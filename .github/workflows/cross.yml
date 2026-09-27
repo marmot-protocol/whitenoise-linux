@@ -21,7 +21,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [linux-arm64, windows-amd64]
+        # linux-amd64 is not a cross build, but the same portable tarball
+        # recipe as linux-arm64 (Ubuntu 24.04 sysroot, bundled libraries).
+        target: [linux-arm64, linux-amd64, windows-amd64]
     steps:
       - uses: actions/checkout@v4
       - name: Install Podman
@@ -167,7 +169,7 @@ jobs:
               unzip -q dist/*-windows-amd64.zip -d build/cross-smoke
             fi
           else
-            tar -xzf dist/*-linux-arm64.tar.gz -C build/cross-smoke
+            tar -xzf dist/*-${{ matrix.target }}.tar.gz -C build/cross-smoke
           fi
           root=build/cross-smoke/package
           if [ ! -e "$root/current" ]; then

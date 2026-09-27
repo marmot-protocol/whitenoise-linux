@@ -31,3 +31,7 @@ test-reload:
 # Regenerate and merge gettext catalogs.
 translations:
     @scripts/update-translations.sh
+
+# Bump APP_VERSION to today, tag v<date>-build.<n>, push to both remotes.
+release *args:
+    @scripts/release.sh "$@"

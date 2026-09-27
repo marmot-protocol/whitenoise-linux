@@ -6,8 +6,8 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 TARGET="${1:-${WN_TARGET:-}}"
 case "$TARGET" in
-  linux-arm64|windows-amd64|darwin-amd64|darwin-arm64) ;;
-  *) echo 'Usage: scripts/cross-build.sh {linux-arm64|windows-amd64|darwin-amd64|darwin-arm64}' >&2; exit 2 ;;
+  linux-arm64|linux-amd64|windows-amd64|darwin-amd64|darwin-arm64) ;;
+  *) echo 'Usage: scripts/cross-build.sh {linux-arm64|linux-amd64|windows-amd64|darwin-amd64|darwin-arm64}' >&2; exit 2 ;;
 esac
 if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then echo 'Run with bash 4 or newer (on macOS: scripts/macos-setup.sh).' >&2; exit 2; fi
 case "$TARGET" in
@@ -47,7 +47,7 @@ if ! stamp_fresh "$OUT/libmarmot_c.a" "$OUT/libmarmot_c.stamp" "$MARMOT_STAMP"; 
   export "PKG_CONFIG_LIBDIR_$RUST_KEY=$PKG_CONFIG_LIBDIR"
   export "PKG_CONFIG_SYSROOT_DIR_$RUST_KEY=${PKG_CONFIG_SYSROOT_DIR:-}"
   RUST_ARGS=(-C "linker=$CC")
-  if [ "$TARGET" = linux-arm64 ]; then RUST_ARGS+=(-C "link-arg=--sysroot=$SYSROOT"); fi
+  if [ "$SYSTEM" = Linux ]; then RUST_ARGS+=(-C "link-arg=--sysroot=$SYSROOT"); fi
   export "CARGO_TARGET_${RUST_UPPER}_RUSTFLAGS=${RUST_ARGS[*]}"
   env -u CC -u CXX -u AR -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_SYSROOT_DIR \
     CARGO_TARGET_DIR="$OUT/cargo" cargo build --manifest-path "$HERE/vendor/mdk/Cargo.toml" \

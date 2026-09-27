@@ -21,26 +21,37 @@ PREFIX="$OUT/vcpkg-installed/$TARGET"
 SYSROOT=
 EXE=
 case "$TARGET" in
-  linux-arm64)
-    RUST_TARGET=aarch64-unknown-linux-gnu; ODIN_TARGET=linux_arm64
-    CPU=aarch64; SYSTEM=Linux; CC=aarch64-linux-gnu-gcc; CXX=aarch64-linux-gnu-g++
-    AR=aarch64-linux-gnu-ar; STRIP=aarch64-linux-gnu-strip; OBJCOPY=aarch64-linux-gnu-objcopy
+  linux-arm64|linux-amd64)
+    # One portable-tarball recipe for both Linux architectures: an Ubuntu
+    # 24.04 sysroot for the target, compiled against from the amd64 container.
+    if [ "$TARGET" = linux-arm64 ]; then
+      CPU=aarch64; DEB_ARCH=arm64; ODIN_TARGET=linux_arm64
+      UBUNTU_MIRROR=http://ports.ubuntu.com/ubuntu-ports
+    else
+      CPU=x86_64; DEB_ARCH=amd64; ODIN_TARGET=linux_amd64
+      UBUNTU_MIRROR=http://archive.ubuntu.com/ubuntu
+    fi
+    TRIPLE="$CPU-linux-gnu"; RUST_TARGET="$CPU-unknown-linux-gnu"
+    SYSTEM=Linux; CC="$TRIPLE-gcc"; CXX="$TRIPLE-g++"
+    AR="$TRIPLE-ar"; STRIP="$TRIPLE-strip"; OBJCOPY="$TRIPLE-objcopy"
     SYSROOT="$OUT/sysroot"
     if [ ! -f "$SYSROOT/.complete" ]; then
-      # extract mode downloads and unpacks arm64 packages without chrooting or
-      # emulating a compiler; GCC above remains an amd64 Linux executable.
-      mmdebstrap --mode=root --variant=extract --architectures=arm64 \
+      # extract mode downloads and unpacks target packages without chrooting
+      # or emulating a compiler; the compilers above are amd64 executables.
+      mmdebstrap --mode=root --variant=extract --architectures="$DEB_ARCH" \
         --include=libc6-dev,libstdc++-13-dev,libarchive-dev,libwebp-dev,libmpv-dev,libpoppler-glib-dev,libcairo2-dev,libcurl4-openssl-dev,libssl-dev,libglib2.0-dev,libfreetype-dev,libavformat-dev,libavcodec-dev,libavutil-dev,libswresample-dev,libwebkit2gtk-4.1-dev,libasound2-dev,libpulse-dev,libx11-dev,libxext-dev,libxcursor-dev,libxi-dev,libxfixes-dev,libxrandr-dev,libxss-dev,libxtst-dev,libwayland-dev,libxkbcommon-dev,libegl1-mesa-dev,libgbm-dev,curl,ca-certificates,gstreamer1.0-plugins-good,gstreamer1.0-libav \
-        noble "$SYSROOT" 'deb http://ports.ubuntu.com/ubuntu-ports noble main universe' \
-        'deb http://ports.ubuntu.com/ubuntu-ports noble-updates main universe' \
-        'deb http://ports.ubuntu.com/ubuntu-ports noble-security main universe'
+        noble "$SYSROOT" "deb $UBUNTU_MIRROR noble main universe" \
+        "deb $UBUNTU_MIRROR noble-updates main universe" \
+        "deb $UBUNTU_MIRROR noble-security main universe"
       touch "$SYSROOT/.complete"
     fi
     # extract mode does not run usrmerge's maintainer script. Some packages
     # still unpack under /lib, while glibc's linker script names /lib paths
     # for files shipped under /usr/lib. Merge without executing target code;
     # this also repairs previously extracted sysroots marked complete.
-    for directory in bin sbin lib; do
+    for directory in bin sbin lib lib64; do
+      # lib64 exists only on amd64, where glibc names /lib64/ld-linux-x86-64.so.2.
+      if [ "$directory" = lib64 ] && [ ! -e "$SYSROOT/usr/lib64" ] && [ ! -e "$SYSROOT/lib64" ]; then continue; fi
       if [ ! -L "$SYSROOT/$directory" ]; then
         mkdir -p "$SYSROOT/usr/$directory"
         if [ -d "$SYSROOT/$directory" ]; then
@@ -53,19 +64,19 @@ case "$TARGET" in
     # BLAS/LAPACK normally acquire these SONAME paths via update-alternatives.
     # libsphinxbase (through libmpv/FFmpeg) needs them during linking/loading.
     for library in blas lapack; do
-      test -f "$SYSROOT/usr/lib/aarch64-linux-gnu/$library/lib$library.so.3"
-      ln -sfn "$library/lib$library.so.3" "$SYSROOT/usr/lib/aarch64-linux-gnu/lib$library.so.3"
+      test -f "$SYSROOT/usr/lib/$TRIPLE/$library/lib$library.so.3"
+      ln -sfn "$library/lib$library.so.3" "$SYSROOT/usr/lib/$TRIPLE/lib$library.so.3"
     done
     PREFIX="$SYSROOT/usr"
     # Match the native build's Clang workaround for SQLCipher TLS relocations.
     CC="$OUT/target-clang"
     cat > "$CC" <<CLANG
 #!/usr/bin/env bash
-exec clang --target=aarch64-linux-gnu --sysroot="$SYSROOT" "\$@"
+exec clang --target=$TRIPLE --sysroot="$SYSROOT" "\$@"
 CLANG
     chmod +x "$CC"
     export PKG_CONFIG_SYSROOT_DIR="$SYSROOT"
-    export PKG_CONFIG_LIBDIR="$SYSROOT/usr/lib/aarch64-linux-gnu/pkgconfig:$SYSROOT/usr/lib/pkgconfig:$SYSROOT/usr/share/pkgconfig"
+    export PKG_CONFIG_LIBDIR="$SYSROOT/usr/lib/$TRIPLE/pkgconfig:$SYSROOT/usr/lib/pkgconfig:$SYSROOT/usr/share/pkgconfig"
     ;;
   windows-amd64)
     # LLVM-MinGW supplies the recent WinRT headers required by current GLib.
@@ -126,7 +137,7 @@ export "CC_$RUST_KEY=$CC" "CXX_$RUST_KEY=$CXX" "AR_$RUST_KEY=$AR"
 export "CARGO_TARGET_${RUST_UPPER}_LINKER=$CC"
 export PKG_CONFIG_PATH= PKG_CONFIG_ALLOW_CROSS=1
 CFLAGS=(-O2 -fPIC)
-if [ "$TARGET" = linux-arm64 ]; then CFLAGS+=("--sysroot=$SYSROOT"); fi
+if [ "$SYSTEM" = Linux ]; then CFLAGS+=("--sysroot=$SYSROOT"); fi
 mkdir -p "$OUT" "$PREFIX" "$OUT/triplets"
 cat > "$OUT/toolchain.cmake" <<CMAKE
 set(CMAKE_SYSTEM_NAME $SYSTEM)
@@ -142,7 +153,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 CMAKE
-if [ "$TARGET" = linux-arm64 ]; then
+if [ "$SYSTEM" = Linux ]; then
   printf 'set(CMAKE_SYSROOT "%s")\n' "$SYSROOT" >> "$OUT/toolchain.cmake"
 elif [ "$SYSTEM" = Darwin ]; then
   cat >> "$OUT/toolchain.cmake" <<CMAKE

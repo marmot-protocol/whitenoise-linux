@@ -88,13 +88,13 @@ flatpak run dev.ipf.whitenoise
 
 The Flatpak keeps its data under `~/.var/app/dev.ipf.whitenoise/`. One thing stays outside its sandbox: "Launch at login".
 
-Linux ARM64 and Windows x86-64 packages are built on Linux alongside the
-existing Linux x86-64 packages; macOS Intel and ARM64 bundles are built on a
-Mac, and the OpenBSD package on OpenBSD 7.9.
+Linux ARM64 and x86-64 tarballs and Windows x86-64 packages are built on
+Linux alongside the AppImage and Flatpak; macOS Intel and ARM64 bundles are
+built on a Mac, and the OpenBSD package on OpenBSD 7.9.
 
 | Target | Archive | Launch |
 | --- | --- | --- |
-| Linux ARM64 | `WhiteNoise-<version>-linux-arm64.tar.gz` | Extract and run the top-level `whitenoise` script; requires glibc 2.39 or newer |
+| Linux ARM64 / x86-64 | `WhiteNoise-<version>-linux-{arm64,amd64}.tar.gz` | Extract and run the top-level `whitenoise` script; requires glibc 2.39 or newer |
 | Windows x86-64 | `WhiteNoise-win-Setup.exe` or `WhiteNoise-win-Portable.zip` | Run the installer, or extract the portable zip anywhere and run `White Noise.exe`; requires Windows 10 or newer |
 | macOS Intel / ARM64 | `WhiteNoise-<version>-darwin-{amd64,arm64}.tar.gz` | Extract `White Noise.app`; requires macOS 13 or newer |
 | OpenBSD amd64 | `WhiteNoise-<version>-openbsd-amd64.tar.gz` | Extract and run `bin/whitenoise`; requires OpenBSD 7.9 and `pkg_add sdl3 libarchive libwebp mpv poppler cairo curl glib2`. Reading aloud and dictation are not included |
@@ -165,8 +165,10 @@ The first build is the slow one: it clones the pinned Marmot revision and builds
 
 ### Cross releases
 
-`scripts/cross-build.sh TARGET` accepts `linux-arm64`, `windows-amd64`,
-`darwin-amd64`, or `darwin-arm64`. `WN_TARGET=TARGET scripts/build.sh` invokes
+`scripts/cross-build.sh TARGET` accepts `linux-arm64`, `linux-amd64`,
+`windows-amd64`, `darwin-amd64`, or `darwin-arm64`. `linux-amd64` is not a
+cross build, but the same portable tarball recipe as `linux-arm64`.
+`WN_TARGET=TARGET scripts/build.sh` invokes
 the same path. The normal `scripts/build.sh` remains a native Linux build.
 Each target has separate objects, Rust output, libraries and package files
 under `build/cross/TARGET`; finished archives go to `dist/`.
@@ -176,7 +178,7 @@ tools:
 
 ```sh
 podman build -f packaging/cross/Containerfile -t whitenoise-cross packaging/cross
-podman run --rm -v "$PWD:/work" whitenoise-cross linux-arm64
+podman run --rm -v "$PWD:/work" whitenoise-cross linux-arm64    # or linux-amd64
 podman run --rm -v "$PWD:/work" whitenoise-cross windows-amd64
 ```
 
@@ -237,6 +239,15 @@ OpenBSD job boots the OpenBSD 7.9 image from
 [cross-platform-actions](https://github.com/cross-platform-actions/action)
 under QEMU, builds and packages inside it, and launches the packaged binary
 headless there.
+
+The app shows the version written in `APP_VERSION` (`app/advanced.odin`); a
+tag does not change it, and `release.yml` rejects a tag that does not match
+it. `just release` (`scripts/release.sh`) keeps the two together: on a clean,
+current `master` it sets `APP_VERSION` to today's date with the next revision
+(`2026.9.27+1`, then `+2` the same day), commits, tags `v2026.9.27-build.1`,
+and pushes `master` and the tag to both remotes. The tag reaching GitHub
+starts the release build. `just release --dry-run` prints the version and
+tag without changing anything.
 
 Tagged releases publish the Windows installer, the portable zip, and
 Velopack's feed (`releases.win.json`, `assets.win.json`, `RELEASES`, and the

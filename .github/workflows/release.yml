@@ -245,6 +245,24 @@ jobs:
           sha256sum -- * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
+      # scripts/release.sh writes the reviewed notes as the tag's message:
+      # its first line is the release title, the rest the body. A tag
+      # without notes (made by hand) falls back to GitHub's generated ones.
+      - uses: actions/checkout@v4
+        with:
+          path: src
+      - name: Read the release notes from the tag
+        id: notes
+        run: |
+          git -C src fetch -q --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          echo "name=$(git -C src tag -l --format='%(contents:subject)' "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
+          git -C src tag -l --format='%(contents:body)' "$GITHUB_REF_NAME" > release-notes.md
+          if grep -q '[^[:space:]]' release-notes.md; then
+            echo "generate=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "generate=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -258,5 +276,7 @@ jobs:
             dist/*.win.json
             dist/RELEASES
             dist/SHA256SUMS.txt
-          generate_release_notes: true
+          name: ${{ steps.notes.outputs.name || github.ref_name }}
+          body_path: release-notes.md
+          generate_release_notes: ${{ steps.notes.outputs.generate == 'true' }}
           fail_on_unmatched_files: true

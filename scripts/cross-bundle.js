@@ -31,7 +31,7 @@ for (const root of roots) {
 }
 
 const windowsSystem = new Set("kernel32.dll bcryptprimitives.dll avicap32.dll user32.dll gdi32.dll advapi32.dll shell32.dll ole32.dll oleaut32.dll uuid.dll ws2_32.dll crypt32.dll bcrypt.dll ncrypt.dll secur32.dll iphlpapi.dll userenv.dll ntdll.dll shlwapi.dll comdlg32.dll winmm.dll version.dll setupapi.dll cfgmgr32.dll dwmapi.dll imm32.dll uxtheme.dll dinput8.dll dxgi.dll d3d11.dll d3d12.dll dxguid.dll opengl32.dll glu32.dll msvcrt.dll ucrtbase.dll winhttp.dll wldap32.dll normaliz.dll dnsapi.dll powrprof.dll winspool.drv propsys.dll avrt.dll hid.dll mf.dll mfplat.dll mfreadwrite.dll mfuuid.dll strmiids.dll ksuser.dll dcomp.dll shcore.dll msimg32.dll usp10.dll dbghelp.dll psapi.dll authz.dll netapi32.dll wintrust.dll imagehlp.dll wtsapi32.dll win32u.dll".split(" "));
-const linuxSystem = /^(?:ld-linux-aarch64\.so\.1|lib(?:c|m|dl|pthread|rt|resolv|util)\.so\.[0-9]+)$/;
+const linuxSystem = /^(?:ld-linux-(?:aarch64\.so\.1|x86-64\.so\.2)|lib(?:c|m|dl|pthread|rt|resolv|util)\.so\.[0-9]+)$/;
 
 function kind(path) {
   const fd = openSync(path, "r");

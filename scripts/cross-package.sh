@@ -15,7 +15,9 @@ STAGE="$OUT/package/$NAME"
 rm -rf "$STAGE"
 EXE=
 case "$TARGET" in
-  linux-arm64) SYSTEM=linux; BIN="$STAGE/usr/bin"; RES="$STAGE/usr/share/whitenoise-linux" ;;
+  linux-arm64|linux-amd64)
+    SYSTEM=linux; BIN="$STAGE/usr/bin"; RES="$STAGE/usr/share/whitenoise-linux"
+    TRIPLE=aarch64-linux-gnu; [ "$TARGET" = linux-arm64 ] || TRIPLE=x86_64-linux-gnu ;;
   windows-amd64) SYSTEM=windows; BIN="$STAGE"; RES="$STAGE/resources"; EXE=.exe ;;
   darwin-amd64|darwin-arm64)
     SYSTEM=darwin; STAGE="$STAGE/White Noise.app"
@@ -63,8 +65,8 @@ if [ "$SYSTEM" = linux ]; then
   # DT_NEEDED alone cannot discover them. Include their data as well.
   mkdir -p "$STAGE/usr/lib" "$STAGE/usr/share"
   for dir in webkit2gtk-4.1 gstreamer-1.0 gio; do
-    if [ -d "$PREFIX/lib/aarch64-linux-gnu/$dir" ]; then
-      cp -a "$PREFIX/lib/aarch64-linux-gnu/$dir" "$STAGE/usr/lib/"
+    if [ -d "$PREFIX/lib/$TRIPLE/$dir" ]; then
+      cp -a "$PREFIX/lib/$TRIPLE/$dir" "$STAGE/usr/lib/"
     fi
   done
   for dir in glib-2.0 gstreamer-1.0 mime fontconfig fonts; do

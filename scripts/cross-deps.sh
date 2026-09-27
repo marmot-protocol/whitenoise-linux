@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Sourced after cross-toolchain.sh; every compiler invocation targets TARGET.
 set -euo pipefail
-if [ "$TARGET" = linux-arm64 ]; then
+if [ "$SYSTEM" = Linux ]; then
   SDL_VERSION=3.4.14
   if [ ! -d "$OUT/SDL" ]; then
     git clone --depth 1 -b "release-$SDL_VERSION" https://github.com/libsdl-org/SDL.git "$OUT/SDL"
   fi
   if ! WAYLAND_SCANNER="$(command -v wayland-scanner)"; then
-    echo 'Install host libwayland-bin: ARM64 SDL requires a Linux-hosted wayland-scanner.' >&2
+    echo 'Install host libwayland-bin: Linux SDL requires a Linux-hosted wayland-scanner.' >&2
     exit 1
   fi
   cmake -S "$OUT/SDL" -B "$OUT/sdl-build" -G Ninja \
@@ -112,6 +112,9 @@ case "$TARGET" in
   linux-arm64)
     archive=sherpa-onnx-v1.13.7-linux-aarch64-shared-cpu-lib.tar.bz2
     digest=306001f71409c73e8c4bfe117f410daab7e551a5dc4e1f22d75738b2ce0c8051 ;;
+  linux-amd64)
+    archive=sherpa-onnx-v1.13.7-linux-x64-shared-lib.tar.bz2
+    digest=29a775ce0936ba9d6d3432769d01731048728dd8851b202e638aa6d4bf77722f ;;
   windows-amd64)
     archive=sherpa-onnx-v1.13.7-win-x64-shared-MT-Release-lib.tar.bz2
     digest=7a362a9f339a2937e7f8806e904f3e8a031a7774982eea08bca8336b2c257529 ;;

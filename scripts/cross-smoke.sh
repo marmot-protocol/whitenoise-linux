@@ -4,22 +4,24 @@
 set -euo pipefail
 
 if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
-  echo "Usage: $0 <linux-arm64|windows-amd64|darwin-arm64|darwin-amd64> <package-root> [linux-sysroot]" >&2
+  echo "Usage: $0 <linux-arm64|linux-amd64|windows-amd64|darwin-arm64|darwin-amd64> <package-root> [linux-sysroot]" >&2
   exit 2
 fi
 target="$1"
 root="$(realpath "$2")"
 run=()
 case "$target" in
-  linux-arm64)
+  linux-arm64|linux-amd64)
     exe="$root/usr/bin/whitenoise"
-    if [ "$(uname -m)" != aarch64 ]; then
+    cpu=aarch64; [ "$target" = linux-arm64 ] || cpu=x86_64
+    # Another architecture runs under QEMU with the target's glibc.
+    if [ "$(uname -m)" != "$cpu" ]; then
       if [ "$#" != 3 ]; then
-        echo "linux-arm64 smoke on this host requires a target sysroot." >&2
+        echo "$target smoke on this host requires a target sysroot." >&2
         exit 2
       fi
       sysroot="$(realpath "$3")"
-      run=(qemu-aarch64)
+      run=("qemu-$cpu")
     fi
     ;;
   windows-amd64)
@@ -59,17 +61,18 @@ export HOME="$work/home" XDG_CONFIG_HOME="$work/config"
 export XDG_DATA_HOME="$work/data" WINEPREFIX="$work/wine"
 export SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke
 cd "$work"
-if [ "$target" = linux-arm64 ]; then
+if [ "$target" = linux-arm64 ] || [ "$target" = linux-amd64 ]; then
   # Set the guest path, not LD_LIBRARY_PATH for the host's QEMU executable.
   libs="$root/usr/lib:$root/usr/share/whitenoise-linux/tts-lib"
   if [ "${#run[@]}" -gt 0 ]; then
     # Only glibc comes from the target distro. Every other dependency must
     # resolve from the shipped package, not the build sysroot.
     runtime="$work/sysroot"
-    mkdir -p "$runtime/lib/aarch64-linux-gnu"
-    cp -L "$sysroot/lib/ld-linux-aarch64.so.1" "$runtime/lib/"
+    loader=ld-linux-aarch64.so.1; [ "$cpu" = aarch64 ] || loader=ld-linux-x86-64.so.2
+    mkdir -p "$runtime/lib/$cpu-linux-gnu"
+    cp -L "$sysroot/lib/$loader" "$runtime/lib/"
     for lib in libc.so.6 libm.so.6 libdl.so.2 libpthread.so.0 librt.so.1 libresolv.so.2 libutil.so.1; do
-      cp -L "$sysroot/lib/aarch64-linux-gnu/$lib" "$runtime/lib/aarch64-linux-gnu/"
+      cp -L "$sysroot/lib/$cpu-linux-gnu/$lib" "$runtime/lib/$cpu-linux-gnu/"
     done
     # Odin walks absolute directories using openat from /. Keep temporary
     # data on the host /tmp rather than inside QEMU's loader prefix.
