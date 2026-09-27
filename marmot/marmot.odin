@@ -21,6 +21,9 @@ when #config(WN_RELOAD, false) {
 	foreign import lib {MARMOT_ARCHIVE, "system:ws2_32", "system:bcrypt", "system:ntdll", "system:userenv", "system:advapi32", "system:secur32", "system:crypt32"}
 } else when ODIN_OS == .Darwin {
 	foreign import lib {MARMOT_ARCHIVE, "system:Security.framework", "system:CoreFoundation.framework", "system:SystemConfiguration.framework"}
+} else when ODIN_OS == .OpenBSD {
+	// dlopen lives in libc; Rust's std unwinds through libc++abi here.
+	foreign import lib {MARMOT_ARCHIVE, "system:m", "system:pthread", "system:c++abi"}
 } else {
 	foreign import lib {MARMOT_ARCHIVE, "system:m", "system:pthread", "system:dl"}
 }

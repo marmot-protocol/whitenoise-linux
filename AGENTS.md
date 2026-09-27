@@ -37,9 +37,10 @@ output is already present, so only the first run is slow:
 - An `ODIN_ROOT` overlay at `build/odin-root`, but **only** when the installed
   Odin is missing `vendor/stb/lib/stb_truetype.a` or `vendor/cgltf/lib/cgltf.a`
   (the Linux release tarball is; `sdlrl` needs stb truetype and image, the
-  glTF viewer needs cgltf). The overlay symlinks the real install and swaps
-  in writable `vendor/stb` and `vendor/cgltf` copies it can run
-  `build_stb.sh` and `build_cgltf.sh` in.
+  glTF viewer needs cgltf), and always on OpenBSD. The overlay symlinks the
+  real install and swaps in writable `vendor/stb` and `vendor/cgltf` copies it
+  can run `build_stb.sh` and `build_cgltf.sh` in. On OpenBSD it also points
+  those bindings at the built archives, which they name for Linux only.
 
 `DEPS_PIN` holds every third-party revision as `<name>-commit = <sha>`, one
 per line. Bumping one is a one-line edit; `just build` re-checks out and

@@ -199,6 +199,66 @@ jobs:
           path: build/cross-evidence/${{ matrix.target }}.png
           if-no-files-found: error
 
+  # No hosted OpenBSD runner: boot the OpenBSD 7.9 image under QEMU on Linux
+  # and build natively inside it (scripts/openbsd-build.sh). The workspace
+  # syncs into the VM and back, so the host restores and saves the caches.
+  openbsd:
+    name: Build openbsd-amd64 in a VM
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # Sources first: build.sh clones vendor/mdk only when the directory is
+      # missing, and restoring the bundle below would create it.
+      - name: Fetch sources
+        id: sources
+        run: |
+          scripts/build.sh sources
+          echo "mdk=$(sed -n 's/^mdk-commit = //p' DEPS_PIN)" >> "$GITHUB_OUTPUT"
+      - name: Restore the marmot-c bundle
+        id: marmot-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: vendor/mdk/crates/marmot-c/output
+          key: marmot-openbsd-amd64-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}
+      - name: Build and package in OpenBSD
+        uses: cross-platform-actions/action@v1.6.0
+        env:
+          WN_RELEASE_VERSION: ${{ inputs.version }}
+        with:
+          operating_system: openbsd
+          version: '7.9'
+          architecture: x86-64
+          cpu_count: 4
+          memory: 12G
+          environment_variables: WN_RELEASE_VERSION
+          run: |
+            sudo pkg_add -I bash git cmake ninja gmake coreutils llvm%21 rust unzip-- \
+              sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg
+            # The image's root filesystem has ~4 GB left after the packages,
+            # short of cargo's ~2.3 GB plus the workspace. Build Rust on a
+            # swap-backed memory filesystem; root's class caps data at 4 GB.
+            sudo sh -c 'ulimit -d unlimited && mkdir -p /mnt/scratch && mount_mfs -s 8g swap /mnt/scratch && chown runner /mnt/scratch'
+            export CARGO_TARGET_DIR=/mnt/scratch/target CARGO_HOME=/mnt/scratch/cargo
+            bash scripts/openbsd-build.sh
+            # Keep the sync back small.
+            rm -rf build/openbsd/odin
+      - name: Save the marmot-c bundle
+        if: always() && steps.marmot-cache.outputs.cache-hit != 'true' && hashFiles('vendor/mdk/crates/marmot-c/output/.mdk-patches') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: vendor/mdk/crates/marmot-c/output
+          key: ${{ steps.marmot-cache.outputs.cache-primary-key }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-openbsd-amd64
+          path: dist/*-openbsd-amd64.tar.gz
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smoke-openbsd-amd64
+          path: build/openbsd/wn-odin-shot.png
+          if-no-files-found: error
+
   # Apple's SDK is licensed for Apple hardware, so macOS packages build on a
   # Mac. One Apple silicon runner builds both architectures; the Intel bundle
   # is smoke-tested under Rosetta. ponytail: GitHub-hosted until the

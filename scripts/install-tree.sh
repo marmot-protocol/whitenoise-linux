@@ -20,14 +20,21 @@ mkdir -p "$PREFIX/bin" "$RES/fonts" "$PREFIX/share/applications" \
   "$PREFIX/share/icons/hicolor/256x256/apps" "$PREFIX/share/metainfo"
 
 cp "$HERE/build/app" "$PREFIX/bin/whitenoise"
-cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$PREFIX/bin/"
+# Speech helpers and their runtime exist only where build.sh builds them
+# (Linux; see there). Elsewhere reading aloud/dictation report they
+# could not start.
+SPEECH=
+if [ "$(uname -s)" = Linux ]; then SPEECH=1; fi
+if [ -n "$SPEECH" ]; then cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$PREFIX/bin/"; fi
 mkdir -p "$RES/licenses"
 cp "$HERE/build/wn-font" "$RES/"
 cp "$HERE/vendor/crop-circles/LICENSE" "$RES/licenses/crop-circles.txt"
 cp "$HERE/vendor/crop-circles/README.txt" "$RES/licenses/crop-circles-notices.txt"
-cp "$HERE/vendor/sherpa-onnx/LICENSE" "$RES/licenses/sherpa-onnx.txt"
-cp "$HERE/vendor/sherpa-onnx/LICENSE-onnxruntime" "$RES/licenses/onnxruntime.txt"
-cp "$HERE/vendor/sherpa-onnx/ThirdPartyNotices-onnxruntime.txt" "$RES/licenses/onnxruntime-third-party.txt"
+if [ -n "$SPEECH" ]; then
+  cp "$HERE/vendor/sherpa-onnx/LICENSE" "$RES/licenses/sherpa-onnx.txt"
+  cp "$HERE/vendor/sherpa-onnx/LICENSE-onnxruntime" "$RES/licenses/onnxruntime.txt"
+  cp "$HERE/vendor/sherpa-onnx/ThirdPartyNotices-onnxruntime.txt" "$RES/licenses/onnxruntime-third-party.txt"
+fi
 # MicroTeX and the TeX Gyre DejaVu Math font it typesets with are linked
 # and #loaded into the binary; ship their licenses (the font: GUST Font
 # License, DejaVu changes public domain; texts staged by build.sh).
@@ -35,10 +42,12 @@ cp "$HERE/vendor/microtex/LICENSE" "$RES/licenses/microtex.txt"
 cp "$HERE/vendor/microtex/res/tex-gyre/README-TeX-Gyre-DejaVu-Math.txt" "$RES/licenses/tex-gyre-dejavu-math.txt"
 cp "$HERE/vendor/fonts/GUST-FONT-LICENSE.txt" "$RES/licenses/gust-font-license.txt"
 cp "$HERE/vendor/fonts/DejaVu-LICENSE.txt" "$RES/licenses/dejavu.txt"
-cp "$HERE/docs/tts.md" "$RES/licenses/speech-model.md"
-cp "$HERE/docs/stt.md" "$RES/licenses/dictation-model.md"
-mkdir -p "$RES/tts-lib"
-cp "$HERE/build/tts-lib/"*.so "$RES/tts-lib/"
+if [ -n "$SPEECH" ]; then
+  cp "$HERE/docs/tts.md" "$RES/licenses/speech-model.md"
+  cp "$HERE/docs/stt.md" "$RES/licenses/dictation-model.md"
+  mkdir -p "$RES/tts-lib"
+  cp "$HERE/build/tts-lib/"*.so "$RES/tts-lib/"
+fi
 # The webxdc host process, only when webkit2gtk was present at build time.
 # The app looks for it beside its own binary.
 if [ -x "$HERE/build/wn-webview" ]; then

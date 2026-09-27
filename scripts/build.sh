@@ -9,6 +9,18 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
+# OpenBSD's coreutils package installs GNU sha256sum as gsha256sum; its own
+# sha256 -c reads a different line format.
+if ! command -v sha256sum >/dev/null && command -v gsha256sum >/dev/null; then
+  sha256sum() { gsha256sum "$@"; }
+fi
+# OpenBSD's login classes cap a process's data size (1.5 GB soft for staff);
+# rustc on marmot-app and `odin build -o:speed` on the app need more
+# ("memory allocation failed", "Out of Virtual memory"). Raise the soft
+# limit to the hard one for the whole build.
+if [ "$(uname -s)" = OpenBSD ]; then
+  ulimit -d "$(ulimit -Hd)"
+fi
 # Cross builds share source pins and assets, but never stage host objects.
 if [ -n "${WN_TARGET:-}" ] && [ "${1:-}" != sources ]; then
   exec bash "$HERE/scripts/cross-build.sh" "$WN_TARGET"
@@ -49,8 +61,16 @@ for patch in "${MDK_PATCHES[@]}"; do
 done
 PATCHES_HASH="$(sha256sum "${MDK_PATCHES[@]}")"
 if [ "${1:-}" != sources ] && { [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ] || [ "$(cat "$BUNDLE/.mdk-patches" 2>/dev/null || true)" != "$PATCHES_HASH" ]; }; then
+  RUST_ENV=()
+  if [ "$(uname -s)" = OpenBSD ]; then
+    # ponytail: OpenBSD has no rustup, and its rust package (1.94) predates
+    # MDK's pinned toolchain; libsqlite3-sys's build script uses cfg_select!,
+    # still unstable there. Unlock that one feature on the stable compiler.
+    # Drop this once the package reaches vendor/mdk/rust-toolchain.toml.
+    RUST_ENV=(RUSTC_BOOTSTRAP=1 RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-Zcrate-attr=feature(cfg_select)")
+  fi
   # GCC folds SQLCipher's TLS seed into overflowing relocations (sqlcipher#600).
-  CC="${CC:-clang}" OTLP_EXPORT=1 "$MDK/crates/marmot-c/c-bindings.sh"
+  env "${RUST_ENV[@]}" CC="${CC:-clang}" OTLP_EXPORT=1 "$MDK/crates/marmot-c/c-bindings.sh"
   touch "$BUNDLE/.otlp-export"
   printf '%s\n' "$PATCHES_HASH" > "$BUNDLE/.mdk-patches"
 fi
@@ -60,6 +80,11 @@ CLAY_PIN="$(pin clay)"
 if [ ! -d "$CLAY" ]; then
   git clone --filter=blob:none https://github.com/nicbarker/clay.git "$CLAY"
   git -C "$CLAY" checkout --detach "$CLAY_PIN"
+fi
+# The Odin binding links linux/clay.a on Linux only; OpenBSD uses the same
+# ELF archive (patches/clay-openbsd.patch). Applied once, in place.
+if git -C "$CLAY" apply --check "$HERE/patches/clay-openbsd.patch" 2>/dev/null; then
+  git -C "$CLAY" apply "$HERE/patches/clay-openbsd.patch"
 fi
 
 if [ "${1:-}" != sources ]; then
@@ -124,7 +149,7 @@ fi
 # raw socket, framed in app/ws_shim.c.
 mkdir -p "$HERE/build/ws"
 if [ ! -f "$HERE/build/libwnws.a" ] || [ "$HERE/app/ws_shim.c" -nt "$HERE/build/libwnws.a" ]; then
-  cc -c -O2 -fPIC "$HERE/app/ws_shim.c" -o "$HERE/build/ws/ws_shim.o"
+  cc -c -O2 -fPIC $(pkg-config --cflags libcurl) "$HERE/app/ws_shim.c" -o "$HERE/build/ws/ws_shim.o"
   rm -f "$HERE/build/libwnws.a"
   ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o"
 fi
@@ -175,7 +200,7 @@ if [ ! -f "$HERE/build/microtex/lib/libmicrotex.a" ] || [ "$(cat "$HERE/build/mi
   cmake -S "$MICROTEX" -B "$HERE/build/microtex" -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_STATIC=ON -DHAVE_CWRAPPER=ON \
     -DHAVE_LOG=OFF -DGRAPHICS_DEBUG=OFF -DHAVE_AUTO_FONT_FIND=OFF
-  cmake --build "$HERE/build/microtex" --target microtex -j"$(nproc)"
+  cmake --build "$HERE/build/microtex" --target microtex -j"$(getconf NPROCESSORS_ONLN)"
   echo "$MICROTEX_STAMP" > "$HERE/build/microtex/stamp"
   rm -f "$HERE/build/libwnmath.a"
 fi
@@ -194,14 +219,19 @@ ar rcs "$HERE/build/libwnipc.a" "$HERE/build/helper_ipc.o"
 # FreeType decodes profile web fonts for the existing SFNT text renderer.
 cc -O2 -Wall -Wextra "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) -o "$HERE/build/wn-font"
 
-# Speech helper uses the pinned multilingual CPU runtime.
-bash "$HERE/scripts/build-tts.sh"
-TTS="$HERE/vendor/sherpa-onnx"
-for speech in tts stt; do
-  cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/app/$speech.c" "$HERE/build/libwnipc.a" \
-    -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib:$ORIGIN/../share/whitenoise-linux/tts-lib' \
-    $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 libavformat libavcodec libavutil libswresample libcrypto) -pthread -lm -o "$HERE/build/wn-$speech"
-done
+# Speech helpers use the pinned multilingual CPU runtime, which sherpa-onnx
+# only publishes for Linux (and the cross targets'). Elsewhere (OpenBSD) the
+# helpers are not built and reading aloud/dictation report that they could
+# not start.
+if [ "$(uname -s)" = Linux ]; then
+  bash "$HERE/scripts/build-tts.sh"
+  TTS="$HERE/vendor/sherpa-onnx"
+  for speech in tts stt; do
+    cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/app/$speech.c" "$HERE/build/libwnipc.a" \
+      -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib:$ORIGIN/../share/whitenoise-linux/tts-lib' \
+      $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 libavformat libavcodec libavutil libswresample libcrypto) -pthread -lm -o "$HERE/build/wn-$speech"
+  done
+fi
 
 # wn-webview: the process that runs a webxdc app offscreen and hands
 # the app its pixels through shared memory. Optional: without
@@ -222,7 +252,7 @@ fi
 TWEMOJI="$HERE/vendor/twemoji"
 if [ ! -d "$TWEMOJI" ]; then
   TMP="$(mktemp -d)"
-  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/twemoji-assets/twemoji-assets-1.5.1+17.0.2.crate" | tar xz -C "$TMP"
+  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/twemoji-assets/twemoji-assets-1.5.1+17.0.2.crate" | tar -xzf - -C "$TMP"
   mv "$TMP"/twemoji-assets-*/assets/72x72 "$TWEMOJI"
   rm -rf "$TMP"
 fi
@@ -233,9 +263,10 @@ fi
 CATALOG="$HERE/vendor/emoji-catalog.tsv"
 if [ ! -f "$CATALOG" ]; then
   TMP="$(mktemp -d)"
-  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/emojis/emojis-0.6.4.crate" | tar xz -C "$TMP"
+  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/emojis/emojis-0.6.4.crate" | tar -xzf - -C "$TMP"
+  # A literal tab: BSD sed does not expand \t in the replacement.
   grep -o 'Emoji { emoji: "[^"]*", name: "[^"]*"' "$TMP"/emojis-0.6.4/src/gen/mod.rs |
-    sed 's/Emoji { emoji: "\([^"]*\)", name: "\([^"]*\)"/\1\t\2/' |
+    sed "s/Emoji { emoji: \"\([^\"]*\)\", name: \"\([^\"]*\)\"/\1$(printf '\t')\2/" |
     grep -av $'\xf0\x9f\x8f\xbb' | grep -av $'\xf0\x9f\x8f\xbc' |
     grep -av $'\xf0\x9f\x8f\xbd' | grep -av $'\xf0\x9f\x8f\xbe' |
     grep -av $'\xf0\x9f\x8f\xbf' >"$CATALOG"
@@ -268,9 +299,11 @@ if [ ! -f "$FONTS/LiberationSans-Regular.ttf" ] || [ ! -f "$FONTS/LiberationSans
   TMP="$(mktemp -d)"
   curl -sSfL -o "$TMP/liberation.tar.gz" "$LIBERATION_URL"
   echo "$LIBERATION_SHA  $TMP/liberation.tar.gz" | sha256sum -c -
-  tar -xzf "$TMP/liberation.tar.gz" -C "$FONTS" --strip-components=1 \
-    --wildcards '*/LiberationSans-Regular.ttf' '*/LiberationSans-Bold.ttf' \
-    '*/LiberationSans-Italic.ttf' '*/LiberationSans-BoldItalic.ttf' '*/LiberationMono-Regular.ttf'
+  # Extract whole, then copy: --strip-components/--wildcards are GNU-only.
+  tar -xzf "$TMP/liberation.tar.gz" -C "$TMP"
+  for face in LiberationSans-Regular LiberationSans-Bold LiberationSans-Italic LiberationSans-BoldItalic LiberationMono-Regular; do
+    cp "$TMP"/liberation-fonts-ttf-*/"$face.ttf" "$FONTS/"
+  done
   rm -rf "$TMP"
 fi
 
@@ -317,10 +350,12 @@ fi
 # built .a archives (sdlrl needs stb truetype + image, the glTF viewer
 # needs cgltf). When either is missing, build them inside a private
 # ODIN_ROOT that symlinks the real install and swaps in writable copies
-# of those two vendor dirs.
-SYS_ODIN="$(dirname "$(realpath "$(command -v odin)")")"
+# of those two vendor dirs. OpenBSD always takes the overlay: its bindings
+# name the archives for Linux only (below).
+SYS_ODIN="$(env -u ODIN_ROOT odin root)"
+SYS_ODIN="${SYS_ODIN%/}"
 ODIN_ROOT_ARG=()
-if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendor/cgltf/lib/cgltf.a" ]; then
+if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendor/cgltf/lib/cgltf.a" ] || [ "$(uname -s)" = OpenBSD ]; then
   OVERLAY="$HERE/build/odin-root"
   if [ ! -f "$OVERLAY/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$OVERLAY/vendor/cgltf/lib/cgltf.a" ]; then
     # An older overlay symlinks vendor/cgltf to the read-only install;
@@ -339,6 +374,15 @@ if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendo
     done
     ODIN_ROOT="$OVERLAY" "$OVERLAY/vendor/stb/src/build_stb.sh"
     ODIN_ROOT="$OVERLAY" "$OVERLAY/vendor/cgltf/src/build_cgltf.sh"
+    # The bindings pick ../lib/*.a `when ODIN_OS == .Linux` and otherwise
+    # fall back to system:stb_image etc., which no OpenBSD package ships.
+    # build_*.sh build the same ELF archives there; point OpenBSD at them.
+    if [ "$(uname -s)" = OpenBSD ]; then
+      for binding in "$OVERLAY"/vendor/stb/*/*.odin "$OVERLAY"/vendor/cgltf/*.odin; do
+        sed 's/when ODIN_OS == \.Linux$/when ODIN_OS == .Linux || ODIN_OS == .OpenBSD/' "$binding" >"$binding.tmp"
+        mv "$binding.tmp" "$binding"
+      done
+    fi
   fi
   ODIN_ROOT_ARG=(ODIN_ROOT="$OVERLAY")
 fi
@@ -376,10 +420,13 @@ if [ "${1:-}" = test ]; then
   "$HERE/build/event-layout-test"
   cc -O2 -I"$HERE/build/clay" "$HERE/tests/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"
   "$HERE/build/clay/hashmap-test"
-  cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/tests/stt-test.c" "$HERE/build/libwnipc.a" \
-    -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
-    $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 libavformat libavcodec libavutil libswresample libcrypto) -pthread -lm -o "$HERE/build/stt-test"
-  "$HERE/build/stt-test"
+  # Needs the Linux-only speech runtime (see the speech helpers above).
+  if [ "$(uname -s)" = Linux ]; then
+    cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/tests/stt-test.c" "$HERE/build/libwnipc.a" \
+      -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
+      $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 libavformat libavcodec libavutil libswresample libcrypto) -pthread -lm -o "$HERE/build/stt-test"
+    "$HERE/build/stt-test"
+  fi
   cc -O2 -Wall -Wextra "$HERE/tests/speech-decode-test.c" "$HERE/app/helper_ipc.c" \
     $(pkg-config --cflags --libs glib-2.0 libavformat libavcodec libavutil libswresample) \
     -pthread -lm -o "$HERE/build/speech-decode-test"

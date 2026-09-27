@@ -72,6 +72,10 @@ res_font :: proc(name: string) -> cstring {
 
 @(private)
 executable_path :: proc(allocator := context.temp_allocator) -> string {
+	// OpenBSD has no API for this; see paths_openbsd.odin.
+	when ODIN_OS == .OpenBSD {
+		if path := argv0_path(allocator); path != "" {return path}
+	}
 	path, err := os.get_executable_path(allocator)
 	if err != nil {return ""}
 	return path

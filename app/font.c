@@ -56,6 +56,11 @@ int main(int argc, char **argv) {
     memory.rlim_cur += info.virtual_size;
     memory.rlim_max = memory.rlim_cur;
 #endif
+#ifndef RLIMIT_AS
+    // OpenBSD has no address-space limit; RLIMIT_DATA bounds malloc and
+    // anonymous mmap there, which is what a hostile font would grow.
+#define RLIMIT_AS RLIMIT_DATA
+#endif
     if (setrlimit(RLIMIT_AS, &memory) || setrlimit(RLIMIT_CPU, &cpu))
         return 1;
 #endif

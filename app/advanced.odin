@@ -529,6 +529,8 @@ obs_os_type :: proc() -> cstring {
 		return "windows"
 	} else when ODIN_OS == .Darwin {
 		return "darwin"
+	} else when ODIN_OS == .OpenBSD {
+		return "openbsd"
 	} else {
 		return "linux"
 	}

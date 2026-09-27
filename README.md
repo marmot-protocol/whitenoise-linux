@@ -90,13 +90,14 @@ The Flatpak keeps its data under `~/.var/app/dev.ipf.whitenoise/`. One thing sta
 
 Linux ARM64 and Windows x86-64 packages are built on Linux alongside the
 existing Linux x86-64 packages; macOS Intel and ARM64 bundles are built on a
-Mac.
+Mac, and the OpenBSD package on OpenBSD 7.9.
 
 | Target | Archive | Launch |
 | --- | --- | --- |
 | Linux ARM64 | `WhiteNoise-<version>-linux-arm64.tar.gz` | Extract and run the top-level `whitenoise` script; requires glibc 2.39 or newer |
 | Windows x86-64 | `WhiteNoise-win-Setup.exe` or `WhiteNoise-win-Portable.zip` | Run the installer, or extract the portable zip anywhere and run `White Noise.exe`; requires Windows 10 or newer |
 | macOS Intel / ARM64 | `WhiteNoise-<version>-darwin-{amd64,arm64}.tar.gz` | Extract `White Noise.app`; requires macOS 13 or newer |
+| OpenBSD amd64 | `WhiteNoise-<version>-openbsd-amd64.tar.gz` | Extract and run `bin/whitenoise`; requires OpenBSD 7.9 and `pkg_add sdl3 libarchive libwebp mpv poppler cairo curl glib2`. Reading aloud and dictation are not included |
 
 Windows installs update themselves through [Velopack](https://velopack.io).
 The app checks this repository's GitHub releases at launch and every six
@@ -208,11 +209,34 @@ scripts/cross-build.sh darwin-arm64    # or darwin-amd64 for Intel
 The build uses Xcode's clang with a pinned `-arch` and a macOS 13 deployment
 target, then signs every Mach-O file and the bundle ad hoc with `codesign`.
 
+OpenBSD builds natively on OpenBSD 7.9; there is no cross toolchain for it.
+`scripts/openbsd-build.sh` lists the packages to install in its header, builds
+the pinned Odin release from source (OpenBSD has no Odin package), runs
+`scripts/build.sh`, and packs the install tree as
+`dist/WhiteNoise-<version>-openbsd-amd64.tar.gz`:
+
+```sh
+doas pkg_add bash git cmake ninja gmake coreutils llvm%21 rust unzip-- \
+  sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg
+bash scripts/openbsd-build.sh
+```
+
+OpenBSD's Rust package (1.94) is older than the toolchain Marmot pins, so
+`scripts/build.sh` enables the one unstable feature the build needs
+(`cfg_select`) on OpenBSD. It also raises the per-process data size limit,
+which rustc and Odin's optimizing build otherwise run out of.
+Reading aloud and dictation are left out: sherpa-onnx publishes no OpenBSD
+runtime, so those features report that they could not start.
+
 `.github/workflows/cross.yml` is called by CI and tagged releases. Its Linux
 ARM64 and Windows jobs extract the shipped archive and require a headless
 launch to produce a screenshot under QEMU or Wine. No compiler runs under
 those emulators. Its macOS jobs build both bundles on a GitHub Apple silicon
-runner and launch each one there, the Intel bundle through Rosetta.
+runner and launch each one there, the Intel bundle through Rosetta. Its
+OpenBSD job boots the OpenBSD 7.9 image from
+[cross-platform-actions](https://github.com/cross-platform-actions/action)
+under QEMU, builds and packages inside it, and launches the packaged binary
+headless there.
 
 Tagged releases publish the Windows installer, the portable zip, and
 Velopack's feed (`releases.win.json`, `assets.win.json`, `RELEASES`, and the

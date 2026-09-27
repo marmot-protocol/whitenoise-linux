@@ -1,7 +1,10 @@
 #define _POSIX_C_SOURCE 200809L
-// Strict POSIX mode hides flock() and LOCK_EX on macOS; this re-exposes
-// them. Other platforms ignore it.
+// Strict POSIX mode hides flock() and LOCK_EX on macOS and OpenBSD; these
+// re-expose them. (glibc warns on _BSD_SOURCE, so only OpenBSD gets it.)
 #define _DARWIN_C_SOURCE
+#ifdef __OpenBSD__
+#define _BSD_SOURCE
+#endif
 #include "helper_ipc.h"
 #include <stdio.h>
 #include <stdlib.h>
