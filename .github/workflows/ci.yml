@@ -23,6 +23,13 @@ env:
   ODIN_VERSION: dev-2026-09
   # SDL3 is not packaged on ubuntu-24.04; build it from source and cache it.
   SDL_VERSION: "3.4.14"
+  # AppImage tooling for the staging build, pinned like release.yml's.
+  LINUXDEPLOY_VERSION: 1-alpha-20251107-1
+  LINUXDEPLOY_SHA256: c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d
+  APPIMAGETOOL_VERSION: "1.9.1"
+  APPIMAGETOOL_SHA256: ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+  # The runners have no FUSE; AppImages self-extract instead of mounting.
+  APPIMAGE_EXTRACT_AND_RUN: "1"
 
 jobs:
   build:
@@ -54,7 +61,7 @@ jobs:
             pkg-config cmake ninja-build clang git curl \
             libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
             libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev gettext \
-            libxtst-dev
+            libxtst-dev file desktop-file-utils
           sudo apt-get autoclean -o "Dir::Cache::Archives=$archives"
           # apt leaves its lock and partial/ root-only; the cache save reads as the runner.
           sudo chown -R "$(id -u):$(id -g)" "$archives"
@@ -174,6 +181,47 @@ jobs:
             build/fbx/ufbx.o
             build/fbx/ufbx.stamp
           key: ${{ steps.cdeps-cache.outputs.cache-primary-key }}
+
+      # The x86_64 Linux package, from the binaries the step above built, as
+      # .ngit/act/workflows/release-appimage.yml does for ngit. No -u: a
+      # staging build must not point AppImageUpdate at the release channel.
+      - name: Build staging AppImage
+        run: |
+          set -euo pipefail
+          rm -rf AppDir
+          scripts/install-tree.sh AppDir/usr whitenoise
+          wget -q -O linuxdeploy \
+            "https://github.com/linuxdeploy/linuxdeploy/releases/download/$LINUXDEPLOY_VERSION/linuxdeploy-x86_64.AppImage"
+          wget -q -O appimagetool \
+            "https://github.com/AppImage/appimagetool/releases/download/$APPIMAGETOOL_VERSION/appimagetool-x86_64.AppImage"
+          echo "$LINUXDEPLOY_SHA256  linuxdeploy" | sha256sum -c -
+          echo "$APPIMAGETOOL_SHA256  appimagetool" | sha256sum -c -
+          chmod +x linuxdeploy appimagetool
+          export LD_LIBRARY_PATH="/usr/local/sdl3/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          ./linuxdeploy --appdir AppDir \
+            --executable AppDir/usr/bin/whitenoise \
+            --executable AppDir/usr/bin/wn-tts \
+            --executable AppDir/usr/bin/wn-stt \
+            --executable AppDir/usr/share/whitenoise-linux/wn-font \
+            --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
+            --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
+          out="WhiteNoise-$(bash scripts/version.sh)-staging-${GITHUB_SHA:0:8}-x86_64.AppImage"
+          ./appimagetool AppDir "$out"
+          echo "APPIMAGE_NAME=$out" >> "$GITHUB_ENV"
+
+      # Boots the package with SDL's dummy video driver; WN_SHOT exits after a
+      # few frames. Catches a missing bundled library or a res_dir that no
+      # longer finds its data.
+      - name: Run the AppImage headless
+        run: |
+          chmod +x "$APPIMAGE_NAME"
+          SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke ./"$APPIMAGE_NAME" "$(mktemp -d)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whitenoise-staging-x86_64
+          path: ${{ env.APPIMAGE_NAME }}
+          if-no-files-found: error
 
   cross:
     uses: ./.github/workflows/cross.yml
