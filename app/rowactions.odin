@@ -356,7 +356,7 @@ handle_folder_navigation :: proc(ui: ^Ui_State) -> bool {
 					if clay.PointerOver(clay.ID("FolderMenuEdit")) {
 						open_folder_modal(ui, rename = i)
 					} else if clay.PointerOver(clay.ID("FolderMenuDelete")) {
-						delete_folder(ui, i)
+						confirm_ask(ui, .Delete_Folder, name, name)
 					}
 					break
 				}

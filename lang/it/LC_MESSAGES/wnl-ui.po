@@ -984,6 +984,9 @@ msgstr "Elimina per me"
 msgid "Delete for you?"
 msgstr "Eliminare per me?"
 
+msgid "Delete this folder?"
+msgstr "Eliminare questa cartella?"
+
 #, fuzzy
 msgid "Delete this message?"
 msgstr "Eliminare per me?"
@@ -1941,6 +1944,9 @@ msgstr "Reazioni con un tocco"
 
 msgid "Only group admins can change this setting."
 msgstr "Solo gli amministratori del gruppo possono modificare questa impostazione."
+
+msgid "Only the folder is removed. Its chats stay in your chat list."
+msgstr "Viene rimossa solo la cartella. Le sue chat restano nell'elenco delle chat."
 
 msgid "Open"
 msgstr "Apri"

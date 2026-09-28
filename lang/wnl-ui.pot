@@ -928,6 +928,9 @@ msgstr ""
 msgid "Delete for you?"
 msgstr ""
 
+msgid "Delete this folder?"
+msgstr ""
+
 msgid "Delete this message?"
 msgstr ""
 
@@ -1834,6 +1837,9 @@ msgid "One-tap reactions"
 msgstr ""
 
 msgid "Only group admins can change this setting."
+msgstr ""
+
+msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr ""
 
 msgid "Open"

@@ -1816,7 +1816,8 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				return
 			}
 			if clay.PointerOver(clay.ID("SettingsFolderDelete", u32(i))) {
-				delete_folder(ui, i)
+				name := ui.prefs.folders[i]
+				confirm_ask(ui, .Delete_Folder, name, name)
 				return
 			}
 			if clay.PointerOver(clay.ID("SettingsFolder", u32(i))) {

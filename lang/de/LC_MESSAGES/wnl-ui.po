@@ -984,6 +984,9 @@ msgstr "Für mich löschen"
 msgid "Delete for you?"
 msgstr "Für mich löschen?"
 
+msgid "Delete this folder?"
+msgstr "Diesen Ordner löschen?"
+
 #, fuzzy
 msgid "Delete this message?"
 msgstr "Für mich löschen?"
@@ -1941,6 +1944,9 @@ msgstr "Ein-Tipp-Reaktionen"
 
 msgid "Only group admins can change this setting."
 msgstr "Nur Gruppenadmins können diese Einstellung ändern."
+
+msgid "Only the folder is removed. Its chats stay in your chat list."
+msgstr "Nur der Ordner wird entfernt. Seine Chats bleiben in deiner Chatliste."
 
 msgid "Open"
 msgstr "Öffnen"

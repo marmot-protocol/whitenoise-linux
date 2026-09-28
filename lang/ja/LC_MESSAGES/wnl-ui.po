@@ -984,6 +984,9 @@ msgstr "自分のみ削除"
 msgid "Delete for you?"
 msgstr "自分のみ削除しますか？"
 
+msgid "Delete this folder?"
+msgstr "このフォルダーを削除しますか？"
+
 #, fuzzy
 msgid "Delete this message?"
 msgstr "自分のみ削除しますか？"
@@ -1941,6 +1944,9 @@ msgstr "ワンタップリアクション"
 
 msgid "Only group admins can change this setting."
 msgstr "この設定を変更できるのはグループ管理者だけです。"
+
+msgid "Only the folder is removed. Its chats stay in your chat list."
+msgstr "フォルダーだけが削除されます。中のチャットはチャット一覧に残ります。"
 
 msgid "Open"
 msgstr "開く"
