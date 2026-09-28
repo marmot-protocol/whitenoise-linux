@@ -27,7 +27,7 @@ case "$(uname -m)" in
 esac
 fetch "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.7/$archive" "$TTS/runtime.tar.bz2" "$digest"
 if [ ! -f "$TTS/lib/libsherpa-onnx-c-api.so" ] || [ ! -f "$TTS/lib/libonnxruntime.so" ] || [ "$TTS/runtime.tar.bz2" -nt "$TTS/lib/libsherpa-onnx-c-api.so" ]; then
-  tar -xjf "$TTS/runtime.tar.bz2" --strip-components=1 -C "$TTS"
+  tar --no-same-owner -xjf "$TTS/runtime.tar.bz2" --strip-components=1 -C "$TTS"
   touch "$TTS/lib/libsherpa-onnx-c-api.so"
 fi
 fetch "https://raw.githubusercontent.com/k2-fsa/sherpa-onnx/$REV/sherpa-onnx/c-api/c-api.h" \

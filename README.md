@@ -163,6 +163,9 @@ just run
 
 The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx, MicroTeX and the Twemoji set, and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
 
+The Linux speech runtime is extracted without restoring archive ownership,
+so it also builds as root inside Flatpak's restricted user namespace.
+
 ### Cross releases
 
 `scripts/cross-build.sh TARGET` accepts `linux-arm64`, `linux-amd64`,
