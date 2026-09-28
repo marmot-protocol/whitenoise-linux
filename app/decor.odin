@@ -83,17 +83,16 @@ wash_draw :: proc(bounds: clay.BoundingBox) {
 
 // The scene this theme asks for by name, or nil. One payload pointer,
 // so the timeline mounts decor without branching on theme identity.
+// Animated scenes disappear under reduced motion and must not prevent idle.
 decor_payload :: proc() -> rawptr {
+	animated: rawptr
 	switch BACKDROP {
 	case "synth":
-		anim_moving += 1
-		return &synth_decor
+		animated = &synth_decor
 	case "dust":
-		anim_moving += 1
-		return &dust_decor
+		animated = &dust_decor
 	case "scan":
-		anim_moving += 1
-		return &scan_decor
+		animated = &scan_decor
 	case "deco":
 		return &deco_decor
 	case "blinds":
@@ -101,10 +100,13 @@ decor_payload :: proc() -> rawptr {
 	case "stripes":
 		return &stripes_decor
 	case "waves":
-		anim_moving += 1
-		return &waves_decor
+		animated = &waves_decor
 	case "airmail":
 		return &airmail_decor
+	}
+	if animated != nil && motion_on() {
+		anim_moving += 1
+		return animated
 	}
 	return nil
 }

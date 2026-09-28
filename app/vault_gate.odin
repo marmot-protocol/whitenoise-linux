@@ -355,7 +355,7 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				sizing = {clay.SizingGrow(), clay.SizingGrow()},
 				childAlignment = {x = .Center, y = .Center},
 			},
-			custom = {customData = &synth_decor},
+			custom = {customData = motion_on() ? &synth_decor : nil},
 		},
 		) {
 			if clay.UI(clay.ID("GateCard"))(
