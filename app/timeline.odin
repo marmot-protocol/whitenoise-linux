@@ -626,6 +626,8 @@ msg_actions :: proc(index: u32, msg: Msg_Ui) {
 	}
 }
 
+MSG_PAD_Y :: u16(6) // a message row's vertical padding
+
 message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 	// A message that just landed glows in the accent surface and fades
 	// back to the row's normal fill, so the eye is carried to it without
@@ -647,13 +649,8 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			dissolve(msg.id)
 		}
 	}
-	// Rows trail a fast scroll by a few px, more the further they sit
-	// from the middle of the view, and settle when it stops.
-	lag_top, lag_bottom := scroll_lag(index)
 	// A continued row sits tight under the one above it.
-	if head == .Continued {
-		lag_top -= min(lag_top, MSG_PAD_Y)
-	}
+	pad_top := head == .Continued ? 0 : MSG_PAD_Y
 	if clay.UI(clay.ID("MsgRow", index))(
 	{
 		layout = {
@@ -661,7 +658,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				width = clay.SizingGrow(),
 				height = collapsing ? clay.SizingFixed(collapse_h) : {},
 			},
-			padding = {left = 16, right = 16, top = lag_top, bottom = lag_bottom},
+			padding = {left = 16, right = 16, top = pad_top, bottom = MSG_PAD_Y},
 			childGap = 10,
 		},
 		backgroundColor = mix_color(hovered() ? HOVER : {}, SELECTED, fresh * 0.85),

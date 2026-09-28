@@ -178,8 +178,7 @@ SCENE_SLOT :: 0
 LAYER_SLOT :: 1
 FRAME_SLOT :: 2
 HOLD_SLOT :: 3
-TRAIL_SLOT :: 4
-PUSH_SLOT :: 5 // incoming view while FRAME retains the displayed composite
+PUSH_SLOT :: 4 // incoming view while FRAME retains the displayed composite
 MODAL_LIFT :: f32(0.04) // how far the modal layer scales in from
 PAGE_PUSH :: f32(0.03) // how far the outgoing page pulls away from the eye
 
@@ -216,56 +215,9 @@ draw_frame :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand)) {
 		slot = FRAME_SLOT
 	}
 	rl.DrawTarget(slot, 1)
-	scroll_smear()
 	if !page_push {
 		draw_page_transition()
 	}
-}
-
-// Motion blur on a thrown timeline. TRAIL keeps a decayed history of
-// the frame, and the faster the content is moving the more of that
-// history goes back over the sharp frame, so a fling smears and a slow
-// scroll does not. Only the timeline's own rectangle: the rail and the
-// header are not moving and must not blur with it.
-SMEAR_FROM :: f32(4) // px/frame of scroll where a trail starts to show
-SMEAR_TO :: f32(26) // and where it is as strong as it gets
-SMEAR_MAX :: f32(0.5)
-TRAIL_MIX :: f32(0.45) // weight of the newest frame in the history
-
-@(private = "file")
-smearing: bool
-
-@(private = "file")
-scroll_smear :: proc() {
-	// A modal owns the screen while it is up, and the page behind it is
-	// already blurred by the veil; a second blur over the top is mud.
-	// Only app-driven travel smears (scroll_glide); the user's own wheel
-	// and drag stay sharp.
-	strength := clamp((abs(scroll_vel) - SMEAR_FROM) / (SMEAR_TO - SMEAR_FROM), 0, 1) * SMEAR_MAX
-	if !scroll_glide || strength <= 0 || open_t(clay.ID("ModalVeil")) > 0 {
-		smearing = false
-		return
-	}
-	box, ok := element_box(clay.ID("Timeline"))
-	if !ok {
-		smearing = false
-		return
-	}
-	// The first smeared frame has no history yet, so it seeds one
-	// instead of ghosting whatever was in the texture.
-	if !smearing {
-		smearing = rl.CopyTarget(TRAIL_SLOT, FRAME_SLOT)
-		return
-	}
-	rl.FadeTargetInto(TRAIL_SLOT, FRAME_SLOT, TRAIL_MIX)
-	rl.DrawTargetRegion(
-		TRAIL_SLOT,
-		box.x * UI_ZOOM,
-		box.y * UI_ZOOM,
-		box.width * UI_ZOOM,
-		box.height * UI_ZOOM,
-		strength,
-	)
 }
 
 // Adjacent, opaque panes share one moving edge. Tab changes push the sidebar

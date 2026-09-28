@@ -493,23 +493,18 @@ scroll_residual: clay.Vector2
 // scrollbars already walk stands in for one.
 drag_targets: [dynamic]clay.ElementId
 
-// How far the timeline is pulled past its end: + past the top, - past
-// the bottom. Applied as extra padding and sprung back to zero, which
-// is the only rubber band available when clay clamps scroll itself.
-overscroll: f32
-
-update_overscroll :: proc(step_y: f32) {
-	_ = step_y
-	overscroll = 0 // the chat box does not animate; no rubber band
-}
+// Set by anything that teleports the scroll position (a reply jump, a
+// search hit, a snap to the newest message) so the frame after it is
+// drawn instead of idled. Cleared at the top of every frame.
+scroll_jumped: bool
 
 // ── Dragging the view ───────────────────────────────────────────────
 //
 // A finger has no wheel. On a touch machine a press that did not land on
 // a message body (that one selects text) grabs the view itself: the
 // content follows the pointer, and letting go throws it, so the last
-// flick keeps running and settles into the same rubber band a wheel
-// scroll does. With a mouse there is a wheel, and this is off.
+// flick keeps running and glides to a stop the way a wheel scroll does.
+// With a mouse there is a wheel, and this is off.
 
 DRAG_MIN :: f32(3) // px of travel before a press stops being a click
 DRAG_VEL_RATE :: f32(30) // smoothing on the throw speed, in 1/s
@@ -578,68 +573,6 @@ update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
 	data.scrollPosition.y = clamp(data.scrollPosition.y + step, -overflow, 0)
 	ui.scroll_pending = false // the user is driving; stop chasing the bottom
 	anim_moving += 1
-}
-
-// ── Scroll velocity ─────────────────────────────────────────────────
-//
-// A uniform lag would be invisible (everything shifts together), so the
-// lag is weighted by how far a row sits from the middle of the view:
-// the centre holds, the edges trail. The timeline stretches while it is
-// dragged and settles when it stops, which is what reads as matter.
-
-SCROLL_LAG_MAX :: f32(5) // px, and the padding budget a row can spend
-SCROLL_LAG_K :: f32(0.09) // px of lag per px/frame of scroll
-MSG_PAD_Y :: u16(6) // the row's resting vertical padding
-
-scroll_vel: f32
-
-// Set by anything that teleports the scroll position (a reply jump, a
-// search hit): the move must not read as velocity, or the smear ghosts
-// the pre-jump content over the timeline.
-scroll_jumped: bool
-
-// True only on frames where the app itself is animating the timeline
-// (the glide to a newly arrived message). The smear is for that kind of
-// travel; the user's own wheel and drag stay sharp.
-scroll_glide: bool
-
-@(private = "file")
-scroll_prev_y: f32
-
-// Called once per frame, before the layout that reads it.
-update_scroll_vel :: proc() {
-	// The chat box does not animate: no velocity means no row lag and
-	// no smear, whatever moved the scroll position.
-	scroll_glide = false
-	scroll_jumped = false
-	scroll_vel, scroll_prev_y = 0, 0
-}
-
-// Vertical padding for one message row: the same total height, shifted
-// by its share of the lag.
-scroll_lag :: proc(index: u32) -> (top, bottom: u16) {
-	if scroll_vel == 0 {
-		return MSG_PAD_Y, MSG_PAD_Y
-	}
-	row, row_ok := element_box(clay.ID("MsgRow", index))
-	view, view_ok := element_box(clay.ID("Timeline"))
-	if !row_ok || !view_ok || view.height <= 0 {
-		return MSG_PAD_Y, MSG_PAD_Y
-	}
-	from_mid := ((row.y + row.height / 2) - (view.y + view.height / 2)) / (view.height / 2)
-	lag :=
-		clamp(scroll_vel * SCROLL_LAG_K, -SCROLL_LAG_MAX, SCROLL_LAG_MAX) *
-		abs(clamp(from_mid, -1, 1))
-	return lag_pads(lag)
-}
-
-// Split the row's padding budget around `lag`. The bottom is derived,
-// never rounded on its own: two independent truncations lost up to 1px
-// of row height each, and ~50 rows of that resized the timeline enough
-// to shove a bottom-pinned view back up off the newest message.
-lag_pads :: proc(lag: f32) -> (top, bottom: u16) {
-	top = u16(math.round(f32(MSG_PAD_Y) + clamp(lag, -SCROLL_LAG_MAX, SCROLL_LAG_MAX)))
-	return top, 2 * MSG_PAD_Y - top
 }
 
 // ── Screen shake ────────────────────────────────────────────────────

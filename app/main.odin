@@ -1459,9 +1459,7 @@ app_main :: proc() {
 			wheel = {}
 		}
 		// Wheel notches land in a residual that drains a fraction per
-		// frame, so a scroll glides to a stop instead of stepping. What
-		// the residual can't spend (already at a bound) becomes
-		// overscroll, sprung back by the timeline's own padding.
+		// frame, so a scroll glides to a stop instead of stepping.
 		scroll_residual += transmute(clay.Vector2)wheel
 		// The chat list follows wheel input immediately.
 		drain := clay.PointerOver(clay.ID("ChatList")) ? f32(1) : anim_drain(SCROLL_DRAIN)
@@ -1476,8 +1474,7 @@ app_main :: proc() {
 		if scroll_residual != {} {
 			anim_moving += 1
 		}
-		update_overscroll(step.y)
-		update_scroll_vel()
+		scroll_jumped = false
 		clay.UpdateScrollContainers(false, step, rl.GetFrameTime())
 		clay.SetLayoutDimensions(
 			{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
@@ -1626,7 +1623,7 @@ app_main :: proc() {
 						-overflow,
 						0,
 					)
-					scroll_jumped = true // a teleport, not velocity
+					scroll_jumped = true
 					ui.scroll_pending = false
 				}
 				break
@@ -1644,7 +1641,7 @@ app_main :: proc() {
 				// No glide: the chat box does not animate. Arrivals and
 				// chat opens both snap to the bottom.
 				scroll_data.scrollPosition.y = target
-				scroll_jumped = true // a teleport, not velocity
+				scroll_jumped = true
 				ui.scroll_pending = false
 			}
 		}
