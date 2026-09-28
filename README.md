@@ -331,7 +331,9 @@ It reads flat by intent. The layout is immediate-mode: every frame rebuilds the 
 | --- | --- |
 | `app/` | The whole app: panes, layout, state, workers, vault, media viewers |
 | `app/state.odin` | `Ui_State`, the single struct every pane reads, plus the live theme globals |
-| `app/workers.odin` | The live-subscription worker and the per-send threads that keep blocking Marmot calls off the UI thread |
+| `app/chatpane.odin` | Chat-pane rendering, group info, and the composer |
+| `app/loginpane.odin` | Sign-in and key-generation UI, with button and progress helpers |
+| `app/workers.odin` | Live subscriptions, sends, member loading, and other blocking Marmot calls kept off the UI thread |
 | `app/sdlrl/` | SDL3 shim with a raylib-shaped API: window, input, IME, clipboard, and a stb_truetype text engine |
 | `app/vault.odin` | The password-encrypted secret vault |
 | `marmot/` | The `marmot-c` bindings, the only place that touches C |

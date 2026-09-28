@@ -308,6 +308,133 @@ live_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Chat_List_Work) 
 	}
 }
 
+@(private)
+Members_Work :: struct {
+	worker:         ^thread.Thread,
+	client:         ^marmot.Client,
+	account, group: cstring,
+	details:        ^marmot.Group_Details,
+	err:            string,
+}
+
+@(private)
+members_job: ^Members_Work
+@(private)
+members_retired: [dynamic]^Members_Work
+
+// Group details enrich every member. Keep that database work off the UI thread.
+load_members :: proc(client: ^marmot.Client, ui: ^Ui_State) {
+	if ui.selected < 0 {return}
+	if members_job != nil {append(&members_retired, members_job)}
+	job := new(Members_Work)
+	job.client = client
+	job.account = strings.clone_to_cstring(ui.account_ref)
+	job.group = strings.clone_to_cstring(ui.chats[ui.selected].group_id)
+	job.worker = thread.create(proc(t: ^thread.Thread) {
+		context.allocator = reload_allocator()
+		job := (^Members_Work)(t.data)
+		defer frame_wake()
+		defer free_all(context.temp_allocator)
+		if marmot.group_details(job.client, job.account, job.group, &job.details) != .OK {
+			job.err = marmot.last_error()
+		}
+	})
+	job.worker.data = job
+	members_job = job
+	thread.start(job.worker)
+}
+
+@(private)
+members_free :: proc(job: ^Members_Work) {
+	thread.join(job.worker)
+	thread.destroy(job.worker)
+	if job.details != nil {marmot.group_details_free(job.details)}
+	delete(job.account); delete(job.group); delete(job.err)
+	free(job)
+}
+
+@(private)
+members_stop :: proc() {
+	if members_job != nil {members_free(members_job); members_job = nil}
+	for job in members_retired {members_free(job)}
+	delete(members_retired); members_retired = {}
+}
+
+@(private)
+members_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	for i := len(members_retired) - 1; i >= 0; i -= 1 {
+		if thread.is_done(members_retired[i].worker) {
+			members_free(members_retired[i])
+			unordered_remove(&members_retired, i)
+		}
+	}
+	job := members_job
+	if job == nil || !thread.is_done(job.worker) {return}
+	members_job = nil
+	defer members_free(job)
+	if ui.selected < 0 ||
+	   ui.account_ref != string(job.account) ||
+	   ui.chats[ui.selected].group_id != string(job.group) {return}
+	if job.details == nil {
+		ui.client_status = fmt.aprintf(
+			"%s %s",
+			tr("Couldn't load group members. Please try again."),
+			job.err,
+		)
+		return
+	}
+	members_apply(ui, client, job.details)
+}
+
+@(private)
+members_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, details: ^marmot.Group_Details) {
+	delete(ui.group_desc)
+	ui.group_desc = strings.clone(
+		details.group.description != nil ? string(details.group.description) : "",
+	)
+	ui.group_retention = details.group.disappearing_message_secs
+
+	members_clear(ui)
+	ui.member_nick = -1 // fresh rows invalidate the editor index
+	ui.member_menu = -1
+	for i in 0 ..< details.members_len {
+		member := &details.members[i]
+		// Local nickname wins over the published name, like contacts.
+		name: string
+		if nick, ok := ui.nicknames[string(member.member_id_hex)];
+		   ok && len(nick) > 0 && !member.is_self {
+			name = nick
+		} else if member.display_name != nil && len(string(member.display_name)) > 0 {
+			name = string(member.display_name)
+		} else if member.is_self {
+			name = "you"
+		} else {
+			name = short_hex(string(member.member_id_hex))
+		}
+		append(
+			&ui.members,
+			Member_Ui {
+				pic_url = strings.clone(
+					profile_info(client, string(member.member_id_hex)).pic_url,
+				),
+				id_hex = strings.clone(string(member.member_id_hex)),
+				npub = hex_npub(string(member.member_id_hex)),
+				name = strings.clone(name),
+				is_admin = member.is_admin,
+				is_self = member.is_self,
+			},
+		)
+	}
+}
+
+@(private)
+members_clear :: proc(ui: ^Ui_State) {
+	for member in ui.members {
+		delete(member.id_hex); delete(member.npub); delete(member.name); delete(member.pic_url)
+	}
+	clear(&ui.members)
+}
+
 // Optimistic-send plumbing, the slint PendingState overlay for the
 // send path: Enter appends a grayed "sending…" row and clears the
 // composer immediately, a worker thread runs the blocking marmot
