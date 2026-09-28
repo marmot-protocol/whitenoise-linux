@@ -1,8 +1,8 @@
-/* Process transport only: no image parser or decoder is linked into the UI. */
+/* Bounded process transport only: no document decoder is linked into the UI. */
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include "image_ipc.h"
+#include "decoder_ipc.h"
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,8 +32,11 @@
 #endif
 #endif
 
+enum decoder_kind { DECODER_IMAGE, DECODER_ARCHIVE, DECODER_PDF };
+
 struct image_reply {
     unsigned char header[WN_IMAGE_HEADER];
+    unsigned char page_header[4];
     unsigned char extra;
     unsigned char *pixels;
     size_t received;
@@ -42,6 +45,11 @@ struct image_reply {
     uint32_t height;
     uint32_t dimension;
     uint32_t cap;
+    enum decoder_kind kind;
+    WnArchiveOp op;
+    uint32_t index;
+    uint32_t count;
+    uint32_t target_height;
 };
 
 /* Read directly into its final destination, with one byte reserved to detect excess. */
@@ -51,8 +59,16 @@ static unsigned char *image_buffer(struct image_reply *reply, size_t *size) {
         return reply->header + reply->received;
     }
     size_t offset = reply->received - WN_IMAGE_HEADER;
-    if (offset < reply->bytes) {
-        *size = reply->bytes - offset;
+    if (reply->kind == DECODER_PDF) {
+        if (offset < 4) {
+            *size = 4 - offset;
+            return reply->page_header + offset;
+        }
+        offset -= 4;
+    }
+    size_t bytes = reply->bytes - (reply->kind == DECODER_PDF ? 4u : 0u);
+    if (offset < bytes) {
+        *size = bytes - offset;
         if (*size > 65536) {
             *size = 65536;
         }
@@ -62,6 +78,43 @@ static unsigned char *image_buffer(struct image_reply *reply, size_t *size) {
     return &reply->extra;
 }
 
+static int decoder_header(struct image_reply *reply) {
+    const unsigned char *header = reply->header;
+    reply->bytes = wn_image_u32(header + 12);
+    if (reply->kind == DECODER_ARCHIVE) {
+        reply->count = wn_image_u32(header + 4);
+        uint32_t index = wn_image_u32(header + 8);
+        if (memcmp(header, "ARO1", 4) || reply->bytes > reply->cap) {
+            return 0;
+        }
+        if (reply->op == WN_ARCHIVE_LIST) {
+            if (reply->count > WN_ARCHIVE_COUNT_MAX || index ||
+                (uint64_t)reply->count * 17 > reply->bytes || (!reply->count && reply->bytes)) {
+                return 0;
+            }
+        } else if (reply->count || index != reply->index) {
+            return 0;
+        }
+    } else {
+        reply->width = wn_image_u32(header + 4);
+        reply->height = wn_image_u32(header + 8);
+        uint64_t expected = (uint64_t)reply->width * reply->height * 4;
+        int pdf = reply->kind == DECODER_PDF;
+        if (memcmp(header, pdf ? "PDO1" : "WNO1", 4) || !reply->width || !reply->height ||
+            reply->width > reply->dimension ||
+            reply->height > (pdf ? WN_PDF_DIM_MAX : reply->dimension) ||
+            (pdf && reply->target_height && reply->height > reply->target_height) ||
+            expected > reply->cap || expected + (pdf ? 4u : 0u) != reply->bytes) {
+            return 0;
+        }
+        if (pdf) {
+            return 1; /* Validate page count before allocating pixels. */
+        }
+    }
+    reply->pixels = malloc(reply->bytes ? reply->bytes : 1);
+    return reply->pixels != NULL;
+}
+
 static int image_received(struct image_reply *reply, size_t size) {
     if (reply->received >= WN_IMAGE_HEADER + (size_t)reply->bytes &&
         reply->received >= WN_IMAGE_HEADER) {
@@ -69,21 +122,15 @@ static int image_received(struct image_reply *reply, size_t size) {
     }
     reply->received += size;
     if (reply->received == WN_IMAGE_HEADER) {
-        if (memcmp(reply->header, "WNO1", 4)) {
+        return decoder_header(reply);
+    }
+    if (reply->kind == DECODER_PDF && reply->received == WN_IMAGE_HEADER + 4) {
+        reply->count = wn_image_u32(reply->page_header);
+        if (!reply->count || reply->count > WN_PDF_PAGES_MAX || reply->index >= reply->count) {
             return 0;
         }
-        reply->width = wn_image_u32(reply->header + 4);
-        reply->height = wn_image_u32(reply->header + 8);
-        reply->bytes = wn_image_u32(reply->header + 12);
-        uint64_t expected = (uint64_t)reply->width * reply->height * 4;
-        if (!reply->width || !reply->height || reply->width > reply->dimension ||
-            reply->height > reply->dimension || expected > reply->cap || expected != reply->bytes) {
-            return 0;
-        }
-        reply->pixels = malloc(reply->bytes);
-        if (!reply->pixels) {
-            return 0;
-        }
+        reply->pixels = malloc(reply->bytes - 4);
+        return reply->pixels != NULL;
     }
     return 1;
 }
@@ -98,6 +145,7 @@ struct image_writer {
     const unsigned char *header;
     const unsigned char *data;
     DWORD size;
+    DWORD header_size;
 };
 
 static int image_write_all(HANDLE pipe, const unsigned char *data, DWORD size) {
@@ -115,7 +163,7 @@ static int image_write_all(HANDLE pipe, const unsigned char *data, DWORD size) {
 
 static DWORD WINAPI image_write_thread(LPVOID context) {
     struct image_writer *writer = context;
-    int ok = image_write_all(writer->pipe, writer->header, WN_IMAGE_HEADER) &&
+    int ok = image_write_all(writer->pipe, writer->header, writer->header_size) &&
              image_write_all(writer->pipe, writer->data, writer->size);
     CloseHandle(writer->pipe);
     return ok ? 0 : 1;
@@ -151,8 +199,33 @@ static HANDLE image_job(void) {
     return job;
 }
 
-static int image_run(const char *helper, const unsigned char *data, int size,
-                     const unsigned char *header, struct image_reply *reply) {
+/* Quote one CRT argv element, including quotes and trailing backslashes. */
+static wchar_t *decoder_quote(wchar_t *out, const wchar_t *text) {
+    *out++ = L'"';
+    while (*text) {
+        size_t slashes = 0;
+        while (*text == L'\\') {
+            ++slashes;
+            ++text;
+        }
+        size_t copies = (*text == L'"' || !*text) ? slashes * 2 : slashes;
+        while (copies--) {
+            *out++ = L'\\';
+        }
+        if (!*text) {
+            break;
+        }
+        if (*text == L'"') {
+            *out++ = L'\\';
+        }
+        *out++ = *text++;
+    }
+    *out++ = L'"';
+    return out;
+}
+
+static int image_run(const char *helper, const char *argument, const unsigned char *data, int size,
+                     const unsigned char *header, size_t header_size, struct image_reply *reply) {
     ULONGLONG deadline = GetTickCount64() + WN_IMAGE_SECONDS * 1000;
     SECURITY_ATTRIBUTES security = {sizeof(security), NULL, TRUE};
     HANDLE child_in = NULL, input = NULL, output = NULL, child_out = NULL;
@@ -163,20 +236,30 @@ static int image_run(const char *helper, const unsigned char *data, int size,
     int attributes_ready = 0;
     int ok = 0;
     wchar_t *path = image_wide(helper);
+    wchar_t *arg = argument ? image_wide(argument) : NULL;
     wchar_t *command = NULL;
     struct image_writer request = {0};
-    if (!path || wcschr(path, L'"')) {
+    if (!path || wcschr(path, L'"') || (argument && !arg)) {
         goto done;
     }
     size_t length = wcslen(path);
-    command = malloc((length + 3) * sizeof(*command));
+    size_t arg_length = arg ? wcslen(arg) : 0;
+    if (length > 32767 || arg_length > 32767) {
+        goto done;
+    }
+    command = malloc((length + arg_length * 2 + 7) * sizeof(*command));
     if (!command) {
         goto done;
     }
     command[0] = L'"';
     memcpy(command + 1, path, length * sizeof(*path));
     command[length + 1] = L'"';
-    command[length + 2] = 0;
+    wchar_t *end = command + length + 2;
+    if (arg) {
+        *end++ = L' ';
+        end = decoder_quote(end, arg);
+    }
+    *end = 0;
     if (!CreatePipe(&child_in, &input, &security, 0) ||
         !SetHandleInformation(input, HANDLE_FLAG_INHERIT, 0) ||
         !CreatePipe(&output, &child_out, &security, 0) ||
@@ -225,6 +308,7 @@ static int image_run(const char *helper, const unsigned char *data, int size,
     request.header = header;
     request.data = data;
     request.size = (DWORD)size;
+    request.header_size = (DWORD)header_size;
     writer = CreateThread(NULL, 0, image_write_thread, &request, 0, NULL);
     if (!writer) {
         goto done;
@@ -300,6 +384,7 @@ done:
     free(start.lpAttributeList);
     free(command);
     free(path);
+    free(arg);
     return ok;
 }
 #else
@@ -320,8 +405,8 @@ static int image_high_fd(int fd) {
     return high;
 }
 
-static pid_t image_spawn(const char *helper, int socket, int null) {
-    char *args[] = {(char *)helper, NULL};
+static pid_t image_spawn(const char *helper, const char *argument, int socket, int null) {
+    char *args[] = {(char *)helper, (char *)argument, NULL};
     char *environment[] = {NULL};
 #ifdef __APPLE__
     /* CLOEXEC_DEFAULT also excludes descriptors opened concurrently elsewhere. */
@@ -374,8 +459,8 @@ static pid_t image_spawn(const char *helper, int socket, int null) {
 #endif
 }
 
-static int image_run(const char *helper, const unsigned char *data, int size,
-                     const unsigned char *header, struct image_reply *reply) {
+static int image_run(const char *helper, const char *argument, const unsigned char *data, int size,
+                     const unsigned char *header, size_t header_size, struct image_reply *reply) {
     int64_t start = image_millis();
     if (start < 0) {
         return 0;
@@ -416,7 +501,7 @@ static int image_run(const char *helper, const unsigned char *data, int size,
     if (flags < 0 || fcntl(pair[0], F_SETFL, flags | O_NONBLOCK)) {
         goto done;
     }
-    child = image_spawn(helper, pair[1], null);
+    child = image_spawn(helper, argument, pair[1], null);
     close(pair[1]);
     pair[1] = -1;
     close(null);
@@ -425,7 +510,7 @@ static int image_run(const char *helper, const unsigned char *data, int size,
         goto done;
     }
     size_t sent = 0;
-    size_t total = WN_IMAGE_HEADER + (size_t)size;
+    size_t total = header_size + (size_t)size;
     int eof = 0;
     while (1) {
         int64_t now = image_millis();
@@ -483,11 +568,11 @@ static int image_run(const char *helper, const unsigned char *data, int size,
         if ((pollfd.revents & POLLOUT) && sent < total) {
             const unsigned char *buffer;
             size_t count;
-            if (sent < WN_IMAGE_HEADER) {
+            if (sent < header_size) {
                 buffer = header + sent;
-                count = WN_IMAGE_HEADER - sent;
+                count = header_size - sent;
             } else {
-                buffer = data + sent - WN_IMAGE_HEADER;
+                buffer = data + sent - header_size;
                 count = total - sent;
                 if (count > 65536) {
                     count = 65536;
@@ -551,11 +636,85 @@ unsigned char *wn_image_decode(const char *helper, const unsigned char *data, in
     struct image_reply reply = {0};
     reply.dimension = (uint32_t)max_dimension;
     reply.cap = max_bytes;
-    if (!image_run(helper, data, size, header, &reply)) {
+    if (!image_run(helper, NULL, data, size, header, sizeof(header), &reply)) {
         free(reply.pixels);
         return NULL;
     }
     *width = (int)reply.width;
     *height = (int)reply.height;
+    return reply.pixels;
+}
+
+unsigned char *wn_archive_read(const char *helper, const unsigned char *data, int size,
+                               WnArchiveOp op, unsigned int index, unsigned int *count,
+                               unsigned int *length) {
+    if (count) {
+        *count = 0;
+    }
+    if (length) {
+        *length = 0;
+    }
+    if (!count || !length || !helper || !*helper || !data || size <= 0 ||
+        (unsigned int)size > WN_ARCHIVE_INPUT_MAX ||
+        (op != WN_ARCHIVE_LIST && op != WN_ARCHIVE_ENTRY) || (op == WN_ARCHIVE_LIST && index) ||
+        index >= WN_ARCHIVE_SCAN_MAX) {
+        return NULL;
+    }
+    unsigned char header[16];
+    memcpy(header, "ARI1", 4);
+    wn_image_put(header + 4, (uint32_t)size);
+    wn_image_put(header + 8, (uint32_t)op);
+    wn_image_put(header + 12, index);
+    struct image_reply reply = {0};
+    reply.kind = DECODER_ARCHIVE;
+    reply.op = op;
+    reply.index = index;
+    reply.cap = op == WN_ARCHIVE_LIST ? WN_ARCHIVE_LIST_MAX : WN_ARCHIVE_ENTRY_MAX;
+    if (!image_run(helper, NULL, data, size, header, sizeof(header), &reply)) {
+        free(reply.pixels);
+        return NULL;
+    }
+    *count = reply.count;
+    *length = reply.bytes;
+    return reply.pixels;
+}
+
+unsigned char *wn_pdf_render(const char *helper, const char *font_dir, const unsigned char *data,
+                             int size, unsigned int page, unsigned int width, unsigned int height,
+                             unsigned int *pages, unsigned int *out_width,
+                             unsigned int *out_height) {
+    if (pages) {
+        *pages = 0;
+    }
+    if (out_width) {
+        *out_width = 0;
+    }
+    if (out_height) {
+        *out_height = 0;
+    }
+    if (!pages || !out_width || !out_height || !helper || !*helper || !data || size <= 0 ||
+        (unsigned int)size > WN_PDF_INPUT_MAX || page >= WN_PDF_PAGES_MAX || !width ||
+        width > WN_PDF_DIM_MAX || height > WN_PDF_DIM_MAX) {
+        return NULL;
+    }
+    unsigned char header[20];
+    memcpy(header, "PDI1", 4);
+    wn_image_put(header + 4, (uint32_t)size);
+    wn_image_put(header + 8, page);
+    wn_image_put(header + 12, width);
+    wn_image_put(header + 16, height);
+    struct image_reply reply = {0};
+    reply.kind = DECODER_PDF;
+    reply.index = page;
+    reply.dimension = width;
+    reply.target_height = height;
+    reply.cap = WN_PDF_OUTPUT_MAX;
+    if (!image_run(helper, font_dir, data, size, header, sizeof(header), &reply)) {
+        free(reply.pixels);
+        return NULL;
+    }
+    *pages = reply.count;
+    *out_width = reply.width;
+    *out_height = reply.height;
     return reply.pixels;
 }

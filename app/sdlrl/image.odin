@@ -11,7 +11,7 @@ IMAGE_BUILD_DIR ::
 IMAGE_HELPER_DEV ::
 	#directory + "/" + IMAGE_BUILD_DIR + "/wn-image" + (".exe" when ODIN_OS == .Windows else "")
 
-foreign import image_lib {IMAGE_BUILD_DIR + "/libwnimage.a"}
+foreign import image_lib {IMAGE_BUILD_DIR + "/libwndecoder.a"}
 
 @(private, default_calling_convention = "c")
 foreign image_lib {

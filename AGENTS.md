@@ -93,11 +93,11 @@ the offline queue. UI prefs are a separate JSON blob at
 ### System dependencies
 
 Odin (a recent nightly; CI pins one in `.github/workflows/ci.yml`), a C and
-C++ compiler, CMake, and a Rust toolchain for `marmot-c`. Then SDL3 plus the
-libraries behind the `foreign import "system:…"` lines in `app/`: `libarchive`
-(`archive.odin`), `libmpv` (`mpv.odin`), `poppler-glib` + `glib` + `gobject` +
-`cairo` (`pdf.odin`, `math.odin`), `libcurl` (`ws_shim.c`, the nevent card
-fetch).
+C++ compiler, CMake, and a Rust toolchain for `marmot-c`. Then SDL3 plus
+`libarchive` (`archive.c`), `libmpv` (`mpv.odin`), `poppler-glib` + `glib` +
+`gobject` + `fontconfig` (`pdf.c`), `cairo` (`pdf.c`, `math.odin`) and `libcurl`
+(`ws_shim.c`, the nevent card fetch). Archive and PDF parsing run in the
+packaged `wn-archive` and `wn-pdf` helpers, not in the UI process.
 
 ## Architecture
 

@@ -30,8 +30,14 @@ export PATH="$ODIN:$PATH"
 
 bash "$HERE/scripts/build.sh"
 cc -O2 -Wall -Wextra -I"$ODIN/vendor/stb/src" "$HERE/tests/image-test.c" \
-  "$HERE/build/libwnimage.a" $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/image-test"
+  "$HERE/build/libwndecoder.a" $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/image-test"
 "$HERE/build/image-test" "$HERE/build/wn-image"
+cc -O2 -Wall -Wextra "$HERE/tests/archive-helper-test.c" "$HERE/build/libwndecoder.a" \
+  $(pkg-config --cflags --libs libarchive) -o "$HERE/build/archive-helper-test"
+"$HERE/build/archive-helper-test" "$HERE/build/wn-archive"
+cc -O2 -Wall -Wextra "$HERE/tests/pdf-helper-test.c" "$HERE/build/libwndecoder.a" \
+  -o "$HERE/build/pdf-helper-test"
+"$HERE/build/pdf-helper-test" "$HERE/build/wn-pdf" "$HERE/vendor/fonts"
 
 VERSION="${WN_RELEASE_VERSION:-$(bash "$HERE/scripts/version.sh")}"
 NAME="WhiteNoise-$VERSION-openbsd-amd64"

@@ -76,8 +76,8 @@ fi
 "$AR" rcs "$OUT/libwnws.a" "$OUT/ws.o"
 "$CC" "${CFLAGS[@]}" -c "$HERE/app/helper_ipc.c" -o "$OUT/ipc.o"
 "$AR" rcs "$OUT/libwnipc.a" "$OUT/ipc.o"
-"$CC" "${CFLAGS[@]}" -c "$HERE/app/image_ipc.c" -o "$OUT/image_ipc.o"
-"$AR" rcs "$OUT/libwnimage.a" "$OUT/image_ipc.o"
+"$CC" "${CFLAGS[@]}" -c "$HERE/app/decoder_ipc.c" -o "$OUT/decoder_ipc.o"
+"$AR" rcs "$OUT/libwndecoder.a" "$OUT/decoder_ipc.o"
 MICROTEX_STAMP="$({ pin microtex; cat "$HERE"/patches/microtex-*.patch; } | sha256sum | cut -d' ' -f1)"
 if ! stamp_fresh "$OUT/microtex/lib/libmicrotex.a" "$OUT/microtex.stamp" "$MICROTEX_STAMP"; then
   rm -rf "$OUT/microtex"
@@ -108,6 +108,10 @@ ODIN_ROOT="$(odin root)"
 "$CC" "${CFLAGS[@]}" -I"${ODIN_ROOT%/}/vendor/stb/src" "$HERE/app/image.c" \
   $(pkg-config --cflags --libs libwebp) -lm \
   "${HELPER_ENTRY[@]}" "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-image$EXE"
+"$CC" "${CFLAGS[@]}" "$HERE/app/archive.c" $(pkg-config --cflags --libs libarchive) \
+  "${HELPER_ENTRY[@]}" "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-archive$EXE"
+"$CC" "${CFLAGS[@]}" "$HERE/app/pdf.c" $(pkg-config --cflags --libs poppler-glib cairo fontconfig) -lm \
+  "${HELPER_ENTRY[@]}" "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-pdf$EXE"
 for speech in tts stt; do
   "$CC" "${CFLAGS[@]}" -I"$TTS/include" "$HERE/app/$speech.c" "$OUT/libwnipc.a" \
     -L"$TTS/lib" -lsherpa-onnx-c-api \
@@ -158,9 +162,9 @@ if [ "$SYSTEM" = Windows ]; then
   WINDOWS_LINK=("$OUT/mingw_shim.o" "$OUT/velopack/libvelopack_libc.dll.a")
 fi
 "$CXX" "${CFLAGS[@]}" "$OUT/app.o" "${WINDOWS_LINK[@]}" \
-  "$OUT/libwnfbx.a" "$OUT/libwnws.a" "$OUT/libwnmath.a" "$OUT/libwnipc.a" "$OUT/libwnimage.a" \
+  "$OUT/libwnfbx.a" "$OUT/libwnws.a" "$OUT/libwnmath.a" "$OUT/libwnipc.a" "$OUT/libwndecoder.a" \
   "$OUT/microtex/lib/libmicrotex.a" "$OUT/clay/clay.a" "$OUT/stb/stb.a" "$OUT/cgltf.a" "$OUT/libmarmot_c.a" \
-  $(pkg-config --libs sdl3 libarchive mpv poppler-glib gobject-2.0 glib-2.0 cairo libcurl openssl) \
+  $(pkg-config --libs sdl3 mpv cairo libcurl openssl) \
   "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/whitenoise$EXE"
 # Export only paths consumed by packaging; do not serialize credentials/SDKs.
 export WN_CROSS_PREFIX="$PREFIX" WN_CROSS_SYSROOT="$SYSROOT" WN_CROSS_TTS="$TTS"

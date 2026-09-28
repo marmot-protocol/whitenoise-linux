@@ -22,6 +22,9 @@ done
 for entry in vendor marmot themes lang build; do
   ln -s "$HERE/$entry" "$fixture/$entry"
 done
+for helper in wn-archive wn-pdf; do
+  ln -s "$HERE/build/$helper" "$fixture/$helper"
+done
 if [ -d "$HERE/build/odin-root" ]; then
   export ODIN_ROOT="$HERE/build/odin-root"
 fi

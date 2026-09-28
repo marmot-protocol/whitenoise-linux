@@ -1,5 +1,5 @@
 /* Untrusted image headers and compressed pixels are only inspected here. */
-#include "image_ipc.h"
+#include "decoder_limits.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,62 +8,11 @@
 #define STBI_NO_STDIO
 #define STBI_MAX_DIMENSIONS ((int)WN_IMAGE_DIM_MAX)
 #include <stb_image.h>
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <fcntl.h>
-#include <io.h>
-#else
-#include <sys/resource.h>
-#include <unistd.h>
-#endif
-#ifdef __APPLE__
-#include <mach/mach.h>
-#endif
 
 static int image_restrict(void) {
-#ifdef _WIN32
-    HANDLE job = CreateJobObjectW(NULL, NULL);
-    JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {0};
-    limits.BasicLimitInformation.LimitFlags =
-        JOB_OBJECT_LIMIT_PROCESS_MEMORY | JOB_OBJECT_LIMIT_PROCESS_TIME;
-    limits.ProcessMemoryLimit = WN_IMAGE_MEMORY_MAX;
-    limits.BasicLimitInformation.PerProcessUserTimeLimit.QuadPart = 5 * 10000000LL;
-    if (!job ||
-        !SetInformationJobObject(job, JobObjectExtendedLimitInformation, &limits, sizeof(limits)) ||
-        !AssignProcessToJobObject(job, GetCurrentProcess()) ||
-        _setmode(_fileno(stdin), _O_BINARY) < 0 || _setmode(_fileno(stdout), _O_BINARY) < 0) {
+    if (!wn_decoder_limits()) {
         return 0;
     }
-    /* Keep the job alive until process exit. */
-#else
-    struct rlimit memory = {WN_IMAGE_MEMORY_MAX, WN_IMAGE_MEMORY_MAX};
-    struct rlimit cpu = {5, 5};
-    struct rlimit core = {0, 0};
-#ifdef __APPLE__
-    struct mach_task_basic_info info;
-    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
-    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&info, &count) !=
-            KERN_SUCCESS ||
-        info.virtual_size > RLIM_INFINITY - WN_IMAGE_MEMORY_MAX) {
-        return 0;
-    }
-    memory.rlim_cur += info.virtual_size;
-    memory.rlim_max = memory.rlim_cur;
-#endif
-#ifdef RLIMIT_AS
-    if (setrlimit(RLIMIT_AS, &memory)) {
-        return 0;
-    }
-#else
-    if (setrlimit(RLIMIT_DATA, &memory)) {
-        return 0;
-    }
-#endif
-    if (setrlimit(RLIMIT_CPU, &cpu) || setrlimit(RLIMIT_CORE, &core)) {
-        return 0;
-    }
-#endif
 #ifdef __OpenBSD__
     if (unveil(NULL, NULL) || pledge("stdio", NULL)) {
         return 0;

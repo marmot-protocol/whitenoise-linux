@@ -1,5 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
-#include "../app/image_ipc.h"
+#include "../app/decoder_ipc.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
