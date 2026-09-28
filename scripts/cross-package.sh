@@ -26,11 +26,11 @@ case "$TARGET" in
 esac
 mkdir -p "$BIN" "$RES/fonts" "$RES/licenses"
 cp "$OUT/whitenoise$EXE" "$OUT/wn-tts$EXE" "$OUT/wn-stt$EXE" "$BIN/"
-# Font helper is resolved from the resource directory on every platform.
-cp "$OUT/wn-font$EXE" "$RES/"
+# Decoder helpers are resolved from resources, or beside the app on Windows.
+cp "$OUT/wn-font$EXE" "$OUT/wn-image$EXE" "$RES/"
 if [ "$SYSTEM" = windows ]; then
-  # DLL lookup starts at the executable directory, including wn-font's.
-  cp "$OUT/wn-font$EXE" "$BIN/"
+  # DLL lookup starts at each helper's executable directory.
+  cp "$OUT/wn-font$EXE" "$OUT/wn-image$EXE" "$BIN/"
   cp "${WN_CROSS_WINDOWS_RUNTIME:?}/LICENSE.TXT" "$RES/licenses/llvm-runtime.txt"
   cp -R "$WN_CROSS_WINDOWS_RUNTIME/x86_64-w64-mingw32/share/mingw32" "$RES/licenses/mingw-runtime"
   cp "${WN_CROSS_VELOPACK:?}/LICENSE" "$RES/licenses/velopack.txt"
@@ -145,7 +145,7 @@ bun "$HERE/scripts/cross-bundle.js" "$SYSTEM" "$STAGE" "${ROOTS[@]}"
 if [ "$SYSTEM" = windows ]; then
   # The resource helper cannot load DLLs from its parent's directory. Keep the
   # executable only beside the app; helper_path resolves this first.
-  rm "$RES/wn-font.exe"
+  rm "$RES/wn-font.exe" "$RES/wn-image.exe"
 fi
 if [ "$SYSTEM" = darwin ]; then
   # Install-name changes above invalidate signatures, and Apple silicon runs

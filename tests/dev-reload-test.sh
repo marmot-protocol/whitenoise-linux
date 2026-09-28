@@ -16,6 +16,7 @@ cleanup() {
 trap cleanup EXIT
 cp -a "$HERE/app" "$TASK_DIR/app"
 for entry in vendor marmot themes lang build; do ln -s "$HERE/$entry" "$TASK_DIR/$entry"; done
+ln -s "$HERE/build/wn-image" "$TASK_DIR/wn-image"
 if [ -d "$HERE/build/odin-root" ]; then export ODIN_ROOT="$HERE/build/odin-root"; fi
 cc -shared -Wl,-soname,libmarmot-dev.so -o "$HERE/build/libmarmot-dev.so.next" \
 	-Wl,--whole-archive "$HERE/vendor/mdk/crates/marmot-c/output/lib/libmarmot_c.a" -Wl,--no-whole-archive -lm -lpthread -ldl

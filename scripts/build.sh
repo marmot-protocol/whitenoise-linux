@@ -224,6 +224,13 @@ fi
 cc -c -O2 -fPIC -pthread "$HERE/app/helper_ipc.c" -o "$HERE/build/helper_ipc.o"
 ar rcs "$HERE/build/libwnipc.a" "$HERE/build/helper_ipc.o"
 
+# Image parsers live only in a bounded helper; the app links the pipe client.
+cc -c -O2 -fPIC -pthread "$HERE/app/image_ipc.c" -o "$HERE/build/image_ipc.o"
+ar rcs "$HERE/build/libwnimage.a" "$HERE/build/image_ipc.o"
+IMAGE_ODIN="$(env -u ODIN_ROOT odin root)"
+cc -O2 -Wall -Wextra -I"${IMAGE_ODIN%/}/vendor/stb/src" "$HERE/app/image.c" \
+  $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/wn-image"
+
 # FreeType decodes profile web fonts for the existing SFNT text renderer.
 cc -O2 -Wall -Wextra "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) -o "$HERE/build/wn-font"
 
@@ -438,6 +445,9 @@ echo "==> Done: $HERE/build/{smoke,app}"
 # does after the build.
 if [ "${1:-}" = test ]; then
   bash "$HERE/tests/version-test.sh"
+  cc -O2 -Wall -Wextra -I"${IMAGE_ODIN%/}/vendor/stb/src" "$HERE/tests/image-test.c" \
+    "$HERE/build/libwnimage.a" $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/image-test"
+  "$HERE/build/image-test" "$HERE/build/wn-image"
   cc -std=c11 -I"$HERE/vendor/mdk/crates/marmot-c/include" "$HERE/tests/event-layout-test.c" -o "$HERE/build/event-layout-test"
   "$HERE/build/event-layout-test"
   cc -O2 -I"$HERE/build/clay" "$HERE/tests/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"

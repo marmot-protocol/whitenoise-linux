@@ -972,7 +972,7 @@ app_main :: proc() {
 		}
 	}
 	window_start := time.tick_now()
-	rl.InitWindow(win_w, win_h, WIN_TITLE)
+	rl.InitWindow(win_w, win_h, WIN_TITLE, helper_path("wn-image"))
 	local_timing_end(.window_init, window_start)
 	// After the window, never before: the zoom is derived from the
 	// window's width, and there is no window to ask until now. The

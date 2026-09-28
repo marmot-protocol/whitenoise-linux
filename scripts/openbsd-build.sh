@@ -29,6 +29,9 @@ fi
 export PATH="$ODIN:$PATH"
 
 bash "$HERE/scripts/build.sh"
+cc -O2 -Wall -Wextra -I"$ODIN/vendor/stb/src" "$HERE/tests/image-test.c" \
+  "$HERE/build/libwnimage.a" $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/image-test"
+"$HERE/build/image-test" "$HERE/build/wn-image"
 
 VERSION="${WN_RELEASE_VERSION:-$(bash "$HERE/scripts/version.sh")}"
 NAME="WhiteNoise-$VERSION-openbsd-amd64"

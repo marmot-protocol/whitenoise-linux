@@ -76,6 +76,8 @@ fi
 "$AR" rcs "$OUT/libwnws.a" "$OUT/ws.o"
 "$CC" "${CFLAGS[@]}" -c "$HERE/app/helper_ipc.c" -o "$OUT/ipc.o"
 "$AR" rcs "$OUT/libwnipc.a" "$OUT/ipc.o"
+"$CC" "${CFLAGS[@]}" -c "$HERE/app/image_ipc.c" -o "$OUT/image_ipc.o"
+"$AR" rcs "$OUT/libwnimage.a" "$OUT/image_ipc.o"
 MICROTEX_STAMP="$({ pin microtex; cat "$HERE"/patches/microtex-*.patch; } | sha256sum | cut -d' ' -f1)"
 if ! stamp_fresh "$OUT/microtex/lib/libmicrotex.a" "$OUT/microtex.stamp" "$MICROTEX_STAMP"; then
   rm -rf "$OUT/microtex"
@@ -102,6 +104,10 @@ HELPER_ENTRY=()
 if [ "$SYSTEM" = Windows ]; then HELPER_ENTRY=(-municode); fi
 "$CC" "${CFLAGS[@]}" "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) \
   "${HELPER_ENTRY[@]}" "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-font$EXE"
+ODIN_ROOT="$(odin root)"
+"$CC" "${CFLAGS[@]}" -I"${ODIN_ROOT%/}/vendor/stb/src" "$HERE/app/image.c" \
+  $(pkg-config --cflags --libs libwebp) -lm \
+  "${HELPER_ENTRY[@]}" "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-image$EXE"
 for speech in tts stt; do
   "$CC" "${CFLAGS[@]}" -I"$TTS/include" "$HERE/app/$speech.c" "$OUT/libwnipc.a" \
     -L"$TTS/lib" -lsherpa-onnx-c-api \
@@ -113,7 +119,6 @@ if [ "$SYSTEM" = Linux ]; then
     $(pkg-config --cflags --libs webkit2gtk-4.1) "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-webview"
 fi
 
-ODIN_ROOT="$(odin root)"
 for stb in image image_write image_resize truetype rect_pack vorbis sprintf; do
   "$CC" "${CFLAGS[@]}" -c "$ODIN_ROOT/vendor/stb/src/stb_$stb.c" -o "$OUT/stb/$stb.o"
 done
@@ -153,9 +158,9 @@ if [ "$SYSTEM" = Windows ]; then
   WINDOWS_LINK=("$OUT/mingw_shim.o" "$OUT/velopack/libvelopack_libc.dll.a")
 fi
 "$CXX" "${CFLAGS[@]}" "$OUT/app.o" "${WINDOWS_LINK[@]}" \
-  "$OUT/libwnfbx.a" "$OUT/libwnws.a" "$OUT/libwnmath.a" "$OUT/libwnipc.a" \
+  "$OUT/libwnfbx.a" "$OUT/libwnws.a" "$OUT/libwnmath.a" "$OUT/libwnipc.a" "$OUT/libwnimage.a" \
   "$OUT/microtex/lib/libmicrotex.a" "$OUT/clay/clay.a" "$OUT/stb/stb.a" "$OUT/cgltf.a" "$OUT/libmarmot_c.a" \
-  $(pkg-config --libs sdl3 libarchive libwebp mpv poppler-glib gobject-2.0 glib-2.0 cairo libcurl openssl) \
+  $(pkg-config --libs sdl3 libarchive mpv poppler-glib gobject-2.0 glib-2.0 cairo libcurl openssl) \
   "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/whitenoise$EXE"
 # Export only paths consumed by packaging; do not serialize credentials/SDKs.
 export WN_CROSS_PREFIX="$PREFIX" WN_CROSS_SYSROOT="$SYSROOT" WN_CROSS_TTS="$TTS"

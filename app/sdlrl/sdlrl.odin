@@ -17,6 +17,7 @@ package sdlrl
 
 import "base:runtime"
 import "core:c"
+import "core:c/libc"
 import "core:fmt"
 import "core:math"
 import "core:mem"
@@ -46,7 +47,7 @@ Texture2D :: struct {
 }
 
 Image :: struct {
-	data:   [^]u8, // RGBA8, stb-owned
+	data:   [^]u8, // RGBA8, libc-owned
 	width:  i32,
 	height: i32,
 }
@@ -102,6 +103,7 @@ TextureFilter :: enum {
 State :: struct {
 	window:        ^sdl.Window,
 	renderer:      ^sdl.Renderer,
+	image_helper:  cstring,
 	quit:          bool,
 	fullscreen:    bool,
 	// per-frame input
@@ -221,7 +223,8 @@ SCANCODES := [KeyboardKey]sdl.Scancode {
 
 // ── Window / frame loop ─────────────────────────────────────────────
 
-InitWindow :: proc(width, height: i32, title: cstring) {
+InitWindow :: proc(width, height: i32, title: cstring, image_helper: string = IMAGE_HELPER_DEV) {
+	state.image_helper = strings.clone_to_cstring(image_helper)
 	callback_allocator = context.allocator
 	when #config(WN_RELOAD, false) {
 		state.window = wn_dev_window(c.int(width), c.int(height), title, &state.renderer)
@@ -551,6 +554,8 @@ ShowWindow :: proc() {
 
 CloseWindow :: proc() {
 	when #config(WN_RELOAD, false) {wn_dev_wait_dialogs()}
+	delete(state.image_helper)
+	state.image_helper = nil
 	_ = sdl.StopTextInput(state.window)
 	if tray != nil {sdl.DestroyTray(tray); tray = nil}
 	if tray_surface != nil {sdl.DestroySurface(tray_surface); tray_surface = nil}
@@ -929,12 +934,17 @@ GetClipboardBytes :: proc(mime: cstring, allocator := context.allocator) -> []u8
 
 // ── Textures / images ───────────────────────────────────────────────
 
-LoadImageFromMemory :: proc(ext: cstring, data: [^]u8, size: i32) -> Image {
-	if size >= 12 && string(data[:4]) == "RIFF" && string(data[8:12]) == "WEBP" {
-		return decode_webp(data, size)
-	}
-	w, h, comp: c.int
-	pixels := stbi.load_from_memory(data, size, &w, &h, &comp, 4)
+LoadImageFromMemory :: proc(
+	ext: cstring,
+	data: [^]u8,
+	size: i32,
+	max_dimension: i32 = 32768,
+	max_bytes: u32 = 256 * 1024 * 1024,
+) -> Image {
+	helper := state.image_helper
+	if helper == nil {helper = IMAGE_HELPER_DEV}
+	w, h: c.int
+	pixels := wn_image_decode(helper, data, size, max_dimension, max_bytes, &w, &h)
 	return {data = pixels, width = i32(w), height = i32(h)}
 }
 
@@ -947,7 +957,7 @@ LoadImage :: proc(path: cstring) -> Image {
 
 UnloadImage :: proc(image: Image) {
 	if image.data != nil {
-		stbi.image_free(image.data)
+		libc.free(image.data)
 	}
 }
 

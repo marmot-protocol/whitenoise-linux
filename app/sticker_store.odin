@@ -56,10 +56,6 @@ sticker_requested: map[string]bool
 
 @(private, default_calling_convention = "c")
 foreign _ {
-	WebPGetInfo :: proc(bytes: [^]u8, size: c.size_t, w, h: ^c.int) -> c.int ---
-}
-@(private, default_calling_convention = "c")
-foreign _ {
 	wn_https_get :: proc(url: cstring, out: [^]u8, cap: c.size_t) -> c.int ---
 }
 
@@ -83,11 +79,9 @@ media_write_sealed :: proc(path: string, data: []u8) -> bool {
 @(private)
 sticker_image :: proc(bytes: []u8, mime: string) -> rl.Image {
 	if len(bytes) < 12 || len(bytes) > STICKER_BYTES_LIMIT {return {}}
-	w, h, channels: c.int
 	if mime == "image/webp" {
 		if string(bytes[:4]) != "RIFF" || string(bytes[8:12]) != "WEBP" {return {}}
 		if len(bytes) >= 21 && string(bytes[12:16]) == "VP8X" && bytes[20] & 2 != 0 {return {}}
-		if WebPGetInfo(raw_data(bytes), uint(len(bytes)), &w, &h) == 0 {return {}}
 	} else {
 		if mime == "image/png" {
 			if string(bytes[:8]) != "\x89PNG\r\n\x1a\n" {return {}}
@@ -99,11 +93,13 @@ sticker_image :: proc(bytes: []u8, mime: string) -> rl.Image {
 				at += int(size) + 12
 			}
 		} else if mime != "image/jpeg" || bytes[0] != 0xff || bytes[1] != 0xd8 {return {}}
-		if stbi.info_from_memory(raw_data(bytes), c.int(len(bytes)), &w, &h, &channels) ==
-		   0 {return {}}
 	}
-	if w <= 0 || h <= 0 || w > STICKER_DIM_LIMIT || h > STICKER_DIM_LIMIT {return {}}
-	return rl.LoadImageFromMemory("", raw_data(bytes), i32(len(bytes)))
+	return rl.LoadImageFromMemory(
+		"",
+		raw_data(bytes),
+		i32(len(bytes)),
+		max_dimension = STICKER_DIM_LIMIT,
+	)
 }
 
 @(private)

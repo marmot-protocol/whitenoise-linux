@@ -1,13 +1,11 @@
 package main
 
-import "core:c"
 import "core:encoding/base64"
 import "core:math"
 import "core:strings"
 
 import rl "sdlrl"
 import cgltf "vendor:cgltf"
-import stbi "vendor:stb/image"
 
 // Material factors and decoded images outlive cgltf.data. Texture views borrow
 // only the images recorded in insp.images, never the GLB's encoded bytes.
@@ -213,15 +211,12 @@ glb_material_image :: proc(source: ^cgltf.image, decoded, encoded: ^int) -> rl.I
 	png := len(bytes) >= 8 && string(bytes[:8]) == "\x89PNG\r\n\x1a\n"
 	jpeg := len(bytes) >= 3 && bytes[0] == 0xff && bytes[1] == 0xd8 && bytes[2] == 0xff
 	if !png && !jpeg {return {}}
-	w, h, components: c.int
-	if stbi.info_from_memory(raw_data(bytes), c.int(len(bytes)), &w, &h, &components) == 0 {
-		return {}
-	}
-	if w <= 0 || h <= 0 || i64(w) * i64(h) > i64(FBX_TEXTURE_BYTES - decoded^) / 4 {
-		return {}
-	}
-	size := int(w) * int(h) * 4
-	image := rl.LoadImageFromMemory("", raw_data(bytes), i32(len(bytes)))
-	if image.data != nil {decoded^ += size}
+	image := rl.LoadImageFromMemory(
+		"",
+		raw_data(bytes),
+		i32(len(bytes)),
+		max_bytes = u32(FBX_TEXTURE_BYTES - decoded^),
+	)
+	if image.data != nil {decoded^ += int(image.width) * int(image.height) * 4}
 	return image
 }

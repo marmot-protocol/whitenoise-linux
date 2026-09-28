@@ -1,13 +1,11 @@
 package main
 
-import "core:c"
 import "core:fmt"
 import "core:math"
 import "core:path/filepath"
 import "core:strings"
 
 import rl "sdlrl"
-import stbi "vendor:stb/image"
 
 @(private)
 Fbx_Channel :: enum i32 {
@@ -149,18 +147,17 @@ fbx_load_textures :: proc(insp: ^Inspect, archive: ^Arc_View, model_name: string
 			bytes, ok := arc_entry_bytes(archive, index)
 			if !ok {continue}
 			extracted += len(bytes)
-			w, h, components: c.int
-			valid :=
-				stbi.info_from_memory(raw_data(bytes), c.int(len(bytes)), &w, &h, &components) != 0
-			size := i64(w) * i64(h) * 4
-			if valid && w > 0 && h > 0 && size <= i64(FBX_TEXTURE_BYTES - decoded) {
-				image := rl.LoadImageFromMemory("", raw_data(bytes), i32(len(bytes)))
-				if image.data != nil {
-					decoded += int(size)
-					append(&insp.images, image)
-					loaded[index] = image
-					texture.image = image
-				}
+			image := rl.LoadImageFromMemory(
+				"",
+				raw_data(bytes),
+				i32(len(bytes)),
+				max_bytes = u32(max(0, FBX_TEXTURE_BYTES - decoded)),
+			)
+			if image.data != nil {
+				decoded += int(image.width) * int(image.height) * 4
+				append(&insp.images, image)
+				loaded[index] = image
+				texture.image = image
 			}
 			delete(bytes)
 		}

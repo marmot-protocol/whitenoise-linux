@@ -265,6 +265,23 @@ its input file, locks that filesystem policy, and calls
 `pledge("stdio rpath", NULL)` before initializing FreeType. If sandbox setup
 fails, decoding stops. The main application is not pledged or unveiled.
 
+Still images are decoded by `wn-image`, including header probes for card,
+sticker and model-texture budgets. The app sends compressed bytes over private
+pipes and accepts only bounded RGBA pixels. Each request allows at most
+128 MiB of input, 256 MiB of pixels and 32,768 pixels per dimension; individual
+callers can impose smaller limits. The parent checks the response dimensions,
+byte count, end of stream and exit status, and kills the helper after ten
+seconds. A missing helper or failed decode has no in-process fallback.
+
+On OpenBSD, `wn-image` locks `unveil()` with no filesystem paths and pledges
+`stdio` before reading input. The helper has five CPU seconds and a 1 GiB
+memory limit. Other platforms use a separate, resource-limited process, not
+an equivalent filesystem or syscall sandbox. The child receives no inherited
+environment and only its input, output and null error stream. Linux requires
+`close_range` (kernel 5.9 or newer); if descriptor isolation fails, decoding
+stops. Font rasterization, PDF, archive, video and model parsing remain in
+the main process.
+
 `.github/workflows/cross.yml` is called by CI and tagged releases. Its Linux
 ARM64 and Windows jobs extract the shipped archive and require a headless
 launch to produce a screenshot under QEMU or Wine. No compiler runs under
