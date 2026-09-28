@@ -197,7 +197,10 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("GsHead"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
 		) {
-			clay.Text("Search all chats", {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
+			clay.Text(
+				tr("Search all chats"),
+				{fontId = FONT_TITLE, fontSize = 20, textColor = TEXT},
+			)
 			if clay.UI(clay.ID("GsHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("GsClose"))(
 			{
@@ -231,7 +234,7 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				ui,
 				"GsInput",
 				&ui.gs_input,
-				"Search messages",
+				tr("Search messages"),
 				ui.focus == .GSearch,
 				13,
 				TEXT_LO,
@@ -242,7 +245,7 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 		if empty && len(ui.prefs.recent_searches) > 0 {
 			if clay.UI(clay.ID("GsRecentHead"))({layout = {padding = {left = 4, top = 2}}}) {
 				clay.Text(
-					"RECENT",
+					tr("RECENT"),
 					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, letterSpacing = 2},
 				)
 			}
@@ -268,7 +271,7 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 			}
 		} else if empty {
 			clay.Text(
-				"Type to search all chats.",
+				tr("Type to search all chats."),
 				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 			)
 		} else if search_pending[.Global] != nil ||
@@ -278,7 +281,7 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 			)
 		} else if len(ui.gs_hits) == 0 {
-			clay.Text("No matches.", {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			clay.Text(tr("No matches."), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
 		}
 
 		if clay.UI(clay.ID("GsList"))(

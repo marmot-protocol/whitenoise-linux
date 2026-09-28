@@ -675,8 +675,16 @@ msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
 msgid "Couldn't create the vault. Please try again."
 msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
 
+#, c-format
+msgid "Couldn't decline. %s"
+msgstr "Die Einladung konnte nicht abgelehnt werden. %s"
+
 msgid "Couldn't decode this audio. Try another audio file."
 msgstr "Dieses Audio konnte nicht dekodiert werden. Versuch eine andere Audiodatei."
+
+#, c-format
+msgid "Couldn't delete %s. Please try again."
+msgstr "%s konnte nicht gelöscht werden. Bitte versuche es erneut."
 
 #, fuzzy, c-format
 msgid "Couldn't delete the audit log file. %s"
@@ -703,6 +711,10 @@ msgstr "Es wurde keine Sprache erkannt. Sprich deutlich und versuch es erneut."
 
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "Der Sticker konnte nicht importiert werden. Wähle ein Bild unter 4 MiB."
+
+#, c-format
+msgid "Couldn't leave. %s"
+msgstr "Die Gruppe konnte nicht verlassen werden. %s"
 
 msgid "Couldn't load GIFs. Please try again."
 msgstr "GIFs konnten nicht geladen werden. Versuch es bitte erneut."
@@ -849,9 +861,16 @@ msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
 msgid "Couldn't serialize the snapshot. Please try again."
 msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
 
-#, fuzzy
 msgid "Couldn't share the theme. Please try again."
-msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
+msgstr "Das Theme konnte nicht geteilt werden. Bitte versuche es erneut."
+
+#, c-format
+msgid "Couldn't share the theme. Please try again. %s"
+msgstr "Das Theme konnte nicht geteilt werden. Bitte versuche es erneut. %s"
+
+#, c-format
+msgid "Couldn't sign out. %s"
+msgstr "Die Abmeldung ist fehlgeschlagen. %s"
 
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "Das Vorlesen konnte nicht gestartet werden. Bitte versuche es erneut."
@@ -1885,6 +1904,9 @@ msgstr ""
 msgid "No key package yet. Publish one so people can invite you."
 msgstr "Veröffentliche eines, damit andere dich in Gruppen einladen können."
 
+msgid "No matches."
+msgstr "Keine Treffer."
+
 msgid "No matching chats"
 msgstr "Keine passenden Chats"
 
@@ -2166,7 +2188,7 @@ msgid "RAW EVENTS"
 msgstr ""
 
 msgid "RECENT"
-msgstr ""
+msgstr "ZULETZT"
 
 #, fuzzy
 msgid "RELAYS IN COMMON"
@@ -2390,9 +2412,8 @@ msgstr "Suchen"
 msgid "Search GIFs"
 msgstr "GIFs suchen"
 
-#, fuzzy
 msgid "Search all chats"
-msgstr "Chats durchsuchen…"
+msgstr "Alle Chats durchsuchen"
 
 msgid "Search archived chats..."
 msgstr "Archivierte Chats durchsuchen..."
@@ -2403,12 +2424,17 @@ msgstr ""
 msgid "Search folders..."
 msgstr "Ordner suchen..."
 
-#, fuzzy
 msgid "Search images"
-msgstr "Nachrichten durchsuchen…"
+msgstr "Bilder suchen"
 
 msgid "Search issues"
 msgstr "Meldungen suchen"
+
+msgid "Search messages"
+msgstr "Nachrichten durchsuchen"
+
+msgid "Search openly licensed images"
+msgstr "Bilder mit offener Lizenz suchen"
 
 msgid "Search results"
 msgstr "Suchergebnisse"
@@ -2769,6 +2795,13 @@ msgstr ""
 msgid "Theme"
 msgstr "Thema"
 
+msgid "Theme deleted"
+msgstr "Theme gelöscht"
+
+#, c-format
+msgid "Theme shared with %s"
+msgstr "Theme mit %s geteilt"
+
 msgid "Themes, text size, and the look of your conversations."
 msgstr "Passe Themen, Textgröße und das Aussehen deiner Unterhaltungen an."
 
@@ -2873,6 +2906,9 @@ msgstr "Versuche eine andere Suche."
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
+
+msgid "Type to search all chats."
+msgstr "Tippe, um alle Chats zu durchsuchen."
 
 msgid "Unavailable conversation"
 msgstr "Unterhaltung nicht verfügbar"

@@ -200,7 +200,7 @@ openverse_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("OvHead"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
 		) {
-			clay.Text("Search images", {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
+			clay.Text(tr("Search images"), {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
 			if clay.UI(clay.ID("OvHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("OvClose"))(
 			{
@@ -241,7 +241,7 @@ openverse_modal :: proc(ui: ^Ui_State) {
 					ui,
 					"OvField",
 					&ui.ov_input,
-					"Search openly licensed images",
+					tr("Search openly licensed images"),
 					ui.focus == .Ov,
 					13,
 					TEXT_LO,

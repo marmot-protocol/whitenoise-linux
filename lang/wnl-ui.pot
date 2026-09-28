@@ -639,7 +639,15 @@ msgstr ""
 msgid "Couldn't create the vault. Please try again."
 msgstr ""
 
+#, c-format
+msgid "Couldn't decline. %s"
+msgstr ""
+
 msgid "Couldn't decode this audio. Try another audio file."
+msgstr ""
+
+#, c-format
+msgid "Couldn't delete %s. Please try again."
 msgstr ""
 
 #, c-format
@@ -666,6 +674,10 @@ msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr ""
 
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
+msgstr ""
+
+#, c-format
+msgid "Couldn't leave. %s"
 msgstr ""
 
 msgid "Couldn't load GIFs. Please try again."
@@ -803,6 +815,14 @@ msgid "Couldn't serialize the snapshot. Please try again."
 msgstr ""
 
 msgid "Couldn't share the theme. Please try again."
+msgstr ""
+
+#, c-format
+msgid "Couldn't share the theme. Please try again. %s"
+msgstr ""
+
+#, c-format
+msgid "Couldn't sign out. %s"
 msgstr ""
 
 msgid "Couldn't start reading aloud. Please try again."
@@ -1782,6 +1802,9 @@ msgstr ""
 msgid "No key package yet. Publish one so people can invite you."
 msgstr ""
 
+msgid "No matches."
+msgstr ""
+
 msgid "No matching chats"
 msgstr ""
 
@@ -2286,6 +2309,12 @@ msgstr ""
 msgid "Search issues"
 msgstr ""
 
+msgid "Search messages"
+msgstr ""
+
+msgid "Search openly licensed images"
+msgstr ""
+
 msgid "Search results"
 msgstr ""
 
@@ -2621,6 +2650,13 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
+msgid "Theme deleted"
+msgstr ""
+
+#, c-format
+msgid "Theme shared with %s"
+msgstr ""
+
 msgid "Themes, text size, and the look of your conversations."
 msgstr ""
 
@@ -2718,6 +2754,9 @@ msgid "Try a different search."
 msgstr ""
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
+msgstr ""
+
+msgid "Type to search all chats."
 msgstr ""
 
 msgid "Unavailable conversation"

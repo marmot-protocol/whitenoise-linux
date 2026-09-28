@@ -48,7 +48,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 **Look & feel**
 
 - Eight themes (dark, light, AMOLED, retro, terminal, crayon, synthwave, chalkboard) and five accent colors, all data-driven from `themes/*.toml`. Drop your own pack in the data dir.
-- English, Italian, German, and Japanese, switchable at runtime.
+- English, Italian, German, and Japanese, switchable at runtime, including search dialogs, theme notifications, and confirmation errors.
 - Native desktop notifications, a command palette, and full keyboard navigation.
 - Reduce motion hides animated synth, dust, scan, and wave backdrops, including the vault gate's synth backdrop. Static decorations remain visible.
 

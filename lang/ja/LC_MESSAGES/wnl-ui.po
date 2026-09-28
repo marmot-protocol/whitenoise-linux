@@ -675,8 +675,16 @@ msgstr "チャットを作成できませんでした。もう一度お試しく
 msgid "Couldn't create the vault. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
 
+#, c-format
+msgid "Couldn't decline. %s"
+msgstr "招待を辞退できませんでした。%s"
+
 msgid "Couldn't decode this audio. Try another audio file."
 msgstr "この音声を読み取れませんでした。別の音声ファイルをお試しください。"
+
+#, c-format
+msgid "Couldn't delete %s. Please try again."
+msgstr "%sを削除できませんでした。もう一度お試しください。"
 
 #, fuzzy, c-format
 msgid "Couldn't delete the audit log file. %s"
@@ -703,6 +711,10 @@ msgstr "音声を聞き取れませんでした。はっきり話して、もう
 
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "ステッカーを読み込めませんでした。4 MiB未満の画像を選んでください。"
+
+#, c-format
+msgid "Couldn't leave. %s"
+msgstr "グループを退出できませんでした。%s"
 
 msgid "Couldn't load GIFs. Please try again."
 msgstr "GIFを読み込めませんでした。もう一度お試しください。"
@@ -849,9 +861,16 @@ msgstr "チャットを作成できませんでした。もう一度お試しく
 msgid "Couldn't serialize the snapshot. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
 
-#, fuzzy
 msgid "Couldn't share the theme. Please try again."
-msgstr "チャットを作成できませんでした。もう一度お試しください。"
+msgstr "テーマを共有できませんでした。もう一度お試しください。"
+
+#, c-format
+msgid "Couldn't share the theme. Please try again. %s"
+msgstr "テーマを共有できませんでした。もう一度お試しください。%s"
+
+#, c-format
+msgid "Couldn't sign out. %s"
+msgstr "サインアウトできませんでした。%s"
 
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "読み上げを開始できませんでした。もう一度お試しください。"
@@ -1885,6 +1904,9 @@ msgstr ""
 msgid "No key package yet. Publish one so people can invite you."
 msgstr "公開すると他のユーザーがグループに招待できるようになります。"
 
+msgid "No matches."
+msgstr "一致する結果はありません。"
+
 msgid "No matching chats"
 msgstr "一致するチャットはありません"
 
@@ -2166,7 +2188,7 @@ msgid "RAW EVENTS"
 msgstr ""
 
 msgid "RECENT"
-msgstr ""
+msgstr "最近の検索"
 
 #, fuzzy
 msgid "RELAYS IN COMMON"
@@ -2390,9 +2412,8 @@ msgstr "検索"
 msgid "Search GIFs"
 msgstr "GIFを検索"
 
-#, fuzzy
 msgid "Search all chats"
-msgstr "チャットを検索…"
+msgstr "すべてのチャットを検索"
 
 msgid "Search archived chats..."
 msgstr "アーカイブしたチャットを検索..."
@@ -2403,12 +2424,17 @@ msgstr ""
 msgid "Search folders..."
 msgstr "フォルダを検索..."
 
-#, fuzzy
 msgid "Search images"
-msgstr "メッセージを検索…"
+msgstr "画像を検索"
 
 msgid "Search issues"
 msgstr "報告を検索"
+
+msgid "Search messages"
+msgstr "メッセージを検索"
+
+msgid "Search openly licensed images"
+msgstr "オープンライセンスの画像を検索"
 
 msgid "Search results"
 msgstr "検索結果"
@@ -2769,6 +2795,13 @@ msgstr ""
 msgid "Theme"
 msgstr "テーマ"
 
+msgid "Theme deleted"
+msgstr "テーマを削除しました"
+
+#, c-format
+msgid "Theme shared with %s"
+msgstr "%sにテーマを共有しました"
+
 msgid "Themes, text size, and the look of your conversations."
 msgstr "テーマ、文字サイズ、会話の見た目を設定します。"
 
@@ -2873,6 +2906,9 @@ msgstr "別の検索語を試してください。"
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
+
+msgid "Type to search all chats."
+msgstr "入力してすべてのチャットを検索します。"
 
 msgid "Unavailable conversation"
 msgstr "利用できない会話"

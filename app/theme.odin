@@ -690,11 +690,14 @@ share_theme :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 		   &summary,
 	   ) !=
 	   .OK {
-		ui.client_status = fmt.aprintf("Couldn't share the theme. %s", marmot.last_error())
+		ui.client_status = fmt.aprintf(
+			tr("Couldn't share the theme. Please try again. %s"),
+			marmot.last_error(),
+		)
 		return
 	}
 	marmot.send_summary_free(summary)
-	toast(ui, fmt.tprintf("Theme shared with %s", ui.chats[dest].title))
+	toast(ui, fmt.tprintf(tr("Theme shared with %s"), ui.chats[dest].title))
 }
 
 // The strip a shared theme shows: the real derived pack, so the offer
@@ -722,7 +725,7 @@ delete_theme :: proc(ui: ^Ui_State, index: int) {
 	path := fmt.tprintf("%s/themes/%s.toml", data_home, theme_packs[index].mode)
 	if err := os.remove(path); err != nil {
 		ui.client_status = fmt.aprintf(
-			"Couldn't delete %s. Please try again.",
+			tr("Couldn't delete %s. Please try again."),
 			theme_packs[index].name,
 		)
 		return
@@ -732,5 +735,5 @@ delete_theme :: proc(ui: ^Ui_State, index: int) {
 	ui.theme = 0
 	apply_theme(ui.theme, ui.accent)
 	save_settings(ui)
-	toast(ui, "Theme deleted")
+	toast(ui, tr("Theme deleted"))
 }

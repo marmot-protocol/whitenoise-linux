@@ -306,7 +306,7 @@ leave_group :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
 	if marmot.leave_group(client, account, group, &summary) != .OK {
-		ui.client_status = fmt.aprintf("Couldn't leave. %s", marmot.last_error())
+		ui.client_status = fmt.aprintf(tr("Couldn't leave. %s"), marmot.last_error())
 		return
 	}
 	marmot.send_summary_free(summary)
@@ -323,7 +323,7 @@ decline_invite :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
 	if marmot.decline_group_invite(client, account, group, &result) != .OK {
-		ui.client_status = fmt.aprintf("Couldn't decline. %s", marmot.last_error())
+		ui.client_status = fmt.aprintf(tr("Couldn't decline. %s"), marmot.last_error())
 		return
 	}
 	marmot.group_invite_decline_result_free(result)
@@ -335,7 +335,7 @@ sign_out :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	outcome: ^marmot.Sign_Out_Outcome
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	if marmot.sign_out(client, account, false, &outcome) != .OK {
-		ui.client_status = fmt.aprintf("Couldn't sign out. %s", marmot.last_error())
+		ui.client_status = fmt.aprintf(tr("Couldn't sign out. %s"), marmot.last_error())
 		return
 	}
 	marmot.sign_out_outcome_free(outcome)
