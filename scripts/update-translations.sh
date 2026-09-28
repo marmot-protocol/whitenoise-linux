@@ -8,9 +8,10 @@
 # desyncs on the stray quotes inside one). Nothing is written back to the
 # copies, so the neutralized sources live in a temp dir and are thrown away.
 #
-# Three shapes of translatable string are extracted:
+# Four shapes of translatable string are extracted:
 #
 #   tr("…")            the string is translated where it is written
+#   tr("one", "many", count) extracts both count forms as separate entries
 #   N_("…")            the string is held in a package-level table or
 #                      returned from a copy proc; some tr(var) further down
 #                      translates it (see i18n.odin)
@@ -46,7 +47,7 @@ HELPERS=(
 # One pass per keyword group, where a group holds at most one position per
 # proc; the passes are then merged with the first occurrence winning.
 declare -A seen=()
-PASS1=(--keyword=tr --keyword=N_) PASS2=()
+PASS1=(--keyword=tr --keyword=N_) PASS2=(--keyword=tr:2)
 for h in "${HELPERS[@]}"; do
     name="${h%%:*}"
     if [ -n "${seen[$name]:-}" ]; then PASS2+=("--keyword=$h"); else PASS1+=("--keyword=$h"); fi

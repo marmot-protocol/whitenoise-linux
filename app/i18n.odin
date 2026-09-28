@@ -1,8 +1,8 @@
 // Interface-language lookup: the gettext catalogs the slint app
 // maintains in lang/ (msgids are the English source strings),
 // embedded at build time and parsed into one msgid → msgstr map on
-// boot and on locale switch. No plural or msgctxt support; entries
-// needing either fall back to English.
+// boot and on locale switch. No gettext plural-entry or msgctxt support;
+// count forms are separate msgids selected by tr().
 package main
 
 import "core:strings"
@@ -20,11 +20,14 @@ g_tr: map[string]string
 // English msgid → translation. A missing entry falls back to the
 // English string, which also covers Odin-only strings the slint
 // catalogs never saw.
-tr :: proc(s: string) -> string {
-	if out, ok := g_tr[s]; ok {
+// Counted labels use separate catalog entries for one and all other counts.
+// Japanese translates both entries alike; English, Italian, and German differ.
+tr :: proc(s: string, plural: string = "", count: int = 1) -> string {
+	id := count != 1 && plural != "" ? plural : s
+	if out, ok := g_tr[id]; ok {
 		return out
 	}
-	return s
+	return id
 }
 
 // gettext's noop marker. Identity at runtime; it exists so

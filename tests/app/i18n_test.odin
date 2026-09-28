@@ -78,3 +78,12 @@ po_catalogs :: proc(t: ^testing.T) {
 		testing.expect(t, ok, "missing a settings msgid")
 	}
 }
+
+@(test)
+tr_count_fallback :: proc(t: ^testing.T) {
+	singular := "Untranslated single item"
+	plural := "Untranslated multiple items"
+	for count in ([]int{0, 1, 2, 10, 21, 101}) {
+		testing.expect_value(t, tr(singular, plural, count), count == 1 ? singular : plural)
+	}
+}

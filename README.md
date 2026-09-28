@@ -366,6 +366,14 @@ The shell implementations live under `scripts/`; CI and packaging call them dire
 
 All tests live under `tests/`; `just test` runs the same checks as CI. For a focused Odin run, use `tests/odin.sh app [odin test flags]` or `tests/odin.sh app/sdlrl`. The runner assembles a temporary package so tests retain access to private symbols. End-to-end testing (a QEMU VM harness, a headless control daemon, and multi-VM messaging scenarios) lives in the separate [`darkmatter-automated-testing`](https://github.com/marmot-protocol/darkmatter-automated-testing) repo, which builds this checkout.
 
+Use `tr("text")` for UI strings and `tr("%d item", "%d items", count)` for
+counted labels, then format the returned string with the count. The latter
+selects the first catalog entry for one and the second for every other count.
+Run `just translations` to extract both entries. Japanese uses the same
+translation for both; English, Italian, and German distinguish singular
+and plural. This does not interpret gettext `Plural-Forms` expressions;
+adding a language with other count rules requires extending `tr()`.
+
 `just dev` keeps the SDL window and vault unlock across code reloads. It rebuilds
 the UI and runtime from saved settings and drafts, so transient dialogs and
 playback reset. Reload waits for active writes and file pickers, and for you

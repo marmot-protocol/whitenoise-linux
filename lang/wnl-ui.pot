@@ -20,6 +20,14 @@ msgid "%d files"
 msgstr ""
 
 #, c-format
+msgid "%d member"
+msgstr ""
+
+#, c-format
+msgid "%d members"
+msgstr ""
+
+#, c-format
 msgid "%d of %d connected"
 msgstr ""
 
@@ -41,6 +49,10 @@ msgstr ""
 
 #, c-format
 msgid "%d replies"
+msgstr ""
+
+#, c-format
+msgid "%d reply"
 msgstr ""
 
 #, c-format

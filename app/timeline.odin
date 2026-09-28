@@ -1911,7 +1911,10 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						{fontId = FONT_ICON, fontSize = 11, textColor = ACCENT},
 					)
 					clay.Text(
-						fmt.tprintf(tr("%d replies"), msg.thread_replies),
+						fmt.tprintf(
+							tr("%d reply", "%d replies", msg.thread_replies),
+							msg.thread_replies,
+						),
 						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
 					)
 				}

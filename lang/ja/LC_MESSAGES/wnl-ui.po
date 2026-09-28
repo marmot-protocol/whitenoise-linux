@@ -20,6 +20,14 @@ msgid "%d files"
 msgstr "%d 個のファイル"
 
 #, c-format
+msgid "%d member"
+msgstr "メンバー%d人"
+
+#, c-format
+msgid "%d members"
+msgstr "メンバー%d人"
+
+#, c-format
 msgid "%d of %d connected"
 msgstr ""
 
@@ -41,7 +49,11 @@ msgstr "公開すると他のユーザーがグループに招待できるよう
 
 #, c-format
 msgid "%d replies"
-msgstr ""
+msgstr "%d件の返信"
+
+#, c-format
+msgid "%d reply"
+msgstr "%d件の返信"
 
 #, c-format
 msgid "%d votes"

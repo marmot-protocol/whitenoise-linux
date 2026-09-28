@@ -20,6 +20,14 @@ msgid "%d files"
 msgstr "%d file"
 
 #, c-format
+msgid "%d member"
+msgstr "%d membro"
+
+#, c-format
+msgid "%d members"
+msgstr "%d membri"
+
+#, c-format
 msgid "%d of %d connected"
 msgstr ""
 
@@ -41,7 +49,11 @@ msgstr "Pubblicane uno così altri utenti possono invitarti nei gruppi."
 
 #, c-format
 msgid "%d replies"
-msgstr ""
+msgstr "%d risposte"
+
+#, c-format
+msgid "%d reply"
+msgstr "%d risposta"
 
 #, c-format
 msgid "%d votes"

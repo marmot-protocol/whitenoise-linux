@@ -71,7 +71,7 @@ group_hero :: proc(ui: ^Ui_State) {
 		avatar("HeroAvatar", 0, chat.avatar_key, chat.title, 72, chat_pic(chat))
 		clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
 		clay.Text(
-			fmt.tprintf("%d members", len(ui.members)),
+			fmt.tprintf(tr("%d member", "%d members", len(ui.members)), len(ui.members)),
 			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, letterSpacing = 1},
 		)
 		micro_button("HeroPicBtn", "Change photo")
