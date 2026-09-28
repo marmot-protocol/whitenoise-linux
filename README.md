@@ -255,10 +255,10 @@ tag without changing anything.
 Tagged releases publish the Windows installer, the portable zip, and
 Velopack's feed (`releases.win.json`, `assets.win.json`, `RELEASES`, and the
 `.nupkg` packages) to the GitHub release. The job first downloads the previous
-release so Velopack can also publish a delta package. Windows binaries,
-`Update.exe`, and `Setup.exe` are Authenticode-signed with
-[jsign](https://ebourg.github.io/jsign/), and a tag fails without signing
-configured. Set repository variables `JSIGN_STORETYPE` (jsign's
+release so Velopack can also publish a delta package. Windows packages are
+unsigned unless `JSIGN_STORETYPE` is configured. Unsigned builds may trigger
+Windows publisher and SmartScreen warnings. To enable Authenticode signing
+with [jsign](https://ebourg.github.io/jsign/), set repository variables `JSIGN_STORETYPE` (jsign's
 `--storetype`, for example `PKCS12` or `TRUSTEDSIGNING`) and `JSIGN_ALIAS`,
 secret `JSIGN_STOREPASS`, and either secret `JSIGN_KEYSTORE_BASE64` (a
 base64 keystore file, such as a `.p12`) or secret `JSIGN_KEYSTORE` (a cloud
