@@ -637,6 +637,9 @@ msgstr "Copia JSON"
 msgid "Copy info hash"
 msgstr "Copia info hash"
 
+msgid "Copy link"
+msgstr "Copia link"
+
 msgid "Copy magnet link"
 msgstr "Copia link magnet"
 
@@ -646,6 +649,9 @@ msgstr "Copia chiave pubblica"
 
 msgid "Copy text"
 msgstr "Copia testo"
+
+msgid "Copy this link and open it in your browser."
+msgstr "Copia questo link e aprilo nel tuo browser."
 
 msgid "Corner scale"
 msgstr ""
@@ -852,6 +858,9 @@ msgstr "Impossibile cercare le GIF. Riprova."
 
 msgid "Couldn't search messages. Please try again."
 msgstr "Non è stato possibile cercare i messaggi. Riprova."
+
+msgid "Couldn't send the notification. Please try again."
+msgstr "Non è stato possibile inviare la notifica. Riprova."
 
 msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr "Impossibile inviare l'adesivo. Torna al tuo account e riprova."

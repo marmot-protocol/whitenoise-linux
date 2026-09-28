@@ -22,10 +22,14 @@ done
 for entry in vendor marmot themes lang build; do
   ln -s "$HERE/$entry" "$fixture/$entry"
 done
-for helper in wn-archive wn-pdf wn-mesh wn-fbx; do
+for helper in wn-archive wn-pdf wn-mesh wn-fbx wn-math; do
   ln -s "$HERE/build/$helper" "$fixture/$helper"
 done
 if [ -d "$HERE/build/odin-root" ]; then
   export ODIN_ROOT="$HERE/build/odin-root"
 fi
-odin test "$fixture/$package" -out:"$fixture/test" "$@"
+LINK_ARGS=()
+if [ "$(uname -s)" = OpenBSD ]; then
+  LINK_ARGS=('-extra-linker-flags:-Wl,--wrap=execve,--exclude-libs=libmarmot_c.a')
+fi
+odin test "$fixture/$package" -out:"$fixture/test" "${LINK_ARGS[@]}" "$@"

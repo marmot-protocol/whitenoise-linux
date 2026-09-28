@@ -838,8 +838,10 @@ settings_general :: proc(ui: ^Ui_State) {
 	case 0:
 		if clay.UI(clay.ID("StartupGroup"))(settings_box()) {
 			settings_group(N_("Startup"))
-			if clay.UI(clay.ID("RowLaunch"))(settings_row()) {
-				settings_check("TgLaunch", ui.prefs.launch_at_login, "Launch at login", "")
+			when ODIN_OS != .OpenBSD {
+				if clay.UI(clay.ID("RowLaunch"))(settings_row()) {
+					settings_check("TgLaunch", ui.prefs.launch_at_login, "Launch at login", "")
+				}
 			}
 			if clay.UI(clay.ID("RowTray"))(settings_row()) {
 				settings_check(
@@ -1872,10 +1874,12 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 
 	case .General:
-		if clay.PointerOver(clay.ID("TgLaunch")) {
-			flip(ui, &ui.prefs.launch_at_login)
-			apply_autostart(ui.prefs.launch_at_login)
-			return
+		when ODIN_OS != .OpenBSD {
+			if clay.PointerOver(clay.ID("TgLaunch")) {
+				flip(ui, &ui.prefs.launch_at_login)
+				apply_autostart(ui.prefs.launch_at_login)
+				return
+			}
 		}
 		if clay.PointerOver(clay.ID("TgTray")) {
 			flip(ui, &ui.prefs.start_in_tray)

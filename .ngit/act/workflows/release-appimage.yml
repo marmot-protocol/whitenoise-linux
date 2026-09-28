@@ -130,6 +130,7 @@ jobs:
             --executable AppDir/usr/share/whitenoise-linux/wn-pdf \
             --executable AppDir/usr/share/whitenoise-linux/wn-mesh \
             --executable AppDir/usr/share/whitenoise-linux/wn-fbx \
+            --executable AppDir/usr/share/whitenoise-linux/wn-math \
             --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
           # Short commit for a recognizable staging filename. act sets GITHUB_SHA.

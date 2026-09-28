@@ -14,7 +14,6 @@ package main
 
 import "core:encoding/json"
 import "core:fmt"
-import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:thread"
@@ -111,7 +110,7 @@ gh_worker :: proc(key: string) {
 	defer frame_wake()
 	url := fmt.aprintf("%s%s", GH_API, key)
 	defer delete(url)
-	state, out, _, err := os.process_exec(
+	state, out, _, err := tool_exec(
 		{
 			command = {
 				curl_path(),
@@ -327,7 +326,7 @@ gh_card :: proc(id: u32, ref: Gh_Ref) {
 			},
 			) {
 				clay.Text(
-					tr("Open in browser"),
+					external_link_action(),
 					{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_DIM, wrapMode = .None},
 				)
 				clay.Text("\uf08e", {fontId = FONT_ICON, fontSize = 10, textColor = TEXT_DIM})

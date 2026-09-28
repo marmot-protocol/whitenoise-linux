@@ -605,6 +605,9 @@ msgstr ""
 msgid "Copy info hash"
 msgstr ""
 
+msgid "Copy link"
+msgstr ""
+
 msgid "Copy magnet link"
 msgstr ""
 
@@ -612,6 +615,9 @@ msgid "Copy npub"
 msgstr ""
 
 msgid "Copy text"
+msgstr ""
+
+msgid "Copy this link and open it in your browser."
 msgstr ""
 
 msgid "Corner scale"
@@ -806,6 +812,9 @@ msgid "Couldn't search GIFs. Please try again."
 msgstr ""
 
 msgid "Couldn't search messages. Please try again."
+msgstr ""
+
+msgid "Couldn't send the notification. Please try again."
 msgstr ""
 
 msgid "Couldn't send the sticker. Switch back to your account and try again."

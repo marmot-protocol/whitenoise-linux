@@ -922,6 +922,8 @@ app_main :: proc() {
 		}
 		home = fmt.aprintf("%s/whitenoise", data)
 	}
+	when ODIN_OS == .OpenBSD {home = sandbox_prepare(home)}
+	defer {when ODIN_OS == .OpenBSD {sandbox_stop()}}
 
 	ui: Ui_State
 	ui.selected = -1
@@ -974,6 +976,9 @@ app_main :: proc() {
 	window_start := time.tick_now()
 	rl.InitWindow(win_w, win_h, WIN_TITLE, helper_path("wn-image"))
 	local_timing_end(.window_init, window_start)
+	// SDL opens its display and renderer before the filesystem is locked;
+	// attachment workers, the vault and Marmot only run after confinement.
+	when ODIN_OS == .OpenBSD {sandbox_enter()}
 	// After the window, never before: the zoom is derived from the
 	// window's width, and there is no window to ask until now. The
 	// vault gate runs its own frames before the main loop, so getting

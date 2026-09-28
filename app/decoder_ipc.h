@@ -21,6 +21,10 @@
 #define WN_PDF_PAGES_MAX 10000u
 #define WN_MODEL_INPUT_MAX WN_IMAGE_INPUT_MAX
 #define WN_MODEL_OUTPUT_MAX (512u * 1024u * 1024u)
+#define WN_MATH_INPUT_MAX 4096u
+#define WN_MATH_DIM_MAX 4096u
+#define WN_MATH_OUTPUT_MAX (8u * 1024u * 1024u)
+#define WN_MATH_REQUEST_HEADER 24u
 
 typedef enum {
     WN_MESH_STL = 1,
@@ -42,9 +46,19 @@ static inline void wn_image_put(unsigned char *p, uint32_t n) {
     p[3] = (unsigned char)(n >> 24);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Returns malloc-owned RGBA; on failure returns NULL and zeros both dimensions. */
 unsigned char *wn_image_decode(const char *helper, const unsigned char *data, int size,
                                int max_dimension, unsigned int max_bytes, int *width, int *height);
+
+/* MAI1,size,font-size bits,ARGB,side,bytes + source + EOF -> MAO1,width,height,bytes
+ * + straight RGBA + EOF. Source must not contain NUL. Failure zeros dimensions. */
+unsigned char *wn_math_render(const char *helper, const unsigned char *data, int size,
+                              float font_size, unsigned int argb, unsigned int max_side,
+                              unsigned int max_bytes, int *width, int *height);
 
 typedef enum { WN_ARCHIVE_LIST = 0, WN_ARCHIVE_ENTRY = 1 } WnArchiveOp;
 /* Successful empty payloads still return malloc-owned memory. */
@@ -74,5 +88,9 @@ unsigned char *wn_model_exchange(WnModelSession *session, unsigned int operation
                                  unsigned char *output, unsigned int capacity,
                                  unsigned int *length);
 void wn_model_close(WnModelSession *session);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

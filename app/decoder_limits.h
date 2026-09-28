@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <fcntl.h>
 #include <io.h>
+#include <string.h>
 #else
 #include <sys/resource.h>
 #include <unistd.h>
@@ -27,7 +28,8 @@ typedef enum {
 static inline int wn_decoder_limits(WnDecoderLifetime lifetime) {
 #ifdef _WIN32
     HANDLE job = CreateJobObjectW(NULL, NULL);
-    JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {0};
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits;
+    memset(&limits, 0, sizeof limits);
     limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_PROCESS_MEMORY;
     limits.ProcessMemoryLimit = WN_IMAGE_MEMORY_MAX;
     if (lifetime == WN_DECODER_ONESHOT) {

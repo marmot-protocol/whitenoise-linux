@@ -115,7 +115,7 @@ built on a Mac, and the OpenBSD package on OpenBSD 7.9.
 | Linux ARM64 / x86-64 | `WhiteNoise-<version>-linux-{arm64,amd64}.tar.gz` | Extract and run the top-level `whitenoise` script; requires glibc 2.39 or newer |
 | Windows x86-64 | `WhiteNoise-win-Setup.exe` or `WhiteNoise-win-Portable.zip` | Run the installer, or extract the portable zip anywhere and run `White Noise.exe`; requires Windows 10 or newer |
 | macOS Intel / ARM64 | `WhiteNoise-<version>-darwin-{amd64,arm64}.tar.gz` | Extract `White Noise.app`; requires macOS 13 or newer |
-| OpenBSD amd64 | `WhiteNoise-<version>-openbsd-amd64.tar.gz` | Extract and run `bin/whitenoise`; requires OpenBSD 7.9 and `pkg_add sdl3 libarchive libwebp mpv poppler cairo curl glib2`. Reading aloud and dictation are not included |
+| OpenBSD amd64 | `WhiteNoise-<version>-openbsd-amd64.tar.gz` | Install as root under a protected prefix, then run as your normal user (see below). Requires OpenBSD 7.9 and `pkg_add libarchive libwebp mpv poppler cairo curl glib2 zenity libnotify`. Reading aloud and dictation are not included |
 
 Windows installs update themselves through [Velopack](https://velopack.io).
 The app checks this repository's GitHub releases at launch and every six
@@ -216,9 +216,9 @@ The ARM64 build extracts an Ubuntu 24.04 target sysroot without running ARM
 compilers. Windows uses LLVM-MinGW 20260922 with UCRT and libc++, paired with
 Rust's `x86_64-pc-windows-gnullvm` target. Its separate vcpkg triplet avoids
 reusing GCC/MSVCRT libraries. Windows 10 or newer supplies UCRT. Odin emits
-target objects; the target C++ linker links
-them with Marmot, Clay, STB,
-MicroTeX, the app shims and media libraries. Source revisions are pinned in
+target objects; the target C linker links the app with Marmot, Clay, STB,
+the app shims and media libraries. The C++ linker links `wn-math` with
+MicroTeX and Cairo. Source revisions are pinned in
 `DEPS_PIN`, and Windows/macOS dependency recipes are pinned by the vcpkg
 baseline in `packaging/cross/vcpkg.json`. FFmpeg includes dav1d for CPU AV1
 decoding on Windows and macOS. Speech uses the same pinned upstream
@@ -249,9 +249,13 @@ the pinned Odin release from source (OpenBSD has no Odin package), runs
 
 ```sh
 doas pkg_add bash git cmake ninja gmake coreutils llvm%21 rust unzip-- \
-  sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg
+  sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify
 bash scripts/openbsd-build.sh
 ```
+
+Run the build as your normal user, with `sudo` or `doas` configured for
+package staging. The script tests a root-owned installation, including an
+Xvfb window that resizes and closes under confinement.
 
 OpenBSD's Rust package (1.94) is older than the toolchain Marmot pins, so
 `scripts/build.sh` enables the one unstable feature the build needs
@@ -260,10 +264,50 @@ which rustc and Odin's optimizing build otherwise run out of.
 Reading aloud and dictation are left out: sherpa-onnx publishes no OpenBSD
 runtime, so those features report that they could not start.
 
-On OpenBSD, the `wn-font` helper uses `unveil()` to allow read access only to
-its input file, locks that filesystem policy, and calls
-`pledge("stdio rpath", NULL)` before initializing FreeType. If sandbox setup
-fails, decoding stops. The main application is not pledged or unveiled.
+OpenBSD requires a root-owned installation whose resources, helpers,
+libraries and ancestor directories are not group- or other-writable.
+Mutable symlink routes are rejected too. Extract the release as root into
+a protected directory, not your home directory:
+
+```sh
+doas tar -xzf WhiteNoise-<version>-openbsd-amd64.tar.gz -C /usr/local
+/usr/local/WhiteNoise-<version>-openbsd-amd64/bin/whitenoise
+```
+
+Run the app as your normal user. Running as root or directly from an
+unprivileged build tree is rejected. For a source build, use
+`doas bash scripts/install-tree.sh /usr/local/whitenoise whitenoise`, then
+run `/usr/local/whitenoise/bin/whitenoise`.
+
+The main process locks `unveil()` and enters `pledge()` after opening the
+display, before starting attachment workers, the vault or Marmot. It keeps
+networking, display/audio access and read-write access to the canonical
+Marmot data, app settings and Downloads directories. Runtime resources are
+read-only. Temporary files and caches stay under the data directory.
+The MDK filesystem patch anchors directory creation inside the unveiled data
+tree; it does not require opening `/`.
+
+SQLCipher's C build uses OpenBSD's concealed allocators instead of unsupported
+`mlock` calls. Those allocations are excluded from core dumps and wiped on
+free. They can enter swap; swap confidentiality depends on the host's
+encryption policy. Marmot's bundled OpenSSL symbols are hidden from dynamic
+libraries so they cannot replace system libcurl's incompatible LibreSSL symbols.
+
+The main process has no `exec` promise. A prestarted broker launches only
+the frozen `wn-*` helper paths, with fixed decoder arguments and an empty
+decoder environment. A separate broker runs curl, notifications and file
+dialogs with an inherited, locked policy. Display credentials are copied
+into a private runtime home, removed with its GTK state on normal shutdown.
+Forced termination can leave that private directory behind.
+
+SDL is built from its pin without SysV shared memory and linked statically.
+GTK dialogs use Cairo rather than GL for the same restriction. Links offer
+Copy link, storage offers Copy path instead of Open folder, and Launch at
+login is not offered. Network and desktop IPC remain available; this policy
+does not isolate X11 or D-Bus from the rest of your desktop.
+
+The `wn-font` helper receives an already-open input file on stdin, locks
+`unveil()` with no paths and pledges `stdio` before initializing FreeType.
 
 Still images are decoded by `wn-image`, including header probes for card,
 sticker and model-texture budgets. The app sends compressed bytes over private
@@ -293,15 +337,24 @@ validates channel sizes, indices, finite values, strings and texture references
 before publishing a model. Embedded GLB images go through `wn-image`.
 Neither cgltf nor ufbx is linked into the main application.
 
-On OpenBSD, `wn-image`, `wn-archive`, `wn-mesh` and `wn-fbx` lock `unveil()`
-with no filesystem paths and pledge `stdio` before reading input.
-`wn-pdf` loads Fontconfig's
-font list and the trusted bundled font directory first, then unveils only
-the resolved font files and Poppler resource directories read-only. It locks
-that policy and pledges `stdio rpath` before reading PDF bytes.
+Math blocks are rendered by `wn-math`; MicroTeX is no longer linked into the
+main application. Each request accepts at most 4,096 source bytes and returns
+at most 8 MiB of straight RGBA pixels, with dimensions no larger than 4,096.
+The helper embeds its font. Invalid input, a failed helper or an exceeded
+budget leaves the source text visible instead of rendering it in-process.
 
-All five helpers share a 1 GiB memory limit, no inherited environment and
-only input, output and a null error stream. Image, archive, PDF and mesh helpers
+On OpenBSD, `wn-image`, `wn-archive`, `wn-mesh`, `wn-fbx` and `wn-math` lock
+`unveil()` with no filesystem paths and pledge `stdio` before reading input.
+`wn-math` loads its fixed UTF-8 locale before confinement; parsing never
+opens locale files.
+`wn-pdf` initializes Fontconfig and the trusted bundled fonts first, then
+unveils the bundle, standard system font trees and Poppler resource directories
+read-only. Directory grants avoid OpenBSD's limit on individual unveiled names.
+It locks that policy and pledges `stdio rpath` before reading PDF bytes.
+
+The image, archive, PDF, mesh, FBX and math decoders share a 1 GiB memory limit,
+no inherited environment and only input, output and a null error stream.
+Image, archive, PDF, mesh and math helpers
 have five CPU seconds and ten seconds wall time; the parent requires exact
 reply framing, end of stream and successful exit. FBX helpers have a ten-second
 deadline and an echoed sequence number per exchange, but no cumulative CPU

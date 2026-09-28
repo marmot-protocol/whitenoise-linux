@@ -163,18 +163,23 @@ odin build "$HERE/model-decoder" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARG
   -o:speed -build-mode:obj -out:"$OUT/mesh.o"
 "$CC" "${CFLAGS[@]}" "$OUT/mesh.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmesh.a" "$OUT/cgltf.a" \
   -lm "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-mesh$EXE"
-# Odin does not cross-link different OSes. Generate a single native object and
-# pass all foreign dependencies to the target C++ driver (MicroTeX uses C++).
+odin build "$HERE/math-decoder" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
+  -o:speed -build-mode:obj -out:"$OUT/math.o"
+"$CXX" "${CFLAGS[@]}" "$OUT/math.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmath.a" \
+  "$OUT/microtex/lib/libmicrotex.a" $(pkg-config --libs cairo) \
+  "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-math$EXE"
+# Odin does not cross-link different OSes. Link its native object with the
+# target driver; MicroTeX and Cairo belong only to the math helper.
 odin build "$HERE/app" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
   -o:speed -build-mode:obj -out:"$OUT/app.o"
 WINDOWS_LINK=()
 if [ "$SYSTEM" = Windows ]; then
   WINDOWS_LINK=("${WINDOWS_RUNTIME[@]}" "$OUT/velopack/libvelopack_libc.dll.a")
 fi
-"$CXX" "${CFLAGS[@]}" "$OUT/app.o" "${WINDOWS_LINK[@]}" \
-  "$OUT/libwnws.a" "$OUT/libwnmath.a" "$OUT/libwnipc.a" "$OUT/libwndecoder.a" \
-  "$OUT/microtex/lib/libmicrotex.a" "$OUT/clay/clay.a" "$OUT/stb/stb.a" "$OUT/libmarmot_c.a" \
-  $(pkg-config --libs sdl3 mpv cairo libcurl openssl) \
+"$CC" "${CFLAGS[@]}" "$OUT/app.o" "${WINDOWS_LINK[@]}" \
+  "$OUT/libwnws.a" "$OUT/libwnipc.a" "$OUT/libwndecoder.a" \
+  "$OUT/clay/clay.a" "$OUT/stb/stb.a" "$OUT/libmarmot_c.a" \
+  $(pkg-config --libs sdl3 mpv libcurl openssl) \
   "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/whitenoise$EXE"
 # Export only paths consumed by packaging; do not serialize credentials/SDKs.
 export WN_CROSS_PREFIX="$PREFIX" WN_CROSS_SYSROOT="$SYSROOT" WN_CROSS_TTS="$TTS"

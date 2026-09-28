@@ -227,7 +227,7 @@ settings_storage :: proc(ui: ^Ui_State) {
 			row_labels("Location", data_home)
 			if clay.UI(clay.ID("LocationActions"))({layout = {childGap = 6}}) {
 				settings_button("LocCopy", "Copy")
-				settings_button("LocOpen", "Open folder")
+				when ODIN_OS != .OpenBSD {settings_button("LocOpen", "Open folder")}
 			}
 		}
 		if clay.UI(clay.ID("RowBackup"))(settings_row()) {
@@ -278,9 +278,11 @@ handle_storage :: proc(ui: ^Ui_State) {
 		copy_text(ui, data_home, "Path copied")
 		return
 	}
-	if clicked("LocOpen") {
-		open_external(data_home)
-		return
+	when ODIN_OS != .OpenBSD {
+		if clicked("LocOpen") {
+			open_external(data_home)
+			return
+		}
 	}
 	if clicked("CacheClear") {
 		if armed(ui, "CacheClear") {

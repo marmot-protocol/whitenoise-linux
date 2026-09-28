@@ -338,7 +338,9 @@ dialog_cb :: proc "c" (userdata: rawptr, filelist: [^]cstring, filter: c.int) {
 
 // Open the native multi-select file picker (async; see PickedFiles).
 OpenFileDialog :: proc(allow_many: bool) {
-	when #config(WN_RELOAD, false) {
+	when ODIN_OS == .OpenBSD {
+		confined_dialog(allow_many ? .Open_Many : .Open_One, nil, dialog_cb)
+	} else when #config(WN_RELOAD, false) {
 		wn_dev_dialog(allow_many ? .Open_Many : .Open_One, dialog_cb, nil)
 	} else {
 		sdl.ShowOpenFileDialog(dialog_cb, nil, state.window, nil, 0, nil, allow_many)
@@ -386,7 +388,9 @@ save_cb :: proc "c" (userdata: rawptr, filelist: [^]cstring, filter: c.int) {
 SaveFileDialog :: proc(default_name: string) {
 	delete(save_name)
 	save_name = strings.clone_to_cstring(default_name)
-	when #config(WN_RELOAD, false) {
+	when ODIN_OS == .OpenBSD {
+		confined_dialog(.Save, save_name, save_cb)
+	} else when #config(WN_RELOAD, false) {
 		wn_dev_dialog(.Save, save_cb, save_name)
 	} else {
 		sdl.ShowSaveFileDialog(save_cb, nil, state.window, nil, 0, save_name)

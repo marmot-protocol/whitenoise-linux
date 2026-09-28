@@ -10,36 +10,22 @@
 #include <string.h>
 #ifdef __OpenBSD__
 #include <errno.h>
-#include <limits.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #endif
 
 #ifdef __OpenBSD__
-static int pdf_font_allow(FcConfig *config) {
-    for (int kind = FcSetSystem; kind <= FcSetApplication; ++kind) {
-        FcFontSet *fonts = FcConfigGetFonts(config, (FcSetName)kind);
-        if (!fonts) {
-            continue;
-        }
-        for (int i = 0; i < fonts->nfont; ++i) {
-            FcChar8 *file = NULL;
-            char resolved[PATH_MAX];
-            if (FcPatternGetString(fonts->fonts[i], FC_FILE, 0, &file) != FcResultMatch ||
-                !realpath((const char *)file, resolved) || unveil(resolved, "r")) {
-                return 0;
-            }
-        }
+static int pdf_font_allow(const char *directory) {
+    if (unveil(directory, "r")) {
+        return 0;
     }
-    /* Poppler's CMaps, encodings and Unicode maps, not arbitrary system data. */
-    const char *resources[] = {"/usr/local/share/poppler", "/usr/share/poppler"};
+    /* Per-file grants exceed OpenBSD's unveil name limit on a stock install.
+       Keep directory grants to standard font trees and Poppler resources,
+       never arbitrary directories discovered through Fontconfig. */
+    const char *resources[] = {"/usr/X11R6/lib/X11/fonts", "/usr/local/share/fonts",
+                               "/usr/share/fonts", "/usr/local/share/poppler",
+                               "/usr/share/poppler"};
     for (size_t i = 0; i < sizeof(resources) / sizeof(resources[0]); ++i) {
-        struct stat st;
-        if (stat(resources[i], &st)) {
-            if (errno != ENOENT) {
-                return 0;
-            }
-        } else if (!S_ISDIR(st.st_mode) || unveil(resources[i], "r")) {
+        if (unveil(resources[i], "r") && errno != ENOENT) {
             return 0;
         }
     }
@@ -63,7 +49,7 @@ static FcConfig *pdf_fonts(const char *directory) {
         return NULL;
     }
 #ifdef __OpenBSD__
-    if (!pdf_font_allow(config)) {
+    if (!pdf_font_allow(directory)) {
         FcConfigDestroy(config);
         return NULL;
     }

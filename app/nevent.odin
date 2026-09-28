@@ -308,7 +308,7 @@ nev_split_images :: proc(blocks: ^[dynamic]Md_Block_Ui) {
 nev_img_worker :: proc(url: string) {
 	context.allocator = reload_allocator()
 	defer frame_wake()
-	state, data, stderr, err := os.process_exec(
+	state, data, stderr, err := tool_exec(
 		{
 			command = {
 				curl_path(),

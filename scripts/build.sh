@@ -41,7 +41,7 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-MDK_PATCHES=("$HERE/patches/mdk-app-components.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-windows-port.patch")
+MDK_PATCHES=("$HERE/patches/mdk-app-components.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-windows-port.patch" "$HERE/patches/mdk-openbsd-unveil.patch" "$HERE/patches/mdk-openbsd-memory.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
@@ -81,6 +81,38 @@ if [ "${1:-}" != sources ] && { [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "
   env "${RUST_ENV[@]}" CC="${CC:-clang}" OTLP_EXPORT=1 "$MDK/crates/marmot-c/c-bindings.sh"
   touch "$BUNDLE/.otlp-export"
   printf '%s\n' "$PATCHES_HASH" > "$BUNDLE/.mdk-patches"
+fi
+
+# OpenBSD pledge cannot permit SysV shared memory. Link the XPutImage-capable
+# SDL statically: OpenBSD's loader does not expand $ORIGIN library paths.
+# Disable dlopen metadata: OpenBSD skips PT_NOTE segments over 1024 bytes,
+# losing the required OpenBSD note when SDL's dependency notes share it.
+if [ "$(uname -s)" = OpenBSD ] && [ "${1:-}" != sources ]; then
+  SDL="$HERE/vendor/sdl"
+  SDL_PIN="$(pin sdl)"
+  if [ ! -d "$SDL" ]; then
+    git clone --filter=blob:none https://github.com/libsdl-org/SDL.git "$SDL"
+  fi
+  if [ "$(git -C "$SDL" rev-parse HEAD)" != "$SDL_PIN" ]; then
+    git -C "$SDL" fetch origin "$SDL_PIN"
+    git -C "$SDL" checkout --detach "$SDL_PIN"
+  fi
+  SDL_STAMP="$SDL_PIN NO_SHARED_MEMORY static no-dlopen-notes"
+  if [ ! -f "$HERE/build/sdl/lib/libSDL3.a" ] || [ "$(cat "$HERE/build/sdl/stamp" 2>/dev/null || true)" != "$SDL_STAMP" ]; then
+    cmake -S "$SDL" -B "$HERE/build/sdl-cmake" -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$HERE/build/sdl" \
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+      -DCMAKE_C_FLAGS="${CFLAGS:-} -DNO_SHARED_MEMORY" \
+      -DSDL_DLOPEN_NOTES=OFF \
+      -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST_LIBRARY=OFF
+    cmake --build "$HERE/build/sdl-cmake" -j"$(getconf NPROCESSORS_ONLN)"
+    cmake --install "$HERE/build/sdl-cmake"
+    printf '%s\n' "$SDL_STAMP" > "$HERE/build/sdl/stamp"
+  fi
+  cc -O2 -fPIC -pthread -c "$HERE/app/main_sandbox.c" -o "$HERE/build/main_sandbox.o"
+  cc -O2 -fPIC -pthread -c "$HERE/app/tool_broker.c" -o "$HERE/build/tool_broker.o"
+  cc -O2 -fPIC -c "$HERE/app/helper_broker.c" -o "$HERE/build/helper_broker.o"
+  ar rcs "$HERE/build/libwnsandbox.a" "$HERE/build/main_sandbox.o" "$HERE/build/tool_broker.o" "$HERE/build/helper_broker.o"
 fi
 
 CLAY="$HERE/vendor/clay"
@@ -202,7 +234,7 @@ if [ ! -f "$HERE/build/microtex/lib/libmicrotex.a" ] || [ "$(cat "$HERE/build/mi
   rm -f "$HERE/build/libwnmath.a"
 fi
 mkdir -p "$HERE/build/math"
-if [ ! -f "$HERE/build/libwnmath.a" ] || [ "$HERE/app/math_shim.cpp" -nt "$HERE/build/libwnmath.a" ] || [ "${MICROTEX_PATCHES[0]}" -nt "$HERE/build/libwnmath.a" ]; then
+if [ ! -f "$HERE/build/libwnmath.a" ] || [ "$HERE/app/math_shim.cpp" -nt "$HERE/build/libwnmath.a" ] || [ "$HERE/app/decoder_ipc.h" -nt "$HERE/build/libwnmath.a" ] || [ "$HERE/app/decoder_limits.h" -nt "$HERE/build/libwnmath.a" ] || [ "${MICROTEX_PATCHES[0]}" -nt "$HERE/build/libwnmath.a" ]; then
   c++ -std=c++17 -c -O2 -fPIC -Wall -Wextra -DHAVE_CWRAPPER -isystem "$MICROTEX/lib" -isystem "$HERE/build/microtex/lib" \
     $(pkg-config --cflags cairo) "$HERE/app/math_shim.cpp" -o "$HERE/build/math/math_shim.o"
   rm -f "$HERE/build/libwnmath.a"
@@ -413,7 +445,41 @@ if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendo
   ODIN_ROOT_ARG=(ODIN_ROOT="$OVERLAY")
 fi
 
+APP_LINK_ARGS=()
+if [ "$(uname -s)" = OpenBSD ]; then
+  # Point only this compiler overlay at the private SDL, never the system copy.
+  if [ -L "$OVERLAY/vendor/sdl3" ] || [ ! -d "$OVERLAY/vendor/sdl3" ]; then
+    rm -rf "$OVERLAY/vendor/sdl3"
+    cp -R "$SYS_ODIN/vendor/sdl3" "$OVERLAY/vendor/sdl3"
+  fi
+  printf 'package sdl3\n@(export) foreign import lib {"../../../sdl/lib/libSDL3.a", "system:pthread", "system:m", "system:usbhid"}\n' \
+    > "$OVERLAY/vendor/sdl3/sdl3__foreign.odin"
+  # OpenBSD has no O_EXEC: Odin's pre-open would require read permission,
+  # allowing writable hardlinks to helpers. Probe execute permission instead.
+  if [ -L "$OVERLAY/core" ]; then
+    rm "$OVERLAY/core"
+    mkdir -p "$OVERLAY/core"
+    for entry in "$SYS_ODIN/core"/*; do
+      if [ "$(basename "$entry")" = os ]; then
+        cp -R "$entry" "$OVERLAY/core/"
+      else
+        ln -s "$entry" "$OVERLAY/core/"
+      fi
+    done
+  fi
+  EXEC_PATCH="$HERE/patches/odin-openbsd-exec.patch"
+  if git -C "$HERE" apply --directory=build/odin-root --check "$EXEC_PATCH" 2>/dev/null; then
+    git -C "$HERE" apply --directory=build/odin-root "$EXEC_PATCH"
+  elif ! git -C "$HERE" apply --directory=build/odin-root --reverse --check "$EXEC_PATCH" 2>/dev/null; then
+    echo "==> Odin executable probe patch conflicts with the installed compiler" >&2
+    exit 1
+  fi
+  # Keep bundled OpenSSL/SQLCipher symbols private: system libcurl uses LibreSSL.
+  APP_LINK_ARGS=('-extra-linker-flags:-Wl,--wrap=execve,--exclude-libs=libmarmot_c.a')
+fi
+
 env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/model-decoder" -o:speed -out:"$HERE/build/wn-mesh"
+env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/math-decoder" -o:speed -out:"$HERE/build/wn-math"
 
 # The dev host builds a reloadable library after staging these same inputs.
 if [ "${1:-}" = stage ]; then
@@ -427,7 +493,7 @@ rm -f "$HERE/build/smoke" "$HERE/build/app"
 odin build "$HERE/tests/smoke" -out:"$HERE/build/smoke"
 # -o:speed: the STL orbit path needs it (200k tris: 20ms/step at
 # -o:minimal vs 3.4ms; 60fps budget is 16.6ms).
-env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" -o:speed -out:"$HERE/build/app"
+env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" -o:speed "${APP_LINK_ARGS[@]}" -out:"$HERE/build/app"
 # Unused imports: fatal in CI, a warning locally so a work-in-progress
 # import does not block a build.
 if ! env "${ODIN_ROOT_ARG[@]}" "$HERE/scripts/vet-imports.sh"; then
@@ -456,6 +522,9 @@ if [ "${1:-}" = test ]; then
   cc -O2 -Wall -Wextra "$HERE/tests/model-transport-test.c" "$HERE/build/libwndecoder.a" \
     -o "$HERE/build/model-transport-test"
   "$HERE/build/model-transport-test" --test
+  cc -O2 -Wall -Wextra "$HERE/tests/math-helper-test.c" "$HERE/build/libwndecoder.a" \
+    -o "$HERE/build/math-helper-test"
+  "$HERE/build/math-helper-test" "$HERE/build/wn-math"
   cc -std=c11 -I"$HERE/vendor/mdk/crates/marmot-c/include" "$HERE/tests/event-layout-test.c" -o "$HERE/build/event-layout-test"
   "$HERE/build/event-layout-test"
   cc -O2 -I"$HERE/build/clay" "$HERE/tests/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"

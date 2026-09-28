@@ -205,6 +205,9 @@ web_close :: proc() {
 @(private = "file")
 web_viewer_path :: proc() -> string {
 	path := helper_path("wn-webview")
+	// The OpenBSD startup cache already checked existence; helpers are
+	// execute-only after unveil so a later stat would incorrectly hide them.
+	when ODIN_OS == .OpenBSD {return path}
 	return os.is_file(path) ? path : ""
 }
 

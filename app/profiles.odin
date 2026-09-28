@@ -575,7 +575,7 @@ pic_load :: proc(url: string) -> []u8 {
 			}
 		}
 	}
-	state, data, stderr, err := os.process_exec(
+	state, data, stderr, err := tool_exec(
 		{command = {curl_path(), "-sfL", "--max-time", "15", "--", url}},
 		context.allocator,
 	)

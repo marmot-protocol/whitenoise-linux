@@ -1,19 +1,13 @@
-// Math blocks: TeX source to straight-alpha RGBA pixels, for app/math.odin.
-//
-//   math_shim_render
-//     microtex_parseRender -> Render (box tree)
-//     microtex_getDrawingData -> byte stream of draw commands
-//     replay -> cairo ARGB32 surface -> RGBA, unpremultiplied
-//
-// MicroTeX throws C++ exceptions on malformed input ("\over\over" throws
-// ex_parse). The source comes from untrusted peers, so every call into
-// the engine sits inside try/catch and a failure returns nullptr, which
-// the app answers by drawing the TeX source instead.
-//
-// \newcommand, \definecolor, and a few switches (\everymath,
-// \breakEverywhere, ...) write process-wide state. reset_state() puts it
-// back after every render, so one peer's formula can't change the next;
-// patches/microtex-isolation.patch adds the resets it needs.
+// One-shot math helper: untrusted TeX to straight-alpha RGBA pixels.
+// MicroTeX's process-wide macros, colors and switches die with the process;
+// no parser state or parser code is shared with the UI.
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef NOGDI
+#define NOGDI
+#endif
+#include "decoder_limits.h"
 #include <cairo.h>
 
 #include <algorithm>
@@ -21,13 +15,10 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <string>
 #include <vector>
 
-#include "atom/atom_basic.h"
-#include "atom/atom_row.h"
-#include "macro/macro.h"
 #include "microtex.h"
+#include "utils/utils.h"
 #include "wrapper/cwrapper.h"
 
 namespace {
@@ -304,44 +295,24 @@ bool replay(cairo_t *cr, const uint8_t *data, uint32_t fg) {
     return in.ok;
 }
 
-// The math font every render starts from; \mathversion can change it.
-std::string math_font;
-
-void reset_state() {
-    microtex::NewCommandMacro::_reset_();
-    microtex::ColorAtom::_reset_();
-    microtex::RowAtom::_breakEverywhere = false;
-    microtex::MicroTeX::overrideTexStyle(false);
-    microtex::MicroTeX::setDefaultMathFont(math_font);
-}
-
-} // namespace
-
-extern "C" {
-
-// Load the .clm2 math font. `font` must outlive every render. Once per
-// process: MicroTeX has no working teardown (release frees its static
-// macro table for good), so the engine lives until exit.
-bool math_shim_init(const uint8_t *font, unsigned long len) {
+// Load the embedded .clm2 font after confinement. Its bytes outlive the
+// single render; MicroTeX and its process-wide tables live until exit.
+bool init_font(const uint8_t *font, unsigned long len) {
     try {
         microtex_registerCallbacks(no_layout, no_bounds, no_release, no_cached_path);
         FontMetaPtr meta = microtex_init(len, font);
-        math_font = microtex_getFontName(meta);
+        microtex::MicroTeX::setDefaultMathFont(microtex_getFontName(meta));
         microtex_releaseFontMeta(meta);
         microtex_setRenderGlyphUsePath(true);
-        // The first reset records the pristine state later ones restore.
-        reset_state();
         return microtex_isInited();
     } catch (...) {
         return false;
     }
 }
 
-// Typeset `tex` at `size` px in `argb`. Returns w*h RGBA pixels (free with
-// math_shim_free), or nullptr when the source doesn't parse, renders
-// empty, or exceeds `max_side` on either axis or `max_area` pixels.
-uint8_t *math_shim_render(const char *tex, float size, uint32_t argb, int max_side, long max_area,
-                          int *w, int *h) {
+// Typeset one display-math expression, bounded before drawing allocation.
+uint8_t *render_math(const char *tex, float size, uint32_t argb, uint32_t max_side,
+                     uint32_t max_bytes, int *w, int *h) {
     RenderPtr render = nullptr;
     DrawingData data = nullptr;
     cairo_surface_t *surface = nullptr;
@@ -352,10 +323,12 @@ uint8_t *math_shim_render(const char *tex, float size, uint32_t argb, int max_si
         render = microtex_parseRender(tex, 0, size, size / 3, argb, false, true, 0);
         // Antialiasing and italic overhang spill a little past the box.
         int pad = static_cast<int>(size / 8) + 1;
-        *w = microtex_getRenderWidth(render) + 2 * pad;
-        *h = microtex_getRenderHeight(render) + 2 * pad;
-        if (*w > 2 * pad && *h > 2 * pad && *w <= max_side && *h <= max_side &&
-            static_cast<long>(*w) * *h <= max_area) {
+        int64_t width = static_cast<int64_t>(microtex_getRenderWidth(render)) + 2 * pad;
+        int64_t height = static_cast<int64_t>(microtex_getRenderHeight(render)) + 2 * pad;
+        if (width > 2 * pad && height > 2 * pad && width <= max_side && height <= max_side &&
+            static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * 4 <= max_bytes) {
+            *w = static_cast<int>(width);
+            *h = static_cast<int>(height);
             data = microtex_getDrawingData(render, pad, pad);
         }
     } catch (...) {
@@ -365,7 +338,6 @@ uint8_t *math_shim_render(const char *tex, float size, uint32_t argb, int max_si
         if (render != nullptr) {
             microtex_deleteRender(render);
         }
-        reset_state();
     } catch (...) {
     }
     if (data == nullptr) {
@@ -401,8 +373,69 @@ uint8_t *math_shim_render(const char *tex, float size, uint32_t argb, int max_si
     return out;
 }
 
-void math_shim_free(uint8_t *pixels) {
+int run(const uint8_t *font, unsigned long length) {
+    if (!wn_decoder_limits(WN_DECODER_ONESHOT)) {
+        return 1;
+    }
+#ifdef __OpenBSD__
+    // Character classification lazily opens OpenBSD's UTF-8 locale.
+    // Initialize the fixed locale before dropping every filesystem path.
+    (void)microtex::defaultLocale();
+    if (unveil(nullptr, nullptr) || pledge("stdio", nullptr)) {
+        return 1;
+    }
+#endif
+    // No input is read until resource and filesystem confinement are locked.
+    uint8_t header[24];
+    if (fread(header, 1, sizeof(header), stdin) != sizeof(header) ||
+        std::memcmp(header, "MAI1", 4)) {
+        return 1;
+    }
+    uint32_t size = wn_image_u32(header + 4);
+    uint32_t font_bits = wn_image_u32(header + 8);
+    float font_size;
+    static_assert(sizeof(font_size) == sizeof(font_bits), "32-bit wire float required");
+    std::memcpy(&font_size, &font_bits, sizeof(font_size));
+    uint32_t argb = wn_image_u32(header + 12);
+    uint32_t max_side = wn_image_u32(header + 16);
+    uint32_t max_bytes = wn_image_u32(header + 20);
+    if (!size || size > WN_MATH_INPUT_MAX || !std::isfinite(font_size) || font_size <= 0 ||
+        font_size > WN_MATH_DIM_MAX || !max_side || max_side > WN_MATH_DIM_MAX || !max_bytes ||
+        max_bytes > WN_MATH_OUTPUT_MAX) {
+        return 1;
+    }
+    char source[WN_MATH_INPUT_MAX + 1];
+    if (fread(source, 1, size, stdin) != size || fgetc(stdin) != EOF || ferror(stdin) ||
+        std::memchr(source, '\0', size)) {
+        return 1;
+    }
+    source[size] = '\0';
+    if (!font || !length || !init_font(font, length)) {
+        return 1;
+    }
+    int width = 0, height = 0;
+    uint8_t *pixels = render_math(source, font_size, argb, max_side, max_bytes, &width, &height);
+    if (!pixels) {
+        return 1;
+    }
+    uint32_t bytes = static_cast<uint32_t>(static_cast<uint64_t>(width) * height * 4);
+    uint8_t reply[16];
+    std::memcpy(reply, "MAO1", 4);
+    wn_image_put(reply + 4, static_cast<uint32_t>(width));
+    wn_image_put(reply + 8, static_cast<uint32_t>(height));
+    wn_image_put(reply + 12, bytes);
+    bool sent = fwrite(reply, 1, sizeof(reply), stdout) == sizeof(reply) &&
+                fwrite(pixels, 1, bytes, stdout) == bytes && !fflush(stdout);
     std::free(pixels);
+    return sent ? 0 : 1;
 }
 
-} // extern "C"
+} // namespace
+
+extern "C" int wn_math_run(const unsigned char *font, unsigned long length) {
+    try {
+        return run(font, length);
+    } catch (...) {
+        return 1;
+    }
+}

@@ -37,8 +37,10 @@ output is already present, so only the first run is slow:
 - `vendor/microtex` at its pinned `openmath` commit with
   `patches/microtex-isolation.patch`, `patches/microtex-libcxx-includes.patch`
   and `patches/microtex-locale-fallback.patch` applied, built by CMake into
-  `build/microtex/lib/libmicrotex.a`; `app/math_shim.cpp` (the `$$` math
-  block renderer) is archived into `build/libwnmath.a`.
+  `build/microtex/lib/libmicrotex.a`; `app/math_shim.cpp` is archived into
+  `build/libwnmath.a` and linked only into `build/wn-math`. The helper embeds
+  its font and exchanges bounded source/RGBA messages with `app/math.odin`.
+  The UI does not link MicroTeX.
 - An `ODIN_ROOT` overlay at `build/odin-root`, but **only** when the installed
   Odin is missing `vendor/stb/lib/stb_truetype.a` or `vendor/cgltf/lib/cgltf.a`
   (the Linux release tarball is; `sdlrl` needs stb truetype and image, the
@@ -46,10 +48,34 @@ output is already present, so only the first run is slow:
   real install and swaps in writable `vendor/stb` and `vendor/cgltf` copies it
   can run `build_stb.sh` and `build_cgltf.sh` in. On OpenBSD it also points
   those bindings at the built archives, which they name for Linux only.
+  OpenBSD also builds the pinned SDL statically with `NO_SHARED_MEMORY`,
+  points the SDL bindings at that archive, and patches Odin's executable
+  probe to use `access(X_OK)` rather than a read-opening `O_EXEC` substitute.
 
 `DEPS_PIN` holds every third-party revision as `<name>-commit = <sha>`, one
 per line. Bumping one is a one-line edit; `just build` re-checks out and
 rebuilds on the next run.
+
+OpenBSD runs only from a root-owned, non-group/other-writable installation
+with protected ancestry. `scripts/openbsd-build.sh` stages one as root, then
+runs capability tests and dummy/Xvfb package smokes as the invoking user.
+For local runs, install with
+`doas bash scripts/install-tree.sh /usr/local/whitenoise whitenoise` and run
+`/usr/local/whitenoise/bin/whitenoise` as your normal user.
+Direct unprivileged `build/app` runs are rejected.
+
+The OpenBSD main process keeps networking, desktop access and the data,
+settings and Downloads roots, but no `exec` promise. Start both brokers
+before SDL or workers: `helper_broker.c` freezes helper paths/arguments and
+`tool_broker.c` confines curl, notifications and dialogs. Link OpenBSD app
+and package-private tests with `--wrap=execve` and
+`--exclude-libs=libmarmot_c.a`; the latter keeps bundled OpenSSL symbols out of
+system LibreSSL callers. Stop workers and SDL before the brokers, then remove
+the private runtime home through `wn_main_sandbox_cleanup()`.
+Cache kernel-version metadata before confinement too: Odin's BSD version
+query uses `KERN_OSREVISION`, which pledge forbids.
+`wn-math` initializes its fixed UTF-8 locale before locking an empty unveil
+tree. Keep untrusted TeX parsing after that lock.
 
 Odin has no incremental compilation, so a full app build is the unit of work
 (~3s at `-o:minimal`, which is what `just dev` uses; release builds use

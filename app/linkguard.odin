@@ -5,6 +5,7 @@
 // chat came from someone else. "Always open links to this site" adds
 // the host to the trusted list Settings → Advanced manages, and later
 // links to that exact host open without the stop.
+// OpenBSD instead offers Copy link; it never hands links to another program.
 package main
 
 import "core:strings"
@@ -66,9 +67,11 @@ trusted_site :: proc(ui: ^Ui_State, host: string) -> bool {
 
 // Trusted hosts open immediately; everything else asks first.
 open_link :: proc(ui: ^Ui_State, url: string) {
-	if trusted_site(ui, url_host(url)) {
-		spawn_link(ui, url)
-		return
+	when ODIN_OS != .OpenBSD {
+		if trusted_site(ui, url_host(url)) {
+			spawn_link(ui, url)
+			return
+		}
 	}
 	delete(ui.link_url)
 	ui.link_url = strings.clone(url)
@@ -77,8 +80,21 @@ open_link :: proc(ui: ^Ui_State, url: string) {
 }
 
 spawn_link :: proc(ui: ^Ui_State, url: string) {
-	open_external(url)
-	toast(ui, tr("Opening in your browser"))
+	when ODIN_OS == .OpenBSD {
+		copy_text(ui, url)
+	} else {
+		open_external(url)
+		toast(ui, tr("Opening in your browser"))
+	}
+}
+
+@(private)
+external_link_action :: proc() -> string {
+	when ODIN_OS == .OpenBSD {
+		return tr("Copy link")
+	} else {
+		return tr("Open in browser")
+	}
 }
 
 // Click on a link run in a body.
@@ -92,6 +108,13 @@ handle_link_click :: proc(ui: ^Ui_State) {
 
 link_modal :: proc(ui: ^Ui_State) {
 	host := url_host(ui.link_url)
+	title, explanation, action :=
+		tr("Open this link?"), tr("This leaves White Noise and opens in your browser."), tr("Open")
+	when ODIN_OS == .OpenBSD {
+		title = tr("Copy link")
+		explanation = tr("Copy this link and open it in your browser.")
+		action = tr("Copy link")
+	}
 	if clay.UI(clay.ID("LinkModal"))(
 	{
 		layout = {
@@ -121,15 +144,9 @@ link_modal :: proc(ui: ^Ui_State) {
 		},
 		) {
 			clay.Text(ICON_GLOBE, {fontId = FONT_ICON, fontSize = 15, textColor = ACCENT})
-			clay.Text(
-				tr("Open this link?"),
-				{fontId = FONT_TITLE, fontSize = 18, textColor = TEXT},
-			)
+			clay.Text(title, {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
 		}
-		clay.Text(
-			tr("This leaves White Noise and opens in your browser."),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-		)
+		clay.Text(explanation, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 
 		eyebrow("SITE")
 		if clay.UI(clay.ID("LinkCard"))(
@@ -163,20 +180,22 @@ link_modal :: proc(ui: ^Ui_State) {
 			mono_lines(ui.link_url, inner, TEXT_LO)
 		}
 
-		if clay.UI(clay.ID("LinkTrustRow"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 10,
-				childAlignment = {y = .Center},
+		when ODIN_OS != .OpenBSD {
+			if clay.UI(clay.ID("LinkTrustRow"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 10,
+					childAlignment = {y = .Center},
+				},
 			},
-		},
-		) {
-			toggle("LinkTrust", ui.link_trust)
-			clay.Text(
-				tr("Always open links to this site"),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-			)
+			) {
+				toggle("LinkTrust", ui.link_trust)
+				clay.Text(
+					tr("Always open links to this site"),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				)
+			}
 		}
 
 		if clay.UI(clay.ID("LinkActions"))(
@@ -200,7 +219,7 @@ link_modal :: proc(ui: ^Ui_State) {
 				cornerRadius = rr(9),
 			},
 			) {
-				clay.Text(tr("Open"), {fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT})
+				clay.Text(action, {fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT})
 			}
 		}
 	}
@@ -214,14 +233,18 @@ handle_link_modal :: proc(ui: ^Ui_State) {
 	if !mouse_released() && !rl.IsKeyPressed(.ENTER) {
 		return
 	}
-	if clay.PointerOver(clay.ID("LinkTrust")) {
-		ui.link_trust = !ui.link_trust
-		return
+	when ODIN_OS != .OpenBSD {
+		if clay.PointerOver(clay.ID("LinkTrust")) {
+			ui.link_trust = !ui.link_trust
+			return
+		}
 	}
 	if clicked("LinkGo") || rl.IsKeyPressed(.ENTER) {
-		if ui.link_trust {
-			append(&ui.prefs.trusted_sites, strings.clone(url_host(ui.link_url)))
-			save_settings(ui)
+		when ODIN_OS != .OpenBSD {
+			if ui.link_trust {
+				append(&ui.prefs.trusted_sites, strings.clone(url_host(ui.link_url)))
+				save_settings(ui)
+			}
 		}
 		spawn_link(ui, ui.link_url)
 		ui.link_open = false

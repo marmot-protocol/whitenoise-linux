@@ -32,8 +32,19 @@
 #endif
 #endif
 #include "decoder_limits.h"
+#ifdef __OpenBSD__
+/* The standalone transport tests do not link the application's launcher. */
+extern int wn_helper_execve(const char *, char *const[], char *const[]) __attribute__((weak));
+#endif
 
-enum decoder_kind { DECODER_IMAGE, DECODER_ARCHIVE, DECODER_PDF, DECODER_MESH, DECODER_MODEL };
+enum decoder_kind {
+    DECODER_IMAGE,
+    DECODER_ARCHIVE,
+    DECODER_PDF,
+    DECODER_MESH,
+    DECODER_MODEL,
+    DECODER_MATH
+};
 
 struct image_reply {
     unsigned char header[WN_IMAGE_HEADER];
@@ -111,7 +122,8 @@ static int decoder_header(struct image_reply *reply) {
         reply->height = wn_image_u32(header + 8);
         uint64_t expected = (uint64_t)reply->width * reply->height * 4;
         int pdf = reply->kind == DECODER_PDF;
-        if (memcmp(header, pdf ? "PDO1" : "WNO1", 4) || !reply->width || !reply->height ||
+        const char *magic = pdf ? "PDO1" : reply->kind == DECODER_MATH ? "MAO1" : "WNO1";
+        if (memcmp(header, magic, 4) || !reply->width || !reply->height ||
             reply->width > reply->dimension ||
             reply->height > (pdf ? WN_PDF_DIM_MAX : reply->dimension) ||
             (pdf && reply->target_height && reply->height > reply->target_height) ||
@@ -534,6 +546,12 @@ static pid_t image_spawn(const char *helper, const char *argument, int socket, i
         _exit(1);
     }
 #ifdef __OpenBSD__
+    if (wn_helper_execve) {
+        wn_helper_execve(helper, args, environment);
+        if (errno != ENOSYS) {
+            _exit(1);
+        }
+    }
     closefrom(STDERR_FILENO + 1);
 #elif defined(__linux__)
 #ifdef SYS_close_range
@@ -770,6 +788,45 @@ unsigned char *wn_image_decode(const char *helper, const unsigned char *data, in
     wn_image_put(header + 12, max_bytes);
     struct image_reply reply = {0};
     reply.dimension = (uint32_t)max_dimension;
+    reply.cap = max_bytes;
+    if (!image_run(helper, NULL, data, size, header, sizeof(header), &reply)) {
+        free(reply.pixels);
+        return NULL;
+    }
+    *width = (int)reply.width;
+    *height = (int)reply.height;
+    return reply.pixels;
+}
+
+unsigned char *wn_math_render(const char *helper, const unsigned char *data, int size,
+                              float font_size, unsigned int argb, unsigned int max_side,
+                              unsigned int max_bytes, int *width, int *height) {
+    if (width) {
+        *width = 0;
+    }
+    if (height) {
+        *height = 0;
+    }
+    if (!width || !height || !helper || !*helper || !data || size <= 0 ||
+        (unsigned int)size > WN_MATH_INPUT_MAX ||
+        !(font_size > 0 && font_size <= WN_MATH_DIM_MAX) || !max_side ||
+        max_side > WN_MATH_DIM_MAX || !max_bytes || max_bytes > WN_MATH_OUTPUT_MAX ||
+        memchr(data, 0, (size_t)size)) {
+        return NULL;
+    }
+    uint32_t font_bits;
+    _Static_assert(sizeof(font_size) == sizeof(font_bits), "math wire requires 32-bit float");
+    memcpy(&font_bits, &font_size, sizeof(font_bits));
+    unsigned char header[WN_MATH_REQUEST_HEADER];
+    memcpy(header, "MAI1", 4);
+    wn_image_put(header + 4, (uint32_t)size);
+    wn_image_put(header + 8, font_bits);
+    wn_image_put(header + 12, argb);
+    wn_image_put(header + 16, max_side);
+    wn_image_put(header + 20, max_bytes);
+    struct image_reply reply = {0};
+    reply.kind = DECODER_MATH;
+    reply.dimension = max_side;
     reply.cap = max_bytes;
     if (!image_run(helper, NULL, data, size, header, sizeof(header), &reply)) {
         free(reply.pixels);
