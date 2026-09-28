@@ -46,6 +46,7 @@ vault_pw_wipe :: proc(ui: ^Ui_State) {
 		mem.zero_slice(field[:])
 		clear(&field)
 	}
+	ui.vault_pw_check = {}
 }
 
 // True while one of the three boxes is the buffer being edited, so
@@ -72,6 +73,13 @@ vault_pw_apply :: proc(ui: ^Ui_State) {
 	}
 	if len(fresh) == 0 {
 		ui.vault_pw_err = tr("Pick a new password first.")
+		ui.vault_pw_focus = .New
+		return
+	}
+	if password_bits(fresh, &ui.vault_pw_check) < PASSWORD_MIN_BITS {
+		ui.vault_pw_err = tr(
+			"This password is too easy to guess. Use unrelated words or a password-manager password.",
+		)
 		ui.vault_pw_focus = .New
 		return
 	}
@@ -192,6 +200,8 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			ui.vault_pw_focus == .New,
 			"Your new password",
 		)
+		bits := password_bits(string(ui.vault_pw[.New][:]), &ui.vault_pw_check)
+		password_hint(bits)
 		eyebrow("CONFIRM NEW PASSWORD")
 		gate_field(
 			ui,
@@ -224,13 +234,17 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("VaultPwGo"))(
 			{
 				layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
-				backgroundColor = ACCENT,
+				backgroundColor = bits >= PASSWORD_MIN_BITS ? ACCENT : ROW_BG,
 				cornerRadius = rr(9),
 			},
 			) {
 				clay.Text(
 					tr("Change password"),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT},
+					{
+						fontId = FONT_TITLE,
+						fontSize = 13,
+						textColor = bits >= PASSWORD_MIN_BITS ? ON_ACCENT : TEXT_LO,
+					},
 				)
 			}
 		}

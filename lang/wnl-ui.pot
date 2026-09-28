@@ -1102,6 +1102,10 @@ msgstr ""
 msgid "Enter your password to unlock this device's keys."
 msgstr ""
 
+#, c-format
+msgid "Estimated strength: %d bits. Required: %d."
+msgstr ""
+
 msgid "Event fetch relays"
 msgstr ""
 
@@ -2641,6 +2645,9 @@ msgstr ""
 msgid "This message was deleted"
 msgstr ""
 
+msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
+msgstr ""
+
 msgid "This session"
 msgstr ""
 
@@ -2756,6 +2763,9 @@ msgid "Use another key"
 msgstr ""
 
 msgid "Use this theme"
+msgstr ""
+
+msgid "Use unrelated words or a password-manager password."
 msgstr ""
 
 msgid "Used for generated user and group avatars."

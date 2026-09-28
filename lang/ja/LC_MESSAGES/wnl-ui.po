@@ -1168,6 +1168,10 @@ msgstr ""
 msgid "Enter your password to unlock this device's keys."
 msgstr "パスワードを入力してロックを解除"
 
+#, c-format
+msgid "Estimated strength: %d bits. Required: %d."
+msgstr "推定強度：%dビット。必要な強度：%dビット。"
+
 msgid "Event fetch relays"
 msgstr "イベント取得リレー"
 
@@ -2794,6 +2798,9 @@ msgstr "既定のブラウザで{}を開きます。"
 msgid "This message was deleted"
 msgstr "画像が選択されていません。"
 
+msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
+msgstr "このパスワードは推測されやすいものです。関連のない単語を組み合わせるか、パスワードマネージャーで生成したパスワードを使用してください。"
+
 msgid "This session"
 msgstr "現在のセッション"
 
@@ -2912,6 +2919,9 @@ msgstr "別の鍵を使う"
 #, fuzzy
 msgid "Use this theme"
 msgstr "次の画像"
+
+msgid "Use unrelated words or a password-manager password."
+msgstr "関連のない単語を組み合わせるか、パスワードマネージャーで生成したパスワードを使用してください。"
 
 msgid "Used for generated user and group avatars."
 msgstr "ユーザーやグループの自動生成アバターに使用します。"

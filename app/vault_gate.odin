@@ -160,6 +160,8 @@ gate_confirm: bool // the confirm box has focus
 gate_err: string
 @(private = "file")
 gate_reset_armed: bool
+@(private = "file")
+gate_check: Password_Check
 
 @(private = "file")
 gate_close :: proc() {
@@ -169,6 +171,7 @@ gate_close :: proc() {
 	delete(gate_pw2)
 	gate_pw = nil
 	gate_pw2 = nil
+	gate_check = {}
 }
 
 // Unlock an existing vault, or create one on first run. Runs its own
@@ -259,6 +262,12 @@ gate_input :: proc(ui: ^Ui_State) -> bool {
 	password := string(gate_pw[:])
 	if len(password) == 0 {
 		gate_err = tr("Pick a password first.")
+		return false
+	}
+	if creating && password_bits(password, &gate_check) < PASSWORD_MIN_BITS {
+		gate_err = tr(
+			"This password is too easy to guess. Use unrelated words or a password-manager password.",
+		)
 		return false
 	}
 
@@ -363,8 +372,13 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				layout = {
 					sizing = {width = clay.SizingFixed(fit_w(660))},
 					layoutDirection = .TopToBottom,
-					padding = clay.PaddingAll(single_pane() ? 20 : 50),
-					childGap = 14,
+					padding = {
+						left = single_pane() ? 20 : 50,
+						right = single_pane() ? 20 : 50,
+						top = single_pane() ? 20 : creating ? 24 : 50,
+						bottom = single_pane() ? 20 : creating ? 24 : 50,
+					},
+					childGap = creating ? 8 : 14,
 					childAlignment = {x = .Center},
 				},
 				backgroundColor = CARD,
@@ -386,6 +400,7 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				eyebrow("PASSWORD")
 				gate_field(ui, "GatePwBox", &gate_pw, !gate_confirm || !creating, "Your password")
 				if creating {
+					password_hint(password_bits(string(gate_pw[:]), &gate_check))
 					eyebrow("CONFIRM PASSWORD")
 					gate_field(ui, "GatePw2Box", &gate_pw2, gate_confirm, "Your password")
 				}
@@ -393,7 +408,15 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				if clay.UI(clay.ID("GateGapB"))(
 				{layout = {sizing = {height = clay.SizingFixed(6)}}},
 				) {}
-				login_big_button("GateGo", creating ? tr("Continue") : tr("Unlock"), true)
+				ready :=
+					!creating ||
+					password_bits(string(gate_pw[:]), &gate_check) >= PASSWORD_MIN_BITS
+				login_big_button(
+					"GateGo",
+					creating ? tr("Continue") : tr("Unlock"),
+					true,
+					ready ? .Enabled : .Disabled,
+				)
 				if !creating {
 					micro_button(
 						"GateReset",

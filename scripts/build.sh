@@ -279,6 +279,20 @@ if [ ! -f "$CATALOG" ]; then
   rm -rf "$TMP"
 fi
 
+# Common passwords are compiled into the app, never fetched during a check.
+PASSWORDS="$HERE/vendor/common-passwords.txt"
+PASSWORDS_PIN="$(pin seclists)"
+if [ ! -f "$PASSWORDS" ] || [ ! -f "$HERE/vendor/common-passwords.LICENSE" ] || [ "$(cat "$HERE/vendor/.common-passwords-pin" 2>/dev/null || true)" != "$PASSWORDS_PIN" ]; then
+  TMP="$(mktemp -d)"
+  PASSWORDS_URL="https://raw.githubusercontent.com/danielmiessler/SecLists/$PASSWORDS_PIN"
+  curl -sSfL "$PASSWORDS_URL/Passwords/Common-Credentials/10k-most-common.txt" -o "$TMP/common-passwords.txt"
+  curl -sSfL "$PASSWORDS_URL/LICENSE" -o "$TMP/common-passwords.LICENSE"
+  mv "$TMP/common-passwords.txt" "$PASSWORDS"
+  mv "$TMP/common-passwords.LICENSE" "$HERE/vendor/common-passwords.LICENSE"
+  printf '%s\n' "$PASSWORDS_PIN" > "$HERE/vendor/.common-passwords-pin"
+  rm -rf "$TMP"
+fi
+
 # Bundled fonts, staged like twemoji above so every package ships
 # byte-identical faces regardless of the build host's font packages.
 # Both archives are pinned by sha256; bump a pin and `rm -rf

@@ -607,6 +607,7 @@ Ui_State :: struct {
 	vault_pw:                                              [Vault_Pw_Field][dynamic]u8, // its three boxes (masked)
 	vault_pw_focus:                                        Vault_Pw_Field, // which of them takes the typing
 	vault_pw_err:                                          string, // in-modal failure line, "" = none
+	vault_pw_check:                                        Password_Check,
 	cache_bytes:                                           i64, // media-cache size, from cache_scan
 	cache_scanned:                                         bool,
 	emoji_staged:                                          string, // picked emoji file awaiting its shortcode

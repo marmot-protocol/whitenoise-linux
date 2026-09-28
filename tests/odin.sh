@@ -13,9 +13,11 @@ fixture="$(mktemp -d "$HERE/build/odin-test.XXXXXX")"
 trap 'rm -rf "$fixture"' EXIT
 cp -a "$HERE/app" "$fixture/app"
 cp -a "$HERE/tests/app/." "$fixture/app/"
-# These tests need nevent's file-private symbols as well as package-private ones.
-sed '/^package main$/d' "$fixture/app/nevent_internal_test.odin" >> "$fixture/app/nevent.odin"
-rm "$fixture/app/nevent_internal_test.odin"
+# Internal tests share the source file's private symbols.
+for module in nevent vault_gate vault_pw; do
+  sed '/^package main$/d' "$fixture/app/${module}_internal_test.odin" >> "$fixture/app/$module.odin"
+  rm "$fixture/app/${module}_internal_test.odin"
+done
 for entry in vendor marmot themes lang build observability.toml; do
   ln -s "$HERE/$entry" "$fixture/$entry"
 done

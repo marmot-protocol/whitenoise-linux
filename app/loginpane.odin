@@ -21,25 +21,40 @@ login_button :: proc(id_str: string, label: string) {
 	}
 }
 
+@(private)
+Button_State :: enum {
+	Enabled,
+	Disabled,
+}
+
 // Full-width stacked login button, the slint sign-in card style.
-login_big_button :: proc(id_str: string, label: string, primary: bool) {
+login_big_button :: proc(
+	id_str: string,
+	label: string,
+	primary: bool,
+	state: Button_State = .Enabled,
+) {
 	if clay.UI(clay.ID(id_str))(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(52)},
 			childAlignment = {x = .Center, y = .Center},
 		},
-		backgroundColor = primary ? ACCENT : ROW_BG,
+		backgroundColor = primary && state == .Enabled ? ACCENT : ROW_BG,
 		cornerRadius = rr(10),
 		border = primary ? {} : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
 	},
 	) {
-		if primary {
+		if primary && state == .Enabled {
 			hover_glow(clay.ID(id_str), ACCENT, hovered())
 		}
 		clay.Text(
 			label,
-			{fontId = FONT_TITLE, fontSize = 16, textColor = primary ? ON_ACCENT : TEXT},
+			{
+				fontId = FONT_TITLE,
+				fontSize = 16,
+				textColor = state == .Disabled ? TEXT_LO : primary ? ON_ACCENT : TEXT,
+			},
 		)
 	}
 }

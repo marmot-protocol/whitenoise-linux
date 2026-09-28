@@ -63,6 +63,22 @@ There is no OS keyring and no plaintext key on disk. Every secret (your nsec, Ma
 
 The flip side is that **there is no recovery**: lose the password and the data is gone. Take a backup if that matters to you; the backup is sealed with the same vault password, so a restore needs exactly one secret.
 
+Creating or changing a vault password requires at least 40 bits of estimated
+strength. The Odin check counts character diversity and discounts repeated
+blocks and alphabet or keyboard sequences. It rejects whole passwords found
+in the [SecLists common-password file](https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/10k-most-common.txt),
+including case changes and simple letter substitutions. It does not penalize
+individual words inside a passphrase or require particular character classes.
+Use unrelated words or a password-manager password.
+
+The corpus is staged at `vendor/common-passwords.txt`, pinned by `seclists-commit`
+in `DEPS_PIN`, and embedded in the app. The check runs offline.
+
+This heuristic does not measure entropy, model a full dictionary attack, or
+predict cracking time. It scores the first 100 Unicode characters to bound
+its work; the full password encrypts the vault. Existing passwords still unlock
+regardless of strength. The `WN_VAULT_PW` harness bypasses this UI policy.
+
 Image previews stay in memory for the session. They check decoded format
 and dimensions, with a 16 MiB download limit and a 16-megapixel decode limit.
 These checks do not sandbox image decoders or prevent requests to
@@ -338,6 +354,7 @@ It reads flat by intent. The layout is immediate-mode: every frame rebuilds the 
 | `app/sdlrl/` | SDL3 shim with a raylib-shaped API: window, input, IME, clipboard, and a stb_truetype text engine |
 | `app/vault.odin` | The password-encrypted secret vault |
 | `marmot/` | The `marmot-c` bindings, the only place that touches C |
+| `app/password.odin` | The allocation-free password-strength heuristic and input cache |
 | `tests/smoke/` | Standalone liveness check for the bindings against a fresh home dir |
 | `themes/` | The theme packs, `#load`ed at build time |
 | `lang/` | gettext catalogs (`en` source, plus `it`, `de`, `ja`), `#load`ed at build time |

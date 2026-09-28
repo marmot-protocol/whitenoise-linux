@@ -29,6 +29,9 @@ output is already present, so only the first run is slow:
   `app/fbx_shim.c` are archived into `build/libwnfbx.a`.
 - `vendor/twemoji` (the 72x72 PNG set) and `vendor/emoji-catalog.tsv`, both
   pulled from pinned crates.io tarballs.
+- `vendor/common-passwords.txt` and its MIT license from SecLists at
+  `seclists-commit` in `DEPS_PIN`. The Odin password-strength check embeds the
+  corpus with `#load`; there is no runtime file lookup or network request.
 - `vendor/microtex` at its pinned `openmath` commit with
   `patches/microtex-isolation.patch`, `patches/microtex-libcxx-includes.patch`
   and `patches/microtex-locale-fallback.patch` applied, built by CMake into

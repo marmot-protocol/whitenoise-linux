@@ -1168,6 +1168,10 @@ msgstr ""
 msgid "Enter your password to unlock this device's keys."
 msgstr "Gib dein Passwort zum Entsperren ein"
 
+#, c-format
+msgid "Estimated strength: %d bits. Required: %d."
+msgstr "Geschätzte Stärke: %d Bit. Erforderlich: %d."
+
 msgid "Event fetch relays"
 msgstr "Relays für Ereignisse"
 
@@ -2794,6 +2798,9 @@ msgstr "Dies öffnet {} in deinem Standardbrowser."
 msgid "This message was deleted"
 msgstr "Kein Bild ausgewählt."
 
+msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
+msgstr "Dieses Passwort ist zu leicht zu erraten. Verwende unzusammenhängende Wörter oder ein von einem Passwortmanager erzeugtes Passwort."
+
 msgid "This session"
 msgstr "Diese Sitzung"
 
@@ -2912,6 +2919,9 @@ msgstr "Anderen Schlüssel verwenden"
 #, fuzzy
 msgid "Use this theme"
 msgstr "Nächstes Bild"
+
+msgid "Use unrelated words or a password-manager password."
+msgstr "Verwende unzusammenhängende Wörter oder ein von einem Passwortmanager erzeugtes Passwort."
 
 msgid "Used for generated user and group avatars."
 msgstr "Wird für generierte Benutzer- und Gruppenavatare verwendet."

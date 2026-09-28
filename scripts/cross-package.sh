@@ -45,6 +45,7 @@ cat > "$RES/fonts.conf" <<'FONTCONFIG'
 <fontconfig><dir prefix="relative">fonts</dir><cachedir prefix="xdg">fontconfig</cachedir></fontconfig>
 FONTCONFIG
 cp "$HERE/vendor/crop-circles/LICENSE" "$RES/licenses/crop-circles.txt"
+cp "$HERE/vendor/common-passwords.LICENSE" "$RES/licenses/seclists.txt"
 cp "$HERE/vendor/crop-circles/README.txt" "$RES/licenses/crop-circles-notices.txt"
 cp "$HERE/vendor/microtex/LICENSE" "$RES/licenses/microtex.txt"
 cp "$HERE/vendor/microtex/res/tex-gyre/README-TeX-Gyre-DejaVu-Math.txt" "$RES/licenses/tex-gyre-dejavu-math.txt"
