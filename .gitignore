@@ -22,3 +22,4 @@
 
 # flatpak-builder state for a local packaging/flatpak build
 /.flatpak-builder/
+/.flatpak-cache/

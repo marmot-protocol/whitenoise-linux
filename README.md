@@ -167,6 +167,14 @@ The native Linux build extracts speech, font, and emoji archives without
 restoring ownership, so it can run as root inside Flatpak's restricted user
 namespace.
 
+The release workflow also builds Flatpak on `master` to populate caches that
+later tags can restore. It caches the GNOME 50 module outputs, downloads,
+Git mirrors, and ccache, plus separate Marmot and C dependency outputs.
+Marmot requires an exact pin-and-patch match; MicroTeX and ufbx use the same
+build stamps as native CI. Cargo target directories are not cached, and
+Flatpak objects are kept separate from native Ubuntu objects. Only tag
+builds publish releases.
+
 ### Cross releases
 
 `scripts/cross-build.sh TARGET` accepts `linux-arm64`, `linux-amd64`,

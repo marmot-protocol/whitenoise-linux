@@ -151,6 +151,10 @@ modules:
         # the linker finds the libmpv and poppler built above.
         LIBRARY_PATH: /app/lib
     build-commands:
+      # Fetch sources before restoring outputs: build.sh must create the MDK
+      # checkout, and pin changes must not delete a freshly restored bundle.
+      - scripts/build.sh sources
+      - if [ -d .flatpak-cache ]; then cp -a .flatpak-cache/. .; fi
       - scripts/build.sh
       - scripts/install-tree.sh /app dev.ipf.whitenoise
     sources:
