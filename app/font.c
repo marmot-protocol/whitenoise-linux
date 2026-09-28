@@ -12,6 +12,9 @@
 #else
 #include <sys/resource.h>
 #endif
+#ifdef __OpenBSD__
+#include <unistd.h>
+#endif
 #ifdef __APPLE__
 #include <mach/mach.h>
 #endif
@@ -63,6 +66,12 @@ int main(int argc, char **argv) {
 #endif
     if (setrlimit(RLIMIT_AS, &memory) || setrlimit(RLIMIT_CPU, &cpu))
         return 1;
+#endif
+#ifdef __OpenBSD__
+    // Restrict the decoder to its input file and already-open output streams.
+    if (unveil(argv[1], "r") || unveil(NULL, NULL) || pledge("stdio rpath", NULL)) {
+        return 1;
+    }
 #endif
     FT_Library library;
     FT_Face face;

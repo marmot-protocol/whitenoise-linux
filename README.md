@@ -260,6 +260,11 @@ which rustc and Odin's optimizing build otherwise run out of.
 Reading aloud and dictation are left out: sherpa-onnx publishes no OpenBSD
 runtime, so those features report that they could not start.
 
+On OpenBSD, the `wn-font` helper uses `unveil()` to allow read access only to
+its input file, locks that filesystem policy, and calls
+`pledge("stdio rpath", NULL)` before initializing FreeType. If sandbox setup
+fails, decoding stops. The main application is not pledged or unveiled.
+
 `.github/workflows/cross.yml` is called by CI and tagged releases. Its Linux
 ARM64 and Windows jobs extract the shipped archive and require a headless
 launch to produce a screenshot under QEMU or Wine. No compiler runs under
