@@ -162,6 +162,8 @@ jobs:
             --executable AppDir/usr/share/whitenoise-linux/wn-image \
             --executable AppDir/usr/share/whitenoise-linux/wn-archive \
             --executable AppDir/usr/share/whitenoise-linux/wn-pdf \
+            --executable AppDir/usr/share/whitenoise-linux/wn-mesh \
+            --executable AppDir/usr/share/whitenoise-linux/wn-fbx \
             --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
           out="WhiteNoise-${GITHUB_REF_NAME}-x86_64.AppImage"

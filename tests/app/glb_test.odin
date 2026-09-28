@@ -218,3 +218,103 @@ glb_material_opacity :: proc(t: ^testing.T) {
 		stl_view_free(view)
 	}
 }
+
+@(test)
+mesh_rejects_bad_geometry :: proc(t: ^testing.T) {
+	// One bounded, normalized triangle; wire bytes are independent of helper code.
+	words := [15]u32le {
+		0 = 1,
+		1 = 1,
+	}
+	words[9], words[13] = 0x3f800000, 0x3f800000
+	bytes := mem.slice_to_bytes(words[:])
+	valid, ok := mesh_validate(bytes, 1)
+	testing.expect(t, ok)
+	testing.expect_value(t, mesh_float(valid.tris, 12), f32(1))
+	for length in ([]int{0, 23, len(bytes) - 1}) {
+		_, accepted := mesh_validate(bytes[:length], 1)
+		testing.expect(t, !accepted)
+	}
+	for change in ([][2]u32 {
+			{0, 2}, // unknown payload version
+			{1, 0xffffffff}, // triangle count overflow
+			{2, 8}, // unknown channel flag
+			{3, 1}, // material metadata forbidden for STL
+			{5, 1}, // reserved word
+			{6, 0x7fc00000}, // NaN position
+			{6, 0x7f800000}, // infinite position
+			{6, 0x40000000}, // unnormalized position
+		}) {
+		saved := words[change[0]]
+		words[change[0]] = u32le(change[1])
+		_, accepted := mesh_validate(bytes, 1)
+		testing.expect(t, !accepted)
+		words[change[0]] = saved
+	}
+	trailing := make([]u8, len(bytes) + 1)
+	defer delete(trailing)
+	copy(trailing, bytes)
+	_, accepted := mesh_validate(trailing, 1)
+	testing.expect(t, !accepted)
+}
+
+@(test)
+mesh_reply_rejects_material_references :: proc(t: ^testing.T) {
+	// GLB: position9 + normal9 + mat-index1 + material12 + six texture16 records.
+	words := [133]u32le {
+		0 = 1,
+		1 = 1,
+		2 = 5,
+		3 = 1,
+	}
+	bytes := mem.slice_to_bytes(words[:])
+	_, ok := mesh_validate(bytes, 3)
+	testing.expect(t, ok)
+	for change in ([][2]u32 {
+			{24, 1}, // triangle references absent material
+			{24, 0xfffffffe}, // only -1 is the absent-material sentinel
+			{25, 0x7fc00000}, // NaN material factor
+			{37, 1}, // texture references absent encoded image
+			{38, 3}, // invalid wrapping enum
+			{40, 4}, // invalid pixel channel enum
+			{41, 3}, // invalid alpha mode
+			{42, 0x7f800000}, // infinite texture transform
+		}) {
+		saved := words[change[0]]
+		words[change[0]] = u32le(change[1])
+		_, accepted := mesh_validate(bytes, 3)
+		testing.expect(t, !accepted)
+		words[change[0]] = saved
+	}
+}
+
+@(test)
+mesh_reply_rejects_encoded_image_bounds :: proc(t: ^testing.T) {
+	words := [136]u32le {
+		0 = 1,
+		1 = 1,
+		2 = 5,
+		3 = 1,
+		4 = 1,
+	}
+	// One texture reference and an encoded PNG signature. Image contents remain
+	// wn-image's responsibility; the mesh boundary validates framing and limits.
+	words[37] = 1
+	words[133], words[134], words[135] = 8, 0x474e5089, 0x0a1a0a0d
+	bytes := mem.slice_to_bytes(words[:])
+	_, ok := mesh_validate(bytes, 3)
+	testing.expect(t, ok)
+	for size in ([]u32{0, 9, 0xffffffff}) {
+		words[133] = u32le(size)
+		_, accepted := mesh_validate(bytes, 3)
+		testing.expect(t, !accepted)
+	}
+	words[133] = 8
+	words[37] = 2
+	_, bad_reference := mesh_validate(bytes, 3)
+	testing.expect(t, !bad_reference)
+	words[37] = 1
+	words[134] = 0
+	_, bad_signature := mesh_validate(bytes, 3)
+	testing.expect(t, !bad_signature)
+}

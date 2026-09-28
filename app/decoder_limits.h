@@ -16,15 +16,24 @@
 #include <mach/mach.h>
 #endif
 
-/* Set before parsing; each decoder installs its own filesystem capability policy. */
-static inline int wn_decoder_limits(void) {
+typedef enum {
+    WN_DECODER_ONESHOT,
+    WN_DECODER_SESSION,
+} WnDecoderLifetime;
+
+/* Set before parsing; each decoder installs its own filesystem capability policy.
+ * Sessions use the parent's per-transaction deadline, not a cumulative CPU quota
+ * that would eventually terminate a healthy looping animation. */
+static inline int wn_decoder_limits(WnDecoderLifetime lifetime) {
 #ifdef _WIN32
     HANDLE job = CreateJobObjectW(NULL, NULL);
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {0};
-    limits.BasicLimitInformation.LimitFlags =
-        JOB_OBJECT_LIMIT_PROCESS_MEMORY | JOB_OBJECT_LIMIT_PROCESS_TIME;
+    limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_PROCESS_MEMORY;
     limits.ProcessMemoryLimit = WN_IMAGE_MEMORY_MAX;
-    limits.BasicLimitInformation.PerProcessUserTimeLimit.QuadPart = 5 * 10000000LL;
+    if (lifetime == WN_DECODER_ONESHOT) {
+        limits.BasicLimitInformation.LimitFlags |= JOB_OBJECT_LIMIT_PROCESS_TIME;
+        limits.BasicLimitInformation.PerProcessUserTimeLimit.QuadPart = 5 * 10000000LL;
+    }
     if (!job ||
         !SetInformationJobObject(job, JobObjectExtendedLimitInformation, &limits, sizeof(limits)) ||
         !AssignProcessToJobObject(job, GetCurrentProcess()) ||
@@ -59,7 +68,8 @@ static inline int wn_decoder_limits(void) {
         return 0;
     }
 #endif
-    if (setrlimit(RLIMIT_CPU, &cpu) || setrlimit(RLIMIT_CORE, &core)) {
+    if ((lifetime == WN_DECODER_ONESHOT && setrlimit(RLIMIT_CPU, &cpu)) ||
+        setrlimit(RLIMIT_CORE, &core)) {
         return 0;
     }
 #endif

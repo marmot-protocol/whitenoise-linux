@@ -38,6 +38,9 @@ cc -O2 -Wall -Wextra "$HERE/tests/archive-helper-test.c" "$HERE/build/libwndecod
 cc -O2 -Wall -Wextra "$HERE/tests/pdf-helper-test.c" "$HERE/build/libwndecoder.a" \
   -o "$HERE/build/pdf-helper-test"
 "$HERE/build/pdf-helper-test" "$HERE/build/wn-pdf" "$HERE/vendor/fonts"
+cc -O2 -Wall -Wextra "$HERE/tests/model-transport-test.c" "$HERE/build/libwndecoder.a" \
+  -o "$HERE/build/model-transport-test"
+"$HERE/build/model-transport-test" --test
 
 VERSION="${WN_RELEASE_VERSION:-$(bash "$HERE/scripts/version.sh")}"
 NAME="WhiteNoise-$VERSION-openbsd-amd64"

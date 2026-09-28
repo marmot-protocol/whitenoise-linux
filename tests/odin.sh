@@ -22,7 +22,7 @@ done
 for entry in vendor marmot themes lang build; do
   ln -s "$HERE/$entry" "$fixture/$entry"
 done
-for helper in wn-archive wn-pdf; do
+for helper in wn-archive wn-pdf wn-mesh wn-fbx; do
   ln -s "$HERE/build/$helper" "$fixture/$helper"
 done
 if [ -d "$HERE/build/odin-root" ]; then

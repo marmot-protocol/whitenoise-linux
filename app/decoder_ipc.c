@@ -31,8 +31,9 @@
 #include <spawn.h>
 #endif
 #endif
+#include "decoder_limits.h"
 
-enum decoder_kind { DECODER_IMAGE, DECODER_ARCHIVE, DECODER_PDF };
+enum decoder_kind { DECODER_IMAGE, DECODER_ARCHIVE, DECODER_PDF, DECODER_MESH, DECODER_MODEL };
 
 struct image_reply {
     unsigned char header[WN_IMAGE_HEADER];
@@ -50,6 +51,8 @@ struct image_reply {
     uint32_t index;
     uint32_t count;
     uint32_t target_height;
+    uint32_t sequence;
+    int borrowed;
 };
 
 /* Read directly into its final destination, with one byte reserved to detect excess. */
@@ -81,7 +84,15 @@ static unsigned char *image_buffer(struct image_reply *reply, size_t *size) {
 static int decoder_header(struct image_reply *reply) {
     const unsigned char *header = reply->header;
     reply->bytes = wn_image_u32(header + 12);
-    if (reply->kind == DECODER_ARCHIVE) {
+    if (reply->kind == DECODER_MESH || reply->kind == DECODER_MODEL) {
+        int mesh = reply->kind == DECODER_MESH;
+        if (memcmp(header, mesh ? "MDO1" : "FBO1", 4) ||
+            wn_image_u32(header + 4) != (mesh ? 1u : reply->index) ||
+            wn_image_u32(header + 8) != (mesh ? 0u : reply->sequence) ||
+            reply->bytes > reply->cap) {
+            return 0;
+        }
+    } else if (reply->kind == DECODER_ARCHIVE) {
         reply->count = wn_image_u32(header + 4);
         uint32_t index = wn_image_u32(header + 8);
         if (memcmp(header, "ARO1", 4) || reply->bytes > reply->cap) {
@@ -111,7 +122,9 @@ static int decoder_header(struct image_reply *reply) {
             return 1; /* Validate page count before allocating pixels. */
         }
     }
-    reply->pixels = malloc(reply->bytes ? reply->bytes : 1);
+    if (!reply->borrowed) {
+        reply->pixels = malloc(reply->bytes ? reply->bytes : 1);
+    }
     return reply->pixels != NULL;
 }
 
@@ -139,34 +152,59 @@ static int image_complete(const struct image_reply *reply) {
     return reply->pixels && reply->received == WN_IMAGE_HEADER + (size_t)reply->bytes;
 }
 
+/* Spawn and transport are shared by one-shot decoders and persistent models. */
 #ifdef _WIN32
-struct image_writer {
-    HANDLE pipe;
+struct decoder_process {
+    HANDLE process;
+    HANDLE job;
+    HANDLE input;
+    HANDLE output;
+    HANDLE writer;
+    HANDLE start_write;
+    HANDLE write_done;
+    volatile LONG stop;
     const unsigned char *header;
     const unsigned char *data;
     DWORD size;
     DWORD header_size;
+    int finish;
+    int write_ok;
 };
 
-static int image_write_all(HANDLE pipe, const unsigned char *data, DWORD size) {
-    while (size) {
+static int64_t image_millis(void) {
+    return (int64_t)GetTickCount64();
+}
+
+static int image_write_all(struct decoder_process *process, const unsigned char *data, DWORD size) {
+    while (size && !InterlockedCompareExchange(&process->stop, 0, 0)) {
         DWORD written = 0;
         DWORD chunk = size > 65536 ? 65536 : size;
-        if (!WriteFile(pipe, data, chunk, &written, NULL) || !written) {
+        if (!WriteFile(process->input, data, chunk, &written, NULL) || !written) {
             return 0;
         }
         data += written;
         size -= written;
     }
-    return 1;
+    return size == 0;
 }
 
+/* One worker per helper, never one per pose. Closing the job breaks blocked writes;
+ * stop plus the wake event also covers a worker idle between transactions. */
 static DWORD WINAPI image_write_thread(LPVOID context) {
-    struct image_writer *writer = context;
-    int ok = image_write_all(writer->pipe, writer->header, writer->header_size) &&
-             image_write_all(writer->pipe, writer->data, writer->size);
-    CloseHandle(writer->pipe);
-    return ok ? 0 : 1;
+    struct decoder_process *process = context;
+    while (WaitForSingleObject(process->start_write, INFINITE) == WAIT_OBJECT_0) {
+        if (InterlockedCompareExchange(&process->stop, 0, 0)) {
+            break;
+        }
+        process->write_ok = image_write_all(process, process->header, process->header_size) &&
+                            image_write_all(process, process->data, process->size);
+        if (process->finish) {
+            CloseHandle(process->input);
+            process->input = NULL;
+        }
+        SetEvent(process->write_done);
+    }
+    return 0;
 }
 
 static wchar_t *image_wide(const char *text) {
@@ -182,14 +220,17 @@ static wchar_t *image_wide(const char *text) {
     return wide;
 }
 
-static HANDLE image_job(void) {
+static HANDLE image_job(WnDecoderLifetime lifetime) {
     HANDLE job = CreateJobObjectW(NULL, NULL);
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {0};
-    limits.BasicLimitInformation.LimitFlags =
-        JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_PROCESS_MEMORY |
-        JOB_OBJECT_LIMIT_PROCESS_TIME | JOB_OBJECT_LIMIT_ACTIVE_PROCESS;
+    limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE |
+                                              JOB_OBJECT_LIMIT_PROCESS_MEMORY |
+                                              JOB_OBJECT_LIMIT_ACTIVE_PROCESS;
     limits.ProcessMemoryLimit = WN_IMAGE_MEMORY_MAX;
-    limits.BasicLimitInformation.PerProcessUserTimeLimit.QuadPart = 5 * 10000000LL;
+    if (lifetime == WN_DECODER_ONESHOT) {
+        limits.BasicLimitInformation.LimitFlags |= JOB_OBJECT_LIMIT_PROCESS_TIME;
+        limits.BasicLimitInformation.PerProcessUserTimeLimit.QuadPart = 5 * 10000000LL;
+    }
     limits.BasicLimitInformation.ActiveProcessLimit = 1;
     if (job &&
         !SetInformationJobObject(job, JobObjectExtendedLimitInformation, &limits, sizeof(limits))) {
@@ -224,12 +265,50 @@ static wchar_t *decoder_quote(wchar_t *out, const wchar_t *text) {
     return out;
 }
 
-static int image_run(const char *helper, const char *argument, const unsigned char *data, int size,
-                     const unsigned char *header, size_t header_size, struct image_reply *reply) {
-    ULONGLONG deadline = GetTickCount64() + WN_IMAGE_SECONDS * 1000;
+static void decoder_stop(struct decoder_process *process) {
+    InterlockedExchange(&process->stop, 1);
+    if (process->process) {
+        TerminateProcess(process->process, 1);
+    }
+    if (process->job) {
+        CloseHandle(process->job);
+        process->job = NULL;
+    }
+    if (process->writer) {
+        SetEvent(process->start_write);
+        CancelSynchronousIo(process->writer);
+        WaitForSingleObject(process->writer, INFINITE);
+        CloseHandle(process->writer);
+        process->writer = NULL;
+    }
+    if (process->process) {
+        WaitForSingleObject(process->process, INFINITE);
+        CloseHandle(process->process);
+        process->process = NULL;
+    }
+    if (process->input) {
+        CloseHandle(process->input);
+        process->input = NULL;
+    }
+    if (process->output) {
+        CloseHandle(process->output);
+        process->output = NULL;
+    }
+    if (process->start_write) {
+        CloseHandle(process->start_write);
+        process->start_write = NULL;
+    }
+    if (process->write_done) {
+        CloseHandle(process->write_done);
+        process->write_done = NULL;
+    }
+}
+
+static int decoder_start(struct decoder_process *child, const char *helper, const char *argument,
+                         WnDecoderLifetime lifetime) {
+    memset(child, 0, sizeof(*child));
     SECURITY_ATTRIBUTES security = {sizeof(security), NULL, TRUE};
-    HANDLE child_in = NULL, input = NULL, output = NULL, child_out = NULL;
-    HANDLE null = INVALID_HANDLE_VALUE, job = NULL, writer = NULL;
+    HANDLE child_in = NULL, child_out = NULL, null = INVALID_HANDLE_VALUE;
     PROCESS_INFORMATION process = {0};
     STARTUPINFOEXW start = {0};
     SIZE_T attribute_size = 0;
@@ -238,7 +317,6 @@ static int image_run(const char *helper, const char *argument, const unsigned ch
     wchar_t *path = image_wide(helper);
     wchar_t *arg = argument ? image_wide(argument) : NULL;
     wchar_t *command = NULL;
-    struct image_writer request = {0};
     if (!path || wcschr(path, L'"') || (argument && !arg)) {
         goto done;
     }
@@ -260,16 +338,16 @@ static int image_run(const char *helper, const char *argument, const unsigned ch
         end = decoder_quote(end, arg);
     }
     *end = 0;
-    if (!CreatePipe(&child_in, &input, &security, 0) ||
-        !SetHandleInformation(input, HANDLE_FLAG_INHERIT, 0) ||
-        !CreatePipe(&output, &child_out, &security, 0) ||
-        !SetHandleInformation(output, HANDLE_FLAG_INHERIT, 0)) {
+    if (!CreatePipe(&child_in, &child->input, &security, 0) ||
+        !SetHandleInformation(child->input, HANDLE_FLAG_INHERIT, 0) ||
+        !CreatePipe(&child->output, &child_out, &security, 0) ||
+        !SetHandleInformation(child->output, HANDLE_FLAG_INHERIT, 0)) {
         goto done;
     }
     null = CreateFileW(L"NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &security,
                        OPEN_EXISTING, 0, NULL);
-    job = image_job();
-    if (null == INVALID_HANDLE_VALUE || !job) {
+    child->job = image_job(lifetime);
+    if (null == INVALID_HANDLE_VALUE || !child->job) {
         goto done;
     }
     InitializeProcThreadAttributeList(NULL, 1, 0, &attribute_size);
@@ -296,30 +374,67 @@ static int image_run(const char *helper, const char *argument, const unsigned ch
                         environment, NULL, &start.StartupInfo, &process)) {
         goto done;
     }
-    if (!AssignProcessToJobObject(job, process.hProcess) ||
+    child->process = process.hProcess;
+    if (!AssignProcessToJobObject(child->job, process.hProcess) ||
         ResumeThread(process.hThread) == (DWORD)-1) {
         goto done;
     }
-    CloseHandle(child_in);
-    child_in = NULL;
-    CloseHandle(child_out);
-    child_out = NULL;
-    request.pipe = input;
-    request.header = header;
-    request.data = data;
-    request.size = (DWORD)size;
-    request.header_size = (DWORD)header_size;
-    writer = CreateThread(NULL, 0, image_write_thread, &request, 0, NULL);
-    if (!writer) {
+    child->start_write = CreateEventW(NULL, FALSE, FALSE, NULL);
+    child->write_done = CreateEventW(NULL, TRUE, FALSE, NULL);
+    if (!child->start_write || !child->write_done) {
         goto done;
     }
-    input = NULL; /* The writer owns this handle until its thread terminates. */
+    child->writer = CreateThread(NULL, 0, image_write_thread, child, 0, NULL);
+    ok = child->writer != NULL;
+done:
+    if (child_in) {
+        CloseHandle(child_in);
+    }
+    if (child_out) {
+        CloseHandle(child_out);
+    }
+    if (null != INVALID_HANDLE_VALUE) {
+        CloseHandle(null);
+    }
+    if (process.hThread) {
+        CloseHandle(process.hThread);
+    }
+    if (attributes_ready) {
+        DeleteProcThreadAttributeList(start.lpAttributeList);
+    }
+    free(start.lpAttributeList);
+    free(command);
+    free(path);
+    free(arg);
+    if (!ok) {
+        decoder_stop(child);
+    }
+    return ok;
+}
+
+static int decoder_transfer(struct decoder_process *process, const unsigned char *data,
+                            unsigned int size, const unsigned char *header, size_t header_size,
+                            struct image_reply *reply, int finish, int64_t deadline) {
+    DWORD available = 0;
+    if (!PeekNamedPipe(process->output, NULL, 0, NULL, &available, NULL) || available ||
+        WaitForSingleObject(process->process, 0) != WAIT_TIMEOUT) {
+        return 0;
+    }
+    process->header = header;
+    process->header_size = (DWORD)header_size;
+    process->data = data;
+    process->size = size;
+    process->finish = finish;
+    process->write_ok = 0;
+    if (!ResetEvent(process->write_done) || !SetEvent(process->start_write)) {
+        return 0;
+    }
     int eof = 0;
-    while (GetTickCount64() < deadline) {
-        DWORD available = 0;
-        if (!eof && !PeekNamedPipe(output, NULL, 0, NULL, &available, NULL)) {
+    while (image_millis() < deadline) {
+        available = 0;
+        if (!eof && !PeekNamedPipe(process->output, NULL, 0, NULL, &available, NULL)) {
             if (GetLastError() != ERROR_BROKEN_PIPE) {
-                goto done;
+                return 0;
             }
             eof = 1;
         }
@@ -330,64 +445,39 @@ static int image_run(const char *helper, const char *argument, const unsigned ch
             if (capacity > available) {
                 capacity = available;
             }
-            if (!ReadFile(output, buffer, (DWORD)capacity, &count, NULL) || !count ||
+            if (!ReadFile(process->output, buffer, (DWORD)capacity, &count, NULL) || !count ||
                 !image_received(reply, count)) {
-                goto done;
+                return 0;
             }
             continue;
         }
-        if (eof && WaitForSingleObject(process.hProcess, 0) == WAIT_OBJECT_0 &&
-            WaitForSingleObject(writer, 0) == WAIT_OBJECT_0) {
-            DWORD status = 1, write_status = 1;
-            ok = GetExitCodeProcess(process.hProcess, &status) && status == 0 &&
-                 GetExitCodeThread(writer, &write_status) && write_status == 0 &&
-                 image_complete(reply);
-            break;
+        int written = WaitForSingleObject(process->write_done, 0) == WAIT_OBJECT_0;
+        if (written && !process->write_ok) {
+            return 0;
+        }
+        if (!finish) {
+            if (eof || WaitForSingleObject(process->process, 0) != WAIT_TIMEOUT) {
+                return 0;
+            }
+            if (written && image_complete(reply)) {
+                return 1;
+            }
+        } else if (eof && written && WaitForSingleObject(process->process, 0) == WAIT_OBJECT_0) {
+            DWORD status = 1;
+            return GetExitCodeProcess(process->process, &status) && status == 0 &&
+                   image_complete(reply);
         }
         Sleep(1);
     }
-done:
-    if (process.hProcess && !ok) {
-        TerminateProcess(process.hProcess, 1);
-    }
-    if (job) {
-        CloseHandle(job);
-    }
-    if (child_in) {
-        CloseHandle(child_in);
-    }
-    if (child_out) {
-        CloseHandle(child_out);
-    }
-    if (writer) {
-        CancelSynchronousIo(writer);
-        WaitForSingleObject(writer, INFINITE);
-        CloseHandle(writer);
-    }
-    if (process.hProcess) {
-        WaitForSingleObject(process.hProcess, INFINITE);
-        CloseHandle(process.hProcess);
-        CloseHandle(process.hThread);
-    }
-    if (input) {
-        CloseHandle(input);
-    }
-    if (output) {
-        CloseHandle(output);
-    }
-    if (null != INVALID_HANDLE_VALUE) {
-        CloseHandle(null);
-    }
-    if (attributes_ready) {
-        DeleteProcThreadAttributeList(start.lpAttributeList);
-    }
-    free(start.lpAttributeList);
-    free(command);
-    free(path);
-    free(arg);
-    return ok;
+    return 0;
 }
 #else
+struct decoder_process {
+    pid_t child;
+    int socket;
+    int reaped;
+};
+
 static int64_t image_millis(void) {
     struct timespec now;
     if (clock_gettime(CLOCK_MONOTONIC, &now)) {
@@ -423,7 +513,9 @@ static pid_t image_spawn(const char *helper, const char *argument, int socket, i
     if (!posix_spawn_file_actions_adddup2(&actions, socket, STDIN_FILENO) &&
         !posix_spawn_file_actions_adddup2(&actions, socket, STDOUT_FILENO) &&
         !posix_spawn_file_actions_adddup2(&actions, null, STDERR_FILENO) &&
-        !posix_spawnattr_setflags(&attributes, POSIX_SPAWN_CLOEXEC_DEFAULT)) {
+        !posix_spawnattr_setpgroup(&attributes, 0) &&
+        !posix_spawnattr_setflags(&attributes,
+                                  POSIX_SPAWN_CLOEXEC_DEFAULT | POSIX_SPAWN_SETPGROUP)) {
         if (posix_spawn(&child, helper, &actions, &attributes, args, environment)) {
             child = -1;
         }
@@ -437,7 +529,7 @@ static pid_t image_spawn(const char *helper, const char *argument, int socket, i
         return child;
     }
     /* Only async-signal-safe operations are allowed after a multithreaded fork. */
-    if (dup2(socket, STDIN_FILENO) < 0 || dup2(socket, STDOUT_FILENO) < 0 ||
+    if (setpgid(0, 0) || dup2(socket, STDIN_FILENO) < 0 || dup2(socket, STDOUT_FILENO) < 0 ||
         dup2(null, STDERR_FILENO) < 0) {
         _exit(1);
     }
@@ -449,23 +541,39 @@ static pid_t image_spawn(const char *helper, const char *argument, int socket, i
         _exit(1);
     }
 #else
-#error "Image isolation requires Linux close_range support"
+#error "Decoder isolation requires Linux close_range support"
 #endif
 #else
-#error "Image isolation needs a close-all-descriptors implementation on this target"
+#error "Decoder isolation needs a close-all-descriptors implementation on this target"
 #endif
     execve(helper, args, environment);
     _exit(1);
 #endif
 }
 
-static int image_run(const char *helper, const char *argument, const unsigned char *data, int size,
-                     const unsigned char *header, size_t header_size, struct image_reply *reply) {
-    int64_t start = image_millis();
-    if (start < 0) {
-        return 0;
+static void decoder_stop(struct decoder_process *process) {
+    if (process->socket >= 0) {
+        close(process->socket);
+        process->socket = -1;
     }
-    int64_t deadline = start + WN_IMAGE_SECONDS * 1000;
+    if (process->child > 0) {
+        if (!process->reaped) {
+            /* Signal the private group only while its leader's PID is still owned. */
+            kill(-process->child, SIGKILL);
+            kill(process->child, SIGKILL);
+            while (waitpid(process->child, NULL, 0) < 0 && errno == EINTR) {
+            }
+        }
+        process->child = -1;
+    }
+}
+
+static int decoder_start(struct decoder_process *process, const char *helper, const char *argument,
+                         WnDecoderLifetime lifetime) {
+    (void)lifetime; /* POSIX helpers install their own limits before parsing input. */
+    process->child = -1;
+    process->socket = -1;
+    process->reaped = 0;
     int pair[2];
 #ifdef __APPLE__
     int socket_type = SOCK_STREAM;
@@ -476,7 +584,7 @@ static int image_run(const char *helper, const char *argument, const unsigned ch
         return 0;
     }
 #ifdef __APPLE__
-    /* Darwin has no atomic SOCK_CLOEXEC; image spawns also use CLOEXEC_DEFAULT. */
+    /* Darwin has no atomic SOCK_CLOEXEC; spawns also use CLOEXEC_DEFAULT. */
     if (fcntl(pair[0], F_SETFD, FD_CLOEXEC) || fcntl(pair[1], F_SETFD, FD_CLOEXEC)) {
         close(pair[0]);
         close(pair[1]);
@@ -486,7 +594,6 @@ static int image_run(const char *helper, const char *argument, const unsigned ch
     pair[0] = image_high_fd(pair[0]);
     pair[1] = image_high_fd(pair[1]);
     int null = image_high_fd(open("/dev/null", O_WRONLY | O_CLOEXEC));
-    pid_t child = -1;
     int ok = 0;
     if (pair[0] < 0 || pair[1] < 0 || null < 0) {
         goto done;
@@ -501,13 +608,33 @@ static int image_run(const char *helper, const char *argument, const unsigned ch
     if (flags < 0 || fcntl(pair[0], F_SETFL, flags | O_NONBLOCK)) {
         goto done;
     }
-    child = image_spawn(helper, argument, pair[1], null);
-    close(pair[1]);
-    pair[1] = -1;
-    close(null);
-    null = -1;
-    if (child < 0) {
+    process->child = image_spawn(helper, argument, pair[1], null);
+    if (process->child < 0) {
         goto done;
+    }
+    process->socket = pair[0];
+    pair[0] = -1;
+    ok = 1;
+done:
+    if (pair[0] >= 0) {
+        close(pair[0]);
+    }
+    if (pair[1] >= 0) {
+        close(pair[1]);
+    }
+    if (null >= 0) {
+        close(null);
+    }
+    return ok;
+}
+
+static int decoder_transfer(struct decoder_process *process, const unsigned char *data,
+                            unsigned int size, const unsigned char *header, size_t header_size,
+                            struct image_reply *reply, int finish, int64_t deadline) {
+    unsigned char extra;
+    ssize_t pending = recv(process->socket, &extra, 1, MSG_PEEK);
+    if (pending >= 0 || (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)) {
+        return 0;
     }
     size_t sent = 0;
     size_t total = header_size + (size_t)size;
@@ -515,29 +642,34 @@ static int image_run(const char *helper, const char *argument, const unsigned ch
     while (1) {
         int64_t now = image_millis();
         if (now < 0 || now >= deadline) {
-            break;
+            return 0;
+        }
+        if (!finish && sent == total && image_complete(reply)) {
+            pending = recv(process->socket, &extra, 1, MSG_PEEK);
+            if (pending < 0 && errno == EINTR) {
+                continue;
+            }
+            return pending < 0 && (errno == EAGAIN || errno == EWOULDBLOCK);
         }
         if (eof) {
             int status;
-            pid_t waited = waitpid(child, &status, WNOHANG);
-            if (waited == child) {
-                child = -1;
-                ok = sent == total && image_complete(reply) && WIFEXITED(status) &&
-                     WEXITSTATUS(status) == 0;
-                break;
+            pid_t waited = waitpid(process->child, &status, WNOHANG);
+            if (waited == process->child) {
+                process->reaped = 1;
+                return sent == total && image_complete(reply) && WIFEXITED(status) &&
+                       WEXITSTATUS(status) == 0;
             }
             if (waited < 0 && errno != EINTR) {
-                /* ECHILD means a process-wide SIGCHLD handler already reaped it. */
                 if (errno == ECHILD) {
-                    child = -1;
+                    process->reaped = 1;
                 }
-                break;
+                return 0;
             }
             struct timespec pause = {0, 1000000};
             nanosleep(&pause, NULL);
             continue;
         }
-        struct pollfd pollfd = {pair[0], POLLIN, 0};
+        struct pollfd pollfd = {process->socket, POLLIN, 0};
         if (sent < total) {
             pollfd.events |= POLLOUT;
         }
@@ -546,23 +678,23 @@ static int image_run(const char *helper, const char *argument, const unsigned ch
             continue;
         }
         if (ready <= 0 || (pollfd.revents & POLLNVAL)) {
-            break;
+            return 0;
         }
         if (pollfd.revents & (POLLIN | POLLHUP | POLLERR)) {
             size_t capacity;
             unsigned char *buffer = image_buffer(reply, &capacity);
-            ssize_t count = recv(pair[0], buffer, capacity, 0);
+            ssize_t count = recv(process->socket, buffer, capacity, 0);
             if (count > 0) {
                 if (!image_received(reply, (size_t)count)) {
-                    break;
+                    return 0;
                 }
             } else if (count == 0) {
                 eof = 1;
-                if (!image_complete(reply) || sent != total) {
-                    break;
+                if (!finish || !image_complete(reply) || sent != total) {
+                    return 0;
                 }
             } else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
-                break;
+                return 0;
             }
         }
         if ((pollfd.revents & POLLOUT) && sent < total) {
@@ -583,36 +715,39 @@ static int image_run(const char *helper, const char *argument, const unsigned ch
 #else
             int send_flags = 0;
 #endif
-            ssize_t written = send(pair[0], buffer, count, send_flags);
+            ssize_t written = send(process->socket, buffer, count, send_flags);
             if (written > 0) {
                 sent += (size_t)written;
-                if (sent == total && shutdown(pair[0], SHUT_WR)) {
-                    break;
+                if (finish && sent == total && shutdown(process->socket, SHUT_WR)) {
+                    return 0;
                 }
             } else if (written == 0 ||
                        (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)) {
-                break;
+                return 0;
             }
         }
     }
-done:
-    if (pair[0] >= 0) {
-        close(pair[0]);
-    }
-    if (pair[1] >= 0) {
-        close(pair[1]);
-    }
-    if (null >= 0) {
-        close(null);
-    }
-    if (child > 0) {
-        kill(child, SIGKILL);
-        while (waitpid(child, NULL, 0) < 0 && errno == EINTR) {
-        }
-    }
-    return ok;
 }
 #endif
+
+static int image_run(const char *helper, const char *argument, const unsigned char *data, int size,
+                     const unsigned char *header, size_t header_size, struct image_reply *reply) {
+    int64_t start = image_millis();
+    struct decoder_process process;
+    if (start < 0 || !decoder_start(&process, helper, argument, WN_DECODER_ONESHOT)) {
+        return 0;
+    }
+    int ok = decoder_transfer(&process, data, (unsigned int)size, header, header_size, reply, 1,
+                              start + WN_IMAGE_SECONDS * 1000);
+    decoder_stop(&process);
+    return ok;
+}
+
+struct WnModelSession {
+    struct decoder_process process;
+    int active;
+    uint32_t sequence;
+};
 
 unsigned char *wn_image_decode(const char *helper, const unsigned char *data, int size,
                                int max_dimension, unsigned int max_bytes, int *width, int *height) {
@@ -717,4 +852,96 @@ unsigned char *wn_pdf_render(const char *helper, const char *font_dir, const uns
     *out_width = reply.width;
     *out_height = reply.height;
     return reply.pixels;
+}
+
+unsigned char *wn_mesh_decode(const char *helper, const unsigned char *data, int size,
+                              unsigned int format, unsigned int *length) {
+    if (length) {
+        *length = 0;
+    }
+    if (!length || !helper || !*helper || !data || size <= 0 ||
+        (unsigned int)size > WN_MODEL_INPUT_MAX || format < WN_MESH_STL || format > WN_MESH_GCODE) {
+        return NULL;
+    }
+    unsigned char header[16];
+    memcpy(header, "MDI1", 4);
+    wn_image_put(header + 4, (uint32_t)size);
+    wn_image_put(header + 8, format);
+    wn_image_put(header + 12, 0);
+    struct image_reply reply = {0};
+    reply.kind = DECODER_MESH;
+    reply.cap = WN_MODEL_OUTPUT_MAX;
+    if (!image_run(helper, NULL, data, size, header, sizeof(header), &reply)) {
+        free(reply.pixels);
+        return NULL;
+    }
+    *length = reply.bytes;
+    return reply.pixels;
+}
+
+WnModelSession *wn_model_start(const char *helper) {
+    if (!helper || !*helper) {
+        return NULL;
+    }
+    WnModelSession *session = calloc(1, sizeof(*session));
+    if (!session) {
+        return NULL;
+    }
+    if (!decoder_start(&session->process, helper, NULL, WN_DECODER_SESSION)) {
+        free(session);
+        return NULL;
+    }
+    session->active = 1;
+    return session;
+}
+
+unsigned char *wn_model_exchange(WnModelSession *session, unsigned int operation,
+                                 const unsigned char *data, unsigned int size,
+                                 unsigned char *output, unsigned int capacity,
+                                 unsigned int *length) {
+    if (length) {
+        *length = 0;
+    }
+    if (!session || !session->active) {
+        return NULL;
+    }
+    int64_t start = image_millis();
+    if (!length || (size && !data) || size > WN_MODEL_INPUT_MAX || operation > WN_MODEL_POSE ||
+        session->sequence == UINT32_MAX || start < 0) {
+        decoder_stop(&session->process);
+        session->active = 0;
+        return NULL;
+    }
+    unsigned char header[16];
+    memcpy(header, "FBI1", 4);
+    wn_image_put(header + 4, operation);
+    wn_image_put(header + 8, size);
+    wn_image_put(header + 12, ++session->sequence);
+    struct image_reply reply = {0};
+    reply.kind = DECODER_MODEL;
+    reply.index = operation;
+    reply.sequence = session->sequence;
+    reply.cap = output && capacity < WN_MODEL_OUTPUT_MAX ? capacity : WN_MODEL_OUTPUT_MAX;
+    reply.pixels = output;
+    reply.borrowed = output != NULL;
+    if (!decoder_transfer(&session->process, data, size, header, sizeof(header), &reply, 0,
+                          start + WN_IMAGE_SECONDS * 1000)) {
+        decoder_stop(&session->process);
+        session->active = 0;
+        if (!reply.borrowed) {
+            free(reply.pixels);
+        }
+        return NULL;
+    }
+    *length = reply.bytes;
+    return reply.pixels;
+}
+
+void wn_model_close(WnModelSession *session) {
+    if (session) {
+        if (session->active) {
+            decoder_stop(&session->process);
+        }
+        free(session);
+    }
 }

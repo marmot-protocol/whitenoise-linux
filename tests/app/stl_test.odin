@@ -70,3 +70,15 @@ obj_parse :: proc(t: ^testing.T) {
 	_, bad := parse_obj(transmute([]u8)string("v 0 0 0\nf 1 2 3\n"))
 	testing.expect(t, !bad)
 }
+
+@(test)
+mesh_rejects_nonfinite_source :: proc(t: ^testing.T) {
+	for source in ([]string{"solid x\nvertex NaN 0 0\nvertex 1 0 0\nvertex 0 1 0\nendsolid x\n", "solid x\nvertex Inf 0 0\nvertex 1 0 0\nvertex 0 1 0\nendsolid x\n"}) {
+		tris, ok := parse_stl(transmute([]u8)source)
+		delete(tris)
+		testing.expect(t, !ok)
+	}
+	tris, ok := parse_obj(transmute([]u8)string("v NaN 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n"))
+	delete(tris)
+	testing.expect(t, !ok)
+}

@@ -160,7 +160,7 @@ static int arc_read(struct archive *archive, uint32_t op, uint32_t requested,
 
 int main(int argc, char **argv) {
     (void)argv;
-    if (argc != 1 || !wn_decoder_limits() || !arc_locale()) {
+    if (argc != 1 || !wn_decoder_limits(WN_DECODER_ONESHOT) || !arc_locale()) {
         return 1;
     }
 #ifdef __OpenBSD__

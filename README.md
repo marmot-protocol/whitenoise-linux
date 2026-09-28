@@ -286,21 +286,33 @@ limited to 128 MiB and documents to 10,000 pages; each reply contains at most
 64 MiB of RGBA pixels, with dimensions no larger than 32,768 or the requested
 bounding box. Poppler and embedded-font parsing stay in the helper.
 
-On OpenBSD, `wn-image` and `wn-archive` lock `unveil()` with no filesystem
-paths and pledge `stdio` before reading input. `wn-pdf` loads Fontconfig's
+STL, OBJ, GLB and G-code parsing runs in `wn-mesh`; FBX parsing and animation
+evaluation run in `wn-fbx`. Input is limited to 128 MiB, geometry to two
+million triangles or toolpath segments, and flat replies to 512 MiB. The app
+validates channel sizes, indices, finite values, strings and texture references
+before publishing a model. Embedded GLB images go through `wn-image`.
+Neither cgltf nor ufbx is linked into the main application.
+
+On OpenBSD, `wn-image`, `wn-archive`, `wn-mesh` and `wn-fbx` lock `unveil()`
+with no filesystem paths and pledge `stdio` before reading input.
+`wn-pdf` loads Fontconfig's
 font list and the trusted bundled font directory first, then unveils only
 the resolved font files and Poppler resource directories read-only. It locks
 that policy and pledges `stdio rpath` before reading PDF bytes.
 
-All three helpers share the bounded process transport: five CPU seconds,
-ten seconds wall time and a 1 GiB memory limit, with no inherited environment
-and only input, output and a null error stream. The parent requires exact
-reply framing, end of stream and successful exit. Failure has no in-process
-fallback. Linux requires `close_range` (kernel 5.9 or newer); descriptor or
-sandbox setup failure stops decoding. Platforms other than OpenBSD use
-separate resource-limited processes, not an equivalent filesystem or syscall
-sandbox. The app's own font rasterization, video and model parsing remain
-in the main process.
+All five helpers share a 1 GiB memory limit, no inherited environment and
+only input, output and a null error stream. Image, archive, PDF and mesh helpers
+have five CPU seconds and ten seconds wall time; the parent requires exact
+reply framing, end of stream and successful exit. FBX helpers have a ten-second
+deadline and an echoed sequence number per exchange, but no cumulative CPU
+quota, so valid looping animations do not expire.
+Static FBX helpers close after loading; animated helpers close with the model.
+An invalid pose leaves the last validated geometry intact and closes the helper.
+
+Failure has no in-process fallback. Linux requires `close_range` (kernel 5.9
+or newer); descriptor or sandbox setup failure stops decoding. Platforms other
+than OpenBSD use separate resource-limited processes, not an equivalent
+filesystem or syscall sandbox. Video parsing remains in the main process.
 
 `.github/workflows/cross.yml` is called by CI and tagged releases. Its Linux
 ARM64 and Windows jobs extract the shipped archive and require a headless

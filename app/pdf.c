@@ -181,7 +181,7 @@ done:
 }
 
 int main(int argc, char **argv) {
-    if (argc != 2 || !argv[1][0] || !wn_decoder_limits()) {
+    if (argc != 2 || !argv[1][0] || !wn_decoder_limits(WN_DECODER_ONESHOT)) {
         return 1;
     }
     FcConfig *fonts = pdf_fonts(argv[1]);

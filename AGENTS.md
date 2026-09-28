@@ -25,8 +25,10 @@ output is already present, so only the first run is slow:
 - `vendor/mdk` cloned at `mdk-commit` from `DEPS_PIN`, and its C bundle built by
   upstream's own `crates/marmot-c/c-bindings.sh` (this is the Rust part of the
   build, and the long pole on a cold checkout).
-- `vendor/clay` and `vendor/ufbx` at their pinned commits; `ufbx.c` plus
-  `app/fbx_shim.c` are archived into `build/libwnfbx.a`.
+- `vendor/clay` and `vendor/ufbx` at their pinned commits; `ufbx.c`,
+  `app/fbx_shim.c` and `app/fbx_helper.c` build the isolated `build/wn-fbx`
+  parser and animation helper. `model-decoder/` builds `build/wn-mesh` for
+  STL, OBJ, GLB and G-code. Neither parser library is linked into the UI.
 - `vendor/twemoji` (the 72x72 PNG set) and `vendor/emoji-catalog.tsv`, both
   pulled from pinned crates.io tarballs.
 - `vendor/common-passwords.txt` and its MIT license from SecLists at
@@ -40,7 +42,7 @@ output is already present, so only the first run is slow:
 - An `ODIN_ROOT` overlay at `build/odin-root`, but **only** when the installed
   Odin is missing `vendor/stb/lib/stb_truetype.a` or `vendor/cgltf/lib/cgltf.a`
   (the Linux release tarball is; `sdlrl` needs stb truetype and image, the
-  glTF viewer needs cgltf), and always on OpenBSD. The overlay symlinks the
+  mesh helper needs cgltf), and always on OpenBSD. The overlay symlinks the
   real install and swaps in writable `vendor/stb` and `vendor/cgltf` copies it
   can run `build_stb.sh` and `build_cgltf.sh` in. On OpenBSD it also points
   those bindings at the built archives, which they name for Linux only.

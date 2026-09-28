@@ -120,11 +120,8 @@ if [ "$(git -C "$CROP" rev-parse HEAD)" != "$CROP_PIN" ]; then
   git -C "$CROP" checkout --detach "$CROP_PIN"
 fi
 
-# FBX support: ufbx (single-file MIT reader) plus app/fbx_shim.c, the
-# flat C API the Odin viewer binds. FBX is a versioned proprietary
-# format with skinning and animation curves; ufbx already reads every
-# flavor, so only the shim is ours. Archived into build/ so a stale
-# object can't survive a shim edit.
+# ufbx is linked only into the FBX helper. Cache the pinned reader object;
+# compile the shim with the helper so header edits cannot leave a stale ABI.
 UFBX="$HERE/vendor/ufbx"
 UFBX_PIN="$(pin ufbx)"
 if [ ! -d "$UFBX" ]; then
@@ -143,14 +140,6 @@ mkdir -p "$HERE/build/fbx"
 if [ ! -f "$HERE/build/fbx/ufbx.o" ] || [ "$(cat "$HERE/build/fbx/ufbx.stamp" 2>/dev/null || true)" != "$UFBX_PIN" ]; then
   cc -c -O2 -fPIC "$UFBX/ufbx.c" -o "$HERE/build/fbx/ufbx.o"
   echo "$UFBX_PIN" > "$HERE/build/fbx/ufbx.stamp"
-  rm -f "$HERE/build/libwnfbx.a"
-fi
-if [ ! -f "$HERE/build/fbx/fbx_shim.o" ] || [ "$HERE/app/fbx_shim.c" -nt "$HERE/build/fbx/fbx_shim.o" ]; then
-  cc -c -O2 -fPIC -I"$UFBX" "$HERE/app/fbx_shim.c" -o "$HERE/build/fbx/fbx_shim.o"
-  rm -f "$HERE/build/libwnfbx.a"
-fi
-if [ ! -f "$HERE/build/libwnfbx.a" ]; then
-  ar rcs "$HERE/build/libwnfbx.a" "$HERE/build/fbx/ufbx.o" "$HERE/build/fbx/fbx_shim.o"
 fi
 
 # Nostr event fetch (nevent cards): a websocket REQ over libcurl's
@@ -224,7 +213,7 @@ fi
 cc -c -O2 -fPIC -pthread "$HERE/app/helper_ipc.c" -o "$HERE/build/helper_ipc.o"
 ar rcs "$HERE/build/libwnipc.a" "$HERE/build/helper_ipc.o"
 
-# Image, archive and PDF parsers run in helpers sharing one bounded pipe client.
+# Attachment parsers run in helpers sharing one bounded pipe client.
 cc -c -O2 -fPIC -pthread "$HERE/app/decoder_ipc.c" -o "$HERE/build/decoder_ipc.o"
 ar rcs "$HERE/build/libwndecoder.a" "$HERE/build/decoder_ipc.o"
 IMAGE_ODIN="$(env -u ODIN_ROOT odin root)"
@@ -234,6 +223,10 @@ cc -O2 -Wall -Wextra "$HERE/app/archive.c" \
   $(pkg-config --cflags --libs libarchive) -o "$HERE/build/wn-archive"
 cc -O2 -Wall -Wextra "$HERE/app/pdf.c" \
   $(pkg-config --cflags --libs poppler-glib cairo fontconfig) -lm -o "$HERE/build/wn-pdf"
+cc -O2 -Wall -Wextra -I"$UFBX" "$HERE/app/fbx_helper.c" "$HERE/app/fbx_shim.c" \
+  "$HERE/build/fbx/ufbx.o" -lm -o "$HERE/build/wn-fbx"
+cc -c -O2 -fPIC "$HERE/app/mesh_limits.c" -o "$HERE/build/mesh_limits.o"
+ar rcs "$HERE/build/libwnmesh.a" "$HERE/build/mesh_limits.o"
 
 # FreeType decodes profile web fonts for the existing SFNT text renderer.
 cc -O2 -Wall -Wextra "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) -o "$HERE/build/wn-font"
@@ -380,7 +373,7 @@ if [ "${1:-}" = sources ]; then
 fi
 
 # The Linux odin release ships vendor/stb and vendor/cgltf without their
-# built .a archives (sdlrl needs stb truetype + image, the glTF viewer
+# built .a archives (sdlrl needs stb truetype + image, the mesh helper
 # needs cgltf). When either is missing, build them inside a private
 # ODIN_ROOT that symlinks the real install and swaps in writable copies
 # of those two vendor dirs. OpenBSD always takes the overlay: its bindings
@@ -420,6 +413,8 @@ if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendo
   ODIN_ROOT_ARG=(ODIN_ROOT="$OVERLAY")
 fi
 
+env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/model-decoder" -o:speed -out:"$HERE/build/wn-mesh"
+
 # The dev host builds a reloadable library after staging these same inputs.
 if [ "${1:-}" = stage ]; then
   exit 0
@@ -458,6 +453,9 @@ if [ "${1:-}" = test ]; then
   cc -O2 -Wall -Wextra "$HERE/tests/pdf-helper-test.c" "$HERE/build/libwndecoder.a" \
     -o "$HERE/build/pdf-helper-test"
   "$HERE/build/pdf-helper-test" "$HERE/build/wn-pdf" "$HERE/vendor/fonts"
+  cc -O2 -Wall -Wextra "$HERE/tests/model-transport-test.c" "$HERE/build/libwndecoder.a" \
+    -o "$HERE/build/model-transport-test"
+  "$HERE/build/model-transport-test" --test
   cc -std=c11 -I"$HERE/vendor/mdk/crates/marmot-c/include" "$HERE/tests/event-layout-test.c" -o "$HERE/build/event-layout-test"
   "$HERE/build/event-layout-test"
   cc -O2 -I"$HERE/build/clay" "$HERE/tests/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"

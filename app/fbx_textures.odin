@@ -19,7 +19,7 @@ Fbx_Channel :: enum i32 {
 
 @(private)
 Fbx_Texture_Info :: struct {
-	path:             cstring, // borrowed from ufbx
+	path:             string, // owned, validated helper reference
 	uv:               [6]f32,
 	tint:             [4]f32,
 	clamp_u, clamp_v: i32,
@@ -28,6 +28,7 @@ Fbx_Texture_Info :: struct {
 @(private)
 Fbx_Texture :: struct {
 	info:         Fbx_Texture_Info,
+	reference:    i32, // -1 unsupported, 0 absent, 1 explicit path
 	image:        rl.Image, // borrowed from Inspect.images
 	pixels:       enum {
 		Color,
@@ -70,7 +71,7 @@ fbx_find_texture :: proc(paths, basenames: map[string]int, model_name, reference
 
 @(private)
 fbx_load_textures :: proc(insp: ^Inspect, archive: ^Arc_View, model_name: string) {
-	if insp.scene == nil || insp.uv == nil || archive == nil {return}
+	if len(insp.material_names) == 0 || insp.uv == nil || archive == nil {return}
 	paths := make(map[string]int, context.temp_allocator)
 	basenames := make(map[string]int, context.temp_allocator)
 	named := make(map[string]int, context.temp_allocator)
@@ -116,21 +117,18 @@ fbx_load_textures :: proc(insp: ^Inspect, archive: ^Arc_View, model_name: string
 	}
 
 	loaded := make(map[int]rl.Image, context.temp_allocator)
-	insp.textures = make([][Fbx_Channel]Fbx_Texture, len(insp.mats) / FBX_MAT_FLOATS)
 	decoded, extracted := 0, 0
 	for &material, i in insp.textures {
-		name := strings.to_lower(
-			string(fbx_material_name(insp.scene, i32(i))),
-			context.temp_allocator,
-		)
+		name := strings.to_lower(insp.material_names[i], context.temp_allocator)
 		for &texture, channel in material {
 			index := -1
-			reference := fbx_texture_of(insp.scene, i32(i), channel, &texture.info)
+			reference := texture.reference
 			if reference < 0 {continue}
 			if reference > 0 {
-				index = fbx_find_texture(paths, basenames, model_name, string(texture.info.path))
+				index = fbx_find_texture(paths, basenames, model_name, texture.info.path)
 			} else if match, ok := named[fmt.tprintf("%s/%d", name, channel)]; ok && name != "" {
 				index = match
+				delete(texture.info.path)
 				texture.info = {
 					uv   = {1, 0, 0, 0, 1, 0},
 					tint = {1, 1, 1, 1},

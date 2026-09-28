@@ -2,6 +2,7 @@
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 
+import "core:math"
 import "core:testing"
 
 @(test)
@@ -20,4 +21,19 @@ gcode_parse :: proc(t: ^testing.T) {
 	// Comment-only input has no extrusion.
 	_, bad := parse_gcode(transmute([]u8)string("; nothing\nG1 X5 Y5\n"))
 	testing.expect(t, !bad)
+}
+
+@(test)
+gcode_relative_axes :: proc(t: ^testing.T) {
+	source := "G90\nM82\nG1 X2 E1\nG91\nG1 Y2 E1\nG92 E0\nG1 Z2 E1\n"
+	segments, ok := parse_gcode(transmute([]u8)source)
+	defer delete(segments)
+	testing.expect(t, ok)
+	expected := [18]f32{-1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1, 1, 1}
+	testing.expect_value(t, len(segments), len(expected))
+	if len(segments) != len(expected) {return}
+	scale := math.sqrt(f32(3))
+	for value, i in segments {
+		testing.expect(t, abs(value - expected[i] / scale) < 0.00001)
+	}
 }

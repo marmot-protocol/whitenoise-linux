@@ -4,20 +4,19 @@ import "core:encoding/base64"
 import "core:math"
 import "core:strings"
 
-import rl "sdlrl"
 import cgltf "vendor:cgltf"
 
-// Material factors and decoded images outlive cgltf.data. Texture views borrow
-// only the images recorded in insp.images, never the GLB's encoded bytes.
+// Embedded encoded image bytes are copied out of cgltf and decoded only by the parent.
 @(private)
-glb_load_materials :: proc(data: ^cgltf.data, insp: ^Inspect) -> bool {
+glb_load_materials :: proc(data: ^cgltf.data, insp: ^Mesh) -> bool {
 	if data == nil || insp == nil {return false}
 	if len(data.materials) == 0 {return true}
+	if len(data.materials) > MESH_MAX_MATERIALS {return false}
 	insp.mats = make([]f32, len(data.materials) * FBX_MAT_FLOATS)
-	insp.textures = make([][Fbx_Channel]Fbx_Texture, len(data.materials))
-	loaded := make(map[^cgltf.image]rl.Image)
+	insp.textures = make([][Mesh_Channel]Mesh_Texture, len(data.materials))
+	loaded := make(map[^cgltf.image]i32)
 	defer delete(loaded)
-	decoded, encoded := 0, 0
+	encoded := 0
 	for &material, i in data.materials {
 		pbr := &material.pbr_metallic_roughness
 		base := pbr.base_color_factor
@@ -74,7 +73,6 @@ glb_load_materials :: proc(data: ^cgltf.data, insp: ^Inspect) -> bool {
 			base,
 			insp,
 			&loaded,
-			&decoded,
 			&encoded,
 		)
 		switch material.alpha_mode {
@@ -90,13 +88,12 @@ glb_load_materials :: proc(data: ^cgltf.data, insp: ^Inspect) -> bool {
 			{pbr.metallic_factor, pbr.metallic_factor, pbr.metallic_factor, 1},
 			insp,
 			&loaded,
-			&decoded,
 			&encoded,
 		)
 		textures[.Metalness].pixels = .Blue
 		textures[.Roughness] = textures[.Metalness]
 		textures[.Roughness].pixels = .Green
-		textures[.Roughness].info.tint = {
+		textures[.Roughness].tint = {
 			pbr.roughness_factor,
 			pbr.roughness_factor,
 			pbr.roughness_factor,
@@ -107,7 +104,6 @@ glb_load_materials :: proc(data: ^cgltf.data, insp: ^Inspect) -> bool {
 			{emission[0], emission[1], emission[2], 1},
 			insp,
 			&loaded,
-			&decoded,
 			&encoded,
 		)
 	}
@@ -118,11 +114,11 @@ glb_load_materials :: proc(data: ^cgltf.data, insp: ^Inspect) -> bool {
 glb_material_texture :: proc(
 	view: ^cgltf.texture_view,
 	tint: [4]f32,
-	insp: ^Inspect,
-	loaded: ^map[^cgltf.image]rl.Image,
-	decoded, encoded: ^int,
-) -> Fbx_Texture {
-	out: Fbx_Texture
+	insp: ^Mesh,
+	loaded: ^map[^cgltf.image]i32,
+	encoded: ^int,
+) -> Mesh_Texture {
+	out: Mesh_Texture
 	texture := view.texture
 	if texture == nil || texture.image_ == nil {return out}
 	texcoord := view.texcoord
@@ -131,8 +127,8 @@ glb_material_texture :: proc(
 	}
 	// Geometry carries UV0 only. Do not silently sample UV1 textures with UV0.
 	if texcoord != 0 {return out}
-	out.info.uv = {1, 0, 0, 0, 1, 0}
-	out.info.tint = tint
+	out.uv = {1, 0, 0, 0, 1, 0}
+	out.tint = tint
 	if view.has_transform {
 		t := &view.transform
 		co, si := math.cos(t.rotation), math.sin(t.rotation)
@@ -140,22 +136,27 @@ glb_material_texture :: proc(
 		c, d := si * t.scale[0], co * t.scale[1]
 		// Both Inspect UVs and the sampler use V up. Conjugate glTF's
 		// top-origin transform by (u, v) -> (u, 1-v).
-		out.info.uv = {a, -b, b + t.offset[0], -c, d, 1 - d - t.offset[1]}
-		for value in out.info.uv {
+		out.uv = {a, -b, b + t.offset[0], -c, d, 1 - d - t.offset[1]}
+		for value in out.uv {
 			if math.is_nan(value) || math.is_inf(value) {return {}}
 		}
 	}
 	if texture.sampler != nil {
-		out.info.clamp_u = glb_texture_wrap(texture.sampler.wrap_s)
-		out.info.clamp_v = glb_texture_wrap(texture.sampler.wrap_t)
+		out.clamp_u = glb_texture_wrap(texture.sampler.wrap_s)
+		out.clamp_v = glb_texture_wrap(texture.sampler.wrap_t)
 	}
 	if image, ok := loaded[texture.image_]; ok {
 		out.image = image
 		return out
 	}
-	out.image = glb_material_image(texture.image_, decoded, encoded)
-	loaded[texture.image_] = out.image // Failed decodes are not retried.
-	if out.image.data != nil {append(&insp.images, out.image)}
+	if len(insp.images) < MESH_MAX_IMAGES {
+		bytes := glb_material_image(texture.image_, encoded)
+		if len(bytes) > 0 {
+			append(&insp.images, bytes)
+			out.image = i32(len(insp.images))
+		}
+	}
+	loaded[texture.image_] = out.image // Failed extraction is not retried.
 	return out
 }
 
@@ -173,11 +174,12 @@ glb_texture_wrap :: proc(wrap: cgltf.wrap_mode) -> i32 {
 }
 
 @(private)
-glb_material_image :: proc(source: ^cgltf.image, decoded, encoded: ^int) -> rl.Image {
-	if decoded^ >= FBX_TEXTURE_BYTES || encoded^ >= FBX_TEXTURE_BYTES {return {}}
+glb_material_image :: proc(source: ^cgltf.image, encoded: ^int) -> []u8 {
+	if encoded^ >= FBX_TEXTURE_BYTES {return nil}
 	bytes: []u8
 	owned: []u8
-	defer delete(owned)
+	transferred := false
+	defer if !transferred {delete(owned)}
 	if source.buffer_view != nil {
 		view := source.buffer_view
 		if view.has_meshopt_compression || view.buffer == nil || view.buffer.data == nil {
@@ -211,12 +213,11 @@ glb_material_image :: proc(source: ^cgltf.image, decoded, encoded: ^int) -> rl.I
 	png := len(bytes) >= 8 && string(bytes[:8]) == "\x89PNG\r\n\x1a\n"
 	jpeg := len(bytes) >= 3 && bytes[0] == 0xff && bytes[1] == 0xd8 && bytes[2] == 0xff
 	if !png && !jpeg {return {}}
-	image := rl.LoadImageFromMemory(
-		"",
-		raw_data(bytes),
-		i32(len(bytes)),
-		max_bytes = u32(FBX_TEXTURE_BYTES - decoded^),
-	)
-	if image.data != nil {decoded^ += int(image.width) * int(image.height) * 4}
-	return image
+	if owned != nil {
+		transferred = true
+		return owned
+	}
+	out := make([]u8, len(bytes))
+	copy(out, bytes)
+	return out
 }

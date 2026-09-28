@@ -10,7 +10,7 @@
 #include <stb_image.h>
 
 static int image_restrict(void) {
-    if (!wn_decoder_limits()) {
+    if (!wn_decoder_limits(WN_DECODER_ONESHOT)) {
         return 0;
     }
 #ifdef __OpenBSD__
