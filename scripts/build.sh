@@ -14,6 +14,12 @@ HERE="$(cd "$(dirname "$0")/.." && pwd)"
 if ! command -v sha256sum >/dev/null && command -v gsha256sum >/dev/null; then
   sha256sum() { gsha256sum "$@"; }
 fi
+# GNU tar restores ownership as root, which fails in Flatpak's UID namespace.
+# OpenBSD tar already leaves ownership unchanged unless -p is requested.
+TAR_OWNER=()
+if [ "$(uname -s)" = Linux ]; then
+  TAR_OWNER=(--no-same-owner)
+fi
 # OpenBSD's login classes cap a process's data size (1.5 GB soft for staff);
 # rustc on marmot-app and `odin build -o:speed` on the app need more
 # ("memory allocation failed", "Out of Virtual memory"). Raise the soft
@@ -252,7 +258,7 @@ fi
 TWEMOJI="$HERE/vendor/twemoji"
 if [ ! -d "$TWEMOJI" ]; then
   TMP="$(mktemp -d)"
-  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/twemoji-assets/twemoji-assets-1.5.1+17.0.2.crate" | tar -xzf - -C "$TMP"
+  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/twemoji-assets/twemoji-assets-1.5.1+17.0.2.crate" | tar "${TAR_OWNER[@]}" -xzf - -C "$TMP"
   mv "$TMP"/twemoji-assets-*/assets/72x72 "$TWEMOJI"
   rm -rf "$TMP"
 fi
@@ -263,7 +269,7 @@ fi
 CATALOG="$HERE/vendor/emoji-catalog.tsv"
 if [ ! -f "$CATALOG" ]; then
   TMP="$(mktemp -d)"
-  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/emojis/emojis-0.6.4.crate" | tar -xzf - -C "$TMP"
+  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/emojis/emojis-0.6.4.crate" | tar "${TAR_OWNER[@]}" -xzf - -C "$TMP"
   # A literal tab: BSD sed does not expand \t in the replacement.
   grep -o 'Emoji { emoji: "[^"]*", name: "[^"]*"' "$TMP"/emojis-0.6.4/src/gen/mod.rs |
     sed "s/Emoji { emoji: \"\([^\"]*\)\", name: \"\([^\"]*\)\"/\1$(printf '\t')\2/" |
@@ -300,7 +306,7 @@ if [ ! -f "$FONTS/LiberationSans-Regular.ttf" ] || [ ! -f "$FONTS/LiberationSans
   curl -sSfL -o "$TMP/liberation.tar.gz" "$LIBERATION_URL"
   echo "$LIBERATION_SHA  $TMP/liberation.tar.gz" | sha256sum -c -
   # Extract whole, then copy: --strip-components/--wildcards are GNU-only.
-  tar -xzf "$TMP/liberation.tar.gz" -C "$TMP"
+  tar "${TAR_OWNER[@]}" -xzf "$TMP/liberation.tar.gz" -C "$TMP"
   for face in LiberationSans-Regular LiberationSans-Bold LiberationSans-Italic LiberationSans-BoldItalic LiberationMono-Regular; do
     cp "$TMP"/liberation-fonts-ttf-*/"$face.ttf" "$FONTS/"
   done
