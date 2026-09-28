@@ -1552,7 +1552,7 @@ CaptureFrame :: proc() -> Texture2D {
 //
 //   frame ──▶ 1/2 ──▶ 1/4 ──▶ 1/8 ──▶ 1/16 ──stretch──▶ screen
 
-TARGET_SLOTS :: 6 // named by the SLOT constants in renderer.odin
+TARGET_SLOTS :: 5 // named by the SLOT constants in renderer.odin
 BLUR_STEPS :: 4
 TARGET_DEPTH :: 2 // the frame, and the layer split inside it
 
@@ -1758,24 +1758,6 @@ CopyTarget :: proc(dst_slot, src_slot: int) -> bool {
 	sdl.RenderClear(state.renderer)
 	sdl.SetTextureAlphaMod(src.tex, 255)
 	sdl.RenderTexture(state.renderer, src.tex, nil, nil)
-	return true
-}
-
-// Draw src over dst at an alpha, without clearing dst first. Repeated
-// every frame this makes dst an exponentially decayed history of src,
-// which is the whole of the motion trail: each frame is worth `alpha`,
-// the one before it `alpha*(1-alpha)`, and so on back.
-FadeTargetInto :: proc(dst_slot, src_slot: int, alpha: f32) -> bool {
-	src := targets[src_slot]
-	if src.tex == nil || !ensure_target(&targets[dst_slot], src.w, src.h) {
-		return false
-	}
-	saved := begin_raw()
-	defer restore_view(saved)
-	sdl.SetRenderTarget(state.renderer, targets[dst_slot].tex)
-	sdl.SetTextureAlphaMod(src.tex, u8(clamp(alpha, 0, 1) * 255))
-	sdl.RenderTexture(state.renderer, src.tex, nil, nil)
-	sdl.SetTextureAlphaMod(src.tex, 255)
 	return true
 }
 

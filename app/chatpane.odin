@@ -205,8 +205,8 @@ chat_pane :: proc(ui: ^Ui_State) {
 						padding = {
 							left = side_pad + u16(thread_slide()),
 							right = side_pad,
-							top = 8 + u16(max(overscroll, 0)),
-							bottom = 8 + u16(max(-overscroll, 0)),
+							top = 8,
+							bottom = 8,
 						},
 						childGap = 2,
 					},

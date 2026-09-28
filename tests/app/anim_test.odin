@@ -33,12 +33,3 @@ test_anim_set_no_replay :: proc(t: ^testing.T) {
 	anim_tick(1.0 / 60)
 	testing.expect(t, anim_to(0x77770001, 340) == 340, "entry replayed the drag")
 }
-
-@(test)
-test_lag_pads_total :: proc(t: ^testing.T) {
-	for i in -120 ..= 120 {
-		lag := f32(i) / 10
-		top, bottom := lag_pads(lag)
-		testing.expectf(t, top + bottom == 2 * MSG_PAD_Y, "lag %v split %v+%v", lag, top, bottom)
-	}
-}
