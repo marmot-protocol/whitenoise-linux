@@ -119,7 +119,7 @@ Web_Modal :: struct {
 web_modal: Web_Modal
 
 web_open :: proc(url, title: string) -> bool {
-	if !WEBXDC_SUPPORTED {return false}
+	when !WEBXDC_SUPPORTED {return false}
 	web_close()
 
 	viewer := web_viewer_path()
@@ -205,9 +205,6 @@ web_close :: proc() {
 @(private = "file")
 web_viewer_path :: proc() -> string {
 	path := helper_path("wn-webview")
-	// The OpenBSD startup cache already checked existence; helpers are
-	// execute-only after unveil so a later stat would incorrectly hide them.
-	when ODIN_OS == .OpenBSD {return path}
 	return os.is_file(path) ? path : ""
 }
 

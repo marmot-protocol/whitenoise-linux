@@ -52,8 +52,11 @@ if [ -n "$SPEECH" ]; then
   cp "$HERE/build/tts-lib/"*.so "$RES/tts-lib/"
 fi
 # The webxdc host process, only when webkit2gtk was present at build time.
+# Never ship it on OpenBSD, including leftovers from earlier installs.
 # The app looks for it beside its own binary.
-if [ -x "$HERE/build/wn-webview" ]; then
+if [ "$(uname -s)" = OpenBSD ]; then
+  rm -f "$PREFIX/bin/wn-webview"
+elif [ -x "$HERE/build/wn-webview" ]; then
   cp "$HERE/build/wn-webview" "$PREFIX/bin/"
 fi
 cp -r "$HERE/vendor/twemoji" "$RES/"

@@ -263,6 +263,8 @@ OpenBSD's Rust package (1.94) is older than the toolchain Marmot pins, so
 which rustc and Odin's optimizing build otherwise run out of.
 Reading aloud and dictation are left out: sherpa-onnx publishes no OpenBSD
 runtime, so those features report that they could not start.
+Webxdc is disabled on OpenBSD. `.xdc` attachments remain ordinary downloadable
+files; the build omits `wn-webview`, and installation removes an older copy.
 
 OpenBSD requires a root-owned installation whose resources, helpers,
 libraries and ancestor directories are not group- or other-writable.

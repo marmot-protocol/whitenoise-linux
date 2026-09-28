@@ -24,7 +24,14 @@
 #include <sys/syscall.h>
 #endif
 
-#define HELPER_COUNT 10u
+static const char *const helper_names[] = {
+    "wn-image",   "wn-archive", "wn-mesh", "wn-fbx", "wn-math",
+    "wn-pdf",     "wn-font",    "wn-stt",  "wn-tts",
+#ifndef __OpenBSD__
+    "wn-webview",
+#endif
+};
+#define HELPER_COUNT (sizeof(helper_names) / sizeof(helper_names[0]))
 #define ARG_COUNT 64u
 #define ARG_BYTES 16384u
 #define JOB_COUNT 128u
@@ -272,9 +279,6 @@ static int receive_channel(int socket, int descriptors[4], unsigned char *mask) 
 }
 
 static int freeze_helpers(const char *const *helpers, size_t count, const char *resources) {
-    static const char *const names[] = {"wn-image", "wn-archive", "wn-mesh", "wn-fbx",
-                                        "wn-math",  "wn-pdf",     "wn-font", "wn-stt",
-                                        "wn-tts",   "wn-webview"};
     if (count > HELPER_COUNT || (count && !helpers) || !resources) {
         return EINVAL;
     }
@@ -286,7 +290,7 @@ static int freeze_helpers(const char *const *helpers, size_t count, const char *
         const char *name = strrchr(helpers[i], '/');
         name = name ? name + 1 : helpers[i];
         size_t kind = 0;
-        while (kind < HELPER_COUNT && strcmp(name, names[kind])) {
+        while (kind < HELPER_COUNT && strcmp(name, helper_names[kind])) {
             ++kind;
         }
         if (kind == HELPER_COUNT) {

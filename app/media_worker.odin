@@ -86,7 +86,13 @@ media_kind :: proc(name, mime: string) -> Media_Kind {
 		if strings.has_suffix(lower, ext) {return .Audio}
 	}
 	if strings.has_suffix(lower, ".pdf") || mime == "application/pdf" {return .Pdf}
-	if is_xdc_name(lower) {return .Xdc}
+	if is_xdc_name(lower) {
+		when ODIN_OS == .OpenBSD {
+			return .File
+		} else {
+			return .Xdc
+		}
+	}
 	for ext in ([]string{".zip", ".rar", ".7z", ".tar", ".tgz", ".txz", ".tbz2"}) {
 		if strings.has_suffix(lower, ext) {return .Arc}
 	}

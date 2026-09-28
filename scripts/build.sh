@@ -280,7 +280,10 @@ fi
 # wn-webview: the process that runs a webxdc app offscreen and hands
 # the app its pixels through shared memory. Optional: without
 # webkit2gtk-4.1 there is no viewer, and .xdc attachments stay inert.
-if pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
+# OpenBSD never builds or runs the host, even with WebKit installed.
+if [ "$(uname -s)" = OpenBSD ]; then
+  echo "==> webxdc apps are disabled on OpenBSD"
+elif pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
   if [ ! -f "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.c" -nt "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.h" -nt "$HERE/build/wn-webview" ] || [ "$HERE/build/libwnipc.a" -nt "$HERE/build/wn-webview" ]; then
     cc -O2 "$HERE/app/webview.c" "$HERE/build/libwnipc.a" -pthread -o "$HERE/build/wn-webview" \
       $(pkg-config --cflags --libs webkit2gtk-4.1)
