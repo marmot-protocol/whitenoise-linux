@@ -170,7 +170,7 @@ get_started_pane :: proc(ui: ^Ui_State) {
 						)
 					}
 					if len(view.action) > 0 {
-						micro_button(step_action_id(step), view.action)
+						micro_button(step_action_id(step), tr(view.action))
 					}
 				}
 				if step != .First_Chat {

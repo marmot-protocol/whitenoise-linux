@@ -238,7 +238,7 @@ xdc_launch :: proc(
 	defer delete(url)
 
 	if !serving {
-		ui.client_status = fmt.aprintf("couldn't open %s. Please try again.", view.name)
+		set_status(ui, fmt.aprintf(tr("Couldn't open %s. Please try again."), view.name), .Error)
 		return
 	}
 	// The next reload fills the update list for this session.
@@ -246,7 +246,7 @@ xdc_launch :: proc(
 
 	fmt.eprintfln("webxdc: serving %s at %s", view.name, url)
 	if !web_open(url, view.name) {
-		ui.client_status = fmt.aprintf("couldn't open %s. Please try again.", view.name)
+		set_status(ui, fmt.aprintf(tr("Couldn't open %s. Please try again."), view.name), .Error)
 	}
 }
 

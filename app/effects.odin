@@ -432,7 +432,7 @@ effect_picker :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		eyebrow("SEND WITH EFFECT")
+		eyebrow(tr("SEND WITH EFFECT"))
 		if clay.UI(clay.ID("FxRow"))({layout = {childGap = 6}}) {
 			for e, i in EFFECTS {
 				armed := ui.fx_armed == e.id
@@ -462,7 +462,7 @@ effect_picker :: proc(ui: ^Ui_State) {
 			}
 		}
 		if ui.fx_armed != 0 {
-			micro_button("FxClear", "Clear effect")
+			micro_button("FxClear", tr("Clear effect"))
 		}
 	}
 }

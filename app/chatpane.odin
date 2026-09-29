@@ -124,7 +124,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 					ui,
 					"SearchBox",
 					&ui.search_input,
-					"Search messages",
+					tr("Search messages"),
 					ui.focus == .Search,
 				)
 			}
@@ -155,8 +155,8 @@ chat_pane :: proc(ui: ^Ui_State) {
 					tr("You were invited to this group."),
 					{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
 				)
-				login_button("InviteAccept", "Accept")
-				login_button("InviteDecline", "Decline")
+				login_button("InviteAccept", tr("Accept"))
+				login_button("InviteDecline", tr("Decline"))
 			}
 		}
 
@@ -225,7 +225,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 						{layout = {padding = {left = 16, right = 16, top = 8, bottom = 2}}},
 						) {
 							clay.Text(
-								"• CHAT REQUEST •",
+								tr("• CHAT REQUEST •"),
 								{
 									fontId = FONT_MONO,
 									fontSize = 10,
@@ -324,7 +324,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 								},
 								) {}
 								clay.Text(
-									"• NEW MESSAGES •",
+									tr("• NEW MESSAGES •"),
 									{
 										fontId = FONT_MONO,
 										fontSize = 10,
@@ -475,7 +475,7 @@ section_head :: proc(id_str: string, label: string, note: string) {
 	},
 	) {
 		clay.Text(
-			tr(label),
+			label,
 			{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 1},
 		)
 		if len(note) > 0 {
@@ -513,7 +513,7 @@ members_panel :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
-				login_button("GroupFilesOpen", "Files")
+				login_button("GroupFilesOpen", tr("Files"))
 				if clay.UI(clay.ID("MembersHeadGap"))(
 				{layout = {sizing = {width = clay.SizingGrow()}}},
 				) {}
@@ -647,7 +647,7 @@ info_width :: proc(ui: ^Ui_State) -> f32 {
 info_settings_col :: proc(ui: ^Ui_State) {
 	group_hero(ui)
 
-	eyebrow("GROUP NAME")
+	eyebrow(tr("GROUP NAME"))
 	if clay.UI(clay.ID("RenameBox"))(
 	{
 		layout = {
@@ -660,24 +660,24 @@ info_settings_col :: proc(ui: ^Ui_State) {
 		border = ui.focus == .Rename ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
 	},
 	) {
-		field_text(ui, "RenameBox", &ui.rename_input, "New name", ui.focus == .Rename)
+		field_text(ui, "RenameBox", &ui.rename_input, tr("New name"), ui.focus == .Rename)
 	}
-	login_button("RenameBtn", "Rename")
+	login_button("RenameBtn", tr("Rename"))
 
 	// Group timer, an MLS setting shared by every member; MDK
 	// stamps each new message and prunes after expiry.
-	eyebrow("DISAPPEARING MESSAGES")
+	eyebrow(tr("DISAPPEARING MESSAGES"))
 	if clay.UI(clay.ID("RetentionRow"))({layout = {childGap = 8}}) {
 		labels := [len(RETENTION_SECS)]string{N_("Off"), "1h", "1d", "1w", "4w"}
 		for secs, i in RETENTION_SECS {
 			active := ui.group_retention == secs
-			micro_button(fmt.tprintf("RetChip%d", i), labels[i], active ? ACCENT : {})
+			micro_button(fmt.tprintf("RetChip%d", i), tr(labels[i]), active ? ACCENT : {})
 		}
 	}
 
 	issues_settings(ui)
 
-	eyebrow("ADD MEMBER")
+	eyebrow(tr("ADD MEMBER"))
 	if clay.UI(clay.ID("InviteBox"))(
 	{
 		layout = {
@@ -700,10 +700,10 @@ info_settings_col :: proc(ui: ^Ui_State) {
 	}
 	login_button(
 		"InviteBtn",
-		ui.nip05_ticket != 0 ? N_("Looking up...") : strings.contains(string(ui.invite_input[:]), "@") ? N_("Look up") : N_("Invite"),
+		ui.nip05_ticket != 0 ? tr("Looking up...") : strings.contains(string(ui.invite_input[:]), "@") ? tr("Look up") : tr("Invite"),
 	)
 
-	eyebrow("EXPORT CHAT")
+	eyebrow(tr("EXPORT CHAT"))
 	if clay.UI(clay.ID("ExportRow"))({layout = {childGap = 8}}) {
 		micro_button("ExportHtmlBtn", "HTML")
 		micro_button("ExportMdBtn", "Markdown")
@@ -720,7 +720,7 @@ MEMBER_NICK_HEIGHT :: 28
 // The people column: the member list and shared media.
 @(private = "file")
 info_people_col :: proc(ui: ^Ui_State, col_w: f32) {
-	section_head("MembersSection", "Members", fmt.tprintf("%d", len(ui.members)))
+	section_head("MembersSection", tr("Members"), fmt.tprintf("%d", len(ui.members)))
 	// Retain row geometry, but do not build names or queue avatars off screen.
 	data := clay.GetScrollContainerData(clay.ID("MembersScroll"))
 	view := clay.GetElementData(clay.ID("MembersScroll"))
@@ -842,7 +842,7 @@ info_people_col :: proc(ui: ^Ui_State, col_w: f32) {
 					ui,
 					"MemberNickBox",
 					&ui.nick_input,
-					"Nickname",
+					tr("Nickname"),
 					ui.focus == .Nick,
 					12,
 					TEXT_LO,
@@ -886,7 +886,7 @@ shared_media_grid :: proc(ui: ^Ui_State, col_w: f32) {
 		return
 	}
 
-	section_head("SharedMediaSection", "Shared media", "")
+	section_head("SharedMediaSection", tr("Shared media"), "")
 	cell := (col_w - 12) / SHARED_MEDIA_COLS // minus the two 6px gaps
 	if clay.UI(clay.ID("SharedMedia"))({layout = {layoutDirection = .TopToBottom, childGap = 6}}) {
 		for row := 0; row * SHARED_MEDIA_COLS < len(thumbs); row += 1 {
@@ -917,7 +917,7 @@ shared_media_grid :: proc(ui: ^Ui_State, col_w: f32) {
 	}
 	if total > len(thumbs) {
 		clay.Text(
-			fmt.tprintf("+%d more", total - len(thumbs)),
+			fmt.tprintf(tr("+%d more"), total - len(thumbs)),
 			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 		)
 	}
@@ -1111,13 +1111,13 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 			tr("npub, hex, name@domain, or .bit (optional)"),
 			ui.focus == .NC_Member,
 		)
-		input_box(ui, "NCName", &ui.nc_name, "Group name", ui.focus == .NC_Name)
+		input_box(ui, "NCName", &ui.nc_name, tr("Group name"), ui.focus == .NC_Name)
 		if clay.UI(clay.ID("NCButtons"))({layout = {childGap = 12}}) {
 			login_button(
 				"NCCreate",
-				ui.nip05_ticket != 0 ? N_("Looking up...") : strings.contains(string(ui.nc_member[:]), "@") ? N_("Look up") : N_("Create"),
+				ui.nip05_ticket != 0 ? tr("Looking up...") : strings.contains(string(ui.nc_member[:]), "@") ? tr("Look up") : tr("Create"),
 			)
-			login_button("NCCancel", "Cancel")
+			login_button("NCCancel", tr("Cancel"))
 		}
 	}
 }
@@ -1182,10 +1182,10 @@ chat_composer :: proc(ui: ^Ui_State) {
 		},
 		) {
 			clay.Text(
-				fmt.tprintf("Replying to: %s", ui.reply_hint),
+				fmt.tprintf(tr("Replying to: %s"), ui.reply_hint),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 			)
-			action_chip("ReplyCancel", 0, "Cancel")
+			action_chip("ReplyCancel", 0, tr("Cancel"))
 		}
 	}
 
@@ -1410,7 +1410,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 						effect_picker(ui)
 					}
 					if hovered() {
-						tooltip("Send with an effect")
+						tooltip(tr("Send with an effect"))
 					}
 					if tex := emoji_tex(effect_emoji(ui.fx_armed));
 					   ui.fx_armed != 0 && tex != nil {
@@ -1440,12 +1440,12 @@ chat_composer :: proc(ui: ^Ui_State) {
 				},
 				) {
 					if hovered() {
-						tooltip("Create a poll")
+						tooltip(tr("Create a poll"))
 					}
 					clay.Text(ICON_POLL, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
 				}
 				if ui.prefs.stt_enabled {
-					micro_button("DictateBtn", "Dictate", ui.stt.file != nil ? TEXT_LO : {})
+					micro_button("DictateBtn", tr("Dictate"), ui.stt.file != nil ? TEXT_LO : {})
 				}
 				if clay.UI(clay.ID("MicBtn"))(
 				{

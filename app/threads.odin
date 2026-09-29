@@ -130,7 +130,7 @@ thread_root_plate :: proc(ui: ^Ui_State) {
 		{layout = {padding = {left = 16, right = 16, top = 4, bottom = 2}}},
 		) {
 			clay.Text(
-				"• THREAD •",
+				tr("• THREAD •"),
 				{fontId = FONT_MONO, fontSize = 10, textColor = ACCENT_DIM, letterSpacing = 2},
 			)
 		}

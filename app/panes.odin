@@ -260,7 +260,7 @@ folder_header :: proc(ui: ^Ui_State, index: u32, name: string, unread: int, coll
 			},
 			) {
 				clay.Text("···", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_LO})
-				if hovered() {tooltip("Folder options")}
+				if hovered() {tooltip(tr("Folder options"))}
 			}
 		}
 	}
@@ -368,7 +368,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							}
 							if chat.pending {
 								clay.Text(
-									"INVITE",
+									tr("INVITE"),
 									{
 										fontId = FONT_BODY,
 										fontSize = 10,
@@ -378,7 +378,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 								)
 							}
 							if hovered() {
-								action_chip("ChatArch", index, "Archive")
+								action_chip("ChatArch", index, tr("Archive"))
 								action_chip("ChatMenu", index, "···")
 							}
 							if clay.UI(clay.ID("ChatRowGap", index))(
@@ -586,7 +586,7 @@ account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 		) {}
 		if active {
 			clay.Text(
-				"ACTIVE",
+				tr("ACTIVE"),
 				{fontId = FONT_MONO, fontSize = 10, textColor = ACCENT, letterSpacing = 2},
 			)
 		}
@@ -689,8 +689,8 @@ peer_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("PeerActions"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
 		) {
-			micro_button("PeerCopyNpub", "Copy npub")
-			micro_button("PeerViewProfile", "View full profile")
+			micro_button("PeerCopyNpub", tr("Copy npub"))
+			micro_button("PeerViewProfile", tr("View full profile"))
 		}
 	}
 }
@@ -789,9 +789,9 @@ centered_note :: proc(id_str: string, title: string, sub: string) {
 		},
 	},
 	) {
-		clay.Text(tr(title), {fontId = FONT_TITLE, fontSize = 24, textColor = TEXT_DIM})
+		clay.Text(title, {fontId = FONT_TITLE, fontSize = 24, textColor = TEXT_DIM})
 		if len(sub) > 0 {
-			clay.Text(tr(sub), {fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM})
+			clay.Text(sub, {fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM})
 		}
 	}
 }
@@ -799,7 +799,7 @@ centered_note :: proc(id_str: string, title: string, sub: string) {
 // Section eyebrow, ALL CAPS like the slint app.
 eyebrow :: proc(text: string) {
 	// A stencilled theme brackets its captions: [ACTIONS], not ACTIONS.
-	label := BRACKET_LABELS ? fmt.tprintf("[%s]", tr(text)) : tr(text)
+	label := BRACKET_LABELS ? fmt.tprintf("[%s]", text) : text
 	clay.Text(label, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 2})
 }
 
@@ -810,7 +810,7 @@ eyebrow :: proc(text: string) {
 profile_rail :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("PrHead"))({layout = {padding = {left = 4, top = 6, bottom = 4}}}) {
 		clay.Text(
-			fmt.tprintf("ACCOUNTS   %d", len(ui.accounts)),
+			fmt.tprintf(tr("ACCOUNTS   %d"), len(ui.accounts)),
 			{fontId = FONT_MONO, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 2},
 		)
 	}
@@ -850,14 +850,14 @@ profile_rail :: proc(ui: ^Ui_State) {
 			}
 			if active {
 				clay.Text(
-					"ACTIVE",
+					tr("ACTIVE"),
 					{fontId = FONT_MONO, fontSize = 9, textColor = ACCENT, letterSpacing = 2},
 				)
 			}
 		}
 	}
 	if clay.UI(clay.ID("PrAddRow"))({layout = {padding = {left = 4, top = 4, bottom = 8}}}) {
-		micro_button("PrAddAccount", "Add account")
+		micro_button("PrAddAccount", tr("Add account"))
 	}
 
 	if clay.UI(clay.ID("PrRule"))(
@@ -872,8 +872,8 @@ profile_rail :: proc(ui: ^Ui_State) {
 			{fontId = FONT_MONO, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 2},
 		)
 	}
-	profile_rail_link("PrKeys", ICON_KEY, "Keys & identity")
-	profile_rail_link("PrNetwork", ICON_GLOBE, "Network & relays")
+	profile_rail_link("PrKeys", ICON_KEY, tr("Keys & identity"))
+	profile_rail_link("PrNetwork", ICON_GLOBE, tr("Network & relays"))
 }
 
 // One jump row, the settings-sidebar grammar.
@@ -892,14 +892,14 @@ profile_rail_link :: proc(id_str: string, icon: string, label: string) {
 	},
 	) {
 		clay.Text(icon, {fontId = FONT_ICON, fontSize = 13, textColor = TEXT_DIM})
-		clay.Text(tr(label), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+		clay.Text(label, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
 	}
 }
 
 contacts_pane :: proc(ui: ^Ui_State) {
 	contact, found := shown_contact(ui)
 	if !found {
-		centered_note("PickContact", "Contact", "Select a contact from the list.")
+		centered_note("PickContact", tr("Contact"), tr("Select a contact from the list."))
 		return
 	}
 
@@ -1008,7 +1008,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				}
 				if contact_label(ui, contact) != contact.name {
 					clay.Text(
-						fmt.tprintf("aka %s", contact.name),
+						fmt.tprintf(tr("aka %s"), contact.name),
 						{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO, wrapMode = .None},
 					)
 				}
@@ -1048,11 +1048,19 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			border = {color = ui.focus == .Nick ? ACCENT : FIELD_BORDER, width = bw()},
 		},
 		) {
-			field_text(ui, "NickBox", &ui.nick_input, "Nickname", ui.focus == .Nick, 12, TEXT_LO)
+			field_text(
+				ui,
+				"NickBox",
+				&ui.nick_input,
+				tr("Nickname"),
+				ui.focus == .Nick,
+				12,
+				TEXT_LO,
+			)
 		}
 
 		if clay.UI(clay.ID("IdentityEyebrow"))({layout = {padding = {top = 8}}}) {
-			eyebrow("IDENTITY")
+			eyebrow(tr("IDENTITY"))
 		}
 		// One flat card; rows separate with hairlines, values right.
 		if clay.UI(clay.ID("IdentityCard"))(
@@ -1089,7 +1097,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 					npub_tail(contact.npub),
 					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM},
 				)
-				micro_button("CopyNpubBtn", "Copy")
+				micro_button("CopyNpubBtn", tr("Copy"))
 			}
 			identity_w := clay.GetElementData(clay.ID("IdentityCard")).boundingBox.width
 			if identity_w <= 0 {identity_w = page_w(ui) - 48}
@@ -1101,10 +1109,10 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				font = FONT_TITLE,
 			)
 		}
-		micro_button("QrBtn", "Show as QR")
+		micro_button("QrBtn", tr("Show as QR"))
 
 		if clay.UI(clay.ID("KpEyebrow"))({layout = {padding = {top = 8}}}) {
-			eyebrow("KEY PACKAGE")
+			eyebrow(tr("KEY PACKAGE"))
 		}
 		if clay.UI(clay.ID("KpCard"))(
 		{
@@ -1135,12 +1143,12 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		}
 
 		if clay.UI(clay.ID("RelaysEyebrow"))({layout = {padding = {top = 8}}}) {
-			eyebrow("RELAYS IN COMMON")
+			eyebrow(tr("RELAYS IN COMMON"))
 		}
 		contact_relays_card(FONT_BODY)
 
 		if clay.UI(clay.ID("GroupsEyebrow"))({layout = {padding = {top = 8}}}) {
-			eyebrow("GROUPS IN COMMON")
+			eyebrow(tr("GROUPS IN COMMON"))
 		}
 		// Flat hairline rows, no filled plates.
 		if clay.UI(clay.ID("CommonGroups"))(
@@ -1178,7 +1186,10 @@ contacts_pane :: proc(ui: ^Ui_State) {
 							{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
 						)
 						clay.Text(
-							fmt.tprintf("%d members", group.members),
+							fmt.tprintf(
+								tr(group.members == 1 ? N_("%d member") : N_("%d members")),
+								group.members,
+							),
 							{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO},
 						)
 					}
@@ -1189,12 +1200,16 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		// Local-only block, the slint contact action: nothing is
 		// published; the 1:1 chat leaves the rail while blocked.
 		if clay.UI(clay.ID("ActionsEyebrow"))({layout = {padding = {top = 8}}}) {
-			eyebrow("ACTIONS")
+			eyebrow(tr("ACTIONS"))
 		}
 		if clay.UI(clay.ID("ActionsRow"))({layout = {childGap = 8}}) {
-			micro_button("BlockBtn", ui.blocked[contact.id_hex] ? "Unblock" : "Block", DANGER)
+			micro_button(
+				"BlockBtn",
+				ui.blocked[contact.id_hex] ? tr("Unblock") : tr("Block"),
+				DANGER,
+			)
 			if ui.selected_contact >= 0 {
-				micro_button("RemoveContactBtn", "Remove contact", DANGER)
+				micro_button("RemoveContactBtn", tr("Remove contact"), DANGER)
 			}
 		}
 
@@ -1326,7 +1341,7 @@ micro_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
 	},
 	) {
 		clay.Text(
-			tr(label),
+			label,
 			{fontId = FONT_BODY, fontSize = 11, textColor = tinted ? color : TEXT_DIM},
 		)
 	}
@@ -1373,7 +1388,7 @@ qr_modal :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 // payload as the slint profile_qr_url).
 show_contact_qr :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 	if contact_qr(ui, contact.npub) == nil {
-		ui.client_status = strings.clone(tr("Couldn't render the QR code. Please try again."))
+		set_status(ui, strings.clone(tr("Couldn't render the QR code. Please try again.")), .Error)
 		return
 	}
 	ui.qr_open = true
@@ -1891,7 +1906,7 @@ form_row :: proc(
 		{layout = {sizing = {width = clay.SizingFixed(120)}}},
 		) {
 			clay.Text(
-				tr(label),
+				label,
 				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2},
 			)
 		}
@@ -1986,7 +2001,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					{fontId = FONT_TITLE, fontSize = 22, textColor = TEXT},
 				)
 				clay.Text(
-					ui.profile.editing ? "EDITING · BROADCAST TO RELAYS ON PUBLISH" : "VISIBLE TO ANYONE YOU CHAT WITH",
+					ui.profile.editing ? tr("EDITING · BROADCAST TO RELAYS ON PUBLISH") : tr("VISIBLE TO ANYONE YOU CHAT WITH"),
 					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2},
 				)
 			}
@@ -2012,7 +2027,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					)
 				}
 				clay.Text(
-					ui.profile.editing ? "Cancel" : "Edit profile",
+					ui.profile.editing ? tr("Cancel") : tr("Edit profile"),
 					{
 						fontId = FONT_TITLE,
 						fontSize = 13,
@@ -2139,7 +2154,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					shown_about :=
 						ui.profile.editing ? string(ui.about_input[:]) : ui.profile.about
 					clay.Text(
-						len(shown_name) > 0 ? shown_name : "(no display name)",
+						len(shown_name) > 0 ? shown_name : tr("(no display name)"),
 						{
 							fontId = title_font != 0 ? title_font : FONT_TITLE,
 							fontSize = 24,
@@ -2163,7 +2178,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 		// ── Edit form: every kind-0 field the app lets you set ─────
 		if ui.profile.editing {
 			if clay.UI(clay.ID("FormEyebrow"))({layout = {padding = {top = 6}}}) {
-				eyebrow("EDIT PROFILE")
+				eyebrow(tr("EDIT PROFILE"))
 			}
 			if clay.UI(clay.ID("ProfileForm"))(
 			{
@@ -2181,7 +2196,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 				form_row(
 					ui,
 					0,
-					"DISPLAY NAME",
+					tr("DISPLAY NAME"),
 					"NameBox",
 					&ui.name_input,
 					tr("Your name"),
@@ -2190,7 +2205,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 				form_row(
 					ui,
 					1,
-					"ABOUT",
+					tr("ABOUT"),
 					"AboutBox",
 					&ui.about_input,
 					tr("A line about you"),
@@ -2225,9 +2240,9 @@ profile_pane :: proc(ui: ^Ui_State) {
 				},
 				) {
 					if ppic_busy {
-						micro_button("ChangePicBtn", "Uploading picture")
+						micro_button("ChangePicBtn", tr("Uploading picture"))
 					} else {
-						micro_button("ChangePicBtn", "Change picture")
+						micro_button("ChangePicBtn", tr("Change picture"))
 					}
 					if clay.UI(clay.ID("FormActionGap"))(
 					{layout = {sizing = {width = clay.SizingGrow()}}},
@@ -2254,7 +2269,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 
 		// ── Identity: copyable npub + inline QR ────────────────────
 		if clay.UI(clay.ID("IdEyebrow"))({layout = {padding = {top = 6}}}) {
-			eyebrow("IDENTITY")
+			eyebrow(tr("IDENTITY"))
 		}
 		if clay.UI(clay.ID("ProfileIdCard"))(
 		{
@@ -2290,7 +2305,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					npub_tail(ui.profile.npub),
 					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM},
 				)
-				micro_button("ProfileCopyNpub", "Copy")
+				micro_button("ProfileCopyNpub", tr("Copy"))
 			}
 			if ui.profile.qr != nil {
 				identity_w := clay.GetElementData(clay.ID("ProfileIdCard")).boundingBox.width
@@ -2307,7 +2322,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 
 		// ── Profile fields, viewer rows ────────────────────────────
 		if clay.UI(clay.ID("ProfileEyebrow"))({layout = {padding = {top = 6}}}) {
-			eyebrow("PROFILE")
+			eyebrow(tr("PROFILE"))
 		}
 		if clay.UI(clay.ID("ProfileCard"))(
 		{
@@ -2319,7 +2334,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 		) {
 			profile_kv(
 				0,
-				"Username",
+				tr("Username"),
 				len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : "",
 				font = FONT_BODY,
 			)
@@ -2327,15 +2342,15 @@ profile_pane :: proc(ui: ^Ui_State) {
 			profile_kv(2, "Lightning", ui.profile.lud16, font = FONT_BODY)
 			profile_kv(
 				3,
-				"Picture",
-				ui.profile.pic_set ? "Set" : "Not set",
+				tr("Picture"),
+				ui.profile.pic_set ? tr("Set") : tr("Not set"),
 				true,
 				font = FONT_BODY,
 			)
 		}
 
 		if clay.UI(clay.ID("SignOutPad"))({layout = {padding = {top = 6}}}) {
-			login_button("SignOutBtn", "Sign out")
+			login_button("SignOutBtn", tr("Sign out"))
 		}
 	}
 	scrollbar(clay.ID("ProfilePage"))
@@ -2358,7 +2373,7 @@ nav_button :: proc(page: Page, active: bool) {
 	},
 	) {
 		if hovered() {
-			tooltip(NAV_TIPS[page], .Right)
+			tooltip(tr(NAV_TIPS[page]), .Right)
 		}
 		clay.Text(
 			PAGE_ICONS[page],
@@ -2392,9 +2407,9 @@ nav_indicator :: proc(ui: ^Ui_State) {
 }
 
 NAV_TIPS := [Page]string {
-	.Chats    = "Chats",
-	.Contacts = "People",
-	.Archived = "Archive",
-	.Settings = "Settings",
-	.Profile  = "Your profile",
+	.Chats    = N_("Chats"),
+	.Contacts = N_("People"),
+	.Archived = N_("Archive"),
+	.Settings = N_("Settings"),
+	.Profile  = N_("Your profile"),
 }

@@ -20,10 +20,10 @@ app_started: f64
 // One leg of the message path. The trace animates a packet across them
 // in order, resting a beat at each stop.
 HOPS := [][2]string {
-	{"YOU", N_("plaintext")},
+	{N_("YOU"), N_("plaintext")},
 	{"MLS", N_("sealed here")},
-	{"RELAY", N_("carries the blob")},
-	{"THEM", N_("opened there")},
+	{N_("RELAY"), N_("carries the blob")},
+	{N_("THEM"), N_("opened there")},
 }
 
 TRACE_SECS :: 1.1 // per hop
@@ -32,7 +32,7 @@ settings_about :: proc(ui: ^Ui_State) {
 	about_wordmark()
 
 	if clay.UI(clay.ID("AboutDescriptionGroup"))(settings_box()) {
-		settings_group(N_("What it is"))
+		settings_group(tr("What it is"))
 		clay.Text(
 			tr(
 				"A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group.",
@@ -42,7 +42,7 @@ settings_about :: proc(ui: ^Ui_State) {
 	}
 
 	if clay.UI(clay.ID("AboutTraceGroup"))(settings_box()) {
-		settings_group(N_("Where a message goes"))
+		settings_group(tr("Where a message goes"))
 		about_trace(ui)
 		clay.Text(
 			tr("The relay in the middle stores and forwards. It never holds a key."),
@@ -51,12 +51,12 @@ settings_about :: proc(ui: ^Ui_State) {
 	}
 
 	if clay.UI(clay.ID("AboutSessionGroup"))(settings_box()) {
-		settings_group(N_("This session"))
+		settings_group(tr("This session"))
 		about_readout(ui)
 	}
 
 	if clay.UI(clay.ID("AboutCreditsGroup"))(settings_box()) {
-		settings_group(N_("Built with"))
+		settings_group(tr("Built with"))
 		about_credits(ui)
 	}
 
@@ -73,7 +73,7 @@ settings_about :: proc(ui: ^Ui_State) {
 	},
 	) {
 		clay.Text(
-			fmt.tprintf("White Noise %s · odin port", APP_VERSION),
+			fmt.tprintf(tr("White Noise %s · odin port"), APP_VERSION),
 			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM},
 		)
 		clay.Text(data_home, {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO})
@@ -156,7 +156,7 @@ about_trace :: proc(ui: ^Ui_State) {
 			},
 			) {
 				clay.Text(
-					hop[0],
+					tr(hop[0]),
 					{
 						fontId = FONT_MONO,
 						fontSize = 11,
@@ -189,22 +189,22 @@ about_trace :: proc(ui: ^Ui_State) {
 @(private = "file")
 about_readout :: proc(ui: ^Ui_State) {
 	tiles := [][2]string {
-		{fmt.tprintf("%d", len(ui.chats)), "CHATS"},
-		{fmt.tprintf("%d", len(ui.contacts)), "CONTACTS"},
+		{fmt.tprintf("%d", len(ui.chats)), tr("CHATS")},
+		{fmt.tprintf("%d", len(ui.contacts)), tr("CONTACTS")},
 		{
 			fmt.tprintf(
 				"%d/%d",
 				ui.health_ok ? int(ui.health.connected) : 0,
 				ui.health_ok ? int(ui.health.total_relays) : len(DEFAULT_RELAYS),
 			),
-			"RELAYS",
+			tr("RELAYS"),
 		},
-		{fmt.tprintf("%d", len(ui.messages)), "LOADED"},
+		{fmt.tprintf("%d", len(ui.messages)), tr("LOADED")},
 		{
 			len(theme_packs) > 0 ? theme_packs[clamp(ui.theme, 0, len(theme_packs) - 1)].name : "—",
-			"THEME",
+			tr("THEME"),
 		},
-		{uptime_label(), "UPTIME"},
+		{uptime_label(), tr("UPTIME")},
 	}
 	columns := settings_body_width(ui) - 24 < 520 ? 2 : 3
 	if clay.UI(clay.ID("AboutGrid"))(

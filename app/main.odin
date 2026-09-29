@@ -288,7 +288,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 														textColor = TEXT_DIM,
 													},
 												)
-												if hovered() {tooltip("Chat options")}
+												if hovered() {tooltip(tr("Chat options"))}
 											}
 										}
 										if ui.page != .Contacts {
@@ -372,7 +372,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 											ui,
 											"FilterBox",
 											&ui.sidebar_filter,
-											ui.page == .Contacts ? "Search contacts..." : "Search messages...",
+											ui.page == .Contacts ? tr("Search contacts...") : tr("Search messages..."),
 											ui.focus == .Filter,
 											13,
 											TEXT_LO,
@@ -442,7 +442,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 												)
 												if hovered() {
 													tooltip(
-														ui.prefs.recent_chats ? "Group chats by folder" : "Sort chats by recent activity",
+														ui.prefs.recent_chats ? tr("Group chats by folder") : tr("Sort chats by recent activity"),
 													)
 												}
 											}
@@ -469,8 +469,8 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 											},
 										},
 										) {
-											micro_button("ContactsCsvBtn", "Export CSV")
-											micro_button("ContactsJsonBtn", "Export JSON")
+											micro_button("ContactsCsvBtn", tr("Export CSV"))
+											micro_button("ContactsJsonBtn", tr("Export JSON"))
 										}
 									}
 									if clay.UI(clay.ID("ContactList"))(
@@ -768,7 +768,11 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 								} else if len(ui.chats) == 0 {
 									get_started_pane(ui)
 								} else {
-									centered_note("PickChat", "Select a chat", ui.client_status)
+									centered_note(
+										"PickChat",
+										tr("Select a chat"),
+										ui.client_status,
+									)
 								}
 							case .Contacts:
 								contacts_pane(ui)
@@ -1088,7 +1092,7 @@ app_main :: proc() {
 			   &group_id,
 		   ) !=
 		   .OK {
-			ui.client_status = fmt.aprintf("create group failed: %s", marmot.last_error())
+			set_status(&ui, fmt.aprintf("create group failed: %s", marmot.last_error()), .Error)
 		} else {
 			marmot.string_free(group_id)
 			load_chat_list(client, ui.account_ref, &ui)

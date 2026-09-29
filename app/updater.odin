@@ -258,8 +258,8 @@ update_bar :: proc() {
 		backgroundColor = STATUS_BAR,
 	},
 	) {
-		micro_button("UpdateRestart", "Restart now", ACCENT)
-		micro_button("UpdateLater", "Later")
+		micro_button("UpdateRestart", tr("Restart now"), ACCENT)
+		micro_button("UpdateLater", tr("Later"))
 		clay.Text(
 			fmt.tprintf(tr("White Noise %s is ready to install."), update_version()),
 			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
@@ -274,7 +274,7 @@ update_settings_row :: proc() {
 		return
 	}
 	if clay.UI(clay.ID("AboutUpdateGroup"))(settings_box()) {
-		settings_group(N_("Updates"))
+		settings_group(tr("Updates"))
 		if clay.UI(clay.ID("AboutUpdateRow"))(
 		{
 			layout = {
@@ -302,9 +302,9 @@ update_settings_row :: proc() {
 			{layout = {sizing = {width = clay.SizingGrow()}}},
 			) {}
 			if phase == .Ready {
-				settings_button("UpdateRestart", "Restart now", ACCENT)
+				settings_button("UpdateRestart", tr("Restart now"), ACCENT)
 			} else if phase == .Idle || phase == .Failed {
-				settings_button("UpdateCheck", "Check now")
+				settings_button("UpdateCheck", tr("Check now"))
 			}
 		}
 	}

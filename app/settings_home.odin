@@ -210,7 +210,7 @@ settings_navigation :: proc(ui: ^Ui_State) {
 					)
 				}
 				if len(ui.settings_search) >
-				   0 {micro_button("SettingsSearchClear", "Clear search")}
+				   0 {micro_button("SettingsSearchClear", tr("Clear search"))}
 			}
 		} else {
 			if clay.UI(clay.ID("SettingsHome"))(
@@ -237,7 +237,7 @@ settings_navigation :: proc(ui: ^Ui_State) {
 					{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
 				)
 			}
-			if !compact {micro_button("SettingsSearchOpen", "Find a setting")}
+			if !compact {micro_button("SettingsSearchOpen", tr("Find a setting"))}
 		}
 	}
 }

@@ -137,7 +137,7 @@ save_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	}
 
 	fail :: proc(ui: ^Ui_State, name: string) {
-		ui.client_status = fmt.aprintf("couldn't save %s", name)
+		set_status(ui, fmt.aprintf(tr("Couldn't save %s. Please try again."), name), .Error)
 	}
 
 	if pending_blob != nil {
@@ -148,7 +148,7 @@ save_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 		if os.write_entire_file(path, pending_blob) != nil {
 			fail(ui, pending_save.name)
 		} else {
-			ui.client_status = fmt.aprintf("saved %s", path)
+			set_status(ui, fmt.aprintf(tr("Saved %s."), path), .Info)
 		}
 		return
 	}
@@ -173,7 +173,7 @@ save_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 		fail(ui, pending_save.name)
 		return
 	}
-	ui.client_status = fmt.aprintf("saved %s", path)
+	set_status(ui, fmt.aprintf(tr("Saved %s."), path), .Info)
 }
 
 // Use the retained window's media reference, or query if its chat was left.

@@ -165,7 +165,8 @@ issues_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	defer delete(err)
 	ui.issue_setting, ui.issue_admin = setting, admin
 	if setting != .Enabled {ui.issues_open = false; issues_sync_route(ui, client)}
-	if err != "" {ui.client_status = strings.clone(tr("Couldn't load issues. Please try again."))}
+	if err !=
+	   "" {set_status(ui, strings.clone(tr("Couldn't load issues. Please try again.")), .Error)}
 	if page == nil {
 		issues_rows_free(ui.issues, ui.issue_index)
 		ui.issues, ui.issue_index = {}, nil

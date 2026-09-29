@@ -360,12 +360,12 @@ audio_tile :: proc(
 							active ? N_("Transcribing...") : view.transcript_done ? (view.transcript_open ? N_("Collapse transcription") : N_("View transcription")) : N_("Transcribe")
 						micro_button(
 							button,
-							label,
+							tr(label),
 							active || (!view.transcript_done && g_ui.stt.file != nil) ? TEXT_LO : {},
 						)
 						if active {
 							cancel := fmt.tprintf("AudioSttCancel%d", id)
-							micro_button(cancel, "Cancel")
+							micro_button(cancel, tr("Cancel"))
 							if clay.PointerOver(clay.ID(cancel)) {stt_hover = {
 									message    = msg_id,
 									attachment = att,
@@ -617,12 +617,12 @@ msg_actions :: proc(index: u32, msg: Msg_Ui) {
 	// A reply can't carry a thread tag, so thread rows
 	// offer Thread (nesting) instead of Reply.
 	if len(msg.thread_of) == 0 || g_ui.compose_issue != "" {
-		action_chip("MsgReply", index, "Reply")
+		action_chip("MsgReply", index, tr("Reply"))
 	}
-	action_chip("MsgThread", index, "Thread")
+	action_chip("MsgThread", index, tr("Thread"))
 	if msg.mine {
-		action_chip("MsgEdit", index, "Edit")
-		action_chip("MsgDel", index, "Delete")
+		action_chip("MsgEdit", index, tr("Edit"))
+		action_chip("MsgDel", index, tr("Delete"))
 	}
 }
 
@@ -1390,7 +1390,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 									arc_more_hover = view
 								}
 								label :=
-									view.expanded ? "Show fewer files" : fmt.tprintf("and %d more files", len(view.entries) - ARC_TILE_ROWS)
+									view.expanded ? tr("Show fewer files") : fmt.tprintf(tr("and %d more files"), len(view.entries) - ARC_TILE_ROWS)
 								clay.Text(
 									label,
 									{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
@@ -1460,7 +1460,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						)
 						if len(view.blocks) > shown {
 							clay.Text(
-								fmt.tprintf("and %d more blocks", len(view.blocks) - shown),
+								fmt.tprintf(tr("and %d more blocks"), len(view.blocks) - shown),
 								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 							)
 						}
@@ -1509,7 +1509,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 								{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
 							)
 							clay.Text(
-								view.lang,
+								tr(view.lang),
 								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 							)
 						}
@@ -1586,7 +1586,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							)
 							size := att_size_label(msg, att_index)
 							clay.Text(
-								len(size) > 0 ? fmt.tprintf("%s · Click to download.", size) : "Click to download.",
+								len(size) > 0 ? fmt.tprintf(tr("%s · Click to download."), size) : tr("Click to download."),
 								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 							)
 						}
@@ -1909,7 +1909,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					)
 					clay.Text(
 						fmt.tprintf(
-							tr("%d reply", "%d replies", msg.thread_replies),
+							tr(msg.thread_replies == 1 ? N_("%d reply") : N_("%d replies")),
 							msg.thread_replies,
 						),
 						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
@@ -3498,6 +3498,6 @@ theme_offer :: proc(index: u32, msg: Msg_Ui) {
 				) {}
 			}
 		}
-		micro_button(fmt.tprintf("ThemeApply%d", index), "Use this theme")
+		micro_button(fmt.tprintf("ThemeApply%d", index), tr("Use this theme"))
 	}
 }

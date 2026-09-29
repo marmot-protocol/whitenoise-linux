@@ -14,10 +14,7 @@ login_button :: proc(id_str: string, label: string) {
 		border = bevel_border(),
 	},
 	) {
-		clay.Text(
-			tr(label),
-			{fontId = FONT_BODY, fontSize = 16, textColor = hovered() ? BG : TEXT},
-		)
+		clay.Text(label, {fontId = FONT_BODY, fontSize = 16, textColor = hovered() ? BG : TEXT})
 	}
 }
 
@@ -122,8 +119,8 @@ login_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("LoginGapA"))(
 			{layout = {sizing = {height = clay.SizingFixed(10)}}},
 			) {}
-			login_big_button("LoginImportBtn", "I have an nsec", true)
-			login_big_button("LoginCreate", "Generate a new key", false)
+			login_big_button("LoginImportBtn", tr("I have an nsec"), true)
+			login_big_button("LoginCreate", tr("Generate a new key"), false)
 			if clay.UI(clay.ID("LoginGapB"))(
 			{layout = {sizing = {height = clay.SizingFixed(10)}}},
 			) {}
@@ -171,8 +168,8 @@ login_pane :: proc(ui: ^Ui_State) {
 			{layout = {sizing = {height = clay.SizingFixed(6)}}},
 			) {}
 			if clay.UI(clay.ID("LoginButtons"))({layout = {childGap = 12}}) {
-				login_button("LoginBack", "Back")
-				login_button("LoginGo", "Continue")
+				login_button("LoginBack", tr("Back"))
+				login_button("LoginGo", tr("Continue"))
 			}
 		}
 

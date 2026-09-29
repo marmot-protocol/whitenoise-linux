@@ -219,7 +219,10 @@ shell_navigation :: proc(ui: ^Ui_State) {
 			) {
 				collapsed := rail_narrow(ui)
 				if hovered() {
-					tooltip(collapsed ? "Expand the chat list" : "Collapse the chat list", .Right)
+					tooltip(
+						collapsed ? tr("Expand the chat list") : tr("Collapse the chat list"),
+						.Right,
+					)
 				}
 				clay.Text(
 					collapsed ? "›" : "‹",
@@ -444,9 +447,9 @@ status_bar :: proc(ui: ^Ui_State) {
 			backgroundColor = STATUS_BAR,
 		},
 		) {
-			micro_button("SttCancel", "Cancel")
+			micro_button("SttCancel", tr("Cancel"))
 			if ui.stt.status == 'R' {
-				micro_button("SttFinish", "Finish dictation")
+				micro_button("SttFinish", tr("Finish dictation"))
 			}
 			clay.Text(stt_status(ui), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 		}
@@ -463,7 +466,7 @@ status_bar :: proc(ui: ^Ui_State) {
 			backgroundColor = STATUS_BAR,
 		},
 		) {
-			micro_button("TtsStopGlobal", "Stop reading")
+			micro_button("TtsStopGlobal", tr("Stop reading"))
 			clay.Text(tts_status(ui), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 		}
 	}
@@ -485,20 +488,25 @@ status_bar :: proc(ui: ^Ui_State) {
 		state := net_state(ui)
 		status_pill(
 			"NetPill",
-			state == .Online ? "ONLINE" : state == .Connecting ? "CONNECTING" : "OFFLINE",
+			state == .Online ? tr("ONLINE") : state == .Connecting ? tr("CONNECTING") : tr("OFFLINE"),
 			net_color(state),
 		)
 		if clay.UI(clay.ID("StatusGapL"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 
 		syncing := rl.GetTime() - sync_at < SYNCING_SECS
 		status_pill("RelayPill", relay_counter(ui), TEXT_LO, false)
-		status_pill("SyncPill", syncing ? "SYNCING" : "SYNCED", syncing ? ACCENT : TEXT_LO, false)
+		status_pill(
+			"SyncPill",
+			syncing ? tr("SYNCING") : tr("SYNCED"),
+			syncing ? ACCENT : TEXT_LO,
+			false,
+		)
 		if clay.UI(clay.ID("StatusGapR"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 
 		// Shortcut hints are the first thing to go when the bar cannot
 		// hold everything: they are the only part of it that is not
 		// live state, and a one-card window rarely has the keys.
-		for hint in ([][2]string{{"Ctrl K", "SEARCH"}, {"Ctrl P", "COMMANDS"}}) {
+		for hint in ([][2]string{{"Ctrl K", tr("SEARCH")}, {"Ctrl P", tr("COMMANDS")}}) {
 			if f32(rl.GetScreenWidth()) / UI_ZOOM < HINTS_W {
 				break
 			}
@@ -516,11 +524,20 @@ status_bar :: proc(ui: ^Ui_State) {
 
 // ── Message banner ──────────────────────────────────────────────────
 
-// Route a new client_status into the banner. Errors keep the recovery
-// wording they were written with; this only decides the tint.
-// ponytail: prefix sniffing instead of a typed status; give
-// client_status a severity field if a message ever lands in the wrong
-// color.
+Status_Kind :: enum {
+	Info,
+	Error,
+}
+
+// The one way to post a banner message. The kind travels with the
+// text because the text is already translated, so its wording can't
+// tell an error from a notice.
+set_status :: proc(ui: ^Ui_State, text: string, kind: Status_Kind) {
+	ui.client_status = text
+	ui.client_status_kind = kind
+}
+
+// Route a new client_status into the banner.
 banner_tick :: proc(ui: ^Ui_State) {
 	if ui.client_status == ui.banner_seen {
 		return
@@ -530,14 +547,11 @@ banner_tick :: proc(ui: ^Ui_State) {
 		return
 	}
 	ui.banner = ui.client_status
-	ui.banner_error =
-		strings.has_prefix(ui.client_status, "Couldn't") ||
-		strings.contains(ui.client_status, "failed") ||
-		strings.contains(ui.client_status, "couldn't")
+	ui.banner_kind = ui.client_status_kind
 }
 
 banner_bar :: proc(ui: ^Ui_State) {
-	color := ui.banner_error ? DANGER : ACCENT
+	color := ui.banner_kind == .Error ? DANGER : ACCENT
 	if clay.UI(clay.ID("Banner"))(
 	{
 		layout = {
@@ -637,9 +651,9 @@ toast :: proc(ui: ^Ui_State, text: string) {
 
 // Copy chips have no visible result of their own, so every one of them
 // goes through here and gets the toast.
-copy_text :: proc(ui: ^Ui_State, text: string, label := "Copied") {
+copy_text :: proc(ui: ^Ui_State, text: string, label: string) {
 	rl.SetClipboardText(strings.clone_to_cstring(text, context.temp_allocator))
-	toast(ui, tr(label))
+	toast(ui, label)
 }
 
 toast_layer :: proc(ui: ^Ui_State) {
@@ -708,7 +722,7 @@ tooltip :: proc(text: string, side: Tip_Side = .Below) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(tr(text), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT})
+		clay.Text(text, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT})
 	}
 }
 
@@ -797,7 +811,12 @@ apply_tray :: proc(ui: ^Ui_State) {
 	// Accent square with Show/Quit; a missing StatusNotifier host means
 	// no icon appears, so closing must still quit.
 	abgr := u32(0xff) << 24 | u32(ACCENT[2]) << 16 | u32(ACCENT[1]) << 8 | u32(ACCENT[0])
-	rl.InitTray("White Noise", abgr, "Show", "Quit")
+	rl.InitTray(
+		"White Noise",
+		abgr,
+		strings.clone_to_cstring(tr("Show"), context.temp_allocator),
+		strings.clone_to_cstring(tr("Quit"), context.temp_allocator),
+	)
 	rl.SetHideOnClose(ui.prefs.minimize_tray)
 }
 
@@ -817,7 +836,7 @@ tray_tick :: proc(ui: ^Ui_State) {
 		return
 	}
 	tray_unread = total
-	label := total == 0 ? "White Noise" : fmt.tprintf("White Noise · %d unread", total)
+	label := total == 0 ? "White Noise" : fmt.tprintf(tr("White Noise · %d unread"), total)
 	rl.SetTrayTooltip(strings.clone_to_cstring(label, context.temp_allocator))
 }
 

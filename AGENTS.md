@@ -245,19 +245,23 @@ locale.
 `scripts/update-translations.sh` regenerates `lang/wnl-ui.pot` and merges it
 into the catalogs. It is `xgettext -L C` over a copy of `app/*.odin` (Odin is
 close enough to C for the lexer, once backtick raw strings are blanked out),
-and it recognizes three shapes:
+and it recognizes two markers:
 
 - `tr("…")`: translated where it is written.
 - `N_("…")`: gettext's noop marker, for a string held in a package-level
   table or returned from a copy proc, where some `tr(var)` downstream does the
   lookup. Mark at the literal, translate at the point of use.
-- `helper("…", …)`: a proc that calls `tr()` on one of its parameters, so the
-  literal at the call site is the msgid. These are listed by name and argument
-  position in the script's `HELPERS` array.
 
-**Adding a proc that `tr()`s a parameter means adding it to `HELPERS`,** or
-its call sites go unextracted and stay English. Same for a new table of
-copy: mark each literal `N_(…)`.
+UI helpers (`micro_button`, `row_labels`, `tooltip`, …) render the display
+string they are given and never call `tr()` on a parameter, so every call
+site marks its own copy: `micro_button("Id", tr("Save"))`. A ternary marks
+each branch. A counted label picks its msgid at the call site:
+`tr(n == 1 ? N_("%d reply") : N_("%d replies"))`. Never pass user text,
+paths or symbols (`+`, `100%`, `HTML`) through `tr()`.
+
+Banner messages go through `set_status(ui, text, .Error | .Info)`
+(`shell.odin`). The kind is explicit because translated text can't be
+inspected for words like "Couldn't".
 
 Edit the `.po` files directly. The catalogs have no `msgctxt` (`po_parse`
 ignores it and keys on msgid alone, first entry winning), and no plural forms.

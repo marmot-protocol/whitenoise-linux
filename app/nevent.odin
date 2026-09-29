@@ -600,16 +600,16 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			clay.Text(ICON_GLOBE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
 			switch {
 			case len(card.raw) == 0:
-				eyebrow("NOSTR EVENT")
+				eyebrow(tr("NOSTR EVENT"))
 			case card.kind == NEV_PRODUCT_KIND:
-				eyebrow("PRODUCT")
+				eyebrow(tr("PRODUCT"))
 			case card.kind == NEV_GEOCACHE_KIND:
-				eyebrow("GEOCACHE")
+				eyebrow(tr("GEOCACHE"))
 			case textual:
-				eyebrow("NOTE")
+				eyebrow(tr("NOTE"))
 			case:
 				clay.Text(
-					fmt.tprintf("KIND %d", card.kind),
+					fmt.tprintf(tr("KIND %d"), card.kind),
 					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
 				)
 			}
@@ -1002,7 +1002,7 @@ nev_geocache_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 	{layout = {sizing = {width = clay.SizingFixed(width)}}},
 	) {
 		if hovered() {link_hover = "https://www.openstreetmap.org/copyright"}
-		body_text(base + 6, "© OpenStreetMap contributors", 10, TEXT_DIM, wrap_w = width)
+		body_text(base + 6, tr("© OpenStreetMap contributors"), 10, TEXT_DIM, wrap_w = width)
 	}
 	if clay.UI(clay.ID("NevMapOpen", id))(
 	{layout = {sizing = {width = clay.SizingFixed(width)}, padding = {top = 4, bottom = 4}}},

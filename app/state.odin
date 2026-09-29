@@ -647,11 +647,12 @@ Ui_State :: struct {
 	nc_member:                                             [dynamic]u8, // npub/hex/NIP-05 for a DM; empty = own group
 	nip05_ticket:                                          int,
 	nc_name:                                               [dynamic]u8,
-	client_status:                                         string,
+	client_status:                                         string, // written only through set_status
+	client_status_kind:                                    Status_Kind,
 	// ── Shell chrome (shell.odin, palette.odin, confirm.odin,
 	// linkguard.odin) ────────────────────────────────────────────────
 	banner:                                                string, // status/error strip over the status bar; "" = none
-	banner_error:                                          bool, // tint it danger
+	banner_kind:                                           Status_Kind, // .Error tints it danger
 	banner_seen:                                           string, // client_status already routed to the banner
 	toast:                                                 string, // transient confirmation ("Copied")
 	toast_until:                                           f64, // rl.GetTime() deadline; 0 = no toast

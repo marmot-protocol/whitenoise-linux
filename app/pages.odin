@@ -127,7 +127,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		if clicked("PeerCopyNpub") && len(ui.peer_npub) > 0 {
-			copy_text(ui, ui.peer_npub, "npub copied")
+			copy_text(ui, ui.peer_npub, tr("npub copied"))
 			return
 		}
 		if clicked("PeerViewProfile") {
@@ -263,7 +263,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				return
 			}
 			if clicked("CopyNpubBtn") && len(contact.npub) > 0 {
-				copy_text(ui, contact.npub, "npub copied")
+				copy_text(ui, contact.npub, tr("npub copied"))
 				return
 			}
 			if clicked("QrBtn") && len(contact.npub) > 0 {
@@ -338,7 +338,11 @@ remove_contact :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	user := strings.clone_to_cstring(hex, context.temp_allocator)
 	if marmot.unfollow_user(client, account, user, &follows) != .OK {
-		ui.client_status = fmt.aprintf("Couldn't remove the contact. %s", marmot.last_error())
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't remove the contact. %s"), marmot.last_error()),
+			.Error,
+		)
 		return
 	}
 	marmot.string_list_free(follows)
@@ -382,7 +386,7 @@ start_dm :: proc(ui: ^Ui_State, client: ^marmot.Client, contact: Contact_Ui) {
 		   &group_id,
 	   ) !=
 	   .OK {
-		ui.client_status = fmt.aprintf("Couldn't start the chat. %s", marmot.last_error())
+		set_status(ui, fmt.aprintf(tr("Couldn't start the chat. %s"), marmot.last_error()), .Error)
 		return
 	}
 	new_group := strings.clone(string(group_id))
@@ -449,7 +453,11 @@ publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		   &out,
 	   ) !=
 	   .OK {
-		ui.client_status = fmt.aprintf("Couldn't publish the profile. %s", marmot.last_error())
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't publish the profile. %s"), marmot.last_error()),
+			.Error,
+		)
 		return
 	}
 	marmot.user_profile_metadata_free(out)
@@ -540,7 +548,7 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("ProfileCopyNpub") && len(ui.profile.npub) > 0 {
-		copy_text(ui, ui.profile.npub, "npub copied")
+		copy_text(ui, ui.profile.npub, tr("npub copied"))
 		return
 	}
 
@@ -613,7 +621,7 @@ set_relays :: proc(ui: ^Ui_State, client: ^marmot.Client, relays: []cstring) {
 		   &lists,
 	   ) !=
 	   .OK {
-		ui.client_status = fmt.aprintf("Couldn't update relays. %s", marmot.last_error())
+		set_status(ui, fmt.aprintf(tr("Couldn't update relays. %s"), marmot.last_error()), .Error)
 		return
 	}
 	marmot.account_relay_lists_free(lists)
@@ -645,18 +653,18 @@ format_when :: proc(at: u64) -> string {
 }
 
 MONTH_ABBREV := []string {
-	"Jan",
-	"Feb",
-	"Mar",
-	"Apr",
-	"May",
-	"Jun",
-	"Jul",
-	"Aug",
-	"Sep",
-	"Oct",
-	"Nov",
-	"Dec",
+	N_("Jan"),
+	N_("Feb"),
+	N_("Mar"),
+	N_("Apr"),
+	N_("May"),
+	N_("Jun"),
+	N_("Jul"),
+	N_("Aug"),
+	N_("Sep"),
+	N_("Oct"),
+	N_("Nov"),
+	N_("Dec"),
 }
 
 // Full stamp for the timestamp hover tooltip: "Aug 25, 2026 · 09:14".
@@ -666,7 +674,7 @@ format_full :: proc(at: u64) -> string {
 	year, month, day := time.date(stamp)
 	when_str := format_when(at)
 	defer delete(when_str)
-	return fmt.aprintf("%s %d, %04d · %s", MONTH_ABBREV[int(month) - 1], day, year, when_str)
+	return fmt.aprintf("%s %d, %04d · %s", tr(MONTH_ABBREV[int(month) - 1]), day, year, when_str)
 }
 
 // Day-marker label: "Today" for the current local date, else per the
@@ -679,14 +687,14 @@ format_day :: proc(at: u64) -> string {
 	now := u64(time.now()._nsec) / 1_000_000_000
 	now_y, now_m, now_d := time.date(time.unix(i64(local_seconds(now)), 0))
 	if year == now_y && month == now_m && day == now_d {
-		return strings.clone("Today")
+		return strings.clone(tr("Today"))
 	}
 	format := g_prefs != nil ? g_prefs.date_format : 2
 	switch format {
 	case 0:
-		return fmt.aprintf("%s %d", MONTH_ABBREV[int(month) - 1], day)
+		return fmt.aprintf("%s %d", tr(MONTH_ABBREV[int(month) - 1]), day)
 	case 1:
-		return fmt.aprintf("%d %s", day, MONTH_ABBREV[int(month) - 1])
+		return fmt.aprintf("%d %s", day, tr(MONTH_ABBREV[int(month) - 1]))
 	}
 	return fmt.aprintf("%04d-%02d-%02d", year, int(month), day)
 }
@@ -714,7 +722,11 @@ import_identity_blocking :: proc(
 		   &summary,
 	   ) !=
 	   .OK {
-		return "", fmt.aprintf("Couldn't log in. %s", marmot.last_error(), allocator = allocator)
+		return "", fmt.aprintf(
+			tr("Couldn't log in. %s"),
+			marmot.last_error(),
+			allocator = allocator,
+		)
 	}
 	defer marmot.account_summary_free(summary)
 	return strings.clone(string(summary.account_id_hex), allocator), ""
@@ -742,7 +754,7 @@ create_identity_blocking :: proc(
 	   ) !=
 	   .OK {
 		return "", "", fmt.aprintf(
-			"Couldn't create an identity. %s",
+			tr("Couldn't create an identity. %s"),
 			marmot.last_error(),
 			allocator = allocator,
 		)
@@ -831,7 +843,7 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 	summary: ^marmot.Account_Summary
 	account := strings.clone_to_cstring(account_id, context.temp_allocator)
 	if marmot.sign_in_account(client, account, &summary) != .OK {
-		ui.client_status = fmt.aprintf("Couldn't switch account. %s", marmot.last_error())
+		set_status(ui, fmt.aprintf(tr("Couldn't switch account. %s"), marmot.last_error()), .Error)
 		return
 	}
 	marmot.account_summary_free(summary)
@@ -1173,7 +1185,7 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 		   &client,
 	   ) !=
 	   .OK {
-		ui.client_status = fmt.aprintf("runtime failed: %s", marmot.last_error())
+		set_status(ui, fmt.aprintf(tr("Runtime failed: %s"), marmot.last_error()), .Error)
 		return nil
 	}
 
@@ -1182,9 +1194,9 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	apply_observability(ui, client)
 
 	if marmot.client_start(client) != .OK {
-		ui.client_status = fmt.aprintf("started offline: %s", marmot.last_error())
+		set_status(ui, fmt.aprintf(tr("Started offline: %s"), marmot.last_error()), .Info)
 	} else {
-		ui.client_status = "runtime running"
+		set_status(ui, tr("Runtime running"), .Info)
 	}
 
 	// Same snapshot as every later account change; a second hand-rolled
@@ -1379,7 +1391,7 @@ load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_Stat
 @(private)
 chat_list_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
 	if job.err != "" {
-		ui.client_status = fmt.aprintf("chat list failed: %s", job.err)
+		set_status(ui, fmt.aprintf(tr("Chat list failed: %s"), job.err), .Error)
 		return
 	}
 	rows := job.rows

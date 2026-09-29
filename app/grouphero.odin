@@ -71,14 +71,17 @@ group_hero :: proc(ui: ^Ui_State) {
 		avatar("HeroAvatar", 0, chat.avatar_key, chat.title, 72, chat_pic(chat))
 		clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
 		clay.Text(
-			fmt.tprintf(tr("%d member", "%d members", len(ui.members)), len(ui.members)),
+			fmt.tprintf(
+				tr(len(ui.members) == 1 ? N_("%d member") : N_("%d members")),
+				len(ui.members),
+			),
 			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, letterSpacing = 1},
 		)
-		micro_button("HeroPicBtn", "Change photo")
+		micro_button("HeroPicBtn", tr("Change photo"))
 		if ui.gpic_menu_open {
 			if clay.UI(clay.ID("GpicMenu"))({layout = {childGap = 8}}) {
-				micro_button("GpicFile", "From file")
-				micro_button("GpicSearch", "Search images")
+				micro_button("GpicFile", tr("From file"))
+				micro_button("GpicSearch", tr("Search images"))
 			}
 		}
 
@@ -95,22 +98,28 @@ group_hero :: proc(ui: ^Ui_State) {
 				border = ui.focus == .Desc ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
 			},
 			) {
-				field_text(ui, "DescBox", &ui.desc_input, "Describe the group", ui.focus == .Desc)
+				field_text(
+					ui,
+					"DescBox",
+					&ui.desc_input,
+					tr("Describe the group"),
+					ui.focus == .Desc,
+				)
 			}
 			if clay.UI(clay.ID("DescActions"))({layout = {childGap = 8}}) {
-				micro_button("DescSave", "Save")
-				micro_button("DescCancel", "Cancel")
+				micro_button("DescSave", tr("Save"))
+				micro_button("DescCancel", tr("Cancel"))
 			}
 		} else {
 			if len(ui.group_desc) > 0 {
 				clay.Text(ui.group_desc, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 			} else {
 				clay.Text(
-					"No description.",
+					tr("No description."),
 					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
 				)
 			}
-			micro_button("DescEditBtn", "Edit")
+			micro_button("DescEditBtn", tr("Edit"))
 		}
 	}
 }
@@ -167,7 +176,11 @@ save_description :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
 	desc := strings.clone_to_cstring(string(ui.desc_input[:]), context.temp_allocator)
 	if marmot.update_group_profile(client, account, group, nil, desc, &summary) != .OK {
-		ui.client_status = fmt.aprintf("Couldn't update the description. %s", marmot.last_error())
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't update the description. %s"), marmot.last_error()),
+			.Error,
+		)
 		return
 	}
 	marmot.send_summary_free(summary)
@@ -185,7 +198,7 @@ set_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	}
 	data, read_err := os.read_entire_file(path, context.allocator)
 	if read_err != nil {
-		ui.client_status = fmt.aprintf("Couldn't read %s.", path)
+		set_status(ui, fmt.aprintf(tr("Couldn't read %s."), path), .Error)
 		return
 	}
 	defer delete(data)
@@ -196,7 +209,7 @@ set_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	}
 	media_type := media_type_for(base)
 	if !strings.has_prefix(media_type, "image/") {
-		ui.client_status = strings.clone("Couldn't use that file. Choose a PNG or JPEG.")
+		set_status(ui, strings.clone(tr("Couldn't use that file. Choose a PNG or JPEG.")), .Error)
 		return
 	}
 	ext := strings.clone_to_cstring(
@@ -205,7 +218,11 @@ set_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	)
 	image := rl.LoadImageFromMemory(ext, raw_data(data), i32(len(data)))
 	if image.data == nil {
-		ui.client_status = strings.clone("Couldn't decode the image. Choose a PNG or JPEG.")
+		set_status(
+			ui,
+			strings.clone(tr("Couldn't decode the image. Choose a PNG or JPEG.")),
+			.Error,
+		)
 		return
 	}
 
@@ -364,7 +381,7 @@ gimg_worker :: proc(_: ^thread.Thread) {
 				   &summary,
 			   ) !=
 			   .OK {
-				result.err = fmt.aprintf("Couldn't publish the photo. %s", marmot.last_error())
+				result.err = fmt.aprintf(tr("Couldn't publish the photo. %s"), marmot.last_error())
 			} else {
 				marmot.send_summary_free(summary)
 			}
@@ -416,7 +433,7 @@ drain_gimg :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	reload := false
 	for r in done {
 		if len(r.err) > 0 {
-			ui.client_status = r.err
+			set_status(ui, r.err, .Error)
 			continue
 		}
 		if len(r.url) == 0 {

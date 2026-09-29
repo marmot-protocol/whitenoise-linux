@@ -1,33 +1,47 @@
 // Interface-language lookup: the gettext catalogs the slint app
 // maintains in lang/ (msgids are the English source strings),
-// embedded at build time and parsed into one msgid → msgstr map on
-// boot and on locale switch. No gettext plural-entry or msgctxt support;
-// count forms are separate msgids selected by tr().
+// embedded at build time and parsed into one msgid → msgstr map the
+// first time its locale is selected. No gettext plural-entry or msgctxt
+// support; count forms are separate msgids selected at the call site.
 package main
 
 import "core:strings"
+import "core:sync"
 
 // en is the msgid source, so it needs no catalog.
-CATALOGS := [][2]string {
+CATALOGS := [?][2]string {
 	{"it", #load("../lang/it/LC_MESSAGES/wnl-ui.po", string)},
 	{"de", #load("../lang/de/LC_MESSAGES/wnl-ui.po", string)},
 	{"ja", #load("../lang/ja/LC_MESSAGES/wnl-ui.po", string)},
 }
 
+// Parsed catalogs are never mutated or freed once published, so worker
+// threads may call tr() while the UI thread switches locale: a switch
+// is one atomic pointer store, and a string tr() returned stays valid.
+//
+//   UI thread: set_locale("de") -> parse once into g_catalogs[1]
+//                               -> atomic store g_tr = &g_catalogs[1]
+//   any thread: tr(s) -> atomic load g_tr -> immutable map lookup
 @(private = "file")
-g_tr: map[string]string
+g_catalogs: [len(CATALOGS)]map[string]string
+@(private = "file")
+g_tr: ^map[string]string // nil = English
 
 // English msgid → translation. A missing entry falls back to the
 // English string, which also covers Odin-only strings the slint
 // catalogs never saw.
-// Counted labels use separate catalog entries for one and all other counts.
-// Japanese translates both entries alike; English, Italian, and German differ.
-tr :: proc(s: string, plural: string = "", count: int = 1) -> string {
-	id := count != 1 && plural != "" ? plural : s
-	if out, ok := g_tr[id]; ok {
+// Counted labels pick one of two N_ msgids at the call site, e.g.
+// tr(n == 1 ? N_("%d reply") : N_("%d replies")); Japanese translates
+// both entries alike.
+tr :: proc(s: string) -> string {
+	catalog := sync.atomic_load(&g_tr)
+	if catalog == nil {
+		return s
+	}
+	if out, ok := catalog[s]; ok {
 		return out
 	}
-	return id
+	return s
 }
 
 // gettext's noop marker. Identity at runtime; it exists so
@@ -40,17 +54,17 @@ N_ :: proc "contextless" (s: string) -> string {
 }
 
 set_locale :: proc(code: string) {
-	for id, str in g_tr {
-		delete(id)
-		delete(str)
-	}
-	clear(&g_tr)
-	for pair in CATALOGS {
-		if pair[0] == code {
-			po_parse(pair[1], &g_tr)
-			return
+	for pair, i in CATALOGS {
+		if pair[0] != code {
+			continue
 		}
+		if len(g_catalogs[i]) == 0 {
+			po_parse(pair[1], &g_catalogs[i])
+		}
+		sync.atomic_store(&g_tr, &g_catalogs[i])
+		return
 	}
+	sync.atomic_store(&g_tr, nil)
 }
 
 @(private = "file")

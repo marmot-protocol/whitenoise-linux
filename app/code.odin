@@ -66,7 +66,7 @@ Code_Lang :: struct {
 
 @(private = "file")
 CODE_LANGS := []Code_Lang {
-	{"Text", {".txt", ".log"}, "", "", ""},
+	{N_("Text"), {".txt", ".log"}, "", "", ""},
 	{"JSON", {".json", ".jsonl", ".ndjson"}, "", "", ""},
 	{"Odin", {".odin"}, "//", "/*", "*/"},
 	{
@@ -99,8 +99,8 @@ CODE_LANGS := []Code_Lang {
 		"*/",
 	},
 	{"Python", {".py", ".pyw"}, "#", `"""`, `"""`},
-	{"Shell", {".sh", ".bash", ".zsh", ".fish", ".nu"}, "#", "", ""},
-	{"Config", {".toml", ".ini", ".conf", ".cfg", ".yaml", ".yml"}, "#", "", ""},
+	{N_("Shell"), {".sh", ".bash", ".zsh", ".fish", ".nu"}, "#", "", ""},
+	{N_("Config"), {".toml", ".ini", ".conf", ".cfg", ".yaml", ".yml"}, "#", "", ""},
 	{"Ruby", {".rb"}, "#", "=begin", "=end"},
 	{"Lua", {".lua"}, "--", "--[[", "]]"},
 	{"SQL", {".sql"}, "--", "/*", "*/"},
@@ -583,7 +583,7 @@ code_lines :: proc(
 	}
 	if len(view.lines) > shown {
 		clay.Text(
-			fmt.tprintf("and %d more lines", len(view.lines) - shown),
+			fmt.tprintf(tr("and %d more lines"), len(view.lines) - shown),
 			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 		)
 	}

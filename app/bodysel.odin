@@ -302,5 +302,5 @@ handle_body_copy :: proc(ui: ^Ui_State) {
 	if ui.ed_target != nil && ui.ed.selection[0] != ui.ed.selection[1] {
 		return
 	}
-	copy_text(ui, ui.sel_copy, "Message text copied")
+	copy_text(ui, ui.sel_copy, tr("Message text copied"))
 }

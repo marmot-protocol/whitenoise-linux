@@ -46,7 +46,7 @@ settings_avatar_choices :: proc(ui: ^Ui_State) {
 
 	width := settings_body_width(ui) - 24
 	if clay.UI(clay.ID("AvatarGroup"))(settings_box()) {
-		settings_group(N_("Avatars"))
+		settings_group(tr("Avatars"))
 		if clay.UI(clay.ID("RowAvatarShape"))(
 		{
 			layout = {
@@ -58,8 +58,8 @@ settings_avatar_choices :: proc(ui: ^Ui_State) {
 		},
 		) {
 			row_labels(
-				"Default avatar shape",
-				"Used for profile photos without a published shape.",
+				tr("Default avatar shape"),
+				tr("Used for profile photos without a published shape."),
 			)
 			settings_avatar_preview_grid(
 				"AvatarShapeChip",
@@ -80,7 +80,7 @@ settings_avatar_choices :: proc(ui: ^Ui_State) {
 			},
 		},
 		) {
-			row_labels("Crop circle shape", "Used for generated user and group avatars.")
+			row_labels(tr("Crop circle shape"), tr("Used for generated user and group avatars."))
 			settings_avatar_preview_grid(
 				"CropShapeChip",
 				crops[:],

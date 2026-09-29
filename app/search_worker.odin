@@ -224,10 +224,14 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			job.ready = false
 			if search_current(job, ui) {
 				if job.err != "" {
-					ui.client_status = fmt.aprintf(
-						"%s %s",
-						tr("Couldn't search messages. Please try again."),
-						job.err,
+					set_status(
+						ui,
+						fmt.aprintf(
+							"%s %s",
+							tr("Couldn't search messages. Please try again."),
+							job.err,
+						),
+						.Error,
 					)
 				} else {
 					indices := make(map[string]int, context.temp_allocator)

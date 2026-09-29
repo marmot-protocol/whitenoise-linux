@@ -466,7 +466,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 					}
 				}
 				if !ui.sticker_loaded {clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM})}
-				if len(ui.sticker_packs) > 0 {eyebrow("YOUR PACKS")}
+				if len(ui.sticker_packs) > 0 {eyebrow(tr("YOUR PACKS"))}
 				for pack, i in ui.sticker_packs {
 					if clay.UI(clay.ID("StickerLibraryPack", u32(i)))(
 					{
@@ -521,7 +521,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 						clay.Text("›", {fontId = FONT_BODY, fontSize = 22, textColor = TEXT_DIM})
 					}
 				}
-				eyebrow("YOUR STICKERS")
+				eyebrow(tr("YOUR STICKERS"))
 				personal := make([dynamic]int, context.temp_allocator)
 				for item, i in ui.stickers {if item.ref.pack == "" {append(&personal, i)}}
 				if len(personal) ==

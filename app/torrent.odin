@@ -489,9 +489,9 @@ handle_tor_click :: proc(ui: ^Ui_State) {
 	case tor_open_hover != nil:
 		tor_open_hover.open = !tor_open_hover.open
 	case tor_magnet_hover != nil:
-		copy_text(ui, tor_magnet_hover.magnet, "Magnet link copied")
+		copy_text(ui, tor_magnet_hover.magnet, tr("Magnet link copied"))
 	case tor_hash_hover != nil:
-		copy_text(ui, tor_hash_hover.infohash, "Info hash copied")
+		copy_text(ui, tor_hash_hover.infohash, tr("Info hash copied"))
 	}
 }
 
@@ -713,7 +713,7 @@ tor_tile :: proc(view: ^Tor_View, id: u32, msg_id: string, att: int, file_name: 
 				) {
 					if hovered() {
 						tor_hash_hover = view
-						tooltip("Copy info hash")
+						tooltip(tr("Copy info hash"))
 					}
 					tor_key(tr("Info hash"))
 					clay.Text(

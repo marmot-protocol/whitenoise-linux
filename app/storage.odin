@@ -104,7 +104,7 @@ cache_scan :: proc(ui: ^Ui_State) {
 cache_clear :: proc(ui: ^Ui_State) {
 	os.remove_all(media_cache_dir())
 	cache_scan(ui)
-	ui.client_status = tr("Media cache cleared.")
+	set_status(ui, tr("Media cache cleared."), .Info)
 }
 
 // ── Backup flow ─────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ backup_close :: proc(ui: ^Ui_State) {
 backup_create :: proc(ui: ^Ui_State) {
 	plain, packed := backup_pack()
 	if !packed {
-		ui.client_status = tr("Couldn't create the backup. Please try again.")
+		set_status(ui, tr("Couldn't create the backup. Please try again."), .Error)
 		return
 	}
 	sealed := backup_seal(plain, string(ui.backup_pw[:]))
@@ -151,14 +151,14 @@ backup_saved :: proc(ui: ^Ui_State) {
 	backup_saving = false
 	ui.prefs.last_backup = time.time_to_unix(time.now())
 	save_settings(ui)
-	ui.client_status = tr("Backup created.")
+	set_status(ui, tr("Backup created."), .Info)
 }
 
 // A picked file becomes the import source; the password comes next.
 backup_stage :: proc(ui: ^Ui_State, path: string) {
 	data, read_err := os.read_entire_file(path, context.allocator)
 	if read_err != nil {
-		ui.client_status = tr("Couldn't read the backup file. Please try again.")
+		set_status(ui, tr("Couldn't read the backup file. Please try again."), .Error)
 		return
 	}
 	delete(ui.backup_blob)
@@ -171,7 +171,11 @@ backup_stage :: proc(ui: ^Ui_State, path: string) {
 backup_import :: proc(ui: ^Ui_State) {
 	plain, opened := backup_open(ui.backup_blob, string(ui.backup_pw[:]))
 	if !opened {
-		ui.client_status = tr("Couldn't open the backup. Double-check the password and try again.")
+		set_status(
+			ui,
+			tr("Couldn't open the backup. Double-check the password and try again."),
+			.Error,
+		)
 		clear(&ui.backup_pw)
 		return
 	}
@@ -179,7 +183,7 @@ backup_import :: proc(ui: ^Ui_State) {
 
 	written, restored := backup_restore(plain)
 	if !restored {
-		ui.client_status = tr("Couldn't read the backup. Please try again.")
+		set_status(ui, tr("Couldn't read the backup. Please try again."), .Error)
 		return
 	}
 	backup_close(ui)
@@ -188,7 +192,7 @@ backup_import :: proc(ui: ^Ui_State) {
 	apply_theme(ui.theme, ui.accent)
 	set_locale(ui.prefs.locale)
 	custom_emoji_scan()
-	ui.client_status = fmt.aprintf(tr("Backup imported: %d files restored."), written)
+	set_status(ui, fmt.aprintf(tr("Backup imported: %d files restored."), written), .Info)
 }
 
 // ── Page ────────────────────────────────────────────────────────────
@@ -199,11 +203,13 @@ settings_storage :: proc(ui: ^Ui_State) {
 	}
 
 	if clay.UI(clay.ID("StorageCacheGroup"))(settings_box()) {
-		settings_group(N_("Media cache"))
+		settings_group(tr("Media cache"))
 		if clay.UI(clay.ID("RowCache"))(settings_row(true)) {
 			row_labels(
-				"Cached attachments",
-				"Images and files kept on this device so they don't download twice, sealed with your vault key.",
+				tr("Cached attachments"),
+				tr(
+					"Images and files kept on this device so they don't download twice, sealed with your vault key.",
+				),
 			)
 			if clay.UI(clay.ID("CacheActions"))(
 			{layout = {childGap = 6, childAlignment = {y = .Center}}},
@@ -222,25 +228,27 @@ settings_storage :: proc(ui: ^Ui_State) {
 	}
 
 	if clay.UI(clay.ID("StorageBackupsGroup"))(settings_box()) {
-		settings_group(N_("Keys & backups"))
+		settings_group(tr("Keys & backups"))
 		if clay.UI(clay.ID("RowLocation"))(settings_row(true)) {
-			row_labels("Location", data_home)
+			row_labels(tr("Location"), data_home)
 			if clay.UI(clay.ID("LocationActions"))({layout = {childGap = 6}}) {
-				settings_button("LocCopy", "Copy")
-				when ODIN_OS != .OpenBSD {settings_button("LocOpen", "Open folder")}
+				settings_button("LocCopy", tr("Copy"))
+				when ODIN_OS != .OpenBSD {settings_button("LocOpen", tr("Open folder"))}
 			}
 		}
 		if clay.UI(clay.ID("RowBackup"))(settings_row()) {
 			row_labels(
-				"Back up everything",
-				"Pack your settings, drafts, custom emoji, and themes into one encrypted file.",
+				tr("Back up everything"),
+				tr(
+					"Pack your settings, drafts, custom emoji, and themes into one encrypted file.",
+				),
 			)
-			settings_button("BackupBtn", "Create backup...")
+			settings_button("BackupBtn", tr("Create backup..."))
 		}
 		if clay.UI(clay.ID("RowImport"))(settings_row()) {
 			row_labels(
-				"Import a backup",
-				"Replaces the settings, drafts, custom emoji, and themes on this device.",
+				tr("Import a backup"),
+				tr("Replaces the settings, drafts, custom emoji, and themes on this device."),
 			)
 			settings_button(
 				"ImportBtn",
@@ -249,7 +257,7 @@ settings_storage :: proc(ui: ^Ui_State) {
 			)
 		}
 		if clay.UI(clay.ID("RowLastBackup"))(settings_row()) {
-			row_labels("Last backup", last_backup_line(ui))
+			row_labels(tr("Last backup"), last_backup_line(ui))
 		}
 		clay.Text(
 			tr(
@@ -275,7 +283,7 @@ last_backup_line :: proc(ui: ^Ui_State) -> string {
 
 handle_storage :: proc(ui: ^Ui_State) {
 	if clicked("LocCopy") {
-		copy_text(ui, data_home, "Path copied")
+		copy_text(ui, data_home, tr("Path copied"))
 		return
 	}
 	when ODIN_OS != .OpenBSD {
@@ -382,7 +390,7 @@ backup_modal :: proc(ui: ^Ui_State) {
 			creating ? tr("Pick a password to encrypt the backup with. Without it the file cannot be opened again.") : tr("Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced.")
 		clay.Text(blurb, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 
-		eyebrow("PASSWORD")
+		eyebrow(tr("PASSWORD"))
 		if clay.UI(clay.ID("BackupPwBox"))(
 		{
 			layout = {
@@ -422,7 +430,7 @@ backup_modal :: proc(ui: ^Ui_State) {
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text("Cancel", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			}
 			if clay.UI(clay.ID("BackupBtnsGap"))(
 			{layout = {sizing = {width = clay.SizingGrow()}}},

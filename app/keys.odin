@@ -94,7 +94,11 @@ fetch_key_packages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	kp_rows_free(&ui.kp_list)
 	ui.kp_fetched = true
 	if !kp_rows(client, ui.account_ref, &ui.kp_list) {
-		ui.client_status = fmt.aprintf("Couldn't read your key packages. %s", marmot.last_error())
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't read your key packages. %s"), marmot.last_error()),
+			.Error,
+		)
 	}
 }
 
@@ -140,14 +144,15 @@ publish_key_package :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: Kp_Publ
 	status :=
 		kind == .Fresh ? marmot.publish_new_key_package(client, account, &accepted) : marmot.republish_key_package(client, account, &accepted)
 	if status != .OK {
-		ui.client_status = fmt.aprintf(
-			tr("Couldn't publish the key package. %s"),
-			marmot.last_error(),
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't publish the key package. %s"), marmot.last_error()),
+			.Error,
 		)
 		return
 	}
 	fetch_key_packages(ui, client)
-	ui.client_status = fmt.aprintf(tr("Key package accepted by %d relays."), accepted)
+	set_status(ui, fmt.aprintf(tr("Key package accepted by %d relays."), accepted), .Info)
 }
 
 // ── Danger zone secrets ─────────────────────────────────────────────
@@ -168,9 +173,10 @@ reveal_nsec :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	nsec: cstring
 	if marmot.reveal_nsec(client, account, &nsec) != .OK || nsec == nil {
-		ui.client_status = fmt.aprintf(
-			tr("Couldn't reveal your private key. %s"),
-			marmot.last_error(),
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't reveal your private key. %s"), marmot.last_error()),
+			.Error,
 		)
 		return
 	}
@@ -195,7 +201,7 @@ do_export :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	pw := strings.clone_to_cstring(string(ui.export_pw[:]), context.temp_allocator)
 	sealed: cstring
 	if marmot.export_encrypted_secret_key(client, account, pw, &sealed) != .OK || sealed == nil {
-		ui.client_status = fmt.aprintf(tr("Couldn't export the key. %s"), marmot.last_error())
+		set_status(ui, fmt.aprintf(tr("Couldn't export the key. %s"), marmot.last_error()), .Error)
 		return
 	}
 	ui.export_result = strings.clone(string(sealed))
@@ -208,7 +214,7 @@ settings_keys :: proc(ui: ^Ui_State) {
 	body_width := settings_body_width(ui) - 24
 	if ui.settings_tab == 0 {
 		if clay.UI(clay.ID("KeysIdentityGroup"))(settings_box()) {
-			settings_group(N_("Keys & identity"))
+			settings_group(tr("Keys & identity"))
 			if clay.UI(clay.ID("KeysProfile"))(settings_row()) {
 				name := len(ui.profile.name) > 0 ? ui.profile.name : short_hex(ui.account_ref)
 				avatar("KeysAvatar", 0, ui.account_ref, name, 44, url_pic(ui.my_pic_url))
@@ -225,7 +231,7 @@ settings_keys :: proc(ui: ^Ui_State) {
 					tr("Public key (npub)"),
 					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
 				)
-				settings_button("SettingsCopyNpub", "Copy")
+				settings_button("SettingsCopyNpub", tr("Copy"))
 			}
 			if clay.UI(clay.ID("NpubInset"))(
 			{
@@ -248,8 +254,10 @@ settings_keys :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("RowSovereign"))(settings_row()) {
 				clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
 				row_labels(
-					"Your identity is sovereign",
-					"White Noise never sees your private key. It lives only on this device and any signer you connect.",
+					tr("Your identity is sovereign"),
+					tr(
+						"White Noise never sees your private key. It lives only on this device and any signer you connect.",
+					),
 				)
 			}
 		}
@@ -261,7 +269,7 @@ settings_keys :: proc(ui: ^Ui_State) {
 	action_row.layout.childGap = 6
 	if ui.settings_tab == 1 {
 		if clay.UI(clay.ID("KpStatus"))(settings_box()) {
-			settings_group(N_("Key packages"))
+			settings_group(tr("Key packages"))
 			clay.Text(kp_status_line(ui), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 			if clay.UI(clay.ID("KpStatusActions"))(
 			{
@@ -299,13 +307,13 @@ settings_keys :: proc(ui: ^Ui_State) {
 						)
 					}
 					tag :=
-						row.relay ? (len(row.relay_urls) > 0 ? fmt.tprintf("RELAY · %d", len(row.relay_urls)) : "RELAY") : "LOCAL"
+						row.relay ? (len(row.relay_urls) > 0 ? fmt.tprintf(tr("RELAY · %d"), len(row.relay_urls)) : tr("RELAY")) : tr("LOCAL")
 					clay.Text(tag, {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_DIM})
 				}
 			}
 		}
 		if clay.UI(clay.ID("RowRotate"))(settings_box()) {
-			settings_group(N_("Rotate key package now"))
+			settings_group(tr("Rotate key package now"))
 			clay.Text(
 				tr("Invalidates the current package and uploads a fresh one to your relays."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
@@ -317,18 +325,22 @@ settings_keys :: proc(ui: ^Ui_State) {
 	}
 
 	if clay.UI(clay.ID("KeysVaultGroup"))(settings_box()) {
-		settings_group(N_("Device vault"))
+		settings_group(tr("Device vault"))
 		if clay.UI(clay.ID("RowVaultPw"))(action_row) {
 			row_labels(
-				"Change vault password",
-				"Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one.",
+				tr("Change vault password"),
+				tr(
+					"Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one.",
+				),
 			)
-			settings_button("VaultPwBtn", "Change...")
+			settings_button("VaultPwBtn", tr("Change..."))
 		}
 		if clay.UI(clay.ID("RowExport"))(action_row) {
 			row_labels(
-				"Export encrypted key (ncryptsec)",
-				"Creates a NIP-49 key encrypted with a password, safe to store or move to another client.",
+				tr("Export encrypted key (ncryptsec)"),
+				tr(
+					"Creates a NIP-49 key encrypted with a password, safe to store or move to another client.",
+				),
 			)
 			label := ui.keys_confirm == "ExportBtn" ? tr("Confirm") : tr("Export")
 			settings_button("ExportBtn", label)
@@ -341,7 +353,7 @@ settings_keys :: proc(ui: ^Ui_State) {
 		width = {left = 2, right = 1, top = 1, bottom = 1},
 	}
 	if clay.UI(clay.ID("KeysDangerGroup"))(security) {
-		settings_group(N_("Security actions"))
+		settings_group(tr("Security actions"))
 		// Reveal: arm, confirm, then a masked plate with copy and unmask.
 		if clay.UI(clay.ID("RowReveal"))(action_row) {
 			if clay.UI(clay.ID("RevealCol"))(
@@ -435,7 +447,7 @@ handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("SettingsCopyNpub") && len(ui.profile.npub) > 0 {
-		copy_text(ui, ui.profile.npub, "npub copied")
+		copy_text(ui, ui.profile.npub, tr("npub copied"))
 		return
 	}
 	if clicked("KpRefresh") {
@@ -463,7 +475,7 @@ handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("NsecCopy") && len(ui.keys_nsec) > 0 {
-		copy_text(ui, ui.keys_nsec, "Secret key copied")
+		copy_text(ui, ui.keys_nsec, tr("Secret key copied"))
 		return
 	}
 	if clicked("ExportBtn") {
@@ -504,7 +516,7 @@ export_modal :: proc(ui: ^Ui_State) {
 		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
 		) {
 			clay.Text(
-				"Export encrypted key",
+				tr("Export encrypted key"),
 				{fontId = FONT_TITLE, fontSize = 17, textColor = TEXT},
 			)
 			if clay.UI(clay.ID("ExportHeadGap"))(
@@ -529,7 +541,7 @@ export_modal :: proc(ui: ^Ui_State) {
 				),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 			)
-			eyebrow("PASSWORD")
+			eyebrow(tr("PASSWORD"))
 			if clay.UI(clay.ID("ExportPwBox"))(
 			{
 				layout = {
@@ -568,7 +580,7 @@ export_modal :: proc(ui: ^Ui_State) {
 					border = {color = FIELD_BORDER, width = bw()},
 				},
 				) {
-					clay.Text("Cancel", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+					clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 				}
 				if clay.UI(clay.ID("ExportBtnsGap"))(
 				{layout = {sizing = {width = clay.SizingGrow()}}},
@@ -581,7 +593,7 @@ export_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					clay.Text(
-						"Export key",
+						tr("Export key"),
 						{fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT},
 					)
 				}
@@ -594,7 +606,7 @@ export_modal :: proc(ui: ^Ui_State) {
 				),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 			)
-			eyebrow("ENCRYPTED KEY (NCRYPTSEC)")
+			eyebrow(tr("ENCRYPTED KEY (NCRYPTSEC)"))
 			if clay.UI(clay.ID("ExportKeyPlate"))(
 			{
 				layout = {
@@ -624,7 +636,7 @@ export_modal :: proc(ui: ^Ui_State) {
 				{layout = {sizing = {width = clay.SizingGrow()}}},
 				) {}
 				micro_button("ExportSave", tr("Save file"))
-				micro_button("ExportCopy", "Copy")
+				micro_button("ExportCopy", tr("Copy"))
 			}
 			clay.Text(
 				tr(
@@ -641,7 +653,7 @@ export_modal :: proc(ui: ^Ui_State) {
 					border = {color = FIELD_BORDER, width = bw()},
 				},
 				) {
-					clay.Text("Done", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+					clay.Text(tr("Done"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 				}
 			}
 		}

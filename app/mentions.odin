@@ -470,7 +470,7 @@ mention_inbox :: proc(ui: ^Ui_State) {
 		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
 		) {
 			clay.Text(
-				"MENTIONS",
+				tr("MENTIONS"),
 				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM, letterSpacing = 2},
 			)
 			if clay.UI(clay.ID("MiHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
@@ -490,7 +490,7 @@ mention_inbox :: proc(ui: ^Ui_State) {
 
 		if len(ui.mi_hits) == 0 {
 			clay.Text(
-				"No mentions yet.",
+				tr("No mentions yet."),
 				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 			)
 		}

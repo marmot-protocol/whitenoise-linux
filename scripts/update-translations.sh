@@ -8,19 +8,15 @@
 # desyncs on the stray quotes inside one). Nothing is written back to the
 # copies, so the neutralized sources live in a temp dir and are thrown away.
 #
-# Four shapes of translatable string are extracted:
+# Two markers are extracted, and nothing else:
 #
-#   tr("…")            the string is translated where it is written
-#   tr("one", "many", count) extracts both count forms as separate entries
-#   N_("…")            the string is held in a package-level table or
+#   tr("...")          the string is translated where it is written
+#   N_("...")          the string is held in a package-level table or
 #                      returned from a copy proc; some tr(var) further down
 #                      translates it (see i18n.odin)
-#   helper("…", …)     the helper's own body calls tr() on that parameter,
-#                      so the literal at the call site is the msgid. Each
-#                      one is listed below as name:argument-position.
 #
-# Adding a helper that tr()s a parameter means adding it to HELPERS, or its
-# call sites go unextracted and fall back to English.
+# UI helpers take display strings and never call tr() on a parameter, so
+# every msgid is marked where it is written.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -30,28 +26,6 @@ LOCALES=(it de ja)
 
 for tool in xgettext msgmerge; do
     command -v "$tool" >/dev/null || { echo "✗ $tool not found — install gettext." >&2; exit 1; }
-done
-
-# procedure:argument-position for every proc that calls tr() on a parameter.
-# A proc that translates two of its parameters is listed once per position and
-# split across passes below: `name:1,2` would mean ngettext singular/plural to
-# xgettext, not "extract both".
-HELPERS=(
-    section_head:2 login_button:2 kp_kv:3 ctx_item:3
-    centered_note:2 centered_note:3 eyebrow:1 profile_rail_link:3 micro_button:2 form_row:3
-    row_labels:1 row_labels:2 settings_header:2 settings_header:3 settings_group:1 gate_field:5
-    settings_button:2 settings_check:3 settings_check:4
-    copy_text:3 tooltip:1
-)
-
-# One pass per keyword group, where a group holds at most one position per
-# proc; the passes are then merged with the first occurrence winning.
-declare -A seen=()
-PASS1=(--keyword=tr --keyword=N_) PASS2=(--keyword=tr:2)
-for h in "${HELPERS[@]}"; do
-    name="${h%%:*}"
-    if [ -n "${seen[$name]:-}" ]; then PASS2+=("--keyword=$h"); else PASS1+=("--keyword=$h"); fi
-    seen[$name]=1
 done
 
 TMP="$(mktemp -d)"
@@ -67,15 +41,10 @@ done
 # Run from the temp dir so the `#:` references come out as bare filenames.
 # They do not survive the commit either way: scripts/po-clean.sh strips
 # locations, so a source-line shift never shows up as a catalog diff.
-extract() { # <output> <keyword…>
-    local out="$1"; shift
-    (cd "$TMP" && xgettext -L C --from-code=UTF-8 --no-wrap --sort-by-file \
-        "$@" --package-name=wnl-ui --copyright-holder="" --msgid-bugs-address="" \
-        -o "$out" ./*.odin) 2>&1 | grep -vE 'msgid-bugs-address|Makevars|MSGID_BUGS|Empty msgid|^ +(gettext|meta information)' || true
-}
-extract pass1.pot "${PASS1[@]}"
-extract pass2.pot "${PASS2[@]}"
-msgcat --use-first --no-wrap -o "$TMP/wnl-ui.pot" "$TMP/pass1.pot" "$TMP/pass2.pot"
+(cd "$TMP" && xgettext -L C --from-code=UTF-8 --no-wrap --sort-by-file \
+    --keyword=tr --keyword=N_ --package-name=wnl-ui --copyright-holder="" --msgid-bugs-address="" \
+    -o wnl-ui.pot ./*.odin) 2>&1 | grep -vE 'msgid-bugs-address|Makevars|MSGID_BUGS|Empty msgid|^ +(gettext|meta information)' || true
+
 # Fill the header fields xgettext leaves as placeholders. msgfmt --check warns
 # on every one of them, and the pre-commit hook treats those warnings as
 # fatal. The revision date is a constant so the header never churns.

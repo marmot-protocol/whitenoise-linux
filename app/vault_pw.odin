@@ -102,7 +102,7 @@ vault_pw_apply :: proc(ui: ^Ui_State) {
 	cache_scan(ui)
 
 	vault_pw_close(ui)
-	ui.client_status = tr("Vault password changed.")
+	set_status(ui, tr("Vault password changed."), .Info)
 }
 
 // The modal owns input while it is open.
@@ -184,31 +184,31 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 		)
 
-		eyebrow("CURRENT PASSWORD")
+		eyebrow(tr("CURRENT PASSWORD"))
 		gate_field(
 			ui,
 			"VaultPwCurBox",
 			&ui.vault_pw[.Current],
 			ui.vault_pw_focus == .Current,
-			"Your current password",
+			tr("Your current password"),
 		)
-		eyebrow("NEW PASSWORD")
+		eyebrow(tr("NEW PASSWORD"))
 		gate_field(
 			ui,
 			"VaultPwNewBox",
 			&ui.vault_pw[.New],
 			ui.vault_pw_focus == .New,
-			"Your new password",
+			tr("Your new password"),
 		)
 		bits := password_bits(string(ui.vault_pw[.New][:]), &ui.vault_pw_check)
 		password_hint(bits)
-		eyebrow("CONFIRM NEW PASSWORD")
+		eyebrow(tr("CONFIRM NEW PASSWORD"))
 		gate_field(
 			ui,
 			"VaultPwNew2Box",
 			&ui.vault_pw[.Confirm],
 			ui.vault_pw_focus == .Confirm,
-			"Your new password",
+			tr("Your new password"),
 		)
 
 		if len(ui.vault_pw_err) > 0 {

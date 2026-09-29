@@ -653,7 +653,7 @@ share_theme :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 	}
 	pack := theme_packs[clamp(ui.theme, 0, len(theme_packs) - 1)]
 	if len(pack.source) == 0 {
-		ui.client_status = strings.clone(tr("Couldn't share the theme. Please try again."))
+		set_status(ui, strings.clone(tr("Couldn't share the theme. Please try again.")), .Error)
 		return
 	}
 
@@ -690,9 +690,10 @@ share_theme :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 		   &summary,
 	   ) !=
 	   .OK {
-		ui.client_status = fmt.aprintf(
-			tr("Couldn't share the theme. Please try again. %s"),
-			marmot.last_error(),
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't share the theme. Please try again. %s"), marmot.last_error()),
+			.Error,
 		)
 		return
 	}
@@ -724,9 +725,10 @@ delete_theme :: proc(ui: ^Ui_State, index: int) {
 	}
 	path := fmt.tprintf("%s/themes/%s.toml", data_home, theme_packs[index].mode)
 	if err := os.remove(path); err != nil {
-		ui.client_status = fmt.aprintf(
-			tr("Couldn't delete %s. Please try again."),
-			theme_packs[index].name,
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't delete %s. Please try again."), theme_packs[index].name),
+			.Error,
 		)
 		return
 	}

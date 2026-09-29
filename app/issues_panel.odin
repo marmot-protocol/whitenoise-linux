@@ -17,7 +17,7 @@ ISSUE_STATUS_NAMES := [3]string{N_("Unresolved"), N_("Resolved"), N_("Closed")}
 
 @(private)
 issues_settings :: proc(ui: ^Ui_State) {
-	eyebrow("ISSUE TRACKING")
+	eyebrow(tr("ISSUE TRACKING"))
 	if ui.issue_ticket != 0 && ui.issue_action == .Setting {
 		clay.Text(
 			tr("Updating issue tracking..."),
@@ -28,7 +28,7 @@ issues_settings :: proc(ui: ^Ui_State) {
 			tr("Issue tracking is unavailable."),
 			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 		)
-		micro_button("IssueRetry", "Retry")
+		micro_button("IssueRetry", tr("Retry"))
 	} else {
 		clay.Text(
 			ui.issue_setting == .Enabled ? tr("Enabled for this group.") : tr("Disabled for this group."),
@@ -315,7 +315,7 @@ issues_panel :: proc(ui: ^Ui_State) {
 				layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(16)},
 				border = {color = DIVIDER, width = {top = 1}},
 			},
-			) {micro_button("IssueClose", "Back to chat")}
+			) {micro_button("IssueClose", tr("Back to chat"))}
 		}
 	}
 	if narrow && !detail {return}
@@ -327,7 +327,7 @@ issues_panel :: proc(ui: ^Ui_State) {
 		if narrow && detail {
 			if clay.UI(clay.ID("IssueNavigation"))(
 			{layout = {padding = {left = pad, right = pad, top = 12}}},
-			) {micro_button("IssueBack", "Back to issues")}
+			) {micro_button("IssueBack", tr("Back to issues"))}
 		}
 		if ui.issue_new {
 			if clay.UI(clay.ID("IssueForm"))(
@@ -387,7 +387,7 @@ issues_panel :: proc(ui: ^Ui_State) {
 				border = {color = DIVIDER, width = {top = 1}},
 			},
 			) {
-				if !narrow {micro_button("IssueBack", "Back to issues")}
+				if !narrow {micro_button("IssueBack", tr("Back to issues"))}
 				if clay.UI(clay.ID("IssueFormSpace"))(
 				{layout = {sizing = {width = clay.SizingGrow()}}},
 				) {}
@@ -607,7 +607,7 @@ handle_issues :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		body := strings.trim_space(string(ui.issue_body[:]))
 		if subject == "" ||
 		   body ==
-			   "" {ui.client_status = strings.clone(tr("Enter an issue title and description.")); return true}
+			   "" {set_status(ui, strings.clone(tr("Enter an issue title and description.")), .Error); return true}
 		tags := make([dynamic][]string, context.temp_allocator)
 		append(&tags, []string{"subject", subject})
 		for label in strings.split(string(ui.issue_labels[:]), ",", context.temp_allocator) {
@@ -649,7 +649,7 @@ issues_complete :: proc(ui: ^Ui_State, done: Op_Done) {
 	   done.ticket != ui.issue_ticket {return}
 	ui.issue_ticket = 0
 	if done.err !=
-	   "" {ui.client_status = strings.clone(tr("Couldn't update issues. Please try again.")); return}
+	   "" {set_status(ui, strings.clone(tr("Couldn't update issues. Please try again.")), .Error); return}
 	switch ui.issue_action {
 	case .Create:
 		clear(&ui.issue_subject); clear(&ui.issue_body); clear(&ui.issue_labels)

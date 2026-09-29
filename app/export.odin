@@ -343,7 +343,7 @@ export_contacts :: proc(ui: ^Ui_State, kind: Contacts_Kind) {
 			context.temp_allocator,
 		)
 		if err != nil {
-			ui.client_status = "Couldn't export contacts. Please try again."
+			set_status(ui, tr("Couldn't export contacts. Please try again."), .Error)
 			return
 		}
 		strings.write_bytes(&b, data)

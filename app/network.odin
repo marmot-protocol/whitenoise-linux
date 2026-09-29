@@ -56,13 +56,13 @@ settings_network :: proc(ui: ^Ui_State) {
 						{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
 					)
 				}
-				settings_button("NetRefresh", "Refresh")
+				settings_button("NetRefresh", tr("Refresh"))
 			}
 			clay.Text(health_detail(ui), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 		}
 
 		if clay.UI(clay.ID("NetworkOutboxGroup"))(settings_box()) {
-			settings_group(N_("Published outbox relays (NIP-65)"))
+			settings_group(tr("Published outbox relays (NIP-65)"))
 			clay.Text(
 				tr("Where you publish."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
@@ -93,12 +93,12 @@ settings_network :: proc(ui: ^Ui_State) {
 					"wss://relay.example.com",
 					ui.focus == .Relay,
 				)
-				settings_button("AddRelayBtn", "Add")
+				settings_button("AddRelayBtn", tr("Add"))
 			}
 		}
 
 		if clay.UI(clay.ID("NetworkInboxGroup"))(settings_box()) {
-			settings_group(N_("Published inbox relays"))
+			settings_group(tr("Published inbox relays"))
 			clay.Text(
 				tr("Where peers reach you."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
@@ -129,7 +129,7 @@ settings_network :: proc(ui: ^Ui_State) {
 					"wss://relay.example.com",
 					ui.focus == .Inbox,
 				)
-				settings_button("AddInboxBtn", "Add")
+				settings_button("AddInboxBtn", tr("Add"))
 			}
 		}
 
@@ -144,15 +144,17 @@ settings_network :: proc(ui: ^Ui_State) {
 			recovery.layout.childGap = 8
 			if clay.UI(clay.ID("RowRepublish"))(recovery) {
 				row_labels(
-					"Republish relay lists",
-					"Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you.",
+					tr("Republish relay lists"),
+					tr(
+						"Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you.",
+					),
 				)
-				settings_button("RepublishBtn", "Republish")
+				settings_button("RepublishBtn", tr("Republish"))
 			}
 		}
 	} else {
 		if clay.UI(clay.ID("NetworkFetchGroup"))(settings_box()) {
-			settings_group(N_("Event fetch relays"))
+			settings_group(tr("Event fetch relays"))
 			clay.Text(
 				tr(
 					"Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these.",
@@ -179,12 +181,12 @@ settings_network :: proc(ui: ^Ui_State) {
 					"wss://relay.example.com",
 					ui.focus == .Fetch,
 				)
-				settings_button("AddFetchBtn", "Add")
+				settings_button("AddFetchBtn", tr("Add"))
 			}
 		}
 
 		if clay.UI(clay.ID("NetworkClientGroup"))(settings_box()) {
-			settings_group(N_("Open events in"))
+			settings_group(tr("Open events in"))
 			clay.Text(
 				tr(
 					"The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}.",
@@ -266,7 +268,7 @@ relay_row :: proc(row_id: string, remove_id: string, index: u32, relay: string) 
 		},
 		) {
 			if hovered() {
-				tooltip(N_("Remove"))
+				tooltip(tr("Remove"))
 				cursor_raise(.Pointer)
 			}
 			clay.Text(
@@ -345,7 +347,11 @@ set_inbox_relays :: proc(ui: ^Ui_State, client: ^marmot.Client, relays: []cstrin
 		   &lists,
 	   ) !=
 	   .OK {
-		ui.client_status = fmt.aprintf("Couldn't update inbox relays. %s", marmot.last_error())
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't update inbox relays. %s"), marmot.last_error()),
+			.Error,
+		)
 		return
 	}
 	marmot.account_relay_lists_free(lists)
@@ -432,20 +438,21 @@ republish_relay_lists :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		   uint(len(DEFAULT_RELAYS)),
 	   ) !=
 	   .OK {
-		ui.client_status = fmt.aprintf(
-			"Couldn't republish the relay lists. %s",
-			marmot.last_error(),
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't republish the relay lists. %s"), marmot.last_error()),
+			.Error,
 		)
 		return
 	}
-	ui.client_status = "Relay lists republished."
+	set_status(ui, tr("Relay lists republished."), .Info)
 }
 
 // Rail/status-bar counter: live connected-of-total once a health call
 // has landed, the configured relay count before that.
 relay_counter :: proc(ui: ^Ui_State) -> string {
 	if ui.health_ok {
-		return fmt.tprintf("%d/%d RELAYS", ui.health.connected, ui.health.total_relays)
+		return fmt.tprintf(tr("%d/%d RELAYS"), ui.health.connected, ui.health.total_relays)
 	}
-	return fmt.tprintf("%d/%d RELAYS", 0, len(DEFAULT_RELAYS))
+	return fmt.tprintf(tr("%d/%d RELAYS"), 0, len(DEFAULT_RELAYS))
 }

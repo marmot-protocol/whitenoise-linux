@@ -13,14 +13,14 @@ settings_speech :: proc(ui: ^Ui_State) {
 				settings_check(
 					"TgStt",
 					ui.prefs.stt_enabled,
-					"Speech to text",
-					"Dictate drafts and transcribe audio messages on your device.",
+					tr("Speech to text"),
+					tr("Dictate drafts and transcribe audio messages on your device."),
 				)
 			}
 		}
 		if ui.prefs.stt_enabled {
 			if clay.UI(clay.ID("TranscriptionGroup"))(settings_box()) {
-				settings_group(N_("Transcription model"))
+				settings_group(tr("Transcription model"))
 				clay.Text(
 					tr("Select a model to download it for dictation and audio messages."),
 					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
@@ -101,7 +101,7 @@ settings_speech :: proc(ui: ^Ui_State) {
 									) {}
 								}
 							}
-							settings_button("SttCancel", "Cancel")
+							settings_button("SttCancel", tr("Cancel"))
 						}
 					}
 				}
@@ -113,16 +113,18 @@ settings_speech :: proc(ui: ^Ui_State) {
 				settings_check(
 					"TgTts",
 					ui.prefs.tts_enabled,
-					"Read aloud",
-					"Read messages on your device in 31 languages. Downloads about 145 MB on first use.",
+					tr("Read aloud"),
+					tr(
+						"Read messages on your device in 31 languages. Downloads about 145 MB on first use.",
+					),
 				)
 			}
 		}
 		if ui.prefs.tts_enabled {
 			if clay.UI(clay.ID("TtsModel"))(settings_box()) {
 				row_labels(
-					"Speech model",
-					"Shared by all ten voices and 31 languages. Downloads once.",
+					tr("Speech model"),
+					tr("Shared by all ten voices and 31 languages. Downloads once."),
 				)
 				settings_tts_download(ui, 0)
 			}
@@ -169,7 +171,7 @@ settings_speech :: proc(ui: ^Ui_State) {
 								{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
 							)
 						}
-						settings_button(fmt.tprintf("TtsPreview%d", i), "Preview")
+						settings_button(fmt.tprintf("TtsPreview%d", i), tr("Preview"))
 					}
 				}
 			}

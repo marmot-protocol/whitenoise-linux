@@ -28,7 +28,7 @@ ctx_item :: proc(id_str: string, glyph: string, label: string) {
 				{fontId = FONT_ICON, fontSize = 13, textColor = hovered() ? TEXT : TEXT_DIM},
 			)
 		}
-		clay.Text(tr(label), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+		clay.Text(label, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 	}
 }
 
@@ -70,17 +70,17 @@ member_menu :: proc(ui: ^Ui_State) {
 	) {
 		if member.is_self {
 			if member.is_admin {
-				ctx_item("MemberStepDown", ICON_BAN, "Step down")
+				ctx_item("MemberStepDown", ICON_BAN, tr("Step down"))
 			}
 			return
 		}
 		ctx_item(
 			member.is_admin ? "MemberDemote" : "MemberPromote",
 			ICON_STAR,
-			member.is_admin ? "Demote" : "Promote",
+			member.is_admin ? tr("Demote") : tr("Promote"),
 		)
-		ctx_item("MemberRemove", ICON_TRASH, "Remove")
-		ctx_item("MemberNick", ICON_PENCIL, "Nickname")
+		ctx_item("MemberRemove", ICON_TRASH, tr("Remove"))
+		ctx_item("MemberNick", ICON_PENCIL, tr("Nickname"))
 	}
 }
 
@@ -219,16 +219,16 @@ context_menu :: proc(ui: ^Ui_State) {
 
 			// Same rows and gating as wiring/extra.rs builds (no text
 			// selection here). A tombstone offers no action rows.
-			ctx_item("CtxReact", ICON_SMILE, "Add reaction")
+			ctx_item("CtxReact", ICON_SMILE, tr("Add reaction"))
 			if len(msg.thread_of) == 0 || ui.compose_issue != "" {
-				ctx_item("CtxReply", ICON_REPLY, "Reply")
+				ctx_item("CtxReply", ICON_REPLY, tr("Reply"))
 			}
-			ctx_item("CtxThread", ICON_COMMENTS, "Reply in thread")
-			ctx_item("CtxForward", ICON_FORWARD, "Forward")
+			ctx_item("CtxThread", ICON_COMMENTS, tr("Reply in thread"))
+			ctx_item("CtxForward", ICON_FORWARD, tr("Forward"))
 			if len(msg.body) > 0 {
-				ctx_item("CtxCopy", ICON_COPY, "Copy text")
+				ctx_item("CtxCopy", ICON_COPY, tr("Copy text"))
 				if ui.prefs.tts_enabled {
-					ctx_item("CtxRead", ICON_COMMENTS, "Read aloud")
+					ctx_item("CtxRead", ICON_COMMENTS, tr("Read aloud"))
 				}
 			}
 			for att_name, i in msg.att_names {
@@ -238,17 +238,17 @@ context_menu :: proc(ui: ^Ui_State) {
 				ctx_item(
 					fmt.tprintf("CtxSave%d", i),
 					ICON_DOWNLOAD,
-					fmt.tprintf("Save %s", att_name),
+					fmt.tprintf(tr("Save %s"), att_name),
 				)
 			}
-			ctx_item("CtxDelMe", ICON_TRASH, "Delete for me")
+			ctx_item("CtxDelMe", ICON_TRASH, tr("Delete for me"))
 			if msg.mine {
-				ctx_item("CtxEdit", ICON_PENCIL, "Edit message")
-				ctx_item("CtxDelAll", ICON_BAN, "Delete for everyone")
+				ctx_item("CtxEdit", ICON_PENCIL, tr("Edit message"))
+				ctx_item("CtxDelAll", ICON_BAN, tr("Delete for everyone"))
 			}
 		}
 		if ui.prefs.dev_mode {
-			ctx_item("CtxRaw", ICON_CODE, "View raw event")
+			ctx_item("CtxRaw", ICON_CODE, tr("View raw event"))
 		}
 	}
 }
@@ -306,7 +306,7 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 		   0 {clay.Text(tr("Loading..."), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})}
 		edit_count := max(0, len(history) - (ui.hist_original ? 1 : 0))
 		clay.Text(
-			fmt.tprintf("%d edit%s", edit_count, edit_count == 1 ? "" : "s"),
+			fmt.tprintf(tr(edit_count == 1 ? N_("%d edit") : N_("%d edits")), edit_count),
 			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 		)
 
@@ -494,7 +494,7 @@ raw_event_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("RawActions"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
 		) {
-			micro_button("RawCopy", "Copy")
+			micro_button("RawCopy", tr("Copy"))
 		}
 	}
 }
@@ -558,7 +558,7 @@ encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 		)
 
-		eyebrow("GROUP ID")
+		eyebrow(tr("GROUP ID"))
 		if clay.UI(clay.ID("EncFingerprint"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {x = .Center}}},
 		) {
@@ -576,14 +576,14 @@ encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 		}
 
 		if len(ui.enc_epoch) > 0 {
-			eyebrow("EPOCH")
+			eyebrow(tr("EPOCH"))
 			clay.Text(ui.enc_epoch, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
 		}
 
 		if clay.UI(clay.ID("EncActions"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
 		) {
-			micro_button("EncCopyId", "Copy")
+			micro_button("EncCopyId", tr("Copy"))
 		}
 	}
 }
@@ -715,7 +715,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 			if ui.gif_tab {gif_picker(ui); return}
 			if ui.sticker_tab {sticker_control("StickerManage", 0, tr("Manage")); sticker_picker(ui); return}
 		}
-		eyebrow("RECENT")
+		eyebrow(tr("RECENT"))
 		if clay.UI(clay.ID("PkRecentRow"))({layout = {childGap = 2}}) {
 			for recent, i in ui.recent_emoji {
 				if tex := emoji_tex(recent); tex != nil {

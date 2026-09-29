@@ -81,7 +81,7 @@ open_link :: proc(ui: ^Ui_State, url: string) {
 
 spawn_link :: proc(ui: ^Ui_State, url: string) {
 	when ODIN_OS == .OpenBSD {
-		copy_text(ui, url)
+		copy_text(ui, url, tr("Copied"))
 	} else {
 		open_external(url)
 		toast(ui, tr("Opening in your browser"))
@@ -148,7 +148,7 @@ link_modal :: proc(ui: ^Ui_State) {
 		}
 		clay.Text(explanation, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 
-		eyebrow("SITE")
+		eyebrow(tr("SITE"))
 		if clay.UI(clay.ID("LinkCard"))(
 		{
 			layout = {

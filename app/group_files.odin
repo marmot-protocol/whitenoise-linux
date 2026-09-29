@@ -312,7 +312,7 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			},
 			) {
 				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_DIM})
-				if hovered() {tooltip("Back to chat")}
+				if hovered() {tooltip(tr("Back to chat"))}
 			}
 		}
 		if !ready {
@@ -637,7 +637,7 @@ group_file_card :: proc(ui: ^Ui_State, job: ^Group_Files_Job, index: int, width:
 						ICON_DOWNLOAD,
 						{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
 					)
-					if hovered() {tooltip("Save attachment")}
+					if hovered() {tooltip(tr("Save attachment"))}
 				}
 			}
 		}

@@ -305,7 +305,11 @@ handle_model_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		model_hover.att,
 	)
 	if !ok {
-		ui.client_status = fmt.aprintf("couldn't open %s", model_hover.name)
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't open %s. Please try again."), model_hover.name),
+			.Error,
+		)
 		return
 	}
 	defer marmot.media_download_result_free(result)
@@ -333,7 +337,11 @@ handle_code_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		code_hover.att,
 	)
 	if !ok {
-		ui.client_status = fmt.aprintf("couldn't open %s", code_hover.name)
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't open %s. Please try again."), code_hover.name),
+			.Error,
+		)
 		return
 	}
 	defer marmot.media_download_result_free(result)
@@ -361,9 +369,10 @@ handle_pdf_full :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		pdf_full_hover.att,
 	)
 	if !ok {
-		ui.client_status = fmt.aprintf(
-			tr("Couldn't open %s. Please try again."),
-			pdf_full_hover.name,
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't open %s. Please try again."), pdf_full_hover.name),
+			.Error,
 		)
 		return
 	}
@@ -417,7 +426,7 @@ copy_preview_image :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ok: bool
 		result, ok = fetch_attachment(ui, client, ui.chats[ui.selected].group_id, s.msg_id, s.att)
 		if !ok {
-			ui.client_status = fmt.aprintf("couldn't copy %s", s.name)
+			set_status(ui, fmt.aprintf(tr("Couldn't copy %s. Please try again."), s.name), .Error)
 			return
 		}
 		bytes = result.plaintext[:result.plaintext_len]
@@ -436,10 +445,10 @@ copy_preview_image :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		// SDL takes ownership before invoking the platform backend, even
 		// when that backend fails. Clearing runs its cleanup exactly once.
 		_ = sdl.ClearClipboardData()
-		ui.client_status = "couldn't copy image to the clipboard"
+		set_status(ui, tr("Couldn't copy the image to the clipboard. Please try again."), .Error)
 		return
 	}
-	ui.client_status = fmt.aprintf("copied %s", name)
+	set_status(ui, fmt.aprintf(tr("Copied %s."), name), .Info)
 }
 
 @(private = "file")
@@ -575,7 +584,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 			)
 			if clay.UI(clay.ID("PvHeadPad"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if preview.kind == .Message && ui.prefs.tts_enabled {
-				micro_button("PvRead", "Read aloud")
+				micro_button("PvRead", tr("Read aloud"))
 			}
 			stored := !slides || preview.slides[preview.slide].msg_id != ""
 			if stored &&
@@ -587,7 +596,10 @@ preview_modal :: proc(ui: ^Ui_State) {
 					cornerRadius = rr(8),
 				},
 				) {
-					clay.Text("Copy image", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+					clay.Text(
+						tr("Copy image"),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
+					)
 				}
 			}
 			if preview.kind == .Video || preview.kind == .Pdf {
@@ -612,7 +624,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 					cornerRadius = rr(8),
 				},
 				) {
-					clay.Text("Save", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+					clay.Text(tr("Save"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 				}
 			}
 			if clay.UI(clay.ID("PvClose"))(
@@ -630,13 +642,13 @@ preview_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("PvZoomTools"))(
 			{layout = {childGap = 8, childAlignment = {y = .Center}}},
 			) {
-				micro_button("PvZoomOut", "−")
+				micro_button("PvZoomOut", "\u2212")
 				clay.Text(
 					fmt.tprintf("%.0f%%", preview.image_scale * UI_ZOOM * 100),
 					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM},
 				)
 				micro_button("PvZoomIn", "+")
-				micro_button("PvFit", "Fit")
+				micro_button("PvFit", tr("Fit"))
 				micro_button("PvActual", "100%")
 				slide_nav()
 			}
@@ -731,7 +743,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 					},
 					) {
 						clay.Text(
-							"Couldn't play video. Click to retry.",
+							tr("Couldn't play video. Click to retry."),
 							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 						)
 					}
@@ -976,7 +988,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 					md_blocks(preview.txt.blocks[:shown], 0x7f000000, wrap_w = fit_w(480) - 20)
 					if len(preview.txt.blocks) > shown {
 						clay.Text(
-							fmt.tprintf("and %d more blocks", len(preview.txt.blocks) - shown),
+							fmt.tprintf(tr("and %d more blocks"), len(preview.txt.blocks) - shown),
 							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 						)
 					}
@@ -1046,7 +1058,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					clay.Text(
-						"No preview for this file type. Save it, or read the bytes.",
+						tr("No preview for this file type. Save it, or read the bytes."),
 						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 					)
 					if clay.UI(clay.ID("PvHex"))(
@@ -1057,7 +1069,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 					},
 					) {
 						clay.Text(
-							"View as hex",
+							tr("View as hex"),
 							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
 						)
 					}
@@ -1283,7 +1295,7 @@ hex_rows :: proc(bytes: []u8) {
 	}
 	if len(bytes) > rows * HEX_COLS {
 		clay.Text(
-			fmt.tprintf("and %s more", arc_size_label(i64(len(bytes) - rows * HEX_COLS))),
+			fmt.tprintf(tr("and %s more"), arc_size_label(i64(len(bytes) - rows * HEX_COLS))),
 			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 		)
 	}

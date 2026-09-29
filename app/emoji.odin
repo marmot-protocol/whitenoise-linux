@@ -182,7 +182,7 @@ PAGE_ICONS := [Page]string {
 
 // Palette globals, filled from the active Theme_Pack (the slint
 // themes/*.toml packs, embedded and parsed in theme.odin).
-ACCENT_NAMES := [5]string{"Mint", "Ocean", "Berry", "Coral", "Lavender"}
+ACCENT_NAMES := [5]string{N_("Mint"), N_("Ocean"), N_("Berry"), N_("Coral"), N_("Lavender")}
 
 BG := clay.Color{6, 7, 8, 255}
 CARD := clay.Color{15, 19, 24, 255}

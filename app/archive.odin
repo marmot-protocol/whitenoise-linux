@@ -202,7 +202,7 @@ handle_arc_click :: proc(ui: ^Ui_State) {
 	}
 	bytes, ok := arc_entry_bytes(arc_hover.view, arc_hover.entry)
 	if !ok {
-		ui.client_status = fmt.aprintf("couldn't read %s", arc_hover.name)
+		set_status(ui, fmt.aprintf(tr("Couldn't read %s."), arc_hover.name), .Error)
 		return
 	}
 	preview_show(arc_hover.name, bytes, arc_hover.view)

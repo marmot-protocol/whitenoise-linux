@@ -140,15 +140,17 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		slot := adopt_theme(msg.theme_toml)
 		if slot < 0 {
-			ui.client_status = strings.clone(
-				tr("Couldn't use that theme. It isn't a theme this version reads."),
+			set_status(
+				ui,
+				strings.clone(tr("Couldn't use that theme. It isn't a theme this version reads.")),
+				.Error,
 			)
 			return
 		}
 		ui.theme = slot
 		apply_theme(ui.theme, ui.accent)
 		save_settings(ui)
-		toast(ui, "Theme applied")
+		toast(ui, tr("Theme applied"))
 		return
 	}
 
@@ -273,7 +275,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		if clicked("RawCopy") {
-			copy_text(ui, ui.raw_json)
+			copy_text(ui, ui.raw_json, tr("Copied"))
 		}
 		return
 	}
@@ -285,7 +287,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		if clicked("EncCopyId") && ui.selected >= 0 {
-			copy_text(ui, ui.chats[ui.selected].group_id, "Group id copied")
+			copy_text(ui, ui.chats[ui.selected].group_id, tr("Group id copied"))
 		}
 		return
 	}
@@ -573,7 +575,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				marmot.app_group_record_free(record)
 				refresh_after_action(ui, client)
 			} else {
-				ui.client_status = fmt.aprintf("Couldn't accept. %s", marmot.last_error())
+				set_status(ui, fmt.aprintf(tr("Couldn't accept. %s"), marmot.last_error()), .Error)
 			}
 			return
 		}
@@ -802,7 +804,7 @@ media_type_for :: proc(name: string) -> string {
 stage_file :: proc(ui: ^Ui_State, path: string) {
 	data, read_err := os.read_entire_file(path, context.allocator)
 	if read_err != nil {
-		ui.client_status = fmt.aprintf("couldn't read %s", path)
+		set_status(ui, fmt.aprintf(tr("Couldn't read %s."), path), .Error)
 		return
 	}
 
@@ -1067,7 +1069,7 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 	if clay.PointerOver(clay.ID("CtxCopy")) {
-		copy_text(ui, msg.body, "Message copied")
+		copy_text(ui, msg.body, tr("Message copied"))
 		return
 	}
 	if ui.prefs.tts_enabled && clay.PointerOver(clay.ID("CtxRead")) {
@@ -1195,9 +1197,13 @@ set_archived :: proc(ui: ^Ui_State, client: ^marmot.Client, group_id: string, ar
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	group := strings.clone_to_cstring(group_id, context.temp_allocator)
 	if marmot.set_group_archived(client, account, group, archived, &record) != .OK {
-		ui.client_status = fmt.aprintf(
-			archived ? "Couldn't archive. %s" : "Couldn't unarchive. %s",
-			marmot.last_error(),
+		set_status(
+			ui,
+			fmt.aprintf(
+				archived ? tr("Couldn't archive. %s") : tr("Couldn't unarchive. %s"),
+				marmot.last_error(),
+			),
+			.Error,
 		)
 		return
 	}
@@ -1254,7 +1260,11 @@ create_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, name, member: string)
 		   &group_id,
 	   ) !=
 	   .OK {
-		ui.client_status = fmt.aprintf("Couldn't create the chat. %s", marmot.last_error())
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't create the chat. %s"), marmot.last_error()),
+			.Error,
+		)
 		return ""
 	}
 	new_group := strings.clone(string(group_id))
@@ -1322,7 +1332,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if clicked("NCCreate") || rl.IsKeyPressed(.ENTER) {
 		if ui.nip05_ticket != 0 {return}
-		name := len(ui.nc_name) > 0 ? string(ui.nc_name[:]) : "New group"
+		name := len(ui.nc_name) > 0 ? string(ui.nc_name[:]) : tr("New group")
 
 		member := strings.trim_space(string(ui.nc_member[:]))
 		// A pasted marmot:// profile link reduces to its bare reference.
@@ -1351,23 +1361,29 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				// (`.Resolved`) which we MUST NOT act on. Queue the intent
 				// and let drain_nc_intents finish it when the worker lands.
 				nc_pending_push(member, .New_Chat, ui.account_ref, "", name)
-				ui.client_status = strings.clone(tr("Looking up the Namecoin name."))
+				set_status(ui, strings.clone(tr("Looking up the Namecoin name.")), .Info)
 				return
 			}
 			switch done.status {
 			case .Resolved:
 				new_chat_create_and_open(ui, client, name, done.result.pubkey_hex)
 			case .Not_Found:
-				ui.client_status = fmt.aprintf(
-					tr("Couldn't resolve %s on Namecoin. Double-check it and try again."),
-					member,
+				set_status(
+					ui,
+					fmt.aprintf(
+						tr("Couldn't resolve %s on Namecoin. Double-check it and try again."),
+						member,
+					),
+					.Error,
 				)
 			case .Unavailable:
 				// Cache had nothing and worker returned inline unavailable;
 				// queue the intent for the next drain attempt to retry.
 				nc_pending_push(member, .New_Chat, ui.account_ref, "", name)
-				ui.client_status = strings.clone(
-					tr("Couldn't reach the Namecoin resolvers. Please try again."),
+				set_status(
+					ui,
+					strings.clone(tr("Couldn't reach the Namecoin resolvers. Please try again.")),
+					.Error,
 				)
 			}
 			nc_done_free(done)
@@ -1403,7 +1419,7 @@ drain_nc_intents :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Expire stale intents first; a worker that never comes back must
 	// not pin a follow-up action to fire minutes after the user moved on.
 	if dropped := nc_pending_gc(); dropped > 0 {
-		ui.client_status = strings.clone(tr("Namecoin lookup took too long; try again."))
+		set_status(ui, strings.clone(tr("Namecoin lookup took too long; try again.")), .Error)
 	}
 
 	dones := nc_drain(context.allocator)
@@ -1443,19 +1459,29 @@ drain_nc_intents :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				switch p.intent {
 				case .Invite:
 					admin_op(ui, client, "invite", d.result.pubkey_hex)
-					ui.client_status = strings.clone(tr("Namecoin name resolved. Invite sent."))
+					set_status(
+						ui,
+						strings.clone(tr("Namecoin name resolved. Invite sent.")),
+						.Info,
+					)
 				case .New_Chat:
 					new_chat_create_and_open(ui, client, p.group_name, d.result.pubkey_hex)
 				case .None:
 				}
 			case .Not_Found:
-				ui.client_status = fmt.aprintf(
-					tr("Couldn't resolve %s on Namecoin. Double-check it and try again."),
-					p.identifier,
+				set_status(
+					ui,
+					fmt.aprintf(
+						tr("Couldn't resolve %s on Namecoin. Double-check it and try again."),
+						p.identifier,
+					),
+					.Error,
 				)
 			case .Unavailable:
-				ui.client_status = strings.clone(
-					tr("Couldn't reach the Namecoin resolvers. Please try again."),
+				set_status(
+					ui,
+					strings.clone(tr("Couldn't reach the Namecoin resolvers. Please try again.")),
+					.Error,
 				)
 			}
 			nc_pending_free(p)
@@ -1621,7 +1647,7 @@ invite_member :: proc(ui: ^Ui_State, client: ^marmot.Client, member_ref: string)
 	group_id :=
 		ui.selected >= 0 && ui.selected < len(ui.chats) ? ui.chats[ui.selected].group_id : ""
 	if len(group_id) == 0 {
-		ui.client_status = strings.clone(tr("Open a chat before inviting someone."))
+		set_status(ui, strings.clone(tr("Open a chat before inviting someone.")), .Error)
 		return
 	}
 
@@ -1636,23 +1662,29 @@ invite_member :: proc(ui: ^Ui_State, client: ^marmot.Client, member_ref: string)
 		// it here — queue the invite and let drain_nc_intents finish it
 		// once the worker returns.
 		nc_pending_push(trimmed, .Invite, ui.account_ref, group_id)
-		ui.client_status = strings.clone(tr("Looking up the Namecoin name."))
+		set_status(ui, strings.clone(tr("Looking up the Namecoin name.")), .Info)
 		return
 	}
 	switch done.status {
 	case .Resolved:
 		admin_op(ui, client, "invite", done.result.pubkey_hex)
 	case .Not_Found:
-		ui.client_status = fmt.aprintf(
-			tr("Couldn't resolve %s on Namecoin. Double-check it and try again."),
-			trimmed,
+		set_status(
+			ui,
+			fmt.aprintf(
+				tr("Couldn't resolve %s on Namecoin. Double-check it and try again."),
+				trimmed,
+			),
+			.Error,
 		)
 	case .Unavailable:
 		// Cache had nothing and inline resolve unavailable; queue for
 		// retry the next time drain sees a fresh Nc_Done.
 		nc_pending_push(trimmed, .Invite, ui.account_ref, group_id)
-		ui.client_status = strings.clone(
-			tr("Couldn't reach the Namecoin resolvers. Please try again."),
+		set_status(
+			ui,
+			strings.clone(tr("Couldn't reach the Namecoin resolvers. Please try again.")),
+			.Error,
 		)
 	}
 	nc_done_free(done)

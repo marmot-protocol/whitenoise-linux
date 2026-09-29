@@ -41,7 +41,7 @@ json_opts :: proc() -> json.Marshal_Options {
 
 settings_debug :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("DebugSnapshotGroup"))(settings_box()) {
-		settings_group(DEBUG_EYEBROWS[clamp(ui.debug_tab, 0, len(DEBUG_EYEBROWS) - 1)])
+		settings_group(tr(DEBUG_EYEBROWS[clamp(ui.debug_tab, 0, len(DEBUG_EYEBROWS) - 1)]))
 		if clay.UI(clay.ID("DbgTabs"))({layout = {layoutDirection = .TopToBottom, childGap = 4}}) {
 			for row in 0 ..< 2 {
 				if clay.UI(clay.ID("DbgTabRow", u32(row)))({layout = {childGap = 4}}) {
@@ -52,8 +52,8 @@ settings_debug :: proc(ui: ^Ui_State) {
 			}
 		}
 		if clay.UI(clay.ID("DbgActions"))({layout = {childGap = 6}}) {
-			settings_button("DbgRefresh", "Refresh")
-			settings_button("DbgCopy", "Copy JSON")
+			settings_button("DbgRefresh", tr("Refresh"))
+			settings_button("DbgCopy", tr("Copy JSON"))
 		}
 		if clay.UI(clay.ID("DbgPlate"))(
 		{
@@ -250,9 +250,9 @@ kp_json :: proc(rows: []Kp_Row) -> string {
 
 settings_kp :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("KpOwnGroup"))(settings_box()) {
-		settings_group(N_("YOUR KEY PACKAGES"))
+		settings_group(tr("YOUR KEY PACKAGES"))
 		if clay.UI(clay.ID("KpMineRow"))({layout = {childGap = 6}}) {
-			settings_button("KpMineRefresh", "Decode own")
+			settings_button("KpMineRefresh", tr("Decode own"))
 		}
 		kp_cards(
 			ui,
@@ -263,7 +263,7 @@ settings_kp :: proc(ui: ^Ui_State) {
 	}
 
 	if clay.UI(clay.ID("KpInspectGroup"))(settings_box()) {
-		settings_group(N_("INSPECT SOMEONE ELSE'S"))
+		settings_group(tr("INSPECT SOMEONE ELSE'S"))
 		if clay.UI(clay.ID("KpInspectRow"))(
 		{
 			layout = {
@@ -273,8 +273,8 @@ settings_kp :: proc(ui: ^Ui_State) {
 			},
 		},
 		) {
-			settings_input(ui, "KpBox", &ui.kp_input, "npub or hex pubkey", ui.focus == .KP)
-			settings_button("KpInspect", "Inspect")
+			settings_input(ui, "KpBox", &ui.kp_input, tr("npub or hex pubkey"), ui.focus == .KP)
+			settings_button("KpInspect", tr("Inspect"))
 		}
 		if len(ui.kp_peer_owner) > 0 {
 			clay.Text(ui.kp_peer_owner, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM})
@@ -299,21 +299,31 @@ kp_cards :: proc(ui: ^Ui_State, prefix: string, rows: []Kp_Row, empty: string) {
 	for row, i in rows {
 		where_at :=
 			row.local && row.relay ? tr("local + relay") : (row.local ? tr("local only") : tr("relay"))
-		kp_kv(prefix, u32(i * 10 + 0), "Owner", len(row.owner) > 0 ? row.owner : tr("(unknown)"))
+		kp_kv(
+			prefix,
+			u32(i * 10 + 0),
+			tr("Owner"),
+			len(row.owner) > 0 ? row.owner : tr("(unknown)"),
+		)
 		kp_kv(
 			prefix,
 			u32(i * 10 + 1),
-			"Key package ref",
+			tr("Key package ref"),
 			len(row.kp_ref) > 0 ? row.kp_ref : tr("(none)"),
 		)
-		kp_kv(prefix, u32(i * 10 + 2), "Event id", len(row.id) > 0 ? row.id : tr("(unpublished)"))
-		kp_kv(prefix, u32(i * 10 + 3), "Published", row.at)
-		kp_kv(prefix, u32(i * 10 + 4), "Where", where_at)
-		kp_kv(prefix, u32(i * 10 + 5), "Size", fmt.tprintf("%d bytes", row.bytes))
+		kp_kv(
+			prefix,
+			u32(i * 10 + 2),
+			tr("Event id"),
+			len(row.id) > 0 ? row.id : tr("(unpublished)"),
+		)
+		kp_kv(prefix, u32(i * 10 + 3), tr("Published"), row.at)
+		kp_kv(prefix, u32(i * 10 + 4), tr("Where"), where_at)
+		kp_kv(prefix, u32(i * 10 + 5), tr("Size"), fmt.tprintf(tr("%d bytes"), row.bytes))
 		kp_kv(
 			prefix,
 			u32(i * 10 + 6),
-			"Relays",
+			tr("Relays"),
 			len(row.relay_urls) > 0 ? strings.join(row.relay_urls, ", ", context.temp_allocator) : tr("(none)"),
 		)
 	}
@@ -333,7 +343,7 @@ kp_cards :: proc(ui: ^Ui_State, prefix: string, rows: []Kp_Row, empty: string) {
 
 kp_kv :: proc(prefix: string, index: u32, label: string, value: string) {
 	if clay.UI(clay.ID(fmt.tprintf("%sKv", prefix), index))(settings_row(true)) {
-		clay.Text(tr(label), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM})
+		clay.Text(label, {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM})
 		if clay.UI(clay.ID(fmt.tprintf("%sKvVal", prefix), index))(
 		{layout = {sizing = {width = clay.SizingGrow()}}},
 		) {
@@ -362,16 +372,17 @@ inspect_peer_key_packages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ref := strings.clone_to_cstring(string(ui.kp_input[:]), context.temp_allocator)
 	hex: cstring
 	if marmot.account_id_hex(client, ref, &hex) != .OK || hex == nil {
-		ui.client_status = tr("Couldn't read that pubkey. Double-check it and try again.")
+		set_status(ui, tr("Couldn't read that pubkey. Double-check it and try again."), .Error)
 		return
 	}
 	defer marmot.string_free(hex)
 
 	ui.kp_peer_owner = strings.clone(string(hex))
 	if !kp_rows(client, ui.kp_peer_owner, &ui.kp_peer) {
-		ui.client_status = fmt.aprintf(
-			tr("Couldn't read their key packages. %s"),
-			marmot.last_error(),
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't read their key packages. %s"), marmot.last_error()),
+			.Error,
 		)
 	}
 }
@@ -395,7 +406,7 @@ handle_debug :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("DbgCopy") && len(ui.debug_json) > 0 {
-		copy_text(ui, ui.debug_json)
+		copy_text(ui, ui.debug_json, tr("Copied"))
 	}
 }
 

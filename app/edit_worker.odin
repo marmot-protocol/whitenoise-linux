@@ -16,10 +16,10 @@ queue_edit :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 edit_complete :: proc(ui: ^Ui_State, done: Op_Done) {
 	if ui.edit_ticket == done.ticket {ui.edit_ticket = 0}
 	if done.err != "" {
-		ui.client_status = fmt.aprintf(
-			"%s %s",
-			tr("Couldn't save the edit. Please try again."),
-			done.err,
+		set_status(
+			ui,
+			fmt.aprintf("%s %s", tr("Couldn't save the edit. Please try again."), done.err),
+			.Error,
 		)
 		append(&failed_edits, done) // switching chats must not discard a failed edit
 		shake()

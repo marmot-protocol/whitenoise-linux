@@ -123,7 +123,7 @@ timeline_worker :: proc(t: ^thread.Thread) {
 		if status != .OK && status != .TIMEOUT {
 			delete(job.err)
 			job.err = marmot.last_error()
-			if job.err == "" {job.err = strings.clone("Timeline subscription closed.")}
+			if job.err == "" {job.err = strings.clone(N_("Timeline subscription closed."))}
 		}
 		cancel := job.cancel
 		direction = job.request
@@ -298,10 +298,10 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		marmot.chat_list_row_free(read_row)
 	}
 	if read_error != "" {
-		ui.client_status = fmt.aprintf(
-			"%s %s",
-			tr("Couldn't mark the chat read. Please try again."),
-			read_error,
+		set_status(
+			ui,
+			fmt.aprintf("%s %s", tr("Couldn't mark the chat read. Please try again."), read_error),
+			.Error,
 		)
 		delete(read_error)
 	}
@@ -310,9 +310,9 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.timeline_error = fmt.aprintf(
 			"%s %s",
 			tr("Couldn't load messages. Please try again."),
-			err,
+			tr(err), // marmot's error text or the worker's N_ fallback
 		)
-		ui.client_status = strings.clone(ui.timeline_error)
+		set_status(ui, strings.clone(ui.timeline_error), .Error)
 		delete(err)
 		ui.timeline_loading, ui.timeline_paging = false, false
 	}

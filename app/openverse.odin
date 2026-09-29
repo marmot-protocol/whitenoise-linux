@@ -104,7 +104,7 @@ ov_worker :: proc() {
 	hits: [dynamic]Ov_Hit
 	fail: string
 	if err != nil || state.exit_code != 0 || len(out) == 0 {
-		fail = strings.clone("Couldn't search. Please try again.")
+		fail = N_("Couldn't search. Please try again.")
 	} else {
 		hits, fail = ov_parse(out)
 	}
@@ -122,7 +122,7 @@ ov_worker :: proc() {
 ov_parse :: proc(body: []u8) -> (hits: [dynamic]Ov_Hit, fail: string) {
 	val, perr := json.parse(body)
 	if perr != nil {
-		return hits, strings.clone("Couldn't search. Please try again.")
+		return hits, N_("Couldn't search. Please try again.")
 	}
 	defer json.destroy_value(val)
 
@@ -143,7 +143,7 @@ ov_parse :: proc(body: []u8) -> (hits: [dynamic]Ov_Hit, fail: string) {
 		}
 	}
 	if len(hits) == 0 {
-		fail = strings.clone("No results. Try another search.")
+		fail = N_("No results. Try another search.")
 	}
 	return hits, fail
 }
@@ -163,7 +163,8 @@ drain_ov :: proc() {
 	ov_hits = ov_fresh
 	ov_fresh = {}
 	delete(ov_err)
-	ov_err = ov_fresh_err
+	// The worker hands over a static N_ msgid; translate on the UI thread.
+	ov_err = len(ov_fresh_err) > 0 ? strings.clone(tr(ov_fresh_err)) : ""
 	ov_fresh_err = ""
 	ov_fresh_ready = false
 	ov_busy = false
@@ -246,7 +247,7 @@ openverse_modal :: proc(ui: ^Ui_State) {
 					TEXT_LO,
 				)
 			}
-			micro_button("OvGo", ov_busy ? "Searching…" : "Search")
+			micro_button("OvGo", ov_busy ? tr("Searching…") : tr("Search"))
 		}
 
 		if len(ov_err) > 0 {
@@ -326,7 +327,7 @@ ov_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, full_url: string) {
 	url := strings.clone_to_cstring(full_url, context.temp_allocator)
 	if marmot.update_group_avatar_url(client, account, group, url, nil, nil, &summary) != .OK {
 		delete(ov_err)
-		ov_err = fmt.aprintf("Couldn't set the photo. %s", marmot.last_error())
+		ov_err = fmt.aprintf(tr("Couldn't set the photo. %s"), marmot.last_error())
 		return
 	}
 	marmot.send_summary_free(summary)

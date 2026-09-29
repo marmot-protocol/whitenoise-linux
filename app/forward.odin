@@ -68,7 +68,7 @@ forward_modal :: proc(ui: ^Ui_State) {
 		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
 		) {
 			clay.Text(
-				tr(ui.fwd_kind == .Theme ? "Share theme with" : "Forward to"),
+				ui.fwd_kind == .Theme ? tr("Share theme with") : tr("Forward to"),
 				{fontId = FONT_TITLE, fontSize = 20, textColor = TEXT},
 			)
 			if clay.UI(clay.ID("FwdHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
@@ -102,7 +102,7 @@ forward_modal :: proc(ui: ^Ui_State) {
 				ui,
 				"FwdFilter",
 				&ui.fwd_filter,
-				"Filter chats",
+				tr("Filter chats"),
 				ui.focus == .Fwd,
 				13,
 				TEXT_LO,
@@ -291,7 +291,7 @@ drain_forwards :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if p.dismissed {free_pending(p); ordered_remove(&ui.pending, i); continue}
 		if !job.ok {
 			p.failed = true
-			ui.client_status = strings.clone("Couldn't forward. Please try again.")
+			set_status(ui, strings.clone(tr("Couldn't forward. Please try again.")), .Error)
 			continue
 		}
 		p.atts = job.atts; job.atts = {}

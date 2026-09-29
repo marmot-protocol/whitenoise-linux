@@ -459,7 +459,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			} else if record.reply_to_message_id_hex != nil {
 				// Parent outside the loaded window (or deleted): keep the
 				// reply frame with a plain note instead of dropping it.
-				msg.reply_text = strings.clone("Original message unavailable")
+				msg.reply_text = strings.clone(tr("Original message unavailable"))
 			}
 
 		}
@@ -643,7 +643,7 @@ raw_event_json :: proc(client: ^marmot.Client, ui: ^Ui_State, msg_id: string) ->
 		}
 		return record_json(record)
 	}
-	return fmt.aprintf("No record with id %s in this chat's window.", msg_id)
+	return fmt.aprintf(tr("No record with id %s in this chat's window."), msg_id)
 }
 
 // Pretty-print one record's projection of the inner app event.

@@ -330,7 +330,7 @@ gate_field :: proc(
 			glow(clay.ID(id_str), ACCENT, 0.35 + clamp((pop - 1) * 3, 0, 0.65), 18)
 		}
 		if len(buf) == 0 {
-			clay.Text(tr(placeholder), {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
+			clay.Text(placeholder, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
 		} else {
 			clay.Text(
 				strings.repeat("*", min(len(buf), 48), context.temp_allocator),
@@ -397,12 +397,18 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				{layout = {sizing = {height = clay.SizingFixed(10)}}},
 				) {}
 
-				eyebrow("PASSWORD")
-				gate_field(ui, "GatePwBox", &gate_pw, !gate_confirm || !creating, "Your password")
+				eyebrow(tr("PASSWORD"))
+				gate_field(
+					ui,
+					"GatePwBox",
+					&gate_pw,
+					!gate_confirm || !creating,
+					tr("Your password"),
+				)
 				if creating {
 					password_hint(password_bits(string(gate_pw[:]), &gate_check))
-					eyebrow("CONFIRM PASSWORD")
-					gate_field(ui, "GatePw2Box", &gate_pw2, gate_confirm, "Your password")
+					eyebrow(tr("CONFIRM PASSWORD"))
+					gate_field(ui, "GatePw2Box", &gate_pw2, gate_confirm, tr("Your password"))
 				}
 
 				if clay.UI(clay.ID("GateGapB"))(

@@ -120,7 +120,6 @@ settings_box :: proc() -> clay.ElementDeclaration {
 }
 
 settings_group :: proc(label: string) {
-	label := tr(label)
 	width := g_ui == nil ? f32(600) : settings_body_width(g_ui) - 24
 	long := rl.MeasureTextLine(FONT_TITLE, 12, label, 0).x > width - 8
 	if clay.UI(clay.ID_LOCAL(label))(
@@ -218,7 +217,7 @@ settings_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
 	},
 	) {
 		clay.Text(
-			tr(label),
+			label,
 			{fontId = FONT_BODY, fontSize = 12, textColor = color.a != 0 ? color : TEXT},
 		)
 	}
@@ -387,9 +386,9 @@ row_labels :: proc(title: string, sub: string, title_color: clay.Color = {}) {
 		},
 	},
 	) {
-		clay.Text(tr(title), {fontId = FONT_TITLE, fontSize = 13, textColor = color})
+		clay.Text(title, {fontId = FONT_TITLE, fontSize = 13, textColor = color})
 		if len(sub) > 0 {
-			clay.Text(tr(sub), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			clay.Text(sub, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 		}
 	}
 }
@@ -440,9 +439,9 @@ settings_header :: proc(section: Settings_Section, title: string, sub: string) {
 			},
 		},
 		) {
-			clay.Text(tr(title), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
+			clay.Text(title, {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
 			if len(sub) > 0 {
-				clay.Text(tr(sub), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				clay.Text(sub, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 			}
 		}
 	}
@@ -516,8 +515,8 @@ settings_pane :: proc(ui: ^Ui_State) {
 					section := SETTINGS_SECTIONS[ui.settings_section]
 					settings_header(
 						ui.settings_section,
-						section.label,
-						settings_description(ui.settings_section),
+						tr(section.label),
+						tr(settings_description(ui.settings_section)),
 					)
 					settings_tab_strip(ui)
 				}
@@ -598,7 +597,7 @@ settings_folders :: proc(ui: ^Ui_State) {
 	box := settings_box()
 	box.layout.sizing.width = clay.SizingFixed(min(580, settings_body_width(ui)))
 	if clay.UI(clay.ID("FoldersGroup"))(box) {
-		settings_group(N_("Folders"))
+		settings_group(tr("Folders"))
 		if clay.UI(clay.ID("SettingsFolderActions"))(
 		{
 			layout = {
@@ -627,7 +626,7 @@ settings_folders :: proc(ui: ^Ui_State) {
 					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 				)
 			}
-			settings_button("SettingsFolderNew", "New folder", ACCENT)
+			settings_button("SettingsFolderNew", tr("New folder"), ACCENT)
 		}
 		// Short lists fit their contents; long lists retain a bounded scroll viewport.
 		list_height := max(60, f32(rl.GetScreenHeight()) / UI_ZOOM - 240)
@@ -710,7 +709,7 @@ settings_folders :: proc(ui: ^Ui_State) {
 									},
 								)
 								if hovered() {
-									tooltip(direction == 0 ? N_("Move up") : N_("Move down"))
+									tooltip(direction == 0 ? tr("Move up") : tr("Move down"))
 									if enabled {cursor_raise(.Pointer)}
 								}
 							}
@@ -737,7 +736,7 @@ settings_folders :: proc(ui: ^Ui_State) {
 								},
 							)
 							if hovered() {
-								tooltip(action == 0 ? N_("Edit folder") : N_("Delete"))
+								tooltip(action == 0 ? tr("Edit folder") : tr("Delete"))
 								cursor_raise(.Pointer)
 							}
 						}
@@ -837,33 +836,35 @@ settings_general :: proc(ui: ^Ui_State) {
 	switch ui.settings_tab {
 	case 0:
 		if clay.UI(clay.ID("StartupGroup"))(settings_box()) {
-			settings_group(N_("Startup"))
+			settings_group(tr("Startup"))
 			when ODIN_OS != .OpenBSD {
 				if clay.UI(clay.ID("RowLaunch"))(settings_row()) {
-					settings_check("TgLaunch", ui.prefs.launch_at_login, "Launch at login", "")
+					settings_check("TgLaunch", ui.prefs.launch_at_login, tr("Launch at login"), "")
 				}
 			}
 			if clay.UI(clay.ID("RowTray"))(settings_row()) {
 				settings_check(
 					"TgTray",
 					ui.prefs.start_in_tray,
-					"Start minimized to tray",
-					"Takes effect on the next launch.",
+					tr("Start minimized to tray"),
+					tr("Takes effect on the next launch."),
 				)
 			}
 			if clay.UI(clay.ID("RowMinTray"))(settings_row()) {
 				settings_check(
 					"TgMinTray",
 					ui.prefs.minimize_tray,
-					"Close to tray",
-					"Closing the window hides it. The tray icon shows your unread total and brings it back.",
+					tr("Close to tray"),
+					tr(
+						"Closing the window hides it. The tray icon shows your unread total and brings it back.",
+					),
 				)
 			}
 			if clay.UI(clay.ID("RowRestore"))(settings_row()) {
 				settings_check(
 					"TgRestore",
 					ui.prefs.restore_last_chat,
-					"Restore last selected chat on launch",
+					tr("Restore last selected chat on launch"),
 					"",
 				)
 			}
@@ -871,26 +872,26 @@ settings_general :: proc(ui: ^Ui_State) {
 
 	case 1:
 		if clay.UI(clay.ID("LanguageGroup"))(settings_box()) {
-			settings_group(N_("Language"))
+			settings_group(tr("Language"))
 			column := settings_row()
 			column.layout.layoutDirection = .TopToBottom
 			column.layout.childGap = 8
 			if clay.UI(clay.ID("RowLang"))(column) {
-				row_labels("Interface language", "")
+				row_labels(tr("Interface language"), "")
 				settings_button(
 					"LangChange",
 					fmt.tprintf("%s  ▾", locale_label(ui.prefs.locale)),
 				)
 			}
 			if clay.UI(clay.ID("RowTimeFmt"))(column) {
-				row_labels("Time format", "")
+				row_labels(tr("Time format"), "")
 				if clay.UI(clay.ID("TimeFmtCol"))({layout = {childGap = 6}}) {
 					settings_option("TimeFmt", 0, "14:30", !ui.prefs.hour12)
 					settings_option("TimeFmt", 1, "2:30 PM", ui.prefs.hour12)
 				}
 			}
 			if clay.UI(clay.ID("RowDateFmt"))(column) {
-				row_labels("Date format", "")
+				row_labels(tr("Date format"), "")
 				if clay.UI(clay.ID("DateFmtCol"))({layout = {childGap = 6}}) {
 					for label, i in DATE_FORMATS {
 						settings_option("DateFmt", u32(i), label, ui.prefs.date_format == i)
@@ -901,13 +902,13 @@ settings_general :: proc(ui: ^Ui_State) {
 
 	case 2:
 		if clay.UI(clay.ID("ReactionsGroup"))(settings_box()) {
-			settings_group(N_("Quick reactions"))
+			settings_group(tr("Quick reactions"))
 			row := settings_row()
 			row.layout.layoutDirection = .TopToBottom
 			if clay.UI(clay.ID("RowQuick"))(row) {
 				row_labels(
-					"One-tap reactions",
-					"Shown on the message menu. Tap one to remove it. Up to 16.",
+					tr("One-tap reactions"),
+					tr("Shown on the message menu. Tap one to remove it. Up to 16."),
 				)
 				columns := max(1, int((settings_body_width(ui) - 24) / 32))
 				for first := 0; first < len(ui.prefs.quick_reactions); first += columns {
@@ -950,17 +951,17 @@ settings_general :: proc(ui: ^Ui_State) {
 				}
 			}
 			if clay.UI(clay.ID("RowQuickReset"))(settings_row()) {
-				row_labels("Restore the default reactions", "")
-				settings_button("QuickReset", "Reset")
+				row_labels(tr("Restore the default reactions"), "")
+				settings_button("QuickReset", tr("Reset"))
 			}
 		}
 
 		if clay.UI(clay.ID("CustomEmojiGroup"))(settings_box()) {
-			settings_group(N_("Custom emoji"))
+			settings_group(tr("Custom emoji"))
 			row := settings_row()
 			row.layout.layoutDirection = .TopToBottom
 			if clay.UI(clay.ID("RowEmoji"))(row) {
-				row_labels("Uploaded emoji", "Tap one to remove it.")
+				row_labels(tr("Uploaded emoji"), tr("Tap one to remove it."))
 				for name, i in custom_emoji_names {
 					if clay.UI(clay.ID("EmojiChip", u32(i)))(
 					{
@@ -1000,7 +1001,7 @@ settings_general :: proc(ui: ^Ui_State) {
 			}
 			if len(ui.emoji_staged) > 0 {
 				clay.Text(
-					"Name the shortcode. Type it in messages as :name:.",
+					tr("Name the shortcode. Type it in messages as :name:."),
 					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 				)
 				// Fixed-size input first: this clay build drops a fixed sibling
@@ -1022,17 +1023,17 @@ settings_general :: proc(ui: ^Ui_State) {
 						ui.focus == .EmojiName,
 						min(220, settings_body_width(ui) - 200),
 					)
-					settings_button("EmojiSave", "Save")
-					settings_button("EmojiCancel", "Cancel")
+					settings_button("EmojiSave", tr("Save"))
+					settings_button("EmojiCancel", tr("Cancel"))
 				}
 			}
 		}
 
 		if clay.UI(clay.ID("ShortcutsGroup"))(settings_box()) {
-			settings_group(N_("Help"))
+			settings_group(tr("Help"))
 			if clay.UI(clay.ID("RowShortcuts"))(settings_row()) {
-				row_labels("Keyboard shortcuts", "")
-				settings_button("ShortcutsView", "View")
+				row_labels(tr("Keyboard shortcuts"), "")
+				settings_button("ShortcutsView", tr("View"))
 			}
 		}
 	}
@@ -1053,7 +1054,7 @@ SCROLL_SPEEDS := []int{100, 150, 200, 300}
 SCROLL_SPEED_LABELS := []string{"1x", "1.5x", "2x", "3x"}
 
 BODY_FONT_DELTAS := []int{-2, 0, 2}
-BODY_FONT_LABELS := []string{"Small", "Default", "Large"}
+BODY_FONT_LABELS := []string{N_("Small"), N_("Default"), N_("Large")}
 
 // Sample conversation rendered with the active theme and actual text-size preference.
 // It never replaces the user's theme with a canned palette.
@@ -1123,9 +1124,9 @@ settings_appearance :: proc(ui: ^Ui_State) {
 	switch ui.settings_tab {
 	case 0:
 		if clay.UI(clay.ID("ThemeGroup"))(settings_box()) {
-			settings_group(N_("Theme"))
+			settings_group(tr("Theme"))
 			if clay.UI(clay.ID("RowTheme"))(settings_row(true)) {
-				row_labels("Theme", "Pick the whole app's look.")
+				row_labels(tr("Theme"), tr("Pick the whole app's look."))
 				if clay.UI(clay.ID("ThemeDrop"))(
 				{
 					layout = {
@@ -1234,9 +1235,9 @@ settings_appearance :: proc(ui: ^Ui_State) {
 			}
 			if ui.theme != system_theme_index {
 				if clay.UI(clay.ID("RowAccent"))(settings_row(true)) {
-					row_labels("Accent color", "")
+					row_labels(tr("Accent color"), "")
 					clay.Text(
-						ACCENT_NAMES[ui.accent],
+						tr(ACCENT_NAMES[ui.accent]),
 						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 					)
 					if clay.UI(clay.ID("AccentChoices"))({layout = {childGap = 10}}) {
@@ -1260,14 +1261,14 @@ settings_appearance :: proc(ui: ^Ui_State) {
 			}
 			if clay.UI(clay.ID("RowThemeShare"))(settings_row(true)) {
 				row_labels(
-					"Share this theme",
-					"Pick a chat to send it to. They choose whether to use it.",
+					tr("Share this theme"),
+					tr("Pick a chat to send it to. They choose whether to use it."),
 				)
 				if clay.UI(clay.ID("ThemeShareActions"))({layout = {childGap = 8}}) {
-					settings_button("ThemeShareBtn", "Share to chat")
-					settings_button("ThemeEditBtn", "Edit")
+					settings_button("ThemeShareBtn", tr("Share to chat"))
+					settings_button("ThemeEditBtn", tr("Edit"))
 					if active_pack(ui).custom {
-						settings_button("ThemeDeleteBtn", "Delete", DANGER)
+						settings_button("ThemeDeleteBtn", tr("Delete"), DANGER)
 					}
 				}
 			}
@@ -1278,9 +1279,9 @@ settings_appearance :: proc(ui: ^Ui_State) {
 
 	case 1:
 		if clay.UI(clay.ID("InterfaceGroup"))(settings_box()) {
-			settings_group(N_("Interface"))
+			settings_group(tr("Interface"))
 			if clay.UI(clay.ID("RowZoom"))(settings_row(true)) {
-				row_labels("Interface zoom", "Also Ctrl + / - / 0.")
+				row_labels(tr("Interface zoom"), tr("Also Ctrl + / - / 0."))
 				if clay.UI(clay.ID("ZoomChoices"))(
 				{layout = {childGap = 8, childAlignment = {y = .Center}}},
 				) {
@@ -1290,24 +1291,27 @@ settings_appearance :: proc(ui: ^Ui_State) {
 					)
 					settings_button("ZoomMinus", "-")
 					settings_button("ZoomPlus", "+")
-					settings_button("ZoomReset", "Reset")
+					settings_button("ZoomReset", tr("Reset"))
 				}
 			}
 			if clay.UI(clay.ID("RowBodyFont"))(settings_row(true)) {
-				row_labels("Message text size", "Applies to message bodies and the composer.")
+				row_labels(
+					tr("Message text size"),
+					tr("Applies to message bodies and the composer."),
+				)
 				if clay.UI(clay.ID("BodyFontChoices"))({layout = {childGap = 6}}) {
 					for label, i in BODY_FONT_LABELS {
 						settings_option(
 							"BodyFontChip",
 							u32(i),
-							label,
+							tr(label),
 							ui.prefs.body_font == BODY_FONT_DELTAS[i],
 						)
 					}
 				}
 			}
 			if clay.UI(clay.ID("RowScroll"))(settings_row(true)) {
-				row_labels("Scroll speed", "How far the mouse wheel moves the view.")
+				row_labels(tr("Scroll speed"), tr("How far the mouse wheel moves the view."))
 				if clay.UI(clay.ID("ScrollChoices"))({layout = {childGap = 6}}) {
 					for label, i in SCROLL_SPEED_LABELS {
 						settings_option(
@@ -1322,21 +1326,25 @@ settings_appearance :: proc(ui: ^Ui_State) {
 		}
 
 		if clay.UI(clay.ID("LayoutGroup"))(settings_box()) {
-			settings_group(N_("Layout"))
+			settings_group(tr("Layout"))
 			if clay.UI(clay.ID("RowMotion"))(settings_row()) {
 				settings_check(
 					"TgMotion",
 					ui.prefs.reduce_motion,
-					"Reduce motion",
-					"Turn off animated transitions, flights and effects. State still changes, nothing moves.",
+					tr("Reduce motion"),
+					tr(
+						"Turn off animated transitions, flights and effects. State still changes, nothing moves.",
+					),
 				)
 			}
 			if clay.UI(clay.ID("RowCentered"))(settings_row()) {
 				settings_check(
 					"TgCentered",
 					ui.prefs.centered_chat,
-					"Centred conversation",
-					"Keep the open conversation on a comfortable reading measure instead of filling the width.",
+					tr("Centred conversation"),
+					tr(
+						"Keep the open conversation on a comfortable reading measure instead of filling the width.",
+					),
 				)
 			}
 		}
@@ -1347,40 +1355,40 @@ settings_appearance :: proc(ui: ^Ui_State) {
 
 settings_notifications :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("NotificationsGroup"))(settings_box()) {
-		settings_group(N_("Incoming messages"))
+		settings_group(tr("Incoming messages"))
 		if clay.UI(clay.ID("RowNotify"))(settings_row()) {
 			settings_check(
 				"TgNotify",
 				ui.prefs.notify_desktop,
-				"Desktop notifications",
-				"Get an alert when a message arrives in a chat you're not viewing.",
+				tr("Desktop notifications"),
+				tr("Get an alert when a message arrives in a chat you're not viewing."),
 			)
 		}
 		if clay.UI(clay.ID("RowSound"))(settings_row()) {
-			settings_check("TgSound", ui.prefs.notify_sound, "Play a sound", "")
+			settings_check("TgSound", ui.prefs.notify_sound, tr("Play a sound"), "")
 		}
 		if clay.UI(clay.ID("RowUiSounds"))(settings_row()) {
 			settings_check(
 				"TgUiSounds",
 				ui.prefs.ui_sounds,
-				"Interface sounds",
-				"Short tones when a message leaves, arrives, or fails to send.",
+				tr("Interface sounds"),
+				tr("Short tones when a message leaves, arrives, or fails to send."),
 			)
 		}
 		if clay.UI(clay.ID("RowPreview"))(settings_row()) {
 			settings_check(
 				"TgPreview",
 				ui.prefs.notify_preview,
-				"Show message preview",
-				"Off shows only \"New message\" without the text.",
+				tr("Show message preview"),
+				tr("Off shows only \"New message\" without the text."),
 			)
 		}
 		if clay.UI(clay.ID("RowNotifyTest"))(settings_row()) {
 			row_labels(
-				"Send a test notification",
-				"See and hear it with today's sound and preview settings.",
+				tr("Send a test notification"),
+				tr("See and hear it with today's sound and preview settings."),
 			)
-			settings_button("NotifyTest", "Send test")
+			settings_button("NotifyTest", tr("Send test"))
 		}
 	}
 }
@@ -1462,7 +1470,7 @@ SHORTCUTS := [][2]string {
 	{"Ctrl + Tab / Shift + Tab", N_("Next / previous chat")},
 	{"Ctrl + / - / 0", N_("Zoom in / out / reset")},
 	{"← / →", N_("Previous / next in the media viewer")},
-	{"Right click", N_("Message menu")},
+	{N_("Right click"), N_("Message menu")},
 }
 
 shortcuts_modal :: proc(ui: ^Ui_State) {
@@ -1515,7 +1523,7 @@ shortcuts_modal :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
-				clay.Text(pair[0], {fontId = FONT_MONO, fontSize = 12, textColor = ACCENT})
+				clay.Text(tr(pair[0]), {fontId = FONT_MONO, fontSize = 12, textColor = ACCENT})
 				if clay.UI(clay.ID("ShortRowGap", u32(i)))(
 				{layout = {sizing = {width = clay.SizingGrow()}}},
 				) {}
@@ -1717,7 +1725,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		if clicked("ExportCopy") && len(ui.export_result) > 0 {
-			copy_text(ui, ui.export_result, "Encrypted key copied")
+			copy_text(ui, ui.export_result, tr("Encrypted key copied"))
 			return
 		}
 		if clicked("ExportClose") ||
@@ -2030,7 +2038,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if clicked("ThemeShareBtn") {
 			if len(ui.chats) == 0 {
-				ui.client_status = strings.clone(tr("No chats to share with yet."))
+				set_status(ui, strings.clone(tr("No chats to share with yet.")), .Info)
 				return
 			}
 			ui.fwd_open = true

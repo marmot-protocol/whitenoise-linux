@@ -34,20 +34,20 @@ Theme_Field :: struct {
 // The editable surface, in the order it reads on screen. Seeds first,
 // because everything below them derives from them.
 THEME_FIELDS := []Theme_Field {
-	{"IDENTITY", N_("Name"), "name", .Text},
+	{N_("IDENTITY"), N_("Name"), "name", .Text},
 	{"", N_("Font"), "font", .Text},
-	{"SEEDS", N_("Background"), "bg", .Color},
+	{N_("SEEDS"), N_("Background"), "bg", .Color},
 	{"", N_("Background 2"), "bg-2", .Color},
 	{"", N_("Text"), "text-hi", .Color},
 	{"", N_("Danger"), "danger", .Color},
 	{"", N_("Warning"), "warning", .Color},
-	{"ACCENTS", N_("Accent 1"), "accent-1", .Color},
-	{"", N_("Accent 2"), "accent-2", .Color},
-	{"", N_("Accent 3"), "accent-3", .Color},
-	{"", N_("Accent 4"), "accent-4", .Color},
-	{"", N_("Accent 5"), "accent-5", .Color},
+	{N_("ACCENTS"), N_("Accent %s"), "accent-1", .Color},
+	{"", N_("Accent %s"), "accent-2", .Color},
+	{"", N_("Accent %s"), "accent-3", .Color},
+	{"", N_("Accent %s"), "accent-4", .Color},
+	{"", N_("Accent %s"), "accent-5", .Color},
 	{"", N_("On accent"), "on-accent", .Color},
-	{"SURFACES", N_("Panel"), "panel", .Color},
+	{N_("SURFACES"), N_("Panel"), "panel", .Color},
 	{"", N_("Panel 2"), "panel-2", .Color},
 	{"", N_("Rail"), "rail", .Color},
 	{"", N_("Elevated"), "elevated", .Color},
@@ -58,17 +58,17 @@ THEME_FIELDS := []Theme_Field {
 	{"", N_("Field hover"), "field-hover", .Color},
 	{"", N_("Hover"), "hover", .Color},
 	{"", N_("Status bar"), "status-bar", .Color},
-	{"TEXT", N_("Text mid"), "text-mid", .Color},
+	{N_("TEXT"), N_("Text mid"), "text-mid", .Color},
 	{"", N_("Text low"), "text-lo", .Color},
 	{"", N_("Text lowest"), "text-vlo", .Color},
-	{"LINES", N_("Divider"), "divider", .Color},
+	{N_("LINES"), N_("Divider"), "divider", .Color},
 	{"", N_("Field border"), "field-border", .Color},
 	{"", N_("Card border"), "card-border", .Color},
 	{"", N_("Elevated border"), "elevated-border", .Color},
 	{"", N_("Border 2"), "border-2", .Color},
 	{"", N_("Avatar ring"), "avatar-ring", .Color},
 	{"", N_("Top glint"), "top-glint", .Color},
-	{"DEPTH", N_("Overlay"), "overlay", .Color},
+	{N_("DEPTH"), N_("Overlay"), "overlay", .Color},
 	{"", N_("Overlay strong"), "overlay-strong", .Color},
 	{"", N_("Vignette"), "vignette", .Color},
 	{"", N_("Shadow soft"), "shadow-soft", .Color},
@@ -76,12 +76,12 @@ THEME_FIELDS := []Theme_Field {
 	{"", N_("Shadow popover"), "shadow-popover", .Color},
 	{"", N_("Bevel light"), "bevel-hi", .Color},
 	{"", N_("Bevel shade"), "bevel-lo", .Color},
-	{"MEDIA", N_("Media backdrop"), "media-backdrop", .Color},
+	{N_("MEDIA"), N_("Media backdrop"), "media-backdrop", .Color},
 	{"", N_("Chip background"), "media-chip-bg", .Color},
 	{"", N_("Chip text"), "media-chip-fg", .Color},
 	{"", N_("Chip outline"), "media-chip-outline", .Color},
 	{"", N_("Control background"), "media-control-bg", .Color},
-	{"METRICS", N_("Corner scale"), "r-scale", .Number},
+	{N_("METRICS"), N_("Corner scale"), "r-scale", .Number},
 	{"", N_("Border width"), "border-w", .Number},
 	{"", N_("Focus glow radius"), "glow-r", .Number},
 	{"", N_("Shadow offset"), "shadow-y", .Number},
@@ -250,7 +250,7 @@ theme_edit_open :: proc(ui: ^Ui_State) {
 		buf: [dynamic]u8
 		switch field.key {
 		case "name":
-			append(&buf, fmt.tprintf("%s copy", pack.name))
+			append(&buf, fmt.tprintf(tr("%s copy"), pack.name))
 		case "bg":
 			append(&buf, hex6(pack.bg))
 		case "text-hi":
@@ -350,7 +350,7 @@ theme_edit_toml :: proc(ui: ^Ui_State) -> string {
 
 	name := val(ui, idx("name"))
 	if len(name) == 0 {
-		name = "Custom"
+		name = tr("Custom")
 	}
 	fmt.sbprintfln(&b, "# Written by the theme editor.")
 	fmt.sbprintfln(&b, "name = \"%s\"", name)
@@ -478,7 +478,7 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("ThemeGroup", u32(i)))(
 					{layout = {padding = {top = 8, bottom = 2}}},
 					) {
-						eyebrow(field.group)
+						eyebrow(tr(field.group))
 					}
 				}
 				theme_field_row(ui, live, field, i)
@@ -487,7 +487,7 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("ThemeFlagsEyebrow"))(
 			{layout = {padding = {top = 10, bottom = 2}}},
 			) {
-				eyebrow("STYLE")
+				eyebrow(tr("STYLE"))
 			}
 			if clay.UI(clay.ID("ThemeFlags"))(
 			{
@@ -516,7 +516,7 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 						{layout = {sizing = {width = clay.SizingGrow()}}},
 						) {}
 						on := i < len(ui.theme_flags) && ui.theme_flags[i]
-						theme_chip_indexed("ThemeFlag", u32(i), on ? "On" : "Off", on)
+						theme_chip_indexed("ThemeFlag", u32(i), on ? tr("On") : tr("Off"), on)
 					}
 				}
 			}
@@ -524,7 +524,7 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("ThemeBackdropEyebrow"))(
 			{layout = {padding = {top = 10, bottom = 2}}},
 			) {
-				eyebrow("BACKDROP")
+				eyebrow(tr("BACKDROP"))
 			}
 			for row in 0 ..< (len(THEME_BACKDROPS) + THEME_BACKDROPS_PER_ROW - 1) / THEME_BACKDROPS_PER_ROW {
 				if clay.UI(clay.ID("ThemeBackdrops", u32(row)))(
@@ -559,11 +559,11 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 			},
 		},
 		) {
-			micro_button("ThemeEditCancel", "Cancel")
+			micro_button("ThemeEditCancel", tr("Cancel"))
 			if clay.UI(clay.ID("ThemeEditGap"))(
 			{layout = {sizing = {width = clay.SizingGrow()}}},
 			) {}
-			micro_button("ThemeEditSave", "Save and use", ACCENT)
+			micro_button("ThemeEditSave", tr("Save and use"), ACCENT)
 		}
 	}
 }
@@ -579,7 +579,12 @@ theme_field_row :: proc(ui: ^Ui_State, live: Theme_Pack, field: Theme_Field, i: 
 		},
 	},
 	) {
-		clay.Text(tr(field.label), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		// A numbered label takes the key's trailing number: "accent-3" -> "Accent 3".
+		label := tr(field.label)
+		if strings.contains(field.label, "%s") {
+			label = fmt.tprintf(label, field.key[strings.last_index_byte(field.key, '-') + 1:])
+		}
+		clay.Text(label, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 		if clay.UI(clay.ID("ThemeSeedGap", u32(i)))(
 		{layout = {sizing = {width = clay.SizingGrow()}}},
 		) {}
@@ -628,15 +633,19 @@ handle_theme_edit :: proc(ui: ^Ui_State) -> bool {
 
 		slot := adopt_theme(toml)
 		if slot < 0 {
-			ui.client_status = strings.clone(
-				tr("Couldn't save the theme. Check the name and colors and try again."),
+			set_status(
+				ui,
+				strings.clone(
+					tr("Couldn't save the theme. Check the name and colors and try again."),
+				),
+				.Error,
 			)
 			return true
 		}
 		ui.theme = slot
 		apply_theme(ui.theme, ui.accent)
 		save_settings(ui)
-		toast(ui, "Theme saved")
+		toast(ui, tr("Theme saved"))
 		return true
 	}
 

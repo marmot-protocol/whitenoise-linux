@@ -221,8 +221,12 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 		   group.account == ui.account_ref &&
 		   ui.selected >= 0 &&
 		   group.group == ui.chats[ui.selected].group_id {
-			ui.client_status = strings.clone(
-				tr("Another group change took precedence. Review your group settings."),
+			set_status(
+				ui,
+				strings.clone(
+					tr("Another group change took precedence. Review your group settings."),
+				),
+				.Error,
 			)
 		}
 		delete(group.group)
@@ -376,10 +380,10 @@ members_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   ui.account_ref != string(job.account) ||
 	   ui.chats[ui.selected].group_id != string(job.group) {return}
 	if job.details == nil {
-		ui.client_status = fmt.aprintf(
-			"%s %s",
-			tr("Couldn't load group members. Please try again."),
-			job.err,
+		set_status(
+			ui,
+			fmt.aprintf("%s %s", tr("Couldn't load group members. Please try again."), job.err),
+			.Error,
 		)
 		return
 	}
@@ -974,7 +978,7 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 					shake() // a send that is not coming back deserves it
 					play_sound(.Error)
 				}
-				ui.client_status = fmt.aprintf("send failed: %s", d.err)
+				set_status(ui, fmt.aprintf(tr("Send failed: %s"), d.err), .Error)
 			}
 			break
 		}
@@ -1235,7 +1239,7 @@ op_worker :: proc(t: ^thread.Thread) {
 		marmot.send_summary_free(summary)
 	} else {
 		err = marmot.last_error()
-		if err == "" {err = strings.clone("Group action unavailable.")}
+		if err == "" {err = strings.clone(N_("Group action unavailable."))}
 	}
 	done.err = err
 	if (job.op == .Retry_Convergence || job.op == .Repair_History) && string(job.target) != "" {
@@ -1403,7 +1407,7 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if d.ticket == ui.hist_ticket {
 				ui.hist_ticket = 0
 				if d.err !=
-				   "" {ui.client_status = strings.clone(tr("Couldn't load edit history. Please try again."))} else {
+				   "" {set_status(ui, strings.clone(tr("Couldn't load edit history. Please try again.")), .Error)} else {
 					ui.hist_original = d.has_original
 					if d.has_original {append(&ui.hist_versions, history_version(client, d.original_at, d.content))}
 					for i := len(d.history) - 1; i >= 0; i -= 1 {
@@ -1449,7 +1453,8 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		case .Rename:
 			refresh_after_action(ui, client) // undo the optimistic title
 		}
-		ui.client_status = fmt.aprintf("action failed: %s", d.err)
+		// d.err is marmot's error text or an N_ msgid from the worker.
+		set_status(ui, fmt.aprintf(tr("Action failed: %s"), tr(d.err)), .Error)
 		delete(d.err)
 		shake()
 		play_sound(.Error)

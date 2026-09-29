@@ -35,21 +35,25 @@ settings_advanced :: proc(ui: ^Ui_State) {
 	switch ui.settings_tab {
 	case 0:
 		if clay.UI(clay.ID("AdvancedPrivacyGroup"))(settings_box()) {
-			settings_group(N_("Security & privacy"))
+			settings_group(tr("Security & privacy"))
 			if clay.UI(clay.ID("RowLinkPreviews"))(settings_row()) {
 				settings_check(
 					"TgLinkPreviews",
 					!ui.prefs.disable_link_previews,
-					"Link previews",
-					"Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads.",
+					tr("Link previews"),
+					tr(
+						"Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads.",
+					),
 				)
 			}
 			if clay.UI(clay.ID("RowTelemetry"))(settings_row()) {
 				settings_check(
 					"TgTelemetry",
 					ui.telemetry_enabled,
-					"Share usage and diagnostics",
-					"Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off.",
+					tr("Share usage and diagnostics"),
+					tr(
+						"Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off.",
+					),
 				)
 			}
 			if clay.UI(clay.ID("TelemetryDisclosure"))(
@@ -87,7 +91,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 
 		when ODIN_OS != .OpenBSD {
 			if clay.UI(clay.ID("AdvancedTrustedGroup"))(settings_box()) {
-				settings_group(N_("Trusted link sites"))
+				settings_group(tr("Trusted link sites"))
 				clay.Text(
 					tr("Links to these exact sites open without confirmation."),
 					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
@@ -117,13 +121,13 @@ settings_advanced :: proc(ui: ^Ui_State) {
 
 	case 1:
 		if clay.UI(clay.ID("AdvancedAuditGroup"))(settings_box()) {
-			settings_group(N_("Audit logs"))
+			settings_group(tr("Audit logs"))
 			if clay.UI(clay.ID("RowAudit"))(settings_row()) {
 				settings_check(
 					"TgAudit",
 					ui.audit_enabled,
-					"Audit logs",
-					"Record group audit log files on this device. Identifiers are hashed.",
+					tr("Audit logs"),
+					tr("Record group audit log files on this device. Identifiers are hashed."),
 				)
 			}
 			if clay.UI(clay.ID("AuditRefreshRow"))(
@@ -133,7 +137,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					tr("Audit log files"),
 					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
 				)
-				settings_button("AuditRefresh", "Refresh")
+				settings_button("AuditRefresh", tr("Refresh"))
 			}
 			if len(ui.audit_files) == 0 {
 				if clay.UI(clay.ID("RowNoAudit"))({layout = {padding = {top = 4, bottom = 4}}}) {
@@ -184,7 +188,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 						id := audit_delete_id(i)
 						settings_button(
 							id,
-							ui.keys_confirm == id ? "Confirm delete" : "Delete",
+							ui.keys_confirm == id ? tr("Confirm delete") : tr("Delete"),
 							DANGER,
 						)
 					}
@@ -200,13 +204,15 @@ settings_advanced :: proc(ui: ^Ui_State) {
 
 	case 2:
 		if clay.UI(clay.ID("AdvancedDeveloperGroup"))(settings_box()) {
-			settings_group(N_("Developer"))
+			settings_group(tr("Developer"))
 			if clay.UI(clay.ID("RowDevMode"))(settings_row()) {
 				settings_check(
 					"TgDevMode",
 					ui.prefs.dev_mode,
-					"Developer mode",
-					"Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.",
+					tr("Developer mode"),
+					tr(
+						"Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.",
+					),
 				)
 			}
 		}
@@ -300,7 +306,7 @@ set_telemetry :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
 	if client == nil ||
 	   marmot.set_diagnostics_consent(client, on ? .Grant : .Decline, &out) != .OK {
 		ui.telemetry_enabled = false // MDK fails closed if the receipt cannot be saved.
-		ui.client_status = tr("Couldn't change diagnostics sharing. Please try again.")
+		set_status(ui, tr("Couldn't change diagnostics sharing. Please try again."), .Error)
 		return
 	}
 	ui.telemetry_enabled = out.decision == .Granted
@@ -311,7 +317,11 @@ set_telemetry :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
 set_audit :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
 	cur: ^marmot.Audit_Log_Settings
 	if client == nil || marmot.audit_log_settings(client, &cur) != .OK {
-		ui.client_status = fmt.aprintf(tr("Couldn't change audit logs. %s"), marmot.last_error())
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't change audit logs. %s"), marmot.last_error()),
+			.Error,
+		)
 		return
 	}
 	next := marmot.Audit_Log_Settings {
@@ -322,7 +332,11 @@ set_audit :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
 
 	out: ^marmot.Audit_Log_Settings
 	if marmot.set_audit_log_settings(client, &next, &out) != .OK {
-		ui.client_status = fmt.aprintf(tr("Couldn't change audit logs. %s"), marmot.last_error())
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't change audit logs. %s"), marmot.last_error()),
+			.Error,
+		)
 		return
 	}
 	ui.audit_enabled = out.enabled
@@ -395,14 +409,18 @@ audit_delete :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 		   &result,
 	   ) !=
 		   .OK {
-		ui.client_status = fmt.aprintf(
-			tr("Couldn't delete the audit log file. %s"),
-			marmot.last_error(),
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't delete the audit log file. %s"), marmot.last_error()),
+			.Error,
 		)
 		return
 	}
-	ui.client_status =
-		result.still_recording ? tr("Deleted. Recording continues in a fresh file.") : tr("Audit log file deleted.")
+	set_status(
+		ui,
+		result.still_recording ? tr("Deleted. Recording continues in a fresh file.") : tr("Audit log file deleted."),
+		.Info,
+	)
 	marmot.audit_log_delete_result_free(result)
 
 	audit_scan(ui, client)

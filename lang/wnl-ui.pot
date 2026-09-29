@@ -12,7 +12,19 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #, c-format
+msgid "%d bytes"
+msgstr ""
+
+#, c-format
 msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
+msgstr ""
+
+#, c-format
+msgid "%d edit"
+msgstr ""
+
+#, c-format
+msgid "%d edits"
 msgstr ""
 
 #, c-format
@@ -60,6 +72,10 @@ msgid "%d votes"
 msgstr ""
 
 #, c-format
+msgid "%d/%d RELAYS"
+msgstr ""
+
+#, c-format
 msgid "%s added %s"
 msgstr ""
 
@@ -69,6 +85,10 @@ msgstr ""
 
 #, c-format
 msgid "%s changed the group photo"
+msgstr ""
+
+#, c-format
+msgid "%s copy"
 msgstr ""
 
 #, c-format
@@ -111,6 +131,13 @@ msgstr ""
 msgid "%s was removed from the group"
 msgstr ""
 
+#, c-format
+msgid "%s · Click to download."
+msgstr ""
+
+msgid "(no display name)"
+msgstr ""
+
 msgid "(none)"
 msgstr ""
 
@@ -123,20 +150,11 @@ msgstr ""
 msgid "(unpublished)"
 msgstr ""
 
-msgid "+"
-msgstr ""
-
 #, c-format
 msgid "+%d more"
 msgstr ""
 
-msgid "-"
-msgstr ""
-
 msgid "1 vote"
-msgstr ""
-
-msgid "100%"
 msgstr ""
 
 msgid "25 European languages, including English and Italian."
@@ -160,10 +178,23 @@ msgstr ""
 msgid "ABOUT"
 msgstr ""
 
+msgid "ACCENTS"
+msgstr ""
+
+#, c-format
+msgid "ACCOUNTS   %d"
+msgstr ""
+
 msgid "ACTIONS"
 msgstr ""
 
+msgid "ACTIVE"
+msgstr ""
+
 msgid "ADD MEMBER"
+msgstr ""
+
+msgid "ANIMATION"
 msgstr ""
 
 msgid "About"
@@ -172,19 +203,8 @@ msgstr ""
 msgid "About White Noise"
 msgstr ""
 
-msgid "Accent 1"
-msgstr ""
-
-msgid "Accent 2"
-msgstr ""
-
-msgid "Accent 3"
-msgstr ""
-
-msgid "Accent 4"
-msgstr ""
-
-msgid "Accent 5"
+#, c-format
+msgid "Accent %s"
 msgstr ""
 
 msgid "Accent color"
@@ -193,7 +213,14 @@ msgstr ""
 msgid "Accept"
 msgstr ""
 
+msgid "Account"
+msgstr ""
+
 msgid "Accounts"
+msgstr ""
+
+#, c-format
+msgid "Action failed: %s"
 msgstr ""
 
 msgid "Add"
@@ -277,6 +304,9 @@ msgstr ""
 msgid "Apps"
 msgstr ""
 
+msgid "Apr"
+msgstr ""
+
 msgid "Archive"
 msgstr ""
 
@@ -308,6 +338,9 @@ msgid "Audit log files"
 msgstr ""
 
 msgid "Audit logs"
+msgstr ""
+
+msgid "Aug"
 msgstr ""
 
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
@@ -356,6 +389,12 @@ msgstr ""
 msgid "Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included."
 msgstr ""
 
+msgid "Base color"
+msgstr ""
+
+msgid "Berry"
+msgstr ""
+
 msgid "Bevel light"
 msgstr ""
 
@@ -374,6 +413,12 @@ msgstr ""
 msgid "Blue"
 msgstr ""
 
+msgid "Bones"
+msgstr ""
+
+msgid "Bones influence"
+msgstr ""
+
 msgid "Border 2"
 msgstr ""
 
@@ -389,7 +434,13 @@ msgstr ""
 msgid "Built with"
 msgstr ""
 
+msgid "CHATS"
+msgstr ""
+
 msgid "COLOR"
+msgstr ""
+
+msgid "COMMANDS"
 msgstr ""
 
 msgid "CONFIRM NEW PASSWORD"
@@ -398,10 +449,13 @@ msgstr ""
 msgid "CONFIRM PASSWORD"
 msgstr ""
 
-msgid "CURRENT PASSWORD"
+msgid "CONNECTING"
 msgstr ""
 
-msgid "CacheClear"
+msgid "CONTACTS"
+msgstr ""
+
+msgid "CURRENT PASSWORD"
 msgstr ""
 
 msgid "Cached attachments"
@@ -444,6 +498,10 @@ msgid "Change vault password"
 msgstr ""
 
 msgid "Change..."
+msgstr ""
+
+#, c-format
+msgid "Chat list failed: %s"
 msgstr ""
 
 msgid "Chat options"
@@ -509,6 +567,9 @@ msgstr ""
 msgid "Click a sticker for a larger preview."
 msgstr ""
 
+msgid "Click to download."
+msgstr ""
+
 msgid "Close"
 msgstr ""
 
@@ -546,6 +607,9 @@ msgid "Command palette"
 msgstr ""
 
 msgid "Comment"
+msgstr ""
+
+msgid "Config"
 msgstr ""
 
 msgid "Confirm"
@@ -596,10 +660,20 @@ msgstr ""
 msgid "Conversations"
 msgstr ""
 
+msgid "Copied"
+msgstr ""
+
+#, c-format
+msgid "Copied %s."
+msgstr ""
+
 msgid "Copy"
 msgstr ""
 
 msgid "Copy JSON"
+msgstr ""
+
+msgid "Copy image"
 msgstr ""
 
 msgid "Copy info hash"
@@ -620,10 +694,21 @@ msgstr ""
 msgid "Copy this link and open it in your browser."
 msgstr ""
 
+msgid "Coral"
+msgstr ""
+
 msgid "Corner scale"
 msgstr ""
 
+#, c-format
+msgid "Couldn't accept. %s"
+msgstr ""
+
 msgid "Couldn't add the pack. No supported stickers are available."
+msgstr ""
+
+#, c-format
+msgid "Couldn't archive. %s"
 msgstr ""
 
 msgid "Couldn't cache your transcription. Please try again."
@@ -642,7 +727,22 @@ msgstr ""
 msgid "Couldn't check for updates. Please try again."
 msgstr ""
 
+#, c-format
+msgid "Couldn't copy %s. Please try again."
+msgstr ""
+
+msgid "Couldn't copy the image to the clipboard. Please try again."
+msgstr ""
+
+#, c-format
+msgid "Couldn't create an identity. %s"
+msgstr ""
+
 msgid "Couldn't create the backup. Please try again."
+msgstr ""
+
+#, c-format
+msgid "Couldn't create the chat. %s"
 msgstr ""
 
 msgid "Couldn't create the vault. Please try again."
@@ -650,6 +750,9 @@ msgstr ""
 
 #, c-format
 msgid "Couldn't decline. %s"
+msgstr ""
+
+msgid "Couldn't decode the image. Choose a PNG or JPEG."
 msgstr ""
 
 msgid "Couldn't decode this audio. Try another audio file."
@@ -669,6 +772,9 @@ msgstr ""
 msgid "Couldn't download the speech model. Check your connection and available disk space, then try again."
 msgstr ""
 
+msgid "Couldn't export contacts. Please try again."
+msgstr ""
+
 msgid "Couldn't export the chat. Please try again."
 msgstr ""
 
@@ -684,6 +790,9 @@ msgstr ""
 
 #, c-format
 msgid "Couldn't forward to %s. Open the chat to retry."
+msgstr ""
+
+msgid "Couldn't forward. Please try again."
 msgstr ""
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
@@ -742,7 +851,15 @@ msgstr ""
 msgid "Couldn't load your stickers. Please try again."
 msgstr ""
 
+#, c-format
+msgid "Couldn't log in. %s"
+msgstr ""
+
 msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
+msgstr ""
+
+#, c-format
+msgid "Couldn't mark the chat read. %s"
 msgstr ""
 
 msgid "Couldn't mark the chat read. Please try again."
@@ -761,11 +878,30 @@ msgstr ""
 msgid "Couldn't play speech. Check your audio output and try again."
 msgstr ""
 
+msgid "Couldn't play video. Click to retry."
+msgstr ""
+
 #, c-format
 msgid "Couldn't publish the key package. %s"
 msgstr ""
 
+#, c-format
+msgid "Couldn't publish the photo. %s"
+msgstr ""
+
+#, c-format
+msgid "Couldn't publish the picture. %s"
+msgstr ""
+
+#, c-format
+msgid "Couldn't publish the profile. %s"
+msgstr ""
+
 msgid "Couldn't reach the Namecoin resolvers. Please try again."
+msgstr ""
+
+#, c-format
+msgid "Couldn't read %s."
 msgstr ""
 
 msgid "Couldn't read that pubkey. Double-check it and try again."
@@ -793,7 +929,15 @@ msgstr ""
 msgid "Couldn't read this message aloud. Please try again."
 msgstr ""
 
+#, c-format
+msgid "Couldn't read your key packages. %s"
+msgstr ""
+
 msgid "Couldn't remove the GIF. Please try again."
+msgstr ""
+
+#, c-format
+msgid "Couldn't remove the contact. %s"
 msgstr ""
 
 msgid "Couldn't remove the saved file. Please try again."
@@ -803,11 +947,19 @@ msgid "Couldn't render the QR code. Please try again."
 msgstr ""
 
 #, c-format
+msgid "Couldn't republish the relay lists. %s"
+msgstr ""
+
+#, c-format
 msgid "Couldn't resolve %s on Namecoin. Double-check it and try again."
 msgstr ""
 
 #, c-format
 msgid "Couldn't reveal your private key. %s"
+msgstr ""
+
+#, c-format
+msgid "Couldn't save %s. Please try again."
 msgstr ""
 
 msgid "Couldn't save the GIF. Please try again."
@@ -831,6 +983,9 @@ msgstr ""
 msgid "Couldn't search messages. Please try again."
 msgstr ""
 
+msgid "Couldn't search. Please try again."
+msgstr ""
+
 msgid "Couldn't send the notification. Please try again."
 msgstr ""
 
@@ -841,6 +996,10 @@ msgid "Couldn't serialize the key packages. Please try again."
 msgstr ""
 
 msgid "Couldn't serialize the snapshot. Please try again."
+msgstr ""
+
+#, c-format
+msgid "Couldn't set the photo. %s"
 msgstr ""
 
 msgid "Couldn't share the theme. Please try again."
@@ -857,7 +1016,15 @@ msgstr ""
 msgid "Couldn't start reading aloud. Please try again."
 msgstr ""
 
+#, c-format
+msgid "Couldn't start the chat. %s"
+msgstr ""
+
 msgid "Couldn't start transcription. Please try again."
+msgstr ""
+
+#, c-format
+msgid "Couldn't switch account. %s"
 msgstr ""
 
 msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
@@ -869,10 +1036,33 @@ msgstr ""
 msgid "Couldn't transcribe your speech. Please try again."
 msgstr ""
 
+#, c-format
+msgid "Couldn't unarchive. %s"
+msgstr ""
+
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr ""
 
+#, c-format
+msgid "Couldn't update inbox relays. %s"
+msgstr ""
+
 msgid "Couldn't update issues. Please try again."
+msgstr ""
+
+#, c-format
+msgid "Couldn't update relays. %s"
+msgstr ""
+
+#, c-format
+msgid "Couldn't update the description. %s"
+msgstr ""
+
+#, c-format
+msgid "Couldn't upload the picture. %s"
+msgstr ""
+
+msgid "Couldn't use that file. Choose a PNG or JPEG."
 msgstr ""
 
 msgid "Couldn't use that theme. It isn't a theme this version reads."
@@ -920,6 +1110,9 @@ msgstr ""
 msgid "Current"
 msgstr ""
 
+msgid "Custom"
+msgstr ""
+
 msgid "Custom color"
 msgstr ""
 
@@ -927,6 +1120,9 @@ msgid "Custom emoji"
 msgstr ""
 
 msgid "Cyan"
+msgstr ""
+
+msgid "DEPTH"
 msgstr ""
 
 msgid "DETAILS"
@@ -945,6 +1141,9 @@ msgid "Date format"
 msgstr ""
 
 msgid "Debug"
+msgstr ""
+
+msgid "Dec"
 msgstr ""
 
 msgid "Decline"
@@ -998,6 +1197,9 @@ msgstr ""
 msgid "Demote"
 msgstr ""
 
+msgid "Describe the group"
+msgstr ""
+
 msgid "Describe the issue (Markdown)"
 msgstr ""
 
@@ -1014,6 +1216,12 @@ msgid "Developer"
 msgstr ""
 
 msgid "Developer mode"
+msgstr ""
+
+msgid "Developer mode off"
+msgstr ""
+
+msgid "Developer mode on"
 msgstr ""
 
 msgid "Device vault"
@@ -1062,6 +1270,9 @@ msgstr ""
 msgid "Documents"
 msgstr ""
 
+msgid "Done"
+msgstr ""
+
 msgid "Done."
 msgstr ""
 
@@ -1082,6 +1293,9 @@ msgid "Downloads"
 msgstr ""
 
 msgid "EDIT PROFILE"
+msgstr ""
+
+msgid "EDITING · BROADCAST TO RELAYS ON PUBLISH"
 msgstr ""
 
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
@@ -1109,6 +1323,9 @@ msgstr ""
 msgid "Edit message"
 msgstr ""
 
+msgid "Edit profile"
+msgstr ""
+
 msgid "Edit theme"
 msgstr ""
 
@@ -1119,6 +1336,9 @@ msgid "Elevated border"
 msgstr ""
 
 msgid "Email"
+msgstr ""
+
+msgid "Emission"
 msgstr ""
 
 msgid "Emoji"
@@ -1185,7 +1405,13 @@ msgstr ""
 msgid "Export as Markdown"
 msgstr ""
 
+msgid "Export encrypted key"
+msgstr ""
+
 msgid "Export encrypted key (ncryptsec)"
+msgstr ""
+
+msgid "Export key"
 msgstr ""
 
 msgid "FILES"
@@ -1198,6 +1424,9 @@ msgid "Fast motion"
 msgstr ""
 
 msgid "Favorites"
+msgstr ""
+
+msgid "Feb"
 msgstr ""
 
 msgid "Female voice. Supports all reading languages."
@@ -1215,7 +1444,13 @@ msgstr ""
 msgid "Files"
 msgstr ""
 
+msgid "Filter chats"
+msgstr ""
+
 msgid "Filter unread chats"
+msgstr ""
+
+msgid "Final render"
 msgstr ""
 
 msgid "Find a setting"
@@ -1272,6 +1507,9 @@ msgstr ""
 msgid "Forward"
 msgstr ""
 
+msgid "Forward to"
+msgstr ""
+
 #, c-format
 msgid "Forwarding to %s…"
 msgstr ""
@@ -1283,6 +1521,9 @@ msgid "Fullscreen"
 msgstr ""
 
 msgid "GEOCACHE"
+msgstr ""
+
+msgid "GIF search is provided by GifSnap. What you type in the GIF search box and your IP address are sent to GifSnap to find GIFs, and GIF previews load from its servers."
 msgstr ""
 
 msgid "GIFs"
@@ -1301,6 +1542,9 @@ msgid "Games"
 msgstr ""
 
 msgid "General"
+msgstr ""
+
+msgid "Generate a new key"
 msgstr ""
 
 msgid "Generating your key"
@@ -1336,16 +1580,19 @@ msgstr ""
 msgid "Green"
 msgstr ""
 
+msgid "Group action unavailable."
+msgstr ""
+
 msgid "Group chats by folder"
 msgstr ""
 
 msgid "Group id copied"
 msgstr ""
 
-msgid "Grouped"
+msgid "Group name"
 msgstr ""
 
-msgid "HTML"
+msgid "Grouped"
 msgstr ""
 
 msgid "Hard shadows"
@@ -1375,6 +1622,9 @@ msgstr ""
 msgid "How far the mouse wheel moves the view."
 msgstr ""
 
+msgid "I have an nsec"
+msgstr ""
+
 msgid "ICON"
 msgstr ""
 
@@ -1382,6 +1632,9 @@ msgid "IDENTITY"
 msgstr ""
 
 msgid "INSPECT SOMEONE ELSE'S"
+msgstr ""
+
+msgid "INVITE"
 msgstr ""
 
 msgid "ISSUE"
@@ -1425,9 +1678,6 @@ msgid "Import image"
 msgstr ""
 
 msgid "Import..."
-msgstr ""
-
-msgid "ImportBtn"
 msgstr ""
 
 msgid "Inbox relays"
@@ -1511,10 +1761,23 @@ msgstr ""
 msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
 msgstr ""
 
+msgid "Jan"
+msgstr ""
+
+msgid "Jul"
+msgstr ""
+
+msgid "Jun"
+msgstr ""
+
 msgid "KEY PACKAGE"
 msgstr ""
 
 msgid "KEY PACKAGES"
+msgstr ""
+
+#, c-format
+msgid "KIND %d"
 msgstr ""
 
 msgid "KP inspector"
@@ -1557,7 +1820,13 @@ msgstr ""
 msgid "Keys & identity"
 msgstr ""
 
-msgid "LIGHTNING"
+msgid "LINES"
+msgstr ""
+
+msgid "LOADED"
+msgstr ""
+
+msgid "LOCAL"
 msgstr ""
 
 msgid "Labels"
@@ -1582,6 +1851,9 @@ msgid "Later"
 msgstr ""
 
 msgid "Launch at login"
+msgstr ""
+
+msgid "Lavender"
 msgstr ""
 
 msgid "Layout"
@@ -1647,6 +1919,18 @@ msgstr ""
 msgid "Looking up..."
 msgstr ""
 
+msgid "MATERIAL CHANNELS"
+msgstr ""
+
+msgid "MEDIA"
+msgstr ""
+
+msgid "MENTIONS"
+msgstr ""
+
+msgid "METRICS"
+msgstr ""
+
 msgid "Magnet link copied"
 msgstr ""
 
@@ -1671,16 +1955,19 @@ msgstr ""
 msgid "Manage your relays"
 msgstr ""
 
+msgid "Mar"
+msgstr ""
+
 msgid "Mark read"
 msgstr ""
 
 msgid "Mark unread"
 msgstr ""
 
-msgid "Markdown"
+msgid "Marmot"
 msgstr ""
 
-msgid "Marmot"
+msgid "May"
 msgstr ""
 
 msgid "Media backdrop"
@@ -1716,7 +2003,16 @@ msgstr ""
 msgid "Messaging"
 msgstr ""
 
+msgid "Metalness"
+msgstr ""
+
 msgid "Micro"
+msgstr ""
+
+msgid "Mint"
+msgstr ""
+
+msgid "Model inspector"
 msgstr ""
 
 msgid "Money"
@@ -1743,10 +2039,10 @@ msgstr ""
 msgid "Music"
 msgstr ""
 
-msgid "NEW PASSWORD"
+msgid "Mute"
 msgstr ""
 
-msgid "NIP-05"
+msgid "NEW PASSWORD"
 msgstr ""
 
 msgid "NOSTR EVENT"
@@ -1755,10 +2051,10 @@ msgstr ""
 msgid "NOTE"
 msgstr ""
 
-msgid "NSEC"
+msgid "Name"
 msgstr ""
 
-msgid "Name"
+msgid "Name the shortcode. Type it in messages as :name:."
 msgstr ""
 
 msgid "Namecoin lookup took too long; try again."
@@ -1768,6 +2064,9 @@ msgid "Namecoin name resolved. Invite sent."
 msgstr ""
 
 msgid "Nature"
+msgstr ""
+
+msgid "Navigate"
 msgstr ""
 
 msgid "Network & relays"
@@ -1782,10 +2081,16 @@ msgstr ""
 msgid "New folder"
 msgstr ""
 
+msgid "New group"
+msgstr ""
+
 msgid "New issue"
 msgstr ""
 
 msgid "New message"
+msgstr ""
+
+msgid "New name"
 msgstr ""
 
 msgid "News"
@@ -1830,6 +2135,9 @@ msgstr ""
 msgid "No contacts yet"
 msgstr ""
 
+msgid "No description."
+msgstr ""
+
 msgid "No files match these filters."
 msgstr ""
 
@@ -1866,10 +2174,23 @@ msgstr ""
 msgid "No matching stickers."
 msgstr ""
 
+msgid "No mentions yet."
+msgstr ""
+
 msgid "No messages yet"
 msgstr ""
 
+msgid "No preview for this file type. Save it, or read the bytes."
+msgstr ""
+
+#, c-format
+msgid "No record with id %s in this chat's window."
+msgstr ""
+
 msgid "No relay list published."
+msgstr ""
+
+msgid "No results. Try another search."
 msgstr ""
 
 msgid "No stickers here yet."
@@ -1890,16 +2211,40 @@ msgstr ""
 msgid "Not loaded yet. Click Refresh."
 msgstr ""
 
+msgid "Not now"
+msgstr ""
+
+msgid "Not set"
+msgstr ""
+
 msgid "Notes to self"
 msgstr ""
 
 msgid "Notifications"
 msgstr ""
 
+msgid "Nov"
+msgstr ""
+
+msgid "OFFLINE"
+msgstr ""
+
+msgid "ONLINE"
+msgstr ""
+
+msgid "Ocean"
+msgstr ""
+
+msgid "Oct"
+msgstr ""
+
 msgid "Off"
 msgstr ""
 
 msgid "Off shows only \"New message\" without the text."
+msgstr ""
+
+msgid "On"
 msgstr ""
 
 msgid "On accent"
@@ -1956,6 +2301,9 @@ msgstr ""
 msgid "Original"
 msgstr ""
 
+msgid "Original message unavailable"
+msgstr ""
+
 msgid "Other"
 msgstr ""
 
@@ -2007,6 +2355,9 @@ msgstr ""
 msgid "Path copied"
 msgstr ""
 
+msgid "Pause"
+msgstr ""
+
 msgid "People"
 msgstr ""
 
@@ -2037,7 +2388,13 @@ msgstr ""
 msgid "Pick the whole app's look."
 msgstr ""
 
+msgid "Picture"
+msgstr ""
+
 msgid "Pieces"
+msgstr ""
+
+msgid "Pin to top"
 msgstr ""
 
 msgid "Pink"
@@ -2050,6 +2407,9 @@ msgid "Pixel metrics"
 msgstr ""
 
 msgid "Plate"
+msgstr ""
+
+msgid "Play"
 msgstr ""
 
 msgid "Play a sound"
@@ -2146,13 +2506,29 @@ msgstr ""
 msgid "Quick reactions"
 msgstr ""
 
+msgid "Quit"
+msgstr ""
+
 msgid "RAW EVENTS"
 msgstr ""
 
 msgid "RECENT"
 msgstr ""
 
+msgid "RELAY"
+msgstr ""
+
+#, c-format
+msgid "RELAY · %d"
+msgstr ""
+
+msgid "RELAYS"
+msgstr ""
+
 msgid "RELAYS IN COMMON"
+msgstr ""
+
+msgid "RENDER"
 msgstr ""
 
 msgid "Rail"
@@ -2188,6 +2564,9 @@ msgstr ""
 msgid "Record group audit log files on this device. Identifiers are hashed."
 msgstr ""
 
+msgid "Recording"
+msgstr ""
+
 msgid "Red"
 msgstr ""
 
@@ -2198,6 +2577,9 @@ msgid "Refresh"
 msgstr ""
 
 msgid "Regular"
+msgstr ""
+
+msgid "Relay lists republished."
 msgstr ""
 
 msgid "Relay status unavailable"
@@ -2251,6 +2633,10 @@ msgstr ""
 msgid "Reply in thread"
 msgstr ""
 
+#, c-format
+msgid "Replying to: %s"
+msgstr ""
+
 msgid "Republish"
 msgstr ""
 
@@ -2293,6 +2679,9 @@ msgstr ""
 msgid "Reveal private key (nsec)"
 msgstr ""
 
+msgid "Right click"
+msgstr ""
+
 msgid "Rocket"
 msgstr ""
 
@@ -2302,7 +2691,23 @@ msgstr ""
 msgid "Rotate key package now"
 msgstr ""
 
+msgid "Roughness"
+msgstr ""
+
 msgid "Rounded"
+msgstr ""
+
+#, c-format
+msgid "Runtime failed: %s"
+msgstr ""
+
+msgid "Runtime running"
+msgstr ""
+
+msgid "SEARCH"
+msgstr ""
+
+msgid "SEEDS"
 msgstr ""
 
 msgid "SEND WITH EFFECT"
@@ -2314,16 +2719,32 @@ msgstr ""
 msgid "SITE"
 msgstr ""
 
+msgid "SKIN"
+msgstr ""
+
 msgid "STATE SNAPSHOT"
 msgstr ""
 
 msgid "STYLE"
 msgstr ""
 
+msgid "SURFACES"
+msgstr ""
+
+msgid "SYNCED"
+msgstr ""
+
+msgid "SYNCING"
+msgstr ""
+
 msgid "Safe to share. This is how people find you."
 msgstr ""
 
 msgid "Save"
+msgstr ""
+
+#, c-format
+msgid "Save %s"
 msgstr ""
 
 msgid "Save GIF"
@@ -2347,6 +2768,10 @@ msgstr ""
 msgid "Saved"
 msgstr ""
 
+#, c-format
+msgid "Saved %s."
+msgstr ""
+
 msgid "Scan to add"
 msgstr ""
 
@@ -2362,10 +2787,16 @@ msgstr ""
 msgid "Search GIFs"
 msgstr ""
 
+msgid "Search GIFs with GifSnap"
+msgstr ""
+
 msgid "Search all chats"
 msgstr ""
 
 msgid "Search archived chats..."
+msgstr ""
+
+msgid "Search contacts..."
 msgstr ""
 
 msgid "Search everywhere"
@@ -2381,6 +2812,9 @@ msgid "Search issues"
 msgstr ""
 
 msgid "Search messages"
+msgstr ""
+
+msgid "Search messages..."
 msgstr ""
 
 msgid "Search openly licensed images"
@@ -2425,10 +2859,17 @@ msgstr ""
 msgid "Select an issue to read its discussion."
 msgstr ""
 
+msgid "Send"
+msgstr ""
+
 msgid "Send a message..."
 msgstr ""
 
 msgid "Send a test notification"
+msgstr ""
+
+#, c-format
+msgid "Send failed: %s"
 msgstr ""
 
 msgid "Send test"
@@ -2444,6 +2885,12 @@ msgid "Send with an effect"
 msgstr ""
 
 msgid "Sending..."
+msgstr ""
+
+msgid "Sep"
+msgstr ""
+
+msgid "Set"
 msgstr ""
 
 msgid "Settings"
@@ -2509,6 +2956,9 @@ msgstr ""
 msgid "Shared media"
 msgstr ""
 
+msgid "Shell"
+msgstr ""
+
 msgid "Shopping"
 msgstr ""
 
@@ -2519,6 +2969,9 @@ msgid "Show"
 msgstr ""
 
 msgid "Show as QR"
+msgstr ""
+
+msgid "Show fewer files"
 msgstr ""
 
 msgid "Show group members"
@@ -2554,6 +3007,9 @@ msgstr ""
 msgid "Single choice"
 msgstr ""
 
+msgid "Single sided"
+msgstr ""
+
 msgid "Size"
 msgstr ""
 
@@ -2568,6 +3024,9 @@ msgid "Small"
 msgstr ""
 
 msgid "Sold"
+msgstr ""
+
+msgid "Sort chats by recent activity"
 msgstr ""
 
 msgid "Speech"
@@ -2589,6 +3048,10 @@ msgid "Start minimized to tray"
 msgstr ""
 
 msgid "Start your first chat"
+msgstr ""
+
+#, c-format
+msgid "Started offline: %s"
 msgstr ""
 
 msgid "Starting the runtime"
@@ -2653,7 +3116,20 @@ msgstr ""
 msgid "System"
 msgstr ""
 
+msgid "TEXT"
+msgstr ""
+
+msgid "THEM"
+msgstr ""
+
+msgid "THEME"
+msgstr ""
+
 msgid "TIMINGS"
+msgstr ""
+
+#, c-format
+msgid "Take %d"
 msgstr ""
 
 msgid "Takes effect on the next launch."
@@ -2721,7 +3197,13 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
+msgid "Theme applied"
+msgstr ""
+
 msgid "Theme deleted"
+msgstr ""
+
+msgid "Theme saved"
 msgstr ""
 
 #, c-format
@@ -2776,10 +3258,16 @@ msgstr ""
 msgid "Time format"
 msgstr ""
 
+msgid "Timeline subscription closed."
+msgstr ""
+
 msgid "Timings"
 msgstr ""
 
 msgid "Title"
+msgstr ""
+
+msgid "Today"
 msgstr ""
 
 msgid "Toggle developer mode"
@@ -2827,7 +3315,16 @@ msgstr ""
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
 
+msgid "Type a command"
+msgstr ""
+
 msgid "Type to search all chats."
+msgstr ""
+
+msgid "UPTIME"
+msgstr ""
+
+msgid "UV checker"
 msgstr ""
 
 msgid "Unavailable conversation"
@@ -2890,16 +3387,28 @@ msgstr ""
 msgid "Used for profile photos without a published shape."
 msgstr ""
 
+msgid "Username"
+msgstr ""
+
+msgid "VISIBLE TO ANYONE YOU CHAT WITH"
+msgstr ""
+
 msgid "Vault password changed."
 msgstr ""
 
 msgid "Verifying download..."
 msgstr ""
 
+msgid "Vertex normals"
+msgstr ""
+
 msgid "Videos"
 msgstr ""
 
 msgid "View"
+msgstr ""
+
+msgid "View as hex"
 msgstr ""
 
 msgid "View full profile"
@@ -2924,6 +3433,9 @@ msgid "Visual fingerprint"
 msgstr ""
 
 msgid "Voting has ended."
+msgstr ""
+
+msgid "WIREFRAME"
 msgstr ""
 
 msgid "Warning"
@@ -2966,10 +3478,24 @@ msgstr ""
 msgid "White Noise %s is ready to install."
 msgstr ""
 
+#, c-format
+msgid "White Noise %s · odin port"
+msgstr ""
+
 msgid "White Noise and this session."
 msgstr ""
 
+msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
+msgstr ""
+
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
+msgstr ""
+
+#, c-format
+msgid "White Noise · %d unread"
+msgstr ""
+
+msgid "Wireframe"
 msgstr ""
 
 msgid "Work"
@@ -3067,7 +3593,23 @@ msgid "Zoom out"
 msgstr ""
 
 #, c-format
+msgid "aka %s"
+msgstr ""
+
+#, c-format
+msgid "and %d more blocks"
+msgstr ""
+
+#, c-format
 msgid "and %d more files"
+msgstr ""
+
+#, c-format
+msgid "and %d more lines"
+msgstr ""
+
+#, c-format
+msgid "and %s more"
 msgstr ""
 
 msgid "carries the blob"
@@ -3097,6 +3639,9 @@ msgstr ""
 msgid "npub copied"
 msgstr ""
 
+msgid "npub or hex pubkey"
+msgstr ""
+
 msgid "npub, hex, name@domain, or .bit"
 msgstr ""
 
@@ -3115,5 +3660,17 @@ msgstr ""
 msgid "sealed here"
 msgstr ""
 
-msgid "−"
+msgid "© OpenStreetMap contributors"
+msgstr ""
+
+msgid "• CHAT REQUEST •"
+msgstr ""
+
+msgid "• NEW MESSAGES •"
+msgstr ""
+
+msgid "• THREAD •"
+msgstr ""
+
+msgid "↑↓ move   ⏎ run   esc close"
 msgstr ""

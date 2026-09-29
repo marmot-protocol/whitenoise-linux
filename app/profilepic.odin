@@ -48,7 +48,7 @@ set_profile_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	}
 	data, read_err := os.read_entire_file(path, context.allocator)
 	if read_err != nil {
-		ui.client_status = fmt.aprintf("Couldn't read %s.", path)
+		set_status(ui, fmt.aprintf(tr("Couldn't read %s."), path), .Error)
 		return
 	}
 
@@ -59,7 +59,7 @@ set_profile_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	media_type := media_type_for(base)
 	if !strings.has_prefix(media_type, "image/") {
 		delete(data)
-		ui.client_status = strings.clone("Couldn't use that file. Choose a PNG or JPEG.")
+		set_status(ui, strings.clone(tr("Couldn't use that file. Choose a PNG or JPEG.")), .Error)
 		return
 	}
 	ext := strings.clone_to_cstring(
@@ -69,7 +69,11 @@ set_profile_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	image := rl.LoadImageFromMemory(ext, raw_data(data), i32(len(data)))
 	if image.data == nil {
 		delete(data)
-		ui.client_status = strings.clone("Couldn't decode the image. Choose a PNG or JPEG.")
+		set_status(
+			ui,
+			strings.clone(tr("Couldn't decode the image. Choose a PNG or JPEG.")),
+			.Error,
+		)
 		return
 	}
 	rl.UnloadImage(image)
@@ -107,7 +111,7 @@ ppic_worker :: proc() {
 		url = strings.clone(string(url_c))
 		marmot.string_free(url_c)
 	} else {
-		err = fmt.aprintf("Couldn't upload the picture. %s", marmot.last_error())
+		err = fmt.aprintf(tr("Couldn't upload the picture. %s"), marmot.last_error())
 	}
 
 	// Republish kind-0 with the new URL, everything else as it stands.
@@ -131,7 +135,7 @@ ppic_worker :: proc() {
 			   &out,
 		   ) !=
 		   .OK {
-			err = fmt.aprintf("Couldn't publish the picture. %s", marmot.last_error())
+			err = fmt.aprintf(tr("Couldn't publish the picture. %s"), marmot.last_error())
 			delete(url)
 			url = ""
 		} else {
@@ -164,7 +168,7 @@ drain_ppic :: proc(ui: ^Ui_State) {
 	}
 
 	if len(err) > 0 {
-		ui.client_status = err
+		set_status(ui, err, .Error)
 	}
 	if len(url) > 0 {
 		ext := strings.clone_to_cstring(

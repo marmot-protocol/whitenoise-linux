@@ -231,7 +231,7 @@ poll_modal :: proc(ui: ^Ui_State) {
 			)
 		}
 		if len(ui.poll_inputs) < POLL_OPTS_CAP {
-			micro_button("PollAddOpt", "Add option")
+			micro_button("PollAddOpt", tr("Add option"))
 		}
 		if clay.UI(clay.ID("PollBtnRow"))(
 		{
@@ -243,13 +243,13 @@ poll_modal :: proc(ui: ^Ui_State) {
 		},
 		) {
 			if ui.poll_multi_in {
-				micro_button("PollMulti", "Multiple choice")
+				micro_button("PollMulti", tr("Multiple choice"))
 			} else {
-				micro_button("PollMulti", "Single choice")
+				micro_button("PollMulti", tr("Single choice"))
 			}
 			if clay.UI(clay.ID("PollBtnGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			login_button("PollCancel", "Cancel")
-			login_button("PollCreate", "Create")
+			login_button("PollCancel", tr("Cancel"))
+			login_button("PollCreate", tr("Create"))
 		}
 	}
 }

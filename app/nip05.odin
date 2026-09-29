@@ -104,8 +104,12 @@ nip05_complete :: proc(ui: ^Ui_State, done: Op_Done) {
 	}
 	if string(buf[:]) != done.target {return}
 	if done.content == "" {
-		ui.client_status = strings.clone(
-			tr("Couldn't look up that NIP-05 address. Double-check it and try again."),
+		set_status(
+			ui,
+			strings.clone(
+				tr("Couldn't look up that NIP-05 address. Double-check it and try again."),
+			),
+			.Error,
 		)
 		return
 	}

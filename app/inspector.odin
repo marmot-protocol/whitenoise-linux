@@ -47,20 +47,20 @@ Insp_Row :: struct {
 }
 
 INSP_RENDER := []Insp_Row {
-	{.Final, "Final render"},
+	{.Final, N_("Final render")},
 	{.Matcap, "Matcap"},
-	{.Wireframe, "Wireframe"},
-	{.Vertex_Normals, "Vertex normals"},
+	{.Wireframe, N_("Wireframe")},
+	{.Vertex_Normals, N_("Vertex normals")},
 }
-INSP_SKIN := []Insp_Row{{.Bones, "Bones"}, {.Bone_Influence, "Bones influence"}}
+INSP_SKIN := []Insp_Row{{.Bones, N_("Bones")}, {.Bone_Influence, N_("Bones influence")}}
 INSP_CHANNELS := []Insp_Row {
-	{.Base_Color, "Base color"},
-	{.Metalness, "Metalness"},
-	{.Roughness, "Roughness"},
-	{.Emission, "Emission"},
+	{.Base_Color, N_("Base color")},
+	{.Metalness, N_("Metalness")},
+	{.Roughness, N_("Roughness")},
+	{.Emission, N_("Emission")},
 	{.Specular, "Specular F0"},
 }
-INSP_UV := []Insp_Row{{.Uv_Checker, "UV checker"}}
+INSP_UV := []Insp_Row{{.Uv_Checker, N_("UV checker")}}
 
 // One panel section. The id prefix keys both the layout and the click
 // pass, so they can't drift apart.
@@ -71,9 +71,9 @@ Insp_Section :: struct {
 }
 
 INSP_SECTIONS := []Insp_Section {
-	{"MiRender", "RENDER", INSP_RENDER},
-	{"MiSkin", "SKIN", INSP_SKIN},
-	{"MiChan", "MATERIAL CHANNELS", INSP_CHANNELS},
+	{"MiRender", N_("RENDER"), INSP_RENDER},
+	{"MiSkin", N_("SKIN"), INSP_SKIN},
+	{"MiChan", N_("MATERIAL CHANNELS"), INSP_CHANNELS},
 	{"MiUv", "UV", INSP_UV},
 }
 
@@ -380,9 +380,9 @@ inspector_panel :: proc(view: ^Stl_View, height: f32) {
 		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 	},
 	) {
-		clay.Text("Model inspector", {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
+		clay.Text(tr("Model inspector"), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
 
-		insp_caption("MiWireCap", "WIREFRAME", len(WIRE_COLORS) - 1)
+		insp_caption("MiWireCap", tr("WIREFRAME"), len(WIRE_COLORS) - 1)
 		if clay.UI(clay.ID("MiWireRow"))(
 		{layout = {childGap = 4, sizing = {width = clay.SizingGrow()}}},
 		) {
@@ -444,7 +444,7 @@ insp_section :: proc(view: ^Stl_View, section: Insp_Section) {
 			ready += 1
 		}
 	}
-	insp_caption(fmt.tprintf("%sCap", section.id), section.label, ready)
+	insp_caption(fmt.tprintf("%sCap", section.id), tr(section.label), ready)
 
 	for row, i in section.rows {
 		available := mode_ready(view, row.mode)
@@ -461,7 +461,7 @@ insp_section :: proc(view: ^Stl_View, section: Insp_Section) {
 		},
 		) {
 			color := selected ? PLATE : (available ? TEXT : TEXT_DIM)
-			clay.Text(row.label, {fontId = FONT_BODY, fontSize = 11, textColor = color})
+			clay.Text(tr(row.label), {fontId = FONT_BODY, fontSize = 11, textColor = color})
 		}
 	}
 }
@@ -501,7 +501,7 @@ insp_toggle_row :: proc(view: ^Stl_View) {
 			},
 			) {}
 		}
-		clay.Text("Single sided", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT})
+		clay.Text(tr("Single sided"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT})
 	}
 }
 
@@ -510,7 +510,7 @@ insp_toggle_row :: proc(view: ^Stl_View) {
 @(private = "file")
 insp_animation :: proc(view: ^Stl_View) {
 	insp := &view.insp
-	insp_caption("MiAnimCap", "ANIMATION", len(insp.takes))
+	insp_caption("MiAnimCap", tr("ANIMATION"), len(insp.takes))
 
 	for take, i in insp.takes {
 		selected := insp.anim == i
@@ -525,7 +525,7 @@ insp_animation :: proc(view: ^Stl_View) {
 			cornerRadius = rr(6),
 		},
 		) {
-			label := len(take) > 0 ? take : fmt.tprintf("Take %d", i + 1)
+			label := len(take) > 0 ? take : fmt.tprintf(tr("Take %d"), i + 1)
 			clay.Text(
 				label,
 				{fontId = FONT_BODY, fontSize = 11, textColor = selected ? PLATE : TEXT},
@@ -555,7 +555,7 @@ insp_animation :: proc(view: ^Stl_View) {
 		},
 		) {
 			clay.Text(
-				insp.playing ? "Pause" : "Play",
+				insp.playing ? tr("Pause") : tr("Play"),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT},
 			)
 		}

@@ -33,7 +33,11 @@ voice: Voice_Rec
 voice_start :: proc(ui: ^Ui_State) {
 	// Subsystem init is ref-counted; safe on every start.
 	if !sdl.InitSubSystem({.AUDIO}) {
-		ui.client_status = strings.clone("Couldn't open the microphone. Please try again.")
+		set_status(
+			ui,
+			strings.clone(tr("Couldn't open the microphone. Please try again.")),
+			.Error,
+		)
 		return
 	}
 	spec := sdl.AudioSpec {
@@ -43,7 +47,11 @@ voice_start :: proc(ui: ^Ui_State) {
 	}
 	voice.stream = sdl.OpenAudioDeviceStream(sdl.AUDIO_DEVICE_DEFAULT_RECORDING, &spec, nil, nil)
 	if voice.stream == nil {
-		ui.client_status = strings.clone("Couldn't open the microphone. Please try again.")
+		set_status(
+			ui,
+			strings.clone(tr("Couldn't open the microphone. Please try again.")),
+			.Error,
+		)
 		return
 	}
 	sdl.ResumeAudioStreamDevice(voice.stream)
@@ -161,7 +169,7 @@ voice_bar :: proc() {
 			cornerRadius = rr(5),
 		},
 		) {}
-		clay.Text("Recording", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+		clay.Text(tr("Recording"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 		clay.Text(
 			fmt_clock(f64(len(voice.samples)) / VOICE_RATE),
 			{fontId = FONT_MONO, fontSize = 12, textColor = TEXT_DIM},
@@ -191,7 +199,7 @@ voice_bar :: proc() {
 			) {}
 		}
 		if clay.UI(clay.ID("VoiceGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-		action_chip("VoiceCancel", 0, "Cancel")
-		action_chip("VoiceSend", 0, "Send")
+		action_chip("VoiceCancel", 0, tr("Cancel"))
+		action_chip("VoiceSend", 0, tr("Send"))
 	}
 }

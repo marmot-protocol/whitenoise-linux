@@ -282,13 +282,21 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		ctx_item("RowPin", ICON_PIN, ui.prefs.pinned[chat.group_id] ? "Unpin" : "Pin to top")
-		ctx_item("RowMute", ICON_BELL_OFF, ui.prefs.muted_ids[chat.group_id] ? "Unmute" : "Mute")
-		ctx_item("RowRead", ICON_ENVELOPE_OPEN, "Mark read")
-		ctx_item("RowUnread", ICON_ENVELOPE, "Mark unread")
-		ctx_item("RowFolder", ICON_FOLDER, "Move to folder")
-		ctx_item("RowExportHtml", ICON_DOWNLOAD, "Export as HTML")
-		ctx_item("RowExportMd", ICON_DOWNLOAD, "Export as Markdown")
+		ctx_item(
+			"RowPin",
+			ICON_PIN,
+			ui.prefs.pinned[chat.group_id] ? tr("Unpin") : tr("Pin to top"),
+		)
+		ctx_item(
+			"RowMute",
+			ICON_BELL_OFF,
+			ui.prefs.muted_ids[chat.group_id] ? tr("Unmute") : tr("Mute"),
+		)
+		ctx_item("RowRead", ICON_ENVELOPE_OPEN, tr("Mark read"))
+		ctx_item("RowUnread", ICON_ENVELOPE, tr("Mark unread"))
+		ctx_item("RowFolder", ICON_FOLDER, tr("Move to folder"))
+		ctx_item("RowExportHtml", ICON_DOWNLOAD, tr("Export as HTML"))
+		ctx_item("RowExportMd", ICON_DOWNLOAD, tr("Export as Markdown"))
 	}
 }
 
@@ -315,10 +323,10 @@ folder_menu :: proc(ui: ^Ui_State) {
 	},
 	) {
 		if ui.folder_menu_name == "" {
-			ctx_item("FolderCreate", ICON_FOLDER, "New folder")
+			ctx_item("FolderCreate", ICON_FOLDER, tr("New folder"))
 		} else {
-			ctx_item("FolderMenuEdit", ICON_PENCIL, N_("Edit folder"))
-			ctx_item("FolderMenuDelete", ICON_TRASH, "Delete")
+			ctx_item("FolderMenuEdit", ICON_PENCIL, tr("Edit folder"))
+			ctx_item("FolderMenuDelete", ICON_TRASH, tr("Delete"))
 		}
 	}
 }
@@ -537,7 +545,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 				TEXT_LO,
 			)
 		}
-		eyebrow(N_("COLOR"))
+		eyebrow(tr("COLOR"))
 		if clay.UI(clay.ID("FolderColorDefault"))(
 		{
 			layout = {
@@ -586,7 +594,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 						},
 						) {}
 						if hovered() {
-							tooltip(FOLDER_COLOR_NAMES[i])
+							tooltip(tr(FOLDER_COLOR_NAMES[i]))
 							cursor_raise(.Pointer)
 						}
 					}
@@ -620,7 +628,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 			tr("Enter a color as #RRGGBB."),
 			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
 		)
-		eyebrow(N_("ICON"))
+		eyebrow(tr("ICON"))
 		if clay.UI(clay.ID("FolderIconGrid"))(
 		{
 			layout = {
@@ -659,7 +667,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 						) {
 							folder_icon_draw(i, 20, preview)
 							if hovered() {
-								tooltip(FOLDER_ICON_NAMES[i])
+								tooltip(tr(FOLDER_ICON_NAMES[i]))
 								cursor_raise(.Pointer)
 							}
 						}
@@ -912,7 +920,11 @@ mark_chat_read :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 	group := strings.clone_to_cstring(chat.group_id, context.temp_allocator)
 	message := strings.clone_to_cstring(chat.last_id, context.temp_allocator)
 	if marmot.mark_timeline_message_read(client, account, group, message, &row) != .OK {
-		ui.client_status = fmt.aprintf("Couldn't mark the chat read. %s", marmot.last_error())
+		set_status(
+			ui,
+			fmt.aprintf(tr("Couldn't mark the chat read. %s"), marmot.last_error()),
+			.Error,
+		)
 		return
 	}
 	ui.chats[index].unread = row.unread_count

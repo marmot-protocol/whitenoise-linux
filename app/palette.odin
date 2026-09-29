@@ -47,34 +47,34 @@ COMMANDS := [Cmd]struct {
 	label: string,
 	hint:  string,
 } {
-	.Goto_Chats        = {N_("Go to chats"), "Navigate"},
-	.Goto_People       = {N_("Go to people"), "Navigate"},
-	.Goto_Archive      = {N_("Go to archive"), "Navigate"},
-	.Goto_Settings     = {N_("Go to settings"), "Navigate"},
-	.Goto_Profile      = {N_("Go to your profile"), "Navigate"},
-	.New_Chat          = {N_("New chat"), "Chats"},
-	.Notes_To_Self     = {N_("Notes to self"), "Chats"},
+	.Goto_Chats        = {N_("Go to chats"), N_("Navigate")},
+	.Goto_People       = {N_("Go to people"), N_("Navigate")},
+	.Goto_Archive      = {N_("Go to archive"), N_("Navigate")},
+	.Goto_Settings     = {N_("Go to settings"), N_("Navigate")},
+	.Goto_Profile      = {N_("Go to your profile"), N_("Navigate")},
+	.New_Chat          = {N_("New chat"), N_("Chats")},
+	.Notes_To_Self     = {N_("Notes to self"), N_("Chats")},
 	.Search_All        = {N_("Search all chats"), "Ctrl K"},
-	.Toggle_Unread     = {N_("Filter unread chats"), "Chats"},
-	.Toggle_Rail       = {N_("Collapse the chat list"), "View"},
-	.Toggle_Members    = {N_("Show group members"), "View"},
-	.Set_General       = {N_("Settings: general"), "Settings"},
-	.Set_Network       = {N_("Settings: network and relays"), "Settings"},
-	.Set_Keys          = {N_("Settings: keys and identity"), "Settings"},
-	.Set_Appearance    = {N_("Settings: appearance"), "Settings"},
-	.Set_Notifications = {N_("Settings: notifications"), "Settings"},
-	.Set_Storage       = {N_("Settings: storage"), "Settings"},
-	.Set_Advanced      = {N_("Settings: advanced"), "Settings"},
-	.Set_About         = {N_("Settings: about"), "Settings"},
-	.Next_Theme        = {N_("Next theme"), "Appearance"},
-	.Next_Accent       = {N_("Next accent color"), "Appearance"},
-	.Toggle_Centered   = {N_("Center the conversation"), "Appearance"},
-	.Toggle_Dev        = {N_("Toggle developer mode"), "Advanced"},
+	.Toggle_Unread     = {N_("Filter unread chats"), N_("Chats")},
+	.Toggle_Rail       = {N_("Collapse the chat list"), N_("View")},
+	.Toggle_Members    = {N_("Show group members"), N_("View")},
+	.Set_General       = {N_("Settings: general"), N_("Settings")},
+	.Set_Network       = {N_("Settings: network and relays"), N_("Settings")},
+	.Set_Keys          = {N_("Settings: keys and identity"), N_("Settings")},
+	.Set_Appearance    = {N_("Settings: appearance"), N_("Settings")},
+	.Set_Notifications = {N_("Settings: notifications"), N_("Settings")},
+	.Set_Storage       = {N_("Settings: storage"), N_("Settings")},
+	.Set_Advanced      = {N_("Settings: advanced"), N_("Settings")},
+	.Set_About         = {N_("Settings: about"), N_("Settings")},
+	.Next_Theme        = {N_("Next theme"), N_("Appearance")},
+	.Next_Accent       = {N_("Next accent color"), N_("Appearance")},
+	.Toggle_Centered   = {N_("Center the conversation"), N_("Appearance")},
+	.Toggle_Dev        = {N_("Toggle developer mode"), N_("Advanced")},
 	.Zoom_In           = {N_("Zoom in"), "Ctrl +"},
 	.Zoom_Out          = {N_("Zoom out"), "Ctrl -"},
 	.Zoom_Reset        = {N_("Reset zoom"), "Ctrl 0"},
-	.Shortcuts         = {N_("Keyboard shortcuts"), "Help"},
-	.Sign_Out          = {N_("Sign out"), "Account"},
+	.Shortcuts         = {N_("Keyboard shortcuts"), N_("Help")},
+	.Sign_Out          = {N_("Sign out"), N_("Account")},
 }
 
 PAL_ROWS_MAX :: 9
@@ -171,7 +171,7 @@ palette_modal :: proc(ui: ^Ui_State) {
 				ui,
 				"PalInput",
 				&ui.pal_input,
-				"Type a command",
+				tr("Type a command"),
 				ui.focus == .Pal,
 				14,
 				TEXT_LO,
@@ -216,7 +216,7 @@ palette_modal :: proc(ui: ^Ui_State) {
 				{layout = {sizing = {width = clay.SizingGrow()}}},
 				) {}
 				clay.Text(
-					COMMANDS[cmd].hint,
+					tr(COMMANDS[cmd].hint),
 					{
 						fontId = FONT_MONO,
 						fontSize = 10,
@@ -237,7 +237,7 @@ palette_modal :: proc(ui: ^Ui_State) {
 		},
 		) {
 			clay.Text(
-				"↑↓ move   ⏎ run   esc close",
+				tr("↑↓ move   ⏎ run   esc close"),
 				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 1},
 			)
 			if clay.UI(clay.ID("PalFootGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
@@ -365,12 +365,12 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		toast(ui, theme_packs[ui.theme].name)
 	case .Next_Accent:
 		theme_switch(ui, ui.theme, (ui.accent + 1) % len(ACCENT_NAMES))
-		toast(ui, ACCENT_NAMES[ui.accent])
+		toast(ui, tr(ACCENT_NAMES[ui.accent]))
 	case .Toggle_Centered:
 		flip(ui, &ui.prefs.centered_chat)
 	case .Toggle_Dev:
 		flip(ui, &ui.prefs.dev_mode)
-		toast(ui, ui.prefs.dev_mode ? "Developer mode on" : "Developer mode off")
+		toast(ui, ui.prefs.dev_mode ? tr("Developer mode on") : tr("Developer mode off"))
 	case .Zoom_In, .Zoom_Out, .Zoom_Reset:
 		ui.prefs.zoom_pct =
 			cmd == .Zoom_Reset ? 100 : ui.prefs.zoom_pct + (cmd == .Zoom_In ? 10 : -10)
