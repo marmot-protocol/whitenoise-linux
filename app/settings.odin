@@ -63,6 +63,7 @@ Prefs :: struct {
 	// sqlite, not here)
 	trusted_sites:         [dynamic]string,
 	disable_link_previews: bool, // zero keeps automatic previews on for older settings
+	gif_consent:           bool, // accepted that GIF searches go to GifSnap
 	// Nostr event cards (nevent.odin): where referenced events are
 	// pulled from, and the user's own "open in" web client, a URL
 	// with {id} standing for the nevent/note token.

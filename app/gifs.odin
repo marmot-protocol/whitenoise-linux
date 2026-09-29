@@ -228,7 +228,8 @@ gif_open :: proc(ui: ^Ui_State) {
 
 @(private)
 gif_search :: proc(ui: ^Ui_State, page := 1) {
-	if ui.gif_job != nil {return}
+	// Every GifSnap request starts here; nothing leaves before the disclosure is accepted.
+	if ui.gif_job != nil || !ui.prefs.gif_consent {return}
 	query := strings.trim_space(string(ui.picker_filter[:]))
 	if len(query) > 512 {ui.gif_due = 0; ui.gif_error = N_("Use a shorter search."); return}
 	job := gif_start(ui, .Search)
@@ -519,6 +520,7 @@ gif_visible :: proc(index: int) -> bool {
 
 @(private)
 gif_picker :: proc(ui: ^Ui_State) {
+	if !ui.prefs.gif_consent {gif_consent_panel(); return}
 	width := modal_w(clay.ID("PickerPanel"), 560) - 24
 	columns := width >= 440 ? 3 : 2
 	cell := (width - f32(columns - 1) * 6) / f32(columns)
@@ -703,10 +705,59 @@ gif_picker :: proc(ui: ^Ui_State) {
 	}
 }
 
+// First-use disclosure shown in place of the GIF tab until accepted.
+@(private)
+gif_consent_panel :: proc() {
+	if clay.UI(clay.ID("GifConsent"))(
+	{
+		layout = {
+			sizing = {clay.SizingGrow(), clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(8),
+			childGap = 12,
+		},
+	},
+	) {
+		clay.Text(
+			tr("Search GIFs with GifSnap"),
+			{fontId = FONT_TITLE, fontSize = 18, textColor = TEXT},
+		)
+		clay.Text(
+			tr(
+				"GIF search is provided by GifSnap. What you type in the GIF search box and your IP address are sent to GifSnap to find GIFs, and GIF previews load from its servers.",
+			),
+			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+		)
+		clay.Text(
+			tr(
+				"White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control.",
+			),
+			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+		)
+		if clay.UI(clay.ID("GifConsentGrow"))(
+		{layout = {sizing = {height = clay.SizingGrow()}}},
+		) {}
+		if clay.UI(clay.ID("GifConsentRow"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+		) {
+			if clay.UI(clay.ID("GifConsentGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
+			login_button("GifConsentNo", tr("Not now"))
+			login_button("GifConsentYes", tr("Accept"))
+		}
+	}
+}
+
 @(private)
 handle_gif_picker :: proc(ui: ^Ui_State) {
 	if rl.IsKeyPressed(.ESCAPE) || mouse_released() && !clay.PointerOver(clay.ID("PickerPanel")) {
 		ui.picker_open = false; ui.focus = .Compose; return
+	}
+	if !ui.prefs.gif_consent {
+		if clicked("GifConsentNo") {ui.gif_tab = false; return}
+		if clicked("GifConsentYes") {ui.prefs.gif_consent = true; save_settings(ui); gif_open(ui)}
+		return
 	}
 	if clicked("GifRetry") {
 		gif_retry(ui)
