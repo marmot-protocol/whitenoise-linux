@@ -1,7 +1,9 @@
 #define _POSIX_C_SOURCE 200809L
+// Tile side; matches EMOJI_SIDE in scripts/build.sh and app/emoji.odin.
+#define SIDE 128
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
-#define STBI_MAX_DIMENSIONS 72
+#define STBI_MAX_DIMENSIONS SIDE
 #include "stb_image.h"
 #include <errno.h>
 #include <stdint.h>
@@ -11,7 +13,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define PIXELS (72 * 72 * 4)
+#define PIXELS (SIDE * SIDE * 4)
 static char *temporary;
 static void cleanup(void) {
     if (temporary) {
@@ -133,8 +135,8 @@ int main(int argc, char **argv) {
             if (fclose(png)) {
                 io_fail(path);
             }
-            if (!pixels || width != 72 || height != 72) {
-                fprintf(stderr, "emoji-pack: invalid 72x72 PNG: %s\n", path);
+            if (!pixels || width != SIDE || height != SIDE) {
+                fprintf(stderr, "emoji-pack: invalid %dx%d PNG: %s\n", SIDE, SIDE, path);
                 exit(1);
             }
         } else {

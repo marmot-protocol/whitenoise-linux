@@ -29,9 +29,10 @@ output is already present, so only the first run is slow:
   `app/fbx_shim.c` and `app/fbx_helper.c` build the isolated `build/wn-fbx`
   parser and animation helper. `model-decoder/` builds `build/wn-mesh` for
   STL, OBJ, GLB and G-code. Neither parser library is linked into the UI.
-- `vendor/emoji/{noto,twemoji,openmoji}`, the three 72x72 PNG sets the user
+- `vendor/emoji/{noto,twemoji,openmoji}`, the three 128x128 PNG sets the user
   picks between in Appearance: Noto from a sparse clone at
-  `noto-emoji-commit`, Twemoji and OpenMoji from sha256-pinned archives.
+  `noto-emoji-commit`, Twemoji and OpenMoji rasterized from the SVGs in
+  sha256-pinned archives with `rsvg-convert`.
   Staging renames every tile to lowercase hex codepoints joined by `-` with
   VS16 dropped. `vendor/emoji/openmoji-extras.tsv` lists the emoji only
   OpenMoji draws. Their licences land in `vendor/emoji-licenses`, and
@@ -128,7 +129,8 @@ the offline queue. UI prefs are a separate JSON blob at
 ### System dependencies
 
 Odin (a recent nightly; CI pins one in `.github/workflows/ci.yml`), a C and
-C++ compiler, CMake, and a Rust toolchain for `marmot-c`. Then SDL3 plus
+C++ compiler, CMake, a Rust toolchain for `marmot-c`, and `rsvg-convert`
+(librsvg) to stage the emoji sets. Then SDL3 plus
 `libarchive` (`archive.c`), `libmpv` (`mpv.odin`), `poppler-glib` + `glib` +
 `gobject` + `fontconfig` (`pdf.c`), `cairo` (`pdf.c`, `math.odin`) and `libcurl`
 (`ws_shim.c`, the nevent card fetch). Archive and PDF parsing run in the

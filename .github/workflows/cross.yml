@@ -228,6 +228,7 @@ jobs:
       - name: Fetch sources
         id: sources
         run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends librsvg2-bin
           scripts/build.sh sources
           echo "mdk=$(sed -n 's/^mdk-commit = //p' DEPS_PIN)" >> "$GITHUB_OUTPUT"
       - name: Restore the marmot-c bundle
@@ -252,7 +253,7 @@ jobs:
           run: |
             trap 'rm -f build/observability-tokens.toml' EXIT
             sudo pkg_add -I bash git cmake ninja gmake coreutils llvm%21 rust unzip-- \
-              sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify
+              sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify librsvg
             # The image's root filesystem has ~4 GB left after the packages,
             # short of cargo's ~2.3 GB plus the workspace. Build Rust on a
             # swap-backed memory filesystem; root's class caps data at 4 GB.

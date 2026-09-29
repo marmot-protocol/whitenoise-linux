@@ -105,7 +105,14 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 			}
 
 			if !message_excerpt(0xF00000 + index * 8, p.body, body_color, p.excerpt) {
-				body_text(0xF00000 + index * 8, p.body, 14, body_color, wrap_w = body_wrap_w())
+				body_text(
+					0xF00000 + index * 8,
+					p.body,
+					14,
+					body_color,
+					wrap_w = body_wrap_w(),
+					emoji = .Jumbo,
+				)
 			}
 			if can_delete {
 				if clay.UI(clay.ID("PendingDeleteEnd", index))(
@@ -1728,7 +1735,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				!msg.deleted &&
 				message_excerpt(index * 4096, msg.body, TEXT, msg.excerpt)
 			if !giphy && !cropped && len(msg.blocks) == 0 && len(msg.body) > 0 {
-				body_text(index * 4096, msg.body, 14, TEXT, true)
+				body_text(index * 4096, msg.body, 14, TEXT, true, emoji = .Jumbo)
 			}
 
 			// A shared theme: swatches off the pack itself, so the offer
@@ -1748,7 +1755,15 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			if !giphy &&
 			   len(msg.secrets) == 0 &&
 			   !cropped &&
-			   excerpt_body(index * 4096, "", msg.blocks[:], msg.excerpt, body_wrap_w(), TEXT) {
+			   excerpt_body(
+				   index * 4096,
+				   "",
+				   msg.blocks[:],
+				   msg.excerpt,
+				   body_wrap_w(),
+				   TEXT,
+				   emoji = .Jumbo,
+			   ) {
 				message_more(index * 4096, msg.excerpt)
 			}
 
@@ -2810,6 +2825,7 @@ md_blocks :: proc(
 	quote_level: u16 = 0,
 	indent_base: u16 = 0,
 	lines_used: ^int = nil,
+	emoji := Emoji_Scale.Inline,
 ) -> bool {
 	remaining := max_lines
 	defer {if lines_used != nil {lines_used^ = max_lines - remaining}}
@@ -2915,6 +2931,8 @@ md_blocks :: proc(
 					width,
 					remaining,
 					block.fonts,
+					// Jumbo only when this paragraph is the whole body.
+					len(blocks) == 1 && block.kind == .Para ? emoji : .Inline,
 				)
 			case .Heading:
 				size := u16(max(24 - block.level * 2, 15))
@@ -3161,10 +3179,12 @@ body_text :: proc(
 	wrap_w: f32 = 0,
 	max_lines: int = max(int),
 	fonts: string = "",
+	emoji := Emoji_Scale.Inline,
 ) -> int {
 	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
-	tile_px := body_tile_size(text, font_size)
-	lines := wrapped_lines(text, wrap, font_size, link_cards_enabled() ? .Cards : .Text, fonts)
+	tile_px := body_tile_size(text, font_size, emoji)
+	mode: Wrap_Mode = link_cards_enabled() ? .Cards : .Text
+	lines := wrapped_lines(text, wrap, font_size, mode, fonts, tile_px)
 	count := len(lines)
 	lines = lines[:min(len(lines), max_lines)]
 	// Parse destinations before wrapping: every visible fragment keeps
@@ -3261,6 +3281,7 @@ excerpt_body :: proc(
 	width: f32,
 	color: clay.Color,
 	source: Excerpt_Source = .Message,
+	emoji := Emoji_Scale.Inline,
 ) -> bool {
 	if len(text) == 0 && len(blocks) == 0 {return false}
 	progress :=
@@ -3292,10 +3313,20 @@ excerpt_body :: proc(
 		},
 		) {
 			if len(blocks) > 0 {
-				more = md_blocks(blocks, id, source == .Message, width, limit) || more
+				more =
+					md_blocks(blocks, id, source == .Message, width, limit, emoji = emoji) || more
 			} else {
 				more =
-					body_text(id, text, BODY_FS, color, source == .Message, width, limit) >
+					body_text(
+						id,
+						text,
+						BODY_FS,
+						color,
+						source == .Message,
+						width,
+						limit,
+						emoji = emoji,
+					) >
 						MESSAGE_LINES ||
 					more
 			}
@@ -3356,21 +3387,34 @@ att_w :: proc(w: f32 = 320) -> f32 {
 	return min(w, body_wrap_w())
 }
 
+// How a body of at most six emoji and nothing else draws them. Inline
+// (quotes, previews, rows) uses 28px tiles; Jumbo (a message body)
+// uses the art's native EMOJI_SIDE physical pixels, ~85 logical at 1.5x.
+@(private)
+Emoji_Scale :: enum {
+	Inline,
+	Jumbo,
+}
+
 // Pick emoji size for the whole body, so a short wrapped tail does
 // not grow larger than the tiles used to measure its line.
 @(private)
-body_tile_size :: proc(text: string, font_size: u16) -> f32 {
+body_tile_size :: proc(text: string, font_size: u16, scale := Emoji_Scale.Inline) -> f32 {
+	text_px := f32(font_size) + 4
 	tiles := 0
 	it := utf8.decode_grapheme_iterator_make(text)
 	for cluster, _ in rl.grapheme_iterate(&it) {
 		if text_emoji(cluster) != nil {
 			tiles += 1
-			if tiles > 6 {return f32(font_size) + 4}
+			if tiles > 6 {return text_px}
 		} else if len(strings.trim_space(cluster)) > 0 {
-			return f32(font_size) + 4
+			return text_px
 		}
 	}
-	return tiles > 0 ? 28 : f32(font_size) + 4
+	if tiles == 0 {
+		return text_px
+	}
+	return scale == .Jumbo ? f32(EMOJI_SIDE) / UI_SCALE : 28
 }
 
 // Greedy break at whole words, or whole graphemes in an over-long word.

@@ -4,7 +4,7 @@ ARG ODIN_SHA256=167c3e1d7056419dad2e04bb3bd98715b7ff286d4c125f3c5a5ee337c6254283
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential clang llvm lld cmake ninja-build pkg-config git curl ca-certificates \
-    unzip zip xz-utils bzip2 tar file patch python3 python3-pip python3-venv \
+    unzip zip xz-utils bzip2 tar file patch python3 python3-pip python3-venv librsvg2-bin \
     autoconf autoconf-archive automake libtool gettext gperf bison flex nasm yasm texinfo \
     libssl-dev libxml2-dev zlib1g-dev liblzma-dev libbz2-dev \
     gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu \

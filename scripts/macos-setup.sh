@@ -38,7 +38,7 @@ esac
 # GNU userland (the cross scripts use GNU sed/tar/find flags and bash 4+),
 # plus what vcpkg's Autotools and Meson ports expect on the build machine.
 brew install --quiet bash coreutils findutils gnu-sed gnu-tar cmake ninja pkgconf nasm \
-  autoconf autoconf-archive automake libtool gettext gperf bison flex
+  autoconf autoconf-archive automake libtool gettext gperf bison flex librsvg
 
 mkdir -p "$TOOLS"
 fetch() { # url path sha256

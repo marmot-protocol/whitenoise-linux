@@ -165,13 +165,13 @@ You need `just`, the [Odin compiler](https://odin-lang.org/docs/install/), a C a
 sudo apt-get install -y just pkg-config cmake clang git curl \
   libsdl3-dev libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libglib2.0-dev \
   libcurl4-openssl-dev libssl-dev libfreetype-dev libwebp-dev \
-  libavformat-dev libavcodec-dev libavutil-dev libswresample-dev
+  libavformat-dev libavcodec-dev libavutil-dev libswresample-dev librsvg2-bin
 ```
 
 **Arch:**
 
 ```sh
-sudo pacman -S --needed just odin rust cmake sdl3 libarchive mpv ffmpeg poppler-glib cairo glib2 curl openssl freetype2 libwebp
+sudo pacman -S --needed just odin rust cmake sdl3 libarchive mpv ffmpeg poppler-glib cairo glib2 curl openssl freetype2 libwebp librsvg
 ```
 
 **Then:**
@@ -183,7 +183,7 @@ just build
 just run
 ```
 
-The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx, MicroTeX and the Noto, Twemoji and OpenMoji emoji sets, and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
+The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx, MicroTeX and the Noto, Twemoji and OpenMoji emoji sets (rasterizing the latter two from SVG with `rsvg-convert`), and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
 
 The native Linux build extracts speech, font, and emoji archives without
 restoring ownership, so it can run as root inside Flatpak's restricted user
@@ -266,7 +266,7 @@ the pinned Odin release from source (OpenBSD has no Odin package), runs
 
 ```sh
 doas pkg_add bash git cmake ninja gmake coreutils llvm%21 rust unzip-- \
-  sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify
+  sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify librsvg
 bash scripts/openbsd-build.sh
 ```
 

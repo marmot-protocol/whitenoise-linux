@@ -297,18 +297,26 @@ else
 fi
 fi
 
-# Emoji art: one folder of 72x72 PNG tiles per set the user can pick in
+# Emoji art: one folder of 128x128 PNG tiles per set the user can pick in
 # Appearance, for the picker packs and reaction chips (any emoji, not
 # just the embedded quick-react six). Licence texts go to emoji-licenses.
 #
 #   vendor/emoji/noto/      googlefonts/noto-emoji at noto-emoji-commit (Apache 2.0)
-#   vendor/emoji/twemoji/   twemoji-assets crate, sha256-pinned (CC-BY 4.0)
-#   vendor/emoji/openmoji/  OpenMoji release zip, sha256-pinned (CC BY-SA 4.0)
+#   vendor/emoji/twemoji/   twemoji-assets crate SVGs, sha256-pinned (CC-BY 4.0)
+#   vendor/emoji/openmoji/  OpenMoji release SVG zip, sha256-pinned (CC BY-SA 4.0)
 #
-# Delete a set's folder to restage it.
+# Noto ships 128px PNGs. Twemoji and OpenMoji ship PNGs only at 72px (and
+# OpenMoji at 618px), so their SVGs are rasterized with rsvg-convert.
+# The side must match EMOJI_SIDE in app/emoji.odin and scripts/emoji-pack.c;
+# a change restages every set. Delete a set's folder to restage it.
 EMOJI="$HERE/vendor/emoji"
 EMOJI_LICENSES="$HERE/vendor/emoji-licenses"
+EMOJI_SIDE=128
+EMOJI_SIDE_STAMP="$HERE/vendor/.emoji-side"
 mkdir -p "$EMOJI" "$EMOJI_LICENSES"
+if [ "$(cat "$EMOJI_SIDE_STAMP" 2>/dev/null || true)" != "$EMOJI_SIDE" ]; then
+  rm -rf "$EMOJI/noto" "$EMOJI/twemoji" "$EMOJI/openmoji"
+fi
 
 # Upstream names differ for the same emoji ("emoji_u1f441_200d_1f5e8",
 # "1F441-FE0F-200D-1F5E8-FE0F"). Copy each tile to the one name
@@ -336,12 +344,28 @@ emoji_stage() {
   done
 }
 
+# Rasterize every SVG under $2 to an EMOJI_SIDE-square PNG in $1, keeping
+# the upstream name for emoji_stage. One rsvg-convert per file, batched
+# across all cores: ~4,000 files take about 2 s on 16 threads.
+emoji_rasterize() {
+  mkdir -p "$1"
+  find "$2" -name '*.svg' -print0 | xargs -0 -n 64 -P "$(getconf _NPROCESSORS_ONLN)" sh -c '
+    out="$1" side="$2"
+    shift 2
+    for svg; do
+      name="${svg##*/}"
+      rsvg-convert -w "$side" -h "$side" -o "$out/${name%.svg}.png" "$svg" || exit 255
+    done
+  ' sh "$1" "$EMOJI_SIDE"
+}
+
 NOTO="$HERE/vendor/noto-emoji"
 NOTO_PIN="$(pin noto-emoji)"
 if [ ! -d "$NOTO" ]; then
   git clone --filter=blob:none --depth 1 --no-checkout https://github.com/googlefonts/noto-emoji.git "$NOTO"
-  git -C "$NOTO" sparse-checkout set --no-cone /2D/png/72/ /3D/png/72/ /LICENSE
 fi
+# Set on every run so a clone made for another tile size switches folders.
+git -C "$NOTO" sparse-checkout set --no-cone "/2D/png/$EMOJI_SIDE/" "/3D/png/$EMOJI_SIDE/" /LICENSE
 if [ ! -f "$NOTO/LICENSE" ] || [ "$(git -C "$NOTO" rev-parse HEAD)" != "$NOTO_PIN" ]; then
   git -C "$NOTO" fetch --filter=blob:none --depth 1 origin "$NOTO_PIN"
   git -C "$NOTO" checkout --detach "$NOTO_PIN"
@@ -353,8 +377,8 @@ if [ ! -d "$EMOJI/noto" ]; then
   # region-flags). The 3D set's flags are that same waved art, so stage
   # 3D first and let 2D overwrite everything it has.
   mkdir "$TMP/tiles"
-  emoji_stage "$TMP/tiles" "$NOTO"/3D/png/72/*.png
-  emoji_stage "$TMP/tiles" "$NOTO"/2D/png/72/*.png
+  emoji_stage "$TMP/tiles" "$NOTO"/3D/png/"$EMOJI_SIDE"/*.png
+  emoji_stage "$TMP/tiles" "$NOTO"/2D/png/"$EMOJI_SIDE"/*.png
   cp "$NOTO/LICENSE" "$EMOJI_LICENSES/noto-emoji.txt"
   mv "$TMP/tiles" "$EMOJI/noto"
   rm -rf "$TMP"
@@ -368,7 +392,8 @@ if [ ! -d "$EMOJI/twemoji" ]; then
   echo "$TWEMOJI_SHA  $TMP/twemoji.crate" | sha256sum -c -
   tar "${TAR_OWNER[@]}" -xzf "$TMP/twemoji.crate" -C "$TMP"
   mkdir "$TMP/tiles"
-  emoji_stage "$TMP/tiles" "$TMP"/twemoji-assets-*/assets/72x72/*.png
+  emoji_rasterize "$TMP/png" "$TMP"/twemoji-assets-*/assets/svg
+  emoji_stage "$TMP/tiles" "$TMP"/png/*.png
   # The crate carries only its code licence; the graphics are CC-BY 4.0.
   printf '%s\n' \
     "Twemoji graphics: Copyright 2019 Twitter, Inc and other contributors." \
@@ -378,8 +403,8 @@ if [ ! -d "$EMOJI/twemoji" ]; then
   rm -rf "$TMP"
 fi
 
-OPENMOJI_URL="https://github.com/hfg-gmuend/openmoji/releases/download/17.0.0/openmoji-72x72-color.zip"
-OPENMOJI_SHA="fee0c272d0105f5b37e63dcc60c3759bda5a90c5ba2b160f64eaa768149eb5e9"
+OPENMOJI_URL="https://github.com/hfg-gmuend/openmoji/releases/download/17.0.0/openmoji-svg-color.zip"
+OPENMOJI_SHA="59b0cd9f6fe033818fc02585cea42bea9fba5d68a4d3a3639bfe5d5cc3805689"
 OPENMOJI_LICENSE_URL="https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/LICENSE.txt"
 OPENMOJI_LICENSE_SHA="5e436ff8ffbb77d8607220e9bce20c8915d860010feeb6c1ebef5a85688e9b39"
 OPENMOJI_DATA_URL="https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/data/openmoji.json"
@@ -393,7 +418,8 @@ if [ ! -d "$EMOJI/openmoji" ] || [ ! -f "$EMOJI/openmoji-extras.tsv" ]; then
   echo "$OPENMOJI_LICENSE_SHA  $TMP/LICENSE.txt" | sha256sum -c -
   curl -sSfL -o "$TMP/openmoji.json" "$OPENMOJI_DATA_URL"
   echo "$OPENMOJI_DATA_SHA  $TMP/openmoji.json" | sha256sum -c -
-  unzip -qo "$TMP/openmoji.zip" -d "$TMP/png"
+  unzip -qo "$TMP/openmoji.zip" -d "$TMP/svg"
+  emoji_rasterize "$TMP/png" "$TMP/svg"
   mkdir "$TMP/tiles"
   emoji_stage "$TMP/tiles" "$TMP"/png/*.png
   # Emoji only OpenMoji draws (its private-use designs and non-RGI
@@ -431,6 +457,7 @@ if [ ! -d "$EMOJI/openmoji" ] || [ ! -f "$EMOJI/openmoji-extras.tsv" ]; then
   mv "$TMP/extras.tsv" "$EMOJI/openmoji-extras.tsv"
   rm -rf "$TMP"
 fi
+printf '%s\n' "$EMOJI_SIDE" > "$EMOJI_SIDE_STAMP"
 
 # Emoji picker catalog: "emoji<TAB>name aliases" per line, extracted from
 # the pinned emojis crate. Keep shortcodes (100, thumbsup, etc.) searchable.
