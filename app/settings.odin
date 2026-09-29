@@ -110,11 +110,12 @@ Settings :: struct {
 	prefs:      Prefs,
 }
 
-settings_path :: proc(allocator := context.temp_allocator) -> string {
+settings_path :: proc(allocator := context.temp_allocator, filename := "settings.json") -> string {
 	cfg, err := os.user_config_dir(allocator)
 	if err != nil {return ""}
-	return fmt.aprintf("%s/whitenoise/settings.json", cfg, allocator = allocator)
+	return fmt.aprintf("%s/whitenoise/%s", cfg, filename, allocator = allocator)
 }
+
 
 // "Delete for me" hidden message ids, a JSON array in a sibling file
 // so settings.json keeps the slint settings.rs shape. Local-only,

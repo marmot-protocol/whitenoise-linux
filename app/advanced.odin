@@ -23,9 +23,6 @@ import marmot "../marmot"
 
 APP_VERSION :: "2026.9.27+1" // YYYY.M.D + increasing build revision
 
-// Endpoints and tokens, embedded like the slint app does. Not secret.
-OBSERVABILITY_TOML :: #load("../observability.toml", string)
-
 Audit_File :: struct {
 	path:  string,
 	name:  string,
@@ -445,22 +442,34 @@ obs_parse :: proc(text: string, out: ^Observability) {
 	}
 }
 
+// Public defaults, embedded write tokens, then an optional per-user override.
+// Returned strings borrow the embedded text or the temporary file buffer.
+obs_load :: proc(
+	path: string,
+	tokens := #load("../build/observability-tokens.toml", string),
+) -> Observability {
+	cfg := Observability {
+		otlp_metrics_endpoint  = "https://otlp.ipf.dev/v1/metrics",
+		goggles_audit_endpoint = "https://goggles.ipf.dev/api/v1/audit-logs/",
+		tenant                 = "whitenoise-linux",
+		deployment_environment = "production",
+	}
+	obs_parse(tokens, &cfg)
+	if path != "" {
+		if data, err := os.read_entire_file(path, context.temp_allocator); err == nil {
+			obs_parse(string(data), &cfg)
+		}
+	}
+	return cfg
+}
+
 // Tell the runtime where telemetry and audit uploads would go. Borrowed
 // inputs only, so everything here can live in the temp allocator.
 apply_observability :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if client == nil {
 		return
 	}
-	cfg: Observability
-	obs_parse(OBSERVABILITY_TOML, &cfg)
-
-	// A copy in the data dir wins, so endpoints change without a rebuild.
-	if data, err := os.read_entire_file(
-		fmt.tprintf("%s/observability.toml", data_home),
-		context.temp_allocator,
-	); err == nil {
-		obs_parse(string(data), &cfg)
-	}
+	cfg := obs_load(settings_path(filename = "observability.toml"))
 
 	install_id: cstring
 	marmot.telemetry_install_id(client, &install_id)

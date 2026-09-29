@@ -9,6 +9,8 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
+# Regenerate before cross dispatch and sources/stage exits as well.
+bash "$HERE/scripts/observability.sh"
 # OpenBSD's coreutils package installs GNU sha256sum as gsha256sum; its own
 # sha256 -c reads a different line format.
 if ! command -v sha256sum >/dev/null && command -v gsha256sum >/dev/null; then

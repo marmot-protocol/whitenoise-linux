@@ -122,7 +122,14 @@ jobs:
           key: marmot-linux-x64-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}
 
       - name: Build
+        env:
+          WN_METRICS_WRITE_TOKEN: ${{ secrets.WN_METRICS_WRITE_TOKEN }}
+          WN_AUDIT_WRITE_TOKEN: ${{ secrets.WN_AUDIT_WRITE_TOKEN }}
         run: scripts/build.sh
+
+      - name: Remove generated observability credentials
+        if: always()
+        run: rm -f build/observability-tokens.toml
 
       - name: Assemble AppDir
         run: |
@@ -215,6 +222,9 @@ jobs:
 
       - name: Restore Flatpak modules and downloads
         id: flatpak-cache
+        # Tagged builds must recompile with their secrets, not reuse the app
+        # cached by a tokenless master build.
+        if: "!startsWith(github.ref, 'refs/tags/')"
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -229,6 +239,9 @@ jobs:
       # mdk/clay/ufbx/microtex, cargo fetches crates), which the manifest declares
       # in its build-args; the action passes it through.
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        env:
+          WN_METRICS_WRITE_TOKEN: ${{ startsWith(github.ref, 'refs/tags/') && secrets.WN_METRICS_WRITE_TOKEN || '' }}
+          WN_AUDIT_WRITE_TOKEN: ${{ startsWith(github.ref, 'refs/tags/') && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         with:
           manifest-path: packaging/flatpak/${{ env.FLATPAK_ID }}.yml
           bundle: WhiteNoise-${{ github.ref_name }}-x86_64.flatpak
@@ -237,7 +250,7 @@ jobs:
           repo-dir: build/flatpak-repo
           state-dir: build/flatpak-state
           keep-build-dirs: true
-          cache: true
+          cache: ${{ !startsWith(github.ref, 'refs/tags/') }}
           restore-cache: false
           save-cache: false
 
@@ -246,6 +259,10 @@ jobs:
       - name: Collect Flatpak dependency outputs
         if: always()
         run: |
+          # Remove credentials even when compilation failed, before any cache save.
+          if [ -d build/flatpak-state/build ]; then
+            find build/flatpak-state/build -name observability-tokens.toml -delete
+          fi
           source=build/flatpak-state/build/whitenoise-linux
           bundle=vendor/mdk/crates/marmot-c/output
           if [ -f "$source/$bundle/.mdk-patches" ]; then
@@ -276,7 +293,8 @@ jobs:
           key: ${{ steps.cdeps-cache.outputs.cache-primary-key }}
 
       - name: Save Flatpak modules and downloads
-        if: always() && steps.flatpak-cache.outputs.cache-hit != 'true' && hashFiles('build/flatpak-state/cache/config') != ''
+        # The module cache includes the app binary; never save token-bearing builds.
+        if: always() && !startsWith(github.ref, 'refs/tags/') && steps.flatpak-cache.outputs.cache-hit != 'true' && hashFiles('build/flatpak-state/cache/config') != ''
         uses: actions/cache/save@v4
         with:
           path: |

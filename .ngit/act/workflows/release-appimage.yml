@@ -11,7 +11,7 @@
 # enabled, ngit-ci uploads that artifact to its Blossom server(s) and attaches
 # the resulting Blossom URL(s) as `artifact` tags on the signed Job Result
 # (kind 9841): `upload-artifact` IS "publish to Blossom" here. There is no
-# forge token and no secrets.
+# forge token; optional observability write tokens come from runner secrets.
 #
 # No actions/cache here, unlike the GitHub workflow: act containers are
 # ephemeral and the cache backend is not reliably present, so SDL3 and Odin
@@ -92,7 +92,14 @@ jobs:
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Build
+        env:
+          WN_METRICS_WRITE_TOKEN: ${{ secrets.WN_METRICS_WRITE_TOKEN }}
+          WN_AUDIT_WRITE_TOKEN: ${{ secrets.WN_AUDIT_WRITE_TOKEN }}
         run: scripts/build.sh
+
+      - name: Remove generated observability credentials
+        if: always()
+        run: rm -f build/observability-tokens.toml
 
       # usr/bin + usr/share/whitenoise-linux is a contract with res_dir in
       # app/paths.odin; scripts/install-tree.sh lays it out, the same way

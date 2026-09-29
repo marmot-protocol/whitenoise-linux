@@ -23,9 +23,15 @@ jobs:
       - name: Cross compile and package
         env:
           WN_RELEASE_VERSION: staging-${{ github.sha }}
+          WN_METRICS_WRITE_TOKEN: ${{ secrets.WN_METRICS_WRITE_TOKEN }}
+          WN_AUDIT_WRITE_TOKEN: ${{ secrets.WN_AUDIT_WRITE_TOKEN }}
         run: |
           podman run --rm -v "$PWD:/work" -e WN_RELEASE_VERSION \
+            -e WN_METRICS_WRITE_TOKEN -e WN_AUDIT_WRITE_TOKEN \
             whitenoise-cross '${{ matrix.target }}'
+      - name: Remove generated observability credentials
+        if: always()
+        run: sudo rm -f build/observability-tokens.toml
       - name: Extract and execute shipped package
         run: |
           mkdir -p build/cross-smoke build/cross-evidence

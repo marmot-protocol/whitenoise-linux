@@ -311,7 +311,11 @@ The first time you launch, you either paste an existing nsec or generate a new o
 
 The data directory is the app's first argument and defaults to `~/.local/share/whitenoise`. It holds the vault, the media cache, the offline queue, and any custom theme packs you drop in its `themes/` subdirectory. UI preferences (theme, accent, locale, notification toggles, nicknames) live separately in `$XDG_CONFIG_HOME/whitenoise/settings.json`.
 
-Telemetry and audit-log endpoints are configured in `observability.toml`, but nothing is ever sent until you enable the toggles under **Settings**, in the **Advanced** section.
+Telemetry and audit logs use built-in endpoints. To override them, create
+`$XDG_CONFIG_HOME/whitenoise/observability.toml` (or
+`~/.config/whitenoise/observability.toml` when `XDG_CONFIG_HOME` is unset).
+Nothing is sent until you enable the corresponding toggles under
+**Settings**, in the **Advanced** section.
 
 A few environment variables matter, mostly for automation:
 
@@ -406,6 +410,21 @@ To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; t
 The current pin is MDK 0.11.0. The build applies the patches listed in
 `scripts/build.sh`, including `patches/mdk-app-components.patch` for the
 unmerged group app-component API used by issue tracking.
+
+Publishing workflows read `WN_METRICS_WRITE_TOKEN` and `WN_AUDIT_WRITE_TOKEN`
+from CI secrets. Configure both on GitHub and on trusted ngit/act publishing
+runners, not PR runners. Local builds without them contain no write tokens.
+The build embeds a generated, mode-0600 `build/observability-tokens.toml`;
+CI removes that file before cache and artifact uploads. Tokens must be
+printable ASCII without double quotes or backslashes.
+
+This keeps credentials out of source and build logs, but they remain
+extractable from published binaries. Keep them write-only and narrowly
+scoped. The optional per-user `observability.toml` overrides embedded settings;
+protect credentials in that file with mode 0600. On macOS it lives under
+`~/Library/Application Support/whitenoise/`; on Windows, under
+`%LOCALAPPDATA%/whitenoise/`. Uploads still require the corresponding consent
+setting. See [timing and observability configuration](docs/timings.md).
 
 ## Contributing
 

@@ -145,6 +145,10 @@ modules:
       build-args:
         - --share=network
       append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/llvm21/bin:/app/odin
+      # Passed privately from the build host, never written into the manifest.
+      secret-env:
+        - WN_METRICS_WRITE_TOKEN
+        - WN_AUDIT_WRITE_TOKEN
       env:
         CARGO_HOME: /run/build/whitenoise-linux/cargo
         # Odin's `foreign import "system:…"` ignores LDFLAGS; this is how
@@ -153,9 +157,10 @@ modules:
     build-commands:
       # Fetch sources before restoring outputs: build.sh must create the MDK
       # checkout, and pin changes must not delete a freshly restored bundle.
-      - scripts/build.sh sources
+      - trap 'rm -f build/observability-tokens.toml' EXIT; scripts/build.sh sources
       - if [ -d .flatpak-cache ]; then cp -a .flatpak-cache/. .; fi
-      - scripts/build.sh
+      # Do not let Flatpak's debug/source export retain the generated TOML.
+      - trap 'rm -f build/observability-tokens.toml' EXIT; scripts/build.sh
       - scripts/install-tree.sh /app dev.ipf.whitenoise
     sources:
       - type: dir

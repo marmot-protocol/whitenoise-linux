@@ -23,7 +23,7 @@ The app configures its route before starting MDK and builds marmot-c with
 `otlp-export`; cached bundles without that feature are rebuilt.
 
 MDK exports its fixed set of aggregate timing histograms and counters to
-the `otlp_metrics_endpoint` in `observability.toml`, by default
+the configured `otlp_metrics_endpoint`, by default
 `https://otlp.ipf.dev/v1/metrics`. The runtime does not offer a per-operation
 export filter. The local report's `otlp_export` field describes readiness,
 not delivery acknowledgement. Raw message contents and account/group IDs
@@ -34,6 +34,32 @@ Goggles' `/api/v1/audit-logs/` endpoint accepts forensic audit events, not
 OTLP metrics. Do not send timing JSON there. Displaying these aggregates in
 Goggles requires a collector-backed metrics view in that separate project.
 Production retention and server ingestion were not verified by local tests.
+
+### Collector configuration
+
+The app starts with public defaults: metrics at
+`https://otlp.ipf.dev/v1/metrics`, audit uploads at
+`https://goggles.ipf.dev/api/v1/audit-logs/`, tenant `whitenoise-linux`, and
+deployment environment `production`. It then loads the write tokens embedded
+from generated `build/observability-tokens.toml`.
+
+An optional per-user `observability.toml` overrides only the keys it names.
+On Linux, put it at `$XDG_CONFIG_HOME/whitenoise/observability.toml`, or
+`~/.config/whitenoise/observability.toml` when `XDG_CONFIG_HOME` is unset or
+empty. This is the same directory as `settings.json`. macOS uses
+`~/Library/Application Support/whitenoise/observability.toml`; Windows uses
+the LocalAppData known folder followed by `whitenoise/observability.toml`.
+Those platforms use their native config directory, not `XDG_CONFIG_HOME`.
+The app does not read configuration from its data directory or the repository.
+A missing or unreadable override leaves the embedded configuration intact.
+
+The accepted keys are `otlp_metrics_endpoint`, `otlp_token`,
+`goggles_audit_endpoint`, `goggles_token`, `tenant`, and
+`deployment_environment`. Use one `key = "value"` assignment per line;
+lines beginning with `#` are comments. An empty value overrides the embedded
+value too. Protect files containing credentials with mode 0600 on Unix or
+an equivalent user-only ACL on Windows. Routes and tokens never grant consent;
+uploads still require the corresponding setting in Settings > Advanced.
 
 Prioritize these OTLP histograms when building that view:
 

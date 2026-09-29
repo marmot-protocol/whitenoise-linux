@@ -7,6 +7,17 @@ on:
         type: string
         required: false
         default: ''
+    secrets:
+      WN_METRICS_WRITE_TOKEN:
+        required: false
+      WN_AUDIT_WRITE_TOKEN:
+        required: false
+      JSIGN_KEYSTORE_BASE64:
+        required: false
+      JSIGN_KEYSTORE:
+        required: false
+      JSIGN_STOREPASS:
+        required: false
   workflow_dispatch:
     inputs:
       version:
@@ -109,6 +120,8 @@ jobs:
       - name: Cross compile and package
         env:
           WN_RELEASE_VERSION: ${{ inputs.version }}
+          WN_METRICS_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
+          WN_AUDIT_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
           RELEASE: ${{ matrix.target == 'windows-amd64' && inputs.version != '' }}
           JSIGN_STORETYPE: ${{ vars.JSIGN_STORETYPE }}
           JSIGN_ALIAS: ${{ vars.JSIGN_ALIAS }}
@@ -117,7 +130,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           mkdir -p "$HOME/.cache/vcpkg/archives"
-          args=(-e WN_RELEASE_VERSION -v "$HOME/.cache/vcpkg:/root/.cache/vcpkg")
+          args=(-e WN_RELEASE_VERSION -e WN_METRICS_WRITE_TOKEN -e WN_AUDIT_WRITE_TOKEN
+            -v "$HOME/.cache/vcpkg:/root/.cache/vcpkg")
           if [ "$RELEASE" = true ]; then
             # A keystore file is mounted; a cloud keystore is a name/URL.
             keystore="$JSIGN_KEYSTORE_SECRET"
@@ -126,6 +140,9 @@ jobs:
               -e JSIGN_KEYSTORE="$keystore" -e GITHUB_TOKEN -e WN_VELOPACK_REPO="https://github.com/${{ github.repository }}")
           fi
           podman run --rm -v "$PWD:/work" "${args[@]}" whitenoise-cross '${{ matrix.target }}'
+      - name: Remove generated observability credentials
+        if: always()
+        run: sudo rm -f build/observability-tokens.toml
       - name: Save marmot-c
         if: always() && steps.marmot-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/libmarmot_c.stamp', matrix.target)) != ''
         uses: actions/cache/save@v4
@@ -223,14 +240,17 @@ jobs:
         uses: cross-platform-actions/action@v1.6.0
         env:
           WN_RELEASE_VERSION: ${{ inputs.version }}
+          WN_METRICS_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
+          WN_AUDIT_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         with:
           operating_system: openbsd
           version: '7.9'
           architecture: x86-64
           cpu_count: 4
           memory: 12G
-          environment_variables: WN_RELEASE_VERSION
+          environment_variables: WN_RELEASE_VERSION WN_METRICS_WRITE_TOKEN WN_AUDIT_WRITE_TOKEN
           run: |
+            trap 'rm -f build/observability-tokens.toml' EXIT
             sudo pkg_add -I bash git cmake ninja gmake coreutils llvm%21 rust unzip-- \
               sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg
             # The image's root filesystem has ~4 GB left after the packages,
@@ -241,6 +261,9 @@ jobs:
             bash scripts/openbsd-build.sh
             # Keep the sync back small.
             rm -rf build/openbsd/odin
+      - name: Remove generated observability credentials
+        if: always()
+        run: rm -f build/observability-tokens.toml
       - name: Save the marmot-c bundle
         if: always() && steps.marmot-cache.outputs.cache-hit != 'true' && hashFiles('vendor/mdk/crates/marmot-c/output/.mdk-patches') != ''
         uses: actions/cache/save@v4
@@ -309,9 +332,14 @@ jobs:
       - name: Build and package
         env:
           WN_RELEASE_VERSION: ${{ inputs.version }}
+          WN_METRICS_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
+          WN_AUDIT_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         run: |
           source "$RUNNER_TEMP/tools/env"
           bash scripts/cross-build.sh '${{ matrix.target }}'
+      - name: Remove generated observability credentials
+        if: always()
+        run: rm -f build/observability-tokens.toml
       - name: Save marmot-c
         if: always() && steps.marmot-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/libmarmot_c.stamp', matrix.target)) != ''
         uses: actions/cache/save@v4

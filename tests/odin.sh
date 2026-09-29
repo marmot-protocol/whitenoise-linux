@@ -8,6 +8,7 @@ case "$package" in
   *) echo "Usage: tests/odin.sh app|app/sdlrl [odin test flags]" >&2; exit 1 ;;
 esac
 shift
+bash "$HERE/scripts/observability.sh"
 mkdir -p "$HERE/build"
 fixture="$(mktemp -d "$HERE/build/odin-test.XXXXXX")"
 trap 'rm -rf "$fixture"' EXIT
@@ -18,7 +19,7 @@ for module in nevent vault_gate vault_pw; do
   sed '/^package main$/d' "$fixture/app/${module}_internal_test.odin" >> "$fixture/app/$module.odin"
   rm "$fixture/app/${module}_internal_test.odin"
 done
-for entry in vendor marmot themes lang build observability.toml; do
+for entry in vendor marmot themes lang build; do
   ln -s "$HERE/$entry" "$fixture/$entry"
 done
 if [ -d "$HERE/build/odin-root" ]; then
