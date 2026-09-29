@@ -406,17 +406,16 @@ fi
 
 # The math font (TeX Gyre DejaVu Math, app/math.odin) is under the GUST
 # Font License, with the DejaVu changes in the public domain. MicroTeX's
-# copy ships only a README that names both texts, so fetch them here.
-while read -r file sha url; do
-  if [ ! -f "$FONTS/$file" ]; then
-    curl -sSfL "$url" -o "$FONTS/$file.tmp"
-    echo "$sha  $FONTS/$file.tmp" | sha256sum -c -
-    mv "$FONTS/$file.tmp" "$FONTS/$file"
-  fi
-done <<'LICENSES'
-GUST-FONT-LICENSE.txt 2bd69affc3da00715116f713f57eab9707e96daf3562ad0215987b15b9c16f73 https://mirrors.ctan.org/fonts/tex-gyre-math/doc/GUST-FONT-LICENSE.txt
-DejaVu-LICENSE.txt 7a083b136e64d064794c3419751e5c7dd10d2f64c108fe5ba161eae5e5958a93 https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/version_2_37/LICENSE
-LICENSES
+# copy ships only a README that names both texts, so stage them here.
+# Keep GUST local: CTAN's regional mirrors are not reliably reachable from CI.
+# Source: https://mirrors.ctan.org/fonts/tex-gyre-math/doc/GUST-FONT-LICENSE.txt
+# SHA-256: 2bd69affc3da00715116f713f57eab9707e96daf3562ad0215987b15b9c16f73
+cp "$HERE/assets/fonts/GUST-FONT-LICENSE.txt" "$FONTS/GUST-FONT-LICENSE.txt"
+if [ ! -f "$FONTS/DejaVu-LICENSE.txt" ]; then
+  curl -sSfL https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/version_2_37/LICENSE -o "$FONTS/DejaVu-LICENSE.txt.tmp"
+  echo "7a083b136e64d064794c3419751e5c7dd10d2f64c108fe5ba161eae5e5958a93  $FONTS/DejaVu-LICENSE.txt.tmp" | sha256sum -c -
+  mv "$FONTS/DejaVu-LICENSE.txt.tmp" "$FONTS/DejaVu-LICENSE.txt"
+fi
 
 mkdir -p "$HERE/build"
 if [ "${1:-}" = sources ]; then

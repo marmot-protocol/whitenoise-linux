@@ -236,6 +236,8 @@ baseline in `packaging/cross/vcpkg.json`. FFmpeg includes dav1d for CPU AV1
 decoding on Windows and macOS. Speech uses the same pinned upstream
 sherpa-onnx CPU runtime as the native build. Packages include the speech/font
 helpers, curl, their loader dependencies, fonts, emoji data and licenses.
+The GUST font license is checked in at `assets/fonts/GUST-FONT-LICENSE.txt`
+and staged locally by native and cross builds, without contacting CTAN mirrors.
 
 macOS bundles build on a Mac, where Apple's SDK is licensed: Xcode or its
 Command Line Tools supply it, and no Apple account is needed. An Apple silicon
