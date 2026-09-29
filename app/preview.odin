@@ -167,7 +167,7 @@ preview_show :: proc(name: string, bytes: []u8, archive: ^Arc_View = nil) {
 	case has(lower, ".pdf"):
 		pdf := pdf_view_make(bytes)
 		if pdf.failed {
-			free(pdf)
+			pdf_view_free(pdf)
 		} else {
 			preview.pdf = pdf
 			preview.kind = .Pdf

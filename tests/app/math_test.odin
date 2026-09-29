@@ -1,29 +1,22 @@
-// Math blocks: MicroTeX through app/math_shim.cpp, fed peer-controlled
-// TeX. Malformed input must come back as nil (source text), never an
-// abort or a hang, and nothing one formula defines may leak into the next.
+// Math blocks: isolated wn-math, fed peer-controlled TeX. Malformed
+// input must return nil (source text), never abort or hang the parent,
+// and nothing one formula defines may leak into the next.
 // Run: tests/odin.sh app
 package main
 
 import "core:c"
+import "core:c/libc"
 import "core:strings"
 import "core:testing"
 
-// The shim's C symbols, bound here under test-only names so app/math.odin
-// keeps its bindings file-private.
-foreign import math_test_lib {"../build/libwnmath.a", "../build/microtex/lib/libmicrotex.a", "system:cairo", "system:stdc++", "system:m"}
+// Keep the app's transport binding file-private.
+foreign import math_test_lib {WN_BUILD_DIR + "/libwndecoder.a"}
 
 @(private = "file", default_calling_convention = "c")
 foreign math_test_lib {
-	@(link_name = "math_shim_init")
-	shim_init :: proc(font: [^]u8, len: c.ulong) -> bool ---
-	@(link_name = "math_shim_render")
-	shim_render :: proc(tex: cstring, size: f32, argb: u32, max_side: c.int, max_area: c.long, w, h: ^c.int) -> [^]u8 ---
-	@(link_name = "math_shim_free")
-	shim_free :: proc(pixels: [^]u8) ---
+	@(link_name = "wn_math_render")
+	test_math_render :: proc(helper: cstring, data: [^]u8, size: c.int, font_size: f32, argb, max_side, max_bytes: c.uint, w, h: ^c.int) -> [^]u8 ---
 }
-
-@(private = "file")
-FONT := #load("../vendor/microtex/res/tex-gyre/texgyredejavu-math.clm2")
 
 // MicroTeX's own showcase: \newcommand, \fatalIfCmdConflict, colors,
 // matrices, \fcolorbox.
@@ -34,7 +27,7 @@ SAMPLE :: #load("math_sample.tex", string)
 @(private = "file")
 MAX_SIDE :: 4096
 @(private = "file")
-MAX_AREA :: 2 << 20
+MAX_BYTES :: 8 << 20
 
 @(private = "file")
 Rendered :: struct {
@@ -49,17 +42,19 @@ Rendered :: struct {
 // Render in white ink, the way a dark theme does.
 @(private = "file")
 render :: proc(tex: string) -> (r: Rendered) {
-	pixels := shim_render(
-		strings.clone_to_cstring(tex, context.temp_allocator),
+	pixels := test_math_render(
+		strings.clone_to_cstring(helper_path("wn-math"), context.temp_allocator),
+		raw_data(tex),
+		c.int(len(tex)),
 		20,
 		0xffffffff,
 		MAX_SIDE,
-		MAX_AREA,
+		MAX_BYTES,
 		&r.w,
 		&r.h,
 	)
 	if pixels == nil {return}
-	defer shim_free(pixels)
+	defer libc.free(pixels)
 
 	for i in 0 ..< int(r.w) * int(r.h) {
 		p := pixels[i * 4:][:4]
@@ -75,16 +70,14 @@ render :: proc(tex: string) -> (r: Rendered) {
 }
 
 @(test)
-math_shim_isolation :: proc(t: ^testing.T) {
-	testing.expect(t, shim_init(raw_data(FONT), c.ulong(len(FONT))))
-
+math_helper_isolation :: proc(t: ^testing.T) {
 	quadratic := render(`x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}`)
 	testing.expect(t, quadratic.ok)
 	testing.expect(t, quadratic.w > quadratic.h && quadratic.h > 20)
 	pmatrix := render(`\begin{pmatrix} a & b \\ c & d \end{pmatrix}`)
 	testing.expect(t, pmatrix.ok)
 
-	// MicroTeX throws on these; the shim must catch, not abort.
+	// MicroTeX throws on these; the helper must fail without affecting the parent.
 	testing.expect(t, !render(`\over\over`).ok)
 	testing.expect(t, !render(`\frac{`).ok)
 

@@ -38,7 +38,6 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 
 import marmot "../marmot"
 import rl "sdlrl"
-import stbi "vendor:stb/image"
 
 foreign import wslib {WN_BUILD_DIR + "/libwnws.a", "system:curl"}
 
@@ -309,7 +308,7 @@ nev_split_images :: proc(blocks: ^[dynamic]Md_Block_Ui) {
 nev_img_worker :: proc(url: string) {
 	context.allocator = reload_allocator()
 	defer frame_wake()
-	state, data, stderr, err := os.process_exec(
+	state, data, stderr, err := tool_exec(
 		{
 			command = {
 				curl_path(),
@@ -345,18 +344,17 @@ nev_img_worker :: proc(url: string) {
 	sync.unlock(&nev_mutex)
 }
 
-// Probe actual bytes before the decoder allocates the RGBA buffer.
+// Enforce the card's decoded-image budget inside the helper and at its boundary.
 @(private)
 nev_image_decode :: proc(bytes: []u8) -> rl.Image {
 	if len(bytes) < 12 || len(bytes) > 16 * 1024 * 1024 {return {}}
-	w, h, channels: c.int
-	if string(bytes[:4]) == "RIFF" && string(bytes[8:12]) == "WEBP" {
-		if WebPGetInfo(raw_data(bytes), uint(len(bytes)), &w, &h) == 0 {return {}}
-	} else if stbi.info_from_memory(raw_data(bytes), c.int(len(bytes)), &w, &h, &channels) == 0 {
-		return {}
-	}
-	if w <= 0 || h <= 0 || w > 8192 || h > 8192 || i64(w) * i64(h) > 16 * 1024 * 1024 {return {}}
-	return rl.LoadImageFromMemory("", raw_data(bytes), i32(len(bytes)))
+	return rl.LoadImageFromMemory(
+		"",
+		raw_data(bytes),
+		i32(len(bytes)),
+		max_dimension = 8192,
+		max_bytes = 64 * 1024 * 1024,
+	)
 }
 
 // The texture for an image link, requesting it on first sight.

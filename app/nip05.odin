@@ -2,7 +2,6 @@ package main
 
 import "core:encoding/json"
 import "core:fmt"
-import "core:os"
 import "core:strings"
 
 @(private)
@@ -61,7 +60,7 @@ nip05_lookup :: proc(ref: string) -> string {
 	url := fmt.aprintf("https://%s/.well-known/nostr.json?name=%s", domain, name)
 	defer delete(url)
 	// NIP-05 forbids redirects. Ignore curlrc so it cannot enable them.
-	state, out, stderr, err := os.process_exec(
+	state, out, stderr, err := tool_exec(
 		{
 			command = {
 				curl_path(),

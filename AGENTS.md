@@ -25,8 +25,10 @@ output is already present, so only the first run is slow:
 - `vendor/mdk` cloned at `mdk-commit` from `DEPS_PIN`, and its C bundle built by
   upstream's own `crates/marmot-c/c-bindings.sh` (this is the Rust part of the
   build, and the long pole on a cold checkout).
-- `vendor/clay` and `vendor/ufbx` at their pinned commits; `ufbx.c` plus
-  `app/fbx_shim.c` are archived into `build/libwnfbx.a`.
+- `vendor/clay` and `vendor/ufbx` at their pinned commits; `ufbx.c`,
+  `app/fbx_shim.c` and `app/fbx_helper.c` build the isolated `build/wn-fbx`
+  parser and animation helper. `model-decoder/` builds `build/wn-mesh` for
+  STL, OBJ, GLB and G-code. Neither parser library is linked into the UI.
 - `vendor/twemoji` (the 72x72 PNG set) and `vendor/emoji-catalog.tsv`, both
   pulled from pinned crates.io tarballs.
 - `vendor/common-passwords.txt` and its MIT license from SecLists at
@@ -35,19 +37,45 @@ output is already present, so only the first run is slow:
 - `vendor/microtex` at its pinned `openmath` commit with
   `patches/microtex-isolation.patch`, `patches/microtex-libcxx-includes.patch`
   and `patches/microtex-locale-fallback.patch` applied, built by CMake into
-  `build/microtex/lib/libmicrotex.a`; `app/math_shim.cpp` (the `$$` math
-  block renderer) is archived into `build/libwnmath.a`.
+  `build/microtex/lib/libmicrotex.a`; `app/math_shim.cpp` is archived into
+  `build/libwnmath.a` and linked only into `build/wn-math`. The helper embeds
+  its font and exchanges bounded source/RGBA messages with `app/math.odin`.
+  The UI does not link MicroTeX.
 - An `ODIN_ROOT` overlay at `build/odin-root`, but **only** when the installed
   Odin is missing `vendor/stb/lib/stb_truetype.a` or `vendor/cgltf/lib/cgltf.a`
   (the Linux release tarball is; `sdlrl` needs stb truetype and image, the
-  glTF viewer needs cgltf), and always on OpenBSD. The overlay symlinks the
+  mesh helper needs cgltf), and always on OpenBSD. The overlay symlinks the
   real install and swaps in writable `vendor/stb` and `vendor/cgltf` copies it
   can run `build_stb.sh` and `build_cgltf.sh` in. On OpenBSD it also points
   those bindings at the built archives, which they name for Linux only.
+  OpenBSD also builds the pinned SDL statically with `NO_SHARED_MEMORY`,
+  points the SDL bindings at that archive, and patches Odin's executable
+  probe to use `access(X_OK)` rather than a read-opening `O_EXEC` substitute.
 
 `DEPS_PIN` holds every third-party revision as `<name>-commit = <sha>`, one
 per line. Bumping one is a one-line edit; `just build` re-checks out and
 rebuilds on the next run.
+
+OpenBSD runs only from a root-owned, non-group/other-writable installation
+with protected ancestry. `scripts/openbsd-build.sh` stages one as root, then
+runs capability tests and dummy/Xvfb package smokes as the invoking user.
+For local runs, install with
+`doas bash scripts/install-tree.sh /usr/local/whitenoise whitenoise` and run
+`/usr/local/whitenoise/bin/whitenoise` as your normal user.
+Direct unprivileged `build/app` runs are rejected.
+
+The OpenBSD main process keeps networking, desktop access and the data,
+settings and Downloads roots, but no `exec` promise. Start both brokers
+before SDL or workers: `helper_broker.c` freezes helper paths/arguments and
+`tool_broker.c` confines curl, notifications and dialogs. Link OpenBSD app
+and package-private tests with `--wrap=execve` and
+`--exclude-libs=libmarmot_c.a`; the latter keeps bundled OpenSSL symbols out of
+system LibreSSL callers. Stop workers and SDL before the brokers, then remove
+the private runtime home through `wn_main_sandbox_cleanup()`.
+Cache kernel-version metadata before confinement too: Odin's BSD version
+query uses `KERN_OSREVISION`, which pledge forbids.
+`wn-math` initializes its fixed UTF-8 locale before locking an empty unveil
+tree. Keep untrusted TeX parsing after that lock.
 
 Odin has no incremental compilation, so a full app build is the unit of work
 (~3s at `-o:minimal`, which is what `just dev` uses; release builds use
@@ -93,11 +121,11 @@ the offline queue. UI prefs are a separate JSON blob at
 ### System dependencies
 
 Odin (a recent nightly; CI pins one in `.github/workflows/ci.yml`), a C and
-C++ compiler, CMake, and a Rust toolchain for `marmot-c`. Then SDL3 plus the
-libraries behind the `foreign import "system:…"` lines in `app/`: `libarchive`
-(`archive.odin`), `libmpv` (`mpv.odin`), `poppler-glib` + `glib` + `gobject` +
-`cairo` (`pdf.odin`, `math.odin`), `libcurl` (`ws_shim.c`, the nevent card
-fetch).
+C++ compiler, CMake, and a Rust toolchain for `marmot-c`. Then SDL3 plus
+`libarchive` (`archive.c`), `libmpv` (`mpv.odin`), `poppler-glib` + `glib` +
+`gobject` + `fontconfig` (`pdf.c`), `cairo` (`pdf.c`, `math.odin`) and `libcurl`
+(`ws_shim.c`, the nevent card fetch). Archive and PDF parsing run in the
+packaged `wn-archive` and `wn-pdf` helpers, not in the UI process.
 
 ## Architecture
 

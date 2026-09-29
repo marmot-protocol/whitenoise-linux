@@ -1,41 +1,39 @@
-// Archive attachments (zip, rar, 7z, tar…) listed inline through
-// libarchive, straight from the decrypted bytes; nothing is written
-// to disk. Clicking an entry decompresses just that entry into
-// memory and opens it in the preview modal, which reuses the same
-// renderers as the timeline tiles.
+// Archive attachments are listed and extracted by the isolated wn-archive
+// helper. The parent validates metadata before publishing a view; neither
+// side writes decompressed entries to disk.
 package main
 
 import "core:c"
+import "core:c/libc"
 import "core:fmt"
+import "core:slice"
 import "core:strings"
+import "core:unicode/utf8"
 
-foreign import la "system:archive"
+foreign import arc_decoder {WN_BUILD_DIR + "/libwndecoder.a"}
 
-ARCHIVE_OK :: 0
-ARCHIVE_EOF :: 1
-AE_IFMT :: 0o170000
-AE_IFREG :: 0o100000
-
-ARC_MAX_ENTRIES :: 2000 // listing cap for hostile archives
-ARC_MAX_ENTRY_BYTES :: 64 * 1024 * 1024 // per-entry decompression cap
-ARC_TILE_ROWS :: 12 // entries shown on the tile
-
-archive_t :: struct {}
-archive_entry_t :: struct {}
-
-@(default_calling_convention = "c")
-foreign la {
-	archive_read_new :: proc() -> ^archive_t ---
-	archive_read_free :: proc(a: ^archive_t) -> c.int ---
-	archive_read_support_filter_all :: proc(a: ^archive_t) -> c.int ---
-	archive_read_support_format_all :: proc(a: ^archive_t) -> c.int ---
-	archive_read_open_memory :: proc(a: ^archive_t, buf: rawptr, size: c.size_t) -> c.int ---
-	archive_read_next_header :: proc(a: ^archive_t, entry: ^^archive_entry_t) -> c.int ---
-	archive_read_data :: proc(a: ^archive_t, buf: rawptr, size: c.size_t) -> c.ssize_t ---
-	archive_entry_pathname_utf8 :: proc(entry: ^archive_entry_t) -> cstring ---
-	archive_entry_size :: proc(entry: ^archive_entry_t) -> i64 ---
-	archive_entry_filetype :: proc(entry: ^archive_entry_t) -> c.uint ---
+@(private)
+Arc_Op :: enum c.int {
+	List,
+	Entry,
 }
+
+@(private, default_calling_convention = "c")
+foreign arc_decoder {
+	wn_archive_read :: proc(helper: cstring, data: [^]u8, size: c.int, op: Arc_Op, index: c.uint, count, length: ^c.uint) -> [^]u8 ---
+}
+
+ARC_MAX_ENTRIES :: 2000
+ARC_MAX_ENTRY_BYTES :: 64 * 1024 * 1024
+ARC_TILE_ROWS :: 12
+@(private)
+ARC_MAX_INPUT_BYTES :: 128 * 1024 * 1024
+@(private)
+ARC_MAX_LIST_BYTES :: 8 * 1024 * 1024
+@(private)
+ARC_MAX_HEADERS :: 65536
+@(private)
+ARC_MAX_NAME_BYTES :: 4096
 
 Arc_Entry :: struct {
 	name:  string,
@@ -50,107 +48,105 @@ Arc_View :: struct {
 }
 
 @(private = "file")
-arc_open :: proc(data: []u8) -> ^archive_t {
-	a := archive_read_new()
-	if a == nil {
-		return nil
-	}
-	archive_read_support_filter_all(a)
-	archive_read_support_format_all(a)
-	if archive_read_open_memory(a, raw_data(data), c.size_t(len(data))) != ARCHIVE_OK {
-		archive_read_free(a)
-		return nil
-	}
-	return a
+arc_u32 :: proc(data: []u8) -> u32 {
+	return u32(data[0]) | u32(data[1]) << 8 | u32(data[2]) << 16 | u32(data[3]) << 24
 }
 
-// data ownership transfers to the view. nil = not a readable archive.
+// Validate the complete untrusted listing before handing any entries to a
+// caller. Names are cloned because the transport buffer is malloc-owned.
+@(private)
+arc_parse_entries :: proc(payload: []u8, count: u32) -> ([]Arc_Entry, bool) {
+	if count > ARC_MAX_ENTRIES || len(payload) > ARC_MAX_LIST_BYTES {
+		return nil, false
+	}
+	entries := make([]Arc_Entry, int(count))
+	complete := false
+	defer {
+		if !complete {
+			for entry in entries {delete(entry.name)}
+			delete(entries)
+		}
+	}
+	position, previous := 0, -1
+	for &entry in entries {
+		if len(payload) - position < 16 {return nil, false}
+		record := payload[position:]
+		index := arc_u32(record)
+		length := arc_u32(record[4:])
+		bits := u64(arc_u32(record[8:])) | u64(arc_u32(record[12:])) << 32
+		declared := transmute(i64)bits
+		position += 16
+		if index >= ARC_MAX_HEADERS ||
+		   int(index) <= previous ||
+		   length == 0 ||
+		   length > ARC_MAX_NAME_BYTES ||
+		   int(length) > len(payload) - position ||
+		   declared < -1 {
+			return nil, false
+		}
+		name := string(payload[position:position + int(length)])
+		if !utf8.valid_string(name) || strings.contains(name, "\x00") {
+			return nil, false
+		}
+		entry = {
+			name  = strings.clone(name),
+			size  = declared,
+			index = int(index),
+		}
+		position += int(length)
+		previous = int(index)
+	}
+	if position != len(payload) {return nil, false}
+	complete = true
+	return entries, true
+}
+
+// Ownership transfers only on success. Empty archives are not previewable.
 arc_view_make :: proc(data: []u8) -> ^Arc_View {
-	a := arc_open(data)
-	if a == nil {
-		return nil
-	}
-	defer archive_read_free(a)
-
-	entries := make([dynamic]Arc_Entry)
-	entry: ^archive_entry_t
-	for index := 0; len(entries) < ARC_MAX_ENTRIES; index += 1 {
-		status := archive_read_next_header(a, &entry)
-		if status == ARCHIVE_EOF {
-			break
-		}
-		if status != ARCHIVE_OK {
-			// A bad header on an otherwise listable archive: keep
-			// what was read; nothing at all means not an archive.
-			break
-		}
-		if archive_entry_filetype(entry) & AE_IFMT != AE_IFREG {
-			continue
-		}
-		path := archive_entry_pathname_utf8(entry)
-		if path == nil {
-			continue
-		}
-		append(
-			&entries,
-			Arc_Entry {
-				name = strings.clone(string(path)),
-				size = archive_entry_size(entry),
-				index = index,
-			},
-		)
-	}
-
-	if len(entries) == 0 {
-		delete(entries)
-		return nil
-	}
+	if len(data) == 0 || len(data) > ARC_MAX_INPUT_BYTES {return nil}
+	helper := strings.clone_to_cstring(helper_path("wn-archive"))
+	defer delete(helper)
+	count, length: c.uint
+	payload := wn_archive_read(helper, raw_data(data), c.int(len(data)), .List, 0, &count, &length)
+	if payload == nil {return nil}
+	defer libc.free(payload)
+	if count == 0 {return nil}
+	entries, ok := arc_parse_entries(payload[:int(length)], u32(count))
+	if !ok {return nil}
 	view := new(Arc_View)
 	view^ = {
 		data    = data,
-		entries = entries[:],
+		entries = entries,
 	}
 	return view
 }
 
-// Decompress one entry into memory (never to disk), capped so a
-// hostile archive can't balloon.
+// The returned bytes retain the caller's Odin allocator ownership. In
+// particular, previews may retain them in the reload allocator.
 arc_entry_bytes :: proc(view: ^Arc_View, header_index: int) -> ([]u8, bool) {
-	a := arc_open(view.data)
-	if a == nil {
+	if view == nil ||
+	   len(view.data) == 0 ||
+	   len(view.data) > ARC_MAX_INPUT_BYTES ||
+	   header_index < 0 ||
+	   header_index >= ARC_MAX_HEADERS {
 		return nil, false
 	}
-	defer archive_read_free(a)
-
-	entry: ^archive_entry_t
-	for index := 0;; index += 1 {
-		if archive_read_next_header(a, &entry) != ARCHIVE_OK {
-			return nil, false
-		}
-		if index == header_index {
-			break
-		}
-	}
-
-	declared := archive_entry_size(entry)
-	if declared < 0 || declared > ARC_MAX_ENTRY_BYTES {
-		return nil, false
-	}
-
-	out := make([dynamic]u8)
-	chunk: [64 * 1024]u8
-	for {
-		n := archive_read_data(a, &chunk[0], len(chunk))
-		if n < 0 || len(out) + int(n) > ARC_MAX_ENTRY_BYTES {
-			delete(out)
-			return nil, false
-		}
-		if n == 0 {
-			break
-		}
-		append(&out, ..chunk[:n])
-	}
-	return out[:], true
+	helper := strings.clone_to_cstring(helper_path("wn-archive"))
+	defer delete(helper)
+	count, length: c.uint
+	payload := wn_archive_read(
+		helper,
+		raw_data(view.data),
+		c.int(len(view.data)),
+		.Entry,
+		c.uint(header_index),
+		&count,
+		&length,
+	)
+	if payload == nil {return nil, false}
+	defer libc.free(payload)
+	if count != 0 || length > ARC_MAX_ENTRY_BYTES {return nil, false}
+	return slice.clone(payload[:int(length)]), true
 }
 
 // "1.4 MiB" style label for the entry rows.

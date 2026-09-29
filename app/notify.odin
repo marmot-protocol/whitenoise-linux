@@ -103,6 +103,14 @@ display notification (item 2 of argv) with title (item 1 of argv)
 end run`
 		spawn_argv({"osascript", "-e", script, "--", title, shown})
 		if ui.prefs.notify_sound {spawn_argv({"afplay", "/System/Library/Sounds/Glass.aiff"})}
+	} else when ODIN_OS == .OpenBSD {
+		sound :=
+			ui.prefs.notify_sound ? "string:sound-name:message-new-instant" : "boolean:suppress-sound:true"
+		if error := sandbox_notify({"-a", "White Noise", "--hint", sound, "--", title, shown});
+		   error != 0 {
+			toast(ui, tr("Couldn't send the notification. Please try again."))
+			fmt.eprintfln("OpenBSD notification: error %d", error)
+		}
 	} else {
 		spawn_argv({"notify-send", "-a", "White Noise", "--", title, shown})
 		if ui.prefs.notify_sound {spawn_cmd(NOTIFY_SOUND)}

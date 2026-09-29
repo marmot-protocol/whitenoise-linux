@@ -119,7 +119,7 @@ Web_Modal :: struct {
 web_modal: Web_Modal
 
 web_open :: proc(url, title: string) -> bool {
-	if !WEBXDC_SUPPORTED {return false}
+	when !WEBXDC_SUPPORTED {return false}
 	web_close()
 
 	viewer := web_viewer_path()

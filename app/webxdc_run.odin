@@ -1,8 +1,8 @@
-// Running a webxdc app (NIP-DC), rung B: the unpacked .xdc is served
-// from memory on 127.0.0.1 and opened in the system browser, and the
-// webxdc.js shim talks back over that same loopback.
+// Running a webxdc app (NIP-DC): the unpacked .xdc is served from
+// memory on 127.0.0.1 and opened in the embedded WebKit helper.
+// The webxdc.js shim talks back over that same loopback.
 //
-//   tile click ──► xdc_launch ──► xdg-open http://127.0.0.1:p/<token>/
+//   tile click ──► xdc_launch ──► wn-webview http://127.0.0.1:p/
 //                                        │
 //   sendUpdate() ──► POST api/send ──► outbox ──► xdc_drain ──► send_text
 //                                                                  │
@@ -193,7 +193,7 @@ xdc_launch :: proc(
 	view: ^Xdc_View,
 	session, group_id: string,
 ) {
-	if !WEBXDC_SUPPORTED {
+	when !WEBXDC_SUPPORTED {
 		toast(ui, tr("Webxdc apps are only supported on Linux."))
 		return
 	}

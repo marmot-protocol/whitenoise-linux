@@ -16,6 +16,7 @@ cleanup() {
 trap cleanup EXIT
 cp -a "$HERE/app" "$TASK_DIR/app"
 for entry in vendor marmot themes lang build; do ln -s "$HERE/$entry" "$TASK_DIR/$entry"; done
+for helper in wn-image wn-archive wn-pdf wn-mesh wn-fbx wn-math; do ln -s "$HERE/build/$helper" "$TASK_DIR/$helper"; done
 if [ -d "$HERE/build/odin-root" ]; then export ODIN_ROOT="$HERE/build/odin-root"; fi
 cc -shared -Wl,-soname,libmarmot-dev.so -o "$HERE/build/libmarmot-dev.so.next" \
 	-Wl,--whole-archive "$HERE/vendor/mdk/crates/marmot-c/output/lib/libmarmot_c.a" -Wl,--no-whole-archive -lm -lpthread -ldl
@@ -29,6 +30,7 @@ for variable in ${!WN_TEST_@}; do unset "$variable"; done
 cd "$TASK_DIR"
 WN_SHOT=1 WN_SHOT_FRAME=5 WN_VAULT_PW=test ./seed "$TASK_DIR/data" > seed.log 2>&1
 unset WN_VAULT_PW WN_SHOT WN_SHOT_FRAME
+export WN_TEST_PREVIEW="$HERE/vendor/ufbx/data/max2009_cube_anim_6100_binary.fbx"
 
 build_module() {
 	odin build "$TASK_DIR/app" -o:minimal -build-mode:dynamic -define:WN_DEV=true -define:WN_RELOAD=true \
@@ -46,6 +48,19 @@ wait_log() {
 	cat host.log
 	return 1
 }
+wait_model_helper() {
+	local child
+	for _ in {1..150}; do
+		if child=$(ps -o pid=,comm= --ppid "$pid" | awk '$2 == "wn-fbx" {print $1}') && [ -n "$child" ]; then
+			printf '%s\n' "$child"
+			return
+		fi
+		kill -0 "$pid" 2>/dev/null || { cat host.log >&2; return 1; }
+		sleep 0.1
+	done
+	cat host.log >&2
+	return 1
+}
 probe one
 build_module "$TASK_DIR/app-one.so"
 printf '%s\n' "$TASK_DIR/app-one.so" > module
@@ -53,6 +68,8 @@ printf '%s\n' "$TASK_DIR/app-one.so" > module
 pid=$!
 echo 'get page' >> cmd
 wait_log 'devctl: page = Chats'
+# An animated preview owns a live decoder even while its pane is not mounted.
+helper_before=$(wait_model_helper)
 
 # Syntax errors and invalid libraries must leave the current process usable.
 echo 'invalid odin syntax' > app/reload_probe.odin
@@ -76,6 +93,8 @@ echo 'set editing ' >> cmd
 wait_log 'dev: reloaded, window='
 echo 'get page' >> cmd
 wait_log 'reload-probe:two'
+! kill -0 "$helper_before" 2>/dev/null
+helper_after=$(wait_model_helper)
 for _ in {1..150}; do
 	if [ "$(grep -c 'devctl: page = Chats' host.log)" -eq 2 ]; then break; fi
 	sleep 0.1
@@ -91,4 +110,5 @@ wait_log 'devctl: editing = "quitting-edit"'
 kill "$pid"
 wait "$pid"
 pid=""
+! kill -0 "$helper_after" 2>/dev/null
 echo 'Reload passed: new code, same process/window, unlocked, old code unloaded; failures kept the app running.'

@@ -29,9 +29,6 @@ g_res: string
 WN_BUILD_DIR ::
 	"../build" when #config(WN_TARGET, "") == "" else "../build/cross/" + #config(WN_TARGET, "")
 
-@(private)
-WN_CXX_LIBRARY :: "system:stdc++" when ODIN_OS == .Linux else "system:c++"
-
 // The bundled-data directory, resolved once from the running binary.
 res_dir :: proc() -> string {
 	if g_res != "" {
@@ -83,6 +80,9 @@ executable_path :: proc(allocator := context.temp_allocator) -> string {
 
 @(private)
 helper_path :: proc(name: string) -> string {
+	when ODIN_OS == .OpenBSD {
+		if path, ok := sandbox_helpers[name]; ok {return path}
+	}
 	exe := executable_path()
 	if exe == "" {return ""}
 	filename := name

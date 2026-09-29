@@ -1,32 +1,11 @@
-// Flat C shim over ufbx, the FBX half of the model viewer.
-//
-// FBX is a versioned proprietary format (binary node trees with
-// deflated arrays, plus an ASCII flavor) carrying skin clusters,
-// animation curves, and a transform pyramid with pre/post rotation
-// and geometric transforms. ufbx handles all of that; this file
-// flattens its scene graph into the triangle-soup arrays the Odin
-// viewer already draws, so app/fbx.odin binds six plain procs
-// instead of mirroring ufbx's struct layouts.
-//
-//   fbx_open   → triangulate every mesh instance once, into
-//                unit-sphere world-space arrays + the per-vertex
-//                skin/material side channels the inspector reads
-//   fbx_eval   → pose the skeleton at a time and re-skin into
-//                caller-owned buffers (no allocation per frame)
-//   fbx_close  → free the scene and every array above
-//
-// Odin owns nothing here; every pointer handed out lives until
-// fbx_close.
+// Helper-only ufbx adapter. Scene pointers and borrowed arrays never cross IPC.
 #include "ufbx.h"
+#include "fbx_shim.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-
-// Parse cap, matching STL_MAX_TRIS: a hostile file can't make us
-// allocate gigabytes before we notice.
-#define FBX_MAX_TRIS 2000000
 
 // The unit-sphere fit covers the animation, not just the rest pose,
 // or a model that walks away from the origin drifts out of the tile.
@@ -34,27 +13,6 @@
 // capped; past that a big model keeps the rest-pose fit.
 #define FBX_FIT_SAMPLES 8
 #define FBX_FIT_MAX_TRIS 200000
-
-// Per-material channel row handed to the inspector's channel views.
-#define FBX_MAT_FLOATS 12
-
-// Layout mirrored by Fbx_Model in app/fbx.odin. Four i32 then only
-// pointers, so both sides agree without packing pragmas.
-typedef struct fbx_model {
-    int32_t num_tris;
-    int32_t num_bones;
-    int32_t num_anims;
-    int32_t num_mats;
-    float *pos;    // num_tris*9, rest pose, unit-sphere normalized
-    float *nrm;    // num_tris*9, per-vertex normals
-    float *uv;     // num_tris*6, zeros when the file carries none
-    int32_t *bone; // num_tris*3, dominant cluster, -1 when unskinned
-    float *weight; // num_tris*3, that cluster's weight
-    int32_t *mat;  // num_tris, index into mats, -1 when unassigned
-    float *mats;   // num_mats*FBX_MAT_FLOATS
-    int32_t has_uv;
-    int32_t has_skin;
-} fbx_model;
 
 // One mesh instance: an FBX mesh can hang off several nodes, and each
 // placement is its own run of triangles.
@@ -93,8 +51,6 @@ struct fbx_scene {
     float center[3];
     float radius;
 };
-
-typedef struct fbx_scene fbx_scene;
 
 static int32_t eval_raw(fbx_scene *s, int32_t anim_index, double time, float *out_pos,
                         float *out_nrm);
@@ -168,23 +124,6 @@ static void fill_material(float *row, const ufbx_material *mat) {
 }
 
 // Borrowed paths and sampling metadata; the caller resolves only archive entries.
-// Layout and channel order are mirrored in fbx_textures.odin.
-enum fbx_channel {
-    FBX_BASE_COLOR,
-    FBX_METALNESS,
-    FBX_ROUGHNESS,
-    FBX_EMISSION,
-    FBX_SPECULAR,
-    FBX_NORMAL,
-    FBX_CHANNEL_COUNT,
-};
-
-typedef struct fbx_texture_info {
-    const char *path;
-    float uv[6];
-    float tint[4];
-    int32_t clamp_u, clamp_v;
-} fbx_texture_info;
 
 const char *fbx_material_name(fbx_scene *s, int32_t material) {
     if (!s || material < 0 || material >= s->model.num_mats) {
@@ -491,6 +430,11 @@ fbx_scene *fbx_open(const void *data, size_t len) {
     if (!scene) {
         return NULL;
     }
+    if (scene->nodes.count > FBX_MAX_ITEMS || scene->materials.count > FBX_MAX_ITEMS ||
+        scene->anim_stacks.count > FBX_MAX_ITEMS || scene->skin_clusters.count > FBX_MAX_ITEMS) {
+        ufbx_free_scene(scene);
+        return NULL;
+    }
 
     fbx_scene *s = (fbx_scene *)calloc(1, sizeof(fbx_scene));
     if (!s) {
@@ -501,6 +445,7 @@ fbx_scene *fbx_open(const void *data, size_t len) {
 
     // Pass 1: collect mesh instances, count triangles and clusters.
     size_t ntri = 0;
+    size_t cluster_capacity = 0;
     int32_t nclusters = 0;
     for (size_t i = 0; i < scene->nodes.count; i++) {
         ufbx_node *node = scene->nodes.data[i];
@@ -508,16 +453,21 @@ fbx_scene *fbx_open(const void *data, size_t len) {
             continue;
         }
         ntri += node->mesh->num_triangles;
+        if (node->mesh->skin_deformers.count > 0) {
+            cluster_capacity += node->mesh->skin_deformers.data[0]->clusters.count;
+        }
+        if (ntri > FBX_MAX_TRIS || cluster_capacity > FBX_MAX_ITEMS) {
+            break;
+        }
     }
-    if (ntri == 0 || ntri > FBX_MAX_TRIS) {
+    if (ntri == 0 || ntri > FBX_MAX_TRIS || cluster_capacity > FBX_MAX_ITEMS) {
         ufbx_free_scene(scene);
         free(s);
         return NULL;
     }
 
     s->parts = (fbx_part *)calloc(scene->nodes.count, sizeof(fbx_part));
-    s->clusters =
-        (ufbx_skin_cluster **)calloc(scene->skin_clusters.count + 1, sizeof(ufbx_skin_cluster *));
+    s->clusters = (ufbx_skin_cluster **)calloc(cluster_capacity + 1, sizeof(ufbx_skin_cluster *));
     if (!s->parts || !s->clusters) {
         fbx_free_arrays(s);
         ufbx_free_scene(scene);

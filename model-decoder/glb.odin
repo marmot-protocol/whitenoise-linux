@@ -455,7 +455,7 @@ glb_normalize :: proc(tris: []f32) {
 }
 
 @(private)
-parse_glb :: proc(bytes: []u8) -> (^Stl_View, bool) {
+parse_glb :: proc(bytes: []u8) -> (^Mesh, bool) {
 	if !glb_container_valid(bytes) {return nil, false}
 	data, result := cgltf.parse(cgltf.options{type = .glb}, raw_data(bytes), uint(len(bytes)))
 	if result != .success {return nil, false}
@@ -592,20 +592,9 @@ parse_glb :: proc(bytes: []u8) -> (^Stl_View, bool) {
 		}
 	}
 	glb_normalize(tris)
-	view := stl_view_make(tris)
-	view.insp.vnrm, view.insp.uv, view.insp.mat = vnrm, uvs, mats
+	mesh := new(Mesh)
+	mesh.tris, mesh.vnrm, mesh.uv, mesh.mat = tris, vnrm, uvs, mats
 	owned = false
-	for i in 0 ..< ntri {
-		for k in 0 ..< 3 {
-			at := i * 9 + k * 3
-			if vnrm[at] == 0 && vnrm[at + 1] == 0 && vnrm[at + 2] == 0 {
-				copy(vnrm[at:at + 3], view.norms[i * 3:i * 3 + 3])
-			}
-		}
-	}
-	if !glb_load_materials(data, &view.insp) {
-		stl_view_free(view)
-		return nil, false
-	}
-	return view, true
+	if !glb_load_materials(data, mesh) {mesh_free(mesh); return nil, false}
+	return mesh, true
 }

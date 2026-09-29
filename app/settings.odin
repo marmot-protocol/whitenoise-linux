@@ -111,6 +111,11 @@ Settings :: struct {
 }
 
 settings_path :: proc(allocator := context.temp_allocator, filename := "settings.json") -> string {
+	when ODIN_OS == .OpenBSD {
+		if sandbox_settings_dir != "" {
+			return fmt.aprintf("%s/%s", sandbox_settings_dir, filename, allocator = allocator)
+		}
+	}
 	cfg, err := os.user_config_dir(allocator)
 	if err != nil {return ""}
 	return fmt.aprintf("%s/whitenoise/%s", cfg, filename, allocator = allocator)

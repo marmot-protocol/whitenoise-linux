@@ -1,6 +1,5 @@
-// FBX checks across the C boundary: the shim's arrays have to line up
-// with what the viewer indexes, and posing has to actually move
-// vertices. Run: ODIN_ROOT=build/odin-root tests/odin.sh app
+// FBX behavior across the persistent helper boundary: channels are parent-owned
+// and posing must actually move vertices. Run: tests/odin.sh app
 //
 // The fixtures are ufbx's own test data, which scripts/build.sh clones (and
 // .gitignore keeps out of the tree), so each test skips when the
@@ -142,8 +141,7 @@ fbx_animation_moves :: proc(t: ^testing.T) {
 	testing.expect(t, moved)
 }
 
-// Hostile input must fail, not crash or allocate: the shim owns a lot
-// of memory behind one pointer.
+// Hostile source data must fail without publishing a view.
 @(test)
 fbx_rejects_garbage :: proc(t: ^testing.T) {
 	junk := make([]u8, 4096)
@@ -179,4 +177,108 @@ fbx_modes_gated :: proc(t: ^testing.T) {
 	for c in colors {
 		testing.expect(t, c.a == 1)
 	}
+}
+
+// A complete skin/material record exercises offsets even after variable strings.
+@(private = "file")
+fbx_test_metadata :: proc() -> []u8 {
+	data := make([]u8, 554)
+	copy(data[:4], "FBM1")
+	fbx_put_u32(data[4:], 1) // triangle
+	fbx_put_u32(data[8:], 1) // bone
+	fbx_put_u32(data[16:], 1) // material
+	fbx_put_u32(data[20:], 3) // UV and skin
+	fbx_put_u32(data[44:], transmute(u32)f32(1))
+	fbx_put_u32(data[60:], transmute(u32)f32(1))
+	fbx_put_u32(data[204:], 3)
+	copy(data[208:211], "mat")
+	fbx_put_u32(data[211:], 1) // explicit first texture
+	fbx_put_u32(data[263:], 7)
+	copy(data[267:274], "tex.png")
+	return data
+}
+
+@(test)
+fbx_metadata_ownership :: proc(t: ^testing.T) {
+	data := fbx_test_metadata()
+	defer delete(data)
+	view, ok := fbx_decode_metadata(data)
+	testing.expect(t, ok)
+	if !ok {return}
+	defer stl_view_free(view)
+	for &byte in data {byte = 0}
+	testing.expect_value(t, view.tris[3], f32(1))
+	testing.expect_value(t, view.insp.material_names[0], "mat")
+	testing.expect_value(t, view.insp.textures[0][.Base_Color].info.path, "tex.png")
+	testing.expect_value(t, view.insp.bone[0], i32(0))
+	testing.expect_value(t, view.insp.mat[0], i32(0))
+}
+
+@(test)
+fbx_rejects_hostile_metadata :: proc(t: ^testing.T) {
+	for mutation in ([]struct {
+			offset: int,
+			bits:   u32,
+		} {
+			{4, 2_000_001}, // allocation bound
+			{20, 4}, // unknown flags
+			{24, 1}, // reserved field
+			{32, 0x7f800000}, // nonfinite position
+			{104, 0x7fc00000}, // nonfinite UV
+			{128, 1}, // bone outside table
+			{140, 0x7fc00000}, // nonfinite skin weight
+			{152, 1}, // material outside table
+			{156, 0xff800000}, // nonfinite material channel
+			{204, 4097}, // oversized name
+			{211, 2}, // unsupported texture reference enum
+			{215, 2}, // unsupported FBX wrapping
+			{223, 0x7fc00000}, // nonfinite texture transform
+			{263, 0}, // explicit reference cannot be empty
+		}) {
+		data := fbx_test_metadata()
+		fbx_put_u32(data[mutation.offset:], mutation.bits)
+		view, ok := fbx_decode_metadata(data)
+		testing.expect(t, !ok)
+		if ok {stl_view_free(view)}
+		delete(data)
+	}
+	data := fbx_test_metadata()
+	defer delete(data)
+	for size in 0 ..< len(data) {
+		view, ok := fbx_decode_metadata(data[:size])
+		testing.expect(t, !ok)
+		if ok {stl_view_free(view)}
+	}
+	data[208] = 0xff
+	_, invalid_utf8 := fbx_decode_metadata(data)
+	testing.expect(t, !invalid_utf8)
+	data[208] = 0
+	_, embedded_nul := fbx_decode_metadata(data)
+	testing.expect(t, !embedded_nul)
+}
+
+@(test)
+fbx_pose_atomic_publication :: proc(t: ^testing.T) {
+	data := fbx_test_metadata()
+	defer delete(data)
+	view, ok := fbx_decode_metadata(data)
+	testing.expect(t, ok)
+	if !ok {return}
+	defer stl_view_free(view)
+	pose: [80]u8
+	copy(pose[:4], "FBP1")
+	fbx_put_u32(pose[4:], 1)
+	fbx_put_u32(pose[8:], transmute(u32)f32(0.5))
+	fbx_put_u32(pose[76:], 0x7fc00000)
+	testing.expect(t, !fbx_apply_pose(view, pose[:]))
+	testing.expect_value(t, view.tris[0], f32(0))
+	testing.expect_value(t, view.tris[3], f32(1))
+	testing.expect_value(t, view.insp.vnrm[8], f32(0))
+	fbx_put_u32(pose[76:], transmute(u32)f32(1))
+	testing.expect(t, fbx_apply_pose(view, pose[:]))
+	testing.expect_value(t, view.tris[0], f32(0.5))
+	testing.expect_value(t, view.insp.vnrm[8], f32(1))
+	testing.expect(t, !fbx_apply_pose(view, pose[:79]))
+	fbx_put_u32(pose[4:], 2)
+	testing.expect(t, !fbx_apply_pose(view, pose[:]))
 }

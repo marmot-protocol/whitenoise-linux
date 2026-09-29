@@ -22,7 +22,12 @@ group_files_filter_history :: proc(t: ^testing.T) {
 	for item in ([]struct {
 			name, mime: string,
 			kind:       Group_File_Type,
-		}{{"photo.png", "image/png", .Images}, {"ANIM.GIF", "", .Images}, {"film.mp4", "", .Videos}, {"voice.ogg", "", .Audio}, {"plan.pdf", "", .Documents}, {"notes.txt", "text/plain", .Documents}, {"table.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", .Documents}, {"backup.zip", "", .Archives}, {"part.stl", "", .Models}, {"font.ttf", "", .Fonts}, {"game.xdc", "", .Apps}, {"unknown.bin", "", .Other}}) {testing.expect_value(t, group_file_type(item.name, item.mime), item.kind)}
+		}{{"photo.png", "image/png", .Images}, {"ANIM.GIF", "", .Images}, {"film.mp4", "", .Videos}, {"voice.ogg", "", .Audio}, {"plan.pdf", "", .Documents}, {"notes.txt", "text/plain", .Documents}, {"table.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", .Documents}, {"backup.zip", "", .Archives}, {"part.stl", "", .Models}, {"font.ttf", "", .Fonts}, {"unknown.bin", "", .Other}}) {testing.expect_value(t, group_file_type(item.name, item.mime), item.kind)}
+	when ODIN_OS == .OpenBSD {
+		testing.expect_value(t, group_file_type("game.xdc", ""), Group_File_Type.Other)
+	} else {
+		testing.expect_value(t, group_file_type("game.xdc", ""), Group_File_Type.Apps)
+	}
 	media := [?]marmot.Media_Attachment_Outcome {
 		{tag = .REJECTED, body = {rejected = {0, {.INVALID_STRUCTURE, "bad"}}}},
 		{body = {accepted = {1, {file_name = "photo.png", media_type = "image/png"}}}},

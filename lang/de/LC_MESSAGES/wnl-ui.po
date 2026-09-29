@@ -637,6 +637,9 @@ msgstr "JSON kopieren"
 msgid "Copy info hash"
 msgstr "Info-Hash kopieren"
 
+msgid "Copy link"
+msgstr "Link kopieren"
+
 msgid "Copy magnet link"
 msgstr "Magnet-Link kopieren"
 
@@ -646,6 +649,9 @@ msgstr "Öffentlichen Schlüssel kopieren"
 
 msgid "Copy text"
 msgstr "Text kopieren"
+
+msgid "Copy this link and open it in your browser."
+msgstr "Kopiere diesen Link und öffne ihn in deinem Browser."
 
 msgid "Corner scale"
 msgstr ""
@@ -852,6 +858,9 @@ msgstr "GIFs konnten nicht gesucht werden. Versuch es bitte erneut."
 
 msgid "Couldn't search messages. Please try again."
 msgstr "Die Nachrichten konnten nicht durchsucht werden. Bitte versuche es erneut."
+
+msgid "Couldn't send the notification. Please try again."
+msgstr "Die Benachrichtigung konnte nicht gesendet werden. Bitte versuche es erneut."
 
 msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr "Der Sticker konnte nicht gesendet werden. Wechsle zu deinem vorherigen Konto und versuche es erneut."

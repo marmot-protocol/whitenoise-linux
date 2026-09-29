@@ -41,7 +41,7 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-MDK_PATCHES=("$HERE/patches/mdk-app-components.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-windows-port.patch")
+MDK_PATCHES=("$HERE/patches/mdk-app-components.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-windows-port.patch" "$HERE/patches/mdk-openbsd-unveil.patch" "$HERE/patches/mdk-openbsd-memory.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
@@ -83,6 +83,38 @@ if [ "${1:-}" != sources ] && { [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "
   printf '%s\n' "$PATCHES_HASH" > "$BUNDLE/.mdk-patches"
 fi
 
+# OpenBSD pledge cannot permit SysV shared memory. Link the XPutImage-capable
+# SDL statically: OpenBSD's loader does not expand $ORIGIN library paths.
+# Disable dlopen metadata: OpenBSD skips PT_NOTE segments over 1024 bytes,
+# losing the required OpenBSD note when SDL's dependency notes share it.
+if [ "$(uname -s)" = OpenBSD ] && [ "${1:-}" != sources ]; then
+  SDL="$HERE/vendor/sdl"
+  SDL_PIN="$(pin sdl)"
+  if [ ! -d "$SDL" ]; then
+    git clone --filter=blob:none https://github.com/libsdl-org/SDL.git "$SDL"
+  fi
+  if [ "$(git -C "$SDL" rev-parse HEAD)" != "$SDL_PIN" ]; then
+    git -C "$SDL" fetch origin "$SDL_PIN"
+    git -C "$SDL" checkout --detach "$SDL_PIN"
+  fi
+  SDL_STAMP="$SDL_PIN NO_SHARED_MEMORY static no-dlopen-notes"
+  if [ ! -f "$HERE/build/sdl/lib/libSDL3.a" ] || [ "$(cat "$HERE/build/sdl/stamp" 2>/dev/null || true)" != "$SDL_STAMP" ]; then
+    cmake -S "$SDL" -B "$HERE/build/sdl-cmake" -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$HERE/build/sdl" \
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+      -DCMAKE_C_FLAGS="${CFLAGS:-} -DNO_SHARED_MEMORY" \
+      -DSDL_DLOPEN_NOTES=OFF \
+      -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST_LIBRARY=OFF
+    cmake --build "$HERE/build/sdl-cmake" -j"$(getconf NPROCESSORS_ONLN)"
+    cmake --install "$HERE/build/sdl-cmake"
+    printf '%s\n' "$SDL_STAMP" > "$HERE/build/sdl/stamp"
+  fi
+  cc -O2 -fPIC -pthread -c "$HERE/app/main_sandbox.c" -o "$HERE/build/main_sandbox.o"
+  cc -O2 -fPIC -pthread -c "$HERE/app/tool_broker.c" -o "$HERE/build/tool_broker.o"
+  cc -O2 -fPIC -c "$HERE/app/helper_broker.c" -o "$HERE/build/helper_broker.o"
+  ar rcs "$HERE/build/libwnsandbox.a" "$HERE/build/main_sandbox.o" "$HERE/build/tool_broker.o" "$HERE/build/helper_broker.o"
+fi
+
 CLAY="$HERE/vendor/clay"
 CLAY_PIN="$(pin clay)"
 if [ ! -d "$CLAY" ]; then
@@ -120,11 +152,8 @@ if [ "$(git -C "$CROP" rev-parse HEAD)" != "$CROP_PIN" ]; then
   git -C "$CROP" checkout --detach "$CROP_PIN"
 fi
 
-# FBX support: ufbx (single-file MIT reader) plus app/fbx_shim.c, the
-# flat C API the Odin viewer binds. FBX is a versioned proprietary
-# format with skinning and animation curves; ufbx already reads every
-# flavor, so only the shim is ours. Archived into build/ so a stale
-# object can't survive a shim edit.
+# ufbx is linked only into the FBX helper. Cache the pinned reader object;
+# compile the shim with the helper so header edits cannot leave a stale ABI.
 UFBX="$HERE/vendor/ufbx"
 UFBX_PIN="$(pin ufbx)"
 if [ ! -d "$UFBX" ]; then
@@ -143,14 +172,6 @@ mkdir -p "$HERE/build/fbx"
 if [ ! -f "$HERE/build/fbx/ufbx.o" ] || [ "$(cat "$HERE/build/fbx/ufbx.stamp" 2>/dev/null || true)" != "$UFBX_PIN" ]; then
   cc -c -O2 -fPIC "$UFBX/ufbx.c" -o "$HERE/build/fbx/ufbx.o"
   echo "$UFBX_PIN" > "$HERE/build/fbx/ufbx.stamp"
-  rm -f "$HERE/build/libwnfbx.a"
-fi
-if [ ! -f "$HERE/build/fbx/fbx_shim.o" ] || [ "$HERE/app/fbx_shim.c" -nt "$HERE/build/fbx/fbx_shim.o" ]; then
-  cc -c -O2 -fPIC -I"$UFBX" "$HERE/app/fbx_shim.c" -o "$HERE/build/fbx/fbx_shim.o"
-  rm -f "$HERE/build/libwnfbx.a"
-fi
-if [ ! -f "$HERE/build/libwnfbx.a" ]; then
-  ar rcs "$HERE/build/libwnfbx.a" "$HERE/build/fbx/ufbx.o" "$HERE/build/fbx/fbx_shim.o"
 fi
 
 # Nostr event fetch (nevent cards): a websocket REQ over libcurl's
@@ -213,7 +234,7 @@ if [ ! -f "$HERE/build/microtex/lib/libmicrotex.a" ] || [ "$(cat "$HERE/build/mi
   rm -f "$HERE/build/libwnmath.a"
 fi
 mkdir -p "$HERE/build/math"
-if [ ! -f "$HERE/build/libwnmath.a" ] || [ "$HERE/app/math_shim.cpp" -nt "$HERE/build/libwnmath.a" ] || [ "${MICROTEX_PATCHES[0]}" -nt "$HERE/build/libwnmath.a" ]; then
+if [ ! -f "$HERE/build/libwnmath.a" ] || [ "$HERE/app/math_shim.cpp" -nt "$HERE/build/libwnmath.a" ] || [ "$HERE/app/decoder_ipc.h" -nt "$HERE/build/libwnmath.a" ] || [ "$HERE/app/decoder_limits.h" -nt "$HERE/build/libwnmath.a" ] || [ "${MICROTEX_PATCHES[0]}" -nt "$HERE/build/libwnmath.a" ]; then
   c++ -std=c++17 -c -O2 -fPIC -Wall -Wextra -DHAVE_CWRAPPER -isystem "$MICROTEX/lib" -isystem "$HERE/build/microtex/lib" \
     $(pkg-config --cflags cairo) "$HERE/app/math_shim.cpp" -o "$HERE/build/math/math_shim.o"
   rm -f "$HERE/build/libwnmath.a"
@@ -223,6 +244,21 @@ fi
 # Parent/child IPC is shared by speech and the webxdc host.
 cc -c -O2 -fPIC -pthread "$HERE/app/helper_ipc.c" -o "$HERE/build/helper_ipc.o"
 ar rcs "$HERE/build/libwnipc.a" "$HERE/build/helper_ipc.o"
+
+# Attachment parsers run in helpers sharing one bounded pipe client.
+cc -c -O2 -fPIC -pthread "$HERE/app/decoder_ipc.c" -o "$HERE/build/decoder_ipc.o"
+ar rcs "$HERE/build/libwndecoder.a" "$HERE/build/decoder_ipc.o"
+IMAGE_ODIN="$(env -u ODIN_ROOT odin root)"
+cc -O2 -Wall -Wextra -I"${IMAGE_ODIN%/}/vendor/stb/src" "$HERE/app/image.c" \
+  $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/wn-image"
+cc -O2 -Wall -Wextra "$HERE/app/archive.c" \
+  $(pkg-config --cflags --libs libarchive) -o "$HERE/build/wn-archive"
+cc -O2 -Wall -Wextra "$HERE/app/pdf.c" \
+  $(pkg-config --cflags --libs poppler-glib cairo fontconfig) -lm -o "$HERE/build/wn-pdf"
+cc -O2 -Wall -Wextra -I"$UFBX" "$HERE/app/fbx_helper.c" "$HERE/app/fbx_shim.c" \
+  "$HERE/build/fbx/ufbx.o" -lm -o "$HERE/build/wn-fbx"
+cc -c -O2 -fPIC "$HERE/app/mesh_limits.c" -o "$HERE/build/mesh_limits.o"
+ar rcs "$HERE/build/libwnmesh.a" "$HERE/build/mesh_limits.o"
 
 # FreeType decodes profile web fonts for the existing SFNT text renderer.
 cc -O2 -Wall -Wextra "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) -o "$HERE/build/wn-font"
@@ -244,7 +280,10 @@ fi
 # wn-webview: the process that runs a webxdc app offscreen and hands
 # the app its pixels through shared memory. Optional: without
 # webkit2gtk-4.1 there is no viewer, and .xdc attachments stay inert.
-if pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
+# OpenBSD never builds or runs the host, even with WebKit installed.
+if [ "$(uname -s)" = OpenBSD ]; then
+  echo "==> webxdc apps are disabled on OpenBSD"
+elif pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
   if [ ! -f "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.c" -nt "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.h" -nt "$HERE/build/wn-webview" ] || [ "$HERE/build/libwnipc.a" -nt "$HERE/build/wn-webview" ]; then
     cc -O2 "$HERE/app/webview.c" "$HERE/build/libwnipc.a" -pthread -o "$HERE/build/wn-webview" \
       $(pkg-config --cflags --libs webkit2gtk-4.1)
@@ -369,7 +408,7 @@ if [ "${1:-}" = sources ]; then
 fi
 
 # The Linux odin release ships vendor/stb and vendor/cgltf without their
-# built .a archives (sdlrl needs stb truetype + image, the glTF viewer
+# built .a archives (sdlrl needs stb truetype + image, the mesh helper
 # needs cgltf). When either is missing, build them inside a private
 # ODIN_ROOT that symlinks the real install and swaps in writable copies
 # of those two vendor dirs. OpenBSD always takes the overlay: its bindings
@@ -409,6 +448,42 @@ if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendo
   ODIN_ROOT_ARG=(ODIN_ROOT="$OVERLAY")
 fi
 
+APP_LINK_ARGS=()
+if [ "$(uname -s)" = OpenBSD ]; then
+  # Point only this compiler overlay at the private SDL, never the system copy.
+  if [ -L "$OVERLAY/vendor/sdl3" ] || [ ! -d "$OVERLAY/vendor/sdl3" ]; then
+    rm -rf "$OVERLAY/vendor/sdl3"
+    cp -R "$SYS_ODIN/vendor/sdl3" "$OVERLAY/vendor/sdl3"
+  fi
+  printf 'package sdl3\n@(export) foreign import lib {"../../../sdl/lib/libSDL3.a", "system:pthread", "system:m", "system:usbhid"}\n' \
+    > "$OVERLAY/vendor/sdl3/sdl3__foreign.odin"
+  # OpenBSD has no O_EXEC: Odin's pre-open would require read permission,
+  # allowing writable hardlinks to helpers. Probe execute permission instead.
+  if [ -L "$OVERLAY/core" ]; then
+    rm "$OVERLAY/core"
+    mkdir -p "$OVERLAY/core"
+    for entry in "$SYS_ODIN/core"/*; do
+      if [ "$(basename "$entry")" = os ]; then
+        cp -R "$entry" "$OVERLAY/core/"
+      else
+        ln -s "$entry" "$OVERLAY/core/"
+      fi
+    done
+  fi
+  EXEC_PATCH="$HERE/patches/odin-openbsd-exec.patch"
+  if git -C "$HERE" apply --directory=build/odin-root --check "$EXEC_PATCH" 2>/dev/null; then
+    git -C "$HERE" apply --directory=build/odin-root "$EXEC_PATCH"
+  elif ! git -C "$HERE" apply --directory=build/odin-root --reverse --check "$EXEC_PATCH" 2>/dev/null; then
+    echo "==> Odin executable probe patch conflicts with the installed compiler" >&2
+    exit 1
+  fi
+  # Keep bundled OpenSSL/SQLCipher symbols private: system libcurl uses LibreSSL.
+  APP_LINK_ARGS=('-extra-linker-flags:-Wl,--wrap=execve,--exclude-libs=libmarmot_c.a')
+fi
+
+env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/model-decoder" -o:speed -out:"$HERE/build/wn-mesh"
+env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/math-decoder" -o:speed -out:"$HERE/build/wn-math"
+
 # The dev host builds a reloadable library after staging these same inputs.
 if [ "${1:-}" = stage ]; then
   exit 0
@@ -421,7 +496,7 @@ rm -f "$HERE/build/smoke" "$HERE/build/app"
 odin build "$HERE/tests/smoke" -out:"$HERE/build/smoke"
 # -o:speed: the STL orbit path needs it (200k tris: 20ms/step at
 # -o:minimal vs 3.4ms; 60fps budget is 16.6ms).
-env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" -o:speed -out:"$HERE/build/app"
+env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" -o:speed "${APP_LINK_ARGS[@]}" -out:"$HERE/build/app"
 # Unused imports: fatal in CI, a warning locally so a work-in-progress
 # import does not block a build.
 if ! env "${ODIN_ROOT_ARG[@]}" "$HERE/scripts/vet-imports.sh"; then
@@ -438,6 +513,24 @@ echo "==> Done: $HERE/build/{smoke,app}"
 # does after the build.
 if [ "${1:-}" = test ]; then
   bash "$HERE/tests/version-test.sh"
+  cc -O2 -Wall -Wextra "$HERE/tests/ws-frame-test.c" \
+    $(pkg-config --cflags --libs libcurl) -o "$HERE/build/ws-frame-test"
+  "$HERE/build/ws-frame-test"
+  cc -O2 -Wall -Wextra -I"${IMAGE_ODIN%/}/vendor/stb/src" "$HERE/tests/image-test.c" \
+    "$HERE/build/libwndecoder.a" $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/image-test"
+  "$HERE/build/image-test" "$HERE/build/wn-image"
+  cc -O2 -Wall -Wextra "$HERE/tests/archive-helper-test.c" "$HERE/build/libwndecoder.a" \
+    $(pkg-config --cflags --libs libarchive) -o "$HERE/build/archive-helper-test"
+  "$HERE/build/archive-helper-test" "$HERE/build/wn-archive"
+  cc -O2 -Wall -Wextra "$HERE/tests/pdf-helper-test.c" "$HERE/build/libwndecoder.a" \
+    -o "$HERE/build/pdf-helper-test"
+  "$HERE/build/pdf-helper-test" "$HERE/build/wn-pdf" "$HERE/vendor/fonts"
+  cc -O2 -Wall -Wextra "$HERE/tests/model-transport-test.c" "$HERE/build/libwndecoder.a" \
+    -o "$HERE/build/model-transport-test"
+  "$HERE/build/model-transport-test" --test
+  cc -O2 -Wall -Wextra "$HERE/tests/math-helper-test.c" "$HERE/build/libwndecoder.a" \
+    -o "$HERE/build/math-helper-test"
+  "$HERE/build/math-helper-test" "$HERE/build/wn-math"
   cc -std=c11 -I"$HERE/vendor/mdk/crates/marmot-c/include" "$HERE/tests/event-layout-test.c" -o "$HERE/build/event-layout-test"
   "$HERE/build/event-layout-test"
   cc -O2 -I"$HERE/build/clay" "$HERE/tests/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"

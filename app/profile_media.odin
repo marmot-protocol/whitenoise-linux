@@ -73,7 +73,7 @@ profile_font_worker :: proc(font: ^Profile_Font) {
 		os.make_directory(dir)
 		tmp := fmt.tprintf("%s.download", path)
 		defer os.remove(tmp)
-		state, _, _, err := os.process_exec(
+		state, _, _, err := tool_exec(
 			{
 				command = {
 					curl_path(),
@@ -96,10 +96,23 @@ profile_font_worker :: proc(font: ^Profile_Font) {
 		)
 		if err != nil || state.exit_code != 0 {return}
 		helper := helper_path("wn-font")
-		decoded, data, _, decode_err := os.process_exec(
-			{command = {helper, tmp}},
-			context.temp_allocator,
-		)
+		request := os.Process_Desc {
+			command = {helper, tmp},
+		}
+		input: ^os.File
+		when ODIN_OS == .OpenBSD {
+			open_err: os.Error
+			input, open_err = os.open(tmp)
+			if open_err != nil {return}
+			request.command = {helper, "--stdin"}
+			request.stdin = input
+		}
+		defer {
+			when ODIN_OS == .OpenBSD {
+				os.close(input)
+			}
+		}
+		decoded, data, _, decode_err := os.process_exec(request, context.temp_allocator)
 		if decode_err != nil || decoded.exit_code != 0 || len(data) < 12 {return}
 		if os.write_entire_file(tmp, data) != nil || os.rename(tmp, path) != nil {return}
 	}

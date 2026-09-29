@@ -116,6 +116,11 @@ settings_available :: proc(ui: ^Ui_State, section: Settings_Section) -> bool {
 
 @(private)
 settings_task_matches :: proc(ui: ^Ui_State, task: Settings_Task, query: string) -> bool {
+	when ODIN_OS == .OpenBSD {
+		if task.anchor == "RowLaunch" {
+			return false
+		}
+	}
 	if !settings_available(ui, task.section) {return false}
 	if query == "" {return true}
 	text := strings.to_lower(
@@ -362,7 +367,11 @@ settings_home :: proc(ui: ^Ui_State) {
 							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 						)
 						for task, index in SETTINGS_TASKS {
-							if task.section != section || !task.featured {continue}
+							if task.section != section ||
+							   !task.featured ||
+							   !settings_task_matches(ui, task, "") {
+								continue
+							}
 							if clay.UI(clay.ID("SettingsTask", u32(index)))(
 							{layout = {padding = {top = 3, bottom = 3}}},
 							) {

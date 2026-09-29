@@ -1,0 +1,28 @@
+diff --git a/core/os/process_posix.odin b/core/os/process_posix.odin
+--- a/core/os/process_posix.odin
++++ b/core/os/process_posix.odin
+@@ -67,7 +67,6 @@
+-			if exe_fd := posix.open(strings.to_cstring(&exe_builder) or_return, {.CLOEXEC, .EXEC}); exe_fd == -1 {
++			if posix.access(strings.to_cstring(&exe_builder) or_return, {.X_OK}) != .OK {
+ 				continue
+ 			} else {
+-				posix.close(exe_fd)
+ 				found = true
+ 				break
+ 			}
+@@ -87,6 +86,4 @@
+-			if exe_fd := posix.open(strings.to_cstring(&exe_builder) or_return, {.CLOEXEC, .EXEC}); exe_fd == -1 {
++			if posix.access(strings.to_cstring(&exe_builder) or_return, {.X_OK}) != .OK {
+ 				err = .Not_Exist
+ 				return
+-			} else {
+-				posix.close(exe_fd)
+ 			}
+@@ -98,6 +95,4 @@
+-		if exe_fd := posix.open(strings.to_cstring(&exe_builder) or_return, {.CLOEXEC, .EXEC}); exe_fd == -1 {
++		if posix.access(strings.to_cstring(&exe_builder) or_return, {.X_OK}) != .OK {
+ 			err = .Not_Exist
+ 			return
+-		} else {
+-			posix.close(exe_fd)
+ 		}

@@ -12,16 +12,27 @@
 #else
 #include <sys/resource.h>
 #endif
+#ifdef __OpenBSD__
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 #ifdef __APPLE__
 #include <mach/mach.h>
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__OpenBSD__)
 static unsigned long font_read(FT_Stream stream, unsigned long offset, unsigned char *buffer,
                                unsigned long count) {
     FILE *file = stream->descriptor.pointer;
-    if (_fseeki64(file, offset, SEEK_SET))
+#ifdef _WIN32
+    int seek_error = _fseeki64(file, offset, SEEK_SET);
+#else
+    int seek_error = offset > stream->size || fseeko(file, (off_t)offset, SEEK_SET);
+#endif
+    if (seek_error) {
         return count ? 0 : 1;
+    }
     return count ? (unsigned long)fread(buffer, 1, count, file) : 0;
 }
 #endif
@@ -64,11 +75,18 @@ int main(int argc, char **argv) {
     if (setrlimit(RLIMIT_AS, &memory) || setrlimit(RLIMIT_CPU, &cpu))
         return 1;
 #endif
+#ifdef __OpenBSD__
+    /* The confined caller pins the input descriptor, never a post-exec path. */
+    if (strcmp(argv[1], "--stdin") || unveil(NULL, NULL) || pledge("stdio", NULL)) {
+        return 1;
+    }
+#endif
     FT_Library library;
     FT_Face face;
     if (FT_Init_FreeType(&library)) {
         return 1;
     }
+#if defined(_WIN32) || defined(__OpenBSD__)
 #ifdef _WIN32
     int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, argv[1], -1, NULL, 0);
     wchar_t *path = length ? malloc((size_t)length * sizeof(*path)) : NULL;
@@ -84,6 +102,15 @@ int main(int argc, char **argv) {
         return 1;
     }
     __int64 input_size = _filelengthi64(_fileno(file));
+#else
+    FILE *file = stdin;
+    struct stat input;
+    if (fstat(STDIN_FILENO, &input) || !S_ISREG(input.st_mode)) {
+        FT_Done_FreeType(library);
+        return 1;
+    }
+    off_t input_size = input.st_size;
+#endif
     if (input_size <= 0 || input_size > 16 * 1024 * 1024) {
         fclose(file);
         FT_Done_FreeType(library);
@@ -101,7 +128,7 @@ int main(int argc, char **argv) {
     FT_Error opened = FT_New_Face(library, argv[1], 0, &face);
 #endif
     if (opened) {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__OpenBSD__)
         fclose(file);
 #endif
         FT_Done_FreeType(library);
@@ -117,8 +144,10 @@ int main(int argc, char **argv) {
         free(data);
     }
     FT_Done_Face(face);
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__OpenBSD__)
     fclose(file);
+#endif
+#ifdef _WIN32
     CloseHandle(job);
 #endif
     FT_Done_FreeType(library);

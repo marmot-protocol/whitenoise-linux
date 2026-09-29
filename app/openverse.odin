@@ -13,7 +13,6 @@ package main
 
 import "core:encoding/json"
 import "core:fmt"
-import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:thread"
@@ -84,7 +83,7 @@ ov_worker :: proc() {
 	defer delete(q)
 	ps := fmt.aprintf("page_size=%d", OV_PAGE_SIZE)
 	defer delete(ps)
-	state, out, _, err := os.process_exec(
+	state, out, _, err := tool_exec(
 		{
 			command = {
 				curl_path(),

@@ -3,7 +3,6 @@ package main
 import "core:encoding/entity"
 import "core:encoding/json"
 import "core:fmt"
-import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:thread"
@@ -72,7 +71,7 @@ hn_worker :: proc(key: string) {
 	defer frame_wake()
 	url := fmt.aprintf("https://hacker-news.firebaseio.com/v0/item/%s.json", key)
 	defer delete(url)
-	state, out, _, err := os.process_exec(
+	state, out, _, err := tool_exec(
 		{command = {curl_path(), "-sf", "--max-time", "10", "--max-filesize", "1048576", url}},
 		context.allocator,
 	)
@@ -129,6 +128,9 @@ hn_card :: proc(id: u32, key, url: string) {
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
 		}
-		clay.Text(tr("Open in browser"), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_DIM})
+		clay.Text(
+			external_link_action(),
+			{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_DIM},
+		)
 	}
 }

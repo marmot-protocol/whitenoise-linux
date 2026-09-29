@@ -1,5 +1,5 @@
-// STL chat attachments rendered as interactive 3D: parse both STL
-// flavors, then draw through a clay Custom command. The stack has no
+// Mesh chat attachments are decoded by isolated helpers, then drawn
+// through a clay Custom command. The stack has no
 // 3D API; models up to RASTER_MAX_TRIS rasterize on the CPU with a
 // real z-buffer into a streaming texture (layered shells sit closer
 // together than any per-triangle sort can order), and bigger ones
@@ -18,7 +18,6 @@
 // -o:speed (the app build, see scripts/build.sh).
 package main
 
-import "core:encoding/endian"
 import "core:math"
 import "core:mem"
 import "core:os"
@@ -28,11 +27,7 @@ import "core:strings"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
-// Binary layout: 80-byte header + u32 count, then 50 bytes per
-// triangle (normal + 3 verts as f32le, u16 attribute).
-STL_HEADER_BYTES :: 84
-STL_TRI_BYTES :: 50
-// Parse cap so a bogus binary count can't allocate gigabytes.
+// Parent independently enforces the helper's triangle budget.
 STL_MAX_TRIS :: 2_000_000
 
 STL_ORBIT_SPEED :: 0.012 // radians per layout px of drag
@@ -149,174 +144,6 @@ model_view_make :: proc(lower: string, data: []u8) -> ^Stl_View {
 	return stl_view_make(tris)
 }
 
-// Wavefront OBJ, geometry only: v records and fan-triangulated f
-// records (texture/normal indices after '/' are ignored). Negative
-// indices count from the end, per spec.
-parse_obj :: proc(data: []u8) -> ([]f32, bool) {
-	pos := make([dynamic]f32)
-	defer delete(pos)
-	tris := make([dynamic]f32)
-	text := string(data)
-
-	fail :: proc(tris: ^[dynamic]f32) -> ([]f32, bool) {
-		delete(tris^)
-		return nil, false
-	}
-
-	for line in strings.split_lines_iterator(&text) {
-		l := strings.trim_space(line)
-		switch {
-		case strings.has_prefix(l, "v "):
-			rest := l[2:]
-			for _ in 0 ..< 3 {
-				rest = strings.trim_left_space(rest)
-				v, n, ok := strconv.parse_f32_prefix(rest)
-				if !ok {
-					return fail(&tris)
-				}
-				append(&pos, v)
-				rest = rest[n:]
-			}
-
-		case strings.has_prefix(l, "f "):
-			rest := l[2:]
-			nv := len(pos) / 3
-			corners := make([dynamic]int, context.temp_allocator)
-			for tok in strings.fields_iterator(&rest) {
-				head := tok
-				if slash := strings.index_byte(head, '/'); slash >= 0 {
-					head = head[:slash]
-				}
-				idx, ok := strconv.parse_int(head)
-				if !ok {
-					return fail(&tris)
-				}
-				if idx < 0 {
-					idx += nv
-				} else {
-					idx -= 1
-				}
-				if idx < 0 || idx >= nv {
-					return fail(&tris)
-				}
-				append(&corners, idx)
-			}
-			if len(corners) < 3 {
-				return fail(&tris)
-			}
-			for k in 2 ..< len(corners) {
-				for corner in ([3]int{corners[0], corners[k - 1], corners[k]}) {
-					append(&tris, pos[corner * 3], pos[corner * 3 + 1], pos[corner * 3 + 2])
-				}
-				if len(tris) / 9 > STL_MAX_TRIS {
-					return fail(&tris)
-				}
-			}
-		}
-	}
-
-	if len(tris) == 0 {
-		return fail(&tris)
-	}
-	normalize_tris(tris[:])
-	return tris[:], true
-}
-
-// Both STL flavors: binary first (exact size math; many binary files
-// also start with "solid"), ASCII as the fallback.
-parse_stl :: proc(data: []u8) -> ([]f32, bool) {
-	tris := parse_stl_binary(data)
-	if tris == nil {
-		tris = parse_stl_ascii(data)
-	}
-	if tris == nil {
-		return nil, false
-	}
-
-	normalize_tris(tris)
-	return tris, true
-}
-
-@(private = "file")
-parse_stl_binary :: proc(data: []u8) -> []f32 {
-	if len(data) < STL_HEADER_BYTES {
-		return nil
-	}
-	count_u32, _ := endian.get_u32(data[80:84], .Little)
-	count := int(count_u32)
-	if count == 0 || count > STL_MAX_TRIS || len(data) < STL_HEADER_BYTES + count * STL_TRI_BYTES {
-		return nil
-	}
-
-	out := make([]f32, count * 9)
-	for i in 0 ..< count {
-		base := STL_HEADER_BYTES + i * STL_TRI_BYTES + 12 // skip the stored normal
-		for j in 0 ..< 9 {
-			out[i * 9 + j], _ = endian.get_f32(data[base + j * 4:][:4], .Little)
-		}
-	}
-	return out
-}
-
-@(private = "file")
-parse_stl_ascii :: proc(data: []u8) -> []f32 {
-	text := string(data)
-	if !strings.has_prefix(strings.trim_left_space(text), "solid") {
-		return nil
-	}
-
-	// Token stream: every "vertex" keyword owes three floats.
-	out := make([dynamic]f32)
-	pending := 0
-	for tok in strings.fields_iterator(&text) {
-		if pending > 0 {
-			v, ok := strconv.parse_f32(tok)
-			if !ok {
-				delete(out)
-				return nil
-			}
-			append(&out, v)
-			pending -= 1
-			continue
-		}
-		if tok == "vertex" {
-			pending = 3
-		}
-	}
-
-	if pending != 0 || len(out) == 0 || len(out) % 9 != 0 || len(out) / 9 > STL_MAX_TRIS {
-		delete(out)
-		return nil
-	}
-	return out[:]
-}
-
-// Center on the bbox and scale into the unit sphere so drawing never
-// needs the model's real dimensions. Works on any stride-3 point
-// array (the g-code view runs its segment endpoints through it too).
-normalize_tris :: proc(tris: []f32) {
-	lo := [3]f32{max(f32), max(f32), max(f32)}
-	hi := [3]f32{min(f32), min(f32), min(f32)}
-	for i in 0 ..< len(tris) / 3 {
-		for a in 0 ..< 3 {
-			v := tris[i * 3 + a]
-			lo[a] = min(lo[a], v)
-			hi[a] = max(hi[a], v)
-		}
-	}
-
-	center := [3]f32{(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2}
-	d := [3]f32{hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]}
-	radius := math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]) / 2
-	if radius <= 0 {
-		radius = 1
-	}
-	for i in 0 ..< len(tris) / 3 {
-		for a in 0 ..< 3 {
-			tris[i * 3 + a] = (tris[i * 3 + a] - center[a]) / radius
-		}
-	}
-}
 
 stl_view_make :: proc(tris: []f32) -> ^Stl_View {
 	ntri := len(tris) / 9

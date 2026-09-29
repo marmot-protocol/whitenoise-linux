@@ -1,13 +1,11 @@
 package main
 
-import "core:c"
 import "core:fmt"
 import "core:math"
 import "core:path/filepath"
 import "core:strings"
 
 import rl "sdlrl"
-import stbi "vendor:stb/image"
 
 @(private)
 Fbx_Channel :: enum i32 {
@@ -21,7 +19,7 @@ Fbx_Channel :: enum i32 {
 
 @(private)
 Fbx_Texture_Info :: struct {
-	path:             cstring, // borrowed from ufbx
+	path:             string, // owned, validated helper reference
 	uv:               [6]f32,
 	tint:             [4]f32,
 	clamp_u, clamp_v: i32,
@@ -30,6 +28,7 @@ Fbx_Texture_Info :: struct {
 @(private)
 Fbx_Texture :: struct {
 	info:         Fbx_Texture_Info,
+	reference:    i32, // -1 unsupported, 0 absent, 1 explicit path
 	image:        rl.Image, // borrowed from Inspect.images
 	pixels:       enum {
 		Color,
@@ -72,7 +71,7 @@ fbx_find_texture :: proc(paths, basenames: map[string]int, model_name, reference
 
 @(private)
 fbx_load_textures :: proc(insp: ^Inspect, archive: ^Arc_View, model_name: string) {
-	if insp.scene == nil || insp.uv == nil || archive == nil {return}
+	if len(insp.material_names) == 0 || insp.uv == nil || archive == nil {return}
 	paths := make(map[string]int, context.temp_allocator)
 	basenames := make(map[string]int, context.temp_allocator)
 	named := make(map[string]int, context.temp_allocator)
@@ -118,21 +117,18 @@ fbx_load_textures :: proc(insp: ^Inspect, archive: ^Arc_View, model_name: string
 	}
 
 	loaded := make(map[int]rl.Image, context.temp_allocator)
-	insp.textures = make([][Fbx_Channel]Fbx_Texture, len(insp.mats) / FBX_MAT_FLOATS)
 	decoded, extracted := 0, 0
 	for &material, i in insp.textures {
-		name := strings.to_lower(
-			string(fbx_material_name(insp.scene, i32(i))),
-			context.temp_allocator,
-		)
+		name := strings.to_lower(insp.material_names[i], context.temp_allocator)
 		for &texture, channel in material {
 			index := -1
-			reference := fbx_texture_of(insp.scene, i32(i), channel, &texture.info)
+			reference := texture.reference
 			if reference < 0 {continue}
 			if reference > 0 {
-				index = fbx_find_texture(paths, basenames, model_name, string(texture.info.path))
+				index = fbx_find_texture(paths, basenames, model_name, texture.info.path)
 			} else if match, ok := named[fmt.tprintf("%s/%d", name, channel)]; ok && name != "" {
 				index = match
+				delete(texture.info.path)
 				texture.info = {
 					uv   = {1, 0, 0, 0, 1, 0},
 					tint = {1, 1, 1, 1},
@@ -149,18 +145,17 @@ fbx_load_textures :: proc(insp: ^Inspect, archive: ^Arc_View, model_name: string
 			bytes, ok := arc_entry_bytes(archive, index)
 			if !ok {continue}
 			extracted += len(bytes)
-			w, h, components: c.int
-			valid :=
-				stbi.info_from_memory(raw_data(bytes), c.int(len(bytes)), &w, &h, &components) != 0
-			size := i64(w) * i64(h) * 4
-			if valid && w > 0 && h > 0 && size <= i64(FBX_TEXTURE_BYTES - decoded) {
-				image := rl.LoadImageFromMemory("", raw_data(bytes), i32(len(bytes)))
-				if image.data != nil {
-					decoded += int(size)
-					append(&insp.images, image)
-					loaded[index] = image
-					texture.image = image
-				}
+			image := rl.LoadImageFromMemory(
+				"",
+				raw_data(bytes),
+				i32(len(bytes)),
+				max_bytes = u32(max(0, FBX_TEXTURE_BYTES - decoded)),
+			)
+			if image.data != nil {
+				decoded += int(image.width) * int(image.height) * 4
+				append(&insp.images, image)
+				loaded[index] = image
+				texture.image = image
 			}
 			delete(bytes)
 		}

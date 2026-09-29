@@ -1,65 +1,27 @@
-// FBX models: bindings for app/fbx_shim.c (ufbx behind a flat C API,
-// built into build/libwnfbx.a by scripts/build.sh) plus the inspector state a
-// mesh view carries.
-//
-// An FBX file lands in the same Stl_View the STL/OBJ path uses, so
-// orbit, painter's sort, and the draw call are shared. What FBX adds
-// rides in Inspect: per-vertex normals and UVs, skin weights, material
-// channels, and the animation takes the chooser lists. Static formats
-// leave those nil and simply show fewer inspector rows.
-//
-//   parse_fbx  → shim triangulates once → Stl_View + Inspect
-//   fbx_pose   → per frame while playing: re-skin into view.tris
-//                (the shim writes into our buffers, no allocation)
+// FBX parsing and evaluation live in the persistent wn-fbx helper. The UI
+// owns every published channel and validates each complete reply before use.
 package main
 
-import "core:c"
+import "core:c/libc"
+import "core:math"
 import "core:strings"
-
+import "core:unicode/utf8"
 import rl "sdlrl"
 
-foreign import fbxlib {WN_BUILD_DIR + "/libwnfbx.a", "system:m", WN_CXX_LIBRARY}
-
-// Mirrors `struct fbx_model` in app/fbx_shim.c: four i32, then only
-// pointers, then two i32. Every array is owned by the C side and
-// lives until fbx_close.
-Fbx_Model :: struct {
-	num_tris:  i32,
-	num_bones: i32,
-	num_anims: i32,
-	num_mats:  i32,
-	pos:       [^]f32, // num_tris*9, rest pose, unit-sphere normalized
-	nrm:       [^]f32, // num_tris*9
-	uv:        [^]f32, // num_tris*6
-	bone:      [^]i32, // num_tris*3, dominant cluster or -1
-	weight:    [^]f32, // num_tris*3
-	mat:       [^]i32, // num_tris, index into mats or -1
-	mats:      [^]f32, // num_mats*FBX_MAT_FLOATS
-	has_uv:    i32,
-	has_skin:  i32,
+foreign import fbx_decoder {WN_BUILD_DIR + "/libwndecoder.a"}
+@(private, default_calling_convention = "c")
+foreign fbx_decoder {
+	wn_model_start :: proc(helper: cstring) -> rawptr ---
+	wn_model_exchange :: proc(session: rawptr, operation: u32, data: [^]u8, size: u32, output: [^]u8, capacity: u32, length: ^u32) -> [^]u8 ---
+	wn_model_close :: proc(session: rawptr) ---
 }
 
-FBX_MAT_FLOATS :: 12 // base rgb, metal, rough, emission rgb, specular rgb, opacity
+FBX_MAT_FLOATS :: 12
+@(private)
+FBX_MAX_ITEMS :: 65536
+@(private)
+FBX_MAX_PAYLOAD :: 512 * 1024 * 1024
 
-@(default_calling_convention = "c")
-foreign fbxlib {
-	@(private)
-	fbx_texture_of :: proc(scene: rawptr, material: i32, channel: Fbx_Channel, out: ^Fbx_Texture_Info) -> i32 ---
-	@(private)
-	fbx_material_name :: proc(scene: rawptr, material: i32) -> cstring ---
-	fbx_open :: proc(data: rawptr, len: c.size_t) -> rawptr ---
-	fbx_model_of :: proc(scene: rawptr) -> ^Fbx_Model ---
-	fbx_anim_name :: proc(scene: rawptr, index: i32) -> cstring ---
-	fbx_anim_begin :: proc(scene: rawptr, index: i32) -> f64 ---
-	fbx_anim_end :: proc(scene: rawptr, index: i32) -> f64 ---
-	fbx_eval :: proc(scene: rawptr, anim: i32, time: f64, out_pos: [^]f32, out_nrm: [^]f32) -> i32 ---
-	fbx_close :: proc(scene: rawptr) ---
-}
-
-// What the Model Inspector paints. Every mode works on any mesh; the
-// ones that need data the format doesn't carry (skin weights, UVs,
-// materials) are listed as unavailable rather than hidden, so the
-// panel doesn't reshuffle between files.
 Render_Mode :: enum u8 {
 	Final,
 	Bones,
@@ -75,94 +37,214 @@ Render_Mode :: enum u8 {
 	Uv_Checker,
 }
 
-// Overlay geometry (wireframe, vertex normals) is built as thin quads
-// in the same vertex buffer the model uses, so it costs one extra
-// draw call and no new renderer path.
-// ponytail: 18 verts per triangle for the wireframe; past this many
-// triangles the overlay rows go unavailable rather than stalling the
-// frame. A real line renderer is the upgrade.
 WIRE_MAX_TRIS :: 60_000
 
-// Inspector channels are borrowed from the FBX shim when scene is non-nil;
-// otherwise the mesh view owns them.
 Inspect :: struct {
-	mode:         Render_Mode,
-	wire:         int, // wireframe overlay color index, -1 = off
-	single_sided: bool,
-
-	// Shared model channels; scene is only used for FBX animation.
-	scene:        rawptr, // ^fbx_scene, nil for static formats
-	vnrm:         []f32, // ntri*9 per-vertex normals, Odin-owned (posed)
-	uv:           []f32, // ntri*6
-	bone:         []i32, // ntri*3 dominant cluster
-	bwt:          []f32, // ntri*3 its weight
-	mat:          []i32, // ntri material index
-	mats:         []f32, // nmat*FBX_MAT_FLOATS
-	nbones:       int,
-	textures:     [][Fbx_Channel]Fbx_Texture,
-	images:       [dynamic]rl.Image, // decoded archive textures, owned and shared by materials
-
-	// Animation chooser: -1 is the rest pose, otherwise a take index.
-	anim:         int,
-	takes:        []string, // owned names, one per take
-	t0:           f64,
-	t1:           f64,
-	time:         f64,
-	playing:      bool,
-	posed:        bool, // tris hold a posed frame, not the rest pose
+	mode:           Render_Mode,
+	wire:           int,
+	single_sided:   bool,
+	// Opaque transport handle, never a parser or scene pointer.
+	session:        rawptr,
+	vnrm:           []f32,
+	uv:             []f32,
+	bone:           []i32,
+	bwt:            []f32,
+	mat:            []i32,
+	mats:           []f32,
+	nbones:         int,
+	textures:       [][Fbx_Channel]Fbx_Texture,
+	images:         [dynamic]rl.Image,
+	material_names: []string,
+	pose_scratch:   []u8,
+	anim:           int,
+	takes:          []string,
+	take_times:     [][2]f64,
+	t0, t1, time:   f64,
+	playing, posed: bool,
 }
 
-// Parse an FBX file into the shared mesh view. The triangle buffer is
-// copied out of the shim so posing can write into it; the read-only
-// side channels stay borrowed.
-parse_fbx :: proc(data: []u8) -> (^Stl_View, bool) {
-	scene := fbx_open(raw_data(data), c.size_t(len(data)))
-	if scene == nil {
-		return nil, false
+@(private)
+Fbx_Wire :: struct {
+	data: []u8,
+	at:   int,
+	ok:   bool,
+}
+
+@(private)
+fbx_wire_u32 :: proc(r: ^Fbx_Wire) -> u32 {
+	if !r.ok || len(r.data) - r.at < 4 {r.ok = false; return 0}
+	b := r.data[r.at:r.at + 4]
+	r.at += 4
+	return u32(b[0]) | u32(b[1]) << 8 | u32(b[2]) << 16 | u32(b[3]) << 24
+}
+
+@(private)
+fbx_put_u32 :: proc(b: []u8, v: u32) {
+	b[0], b[1], b[2], b[3] = u8(v), u8(v >> 8), u8(v >> 16), u8(v >> 24)
+}
+
+@(private)
+fbx_wire_f32 :: proc(r: ^Fbx_Wire) -> f32 {
+	v := transmute(f32)fbx_wire_u32(r)
+	if math.is_nan(v) || math.is_inf(v) {r.ok = false}
+	return v
+}
+
+@(private)
+fbx_wire_f64 :: proc(r: ^Fbx_Wire) -> f64 {
+	lo := fbx_wire_u32(r)
+	hi := fbx_wire_u32(r)
+	v := transmute(f64)(u64(lo) | u64(hi) << 32)
+	if math.is_nan(v) || math.is_inf(v) {r.ok = false}
+	return v
+}
+
+@(private)
+fbx_wire_string :: proc(r: ^Fbx_Wire) -> string {
+	n := int(fbx_wire_u32(r))
+	if !r.ok || n > 4096 || n > len(r.data) - r.at {r.ok = false; return ""}
+	s := string(r.data[r.at:r.at + n])
+	r.at += n
+	if !utf8.valid_string(s) || strings.contains(s, "\x00") {r.ok = false; return ""}
+	return strings.clone(s)
+}
+
+@(private)
+fbx_wire_floats :: proc(r: ^Fbx_Wire, n: int) -> []f32 {
+	if !r.ok || n > (len(r.data) - r.at) / 4 {r.ok = false; return nil}
+	values := make([]f32, n)
+	for &v in values {v = fbx_wire_f32(r)}
+	return values
+}
+
+@(private)
+fbx_wire_indices :: proc(r: ^Fbx_Wire, n, count: int) -> []i32 {
+	if !r.ok || n > (len(r.data) - r.at) / 4 {r.ok = false; return nil}
+	values := make([]i32, n)
+	for &v in values {
+		v = transmute(i32)fbx_wire_u32(r)
+		if v < -1 || int(v) >= count {r.ok = false}
 	}
-	model := fbx_model_of(scene)
-	ntri := int(model.num_tris)
-	if ntri <= 0 {
-		fbx_close(scene)
-		return nil, false
+	return values
+}
+
+// FBM1 schema is documented next to the helper writer. No scene is published
+// until all counts, numeric channels, indices, names and references validate.
+@(private)
+fbx_decode_metadata :: proc(payload: []u8) -> (^Stl_View, bool) {
+	if len(payload) < 32 ||
+	   len(payload) > FBX_MAX_PAYLOAD ||
+	   string(payload[:4]) != "FBM1" {return nil, false}
+	r := Fbx_Wire {
+		data = payload,
+		at   = 4,
+		ok   = true,
 	}
-
-	tris := make([]f32, ntri * 9)
-	copy(tris, model.pos[:ntri * 9])
-	view := stl_view_make(tris)
-
-	vnrm := make([]f32, ntri * 9)
-	copy(vnrm, model.nrm[:ntri * 9])
-
-	takes := make([]string, int(model.num_anims))
-	for i in 0 ..< len(takes) {
-		takes[i] = strings.clone_from_cstring(fbx_anim_name(scene, i32(i)))
-	}
-
-	view.insp = Inspect {
+	ntri := int(fbx_wire_u32(&r))
+	nbones := int(fbx_wire_u32(&r))
+	ntakes := int(fbx_wire_u32(&r))
+	nmats := int(fbx_wire_u32(&r))
+	flags := fbx_wire_u32(&r)
+	reserved0, reserved1 := fbx_wire_u32(&r), fbx_wire_u32(&r)
+	if ntri < 1 ||
+	   ntri > STL_MAX_TRIS ||
+	   nbones > FBX_MAX_ITEMS ||
+	   ntakes > FBX_MAX_ITEMS ||
+	   nmats > FBX_MAX_ITEMS ||
+	   flags & ~u32(3) != 0 ||
+	   reserved0 != 0 ||
+	   reserved1 != 0 {return nil, false}
+	// Check the complete fixed-size portion before allocating any channels.
+	fixed := ntri * 18 * 4 + nmats * FBX_MAT_FLOATS * 4
+	if flags & 1 != 0 {fixed += ntri * 6 * 4}
+	if flags & 2 != 0 {fixed += ntri * 6 * 4}
+	if nmats > 0 {fixed += ntri * 4}
+	if fixed > len(payload) - r.at {return nil, false}
+	insp := Inspect {
 		wire   = -1,
-		scene  = scene,
-		vnrm   = vnrm,
-		uv     = model.has_uv != 0 ? model.uv[:ntri * 6] : nil,
-		bone   = model.has_skin != 0 ? model.bone[:ntri * 3] : nil,
-		bwt    = model.has_skin != 0 ? model.weight[:ntri * 3] : nil,
-		mat    = model.num_mats > 0 ? model.mat[:ntri] : nil,
-		mats   = model.num_mats > 0 ? model.mats[:int(model.num_mats) * FBX_MAT_FLOATS] : nil,
-		nbones = int(model.num_bones),
-		takes  = takes,
 		anim   = -1,
+		nbones = nbones,
 	}
-	// Open on the first take so a rigged model moves without hunting
-	// through the panel first.
-	if len(takes) > 0 {
+	tris := fbx_wire_floats(&r, ntri * 9)
+	complete := false
+	defer {
+		if !complete {delete(tris); fbx_free(&insp)}
+	}
+	insp.vnrm = fbx_wire_floats(&r, ntri * 9)
+	if flags & 1 != 0 {insp.uv = fbx_wire_floats(&r, ntri * 6)}
+	if flags & 2 != 0 {
+		if nbones == 0 {return nil, false}
+		insp.bone = fbx_wire_indices(&r, ntri * 3, nbones)
+		insp.bwt = fbx_wire_floats(&r, ntri * 3)
+	}
+	if nmats > 0 {
+		insp.mat = fbx_wire_indices(&r, ntri, nmats)
+		insp.mats = fbx_wire_floats(&r, nmats * FBX_MAT_FLOATS)
+	}
+	if !r.ok || ntakes * 20 + nmats * (4 + 6 * 56) > len(payload) - r.at {return nil, false}
+	insp.takes = make([]string, ntakes)
+	insp.take_times = make([][2]f64, ntakes)
+	for &name, i in insp.takes {
+		begin, end := fbx_wire_f64(&r), fbx_wire_f64(&r)
+		if !r.ok || end < begin {return nil, false}
+		insp.take_times[i] = {begin, end}
+		name = fbx_wire_string(&r)
+		if !r.ok {return nil, false}
+	}
+	insp.material_names = make([]string, nmats)
+	insp.textures = make([][Fbx_Channel]Fbx_Texture, nmats)
+	for &name, i in insp.material_names {
+		name = fbx_wire_string(&r)
+		for &texture in insp.textures[i] {
+			texture.reference = transmute(i32)fbx_wire_u32(&r)
+			texture.info.clamp_u = transmute(i32)fbx_wire_u32(&r)
+			texture.info.clamp_v = transmute(i32)fbx_wire_u32(&r)
+			for &v in texture.info.uv {v = fbx_wire_f32(&r)}
+			for &v in texture.info.tint {v = fbx_wire_f32(&r)}
+			texture.info.path = fbx_wire_string(&r)
+			if !r.ok ||
+			   texture.reference < -1 ||
+			   texture.reference > 1 ||
+			   texture.info.clamp_u < 0 ||
+			   texture.info.clamp_u > 1 ||
+			   texture.info.clamp_v < 0 ||
+			   texture.info.clamp_v > 1 ||
+			   (texture.reference == 1 && texture.info.path == "") {return nil, false}
+		}
+	}
+	if !r.ok || r.at != len(payload) {return nil, false}
+	if ntakes > 0 {insp.pose_scratch = make([]u8, 8 + ntri * 18 * 4)}
+	view := stl_view_make(tris)
+	view.insp = insp
+	complete = true
+	return view, true
+}
+
+parse_fbx :: proc(data: []u8) -> (^Stl_View, bool) {
+	if len(data) == 0 || len(data) > 128 * 1024 * 1024 {return nil, false}
+	helper := strings.clone_to_cstring(helper_path("wn-fbx"), context.temp_allocator)
+	session := wn_model_start(helper)
+	if session == nil {return nil, false}
+	complete := false
+	defer {if !complete {wn_model_close(session)}}
+	length: u32
+	payload := wn_model_exchange(session, 0, raw_data(data), u32(len(data)), nil, 0, &length)
+	if payload == nil {return nil, false}
+	defer libc.free(payload)
+	view, ok := fbx_decode_metadata(payload[:int(length)])
+	if !ok {return nil, false}
+	if len(view.insp.takes) > 0 {
+		view.insp.session = session
+		complete = true
 		fbx_select_take(view, 0)
-		view.insp.playing = true
+		view.insp.playing = view.insp.session != nil
+	} else {
+		wn_model_close(session)
+		complete = true
 	}
 	return view, true
 }
 
-// Point the chooser at a take (or -1 for the rest pose) and rewind to
-// its start.
 fbx_select_take :: proc(view: ^Stl_View, take: int) {
 	insp := &view.insp
 	insp.anim = take
@@ -173,73 +255,93 @@ fbx_select_take :: proc(view: ^Stl_View, take: int) {
 		fbx_pose(view, 0)
 		return
 	}
-	insp.t0 = fbx_anim_begin(insp.scene, i32(take))
-	insp.t1 = fbx_anim_end(insp.scene, i32(take))
-	if insp.t1 <= insp.t0 {
-		insp.t1 = insp.t0 + 1
-	}
+	insp.t0, insp.t1 = insp.take_times[take][0], insp.take_times[take][1]
+	if insp.t1 <= insp.t0 {insp.t1 = insp.t0 + 1}
 	insp.time = insp.t0
 	fbx_pose(view, insp.t0)
 }
 
-// Skin the mesh at `time` straight into the view's own buffers, then
-// invalidate the rotation caches so the next frame redraws it.
-fbx_pose :: proc(view: ^Stl_View, time: f64) {
-	insp := &view.insp
-	if insp.scene == nil {
-		return
+// Validation is a separate pass: a malformed final normal must not publish
+// even the first position. Transport writes only into reusable scratch.
+@(private)
+fbx_apply_pose :: proc(view: ^Stl_View, payload: []u8) -> bool {
+	if len(payload) != 8 + len(view.tris) * 8 ||
+	   len(view.insp.vnrm) != len(view.tris) ||
+	   string(payload[:4]) != "FBP1" {return false}
+	r := Fbx_Wire {
+		data = payload,
+		at   = 4,
+		ok   = true,
 	}
-	if fbx_eval(insp.scene, i32(insp.anim), time, raw_data(view.tris), raw_data(insp.vnrm)) == 0 {
-		return
-	}
-	insp.posed = insp.anim >= 0
+	if int(fbx_wire_u32(&r)) != len(view.tris) / 9 {return false}
+	for i in 0 ..< len(view.tris) * 2 {fbx_wire_f32(&r)}
+	if !r.ok || r.at != len(payload) {return false}
+	r.at = 8
+	for &v in view.tris {v = transmute(f32)fbx_wire_u32(&r)}
+	for &v in view.insp.vnrm {v = transmute(f32)fbx_wire_u32(&r)}
+	view.insp.posed = view.insp.anim >= 0
 	stl_face_normals(view)
 	view.dirty = true
-	view.built = {} // force the vertex buffer to rebuild
+	view.built = {}
+	return true
 }
 
-// Advance every playing model view by the frame delta, looping inside
-// the take's own time range. Called once per frame from the app loop.
+fbx_pose :: proc(view: ^Stl_View, time: f64) {
+	insp := &view.insp
+	if insp.session == nil {return}
+	request: [12]u8
+	fbx_put_u32(request[:4], transmute(u32)i32(insp.anim))
+	bits := transmute(u64)time
+	fbx_put_u32(request[4:8], u32(bits))
+	fbx_put_u32(request[8:], u32(bits >> 32))
+	length: u32
+	payload := wn_model_exchange(
+		insp.session,
+		1,
+		raw_data(request[:]),
+		12,
+		raw_data(insp.pose_scratch),
+		u32(len(insp.pose_scratch)),
+		&length,
+	)
+	if payload == nil || !fbx_apply_pose(view, insp.pose_scratch[:int(length)]) {
+		wn_model_close(insp.session)
+		insp.session = nil
+		insp.playing = false
+	}
+}
+
 advance_models :: proc(dt: f32) {
 	for view in playing_models {
 		insp := &view.insp
-		if !insp.playing || insp.anim < 0 {
-			continue
-		}
+		if !insp.playing || insp.anim < 0 {continue}
 		anim_moving += 1
 		insp.time += f64(dt)
-		if insp.time > insp.t1 {
-			insp.time = insp.t0 + (insp.time - insp.t1)
-		}
+		if insp.time > insp.t1 {insp.time = insp.t0 + (insp.time - insp.t1)}
 		fbx_pose(view, insp.time)
 	}
 	clear(&playing_models)
 }
 
-// Views that asked to animate this frame, refilled during the layout
-// build (only mounted tiles animate; a scrolled-away model costs
-// nothing).
 playing_models: [dynamic]^Stl_View
 
 fbx_free :: proc(insp: ^Inspect) {
-	if insp.scene != nil {
-		fbx_close(insp.scene)
-	} else {
-		delete(insp.uv)
-		delete(insp.bone)
-		delete(insp.bwt)
-		delete(insp.mat)
-		delete(insp.mats)
-	}
-	for image in insp.images {
-		rl.UnloadImage(image)
-	}
+	if insp.session != nil {wn_model_close(insp.session)}
+	delete(insp.uv)
+	delete(insp.bone)
+	delete(insp.bwt)
+	delete(insp.mat)
+	delete(insp.mats)
+	for image in insp.images {rl.UnloadImage(image)}
 	delete(insp.images)
+	for material in insp.textures {for texture in material {delete(texture.info.path)}}
 	delete(insp.textures)
 	delete(insp.vnrm)
-	for name in insp.takes {
-		delete(name)
-	}
+	for name in insp.takes {delete(name)}
 	delete(insp.takes)
+	delete(insp.take_times)
+	for name in insp.material_names {delete(name)}
+	delete(insp.material_names)
+	delete(insp.pose_scratch)
 	insp^ = {}
 }

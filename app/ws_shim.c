@@ -162,7 +162,8 @@ static long recv_message(CURL *c, unsigned char *out, size_t cap, int64_t deadli
         if (op == 8) {
             return -1;
         }
-        int keep = (op == 1 || op == 0) && len + n <= cap;
+        // len stays within cap; subtract before comparing an untrusted 64-bit length.
+        int keep = (op == 1 || op == 0) && n <= cap - len;
         if (keep) {
             if (recv_all(c, out + len, (size_t)n, deadline) < 0) {
                 return -1;

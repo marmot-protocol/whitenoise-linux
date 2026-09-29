@@ -70,12 +70,12 @@ if ! stamp_fresh "$OUT/fbx/ufbx.o" "$OUT/fbx/ufbx.stamp" "$UFBX_STAMP"; then
   "$CC" "${CFLAGS[@]}" -c "$HERE/vendor/ufbx/ufbx.c" -o "$OUT/fbx/ufbx.o"
   echo "$UFBX_STAMP" > "$OUT/fbx/ufbx.stamp"
 fi
-"$CC" "${CFLAGS[@]}" -I"$HERE/vendor/ufbx" -c "$HERE/app/fbx_shim.c" -o "$OUT/fbx/shim.o"
-"$AR" rcs "$OUT/libwnfbx.a" "$OUT/fbx/ufbx.o" "$OUT/fbx/shim.o"
 "$CC" "${CFLAGS[@]}" $(pkg-config --cflags libcurl) -c "$HERE/app/ws_shim.c" -o "$OUT/ws.o"
 "$AR" rcs "$OUT/libwnws.a" "$OUT/ws.o"
 "$CC" "${CFLAGS[@]}" -c "$HERE/app/helper_ipc.c" -o "$OUT/ipc.o"
 "$AR" rcs "$OUT/libwnipc.a" "$OUT/ipc.o"
+"$CC" "${CFLAGS[@]}" -c "$HERE/app/decoder_ipc.c" -o "$OUT/decoder_ipc.o"
+"$AR" rcs "$OUT/libwndecoder.a" "$OUT/decoder_ipc.o"
 MICROTEX_STAMP="$({ pin microtex; cat "$HERE"/patches/microtex-*.patch; } | sha256sum | cut -d' ' -f1)"
 if ! stamp_fresh "$OUT/microtex/lib/libmicrotex.a" "$OUT/microtex.stamp" "$MICROTEX_STAMP"; then
   rm -rf "$OUT/microtex"
@@ -102,6 +102,18 @@ HELPER_ENTRY=()
 if [ "$SYSTEM" = Windows ]; then HELPER_ENTRY=(-municode); fi
 "$CC" "${CFLAGS[@]}" "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) \
   "${HELPER_ENTRY[@]}" "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-font$EXE"
+ODIN_ROOT="$(odin root)"
+"$CC" "${CFLAGS[@]}" -I"${ODIN_ROOT%/}/vendor/stb/src" "$HERE/app/image.c" \
+  $(pkg-config --cflags --libs libwebp) -lm \
+  "${HELPER_ENTRY[@]}" "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-image$EXE"
+"$CC" "${CFLAGS[@]}" "$HERE/app/archive.c" $(pkg-config --cflags --libs libarchive) \
+  "${HELPER_ENTRY[@]}" "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-archive$EXE"
+"$CC" "${CFLAGS[@]}" "$HERE/app/pdf.c" $(pkg-config --cflags --libs poppler-glib cairo fontconfig) -lm \
+  "${HELPER_ENTRY[@]}" "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-pdf$EXE"
+"$CC" "${CFLAGS[@]}" -I"$HERE/vendor/ufbx" "$HERE/app/fbx_helper.c" "$HERE/app/fbx_shim.c" \
+  "$OUT/fbx/ufbx.o" -lm "${HELPER_ENTRY[@]}" "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-fbx$EXE"
+"$CC" "${CFLAGS[@]}" -c "$HERE/app/mesh_limits.c" -o "$OUT/mesh_limits.o"
+"$AR" rcs "$OUT/libwnmesh.a" "$OUT/mesh_limits.o"
 for speech in tts stt; do
   "$CC" "${CFLAGS[@]}" -I"$TTS/include" "$HERE/app/$speech.c" "$OUT/libwnipc.a" \
     -L"$TTS/lib" -lsherpa-onnx-c-api \
@@ -113,7 +125,6 @@ if [ "$SYSTEM" = Linux ]; then
     $(pkg-config --cflags --libs webkit2gtk-4.1) "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-webview"
 fi
 
-ODIN_ROOT="$(odin root)"
 for stb in image image_write image_resize truetype rect_pack vorbis sprintf; do
   "$CC" "${CFLAGS[@]}" -c "$ODIN_ROOT/vendor/stb/src/stb_$stb.c" -o "$OUT/stb/$stb.o"
 done
@@ -143,19 +154,32 @@ for stb in image image_write image_resize truetype rect_pack vorbis sprintf; do
 done
 cp "$OUT/cgltf.a" "$OVERLAY/vendor/cgltf/lib$SUBDIR/cgltf.$SUFFIX"
 export ODIN_ROOT="$OVERLAY"
-# Odin does not cross-link different OSes. Generate a single native object and
-# pass all foreign dependencies to the target C++ driver (MicroTeX uses C++).
+WINDOWS_RUNTIME=()
+if [ "$SYSTEM" = Windows ]; then
+  "$CC" "${CFLAGS[@]}" -c "$HERE/app/mingw_shim.c" -o "$OUT/mingw_shim.o"
+  WINDOWS_RUNTIME=("$OUT/mingw_shim.o")
+fi
+odin build "$HERE/model-decoder" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
+  -o:speed -build-mode:obj -out:"$OUT/mesh.o"
+"$CC" "${CFLAGS[@]}" "$OUT/mesh.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmesh.a" "$OUT/cgltf.a" \
+  -lm "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-mesh$EXE"
+odin build "$HERE/math-decoder" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
+  -o:speed -build-mode:obj -out:"$OUT/math.o"
+"$CXX" "${CFLAGS[@]}" "$OUT/math.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmath.a" \
+  "$OUT/microtex/lib/libmicrotex.a" $(pkg-config --libs cairo) \
+  "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-math$EXE"
+# Odin does not cross-link different OSes. Link its native object with the
+# target driver; MicroTeX and Cairo belong only to the math helper.
 odin build "$HERE/app" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
   -o:speed -build-mode:obj -out:"$OUT/app.o"
 WINDOWS_LINK=()
 if [ "$SYSTEM" = Windows ]; then
-  "$CC" "${CFLAGS[@]}" -c "$HERE/app/mingw_shim.c" -o "$OUT/mingw_shim.o"
-  WINDOWS_LINK=("$OUT/mingw_shim.o" "$OUT/velopack/libvelopack_libc.dll.a")
+  WINDOWS_LINK=("${WINDOWS_RUNTIME[@]}" "$OUT/velopack/libvelopack_libc.dll.a")
 fi
-"$CXX" "${CFLAGS[@]}" "$OUT/app.o" "${WINDOWS_LINK[@]}" \
-  "$OUT/libwnfbx.a" "$OUT/libwnws.a" "$OUT/libwnmath.a" "$OUT/libwnipc.a" \
-  "$OUT/microtex/lib/libmicrotex.a" "$OUT/clay/clay.a" "$OUT/stb/stb.a" "$OUT/cgltf.a" "$OUT/libmarmot_c.a" \
-  $(pkg-config --libs sdl3 libarchive libwebp mpv poppler-glib gobject-2.0 glib-2.0 cairo libcurl openssl) \
+"$CC" "${CFLAGS[@]}" "$OUT/app.o" "${WINDOWS_LINK[@]}" \
+  "$OUT/libwnws.a" "$OUT/libwnipc.a" "$OUT/libwndecoder.a" \
+  "$OUT/clay/clay.a" "$OUT/stb/stb.a" "$OUT/libmarmot_c.a" \
+  $(pkg-config --libs sdl3 mpv libcurl openssl) \
   "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/whitenoise$EXE"
 # Export only paths consumed by packaging; do not serialize credentials/SDKs.
 export WN_CROSS_PREFIX="$PREFIX" WN_CROSS_SYSROOT="$SYSROOT" WN_CROSS_TTS="$TTS"

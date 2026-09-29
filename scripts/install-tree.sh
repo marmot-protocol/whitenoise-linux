@@ -27,7 +27,8 @@ SPEECH=
 if [ "$(uname -s)" = Linux ]; then SPEECH=1; fi
 if [ -n "$SPEECH" ]; then cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$PREFIX/bin/"; fi
 mkdir -p "$RES/licenses"
-cp "$HERE/build/wn-font" "$RES/"
+cp "$HERE/build/wn-font" "$HERE/build/wn-image" "$HERE/build/wn-archive" "$HERE/build/wn-pdf" \
+  "$HERE/build/wn-mesh" "$HERE/build/wn-fbx" "$HERE/build/wn-math" "$RES/"
 cp "$HERE/vendor/crop-circles/LICENSE" "$RES/licenses/crop-circles.txt"
 cp "$HERE/vendor/common-passwords.LICENSE" "$RES/licenses/seclists.txt"
 cp "$HERE/vendor/crop-circles/README.txt" "$RES/licenses/crop-circles-notices.txt"
@@ -37,9 +38,10 @@ if [ -n "$SPEECH" ]; then
   cp "$HERE/vendor/sherpa-onnx/ThirdPartyNotices-onnxruntime.txt" "$RES/licenses/onnxruntime-third-party.txt"
 fi
 # MicroTeX and the TeX Gyre DejaVu Math font it typesets with are linked
-# and #loaded into the binary; ship their licenses (the font: GUST Font
+# and #loaded into wn-math; ship their licenses (the font: GUST Font
 # License, DejaVu changes public domain; texts staged by build.sh).
 cp "$HERE/vendor/microtex/LICENSE" "$RES/licenses/microtex.txt"
+if [ "$(uname -s)" = OpenBSD ]; then cp "$HERE/vendor/sdl/LICENSE.txt" "$RES/licenses/sdl.txt"; fi
 cp "$HERE/vendor/microtex/res/tex-gyre/README-TeX-Gyre-DejaVu-Math.txt" "$RES/licenses/tex-gyre-dejavu-math.txt"
 cp "$HERE/vendor/fonts/GUST-FONT-LICENSE.txt" "$RES/licenses/gust-font-license.txt"
 cp "$HERE/vendor/fonts/DejaVu-LICENSE.txt" "$RES/licenses/dejavu.txt"
@@ -50,8 +52,11 @@ if [ -n "$SPEECH" ]; then
   cp "$HERE/build/tts-lib/"*.so "$RES/tts-lib/"
 fi
 # The webxdc host process, only when webkit2gtk was present at build time.
+# Never ship it on OpenBSD, including leftovers from earlier installs.
 # The app looks for it beside its own binary.
-if [ -x "$HERE/build/wn-webview" ]; then
+if [ "$(uname -s)" = OpenBSD ]; then
+  rm -f "$PREFIX/bin/wn-webview"
+elif [ -x "$HERE/build/wn-webview" ]; then
   cp "$HERE/build/wn-webview" "$PREFIX/bin/"
 fi
 cp -r "$HERE/vendor/twemoji" "$RES/"

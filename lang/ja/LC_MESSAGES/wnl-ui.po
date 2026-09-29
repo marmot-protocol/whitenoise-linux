@@ -637,6 +637,9 @@ msgstr "JSON をコピー"
 msgid "Copy info hash"
 msgstr "情報ハッシュをコピー"
 
+msgid "Copy link"
+msgstr "リンクをコピー"
+
 msgid "Copy magnet link"
 msgstr "マグネットリンクをコピー"
 
@@ -646,6 +649,9 @@ msgstr "公開鍵をコピー"
 
 msgid "Copy text"
 msgstr "テキストをコピー"
+
+msgid "Copy this link and open it in your browser."
+msgstr "このリンクをコピーして、ブラウザで開いてください。"
 
 msgid "Corner scale"
 msgstr ""
@@ -852,6 +858,9 @@ msgstr "GIFを検索できませんでした。もう一度お試しください
 
 msgid "Couldn't search messages. Please try again."
 msgstr "メッセージを検索できませんでした。もう一度お試しください。"
+
+msgid "Couldn't send the notification. Please try again."
+msgstr "通知を送信できませんでした。もう一度お試しください。"
 
 msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr "ステッカーを送信できませんでした。元のアカウントに戻って、もう一度お試しください。"

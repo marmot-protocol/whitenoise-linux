@@ -85,28 +85,32 @@ settings_advanced :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		if clay.UI(clay.ID("AdvancedTrustedGroup"))(settings_box()) {
-			settings_group(N_("Trusted link sites"))
-			clay.Text(
-				tr("Links to these exact sites open without confirmation."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-			)
-			if len(ui.prefs.trusted_sites) == 0 {
-				if clay.UI(clay.ID("RowNoTrusted"))({layout = {padding = {top = 4, bottom = 4}}}) {
-					clay.Text(
-						tr("No trusted sites."),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-					)
+		when ODIN_OS != .OpenBSD {
+			if clay.UI(clay.ID("AdvancedTrustedGroup"))(settings_box()) {
+				settings_group(N_("Trusted link sites"))
+				clay.Text(
+					tr("Links to these exact sites open without confirmation."),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				)
+				if len(ui.prefs.trusted_sites) == 0 {
+					if clay.UI(clay.ID("RowNoTrusted"))(
+					{layout = {padding = {top = 4, bottom = 4}}},
+					) {
+						clay.Text(
+							tr("No trusted sites."),
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						)
+					}
 				}
-			}
-			for site, i in ui.prefs.trusted_sites {
-				relay_row("TrustRow", "TrustRemove", u32(i), site)
-			}
-			if len(ui.prefs.trusted_sites) > 0 {
-				if clay.UI(clay.ID("TrustActions"))({layout = {childGap = 8}}) {
-					label :=
-						ui.keys_confirm == "TrustForgetAll" ? tr("Confirm forget all") : tr("Forget all")
-					settings_button("TrustForgetAll", label, DANGER)
+				for site, i in ui.prefs.trusted_sites {
+					relay_row("TrustRow", "TrustRemove", u32(i), site)
+				}
+				if len(ui.prefs.trusted_sites) > 0 {
+					if clay.UI(clay.ID("TrustActions"))({layout = {childGap = 8}}) {
+						label :=
+							ui.keys_confirm == "TrustForgetAll" ? tr("Confirm forget all") : tr("Forget all")
+						settings_button("TrustForgetAll", label, DANGER)
+					}
 				}
 			}
 		}
@@ -549,6 +553,8 @@ obs_os_type :: proc() -> cstring {
 obs_os_version :: proc() -> cstring {
 	when ODIN_OS == .Linux {
 		return obs_file_cstr("/proc/sys/kernel/osrelease")
+	} else when ODIN_OS == .OpenBSD {
+		return obs_cstr(sandbox_os_version, "unknown")
 	} else {
 		version, ok := sysinfo.os_version(context.temp_allocator)
 		return ok ? obs_cstr(version.full, "unknown") : "unknown"
