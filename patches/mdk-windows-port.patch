@@ -132,10 +132,10 @@ index 1b5caf18..3b6b0ce1 100644
  
  #[cfg(all(test, unix))]
 diff --git a/crates/marmot-account/src/io.rs b/crates/marmot-account/src/io.rs
-index 22f135f1..bb33acb6 100644
+index 283bb66c..8cb61619 100644
 --- a/crates/marmot-account/src/io.rs
 +++ b/crates/marmot-account/src/io.rs
-@@ -192,12 +192,36 @@ fn create_temp_file(
+@@ -271,12 +271,36 @@ fn create_temp_file(
      .into())
  }
  
@@ -216,20 +216,20 @@ index 6531e14a..ec2baeb3 100644
              Err(AppError::Io(io::Error::new(
                  io::ErrorKind::Unsupported,
 diff --git a/crates/marmot-forensics/src/lib.rs b/crates/marmot-forensics/src/lib.rs
-index 60f0441b..6181988d 100644
+index e66f631e..00787865 100644
 --- a/crates/marmot-forensics/src/lib.rs
 +++ b/crates/marmot-forensics/src/lib.rs
 @@ -1,5 +1,4 @@
  pub mod audit;
 -#[cfg(unix)]
  pub mod local_delivery;
- 
- pub use audit::{
+ /// Inactive next-version Welcome contract; does not change recorder output.
+ pub mod v5;
 diff --git a/crates/marmot-forensics/src/local_delivery.rs b/crates/marmot-forensics/src/local_delivery.rs
-index bf3bb6d7..5bf8ba98 100644
+index 76598f95..3ea0d9e3 100644
 --- a/crates/marmot-forensics/src/local_delivery.rs
 +++ b/crates/marmot-forensics/src/local_delivery.rs
-@@ -159,11 +159,14 @@ impl LocalAuditDelivery {
+@@ -160,11 +160,14 @@ impl LocalAuditDelivery {
          if !name.starts_with("audit-") || !name.ends_with(".jsonl") {
              return Err(invalid("unexpected recorder file name"));
          }
@@ -244,7 +244,7 @@ index bf3bb6d7..5bf8ba98 100644
          let state_path = state_dir.as_ref().join("local-delivery.json");
          // Rename is the state commit point. A leftover staging file came from
          // an interrupted pre-commit write and can be discarded on restart.
-@@ -245,7 +248,7 @@ impl LocalAuditDelivery {
+@@ -246,7 +249,7 @@ impl LocalAuditDelivery {
                  if len < prepared.end {
                      self.state.journals[index].observed_len =
                          self.state.journals[index].observed_len.max(prepared.end);
@@ -253,7 +253,7 @@ index bf3bb6d7..5bf8ba98 100644
                      self.record_gap(
                          index,
                          prepared.start,
-@@ -259,7 +262,7 @@ impl LocalAuditDelivery {
+@@ -260,7 +263,7 @@ impl LocalAuditDelivery {
                  }
                  let bytes = read_range(&mut file, prepared.start, prepared.end)?;
                  if digest(&bytes) != prepared.digest {
@@ -262,7 +262,7 @@ index bf3bb6d7..5bf8ba98 100644
                      self.record_gap(
                          index,
                          prepared.start,
-@@ -290,7 +293,7 @@ impl LocalAuditDelivery {
+@@ -291,7 +294,7 @@ impl LocalAuditDelivery {
                      if self.is_active(index) {
                          return Ok(Preparation::Step(DeliveryStep::WaitingForWriter));
                      }
@@ -271,7 +271,7 @@ index bf3bb6d7..5bf8ba98 100644
                      self.record_gap(index, line_start, end, GapReason::TornTail)?;
                      return Ok(Preparation::Step(DeliveryStep::Gap));
                  }
-@@ -298,7 +301,7 @@ impl LocalAuditDelivery {
+@@ -299,7 +302,7 @@ impl LocalAuditDelivery {
                      if !bodies.is_empty() {
                          break;
                      }
@@ -280,7 +280,7 @@ index bf3bb6d7..5bf8ba98 100644
                      self.record_gap(index, line_start, end, GapReason::OversizedLine)?;
                      return Ok(Preparation::Step(DeliveryStep::Gap));
                  }
-@@ -306,7 +309,7 @@ impl LocalAuditDelivery {
+@@ -307,7 +310,7 @@ impl LocalAuditDelivery {
                      if !bodies.is_empty() {
                          break;
                      }
@@ -289,7 +289,7 @@ index bf3bb6d7..5bf8ba98 100644
                      self.record_gap(index, line_start, end, GapReason::InvalidRecord)?;
                      return Ok(Preparation::Step(DeliveryStep::Gap));
                  }
-@@ -322,7 +325,7 @@ impl LocalAuditDelivery {
+@@ -323,7 +326,7 @@ impl LocalAuditDelivery {
              let end = start + bytes.len() as u64;
              // The recorder flushes but does not fsync. A local prepared claim
              // must establish that boundary before publication and send.
@@ -298,7 +298,7 @@ index bf3bb6d7..5bf8ba98 100644
              let prepared = Prepared {
                  start,
                  end,
-@@ -473,9 +476,8 @@ impl LocalAuditDelivery {
+@@ -474,9 +477,8 @@ impl LocalAuditDelivery {
              }
              result => result?,
          };
@@ -310,7 +310,7 @@ index bf3bb6d7..5bf8ba98 100644
          if device != j.device || inode != j.inode {
              return Err(io::Error::from(io::ErrorKind::WouldBlock));
          }
-@@ -516,21 +518,20 @@ impl LocalAuditDelivery {
+@@ -517,21 +519,20 @@ impl LocalAuditDelivery {
          let mut source_identities = std::collections::HashSet::new();
          for path in paths.into_iter().filter(|path| path != &self.active) {
              let file = open_source(&path)?;
@@ -336,7 +336,7 @@ index bf3bb6d7..5bf8ba98 100644
              let fp_len = (len as usize).min(FINGERPRINT_BYTES) as u8;
              let fp = fingerprint(&mut file, fp_len as usize)?;
              let name = path
-@@ -653,8 +654,7 @@ impl LocalAuditDelivery {
+@@ -654,8 +655,7 @@ impl LocalAuditDelivery {
              return Err(error);
          }
          drop(file);
@@ -346,7 +346,7 @@ index bf3bb6d7..5bf8ba98 100644
      }
  }
  
-@@ -805,6 +805,13 @@ fn open_source(path: &Path) -> io::Result<File> {
+@@ -806,6 +806,13 @@ fn open_source(path: &Path) -> io::Result<File> {
          use std::os::unix::fs::OpenOptionsExt;
          options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
      }
@@ -360,7 +360,7 @@ index bf3bb6d7..5bf8ba98 100644
      let file = options.open(path)?;
      if !file.metadata()?.is_file() {
          return Err(invalid("source is not a regular file"));
-@@ -833,9 +840,110 @@ fn load_state(path: &Path, destination: &str, active_name: &str) -> io::Result<S
+@@ -834,9 +841,110 @@ fn load_state(path: &Path, destination: &str, active_name: &str) -> io::Result<S
      Ok(state)
  }
  
@@ -473,7 +473,7 @@ index bf3bb6d7..5bf8ba98 100644
  }
  
  fn fingerprint(file: &mut File, len: usize) -> io::Result<String> {
-@@ -1249,7 +1357,7 @@ mod tests {
+@@ -1256,7 +1364,7 @@ mod tests {
          // match the replacement after a real recorder clear to model reuse.
          recorder.rotate().unwrap();
          record(&recorder, "new_generation");

@@ -43,10 +43,10 @@ index 57be67e1..d69bdd4f 100644
          nostr::prelude::Keys::generate().public_key().to_hex()
      }
 diff --git a/crates/marmot-app/tests/relay_runtime.rs b/crates/marmot-app/tests/relay_runtime.rs
-index d4db8b57..1bca104e 100644
+index abb890fe..24d8c388 100644
 --- a/crates/marmot-app/tests/relay_runtime.rs
 +++ b/crates/marmot-app/tests/relay_runtime.rs
-@@ -15563,3 +15563,187 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
+@@ -15855,3 +15855,187 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
      bob.shutdown().await;
      carol.shutdown().await;
  }
@@ -235,10 +235,10 @@ index d4db8b57..1bca104e 100644
 +    alice_rt.shutdown_and_close().await.unwrap();
 +}
 diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
-index b54b6228..4e08aff3 100644
+index ce1baaa8..794e9d4a 100644
 --- a/crates/marmot-c/include/marmot.h
 +++ b/crates/marmot-c/include/marmot.h
-@@ -2961,6 +2961,15 @@ typedef struct MarmotAppMessageRecord {
+@@ -3050,6 +3050,15 @@ typedef struct MarmotAppMessageRecord {
     * Local wall-clock time when this device observed the delivery.
     */
    uint64_t received_at;

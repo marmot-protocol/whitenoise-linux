@@ -10,11 +10,23 @@ index 0eeae504..cc50f5de 100644
                      attachments: upload_attachments,
                      caption,
                      send: true,
+diff --git a/crates/cli/src/commands/media.rs b/crates/cli/src/commands/media.rs
+index a2d4c4eb..64b30f4c 100644
+--- a/crates/cli/src/commands/media.rs
++++ b/crates/cli/src/commands/media.rs
+@@ -70,6 +70,7 @@ pub(crate) async fn media_command_with_runtime(
+                     &account.account_id_hex,
+                     &group_id,
+                     MediaUploadRequest {
++                        message_tags: Vec::new(),
+                         attachments,
+                         caption: message,
+                         send,
 diff --git a/crates/marmot-app/src/client/audit.rs b/crates/marmot-app/src/client/audit.rs
-index 1f70f4fb..63885778 100644
+index b3a44898..c5dbf43a 100644
 --- a/crates/marmot-app/src/client/audit.rs
 +++ b/crates/marmot-app/src/client/audit.rs
-@@ -131,7 +131,9 @@ impl AppClient {
+@@ -200,7 +200,9 @@ impl AppClient {
          intent: &AppMessageIntent,
      ) -> Option<AuditEventContext> {
          let (action, target_count): (&'static str, Option<u64>) = match intent {
@@ -26,10 +38,10 @@ index 1f70f4fb..63885778 100644
              AppMessageIntent::Edit { .. } => ("edit_message", None),
              AppMessageIntent::Reaction { .. } => ("react", None),
 diff --git a/crates/marmot-app/src/client/mod.rs b/crates/marmot-app/src/client/mod.rs
-index b412ce25..2e04dfec 100644
+index a7caa608..93c3f9bb 100644
 --- a/crates/marmot-app/src/client/mod.rs
 +++ b/crates/marmot-app/src/client/mod.rs
-@@ -169,6 +169,7 @@ pub(crate) struct EncryptedMediaUploadFinish {
+@@ -179,6 +179,7 @@ pub(crate) struct EncryptedMediaUploadFinish {
      media_secret: SecretBytes,
      should_send: bool,
      caption: Option<String>,
@@ -37,7 +49,7 @@ index b412ce25..2e04dfec 100644
  }
  
  pub(crate) struct EncryptedMediaDownloadHttp {
-@@ -3699,7 +3700,9 @@ impl AppClient {
+@@ -3815,7 +3816,9 @@ impl AppClient {
              AppMessageIntent::Report { .. } | AppMessageIntent::DismissReports { .. } => {
                  (Family::MessageAction, "custom")
              }
@@ -48,7 +60,7 @@ index b412ce25..2e04dfec 100644
              AppMessageIntent::Reply { .. } => (Family::MessageAction, "reply"),
              AppMessageIntent::Reaction { .. } => (Family::MessageAction, "reaction"),
              AppMessageIntent::Unreact { .. } | AppMessageIntent::DeleteReactions { .. } => {
-@@ -4574,6 +4577,7 @@ impl AppClient {
+@@ -4711,6 +4714,7 @@ impl AppClient {
              self.validate_draft_media_references(group, &attachments)?;
              (
                  AppMessageIntent::Media {
@@ -56,7 +68,7 @@ index b412ce25..2e04dfec 100644
                      attachments,
                      caption: Some(draft.content),
                  },
-@@ -4642,6 +4646,7 @@ impl AppClient {
+@@ -4779,6 +4783,7 @@ impl AppClient {
              .send_app_event(
                  group_id,
                  AppMessageIntent::Media {
@@ -64,7 +76,7 @@ index b412ce25..2e04dfec 100644
                      attachments,
                      caption,
                  },
-@@ -4737,6 +4742,8 @@ impl AppClient {
+@@ -4874,6 +4879,8 @@ impl AppClient {
          let (source_epoch, media_secret) = self.encrypted_media_secret(group_id)?;
          let account = self.app.account_home().account(&self.state.label)?;
          let signer = self.app.account_signer_for_summary(&account)?;
@@ -73,7 +85,7 @@ index b412ce25..2e04dfec 100644
          let should_send = request.send;
          let caption = request.caption.clone();
          Ok((
-@@ -4757,6 +4764,7 @@ impl AppClient {
+@@ -4894,6 +4901,7 @@ impl AppClient {
                  media_secret,
                  should_send,
                  caption,
@@ -81,7 +93,7 @@ index b412ce25..2e04dfec 100644
              },
          ))
      }
-@@ -4769,13 +4777,23 @@ impl AppClient {
+@@ -4906,13 +4914,23 @@ impl AppClient {
          if !finish.should_send {
              return Ok(result);
          }
@@ -121,10 +133,10 @@ index 0fa7520d..2471be16 100644
          | AppMessageIntent::Media { .. }
          | AppMessageIntent::Poll { .. }
 diff --git a/crates/marmot-app/src/local_submissions.rs b/crates/marmot-app/src/local_submissions.rs
-index 1a6e59ef..779073d7 100644
+index 013ed1af..4c19304e 100644
 --- a/crates/marmot-app/src/local_submissions.rs
 +++ b/crates/marmot-app/src/local_submissions.rs
-@@ -97,6 +97,7 @@ impl LocalMessageRequest {
+@@ -100,6 +100,7 @@ impl LocalMessageRequest {
              AppMessageIntent::Media {
                  attachments: self.attachments.clone(),
                  caption: Some(self.content.clone()),
@@ -165,7 +177,7 @@ index 92f57c3e..71b0ab4e 100644
              file_name: "release.apk".to_owned(),
              media_type: "application/vnd.android.package-archive".to_owned(),
 diff --git a/crates/marmot-app/src/messages/intents.rs b/crates/marmot-app/src/messages/intents.rs
-index d69bdd4f..d263fdc8 100644
+index d69bdd4f..14320c18 100644
 --- a/crates/marmot-app/src/messages/intents.rs
 +++ b/crates/marmot-app/src/messages/intents.rs
 @@ -205,6 +205,10 @@ pub(crate) enum AppMessageIntent {
@@ -252,7 +264,15 @@ index d69bdd4f..d263fdc8 100644
  fn validate_custom_event_kind(kind: u64) -> Result<(), AppError> {
      if is_reserved_app_event_kind(kind) {
          return Err(AppError::InvalidAppMessagePayload(format!(
-@@ -1170,3 +1211,49 @@ mod reporting_tests {
+@@ -999,6 +1040,7 @@ mod mention_tests {
+                 text: "same text".into(),
+             },
+             AppMessageIntent::Media {
++                message_tags: Vec::new(),
+                 caption: Some("same text".into()),
+                 attachments: vec![MediaAttachmentReference {
+                     locators: vec![],
+@@ -1170,3 +1212,49 @@ mod reporting_tests {
          }
      }
  }
@@ -262,7 +282,7 @@ index d69bdd4f..d263fdc8 100644
 +    use super::*;
 +    #[test]
 +    fn message_application_tags() {
-+        let pk = nostr::Keys::generate().public_key().to_hex();
++        let pk = nostr::prelude::Keys::generate().public_key().to_hex();
 +        let reference = "ab".repeat(32);
 +        let tags = vec![
 +            vec!["effect".into(), "party".into()],
@@ -316,10 +336,10 @@ index 8530afbf..5762e10b 100644
  };
  pub use intents::{is_reserved_app_event_kind, is_stream_final_event, tag_value, tag_values};
 diff --git a/crates/marmot-app/src/runtime/mod.rs b/crates/marmot-app/src/runtime/mod.rs
-index 4d00c01b..fc969f90 100644
+index 8cd1a5df..f93cf389 100644
 --- a/crates/marmot-app/src/runtime/mod.rs
 +++ b/crates/marmot-app/src/runtime/mod.rs
-@@ -2490,6 +2490,29 @@ impl MarmotAppRuntime {
+@@ -2619,6 +2619,29 @@ impl MarmotAppRuntime {
          Ok(summary)
      }
  
@@ -349,7 +369,7 @@ index 4d00c01b..fc969f90 100644
      pub async fn send_agent_activity(
          &self,
          account_ref: &str,
-@@ -3394,6 +3417,7 @@ impl MarmotAppRuntime {
+@@ -3549,6 +3572,7 @@ impl MarmotAppRuntime {
                  account_ref,
                  group_id,
                  AppMessageIntent::Media {
@@ -358,10 +378,10 @@ index 4d00c01b..fc969f90 100644
                      caption,
                  },
 diff --git a/crates/marmot-app/src/tests.rs b/crates/marmot-app/src/tests.rs
-index 6215c856..e49c6aa0 100644
+index e90db290..9dcb8617 100644
 --- a/crates/marmot-app/src/tests.rs
 +++ b/crates/marmot-app/src/tests.rs
-@@ -5278,6 +5278,7 @@ async fn media_send_epoch_pin_body() {
+@@ -3854,6 +3854,7 @@ async fn media_send_epoch_pin_body() {
          .send_app_event(
              &group_id,
              AppMessageIntent::Media {
@@ -369,7 +389,7 @@ index 6215c856..e49c6aa0 100644
                  attachments: vec![pinned_elsewhere],
                  caption: None,
              },
-@@ -5336,6 +5337,7 @@ async fn media_send_epoch_pin_body() {
+@@ -3912,6 +3913,7 @@ async fn media_send_epoch_pin_body() {
          .send_app_event(
              &group_id,
              AppMessageIntent::Media {
@@ -377,7 +397,7 @@ index 6215c856..e49c6aa0 100644
                  attachments: vec![current],
                  caption: None,
              },
-@@ -13561,6 +13563,7 @@ fn reply_intent_builds_kind_nine_with_e_and_q_tags() {
+@@ -13593,6 +13595,7 @@ fn reply_intent_builds_kind_nine_with_e_and_q_tags() {
  #[test]
  fn media_intent_builds_kind_nine_with_ordered_imeta_tags() {
      let event = build(AppMessageIntent::Media {
@@ -385,7 +405,7 @@ index 6215c856..e49c6aa0 100644
          attachments: vec![
              MediaAttachmentReference {
                  locators: vec![MediaLocator {
-@@ -13938,6 +13941,7 @@ fn received_media_message_with_out_of_policy_locator_is_still_delivered() {
+@@ -13970,6 +13973,7 @@ fn received_media_message_with_out_of_policy_locator_is_still_delivered() {
      // keeps a structurally well-formed media reference regardless of locator
      // policy; fetchability is decided later at download time.
      let event = build(AppMessageIntent::Media {
@@ -393,7 +413,7 @@ index 6215c856..e49c6aa0 100644
          attachments: vec![MediaAttachmentReference {
              // A locator kind that is not the default `blossom-v1` and would be
              // out of a blossom-only policy.
-@@ -13975,6 +13979,7 @@ fn received_media_message_with_out_of_policy_locator_is_still_delivered() {
+@@ -14007,6 +14011,7 @@ fn received_media_message_with_out_of_policy_locator_is_still_delivered() {
  
  fn malformed_media_message(version: &str) -> Vec<u8> {
      let mut event = build(AppMessageIntent::Media {
@@ -414,10 +434,10 @@ index 52ca8f35..25bdcd1f 100644
              caption: Some("caption".into()),
          },
 diff --git a/crates/marmot-app/tests/relay_runtime.rs b/crates/marmot-app/tests/relay_runtime.rs
-index 1bca104e..0e6c44b6 100644
+index 24d8c388..2e0c7ae5 100644
 --- a/crates/marmot-app/tests/relay_runtime.rs
 +++ b/crates/marmot-app/tests/relay_runtime.rs
-@@ -8616,6 +8616,98 @@ async fn relay_app_runtime_creates_default_agent_text_stream_group() {
+@@ -8630,6 +8630,98 @@ async fn relay_app_runtime_creates_default_agent_text_stream_group() {
      assert_eq!(alice_secret, repeated_alice_secret);
  }
  
@@ -516,7 +536,7 @@ index 1bca104e..0e6c44b6 100644
  #[tokio::test]
  async fn encrypted_media_upload_sends_ciphertext_and_download_decrypts_plaintext() {
      let dir = tempfile::tempdir().unwrap();
-@@ -8645,6 +8737,7 @@ async fn encrypted_media_upload_sends_ciphertext_and_download_decrypts_plaintext
+@@ -8659,6 +8751,7 @@ async fn encrypted_media_upload_sends_ciphertext_and_download_decrypts_plaintext
          .upload_media(
              &group_id,
              MediaUploadRequest {
@@ -524,7 +544,7 @@ index 1bca104e..0e6c44b6 100644
                  attachments: vec![
                      MediaUploadAttachmentRequest {
                          file_name: "note.txt".to_owned(),
-@@ -8771,6 +8864,7 @@ async fn encrypted_media_upload_sends_ciphertext_and_download_decrypts_plaintext
+@@ -8785,6 +8878,7 @@ async fn encrypted_media_upload_sends_ciphertext_and_download_decrypts_plaintext
          .upload_media(
              &group_id,
              MediaUploadRequest {
@@ -532,7 +552,7 @@ index 1bca104e..0e6c44b6 100644
                  attachments: vec![MediaUploadAttachmentRequest {
                      file_name: "repeat.txt".to_owned(),
                      media_type: "text/plain".to_owned(),
-@@ -8798,6 +8892,7 @@ async fn encrypted_media_upload_sends_ciphertext_and_download_decrypts_plaintext
+@@ -8812,6 +8906,7 @@ async fn encrypted_media_upload_sends_ciphertext_and_download_decrypts_plaintext
          .upload_media(
              &group_id,
              MediaUploadRequest {
@@ -540,7 +560,7 @@ index 1bca104e..0e6c44b6 100644
                  attachments: vec![MediaUploadAttachmentRequest {
                      file_name: "bob.txt".to_owned(),
                      media_type: "text/plain".to_owned(),
-@@ -8833,6 +8928,7 @@ async fn encrypted_media_upload_sends_ciphertext_and_download_decrypts_plaintext
+@@ -8847,6 +8942,7 @@ async fn encrypted_media_upload_sends_ciphertext_and_download_decrypts_plaintext
          .upload_media(
              &group_id,
              MediaUploadRequest {
@@ -548,7 +568,7 @@ index 1bca104e..0e6c44b6 100644
                  attachments: vec![MediaUploadAttachmentRequest {
                      file_name: "third.txt".to_owned(),
                      media_type: "text/plain".to_owned(),
-@@ -8888,6 +8984,7 @@ async fn retained_media_rehydrates_a_retired_current_epoch_before_the_group_adva
+@@ -8902,6 +8998,7 @@ async fn retained_media_rehydrates_a_retired_current_epoch_before_the_group_adva
          .upload_media(
              &group_id,
              MediaUploadRequest {
@@ -556,7 +576,7 @@ index 1bca104e..0e6c44b6 100644
                  attachments: vec![MediaUploadAttachmentRequest {
                      file_name: "expired.txt".to_owned(),
                      media_type: "text/plain".to_owned(),
-@@ -8952,6 +9049,7 @@ async fn retained_media_rehydrates_a_retired_current_epoch_before_the_group_adva
+@@ -8966,6 +9063,7 @@ async fn retained_media_rehydrates_a_retired_current_epoch_before_the_group_adva
          .upload_media(
              &group_id,
              MediaUploadRequest {
@@ -564,7 +584,7 @@ index 1bca104e..0e6c44b6 100644
                  attachments: vec![MediaUploadAttachmentRequest {
                      file_name: "retained.txt".to_owned(),
                      media_type: "text/plain".to_owned(),
-@@ -9113,6 +9211,7 @@ async fn upload_media_errors_when_policy_has_no_blossom_endpoint() {
+@@ -9127,6 +9225,7 @@ async fn upload_media_errors_when_policy_has_no_blossom_endpoint() {
          .upload_media(
              &group_id,
              MediaUploadRequest {
@@ -573,10 +593,10 @@ index 1bca104e..0e6c44b6 100644
                      file_name: "note.txt".to_owned(),
                      media_type: "text/plain".to_owned(),
 diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
-index 4e08aff3..d3f4e294 100644
+index 794e9d4a..8967678e 100644
 --- a/crates/marmot-c/include/marmot.h
 +++ b/crates/marmot-c/include/marmot.h
-@@ -3545,6 +3545,8 @@ typedef struct MarmotMediaUploadAttachmentRequest {
+@@ -3646,6 +3646,8 @@ typedef struct MarmotMediaUploadAttachmentRequest {
   * A full upload request. Borrowed input only.
   */
  typedef struct MarmotMediaUploadRequest {
@@ -585,7 +605,7 @@ index 4e08aff3..d3f4e294 100644
    const struct MarmotMediaUploadAttachmentRequest *attachments;
    uintptr_t attachments_len;
    /**
-@@ -8421,6 +8423,10 @@ MarmotStatus marmot_build_media_imeta_tag(const struct MarmotClient *client,
+@@ -8607,6 +8609,10 @@ MarmotStatus marmot_build_media_imeta_tag(const struct MarmotClient *client,
                                            const struct MarmotMediaAttachmentReference *reference,
                                            struct MarmotMessageTag **out);
  
@@ -597,10 +617,10 @@ index 4e08aff3..d3f4e294 100644
   * Send a custom application event into the group. `tags` is a flat
   * array of `tags_len` tag rows, each row a `(char **, len)` pair of
 diff --git a/crates/marmot-c/src/commands.rs b/crates/marmot-c/src/commands.rs
-index 14f9fe04..81a310df 100644
+index 2c78b818..3b0ec3d8 100644
 --- a/crates/marmot-c/src/commands.rs
 +++ b/crates/marmot-c/src/commands.rs
-@@ -2296,6 +2296,47 @@ pub unsafe extern "C" fn marmot_build_media_imeta_tag(
+@@ -2334,6 +2334,47 @@ pub unsafe extern "C" fn marmot_build_media_imeta_tag(
      })
  }
  

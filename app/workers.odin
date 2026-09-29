@@ -90,7 +90,7 @@ events_worker :: proc(t: ^thread.Thread) {
 		     .Epoch_Stall_Escalated,
 		     .Group_Change_Superseded:
 			group = event.body.group.group
-		case .Account_Error, .Agent_Stream_Activity:
+		case .Account_Error, .Agent_Stream_Activity, .History_Notices_Changed:
 			continue
 		}
 		if group == nil {

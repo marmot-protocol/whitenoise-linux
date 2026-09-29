@@ -1,8 +1,29 @@
-diff --git i/crates/marmot-c/src/commands.rs w/crates/marmot-c/src/commands.rs
-index 0792ad21..13454883 100644
---- i/crates/marmot-c/src/commands.rs
-+++ w/crates/marmot-c/src/commands.rs
-@@ -838,6 +838,7 @@ c_cmd! {
+diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
+index 8967678e..7e1dd1dc 100644
+--- a/crates/marmot-c/include/marmot.h
++++ b/crates/marmot-c/include/marmot.h
+@@ -6915,6 +6915,16 @@ MarmotStatus marmot_secure_delete_expired(const struct MarmotClient *client,
+  */
+ MarmotStatus marmot_catch_up_accounts(const struct MarmotClient *client);
+ 
++/**
++ *
++ * # Safety
++ * `client` must be a live handle; string arguments must be valid
++ * NUL-terminated strings (nullable ones may be NULL); array
++ * arguments must hold their stated length (or be NULL with
++ * length 0); out-pointers must be valid.
++ */
++MarmotStatus marmot_repair_full_history(const struct MarmotClient *client, const char *account_ref);
++
+ /**
+  * Per-account notification switches. Free with
+  * `marmot_notification_settings_free`.
+diff --git a/crates/marmot-c/src/commands.rs b/crates/marmot-c/src/commands.rs
+index 3b0ec3d8..4fb21e66 100644
+--- a/crates/marmot-c/src/commands.rs
++++ b/crates/marmot-c/src/commands.rs
+@@ -862,6 +862,7 @@ c_cmd! {
      /// One-time catch-up across every running account (e.g. after a push
      /// wake).
      async fn marmot_catch_up_accounts() -> unit = catch_up_accounts;
@@ -10,10 +31,10 @@ index 0792ad21..13454883 100644
  
      /// Per-account notification switches. Free with
      /// `marmot_notification_settings_free`.
-diff --git i/crates/marmot-uniffi/src/commands/notification.rs w/crates/marmot-uniffi/src/commands/notification.rs
+diff --git a/crates/marmot-uniffi/src/commands/notification.rs b/crates/marmot-uniffi/src/commands/notification.rs
 index d85219fe..1e75aa8e 100644
---- i/crates/marmot-uniffi/src/commands/notification.rs
-+++ w/crates/marmot-uniffi/src/commands/notification.rs
+--- a/crates/marmot-uniffi/src/commands/notification.rs
++++ b/crates/marmot-uniffi/src/commands/notification.rs
 @@ -47,6 +47,12 @@ impl Marmot {
          Ok(())
      }
@@ -27,22 +48,3 @@ index d85219fe..1e75aa8e 100644
      /// Interrupt retry backoff for durable outbound work after the host has
      /// observed usable connectivity. This is a scheduling signal only; it does
      /// not recreate application events or weaken exact-replay guarantees.
---- a/crates/marmot-c/include/marmot.h
-+++ b/crates/marmot-c/include/marmot.h
-@@ -6545,6 +6545,16 @@
- MarmotStatus marmot_catch_up_accounts(const struct MarmotClient *client);
- 
- /**
-+ *
-+ * # Safety
-+ * `client` must be a live handle; string arguments must be valid
-+ * NUL-terminated strings (nullable ones may be NULL); array
-+ * arguments must hold their stated length (or be NULL with
-+ * length 0); out-pointers must be valid.
-+ */
-+MarmotStatus marmot_repair_full_history(const struct MarmotClient *client, const char *account_ref);
-+
-+/**
-  * Per-account notification switches. Free with
-  * `marmot_notification_settings_free`.
-  *

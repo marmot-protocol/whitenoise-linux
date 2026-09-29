@@ -1,5 +1,5 @@
 diff --git a/Cargo.lock b/Cargo.lock
-index dbb3ce90..6c086a57 100644
+index 6e94733f..40802c7f 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
 @@ -6703,6 +6703,7 @@ dependencies = [
@@ -7,19 +7,19 @@ index dbb3ce90..6c086a57 100644
   "hex",
   "nostr 0.45.5",
 + "nostr-gossip",
+  "nostr-memory",
   "nostr-relay-builder",
   "nostr-sdk",
-  "serde",
 diff --git a/Cargo.toml b/Cargo.toml
-index 7de16e17..ecfb9de0 100644
+index 62d86124..ef80208a 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -105,6 +105,7 @@ rustls = { version = "0.23.45", default-features = false, features = ["ring", "s
  # the broker can build ALPN-carrying rustls client configs with platform trust.
  rustls-platform-verifier = "0.6"
- nostr = { git = "https://github.com/erskingardner/rust-nostr", rev = "63384e485d55097cb3d9e57a2146f453a5742570", default-features = false, features = ["std", "rand", "os-rng", "nip04", "nip49", "nip59"] }
-+nostr-gossip = { git = "https://github.com/erskingardner/rust-nostr", rev = "63384e485d55097cb3d9e57a2146f453a5742570" }
- nostr-sdk = { git = "https://github.com/erskingardner/rust-nostr", rev = "63384e485d55097cb3d9e57a2146f453a5742570", features = ["local-relay"] }
+ nostr = { git = "https://github.com/erskingardner/rust-nostr", rev = "a9c7a6423d104c603de6ea8244265ea17f0f9d89", default-features = false, features = ["std", "rand", "os-rng", "nip04", "nip49", "nip59"] }
++nostr-gossip = { git = "https://github.com/erskingardner/rust-nostr", rev = "a9c7a6423d104c603de6ea8244265ea17f0f9d89" }
+ nostr-sdk = { git = "https://github.com/erskingardner/rust-nostr", rev = "a9c7a6423d104c603de6ea8244265ea17f0f9d89", features = ["local-relay"] }
  nostr-relay-builder = "0.44"
  # OTLP export (behind the marmot-app `otlp-export` feature): map pre-aggregated
 diff --git a/crates/marmot-app/src/client/push.rs b/crates/marmot-app/src/client/push.rs
@@ -383,7 +383,7 @@ index 00000000..5dbf0f72
 +    }
 +}
 diff --git a/crates/marmot-app/src/notifications.rs b/crates/marmot-app/src/notifications.rs
-index 1dcbd294..dbb2b098 100644
+index a8665d79..cd8a94e3 100644
 --- a/crates/marmot-app/src/notifications.rs
 +++ b/crates/marmot-app/src/notifications.rs
 @@ -56,6 +56,9 @@ pub const PUSH_VERSION: &str = "marmot-push-v1";
@@ -464,18 +464,18 @@ index ff7c6a5b..18a36b34 100644
  
  #[tokio::test]
 diff --git a/crates/marmot-app/src/relay_plane/mod.rs b/crates/marmot-app/src/relay_plane/mod.rs
-index 492f60d2..6faf2e78 100644
+index d1b230c3..f803f62f 100644
 --- a/crates/marmot-app/src/relay_plane/mod.rs
 +++ b/crates/marmot-app/src/relay_plane/mod.rs
 @@ -10,10 +10,11 @@ use async_trait::async_trait;
  use cgka_traits::transport::Timestamp;
  use cgka_traits::{
-     MemberId, TransportAccountActivation, TransportAdapter, TransportAdapterError,
--    TransportDelivery, TransportEndpoint, TransportGroupSubscription, TransportGroupSync,
--    TransportPublishReport, TransportPublishRequest,
-+    TransportDelivery, TransportEndpoint, TransportEndpointFailure, TransportEndpointFailureKind,
-+    TransportEndpointRejectionCategory, TransportGroupSubscription, TransportGroupSync,
-+    TransportPublishFailure, TransportPublishReport, TransportPublishRequest,
+     MemberId, MessageId, TransportAccountActivation, TransportAdapter, TransportAdapterError,
+-    TransportDelivery, TransportDeliveryPlane, TransportEndpoint, TransportGroupSubscription,
+-    TransportGroupSync, TransportPublishReport, TransportPublishRequest,
++    TransportDelivery, TransportDeliveryPlane, TransportEndpoint, TransportEndpointFailure,
++    TransportEndpointFailureKind, TransportEndpointRejectionCategory, TransportGroupSubscription,
++    TransportGroupSync, TransportPublishFailure, TransportPublishReport, TransportPublishRequest,
  };
 -use futures::{Stream, StreamExt};
 +use futures::{Stream, StreamExt, stream::FuturesUnordered};
@@ -484,33 +484,33 @@ index 492f60d2..6faf2e78 100644
      Client as NostrSdkClient, ClientNotification, Filter, Kind, PublicKey, RelayMessage, RelayUrl,
 @@ -23,7 +24,7 @@ use rand::RngCore;
  use serde::{Deserialize, Serialize};
- use tokio::sync::{Mutex, broadcast, mpsc};
+ use tokio::sync::{Mutex, Notify, broadcast, mpsc};
  use tokio::task::JoinHandle;
 -use tokio::time::timeout;
 +use tokio::time::{timeout, timeout_at};
  use transport_nostr_adapter::{
      AccountSubscriptionEose, NostrAcquisitionCancellation, NostrAcquisitionError,
-     NostrAcquisitionRequest, NostrAcquisitionResult, NostrPublishOutcome, NostrReconciliationItem,
-@@ -72,6 +73,7 @@ const RELAY_PLANE_TASK_ABORT_WAIT: Duration = Duration::from_millis(250);
+     NostrAcquisitionRequest, NostrAcquisitionResult, NostrNotificationLossFloor,
+@@ -77,6 +78,7 @@ const RELAY_PLANE_TASK_ABORT_WAIT: Duration = Duration::from_millis(250);
  const RELAY_NOTIFICATION_RESTART_INITIAL_BACKOFF: Duration = Duration::from_millis(100);
  const RELAY_NOTIFICATION_RESTART_MAX_BACKOFF: Duration = Duration::from_secs(30);
  const RELAY_NOTIFICATION_RESTART_HEALTHY_RUNTIME: Duration = Duration::from_secs(5);
 +const ACCOUNT_PUBLISH_WAIT: Duration = Duration::from_secs(20);
- 
- #[derive(Clone)]
- pub struct MarmotRelayPlane {
-@@ -138,6 +140,7 @@ pub struct MarmotRelayPlaneAccountAdapter {
+ /// Notifications a relay consumer may queue for its event worker before the
+ /// backlog counts as receiver loss. A catch-up rebuild replays every stored
+ /// event inside the lookback window as a raw relay copy, plus a deduplicated
+@@ -220,6 +222,7 @@ pub struct MarmotRelayPlaneAccountAdapter {
      account_id: MemberId,
      relay_plane: MarmotRelayPlane,
      publish_client: Arc<dyn NostrRelayClient>,
 +    anonymous_publish_client: Option<NostrSdkRelayClient>,
      delivery_rx: Arc<Mutex<mpsc::Receiver<AccountDeliveryEvent>>>,
      delivery_overflow: Arc<AccountDeliveryOverflowState>,
-     incremental_activation: Arc<Mutex<Option<IncrementalActivation>>>,
-@@ -813,10 +816,19 @@ impl MarmotRelayPlane {
-                 recovery_marker,
-             },
-         );
+     /// The queue generation `delivery_rx` belongs to.
+@@ -1412,10 +1415,19 @@ impl MarmotRelayPlane {
+             enqueue_account_delivery_overflow_signal(&signal_tx, &delivery_overflow, generation);
+         }
+         drop(routes);
 +        // Never share a socket with the authenticated receive pool or Welcome
 +        // publisher. Adapter clones retain this account's anonymous WRITE pool.
 +        let anonymous_publish_client = self
@@ -526,8 +526,8 @@ index 492f60d2..6faf2e78 100644
 +            anonymous_publish_client,
              delivery_rx: Arc::new(Mutex::new(delivery_rx)),
              delivery_overflow,
-             incremental_activation: Arc::new(Mutex::new(None)),
-@@ -2320,6 +2332,141 @@ fn recover_relay_notification_forwarder_scoped(
+             delivery_epoch,
+@@ -3215,6 +3227,141 @@ fn push_eose_repair_report(transport: &RelayPlaneTransport, report: EoseRepairRe
  }
  
  impl MarmotRelayPlaneAccountAdapter {
@@ -669,43 +669,46 @@ index 492f60d2..6faf2e78 100644
      /// Explicit catch-up must reissue even settled, matching subscriptions.
      /// Cancellation leaves reuse disabled until an activation succeeds.
      pub(crate) async fn require_fresh_activation(&self) {
-@@ -2722,15 +2869,29 @@ impl TransportAdapter for MarmotRelayPlaneAccountAdapter {
-         request.validate_envelope_matches_target()?;
-         let event = NostrTransportEvent::from_transport_message(&request.message)
-             .map_err(|e| TransportAdapterError::Publish(format!("Nostr payload: {e}")))?;
--        let outcome = self
--            .publish_client
--            .publish_event_for_account(
+@@ -3791,11 +3938,32 @@ impl TransportAdapter for MarmotRelayPlaneAccountAdapter {
+             .inner
+             .transport
+             .adapter
+-            .publish_event_with_client(
+-                self.publish_client.as_ref(),
 -                &request.account_id,
-+        // Welcome fanout keeps its account publisher; a blocked inbox write
-+        // cannot stall the independent anonymous group publisher.
-+        let outcome = if matches!(
-+            request.target,
-+            cgka_traits::TransportPublishTarget::Group { .. }
-+        ) {
-+            self.publish_signed_event(
-+                self.publish_client.as_ref(),
-                 request.target.endpoints(),
-                 &event,
+-                request.target.endpoints(),
+-                &event,
++            .publish_event_with_accounting(
++                async {
++                    // Welcome fanout keeps its account publisher; a blocked inbox
++                    // write cannot stall the independent anonymous group publisher.
++                    if matches!(
++                        request.target,
++                        cgka_traits::TransportPublishTarget::Group { .. }
++                    ) {
++                        self.publish_signed_event(
++                            self.publish_client.as_ref(),
++                            request.target.endpoints(),
++                            &event,
++                            request.required_acks,
++                        )
++                        .await
++                    } else {
++                        self.publish_client
++                            .publish_event_for_account(
++                                &self.account_id,
++                                request.target.endpoints(),
++                                &event,
++                                request.required_acks,
++                            )
++                            .await
++                    }
++                },
                  request.required_acks,
              )
--            .await?;
-+            .await?
-+        } else {
-+            self.publish_client
-+                .publish_event_for_account(
-+                    &self.account_id,
-+                    request.target.endpoints(),
-+                    &event,
-+                    request.required_acks,
-+                )
-+                .await?
-+        };
-         let local_fanout_endpoints = if !outcome.accepted.is_empty() {
-             outcome
-                 .accepted
+             .await?;
 diff --git a/crates/marmot-app/src/relay_plane/tests.rs b/crates/marmot-app/src/relay_plane/tests.rs
-index 59c7aa12..0ff4ccaa 100644
+index 2f4657e4..4fa19db4 100644
 --- a/crates/marmot-app/src/relay_plane/tests.rs
 +++ b/crates/marmot-app/src/relay_plane/tests.rs
 @@ -1,5 +1,5 @@
@@ -715,9 +718,9 @@ index 59c7aa12..0ff4ccaa 100644
  fn test_notification_stream(
      receiver: broadcast::Receiver<RelayPoolNotification>,
  ) -> RelayNotificationStream {
-@@ -3240,3 +3240,366 @@ async fn loss_authority_router_updates_a_marker_with_its_control_already_queued(
-         "count updates do not enqueue duplicate controls"
-     );
+@@ -5768,3 +5768,366 @@ async fn a_lag_that_postpones_a_follow_up_repair_owns_the_pass() {
+     assert_eq!(reports[0].lags, 1);
+     plane.shutdown().await;
  }
 +
 +#[derive(Debug, Clone)]
@@ -1083,10 +1086,10 @@ index 59c7aa12..0ff4ccaa 100644
 +    plane.shutdown().await;
 +}
 diff --git a/crates/marmot-app/tests/relay_runtime.rs b/crates/marmot-app/tests/relay_runtime.rs
-index 6f090289..d4db8b57 100644
+index e8d87567..abb890fe 100644
 --- a/crates/marmot-app/tests/relay_runtime.rs
 +++ b/crates/marmot-app/tests/relay_runtime.rs
-@@ -31,7 +31,7 @@ use nostr_relay_builder::prelude::{
+@@ -33,7 +33,7 @@ use nostr_relay_builder::prelude::{
  };
  use nostr_relay_builder::{LocalRelay, MockRelay, RelayBuilder};
  use nostr_sdk::prelude::{
@@ -1095,7 +1098,7 @@ index 6f090289..d4db8b57 100644
      Timestamp as NostrTimestamp,
  };
  use sha2::{Digest, Sha256};
-@@ -189,6 +189,353 @@ async fn active_group_send_timings() {
+@@ -191,6 +191,353 @@ async fn active_group_send_timings() {
      }
  }
  
@@ -1449,7 +1452,7 @@ index 6f090289..d4db8b57 100644
  async fn mock_relay() -> (MockRelay, String) {
      let relay = MockRelay::run().await.unwrap();
      let url = relay.url().await.to_string();
-@@ -6014,6 +6361,9 @@ async fn app_runtime_declines_pending_invite_by_leaving_and_archiving() {
+@@ -6028,6 +6375,9 @@ async fn app_runtime_declines_pending_invite_by_leaving_and_archiving() {
      })
      .await;
  
@@ -1488,7 +1491,7 @@ index bbc360d0..d5490dd5 100644
          let root = tempfile::tempdir().unwrap();
          let app = MarmotApp::with_relays(root.path(), vec![url.clone()]);
 diff --git a/crates/transport-nostr-adapter/Cargo.toml b/crates/transport-nostr-adapter/Cargo.toml
-index 96a1be54..2e33a876 100644
+index 5874b2c7..9916587f 100644
 --- a/crates/transport-nostr-adapter/Cargo.toml
 +++ b/crates/transport-nostr-adapter/Cargo.toml
 @@ -8,7 +8,7 @@ description = "Nostr transport adapter for Marmot CGKA transport messages."
@@ -1509,10 +1512,38 @@ index 96a1be54..2e33a876 100644
  serde.workspace = true
  serde_json.workspace = true
 diff --git a/crates/transport-nostr-adapter/src/lib.rs b/crates/transport-nostr-adapter/src/lib.rs
-index 4f3710e6..31de809c 100644
+index 87b78caf..720a4075 100644
 --- a/crates/transport-nostr-adapter/src/lib.rs
 +++ b/crates/transport-nostr-adapter/src/lib.rs
-@@ -1374,6 +1374,14 @@ impl TransportAdapter for NostrTransportAdapter {
+@@ -865,11 +865,24 @@ impl NostrTransportAdapter {
+         endpoints: &[TransportEndpoint],
+         event: &NostrTransportEvent,
+         required_acks: usize,
++    ) -> Result<NostrPublishOutcome, TransportAdapterError> {
++        self.publish_event_with_accounting(
++            client.publish_event_for_account(account_id, endpoints, event, required_acks),
++            required_acks,
++        )
++        .await
++    }
++
++    /// Record one logical publication, including a race across anonymous and
++    /// authenticated clients, with the same outcome and cancellation semantics
++    /// as [`Self::publish_event_with_client`].
++    pub async fn publish_event_with_accounting(
++        &self,
++        publish: impl Future<Output = Result<NostrPublishOutcome, TransportAdapterError>>,
++        required_acks: usize,
+     ) -> Result<NostrPublishOutcome, TransportAdapterError> {
+         let mut attempt = self.publish_accounting.begin();
+-        let outcome = client
+-            .publish_event_for_account(account_id, endpoints, event, required_acks)
+-            .await;
++        let outcome = publish.await;
+         match &outcome {
+             Ok(result)
+                 if publish_accounting::outcome_met_required_acks(
+@@ -1730,6 +1743,14 @@ impl TransportAdapter for NostrTransportAdapter {
                  .accounts
                  .get(&sync.account_id)
                  .expect("the AccountNotActive guard above proved the account is active");
@@ -1528,28 +1559,29 @@ index 4f3710e6..31de809c 100644
              // new attempt, so both sides of the diff carry the activation's own
              // attempt and the ids stay stable across it.
 diff --git a/crates/transport-nostr-adapter/src/sdk_client.rs b/crates/transport-nostr-adapter/src/sdk_client.rs
-index 500bfd5f..e2099d7e 100644
+index 69b31f62..1ceee363 100644
 --- a/crates/transport-nostr-adapter/src/sdk_client.rs
 +++ b/crates/transport-nostr-adapter/src/sdk_client.rs
-@@ -12,12 +12,14 @@ use cgka_traits::{
-     TransportPublishFailure, collapse_publish_failure_summaries,
+@@ -13,13 +13,14 @@ use cgka_traits::{
+     collapse_publish_failure_summaries,
  };
  use futures::StreamExt;
 +use nostr_gossip::NostrGossip;
  use nostr_sdk::NotificationUpdate;
  use nostr_sdk::prelude::{
      AcquisitionEnd as SdkAcquisitionEnd, AcquisitionLimits as SdkAcquisitionLimits, Client,
--    ClientNotification, Event, EventBuilder, EventId, Filter, FinalizeEventAsync, Kind, PublicKey,
--    RelayAcquisition, RelayCapabilities, RelayMessage, RelayStatus, RelayUrl, ReqTarget,
--    SingleLetterTag, SubscriptionId, SyncDirection, SyncOptions, Tag, Timestamp as NostrTimestamp,
-+    ClientBuilder, ClientNotification, ErrorKind as SdkErrorKind, Event, EventBuilder, EventId,
-+    Filter, FinalizeEventAsync, Kind, PublicKey, RelayAcquisition, RelayCapabilities, RelayMessage,
-+    RelayStatus, RelayUrl, ReqTarget, SingleLetterTag, SubscriptionId, SyncDirection, SyncOptions,
-+    Tag, Timestamp as NostrTimestamp,
+-    ClientMessage, ClientNotification, Event, EventBuilder, EventId, Filter, FinalizeEventAsync,
+-    Kind, PublicKey, Relay, RelayAcquisition, RelayCapabilities, RelayMessage, RelayStatus,
+-    RelayUrl, ReqTarget, SingleLetterTag, SubscriptionId, SyncDirection, SyncOptions, Tag,
+-    Timestamp as NostrTimestamp,
++    ClientBuilder, ClientMessage, ClientNotification, ErrorKind as SdkErrorKind, Event,
++    EventBuilder, EventId, Filter, FinalizeEventAsync, Kind, PublicKey, Relay, RelayAcquisition,
++    RelayCapabilities, RelayMessage, RelayStatus, RelayUrl, ReqTarget, SingleLetterTag,
++    SubscriptionId, SyncDirection, SyncOptions, Tag, Timestamp as NostrTimestamp,
  };
+ use nostr_sdk::relay::EventSendStatus;
  use tokio::sync::{Mutex, RwLock, mpsc, watch};
- use tokio::task::{JoinHandle, JoinSet};
-@@ -65,6 +67,9 @@ const SDK_RELAY_BATCH_OVERALL_WAIT: Duration = Duration::from_secs(60);
+@@ -69,6 +70,9 @@ const SDK_RELAY_BATCH_OVERALL_WAIT: Duration = Duration::from_secs(60);
  /// fan-outs. Four covers the generated-account bootstrap cohort while keeping
  /// larger batches backpressured.
  const SDK_RELAY_BATCH_MAX_IN_FLIGHT: usize = 4;
@@ -1559,18 +1591,21 @@ index 500bfd5f..e2099d7e 100644
  /// One route gets a strict pass-wide budget, including set comparison, replay
  /// fetch, decoding, and materialization. The app rotates routes durably, so a
  /// slow route cannot consume the whole account startup quantum.
-@@ -301,8 +306,9 @@ pub struct NostrSdkRelayClient {
+@@ -410,11 +414,12 @@ pub struct NostrSdkRelayClient {
      account_clients: Arc<RwLock<HashMap<MemberId, NostrSdkRelayClient>>>,
      notification_loss_tx: watch::Sender<Option<NostrNotificationLoss>>,
      require_account_context: bool,
 +    publication: SdkPublication,
      account_subscriptions: Arc<RwLock<HashMap<MemberId, Vec<SubscriptionId>>>>,
+     /// Floors of the REQs this client issued, read at a receiver lag. A
+     /// std lock, never held across an await.
+     subscription_floors: Arc<StdMutex<SubscriptionFloors>>,
 -    publish_relay_refs: Arc<Mutex<HashMap<RelayUrl, usize>>>,
 +    publish_relay_cache: Arc<PublishRelayCache>,
      #[cfg(test)]
      publish_connect_attempts: Arc<Mutex<HashMap<RelayUrl, usize>>>,
      #[cfg(test)]
-@@ -346,6 +352,136 @@ impl Drop for ForwarderWorkerGuard {
+@@ -458,6 +463,136 @@ impl Drop for ForwarderWorkerGuard {
      }
  }
  
@@ -1707,7 +1742,7 @@ index 500bfd5f..e2099d7e 100644
  struct ScopedPublishRelayLease {
      owner: NostrSdkRelayClient,
      endpoints: Vec<RelayUrl>,
-@@ -359,23 +495,17 @@ impl ScopedPublishRelayLease {
+@@ -471,23 +606,17 @@ impl ScopedPublishRelayLease {
          }
      }
  
@@ -1739,7 +1774,7 @@ index 500bfd5f..e2099d7e 100644
          }
      }
  }
-@@ -407,14 +537,18 @@ struct PreparedPublish {
+@@ -519,15 +648,19 @@ struct PreparedPublish {
  impl NostrSdkRelayClient {
      pub fn new(client: Client) -> Self {
          Self {
@@ -1755,11 +1790,12 @@ index 500bfd5f..e2099d7e 100644
              require_account_context: false,
 +            publication: SdkPublication::OpaqueClient,
              account_subscriptions: Arc::new(RwLock::new(HashMap::new())),
+             subscription_floors: Arc::default(),
 -            publish_relay_refs: Arc::new(Mutex::new(HashMap::new())),
              #[cfg(test)]
              publish_connect_attempts: Arc::new(Mutex::new(HashMap::new())),
              #[cfg(test)]
-@@ -483,12 +617,12 @@ impl NostrSdkRelayClient {
+@@ -596,12 +729,12 @@ impl NostrSdkRelayClient {
                  "account signer changed without removing prior context".to_owned(),
              ));
          }
@@ -1778,7 +1814,7 @@ index 500bfd5f..e2099d7e 100644
          clients.insert(account_id, context.clone());
          Ok(context)
      }
-@@ -544,6 +678,18 @@ impl NostrSdkRelayClient {
+@@ -657,6 +790,18 @@ impl NostrSdkRelayClient {
          Ok(())
      }
  
@@ -1797,7 +1833,7 @@ index 500bfd5f..e2099d7e 100644
      pub fn client(&self) -> &Client {
          &self.client
      }
-@@ -1105,11 +1251,17 @@ impl NostrSdkRelayClient {
+@@ -1599,11 +1744,17 @@ impl NostrSdkRelayClient {
          // the SDK's bounded connection attempt so pre-send failures remain
          // explicitly retryable and a host connectivity wake can replay them
          // immediately.
@@ -1820,7 +1856,7 @@ index 500bfd5f..e2099d7e 100644
              Ok(()) => Ok(endpoint),
              // Failure reasons never embed the nostr-sdk error Display: it
              // commonly carries the relay URL, and these reasons flow into
-@@ -1125,8 +1277,81 @@ impl NostrSdkRelayClient {
+@@ -1619,8 +1770,81 @@ impl NostrSdkRelayClient {
          }
      }
  
@@ -1829,7 +1865,7 @@ index 500bfd5f..e2099d7e 100644
 +        endpoint: &RelayUrl,
 +        event: &Event,
 +        transport_endpoint: &TransportEndpoint,
-+    ) -> Result<(), TransportEndpointFailure> {
++    ) -> Result<Option<TransportEndpointAckKind>, TransportEndpointFailure> {
 +        let local_failure = |reason: &str| TransportEndpointFailure {
 +            endpoint: transport_endpoint.clone(),
 +            reason: reason.to_owned(),
@@ -1846,7 +1882,7 @@ index 500bfd5f..e2099d7e 100644
 +                    .map_err(|_| local_failure("send event failed"))?;
 +                let remote = output.failed.get(endpoint).map(String::as_str);
 +                if relay_endpoint_publish_accepted(output.success.contains_key(endpoint), remote) {
-+                    Ok(())
++                    Ok(typed_relay_ack_kind(output.success.get(endpoint)))
 +                } else if let Some(remote) = remote {
 +                    Err(relay_rejection_endpoint_failure(
 +                        transport_endpoint.clone(),
@@ -1877,11 +1913,11 @@ index 500bfd5f..e2099d7e 100644
 +                    .map_err(|_| local_failure("send event failed"))?
 +                    .ok_or_else(|| local_failure("send event failed"))?;
 +                match relay.send_event(event).await {
-+                    Ok(_) => Ok(()),
++                    Ok(output) => Ok(typed_relay_ack_kind(Some(output.status()))),
 +                    Err(error) if error.kind() == SdkErrorKind::Rejected => {
 +                        let message = error.to_string();
 +                        if relay_endpoint_publish_accepted(false, Some(&message)) {
-+                            Ok(())
++                            Ok(None)
 +                        } else {
 +                            Err(relay_rejection_endpoint_failure(
 +                                transport_endpoint.clone(),
@@ -1903,7 +1939,7 @@ index 500bfd5f..e2099d7e 100644
          endpoint: RelayUrl,
          event: Event,
      ) -> Result<TransportEndpointReceipt, TransportEndpointFailure> {
-@@ -1140,43 +1365,17 @@ impl NostrSdkRelayClient {
+@@ -1634,47 +1858,18 @@ impl NostrSdkRelayClient {
          for attempt in 1..=SDK_RELAY_PUBLISH_ATTEMPTS {
              match timeout(
                  SDK_RELAY_PUBLISH_WAIT,
@@ -1918,10 +1954,15 @@ index 500bfd5f..e2099d7e 100644
 -                        output.failed.get(&endpoint).map(String::as_str),
 -                    ) =>
 -                {
-+                Ok(Ok(())) => {
++                Ok(Ok(ack_kind)) => {
                      return Ok(TransportEndpointReceipt {
                          endpoint: transport_endpoint,
                          accepted_at: None,
+-                        // Only a typed SDK ACK can establish this detail. The
+-                        // legacy failed-map duplicate path remains accepted
+-                        // but has no preserved ACK status to classify.
+-                        ack_kind: typed_relay_ack_kind(output.success.get(&endpoint)),
++                        ack_kind,
                      });
                  }
 -                Ok(Ok(output)) => {
@@ -1950,7 +1991,7 @@ index 500bfd5f..e2099d7e 100644
                  Err(_) => {
                      last_failure.reason = "send event timed out".to_owned();
                      last_failure.kind = TransportEndpointFailureKind::PossiblyExposed;
-@@ -1221,7 +1420,7 @@ impl NostrSdkRelayClient {
+@@ -1719,7 +1914,7 @@ impl NostrSdkRelayClient {
                  if connect_before_send {
                      sdk.connect_publish_relay(endpoint.clone()).await?;
                  }
@@ -1959,7 +2000,7 @@ index 500bfd5f..e2099d7e 100644
              });
          }
  
-@@ -1266,6 +1465,22 @@ impl NostrSdkRelayClient {
+@@ -1764,6 +1959,22 @@ impl NostrSdkRelayClient {
          // releasing the batch lease so no send future can race cleanup.
          if aborted_publishes {
              while publishes.join_next().await.is_some() {}
@@ -1982,7 +2023,7 @@ index 500bfd5f..e2099d7e 100644
          }
          self.reset_ambiguous_publish_relays(&failed).await;
          Self::finish_publish_outcome(
-@@ -1284,12 +1499,8 @@ impl NostrSdkRelayClient {
+@@ -1782,12 +1993,8 @@ impl NostrSdkRelayClient {
          let mut lease = ScopedPublishRelayLease::new(self.clone());
          let mut unavailable = HashMap::new();
          for endpoint in &request.endpoints {
@@ -1997,7 +2038,7 @@ index 500bfd5f..e2099d7e 100644
                  Err(failure) => {
                      unavailable.insert(endpoint.clone(), failure);
                  }
-@@ -1334,13 +1545,8 @@ impl NostrSdkRelayClient {
+@@ -1832,13 +2039,8 @@ impl NostrSdkRelayClient {
          let mut unavailable = HashMap::new();
          let mut connectable = Vec::new();
          for endpoint in unique_endpoints {
@@ -2013,7 +2054,7 @@ index 500bfd5f..e2099d7e 100644
                  Err(failure) => {
                      unavailable.insert(endpoint, failure);
                  }
-@@ -1486,7 +1692,7 @@ impl NostrSdkRelayClient {
+@@ -1984,7 +2186,7 @@ impl NostrSdkRelayClient {
      /// options preserved except for the reconnect interval. `Client` has no
      /// supported in-place relay-option update API, so this is intentionally
      /// limited to the caller that observed `add_*_relay == true` while holding
@@ -2022,7 +2063,7 @@ index 500bfd5f..e2099d7e 100644
      async fn pin_new_relay_retry_interval(&self, endpoint: &RelayUrl) -> Result<(), ()> {
          #[cfg(test)]
          if self.publish_relay_pin_failure_stage.load(Ordering::Relaxed) == 1 {
-@@ -1529,7 +1735,7 @@ impl NostrSdkRelayClient {
+@@ -2027,7 +2229,7 @@ impl NostrSdkRelayClient {
          &self,
          endpoint: RelayUrl,
      ) -> Result<(), TransportAdapterError> {
@@ -2031,7 +2072,7 @@ index 500bfd5f..e2099d7e 100644
          let added = self
              .client
              .add_relay(endpoint.clone())
-@@ -1558,7 +1764,7 @@ impl NostrSdkRelayClient {
+@@ -2056,7 +2258,7 @@ impl NostrSdkRelayClient {
      /// SDK-owned and close on finish, cancellation, or dropped work; a newly
      /// registered relay stays in this account's compatible connection pool.
      async fn add_acquisition_relay(&self, endpoint: &RelayUrl) -> Result<(), ()> {
@@ -2040,7 +2081,7 @@ index 500bfd5f..e2099d7e 100644
          if self.client.relays().await.contains_key(endpoint) {
              return Ok(());
          }
-@@ -1585,27 +1791,28 @@ impl NostrSdkRelayClient {
+@@ -2083,27 +2285,28 @@ impl NostrSdkRelayClient {
      async fn retain_publish_relay(
          &self,
          endpoint: &RelayUrl,
@@ -2083,7 +2124,7 @@ index 500bfd5f..e2099d7e 100644
          match self
              .client
              .add_relay(endpoint.clone())
-@@ -1613,6 +1820,15 @@ impl NostrSdkRelayClient {
+@@ -2111,6 +2314,15 @@ impl NostrSdkRelayClient {
              .await
          {
              Ok(true) => {
@@ -2099,7 +2140,7 @@ index 500bfd5f..e2099d7e 100644
                  if self.pin_new_relay_retry_interval(endpoint).await.is_err() {
                      if self.client.relays().await.contains_key(endpoint) {
                          tracing::warn!(
-@@ -1620,8 +1836,7 @@ impl NostrSdkRelayClient {
+@@ -2118,8 +2330,7 @@ impl NostrSdkRelayClient {
                              method = "retain_publish_relay",
                              "new publish relay kept SDK retry defaults after configuration failed"
                          );
@@ -2109,7 +2150,7 @@ index 500bfd5f..e2099d7e 100644
                      }
                      return Err(TransportEndpointFailure {
                          endpoint: transport_endpoint,
-@@ -1630,10 +1845,9 @@ impl NostrSdkRelayClient {
+@@ -2128,10 +2339,9 @@ impl NostrSdkRelayClient {
                          rejection_category: None,
                      });
                  }
@@ -2122,7 +2163,7 @@ index 500bfd5f..e2099d7e 100644
              Err(_) => Err(TransportEndpointFailure {
                  endpoint: transport_endpoint,
                  reason: "add publish relay failed".to_owned(),
-@@ -1643,51 +1857,38 @@ impl NostrSdkRelayClient {
+@@ -2141,51 +2351,38 @@ impl NostrSdkRelayClient {
          }
      }
  
@@ -2199,7 +2240,7 @@ index 500bfd5f..e2099d7e 100644
      }
  
      /// Invalidate sockets whose publish result cannot establish whether the
-@@ -2482,9 +2683,20 @@ mod tests {
+@@ -3085,9 +3282,20 @@ mod tests {
      use crate::{NostrKeyPackagePublication, SubscriptionAttempt};
      use cgka_traits::engine::KeyPackage;
      use cgka_traits::{Timestamp, TransportAdapter};
@@ -2221,7 +2262,7 @@ index 500bfd5f..e2099d7e 100644
      use tokio::net::TcpListener;
      use tokio::time::{Duration, advance, timeout};
      use transport_nostr_peeler::KIND_MARMOT_GROUP_MESSAGE;
-@@ -2973,6 +3185,74 @@ mod tests {
+@@ -4512,6 +4720,74 @@ mod tests {
          signed_sdk_from_client(client, keys)
      }
  
@@ -2296,7 +2337,7 @@ index 500bfd5f..e2099d7e 100644
      #[derive(Default)]
      struct TestReconciliationProgress {
          cursor: std::sync::Mutex<Option<[u8; 32]>>,
-@@ -3939,7 +4219,7 @@ mod tests {
+@@ -5687,7 +5963,7 @@ mod tests {
              outcome.failed.is_empty(),
              "aborted fan-out tasks must not add failures after quorum"
          );
@@ -2305,7 +2346,7 @@ index 500bfd5f..e2099d7e 100644
      }
  
      #[tokio::test]
-@@ -3965,7 +4245,73 @@ mod tests {
+@@ -5713,7 +5989,73 @@ mod tests {
              outcome.failed.is_empty(),
              "aborted fan-out tasks must not add failures after quorum"
          );
@@ -2380,7 +2421,7 @@ index 500bfd5f..e2099d7e 100644
      }
  
      #[tokio::test]
-@@ -3995,7 +4341,7 @@ mod tests {
+@@ -5743,7 +6085,7 @@ mod tests {
      }
  
      #[tokio::test(start_paused = true)]
@@ -2389,7 +2430,7 @@ index 500bfd5f..e2099d7e 100644
          let stored_ids = Arc::new(Mutex::new(Vec::new()));
          let endpoint = TransportEndpoint(storing_no_ack_relay_url(stored_ids.clone()).await);
          let keys = Keys::generate();
-@@ -4159,18 +4505,15 @@ mod tests {
+@@ -5907,18 +6249,15 @@ mod tests {
                  .await
          });
  
@@ -2411,7 +2452,7 @@ index 500bfd5f..e2099d7e 100644
  
          sdk.client().add_relay(endpoint.as_str()).await.unwrap();
  
-@@ -4184,6 +4527,76 @@ mod tests {
+@@ -5932,12 +6271,93 @@ mod tests {
          assert_eq!(sdk.relay_health().await.total_relays, 1);
      }
  
@@ -2487,8 +2528,26 @@ index 500bfd5f..e2099d7e 100644
 +
      #[tokio::test]
      async fn publish_event_accepts_republishing_same_signed_replaceable_event() {
++        assert_republishing_ack_kind(false).await;
++        assert_republishing_ack_kind(true).await;
++    }
++
++    async fn assert_republishing_ack_kind(owned_relay: bool) {
          let relay = MockRelay::run().await.unwrap();
-@@ -4226,26 +4639,369 @@ mod tests {
+         let endpoint = TransportEndpoint(relay.url().await.to_string());
+         let keys = Keys::generate();
+-        let sdk = signed_sdk(keys.clone());
++        let sdk = if owned_relay {
++            let mut sdk = NostrSdkRelayClient::from_builder(Client::builder());
++            sdk.signer = Some(SdkSigner(Arc::new(keys.clone())));
++            sdk
++        } else {
++            signed_sdk(keys.clone())
++        };
+         let dto = NostrKeyPackagePublication {
+             client_name: None,
+             account_id: MemberId::new(keys.public_key().to_bytes().to_vec()),
+@@ -6044,26 +6464,369 @@ mod tests {
      }
  
      #[tokio::test]
@@ -2874,7 +2933,7 @@ index 500bfd5f..e2099d7e 100644
      }
  
      #[tokio::test]
-@@ -4256,24 +5012,12 @@ mod tests {
+@@ -6074,24 +6837,12 @@ mod tests {
              .publish_relay_pin_failure_stage
              .store(1, Ordering::Relaxed);
  
@@ -2904,7 +2963,7 @@ index 500bfd5f..e2099d7e 100644
          assert!(
              !registered_sdk
                  .client
-@@ -4289,11 +5033,12 @@ mod tests {
+@@ -6107,11 +6858,12 @@ mod tests {
              .publish_relay_pin_failure_stage
              .store(2, Ordering::Relaxed);
  
@@ -2920,7 +2979,7 @@ index 500bfd5f..e2099d7e 100644
          assert!(
              !removed_sdk
                  .client
-@@ -4392,7 +5137,7 @@ mod tests {
+@@ -6210,7 +6962,7 @@ mod tests {
      }
  
      #[tokio::test]
@@ -2929,7 +2988,7 @@ index 500bfd5f..e2099d7e 100644
          let relay = MockRelay::run().await.unwrap();
          let endpoint = TransportEndpoint(relay.url().await.to_string());
          let relay_url = RelayUrl::parse(endpoint.as_str()).unwrap();
-@@ -4422,7 +5167,7 @@ mod tests {
+@@ -6240,7 +6992,7 @@ mod tests {
              sdk.publish_release_attempts.lock().await.get(&relay_url),
              Some(&1)
          );
@@ -2938,7 +2997,7 @@ index 500bfd5f..e2099d7e 100644
      }
  
      #[tokio::test]
-@@ -4535,7 +5280,7 @@ mod tests {
+@@ -6353,7 +7105,7 @@ mod tests {
              outcomes[1].is_ok(),
              "healthy request must remain successful in slot one"
          );
@@ -2947,7 +3006,7 @@ index 500bfd5f..e2099d7e 100644
      }
  
      #[tokio::test(start_paused = true)]
-@@ -4618,7 +5363,7 @@ mod tests {
+@@ -6436,7 +7188,7 @@ mod tests {
              NostrEventPublishRequest {
                  endpoints: vec![endpoint_a.clone(), endpoint_b.clone(), endpoint_a],
                  event: signed_group_event_dto(),
@@ -2956,7 +3015,7 @@ index 500bfd5f..e2099d7e 100644
              },
              NostrEventPublishRequest {
                  endpoints: vec![endpoint_b],
-@@ -4634,7 +5379,7 @@ mod tests {
+@@ -6452,7 +7204,7 @@ mod tests {
          assert_eq!(attempts.get(&relay_url_a), Some(&1));
          assert_eq!(attempts.get(&relay_url_b), Some(&1));
          drop(attempts);
@@ -2965,7 +3024,7 @@ index 500bfd5f..e2099d7e 100644
      }
  
      #[tokio::test]
-@@ -5004,6 +5749,57 @@ mod tests {
+@@ -6822,6 +7574,57 @@ mod tests {
          }
      }
  
@@ -3024,7 +3083,7 @@ index 500bfd5f..e2099d7e 100644
          let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
          let addr = listener.local_addr().unwrap();
 diff --git a/crates/transport-nostr-adapter/tests/inbound_routing.rs b/crates/transport-nostr-adapter/tests/inbound_routing.rs
-index 852e5762..962231b1 100644
+index 1e4ac7d7..40adc5dc 100644
 --- a/crates/transport-nostr-adapter/tests/inbound_routing.rs
 +++ b/crates/transport-nostr-adapter/tests/inbound_routing.rs
 @@ -20,6 +20,55 @@ use transport_nostr_peeler::{KIND_MARMOT_GROUP_MESSAGE, NostrTransportEvent};

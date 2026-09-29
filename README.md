@@ -403,6 +403,10 @@ host or the Rust library restart the host; the vault stays unlocked for the
 
 To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `just build` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
 
+The current pin is MDK 0.11.0. The build applies the patches listed in
+`scripts/build.sh`, including `patches/mdk-app-components.patch` for the
+unmerged group app-component API used by issue tracking.
+
 ## Contributing
 
 Issues and pull requests are welcome. If you're working with an AI coding agent, point it at [`AGENTS.md`](AGENTS.md) first; it has the architecture and conventions in more detail than this file.

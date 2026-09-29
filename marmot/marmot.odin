@@ -202,6 +202,7 @@ Runtime_Event :: struct {
 		Welcome_Delivery_Pending,
 		Epoch_Stall_Escalated,
 		Group_Change_Superseded,
+		History_Notices_Changed,
 	},
 	body: struct #raw_union {
 		group:   struct {
