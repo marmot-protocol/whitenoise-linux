@@ -50,7 +50,9 @@ output is already present, so only the first run is slow:
   those bindings at the built archives, which they name for Linux only.
   OpenBSD also builds the pinned SDL statically with `NO_SHARED_MEMORY`,
   points the SDL bindings at that archive, and patches Odin's executable
-  probe to use `access(X_OK)` rather than a read-opening `O_EXEC` substitute.
+  probe to use `access(X_OK)` rather than a read-opening `O_EXEC` substitute,
+  and its futex waits to treat `EAGAIN`, `EINTR` and `ECANCELED` as wakeups
+  instead of panicking.
 
 `DEPS_PIN` holds every third-party revision as `<name>-commit = <sha>`, one
 per line. Bumping one is a one-line edit; `just build` re-checks out and

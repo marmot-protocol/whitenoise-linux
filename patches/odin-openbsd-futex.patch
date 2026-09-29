@@ -1,0 +1,49 @@
+diff --git a/core/sync/futex_openbsd.odin b/core/sync/futex_openbsd.odin
+--- a/core/sync/futex_openbsd.odin
++++ b/core/sync/futex_openbsd.odin
+@@ -13,7 +13,10 @@ FUTEX_PRIVATE_FLAG :: 128
+ FUTEX_WAIT_PRIVATE :: (FUTEX_WAIT | FUTEX_PRIVATE_FLAG)
+ FUTEX_WAKE_PRIVATE :: (FUTEX_WAKE | FUTEX_PRIVATE_FLAG)
+ 
++EINTR     :: 4
++EAGAIN    :: 35
+ ETIMEDOUT :: 60
++ECANCELED :: 88
+ 
+ 
+ foreign import libc "system:c"
+@@ -22,7 +25,7 @@ foreign libc {
+ 	@(link_name="futex")
+ 	_unix_futex :: proc "c" (f: ^Futex, op: c.int, val: u32, timeout: rawptr) -> c.int ---
+ 
+-	@(link_name="__errno")	__errno :: proc() -> ^int ---
++	@(link_name="__errno")	__errno :: proc() -> ^c.int ---
+ }
+ 
+ _futex_wait :: proc "contextless" (f: ^Futex, expected: u32) -> bool {
+@@ -32,8 +35,11 @@ _futex_wait :: proc "contextless" (f: ^Futex, expected: u32) -> bool {
+ 		return true
+ 	}
+ 
+-	if __errno()^ == ETIMEDOUT {
++	switch __errno()^ {
++	case ETIMEDOUT:
+ 		return false
++	case EINTR, EAGAIN, ECANCELED:
++		return true
+ 	}
+ 
+ 	panic_contextless("futex_wait failure")
+@@ -58,8 +64,11 @@ _futex_wait_with_timeout :: proc "contextless" (f: ^Futex, expected: u32, durati
+ 		return true
+ 	}
+ 
+-	if __errno()^ == ETIMEDOUT {
++	switch __errno()^ {
++	case ETIMEDOUT:
+ 		return false
++	case EINTR, EAGAIN, ECANCELED:
++		return true
+ 	}
+ 
+ 	panic_contextless("futex_wait_with_timeout failure")

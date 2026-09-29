@@ -474,24 +474,30 @@ if [ "$(uname -s)" = OpenBSD ]; then
     > "$OVERLAY/vendor/sdl3/sdl3__foreign.odin"
   # OpenBSD has no O_EXEC: Odin's pre-open would require read permission,
   # allowing writable hardlinks to helpers. Probe execute permission instead.
+  # Odin's OpenBSD futex waits also panic on EAGAIN, EINTR and ECANCELED,
+  # which the kernel returns for ordinary lost races and signals, and read
+  # the 32-bit errno as 64 bits. Patch private copies of core/os and core/sync.
   if [ -L "$OVERLAY/core" ]; then
     rm "$OVERLAY/core"
     mkdir -p "$OVERLAY/core"
     for entry in "$SYS_ODIN/core"/*; do
-      if [ "$(basename "$entry")" = os ]; then
-        cp -R "$entry" "$OVERLAY/core/"
-      else
-        ln -s "$entry" "$OVERLAY/core/"
-      fi
+      ln -s "$entry" "$OVERLAY/core/"
     done
   fi
-  EXEC_PATCH="$HERE/patches/odin-openbsd-exec.patch"
-  if git -C "$HERE" apply --directory=build/odin-root --check "$EXEC_PATCH" 2>/dev/null; then
-    git -C "$HERE" apply --directory=build/odin-root "$EXEC_PATCH"
-  elif ! git -C "$HERE" apply --directory=build/odin-root --reverse --check "$EXEC_PATCH" 2>/dev/null; then
-    echo "==> Odin executable probe patch conflicts with the installed compiler" >&2
-    exit 1
-  fi
+  for pkg in os sync; do
+    if [ -L "$OVERLAY/core/$pkg" ]; then
+      rm "$OVERLAY/core/$pkg"
+      cp -R "$SYS_ODIN/core/$pkg" "$OVERLAY/core/"
+    fi
+  done
+  for patch in "$HERE"/patches/odin-openbsd-*.patch; do
+    if git -C "$HERE" apply --directory=build/odin-root --check "$patch" 2>/dev/null; then
+      git -C "$HERE" apply --directory=build/odin-root "$patch"
+    elif ! git -C "$HERE" apply --directory=build/odin-root --reverse --check "$patch" 2>/dev/null; then
+      echo "==> $(basename "$patch") conflicts with the installed compiler" >&2
+      exit 1
+    fi
+  done
   # Keep bundled OpenSSL/SQLCipher symbols private: system libcurl uses LibreSSL.
   APP_LINK_ARGS=('-extra-linker-flags:-Wl,--wrap=execve,--exclude-libs=libmarmot_c.a')
 fi
