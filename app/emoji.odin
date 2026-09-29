@@ -22,15 +22,36 @@ quick_tile :: proc(emoji: string) -> ^rl.Texture2D {
 	return nil
 }
 
-// On-demand Twemoji tile cache for arbitrary emoji (reaction chips):
-// emoji → texture from vendor/twemoji (staged by scripts/build.sh), keyed by
-// the twemoji filename convention (hex codepoints joined by '-', VS16
-// dropped; retried with it when the plain name misses). nil = no tile,
-// caller falls back to the raw text glyph.
-twemoji_dir :: proc() -> string {
-	dir, _ := filepath.join({res_dir(), "twemoji"}, context.temp_allocator)
-	return dir
+// Emoji art sets the user picks in Appearance. Each is staged by
+// scripts/build.sh as res_dir()/emoji/<dir>/ tiles plus the catalog's
+// pixel pack at res_dir()/emoji/<dir>.bin. Noto is first so older
+// settings files, which lack the field, get it.
+Emoji_Set :: enum {
+	Noto,
+	Twemoji,
+	OpenMoji,
 }
+@(private)
+EMOJI_SET_DIRS := [Emoji_Set]string {
+	.Noto     = "noto",
+	.Twemoji  = "twemoji",
+	.OpenMoji = "openmoji",
+}
+@(private)
+EMOJI_SET_NAMES := [Emoji_Set]string {
+	.Noto     = "Noto",
+	.Twemoji  = "Twemoji",
+	.OpenMoji = "OpenMoji",
+}
+@(private)
+emoji_set: Emoji_Set
+@(private)
+emoji_pack: []u8
+
+// On-demand tile cache for arbitrary emoji (reaction chips): emoji to
+// texture from the active set, pack first, then its tile folder keyed
+// by the staged name (lowercase hex codepoints joined by '-', VS16
+// dropped). nil = no tile, caller falls back to the raw text glyph.
 emoji_tex_cache: map[string]^rl.Texture2D
 
 @(private)
@@ -42,26 +63,39 @@ emoji_pixels: map[string][]u8
 
 // Plain UI text shares the tile cache with messages. Resolve whole
 // graphemes so flags, skin tones, and joined emoji occupy one cell.
+// Private-use graphemes count too (OpenMoji's E000 goldfish), and so
+// does any grapheme carrying VS16 or a ZWJ: "\u2B21\uFE0F\u200D\U0001F7E8"
+// starts with a text symbol but asks for emoji presentation. Graphemes
+// no set draws fall back to the text glyph.
 @(private)
 text_emoji :: proc(text: string) -> ^rl.Texture2D {
 	if strings.contains(text, "\uFE0E") {return nil}
 	r, _ := utf8.decode_rune_in_string(text)
 	if !unicode.is_emoji_extended_pictographic(r) &&
 	   !unicode.is_regional_indicator(r) &&
+	   !(r >= 0xE000 && r <= 0xF8FF) &&
+	   !strings.contains(text, "\uFE0F") &&
+	   !strings.contains(text, "\u200D") &&
 	   !strings.contains(text, "\u20E3") {
 		return nil
 	}
 	return emoji_tex(text)
 }
 
-// Picker catalog, loaded from vendor/emoji-catalog.tsv (staged by
-// scripts/build.sh): base emoji plus a lowercase search name.
+// Picker catalog: the base rows from emoji-catalog.tsv, shared by every
+// set, then the active set's own emoji/<set>-extras.tsv rows when it
+// has any. Each row is an emoji plus a lowercase search name; the
+// set's pack holds one pixel record per row in that order.
 Emoji_Entry :: struct {
 	emoji:  string,
 	name:   string,
 	pixels: []u8,
 }
 emoji_catalog: [dynamic]Emoji_Entry
+@(private)
+emoji_base_rows: int
+@(private)
+emoji_extras: []u8 // backs the extras rows' emoji strings
 
 load_emoji_catalog :: proc() {
 	catalog, _ := filepath.join({res_dir(), "emoji-catalog.tsv"}, context.temp_allocator)
@@ -70,7 +104,15 @@ load_emoji_catalog :: proc() {
 		fmt.eprintfln("emoji: catalog missing: %v", err)
 		return
 	}
-	for line in strings.split_lines(string(data)) {
+	catalog_append(data)
+	emoji_base_rows = len(emoji_catalog)
+}
+
+// "emoji<TAB>search words" lines; the emoji strings slice into `data`.
+@(private = "file")
+catalog_append :: proc(data: []u8) {
+	text := string(data)
+	for line in strings.split_lines_iterator(&text) {
 		tab := strings.index_byte(line, '\t')
 		if tab <= 0 {
 			continue
@@ -80,17 +122,58 @@ load_emoji_catalog :: proc() {
 			Emoji_Entry{emoji = line[:tab], name = strings.to_lower(line[tab + 1:])},
 		)
 	}
-	path, _ := filepath.join({res_dir(), "emoji-pixels.bin"}, context.temp_allocator)
-	pixels, pixel_err := os.read_entire_file(path, context.allocator)
-	if pixel_err != nil || !emoji_pack_valid(pixels, len(emoji_catalog)) {
-		fmt.eprintfln("emoji: missing or invalid pixel pack: %s (%v)", path, pixel_err)
-		delete(pixels)
+}
+
+// Make `set` the art every emoji draws with: drop the old pack, extras
+// rows and every texture made from them, then load the set's extras
+// and point the catalog at its pack. A missing pack leaves rows without
+// pixels (the picker hides them); tiles still load from the set folder.
+emoji_set_load :: proc(set: Emoji_Set) {
+	emoji_set = set
+	for key, tex in emoji_tex_cache {
+		if tex != nil {
+			rl.UnloadTexture(tex^)
+			free(tex)
+		}
+		delete(key)
+	}
+	clear(&emoji_tex_cache)
+	clear(&emoji_pixels)
+	for &entry in emoji_catalog {
+		entry.pixels = nil
+	}
+	for entry in emoji_catalog[emoji_base_rows:] {
+		delete(entry.name)
+	}
+	resize(&emoji_catalog, emoji_base_rows)
+	delete(emoji_extras)
+	emoji_extras = nil
+	delete(emoji_pack)
+	emoji_pack = nil
+
+	extras := fmt.tprintf("%s/emoji/%s-extras.tsv", res_dir(), EMOJI_SET_DIRS[set])
+	if os.exists(extras) {
+		data, err := os.read_entire_file(extras, context.allocator)
+		if err != nil {
+			fmt.eprintfln("emoji: couldn't read %s: %v", extras, err)
+		} else {
+			emoji_extras = data
+			catalog_append(data)
+		}
+	}
+
+	path := fmt.tprintf("%s/emoji/%s.bin", res_dir(), EMOJI_SET_DIRS[set])
+	pack, err := os.read_entire_file(path, context.allocator)
+	if err != nil || !emoji_pack_valid(pack, len(emoji_catalog)) {
+		fmt.eprintfln("emoji: missing or invalid pixel pack: %s (%v)", path, err)
+		delete(pack)
 		return
 	}
+	emoji_pack = pack
 	for &entry, i in emoji_catalog {
 		offset := 8 + i * EMOJI_RECORD_BYTES
-		if pixels[offset] == 0 {continue}
-		entry.pixels = pixels[offset + 1:offset + EMOJI_RECORD_BYTES]
+		if pack[offset] == 0 {continue}
+		entry.pixels = pack[offset + 1:offset + EMOJI_RECORD_BYTES]
 		emoji_pixels[entry.emoji] = entry.pixels
 	}
 }
@@ -139,37 +222,43 @@ emoji_tex :: proc(emoji: string) -> ^rl.Texture2D {
 	return tex
 }
 
+// The active set's tile, else the first other set that draws the emoji,
+// so an emoji only OpenMoji has (its E000 goldfish) still renders as
+// OpenMoji art under Noto or Twemoji.
 @(private)
 emoji_image :: proc(emoji: string) -> rl.Image {
-	plain := strings.builder_make(context.temp_allocator)
-	full := strings.builder_make(context.temp_allocator)
+	name := strings.builder_make(context.temp_allocator)
 	for r in emoji {
-		if strings.builder_len(full) > 0 {
-			strings.write_byte(&full, '-')
-		}
-		fmt.sbprintf(&full, "%x", i32(r))
 		if r == 0xFE0F {
 			continue
 		}
-		if strings.builder_len(plain) > 0 {
-			strings.write_byte(&plain, '-')
+		if strings.builder_len(name) > 0 {
+			strings.write_byte(&name, '-')
 		}
-		fmt.sbprintf(&plain, "%x", i32(r))
+		fmt.sbprintf(&name, "%x", i32(r))
 	}
 
-	candidates := [2]string{strings.to_string(plain), strings.to_string(full)}
-	for candidate in candidates {
-		path := fmt.tprintf("%s/%s.png", twemoji_dir(), candidate)
-		if !os.exists(path) {
+	if image := emoji_set_image(emoji_set, strings.to_string(name)); image.data != nil {
+		return image
+	}
+	for set in Emoji_Set {
+		if set == emoji_set {
 			continue
 		}
-		img := rl.LoadImage(strings.clone_to_cstring(path, context.temp_allocator))
-		if img.data == nil {
-			continue
+		if image := emoji_set_image(set, strings.to_string(name)); image.data != nil {
+			return image
 		}
-		return img
 	}
 	return {}
+}
+
+@(private = "file")
+emoji_set_image :: proc(set: Emoji_Set, name: string) -> rl.Image {
+	path := fmt.tprintf("%s/emoji/%s/%s.png", res_dir(), EMOJI_SET_DIRS[set], name)
+	if !os.exists(path) {
+		return {}
+	}
+	return rl.LoadImage(strings.clone_to_cstring(path, context.temp_allocator))
 }
 
 PAGE_ICONS := [Page]string {

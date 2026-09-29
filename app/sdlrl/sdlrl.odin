@@ -1376,13 +1376,38 @@ get_glyph :: proc(font_id: u16, px: u16, r: rune) -> (Glyph, int) {
 	return glyph, file
 }
 
+// Grapheme clusters as the emoji sets draw them, a drop-in for
+// utf8.decode_grapheme_iterate. UAX #29 joins a ZWJ sequence only when
+// its base is Extended_Pictographic, so OpenMoji's hexagon + orange
+// square (U+2B21 U+FE0F U+200D U+1F7E7) splits after the ZWJ. While a
+// cluster ends in ZWJ, absorb the next one, so the whole sequence
+// reaches a single tile lookup and moves the caret as one unit.
+grapheme_iterate :: proc(
+	it: ^utf8.Grapheme_Iterator,
+) -> (
+	text: string,
+	grapheme: utf8.Grapheme,
+	ok: bool,
+) {
+	text, grapheme, ok = utf8.decode_grapheme_iterate(it)
+	for ok && strings.has_suffix(text, "\u200D") {
+		next, _, more := utf8.decode_grapheme_iterate(it)
+		if !more {
+			break
+		}
+		text = it.str[grapheme.byte_index:grapheme.byte_index + len(text) + len(next)]
+	}
+	grapheme.text = text
+	return
+}
+
 // Width/height of one line at the given logical size, matching what
 // DrawTextLine paints. Height is the font size, clay's convention.
 MeasureTextLine :: proc(font_id: u16, size: u16, text: string, letter_spacing: f32) -> Vector2 {
 	px := u16(f32(size) * state.pixel_scale + 0.5)
 	width: f32 = 0
 	it := utf8.decode_grapheme_iterator_make(text)
-	for cluster, _ in utf8.decode_grapheme_iterate(&it) {
+	for cluster, _ in grapheme_iterate(&it) {
 		if font_id != IconFont && state.text_image != nil && state.text_image(cluster) != nil {
 			width += f32(size) + letter_spacing
 			continue
@@ -1410,7 +1435,7 @@ DrawTextLine :: proc(
 	px := u16(f32(size) * state.pixel_scale + 0.5)
 	pen := x
 	it := utf8.decode_grapheme_iterator_make(text)
-	for cluster, _ in utf8.decode_grapheme_iterate(&it) {
+	for cluster, _ in grapheme_iterate(&it) {
 		if font_id != IconFont && state.text_image != nil {
 			if tex := state.text_image(cluster); tex != nil {
 				DrawTextureRect(tex, pen, y, f32(size), f32(size), {255, 255, 255, color.a})

@@ -209,7 +209,7 @@ gif_keyboard :: proc(t: ^testing.T) {
 	append(&ui.compose, "Keep your draft")
 	g_ui, g_prefs = &ui, &ui.prefs; defer {g_ui, g_prefs = nil, nil}
 	defer gif_stop(&ui)
-	image := rl.LoadImage("vendor/twemoji/1f9ab.png")
+	image := rl.LoadImage("vendor/emoji/noto/1f9ab.png")
 	defer rl.UnloadImage(image)
 	for i in 0 ..< 8 {
 		append(

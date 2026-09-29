@@ -183,17 +183,20 @@ just build
 just run
 ```
 
-The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx, MicroTeX and the Twemoji set, and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
+The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx, MicroTeX and the Noto, Twemoji and OpenMoji emoji sets, and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
 
 The native Linux build extracts speech, font, and emoji archives without
 restoring ownership, so it can run as root inside Flatpak's restricted user
 namespace.
 
-The build also packs the catalog's Twemoji PNGs into `emoji-pixels.bin`.
-The app reads this fixed-size RGBA data at startup and uploads only visible
-picker rows, so opening, scrolling, and searching do not launch PNG decoders
-for catalog emoji. The pack adds about 38 MiB of uncompressed resources and
-resident pixel data. It ships beside `emoji-catalog.tsv` in every package.
+The build also packs each emoji set's catalog PNGs into `emoji/<set>.bin`.
+The app reads the active set's fixed-size RGBA data at startup (and again
+when you pick another set in Appearance) and uploads only visible picker
+rows, so opening, scrolling, and searching do not launch PNG decoders for
+catalog emoji. Each pack is about 38 MiB uncompressed (OpenMoji's 49 MiB,
+with its own extra emoji), so the three add about 127 MiB of resources;
+only the active one is resident. They ship beside `emoji-catalog.tsv` in
+every package.
 
 The release workflow also builds Flatpak on `master` to populate caches that
 later tags can restore. It caches the GNOME 50 module outputs, downloads,

@@ -274,6 +274,8 @@ settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
 		     "ZoomReset",
 		     "RowBodyFont",
 		     "BodyFontChip",
+		     "RowEmojiSet",
+		     "EmojiSetChip",
 		     "RowScroll",
 		     "ScrollChip",
 		     "RowMotion",
@@ -1310,6 +1312,17 @@ settings_appearance :: proc(ui: ^Ui_State) {
 					}
 				}
 			}
+			if clay.UI(clay.ID("RowEmojiSet"))(settings_row(true)) {
+				row_labels(
+					tr("Emoji style"),
+					tr("Applies to the picker, reactions and emoji in messages."),
+				)
+				if clay.UI(clay.ID("EmojiSetChoices"))({layout = {childGap = 6}}) {
+					for name, set in EMOJI_SET_NAMES {
+						settings_option("EmojiSetChip", u32(set), name, ui.prefs.emoji_set == set)
+					}
+				}
+			}
 			if clay.UI(clay.ID("RowScroll"))(settings_row(true)) {
 				row_labels(tr("Scroll speed"), tr("How far the mouse wheel moves the view."))
 				if clay.UI(clay.ID("ScrollChoices"))({layout = {childGap = 6}}) {
@@ -2014,6 +2027,14 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		for _, i in SCROLL_SPEEDS {
 			if clay.PointerOver(clay.ID("ScrollChip", u32(i))) {
 				ui.prefs.scroll_speed = SCROLL_SPEEDS[i]
+				save_settings(ui)
+				return
+			}
+		}
+		for _, set in EMOJI_SET_NAMES {
+			if clay.PointerOver(clay.ID("EmojiSetChip", u32(set))) {
+				ui.prefs.emoji_set = set
+				emoji_set_load(set)
 				save_settings(ui)
 				return
 			}

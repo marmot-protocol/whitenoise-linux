@@ -302,6 +302,9 @@ msgstr "Aspetto"
 msgid "Applies to message bodies and the composer."
 msgstr "Si applica al testo dei messaggi e al campo di scrittura."
 
+msgid "Applies to the picker, reactions and emoji in messages."
+msgstr "Si applica al selettore, alle reazioni e alle emoji nei messaggi."
+
 msgid "Apps"
 msgstr "App"
 
@@ -1362,6 +1365,9 @@ msgstr "Emissione"
 
 msgid "Emoji"
 msgstr "Emoji"
+
+msgid "Emoji style"
+msgstr "Stile delle emoji"
 
 msgid "Enable issue tracking"
 msgstr "Attiva le segnalazioni"

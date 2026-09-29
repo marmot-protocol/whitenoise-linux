@@ -163,7 +163,7 @@ Staged_File :: struct {
 }
 
 Reaction_Ui :: struct {
-	label: string, // text fallback when no twemoji tile, e.g. "👍 2"
+	label: string, // text fallback when no emoji tile, e.g. "👍 2"
 	emoji: string,
 	count: string,
 	mine:  bool, // clicking toggles: unreact when mine, react otherwise

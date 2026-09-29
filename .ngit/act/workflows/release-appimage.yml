@@ -22,9 +22,10 @@
 #     --blossom-servers (NGIT_CI_BLOSSOM_SERVERS). Without it the build still
 #     runs and passes, but no artifact is uploaded.
 #   * The default per-artifact Blossom cap is 64 MiB
-#     (--blossom-max-artifact-bytes). The bundled Twemoji set and libmpv's
-#     codec dependencies put the AppImage within reach of it; if the artifact
-#     is skipped as oversized, the operator must raise that limit.
+#     (--blossom-max-artifact-bytes). The three bundled emoji sets (about
+#     30 MB at zstd -19) and libmpv's codec dependencies put the AppImage
+#     within reach of it; if the artifact is skipped as oversized, the
+#     operator must raise that limit.
 
 name: staging-appimage
 

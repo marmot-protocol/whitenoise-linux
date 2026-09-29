@@ -301,6 +301,9 @@ msgstr ""
 msgid "Applies to message bodies and the composer."
 msgstr ""
 
+msgid "Applies to the picker, reactions and emoji in messages."
+msgstr ""
+
 msgid "Apps"
 msgstr ""
 
@@ -1360,6 +1363,9 @@ msgid "Emission"
 msgstr ""
 
 msgid "Emoji"
+msgstr ""
+
+msgid "Emoji style"
 msgstr ""
 
 msgid "Enable issue tracking"

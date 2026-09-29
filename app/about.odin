@@ -252,7 +252,19 @@ about_readout :: proc(ui: ^Ui_State) {
 	}
 }
 
-CREDITS := []string{"Odin", "clay", "SDL3", "marmot", "MLS", "Nostr", "stb", "Twemoji", "mpv"}
+CREDITS := []string {
+	"Odin",
+	"clay",
+	"SDL3",
+	"marmot",
+	"MLS",
+	"Nostr",
+	"stb",
+	"Noto Emoji",
+	"Twemoji",
+	"OpenMoji",
+	"mpv",
+}
 
 @(private = "file")
 about_credits :: proc(ui: ^Ui_State) {

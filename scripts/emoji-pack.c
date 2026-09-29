@@ -27,10 +27,9 @@ static void io_fail(const char *path) {
     exit(1);
 }
 
-enum selector_mode { DROP_VS16, KEEP_VS16 };
-
-static void filename(char *name, size_t capacity, const unsigned char *s, size_t len,
-                     enum selector_mode mode) {
+// The staged tile name (scripts/build.sh emoji_stage): lowercase hex
+// codepoints joined by '-', VS16 dropped (U+23 U+FE0F U+20E3 -> 23-20e3.png).
+static void filename(char *name, size_t capacity, const unsigned char *s, size_t len) {
     size_t used = 0;
     while (len) {
         uint32_t cp = *s++;
@@ -57,7 +56,7 @@ static void filename(char *name, size_t capacity, const unsigned char *s, size_t
         if (cp < minimum || cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) {
             fail("invalid catalog UTF-8");
         }
-        if (mode == DROP_VS16 && cp == 0xfe0f) {
+        if (cp == 0xfe0f) {
             continue;
         }
         int n = snprintf(name + used, capacity - used, "%s%x", used ? "-" : "", (unsigned)cp);
@@ -73,7 +72,7 @@ static void filename(char *name, size_t capacity, const unsigned char *s, size_t
 
 int main(int argc, char **argv) {
     if (argc != 4) {
-        fail("usage: emoji-pack CATALOG TWEMOJI_DIR OUTPUT");
+        fail("usage: emoji-pack CATALOG EMOJI_DIR OUTPUT");
     }
     FILE *catalog = fopen(argv[1], "rb");
     if (!catalog) {
@@ -112,22 +111,15 @@ int main(int argc, char **argv) {
         if (count == UINT32_MAX) {
             fail("too many catalog rows");
         }
-        FILE *png = NULL;
         char name[1024], path[4096];
-        for (int full = 0; full <= 1; full++) {
-            filename(name, sizeof(name), (unsigned char *)line, (size_t)(tab - line),
-                     full == 0 ? DROP_VS16 : KEEP_VS16);
-            int n = snprintf(path, sizeof(path), "%s/%s", argv[2], name);
-            if (n < 0 || (size_t)n >= sizeof(path)) {
-                fail("Twemoji path too long");
-            }
-            png = fopen(path, "rb");
-            if (png) {
-                break;
-            }
-            if (errno != ENOENT) {
-                io_fail(path);
-            }
+        filename(name, sizeof(name), (unsigned char *)line, (size_t)(tab - line));
+        int n = snprintf(path, sizeof(path), "%s/%s", argv[2], name);
+        if (n < 0 || (size_t)n >= sizeof(path)) {
+            fail("emoji path too long");
+        }
+        FILE *png = fopen(path, "rb");
+        if (!png && errno != ENOENT) {
+            io_fail(path);
         }
         static const unsigned char zeroes[PIXELS] = {0};
         unsigned char available = png != NULL;

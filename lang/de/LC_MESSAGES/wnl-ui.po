@@ -302,6 +302,9 @@ msgstr "Erscheinungsbild"
 msgid "Applies to message bodies and the composer."
 msgstr "Gilt für Nachrichtentexte und das Eingabefeld."
 
+msgid "Applies to the picker, reactions and emoji in messages."
+msgstr "Gilt für die Auswahl, Reaktionen und Emoji in Nachrichten."
+
 msgid "Apps"
 msgstr "Apps"
 
@@ -1362,6 +1365,9 @@ msgstr "Emission"
 
 msgid "Emoji"
 msgstr "Emoji"
+
+msgid "Emoji style"
+msgstr "Emoji-Stil"
 
 msgid "Enable issue tracking"
 msgstr "Problemverfolgung aktivieren"

@@ -1320,7 +1320,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 			// One row per physical line ('\n' from Shift+Enter or
 			// paste); each splits at the selection so the caret
 			// sits at its head and the selected span highlights.
-			// Emoji render as Twemoji tiles like message bodies.
+			// Emoji render as tiles like message bodies.
 			// Long drafts scroll inside the capped text viewport.
 			if clay.UI(clay.ID("ComposeClip"))(
 			{

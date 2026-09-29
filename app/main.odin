@@ -132,7 +132,7 @@ ICON_CODEPOINTS := []rune {
 	0xF005,
 }
 
-// Quick-reaction strip (the slint QuickReact.list): vendored Twemoji
+// Quick-reaction strip (the slint QuickReact.list): vendored Noto
 // 72px tiles, drawn as textures since no installed font rasterizes
 // color emoji.
 QUICK_REACT := [6]struct {
@@ -151,7 +151,7 @@ quick_react_tex: [6]rl.Texture2D
 @(private)
 timeline_draw_offset: f32
 
-// Tile for a one-tap reaction: staged twemoji first, bundled default
+// Tile for a one-tap reaction: the active set first, bundled Noto
 // tiles as fallback, nil = draw the text glyph.
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.RenderCommand) {
 	if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
@@ -1008,6 +1008,7 @@ app_main :: proc() {
 		append(&ui.recent_emoji, entry.emoji)
 	}
 	load_emoji_catalog()
+	emoji_set_load(ui.prefs.emoji_set)
 	// Before any picker or message needs them, not on first Settings visit.
 	custom_emoji_scan()
 

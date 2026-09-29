@@ -3,7 +3,7 @@
 # prefix, in the layout res_dir (app/paths.odin) expects:
 #
 #   <prefix>/bin/whitenoise
-#   <prefix>/share/whitenoise-linux/{twemoji,emoji-catalog.tsv,emoji-pixels.bin,fonts}
+#   <prefix>/share/whitenoise-linux/{emoji,emoji-catalog.tsv,fonts}
 #   <prefix>/share/{applications,icons,metainfo}/<id>.*
 #
 # Usage: install-tree.sh <prefix> <id>
@@ -59,8 +59,10 @@ if [ "$(uname -s)" = OpenBSD ]; then
 elif [ -x "$HERE/build/wn-webview" ]; then
   cp "$HERE/build/wn-webview" "$PREFIX/bin/"
 fi
-cp -r "$HERE/vendor/twemoji" "$RES/"
-cp "$HERE/vendor/emoji-catalog.tsv" "$HERE/vendor/emoji-pixels.bin" "$RES/"
+# Every selectable set: emoji/<set>/ tiles plus the emoji/<set>.bin pack.
+cp -r "$HERE/vendor/emoji" "$RES/"
+cp "$HERE/vendor/emoji-licenses/"*.txt "$RES/licenses/"
+cp "$HERE/vendor/emoji-catalog.tsv" "$RES/"
 # Fonts are staged and sha256-pinned by scripts/build.sh, so every package ships
 # byte-identical faces.
 cp "$HERE"/vendor/fonts/*.ttf "$RES/fonts/"

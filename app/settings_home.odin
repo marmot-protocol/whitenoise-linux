@@ -22,6 +22,7 @@ Settings_Task :: struct {
 SETTINGS_TASKS := []Settings_Task {
 	{.Appearance, N_("Theme"), "RowTheme", "appearance colors look", true},
 	{.Appearance, N_("Message text size"), "RowBodyFont", "font accessibility", true},
+	{.Appearance, N_("Emoji style"), "RowEmojiSet", "noto twemoji openmoji look", false},
 	{.Appearance, N_("Default avatar shape"), "RowAvatarShape", "photo picture", false},
 	{.Appearance, N_("Crop circle shape"), "RowCropShape", "identity fingerprint avatar", false},
 	{.Appearance, N_("Interface zoom"), "RowZoom", "scale size accessibility", false},

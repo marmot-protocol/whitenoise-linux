@@ -1,7 +1,7 @@
 // Starter identity for freshly generated accounts, the slint
 // animal-avatar port: a deterministic "[Adjective] [Animal]" name from
 // the new npub, published as the kind-0 name, plus a composed face
-// (Twemoji animal glyph over the npub gradient) shown locally.
+// (emoji animal glyph over the npub gradient) shown locally.
 //
 // The slint app uploads the face PNG to public Blossom and publishes
 // its URL in kind-0 `picture`; marmot-c exports neither a public
@@ -64,7 +64,7 @@ ADJECTIVES := [?]string {
 	"Wobbly",
 }
 
-// Every animal pairs its name with the Twemoji codepoint used for the
+// Every animal pairs its name with the emoji codepoint used for the
 // face, so any generated name is guaranteed to have art on disk.
 Starter_Animal :: struct {
 	name: string,
@@ -98,7 +98,7 @@ ANIMALS := [?]Starter_Animal {
 	{"Llama", '🦙'},
 }
 
-// Output edge; big enough that the 72px Twemoji tile upscales cleanly
+// Output edge; big enough that the 72px emoji tile upscales cleanly
 // for every avatar size the UI renders.
 @(private = "file")
 STARTER_SIDE :: 256
@@ -116,12 +116,7 @@ starter_identity :: proc(npub: string) -> (name: string, cp: rune) {
 // missing (temp-allocated otherwise; texture upload copies it).
 @(private = "file")
 starter_face :: proc(npub: string, cp: rune) -> rl.Image {
-	glyph := rl.LoadImage(
-		strings.clone_to_cstring(
-			fmt.tprintf("%s/%x.png", twemoji_dir(), i32(cp)),
-			context.temp_allocator,
-		),
-	)
+	glyph := emoji_image(fmt.tprintf("%c", cp))
 	if glyph.data == nil {
 		return {}
 	}

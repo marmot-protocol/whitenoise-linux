@@ -42,7 +42,7 @@ sticker_layout :: proc(t: ^testing.T) {
 		author     = strings.clone(sha),
 	}
 	tex := new(rl.Texture2D)
-	image := rl.LoadImage("vendor/twemoji/1f9ab.png")
+	image := rl.LoadImage("vendor/emoji/noto/1f9ab.png")
 	testing.expect(t, image.data != nil)
 	image = sticker_thumb(image)
 	tex^ = sticker_texture_load(image)
@@ -53,12 +53,12 @@ sticker_layout :: proc(t: ^testing.T) {
 	photo := Media_Job {
 		kind  = .Image,
 		key   = sha,
-		image = rl.LoadImage("vendor/twemoji/1f9ab.png"),
+		image = rl.LoadImage("vendor/emoji/noto/1f9ab.png"),
 	}
 	sticker := Media_Job {
 		kind  = .Sticker,
 		key   = sha,
-		image = sticker_thumb(rl.LoadImage("vendor/twemoji/1f9ab.png")),
+		image = sticker_thumb(rl.LoadImage("vendor/emoji/noto/1f9ab.png")),
 	}
 	media_publish(&photo)
 	media_publish(&sticker)

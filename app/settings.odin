@@ -43,6 +43,7 @@ Prefs :: struct {
 	centered_chat:         bool,
 	reduce_motion:         bool, // snaps every transition; nothing animates
 	body_font:             int, // message-body px delta; -2/0/+2 = small/default/large
+	emoji_set:             Emoji_Set, // art for the picker, reactions and message emoji
 	// Gutters: drag-resized, persisted widths and the collapsed rail.
 	rail_w:                int, // chat-list card width
 	panel_w:               int, // members/info panel width
@@ -219,6 +220,7 @@ load_settings :: proc(ui: ^Ui_State) {
 	ui.prefs.crop_avatar_shape = Crop_Shape(
 		clamp(int(ui.prefs.crop_avatar_shape), 0, int(Crop_Shape.Rounded)),
 	)
+	ui.prefs.emoji_set = Emoji_Set(clamp(int(ui.prefs.emoji_set), 0, int(max(Emoji_Set))))
 	// ponytail: an empty list reads as "older settings.json", so the
 	// defaults come back; a user who wants no fetch relays at all
 	// cannot have that yet.

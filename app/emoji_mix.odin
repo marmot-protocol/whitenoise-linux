@@ -167,9 +167,10 @@ jpeg_sink :: proc "c" (ctx: rawptr, data: rawptr, size: c.int) {
 // emoji and :code: custom ones (user files and the built-in :marmot: /
 // :wn:). ok is false when one has no image or the encode fails.
 //
-// ponytail: Twemoji ships 72px tiles, so a 300px glyph is a 4x bilinear
-// upscale and reads softer than Android's font-rendered emoji. Vendoring
-// the SVG set (or a color font) and rasterizing at size is the upgrade.
+// ponytail: every staged emoji set is 72px tiles, so a 300px glyph is a
+// 4x bilinear upscale and reads softer than Android's font-rendered
+// emoji. Staging each set's large PNGs (or SVGs) for this path is the
+// upgrade.
 @(private)
 emoji_mix_render :: proc(emoji: []string) -> (draft: Pic_Draft, ok: bool) {
 	if len(emoji) == 0 || len(emoji) > EMOJI_MIX_MAX {

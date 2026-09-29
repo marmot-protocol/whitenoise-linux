@@ -22,19 +22,35 @@ else
     mv "$WORK/stb_image.h" "$STB/stb_image.h"
   fi
 fi
-PACK="$HERE/vendor/emoji-pixels.bin"
-STAMP="$HERE/vendor/.emoji-pixels-inputs"
-# Content hashes include names, additions and deletions, not just newer mtimes.
-# Hash files in batches to stay within ARG_MAX on every supported host.
-"${HASH[@]}" "$HERE/scripts/emoji-pack.c" "$HERE/scripts/build-emoji-pack.sh" \
-  "$HERE/vendor/emoji-catalog.tsv" "$STB/stb_image.h" > "$WORK/manifest"
-find "$HERE/vendor/twemoji" -type f -name '*.png' -exec "${HASH[@]}" {} + | LC_ALL=C sort >> "$WORK/manifest"
-INPUTS="$("${HASH[@]}" < "$WORK/manifest")"
-if [ -f "$PACK" ] && [ "$(cat "$STAMP" 2>/dev/null || true)" = "$INPUTS" ]; then
-  exit 0
-fi
-# CC/CFLAGS may describe a foreign target. Only HOST_CC selects this executable.
-"${HOST_CC:-cc}" -std=c99 -O2 -Wall -Wextra -I"$STB" "$HERE/scripts/emoji-pack.c" -lm -o "$WORK/emoji-pack"
-"$WORK/emoji-pack" "$HERE/vendor/emoji-catalog.tsv" "$HERE/vendor/twemoji" "$PACK"
-printf '%s\n' "$INPUTS" > "$WORK/inputs"
-mv "$WORK/inputs" "$STAMP"
+# One pack per staged set: vendor/emoji/<set>/ -> vendor/emoji/<set>.bin.
+# Rows follow the base catalog, then the set's own <set>-extras.tsv when
+# it has one, the same order app/emoji.odin loads them in.
+for SET in noto twemoji openmoji; do
+  TILES="$HERE/vendor/emoji/$SET"
+  PACK="$HERE/vendor/emoji/$SET.bin"
+  STAMP="$HERE/vendor/.emoji-$SET-inputs"
+  CATALOG="$WORK/$SET.tsv"
+  cat "$HERE/vendor/emoji-catalog.tsv" > "$CATALOG"
+  if [ -f "$HERE/vendor/emoji/$SET-extras.tsv" ]; then
+    cat "$HERE/vendor/emoji/$SET-extras.tsv" >> "$CATALOG"
+  fi
+  # Content hashes include names, additions and deletions, not just newer mtimes.
+  # Hash files in batches to stay within ARG_MAX on every supported host.
+  # The merged catalog is hashed from stdin: its temporary path changes per run.
+  {
+    "${HASH[@]}" "$HERE/scripts/emoji-pack.c" "$HERE/scripts/build-emoji-pack.sh" "$STB/stb_image.h"
+    "${HASH[@]}" < "$CATALOG"
+  } > "$WORK/manifest"
+  find "$TILES" -type f -name '*.png' -exec "${HASH[@]}" {} + | LC_ALL=C sort >> "$WORK/manifest"
+  INPUTS="$("${HASH[@]}" < "$WORK/manifest")"
+  if [ -f "$PACK" ] && [ "$(cat "$STAMP" 2>/dev/null || true)" = "$INPUTS" ]; then
+    continue
+  fi
+  if [ ! -x "$WORK/emoji-pack" ]; then
+    # CC/CFLAGS may describe a foreign target. Only HOST_CC selects this executable.
+    "${HOST_CC:-cc}" -std=c99 -O2 -Wall -Wextra -I"$STB" "$HERE/scripts/emoji-pack.c" -lm -o "$WORK/emoji-pack"
+  fi
+  "$WORK/emoji-pack" "$CATALOG" "$TILES" "$PACK"
+  printf '%s\n' "$INPUTS" > "$WORK/inputs"
+  mv "$WORK/inputs" "$STAMP"
+done

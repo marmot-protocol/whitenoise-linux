@@ -302,6 +302,9 @@ msgstr "外観"
 msgid "Applies to message bodies and the composer."
 msgstr "メッセージ本文と入力欄に適用されます。"
 
+msgid "Applies to the picker, reactions and emoji in messages."
+msgstr "ピッカー、リアクション、メッセージ内の絵文字に適用されます。"
+
 msgid "Apps"
 msgstr "アプリ"
 
@@ -1362,6 +1365,9 @@ msgstr "エミッション"
 
 msgid "Emoji"
 msgstr "絵文字"
+
+msgid "Emoji style"
+msgstr "絵文字のスタイル"
 
 msgid "Enable issue tracking"
 msgstr "問題の追跡を有効にする"

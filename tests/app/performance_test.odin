@@ -176,7 +176,7 @@ performance_media :: proc(t: ^testing.T) {
 		bytes := transmute([]u8)body
 		if i >= 3 {
 			delete(name); delete(body)
-			path := i == 3 ? "twemoji/1f600.png" : "fonts/LiberationSans-Regular.ttf"
+			path := i == 3 ? "emoji/noto/1f600.png" : "fonts/LiberationSans-Regular.ttf"
 			read_err: os.Error
 			bytes, read_err = os.read_entire_file(
 				fmt.tprintf("%s/%s", res_dir(), path),

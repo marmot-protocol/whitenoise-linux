@@ -37,8 +37,9 @@ if [ "$SYSTEM" = windows ]; then
   cp -R "$WN_CROSS_WINDOWS_RUNTIME/x86_64-w64-mingw32/share/mingw32" "$RES/licenses/mingw-runtime"
   cp "${WN_CROSS_VELOPACK:?}/LICENSE" "$RES/licenses/velopack.txt"
 fi
-cp -R "$HERE/vendor/twemoji" "$RES/"
-cp "$HERE/vendor/emoji-catalog.tsv" "$HERE/vendor/emoji-pixels.bin" "$RES/"
+cp -R "$HERE/vendor/emoji" "$RES/"
+cp "$HERE/vendor/emoji-licenses/"*.txt "$RES/licenses/"
+cp "$HERE/vendor/emoji-catalog.tsv" "$RES/"
 cp "$HERE/vendor/fonts/"*.ttf "$RES/fonts/"
 cp "$HERE/vendor/fonts/"*.txt "$RES/licenses/"
 cat > "$RES/fonts.conf" <<'FONTCONFIG'

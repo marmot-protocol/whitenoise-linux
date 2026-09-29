@@ -1,4 +1,4 @@
-// Where the bundled runtime data lives: the Twemoji tiles, the emoji
+// Where the bundled runtime data lives: the emoji tile sets, the emoji
 // picker catalog, and the fonts a packaged build ships.
 //
 // Packaged resources live in usr/share on Linux, resources beside the

@@ -29,8 +29,13 @@ output is already present, so only the first run is slow:
   `app/fbx_shim.c` and `app/fbx_helper.c` build the isolated `build/wn-fbx`
   parser and animation helper. `model-decoder/` builds `build/wn-mesh` for
   STL, OBJ, GLB and G-code. Neither parser library is linked into the UI.
-- `vendor/twemoji` (the 72x72 PNG set) and `vendor/emoji-catalog.tsv`, both
-  pulled from pinned crates.io tarballs.
+- `vendor/emoji/{noto,twemoji,openmoji}`, the three 72x72 PNG sets the user
+  picks between in Appearance: Noto from a sparse clone at
+  `noto-emoji-commit`, Twemoji and OpenMoji from sha256-pinned archives.
+  Staging renames every tile to lowercase hex codepoints joined by `-` with
+  VS16 dropped. `vendor/emoji/openmoji-extras.tsv` lists the emoji only
+  OpenMoji draws. Their licences land in `vendor/emoji-licenses`, and
+  `vendor/emoji-catalog.tsv` comes from a pinned crates.io tarball.
 - `vendor/common-passwords.txt` and its MIT license from SecLists at
   `seclists-commit` in `DEPS_PIN`. The Odin password-strength check embeds the
   corpus with `#load`; there is no runtime file lookup or network request.
@@ -210,7 +215,8 @@ binary, so that layout is a contract with it:
 
 ```
 <prefix>/bin/whitenoise
-<prefix>/share/whitenoise-linux/twemoji/*.png      reaction and picker tiles
+<prefix>/share/whitenoise-linux/emoji/<set>/*.png  reaction and picker tiles
+<prefix>/share/whitenoise-linux/emoji/<set>.bin    the picker's pixel pack
 <prefix>/share/whitenoise-linux/emoji-catalog.tsv  the picker's search index
 <prefix>/share/whitenoise-linux/fonts/*.ttf        the four bundled faces
 ```

@@ -3,7 +3,7 @@
 #
 # Both packages install the same tree, via scripts/install-tree.sh:
 #   * the binary at <prefix>/bin, and the runtime data the app reads from
-#     disk (Twemoji tiles, the emoji picker catalog, the fonts) at
+#     disk (the emoji sets, the emoji picker catalog, the fonts) at
 #     <prefix>/share/whitenoise-linux. `res_dir` in app/paths.odin resolves
 #     that relative to the binary, so the layout is a contract with it.
 #   * Noto Sans CJK is deliberately NOT bundled: the .ttc is tens of

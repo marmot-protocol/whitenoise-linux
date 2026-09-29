@@ -20,7 +20,7 @@ sticker_hologram :: proc(t: ^testing.T) {
 	ui: Ui_State
 	g_prefs = &ui.prefs
 	defer {g_prefs = nil}
-	art := rl.LoadImage("vendor/twemoji/1f9ab.png")
+	art := rl.LoadImage("vendor/emoji/noto/1f9ab.png")
 	defer rl.UnloadImage(art)
 	tex := sticker_texture_load(art)
 	defer {

@@ -3,8 +3,8 @@
 package main
 
 import "core:fmt"
-import "core:os"
 import "core:testing"
+import rl "sdlrl"
 
 @(test)
 starter_identity_deterministic :: proc(t: ^testing.T) {
@@ -20,7 +20,8 @@ starter_identity_deterministic :: proc(t: ^testing.T) {
 @(test)
 starter_animals_have_tiles :: proc(t: ^testing.T) {
 	for animal in ANIMALS {
-		path := fmt.tprintf("%s/%x.png", twemoji_dir(), i32(animal.cp))
-		testing.expect(t, os.exists(path), fmt.tprintf("%s: missing tile %s", animal.name, path))
+		glyph := emoji_image(fmt.tprintf("%c", animal.cp))
+		testing.expect(t, glyph.data != nil, fmt.tprintf("%s: missing tile", animal.name))
+		rl.UnloadImage(glyph)
 	}
 }

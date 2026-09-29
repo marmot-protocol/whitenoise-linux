@@ -1846,7 +1846,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							border = chip.mine ? clay.BorderElementConfig{color = chip.ghost ? ACCENT_DIM : ACCENT, width = bw()} : {},
 						},
 						) {
-							// Twemoji tile + count, text fallback when the
+							// Emoji tile + count, text fallback when the
 							// sheet has no tile for this emoji.
 							if tex := emoji_tex(chip.emoji); tex != nil {
 								if clay.UI(clay.ID("MsgReactionImg", slot))(
@@ -2235,7 +2235,7 @@ inline_segs :: proc(
 			continue
 		}
 		it := utf8.decode_grapheme_iterator_make(text[i:])
-		cluster, _, _ := utf8.decode_grapheme_iterate(&it)
+		cluster, _, _ := rl.grapheme_iterate(&it)
 		j := i + len(cluster)
 		tex := text_emoji(cluster)
 		if tex == nil {i = j; continue}
@@ -2716,7 +2716,7 @@ md_table :: proc(
 			fonts := r < len(cell_fonts) && c < len(cell_fonts[r]) ? cell_fonts[r][c] : ""
 			width: f32
 			it := utf8.decode_grapheme_iterator_make(cell)
-			for cluster, g in utf8.decode_grapheme_iterate(&it) {width += rl.MeasureTextLine(len(fonts) > 0 ? text_font(fonts, g.byte_index) : (r == 0 ? FONT_TITLE : FONT_BODY), 13, cluster, 0).x}
+			for cluster, g in rl.grapheme_iterate(&it) {width += rl.MeasureTextLine(len(fonts) > 0 ? text_font(fonts, g.byte_index) : (r == 0 ? FONT_TITLE : FONT_BODY), 13, cluster, 0).x}
 			widths[c] = max(widths[c], width)
 		}
 	}
@@ -3362,7 +3362,7 @@ att_w :: proc(w: f32 = 320) -> f32 {
 body_tile_size :: proc(text: string, font_size: u16) -> f32 {
 	tiles := 0
 	it := utf8.decode_grapheme_iterator_make(text)
-	for cluster, _ in utf8.decode_grapheme_iterate(&it) {
+	for cluster, _ in rl.grapheme_iterate(&it) {
 		if text_emoji(cluster) != nil {
 			tiles += 1
 			if tiles > 6 {return f32(font_size) + 4}
@@ -3429,7 +3429,7 @@ rune_fit :: proc(
 	previous_emoji := false
 	skip := at
 	it := utf8.decode_grapheme_iterator_make(text[at:end])
-	for cluster, grapheme in utf8.decode_grapheme_iterate(&it) {
+	for cluster, grapheme in rl.grapheme_iterate(&it) {
 		i := at + grapheme.byte_index
 		if i < skip {continue}
 		literal := text_literal(fonts, i)

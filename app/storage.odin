@@ -192,6 +192,9 @@ backup_import :: proc(ui: ^Ui_State) {
 	apply_theme(ui.theme, ui.accent)
 	set_locale(ui.prefs.locale)
 	custom_emoji_scan()
+	if ui.prefs.emoji_set != emoji_set {
+		emoji_set_load(ui.prefs.emoji_set)
+	}
 	set_status(ui, fmt.aprintf(tr("Backup imported: %d files restored."), written), .Info)
 }
 

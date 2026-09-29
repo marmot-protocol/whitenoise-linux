@@ -297,14 +297,138 @@ else
 fi
 fi
 
-# Full Twemoji 72x72 PNG set for reaction chips (any emoji, not just
-# the embedded quick-react six), staged from the pinned crates.io
-# tarball of twemoji-assets.
-TWEMOJI="$HERE/vendor/twemoji"
-if [ ! -d "$TWEMOJI" ]; then
-  TMP="$(mktemp -d)"
-  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/twemoji-assets/twemoji-assets-1.5.1+17.0.2.crate" | tar "${TAR_OWNER[@]}" -xzf - -C "$TMP"
-  mv "$TMP"/twemoji-assets-*/assets/72x72 "$TWEMOJI"
+# Emoji art: one folder of 72x72 PNG tiles per set the user can pick in
+# Appearance, for the picker packs and reaction chips (any emoji, not
+# just the embedded quick-react six). Licence texts go to emoji-licenses.
+#
+#   vendor/emoji/noto/      googlefonts/noto-emoji at noto-emoji-commit (Apache 2.0)
+#   vendor/emoji/twemoji/   twemoji-assets crate, sha256-pinned (CC-BY 4.0)
+#   vendor/emoji/openmoji/  OpenMoji release zip, sha256-pinned (CC BY-SA 4.0)
+#
+# Delete a set's folder to restage it.
+EMOJI="$HERE/vendor/emoji"
+EMOJI_LICENSES="$HERE/vendor/emoji-licenses"
+mkdir -p "$EMOJI" "$EMOJI_LICENSES"
+
+# Upstream names differ for the same emoji ("emoji_u1f441_200d_1f5e8",
+# "1F441-FE0F-200D-1F5E8-FE0F"). Copy each tile to the one name
+# app/emoji.odin and scripts/emoji-pack.c look up: lowercase hex
+# codepoints joined by '-', VS16 dropped ("1f441-200d-1f5e8.png").
+# Names that are not codepoint sequences are skipped.
+emoji_stage() {
+  local dst="$1" src name code out
+  shift
+  for src in "$@"; do
+    name="${src##*/}"
+    name="${name%.png}"
+    name="${name#emoji_u}"
+    out=""
+    for code in ${name//[_-]/ }; do
+      if [[ ! $code =~ ^[0-9a-fA-F]{1,6}$ ]]; then
+        continue 2
+      fi
+      printf -v code '%x' "$((16#$code))"
+      if [ "$code" != fe0f ]; then
+        out="${out:+$out-}$code"
+      fi
+    done
+    cp "$src" "$dst/$out.png"
+  done
+}
+
+NOTO="$HERE/vendor/noto-emoji"
+NOTO_PIN="$(pin noto-emoji)"
+if [ ! -d "$NOTO" ]; then
+  git clone --filter=blob:none --depth 1 --no-checkout https://github.com/googlefonts/noto-emoji.git "$NOTO"
+  git -C "$NOTO" sparse-checkout set --no-cone /2D/png/72/ /3D/png/72/ /LICENSE
+fi
+if [ ! -f "$NOTO/LICENSE" ] || [ "$(git -C "$NOTO" rev-parse HEAD)" != "$NOTO_PIN" ]; then
+  git -C "$NOTO" fetch --filter=blob:none --depth 1 origin "$NOTO_PIN"
+  git -C "$NOTO" checkout --detach "$NOTO_PIN"
+  rm -rf "$EMOJI/noto"
+fi
+if [ ! -d "$EMOJI/noto" ]; then
+  TMP="$(mktemp -d "$HERE/vendor/.emoji.XXXXXX")"
+  # The classic 2D set has no flags (Noto's font build waves them from
+  # region-flags). The 3D set's flags are that same waved art, so stage
+  # 3D first and let 2D overwrite everything it has.
+  mkdir "$TMP/tiles"
+  emoji_stage "$TMP/tiles" "$NOTO"/3D/png/72/*.png
+  emoji_stage "$TMP/tiles" "$NOTO"/2D/png/72/*.png
+  cp "$NOTO/LICENSE" "$EMOJI_LICENSES/noto-emoji.txt"
+  mv "$TMP/tiles" "$EMOJI/noto"
+  rm -rf "$TMP"
+fi
+
+TWEMOJI_URL="https://static.crates.io/crates/twemoji-assets/twemoji-assets-1.5.1+17.0.2.crate"
+TWEMOJI_SHA="6857896b4a287e70f8197ab8fb9d68b3c43bb7ae97595aceaf2d11c21b93d9e9"
+if [ ! -d "$EMOJI/twemoji" ]; then
+  TMP="$(mktemp -d "$HERE/vendor/.emoji.XXXXXX")"
+  curl -sSfL -A "whitenoise-build" -o "$TMP/twemoji.crate" "$TWEMOJI_URL"
+  echo "$TWEMOJI_SHA  $TMP/twemoji.crate" | sha256sum -c -
+  tar "${TAR_OWNER[@]}" -xzf "$TMP/twemoji.crate" -C "$TMP"
+  mkdir "$TMP/tiles"
+  emoji_stage "$TMP/tiles" "$TMP"/twemoji-assets-*/assets/72x72/*.png
+  # The crate carries only its code licence; the graphics are CC-BY 4.0.
+  printf '%s\n' \
+    "Twemoji graphics: Copyright 2019 Twitter, Inc and other contributors." \
+    "Licensed under CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/" \
+    > "$EMOJI_LICENSES/twemoji.txt"
+  mv "$TMP/tiles" "$EMOJI/twemoji"
+  rm -rf "$TMP"
+fi
+
+OPENMOJI_URL="https://github.com/hfg-gmuend/openmoji/releases/download/17.0.0/openmoji-72x72-color.zip"
+OPENMOJI_SHA="fee0c272d0105f5b37e63dcc60c3759bda5a90c5ba2b160f64eaa768149eb5e9"
+OPENMOJI_LICENSE_URL="https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/LICENSE.txt"
+OPENMOJI_LICENSE_SHA="5e436ff8ffbb77d8607220e9bce20c8915d860010feeb6c1ebef5a85688e9b39"
+OPENMOJI_DATA_URL="https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/data/openmoji.json"
+OPENMOJI_DATA_SHA="ab181dd523021dfbe2b98a13d96ab384b7b3014d17815261bc267fb39d9a211b"
+if [ ! -d "$EMOJI/openmoji" ] || [ ! -f "$EMOJI/openmoji-extras.tsv" ]; then
+  rm -rf "$EMOJI/openmoji"
+  TMP="$(mktemp -d "$HERE/vendor/.emoji.XXXXXX")"
+  curl -sSfL -o "$TMP/openmoji.zip" "$OPENMOJI_URL"
+  echo "$OPENMOJI_SHA  $TMP/openmoji.zip" | sha256sum -c -
+  curl -sSfL -o "$TMP/LICENSE.txt" "$OPENMOJI_LICENSE_URL"
+  echo "$OPENMOJI_LICENSE_SHA  $TMP/LICENSE.txt" | sha256sum -c -
+  curl -sSfL -o "$TMP/openmoji.json" "$OPENMOJI_DATA_URL"
+  echo "$OPENMOJI_DATA_SHA  $TMP/openmoji.json" | sha256sum -c -
+  unzip -qo "$TMP/openmoji.zip" -d "$TMP/png"
+  mkdir "$TMP/tiles"
+  emoji_stage "$TMP/tiles" "$TMP"/png/*.png
+  # Emoji only OpenMoji draws (its private-use designs and non-RGI
+  # Unicode sequences), in the base catalog's "emoji<TAB>search" form.
+  # The picker appends them while OpenMoji is the active set. The JSON
+  # is pretty-printed one key per line, with no escaped quotes in these
+  # fields, so awk reads each object's keys and prints at its brace.
+  # Single codepoints outside the private-use area ("-", U+2605 star)
+  # are ordinary text, so they get VS16 (EF B8 8F) to ask for emoji
+  # presentation; without it every hyphen in a message would be a tile.
+  awk -F '"' '
+    $2 == "emoji" { emoji = $4 }
+    $2 == "hexcode" { hex = $4 }
+    $2 == "group" { group = $4 }
+    $2 == "annotation" { name = $4 }
+    $2 == "tags" { tags = $4 }
+    $2 == "openmoji_tags" { own = $4 }
+    $2 == "skintone" { skin = $4 }
+    /^  }/ {
+      if (group ~ /^extras-/ && skin == "") {
+        if (hex !~ /-/ && !(length(hex) == 4 && hex ~ /^(E|F[0-8])/)) {
+          emoji = emoji "\357\270\217"
+        }
+        printf "%s\t%s %s %s\n", emoji, name, tags, own
+      }
+    }
+  ' "$TMP/openmoji.json" > "$TMP/extras.tsv"
+  {
+    echo "All emojis designed by OpenMoji, the open-source emoji and icon project."
+    echo "https://openmoji.org/ License: CC BY-SA 4.0"
+    echo
+    cat "$TMP/LICENSE.txt"
+  } > "$EMOJI_LICENSES/openmoji.txt"
+  mv "$TMP/tiles" "$EMOJI/openmoji"
+  mv "$TMP/extras.tsv" "$EMOJI/openmoji-extras.tsv"
   rm -rf "$TMP"
 fi
 
@@ -350,7 +474,7 @@ if [ ! -f "$PASSWORDS" ] || [ ! -f "$HERE/vendor/common-passwords.LICENSE" ] || 
   rm -rf "$TMP"
 fi
 
-# Bundled fonts, staged like twemoji above so every package ships
+# Bundled fonts, staged like the emoji tiles above so every package ships
 # byte-identical faces regardless of the build host's font packages.
 # Both archives are pinned by sha256; bump a pin and `rm -rf
 # vendor/fonts` to restage.

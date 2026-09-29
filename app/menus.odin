@@ -662,7 +662,7 @@ picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D) {
 	}
 }
 
-// Emoji picker, the slint EmojiPicker: recents, search, Twemoji grid.
+// Emoji picker, the slint EmojiPicker: recents, search, emoji grid.
 emoji_picker :: proc(ui: ^Ui_State) {
 	gif := ui.gif_tab && ui.picker_target == "" && ui.picker_mode == .Message
 	width := modal_w(clay.ID("PickerPanel"), gif ? 560 : 400)

@@ -69,7 +69,7 @@ prev_grapheme :: proc(text: string, pos: int) -> int {
 	it := utf8.decode_grapheme_iterator_make(text[:p])
 	last := 0
 	for {
-		_, g, ok := utf8.decode_grapheme_iterate(&it)
+		_, g, ok := rl.grapheme_iterate(&it)
 		if !ok {
 			break
 		}
@@ -84,11 +84,11 @@ next_grapheme :: proc(text: string, pos: int) -> int {
 		return len(text)
 	}
 	it := utf8.decode_grapheme_iterator_make(text[p:])
-	_, _, ok := utf8.decode_grapheme_iterate(&it)
+	_, _, ok := rl.grapheme_iterate(&it)
 	if !ok {
 		return len(text)
 	}
-	_, second, ok2 := utf8.decode_grapheme_iterate(&it)
+	_, second, ok2 := rl.grapheme_iterate(&it)
 	return ok2 ? p + second.byte_index : len(text)
 }
 
@@ -169,7 +169,7 @@ set_lines :: proc(ed: ^edit.State, multiline: bool) {
 		if head > line[1] {continue}
 		x: f32
 		it := utf8.decode_grapheme_iterator_make(text[line[0]:head])
-		for cluster, _ in utf8.decode_grapheme_iterate(&it) {
+		for cluster, _ in rl.grapheme_iterate(&it) {
 			x +=
 				text_emoji(cluster) != nil ? 18 : rl.MeasureTextLine(FONT_BODY, BODY_FS, cluster, 0).x
 		}
@@ -403,7 +403,7 @@ hit_plain :: proc(
 	previous_emoji := false
 	skip := 0
 	it := utf8.decode_grapheme_iterator_make(text)
-	for cluster, grapheme in utf8.decode_grapheme_iterate(&it) {
+	for cluster, grapheme in rl.grapheme_iterate(&it) {
 		i := grapheme.byte_index
 		if i < skip {continue}
 		literal := text_literal(fonts, i)
@@ -500,7 +500,7 @@ field_mouse :: proc(
 hit_compose_line :: proc(line: string, x: f32) -> int {
 	pen: f32 = 0
 	it := utf8.decode_grapheme_iterator_make(line)
-	for cluster, g in utf8.decode_grapheme_iterate(&it) {
+	for cluster, g in rl.grapheme_iterate(&it) {
 		adv := rl.MeasureTextLine(FONT_BODY, BODY_FS, cluster, 0).x
 		if text_emoji(cluster) != nil {adv = 18}
 		if x < pen + adv / 2 {
