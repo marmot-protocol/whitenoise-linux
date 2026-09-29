@@ -308,6 +308,10 @@ Copy link, storage offers Copy path instead of Open folder, and Launch at
 login is not offered. Network and desktop IPC remain available; this policy
 does not isolate X11 or D-Bus from the rest of your desktop.
 
+Websocket fetching remains in-process. Frame lengths are checked against the
+remaining response capacity without adding untrusted lengths, including across
+fragmented messages.
+
 The `wn-font` helper receives an already-open input file on stdin, locks
 `unveil()` with no paths and pledges `stdio` before initializing FreeType.
 
