@@ -13,6 +13,8 @@
 // separate, system-level thing (notify.odin).
 package main
 
+import "core:math"
+
 import rl "sdlrl"
 import sdl "vendor:sdl3"
 
@@ -96,7 +98,7 @@ play_sound :: proc(kind: Sound) {
 		env := min(t * 25, 1) * (1 - t) * (1 - t)
 		hz := tone.from + (tone.to - tone.from) * t
 		phase += f64(hz) * 2 * 3.14159265 / SND_RATE
-		sample := sin_approx(phase)
+		sample := f32(math.sin(phase))
 		if tone.square {
 			sample = sample > 0 ? 0.6 : -0.6
 		}

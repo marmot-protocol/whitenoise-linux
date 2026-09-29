@@ -7,6 +7,8 @@
 // to take on faith; every figure comes from the session.
 package main
 
+import "core:math"
+
 import "core:fmt"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -100,7 +102,7 @@ about_wordmark :: proc() {
 			for i in 0 ..< 3 {
 				// 26..46px, each bar a third of a cycle behind the last.
 				phase := t * 1.6 + f64(i) * 2.1
-				h := f32(36 + 10 * sin_approx(phase))
+				h := f32(36 + 10 * f32(math.sin(phase)))
 				if clay.UI(clay.ID("AboutBar", u32(i)))(
 				{
 					layout = {
@@ -295,18 +297,4 @@ uptime_label :: proc() -> string {
 		return fmt.tprintf("%dm", total / 60)
 	}
 	return fmt.tprintf("%dh %dm", total / 3600, (total % 3600) / 60)
-}
-
-// Sine without pulling in core:math for one decoration: a parabola pair
-// over [-π, π], within ~1% of the real thing.
-sin_approx :: proc(x: f64) -> f32 {
-	PI :: 3.14159265358979
-	t := x - 2 * PI * f64(int(x / (2 * PI)))
-	if t > PI {
-		t -= 2 * PI
-	} else if t < -PI {
-		t += 2 * PI
-	}
-	y := 4 / PI * t - 4 / (PI * PI) * t * abs(t)
-	return f32(0.225 * (y * abs(y) - y) + y)
 }

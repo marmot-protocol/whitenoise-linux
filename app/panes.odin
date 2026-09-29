@@ -1,5 +1,7 @@
 package main
 
+import "core:math"
+
 import "core:encoding/hex"
 import "core:fmt"
 import "core:strings"
@@ -533,7 +535,7 @@ send_spinner :: proc(index: u32, state: Send_State) {
 	{layout = {childGap = 3, childAlignment = {y = .Center}}},
 	) {
 		for i in 0 ..< 3 {
-			wave := sin_approx(rl.GetTime() * 4 - f64(i) * 0.7) * 0.5 + 0.5
+			wave := f32(math.sin(rl.GetTime() * 4 - f64(i) * 0.7)) * 0.5 + 0.5
 			if clay.UI(clay.ID("ChatRowSendDot", index * 8 + u32(i)))(
 			{
 				layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingFixed(3)}},

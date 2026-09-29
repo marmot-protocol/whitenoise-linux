@@ -8,6 +8,8 @@
 // frame, after the renderer has walked the commands).
 package main
 
+import "core:math"
+
 import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -68,7 +70,7 @@ delivery_tick :: proc(group_id: string, index: u32, state: marmot.Delivery_State
 stroke :: proc(verts: ^[dynamic]rl.Vertex, x0, y0, x1, y1, w: f32, color: rl.FColor) {
 	dx := x1 - x0
 	dy := y1 - y0
-	mag := max(sqrt_approx(dx * dx + dy * dy), 0.001)
+	mag := max(math.sqrt(dx * dx + dy * dy), 0.001)
 	// Normal to the segment, scaled to half the stroke width.
 	nx := -dy / mag * w / 2
 	ny := dx / mag * w / 2
@@ -91,18 +93,6 @@ stroke :: proc(verts: ^[dynamic]rl.Vertex, x0, y0, x1, y1, w: f32, color: rl.FCo
 	append(verts, a, b, c, b, d, c)
 }
 
-// Newton steps from a decent guess: this is called a handful of times a
-// frame, and it keeps the file free of a math import.
-sqrt_approx :: proc(x: f32) -> f32 {
-	if x <= 0 {
-		return 0
-	}
-	guess := x > 1 ? x / 2 : x
-	for _ in 0 ..< 6 {
-		guess = 0.5 * (guess + x / guess)
-	}
-	return guess
-}
 
 // The checkmark path: down to the elbow, then up to the tip. `progress`
 // is how much of the total length is drawn.

@@ -603,8 +603,8 @@ shake_offset :: proc() -> (dx, dy: f32) {
 	}
 	anim_moving += 1
 	t := f64(anim_frame)
-	dx = shake_amount * sin_approx(t * 1.7)
-	dy = shake_amount * 0.5 * sin_approx(t * 2.6 + 1.1)
+	dx = shake_amount * f32(math.sin(t * 1.7))
+	dy = shake_amount * 0.5 * f32(math.sin(t * 2.6 + 1.1))
 	shake_amount -= shake_amount * SHAKE_DECAY * anim_dt
 	return
 }

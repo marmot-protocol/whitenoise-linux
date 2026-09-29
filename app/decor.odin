@@ -14,6 +14,8 @@
 // the accent color and cost one triangle batch a frame.
 package main
 
+import "core:math"
+
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
@@ -248,7 +250,7 @@ dust_draw :: proc(bounds: clay.BoundingBox) {
 		// Wrap across the width, bobbing on a slow sine.
 		travel := f32(now) * DUST_DRIFT * speed + seed * bounds.width
 		x := bounds.x + travel - bounds.width * f32(int(travel / bounds.width))
-		y := bounds.y + lane * bounds.height + 6 * sin_approx(now * 0.6 + f64(i))
+		y := bounds.y + lane * bounds.height + 6 * f32(math.sin(now * 0.6 + f64(i)))
 
 		alpha := 12 + 22 * seed
 		rl.DrawRectangleRoundedPx(
@@ -288,12 +290,6 @@ scan_draw :: proc(bounds: clay.BoundingBox) {
 	}
 }
 
-// Cosine from the sine approximation already in the tree (about.odin),
-// a quarter turn ahead.
-@(private = "file")
-cos_approx :: proc(x: f64) -> f32 {
-	return sin_approx(x + 1.5707963267948966)
-}
 
 // ── Art deco sunburst ───────────────────────────────────────────────
 //
@@ -320,8 +316,8 @@ deco_draw :: proc(bounds: clay.BoundingBox) {
 			&verts,
 			cx,
 			cy,
-			cx + reach * cos_approx(f64(angle)),
-			cy + reach * sin_approx(f64(angle)),
+			cx + reach * f32(math.cos(f64(angle))),
+			cy + reach * f32(math.sin(f64(angle))),
 			8,
 			tint,
 		)
@@ -335,8 +331,8 @@ deco_draw :: proc(bounds: clay.BoundingBox) {
 		for step in 0 ..< 48 {
 			a := f32(3.14159) * (1 + f32(step) / 48)
 			rl.DrawRectangleRec(
-				cx + r * cos_approx(f64(a)),
-				cy + r * sin_approx(f64(a)),
+				cx + r * f32(math.cos(f64(a))),
+				cy + r * f32(math.sin(f64(a))),
 				2,
 				2,
 				ring,
@@ -436,7 +432,7 @@ waves_draw :: proc(bounds: clay.BoundingBox) {
 		// Sampled coarsely: the eye reads the curve, not the segments.
 		for x := bounds.x; x < bounds.x + bounds.width; x += 6 {
 			phase := f64(x) * 0.008 + now * (0.25 + f64(t) * 0.2)
-			rl.DrawRectangleRec(x, base + amp * sin_approx(phase), 6, 2, tint)
+			rl.DrawRectangleRec(x, base + amp * f32(math.sin(phase)), 6, 2, tint)
 		}
 	}
 }

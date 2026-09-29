@@ -11,6 +11,8 @@
 // The send queue retains the tag across uploads, replies and retries.
 package main
 
+import "core:math"
+
 import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -105,27 +107,27 @@ fx_transform :: proc(fx: u8, slot: int, t: f64) -> (dx, dy: f32, size_mul, alpha
 		size_mul *= 0.7
 	}
 	if fx & FX_SHAKE != 0 {
-		dx += 1.6 * sin_approx(t * 34 + f64(slot))
+		dx += 1.6 * f32(math.sin(t * 34 + f64(slot)))
 	}
 	if fx & FX_JITTER != 0 {
 		// Two incommensurate rates read as random without a PRNG.
-		dx += 1.3 * sin_approx(t * 41 + f64(slot) * 2.3)
-		dy += 1.3 * sin_approx(t * 27 + f64(slot) * 5.1)
+		dx += 1.3 * f32(math.sin(t * 41 + f64(slot) * 2.3))
+		dy += 1.3 * f32(math.sin(t * 27 + f64(slot) * 5.1))
 	}
 	if fx & FX_NOD != 0 {
-		dy += 1.8 * sin_approx(t * 5 + f64(slot) * 0.15)
+		dy += 1.8 * f32(math.sin(t * 5 + f64(slot) * 0.15))
 	}
 	if fx & FX_RIPPLE != 0 {
-		dy += 2.4 * sin_approx(phase)
+		dy += 2.4 * f32(math.sin(phase))
 	}
 	if fx & FX_BLOOM != 0 {
-		alpha_mul *= 0.65 + 0.35 * (0.5 + 0.5 * sin_approx(t * 3 + f64(slot) * 0.4))
-		size_mul *= 1 + 0.06 * sin_approx(t * 3 + f64(slot) * 0.4)
+		alpha_mul *= 0.65 + 0.35 * (0.5 + 0.5 * f32(math.sin(t * 3 + f64(slot) * 0.4)))
+		size_mul *= 1 + 0.06 * f32(math.sin(t * 3 + f64(slot) * 0.4))
 	}
 	if fx & FX_EXPLODE != 0 {
 		// A slow breathe out and back, so the run keeps pulsing rather
 		// than blowing apart once and leaving a hole in the line.
-		push := 0.5 + 0.5 * sin_approx(t * 2 + f64(slot) * 0.9)
+		push := 0.5 + 0.5 * f32(math.sin(t * 2 + f64(slot) * 0.9))
 		dy -= 2.5 * push
 		size_mul *= 1 + 0.25 * push
 	}
@@ -325,7 +327,7 @@ burst_particles :: proc(index: u32, slot: int) {
 	for i in 0 ..< e.count {
 		// Fan the particles across the row, each with its own speed.
 		spread := e.count > 1 ? f32(i) / f32(e.count - 1) : 0.5 // 0..1
-		speed := 0.6 + 0.4 * (0.5 + 0.5 * sin_approx(f64(i) * 1.7))
+		speed := 0.6 + 0.4 * (0.5 + 0.5 * f32(math.sin(f64(i) * 1.7)))
 		x := (spread - 0.5) * e.spread * (0.35 + progress * speed)
 		y := -progress * speed * e.rise + 40 * progress * progress
 		size := 14 + 10 * (1 - progress)

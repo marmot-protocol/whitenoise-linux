@@ -356,6 +356,8 @@ million triangles or toolpath segments, and flat replies to 512 MiB. The app
 validates channel sizes, indices, finite values, strings and texture references
 before publishing a model. Embedded GLB images go through `wn-image`.
 Neither cgltf nor ufbx is linked into the main application.
+FBX triangles are not subdivided after import; animation poses the imported
+geometry without changing its topology.
 
 Math blocks are rendered by `wn-math`; MicroTeX is no longer linked into the
 main application. Each request accepts at most 4,096 source bytes and returns
@@ -497,6 +499,7 @@ A few design choices are worth knowing before you dig in:
 - **Optimistic rendering.** Sending, reacting, and unreacting apply locally and repaint immediately, then reconcile against Marmot's response. The UI never blocks on the network round-trip.
 - **Two upload paths.** Chat attachments go through Marmot's encrypted MIP-04 path, readable only by group members. Profile pictures take the deliberately public Blossom path.
 - **Data-driven themes.** Every color, metric, and capability flag comes from a `themes/*.toml` pack. A new component reads the globals; it never branches on which theme is active.
+- **Standard math.** Motion, decoration and sound synthesis call `core:math` directly, evaluating `f64` phases before narrowing to `f32`. Checkmark strokes use `math.sqrt` with a minimum normalization length of 0.001.
 
 For the deeper details, see [`AGENTS.md`](AGENTS.md).
 

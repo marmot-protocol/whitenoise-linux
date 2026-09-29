@@ -7,6 +7,8 @@
 // target group by the upload worker.
 package main
 
+import "core:math"
+
 import "core:fmt"
 import "core:strings"
 import "core:sync"
@@ -396,7 +398,7 @@ forward_progress :: proc(ui: ^Ui_State) {
 					backgroundColor = ACCENT,
 					floating = {
 						attachTo = .Parent,
-						offset = {f32(38 * (1 + sin_approx(rl.GetTime() * 4))), 0},
+						offset = {f32(38 * (1 + f32(math.sin(rl.GetTime() * 4)))), 0},
 					},
 				},
 				) {}
