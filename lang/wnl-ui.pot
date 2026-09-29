@@ -738,6 +738,9 @@ msgstr ""
 msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
 msgstr ""
 
+msgid "Couldn't mark the chat read. Please try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't open %s. Please try again."
 msgstr ""
@@ -1597,6 +1600,9 @@ msgid "Links to these exact sites open without confirmation."
 msgstr ""
 
 msgid "Listening... Finish when you're done (30 seconds maximum)."
+msgstr ""
+
+msgid "Loading messages…"
 msgstr ""
 
 msgid "Loading your accounts"

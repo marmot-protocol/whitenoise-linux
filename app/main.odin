@@ -1712,6 +1712,8 @@ app_main :: proc() {
 		)
 
 		post_start := time.tick_now()
+		if ui.settings_dirty {save_settings(&ui, background = true)}
+		settings_drain(&ui)
 		// Profile pictures fetched by the curl worker decode here (the
 		// render thread owns texture creation).
 		drain_pics()
@@ -2098,6 +2100,7 @@ app_main :: proc() {
 	xdc_stop()
 	stash_draft(&ui)
 	save_settings(&ui)
+	settings_stop(&ui)
 
 	// Shutdown order matters: closing the runtime makes the blocking
 	// subscription read return CLOSED (worker exits), then the sub is

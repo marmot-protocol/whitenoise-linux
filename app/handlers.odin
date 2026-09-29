@@ -5,6 +5,7 @@ import "core:os"
 import "core:strconv"
 import "core:strings"
 import "core:text/edit"
+import "core:thread"
 import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -1170,38 +1171,20 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 	// clears the row's first_unread on the chat-list reload.
 	delete(ui.unread_mark_id)
 	ui.unread_mark_id = strings.clone(ui.chats[index].first_unread)
-	load_timeline(client, ui)
+	// Reselecting an already loaded chat needs no synchronous re-projection.
+	if client != nil && (!timeline_scope(ui, "") || thread.is_done(timeline_job.worker)) {
+		timeline_start(client, ui, "")
+	}
 	if !ui.timeline_loading {edit_restore(ui)}
 
 	// Remember for "Restore last selected chat on launch".
 	if ui.prefs.last_chat != ui.chats[index].group_id {
 		delete(ui.prefs.last_chat)
 		ui.prefs.last_chat = strings.clone(ui.chats[index].group_id)
-		save_settings(ui)
+		ui.settings_dirty = true
 	}
 
-	if len(ui.messages) > 0 {
-		// The newest row by MLS order, which the wall-clock sort can move off the tail.
-		last := len(ui.messages) - 1
-		for msg, i in ui.messages {
-			if msg.mls_order > ui.messages[last].mls_order {last = i}
-		}
-		row: ^marmot.Chat_List_Row
-		account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-		group := strings.clone_to_cstring(ui.chats[index].group_id, context.temp_allocator)
-		if marmot.mark_timeline_message_read(
-			   client,
-			   account,
-			   group,
-			   strings.clone_to_cstring(ui.messages[last].id, context.temp_allocator),
-			   &row,
-		   ) ==
-		   .OK {
-			marmot.chat_list_row_free(row)
-			load_chat_list(client, ui.account_ref, ui)
-			ui.selected = index
-		}
-	}
+	if !ui.timeline_loading {timeline_mark_read(ui)}
 }
 
 set_archived :: proc(ui: ^Ui_State, client: ^marmot.Client, group_id: string, archived: bool) {

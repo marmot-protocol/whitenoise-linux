@@ -776,6 +776,9 @@ msgstr "ステッカーを読み込めませんでした。もう一度お試し
 msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
 msgstr "このNIP-05アドレスを検索できませんでした。確認してもう一度お試しください。"
 
+msgid "Couldn't mark the chat read. Please try again."
+msgstr "チャットを既読にできませんでした。もう一度お試しください。"
+
 #, c-format
 msgid "Couldn't open %s. Please try again."
 msgstr "%sを開けませんでした。もう一度お試しください。"
@@ -1686,6 +1689,9 @@ msgstr "これらのサイトへのリンクは確認なしで開きます。"
 
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr "聞き取り中です。話し終えたら完了してください（最大30秒）。"
+
+msgid "Loading messages…"
+msgstr "メッセージを読み込み中…"
 
 msgid "Loading your accounts"
 msgstr ""

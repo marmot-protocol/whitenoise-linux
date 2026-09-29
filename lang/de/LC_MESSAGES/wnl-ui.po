@@ -776,6 +776,9 @@ msgstr "Deine Sticker konnten nicht geladen werden. Bitte versuche es erneut."
 msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
 msgstr "Diese NIP-05-Adresse konnte nicht gefunden werden. Überprüfe sie und versuche es erneut."
 
+msgid "Couldn't mark the chat read. Please try again."
+msgstr "Der Chat konnte nicht als gelesen markiert werden. Bitte versuche es erneut."
+
 #, c-format
 msgid "Couldn't open %s. Please try again."
 msgstr "%s konnte nicht geöffnet werden. Bitte versuche es erneut."
@@ -1686,6 +1689,9 @@ msgstr "Links zu genau diesen Websites werden ohne Bestätigung geöffnet."
 
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr "Aufnahme läuft... Beende sie, wenn du fertig bist (maximal 30 Sekunden)."
+
+msgid "Loading messages…"
+msgstr "Nachrichten werden geladen…"
 
 msgid "Loading your accounts"
 msgstr ""

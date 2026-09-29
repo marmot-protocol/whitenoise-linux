@@ -236,7 +236,54 @@ chat_pane :: proc(ui: ^Ui_State) {
 							)
 						}
 					}
-					if len(ui.messages) == 0 && len(ui.pending) == 0 {
+					if ui.timeline_loading {
+						if clay.UI(clay.ID("TimelineLoading"))(
+						{
+							layout = {
+								padding = clay.PaddingAll(16),
+								childGap = 10,
+								layoutDirection = .TopToBottom,
+							},
+						},
+						) {
+							clay.Text(
+								tr("Loading messages…"),
+								{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+							)
+							if clay.UI(clay.ID("TimelineLoadingTrack"))(
+							{
+								layout = {sizing = {clay.SizingFixed(180), clay.SizingFixed(4)}},
+								backgroundColor = PLATE,
+								cornerRadius = rr(2),
+							},
+							) {
+								phase :=
+									ui.prefs.reduce_motion ? f32(0.5) : f32(rl.GetTime() - f64(int(rl.GetTime())))
+								if !ui.prefs.reduce_motion {anim_moving += 1}
+								if clay.UI(clay.ID("TimelineLoadingOffset"))(
+								{layout = {sizing = {width = clay.SizingFixed(phase * 132)}}},
+								) {}
+								if clay.UI(clay.ID("TimelineLoadingBar"))(
+								{
+									layout = {
+										sizing = {clay.SizingFixed(48), clay.SizingFixed(4)},
+									},
+									backgroundColor = ACCENT,
+									cornerRadius = rr(2),
+								},
+								) {}
+							}
+						}
+					} else if ui.timeline_error != "" {
+						if clay.UI(clay.ID("TimelineLoadError"))(
+						{layout = {padding = clay.PaddingAll(16)}},
+						) {
+							clay.Text(
+								ui.timeline_error,
+								{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
+							)
+						}
+					} else if len(ui.messages) == 0 && len(ui.pending) == 0 {
 						empty_timeline(ui)
 					}
 					// The thread route filters the one timeline: the main

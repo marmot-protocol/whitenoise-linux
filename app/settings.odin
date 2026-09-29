@@ -9,6 +9,7 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:thread"
 
 // The slint settings pages' knobs. Serialized nested under "prefs".
 Prefs :: struct {
@@ -230,12 +231,10 @@ load_settings :: proc(ui: ^Ui_State) {
 	}
 }
 
-save_settings :: proc(ui: ^Ui_State) {
+save_settings :: proc(ui: ^Ui_State, background := false) {
 	timing_start := time.tick_now()
 	defer local_timing_end(.settings_save, timing_start)
-	path := settings_path()
-	dir := fmt.tprintf("%s", path[:len(path) - len("/settings.json")])
-	os.make_directory(dir)
+	ui.settings_dirty = false
 
 	blocked := make([dynamic]string, context.temp_allocator)
 	for hex in ui.blocked {
@@ -251,10 +250,66 @@ save_settings :: proc(ui: ^Ui_State) {
 			blocked = blocked,
 			prefs = ui.prefs,
 		},
-		allocator = context.temp_allocator,
+		allocator = context.allocator,
 	)
 	if err != nil {
 		return
 	}
-	_ = os.write_entire_file(path, data)
+	if !background && ui.settings_job == nil {
+		defer delete(data)
+		path := settings_path()
+		if path == "" {return}
+		os.make_directory(path[:len(path) - len("/settings.json")])
+		_ = os.write_entire_file(path, data)
+		return
+	}
+	delete(ui.settings_pending)
+	ui.settings_pending = data
+	settings_drain(ui)
+}
+
+@(private)
+Settings_Work :: struct {
+	worker: ^thread.Thread,
+	data:   []u8,
+}
+
+// A single writer preserves call order across chat switches and other prefs.
+// It owns serialized bytes, never aliases mutable Ui_State maps or strings.
+@(private)
+settings_drain :: proc(ui: ^Ui_State) {
+	job := ui.settings_job
+	if job != nil {
+		if !thread.is_done(job.worker) {return}
+		thread.join(job.worker)
+		thread.destroy(job.worker)
+		delete(job.data)
+		free(job)
+		ui.settings_job = nil
+	}
+	if len(ui.settings_pending) == 0 {return}
+	job = new(Settings_Work)
+	job.data, ui.settings_pending = ui.settings_pending, nil
+	job.worker = thread.create(proc(t: ^thread.Thread) {
+		context.allocator = reload_allocator()
+		job := (^Settings_Work)(t.data)
+		path := settings_path()
+		if path != "" {
+			os.make_directory(path[:len(path) - len("/settings.json")])
+			_ = os.write_entire_file(path, job.data)
+		}
+		frame_wake()
+	})
+	job.worker.data = job
+	ui.settings_job = job
+	thread.start(job.worker)
+}
+
+@(private)
+settings_stop :: proc(ui: ^Ui_State) {
+	if ui.settings_dirty {save_settings(ui)}
+	for ui.settings_job != nil {
+		thread.join(ui.settings_job.worker)
+		settings_drain(ui)
+	}
 }

@@ -304,7 +304,7 @@ live_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Chat_List_Work) 
 	   !ui.timeline_loading &&
 	   !ui.tl_has_after &&
 	   ui.chats[ui.selected].unread > 0 {
-		mark_chat_read(ui, client, ui.selected)
+		timeline_mark_read(ui)
 	}
 }
 
