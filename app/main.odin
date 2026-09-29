@@ -786,6 +786,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 
 			// Message banner + status bar, the slint shell's bottom strip.
 			forward_progress(ui)
+			export_progress(ui)
 			status_bar(ui)
 
 			// One backdrop for every centered modal, whichever pane drew it.
@@ -2116,6 +2117,7 @@ app_main :: proc() {
 	timeline_stop()
 	members_stop()
 	group_files_stop()
+	export_stop(&ui)
 	issues_stop(&ui)
 	search_stop()
 	if live.refresh != nil {chat_list_free(live.refresh); free(live.refresh)}
@@ -2158,7 +2160,6 @@ app_main :: proc() {
 	}
 	delete(ui.staged_drafts)
 	delete(ui.compose_issue)
-	delete(export_account); delete(export_group)
 	for row in ui.chats {chat_free(row)}
 	for row in ui.archived {chat_free(row)}
 	delete(ui.chats); delete(ui.archived); delete(retired_chats)

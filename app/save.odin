@@ -39,11 +39,15 @@ pending_blob: []u8 // in-memory save source (preview modal); nil = record-based
 
 // Save bytes already in memory (an archive entry in the preview
 // modal); no re-fetch when the path arrives.
-start_blob_save :: proc(name: string, bytes: []u8) {
+start_blob_save :: proc(name: string, bytes: []u8, take_ownership := false) {
 	backup_saving = false // a cancelled backup dialog must not stamp this one
 	delete(pending_blob)
-	pending_blob = make([]u8, len(bytes))
-	copy(pending_blob, bytes)
+	if take_ownership {
+		pending_blob = bytes
+	} else {
+		pending_blob = make([]u8, len(bytes))
+		copy(pending_blob, bytes)
+	}
 
 	delete(pending_save.group)
 	delete(pending_save.msg_id)

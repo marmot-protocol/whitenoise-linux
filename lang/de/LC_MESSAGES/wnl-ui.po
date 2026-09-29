@@ -705,6 +705,9 @@ msgstr "Die Sprachdateien konnten nicht heruntergeladen werden. Bitte versuche e
 msgid "Couldn't download the speech model. Check your connection and available disk space, then try again."
 msgstr "Das Sprachmodell konnte nicht heruntergeladen werden. Prüfe deine Verbindung und den verfügbaren Speicherplatz und versuche es erneut."
 
+msgid "Couldn't export the chat. Please try again."
+msgstr "Der Chat konnte nicht exportiert werden. Bitte versuche es erneut."
+
 #, fuzzy, c-format
 msgid "Couldn't export the key. %s"
 msgstr "Kontakte konnten nicht exportiert werden."
@@ -1477,6 +1480,10 @@ msgstr "Bilder"
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
 
+#, c-format
+msgid "Images processed: %d of %d"
+msgstr "Verarbeitete Bilder: %d von %d"
+
 msgid "Import a backup"
 msgstr "Backup importieren"
 
@@ -1694,6 +1701,9 @@ msgstr "Links zu genau diesen Websites werden ohne Bestätigung geöffnet."
 
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr "Aufnahme läuft... Beende sie, wenn du fertig bist (maximal 30 Sekunden)."
+
+msgid "Loading messages for export..."
+msgstr "Nachrichten für den Export werden geladen..."
 
 msgid "Loading your accounts"
 msgstr ""
@@ -2150,6 +2160,12 @@ msgstr "Ton abspielen"
 msgid "Pre-order"
 msgstr "Vorbestellung"
 
+msgid "Preparing HTML export..."
+msgstr "HTML-Export wird vorbereitet..."
+
+msgid "Preparing Markdown export..."
+msgstr "Markdown-Export wird vorbereitet..."
+
 #, c-format
 msgid "Preparing attachments for %s…"
 msgstr "Anhänge für %s werden vorbereitet…"
@@ -2192,6 +2208,9 @@ msgstr "Privater Gruppenchat über Nostr"
 
 msgid "Profile"
 msgstr "Profil"
+
+msgid "Progress is indeterminate."
+msgstr "Der Fortschritt ist unbestimmt."
 
 msgid "Projects"
 msgstr "Projekte"
