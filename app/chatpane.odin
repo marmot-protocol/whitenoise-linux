@@ -648,7 +648,7 @@ info_settings_col :: proc(ui: ^Ui_State) {
 			ui,
 			"InviteBox",
 			&ui.invite_input,
-			tr("npub, hex or name@domain"),
+			tr("npub, hex, name@domain, or .bit"),
 			ui.focus == .Invite,
 		)
 	}
@@ -1062,7 +1062,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 			ui,
 			"NCMember",
 			&ui.nc_member,
-			tr("npub, hex or name@domain (optional)"),
+			tr("npub, hex, name@domain, or .bit (optional)"),
 			ui.focus == .NC_Member,
 		)
 		input_box(ui, "NCName", &ui.nc_name, "Group name", ui.focus == .NC_Name)
