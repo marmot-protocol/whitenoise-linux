@@ -4,6 +4,30 @@ import "base:runtime"
 import "core:sync"
 import "core:testing"
 
+@(test)
+test_page_chat_identity :: proc(t: ^testing.T) {
+	ui := Ui_State {
+		account_ref = "account-a",
+		selected    = 1,
+	}
+	append(&ui.chats, Chat_Row_Ui{group_id = "chat-a"}, Chat_Row_Ui{group_id = "chat-b"})
+	defer delete(ui.chats)
+	key := page_view_key(&ui)
+
+	ui.chats[0], ui.chats[1] = ui.chats[1], ui.chats[0]
+	ui.selected = 0
+	testing.expect(t, page_view_key(&ui) == key, "reordering must not restart the transition")
+
+	ui.selected = 1
+	testing.expect(t, page_view_key(&ui) != key, "switching chats must change the view")
+	ui.selected = 0
+	ui.account_ref = "account-b"
+	testing.expect(t, page_view_key(&ui) != key, "switching accounts must change the view")
+	ui.account_ref = "account-a"
+	ui.selected = -1
+	testing.expect(t, page_view_key(&ui) != key, "leaving the chat must change the view")
+}
+
 // The runner frees each test's allocator when the test ends, so a global
 // map first grown inside one test points at dead memory in the next and
 // its next insert panics. Allocate the anim maps from the heap up front,

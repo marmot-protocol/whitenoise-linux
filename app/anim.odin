@@ -239,7 +239,11 @@ PAGE_SETTLE :: 0.4 // grace after a switch: arrivals inside it are "already ther
 // What counts as a different view: the page, the selected chat, the
 // new-chat pane. Anything that swaps the whole main card.
 page_view_key :: proc(ui: ^Ui_State) -> u32 {
-	key := u32(ui.page) * 131 + u32(ui.selected + 2) * 7919
+	key := u32(ui.page) * 131 + clay.ID(ui.account_ref).id
+	if ui.selected >= 0 {
+		// Activity reorders rows without changing the open conversation.
+		key = clay.ID(ui.chats[ui.selected].group_id, key).id
+	}
 	if ui.show_members {
 		key ~= 0x2ab17e10 // the group-info page swaps the whole chat area
 	}
