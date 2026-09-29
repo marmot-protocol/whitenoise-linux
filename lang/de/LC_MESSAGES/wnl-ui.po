@@ -794,9 +794,8 @@ msgstr "Die Sprachausgabe konnte nicht wiedergegeben werden. Prüfe deine Audioa
 msgid "Couldn't publish the key package. %s"
 msgstr "auf dem Schlüsselpaket selbst"
 
-#, fuzzy
 msgid "Couldn't reach the Namecoin resolvers. Please try again."
-msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
+msgstr "Die Namecoin-Resolver konnten nicht erreicht werden. Bitte versuche es erneut."
 
 #, fuzzy
 msgid "Couldn't read that pubkey. Double-check it and try again."
@@ -837,9 +836,9 @@ msgstr "Die gespeicherte Datei konnte nicht entfernt werden. Versuch es bitte er
 msgid "Couldn't render the QR code. Please try again."
 msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
 
-#, fuzzy, c-format
+#, c-format
 msgid "Couldn't resolve %s on Namecoin. Double-check it and try again."
-msgstr "Das Konto konnte nicht hinzugefügt werden. Überprüfe den Schlüssel und versuche es erneut."
+msgstr "%s konnte auf Namecoin nicht aufgelöst werden. Überprüfe es und versuche es erneut."
 
 #, fuzzy, c-format
 msgid "Couldn't reveal your private key. %s"
@@ -1706,14 +1705,11 @@ msgstr "Speicherort"
 msgid "Look up"
 msgstr "Nachschlagen"
 
+msgid "Looking up the Namecoin name."
+msgstr "Der Namecoin-Name wird nachgeschlagen."
+
 msgid "Looking up..."
 msgstr "Wird gesucht..."
-
-msgid "Looking up the Namecoin name."
-msgstr ""
-
-msgid "MEDIA CACHE"
-msgstr "MEDIEN-CACHE"
 
 msgid "Magnet link copied"
 msgstr "Magnet-Link kopiert"
@@ -1834,10 +1830,10 @@ msgid "Name"
 msgstr ""
 
 msgid "Namecoin lookup took too long; try again."
-msgstr ""
+msgstr "Das Nachschlagen des Namecoin-Namens hat zu lange gedauert; versuche es erneut."
 
 msgid "Namecoin name resolved. Invite sent."
-msgstr ""
+msgstr "Namecoin-Name aufgelöst. Einladung gesendet."
 
 msgid "Nature"
 msgstr "Natur"
@@ -2006,7 +2002,7 @@ msgid "Open"
 msgstr "Öffnen"
 
 msgid "Open a chat before inviting someone."
-msgstr ""
+msgstr "Öffne einen Chat, bevor du jemanden einlädst."
 
 msgid "Open events in"
 msgstr "Ereignisse öffnen in"
@@ -3222,11 +3218,11 @@ msgstr ""
 msgid "npub copied"
 msgstr "npub kopiert"
 
-msgid "npub, hex or name@domain"
-msgstr "npub, Hex oder name@domain"
+msgid "npub, hex, name@domain, or .bit"
+msgstr "npub, Hex, name@domain oder .bit"
 
-msgid "npub, hex or name@domain (optional)"
-msgstr "npub, Hex oder name@domain (optional)"
+msgid "npub, hex, name@domain, or .bit (optional)"
+msgstr "npub, Hex, name@domain oder .bit (optional)"
 
 msgid "opened there"
 msgstr ""

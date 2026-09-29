@@ -1617,13 +1617,10 @@ msgstr ""
 msgid "Look up"
 msgstr ""
 
-msgid "Looking up..."
-msgstr ""
-
 msgid "Looking up the Namecoin name."
 msgstr ""
 
-msgid "MEDIA CACHE"
+msgid "Looking up..."
 msgstr ""
 
 msgid "Magnet link copied"
@@ -3060,10 +3057,10 @@ msgstr ""
 msgid "npub copied"
 msgstr ""
 
-msgid "npub, hex or name@domain"
+msgid "npub, hex, name@domain, or .bit"
 msgstr ""
 
-msgid "npub, hex or name@domain (optional)"
+msgid "npub, hex, name@domain, or .bit (optional)"
 msgstr ""
 
 msgid "opened there"
