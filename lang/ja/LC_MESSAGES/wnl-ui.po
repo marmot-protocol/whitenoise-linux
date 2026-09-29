@@ -705,6 +705,9 @@ msgstr "音声ファイルをダウンロードできませんでした。もう
 msgid "Couldn't download the speech model. Check your connection and available disk space, then try again."
 msgstr "音声モデルをダウンロードできませんでした。接続とディスクの空き容量を確認して、もう一度お試しください。"
 
+msgid "Couldn't export the chat. Please try again."
+msgstr "チャットをエクスポートできませんでした。もう一度お試しください。"
+
 #, fuzzy, c-format
 msgid "Couldn't export the key. %s"
 msgstr "連絡先をエクスポートできませんでした。"
@@ -1469,6 +1472,10 @@ msgstr "画像"
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
 
+#, c-format
+msgid "Images processed: %d of %d"
+msgstr "処理済み画像: %d / %d"
+
 msgid "Import a backup"
 msgstr "バックアップをインポート"
 
@@ -1686,6 +1693,9 @@ msgstr "これらのサイトへのリンクは確認なしで開きます。"
 
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr "聞き取り中です。話し終えたら完了してください（最大30秒）。"
+
+msgid "Loading messages for export..."
+msgstr "エクスポートするメッセージを読み込み中..."
 
 msgid "Loading your accounts"
 msgstr ""
@@ -2142,6 +2152,12 @@ msgstr "音を鳴らす"
 msgid "Pre-order"
 msgstr "予約注文"
 
+msgid "Preparing HTML export..."
+msgstr "HTMLエクスポートを準備中..."
+
+msgid "Preparing Markdown export..."
+msgstr "Markdownエクスポートを準備中..."
+
 msgid "Preparing dictation..."
 msgstr "音声入力を準備しています..."
 
@@ -2177,6 +2193,9 @@ msgstr "Nostr を使ったプライベートグループチャット"
 
 msgid "Profile"
 msgstr "プロフィール"
+
+msgid "Progress is indeterminate."
+msgstr "進捗率は未確定です。"
 
 msgid "Projects"
 msgstr "プロジェクト"

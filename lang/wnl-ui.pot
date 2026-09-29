@@ -669,6 +669,9 @@ msgstr ""
 msgid "Couldn't download the speech model. Check your connection and available disk space, then try again."
 msgstr ""
 
+msgid "Couldn't export the chat. Please try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't export the key. %s"
 msgstr ""
@@ -1391,6 +1394,10 @@ msgstr ""
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
 
+#, c-format
+msgid "Images processed: %d of %d"
+msgstr ""
+
 msgid "Import a backup"
 msgstr ""
 
@@ -1597,6 +1604,9 @@ msgid "Links to these exact sites open without confirmation."
 msgstr ""
 
 msgid "Listening... Finish when you're done (30 seconds maximum)."
+msgstr ""
+
+msgid "Loading messages for export..."
 msgstr ""
 
 msgid "Loading your accounts"
@@ -2034,6 +2044,12 @@ msgstr ""
 msgid "Pre-order"
 msgstr ""
 
+msgid "Preparing HTML export..."
+msgstr ""
+
+msgid "Preparing Markdown export..."
+msgstr ""
+
 msgid "Preparing dictation..."
 msgstr ""
 
@@ -2068,6 +2084,9 @@ msgid "Private group chat over Nostr"
 msgstr ""
 
 msgid "Profile"
+msgstr ""
+
+msgid "Progress is indeterminate."
 msgstr ""
 
 msgid "Projects"

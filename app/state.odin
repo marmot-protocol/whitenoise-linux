@@ -451,6 +451,7 @@ Ui_State :: struct {
 	rail_rows:                                             [dynamic]int, // chat indices as rendered in the rail, for Ctrl+Tab cycling
 	rail_peek:                                             bool, // chat list opened by hand in a window too narrow for it; see toggle_rail
 	messages:                                              [dynamic]Msg_Ui, // selected chat's timeline
+	transcript:                                            ^Transcript_Job,
 	pending:                                               [dynamic]Pending_Send, // optimistic sends awaiting ack
 	react_pending:                                         [dynamic]Pending_React, // optimistic reactions awaiting ack
 	compose:                                               [dynamic]u8,
