@@ -334,6 +334,7 @@ if [ ! -f "$CATALOG" ] || [ "$(cat "$HERE/vendor/.emoji-catalog-version" 2>/dev/
   printf '%s\n' "$CATALOG_VERSION" >"$HERE/vendor/.emoji-catalog-version"
   rm -rf "$TMP"
 fi
+bash "$HERE/scripts/build-emoji-pack.sh"
 
 # Common passwords are compiled into the app, never fetched during a check.
 PASSWORDS="$HERE/vendor/common-passwords.txt"

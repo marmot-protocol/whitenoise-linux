@@ -186,6 +186,12 @@ The native Linux build extracts speech, font, and emoji archives without
 restoring ownership, so it can run as root inside Flatpak's restricted user
 namespace.
 
+The build also packs the catalog's Twemoji PNGs into `emoji-pixels.bin`.
+The app reads this fixed-size RGBA data at startup and uploads only visible
+picker rows, so opening, scrolling, and searching do not launch PNG decoders
+for catalog emoji. The pack adds about 38 MiB of uncompressed resources and
+resident pixel data. It ships beside `emoji-catalog.tsv` in every package.
+
 The release workflow also builds Flatpak on `master` to populate caches that
 later tags can restore. It caches the GNOME 50 module outputs, downloads,
 Git mirrors, and ccache, plus separate Marmot and C dependency outputs.

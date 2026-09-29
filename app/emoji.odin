@@ -33,6 +33,13 @@ twemoji_dir :: proc() -> string {
 }
 emoji_tex_cache: map[string]^rl.Texture2D
 
+@(private)
+EMOJI_SIDE :: 72
+@(private)
+EMOJI_RECORD_BYTES :: 1 + EMOJI_SIDE * EMOJI_SIDE * 4
+@(private)
+emoji_pixels: map[string][]u8
+
 // Plain UI text shares the tile cache with messages. Resolve whole
 // graphemes so flags, skin tones, and joined emoji occupy one cell.
 @(private)
@@ -50,8 +57,9 @@ text_emoji :: proc(text: string) -> ^rl.Texture2D {
 // Picker catalog, loaded from vendor/emoji-catalog.tsv (staged by
 // scripts/build.sh): base emoji plus a lowercase search name.
 Emoji_Entry :: struct {
-	emoji: string,
-	name:  string,
+	emoji:  string,
+	name:   string,
+	pixels: []u8,
 }
 emoji_catalog: [dynamic]Emoji_Entry
 
@@ -72,6 +80,31 @@ load_emoji_catalog :: proc() {
 			Emoji_Entry{emoji = line[:tab], name = strings.to_lower(line[tab + 1:])},
 		)
 	}
+	path, _ := filepath.join({res_dir(), "emoji-pixels.bin"}, context.temp_allocator)
+	pixels, pixel_err := os.read_entire_file(path, context.allocator)
+	if pixel_err != nil || !emoji_pack_valid(pixels, len(emoji_catalog)) {
+		fmt.eprintfln("emoji: missing or invalid pixel pack: %s (%v)", path, pixel_err)
+		delete(pixels)
+		return
+	}
+	for &entry, i in emoji_catalog {
+		offset := 8 + i * EMOJI_RECORD_BYTES
+		if pixels[offset] == 0 {continue}
+		entry.pixels = pixels[offset + 1:offset + EMOJI_RECORD_BYTES]
+		emoji_pixels[entry.emoji] = entry.pixels
+	}
+}
+
+// Fixed-size RGBA records need no runtime image parser or helper process.
+@(private)
+emoji_pack_valid :: proc(data: []u8, count: int) -> bool {
+	if len(data) < 8 || string(data[:4]) != "WNE1" {return false}
+	stored := u32(data[4]) | u32(data[5]) << 8 | u32(data[6]) << 16 | u32(data[7]) << 24
+	if u64(stored) != u64(count) || len(data) != 8 + count * EMOJI_RECORD_BYTES {return false}
+	for i in 0 ..< count {
+		if data[8 + i * EMOJI_RECORD_BYTES] > 1 {return false}
+	}
+	return true
 }
 
 emoji_tex :: proc(emoji: string) -> ^rl.Texture2D {
@@ -84,12 +117,22 @@ emoji_tex :: proc(emoji: string) -> ^rl.Texture2D {
 		return cached
 	}
 
-	img := emoji_image(emoji)
+	pixels := emoji_pixels[emoji]
+	img: rl.Image
+	if len(pixels) > 0 {
+		img = {
+			data   = raw_data(pixels),
+			width  = EMOJI_SIDE,
+			height = EMOJI_SIDE,
+		}
+	} else {
+		img = emoji_image(emoji)
+	}
 	tex: ^rl.Texture2D
 	if img.data != nil {
 		tex = new(rl.Texture2D)
 		tex^ = rl.LoadTextureFromImage(img)
-		rl.UnloadImage(img)
+		if len(pixels) == 0 {rl.UnloadImage(img)}
 		rl.SetTextureFilter(tex^, .BILINEAR)
 	}
 	emoji_tex_cache[strings.clone(emoji)] = tex

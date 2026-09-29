@@ -588,9 +588,7 @@ encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 	}
 }
 
-// Cap on rendered picker cells; clay elements aren't virtualized, so
-// the grid shows the first matches and search narrows the rest.
-// ponytail: port ListView-style virtualization if the cap ever hurts.
+// Cap the result list; offscreen rows retain geometry but no tile elements.
 PICKER_MAX_CELLS :: 396
 PICKER_CELL_W :: f32(30 + 2) // cell plus the row's childGap
 
@@ -609,10 +607,8 @@ picker_matches :: proc(ui: ^Ui_State) -> [dynamic]int {
 	matches := make([dynamic]int, context.temp_allocator)
 	filter := strings.to_lower(string(ui.picker_filter[:]), context.temp_allocator)
 	for entry, i in emoji_catalog {
+		if len(entry.pixels) == 0 {continue}
 		if len(filter) > 0 && !strings.contains(entry.name, filter) {
-			continue
-		}
-		if emoji_tex(entry.emoji) == nil {
 			continue
 		}
 		append(&matches, i)
@@ -775,8 +771,20 @@ emoji_picker :: proc(ui: ^Ui_State) {
 			}
 			matches := picker_matches(ui)
 			cols := picker_cols()
+			view := clay.GetScrollContainerData(clay.ID("PickerGrid"))
+			top := view.found ? max(0, -view.scrollPosition.y) : 0
+			view_height :=
+				view.found && view.scrollContainerDimensions.height > 0 ? view.scrollContainerDimensions.height : height
+			bottom := top + view_height
+			y := len(custom) > 0 ? PICKER_CELL_W : 0
 			for row_start := 0; row_start < len(matches); row_start += cols {
-				if clay.UI(clay.ID("PkRow", u32(row_start)))({layout = {childGap = 2}}) {
+				visible := y + PICKER_CELL_W >= top - PICKER_CELL_W && y <= bottom + PICKER_CELL_W
+				y += PICKER_CELL_W
+				if clay.UI(clay.ID("PkRow", u32(row_start)))(
+				{layout = {childGap = 2, sizing = {height = clay.SizingFixed(30)}}},
+				) {
+					// Empty rows retain scroll geometry without uploading offscreen tiles.
+					if !visible {continue}
 					for k in row_start ..< min(row_start + cols, len(matches)) {
 						entry := emoji_catalog[matches[k]]
 						picker_cell("PkCell", u32(matches[k]), emoji_tex(entry.emoji))
