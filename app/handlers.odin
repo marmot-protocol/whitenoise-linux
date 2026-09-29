@@ -1521,7 +1521,9 @@ Msg_Op :: enum {
 	History,
 	Issue,
 	Issue_Setting,
-	Custom, // app-defined kind + tags (polls, votes, thread messages)
+	Custom, // app-defined kind + tags
+	Poll_Create,
+	Poll_Vote,
 	Retry_Convergence,
 	Repair_History,
 	Retention, // disappearing-timer change; the seconds ride Op_Job.secs

@@ -989,17 +989,20 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // reloads when the worker reports back. Threads are reaped by
 // drain_sends, which joins whatever is done in send_threads.
 Op_Job :: struct {
-	ticket:  int,
-	client:  ^marmot.Client,
-	op:      Msg_Op,
-	account: cstring,
-	group:   cstring,
-	target:  cstring,
-	emoji:   cstring, // nil for delete
-	kind:    u64, // .Custom only
-	tags:    [][]cstring, // .Custom only, owned rows
-	content: cstring, // .Custom only
-	secs:    u64, // .Retention only
+	ticket:      int,
+	client:      ^marmot.Client,
+	op:          Msg_Op,
+	account:     cstring,
+	group:       cstring,
+	target:      cstring,
+	emoji:       cstring, // nil for delete
+	kind:        u64, // .Custom/.Issue only
+	tags:        [][]cstring, // owned custom-event or poll-context tags
+	content:     cstring, // custom event, poll question, or edit
+	poll_values: []cstring, // option labels on creation; selected ids on voting
+	poll_type:   marmot.Poll_Type,
+	poll_issue:  bool, // issue permission check and completion routing
+	secs:        u64, // .Retention only
 }
 
 Op_Done :: struct {
@@ -1023,7 +1026,7 @@ op_worker :: proc(t: ^thread.Thread) {
 	summary: ^marmot.Send_Summary
 	done := Op_Done {
 		ticket = job.ticket,
-		op     = job.op,
+		op     = job.poll_issue ? .Issue : job.op,
 	}
 	status: marmot.Status
 	switch job.op {
@@ -1098,6 +1101,42 @@ op_worker :: proc(t: ^thread.Thread) {
 			job.group,
 			job.target,
 			job.content,
+			&summary,
+		)
+	case .Poll_Create:
+		rows := make([]marmot.Message_Tag, len(job.tags), context.temp_allocator)
+		for row, i in job.tags {
+			rows[i] = {
+				values     = raw_data(row),
+				values_len = uint(len(row)),
+			}
+		}
+		status = .OK
+		if job.poll_issue {status = issue_send_allowed(job.client, job.account, job.group)}
+		if status == .OK {
+			status = marmot.create_poll(
+				job.client,
+				job.account,
+				job.group,
+				job.content,
+				raw_data(job.poll_values),
+				uint(len(job.poll_values)),
+				u32(job.poll_type),
+				0,
+				0,
+				raw_data(rows),
+				uint(len(rows)),
+				&summary,
+			)
+		}
+	case .Poll_Vote:
+		status = marmot.cast_poll_vote(
+			job.client,
+			job.account,
+			job.group,
+			job.target,
+			raw_data(job.poll_values),
+			uint(len(job.poll_values)),
 			&summary,
 		)
 	case .Custom, .Issue:
@@ -1203,7 +1242,7 @@ op_worker :: proc(t: ^thread.Thread) {
 	}
 	if job.op == .History ||
 	   job.op == .Edit ||
-	   job.op == .Issue ||
+	   done.op == .Issue ||
 	   job.op == .Issue_Setting ||
 	   job.op == .Lookup_Member {
 		done.account = strings.clone(string(job.account))
@@ -1229,14 +1268,16 @@ op_worker :: proc(t: ^thread.Thread) {
 		delete(row)
 	}
 	delete(job.tags)
+	for value in job.poll_values {delete(value)}
+	delete(job.poll_values)
 	if job.content != nil {
 		delete(job.content)
 	}
 	free(job)
 }
 
-// Fire-and-forget custom event onto the op worker (poll, vote, thread
-// message); drain_ops reloads the timeline on the ack.
+// Fire-and-forget custom event onto the op worker; drain_ops reloads
+// the timeline on the ack.
 spawn_custom :: proc(
 	ui: ^Ui_State,
 	client: ^marmot.Client,
@@ -1269,6 +1310,41 @@ spawn_custom :: proc(
 	ticket := job.ticket
 	thread.start(t)
 	return ticket
+}
+
+// Own every string before starting the worker: modal drafts and timeline
+// projections can be replaced while native validation/publishing is in flight.
+spawn_poll :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	op: Msg_Op,
+	target, question: string,
+	values: []string,
+	poll_type: marmot.Poll_Type = .Single_Choice,
+	tags: [][]string = nil,
+) {
+	op_ticket += 1
+	job := new(Op_Job)
+	job.ticket = op_ticket
+	job.client = client
+	job.op = op
+	job.account = strings.clone_to_cstring(ui.account_ref)
+	job.group = strings.clone_to_cstring(ui.chats[ui.selected].group_id)
+	job.target = strings.clone_to_cstring(target)
+	job.content = strings.clone_to_cstring(question)
+	job.poll_type = poll_type
+	job.poll_issue = ui.compose_issue != ""
+	job.poll_values = make([]cstring, len(values))
+	for value, i in values {job.poll_values[i] = strings.clone_to_cstring(value)}
+	job.tags = make([][]cstring, len(tags))
+	for row, i in tags {
+		job.tags[i] = make([]cstring, len(row))
+		for value, j in row {job.tags[i][j] = strings.clone_to_cstring(value)}
+	}
+	t := thread.create(op_worker)
+	t.data = job
+	append(&send_threads, t)
+	thread.start(t)
 }
 
 spawn_op :: proc(

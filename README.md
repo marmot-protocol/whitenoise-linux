@@ -410,6 +410,10 @@ To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; t
 The current pin is MDK 0.11.0. The build applies the patches listed in
 `scripts/build.sh`, including `patches/mdk-app-components.patch` for the
 unmerged group app-component API used by issue tracking.
+Poll creation, voting, and tallies use MDK's native poll APIs and timeline
+projection. `patches/mdk-poll-context.patch` preserves thread and issue context
+through native creation. MDK disallows poll creation in unnamed two-person
+conversations. A multiple-choice vote must retain at least one selection.
 
 Publishing workflows read `WN_METRICS_WRITE_TOKEN` and `WN_AUDIT_WRITE_TOKEN`
 from CI secrets. Configure both on GitHub and on trusted ngit/act publishing

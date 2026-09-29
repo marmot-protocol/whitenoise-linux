@@ -120,10 +120,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			inflight[p.body] += 1
 		}
 	}
-	// NIP-88 votes and thread replies fold into other rows: collected
-	// during the walk, applied once every row is built (a vote can sit
-	// either side of its poll in the page). Values borrow the page.
-	votes := make(map[string]map[string]Poll_Vote, context.temp_allocator) // poll id → sender → latest
+	// Thread replies fold into their root rows after the page is built.
 	thread_counts := make(map[string]int, context.temp_allocator)
 
 	previous := make([]Msg_Ui, len(ui.messages), context.temp_allocator)
@@ -168,10 +165,8 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			}
 		}
 
-		// A kind-1018 vote folds into its poll's tally; never a row.
-		// Latest per sender wins here, per NIP-88.
+		// MDK folds authenticated poll responses into the poll projection.
 		if record.kind == KIND_POLL_VOTE {
-			poll_vote_collect(&votes, record)
 			continue
 		}
 
@@ -299,6 +294,9 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			content = versions[len(versions) - 1].record
 		}
 		body := content.plaintext != nil ? string(content.plaintext) : ""
+		if record.poll != nil {
+			body = string(record.poll.question)
+		}
 		if record.kind == AGENT_STREAM_START {
 			body = stream_body
 		}
@@ -325,11 +323,9 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			edited    = record.edit != nil || (has_edits && len(versions) > 0),
 			effect    = record_effect(record),
 		}
-		// A kind-1068 poll renders its question as the body plus the
-		// option bars parsed here; a kind-1111 thread message leaves
-		// the main timeline for its root's thread panel.
-		if record.kind == KIND_POLL {
-			poll_parse(client, &msg, record)
+		// Native poll projections include votes outside the visible page.
+		if record.poll != nil {
+			poll_project(client, &msg, record.poll)
 		}
 		// A kind-1111 thread message, or a poll created inside a
 		// thread, references its root as the first e tag and renders
@@ -372,7 +368,8 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 				if j < len(previous[old].secrets) {layer.open = previous[old].secrets[j].open}
 			}
 		}
-		if secret != "" ||
+		if record.poll != nil ||
+		   secret != "" ||
 		   ((msg.edited || record.kind == KIND_POLL || record.kind == KIND_THREAD) &&
 				   content.content_tokens.blocks_len == 0 &&
 				   len(body) > 0) {
@@ -502,11 +499,8 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	ui.scroll_pending ||=
 		follow && len(ui.messages) > 0 && !(ui.messages[len(ui.messages) - 1].id in old_times)
 
-	// Fold the collected votes and thread reply counts onto their rows.
+	// Fold the collected thread reply counts onto their rows.
 	for &m in ui.messages {
-		if len(m.poll_opts) > 0 {
-			poll_tally(&m, votes[m.id], ui.account_ref)
-		}
 		if n, ok := thread_counts[m.id]; ok {
 			m.thread_replies = n
 		}

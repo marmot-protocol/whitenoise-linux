@@ -786,12 +786,38 @@ Message_Tag :: struct {
 	values_len: uint,
 }
 
+Poll_Type :: enum i32 {
+	Single_Choice,
+	Multiple_Choice,
+}
+
+Poll_Option_Result :: struct {
+	id:    cstring,
+	label: cstring,
+	votes: u64,
+}
+
+// Borrowed from the owning Timeline_Page, including all nested strings.
+Poll_Projection :: struct {
+	question:            cstring,
+	options:             [^]Poll_Option_Result,
+	options_len:         uint,
+	poll_type:           Poll_Type,
+	participants:        u64,
+	local_selection:     [^]cstring,
+	local_selection_len: uint,
+	creator:             cstring,
+	has_ends_at:         bool,
+	ends_at:             u64,
+	open:                bool,
+}
+
 // Full mirror of MarmotTimelineMessageRecord: records are indexed by
 // value out of Timeline_Page, so the stride must match C exactly.
 Timeline_Message_Record :: struct {
 	message_id_hex:            cstring,
 	has_reports:               bool,
-	poll:                      rawptr, // ^MarmotPollProjection, unread
+	poll:                      ^Poll_Projection,
 	source_message_id_hex:     cstring,
 	has_source_epoch:          bool,
 	source_epoch:              u64,
@@ -923,6 +949,15 @@ Timeline_Page :: struct {
 // vendored marmot.h (x86_64). A mismatch means a mirror drifted from
 // the C layout; fix the struct, then update the constant.
 #assert(size_of(Timeline_Message_Record) == 320)
+#assert(offset_of(Timeline_Message_Record, poll) == 16)
+#assert(size_of(Poll_Type) == 4)
+#assert(size_of(Poll_Option_Result) == 24)
+#assert(size_of(Poll_Projection) == 88)
+#assert(offset_of(Poll_Projection, poll_type) == 24)
+#assert(offset_of(Poll_Projection, participants) == 32)
+#assert(offset_of(Poll_Projection, local_selection) == 40)
+#assert(offset_of(Poll_Projection, ends_at) == 72)
+#assert(offset_of(Poll_Projection, open) == 80)
 #assert(size_of(Group_System_Event) == 104)
 #assert(size_of(Timeline_Page) == 24)
 #assert(size_of(Timeline_Message_Query) == 72)
@@ -1298,10 +1333,11 @@ foreign lib {
 	create_group :: proc(client: ^Client, account_ref: cstring, name: cstring, member_refs: [^]cstring, member_refs_len: uint, description: cstring, out: ^cstring) -> Status ---
 	send_text :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
 	// App-defined event: any non-reserved kind with caller-built tags
-	// (borrowed, MarmotStringArray rows == Message_Tag layout). Carries
-	// NIP-88 polls/votes and thread messages.
+	// (borrowed, MarmotStringArray rows == Message_Tag layout).
 	send_custom_event :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, kind: u64, tags: [^]Message_Tag, tags_len: uint, content: cstring, out: ^^Send_Summary) -> Status ---
 	send_tagged_text :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, tags: [^]Message_Tag, tags_len: uint, content: cstring, out: ^^Send_Summary) -> Status ---
+	create_poll :: proc(client: ^Client, account_ref, group_id_hex, question: cstring, options: [^]cstring, options_len: uint, poll_type: u32, has_ends_at: u8, ends_at: u64, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
+	cast_poll_vote :: proc(client: ^Client, account_ref, group_id_hex, poll_event_id: cstring, option_ids: [^]cstring, option_ids_len: uint, out: ^^Send_Summary) -> Status ---
 	// An imeta tag for an uploaded reference, so a custom event can
 	// carry media the timeline resolves like a kind-9's.
 	build_media_imeta_tag :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, reference: ^Media_Attachment_Reference, out: ^^Message_Tag) -> Status ---

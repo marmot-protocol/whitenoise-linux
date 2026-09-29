@@ -1,142 +1,47 @@
-// NIP-88 polls over Marmot custom events.
-//
-//   create        vote                  render
-//   kind 1068 ──▶ kind 1018 ──▶ load_timeline tally ──▶ option bars
-//   content=Q     ["e", poll]           (latest vote per sender wins)
-//   ["option",    ["response", id]…
-//    id, label]…
-//
-// The poll is a normal timeline row whose body is the question;
-// poll_parse fills Msg_Ui.poll_*, poll_tally folds the collected
-// votes, poll_block draws the options, handlers route clicks to
-// poll_vote. Votes are fire-and-forget: the tally updates when the
-// ack's reload lands, no optimistic ghost.
+// Native MDK polls. The timeline owns the authenticated tally and local
+// selection; the UI owns copied display data until its next snapshot.
 package main
 
 import "core:fmt"
-import "core:strconv"
 import "core:strings"
-import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 import marmot "../marmot"
 
-// One sender's latest kind-1018 response, borrowed from the timeline
-// page for the duration of load_timeline.
-Poll_Vote :: struct {
-	at:   u64,
-	opts: []string, // response tag values, wire order
-}
-
-// Fold one vote record into the per-poll map; latest timestamp wins.
-poll_vote_collect :: proc(
-	votes: ^map[string]map[string]Poll_Vote,
-	record: ^marmot.Timeline_Message_Record,
-) {
-	poll_id := first_event_ref(record)
-	if len(poll_id) == 0 || record.sender == nil {
-		return
-	}
-	sender := string(record.sender)
-
-	opts := make([dynamic]string, context.temp_allocator)
-	for t in 0 ..< record.tags_len {
-		tag := &record.tags[t]
-		if tag.values_len >= 2 && string(tag.values[0]) == "response" {
-			append(&opts, string(tag.values[1]))
+// Copy the projection before its timeline page is freed. The tally is not
+// reconstructed from the visible page, which may omit older poll responses.
+poll_project :: proc(client: ^marmot.Client, msg: ^Msg_Ui, poll: ^marmot.Poll_Projection) {
+	msg.poll_multi = poll.poll_type == .Multiple_Choice
+	msg.poll_total = poll.participants
+	msg.poll_open = poll.open
+	reserve(&msg.poll_opts, int(poll.options_len))
+	for option in poll.options[:poll.options_len] {
+		opt := Poll_Opt_Ui {
+			id    = strings.clone(string(option.id)),
+			label = strings.clone(string(option.label)),
+			count = option.votes,
 		}
-	}
-
-	per, ok := votes[poll_id]
-	if !ok {
-		per = make(map[string]Poll_Vote, context.temp_allocator)
-	}
-	if prev, seen := per[sender]; !seen || record.timeline_at > prev.at {
-		per[sender] = Poll_Vote {
-			at   = record.timeline_at,
-			opts = opts[:],
-		}
-	}
-	votes[poll_id] = per
-}
-
-// Fill Msg_Ui.poll_* from a kind-1068 record's tags. Option labels run
-// through marmot's markdown parser, the same pass message bodies get,
-// so poll_block can draw them with md_blocks.
-poll_parse :: proc(client: ^marmot.Client, msg: ^Msg_Ui, record: ^marmot.Timeline_Message_Record) {
-	for t in 0 ..< record.tags_len {
-		tag := &record.tags[t]
-		if tag.values_len >= 3 && string(tag.values[0]) == "option" {
-			opt := Poll_Opt_Ui {
-				id    = strings.clone(string(tag.values[1])),
-				label = strings.clone(string(tag.values[2])),
-			}
-			doc: ^marmot.Markdown_Document
-			if marmot.parse_markdown(
-				   client,
-				   strings.clone_to_cstring(opt.label, context.temp_allocator),
-				   &doc,
-			   ) ==
-			   .OK {
-				convert_blocks(
-					&opt.blocks,
-					doc.blocks,
-					doc.blocks_len,
-					false,
-					([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len],
-				)
-				marmot.markdown_document_free(doc)
-			}
-			append(&msg.poll_opts, opt)
-		} else if tag.values_len >= 2 && string(tag.values[0]) == "polltype" {
-			msg.poll_multi = string(tag.values[1]) == "multiplechoice"
-		} else if tag.values_len >= 2 && string(tag.values[0]) == "endsAt" {
-			msg.poll_ends, _ = strconv.parse_u64(string(tag.values[1]))
-		}
-	}
-}
-
-// Count the collected votes onto the option rows. NIP-88: one vote per
-// sender (poll_vote_collect kept the latest), single choice takes the
-// first response tag, multiple choice the first occurrence of each id;
-// votes after endsAt don't count.
-poll_tally :: proc(msg: ^Msg_Ui, per: map[string]Poll_Vote, self: string) {
-	for sender, v in per {
-		if msg.poll_ends != 0 && v.at > msg.poll_ends {
-			continue
-		}
-		counted := false
-		seen := make(map[string]bool, context.temp_allocator)
-		for opt_id in v.opts {
-			if seen[opt_id] {
-				continue
-			}
-			seen[opt_id] = true
-			for &opt in msg.poll_opts {
-				if opt.id != opt_id {
-					continue
-				}
-				opt.count += 1
-				if sender == self {
-					opt.mine = true
-				}
-				counted = true
-				break
-			}
-			if !msg.poll_multi {
+		for selected in poll.local_selection[:poll.local_selection_len] {
+			if string(selected) == opt.id {
+				opt.mine = true
 				break
 			}
 		}
-		if counted {
-			msg.poll_total += 1
+		doc: ^marmot.Markdown_Document
+		if marmot.parse_markdown(client, option.label, &doc) == .OK {
+			convert_blocks(
+				&opt.blocks,
+				doc.blocks,
+				doc.blocks_len,
+				false,
+				([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len],
+			)
+			marmot.markdown_document_free(doc)
 		}
+		append(&msg.poll_opts, opt)
 	}
-}
-
-poll_closed :: proc(msg: Msg_Ui) -> bool {
-	return msg.poll_ends != 0 && u64(time.time_to_unix(time.now())) > msg.poll_ends
 }
 
 // The option bars under a poll's question, drawn by message_row.
@@ -161,7 +66,7 @@ poll_block :: proc(index: u32, msg: Msg_Ui) {
 					childGap = 4,
 					padding = clay.PaddingAll(8),
 				},
-				backgroundColor = hovered() && !poll_closed(msg) ? HOVER : ROW_BG,
+				backgroundColor = hovered() && msg.poll_open ? HOVER : ROW_BG,
 				cornerRadius = rr(8),
 				border = opt.mine ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
 			},
@@ -232,7 +137,7 @@ poll_block :: proc(index: u32, msg: Msg_Ui) {
 				fmt.tprintf(tr("%d votes"), msg.poll_total),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
 			)
-			if poll_closed(msg) {
+			if !msg.poll_open {
 				clay.Text(
 					tr("Voting has ended."),
 					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
@@ -242,31 +147,23 @@ poll_block :: proc(index: u32, msg: Msg_Ui) {
 	}
 }
 
-// Send this sender's full response set, replacing any earlier vote:
-// single choice replaces with the clicked option, multiple choice
-// toggles it within the currently voted set.
+// Build the full replacement selection. Multiple choice toggles an option;
+// single choice replaces the previous selection.
+poll_selection :: proc(msg: ^Msg_Ui, opt: int) -> []string {
+	selected := make([dynamic]string, 0, len(msg.poll_opts), context.temp_allocator)
+	for option, i in msg.poll_opts {
+		picked := msg.poll_multi ? (i == opt ? !option.mine : option.mine) : i == opt
+		if picked {append(&selected, option.id)}
+	}
+	return selected[:]
+}
+
 poll_vote :: proc(ui: ^Ui_State, client: ^marmot.Client, msg: ^Msg_Ui, opt: int) {
-	if poll_closed(msg^) {
-		return
-	}
-	tags := make([dynamic][]string, context.temp_allocator)
-	ref := make([]string, 2, context.temp_allocator)
-	ref[0] = "e"
-	ref[1] = msg.id
-	append(&tags, ref)
-
-	for o, j in msg.poll_opts {
-		picked := msg.poll_multi ? (j == opt ? !o.mine : o.mine) : j == opt
-		if !picked {
-			continue
-		}
-		row := make([]string, 2, context.temp_allocator)
-		row[0] = "response"
-		row[1] = o.id
-		append(&tags, row)
-	}
-
-	spawn_custom(ui, client, KIND_POLL_VOTE, tags[:], "")
+	if !msg.poll_open {return}
+	selected := poll_selection(msg, opt)
+	// Native polls require at least one selection; keep the final vote.
+	if len(selected) == 0 {return}
+	spawn_poll(ui, client, .Poll_Vote, msg.id, "", selected)
 	play_sound(.Send)
 }
 
@@ -349,31 +246,22 @@ poll_reset :: proc(ui: ^Ui_State) {
 	ui.focus = .PollQ
 }
 
-// Publish the kind-1068 event and close; needs a question and at
-// least two non-blank options.
+// MDK assigns option ids, validates the poll and authors its event. Only
+// conversation/thread context tags are supplied by the application.
 poll_create :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	question := strings.trim_space(string(ui.poll_question[:]))
-	tags := make([dynamic][]string, context.temp_allocator)
-	n := 0
+	options := make([dynamic]string, 0, len(ui.poll_inputs), context.temp_allocator)
 	for i in 0 ..< len(ui.poll_inputs) {
 		label := strings.trim_space(string(ui.poll_inputs[i][:]))
 		if len(label) == 0 {
 			continue
 		}
-		row := make([]string, 3, context.temp_allocator)
-		row[0] = "option"
-		row[1] = fmt.tprintf("%d", n)
-		row[2] = label
-		append(&tags, row)
-		n += 1
+		append(&options, label)
 	}
-	if len(question) == 0 || n < POLL_OPTS_MIN {
+	if len(question) == 0 || len(options) < POLL_OPTS_MIN {
 		return
 	}
-	row := make([]string, 2, context.temp_allocator)
-	row[0] = "polltype"
-	row[1] = ui.poll_multi_in ? "multiplechoice" : "singlechoice"
-	append(&tags, row)
+	tags := make([dynamic][]string, context.temp_allocator)
 
 	// A poll created inside a thread carries the root e tag and lives
 	// in that thread's view.
@@ -388,13 +276,15 @@ poll_create :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		append(&tags, ref)
 	}
 
-	spawn_custom(
+	spawn_poll(
 		ui,
 		client,
-		KIND_POLL,
-		tags[:],
+		.Poll_Create,
+		"",
 		question,
-		ui.compose_issue != "" ? .Issue : .Custom,
+		options[:],
+		ui.poll_multi_in ? .Multiple_Choice : .Single_Choice,
+		tags[:],
 	)
 	play_sound(.Send)
 	poll_close(ui)

@@ -317,25 +317,24 @@ Msg_Ui :: struct {
 	media_pending:       [dynamic]Media_Pending,
 	effect:              int, // ["effect", key] burst id from the event tags, 0 = none
 	history:             [dynamic]Edit_Version,
-	poll_opts:           [dynamic]Poll_Opt_Ui, // kind-1068 options + tally; empty = not a poll
-	poll_multi:          bool, // polltype multiplechoice
-	poll_total:          int, // distinct voters counted
-	poll_ends:           u64, // endsAt unix seconds, 0 = open-ended
+	poll_opts:           [dynamic]Poll_Opt_Ui, // MDK projection options; empty = not a poll
+	poll_multi:          bool,
+	poll_total:          u64, // authenticated participants, including votes outside this page
+	poll_open:           bool, // MDK's projected voting state
 	thread_of:           string, // kind-1111: root message id; "" = main timeline
 	thread_replies:      int, // thread messages under this root
 }
 
-// NIP-88 polls and Discord-style threads ride the group as custom
-// events; loaders folds votes/thread rows, timeline renders them.
-KIND_POLL :: 1068 // NIP-88 poll: content = question, option tags
-KIND_POLL_VOTE :: 1018 // NIP-88 response: ["e", poll] + ["response", id]
+// Native polls are projected by MDK; thread messages remain app-defined.
+KIND_POLL :: 1068
+KIND_POLL_VOTE :: 1018
 KIND_THREAD :: 1111 // thread message: ["e", root], text in content
 
 Poll_Opt_Ui :: struct {
-	id:     string, // option id from the ["option", id, label] tag
+	id:     string, // MDK option id, preserved when casting a selection
 	label:  string,
 	blocks: [dynamic]Md_Block_Ui, // label parsed as markdown; empty = render label plain
-	count:  int, // votes after per-sender latest-wins dedup
+	count:  u64, // authenticated projected votes for this option
 	mine:   bool, // own latest vote includes this option
 }
 

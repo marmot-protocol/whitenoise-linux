@@ -1,0 +1,402 @@
+diff --git tmp/wn-poll-patch-base/crates/marmot-app/src/messages/intents.rs b/crates/marmot-app/src/messages/intents.rs
+index 9145950..30bf52c 100644
+--- tmp/wn-poll-patch-base/crates/marmot-app/src/messages/intents.rs
++++ b/crates/marmot-app/src/messages/intents.rs
+@@ -236,6 +236,7 @@ pub(crate) enum AppMessageIntent {
+         options: Vec<String>,
+         poll_type: PollType,
+         ends_at: Option<u64>,
++        message_tags: Vec<Vec<String>>,
+     },
+     PollResponse {
+         poll_event_id: String,
+@@ -456,9 +457,24 @@ pub(crate) fn build_inner_event_with_media_reply(
+             options,
+             poll_type,
+             ends_at,
++            message_tags,
+         } => {
+-            let tags = poll_tags(created_at, question, options, *poll_type, *ends_at)
++            validate_message_tags(message_tags)?;
++            if message_tags.iter().any(|tag| {
++                matches!(tag[0].as_str(), "option" | "polltype" | "endsAt" | "response")
++            }) {
++                return Err(AppError::InvalidAppMessagePayload(
++                    "poll context cannot override poll fields".into(),
++                ));
++            }
++            let mut tags = poll_tags(created_at, question, options, *poll_type, *ends_at)
+                 .map_err(|error| AppError::InvalidAppMessagePayload(error.to_string()))?;
++            if tags.len() + message_tags.len() > cgka_traits::polls::POLL_MAX_TAGS {
++                return Err(AppError::InvalidAppMessagePayload(
++                    "poll tags exceed limits".into(),
++                ));
++            }
++            tags.extend_from_slice(message_tags);
+             Ok(event(MARMOT_APP_EVENT_KIND_POLL, tags, question.clone()))
+         }
+         AppMessageIntent::PollResponse {
+@@ -1164,6 +1180,47 @@ mod mention_tests {
+     }
+ }
+ 
++#[cfg(test)]
++mod poll_context_tests {
++    use super::*;
++
++    #[test]
++    fn poll_context_is_bounded() {
++        let author = "11".repeat(32);
++        let create = |message_tags| AppMessageIntent::Poll {
++            question: "Drink?".into(),
++            options: vec!["Tea".into(), "Coffee".into()],
++            poll_type: PollType::MultipleChoice,
++            ends_at: Some(200),
++            message_tags,
++        };
++        for key in ["option", "polltype", "endsAt", "response", "imeta"] {
++            let result = build_inner_event(
++                &create(vec![vec![key.into(), "override".into()]]),
++                &author,
++                100,
++            );
++            assert!(matches!(result, Err(AppError::InvalidAppMessagePayload(_))));
++        }
++        let context_slots = cgka_traits::polls::POLL_MAX_TAGS - 4;
++        let context = vec![vec!["p".into(), author.clone()]; context_slots];
++        let event = build_inner_event(&create(context.clone()), &author, 100).unwrap();
++        let definition = cgka_traits::parse_poll(&event).unwrap();
++        assert_eq!(definition.poll_type, PollType::MultipleChoice);
++        assert_eq!(definition.ends_at, Some(200));
++        let mut oversized = context;
++        oversized.push(vec!["p".into(), author.clone()]);
++        assert!(matches!(
++            build_inner_event(&create(oversized), &author, 100),
++            Err(AppError::InvalidAppMessagePayload(_))
++        ));
++        assert!(matches!(
++            build_inner_event(&create(vec![vec!["e".into(), " ".into()]]), &author, 100),
++            Err(AppError::InvalidAppMessagePayload(_))
++        ));
++    }
++}
++
+ #[cfg(test)]
+ mod reporting_tests {
+     use super::*;
+diff --git a/crates/marmot-app/src/runtime/commands.rs b/crates/marmot-app/src/runtime/commands.rs
+--- a/crates/marmot-app/src/runtime/commands.rs
++++ b/crates/marmot-app/src/runtime/commands.rs
+@@ -1762,6 +1762,7 @@
+         options: Vec<String>,
+         poll_type: cgka_traits::PollType,
+         ends_at: Option<u64>,
++        message_tags: Vec<Vec<String>>,
+     ) -> Result<SendSummary, AppError> {
+         self.send_app_event(
+             account_ref,
+@@ -1771,6 +1772,7 @@
+                 options,
+                 poll_type,
+                 ends_at,
++                message_tags,
+             },
+         )
+         .await
+diff --git a/crates/marmot-app/src/runtime/mod.rs b/crates/marmot-app/src/runtime/mod.rs
+--- a/crates/marmot-app/src/runtime/mod.rs
++++ b/crates/marmot-app/src/runtime/mod.rs
+@@ -2707,6 +2707,8 @@
+     }
+ 
+     /// Create an encrypted NIP-88 poll in a group conversation.
++    /// Additional message tags retain thread or issue context; poll fields
++    /// and encrypted-media tags cannot be supplied through this parameter.
+     pub async fn create_poll(
+         &self,
+         account_ref: &str,
+@@ -2715,9 +2717,10 @@
+         options: Vec<String>,
+         poll_type: cgka_traits::PollType,
+         ends_at: Option<u64>,
++        message_tags: Vec<Vec<String>>,
+     ) -> Result<SendSummary, AppError> {
+         self.accounts
+-            .create_poll(account_ref, group_id, question, options, poll_type, ends_at)
++            .create_poll(account_ref, group_id, question, options, poll_type, ends_at, message_tags)
+             .await
+     }
+ 
+diff --git a/crates/marmot-app/src/runtime/tests.rs b/crates/marmot-app/src/runtime/tests.rs
+--- a/crates/marmot-app/src/runtime/tests.rs
++++ b/crates/marmot-app/src/runtime/tests.rs
+@@ -289,6 +289,7 @@
+             vec!["Yes".into(), "No".into()],
+             cgka_traits::PollType::SingleChoice,
+             None,
++            Vec::new(),
+         )
+         .await
+         .unwrap_err();
+@@ -304,6 +305,7 @@
+             vec!["Yes".into(), "No".into()],
+             cgka_traits::PollType::SingleChoice,
+             None,
++            Vec::new(),
+         )
+         .await
+         .unwrap();
+@@ -351,6 +353,7 @@
+             vec!["Yes".into(), "No".into()],
+             cgka_traits::PollType::SingleChoice,
+             None,
++            Vec::new(),
+         )
+         .await
+         .unwrap();
+diff --git a/crates/marmot-uniffi/src/commands/message.rs b/crates/marmot-uniffi/src/commands/message.rs
+--- a/crates/marmot-uniffi/src/commands/message.rs
++++ b/crates/marmot-uniffi/src/commands/message.rs
+@@ -222,7 +222,8 @@
+     }
+ 
+     /// Create an encrypted NIP-88 poll in a group conversation. Option ids use
+-    /// `"0"` through `"9"`.
++    /// `"0"` through `"9"`. Additional message tags retain thread/issue context
++    /// but cannot override native poll fields or introduce encrypted media.
+     pub async fn create_poll(
+         &self,
+         account_ref: String,
+@@ -231,6 +232,7 @@
+         options: Vec<String>,
+         poll_type: PollTypeFfi,
+         ends_at: Option<u64>,
++        message_tags: Vec<Vec<String>>,
+     ) -> Result<SendSummaryFfi, MarmotKitError> {
+         let group_id = group_id_from_hex(&group_id_hex)?;
+         let summary = self
+@@ -242,6 +244,7 @@
+                 options,
+                 poll_type.into(),
+                 ends_at,
++                message_tags,
+             )
+             .await?;
+         Ok(summary.into())
+diff --git a/crates/marmot-c/src/commands.rs b/crates/marmot-c/src/commands.rs
+--- a/crates/marmot-c/src/commands.rs
++++ b/crates/marmot-c/src/commands.rs
+@@ -2421,11 +2421,13 @@
+ 
+ /// Create an encrypted NIP-88 poll in a group conversation. Option ids use `"0"`
+ /// through `"9"`. Free `out` with `marmot_send_summary_free`.
++/// Additional `tags` retain thread/issue context, not poll fields or media.
+ ///
+ /// # Safety
+ /// Strings must be valid; `options` must hold `options_len` valid strings (or
+ /// be NULL with length 0); `poll_type` must be a valid `MarmotPollType`
+-/// discriminant; `out` must be writable.
++/// discriminant; `tags` must hold `tags_len` valid borrowed string-array rows
++/// (or be NULL with length 0); `out` must be writable.
+ #[unsafe(no_mangle)]
+ pub unsafe extern "C" fn marmot_create_poll(
+     client: *const MarmotClient,
+@@ -2437,6 +2439,8 @@
+     poll_type: u32,
+     has_ends_at: u8,
+     ends_at: u64,
++    tags: *const MarmotStringArray,
++    tags_len: usize,
+     out: *mut *mut MarmotSendSummary,
+ ) -> MarmotStatus {
+     ffi_guard(|| {
+@@ -2447,6 +2451,9 @@
+         let question = try_arg!(unsafe { required_str(question) });
+         let options = try_arg!(unsafe { str_array(options, options_len) });
+         let poll_type = try_arg!(MarmotPollType::from_c(poll_type));
++        let tags = try_arg!(unsafe {
++            struct_array(tags, tags_len, |row| str_array(row.values, row.values_len))
++        });
+         unsafe {
+             deliver(
+                 client.block_on(client.marmot.create_poll(
+@@ -2456,6 +2463,7 @@
+                     options,
+                     poll_type.to_ffi(),
+                     (has_ends_at != 0).then_some(ends_at),
++                    tags,
+                 )),
+                 out,
+             )
+diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
+--- a/crates/marmot-c/include/marmot.h
++++ b/crates/marmot-c/include/marmot.h
+@@ -8645,11 +8645,13 @@
+ /**
+  * Create an encrypted NIP-88 poll in a group conversation. Option ids use `"0"`
+  * through `"9"`. Free `out` with `marmot_send_summary_free`.
++ * Additional `tags` retain thread/issue context, not poll fields or media.
+  *
+  * # Safety
+  * Strings must be valid; `options` must hold `options_len` valid strings (or
+  * be NULL with length 0); `poll_type` must be a valid `MarmotPollType`
+- * discriminant; `out` must be writable.
++ * discriminant; `tags` must hold `tags_len` valid borrowed string-array rows
++ * (or be NULL with length 0); `out` must be writable.
+  */
+ MarmotStatus marmot_create_poll(const struct MarmotClient *client,
+                                 const char *account_ref,
+@@ -8660,6 +8662,8 @@
+                                 uint32_t poll_type,
+                                 uint8_t has_ends_at,
+                                 uint64_t ends_at,
++                                const struct MarmotStringArray *tags,
++                                uintptr_t tags_len,
+                                 struct MarmotSendSummary **out);
+ 
+ /**
+diff --git a/crates/marmot-app/tests/relay_runtime.rs b/crates/marmot-app/tests/relay_runtime.rs
+--- a/crates/marmot-app/tests/relay_runtime.rs
++++ b/crates/marmot-app/tests/relay_runtime.rs
+@@ -3802,6 +3802,120 @@
+ }
+ 
+ #[tokio::test]
++async fn native_polls_keep_context() {
++    let dir = tempfile::tempdir().unwrap();
++    let (_relay, app, url) = mock_app(&dir).await;
++    let runtime = MarmotAppRuntime::new(app);
++    let setup = AccountSetupRequest {
++        default_relays: vec![endpoint(&url)],
++        bootstrap_relays: vec![endpoint(&url)],
++        publish_initial_key_package: true,
++        ..Default::default()
++    };
++    let alice = create_network_ready_identity(&runtime, setup.relay_options_only()).await.account;
++    let bob = create_network_ready_identity(&runtime, setup).await.account;
++    let a = &alice.account_id_hex;
++    let b = &bob.account_id_hex;
++    let mut events = runtime.subscribe();
++    let group = runtime
++        .create_group(a, "Native polls", std::slice::from_ref(b), None)
++        .await
++        .unwrap();
++    wait_for_event(&mut events, |event| {
++        matches!(event, MarmotAppEvent::GroupJoined { account_id_hex, group_id, .. }
++            if account_id_hex == b && group_id == &group)
++    }).await;
++    accept_group_invite_retrying_busy(&runtime, b, &group).await.unwrap();
++    let group_hex = hex::encode(group.as_slice());
++    let query = TimelineMessageQuery {
++        group_id_hex: Some(group_hex.clone()),
++        ..Default::default()
++    };
++    let mut alice_timeline = runtime.subscribe_timeline_messages(a, query.clone()).await.unwrap();
++    let mut bob_timeline = runtime.subscribe_timeline_messages(b, query).await.unwrap();
++
++    for issue in [false, true] {
++        let root = if issue {
++            runtime.send_custom_event(
++                a, &group, 1621,
++                vec![vec!["subject".into(), "Choose a drink".into()]],
++                "Issue description".into(),
++            ).await.unwrap()
++        } else {
++            runtime.send_message(a, &group, b"Thread discussion".to_vec()).await.unwrap()
++        };
++        let root_id = &root.message_ids[0];
++        let tags = if issue {
++            vec![
++                vec!["E".into(), root_id.clone(), String::new(), a.clone()],
++                vec!["K".into(), "1621".into()],
++                vec!["P".into(), a.clone()],
++                vec!["e".into(), root_id.clone(), String::new(), a.clone()],
++                vec!["k".into(), "1621".into()],
++                vec!["p".into(), a.clone()],
++            ]
++        } else {
++            vec![vec!["e".into(), root_id.clone()]]
++        };
++        let mode = if issue {
++            cgka_traits::PollType::MultipleChoice
++        } else {
++            cgka_traits::PollType::SingleChoice
++        };
++        let sent = runtime.create_poll(
++            a, &group, "Drink?".into(), vec!["Tea".into(), "Coffee".into()],
++            mode, None, tags,
++        ).await.unwrap();
++        let poll_id = &sent.message_ids[0];
++        wait_for_timeline_update(&mut bob_timeline, |update| {
++            matches!(update, marmot_app::RuntimeTimelineMessageUpdate::Projection(projection)
++                if projection.update.timeline_messages.iter().any(|message|
++                    message.message_id_hex == *poll_id && message.poll.is_some()))
++        }).await;
++        let peer = runtime.timeline_message(b, &group_hex, poll_id).unwrap().unwrap();
++        assert_eq!(peer.reply_to_message_id_hex.as_deref(), Some(root_id.as_str()));
++        assert_eq!(
++            peer.reply_preview.as_ref().unwrap().plaintext,
++            if issue { "Issue description" } else { "Thread discussion" },
++        );
++        if issue {
++            assert_eq!(tag_value(&peer.tags, "E"), Some(root_id.as_str()));
++            assert_eq!(tag_value(&peer.tags, "K"), Some("1621"));
++        }
++        let initial = peer.poll.unwrap();
++        assert_eq!(initial.question, "Drink?");
++        assert_eq!(initial.poll_type, mode);
++        assert_eq!(initial.options.iter().map(|option| option.label.as_str()).collect::<Vec<_>>(),
++            ["Tea", "Coffee"]);
++        assert_eq!(initial.participants, 0);
++        assert!(initial.open);
++
++        runtime.cast_poll_vote(a, &group, poll_id.clone(), vec!["0".into()]).await.unwrap();
++        let peer_selection = if issue { vec!["0".into(), "1".into()] } else { vec!["1".into()] };
++        runtime.cast_poll_vote(b, &group, poll_id.clone(), peer_selection.clone()).await.unwrap();
++        for timeline in [&mut alice_timeline, &mut bob_timeline] {
++            wait_for_timeline_update(timeline, |update| {
++                matches!(update, marmot_app::RuntimeTimelineMessageUpdate::Projection(projection)
++                    if projection.update.timeline_messages.iter().any(|message|
++                        message.message_id_hex == *poll_id
++                            && message.poll.as_ref().is_some_and(|poll| poll.participants == 2)))
++            }).await;
++        }
++        for (account, selected) in [(a, vec!["0".to_owned()]), (b, peer_selection)] {
++            let projected = runtime.timeline_message(account, &group_hex, poll_id)
++                .unwrap().unwrap().poll.unwrap();
++            assert_eq!(projected.participants, 2);
++            assert_eq!(projected.local_selection, selected);
++            assert_eq!(projected.options[0].votes, if issue { 2 } else { 1 });
++            assert_eq!(projected.options[1].votes, 1);
++        }
++    }
++    drop(alice_timeline);
++    drop(bob_timeline);
++    runtime.shutdown_and_close().await.unwrap();
++}
++
++#[tokio::test]
+ async fn app_runtime_delete_group_local_removes_projection_without_publishing_leave() {
+     let dir = tempfile::tempdir().unwrap();
+     let (_relay, app, url) = mock_app(&dir).await;
+diff --git a/crates/storage-sqlite/src/timeline.rs b/crates/storage-sqlite/src/timeline.rs
+--- a/crates/storage-sqlite/src/timeline.rs
++++ b/crates/storage-sqlite/src/timeline.rs
+@@ -2110,7 +2110,7 @@
+ 
+     let mut stream_start = None;
+     let mut row = match event.kind {
+-        MARMOT_APP_EVENT_KIND_CHAT => timeline_row_from_chat(&event),
++        MARMOT_APP_EVENT_KIND_CHAT | MARMOT_APP_EVENT_KIND_POLL => timeline_row_from_chat(&event),
+         MARMOT_APP_EVENT_KIND_AGENT_ACTIVITY
+         | MARMOT_APP_EVENT_KIND_AGENT_OPERATION
+         | MARMOT_APP_EVENT_KIND_GROUP_SYSTEM => timeline_row_from_app_event(&event),
+@@ -3647,7 +3647,7 @@
+ 
+     for event in &events {
+         match event.kind {
+-            MARMOT_APP_EVENT_KIND_CHAT => {
++            MARMOT_APP_EVENT_KIND_CHAT | MARMOT_APP_EVENT_KIND_POLL => {
+                 let mut row = timeline_row_from_chat(event);
+                 if event.invalidated {
+                     row.invalidation_status = Some(invalidation_status(event));

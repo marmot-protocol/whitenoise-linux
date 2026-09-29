@@ -45,6 +45,17 @@ _Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.detail)
                "rejection detail");
 _Static_assert(sizeof(MarmotTimelineMessageRecord) == 320, "timeline stride");
 _Static_assert(offsetof(MarmotTimelineMessageRecord, media) == 216, "timeline media");
+_Static_assert(offsetof(MarmotTimelineMessageRecord, poll) == 16, "timeline poll");
+_Static_assert(sizeof(MarmotPollType) == 4, "poll type width");
+_Static_assert(MARMOT_POLL_TYPE_SINGLE_CHOICE == 0, "single-choice poll");
+_Static_assert(MARMOT_POLL_TYPE_MULTIPLE_CHOICE == 1, "multiple-choice poll");
+_Static_assert(sizeof(MarmotPollOptionResult) == 24, "poll option stride");
+_Static_assert(sizeof(MarmotPollProjection) == 88, "poll projection stride");
+_Static_assert(offsetof(MarmotPollProjection, poll_type) == 24, "poll type");
+_Static_assert(offsetof(MarmotPollProjection, participants) == 32, "poll participants");
+_Static_assert(offsetof(MarmotPollProjection, local_selection) == 40, "poll selection");
+_Static_assert(offsetof(MarmotPollProjection, ends_at) == 72, "poll deadline");
+_Static_assert(offsetof(MarmotPollProjection, open) == 80, "poll voting state");
 _Static_assert(sizeof(MarmotTimelineReplyPreview) == 120, "reply preview stride");
 _Static_assert(offsetof(MarmotTimelineReplyPreview, media) == 80, "reply preview media");
 
