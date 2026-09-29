@@ -28,6 +28,10 @@ Timeline_Work :: struct {
 	err:                    string,
 	paged:                  bool,
 	at:                     time.Tick,
+	read_request:           cstring,
+	read_latest:            string, // UI-thread deduplication, newest MLS order seen
+	read_row:               ^marmot.Chat_List_Row,
+	read_error:             string,
 }
 @(private)
 timeline_job: ^Timeline_Work
@@ -124,8 +128,28 @@ timeline_worker :: proc(t: ^thread.Thread) {
 		cancel := job.cancel
 		direction = job.request
 		job.request = .None
+		read_request := job.read_request
+		job.read_request = nil
 		sync.unlock(&job.mutex)
 		if status != .TIMEOUT {frame_wake()}
+		if read_request != nil {
+			row: ^marmot.Chat_List_Row
+			read_status := marmot.mark_timeline_message_read(
+				job.client,
+				job.account,
+				job.group,
+				read_request,
+				&row,
+			)
+			delete(read_request)
+			err := read_status != .OK ? marmot.last_error() : ""
+			sync.lock(&job.mutex)
+			if job.read_row != nil {marmot.chat_list_row_free(job.read_row)}
+			delete(job.read_error)
+			job.read_row, job.read_error = row, err
+			sync.unlock(&job.mutex)
+			frame_wake()
+		}
 		if cancel || (status != .OK && status != .TIMEOUT) {break}
 		page_start := time.tick_now()
 		switch direction {
@@ -161,6 +185,7 @@ timeline_retire :: proc() {
 @(private)
 timeline_start :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string) {
 	timeline_retire()
+	delete(ui.timeline_error); ui.timeline_error = ""
 	if ui.messages_account != ui.account_ref ||
 	   ui.messages_group != ui.chats[ui.selected].group_id {
 		append(&retired_messages, ..ui.messages[:])
@@ -205,7 +230,37 @@ timeline_free :: proc(job: ^Timeline_Work) {
 	for older in job.history {marmot.timeline_page_free(older)}
 	delete(job.history)
 	delete(job.account); delete(job.group); delete(job.search); delete(job.err)
+	delete(job.read_request); delete(job.read_latest); delete(job.read_error)
+	if job.read_row != nil {marmot.chat_list_row_free(job.read_row)}
 	free(job)
+}
+
+// Only mark messages in the applied latest window. The unread divider was
+// captured before this request; neither a rail update nor its result moves it.
+@(private)
+timeline_mark_read :: proc(ui: ^Ui_State) {
+	job := timeline_job
+	if job == nil ||
+	   !timeline_scope(ui, "") ||
+	   ui.timeline_loading ||
+	   ui.tl_has_after ||
+	   len(ui.messages) == 0 {return}
+	last := len(ui.messages) - 1
+	for msg, i in ui.messages {
+		if msg.mls_order > ui.messages[last].mls_order {last = i}
+	}
+	id := ui.messages[last].id
+	if id == job.read_latest {return}
+	delete(job.read_latest)
+	job.read_latest = strings.clone(id)
+	if ui.chats[ui.selected].group_id in ui.prefs.unread_ids {
+		delete_key(&ui.prefs.unread_ids, ui.chats[ui.selected].group_id)
+		ui.settings_dirty = true
+	}
+	sync.lock(&job.mutex)
+	delete(job.read_request)
+	job.read_request = strings.clone_to_cstring(id)
+	sync.unlock(&job.mutex)
 }
 
 @(private)
@@ -228,13 +283,36 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	history := job.history
 	job.history = {}
 	job.page, job.err, job.paged = nil, "", false
+	read_row, read_error := job.read_row, job.read_error
+	job.read_row, job.read_error = nil, ""
 	sync.unlock(&job.mutex)
-	if err != "" {
+	if read_row != nil {
+		chat := &ui.chats[ui.selected]
+		// A newer rail event may already have arrived while this write ran.
+		if read_row.last_message != nil &&
+		   chat.last_id == string(read_row.last_message.message_id_hex) {
+			chat.unread = read_row.unread_count
+			delete(chat.first_unread)
+			chat.first_unread = strings.clone(string(read_row.first_unread_message_id_hex))
+		}
+		marmot.chat_list_row_free(read_row)
+	}
+	if read_error != "" {
 		ui.client_status = fmt.aprintf(
+			"%s %s",
+			tr("Couldn't mark the chat read. Please try again."),
+			read_error,
+		)
+		delete(read_error)
+	}
+	if err != "" {
+		delete(ui.timeline_error)
+		ui.timeline_error = fmt.aprintf(
 			"%s %s",
 			tr("Couldn't load messages. Please try again."),
 			err,
 		)
+		ui.client_status = strings.clone(ui.timeline_error)
 		delete(err)
 		ui.timeline_loading, ui.timeline_paging = false, false
 	}
@@ -262,8 +340,8 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if !previous[msg.id] && !msg.mine && !msg.system {msg.visible_since = at}
 		}
 	}
-	if !page.has_more_after && rl.IsWindowFocused() && ui.chats[ui.selected].unread > 0 {
-		mark_chat_read(ui, client, ui.selected)
+	if !page.has_more_after && (initial || rl.IsWindowFocused()) {
+		timeline_mark_read(ui)
 	}
 }
 

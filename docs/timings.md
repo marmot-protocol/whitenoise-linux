@@ -170,3 +170,46 @@ The report can also be copied alongside MDK counters from Debug > Timings.
 Record the build, hardware, renderer/display, window size, dataset, workload,
 network, cache state, sample counts, and warm-up policy with each comparison.
 Run the same workload on the other apps before making comparative claims.
+
+## Chat switching
+
+Chat selection restores the draft and staged attachments before rendering.
+The timeline shows "Loading messages…" with an indeterminate bar until its
+worker returns. Load failures stay in that chat's timeline, so an unrelated
+worker cannot replace the error with a different operation's status.
+
+Switch-triggered preference snapshots are queued after presentation. One
+settings writer keeps the latest pending snapshot behind the current write;
+later preference changes cannot be overwritten by an older switch. Shutdown
+flushes the queue. For these saves, `settings_save` measures serialization
+and enqueueing, not the background filesystem write. Other saves retain
+their synchronous path unless a switch write is already outstanding.
+
+Automatic read marks run on the timeline worker after the selected window
+has been applied. They use the newest MLS order in that window, preserve
+the unread-divider snapshot, and do not mark unseen newer pages read.
+Retired subscriptions cannot apply their results to a later selection.
+
+An isolated Linux SDL offscreen run at 1024 by 700 measured the following
+input-to-render intervals with temporary timestamp probes:
+
+| Scenario | Before | After |
+| --- | --- | --- |
+| SDL Ctrl+Tab, delayed dependencies | 702.30 ms | 1.31 ms |
+| Cold/warm row switches, delayed dependencies | 701.90–703.18 ms (3 samples) | 1.25–1.81 ms (4 samples) |
+| Normal row switches | Not measured | 1.49–2.58 ms (3 samples) |
+| Returning to a 100-row window after 110 fixture sends | Not measured | 1.60 ms |
+
+The delayed run added 700 ms to settings writes, timeline subscription
+opening and automatic read marks. Rapid switches completed in the latest
+chat with its draft and preference intact. A forced subscription failure
+cleared loading and displayed the local error. The normal run completed
+with the expected 100-row window and no timeline error.
+
+The keyboard probe timestamps SDL event enqueueing; row probes timestamp
+devctl's injected mouse release before input dispatch. The endpoint is the
+first rendered selection highlight, before SDL presentation. Screenshots
+confirmed the pending bar and terminal states, but did not supply the
+timings. These samples exclude external devctl command-file delivery and
+do not measure compositor presentation, display scanout, or physical input
+latency. The temporary probes and dependency delays are not shipped.

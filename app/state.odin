@@ -543,6 +543,10 @@ Ui_State :: struct {
 	tl_has_more:                                           bool, // last timeline page had older messages beyond the limit
 	tl_has_after:                                          bool,
 	timeline_loading, timeline_paging:                     bool,
+	timeline_error:                                        string,
+	settings_dirty:                                        bool, // snapshot after presenting a chat switch
+	settings_job:                                          ^Settings_Work,
+	settings_pending:                                      []u8, // newest snapshot, behind the in-flight write
 	unread_mark_id:                                        string, // NEW MESSAGES divider anchor, snapshotted at select
 	// time (mark-as-read clears the row's first_unread)
 	mention_active:                                        bool, // composer @-autocomplete popover

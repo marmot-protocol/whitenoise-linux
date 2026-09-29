@@ -783,6 +783,9 @@ msgstr "Impossibile caricare i tuoi adesivi. Riprova."
 msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
 msgstr "Impossibile trovare questo indirizzo NIP-05. Ricontrollalo e riprova."
 
+msgid "Couldn't mark the chat read. Please try again."
+msgstr "Impossibile contrassegnare la chat come letta. Riprova."
+
 #, c-format
 msgid "Couldn't open %s. Please try again."
 msgstr "Impossibile aprire %s. Riprova."
@@ -1704,6 +1707,9 @@ msgstr "In ascolto... Termina quando hai finito (massimo 30 secondi)."
 
 msgid "Loading messages for export..."
 msgstr "Caricamento dei messaggi da esportare..."
+
+msgid "Loading messages…"
+msgstr "Caricamento dei messaggi…"
 
 msgid "Loading your accounts"
 msgstr ""
