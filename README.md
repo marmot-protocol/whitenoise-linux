@@ -27,6 +27,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 
 - One-to-one and group chats, end-to-end encrypted through Marmot's MLS, with sealed-sender invites over NIP-59.
 - Markdown bodies (with typeset `$$` math blocks), reactions, replies, edits with history, forwarding, and search.
+- Emoji search accepts names and shortcodes, such as `100` for hundred points and `thumbsup` for thumbs up. Shortcodes work with or without surrounding colons.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
 - Per-chat unread tracking, surfaced as rail badges.
 - Deleting a chat folder requires confirmation, from both Settings and its context menu. Only the folder is removed; its chats stay in your chat list.

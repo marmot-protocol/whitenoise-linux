@@ -304,19 +304,30 @@ if [ ! -d "$TWEMOJI" ]; then
   rm -rf "$TMP"
 fi
 
-# Emoji picker catalog: "emoji<TAB>name" per line, extracted from the
-# pinned emojis crate (the same dataset the slint build walks). Skin
-# tone variants are dropped to keep the grid to base emoji.
+# Emoji picker catalog: "emoji<TAB>name aliases" per line, extracted from
+# the pinned emojis crate. Keep shortcodes (100, thumbsup, etc.) searchable.
+# Skin tone variants are dropped to keep the grid to base emoji.
 CATALOG="$HERE/vendor/emoji-catalog.tsv"
-if [ ! -f "$CATALOG" ]; then
+CATALOG_VERSION="emojis-0.6.4-aliases-1"
+if [ ! -f "$CATALOG" ] || [ "$(cat "$HERE/vendor/.emoji-catalog-version" 2>/dev/null || true)" != "$CATALOG_VERSION" ]; then
   TMP="$(mktemp -d)"
   curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/emojis/emojis-0.6.4.crate" | tar "${TAR_OWNER[@]}" -xzf - -C "$TMP"
-  # A literal tab: BSD sed does not expand \t in the replacement.
-  grep -o 'Emoji { emoji: "[^"]*", name: "[^"]*"' "$TMP"/emojis-0.6.4/src/gen/mod.rs |
-    sed "s/Emoji { emoji: \"\([^\"]*\)\", name: \"\([^\"]*\)\"/\1$(printf '\t')\2/" |
-    grep -av $'\xf0\x9f\x8f\xbb' | grep -av $'\xf0\x9f\x8f\xbc' |
-    grep -av $'\xf0\x9f\x8f\xbd' | grep -av $'\xf0\x9f\x8f\xbe' |
-    grep -av $'\xf0\x9f\x8f\xbf' >"$CATALOG"
+  # Only emoji, name and aliases are quoted in the pinned generated records.
+  awk -F '"' '
+    /Emoji { emoji: / {
+      if ($2 ~ /🏻|🏼|🏽|🏾|🏿/) { next }
+      search = $4
+      for (i = 6; i < NF; i += 2) {
+        search = search " :" $i ":"
+        alias = $i
+        gsub(/_/, " ", alias)
+        search = search " " alias
+      }
+      printf "%s\t%s\n", $2, search
+    }
+  ' "$TMP"/emojis-0.6.4/src/gen/mod.rs >"$TMP/catalog.tsv"
+  mv "$TMP/catalog.tsv" "$CATALOG"
+  printf '%s\n' "$CATALOG_VERSION" >"$HERE/vendor/.emoji-catalog-version"
   rm -rf "$TMP"
 fi
 
