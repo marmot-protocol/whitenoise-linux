@@ -540,7 +540,16 @@ msgstr ""
 msgid "Choose a destination for this chat."
 msgstr ""
 
+msgid "Choose at most two emoji."
+msgstr ""
+
 msgid "Choose how your conversations look and feel."
+msgstr ""
+
+msgid "Choose image"
+msgstr ""
+
+msgid "Choose one or two emoji. Every member sees the same image."
 msgstr ""
 
 msgid "Choose what gets your attention."
@@ -943,6 +952,9 @@ msgstr ""
 msgid "Couldn't remove the saved file. Please try again."
 msgstr ""
 
+msgid "Couldn't render that emoji. Choose another one."
+msgstr ""
+
 msgid "Couldn't render the QR code. Please try again."
 msgstr ""
 
@@ -1087,6 +1099,9 @@ msgid "Create folder"
 msgstr ""
 
 msgid "Create folders to organize your chats."
+msgstr ""
+
+msgid "Create from emoji"
 msgstr ""
 
 msgid "Create issue"
@@ -1296,6 +1311,9 @@ msgid "EDIT PROFILE"
 msgstr ""
 
 msgid "EDITING · BROADCAST TO RELAYS ON PUBLISH"
+msgstr ""
+
+msgid "EMOJI GROUP IMAGE"
 msgstr ""
 
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
@@ -1512,6 +1530,9 @@ msgstr ""
 
 #, c-format
 msgid "Forwarding to %s…"
+msgstr ""
+
+msgid "From emoji"
 msgstr ""
 
 msgid "From file"
@@ -2136,6 +2157,9 @@ msgid "No contacts yet"
 msgstr ""
 
 msgid "No description."
+msgstr ""
+
+msgid "No emoji selected"
 msgstr ""
 
 msgid "No files match these filters."
@@ -3373,6 +3397,9 @@ msgid "Use a shorter search."
 msgstr ""
 
 msgid "Use another key"
+msgstr ""
+
+msgid "Use emoji image"
 msgstr ""
 
 msgid "Use this theme"

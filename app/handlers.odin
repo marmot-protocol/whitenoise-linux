@@ -916,7 +916,7 @@ uri_unescape :: proc(uri: string) -> string {
 
 // Open the picker anchored near the pointer, clamped on-window.
 open_picker :: proc(ui: ^Ui_State, target: string) {
-	if target != "" || ui.adding_quick {ui.sticker_tab = false; ui.gif_tab = false}
+	if target != "" || ui.picker_mode != .Message {ui.sticker_tab = false; ui.gif_tab = false}
 	if ui.sticker_tab {sticker_library_open(ui)}
 	m := rl.GetMousePosition()
 	ui.picker_open = true
@@ -927,12 +927,18 @@ open_picker :: proc(ui: ^Ui_State, target: string) {
 	ui.picker_return = head
 	ui.focus = .Picker
 	clear(&ui.picker_filter)
-	ui.picker_x, ui.picker_y = panel_pos(m.x / UI_ZOOM - 200, m.y / UI_ZOOM - 452, 408, 448)
+	h: f32 = ui.picker_mode == .Group_Image ? 568 : 448 // emoji_picker's panel height + 8
+	ui.picker_x, ui.picker_y = panel_pos(m.x / UI_ZOOM - 200, m.y / UI_ZOOM - h - 4, 408, h)
 	if ui.gif_tab {gif_open(ui)}
 }
 
 // Insert into the composer or react to the target, then close.
 pick_emoji :: proc(ui: ^Ui_State, client: ^marmot.Client, emoji: string) {
+	// A group image takes at most two; a rejected pick is not a use.
+	if ui.picker_mode == .Group_Image && len(ui.gemoji) >= EMOJI_MIX_MAX {
+		set_status(ui, strings.clone(tr("Choose at most two emoji.")), .Error)
+		return
+	}
 	// Move to the front of the session recents, capped at 8.
 	for recent, i in ui.recent_emoji {
 		if recent == emoji {
@@ -945,12 +951,15 @@ pick_emoji :: proc(ui: ^Ui_State, client: ^marmot.Client, emoji: string) {
 		resize(&ui.recent_emoji, 8)
 	}
 
-	ui.picker_open = false
-	ui.focus = .Compose
+	if ui.picker_mode == .Group_Image {
+		gemoji_add(ui, emoji)
+		return
+	}
+	mode := ui.picker_mode
+	close_picker(ui)
 	// Settings "one-tap reactions" add: the pick lands in prefs, not
 	// the composer.
-	if ui.adding_quick {
-		ui.adding_quick = false
+	if mode == .Quick_Reaction {
 		if len(ui.prefs.quick_reactions) < QUICK_MAX {
 			append(&ui.prefs.quick_reactions, strings.clone(emoji))
 		}
@@ -969,8 +978,19 @@ pick_emoji :: proc(ui: ^Ui_State, client: ^marmot.Client, emoji: string) {
 	ed_end(ui, &ui.compose)
 }
 
+// Close the picker and return focus to where the picks were going.
+close_picker :: proc(ui: ^Ui_State) {
+	ui.picker_open = false
+	ui.focus = .Compose
+	if ui.picker_mode == .Group_Image {
+		ui.focus = ui.gemoji_dest == .New_Chat ? .NC_Name : .Invite
+		gemoji_clear(ui)
+	}
+	ui.picker_mode = .Message
+}
+
 handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if ui.picker_target == "" && !ui.adding_quick {
+	if ui.picker_target == "" && ui.picker_mode == .Message {
 		if clicked_indexed(
 			"PickerStickers",
 			0,
@@ -986,9 +1006,11 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if ui.gif_tab {handle_gif_picker(ui); return}
 		if ui.sticker_tab {handle_sticker_picker(ui); return}
 	}
+	if ui.picker_mode == .Group_Image && handle_emoji_mix(ui, client) {
+		return
+	}
 	if rl.IsKeyPressed(.ESCAPE) {
-		ui.picker_open = false
-		ui.focus = .Compose
+		close_picker(ui)
 		return
 	}
 	edit_text(ui, &ui.picker_filter)
@@ -1021,8 +1043,7 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 	if !clay.PointerOver(clay.ID("PickerPanel")) {
-		ui.picker_open = false
-		ui.focus = .Compose
+		close_picker(ui)
 	}
 }
 
@@ -1329,6 +1350,19 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.focus = .Compose
 		return
 	}
+	if clicked("NCPicFile") {
+		ui.picking_ncpic = true
+		rl.OpenFileDialog(false)
+		return
+	}
+	if clicked("NCPicEmoji") {
+		open_emoji_mix(ui, .New_Chat)
+		return
+	}
+	if clicked("NCPicRemove") {
+		pic_draft_free(&ui.nc_pic)
+		return
+	}
 
 	if clicked("NCCreate") || rl.IsKeyPressed(.ENTER) {
 		if ui.nip05_ticket != 0 {return}
@@ -1394,13 +1428,17 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 }
 
-// The common tail of new_chat: create the group, clear the form, jump to
-// the new chat. Shared by the direct-input path and the Namecoin resolve
-// callback.
+// The common tail of new_chat: create the group, hand a staged image to
+// the group-image worker, clear the form, jump to the new chat. Shared
+// by the direct-input path and the Namecoin resolve callback.
 new_chat_create_and_open :: proc(ui: ^Ui_State, client: ^marmot.Client, name, member: string) {
 	id := create_chat(ui, client, name, member)
 	if len(id) == 0 {
 		return
+	}
+	if len(ui.nc_pic.data) > 0 {
+		upload_group_pic(ui, client, id, ui.nc_pic)
+		ui.nc_pic = {}
 	}
 	clear(&ui.nc_member)
 	clear(&ui.nc_name)

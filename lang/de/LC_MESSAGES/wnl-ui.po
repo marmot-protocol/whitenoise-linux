@@ -541,8 +541,17 @@ msgstr "Chip-Text"
 msgid "Choose a destination for this chat."
 msgstr "Wähle einen Zielordner für diesen Chat."
 
+msgid "Choose at most two emoji."
+msgstr "Wähle höchstens zwei Emoji."
+
 msgid "Choose how your conversations look and feel."
 msgstr "Wähle, wie deine Unterhaltungen aussehen und sich anfühlen."
+
+msgid "Choose image"
+msgstr "Bild wählen"
+
+msgid "Choose one or two emoji. Every member sees the same image."
+msgstr "Wähle ein oder zwei Emoji. Alle Mitglieder sehen dasselbe Bild."
 
 msgid "Choose what gets your attention."
 msgstr "Wähle, worauf du aufmerksam gemacht wirst."
@@ -944,6 +953,9 @@ msgstr "Der Kontakt konnte nicht entfernt werden. %s"
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "Die gespeicherte Datei konnte nicht entfernt werden. Bitte versuche es erneut."
 
+msgid "Couldn't render that emoji. Choose another one."
+msgstr "Dieses Emoji kann nicht dargestellt werden. Wähle ein anderes."
+
 msgid "Couldn't render the QR code. Please try again."
 msgstr "Der QR-Code konnte nicht erzeugt werden. Bitte versuche es erneut."
 
@@ -1089,6 +1101,9 @@ msgstr "Ordner erstellen"
 
 msgid "Create folders to organize your chats."
 msgstr "Erstelle Ordner, um deine Chats zu organisieren."
+
+msgid "Create from emoji"
+msgstr "Aus Emoji erstellen"
 
 msgid "Create issue"
 msgstr "Meldung erstellen"
@@ -1298,6 +1313,9 @@ msgstr "PROFIL BEARBEITEN"
 
 msgid "EDITING · BROADCAST TO RELAYS ON PUBLISH"
 msgstr "BEARBEITUNG · WIRD BEIM VERÖFFENTLICHEN AN RELAYS GESENDET"
+
+msgid "EMOJI GROUP IMAGE"
+msgstr "GRUPPENBILD AUS EMOJI"
 
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
 msgstr "VERSCHLÜSSELTER SCHLÜSSEL (NCRYPTSEC)"
@@ -1514,6 +1532,9 @@ msgstr "Weiterleiten an"
 #, c-format
 msgid "Forwarding to %s…"
 msgstr "Wird an %s weitergeleitet…"
+
+msgid "From emoji"
+msgstr "Aus Emoji"
 
 msgid "From file"
 msgstr "Aus Datei"
@@ -2138,6 +2159,9 @@ msgstr "Noch keine Kontakte"
 
 msgid "No description."
 msgstr "Keine Beschreibung."
+
+msgid "No emoji selected"
+msgstr "Kein Emoji ausgewählt"
 
 msgid "No files match these filters."
 msgstr "Keine Dateien entsprechen diesen Filtern."
@@ -3375,6 +3399,9 @@ msgstr "Verwende einen kürzeren Suchbegriff."
 
 msgid "Use another key"
 msgstr "Anderen Schlüssel verwenden"
+
+msgid "Use emoji image"
+msgstr "Emoji-Bild verwenden"
 
 msgid "Use this theme"
 msgstr "Dieses Theme verwenden"

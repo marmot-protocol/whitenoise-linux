@@ -541,8 +541,17 @@ msgstr "Testo chip"
 msgid "Choose a destination for this chat."
 msgstr "Scegli una destinazione per questa chat."
 
+msgid "Choose at most two emoji."
+msgstr "Scegli al massimo due emoji."
+
 msgid "Choose how your conversations look and feel."
 msgstr "Scegli l'aspetto e lo stile delle tue conversazioni."
+
+msgid "Choose image"
+msgstr "Scegli immagine"
+
+msgid "Choose one or two emoji. Every member sees the same image."
+msgstr "Scegli una o due emoji. Tutti i membri vedono la stessa immagine."
 
 msgid "Choose what gets your attention."
 msgstr "Scegli cosa merita la tua attenzione."
@@ -944,6 +953,9 @@ msgstr "Impossibile rimuovere il contatto. %s"
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "Impossibile rimuovere il file salvato. Riprova."
 
+msgid "Couldn't render that emoji. Choose another one."
+msgstr "Impossibile disegnare questa emoji. Scegline un'altra."
+
 msgid "Couldn't render the QR code. Please try again."
 msgstr "Impossibile generare il codice QR. Riprova."
 
@@ -1089,6 +1101,9 @@ msgstr "Crea cartella"
 
 msgid "Create folders to organize your chats."
 msgstr "Crea cartelle per organizzare le tue chat."
+
+msgid "Create from emoji"
+msgstr "Crea da emoji"
 
 msgid "Create issue"
 msgstr "Crea segnalazione"
@@ -1298,6 +1313,9 @@ msgstr "MODIFICA PROFILO"
 
 msgid "EDITING · BROADCAST TO RELAYS ON PUBLISH"
 msgstr "MODIFICA · INVIATO AI RELAY ALLA PUBBLICAZIONE"
+
+msgid "EMOJI GROUP IMAGE"
+msgstr "IMMAGINE DEL GRUPPO DA EMOJI"
 
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
 msgstr "CHIAVE CRITTOGRAFATA (NCRYPTSEC)"
@@ -1514,6 +1532,9 @@ msgstr "Inoltra a"
 #, c-format
 msgid "Forwarding to %s…"
 msgstr "Inoltro a %s…"
+
+msgid "From emoji"
+msgstr "Da emoji"
 
 msgid "From file"
 msgstr "Da file"
@@ -2138,6 +2159,9 @@ msgstr "Ancora nessun contatto"
 
 msgid "No description."
 msgstr "Nessuna descrizione."
+
+msgid "No emoji selected"
+msgstr "Nessuna emoji selezionata"
 
 msgid "No files match these filters."
 msgstr "Nessun file corrisponde a questi filtri."
@@ -3375,6 +3399,9 @@ msgstr "Usa una ricerca più breve."
 
 msgid "Use another key"
 msgstr "Usa un'altra chiave"
+
+msgid "Use emoji image"
+msgstr "Usa immagine emoji"
 
 msgid "Use this theme"
 msgstr "Usa questo tema"

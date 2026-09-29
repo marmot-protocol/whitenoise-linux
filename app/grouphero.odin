@@ -2,10 +2,12 @@
 // chooser, group title, and inline description editing.
 //
 // The description publishes through marmot_update_group_profile. The
-// photo has two sources: "Search images" (Openverse, openverse.odin)
+// photo has three sources: "Search images" (Openverse, openverse.odin)
 // publishes a plain URL avatar via marmot_update_group_avatar_url;
 // "From file" is encrypted, uploaded to Blossom and committed as the
 // group image (marmot_update_group_image), which only an admin may do.
+// "From emoji" renders a JPEG (emoji_mix.odin) that takes the same
+// encrypted path.
 //
 // Both directions block on the network, so they run on the group-image
 // worker and land back on the UI thread in drain_gimg, where texture
@@ -81,6 +83,7 @@ group_hero :: proc(ui: ^Ui_State) {
 		if ui.gpic_menu_open {
 			if clay.UI(clay.ID("GpicMenu"))({layout = {childGap = 8}}) {
 				micro_button("GpicFile", tr("From file"))
+				micro_button("GpicEmoji", tr("From emoji"))
 				micro_button("GpicSearch", tr("Search images"))
 			}
 		}
@@ -142,6 +145,11 @@ handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 			ov_show(ui)
 			return true
 		}
+		if clicked("GpicEmoji") {
+			ui.gpic_menu_open = false
+			open_emoji_mix(ui, .Selected_Group)
+			return true
+		}
 	}
 
 	if clicked("DescEditBtn") {
@@ -189,19 +197,23 @@ save_description :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	load_members(client, ui) // re-snapshots group_desc
 }
 
-// A file picked for the group photo: decode it for an instant local
-// preview, then hand the bytes to the worker, which encrypts and
-// uploads them to Blossom and commits them as the group image.
+// A file picked for the open group's photo.
 set_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	if ui.selected < 0 {
 		return
 	}
+	if draft, ok := load_pic_draft(ui, path); ok {
+		upload_group_pic(ui, client, ui.chats[ui.selected].group_id, draft)
+	}
+}
+
+// Read and decode a picked image file; errors go to the status line.
+load_pic_draft :: proc(ui: ^Ui_State, path: string) -> (draft: Pic_Draft, ok: bool) {
 	data, read_err := os.read_entire_file(path, context.allocator)
 	if read_err != nil {
 		set_status(ui, fmt.aprintf(tr("Couldn't read %s."), path), .Error)
 		return
 	}
-	defer delete(data)
 
 	base := path
 	if slash := strings.last_index_byte(path, '/'); slash >= 0 {
@@ -209,6 +221,7 @@ set_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	}
 	media_type := media_type_for(base)
 	if !strings.has_prefix(media_type, "image/") {
+		delete(data)
 		set_status(ui, strings.clone(tr("Couldn't use that file. Choose a PNG or JPEG.")), .Error)
 		return
 	}
@@ -218,6 +231,7 @@ set_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	)
 	image := rl.LoadImageFromMemory(ext, raw_data(data), i32(len(data)))
 	if image.data == nil {
+		delete(data)
 		set_status(
 			ui,
 			strings.clone(tr("Couldn't decode the image. Choose a PNG or JPEG.")),
@@ -225,11 +239,16 @@ set_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 		)
 		return
 	}
+	return {data = data, media_type = media_type, image = image}, true
+}
 
-	gid := ui.chats[ui.selected].group_id
+// Show `draft` as the group's photo at once, then hand its bytes to the
+// worker, which encrypts and uploads them to Blossom and commits them
+// as the group image. Takes ownership of `draft`.
+upload_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, gid: string, draft: Pic_Draft) {
 	url := fmt.tprintf("group://%s", gid)
-	register_local_pic(url, image)
-	rl.UnloadImage(image)
+	register_local_pic(url, draft.image)
+	rl.UnloadImage(draft.image)
 	// The local override outlives the upload: it is the same picture,
 	// and keeping it saves re-downloading what this client just sent.
 	if gid not_in gpic_local {
@@ -242,8 +261,8 @@ set_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 			client = client,
 			account = strings.clone(ui.account_ref),
 			group_id = strings.clone(gid),
-			data = slice.clone(data),
-			media_type = media_type,
+			data = draft.data,
+			media_type = draft.media_type,
 		},
 	)
 }

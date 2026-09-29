@@ -386,6 +386,13 @@ Profile_Ui :: struct {
 	qr:       ^rl.Texture2D, // own marmot:// deep link, page-inline
 }
 
+// Where an emoji picker pick lands.
+Picker_Mode :: enum {
+	Message, // the composer, or a reaction when picker_target is set
+	Quick_Reaction, // settings one-tap reactions
+	Group_Image, // ui.gemoji, for an emoji group image (emoji_mix.odin)
+}
+
 Ui_State :: struct {
 	gif_tab, gif_saved, gif_loaded:                        bool,
 	gif_hits, gif_library:                                 [dynamic]Gif_Item,
@@ -499,6 +506,7 @@ Ui_State :: struct {
 	desc_editing:                                          bool,
 	gpic_menu_open:                                        bool, // hero "Change photo" chooser row
 	picking_gpic:                                          bool, // route the next picked file to the group photo
+	picking_ncpic:                                         bool, // route the next picked file to the new-chat group image
 	picking_ppic:                                          bool, // route the next picked file to the profile picture
 	ov_open:                                               bool, // Openverse image-search modal
 	ov_input:                                              [dynamic]u8, // its query box
@@ -617,7 +625,10 @@ Ui_State :: struct {
 	cache_scanned:                                         bool,
 	emoji_staged:                                          string, // picked emoji file awaiting its shortcode
 	emoji_name:                                            [dynamic]u8, // its shortcode box
-	adding_quick:                                          bool, // emoji picker adds a one-tap reaction
+	picker_mode:                                           Picker_Mode,
+	gemoji:                                                [dynamic]string, // emoji picked for a group image, tap order
+	gemoji_pic:                                            Pic_Draft, // their current render
+	gemoji_dest:                                           Gemoji_Dest,
 	kp_input:                                              [dynamic]u8, // KP-inspector pubkey box
 	inbox_input:                                           [dynamic]u8, // settings inbox-relay box
 	fetch_input:                                           [dynamic]u8, // settings event-fetch-relay box
@@ -647,6 +658,7 @@ Ui_State :: struct {
 	nc_member:                                             [dynamic]u8, // npub/hex/NIP-05 for a DM; empty = own group
 	nip05_ticket:                                          int,
 	nc_name:                                               [dynamic]u8,
+	nc_pic:                                                Pic_Draft, // group image staged for Create
 	client_status:                                         string, // written only through set_status
 	client_status_kind:                                    Status_Kind,
 	// ── Shell chrome (shell.odin, palette.odin, confirm.odin,

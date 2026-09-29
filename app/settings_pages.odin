@@ -1929,7 +1929,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 		}
 		if clicked("QuickAdd") {
-			ui.adding_quick = true
+			ui.picker_mode = .Quick_Reaction
 			ui.picker_open = true
 			ui.picker_target = ""
 			ui.picker_x = 200

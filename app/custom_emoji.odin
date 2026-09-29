@@ -124,6 +124,23 @@ builtin_tex_by_code :: proc(code: string) -> ^rl.Texture2D {
 	return nil
 }
 
+// Decoded pixels for a shortcode, the same precedence as
+// custom_tex_by_code minus received-only codes (those exist only as
+// textures). data == nil when undefined; the caller unloads it.
+@(private)
+custom_emoji_image :: proc(code: string) -> rl.Image {
+	if name := emoji_file_for(code); len(name) > 0 {
+		path := fmt.tprintf("%s/%s", emoji_dir(), name)
+		return rl.LoadImage(strings.clone_to_cstring(path, context.temp_allocator))
+	}
+	for b in BUILTIN_EMOJI {
+		if b.code == code {
+			return rl.LoadImageFromMemory(".png", raw_data(b.png), i32(len(b.png)))
+		}
+	}
+	return {}
+}
+
 // Parse a :shortcode: starting at text[i] (text[i] == ':'). Returns
 // the index past the closing ':' and the texture; nil = not a known
 // shortcode, render literally.

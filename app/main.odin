@@ -1008,6 +1008,8 @@ app_main :: proc() {
 		append(&ui.recent_emoji, entry.emoji)
 	}
 	load_emoji_catalog()
+	// Before any picker or message needs them, not on first Settings visit.
+	custom_emoji_scan()
 
 	// Every secret lives in $home/vault.db, marmot's account keys
 	// included, so the vault opens before the runtime does; closing the
@@ -1750,6 +1752,10 @@ app_main :: proc() {
 				stage_emoji(&ui, path)
 			} else if ui.picking_gpic {
 				set_group_pic(&ui, client, path)
+			} else if ui.picking_ncpic {
+				if draft, ok := load_pic_draft(&ui, path); ok {
+					nc_pic_set(&ui, draft)
+				}
 			} else if ui.picking_ppic {
 				set_profile_pic(&ui, client, path)
 			} else {
@@ -1761,6 +1767,7 @@ app_main :: proc() {
 			ui.picking_sticker = false
 			ui.picking_emoji = false
 			ui.picking_gpic = false
+			ui.picking_ncpic = false
 			ui.picking_ppic = false
 			ui.picking_backup = false
 		}

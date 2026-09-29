@@ -664,9 +664,9 @@ picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D) {
 
 // Emoji picker, the slint EmojiPicker: recents, search, Twemoji grid.
 emoji_picker :: proc(ui: ^Ui_State) {
-	gif := ui.gif_tab && ui.picker_target == "" && !ui.adding_quick
+	gif := ui.gif_tab && ui.picker_target == "" && ui.picker_mode == .Message
 	width := modal_w(clay.ID("PickerPanel"), gif ? 560 : 400)
-	height := modal_h(gif ? 540 : 440)
+	height := modal_h(gif ? 540 : ui.picker_mode == .Group_Image ? 560 : 440)
 	x, y := ui.picker_x, ui.picker_y
 	if gif {
 		if composer := clay.GetElementData(clay.ID("ComposeBox")); composer.found {
@@ -694,7 +694,10 @@ emoji_picker :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if ui.picker_target == "" && !ui.adding_quick {
+		if ui.picker_mode == .Group_Image {
+			emoji_mix_header(ui)
+		}
+		if ui.picker_target == "" && ui.picker_mode == .Message {
 			if clay.UI(clay.ID("PickerTabs"))(
 			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
 			) {

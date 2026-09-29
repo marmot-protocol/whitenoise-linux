@@ -143,37 +143,10 @@ starter_face :: proc(npub: string, cp: rune) -> rl.Image {
 		}
 	}
 
-	// Glyph centered at ~66% of the canvas, bilinear-sampled from the
-	// 72px tile, straight-alpha blended onto the gradient.
+	// Glyph centered at ~66% of the canvas.
 	face := STARTER_SIDE * 2 / 3
 	off := (STARTER_SIDE - face) / 2
-	for y in 0 ..< face {
-		for x in 0 ..< face {
-			sx := (f32(x) + 0.5) * f32(glyph.width) / f32(face) - 0.5
-			sy := (f32(y) + 0.5) * f32(glyph.height) / f32(face) - 0.5
-			x0 := clamp(int(sx), 0, int(glyph.width) - 1)
-			y0 := clamp(int(sy), 0, int(glyph.height) - 1)
-			x1 := min(x0 + 1, int(glyph.width) - 1)
-			y1 := min(y0 + 1, int(glyph.height) - 1)
-			fx := clamp(sx - f32(x0), 0, 1)
-			fy := clamp(sy - f32(y0), 0, 1)
-
-			src := [4]f32{}
-			for ch in 0 ..< 4 {
-				s00 := f32(glyph.data[(y0 * int(glyph.width) + x0) * 4 + ch])
-				s10 := f32(glyph.data[(y0 * int(glyph.width) + x1) * 4 + ch])
-				s01 := f32(glyph.data[(y1 * int(glyph.width) + x0) * 4 + ch])
-				s11 := f32(glyph.data[(y1 * int(glyph.width) + x1) * 4 + ch])
-				src[ch] = (s00 * (1 - fx) + s10 * fx) * (1 - fy) + (s01 * (1 - fx) + s11 * fx) * fy
-			}
-
-			a := src[3] / 255
-			d := ((y + off) * STARTER_SIDE + x + off) * 4
-			out[d + 0] = u8(src[0] * a + f32(out[d + 0]) * (1 - a))
-			out[d + 1] = u8(src[1] * a + f32(out[d + 1]) * (1 - a))
-			out[d + 2] = u8(src[2] * a + f32(out[d + 2]) * (1 - a))
-		}
-	}
+	blend_tile(out, STARTER_SIDE, glyph, {off, off}, face)
 	return {data = raw_data(out), width = STARTER_SIDE, height = STARTER_SIDE}
 }
 

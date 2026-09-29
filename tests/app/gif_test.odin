@@ -345,13 +345,13 @@ gif_keyboard :: proc(t: ^testing.T) {
 	testing.expect(t, !ui.picker_open && ui.focus == .Compose)
 	if len(ui.staged) ==
 	   1 {testing.expect_value(t, ui.staged[0].media_type, "image/gif"); remove_staged(&ui, 0)}
-	ui.adding_quick = true; ui.gif_tab = true
+	ui.picker_mode = .Quick_Reaction; ui.gif_tab = true
 	open_picker(&ui, ""); testing.expect(t, !ui.gif_tab)
 	if os.get_env("WN_TEST_GIF_LIVE", context.temp_allocator) != "" {
 		start_pic_worker(); defer stop_pic_worker()
 		rl.SetWindowSize(900, 760); clay.SetLayoutDimensions({900, 760})
 		rl.SetTargetFPS(30)
-		ui.adding_quick = false; ui.gif_tab = true; ui.gif_saved = false
+		ui.picker_mode = .Message; ui.gif_tab = true; ui.gif_saved = false
 		ed_set(&ui, &ui.picker_filter, "cat")
 		gif_search(&ui); gif_drain(&ui)
 		thread.join(ui.gif_job.worker); gif_drain(&ui)

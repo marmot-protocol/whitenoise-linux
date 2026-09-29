@@ -541,8 +541,17 @@ msgstr "チップの文字"
 msgid "Choose a destination for this chat."
 msgstr "このチャットの移動先を選んでください。"
 
+msgid "Choose at most two emoji."
+msgstr "絵文字は2つまで選択できます。"
+
 msgid "Choose how your conversations look and feel."
 msgstr "会話の見た目や操作感を設定します。"
+
+msgid "Choose image"
+msgstr "画像を選択"
+
+msgid "Choose one or two emoji. Every member sees the same image."
+msgstr "絵文字を1つか2つ選択してください。すべてのメンバーに同じ画像が表示されます。"
 
 msgid "Choose what gets your attention."
 msgstr "通知を受け取る内容を選択します。"
@@ -944,6 +953,9 @@ msgstr "連絡先を削除できませんでした。%s"
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "保存したファイルを削除できませんでした。もう一度お試しください。"
 
+msgid "Couldn't render that emoji. Choose another one."
+msgstr "その絵文字を描画できません。別の絵文字を選択してください。"
+
 msgid "Couldn't render the QR code. Please try again."
 msgstr "QR コードを描画できませんでした。もう一度お試しください。"
 
@@ -1089,6 +1101,9 @@ msgstr "フォルダを作成"
 
 msgid "Create folders to organize your chats."
 msgstr "フォルダを作成してチャットを整理できます。"
+
+msgid "Create from emoji"
+msgstr "絵文字から作成"
 
 msgid "Create issue"
 msgstr "報告を作成"
@@ -1298,6 +1313,9 @@ msgstr "プロフィールを編集"
 
 msgid "EDITING · BROADCAST TO RELAYS ON PUBLISH"
 msgstr "編集中 · 公開時にリレーへ配信されます"
+
+msgid "EMOJI GROUP IMAGE"
+msgstr "絵文字のグループ画像"
 
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
 msgstr "暗号化キー(NCRYPTSEC)"
@@ -1514,6 +1532,9 @@ msgstr "転送先"
 #, c-format
 msgid "Forwarding to %s…"
 msgstr "%sに転送中…"
+
+msgid "From emoji"
+msgstr "絵文字から"
 
 msgid "From file"
 msgstr "ファイルから"
@@ -2138,6 +2159,9 @@ msgstr "連絡先がまだありません"
 
 msgid "No description."
 msgstr "説明はありません。"
+
+msgid "No emoji selected"
+msgstr "絵文字が選択されていません"
 
 msgid "No files match these filters."
 msgstr "このフィルターに一致するファイルはありません。"
@@ -3375,6 +3399,9 @@ msgstr "検索キーワードを短くしてください。"
 
 msgid "Use another key"
 msgstr "別の鍵を使う"
+
+msgid "Use emoji image"
+msgstr "絵文字の画像を使用"
 
 msgid "Use this theme"
 msgstr "このテーマを使う"

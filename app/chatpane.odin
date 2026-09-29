@@ -1112,6 +1112,16 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 			ui.focus == .NC_Member,
 		)
 		input_box(ui, "NCName", &ui.nc_name, tr("Group name"), ui.focus == .NC_Name)
+		if clay.UI(clay.ID("NCPicRow"))(
+		{layout = {childGap = 12, childAlignment = {y = .Center}}},
+		) {
+			avatar("NCPic", 0, "", string(ui.nc_name[:]), 48, nc_pic_tex(ui))
+			micro_button("NCPicFile", tr("Choose image"))
+			micro_button("NCPicEmoji", tr("Create from emoji"))
+			if len(ui.nc_pic.data) > 0 {
+				micro_button("NCPicRemove", tr("Remove"))
+			}
+		}
 		if clay.UI(clay.ID("NCButtons"))({layout = {childGap = 12}}) {
 			login_button(
 				"NCCreate",
