@@ -563,8 +563,9 @@ render_range :: proc(
 				if len(overlay_colors) > 0 && overlay_colors[len(overlay_colors) - 1] != 0 {
 					tint = overlay_colors[len(overlay_colors) - 1]
 				}
-				// The top-center hinge stays fixed. Rotate the opaque cover
-				// and its photo together, clipped to the original avatar slot.
+				// The top-center hinge stays fixed. Rotate the photo, clipped to
+				// the original avatar slot. The photo is pre-masked, so it keeps
+				// its shape while it swings.
 				uvs := [6]rl.Vector2{{0, 0}, {1, 0}, {1, 1}, {0, 0}, {1, 1}, {0, 1}}
 				vertices: [6]rl.Vertex
 				for uv, k in uvs {
@@ -575,24 +576,9 @@ render_range :: proc(
 							bounds.x + bounds.width / 2 + dx * cos - dy * sin,
 							bounds.y + dx * sin + dy * cos,
 						},
-						color     = {
-							view.back.r / 255,
-							view.back.g / 255,
-							view.back.b / 255,
-							tint.a / 255,
-						},
+						color     = {tint.r / 255, tint.g / 255, tint.b / 255, tint.a / 255},
 						tex_coord = {uv.x, uv.y},
 					}
-				}
-				rl.DrawTrianglesClipped(
-					vertices[:],
-					bounds.x,
-					bounds.y,
-					bounds.width,
-					bounds.height,
-				)
-				for &vertex in vertices {
-					vertex.color = {tint.r / 255, tint.g / 255, tint.b / 255, tint.a / 255}
 				}
 				rl.DrawTrianglesClipped(
 					vertices[:],

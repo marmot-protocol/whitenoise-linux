@@ -15,7 +15,6 @@ Avatar_Hinge :: struct {
 	kind:  Model_Kind,
 	tex:   ^rl.Texture2D,
 	angle: f32,
-	back:  clay.Color,
 }
 
 // FNV-1a, the same stable-hash idea the slint app uses.
@@ -129,7 +128,6 @@ avatar :: proc(
 					kind  = .Avatar_Hinge,
 					tex   = tex,
 					angle = hinge_angle,
-					back  = avatar_color(key),
 				}
 				image = {}
 				custom = {
