@@ -679,6 +679,10 @@ msgstr ""
 msgid "Couldn't finish dictation. Please try again."
 msgstr ""
 
+#, c-format
+msgid "Couldn't forward to %s. Open the chat to retry."
+msgstr ""
+
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr ""
 
@@ -1260,6 +1264,10 @@ msgid "Forget all"
 msgstr ""
 
 msgid "Forward"
+msgstr ""
+
+#, c-format
+msgid "Forwarding to %s…"
 msgstr ""
 
 msgid "From file"
@@ -2032,6 +2040,13 @@ msgid "Play a sound"
 msgstr ""
 
 msgid "Pre-order"
+msgstr ""
+
+#, c-format
+msgid "Preparing attachments for %s…"
+msgstr ""
+
+msgid "Preparing attachments…"
 msgstr ""
 
 msgid "Preparing dictation..."

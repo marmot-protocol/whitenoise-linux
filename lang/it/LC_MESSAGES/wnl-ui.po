@@ -715,6 +715,10 @@ msgstr "Impossibile trovare il pacchetto. Inserisci il suo naddr o le sue coordi
 msgid "Couldn't finish dictation. Please try again."
 msgstr "Impossibile completare la dettatura. Riprova."
 
+#, c-format
+msgid "Couldn't forward to %s. Open the chat to retry."
+msgstr "Impossibile inoltrare a %s. Apri la chat per riprovare."
+
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "Impossibile rilevare la voce. Parla chiaramente e riprova."
 
@@ -1331,6 +1335,10 @@ msgstr "Dimentica tutti"
 
 msgid "Forward"
 msgstr "Inoltra"
+
+#, c-format
+msgid "Forwarding to %s…"
+msgstr "Inoltro a %s…"
 
 #, fuzzy
 msgid "From file"
@@ -2141,6 +2149,13 @@ msgstr "Riproduci un suono"
 
 msgid "Pre-order"
 msgstr "Preordine"
+
+#, c-format
+msgid "Preparing attachments for %s…"
+msgstr "Preparazione degli allegati per %s…"
+
+msgid "Preparing attachments…"
+msgstr "Preparazione degli allegati…"
 
 msgid "Preparing dictation..."
 msgstr "Preparazione della dettatura..."

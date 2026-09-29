@@ -29,8 +29,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 			encryption_modal(ui, chat)
 		}
 		if open_now(clay.ID("FwdModal"), ui.fwd_open && ui.fwd_kind == .Message) &&
-		   ui.fwd_msg >= 0 &&
-		   ui.fwd_msg < len(ui.messages) {
+		   forward_source(ui) >= 0 {
 			forward_modal(ui)
 		}
 		if open_now(clay.ID("OvModal"), ui.ov_open) {

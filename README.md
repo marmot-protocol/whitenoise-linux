@@ -29,6 +29,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Markdown bodies (with typeset `$$` math blocks), reactions, replies, edits with history, forwarding, and search.
 - Emoji search accepts names and shortcodes, such as `100` for hundred points and `thumbsup` for thumbs up. Shortcodes work with or without surrounding colons.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
+- Forwarded attachments download and prepare in the background. A status strip names the destination and stays visible through preparation and sending, even if you switch chats. Failed forwards can be retried from the destination chat.
 - Per-chat unread tracking, surfaced as rail badges.
 - Deleting a chat folder requires confirmation, from both Settings and its context menu. Only the folder is removed; its chats stay in your chat list.
 

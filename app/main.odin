@@ -785,6 +785,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			}
 
 			// Message banner + status bar, the slint shell's bottom strip.
+			forward_progress(ui)
 			status_bar(ui)
 
 			// One backdrop for every centered modal, whichever pane drew it.
@@ -2108,6 +2109,7 @@ app_main :: proc() {
 	stop_pic_worker()
 	auth_stop()
 	for worker in send_threads {thread.join(worker); thread.destroy(worker)}
+	forward_stop(&ui)
 	sticker_stop()
 	gif_stop(&ui)
 	delete(send_threads)
