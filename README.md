@@ -414,6 +414,8 @@ Poll creation, voting, and tallies use MDK's native poll APIs and timeline
 projection. `patches/mdk-poll-context.patch` preserves thread and issue context
 through native creation. MDK disallows poll creation in unnamed two-person
 conversations. A multiple-choice vote must retain at least one selection.
+Poll cards stay compact in wide chats and wrap option labels in narrow panes.
+Checkmarks identify your selections.
 
 Publishing workflows read `WN_METRICS_WRITE_TOKEN` and `WN_AUDIT_WRITE_TOKEN`
 from CI secrets. Configure both on GitHub and on trusted ngit/act publishing

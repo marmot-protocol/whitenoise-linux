@@ -47,39 +47,60 @@ poll_project :: proc(client: ^marmot.Client, msg: ^Msg_Ui, poll: ^marmot.Poll_Pr
 // The option bars under a poll's question, drawn by message_row.
 // Clicks are routed by handle_chat to poll_vote.
 poll_block :: proc(index: u32, msg: Msg_Ui) {
+	width := att_w(360)
 	if clay.UI(clay.ID("MsgPoll", index))(
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			childGap = 4,
-			sizing = {width = clay.SizingGrow({max = 300})},
+			childGap = 8,
+			sizing = {width = clay.SizingFixed(width)},
 		},
 	},
 	) {
 		for opt, j in msg.poll_opts {
 			slot := index * 64 + u32(j)
+			count := fmt.tprintf("%d", opt.count)
+			count_w := max(f32(20), rl.MeasureTextLine(FONT_BODY, 13, count, 0).x)
 			if clay.UI(clay.ID("PollOptRow", slot))(
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
 					layoutDirection = .TopToBottom,
-					childGap = 4,
-					padding = clay.PaddingAll(8),
+					childGap = 8,
+					padding = clay.PaddingAll(12),
 				},
-				backgroundColor = hovered() && msg.poll_open ? HOVER : ROW_BG,
+				backgroundColor = opt.mine ? SELECTED : (hovered() && msg.poll_open ? HOVER : ROW_BG),
 				cornerRadius = rr(8),
-				border = opt.mine ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
+				border = {color = opt.mine ? ACCENT : ELEVATED_BORDER, width = bw()},
 			},
 			) {
 				if clay.UI(clay.ID("PollOptTop", slot))(
 				{
 					layout = {
 						sizing = {width = clay.SizingGrow()},
-						childGap = 6,
+						childGap = 10,
 						childAlignment = {y = .Center},
 					},
 				},
 				) {
+					if clay.UI(clay.ID("PollOptChoice", slot))(
+					{
+						layout = {
+							sizing = {clay.SizingFixed(18), clay.SizingFixed(18)},
+							childAlignment = {x = .Center, y = .Center},
+						},
+						border = {color = opt.mine ? ACCENT : TEXT_DIM, width = bw()},
+						backgroundColor = opt.mine ? ACCENT : {},
+						cornerRadius = rr(msg.poll_multi ? 3 : 9),
+					},
+					) {
+						if opt.mine {
+							clay.Text(
+								ICON_CHECK,
+								{fontId = FONT_ICON, fontSize = 11, textColor = ON_ACCENT},
+							)
+						}
+					}
 					// Label drawn by the message markdown renderer; the
 					// grow column pushes the count to the right edge.
 					// Id window: [1024, 3072) inside the row's 4096 block
@@ -94,17 +115,26 @@ poll_block :: proc(index: u32, msg: Msg_Ui) {
 					},
 					) {
 						if len(opt.blocks) > 0 {
-							md_blocks(opt.blocks[:], index * 4096 + 1024 + u32(j) * 32)
+							md_blocks(
+								opt.blocks[:],
+								index * 4096 + 1024 + u32(j) * 32,
+								wrap_w = max(f32(1), width - 24 - 18 - 20 - count_w),
+							)
 						} else {
 							clay.Text(
 								opt.label,
-								{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+								{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
 							)
 						}
 					}
 					clay.Text(
-						fmt.tprintf("%d", opt.count),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+						count,
+						{
+							fontId = FONT_BODY,
+							fontSize = 13,
+							textColor = TEXT_DIM,
+							wrapMode = .None,
+						},
 					)
 				}
 				frac := msg.poll_total > 0 ? f32(opt.count) / f32(msg.poll_total) : 0
@@ -132,15 +162,15 @@ poll_block :: proc(index: u32, msg: Msg_Ui) {
 				}
 			}
 		}
-		if clay.UI(clay.ID("MsgPollFoot", index))({layout = {childGap = 6}}) {
+		if clay.UI(clay.ID("MsgPollFoot", index))({layout = {childGap = 8, padding = {top = 4}}}) {
 			clay.Text(
-				fmt.tprintf(tr("%d votes"), msg.poll_total),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+				msg.poll_total == 1 ? tr("1 vote") : fmt.tprintf(tr("%d votes"), msg.poll_total),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 			)
 			if !msg.poll_open {
 				clay.Text(
 					tr("Voting has ended."),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 				)
 			}
 		}

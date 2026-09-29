@@ -135,6 +135,9 @@ msgstr ""
 msgid "-"
 msgstr ""
 
+msgid "1 vote"
+msgstr "1 Stimme"
+
 msgid "100%"
 msgstr ""
 
