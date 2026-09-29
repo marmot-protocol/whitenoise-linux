@@ -210,6 +210,8 @@ cross build, but the same portable tarball recipe as `linux-arm64`.
 the same path. The normal `scripts/build.sh` remains a native Linux build.
 Each target has separate objects, Rust output, libraries and package files
 under `build/cross/TARGET`; finished archives go to `dist/`.
+Both native and cross builds include the Nostr and Namecoin WebSocket
+transports (`ws_shim.c` and `nc_shim.c`) in `libwnws.a`.
 
 The supplied amd64 Linux container includes the cross compilers and package
 tools:

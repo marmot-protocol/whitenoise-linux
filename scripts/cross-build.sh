@@ -71,7 +71,8 @@ if ! stamp_fresh "$OUT/fbx/ufbx.o" "$OUT/fbx/ufbx.stamp" "$UFBX_STAMP"; then
   echo "$UFBX_STAMP" > "$OUT/fbx/ufbx.stamp"
 fi
 "$CC" "${CFLAGS[@]}" $(pkg-config --cflags libcurl) -c "$HERE/app/ws_shim.c" -o "$OUT/ws.o"
-"$AR" rcs "$OUT/libwnws.a" "$OUT/ws.o"
+"$CC" "${CFLAGS[@]}" $(pkg-config --cflags libcurl) -c "$HERE/app/nc_shim.c" -o "$OUT/nc.o"
+"$AR" rcs "$OUT/libwnws.a" "$OUT/ws.o" "$OUT/nc.o"
 "$CC" "${CFLAGS[@]}" -c "$HERE/app/helper_ipc.c" -o "$OUT/ipc.o"
 "$AR" rcs "$OUT/libwnipc.a" "$OUT/ipc.o"
 "$CC" "${CFLAGS[@]}" -c "$HERE/app/decoder_ipc.c" -o "$OUT/decoder_ipc.o"
