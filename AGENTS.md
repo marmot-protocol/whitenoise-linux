@@ -295,6 +295,18 @@ register per string.
 
 ## Conventions
 
+- **Visible feedback within two frames.** Every user action MUST produce a
+  visible result within 0 to 2 frames at 60 fps (about 33 ms maximum). The work
+  itself does not have to finish in that time. If it takes longer for any
+  reason, the UI MUST show a visual indication within that same budget that
+  work is happening, and keep its ongoing status visible until completion.
+  Match the feedback to the UI element: the start of an animation can be
+  enough; a spinner MUST include details of what is happening and a progress
+  bar, not just spin without explanation. Show measured progress when known;
+  use an explicitly indeterminate bar otherwise. Never invent percentages.
+  More than two frames without visible feedback is S L O W. The user WILL
+  notice, WILL call it lag, and WILL think White Noise sucks. This is a
+  requirement, not optional polish.
 - **Data first.** Design the layout of `Ui_State` and how a frame reads it
   before writing procs. Flat arrays and structs, not object graphs.
 - **No speculative generality.** No interface with one implementation, no
