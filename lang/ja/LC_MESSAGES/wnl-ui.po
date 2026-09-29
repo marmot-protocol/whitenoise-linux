@@ -715,6 +715,10 @@ msgstr "パックが見つかりませんでした。ステッカーパックの
 msgid "Couldn't finish dictation. Please try again."
 msgstr "音声入力を完了できませんでした。もう一度お試しください。"
 
+#, c-format
+msgid "Couldn't forward to %s. Open the chat to retry."
+msgstr "%sに転送できませんでした。チャットを開いて再試行してください。"
+
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "音声を聞き取れませんでした。はっきり話して、もう一度お試しください。"
 
@@ -1331,6 +1335,10 @@ msgstr "すべて忘れる"
 
 msgid "Forward"
 msgstr "転送"
+
+#, c-format
+msgid "Forwarding to %s…"
+msgstr "%sに転送中…"
 
 #, fuzzy
 msgid "From file"
@@ -2141,6 +2149,13 @@ msgstr "音を鳴らす"
 
 msgid "Pre-order"
 msgstr "予約注文"
+
+#, c-format
+msgid "Preparing attachments for %s…"
+msgstr "%sへの添付ファイルを準備中…"
+
+msgid "Preparing attachments…"
+msgstr "添付ファイルを準備中…"
 
 msgid "Preparing dictation..."
 msgstr "音声入力を準備しています..."

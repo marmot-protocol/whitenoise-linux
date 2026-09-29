@@ -518,7 +518,8 @@ Ui_State :: struct {
 	enc_epoch:                                             string, // its MLS epoch, "" when the lookup failed
 	fwd_open:                                              bool, // destination-chat picker
 	fwd_kind:                                              Fwd_Kind, // what the pick sends
-	fwd_msg:                                               int, // index into messages (.Message only)
+	fwd_msg:                                               string, // stable source message ID (.Message only)
+	fwd_source:                                            string, // source group when the picker opened
 	fwd_filter:                                            [dynamic]u8, // its chat filter box
 	poll_open:                                             bool, // create-poll modal
 	poll_question:                                         [dynamic]u8,

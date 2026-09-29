@@ -63,7 +63,7 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 			) {
 				clay.Text(p.sender, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
 				clay.Text(
-					p.failed ? "failed" : p.queued ? "queued" : "sending…",
+					p.failed ? "failed" : p.queued ? "queued" : p.forward != nil ? tr("Preparing attachments…") : "sending…",
 					{fontId = FONT_BODY, fontSize = 11, textColor = p.failed ? DANGER : TEXT_LO},
 				)
 				if can_delete {

@@ -446,6 +446,9 @@ members_clear :: proc(ui: ^Ui_State) {
 //                (grayed row)          (mutex)     (drop row + reload,
 //                                                   or mark failed)
 Pending_Send :: struct {
+	forward:       ^Forward_Job, // source snapshot while attachments are preparing
+	forward_title: string, // destination label retained through send completion
+	account_ref:   string, // pinned for forwards; empty uses the current account
 	excerpt:       Excerpt,
 	sticker:       Sticker_Ref,
 	effect:        int,
@@ -698,11 +701,12 @@ send_worker :: proc(t: ^thread.Thread) {
 }
 
 spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
+	if p.forward != nil {forward_start(p); return}
 	p.sending_since = time.tick_now()
 	job := new(Send_Job)
 	job.ticket = p.ticket
 	job.client = client
-	job.account = strings.clone_to_cstring(ui.account_ref)
+	job.account = strings.clone_to_cstring(p.account_ref != "" ? p.account_ref : ui.account_ref)
 	job.group = strings.clone_to_cstring(p.group_id)
 	job.text = strings.clone_to_cstring(p.body)
 	job.reply = len(p.reply_to) > 0 ? strings.clone_to_cstring(p.reply_to) : nil
@@ -794,6 +798,9 @@ attach_body_emoji :: proc(p: ^Pending_Send, body: string) {
 }
 
 free_pending :: proc(p: ^Pending_Send) {
+	forward_free(p.forward)
+	delete(p.forward_title)
+	delete(p.account_ref)
 	delete(p.group_id)
 	sticker_ref_free(p.sticker)
 	delete(p.sender)
@@ -878,6 +885,7 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 // Frame-loop drain: settle acked/failed sends and reap worker threads.
 drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	drain_forwards(ui, client)
 	for i := len(send_threads) - 1; i >= 0; i -= 1 {
 		if thread.is_done(send_threads[i]) {
 			thread.join(send_threads[i])
@@ -1766,6 +1774,12 @@ auth_stop :: proc() {
 @(private)
 reload_jobs_busy :: proc() -> bool {
 	if auth_thread != nil {return true}
+	// Preparation can finish between frames, before its upload is spawned.
+	if g_ui != nil {
+		for p in g_ui.pending {
+			if p.forward != nil && !p.failed && !p.dismissed {return true}
+		}
+	}
 	for worker in send_threads {
 		if !thread.is_done(worker) {return true}
 	}

@@ -1100,7 +1100,10 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clay.PointerOver(clay.ID("CtxForward")) {
 		ui.fwd_open = true
 		ui.fwd_kind = .Message
-		ui.fwd_msg = ui.ctx_msg
+		delete(ui.fwd_msg)
+		delete(ui.fwd_source)
+		ui.fwd_msg = strings.clone(msg.id)
+		ui.fwd_source = strings.clone(ui.chats[ui.selected].group_id)
 		clear(&ui.fwd_filter)
 		ui.focus = .Fwd
 		return

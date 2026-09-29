@@ -715,6 +715,10 @@ msgstr "Das Paket konnte nicht gefunden werden. Gib seine naddr oder Koordinate 
 msgid "Couldn't finish dictation. Please try again."
 msgstr "Das Diktat konnte nicht abgeschlossen werden. Versuch es bitte erneut."
 
+#, c-format
+msgid "Couldn't forward to %s. Open the chat to retry."
+msgstr "Weiterleiten an %s fehlgeschlagen. Öffne den Chat, um es erneut zu versuchen."
+
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "Es wurde keine Sprache erkannt. Sprich deutlich und versuch es erneut."
 
@@ -1331,6 +1335,10 @@ msgstr "Alle vergessen"
 
 msgid "Forward"
 msgstr "Weiterleiten"
+
+#, c-format
+msgid "Forwarding to %s…"
+msgstr "Wird an %s weitergeleitet…"
 
 #, fuzzy
 msgid "From file"
@@ -2141,6 +2149,13 @@ msgstr "Ton abspielen"
 
 msgid "Pre-order"
 msgstr "Vorbestellung"
+
+#, c-format
+msgid "Preparing attachments for %s…"
+msgstr "Anhänge für %s werden vorbereitet…"
+
+msgid "Preparing attachments…"
+msgstr "Anhänge werden vorbereitet…"
 
 msgid "Preparing dictation..."
 msgstr "Diktat wird vorbereitet..."
