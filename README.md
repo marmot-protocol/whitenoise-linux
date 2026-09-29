@@ -417,6 +417,10 @@ conversations. A multiple-choice vote must retain at least one selection.
 Poll cards stay compact in wide chats and wrap option labels in narrow panes.
 Checkmarks identify your selections.
 
+Validate MDK patch changes by applying the full `MDK_PATCHES` list, in order,
+to a clean checkout of `mdk-commit`, then checking the already-patched tree.
+A successful reverse check alone can hide an invalid old-file path.
+
 Publishing workflows read `WN_METRICS_WRITE_TOKEN` and `WN_AUDIT_WRITE_TOKEN`
 from CI secrets. Configure both on GitHub and on trusted ngit/act publishing
 runners, not PR runners. Local builds without them contain no write tokens.

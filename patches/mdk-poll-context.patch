@@ -1,6 +1,6 @@
-diff --git tmp/wn-poll-patch-base/crates/marmot-app/src/messages/intents.rs b/crates/marmot-app/src/messages/intents.rs
+diff --git a/crates/marmot-app/src/messages/intents.rs b/crates/marmot-app/src/messages/intents.rs
 index 9145950..30bf52c 100644
---- tmp/wn-poll-patch-base/crates/marmot-app/src/messages/intents.rs
+--- a/crates/marmot-app/src/messages/intents.rs
 +++ b/crates/marmot-app/src/messages/intents.rs
 @@ -236,6 +236,7 @@ pub(crate) enum AppMessageIntent {
          options: Vec<String>,
