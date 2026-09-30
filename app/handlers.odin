@@ -703,6 +703,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			ui.replying = ""
 			return
 		}
+		if clicked("EditCancel") {
+			cancel_edit(ui)
+			return
+		}
 	}
 
 	// The @-mention and :shortcode: popovers consume Escape/Enter/arrows
@@ -717,9 +721,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if rl.IsKeyPressed(.ESCAPE) {
 		if len(ui.editing) > 0 {
-			// Cancel the edit; bring back the pre-edit draft.
-			ui.editing = ""
-			ed_set(ui, &ui.compose, ui.drafts[compose_draft_key(ui)])
+			cancel_edit(ui)
 		} else {
 			clear(&ui.compose)
 			drop_draft(ui)
@@ -1176,6 +1178,13 @@ start_edit :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 	ed_set(ui, &ui.compose, msg.body)
 	ui.editing = msg.id
 	ui.focus = .Compose
+}
+
+// Leave the edit and bring back the draft it borrowed the composer from.
+@(private = "file")
+cancel_edit :: proc(ui: ^Ui_State) {
+	ui.editing = ""
+	ed_set(ui, &ui.compose, ui.drafts[compose_draft_key(ui)])
 }
 
 // Stash the composer as the selected chat's draft (whitespace-only

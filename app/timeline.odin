@@ -706,6 +706,9 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 	}
 	// A continued row sits tight under the one above it.
 	pad_top := head == .Continued ? 0 : MSG_PAD_Y
+	// The row whose text is in the composer holds the selected fill and
+	// an accent rule, so it is clear which message the edit replaces.
+	editing := g_ui != nil && len(msg.id) > 0 && g_ui.editing == msg.id
 	if clay.UI(clay.ID("MsgRow", index))(
 	{
 		layout = {
@@ -716,7 +719,8 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			padding = {left = 16, right = 16, top = pad_top, bottom = MSG_PAD_Y},
 			childGap = 10,
 		},
-		backgroundColor = mix_color(hovered() ? HOVER : {}, SELECTED, fresh * 0.85),
+		backgroundColor = editing ? SELECTED : mix_color(hovered() ? HOVER : {}, SELECTED, fresh * 0.85),
+		border = editing ? clay.BorderElementConfig{color = ACCENT, width = {left = 3}} : {},
 		clip = collapsing ? clay.ClipElementConfig{vertical = true} : {},
 	},
 	) {

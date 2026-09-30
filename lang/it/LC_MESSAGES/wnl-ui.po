@@ -1446,6 +1446,9 @@ msgstr "Modifica tema"
 msgid "Edit your last message (empty composer)"
 msgstr "Modifica il tuo ultimo messaggio (campo di scrittura vuoto)"
 
+msgid "Editing message"
+msgstr "Modifica del messaggio in corso"
+
 msgid "Elevated"
 msgstr "Rialzato"
 

@@ -1244,8 +1244,28 @@ chat_composer :: proc(ui: ^Ui_State) {
 		return
 	}
 
-	// Reply banner.
-	if len(ui.replying) > 0 {
+	// Edit banner: the composer holds a sent message, not a new one.
+	// It stands in for the reply banner, which returns once the edit ends.
+	if len(ui.editing) > 0 {
+		if clay.UI(clay.ID("EditBanner"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				padding = {left = 16, right = 16, top = 6, bottom = 6},
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = RAIL_BG,
+		},
+		) {
+			clay.Text(ICON_PENCIL, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
+			clay.Text(
+				tr("Editing message"),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+			action_chip("EditCancel", 0, tr("Cancel"))
+		}
+	} else if len(ui.replying) > 0 {
 		if clay.UI(clay.ID("ReplyBanner"))(
 		{
 			layout = {

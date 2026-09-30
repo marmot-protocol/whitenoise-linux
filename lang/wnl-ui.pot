@@ -1445,6 +1445,9 @@ msgstr ""
 msgid "Edit your last message (empty composer)"
 msgstr ""
 
+msgid "Editing message"
+msgstr ""
+
 msgid "Elevated"
 msgstr ""
 
