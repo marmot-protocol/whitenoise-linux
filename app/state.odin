@@ -562,6 +562,11 @@ Ui_State :: struct {
 	mention_sel:                                           int, // selected candidate row
 	mention_cands:                                         [dynamic]int, // candidate indices into members
 	mention_dismissed:                                     int, // "@" offset Escaped away, -1 = none
+	shortcode_active:                                      bool, // composer :shortcode: emoji popover
+	shortcode_at_b:                                        int, // byte offset of the active ":"
+	shortcode_sel:                                         int, // selected candidate row
+	shortcode_cands:                                       [dynamic]Shortcode_Cand,
+	shortcode_dismissed:                                   int, // ":" offset Escaped away, -1 = none
 	mi_open:                                               bool, // mentions inbox dropdown
 	mi_account:                                            string, // account owning the displayed mentions
 	mi_hits:                                               [dynamic]Mention_Hit, // its cards, newest first

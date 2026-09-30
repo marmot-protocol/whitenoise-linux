@@ -764,7 +764,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 			// Custom :shortcode: emoji lead the grid; the search box
 			// matches their codes too.
 			// ponytail: one unwrapped row; wrap it if the set grows.
-			custom := picker_custom(ui)
+			custom := picker_custom(string(ui.picker_filter[:]))
 			if len(custom) > 0 {
 				if clay.UI(clay.ID("PkCustomRow"))({layout = {childGap = 2}}) {
 					for code, k in custom {

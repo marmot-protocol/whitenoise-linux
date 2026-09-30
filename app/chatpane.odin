@@ -1313,9 +1313,12 @@ chat_composer :: proc(ui: ^Ui_State) {
 			if clay.Hovered() {
 				cursor_raise(.Text)
 			}
-			// The @-mention popover floats above the box.
+			// The @-mention and :shortcode: popovers float above the box.
 			if open_now(clay.ID("MentionPop"), ui.mention_active) {
 				mention_popover(ui)
+			}
+			if open_now(clay.ID("ShortcodePop"), ui.shortcode_active) {
+				shortcode_popover(ui)
 			}
 			// One row per physical line ('\n' from Shift+Enter or
 			// paste); each splits at the selection so the caret

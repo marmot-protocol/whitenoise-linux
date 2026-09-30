@@ -935,6 +935,7 @@ app_main :: proc() {
 	ui.selected = -1
 	ui.selected_contact = -1
 	ui.mention_dismissed = -1
+	ui.shortcode_dismissed = -1
 	ui.member_nick = -1
 	ui.member_menu = -1
 	ui.row_menu = -1

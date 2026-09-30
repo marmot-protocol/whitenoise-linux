@@ -165,11 +165,12 @@ shortcode_at :: proc(text: string, i: int) -> (end: int, tex: ^rl.Texture2D) {
 	return j + 1, custom_tex_by_code(text[i + 1:j])
 }
 
-// Shortcodes matching the picker search box: the user's files, then
-// the builtins (deduped, so a user override shows once).
-picker_custom :: proc(ui: ^Ui_State) -> [dynamic]string {
+// Shortcodes containing `query` (the picker search box, or a composer
+// ":token"): the user's files, then the builtins (deduped, so a user
+// override shows once).
+picker_custom :: proc(query: string) -> [dynamic]string {
 	codes := make([dynamic]string, context.temp_allocator)
-	filter := strings.to_lower(string(ui.picker_filter[:]), context.temp_allocator)
+	filter := strings.to_lower(query, context.temp_allocator)
 
 	add :: proc(codes: ^[dynamic]string, code, filter: string) {
 		lower := strings.to_lower(code, context.temp_allocator)

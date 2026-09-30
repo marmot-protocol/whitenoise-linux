@@ -121,9 +121,18 @@ handle_mention_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 MENTION_CANDS_MAX :: 8
 
-// Find an active "@token" ending at the caret: the "@" sits at the
-// start or after whitespace, no whitespace between it and the caret.
-detect_mention :: proc(text: string, cursor: int) -> (at: int, query: string, ok: bool) {
+// Find an active trigger token ("@name", ":smile") ending at the caret:
+// the trigger sits at the start or after whitespace, no whitespace
+// between it and the caret.
+detect_token :: proc(
+	text: string,
+	cursor: int,
+	trigger: rune,
+) -> (
+	at: int,
+	query: string,
+	ok: bool,
+) {
 	if cursor > len(text) {
 		return
 	}
@@ -131,7 +140,7 @@ detect_mention :: proc(text: string, cursor: int) -> (at: int, query: string, ok
 	i := len(prefix)
 	for i > 0 {
 		r, w := utf8.decode_last_rune_in_string(prefix[:i])
-		if r == '@' {
+		if r == trigger {
 			pos := i - w
 			if pos > 0 {
 				pr, _ := utf8.decode_last_rune_in_string(prefix[:pos])
@@ -158,7 +167,7 @@ mention_update :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	text := string(ui.compose[:])
 	_, _, head := field_sel(ui, &ui.compose)
-	at, query, ok := detect_mention(text, head)
+	at, query, ok := detect_token(text, head, '@')
 	if !ok {
 		ui.mention_dismissed = -1
 		return

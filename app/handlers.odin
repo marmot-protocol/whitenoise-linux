@@ -693,9 +693,13 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	// The @-mention popover consumes Escape/Enter/arrows while open.
+	// The @-mention and :shortcode: popovers consume Escape/Enter/arrows
+	// while open.
 	if ui.issues_open && ui.focus != .Compose {return}
 	if handle_mention(ui, client) {
+		return
+	}
+	if handle_shortcode(ui) {
 		return
 	}
 
@@ -1026,7 +1030,7 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
-	for code, i in picker_custom(ui) {
+	for code, i in picker_custom(string(ui.picker_filter[:])) {
 		if clay.PointerOver(clay.ID("PkCustom", u32(i))) {
 			pick_emoji(ui, client, fmt.tprintf(":%s:", code))
 			return
@@ -1560,7 +1564,10 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	if handle_hero(ui, client) {
+	if handle_mention(ui, client) {
+		return
+	}
+	if handle_shortcode(ui) {
 		return
 	}
 	if mouse_released() {
