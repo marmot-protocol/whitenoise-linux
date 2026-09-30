@@ -162,13 +162,68 @@ live_tick :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 // Prune messages past their group's disappearing timer. Expiry lives
 // in MDK's sqlite, so this survives restarts; MDK defers on unread
 // messages and clock skew, making a quiet minute-scale poll enough.
+// The sweep can block for a long time (883 ms measured on the first
+// frame after boot, a one-group account), so it runs on a worker and
+// the first tick after it lands applies the result.
 RETENTION_SWEEP_SECS :: 60.0
 
 @(private = "file")
 retention_last: f64 = -1
 
+@(private = "file")
+Retention_Job :: struct {
+	worker:  ^thread.Thread,
+	client:  ^marmot.Client,
+	account: cstring,
+	now_ms:  u64,
+	status:  marmot.Status,
+	error:   string, // marmot's last_error is per thread
+	report:  ^marmot.Retention_Sweep_Report,
+}
+
+@(private = "file")
+retention_job: Retention_Job
+
+@(private = "file")
+retention_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
+	defer frame_wake()
+	job := (^Retention_Job)(t.data)
+	job.status = marmot.sweep_expired_retention(job.client, job.account, job.now_ms, &job.report)
+	if job.status != .OK {
+		job.report = nil
+		job.error = marmot.last_error()
+	}
+}
+
+// Join the sweep in flight and release it. Shutdown calls this before
+// the client is freed.
+@(private)
+retention_stop :: proc() {
+	job := &retention_job
+	if job.worker == nil {
+		return
+	}
+	thread.join(job.worker)
+	thread.destroy(job.worker)
+	if job.report != nil {
+		marmot.retention_sweep_report_free(job.report)
+	}
+	delete(job.account)
+	delete(job.error)
+	job^ = {}
+}
+
 retention_tick :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if client == nil || len(ui.account_ref) == 0 {
+		return
+	}
+	job := &retention_job
+	if job.worker != nil {
+		if thread.is_done(job.worker) {
+			retention_apply(ui, client, job)
+			retention_stop()
+		}
 		return
 	}
 	now := rl.GetTime()
@@ -177,14 +232,27 @@ retention_tick :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	retention_last = now
 
-	report: ^marmot.Retention_Sweep_Report
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	now_ms := u64(time.now()._nsec) / 1_000_000
-	if marmot.sweep_expired_retention(client, account, now_ms, &report) != .OK {
-		fmt.eprintfln("retention sweep failed: %s", marmot.last_error())
+	job^ = {
+		client  = client,
+		account = strings.clone_to_cstring(ui.account_ref),
+		now_ms  = u64(time.now()._nsec) / 1_000_000,
+	}
+	job.worker = thread.create(retention_worker)
+	job.worker.data = job
+	thread.start(job.worker)
+}
+
+@(private = "file")
+retention_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Retention_Job) {
+	if job.status != .OK {
+		fmt.eprintfln("retention sweep failed: %s", job.error)
 		return
 	}
-	defer marmot.retention_sweep_report_free(report)
+	// An account switch mid-sweep leaves nothing on screen to refresh.
+	report := job.report
+	if string(job.account) != ui.account_ref {
+		return
+	}
 
 	// Refresh only what a prune actually touched: rail previews always,
 	// the open timeline only when its own group lost rows.

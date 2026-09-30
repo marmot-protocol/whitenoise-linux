@@ -2125,6 +2125,7 @@ app_main :: proc() {
 	stop_gimg_worker()
 	stop_pic_worker()
 	auth_stop()
+	retention_stop()
 	for worker in send_threads {thread.join(worker); thread.destroy(worker)}
 	forward_stop(&ui)
 	sticker_stop()
