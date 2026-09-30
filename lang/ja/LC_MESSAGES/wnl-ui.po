@@ -12,6 +12,14 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #, c-format
+msgid "%d blocked message"
+msgstr "ブロックしたメッセージ %d 件"
+
+#, c-format
+msgid "%d blocked messages"
+msgstr "ブロックしたメッセージ %d 件"
+
+#, c-format
 msgid "%d bytes"
 msgstr "%dバイト"
 
@@ -422,6 +430,9 @@ msgstr "ブロック"
 
 msgid "Block this contact?"
 msgstr "この連絡先をブロックしますか？"
+
+msgid "Blocked message"
+msgstr "ブロックしたメッセージ"
 
 msgid "Blue"
 msgstr "青"
@@ -3366,8 +3377,8 @@ msgstr "更新したリストがあなたのリレーに公開されます。"
 msgid "The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}."
 msgstr "イベントカードから開くウェブクライアントです。イベントの部分には {id} を使います。例: https://primal.net/e/{id}。"
 
-msgid "Their direct chat leaves your list. Nothing is published, and you can undo it here."
-msgstr "この相手との個別チャットが一覧から消えます。何も公開されず、ここで元に戻せます。"
+msgid "Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."
+msgstr "この相手のメッセージは表示するまで隠され、個別にメッセージを送ることもできなくなります。何も公開されず、ここで元に戻せます。"
 
 msgid "Theme"
 msgstr "テーマ"
@@ -3720,6 +3731,9 @@ msgstr "黄"
 
 msgid "You"
 msgstr "あなた"
+
+msgid "You can't send messages to someone you blocked."
+msgstr "ブロックした相手にはメッセージを送信できません。"
 
 msgid "You have the latest version."
 msgstr "最新バージョンです。"

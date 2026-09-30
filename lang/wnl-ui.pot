@@ -12,6 +12,14 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #, c-format
+msgid "%d blocked message"
+msgstr ""
+
+#, c-format
+msgid "%d blocked messages"
+msgstr ""
+
+#, c-format
 msgid "%d bytes"
 msgstr ""
 
@@ -420,6 +428,9 @@ msgid "Block"
 msgstr ""
 
 msgid "Block this contact?"
+msgstr ""
+
+msgid "Blocked message"
 msgstr ""
 
 msgid "Blue"
@@ -3365,7 +3376,7 @@ msgstr ""
 msgid "The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}."
 msgstr ""
 
-msgid "Their direct chat leaves your list. Nothing is published, and you can undo it here."
+msgid "Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."
 msgstr ""
 
 msgid "Theme"
@@ -3718,6 +3729,9 @@ msgid "Yellow"
 msgstr ""
 
 msgid "You"
+msgstr ""
+
+msgid "You can't send messages to someone you blocked."
 msgstr ""
 
 msgid "You have the latest version."

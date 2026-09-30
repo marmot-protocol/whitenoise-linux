@@ -279,8 +279,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				// Unblocking restores what block hid, so it goes through
 				// without asking; blocking is the destructive direction.
 				if ui.blocked[contact.id_hex] {
-					delete_key(&ui.blocked, contact.id_hex)
-					save_settings(ui)
+					unblock_account(ui, client, contact.id_hex)
 				} else {
 					confirm_ask(ui, .Block, contact.id_hex, contact_label(ui, contact))
 				}
@@ -288,6 +287,16 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 		}
 	}
+}
+
+// Unblocking restores what block hid: their messages show inline again
+// and in rail previews, and a DM with them gets its composer back.
+@(private)
+unblock_account :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
+	key, _ := delete_key(&ui.blocked, hex)
+	delete(key)
+	save_settings(ui)
+	refresh_after_action(ui, client)
 }
 
 @(private)
@@ -1262,10 +1271,11 @@ is_xdc_blob :: proc(text: string) -> bool {
 }
 
 // The rail preview for a chat whose newest record can't speak for
-// itself: a kind-1210 system payload (raw JSON) or a webxdc state
-// blob. Re-reads the newest window (a local query) and phrases the
-// newest displayable record the way the timeline does, skipping what
-// the timeline skips. Temp-allocated; "" when nothing qualifies.
+// itself: a kind-1210 system payload (raw JSON), a webxdc state blob,
+// or a message from someone you blocked. Re-reads the newest window (a
+// local query) and phrases the newest displayable record the way the
+// timeline does, skipping what the timeline skips or collapses.
+// Temp-allocated; "" when nothing qualifies.
 @(private = "file")
 window_preview :: proc(
 	client: ^marmot.Client,
@@ -1306,6 +1316,9 @@ preview_text :: proc(client: ^marmot.Client, page: ^marmot.Timeline_Page) -> str
 					context.temp_allocator,
 				)
 			}
+			continue
+		}
+		if record.sender != nil && g_ui != nil && g_ui.blocked[string(record.sender)] {
 			continue
 		}
 		text := record.plaintext != nil ? string(record.plaintext) : ""
@@ -1354,9 +1367,14 @@ row_to_ui :: proc(
 	}
 
 	preview: string
-	mine: bool
+	mine, blocked: bool
 	if row.last_message != nil {
 		mine = row.last_message.sender != nil && string(row.last_message.sender) == account_ref
+		blocked =
+			!mine &&
+			row.last_message.sender != nil &&
+			g_ui != nil &&
+			g_ui.blocked[string(row.last_message.sender)]
 		if row.last_message.plaintext != nil {
 			preview = string(row.last_message.plaintext)
 		}
@@ -1377,7 +1395,7 @@ row_to_ui :: proc(
 		)
 		if row.last_message.kind == 1210 && row.last_message.group_system != nil {
 			preview = system_text(client, row.last_message.group_system)
-		} else if row.last_message.kind == 1210 || xdc {
+		} else if row.last_message.kind == 1210 || xdc || blocked {
 			phrased: string
 			if page, read := previews[string(row.group_id_hex)]; read {
 				phrased = preview_text(client, page)
@@ -1386,8 +1404,8 @@ row_to_ui :: proc(
 			}
 			if len(phrased) > 0 {
 				preview = phrased
-			} else if xdc {
-				preview = "" // never the raw blob
+			} else if xdc || blocked {
+				preview = "" // never the raw blob, never a blocked sender's text
 			}
 		}
 	}
@@ -1422,6 +1440,7 @@ row_to_ui :: proc(
 		),
 		last_kind    = row.last_message != nil ? row.last_message.kind : 0,
 		last_mine    = mine,
+		last_blocked = blocked,
 	}
 }
 
@@ -1432,6 +1451,7 @@ load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_Stat
 		account = strings.clone_to_cstring(account_ref),
 	}
 	defer chat_list_free(&job)
+	chat_list_blocked(&job, ui)
 	chat_list_read(&job)
 	chat_list_apply(ui, &job)
 }

@@ -12,6 +12,14 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #, c-format
+msgid "%d blocked message"
+msgstr "%d messaggio bloccato"
+
+#, c-format
+msgid "%d blocked messages"
+msgstr "%d messaggi bloccati"
+
+#, c-format
 msgid "%d bytes"
 msgstr "%d byte"
 
@@ -422,6 +430,9 @@ msgstr "Blocca"
 
 msgid "Block this contact?"
 msgstr "Bloccare questo contatto?"
+
+msgid "Blocked message"
+msgstr "Messaggio bloccato"
 
 msgid "Blue"
 msgstr "Blu"
@@ -3366,8 +3377,8 @@ msgstr "L'elenco aggiornato viene pubblicato sui tuoi relay."
 msgid "The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}."
 msgstr "Il client web in cui si apre una scheda evento, con {id} al posto dell'evento. Per esempio https://primal.net/e/{id}."
 
-msgid "Their direct chat leaves your list. Nothing is published, and you can undo it here."
-msgstr "La sua chat diretta esce dal tuo elenco. Non viene pubblicato nulla e puoi annullare da qui."
+msgid "Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."
+msgstr "I suoi messaggi restano nascosti finché non li mostri e non puoi scrivergli direttamente. Non viene pubblicato nulla e puoi annullare da qui."
 
 msgid "Theme"
 msgstr "Tema"
@@ -3720,6 +3731,9 @@ msgstr "Giallo"
 
 msgid "You"
 msgstr "Tu"
+
+msgid "You can't send messages to someone you blocked."
+msgstr "Non puoi inviare messaggi a qualcuno che hai bloccato."
 
 msgid "You have the latest version."
 msgstr "Hai la versione più recente."

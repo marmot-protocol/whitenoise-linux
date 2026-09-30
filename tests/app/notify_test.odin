@@ -24,6 +24,9 @@ notify_gate :: proc(t: ^testing.T) {
 	mine := base; mine.from_me = true
 	testing.expect(t, !should_notify(mine), "own send")
 
+	blocked := base; blocked.blocked = true; blocked.focused = true
+	testing.expect(t, !should_notify(blocked), "sender is blocked")
+
 	stale := base; stale.fresh = false
 	testing.expect(t, !should_notify(stale), "unread count unchanged")
 

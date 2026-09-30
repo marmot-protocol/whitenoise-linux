@@ -303,12 +303,14 @@ chat_pane :: proc(ui: ^Ui_State) {
 					ui.timeline_metric = {body_wrap_w(), UI_SCALE, R_SCALE, chip_h()}
 					run: Msg_Run
 					wrap_w := body_wrap_w()
+					blocked_at := -1 // first row of the blocked run in progress
 					for msg, i in ui.messages {
 						if msg.thread_of != cur {
 							continue
 						}
 						if len(ui.unread_mark_id) > 0 && msg.id == ui.unread_mark_id {
 							run = {}
+							blocked_at = -1
 							// Center label between two rule lines, like the
 							// slint unread divider.
 							if clay.UI(clay.ID("UnreadMarker"))(
@@ -356,6 +358,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 						}
 						if i == 0 || msg.day != ui.messages[i - 1].day {
 							run = {}
+							blocked_at = -1
 							if clay.UI(clay.ID("DayMarker", u32(i)))(
 							{
 								layout = {
@@ -375,6 +378,23 @@ chat_pane :: proc(ui: ^Ui_State) {
 									},
 								)
 							}
+						}
+						// Grouping restarts on both sides of a blocked run, so a
+						// collapsed run never glues its neighbours together.
+						if !msg_blocked(ui, msg) {
+							if blocked_at >= 0 {run = {}}
+							blocked_at = -1
+						} else {
+							if blocked_at < 0 {
+								blocked_at = i
+								run = {}
+								blocked_run_row(
+									u32(i),
+									blocked_run_len(ui, i),
+									ui.blocked_open[msg.id],
+								)
+							}
+							if !ui.blocked_open[ui.messages[blocked_at].id] {continue}
 						}
 						head := msg_run_step(&run, msg, wrap_w)
 						if timeline_skip(ui, msg) {
@@ -409,6 +429,37 @@ chat_pane :: proc(ui: ^Ui_State) {
 				chat_composer(ui)
 			}
 		}
+	}
+}
+
+// The peer of the selected 1:1 chat when you blocked them, "" otherwise.
+// That DM keeps its history but loses its composer (blocked_bar).
+@(private)
+blocked_peer :: proc(ui: ^Ui_State) -> string {
+	if ui.selected < 0 {return ""}
+	peer, is_dm := ui.dm_peer[ui.chats[ui.selected].group_id]
+	if !is_dm || !ui.blocked[peer] {return ""}
+	return peer
+}
+
+@(private = "file")
+blocked_bar :: proc() {
+	if clay.UI(clay.ID("BlockedBar"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = clay.PaddingAll(16),
+			childGap = 10,
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = ROW_BG,
+	},
+	) {
+		clay.Text(
+			tr("You can't send messages to someone you blocked."),
+			{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
+		)
+		login_button("BlockedUnblock", tr("Unblock"))
 	}
 }
 
@@ -1188,6 +1239,11 @@ issue_editor :: proc(
 
 @(private)
 chat_composer :: proc(ui: ^Ui_State) {
+	if blocked_peer(ui) != "" {
+		blocked_bar()
+		return
+	}
+
 	// Reply banner.
 	if len(ui.replying) > 0 {
 		if clay.UI(clay.ID("ReplyBanner"))(

@@ -239,7 +239,9 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 					if kind != .Sidebar {
 						if kind == .Global {gs_clear_hits(ui)} else {mi_clear(ui)}
 						for &hit in job.hits {
-							if kind == .Mentions && ui.hidden[hit.msg_id] {continue}
+							// Mentions by someone you blocked never reach the bell.
+							if kind == .Mentions &&
+							   (ui.hidden[hit.msg_id] || ui.blocked[hit.sender]) {continue}
 							if i, ok := indices[hit.group]; ok {
 								hit.chat = i
 								hit.title = strings.clone(ui.chats[i].title)

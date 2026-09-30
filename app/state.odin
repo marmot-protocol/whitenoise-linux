@@ -150,6 +150,7 @@ Chat_Row_Ui :: struct {
 	last_id:      string, // latest message id, "" = none (notification dedupe)
 	last_kind:    u64, // latest message's event kind
 	last_mine:    bool, // latest message is an own send
+	last_blocked: bool, // latest message is from someone you blocked (no preview, no alert)
 }
 
 // One picked-but-unsent attachment, shown as a chip above the composer
@@ -279,6 +280,7 @@ Msg_Ui :: struct {
 	blocks:              [dynamic]Md_Block_Ui,
 	reactions:           [dynamic]Reaction_Ui,
 	reply_from:          string, // sender of the replied-to message, "" = not a reply
+	reply_from_id:       string, // its account hex, so a blocked parent quotes as blocked
 	reply_text:          string,
 	reply_image:         string, // first parent image's session cache key
 	reply_id:            string, // parent message id, the preview's jump target
@@ -583,6 +585,7 @@ Ui_State :: struct {
 	nicknames:                                             map[string]string, // account hex → local nickname (settings.json)
 	drafts:                                                map[string]string, // group id → unsent composer text (settings.json)
 	blocked:                                               map[string]bool, // account hex → locally blocked (settings.json)
+	blocked_open:                                          map[string]bool, // first message id of a blocked run revealed in this chat visit
 	hidden:                                                map[string]bool, // message id → "Delete for me" hide (hidden.json)
 	dm_peer:                                               map[string]string, // 1:1 group id → peer hex, from load_contacts
 	nick_input:                                            [dynamic]u8, // contact-page nickname editor

@@ -62,7 +62,7 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 	case .Block:
 		return N_(
 			"Block this contact?",
-		), N_("Their direct chat leaves your list. Nothing is published, and you can undo it here."), N_("Block")
+		), N_("Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."), N_("Block")
 	case .Delete_Theme:
 		return N_(
 			"Delete this theme?",
@@ -258,6 +258,7 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	case .Block:
 		ui.blocked[strings.clone(c.arg)] = true
 		save_settings(ui)
+		refresh_after_action(ui, client) // re-phrase rail previews without them
 	case .Delete_Theme:
 		delete_theme(ui, c.idx)
 	case .Delete_Folder:

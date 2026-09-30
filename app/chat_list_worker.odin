@@ -12,12 +12,19 @@ Chat_List_Work :: struct {
 	account:  cstring,
 	rows:     ^marmot.Presented_Chat_List,
 	previews: map[string]^marmot.Timeline_Page, // keys borrow rows; nil means a failed preview read
+	blocked:  map[string]bool, // owned copy of ui.blocked; the worker must not read Ui_State
 	err:      string,
 	revision: u64,
 }
 
 @(private)
 chat_list_revision: u64
+
+// The job's own copy of the block list, taken on the UI thread.
+@(private)
+chat_list_blocked :: proc(job: ^Chat_List_Work, ui: ^Ui_State) {
+	for hex in ui.blocked {job.blocked[strings.clone(hex)] = true}
+}
 
 @(private)
 chat_list_read :: proc(job: ^Chat_List_Work) {
@@ -31,8 +38,12 @@ chat_list_read :: proc(job: ^Chat_List_Work) {
 		row := &job.rows.rows[i].row
 		last := row.last_message
 		if last != nil && last.kind == 1210 && last.group_system != nil {continue}
+		// A blocked sender's message never previews: row_to_ui phrases
+		// the newest one from someone else out of this page instead.
+		blocked := last != nil && last.sender != nil && job.blocked[string(last.sender)]
 		if last == nil ||
-		   (last.kind != 1210 &&
+		   (!blocked &&
+				   last.kind != 1210 &&
 				   !strings.has_prefix(
 						   strings.trim_space(string(last.plaintext)),
 						   XDC_SENTINEL,
@@ -62,6 +73,8 @@ chat_list_free :: proc(job: ^Chat_List_Work) {
 	if job.worker != nil {thread.join(job.worker); thread.destroy(job.worker)}
 	for _, page in job.previews {if page != nil {marmot.timeline_page_free(page)}}
 	delete(job.previews)
+	for hex in job.blocked {delete(hex)}
+	delete(job.blocked)
 	if job.rows != nil {marmot.presented_chat_list_free(job.rows)}
 	delete(job.account); delete(job.err)
 }

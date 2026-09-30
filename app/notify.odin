@@ -29,6 +29,7 @@ Notify_Gate :: struct {
 	viewing: bool, // this chat is the open conversation
 	muted:   bool, // marmot's per-chat mute
 	from_me: bool, // own send, already on screen
+	blocked: bool, // latest message is from someone you blocked
 	fresh:   bool, // the chat's unread count went up in this update
 	kind:    u64, // latest message's event kind
 	msg_id:  string, // latest message id, "" = none
@@ -36,7 +37,7 @@ Notify_Gate :: struct {
 }
 
 should_notify :: proc(g: Notify_Gate) -> bool {
-	if !g.enabled || g.muted || g.from_me || !g.fresh {
+	if !g.enabled || g.muted || g.from_me || g.blocked || !g.fresh {
 		return false
 	}
 	// A focused window showing the chat is not a missed message;

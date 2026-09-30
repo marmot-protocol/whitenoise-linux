@@ -324,6 +324,7 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	job = new(Chat_List_Work)
 	job.client, job.account = client, strings.clone_to_cstring(ui.account_ref)
 	job.revision = chat_list_revision
+	chat_list_blocked(job, ui)
 	job.worker = thread.create(chat_list_worker)
 	job.worker.data = job
 	live.refresh = job
@@ -356,6 +357,7 @@ live_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Chat_List_Work) 
 			viewing = chat.group_id == selected_group,
 			muted   = chat.muted,
 			from_me = chat.last_mine,
+			blocked = chat.last_blocked,
 			fresh   = chat.unread > old_unread[chat.group_id],
 			kind    = chat.last_kind,
 			msg_id  = chat.last_id,

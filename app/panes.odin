@@ -120,7 +120,6 @@ chat_rail :: proc(ui: ^Ui_State) {
 	count := 0
 	for i in order {
 		chat := &ui.chats[i]
-		if peer, is_dm := ui.dm_peer[chat.group_id]; is_dm && ui.blocked[peer] {continue}
 		if len(filter) > 0 &&
 		   !strings.contains(strings.to_lower(chat.title, context.temp_allocator), filter) &&
 		   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {continue}
@@ -1205,8 +1204,8 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		// Local-only block, the slint contact action: nothing is
-		// published; the 1:1 chat leaves the rail while blocked.
+		// Local-only block: nothing is published. Their messages collapse
+		// behind a Show toggle and a 1:1 chat with them loses its composer.
 		if clay.UI(clay.ID("ActionsEyebrow"))({layout = {padding = {top = 8}}}) {
 			eyebrow(tr("ACTIONS"))
 		}

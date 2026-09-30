@@ -420,7 +420,12 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// With the webxdc modal open the page owns the keyboard: skip the
 	// composer edit, or it drains the typed runes before
 	// handle_web_input can forward them.
-	if ui.focus != .Filter && !web_modal.open && (ui.stt.file == nil || ui.stt.message != "") {
+	// A DM with someone you blocked has no composer to type into.
+	blocked_dm := blocked_peer(ui)
+	if ui.focus != .Filter &&
+	   !web_modal.open &&
+	   (ui.stt.file == nil || ui.stt.message != "") &&
+	   blocked_dm == "" {
 		buf := active_buf(ui)
 		edit_text(ui, buf, buf == &ui.compose)
 	}
@@ -590,6 +595,11 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
+	if blocked_dm != "" && clicked("BlockedUnblock") {
+		unblock_account(ui, client, blocked_dm)
+		return
+	}
+
 	if ui.search_open {
 		if rl.IsKeyPressed(.ENTER) {
 			load_timeline(client, ui, string(ui.search_input[:]))
@@ -606,6 +616,15 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Per-message row actions.
 	if mouse_released() {
 		for msg, i in ui.messages {
+			if clay.PointerOver(clay.ID("BlockedToggle", u32(i))) {
+				if ui.blocked_open[msg.id] {
+					key, _ := delete_key(&ui.blocked_open, msg.id)
+					delete(key)
+				} else {
+					ui.blocked_open[strings.clone(msg.id)] = true
+				}
+				return
+			}
 			for &secret, j in msg.secrets {
 				if !msg.deleted && clay.PointerOver(clay.ID("MsgReveal", u32(i) * 4096 + u32(j))) {
 					secret.open = !secret.open
@@ -716,11 +735,13 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	// Shift+Enter inserts a newline instead of sending.
-	if ui.focus == .Compose && rl.IsKeyPressed(.ENTER) && shift_down() {
+	if ui.focus == .Compose && blocked_dm == "" && rl.IsKeyPressed(.ENTER) && shift_down() {
 		ed_insert(ui, &ui.compose, "\n")
 	}
 
-	send := (rl.IsKeyPressed(.ENTER) && !shift_down()) || clicked("SendBtn") || test_send_now
+	send :=
+		blocked_dm == "" &&
+		((rl.IsKeyPressed(.ENTER) && !shift_down()) || clicked("SendBtn") || test_send_now)
 	test_send_now = false
 	// Staged attachments send on their own only outside an edit (an
 	// edit needs text and never sends them, like the slint composer).

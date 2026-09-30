@@ -129,6 +129,10 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	group_id := ui.chats[ui.selected].group_id
 	if ui.messages_group == group_id && ui.messages_account == ui.account_ref {
 		for msg, i in previous {previous_ids[msg.id] = i}
+	} else {
+		// Revealed blocked runs collapse again when you leave the chat.
+		for id in ui.blocked_open {delete(id)}
+		clear(&ui.blocked_open)
 	}
 	delete(ui.messages_group)
 	delete(ui.messages_account)
@@ -458,6 +462,9 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 				msg.reply_from = strings.clone(
 					preview.sender != nil ? profile_label(client, string(preview.sender)) : "?",
 				)
+				if preview.sender != nil {
+					msg.reply_from_id = strings.clone(string(preview.sender))
+				}
 				msg.reply_text = strings.clone(
 					chat_preview(preview.plaintext != nil ? string(preview.plaintext) : ""),
 				)

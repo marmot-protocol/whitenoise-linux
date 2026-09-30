@@ -442,6 +442,55 @@ system_row :: proc(index: u32, msg: Msg_Ui) {
 	}
 }
 
+// A row from someone you blocked. Consecutive ones collapse behind one
+// blocked_run_row until you reveal them, like Discord:
+//
+//   [ban] 3 blocked messages  [Show]     collapsed, rows not built
+//   [ban] 3 blocked messages  [Hide]     revealed, rows follow
+@(private)
+msg_blocked :: proc(ui: ^Ui_State, msg: Msg_Ui) -> bool {
+	return !msg.system && !msg.mine && ui.blocked[msg.sender_id]
+}
+
+// Rows in the blocked run starting at `start`. The run ends where the
+// timeline loop draws something between rows: a day or unread marker.
+@(private)
+blocked_run_len :: proc(ui: ^Ui_State, start: int) -> int {
+	first := ui.messages[start]
+	count := 0
+	for msg, j in ui.messages[start:] {
+		if msg.thread_of != first.thread_of {continue}
+		if msg.day != first.day || !msg_blocked(ui, msg) {break}
+		if j > 0 && msg.id == ui.unread_mark_id {break}
+		count += 1
+	}
+	return count
+}
+
+@(private)
+blocked_run_row :: proc(index: u32, count: int, open: bool) {
+	if clay.UI(clay.ID("BlockedRun", index))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = {left = 16, right = 16, top = 4, bottom = 4},
+			childGap = 8,
+			childAlignment = {y = .Center},
+		},
+	},
+	) {
+		clay.Text(ICON_BAN, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO})
+		clay.Text(
+			fmt.tprintf(
+				tr(count == 1 ? N_("%d blocked message") : N_("%d blocked messages")),
+				count,
+			),
+			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+		)
+		action_chip("BlockedToggle", index, open ? tr("Hide") : tr("Show"))
+	}
+}
+
 // Floating jump-to-latest over the timeline's bottom-right, shown once
 // the view sits more than a screen above the newest message; the click
 // (handle_chat) re-arms the bottom jump.
@@ -639,7 +688,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 	// back to the row's normal fill, so the eye is carried to it without
 	// anything moving.
 	fresh, landed := msg_fresh(msg.id)
-	if landed && !msg.mine {
+	if landed && !msg.mine && (g_ui == nil || !g_ui.blocked[msg.sender_id]) {
 		play_sound(.Receive)
 	}
 	// A deleted row shrinks into its tombstone rather than snapping to
@@ -1622,8 +1671,16 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 
 			// The quoted parent sits above the body it answers; a click
 			// centers that message (handle_reply_jump).
-			if len(msg.reply_from) > 0 || len(msg.reply_text) > 0 || len(msg.reply_image) > 0 {
-				jumpable := len(msg.reply_id) > 0
+			// A parent from someone you blocked quotes as a bare
+			// "Blocked message": no author, text or image, and no jump
+			// into their collapsed run.
+			reply_from, reply_text, reply_image := msg.reply_from, msg.reply_text, msg.reply_image
+			reply_blocked := g_ui != nil && g_ui.blocked[msg.reply_from_id]
+			if reply_blocked {
+				reply_from, reply_text, reply_image = "", tr("Blocked message"), ""
+			}
+			if len(reply_from) > 0 || len(reply_text) > 0 || len(reply_image) > 0 {
+				jumpable := len(msg.reply_id) > 0 && !reply_blocked
 				if clay.UI(clay.ID("MsgReplyPrev", index))(
 				{
 					layout = {
@@ -1651,9 +1708,9 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					{layout = {layoutDirection = .TopToBottom, childGap = 2}},
 					) {
 						// No author line when the parent is unavailable.
-						if len(msg.reply_from) > 0 {
+						if len(reply_from) > 0 {
 							clay.Text(
-								msg.reply_from,
+								reply_from,
 								{fontId = FONT_TITLE, fontSize = 11, textColor = ACCENT},
 							)
 						}
@@ -1661,15 +1718,15 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						// breaks instead of pushing the bubble off-pane.
 						body_text(
 							index * 4096 + 3072,
-							msg.reply_text,
+							reply_text,
 							12,
 							TEXT_DIM,
 							wrap_w = body_wrap_w() - 40,
 						)
-						if msg.reply_image != "" {
-							tex, seen := media_textures[msg.reply_image]
+						if reply_image != "" {
+							tex, seen := media_textures[reply_image]
 							if !seen {
-								view, found := media_cached(.Sticker, msg.reply_image)
+								view, found := media_cached(.Sticker, reply_image)
 								tex, seen = (^rl.Texture2D)(view), found
 							}
 							if tex != nil && tex.width > 0 && tex.height > 0 {
@@ -1701,7 +1758,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							) {
 								if seen {
 									if hovered() {
-										img_retry_hover = msg.reply_image
+										img_retry_hover = reply_image
 										reply_jump_hover = ""
 									}
 									clay.Text(
