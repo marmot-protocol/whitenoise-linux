@@ -49,9 +49,10 @@ send_retryable :: proc(s: marmot.Status) -> bool {
 // On-disk shapes; media_type is re-derived from the name on load so
 // the Pending_Att keeps its static-literal contract.
 Offline_Att :: struct {
-	name: string,
-	dim:  string, // "WxH", "" for non-images
-	data: string, // base64 plaintext bytes
+	name:  string,
+	dim:   string, // "WxH", "" for non-images
+	data:  string, // base64 plaintext bytes
+	emoji: string, // NIP-30 shortcode, "" for ordinary attachments
 }
 
 Offline_Item :: struct {
@@ -101,7 +102,10 @@ save_offline :: proc(ui: ^Ui_State) {
 		item.atts = make([dynamic]Offline_Att, context.temp_allocator)
 		for a in p.atts {
 			b64 := base64.encode(a.data, base64.ENC_TABLE, context.temp_allocator)
-			append(&item.atts, Offline_Att{name = a.name, dim = a.dim, data = b64})
+			append(
+				&item.atts,
+				Offline_Att{name = a.name, dim = a.dim, data = b64, emoji = a.emoji},
+			)
 		}
 		append(&items, item)
 	}
@@ -164,6 +168,7 @@ load_offline :: proc(ui: ^Ui_State) {
 			if b64_err != nil {
 				delete(att.name)
 				delete(att.dim)
+				delete(att.emoji)
 				continue
 			}
 			a := Pending_Att {
@@ -171,6 +176,7 @@ load_offline :: proc(ui: ^Ui_State) {
 				media_type = media_type_for(att.name),
 				dim        = att.dim,
 				data       = bytes,
+				emoji      = att.emoji,
 			}
 			if strings.has_prefix(a.media_type, "image/") {
 				ext := strings.clone_to_cstring(

@@ -41,7 +41,7 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-MDK_PATCHES=("$HERE/patches/mdk-app-components.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-windows-port.patch" "$HERE/patches/mdk-openbsd-unveil.patch" "$HERE/patches/mdk-openbsd-memory.patch")
+MDK_PATCHES=("$HERE/patches/mdk-app-components.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-windows-port.patch" "$HERE/patches/mdk-openbsd-unveil.patch" "$HERE/patches/mdk-openbsd-memory.patch" "$HERE/patches/mdk-tagged-media.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"

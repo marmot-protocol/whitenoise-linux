@@ -29,6 +29,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Markdown bodies (with typeset `$$` math blocks), reactions, replies, edits with history, forwarding, and search.
 - Export the loaded chat window as HTML or Markdown from the members panel. HTML prepares embedded images in the background and shows image progress before opening the save dialog. Unavailable images appear as notes in the transcript. Leaving the chat or changing accounts discards an unfinished export.
 - Emoji search accepts names and shortcodes, such as `100` for hundred points and `thumbsup` for thumbs up. Shortcodes work with or without surrounding colons.
+- Custom `:shortcode:` emoji use NIP-30. The image goes out as an encrypted attachment, and the message carries an `["emoji", shortcode, url]` tag pointing at that attachment's Blossom URL. Reactions work the same way: a `:shortcode:` reaction carries its own `imeta` and emoji tag. Forwards keep the tags. `patches/mdk-tagged-media.patch` adds `marmot_send_tagged_media` and `marmot_react_with_media`, and keeps the media key for reaction images the way it does for chat media.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
 - Forwarded attachments download and prepare in the background. A status strip names the destination and stays visible through preparation and sending, even if you switch chats. Failed forwards can be retried from the destination chat.
 - Per-chat unread tracking, surfaced as rail badges.

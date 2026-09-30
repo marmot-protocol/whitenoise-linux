@@ -26,7 +26,7 @@ media_outcome_slots :: proc(t: ^testing.T) {
 				body = {rejected = {u32(i), {.UNSUPPORTED_FORMAT, "raw detail"}}},
 			}
 		}
-		media_attach(&msg, nil, "account", "group", &outcome)
+		media_attach(&msg, nil, "account", "group", &outcome, "")
 	}
 	record := marmot.Timeline_Message_Record {
 		media     = raw_data(outcomes[:]),

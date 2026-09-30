@@ -482,6 +482,7 @@ Pending_Att :: struct {
 	dim:        string, // "WxH", "" for non-images
 	data:       []u8,
 	tex:        ^rl.Texture2D, // thumbnail for the pending row, nil for non-images
+	emoji:      string, // NIP-30 shortcode this image defines, "" otherwise
 }
 
 Job_Att :: struct {
@@ -490,6 +491,7 @@ Job_Att :: struct {
 	dim:        cstring, // nil for non-images
 	data:       [^]u8, // borrowed from the Pending_Att
 	data_len:   uint,
+	emoji:      cstring, // nil unless the Pending_Att carries a shortcode
 }
 
 Send_Job :: struct {
@@ -574,6 +576,7 @@ send_thread :: proc(
 		append(&built, tag)
 		append(&rows, tag^)
 	}
+	emoji_tags(&rows, job, result)
 
 	summary: ^marmot.Send_Summary
 	status := marmot.send_custom_event(
@@ -584,6 +587,74 @@ send_thread :: proc(
 		raw_data(rows[:]),
 		uint(len(rows)),
 		job.text,
+		&summary,
+	)
+	if status == .OK {
+		sent_ids(ids, summary)
+		marmot.send_summary_free(summary)
+	}
+	return status
+}
+
+// NIP-30: one ["emoji", code, url] row per custom-emoji attachment.
+// The url is the Blossom locator its imeta tag also carries, so a
+// receiver pairs the shortcode with that encrypted attachment:
+//
+//   ["imeta", "locator blossom https://b.example/ab12…", …]
+//   ["emoji", "party", "https://b.example/ab12…"]
+@(private = "file")
+emoji_tags :: proc(
+	rows: ^[dynamic]marmot.Message_Tag,
+	job: ^Send_Job,
+	result: ^marmot.Media_Upload_Result,
+) {
+	if result == nil {
+		return
+	}
+	for a, i in job.atts[:min(len(job.atts), int(result.attachments_len))] {
+		ref := &result.attachments[i].reference
+		if a.emoji == nil || ref.locators_len == 0 {
+			continue
+		}
+		values := make([]cstring, 3, context.temp_allocator)
+		values[0] = "emoji"
+		values[1] = a.emoji
+		values[2] = ref.locators[0].value
+		append(rows, marmot.Message_Tag{raw_data(values), 3})
+	}
+}
+
+// Main-timeline counterpart of send_thread for a body with custom
+// emoji: the kind-9 carries the uploaded references plus their tags.
+@(private = "file")
+send_emoji_media :: proc(
+	job: ^Send_Job,
+	result: ^marmot.Media_Upload_Result,
+	ids: ^[dynamic]string,
+) -> marmot.Status {
+	rows := make([dynamic]marmot.Message_Tag, context.temp_allocator)
+	append(&rows, ..job.tags)
+	emoji_tags(&rows, job, result)
+
+	refs := make(
+		[]marmot.Media_Attachment_Reference,
+		result.attachments_len,
+		context.temp_allocator,
+	)
+	for &ref, i in refs {
+		ref = result.attachments[i].reference
+	}
+
+	summary: ^marmot.Send_Summary
+	status := marmot.send_tagged_media(
+		job.client,
+		job.account,
+		job.group,
+		raw_data(refs),
+		uint(len(refs)),
+		raw_data(rows[:]),
+		uint(len(rows)),
+		job.caption,
 		&summary,
 	)
 	if status == .OK {
@@ -607,6 +678,10 @@ send_worker :: proc(t: ^thread.Thread) {
 		// (main timeline) publish the kind-9 message in the same call.
 		// A thread upload keeps send=false and publishes the references
 		// itself as a kind-1111 event; upload_media sends kind 9.
+		// Custom emoji also keep send=false: their NIP-30 tags need the
+		// Blossom URLs, which exist only after the upload.
+		has_emoji := false
+		for a in job.atts {has_emoji ||= a.emoji != nil}
 		requests := make([]marmot.Media_Upload_Attachment_Request, len(job.atts))
 		for a, i in job.atts {
 			requests[i] = {
@@ -623,13 +698,15 @@ send_worker :: proc(t: ^thread.Thread) {
 			attachments      = raw_data(requests),
 			attachments_len  = uint(len(requests)),
 			caption          = job.caption,
-			send             = job.thread == nil,
+			send             = job.thread == nil && !has_emoji,
 		}
 		result: ^marmot.Media_Upload_Result
 		status = marmot.upload_media(job.client, job.account, job.group, &request, &result)
 		if status == .OK {
 			if job.thread != nil {
 				status = send_thread(job, result, &ids)
+			} else if has_emoji {
+				status = send_emoji_media(job, result, &ids)
 			} else {
 				sent_ids(&ids, result.sent)
 			}
@@ -693,6 +770,9 @@ send_worker :: proc(t: ^thread.Thread) {
 		if a.dim != nil {
 			delete(a.dim)
 		}
+		if a.emoji != nil {
+			delete(a.emoji)
+		}
 		// a.data belongs to the Pending_Att; drain_sends frees it.
 	}
 	delete(job.atts)
@@ -724,7 +804,7 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
 		// sends job.text as the kind-1111 content already.
 		emoji_only := job.thread == nil && len(p.body) > 0
 		for a in p.atts {
-			emoji_only &= strings.has_prefix(a.name, EMOJI_ATT_PREFIX)
+			emoji_only &= a.emoji != ""
 		}
 		if emoji_only || p.sticker.sha != "" {
 			job.caption = job.text
@@ -737,6 +817,7 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
 				dim        = len(a.dim) > 0 ? strings.clone_to_cstring(a.dim) : nil,
 				data       = raw_data(a.data),
 				data_len   = uint(len(a.data)),
+				emoji      = len(a.emoji) > 0 ? strings.clone_to_cstring(a.emoji) : nil,
 			}
 		}
 	}
@@ -777,25 +858,22 @@ queue_send :: proc(ui: ^Ui_State, client: ^marmot.Client, body: string) {
 	spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
 }
 
-// Ship the image behind every :shortcode: this device defines, so the
-// group renders it instead of the literal text, including in replies.
+// Ship the image behind every :shortcode: in the body, so the group
+// (and any NIP-30 client) renders it instead of the literal text.
 @(private = "file")
 attach_body_emoji :: proc(p: ^Pending_Send, body: string) {
 	for code in emoji_codes_in(body) {
-		name := emoji_file_for(code)
-		data, err := os.read_entire_file(
-			fmt.tprintf("%s/%s", emoji_dir(), name),
-			context.allocator,
-		)
-		if err != nil {
+		name, data := emoji_payload(code)
+		if data == nil {
 			continue
 		}
 		append(
 			&p.atts,
 			Pending_Att {
-				name = fmt.aprintf("%s%s", EMOJI_ATT_PREFIX, name),
+				name = name,
 				media_type = media_type_for(name),
 				data = data,
+				emoji = strings.clone(code),
 			},
 		)
 	}
@@ -816,6 +894,7 @@ free_pending :: proc(p: ^Pending_Send) {
 		delete(a.name)
 		delete(a.dim)
 		delete(a.data)
+		delete(a.emoji)
 		if a.tex != nil {
 			sticker_texture_free(a.tex^)
 			free(a.tex)
@@ -1008,6 +1087,8 @@ Op_Job :: struct {
 	group:       cstring,
 	target:      cstring,
 	emoji:       cstring, // nil for delete
+	emoji_file:  cstring, // .React with a :code: this device has an image for
+	emoji_png:   []u8, // that image's bytes, owned
 	kind:        u64, // .Custom/.Issue only
 	tags:        [][]cstring, // owned custom-event or poll-context tags
 	content:     cstring, // custom event, poll question, or edit
@@ -1030,6 +1111,62 @@ Op_Done :: struct {
 ops_mutex: sync.Mutex
 ops_done: [dynamic]Op_Done
 op_ticket: int
+
+// NIP-30 reaction, the kind-7 counterpart of send_emoji_media: upload
+// the image unsent, then react with its imeta plus ["emoji", code, url].
+@(private = "file")
+react_custom_emoji :: proc(job: ^Op_Job, summary: ^^marmot.Send_Summary) -> marmot.Status {
+	upload := marmot.Media_Upload_Attachment_Request {
+		file_name     = job.emoji_file,
+		media_type    = strings.clone_to_cstring(
+			media_type_for(string(job.emoji_file)),
+			context.temp_allocator,
+		),
+		plaintext     = raw_data(job.emoji_png),
+		plaintext_len = uint(len(job.emoji_png)),
+	}
+	request := marmot.Media_Upload_Request {
+		attachments     = &upload,
+		attachments_len = 1,
+	}
+	result: ^marmot.Media_Upload_Result
+	if status := marmot.upload_media(job.client, job.account, job.group, &request, &result);
+	   status != .OK {
+		return status
+	}
+	defer marmot.media_upload_result_free(result)
+
+	ref := &result.attachments[0].reference
+	if ref.locators_len == 0 {
+		return marmot.react_to_message(
+			job.client,
+			job.account,
+			job.group,
+			job.target,
+			job.emoji,
+			summary,
+		)
+	}
+	code, _ := emoji_shortcode(string(job.emoji))
+	values := [3]cstring {
+		"emoji",
+		strings.clone_to_cstring(code, context.temp_allocator),
+		ref.locators[0].value,
+	}
+	tag := marmot.Message_Tag{raw_data(values[:]), 3}
+	return marmot.react_with_media(
+		job.client,
+		job.account,
+		job.group,
+		job.target,
+		job.emoji,
+		ref,
+		1,
+		&tag,
+		1,
+		summary,
+	)
+}
 
 op_worker :: proc(t: ^thread.Thread) {
 	context.allocator = reload_allocator()
@@ -1088,14 +1225,18 @@ op_worker :: proc(t: ^thread.Thread) {
 			if records != nil {marmot.app_message_list_free(records)}
 		}
 	case .React:
-		status = marmot.react_to_message(
-			job.client,
-			job.account,
-			job.group,
-			job.target,
-			job.emoji,
-			&summary,
-		)
+		if job.emoji_png != nil {
+			status = react_custom_emoji(job, &summary)
+		} else {
+			status = marmot.react_to_message(
+				job.client,
+				job.account,
+				job.group,
+				job.target,
+				job.emoji,
+				&summary,
+			)
+		}
 	case .Unreact:
 		status = marmot.unreact_from_message(
 			job.client,
@@ -1273,6 +1414,8 @@ op_worker :: proc(t: ^thread.Thread) {
 	if job.emoji != nil {
 		delete(job.emoji)
 	}
+	delete(job.emoji_file)
+	delete(job.emoji_png)
 	for row in job.tags {
 		for v in row {
 			delete(v)
@@ -1377,6 +1520,14 @@ spawn_op :: proc(
 	)
 	job.target = strings.clone_to_cstring(message_id)
 	job.emoji = op == .React ? strings.clone_to_cstring(emoji) : nil
+	if code, custom := emoji_shortcode(emoji); custom && op == .React {
+		name, data := emoji_payload(code)
+		if data != nil {
+			job.emoji_file = strings.clone_to_cstring(name)
+			job.emoji_png = data
+			delete(name)
+		}
+	}
 	if op == .Edit {job.content = strings.clone_to_cstring(emoji)}
 	job.secs = secs
 

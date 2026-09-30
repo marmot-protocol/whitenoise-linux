@@ -201,7 +201,7 @@ performance_media :: proc(t: ^testing.T) {
 		outcome := marmot.Media_Attachment_Outcome {
 			body = {accepted = {u32(i), ref}},
 		}
-		media_attach(&ui.messages[0], nil, "account", "group", &outcome)
+		media_attach(&ui.messages[0], nil, "account", "group", &outcome, "")
 		delete(ref.plaintext_sha256); delete(ref.file_name)
 		delete(key); delete(name); delete(body); delete(sealed)
 	}

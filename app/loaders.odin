@@ -435,6 +435,12 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 
 		group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
+		for chip in msg.reactions {
+			if code, custom := emoji_shortcode(chip.emoji);
+			   custom && custom_tex_by_code(code) == nil {
+				reaction_emoji_enqueue(client, account, group, code)
+			}
+		}
 		tags := record.tags[:record.tags_len]
 		// The thread's e tag sets membership; only an explicit q tag quotes its parent.
 		thread_parent :=
@@ -465,7 +471,12 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 
 		for j in 0 ..< record.media_len {
-			media_attach(&msg, client, account, group, &record.media[j])
+			outcome := &record.media[j]
+			emoji := ""
+			if outcome.tag == .ACCEPTED {
+				emoji = emoji_tag_code(tags, &outcome.body.accepted.reference)
+			}
+			media_attach(&msg, client, account, group, outcome, emoji)
 		}
 		append(&ui.messages, msg)
 	}

@@ -938,6 +938,24 @@ Media_Download_Result :: struct {
 	size_bytes:    u64,
 }
 
+// One attachment marmot parsed from a stored event's imeta, any kind.
+Media_Record :: struct {
+	message_id_hex:   cstring,
+	attachment_index: u32,
+	direction:        cstring,
+	group_id_hex:     cstring,
+	sender:           cstring,
+	reference:        Media_Attachment_Reference,
+	caption:          cstring,
+	recorded_at:      u64,
+	received_at:      u64,
+}
+
+Media_Record_List :: struct {
+	items: [^]Media_Record,
+	len:   uint,
+}
+
 Timeline_Page :: struct {
 	messages:        [^]Timeline_Message_Record,
 	messages_len:    uint,
@@ -976,6 +994,9 @@ Timeline_Page :: struct {
 #assert(size_of(Media_Upload_Result) == 24)
 #assert(size_of(Media_Upload_Attachment_Result) == 96)
 #assert(size_of(Media_Download_Result) == 40)
+#assert(size_of(Media_Record) == 152)
+#assert(offset_of(Media_Record, reference) == 40)
+#assert(offset_of(Media_Record, caption) == 128)
 
 String_List :: struct {
 	items: [^]cstring,
@@ -1336,6 +1357,9 @@ foreign lib {
 	// (borrowed, MarmotStringArray rows == Message_Tag layout).
 	send_custom_event :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, kind: u64, tags: [^]Message_Tag, tags_len: uint, content: cstring, out: ^^Send_Summary) -> Status ---
 	send_tagged_text :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, tags: [^]Message_Tag, tags_len: uint, content: cstring, out: ^^Send_Summary) -> Status ---
+	// Kind-9 media from upload_media(send=false) references plus extra
+	// tags that name them (NIP-30 emoji). imeta tags are rejected.
+	send_tagged_media :: proc(client: ^Client, account_ref, group_id_hex: cstring, attachments: [^]Media_Attachment_Reference, attachments_len: uint, tags: [^]Message_Tag, tags_len: uint, caption: cstring, out: ^^Send_Summary) -> Status ---
 	create_poll :: proc(client: ^Client, account_ref, group_id_hex, question: cstring, options: [^]cstring, options_len: uint, poll_type: u32, has_ends_at: u8, ends_at: u64, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
 	cast_poll_vote :: proc(client: ^Client, account_ref, group_id_hex, poll_event_id: cstring, option_ids: [^]cstring, option_ids_len: uint, out: ^^Send_Summary) -> Status ---
 	// An imeta tag for an uploaded reference, so a custom event can
@@ -1343,6 +1367,9 @@ foreign lib {
 	build_media_imeta_tag :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, reference: ^Media_Attachment_Reference, out: ^^Message_Tag) -> Status ---
 	message_tag_free :: proc(tag: ^Message_Tag) ---
 	react_to_message :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, emoji: cstring, out: ^^Send_Summary) -> Status ---
+	// Kind-7 with uploaded attachments as imeta plus tags naming them
+	// (NIP-30 emoji). imeta rows in tags are rejected.
+	react_with_media :: proc(client: ^Client, account_ref, group_id_hex, target_message_id, emoji: cstring, attachments: [^]Media_Attachment_Reference, attachments_len: uint, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
 	unreact_from_message :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, out: ^^Send_Summary) -> Status ---
 	reply_to_message :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
 
@@ -1376,6 +1403,9 @@ foreign lib {
 	media_upload_result_free :: proc(ptr: ^Media_Upload_Result) ---
 	download_media :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, reference: ^Media_Attachment_Reference, out: ^^Media_Download_Result) -> Status ---
 	media_download_result_free :: proc(ptr: ^Media_Download_Result) ---
+	// Every stored imeta attachment in the group; has_limit 0 = all.
+	list_media :: proc(client: ^Client, account_ref, group_id_hex: cstring, has_limit: u8, limit: u32, out: ^^Media_Record_List) -> Status ---
+	media_record_list_free :: proc(ptr: ^Media_Record_List) ---
 
 	timeline_messages :: proc(client: ^Client, account_ref: cstring, query: ^Timeline_Message_Query, out: ^^Timeline_Page) -> Status ---
 	timeline_page_free :: proc(ptr: ^Timeline_Page) ---

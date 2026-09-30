@@ -150,6 +150,7 @@ Forward_Job :: struct {
 	client:          ^marmot.Client,
 	account, source: cstring,
 	refs:            []marmot.Media_Attachment_Reference,
+	emoji:           []string, // NIP-30 shortcode per ref, "" for ordinary attachments
 	invalid:         bool,
 	mutex:           sync.Mutex,
 	done, ok:        bool,
@@ -178,9 +179,11 @@ forward_snapshot :: proc(ui: ^Ui_State, client: ^marmot.Client) -> ^Forward_Job 
 		if string(record.message_id_hex) != ui.fwd_msg {continue}
 		job.invalid = record.media_len == 0
 		job.refs = make([]marmot.Media_Attachment_Reference, record.media_len)
+		job.emoji = make([]string, record.media_len)
 		for &r, i in job.refs {
 			ref := media_reference(&record, i)
 			if ref == nil {job.invalid = true; continue}
+			job.emoji[i] = strings.clone(emoji_tag_code(record.tags[:record.tags_len], ref))
 			r = ref^
 			for field in ([]^cstring{&r.ciphertext_sha256, &r.plaintext_sha256, &r.nonce_hex, &r.file_name, &r.media_type, &r.dim, &r.thumbhash}) {
 				if field^ != nil {field^ = strings.clone_to_cstring(string(field^))}
@@ -201,7 +204,7 @@ forward_snapshot :: proc(ui: ^Ui_State, client: ^marmot.Client) -> ^Forward_Job 
 
 @(private)
 forward_payload_clear :: proc(job: ^Forward_Job) {
-	for a in job.atts {delete(a.name); delete(a.dim); delete(a.data)}
+	for a in job.atts {delete(a.name); delete(a.dim); delete(a.data); delete(a.emoji)}
 	delete(job.atts); job.atts = {}
 	for image in job.images {if image.data != nil {rl.UnloadImage(image)}}
 	delete(job.images); job.images = {}
@@ -218,7 +221,8 @@ forward_free :: proc(job: ^Forward_Job) {
 		for locator in r.locators[:r.locators_len] {delete(locator.kind); delete(locator.value)}
 		delete(r.locators[:r.locators_len])
 	}
-	delete(job.refs); delete(job.account); delete(job.source); free(job)
+	for code in job.emoji {delete(code)}
+	delete(job.emoji); delete(job.refs); delete(job.account); delete(job.source); free(job)
 }
 
 @(private)
@@ -231,7 +235,7 @@ forward_worker :: proc(t: ^thread.Thread) {
 		frame_wake()
 	}
 	if job.invalid {return}
-	for &reference in job.refs {
+	for &reference, i in job.refs {
 		result: ^marmot.Media_Download_Result
 		if marmot.download_media(job.client, job.account, job.source, &reference, &result) != .OK {
 			fmt.eprintfln("forward: download failed: %s", marmot.last_error())
@@ -245,6 +249,7 @@ forward_worker :: proc(t: ^thread.Thread) {
 			media_type = media_type_for(name),
 			data       = make([]u8, result.plaintext_len),
 			dim        = strings.clone(string(reference.dim)),
+			emoji      = strings.clone(job.emoji[i]),
 		}
 		copy(att.data, result.plaintext[:result.plaintext_len])
 		marmot.media_download_result_free(result)
@@ -297,7 +302,8 @@ drain_forwards :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		p.atts = job.atts; job.atts = {}
 		for &att, j in p.atts {
 			image := job.images[j]
-			if image.data == nil {continue}
+			// Emoji draw inline, never as pending thumbnails.
+			if image.data == nil || att.emoji != "" {continue}
 			att.tex = new(rl.Texture2D)
 			is_sticker :=
 				p.sticker.sha != "" && p.sticker.sha == string(job.refs[j].plaintext_sha256)
@@ -305,8 +311,12 @@ drain_forwards :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		forward_free(job); p.forward = nil
 		// Text and album remain separate sends, with the effect on the album.
+		// Emoji images go with the text whose :code: they draw (NIP-30 tags
+		// on the same kind-9); an all-emoji forward stays one send.
+		all_emoji := len(p.atts) > 0
+		for att in p.atts {all_emoji &&= att.emoji != ""}
 		text: Pending_Send
-		if p.body != "" {
+		if p.body != "" && !all_emoji {
 			send_ticket += 1
 			text = Pending_Send {
 				ticket        = send_ticket,
@@ -318,6 +328,11 @@ drain_forwards :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				body          = p.body,
 			}
 			p.body = ""
+			for j := 0; j < len(p.atts); {
+				if p.atts[j].emoji == "" {j += 1; continue}
+				append(&text.atts, p.atts[j])
+				ordered_remove(&p.atts, j)
+			}
 		}
 		if text.ticket != 0 {
 			spawn_send(ui, client, &text)

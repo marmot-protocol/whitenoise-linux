@@ -67,6 +67,7 @@ Media_Job :: struct {
 	size:           i64,
 	queued_at:      time.Tick,
 	external_gif:   bool,
+	reaction:       bool, // .Emoji: find the reference on the kind-7 naming `key`
 }
 @(private)
 media_jobs: [dynamic]^Media_Job
@@ -75,7 +76,6 @@ media_inflight: map[Media_Key]bool
 
 @(private)
 media_kind :: proc(name, mime: string) -> Media_Kind {
-	if strings.has_prefix(name, EMOJI_ATT_PREFIX) {return .Emoji}
 	lower := strings.to_lower(name, context.temp_allocator)
 	if is_model_name(lower) || strings.has_prefix(mime, "model/") {return .Mesh}
 	if strings.has_suffix(lower, ".gcode") || strings.has_suffix(lower, ".gco") {return .Gcode}
@@ -179,6 +179,14 @@ reply_image_load :: proc(
 		name := ref.file_name != nil ? string(ref.file_name) : ""
 		mime := ref.media_type != nil ? string(ref.media_type) : ""
 		if media_kind(name, mime) != .Image {continue}
+		// ponytail: previews carry no tags, so a NIP-30 emoji image is
+		// recognized by the :stem: of its filename in the preview text.
+		// Upgrade: have marmot project the parent's tags into the preview.
+		if preview.plaintext != nil &&
+		   strings.contains(
+			   string(preview.plaintext),
+			   fmt.tprintf(":%s:", emoji_code(name)),
+		   ) {continue}
 		key := ref.plaintext_sha256 != nil ? string(ref.plaintext_sha256) : name
 		if _, seen := media_cached(.Image, key); !seen {
 			media_enqueue(client, account, group, ref, .Image, key)
@@ -194,6 +202,7 @@ media_attach :: proc(
 	client: ^marmot.Client,
 	account, group: cstring,
 	outcome: ^marmot.Media_Attachment_Outcome,
+	emoji: string, // NIP-30 shortcode this attachment defines, "" otherwise
 ) {
 	if outcome.tag == .REJECTED {
 		index := int(outcome.body.rejected.attachment_index)
@@ -212,7 +221,7 @@ media_attach :: proc(
 	msg.att_keys[index] = strings.clone(key)
 	kind := media_kind(name, ref.media_type != nil ? string(ref.media_type) : "")
 	if key == msg.sticker.sha && msg.sticker.sha != "" {kind = .Sticker}
-	if kind == .Emoji {key = emoji_code(name[len(EMOJI_ATT_PREFIX):])}
+	if emoji != "" {kind = .Emoji; key = emoji}
 	view, seen := media_cached(kind, key)
 	if !seen {
 		media_enqueue(client, account, group, ref, kind, key)
@@ -282,11 +291,42 @@ media_enqueue :: proc(
 		account   = strings.clone_to_cstring(string(account)),
 		group     = strings.clone_to_cstring(string(group)),
 		key       = strings.clone(key),
-		reference = ref^,
+		reference = media_ref_clone(ref),
 		kind      = kind,
 		color     = clay_color(TEXT),
 	}
-	r := &job.reference
+	media_inflight[Media_Key{job.key, kind}] = true
+	append(&media_jobs, job)
+}
+
+// A reaction chip showing a :code: this device can't draw fetches the
+// image its kind-7 carries (NIP-30 emoji tag + imeta). One attempt per
+// shortcode per session; see remote_emoji_missed.
+@(private)
+reaction_emoji_enqueue :: proc(client: ^marmot.Client, account, group: cstring, code: string) {
+	if code in remote_emoji_tex || code in remote_emoji_missed {return}
+	if media_inflight[Media_Key{code, .Emoji}] {return}
+	job := new(Media_Job)
+	job^ = {
+		queued_at = time.tick_now(),
+		client    = client,
+		account   = strings.clone_to_cstring(string(account)),
+		group     = strings.clone_to_cstring(string(group)),
+		key       = strings.clone(code),
+		kind      = .Emoji,
+		reaction  = true,
+	}
+	media_inflight[Media_Key{job.key, .Emoji}] = true
+	append(&media_jobs, job)
+}
+
+// Deep copy, so a job outlives the timeline page or list it came from.
+// media_job_free releases it.
+@(private = "file")
+media_ref_clone :: proc(
+	ref: ^marmot.Media_Attachment_Reference,
+) -> marmot.Media_Attachment_Reference {
+	r := ref^
 	for field in ([]^cstring{&r.ciphertext_sha256, &r.plaintext_sha256, &r.nonce_hex, &r.file_name, &r.media_type, &r.dim, &r.thumbhash}) {
 		if field^ != nil {field^ = strings.clone_to_cstring(string(field^))}
 	}
@@ -297,8 +337,54 @@ media_enqueue :: proc(
 		locator.value = strings.clone_to_cstring(string(locator.value))
 	}
 	r.locators = raw_data(locators)
-	media_inflight[Media_Key{job.key, kind}] = true
-	append(&media_jobs, job)
+	return r
+}
+
+// Point a reaction job at its image: the group's kind-7 whose emoji tag
+// names job.key, then the attachment marmot parsed from that event's
+// imeta with the tag's url.
+// ponytail: scans the group's retained reactions and media. Use an id
+// lookup when marmot-c exposes one.
+@(private = "file")
+reaction_emoji_ref :: proc(job: ^Media_Job) -> bool {
+	kinds := [1]u64{7}
+	reactions: ^marmot.App_Message_List
+	if marmot.messages(job.client, job.account, job.group, 0, 0, &kinds[0], 1, &reactions) !=
+		   .OK ||
+	   reactions == nil {
+		return false
+	}
+	defer marmot.app_message_list_free(reactions)
+
+	id, url: string
+	for record in reactions.items[:reactions.len] {
+		if record.invalidated {continue}
+		for tag in record.tags[:record.tags_len] {
+			if tag.values_len >= 3 &&
+			   string(tag.values[0]) == "emoji" &&
+			   string(tag.values[1]) == job.key {
+				id, url = string(record.message_id_hex), string(tag.values[2])
+			}
+		}
+	}
+	if url == "" {return false}
+
+	media: ^marmot.Media_Record_List
+	if marmot.list_media(job.client, job.account, job.group, 0, 0, &media) != .OK || media == nil {
+		return false
+	}
+	defer marmot.media_record_list_free(media)
+	for &record in media.items[:media.len] {
+		if string(record.message_id_hex) != id {continue}
+		ref := &record.reference
+		for locator in ref.locators[:ref.locators_len] {
+			if string(locator.value) == url {
+				job.reference = media_ref_clone(ref)
+				return true
+			}
+		}
+	}
+	return false
 }
 
 @(private)
@@ -327,6 +413,7 @@ media_worker :: proc(t: ^thread.Thread) {
 		bytes = slice.clone(buffer[:n])
 	} else {
 		ok: bool
+		if job.reaction && !reaction_emoji_ref(job) {return}
 		bytes, ok = media_load(job.client, job.account, job.group, &job.reference)
 		if !ok {return}
 	}
@@ -386,7 +473,14 @@ media_publish :: proc(job: ^Media_Job) {
 		} else {
 			view: ^rl.Texture2D
 			if tex.width > 0 {view = new(rl.Texture2D); view^ = tex}
-			if job.kind == .Emoji {remote_emoji_tex[key] = view} else {media_textures[key] = view}
+			switch {
+			case job.reaction && view == nil:
+				remote_emoji_missed[key] = true
+			case job.kind == .Emoji:
+				remote_emoji_tex[key] = view
+			case:
+				media_textures[key] = view
+			}
 			rl.UnloadImage(job.image)
 		}
 	case .Mesh:
