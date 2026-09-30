@@ -391,15 +391,19 @@ gate_field :: proc(
 			glow(clay.ID(id_str), ACCENT, 0.35 + clamp((pop - 1) * 3, 0, 0.65), 18)
 		}
 		if len(buf) == 0 {
+			// Caret before the hint, where typing will start.
+			if focused {
+				caret(16)
+			}
 			clay.Text(placeholder, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
 		} else {
 			clay.Text(
 				strings.repeat("*", min(len(buf), 48), context.temp_allocator),
 				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT},
 			)
-		}
-		if focused {
-			caret(16)
+			if focused {
+				caret(16)
+			}
 		}
 	}
 }

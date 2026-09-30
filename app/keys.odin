@@ -555,6 +555,9 @@ export_modal :: proc(ui: ^Ui_State) {
 			},
 			) {
 				if len(ui.export_pw) == 0 {
+					if ui.focus == .ExportPw {
+						caret(15)
+					}
 					clay.Text(
 						tr("Your password"),
 						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO},
@@ -564,9 +567,9 @@ export_modal :: proc(ui: ^Ui_State) {
 						strings.repeat("*", min(len(ui.export_pw), 48), context.temp_allocator),
 						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
 					)
-				}
-				if ui.focus == .ExportPw {
-					caret(15)
+					if ui.focus == .ExportPw {
+						caret(15)
+					}
 				}
 			}
 			if clay.UI(clay.ID("ExportBtns"))(

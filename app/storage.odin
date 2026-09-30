@@ -407,6 +407,9 @@ backup_modal :: proc(ui: ^Ui_State) {
 		},
 		) {
 			if len(ui.backup_pw) == 0 {
+				if ui.focus == .BackupPw {
+					caret(15)
+				}
 				clay.Text(
 					tr("Your password"),
 					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO},
@@ -416,9 +419,9 @@ backup_modal :: proc(ui: ^Ui_State) {
 					strings.repeat("*", min(len(ui.backup_pw), 48), context.temp_allocator),
 					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
 				)
-			}
-			if ui.focus == .BackupPw {
-				caret(15)
+				if ui.focus == .BackupPw {
+					caret(15)
+				}
 			}
 		}
 

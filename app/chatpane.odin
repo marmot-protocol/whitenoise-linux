@@ -1015,6 +1015,10 @@ field_text :: proc(
 			}
 			caret_h := f32(font_size) + 1
 			if len(buf) == 0 {
+				// Caret first: typing starts at the left edge, not after the hint.
+				if focused {
+					caret(caret_h)
+				}
 				ph := ph_color
 				if ph.a == 0 {
 					ph = TEXT_DIM
@@ -1023,9 +1027,6 @@ field_text :: proc(
 					placeholder,
 					{fontId = FONT_BODY, fontSize = font_size, textColor = ph, wrapMode = .None},
 				)
-				if focused {
-					caret(caret_h)
-				}
 			} else {
 				text := string(buf[:])
 				lo, hi, head := field_sel(ui, buf)
@@ -1221,16 +1222,29 @@ issue_editor :: proc(
 			clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
-			if len(buf) ==
-			   0 {clay.Text(placeholder, {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_DIM})}
-			text := string(buf[:])
-			lo, hi, head := field_sel(ui, buf)
-			if ui.focus != focus {head = -1}
-			for line, i in compose_lines(text) {
-				h := head
-				if head == line[0] && line[0] > 0 && text[line[0] - 1] != '\n' {h = -1}
-				compose_line(u32(i), text, line[0], line[1], lo, hi, h)
-				if h >= line[0] && h <= line[1] {compose_view.row = u32(i)}
+			if len(buf) == 0 && len(rl.Preedit()) == 0 {
+				compose_view.row = 0
+				if clay.UI(clay.ID("ComposeLine", 0))(
+				{layout = {childGap = 1, childAlignment = {y = .Center}}},
+				) {
+					if ui.focus == focus {
+						caret()
+					}
+					clay.Text(
+						placeholder,
+						{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_DIM},
+					)
+				}
+			} else {
+				text := string(buf[:])
+				lo, hi, head := field_sel(ui, buf)
+				if ui.focus != focus {head = -1}
+				for line, i in compose_lines(text) {
+					h := head
+					if head == line[0] && line[0] > 0 && text[line[0] - 1] != '\n' {h = -1}
+					compose_line(u32(i), text, line[0], line[1], lo, hi, h)
+					if h >= line[0] && h <= line[1] {compose_view.row = u32(i)}
+				}
 			}
 		}
 		scrollbar(clay.ID("ComposeClip"))
@@ -1435,13 +1449,14 @@ chat_composer :: proc(ui: ^Ui_State) {
 						if clay.UI(clay.ID("ComposeLine", 0))(
 						{layout = {childGap = 1, childAlignment = {y = .Center}}},
 						) {
+							// Caret first: typing starts at the left edge.
+							if ui.focus == .Compose {
+								caret()
+							}
 							clay.Text(
 								ui.compose_issue != "" ? tr("Write a comment") : tr("Send a message..."),
 								{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_LO},
 							)
-							if ui.focus == .Compose {
-								caret()
-							}
 						}
 					} else {
 						text := string(ui.compose[:])
