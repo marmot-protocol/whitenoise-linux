@@ -2003,6 +2003,9 @@ msgstr ""
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr ""
 
+msgid "Loading full resolution…"
+msgstr ""
+
 msgid "Loading messages for export..."
 msgstr ""
 

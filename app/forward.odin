@@ -264,7 +264,7 @@ forward_worker :: proc(t: ^thread.Thread) {
 			)
 			if image.data != nil {
 				if att.dim == "" {att.dim = fmt.aprintf("%dx%d", image.width, image.height)}
-				image = sticker_thumb(image)
+				image = image_fit(image, STICKER_PX)
 			}
 		}
 		append(&job.atts, att); append(&job.images, image)

@@ -102,11 +102,17 @@ sticker_image :: proc(bytes: []u8, mime: string) -> rl.Image {
 	)
 }
 
+// Sticker cells draw at most 256 px.
 @(private)
-sticker_thumb :: proc(image: rl.Image) -> rl.Image {
+STICKER_PX :: 256
+
+// Shrink an image so its longest side fits `side`, keeping the aspect ratio.
+// Takes ownership: returns the input when it already fits, {} on failure.
+@(private)
+image_fit :: proc(image: rl.Image, side: i32) -> rl.Image {
 	if image.data == nil || image.width <= 0 || image.height <= 0 {return image}
-	if max(image.width, image.height) <= 256 {return image}
-	scale := 256 / f32(max(image.width, image.height))
+	if max(image.width, image.height) <= side {return image}
+	scale := f32(side) / f32(max(image.width, image.height))
 	w, h := max(1, i32(f32(image.width) * scale)), max(1, i32(f32(image.height) * scale))
 	pixels := ([^]u8)(libc.malloc(uint(w * h * 4)))
 	if pixels == nil {rl.UnloadImage(image); return {}}
@@ -278,7 +284,7 @@ sticker_worker :: proc(t: ^thread.Thread) {
 		if job.op != .Send && !media_write_sealed(sticker_blob_path(job.item.ref.sha), job.data) {
 			job.error = N_("Couldn't save your stickers. Please try again."); return
 		}
-		job.image = sticker_thumb(job.image)
+		job.image = image_fit(job.image, STICKER_PX)
 	}
 }
 

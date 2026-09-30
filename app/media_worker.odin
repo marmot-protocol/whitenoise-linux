@@ -35,9 +35,16 @@ Media_Kind :: enum {
 	Text,
 	Code,
 	Font,
+	Original, // an image at full size, decoded only for the lightbox
 }
 @(private)
 MEDIA_WORKERS :: 2
+// Longest side of a timeline image texture. A 12-megapixel photo uploaded at
+// full size costs 48 MB of texture memory and stalls the frame that draws
+// it; tiles are at most a few hundred points wide, so 1280 px still covers
+// them at 2x density. The lightbox loads .Original for real pixels.
+@(private)
+TIMELINE_IMAGE_PX :: 1280
 @(private)
 Media_Key :: struct {
 	key:  string,
@@ -137,6 +144,8 @@ media_cached :: proc(kind: Media_Kind, key: string) -> (rawptr, bool) {
 		v, ok := code_views[key]; return v, ok
 	case .Font:
 		v, ok := ttf_views[key]; return v, ok
+	case .Original:
+		v, ok := original_textures[key]; return v, ok
 	case .File:
 		return nil, true
 	}
@@ -271,7 +280,7 @@ media_ready :: proc(msg: ^Msg_Ui, kind: Media_Kind, key: string, index: int, vie
 		media_insert(&msg.codes, Att_Item(^Code_View){(^Code_View)(view), index})
 	case .Font:
 		media_insert(&msg.fonts, Att_Item(^Ttf_View){(^Ttf_View)(view), index})
-	case .File, .Emoji:
+	case .File, .Emoji, .Original:
 	}
 }
 
@@ -424,8 +433,13 @@ media_worker :: proc(t: ^thread.Thread) {
 	name := strings.to_lower(string(job.reference.file_name), context.temp_allocator)
 	switch job.kind {
 	case .Sticker:
-		job.image = sticker_thumb(sticker_image(bytes, string(job.reference.media_type)))
-	case .Image, .Emoji:
+		job.image = image_fit(sticker_image(bytes, string(job.reference.media_type)), STICKER_PX)
+	case .Image:
+		job.image = image_fit(
+			rl.LoadImageFromMemory("", raw_data(bytes), i32(len(bytes))),
+			TIMELINE_IMAGE_PX,
+		)
+	case .Emoji, .Original:
 		job.image = rl.LoadImageFromMemory("", raw_data(bytes), i32(len(bytes)))
 	case .Font:
 		job.image = rl.FontSpecimen(bytes, SPECIMEN_LINES, SPECIMEN_SIZES, job.color, 640)
@@ -462,7 +476,7 @@ media_publish :: proc(job: ^Media_Job) {
 	// A sticker's display finish must not replace an ordinary photo's texture.
 	key := job.kind == .Sticker ? fmt.aprintf("sticker:%s", job.key) : strings.clone(job.key)
 	switch job.kind {
-	case .Image, .Sticker, .Emoji, .Font:
+	case .Image, .Sticker, .Emoji, .Font, .Original:
 		tex :=
 			job.kind == .Sticker ? sticker_texture_load(job.image) : rl.LoadTextureFromImage(job.image)
 		if job.kind == .Font {
@@ -478,6 +492,8 @@ media_publish :: proc(job: ^Media_Job) {
 				remote_emoji_missed[key] = true
 			case job.kind == .Emoji:
 				remote_emoji_tex[key] = view
+			case job.kind == .Original:
+				original_textures[key] = view
 			case:
 				media_textures[key] = view
 			}
@@ -543,6 +559,9 @@ media_drain :: proc(ui: ^Ui_State) {
 		}
 	}
 	active := 0
+	// A full-size photo's texture upload costs several milliseconds, so publish
+	// one finished job per frame and wake the next frame for the rest.
+	published := false
 	for i := len(media_jobs) - 1; i >= 0; i -= 1 {
 		job := media_jobs[i]
 		if job.worker == nil {continue}
@@ -550,6 +569,12 @@ media_drain :: proc(ui: ^Ui_State) {
 		done := job.done
 		sync.unlock(&job.mutex)
 		if !done {active += 1; continue}
+		if published {
+			active += 1
+			frame_wake()
+			continue
+		}
+		published = true
 		thread.join(job.worker)
 		thread.destroy(job.worker)
 		media_publish(job)

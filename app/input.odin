@@ -610,6 +610,10 @@ data_home: string
 // nil marks a failed download. Owns every message-row texture.
 media_textures: map[string]^rl.Texture2D
 
+// Full-size lightbox textures by the same key, freed when the lightbox
+// closes; nil marks a failed load.
+original_textures: map[string]^rl.Texture2D
+
 // Plaintext byte size per blob key, learned whenever a download passes
 // through (the imeta tag carries no size, so this is best-effort
 // session knowledge, like the slint app's attachment_size_cache).

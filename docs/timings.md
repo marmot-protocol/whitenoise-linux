@@ -190,6 +190,18 @@ has been applied. They use the newest MLS order in that window, preserve
 the unread-divider snapshot, and do not mark unseen newer pages read.
 Retired subscriptions cannot apply their results to a later selection.
 
+Avatars that a newly opened chat needs are decoded and cropped to 256 px on
+the picture worker; the frame loop only uploads the pixels. Finished message
+media publishes one texture per frame, because uploading a 12-megapixel
+photo took 6 to 12 ms on the UI thread.
+
+Timeline images are scaled on the media worker so their longest side is at
+most 1280 px. Full-size textures (48 MB for a 12-megapixel photo) stalled
+later draws while the driver caught up. The lightbox shows the scaled
+texture at once, labels the slide "Loading full resolution" with an
+indeterminate bar, and swaps in the original at the same on-screen size.
+Originals are freed when the lightbox closes.
+
 An isolated Linux SDL offscreen run at 1024 by 700 measured the following
 input-to-render intervals with temporary timestamp probes:
 

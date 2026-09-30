@@ -32,8 +32,9 @@ avatar_masks: map[Avatar_Mask_Key]^rl.Texture2D
 
 // Keep square pixels so changing the mask never clips an already round picture.
 // 256px covers profile avatars at 2x density without retaining full-size photos.
+// CPU only, so the picture worker crops off the UI thread.
 @(private)
-photo_texture :: proc(image: rl.Image) -> ^rl.Texture2D {
+photo_square :: proc(image: rl.Image) -> ([]u8, i32) {
 	side := min(image.width, image.height)
 	n := min(side, 256)
 	ox, oy := (image.width - side) / 2, (image.height - side) / 2
@@ -45,6 +46,13 @@ photo_texture :: proc(image: rl.Image) -> ^rl.Texture2D {
 			copy(pixels[dst:dst + 4], image.data[src:src + 4])
 		}
 	}
+	return pixels, n
+}
+
+// Upload a square photo as a round texture. Takes ownership of the pixels,
+// kept for the other mask shapes.
+@(private)
+photo_install :: proc(pixels: []u8, n: i32) -> ^rl.Texture2D {
 	tex := new(rl.Texture2D)
 	image := rl.Image {
 		data   = raw_data(pixels),

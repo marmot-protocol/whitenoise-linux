@@ -54,6 +54,7 @@ Slide :: struct {
 	name:   string, // owned
 	att:    int, // position in the record's media list
 	tex:    ^rl.Texture2D,
+	key:    string, // owned; blob key of the full-size original
 }
 
 Preview :: struct {
@@ -75,6 +76,7 @@ Preview :: struct {
 	slide:          int, // current slideshow position
 	image_zoom:     f32, // 0 = initial readable scale, -1 = fit, positive = scale
 	image_scale:    f32, // last rendered scale, for zoom controls
+	image_tex_w:    i32, // width image_zoom is relative to; 0 = none drawn yet
 	image_drag:     bool,
 	image_pointer:  rl.Vector2,
 }
@@ -200,10 +202,19 @@ preview_show_slides :: proc(ui: ^Ui_State, msg_id: string, att: int) {
 		// Merge loaded and failed images back into attachment order.
 		row := make([dynamic]Slide, context.temp_allocator)
 		for entry in msg.images {
-			append(&row, Slide{msg.id, msg.att_names[entry.att], entry.att, entry.view})
+			append(
+				&row,
+				Slide {
+					msg.id,
+					msg.att_names[entry.att],
+					entry.att,
+					entry.view,
+					msg.att_keys[entry.att],
+				},
+			)
 		}
 		for entry in msg.img_failed {
-			append(&row, Slide{msg.id, msg.att_names[entry.att], entry.att, nil})
+			append(&row, Slide{msg.id, msg.att_names[entry.att], entry.att, nil, ""})
 		}
 		slice.sort_by(row[:], proc(a, b: Slide) -> bool {
 			return a.att < b.att
@@ -214,7 +225,13 @@ preview_show_slides :: proc(ui: ^Ui_State, msg_id: string, att: int) {
 			}
 			append(
 				&preview.slides,
-				Slide{strings.clone(s.msg_id), strings.clone(s.name), s.att, s.tex},
+				Slide {
+					strings.clone(s.msg_id),
+					strings.clone(s.name),
+					s.att,
+					s.tex,
+					strings.clone(s.key),
+				},
 			)
 		}
 	}
@@ -224,6 +241,48 @@ preview_show_slides :: proc(ui: ^Ui_State, msg_id: string, att: int) {
 	}
 	preview.kind = .Slides
 	preview_shown = true
+}
+
+// Timeline textures are capped at TIMELINE_IMAGE_PX, so a slide whose
+// texture reaches the cap may have more pixels in its original.
+@(private = "file")
+slide_downscaled :: proc(s: Slide) -> bool {
+	return s.tex != nil && s.key != "" && max(s.tex.width, s.tex.height) >= TIMELINE_IMAGE_PX
+}
+
+// The texture to draw for a slide: its full-size original once decoded,
+// the timeline texture until then. loading while the original is on its way.
+@(private = "file")
+slide_texture :: proc(s: Slide) -> (tex: ^rl.Texture2D, loading: bool) {
+	if !slide_downscaled(s) {return s.tex, false}
+	if full := original_textures[s.key]; full != nil {return full, false}
+	return s.tex, media_inflight[{s.key, .Original}]
+}
+
+// Queue the full-size decode for the slide on screen, once per lightbox.
+@(private = "file")
+slide_original_request :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	s := preview.slides[preview.slide]
+	if !slide_downscaled(s) || client == nil || ui.selected < 0 || ui.selected >= len(ui.chats) {
+		return
+	}
+	if _, seen := original_textures[s.key]; seen || media_inflight[{s.key, .Original}] {return}
+	group := ui.chats[ui.selected].group_id
+	page := timeline_page
+	if timeline_job == nil ||
+	   string(timeline_job.group) != group ||
+	   string(timeline_job.account) != ui.account_ref {page = nil}
+	reference, _ := page_media_ref(page, s.msg_id, s.att)
+	if reference == nil {reference = group_file_ref(ui, group, s.msg_id, s.att)}
+	if reference == nil {return}
+	media_enqueue(
+		client,
+		strings.clone_to_cstring(ui.account_ref, context.temp_allocator),
+		strings.clone_to_cstring(group, context.temp_allocator),
+		reference,
+		.Original,
+		s.key,
+	)
 }
 
 // Click an image tile: open the lightbox on it; a failed tile retries
@@ -242,7 +301,7 @@ handle_img_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		preview_close()
 		preview.kind = .Slides
 		name := img_link_hover[strings.last_index_byte(img_link_hover, '/') + 1:]
-		append(&preview.slides, Slide{"", strings.clone(name), 0, tex})
+		append(&preview.slides, Slide{"", strings.clone(name), 0, tex, ""})
 		preview_shown = true
 		return
 	}
@@ -519,8 +578,15 @@ preview_close :: proc() {
 	for s in preview.slides {
 		delete(s.msg_id)
 		delete(s.name)
+		delete(s.key)
 	}
 	delete(preview.slides)
+	// Full-size textures are large; keep them only while the lightbox is open.
+	for key, tex in original_textures {
+		if tex != nil {rl.UnloadTexture(tex^); free(tex)}
+		delete(key)
+	}
+	clear(&original_textures)
 	blocks_free(preview.message_blocks)
 	if !preview.vid_shared {delete(preview.bytes)}
 	delete(preview.name)
@@ -651,6 +717,15 @@ preview_modal :: proc(ui: ^Ui_State) {
 				micro_button("PvFit", tr("Fit"))
 				micro_button("PvActual", "100%")
 				slide_nav()
+				if slides {
+					if _, loading := slide_texture(preview.slides[preview.slide]); loading {
+						clay.Text(
+							tr("Loading full resolution\u2026"),
+							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+						)
+						busy_bar("PvOriginalBar")
+					}
+				}
 			}
 		}
 		if clay.UI(clay.ID("PvScroll"))(
@@ -675,10 +750,17 @@ preview_modal :: proc(ui: ^Ui_State) {
 		) {
 			switch preview.kind {
 			case .Image, .Slides:
-				tex := slides ? preview.slides[preview.slide].tex : &preview.tex
+				tex := &preview.tex
+				if slides {tex, _ = slide_texture(preview.slides[preview.slide])}
 				if tex != nil && tex.width > 0 && tex.height > 0 {
 					h := max(f32(80), max_h - PV_CHROME - 40)
 					fit := min(image_w / f32(tex.width), h / f32(tex.height))
+					// The original replacing its downscaled texture keeps the
+					// on-screen size: zoom is relative to texture pixels.
+					if preview.image_tex_w > 0 && preview.image_zoom > 0 {
+						preview.image_zoom *= f32(preview.image_tex_w) / f32(tex.width)
+					}
+					preview.image_tex_w = tex.width
 					if preview.image_zoom == 0 {
 						preview.image_zoom = min(fit, 1)
 						if tex.width >
@@ -1120,6 +1202,7 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		preview_close()
 		return
 	}
+	if preview.kind == .Slides {slide_original_request(ui, client)}
 	if preview.kind == .Pdf && clicked("PvFull") {
 		preview.pdf_fullscreen = !preview.pdf_fullscreen
 		if data := clay.GetScrollContainerData(clay.ID("PvScroll")); data.found {
@@ -1219,6 +1302,7 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if previous != preview.slide {
 			preview.image_zoom = 0
+			preview.image_tex_w = 0
 			if data := clay.GetScrollContainerData(clay.ID("PvScroll"));
 			   data.found {data.scrollPosition^ = {}}
 		}

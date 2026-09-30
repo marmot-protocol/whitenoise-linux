@@ -87,7 +87,7 @@ group_file_type :: proc(name, media_type: string) -> Group_File_Type {
 	mime := media_type
 	if mime == "" || mime == "application/octet-stream" {mime = media_type_for(name)}
 	switch media_kind(name, mime) {
-	case .Image, .Sticker, .Loop, .Emoji:
+	case .Image, .Sticker, .Loop, .Emoji, .Original:
 		return .Images
 	case .Video:
 		return .Videos
@@ -734,6 +734,7 @@ handle_group_files :: proc(ui: ^Ui_State) {
 					strings.clone(name),
 					file.index,
 					tex,
+					strings.clone(key),
 				},
 			)
 			preview_shown = true

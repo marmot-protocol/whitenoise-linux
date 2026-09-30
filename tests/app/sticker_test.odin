@@ -194,9 +194,9 @@ sticker_artwork_preserved :: proc(t: ^testing.T) {
 	pixels: [32 * 32][4]u8
 	for &pixel, i in pixels {pixel = {80, 100, 120, u8(i % 256)}}
 	before := pixels
-	image := sticker_thumb({data = ([^]u8)(raw_data(pixels[:])), width = 32, height = 32})
+	image := image_fit({data = ([^]u8)(raw_data(pixels[:])), width = 32, height = 32}, STICKER_PX)
 	testing.expect_value(t, image.width, i32(32))
 	testing.expect_value(t, image.height, i32(32))
 	testing.expect_value(t, pixels, before)
-	testing.expect(t, sticker_thumb({}).data == nil)
+	testing.expect(t, image_fit({}, STICKER_PX).data == nil)
 }

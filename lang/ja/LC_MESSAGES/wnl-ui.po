@@ -2004,6 +2004,9 @@ msgstr "これらのサイトへのリンクは確認なしで開きます。"
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr "聞き取り中です。話し終えたら完了してください（最大30秒）。"
 
+msgid "Loading full resolution…"
+msgstr "フル解像度で読み込み中…"
+
 msgid "Loading messages for export..."
 msgstr "エクスポートするメッセージを読み込み中..."
 

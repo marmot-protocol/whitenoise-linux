@@ -2004,6 +2004,9 @@ msgstr "I link esattamente a questi siti si aprono senza conferma."
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr "In ascolto... Termina quando hai finito (massimo 30 secondi)."
 
+msgid "Loading full resolution…"
+msgstr "Caricamento della risoluzione completa…"
+
 msgid "Loading messages for export..."
 msgstr "Caricamento dei messaggi da esportare..."
 

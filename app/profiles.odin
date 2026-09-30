@@ -2,16 +2,16 @@
 //
 // Names and picture URLs come from marmot's local kind-0 cache
 // (marmot_user_profile), checked in bounded background batches.
-// Picture bytes are fetched by one curl worker thread; the
-// frame loop drains the results and decodes them into textures
+// Picture bytes are fetched, decoded and cropped by one curl worker
+// thread; the frame loop only uploads the pixels as textures
 // (texture creation must stay on the render thread), so layout code
 // only ever calls url_pic and falls back to the gradient avatar
 // while nil.
 //
 //   layout ── url_pic(url) ──► pic_textures[url]
-//                 │ miss: enqueue          ▲
-//                 ▼                        │ decode + circle mask
-//             pic_queue ──► curl worker ──► pic_done ──► drain_pics (frame loop)
+//                 │ miss: enqueue                    ▲
+//                 ▼                                  │ upload + circle mask
+//             pic_queue ──► curl worker (decode) ──► pic_done ──► drain_pics (frame loop)
 package main
 
 import "core:crypto/hash"
@@ -184,7 +184,7 @@ register_starter_pic :: proc(hex: string, name: string, url: string, image: rl.I
 // group://, blossom://): nothing to fetch, the texture lands in the cache
 // directly. Re-registering an URL replaces its texture.
 register_local_pic :: proc(url: string, image: rl.Image) {
-	tex := photo_texture(image)
+	tex := photo_install(photo_square(image))
 	if old, ok := pic_textures[url]; ok {
 		if old != nil {
 			forget_avatar(old)
@@ -420,9 +420,20 @@ update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
 
 @(private = "file")
 Fetched_Pic :: struct {
-	url:  string,
-	data: []u8, // nil = fetch failed
-	side: i32, // generated RGBA pixels; zero means encoded image bytes
+	url:    string,
+	kind:   Pic_Kind,
+	pixels: []u8, // .Generated/.Photo: side × side RGBA; nil = fetch or decode failed
+	side:   i32,
+	thumb:  rl.Image, // .Thumbnail: decoded as is, libc-owned
+}
+
+// How drain_pics installs a finished picture. The worker decodes and crops,
+// so the frame loop only uploads pixels.
+@(private = "file")
+Pic_Kind :: enum {
+	Generated, // crop-circle fingerprint, uploaded as is
+	Photo, // profile picture, kept for mask variants
+	Thumbnail, // picker GIF or image thumbnail, uploaded uncropped
 }
 
 @(private = "file")
@@ -519,19 +530,23 @@ pic_worker :: proc(_: ^thread.Thread) {
 			continue
 		}
 
+		pic := Fetched_Pic {
+			url = url,
+		}
 		data: []u8
-		side: i32
 		if strings.has_prefix(url, "crop-circle:") {
-			data, side = crop_circle_pixels(url[len("crop-circle:"):])
+			pic.pixels, pic.side = crop_circle_pixels(url[len("crop-circle:"):])
 		} else if strings.has_prefix(url, "crop-square:") {
-			data, side = crop_circle_pixels(url[len("crop-square:"):], .Square)
+			pic.pixels, pic.side = crop_circle_pixels(url[len("crop-square:"):], .Square)
 		} else if strings.has_prefix(url, "crop-round:") {
-			data, side = crop_circle_pixels(url[len("crop-round:"):], .Circle)
+			pic.pixels, pic.side = crop_circle_pixels(url[len("crop-round:"):], .Circle)
 		} else if strings.has_prefix(url, "crop-rounded:") {
-			data, side = crop_circle_pixels(url[len("crop-rounded:"):], .Rounded)
+			pic.pixels, pic.side = crop_circle_pixels(url[len("crop-rounded:"):], .Rounded)
 		} else if strings.has_prefix(url, "gif:") {
+			pic.kind = .Thumbnail
 			data = gif_read(url[len("gif:"):])
 		} else if strings.has_prefix(url, "image:") {
+			pic.kind = .Thumbnail
 			// Transient picker thumbnails use the bounded HTTPS fetch, without avatar cropping.
 			buffer := make([]u8, 4 * 1024 * 1024, context.temp_allocator)
 			n := wn_https_get(
@@ -541,12 +556,26 @@ pic_worker :: proc(_: ^thread.Thread) {
 			)
 			if n > 0 {data = make([]u8, int(n)); copy(data, buffer[:n])}
 		} else {
+			pic.kind = .Photo
 			data = pic_load(url)
+		}
+
+		// Decoding a full-size photo takes tens of milliseconds; keep it here,
+		// off the frame loop.
+		if data != nil {
+			image := rl.LoadImageFromMemory(".img", raw_data(data), i32(len(data)))
+			delete(data)
+			if pic.kind == .Photo {
+				if image.data != nil {pic.pixels, pic.side = photo_square(image)}
+				rl.UnloadImage(image)
+			} else {
+				pic.thumb = image
+			}
 		}
 		free_all(context.temp_allocator)
 
 		sync.lock(&pic_mutex)
-		append(&pic_done, Fetched_Pic{url = url, data = data, side = side})
+		append(&pic_done, pic)
 		sync.unlock(&pic_mutex)
 		frame_wake()
 	}
@@ -625,25 +654,26 @@ drain_pics :: proc() {
 
 	for f in done {
 		tex: ^rl.Texture2D
-		if f.data != nil && f.side > 0 {
-			tex = new(rl.Texture2D)
-			tex^ = rl.LoadTextureFromImage(
-				{data = raw_data(f.data), width = f.side, height = f.side},
-			)
-			delete(f.data)
-		} else if f.data != nil {
-			image := rl.LoadImageFromMemory(".img", raw_data(f.data), i32(len(f.data)))
-			if image.data != nil {
-				if strings.has_prefix(f.url, "image:") || strings.has_prefix(f.url, "gif:") {
-					tex = new(rl.Texture2D)
-					tex^ = rl.LoadTextureFromImage(image)
-				} else {tex = photo_texture(image)}
-				rl.UnloadImage(image)
+		switch f.kind {
+		case .Generated:
+			if f.pixels != nil {
+				tex = new(rl.Texture2D)
+				tex^ = rl.LoadTextureFromImage(
+					{data = raw_data(f.pixels), width = f.side, height = f.side},
+				)
+				delete(f.pixels)
 			}
-			delete(f.data)
+		case .Photo:
+			if f.pixels != nil {tex = photo_install(f.pixels, f.side)}
+		case .Thumbnail:
+			if f.thumb.data != nil {
+				tex = new(rl.Texture2D)
+				tex^ = rl.LoadTextureFromImage(f.thumb)
+				rl.UnloadImage(f.thumb)
+			}
 		}
 		pic_textures[f.url] = tex // nil marks a permanent miss
-		if tex != nil && f.side == 0 {wrap_flush = true}
+		if tex != nil && f.kind != .Generated {wrap_flush = true}
 	}
 	delete(done)
 }

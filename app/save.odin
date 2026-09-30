@@ -203,33 +203,9 @@ fetch_attachment :: proc(
 	}
 	defer {if owned {marmot.timeline_page_free(page)}}
 
-	reference: ^marmot.Media_Attachment_Reference
-	for i in 0 ..< page.messages_len {
-		record := &page.messages[i]
-		if record.message_id_hex == nil || string(record.message_id_hex) != msg_id {
-			continue
-		}
-		if record.deleted || record.invalidation_status != nil {return}
-		reference = media_reference(record, index)
-		if reference == nil {return}
-		break
-	}
-	// The file browser retains references outside the timeline's loaded window.
-	if job := group_files_job;
-	   reference == nil &&
-	   job != nil &&
-	   job.worker == nil &&
-	   string(job.account) == ui.account_ref &&
-	   string(job.group) == group {
-		for file in job.files {
-			if string(file.record.message_id_hex) == msg_id &&
-			   file.index == index &&
-			   group_file_matches(ui, file) {
-				reference = media_reference(file.record, index)
-				break
-			}
-		}
-	}
+	reference, found := page_media_ref(page, msg_id, index)
+	if found && reference == nil {return}
+	if reference == nil {reference = group_file_ref(ui, group, msg_id, index)}
 	if reference == nil {return}
 	group_c := strings.clone_to_cstring(group, context.temp_allocator)
 	if marmot.download_media(client, account, group_c, reference, &result) != .OK {
@@ -241,4 +217,49 @@ fetch_attachment :: proc(
 		blob_sizes[strings.clone(string(sha))] = i64(result.plaintext_len)
 	}
 	return result, true
+}
+
+// The attachment reference in a timeline page. found reports whether the
+// message is in the page at all, so a deleted one stops the search.
+@(private)
+page_media_ref :: proc(
+	page: ^marmot.Timeline_Page,
+	msg_id: string,
+	index: int,
+) -> (
+	reference: ^marmot.Media_Attachment_Reference,
+	found: bool,
+) {
+	if page == nil {return}
+	for i in 0 ..< page.messages_len {
+		record := &page.messages[i]
+		if record.message_id_hex == nil || string(record.message_id_hex) != msg_id {
+			continue
+		}
+		if record.deleted || record.invalidation_status != nil {return nil, true}
+		return media_reference(record, index), true
+	}
+	return
+}
+
+// The file browser retains references outside the timeline's loaded window.
+@(private)
+group_file_ref :: proc(
+	ui: ^Ui_State,
+	group, msg_id: string,
+	index: int,
+) -> ^marmot.Media_Attachment_Reference {
+	job := group_files_job
+	if job == nil ||
+	   job.worker != nil ||
+	   string(job.account) != ui.account_ref ||
+	   string(job.group) != group {return nil}
+	for file in job.files {
+		if string(file.record.message_id_hex) == msg_id &&
+		   file.index == index &&
+		   group_file_matches(ui, file) {
+			return media_reference(file.record, index)
+		}
+	}
+	return nil
 }

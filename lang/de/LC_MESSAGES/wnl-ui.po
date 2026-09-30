@@ -2004,6 +2004,9 @@ msgstr "Links zu genau diesen Websites werden ohne Bestätigung geöffnet."
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr "Aufnahme läuft... Beende sie, wenn du fertig bist (maximal 30 Sekunden)."
 
+msgid "Loading full resolution…"
+msgstr "Volle Auflösung wird geladen…"
+
 msgid "Loading messages for export..."
 msgstr "Nachrichten für den Export werden geladen..."
 
