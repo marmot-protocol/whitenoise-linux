@@ -245,6 +245,9 @@ msgstr "パックを追加"
 msgid "Add reaction"
 msgstr "リアクションを追加"
 
+msgid "Add relays for linked events"
+msgstr "リンクされたイベント用のリレーを追加"
+
 msgid "Add someone by npub, or make a group of your own."
 msgstr "npub で相手を追加するか、自分だけのグループを作成してください。"
 
@@ -272,6 +275,9 @@ msgstr "すべて"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "すべてのアカウントは接続されたままです。切り替えても、表示するアカウントが変わるだけです。"
 
+msgid "All categories"
+msgstr "すべてのカテゴリ"
+
 msgid "All senders"
 msgstr "すべての送信者"
 
@@ -289,6 +295,9 @@ msgstr "琥珀色"
 
 msgid "An empty box derives its value. The window previews as you type."
 msgstr "空欄の項目は値が自動で導き出されます。入力するとウィンドウでプレビューされます。"
+
+msgid "Animations are distracting"
+msgstr "アニメーションが気になります"
 
 msgid "Another group change took precedence. Review your group settings."
 msgstr "別のグループ変更が優先されました。グループ設定を確認してください。"
@@ -486,6 +495,9 @@ msgstr "カードのくぼみ"
 msgid "Center the conversation"
 msgstr "会話を中央に配置"
 
+msgid "Centre the conversation"
+msgstr "会話を中央に表示"
+
 msgid "Centred conversation"
 msgstr "会話を中央に配置"
 
@@ -498,7 +510,28 @@ msgstr "写真を変更"
 msgid "Change picture"
 msgstr "画像を変更"
 
+msgid "Change the date format"
+msgstr "日付の形式を変更"
+
+msgid "Change the interface language"
+msgstr "表示言語を変更"
+
+msgid "Change the message text size"
+msgstr "メッセージの文字サイズを変更"
+
+msgid "Change the scroll speed"
+msgstr "スクロール速度を変更"
+
+msgid "Change the theme"
+msgstr "テーマを変更"
+
+msgid "Change the time format"
+msgstr "時刻の形式を変更"
+
 msgid "Change vault password"
+msgstr "保管庫のパスワードを変更"
+
+msgid "Change your vault password"
 msgstr "保管庫のパスワードを変更"
 
 msgid "Change..."
@@ -547,6 +580,9 @@ msgstr "チップの文字"
 msgid "Choose a destination for this chat."
 msgstr "このチャットの移動先を選んでください。"
 
+msgid "Choose an emoji style"
+msgstr "絵文字のスタイルを選択"
+
 msgid "Choose at most two emoji."
 msgstr "絵文字は2つまで選択できます。"
 
@@ -559,6 +595,15 @@ msgstr "画像を選択"
 msgid "Choose one or two emoji. Every member sees the same image."
 msgstr "絵文字を1つか2つ選択してください。すべてのメンバーに同じ画像が表示されます。"
 
+msgid "Choose one-tap reactions"
+msgstr "ワンタップリアクションを選択"
+
+msgid "Choose the crop circle shape"
+msgstr "ミステリーサークルの形状を選択"
+
+msgid "Choose the default avatar shape"
+msgstr "アバターの既定の形を選択"
+
 msgid "Choose what gets your attention."
 msgstr "通知を受け取る内容を選択します。"
 
@@ -568,11 +613,23 @@ msgstr "変更したい設定を選択してください。"
 msgid "Choose when and how White Noise alerts you."
 msgstr "White Noise が通知するタイミングと方法を設定します。"
 
+msgid "Choose where events open"
+msgstr "イベントを開く場所を選択"
+
+msgid "Choose where people reach you"
+msgstr "受信先を選択"
+
+msgid "Choose where you publish"
+msgstr "公開先を選択"
+
 msgid "Circle"
 msgstr "円"
 
 msgid "Clear cache"
 msgstr "キャッシュを消去"
+
+msgid "Clear cached attachments"
+msgstr "キャッシュした添付ファイルを削除"
 
 msgid "Clear effect"
 msgstr "エフェクトを解除"
@@ -615,6 +672,9 @@ msgstr "チャット一覧を折りたたむ"
 
 msgid "Collapse transcription"
 msgstr "文字起こしを折りたたむ"
+
+msgid "Collecting logs for a bug report"
+msgstr "不具合報告用のログを集める"
 
 msgid "Collector and retention"
 msgstr "送信先と保存期間"
@@ -709,6 +769,9 @@ msgstr "テキストをコピー"
 
 msgid "Copy this link and open it in your browser."
 msgstr "このリンクをコピーして、ブラウザで開いてください。"
+
+msgid "Copy your public key"
+msgstr "公開鍵をコピー"
 
 msgid "Coral"
 msgstr "コーラル"
@@ -1252,6 +1315,9 @@ msgstr "開発者モードをオフにしました"
 msgid "Developer mode on"
 msgstr "開発者モードをオンにしました"
 
+msgid "Developer tools"
+msgstr "開発者ツール"
+
 msgid "Device vault"
 msgstr "端末の保管庫"
 
@@ -1273,8 +1339,14 @@ msgstr "この端末上で下書きの音声入力や音声メッセージの文
 msgid "Dictate messages and listen to them aloud."
 msgstr "メッセージの音声入力や読み上げができます。"
 
+msgid "Dictate your messages"
+msgstr "メッセージを音声入力"
+
 msgid "Dictation"
 msgstr "音声入力"
+
+msgid "Dictation doesn't work"
+msgstr "音声入力が動作しません"
 
 #, c-format
 msgid "Difficulty: %d/5"
@@ -1487,9 +1559,6 @@ msgstr "未読のチャットで絞り込む"
 msgid "Final render"
 msgstr "最終レンダリング"
 
-msgid "Find a setting"
-msgstr "設定を検索"
-
 msgid "Find a setting..."
 msgstr "設定を検索..."
 
@@ -1590,6 +1659,9 @@ msgstr "鍵を生成しています"
 msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr "表示していないチャットにメッセージが届いたときに通知を受け取ります。"
 
+msgid "Get desktop notifications"
+msgstr "デスクトップ通知を受け取る"
+
 msgid "Get started"
 msgstr "はじめに"
 
@@ -1634,6 +1706,9 @@ msgstr "フォルダ別"
 
 msgid "Hard shadows"
 msgstr "くっきりした影"
+
+msgid "Have messages read aloud"
+msgstr "メッセージを読み上げる"
 
 msgid "Help"
 msgstr "ヘルプ"
@@ -1717,9 +1792,6 @@ msgstr "画像を読み込む"
 msgid "Import..."
 msgstr "インポート..."
 
-msgid "Inbox relays"
-msgstr "受信リレー"
-
 msgid "Incoming messages"
 msgstr "受信メッセージ"
 
@@ -1741,8 +1813,14 @@ msgstr "MLS キーパッケージを確認します。"
 msgid "Inspect application state and events."
 msgstr "アプリの状態とイベントを確認します。"
 
+msgid "Inspect key packages"
+msgstr "キーパッケージを調べる"
+
 msgid "Inspect published MLS key packages."
 msgstr "公開済みの MLS キーパッケージを確認します。"
+
+msgid "Inspect the current session"
+msgstr "現在のセッションを調べる"
 
 msgid "Inspect the current session."
 msgstr "現在のセッションを確認します。"
@@ -1989,9 +2067,6 @@ msgstr "接続と公開済みのリレーリストを管理します。"
 msgid "Manage local files and encrypted backups."
 msgstr "ローカルファイルと暗号化バックアップを管理します。"
 
-msgid "Manage your relays"
-msgstr "リレーを管理"
-
 msgid "Mar"
 msgstr "3月"
 
@@ -2036,6 +2111,9 @@ msgstr "メッセージのテキストをコピーしました"
 
 msgid "Message text size"
 msgstr "メッセージの文字サイズ"
+
+msgid "Messages aren't arriving"
+msgstr "メッセージが届きません"
 
 msgid "Messaging"
 msgstr "メッセージ"
@@ -2260,8 +2338,14 @@ msgstr "未設定"
 msgid "Notes to self"
 msgstr "自分用メモ"
 
+msgid "Nothing is read aloud"
+msgstr "読み上げられません"
+
 msgid "Notifications"
 msgstr "通知"
+
+msgid "Notifications don't appear"
+msgstr "通知が表示されません"
 
 msgid "Nov"
 msgstr "11月"
@@ -2398,14 +2482,23 @@ msgstr "パスをコピーしました"
 msgid "Pause"
 msgstr "一時停止"
 
+msgid "Peers can't find you"
+msgstr "ほかの人があなたを見つけられません"
+
 msgid "People"
 msgstr "連絡先"
+
+msgid "People can't invite you"
+msgstr "ほかの人があなたを招待できません"
 
 msgid "Pets"
 msgstr "ペット"
 
 msgid "Photos"
 msgstr "写真"
+
+msgid "Pick a category"
+msgstr "カテゴリを選んでください"
 
 msgid "Pick a chat to send it to. They choose whether to use it."
 msgstr "送信先のチャットを選んでください。使うかどうかは相手が決めます。"
@@ -2424,6 +2517,9 @@ msgstr "鍵の暗号化に使うパスワードを決めてください。ほか
 
 msgid "Pick a password. It encrypts everything in the app, and there is no way to recover it."
 msgstr "パスワードを決めてください。アプリ内のすべてを暗号化するパスワードで、復元する方法はありません。"
+
+msgid "Pick a task..."
+msgstr "作業を選んでください..."
 
 msgid "Pick the whole app's look."
 msgstr "アプリ全体の見た目を選択します。"
@@ -2454,6 +2550,12 @@ msgstr "再生"
 
 msgid "Play a sound"
 msgstr "音を鳴らす"
+
+msgid "Play a sound for new messages"
+msgstr "新着メッセージで音を鳴らす"
+
+msgid "Play interface sounds"
+msgstr "操作音を鳴らす"
 
 msgid "Pre-order"
 msgstr "予約注文"
@@ -2524,6 +2626,9 @@ msgstr "公開鍵。共有して問題ありません。"
 
 msgid "Publish"
 msgstr "公開"
+
+msgid "Publish a key package"
+msgstr "キーパッケージを公開"
 
 msgid "Publish changes"
 msgstr "変更を公開"
@@ -2600,6 +2705,9 @@ msgstr "読み上げています..."
 
 msgid "Recent"
 msgstr "最近"
+
+msgid "Record audit logs"
+msgstr "監査ログを記録"
 
 msgid "Record group audit log files on this device. Identifiers are hashed."
 msgstr "グループの監査ログファイルをこの端末に記録します。識別子はハッシュ化されます。"
@@ -2683,6 +2791,9 @@ msgstr "再公開"
 msgid "Republish relay lists"
 msgstr "リレーリストを再公開"
 
+msgid "Republish your relay lists"
+msgstr "リレーリストを再公開"
+
 msgid "Reset"
 msgstr "リセット"
 
@@ -2707,6 +2818,9 @@ msgstr "起動時に最後のチャットを復元"
 msgid "Restore the default reactions"
 msgstr "デフォルトのリアクションに戻す"
 
+msgid "Restore the last chat on launch"
+msgstr "起動時に前回のチャットを開く"
+
 msgid "Retry"
 msgstr "再試行"
 
@@ -2718,6 +2832,9 @@ msgstr "隠されたメッセージを表示"
 
 msgid "Reveal private key (nsec)"
 msgstr "秘密鍵を表示 (nsec)"
+
+msgid "Reveal your secret key"
+msgstr "秘密鍵を表示"
 
 msgid "Right click"
 msgstr "右クリック"
@@ -2881,8 +2998,14 @@ msgstr "セキュリティとプライバシー"
 msgid "Security actions"
 msgstr "セキュリティ操作"
 
+msgid "See also"
+msgstr "関連項目"
+
 msgid "See and hear it with today's sound and preview settings."
 msgstr "現在のサウンドとプレビュー設定で確認できます。"
+
+msgid "See where your data is stored"
+msgstr "データの保存場所を確認"
 
 msgid "Select a chat"
 msgstr "チャットを選択"
@@ -3026,6 +3149,9 @@ msgstr "折りたたむ"
 msgid "Show message preview"
 msgstr "メッセージのプレビューを表示"
 
+msgid "Show or hide message previews"
+msgstr "メッセージのプレビューを表示または非表示"
+
 msgid "Shown on the message menu. Tap one to remove it. Up to 16."
 msgstr "メッセージメニューに表示されます。タップすると削除できます。最大16件です。"
 
@@ -3068,6 +3194,9 @@ msgstr "売却済み"
 
 msgid "Sort chats by recent activity"
 msgstr "最近のアクティビティ順にチャットを並べ替え"
+
+msgid "Sounds don't play"
+msgstr "音が鳴りません"
 
 msgid "Speech"
 msgstr "音声"
@@ -3193,6 +3322,9 @@ msgstr "テスト通知"
 
 msgid "Text"
 msgstr "テキスト"
+
+msgid "Text is hard to read"
+msgstr "文字が読みにくいです"
 
 msgid "Text low"
 msgstr "テキスト（低）"
@@ -3346,6 +3478,9 @@ msgstr "旅行"
 msgid "Trophy"
 msgstr "トロフィー"
 
+msgid "Troubleshooters"
+msgstr "トラブルシューティング"
+
 msgid "Trusted link sites"
 msgstr "信頼済みのリンク先"
 
@@ -3354,6 +3489,9 @@ msgstr "別の検索語を試してください。"
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "アニメーションによる切り替え、移動、エフェクトをオフにします。状態は変わりますが、何も動きません。"
+
+msgid "Turn on developer mode"
+msgstr "開発者モードをオン"
 
 msgid "Type a command"
 msgstr "コマンドを入力"
@@ -3405,6 +3543,9 @@ msgstr "アップデート"
 
 msgid "Updating issue tracking..."
 msgstr "問題の追跡を更新しています..."
+
+msgid "Upload custom emoji"
+msgstr "カスタム絵文字をアップロード"
 
 msgid "Uploaded emoji"
 msgstr "アップロード済みの絵文字"
@@ -3459,6 +3600,9 @@ msgstr "16進数で表示"
 
 msgid "View full profile"
 msgstr "プロフィール全体を表示"
+
+msgid "View keyboard shortcuts"
+msgstr "キーボードショートカットを表示"
 
 msgid "View raw event"
 msgstr "生イベントを表示"
@@ -3531,6 +3675,9 @@ msgstr "White Noise %s · Odin版"
 msgid "White Noise and this session."
 msgstr "White Noise と現在のセッションについて確認できます。"
 
+msgid "White Noise doesn't open at login"
+msgstr "ログイン時に White Noise が起動しません"
+
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
 msgstr "White NoiseはGifSnapと提携していません。GifSnapがこのデータを悪用すると考える理由はありませんが、White Noiseが管理できない第三者です。"
 
@@ -3590,6 +3737,9 @@ msgstr "あなた: %s"
 msgid "Your current password"
 msgstr "現在のパスワード"
 
+msgid "Your disk is filling up"
+msgstr "ディスクの空きが少なくなっています"
+
 msgid "Your identity and the secrets on this device."
 msgstr "あなたの ID と、この端末上の秘密情報を管理します。"
 
@@ -3617,14 +3767,8 @@ msgstr "パスワード"
 msgid "Your profile"
 msgstr "あなたのプロフィール"
 
-msgid "Your public key"
-msgstr "あなたの公開鍵"
-
 msgid "Your public key. Safe to share."
 msgstr "公開鍵。共有して問題ありません。"
-
-msgid "Your secret key"
-msgstr "あなたの秘密鍵"
 
 msgid "Your stickers"
 msgstr "あなたのステッカー"
@@ -3637,6 +3781,9 @@ msgstr "拡大 / 縮小 / リセット"
 
 msgid "Zoom out"
 msgstr "縮小"
+
+msgid "Zoom the interface"
+msgstr "画面を拡大・縮小"
 
 #, c-format
 msgid "aka %s"
@@ -3696,6 +3843,9 @@ msgstr "npub、16進数、name@domain、または .bit（任意）"
 
 msgid "opened there"
 msgstr "相手側で復号"
+
+msgid "or pick a page"
+msgstr "またはページを選んでください"
 
 msgid "plaintext"
 msgstr "平文"

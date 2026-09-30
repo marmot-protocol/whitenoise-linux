@@ -40,7 +40,7 @@ settings_viewport :: proc(t: ^testing.T) {
 		for target in ([]struct {
 				section: Settings_Section,
 				anchor:  string,
-			}{{.Home, ""}, {.General, "RowLang"}, {.Network, "AddRelayRow"}, {.Network, "AddFetchRow"}, {.Network, "ClientBox"}, {.Keys, "NpubRow"}, {.Keys, "KpStatus"}, {.Keys, "RowRotate"}, {.Keys, "RowVaultPw"}, {.Keys, "RowReveal"}, {.Advanced, "RowTelemetry"}, {.Advanced, "RowAudit"}, {.Advanced, "RowDevMode"}, {.Appearance, "RowTheme"}}) {
+			}{{.Home, ""}, {.Keys, ""}, {.General, "RowLang"}, {.Network, "AddRelayRow"}, {.Network, "AddFetchRow"}, {.Network, "ClientBox"}, {.Keys, "NpubRow"}, {.Keys, "KpStatus"}, {.Keys, "RowRotate"}, {.Keys, "RowVaultPw"}, {.Keys, "RowReveal"}, {.Advanced, "RowTelemetry"}, {.Advanced, "RowAudit"}, {.Advanced, "RowDevMode"}, {.Appearance, "RowTheme"}}) {
 			settings_open(&ui, nil, target.section, anchor = target.anchor)
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
 			root := clay.GetElementData(clay.ID("SettingsRoot"))
@@ -55,6 +55,13 @@ settings_viewport :: proc(t: ^testing.T) {
 					t,
 					clay.GetElementData(clay.ID(target.anchor)).found,
 					"A settings deep link must render its destination control",
+				)
+			} else if target.section != .Home {
+				testing.expect(
+					t,
+					clay.GetElementData(clay.ID("SettingsPageIcon", 0)).found &&
+					!clay.GetElementData(clay.ID("SettingsSheet")).found,
+					"A category without a deep link must open on its menu, not its sheet",
 				)
 			}
 			if target.section == .General {
@@ -85,9 +92,11 @@ settings_viewport :: proc(t: ^testing.T) {
 			"The open theme picker must fit narrow and short windows",
 		) {return}
 		// Wheel input must reach the clipped final row, not just a correctly sized box.
+		// The wheel arrives inside a frame, as in the app: a second scroll update
+		// without a layout between drops containers and their offsets.
 		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
-		clay.UpdateScrollContainers(false, {0, -10000}, 1.0 / 60)
-		for _ in 0 ..< 3 {settings_test_frame(&ui)}
+		settings_test_frame(&ui, {0, -10000})
+		for _ in 0 ..< 2 {settings_test_frame(&ui)}
 		last := len(theme_packs) - 1
 		if last == system_theme_index {last -= 1}
 		target := clay.GetElementData(clay.ID("ThemeOpt", u32(last)))
@@ -108,9 +117,9 @@ settings_viewport :: proc(t: ^testing.T) {
 }
 
 @(private)
-settings_test_frame :: proc(ui: ^Ui_State) {
+settings_test_frame :: proc(ui: ^Ui_State, wheel: clay.Vector2 = {}) {
 	anim_tick(1.0 / 60)
-	clay.UpdateScrollContainers(false, {}, 0)
+	clay.UpdateScrollContainers(false, wheel, 1.0 / 60)
 	clay.BeginLayout()
 	settings_pane(ui)
 	clay.EndLayout(0)

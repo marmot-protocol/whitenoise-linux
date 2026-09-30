@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 96 96">
+<!-- Original White Noise category illustration, created for this project.
+     Licensed under the project's GNU AGPL v3 license; no third-party artwork. -->
+<title>Key packages settings illustration</title>
+<defs>
+<linearGradient id="blue" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#a5e5ff"/><stop offset=".46" stop-color="#4caddd"/><stop offset="1" stop-color="#2873b6"/></linearGradient>
+<linearGradient id="navy" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#6789a6"/><stop offset="1" stop-color="#344d70"/></linearGradient>
+<linearGradient id="silver" x1="0" y1="0" x2=".5" y2="1"><stop stop-color="#fff"/><stop offset=".48" stop-color="#dce6ec"/><stop offset="1" stop-color="#8da5b8"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#fff4b5"/><stop offset=".42" stop-color="#f9cf66"/><stop offset="1" stop-color="#d99536"/></linearGradient>
+<linearGradient id="green" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#d7f4a5"/><stop offset=".5" stop-color="#9ed06c"/><stop offset="1" stop-color="#5d9d58"/></linearGradient>
+<linearGradient id="red" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#ffc0a2"/><stop offset=".5" stop-color="#e6826a"/><stop offset="1" stop-color="#b84d49"/></linearGradient>
+<filter id="shadow" x="-.3" y="-1" width="1.6" height="3"><feGaussianBlur stdDeviation="2"/></filter>
+</defs>
+<ellipse cx="48" cy="83" rx="37" ry="5" fill="#213a59" opacity=".22" filter="url(#shadow)"/>
+<path d="M8 50h40v28H8Z" fill="url(#red)" stroke="#8f3b38" stroke-width="2" stroke-linejoin="round"/>
+<path d="M8 50l6-7h40l-6 7Z" fill="#f2a68f" stroke="#8f3b38" stroke-width="2" stroke-linejoin="round"/>
+<path d="M48 50l6-7v28l-6 7Z" fill="#a44541" stroke="#8f3b38" stroke-width="2" stroke-linejoin="round"/>
+<path d="M25 50h6v27h-6Z" fill="#fff0d6" opacity=".85"/>
+<path d="M16 26h40v24H16Z" fill="url(#blue)" stroke="#2f6a9a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M16 26l6-7h40l-6 7Z" fill="#b8e8ff" stroke="#2f6a9a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M56 26l6-7v24l-6 7Z" fill="#2873b6" stroke="#2f6a9a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M33 27h6v22h-6Z" fill="#fff" opacity=".8"/>
+<path d="M10 52h14m8 0h14" stroke="#ffd9c8" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M18 28h13m10 0h13" stroke="#e4faff" stroke-width="1.5" stroke-linecap="round"/>
+<g transform="rotate(-45 72 60)">
+
+<circle cx="60" cy="60" r="12" fill="url(#gold)" stroke="#a47936" stroke-width="2"/>
+<path d="M71 56h19l5 4-5 4h-3l-2 3-2-3h-2l-2 4-2-4h-6Z" fill="url(#gold)" stroke="#a47936" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="60" cy="60" r="4.5" fill="#536e88" stroke="#fff1b8" stroke-width="2"/>
+<path d="M52 55q5-6 12-3m9 5h16" fill="none" stroke="#fff4c9" stroke-width="2" stroke-linecap="round"/>
+</g>
+</svg>

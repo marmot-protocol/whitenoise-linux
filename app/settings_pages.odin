@@ -31,6 +31,13 @@ Settings_Section :: enum {
 	KP, // dev-mode only
 }
 
+// A category opens on its menu of tasks and pages; a task or page opens its
+// property sheet. Utility sections (About, Debug, KP) have only the sheet.
+Settings_Level :: enum {
+	Menu,
+	Sheet,
+}
+
 SETTINGS_SECTIONS := [Settings_Section]struct {
 	label: string,
 	icon:  string,
@@ -91,15 +98,30 @@ settings_row :: proc(stacked: bool = false) -> clay.ElementDeclaration {
 }
 
 settings_content_width :: proc(ui: ^Ui_State) -> f32 {
+	menu := ui.settings_section == .Home || settings_on_menu(ui)
 	return min(
-		ui.settings_section == .Home ? 900 : (ui.settings_section == .General ? 560 : 740),
-		max(120, page_w(ui) - (page_w(ui) < 560 ? 24 : 48)),
+		menu ? 900 : (ui.settings_section == .General ? 560 : 740),
+		max(120, settings_main_w(ui) - (settings_main_w(ui) < 560 ? 24 : 48)),
 	)
 }
 
 @(private)
 settings_body_width :: proc(ui: ^Ui_State) -> f32 {
-	return max(120, settings_content_width(ui) - (page_w(ui) < 560 ? 16 : 32))
+	return max(120, settings_content_width(ui) - (settings_main_w(ui) < 560 ? 16 : 32))
+}
+
+@(private)
+SETTINGS_PANE_W :: 220
+
+// Beside the page when both fit; narrower windows stack the task boxes.
+@(private)
+settings_wide :: proc(ui: ^Ui_State) -> bool {
+	return page_w(ui) >= 760
+}
+
+@(private)
+settings_main_w :: proc(ui: ^Ui_State) -> f32 {
+	return page_w(ui) - (settings_wide(ui) ? SETTINGS_PANE_W : 0)
 }
 
 @(private)
@@ -223,15 +245,44 @@ settings_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
 	}
 }
 
-SETTINGS_GENERAL_TABS := []string{N_("Startup"), N_("Language"), N_("Messaging")}
-SETTINGS_APPEARANCE_TABS := []string{N_("Theme"), N_("Interface"), N_("Avatars")}
-SETTINGS_SPEECH_TABS := []string{N_("Dictation"), N_("Read aloud")}
-SETTINGS_NETWORK_TABS := []string{N_("Relays"), N_("Linked events")}
-SETTINGS_KEYS_TABS := []string{N_("Identity"), N_("Key packages"), N_("Security")}
-SETTINGS_ADVANCED_TABS := []string{N_("Privacy"), N_("Audit logs"), N_("Developer")}
+// One tab of a property sheet, which the category menu also offers as an icon.
+@(private)
+Settings_Page :: struct {
+	label: string,
+	art:   Settings_Art,
+}
 
-settings_tabs :: proc(ui: ^Ui_State) -> []string {
-	#partial switch ui.settings_section {
+SETTINGS_GENERAL_TABS := []Settings_Page {
+	{N_("Startup"), .Startup},
+	{N_("Language"), .Language},
+	{N_("Messaging"), .Messaging},
+}
+SETTINGS_APPEARANCE_TABS := []Settings_Page {
+	{N_("Theme"), .Appearance},
+	{N_("Interface"), .Interface},
+	{N_("Avatars"), .Avatars},
+}
+SETTINGS_SPEECH_TABS := []Settings_Page {
+	{N_("Dictation"), .Speech},
+	{N_("Read aloud"), .Read_Aloud},
+}
+SETTINGS_NETWORK_TABS := []Settings_Page {
+	{N_("Relays"), .Network},
+	{N_("Linked events"), .Linked_Events},
+}
+SETTINGS_KEYS_TABS := []Settings_Page {
+	{N_("Identity"), .Keys},
+	{N_("Key packages"), .Key_Packages},
+	{N_("Security"), .Security},
+}
+SETTINGS_ADVANCED_TABS := []Settings_Page {
+	{N_("Privacy"), .Privacy},
+	{N_("Audit logs"), .Audit_Logs},
+	{N_("Developer"), .Advanced},
+}
+
+settings_tabs :: proc(section: Settings_Section) -> []Settings_Page {
+	#partial switch section {
 	case .General:
 		return SETTINGS_GENERAL_TABS
 	case .Appearance:
@@ -321,7 +372,7 @@ settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
 }
 
 settings_tab_strip :: proc(ui: ^Ui_State) {
-	tabs := settings_tabs(ui)
+	tabs := settings_tabs(ui.settings_section)
 	if len(tabs) == 0 {return}
 	if clay.UI(clay.ID("SettingsTabs"))(
 	{
@@ -332,7 +383,7 @@ settings_tab_strip :: proc(ui: ^Ui_State) {
 		},
 	},
 	) {
-		for label, i in tabs {
+		for page, i in tabs {
 			selected := ui.settings_tab == i
 			if clay.UI(clay.ID("SettingsTab", u32(i)))(
 			{
@@ -358,7 +409,7 @@ settings_tab_strip :: proc(ui: ^Ui_State) {
 			},
 			) {
 				clay.Text(
-					tr(label),
+					tr(page.label),
 					{fontId = FONT_TITLE, fontSize = 12, textColor = selected ? ACCENT : TEXT_DIM},
 				)
 			}
@@ -419,36 +470,6 @@ toggle :: proc(id_str: string, on: bool) {
 	}
 }
 
-// Illustrated identity remains quiet so the controls own the property page.
-settings_header :: proc(section: Settings_Section, title: string, sub: string) {
-	if clay.UI(clay.ID("SettingsHead"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			childGap = 10,
-			childAlignment = {y = .Center},
-			padding = {bottom = 12},
-		},
-	},
-	) {
-		settings_illustration("SettingsHeadArt", section, 40)
-		if clay.UI(clay.ID("SettingsHeadCol"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 4,
-			},
-		},
-		) {
-			clay.Text(title, {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
-			if len(sub) > 0 {
-				clay.Text(sub, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
-			}
-		}
-	}
-}
-
 // ── Pane dispatch ───────────────────────────────────────────────────
 
 settings_description :: proc(section: Settings_Section) -> string {
@@ -484,89 +505,140 @@ settings_description :: proc(section: Settings_Section) -> string {
 }
 
 settings_pane :: proc(ui: ^Ui_State) {
+	wide := settings_wide(ui)
 	if clay.UI(clay.ID("SettingsRoot"))(
-	{
-		layout = {
-			sizing = {clay.SizingFixed(page_w(ui)), clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-		},
-	},
+	{layout = {sizing = {clay.SizingFixed(page_w(ui)), clay.SizingGrow()}}},
 	) {
-		settings_navigation(ui)
-		if clay.UI(clay.ID("SettingsPage"))(
+		if wide {
+			if clay.UI(clay.ID("SettingsTaskPane"))(
+			{
+				layout = {
+					sizing = {clay.SizingFixed(SETTINGS_PANE_W), clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					padding = clay.PaddingAll(12),
+					childGap = 14,
+				},
+				backgroundColor = STATUS_BAR,
+				border = {color = DIVIDER, width = {right = 1}},
+				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			},
+			) {
+				settings_nav_box(ui)
+				settings_related_boxes(ui)
+			}
+			scrollbar(clay.ID("SettingsTaskPane"))
+		}
+		if clay.UI(clay.ID("SettingsMain"))(
 		{
 			layout = {
 				sizing = {clay.SizingGrow(), clay.SizingGrow()},
 				layoutDirection = .TopToBottom,
-				padding = clay.PaddingAll(page_w(ui) < 560 ? 12 : 24),
-				childAlignment = {x = .Center},
 			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
-			if clay.UI(clay.ID("SettingsContent"))(
+			if ui.settings_section != .Home {settings_banner(ui)}
+			if clay.UI(clay.ID("SettingsPage"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(settings_content_width(ui))},
+					sizing = {clay.SizingGrow(), clay.SizingGrow()},
 					layoutDirection = .TopToBottom,
-					childGap = 0,
+					padding = clay.PaddingAll(settings_main_w(ui) < 560 ? 12 : 24),
+					childAlignment = {x = .Center},
 				},
+				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 			},
 			) {
-				if ui.settings_section != .Home {
-					section := SETTINGS_SECTIONS[ui.settings_section]
-					settings_header(
-						ui.settings_section,
-						tr(section.label),
-						tr(settings_description(ui.settings_section)),
-					)
-					settings_tab_strip(ui)
-				}
-				if ui.settings_section == .Home {
-					settings_home(ui)
-				} else if clay.UI(clay.ID("SettingsSheet"))(
+				if clay.UI(clay.ID("SettingsContent"))(
 				{
 					layout = {
-						sizing = {width = clay.SizingGrow()},
+						sizing = {width = clay.SizingFixed(settings_content_width(ui))},
 						layoutDirection = .TopToBottom,
-						padding = clay.PaddingAll(page_w(ui) < 560 ? 8 : 16),
-						childGap = 18,
+						childGap = 0,
 					},
-					backgroundColor = len(settings_tabs(ui)) > 0 ? PANEL : {},
-					border = len(settings_tabs(ui)) > 0 ? clay.BorderElementConfig{color = FIELD_BORDER, width = {left = 1, right = 1, bottom = 1}} : {},
-					cornerRadius = {bottomLeft = 3 * R_SCALE, bottomRight = 3 * R_SCALE},
 				},
 				) {
-					#partial switch ui.settings_section {
-					case .General:
-						settings_general(ui)
-					case .Folders:
-						settings_folders(ui)
-					case .Speech:
-						settings_speech(ui)
-					case .Network:
-						settings_network(ui)
-					case .Keys:
-						settings_keys(ui)
-					case .Appearance:
-						settings_appearance(ui)
-					case .Notifications:
-						settings_notifications(ui)
-					case .Storage:
-						settings_storage(ui)
-					case .Advanced:
-						settings_advanced(ui)
-					case .About:
-						settings_about(ui)
-					case .Debug:
-						settings_debug(ui)
-					case .KP:
-						settings_kp(ui)
+					if !wide {
+						if clay.UI(clay.ID("SettingsTaskStack"))(
+						{
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								layoutDirection = .TopToBottom,
+								padding = {bottom = 18},
+								childGap = 12,
+							},
+						},
+						) {
+							settings_nav_box(ui)
+						}
+					}
+					tabs := settings_tabs(ui.settings_section)
+					on_menu := settings_on_menu(ui)
+					if ui.settings_section != .Home && !on_menu {
+						settings_tab_strip(ui)
+					}
+					if ui.settings_section == .Home {
+						settings_home(ui)
+					} else if on_menu {
+						settings_category_menu(ui)
+					} else if clay.UI(clay.ID("SettingsSheet"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							padding = clay.PaddingAll(settings_main_w(ui) < 560 ? 8 : 16),
+							childGap = 18,
+						},
+						backgroundColor = len(tabs) > 0 ? PANEL : {},
+						border = len(tabs) > 0 ? clay.BorderElementConfig{color = FIELD_BORDER, width = {left = 1, right = 1, bottom = 1}} : {},
+						cornerRadius = {bottomLeft = 3 * R_SCALE, bottomRight = 3 * R_SCALE},
+					},
+					) {
+						#partial switch ui.settings_section {
+						case .General:
+							settings_general(ui)
+						case .Folders:
+							settings_folders(ui)
+						case .Speech:
+							settings_speech(ui)
+						case .Network:
+							settings_network(ui)
+						case .Keys:
+							settings_keys(ui)
+						case .Appearance:
+							settings_appearance(ui)
+						case .Notifications:
+							settings_notifications(ui)
+						case .Storage:
+							settings_storage(ui)
+						case .Advanced:
+							settings_advanced(ui)
+						case .About:
+							settings_about(ui)
+						case .Debug:
+							settings_debug(ui)
+						case .KP:
+							settings_kp(ui)
+						}
+					}
+					// Related links follow the page when the pane can't sit beside it.
+					if !wide {
+						if clay.UI(clay.ID("SettingsRelatedStack"))(
+						{
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								layoutDirection = .TopToBottom,
+								padding = {top = 24},
+								childGap = 12,
+							},
+						},
+						) {
+							settings_related_boxes(ui)
+						}
 					}
 				}
 			}
+			scrollbar(clay.ID("SettingsPage"))
 		}
-		scrollbar(clay.ID("SettingsPage"))
 	}
 
 	if open_now(clay.ID("ThemeEdit"), ui.theme_edit) {
@@ -1800,7 +1872,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	for _, i in settings_tabs(ui) {
+	for _, i in settings_tabs(ui.settings_section) {
 		if clay.PointerOver(clay.ID("SettingsTab", u32(i))) && ui.settings_tab != i {
 			if ui.settings_section == .Keys {
 				keys_forget(ui)

@@ -370,10 +370,14 @@ phone_back_action :: proc(ui: ^Ui_State) {
 	case .Contacts:
 		ui.selected_contact = -1
 	case .Settings:
-		if ui.settings_section == .Home {
+		// Sheet -> its category menu -> home -> chats.
+		switch {
+		case ui.settings_section == .Home:
 			ui.page = .Chats
-		} else {
+		case settings_on_menu(ui) || !settings_has_menu(ui.settings_section):
 			settings_open(ui, nil, .Home)
+		case:
+			settings_open(ui, nil, ui.settings_section)
 		}
 	case .Archived, .Profile:
 		ui.page = .Chats // no list half of their own to fall back to

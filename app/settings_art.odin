@@ -3,11 +3,56 @@ package main
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
-// Original category artwork. SVG sources and the embedded transparent PNGs
-// live together under assets/settings and share the project's AGPL v3 license.
+// Every illustration settings draws: one per category, plus one per
+// property page that no category picture already describes.
+@(private)
+Settings_Art :: enum {
+	Home,
+	General,
+	Folders,
+	Speech,
+	Network,
+	Keys,
+	Appearance,
+	Notifications,
+	Storage,
+	Advanced,
+	About,
+	Startup,
+	Language,
+	Messaging,
+	Interface,
+	Avatars,
+	Read_Aloud,
+	Linked_Events,
+	Key_Packages,
+	Security,
+	Privacy,
+	Audit_Logs,
+}
+
 // Debug and KP reuse the toolbox and identity illustrations respectively.
+@(private)
+SECTION_ART := [Settings_Section]Settings_Art {
+	.Home          = .Home,
+	.General       = .General,
+	.Folders       = .Folders,
+	.Speech        = .Speech,
+	.Network       = .Network,
+	.Keys          = .Keys,
+	.Appearance    = .Appearance,
+	.Notifications = .Notifications,
+	.Storage       = .Storage,
+	.Advanced      = .Advanced,
+	.About         = .About,
+	.Debug         = .Advanced,
+	.KP            = .Keys,
+}
+
+// Original artwork. SVG sources and the embedded transparent PNGs live
+// together under assets/settings and share the project's AGPL v3 license.
 @(private = "file")
-SETTINGS_ART := [Settings_Section]struct {
+SETTINGS_ART := [Settings_Art]struct {
 	url: string,
 	png: []u8,
 } {
@@ -22,16 +67,22 @@ SETTINGS_ART := [Settings_Section]struct {
 	.Storage       = {"settings-art://storage", #load("assets/settings/storage.png")},
 	.Advanced      = {"settings-art://advanced", #load("assets/settings/advanced.png")},
 	.About         = {"settings-art://about", #load("assets/settings/about.png")},
-	.Debug         = {},
-	.KP            = {},
+	.Startup       = {"settings-art://startup", #load("assets/settings/startup.png")},
+	.Language      = {"settings-art://language", #load("assets/settings/language.png")},
+	.Messaging     = {"settings-art://messaging", #load("assets/settings/messaging.png")},
+	.Interface     = {"settings-art://interface", #load("assets/settings/interface.png")},
+	.Avatars       = {"settings-art://avatars", #load("assets/settings/avatars.png")},
+	.Read_Aloud    = {"settings-art://read-aloud", #load("assets/settings/read-aloud.png")},
+	.Linked_Events = {"settings-art://linked-events", #load("assets/settings/linked-events.png")},
+	.Key_Packages  = {"settings-art://key-packages", #load("assets/settings/key-packages.png")},
+	.Security      = {"settings-art://security", #load("assets/settings/security.png")},
+	.Privacy       = {"settings-art://privacy", #load("assets/settings/privacy.png")},
+	.Audit_Logs    = {"settings-art://audit-logs", #load("assets/settings/audit-logs.png")},
 }
 
 @(private)
-settings_illustration :: proc(id: string, section: Settings_Section, size: f32) {
-	section := section
-	if section == .Debug {section = .Advanced}
-	if section == .KP {section = .Keys}
-	art := SETTINGS_ART[section]
+settings_illustration :: proc(id: string, which: Settings_Art, size: f32) {
+	art := SETTINGS_ART[which]
 	tex := local_pic(art.url)
 	if tex == nil {
 		image := rl.LoadImageFromMemory(".png", raw_data(art.png), i32(len(art.png)))

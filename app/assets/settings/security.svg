@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 96 96">
+<!-- Original White Noise category illustration, created for this project.
+     Licensed under the project's GNU AGPL v3 license; no third-party artwork. -->
+<title>Security settings illustration</title>
+<defs>
+<linearGradient id="blue" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#a5e5ff"/><stop offset=".46" stop-color="#4caddd"/><stop offset="1" stop-color="#2873b6"/></linearGradient>
+<linearGradient id="navy" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#6789a6"/><stop offset="1" stop-color="#344d70"/></linearGradient>
+<linearGradient id="silver" x1="0" y1="0" x2=".5" y2="1"><stop stop-color="#fff"/><stop offset=".48" stop-color="#dce6ec"/><stop offset="1" stop-color="#8da5b8"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#fff4b5"/><stop offset=".42" stop-color="#f9cf66"/><stop offset="1" stop-color="#d99536"/></linearGradient>
+<linearGradient id="green" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#d7f4a5"/><stop offset=".5" stop-color="#9ed06c"/><stop offset="1" stop-color="#5d9d58"/></linearGradient>
+<linearGradient id="red" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#ffc0a2"/><stop offset=".5" stop-color="#e6826a"/><stop offset="1" stop-color="#b84d49"/></linearGradient>
+<filter id="shadow" x="-.3" y="-1" width="1.6" height="3"><feGaussianBlur stdDeviation="2"/></filter>
+</defs>
+<ellipse cx="48" cy="82" rx="35" ry="5" fill="#213a59" opacity=".22" filter="url(#shadow)"/>
+<path d="M48 10 78 20v22c0 20-13 32-30 40C31 74 18 62 18 42V20Z" fill="url(#blue)" stroke="#2b5f8e" stroke-width="2" stroke-linejoin="round"/>
+<path d="M48 16 72 24v18c0 16-10 26-24 33Z" fill="#fff" opacity=".22"/>
+<path d="M24 24 48 16" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+<path d="M38 45v-7a10 10 0 0 1 20 0v7" fill="none" stroke="#6b849b" stroke-width="5" stroke-linecap="round"/>
+<path d="M38 45v-7a10 10 0 0 1 20 0v7" fill="none" stroke="url(#silver)" stroke-width="2.5" stroke-linecap="round"/>
+<rect x="32" y="44" width="32" height="25" rx="4" fill="url(#gold)" stroke="#a47936" stroke-width="2"/>
+<path d="M36 48h24" stroke="#fff4c9" stroke-width="2" stroke-linecap="round"/>
+<circle cx="48" cy="55" r="3.5" fill="#6b4d22"/>
+<path d="M48 57v6" stroke="#6b4d22" stroke-width="3" stroke-linecap="round"/>
+</svg>

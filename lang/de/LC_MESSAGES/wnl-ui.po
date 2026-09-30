@@ -245,6 +245,9 @@ msgstr "Paket hinzufügen"
 msgid "Add reaction"
 msgstr "Reaktion hinzufügen"
 
+msgid "Add relays for linked events"
+msgstr "Relays für verlinkte Ereignisse hinzufügen"
+
 msgid "Add someone by npub, or make a group of your own."
 msgstr "Füge jemanden per npub hinzu oder erstelle eine eigene Gruppe."
 
@@ -272,6 +275,9 @@ msgstr "Alle"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "Alle Konten bleiben verbunden. Beim Wechseln ändert sich nur, welches du gerade ansiehst."
 
+msgid "All categories"
+msgstr "Alle Kategorien"
+
 msgid "All senders"
 msgstr "Alle Absender"
 
@@ -289,6 +295,9 @@ msgstr "Bernstein"
 
 msgid "An empty box derives its value. The window previews as you type."
 msgstr "Ein leeres Feld leitet seinen Wert ab. Das Fenster zeigt beim Tippen eine Vorschau."
+
+msgid "Animations are distracting"
+msgstr "Animationen lenken ab"
 
 msgid "Another group change took precedence. Review your group settings."
 msgstr "Eine andere Gruppenänderung hatte Vorrang. Überprüfe deine Gruppeneinstellungen."
@@ -486,6 +495,9 @@ msgstr "Kartenmulde"
 msgid "Center the conversation"
 msgstr "Unterhaltung zentrieren"
 
+msgid "Centre the conversation"
+msgstr "Unterhaltung zentrieren"
+
 msgid "Centred conversation"
 msgstr "Zentrierte Unterhaltung"
 
@@ -498,7 +510,28 @@ msgstr "Foto ändern"
 msgid "Change picture"
 msgstr "Bild ändern"
 
+msgid "Change the date format"
+msgstr "Datumsformat ändern"
+
+msgid "Change the interface language"
+msgstr "Sprache der Oberfläche ändern"
+
+msgid "Change the message text size"
+msgstr "Textgröße der Nachrichten ändern"
+
+msgid "Change the scroll speed"
+msgstr "Scrollgeschwindigkeit ändern"
+
+msgid "Change the theme"
+msgstr "Theme ändern"
+
+msgid "Change the time format"
+msgstr "Zeitformat ändern"
+
 msgid "Change vault password"
+msgstr "Tresor-Passwort ändern"
+
+msgid "Change your vault password"
 msgstr "Tresor-Passwort ändern"
 
 msgid "Change..."
@@ -547,6 +580,9 @@ msgstr "Chip-Text"
 msgid "Choose a destination for this chat."
 msgstr "Wähle einen Zielordner für diesen Chat."
 
+msgid "Choose an emoji style"
+msgstr "Emoji-Stil wählen"
+
 msgid "Choose at most two emoji."
 msgstr "Wähle höchstens zwei Emojis."
 
@@ -559,6 +595,15 @@ msgstr "Bild wählen"
 msgid "Choose one or two emoji. Every member sees the same image."
 msgstr "Wähle ein oder zwei Emojis. Alle Mitglieder sehen dasselbe Bild."
 
+msgid "Choose one-tap reactions"
+msgstr "Schnellreaktionen wählen"
+
+msgid "Choose the crop circle shape"
+msgstr "Kornkreis-Form wählen"
+
+msgid "Choose the default avatar shape"
+msgstr "Standardform für Avatare wählen"
+
 msgid "Choose what gets your attention."
 msgstr "Wähle, worauf du aufmerksam gemacht wirst."
 
@@ -568,11 +613,23 @@ msgstr "Wähle, was du ändern möchtest."
 msgid "Choose when and how White Noise alerts you."
 msgstr "Wähle, wann und wie White Noise dich benachrichtigt."
 
+msgid "Choose where events open"
+msgstr "Wähle, wo Ereignisse geöffnet werden"
+
+msgid "Choose where people reach you"
+msgstr "Wähle, wo man dich erreicht"
+
+msgid "Choose where you publish"
+msgstr "Wähle, wo du veröffentlichst"
+
 msgid "Circle"
 msgstr "Kreis"
 
 msgid "Clear cache"
 msgstr "Cache leeren"
+
+msgid "Clear cached attachments"
+msgstr "Zwischengespeicherte Anhänge löschen"
 
 msgid "Clear effect"
 msgstr "Effekt entfernen"
@@ -615,6 +672,9 @@ msgstr "Chatliste einklappen"
 
 msgid "Collapse transcription"
 msgstr "Transkription einklappen"
+
+msgid "Collecting logs for a bug report"
+msgstr "Logs für einen Fehlerbericht sammeln"
 
 msgid "Collector and retention"
 msgstr "Erfassungsdienst und Aufbewahrung"
@@ -709,6 +769,9 @@ msgstr "Text kopieren"
 
 msgid "Copy this link and open it in your browser."
 msgstr "Kopiere diesen Link und öffne ihn in deinem Browser."
+
+msgid "Copy your public key"
+msgstr "Deinen öffentlichen Schlüssel kopieren"
 
 msgid "Coral"
 msgstr "Koralle"
@@ -1252,6 +1315,9 @@ msgstr "Entwicklermodus aus"
 msgid "Developer mode on"
 msgstr "Entwicklermodus an"
 
+msgid "Developer tools"
+msgstr "Entwicklerwerkzeuge"
+
 msgid "Device vault"
 msgstr "Gerätetresor"
 
@@ -1273,8 +1339,14 @@ msgstr "Diktiere Entwürfe und transkribiere Audionachrichten auf deinem Gerät.
 msgid "Dictate messages and listen to them aloud."
 msgstr "Diktiere Nachrichten und lass sie dir vorlesen."
 
+msgid "Dictate your messages"
+msgstr "Nachrichten diktieren"
+
 msgid "Dictation"
 msgstr "Diktieren"
+
+msgid "Dictation doesn't work"
+msgstr "Diktieren funktioniert nicht"
 
 #, c-format
 msgid "Difficulty: %d/5"
@@ -1487,9 +1559,6 @@ msgstr "Ungelesene Chats filtern"
 msgid "Final render"
 msgstr "Endgültiges Rendering"
 
-msgid "Find a setting"
-msgstr "Einstellung suchen"
-
 msgid "Find a setting..."
 msgstr "Einstellung suchen..."
 
@@ -1590,6 +1659,9 @@ msgstr "Dein Schlüssel wird erzeugt"
 msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr "Erhalte eine Benachrichtigung, wenn eine Nachricht in einem Chat ankommt, den du gerade nicht ansiehst."
 
+msgid "Get desktop notifications"
+msgstr "Desktop-Benachrichtigungen erhalten"
+
 msgid "Get started"
 msgstr "Erste Schritte"
 
@@ -1634,6 +1706,9 @@ msgstr "Gruppiert"
 
 msgid "Hard shadows"
 msgstr "Harte Schatten"
+
+msgid "Have messages read aloud"
+msgstr "Nachrichten vorlesen lassen"
 
 msgid "Help"
 msgstr "Hilfe"
@@ -1717,9 +1792,6 @@ msgstr "Bild importieren"
 msgid "Import..."
 msgstr "Importieren..."
 
-msgid "Inbox relays"
-msgstr "Empfangs-Relays"
-
 msgid "Incoming messages"
 msgstr "Eingehende Nachrichten"
 
@@ -1741,8 +1813,14 @@ msgstr "Sieh dir MLS-Schlüsselpakete an."
 msgid "Inspect application state and events."
 msgstr "Sieh dir den Anwendungszustand und Ereignisse an."
 
+msgid "Inspect key packages"
+msgstr "Schlüsselpakete untersuchen"
+
 msgid "Inspect published MLS key packages."
 msgstr "Sieh dir veröffentlichte MLS-Schlüsselpakete an."
+
+msgid "Inspect the current session"
+msgstr "Aktuelle Sitzung untersuchen"
 
 msgid "Inspect the current session."
 msgstr "Sieh dir die aktuelle Sitzung an."
@@ -1989,9 +2067,6 @@ msgstr "Verwalte Verbindungen und veröffentlichte Relay-Listen."
 msgid "Manage local files and encrypted backups."
 msgstr "Verwalte lokale Dateien und verschlüsselte Backups."
 
-msgid "Manage your relays"
-msgstr "Deine Relays verwalten"
-
 msgid "Mar"
 msgstr "März"
 
@@ -2036,6 +2111,9 @@ msgstr "Nachrichtentext kopiert"
 
 msgid "Message text size"
 msgstr "Textgröße von Nachrichten"
+
+msgid "Messages aren't arriving"
+msgstr "Nachrichten kommen nicht an"
 
 msgid "Messaging"
 msgstr "Nachrichten"
@@ -2260,8 +2338,14 @@ msgstr "Nicht festgelegt"
 msgid "Notes to self"
 msgstr "Eigene Notizen"
 
+msgid "Nothing is read aloud"
+msgstr "Nichts wird vorgelesen"
+
 msgid "Notifications"
 msgstr "Benachrichtigungen"
+
+msgid "Notifications don't appear"
+msgstr "Benachrichtigungen erscheinen nicht"
 
 msgid "Nov"
 msgstr "Nov."
@@ -2398,14 +2482,23 @@ msgstr "Pfad kopiert"
 msgid "Pause"
 msgstr "Pause"
 
+msgid "Peers can't find you"
+msgstr "Andere finden dich nicht"
+
 msgid "People"
 msgstr "Kontakte"
+
+msgid "People can't invite you"
+msgstr "Andere können dich nicht einladen"
 
 msgid "Pets"
 msgstr "Haustiere"
 
 msgid "Photos"
 msgstr "Fotos"
+
+msgid "Pick a category"
+msgstr "Wähle eine Kategorie"
 
 msgid "Pick a chat to send it to. They choose whether to use it."
 msgstr "Wähle einen Chat, an den es gesendet wird. Die anderen entscheiden, ob sie es verwenden."
@@ -2424,6 +2517,9 @@ msgstr "Wähle ein Passwort, mit dem der Schlüssel verschlüsselt wird. Du brau
 
 msgid "Pick a password. It encrypts everything in the app, and there is no way to recover it."
 msgstr "Wähle ein Passwort. Es verschlüsselt alles in der App, und es gibt keine Möglichkeit, es wiederherzustellen."
+
+msgid "Pick a task..."
+msgstr "Wähle eine Aufgabe..."
 
 msgid "Pick the whole app's look."
 msgstr "Wähle das Aussehen der gesamten App."
@@ -2454,6 +2550,12 @@ msgstr "Abspielen"
 
 msgid "Play a sound"
 msgstr "Ton abspielen"
+
+msgid "Play a sound for new messages"
+msgstr "Ton bei neuen Nachrichten abspielen"
+
+msgid "Play interface sounds"
+msgstr "Oberflächenklänge abspielen"
 
 msgid "Pre-order"
 msgstr "Vorbestellung"
@@ -2524,6 +2626,9 @@ msgstr "Öffentlicher Schlüssel, sicher zum Teilen."
 
 msgid "Publish"
 msgstr "Veröffentlichen"
+
+msgid "Publish a key package"
+msgstr "Schlüsselpaket veröffentlichen"
 
 msgid "Publish changes"
 msgstr "Änderungen veröffentlichen"
@@ -2600,6 +2705,9 @@ msgstr "Wird vorgelesen..."
 
 msgid "Recent"
 msgstr "Zuletzt verwendet"
+
+msgid "Record audit logs"
+msgstr "Audit-Protokolle aufzeichnen"
 
 msgid "Record group audit log files on this device. Identifiers are hashed."
 msgstr "Zeichnet Gruppen-Audit-Protokolldateien auf diesem Gerät auf. Kennungen werden gehasht."
@@ -2683,6 +2791,9 @@ msgstr "Erneut veröffentlichen"
 msgid "Republish relay lists"
 msgstr "Relay-Listen erneut veröffentlichen"
 
+msgid "Republish your relay lists"
+msgstr "Relay-Listen erneut veröffentlichen"
+
 msgid "Reset"
 msgstr "Zurücksetzen"
 
@@ -2707,6 +2818,9 @@ msgstr "Letzten Chat beim Start wiederherstellen"
 msgid "Restore the default reactions"
 msgstr "Standardreaktionen wiederherstellen"
 
+msgid "Restore the last chat on launch"
+msgstr "Letzten Chat beim Start öffnen"
+
 msgid "Retry"
 msgstr "Erneut versuchen"
 
@@ -2718,6 +2832,9 @@ msgstr "Versteckte Nachricht anzeigen"
 
 msgid "Reveal private key (nsec)"
 msgstr "Privaten Schlüssel anzeigen (nsec)"
+
+msgid "Reveal your secret key"
+msgstr "Deinen geheimen Schlüssel anzeigen"
 
 msgid "Right click"
 msgstr "Rechtsklick"
@@ -2881,8 +2998,14 @@ msgstr "Sicherheit & Datenschutz"
 msgid "Security actions"
 msgstr "Sicherheitsaktionen"
 
+msgid "See also"
+msgstr "Siehe auch"
+
 msgid "See and hear it with today's sound and preview settings."
 msgstr "Sieh und höre sie mit den aktuellen Ton- und Vorschau-Einstellungen."
+
+msgid "See where your data is stored"
+msgstr "Sieh nach, wo deine Daten liegen"
 
 msgid "Select a chat"
 msgstr "Chat auswählen"
@@ -3026,6 +3149,9 @@ msgstr "Weniger anzeigen"
 msgid "Show message preview"
 msgstr "Nachrichtenvorschau anzeigen"
 
+msgid "Show or hide message previews"
+msgstr "Nachrichtenvorschau ein- oder ausblenden"
+
 msgid "Shown on the message menu. Tap one to remove it. Up to 16."
 msgstr "Werden im Nachrichtenmenü angezeigt. Tippe eines an, um es zu entfernen. Bis zu 16."
 
@@ -3068,6 +3194,9 @@ msgstr "Verkauft"
 
 msgid "Sort chats by recent activity"
 msgstr "Chats nach letzter Aktivität sortieren"
+
+msgid "Sounds don't play"
+msgstr "Töne werden nicht abgespielt"
 
 msgid "Speech"
 msgstr "Sprache & Stimme"
@@ -3193,6 +3322,9 @@ msgstr "Testbenachrichtigung"
 
 msgid "Text"
 msgstr "Text"
+
+msgid "Text is hard to read"
+msgstr "Text ist schwer zu lesen"
 
 msgid "Text low"
 msgstr "Text schwach"
@@ -3346,6 +3478,9 @@ msgstr "Reisen"
 msgid "Trophy"
 msgstr "Trophäe"
 
+msgid "Troubleshooters"
+msgstr "Problembehandlung"
+
 msgid "Trusted link sites"
 msgstr "Vertrauenswürdige Websites"
 
@@ -3354,6 +3489,9 @@ msgstr "Versuche eine andere Suche."
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "Schalte animierte Übergänge, Flugbewegungen und Effekte aus. Zustände ändern sich weiterhin, nichts bewegt sich."
+
+msgid "Turn on developer mode"
+msgstr "Entwicklermodus einschalten"
 
 msgid "Type a command"
 msgstr "Befehl eingeben"
@@ -3405,6 +3543,9 @@ msgstr "Updates"
 
 msgid "Updating issue tracking..."
 msgstr "Meldungsverfolgung wird aktualisiert..."
+
+msgid "Upload custom emoji"
+msgstr "Eigene Emoji hochladen"
 
 msgid "Uploaded emoji"
 msgstr "Hochgeladene Emojis"
@@ -3459,6 +3600,9 @@ msgstr "Als Hex anzeigen"
 
 msgid "View full profile"
 msgstr "Vollständiges Profil anzeigen"
+
+msgid "View keyboard shortcuts"
+msgstr "Tastenkürzel ansehen"
 
 msgid "View raw event"
 msgstr "Rohes Ereignis anzeigen"
@@ -3531,6 +3675,9 @@ msgstr "White Noise %s · Odin-Port"
 msgid "White Noise and this session."
 msgstr "Erfahre mehr über White Noise und diese Sitzung."
 
+msgid "White Noise doesn't open at login"
+msgstr "White Noise startet nicht bei der Anmeldung"
+
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
 msgstr "White Noise ist nicht mit GifSnap verbunden. Es gibt keinen Grund zu erwarten, dass GifSnap diese Daten missbraucht, aber es ist ein Drittanbieter außerhalb der Kontrolle von White Noise."
 
@@ -3590,6 +3737,9 @@ msgstr "Du: %s"
 msgid "Your current password"
 msgstr "Dein aktuelles Passwort"
 
+msgid "Your disk is filling up"
+msgstr "Dein Speicher wird voll"
+
 msgid "Your identity and the secrets on this device."
 msgstr "Verwalte deine Identität und die geheimen Daten auf diesem Gerät."
 
@@ -3617,14 +3767,8 @@ msgstr "Dein Passwort"
 msgid "Your profile"
 msgstr "Dein Profil"
 
-msgid "Your public key"
-msgstr "Dein öffentlicher Schlüssel"
-
 msgid "Your public key. Safe to share."
 msgstr "Dein öffentlicher Schlüssel. Sicher zum Teilen."
-
-msgid "Your secret key"
-msgstr "Dein geheimer Schlüssel"
 
 msgid "Your stickers"
 msgstr "Deine Sticker"
@@ -3637,6 +3781,9 @@ msgstr "Vergrößern / verkleinern / zurücksetzen"
 
 msgid "Zoom out"
 msgstr "Verkleinern"
+
+msgid "Zoom the interface"
+msgstr "Oberfläche zoomen"
 
 #, c-format
 msgid "aka %s"
@@ -3696,6 +3843,9 @@ msgstr "npub, Hex, name@domain oder .bit (optional)"
 
 msgid "opened there"
 msgstr "dort geöffnet"
+
+msgid "or pick a page"
+msgstr "oder wähle eine Seite"
 
 msgid "plaintext"
 msgstr "Klartext"

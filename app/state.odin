@@ -606,6 +606,7 @@ Ui_State :: struct {
 	folder_menu_x, folder_menu_y:                          f32,
 	search_input:                                          [dynamic]u8,
 	settings_section:                                      Settings_Section,
+	settings_level:                                        Settings_Level, // category menu or its property sheet
 	settings_search:                                       [dynamic]u8,
 	settings_tab:                                          int,
 	settings_anchor:                                       string, // borrowed control ID for a task link

@@ -244,6 +244,9 @@ msgstr ""
 msgid "Add reaction"
 msgstr ""
 
+msgid "Add relays for linked events"
+msgstr ""
+
 msgid "Add someone by npub, or make a group of your own."
 msgstr ""
 
@@ -271,6 +274,9 @@ msgstr ""
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr ""
 
+msgid "All categories"
+msgstr ""
+
 msgid "All senders"
 msgstr ""
 
@@ -287,6 +293,9 @@ msgid "Amber"
 msgstr ""
 
 msgid "An empty box derives its value. The window previews as you type."
+msgstr ""
+
+msgid "Animations are distracting"
 msgstr ""
 
 msgid "Another group change took precedence. Review your group settings."
@@ -485,6 +494,9 @@ msgstr ""
 msgid "Center the conversation"
 msgstr ""
 
+msgid "Centre the conversation"
+msgstr ""
+
 msgid "Centred conversation"
 msgstr ""
 
@@ -497,7 +509,28 @@ msgstr ""
 msgid "Change picture"
 msgstr ""
 
+msgid "Change the date format"
+msgstr ""
+
+msgid "Change the interface language"
+msgstr ""
+
+msgid "Change the message text size"
+msgstr ""
+
+msgid "Change the scroll speed"
+msgstr ""
+
+msgid "Change the theme"
+msgstr ""
+
+msgid "Change the time format"
+msgstr ""
+
 msgid "Change vault password"
+msgstr ""
+
+msgid "Change your vault password"
 msgstr ""
 
 msgid "Change..."
@@ -546,6 +579,9 @@ msgstr ""
 msgid "Choose a destination for this chat."
 msgstr ""
 
+msgid "Choose an emoji style"
+msgstr ""
+
 msgid "Choose at most two emoji."
 msgstr ""
 
@@ -558,6 +594,15 @@ msgstr ""
 msgid "Choose one or two emoji. Every member sees the same image."
 msgstr ""
 
+msgid "Choose one-tap reactions"
+msgstr ""
+
+msgid "Choose the crop circle shape"
+msgstr ""
+
+msgid "Choose the default avatar shape"
+msgstr ""
+
 msgid "Choose what gets your attention."
 msgstr ""
 
@@ -567,10 +612,22 @@ msgstr ""
 msgid "Choose when and how White Noise alerts you."
 msgstr ""
 
+msgid "Choose where events open"
+msgstr ""
+
+msgid "Choose where people reach you"
+msgstr ""
+
+msgid "Choose where you publish"
+msgstr ""
+
 msgid "Circle"
 msgstr ""
 
 msgid "Clear cache"
+msgstr ""
+
+msgid "Clear cached attachments"
 msgstr ""
 
 msgid "Clear effect"
@@ -613,6 +670,9 @@ msgid "Collapse the chat list"
 msgstr ""
 
 msgid "Collapse transcription"
+msgstr ""
+
+msgid "Collecting logs for a bug report"
 msgstr ""
 
 msgid "Collector and retention"
@@ -707,6 +767,9 @@ msgid "Copy text"
 msgstr ""
 
 msgid "Copy this link and open it in your browser."
+msgstr ""
+
+msgid "Copy your public key"
 msgstr ""
 
 msgid "Coral"
@@ -1251,6 +1314,9 @@ msgstr ""
 msgid "Developer mode on"
 msgstr ""
 
+msgid "Developer tools"
+msgstr ""
+
 msgid "Device vault"
 msgstr ""
 
@@ -1272,7 +1338,13 @@ msgstr ""
 msgid "Dictate messages and listen to them aloud."
 msgstr ""
 
+msgid "Dictate your messages"
+msgstr ""
+
 msgid "Dictation"
+msgstr ""
+
+msgid "Dictation doesn't work"
 msgstr ""
 
 #, c-format
@@ -1486,9 +1558,6 @@ msgstr ""
 msgid "Final render"
 msgstr ""
 
-msgid "Find a setting"
-msgstr ""
-
 msgid "Find a setting..."
 msgstr ""
 
@@ -1589,6 +1658,9 @@ msgstr ""
 msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr ""
 
+msgid "Get desktop notifications"
+msgstr ""
+
 msgid "Get started"
 msgstr ""
 
@@ -1632,6 +1704,9 @@ msgid "Grouped"
 msgstr ""
 
 msgid "Hard shadows"
+msgstr ""
+
+msgid "Have messages read aloud"
 msgstr ""
 
 msgid "Help"
@@ -1716,9 +1791,6 @@ msgstr ""
 msgid "Import..."
 msgstr ""
 
-msgid "Inbox relays"
-msgstr ""
-
 msgid "Incoming messages"
 msgstr ""
 
@@ -1740,7 +1812,13 @@ msgstr ""
 msgid "Inspect application state and events."
 msgstr ""
 
+msgid "Inspect key packages"
+msgstr ""
+
 msgid "Inspect published MLS key packages."
+msgstr ""
+
+msgid "Inspect the current session"
 msgstr ""
 
 msgid "Inspect the current session."
@@ -1988,9 +2066,6 @@ msgstr ""
 msgid "Manage local files and encrypted backups."
 msgstr ""
 
-msgid "Manage your relays"
-msgstr ""
-
 msgid "Mar"
 msgstr ""
 
@@ -2034,6 +2109,9 @@ msgid "Message text copied"
 msgstr ""
 
 msgid "Message text size"
+msgstr ""
+
+msgid "Messages aren't arriving"
 msgstr ""
 
 msgid "Messaging"
@@ -2259,7 +2337,13 @@ msgstr ""
 msgid "Notes to self"
 msgstr ""
 
+msgid "Nothing is read aloud"
+msgstr ""
+
 msgid "Notifications"
+msgstr ""
+
+msgid "Notifications don't appear"
 msgstr ""
 
 msgid "Nov"
@@ -2397,13 +2481,22 @@ msgstr ""
 msgid "Pause"
 msgstr ""
 
+msgid "Peers can't find you"
+msgstr ""
+
 msgid "People"
+msgstr ""
+
+msgid "People can't invite you"
 msgstr ""
 
 msgid "Pets"
 msgstr ""
 
 msgid "Photos"
+msgstr ""
+
+msgid "Pick a category"
 msgstr ""
 
 msgid "Pick a chat to send it to. They choose whether to use it."
@@ -2422,6 +2515,9 @@ msgid "Pick a password to encrypt the key with. You will need it to import the k
 msgstr ""
 
 msgid "Pick a password. It encrypts everything in the app, and there is no way to recover it."
+msgstr ""
+
+msgid "Pick a task..."
 msgstr ""
 
 msgid "Pick the whole app's look."
@@ -2452,6 +2548,12 @@ msgid "Play"
 msgstr ""
 
 msgid "Play a sound"
+msgstr ""
+
+msgid "Play a sound for new messages"
+msgstr ""
+
+msgid "Play interface sounds"
 msgstr ""
 
 msgid "Pre-order"
@@ -2522,6 +2624,9 @@ msgid "Public key, safe to share."
 msgstr ""
 
 msgid "Publish"
+msgstr ""
+
+msgid "Publish a key package"
 msgstr ""
 
 msgid "Publish changes"
@@ -2598,6 +2703,9 @@ msgid "Reading aloud..."
 msgstr ""
 
 msgid "Recent"
+msgstr ""
+
+msgid "Record audit logs"
 msgstr ""
 
 msgid "Record group audit log files on this device. Identifiers are hashed."
@@ -2682,6 +2790,9 @@ msgstr ""
 msgid "Republish relay lists"
 msgstr ""
 
+msgid "Republish your relay lists"
+msgstr ""
+
 msgid "Reset"
 msgstr ""
 
@@ -2706,6 +2817,9 @@ msgstr ""
 msgid "Restore the default reactions"
 msgstr ""
 
+msgid "Restore the last chat on launch"
+msgstr ""
+
 msgid "Retry"
 msgstr ""
 
@@ -2716,6 +2830,9 @@ msgid "Reveal hidden message"
 msgstr ""
 
 msgid "Reveal private key (nsec)"
+msgstr ""
+
+msgid "Reveal your secret key"
 msgstr ""
 
 msgid "Right click"
@@ -2880,7 +2997,13 @@ msgstr ""
 msgid "Security actions"
 msgstr ""
 
+msgid "See also"
+msgstr ""
+
 msgid "See and hear it with today's sound and preview settings."
+msgstr ""
+
+msgid "See where your data is stored"
 msgstr ""
 
 msgid "Select a chat"
@@ -3025,6 +3148,9 @@ msgstr ""
 msgid "Show message preview"
 msgstr ""
 
+msgid "Show or hide message previews"
+msgstr ""
+
 msgid "Shown on the message menu. Tap one to remove it. Up to 16."
 msgstr ""
 
@@ -3066,6 +3192,9 @@ msgid "Sold"
 msgstr ""
 
 msgid "Sort chats by recent activity"
+msgstr ""
+
+msgid "Sounds don't play"
 msgstr ""
 
 msgid "Speech"
@@ -3191,6 +3320,9 @@ msgid "Test notification"
 msgstr ""
 
 msgid "Text"
+msgstr ""
+
+msgid "Text is hard to read"
 msgstr ""
 
 msgid "Text low"
@@ -3345,6 +3477,9 @@ msgstr ""
 msgid "Trophy"
 msgstr ""
 
+msgid "Troubleshooters"
+msgstr ""
+
 msgid "Trusted link sites"
 msgstr ""
 
@@ -3352,6 +3487,9 @@ msgid "Try a different search."
 msgstr ""
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
+msgstr ""
+
+msgid "Turn on developer mode"
 msgstr ""
 
 msgid "Type a command"
@@ -3403,6 +3541,9 @@ msgid "Updates"
 msgstr ""
 
 msgid "Updating issue tracking..."
+msgstr ""
+
+msgid "Upload custom emoji"
 msgstr ""
 
 msgid "Uploaded emoji"
@@ -3457,6 +3598,9 @@ msgid "View as hex"
 msgstr ""
 
 msgid "View full profile"
+msgstr ""
+
+msgid "View keyboard shortcuts"
 msgstr ""
 
 msgid "View raw event"
@@ -3530,6 +3674,9 @@ msgstr ""
 msgid "White Noise and this session."
 msgstr ""
 
+msgid "White Noise doesn't open at login"
+msgstr ""
+
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
 msgstr ""
 
@@ -3589,6 +3736,9 @@ msgstr ""
 msgid "Your current password"
 msgstr ""
 
+msgid "Your disk is filling up"
+msgstr ""
+
 msgid "Your identity and the secrets on this device."
 msgstr ""
 
@@ -3616,13 +3766,7 @@ msgstr ""
 msgid "Your profile"
 msgstr ""
 
-msgid "Your public key"
-msgstr ""
-
 msgid "Your public key. Safe to share."
-msgstr ""
-
-msgid "Your secret key"
 msgstr ""
 
 msgid "Your stickers"
@@ -3635,6 +3779,9 @@ msgid "Zoom in / out / reset"
 msgstr ""
 
 msgid "Zoom out"
+msgstr ""
+
+msgid "Zoom the interface"
 msgstr ""
 
 #, c-format
@@ -3694,6 +3841,9 @@ msgid "npub, hex, name@domain, or .bit (optional)"
 msgstr ""
 
 msgid "opened there"
+msgstr ""
+
+msgid "or pick a page"
 msgstr ""
 
 msgid "plaintext"

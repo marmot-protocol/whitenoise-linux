@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 96 96">
+<!-- Original White Noise category illustration, created for this project.
+     Licensed under the project's GNU AGPL v3 license; no third-party artwork. -->
+<title>Language settings illustration</title>
+<defs>
+<linearGradient id="blue" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#a5e5ff"/><stop offset=".46" stop-color="#4caddd"/><stop offset="1" stop-color="#2873b6"/></linearGradient>
+<linearGradient id="navy" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#6789a6"/><stop offset="1" stop-color="#344d70"/></linearGradient>
+<linearGradient id="silver" x1="0" y1="0" x2=".5" y2="1"><stop stop-color="#fff"/><stop offset=".48" stop-color="#dce6ec"/><stop offset="1" stop-color="#8da5b8"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#fff4b5"/><stop offset=".42" stop-color="#f9cf66"/><stop offset="1" stop-color="#d99536"/></linearGradient>
+<linearGradient id="green" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#d7f4a5"/><stop offset=".5" stop-color="#9ed06c"/><stop offset="1" stop-color="#5d9d58"/></linearGradient>
+<linearGradient id="red" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#ffc0a2"/><stop offset=".5" stop-color="#e6826a"/><stop offset="1" stop-color="#b84d49"/></linearGradient>
+<filter id="shadow" x="-.3" y="-1" width="1.6" height="3"><feGaussianBlur stdDeviation="2"/></filter>
+</defs>
+<ellipse cx="48" cy="83" rx="36" ry="5" fill="#213a59" opacity=".22" filter="url(#shadow)"/>
+<path d="M14 14h40a6 6 0 0 1 6 6v26a6 6 0 0 1-6 6H30l-11 10 2-10h-7a6 6 0 0 1-6-6V20a6 6 0 0 1 6-6Z" fill="url(#blue)" stroke="#2e5f8f" stroke-width="2" stroke-linejoin="round"/>
+<path d="M14 18h38" stroke="#e4f7ff" stroke-width="2" stroke-linecap="round"/>
+<path d="M17 41 28 19l11 22M20.5 34h15" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M42 36h40a6 6 0 0 1 6 6v24a6 6 0 0 1-6 6h-6l2 10-11-10H42a6 6 0 0 1-6-6V42a6 6 0 0 1 6-6Z" fill="url(#gold)" stroke="#a67538" stroke-width="2" stroke-linejoin="round"/>
+<path d="M42 40h38" stroke="#fff9d7" stroke-width="2" stroke-linecap="round"/>
+<path d="M50 47h24M62 43v24M52 57h20M56 67l-5 3m17-3 5 3" fill="none" stroke="#7a4f1f" stroke-width="3.5" stroke-linecap="round"/>
+</svg>
