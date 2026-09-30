@@ -129,12 +129,19 @@ fi
 
 if [ "${1:-}" != sources ]; then
 # Rebuild Clay: the upstream prebuilt archive has the slot-reuse bug too.
+# clay-scroll-target.patch keeps a clipped label from swallowing the wheel.
 CLAY_LIB="$CLAY/bindings/odin/clay-odin/linux/clay.a"
-CLAY_PATCH="$HERE/patches/clay-hashmap.patch"
-if [ ! -f "$HERE/build/clay/clay.a" ] || [ "$CLAY/clay.h" -nt "$HERE/build/clay/clay.a" ] || [ "$CLAY_PATCH" -nt "$HERE/build/clay/clay.a" ]; then
+CLAY_PATCHES=("$HERE/patches/clay-hashmap.patch" "$HERE/patches/clay-scroll-target.patch")
+CLAY_STALE=0
+for f in "$CLAY/clay.h" "${CLAY_PATCHES[@]}"; do
+  if [ "$f" -nt "$HERE/build/clay/clay.a" ]; then CLAY_STALE=1; fi
+done
+if [ ! -f "$HERE/build/clay/clay.a" ] || [ "$CLAY_STALE" = 1 ]; then
   mkdir -p "$HERE/build/clay"
   cp "$CLAY/clay.h" "$HERE/build/clay/clay.h"
-  git -C "$HERE" apply --directory=build/clay "$CLAY_PATCH"
+  for patch in "${CLAY_PATCHES[@]}"; do
+    git -C "$HERE" apply --directory=build/clay "$patch"
+  done
   cc -x c -c -DCLAY_IMPLEMENTATION -fPIC -O2 "$HERE/build/clay/clay.h" -o "$HERE/build/clay/clay.o"
   ar rcs "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.o"
 fi
@@ -707,6 +714,8 @@ if [ "${1:-}" = test ]; then
   "$HERE/build/event-layout-test"
   cc -O2 -I"$HERE/build/clay" "$HERE/tests/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"
   "$HERE/build/clay/hashmap-test"
+  cc -O2 -I"$HERE/build/clay" "$HERE/tests/clay_scroll_test.c" -lm -o "$HERE/build/clay/scroll-test"
+  "$HERE/build/clay/scroll-test"
   # Needs the Linux-only speech runtime (see the speech helpers above).
   if [ "$(uname -s)" = Linux ]; then
     cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/tests/stt-test.c" "$HERE/build/libwnipc.a" \

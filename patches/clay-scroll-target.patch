@@ -1,0 +1,24 @@
+diff --git a/clay.h b/clay.h
+--- a/clay.h
++++ b/clay.h
+@@ -4291,8 +4291,19 @@
+         }
+         scrollData->scrollPosition.y = CLAY__MIN(CLAY__MAX(scrollData->scrollPosition.y, -(CLAY__MAX(scrollData->contentSize.height - scrollData->layoutElement->dimensions.height, 0))), 0);
+ 
++        // Input goes to the innermost container under the pointer that can move
++        // along it. One that can't (a clipped one-line label under a vertical
++        // wheel) passes the input to its ancestors instead of swallowing it.
++        Clay_ClipElementConfig *clip = &scrollData->layoutElement->config.clip;
++        bool movesX = clip->horizontal && scrollData->contentSize.width > scrollData->layoutElement->dimensions.width;
++        bool movesY = clip->vertical && scrollData->contentSize.height > scrollData->layoutElement->dimensions.height;
++        bool takesInput = isPointerActive ? movesX || movesY : (scrollDelta.x != 0 && movesX) || (scrollDelta.y != 0 && movesY);
++        if (!takesInput) {
++            continue;
++        }
+         for (int32_t j = 0; j < context->pointerOverIds.length; ++j) { // TODO n & m are small here but this being n*m gives me the creeps
++            // pointerOverIds runs parent before child: a higher index is deeper.
+-            if (scrollData->layoutElement->id == Clay_ElementIdArray_Get(&context->pointerOverIds, j)->id) {
++            if (j > highestPriorityElementIndex && scrollData->layoutElement->id == Clay_ElementIdArray_Get(&context->pointerOverIds, j)->id) {
+                 highestPriorityElementIndex = j;
+                 highestPriorityScrollData = scrollData;
+             }
