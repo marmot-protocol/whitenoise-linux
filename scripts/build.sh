@@ -48,11 +48,11 @@ if [ ! -d "$MDK" ]; then
 fi
 
 if [ "$(git -C "$MDK" rev-parse HEAD)" != "$MDK_PIN" ]; then
-  for patch in "${MDK_PATCHES[@]}"; do
-    if git -C "$MDK" apply --reverse --check "$patch" 2>/dev/null; then
-      git -C "$MDK" apply --reverse "$patch"
-    fi
-  done
+  # Drop applied patches wholesale. Reverse-applying them one by one also
+  # "unapplies" hunks upstream's default branch already carries, which
+  # dirties a fresh clone and blocks the checkout below.
+  git -C "$MDK" reset --hard -q
+  git -C "$MDK" clean -fdq
   git -C "$MDK" fetch origin "$MDK_PIN"
   git -C "$MDK" checkout --detach "$MDK_PIN"
   rm -rf "$BUNDLE"
