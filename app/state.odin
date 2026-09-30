@@ -611,6 +611,7 @@ Ui_State :: struct {
 	folder_rule_focus:                                     int, // which rule box has the caret (focus == .FolderRule)
 	folder_rule_menu:                                      int, // rule row whose type menu is open, -1 = none
 	folder_match:                                          Folder_Match, // the editor's all/any toggle
+	board_drag:                                            Board_Drag, // a chat or folder held on the Folders settings page
 	folder_menu_open:                                      bool,
 	folder_menu_name:                                      string, // "" opens the Chats menu
 	folder_menu_x, folder_menu_y:                          f32,

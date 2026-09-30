@@ -669,7 +669,6 @@ settings_pane :: proc(ui: ^Ui_State) {
 @(private)
 settings_folders :: proc(ui: ^Ui_State) {
 	box := settings_box()
-	box.layout.sizing.width = clay.SizingFixed(min(580, settings_body_width(ui)))
 	if clay.UI(clay.ID("FoldersGroup"))(box) {
 		settings_group(tr("Folders"))
 		if clay.UI(clay.ID("SettingsFolderActions"))(
@@ -692,144 +691,21 @@ settings_folders :: proc(ui: ^Ui_State) {
 			},
 			) {
 				clay.Text(
-					tr("Create folders to organize your chats."),
+					tr(
+						"Drag a chat onto a folder to keep it there, or drag a folder to reorder it.",
+					),
 					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
 				)
 				clay.Text(
-					tr("Deleting a folder doesn't delete your chats."),
+					tr(
+						"A checked box means you placed the chat by hand. Clear it to let folder rules decide.",
+					),
 					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 				)
 			}
 			settings_button("SettingsFolderNew", tr("New folder"), ACCENT)
 		}
-		// Short lists fit their contents; long lists retain a bounded scroll viewport.
-		list_height := max(60, f32(rl.GetScreenHeight()) / UI_ZOOM - 240)
-		page := clay.GetElementData(clay.ID("SettingsPage"))
-		actions := clay.GetElementData(clay.ID("SettingsFolderActions"))
-		if page.found && actions.found {
-			page_scroll := clay.GetScrollContainerData(clay.ID("SettingsPage"))
-			offset := page_scroll.found ? page_scroll.scrollPosition.y : 0
-			used :=
-				actions.boundingBox.y + actions.boundingBox.height - page.boundingBox.y - offset
-			list_height = max(60, page.boundingBox.height - used - 30)
-		}
-		list_height = min(list_height, max(0, f32(len(ui.prefs.folders) * 40 - 4)))
-		if clay.UI(clay.ID("SettingsFolderList"))(
-		{
-			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingFixed(list_height)},
-				layoutDirection = .TopToBottom,
-				childGap = 4,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		},
-		) {
-			view := clay.GetScrollContainerData(clay.ID("SettingsFolderList"))
-			height :=
-				view.found ? view.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-			offset := view.found ? -view.scrollPosition.y : 0
-			first := clamp(int(offset / 40) - 2, 0, len(ui.prefs.folders))
-			last := clamp(int((offset + height) / 40) + 3, first, len(ui.prefs.folders))
-			if first > 0 {
-				if clay.UI(clay.ID("SettingsFoldersBefore"))(
-				{layout = {sizing = {height = clay.SizingFixed(f32(first) * 40 - 4)}}},
-				) {}
-			}
-			for i in first ..< last {
-				name := ui.prefs.folders[i]
-				row := settings_row()
-				row.layout.sizing.height = clay.SizingFixed(36)
-				row.backgroundColor =
-					clay.PointerOver(clay.ID("SettingsFolder", u32(i))) ? HOVER : {}
-				row.border = {
-					color = FIELD_BORDER,
-					width = {bottom = 1},
-				}
-				if clay.UI(clay.ID("SettingsFolder", u32(i)))(row) {
-					folder_icon(ui, name, 17)
-					if clay.UI(clay.ID("SettingsFolderName", u32(i)))(
-					{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
-					) {
-						clay.Text(
-							name,
-							{
-								fontId = FONT_TITLE,
-								fontSize = 13,
-								textColor = TEXT,
-								wrapMode = .None,
-							},
-						)
-					}
-					if clay.UI(clay.ID("SettingsFolderOrder", u32(i)))({layout = {childGap = 2}}) {
-						for direction in 0 ..< 2 {
-							id := direction == 0 ? "SettingsFolderUp" : "SettingsFolderDown"
-							enabled := direction == 0 ? i > 0 : i + 1 < len(ui.prefs.folders)
-							if clay.UI(clay.ID(id, u32(i)))(
-							{
-								layout = {
-									sizing = {clay.SizingFixed(26), clay.SizingFixed(26)},
-									childAlignment = {x = .Center, y = .Center},
-								},
-								backgroundColor = enabled && hovered() ? HOVER : {},
-								cornerRadius = rr(6),
-							},
-							) {
-								clay.Text(
-									direction == 0 ? "\uf062" : ICON_DOWN,
-									{
-										fontId = FONT_ICON,
-										fontSize = 12,
-										textColor = enabled ? TEXT_DIM : fade(TEXT_LO, 0.4),
-									},
-								)
-								if hovered() {
-									tooltip(direction == 0 ? tr("Move up") : tr("Move down"))
-									if enabled {cursor_raise(.Pointer)}
-								}
-							}
-						}
-					}
-					for action in 0 ..< 2 {
-						id := action == 0 ? "SettingsFolderEdit" : "SettingsFolderDelete"
-						if clay.UI(clay.ID(id, u32(i)))(
-						{
-							layout = {
-								sizing = {clay.SizingFixed(26), clay.SizingFixed(26)},
-								childAlignment = {x = .Center, y = .Center},
-							},
-							backgroundColor = hovered() ? HOVER : {},
-							cornerRadius = rr(6),
-						},
-						) {
-							clay.Text(
-								action == 0 ? ICON_PENCIL : ICON_TRASH,
-								{
-									fontId = FONT_ICON,
-									fontSize = 14,
-									textColor = action == 0 ? TEXT_DIM : DANGER,
-								},
-							)
-							if hovered() {
-								tooltip(action == 0 ? tr("Edit folder") : tr("Delete"))
-								cursor_raise(.Pointer)
-							}
-						}
-					}
-				}
-			}
-			if last < len(ui.prefs.folders) {
-				if clay.UI(clay.ID("SettingsFoldersAfter"))(
-				{
-					layout = {
-						sizing = {
-							height = clay.SizingFixed(f32(len(ui.prefs.folders) - last) * 40 - 4),
-						},
-					},
-				},
-				) {}
-			}
-		}
-		scrollbar(clay.ID("SettingsFolderList"))
+		folder_board(ui)
 	}
 }
 
@@ -1895,32 +1771,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	case .Home:
 		return
 	case .Folders:
-		if clicked("SettingsFolderNew") {
-			open_folder_modal(ui)
-			return
-		}
-		for _, i in ui.prefs.folders {
-			up := clay.PointerOver(clay.ID("SettingsFolderUp", u32(i)))
-			down := clay.PointerOver(clay.ID("SettingsFolderDown", u32(i)))
-			if up || down {
-				destination := i + (up ? -1 : 1)
-				if destination >= 0 && destination < len(ui.prefs.folders) {
-					ui.prefs.folders[i], ui.prefs.folders[destination] =
-						ui.prefs.folders[destination], ui.prefs.folders[i]
-					save_settings(ui)
-				}
-				return
-			}
-			if clay.PointerOver(clay.ID("SettingsFolderDelete", u32(i))) {
-				name := ui.prefs.folders[i]
-				confirm_ask(ui, .Delete_Folder, name, name)
-				return
-			}
-			if clay.PointerOver(clay.ID("SettingsFolder", u32(i))) {
-				open_folder_modal(ui, rename = i)
-				return
-			}
-		}
+		// handle_folder_board took every click on this page.
 		return
 	case .Speech:
 		if ui.prefs.stt_enabled {

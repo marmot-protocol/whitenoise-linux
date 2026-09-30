@@ -108,6 +108,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		if settings_handle_navigation(ui, client) {return}
+		// Drags need every frame, not just the release gate below.
+		if ui.settings_section == .Folders && handle_folder_board(ui) {return}
 	}
 
 	// Profile presses and keys, before the release gate below:

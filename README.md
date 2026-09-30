@@ -35,6 +35,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Per-chat unread tracking, surfaced as rail badges.
 - Deleting a chat folder requires confirmation, from both Settings and its context menu. Only the folder is removed; its chats stay in your chat list.
 - Folder rules file chats automatically: name includes a word, has a member (npub), has fewer or more than N people (you included), or has unread messages. Each folder matches all of its rules or any one of them. A chat goes to the first folder, in folder order, whose rules match. A chat you move by hand stays in that folder; choosing "Follow folder rules" in the move dialog hands it back to the rules. Member rules read each group's member list on every chat-list refresh, and only while such a rule exists.
+- Settings > Folders lists every chat under the folder it files into. Drag a chat onto a folder (Unfiled included) to keep it there, or drag a folder header to reorder folders. Chats placed by hand show a checked box; clearing it hands the chat back to the rules. Folders with no chats stay out of the chat list sidebar.
 
 **Media**
 

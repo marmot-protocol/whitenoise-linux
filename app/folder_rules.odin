@@ -119,12 +119,16 @@ folder_rules_match :: proc(set: Folder_Rules, facts: Chat_Facts) -> bool {
 	return set.match == .All
 }
 
-// Where a chat files: a hand placement into a folder that still exists,
-// else the first folder whose rules match, else Unfiled (len(folders)).
+// Where a chat files: a hand placement ("" keeps it in Unfiled) into a
+// folder that still exists, else the first folder whose rules match,
+// else Unfiled (len(folders)).
 @(private)
 chat_folder_slot :: proc(ui: ^Ui_State, chat: ^Chat_Row_Ui, slots: map[string]int) -> int {
-	if slot, placed := slots[ui.prefs.folder_of[chat.group_id]]; placed {return slot}
 	unfiled := len(ui.prefs.folders)
+	if folder, placed := ui.prefs.folder_of[chat.group_id]; placed {
+		if folder == "" {return unfiled}
+		if slot, found := slots[folder]; found {return slot}
+	}
 	if len(ui.prefs.folder_rules) == 0 {return unfiled}
 
 	members, known := ui.chat_members[chat.group_id]
@@ -191,6 +195,33 @@ chat_members_free :: proc(members: ^map[string][]string) {
 folder_rules_free :: proc(set: Folder_Rules) {
 	for rule in set.rules {delete(rule.value)}
 	delete(set.rules)
+}
+
+// Keep a chat in `name` by hand; "" keeps it in Unfiled.
+@(private)
+folder_place :: proc(ui: ^Ui_State, group_id, name: string) {
+	if folder, placed := &ui.prefs.folder_of[group_id]; placed {
+		delete(folder^)
+		folder^ = strings.clone(name)
+		return
+	}
+	ui.prefs.folder_of[strings.clone(group_id)] = strings.clone(name)
+}
+
+// Drop a hand placement, handing the chat back to folder rules.
+@(private)
+folder_unplace :: proc(ui: ^Ui_State, group_id: string) {
+	if group_id not_in ui.prefs.folder_of {return}
+	key, folder := delete_key(&ui.prefs.folder_of, group_id)
+	delete(key)
+	delete(folder)
+}
+
+// True when a chat sits where it is because someone put it there.
+@(private)
+folder_placed :: proc(ui: ^Ui_State, group_id: string) -> bool {
+	folder, placed := ui.prefs.folder_of[group_id]
+	return placed && (folder == "" || slice.contains(ui.prefs.folders[:], folder))
 }
 
 // Drop a folder's rules, key included.

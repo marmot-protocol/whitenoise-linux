@@ -76,6 +76,14 @@ msgid "%d reply"
 msgstr "%d Antwort"
 
 #, c-format
+msgid "%d rule"
+msgstr "%d Regel"
+
+#, c-format
+msgid "%d rules"
+msgstr "%d Regeln"
+
+#, c-format
 msgid "%d votes"
 msgstr "%d Stimmen"
 
@@ -170,6 +178,9 @@ msgstr "25 europäische Sprachen, darunter Englisch und Italienisch."
 
 msgid "3D models"
 msgstr "3D-Modelle"
+
+msgid "A checked box means you placed the chat by hand. Clear it to let folder rules decide."
+msgstr "Ein Häkchen heißt, dass du den Chat von Hand abgelegt hast. Entferne es, damit die Ordnerregeln entscheiden."
 
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "Ein Desktop-Client für private Gruppenchats. Nachrichten werden auf diesem Rechner mit MLS versiegelt, als opake Blobs an Nostr-Relays übergeben und erst innerhalb der Gruppe wieder geöffnet."
@@ -461,6 +472,9 @@ msgstr "Blasenradius"
 msgid "Built with"
 msgstr "Entwickelt mit"
 
+msgid "By rule"
+msgstr "Per Regel"
+
 msgid "CHATS"
 msgstr "CHATS"
 
@@ -657,11 +671,17 @@ msgstr "Effekt entfernen"
 msgid "Clear search"
 msgstr "Suche löschen"
 
+msgid "Clear to let folder rules decide."
+msgstr "Entferne das Häkchen, damit die Ordnerregeln entscheiden."
+
 msgid "Click a sticker for a larger preview."
 msgstr "Klicke auf einen Sticker, um ihn größer anzusehen."
 
 msgid "Click to download."
 msgstr "Zum Herunterladen klicken."
+
+msgid "Click to edit, drag to reorder."
+msgstr "Klicke zum Bearbeiten, ziehe zum Umsortieren."
 
 msgid "Close"
 msgstr "Schließen"
@@ -1188,9 +1208,6 @@ msgstr "Backup erstellen..."
 msgid "Create folder"
 msgstr "Ordner erstellen"
 
-msgid "Create folders to organize your chats."
-msgstr "Erstelle Ordner, um deine Chats zu organisieren."
-
 msgid "Create from emoji"
 msgstr "Aus Emoji erstellen"
 
@@ -1295,9 +1312,6 @@ msgstr "Dieses Theme löschen?"
 
 msgid "Deleted. Recording continues in a fresh file."
 msgstr "Gelöscht. Die Aufzeichnung wird in einer neuen Datei fortgesetzt."
-
-msgid "Deleting a folder doesn't delete your chats."
-msgstr "Wenn du einen Ordner löschst, bleiben deine Chats erhalten."
 
 msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
 msgstr "Das Löschen der gerade aufgezeichneten Datei rotiert sie. Die Aufzeichnung wird in einer neuen Datei fortgesetzt."
@@ -1411,6 +1425,12 @@ msgstr "Download: %d%%"
 
 msgid "Downloads"
 msgstr "Downloads"
+
+msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder it."
+msgstr "Ziehe einen Chat auf einen Ordner, um ihn dort zu behalten, oder ziehe einen Ordner, um ihn umzusortieren."
+
+msgid "Drop here"
+msgstr "Hier ablegen"
 
 msgid "EDIT PROFILE"
 msgstr "PROFIL BEARBEITEN"
@@ -2192,14 +2212,8 @@ msgstr "Monitor"
 msgid "More than"
 msgstr "Mehr als"
 
-msgid "Move down"
-msgstr "Nach unten"
-
 msgid "Move to folder"
 msgstr "In Ordner verschieben"
-
-msgid "Move up"
-msgstr "Nach oben"
 
 msgid "Multilingual. Detects your language automatically."
 msgstr "Mehrsprachig. Erkennt deine Sprache automatisch."
@@ -2369,6 +2383,9 @@ msgstr "Keine Relay-Liste veröffentlicht."
 
 msgid "No results. Try another search."
 msgstr "Keine Ergebnisse. Versuche eine andere Suche."
+
+msgid "No rules"
+msgstr "Keine Regeln"
 
 msgid "No stickers here yet."
 msgstr "Hier sind noch keine Sticker."
@@ -2600,6 +2617,9 @@ msgstr "Angeheftet"
 
 msgid "Pixel metrics"
 msgstr "Pixelmaße"
+
+msgid "Placed by hand"
+msgstr "Von Hand abgelegt"
 
 msgid "Plate"
 msgstr "Platte"

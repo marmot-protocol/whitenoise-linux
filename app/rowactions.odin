@@ -1136,9 +1136,9 @@ delete_folder :: proc(ui: ^Ui_State, index: int) {
 assign_folder :: proc(ui: ^Ui_State, name: string) {
 	if ui.folder_gid == "" {return}
 	if len(name) == 0 {
-		delete_key(&ui.prefs.folder_of, ui.folder_gid)
+		folder_unplace(ui, ui.folder_gid)
 	} else {
-		ui.prefs.folder_of[strings.clone(ui.folder_gid)] = strings.clone(name)
+		folder_place(ui, ui.folder_gid, name)
 	}
 	save_settings(ui)
 	close_folder_modal(ui)

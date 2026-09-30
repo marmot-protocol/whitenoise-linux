@@ -76,6 +76,14 @@ msgid "%d reply"
 msgstr ""
 
 #, c-format
+msgid "%d rule"
+msgstr ""
+
+#, c-format
+msgid "%d rules"
+msgstr ""
+
+#, c-format
 msgid "%d votes"
 msgstr ""
 
@@ -169,6 +177,9 @@ msgid "25 European languages, including English and Italian."
 msgstr ""
 
 msgid "3D models"
+msgstr ""
+
+msgid "A checked box means you placed the chat by hand. Clear it to let folder rules decide."
 msgstr ""
 
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
@@ -460,6 +471,9 @@ msgstr ""
 msgid "Built with"
 msgstr ""
 
+msgid "By rule"
+msgstr ""
+
 msgid "CHATS"
 msgstr ""
 
@@ -656,10 +670,16 @@ msgstr ""
 msgid "Clear search"
 msgstr ""
 
+msgid "Clear to let folder rules decide."
+msgstr ""
+
 msgid "Click a sticker for a larger preview."
 msgstr ""
 
 msgid "Click to download."
+msgstr ""
+
+msgid "Click to edit, drag to reorder."
 msgstr ""
 
 msgid "Close"
@@ -1187,9 +1207,6 @@ msgstr ""
 msgid "Create folder"
 msgstr ""
 
-msgid "Create folders to organize your chats."
-msgstr ""
-
 msgid "Create from emoji"
 msgstr ""
 
@@ -1293,9 +1310,6 @@ msgid "Delete this theme?"
 msgstr ""
 
 msgid "Deleted. Recording continues in a fresh file."
-msgstr ""
-
-msgid "Deleting a folder doesn't delete your chats."
 msgstr ""
 
 msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
@@ -1409,6 +1423,12 @@ msgid "Downloading: %d%%"
 msgstr ""
 
 msgid "Downloads"
+msgstr ""
+
+msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder it."
+msgstr ""
+
+msgid "Drop here"
 msgstr ""
 
 msgid "EDIT PROFILE"
@@ -2191,13 +2211,7 @@ msgstr ""
 msgid "More than"
 msgstr ""
 
-msgid "Move down"
-msgstr ""
-
 msgid "Move to folder"
-msgstr ""
-
-msgid "Move up"
 msgstr ""
 
 msgid "Multilingual. Detects your language automatically."
@@ -2367,6 +2381,9 @@ msgid "No relay list published."
 msgstr ""
 
 msgid "No results. Try another search."
+msgstr ""
+
+msgid "No rules"
 msgstr ""
 
 msgid "No stickers here yet."
@@ -2598,6 +2615,9 @@ msgid "Pinned"
 msgstr ""
 
 msgid "Pixel metrics"
+msgstr ""
+
+msgid "Placed by hand"
 msgstr ""
 
 msgid "Plate"

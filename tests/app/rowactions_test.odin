@@ -124,9 +124,11 @@ folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
 		Chat_Row_Ui{group_id = "acme", title = "Acme corp"},
 		Chat_Row_Ui{group_id = "big", title = "Town hall"},
 		Chat_Row_Ui{group_id = "stale", title = "acme ops"},
+		Chat_Row_Ui{group_id = "kept-unfiled", title = "Acme alerts", unread = 2},
 	)
 	ui.prefs.folder_of["placed"] = "Acme" // by hand, over the Unread rule
 	ui.prefs.folder_of["stale"] = "Removed folder" // gone, so rules decide
+	ui.prefs.folder_of["kept-unfiled"] = "" // by hand into Unfiled, over every rule
 	big := make([]string, 11)
 	for &id in big {id = "someone"}
 	ui.chat_members["dm-bob"] = []string{"me", "bob"}
@@ -144,7 +146,7 @@ folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
 		delete(ui.chat_members)
 	}
 
-	order := []int{0, 1, 2, 3, 4, 5, 6, 7}
+	order := []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
 	sections, grouped := chat_folder_sections(&ui, order, context.allocator)
 	defer delete(sections)
 	defer delete(grouped)
@@ -152,7 +154,7 @@ folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
 
 	// "unread" also names Acme, but Unread comes first in folder order.
 	// "unread-members" has no member list yet, so no size rule holds.
-	expected := [][]int{{1}, {2}, {0, 5, 6, 7}, {3, 4}}
+	expected := [][]int{{1}, {2}, {0, 5, 6, 7}, {3, 4, 8}}
 	for rows, slot in expected {
 		section := sections[slot]
 		if !testing.expect_value(t, section.count, len(rows)) {continue}

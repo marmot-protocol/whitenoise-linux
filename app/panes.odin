@@ -148,16 +148,16 @@ chat_rail :: proc(ui: ^Ui_State) {
 	bottom :=
 		top +
 		(view.found ? view.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM)
-	filtered := len(filter) > 0 || ui.unread_only
 	for section, i in sections {
-		if section.count == 0 && (filtered || i == len(ui.prefs.folders)) {continue}
+		// Empty folders stay out of the rail; Settings > Folders lists them.
+		if section.count == 0 {continue}
 		name := i < len(ui.prefs.folders) ? ui.prefs.folders[i] : ""
 		collapsed := ui.prefs.collapsed_folders[name]
 		rows := grouped[section.start:section.start + section.count]
 		height: f32 = 36
 		if !collapsed {
 			append(&ui.rail_rows, ..rows)
-			height += len(rows) == 0 ? 30 : f32(len(rows)) * (chat_row_height() + 2)
+			height += f32(len(rows)) * (chat_row_height() + 2)
 		}
 		// Offscreen headers need no text clips. Clay tracks every clip as
 		// a scroll container, so mounting all folders exhausts its pool.
@@ -171,28 +171,10 @@ chat_rail :: proc(ui: ^Ui_State) {
 		folder_header(ui, u32(i), name, section.unread, collapsed)
 		y += 36 // header and the list's 2px gap
 		if collapsed {continue}
-		if len(rows) == 0 {
-			if clay.UI(clay.ID("FolderEmpty", u32(i)))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(28)},
-					padding = {left = 12},
-					childAlignment = {y = .Center},
-				},
-			},
-			) {
-				clay.Text(
-					tr("No chats yet"),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
-				)
-			}
-			y += 30
-		} else {
-			chat_rows_window(ui, ui.chats[:], rows, clay.ID("ChatList"), .Archive, 2, y, u32(i))
-			y += f32(len(rows)) * (chat_row_height() + 2)
-		}
+		chat_rows_window(ui, ui.chats[:], rows, clay.ID("ChatList"), .Archive, 2, y, u32(i))
+		y += f32(len(rows)) * (chat_row_height() + 2)
 	}
-	if filtered && len(matched) == 0 {
+	if len(matched) == 0 {
 		clay.Text(tr("No chats yet"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
 	}
 }

@@ -76,6 +76,14 @@ msgid "%d reply"
 msgstr "%d件の返信"
 
 #, c-format
+msgid "%d rule"
+msgstr "ルール %d 件"
+
+#, c-format
+msgid "%d rules"
+msgstr "ルール %d 件"
+
+#, c-format
 msgid "%d votes"
 msgstr "%d票"
 
@@ -170,6 +178,9 @@ msgstr "英語とイタリア語を含む25のヨーロッパ言語に対応し�
 
 msgid "3D models"
 msgstr "3Dモデル"
+
+msgid "A checked box means you placed the chat by hand. Clear it to let folder rules decide."
+msgstr "チェックは、チャットを手動で配置したことを示します。チェックを外すと、フォルダのルールに従います。"
 
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "プライベートなグループチャットのためのデスクトップクライアントです。メッセージはこのマシン上で MLS により暗号化され、中身の読めないデータとして Nostr リレーに渡され、グループ内でのみ再び復号されます。"
@@ -461,6 +472,9 @@ msgstr "吹き出しの角の半径"
 msgid "Built with"
 msgstr "使用技術"
 
+msgid "By rule"
+msgstr "ルールで配置"
+
 msgid "CHATS"
 msgstr "チャット"
 
@@ -657,11 +671,17 @@ msgstr "エフェクトを解除"
 msgid "Clear search"
 msgstr "検索をクリア"
 
+msgid "Clear to let folder rules decide."
+msgstr "チェックを外すと、フォルダのルールに従います。"
+
 msgid "Click a sticker for a larger preview."
 msgstr "ステッカーをクリックすると拡大表示できます。"
 
 msgid "Click to download."
 msgstr "クリックしてダウンロードしてください。"
+
+msgid "Click to edit, drag to reorder."
+msgstr "クリックで編集、ドラッグで並べ替えます。"
 
 msgid "Close"
 msgstr "閉じる"
@@ -1188,9 +1208,6 @@ msgstr "バックアップを作成..."
 msgid "Create folder"
 msgstr "フォルダを作成"
 
-msgid "Create folders to organize your chats."
-msgstr "フォルダを作成してチャットを整理できます。"
-
 msgid "Create from emoji"
 msgstr "絵文字から作成"
 
@@ -1295,9 +1312,6 @@ msgstr "このテーマを削除しますか？"
 
 msgid "Deleted. Recording continues in a fresh file."
 msgstr "削除しました。記録は新しいファイルで続きます。"
-
-msgid "Deleting a folder doesn't delete your chats."
-msgstr "フォルダを削除しても、チャットは削除されません。"
 
 msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
 msgstr "記録中のファイルを削除するとローテーションされます。記録は新しいファイルで続きます。"
@@ -1411,6 +1425,12 @@ msgstr "ダウンロード中: %d%%"
 
 msgid "Downloads"
 msgstr "ダウンロード"
+
+msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder it."
+msgstr "チャットをフォルダにドラッグするとそこに置かれます。フォルダをドラッグすると並べ替えられます。"
+
+msgid "Drop here"
+msgstr "ここにドロップ"
 
 msgid "EDIT PROFILE"
 msgstr "プロフィールを編集"
@@ -2192,14 +2212,8 @@ msgstr "モニター"
 msgid "More than"
 msgstr "人数が次より多い"
 
-msgid "Move down"
-msgstr "下に移動"
-
 msgid "Move to folder"
 msgstr "フォルダに移動"
-
-msgid "Move up"
-msgstr "上に移動"
 
 msgid "Multilingual. Detects your language automatically."
 msgstr "多言語対応です。言語を自動で検出します。"
@@ -2369,6 +2383,9 @@ msgstr "リレーリストは公開されていません。"
 
 msgid "No results. Try another search."
 msgstr "結果がありません。別の検索をお試しください。"
+
+msgid "No rules"
+msgstr "ルールなし"
 
 msgid "No stickers here yet."
 msgstr "まだステッカーがありません。"
@@ -2600,6 +2617,9 @@ msgstr "ピン留め"
 
 msgid "Pixel metrics"
 msgstr "ピクセル単位の寸法"
+
+msgid "Placed by hand"
+msgstr "手動で配置"
 
 msgid "Plate"
 msgstr "プレート"

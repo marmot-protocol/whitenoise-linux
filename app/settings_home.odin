@@ -51,7 +51,7 @@ SETTINGS_TASKS := []Settings_Task {
 		.Folders,
 		N_("Organize your folders"),
 		"SettingsFolderActions",
-		"chats create rename order delete",
+		"chats create rename order delete drag rules",
 		true,
 	},
 	{

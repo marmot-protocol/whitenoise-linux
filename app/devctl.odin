@@ -42,10 +42,16 @@ DEV_POLL_FRAMES :: 6
 @(private = "file")
 CLICK_HOLD_FRAMES :: 2
 
+// A drag presses, walks the pointer to its end over this many frames, and
+// releases there, so code that waits for a travel threshold sees one.
+@(private = "file")
+DRAG_FRAMES :: 12
+
 @(private = "file")
 Dev_Input_Kind :: enum {
 	Move,
 	Click,
+	Drag,
 	Key,
 	Text,
 	Scroll,
@@ -55,6 +61,7 @@ Dev_Input_Kind :: enum {
 Dev_Input :: struct {
 	kind: Dev_Input_Kind,
 	pos:  [2]f32,
+	end:  [2]f32, // Drag: where the release lands
 	key:  rl.KeyboardKey,
 	text: string,
 	at:   int, // frame this fires on
@@ -174,6 +181,30 @@ devctl_apply_input :: proc(frame: int, pointer: ^clay.Vector2) {
 				done = false
 			case:
 				pointer^ = transmute(clay.Vector2)act.pos
+				forced_release = true
+				rl.PushMouseButton(.LEFT, false)
+			}
+
+		case .Drag:
+			step := frame - act.at
+			if step >= 0 {
+				t := min(f32(step) / DRAG_FRAMES, 1)
+				dev_pointer, dev_pointer_on = act.pos + (act.end - act.pos) * t, true
+				dev_real_at = {real.x, real.y}
+				pointer^ = transmute(clay.Vector2)dev_pointer
+				test_pointer = dev_pointer
+			}
+			switch {
+			case step < 0:
+				done = false
+			case step == 0:
+				forced_press = true
+				rl.PushMouseButton(.LEFT, true)
+				done = false
+			case step <= DRAG_FRAMES:
+				rl.PushMouseButton(.LEFT, true)
+				done = false
+			case:
 				forced_release = true
 				rl.PushMouseButton(.LEFT, false)
 			}
@@ -385,6 +416,17 @@ devctl_run :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, line: stri
 			dev_enqueue(frame, Dev_Input{kind = .Click, pos = pos}, CLICK_HOLD_FRAMES + 2)
 		}
 
+	case "drag":
+		from_text, _, rest := strings.partition(arg, " ")
+		from_y, _, to_text := strings.partition(rest, " ")
+		from, from_ok := dev_xy(fmt.tprintf("%s %s", from_text, from_y))
+		to, to_ok := dev_xy(strings.trim_space(to_text))
+		if !from_ok || !to_ok {
+			fmt.println("devctl: drag X1 Y1 X2 Y2")
+			return
+		}
+		dev_enqueue(frame, Dev_Input{kind = .Drag, pos = from, end = to}, DRAG_FRAMES + 2)
+
 	case "key":
 		key, ok := reflect.enum_from_name(rl.KeyboardKey, arg)
 		if !ok {
@@ -576,7 +618,7 @@ dev_xy :: proc(arg: string) -> (pos: [2]f32, ok: bool) {
 
 @(private = "file")
 DEV_HELP :: `devctl commands (append one per line to $WN_DEV_CMD)
-  input   move X Y | click X Y | key NAME | type TEXT
+  input   move X Y | click X Y | drag X1 Y1 X2 Y2 | key NAME | type TEXT
           scroll DY [X Y] | unpoint (hand the pointer back)
   memory  get PATH | set PATH VALUE | fields PATH | len PATH | x PATH [BYTES]
           PATH is relative to Ui_State: chats[0].title, prefs.locale
