@@ -1128,11 +1128,13 @@ app_main :: proc() {
 		case "archived":
 			ui.page = .Archived
 			load_archived(client, &ui)
-		case "members":
+		case "members", "group":
 			if len(ui.chats) > 0 {
 				ui.selected = 0
 				load_timeline(client, &ui)
 				ui.show_members = true
+				ui.info_tab =
+					os.get_env("WN_TEST_PAGE", context.temp_allocator) == "group" ? .Settings : .Members
 				load_members(client, &ui)
 			}
 		case "settings":

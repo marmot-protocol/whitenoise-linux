@@ -55,23 +55,40 @@ chat_pane :: proc(ui: ^Ui_State) {
 			backgroundColor = RAIL_BG,
 		},
 		) {
-			if page_w(ui) >= 420 {
-				peephole_avatar(
-					"ChatHeadAvatar",
-					0,
-					chat.avatar_key,
-					chat.title,
-					34,
-					chat_pic(chat),
-					clay.PointerOver(clay.ID("ChatHeadAvatar", 0)) ? .Open : .Closed,
-				)
-			}
-			// Keep unbroken titles from widening the pane beyond the window.
-			if clay.UI(clay.ID("ChatHeadTitleClip"))({clip = {horizontal = true}}) {
-				clay.Text(
-					chat.title,
-					{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT, wrapMode = .None},
-				)
+			// Avatar and title open group settings; the Members chip opens members.
+			if clay.UI(clay.ID("ChatHeadInfo"))(
+			{
+				layout = {
+					padding = {left = 4, right = 8, top = 2, bottom = 2},
+					childGap = 6,
+					childAlignment = {y = .Center},
+				},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(8),
+			},
+			) {
+				if page_w(ui) >= 420 {
+					peephole_avatar(
+						"ChatHeadAvatar",
+						0,
+						chat.avatar_key,
+						chat.title,
+						34,
+						chat_pic(chat),
+						clay.PointerOver(clay.ID("ChatHeadAvatar", 0)) ? .Open : .Closed,
+					)
+				}
+				// Keep unbroken titles from widening the pane beyond the window.
+				if clay.UI(clay.ID("ChatHeadTitleClip"))({clip = {horizontal = true}}) {
+					clay.Text(
+						chat.title,
+						{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT, wrapMode = .None},
+					)
+				}
+				if hovered() {
+					tooltip(tr("Group settings"))
+					cursor_raise(.Pointer)
+				}
 			}
 			// The badge is provenance, not a control, and it is the
 			// widest thing in the row: dropped when the row has to
@@ -109,7 +126,18 @@ chat_pane :: proc(ui: ^Ui_State) {
 			header_chip("FilesBtn", ICON_FOLDER, ui.group_files_open, tr("Files"))
 			header_chip("SearchBtn", ICON_SEARCH, ui.search_open, tr("Search"))
 			bell_chip(ui)
-			header_chip("MembersBtn", ICON_PEOPLE, ui.show_members, tr("Members"))
+			header_chip(
+				"GroupSettingsBtn",
+				ICON_SETTINGS,
+				ui.show_members && ui.info_tab == .Settings,
+				tr("Settings"),
+			)
+			header_chip(
+				"MembersBtn",
+				ICON_PEOPLE,
+				ui.show_members && ui.info_tab == .Members,
+				tr("Members"),
+			)
 			// The chrome floats over the timeline; only the bottom-most
 			// bar casts, so the shadows don't stack.
 			if len(ui.thread_stack) == 0 {
@@ -469,7 +497,6 @@ panel_target :: proc(ui: ^Ui_State) -> f32 {
 	return f32(clamp(ui.prefs.panel_w, PANEL_W_MIN, PANEL_W_MAX))
 }
 
-// One "Members  8" style section head, the slint Section label + note.
 @(private = "file")
 COMPOSE_TOOLS_H :: f32(28)
 COMPOSE_CHROME_H :: f32(16 + 8) + COMPOSE_TOOLS_H // padding, gap, toolbar
@@ -523,26 +550,17 @@ compose_scroll :: proc(ui: ^Ui_State) {
 	if delta != 0 {anim_moving += 1}
 }
 
-section_head :: proc(id_str: string, label: string, note: string) {
-	if clay.UI(clay.ID(id_str))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			childGap = 8,
-			childAlignment = {y = .Center},
-			padding = {top = 8, bottom = 2},
-		},
-	},
-	) {
-		clay.Text(
-			label,
-			{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 1},
-		)
-		if len(note) > 0 {
-			clay.Text(note, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})
-		}
-	}
+// The group info view is two separate pages: Settings (what the group is
+// and how it behaves) and Members (who is in it). Each has its own chip
+// in the chat header; the header's title also opens Settings.
+Info_Tab :: enum u8 {
+	Settings,
+	Members,
 }
+
+// Readable measure for the page's single column.
+@(private = "file")
+INFO_COL_MAX :: f32(600)
 
 members_panel :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("MembersPanel"))(
@@ -551,144 +569,148 @@ members_panel :: proc(ui: ^Ui_State) {
 		backgroundColor = RAIL_BG,
 	},
 	) {
-		if members_job != nil && len(ui.members) == 0 {
-			clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
-			return
-		}
-		if clay.UI(clay.ID("MembersBody"))(
+		col_w := min(info_width(ui), INFO_COL_MAX)
+		info_top_bar(ui, col_w)
+		if clay.UI(clay.ID("MembersScroll"))(
 		{
 			layout = {
 				sizing = {clay.SizingGrow(), clay.SizingGrow()},
 				layoutDirection = .TopToBottom,
+				padding = {left = 14, right = 14, top = 4, bottom = 24},
+				childAlignment = {x = .Center},
+			},
+			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
+			if clay.UI(clay.ID("InfoColumn"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(col_w)},
+					layoutDirection = .TopToBottom,
+					childGap = 14,
+				},
+			},
+			) {
+				switch ui.info_tab {
+				case .Settings:
+					info_settings_page(ui, col_w)
+				case .Members:
+					info_members_page(ui)
+				}
+			}
+		}
+		scrollbar(clay.ID("MembersScroll"))
+	}
+}
+
+// The page's title over the card column, with close at its right edge.
+@(private = "file")
+info_top_bar :: proc(ui: ^Ui_State, col_w: f32) {
+	if clay.UI(clay.ID("MembersHead"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = {left = 14, right = 14, top = 16, bottom = 12},
+			childAlignment = {x = .Center},
+		},
+	},
+	) {
+		if clay.UI(clay.ID("MembersHeadRow"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingFixed(col_w)},
+				childGap = 10,
+				childAlignment = {y = .Center},
 			},
 		},
 		) {
-			// Close sits over the hero, top-right, like the slint panel.
-			if clay.UI(clay.ID("MembersHead"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					padding = {left = 14, right = 10, top = 10},
-					childAlignment = {y = .Center},
-				},
-			},
-			) {
-				login_button("GroupFilesOpen", tr("Files"))
-				if clay.UI(clay.ID("MembersHeadGap"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {}
-				if clay.UI(clay.ID("MembersClose"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = hovered() ? HOVER : {},
-					cornerRadius = rr(7),
-				},
-				) {
-					clay.Text(
-						ICON_CLOSE,
-						{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
-					)
-				}
+			members := ui.info_tab == .Members
+			clay.Text(
+				members ? tr("Members") : tr("Group settings"),
+				{fontId = FONT_TITLE, fontSize = 20, textColor = TEXT},
+			)
+			if members {
+				clay.Text(
+					fmt.tprintf("%d", len(ui.members)),
+					{fontId = FONT_MONO, fontSize = 13, textColor = TEXT_LO},
+				)
 			}
-
-			// Everything but the head and the leave row scrolls. A wide
-			// pane splits into a settings column and a people column,
-			// capped at a readable width and centered; a narrow one
-			// stacks the same two blocks.
-			if clay.UI(clay.ID("MembersScroll"))(
+			if clay.UI(clay.ID("MembersHeadGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
+			if clay.UI(clay.ID("MembersClose"))(
 			{
 				layout = {
-					sizing = {clay.SizingGrow(), clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					padding = {left = 14, right = 14, bottom = 12},
-					childGap = 6,
-					childAlignment = {x = .Center},
-				},
-				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-			},
-			) {
-				content := info_width(ui)
-				if content >= INFO_WIDE_MIN {
-					row_w := min(content, INFO_COLS_MAX)
-					if clay.UI(clay.ID("InfoCols"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingFixed(row_w)},
-							childGap = INFO_COL_GAP,
-						},
-					},
-					) {
-						if clay.UI(clay.ID("InfoSettings"))(
-						{
-							layout = {
-								sizing = {width = clay.SizingFixed(INFO_SETTINGS_W)},
-								layoutDirection = .TopToBottom,
-								childGap = 6,
-							},
-						},
-						) {
-							info_settings_col(ui)
-						}
-						if clay.UI(clay.ID("InfoPeople"))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow()},
-								layoutDirection = .TopToBottom,
-								childGap = MEMBER_GAP,
-							},
-						},
-						) {
-							info_people_col(ui, row_w - INFO_SETTINGS_W - INFO_COL_GAP)
-						}
-					}
-				} else {
-					if clay.UI(clay.ID("InfoStack"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							childGap = MEMBER_GAP,
-						},
-					},
-					) {
-						info_settings_col(ui)
-						info_people_col(ui, content)
-					}
-				}
-			}
-			scrollbar(clay.ID("MembersScroll"))
-
-			// Pinned under the scroll, the slint GroupLeaveRow.
-			if clay.UI(clay.ID("LeaveBtn"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(46)},
-					padding = {left = 20, right = 20},
-					childGap = 10,
-					childAlignment = {y = .Center},
+					sizing = {width = clay.SizingFixed(30), height = clay.SizingFixed(30)},
+					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : {},
-				border = {color = FIELD_BORDER, width = {top = BORDER_W}},
+				cornerRadius = rr(8),
 			},
 			) {
-				clay.Text(ICON_BAN, {fontId = FONT_ICON, fontSize = 13, textColor = DANGER})
-				clay.Text(
-					tr("Leave group"),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = DANGER},
-				)
+				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				if hovered() {
+					tooltip(tr("Close"))
+					cursor_raise(.Pointer)
+				}
 			}
 		}
 	}
 }
 
-// Layout metrics for the full-pane info page.
-INFO_COLS_MAX :: 1080 // readable cap for the two-column row
-INFO_WIDE_MIN :: 720 // below this the page stays one column
-INFO_SETTINGS_W :: 360
-INFO_COL_GAP :: 32
+// One rounded plate of the info page, holding one setting or one list.
+@(private = "file")
+info_card :: proc() -> clay.ElementDeclaration {
+	return {
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(16),
+			childGap = 12,
+		},
+		backgroundColor = CARD,
+		cornerRadius = rr(12),
+		border = {color = CARD_BORDER, width = bw()},
+	}
+}
+
+// A text box with its primary action beside it.
+@(private = "file")
+info_field :: proc(
+	ui: ^Ui_State,
+	id_str: string,
+	buf: ^[dynamic]u8,
+	hint: string,
+	focus: Focus,
+	button_id: string,
+	button_label: string,
+) {
+	if clay.UI(clay.ID_LOCAL("FieldRow"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			childGap = 8,
+			childAlignment = {y = .Center},
+		},
+	},
+	) {
+		if clay.UI(clay.ID(id_str))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+				padding = {left = 12, right = 12},
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = ROW_BG,
+			cornerRadius = rr(9),
+			border = {color = ui.focus == focus ? ACCENT : FIELD_BORDER, width = bw()},
+		},
+		) {
+			field_text(ui, id_str, buf, hint, ui.focus == focus)
+		}
+		folder_action(button_id, button_label, true)
+	}
+}
 
 // The scroll area's usable width, from last frame's box capped by the
 // window (an inflated stale box during a shrink must not feed back).
@@ -702,71 +724,105 @@ info_width :: proc(ui: ^Ui_State) -> f32 {
 	return w - 28 // the scroll's own side padding
 }
 
-// Identity and group settings: hero, rename, timer, invite, export.
+// Settings: the group's face, one card per setting, then leaving.
 @(private = "file")
-info_settings_col :: proc(ui: ^Ui_State) {
-	group_hero(ui)
-
-	eyebrow(tr("GROUP NAME"))
-	if clay.UI(clay.ID("RenameBox"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
-			padding = {left = 10, right = 10},
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(8),
-		border = ui.focus == .Rename ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
-	},
-	) {
-		field_text(ui, "RenameBox", &ui.rename_input, tr("New name"), ui.focus == .Rename)
+info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
+	if clay.UI(clay.ID("InfoHeroCard"))(info_card()) {
+		group_hero(ui)
 	}
-	login_button("RenameBtn", tr("Rename"))
+
+	if clay.UI(clay.ID("InfoNameCard"))(info_card()) {
+		row_labels(tr("Group name"), tr("Everyone in the group sees the new name."))
+		info_field(
+			ui,
+			"RenameBox",
+			&ui.rename_input,
+			tr("New name"),
+			.Rename,
+			"RenameBtn",
+			tr("Rename"),
+		)
+	}
 
 	// Group timer, an MLS setting shared by every member; MDK
 	// stamps each new message and prunes after expiry.
-	eyebrow(tr("DISAPPEARING MESSAGES"))
-	if clay.UI(clay.ID("RetentionRow"))({layout = {childGap = 8}}) {
-		labels := [len(RETENTION_SECS)]string{N_("Off"), "1h", "1d", "1w", "4w"}
-		for secs, i in RETENTION_SECS {
-			active := ui.group_retention == secs
-			micro_button(fmt.tprintf("RetChip%d", i), tr(labels[i]), active ? ACCENT : {})
+	if clay.UI(clay.ID("InfoTimerCard"))(info_card()) {
+		row_labels(
+			tr("Disappearing messages"),
+			tr("New messages are deleted for everyone after this time."),
+		)
+		// A recessed track of presets; the active one fills with the accent.
+		if clay.UI(clay.ID("RetentionRow"))(
+		{
+			layout = {padding = clay.PaddingAll(3), childGap = 2},
+			backgroundColor = ROW_BG,
+			cornerRadius = rr(10),
+			border = {color = FIELD_BORDER, width = bw()},
+		},
+		) {
+			labels := [len(RETENTION_SECS)]string{N_("Off"), "1h", "1d", "1w", "4w"}
+			for secs, i in RETENTION_SECS {
+				active := ui.group_retention == secs
+				if clay.UI(clay.ID(fmt.tprintf("RetChip%d", i)))(
+				{
+					layout = {padding = {left = 14, right = 14, top = 6, bottom = 6}},
+					backgroundColor = active ? ACCENT : (hovered() ? HOVER : {}),
+					cornerRadius = rr(7),
+				},
+				) {
+					clay.Text(
+						tr(labels[i]),
+						{
+							fontId = FONT_TITLE,
+							fontSize = 12,
+							textColor = active ? ON_ACCENT : TEXT_DIM,
+						},
+					)
+					if hovered() && !active {cursor_raise(.Pointer)}
+				}
+			}
 		}
 	}
 
-	issues_settings(ui)
+	if clay.UI(clay.ID("InfoIssuesCard"))(info_card()) {
+		issues_settings(ui)
+	}
 
-	eyebrow(tr("ADD MEMBER"))
-	if clay.UI(clay.ID("InviteBox"))(
+	if clay.UI(clay.ID("InfoExportCard"))(info_card()) {
+		if clay.UI(clay.ID("ExportRow"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
+			row_labels(tr("Export chat"), tr("Save a copy of this conversation to a file."))
+			micro_button("ExportHtmlBtn", "HTML")
+			micro_button("ExportMdBtn", "Markdown")
+		}
+	}
+
+	shared_media_grid(ui, col_w - 32) // the card's side padding
+
+	// The one destructive action sits last, apart from the settings.
+	if clay.UI(clay.ID("LeaveBtn"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
-			padding = {left = 10, right = 10},
+			sizing = {width = clay.SizingGrow()},
+			padding = clay.PaddingAll(16),
+			childGap = 14,
 			childAlignment = {y = .Center},
 		},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(8),
-		border = {color = FIELD_BORDER, width = bw()},
+		backgroundColor = hovered() ? HOVER : CARD,
+		cornerRadius = rr(12),
+		border = {color = CARD_BORDER, width = bw()},
 	},
 	) {
-		field_text(
-			ui,
-			"InviteBox",
-			&ui.invite_input,
-			tr("npub, hex, name@domain, or .bit"),
-			ui.focus == .Invite,
-		)
-	}
-	login_button(
-		"InviteBtn",
-		ui.nip05_ticket != 0 ? tr("Looking up...") : strings.contains(string(ui.invite_input[:]), "@") ? tr("Look up") : tr("Invite"),
-	)
-
-	eyebrow(tr("EXPORT CHAT"))
-	if clay.UI(clay.ID("ExportRow"))({layout = {childGap = 8}}) {
-		micro_button("ExportHtmlBtn", "HTML")
-		micro_button("ExportMdBtn", "Markdown")
+		clay.Text(ICON_BAN, {fontId = FONT_ICON, fontSize = 15, textColor = DANGER})
+		row_labels(tr("Leave group"), tr("You will stop receiving its messages."), DANGER)
+		if hovered() {cursor_raise(.Pointer)}
 	}
 }
 
@@ -777,11 +833,61 @@ MEMBER_GAP :: 6
 @(private = "file")
 MEMBER_NICK_HEIGHT :: 28
 
-// The people column: the member list and shared media.
+// Only admins can invite, so the member list decides whether you see the
+// invite box. False while the list is still loading.
+@(private)
+self_is_admin :: proc(ui: ^Ui_State) -> bool {
+	for member in ui.members {
+		if member.is_self {
+			return member.is_admin
+		}
+	}
+	return false
+}
+
+// Members: inviting someone (admins only), then everyone in the group.
 @(private = "file")
-info_people_col :: proc(ui: ^Ui_State, col_w: f32) {
-	section_head("MembersSection", tr("Members"), fmt.tprintf("%d", len(ui.members)))
-	// Retain row geometry, but do not build names or queue avatars off screen.
+info_members_page :: proc(ui: ^Ui_State) {
+	if self_is_admin(ui) {
+		if clay.UI(clay.ID("InfoInviteCard"))(info_card()) {
+			row_labels(tr("Add member"), "")
+			info_field(
+				ui,
+				"InviteBox",
+				&ui.invite_input,
+				tr("npub, hex, name@domain, or .bit"),
+				.Invite,
+				"InviteBtn",
+				ui.nip05_ticket != 0 ? tr("Looking up...") : strings.contains(string(ui.invite_input[:]), "@") ? tr("Look up") : tr("Invite"),
+			)
+		}
+	}
+
+	// Rows carry their own inset and hover fill, so the list card hugs them.
+	list_card := info_card()
+	list_card.layout.padding = clay.PaddingAll(8)
+	if clay.UI(clay.ID("InfoMembersCard"))(list_card) {
+		if members_job != nil && len(ui.members) == 0 {
+			clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+		}
+		if clay.UI(clay.ID("MembersList"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = MEMBER_GAP,
+			},
+		},
+		) {
+			member_rows(ui)
+		}
+	}
+}
+
+// The member list. Rows keep their geometry off screen, but only rows
+// near the viewport build names and queue avatars.
+@(private = "file")
+member_rows :: proc(ui: ^Ui_State) {
 	data := clay.GetScrollContainerData(clay.ID("MembersScroll"))
 	view := clay.GetElementData(clay.ID("MembersScroll"))
 	first := clay.GetElementData(clay.ID("MemberRow", 0))
@@ -806,7 +912,7 @@ info_people_col :: proc(ui: ^Ui_State, col_w: f32) {
 		{
 			layout = {
 				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(MEMBER_HEIGHT)},
-				padding = {left = 6, right = 2},
+				padding = {left = 8, right = 6},
 				childGap = 10,
 				childAlignment = {y = .Center},
 			},
@@ -910,8 +1016,6 @@ info_people_col :: proc(ui: ^Ui_State, col_w: f32) {
 			}
 		}
 	}
-
-	shared_media_grid(ui, col_w)
 }
 
 // Timer chip presets, in seconds; 0 disables. Handlers index the same
@@ -946,40 +1050,44 @@ shared_media_grid :: proc(ui: ^Ui_State, col_w: f32) {
 		return
 	}
 
-	section_head("SharedMediaSection", tr("Shared media"), "")
-	cell := (col_w - 12) / SHARED_MEDIA_COLS // minus the two 6px gaps
-	if clay.UI(clay.ID("SharedMedia"))({layout = {layoutDirection = .TopToBottom, childGap = 6}}) {
-		for row := 0; row * SHARED_MEDIA_COLS < len(thumbs); row += 1 {
-			if clay.UI(clay.ID("SharedMediaRow", u32(row)))({layout = {childGap = 6}}) {
-				for t, c in thumbs[row * SHARED_MEDIA_COLS:min((row + 1) * SHARED_MEDIA_COLS, len(thumbs))] {
-					if clay.UI(clay.ID("SharedMediaCell", u32(row * SHARED_MEDIA_COLS + c)))(
-					{
-						layout = {
-							sizing = {
-								width = clay.SizingFixed(cell),
-								height = clay.SizingFixed(cell),
+	if clay.UI(clay.ID("InfoMediaCard"))(info_card()) {
+		row_labels(tr("Shared media"), "")
+		cell := (col_w - 12) / SHARED_MEDIA_COLS // minus the two 6px gaps
+		if clay.UI(clay.ID("SharedMedia"))(
+		{layout = {layoutDirection = .TopToBottom, childGap = 6}},
+		) {
+			for row := 0; row * SHARED_MEDIA_COLS < len(thumbs); row += 1 {
+				if clay.UI(clay.ID("SharedMediaRow", u32(row)))({layout = {childGap = 6}}) {
+					for t, c in thumbs[row * SHARED_MEDIA_COLS:min((row + 1) * SHARED_MEDIA_COLS, len(thumbs))] {
+						if clay.UI(clay.ID("SharedMediaCell", u32(row * SHARED_MEDIA_COLS + c)))(
+						{
+							layout = {
+								sizing = {
+									width = clay.SizingFixed(cell),
+									height = clay.SizingFixed(cell),
+								},
 							},
+							image = {imageData = t.tex},
+							cornerRadius = rr(6),
 						},
-						image = {imageData = t.tex},
-						cornerRadius = rr(6),
-					},
-					) {
-						if hovered() {
-							img_hover = {
-								msg_id = t.msg_id,
-								att    = t.att,
+						) {
+							if hovered() {
+								img_hover = {
+									msg_id = t.msg_id,
+									att    = t.att,
+								}
 							}
 						}
 					}
 				}
 			}
 		}
-	}
-	if total > len(thumbs) {
-		clay.Text(
-			fmt.tprintf(tr("+%d more"), total - len(thumbs)),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-		)
+		if total > len(thumbs) {
+			clay.Text(
+				fmt.tprintf(tr("+%d more"), total - len(thumbs)),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+		}
 	}
 }
 

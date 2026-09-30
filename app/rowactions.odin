@@ -282,6 +282,7 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
+		ctx_item("RowInfo", ICON_SETTINGS, tr("Group settings"))
 		ctx_item(
 			"RowPin",
 			ICON_PIN,
@@ -860,7 +861,7 @@ folder_modal :: proc(ui: ^Ui_State) {
 open_row_menu :: proc(ui: ^Ui_State, index: int) {
 	m := rl.GetMousePosition()
 	ui.row_menu = index
-	ui.row_menu_x, ui.row_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 230, 250)
+	ui.row_menu_x, ui.row_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 230, 285)
 }
 
 // Clicks in the open row menu; anything unhandled closes it.
@@ -880,6 +881,11 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	gid := ui.chats[index].group_id
 	ui.row_menu = -1
 
+	if clay.PointerOver(clay.ID("RowInfo")) {
+		select_chat(ui, client, index)
+		open_group_info(ui, client, .Settings)
+		return
+	}
 	if clay.PointerOver(clay.ID("RowFolder")) {
 		open_folder_modal(ui, gid)
 		return

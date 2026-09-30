@@ -338,10 +338,10 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		toggle_rail(ui)
 	case .Toggle_Members:
 		if ui.selected >= 0 {
-			ui.group_files_open = false
-			ui.show_members = !ui.show_members
 			if ui.show_members {
-				load_members(client, ui)
+				close_group_info(ui)
+			} else {
+				open_group_info(ui, client, .Members)
 			}
 		}
 	case .Set_General:

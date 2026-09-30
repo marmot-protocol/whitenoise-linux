@@ -478,7 +478,8 @@ Ui_State :: struct {
 	edit_ticket:                                           int, // outstanding edit; keep the composer until its ack
 	replying:                                              string, // message id being replied to
 	reply_hint:                                            string, // preview text for the reply banner
-	show_members:                                          bool,
+	show_members:                                          bool, // group info page open
+	info_tab:                                              Info_Tab, // which half of it
 	group_files_open:                                      bool,
 	group_files_type:                                      Group_File_Type,
 	group_files_sender:                                    string, // borrowed from the completed file job

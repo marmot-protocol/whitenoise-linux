@@ -1802,7 +1802,8 @@ theme_chip_indexed :: proc(id_str: string, index: u32, label: string, active: bo
 	}
 }
 
-// Header actions reveal their labels without moving the controls to their right.
+// Header actions expand to show their label while active; an inactive
+// action names itself in a tooltip on hover instead.
 header_chip :: proc(id_str: string, glyph: string, active: bool, label: string) {
 	pad := tap_size() ? u16(13) : u16(8)
 	if clay.UI(clay.ID(id_str))(
@@ -1819,7 +1820,7 @@ header_chip :: proc(id_str: string, glyph: string, active: bool, label: string) 
 			glyph,
 			{fontId = FONT_ICON, fontSize = 14, textColor = active ? ON_ACCENT : TEXT},
 		)
-		header_label(label, active ? ON_ACCENT : TEXT)
+		header_label(label, active)
 	}
 }
 
@@ -1827,9 +1828,10 @@ header_chip :: proc(id_str: string, glyph: string, active: bool, label: string) 
 HEADER_LABEL_SECS :: f32(0.1)
 
 @(private)
-header_label :: proc(label: string, color: clay.Color) {
+header_label :: proc(label: string, active: bool) {
+	if !active && hovered() {tooltip(label)}
 	id := clay.ID_LOCAL("HeaderLabel")
-	target: f32 = hovered() ? 1 : 0
+	target: f32 = active ? 1 : 0
 	entry, seen := anim_vals[id.id]
 	if !seen || entry.frame != anim_frame {
 		step := anim_dt / HEADER_LABEL_SECS
@@ -1853,7 +1855,7 @@ header_label :: proc(label: string, color: clay.Color) {
 			{
 				fontId = FONT_BODY,
 				fontSize = 13,
-				textColor = fade(color, progress),
+				textColor = fade(active ? ON_ACCENT : TEXT, progress),
 				wrapMode = .None,
 			},
 		)

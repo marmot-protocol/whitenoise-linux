@@ -354,7 +354,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if clicked("FilesBtn") || clicked("GroupFilesOpen") {
+	if clicked("FilesBtn") {
 		ui.group_files_open = !ui.group_files_open
 		ui.show_members, ui.issues_open = false, false
 		ui.group_files_type, ui.group_files_sender, ui.group_files_menu = .All, "", .None
@@ -412,10 +412,19 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("SearchBtn") {ui.issues_open = false; issues_sync_route(ui, client)}
+	// The Settings chip toggles group settings; the header's avatar and
+	// title only open it.
+	settings_shown := ui.show_members && ui.info_tab == .Settings
+	if clicked("GroupSettingsBtn") && settings_shown {
+		close_group_info(ui)
+		return
+	}
+	if (clicked("GroupSettingsBtn") || clicked("ChatHeadInfo")) && !settings_shown {
+		open_group_info(ui, client, .Settings)
+		return
+	}
 	if ui.issues_open && !ui.show_members {
-		if clicked(
-			"MembersBtn",
-		) {ui.show_members = true; ui.issues_open = false; issues_sync_route(ui, client); load_members(client, ui); return}
+		if clicked("MembersBtn") {open_group_info(ui, client, .Members); return}
 		if handle_issues(ui, client) {return}
 	}
 	if ui.group_files_open && !clicked("MembersBtn") && !clicked("SearchBtn") {
@@ -551,19 +560,23 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("MembersBtn") {
-		ui.group_files_open = false
-		ui.show_members = !ui.show_members
-		ui.focus = .Invite
-		ui.desc_editing = false
-		ui.gpic_menu_open = false
-		if ui.show_members {
-			load_members(client, ui)
+		if ui.show_members && ui.info_tab == .Members {
+			close_group_info(ui)
+			return
 		}
+		open_group_info(ui, client, .Members)
 		return
 	}
 	if clicked("SearchBtn") {
 		ui.group_files_open = false
-		ui.search_open = !ui.search_open
+		// From members or settings, Search returns to the conversation
+		// with the search open rather than toggling a hidden bar.
+		if ui.show_members {
+			close_group_info(ui)
+			ui.search_open = true
+		} else {
+			ui.search_open = !ui.search_open
+		}
 		ui.focus = ui.search_open ? .Search : .Compose
 		if !ui.search_open {
 			clear(&ui.search_input)
@@ -1271,6 +1284,40 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 	if !ui.timeline_loading {timeline_mark_read(ui)}
 }
 
+// Show one page of the selected chat's group info, closing whatever pane
+// it replaces. Focus lands in that page's text box, so typing goes there.
+open_group_info :: proc(ui: ^Ui_State, client: ^marmot.Client, tab: Info_Tab) {
+	ui.group_files_open = false
+	if ui.issues_open {
+		ui.issues_open = false
+		issues_sync_route(ui, client)
+	}
+	if !ui.show_members {
+		load_members(client, ui)
+	}
+	ui.show_members = true
+	ui.info_tab = tab
+	ui.focus = tab == .Members ? .Invite : .Rename
+	ui.desc_editing = false
+	ui.gpic_menu_open = false
+	ui.member_menu = -1
+	ui.member_nick = -1
+	if data := clay.GetScrollContainerData(clay.ID("MembersScroll")); data.found {
+		data.scrollPosition.y = 0
+	}
+}
+
+// Back to the conversation from either group info page.
+close_group_info :: proc(ui: ^Ui_State) {
+	ui.show_members = false
+	ui.nip05_ticket = 0
+	ui.desc_editing = false
+	ui.gpic_menu_open = false
+	ui.member_menu = -1
+	ui.member_nick = -1
+	ui.focus = .Compose
+}
+
 set_archived :: proc(ui: ^Ui_State, client: ^marmot.Client, group_id: string, archived: bool) {
 	record: ^marmot.App_Group_Record
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
@@ -1628,6 +1675,18 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if handle_shortcode(ui) {
 		return
 	}
+	if handle_hero(ui, client) {
+		return
+	}
+	// Esc leaves the page once nothing inside it (menu, editor) took it.
+	if rl.IsKeyPressed(.ESCAPE) {
+		if ui.gpic_menu_open {
+			ui.gpic_menu_open = false
+		} else {
+			close_group_info(ui)
+		}
+		return
+	}
 	if mouse_released() {
 		for member, i in ui.members {
 			if clay.PointerOver(clay.ID("MemberMenuBtn", u32(i))) {
@@ -1645,8 +1704,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 		}
 		if clay.PointerOver(clay.ID("MembersClose")) {
-			ui.nip05_ticket = 0
-			ui.show_members = false
+			close_group_info(ui)
 			return
 		}
 	}
@@ -1711,6 +1769,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if (rl.IsKeyPressed(.ENTER) || clicked("InviteBtn")) &&
 	   ui.focus == .Invite &&
+	   self_is_admin(ui) &&
 	   len(ui.invite_input) > 0 {
 		if ui.nip05_ticket != 0 {return}
 		input := string(ui.invite_input[:])

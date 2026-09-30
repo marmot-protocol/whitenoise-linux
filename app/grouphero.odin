@@ -79,7 +79,7 @@ group_hero :: proc(ui: ^Ui_State) {
 			chat_pic(chat),
 			clay.PointerOver(clay.ID("HeroAvatar", 0)) ? .Open : .Closed,
 		)
-		clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
+		clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
 		clay.Text(
 			fmt.tprintf(
 				tr(len(ui.members) == 1 ? N_("%d member") : N_("%d members")),
@@ -175,7 +175,7 @@ handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	}
 	if clicked("DescCancel") || rl.IsKeyPressed(.ESCAPE) {
 		ui.desc_editing = false
-		ui.focus = .Invite
+		ui.focus = .Rename
 		return true
 	}
 	if clicked("DescSave") || (ui.focus == .Desc && rl.IsKeyPressed(.ENTER)) {

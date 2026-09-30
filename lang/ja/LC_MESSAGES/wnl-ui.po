@@ -211,9 +211,6 @@ msgstr "操作"
 msgid "ACTIVE"
 msgstr "使用中"
 
-msgid "ADD MEMBER"
-msgstr "メンバーを追加"
-
 msgid "ANIMATION"
 msgstr "アニメーション"
 
@@ -254,6 +251,9 @@ msgstr "アカウントを追加"
 
 msgid "Add an option..."
 msgstr "選択肢を追加..."
+
+msgid "Add member"
+msgstr "メンバーを追加"
 
 msgid "Add option"
 msgstr "選択肢を追加"
@@ -1253,9 +1253,6 @@ msgstr "奥行き"
 msgid "DETAILS"
 msgstr "詳細"
 
-msgid "DISAPPEARING MESSAGES"
-msgstr "消えるメッセージ"
-
 msgid "DISPLAY NAME"
 msgstr "表示名"
 
@@ -1386,11 +1383,11 @@ msgstr "音声入力が動作しません"
 msgid "Difficulty: %d/5"
 msgstr "難易度: %d/5"
 
-msgid "Disable issue tracking"
-msgstr "問題の追跡を無効にする"
-
 msgid "Disabled for this group."
 msgstr "このグループでは無効です。"
+
+msgid "Disappearing messages"
+msgstr "消えるメッセージ"
 
 msgid "Discover"
 msgstr "見つける"
@@ -1447,9 +1444,6 @@ msgstr "暗号化された鍵 (NCRYPTSEC)"
 msgid "EPOCH"
 msgstr "エポック"
 
-msgid "EXPORT CHAT"
-msgstr "チャットをエクスポート"
-
 msgid "Edit"
 msgstr "編集"
 
@@ -1496,9 +1490,6 @@ msgstr "絵文字"
 msgid "Emoji style"
 msgstr "絵文字のスタイル"
 
-msgid "Enable issue tracking"
-msgstr "問題の追跡を有効にする"
-
 msgid "Enabled for this group."
 msgstr "このグループでは有効です。"
 
@@ -1542,6 +1533,9 @@ msgstr "イベント取得リレー"
 msgid "Event id"
 msgstr "イベントID"
 
+msgid "Everyone in the group sees the new name."
+msgstr "新しい名前はグループの全員に表示されます。"
+
 msgid "Exit fullscreen"
 msgstr "全画面表示を終了"
 
@@ -1562,6 +1556,9 @@ msgstr "HTML としてエクスポート"
 
 msgid "Export as Markdown"
 msgstr "Markdown としてエクスポート"
+
+msgid "Export chat"
+msgstr "チャットをエクスポート"
 
 msgid "Export encrypted key"
 msgstr "暗号化された鍵をエクスポート"
@@ -1696,9 +1693,6 @@ msgstr "GIF"
 msgid "GROUP ID"
 msgstr "グループID"
 
-msgid "GROUP NAME"
-msgstr "グループ名"
-
 msgid "GROUPS IN COMMON"
 msgstr "共通のグループ"
 
@@ -1759,6 +1753,9 @@ msgstr "グループIDをコピーしました"
 msgid "Group name"
 msgstr "グループ名"
 
+msgid "Group settings"
+msgstr "グループ設定"
+
 msgid "Grouped"
 msgstr "フォルダ別"
 
@@ -1815,9 +1812,6 @@ msgstr "招待"
 
 msgid "ISSUE"
 msgstr "イシュー"
-
-msgid "ISSUE TRACKING"
-msgstr "問題の追跡"
 
 msgid "Ideas"
 msgstr "アイデア"
@@ -1918,6 +1912,9 @@ msgstr "招待"
 
 msgid "Issue title"
 msgstr "報告のタイトル"
+
+msgid "Issue tracking"
+msgstr "問題の追跡"
 
 msgid "Issue tracking is unavailable."
 msgstr "問題の追跡を利用できません。"
@@ -2277,6 +2274,9 @@ msgstr "新しい報告"
 
 msgid "New message"
 msgstr "新しいメッセージ"
+
+msgid "New messages are deleted for everyone after this time."
+msgstr "新しいメッセージはこの時間が経つと全員から削除されます。"
 
 msgid "New name"
 msgstr "新しい名前"
@@ -2994,6 +2994,9 @@ msgstr "GIFを保存"
 
 msgid "Save GIFs with the star to find them here."
 msgstr "星を押してGIFを保存すると、ここに表示されます。"
+
+msgid "Save a copy of this conversation to a file."
+msgstr "この会話のコピーをファイルに保存します。"
 
 msgid "Save and use"
 msgstr "保存して使用"
@@ -3820,6 +3823,9 @@ msgstr "このグループのメッセージを受信しなくなります。再
 
 msgid "You were invited to this group."
 msgstr "このグループに招待されました。"
+
+msgid "You will stop receiving its messages."
+msgstr "このグループのメッセージは届かなくなります。"
 
 #, c-format
 msgid "You: %s"

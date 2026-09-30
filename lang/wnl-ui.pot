@@ -210,9 +210,6 @@ msgstr ""
 msgid "ACTIVE"
 msgstr ""
 
-msgid "ADD MEMBER"
-msgstr ""
-
 msgid "ANIMATION"
 msgstr ""
 
@@ -252,6 +249,9 @@ msgid "Add account"
 msgstr ""
 
 msgid "Add an option..."
+msgstr ""
+
+msgid "Add member"
 msgstr ""
 
 msgid "Add option"
@@ -1252,9 +1252,6 @@ msgstr ""
 msgid "DETAILS"
 msgstr ""
 
-msgid "DISAPPEARING MESSAGES"
-msgstr ""
-
 msgid "DISPLAY NAME"
 msgstr ""
 
@@ -1385,10 +1382,10 @@ msgstr ""
 msgid "Difficulty: %d/5"
 msgstr ""
 
-msgid "Disable issue tracking"
+msgid "Disabled for this group."
 msgstr ""
 
-msgid "Disabled for this group."
+msgid "Disappearing messages"
 msgstr ""
 
 msgid "Discover"
@@ -1446,9 +1443,6 @@ msgstr ""
 msgid "EPOCH"
 msgstr ""
 
-msgid "EXPORT CHAT"
-msgstr ""
-
 msgid "Edit"
 msgstr ""
 
@@ -1495,9 +1489,6 @@ msgstr ""
 msgid "Emoji style"
 msgstr ""
 
-msgid "Enable issue tracking"
-msgstr ""
-
 msgid "Enabled for this group."
 msgstr ""
 
@@ -1541,6 +1532,9 @@ msgstr ""
 msgid "Event id"
 msgstr ""
 
+msgid "Everyone in the group sees the new name."
+msgstr ""
+
 msgid "Exit fullscreen"
 msgstr ""
 
@@ -1560,6 +1554,9 @@ msgid "Export as HTML"
 msgstr ""
 
 msgid "Export as Markdown"
+msgstr ""
+
+msgid "Export chat"
 msgstr ""
 
 msgid "Export encrypted key"
@@ -1695,9 +1692,6 @@ msgstr ""
 msgid "GROUP ID"
 msgstr ""
 
-msgid "GROUP NAME"
-msgstr ""
-
 msgid "GROUPS IN COMMON"
 msgstr ""
 
@@ -1758,6 +1752,9 @@ msgstr ""
 msgid "Group name"
 msgstr ""
 
+msgid "Group settings"
+msgstr ""
+
 msgid "Grouped"
 msgstr ""
 
@@ -1813,9 +1810,6 @@ msgid "INVITE"
 msgstr ""
 
 msgid "ISSUE"
-msgstr ""
-
-msgid "ISSUE TRACKING"
 msgstr ""
 
 msgid "Ideas"
@@ -1916,6 +1910,9 @@ msgid "Invite"
 msgstr ""
 
 msgid "Issue title"
+msgstr ""
+
+msgid "Issue tracking"
 msgstr ""
 
 msgid "Issue tracking is unavailable."
@@ -2275,6 +2272,9 @@ msgid "New issue"
 msgstr ""
 
 msgid "New message"
+msgstr ""
+
+msgid "New messages are deleted for everyone after this time."
 msgstr ""
 
 msgid "New name"
@@ -2992,6 +2992,9 @@ msgid "Save GIF"
 msgstr ""
 
 msgid "Save GIFs with the star to find them here."
+msgstr ""
+
+msgid "Save a copy of this conversation to a file."
 msgstr ""
 
 msgid "Save and use"
@@ -3818,6 +3821,9 @@ msgid "You stop receiving its messages. Rejoining needs a new invite."
 msgstr ""
 
 msgid "You were invited to this group."
+msgstr ""
+
+msgid "You will stop receiving its messages."
 msgstr ""
 
 #, c-format

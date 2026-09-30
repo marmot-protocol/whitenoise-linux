@@ -428,7 +428,7 @@ bell_chip :: proc(ui: ^Ui_State) {
 			ICON_BELL,
 			{fontId = FONT_ICON, fontSize = 14, textColor = ui.mi_open ? ON_ACCENT : TEXT},
 		)
-		header_label(tr("Mentions"), ui.mi_open ? ON_ACCENT : TEXT)
+		header_label(tr("Mentions"), ui.mi_open)
 		if unread > 0 {
 			if clay.UI(clay.ID("BellBadge"))(
 			{

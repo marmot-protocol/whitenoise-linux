@@ -211,9 +211,6 @@ msgstr "AKTIONEN"
 msgid "ACTIVE"
 msgstr "AKTIV"
 
-msgid "ADD MEMBER"
-msgstr "MITGLIED HINZUFÜGEN"
-
 msgid "ANIMATION"
 msgstr "ANIMATION"
 
@@ -254,6 +251,9 @@ msgstr "Konto hinzufügen"
 
 msgid "Add an option..."
 msgstr "Option hinzufügen..."
+
+msgid "Add member"
+msgstr "Mitglied hinzufügen"
 
 msgid "Add option"
 msgstr "Option hinzufügen"
@@ -1253,9 +1253,6 @@ msgstr "TIEFE"
 msgid "DETAILS"
 msgstr "DETAILS"
 
-msgid "DISAPPEARING MESSAGES"
-msgstr "SELBSTLÖSCHENDE NACHRICHTEN"
-
 msgid "DISPLAY NAME"
 msgstr "ANZEIGENAME"
 
@@ -1386,11 +1383,11 @@ msgstr "Diktieren funktioniert nicht"
 msgid "Difficulty: %d/5"
 msgstr "Schwierigkeit: %d/5"
 
-msgid "Disable issue tracking"
-msgstr "Meldungsverfolgung deaktivieren"
-
 msgid "Disabled for this group."
 msgstr "Für diese Gruppe deaktiviert."
+
+msgid "Disappearing messages"
+msgstr "Selbstlöschende Nachrichten"
 
 msgid "Discover"
 msgstr "Entdecken"
@@ -1447,9 +1444,6 @@ msgstr "VERSCHLÜSSELTER SCHLÜSSEL (NCRYPTSEC)"
 msgid "EPOCH"
 msgstr "EPOCHE"
 
-msgid "EXPORT CHAT"
-msgstr "CHAT EXPORTIEREN"
-
 msgid "Edit"
 msgstr "Bearbeiten"
 
@@ -1496,9 +1490,6 @@ msgstr "Emoji"
 msgid "Emoji style"
 msgstr "Emoji-Stil"
 
-msgid "Enable issue tracking"
-msgstr "Meldungsverfolgung aktivieren"
-
 msgid "Enabled for this group."
 msgstr "Für diese Gruppe aktiviert."
 
@@ -1542,6 +1533,9 @@ msgstr "Relays zum Abrufen von Ereignissen"
 msgid "Event id"
 msgstr "Ereignis-ID"
 
+msgid "Everyone in the group sees the new name."
+msgstr "Alle in der Gruppe sehen den neuen Namen."
+
 msgid "Exit fullscreen"
 msgstr "Vollbild verlassen"
 
@@ -1562,6 +1556,9 @@ msgstr "Als HTML exportieren"
 
 msgid "Export as Markdown"
 msgstr "Als Markdown exportieren"
+
+msgid "Export chat"
+msgstr "Chat exportieren"
 
 msgid "Export encrypted key"
 msgstr "Verschlüsselten Schlüssel exportieren"
@@ -1696,9 +1693,6 @@ msgstr "GIFs"
 msgid "GROUP ID"
 msgstr "GRUPPEN-ID"
 
-msgid "GROUP NAME"
-msgstr "GRUPPENNAME"
-
 msgid "GROUPS IN COMMON"
 msgstr "GEMEINSAME GRUPPEN"
 
@@ -1759,6 +1753,9 @@ msgstr "Gruppen-ID kopiert"
 msgid "Group name"
 msgstr "Gruppenname"
 
+msgid "Group settings"
+msgstr "Gruppeneinstellungen"
+
 msgid "Grouped"
 msgstr "Gruppiert"
 
@@ -1815,9 +1812,6 @@ msgstr "EINLADUNG"
 
 msgid "ISSUE"
 msgstr "ISSUE"
-
-msgid "ISSUE TRACKING"
-msgstr "MELDUNGSVERFOLGUNG"
 
 msgid "Ideas"
 msgstr "Ideen"
@@ -1918,6 +1912,9 @@ msgstr "Einladen"
 
 msgid "Issue title"
 msgstr "Titel der Meldung"
+
+msgid "Issue tracking"
+msgstr "Meldungsverfolgung"
 
 msgid "Issue tracking is unavailable."
 msgstr "Die Meldungsverfolgung ist nicht verfügbar."
@@ -2277,6 +2274,9 @@ msgstr "Neue Meldung"
 
 msgid "New message"
 msgstr "Neue Nachricht"
+
+msgid "New messages are deleted for everyone after this time."
+msgstr "Neue Nachrichten werden nach dieser Zeit für alle gelöscht."
 
 msgid "New name"
 msgstr "Neuer Name"
@@ -2994,6 +2994,9 @@ msgstr "GIF speichern"
 
 msgid "Save GIFs with the star to find them here."
 msgstr "Speichere GIFs mit dem Stern, um sie hier wiederzufinden."
+
+msgid "Save a copy of this conversation to a file."
+msgstr "Speichere eine Kopie dieser Unterhaltung als Datei."
 
 msgid "Save and use"
 msgstr "Speichern und verwenden"
@@ -3820,6 +3823,9 @@ msgstr "Du erhältst keine Nachrichten mehr aus dieser Gruppe. Für einen erneut
 
 msgid "You were invited to this group."
 msgstr "Du wurdest in diese Gruppe eingeladen."
+
+msgid "You will stop receiving its messages."
+msgstr "Du erhältst dann keine Nachrichten mehr aus dieser Gruppe."
 
 #, c-format
 msgid "You: %s"

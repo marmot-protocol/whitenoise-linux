@@ -17,33 +17,33 @@ ISSUE_STATUS_NAMES := [3]string{N_("Unresolved"), N_("Resolved"), N_("Closed")}
 
 @(private)
 issues_settings :: proc(ui: ^Ui_State) {
-	eyebrow(tr("ISSUE TRACKING"))
-	if ui.issue_ticket != 0 && ui.issue_action == .Setting {
-		clay.Text(
-			tr("Updating issue tracking..."),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-		)
+	updating := ui.issue_ticket != 0 && ui.issue_action == .Setting
+	enabled := ui.issue_setting == .Enabled
+	status := enabled ? tr("Enabled for this group.") : tr("Disabled for this group.")
+	if updating {
+		status = tr("Updating issue tracking...")
 	} else if ui.issue_setting == .Unavailable {
-		clay.Text(
-			tr("Issue tracking is unavailable."),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-		)
-		micro_button("IssueRetry", tr("Retry"))
-	} else {
-		clay.Text(
-			ui.issue_setting == .Enabled ? tr("Enabled for this group.") : tr("Disabled for this group."),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-		)
-		if ui.issue_admin {
-			micro_button(
-				"IssueToggle",
-				ui.issue_setting == .Enabled ? tr("Disable issue tracking") : tr("Enable issue tracking"),
-			)
-		} else {
-			clay.Text(
-				tr("Only group admins can change this setting."),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO},
-			)
+		status = tr("Issue tracking is unavailable.")
+	} else if !ui.issue_admin {
+		status = fmt.tprintf("%s %s", status, tr("Only group admins can change this setting."))
+	}
+
+	// Title and status on the left, the one control on the right.
+	if clay.UI(clay.ID("IssueRow"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			childGap = 12,
+			childAlignment = {y = .Center},
+		},
+	},
+	) {
+		row_labels(tr("Issue tracking"), status)
+		// No control while a change is in flight.
+		if !updating && ui.issue_setting == .Unavailable {
+			micro_button("IssueRetry", tr("Retry"))
+		} else if !updating && ui.issue_admin {
+			toggle("IssueToggle", enabled)
 		}
 	}
 }
