@@ -154,7 +154,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 				},
 				backgroundColor = ROW_BG,
 				cornerRadius = rr(8),
-				border = {color = FIELD_BORDER, width = bw()},
+				border = {color = ui.focus == .Search ? ACCENT : FIELD_BORDER, width = bw()},
 			},
 			) {
 				field_text(

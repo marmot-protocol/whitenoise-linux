@@ -359,7 +359,10 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 										},
 										backgroundColor = ROW_BG,
 										cornerRadius = rr(6),
-										border = {color = FIELD_BORDER, width = bw()},
+										border = {
+											color = ui.focus == .Filter ? ACCENT : FIELD_BORDER,
+											width = bw(),
+										},
 									},
 									) {
 										clay.Text(
