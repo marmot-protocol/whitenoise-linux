@@ -313,7 +313,15 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 					},
 				},
 				) {
-					avatar("ChatAvatar", index, chat.avatar_key, chat.title, 36, chat_pic(chat))
+					peephole_avatar(
+						"ChatAvatar",
+						index,
+						chat.avatar_key,
+						chat.title,
+						36,
+						chat_pic(chat),
+						clay.PointerOver(clay.ID("ChatAvatar", index)) ? .Open : .Closed,
+					)
 					if clay.UI(clay.ID("ChatRowLines", index))(
 					{
 						layout = {
@@ -1511,7 +1519,15 @@ archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
 		border = {color = DIVIDER, width = bw()},
 	},
 	) {
-		avatar("ChatAvatar", index, chat.avatar_key, chat.title, 40, chat_pic(chat))
+		peephole_avatar(
+			"ChatAvatar",
+			index,
+			chat.avatar_key,
+			chat.title,
+			40,
+			chat_pic(chat),
+			clay.PointerOver(clay.ID("ChatAvatar", index)) ? .Open : .Closed,
+		)
 		if clay.UI(clay.ID("ArchiveRowLines", index))(
 		{
 			layout = {

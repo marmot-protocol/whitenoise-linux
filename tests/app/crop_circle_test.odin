@@ -257,6 +257,23 @@ crop_circle_layout :: proc(t: ^testing.T) {
 			testing.expect_value(t, reveal.boundingBox, clay.GetElementData(avatar).boundingBox)
 		}
 	}
+	// A group photo opens onto the group's crop circle the same way.
+	gpic_local[key[:32]] = square_url
+	for over in ([]bool{false, true, false}) {
+		box := clay.GetElementData(clay.ID("ChatHeadAvatar", 0)).boundingBox
+		clay.SetPointerState(
+			over ? clay.Vector2{box.x + box.width / 2, box.y + box.height / 2} : clay.Vector2{-1, -1},
+			false,
+		)
+		anim_tick(1.0 / 60)
+		clay.BeginLayout()
+		chat_pane(&ui)
+		_ = clay.EndLayout(0)
+		avatar := clay.ID("ChatHeadAvatar", 0)
+		reveal := clay.GetElementData(clay.ID("PeepReveal", avatar.id))
+		testing.expect_value(t, reveal.found, over)
+	}
+	delete_key(&gpic_local, key[:32])
 	testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone("")}))
 	for shape in Crop_Shape {
 		ui.prefs.crop_avatar_shape = shape

@@ -70,7 +70,15 @@ group_hero :: proc(ui: ^Ui_State) {
 		},
 	},
 	) {
-		avatar("HeroAvatar", 0, chat.avatar_key, chat.title, 72, chat_pic(chat))
+		peephole_avatar(
+			"HeroAvatar",
+			0,
+			chat.avatar_key,
+			chat.title,
+			72,
+			chat_pic(chat),
+			clay.PointerOver(clay.ID("HeroAvatar", 0)) ? .Open : .Closed,
+		)
 		clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
 		clay.Text(
 			fmt.tprintf(

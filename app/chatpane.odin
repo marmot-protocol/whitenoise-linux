@@ -55,8 +55,17 @@ chat_pane :: proc(ui: ^Ui_State) {
 			backgroundColor = RAIL_BG,
 		},
 		) {
-			if page_w(ui) >=
-			   420 {avatar("ChatHeadAvatar", 0, chat.avatar_key, chat.title, 34, chat_pic(chat))}
+			if page_w(ui) >= 420 {
+				peephole_avatar(
+					"ChatHeadAvatar",
+					0,
+					chat.avatar_key,
+					chat.title,
+					34,
+					chat_pic(chat),
+					clay.PointerOver(clay.ID("ChatHeadAvatar", 0)) ? .Open : .Closed,
+				)
+			}
 			// Keep unbroken titles from widening the pane beyond the window.
 			if clay.UI(clay.ID("ChatHeadTitleClip"))({clip = {horizontal = true}}) {
 				clay.Text(
