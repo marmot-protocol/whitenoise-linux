@@ -1443,6 +1443,9 @@ msgstr "Profil bearbeiten"
 msgid "Edit theme"
 msgstr "Theme bearbeiten"
 
+msgid "Edit your last message (empty composer)"
+msgstr "Deine letzte Nachricht bearbeiten (leeres Eingabefeld)"
+
 msgid "Elevated"
 msgstr "Erhöht"
 

@@ -670,18 +670,11 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				return
 			}
 			if clay.PointerOver(clay.ID("MsgReply", u32(i))) {
-				ui.replying = msg.id
-				ui.reply_hint = fmt.aprintf(
-					"%s: %s",
-					msg.sender,
-					msg.body[:min(len(msg.body), 60)],
-				)
+				start_reply(ui, msg)
 				return
 			}
 			if msg.mine && clay.PointerOver(clay.ID("MsgEdit", u32(i))) {
-				stash_draft(ui) // the edit borrows the composer; keep the draft
-				ed_set(ui, &ui.compose, msg.body)
-				ui.editing = msg.id
+				start_edit(ui, msg)
 				return
 			}
 			if msg.mine && clay.PointerOver(clay.ID("MsgDel", u32(i))) {
@@ -732,6 +725,23 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			drop_draft(ui)
 		}
 		ui.replying = ""
+	}
+
+	// Up in an empty composer edits your latest message in this view.
+	// The issue discussion filters rows differently, so it is skipped.
+	if ui.focus == .Compose &&
+	   !ui.issues_open &&
+	   blocked_dm == "" &&
+	   len(ui.compose) == 0 &&
+	   len(ui.editing) == 0 &&
+	   rl.IsKeyPressed(.UP) {
+		cur := thread_cur(ui)
+		#reverse for msg in ui.messages {
+			if msg.mine && !msg.deleted && !msg.system && len(msg.id) > 0 && msg.thread_of == cur {
+				start_edit(ui, msg)
+				return
+			}
+		}
 	}
 
 	// Shift+Enter inserts a newline instead of sending.
@@ -1093,8 +1103,7 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 	if clay.PointerOver(clay.ID("CtxReply")) {
-		ui.replying = msg.id
-		ui.reply_hint = fmt.aprintf("%s: %s", msg.sender, msg.body[:min(len(msg.body), 60)])
+		start_reply(ui, msg)
 		return
 	}
 	if clay.PointerOver(clay.ID("CtxThread")) {
@@ -1119,9 +1128,7 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if msg.mine && clay.PointerOver(clay.ID("CtxEdit")) {
-		stash_draft(ui) // the edit borrows the composer; keep the draft
-		ed_set(ui, &ui.compose, msg.body)
-		ui.editing = msg.id
+		start_edit(ui, msg)
 		return
 	}
 	if msg.mine && clay.PointerOver(clay.ID("CtxDelAll")) {
@@ -1153,6 +1160,22 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.focus = .Fwd
 		return
 	}
+}
+
+// Reply and Edit hand text entry to the user, so both focus the composer.
+@(private = "file")
+start_reply :: proc(ui: ^Ui_State, msg: Msg_Ui) {
+	ui.replying = msg.id
+	ui.reply_hint = fmt.aprintf("%s: %s", msg.sender, msg.body[:min(len(msg.body), 60)])
+	ui.focus = .Compose
+}
+
+@(private = "file")
+start_edit :: proc(ui: ^Ui_State, msg: Msg_Ui) {
+	stash_draft(ui) // the edit borrows the composer; keep the draft
+	ed_set(ui, &ui.compose, msg.body)
+	ui.editing = msg.id
+	ui.focus = .Compose
 }
 
 // Stash the composer as the selected chat's draft (whitespace-only

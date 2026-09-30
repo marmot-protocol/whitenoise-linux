@@ -1549,6 +1549,7 @@ lang_modal :: proc(ui: ^Ui_State) {
 SHORTCUTS := [][2]string {
 	{"Enter", N_("Send the message")},
 	{"Shift + Enter", N_("Insert a new line")},
+	{"↑", N_("Edit your last message (empty composer)")},
 	{"Esc", N_("Cancel edit / reply, close panels")},
 	{"Ctrl + K", N_("Search everywhere")},
 	{"Ctrl + P", N_("Command palette")},

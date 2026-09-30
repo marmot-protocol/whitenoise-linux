@@ -1442,6 +1442,9 @@ msgstr ""
 msgid "Edit theme"
 msgstr ""
 
+msgid "Edit your last message (empty composer)"
+msgstr ""
+
 msgid "Elevated"
 msgstr ""
 

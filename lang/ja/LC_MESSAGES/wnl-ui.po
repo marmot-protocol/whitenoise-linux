@@ -1443,6 +1443,9 @@ msgstr "プロフィールを編集"
 msgid "Edit theme"
 msgstr "テーマを編集"
 
+msgid "Edit your last message (empty composer)"
+msgstr "最後に送ったメッセージを編集（入力欄が空のとき）"
+
 msgid "Elevated"
 msgstr "浮き上がり面"
 
