@@ -650,10 +650,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				}
 				return
 			}
-			if clay.PointerOver(clay.ID("MsgReact", u32(i))) {
-				message_op(ui, client, .React, msg.id, "👍")
-				return
-			}
 			if clay.PointerOver(clay.ID("MsgReply", u32(i))) {
 				ui.replying = msg.id
 				ui.reply_hint = fmt.aprintf(

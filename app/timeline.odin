@@ -620,7 +620,6 @@ msg_run_step :: proc(run: ^Msg_Run, msg: Msg_Ui, wrap_w: f32) -> Msg_Head {
 // row's top-right for a continued one.
 @(private = "file")
 msg_actions :: proc(index: u32, msg: Msg_Ui) {
-	action_chip("MsgReact", index, "+1")
 	// A reply can't carry a thread tag, so thread rows
 	// offer Thread (nesting) instead of Reply.
 	if len(msg.thread_of) == 0 || g_ui.compose_issue != "" {
