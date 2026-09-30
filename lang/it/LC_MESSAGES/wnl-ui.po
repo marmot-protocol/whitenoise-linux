@@ -97,11 +97,11 @@ msgstr "%s ha sciolto il gruppo"
 
 #, c-format
 msgid "%s dismissed %s as admin"
-msgstr "%s ha revocato il ruolo di amministratore a %s"
+msgstr "%s ha revocato il ruolo di admin a %s"
 
 #, c-format
 msgid "%s is no longer an admin"
-msgstr "%s non è più amministratore"
+msgstr "%s non è più admin"
 
 #, c-format
 msgid "%s left the group"
@@ -109,7 +109,7 @@ msgstr "%s ha lasciato il gruppo"
 
 #, c-format
 msgid "%s made %s an admin"
-msgstr "%s ha nominato %s amministratore"
+msgstr "%s ha nominato %s admin"
 
 #, c-format
 msgid "%s removed %s"
@@ -125,7 +125,7 @@ msgstr "%s è stato aggiunto al gruppo"
 
 #, c-format
 msgid "%s was made an admin"
-msgstr "%s è stato nominato amministratore"
+msgstr "%s è stato nominato admin"
 
 #, c-format
 msgid "%s was removed from the group"
@@ -133,7 +133,7 @@ msgstr "%s è stato rimosso dal gruppo"
 
 #, c-format
 msgid "%s · Click to download."
-msgstr "%s · Fai clic per scaricare."
+msgstr "%s · Clicca per scaricare."
 
 msgid "(no display name)"
 msgstr "(nessun nome visualizzato)"
@@ -255,10 +255,10 @@ msgid "Adding…"
 msgstr "Aggiunta…"
 
 msgid "Admin"
-msgstr "Amministratore"
+msgstr "Admin"
 
 msgid "Admins can add and remove members and change group details."
-msgstr "Gli amministratori possono aggiungere e rimuovere membri e modificare i dettagli del gruppo."
+msgstr "Gli admin possono aggiungere e rimuovere membri e modificare i dettagli del gruppo."
 
 msgid "Advanced"
 msgstr "Avanzate"
@@ -291,7 +291,7 @@ msgid "An empty box derives its value. The window previews as you type."
 msgstr "Una casella vuota ricava il proprio valore. La finestra mostra l'anteprima mentre scrivi."
 
 msgid "Another group change took precedence. Review your group settings."
-msgstr "Un’altra modifica del gruppo ha avuto la precedenza. Controlla le impostazioni del gruppo."
+msgstr "Un'altra modifica del gruppo ha avuto la precedenza. Controlla le impostazioni del gruppo."
 
 msgid "Anything you write here stays between you and this device's key."
 msgstr "Tutto ciò che scrivi qui resta tra te e la chiave di questo dispositivo."
@@ -348,7 +348,7 @@ msgid "Aug"
 msgstr "ago"
 
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
-msgstr "Carica automaticamente le anteprime di immagini e siti web supportati. I loro gestori possono vedere il tuo indirizzo IP. Disattivando questa opzione, le anteprime dei link non vengono più caricate automaticamente, ma gli allegati continuano a essere scaricati."
+msgstr "Carica automaticamente le anteprime di immagini e siti web supportati. I loro gestori possono vedere il tuo indirizzo IP. Disattivare questa opzione interrompe le anteprime automatiche dei link, non i download degli allegati."
 
 msgid "Available offline"
 msgstr "Disponibile offline"
@@ -581,10 +581,10 @@ msgid "Clear search"
 msgstr "Cancella ricerca"
 
 msgid "Click a sticker for a larger preview."
-msgstr "Fai clic su un adesivo per ingrandirlo."
+msgstr "Clicca su un adesivo per un'anteprima più grande."
 
 msgid "Click to download."
-msgstr "Fai clic per scaricare."
+msgstr "Clicca per scaricare."
 
 msgid "Close"
 msgstr "Chiudi"
@@ -638,7 +638,7 @@ msgid "Confirm delete"
 msgstr "Conferma eliminazione"
 
 msgid "Confirm forget all"
-msgstr "Conferma la rimozione di tutti"
+msgstr "Conferma e dimentica tutti"
 
 msgid "Confirm import"
 msgstr "Conferma e importa"
@@ -799,7 +799,7 @@ msgid "Couldn't export the key. %s"
 msgstr "Impossibile esportare la chiave. %s"
 
 msgid "Couldn't find that pack. Enter a sticker pack naddr or coordinate."
-msgstr "Impossibile trovare il pacchetto. Inserisci il suo naddr o le sue coordinate."
+msgstr "Impossibile trovare quel pacchetto. Inserisci il naddr o le coordinate di un pacchetto di adesivi."
 
 msgid "Couldn't finish dictation. Please try again."
 msgstr "Impossibile completare la dettatura. Riprova."
@@ -895,7 +895,7 @@ msgid "Couldn't play speech. Check your audio output and try again."
 msgstr "Impossibile riprodurre la voce. Controlla l'uscita audio e riprova."
 
 msgid "Couldn't play video. Click to retry."
-msgstr "Impossibile riprodurre il video. Fai clic per riprovare."
+msgstr "Impossibile riprodurre il video. Clicca per riprovare."
 
 #, c-format
 msgid "Couldn't publish the key package. %s"
@@ -971,7 +971,7 @@ msgstr "Impossibile ripubblicare gli elenchi relay. %s"
 
 #, c-format
 msgid "Couldn't resolve %s on Namecoin. Double-check it and try again."
-msgstr "Impossibile risolvere %s su Namecoin. Controlla e riprova."
+msgstr "Impossibile risolvere %s su Namecoin. Ricontrollalo e riprova."
 
 #, c-format
 msgid "Couldn't reveal your private key. %s"
@@ -1130,7 +1130,7 @@ msgid "Creating your vault…"
 msgstr "Creazione della cassaforte…"
 
 msgid "Crop circle shape"
-msgstr "Forma dei crop circle"
+msgstr "Forma dei cerchi nel grano"
 
 msgid "Current"
 msgstr "Attuale"
@@ -1281,10 +1281,10 @@ msgid "Difficulty: %d/5"
 msgstr "Difficoltà: %d/5"
 
 msgid "Disable issue tracking"
-msgstr "Disattiva le segnalazioni"
+msgstr "Disattiva il tracciamento delle segnalazioni"
 
 msgid "Disabled for this group."
-msgstr "Disattivate per questo gruppo."
+msgstr "Disattivato per questo gruppo."
 
 msgid "Discover"
 msgstr "Scopri"
@@ -1379,10 +1379,10 @@ msgid "Emoji style"
 msgstr "Stile delle emoji"
 
 msgid "Enable issue tracking"
-msgstr "Attiva le segnalazioni"
+msgstr "Attiva il tracciamento delle segnalazioni"
 
 msgid "Enabled for this group."
-msgstr "Attivate per questo gruppo."
+msgstr "Attivato per questo gruppo."
 
 msgid "Encrypted key copied"
 msgstr "Chiave crittografata copiata"
@@ -1678,7 +1678,7 @@ msgid "ISSUE"
 msgstr "SEGNALAZIONE"
 
 msgid "ISSUE TRACKING"
-msgstr "SEGNALAZIONI"
+msgstr "TRACCIAMENTO DELLE SEGNALAZIONI"
 
 msgid "Ideas"
 msgstr "Idee"
@@ -1706,7 +1706,7 @@ msgid "Import a key"
 msgstr "Importa una chiave"
 
 msgid "Import an image to make your first sticker."
-msgstr "Importa un’immagine per creare il tuo primo adesivo."
+msgstr "Importa un'immagine per creare il tuo primo adesivo."
 
 msgid "Import backup"
 msgstr "Importa backup"
@@ -1757,7 +1757,7 @@ msgid "Interface sounds"
 msgstr "Suoni dell'interfaccia"
 
 msgid "Interface zoom"
-msgstr "Zoom dell’interfaccia"
+msgstr "Zoom dell'interfaccia"
 
 msgid "Invalid Nostr reference"
 msgstr "Riferimento Nostr non valido"
@@ -1778,7 +1778,7 @@ msgid "Issue title"
 msgstr "Titolo della segnalazione"
 
 msgid "Issue tracking is unavailable."
-msgstr "Le segnalazioni non sono disponibili."
+msgstr "Il tracciamento delle segnalazioni non è disponibile."
 
 msgid "Issues"
 msgstr "Segnalazioni"
@@ -1876,7 +1876,7 @@ msgid "Language"
 msgstr "Lingua"
 
 msgid "Language, startup, and everyday preferences."
-msgstr "Gestisci la lingua, l'avvio e le preferenze di tutti i giorni."
+msgstr "Lingua, avvio e preferenze di tutti i giorni."
 
 msgid "Large"
 msgstr "Grande"
@@ -1942,7 +1942,7 @@ msgid "Loading…"
 msgstr "Caricamento…"
 
 msgid "Local files, cached media, and encrypted backups."
-msgstr "Gestisci i file locali, i contenuti multimediali in cache e i backup crittografati."
+msgstr "File locali, contenuti multimediali in cache e backup crittografati."
 
 msgid "Location"
 msgstr "Posizione"
@@ -1975,7 +1975,7 @@ msgid "Make White Noise work your way."
 msgstr "Adatta White Noise alle tue esigenze."
 
 msgid "Make this member an admin?"
-msgstr "Rendere amministratore questo membro?"
+msgstr "Rendere admin questo membro?"
 
 msgid "Male voice. Supports all reading languages."
 msgstr "Voce maschile. Supporta tutte le lingue di lettura."
@@ -2279,13 +2279,13 @@ msgid "Oct"
 msgstr "ott"
 
 msgid "Off"
-msgstr "Disattivati"
+msgstr "Off"
 
 msgid "Off shows only \"New message\" without the text."
 msgstr "Se disattivata, mostra solo \"Nuovo messaggio\" senza il testo."
 
 msgid "On"
-msgstr "Attivati"
+msgstr "On"
 
 msgid "On accent"
 msgstr "Su accento"
@@ -2297,7 +2297,7 @@ msgid "One-tap reactions"
 msgstr "Reazioni con un tocco"
 
 msgid "Only group admins can change this setting."
-msgstr "Solo gli amministratori del gruppo possono modificare questa impostazione."
+msgstr "Solo gli admin del gruppo possono modificare questa impostazione."
 
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr "Viene rimossa solo la cartella. Le sue chat restano nell'elenco delle chat."
@@ -2496,7 +2496,7 @@ msgid "Privacy"
 msgstr "Privacy"
 
 msgid "Privacy, diagnostics, and developer tools."
-msgstr "Gestisci la privacy, la diagnostica e gli strumenti per sviluppatori."
+msgstr "Privacy, diagnostica e strumenti per sviluppatori."
 
 msgid "Private"
 msgstr "Privato"
@@ -2635,7 +2635,7 @@ msgid "Remove"
 msgstr "Rimuovi"
 
 msgid "Remove admin rights?"
-msgstr "Rimuovere i diritti di amministratore?"
+msgstr "Rimuovere i diritti di admin?"
 
 msgid "Remove contact"
 msgstr "Rimuovi contatto"
@@ -3122,7 +3122,7 @@ msgid "Sticker pack"
 msgstr "Pacchetto di adesivi"
 
 msgid "Sticker unavailable. Click to view options."
-msgstr "Adesivo non disponibile. Fai clic per vedere le opzioni."
+msgstr "Adesivo non disponibile. Clicca per vedere le opzioni."
 
 msgid "Stickers"
 msgstr "Adesivi"
@@ -3229,7 +3229,7 @@ msgid "The updated list is published to your relays."
 msgstr "L'elenco aggiornato viene pubblicato sui tuoi relay."
 
 msgid "The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}."
-msgstr "Il client web che apre una scheda evento, con {id} al posto dell'evento. Per esempio https://primal.net/e/{id}."
+msgstr "Il client web in cui si apre una scheda evento, con {id} al posto dell'evento. Per esempio https://primal.net/e/{id}."
 
 msgid "Their direct chat leaves your list. Nothing is published, and you can undo it here."
 msgstr "La sua chat diretta esce dal tuo elenco. Non viene pubblicato nulla e puoi annullare da qui."
@@ -3251,7 +3251,7 @@ msgid "Theme shared with %s"
 msgstr "Tema condiviso con %s"
 
 msgid "Themes, text size, and the look of your conversations."
-msgstr "Personalizza i temi, le dimensioni del testo e l'aspetto delle tue conversazioni."
+msgstr "Temi, dimensione del testo e aspetto delle tue conversazioni."
 
 msgid "They can be added to a chat."
 msgstr "Può essere aggiunto a una chat."
@@ -3347,10 +3347,10 @@ msgid "Trophy"
 msgstr "Trofeo"
 
 msgid "Trusted link sites"
-msgstr "Siti con link affidabili"
+msgstr "Siti affidabili per i link"
 
 msgid "Try a different search."
-msgstr "Prova un’altra ricerca."
+msgstr "Prova un'altra ricerca."
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "Disattiva transizioni animate, voli ed effetti. Lo stato cambia comunque, ma nulla si muove."
@@ -3398,13 +3398,13 @@ msgid "Unresolved"
 msgstr "Aperta"
 
 msgid "Unsupported attachment format."
-msgstr "Formato dell’allegato non supportato."
+msgstr "Formato dell'allegato non supportato."
 
 msgid "Updates"
 msgstr "Aggiornamenti"
 
 msgid "Updating issue tracking..."
-msgstr "Aggiornamento delle segnalazioni..."
+msgstr "Aggiornamento del tracciamento delle segnalazioni..."
 
 msgid "Uploaded emoji"
 msgstr "Emoji caricate"
@@ -3529,7 +3529,7 @@ msgid "White Noise %s · odin port"
 msgstr "White Noise %s · port Odin"
 
 msgid "White Noise and this session."
-msgstr "Scopri White Noise e questa sessione."
+msgstr "White Noise e questa sessione."
 
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
 msgstr "White Noise non è affiliato a GifSnap. Non c'è motivo di pensare che GifSnap faccia un uso improprio di questi dati, ma è una terza parte fuori dal controllo di White Noise."
@@ -3575,7 +3575,7 @@ msgid "You have the latest version."
 msgstr "Hai la versione più recente."
 
 msgid "You stay in the group, but another admin has to grant the rights back."
-msgstr "Resti nel gruppo, ma un altro amministratore dovrà riassegnarti i diritti."
+msgstr "Resti nel gruppo, ma un altro admin dovrà riassegnarti i diritti."
 
 msgid "You stop receiving its messages. Rejoining needs a new invite."
 msgstr "Smetterai di ricevere i suoi messaggi. Per rientrare serve un nuovo invito."
@@ -3591,13 +3591,13 @@ msgid "Your current password"
 msgstr "La tua password attuale"
 
 msgid "Your identity and the secrets on this device."
-msgstr "Gestisci la tua identità e i segreti su questo dispositivo."
+msgstr "La tua identità e i segreti su questo dispositivo."
 
 msgid "Your identity is sovereign"
 msgstr "La tua identità è sovrana"
 
 msgid "Your identity, key packages, and device security."
-msgstr "Gestisci la tua identità, i pacchetti chiavi e la sicurezza del dispositivo."
+msgstr "La tua identità, i pacchetti chiavi e la sicurezza del dispositivo."
 
 msgid "Your key never leaves this device."
 msgstr "La tua chiave non lascia mai questo dispositivo."

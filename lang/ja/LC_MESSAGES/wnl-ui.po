@@ -1124,7 +1124,7 @@ msgid "Created by"
 msgstr "作成者"
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
-msgstr "パスワードで暗号化したNIP-49キーを作成します。安全に保存したり、別のクライアントに移したりできます。"
+msgstr "パスワードで暗号化したNIP-49形式の鍵を作成します。安全に保存したり、別のクライアントに移したりできます。"
 
 msgid "Creating your vault…"
 msgstr "保管庫を作成しています…"
@@ -1187,7 +1187,7 @@ msgid "Default avatar shape"
 msgstr "デフォルトのアバター形状"
 
 msgid "Default stack"
-msgstr "既定のフォント"
+msgstr "デフォルトのフォント"
 
 msgid "Delete"
 msgstr "削除"
@@ -1202,7 +1202,7 @@ msgid "Delete for you?"
 msgstr "自分のみ削除しますか？"
 
 msgid "Delete this folder?"
-msgstr "このフォルダーを削除しますか？"
+msgstr "このフォルダを削除しますか？"
 
 msgid "Delete this message?"
 msgstr "このメッセージを削除しますか？"
@@ -1253,7 +1253,7 @@ msgid "Developer mode on"
 msgstr "開発者モードをオンにしました"
 
 msgid "Device vault"
-msgstr "デバイスの保管庫"
+msgstr "端末の保管庫"
 
 msgid "Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."
 msgstr "診断情報には、共有をオフにするまで使用されるランダムなインストール識別子、アプリと端末の情報、リレーのラベルが含まれます。収集サービスはあなたのIPアドレスを受け取ります。メッセージの内容やアカウント、グループの識別子は含まれません。共有をオフにすると今後の送信は停止しますが、送信済みのデータは取り消せません。監査ログは別の設定です。"
@@ -1265,10 +1265,10 @@ msgid "Dictate"
 msgstr "音声入力"
 
 msgid "Dictate and listen on this device."
-msgstr "このデバイス上で音声入力や読み上げができます。"
+msgstr "この端末上で音声入力や読み上げができます。"
 
 msgid "Dictate drafts and transcribe audio messages on your device."
-msgstr "お使いのデバイスで下書きの音声入力や音声メッセージの文字起こしができます。"
+msgstr "この端末上で下書きの音声入力や音声メッセージの文字起こしができます。"
 
 msgid "Dictate messages and listen to them aloud."
 msgstr "メッセージの音声入力や読み上げができます。"
@@ -1330,7 +1330,7 @@ msgid "EMOJI GROUP IMAGE"
 msgstr "絵文字のグループ画像"
 
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
-msgstr "暗号化キー(NCRYPTSEC)"
+msgstr "暗号化された鍵 (NCRYPTSEC)"
 
 msgid "EPOCH"
 msgstr "エポック"
@@ -1385,7 +1385,7 @@ msgid "Enabled for this group."
 msgstr "このグループでは有効です。"
 
 msgid "Encrypted key copied"
-msgstr "暗号化キーをコピーしました"
+msgstr "暗号化された鍵をコピーしました"
 
 msgid "End-to-end encrypted"
 msgstr "エンドツーエンド暗号化"
@@ -1440,13 +1440,13 @@ msgid "Export as Markdown"
 msgstr "Markdown としてエクスポート"
 
 msgid "Export encrypted key"
-msgstr "暗号化キーをエクスポート"
+msgstr "暗号化された鍵をエクスポート"
 
 msgid "Export encrypted key (ncryptsec)"
-msgstr "暗号化キーをエクスポート(ncryptsec)"
+msgstr "暗号化された鍵をエクスポート (ncryptsec)"
 
 msgid "Export key"
-msgstr "キーをエクスポート"
+msgstr "鍵をエクスポート"
 
 msgid "FILES"
 msgstr "ファイル"
@@ -2300,7 +2300,7 @@ msgid "Only group admins can change this setting."
 msgstr "この設定を変更できるのはグループ管理者だけです。"
 
 msgid "Only the folder is removed. Its chats stay in your chat list."
-msgstr "フォルダーだけが削除されます。中のチャットはチャット一覧に残ります。"
+msgstr "フォルダだけが削除されます。中のチャットはチャット一覧に残ります。"
 
 msgid "Open"
 msgstr "開く"
@@ -2629,7 +2629,7 @@ msgid "Relays"
 msgstr "リレー"
 
 msgid "Relays carry your encrypted messages. The defaults are already configured."
-msgstr "リレーは暗号化されたメッセージを運びます。既定のリレーはすでに設定されています。"
+msgstr "リレーは暗号化されたメッセージを運びます。デフォルトのリレーはすでに設定されています。"
 
 msgid "Remove"
 msgstr "削除"
@@ -3515,7 +3515,7 @@ msgid "Where linked Nostr events (nevent, note) are pulled from. Your chats neve
 msgstr "リンクされたNostrイベント（nevent、note）の取得元です。チャットがこれらのリレーに触れることはありません。"
 
 msgid "Where peers reach you."
-msgstr "相手があなたに届ける場所です。"
+msgstr "相手があなたに連絡する場所です。"
 
 msgid "Where you publish."
 msgstr "あなたが発信する場所です。"
@@ -3535,7 +3535,7 @@ msgid "White Noise is not affiliated with GifSnap. There is no reason to expect 
 msgstr "White NoiseはGifSnapと提携していません。GifSnapがこのデータを悪用すると考える理由はありませんが、White Noiseが管理できない第三者です。"
 
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
-msgstr "White Noise はあなたの秘密鍵を一切見ません。このデバイスと接続した署名者にのみ存在します。"
+msgstr "White Noise があなたの秘密鍵を見ることはありません。秘密鍵はこの端末と、接続した署名者にのみ存在します。"
 
 #, c-format
 msgid "White Noise · %d unread"
@@ -3591,16 +3591,16 @@ msgid "Your current password"
 msgstr "現在のパスワード"
 
 msgid "Your identity and the secrets on this device."
-msgstr "あなたのアイデンティティと、このデバイス上の秘密情報を管理します。"
+msgstr "あなたの ID と、この端末上の秘密情報を管理します。"
 
 msgid "Your identity is sovereign"
 msgstr "あなたの ID は主権的です"
 
 msgid "Your identity, key packages, and device security."
-msgstr "あなたのアイデンティティ、キーパッケージ、デバイスのセキュリティを管理します。"
+msgstr "あなたの ID、キーパッケージ、端末のセキュリティを管理します。"
 
 msgid "Your key never leaves this device."
-msgstr "鍵がこのデバイス外に出ることはありません。"
+msgstr "鍵がこの端末の外に出ることはありません。"
 
 msgid "Your name"
 msgstr "あなたの名前"

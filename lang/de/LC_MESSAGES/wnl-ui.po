@@ -97,11 +97,11 @@ msgstr "%s hat die Gruppe aufgelöst"
 
 #, c-format
 msgid "%s dismissed %s as admin"
-msgstr "%s hat %s als Administrator abgesetzt"
+msgstr "%s hat %s als Admin abgesetzt"
 
 #, c-format
 msgid "%s is no longer an admin"
-msgstr "%s ist kein Administrator mehr"
+msgstr "%s ist kein Admin mehr"
 
 #, c-format
 msgid "%s left the group"
@@ -109,7 +109,7 @@ msgstr "%s hat die Gruppe verlassen"
 
 #, c-format
 msgid "%s made %s an admin"
-msgstr "%s hat %s zum Administrator gemacht"
+msgstr "%s hat %s zum Admin gemacht"
 
 #, c-format
 msgid "%s removed %s"
@@ -125,7 +125,7 @@ msgstr "%s wurde zur Gruppe hinzugefügt"
 
 #, c-format
 msgid "%s was made an admin"
-msgstr "%s wurde zum Administrator gemacht"
+msgstr "%s wurde zum Admin gemacht"
 
 #, c-format
 msgid "%s was removed from the group"
@@ -303,7 +303,7 @@ msgid "Applies to message bodies and the composer."
 msgstr "Gilt für Nachrichtentexte und das Eingabefeld."
 
 msgid "Applies to the picker, reactions and emoji in messages."
-msgstr "Gilt für die Auswahl, Reaktionen und Emoji in Nachrichten."
+msgstr "Gilt für die Auswahl, Reaktionen und Emojis in Nachrichten."
 
 msgid "Apps"
 msgstr "Apps"
@@ -548,7 +548,7 @@ msgid "Choose a destination for this chat."
 msgstr "Wähle einen Zielordner für diesen Chat."
 
 msgid "Choose at most two emoji."
-msgstr "Wähle höchstens zwei Emoji."
+msgstr "Wähle höchstens zwei Emojis."
 
 msgid "Choose how your conversations look and feel."
 msgstr "Wähle, wie deine Unterhaltungen aussehen und sich anfühlen."
@@ -557,7 +557,7 @@ msgid "Choose image"
 msgstr "Bild wählen"
 
 msgid "Choose one or two emoji. Every member sees the same image."
-msgstr "Wähle ein oder zwei Emoji. Alle Mitglieder sehen dasselbe Bild."
+msgstr "Wähle ein oder zwei Emojis. Alle Mitglieder sehen dasselbe Bild."
 
 msgid "Choose what gets your attention."
 msgstr "Wähle, worauf du aufmerksam gemacht wirst."
@@ -638,7 +638,7 @@ msgid "Confirm delete"
 msgstr "Löschen bestätigen"
 
 msgid "Confirm forget all"
-msgstr "Vergessen bestätigen"
+msgstr "Bestätigen: alle vergessen"
 
 msgid "Confirm import"
 msgstr "Import bestätigen"
@@ -772,7 +772,7 @@ msgid "Couldn't decode the image. Choose a PNG or JPEG."
 msgstr "Das Bild konnte nicht dekodiert werden. Wähle ein PNG oder JPEG."
 
 msgid "Couldn't decode this audio. Try another audio file."
-msgstr "Dieses Audio konnte nicht dekodiert werden. Versuch eine andere Audiodatei."
+msgstr "Dieses Audio konnte nicht dekodiert werden. Versuche es mit einer anderen Audiodatei."
 
 #, c-format
 msgid "Couldn't delete %s. Please try again."
@@ -1030,7 +1030,7 @@ msgstr "Das Theme konnte nicht geteilt werden. Bitte versuche es erneut. %s"
 
 #, c-format
 msgid "Couldn't sign out. %s"
-msgstr "Du konntest nicht abgemeldet werden. %s"
+msgstr "Die Abmeldung war nicht möglich. %s"
 
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "Das Vorlesen konnte nicht gestartet werden. Bitte versuche es erneut."
@@ -1229,7 +1229,7 @@ msgid "Describe the group"
 msgstr "Beschreibe die Gruppe"
 
 msgid "Describe the issue (Markdown)"
-msgstr "Beschreibe das Problem (Markdown)"
+msgstr "Beschreibe die Meldung (Markdown)"
 
 msgid "Description"
 msgstr "Beschreibung"
@@ -1281,7 +1281,7 @@ msgid "Difficulty: %d/5"
 msgstr "Schwierigkeit: %d/5"
 
 msgid "Disable issue tracking"
-msgstr "Problemverfolgung deaktivieren"
+msgstr "Meldungsverfolgung deaktivieren"
 
 msgid "Disabled for this group."
 msgstr "Für diese Gruppe deaktiviert."
@@ -1379,7 +1379,7 @@ msgid "Emoji style"
 msgstr "Emoji-Stil"
 
 msgid "Enable issue tracking"
-msgstr "Problemverfolgung aktivieren"
+msgstr "Meldungsverfolgung aktivieren"
 
 msgid "Enabled for this group."
 msgstr "Für diese Gruppe aktiviert."
@@ -1397,7 +1397,7 @@ msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "Gib einen Stickernamen mit 1 bis 64 Zeichen ein."
 
 msgid "Enter an issue title and description."
-msgstr "Gib einen Titel und eine Beschreibung ein."
+msgstr "Gib einen Titel und eine Beschreibung für die Meldung ein."
 
 msgid "Enter publishes, Escape cancels."
 msgstr "Enter veröffentlicht, Escape bricht ab."
@@ -1678,7 +1678,7 @@ msgid "ISSUE"
 msgstr "ISSUE"
 
 msgid "ISSUE TRACKING"
-msgstr "PROBLEMVERFOLGUNG"
+msgstr "MELDUNGSVERFOLGUNG"
 
 msgid "Ideas"
 msgstr "Ideen"
@@ -1778,7 +1778,7 @@ msgid "Issue title"
 msgstr "Titel der Meldung"
 
 msgid "Issue tracking is unavailable."
-msgstr "Die Problemverfolgung ist nicht verfügbar."
+msgstr "Die Meldungsverfolgung ist nicht verfügbar."
 
 msgid "Issues"
 msgstr "Meldungen"
@@ -1954,7 +1954,7 @@ msgid "Looking up the Namecoin name."
 msgstr "Der Namecoin-Name wird nachgeschlagen."
 
 msgid "Looking up..."
-msgstr "Wird gesucht..."
+msgstr "Wird nachgeschlagen..."
 
 msgid "MATERIAL CHANNELS"
 msgstr "MATERIALKANÄLE"
@@ -2146,7 +2146,7 @@ msgid "Nickname"
 msgstr "Spitzname"
 
 msgid "No GIFs found. Try another search."
-msgstr "Keine GIFs gefunden. Versuch einen anderen Suchbegriff."
+msgstr "Keine GIFs gefunden. Versuche einen anderen Suchbegriff."
 
 msgid "No archived chats"
 msgstr "Keine archivierten Chats"
@@ -2258,7 +2258,7 @@ msgid "Not set"
 msgstr "Nicht festgelegt"
 
 msgid "Notes to self"
-msgstr "Notizen an mich"
+msgstr "Eigene Notizen"
 
 msgid "Notifications"
 msgstr "Benachrichtigungen"
@@ -3404,7 +3404,7 @@ msgid "Updates"
 msgstr "Updates"
 
 msgid "Updating issue tracking..."
-msgstr "Problemverfolgung wird aktualisiert..."
+msgstr "Meldungsverfolgung wird aktualisiert..."
 
 msgid "Uploaded emoji"
 msgstr "Hochgeladene Emojis"
