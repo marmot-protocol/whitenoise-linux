@@ -505,6 +505,9 @@ mention_inbox :: proc(ui: ^Ui_State) {
 			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
+			// Snippet wrap width: modal and row padding; an unread bar and
+			// its gap take 11 more.
+			snip_w := fit_w(420) - 24 - 16
 			for hit, i in ui.mi_hits {
 				if clay.UI(clay.ID("MiHit", u32(i)))(
 				{
@@ -562,9 +565,14 @@ mention_inbox :: proc(ui: ^Ui_State) {
 								{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
 							)
 						}
-						clay.Text(
+						// Mentions draw as chips, the same as in message bodies.
+						body_text(
+							0xD2000000 + u32(i) * 8,
 							hit.snippet,
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+							12,
+							TEXT_DIM,
+							wrap_w = hit.unread ? snip_w - 11 : snip_w,
+							max_lines = 3,
 						)
 					}
 				}
@@ -583,6 +591,8 @@ handle_mi :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !mouse_released() {
 		return
 	}
+	// The inbox captures the click: a chip in a snippet belongs to the row.
+	mention_hover = ""
 	for hit, i in ui.mi_hits {
 		if clay.PointerOver(clay.ID("MiHit", u32(i))) {
 			ui.mi_open = false

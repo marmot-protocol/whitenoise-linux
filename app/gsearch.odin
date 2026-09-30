@@ -80,6 +80,8 @@ gs_subseq :: proc(hay, needle: string) -> bool {
 
 // One line around the match: newlines flatten to spaces, long bodies
 // clip to a window starting shortly before the hit rune.
+// A profile token is never cut and counts as one rune of the window:
+// it renders as a short mention chip, and a cut one would not parse.
 gs_snippet :: proc(body: string, match_rune: int) -> string {
 	SNIP_BEFORE :: 24
 	SNIP_RUNES :: 90
@@ -88,17 +90,31 @@ gs_snippet :: proc(body: string, match_rune: int) -> string {
 	if start > 0 {
 		strings.write_string(&b, "…")
 	}
-	i := 0
-	for r in body {
-		defer i += 1
-		if i < start {
-			continue
-		}
-		if i >= start + SNIP_RUNES {
+	i, shown := 0, 0 // runes walked, window runes written
+	for at := 0; at < len(body); {
+		if shown >= SNIP_RUNES {
 			strings.write_string(&b, "…")
 			break
 		}
+		if body[at] == '@' || body[at] == 'n' {
+			if end, _, ok := mention_at(body, at); ok {
+				i += utf8.rune_count(body[at:end])
+				if i > start {
+					strings.write_string(&b, body[at:end])
+					shown += 1
+				}
+				at = end
+				continue
+			}
+		}
+		r, w := utf8.decode_rune(body[at:])
+		at += w
+		i += 1
+		if i <= start {
+			continue
+		}
 		strings.write_rune(&b, r == '\n' || r == '\r' ? ' ' : r)
+		shown += 1
 	}
 	return strings.to_string(b)
 }
