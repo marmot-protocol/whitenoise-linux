@@ -256,6 +256,9 @@ msgstr "リアクションを追加"
 msgid "Add relays for linked events"
 msgstr "リンクされたイベント用のリレーを追加"
 
+msgid "Add rule"
+msgstr "ルールを追加"
+
 msgid "Add someone by npub, or make a group of your own."
 msgstr "npub で相手を追加するか、自分だけのグループを作成してください。"
 
@@ -521,6 +524,9 @@ msgstr "写真を変更"
 msgid "Change picture"
 msgstr "画像を変更"
 
+msgid "Change rule type"
+msgstr "ルールの種類を変更"
+
 msgid "Change the date format"
 msgstr "日付の形式を変更"
 
@@ -557,6 +563,9 @@ msgstr "チャットのオプション"
 
 msgid "Chats"
 msgstr "チャット"
+
+msgid "Chats that match file here automatically. People counts include you. A chat you move by hand stays where you put it."
+msgstr "条件に合うチャットは自動でここに入ります。人数にはあなたも含まれます。手動で移動したチャットはその場所に残ります。"
 
 msgid "Chats you archive will appear here."
 msgstr "アーカイブしたチャットがここに表示されます。"
@@ -1491,6 +1500,12 @@ msgstr "報告のタイトルと説明を入力してください。"
 msgid "Enter publishes, Escape cancels."
 msgstr "Enter で公開、Escape でキャンセルします。"
 
+msgid "Enter the member as an npub and try again."
+msgstr "メンバーを npub で入力して、もう一度お試しください。"
+
+msgid "Enter the number of people as a whole number and try again."
+msgstr "人数を整数で入力して、もう一度お試しください。"
+
 msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
 msgstr "このバックアップの作成時に使ったパスワードを入力してください。この端末の設定、下書き、カスタム絵文字、テーマは置き換えられます。"
 
@@ -1555,6 +1570,9 @@ msgstr "2月"
 msgid "Female voice. Supports all reading languages."
 msgstr "女性の声です。すべての読み上げ言語に対応しています。"
 
+msgid "Fewer than"
+msgstr "人数が次より少ない"
+
 msgid "Field"
 msgstr "入力欄"
 
@@ -1611,6 +1629,9 @@ msgstr "フォルダのオプション"
 
 msgid "Folders"
 msgstr "フォルダ"
+
+msgid "Follow folder rules"
+msgstr "フォルダのルールに従う"
 
 msgid "Font"
 msgstr "フォント"
@@ -1723,6 +1744,12 @@ msgstr "フォルダ別"
 
 msgid "Hard shadows"
 msgstr "くっきりした影"
+
+msgid "Has member"
+msgstr "メンバーを含む"
+
+msgid "Has unread messages"
+msgstr "未読メッセージがある"
 
 msgid "Have messages read aloud"
 msgstr "メッセージを読み上げる"
@@ -2099,6 +2126,12 @@ msgstr "未読にする"
 msgid "Marmot"
 msgstr "マーモット"
 
+msgid "Match all rules"
+msgstr "すべてのルールに一致"
+
+msgid "Match any rule"
+msgstr "いずれかのルールに一致"
+
 msgid "May"
 msgstr "5月"
 
@@ -2156,6 +2189,9 @@ msgstr "お金"
 msgid "Monitor"
 msgstr "モニター"
 
+msgid "More than"
+msgstr "人数が次より多い"
+
 msgid "Move down"
 msgstr "下に移動"
 
@@ -2188,6 +2224,9 @@ msgstr "ノート"
 
 msgid "Name"
 msgstr "名前"
+
+msgid "Name includes"
+msgstr "名前に含む"
 
 msgid "Name the shortcode. Type it in messages as :name:."
 msgstr "ショートコードに名前を付けてください。メッセージでは :name: と入力します。"
@@ -2696,6 +2735,9 @@ msgstr "共通のリレー"
 msgid "RENDER"
 msgstr "レンダリング"
 
+msgid "RULES"
+msgstr "ルール"
+
 msgid "Rail"
 msgstr "レール"
 
@@ -2770,6 +2812,9 @@ msgstr "連絡先を削除"
 
 msgid "Remove pack"
 msgstr "パックを削除"
+
+msgid "Remove rule"
+msgstr "ルールを削除"
 
 msgid "Remove saved GIF"
 msgstr "保存したGIFを削除"
@@ -3711,6 +3756,9 @@ msgstr "White Noise · 未読%d件"
 msgid "Wireframe"
 msgstr "ワイヤーフレーム"
 
+msgid "Word"
+msgstr "単語"
+
 msgid "Work"
 msgstr "仕事"
 
@@ -3869,6 +3917,9 @@ msgstr "相手側で復号"
 
 msgid "or pick a page"
 msgstr "またはページを選んでください"
+
+msgid "people"
+msgstr "人"
 
 msgid "plaintext"
 msgstr "平文"

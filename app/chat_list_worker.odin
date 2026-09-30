@@ -7,23 +7,26 @@ import "core:time"
 
 @(private)
 Chat_List_Work :: struct {
-	worker:   ^thread.Thread,
-	client:   ^marmot.Client,
-	account:  cstring,
-	rows:     ^marmot.Presented_Chat_List,
-	previews: map[string]^marmot.Timeline_Page, // keys borrow rows; nil means a failed preview read
-	blocked:  map[string]bool, // owned copy of ui.blocked; the worker must not read Ui_State
-	err:      string,
-	revision: u64,
+	worker:       ^thread.Thread,
+	client:       ^marmot.Client,
+	account:      cstring,
+	rows:         ^marmot.Presented_Chat_List,
+	previews:     map[string]^marmot.Timeline_Page, // keys borrow rows; nil means a failed preview read
+	blocked:      map[string]bool, // owned copy of ui.blocked; the worker must not read Ui_State
+	members:      map[string][]string, // group id to member pubkey hex, read only when read_members
+	read_members: bool, // some folder rule looks at membership
+	err:          string,
+	revision:     u64,
 }
 
 @(private)
 chat_list_revision: u64
 
-// The job's own copy of the block list, taken on the UI thread.
+// The job's own copies of UI state, taken on the UI thread.
 @(private)
-chat_list_blocked :: proc(job: ^Chat_List_Work, ui: ^Ui_State) {
+chat_list_snapshot :: proc(job: ^Chat_List_Work, ui: ^Ui_State) {
 	for hex in ui.blocked {job.blocked[strings.clone(hex)] = true}
+	job.read_members = folder_rules_need_members(ui.prefs)
 }
 
 @(private)
@@ -33,6 +36,9 @@ chat_list_read :: proc(job: ^Chat_List_Work) {
 	if marmot.presented_chat_list(job.client, job.account, false, &job.rows) != .OK {
 		job.err = marmot.last_error()
 		return
+	}
+	if job.read_members {
+		chat_members_fetch(job.client, job.account, job.rows, &job.members)
 	}
 	for i in 0 ..< job.rows.rows_len {
 		row := &job.rows.rows[i].row
@@ -75,6 +81,7 @@ chat_list_free :: proc(job: ^Chat_List_Work) {
 	delete(job.previews)
 	for hex in job.blocked {delete(hex)}
 	delete(job.blocked)
+	chat_members_free(&job.members)
 	if job.rows != nil {marmot.presented_chat_list_free(job.rows)}
 	delete(job.account); delete(job.err)
 }

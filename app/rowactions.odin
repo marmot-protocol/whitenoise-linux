@@ -414,10 +414,12 @@ open_folder_modal :: proc(ui: ^Ui_State, gid: string = "", rename: int = -1) {
 	ed_set(ui, &ui.folder_input, "")
 	ed_set(ui, &ui.folder_search, "")
 	ed_set(ui, &ui.folder_color_input, "")
+	folder_rules_load(ui, "")
 	if rename >= 0 && rename < len(ui.prefs.folders) {
 		ui.folder_mode = .Edit
 		name := ui.prefs.folders[rename]
 		ed_set(ui, &ui.folder_input, name)
+		folder_rules_load(ui, name)
 		ui.folder_icon = clamp(ui.prefs.folder_icons[name], 0, len(FOLDER_ICONS) - 1)
 		if rgb, ok := ui.prefs.folder_colors[name]; ok {
 			ed_set(ui, &ui.folder_color_input, fmt.tprintf("#%06X", rgb))
@@ -452,8 +454,10 @@ folder_destination :: proc(ui: ^Ui_State, name: string, index: int, active: bool
 		if clay.UI(clay.ID("FolderDestinationName", u32(index)))(
 		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
 		) {
+			// With rules in play, leaving every folder hands the chat to them.
+			none := len(ui.prefs.folder_rules) > 0 ? tr("Follow folder rules") : tr("Unfiled")
 			clay.Text(
-				name == "" ? tr("Unfiled") : name,
+				name == "" ? none : name,
 				{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None},
 			)
 		}
@@ -490,8 +494,14 @@ folder_action :: proc(id, label: string, primary: bool = false) {
 folder_editor_focus :: proc(ui: ^Ui_State, focus: Focus) {
 	ui.focus = focus
 	body := clay.GetElementData(clay.ID("FolderEditorBody")).boundingBox
-	field :=
-		clay.GetElementData(clay.ID(focus == .FolderColor ? "FolderColorBox" : "FolderBox")).boundingBox
+	id := "FolderBox"
+	#partial switch focus {
+	case .FolderColor:
+		id = "FolderColorBox"
+	case .FolderRule:
+		id = fmt.tprintf("FolderRuleBox%d", ui.folder_rule_focus)
+	}
+	field := clay.GetElementData(clay.ID(id)).boundingBox
 	scroll := clay.GetScrollContainerData(clay.ID("FolderEditorBody"))
 	if scroll.found {
 		if field.y < body.y {scroll.scrollPosition.y += body.y - field.y}
@@ -545,6 +555,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 				TEXT_LO,
 			)
 		}
+		folder_rules_editor(ui)
 		eyebrow(tr("COLOR"))
 		if clay.UI(clay.ID("FolderColorDefault"))(
 		{
@@ -942,6 +953,9 @@ close_folder_modal :: proc(ui: ^Ui_State) {
 
 // The outer modal dispatcher consumes every click, including dismissal.
 handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if handle_folder_rule_menu(ui) {
+		return
+	}
 	if clicked("FolderClose") || (mouse_released() && !clay.PointerOver(clay.ID("FolderModal"))) {
 		close_folder_modal(ui)
 		return
@@ -981,9 +995,14 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if ui.focus == .FolderColor {
+	#partial switch ui.focus {
+	case .FolderColor:
 		edit_text(ui, &ui.folder_color_input)
-	} else {
+	case .FolderRule:
+		if ui.folder_rule_focus < len(ui.folder_rules) {
+			edit_text(ui, &ui.folder_rules[ui.folder_rule_focus].input)
+		}
+	case:
 		edit_text(ui, &ui.folder_input)
 	}
 	if field_mouse(ui, &ui.folder_color_input, "FolderColorBox") {
@@ -992,6 +1011,9 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if field_mouse(ui, &ui.folder_input, "FolderBox", 14) {
 		ui.focus = .Folder
+		return
+	}
+	if handle_folder_rules(ui) {
 		return
 	}
 	if rl.IsKeyPressed(.TAB) {
@@ -1030,8 +1052,18 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			folder_editor_focus(ui, .FolderColor)
 			return
 		}
+		rules, bad, why := folder_rules_parse(ui)
+		if bad >= 0 {
+			toast(ui, why)
+			ui.folder_rule_focus = bad
+			folder_editor_focus(ui, .FolderRule)
+			return
+		}
 		if ui.folder_mode == .Edit {
-			if ui.folder_rename < 0 || ui.folder_rename >= len(ui.prefs.folders) {return}
+			if ui.folder_rename < 0 || ui.folder_rename >= len(ui.prefs.folders) {
+				folder_rules_free(rules)
+				return
+			}
 			old := ui.prefs.folders[ui.folder_rename]
 			if old != name {
 				for gid, folder in ui.prefs.folder_of {
@@ -1045,6 +1077,7 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				delete_key(&ui.prefs.collapsed_folders, old)
 				delete_key(&ui.prefs.folder_icons, old)
 				delete_key(&ui.prefs.folder_colors, old)
+				folder_rules_drop(ui, old)
 				ui.prefs.folders[ui.folder_rename] = strings.clone(name)
 			}
 		} else {
@@ -1060,6 +1093,7 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		} else {
 			delete_key(&ui.prefs.folder_colors, name)
 		}
+		folder_rules_store(ui, name, rules)
 		if ui.folder_mode == .Create && ui.folder_gid != "" {
 			assign_folder(ui, name)
 			return
@@ -1085,6 +1119,7 @@ delete_folder :: proc(ui: ^Ui_State, index: int) {
 	delete_key(&ui.prefs.collapsed_folders, name)
 	delete_key(&ui.prefs.folder_icons, name)
 	delete_key(&ui.prefs.folder_colors, name)
+	folder_rules_drop(ui, name)
 	ordered_remove(&ui.prefs.folders, index)
 	if ui.folder_rename == index {
 		ui.folder_rename = -1

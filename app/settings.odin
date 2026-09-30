@@ -60,6 +60,7 @@ Prefs :: struct {
 	collapsed_folders:     map[string]bool, // folder name; "" is Unfiled
 	folder_icons:          map[string]int, // folder name → FOLDER_ICONS index
 	folder_colors:         map[string]u32, // folder name → RGB; absent uses the theme accent
+	folder_rules:          map[string]Folder_Rules, // folder name → automatic filing rules
 	// Advanced (telemetry/audit toggles live in marmot's shared
 	// sqlite, not here)
 	trusted_sites:         [dynamic]string,

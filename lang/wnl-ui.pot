@@ -255,6 +255,9 @@ msgstr ""
 msgid "Add relays for linked events"
 msgstr ""
 
+msgid "Add rule"
+msgstr ""
+
 msgid "Add someone by npub, or make a group of your own."
 msgstr ""
 
@@ -520,6 +523,9 @@ msgstr ""
 msgid "Change picture"
 msgstr ""
 
+msgid "Change rule type"
+msgstr ""
+
 msgid "Change the date format"
 msgstr ""
 
@@ -555,6 +561,9 @@ msgid "Chat options"
 msgstr ""
 
 msgid "Chats"
+msgstr ""
+
+msgid "Chats that match file here automatically. People counts include you. A chat you move by hand stays where you put it."
 msgstr ""
 
 msgid "Chats you archive will appear here."
@@ -1490,6 +1499,12 @@ msgstr ""
 msgid "Enter publishes, Escape cancels."
 msgstr ""
 
+msgid "Enter the member as an npub and try again."
+msgstr ""
+
+msgid "Enter the number of people as a whole number and try again."
+msgstr ""
+
 msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
 msgstr ""
 
@@ -1554,6 +1569,9 @@ msgstr ""
 msgid "Female voice. Supports all reading languages."
 msgstr ""
 
+msgid "Fewer than"
+msgstr ""
+
 msgid "Field"
 msgstr ""
 
@@ -1609,6 +1627,9 @@ msgid "Folder options"
 msgstr ""
 
 msgid "Folders"
+msgstr ""
+
+msgid "Follow folder rules"
 msgstr ""
 
 msgid "Font"
@@ -1721,6 +1742,12 @@ msgid "Grouped"
 msgstr ""
 
 msgid "Hard shadows"
+msgstr ""
+
+msgid "Has member"
+msgstr ""
+
+msgid "Has unread messages"
 msgstr ""
 
 msgid "Have messages read aloud"
@@ -2098,6 +2125,12 @@ msgstr ""
 msgid "Marmot"
 msgstr ""
 
+msgid "Match all rules"
+msgstr ""
+
+msgid "Match any rule"
+msgstr ""
+
 msgid "May"
 msgstr ""
 
@@ -2155,6 +2188,9 @@ msgstr ""
 msgid "Monitor"
 msgstr ""
 
+msgid "More than"
+msgstr ""
+
 msgid "Move down"
 msgstr ""
 
@@ -2186,6 +2222,9 @@ msgid "NOTE"
 msgstr ""
 
 msgid "Name"
+msgstr ""
+
+msgid "Name includes"
 msgstr ""
 
 msgid "Name the shortcode. Type it in messages as :name:."
@@ -2695,6 +2734,9 @@ msgstr ""
 msgid "RENDER"
 msgstr ""
 
+msgid "RULES"
+msgstr ""
+
 msgid "Rail"
 msgstr ""
 
@@ -2768,6 +2810,9 @@ msgid "Remove contact"
 msgstr ""
 
 msgid "Remove pack"
+msgstr ""
+
+msgid "Remove rule"
 msgstr ""
 
 msgid "Remove saved GIF"
@@ -3710,6 +3755,9 @@ msgstr ""
 msgid "Wireframe"
 msgstr ""
 
+msgid "Word"
+msgstr ""
+
 msgid "Work"
 msgstr ""
 
@@ -3867,6 +3915,9 @@ msgid "opened there"
 msgstr ""
 
 msgid "or pick a page"
+msgstr ""
+
+msgid "people"
 msgstr ""
 
 msgid "plaintext"

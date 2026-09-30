@@ -1451,13 +1451,19 @@ load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_Stat
 		account = strings.clone_to_cstring(account_ref),
 	}
 	defer chat_list_free(&job)
-	chat_list_blocked(&job, ui)
+	chat_list_snapshot(&job, ui)
 	chat_list_read(&job)
 	chat_list_apply(ui, &job)
 }
 
 @(private)
 chat_list_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
+	// Adopt the job's member lists even on failure: the flag records that
+	// they were asked for, so a failing read isn't retried every frame.
+	chat_members_free(&ui.chat_members)
+	ui.chat_members = job.members
+	job.members = nil
+	ui.chat_members_read = job.read_members
 	if job.err != "" {
 		set_status(ui, fmt.aprintf(tr("Chat list failed: %s"), job.err), .Error)
 		return

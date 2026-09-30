@@ -59,6 +59,11 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 	if ui.folder_open {
 		if ui.folder_mode != .Move && ui.focus == .FolderColor {return &ui.folder_color_input}
+		if ui.folder_mode != .Move &&
+		   ui.focus == .FolderRule &&
+		   ui.folder_rule_focus < len(ui.folder_rules) {
+			return &ui.folder_rules[ui.folder_rule_focus].input
+		}
 		return ui.folder_mode == .Move ? &ui.folder_search : &ui.folder_input
 	}
 	if ui.issues_open && ui.focus == .Issue_Search {return &ui.issue_search}

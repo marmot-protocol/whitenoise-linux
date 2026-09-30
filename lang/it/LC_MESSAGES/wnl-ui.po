@@ -256,6 +256,9 @@ msgstr "Aggiungi reazione"
 msgid "Add relays for linked events"
 msgstr "Aggiungi relay per gli eventi collegati"
 
+msgid "Add rule"
+msgstr "Aggiungi regola"
+
 msgid "Add someone by npub, or make a group of your own."
 msgstr "Aggiungi qualcuno tramite npub, oppure crea un gruppo tutto tuo."
 
@@ -521,6 +524,9 @@ msgstr "Cambia foto"
 msgid "Change picture"
 msgstr "Cambia immagine"
 
+msgid "Change rule type"
+msgstr "Cambia tipo di regola"
+
 msgid "Change the date format"
 msgstr "Cambia il formato della data"
 
@@ -557,6 +563,9 @@ msgstr "Opzioni chat"
 
 msgid "Chats"
 msgstr "Chat"
+
+msgid "Chats that match file here automatically. People counts include you. A chat you move by hand stays where you put it."
+msgstr "Le chat corrispondenti finiscono qui automaticamente. Il numero di persone include te. Una chat che sposti a mano resta dove l'hai messa."
 
 msgid "Chats you archive will appear here."
 msgstr "Le chat che archivi appariranno qui."
@@ -1491,6 +1500,12 @@ msgstr "Inserisci un titolo e una descrizione."
 msgid "Enter publishes, Escape cancels."
 msgstr "Invio pubblica, Esc annulla."
 
+msgid "Enter the member as an npub and try again."
+msgstr "Inserisci il membro come npub e riprova."
+
+msgid "Enter the number of people as a whole number and try again."
+msgstr "Inserisci il numero di persone come numero intero e riprova."
+
 msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
 msgstr "Inserisci la password con cui è stato creato questo backup. Impostazioni, bozze, emoji personalizzate e temi su questo dispositivo verranno sostituiti."
 
@@ -1555,6 +1570,9 @@ msgstr "feb"
 msgid "Female voice. Supports all reading languages."
 msgstr "Voce femminile. Supporta tutte le lingue di lettura."
 
+msgid "Fewer than"
+msgstr "Meno di"
+
 msgid "Field"
 msgstr "Campo"
 
@@ -1611,6 +1629,9 @@ msgstr "Opzioni cartella"
 
 msgid "Folders"
 msgstr "Cartelle"
+
+msgid "Follow folder rules"
+msgstr "Segui le regole delle cartelle"
 
 msgid "Font"
 msgstr "Carattere"
@@ -1723,6 +1744,12 @@ msgstr "Raggruppate"
 
 msgid "Hard shadows"
 msgstr "Ombre nette"
+
+msgid "Has member"
+msgstr "Ha il membro"
+
+msgid "Has unread messages"
+msgstr "Ha messaggi non letti"
 
 msgid "Have messages read aloud"
 msgstr "Fatti leggere i messaggi ad alta voce"
@@ -2099,6 +2126,12 @@ msgstr "Segna come non letta"
 msgid "Marmot"
 msgstr "Marmotta"
 
+msgid "Match all rules"
+msgstr "Tutte le regole"
+
+msgid "Match any rule"
+msgstr "Almeno una regola"
+
 msgid "May"
 msgstr "mag"
 
@@ -2156,6 +2189,9 @@ msgstr "Denaro"
 msgid "Monitor"
 msgstr "Monitor"
 
+msgid "More than"
+msgstr "Più di"
+
 msgid "Move down"
 msgstr "Sposta giù"
 
@@ -2188,6 +2224,9 @@ msgstr "NOTA"
 
 msgid "Name"
 msgstr "Nome"
+
+msgid "Name includes"
+msgstr "Il nome contiene"
 
 msgid "Name the shortcode. Type it in messages as :name:."
 msgstr "Dai un nome allo shortcode. Scrivilo nei messaggi come :name:."
@@ -2696,6 +2735,9 @@ msgstr "RELAY IN COMUNE"
 msgid "RENDER"
 msgstr "RENDER"
 
+msgid "RULES"
+msgstr "REGOLE"
+
 msgid "Rail"
 msgstr "Barra laterale"
 
@@ -2770,6 +2812,9 @@ msgstr "Rimuovi contatto"
 
 msgid "Remove pack"
 msgstr "Rimuovi pacchetto"
+
+msgid "Remove rule"
+msgstr "Rimuovi regola"
 
 msgid "Remove saved GIF"
 msgstr "Rimuovi GIF salvata"
@@ -3711,6 +3756,9 @@ msgstr "White Noise · %d non letti"
 msgid "Wireframe"
 msgstr "Wireframe"
 
+msgid "Word"
+msgstr "Parola"
+
 msgid "Work"
 msgstr "Lavoro"
 
@@ -3869,6 +3917,9 @@ msgstr "aperto lì"
 
 msgid "or pick a page"
 msgstr "oppure scegli una pagina"
+
+msgid "people"
+msgstr "persone"
 
 msgid "plaintext"
 msgstr "testo in chiaro"

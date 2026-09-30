@@ -318,13 +318,15 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 		chat_list_free(job)
 		free(job)
 	}
+	// A new membership rule needs the member lists the last read skipped.
+	if !ui.chat_members_read && folder_rules_need_members(ui.prefs) {live.refresh_dirty = true}
 	// Coalesce events while a read is running; never wait for that read on a frame.
 	if live.refresh != nil || !live.refresh_dirty || client == nil {return}
 	live.refresh_dirty = false
 	job = new(Chat_List_Work)
 	job.client, job.account = client, strings.clone_to_cstring(ui.account_ref)
 	job.revision = chat_list_revision
-	chat_list_blocked(job, ui)
+	chat_list_snapshot(job, ui)
 	job.worker = thread.create(chat_list_worker)
 	job.worker.data = job
 	live.refresh = job

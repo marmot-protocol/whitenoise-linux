@@ -223,6 +223,7 @@ Focus :: enum {
 	EmojiName, // custom-emoji shortcode box
 	Folder, // folder-modal name box
 	FolderColor, // custom folder RGB input
+	FolderRule, // folder-editor rule box, index in ui.folder_rule_focus
 	Pal, // command-palette query box
 	PollQ, // poll-modal question box
 	PollOpt, // poll-modal option box, index in ui.poll_focus
@@ -451,6 +452,8 @@ Ui_State :: struct {
 	relay_input:                                           [dynamic]u8, // profile add-relay draft
 	page:                                                  Page,
 	chats:                                                 [dynamic]Chat_Row_Ui,
+	chat_members:                                          map[string][]string, // group id → member pubkey hex, for folder rules
+	chat_members_read:                                     bool, // the last chat-list read asked for chat_members
 	archived:                                              [dynamic]Chat_Row_Ui,
 	contacts:                                              [dynamic]Contact_Ui,
 	profile:                                               Profile_Ui,
@@ -604,6 +607,10 @@ Ui_State :: struct {
 	folder_icon:                                           int,
 	folder_search:                                         [dynamic]u8,
 	folder_color_input:                                    [dynamic]u8,
+	folder_rules:                                          [dynamic]Folder_Rule_Draft, // the editor's rule rows, reserved to FOLDER_RULES_CAP
+	folder_rule_focus:                                     int, // which rule box has the caret (focus == .FolderRule)
+	folder_rule_menu:                                      int, // rule row whose type menu is open, -1 = none
+	folder_match:                                          Folder_Match, // the editor's all/any toggle
 	folder_menu_open:                                      bool,
 	folder_menu_name:                                      string, // "" opens the Chats menu
 	folder_menu_x, folder_menu_y:                          f32,

@@ -88,6 +88,128 @@ chat_folder_sections_keep_order_and_count_unread :: proc(t: ^testing.T) {
 }
 
 @(test)
+folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
+	ui: Ui_State
+	append(&ui.prefs.folders, "Unread", "Small", "Acme")
+	unread := Folder_Rules {
+		match = .Any,
+	}
+	append(&unread.rules, Folder_Rule{kind = .Unread})
+	small := Folder_Rules {
+		match = .All,
+	}
+	append(
+		&small.rules,
+		Folder_Rule{kind = .Fewer_Than, count = 3},
+		Folder_Rule{kind = .Has_Member, value = "bob"},
+	)
+	acme := Folder_Rules {
+		match = .Any,
+	}
+	append(
+		&acme.rules,
+		Folder_Rule{kind = .Name_Has, value = "acme"},
+		Folder_Rule{kind = .More_Than, count = 10},
+	)
+	ui.prefs.folder_rules["Unread"] = unread
+	ui.prefs.folder_rules["Small"] = small
+	ui.prefs.folder_rules["Acme"] = acme
+	append(
+		&ui.chats,
+		Chat_Row_Ui{group_id = "placed", title = "Lunch", unread = 5},
+		Chat_Row_Ui{group_id = "unread", title = "ACME team", unread = 1},
+		Chat_Row_Ui{group_id = "dm-bob", title = "Bob"},
+		Chat_Row_Ui{group_id = "dm-carol", title = "Carol"},
+		Chat_Row_Ui{group_id = "unread-members", title = "Two of us"},
+		Chat_Row_Ui{group_id = "acme", title = "Acme corp"},
+		Chat_Row_Ui{group_id = "big", title = "Town hall"},
+		Chat_Row_Ui{group_id = "stale", title = "acme ops"},
+	)
+	ui.prefs.folder_of["placed"] = "Acme" // by hand, over the Unread rule
+	ui.prefs.folder_of["stale"] = "Removed folder" // gone, so rules decide
+	big := make([]string, 11)
+	for &id in big {id = "someone"}
+	ui.chat_members["dm-bob"] = []string{"me", "bob"}
+	ui.chat_members["dm-carol"] = []string{"me", "carol"}
+	ui.chat_members["big"] = big
+	defer {
+		delete(ui.prefs.folders)
+		delete(unread.rules)
+		delete(small.rules)
+		delete(acme.rules)
+		delete(ui.prefs.folder_rules)
+		delete(ui.prefs.folder_of)
+		delete(ui.chats)
+		delete(big)
+		delete(ui.chat_members)
+	}
+
+	order := []int{0, 1, 2, 3, 4, 5, 6, 7}
+	sections, grouped := chat_folder_sections(&ui, order, context.allocator)
+	defer delete(sections)
+	defer delete(grouped)
+	if !testing.expect_value(t, len(sections), 4) {return}
+
+	// "unread" also names Acme, but Unread comes first in folder order.
+	// "unread-members" has no member list yet, so no size rule holds.
+	expected := [][]int{{1}, {2}, {0, 5, 6, 7}, {3, 4}}
+	for rows, slot in expected {
+		section := sections[slot]
+		if !testing.expect_value(t, section.count, len(rows)) {continue}
+		for index, i in rows {
+			testing.expect_value(t, grouped[section.start + i], index)
+		}
+	}
+}
+
+@(test)
+folder_rules_parse_rows :: proc(t: ^testing.T) {
+	ui: Ui_State
+	defer {
+		for draft in ui.folder_rules {delete(draft.input)}
+		delete(ui.folder_rules)
+	}
+	draft :: proc(ui: ^Ui_State, kind: Folder_Rule_Kind, text: string) {
+		row := Folder_Rule_Draft {
+			kind = kind,
+		}
+		append(&row.input, text)
+		append(&ui.folder_rules, row)
+	}
+	bob := "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"
+	ui.folder_match = .Any
+	draft(&ui, .Name_Has, "  Acme Team ")
+	draft(&ui, .Name_Has, "   ") // blank rows are skipped
+	draft(&ui, .Unread, "")
+	draft(&ui, .More_Than, "12")
+	npub := hex_npub(bob)
+	defer delete(npub)
+	draft(&ui, .Has_Member, npub)
+
+	set, bad, _ := folder_rules_parse(&ui)
+	defer folder_rules_free(set)
+	testing.expect_value(t, bad, -1)
+	testing.expect_value(t, set.match, Folder_Match.Any)
+	if !testing.expect_value(t, len(set.rules), 4) {return}
+	testing.expect_value(t, set.rules[0].value, "acme team")
+	testing.expect_value(t, set.rules[1].kind, Folder_Rule_Kind.Unread)
+	testing.expect_value(t, set.rules[2].count, 12)
+	testing.expect_value(t, set.rules[3].value, bob)
+
+	// A row that doesn't parse names itself and yields no rules.
+	draft(&ui, .Fewer_Than, "-1")
+	draft(&ui, .Has_Member, "npub1nope")
+	failed, index, why := folder_rules_parse(&ui)
+	testing.expect_value(t, index, 5)
+	testing.expect(t, why != "")
+	testing.expect_value(t, len(failed.rules), 0)
+	delete(ui.folder_rules[5].input)
+	ordered_remove(&ui.folder_rules, 5)
+	_, index, _ = folder_rules_parse(&ui)
+	testing.expect_value(t, index, 5)
+}
+
+@(test)
 folder_delete_confirmation :: proc(t: ^testing.T) {
 	sync.lock(&clay_test_mutex)
 	defer sync.unlock(&clay_test_mutex)

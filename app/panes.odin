@@ -71,7 +71,8 @@ Folder_Section :: struct {
 }
 
 // Stable partition: input is already pinned-first, then activity order.
-// Unknown assignments stay visible under Unfiled rather than disappearing.
+// Unknown assignments stay visible under Unfiled rather than disappearing;
+// chats nobody placed by hand file by folder rules (chat_folder_slot).
 @(private)
 chat_folder_sections :: proc(
 	ui: ^Ui_State,
@@ -86,10 +87,11 @@ chat_folder_sections :: proc(
 	slots := make(map[string]int, len(ui.prefs.folders), allocator)
 	defer delete(slots)
 	for name, i in ui.prefs.folders {slots[name] = i}
-	for i in order {
+	slot_of := make([]int, len(order), context.temp_allocator)
+	for i, k in order {
 		chat := &ui.chats[i]
-		slot, found := slots[ui.prefs.folder_of[chat.group_id]]
-		if !found {slot = len(ui.prefs.folders)}
+		slot := chat_folder_slot(ui, chat, slots)
+		slot_of[k] = slot
 		sections[slot].count += 1
 		if chat.unread > 0 || ui.prefs.unread_ids[chat.group_id] {
 			sections[slot].unread += 1
@@ -101,10 +103,8 @@ chat_folder_sections :: proc(
 		start += section.count
 		section.count = 0
 	}
-	for i in order {
-		slot, found := slots[ui.prefs.folder_of[ui.chats[i].group_id]]
-		if !found {slot = len(ui.prefs.folders)}
-		section := &sections[slot]
+	for i, k in order {
+		section := &sections[slot_of[k]]
 		ordered[section.start + section.count] = i
 		section.count += 1
 	}
