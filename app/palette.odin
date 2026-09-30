@@ -362,7 +362,7 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		settings_open(ui, client, .About)
 	case .Next_Theme:
 		theme_switch(ui, (ui.theme + 1) % max(len(theme_packs), 1), ui.accent)
-		toast(ui, theme_packs[ui.theme].name)
+		toast(ui, tr(theme_packs[ui.theme].name))
 	case .Next_Accent:
 		theme_switch(ui, ui.theme, (ui.accent + 1) % len(ACCENT_NAMES))
 		toast(ui, tr(ACCENT_NAMES[ui.accent]))

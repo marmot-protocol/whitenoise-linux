@@ -201,7 +201,7 @@ about_readout :: proc(ui: ^Ui_State) {
 		},
 		{fmt.tprintf("%d", len(ui.messages)), tr("LOADED")},
 		{
-			len(theme_packs) > 0 ? theme_packs[clamp(ui.theme, 0, len(theme_packs) - 1)].name : "—",
+			len(theme_packs) > 0 ? tr(theme_packs[clamp(ui.theme, 0, len(theme_packs) - 1)].name) : "—",
 			tr("THEME"),
 		},
 		{uptime_label(), tr("UPTIME")},

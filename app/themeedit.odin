@@ -608,7 +608,7 @@ theme_field_row :: proc(ui: ^Ui_State, live: Theme_Pack, field: Theme_Field, i: 
 			ui,
 			fmt.tprintf("ThemeSeedBox%d", i),
 			&ui.theme_fields[i],
-			derived_hint(live, field.key),
+			tr(derived_hint(live, field.key)),
 			focused,
 			130,
 		)

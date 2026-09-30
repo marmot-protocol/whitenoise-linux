@@ -18,7 +18,7 @@ edit_complete :: proc(ui: ^Ui_State, done: Op_Done) {
 	if done.err != "" {
 		set_status(
 			ui,
-			fmt.aprintf("%s %s", tr("Couldn't save the edit. Please try again."), done.err),
+			fmt.aprintf("%s %s", tr("Couldn't save the edit. Please try again."), tr(done.err)),
 			.Error,
 		)
 		append(&failed_edits, done) // switching chats must not discard a failed edit
