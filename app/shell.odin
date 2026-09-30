@@ -734,9 +734,11 @@ BOOT_PHASES := []string {
 	N_("Connecting to relays"),
 }
 
-// One rendered frame of the splash before a blocking boot step, so the
-// window shows what it is waiting on instead of staying black. Phases
-// are announced before the work they name.
+// One rendered frame of the splash: before a blocking boot step, or
+// every frame while one runs on a worker, so the window shows what it
+// is waiting on and keeps moving. Phases are announced before the work
+// they name. The last phase's frame is held for the warp that opens
+// onto the chats.
 splash_frame :: proc(step: int) {
 	clay.SetLayoutDimensions(
 		{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
@@ -788,6 +790,7 @@ splash_frame :: proc(step: int) {
 					) {}
 				}
 			}
+			busy_bar("SplashBusy")
 		}
 	}
 	commands := clay.EndLayout(0)
@@ -796,6 +799,11 @@ splash_frame :: proc(step: int) {
 	rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM})
 	clay_raylib_render(&commands)
 	rl.EndMode2D()
+	if step == len(BOOT_PHASES) - 1 {
+		w := f32(rl.GetScreenWidth()) / UI_ZOOM
+		h := f32(rl.GetScreenHeight()) / UI_ZOOM
+		reveal_capture({w / 2, h / 2}, .Warp)
+	}
 	rl.EndDrawing()
 }
 

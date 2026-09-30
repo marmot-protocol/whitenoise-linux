@@ -4,6 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:thread"
 import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -1165,10 +1166,24 @@ convert_blocks :: proc(
 	}
 }
 
-boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
-	timing_start := time.tick_now()
-	defer local_timing_end(.runtime_init, timing_start)
-	os.make_directory(home)
+// Runtime construction and start. Both do disk I/O over every
+// account's stores, so boot_marmot runs them here while the UI thread
+// keeps the splash moving. `ui` is read by apply_observability only;
+// the UI thread leaves it alone meanwhile.
+@(private = "file")
+Boot_Job :: struct {
+	home:   string,
+	ui:     ^Ui_State,
+	client: ^marmot.Client,
+	status: marmot.Status,
+	error:  string, // marmot's last_error is per thread
+}
+
+@(private = "file")
+boot_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
+	defer free_all(context.temp_allocator)
+	job := (^Boot_Job)(t.data)
 	relays := DEFAULT_RELAYS
 
 	// The account signing keys land in the vault (vault_gate.odin), not
@@ -1176,31 +1191,64 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	// run for the client's whole life.
 	store := vault_secret_store()
 
-	client: ^marmot.Client
-	if marmot.client_new_with_secret_store(
-		   strings.clone_to_cstring(home),
-		   raw_data(relays),
-		   len(relays),
-		   &store,
-		   &client,
-	   ) !=
-	   .OK {
-		set_status(ui, fmt.aprintf(tr("Runtime failed: %s"), marmot.last_error()), .Error)
-		return nil
+	job.status = marmot.client_new_with_secret_store(
+		strings.clone_to_cstring(job.home),
+		raw_data(relays),
+		len(relays),
+		&store,
+		&job.client,
+	)
+	if job.status != .OK {
+		job.client = nil
+		job.error = marmot.last_error()
+		return
 	}
 
 	// Configure the destination before startup restores the saved consent.
-	local_timing_bind(client)
-	apply_observability(ui, client)
+	local_timing_bind(job.client)
+	apply_observability(job.ui, job.client)
 
-	if marmot.client_start(client) != .OK {
-		set_status(ui, fmt.aprintf(tr("Started offline: %s"), marmot.last_error()), .Info)
-	} else {
+	job.status = marmot.client_start(job.client)
+	if job.status != .OK {
+		job.error = marmot.last_error()
+	}
+}
+
+boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
+	timing_start := time.tick_now()
+	defer local_timing_end(.runtime_init, timing_start)
+	os.make_directory(home)
+
+	job := Boot_Job {
+		home = home,
+		ui   = ui,
+	}
+	worker := thread.create(boot_worker)
+	worker.data = &job
+	thread.start(worker)
+	// A close request stays latched for the main loop to act on.
+	for !thread.is_done(worker) {
+		_ = rl.WindowShouldClose()
+		splash_frame(0)
+	}
+	thread.join(worker)
+	thread.destroy(worker)
+
+	client := job.client
+	switch {
+	case client == nil:
+		set_status(ui, fmt.aprintf(tr("Runtime failed: %s"), job.error), .Error)
+		return nil
+	case job.status != .OK:
+		set_status(ui, fmt.aprintf(tr("Started offline: %s"), job.error), .Info)
+	case:
 		set_status(ui, tr("Runtime running"), .Info)
 	}
 
 	// Same snapshot as every later account change; a second hand-rolled
 	// loop here once missed the npub/pic arrays and crashed the switcher.
+	// It creates avatar textures, so it stays on this thread.
+	splash_frame(1)
 	after_login(ui, client)
 
 	return client

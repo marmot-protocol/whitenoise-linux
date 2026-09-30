@@ -526,6 +526,9 @@ msgstr "アップデートを確認しています。"
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "リレーで鍵を確認しています。数秒かかります。"
 
+msgid "Checking your password and decrypting your keys."
+msgstr "パスワードを確認して、鍵を復号しています。"
+
 msgid "Checking..."
 msgstr "確認中..."
 
@@ -1123,6 +1126,9 @@ msgstr "作成者"
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "パスワードで暗号化したNIP-49キーを作成します。安全に保存したり、別のクライアントに移したりできます。"
 
+msgid "Creating your vault…"
+msgstr "保管庫を作成しています…"
+
 msgid "Crop circle shape"
 msgstr "ミステリーサークルの形状"
 
@@ -1215,6 +1221,9 @@ msgstr "記録中のファイルを削除するとローテーションされま
 
 msgid "Demote"
 msgstr "管理者から外す"
+
+msgid "Deriving an encryption key from your password."
+msgstr "パスワードから暗号鍵を導出しています。"
 
 msgid "Describe the group"
 msgstr "グループの説明を入力"
@@ -3369,6 +3378,9 @@ msgstr "未分類"
 
 msgid "Unlock"
 msgstr "ロック解除"
+
+msgid "Unlocking…"
+msgstr "ロックを解除しています…"
 
 msgid "Unmute"
 msgstr "ミュート解除"

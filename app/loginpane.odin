@@ -1,5 +1,6 @@
 package main
 
+import "core:math"
 import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -70,6 +71,38 @@ progress_dots :: proc(id_str: string) {
 			},
 			) {}
 		}
+	}
+}
+
+// Indeterminate progress: an accent segment sweeping its track, for
+// work with no measurable fraction (a key derivation, the runtime
+// start). It never implies a percentage. Reduced motion parks it.
+@(private)
+busy_bar :: proc(id_str: string) {
+	TRACK :: 180
+	SEGMENT :: 48
+	sweep := f32(0.5)
+	if motion_on() {
+		sweep = f32(0.5 * (1 + math.sin(rl.GetTime() * 3)))
+		anim_moving += 1
+	}
+	if clay.UI(clay.ID(id_str))(
+	{
+		layout = {sizing = {clay.SizingFixed(TRACK), clay.SizingFixed(4)}},
+		backgroundColor = ROW_BG,
+		cornerRadius = rr(2),
+	},
+	) {
+		if clay.UI(clay.ID(id_str, 1))(
+		{layout = {sizing = {width = clay.SizingFixed(sweep * (TRACK - SEGMENT))}}},
+		) {}
+		if clay.UI(clay.ID(id_str, 2))(
+		{
+			layout = {sizing = {clay.SizingFixed(SEGMENT), clay.SizingFixed(4)}},
+			backgroundColor = ACCENT,
+			cornerRadius = rr(2),
+		},
+		) {}
 	}
 }
 

@@ -20,6 +20,7 @@ import "core:fmt"
 import "core:mem"
 import "core:os"
 import "core:strings"
+import "core:thread"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -163,6 +164,75 @@ gate_reset_armed: bool
 @(private = "file")
 gate_check: Password_Check
 
+// The unlock or create in flight. Argon2id takes ~15 ms at -o:speed on
+// a fast desktop, ~55 ms at -o:minimal and far longer on slow CPUs, so
+// it runs off the UI thread while the card shows it working. The
+// password borrows gate_pw, which gate_input leaves alone meanwhile.
+@(private = "file")
+Gate_Job :: struct {
+	worker:   ^thread.Thread,
+	creating: bool,
+	password: string,
+	err:      Vault_Err,
+}
+@(private = "file")
+gate_job: Gate_Job
+
+@(private = "file")
+gate_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
+	defer free_all(context.temp_allocator)
+	job := (^Gate_Job)(t.data)
+	job.err = job.creating ? vault_create(job.password) : vault_open(job.password)
+}
+
+@(private = "file")
+gate_start :: proc(creating: bool) {
+	gate_err = ""
+	gate_job = {
+		creating = creating,
+		password = string(gate_pw[:]),
+	}
+	gate_job.worker = thread.create(gate_worker)
+	gate_job.worker.data = &gate_job
+	thread.start(gate_job.worker)
+}
+
+// Also the exit path: closing the window mid-unlock waits out the
+// derivation before gate_close frees the password it reads.
+@(private = "file")
+gate_join :: proc() {
+	if gate_job.worker == nil {
+		return
+	}
+	thread.join(gate_job.worker)
+	thread.destroy(gate_job.worker)
+	gate_job.worker = nil
+}
+
+// True once the worker opened the vault. A failure lands back on the
+// form with its error.
+@(private = "file")
+gate_poll :: proc() -> bool {
+	if !thread.is_done(gate_job.worker) {
+		return false
+	}
+	gate_join()
+	switch {
+	case gate_job.err == .None:
+		return true
+	case gate_job.creating:
+		gate_err = tr("Couldn't create the vault. Please try again.")
+	case gate_job.err == .Wrong_Password:
+		gate_err = tr("Couldn't unlock the vault. Double-check the password and try again.")
+		clear(&gate_pw)
+	case:
+		gate_err = tr("Couldn't read the vault file. Please try again.")
+		clear(&gate_pw)
+	}
+	return false
+}
+
 @(private = "file")
 gate_close :: proc() {
 	mem.zero_slice(gate_pw[:])
@@ -188,6 +258,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 	}
 
 	defer gate_close()
+	defer gate_join()
 	shot := os.get_env("WN_SHOT", context.temp_allocator) != ""
 	for frame := 0; !rl.WindowShouldClose(); frame += 1 {
 		if dev_reload_poll() {return false}
@@ -217,9 +288,10 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 			return false
 		}
 		rl.EndDrawing()
-		if gate_input(ui) {
+		if gate_job.worker != nil && gate_poll() {
 			return true
 		}
+		gate_input(ui)
 		// Same contract as the main loop: the password box is the only
 		// field here, and gate_input's edit_text sets the flag.
 		rl.SetTextInput(text_field_live)
@@ -228,9 +300,12 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 	return false
 }
 
-// One frame of typing and clicks. True once the vault is open.
+// One frame of typing and clicks; submitting starts the unlock worker.
 @(private = "file")
-gate_input :: proc(ui: ^Ui_State) -> bool {
+gate_input :: proc(ui: ^Ui_State) {
+	if gate_job.worker != nil {
+		return
+	}
 	creating := !vault_exists()
 
 	edit_text(ui, gate_confirm && creating ? &gate_pw2 : &gate_pw)
@@ -246,59 +321,45 @@ gate_input :: proc(ui: ^Ui_State) -> bool {
 	if clicked("GateReset") {
 		if !gate_reset_armed {
 			gate_reset_armed = true
-			return false
+			return
 		}
 		gate_reset_armed = false
 		vault_delete()
 		clear(&gate_pw)
 		clear(&gate_pw2)
 		gate_err = ""
-		return false
+		return
 	}
 
 	if !clicked("GateGo") && !rl.IsKeyPressed(.ENTER) {
-		return false
+		return
 	}
 	password := string(gate_pw[:])
 	if len(password) == 0 {
 		gate_err = tr("Pick a password first.")
-		return false
+		return
 	}
 	if creating && password_bits(password, &gate_check) < PASSWORD_MIN_BITS {
 		gate_err = tr(
 			"This password is too easy to guess. Use unrelated words or a password-manager password.",
 		)
-		return false
+		return
 	}
 
 	// Enter walks from the password to the confirm box (the shim has no
 	// Tab key); the second Enter submits.
 	if creating && !gate_confirm {
 		gate_confirm = true
-		return false
+		return
 	}
 
-	if !creating {
-		if err := vault_open(password); err != .None {
-			gate_err =
-				err == .Wrong_Password ? tr("Couldn't unlock the vault. Double-check the password and try again.") : tr("Couldn't read the vault file. Please try again.")
-			clear(&gate_pw)
-			return false
-		}
-		return true
-	}
-
-	if password != string(gate_pw2[:]) {
+	if creating && password != string(gate_pw2[:]) {
 		gate_err = tr("The passwords don't match. Type them again.")
 		clear(&gate_pw2)
 		gate_confirm = true
-		return false
+		return
 	}
-	if vault_create(password) != .None {
-		gate_err = tr("Couldn't create the vault. Please try again.")
-		return false
-	}
-	return true
+	gate_start(creating)
 }
 
 // Shared with the change-password modal (vault_pw.odin), the other
@@ -347,7 +408,10 @@ gate_field :: proc(
 @(private = "file")
 gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 	clay.BeginLayout()
-	creating := !vault_exists()
+	// A create in flight writes vault.db, so the file can't say which
+	// form this is until the job ends.
+	busy := gate_job.worker != nil
+	creating := busy ? gate_job.creating : !vault_exists()
 
 	if clay.UI(clay.ID("Root"))(
 	{
@@ -402,13 +466,19 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 					ui,
 					"GatePwBox",
 					&gate_pw,
-					!gate_confirm || !creating,
+					!busy && (!gate_confirm || !creating),
 					tr("Your password"),
 				)
 				if creating {
 					password_hint(password_bits(string(gate_pw[:]), &gate_check))
 					eyebrow(tr("CONFIRM PASSWORD"))
-					gate_field(ui, "GatePw2Box", &gate_pw2, gate_confirm, tr("Your password"))
+					gate_field(
+						ui,
+						"GatePw2Box",
+						&gate_pw2,
+						!busy && gate_confirm,
+						tr("Your password"),
+					)
 				}
 
 				if clay.UI(clay.ID("GateGapB"))(
@@ -417,13 +487,27 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				ready :=
 					!creating ||
 					password_bits(string(gate_pw[:]), &gate_check) >= PASSWORD_MIN_BITS
-				login_big_button(
-					"GateGo",
-					creating ? tr("Continue") : tr("Unlock"),
-					true,
-					ready ? .Enabled : .Disabled,
-				)
-				if !creating {
+				if busy {
+					login_big_button(
+						"GateGo",
+						creating ? tr("Creating your vault…") : tr("Unlocking…"),
+						true,
+						.Disabled,
+					)
+					busy_bar("GateBusy")
+					clay.Text(
+						creating ? tr("Deriving an encryption key from your password.") : tr("Checking your password and decrypting your keys."),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+					)
+				} else {
+					login_big_button(
+						"GateGo",
+						creating ? tr("Continue") : tr("Unlock"),
+						true,
+						ready ? .Enabled : .Disabled,
+					)
+				}
+				if !creating && !busy {
 					micro_button(
 						"GateReset",
 						gate_reset_armed ? tr("Confirm: delete this vault") : tr("Use another key"),

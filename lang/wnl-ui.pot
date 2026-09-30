@@ -525,6 +525,9 @@ msgstr ""
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr ""
 
+msgid "Checking your password and decrypting your keys."
+msgstr ""
+
 msgid "Checking..."
 msgstr ""
 
@@ -1122,6 +1125,9 @@ msgstr ""
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr ""
 
+msgid "Creating your vault…"
+msgstr ""
+
 msgid "Crop circle shape"
 msgstr ""
 
@@ -1213,6 +1219,9 @@ msgid "Deleting the file being recorded rotates it. Recording continues in a fre
 msgstr ""
 
 msgid "Demote"
+msgstr ""
+
+msgid "Deriving an encryption key from your password."
 msgstr ""
 
 msgid "Describe the group"
@@ -3367,6 +3376,9 @@ msgid "Unfiled"
 msgstr ""
 
 msgid "Unlock"
+msgstr ""
+
+msgid "Unlocking…"
 msgstr ""
 
 msgid "Unmute"

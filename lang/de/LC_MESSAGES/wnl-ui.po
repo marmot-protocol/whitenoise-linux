@@ -526,6 +526,9 @@ msgstr "Suche nach Updates."
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "Dein Schlüssel wird bei den Relays geprüft. Das dauert ein paar Sekunden."
 
+msgid "Checking your password and decrypting your keys."
+msgstr "Dein Passwort wird geprüft und deine Schlüssel werden entschlüsselt."
+
 msgid "Checking..."
 msgstr "Wird geprüft..."
 
@@ -1123,6 +1126,9 @@ msgstr "Erstellt mit"
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "Erstellt einen mit einem Passwort verschlüsselten NIP-49-Schlüssel, den du sicher aufbewahren oder in einen anderen Client übertragen kannst."
 
+msgid "Creating your vault…"
+msgstr "Dein Tresor wird erstellt…"
+
 msgid "Crop circle shape"
 msgstr "Kornkreis-Form"
 
@@ -1215,6 +1221,9 @@ msgstr "Das Löschen der gerade aufgezeichneten Datei rotiert sie. Die Aufzeichn
 
 msgid "Demote"
 msgstr "Zurückstufen"
+
+msgid "Deriving an encryption key from your password."
+msgstr "Aus deinem Passwort wird ein Verschlüsselungsschlüssel abgeleitet."
 
 msgid "Describe the group"
 msgstr "Beschreibe die Gruppe"
@@ -3369,6 +3378,9 @@ msgstr "Ohne Ordner"
 
 msgid "Unlock"
 msgstr "Entsperren"
+
+msgid "Unlocking…"
+msgstr "Wird entsperrt…"
 
 msgid "Unmute"
 msgstr "Stummschaltung aufheben"

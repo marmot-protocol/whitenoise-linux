@@ -526,6 +526,9 @@ msgstr "Controllo degli aggiornamenti in corso."
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "Verifica della tua chiave con i relay. Richiede qualche secondo."
 
+msgid "Checking your password and decrypting your keys."
+msgstr "Verifica della tua password e decifratura delle tue chiavi."
+
 msgid "Checking..."
 msgstr "Verifica in corso..."
 
@@ -1123,6 +1126,9 @@ msgstr "Creato da"
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "Crea una chiave NIP-49 crittografata con una password, da conservare o trasferire in sicurezza a un altro client."
 
+msgid "Creating your vault…"
+msgstr "Creazione della cassaforte…"
+
 msgid "Crop circle shape"
 msgstr "Forma dei crop circle"
 
@@ -1215,6 +1221,9 @@ msgstr "Eliminare il file in registrazione lo ruota. La registrazione continua i
 
 msgid "Demote"
 msgstr "Declassa"
+
+msgid "Deriving an encryption key from your password."
+msgstr "Derivazione di una chiave di crittografia dalla tua password."
 
 msgid "Describe the group"
 msgstr "Descrivi il gruppo"
@@ -3369,6 +3378,9 @@ msgstr "Senza cartella"
 
 msgid "Unlock"
 msgstr "Sblocca"
+
+msgid "Unlocking…"
+msgstr "Sblocco…"
 
 msgid "Unmute"
 msgstr "Riattiva"
