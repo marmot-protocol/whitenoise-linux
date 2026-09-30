@@ -248,6 +248,52 @@ chat_preview_uses_snapshot :: proc(t: ^testing.T) {
 	testing.expect_value(t, chat.preview, "Alice was added to the group")
 }
 
+// The reaction picker borrows its message's row ID. A reload while it
+// is open retires that row; a pick afterwards sent freed bytes to
+// marmot ("string argument was not valid UTF-8").
+@(test)
+reload_rebinds_picker_target :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	context.allocator = runtime.default_context().allocator
+	ui := Ui_State {
+		account_ref = "account",
+	}
+	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
+	defer {
+		for msg in ui.messages {message_free(msg)}
+		delete(ui.messages); delete(ui.chats)
+		delete(ui.messages_account); delete(ui.messages_group)
+		messages_collect()
+	}
+	event := marmot.Group_System_Event {
+		text = "A member joined",
+	}
+	record := marmot.Timeline_Message_Record {
+		kind           = 1210,
+		message_id_hex = "target",
+		group_system   = &event,
+	}
+	page := marmot.Timeline_Page {
+		messages     = &record,
+		messages_len = 1,
+	}
+	timeline_apply(nil, &ui, &page)
+	ui.picker_open, ui.picker_target = true, ui.messages[0].id
+
+	// Same row again: the target follows it into the new storage.
+	timeline_apply(nil, &ui, &page)
+	messages_collect()
+	testing.expect(t, raw_data(ui.picker_target) == raw_data(ui.messages[0].id))
+	testing.expect(t, ui.picker_open)
+
+	// Row gone: nothing to react to, so the picker closes.
+	record.message_id_hex = "other"
+	timeline_apply(nil, &ui, &page)
+	testing.expect_value(t, ui.picker_target, "")
+	testing.expect(t, !ui.picker_open)
+}
+
 // tests/odin.sh app -define:ODIN_TEST_NAMES=thread_reply_previews
 @(test)
 thread_reply_previews :: proc(t: ^testing.T) {

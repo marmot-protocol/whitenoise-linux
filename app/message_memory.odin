@@ -144,7 +144,8 @@ messages_collect :: proc() {
 // These IDs borrow row storage across frames. Rebind before retiring it.
 @(private)
 messages_rebind :: proc(ui: ^Ui_State) {
-	for target in ([]^string{&ui.replying, &ui.editing}) {
+	reacting := ui.picker_target != ""
+	for target in ([]^string{&ui.replying, &ui.editing, &ui.picker_target}) {
 		id := target^
 		target^ = ""
 		if id == "" {
@@ -156,5 +157,10 @@ messages_rebind :: proc(ui: ^Ui_State) {
 				break
 			}
 		}
+	}
+	// The message a reaction picker was opened on left the timeline: close
+	// it rather than let the next pick fall through to the composer.
+	if reacting && ui.picker_target == "" && ui.picker_open {
+		close_picker(ui)
 	}
 }

@@ -190,7 +190,7 @@ timeline_start :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string) {
 	   ui.messages_group != ui.chats[ui.selected].group_id {
 		append(&retired_messages, ..ui.messages[:])
 		clear(&ui.messages)
-		ui.replying, ui.editing = "", ""
+		messages_rebind(ui) // nothing left to bind to: clears every borrowed ID
 		sel_clear(ui)
 	}
 	ui.timeline_loading, ui.timeline_paging = true, false
