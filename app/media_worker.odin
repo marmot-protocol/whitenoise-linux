@@ -35,6 +35,7 @@ Media_Kind :: enum {
 	Text,
 	Code,
 	Font,
+	Nes,
 	Original, // an image at full size, decoded only for the lightbox
 }
 @(private)
@@ -111,6 +112,7 @@ media_kind :: proc(name, mime: string) -> Media_Kind {
 	}
 	if is_code_name(lower) {return .Code}
 	if strings.has_suffix(lower, ".ttf") || strings.has_suffix(lower, ".otf") {return .Font}
+	if is_nes_name(lower) {return .Nes}
 	if strings.has_prefix(mime, "image/") {return .Image}
 	return .File
 }
@@ -144,6 +146,8 @@ media_cached :: proc(kind: Media_Kind, key: string) -> (rawptr, bool) {
 		v, ok := code_views[key]; return v, ok
 	case .Font:
 		v, ok := ttf_views[key]; return v, ok
+	case .Nes:
+		v, ok := nes_views[key]; return v, ok
 	case .Original:
 		v, ok := original_textures[key]; return v, ok
 	case .File:
@@ -280,6 +284,8 @@ media_ready :: proc(msg: ^Msg_Ui, kind: Media_Kind, key: string, index: int, vie
 		media_insert(&msg.codes, Att_Item(^Code_View){(^Code_View)(view), index})
 	case .Font:
 		media_insert(&msg.fonts, Att_Item(^Ttf_View){(^Ttf_View)(view), index})
+	case .Nes:
+		media_insert(&msg.nes, Att_Item(^Nes_View){(^Nes_View)(view), index})
 	case .File, .Emoji, .Original:
 	}
 }
@@ -457,14 +463,21 @@ media_worker :: proc(t: ^thread.Thread) {
 		job.view = xdc_view_make(bytes, string(job.reference.file_name), .Prepare)
 		if job.view != nil {bytes = nil}
 	case .Arc:
-		job.view = arc_view_make(bytes)
-		if job.view != nil {bytes = nil}
+		arc := arc_view_make(bytes)
+		if arc != nil {
+			arc.nes = nes_from_arc(arc)
+			bytes = nil
+		}
+		job.view = arc
 	case .Torrent:
 		job.view = tor_view_make(bytes)
 	case .Text:
 		job.view = txt_view_make(string(bytes))
 	case .Code:
 		job.view = code_view_make(name, string(bytes))
+	case .Nes:
+		job.view = nes_view_make(bytes)
+		if job.view != nil {bytes = nil}
 	case .File:
 	}
 }
@@ -529,6 +542,8 @@ media_publish :: proc(job: ^Media_Job) {
 		txt_views[key] = (^Txt_View)(job.view)
 	case .Code:
 		code_views[key] = (^Code_View)(job.view)
+	case .Nes:
+		nes_views[key] = (^Nes_View)(job.view)
 	case .File:
 	}
 	if _, exists := blob_sizes[job.key]; !exists {blob_sizes[strings.clone(job.key)] = job.size}

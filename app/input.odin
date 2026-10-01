@@ -647,6 +647,9 @@ txt_views: map[string]^Txt_View
 code_views: map[string]^Code_View
 ttf_views: map[string]^Ttf_View
 
+// And for NES cartridges (the ROM, so Play needs no fetch).
+nes_views: map[string]^Nes_View
+
 // Prefs pointer for free helpers (time/date formatting) that have no
 // Ui_State parameter; set once in main.
 g_prefs: ^Prefs

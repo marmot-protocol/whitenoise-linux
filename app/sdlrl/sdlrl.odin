@@ -95,6 +95,7 @@ MouseButton :: enum {
 
 TextureFilter :: enum {
 	BILINEAR,
+	POINT, // nearest neighbour, for pixel art scaled up
 }
 
 // ── State ───────────────────────────────────────────────────────────
@@ -1020,7 +1021,12 @@ UpdateTexturePixels :: proc(texture: ^Texture2D, rgba: [^]u8) {
 	}
 }
 
-SetTextureFilter :: proc(texture: Texture2D, filter: TextureFilter) {} 	// LINEAR set at load
+SetTextureFilter :: proc(texture: Texture2D, filter: TextureFilter) {
+	if texture.tex == nil {
+		return
+	}
+	sdl.SetTextureScaleMode(texture.tex, filter == .POINT ? .NEAREST : .LINEAR)
+}
 
 // Vertex-colored triangle soup for the STL viewer, in layout coords
 // (the render scale applies). Clips to the given rect intersected

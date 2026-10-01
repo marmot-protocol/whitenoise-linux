@@ -351,6 +351,9 @@ msgstr "アーカイブしたチャット"
 msgid "Archives"
 msgstr "アーカイブ"
 
+msgid "Arrow keys move. X is A, Z is B, Enter is Start, Shift is Select."
+msgstr "矢印キーで移動します。XがA、ZがB、EnterがStart、ShiftがSelectです。"
+
 msgid "Ask a question..."
 msgstr "質問を入力..."
 
@@ -921,6 +924,10 @@ msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "ステッカーを読み込めませんでした。4 MiB未満の画像を選んでください。"
 
 #, c-format
+msgid "Couldn't keep %s running. Please try again."
+msgstr "%sの実行を続けられませんでした。もう一度お試しください。"
+
+#, c-format
 msgid "Couldn't leave. %s"
 msgstr "グループを退出できませんでした。%s"
 
@@ -1134,6 +1141,10 @@ msgstr "テーマを共有できませんでした。もう一度お試しくだ
 #, c-format
 msgid "Couldn't sign out. %s"
 msgstr "サインアウトできませんでした。%s"
+
+#, c-format
+msgid "Couldn't start %s. Its cartridge type isn't supported."
+msgstr "%sを起動できませんでした。このカートリッジの種類には対応していません。"
 
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "読み上げを開始できませんでした。もう一度お試しください。"
@@ -2224,6 +2235,9 @@ msgstr "音楽"
 msgid "Mute"
 msgstr "ミュート"
 
+msgid "NES game"
+msgstr "NESゲーム"
+
 msgid "NEW PASSWORD"
 msgstr "新しいパスワード"
 
@@ -2632,6 +2646,9 @@ msgstr "音を鳴らす"
 
 msgid "Play a sound for new messages"
 msgstr "新着メッセージで音を鳴らす"
+
+msgid "Play game"
+msgstr "プレイ"
 
 msgid "Play interface sounds"
 msgstr "操作音を鳴らす"

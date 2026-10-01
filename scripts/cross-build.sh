@@ -169,6 +169,10 @@ odin build "$HERE/math-decoder" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGE
 "$CXX" "${CFLAGS[@]}" "$OUT/math.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmath.a" \
   "$OUT/microtex/lib/libmicrotex.a" $(pkg-config --libs cairo) \
   "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-math$EXE"
+odin build "$HERE/nes-decoder" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
+  -o:speed -build-mode:obj -out:"$OUT/nes.o"
+"$CC" "${CFLAGS[@]}" "$OUT/nes.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmesh.a" \
+  -lm "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-nes$EXE"
 # Odin does not cross-link different OSes. Link its native object with the
 # target driver; MicroTeX and Cairo belong only to the math helper.
 odin build "$HERE/app" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \

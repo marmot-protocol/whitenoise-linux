@@ -857,7 +857,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			})
 			// Keep rejected and loading slots between their accepted siblings.
 			image_pos, video_pos, audio_pos, pdf_pos, model_pos, gcode_pos: int
-			arc_pos, tor_pos, xdc_pos, text_pos, code_pos, font_pos, file_pos, pending_pos: int
+			arc_pos, tor_pos, xdc_pos, nes_pos, text_pos, code_pos, font_pos, file_pos, pending_pos: int
 			for att := 0; att < len(msg.att_names); att += 1 {
 				if msg.sticker.sha != "" && msg.att_keys[att] == msg.sticker.sha {
 					if pending_pos < len(msg.media_pending) &&
@@ -1365,10 +1365,21 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				}
 
 				// Archive tiles: the file listing; clicking an entry opens it
-				// in the preview modal.
+				// in the preview modal. An archive holding only a .nes ROM is
+				// a cartridge tile instead.
 				if entry, j, found := media_at(msg.arcs[:], &arc_pos, att); found {
 					view := entry.view
-					if clay.UI(clay.ID("MsgArc", index * 1024 + u32(j)))(
+					if view.nes != nil {
+						rom := view.entries[0].name
+						nes_tile(
+							view.nes,
+							index * 1024 + 512 + u32(j), // clear of plain .nes tile ids
+							msg.id,
+							entry.att,
+							msg.att_names[entry.att],
+							rom[strings.last_index_byte(rom, '/') + 1:],
+						)
+					} else if clay.UI(clay.ID("MsgArc", index * 1024 + u32(j)))(
 					{
 						layout = {
 							layoutDirection = .TopToBottom,
@@ -1477,6 +1488,18 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						index * 1024 + u32(j),
 						msg.id,
 						entry.att,
+						msg.att_names[entry.att],
+					)
+				}
+
+				// NES cartridge tiles: Play runs it in the player modal.
+				if entry, j, found := media_at(msg.nes[:], &nes_pos, att); found {
+					nes_tile(
+						entry.view,
+						index * 1024 + u32(j),
+						msg.id,
+						entry.att,
+						msg.att_names[entry.att],
 						msg.att_names[entry.att],
 					)
 				}

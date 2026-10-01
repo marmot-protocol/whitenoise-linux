@@ -351,6 +351,9 @@ msgstr "Chat archiviate"
 msgid "Archives"
 msgstr "Archivi"
 
+msgid "Arrow keys move. X is A, Z is B, Enter is Start, Shift is Select."
+msgstr "Le frecce muovono. X è A, Z è B, Invio è Start, Maiusc è Select."
+
 msgid "Ask a question..."
 msgstr "Fai una domanda..."
 
@@ -921,6 +924,10 @@ msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "Impossibile importare l'adesivo. Scegli un'immagine inferiore a 4 MiB."
 
 #, c-format
+msgid "Couldn't keep %s running. Please try again."
+msgstr "Impossibile mantenere in esecuzione %s. Riprova."
+
+#, c-format
 msgid "Couldn't leave. %s"
 msgstr "Impossibile uscire dal gruppo. %s"
 
@@ -1134,6 +1141,10 @@ msgstr "Impossibile condividere il tema. Riprova. %s"
 #, c-format
 msgid "Couldn't sign out. %s"
 msgstr "Impossibile disconnettersi. %s"
+
+#, c-format
+msgid "Couldn't start %s. Its cartridge type isn't supported."
+msgstr "Impossibile avviare %s. Il tipo di cartuccia non è supportato."
 
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "Impossibile avviare la lettura. Riprova."
@@ -2224,6 +2235,9 @@ msgstr "Musica"
 msgid "Mute"
 msgstr "Silenzia"
 
+msgid "NES game"
+msgstr "Gioco NES"
+
 msgid "NEW PASSWORD"
 msgstr "NUOVA PASSWORD"
 
@@ -2632,6 +2646,9 @@ msgstr "Riproduci un suono"
 
 msgid "Play a sound for new messages"
 msgstr "Riproduci un suono per i nuovi messaggi"
+
+msgid "Play game"
+msgstr "Gioca"
 
 msgid "Play interface sounds"
 msgstr "Riproduci i suoni dell'interfaccia"

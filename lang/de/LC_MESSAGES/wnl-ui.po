@@ -351,6 +351,9 @@ msgstr "Archivierte Chats"
 msgid "Archives"
 msgstr "Archive"
 
+msgid "Arrow keys move. X is A, Z is B, Enter is Start, Shift is Select."
+msgstr "Pfeiltasten bewegen. X ist A, Z ist B, Enter ist Start, Umschalt ist Select."
+
 msgid "Ask a question..."
 msgstr "Stelle eine Frage..."
 
@@ -921,6 +924,10 @@ msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "Der Sticker konnte nicht importiert werden. Wähle ein Bild unter 4 MiB."
 
 #, c-format
+msgid "Couldn't keep %s running. Please try again."
+msgstr "%s konnte nicht weiterlaufen. Bitte versuche es erneut."
+
+#, c-format
 msgid "Couldn't leave. %s"
 msgstr "Die Gruppe konnte nicht verlassen werden. %s"
 
@@ -1134,6 +1141,10 @@ msgstr "Das Theme konnte nicht geteilt werden. Bitte versuche es erneut. %s"
 #, c-format
 msgid "Couldn't sign out. %s"
 msgstr "Die Abmeldung war nicht möglich. %s"
+
+#, c-format
+msgid "Couldn't start %s. Its cartridge type isn't supported."
+msgstr "%s konnte nicht gestartet werden. Dieser Modultyp wird nicht unterstützt."
 
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "Das Vorlesen konnte nicht gestartet werden. Bitte versuche es erneut."
@@ -2224,6 +2235,9 @@ msgstr "Musik"
 msgid "Mute"
 msgstr "Stummschalten"
 
+msgid "NES game"
+msgstr "NES-Spiel"
+
 msgid "NEW PASSWORD"
 msgstr "NEUES PASSWORT"
 
@@ -2632,6 +2646,9 @@ msgstr "Ton abspielen"
 
 msgid "Play a sound for new messages"
 msgstr "Ton bei neuen Nachrichten abspielen"
+
+msgid "Play game"
+msgstr "Spielen"
 
 msgid "Play interface sounds"
 msgstr "Oberflächenklänge abspielen"

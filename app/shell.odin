@@ -616,7 +616,8 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 		ui.backup_mode != .None ||
 		ui.vault_pw_open ||
 		preview_shown ||
-		web_modal.open \
+		web_modal.open ||
+		nes_player.open \
 	)
 }
 

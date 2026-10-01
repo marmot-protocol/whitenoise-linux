@@ -46,6 +46,10 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Attachments travel over Marmot's encrypted MIP-04 path. Profile pictures are the one deliberate exception: they go out publicly via Blossom.
 - GLB attachments open as static 3D scenes with orbit, zoom, and the model inspector. The viewer reads node transforms, material factors, and embedded PNG/JPEG textures on UV0. GLB animation, skinning, morph targets, vertex colors, and Draco/meshopt compression are not supported. External resources are never fetched; translucent materials use alpha cutouts.
 
+**Games**
+
+- A `.nes` attachment, or an archive holding nothing but one `.nes` file, shows a cartridge tile with a Play button. The game runs in a modal: arrow keys move, X is A, Z is B, Enter is Start, Shift is Select, and Escape closes it. Supported boards are mappers 0, 1, 2, 3, 4 and 7 (NROM, MMC1, UxROM, CNROM, MMC3, AxROM). There are no battery saves, save states or gamepad input.
+
 **Identity & accounts**
 
 - Several accounts at once, each with a live Marmot worker receiving in the background.
@@ -371,7 +375,13 @@ at most 8 MiB of straight RGBA pixels, with dimensions no larger than 4,096.
 The helper embeds its font. Invalid input, a failed helper or an exceeded
 budget leaves the source text visible instead of rendering it in-process.
 
-On OpenBSD, `wn-image`, `wn-archive`, `wn-mesh`, `wn-fbx` and `wn-math` lock
+NES cartridges run in `wn-nes`, one helper per open game, over the same
+sequenced exchange as `wn-fbx`. The app sends the ROM once (an iNES header and
+at most 8 MiB), then one controller byte per emulated frame. Each reply holds
+61,440 palette indices and at most 1,024 16-bit audio samples. A malformed
+reply, a dead helper or a missed ten-second deadline closes the player.
+
+On OpenBSD, `wn-image`, `wn-archive`, `wn-mesh`, `wn-fbx`, `wn-math` and `wn-nes` lock
 `unveil()` with no filesystem paths and pledge `stdio` before reading input.
 `wn-math` loads its fixed UTF-8 locale before confinement; parsing never
 opens locale files.
@@ -380,7 +390,7 @@ unveils the bundle, standard system font trees and Poppler resource directories
 read-only. Directory grants avoid OpenBSD's limit on individual unveiled names.
 It locks that policy and pledges `stdio rpath` before reading PDF bytes.
 
-The image, archive, PDF, mesh, FBX and math decoders share a 1 GiB memory limit,
+The image, archive, PDF, mesh, FBX, math and NES helpers share a 1 GiB memory limit,
 no inherited environment and only input, output and a null error stream.
 Image, archive, PDF, mesh and math helpers
 have five CPU seconds and ten seconds wall time; the parent requires exact
@@ -389,6 +399,7 @@ deadline and an echoed sequence number per exchange, but no cumulative CPU
 quota, so valid looping animations do not expire.
 Static FBX helpers close after loading; animated helpers close with the model.
 An invalid pose leaves the last validated geometry intact and closes the helper.
+`wn-nes` follows the same session rules and closes with the player.
 
 Failure has no in-process fallback. Linux requires `close_range` (kernel 5.9
 or newer); descriptor or sandbox setup failure stops decoding. Platforms other

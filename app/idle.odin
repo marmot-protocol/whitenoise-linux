@@ -23,6 +23,7 @@ frame_idle :: proc() -> bool {
 	   scroll_jumped ||
 	   voice.stream != nil ||
 	   web_modal.open ||
+	   nes_player.open ||
 	   rl.IsMouseButtonDown(.LEFT) ||
 	   rl.IsMouseButtonDown(.RIGHT) {
 		return false

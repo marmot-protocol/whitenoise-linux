@@ -9,7 +9,7 @@ WN_BUILD_DIR :: "../build" when WN_TARGET == "" else "../build/cross/" + WN_TARG
 foreign import bootstrap {WN_BUILD_DIR + "/libwnmesh.a"}
 @(default_calling_convention = "c")
 foreign bootstrap {
-	wn_mesh_bootstrap :: proc() -> c.int ---
+	wn_mesh_bootstrap :: proc(lifetime: c.int) -> c.int ---
 	wn_mesh_input :: proc(bytes: rawptr, length: c.size_t) -> c.int ---
 	wn_mesh_input_end :: proc() -> c.int ---
 	wn_mesh_output :: proc(bytes: rawptr, length: c.size_t) -> c.int ---
@@ -74,7 +74,7 @@ mesh_payload :: proc(mesh: ^Mesh) -> []u8 {
 }
 
 main :: proc() {
-	if wn_mesh_bootstrap() == 0 {wn_mesh_finish(0); return}
+	if wn_mesh_bootstrap(0) == 0 {wn_mesh_finish(0); return} 	// WN_DECODER_ONESHOT
 	header: [16]u8
 	if wn_mesh_input(raw_data(header[:]), 16) == 0 ||
 	   string(header[:4]) != "MDI1" {wn_mesh_finish(0); return}

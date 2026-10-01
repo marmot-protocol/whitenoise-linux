@@ -101,7 +101,7 @@ group_file_type :: proc(name, media_type: string) -> Group_File_Type {
 		return .Models
 	case .Font:
 		return .Fonts
-	case .Xdc:
+	case .Xdc, .Nes:
 		return .Apps
 	case .File, .Torrent:
 		if strings.has_prefix(mime, "text/") ||

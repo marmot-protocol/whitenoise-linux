@@ -662,6 +662,7 @@ fi
 
 env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/model-decoder" -o:speed -out:"$HERE/build/wn-mesh"
 env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/math-decoder" -o:speed -out:"$HERE/build/wn-math"
+env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/nes-decoder" -o:speed -out:"$HERE/build/wn-nes"
 
 # The dev host builds a reloadable library after staging these same inputs.
 if [ "${1:-}" = stage ]; then

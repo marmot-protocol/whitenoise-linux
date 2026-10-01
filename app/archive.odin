@@ -45,6 +45,7 @@ Arc_View :: struct {
 	data:     []u8, // the archive bytes, owned by the view
 	entries:  []Arc_Entry, // regular files only
 	expanded: bool, // the tile lists every entry, not just the first rows
+	nes:      ^Nes_View, // set when the archive is one .nes ROM; drawn as a cartridge
 }
 
 @(private = "file")

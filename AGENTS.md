@@ -29,6 +29,8 @@ output is already present, so only the first run is slow:
   `app/fbx_shim.c` and `app/fbx_helper.c` build the isolated `build/wn-fbx`
   parser and animation helper. `model-decoder/` builds `build/wn-mesh` for
   STL, OBJ, GLB and G-code. Neither parser library is linked into the UI.
+  `nes-decoder/` builds `build/wn-nes`, the NES emulator session behind
+  the player modal (`app/nes.odin`).
 - `vendor/emoji/{noto,twemoji,openmoji}`, the three 128x128 PNG sets the user
   picks between in Appearance: Noto from a sparse clone at
   `noto-emoji-commit`, Twemoji and OpenMoji rasterized from the SVGs in

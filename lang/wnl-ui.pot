@@ -350,6 +350,9 @@ msgstr ""
 msgid "Archives"
 msgstr ""
 
+msgid "Arrow keys move. X is A, Z is B, Enter is Start, Shift is Select."
+msgstr ""
+
 msgid "Ask a question..."
 msgstr ""
 
@@ -920,6 +923,10 @@ msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr ""
 
 #, c-format
+msgid "Couldn't keep %s running. Please try again."
+msgstr ""
+
+#, c-format
 msgid "Couldn't leave. %s"
 msgstr ""
 
@@ -1132,6 +1139,10 @@ msgstr ""
 
 #, c-format
 msgid "Couldn't sign out. %s"
+msgstr ""
+
+#, c-format
+msgid "Couldn't start %s. Its cartridge type isn't supported."
 msgstr ""
 
 msgid "Couldn't start reading aloud. Please try again."
@@ -2223,6 +2234,9 @@ msgstr ""
 msgid "Mute"
 msgstr ""
 
+msgid "NES game"
+msgstr ""
+
 msgid "NEW PASSWORD"
 msgstr ""
 
@@ -2630,6 +2644,9 @@ msgid "Play a sound"
 msgstr ""
 
 msgid "Play a sound for new messages"
+msgstr ""
+
+msgid "Play game"
 msgstr ""
 
 msgid "Play interface sounds"

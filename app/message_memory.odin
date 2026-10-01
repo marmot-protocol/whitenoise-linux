@@ -131,6 +131,7 @@ message_free :: proc(msg: Msg_Ui) {
 	delete(msg.txts)
 	delete(msg.codes)
 	delete(msg.fonts)
+	delete(msg.nes)
 }
 
 @(private)

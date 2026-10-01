@@ -26,7 +26,7 @@
 
 static const char *const helper_names[] = {
     "wn-image",   "wn-archive", "wn-mesh", "wn-fbx", "wn-math",
-    "wn-pdf",     "wn-font",    "wn-stt",  "wn-tts",
+    "wn-nes",     "wn-pdf",     "wn-font", "wn-stt", "wn-tts",
 #ifndef __OpenBSD__
     "wn-webview",
 #endif
@@ -307,9 +307,9 @@ static int freeze_helpers(const char *const *helpers, size_t count, const char *
         if (!realpath(helpers[i], frozen[i].executable)) {
             return errno;
         }
-        frozen[i].kind = kind < 5    ? HELPER_DECODER
-                         : kind == 5 ? HELPER_PDF
-                         : kind == 6 ? HELPER_FONT
+        frozen[i].kind = kind < 6    ? HELPER_DECODER
+                         : kind == 6 ? HELPER_PDF
+                         : kind == 7 ? HELPER_FONT
                                      : HELPER_OPTIONAL;
         if (frozen[i].kind == HELPER_PDF) {
             char fonts[PATH_MAX];

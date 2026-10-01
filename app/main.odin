@@ -10,6 +10,7 @@
 //      WN_TEST_PREVIEW=<path> opens the preview modal on a local file.
 //      WN_TEST_WEB=<url> opens the webxdc modal on a URL.
 //      WN_TEST_XDC=<file.xdc> unpacks and runs a webxdc app.
+//      WN_TEST_NES=<file.nes> runs a cartridge in the NES player.
 //
 // Secrets: everything sealed goes through $home/vault.db (vault.odin),
 // unlocked by vault_gate before the runtime boots. Marmot's own account
@@ -817,6 +818,10 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			if web_modal.open {
 				web_modal_draw(ui)
 			}
+			// Same for the NES player and its wn-nes session.
+			if nes_player.open {
+				nes_modal_draw(ui)
+			}
 			toast_layer(ui)
 
 			// Root level, not the chat pane: settings opens it too.
@@ -1347,6 +1352,7 @@ app_main :: proc() {
 		drain_ops(&ui, client)
 		drain_nc_intents(&ui, client) // Namecoin .bit resolutions land here
 		web_tick() // webxdc modal: run WebKit, take its pixels
+		nes_tick(&ui) // NES player: emulate the owed frames, queue their audio
 		xdc_drain(&ui, client) // webxdc sendUpdate() becomes a group message
 		drain_auth(&ui, client) // a finished sign-in lands on the UI thread
 		flush_queued(&ui, client)
@@ -1519,6 +1525,7 @@ app_main :: proc() {
 		tor_hash_hover = nil
 		tor_magnet_hover = nil
 		xdc_hover = {}
+		nes_hover = {}
 		img_hover = {}
 		img_link_hover = ""
 		model_hover = {}
@@ -1823,6 +1830,8 @@ app_main :: proc() {
 			handle_confirm(&ui, client)
 		} else if ui.link_open {
 			handle_link_modal(&ui)
+		} else if nes_player.open {
+			handle_nes_input(&ui) // the game owns the keyboard
 		} else if ui.folder_open {
 			handle_folder_modal(&ui, client)
 		} else if ui.pal_open {
@@ -1929,6 +1938,7 @@ app_main :: proc() {
 		handle_tor_click(&ui)
 		handle_xdc_click(&ui, client)
 		handle_web_input(&ui)
+		handle_nes_click(&ui)
 		handle_att_click(&ui)
 		handle_img_click(&ui, client)
 		handle_model_click(&ui, client)
@@ -2068,6 +2078,15 @@ app_main :: proc() {
 			}
 		}
 		if frame == 12 && !preview_shown {
+			if path := os.get_env("WN_TEST_NES", context.temp_allocator); path != "" {
+				if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
+					if view := nes_view_make(bytes); view != nil {
+						nes_play(&ui, view, path)
+					} else {
+						fmt.eprintfln("nes: %s has no iNES header", path)
+					}
+				}
+			}
 			if path := os.get_env("WN_TEST_PREVIEW", context.temp_allocator); path != "" {
 				if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
 					preview_show(path, bytes) // the extension is what dispatches
@@ -2119,6 +2138,7 @@ app_main :: proc() {
 	tts_stop(&ui)
 	preview_close()
 	web_close()
+	nes_close()
 	xdc_stop()
 	stash_draft(&ui)
 	save_settings(&ui)

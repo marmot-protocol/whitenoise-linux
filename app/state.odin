@@ -297,6 +297,7 @@ Msg_Ui :: struct {
 	txts:                [dynamic]Att_Item(^Txt_View), // text/markdown attachments, owned by the txt_views cache
 	codes:               [dynamic]Att_Item(^Code_View), // source attachments, owned by the code_views cache
 	fonts:               [dynamic]Att_Item(^Ttf_View), // font attachments, owned by the ttf_views cache
+	nes:                 [dynamic]Att_Item(^Nes_View), // NES cartridges, owned by the nes_views cache
 	att_names:           [dynamic]string, // every media reference by index, for the ctx-menu save rows
 	att_keys:            [dynamic]string, // cache key (plaintext sha256) per media index
 	att_rejected:        map[int]string, // source index to static, translatable rejection text
