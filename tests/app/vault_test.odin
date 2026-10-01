@@ -80,6 +80,7 @@ vault_dev_session :: proc(t: ^testing.T) {
 vault_round_trip :: proc(t: ^testing.T) {
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
+	defer vault_lock()
 
 	prev_home := data_home
 	data_home = VAULT_TEST_HOME
@@ -140,6 +141,7 @@ vault_round_trip :: proc(t: ^testing.T) {
 vault_rekey_round_trip :: proc(t: ^testing.T) {
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
+	defer vault_lock()
 
 	prev_home := data_home
 	data_home = VAULT_TEST_HOME

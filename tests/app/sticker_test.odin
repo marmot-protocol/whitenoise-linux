@@ -100,6 +100,7 @@ sticker_pack_validation :: proc(t: ^testing.T) {
 sticker_image_storage :: proc(t: ^testing.T) {
 	context.allocator = runtime.default_context().allocator
 	sync.lock(&test_home_lock); defer sync.unlock(&test_home_lock)
+	defer vault_lock()
 	previous := data_home
 	data_home = "/tmp/wn-sticker-storage-test"
 	defer {data_home = previous}

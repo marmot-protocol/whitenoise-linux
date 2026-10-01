@@ -122,6 +122,7 @@ gif_data :: proc(t: ^testing.T) {
 	testing.expect(t, !gif_valid(bytes), "reject huge canvases before decoding")
 	bytes[6], bytes[7] = 1, 0
 	sync.lock(&test_home_lock); defer sync.unlock(&test_home_lock)
+	defer vault_lock()
 	previous := data_home; data_home = "/tmp/wn-gif-storage-test"
 	defer {data_home = previous}
 	os.make_directory(data_home); defer os.remove_all(data_home)

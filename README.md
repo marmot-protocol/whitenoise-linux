@@ -537,6 +537,11 @@ The shell implementations live under `scripts/`; CI and packaging call them dire
 
 All tests live under `tests/`; `just test` runs the same checks as CI. For a focused Odin run, use `tests/odin.sh app [odin test flags]` or `tests/odin.sh app/sdlrl`. The runner assembles a temporary package so tests retain access to private symbols. End-to-end testing (a QEMU VM harness, a headless control daemon, and multi-VM messaging scenarios) lives in the separate [`darkmatter-automated-testing`](https://github.com/marmot-protocol/darkmatter-automated-testing) repo, which builds this checkout.
 
+Vault fixtures must release `g_vault` with `vault_lock()` or `vault_delete()`
+before releasing `test_home_lock`. The test allocator resets after each test;
+leaving its strings in the vault lets a later worker free them with the wrong
+allocator.
+
 Use `tr("text")` for UI strings and `tr("%d item", "%d items", count)` for
 counted labels, then format the returned string with the count. The latter
 selects the first catalog entry for one and the second for every other count.

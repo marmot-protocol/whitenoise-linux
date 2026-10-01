@@ -82,6 +82,7 @@ send_waits_for_timeline :: proc(t: ^testing.T) {
 	defer {
 		timeline_page = nil // the fixture page is stack-owned
 		timeline_stop()
+		vault_lock()
 		timeline_job, timeline_page, timeline_retired = old_job, old_page, old_retired
 		sends_done, data_home = old_done, old_home
 	}

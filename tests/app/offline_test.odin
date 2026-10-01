@@ -15,6 +15,7 @@ OFFLINE_TEST_HOME :: "/tmp/wn-odin-offline-test"
 offline_delete_pending :: proc(t: ^testing.T) {
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
+	defer vault_lock()
 
 	previous_home := data_home
 	data_home = OFFLINE_TEST_HOME
@@ -86,6 +87,7 @@ offline_delete_pending :: proc(t: ^testing.T) {
 offline_roundtrip :: proc(t: ^testing.T) {
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
+	defer vault_lock()
 
 	data_home = OFFLINE_TEST_HOME
 	os.remove_all(OFFLINE_TEST_HOME)
