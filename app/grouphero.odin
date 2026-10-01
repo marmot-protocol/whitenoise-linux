@@ -59,6 +59,7 @@ chat_pic :: proc(chat: Chat_Row_Ui) -> ^rl.Texture2D {
 
 group_hero :: proc(ui: ^Ui_State) {
 	chat := ui.chats[ui.selected]
+	admin := self_is_admin(ui)
 	if clay.UI(clay.ID("GroupHero"))(
 	{
 		layout = {
@@ -77,7 +78,7 @@ group_hero :: proc(ui: ^Ui_State) {
 			chat.title,
 			72,
 			chat_pic(chat),
-			clay.PointerOver(clay.ID("HeroAvatar", 0)) ? .Open : .Closed,
+			admin && clay.PointerOver(clay.ID("HeroAvatar", 0)) ? .Open : .Closed,
 		)
 		clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
 		clay.Text(
@@ -87,8 +88,10 @@ group_hero :: proc(ui: ^Ui_State) {
 			),
 			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, letterSpacing = 1},
 		)
-		micro_button("HeroPicBtn", tr("Change photo"))
-		if ui.gpic_menu_open {
+		if admin {
+			micro_button("HeroPicBtn", tr("Change photo"))
+		}
+		if admin && ui.gpic_menu_open {
 			if clay.UI(clay.ID("GpicMenu"))({layout = {childGap = 8}}) {
 				micro_button("GpicFile", tr("From file"))
 				micro_button("GpicEmoji", tr("From emoji"))
@@ -96,7 +99,7 @@ group_hero :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		if ui.desc_editing {
+		if admin && ui.desc_editing {
 			if clay.UI(clay.ID("DescBox"))(
 			{
 				layout = {
@@ -130,13 +133,18 @@ group_hero :: proc(ui: ^Ui_State) {
 					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
 				)
 			}
-			micro_button("DescEditBtn", tr("Edit"))
+			if admin {
+				micro_button("DescEditBtn", tr("Edit"))
+			}
 		}
 	}
 }
 
 // Hero clicks; true when the frame's input was consumed.
 handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
+	if !self_is_admin(ui) {
+		return false
+	}
 	if clicked("HeroPicBtn") || (mouse_released() && clay.PointerOver(clay.ID("HeroAvatar", 0))) {
 		ui.gpic_menu_open = !ui.gpic_menu_open
 		return true
@@ -428,6 +436,7 @@ gimg_worker :: proc(_: ^thread.Thread) {
 
 start_gimg_worker :: proc() {
 	context.allocator = reload_allocator()
+	gimg_stopping = false
 	gimg_thread = thread.create(gimg_worker)
 	thread.start(gimg_thread)
 }
@@ -447,6 +456,16 @@ stop_gimg_worker :: proc() {
 	thread.join(gimg_thread)
 	thread.destroy(gimg_thread)
 	gimg_thread = nil
+	for job in gimg_queue {
+		delete(job.account); delete(job.group_id); delete(job.url); delete(job.data)
+	}
+	delete(gimg_queue); gimg_queue = {}
+	for result in gimg_done {
+		delete(result.url); delete(result.data); delete(result.err)
+	}
+	delete(gimg_done); gimg_done = {}
+	clear(&gimg_asked)
+	gimg_uploads = 0
 }
 
 // Frame-loop drain: decode downloaded avatars into round textures and

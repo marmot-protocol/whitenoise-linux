@@ -11,6 +11,9 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "%d added, %d skipped, %d failed"
+msgstr "%d aggiunti, %d saltati, %d non riusciti"
+
 #, c-format
 msgid "%d blocked message"
 msgstr "%d messaggio bloccato"
@@ -27,6 +30,12 @@ msgstr "%d byte"
 msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
 msgstr "%d in connessione, %d in attesa, %d disconnessi, %d inattivi."
 
+msgid "%d day"
+msgstr "%d giorno"
+
+msgid "%d days"
+msgstr "%d giorni"
+
 #, c-format
 msgid "%d edit"
 msgstr "%d modifica"
@@ -39,6 +48,12 @@ msgstr "%d modifiche"
 msgid "%d files"
 msgstr "%d file"
 
+msgid "%d hour"
+msgstr "%d ora"
+
+msgid "%d hours"
+msgstr "%d ore"
+
 #, c-format
 msgid "%d member"
 msgstr "%d membro"
@@ -46,6 +61,12 @@ msgstr "%d membro"
 #, c-format
 msgid "%d members"
 msgstr "%d membri"
+
+msgid "%d minute"
+msgstr "%d minuto"
+
+msgid "%d minutes"
+msgstr "%d minuti"
 
 #, c-format
 msgid "%d of %d connected"
@@ -82,6 +103,12 @@ msgstr "%d regola"
 #, c-format
 msgid "%d rules"
 msgstr "%d regole"
+
+msgid "%d second"
+msgstr "%d secondo"
+
+msgid "%d seconds"
+msgstr "%d secondi"
 
 #, c-format
 msgid "%d votes"
@@ -614,6 +641,9 @@ msgstr "Contorno chip"
 msgid "Chip text"
 msgstr "Testo chip"
 
+msgid "Choose a contacts CSV or JSON export to import."
+msgstr "Scegli un'esportazione dei contatti CSV o JSON da importare."
+
 msgid "Choose a destination for this chat."
 msgstr "Scegli una destinazione per questa chat."
 
@@ -695,6 +725,9 @@ msgstr "Chiudi nell'area di notifica"
 msgid "Closed"
 msgstr "Chiusa"
 
+msgid "Closing connections and clearing this session."
+msgstr "Chiusura delle connessioni e cancellazione di questa sessione."
+
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr "Chiudere la finestra la nasconde. L'icona nell'area di notifica mostra il totale dei non letti e la fa riapparire."
 
@@ -767,6 +800,9 @@ msgstr "Connessione ai relay"
 msgid "Contact"
 msgstr "Contatto"
 
+msgid "Contacts imported: %d added, %d skipped, %d failed."
+msgstr "Contatti importati: %d aggiunti, %d saltati, %d non riusciti."
+
 msgid "Continue"
 msgstr "Continua"
 
@@ -825,6 +861,9 @@ msgstr "Scala angoli"
 #, c-format
 msgid "Couldn't accept. %s"
 msgstr "Impossibile accettare l'invito. %s"
+
+msgid "Couldn't add record %d. %s Check your relay settings and import again."
+msgstr "Impossibile aggiungere il record %d. %s Controlla le impostazioni dei tuoi relay e importa di nuovo."
 
 msgid "Couldn't add the pack. No supported stickers are available."
 msgstr "Impossibile aggiungere il pacchetto. Non ci sono adesivi supportati disponibili."
@@ -919,6 +958,27 @@ msgstr "Impossibile inoltrare. Riprova."
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "Impossibile rilevare la voce. Parla chiaramente e riprova."
+
+msgid "Couldn't import contacts. Choose a JSON array of contact records."
+msgstr "Impossibile importare i contatti. Scegli un array JSON di record dei contatti."
+
+msgid "Couldn't import contacts. Choose a contacts CSV or JSON export."
+msgstr "Impossibile importare i contatti. Scegli un'esportazione dei contatti CSV o JSON."
+
+msgid "Couldn't import contacts. Choose a valid contacts JSON export."
+msgstr "Impossibile importare i contatti. Scegli un'esportazione JSON dei contatti valida."
+
+msgid "Couldn't import contacts. Fix CSV record %d: use four fields and double quotes inside quoted fields."
+msgstr "Impossibile importare i contatti. Correggi il record CSV %d: usa quattro campi e raddoppia le virgolette nei campi tra virgolette."
+
+msgid "Couldn't import contacts. Fix JSON record %d: name, npub and nickname must be strings, and blocked must be true or false."
+msgstr "Impossibile importare i contatti. Correggi il record JSON %d: name, npub e nickname devono essere stringhe, blocked deve essere true o false."
+
+msgid "Couldn't import contacts. Set blocked to true or false in CSV record %d."
+msgstr "Impossibile importare i contatti. Imposta blocked su true o false nel record CSV %d."
+
+msgid "Couldn't import contacts. Use the CSV header name,npub,nickname,blocked."
+msgstr "Impossibile importare i contatti. Usa l'intestazione CSV name,npub,nickname,blocked."
 
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "Impossibile importare l'adesivo. Scegli un'immagine inferiore a 4 MiB."
@@ -1054,6 +1114,12 @@ msgstr "Impossibile leggere questo messaggio ad alta voce. Scegli un messaggio d
 
 msgid "Couldn't read this message aloud. Please try again."
 msgstr "Impossibile leggere questo messaggio ad alta voce. Riprova."
+
+msgid "Couldn't read your contacts file. Check the file permissions and try again."
+msgstr "Impossibile leggere il file dei tuoi contatti. Controlla i permessi del file e riprova."
+
+msgid "Couldn't read your existing contacts. Please try again."
+msgstr "Impossibile leggere i tuoi contatti esistenti. Riprova."
 
 #, c-format
 msgid "Couldn't read your key packages. %s"
@@ -1855,11 +1921,17 @@ msgstr "Importa un'immagine per creare il tuo primo adesivo."
 msgid "Import backup"
 msgstr "Importa backup"
 
+msgid "Import contacts"
+msgstr "Importa contatti"
+
 msgid "Import image"
 msgstr "Importa immagine"
 
 msgid "Import..."
 msgstr "Importa..."
+
+msgid "Importing contacts: %d of %d"
+msgstr "Importazione dei contatti: %d di %d"
 
 msgid "Incoming messages"
 msgstr "Messaggi in arrivo"
@@ -2099,6 +2171,12 @@ msgstr "File locali, contenuti multimediali in cache e backup crittografati."
 
 msgid "Location"
 msgstr "Posizione"
+
+msgid "Lock now"
+msgstr "Blocca ora"
+
+msgid "Locking…"
+msgstr "Blocco in corso…"
 
 msgid "Look up"
 msgstr "Cerca"
@@ -2802,8 +2880,14 @@ msgstr "Leggi di più"
 msgid "Reading aloud..."
 msgstr "Lettura in corso..."
 
+msgid "Reading your contacts file and checking existing contacts..."
+msgstr "Lettura del file dei tuoi contatti e verifica dei contatti esistenti..."
+
 msgid "Recent"
 msgstr "Recenti"
+
+msgid "Record %d has an invalid npub. Correct it and import again."
+msgstr "Il record %d ha un npub non valido. Correggilo e importa di nuovo."
 
 msgid "Record audit logs"
 msgstr "Registra i log di audit"

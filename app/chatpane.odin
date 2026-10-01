@@ -727,21 +727,24 @@ info_width :: proc(ui: ^Ui_State) -> f32 {
 // Settings: the group's face, one card per setting, then leaving.
 @(private = "file")
 info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
+	admin := self_is_admin(ui)
 	if clay.UI(clay.ID("InfoHeroCard"))(info_card()) {
 		group_hero(ui)
 	}
 
-	if clay.UI(clay.ID("InfoNameCard"))(info_card()) {
-		row_labels(tr("Group name"), tr("Everyone in the group sees the new name."))
-		info_field(
-			ui,
-			"RenameBox",
-			&ui.rename_input,
-			tr("New name"),
-			.Rename,
-			"RenameBtn",
-			tr("Rename"),
-		)
+	if admin {
+		if clay.UI(clay.ID("InfoNameCard"))(info_card()) {
+			row_labels(tr("Group name"), tr("Everyone in the group sees the new name."))
+			info_field(
+				ui,
+				"RenameBox",
+				&ui.rename_input,
+				tr("New name"),
+				.Rename,
+				"RenameBtn",
+				tr("Rename"),
+			)
+		}
 	}
 
 	// Group timer, an MLS setting shared by every member; MDK
@@ -751,41 +754,50 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 			tr("Disappearing messages"),
 			tr("New messages are deleted for everyone after this time."),
 		)
-		// A recessed track of presets; the active one fills with the accent.
-		if clay.UI(clay.ID("RetentionRow"))(
-		{
-			layout = {padding = clay.PaddingAll(3), childGap = 2},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(10),
-			border = {color = FIELD_BORDER, width = bw()},
-		},
-		) {
-			labels := [len(RETENTION_SECS)]string{N_("Off"), "1h", "1d", "1w", "4w"}
-			for secs, i in RETENTION_SECS {
-				active := ui.group_retention == secs
-				if clay.UI(clay.ID(fmt.tprintf("RetChip%d", i)))(
-				{
-					layout = {padding = {left = 14, right = 14, top = 6, bottom = 6}},
-					backgroundColor = active ? ACCENT : (hovered() ? HOVER : {}),
-					cornerRadius = rr(7),
-				},
-				) {
-					clay.Text(
-						tr(labels[i]),
-						{
-							fontId = FONT_TITLE,
-							fontSize = 12,
-							textColor = active ? ON_ACCENT : TEXT_DIM,
-						},
-					)
-					if hovered() && !active {cursor_raise(.Pointer)}
+		labels := [len(RETENTION_SECS)]string{N_("Off"), "1h", "1d", "1w", "4w"}
+		// Members see the current timer without controls to change it.
+		if !admin {
+			clay.Text(
+				retention_text(ui.group_retention),
+				{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM},
+			)
+		} else {
+			if clay.UI(clay.ID("RetentionRow"))(
+			{
+				layout = {padding = clay.PaddingAll(3), childGap = 2},
+				backgroundColor = ROW_BG,
+				cornerRadius = rr(10),
+				border = {color = FIELD_BORDER, width = bw()},
+			},
+			) {
+				for secs, i in RETENTION_SECS {
+					active := ui.group_retention == secs
+					if clay.UI(clay.ID(fmt.tprintf("RetChip%d", i)))(
+					{
+						layout = {padding = {left = 14, right = 14, top = 6, bottom = 6}},
+						backgroundColor = active ? ACCENT : (hovered() ? HOVER : {}),
+						cornerRadius = rr(7),
+					},
+					) {
+						clay.Text(
+							tr(labels[i]),
+							{
+								fontId = FONT_TITLE,
+								fontSize = 12,
+								textColor = active ? ON_ACCENT : TEXT_DIM,
+							},
+						)
+						if hovered() && !active {cursor_raise(.Pointer)}
+					}
 				}
 			}
 		}
 	}
 
-	if clay.UI(clay.ID("InfoIssuesCard"))(info_card()) {
-		issues_settings(ui)
+	if admin {
+		if clay.UI(clay.ID("InfoIssuesCard"))(info_card()) {
+			issues_settings(ui)
+		}
 	}
 
 	if clay.UI(clay.ID("InfoExportCard"))(info_card()) {
@@ -1021,6 +1033,31 @@ member_rows :: proc(ui: ^Ui_State) {
 // Timer chip presets, in seconds; 0 disables. Handlers index the same
 // array, so chip N here is chip N there.
 RETENTION_SECS :: [5]u64{0, 3600, 86400, 604800, 2419200}
+
+@(private = "file")
+retention_text :: proc(secs: u64) -> string {
+	if secs == 0 {return tr("Off")}
+	units := [?]struct {
+		secs:             u64,
+		singular, plural: string,
+	} {
+		{86400, N_("%d day"), N_("%d days")},
+		{3600, N_("%d hour"), N_("%d hours")},
+		{60, N_("%d minute"), N_("%d minutes")},
+		{1, N_("%d second"), N_("%d seconds")},
+	}
+	remaining := secs
+	parts: [len(units)]string
+	count := 0
+	for unit in units {
+		n := remaining / unit.secs
+		if n == 0 {continue}
+		parts[count] = fmt.tprintf(tr(n == 1 ? unit.singular : unit.plural), n)
+		count += 1
+		remaining %= unit.secs
+	}
+	return strings.join(parts[:count], ", ", context.temp_allocator)
+}
 
 SHARED_MEDIA_CAP :: 60
 SHARED_MEDIA_COLS :: 3

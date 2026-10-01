@@ -11,6 +11,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+msgid "%d added, %d skipped, %d failed"
+msgstr ""
+
 #, c-format
 msgid "%d blocked message"
 msgstr ""
@@ -27,6 +30,12 @@ msgstr ""
 msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
 msgstr ""
 
+msgid "%d day"
+msgstr ""
+
+msgid "%d days"
+msgstr ""
+
 #, c-format
 msgid "%d edit"
 msgstr ""
@@ -39,12 +48,24 @@ msgstr ""
 msgid "%d files"
 msgstr ""
 
+msgid "%d hour"
+msgstr ""
+
+msgid "%d hours"
+msgstr ""
+
 #, c-format
 msgid "%d member"
 msgstr ""
 
 #, c-format
 msgid "%d members"
+msgstr ""
+
+msgid "%d minute"
+msgstr ""
+
+msgid "%d minutes"
 msgstr ""
 
 #, c-format
@@ -81,6 +102,12 @@ msgstr ""
 
 #, c-format
 msgid "%d rules"
+msgstr ""
+
+msgid "%d second"
+msgstr ""
+
+msgid "%d seconds"
 msgstr ""
 
 #, c-format
@@ -613,6 +640,9 @@ msgstr ""
 msgid "Chip text"
 msgstr ""
 
+msgid "Choose a contacts CSV or JSON export to import."
+msgstr ""
+
 msgid "Choose a destination for this chat."
 msgstr ""
 
@@ -694,6 +724,9 @@ msgstr ""
 msgid "Closed"
 msgstr ""
 
+msgid "Closing connections and clearing this session."
+msgstr ""
+
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr ""
 
@@ -766,6 +799,9 @@ msgstr ""
 msgid "Contact"
 msgstr ""
 
+msgid "Contacts imported: %d added, %d skipped, %d failed."
+msgstr ""
+
 msgid "Continue"
 msgstr ""
 
@@ -823,6 +859,9 @@ msgstr ""
 
 #, c-format
 msgid "Couldn't accept. %s"
+msgstr ""
+
+msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr ""
 
 msgid "Couldn't add the pack. No supported stickers are available."
@@ -917,6 +956,27 @@ msgid "Couldn't forward. Please try again."
 msgstr ""
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
+msgstr ""
+
+msgid "Couldn't import contacts. Choose a JSON array of contact records."
+msgstr ""
+
+msgid "Couldn't import contacts. Choose a contacts CSV or JSON export."
+msgstr ""
+
+msgid "Couldn't import contacts. Choose a valid contacts JSON export."
+msgstr ""
+
+msgid "Couldn't import contacts. Fix CSV record %d: use four fields and double quotes inside quoted fields."
+msgstr ""
+
+msgid "Couldn't import contacts. Fix JSON record %d: name, npub and nickname must be strings, and blocked must be true or false."
+msgstr ""
+
+msgid "Couldn't import contacts. Set blocked to true or false in CSV record %d."
+msgstr ""
+
+msgid "Couldn't import contacts. Use the CSV header name,npub,nickname,blocked."
 msgstr ""
 
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
@@ -1052,6 +1112,12 @@ msgid "Couldn't read this message aloud. Choose a shorter text message."
 msgstr ""
 
 msgid "Couldn't read this message aloud. Please try again."
+msgstr ""
+
+msgid "Couldn't read your contacts file. Check the file permissions and try again."
+msgstr ""
+
+msgid "Couldn't read your existing contacts. Please try again."
 msgstr ""
 
 #, c-format
@@ -1854,10 +1920,16 @@ msgstr ""
 msgid "Import backup"
 msgstr ""
 
+msgid "Import contacts"
+msgstr ""
+
 msgid "Import image"
 msgstr ""
 
 msgid "Import..."
+msgstr ""
+
+msgid "Importing contacts: %d of %d"
 msgstr ""
 
 msgid "Incoming messages"
@@ -2097,6 +2169,12 @@ msgid "Local files, cached media, and encrypted backups."
 msgstr ""
 
 msgid "Location"
+msgstr ""
+
+msgid "Lock now"
+msgstr ""
+
+msgid "Locking…"
 msgstr ""
 
 msgid "Look up"
@@ -2801,7 +2879,13 @@ msgstr ""
 msgid "Reading aloud..."
 msgstr ""
 
+msgid "Reading your contacts file and checking existing contacts..."
+msgstr ""
+
 msgid "Recent"
+msgstr ""
+
+msgid "Record %d has an invalid npub. Correct it and import again."
 msgstr ""
 
 msgid "Record audit logs"

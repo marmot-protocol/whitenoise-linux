@@ -11,6 +11,9 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
+msgid "%d added, %d skipped, %d failed"
+msgstr "追加%d件、スキップ%d件、失敗%d件"
+
 #, c-format
 msgid "%d blocked message"
 msgstr "ブロックしたメッセージ %d 件"
@@ -27,6 +30,12 @@ msgstr "%dバイト"
 msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
 msgstr "接続中 %d、保留中 %d、切断 %d、スリープ中 %d。"
 
+msgid "%d day"
+msgstr "%d日"
+
+msgid "%d days"
+msgstr "%d日"
+
 #, c-format
 msgid "%d edit"
 msgstr "%d件の編集"
@@ -39,6 +48,12 @@ msgstr "%d件の編集"
 msgid "%d files"
 msgstr "%d 個のファイル"
 
+msgid "%d hour"
+msgstr "%d時間"
+
+msgid "%d hours"
+msgstr "%d時間"
+
 #, c-format
 msgid "%d member"
 msgstr "メンバー%d人"
@@ -46,6 +61,12 @@ msgstr "メンバー%d人"
 #, c-format
 msgid "%d members"
 msgstr "メンバー%d人"
+
+msgid "%d minute"
+msgstr "%d分"
+
+msgid "%d minutes"
+msgstr "%d分"
 
 #, c-format
 msgid "%d of %d connected"
@@ -82,6 +103,12 @@ msgstr "ルール %d 件"
 #, c-format
 msgid "%d rules"
 msgstr "ルール %d 件"
+
+msgid "%d second"
+msgstr "%d秒"
+
+msgid "%d seconds"
+msgstr "%d秒"
 
 #, c-format
 msgid "%d votes"
@@ -614,6 +641,9 @@ msgstr "チップの輪郭"
 msgid "Chip text"
 msgstr "チップの文字"
 
+msgid "Choose a contacts CSV or JSON export to import."
+msgstr "インポートする連絡先のCSVまたはJSONエクスポートを選んでください。"
+
 msgid "Choose a destination for this chat."
 msgstr "このチャットの移動先を選んでください。"
 
@@ -695,6 +725,9 @@ msgstr "閉じたらトレイに格納"
 msgid "Closed"
 msgstr "終了"
 
+msgid "Closing connections and clearing this session."
+msgstr "接続を閉じて、このセッションを消去しています。"
+
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr "ウィンドウを閉じると非表示になります。トレイアイコンには未読の合計数が表示され、そこから再表示できます。"
 
@@ -767,6 +800,9 @@ msgstr "リレーに接続しています"
 msgid "Contact"
 msgstr "連絡先"
 
+msgid "Contacts imported: %d added, %d skipped, %d failed."
+msgstr "連絡先のインポート：追加%d件、スキップ%d件、失敗%d件。"
+
 msgid "Continue"
 msgstr "続行"
 
@@ -825,6 +861,9 @@ msgstr "角の丸みの倍率"
 #, c-format
 msgid "Couldn't accept. %s"
 msgstr "招待を承諾できませんでした。%s"
+
+msgid "Couldn't add record %d. %s Check your relay settings and import again."
+msgstr "レコード%dを追加できませんでした。%s リレー設定を確認して再度インポートしてください。"
 
 msgid "Couldn't add the pack. No supported stickers are available."
 msgstr "パックを追加できませんでした。対応するステッカーがありません。"
@@ -919,6 +958,27 @@ msgstr "転送できませんでした。もう一度お試しください。"
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "音声を聞き取れませんでした。はっきり話して、もう一度お試しください。"
+
+msgid "Couldn't import contacts. Choose a JSON array of contact records."
+msgstr "連絡先をインポートできませんでした。連絡先レコードのJSON配列を選んでください。"
+
+msgid "Couldn't import contacts. Choose a contacts CSV or JSON export."
+msgstr "連絡先をインポートできませんでした。連絡先のCSVまたはJSONエクスポートを選んでください。"
+
+msgid "Couldn't import contacts. Choose a valid contacts JSON export."
+msgstr "連絡先をインポートできませんでした。有効な連絡先のJSONエクスポートを選んでください。"
+
+msgid "Couldn't import contacts. Fix CSV record %d: use four fields and double quotes inside quoted fields."
+msgstr "連絡先をインポートできませんでした。CSVレコード%dを修正してください。フィールドは4つとし、引用符で囲まれたフィールド内の引用符は二重にしてください。"
+
+msgid "Couldn't import contacts. Fix JSON record %d: name, npub and nickname must be strings, and blocked must be true or false."
+msgstr "連絡先をインポートできませんでした。JSONレコード%dを修正してください。name、npub、nicknameは文字列、blockedはtrueまたはfalseにしてください。"
+
+msgid "Couldn't import contacts. Set blocked to true or false in CSV record %d."
+msgstr "連絡先をインポートできませんでした。CSVレコード%dのblockedをtrueまたはfalseにしてください。"
+
+msgid "Couldn't import contacts. Use the CSV header name,npub,nickname,blocked."
+msgstr "連絡先をインポートできませんでした。CSVヘッダーをname,npub,nickname,blockedにしてください。"
 
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "ステッカーを読み込めませんでした。4 MiB未満の画像を選んでください。"
@@ -1054,6 +1114,12 @@ msgstr "このメッセージを読み上げられませんでした。短いテ
 
 msgid "Couldn't read this message aloud. Please try again."
 msgstr "このメッセージを読み上げられませんでした。もう一度お試しください。"
+
+msgid "Couldn't read your contacts file. Check the file permissions and try again."
+msgstr "連絡先ファイルを読み取れませんでした。ファイルのアクセス権を確認して再試行してください。"
+
+msgid "Couldn't read your existing contacts. Please try again."
+msgstr "既存の連絡先を読み取れませんでした。もう一度お試しください。"
 
 #, c-format
 msgid "Couldn't read your key packages. %s"
@@ -1855,11 +1921,17 @@ msgstr "画像を読み込んで最初のステッカーを作成できます。
 msgid "Import backup"
 msgstr "バックアップをインポート"
 
+msgid "Import contacts"
+msgstr "連絡先をインポート"
+
 msgid "Import image"
 msgstr "画像を読み込む"
 
 msgid "Import..."
 msgstr "インポート..."
+
+msgid "Importing contacts: %d of %d"
+msgstr "連絡先をインポート中：%d / %d"
 
 msgid "Incoming messages"
 msgstr "受信メッセージ"
@@ -2099,6 +2171,12 @@ msgstr "ローカルファイル、メディアキャッシュ、暗号化バッ
 
 msgid "Location"
 msgstr "場所"
+
+msgid "Lock now"
+msgstr "今すぐロック"
+
+msgid "Locking…"
+msgstr "ロックしています…"
 
 msgid "Look up"
 msgstr "検索"
@@ -2802,8 +2880,14 @@ msgstr "続きを読む"
 msgid "Reading aloud..."
 msgstr "読み上げています..."
 
+msgid "Reading your contacts file and checking existing contacts..."
+msgstr "連絡先ファイルを読み取り、既存の連絡先を確認しています..."
+
 msgid "Recent"
 msgstr "最近"
+
+msgid "Record %d has an invalid npub. Correct it and import again."
+msgstr "レコード%dのnpubが無効です。修正して再度インポートしてください。"
 
 msgid "Record audit logs"
 msgstr "監査ログを記録"

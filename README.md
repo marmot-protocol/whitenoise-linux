@@ -26,6 +26,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 **Messaging**
 
 - One-to-one and group chats, end-to-end encrypted through Marmot's MLS, with sealed-sender invites over NIP-59.
+- Group settings show name, description, photo, disappearing-message, and issue-tracking controls only to admins. Other members can view the group's name, description, photo, and current disappearing-message timer in full units, such as "90 days".
 - Markdown bodies (with typeset `$$` math blocks), reactions, replies, edits with history, forwarding, and search.
 - Export the loaded chat window as HTML or Markdown from the members panel. HTML prepares embedded images in the background and shows image progress before opening the save dialog. Unavailable images appear as notes in the transcript. Leaving the chat or changing accounts discards an unfinished export.
 - Emoji search accepts names and shortcodes, such as `100` for hundred points and `thumbsup` for thumbs up. Shortcodes work with or without surrounding colons.

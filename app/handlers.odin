@@ -990,17 +990,24 @@ pick_emoji :: proc(ui: ^Ui_State, client: ^marmot.Client, emoji: string) {
 		set_status(ui, strings.clone(tr("Choose at most two emoji.")), .Error)
 		return
 	}
-	// Move to the front of the session recents, capped at 8.
-	for recent, i in ui.recent_emoji {
+	// Reuse an existing owned string when a recent cell is picked.
+	owned := emoji
+	found := false
+	for recent, i in ui.prefs.recent_emoji {
 		if recent == emoji {
-			ordered_remove(&ui.recent_emoji, i)
+			owned = recent
+			found = true
+			ordered_remove(&ui.prefs.recent_emoji, i)
 			break
 		}
 	}
-	inject_at(&ui.recent_emoji, 0, strings.clone(emoji))
-	if len(ui.recent_emoji) > 8 {
-		resize(&ui.recent_emoji, 8)
+	if !found {owned = strings.clone(emoji)}
+	inject_at(&ui.prefs.recent_emoji, 0, owned)
+	if len(ui.prefs.recent_emoji) > 8 {
+		delete(ui.prefs.recent_emoji[8])
+		resize(&ui.prefs.recent_emoji, 8)
 	}
+	ui.settings_dirty = true
 
 	if ui.picker_mode == .Group_Image {
 		gemoji_add(ui, emoji)
@@ -1075,7 +1082,7 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clay.PointerOver(clay.ID("PickerSearch")) {
 		return
 	}
-	for recent, i in ui.recent_emoji {
+	for recent, i in ui.prefs.recent_emoji {
 		if clay.PointerOver(clay.ID("PkRecent", u32(i))) {
 			pick_emoji(ui, client, recent)
 			return
@@ -1639,6 +1646,7 @@ drain_nc_intents :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 // Member admin actions and the invite box.
 handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	admin := self_is_admin(ui)
 	// Member-row nickname editor: Enter saves (empty clears), Escape
 	// drops it without saving. load_members refreshes the row name.
 	if ui.member_nick >= 0 && ui.member_nick < len(ui.members) && ui.focus == .Nick {
@@ -1715,7 +1723,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.member_nick >= 0 && field_mouse(ui, &ui.nick_input, "MemberNickBox") {
 		ui.focus = .Nick
 	}
-	if field_mouse(ui, &ui.rename_input, "RenameBox") {
+	if admin && field_mouse(ui, &ui.rename_input, "RenameBox") {
 		ui.focus = .Rename
 	}
 
@@ -1724,12 +1732,13 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if clicked("RenameBtn") && len(ui.rename_input) > 0 {
+	if admin && clicked("RenameBtn") && len(ui.rename_input) > 0 {
 		start_rename(ui, client)
 		return
 	}
 
 	if clicked("IssueToggle") &&
+	   admin &&
 	   ui.issue_admin &&
 	   ui.issue_setting != .Unavailable &&
 	   ui.issue_ticket == 0 {
@@ -1744,9 +1753,9 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		)
 		return
 	}
-	if clicked("IssueRetry") {issues_refresh(); return}
+	if admin && clicked("IssueRetry") {issues_refresh(); return}
 	for secs, i in RETENTION_SECS {
-		if !clicked(fmt.tprintf("RetChip%d", i)) || ui.group_retention == secs {
+		if !admin || !clicked(fmt.tprintf("RetChip%d", i)) || ui.group_retention == secs {
 			continue
 		}
 		// Optimistic: the chip flips now, the relay commit runs on the

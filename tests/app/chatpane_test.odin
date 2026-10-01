@@ -4,8 +4,75 @@ package main
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=chat_title_overflow
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
+import "core:fmt"
 import "core:testing"
 import rl "sdlrl"
+
+// Run alone because Clay and SDL state are global.
+@(test)
+group_settings_permissions :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "group_settings_permissions" {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(1200, 1000, "Group settings permissions")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts()
+	load_themes()
+	apply_theme(0, 0)
+	set_locale("en")
+	memory: []u8
+	init_layout(&memory, 32768, {1200, 1000})
+	defer delete(memory)
+	ui := Ui_State {
+		show_members     = true,
+		info_tab         = .Settings,
+		row_menu         = -1,
+		member_menu      = -1,
+		member_nick      = -1,
+		selected_contact = -1,
+		group_desc       = "Shared description",
+		group_retention  = 7776000,
+		issue_setting    = .Enabled,
+		issue_admin      = true,
+	}
+	ui.prefs.rail_w = RAIL_W_MIN
+	ui.prefs.reduce_motion = true
+	append(&ui.accounts, "Test")
+	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Shared group"})
+	append(&ui.members, Member_Ui{is_self = true})
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {
+		g_ui, g_prefs = nil, nil
+		delete(ui.accounts); delete(ui.chats); delete(ui.members)
+		delete(ui.compose); delete(ui.mention_cands)
+	}
+	// Include demotion with stale editor/menu state and a still-enabled issue setting.
+	for admin, i in ([]bool{false, true, false}) {
+		ui.members[0].is_admin = admin
+		ui.desc_editing, ui.gpic_menu_open = i == 2, i == 2
+		for _ in 0 ..< 3 {build_layout(&ui, 0)}
+		commands := build_layout(&ui, 0)
+		for id in ([]string{"RenameBox", "RenameBtn", "HeroPicBtn", "DescEditBtn", "RetentionRow", "RetChip2", "InfoIssuesCard"}) {
+			testing.expect(t, clay.GetElementData(clay.ID(id)).found == admin, id)
+		}
+		for id in ([]string{"DescBox", "DescSave", "GpicMenu"}) {
+			testing.expect(t, !clay.GetElementData(clay.ID(id)).found, id)
+		}
+		testing.expect(t, clay.GetElementData(clay.ID("InfoTimerCard")).found)
+		description_visible := false
+		for command in commands.internalArray[:commands.length] {
+			if command.commandType != .Text {continue}
+			text := command.renderData.text.stringContents
+			part := string(text.chars[:text.length])
+			description_visible ||= part == ui.group_desc
+		}
+		testing.expect(t, description_visible)
+		rl.BeginDrawing()
+		draw_frame(&commands)
+		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-group-settings-%d.png", i))
+		rl.EndDrawing()
+	}
+}
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=thread_reply_count_layout
 @(test)
