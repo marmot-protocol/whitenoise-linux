@@ -74,12 +74,14 @@ member_menu :: proc(ui: ^Ui_State) {
 			}
 			return
 		}
-		ctx_item(
-			member.is_admin ? "MemberDemote" : "MemberPromote",
-			ICON_STAR,
-			member.is_admin ? tr("Demote") : tr("Promote"),
-		)
-		ctx_item("MemberRemove", ICON_TRASH, tr("Remove"))
+		if self_is_admin(ui) {
+			ctx_item(
+				member.is_admin ? "MemberDemote" : "MemberPromote",
+				ICON_STAR,
+				member.is_admin ? tr("Demote") : tr("Promote"),
+			)
+			ctx_item("MemberRemove", ICON_TRASH, tr("Remove"))
+		}
 		ctx_item("MemberNick", ICON_PENCIL, tr("Nickname"))
 	}
 }
@@ -111,13 +113,15 @@ handle_member_menu :: proc(ui: ^Ui_State) -> bool {
 		}
 		return true
 	}
-	if clay.PointerOver(clay.ID(member.is_admin ? "MemberDemote" : "MemberPromote")) {
-		confirm_ask(ui, member.is_admin ? .Demote : .Promote, member.id_hex, member.name)
-		return true
-	}
-	if clay.PointerOver(clay.ID("MemberRemove")) {
-		confirm_ask(ui, .Remove_Member, member.id_hex, member.name)
-		return true
+	if self_is_admin(ui) {
+		if clay.PointerOver(clay.ID(member.is_admin ? "MemberDemote" : "MemberPromote")) {
+			confirm_ask(ui, member.is_admin ? .Demote : .Promote, member.id_hex, member.name)
+			return true
+		}
+		if clay.PointerOver(clay.ID("MemberRemove")) {
+			confirm_ask(ui, .Remove_Member, member.id_hex, member.name)
+			return true
+		}
 	}
 	if clay.PointerOver(clay.ID("MemberNick")) {
 		ui.member_nick = index
