@@ -190,14 +190,22 @@ web_close :: proc() {
 	if !web_modal.open {
 		return
 	}
+	web_disconnect()
+	rl.UnloadTexture(web_modal.tex)
+	delete(web_modal.title)
+	web_modal = {}
+}
+
+// No renderer access: session shutdown can wait for the web helper while
+// the frame thread continues presenting lock feedback.
+web_disconnect :: proc() {
+	if !web_modal.open || web_modal.child.pid == 0 {return}
 	web_modal.shm.quit = 1
 	os.close(web_modal.pipe)
 	_, _ = os.process_wait(web_modal.child)
 
 	wn_ipc_close(web_modal.ipc)
-	rl.UnloadTexture(web_modal.tex)
-	delete(web_modal.title)
-	web_modal = {}
+	web_modal.child = {}
 }
 
 // wn-webview sits beside the app binary; scripts/build.sh only produces it

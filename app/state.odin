@@ -398,6 +398,7 @@ Picker_Mode :: enum {
 }
 
 Ui_State :: struct {
+	lock_requested:                                        bool,
 	gif_tab, gif_saved, gif_loaded:                        bool,
 	gif_hits, gif_library:                                 [dynamic]Gif_Item,
 	gif_job:                                               ^Gif_Job,
@@ -457,6 +458,8 @@ Ui_State :: struct {
 	chat_members_read:                                     bool, // the last chat-list read asked for chat_members
 	archived:                                              [dynamic]Chat_Row_Ui,
 	contacts:                                              [dynamic]Contact_Ui,
+	contact_import:                                        ^Contact_Import_Job,
+	picking_contacts:                                      bool, // route the next picked file to contact import
 	profile:                                               Profile_Ui,
 	theme:                                                 int, // index into theme_packs
 	accent:                                                int,
@@ -582,7 +585,6 @@ Ui_State :: struct {
 	picker_x:                                              f32, // panel anchor, layout coords
 	picker_y:                                              f32,
 	picker_filter:                                         [dynamic]u8,
-	recent_emoji:                                          [dynamic]string,
 	sidebar_filter:                                        [dynamic]u8, // rail chat filter
 	filter_hits:                                           [dynamic]bool, // per-chat body match for sidebar_filter
 	staged:                                                [dynamic]Staged_File, // picked attachments, not yet sent

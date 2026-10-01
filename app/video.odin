@@ -12,6 +12,7 @@ package main
 import "core:c"
 import "core:crypto/sha2"
 import "core:fmt"
+import "core:mem"
 import "core:os"
 import "core:strings"
 import "core:time"
@@ -225,6 +226,9 @@ video_view_free :: proc(view: ^Video_View) {
 		mpv_terminate_destroy(view.mpv)
 	}
 	rl.UnloadTexture(view.tex)
+	mem.zero_slice(view.buf)
+	mem.zero_slice(transmute([]u8)view.transcript)
+	mem.zero_slice(view.data)
 	delete(view.buf)
 	delete(view.transcript)
 	delete(view.data)

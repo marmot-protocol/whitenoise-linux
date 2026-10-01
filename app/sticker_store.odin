@@ -450,4 +450,7 @@ sticker_stop :: proc() {
 	delete(sticker_masks); sticker_masks = {}
 	for key in sticker_requested {delete(key)}
 	delete(sticker_requested)
+	sticker_jobs = {}
+	sticker_textures = {}
+	sticker_requested = {}
 }

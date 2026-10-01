@@ -724,7 +724,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 		}
 		eyebrow(tr("RECENT"))
 		if clay.UI(clay.ID("PkRecentRow"))({layout = {childGap = 2}}) {
-			for recent, i in ui.recent_emoji {
+			for recent, i in ui.prefs.recent_emoji {
 				if tex := emoji_tex(recent); tex != nil {
 					picker_cell("PkRecent", u32(i), tex)
 				}

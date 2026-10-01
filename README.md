@@ -31,6 +31,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Markdown bodies (with typeset `$$` math blocks), reactions, replies, edits with history, forwarding, and search.
 - Export the loaded chat window as HTML or Markdown from the members panel. HTML prepares embedded images in the background and shows image progress before opening the save dialog. Unavailable images appear as notes in the transcript. Leaving the chat or changing accounts discards an unfinished export.
 - Emoji search accepts names and shortcodes, such as `100` for hundred points and `thumbsup` for thumbs up. Shortcodes work with or without surrounding colons.
+- The emoji picker's eight most recent choices survive app restarts, newest first.
 - Custom `:shortcode:` emoji use NIP-30. The image goes out as an encrypted attachment, and the message carries an `["emoji", shortcode, url]` tag pointing at that attachment's Blossom URL. Reactions work the same way: a `:shortcode:` reaction carries its own `imeta` and emoji tag. Forwards keep the tags. `patches/mdk-tagged-media.patch` adds `marmot_send_tagged_media` and `marmot_react_with_media`, and keeps the media key for reaction images the way it does for chat media.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
 - Forwarded attachments download and prepare in the background. A status strip names the destination and stays visible through preparation and sending, even if you switch chats. Failed forwards can be retried from the destination chat.
@@ -56,6 +57,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 
 - Several accounts at once, each with a live Marmot worker receiving in the background.
 - Contacts, private local-only per-contact nicknames, an archive, and npub QR codes.
+- Import and export contacts as CSV or JSON from the contacts rail. Imports skip existing contacts and duplicate npubs, restore private nicknames and blocked state, and report added, skipped, and failed records. Published profile names still come from Nostr.
 
 **Look & feel**
 
@@ -68,6 +70,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 **Privacy & data**
 
 - One password-encrypted vault holds every secret (see [Security model](#security-model)).
+- Lock now in the status bar or command palette closes the runtime, clears the vault key and session state, and returns to the password gate without closing the window. Unlock with your vault password to reconnect.
 - Whole-folder encrypted backup and restore, sealed with your vault password.
 - Opt-in OTLP metrics and audit logging, both off until you turn them on in Settings.
 

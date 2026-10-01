@@ -1,5 +1,6 @@
 package main
 
+import "core:mem"
 import "core:strings"
 
 import rl "sdlrl"
@@ -69,6 +70,7 @@ photo_install :: proc(pixels: []u8, n: i32) -> ^rl.Texture2D {
 @(private)
 forget_avatar :: proc(tex: ^rl.Texture2D) {
 	if image, found := avatar_sources[tex]; found {
+		mem.zero_slice(image.data[:image.width * image.height * 4])
 		delete(image.data[:image.width * image.height * 4])
 		delete_key(&avatar_sources, tex)
 	}

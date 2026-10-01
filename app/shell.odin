@@ -506,6 +506,7 @@ status_bar :: proc(ui: ^Ui_State) {
 			false,
 		)
 		if clay.UI(clay.ID("StatusGapR"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+		micro_button("LockNow", tr("Lock now"))
 
 		// Shortcut hints are the first thing to go when the bar cannot
 		// hold everything: they are the only part of it that is not

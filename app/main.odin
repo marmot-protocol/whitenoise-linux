@@ -25,7 +25,6 @@ import "core:strconv"
 import "core:strings"
 import "core:sys/posix"
 import "core:text/edit"
-import "core:thread"
 import "core:time"
 
 _ :: libc
@@ -466,17 +465,24 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 												textColor = TEXT_DIM,
 											},
 										)
-									} else {
-										if clay.UI(clay.ID("ContactsExportRow"))(
-										{
-											layout = {
-												childGap = 8,
-												padding = {left = 4, bottom = 2},
-											},
+									}
+									if clay.UI(clay.ID("ContactsExportRow"))(
+									{
+										layout = {
+											layoutDirection = .TopToBottom,
+											childGap = 8,
+											padding = {left = 4, bottom = 2},
 										},
-										) {
-											micro_button("ContactsCsvBtn", tr("Export CSV"))
-											micro_button("ContactsJsonBtn", tr("Export JSON"))
+									},
+									) {
+										micro_button("ContactsImportBtn", tr("Import contacts"))
+										if len(ui.contacts) > 0 {
+											if clay.UI(clay.ID("ContactsExportButtons"))(
+											{layout = {childGap = 8}},
+											) {
+												micro_button("ContactsCsvBtn", tr("Export CSV"))
+												micro_button("ContactsJsonBtn", tr("Export JSON"))
+											}
 										}
 									}
 									if clay.UI(clay.ID("ContactList"))(
@@ -797,6 +803,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			// Message banner + status bar, the slint shell's bottom strip.
 			forward_progress(ui)
 			export_progress(ui)
+			contacts_import_progress(ui)
 			status_bar(ui)
 
 			// One backdrop for every centered modal, whichever pane drew it.
@@ -967,7 +974,7 @@ app_main :: proc() {
 	defer instance_unlock()
 	load_themes()
 	defer stop_system_theme()
-	load_settings(&ui)
+	load_settings(&ui, .Preferences)
 	append(&ui.client_input, ..transmute([]u8)ui.prefs.event_client)
 	set_locale(ui.prefs.locale)
 	g_prefs = &ui.prefs
@@ -1003,8 +1010,6 @@ app_main :: proc() {
 	// on a black screen.
 	apply_zoom(&ui)
 	app_started = rl.GetTime()
-	start_pic_worker()
-	start_gimg_worker()
 	defer stop_pic_worker()
 	defer stop_gimg_worker()
 	rl.SetTargetFPS(60)
@@ -1016,7 +1021,6 @@ app_main :: proc() {
 		quick_react_tex[i] = rl.LoadTextureFromImage(img)
 		rl.UnloadImage(img)
 		rl.SetTextureFilter(quick_react_tex[i], .BILINEAR)
-		append(&ui.recent_emoji, entry.emoji)
 	}
 	load_emoji_catalog()
 	emoji_set_load(ui.prefs.emoji_set)
@@ -1027,1197 +1031,1211 @@ app_main :: proc() {
 	// included, so the vault opens before the runtime does; closing the
 	// window at the gate quits.
 	local_timing_end(.linux_startup_before_vault, startup_start)
-	if !vault_gate(&ui) {
-		rl.CloseWindow()
-		return
-	}
 	update_start(os.get_env("WN_TEST_UPDATE_FEED", context.temp_allocator))
 	defer update_stop()
-	// Tray icon for either tray pref; start-in-tray also hides the
-	// window, honored at boot only, after the unlock.
-	apply_tray(&ui)
-	if ui.prefs.start_in_tray && reload_generation == 0 {
-		rl.HideWindow()
-	}
+	for first_session := true;; first_session = false {
+		if !vault_gate(&ui) {
+			if ui.lock_requested {vault_relock()} else {vault_lock()}
+			rl.CloseWindow()
+			return
+		}
+		load_session_settings(&ui)
+		start_pic_worker()
+		start_gimg_worker()
+		// Tray icon for either tray pref; start-in-tray also hides the
+		// window, honored at boot only, after the unlock.
+		apply_tray(&ui)
+		if first_session && ui.prefs.start_in_tray && reload_generation == 0 {
+			rl.HideWindow()
+		}
 
-	ready_started := time.tick_now()
-	startup_ready := ready_started
-	splash_frame(0)
-	client := boot_marmot(home, &ui)
-	splash_frame(1)
-	// The boot line already showed on the splash; don't repeat it as a
-	// banner over the first screen.
-	ui.banner_seen = ui.client_status
-	g_ui = &ui
-	g_client = client
-	if client != nil && len(ui.account_ref) > 0 {
-		load_offline(&ui) // restore queued sends; first flush_queued tick retries them
-	}
+		ready_started := time.tick_now()
+		startup_ready := ready_started
+		splash_frame(0)
+		client := boot_marmot(home, &ui)
+		splash_frame(1)
+		// The boot line already showed on the splash; don't repeat it as a
+		// banner over the first screen.
+		ui.banner_seen = ui.client_status
+		g_ui = &ui
+		g_client = client
+		if client != nil && len(ui.account_ref) > 0 {
+			load_offline(&ui) // restore queued sends; first flush_queued tick retries them
+		}
 
-	shot := os.get_env("WN_SHOT", context.allocator) != ""
-	debug_size := os.get_env("WN_DEBUG_SIZE", context.allocator) != ""
-	frame := 0
+		shot := os.get_env("WN_SHOT", context.allocator) != ""
+		debug_size := os.get_env("WN_DEBUG_SIZE", context.allocator) != ""
+		frame := 0
 
-	// WN_TEST_RESIZE="WxH@N" or "WxH@N~M": resize the window at frame N,
-	// stepped over M frames (a compositor drag delivers a stream of
-	// sizes, not one jump), for headless checks that content tracks a
-	// live resize.
-	test_resize_w, test_resize_h, test_resize_frame := i32(0), i32(0), -1
-	test_resize_ramp := 1
-	if tr_env := os.get_env("WN_TEST_RESIZE", context.allocator); tr_env != "" {
-		if x := strings.index_byte(tr_env, 'x'); x > 0 {
-			if at := strings.index_byte(tr_env, '@'); at > x {
-				rest := tr_env[at + 1:]
-				if tilde := strings.index_byte(rest, '~'); tilde > 0 {
-					m, _ := strconv.parse_int(rest[tilde + 1:])
-					test_resize_ramp = max(m, 1)
-					rest = rest[:tilde]
+		// WN_TEST_RESIZE="WxH@N" or "WxH@N~M": resize the window at frame N,
+		// stepped over M frames (a compositor drag delivers a stream of
+		// sizes, not one jump), for headless checks that content tracks a
+		// live resize.
+		test_resize_w, test_resize_h, test_resize_frame := i32(0), i32(0), -1
+		test_resize_ramp := 1
+		if tr_env := os.get_env("WN_TEST_RESIZE", context.allocator); tr_env != "" {
+			if x := strings.index_byte(tr_env, 'x'); x > 0 {
+				if at := strings.index_byte(tr_env, '@'); at > x {
+					rest := tr_env[at + 1:]
+					if tilde := strings.index_byte(rest, '~'); tilde > 0 {
+						m, _ := strconv.parse_int(rest[tilde + 1:])
+						test_resize_ramp = max(m, 1)
+						rest = rest[:tilde]
+					}
+					w, _ := strconv.parse_int(tr_env[:x])
+					h, _ := strconv.parse_int(tr_env[x + 1:at])
+					n, _ := strconv.parse_int(rest)
+					test_resize_w, test_resize_h, test_resize_frame = i32(w), i32(h), n
 				}
-				w, _ := strconv.parse_int(tr_env[:x])
-				h, _ := strconv.parse_int(tr_env[x + 1:at])
-				n, _ := strconv.parse_int(rest)
-				test_resize_w, test_resize_h, test_resize_frame = i32(w), i32(h), n
 			}
 		}
-	}
-	test_resize_from_w, test_resize_from_h := i32(0), i32(0)
+		test_resize_from_w, test_resize_from_h := i32(0), i32(0)
 
-	// Automation hooks for headless runs: create an identity when none
-	// exists; create a group when none exists; send a message; select
-	// the first chat so the screenshot shows the timeline.
-	if client != nil &&
-	   len(ui.accounts) == 0 &&
-	   os.get_env("WN_TEST_CREATE", context.allocator) != "" {
-		do_create_identity(&ui, client)
-	}
-	if client != nil &&
-	   len(ui.accounts) > 0 &&
-	   len(ui.chats) == 0 &&
-	   os.get_env("WN_TEST_GROUP", context.allocator) != "" {
-		group_id: cstring
-		account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-		if marmot.create_group(
-			   client,
-			   account,
-			   "Notes to self",
-			   nil,
-			   0,
-			   "test group",
-			   &group_id,
-		   ) !=
-		   .OK {
-			set_status(&ui, fmt.aprintf("create group failed: %s", marmot.last_error()), .Error)
-		} else {
-			marmot.string_free(group_id)
-			load_chat_list(client, ui.account_ref, &ui)
+		// Automation hooks for headless runs: create an identity when none
+		// exists; create a group when none exists; send a message; select
+		// the first chat so the screenshot shows the timeline.
+		if client != nil &&
+		   len(ui.accounts) == 0 &&
+		   os.get_env("WN_TEST_CREATE", context.allocator) != "" {
+			do_create_identity(&ui, client)
 		}
-	}
-	// WN_TEST_SEND fires inside the frame loop (after the subscription
-	// is armed) with no manual reload, so the rendered message proves
-	// the live-update path.
-	// Any pack by its mode name ("light", "nixie", "paravion"), so a
-	// screenshot run can land on one directly.
-	if tt := os.get_env("WN_TEST_THEME", context.allocator); tt != "" {
-		for pack, i in theme_packs {
-			if pack.mode == tt {
-				ui.theme = i
-				break
+		if client != nil &&
+		   len(ui.accounts) > 0 &&
+		   len(ui.chats) == 0 &&
+		   os.get_env("WN_TEST_GROUP", context.allocator) != "" {
+			group_id: cstring
+			account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+			if marmot.create_group(
+				   client,
+				   account,
+				   "Notes to self",
+				   nil,
+				   0,
+				   "test group",
+				   &group_id,
+			   ) !=
+			   .OK {
+				set_status(
+					&ui,
+					fmt.aprintf("create group failed: %s", marmot.last_error()),
+					.Error,
+				)
+			} else {
+				marmot.string_free(group_id)
+				load_chat_list(client, ui.account_ref, &ui)
 			}
 		}
-		apply_theme(ui.theme, ui.accent)
-		save_settings(&ui)
-	}
-	test_peer_pending := false
-	if client != nil && len(ui.accounts) > 0 {
-		switch os.get_env("WN_TEST_PAGE", context.allocator) {
-		case "contacts":
+		// WN_TEST_SEND fires inside the frame loop (after the subscription
+		// is armed) with no manual reload, so the rendered message proves
+		// the live-update path.
+		// Any pack by its mode name ("light", "nixie", "paravion"), so a
+		// screenshot run can land on one directly.
+		if tt := os.get_env("WN_TEST_THEME", context.allocator); tt != "" {
+			for pack, i in theme_packs {
+				if pack.mode == tt {
+					ui.theme = i
+					break
+				}
+			}
+			apply_theme(ui.theme, ui.accent)
+			save_settings(&ui)
+		}
+		test_peer_pending := false
+		if path := os.get_env("WN_TEST_CONTACT_IMPORT", context.temp_allocator);
+		   path != "" && client != nil && len(ui.accounts) > 0 {
 			ui.page = .Contacts
-			load_contacts(client, &ui)
-		case "archived":
-			ui.page = .Archived
-			load_archived(client, &ui)
-		case "members", "group":
-			if len(ui.chats) > 0 {
-				ui.selected = 0
-				load_timeline(client, &ui)
-				ui.show_members = true
-				ui.info_tab =
-					os.get_env("WN_TEST_PAGE", context.temp_allocator) == "group" ? .Settings : .Members
-				load_members(client, &ui)
-			}
-		case "settings":
-			ui.page = .Settings
-		case "debug", "kp":
-			// Both are dev-mode only; the harness forces the flag on.
-			ui.page = .Settings
-			ui.prefs.dev_mode = true
-			ui.settings_section =
-				os.get_env("WN_TEST_PAGE", context.temp_allocator) == "kp" ? .KP : .Debug
-			if ui.settings_section == .Debug {
-				compose_debug_json(&ui, client)
-			}
-		case "fx":
-			// Arms the first catalog effect, so WN_TEST_COMPOSE's send
-			// exercises the tagged path.
-			ui.fx_armed = 1
-		case "about":
-			ui.page = .Settings
-			ui.settings_section = .About
-		case "palette":
-			pal_open_modal(&ui)
-		case "advanced":
-			ui.page = .Settings
-			ui.settings_section = .Advanced
-			load_advanced(&ui, client)
-		case "network":
-			ui.page = .Settings
-			ui.settings_section = .Network
-		case "profile":
-			ui.page = .Profile
-			load_profile(client, &ui)
-		case "profile-edit":
-			ui.page = .Profile
-			load_profile(client, &ui)
-			edit_profile_start(&ui)
-		case "accounts":
-			ui.accounts_open = true
-		case "gsearch":
-			gs_open_modal(&ui)
-		case "peer":
-			test_peer_pending = true
-			if len(ui.chats) > 0 {
-				ui.selected = 0
-				load_timeline(client, &ui)
-			}
+			contacts_import_start(&ui, client, path)
 		}
-	}
-
-	// Deep link from the OS scheme handler: open the profile once
-	// booted (own account routes to the profile page, like a mention
-	// click). A second running instance is not detected; the link
-	// opens in this fresh instance.
-	if client != nil && len(ui.account_ref) > 0 && len(link) > 0 {
-		if hx := deeplink_hex(marmot_link_ref(link)); len(hx) > 0 {
-			if hx == ui.account_ref {
+		if client != nil && len(ui.accounts) > 0 {
+			switch os.get_env("WN_TEST_PAGE", context.allocator) {
+			case "contacts":
+				ui.page = .Contacts
+				load_contacts(client, &ui)
+			case "archived":
+				ui.page = .Archived
+				load_archived(client, &ui)
+			case "members", "group":
+				if len(ui.chats) > 0 {
+					ui.selected = 0
+					load_timeline(client, &ui)
+					ui.show_members = true
+					ui.info_tab =
+						os.get_env("WN_TEST_PAGE", context.temp_allocator) == "group" ? .Settings : .Members
+					load_members(client, &ui)
+				}
+			case "settings":
+				ui.page = .Settings
+			case "debug", "kp":
+				// Both are dev-mode only; the harness forces the flag on.
+				ui.page = .Settings
+				ui.prefs.dev_mode = true
+				ui.settings_section =
+					os.get_env("WN_TEST_PAGE", context.temp_allocator) == "kp" ? .KP : .Debug
+				if ui.settings_section == .Debug {
+					compose_debug_json(&ui, client)
+				}
+			case "fx":
+				// Arms the first catalog effect, so WN_TEST_COMPOSE's send
+				// exercises the tagged path.
+				ui.fx_armed = 1
+			case "about":
+				ui.page = .Settings
+				ui.settings_section = .About
+			case "palette":
+				pal_open_modal(&ui)
+			case "advanced":
+				ui.page = .Settings
+				ui.settings_section = .Advanced
+				load_advanced(&ui, client)
+			case "network":
+				ui.page = .Settings
+				ui.settings_section = .Network
+			case "profile":
 				ui.page = .Profile
 				load_profile(client, &ui)
-			} else {
-				info := profile_info(client, hx)
-				open_peer(
-					&ui,
-					client,
-					hx,
-					len(info.name) > 0 ? info.name : short_hex(hx),
-					info.pic_url,
-				)
-			}
-		}
-	}
-
-	ensure_notes(&ui, client) // the rail always has the user's own notepad
-
-	test_send := os.get_env("WN_TEST_SEND", context.allocator)
-
-	// Shot waits out the click sequence: 25 frames per extra pair.
-	shot_frame := test_send != "" ? 300 : 30
-	if test_click := os.get_env("WN_TEST_CLICK", context.allocator); test_click != "" {
-		pairs := (strings.count(test_click, ",") + 1) / 2
-		shot_frame += max(pairs - 1, 0) * 25
-	}
-	if sf := os.get_env("WN_SHOT_FRAME", context.allocator); sf != "" {
-		shot_frame = parse_int_or(sf, shot_frame)
-	}
-	burst_lo, burst_hi := 0, 0
-	if bf := os.get_env("WN_SHOT_BURST", context.allocator); bf != "" {
-		if dash := strings.index_byte(bf, '-'); dash > 0 {
-			burst_lo = parse_int_or(bf[:dash], 0)
-			burst_hi = parse_int_or(bf[dash + 1:], 0)
-		}
-	}
-	// WN_TEST_TYPE="N:text": inject the runes as typed input at frame
-	// N, for headless checks of whoever holds the keyboard.
-	test_type_frame, test_type_text := -1, ""
-	if tt := os.get_env("WN_TEST_TYPE", context.allocator); tt != "" {
-		if colon := strings.index_byte(tt, ':'); colon > 0 {
-			test_type_frame = parse_int_or(tt[:colon], -1)
-			test_type_text = tt[colon + 1:]
-		}
-	}
-	if client != nil &&
-	   len(ui.chats) > 0 &&
-	   os.get_env("WN_TEST_SELECT", context.allocator) != "" {
-		ui.selected = 0
-		load_timeline(client, &ui)
-	}
-
-	// Reopen the last chat, the General-settings startup toggle.
-	if client != nil &&
-	   ui.prefs.restore_last_chat &&
-	   len(ui.prefs.last_chat) > 0 &&
-	   ui.selected < 0 {
-		select_by_id(&ui, client, ui.prefs.last_chat)
-	}
-
-	// Last splash beat: the relay pool is polled once here so the status
-	// bar opens with a real count instead of the pre-poll placeholder.
-	splash_frame(2)
-	health_refresh(&ui, client)
-
-	test_thread_pending := os.get_env("WN_TEST_THREAD", context.allocator) != ""
-	live: Live
-	tl_container_was: [2]f32
-	tl_at_bottom: bool
-	win_was: [2]i32
-	foreground_started: time.Tick
-	focused_was: bool
-	tl_restore: bool
-	tl_offset: f32
-
-	frame_input: bool
-	for !rl.WindowShouldClose(&frame_input) {
-		frame_start := time.tick_now()
-		if dev_reload_poll(&ui) {break}
-		defer free_all(context.temp_allocator)
-		defer messages_collect()
-		defer chats_collect()
-		defer {if wrap_flush {wrap_clear()}}
-		poll_system_theme(&ui, rl.GetTime())
-
-		focused := rl.IsWindowFocused()
-		if focused && !focused_was {
-			foreground_started = time.tick_now()
-		}
-		focused_was = focused
-
-		anim_tick(rl.GetFrameTime())
-		frame_deadline = rl.GetTime() + f64(IDLE_REFRESH_MS) / 1000
-
-		// A monitor change can bring a new pixel density; glyphs baked
-		// for the old one would draw scaled. Cheap check, rare hit.
-		if max(rl.GetWindowScaleDPI().x, 1) * UI_ZOOM != UI_SCALE {
-			refresh_ui_scale()
-		}
-
-		win_now := [2]i32{rl.GetScreenWidth(), rl.GetScreenHeight()}
-		if win_now != win_was {
-			// Zoom is derived from the width (zoom_for_width), so a
-			// resize or a rotation can change it. apply_zoom only pays
-			// for a re-bake when the value actually moves.
-			apply_zoom(&ui)
-			if debug_size {
-				fmt.eprintfln(
-					"size: frame %d win %dx%d density %.4f",
-					frame,
-					win_now.x,
-					win_now.y,
-					rl.GetWindowScaleDPI().x,
-				)
-			}
-			win_was = win_now
-		}
-
-		start_live(&live, client, ui.account_ref) // no-op once running
-		live_tick(&live, &ui, client) // poll fallback when the stream stalls
-		drain_live(&live, &ui, client)
-		timeline_drain(&ui, client)
-		members_drain(&ui, client)
-		group_files_tick(&ui, client)
-		issues_drain(&ui, client)
-		issues_sync_route(&ui, client)
-		if !ui.timeline_loading && test_peer_pending {
-			test_peer_pending = false
-			for msg in ui.messages {
-				if !msg.mine && msg.sender_id != "" {
-					open_peer(&ui, client, msg.sender_id, msg.sender, msg.pic_url)
-					break
-				}
-			}
-			if !ui.peer_open {open_peer(&ui, client, ui.account_ref, ui.accounts[0], ui.my_pic_url)}
-		}
-		if !ui.timeline_loading && test_thread_pending && ui.selected >= 0 {
-			test_thread_pending = false
-			for i := len(ui.messages) - 1; i >= 0; i -= 1 {
-				if ui.messages[i].thread_of == "" && !ui.messages[i].system {
-					thread_push(&ui, ui.messages[i].id)
-					break
+			case "profile-edit":
+				ui.page = .Profile
+				load_profile(client, &ui)
+				edit_profile_start(&ui)
+			case "accounts":
+				ui.accounts_open = true
+			case "gsearch":
+				gs_open_modal(&ui)
+			case "peer":
+				test_peer_pending = true
+				if len(ui.chats) > 0 {
+					ui.selected = 0
+					load_timeline(client, &ui)
 				}
 			}
 		}
-		export_drain(&ui, client)
-		search_drain(&ui, client)
-		media_drain(&ui)
-		agent_tick(&ui, tl_at_bottom ? .Follow : .Hold)
-		drain_sends(&ui, client)
-		tts_tick(&ui)
-		drain_ops(&ui, client)
-		drain_nc_intents(&ui, client) // Namecoin .bit resolutions land here
-		web_tick() // webxdc modal: run WebKit, take its pixels
-		nes_tick(&ui) // NES player: emulate the owed frames, queue their audio
-		xdc_drain(&ui, client) // webxdc sendUpdate() becomes a group message
-		drain_auth(&ui, client) // a finished sign-in lands on the UI thread
-		flush_queued(&ui, client)
-		mi_tick(&ui, client) // periodic mentions-inbox badge refresh
-		health_tick(&ui, client) // relay-pool counters, Network page only
-		retention_tick(&ui, client) // prune disappeared messages
-		banner_tick(&ui) // a new client_status becomes the shell banner
-		tray_tick(&ui) // unread total in the tray tooltip
 
-		// Interface zoom shortcuts (Ctrl + / - / 0), the slint bindings.
-		if rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL) {
-			if rl.IsKeyPressed(.EQUAL) {
-				ui.prefs.zoom_pct += 10
-				apply_zoom(&ui)
-				save_settings(&ui)
+		// Deep link from the OS scheme handler: open the profile once
+		// booted (own account routes to the profile page, like a mention
+		// click). A second running instance is not detected; the link
+		// opens in this fresh instance.
+		if client != nil && len(ui.account_ref) > 0 && len(link) > 0 {
+			if hx := deeplink_hex(marmot_link_ref(link)); len(hx) > 0 {
+				if hx == ui.account_ref {
+					ui.page = .Profile
+					load_profile(client, &ui)
+				} else {
+					info := profile_info(client, hx)
+					open_peer(
+						&ui,
+						client,
+						hx,
+						len(info.name) > 0 ? info.name : short_hex(hx),
+						info.pic_url,
+					)
+				}
 			}
-			if rl.IsKeyPressed(.MINUS) {
-				ui.prefs.zoom_pct -= 10
-				apply_zoom(&ui)
-				save_settings(&ui)
+		}
+
+		ensure_notes(&ui, client) // the rail always has the user's own notepad
+
+		test_send := os.get_env("WN_TEST_SEND", context.allocator)
+
+		// Shot waits out the click sequence: 25 frames per extra pair.
+		shot_frame := test_send != "" ? 300 : 30
+		if test_click := os.get_env("WN_TEST_CLICK", context.allocator); test_click != "" {
+			pairs := (strings.count(test_click, ",") + 1) / 2
+			shot_frame += max(pairs - 1, 0) * 25
+		}
+		if sf := os.get_env("WN_SHOT_FRAME", context.allocator); sf != "" {
+			shot_frame = parse_int_or(sf, shot_frame)
+		}
+		burst_lo, burst_hi := 0, 0
+		if bf := os.get_env("WN_SHOT_BURST", context.allocator); bf != "" {
+			if dash := strings.index_byte(bf, '-'); dash > 0 {
+				burst_lo = parse_int_or(bf[:dash], 0)
+				burst_hi = parse_int_or(bf[dash + 1:], 0)
 			}
-			if rl.IsKeyPressed(.ZERO) {
-				ui.prefs.zoom_pct = 100
-				apply_zoom(&ui)
-				save_settings(&ui)
+		}
+		// WN_TEST_TYPE="N:text": inject the runes as typed input at frame
+		// N, for headless checks of whoever holds the keyboard.
+		test_type_frame, test_type_text := -1, ""
+		if tt := os.get_env("WN_TEST_TYPE", context.allocator); tt != "" {
+			if colon := strings.index_byte(tt, ':'); colon > 0 {
+				test_type_frame = parse_int_or(tt[:colon], -1)
+				test_type_text = tt[colon + 1:]
 			}
-			// Ctrl+Tab / Ctrl+Shift+Tab cycles chats in the rail's
-			// rendered order (last frame's rows), wrapping.
-			if rl.IsKeyPressed(.TAB) && len(ui.rail_rows) > 0 {
-				step := shift_down() ? -1 : 1
-				at := 0 // selection not in the rail: start at the first row
-				for idx, pos in ui.rail_rows {
-					if idx == ui.selected {
-						at = pos + step
+		}
+		if client != nil &&
+		   len(ui.chats) > 0 &&
+		   os.get_env("WN_TEST_SELECT", context.allocator) != "" {
+			ui.selected = 0
+			load_timeline(client, &ui)
+		}
+
+		// Reopen the last chat, the General-settings startup toggle.
+		if client != nil &&
+		   ui.prefs.restore_last_chat &&
+		   len(ui.prefs.last_chat) > 0 &&
+		   ui.selected < 0 {
+			select_by_id(&ui, client, ui.prefs.last_chat)
+		}
+
+		// Last splash beat: the relay pool is polled once here so the status
+		// bar opens with a real count instead of the pre-poll placeholder.
+		splash_frame(2)
+		health_refresh(&ui, client)
+
+		test_thread_pending := os.get_env("WN_TEST_THREAD", context.allocator) != ""
+		live: Live
+		tl_container_was: [2]f32
+		tl_at_bottom: bool
+		win_was: [2]i32
+		foreground_started: time.Tick
+		focused_was: bool
+		tl_restore: bool
+		tl_offset: f32
+
+		frame_input: bool
+		for !rl.WindowShouldClose(&frame_input) {
+			frame_start := time.tick_now()
+			if ui.lock_requested {lock_wait_frame(); break}
+			if dev_reload_poll(&ui) {break}
+			defer free_all(context.temp_allocator)
+			defer messages_collect()
+			defer chats_collect()
+			defer {if wrap_flush {wrap_clear()}}
+			poll_system_theme(&ui, rl.GetTime())
+
+			focused := rl.IsWindowFocused()
+			if focused && !focused_was {
+				foreground_started = time.tick_now()
+			}
+			focused_was = focused
+
+			anim_tick(rl.GetFrameTime())
+			frame_deadline = rl.GetTime() + f64(IDLE_REFRESH_MS) / 1000
+
+			// A monitor change can bring a new pixel density; glyphs baked
+			// for the old one would draw scaled. Cheap check, rare hit.
+			if max(rl.GetWindowScaleDPI().x, 1) * UI_ZOOM != UI_SCALE {
+				refresh_ui_scale()
+			}
+
+			win_now := [2]i32{rl.GetScreenWidth(), rl.GetScreenHeight()}
+			if win_now != win_was {
+				// Zoom is derived from the width (zoom_for_width), so a
+				// resize or a rotation can change it. apply_zoom only pays
+				// for a re-bake when the value actually moves.
+				apply_zoom(&ui)
+				if debug_size {
+					fmt.eprintfln(
+						"size: frame %d win %dx%d density %.4f",
+						frame,
+						win_now.x,
+						win_now.y,
+						rl.GetWindowScaleDPI().x,
+					)
+				}
+				win_was = win_now
+			}
+
+			start_live(&live, client, ui.account_ref) // no-op once running
+			live_tick(&live, &ui, client) // poll fallback when the stream stalls
+			drain_live(&live, &ui, client)
+			timeline_drain(&ui, client)
+			members_drain(&ui, client)
+			group_files_tick(&ui, client)
+			issues_drain(&ui, client)
+			issues_sync_route(&ui, client)
+			if !ui.timeline_loading && test_peer_pending {
+				test_peer_pending = false
+				for msg in ui.messages {
+					if !msg.mine && msg.sender_id != "" {
+						open_peer(&ui, client, msg.sender_id, msg.sender, msg.pic_url)
 						break
 					}
 				}
-				n := len(ui.rail_rows)
-				select_chat(&ui, client, ui.rail_rows[(at + n) %% n])
+				if !ui.peer_open {open_peer(&ui, client, ui.account_ref, ui.accounts[0], ui.my_pic_url)}
 			}
-		}
+			if !ui.timeline_loading && test_thread_pending && ui.selected >= 0 {
+				test_thread_pending = false
+				for i := len(ui.messages) - 1; i >= 0; i -= 1 {
+					if ui.messages[i].thread_of == "" && !ui.messages[i].system {
+						thread_push(&ui, ui.messages[i].id)
+						break
+					}
+				}
+			}
+			export_drain(&ui, client)
+			contacts_import_drain(&ui, client)
+			search_drain(&ui, client)
+			media_drain(&ui)
+			agent_tick(&ui, tl_at_bottom ? .Follow : .Hold)
+			drain_sends(&ui, client)
+			tts_tick(&ui)
+			drain_ops(&ui, client)
+			drain_nc_intents(&ui, client) // Namecoin .bit resolutions land here
+			web_tick() // webxdc modal: run WebKit, take its pixels
+			nes_tick(&ui) // NES player: emulate the owed frames, queue their audio
+			xdc_drain(&ui, client) // webxdc sendUpdate() becomes a group message
+			drain_auth(&ui, client) // a finished sign-in lands on the UI thread
+			flush_queued(&ui, client)
+			mi_tick(&ui, client) // periodic mentions-inbox badge refresh
+			health_tick(&ui, client) // relay-pool counters, Network page only
+			retention_tick(&ui, client) // prune disappeared messages
+			banner_tick(&ui) // a new client_status becomes the shell banner
+			tray_tick(&ui) // unread total in the tray tooltip
 
-		// Synthetic click injection for headless tests: "x,y[,x,y...]",
-		// one click per pair, released every 25 frames from frame 20.
-		forced_release = false
-		forced_press = false
-		pointer := transmute(clay.Vector2)rl.GetMousePosition()
-		if test_click := os.get_env("WN_TEST_CLICK", context.temp_allocator);
-		   test_click != "" && frame >= 15 {
-			parts := strings.split(test_click, ",", context.temp_allocator)
-			step := min(int(frame - 15) / 25, len(parts) / 2 - 1)
-			if len(parts) >= 2 && step >= 0 {
-				px, _ := strconv.parse_f64(parts[step * 2])
-				py, _ := strconv.parse_f64(parts[step * 2 + 1])
-				pointer.x = f32(px)
-				pointer.y = f32(py)
-				test_pointer = {f32(px), f32(py)}
-				test_pointer_on = true
-				forced_press = int(frame) == 18 + step * 25
-				forced_release = int(frame) == 20 + step * 25
+			// Interface zoom shortcuts (Ctrl + / - / 0), the slint bindings.
+			if rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL) {
+				if rl.IsKeyPressed(.EQUAL) {
+					ui.prefs.zoom_pct += 10
+					apply_zoom(&ui)
+					save_settings(&ui)
+				}
+				if rl.IsKeyPressed(.MINUS) {
+					ui.prefs.zoom_pct -= 10
+					apply_zoom(&ui)
+					save_settings(&ui)
+				}
+				if rl.IsKeyPressed(.ZERO) {
+					ui.prefs.zoom_pct = 100
+					apply_zoom(&ui)
+					save_settings(&ui)
+				}
+				// Ctrl+Tab / Ctrl+Shift+Tab cycles chats in the rail's
+				// rendered order (last frame's rows), wrapping.
+				if rl.IsKeyPressed(.TAB) && len(ui.rail_rows) > 0 {
+					step := shift_down() ? -1 : 1
+					at := 0 // selection not in the rail: start at the first row
+					for idx, pos in ui.rail_rows {
+						if idx == ui.selected {
+							at = pos + step
+							break
+						}
+					}
+					n := len(ui.rail_rows)
+					select_chat(&ui, client, ui.rail_rows[(at + n) %% n])
+				}
 			}
-		}
-		if test_type_frame >= 0 && int(frame) == test_type_frame {
-			for r in test_type_text {
-				rl.PushChar(r)
-			}
-		}
-		// After the forced_press reset and the WN_TEST_CLICK block, so a
-		// devctl click owns the same hooks, and before the pointer is
-		// scaled and handed to clay.
-		devctl_poll(&ui, client, int(frame), &pointer)
-		pointer.x /= UI_ZOOM
-		pointer.y /= UI_ZOOM
-		clay.SetPointerState(pointer, rl.IsMouseButtonDown(.LEFT))
 
-		// End a thumb drag one frame AFTER release so mouse_released()
-		// can still see it and swallow the ending click.
-		if !rl.IsMouseButtonDown(.LEFT) && !rl.IsMouseButtonReleased(.LEFT) {
-			scroll_drag = {}
-		}
-		// A drag-selection ending with text selected feeds the primary
-		// selection (select-to-copy), except from the masked nsec field.
-		if rl.IsMouseButtonReleased(.LEFT) && text_drag != nil {
-			if text_drag != &ui.login_input &&
-			   ui.ed_target == text_drag &&
-			   ui.ed.selection[0] != ui.ed.selection[1] {
-				buf := (^[dynamic]u8)(text_drag)
-				lo, hi, _ := field_sel(&ui, buf)
-				rl.SetPrimaryText(
-					strings.clone_to_cstring(string(buf[lo:hi]), context.temp_allocator),
-				)
+			// Synthetic click injection for headless tests: "x,y[,x,y...]",
+			// one click per pair, released every 25 frames from frame 20.
+			forced_release = false
+			forced_press = false
+			pointer := transmute(clay.Vector2)rl.GetMousePosition()
+			if test_click := os.get_env("WN_TEST_CLICK", context.temp_allocator);
+			   test_click != "" && frame >= 15 {
+				parts := strings.split(test_click, ",", context.temp_allocator)
+				step := min(int(frame - 15) / 25, len(parts) / 2 - 1)
+				if len(parts) >= 2 && step >= 0 {
+					px, _ := strconv.parse_f64(parts[step * 2])
+					py, _ := strconv.parse_f64(parts[step * 2 + 1])
+					pointer.x = f32(px)
+					pointer.y = f32(py)
+					test_pointer = {f32(px), f32(py)}
+					test_pointer_on = true
+					forced_press = int(frame) == 18 + step * 25
+					forced_release = int(frame) == 20 + step * 25
+				}
 			}
-			text_drag = nil
-		}
+			if test_type_frame >= 0 && int(frame) == test_type_frame {
+				for r in test_type_text {
+					rl.PushChar(r)
+				}
+			}
+			// After the forced_press reset and the WN_TEST_CLICK block, so a
+			// devctl click owns the same hooks, and before the pointer is
+			// scaled and handed to clay.
+			devctl_poll(&ui, client, int(frame), &pointer)
+			if ui.lock_requested {lock_now(&ui); lock_wait_frame(); break}
+			pointer.x /= UI_ZOOM
+			pointer.y /= UI_ZOOM
+			clay.SetPointerState(pointer, rl.IsMouseButtonDown(.LEFT))
 
-		if os.get_env("WN_DEBUG_INPUT", context.temp_allocator) != "" {
-			if rl.IsMouseButtonPressed(.LEFT) || rl.IsMouseButtonReleased(.LEFT) {
-				fmt.eprintfln(
-					"input: pos=%v down=%v pressed=%v released=%v over_nav1=%v",
-					rl.GetMousePosition(),
-					rl.IsMouseButtonDown(.LEFT),
-					rl.IsMouseButtonPressed(.LEFT),
-					rl.IsMouseButtonReleased(.LEFT),
-					clay.PointerOver(clay.ID("Nav", 1)),
-				)
+			// End a thumb drag one frame AFTER release so mouse_released()
+			// can still see it and swallow the ending click.
+			if !rl.IsMouseButtonDown(.LEFT) && !rl.IsMouseButtonReleased(.LEFT) {
+				scroll_drag = {}
 			}
-		}
-		// Wheel over a 3D tile (hover from last frame's build) zooms
-		// the model instead of scrolling the timeline.
-		wheel := rl.GetMouseWheelMoveV()
-		// Ctrl + wheel zooms the interface; the wheel is consumed so
-		// it doesn't also scroll.
-		if ctrl_down() && wheel.y != 0 {
-			ui.prefs.zoom_pct += wheel.y > 0 ? 10 : -10
-			apply_zoom(&ui)
-			save_settings(&ui)
-			wheel = {}
-		}
-		if preview_shown &&
-		   (preview.kind == .Image || preview.kind == .Slides) &&
-		   clay.PointerOver(clay.ID("PvScroll")) {
-			data := clay.GetScrollContainerData(clay.ID("PvScroll"))
-			if data.found &&
-			   (shift_down() ||
-					   data.contentDimensions.height <= data.scrollContainerDimensions.height) {
-				wheel.x += wheel.y
-				wheel.y = 0
+			// A drag-selection ending with text selected feeds the primary
+			// selection (select-to-copy), except from the masked nsec field.
+			if rl.IsMouseButtonReleased(.LEFT) && text_drag != nil {
+				if text_drag != &ui.login_input &&
+				   ui.ed_target == text_drag &&
+				   ui.ed.selection[0] != ui.ed.selection[1] {
+					buf := (^[dynamic]u8)(text_drag)
+					lo, hi, _ := field_sel(&ui, buf)
+					rl.SetPrimaryText(
+						strings.clone_to_cstring(string(buf[lo:hi]), context.temp_allocator),
+					)
+				}
+				text_drag = nil
 			}
-		}
-		wheel.x *= f32(ui.prefs.scroll_speed) / 100
-		wheel.y *= f32(ui.prefs.scroll_speed) / 100
-		if orbit_hover != nil {
-			wheel = {}
-		}
-		// Wheel notches land in a residual that drains a fraction per
-		// frame, so a scroll glides to a stop instead of stepping.
-		scroll_residual += transmute(clay.Vector2)wheel
-		// The chat list follows wheel input immediately.
-		drain := clay.PointerOver(clay.ID("ChatList")) ? f32(1) : anim_drain(SCROLL_DRAIN)
-		step := clay.Vector2{scroll_residual.x * drain, scroll_residual.y * drain}
-		scroll_residual -= step
-		if abs(scroll_residual.x) < 0.01 {
-			scroll_residual.x = 0
-		}
-		if abs(scroll_residual.y) < 0.01 {
-			scroll_residual.y = 0
-		}
-		if scroll_residual != {} {
-			anim_moving += 1
-		}
-		scroll_jumped = false
-		clay.UpdateScrollContainers(false, step, rl.GetFrameTime())
-		clay.SetLayoutDimensions(
-			{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
-		)
 
-		orbit_hover = nil // rebound by the build when a tile is hovered
-		link_hover = ""
-		nev_more_hover = ""
-		nev_retry_hover = ""
-		nev_hint_hover = ""
-		clear(&sel_lines) // body lines re-register during the build
-		video_hover = nil
-		video_full_hover = {}
-		stt_hover = {}
-		att_hover = {}
-		arc_hover = {}
-		arc_more_hover = nil
-		tor_open_hover = nil
-		tor_hash_hover = nil
-		tor_magnet_hover = nil
-		xdc_hover = {}
-		nes_hover = {}
-		img_hover = {}
-		img_link_hover = ""
-		model_hover = {}
-		code_hover = {}
-		pdf_flip_hover = nil
-		pdf_full_hover = {}
-		img_retry_hover = ""
-		media_retry_hover = false
-		reply_jump_hover = ""
-		mention_hover = ""
-		clear(&drag_targets)
-		clear(&gcode_bars)
-		clear(&video_bars)
-		clear(&anim_bars)
-		advance_videos() // pull decoded frames into the video textures
-		voice_poll() // drain the mic stream while recording
-		local_timing_end(.frame_update, frame_start)
-		build_start := time.tick_now()
-		if !tl_restore {
-			if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
-				tl_offset = data.scrollPosition.y
+			if os.get_env("WN_DEBUG_INPUT", context.temp_allocator) != "" {
+				if rl.IsMouseButtonPressed(.LEFT) || rl.IsMouseButtonReleased(.LEFT) {
+					fmt.eprintfln(
+						"input: pos=%v down=%v pressed=%v released=%v over_nav1=%v",
+						rl.GetMousePosition(),
+						rl.IsMouseButtonDown(.LEFT),
+						rl.IsMouseButtonPressed(.LEFT),
+						rl.IsMouseButtonReleased(.LEFT),
+						clay.PointerOver(clay.ID("Nav", 1)),
+					)
+				}
 			}
-		}
-		render_commands := build_layout(&ui, rl.GetFrameTime())
-		if !layout_overflow && settings_resolve_scroll(&ui) {
-			render_commands = build_layout(&ui, 0)
-		}
-		if tl_restore && !layout_overflow {
-			if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
-				data.scrollPosition.y = tl_offset
-				render_commands = build_layout(&ui, rl.GetFrameTime())
+			// Wheel over a 3D tile (hover from last frame's build) zooms
+			// the model instead of scrolling the timeline.
+			wheel := rl.GetMouseWheelMoveV()
+			// Ctrl + wheel zooms the interface; the wheel is consumed so
+			// it doesn't also scroll.
+			if ctrl_down() && wheel.y != 0 {
+				ui.prefs.zoom_pct += wheel.y > 0 ? 10 : -10
+				apply_zoom(&ui)
+				save_settings(&ui)
+				wheel = {}
 			}
-			tl_restore = false
-		}
-
-		// A relayout (window resize, rail drag, the rewrap they cause)
-		// moves the bottom out from under a bottom-pinned view. Re-pin
-		// and lay out AGAIN in the same frame: rendering first and
-		// correcting next frame shows one wrong-scroll frame per size
-		// step, which a continuous resize turns into a visible bounce.
-		// A view the user scrolled away from is left alone. Container
-		// size is the relayout tell; a new message only grows the
-		// content, so the arrival glide below keeps its motion. The
-		// second build is safe: per-frame anim steps are idempotent.
-		if data := clay.GetScrollContainerData(clay.ID("Timeline"));
-		   data.found && !layout_overflow {
-			overflow := max(
-				data.contentDimensions.height - data.scrollContainerDimensions.height,
-				0,
+			if preview_shown &&
+			   (preview.kind == .Image || preview.kind == .Slides) &&
+			   clay.PointerOver(clay.ID("PvScroll")) {
+				data := clay.GetScrollContainerData(clay.ID("PvScroll"))
+				if data.found &&
+				   (shift_down() ||
+						   data.contentDimensions.height <=
+							   data.scrollContainerDimensions.height) {
+					wheel.x += wheel.y
+					wheel.y = 0
+				}
+			}
+			wheel.x *= f32(ui.prefs.scroll_speed) / 100
+			wheel.y *= f32(ui.prefs.scroll_speed) / 100
+			if orbit_hover != nil {
+				wheel = {}
+			}
+			// Wheel notches land in a residual that drains a fraction per
+			// frame, so a scroll glides to a stop instead of stepping.
+			scroll_residual += transmute(clay.Vector2)wheel
+			// The chat list follows wheel input immediately.
+			drain := clay.PointerOver(clay.ID("ChatList")) ? f32(1) : anim_drain(SCROLL_DRAIN)
+			step := clay.Vector2{scroll_residual.x * drain, scroll_residual.y * drain}
+			scroll_residual -= step
+			if abs(scroll_residual.x) < 0.01 {
+				scroll_residual.x = 0
+			}
+			if abs(scroll_residual.y) < 0.01 {
+				scroll_residual.y = 0
+			}
+			if scroll_residual != {} {
+				anim_moving += 1
+			}
+			scroll_jumped = false
+			clay.UpdateScrollContainers(false, step, rl.GetFrameTime())
+			clay.SetLayoutDimensions(
+				{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
 			)
-			container := [2]f32 {
-				data.scrollContainerDimensions.width,
-				data.scrollContainerDimensions.height,
+
+			orbit_hover = nil // rebound by the build when a tile is hovered
+			link_hover = ""
+			nev_more_hover = ""
+			nev_retry_hover = ""
+			nev_hint_hover = ""
+			clear(&sel_lines) // body lines re-register during the build
+			video_hover = nil
+			video_full_hover = {}
+			stt_hover = {}
+			att_hover = {}
+			arc_hover = {}
+			arc_more_hover = nil
+			tor_open_hover = nil
+			tor_hash_hover = nil
+			tor_magnet_hover = nil
+			xdc_hover = {}
+			nes_hover = {}
+			img_hover = {}
+			img_link_hover = ""
+			model_hover = {}
+			code_hover = {}
+			pdf_flip_hover = nil
+			pdf_full_hover = {}
+			img_retry_hover = ""
+			media_retry_hover = false
+			reply_jump_hover = ""
+			mention_hover = ""
+			clear(&drag_targets)
+			clear(&gcode_bars)
+			clear(&video_bars)
+			clear(&anim_bars)
+			advance_videos() // pull decoded frames into the video textures
+			voice_poll() // drain the mic stream while recording
+			local_timing_end(.frame_update, frame_start)
+			build_start := time.tick_now()
+			if !tl_restore {
+				if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
+					tl_offset = data.scrollPosition.y
+				}
 			}
-			if container != tl_container_was && tl_at_bottom {
-				data.scrollPosition.y = -overflow
-				scroll_jumped = true
-				render_commands = build_layout(&ui, rl.GetFrameTime())
-				data = clay.GetScrollContainerData(clay.ID("Timeline"))
-				overflow = max(
+			render_commands := build_layout(&ui, rl.GetFrameTime())
+			if !layout_overflow && settings_resolve_scroll(&ui) {
+				render_commands = build_layout(&ui, 0)
+			}
+			if tl_restore && !layout_overflow {
+				if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
+					data.scrollPosition.y = tl_offset
+					render_commands = build_layout(&ui, rl.GetFrameTime())
+				}
+				tl_restore = false
+			}
+
+			// A relayout (window resize, rail drag, the rewrap they cause)
+			// moves the bottom out from under a bottom-pinned view. Re-pin
+			// and lay out AGAIN in the same frame: rendering first and
+			// correcting next frame shows one wrong-scroll frame per size
+			// step, which a continuous resize turns into a visible bounce.
+			// A view the user scrolled away from is left alone. Container
+			// size is the relayout tell; a new message only grows the
+			// content, so the arrival glide below keeps its motion. The
+			// second build is safe: per-frame anim steps are idempotent.
+			if data := clay.GetScrollContainerData(clay.ID("Timeline"));
+			   data.found && !layout_overflow {
+				overflow := max(
 					data.contentDimensions.height - data.scrollContainerDimensions.height,
 					0,
 				)
-				data.scrollPosition.y = -overflow
-				// The rebuild can itself move the container a hair (chrome
-				// that measures against the previous layout). Store the
-				// post-rebuild size, or the next frame sees "changed"
-				// again and the pin oscillates between the two layouts.
-				container = {
+				container := [2]f32 {
 					data.scrollContainerDimensions.width,
 					data.scrollContainerDimensions.height,
 				}
-			}
-			tl_container_was = container
-			tl_at_bottom = data.scrollPosition.y <= -overflow + 1
-		}
-
-		local_timing_end(.frame_layout, build_start)
-
-		// A failed layout contains only Clay's error screen. Grow its arena
-		// and retry next frame, before rendering or handling message clicks.
-		if layout_overflow {
-			init_layout(
-				&memory,
-				clay.GetMaxElementCount() * 2,
-				{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
-			)
-			tl_restore = true
-			continue
-		}
-
-		// Models register during the build and are posed before the
-		// renderer walks the commands, so a playing take advances only
-		// while its tile is actually mounted.
-		advance_models(rl.GetFrameTime())
-
-		// Jump to the newest message AFTER layout, so the content
-		// height includes rows appended this frame (an optimistic
-		// pending row would otherwise sit below the scroll fold for
-		// the whole send).
-		// Center a global-search hit: the correction is relative to this
-		// frame's laid-out row box, so the current offset doesn't matter.
-		// ponytail: best effort, one attempt; a hit older than the loaded
-		// page (limit 100) isn't in ui.messages and falls back to the
-		// bottom jump. Paged loading with an anchor is the upgrade.
-		if len(ui.jump_id) > 0 && !ui.timeline_loading && !ui.timeline_paging {
-			for msg, i in ui.messages {
-				if msg.id != ui.jump_id {
-					continue
+				if container != tl_container_was && tl_at_bottom {
+					data.scrollPosition.y = -overflow
+					scroll_jumped = true
+					render_commands = build_layout(&ui, rl.GetFrameTime())
+					data = clay.GetScrollContainerData(clay.ID("Timeline"))
+					overflow = max(
+						data.contentDimensions.height - data.scrollContainerDimensions.height,
+						0,
+					)
+					data.scrollPosition.y = -overflow
+					// The rebuild can itself move the container a hair (chrome
+					// that measures against the previous layout). Store the
+					// post-rebuild size, or the next frame sees "changed"
+					// again and the pin oscillates between the two layouts.
+					container = {
+						data.scrollContainerDimensions.width,
+						data.scrollContainerDimensions.height,
+					}
 				}
-				row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
-				tl := clay.GetElementData(clay.ID("Timeline"))
+				tl_container_was = container
+				tl_at_bottom = data.scrollPosition.y <= -overflow + 1
+			}
+
+			local_timing_end(.frame_layout, build_start)
+
+			// A failed layout contains only Clay's error screen. Grow its arena
+			// and retry next frame, before rendering or handling message clicks.
+			if layout_overflow {
+				init_layout(
+					&memory,
+					clay.GetMaxElementCount() * 2,
+					{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
+				)
+				tl_restore = true
+				continue
+			}
+
+			// Models register during the build and are posed before the
+			// renderer walks the commands, so a playing take advances only
+			// while its tile is actually mounted.
+			advance_models(rl.GetFrameTime())
+
+			// Jump to the newest message AFTER layout, so the content
+			// height includes rows appended this frame (an optimistic
+			// pending row would otherwise sit below the scroll fold for
+			// the whole send).
+			// Center a global-search hit: the correction is relative to this
+			// frame's laid-out row box, so the current offset doesn't matter.
+			// ponytail: best effort, one attempt; a hit older than the loaded
+			// page (limit 100) isn't in ui.messages and falls back to the
+			// bottom jump. Paged loading with an anchor is the upgrade.
+			if len(ui.jump_id) > 0 && !ui.timeline_loading && !ui.timeline_paging {
+				for msg, i in ui.messages {
+					if msg.id != ui.jump_id {
+						continue
+					}
+					row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
+					tl := clay.GetElementData(clay.ID("Timeline"))
+					scroll_data := clay.GetScrollContainerData(clay.ID("Timeline"))
+					if row.found && tl.found && scroll_data.found {
+						overflow := max(
+							scroll_data.contentDimensions.height -
+							scroll_data.scrollContainerDimensions.height,
+							0,
+						)
+						delta :=
+							(row.boundingBox.y + row.boundingBox.height / 2) -
+							(tl.boundingBox.y + tl.boundingBox.height / 2)
+						scroll_data.scrollPosition.y = clamp(
+							scroll_data.scrollPosition.y - delta,
+							-overflow,
+							0,
+						)
+						scroll_jumped = true
+						ui.scroll_pending = false
+					}
+					break
+				}
+				delete(ui.jump_id)
+				ui.jump_id = ""
+			}
+			if ui.scroll_pending && !ui.timeline_loading && !ui.timeline_paging {
 				scroll_data := clay.GetScrollContainerData(clay.ID("Timeline"))
-				if row.found && tl.found && scroll_data.found {
-					overflow := max(
+				if scroll_data.found {
+					overflow :=
 						scroll_data.contentDimensions.height -
-						scroll_data.scrollContainerDimensions.height,
-						0,
-					)
-					delta :=
-						(row.boundingBox.y + row.boundingBox.height / 2) -
-						(tl.boundingBox.y + tl.boundingBox.height / 2)
-					scroll_data.scrollPosition.y = clamp(
-						scroll_data.scrollPosition.y - delta,
-						-overflow,
-						0,
-					)
+						scroll_data.scrollContainerDimensions.height
+					target := overflow > 0 ? -overflow : 0
+					// No glide: the chat box does not animate. Arrivals and
+					// chat opens both snap to the bottom.
+					scroll_data.scrollPosition.y = target
 					scroll_jumped = true
 					ui.scroll_pending = false
 				}
-				break
 			}
-			delete(ui.jump_id)
-			ui.jump_id = ""
-		}
-		if ui.scroll_pending && !ui.timeline_loading && !ui.timeline_paging {
-			scroll_data := clay.GetScrollContainerData(clay.ID("Timeline"))
-			if scroll_data.found {
-				overflow :=
-					scroll_data.contentDimensions.height -
-					scroll_data.scrollContainerDimensions.height
-				target := overflow > 0 ? -overflow : 0
-				// No glide: the chat box does not animate. Arrivals and
-				// chat opens both snap to the bottom.
-				scroll_data.scrollPosition.y = target
-				scroll_jumped = true
-				ui.scroll_pending = false
+			// Anchor and jump corrections happen after layout. Draw their corrected
+			// position in this frame instead of flashing the old position once.
+			if data := clay.GetScrollContainerData(clay.ID("Timeline"));
+			   data.found && abs(data.scrollPosition.y - timeline_draw_offset) > 0.01 {
+				render_commands = build_layout(&ui, 0)
 			}
-		}
-		// Anchor and jump corrections happen after layout. Draw their corrected
-		// position in this frame instead of flashing the old position once.
-		if data := clay.GetScrollContainerData(clay.ID("Timeline"));
-		   data.found && abs(data.scrollPosition.y - timeline_draw_offset) > 0.01 {
-			render_commands = build_layout(&ui, 0)
-		}
-		video_dbg_build = max(
-			video_dbg_build,
-			f32(time.duration_milliseconds(time.tick_since(build_start))),
-		)
+			video_dbg_build = max(
+				video_dbg_build,
+				f32(time.duration_milliseconds(time.tick_since(build_start))),
+			)
 
-		draw_start := time.tick_now()
-		rl.BeginDrawing()
-		shake_x, shake_y := shake_offset()
-		rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM, offset = {shake_x, shake_y}})
-		draw_frame(&render_commands)
-		rl.EndMode2D()
-		local_timing_end(.frame_draw, draw_start)
-		// Before EndDrawing: the backbuffer is undefined after present,
-		// and reading it back then crashes inside Mesa on a frame whose
-		// window was just resized.
-		if shot && burst_hi == 0 && frame + 1 == shot_frame {
-			rl.TakeScreenshot("wn-odin-shot.png")
-			rl.EndDrawing()
-			break
-		}
-		// WN_SHOT_BURST="A-B": one shot per frame across the range, then
-		// exit. One run yields a whole animation timeline.
-		if burst_hi > 0 && frame + 1 >= burst_lo {
-			if frame + 1 <= burst_hi {
-				rl.TakeScreenshot(fmt.ctprintf("wn-odin-burst-%04d.png", frame + 1))
-			}
-			if frame + 1 >= burst_hi {
+			draw_start := time.tick_now()
+			rl.BeginDrawing()
+			shake_x, shake_y := shake_offset()
+			rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM, offset = {shake_x, shake_y}})
+			draw_frame(&render_commands)
+			rl.EndMode2D()
+			local_timing_end(.frame_draw, draw_start)
+			// Before EndDrawing: the backbuffer is undefined after present,
+			// and reading it back then crashes inside Mesa on a frame whose
+			// window was just resized.
+			if shot && burst_hi == 0 && frame + 1 == shot_frame {
+				rl.TakeScreenshot("wn-odin-shot.png")
 				rl.EndDrawing()
 				break
 			}
-		}
-		devctl_draw()
-		present_start := time.tick_now()
-		rl.EndDrawing()
-		local_timing_end(.frame_present, present_start)
-		local_timing_end(.linux_frame_until_present, frame_start)
-		if startup_ready != {} {
-			local_timing_end(.linux_startup_after_vault, startup_ready)
-			startup_ready = {}
-		}
-		if ready_started != {} && rl.IsWindowFocused() {
-			timing_record(client, .Splash_Ready, ready_started)
-			ready_started = {}
-		}
-		if foreground_started != {} && focused {
-			timing_record(client, .Foreground_Local_Ready, foreground_started)
-			foreground_started = {}
-		}
-		timings_presented(&ui, client)
-		video_dbg_draw = max(
-			video_dbg_draw,
-			f32(time.duration_milliseconds(time.tick_since(draw_start))),
-		)
-
-		post_start := time.tick_now()
-		if ui.settings_dirty {save_settings(&ui, background = true)}
-		settings_drain(&ui)
-		// Profile pictures fetched by the curl worker decode here (the
-		// render thread owns texture creation).
-		drain_pics()
-		drain_kp()
-		drain_relays(&ui, client)
-		update_title(&ui)
-		drain_refresh(client, &ui)
-		drain_gimg(&ui, client)
-		drain_ppic(&ui)
-		drain_ov()
-		drain_gh()
-		drain_hn()
-		drain_nev()
-		drain_stickers(&ui, client)
-		gif_drain(&ui)
-
-		// Files picked in the async SDL dialog land here; they become
-		// composer chips, custom emoji when the settings "+" asked, or
-		// the group photo when the hero chooser asked.
-		picked := rl.PickedFiles()
-		for path in picked {
-			if ui.picking_sticker {
-				job := sticker_job_add(.Import)
-				job.input = strings.clone(path)
-			} else if ui.picking_backup {
-				backup_stage(&ui, path)
-			} else if ui.picking_emoji {
-				stage_emoji(&ui, path)
-			} else if ui.picking_gpic {
-				set_group_pic(&ui, client, path)
-			} else if ui.picking_ncpic {
-				if draft, ok := load_pic_draft(&ui, path); ok {
-					nc_pic_set(&ui, draft)
+			// WN_SHOT_BURST="A-B": one shot per frame across the range, then
+			// exit. One run yields a whole animation timeline.
+			if burst_hi > 0 && frame + 1 >= burst_lo {
+				if frame + 1 <= burst_hi {
+					rl.TakeScreenshot(fmt.ctprintf("wn-odin-burst-%04d.png", frame + 1))
 				}
-			} else if ui.picking_ppic {
-				set_profile_pic(&ui, client, path)
-			} else {
-				stage_file(&ui, path)
-			}
-			delete(path)
-		}
-		if len(picked) > 0 {
-			ui.picking_sticker = false
-			ui.picking_emoji = false
-			ui.picking_gpic = false
-			ui.picking_ncpic = false
-			ui.picking_ppic = false
-			ui.picking_backup = false
-		}
-		delete(picked)
-
-		if tc := os.get_env("WN_TEST_COMPOSE", context.temp_allocator); tc != "" {
-			// Semicolon-separated "N:text" entries. Text lands in the
-			// focused input; on the Chats page it also sends.
-			for entry in strings.split(tc, ";", context.temp_allocator) {
-				if colon := strings.index_byte(entry, ':');
-				   colon > 0 && frame == parse_int_or(entry[:colon], -1) {
-					ed_set(&ui, active_buf(&ui), entry[colon + 1:])
-					test_send_now = ui.page == .Chats
-				}
-			}
-		}
-
-		long_press_tick() // before any handler reads long_pressed
-		handle_gutters(&ui)
-		if clicked("SttCancel") {
-			stt_stop(&ui)
-		}
-		if clicked("SttFinish") {
-			stt_finish(&ui)
-		}
-		if clicked("TtsStopGlobal") {
-			tts_stop(&ui)
-		}
-		if clicked("BannerClose") {
-			ui.banner = "" // borrowed from client_status; never freed here
-		}
-		update_handle()
-		if clicked("RailCollapse") {
-			toggle_rail(&ui)
-		}
-		if clicked("PhoneBack") {
-			phone_back_action(&ui)
-		}
-
-		// Modal capture order: a confirm sits over everything, then the
-		// link guard, then the palette, then the older modals. Global
-		// search opens on Ctrl+K, the palette on Ctrl+P.
-		if ui.confirm.kind != .None {
-			handle_confirm(&ui, client)
-		} else if ui.link_open {
-			handle_link_modal(&ui)
-		} else if nes_player.open {
-			handle_nes_input(&ui) // the game owns the keyboard
-		} else if ui.folder_open {
-			handle_folder_modal(&ui, client)
-		} else if ui.pal_open {
-			handle_palette(&ui, client)
-		} else if len(ui.accounts) > 0 &&
-		   !ui.add_account_open &&
-		   ctrl_down() &&
-		   rl.IsKeyPressed(.P) {
-			pal_open_modal(&ui)
-		} else if ui.backup_mode != .None {
-			handle_backup(&ui)
-		} else if ui.vault_pw_open {
-			handle_vault_pw(&ui)
-		} else if ui.sticker_open {
-			handle_sticker_panel(&ui)
-		} else if ui.gs_open {
-			handle_gsearch(&ui, client)
-		} else if ui.folder_menu_open {
-			handle_folder_navigation(&ui)
-		} else if len(ui.accounts) > 0 &&
-		   !ui.add_account_open &&
-		   ((ctrl_down() && rl.IsKeyPressed(.K)) || clicked("GSearchBtn")) {
-			gs_open_modal(&ui)
-		} else {
-			handle_login(&ui, client)
-			handle_pages(&ui, client)
-			if ui.page == .Chats && !ui.add_account_open {
-				handle_chat(&ui, client)
-			}
-		}
-		// Body text selection and the link guard share the pointer over
-		// message bodies: a drag that selected something swallows the
-		// release, so dragging across a link doesn't open it.
-		if !ui.pal_open && !ui.link_open && !ui.gs_open && ui.confirm.kind == .None {
-			handle_body_sel(&ui)
-			handle_body_copy(&ui)
-			// A press that missed a body drags the timeline instead, and
-			// a drag that moved is not a click on whatever is under it.
-			handle_react_fan(&ui, client)
-			update_drag_scroll(
-				&ui,
-				sel_dragging ||
-				orbit_hover != nil ||
-				modal_open(&ui) ||
-				fan_open() ||
-				video_bar_active(),
-			)
-			if len(ui.sel_copy) == 0 && !drag_moved {
-				handle_link_click(&ui)
-				if nev_retry_hover != "" && mouse_released() && !modal_open(&ui) {
-					for key, card in nev_cards {
-						if key != nev_retry_hover || !card.done || len(card.raw) > 0 {continue}
-						delete_key(&nev_cards, key)
-						delete(key)
-						break
-					}
-				}
-				if nev_more_hover != "" && mouse_released() && !modal_open(&ui) {
-					card := nev_cards[nev_more_hover]
-					excerpt_toggle(&card.excerpt, nev_more_id)
-					nev_cards[nev_more_hover] = card
-					for &msg in ui.messages {msg.row_height = 0}
-				}
-				if nev_hint_hover != "" && mouse_released() && !modal_open(&ui) {
-					preview_message(nev_cards[nev_hint_hover].geocache.hint)
-				}
-			}
-		}
-		// Text input follows the field, not the window: it drives the
-		// IME and it is what raises and dismisses a phone's on-screen
-		// keyboard. The area points the compositor at the caret.
-		// ponytail: a chat opens with the composer focused, so on a
-		// phone the keyboard comes up with the chat. TODO: confirm on
-		// hardware (phosh/squeekboard) whether that reads as helpful or
-		// as in the way; if it is in the way, the fix is a focus state
-		// that starts empty on a tap_size() window and fills on a tap.
-		rl.SetTextInput(text_field_live)
-		if text_field_live {
-			rl.SetTextInputArea(
-				i32(caret_box.x * UI_ZOOM),
-				i32(caret_box.y * UI_ZOOM),
-				i32(max(caret_box.width, 1) * UI_ZOOM),
-				i32(caret_box.height * UI_ZOOM),
-			)
-		}
-		text_field_live = false
-		handle_orbit()
-		handle_gcode_bar()
-		handle_anim_bar()
-		if mouse_released() && stt_hover.message != "" {
-			if stt_hover.action == .Toggle {
-				stt_hover.view.transcript_open = !stt_hover.view.transcript_open
-			} else if stt_hover.action == .Cancel {
-				stt_stop(&ui)
-			} else {
-				stt_start(&ui, stt_hover.message, stt_hover.attachment)
-			}
-		}
-		handle_video()
-		handle_video_bar()
-		handle_pdf()
-		handle_preview(&ui, client)
-		handle_arc_click(&ui)
-		handle_tor_click(&ui)
-		handle_xdc_click(&ui, client)
-		handle_web_input(&ui)
-		handle_nes_click(&ui)
-		handle_att_click(&ui)
-		handle_img_click(&ui, client)
-		handle_model_click(&ui, client)
-		handle_code_click(&ui, client)
-		handle_pdf_full(&ui, client)
-		handle_mention_click(&ui, client)
-		handle_img_retry(&ui, client)
-		handle_media_retry(&ui, client)
-		handle_reply_jump(&ui)
-		// Drain after input: Enter finishing dictation must not send its result.
-		stt_tick(&ui)
-
-		// Destination chosen in the save dialog: fetch and write.
-		saved := rl.SavedFiles()
-		for path in saved {
-			save_attachment(&ui, client, path)
-			if backup_saving {
-				backup_saved(&ui)
-			}
-			delete(path)
-		}
-		delete(saved)
-
-		cursor_apply() // every raise for this frame is in by now
-		local_timing_end(.linux_frame_post_present, post_start)
-
-		// Present handler changes on the next frame before sleeping. Input
-		// and worker events wake immediately; timers poll at most 4 Hz.
-		if !shot && !frame_input && frame_idle() {
-			wait_start := time.tick_now()
-			defer local_timing_end(.linux_frame_idle_wait, wait_start)
-			rl.Wait(u32(clamp((frame_deadline - rl.GetTime()) * 1000, 1, f64(IDLE_REFRESH_MS))))
-		}
-
-		frame += 1
-		if test_resize_frame >= 0 &&
-		   frame >= test_resize_frame &&
-		   frame < test_resize_frame + test_resize_ramp {
-			if frame == test_resize_frame {
-				test_resize_from_w, test_resize_from_h = rl.GetScreenWidth(), rl.GetScreenHeight()
-			}
-			t := f32(frame - test_resize_frame + 1) / f32(test_resize_ramp)
-			w := test_resize_from_w + i32(f32(test_resize_w - test_resize_from_w) * t)
-			h := test_resize_from_h + i32(f32(test_resize_h - test_resize_from_h) * t)
-			rl.SetWindowSize(w, h)
-		}
-		if test_send != "" && frame == 10 && client != nil && len(ui.chats) > 0 {
-			summary: ^marmot.Send_Summary
-			account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-			group := strings.clone_to_cstring(ui.chats[0].group_id, context.temp_allocator)
-			if marmot.send_text(
-				   client,
-				   account,
-				   group,
-				   strings.clone_to_cstring(test_send, context.temp_allocator),
-				   &summary,
-			   ) ==
-			   .OK {
-				marmot.send_summary_free(summary)
-			}
-		}
-		if frame == 10 && ui.selected >= 0 {
-			if media_path := os.get_env("WN_TEST_MEDIA", context.allocator); media_path != "" {
-				data, read_err := os.read_entire_file(media_path, context.temp_allocator)
-				if read_err == nil {
-					attachment := marmot.Media_Upload_Attachment_Request {
-						file_name     = strings.clone_to_cstring(
-							media_path,
-							context.temp_allocator,
-						),
-						media_type    = "image/png",
-						plaintext     = raw_data(data),
-						plaintext_len = len(data),
-					}
-					request := marmot.Media_Upload_Request {
-						attachments     = &attachment,
-						attachments_len = 1,
-						caption         = "attachment test",
-						send            = true,
-					}
-					result: ^marmot.Media_Upload_Result
-					account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-					group := strings.clone_to_cstring(
-						ui.chats[ui.selected].group_id,
-						context.temp_allocator,
-					)
-					if marmot.upload_media(client, account, group, &request, &result) != .OK {
-						fmt.eprintfln("media: upload failed: %s", marmot.last_error())
-					} else {
-						fmt.eprintfln("media: uploaded %d attachment(s)", result.attachments_len)
-						marmot.media_upload_result_free(result)
-						load_timeline(client, &ui)
-					}
-				}
-			}
-		}
-		if frame == 5 && ui.selected >= 0 {
-			if seed := os.get_env("WN_TEST_COMPOSE", context.allocator); seed != "" {
-				ed_set(&ui, &ui.compose, seed)
-				ui.ed_target = &ui.compose
-				mid := rune_snap(seed, len(seed) / 2)
-				ui.ed.selection = {mid, mid}
-			}
-		}
-		if frame == 22 &&
-		   ui.selected >= 0 &&
-		   os.get_env("WN_TEST_PICKER", context.temp_allocator) != "" {
-			open_picker(&ui, "")
-		}
-		// WN_TEST_PREVIEW=<path> opens the preview modal on a local
-		// file, the only way to reach the model inspector headlessly
-		// (the modal otherwise opens from an attachment).
-		// Frame 12, before WN_TEST_CLICK's release at 20, so a click can
-		// land on the modal.
-		// WN_TEST_WEB=<url> opens the webxdc modal on any URL, and
-		// WN_TEST_XDC=<file.xdc> takes the whole path a real
-		// attachment takes (unpack, serve, run). Both exist because
-		// the modal otherwise opens only from a chat.
-		// WN_TEST_LINK=<url> raises the external-link guard on a URL.
-		if frame == 12 {
-			if url := os.get_env("WN_TEST_LINK", context.temp_allocator); url != "" {
-				open_link(&ui, url)
-			}
-		}
-		if frame == 12 && !web_modal.open {
-			if url := os.get_env("WN_TEST_WEB", context.temp_allocator); url != "" {
-				web_open(url, "test")
-			}
-			if path := os.get_env("WN_TEST_XDC", context.temp_allocator); path != "" {
-				if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
-					if view := xdc_view_make(bytes, path); view != nil {
-						xdc_launch(&ui, client, view, "test-session", "test-group")
-					} else {
-						fmt.eprintfln("webxdc: %s is not a webxdc app", path)
-					}
-				}
-			}
-		}
-		if frame == 12 && !preview_shown {
-			if path := os.get_env("WN_TEST_NES", context.temp_allocator); path != "" {
-				if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
-					if view := nes_view_make(bytes); view != nil {
-						nes_play(&ui, view, path)
-					} else {
-						fmt.eprintfln("nes: %s has no iNES header", path)
-					}
-				}
-			}
-			if path := os.get_env("WN_TEST_PREVIEW", context.temp_allocator); path != "" {
-				if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
-					preview_show(path, bytes) // the extension is what dispatches
-				}
-			}
-		}
-		if frame == 22 && os.get_env("WN_TEST_HIST", context.temp_allocator) != "" {
-			for msg, i in ui.messages {
-				if msg.edited {
-					ui.hist_open = true
-					ui.hist_msg = i
+				if frame + 1 >= burst_hi {
+					rl.EndDrawing()
 					break
 				}
 			}
-		}
-		if frame == 20 &&
-		   ui.selected >= 0 &&
-		   len(ui.messages) > 0 &&
-		   os.get_env("WN_TEST_CTX", context.temp_allocator) != "" {
-			ui.ctx_open = true
-			ui.ctx_msg = len(ui.messages) - 1
-			ui.ctx_x = 400
-			ui.ctx_y = 120
-		}
-		if frame == 12 && ui.selected >= 0 && len(ui.messages) > 0 {
-			if os.get_env("WN_TEST_REACT", context.allocator) != "" {
-				message_op(&ui, client, .React, ui.messages[len(ui.messages) - 1].id, "👍")
+			devctl_draw()
+			present_start := time.tick_now()
+			rl.EndDrawing()
+			local_timing_end(.frame_present, present_start)
+			local_timing_end(.linux_frame_until_present, frame_start)
+			if startup_ready != {} {
+				local_timing_end(.linux_startup_after_vault, startup_ready)
+				startup_ready = {}
 			}
-			if edit_to := os.get_env("WN_TEST_EDIT", context.allocator); edit_to != "" {
-				for msg in ui.messages {
-					if msg.mine {
-						clear(&ui.compose)
-						append(&ui.compose, edit_to)
-						ui.editing = msg.id
+			if ready_started != {} && rl.IsWindowFocused() {
+				timing_record(client, .Splash_Ready, ready_started)
+				ready_started = {}
+			}
+			if foreground_started != {} && focused {
+				timing_record(client, .Foreground_Local_Ready, foreground_started)
+				foreground_started = {}
+			}
+			timings_presented(&ui, client)
+			video_dbg_draw = max(
+				video_dbg_draw,
+				f32(time.duration_milliseconds(time.tick_since(draw_start))),
+			)
+
+			post_start := time.tick_now()
+			if ui.settings_dirty {save_settings(&ui, background = true)}
+			settings_drain(&ui)
+			// Profile pictures fetched by the curl worker decode here (the
+			// render thread owns texture creation).
+			drain_pics()
+			drain_kp()
+			drain_relays(&ui, client)
+			update_title(&ui)
+			drain_refresh(client, &ui)
+			drain_gimg(&ui, client)
+			drain_ppic(&ui)
+			drain_ov()
+			drain_gh()
+			drain_hn()
+			drain_nev()
+			drain_stickers(&ui, client)
+			gif_drain(&ui)
+
+			// Files picked in the async SDL dialog land here; they become
+			// composer chips, custom emoji when the settings "+" asked, or
+			// the group photo when the hero chooser asked.
+			pick_completed := false
+			picked := rl.PickedFiles(&pick_completed)
+			if pick_completed && len(picked) == 0 {ui.picking_contacts = false}
+			for path in picked {
+				if ui.picking_contacts {
+					contacts_import_start(&ui, client, path)
+				} else if ui.picking_sticker {
+					job := sticker_job_add(.Import)
+					job.input = strings.clone(path)
+				} else if ui.picking_backup {
+					backup_stage(&ui, path)
+				} else if ui.picking_emoji {
+					stage_emoji(&ui, path)
+				} else if ui.picking_gpic {
+					set_group_pic(&ui, client, path)
+				} else if ui.picking_ncpic {
+					if draft, ok := load_pic_draft(&ui, path); ok {
+						nc_pic_set(&ui, draft)
+					}
+				} else if ui.picking_ppic {
+					set_profile_pic(&ui, client, path)
+				} else {
+					stage_file(&ui, path)
+				}
+				delete(path)
+			}
+			if len(picked) > 0 {
+				ui.picking_sticker = false
+				ui.picking_emoji = false
+				ui.picking_gpic = false
+				ui.picking_ncpic = false
+				ui.picking_ppic = false
+				ui.picking_backup = false
+				ui.picking_contacts = false
+			}
+			delete(picked)
+
+			if tc := os.get_env("WN_TEST_COMPOSE", context.temp_allocator); tc != "" {
+				// Semicolon-separated "N:text" entries. Text lands in the
+				// focused input; on the Chats page it also sends.
+				for entry in strings.split(tc, ";", context.temp_allocator) {
+					if colon := strings.index_byte(entry, ':');
+					   colon > 0 && frame == parse_int_or(entry[:colon], -1) {
+						ed_set(&ui, active_buf(&ui), entry[colon + 1:])
+						test_send_now = ui.page == .Chats
+					}
+				}
+			}
+
+			long_press_tick() // before any handler reads long_pressed
+			if clicked("LockNow") {
+				lock_now(&ui)
+				lock_wait_frame()
+				break
+			}
+			handle_gutters(&ui)
+			if clicked("SttCancel") {
+				stt_stop(&ui)
+			}
+			if clicked("SttFinish") {
+				stt_finish(&ui)
+			}
+			if clicked("TtsStopGlobal") {
+				tts_stop(&ui)
+			}
+			if clicked("BannerClose") {
+				ui.banner = "" // borrowed from client_status; never freed here
+			}
+			update_handle()
+			if clicked("RailCollapse") {
+				toggle_rail(&ui)
+			}
+			if clicked("PhoneBack") {
+				phone_back_action(&ui)
+			}
+
+			// Modal capture order: a confirm sits over everything, then the
+			// link guard, then the palette, then the older modals. Global
+			// search opens on Ctrl+K, the palette on Ctrl+P.
+			if ui.confirm.kind != .None {
+				handle_confirm(&ui, client)
+			} else if ui.link_open {
+				handle_link_modal(&ui)
+			} else if nes_player.open {
+				handle_nes_input(&ui) // the game owns the keyboard
+			} else if ui.folder_open {
+				handle_folder_modal(&ui, client)
+			} else if ui.pal_open {
+				handle_palette(&ui, client)
+			} else if len(ui.accounts) > 0 &&
+			   !ui.add_account_open &&
+			   ctrl_down() &&
+			   rl.IsKeyPressed(.P) {
+				pal_open_modal(&ui)
+			} else if ui.backup_mode != .None {
+				handle_backup(&ui)
+			} else if ui.vault_pw_open {
+				handle_vault_pw(&ui)
+			} else if ui.sticker_open {
+				handle_sticker_panel(&ui)
+			} else if ui.gs_open {
+				handle_gsearch(&ui, client)
+			} else if ui.folder_menu_open {
+				handle_folder_navigation(&ui)
+			} else if len(ui.accounts) > 0 &&
+			   !ui.add_account_open &&
+			   ((ctrl_down() && rl.IsKeyPressed(.K)) || clicked("GSearchBtn")) {
+				gs_open_modal(&ui)
+			} else {
+				handle_login(&ui, client)
+				handle_pages(&ui, client)
+				if ui.page == .Chats && !ui.add_account_open {
+					handle_chat(&ui, client)
+				}
+			}
+			// Body text selection and the link guard share the pointer over
+			if ui.lock_requested {lock_wait_frame(); break}
+			// message bodies: a drag that selected something swallows the
+			// release, so dragging across a link doesn't open it.
+			if !ui.pal_open && !ui.link_open && !ui.gs_open && ui.confirm.kind == .None {
+				handle_body_sel(&ui)
+				handle_body_copy(&ui)
+				// A press that missed a body drags the timeline instead, and
+				// a drag that moved is not a click on whatever is under it.
+				handle_react_fan(&ui, client)
+				update_drag_scroll(
+					&ui,
+					sel_dragging ||
+					orbit_hover != nil ||
+					modal_open(&ui) ||
+					fan_open() ||
+					video_bar_active(),
+				)
+				if len(ui.sel_copy) == 0 && !drag_moved {
+					handle_link_click(&ui)
+					if nev_retry_hover != "" && mouse_released() && !modal_open(&ui) {
+						for key, card in nev_cards {
+							if key != nev_retry_hover || !card.done || len(card.raw) > 0 {continue}
+							delete_key(&nev_cards, key)
+							delete(key)
+							break
+						}
+					}
+					if nev_more_hover != "" && mouse_released() && !modal_open(&ui) {
+						card := nev_cards[nev_more_hover]
+						excerpt_toggle(&card.excerpt, nev_more_id)
+						nev_cards[nev_more_hover] = card
+						for &msg in ui.messages {msg.row_height = 0}
+					}
+					if nev_hint_hover != "" && mouse_released() && !modal_open(&ui) {
+						preview_message(nev_cards[nev_hint_hover].geocache.hint)
+					}
+				}
+			}
+			// Text input follows the field, not the window: it drives the
+			// IME and it is what raises and dismisses a phone's on-screen
+			// keyboard. The area points the compositor at the caret.
+			// ponytail: a chat opens with the composer focused, so on a
+			// phone the keyboard comes up with the chat. TODO: confirm on
+			// hardware (phosh/squeekboard) whether that reads as helpful or
+			// as in the way; if it is in the way, the fix is a focus state
+			// that starts empty on a tap_size() window and fills on a tap.
+			rl.SetTextInput(text_field_live)
+			if text_field_live {
+				rl.SetTextInputArea(
+					i32(caret_box.x * UI_ZOOM),
+					i32(caret_box.y * UI_ZOOM),
+					i32(max(caret_box.width, 1) * UI_ZOOM),
+					i32(caret_box.height * UI_ZOOM),
+				)
+			}
+			text_field_live = false
+			handle_orbit()
+			handle_gcode_bar()
+			handle_anim_bar()
+			if mouse_released() && stt_hover.message != "" {
+				if stt_hover.action == .Toggle {
+					stt_hover.view.transcript_open = !stt_hover.view.transcript_open
+				} else if stt_hover.action == .Cancel {
+					stt_stop(&ui)
+				} else {
+					stt_start(&ui, stt_hover.message, stt_hover.attachment)
+				}
+			}
+			handle_video()
+			handle_video_bar()
+			handle_pdf()
+			handle_preview(&ui, client)
+			handle_arc_click(&ui)
+			handle_tor_click(&ui)
+			handle_xdc_click(&ui, client)
+			handle_web_input(&ui)
+			handle_nes_click(&ui)
+			handle_att_click(&ui)
+			handle_img_click(&ui, client)
+			handle_model_click(&ui, client)
+			handle_code_click(&ui, client)
+			handle_pdf_full(&ui, client)
+			handle_mention_click(&ui, client)
+			handle_img_retry(&ui, client)
+			handle_media_retry(&ui, client)
+			handle_reply_jump(&ui)
+			// Drain after input: Enter finishing dictation must not send its result.
+			stt_tick(&ui)
+
+			// Destination chosen in the save dialog: fetch and write.
+			saved := rl.SavedFiles()
+			for path in saved {
+				save_attachment(&ui, client, path)
+				if backup_saving {
+					backup_saved(&ui)
+				}
+				delete(path)
+			}
+			delete(saved)
+
+			cursor_apply() // every raise for this frame is in by now
+			local_timing_end(.linux_frame_post_present, post_start)
+
+			// Present handler changes on the next frame before sleeping. Input
+			// and worker events wake immediately; timers poll at most 4 Hz.
+			if !shot && !frame_input && frame_idle() {
+				wait_start := time.tick_now()
+				defer local_timing_end(.linux_frame_idle_wait, wait_start)
+				rl.Wait(
+					u32(clamp((frame_deadline - rl.GetTime()) * 1000, 1, f64(IDLE_REFRESH_MS))),
+				)
+			}
+
+			frame += 1
+			if test_resize_frame >= 0 &&
+			   frame >= test_resize_frame &&
+			   frame < test_resize_frame + test_resize_ramp {
+				if frame == test_resize_frame {
+					test_resize_from_w, test_resize_from_h =
+						rl.GetScreenWidth(), rl.GetScreenHeight()
+				}
+				t := f32(frame - test_resize_frame + 1) / f32(test_resize_ramp)
+				w := test_resize_from_w + i32(f32(test_resize_w - test_resize_from_w) * t)
+				h := test_resize_from_h + i32(f32(test_resize_h - test_resize_from_h) * t)
+				rl.SetWindowSize(w, h)
+			}
+			if test_send != "" && frame == 10 && client != nil && len(ui.chats) > 0 {
+				summary: ^marmot.Send_Summary
+				account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+				group := strings.clone_to_cstring(ui.chats[0].group_id, context.temp_allocator)
+				if marmot.send_text(
+					   client,
+					   account,
+					   group,
+					   strings.clone_to_cstring(test_send, context.temp_allocator),
+					   &summary,
+				   ) ==
+				   .OK {
+					marmot.send_summary_free(summary)
+				}
+			}
+			if frame == 10 && ui.selected >= 0 {
+				if media_path := os.get_env("WN_TEST_MEDIA", context.allocator); media_path != "" {
+					data, read_err := os.read_entire_file(media_path, context.temp_allocator)
+					if read_err == nil {
+						attachment := marmot.Media_Upload_Attachment_Request {
+							file_name     = strings.clone_to_cstring(
+								media_path,
+								context.temp_allocator,
+							),
+							media_type    = "image/png",
+							plaintext     = raw_data(data),
+							plaintext_len = len(data),
+						}
+						request := marmot.Media_Upload_Request {
+							attachments     = &attachment,
+							attachments_len = 1,
+							caption         = "attachment test",
+							send            = true,
+						}
+						result: ^marmot.Media_Upload_Result
+						account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+						group := strings.clone_to_cstring(
+							ui.chats[ui.selected].group_id,
+							context.temp_allocator,
+						)
+						if marmot.upload_media(client, account, group, &request, &result) != .OK {
+							fmt.eprintfln("media: upload failed: %s", marmot.last_error())
+						} else {
+							fmt.eprintfln(
+								"media: uploaded %d attachment(s)",
+								result.attachments_len,
+							)
+							marmot.media_upload_result_free(result)
+							load_timeline(client, &ui)
+						}
+					}
+				}
+			}
+			if frame == 5 && ui.selected >= 0 {
+				if seed := os.get_env("WN_TEST_COMPOSE", context.allocator); seed != "" {
+					ed_set(&ui, &ui.compose, seed)
+					ui.ed_target = &ui.compose
+					mid := rune_snap(seed, len(seed) / 2)
+					ui.ed.selection = {mid, mid}
+				}
+			}
+			if frame == 22 &&
+			   ui.selected >= 0 &&
+			   os.get_env("WN_TEST_PICKER", context.temp_allocator) != "" {
+				open_picker(&ui, "")
+			}
+			// WN_TEST_PREVIEW=<path> opens the preview modal on a local
+			// file, the only way to reach the model inspector headlessly
+			// (the modal otherwise opens from an attachment).
+			// Frame 12, before WN_TEST_CLICK's release at 20, so a click can
+			// land on the modal.
+			// WN_TEST_WEB=<url> opens the webxdc modal on any URL, and
+			// WN_TEST_XDC=<file.xdc> takes the whole path a real
+			// attachment takes (unpack, serve, run). Both exist because
+			// the modal otherwise opens only from a chat.
+			// WN_TEST_LINK=<url> raises the external-link guard on a URL.
+			if frame == 12 {
+				if url := os.get_env("WN_TEST_LINK", context.temp_allocator); url != "" {
+					open_link(&ui, url)
+				}
+			}
+			if frame == 12 && !web_modal.open {
+				if url := os.get_env("WN_TEST_WEB", context.temp_allocator); url != "" {
+					web_open(url, "test")
+				}
+				if path := os.get_env("WN_TEST_XDC", context.temp_allocator); path != "" {
+					if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
+						if view := xdc_view_make(bytes, path); view != nil {
+							xdc_launch(&ui, client, view, "test-session", "test-group")
+						} else {
+							fmt.eprintfln("webxdc: %s is not a webxdc app", path)
+						}
+					}
+				}
+			}
+			if frame == 12 && !preview_shown {
+				if path := os.get_env("WN_TEST_NES", context.temp_allocator); path != "" {
+					if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
+						if view := nes_view_make(bytes); view != nil {
+							nes_play(&ui, view, path)
+						} else {
+							fmt.eprintfln("nes: %s has no iNES header", path)
+						}
+					}
+				}
+				if path := os.get_env("WN_TEST_PREVIEW", context.temp_allocator); path != "" {
+					if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
+						preview_show(path, bytes) // the extension is what dispatches
+					}
+				}
+			}
+			if frame == 22 && os.get_env("WN_TEST_HIST", context.temp_allocator) != "" {
+				for msg, i in ui.messages {
+					if msg.edited {
+						ui.hist_open = true
+						ui.hist_msg = i
 						break
 					}
 				}
-				if len(ui.editing) > 0 {
-					queue_edit(&ui, client)
+			}
+			if frame == 20 &&
+			   ui.selected >= 0 &&
+			   len(ui.messages) > 0 &&
+			   os.get_env("WN_TEST_CTX", context.temp_allocator) != "" {
+				ui.ctx_open = true
+				ui.ctx_msg = len(ui.messages) - 1
+				ui.ctx_x = 400
+				ui.ctx_y = 120
+			}
+			if frame == 12 && ui.selected >= 0 && len(ui.messages) > 0 {
+				if os.get_env("WN_TEST_REACT", context.allocator) != "" {
+					message_op(&ui, client, .React, ui.messages[len(ui.messages) - 1].id, "👍")
+				}
+				if edit_to := os.get_env("WN_TEST_EDIT", context.allocator); edit_to != "" {
+					for msg in ui.messages {
+						if msg.mine {
+							clear(&ui.compose)
+							append(&ui.compose, edit_to)
+							ui.editing = msg.id
+							break
+						}
+					}
+					if len(ui.editing) > 0 {
+						queue_edit(&ui, client)
+					}
 				}
 			}
 		}
-	}
 
-	// Persist the open chat's half-written draft across restarts.
-	messages_collect()
-	chats_collect()
-	stt_stop(&ui)
-	tts_stop(&ui)
-	preview_close()
-	web_close()
-	nes_close()
-	xdc_stop()
-	stash_draft(&ui)
-	save_settings(&ui)
-	settings_stop(&ui)
+		// Persist the open chat's half-written draft across restarts.
+		messages_collect()
+		chats_collect()
+		stash_draft(&ui)
 
-	// Shutdown order matters: closing the runtime makes the blocking
-	// subscription read return CLOSED (worker exits), then the sub is
-	// freed before the client that created it.
-	local_timing_bind(nil)
-	if client != nil {marmot.client_shutdown(client)}
-	stop_gimg_worker()
-	stop_pic_worker()
-	auth_stop()
-	retention_stop()
-	for worker in send_threads {thread.join(worker); thread.destroy(worker)}
-	forward_stop(&ui)
-	sticker_stop()
-	gif_stop(&ui)
-	delete(send_threads)
-	timeline_stop()
-	members_stop()
-	group_files_stop()
-	export_stop(&ui)
-	issues_stop(&ui)
-	search_stop()
-	if live.refresh != nil {chat_list_free(live.refresh); free(live.refresh)}
-	media_stop()
-	agent_shutdown()
-	if client != nil {
-		if live.worker != nil {
-			thread.join(live.worker)
-			thread.destroy(live.worker)
-			marmot.chat_list_subscription_free(live.sub)
+		// Shutdown order matters: closing the runtime makes the blocking
+		// subscription read return CLOSED (worker exits), then the sub is
+		// freed before the client that created it.
+		session_stop(&ui, client, &live)
+		preview_close()
+		web_close()
+		nes_close()
+		lock_scrub_ui(&ui)
+		delete(live.account)
+		for done in failed_edits {edit_result_free(done)}
+		delete(failed_edits); failed_edits = {}
+		for done in ops_done {
+			for page in done.history {marmot.edit_history_free(page)}
+			delete(done.history)
+			if done.op == .Edit ||
+			   done.op == .Lookup_Member ||
+			   done.op == .History ||
+			   done.op == .Issue ||
+			   done.op == .Issue_Setting {edit_result_free(done)} else {delete(done.err)}
 		}
-		if live.events_worker != nil {
-			thread.join(live.events_worker)
-			thread.destroy(live.events_worker)
-			marmot.events_subscription_free(live.events_sub)
-		}
-		marmot.client_free(client)
-	}
-	delete(live.account)
-	for done in failed_edits {edit_result_free(done)}
-	delete(failed_edits)
-	for done in ops_done {
-		for page in done.history {marmot.edit_history_free(page)}
-		delete(done.history)
-		if done.op == .Edit ||
-		   done.op == .Lookup_Member ||
-		   done.op == .History ||
-		   done.op == .Issue ||
-		   done.op == .Issue_Setting {edit_result_free(done)} else {delete(done.err)}
-	}
-	delete(ops_done)
-	for v in ui.hist_versions {delete(v.at); delete(v.text); blocks_free(v.blocks)}
-	delete(ui.hist_versions)
-	for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
-	delete(ui.staged)
-	for key, files in ui.staged_drafts {
-		ui.staged = files
+		delete(ops_done); ops_done = {}
 		for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
-		delete(ui.staged); delete(key)
+		delete(ui.staged)
+		for key, files in ui.staged_drafts {
+			ui.staged = files
+			for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
+			delete(ui.staged); delete(key)
+		}
+		delete(ui.staged_drafts)
+		delete(ui.compose_issue)
+		for row in ui.chats {chat_free(row)}
+		for row in ui.archived {chat_free(row)}
+		delete(ui.chats); delete(ui.archived); delete(retired_chats); retired_chats = {}
+		for msg in ui.messages {message_free(msg)}
+		delete(ui.messages)
+		delete(ui.messages_group)
+		delete(ui.messages_account)
+		wrap_clear()
+		delete(wrap_cache); wrap_cache = {}
+		math_stop()
+		session_media_clear()
+		vault_lock()
+		if !ui.lock_requested {break}
+		prefs, theme, accent := ui.prefs, ui.theme, ui.accent
+		ui = {}
+		ui.prefs, ui.theme, ui.accent = prefs, theme, accent
+		ui.lock_requested = true
+		ui.selected = -1
+		ui.selected_contact = -1
+		ui.mention_dismissed = -1
+		ui.shortcode_dismissed = -1
+		ui.member_nick = -1
+		ui.member_menu = -1
+		ui.row_menu = -1
+		ui.folder_rename = -1
+		edit.init(&ui.ed, context.allocator, context.allocator)
+		ui.ed.set_clipboard = clip_set
+		ui.ed.get_clipboard = clip_get
+		append(&ui.client_input, ..transmute([]u8)ui.prefs.event_client)
+		g_prefs = &ui.prefs
+		devctl_reset_input()
 	}
-	delete(ui.staged_drafts)
-	delete(ui.compose_issue)
-	for row in ui.chats {chat_free(row)}
-	for row in ui.archived {chat_free(row)}
-	delete(ui.chats); delete(ui.archived); delete(retired_chats)
-	for msg in ui.messages {message_free(msg)}
-	delete(ui.messages)
-	delete(ui.messages_group)
-	delete(ui.messages_account)
-	wrap_clear()
-	delete(wrap_cache)
-	math_stop()
-	for _, view in video_views {if view != nil {video_view_free(view)}}
-	for _, view in stl_views {if view != nil {stl_view_free(view)}}
-	for _, view in pdf_views {if view != nil {pdf_view_free(view)}}
-	for _, view in tor_views {if view != nil {tor_view_free(view)}}
-	vault_lock()
 	rl.CloseWindow()
 }

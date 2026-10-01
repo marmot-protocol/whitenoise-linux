@@ -240,6 +240,13 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if ui.page == .Contacts {
+		if clicked("ContactsImportBtn") {
+			if ui.contact_import != nil || ui.picking_contacts {return}
+			ui.picking_contacts = true
+			set_status(ui, tr("Choose a contacts CSV or JSON export to import."), .Info)
+			rl.OpenFileDialog(false)
+			return
+		}
 		if clicked("ContactsCsvBtn") {
 			export_contacts(ui, .Csv)
 			return

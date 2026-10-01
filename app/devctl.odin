@@ -101,6 +101,12 @@ devctl_poll :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, pointer: 
 	devctl_apply_input(frame, pointer)
 }
 
+devctl_reset_input :: proc() {
+	for input in dev_queue {delete(input.text)}
+	clear(&dev_queue)
+	dev_next_frame = 0
+}
+
 @(private = "file")
 devctl_read :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int) {
 	path := os.get_env("WN_DEV_CMD", context.temp_allocator)

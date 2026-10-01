@@ -159,6 +159,31 @@ dev_vault_read :: proc(cache: []u8) -> bool {
 	}
 }
 
+// A one-byte marker survives watcher process replacement. An empty cache
+// is also used before first unlock, so truncating alone cannot tell the
+// next process to refuse its inherited WN_VAULT_PW startup automation.
+dev_vault_revoke :: proc() {
+	when ODIN_OS == .Linux {
+		fd := dev_vault_fd()
+		if fd < 0 {return}
+		marker := [1]u8{1}
+		linux.ftruncate(fd, 0)
+		linux.pwrite(fd, marker[:], 0)
+	}
+}
+
+dev_vault_manual_locked :: proc() -> bool {
+	when ODIN_OS == .Linux {
+		fd := dev_vault_fd()
+		if fd < 0 {return false}
+		marker: [2]u8
+		n, err := linux.pread(fd, marker[:], 0)
+		return err == .NONE && n == 1 && marker[0] == 1
+	} else {
+		return false
+	}
+}
+
 vault_path :: proc(allocator := context.temp_allocator) -> string {
 	return fmt.aprintf("%s/vault.db", data_home, allocator = allocator)
 }
@@ -430,6 +455,15 @@ vault_lock :: proc() {
 	sync.lock(&g_vault_lock)
 	defer sync.unlock(&g_vault_lock)
 	vault_wipe(&g_vault)
+}
+
+// A user lock is different from a development module restart: revoke the
+// inherited key as well, so the watcher cannot reopen this vault unattended.
+vault_relock :: proc() {
+	sync.lock(&g_vault_lock)
+	defer sync.unlock(&g_vault_lock)
+	vault_wipe(&g_vault)
+	dev_vault_revoke()
 }
 
 // Forget the vault file and everything sealed under its key: the media

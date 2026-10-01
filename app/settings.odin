@@ -7,6 +7,7 @@ import "core:time"
 
 import "core:encoding/json"
 import "core:fmt"
+import "core:mem"
 import "core:os"
 import "core:strings"
 import "core:thread"
@@ -28,6 +29,7 @@ Prefs :: struct {
 	hour12:                bool,
 	date_format:           int, // index into DATE_FORMATS
 	quick_reactions:       [dynamic]string,
+	recent_emoji:          [dynamic]string, // emoji picker, newest first, max 8
 	recent_searches:       [dynamic]string, // global search, newest first, max 8
 	mention_read:          [dynamic]string, // seen mention message ids, capped
 	// Notifications
@@ -168,16 +170,30 @@ save_hidden :: proc(ui: ^Ui_State) {
 	_ = os.write_entire_file(path, data)
 }
 
-load_settings :: proc(ui: ^Ui_State) {
+Settings_Load :: enum {
+	Preferences,
+	Session,
+}
+
+load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	ui.prefs = default_prefs()
-	load_hidden(ui)
+	defer {
+		if len(ui.prefs.recent_emoji) == 0 {
+			for entry in QUICK_REACT {
+				append(&ui.prefs.recent_emoji, strings.clone(entry.emoji))
+			}
+		}
+	}
+	if mode == .Session {load_hidden(ui)}
 
 	data, read_err := os.read_entire_file(settings_path(), context.temp_allocator)
+	defer mem.zero_slice(data)
 	if read_err != nil {
 		return
 	}
 	settings: Settings
 	if json.unmarshal(data, &settings) != nil {
+		settings_discard_private(settings.nicknames, settings.drafts, settings.blocked)
 		return
 	}
 	ui.theme = clamp(settings.theme, 0, max(len(theme_packs) - 1, 0))
@@ -191,12 +207,14 @@ load_settings :: proc(ui: ^Ui_State) {
 	}
 	delete(settings.theme_name)
 	ui.accent = clamp(settings.accent, 0, 4)
-	ui.nicknames = settings.nicknames // unmarshal allocated on the heap; adopt as-is
-	ui.drafts = settings.drafts
-	for hex in settings.blocked {
-		ui.blocked[hex] = true
+	if mode == .Session {
+		ui.nicknames = settings.nicknames // unmarshal allocated on the heap; adopt as-is
+		ui.drafts = settings.drafts
+		for hex in settings.blocked {ui.blocked[hex] = true}
+		delete(settings.blocked)
+	} else {
+		settings_discard_private(settings.nicknames, settings.drafts, settings.blocked)
 	}
-	delete(settings.blocked)
 
 	// zoom_pct 0 marks a pre-prefs settings.json (or a fresh one):
 	// keep the defaults instead of adopting a zeroed struct.
@@ -235,6 +253,40 @@ load_settings :: proc(ui: ^Ui_State) {
 	}
 }
 
+// Unlock restores only session-local data. The already loaded preferences
+// (including emoji history) keep their original ownership across relocks.
+load_session_settings :: proc(ui: ^Ui_State) {
+	load_hidden(ui)
+	data, read_err := os.read_entire_file(settings_path(), context.temp_allocator)
+	defer mem.zero_slice(data)
+	if read_err != nil {return}
+	settings: struct {
+		nicknames: map[string]string,
+		drafts:    map[string]string,
+		blocked:   [dynamic]string,
+	}
+	if json.unmarshal(data, &settings) != nil {
+		settings_discard_private(settings.nicknames, settings.drafts, settings.blocked)
+		return
+	}
+	ui.nicknames, ui.drafts = settings.nicknames, settings.drafts
+	for hex in settings.blocked {ui.blocked[hex] = true}
+	delete(settings.blocked)
+}
+
+settings_discard_private :: proc(nicknames, drafts: map[string]string, blocked: [dynamic]string) {
+	for entries in ([2]map[string]string{nicknames, drafts}) {
+		for key, text in entries {
+			mem.zero_slice(transmute([]u8)key)
+			mem.zero_slice(transmute([]u8)text)
+			delete(key); delete(text)
+		}
+		delete(entries)
+	}
+	for hex in blocked {mem.zero_slice(transmute([]u8)hex); delete(hex)}
+	delete(blocked)
+}
+
 save_settings :: proc(ui: ^Ui_State, background := false) {
 	timing_start := time.tick_now()
 	defer local_timing_end(.settings_save, timing_start)
@@ -260,13 +312,14 @@ save_settings :: proc(ui: ^Ui_State, background := false) {
 		return
 	}
 	if !background && ui.settings_job == nil {
-		defer delete(data)
+		defer {mem.zero_slice(data); delete(data)}
 		path := settings_path()
 		if path == "" {return}
 		os.make_directory(path[:len(path) - len("/settings.json")])
 		_ = os.write_entire_file(path, data)
 		return
 	}
+	mem.zero_slice(ui.settings_pending)
 	delete(ui.settings_pending)
 	ui.settings_pending = data
 	settings_drain(ui)
@@ -287,6 +340,7 @@ settings_drain :: proc(ui: ^Ui_State) {
 		if !thread.is_done(job.worker) {return}
 		thread.join(job.worker)
 		thread.destroy(job.worker)
+		mem.zero_slice(job.data)
 		delete(job.data)
 		free(job)
 		ui.settings_job = nil

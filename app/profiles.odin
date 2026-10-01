@@ -626,6 +626,8 @@ pic_load :: proc(url: string) -> []u8 {
 
 start_pic_worker :: proc() {
 	context.allocator = reload_allocator()
+	pic_stopping = false
+	refresh_stopping = false
 	pic_thread = thread.create(pic_worker)
 	thread.start(pic_thread)
 	refresh_thread = thread.create(refresh_worker)
@@ -643,6 +645,30 @@ stop_pic_worker :: proc() {
 	thread.destroy(pic_thread)
 	pic_thread = nil
 	profile_reads_stop()
+	refresh_client = nil
+	for id in refresh_queue {delete(id)}
+	for id in refresh_done {delete(id)}
+	delete(refresh_queue); refresh_queue = {}
+	delete(refresh_done); refresh_done = {}
+	clear(&refresh_asked)
+	for url in pic_queue {delete(url)}
+	delete(pic_queue); pic_queue = {}
+	for picture in pic_done {
+		delete(picture.url)
+		delete(picture.pixels)
+		if picture.thumb.data != nil {rl.UnloadImage(picture.thumb)}
+	}
+	delete(pic_done); pic_done = {}
+	clear(&pic_requested)
+}
+
+profile_session_clear :: proc() {
+	session_textures_clear(&pic_textures)
+	for key, info in profile_cache {
+		delete(key); delete(info.name); delete(info.pic_url); delete(info.nip05)
+	}
+	clear(&profile_cache)
+	clear(&profile_order)
 }
 
 // Upload generated fingerprints and decode photos into round avatar textures.

@@ -1,6 +1,7 @@
 package main
 
 import marmot "../marmot"
+import "core:mem"
 
 // A reload may run inside a click handler. Keep the previous rows alive
 // until every handler and render command for that frame has finished.
@@ -53,6 +54,7 @@ message_matches :: proc(
 @(private)
 blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 	for block in blocks {
+		mem.zero_slice(transmute([]u8)block.text)
 		delete(block.text)
 		delete(block.fonts)
 		delete(block.alignments)
@@ -64,6 +66,7 @@ blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 		delete(block.cell_fonts)
 		for row in block.cells {
 			for cell in row {
+				mem.zero_slice(transmute([]u8)cell)
 				delete(cell)
 			}
 			delete(row)
@@ -77,6 +80,7 @@ blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 message_free :: proc(msg: Msg_Ui) {
 	sticker_ref_free(msg.sticker)
 	for value in ([]string{msg.id, msg.sender, msg.sender_id, msg.pic_url, msg.body, msg.reply_from, msg.reply_from_id, msg.reply_text, msg.reply_id, msg.reply_image, msg.at, msg.at_full, msg.day, msg.sys_text, msg.sys_added_hex, msg.theme_name, msg.theme_toml, msg.thread_of}) {
+		mem.zero_slice(transmute([]u8)value)
 		delete(value)
 	}
 	blocks_free(msg.blocks)
@@ -93,6 +97,7 @@ message_free :: proc(msg: Msg_Ui) {
 	delete(msg.reactions)
 	for version in msg.history {
 		delete(version.at)
+		mem.zero_slice(transmute([]u8)version.text)
 		delete(version.text)
 		blocks_free(version.blocks)
 	}

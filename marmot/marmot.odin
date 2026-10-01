@@ -1271,6 +1271,7 @@ foreign lib {
 	// NIP-02 follow list. follow/unfollow publish the updated list and
 	// write the new follow set.
 	account_follows :: proc(client: ^Client, account_ref: cstring, out: ^^String_List) -> Status ---
+	follow_user :: proc(client: ^Client, account_ref: cstring, user_ref: cstring, out: ^^String_List) -> Status ---
 	unfollow_user :: proc(client: ^Client, account_ref: cstring, user_ref: cstring, out: ^^String_List) -> Status ---
 
 	// Resolve and cache KeyPackages for prospective members. Asked

@@ -71,6 +71,31 @@ vault_dev_session :: proc(t: ^testing.T) {
 	linux.ftruncate(fd, 1)
 	testing.expect_value(t, vault_open("", .Dev_Cache), Vault_Err.Wrong_Password)
 	testing.expect_value(t, vault_open("second"), Vault_Err.None)
+	sealed, sealed_ok := vault_seal_blob(transmute([]u8)string("private session"))
+	testing.expect(t, sealed_ok)
+	defer delete(sealed)
+	vault_relock()
+	testing.expect(
+		t,
+		dev_vault_manual_locked(),
+		"manual authentication survives a watcher process replacement",
+	)
+	testing.expect(t, !g_vault.unlocked)
+	testing.expect_value(t, g_vault.key, [VAULT_KEY_LEN]u8{})
+	testing.expect_value(t, vault_open("", .Dev_Cache), Vault_Err.Wrong_Password)
+	_, opened := vault_open_blob(sealed)
+	testing.expect(t, !opened)
+	testing.expect_value(t, vault_open("wrong"), Vault_Err.Wrong_Password)
+	testing.expect(t, !g_vault.unlocked)
+	testing.expect_value(t, vault_open("second"), Vault_Err.None)
+	plain, reopened := vault_open_blob(sealed)
+	testing.expect(
+		t,
+		!dev_vault_manual_locked(),
+		"a real password unlock re-enables development reload",
+	)
+	defer delete(plain)
+	testing.expect(t, reopened && string(plain) == "private session")
 	vault_delete()
 	n, _ := linux.pread(fd, stale[:], 0)
 	testing.expect_value(t, n, 0)

@@ -225,9 +225,11 @@ gate_poll :: proc() -> bool {
 		gate_err = tr("Couldn't create the vault. Please try again.")
 	case gate_job.err == .Wrong_Password:
 		gate_err = tr("Couldn't unlock the vault. Double-check the password and try again.")
+		mem.zero_slice(gate_pw[:])
 		clear(&gate_pw)
 	case:
 		gate_err = tr("Couldn't read the vault file. Please try again.")
+		mem.zero_slice(gate_pw[:])
 		clear(&gate_pw)
 	}
 	return false
@@ -242,6 +244,7 @@ gate_close :: proc() {
 	gate_pw = nil
 	gate_pw2 = nil
 	gate_check = {}
+	gate_job = {}
 }
 
 // Unlock an existing vault, or create one on first run. Runs its own
@@ -249,14 +252,21 @@ gate_close :: proc() {
 // be handed to marmot at client construction. False = the user closed
 // the window.
 vault_gate :: proc(ui: ^Ui_State) -> bool {
+	ui.lock_requested = ui.lock_requested || dev_vault_manual_locked()
 	// Headless runs (the dmvm harness) have no one to type a password.
-	if pw := os.get_env("WN_VAULT_PW", context.temp_allocator); pw != "" {
+	if pw := os.get_env("WN_VAULT_PW", context.temp_allocator); pw != "" && !ui.lock_requested {
 		return vault_exists() ? vault_open(pw) == .None : vault_create(pw) == .None
 	}
 	when #config(WN_DEV, false) {
-		if vault_open("", .Dev_Cache) == .None {return true}
+		if !ui.lock_requested && vault_open("", .Dev_Cache) == .None {return true}
 	}
 
+	gate_err = ""
+	gate_confirm = false
+	gate_reset_armed = false
+	gate_job = {}
+	devctl_reset_input()
+	defer editor_forget(ui)
 	defer gate_close()
 	defer gate_join()
 	shot := os.get_env("WN_SHOT", context.temp_allocator) != ""
@@ -267,6 +277,8 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		apply_zoom(ui) // and its own resize response; a no-op unless the width moved
 
 		pointer := transmute(clay.Vector2)rl.GetMousePosition()
+		forced_press, forced_release = false, false
+		devctl_poll(ui, nil, frame, &pointer)
 		pointer.x /= UI_ZOOM
 		pointer.y /= UI_ZOOM
 		clay.SetPointerState(pointer, rl.IsMouseButtonDown(.LEFT))
@@ -279,6 +291,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM})
 		clay_raylib_render(&render_commands)
 		rl.EndMode2D()
+		devctl_draw()
 		// WN_SHOT with no password to type: capture the gate itself and
 		// quit, the same contract the main loop honors. Captured before
 		// EndDrawing; the backbuffer is undefined after present.
@@ -289,6 +302,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		}
 		rl.EndDrawing()
 		if gate_job.worker != nil && gate_poll() {
+			ui.lock_requested = false
 			return true
 		}
 		gate_input(ui)

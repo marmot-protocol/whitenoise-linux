@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:mem"
 import "core:os"
 import "core:slice"
 import "core:strings"
@@ -1993,10 +1994,20 @@ auth_thread: ^thread.Thread
 
 @(private)
 auth_stop :: proc() {
-	if auth_thread == nil {return}
-	thread.join(auth_thread)
-	thread.destroy(auth_thread)
-	auth_thread = nil
+	if auth_thread != nil {
+		thread.join(auth_thread)
+		thread.destroy(auth_thread)
+		auth_thread = nil
+	}
+	if auth_job != nil {auth_job_free(auth_job); auth_job = nil}
+	auth_done = false
+}
+
+auth_job_free :: proc(job: ^Auth_Job) {
+	mem.zero_slice(transmute([]u8)job.nsec)
+	delete(job.nsec); delete(job.hex); delete(job.pic_url); delete(job.err)
+	job.client = nil
+	free(job)
 }
 
 @(private)
@@ -2075,13 +2086,7 @@ drain_auth :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	job := auth_job
 	auth_job = nil
-	defer {
-		delete(job.nsec)
-		delete(job.hex)
-		delete(job.pic_url)
-		delete(job.err)
-		free(job)
-	}
+	defer auth_job_free(job)
 
 	if len(job.err) > 0 {
 		ui.login_error = strings.clone(job.err)

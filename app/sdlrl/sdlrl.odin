@@ -350,9 +350,10 @@ OpenFileDialog :: proc(allow_many: bool) {
 
 // Drain the paths picked since the last call. The caller owns the
 // returned array and its strings.
-PickedFiles :: proc() -> [dynamic]string {
+PickedFiles :: proc(completed: ^bool = nil) -> [dynamic]string {
 	sync.lock(&picked_mutex)
 	defer sync.unlock(&picked_mutex)
+	if completed != nil {completed^ = picked_callbacks > 0}
 	out := picked_paths
 	picked_paths = {}
 	when #config(WN_RELOAD, false) {wn_dev_dialogs_consumed(picked_callbacks)}

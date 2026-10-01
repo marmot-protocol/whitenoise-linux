@@ -273,6 +273,8 @@ xdc_stop :: proc() {
 	thread.destroy(xdc_worker)
 	net.close(listener)
 	xdc_worker = nil
+	listener = {}
+	xdc_connection = {}
 }
 
 // Caller holds the mutex. Binds an ephemeral loopback port and leaves
@@ -291,6 +293,7 @@ xdc_serve_start :: proc() -> bool {
 		return false
 	}
 	listener = sock
+	xdc_stopping = false
 	xdc.port = endpoint.port
 	xdc_worker = thread.create_and_start(xdc_serve)
 	return true

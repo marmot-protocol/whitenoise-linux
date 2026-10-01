@@ -8,6 +8,7 @@
 package main
 
 import "core:encoding/base64"
+import "core:encoding/csv"
 import "core:encoding/json"
 import "core:fmt"
 import "core:math"
@@ -27,6 +28,107 @@ Transcript_Kind :: enum {
 Contacts_Kind :: enum {
 	Csv,
 	Json,
+}
+
+@(private)
+Contacts_File_Row :: struct {
+	name, npub, nickname: string,
+	blocked:              bool,
+}
+
+// Parse the complete document before following anyone. Strings belong to the
+// supplied allocator, which the import worker resets after the batch finishes.
+@(private)
+contacts_parse :: proc(
+	data: []u8,
+	kind: Contacts_Kind,
+) -> (
+	rows: [dynamic]Contacts_File_Row,
+	error: string,
+	record: int,
+) {
+	rows = make([dynamic]Contacts_File_Row, context.temp_allocator)
+	if kind == .Json {
+		value, err := json.parse(data, allocator = context.temp_allocator)
+		if err !=
+		   nil {return rows, N_("Couldn't import contacts. Choose a valid contacts JSON export."), 0}
+		defer json.destroy_value(value, allocator = context.temp_allocator)
+		items, ok := value.(json.Array)
+		if !ok {return rows, N_("Couldn't import contacts. Choose a JSON array of contact records."), 0}
+		for item, i in items {
+			object, is_object := item.(json.Object)
+			name, has_name := object["name"].(json.String)
+			npub, has_npub := object["npub"].(json.String)
+			nickname, has_nickname := object["nickname"].(json.String)
+			blocked, has_blocked := object["blocked"].(json.Boolean)
+			if !is_object ||
+			   len(object) != 4 ||
+			   !has_name ||
+			   !has_npub ||
+			   !has_nickname ||
+			   !has_blocked {
+				return rows,
+					N_(
+						"Couldn't import contacts. Fix JSON record %d: name, npub and nickname must be strings, and blocked must be true or false.",
+					),
+					i + 1
+			}
+			append(
+				&rows,
+				Contacts_File_Row {
+					strings.clone(string(name), context.temp_allocator),
+					strings.clone(string(npub), context.temp_allocator),
+					strings.clone(string(nickname), context.temp_allocator),
+					bool(blocked),
+				},
+			)
+		}
+		return
+	}
+	reader := csv.Reader {
+		fields_per_record   = 4,
+		reuse_record        = true,
+		reuse_record_buffer = true,
+	}
+	csv.reader_init_with_string(&reader, string(data), context.temp_allocator)
+	defer csv.reader_destroy(&reader)
+	header, err := csv.read(&reader)
+	if err != nil ||
+	   len(header) != 4 ||
+	   header[0] != "name" ||
+	   header[1] != "npub" ||
+	   header[2] != "nickname" ||
+	   header[3] != "blocked" {
+		return rows,
+			N_("Couldn't import contacts. Use the CSV header name,npub,nickname,blocked."),
+			0
+	}
+	for i := 1;; i += 1 {
+		fields, err := csv.read(&reader)
+		if csv.is_io_error(err, .EOF) {break}
+		if err != nil {
+			return rows,
+				N_(
+					"Couldn't import contacts. Fix CSV record %d: use four fields and double quotes inside quoted fields.",
+				),
+				i
+		}
+		if fields[3] != "true" && fields[3] != "false" {
+			return rows,
+				N_("Couldn't import contacts. Set blocked to true or false in CSV record %d."),
+				i
+		}
+		append(
+			&rows,
+			Contacts_File_Row {
+				strings.clone(fields[0], context.temp_allocator),
+				strings.clone(fields[1], context.temp_allocator),
+				strings.clone(fields[2], context.temp_allocator),
+				fields[3] == "true",
+			},
+		)
+	}
+	return
 }
 
 // Escape text landing inside an HTML element or attribute.
@@ -321,15 +423,11 @@ export_contacts :: proc(ui: ^Ui_State, kind: Contacts_Kind) {
 			fmt.sbprintf(&b, ",%t\n", ui.blocked[contact.id_hex])
 		}
 	} else {
-		Row :: struct {
-			name, npub, nickname: string,
-			blocked:              bool,
-		}
-		rows := make([dynamic]Row, context.temp_allocator)
+		rows := make([dynamic]Contacts_File_Row, context.temp_allocator)
 		for contact in ui.contacts {
 			append(
 				&rows,
-				Row {
+				Contacts_File_Row {
 					contact.name,
 					contact.npub,
 					ui.nicknames[contact.id_hex],

@@ -40,6 +40,7 @@ Cmd :: enum {
 	Zoom_Out,
 	Zoom_Reset,
 	Shortcuts,
+	Lock_Now,
 	Sign_Out,
 }
 
@@ -74,6 +75,7 @@ COMMANDS := [Cmd]struct {
 	.Zoom_Out          = {N_("Zoom out"), "Ctrl -"},
 	.Zoom_Reset        = {N_("Reset zoom"), "Ctrl 0"},
 	.Shortcuts         = {N_("Keyboard shortcuts"), N_("Help")},
+	.Lock_Now          = {N_("Lock now"), N_("Account")},
 	.Sign_Out          = {N_("Sign out"), N_("Account")},
 }
 
@@ -381,5 +383,7 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		ui.shortcuts_open = true
 	case .Sign_Out:
 		confirm_ask(ui, .Sign_Out, ui.account_ref, account_label(ui, ui.account_ref))
+	case .Lock_Now:
+		lock_now(ui)
 	}
 }

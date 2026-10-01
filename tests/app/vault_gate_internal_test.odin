@@ -1,5 +1,6 @@
 package main
 
+import gate_runtime "base:runtime"
 import gate_sync "core:sync"
 import gate_testing "core:testing"
 
@@ -64,4 +65,51 @@ vault_gate_password_policy :: proc(t: ^gate_testing.T) {
 	clear(&gate_pw); append(&gate_pw, "x")
 	gate_testing.expect(t, gate_submit(&ui))
 	gate_testing.expect(t, vault_verify("x"))
+}
+
+@(test)
+vault_gate_manual_relock :: proc(t: ^gate_testing.T) {
+	// Without a reload heap, gate threads own vault data in the default allocator.
+	context.allocator = gate_runtime.default_context().allocator
+	gate_sync.lock(&clay_test_mutex)
+	defer gate_sync.unlock(&clay_test_mutex)
+	gate_sync.lock(&test_home_lock)
+	defer gate_sync.unlock(&test_home_lock)
+	home, err := os.make_directory_temp("", "wn-relock", context.temp_allocator)
+	if !gate_testing.expect(t, err == nil) {return}
+	defer os.remove_all(home)
+	old_home := data_home
+	data_home = home
+	defer {vault_delete(); data_home = old_home; gate_close(); gate_confirm = false; gate_err = ""}
+	previous := clay.GetCurrentContext()
+	memory: []u8
+	init_layout(&memory, 32768, {800, 700})
+	defer {clay.SetCurrentContext(previous); delete(memory)}
+	clay.BeginLayout(); clay.EndLayout(0)
+	old_password := os.get_env("WN_VAULT_PW", context.temp_allocator)
+	os.set_env("WN_VAULT_PW", "right")
+	defer {
+		if old_password ==
+		   "" {os.unset_env("WN_VAULT_PW")} else {os.set_env("WN_VAULT_PW", old_password)}
+	}
+	gate_testing.expect_value(t, vault_create("right"), Vault_Err.None)
+	gate_testing.expect_value(t, vault_set("account:alice", "signing-secret"), Vault_Err.None)
+	ui: Ui_State
+	lock_now(&ui)
+	gate_testing.expect(t, ui.lock_requested)
+	gate_testing.expect_value(t, os.get_env("WN_VAULT_PW", context.temp_allocator), "")
+	vault_relock()
+	gate_testing.expect(t, !g_vault.unlocked)
+	gate_testing.expect(t, !vault_has("account:alice"))
+	gate_testing.expect_value(t, g_vault.key, [VAULT_KEY_LEN]u8{})
+	rl.PushKey(.ENTER, true)
+	defer rl.PushKey(.ENTER, false)
+	append(&gate_pw, "wrong")
+	gate_testing.expect(t, !gate_submit(&ui))
+	gate_testing.expect(t, !g_vault.unlocked)
+	gate_testing.expect(t, ui.lock_requested)
+	append(&gate_pw, "right")
+	gate_testing.expect(t, gate_submit(&ui))
+	value, found := vault_get("account:alice", context.temp_allocator)
+	gate_testing.expect(t, found && value == "signing-secret")
 }
