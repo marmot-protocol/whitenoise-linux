@@ -286,7 +286,7 @@ gs_next :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 // Push the current query to the front of the persisted recents.
 gs_remember :: proc(ui: ^Ui_State) {
-	q := string(ui.gs_input[:])
+	q := strings.trim_space(string(ui.gs_input[:]))
 	if len(q) == 0 {
 		return
 	}

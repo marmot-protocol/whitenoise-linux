@@ -1491,6 +1491,7 @@ chat_list_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
 	chats_replace(&ui.chats, fresh)
 	if search_group != "" {
 		gs_keep_open_chat(ui, search_group)
+		ui.selected = -1
 		for chat, i in ui.chats {if chat.group_id == search_group {ui.selected = i; break}}
 	}
 	ui.my_pic_url = profile_info(job.client, string(job.account)).pic_url

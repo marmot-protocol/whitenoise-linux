@@ -2,10 +2,13 @@
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 
+import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
+import "core:os"
 import "core:strings"
+import "core:sync"
 import "core:testing"
 import rl "sdlrl"
 
@@ -251,6 +254,75 @@ gs_archived_destination_owns_navigation_metadata :: proc(t: ^testing.T) {
 		len(ui.chats) == 1,
 		"Repeated navigation must not duplicate the same conversation",
 	)
+}
+
+@(test)
+gs_refresh_clears_missing_search_chat :: proc(t: ^testing.T) {
+	defer profile_session_clear()
+	rows := [?]marmot.Presented_Chat_Row{{row = {group_id_hex = "visible"}}}
+	list := marmot.Presented_Chat_List {
+		rows     = raw_data(rows[:]),
+		rows_len = 1,
+	}
+	job := Chat_List_Work {
+		account = "acct",
+		rows    = &list,
+	}
+	ui: Ui_State
+	defer {
+		chats_collect()
+		for chat in ui.chats {chat_free(chat)}
+		delete(ui.chats)
+		for chat in ui.gs_chats {chat_free(chat)}
+		delete(ui.gs_chats)
+		delete(ui.filter_hits)
+	}
+
+	ui.selected = 0
+	append(&ui.chats, chat_clone(Chat_Row_Ui{group_id = "archived", search_only = true}))
+	chat_list_apply(&ui, &job)
+	testing.expect_value(t, ui.selected, -1)
+	testing.expect_value(t, len(ui.chats), 1)
+	testing.expect_value(t, ui.chats[0].group_id, "visible")
+
+	for chat in ui.chats {chat_free(chat)}
+	clear(&ui.chats)
+	append(&ui.chats, chat_clone(Chat_Row_Ui{group_id = "archived", search_only = true}))
+	append(&ui.gs_chats, chat_clone(Chat_Row_Ui{group_id = "archived", title = "Archived"}))
+	ui.selected = 0
+	chat_list_apply(&ui, &job)
+	testing.expect_value(t, ui.selected, 1)
+	testing.expect_value(t, ui.chats[ui.selected].group_id, "archived")
+	testing.expect(t, ui.chats[ui.selected].search_only)
+}
+
+@(test)
+gs_remember_skips_blank_query :: proc(t: ^testing.T) {
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	home, err := os.make_directory_temp("", "wn-gs-recent", context.temp_allocator)
+	if !testing.expect(t, err == nil) {return}
+	defer os.remove_all(home)
+	previous := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
+	os.set_env("XDG_CONFIG_HOME", home)
+	defer {
+		if previous ==
+		   "" {os.unset_env("XDG_CONFIG_HOME")} else {os.set_env("XDG_CONFIG_HOME", previous)}
+	}
+	ui: Ui_State
+	defer {
+		for q in ui.prefs.recent_searches {delete(q)}
+		delete(ui.prefs.recent_searches)
+		delete(ui.gs_input)
+	}
+	append(&ui.gs_input, " \t ")
+	gs_remember(&ui)
+	testing.expect_value(t, len(ui.prefs.recent_searches), 0)
+	clear(&ui.gs_input)
+	append(&ui.gs_input, "  hello  ")
+	gs_remember(&ui)
+	testing.expect_value(t, len(ui.prefs.recent_searches), 1)
+	testing.expect_value(t, ui.prefs.recent_searches[0], "hello")
 }
 
 @(test)
