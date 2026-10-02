@@ -1701,6 +1701,31 @@ chat_composer :: proc(ui: ^Ui_State) {
 					}
 					clay.Text(ICON_POLL, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
 				}
+				// Once a day per chat; lit and inert after it went out.
+				if ui.editing == "" && ui.compose_issue == "" {
+					sent := gm_sent_today(ui)
+					if clay.UI(clay.ID("GmBtn"))(
+					{
+						layout = {padding = {left = 5, right = 5, top = 3, bottom = 3}},
+						backgroundColor = hovered() && !sent ? HOVER : {},
+						cornerRadius = rr(6),
+					},
+					) {
+						if hovered() {
+							tooltip(
+								sent ? tr("You said GM here today") : tr("Say GM (once a day)"),
+							)
+						}
+						clay.Text(
+							"GM",
+							{
+								fontId = FONT_TITLE,
+								fontSize = 12,
+								textColor = sent ? ACCENT_DIM : TEXT_LO,
+							},
+						)
+					}
+				}
 				if ui.prefs.stt_enabled {
 					micro_button("DictateBtn", tr("Dictate"), ui.stt.file != nil ? TEXT_LO : {})
 				}

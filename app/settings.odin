@@ -32,6 +32,8 @@ Prefs :: struct {
 	recent_emoji:          [dynamic]string, // emoji picker, newest first, max 8
 	recent_searches:       [dynamic]string, // global search, newest first, max 8
 	mention_read:          [dynamic]string, // seen mention message ids, capped
+	gm_text:               string, // GM button message; "" sends GM_DEFAULT
+	gm_sent:               map[string]i64, // group id → local day of its last GM, today's only
 	// Notifications
 	notify_desktop:        bool,
 	notify_sound:          bool,

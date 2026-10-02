@@ -47,6 +47,7 @@ SETTINGS_TASKS := []Settings_Task {
 	{.General, N_("Restore the last chat on launch"), "RowRestore", "startup conversation", false},
 	{.General, N_("Change the date format"), "RowDateFmt", "calendar", false},
 	{.General, N_("Upload custom emoji"), "RowEmoji", "emoji messaging", false},
+	{.General, N_("Change your GM"), "RowGm", "good morning greeting daily", false},
 	{
 		.Folders,
 		N_("Organize your folders"),

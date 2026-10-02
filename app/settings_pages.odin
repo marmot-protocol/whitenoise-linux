@@ -313,6 +313,8 @@ settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
 		     "RowEmoji",
 		     "EmojiAdd",
 		     "EmojiNameBox",
+		     "RowGm",
+		     "GmBox",
 		     "RowShortcuts",
 		     "ShortcutsView":
 			return 2
@@ -976,6 +978,19 @@ settings_general :: proc(ui: ^Ui_State) {
 					settings_button("EmojiSave", tr("Save"))
 					settings_button("EmojiCancel", tr("Cancel"))
 				}
+			}
+		}
+
+		if clay.UI(clay.ID("GmGroup"))(settings_box()) {
+			settings_group(tr("GM button"))
+			row := settings_row()
+			row.layout.layoutDirection = .TopToBottom
+			if clay.UI(clay.ID("RowGm"))(row) {
+				row_labels(
+					tr("Your GM"),
+					tr("What the GM button sends. You can use it once a day in each chat."),
+				)
+				settings_input(ui, "GmBox", &ui.gm_input, GM_DEFAULT, ui.focus == .Gm)
 			}
 		}
 
@@ -2083,6 +2098,17 @@ settings_fields :: proc(ui: ^Ui_State) {
 	if ui.settings_section == .KP {
 		if field_mouse(ui, &ui.kp_input, "KpBox", 14) {
 			ui.focus = .KP
+		}
+	}
+	if ui.settings_section == .General && ui.settings_tab == 2 {
+		if field_mouse(ui, &ui.gm_input, "GmBox", 14) {
+			ui.focus = .Gm
+		}
+		// Commits every keystroke; the frame loop writes it in the background.
+		if string(ui.gm_input[:]) != ui.prefs.gm_text {
+			delete(ui.prefs.gm_text)
+			ui.prefs.gm_text = strings.clone(string(ui.gm_input[:]))
+			ui.settings_dirty = true
 		}
 	}
 	if ui.settings_section == .General && ui.settings_tab == 2 && len(ui.emoji_staged) > 0 {
