@@ -582,7 +582,33 @@ account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 				{fontId = FONT_MONO, fontSize = 10, textColor = ACCENT, letterSpacing = 2},
 			)
 		}
+		account_remove_button("AccountRemove", index)
 		clay.Text("›", {fontId = FONT_BODY, fontSize = 16, textColor = TEXT_LO})
+	}
+}
+
+// Trash button on a switcher row; the click asks to remove that account
+// from this device (handlers check it before the row's switch).
+@(private = "file")
+account_remove_button :: proc(id_str: string, index: u32) {
+	if clay.UI(clay.ID(id_str, index))(
+	{
+		layout = {
+			sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(28)},
+			childAlignment = {x = .Center, y = .Center},
+		},
+		backgroundColor = hovered() ? HOVER : {},
+		cornerRadius = rr(6),
+	},
+	) {
+		if hovered() {
+			tooltip(tr("Remove account"))
+			cursor_raise(.Pointer)
+		}
+		clay.Text(
+			ICON_TRASH,
+			{fontId = FONT_ICON, fontSize = 13, textColor = hovered() ? DANGER : TEXT_DIM},
+		)
 	}
 }
 
@@ -848,6 +874,7 @@ profile_rail :: proc(ui: ^Ui_State) {
 					{fontId = FONT_MONO, fontSize = 9, textColor = ACCENT, letterSpacing = 2},
 				)
 			}
+			account_remove_button("PrAcctRemove", u32(i))
 		}
 	}
 	if clay.UI(clay.ID("PrAddRow"))({layout = {padding = {left = 4, top = 4, bottom = 8}}}) {

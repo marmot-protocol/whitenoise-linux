@@ -2073,6 +2073,9 @@ msgstr "Für alle anderen bleibt sie erhalten. Auf diesem Gerät siehst du sie n
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr "Seine Datei wird von diesem Gerät entfernt. In einen Chat geteilte Themes bleiben dort erhalten."
 
+msgid "Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."
+msgstr "Seine Schlüssel und Chats werden von diesem Gerät gelöscht. Für alle anderen bleibt es Mitglied seiner Gruppen. Das lässt sich nicht rückgängig machen."
+
 msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
 msgstr "Seine Schlüssel bleiben im Tresor auf diesem Gerät. Du kannst dich über die Kontenübersicht wieder anmelden."
 
@@ -3024,6 +3027,9 @@ msgstr "Relays übertragen deine verschlüsselten Nachrichten. Die Standard-Rela
 msgid "Remove"
 msgstr "Entfernen"
 
+msgid "Remove account"
+msgstr "Konto entfernen"
+
 msgid "Remove admin rights?"
 msgstr "Adminrechte entziehen?"
 
@@ -3042,6 +3048,9 @@ msgstr "Gespeichertes GIF entfernen"
 msgid "Remove sticker"
 msgstr "Sticker entfernen"
 
+msgid "Remove this account?"
+msgstr "Dieses Konto entfernen?"
+
 msgid "Remove this contact?"
 msgstr "Diesen Kontakt entfernen?"
 
@@ -3050,6 +3059,9 @@ msgstr "Dieses Mitglied entfernen?"
 
 msgid "Remove this relay?"
 msgstr "Dieses Relay entfernen?"
+
+msgid "Removing your account from this device"
+msgstr "Dein Konto wird von diesem Gerät entfernt"
 
 msgid "Rename"
 msgstr "Umbenennen"
@@ -4120,6 +4132,9 @@ msgstr "Dein GM"
 
 msgid "Your account has a pending action. Complete it before reconnecting your signer."
 msgstr "Für dein Konto steht eine Aktion aus. Schließe sie ab, bevor du deinen Signer erneut verbindest."
+
+msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
+msgstr "Dein Konto ist entfernt, aber sein Signer-Eintrag konnte nicht aus dem verschlüsselten Tresor entfernt werden."
 
 msgid "Your current password"
 msgstr "Dein aktuelles Passwort"

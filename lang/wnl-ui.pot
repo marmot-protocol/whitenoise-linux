@@ -2072,6 +2072,9 @@ msgstr ""
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr ""
 
+msgid "Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."
+msgstr ""
+
 msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
 msgstr ""
 
@@ -3023,6 +3026,9 @@ msgstr ""
 msgid "Remove"
 msgstr ""
 
+msgid "Remove account"
+msgstr ""
+
 msgid "Remove admin rights?"
 msgstr ""
 
@@ -3041,6 +3047,9 @@ msgstr ""
 msgid "Remove sticker"
 msgstr ""
 
+msgid "Remove this account?"
+msgstr ""
+
 msgid "Remove this contact?"
 msgstr ""
 
@@ -3048,6 +3057,9 @@ msgid "Remove this member?"
 msgstr ""
 
 msgid "Remove this relay?"
+msgstr ""
+
+msgid "Removing your account from this device"
 msgstr ""
 
 msgid "Rename"
@@ -4118,6 +4130,9 @@ msgid "Your GM"
 msgstr ""
 
 msgid "Your account has a pending action. Complete it before reconnecting your signer."
+msgstr ""
+
+msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr ""
 
 msgid "Your current password"

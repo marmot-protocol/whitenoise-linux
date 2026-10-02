@@ -57,6 +57,8 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 **Identity & accounts**
 
 - Several accounts at once, with local nsec keys and NIP-46 remote signers side by side. Connected accounts receive messages in the background.
+- The app opens on the account you used last. For a remote-signer account it starts on a local one and switches once the signer connects.
+- The trash button on an account row (the Accounts switcher or the Profile page) removes that account from this device after you confirm. Its keys and local chats are deleted; its groups are not notified, so other members still see it.
 - Connect with a `bunker://` link or scan/copy a `nostrconnect://` pairing link. Approve requests in your signer; pending operations show their status and approval links.
 - Contacts, private local-only per-contact nicknames, an archive, and npub QR codes.
 - Import and export contacts as CSV or JSON from the contacts rail. Imports skip existing contacts and duplicate npubs, restore private nicknames and blocked state, and report added, skipped, and failed records. Published profile names still come from Nostr.

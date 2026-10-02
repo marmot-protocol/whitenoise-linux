@@ -154,6 +154,10 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		for id, i in ui.account_ids {
+			if clay.PointerOver(clay.ID("AccountRemove", u32(i))) {
+				confirm_ask(ui, .Remove_Account, id, account_label(ui, id))
+				return
+			}
 			if clay.PointerOver(clay.ID("AccountRow", u32(i))) {
 				ui.accounts_open = false
 				if id != ui.account_ref {
@@ -438,6 +442,10 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// the settings sections that own the rest of an identity.
 	if ui.page == .Profile {
 		for id, i in ui.account_ids {
+			if clay.PointerOver(clay.ID("PrAcctRemove", u32(i))) {
+				confirm_ask(ui, .Remove_Account, id, account_label(ui, id))
+				return
+			}
 			if clay.PointerOver(clay.ID("PrAcct", u32(i))) {
 				if id != ui.account_ref {
 					switch_account(ui, client, id)
@@ -680,6 +688,18 @@ finish_auth :: proc(
 		seed_starter_local(client, hex, pic_url)
 	}
 	after_login(ui, client, hex)
+	remember_account(ui, ui.account_ref)
+}
+
+// Store the account the user chose last; boot_marmot opens on it.
+@(private = "file")
+remember_account :: proc(ui: ^Ui_State, hex: string) {
+	if ui.prefs.last_account == hex {
+		return
+	}
+	delete(ui.prefs.last_account)
+	ui.prefs.last_account = strings.clone(hex)
+	ui.settings_dirty = true
 }
 
 // Synchronous create, for the WN_TEST_CREATE boot hook: the harness
@@ -773,6 +793,7 @@ finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id:
 	nc_pending_cancel_account(ui.account_ref)
 
 	ui.account_ref = strings.clone(account_id)
+	remember_account(ui, account_id)
 	gs_check_account(ui)
 	ui.selected = -1
 	ui.show_members = false
@@ -1169,13 +1190,28 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	// loop here once missed the npub/pic arrays and crashed the switcher.
 	// It creates avatar textures, so it stays on this thread.
 	splash_frame(1)
+
+	// Open on the account chosen last. A remote-signer account can't act
+	// until its signer attaches, so boot lands on a local account and
+	// nip46_tick switches over once the attach completes.
 	boot_active := ""
 	accounts: ^marmot.Account_Summary_List
 	if marmot.list_accounts(client, &accounts) == .OK {
 		for row in accounts.items[:accounts.len] {
-			if row.local_signing &&
-			   !row.external_signing &&
-			   !row.signed_out {boot_active = strings.clone(string(row.account_id_hex), context.temp_allocator); break}
+			if row.signed_out {
+				continue
+			}
+			hex := string(row.account_id_hex)
+			last := hex == ui.prefs.last_account
+			local := row.local_signing && !row.external_signing
+			if last && !local {
+				if item := nip46_find(hex); item != nil {
+					item.switch_requested = true
+				}
+			}
+			if local && (boot_active == "" || last) {
+				boot_active = strings.clone(hex, context.temp_allocator)
+			}
 		}
 		marmot.account_summary_list_free(accounts)
 	}

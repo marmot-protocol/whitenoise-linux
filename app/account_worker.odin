@@ -12,6 +12,7 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 Account_Operation :: enum {
 	Switch,
 	Sign_Out,
+	Remove,
 	Profile,
 	Outbox,
 	Inbox,
@@ -35,7 +36,7 @@ Account_Job :: struct {
 	pic_media:                                    string,
 	relays:                                       []cstring,
 	kind:                                         Account_Operation,
-	fresh, notes, form, open_chat, signed_out:    bool,
+	fresh, notes, form, open_chat, departed:      bool,
 	accepted:                                     u64,
 	key_rows:                                     [dynamic]Kp_Row,
 	worker:                                       ^thread.Thread,
@@ -61,7 +62,9 @@ account_job_new :: proc(
 					   .Switch) {set_status(ui, job.signer == nil ? tr("Your previous account action is still running.") : tr("Your previous account action is still waiting. Check your signer for approval."), .Info); return nil}
 	}
 	signer := nip46_find(owner)
-	if kind != .Sign_Out && signer != nil && (signer.attach != nil || !signer.registered) {
+	// Leaving an account never waits on its signer: a dead one is a reason to remove it.
+	leaving := kind == .Sign_Out || kind == .Remove
+	if !leaving && signer != nil && (signer.attach != nil || !signer.registered) {
 		if kind ==
 		   .Switch {signer.switch_requested = true; if signer.attach == nil {nip46_attach_start(signer)}}
 		set_status(
@@ -102,7 +105,7 @@ account_worker :: proc(t: ^thread.Thread) {
 		out: ^marmot.Account_Summary
 		status = marmot.sign_in_account(job.client, account, &out)
 		if out != nil {marmot.account_summary_free(out)}
-	case .Sign_Out:
+	case .Sign_Out, .Remove:
 		if job.signer != nil &&
 		   job.signer.attach !=
 			   nil {thread.join(job.signer.attach); job.signer.attach_joined = true}
@@ -110,16 +113,29 @@ account_worker :: proc(t: ^thread.Thread) {
 		if job.signer != nil &&
 		   job.signer.persist !=
 			   nil {thread.join(job.signer.persist); job.signer.persist_joined = true}
-		out: ^marmot.Sign_Out_Outcome
-		status = marmot.sign_out(job.client, account, false, &out)
-		if out != nil {marmot.sign_out_outcome_free(out)}
+		if job.kind == .Remove {
+			status = marmot.remove_account(job.client, account)
+		} else {
+			out: ^marmot.Sign_Out_Outcome
+			status = marmot.sign_out(job.client, account, false, &out)
+			if out != nil {marmot.sign_out_outcome_free(out)}
+		}
 		if status == .OK {
-			job.signed_out = true
+			job.departed = true
 			if job.signer != nil {job.signer.registered = false}
 			removed := vault_remove(fmt.tprintf("nip46:%s", job.account))
 			if job.signer != nil {marmot.nip46_logout(job.signer.handle)}
-			if removed !=
-			   .None {job.error = strings.clone(tr("You are signed out, but your signer record could not be removed from the encrypted vault."))}
+			if removed != .None {
+				message := tr(
+					"You are signed out, but your signer record could not be removed from the encrypted vault.",
+				)
+				if job.kind == .Remove {
+					message = tr(
+						"Your account is removed, but its signer record couldn't be removed from the encrypted vault.",
+					)
+				}
+				job.error = strings.clone(message)
+			}
 		}
 	case .Profile:
 		optional :: proc(value: string) -> cstring {return(
@@ -273,7 +289,7 @@ account_job_drain :: proc(ui: ^Ui_State) {
 					image      = image,
 				}; job.pic_data = nil}
 		}
-		if job.signed_out {
+		if job.departed {
 			if job.signer != nil {
 				item := job.signer
 				for candidate, n in nip46_accounts {if candidate == item {ordered_remove(&nip46_accounts, n); break}}
@@ -325,7 +341,7 @@ account_job_drain :: proc(ui: ^Ui_State) {
 					ui.ov_open = false
 					ui.focus = .Invite
 					refresh_after_action(ui, job.client)
-				case .Switch, .Sign_Out:
+				case .Switch, .Sign_Out, .Remove:
 				}
 			}
 		}
@@ -339,6 +355,8 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 		return tr("Switching your account")
 	case .Sign_Out:
 		return tr("Signing out and removing your signer session")
+	case .Remove:
+		return tr("Removing your account from this device")
 	case .Profile:
 		return tr("Publishing your profile")
 	case .Outbox, .Inbox, .Relays:
@@ -431,7 +449,9 @@ account_relays_start :: proc(
 }
 
 @(private)
-nip46_signing_out :: proc(account: string) -> bool {
-	for job in account_jobs {if job.account == account && job.kind == .Sign_Out {return true}}
+account_departing :: proc(account: string) -> bool {
+	for job in account_jobs {
+		if job.account == account && (job.kind == .Sign_Out || job.kind == .Remove) {return true}
+	}
 	return false
 }

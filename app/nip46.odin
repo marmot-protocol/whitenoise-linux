@@ -175,7 +175,7 @@ nip46_snapshot :: proc(handle: ^marmot.Nip46_Session, state: ^Nip46_State) {
 nip46_tick :: proc(ui: ^Ui_State) {
 	account_job_drain(ui)
 	for item in nip46_accounts {
-		if nip46_signing_out(item.account) {continue}
+		if account_departing(item.account) {continue}
 		if item.attach != nil && thread.is_done(item.attach) {
 			if !item.attach_joined {thread.join(item.attach)}
 			thread.destroy(item.attach); item.attach = nil
@@ -198,7 +198,7 @@ nip46_tick :: proc(ui: ^Ui_State) {
 	if auth_job != nil &&
 	   auth_job.session != nil {nip46_snapshot(auth_job.session, &auth_job.signer_state)}
 	for item in nip46_accounts {
-		if nip46_signing_out(item.account) {continue}
+		if account_departing(item.account) {continue}
 		nip46_snapshot(item.handle, &item.state)
 		if item.attach == nil &&
 		   item.registered &&

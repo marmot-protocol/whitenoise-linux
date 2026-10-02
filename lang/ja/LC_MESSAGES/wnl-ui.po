@@ -2073,6 +2073,9 @@ msgstr "ほかの人の画面には残ります。この端末では再び表示
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr "テーマのファイルがこの端末から削除されます。チャットで共有したテーマはそのまま残ります。"
 
+msgid "Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."
+msgstr "鍵とチャットはこの端末から削除されます。ほかのメンバーからは、引き続きグループのメンバーとして見えます。この操作は取り消せません。"
+
 msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
 msgstr "鍵はこの端末の保管庫に残ります。アカウント画面から再度サインインできます。"
 
@@ -3024,6 +3027,9 @@ msgstr "リレーは暗号化されたメッセージを運びます。デフォ
 msgid "Remove"
 msgstr "削除"
 
+msgid "Remove account"
+msgstr "アカウントを削除"
+
 msgid "Remove admin rights?"
 msgstr "管理者権限を外しますか？"
 
@@ -3042,6 +3048,9 @@ msgstr "保存したGIFを削除"
 msgid "Remove sticker"
 msgstr "ステッカーを削除"
 
+msgid "Remove this account?"
+msgstr "このアカウントを削除しますか？"
+
 msgid "Remove this contact?"
 msgstr "この連絡先を削除しますか？"
 
@@ -3050,6 +3059,9 @@ msgstr "このメンバーを削除しますか？"
 
 msgid "Remove this relay?"
 msgstr "このリレーを削除しますか？"
+
+msgid "Removing your account from this device"
+msgstr "この端末からアカウントを削除しています"
 
 msgid "Rename"
 msgstr "名前を変更"
@@ -4120,6 +4132,9 @@ msgstr "あなたのGM"
 
 msgid "Your account has a pending action. Complete it before reconnecting your signer."
 msgstr "このアカウントには保留中の操作があります。署名者に再接続する前に完了してください。"
+
+msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
+msgstr "アカウントは削除されましたが、署名者の記録を暗号化された保管庫から削除できませんでした。"
 
 msgid "Your current password"
 msgstr "現在のパスワード"

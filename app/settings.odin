@@ -24,6 +24,7 @@ Prefs :: struct {
 	minimize_tray:         bool, // closing the window hides it to the tray
 	restore_last_chat:     bool,
 	last_chat:             string, // group id to reopen on launch
+	last_account:          string, // account hex chosen last; boot opens on it
 	notes_group:           string, // group id of the solo "Notes to self" chat
 	locale:                string, // en/it/de/ja; catalogs applied via i18n.odin
 	hour12:                bool,

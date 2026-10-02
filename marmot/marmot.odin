@@ -1274,6 +1274,7 @@ foreign lib {
 	sign_in_account :: proc(client: ^Client, account_ref: cstring, out: ^^Account_Summary) -> Status ---
 	sign_out :: proc(client: ^Client, account_ref: cstring, delete_key_packages: bool, out: ^^Sign_Out_Outcome) -> Status ---
 	sign_out_outcome_free :: proc(ptr: ^Sign_Out_Outcome) ---
+	remove_account :: proc(client: ^Client, account_ref: cstring) -> Status ---
 
 	set_account_nip65_relays :: proc(client: ^Client, account_ref: cstring, relays: [^]cstring, relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Relay_Lists) -> Status ---
 	set_account_inbox_relays :: proc(client: ^Client, account_ref: cstring, relays: [^]cstring, relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Relay_Lists) -> Status ---

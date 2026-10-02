@@ -33,6 +33,7 @@ Confirm_Kind :: enum {
 	Remove_Relay,
 	Remove_Inbox,
 	Sign_Out,
+	Remove_Account,
 }
 
 Confirm :: struct {
@@ -103,6 +104,10 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_(
 			"Sign out of this account?",
 		), N_("Its keys stay in the vault on this device. You can sign in again from the accounts screen."), N_("Sign out")
+	case .Remove_Account:
+		return N_(
+			"Remove this account?",
+		), N_("Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."), N_("Remove")
 	}
 	return "", "", ""
 }
@@ -285,6 +290,8 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		set_inbox_relays(ui, client, relays_without(ui.profile.inbox[:], c.idx))
 	case .Sign_Out:
 		account_job_start(account_job_new(ui, client, .Sign_Out, c.arg))
+	case .Remove_Account:
+		account_job_start(account_job_new(ui, client, .Remove, c.arg))
 	}
 }
 
