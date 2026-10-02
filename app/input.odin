@@ -205,9 +205,13 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 	prev_len := len(buf)
 
 	for ch := rl.GetCharPressed(); ch != 0; ch = rl.GetCharPressed() {
-		if ch >= 32 {
-			edit.input_rune(ed, ch)
+		if ch < 32 {
+			continue
 		}
+		if ch == ' ' && buf == &ui.compose {
+			emoticon_swap(ed)
+		}
+		edit.input_rune(ed, ch)
 	}
 
 	ctrl := ctrl_down()

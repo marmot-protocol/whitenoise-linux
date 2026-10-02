@@ -790,7 +790,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	// Shift+Enter inserts a newline instead of sending.
 	if ui.focus == .Compose && blocked_dm == "" && rl.IsKeyPressed(.ENTER) && shift_down() {
-		ed_insert(ui, &ui.compose, "\n")
+		ed_begin(ui, &ui.compose)
+		emoticon_swap(&ui.ed)
+		edit.input_text(&ui.ed, "\n")
+		ed_end(ui, &ui.compose)
 	}
 
 	send :=
@@ -800,6 +803,12 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Staged attachments send on their own only outside an edit (an
 	// edit needs text and never sends them).
 	if send && (len(ui.compose) > 0 || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
+		// Sending finishes a trailing emoticon: "ok :D" goes out as "ok 😃".
+		ed_begin(ui, &ui.compose)
+		ui.ed.selection = {len(ui.compose), len(ui.compose)}
+		emoticon_swap(&ui.ed)
+		ed_end(ui, &ui.compose)
+
 		// The message leaves the composer rather than appearing above it.
 		if len(ui.editing) == 0 && len(ui.compose) > 0 {
 			send_arc(ui, string(ui.compose[:]))
