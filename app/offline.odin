@@ -134,8 +134,8 @@ load_offline :: proc(ui: ^Ui_State) {
 	if read_err != nil {
 		return
 	}
-	// Sealed under a previous vault password: unreadable, so drop it
-	// rather than keep a queue nothing can send.
+	// A failed tag (corrupt file, or a blob from another vault) is
+	// unreadable, so drop it rather than keep a queue nothing can send.
 	data, opened := vault_open_blob(sealed, context.temp_allocator)
 	if !opened {
 		os.remove(offline_path())

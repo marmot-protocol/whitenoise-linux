@@ -6,9 +6,12 @@
 //   plain: XChaCha20-Poly1305(json(map[string]string)) keyed by
 //          Argon2id(password, salt)
 //
-// Byte-for-byte the slint app's format (src/vault.rs), same cost
-// parameters and same media-cache subkey label, so pointing both apps
-// at one home reads the same vault and the same sealed cache.
+// The envelope matches the slint app's format (src/vault.rs): same
+// version, Argon2id costs, and ciphertext layout. The blob key is an
+// extra map entry. A reader that still derives the historical subkey
+// opens account secrets, and opens blobs only while that derivation
+// still matches (no password change on this binary, and not a vault
+// created here).
 //
 // Every mutation re-seals the whole map under a fresh nonce and renames
 // atomically into place at mode 0600. A wrong password fails the
@@ -16,9 +19,13 @@
 // There is no recovery: the unlock screen's escape hatch deletes the
 // vault and starts over from an nsec.
 //
-// Three consumers: marmot's per-account signing keys (vault_store, the
-// marmot-c secret-store vtable), the media cache, and the offline send
-// queue. The last two go through vault_seal_blob / vault_open_blob.
+// Account secrets live in the map (marmot's per-account signing keys,
+// via the marmot-c secret-store vtable). Every other vault-bound file
+// is sealed with the blob key stored in that map under VAULT_BLOB_KEY,
+// so a password change re-seals this file and leaves the others in
+// place. A vault written before that entry still derives the historical
+// subkey until the password changes; the change saves the derived key
+// in the same persist.
 //
 // Not migrated: an install made before the vault kept its account keys
 // in the OS keychain, which nothing here can read. Those installs sign
@@ -63,10 +70,13 @@ VAULT_MAX_M_COST :: 1 << 20 // 1 GiB of Argon2 memory
 VAULT_MAX_T_COST :: 64
 VAULT_MAX_P_COST :: 64
 
-// Domain separation for the blob subkey. Historical label from the
-// slint app's pre-rename era: changing it derives a different subkey
-// and silently invalidates every sealed cache entry that exists.
+// Domain separation for the historical derived blob subkey. A vault
+// with no VAULT_BLOB_KEY entry still uses it, so existing sealed files
+// stay readable. Changing the label would derive a different subkey.
 VAULT_BLOB_LABEL :: "darkmatter-linux/media-cache/v1"
+
+// 32-byte key, hex, inside the secret map. Not an account secret.
+VAULT_BLOB_KEY :: "blob-key"
 
 Vault_Err :: enum {
 	None,
@@ -310,6 +320,10 @@ vault_create :: proc(password: string) -> Vault_Err {
 	crypto.rand_bytes(g_vault.salt[:])
 	derive_key(password, g_vault.salt[:], VAULT_M_COST, VAULT_T_COST, VAULT_P_COST, g_vault.key[:])
 	g_vault.unlocked = true
+	if !vault_generate_blob_key(&g_vault) {
+		vault_wipe(&g_vault)
+		return .Io
+	}
 
 	if err := vault_persist(&g_vault); err != .None {
 		vault_wipe(&g_vault)
@@ -410,10 +424,11 @@ vault_verify :: proc(password: string) -> bool {
 	return crypto.compare_constant_time(key[:], g_vault.key[:]) == 1
 }
 
-// Re-seal the vault under a new password: fresh salt, fresh key, the
-// same secret map. The blob subkey hangs off the master key, so
-// everything vault_seal_blob wrote (the media cache, the offline queue)
-// is unreadable afterwards and the caller has to re-seal or drop it.
+// Re-seal the vault under a new password: fresh salt, fresh master key,
+// same secret map. A legacy map with no blob key gains the derived key
+// in this same persist, so files sealed under it stay readable. The
+// write is atomic. On failure the session master key, salt, and a blob
+// key inserted by this call go back to matching the file still on disk.
 vault_rekey :: proc(password: string) -> Vault_Err {
 	sync.lock(&g_vault_lock)
 	defer sync.unlock(&g_vault_lock)
@@ -421,18 +436,29 @@ vault_rekey :: proc(password: string) -> Vault_Err {
 		return .Not_Found
 	}
 
+	inserted := false
+	if !(VAULT_BLOB_KEY in g_vault.data) {
+		derived: [VAULT_KEY_LEN]u8
+		defer mem.zero(&derived, size_of(derived))
+		blob_key_derive(g_vault.key[:], derived[:])
+		if !vault_put_blob_key(&g_vault, derived[:]) {
+			return .Io
+		}
+		inserted = true
+	}
+
 	old_key, old_salt := g_vault.key, g_vault.salt
+	defer mem.zero(&old_key, size_of(old_key))
 	crypto.rand_bytes(g_vault.salt[:])
 	derive_key(password, g_vault.salt[:], VAULT_M_COST, VAULT_T_COST, VAULT_P_COST, g_vault.key[:])
 
 	if err := vault_persist(&g_vault); err != .None {
-		// The write is atomic, so the file on disk is still the old one:
-		// put the session key back rather than leaving it keyed to a
-		// vault that was never written.
 		g_vault.key, g_vault.salt = old_key, old_salt
+		if inserted {
+			vault_drop_blob_key(&g_vault)
+		}
 		return err
 	}
-	mem.zero(&old_key, size_of(old_key))
 	return .None
 }
 
@@ -466,9 +492,19 @@ vault_relock :: proc() {
 	dev_vault_revoke()
 }
 
-// Forget the vault file and everything sealed under its key: the media
-// cache and the offline queue would be undecryptable after a reset
-// anyway. Backs the unlock screen's "Use another key".
+// Vault-bound paths. Password change leaves every row except vault.db
+// on the persisted blob key. Reset removes all of them. backup_pack
+// includes none of them. cache_clear removes media-cache only.
+//
+//   vault.db               account secrets and the blob key
+//   offline-queue.json     unsent sends
+//   stickers/              library.bin and personal images
+//   gifs/                  library.bin and saved GIF blobs
+//   media-cache/           attachments, profile-*.bin avatars, *.stt transcripts
+//
+// The unlock gate joins blob writers, then calls this. session_stop
+// has already joined them on the lock path; vault_stores_quiesce runs
+// again so a queued sticker save cannot land after the directories go.
 vault_delete :: proc() {
 	sync.lock(&g_vault_lock)
 	vault_wipe(&g_vault)
@@ -476,8 +512,22 @@ vault_delete :: proc() {
 	sync.unlock(&g_vault_lock)
 
 	os.remove(vault_path())
-	os.remove_all(media_cache_dir())
 	os.remove(offline_path())
+	os.remove_all(media_cache_dir())
+	os.remove_all(fmt.tprintf("%s/stickers", data_home))
+	os.remove_all(fmt.tprintf("%s/gifs", data_home))
+}
+
+// Join blob writers. Safe when none are running.
+@(private)
+vault_stores_quiesce :: proc() {
+	sticker_stop()
+	media_stop()
+	stop_pic_worker()
+	if g_ui != nil {
+		gif_stop(g_ui)
+		stt_stop(g_ui)
+	}
 }
 
 vault_has :: proc(key: string) -> bool {
@@ -534,22 +584,92 @@ vault_remove :: proc(key: string) -> Vault_Err {
 
 // ── Blob sealing ────────────────────────────────────────────────────
 
-// Subkey for at-rest blobs, domain-separated from the vault's own data
-// key. The vault key is already 32 high-entropy bytes, so one SHA-256
-// over (label || key) is a sound KDF here.
+// Historical subkey: SHA-256(label || master key). The master key is
+// already 32 high-entropy bytes, so one SHA-256 is a sound KDF here.
+@(private = "file")
+blob_key_derive :: proc(master: []u8, dst: []u8) {
+	ctx: sha2.Context_256
+	sha2.init_256(&ctx)
+	sha2.update(&ctx, transmute([]u8)string(VAULT_BLOB_LABEL))
+	sha2.update(&ctx, master)
+	sha2.final(&ctx, dst)
+}
+
+@(private = "file")
+blob_key_decode :: proc(raw: string, dst: []u8) -> bool {
+	if len(raw) != VAULT_KEY_LEN * 2 {
+		return false
+	}
+	decoded, ok := hex.decode(transmute([]u8)raw, context.temp_allocator)
+	if !ok || len(decoded) != VAULT_KEY_LEN {
+		return false
+	}
+	copy(dst, decoded)
+	mem.zero_slice(decoded)
+	return true
+}
+
+// Caller holds the vault lock. The map owns both strings.
+@(private = "file")
+vault_put_blob_key :: proc(v: ^Vault, raw: []u8) -> bool {
+	if len(raw) != VAULT_KEY_LEN {
+		return false
+	}
+	if v.data == nil {
+		v.data = make(map[string]string)
+	}
+	encoded, enc_err := hex.encode(raw, context.temp_allocator)
+	if enc_err != nil {
+		return false
+	}
+	defer mem.zero_slice(encoded)
+	cloned := strings.clone(string(encoded))
+	if old, found := v.data[VAULT_BLOB_KEY]; found {
+		mem.zero_slice(transmute([]u8)old)
+		delete(old)
+		v.data[VAULT_BLOB_KEY] = cloned
+	} else {
+		v.data[strings.clone(VAULT_BLOB_KEY)] = cloned
+	}
+	return true
+}
+
+@(private = "file")
+vault_generate_blob_key :: proc(v: ^Vault) -> bool {
+	raw: [VAULT_KEY_LEN]u8
+	defer mem.zero(&raw, size_of(raw))
+	crypto.rand_bytes(raw[:])
+	return vault_put_blob_key(v, raw[:])
+}
+
+// Caller holds the vault lock.
+@(private = "file")
+vault_drop_blob_key :: proc(v: ^Vault) {
+	if !(VAULT_BLOB_KEY in v.data) {
+		return
+	}
+	old_key, old_value := delete_key(&v.data, VAULT_BLOB_KEY)
+	delete(old_key)
+	mem.zero_slice(transmute([]u8)old_value)
+	delete(old_value)
+}
+
+// Stored blob key when the map has one. Otherwise the historical
+// derivation, so a vault that has never changed its password on this
+// binary still opens the files it already sealed. A present but unusable
+// entry fails closed: falling through to the derived key would seal new
+// files under a different key than the one already on disk.
 @(private = "file")
 blob_key :: proc(dst: []u8) -> bool {
 	sync.lock(&g_vault_lock)
 	defer sync.unlock(&g_vault_lock)
-	if !g_vault.unlocked {
+	if !g_vault.unlocked || len(dst) != VAULT_KEY_LEN {
 		return false
 	}
-
-	ctx: sha2.Context_256
-	sha2.init_256(&ctx)
-	sha2.update(&ctx, transmute([]u8)string(VAULT_BLOB_LABEL))
-	sha2.update(&ctx, g_vault.key[:])
-	sha2.final(&ctx, dst)
+	if raw, found := g_vault.data[VAULT_BLOB_KEY]; found {
+		return blob_key_decode(raw, dst)
+	}
+	blob_key_derive(g_vault.key[:], dst)
 	return true
 }
 

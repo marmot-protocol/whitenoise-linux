@@ -147,6 +147,21 @@ sticker_image_storage :: proc(t: ^testing.T) {
 	if len(reloaded.stickers) == 1 {testing.expect_value(t, reloaded.stickers[0].ref.sha, sha)}
 	for item in reloaded.stickers {sticker_item_free(item)}
 	delete(reloaded.stickers)
+	testing.expect_value(t, vault_rekey("second password"), Vault_Err.None)
+	vault_lock()
+	testing.expect_value(t, vault_open("second password"), Vault_Err.None)
+	kept := sticker_read_blob(sha)
+	defer delete(kept)
+	testing.expect_value(t, string(kept), string(bytes))
+	after: Ui_State
+	sticker_library_open(&after)
+	drain_stickers(&after, nil)
+	thread.join(sticker_jobs[0].worker)
+	drain_stickers(&after, nil)
+	testing.expect(t, after.sticker_loaded)
+	testing.expect_value(t, len(after.stickers), 1)
+	for item in after.stickers {sticker_item_free(item)}
+	delete(after.stickers)
 	// Shutdown must complete a queued library write before releasing its bytes.
 	delete(ui.stickers[0].label)
 	ui.stickers[0].label = strings.clone("Renamed")

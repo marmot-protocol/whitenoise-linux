@@ -338,6 +338,7 @@ gate_input :: proc(ui: ^Ui_State) {
 			return
 		}
 		gate_reset_armed = false
+		vault_stores_quiesce()
 		vault_delete()
 		clear(&gate_pw)
 		clear(&gate_pw2)

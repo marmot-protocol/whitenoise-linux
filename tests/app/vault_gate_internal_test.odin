@@ -15,6 +15,8 @@ gate_submit :: proc(ui: ^Ui_State) -> bool {
 
 @(test)
 vault_gate_password_policy :: proc(t: ^gate_testing.T) {
+	// The unlock worker allocates the blob key on the default heap.
+	context.allocator = gate_runtime.default_context().allocator
 	gate_sync.lock(&clay_test_mutex)
 	defer gate_sync.unlock(&clay_test_mutex)
 	gate_sync.lock(&test_home_lock)

@@ -1,21 +1,10 @@
 // Changing the vault password from Settings > Keys & identity.
 //
-// The vault key IS the password (Argon2id over it), and the blob subkey
-// is a hash of that key, so a rotation invalidates everything sealed
-// under the old one:
-//
-//   password ──argon2id──► vault key ──► vault.db      re-sealed here
-//                              │
-//                              └──sha256──► blob key ──► media cache    dropped
-//                                                    └─► offline queue  re-sealed
-//
-// The queue survives because it still exists in Ui_State and can be
-// written again; the cache cannot be reproduced without re-downloading,
-// so it goes.
+// vault_rekey re-seals vault.db under a new Argon2id key and keeps the
+// blob key already stored in the map. Sealed files stay where they are.
 package main
 
 import "core:mem"
-import "core:os"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -94,12 +83,6 @@ vault_pw_apply :: proc(ui: ^Ui_State) {
 		ui.vault_pw_err = tr("Couldn't change the password. Please try again.")
 		return
 	}
-
-	// Both blob stores were keyed off the old password. The queue is
-	// still in memory and re-seals; the cache is gone and re-downloads.
-	save_offline(ui)
-	os.remove_all(media_cache_dir())
-	cache_scan(ui)
 
 	vault_pw_close(ui)
 	set_status(ui, tr("Vault password changed."), .Info)

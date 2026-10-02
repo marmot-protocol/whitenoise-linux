@@ -162,6 +162,19 @@ gif_data :: proc(t: ^testing.T) {
 	testing.expect(t, thumb.data != nil, "saved thumbnails work offline")
 	rl.UnloadImage(thumb); delete(thumb_data)
 	gif_job_free(load)
+	testing.expect_value(t, vault_rekey("second"), Vault_Err.None)
+	vault_lock()
+	testing.expect_value(t, vault_open("second"), Vault_Err.None)
+	again := gif_read(sha)
+	testing.expect_value(t, string(again), string(bytes))
+	delete(again)
+	load_again := new(Gif_Job)
+	load_again.op = .Library
+	worker.data = load_again
+	gif_worker(&worker)
+	testing.expect_value(t, load_again.error, "")
+	testing.expect_value(t, len(load_again.items), 1)
+	gif_job_free(load_again)
 	remove := new(Gif_Job); remove^ = {
 		op    = .Remove,
 		item  = gif_item_clone(item),

@@ -2,9 +2,9 @@
 // + clear), the data-dir readout, and the backup create/import flow.
 //
 // Encryption at rest: cached attachment bytes are sealed with the
-// vault's blob subkey (vault.odin), so nothing decrypted touches the
-// disk in the clear. An entry sealed under a previous password reads as
-// a miss and is downloaded again.
+// vault's blob key (vault.odin), so nothing decrypted touches the disk
+// in the clear. A blob that fails its tag reads as a miss and is
+// downloaded again.
 package main
 
 import "core:fmt"
@@ -59,8 +59,8 @@ media_load :: proc(
 	sha := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : ""
 	cacheable := cache_key_ok(sha)
 	if cacheable {
-		// A blob sealed under a previous vault password fails its tag and
-		// reads as a miss, which downloads and re-seals it.
+		// A failed tag (corrupt file, or a blob from another vault) reads
+		// as a miss, which downloads and re-seals it.
 		if sealed, read_err := os.read_entire_file(cache_path(sha), context.temp_allocator);
 		   read_err == nil {
 			if data, opened := vault_open_blob(sealed); opened {
