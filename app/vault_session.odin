@@ -198,6 +198,13 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	delete(ui.members); ui.members = {}
 	for hit in ui.gs_hits {mem.zero_slice(transmute([]u8)hit.snippet); gs_free_hit(hit)}
 	delete(ui.gs_hits); ui.gs_hits = {}
+	for chat in ui.gs_chats {chat_free(chat)}
+	delete(ui.gs_chats); ui.gs_chats = {}
+	for buffer in ([]^[dynamic]u8{&ui.gs_sender_input, &ui.gs_since, &ui.gs_until}) {session_buffer_forget(buffer)}
+	for text in ([]^string{&ui.gs_group, &ui.gs_sender, &ui.gs_cursor_id, &ui.gs_cursor_group, &ui.gs_error, &ui.gs_account}) {session_string_forget(text)}
+	ui.gs_more, ui.gs_loading, ui.gs_append, ui.gs_resume, ui.gs_jump_pending =
+		false, false, false, false, false
+	ui.gs_attachment, ui.gs_picker, ui.gs_cursor_at = 0, 0, 0
 	for hit in ui.mi_hits {mem.zero_slice(transmute([]u8)hit.snippet); mi_free_hit(hit)}
 	delete(ui.mi_hits); ui.mi_hits = {}
 	for version in ui.hist_versions {
@@ -231,7 +238,7 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 
 @(private = "file")
 session_buffer_forget :: proc(buffer: ^[dynamic]u8) {
-	mem.zero_slice(buffer^[:cap(buffer^)])
+	mem.zero_slice(raw_data(buffer^)[:cap(buffer^)])
 	delete(buffer^)
 	buffer^ = {}
 }

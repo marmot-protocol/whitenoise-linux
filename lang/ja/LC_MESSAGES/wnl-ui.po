@@ -327,6 +327,9 @@ msgstr "すべてのアカウントは接続されたままです。切り替え
 msgid "All categories"
 msgstr "すべてのカテゴリ"
 
+msgid "All chats"
+msgstr "すべてのチャット"
+
 msgid "All senders"
 msgstr "すべての送信者"
 
@@ -350,6 +353,15 @@ msgstr "アニメーションが気になります"
 
 msgid "Another group change took precedence. Review your group settings."
 msgstr "別のグループ変更が優先されました。グループ設定を確認してください。"
+
+msgid "Any attachment"
+msgstr "添付ファイルあり"
+
+msgid "Any sender"
+msgstr "すべての送信者"
+
+msgid "Any type"
+msgstr "すべての種類"
 
 msgid "Anything you write here stays between you and this device's key."
 msgstr "ここに書いた内容は、あなたとこの端末の鍵の間だけにとどまります。"
@@ -605,6 +617,9 @@ msgstr "チャット一覧の読み込みに失敗しました: %s"
 msgid "Chat options"
 msgstr "チャットのオプション"
 
+msgid "Chat: %s"
+msgstr "チャット: %s"
+
 msgid "Chats"
 msgstr "チャット"
 
@@ -646,6 +661,9 @@ msgstr "インポートする連絡先のCSVまたはJSONエクスポートを�
 
 msgid "Choose a destination for this chat."
 msgstr "このチャットの移動先を選んでください。"
+
+msgid "Choose a known sender or enter a 64-character hex public key."
+msgstr "既知の送信者を選択するか、64文字の16進数の公開鍵を入力してください。"
 
 msgid "Choose an emoji style"
 msgstr "絵文字のスタイルを選択"
@@ -1573,6 +1591,9 @@ msgstr "このグループでは有効です。"
 msgid "Encrypted key copied"
 msgstr "暗号化された鍵をコピーしました"
 
+msgid "End day (UTC, inclusive)"
+msgstr "終了日（UTC、その日を含む）"
+
 msgid "End-to-end encrypted"
 msgstr "エンドツーエンド暗号化"
 
@@ -1754,6 +1775,9 @@ msgstr "絵文字から"
 
 msgid "From file"
 msgstr "ファイルから"
+
+msgid "From: %s"
+msgstr "開始: %s"
 
 msgid "Fullscreen"
 msgstr "全画面表示"
@@ -2079,6 +2103,9 @@ msgstr "鍵とバックアップ"
 msgid "Keys & identity"
 msgstr "鍵と ID"
 
+msgid "Known senders"
+msgstr "既知の送信者"
+
 msgid "LINES"
 msgstr "線"
 
@@ -2148,6 +2175,9 @@ msgstr "これらのサイトへのリンクは確認なしで開きます。"
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr "聞き取り中です。話し終えたら完了してください（最大30秒）。"
 
+msgid "Literal message text"
+msgstr "メッセージ本文を文字どおり検索"
+
 msgid "Loading full resolution…"
 msgstr "フル解像度で読み込み中…"
 
@@ -2156,6 +2186,9 @@ msgstr "エクスポートするメッセージを読み込み中..."
 
 msgid "Loading messages…"
 msgstr "メッセージを読み込み中…"
+
+msgid "Loading more matches from local history…"
+msgstr "端末の履歴から追加の検索結果を読み込み中…"
 
 msgid "Loading your accounts"
 msgstr "アカウントを読み込んでいます"
@@ -2294,6 +2327,9 @@ msgstr "お金"
 
 msgid "Monitor"
 msgstr "モニター"
+
+msgid "More results"
+msgstr "さらに表示"
 
 msgid "More than"
 msgstr "人数が次より多い"
@@ -3136,6 +3172,9 @@ msgstr "GIFを検索"
 msgid "Search GIFs with GifSnap"
 msgstr "GifSnapでGIFを検索"
 
+msgid "Search again"
+msgstr "もう一度検索"
+
 msgid "Search all chats"
 msgstr "すべてのチャットを検索"
 
@@ -3171,6 +3210,12 @@ msgstr "検索結果"
 
 msgid "Search stickers"
 msgstr "ステッカーを検索"
+
+msgid "Searches only history stored on this device. Older or unsynced messages may be missing."
+msgstr "この端末に保存された履歴のみを検索します。古いメッセージや未同期のメッセージは見つからない場合があります。"
+
+msgid "Searching local history…"
+msgstr "端末の履歴を検索中…"
 
 msgid "Searching…"
 msgstr "検索中…"
@@ -3235,6 +3280,12 @@ msgstr "メッセージを送信"
 
 msgid "Send with an effect"
 msgstr "エフェクト付きで送信"
+
+msgid "Sender name or hex public key"
+msgstr "送信者名または16進数の公開鍵"
+
+msgid "Sender: %s"
+msgstr "送信者: %s"
 
 msgid "Sending..."
 msgstr "送信しています..."
@@ -3402,6 +3453,9 @@ msgstr "四角"
 msgid "Start chat"
 msgstr "チャットを開始"
 
+msgid "Start day (UTC)"
+msgstr "開始日（UTC）"
+
 msgid "Start minimized to tray"
 msgstr "トレイに最小化して起動"
 
@@ -3524,6 +3578,9 @@ msgstr "テキスト（最低）"
 msgid "Text mid"
 msgstr "テキスト（中）"
 
+msgid "Text: %s"
+msgstr "本文: %s"
+
 msgid "That feels right."
 msgstr "ちょうどいい感じですね。"
 
@@ -3615,6 +3672,9 @@ msgstr "スレッド"
 
 msgid "Three things and you can send your first message."
 msgstr "3 つの手順で最初のメッセージを送れます。"
+
+msgid "Through: %s"
+msgstr "終了: %s"
 
 msgid "Time format"
 msgstr "時刻形式"
@@ -3756,6 +3816,9 @@ msgstr "このテーマを使う"
 
 msgid "Use unrelated words or a password-manager password."
 msgstr "関連のない単語を組み合わせるか、パスワードマネージャーで生成したパスワードを使用してください。"
+
+msgid "Use valid YYYY-MM-DD UTC dates with the start on or before the end."
+msgstr "YYYY-MM-DD形式の有効なUTC日付を入力してください。開始日は終了日以前にしてください。"
 
 msgid "Used for generated user and group avatars."
 msgstr "ユーザーやグループの自動生成アバターに使用します。"

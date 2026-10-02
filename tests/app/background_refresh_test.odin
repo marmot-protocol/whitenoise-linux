@@ -90,13 +90,7 @@ mentions_background_handoff :: proc(t: ^testing.T) {
 	job.kind, job.account = .Mentions, strings.clone(account)
 	append(&job.groups, strings.clone("group"))
 	job.hidden[strings.clone("hidden")] = true
-	job.cache[strings.clone("group")] = {
-		page = &page,
-	}
-	worker := thread.Thread {
-		data = job,
-	}
-	search_worker(&worker)
+	search_mentions_page(job, "group", &page)
 	testing.expect_value(t, len(job.hits), 1)
 	ui := Ui_State {
 		account_ref = account,
@@ -112,9 +106,6 @@ mentions_background_handoff :: proc(t: ^testing.T) {
 	ui.account_ref = "other-account"
 	testing.expect(t, !search_current(job, &ui))
 	ui.account_ref = account
-	entry := job.cache["group"]
-	entry.page = nil // fixture page is stack-owned
-	job.cache["group"] = entry
 	job.ready = true
 	search_active[.Mentions] = job
 	search_drain(&ui, nil)

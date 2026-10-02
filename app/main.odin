@@ -1650,10 +1650,10 @@ app_main :: proc() {
 			// the whole send).
 			// Center a global-search hit: the correction is relative to this
 			// frame's laid-out row box, so the current offset doesn't matter.
-			// ponytail: best effort, one attempt; a hit older than the loaded
-			// page (limit 100) isn't in ui.messages and falls back to the
-			// bottom jump. Paged loading with an anchor is the upgrade.
-			if len(ui.jump_id) > 0 && !ui.timeline_loading && !ui.timeline_paging {
+			if len(ui.jump_id) > 0 &&
+			   !ui.timeline_loading &&
+			   !ui.timeline_paging &&
+			   !gs_seek_jump(&ui) {
 				for msg, i in ui.messages {
 					if msg.id != ui.jump_id {
 						continue

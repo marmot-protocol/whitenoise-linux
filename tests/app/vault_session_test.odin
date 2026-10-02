@@ -33,6 +33,8 @@ vault_lock_scrubs_state :: proc(t: ^testing.T) {
 	)
 	append(&ui.login_input, "private-login-secret")
 	append(&ui.compose, "private draft")
+	append(&ui.gs_input, "private search")
+	clear(&ui.gs_input)
 	ui.drafts[strings.clone("group")] = strings.clone("private draft")
 	ui.client_status = "Borrowed status label"
 	append(&ui.prefs.recent_emoji, strings.clone("🐙"))
@@ -44,6 +46,7 @@ vault_lock_scrubs_state :: proc(t: ^testing.T) {
 	testing.expect(t, raw_data(ui.contacts) == nil)
 	testing.expect(t, raw_data(ui.login_input) == nil)
 	testing.expect(t, raw_data(ui.compose) == nil)
+	testing.expect(t, raw_data(ui.gs_input) == nil)
 	testing.expect_value(t, len(ui.drafts), 0)
 	testing.expect_value(t, ui.client_status, "Borrowed status label")
 	testing.expect(t, raw_data(ui.prefs.recent_emoji) == preference_storage)

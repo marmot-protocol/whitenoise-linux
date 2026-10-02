@@ -151,6 +151,7 @@ Chat_Row_Ui :: struct {
 	last_kind:    u64, // latest message's event kind
 	last_mine:    bool, // latest message is an own send
 	last_blocked: bool, // latest message is from someone you blocked (no preview, no alert)
+	search_only:  bool, // archived search destination, hidden from the active rail
 }
 
 // One picked-but-unsent attachment, shown as a chip above the composer
@@ -214,6 +215,9 @@ Focus :: enum {
 	Nick, // contact nickname box
 	Fwd, // forward-picker filter box
 	GSearch, // global-search modal box
+	GSearch_Sender,
+	GSearch_Since,
+	GSearch_Until,
 	KP, // KP-inspector pubkey box
 	Inbox, // settings inbox-relay box
 	Fetch, // settings event-fetch-relay box
@@ -557,6 +561,18 @@ Ui_State :: struct {
 	gs_open:                                               bool, // global cross-chat search modal
 	gs_input:                                              [dynamic]u8, // its query box
 	gs_hits:                                               [dynamic]Gs_Hit, // its result cards
+	gs_chats:                                              [dynamic]Chat_Row_Ui, // all local chats, including archives
+	gs_account:                                            string, // request and catalog owner
+	gs_group, gs_sender:                                   string, // stable group id and validated sender hex
+	gs_sender_input, gs_since, gs_until:                   [dynamic]u8,
+	gs_attachment:                                         u32, // 0 any, 1 image, 2 video, 3 audio, 4 file, 5 attachment
+	gs_more, gs_loading, gs_append:                        bool,
+	gs_error:                                              string,
+	gs_cursor_at:                                          u64,
+	gs_cursor_id:                                          string,
+	gs_cursor_group:                                       string,
+	gs_picker:                                             u32, // 0 closed, 1 chats, 2 known senders, 3 attachments
+	gs_resume, gs_jump_pending:                            bool,
 	jump_id:                                               string, // message id to center after next layout
 	tl_has_more:                                           bool, // last timeline page had older messages beyond the limit
 	tl_has_after:                                          bool,

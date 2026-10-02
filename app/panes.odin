@@ -120,6 +120,7 @@ chat_rail :: proc(ui: ^Ui_State) {
 	count := 0
 	for i in order {
 		chat := &ui.chats[i]
+		if chat.search_only {continue}
 		if len(filter) > 0 &&
 		   !strings.contains(strings.to_lower(chat.title, context.temp_allocator), filter) &&
 		   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {continue}

@@ -873,6 +873,7 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 	nc_pending_cancel_account(ui.account_ref)
 
 	ui.account_ref = strings.clone(account_id)
+	gs_check_account(ui)
 	ui.selected = -1
 	ui.show_members = false
 	ui.group_files_open = false
@@ -1479,11 +1480,19 @@ chat_list_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
 	}
 	rows := job.rows
 	if rows == nil {return}
+	search_group: string
+	if ui.selected >= 0 && ui.selected < len(ui.chats) && ui.chats[ui.selected].search_only {
+		search_group = ui.chats[ui.selected].group_id
+	}
 	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.rows_len))
 	for i in 0 ..< rows.rows_len {
 		append(&fresh, row_to_ui(job.client, &rows.rows[i], string(job.account), job.previews))
 	}
 	chats_replace(&ui.chats, fresh)
+	if search_group != "" {
+		gs_keep_open_chat(ui, search_group)
+		for chat, i in ui.chats {if chat.group_id == search_group {ui.selected = i; break}}
+	}
 	ui.my_pic_url = profile_info(job.client, string(job.account)).pic_url
 	queue_group_pics(ui, job.client)
 

@@ -327,6 +327,9 @@ msgstr "Tutti gli account restano connessi. Il passaggio cambia solo quale stai 
 msgid "All categories"
 msgstr "Tutte le categorie"
 
+msgid "All chats"
+msgstr "Tutte le chat"
+
 msgid "All senders"
 msgstr "Tutti i mittenti"
 
@@ -350,6 +353,15 @@ msgstr "Le animazioni distraggono"
 
 msgid "Another group change took precedence. Review your group settings."
 msgstr "Un'altra modifica del gruppo ha avuto la precedenza. Controlla le impostazioni del gruppo."
+
+msgid "Any attachment"
+msgstr "Qualsiasi allegato"
+
+msgid "Any sender"
+msgstr "Qualsiasi mittente"
+
+msgid "Any type"
+msgstr "Qualsiasi tipo"
 
 msgid "Anything you write here stays between you and this device's key."
 msgstr "Tutto ciò che scrivi qui resta tra te e la chiave di questo dispositivo."
@@ -605,6 +617,9 @@ msgstr "Caricamento dell'elenco chat non riuscito: %s"
 msgid "Chat options"
 msgstr "Opzioni chat"
 
+msgid "Chat: %s"
+msgstr "Chat: %s"
+
 msgid "Chats"
 msgstr "Chat"
 
@@ -646,6 +661,9 @@ msgstr "Scegli un'esportazione dei contatti CSV o JSON da importare."
 
 msgid "Choose a destination for this chat."
 msgstr "Scegli una destinazione per questa chat."
+
+msgid "Choose a known sender or enter a 64-character hex public key."
+msgstr "Scegli un mittente conosciuto o inserisci una chiave pubblica esadecimale di 64 caratteri."
 
 msgid "Choose an emoji style"
 msgstr "Scegli uno stile per le emoji"
@@ -1573,6 +1591,9 @@ msgstr "Attivato per questo gruppo."
 msgid "Encrypted key copied"
 msgstr "Chiave crittografata copiata"
 
+msgid "End day (UTC, inclusive)"
+msgstr "Giorno finale (UTC, incluso)"
+
 msgid "End-to-end encrypted"
 msgstr "Crittografato end-to-end"
 
@@ -1754,6 +1775,9 @@ msgstr "Da emoji"
 
 msgid "From file"
 msgstr "Da file"
+
+msgid "From: %s"
+msgstr "Dal: %s"
 
 msgid "Fullscreen"
 msgstr "Schermo intero"
@@ -2079,6 +2103,9 @@ msgstr "Chiavi e backup"
 msgid "Keys & identity"
 msgstr "Chiavi e identità"
 
+msgid "Known senders"
+msgstr "Mittenti conosciuti"
+
 msgid "LINES"
 msgstr "LINEE"
 
@@ -2148,6 +2175,9 @@ msgstr "I link esattamente a questi siti si aprono senza conferma."
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr "In ascolto... Termina quando hai finito (massimo 30 secondi)."
 
+msgid "Literal message text"
+msgstr "Testo letterale del messaggio"
+
 msgid "Loading full resolution…"
 msgstr "Caricamento della risoluzione completa…"
 
@@ -2156,6 +2186,9 @@ msgstr "Caricamento dei messaggi da esportare..."
 
 msgid "Loading messages…"
 msgstr "Caricamento dei messaggi…"
+
+msgid "Loading more matches from local history…"
+msgstr "Caricamento di altri risultati dalla cronologia locale…"
 
 msgid "Loading your accounts"
 msgstr "Caricamento dei tuoi account"
@@ -2294,6 +2327,9 @@ msgstr "Denaro"
 
 msgid "Monitor"
 msgstr "Monitor"
+
+msgid "More results"
+msgstr "Altri risultati"
 
 msgid "More than"
 msgstr "Più di"
@@ -3136,6 +3172,9 @@ msgstr "Cerca GIF"
 msgid "Search GIFs with GifSnap"
 msgstr "Cerca GIF con GifSnap"
 
+msgid "Search again"
+msgstr "Cerca di nuovo"
+
 msgid "Search all chats"
 msgstr "Cerca in tutte le chat"
 
@@ -3171,6 +3210,12 @@ msgstr "Risultati della ricerca"
 
 msgid "Search stickers"
 msgstr "Cerca adesivi"
+
+msgid "Searches only history stored on this device. Older or unsynced messages may be missing."
+msgstr "Cerca solo nella cronologia salvata su questo dispositivo. I messaggi più vecchi o non sincronizzati potrebbero mancare."
+
+msgid "Searching local history…"
+msgstr "Ricerca nella cronologia locale…"
 
 msgid "Searching…"
 msgstr "Ricerca…"
@@ -3235,6 +3280,12 @@ msgstr "Invia il messaggio"
 
 msgid "Send with an effect"
 msgstr "Invia con un effetto"
+
+msgid "Sender name or hex public key"
+msgstr "Nome del mittente o chiave pubblica esadecimale"
+
+msgid "Sender: %s"
+msgstr "Mittente: %s"
 
 msgid "Sending..."
 msgstr "Invio in corso..."
@@ -3402,6 +3453,9 @@ msgstr "Quadrato"
 msgid "Start chat"
 msgstr "Avvia chat"
 
+msgid "Start day (UTC)"
+msgstr "Giorno iniziale (UTC)"
+
 msgid "Start minimized to tray"
 msgstr "Avvia ridotto a icona nell'area di notifica"
 
@@ -3524,6 +3578,9 @@ msgstr "Testo più tenue"
 msgid "Text mid"
 msgstr "Testo medio"
 
+msgid "Text: %s"
+msgstr "Testo: %s"
+
 msgid "That feels right."
 msgstr "Così va bene."
 
@@ -3615,6 +3672,9 @@ msgstr "Thread"
 
 msgid "Three things and you can send your first message."
 msgstr "Tre passaggi e puoi inviare il tuo primo messaggio."
+
+msgid "Through: %s"
+msgstr "Fino al: %s"
 
 msgid "Time format"
 msgstr "Formato ora"
@@ -3756,6 +3816,9 @@ msgstr "Usa questo tema"
 
 msgid "Use unrelated words or a password-manager password."
 msgstr "Usa parole non correlate o una password generata da un gestore di password."
+
+msgid "Use valid YYYY-MM-DD UTC dates with the start on or before the end."
+msgstr "Usa date UTC valide nel formato YYYY-MM-DD. La data iniziale non deve essere successiva a quella finale."
 
 msgid "Used for generated user and group avatars."
 msgstr "Usata per gli avatar generati di utenti e gruppi."

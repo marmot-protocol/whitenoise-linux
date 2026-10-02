@@ -157,7 +157,7 @@ chat_refresh_ownership :: proc(t: ^testing.T) {
 }
 
 @(test)
-search_cache_and_stale :: proc(t: ^testing.T) {
+search_obsolete_filters :: proc(t: ^testing.T) {
 	ui := Ui_State {
 		account_ref = "account",
 		gs_open     = true,
@@ -167,37 +167,44 @@ search_cache_and_stale :: proc(t: ^testing.T) {
 	job := new(Search_Job)
 	job.account, job.input = strings.clone("account"), strings.clone("cafe")
 	job.revision = search_revision
-	append(&job.groups, strings.clone("group"))
-	records := [?]marmot.Timeline_Message_Record {
-		{message_id_hex = "match", plaintext = "Café", sender = "sender", kind = 9},
-		{message_id_hex = "deleted", plaintext = "cafe", deleted = true},
-		{message_id_hex = "hidden", plaintext = "cafe"},
-	}
-	page := marmot.Timeline_Page {
-		messages     = raw_data(records[:]),
-		messages_len = len(records),
-	}
-	folded := make([]string, len(records))
-	for r, i in records {folded[i] = gs_fold(string(r.plaintext), context.allocator)}
-	job.cache[strings.clone("group")] = {&page, folded}
-	job.hidden[strings.clone("hidden")] = true
-	// A nil client makes any accidental repeated database query fail this check.
-	worker := thread.Thread {
-		data = job,
-	}
-	search_worker(&worker)
-	testing.expect_value(t, len(job.hits), 1)
-	testing.expect_value(t, job.hits[0].msg_id, "match")
+	defer search_free(job)
 	testing.expect(t, search_current(job, &ui))
 	ui.account_ref = "other"
 	testing.expect(t, !search_current(job, &ui))
 	ui.account_ref = "account"
 	append(&ui.gs_input, "x")
 	testing.expect(t, !search_current(job, &ui))
-	entry := job.cache["group"]
-	entry.page = nil // the fixture page is stack-owned
-	job.cache["group"] = entry
-	search_free(job)
+	resize(&ui.gs_input, 4)
+	ui.gs_group = "other-chat"
+	testing.expect(t, !search_current(job, &ui))
+	ui.gs_group = ""
+	ui.gs_sender = "other-sender"
+	testing.expect(t, !search_current(job, &ui))
+	ui.gs_sender = ""
+	ui.gs_attachment = 1
+	testing.expect(t, !search_current(job, &ui))
+	ui.gs_attachment = 0
+	append(&ui.gs_since, "2020-01-01")
+	defer delete(ui.gs_since)
+	testing.expect(t, !search_current(job, &ui))
+	clear(&ui.gs_since)
+	ui.gs_error = "invalid sender"
+	testing.expect(t, !search_current(job, &ui))
+	ui.gs_error = ""
+	ui.gs_append = true
+	job.append_page = true
+	job.cursor_at, job.cursor_id = 123, strings.clone("id-a")
+	ui.gs_cursor_at, ui.gs_cursor_id = 123, "id-b"
+	testing.expect(t, !search_current(job, &ui))
+	ui.gs_cursor_id = "id-a"
+	testing.expect(t, search_current(job, &ui))
+	job.cursor_group = strings.clone("group-a")
+	ui.gs_cursor_group = "group-b"
+	testing.expect(t, !search_current(job, &ui))
+	ui.gs_cursor_group = "group-a"
+	testing.expect(t, search_current(job, &ui))
+	ui.gs_open = false
+	testing.expect(t, !search_current(job, &ui))
 }
 
 @(test)

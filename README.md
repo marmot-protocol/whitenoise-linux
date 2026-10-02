@@ -29,6 +29,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Group settings show name, description, photo, disappearing-message, and issue-tracking controls only to admins. Other members can view the group's name, description, photo, and current disappearing-message timer in full units, such as "90 days".
 - Only group admins can promote, demote, or remove members. Nicknames change your local labels and remain available to other members.
 - Markdown bodies (with typeset `$$` math blocks), reactions, replies, edits with history, forwarding, and search.
+- Ctrl+K searches literal text in locally stored history, including archived chats. Filter by chat, sender, UTC date range, or attachment type, and use More results to page through matches. Opening a result returns to Chats and loads older history when needed. Closing search preserves its query and results; switching accounts clears them. Unsynced messages are not searched.
 - Export the loaded chat window as HTML or Markdown from the members panel. HTML prepares embedded images in the background and shows image progress before opening the save dialog. Unavailable images appear as notes in the transcript. Leaving the chat or changing accounts discards an unfinished export.
 - Emoji search accepts names and shortcodes, such as `100` for hundred points and `thumbsup` for thumbs up. Shortcodes work with or without surrounding colons.
 - The emoji picker's eight most recent choices survive app restarts, newest first.

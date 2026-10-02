@@ -41,7 +41,7 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-MDK_PATCHES=("$HERE/patches/mdk-app-components.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-windows-port.patch" "$HERE/patches/mdk-openbsd-unveil.patch" "$HERE/patches/mdk-openbsd-memory.patch" "$HERE/patches/mdk-tagged-media.patch")
+MDK_PATCHES=("$HERE/patches/mdk-app-components.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-windows-port.patch" "$HERE/patches/mdk-openbsd-unveil.patch" "$HERE/patches/mdk-openbsd-memory.patch" "$HERE/patches/mdk-tagged-media.patch" "$HERE/patches/mdk-advanced-search.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
@@ -58,15 +58,30 @@ if [ "$(git -C "$MDK" rev-parse HEAD)" != "$MDK_PIN" ]; then
   rm -rf "$BUNDLE"
 fi
 
-# Apply Linux integration changes to the pinned MDK.
-for patch in "${MDK_PATCHES[@]}"; do
-  if git -C "$MDK" apply --check "$patch" 2>/dev/null; then
-    git -C "$MDK" apply "$patch"
-  elif ! git -C "$MDK" apply --reverse --check "$patch" 2>/dev/null; then
-    echo "==> MDK patch conflicts with vendor/mdk: $patch" >&2
-    exit 1
-  fi
-done
+# Later patches can change an earlier patch's reverse-check context. Compare
+# the complete series in a temporary index without changing the checkout.
+mdk_series_applied() (
+  index="$(mktemp "$MDK/.wn-index.XXXXXX")"
+  trap 'rm -f "$index"' EXIT
+  export GIT_INDEX_FILE="$index"
+  git -C "$MDK" read-tree HEAD || return 1
+  for patch in "${MDK_PATCHES[@]}"; do
+    git -C "$MDK" apply --cached "$patch" || return 1
+  done
+  git -C "$MDK" diff --quiet --no-ext-diff
+)
+
+# Apply Linux integration changes to a fresh or partially patched checkout.
+if ! mdk_series_applied; then
+  for patch in "${MDK_PATCHES[@]}"; do
+    if git -C "$MDK" apply --check "$patch" 2>/dev/null; then
+      git -C "$MDK" apply "$patch"
+    elif ! git -C "$MDK" apply --reverse --check "$patch" 2>/dev/null; then
+      echo "==> MDK patch conflicts with vendor/mdk: $patch" >&2
+      exit 1
+    fi
+  done
+fi
 PATCHES_HASH="$(sha256sum "${MDK_PATCHES[@]}")"
 if [ "${1:-}" != sources ] && { [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ] || [ "$(cat "$BUNDLE/.mdk-patches" 2>/dev/null || true)" != "$PATCHES_HASH" ]; }; then
   RUST_ENV=()

@@ -368,6 +368,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("JumpLatest") {
+		ui.gs_jump_pending = false
 		delete(ui.jump_id)
 		ui.jump_id = ""
 		scroll_residual = {}
@@ -1242,7 +1243,9 @@ drop_draft :: proc(ui: ^Ui_State) {
 
 // Select a chat, load its timeline, and clear the unread badge by
 // marking the newest message read.
-select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
+select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int) {
+	index := requested_index
+	ui.gs_jump_pending = false
 	ui.nip05_ticket = 0
 	stash_draft(ui)
 	stash_staged(ui)
@@ -1257,6 +1260,12 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 		if ui.selected != index {
 			nc_pending_cancel_group(ui.chats[ui.selected].group_id)
 		}
+	}
+	#reverse for chat, i in ui.chats {
+		if !chat.search_only || i == index {continue}
+		append(&retired_chats, chat)
+		ordered_remove(&ui.chats, i)
+		if i < index {index -= 1}
 	}
 	ui.selected = index
 	ui.staged = ui.staged_drafts[compose_draft_key(ui)]

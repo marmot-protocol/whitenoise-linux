@@ -1,5 +1,7 @@
 package main
 
+import "core:strings"
+
 @(private)
 retired_chats: [dynamic]Chat_Row_Ui
 
@@ -8,6 +10,13 @@ chat_free :: proc(chat: Chat_Row_Ui) {
 	for value in ([]string{chat.group_id, chat.title, chat.preview, chat.at, chat.first_unread, chat.avatar_url, chat.avatar_key, chat.image_hash, chat.last_id}) {
 		delete(value)
 	}
+}
+
+@(private)
+chat_clone :: proc(chat: Chat_Row_Ui) -> Chat_Row_Ui {
+	copy := chat
+	for value in ([]^string{&copy.group_id, &copy.title, &copy.preview, &copy.at, &copy.first_unread, &copy.avatar_url, &copy.avatar_key, &copy.image_hash, &copy.last_id}) {value^ = strings.clone(value^)}
+	return copy
 }
 
 // Handlers and render commands can still borrow the replaced rows this frame.

@@ -208,13 +208,15 @@ timeline_start :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string) {
 }
 
 @(private)
-timeline_paginate :: proc(ui: ^Ui_State, direction: Timeline_Direction) {
+timeline_paginate :: proc(ui: ^Ui_State, direction: Timeline_Direction, preserve_anchor := false) {
 	if timeline_job == nil || ui.timeline_loading || ui.timeline_paging {return}
-	delete(ui.jump_id)
-	ui.jump_id = ""
-	if len(ui.messages) > 0 {
-		index := direction == .Older ? 0 : len(ui.messages) - 1
-		ui.jump_id = strings.clone(ui.messages[index].id)
+	if !preserve_anchor {
+		delete(ui.jump_id)
+		ui.jump_id = ""
+		if len(ui.messages) > 0 {
+			index := direction == .Older ? 0 : len(ui.messages) - 1
+			ui.jump_id = strings.clone(ui.messages[index].id)
+		}
 	}
 	ui.timeline_paging = true
 	sync.lock(&timeline_job.mutex)

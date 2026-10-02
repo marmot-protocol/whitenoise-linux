@@ -748,6 +748,15 @@ Timeline_Reaction_Summary :: struct {
 	user_reactions_len: uint,
 }
 
+Timeline_Attachment_Type :: enum u32 {
+	Any,
+	Image,
+	Video,
+	Audio,
+	File,
+	Attachment,
+}
+
 // Input struct, borrowed by the call. Zero value = account-wide tail.
 Timeline_Message_Query :: struct {
 	group_id_hex:      cstring,
@@ -760,6 +769,14 @@ Timeline_Message_Query :: struct {
 	after_message_id:  cstring,
 	has_limit:         bool,
 	limit:             u32,
+	sender:            cstring,
+	has_since:         bool,
+	since:             u64,
+	has_until:         bool,
+	until:             u64,
+	attachment_type:   Timeline_Attachment_Type,
+	search_wall_clock: bool, // Global search uses timestamp + message-id cursors.
+	cursor_group_id:   cstring, // Account-wide search cursor group tie-breaker.
 }
 
 // Mirror of MarmotGroupSystemEvent: parsed view of a kind-1210 group
@@ -978,7 +995,16 @@ Timeline_Page :: struct {
 #assert(offset_of(Poll_Projection, open) == 80)
 #assert(size_of(Group_System_Event) == 104)
 #assert(size_of(Timeline_Page) == 24)
-#assert(size_of(Timeline_Message_Query) == 72)
+#assert(size_of(Timeline_Message_Query) == 128)
+#assert(size_of(Timeline_Attachment_Type) == 4)
+#assert(offset_of(Timeline_Message_Query, sender) == 72)
+#assert(offset_of(Timeline_Message_Query, has_since) == 80)
+#assert(offset_of(Timeline_Message_Query, since) == 88)
+#assert(offset_of(Timeline_Message_Query, has_until) == 96)
+#assert(offset_of(Timeline_Message_Query, until) == 104)
+#assert(offset_of(Timeline_Message_Query, attachment_type) == 112)
+#assert(offset_of(Timeline_Message_Query, search_wall_clock) == 116)
+#assert(offset_of(Timeline_Message_Query, cursor_group_id) == 120)
 #assert(size_of(Send_Summary) == 32)
 #assert(size_of(Chat_List_Row) == 208)
 #assert(size_of(Markdown_Document) == 40)
