@@ -31,6 +31,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 						   ui.focus == .Inbox ||
 						   ui.focus == .Fetch ||
 						   ui.focus == .Client ||
+						   ui.focus == .Gm ||
 						   ui.focus == .KP ||
 						   ui.focus == .EmojiName ||
 						   ui.focus == .ExportPw))) &&
@@ -157,11 +158,6 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				ui.accounts_open = false
 				if id != ui.account_ref {
 					switch_account(ui, client, id)
-					// Switching wipes ui.profile; refill it if the page
-					// behind the modal is showing it.
-					if ui.page == .Profile {
-						load_profile(client, ui)
-					}
 				}
 				return
 			}
@@ -353,23 +349,8 @@ reset_profile_view :: proc(ui: ^Ui_State) {
 
 // Unfollow a contact without changing shared group memberships.
 remove_contact :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
-	follows: ^marmot.String_List
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	user := strings.clone_to_cstring(hex, context.temp_allocator)
-	if marmot.unfollow_user(client, account, user, &follows) != .OK {
-		set_status(
-			ui,
-			fmt.aprintf(tr("Couldn't remove the contact. %s"), marmot.last_error()),
-			.Error,
-		)
-		return
-	}
-	marmot.string_list_free(follows)
-
-	load_contacts(client, ui)
-	if ui.selected_contact >= len(ui.contacts) {
-		ui.selected_contact = len(ui.contacts) - 1
-	}
+	job := account_job_new(ui, client, .Unfollow); if job == nil {return}
+	job.target = strings.clone(hex); account_job_start(job)
 }
 
 
@@ -391,34 +372,10 @@ save_nickname :: proc(ui: ^Ui_State) {
 
 // Create (and open) a direct chat with a contact.
 start_dm :: proc(ui: ^Ui_State, client: ^marmot.Client, contact: Contact_Ui) {
-	// ponytail: no existing-DM dedupe yet; creates a fresh group.
-	group_id: cstring
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	members := []cstring{strings.clone_to_cstring(contact.id_hex, context.temp_allocator)}
-	if marmot.create_group(
-		   client,
-		   account,
-		   strings.clone_to_cstring(contact.name, context.temp_allocator),
-		   raw_data(members),
-		   1,
-		   nil,
-		   &group_id,
-	   ) !=
-	   .OK {
-		set_status(ui, fmt.aprintf(tr("Couldn't start the chat. %s"), marmot.last_error()), .Error)
-		return
-	}
-	new_group := strings.clone(string(group_id))
-	marmot.string_free(group_id)
-
-	ui.page = .Chats
-	load_chat_list(client, ui.account_ref, ui)
-	for chat, i in ui.chats {
-		if chat.group_id == new_group {
-			select_chat(ui, client, i)
-			break
-		}
-	}
+	job := account_job_new(ui, client, .Create_Chat); if job == nil {return}
+	job.title = strings.clone(
+		contact.name,
+	); job.target = strings.clone(contact.id_hex); job.open_chat = true; account_job_start(job)
 }
 
 // Publish the whole edit form as kind-0 and leave edit mode.
@@ -426,67 +383,11 @@ publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if len(ui.name_input) == 0 {
 		return
 	}
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-
-	// An empty field clears its kind-0 entry.
-	opt :: proc(buf: []u8) -> cstring {
-		if len(buf) == 0 {
-			return nil
-		}
-		return strings.clone_to_cstring(string(buf), context.temp_allocator)
-	}
-	name := strings.clone_to_cstring(string(ui.name_input[:]), context.temp_allocator)
-	metadata := marmot.User_Profile_Metadata {
-		name         = name,
-		display_name = name,
-		about        = opt(ui.about_input[:]),
-		nip05        = opt(ui.nip05_input[:]),
-		lud16        = opt(ui.lud16_input[:]),
-	}
-
-	// A kind-0 publish replaces the whole record, so carry over the
-	// fields the form doesn't edit.
-	cur: ^marmot.User_Profile_Metadata
-	if marmot.user_profile(client, account, &cur) == .OK && cur != nil {
-		if cur.picture != nil {
-			metadata.picture = strings.clone_to_cstring(
-				string(cur.picture),
-				context.temp_allocator,
-			)
-		}
-		if cur.banner != nil {
-			metadata.banner = strings.clone_to_cstring(string(cur.banner), context.temp_allocator)
-		}
-		marmot.user_profile_metadata_free(cur)
-	}
-
-	out: ^marmot.User_Profile_Metadata
-	if marmot.publish_user_profile(
-		   client,
-		   account,
-		   &metadata,
-		   raw_data(DEFAULT_RELAYS),
-		   uint(len(DEFAULT_RELAYS)),
-		   raw_data(DEFAULT_RELAYS),
-		   uint(len(DEFAULT_RELAYS)),
-		   &out,
-	   ) !=
-	   .OK {
-		set_status(
-			ui,
-			fmt.aprintf(tr("Couldn't publish the profile. %s"), marmot.last_error()),
-			.Error,
-		)
-		return
-	}
-	marmot.user_profile_metadata_free(out)
-
-	ui.profile.name = strings.clone(string(ui.name_input[:]))
-	ui.profile.username = strings.clone(ui.profile.name)
-	ui.profile.about = strings.clone(string(ui.about_input[:]))
-	ui.profile.nip05 = strings.clone(string(ui.nip05_input[:]))
-	ui.profile.lud16 = strings.clone(string(ui.lud16_input[:]))
-	ui.profile.editing = false
+	job := account_job_new(ui, client, .Profile); if job == nil {return}
+	job.fields[0] = strings.clone(
+		string(ui.name_input[:]),
+	); job.fields[1] = strings.clone(string(ui.about_input[:])); job.fields[2] = strings.clone(string(ui.nip05_input[:])); job.fields[3] = strings.clone(string(ui.lud16_input[:]))
+	account_job_start(job)
 }
 
 // Enter the edit form with drafts seeded from the loaded profile.
@@ -540,7 +441,6 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if clay.PointerOver(clay.ID("PrAcct", u32(i))) {
 				if id != ui.account_ref {
 					switch_account(ui, client, id)
-					load_profile(client, ui)
 				}
 				return
 			}
@@ -583,7 +483,7 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	if clicked("RevealNsec") {
+	if clicked("RevealNsec") && account_local(ui) {
 		nsec: cstring
 		if marmot.reveal_nsec(client, account, &nsec) == .OK && nsec != nil {
 			ui.profile.nsec = strings.clone(string(nsec))
@@ -628,23 +528,7 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 }
 
 set_relays :: proc(ui: ^Ui_State, client: ^marmot.Client, relays: []cstring) {
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	lists: ^marmot.Account_Relay_Lists
-	if marmot.set_account_nip65_relays(
-		   client,
-		   account,
-		   raw_data(relays),
-		   uint(len(relays)),
-		   raw_data(DEFAULT_RELAYS),
-		   uint(len(DEFAULT_RELAYS)),
-		   &lists,
-	   ) !=
-	   .OK {
-		set_status(ui, fmt.aprintf(tr("Couldn't update relays. %s"), marmot.last_error()), .Error)
-		return
-	}
-	marmot.account_relay_lists_free(lists)
-	reload_profile(ui, client)
+	account_relays_start(ui, client, relays, .Outbox)
 }
 
 // Truncate an id-like string for display.
@@ -734,10 +618,10 @@ import_identity_blocking :: proc(
 	if marmot.login(
 		   client,
 		   id,
-		   raw_data(DEFAULT_RELAYS),
-		   len(DEFAULT_RELAYS),
-		   raw_data(DEFAULT_RELAYS),
-		   len(DEFAULT_RELAYS),
+		   raw_data(ONBOARDING_RELAYS),
+		   len(ONBOARDING_RELAYS),
+		   raw_data(ONBOARDING_RELAYS),
+		   len(ONBOARDING_RELAYS),
 		   &summary,
 	   ) !=
 	   .OK {
@@ -813,26 +697,39 @@ do_create_identity :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // `active` is the account to land on (the one just added); empty falls
 // back to the first row, which is what boot and sign-out want.
 after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
+	keys_forget(ui); close_export(ui); session_string_forget(&ui.profile.nsec)
+	kp_rows_free(&ui.kp_list); ui.kp_fetched = false
+	delete(ui.kp_own_json); ui.kp_own_json = ""
 	timing_start := time.tick_now()
 	defer local_timing_end(.account_load, timing_start)
 	clear(&ui.accounts)
 	clear(&ui.account_ids)
 	clear(&ui.account_npubs)
 	clear(&ui.account_pics)
+	clear(&ui.account_signing)
 	clear(&ui.login_input)
+	ui.login_method = .Menu
 	ui.login_error = ""
 
 	accounts: ^marmot.Account_Summary_List
 	if marmot.list_accounts(client, &accounts) == .OK {
 		first: string
 		for i in 0 ..< accounts.len {
+			if accounts.items[i].signed_out {continue}
 			hex := string(accounts.items[i].account_id_hex)
 			restore_starter_pic(ui, client, hex)
-			if i == 0 || hex == active {
+			if first == "" || hex == active {
 				delete(first)
 				first = strings.clone(hex)
 			}
 			append(&ui.account_ids, strings.clone(hex))
+			append(
+				&ui.account_signing,
+				Account_Signing {
+					accounts.items[i].local_signing,
+					accounts.items[i].external_signing,
+				},
+			)
 			append(&ui.accounts, strings.clone(profile_label(client, hex)))
 			append(&ui.account_pics, strings.clone(profile_info(client, hex).pic_url))
 			npub: cstring
@@ -849,6 +746,9 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 		if len(first) > 0 {
 			ui.account_ref = first
 			load_chat_list(client, first, ui)
+		} else {
+			ui.account_ref = ""
+			clear(&ui.chats)
 		}
 	}
 	ui.add_account_open = false
@@ -857,15 +757,15 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 
 // Activate another already-stored account and reload everything.
 switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
-	timing_start := time.tick_now()
-	defer local_timing_end(.account_switch, timing_start)
-	summary: ^marmot.Account_Summary
-	account := strings.clone_to_cstring(account_id, context.temp_allocator)
-	if marmot.sign_in_account(client, account, &summary) != .OK {
-		set_status(ui, fmt.aprintf(tr("Couldn't switch account. %s"), marmot.last_error()), .Error)
-		return
-	}
-	marmot.account_summary_free(summary)
+	job := account_job_new(ui, client, .Switch, account_id); account_job_start(job)
+}
+
+@(private)
+finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
+	keys_forget(ui); close_export(ui)
+	session_string_forget(&ui.profile.nsec)
+	kp_rows_free(&ui.kp_list); ui.kp_fetched = false
+	delete(ui.kp_own_json); ui.kp_own_json = ""
 
 	// Drop any pending Namecoin resolves that were queued under the
 	// previous account: their follow-up actions (invite, new chat) must
@@ -1226,6 +1126,7 @@ boot_worker :: proc(t: ^thread.Thread) {
 	// Configure the destination before startup restores the saved consent.
 	local_timing_bind(job.client)
 	apply_observability(job.ui, job.client)
+	nip46_restore(job.client)
 
 	job.status = marmot.client_start(job.client)
 	if job.status != .OK {
@@ -1268,7 +1169,17 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	// loop here once missed the npub/pic arrays and crashed the switcher.
 	// It creates avatar textures, so it stays on this thread.
 	splash_frame(1)
-	after_login(ui, client)
+	boot_active := ""
+	accounts: ^marmot.Account_Summary_List
+	if marmot.list_accounts(client, &accounts) == .OK {
+		for row in accounts.items[:accounts.len] {
+			if row.local_signing &&
+			   !row.external_signing &&
+			   !row.signed_out {boot_active = strings.clone(string(row.account_id_hex), context.temp_allocator); break}
+		}
+		marmot.account_summary_list_free(accounts)
+	}
+	after_login(ui, client, boot_active)
 
 	return client
 }

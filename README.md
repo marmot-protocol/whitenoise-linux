@@ -56,7 +56,8 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 
 **Identity & accounts**
 
-- Several accounts at once, each with a live Marmot worker receiving in the background.
+- Several accounts at once, with local nsec keys and NIP-46 remote signers side by side. Connected accounts receive messages in the background.
+- Connect with a `bunker://` link or scan/copy a `nostrconnect://` pairing link. Approve requests in your signer; pending operations show their status and approval links.
 - Contacts, private local-only per-contact nicknames, an archive, and npub QR codes.
 - Import and export contacts as CSV or JSON from the contacts rail. Imports skip existing contacts and duplicate npubs, restore private nicknames and blocked state, and report added, skipped, and failed records. Published profile names still come from Nostr.
 
@@ -78,6 +79,13 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 ## Security model
 
 There is no OS keyring and no plaintext key on disk. Every secret (your nsec, Marmot's per-account MLS keys, the decrypted media cache, the offline queue) lives in a single vault file (`vault.db`) sealed with XChaCha20-Poly1305 under a key derived from your password with Argon2id.
+
+For NIP-46 accounts, your Nostr private key stays in the remote signer and cannot
+be revealed or exported here. Client communication keys and device-local database
+keys stay in your encrypted vault. Locking or restarting disconnects the transport
+without logging out. Signing out removes the saved session and attempts remote
+logout even if the signer is unavailable. Each account reconnects independently;
+an unavailable signer does not block local accounts.
 
 The flip side is that **there is no recovery**: lose the password and the data is gone. Take a backup if that matters to you; the backup is sealed with the same vault password, so a restore needs exactly one secret.
 
@@ -457,7 +465,15 @@ archives (`--blossom-max-artifact-bytes`, commonly above the default 64 MiB).
 
 ### First run
 
-The first time you launch, you either paste an existing nsec or generate a new one, and you set a vault password. That creates the vault; from then on you just enter the password to open it. A wrong password fails the cipher's authentication tag, so there's no recovery path, but the unlock screen has a **Use another key** option that wipes the vault and starts over from a fresh nsec.
+On first launch, set a vault password, then import or generate an nsec, paste a
+bunker link, or pair with a remote signer. Later launches unlock the same vault.
+A wrong password cannot decrypt it. **Use another key** deletes the vault and
+its sealed data and returns to account setup.
+
+If relay discovery fails during key import or remote-signer login, missing lists
+use `wss://relay.eu.whitenoise.chat`, `wss://relay.us.whitenoise.chat`,
+`wss://relay.ditto.pub`, and `wss://relay.cyberguy.fyi`. Signed relay lists already
+found remain unchanged.
 
 ## Configuration
 

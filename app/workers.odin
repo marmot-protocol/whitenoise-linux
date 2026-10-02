@@ -1978,12 +1978,18 @@ Auth_Seed :: enum {
 }
 
 Auth_Job :: struct {
-	client:  ^marmot.Client,
-	nsec:    string, // "" = mint a fresh identity
-	seed:    Auth_Seed,
-	hex:     string, // result: the account just added
-	pic_url: string,
-	err:     string, // "" = it worked
+	client:                    ^marmot.Client,
+	nsec:                      string,
+	method:                    Login_Method,
+	session:                   ^marmot.Nip46_Session,
+	remote_login:              bool,
+	cancelled, cancel_cleanup: bool,
+	previous_session:          ^Nip46_Account,
+	signer_state:              Nip46_State,
+	seed:                      Auth_Seed,
+	hex:                       string, // result: the account just added
+	pic_url:                   string,
+	err:                       string, // "" = it worked
 }
 
 // Non-nil while a sign-in is in flight; the login pane reads it.
@@ -1993,6 +1999,7 @@ auth_thread: ^thread.Thread
 
 @(private)
 auth_stop :: proc() {
+	if auth_job != nil && auth_job.session != nil {marmot.nip46_cancel(auth_job.session)}
 	if auth_thread != nil {
 		thread.join(auth_thread)
 		thread.destroy(auth_thread)
@@ -2003,6 +2010,8 @@ auth_stop :: proc() {
 }
 
 auth_job_free :: proc(job: ^Auth_Job) {
+	if job.session != nil {marmot.nip46_free(job.session)}
+	nip46_state_free(&job.signer_state)
 	mem.zero_slice(transmute([]u8)job.nsec)
 	delete(job.nsec); delete(job.hex); delete(job.pic_url); delete(job.err)
 	job.client = nil
@@ -2011,7 +2020,8 @@ auth_job_free :: proc(job: ^Auth_Job) {
 
 @(private)
 reload_jobs_busy :: proc() -> bool {
-	if auth_thread != nil {return true}
+	// Remote transport is cancellable; session_stop cancels it before joining.
+	if auth_thread != nil && (auth_job == nil || auth_job.session == nil) {return true}
 	// Preparation can finish between frames, before its upload is spawned.
 	if g_ui != nil {
 		for p in g_ui.pending {
@@ -2040,10 +2050,66 @@ auth_worker :: proc(t: ^thread.Thread) {
 	defer frame_wake()
 	job := (^Auth_Job)(t.data)
 	// marmot's last_error is thread-local, so the message is built here.
-	if len(job.nsec) > 0 {
+	switch job.method {
+	case .Import:
 		job.hex, job.err = import_identity_blocking(job.client, job.nsec)
-	} else {
+	case .Create:
 		job.hex, job.pic_url, job.err = create_identity_blocking(job.client)
+	case .Bunker, .Pair:
+		if job.cancel_cleanup {
+			if job.remote_login {
+				outcome: ^marmot.Sign_Out_Outcome
+				status := marmot.sign_out(
+					job.client,
+					strings.clone_to_cstring(job.hex, context.temp_allocator),
+					false,
+					&outcome,
+				)
+				if outcome != nil {marmot.sign_out_outcome_free(outcome)}
+				if status ==
+				   .OK {vault_remove(fmt.tprintf("nip46:%s", job.hex))} else {job.err = marmot.last_error()}
+			}
+			marmot.nip46_logout(job.session)
+			if job.err == "" {job.err = strings.clone(tr("Connection cancelled."))}
+		} else if !job.remote_login {
+			user: cstring
+			if marmot.nip46_connect(job.session, &user) !=
+			   .OK {job.err = marmot.last_error()} else {job.hex = strings.clone(string(user)); marmot.string_free(user)}
+		} else {
+			if job.previous_session !=
+			   nil {nip46_account_free(job.previous_session); job.previous_session = nil}
+			summary: ^marmot.Account_Summary
+			if marmot.nip46_login(
+				   job.client,
+				   job.session,
+				   raw_data(ONBOARDING_RELAYS),
+				   len(ONBOARDING_RELAYS),
+				   raw_data(ONBOARDING_RELAYS),
+				   len(ONBOARDING_RELAYS),
+				   &summary,
+			   ) !=
+			   .OK {
+				job.err = marmot.last_error()
+			} else {
+				delete(job.hex); job.hex = strings.clone(string(summary.account_id_hex))
+				marmot.account_summary_free(summary)
+				job.err = nip46_store(job.session, job.hex)
+				if job.err != "" {
+					outcome: ^marmot.Sign_Out_Outcome
+					marmot.sign_out(
+						job.client,
+						strings.clone_to_cstring(job.hex, context.temp_allocator),
+						false,
+						&outcome,
+					)
+					if outcome != nil {marmot.sign_out_outcome_free(outcome)}
+					vault_remove(fmt.tprintf("nip46:%s", job.hex))
+					marmot.nip46_logout(job.session)
+				}
+			}
+		}
+	case .Menu:
+		job.err = strings.clone(tr("Choose a sign-in method."))
 	}
 	free_all(context.temp_allocator)
 
@@ -2052,9 +2118,14 @@ auth_worker :: proc(t: ^thread.Thread) {
 	sync.unlock(&auth_mutex)
 }
 
-// Kick a sign-in. `nsec` empty mints a fresh identity. A second call
-// while one is in flight is ignored.
-start_auth :: proc(ui: ^Ui_State, client: ^marmot.Client, nsec: string) {
+// The optional method preserves devctl callers; the UI always selects it explicitly.
+start_auth :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	nsec: string,
+	method: Login_Method = .Menu,
+	session: ^marmot.Nip46_Session = nil,
+) {
 	if auth_job != nil || client == nil {
 		return
 	}
@@ -2063,7 +2134,9 @@ start_auth :: proc(ui: ^Ui_State, client: ^marmot.Client, nsec: string) {
 	auth_job = new(Auth_Job)
 	auth_job.client = client
 	auth_job.nsec = strings.clone(nsec)
-	auth_job.seed = len(nsec) > 0 ? .None : .Starter_Face
+	auth_job.method = method == .Menu ? (nsec == "" ? .Create : .Import) : method
+	auth_job.session = session
+	auth_job.seed = auth_job.method == .Create ? .Starter_Face : .None
 	auth_thread = thread.create(auth_worker)
 	auth_thread.data = auth_job
 	thread.start(auth_thread)
@@ -2084,12 +2157,45 @@ drain_auth :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	auth_done = false
 
 	job := auth_job
+	if job.cancelled && job.err == "" {
+		job.cancel_cleanup = true
+		auth_thread = thread.create(auth_worker); auth_thread.data = job; thread.start(auth_thread)
+		return
+	}
+	if job.err == "" && job.session != nil && !job.remote_login {
+		previous := nip46_find(job.hex)
+		busy := false
+		for pending in account_jobs {if pending.account == job.hex {busy = true; break}}
+		if !busy {
+			if previous != nil {
+				marmot.nip46_cancel(previous.handle)
+				for item, i in nip46_accounts {if item == previous {ordered_remove(&nip46_accounts, i); break}}
+				job.previous_session = previous
+			}
+			job.remote_login = true
+			auth_thread = thread.create(
+				auth_worker,
+			); auth_thread.data = job; thread.start(auth_thread)
+			return
+		}
+		job.err = strings.clone(
+			tr("Your account has a pending action. Complete it before reconnecting your signer."),
+		)
+	}
 	auth_job = nil
 	defer auth_job_free(job)
 
 	if len(job.err) > 0 {
 		ui.login_error = strings.clone(job.err)
+		login_pair_clear(ui)
 		return
 	}
+	if job.session != nil {
+		item := new(
+			Nip46_Account,
+		); item.account = strings.clone(job.hex); item.client = client; item.registered = true; append(&nip46_accounts, item)
+		item.handle = job.session; job.session = nil
+	}
+	login_pair_clear(ui)
 	finish_auth(ui, client, job.hex, job.pic_url, job.seed)
 }

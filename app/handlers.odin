@@ -14,10 +14,24 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	for item, i in nip46_accounts {if mouse_released() && clay.PointerOver(clay.ID("SignerApproval", u32(i))) {nip46_auth_url(ui, item.state.auth_url); return}}
 	if client == nil || (len(ui.accounts) > 0 && !ui.add_account_open) {
 		return
 	}
 	if auth_job != nil {
+		if clicked("LoginCancel") || rl.IsKeyPressed(.ESCAPE) {
+			if auth_job.session != nil {
+				auth_job.cancelled = true
+				marmot.nip46_cancel(auth_job.session)
+				nip46_state_free(&auth_job.signer_state)
+				auth_job.signer_state.state = strings.clone("cancelled")
+				auth_job.signer_state.detail = strings.clone(
+					tr("Finishing the cancelled connection."),
+				)
+			}
+		}
+		if clicked("LoginPairCopy") {copy_text(ui, ui.login_uri, tr("Pairing link copied"))}
+		if clicked("LoginApproval") {nip46_auth_url(ui, auth_job.signer_state.auth_url)}
 		return // a sign-in is in flight; the pane shows its progress
 	}
 
@@ -35,20 +49,33 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("LoginImportBtn") {
-		ui.login_import = true
+		ui.login_method = .Import
+		return
+	}
+	if clicked("LoginBunkerBtn") {
+		ui.login_method = .Bunker
+		clear(&ui.login_input)
+		return
+	}
+	if clicked("LoginPairBtn") {
+		ui.login_method = .Pair
+		clear(&ui.login_input)
+		append(&ui.login_input, ..transmute([]u8)string(DEFAULT_RELAYS[0]))
 		return
 	}
 	if clicked("LoginBack") {
-		ui.login_import = false
+		ui.login_method = .Menu
+		login_pair_clear(ui)
 		clear(&ui.login_input)
 		return
 	}
 
-	submitted := ui.login_import && (rl.IsKeyPressed(.ENTER) || clicked("LoginGo"))
+	submitted := ui.login_method != .Menu && (rl.IsKeyPressed(.ENTER) || clicked("LoginGo"))
 	if submitted && len(ui.login_input) > 0 {
-		start_auth(ui, client, string(ui.login_input[:]))
-	} else if !ui.login_import && clicked("LoginCreate") {
-		start_auth(ui, client, "")
+		if ui.login_method ==
+		   .Import {start_auth(ui, client, string(ui.login_input[:]), .Import)} else {start_remote_auth(ui, client, ui.login_method, string(ui.login_input[:]))}
+	} else if ui.login_method == .Menu && clicked("LoginCreate") {
+		start_auth(ui, client, "", .Create)
 	}
 }
 
@@ -121,6 +148,9 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 	}
 	if ui.focus == .Client {
 		return &ui.client_input
+	}
+	if ui.focus == .Gm {
+		return &ui.gm_input
 	}
 	if ui.focus == .ExportPw {
 		return &ui.export_pw
@@ -525,6 +555,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.poll_open = true
 		return
 	}
+	if clicked("GmBtn") {
+		gm_send(ui, client)
+		return
+	}
 	for _, i in ui.staged {
 		if mouse_released() && clay.PointerOver(clay.ID("StagedX", u32(i))) {
 			remove_staged(ui, i)
@@ -589,18 +623,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Pending-invite banner.
 	if ui.chats[ui.selected].pending {
 		if clicked("InviteAccept") {
-			record: ^marmot.App_Group_Record
-			account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-			group := strings.clone_to_cstring(
-				ui.chats[ui.selected].group_id,
-				context.temp_allocator,
-			)
-			if marmot.accept_group_invite(client, account, group, &record) == .OK {
-				marmot.app_group_record_free(record)
-				refresh_after_action(ui, client)
-			} else {
-				set_status(ui, fmt.aprintf(tr("Couldn't accept. %s"), marmot.last_error()), .Error)
-			}
+			account_job_start(account_job_new(ui, client, .Accept))
 			return
 		}
 		if clicked("InviteDecline") {
@@ -1380,40 +1403,6 @@ select_by_id :: proc(ui: ^Ui_State, client: ^marmot.Client, group_id: string) ->
 	return false
 }
 
-// Create a group and refresh the rail. `member` empty makes a solo
-// group. Returns the new group id (cloned, owned by the caller) or "".
-create_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, name, member: string) -> string {
-	group_id: cstring
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	members: []cstring
-	if len(member) > 0 {
-		members = []cstring{strings.clone_to_cstring(member, context.temp_allocator)}
-	}
-
-	if marmot.create_group(
-		   client,
-		   account,
-		   strings.clone_to_cstring(name, context.temp_allocator),
-		   raw_data(members),
-		   uint(len(members)),
-		   nil,
-		   &group_id,
-	   ) !=
-	   .OK {
-		set_status(
-			ui,
-			fmt.aprintf(tr("Couldn't create the chat. %s"), marmot.last_error()),
-			.Error,
-		)
-		return ""
-	}
-	new_group := strings.clone(string(group_id))
-	marmot.string_free(group_id)
-
-	load_chat_list(client, ui.account_ref, ui)
-	return new_group
-}
-
 // The user's own notepad. It is not an optional chat the user opts into:
 // the rail always has one, so boot makes it when it is missing (a fresh
 // account, or a vault reset) and remembers it by id, which survives a
@@ -1435,10 +1424,12 @@ ensure_notes :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			found = chat.group_id
 		}
 	}
-	id := len(found) > 0 ? strings.clone(found) : create_chat(ui, client, NOTES_TITLE, "")
-	if len(id) == 0 {
+	if found == "" {
+		job := account_job_new(ui, client, .Create_Chat); if job == nil {return}
+		job.title = strings.clone(NOTES_TITLE); job.notes = true; account_job_start(job)
 		return
 	}
+	id := strings.clone(found)
 	delete(ui.prefs.notes_group)
 	ui.prefs.notes_group = id
 	ui.prefs.pinned[strings.clone(id)] = true
@@ -1447,6 +1438,7 @@ ensure_notes :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 open_notes :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ensure_notes(ui, client)
+	for job in account_jobs {if job.account == ui.account_ref && job.notes {job.open_chat = true}}
 	ui.new_chat_open = false
 	ui.focus = .Compose
 	ui.page = .Chats
@@ -1455,6 +1447,13 @@ open_notes :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 // New-chat form: field focus, create, cancel.
 handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	for job in account_jobs {
+		if job.account == ui.account_ref && job.kind == .Create_Chat && job.form {
+			if rl.IsKeyPressed(.ESCAPE) ||
+			   clicked("NCCancel") {job.open_chat = false; ui.new_chat_open = false}
+			return
+		}
+	}
 	edit_text(ui, active_buf(ui))
 
 	if field_mouse(ui, &ui.nc_member, "NCMember", 14) {
@@ -1551,20 +1550,15 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // the group-image worker, clear the form, jump to the new chat. Shared
 // by the direct-input path and the Namecoin resolve callback.
 new_chat_create_and_open :: proc(ui: ^Ui_State, client: ^marmot.Client, name, member: string) {
-	id := create_chat(ui, client, name, member)
-	if len(id) == 0 {
-		return
-	}
+	job := account_job_new(ui, client, .Create_Chat); if job == nil {return}
+	job.title = strings.clone(name); job.target = strings.clone(member); job.open_chat = true
+	job.form = true
 	if len(ui.nc_pic.data) > 0 {
-		upload_group_pic(ui, client, id, ui.nc_pic)
+		job.pic_data = ui.nc_pic.data; job.pic_media = ui.nc_pic.media_type
+		rl.UnloadImage(ui.nc_pic.image)
 		ui.nc_pic = {}
 	}
-	clear(&ui.nc_member)
-	clear(&ui.nc_name)
-	ui.new_chat_open = false
-	ui.focus = .Compose
-	ui.page = .Chats
-	select_by_id(ui, client, id)
+	account_job_start(job)
 }
 
 // Frame-loop drain: pair Nc_Done events from the worker to Nc_Pending

@@ -439,6 +439,7 @@ status_pill :: proc(id_str: string, label: string, color: clay.Color, dot := tru
 }
 
 status_bar :: proc(ui: ^Ui_State) {
+	account_pending_ui(ui)
 	if ui.stt.file != nil && ui.stt.message == "" && ui.stt.purpose != .Download {
 		if clay.UI(clay.ID("SttBar"))(
 		{

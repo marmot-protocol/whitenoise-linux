@@ -25,6 +25,10 @@ settings_viewport :: proc(t: ^testing.T) {
 		page          = .Settings,
 		audit_scanned = true,
 	}
+	append(&ui.account_ids, "viewport-local", "viewport-remote")
+	append(&ui.account_signing, Account_Signing{local = true}, Account_Signing{external = true})
+	ui.account_ref = "viewport-local"
+	defer {delete(ui.account_ids); delete(ui.account_signing)}
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
 	g_ui, g_prefs = &ui, &ui.prefs
@@ -113,6 +117,17 @@ settings_viewport :: proc(t: ^testing.T) {
 			"The final theme option must remain clickable inside the menu clip",
 		)
 		ui.theme_menu_open = false
+		ui.account_ref = "viewport-remote"
+		settings_open(&ui, nil, .Keys, anchor = "RowVaultPw")
+		for _ in 0 ..< 3 {settings_test_frame(&ui)}
+		testing.expect(
+			t,
+			clay.GetElementData(clay.ID("RowVaultPw")).found &&
+			!clay.GetElementData(clay.ID("RowExport")).found &&
+			!clay.GetElementData(clay.ID("RowReveal")).found,
+			"A remote account keeps device vault controls but never offers its private key",
+		)
+		ui.account_ref = "viewport-local"
 	}
 }
 

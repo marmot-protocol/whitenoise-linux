@@ -11,27 +11,114 @@
 //   ███████     ▟▙          strips from the right edge, skipping
 //   █     █      ▘          every module the patterns reserved
 //
-// ponytail: versions 1-5 only. They are exactly the versions with a
-// single Reed-Solomon block, which is what keeps the interleaving and
-// the per-version block tables out of here. Payload ceiling is 106
-// bytes; the profile link is 88. Longer text needs the v6+ tables.
+// Versions 1-40 cover profile links and longer NIP-46 pairing URIs.
 package main
 
 import rl "sdlrl"
 
-QR_MAX_VERSION :: 5
+QR_MAX_VERSION :: 40
 
-// Total and error-correction codewords per version at ECC level L;
-// the data codewords are the difference.
+// ECC level L: codewords per block and number of blocks, indexed by version.
 @(private = "file")
-QR_TOTAL_CW := [QR_MAX_VERSION + 1]int{0, 26, 44, 70, 100, 134}
+QR_ECC_CW := [QR_MAX_VERSION + 1]int {
+	0,
+	7,
+	10,
+	15,
+	20,
+	26,
+	18,
+	20,
+	24,
+	30,
+	18,
+	20,
+	24,
+	26,
+	30,
+	22,
+	24,
+	28,
+	30,
+	28,
+	28,
+	28,
+	28,
+	30,
+	30,
+	26,
+	28,
+	30,
+	30,
+	30,
+	30,
+	30,
+	30,
+	30,
+	30,
+	30,
+	30,
+	30,
+	30,
+	30,
+	30,
+}
 @(private = "file")
-QR_ECC_CW := [QR_MAX_VERSION + 1]int{0, 7, 10, 15, 20, 26}
+QR_BLOCKS := [QR_MAX_VERSION + 1]int {
+	0,
+	1,
+	1,
+	1,
+	1,
+	1,
+	2,
+	2,
+	2,
+	2,
+	4,
+	4,
+	4,
+	4,
+	4,
+	6,
+	6,
+	6,
+	6,
+	7,
+	8,
+	8,
+	9,
+	9,
+	10,
+	12,
+	12,
+	12,
+	13,
+	14,
+	15,
+	16,
+	17,
+	18,
+	19,
+	19,
+	20,
+	21,
+	22,
+	24,
+	25,
+}
 
-// Mode nibble plus the 8-bit character count, in codewords: the fixed
-// overhead every byte-mode payload pays.
+// Function patterns leave this many complete codewords in the matrix.
 @(private = "file")
-QR_HEADER_CW :: 2
+qr_total_cw :: proc(version: int) -> int {
+	modules := (16 * version + 128) * version + 64
+	if version >= 2 {
+		align := version / 7 + 2
+		modules -= (25 * align - 10) * align - 55
+		if version >= 7 {modules -= 36}
+	}
+	return modules / 8
+}
 
 // ── GF(256), the Reed-Solomon field ─────────────────────────────────
 
@@ -68,12 +155,11 @@ qr_gf_pow :: proc(i: int) -> u8 {
 	return gf_exp[i % 255]
 }
 
-// Remainder of `data` divided by the degree-`ecc_len` generator
-// polynomial: the error-correction codewords, high order first.
+// Build the generator once for all Reed-Solomon blocks of this symbol.
 @(private = "file")
-qr_rs :: proc(data: []u8, ecc_len: int) -> []u8 {
+qr_divisor :: proc(gen: []u8) {
 	// Generator: the product of (x - a^i), leading coefficient implied.
-	gen := make([]u8, ecc_len, context.temp_allocator)
+	ecc_len := len(gen)
 	gen[ecc_len - 1] = 1
 	root: u8 = 1
 	for _ in 0 ..< ecc_len {
@@ -85,8 +171,11 @@ qr_rs :: proc(data: []u8, ecc_len: int) -> []u8 {
 		}
 		root = qr_gf_mul(root, 2)
 	}
+}
 
-	rem := make([]u8, ecc_len, context.temp_allocator)
+@(private = "file")
+qr_rs :: proc(data, gen, rem: []u8) {
+	ecc_len := len(gen)
 	for b in data {
 		factor := b ~ rem[0]
 		copy(rem, rem[1:])
@@ -95,7 +184,6 @@ qr_rs :: proc(data: []u8, ecc_len: int) -> []u8 {
 			rem[j] ~= qr_gf_mul(gen[j], factor)
 		}
 	}
-	return rem
 }
 
 // ── Codewords ───────────────────────────────────────────────────────
@@ -106,8 +194,11 @@ qr_ecc_cw :: proc(version: int) -> int {
 
 // Smallest version that holds `n` payload bytes, 0 when none does.
 qr_version_for :: proc(n: int) -> int {
+	if n < 0 || n > 2953 {return 0}
 	for v in 1 ..= QR_MAX_VERSION {
-		if n + QR_HEADER_CW <= QR_TOTAL_CW[v] - QR_ECC_CW[v] {
+		count_bits := v < 10 ? 8 : 16
+		data_len := qr_total_cw(v) - QR_ECC_CW[v] * QR_BLOCKS[v]
+		if 4 + count_bits + n * 8 <= data_len * 8 {
 			return v
 		}
 	}
@@ -124,28 +215,47 @@ qr_put :: proc(out: []u8, at: ^int, value: int, n: int) {
 	}
 }
 
-// Data codewords (mode, length, payload, padding) followed by the
-// error-correction block.
+// Byte-mode data and ECC blocks, interleaved column-first for the decoder.
 qr_codewords :: proc(payload: []u8, version: int, allocator := context.allocator) -> []u8 {
-	data_len := QR_TOTAL_CW[version] - QR_ECC_CW[version]
-	out := make([]u8, QR_TOTAL_CW[version], allocator)
+	total := qr_total_cw(version)
+	blocks, ecc_len := QR_BLOCKS[version], QR_ECC_CW[version]
+	data_len := total - blocks * ecc_len
+	data := make([]u8, data_len, context.temp_allocator)
+	out := make([]u8, total, allocator)
 
 	at := 0
-	qr_put(out, &at, 0b0100, 4) // byte mode
-	qr_put(out, &at, len(payload), 8)
+	qr_put(data, &at, 0b0100, 4) // byte mode
+	qr_put(data, &at, len(payload), version < 10 ? 8 : 16)
 	for b in payload {
-		qr_put(out, &at, int(b), 8)
+		qr_put(data, &at, int(b), 8)
 	}
 
 	// The terminator and the byte alignment are already there: the
 	// buffer is zeroed. The rest takes the spec's alternating pad.
 	pad := [2]u8{0xEC, 0x11}
-	first := (at + 7) / 8
+	first := (min(at + 4, data_len * 8) + 7) / 8
 	for i in first ..< data_len {
-		out[i] = pad[(i - first) % 2]
+		data[i] = pad[(i - first) % 2]
 	}
 
-	copy(out[data_len:], qr_rs(out[:data_len], QR_ECC_CW[version]))
+	short_len := data_len / blocks
+	short_blocks := blocks - total % blocks
+	gen_buffer: [30]u8
+	gen := gen_buffer[:ecc_len]
+	qr_divisor(gen)
+	offset := 0
+	for block in 0 ..< blocks {
+		block_len := short_len + (block >= short_blocks ? 1 : 0)
+		for i in 0 ..< block_len {
+			column :=
+				i < short_len ? i * blocks + block : short_len * blocks + block - short_blocks
+			out[column] = data[offset + i]
+		}
+		rem: [30]u8
+		qr_rs(data[offset:offset + block_len], gen, rem[:ecc_len])
+		for i in 0 ..< ecc_len {out[data_len + i * blocks + block] = rem[i]}
+		offset += block_len
+	}
 	return out
 }
 
@@ -350,14 +460,35 @@ qr_matrix :: proc(
 		}
 	}
 
-	// Versions 2-5 carry exactly one alignment pattern, centered at
-	// 4*version+10 on both axes.
+	// Alignment positions are evenly spaced, except version 32's step.
 	if version >= 2 {
-		c := 4 * version + 10
-		for dy in -2 ..= 2 {
-			for dx in -2 ..= 2 {
-				gset(&g, c + dx, c + dy, max(abs(dx), abs(dy)) != 1)
+		count := version / 7 + 2
+		step := version == 32 ? 26 : ((version * 8 + count * 3 + 5) / (count * 4 - 4)) * 2
+		positions: [7]int
+		positions[0] = 6
+		for i := count - 1; i >= 1; i -= 1 {positions[i] = size - 7 - (count - 1 - i) * step}
+		for y, yi in positions[:count] {
+			for x, xi in positions[:count] {
+				if (xi == 0 && yi == 0) ||
+				   (xi == 0 && yi == count - 1) ||
+				   (xi == count - 1 && yi == 0) {continue}
+				for dy in -2 ..= 2 {
+					for dx in -2 ..= 2 {gset(&g, x + dx, y + dy, max(abs(dx), abs(dy)) != 1)}
+				}
 			}
+		}
+	}
+
+	// Version information uses BCH(18,6), mirrored beside two finders.
+	if version >= 7 {
+		rem := version
+		for _ in 0 ..< 12 {rem = (rem << 1) ~ ((rem >> 11) * 0x1F25)}
+		bits := version << 12 | rem
+		for i in 0 ..< 18 {
+			x, y := size - 11 + i % 3, i / 3
+			dark := bits >> uint(i) & 1 != 0
+			gset(&g, x, y, dark)
+			gset(&g, y, x, dark)
 		}
 	}
 
@@ -399,7 +530,7 @@ qr_matrix :: proc(
 	return g.mods, size
 }
 
-// Modules for `text`, or ok = false when it does not fit version 5.
+// Modules for `text`, or ok = false beyond byte-mode version 40 capacity.
 qr_encode :: proc(
 	text: string,
 	allocator := context.allocator,

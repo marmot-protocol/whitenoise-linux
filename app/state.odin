@@ -222,6 +222,7 @@ Focus :: enum {
 	Inbox, // settings inbox-relay box
 	Fetch, // settings event-fetch-relay box
 	Client, // settings event web-client box
+	Gm, // settings GM-message box
 	ExportPw, // export-ncryptsec password box
 	BackupPw, // backup create/import password box
 	EmojiName, // custom-emoji shortcode box
@@ -441,6 +442,7 @@ Ui_State :: struct {
 	accounts:                                              [dynamic]string, // kind-0 name (else truncated hex) per row
 	account_npubs:                                         [dynamic]string, // npub per row, for the switcher sublabels
 	account_pics:                                          [dynamic]string, // kind-0 picture URL per row, "" = none
+	account_signing:                                       [dynamic]Account_Signing,
 	accounts_open:                                         bool, // the Accounts switcher modal
 	peer_open:                                             bool, // peer-profile popup (any avatar click)
 	peer_hex:                                              string,
@@ -670,6 +672,7 @@ Ui_State :: struct {
 	inbox_input:                                           [dynamic]u8, // settings inbox-relay box
 	fetch_input:                                           [dynamic]u8, // settings event-fetch-relay box
 	client_input:                                          [dynamic]u8, // settings event web-client box, mirrors prefs.event_client
+	gm_input:                                              [dynamic]u8, // settings GM-message box, mirrors prefs.gm_text
 	health:                                                marmot.Relay_Health, // relay-pool counters (network.odin)
 	health_ok:                                             bool, // a relay_health call has succeeded
 	export_open:                                           bool, // export-ncryptsec modal
@@ -726,12 +729,23 @@ Ui_State :: struct {
 	fx_open:                                               bool, // effect picker popover
 	fx_armed:                                              int, // catalog id armed for the next send; 0 = none
 	login_input:                                           [dynamic]u8, // nsec being typed/pasted
-	login_import:                                          bool, // sign-in card: false = menu, true = nsec form
+	login_method:                                          Login_Method,
+	login_uri:                                             string,
+	login_qr:                                              ^rl.Texture2D,
 	login_error:                                           string,
 }
 
 // Relays a new account starts with.
 DEFAULT_RELAYS := []cstring{"wss://relay.eu.whitenoise.chat", "wss://relay.us.whitenoise.chat"}
+
+// Imported and remote identities use these when discovery cannot find their lists.
+@(private)
+ONBOARDING_RELAYS := []cstring {
+	"wss://relay.eu.whitenoise.chat",
+	"wss://relay.us.whitenoise.chat",
+	"wss://relay.ditto.pub",
+	"wss://relay.cyberguy.fyi",
+}
 
 // Live-update plumbing: a worker thread blocks on the chat-list
 // subscription (a chat's row also changes when it gets a message, so

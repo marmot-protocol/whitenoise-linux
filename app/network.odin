@@ -335,27 +335,7 @@ health_tick :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // lists (the setter returns them, but load_profile is the one path
 // that owns ui.profile).
 set_inbox_relays :: proc(ui: ^Ui_State, client: ^marmot.Client, relays: []cstring) {
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	lists: ^marmot.Account_Relay_Lists
-	if marmot.set_account_inbox_relays(
-		   client,
-		   account,
-		   raw_data(relays),
-		   uint(len(relays)),
-		   raw_data(DEFAULT_RELAYS),
-		   uint(len(DEFAULT_RELAYS)),
-		   &lists,
-	   ) !=
-	   .OK {
-		set_status(
-			ui,
-			fmt.aprintf(tr("Couldn't update inbox relays. %s"), marmot.last_error()),
-			.Error,
-		)
-		return
-	}
-	marmot.account_relay_lists_free(lists)
-	reload_profile(ui, client)
+	account_relays_start(ui, client, relays, .Inbox)
 }
 
 reload_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
@@ -428,24 +408,7 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 }
 
 republish_relay_lists :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	if marmot.publish_relay_lists(
-		   client,
-		   account,
-		   raw_data(DEFAULT_RELAYS),
-		   uint(len(DEFAULT_RELAYS)),
-		   raw_data(DEFAULT_RELAYS),
-		   uint(len(DEFAULT_RELAYS)),
-	   ) !=
-	   .OK {
-		set_status(
-			ui,
-			fmt.aprintf(tr("Couldn't republish the relay lists. %s"), marmot.last_error()),
-			.Error,
-		)
-		return
-	}
-	set_status(ui, tr("Relay lists republished."), .Info)
+	account_job_start(account_job_new(ui, client, .Relays))
 }
 
 // Rail/status-bar counter: live connected-of-total once a health call

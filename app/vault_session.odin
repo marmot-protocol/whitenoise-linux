@@ -67,6 +67,7 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	client, ui, live := job.client, job.ui, job.live
 	if ui.lock_requested {vault_relock()}
 	local_timing_bind(nil)
+	nip46_cancel_all()
 	if client != nil {marmot.client_shutdown(client)}
 	mem.zero_slice(transmute([]u8)ui.stt.draft)
 	stt_stop(ui)
@@ -76,9 +77,10 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	xdc_session_clear()
 	save_settings(ui)
 	settings_stop(ui)
+	auth_stop()
+	account_jobs_stop()
 	stop_gimg_worker()
 	stop_pic_worker()
-	auth_stop()
 	contact_import_stop(ui)
 	retention_stop()
 	for worker in send_threads {thread.join(worker); thread.destroy(worker)}
@@ -104,6 +106,7 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 			thread.join(live.events_worker); thread.destroy(live.events_worker)
 			marmot.events_subscription_free(live.events_sub)
 		}
+		nip46_stop()
 		marmot.client_free(client)
 	}
 	vault_lock()
@@ -127,6 +130,7 @@ session_stop :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 	thread.destroy(worker)
 	g_client = nil
 	g_ui = nil
+	login_pair_clear(ui)
 	for change in live.dirty_groups {delete(change.group); delete(change.account)}
 	delete(live.dirty_groups); live.dirty_groups = {}
 	forward_stop(ui)
@@ -155,6 +159,8 @@ editor_forget :: proc(ui: ^Ui_State) {
 
 @(private)
 lock_scrub_ui :: proc(ui: ^Ui_State) {
+	login_pair_clear(ui)
+	delete(ui.account_signing); ui.account_signing = {}
 	editor_forget(ui)
 	keys_forget(ui)
 	vault_pw_close(ui)
@@ -243,7 +249,7 @@ session_buffer_forget :: proc(buffer: ^[dynamic]u8) {
 	buffer^ = {}
 }
 
-@(private = "file")
+@(private)
 session_string_forget :: proc(text: ^string) {
 	mem.zero_slice(transmute([]u8)text^)
 	delete(text^)

@@ -195,22 +195,8 @@ handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 
 // Publish the edited description; an empty field clears it.
 save_description :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	summary: ^marmot.Send_Summary
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
-	desc := strings.clone_to_cstring(string(ui.desc_input[:]), context.temp_allocator)
-	if marmot.update_group_profile(client, account, group, nil, desc, &summary) != .OK {
-		set_status(
-			ui,
-			fmt.aprintf(tr("Couldn't update the description. %s"), marmot.last_error()),
-			.Error,
-		)
-		return
-	}
-	marmot.send_summary_free(summary)
-	ui.desc_editing = false
-	ui.focus = .Invite
-	load_members(client, ui) // re-snapshots group_desc
+	job := account_job_new(ui, client, .Description); if job == nil {return}
+	job.target = strings.clone(string(ui.desc_input[:])); account_job_start(job)
 }
 
 // A file picked for the open group's photo.
@@ -284,6 +270,25 @@ upload_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, gid: string, dra
 }
 
 // ── Group-image worker ──────────────────────────────────────────────
+
+@(private)
+group_pic_queue :: proc(
+	client: ^marmot.Client,
+	account, group: string,
+	data: []u8,
+	media_type: string,
+) {
+	gimg_push(
+		Gimg_Job {
+			kind = .Upload,
+			client = client,
+			account = strings.clone(account),
+			group_id = strings.clone(group),
+			data = data,
+			media_type = media_type,
+		},
+	)
+}
 
 @(private = "file")
 Gimg_Kind :: enum {

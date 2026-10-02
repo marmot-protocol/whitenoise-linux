@@ -817,9 +817,6 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			if open_now(clay.ID("ConfirmModal"), ui.confirm.kind != .None) {
 				confirm_modal(ui)
 			}
-			if open_now(clay.ID("LinkModal"), ui.link_open) {
-				link_modal(ui)
-			}
 			// No close animation: web_close tears down the child process, so
 			// nothing may draw the modal after it.
 			if web_modal.open {
@@ -829,7 +826,6 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			if nes_player.open {
 				nes_modal_draw(ui)
 			}
-			toast_layer(ui)
 
 			// Root level, not the chat pane: settings opens it too.
 			if open_now(clay.ID("PickerPanel"), ui.picker_open) {
@@ -865,6 +861,8 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			fan_layer(ui)
 			fly_layer()
 		}
+		if open_now(clay.ID("LinkModal"), ui.link_open) {link_modal(ui)}
+		toast_layer(ui)
 	}
 
 	commands := clay.EndLayout(frame_time)
@@ -976,6 +974,7 @@ app_main :: proc() {
 	defer stop_system_theme()
 	load_settings(&ui, .Preferences)
 	append(&ui.client_input, ..transmute([]u8)ui.prefs.event_client)
+	append(&ui.gm_input, ..transmute([]u8)ui.prefs.gm_text)
 	set_locale(ui.prefs.locale)
 	g_prefs = &ui.prefs
 	apply_theme(ui.theme, ui.accent)
@@ -1059,6 +1058,13 @@ app_main :: proc() {
 		ui.banner_seen = ui.client_status
 		g_ui = &ui
 		g_client = client
+		if client != nil {nip46_attach_all()}
+		if mode := os.get_env("WN_TEST_NIP46", context.temp_allocator);
+		   mode != "" && client != nil {
+			ui.add_account_open = len(ui.accounts) > 0
+			ui.login_method = mode == "bunker" ? .Bunker : .Pair
+			if mode == "pair" {start_remote_auth(&ui, client, .Pair, string(DEFAULT_RELAYS[0]))}
+		}
 		if client != nil && len(ui.account_ref) > 0 {
 			load_offline(&ui) // restore queued sends; first flush_queued tick retries them
 		}
@@ -1375,6 +1381,7 @@ app_main :: proc() {
 			nes_tick(&ui) // NES player: emulate the owed frames, queue their audio
 			xdc_drain(&ui, client) // webxdc sendUpdate() becomes a group message
 			drain_auth(&ui, client) // a finished sign-in lands on the UI thread
+			nip46_tick(&ui)
 			flush_queued(&ui, client)
 			mi_tick(&ui, client) // periodic mentions-inbox badge refresh
 			health_tick(&ui, client) // relay-pool counters, Network page only
@@ -2236,6 +2243,7 @@ app_main :: proc() {
 		append(&ui.client_input, ..transmute([]u8)ui.prefs.event_client)
 		g_prefs = &ui.prefs
 		devctl_reset_input()
+		append(&ui.gm_input, ..transmute([]u8)ui.prefs.gm_text)
 	}
 	rl.CloseWindow()
 }

@@ -106,14 +106,33 @@ busy_bar :: proc(id_str: string) {
 	}
 }
 
-// Sign-in card: menu of entry options, or the nsec import form.
+@(private = "file")
+PAIR_QR_SIZE :: f32(190)
+
+@(private = "file")
+login_progress :: proc(job: ^Auth_Job, detail: string) {
+	progress_dots("LoginDots")
+	busy_bar("LoginBusy")
+	if job.session == nil {return}
+	clay.Text(
+		tr("Keep your signer open. Approve the connection and requested signatures there."),
+		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+	)
+	if detail != "" {
+		clay.Text(nip46_detail(detail), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+	}
+}
+
+// Sign-in forms and pending work; pairing keeps its code beside the progress.
 login_pane :: proc(ui: ^Ui_State) {
+	pairing := auth_job != nil && auth_job.session != nil && auth_job.method == .Pair
+	menu := auth_job == nil && ui.login_method == .Menu
 	if clay.UI(clay.ID("LoginCard"))(
 	{
 		layout = {
 			sizing = {width = clay.SizingFixed(fit_w(660))},
 			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(50),
+			padding = clay.PaddingAll(pairing || menu ? 24 : 50),
 			childGap = 14,
 			childAlignment = {x = .Center},
 		},
@@ -122,29 +141,101 @@ login_pane :: proc(ui: ^Ui_State) {
 		border = {color = CARD_BORDER, width = bw()},
 	},
 	) {
-		clay.Text("///", {fontId = FONT_TITLE, fontSize = 34, textColor = ACCENT})
+		if !pairing {clay.Text("///", {fontId = FONT_TITLE, fontSize = 34, textColor = ACCENT})}
 		clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT})
 
 		if auth_job != nil {
 			// The round trip runs on the sign-in worker; this is the only
 			// thing the card offers until drain_auth picks it up.
-			minting := len(auth_job.nsec) == 0
-			clay.Text(
-				minting ? tr("Generating your key") : tr("Signing you in"),
-				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
-			)
-			if clay.UI(clay.ID("LoginGapA"))(
-			{layout = {sizing = {height = clay.SizingFixed(10)}}},
-			) {}
-			progress_dots("LoginDots")
-			if clay.UI(clay.ID("LoginGapB"))(
-			{layout = {sizing = {height = clay.SizingFixed(10)}}},
-			) {}
-			clay.Text(
-				minting ? tr("Publishing your profile to the relays. This takes a few seconds.") : tr("Checking your key with the relays. This takes a few seconds."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
-			)
-		} else if !ui.login_import {
+			minting := auth_job.method == .Create
+			remote := auth_job.session != nil
+			state, detail := auth_job.signer_state.state, auth_job.signer_state.detail
+			if remote && (state == "" || detail == "remote signer not connected") {
+				state, detail = "connecting", "connecting to remote signer"
+			}
+			heading := minting ? tr("Generating your key") : tr("Signing you in")
+			if remote &&
+			   !(auth_job.remote_login && state == "ready") {heading = nip46_label(state)}
+			clay.Text(heading, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
+			if pairing {
+				if clay.UI(clay.ID("LoginPairBody"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow({})},
+						childGap = 20,
+						childAlignment = {y = .Center},
+					},
+				},
+				) {
+					if clay.UI(clay.ID("LoginPairWork"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow({})},
+							layoutDirection = .TopToBottom,
+							childGap = 14,
+							childAlignment = {x = .Center},
+						},
+					},
+					) {
+						login_progress(auth_job, detail)
+					}
+					if clay.UI(clay.ID("LoginPairCode"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingFixed(PAIR_QR_SIZE)},
+							layoutDirection = .TopToBottom,
+							childGap = 14,
+							childAlignment = {x = .Center},
+						},
+					},
+					) {
+						if ui.login_qr != nil {
+							if clay.UI(clay.ID("LoginPairQR"))(
+							{
+								layout = {
+									sizing = {
+										clay.SizingFixed(PAIR_QR_SIZE),
+										clay.SizingFixed(PAIR_QR_SIZE),
+									},
+								},
+								image = {imageData = ui.login_qr},
+							},
+							) {}
+						} else {
+							clay.Text(
+								tr(
+									"This pairing link is too long for a QR code. Use Copy pairing link.",
+								),
+								{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+							)
+						}
+						clay.Text(
+							tr(
+								"Scan this pairing code in your signer, or copy the nostrconnect link.",
+							),
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						)
+					}
+				}
+			} else {
+				if clay.UI(clay.ID("LoginGapA"))(
+				{layout = {sizing = {height = clay.SizingFixed(10)}}},
+				) {}
+				login_progress(auth_job, detail)
+			}
+			if remote {
+				if auth_job.signer_state.auth_url !=
+				   "" {micro_button("LoginApproval", tr("Review signer approval link"))}
+				if clay.UI(clay.ID("LoginRemoteActions"))(
+				{layout = {childGap = 12, childAlignment = {y = .Center}}},
+				) {
+					if pairing {micro_button("LoginPairCopy", tr("Copy pairing link"))}
+					micro_button("LoginCancel", tr("Cancel connection"))
+				}
+			}
+			if !pairing {if clay.UI(clay.ID("LoginGapB"))({layout = {sizing = {height = clay.SizingFixed(10)}}}) {}}
+			if !remote {clay.Text(minting ? tr("Publishing your profile to the relays. This takes a few seconds.") : tr("Checking your key with the relays. This takes a few seconds."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})}
+		} else if ui.login_method == .Menu {
 			clay.Text(
 				tr("Sign in to your Nostr identity"),
 				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
@@ -152,25 +243,33 @@ login_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("LoginGapA"))(
 			{layout = {sizing = {height = clay.SizingFixed(10)}}},
 			) {}
-			login_big_button("LoginImportBtn", tr("I have an nsec"), true)
-			login_big_button("LoginCreate", tr("Generate a new key"), false)
+			if clay.UI(clay.ID("LoginLocalMethods"))(
+			{layout = {sizing = {width = clay.SizingGrow({})}, childGap = 14}},
+			) {
+				login_big_button("LoginImportBtn", tr("I have an nsec"), true)
+				login_big_button("LoginCreate", tr("Generate a new key"), false)
+			}
+			if clay.UI(clay.ID("LoginRemoteMethods"))(
+			{layout = {sizing = {width = clay.SizingGrow({})}, childGap = 14}},
+			) {
+				login_big_button("LoginBunkerBtn", tr("Connect with a bunker link"), false)
+				login_big_button("LoginPairBtn", tr("Pair with a remote signer"), false)
+			}
 			if clay.UI(clay.ID("LoginGapB"))(
 			{layout = {sizing = {height = clay.SizingFixed(10)}}},
 			) {}
-			clay.Text(
-				tr("Your key never leaves this device."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
-			)
 			micro_button("LoginBackup", tr("Import backup"))
 		} else {
 			clay.Text(
-				tr("Import a key"),
+				ui.login_method == .Bunker ? tr("Connect your remote signer") : ui.login_method == .Pair ? tr("Pair with your remote signer") : tr("Import a key"),
 				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
 			)
 			if clay.UI(clay.ID("LoginGapA"))(
 			{layout = {sizing = {height = clay.SizingFixed(10)}}},
 			) {}
-			eyebrow("NSEC")
+			eyebrow(
+				ui.login_method == .Bunker ? tr("BUNKER LINK") : ui.login_method == .Pair ? tr("SIGNER RELAY") : "NSEC",
+			)
 			if clay.UI(clay.ID("LoginInput"))(
 			{
 				layout = {
@@ -185,8 +284,13 @@ login_pane :: proc(ui: ^Ui_State) {
 			) {
 				if len(ui.login_input) == 0 {
 					clay.Text(
-						"nsec1...",
+						ui.login_method == .Bunker ? "bunker://..." : ui.login_method == .Pair ? "wss://..." : "nsec1...",
 						{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
+					)
+				} else if ui.login_method == .Pair {
+					clay.Text(
+						string(ui.login_input[:]),
+						{fontId = FONT_BODY, fontSize = 15, textColor = TEXT},
 					)
 				} else {
 					masked := strings.repeat(
@@ -202,12 +306,18 @@ login_pane :: proc(ui: ^Ui_State) {
 			) {}
 			if clay.UI(clay.ID("LoginButtons"))({layout = {childGap = 12}}) {
 				login_button("LoginBack", tr("Back"))
-				login_button("LoginGo", tr("Continue"))
+				login_button(
+					"LoginGo",
+					ui.login_method == .Pair ? tr("Create pairing link") : tr("Continue"),
+				)
 			}
 		}
 
 		if len(ui.login_error) > 0 {
-			clay.Text(ui.login_error, {fontId = FONT_BODY, fontSize = 14, textColor = DANGER})
+			clay.Text(
+				nip46_detail(ui.login_error),
+				{fontId = FONT_BODY, fontSize = 14, textColor = DANGER},
+			)
 		}
 		// Floats to the root; the settings page hosts the same modal.
 		if open_now(clay.ID("BackupModal"), ui.backup_mode != .None) {

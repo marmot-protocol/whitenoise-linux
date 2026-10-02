@@ -321,23 +321,6 @@ handle_openverse :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // then carries it like any other avatar_url.
 @(private = "file")
 ov_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, full_url: string) {
-	summary: ^marmot.Send_Summary
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
-	url := strings.clone_to_cstring(full_url, context.temp_allocator)
-	if marmot.update_group_avatar_url(client, account, group, url, nil, nil, &summary) != .OK {
-		delete(ov_err)
-		ov_err = fmt.aprintf(tr("Couldn't set the photo. %s"), marmot.last_error())
-		return
-	}
-	marmot.send_summary_free(summary)
-
-	// A published photo supersedes any session-local one.
-	gid := ui.chats[ui.selected].group_id
-	if local, ok := gpic_local[gid]; ok {
-		delete(local)
-		delete_key(&gpic_local, gid)
-	}
-	ov_close(ui)
-	refresh_after_action(ui, client)
+	job := account_job_new(ui, client, .Avatar); if job == nil {return}
+	job.target = strings.clone(full_url); account_job_start(job)
 }

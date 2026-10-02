@@ -570,6 +570,8 @@ account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 				npub_tail(ui.account_npubs[index]),
 				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
 			)
+			if int(index) < len(ui.account_signing) &&
+			   ui.account_signing[index].external {nip46_status_ui(ui, ui.account_ids[index], index)}
 		}
 		if clay.UI(clay.ID("AccountRowGap", index))(
 		{layout = {sizing = {width = clay.SizingGrow()}}},
@@ -837,6 +839,8 @@ profile_rail :: proc(ui: ^Ui_State) {
 					npub_tail(ui.account_npubs[i]),
 					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
 				)
+				if i < len(ui.account_signing) &&
+				   ui.account_signing[i].external {nip46_status_ui(ui, ui.account_ids[i], u32(i))}
 			}
 			if active {
 				clay.Text(

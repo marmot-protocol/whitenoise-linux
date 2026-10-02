@@ -11,6 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#, c-format
 msgid "%d added, %d skipped, %d failed"
 msgstr ""
 
@@ -30,9 +31,11 @@ msgstr ""
 msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
 msgstr ""
 
+#, c-format
 msgid "%d day"
 msgstr ""
 
+#, c-format
 msgid "%d days"
 msgstr ""
 
@@ -48,9 +51,11 @@ msgstr ""
 msgid "%d files"
 msgstr ""
 
+#, c-format
 msgid "%d hour"
 msgstr ""
 
+#, c-format
 msgid "%d hours"
 msgstr ""
 
@@ -62,9 +67,11 @@ msgstr ""
 msgid "%d members"
 msgstr ""
 
+#, c-format
 msgid "%d minute"
 msgstr ""
 
+#, c-format
 msgid "%d minutes"
 msgstr ""
 
@@ -104,9 +111,11 @@ msgstr ""
 msgid "%d rules"
 msgstr ""
 
+#, c-format
 msgid "%d second"
 msgstr ""
 
+#, c-format
 msgid "%d seconds"
 msgstr ""
 
@@ -256,6 +265,9 @@ msgstr ""
 msgid "Accept"
 msgstr ""
 
+msgid "Accepting your invitation"
+msgstr ""
+
 msgid "Account"
 msgstr ""
 
@@ -326,6 +338,9 @@ msgstr ""
 msgid "All categories"
 msgstr ""
 
+msgid "All chats"
+msgstr ""
+
 msgid "All senders"
 msgstr ""
 
@@ -350,6 +365,15 @@ msgstr ""
 msgid "Another group change took precedence. Review your group settings."
 msgstr ""
 
+msgid "Any attachment"
+msgstr ""
+
+msgid "Any sender"
+msgstr ""
+
+msgid "Any type"
+msgstr ""
+
 msgid "Anything you write here stays between you and this device's key."
 msgstr ""
 
@@ -360,6 +384,9 @@ msgid "Applies to message bodies and the composer."
 msgstr ""
 
 msgid "Applies to the picker, reactions and emoji in messages."
+msgstr ""
+
+msgid "Approve the request in your signer to continue."
 msgstr ""
 
 msgid "Apps"
@@ -420,6 +447,9 @@ msgid "Avatars"
 msgstr ""
 
 msgid "BACKDROP"
+msgstr ""
+
+msgid "BUNKER LINK"
 msgstr ""
 
 msgid "Back"
@@ -540,6 +570,9 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
+msgid "Cancel connection"
+msgstr ""
+
 msgid "Cancel edit / reply, close panels"
 msgstr ""
 
@@ -591,6 +624,9 @@ msgstr ""
 msgid "Change vault password"
 msgstr ""
 
+msgid "Change your GM"
+msgstr ""
+
 msgid "Change your vault password"
 msgstr ""
 
@@ -602,6 +638,10 @@ msgid "Chat list failed: %s"
 msgstr ""
 
 msgid "Chat options"
+msgstr ""
+
+#, c-format
+msgid "Chat: %s"
 msgstr ""
 
 msgid "Chats"
@@ -644,6 +684,12 @@ msgid "Choose a contacts CSV or JSON export to import."
 msgstr ""
 
 msgid "Choose a destination for this chat."
+msgstr ""
+
+msgid "Choose a known sender or enter a 64-character hex public key."
+msgstr ""
+
+msgid "Choose a sign-in method."
 msgstr ""
 
 msgid "Choose an emoji style"
@@ -787,7 +833,13 @@ msgstr ""
 msgid "Connect to relays"
 msgstr ""
 
+msgid "Connect with a bunker link"
+msgstr ""
+
 msgid "Connect with the relays you choose."
+msgstr ""
+
+msgid "Connect your remote signer"
 msgstr ""
 
 msgid "Connected to relays"
@@ -796,9 +848,22 @@ msgstr ""
 msgid "Connecting to relays"
 msgstr ""
 
+msgid "Connecting to your signer"
+msgstr ""
+
+msgid "Connecting to your signer through its relays."
+msgstr ""
+
+msgid "Connecting your remote signer. Approve the connection there before using this account."
+msgstr ""
+
+msgid "Connection cancelled."
+msgstr ""
+
 msgid "Contact"
 msgstr ""
 
+#, c-format
 msgid "Contacts imported: %d added, %d skipped, %d failed."
 msgstr ""
 
@@ -842,6 +907,9 @@ msgstr ""
 msgid "Copy npub"
 msgstr ""
 
+msgid "Copy pairing link"
+msgstr ""
+
 msgid "Copy text"
 msgstr ""
 
@@ -858,9 +926,6 @@ msgid "Corner scale"
 msgstr ""
 
 #, c-format
-msgid "Couldn't accept. %s"
-msgstr ""
-
 msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr ""
 
@@ -887,6 +952,19 @@ msgstr ""
 msgid "Couldn't check for updates. Please try again."
 msgstr ""
 
+msgid "Couldn't complete the signer request. Please try again."
+msgstr ""
+
+msgid "Couldn't complete the signer request. Use a signer that supports this operation."
+msgstr ""
+
+msgid "Couldn't complete your account action. Please try again."
+msgstr ""
+
+#, c-format
+msgid "Couldn't complete your account action. Please try again. (%s)"
+msgstr ""
+
 #, c-format
 msgid "Couldn't copy %s. Please try again."
 msgstr ""
@@ -901,15 +979,7 @@ msgstr ""
 msgid "Couldn't create the backup. Please try again."
 msgstr ""
 
-#, c-format
-msgid "Couldn't create the chat. %s"
-msgstr ""
-
 msgid "Couldn't create the vault. Please try again."
-msgstr ""
-
-#, c-format
-msgid "Couldn't decline. %s"
 msgstr ""
 
 msgid "Couldn't decode the image. Choose a PNG or JPEG."
@@ -967,12 +1037,15 @@ msgstr ""
 msgid "Couldn't import contacts. Choose a valid contacts JSON export."
 msgstr ""
 
+#, c-format
 msgid "Couldn't import contacts. Fix CSV record %d: use four fields and double quotes inside quoted fields."
 msgstr ""
 
+#, c-format
 msgid "Couldn't import contacts. Fix JSON record %d: name, npub and nickname must be strings, and blocked must be true or false."
 msgstr ""
 
+#, c-format
 msgid "Couldn't import contacts. Set blocked to true or false in CSV record %d."
 msgstr ""
 
@@ -984,10 +1057,6 @@ msgstr ""
 
 #, c-format
 msgid "Couldn't keep %s running. Please try again."
-msgstr ""
-
-#, c-format
-msgid "Couldn't leave. %s"
 msgstr ""
 
 msgid "Couldn't load GIFs. Please try again."
@@ -1067,10 +1136,6 @@ msgid "Couldn't play video. Click to retry."
 msgstr ""
 
 #, c-format
-msgid "Couldn't publish the key package. %s"
-msgstr ""
-
-#, c-format
 msgid "Couldn't publish the photo. %s"
 msgstr ""
 
@@ -1078,11 +1143,10 @@ msgstr ""
 msgid "Couldn't publish the picture. %s"
 msgstr ""
 
-#, c-format
-msgid "Couldn't publish the profile. %s"
+msgid "Couldn't reach the Namecoin resolvers. Please try again."
 msgstr ""
 
-msgid "Couldn't reach the Namecoin resolvers. Please try again."
+msgid "Couldn't reach your signer. Please try again."
 msgstr ""
 
 #, c-format
@@ -1120,15 +1184,7 @@ msgstr ""
 msgid "Couldn't read your existing contacts. Please try again."
 msgstr ""
 
-#, c-format
-msgid "Couldn't read your key packages. %s"
-msgstr ""
-
 msgid "Couldn't remove the GIF. Please try again."
-msgstr ""
-
-#, c-format
-msgid "Couldn't remove the contact. %s"
 msgstr ""
 
 msgid "Couldn't remove the saved file. Please try again."
@@ -1138,10 +1194,6 @@ msgid "Couldn't render that emoji. Choose another one."
 msgstr ""
 
 msgid "Couldn't render the QR code. Please try again."
-msgstr ""
-
-#, c-format
-msgid "Couldn't republish the relay lists. %s"
 msgstr ""
 
 #, c-format
@@ -1168,6 +1220,12 @@ msgstr ""
 msgid "Couldn't save the theme. Check the name and colors and try again."
 msgstr ""
 
+msgid "Couldn't save your signer session in the encrypted vault. Please try again."
+msgstr ""
+
+msgid "Couldn't save your signer session. Please try again."
+msgstr ""
+
 msgid "Couldn't save your stickers. Please try again."
 msgstr ""
 
@@ -1192,19 +1250,11 @@ msgstr ""
 msgid "Couldn't serialize the snapshot. Please try again."
 msgstr ""
 
-#, c-format
-msgid "Couldn't set the photo. %s"
-msgstr ""
-
 msgid "Couldn't share the theme. Please try again."
 msgstr ""
 
 #, c-format
 msgid "Couldn't share the theme. Please try again. %s"
-msgstr ""
-
-#, c-format
-msgid "Couldn't sign out. %s"
 msgstr ""
 
 #, c-format
@@ -1214,15 +1264,7 @@ msgstr ""
 msgid "Couldn't start reading aloud. Please try again."
 msgstr ""
 
-#, c-format
-msgid "Couldn't start the chat. %s"
-msgstr ""
-
 msgid "Couldn't start transcription. Please try again."
-msgstr ""
-
-#, c-format
-msgid "Couldn't switch account. %s"
 msgstr ""
 
 msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
@@ -1241,19 +1283,7 @@ msgstr ""
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr ""
 
-#, c-format
-msgid "Couldn't update inbox relays. %s"
-msgstr ""
-
 msgid "Couldn't update issues. Please try again."
-msgstr ""
-
-#, c-format
-msgid "Couldn't update relays. %s"
-msgstr ""
-
-#, c-format
-msgid "Couldn't update the description. %s"
 msgstr ""
 
 #, c-format
@@ -1267,6 +1297,9 @@ msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr ""
 
 msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
+msgstr ""
+
+msgid "Couldn't verify your signer. Reconnect to the intended signer."
 msgstr ""
 
 msgid "Create"
@@ -1290,6 +1323,9 @@ msgstr ""
 msgid "Create issue"
 msgstr ""
 
+msgid "Create pairing link"
+msgstr ""
+
 msgid "Create poll"
 msgstr ""
 
@@ -1300,6 +1336,9 @@ msgid "Created by"
 msgstr ""
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
+msgstr ""
+
+msgid "Creating your chat"
 msgstr ""
 
 msgid "Creating your vault…"
@@ -1348,6 +1387,9 @@ msgid "Decline"
 msgstr ""
 
 msgid "Decline this invitation?"
+msgstr ""
+
+msgid "Declining your invitation"
 msgstr ""
 
 msgid "Decode own"
@@ -1572,6 +1614,9 @@ msgstr ""
 msgid "Encrypted key copied"
 msgstr ""
 
+msgid "End day (UTC, inclusive)"
+msgstr ""
+
 msgid "End-to-end encrypted"
 msgstr ""
 
@@ -1693,6 +1738,9 @@ msgstr ""
 msgid "Finish dictation"
 msgstr ""
 
+msgid "Finishing the cancelled connection."
+msgstr ""
+
 msgid "Fit"
 msgstr ""
 
@@ -1754,6 +1802,10 @@ msgstr ""
 msgid "From file"
 msgstr ""
 
+#, c-format
+msgid "From: %s"
+msgstr ""
+
 msgid "Fullscreen"
 msgstr ""
 
@@ -1764,6 +1816,9 @@ msgid "GIF search is provided by GifSnap. What you type in the GIF search box an
 msgstr ""
 
 msgid "GIFs"
+msgstr ""
+
+msgid "GM button"
 msgstr ""
 
 msgid "GROUP ID"
@@ -1929,6 +1984,7 @@ msgstr ""
 msgid "Import..."
 msgstr ""
 
+#, c-format
 msgid "Importing contacts: %d of %d"
 msgstr ""
 
@@ -2050,6 +2106,9 @@ msgstr ""
 msgid "Keep your conversations in order."
 msgstr ""
 
+msgid "Keep your signer open. Approve the connection and requested signatures there."
+msgstr ""
+
 #, c-format
 msgid "Key package accepted by %d relays."
 msgstr ""
@@ -2076,6 +2135,9 @@ msgid "Keys & backups"
 msgstr ""
 
 msgid "Keys & identity"
+msgstr ""
+
+msgid "Known senders"
 msgstr ""
 
 msgid "LINES"
@@ -2129,6 +2191,9 @@ msgstr ""
 msgid "Leave this group?"
 msgstr ""
 
+msgid "Leaving your group"
+msgstr ""
+
 msgid "Lime"
 msgstr ""
 
@@ -2147,6 +2212,9 @@ msgstr ""
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr ""
 
+msgid "Literal message text"
+msgstr ""
+
 msgid "Loading full resolution…"
 msgstr ""
 
@@ -2156,7 +2224,13 @@ msgstr ""
 msgid "Loading messages…"
 msgstr ""
 
+msgid "Loading more matches from local history…"
+msgstr ""
+
 msgid "Loading your accounts"
+msgstr ""
+
+msgid "Loading your key packages"
 msgstr ""
 
 msgid "Loading..."
@@ -2292,6 +2366,9 @@ msgid "Money"
 msgstr ""
 
 msgid "Monitor"
+msgstr ""
+
+msgid "More results"
 msgstr ""
 
 msgid "More than"
@@ -2634,6 +2711,15 @@ msgstr ""
 msgid "Pack your settings, drafts, custom emoji, and themes into one encrypted file."
 msgstr ""
 
+msgid "Pair with a remote signer"
+msgstr ""
+
+msgid "Pair with your remote signer"
+msgstr ""
+
+msgid "Pairing link copied"
+msgstr ""
+
 msgid "Panel"
 msgstr ""
 
@@ -2818,7 +2904,19 @@ msgstr ""
 msgid "Published outbox relays (NIP-65)"
 msgstr ""
 
+msgid "Publishing your group profile"
+msgstr ""
+
+msgid "Publishing your key package"
+msgstr ""
+
+msgid "Publishing your profile"
+msgstr ""
+
 msgid "Publishing your profile to the relays. This takes a few seconds."
+msgstr ""
+
+msgid "Publishing your relay lists"
 msgstr ""
 
 msgid "Quick reactions"
@@ -2885,6 +2983,7 @@ msgstr ""
 msgid "Recent"
 msgstr ""
 
+#, c-format
 msgid "Record %d has an invalid npub. Correct it and import again."
 msgstr ""
 
@@ -3021,6 +3120,9 @@ msgstr ""
 msgid "Reveal your secret key"
 msgstr ""
 
+msgid "Review signer approval link"
+msgstr ""
+
 msgid "Right click"
 msgstr ""
 
@@ -3056,6 +3158,9 @@ msgid "SEND WITH EFFECT"
 msgstr ""
 
 msgid "SHARED THEME"
+msgstr ""
+
+msgid "SIGNER RELAY"
 msgstr ""
 
 msgid "SITE"
@@ -3117,6 +3222,12 @@ msgstr ""
 msgid "Saved %s."
 msgstr ""
 
+msgid "Say GM (once a day)"
+msgstr ""
+
+msgid "Scan this pairing code in your signer, or copy the nostrconnect link."
+msgstr ""
+
 msgid "Scan to add"
 msgstr ""
 
@@ -3133,6 +3244,9 @@ msgid "Search GIFs"
 msgstr ""
 
 msgid "Search GIFs with GifSnap"
+msgstr ""
+
+msgid "Search again"
 msgstr ""
 
 msgid "Search all chats"
@@ -3169,6 +3283,12 @@ msgid "Search results"
 msgstr ""
 
 msgid "Search stickers"
+msgstr ""
+
+msgid "Searches only history stored on this device. Older or unsynced messages may be missing."
+msgstr ""
+
+msgid "Searching local history…"
 msgstr ""
 
 msgid "Searching…"
@@ -3233,6 +3353,13 @@ msgid "Send the message"
 msgstr ""
 
 msgid "Send with an effect"
+msgstr ""
+
+msgid "Sender name or hex public key"
+msgstr ""
+
+#, c-format
+msgid "Sender: %s"
 msgstr ""
 
 msgid "Sending..."
@@ -3355,6 +3482,24 @@ msgstr ""
 msgid "Sign out of this account?"
 msgstr ""
 
+msgid "Signer cancelled"
+msgstr ""
+
+msgid "Signer connected"
+msgstr ""
+
+msgid "Signer signed out"
+msgstr ""
+
+msgid "Signer unavailable"
+msgstr ""
+
+msgid "Signer unavailable. Reconnect from Add account."
+msgstr ""
+
+msgid "Signing out and removing your signer session"
+msgstr ""
+
 msgid "Signing you in"
 msgstr ""
 
@@ -3399,6 +3544,9 @@ msgid "Square"
 msgstr ""
 
 msgid "Start chat"
+msgstr ""
+
+msgid "Start day (UTC)"
 msgstr ""
 
 msgid "Start minimized to tray"
@@ -3470,6 +3618,9 @@ msgstr ""
 msgid "Support"
 msgstr ""
 
+msgid "Switching your account"
+msgstr ""
+
 msgid "System"
 msgstr ""
 
@@ -3523,6 +3674,10 @@ msgstr ""
 msgid "Text mid"
 msgstr ""
 
+#, c-format
+msgid "Text: %s"
+msgstr ""
+
 msgid "That feels right."
 msgstr ""
 
@@ -3543,6 +3698,9 @@ msgid "The passwords don't match. Type them again."
 msgstr ""
 
 msgid "The relay in the middle stores and forwards. It never holds a key."
+msgstr ""
+
+msgid "The signer request was cancelled."
 msgstr ""
 
 msgid "The updated list is published to your relays."
@@ -3600,6 +3758,9 @@ msgstr ""
 msgid "This message was deleted"
 msgstr ""
 
+msgid "This pairing link is too long for a QR code. Use Copy pairing link."
+msgstr ""
+
 msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
 msgstr ""
 
@@ -3613,6 +3774,10 @@ msgid "Thread"
 msgstr ""
 
 msgid "Three things and you can send your first message."
+msgstr ""
+
+#, c-format
+msgid "Through: %s"
 msgstr ""
 
 msgid "Time format"
@@ -3732,6 +3897,9 @@ msgstr ""
 msgid "Updating issue tracking..."
 msgstr ""
 
+msgid "Updating your contacts"
+msgstr ""
+
 msgid "Upload custom emoji"
 msgstr ""
 
@@ -3754,6 +3922,9 @@ msgid "Use this theme"
 msgstr ""
 
 msgid "Use unrelated words or a password-manager password."
+msgstr ""
+
+msgid "Use valid YYYY-MM-DD UTC dates with the start on or before the end."
 msgstr ""
 
 msgid "Used for generated user and group avatars."
@@ -3816,6 +3987,9 @@ msgstr ""
 msgid "WIREFRAME"
 msgstr ""
 
+msgid "Waiting for signer approval"
+msgstr ""
+
 msgid "Warning"
 msgstr ""
 
@@ -3832,6 +4006,9 @@ msgid "What is shared"
 msgstr ""
 
 msgid "What it is"
+msgstr ""
+
+msgid "What the GM button sends. You can use it once a day in each chat."
 msgstr ""
 
 msgid "Whatever you send in this chat is encrypted on your device with MLS before it goes out. The relays that pass it along can't read it, and neither can anyone else."
@@ -3909,10 +4086,16 @@ msgstr ""
 msgid "You"
 msgstr ""
 
+msgid "You are signed out, but your signer record could not be removed from the encrypted vault."
+msgstr ""
+
 msgid "You can't send messages to someone you blocked."
 msgstr ""
 
 msgid "You have the latest version."
+msgstr ""
+
+msgid "You said GM here today"
 msgstr ""
 
 msgid "You stay in the group, but another admin has to grant the rights back."
@@ -3931,6 +4114,12 @@ msgstr ""
 msgid "You: %s"
 msgstr ""
 
+msgid "Your GM"
+msgstr ""
+
+msgid "Your account has a pending action. Complete it before reconnecting your signer."
+msgstr ""
+
 msgid "Your current password"
 msgstr ""
 
@@ -3946,9 +4135,6 @@ msgstr ""
 msgid "Your identity, key packages, and device security."
 msgstr ""
 
-msgid "Your key never leaves this device."
-msgstr ""
-
 msgid "Your name"
 msgstr ""
 
@@ -3961,10 +4147,31 @@ msgstr ""
 msgid "Your password"
 msgstr ""
 
+msgid "Your previous account action is still running."
+msgstr ""
+
+msgid "Your previous account action is still waiting. Check your signer for approval."
+msgstr ""
+
+msgid "Your private key stays in your remote signer. Reveal and export are unavailable on this device."
+msgstr ""
+
 msgid "Your profile"
 msgstr ""
 
 msgid "Your public key. Safe to share."
+msgstr ""
+
+msgid "Your signer is connected."
+msgstr ""
+
+msgid "Your signer is unavailable."
+msgstr ""
+
+msgid "Your signer rejected the request."
+msgstr ""
+
+msgid "Your signer session has ended."
 msgstr ""
 
 msgid "Your stickers"
@@ -4054,6 +4261,9 @@ msgid "relay"
 msgstr ""
 
 msgid "sealed here"
+msgstr ""
+
+msgid "you"
 msgstr ""
 
 msgid "© OpenStreetMap contributors"

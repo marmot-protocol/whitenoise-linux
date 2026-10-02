@@ -284,7 +284,7 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	case .Remove_Inbox:
 		set_inbox_relays(ui, client, relays_without(ui.profile.inbox[:], c.idx))
 	case .Sign_Out:
-		sign_out(ui, client)
+		account_job_start(account_job_new(ui, client, .Sign_Out, c.arg))
 	}
 }
 
@@ -303,44 +303,12 @@ leave_group :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.selected < 0 {
 		return
 	}
-	summary: ^marmot.Send_Summary
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
-	if marmot.leave_group(client, account, group, &summary) != .OK {
-		set_status(ui, fmt.aprintf(tr("Couldn't leave. %s"), marmot.last_error()), .Error)
-		return
-	}
-	marmot.send_summary_free(summary)
-	ui.show_members = false
-	ui.selected = -1
-	load_chat_list(client, ui.account_ref, ui)
+	account_job_start(account_job_new(ui, client, .Leave))
 }
 
 decline_invite :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.selected < 0 {
 		return
 	}
-	result: ^marmot.Group_Invite_Decline_Result
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
-	if marmot.decline_group_invite(client, account, group, &result) != .OK {
-		set_status(ui, fmt.aprintf(tr("Couldn't decline. %s"), marmot.last_error()), .Error)
-		return
-	}
-	marmot.group_invite_decline_result_free(result)
-	ui.selected = -1
-	refresh_after_action(ui, client)
-}
-
-sign_out :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	outcome: ^marmot.Sign_Out_Outcome
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	if marmot.sign_out(client, account, false, &outcome) != .OK {
-		set_status(ui, fmt.aprintf(tr("Couldn't sign out. %s"), marmot.last_error()), .Error)
-		return
-	}
-	marmot.sign_out_outcome_free(outcome)
-	ui.page = .Chats
-	ui.selected = -1
-	after_login(ui, client) // re-snapshot accounts; empty list shows login
+	account_job_start(account_job_new(ui, client, .Decline))
 }

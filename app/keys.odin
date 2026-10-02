@@ -91,15 +91,8 @@ kp_rows_free :: proc(rows: ^[dynamic]Kp_Row) {
 
 // Read the active account's key packages.
 fetch_key_packages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	kp_rows_free(&ui.kp_list)
-	ui.kp_fetched = true
-	if !kp_rows(client, ui.account_ref, &ui.kp_list) {
-		set_status(
-			ui,
-			fmt.aprintf(tr("Couldn't read your key packages. %s"), marmot.last_error()),
-			.Error,
-		)
-	}
+	job := account_job_new(ui, client, .Read_Key_Packages)
+	if job != nil {ui.kp_fetched = true; account_job_start(job)}
 }
 
 // One-line summary above the list: what exists and where it lives.
@@ -139,20 +132,8 @@ Kp_Publish :: enum {
 }
 
 publish_key_package :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: Kp_Publish) {
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	accepted: u64
-	status :=
-		kind == .Fresh ? marmot.publish_new_key_package(client, account, &accepted) : marmot.republish_key_package(client, account, &accepted)
-	if status != .OK {
-		set_status(
-			ui,
-			fmt.aprintf(tr("Couldn't publish the key package. %s"), marmot.last_error()),
-			.Error,
-		)
-		return
-	}
-	fetch_key_packages(ui, client)
-	set_status(ui, fmt.aprintf(tr("Key package accepted by %d relays."), accepted), .Info)
+	job := account_job_new(ui, client, .Key_Package); if job == nil {return}
+	job.fresh = kind == .Fresh; account_job_start(job)
 }
 
 // ── Danger zone secrets ─────────────────────────────────────────────
@@ -170,6 +151,7 @@ keys_forget :: proc(ui: ^Ui_State) {
 }
 
 reveal_nsec :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if !account_local(ui) {return}
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	nsec: cstring
 	if marmot.reveal_nsec(client, account, &nsec) != .OK || nsec == nil {
@@ -197,6 +179,7 @@ close_export :: proc(ui: ^Ui_State) {
 // marmot seals the key under the entered passphrase (NIP-49); the raw
 // nsec never enters this process.
 do_export :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if !account_local(ui) {close_export(ui); return}
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	pw := strings.clone_to_cstring(string(ui.export_pw[:]), context.temp_allocator)
 	sealed: cstring
@@ -335,15 +318,17 @@ settings_keys :: proc(ui: ^Ui_State) {
 			)
 			settings_button("VaultPwBtn", tr("Change..."))
 		}
-		if clay.UI(clay.ID("RowExport"))(action_row) {
-			row_labels(
-				tr("Export encrypted key (ncryptsec)"),
-				tr(
-					"Creates a NIP-49 key encrypted with a password, safe to store or move to another client.",
-				),
-			)
-			label := ui.keys_confirm == "ExportBtn" ? tr("Confirm") : tr("Export")
-			settings_button("ExportBtn", label)
+		if account_local(ui) {
+			if clay.UI(clay.ID("RowExport"))(action_row) {
+				row_labels(
+					tr("Export encrypted key (ncryptsec)"),
+					tr(
+						"Creates a NIP-49 key encrypted with a password, safe to store or move to another client.",
+					),
+				)
+				label := ui.keys_confirm == "ExportBtn" ? tr("Confirm") : tr("Export")
+				settings_button("ExportBtn", label)
+			}
 		}
 	}
 
@@ -351,6 +336,15 @@ settings_keys :: proc(ui: ^Ui_State) {
 	security.border = {
 		color = DANGER_BORDER,
 		width = {left = 2, right = 1, top = 1, bottom = 1},
+	}
+	if !account_local(ui) {
+		clay.Text(
+			tr(
+				"Your private key stays in your remote signer. Reveal and export are unavailable on this device.",
+			),
+			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+		)
+		return
 	}
 	if clay.UI(clay.ID("KeysDangerGroup"))(security) {
 		settings_group(tr("Security actions"))
@@ -464,21 +458,21 @@ handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		return
 	}
-	if clicked("RevealNsecBtn") {
+	if clicked("RevealNsecBtn") && account_local(ui) {
 		if armed(ui, "RevealNsecBtn") {
 			reveal_nsec(ui, client)
 		}
 		return
 	}
-	if clicked("NsecShow") {
+	if clicked("NsecShow") && account_local(ui) {
 		ui.keys_nsec_show = !ui.keys_nsec_show
 		return
 	}
-	if clicked("NsecCopy") && len(ui.keys_nsec) > 0 {
+	if clicked("NsecCopy") && account_local(ui) && len(ui.keys_nsec) > 0 {
 		copy_text(ui, ui.keys_nsec, tr("Secret key copied"))
 		return
 	}
-	if clicked("ExportBtn") {
+	if clicked("ExportBtn") && account_local(ui) {
 		if armed(ui, "ExportBtn") {
 			ui.export_open = true
 			clear(&ui.export_pw)
