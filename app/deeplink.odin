@@ -1,4 +1,4 @@
-// marmot:// deep links, the slint deeplink.rs port. The QR payload
+// marmot:// deep links. The QR payload
 // builder lives in panes.odin (qr_texture, marmot://profile/<npub>
 // ?from=qr); this file parses inbound links: in-chat anchors
 // (inline_segs), a pasted new-chat member, and the argv link from the

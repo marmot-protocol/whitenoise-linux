@@ -1,7 +1,6 @@
 // Settings → About.
 //
-// Not the slint page (hero card, feature rows, credits). This one is a
-// live readout: the app explaining what it does with its own running
+// A live readout: the app explaining what it does with its own running
 // numbers, and an animated trace of the path a message takes from this
 // machine to the other end. Nothing here is a marketing claim you have
 // to take on faith; every figure comes from the session.

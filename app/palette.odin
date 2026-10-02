@@ -1,4 +1,4 @@
-// Command palette (Ctrl+P), the slint fuzzy action launcher: one list
+// Command palette (Ctrl+P): one list
 // of everything the chrome can do, filtered as you type, driven from
 // the keyboard. Matching folds case and diacritics, then tries an ordered
 // subsequence, so "gtse" finds "Go to settings".

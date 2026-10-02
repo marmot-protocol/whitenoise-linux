@@ -1,11 +1,9 @@
-// Message effects, the slint pair: inline glyph fx markup inside a
-// body, and one-shot particle bursts over a message.
+// Message effects: inline glyph fx markup inside a body, and
+// one-shot particle bursts over a message.
 //
-// Markup is `{name}…{/name}` with the same eight names the slint
-// renderer decodes as bits (src/render.rs apply_effect), so a message
-// written in either app reads the same in the other. Motion effects
-// split the run per letter, like slint's RunCell, so each glyph moves
-// on its own.
+// Markup is `{name}…{/name}`. Eight names decode as bits, and nesting
+// ORs them. Motion effects split the run per letter, so each glyph
+// moves on its own.
 //
 // Bursts travel as ["effect", <key>] on encrypted kind-9 messages.
 // The send queue retains the tag across uploads, replies and retries.
@@ -136,7 +134,7 @@ fx_transform :: proc(fx: u8, slot: int, t: f64) -> (dx, dy: f32, size_mul, alpha
 
 // ── Particle bursts ─────────────────────────────────────────────────
 
-// (catalog id, wire key, emoji), the slint EFFECTS table.
+// (catalog id, wire key, emoji) for the burst picker and the kind-9 tag.
 EFFECTS := []struct {
 	id:    int,
 	key:   string,
@@ -169,8 +167,8 @@ effect_emoji :: proc(id: int) -> string {
 	return ""
 }
 
-// The `["effect", <key>]` tag on a record, 0 when there is none. The
-// slint app writes it; nothing here can, so this is the receive half.
+// Catalog id of the `["effect", <key>]` tag on a record, 0 when
+// the record has none.
 record_effect :: proc(record: ^marmot.Timeline_Message_Record) -> int {
 	for t in 0 ..< record.tags_len {
 		tag := &record.tags[t]

@@ -12,7 +12,7 @@ import "core:os"
 import "core:strings"
 import "core:thread"
 
-// The slint settings pages' knobs. Serialized nested under "prefs".
+// Settings-page knobs. Serialized nested under "prefs".
 Prefs :: struct {
 	// General
 	launch_at_login:       bool,
@@ -112,7 +112,7 @@ Settings :: struct {
 	accent:     int,
 	nicknames:  map[string]string, // account hex → private local nickname
 	drafts:     map[string]string, // group id → unsent composer text
-	blocked:    [dynamic]string, // account hexes, local-only like slint's blocked_accounts
+	blocked:    [dynamic]string, // account hexes, local-only
 	prefs:      Prefs,
 }
 
@@ -129,8 +129,8 @@ settings_path :: proc(allocator := context.temp_allocator, filename := "settings
 
 
 // "Delete for me" hidden message ids, a JSON array in a sibling file
-// so settings.json keeps the slint settings.rs shape. Local-only,
-// never touches the network.
+// so they stay out of settings.json. Local-only, never touches the
+// network.
 hidden_path :: proc(allocator := context.temp_allocator) -> string {
 	path := settings_path(allocator)
 	return fmt.aprintf(

@@ -399,8 +399,8 @@ audio_tile :: proc(
 	}
 }
 
-// Group-system line (kind-1210): one dim sentence in a centered pill,
-// the slint SystemLine. No avatar, no actions, no message chrome.
+// Group-system line (kind-1210): one dim sentence in a centered pill.
+// No avatar, no actions, no message chrome.
 // Centered by grow spacers, like the unread divider (a cross-axis
 // x=center child drops in this clay build, quirks).
 system_row :: proc(index: u32, msg: Msg_Ui) {
@@ -1100,7 +1100,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 								)
 							}
 						}
-						// Duration stamp, bottom-right (the slint tile's badge).
+						// Duration stamp, bottom-right.
 						if !view.looping && view.dur > 0 {
 							if clay.UI(clay.ID("MsgVideoDur", index * 1024 + u32(j)))(
 							{
@@ -1827,7 +1827,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				theme_offer(index, msg)
 			}
 
-			// Tombstone placeholder body, the slint deleted row.
+			// Tombstone placeholder for a deleted message.
 			if msg.deleted {
 				clay.Text(
 					tr("This message was deleted"),
@@ -2245,7 +2245,7 @@ inline_segs :: proc(
 		if r == '{' {
 			// {name}…{/name} glyph effects: the inner text parses on its
 			// own and every seg it yields carries this bit, so nesting
-			// composes the way the slint renderer's bitmask does.
+			// ORs the bits together.
 			if bit, after, ok := fx_open_at(text, i); ok {
 				inner_end, next := fx_close(text, after, bit)
 				if i > plain_start {
@@ -2260,9 +2260,9 @@ inline_segs :: proc(
 				for seg in inline_segs(text[after:inner_end], text_fonts(fonts, after, inner_end), links[link_index:], offset + after) {
 					tagged := seg
 					tagged.fx |= bit
-					// Motion acts per glyph, like slint's RunCell, so a
-					// moving text seg splits into letters. A very long run
-					// stays whole: the per-letter ids would collide.
+					// Motion acts per glyph, so a moving text seg splits
+					// into letters. A very long run stays whole: the
+					// per-letter ids would collide.
 					plain :=
 						!tagged.bad_ref &&
 						tagged.tex == nil &&
@@ -3250,7 +3250,7 @@ md_blocks :: proc(
 // copies carry no offsets. Selectable bodies are also wrapped here
 // rather than by clay: a selection highlight splits a line into three
 // spans, and clay only wraps a whole Text element. Break points come
-// from measured widths, like the slint renderer's greedy wrapper.
+// from measured widths.
 // `wrap_w` forces wrapping at that width for non-selectable bodies
 // whose container clay can't wrap into (reply previews, edit history).
 body_text :: proc(
@@ -3583,8 +3583,8 @@ rune_fit :: proc(
 	return end
 }
 
-// One row of the message context menu, the slint MenuItem: 16px glyph
-// column, hover highlight, 32px tall.
+// One row of the message context menu: 16px glyph column, hover
+// highlight, 32px tall.
 
 
 // The card a shared theme arrives as: its name, a strip of its own

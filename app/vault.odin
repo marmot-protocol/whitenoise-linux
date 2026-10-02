@@ -6,9 +6,8 @@
 //   plain: XChaCha20-Poly1305(json(map[string]string)) keyed by
 //          Argon2id(password, salt)
 //
-// The envelope matches the slint app's format (src/vault.rs): same
-// version, Argon2id costs, and ciphertext layout. The blob key is an
-// extra map entry. A reader that still derives the historical subkey
+// Version, Argon2id costs, and ciphertext layout are fixed. The blob
+// key is an extra map entry. A reader that still derives the historical subkey
 // opens account secrets, and opens blobs only while that derivation
 // still matches (no password change on this binary, and not a vault
 // created here).

@@ -512,12 +512,11 @@ members_clear :: proc(ui: ^Ui_State) {
 	clear(&ui.members)
 }
 
-// Optimistic-send plumbing, the slint PendingState overlay for the
-// send path: Enter appends a grayed "sending…" row and clears the
-// composer immediately, a worker thread runs the blocking marmot
-// call, and the frame loop drains completions (ack replaces the row
-// with the confirmed record via reload; failure turns it danger with
-// tap-to-retry).
+// Optimistic-send plumbing: Enter appends a grayed "sending…" row
+// and clears the composer immediately. A worker thread runs the
+// blocking marmot call, and the frame loop drains completions (ack
+// replaces the row with the confirmed record via reload; failure
+// turns it danger with tap-to-retry).
 //
 //   Enter ──► ui.pending + worker ──► sends_done ──► drain_sends
 //                (grayed row)          (mutex)     (drop row + reload,
@@ -978,8 +977,8 @@ free_pending :: proc(p: ^Pending_Send) {
 
 // Move the staged chips into pending sends and kick upload workers:
 // all images become ONE pending (the kind-9 album grid), every other
-// file its own pending, mirroring the slint flush. Chips clear
-// immediately; a failed upload turns its row danger for retry.
+// file its own pending. Chips clear immediately; a failed upload
+// turns its row danger for retry.
 queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if len(ui.staged) == 0 {
 		return

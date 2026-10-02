@@ -108,8 +108,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	// Ids present before this reload. marmot stores an outgoing message
 	// locally before the relay ack, so its record shows up while the
 	// send worker is still in flight; the build loop below hides that
-	// copy so the grayed pending row stays alone until the ack (slint
-	// keeps the overlay until ack too).
+	// copy so the grayed pending row stays alone until the ack.
 	old_times := make(map[string]time.Tick, context.temp_allocator)
 	for old in ui.messages {
 		old_times[old.id] = old.visible_since

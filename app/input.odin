@@ -616,7 +616,7 @@ original_textures: map[string]^rl.Texture2D
 
 // Plaintext byte size per blob key, learned whenever a download passes
 // through (the imeta tag carries no size, so this is best-effort
-// session knowledge, like the slint app's attachment_size_cache).
+// session knowledge).
 blob_sizes: map[string]i64
 
 // Same cache shape for parsed STL attachments; the views also carry

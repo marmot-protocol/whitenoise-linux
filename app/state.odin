@@ -154,8 +154,8 @@ Chat_Row_Ui :: struct {
 	search_only:  bool, // archived search destination, hidden from the active rail
 }
 
-// One picked-but-unsent attachment, shown as a chip above the composer
-// (the slint staged_files row). Images carry a decoded thumbnail that
+// One picked-but-unsent attachment, shown as a chip above the composer.
+// Images carry a decoded thumbnail that
 // also provides the send's "WxH" dim.
 Staged_File :: struct {
 	name:       string,
@@ -642,7 +642,7 @@ Ui_State :: struct {
 	settings_tab:                                          int,
 	settings_anchor:                                       string, // borrowed control ID for a task link
 	settings_scroll_pending:                               bool,
-	prefs:                                                 Prefs, // the slint settings knobs (settings.odin)
+	prefs:                                                 Prefs, // settings-page knobs (settings.odin)
 	tts:                                                   Tts_State,
 	stt:                                                   Stt_State,
 	lang_open:                                             bool, // interface-language modal
@@ -730,7 +730,7 @@ Ui_State :: struct {
 	login_error:                                           string,
 }
 
-// Same fleet the slint app uses (src/relays.rs DISCOVERY_RELAYS).
+// Relays a new account starts with.
 DEFAULT_RELAYS := []cstring{"wss://relay.eu.whitenoise.chat", "wss://relay.us.whitenoise.chat"}
 
 // Live-update plumbing: a worker thread blocks on the chat-list

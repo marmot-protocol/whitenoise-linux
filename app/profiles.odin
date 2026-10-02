@@ -1,4 +1,4 @@
-// Profile names + pictures, the slint avatar-pipeline port.
+// Profile names and pictures.
 //
 // Names and picture URLs come from marmot's local kind-0 cache
 // (marmot_user_profile), checked in bounded background batches.

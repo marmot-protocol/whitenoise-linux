@@ -246,7 +246,7 @@ toggle_flag :: proc(set: ^map[string]bool, group_id: string) -> bool {
 	return true
 }
 
-// Right-click menu for a rail row, the slint chat-list row menu.
+// Right-click menu for a rail row.
 // The row a menu was opened on. It outlives the close (which sets the
 // index to -1), so the menu can finish animating out over the chat it
 // belongs to.

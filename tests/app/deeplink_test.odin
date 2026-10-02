@@ -1,4 +1,4 @@
-// marmot:// link parsing, mirroring the slint deeplink.rs tests.
+// marmot:// link parsing.
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 

@@ -131,8 +131,8 @@ handle_member_menu :: proc(ui: ^Ui_State) -> bool {
 	return true
 }
 
-// Right-click context menu for a message, the slint MessageContextMenu:
-// quick-reaction strip, divider, then the gated action rows.
+// Right-click context menu for a message: quick-reaction strip,
+// divider, then the gated action rows.
 context_menu :: proc(ui: ^Ui_State) {
 	msg := ui.messages[ui.ctx_msg]
 
@@ -257,8 +257,8 @@ context_menu :: proc(ui: ^Ui_State) {
 	}
 }
 
-// Edit-history modal, the slint edit-history pane: original first,
-// each edit after, current highlighted.
+// Edit-history modal: original first, each edit after, current
+// highlighted.
 @(private)
 HISTORY_WIDTH :: f32(420)
 @(private)
@@ -504,9 +504,9 @@ raw_event_modal :: proc(ui: ^Ui_State) {
 }
 
 // The "what is this?" explainer opened by tapping the MLS badge in the
-// chat header, the slint encryption-info modal: what end-to-end MLS
-// encryption means in plain language, plus the chat's MLS group id with
-// a Copy button and the current MLS epoch.
+// chat header: what end-to-end MLS encryption means in plain language,
+// plus the chat's MLS group id with a Copy button and the current MLS
+// epoch.
 encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 	if clay.UI(clay.ID("EncModal"))(
 	{
@@ -666,7 +666,7 @@ picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D) {
 	}
 }
 
-// Emoji picker, the slint EmojiPicker: recents, search, emoji grid.
+// Emoji picker: recents, search, and an emoji grid.
 emoji_picker :: proc(ui: ^Ui_State) {
 	gif := ui.gif_tab && ui.picker_target == "" && ui.picker_mode == .Message
 	width := modal_w(clay.ID("PickerPanel"), gif ? 560 : 400)

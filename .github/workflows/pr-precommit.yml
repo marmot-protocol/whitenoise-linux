@@ -20,7 +20,7 @@
 # The hook operates on *staged* files (git diff --cached), and a fresh
 # actions/checkout stages nothing — so we `git add -A` first to present the
 # whole proposal tree as staged, then run the hook. The hook's normalization
-# steps (po-clean, slint format) auto-fix in place and re-stage rather than
+# steps (po-clean, odinfmt, clang-format) auto-fix in place and re-stage rather than
 # failing; we turn any such fix into a failure with a final drift check, so
 # "the hook had to change something" is treated as "not clean" — matching the
 # intent that only an already-clean tree passes.

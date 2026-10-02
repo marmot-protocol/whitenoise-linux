@@ -6,10 +6,9 @@
 // The dump is one mono clay.Text on the scrolling settings page, so it
 // stays capped: raw events show the newest DEBUG_RAW_MAX records.
 //
-// Gap vs the slint app: marmot-c exports no MLS key-package decoder, so
-// the inspector shows the publish metadata marmot hands back
-// (ref, event id, size, relays, where it lives), not the ciphersuite /
-// capabilities / credential rows the slint KpCard renders. See PORT.md.
+// marmot-c exports no MLS key-package decoder, so the inspector
+// shows the publish metadata marmot hands back (ref, event id, size,
+// relays, where it lives).
 package main
 
 import "core:encoding/json"

@@ -286,7 +286,7 @@ slide_original_request :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 }
 
 // Click an image tile: open the lightbox on it; a failed tile retries
-// the download instead (matching the slint viewer's failed-cell tap).
+// the download instead.
 handle_img_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if (img_hover.msg_id == "" && img_link_hover == "") ||
 	   preview_shown ||

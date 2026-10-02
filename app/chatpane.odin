@@ -221,8 +221,8 @@ chat_pane :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
-				// Timeline: a real scroll container, top-anchored like the
-				// slint pane; loads jump to the newest message.
+				// Timeline: a real scroll container, top-anchored.
+				// Loads jump to the newest message.
 				// Centred conversation pads to a ~720 reading measure.
 				side_pad := u16(0)
 				if ui.prefs.centered_chat {
@@ -339,8 +339,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 						if len(ui.unread_mark_id) > 0 && msg.id == ui.unread_mark_id {
 							run = {}
 							blocked_at = -1
-							// Center label between two rule lines, like the
-							// slint unread divider.
+							// Center label between two rule lines.
 							if clay.UI(clay.ID("UnreadMarker"))(
 							{
 								layout = {

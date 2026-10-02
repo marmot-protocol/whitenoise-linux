@@ -284,8 +284,8 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 				},
 			},
 			) {
-				// Avatar left; two stacked lines right: title/time then
-				// preview/tick, like the slint chat list rows.
+				// Avatar left; two stacked lines right: title and time,
+				// then preview and delivery tick.
 				if clay.UI(clay.ID("ChatRowMain", index))(
 				{
 					layout = {
@@ -685,7 +685,7 @@ peer_modal :: proc(ui: ^Ui_State) {
 	}
 }
 
-// The slint account-switcher modal, opened from the rail avatar.
+// Account-switcher modal, opened from the rail avatar.
 accounts_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("AccountsModal"))(
 	{
@@ -786,7 +786,7 @@ centered_note :: proc(id_str: string, title: string, sub: string) {
 	}
 }
 
-// Section eyebrow, ALL CAPS like the slint app.
+// Section eyebrow, ALL CAPS.
 eyebrow :: proc(text: string) {
 	// A stencilled theme brackets its captions: [ACTIONS], not ACTIONS.
 	label := BRACKET_LABELS ? fmt.tprintf("[%s]", text) : text
@@ -1317,8 +1317,8 @@ kp_note :: proc(state: Kp_Probe) -> string {
 	return ""
 }
 
-// Small bordered chip, the slint MicroButton: 11px label, hairline
-// border, hover fill. Pass a color to tint border + label (DANGER).
+// Small bordered chip: 11px label, hairline border, hover fill.
+// Pass a color to tint border and label (DANGER).
 micro_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
 	tinted := color.a != 0
 	down := press_down(clay.ID(id_str))
@@ -1374,8 +1374,7 @@ qr_modal :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 	}
 }
 
-// Rasterize the contact's marmot:// deep link into a texture (same
-// payload as the slint profile_qr_url).
+// Rasterize the contact's marmot:// deep link into a texture.
 show_contact_qr :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 	if contact_qr(ui, contact.npub) == nil {
 		set_status(ui, strings.clone(tr("Couldn't render the QR code. Please try again.")), .Error)
@@ -1959,7 +1958,7 @@ profile_kv :: proc(
 	}
 }
 
-// The slint ProfilePage viewer: header + Edit toggle, banner hero,
+// Profile viewer: header and Edit toggle, banner hero,
 // IDENTITY (npub + inline QR), PROFILE rows, accounts. Relays and the
 // nsec moved to Settings (Network / Keys) and left this page.
 profile_pane :: proc(ui: ^Ui_State) {

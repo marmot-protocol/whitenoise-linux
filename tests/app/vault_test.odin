@@ -126,7 +126,7 @@ vault_round_trip :: proc(t: ^testing.T) {
 	sealed, sealed_ok := vault_seal_blob(blob)
 	testing.expect(t, sealed_ok)
 
-	// The envelope is the slint app's shape, so both read one vault file.
+	// The sealed file is the Argon2id envelope, not plaintext.
 	on_disk, read_err := os.read_entire_file(vault_path(), context.temp_allocator)
 	testing.expect(t, read_err == nil)
 	testing.expect(t, strings.contains(string(on_disk), "argon2id"))

@@ -134,7 +134,7 @@ ICON_CODEPOINTS := []rune {
 	0xF005,
 }
 
-// Quick-reaction strip (the slint QuickReact.list): vendored Noto
+// Quick-reaction strip: vendored Noto
 // 72px tiles, drawn as textures since no installed font rasterizes
 // color emoji.
 QUICK_REACT := [6]struct {
@@ -175,8 +175,8 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 		custom = {customData = wash_payload()},
 	},
 	) {
-		// Logged out: the sign-in card alone on the canvas, like the slint
-		// login gate (no sidebar, no status bar).
+		// Logged out: the sign-in card alone on the canvas (no sidebar,
+		// no status bar).
 		if !logged_in {
 			if clay.UI(clay.ID("LoginCanvas"))(
 			{
@@ -499,7 +499,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									},
 									) {
 										// Alphabetical with letter section headers and a name
-										// filter, the slint contacts rail. Rows keep their
+										// filter. Rows keep their
 										// ui.contacts index in the clay ID so clicks stay stable.
 										filter := strings.to_lower(
 											string(ui.sidebar_filter[:]),
@@ -800,7 +800,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 				}
 			}
 
-			// Message banner + status bar, the slint shell's bottom strip.
+			// Message banner and status bar.
 			forward_progress(ui)
 			export_progress(ui)
 			contacts_import_progress(ui)
@@ -874,8 +874,8 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 }
 
 // Optimistic row: the confirmed row's shape in dim colors with
-// "sending…" for a stamp (the slint pending overlay renders at 0.62
-// opacity); a failed send goes danger and the row is a retry target.
+// "sending…" for a stamp. A failed send goes danger and the row is a
+// retry target.
 // Integer from a test-hook env string, falling back when it isn't one.
 parse_int_or :: proc(text: string, fallback: int) -> int {
 	value, ok := strconv.parse_int(text)
@@ -1382,7 +1382,7 @@ app_main :: proc() {
 			banner_tick(&ui) // a new client_status becomes the shell banner
 			tray_tick(&ui) // unread total in the tray tooltip
 
-			// Interface zoom shortcuts (Ctrl + / - / 0), the slint bindings.
+			// Interface zoom shortcuts (Ctrl + / - / 0).
 			if rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL) {
 				if rl.IsKeyPressed(.EQUAL) {
 					ui.prefs.zoom_pct += 10

@@ -25,7 +25,7 @@ Button_State :: enum {
 	Disabled,
 }
 
-// Full-width stacked login button, the slint sign-in card style.
+// Full-width stacked login button.
 login_big_button :: proc(
 	id_str: string,
 	label: string,

@@ -1,12 +1,11 @@
-// Starter identity for freshly generated accounts, the slint
-// animal-avatar port: a deterministic "[Adjective] [Animal]" name from
-// the new npub, published as the kind-0 name, plus a composed face
-// (emoji animal glyph over the npub gradient) shown locally.
+// Starter identity for freshly generated accounts: a deterministic
+// "[Adjective] [Animal]" name from the new npub, published as the
+// kind-0 name, plus a composed face (emoji animal glyph over the npub
+// gradient) shown locally.
 //
-// The slint app uploads the face PNG to public Blossom and publishes
-// its URL in kind-0 `picture`; marmot-c exports neither a public
-// upload nor an event signer, so here the face stays session-local
-// (registered under a starter:// pseudo-URL in the picture cache).
+// marmot-c exports neither a public upload nor an event signer, so the
+// face stays session-local (registered under a starter:// pseudo-URL
+// in the picture cache).
 package main
 
 import "base:runtime"

@@ -1,6 +1,5 @@
-// Word-level diff for the edit-history modal, mirroring the slint
-// app's edit_diff.rs: unchanged words follow the longest common
-// subsequence, everything else is Removed/Added.
+// Word-level diff for the edit-history modal. Unchanged words follow
+// the longest common subsequence. Everything else is removed or added.
 package main
 
 import marmot "../marmot"

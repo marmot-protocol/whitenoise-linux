@@ -446,7 +446,7 @@ row_labels :: proc(title: string, sub: string, title_color: clay.Color = {}) {
 	}
 }
 
-// On/off pill, the slint toggle.
+// On/off pill.
 toggle :: proc(id_str: string, on: bool) {
 	if clay.UI(clay.ID(id_str))(
 	{

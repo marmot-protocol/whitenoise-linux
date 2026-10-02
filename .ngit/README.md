@@ -10,5 +10,5 @@ with `act` (GitHub Actions-compatible syntax, each job in a Linux container).
 | --- | --- | --- |
 | `act/workflows/pr-precommit.yml` | ngit-ci **and** GitHub | **Canonical** quality gate (runs `.githooks/pre-commit`). GitHub can't execute workflows through symlinks, so `.githooks/pre-commit` keeps a byte-identical copy at `.github/workflows/pr-precommit.yml`. Edit the canonical file only; the hook refreshes the mirror and CI fails on drift. |
 | `act/workflows/release-appimage.yml` | ngit-ci only | Staging AppImage on every master push, published to Blossom by the coordinator. Deliberately **not** mirrored — `upload-artifact` means "publish to Blossom" only under ngit-ci. |
-| `.github/workflows/ci.yml` + `_build.yml` | GitHub only | Release-profile build of the Linux x86_64/arm64 targets (compiled Slint UI). No quality gates — those come from the mirrored `pr-precommit.yml`. |
+| `.github/workflows/ci.yml` + `_build.yml` | GitHub only | Release-profile build of the Linux x86_64/arm64 targets. No quality gates — those come from the mirrored `pr-precommit.yml`. |
 | `.github/workflows/release.yml` | GitHub only | Tag-triggered (`v*`) GitHub Release of the build tarballs. |

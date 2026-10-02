@@ -1,6 +1,6 @@
-// One confirm modal for every destructive action, the slint confirm
-// flow: ask before deleting, leaving, blocking, removing a member,
-// changing admin rights, declining an invite, or dropping a relay.
+// One confirm modal for every destructive action: ask before deleting,
+// leaving, blocking, removing a member, changing admin rights,
+// declining an invite, or dropping a relay.
 //
 // Call sites hand over the intent (kind + subject) instead of acting;
 // run_confirm performs it once the user says yes. The two-step "arm the

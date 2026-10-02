@@ -1,7 +1,6 @@
 #+feature dynamic-literals
-// Theme engine: the slint app's themes/*.toml packs, embedded at
-// compile time and parsed into the same color model, so both UIs draw
-// from one source of truth.
+// Theme engine: themes/*.toml packs, embedded at compile time and
+// parsed into the color globals a frame reads.
 package main
 
 import "core:fmt"

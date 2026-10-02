@@ -775,7 +775,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		((rl.IsKeyPressed(.ENTER) && !shift_down()) || clicked("SendBtn") || test_send_now)
 	test_send_now = false
 	// Staged attachments send on their own only outside an edit (an
-	// edit needs text and never sends them, like the slint composer).
+	// edit needs text and never sends them).
 	if send && (len(ui.compose) > 0 || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
 		// The message leaves the composer rather than appearing above it.
 		if len(ui.editing) == 0 && len(ui.compose) > 0 {
@@ -805,8 +805,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // Staged attachments now go out through queue_staged (optimistic
 // pending rows + upload worker); see the optimistic-send plumbing.
 
-// Extension → MIME, the same guesses the slint app gets from
-// mime_guess. Values are literals; Staged_File never frees them.
+// Extension → MIME. Values are literals; Staged_File never frees them.
 media_type_for :: proc(name: string) -> string {
 	dot := strings.last_index_byte(name, '.')
 	if dot < 0 {
@@ -1106,9 +1105,8 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 }
 
-// Click/keyboard handling for the open message context menu. Mirrors
-// the slint MessageContextMenu actions; anything unhandled closes it
-// (the backdrop dismiss).
+// Click/keyboard handling for the open message context menu.
+// Anything unhandled closes it (the backdrop dismiss).
 handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.ctx_msg < 0 || ui.ctx_msg >= len(ui.messages) || rl.IsKeyPressed(.ESCAPE) {
 		ui.ctx_open = false

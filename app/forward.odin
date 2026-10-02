@@ -1,4 +1,4 @@
-// Forward picker, the slint forward flow (src/wiring/forward.rs):
+// Forward picker.
 // "Forward" in the message context menu opens a destination-chat
 // picker with a live name filter; picking a chat re-sends the body
 // through the optimistic send pipeline (grayed pending row in the

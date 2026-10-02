@@ -17,7 +17,7 @@ Avatar_Hinge :: struct {
 	angle: f32,
 }
 
-// FNV-1a, the same stable-hash idea the slint app uses.
+// FNV-1a over the identity key. Stable for a given account.
 avatar_hash :: proc(key: string) -> u32 {
 	hash: u32 = 2166136261
 	for b in transmute([]u8)key {

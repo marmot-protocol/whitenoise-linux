@@ -1,4 +1,4 @@
-// Openverse remote image search, the slint image_search.rs port:
+// Openverse remote image search.
 // "Search images" in the group hero opens a centered modal with a
 // query box and a thumbnail grid. Openverse indexes openly licensed
 // images and needs no key for basic search. A one-shot curl worker
@@ -118,7 +118,7 @@ ov_worker :: proc() {
 
 // Parse an Openverse response body into hits: results[].url (the
 // pick) and results[].thumbnail (the grid cell); entries missing
-// either are dropped, like the slint image_search.rs.
+// either are dropped.
 ov_parse :: proc(body: []u8) -> (hits: [dynamic]Ov_Hit, fail: string) {
 	val, perr := json.parse(body)
 	if perr != nil {

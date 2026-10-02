@@ -129,7 +129,7 @@ parallax :: proc() -> (x, y: f32) {
 
 // ── Synthwave floor ─────────────────────────────────────────────────
 
-SYNTH_HORIZON :: 0.58 // horizon at 58% height, like the slint scene
+SYNTH_HORIZON :: 0.58 // horizon at 58% of the height
 SYNTH_RAILS :: 9
 SYNTH_RUNGS :: 7
 SYNTH_ROLL :: 0.22 // rungs per second travelling toward the viewer

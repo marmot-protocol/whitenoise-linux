@@ -1,9 +1,8 @@
-// Mentions, the slint mentions.rs port: composer @-autocomplete over
-// the chat's members, inline mention chips in bodies, and the mentions
-// inbox behind the chat-header bell.
+// Mentions: composer @-autocomplete over the chat's members, inline
+// mention chips in bodies, and the mentions inbox behind the
+// chat-header bell.
 //
-// Wire format matches the slint app so the two interoperate: the
-// composer inserts "@npub1... " (at + bare npub + space); bodies
+// The composer inserts "@npub1... " (at + bare npub + space). Bodies
 // recognize npub1/nprofile1 tokens bare, "@"-prefixed, or "nostr:"-
 // prefixed; the inbox counts incoming messages whose current text
 // carries a token resolving to the local account.
