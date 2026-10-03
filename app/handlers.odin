@@ -1454,8 +1454,9 @@ open_notes :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for job in account_jobs {
 		if job.account == ui.account_ref && job.kind == .Create_Chat && job.form {
-			if rl.IsKeyPressed(.ESCAPE) ||
-			   clicked("NCCancel") {job.open_chat = false; ui.new_chat_open = false}
+			if rl.IsKeyPressed(.ESCAPE) || clicked("NCCancel") {
+				close_new_chat(ui)
+			}
 			return
 		}
 	}
@@ -1468,9 +1469,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.focus = .NC_Name
 	}
 	if clicked("NCCancel") || rl.IsKeyPressed(.ESCAPE) {
-		ui.nip05_ticket = 0
-		ui.new_chat_open = false
-		ui.focus = .Compose
+		close_new_chat(ui)
 		return
 	}
 	if clicked("NCPicFile") {
@@ -1549,6 +1548,20 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 		new_chat_create_and_open(ui, client, name, member)
 	}
+}
+
+// Dismiss the new-chat form (Cancel, Escape, or leaving for another page).
+// A create already in flight still finishes, but no longer jumps to the
+// new chat, so the user stays where they went.
+close_new_chat :: proc(ui: ^Ui_State) {
+	for job in account_jobs {
+		if job.account == ui.account_ref && job.kind == .Create_Chat && job.form {
+			job.open_chat = false
+		}
+	}
+	ui.nip05_ticket = 0
+	ui.new_chat_open = false
+	ui.focus = .Compose
 }
 
 // The common tail of new_chat: create the group, hand a staged image to

@@ -1901,6 +1901,12 @@ app_main :: proc() {
 					handle_chat(&ui, client)
 				}
 			}
+			// The new-chat form belongs to Chats but outranks every page in
+			// the main pane. Any jump elsewhere (rail, palette, a profile
+			// link) dismisses it, or it would hide the page just picked.
+			if ui.new_chat_open && ui.page != .Chats {
+				close_new_chat(&ui)
+			}
 			// Body text selection and the link guard share the pointer over
 			if ui.lock_requested {lock_wait_frame(); break}
 			// message bodies: a drag that selected something swallows the
