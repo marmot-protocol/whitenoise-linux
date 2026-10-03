@@ -341,8 +341,11 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 
 // ── Mouse: click-to-caret, drag selection, middle-click paste ───────
 
-// Buffer currently being drag-selected (cleared in the frame loop).
+// Buffer currently being drag-selected and the box its press landed in.
+// The frame loop clears both one frame after the release, so that
+// release's handlers still see the drag (mouse_released).
 text_drag: rawptr
+text_drag_box: clay.ElementId
 
 @(private = "file")
 text_drag_sentence: [2]int
@@ -481,6 +484,7 @@ field_mouse :: proc(
 		}
 		ed_end(ui, buf)
 		text_drag = buf
+		text_drag_box = clay.ID(id_str)
 		return true
 	}
 	if text_drag == buf && rl.IsMouseButtonDown(.LEFT) && ui.ed_target == buf {
@@ -572,6 +576,7 @@ compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Co
 		}
 		ed_end(ui, buf)
 		text_drag = buf
+		text_drag_box = clay.ID("ComposeClip") // not ComposeTools: no drag-to-send
 	case dragging:
 		if ui.ed_target == buf {
 			drag_text_selection(&ui.ed, text, hit)
@@ -661,6 +666,11 @@ g_prefs: ^Prefs
 mouse_released :: proc() -> bool {
 	// A release ending a scrollbar drag must not click what's under
 	// the pointer; the drag clears one frame later in the main loop.
+	// Nor may a text selection dragged out of its field: releasing a
+	// drag over the emoji grid would otherwise pick an emoji.
+	if text_drag != nil && !clay.PointerOver(text_drag_box) {
+		return false
+	}
 	return (rl.IsMouseButtonReleased(.LEFT) && scroll_drag.container == 0) || forced_release
 }
 

@@ -1473,6 +1473,10 @@ app_main :: proc() {
 						strings.clone_to_cstring(string(buf[lo:hi]), context.temp_allocator),
 					)
 				}
+			}
+			// Held through the release frame so mouse_released can tell a
+			// selection drag from a click.
+			if !rl.IsMouseButtonDown(.LEFT) && !rl.IsMouseButtonReleased(.LEFT) {
 				text_drag = nil
 			}
 
