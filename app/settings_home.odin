@@ -830,6 +830,9 @@ settings_open :: proc(
 settings_search_field :: proc(ui: ^Ui_State) {
 	if ui.lang_open || ui.shortcuts_open || ui.theme_menu_open || ui.export_open {return}
 	if field_mouse(ui, &ui.settings_search, "SettingsSearchBox", 12) {ui.focus = .SettingsSearch}
+	// The composer is hidden on this page, so focus left there drops
+	// keystrokes. The search box is the field a settings page types into.
+	if ui.focus == .Compose {ui.focus = .SettingsSearch}
 	if ui.focus != .SettingsSearch {return}
 	before := avatar_hash(string(ui.settings_search[:]))
 	edit_text(ui, &ui.settings_search)
