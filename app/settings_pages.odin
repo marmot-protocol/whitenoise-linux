@@ -1882,10 +1882,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if clicked("QuickAdd") {
 			ui.picker_mode = .Quick_Reaction
-			ui.picker_open = true
-			ui.picker_target = ""
-			ui.picker_x = 200
-			ui.picker_y = 120
+			open_picker(ui, "") // focuses and clears the search box
 			return
 		}
 		if clicked("QuickReset") {
