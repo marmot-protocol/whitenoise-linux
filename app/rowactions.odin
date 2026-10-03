@@ -296,6 +296,7 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 		ctx_item("RowRead", ICON_ENVELOPE_OPEN, tr("Mark read"))
 		ctx_item("RowUnread", ICON_ENVELOPE, tr("Mark unread"))
 		ctx_item("RowFolder", ICON_FOLDER, tr("Move to folder"))
+		ctx_item("RowArchive", ICON_ARCHIVE, tr("Archive"))
 		ctx_item("RowExportHtml", ICON_DOWNLOAD, tr("Export as HTML"))
 		ctx_item("RowExportMd", ICON_DOWNLOAD, tr("Export as Markdown"))
 	}
@@ -861,7 +862,7 @@ folder_modal :: proc(ui: ^Ui_State) {
 open_row_menu :: proc(ui: ^Ui_State, index: int) {
 	m := rl.GetMousePosition()
 	ui.row_menu = index
-	ui.row_menu_x, ui.row_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 230, 285)
+	ui.row_menu_x, ui.row_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 230, 320)
 }
 
 // Clicks in the open row menu; anything unhandled closes it.
@@ -888,6 +889,10 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if clay.PointerOver(clay.ID("RowFolder")) {
 		open_folder_modal(ui, gid)
+		return
+	}
+	if clay.PointerOver(clay.ID("RowArchive")) {
+		set_archived(ui, client, gid, true)
 		return
 	}
 	if clay.PointerOver(clay.ID("RowPin")) {

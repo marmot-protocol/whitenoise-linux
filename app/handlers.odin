@@ -261,10 +261,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				open_row_menu(ui, i)
 				return
 			}
-			if clay.PointerOver(clay.ID("ChatArch", u32(i))) {
-				set_archived(ui, client, ui.chats[i].group_id, true)
-				return
-			}
 			if clay.PointerOver(clay.ID("ChatRow", u32(i))) {
 				select_chat(ui, client, i)
 				break

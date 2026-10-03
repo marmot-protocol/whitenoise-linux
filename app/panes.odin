@@ -313,7 +313,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 						},
 					},
 					) {
-						// Reserves the hover chips' height, so the row keeps its size
+						// Reserves the hover chip's height, so the row keeps its size
 						// as the pointer crosses it.
 						if clay.UI(clay.ID("ChatRowTop", index))(
 						{
@@ -367,10 +367,6 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 									},
 								)
 							}
-							if hovered() {
-								action_chip("ChatArch", index, tr("Archive"))
-								action_chip("ChatMenu", index, "···")
-							}
 							if clay.UI(clay.ID("ChatRowGap", index))(
 							{layout = {sizing = {width = clay.SizingGrow()}}},
 							) {}
@@ -423,6 +419,11 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 								chat.at,
 								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
 							)
+							// Archive and the other row actions live in this menu,
+							// which right-click and long-press also open.
+							if hovered() {
+								action_chip("ChatMenu", index, "···")
+							}
 						}
 						if clay.UI(clay.ID("ChatRowPrev", index))(
 						{
