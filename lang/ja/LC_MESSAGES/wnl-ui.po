@@ -2531,6 +2531,9 @@ msgstr "一致する結果はありません。"
 msgid "No matching chats"
 msgstr "一致するチャットはありません"
 
+msgid "No matching messages"
+msgstr "一致するメッセージはありません"
+
 msgid "No matching settings."
 msgstr "一致する設定はありません。"
 

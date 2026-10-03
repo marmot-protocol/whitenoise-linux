@@ -2531,6 +2531,9 @@ msgstr "Nessuna corrispondenza."
 msgid "No matching chats"
 msgstr "Nessuna chat corrispondente"
 
+msgid "No matching messages"
+msgstr "Nessun messaggio corrispondente"
+
 msgid "No matching settings."
 msgstr "Nessuna impostazione corrispondente."
 

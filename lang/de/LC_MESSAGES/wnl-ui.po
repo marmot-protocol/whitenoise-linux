@@ -2531,6 +2531,9 @@ msgstr "Keine Treffer."
 msgid "No matching chats"
 msgstr "Keine passenden Chats"
 
+msgid "No matching messages"
+msgstr "Keine passenden Nachrichten"
+
 msgid "No matching settings."
 msgstr "Keine passenden Einstellungen."
 

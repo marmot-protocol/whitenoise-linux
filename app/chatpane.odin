@@ -1253,8 +1253,20 @@ input_box :: proc(
 // Empty timeline: a centred plate, not a sentence stranded in the
 // top-left under the session divider. Grows into whatever height the
 // dividers above it leave, so it holds the middle of the pane.
+// An applied search that matched nothing says so and offers the way
+// back, instead of claiming the chat itself is empty.
 empty_timeline :: proc(ui: ^Ui_State) {
 	notes := ui.selected >= 0 && ui.chats[ui.selected].group_id == ui.prefs.notes_group
+	searched := timeline_job != nil && len(timeline_job.search) > 0
+	title, hint := tr("No messages yet"), tr("Send the first message to start the conversation.")
+	if notes {
+		title, hint =
+			tr("Your own notepad"),
+			tr("Anything you write here stays between you and this device's key.")
+	}
+	if searched {
+		title, hint = tr("No matching messages"), tr("Try a different search.")
+	}
 	if clay.UI(clay.ID("EmptyTL"))(
 	{
 		layout = {
@@ -1278,18 +1290,15 @@ empty_timeline :: proc(ui: ^Ui_State) {
 		},
 		) {
 			clay.Text(
-				notes ? ICON_PENCIL : ICON_CHATS,
+				searched ? ICON_SEARCH : notes ? ICON_PENCIL : ICON_CHATS,
 				{fontId = FONT_ICON, fontSize = 24, textColor = ACCENT_DIM},
 			)
 		}
-		clay.Text(
-			notes ? tr("Your own notepad") : tr("No messages yet"),
-			{fontId = FONT_TITLE, fontSize = 18, textColor = TEXT},
-		)
-		clay.Text(
-			notes ? tr("Anything you write here stays between you and this device's key.") : tr("Send the first message to start the conversation."),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-		)
+		clay.Text(title, {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
+		clay.Text(hint, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+		if searched {
+			micro_button("TimelineClearSearch", tr("Clear search"))
+		}
 	}
 }
 

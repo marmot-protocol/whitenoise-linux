@@ -2530,6 +2530,9 @@ msgstr ""
 msgid "No matching chats"
 msgstr ""
 
+msgid "No matching messages"
+msgstr ""
+
 msgid "No matching settings."
 msgstr ""
 

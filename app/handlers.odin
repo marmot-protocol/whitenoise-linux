@@ -642,7 +642,8 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if rl.IsKeyPressed(.ENTER) {
 			load_timeline(client, ui, string(ui.search_input[:]))
 		}
-		if rl.IsKeyPressed(.ESCAPE) {
+		// Esc and the empty-result button both return to the full timeline.
+		if rl.IsKeyPressed(.ESCAPE) || clicked("TimelineClearSearch") {
 			ui.search_open = false
 			ui.focus = .Compose
 			clear(&ui.search_input)
