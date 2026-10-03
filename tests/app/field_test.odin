@@ -30,6 +30,7 @@ field_overflow :: proc(t: ^testing.T) {
 	heads := []int{len(ui.nc_member), 0, 24}
 	for head in heads {
 		ui.ed.selection = {head, head}
+		caret_wake() // solid, not mid-blink
 		// The viewport's resolved width is available on the next frame.
 		for frame in 0 ..< 2 {
 			clay.BeginLayout()
@@ -73,4 +74,58 @@ field_overflow :: proc(t: ^testing.T) {
 			testing.expect(t, painted, "the zero-width caret must still paint its stroke")
 		}
 	}
+}
+
+// A field inside a floating panel (the emoji picker floats at z 12)
+// must paint its caret in the panel's layer, not under the panel.
+@(test)
+field_caret_in_float :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+
+	rl.SetPixelScale(1)
+	memory := make([]u8, int(clay.MinMemorySize()))
+	defer delete(memory)
+	previous := clay.GetCurrentContext()
+	defer clay.SetCurrentContext(previous)
+	clay.Initialize(
+		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
+		{600, 200},
+		{},
+	)
+	clay.SetMeasureTextFunction(measure_text, nil)
+
+	ui: Ui_State
+	append(&ui.picker_filter, "face")
+	defer delete(ui.picker_filter)
+	ui.ed_target = &ui.picker_filter
+	ui.ed.selection = {4, 4}
+	caret_wake() // solid, not mid-blink
+
+	clay.BeginLayout()
+	if clay.UI(clay.ID("TestPanel"))(
+	{
+		layout = {sizing = {clay.SizingFixed(300), clay.SizingFixed(100)}},
+		backgroundColor = {1, 1, 1, 255},
+		floating = {attachTo = .Root, zIndex = 12},
+	},
+	) {
+		field_text(&ui, "TestSearch", &ui.picker_filter, "search...", true)
+	}
+	commands := clay.EndLayout(0)
+
+	panel_at, caret_at := -1, -1
+	for command, i in commands.internalArray[:commands.length] {
+		if command.commandType != .Rectangle {
+			continue
+		}
+		if command.boundingBox.width == 300 {
+			panel_at = i
+		}
+		if command.boundingBox.width == CARET_W {
+			caret_at = i
+			testing.expect_value(t, command.zIndex, 12)
+		}
+	}
+	testing.expect(t, panel_at >= 0 && caret_at > panel_at, "the caret must draw over its panel")
 }

@@ -145,8 +145,10 @@ fi
 if [ "${1:-}" != sources ]; then
 # Rebuild Clay: the upstream prebuilt archive has the slot-reuse bug too.
 # clay-scroll-target.patch keeps a clipped label from swallowing the wheel.
+# clay-float-layer.patch keeps a z-less float (the text caret) above the
+# floating panel it sits in.
 CLAY_LIB="$CLAY/bindings/odin/clay-odin/linux/clay.a"
-CLAY_PATCHES=("$HERE/patches/clay-hashmap.patch" "$HERE/patches/clay-scroll-target.patch")
+CLAY_PATCHES=("$HERE/patches/clay-hashmap.patch" "$HERE/patches/clay-scroll-target.patch" "$HERE/patches/clay-float-layer.patch")
 CLAY_STALE=0
 for f in "$CLAY/clay.h" "${CLAY_PATCHES[@]}"; do
   if [ "$f" -nt "$HERE/build/clay/clay.a" ]; then CLAY_STALE=1; fi

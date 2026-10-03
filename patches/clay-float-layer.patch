@@ -1,0 +1,26 @@
+diff --git a/clay.h b/clay.h
+--- a/clay.h
++++ b/clay.h
+@@ -2148,6 +2148,22 @@
+             if (declaration->floating.clipTo == CLAY_CLIP_TO_NONE) {
+                 clipElementId = 0;
+             }
++            // A float attached to its parent without a z of its own draws in
++            // the layer of the innermost open float, not at z 0, which would
++            // sort it under that float (a text caret in a floating picker).
++            if (declaration->floating.attachTo == CLAY_ATTACH_TO_PARENT && floatingConfig->zIndex == 0) {
++                bool found = false;
++                for (int32_t r = context->layoutElementTreeRoots.length - 1; r >= 0 && !found; --r) {
++                    Clay__LayoutElementTreeRoot *root = Clay__LayoutElementTreeRootArray_Get(&context->layoutElementTreeRoots, r);
++                    for (int32_t s = 0; s < context->openLayoutElementStack.length - 1; ++s) {
++                        if (Clay__int32_tArray_GetValue(&context->openLayoutElementStack, s) == root->layoutElementIndex) {
++                            floatingConfig->zIndex = root->zIndex;
++                            found = true;
++                            break;
++                        }
++                    }
++                }
++            }
+             int32_t currentElementIndex = Clay__int32_tArray_GetValue(&context->openLayoutElementStack, context->openLayoutElementStack.length - 1);
+             Clay__int32_tArray_Set(&context->layoutElementClipElementIds, currentElementIndex, clipElementId);
+             Clay__int32_tArray_Add(&context->openClipElementStack, clipElementId);

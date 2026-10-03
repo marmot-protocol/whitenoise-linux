@@ -60,7 +60,7 @@ mkdir -p "$OUT/clay" "$OUT/fbx" "$OUT/math" "$OUT/stb"
 cp "$HERE/vendor/clay/clay.h" "$OUT/clay/clay.h"
 # clay-mingw-enums.patch only affects _WIN32: the Odin binding assumes MSVC's
 # 4-byte enums there, while Clang for MinGW would pack them to 1 byte.
-for patch in clay-hashmap clay-scroll-target clay-mingw-enums; do
+for patch in clay-hashmap clay-scroll-target clay-float-layer clay-mingw-enums; do
   git -C "$HERE" apply --directory="build/cross/$TARGET/clay" "$HERE/patches/$patch.patch"
 done
 "$CC" "${CFLAGS[@]}" -x c -c -DCLAY_IMPLEMENTATION "$OUT/clay/clay.h" -o "$OUT/clay/clay.o"
