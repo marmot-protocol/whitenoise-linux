@@ -3703,6 +3703,9 @@ msgstr "ちょうどいい感じですね。"
 msgid "That isn't your current password. Double-check it and try again."
 msgstr "現在のパスワードと一致しません。確認して、もう一度お試しください。"
 
+msgid "That key isn't an nsec. Double-check it and try again."
+msgstr "このキーはnsecではありません。確認して、もう一度お試しください。"
+
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr "チャットが一覧から消えます。後で参加するには新しい招待が必要です。"
 

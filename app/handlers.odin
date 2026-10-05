@@ -71,6 +71,21 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	submitted := ui.login_method != .Menu && (rl.IsKeyPressed(.ENTER) || clicked("LoginGo"))
+
+	// Reject anything but a well-formed nsec before the runtime sees it:
+	// it reads other input as a public identity, and either way answers
+	// with a raw parse error ("invalid Nostr public key", "invalid nsec
+	// or secret key") that tells the user nothing about the fix.
+	if submitted && ui.login_method == .Import && len(ui.login_input) > 0 {
+		hrp, key, ok := bech32_decode(string(ui.login_input[:]))
+		if !ok || hrp != "nsec" || len(key) != 32 {
+			ui.login_error = strings.clone(
+				tr("That key isn't an nsec. Double-check it and try again."),
+			)
+			return
+		}
+	}
+
 	if submitted && len(ui.login_input) > 0 {
 		if ui.login_method ==
 		   .Import {start_auth(ui, client, string(ui.login_input[:]), .Import)} else {start_remote_auth(ui, client, ui.login_method, string(ui.login_input[:]))}

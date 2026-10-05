@@ -3703,6 +3703,9 @@ msgstr "So fühlt es sich richtig an."
 msgid "That isn't your current password. Double-check it and try again."
 msgstr "Das ist nicht dein aktuelles Passwort. Überprüfe es und versuche es erneut."
 
+msgid "That key isn't an nsec. Double-check it and try again."
+msgstr "Dieser Schlüssel ist kein nsec. Überprüfe ihn und versuche es erneut."
+
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr "Der Chat verschwindet aus deiner Liste. Für einen späteren Beitritt brauchst du eine neue Einladung."
 
