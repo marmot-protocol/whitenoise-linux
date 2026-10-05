@@ -7,10 +7,34 @@ import "core:slice"
 import "core:strings"
 import "core:sync"
 import "core:testing"
+import "core:thread"
 import "core:time"
 
 import rl "sdlrl"
 import stbi "vendor:stb/image"
+
+// preview_show decodes models on a worker; wait for it and reap the
+// thread, as the frame loop's poll and drain_sends would. send_threads
+// is swapped out under test_home_lock (taken after clay_test_mutex,
+// as elsewhere) so other tests' workers are left alone.
+@(private = "file")
+preview_show_wait :: proc(name: string, bytes: []u8, archive: ^Arc_View = nil) {
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	old_threads := send_threads
+	send_threads = {}
+	preview_show(name, bytes, archive)
+	for preview.kind == .Model_Loading {
+		time.sleep(time.Millisecond)
+		preview_model_poll()
+	}
+	for worker in send_threads {
+		thread.join(worker)
+		thread.destroy(worker)
+	}
+	delete(send_threads)
+	send_threads = old_threads
+}
 
 @(test)
 fbx_archive_textures :: proc(t: ^testing.T) {
@@ -27,7 +51,7 @@ fbx_archive_textures :: proc(t: ^testing.T) {
 	bytes, ok := arc_entry_bytes(archive, archive.entries[0].index)
 	testing.expect(t, ok)
 	if !ok {return}
-	preview_show(archive.entries[0].name, bytes, archive)
+	preview_show_wait(archive.entries[0].name, bytes, archive)
 	defer preview_close()
 	testing.expect_value(t, preview.kind, Preview_Kind.Mesh)
 	if preview.mesh == nil {return}
@@ -46,7 +70,7 @@ fbx_archive_textures :: proc(t: ^testing.T) {
 	delete(archive.entries[1].name)
 	archive.entries[1].name = strings.clone("elsewhere/unrelated.tga")
 	missing, _ := arc_entry_bytes(archive, archive.entries[0].index)
-	preview_show(archive.entries[0].name, missing, archive)
+	preview_show_wait(archive.entries[0].name, missing, archive)
 	testing.expect_value(t, preview.kind, Preview_Kind.Mesh)
 	testing.expect_value(t, len(preview.mesh.insp.images), 0)
 
@@ -57,14 +81,14 @@ fbx_archive_textures :: proc(t: ^testing.T) {
 	no_links2, _ := strings.replace_all(no_links, `C: "OP",4,3,"SpecularColor"`, "")
 	delete(archive.entries[1].name)
 	archive.entries[1].name = strings.clone("Texture/House_Default_AlbedoTransparency.tga")
-	preview_show(archive.entries[0].name, transmute([]u8)no_links2, archive)
+	preview_show_wait(archive.entries[0].name, transmute([]u8)no_links2, archive)
 	testing.expect_value(t, len(preview.mesh.insp.images), 1)
 
 	// Two files matching the same material/channel must leave it untextured.
 	delete(archive.entries[0].name)
 	archive.entries[0].name = strings.clone("Texture/Other_Default_Albedo.tga")
 	copy_fbx := strings.clone(string(preview.bytes))
-	preview_show("Models/Triangle.fbx", transmute([]u8)copy_fbx, archive)
+	preview_show_wait("Models/Triangle.fbx", transmute([]u8)copy_fbx, archive)
 	testing.expect_value(t, len(preview.mesh.insp.images), 0)
 }
 
@@ -128,7 +152,7 @@ fbx_texture_render :: proc(t: ^testing.T) {
 	bytes, ok := arc_entry_bytes(archive, archive.entries[entry].index)
 	testing.expect(t, ok)
 	if !ok {return}
-	preview_show(archive.entries[entry].name, bytes, archive)
+	preview_show_wait(archive.entries[entry].name, bytes, archive)
 	defer preview_close()
 	view := preview.mesh
 	testing.expect(t, view != nil)
@@ -154,6 +178,8 @@ fbx_texture_render :: proc(t: ^testing.T) {
 	}
 	stbi.write_png("/tmp/wn-fbx-textures.png", 512, 512, 4, raw_data(view.pix), 512 * 4)
 	full := hash.crc32(view.pix)
+	// A pass slower than the budget is what makes a drag downscale.
+	view.pass_time = ORBIT_PASS_BUDGET + 1
 	orbit_drag, orbit_moved = &view.orbit, true
 	defer {orbit_drag, orbit_moved = nil, false}
 	stl_draw(view, {0, 0, 512, 512})

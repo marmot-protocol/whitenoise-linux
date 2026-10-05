@@ -10,6 +10,8 @@ import "core:fmt"
 import "core:mem"
 import "core:slice"
 import "core:strings"
+import "core:sync"
+import "core:thread"
 
 import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -21,6 +23,7 @@ Preview_Kind :: enum {
 	Image,
 	Mesh,
 	Gcode,
+	Model_Loading,
 	Video,
 	Pdf,
 	Text,
@@ -95,6 +98,93 @@ img_link_hover: string
 preview: Preview
 preview_shown: bool
 
+// A model the modal is decoding off the UI thread: parse, stand-in and
+// face normals take ~230 ms for a 1.2M-triangle STL. The worker owns
+// `bytes` (preview.bytes, shared while the modal waits) and `view`
+// until done; a load the modal stopped waiting for frees itself.
+@(private = "file")
+Model_Load :: struct {
+	mutex:     sync.Mutex,
+	lower:     string, // owned
+	bytes:     []u8,
+	archive:   ^Arc_View, // texture source, read on the UI thread once done
+	// The opener's allocator: whoever finishes with the view frees it.
+	// In app builds this is reload_allocator(); tests pass their own.
+	allocator: mem.Allocator,
+	view:      ^Stl_View,
+	done:      bool,
+	dropped:   bool,
+}
+
+@(private = "file")
+model_load: ^Model_Load
+
+@(private = "file")
+model_load_worker :: proc(job: ^Model_Load) {
+	context.allocator = job.allocator
+	defer free_all(context.temp_allocator)
+	view := model_view_make(job.lower, job.bytes)
+	sync.lock(&job.mutex)
+	job.view, job.done = view, true
+	dropped := job.dropped
+	sync.unlock(&job.mutex)
+	if dropped {
+		model_load_free(job)
+	}
+	frame_wake()
+}
+
+@(private = "file")
+model_load_free :: proc(job: ^Model_Load) {
+	if job.view != nil {
+		stl_view_free(job.view)
+	}
+	delete(job.bytes)
+	delete(job.lower)
+	free(job)
+}
+
+// Stop waiting for the load: free it now if it finished, or let the
+// worker free it when it does. The job takes preview.bytes with it.
+@(private = "file")
+model_load_drop :: proc() {
+	job := model_load
+	model_load = nil
+	sync.lock(&job.mutex)
+	done := job.done
+	job.dropped = true
+	sync.unlock(&job.mutex)
+	if done {
+		model_load_free(job)
+	}
+}
+
+// Move a finished load into the modal. Texture images come from the
+// archive here, on the UI thread that owns it.
+@(private)
+preview_model_poll :: proc() {
+	job := model_load
+	if job == nil {
+		return
+	}
+	sync.lock(&job.mutex)
+	done := job.done
+	sync.unlock(&job.mutex)
+	if !done {
+		return
+	}
+
+	model_load = nil
+	preview.kind = .Unsupported
+	if job.view != nil {
+		fbx_load_textures(&job.view.insp, job.archive, preview.name)
+		preview.mesh = job.view
+		preview.kind = .Mesh
+	}
+	delete(job.lower)
+	free(job)
+}
+
 @(private)
 preview_message :: proc(text: string, blocks: []Md_Block_Ui = nil) {
 	preview_close()
@@ -145,11 +235,18 @@ preview_show :: proc(name: string, bytes: []u8, archive: ^Arc_View = nil) {
 		preview.vid = video_view_make(clone_bytes(bytes), .Clip)
 		preview.kind = .Video
 	case is_model_name(lower):
-		if mesh := model_view_make(lower, bytes); mesh != nil {
-			fbx_load_textures(&mesh.insp, archive, name)
-			preview.mesh = mesh
-			preview.kind = .Mesh
+		model_load = new(Model_Load)
+		model_load^ = {
+			lower     = strings.clone(lower),
+			bytes     = bytes,
+			archive   = archive,
+			allocator = context.allocator,
 		}
+		append(
+			&send_threads,
+			thread.create_and_start_with_poly_data(model_load, model_load_worker),
+		)
+		preview.kind = .Model_Loading
 	case has(lower, ".gcode") || has(lower, ".gco"):
 		if segs, ok := parse_gcode(bytes); ok {
 			preview.gc = gcode_view_make(segs)
@@ -588,7 +685,11 @@ preview_close :: proc() {
 	}
 	clear(&original_textures)
 	blocks_free(preview.message_blocks)
-	if !preview.vid_shared {delete(preview.bytes)}
+	if model_load != nil {
+		model_load_drop()
+	} else if !preview.vid_shared {
+		delete(preview.bytes)
+	}
 	delete(preview.name)
 	if preview.kind == .Video {
 		rl.SetFullscreen(false)
@@ -866,6 +967,35 @@ preview_modal :: proc(ui: ^Ui_State) {
 							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 						)
 					}
+				}
+
+			case .Model_Loading:
+				// The model tile plus the inspector beside it, so the
+				// modal keeps its size when the decode lands.
+				if clay.UI(clay.ID("PvModelLoading"))(
+				{
+					layout = {
+						sizing = {
+							width = clay.SizingFixed(fit_w(480) + 10 + INSP_WIDTH),
+							height = clay.SizingFixed(min(f32(480), max_h - PV_CHROME)),
+						},
+						layoutDirection = .TopToBottom,
+						childGap = 10,
+						childAlignment = {x = .Center, y = .Center},
+					},
+					backgroundColor = PLATE,
+					cornerRadius = rr(8),
+				},
+				) {
+					clay.Text(
+						tr("Reading the model\u2026"),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+					)
+					clay.Text(
+						tr("Progress is indeterminate."),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+					)
+					busy_bar("PvModelBusy")
 				}
 
 			case .Mesh, .Gcode:
@@ -1198,6 +1328,7 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !preview_shown {
 		return
 	}
+	preview_model_poll()
 	if rl.IsKeyPressed(.ESCAPE) {
 		preview_close()
 		return

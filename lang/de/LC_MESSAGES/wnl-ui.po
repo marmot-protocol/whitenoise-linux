@@ -2984,6 +2984,9 @@ msgstr "Mehr lesen"
 msgid "Reading aloud..."
 msgstr "Wird vorgelesen..."
 
+msgid "Reading the model…"
+msgstr "Modell wird gelesen…"
+
 msgid "Reading your contacts file and checking existing contacts..."
 msgstr "Deine Kontaktdatei wird gelesen und vorhandene Kontakte werden geprüft..."
 

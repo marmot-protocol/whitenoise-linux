@@ -2983,6 +2983,9 @@ msgstr ""
 msgid "Reading aloud..."
 msgstr ""
 
+msgid "Reading the model…"
+msgstr ""
+
 msgid "Reading your contacts file and checking existing contacts..."
 msgstr ""
 

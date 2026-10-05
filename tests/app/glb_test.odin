@@ -212,7 +212,7 @@ glb_material_opacity :: proc(t: ^testing.T) {
 		delete(bytes)
 		testing.expect(t, view != nil)
 		if view == nil {continue}
-		color := model_vert_colors(view, 0)[0]
+		color := model_vert_colors(view, 0, model_corner_normals(view, 0))[0]
 		want := mode == "OPAQUE" ? f32(1) : (mode == "MASK" ? f32(0) : f32(0.25))
 		testing.expect_value(t, color.a, want)
 		stl_view_free(view)

@@ -1,9 +1,8 @@
 // The Model Inspector: the sidebar next to a model in the preview
 // modal, and the per-vertex coloring every one of its modes produces.
 //
-// The renderer is the same painter-sorted triangle soup the STL tile
-// has always drawn, so a "channel" here is a color function, not a
-// shader:
+// The renderer is the STL tile's software raster, so a "channel"
+// here is a color function, not a shader:
 //
 //   model_vert_colors → one FColor per triangle corner, per mode
 //   model_vert_uvs    → tex coords, only the UV-checker mode uses them
@@ -37,8 +36,7 @@ WIRE_COLORS := [7]rl.FColor {
 MATCAP_LIGHT :: [3]f32{-0.45, 0.62, 0.64} // upper-left key light, view space
 OVERLAY_WIDTH :: 0.9 // overlay quad half-width in layout px
 NORMAL_LEN :: 0.06 // vertex-normal spike length, unit-sphere units
-CHECKER_SIZE :: 256 // UV-checker texture, 16 squares across
-CHECKER_SQUARES :: 16
+CHECKER_SQUARES :: 16 // UV-checker squares across the unit UV square
 
 // Panel row: a mode plus the label the sidebar prints for it.
 Insp_Row :: struct {
@@ -160,15 +158,26 @@ heat :: proc(t: f32) -> [3]f32 {
 		clamp(1.2 - v * 2.4, 0, 1),
 	}
 }
+// The view-space normal at each corner of a triangle.
+@(private)
+model_corner_normals :: proc(view: ^Stl_View, tri: int) -> (out: [3][3]f32) {
+	for k in 0 ..< 3 {
+		out[k] = corner_normal(view, tri, k)
+	}
+	return
+}
+
 
 // One color per corner of a triangle: the whole inspector, per mode.
-model_vert_colors :: proc(view: ^Stl_View, tri: int) -> [3]rl.FColor {
+// `normals` are view-space corner normals; the stand-in passes its
+// own smooth ones, since its corners are not `tri`'s.
+model_vert_colors :: proc(view: ^Stl_View, tri: int, normals: [3][3]f32) -> [3]rl.FColor {
 	insp := &view.insp
 	mat := material_of(view, tri)
 	out: [3]rl.FColor
 
 	for k in 0 ..< 3 {
-		n := corner_normal(view, tri, k)
+		n := normals[k]
 		g := lambert(n)
 		rgb: [3]f32
 
@@ -238,9 +247,9 @@ model_vert_colors :: proc(view: ^Stl_View, tri: int) -> [3]rl.FColor {
 }
 
 // Tex coords for the UV-checker pass, zeroed for every other mode.
-// ponytail: UVs outside [0,1] clamp instead of tiling (the SDL
-// binding exposes no wrap mode), so a tiled unwrap shows a stretched
-// band at the seam.
+// ponytail: UVs outside [0,1] clamp instead of tiling, so a tiled
+// unwrap shows a stretched band at the seam; wrap them in stl.odin's
+// checker lookup to fix it.
 model_vert_uvs :: proc(view: ^Stl_View, tri: int) -> [3][2]f32 {
 	insp := &view.insp
 	if insp.mode != .Uv_Checker || insp.uv == nil {
@@ -257,8 +266,8 @@ model_vert_uvs :: proc(view: ^Stl_View, tri: int) -> [3][2]f32 {
 // ── Overlays ────────────────────────────────────────────────────────
 
 // Wireframe edges and vertex-normal spikes, as thin screen-space
-// quads appended to a second buffer. Built with the main vertex
-// buffer, so it follows the same rebuild key.
+// quads drawn over the raster. Built from view.rot once a full pass
+// completes, and again when the tile moves.
 build_overlay :: proc(view: ^Stl_View, cx, cy, scale: f32) {
 	clear(&view.over)
 	insp := &view.insp
@@ -274,14 +283,13 @@ build_overlay :: proc(view: ^Stl_View, cx, cy, scale: f32) {
 		color = {0.45, 0.72, 1, 1}
 	}
 
-	for idx in view.order {
-		tri := int(idx)
-		if insp.single_sided && view.shade[tri] < 0 {
+	for tri in 0 ..< ntri {
+		if insp.single_sided && tri_facing(view, tri) < 0 {
 			continue
 		}
 		at := tri * 9
 
-		// Screen position of each corner, matching stl_build_verts.
+		// Screen position of each corner, matching the raster.
 		p: [3]rl.Vector2
 		for k in 0 ..< 3 {
 			p[k] = {cx + view.rot[at + k * 3] * scale, cy - view.rot[at + k * 3 + 1] * scale}
@@ -334,30 +342,6 @@ push_quad :: proc(out: ^[dynamic]rl.Vertex, a, b: rl.Vector2, color: rl.FColor) 
 	append(out, v0, v1, v2, v2, v1, v3)
 }
 
-// The UV-checker texture, built once and kept for the session.
-checker_tex: rl.Texture2D
-checker_ready: bool
-
-checker_texture :: proc() -> ^rl.Texture2D {
-	if checker_ready {
-		return &checker_tex
-	}
-	pixels := make([]u8, CHECKER_SIZE * CHECKER_SIZE * 4)
-	defer delete(pixels)
-	cell := CHECKER_SIZE / CHECKER_SQUARES
-	for y in 0 ..< CHECKER_SIZE {
-		for x in 0 ..< CHECKER_SIZE {
-			light := ((x / cell) + (y / cell)) % 2 == 0
-			shade: u8 = light ? 220 : 90
-			at := (y * CHECKER_SIZE + x) * 4
-			pixels[at], pixels[at + 1], pixels[at + 2], pixels[at + 3] = shade, shade, shade, 255
-		}
-	}
-	checker_tex = rl.CreateStreamTexture(CHECKER_SIZE, CHECKER_SIZE)
-	rl.UpdateTexturePixels(&checker_tex, raw_data(pixels))
-	checker_ready = true
-	return &checker_tex
-}
 
 // ── Panel ───────────────────────────────────────────────────────────
 

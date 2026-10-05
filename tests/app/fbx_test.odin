@@ -173,7 +173,7 @@ fbx_modes_gated :: proc(t: ^testing.T) {
 
 	// The color path still has to answer for a static mesh.
 	view.insp.mode = .Matcap
-	colors := model_vert_colors(view, 0)
+	colors := model_vert_colors(view, 0, model_corner_normals(view, 0))
 	for c in colors {
 		testing.expect(t, c.a == 1)
 	}

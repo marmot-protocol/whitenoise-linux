@@ -1,28 +1,31 @@
 // Mesh chat attachments are decoded by isolated helpers, then drawn
-// through a clay Custom command. The stack has no
-// 3D API; models up to RASTER_MAX_TRIS rasterize on the CPU with a
-// real z-buffer into a streaming texture (layered shells sit closer
-// together than any per-triangle sort can order), and bigger ones
-// fall back to the painter's bucket sort + RenderGeometry, whose cost
-// scales better and whose small facets rarely misorder.
+// through a clay Custom command. The stack has no 3D API, so every
+// model rasterizes on the CPU with a real z-buffer into a streaming
+// texture; a still model costs one texture draw per frame.
 //
-//   parse_stl ─→ unit-sphere tris + face normals (once)
-//        stl_update: rotate + shade + bucket-sort   (orientation change)
-//        stl_draw:   rebuild cached vertex buffer   (orientation, zoom,
-//                    or bounds change) → DrawTrianglesClipped
-//        handle_stl: drag = orbit, wheel = zoom (over the tile)
+//   stl_view_make ─→ unit-sphere tris, face normals, and for models
+//                    over MESH_FRAME_TRIS a clustered stand-in (once)
+//   stl_draw: key (size, zoom, yaw, pitch) changed?
+//        small model: rasterize every triangle now
+//        big model:   rasterize the stand-in now, then the full mesh
+//                     in MESH_REFINE_BUDGET slices on later frames
+//   handle_orbit: drag = orbit, wheel = zoom (over the tile)
 //
-// Every stage is O(n) with no per-frame allocation; a still model
-// costs only the RenderGeometry call. Measured, 200k random tris per
-// orbit step: 125ms before; now 20.0ms at -o:minimal, 3.4ms at
-// -o:speed (the app build, see scripts/build.sh).
+// Each pass forks one thread per strip set of rows (up to 8). On 8
+// threads at a 600 px tile: a 104k-triangle stand-in takes ~5 ms, a
+// 135k-triangle model ~4 ms, and a 1.2M-triangle mesh refines in five
+// frames, so dragging, zooming and opening never wait on the full mesh.
 package main
 
 import "core:math"
+import "core:math/linalg"
 import "core:mem"
 import "core:os"
+import "core:slice"
 import "core:strconv"
 import "core:strings"
+import "core:thread"
+import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -36,9 +39,14 @@ STL_ZOOM_MIN :: 0.3
 STL_ZOOM_MAX :: 10.0
 STL_BASE :: rl.FColor{0.78, 0.80, 0.84, 1} // neutral resin gray
 
-// Painter's-order depth buckets; z spans [-1, 1] after unit-sphere
-// normalization, so 256 slices are far below visible error.
-STL_BUCKETS :: 65536
+// Most triangles one frame rasterizes. A model under it renders whole
+// on every change; a bigger one shows a stand-in of at most this many
+// first.
+MESH_FRAME_TRIS :: 150_000
+
+// Per-frame time the full-mesh refinement may take, shared by every
+// model on screen, so refining frames stay inside 60 fps.
+MESH_REFINE_BUDGET :: 6 * time.Millisecond
 
 // First field of every Custom-command payload: the renderer peeks it
 // to dispatch (mesh models and the G-code extrusion view share the
@@ -73,32 +81,31 @@ Orbit :: struct {
 	dirty: bool, // rotation-dependent caches need a rebuild
 }
 
-// One rendered mesh (STL or OBJ). tris/norms are computed once at
-// parse; the rotation caches (rot/shade/order) rebuild on orientation
-// change, and verts rebuilds when those or the tile placement change.
+// One rendered mesh (STL, OBJ, FBX or GLB). tris/norms/proxy are
+// computed once at parse; rot and the raster rebuild per pass.
 Stl_View :: struct {
 	kind:        Model_Kind, // .Mesh; must stay the first field
 	using orbit: Orbit,
 	tris:        []f32, // ntri * 9 vertex floats, unit-sphere normalized
 	norms:       []f32, // ntri * 3 unit face normals
-	rot:         []f32, // rotated tris, same layout
-	shade:       []f32, // per-tri view-space normal z (sign = facing)
-	order:       []i32, // triangle indices, back to front
-	verts:       []rl.Vertex, // cached draw buffer, ntri * 3
-	built:       [5]f32, // (cx, cy, scale, yaw, pitch) verts was built for
-	// View-space axes expressed in model space, rebuilt with the
-	// rotation caches. The inspector dots vertex normals against
-	// these instead of rotating a second normal buffer per frame.
+	rot:         []f32, // view-space tris, same layout, written by the full pass
+	proxy:       Mesh_Proxy, // empty for models under MESH_FRAME_TRIS
+	// View-space axes expressed in model space, set per pass. Corners
+	// rotate by them, and the inspector dots vertex normals against
+	// them instead of rotating a second normal buffer.
 	basis:       [3][3]f32,
 	insp:        Inspect, // render mode, overlays, FBX channels + animation
 	over:        [dynamic]rl.Vertex, // overlay quads (wireframe / normals)
 
-	// Software z-buffer raster (models under RASTER_MAX_TRIS): the
-	// painter's sort can't order stacked shells, so the surface is
-	// rasterized into a streaming texture with real depth instead.
-	// `built` doubles as its cache key ((rw, rh, zoom, yaw, pitch)
-	// there), so everything that already clears `built` to force a
-	// color rebuild invalidates the raster the same way.
+	// Software z-buffer raster. `built` is the pass key (rw, rh, zoom,
+	// yaw, pitch); clearing it forces a new pass after a color change.
+	// raster_tex shows the last finished picture while a big model's
+	// full pass fills pix over several frames.
+	built:       [5]f32,
+	rotated:     bool, // the full pass has filled rot
+	refined:     bool, // the full pass is done and on raster_tex
+	strip_next:  [RASTER_THREADS_MAX]int, // full pass progress per strip set
+	pass_time:   time.Duration, // synchronous cost of the last full-size pass start
 	pix:         []u8, // rw * rh RGBA
 	zbuf:        []f32,
 	raster_tex:  rl.Texture2D,
@@ -124,6 +131,16 @@ is_model_name :: proc(lower: string) -> bool {
 		strings.has_suffix(lower, ".fbx") ||
 		strings.has_suffix(lower, ".glb") \
 	)
+}
+
+// Decimated stand-in for a big model, drawn while the full mesh is
+// still rasterizing. All slices are per triangle, 9 floats each for
+// pos/nrm/rot. Built from the rest pose.
+Mesh_Proxy :: struct {
+	pos: []f32, // model-space corners
+	nrm: []f32, // smooth model-space corner normals
+	rot: []f32, // pos in view space for the current pass
+	src: []i32, // the full triangle each one takes material colors from
 }
 
 // One entry point for the timeline and the preview modal: parse any
@@ -154,17 +171,102 @@ stl_view_make :: proc(tris: []f32) -> ^Stl_View {
 		tris = tris,
 		norms = make([]f32, ntri * 3),
 		rot = make([]f32, len(tris)),
-		shade = make([]f32, ntri),
-		order = make([]i32, ntri),
-		verts = make([]rl.Vertex, ntri * 3),
 		insp = {wire = -1, anim = -1},
 	}
 	stl_face_normals(view)
+	view.proxy = mesh_proxy(tris, view.norms)
 	return view
 }
 
-// Unit face normals from the current triangle positions; stl_update
-// rotates these instead of re-deriving them from edges every
+// The stand-in, by vertex clustering: snap every corner to a grid
+// cell, merge each cell's corners into one vertex at their centroid
+// with their averaged face normal, and keep the triangles whose
+// corners land in three cells. Interpolating those smooth normals is
+// what hides the coarse triangles. The grid coarsens until the result
+// fits MESH_FRAME_TRIS. Runs where the view is made, off the UI thread.
+@(private = "file")
+mesh_proxy :: proc(tris, norms: []f32) -> (proxy: Mesh_Proxy) {
+	ntri := len(tris) / 9
+	if ntri <= MESH_FRAME_TRIS {
+		return
+	}
+
+	sum := make([dynamic][3]f32, context.temp_allocator) // corner positions per vertex
+	nrm := make([dynamic][3]f32, context.temp_allocator) // face normals per vertex
+	count := make([dynamic]f32, context.temp_allocator)
+	faces := make([dynamic][3]i32, context.temp_allocator) // vertex triples
+	src := make([dynamic]i32, context.temp_allocator)
+	for grid := 160; grid >= 8; grid = grid * 7 / 8 {
+		cells := make([]i32, grid * grid * grid, context.temp_allocator)
+		slice.fill(cells, -1)
+		clear(&sum)
+		clear(&nrm)
+		clear(&count)
+		clear(&faces)
+		clear(&src)
+
+		for tri in 0 ..< ntri {
+			n := [3]f32{norms[tri * 3], norms[tri * 3 + 1], norms[tri * 3 + 2]}
+			face: [3]i32
+			for k in 0 ..< 3 {
+				p := [3]f32 {
+					tris[tri * 9 + k * 3],
+					tris[tri * 9 + k * 3 + 1],
+					tris[tri * 9 + k * 3 + 2],
+				}
+				// Unit-sphere coordinates: [-1, 1] to [0, grid) per axis.
+				cell := 0
+				for axis in 0 ..< 3 {
+					at := int((p[axis] + 1) * 0.5 * f32(grid))
+					cell = cell * grid + clamp(at, 0, grid - 1)
+				}
+				if cells[cell] < 0 {
+					cells[cell] = i32(len(sum))
+					append(&sum, [3]f32{})
+					append(&nrm, [3]f32{})
+					append(&count, 0)
+				}
+				v := cells[cell]
+				sum[v] += p
+				count[v] += 1
+				// STL winding is unreliable: align each normal with the
+				// cell's running sum so flipped faces don't cancel out.
+				nrm[v] += linalg.dot(nrm[v], n) < 0 ? -n : n
+				face[k] = v
+			}
+			if face[0] != face[1] && face[1] != face[2] && face[0] != face[2] {
+				append(&faces, face)
+				append(&src, i32(tri))
+				if len(faces) > MESH_FRAME_TRIS {
+					break // over budget: try a coarser grid
+				}
+			}
+		}
+		if len(faces) <= MESH_FRAME_TRIS {
+			break
+		}
+	}
+
+	proxy = {
+		pos = make([]f32, len(faces) * 9),
+		nrm = make([]f32, len(faces) * 9),
+		rot = make([]f32, len(faces) * 9),
+		src = slice.clone(src[:]),
+	}
+	for face, i in faces {
+		for v, k in face {
+			at := i * 9 + k * 3
+			p := sum[v] / count[v]
+			n := linalg.normalize0(nrm[v])
+			copy(proxy.pos[at:at + 3], p[:])
+			copy(proxy.nrm[at:at + 3], n[:])
+		}
+	}
+	return
+}
+
+// Unit face normals from the current triangle positions; the raster
+// passes rotate these instead of re-deriving them from edges every
 // orientation change. A posed FBX frame re-runs this, since skinning
 // moved the vertices.
 stl_face_normals :: proc(view: ^Stl_View) {
@@ -193,135 +295,62 @@ stl_face_normals :: proc(view: ^Stl_View) {
 	}
 }
 
-// Rebuild the rotation-dependent caches: rotated verts, headlight
-// shading from the rotated face normal, and the paint order via an
-// O(n) depth bucket sort (a comparison sort here was the frame-rate
-// bottleneck).
-@(private = "file")
-stl_update :: proc(view: ^Stl_View) {
-	if !view.dirty {
-		return
-	}
-	view.dirty = false
-
-	cy, sy := math.cos(view.yaw), math.sin(view.yaw)
-	cp, sp := math.cos(view.pitch), math.sin(view.pitch)
-	ntri := len(view.tris) / 9
-
-	// Rows of the rotation matrix below: the view's right/up/forward
-	// axes in model space, for the inspector's per-vertex shading.
-	view.basis = {{cy, 0, sy}, {sy * sp, cp, -cy * sp}, {-sy * cp, sp, cy * cp}}
-
-	// z ∈ [-1, 1] → bucket; count, prefix-sum, place. Far (small z)
-	// buckets paint first. 64k buckets: layered shells sit ~0.007
-	// apart in unit-sphere space, so 256 buckets tied them and file
-	// order picked the winner per triangle.
-	bucket := make([]u16, ntri, context.temp_allocator)
-	counts := make([]i32, STL_BUCKETS, context.temp_allocator)
-
-	for i in 0 ..< ntri {
-		// Yaw about Y, then pitch about X; +z faces the viewer.
-		for k in 0 ..< 3 {
-			at := i * 9 + k * 3
-			x, y, z := view.tris[at], view.tris[at + 1], view.tris[at + 2]
-			rx := x * cy + z * sy
-			tz := -x * sy + z * cy
-			view.rot[at] = rx
-			view.rot[at + 1] = y * cp - tz * sp
-			view.rot[at + 2] = y * sp + tz * cp
-		}
-
-		// STL winding is not reliable, so the default shading takes
-		// |nz| of the rotated normal rather than culling backfaces.
-		// The signed value is kept: Single Sided culls on it.
-		nx, ny, nz := view.norms[i * 3], view.norms[i * 3 + 1], view.norms[i * 3 + 2]
-		view.shade[i] = ny * sp + (-nx * sy + nz * cy) * cp
-
-		at := i * 9
-		// Nearest corner, not the centroid: a large face keeps a
-		// middling centroid while a sliver overlapping it sorts nearer
-		// and wrongly paints on top.
-		// ponytail: this path only serves models too big for the
-		// z-buffer raster, and can still misorder close layered
-		// sheets; raise RASTER_MAX_TRIS if that ever shows there.
-		z_near := max(view.rot[at + 2], view.rot[at + 5], view.rot[at + 8])
-		b := u16(clamp(int((z_near + 1) * (STL_BUCKETS / 2)), 0, STL_BUCKETS - 1))
-		bucket[i] = b
-		counts[b] += 1
-	}
-
-	next := make([]i32, STL_BUCKETS, context.temp_allocator)
-	total: i32
-	for c, b in counts {
-		next[b] = total
-		total += c
-	}
-	for i in 0 ..< ntri {
-		b := bucket[i]
-		view.order[next[b]] = i32(i)
-		next[b] += 1
-	}
-}
-
-// Rebuild the cached vertex buffer for a tile placement. Skipped
-// entirely when nothing moved, so a still model costs only the
-// RenderGeometry call per frame.
-@(private = "file")
-stl_build_verts :: proc(view: ^Stl_View, cx, cy, scale: f32) {
-	key := [5]f32{cx, cy, scale, view.yaw, view.pitch}
-	if view.built == key {
-		return
-	}
-	view.built = key
-
-	for idx, i in view.order {
-		at := int(idx) * 9
-		// Single Sided drops back-facing triangles by collapsing them
-		// to a point, which keeps every buffer index stable.
-		if view.insp.single_sided && view.shade[idx] < 0 {
-			p := rl.Vertex {
-				position = {cx, cy},
-			}
-			view.verts[i * 3], view.verts[i * 3 + 1], view.verts[i * 3 + 2] = p, p, p
-			continue
-		}
-
-		colors := model_vert_colors(view, int(idx))
-		uvs := model_vert_uvs(view, int(idx))
-		for k in 0 ..< 3 {
-			view.verts[i * 3 + k] = {
-				position  = {
-					cx + view.rot[at + k * 3] * scale,
-					cy - view.rot[at + k * 3 + 1] * scale,
-				},
-				color     = colors[k],
-				tex_coord = {uvs[k][0], uvs[k][1]},
-			}
-		}
-	}
-
-	build_overlay(view, cx, cy, scale)
-}
-
-// Under this, the model draws through the software z-buffer; over it,
-// the painter's sort (raster setup cost scales with triangles, and a
-// huge STL orbits fine sorted: its facets are small).
-RASTER_MAX_TRIS :: 150_000
-
 @(private)
 ORBIT_RASTER_SIZE :: 256 // longest edge while dragging; full resolution returns on release
 
-// Rasterize the model into view.pix with a real depth test, at the
-// tile's pixel size. Rebuilds only when the key (size, orbit, or a
-// cleared `built`) moves; a still model costs one texture draw.
-@(private = "file")
-stl_raster :: proc(view: ^Stl_View, w, h: i32) -> (rebuilt: bool) {
-	key := [5]f32{f32(w), f32(h), view.zoom, view.yaw, view.pitch}
-	if view.built == key {
-		return false
-	}
-	view.built = key
+// A view whose full-size pass (the stand-in, or a whole small model)
+// took longer than this drags at ORBIT_RASTER_SIZE instead.
+@(private)
+ORBIT_PASS_BUDGET :: 8 * time.Millisecond
 
+// The triangles one pass draws: the full mesh, or the stand-in.
+@(private = "file")
+Raster_Mesh :: struct {
+	pos, rot: []f32, // model- and view-space corners, 9 floats per triangle
+	// Stand-in only: smooth corner normals, and the full triangle each
+	// takes material colors from. Stand-ins skip textures, since their
+	// corners have no UVs.
+	nrm:      []f32,
+	src:      []i32,
+}
+
+// Passes fork up to this many threads and join them before returning,
+// so no raster thread outlives a frame or a reload.
+@(private = "file")
+RASTER_THREADS_MAX :: 8
+
+// Threads own interleaved strips of this many rows, which keeps them
+// evenly loaded when the model fills only the middle of the tile.
+@(private = "file")
+RASTER_STRIP :: 8
+
+// One thread's share of a pass: a triangle range to rotate, or a set of
+// strips to rasterize every triangle of the pass into.
+@(private = "file")
+Raster_Job :: struct {
+	view:        ^Stl_View,
+	mesh:        Raster_Mesh,
+	first, last: int, // rotate: this thread's triangles
+	band:        int, // raster: rows whose strip % threads == band
+	threads:     int,
+	deadline:    time.Tick, // raster: stop here and resume next frame; {} = never
+}
+
+// Probed once, not a syscall per pass.
+@(private = "file")
+raster_thread_count: int
+
+@(private = "file")
+raster_threads :: proc() -> int {
+	if raster_thread_count == 0 {
+		raster_thread_count = clamp(os.get_processor_core_count(), 1, RASTER_THREADS_MAX)
+	}
+	return raster_thread_count
+}
+
+// Size the buffers to the tile and clear them for a new pass.
+@(private = "file")
+raster_clear :: proc(view: ^Stl_View, w, h: i32) {
 	if view.rw != w || view.rh != h {
 		delete(view.pix)
 		delete(view.zbuf)
@@ -332,175 +361,389 @@ stl_raster :: proc(view: ^Stl_View, w, h: i32) -> (rebuilt: bool) {
 		view.rw, view.rh = w, h
 	}
 	mem.zero_slice(view.pix)
-	for &z in view.zbuf {
-		z = math.NEG_INF_F32
-	}
+	slice.fill(view.zbuf, math.NEG_INF_F32)
+}
 
+// View-space z of a triangle's face normal; negative faces away.
+// Only Single Sided culls on it: STL winding is unreliable, so the
+// shading itself takes |nz|.
+@(private)
+tri_facing :: proc(view: ^Stl_View, tri: int) -> f32 {
+	n, b := view.norms[tri * 3:tri * 3 + 3], view.basis[2]
+	return n[0] * b[0] + n[1] * b[1] + n[2] * b[2]
+}
+
+// Narrow a row span [lo, hi] (pixel-center x) to where a + b * x >= 0.
+@(private = "file")
+span_clip :: proc(span: ^[2]f32, a, b: f32) {
+	switch {
+	case b > 0:
+		span[0] = max(span[0], -a / b)
+	case b < 0:
+		span[1] = min(span[1], -a / b)
+	case a < 0:
+		span^ = {1, 0} // never true on this row
+	}
+}
+
+// One view-space triangle of the job's mesh into the job's strips of
+// pix, with a depth test. Colors are looked up at the first pixel the
+// triangle wins: most triangles of a dense mesh win none.
+@(private = "file")
+raster_tri :: proc(job: ^Raster_Job, i: int) {
+	view, mesh := job.view, job.mesh
+	w, h := view.rw, view.rh
 	cx, cy := f32(w) / 2, f32(h) / 2
 	scale := f32(min(w, h)) * 0.45 * view.zoom
-	checker := view.insp.mode == .Uv_Checker && view.insp.uv != nil
-	textured := len(view.insp.images) > 0
+
+	// Screen-space corners; z stays in view units for the test.
+	p := mesh.rot[i * 9:i * 9 + 9]
+	x0 := cx + p[0] * scale
+	y0 := cy - p[1] * scale
+	z0 := p[2]
+	x1 := cx + p[3] * scale
+	y1 := cy - p[4] * scale
+	z1 := p[5]
+	x2 := cx + p[6] * scale
+	y2 := cy - p[7] * scale
+	z2 := p[8]
+
+	// Most triangles of a dense mesh sit inside one strip, so every
+	// thread but its owner drops them here.
+	lo_y := clamp(int(math.floor(min(y0, y1, y2))), 0, int(h) - 1)
+	hi_y := clamp(int(math.ceil(max(y0, y1, y2))), 0, int(h) - 1)
+	if lo_y / RASTER_STRIP == hi_y / RASTER_STRIP &&
+	   (lo_y / RASTER_STRIP) % job.threads != job.band {
+		return
+	}
+
+	tri := mesh.src == nil ? i : int(mesh.src[i])
+	if view.insp.single_sided && tri_facing(view, tri) < 0 {
+		return
+	}
+
+	area := (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)
+	if area == 0 {
+		return
+	}
+	inv := 1 / area
+
+	lo_x := clamp(int(math.floor(min(x0, x1, x2))), 0, int(w) - 1)
+	hi_x := clamp(int(math.ceil(max(x0, x1, x2))), 0, int(w) - 1)
+	if lo_x > hi_x || lo_y > hi_y {
+		return
+	}
+
+	full := mesh.src == nil
+	checker := full && view.insp.mode == .Uv_Checker && view.insp.uv != nil
+	textured := full && len(view.insp.images) > 0
 	cell := f32(CHECKER_SQUARES)
+	shaded := false
+	colors: [3]rl.FColor
+	uvs: [3][2]f32
+	basis: [5][3]f32
 
-	ntri := len(view.tris) / 9
-	for tri in 0 ..< ntri {
-		if view.insp.single_sided && view.shade[tri] < 0 {
+	for py in lo_y ..= hi_y {
+		if (py / RASTER_STRIP) % job.threads != job.band {
 			continue
 		}
-		at := tri * 9
-		// Screen-space corners; z stays in view units for the test.
-		x0 := cx + view.rot[at] * scale
-		y0 := cy - view.rot[at + 1] * scale
-		z0 := view.rot[at + 2]
-		x1 := cx + view.rot[at + 3] * scale
-		y1 := cy - view.rot[at + 4] * scale
-		z1 := view.rot[at + 5]
-		x2 := cx + view.rot[at + 6] * scale
-		y2 := cy - view.rot[at + 7] * scale
-		z2 := view.rot[at + 8]
+		fy := f32(py) + 0.5
+		row := py * int(w)
 
-		area := (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)
-		if area == 0 {
-			continue
-		}
-		inv := 1 / area
-
-		lo_x := clamp(int(math.floor(min(x0, x1, x2))), 0, int(w) - 1)
-		hi_x := clamp(int(math.ceil(max(x0, x1, x2))), 0, int(w) - 1)
-		lo_y := clamp(int(math.floor(min(y0, y1, y2))), 0, int(h) - 1)
-		hi_y := clamp(int(math.ceil(max(y0, y1, y2))), 0, int(h) - 1)
-		if lo_x > hi_x || lo_y > hi_y {
-			continue
-		}
-
-		colors := model_vert_colors(view, tri)
-		uvs: [3][2]f32
-		basis: [5][3]f32
-		if checker {
-			uvs = model_vert_uvs(view, tri)
-		} else if textured {
-			for k in 0 ..< 3 {
-				uvs[k] = {view.insp.uv[tri * 6 + k * 2], view.insp.uv[tri * 6 + k * 2 + 1]}
+		// Barycentric weights; signs flip with winding, so inside = all
+		// three on the same side as the area. Along a row each is
+		// linear in x (a + b * fx), so the row is clipped to where all
+		// three are >= 0 and no pixel outside the triangle is visited.
+		a0, b0 := (x1 * (y2 - fy) - x2 * (y1 - fy)) * inv, (y1 - y2) * inv
+		a1, b1 := (x2 * (y0 - fy) - x0 * (y2 - fy)) * inv, (y2 - y0) * inv
+		span := [2]f32{f32(lo_x) + 0.5, f32(hi_x) + 0.5}
+		span_clip(&span, a0, b0)
+		span_clip(&span, a1, b1)
+		span_clip(&span, 1 - a0 - a1, -b0 - b1)
+		for px in int(math.ceil(span[0] - 0.5)) ..= int(math.floor(span[1] - 0.5)) {
+			fx := f32(px) + 0.5
+			w0 := a0 + b0 * fx
+			w1 := a1 + b1 * fx
+			w2 := 1 - w0 - w1
+			// Rounding at the span ends can still land a hair outside.
+			if w0 < 0 || w1 < 0 || w2 < 0 {
+				continue
 			}
-			if view.insp.mode == .Final {basis = model_texture_basis(view, tri)}
-		}
-
-		for py in lo_y ..= hi_y {
-			fy := f32(py) + 0.5
-			row := py * int(w)
-			for px in lo_x ..= hi_x {
-				fx := f32(px) + 0.5
-				// Barycentric weights; signs flip with winding, so
-				// inside = all three on the same side as the area.
-				w0 := ((x1 - fx) * (y2 - fy) - (x2 - fx) * (y1 - fy)) * inv
-				w1 := ((x2 - fx) * (y0 - fy) - (x0 - fx) * (y2 - fy)) * inv
-				w2 := 1 - w0 - w1
-				if w0 < 0 || w1 < 0 || w2 < 0 {
-					continue
+			z := w0 * z0 + w1 * z1 + w2 * z2
+			if z <= view.zbuf[row + px] {
+				continue
+			}
+			if !shaded {
+				shaded = true
+				normals: [3][3]f32
+				if full {
+					normals = model_corner_normals(view, tri)
+				} else {
+					for k in 0 ..< 3 {
+						normals[k] = view_space(view.basis, mesh.nrm[i * 9 + k * 3:])
+					}
 				}
-				z := w0 * z0 + w1 * z1 + w2 * z2
-				if z <= view.zbuf[row + px] {
-					continue
-				}
-				r := w0 * colors[0].r + w1 * colors[1].r + w2 * colors[2].r
-				g := w0 * colors[0].g + w1 * colors[1].g + w2 * colors[2].g
-				b := w0 * colors[0].b + w1 * colors[1].b + w2 * colors[2].b
-				alpha := w0 * colors[0].a + w1 * colors[1].a + w2 * colors[2].a
+				colors = model_vert_colors(view, tri, normals)
 				if checker {
-					u := w0 * uvs[0][0] + w1 * uvs[1][0] + w2 * uvs[2][0]
-					v := w0 * uvs[0][1] + w1 * uvs[1][1] + w2 * uvs[2][1]
-					// The same 16-square pattern the texture bakes,
-					// clamped like the GPU path (no wrap mode there).
-					iu := int(clamp(u, 0, 0.9999) * cell)
-					iv := int(clamp(v, 0, 0.9999) * cell)
-					tone := (iu + iv) % 2 == 0 ? f32(220.0 / 255.0) : f32(90.0 / 255.0)
-					r *= tone
-					g *= tone
-					b *= tone
+					uvs = model_vert_uvs(view, tri)
 				} else if textured {
-					uv := uvs[0] * w0 + uvs[1] * w1 + uvs[2] * w2
-					color := model_texture_color(
-						view,
-						tri,
-						uv,
-						{w0, w1, w2},
-						basis,
-						{r, g, b, alpha},
-					)
-					r, g, b, alpha = color.r, color.g, color.b, color.a
+					for k in 0 ..< 3 {
+						uvs[k] = {view.insp.uv[tri * 6 + k * 2], view.insp.uv[tri * 6 + k * 2 + 1]}
+					}
+					if view.insp.mode == .Final {basis = model_texture_basis(view, tri)}
 				}
-				// ponytail: alpha cutouts; translucent surfaces need a sorted blend pass.
-				if alpha < 0.5 {continue}
-				view.zbuf[row + px] = z
-				out := (row + px) * 4
-				view.pix[out] = u8(clamp(r, 0, 1) * 255)
-				view.pix[out + 1] = u8(clamp(g, 0, 1) * 255)
-				view.pix[out + 2] = u8(clamp(b, 0, 1) * 255)
-				view.pix[out + 3] = 255
 			}
+			r := w0 * colors[0].r + w1 * colors[1].r + w2 * colors[2].r
+			g := w0 * colors[0].g + w1 * colors[1].g + w2 * colors[2].g
+			b := w0 * colors[0].b + w1 * colors[1].b + w2 * colors[2].b
+			alpha := w0 * colors[0].a + w1 * colors[1].a + w2 * colors[2].a
+			if checker {
+				u := w0 * uvs[0][0] + w1 * uvs[1][0] + w2 * uvs[2][0]
+				v := w0 * uvs[0][1] + w1 * uvs[1][1] + w2 * uvs[2][1]
+				// 16 squares across the unit UV square,
+				// clamped rather than tiled.
+				iu := int(clamp(u, 0, 0.9999) * cell)
+				iv := int(clamp(v, 0, 0.9999) * cell)
+				tone := (iu + iv) % 2 == 0 ? f32(220.0 / 255.0) : f32(90.0 / 255.0)
+				r *= tone
+				g *= tone
+				b *= tone
+			} else if textured {
+				uv := uvs[0] * w0 + uvs[1] * w1 + uvs[2] * w2
+				color := model_texture_color(view, tri, uv, {w0, w1, w2}, basis, {r, g, b, alpha})
+				r, g, b, alpha = color.r, color.g, color.b, color.a
+			}
+			// ponytail: alpha cutouts; translucent surfaces need a sorted blend pass.
+			if alpha < 0.5 {continue}
+			view.zbuf[row + px] = z
+			out := (row + px) * 4
+			view.pix[out] = u8(clamp(r, 0, 1) * 255)
+			view.pix[out + 1] = u8(clamp(g, 0, 1) * 255)
+			view.pix[out + 2] = u8(clamp(b, 0, 1) * 255)
+			view.pix[out + 3] = 255
 		}
 	}
-	rl.UpdateTexturePixels(&view.raster_tex, raw_data(view.pix))
-	return true
 }
+
+// Model space to view space through the pass's basis rows: yaw about
+// Y, then pitch about X, +z facing the viewer. `v` starts at x.
+@(private = "file")
+view_space :: #force_inline proc(b: [3][3]f32, v: []f32) -> [3]f32 {
+	x, y, z := v[0], v[1], v[2]
+	return {
+		b[0][0] * x + b[0][1] * y + b[0][2] * z,
+		b[1][0] * x + b[1][1] * y + b[1][2] * z,
+		b[2][0] * x + b[2][1] * y + b[2][2] * z,
+	}
+}
+
+// Rotate the job's triangles into view space.
+@(private = "file")
+rotate_job :: proc(job: ^Raster_Job) {
+	b, mesh := job.view.basis, job.mesh
+	for at := job.first * 9; at < job.last * 9; at += 3 {
+		p := view_space(b, mesh.pos[at:])
+		mesh.rot[at], mesh.rot[at + 1], mesh.rot[at + 2] = p[0], p[1], p[2]
+	}
+}
+
+// Rasterize the job's strips from triangle `first` on, until done or
+// past the deadline; `first` is left where the next frame resumes.
+@(private = "file")
+strip_job :: proc(shared: ^Raster_Job) {
+	// A local copy: the jobs sit side by side in one array, and bumping
+	// `first` there per triangle bounced their cache lines between
+	// cores on every read of view and mesh.
+	job := shared^
+	defer shared.first = job.first
+	for job.first < job.last {
+		raster_tri(&job, job.first)
+		job.first += 1
+		// The clock is read every 4096 triangles; per triangle it
+		// would cost about as much as the triangle.
+		if job.deadline != {} &&
+		   job.first % 4096 == 0 &&
+		   time.tick_diff(job.deadline, time.tick_now()) > 0 {
+			return
+		}
+	}
+}
+
+// Run one job per thread and wait for all of them.
+@(private = "file")
+fork_join :: proc(jobs: []Raster_Job, work: proc(job: ^Raster_Job)) {
+	workers: [RASTER_THREADS_MAX]^thread.Thread
+	for &job, t in jobs {
+		workers[t] = thread.create_and_start_with_poly_data(&job, work)
+	}
+	for worker in workers[:len(jobs)] {
+		thread.join(worker)
+		thread.destroy(worker)
+	}
+}
+
+// Rotate a whole mesh, one triangle range per thread.
+@(private = "file")
+raster_rotate :: proc(view: ^Stl_View, mesh: Raster_Mesh) {
+	n := raster_threads()
+	count := len(mesh.pos) / 9
+	per := (count + n - 1) / n
+	jobs: [RASTER_THREADS_MAX]Raster_Job
+	for &job, t in jobs[:n] {
+		job = {
+			view  = view,
+			mesh  = mesh,
+			first = min(t * per, count),
+			last  = min((t + 1) * per, count),
+		}
+	}
+	fork_join(jobs[:n], rotate_job)
+}
+
+// Rasterize a rotated mesh, one strip set per thread, each resuming at
+// next[band]. Done once every strip set has drawn every triangle.
+@(private = "file")
+raster_strips :: proc(
+	view: ^Stl_View,
+	mesh: Raster_Mesh,
+	next: []int,
+	deadline: time.Tick,
+) -> (
+	done: bool,
+) {
+	n := raster_threads()
+	count := len(mesh.pos) / 9
+	jobs: [RASTER_THREADS_MAX]Raster_Job
+	for &job, t in jobs[:n] {
+		job = {
+			view     = view,
+			mesh     = mesh,
+			first    = next[t],
+			last     = count,
+			band     = t,
+			threads  = n,
+			deadline = deadline,
+		}
+	}
+	fork_join(jobs[:n], strip_job)
+
+	done = true
+	for job, t in jobs[:n] {
+		next[t] = job.first
+		done &&= job.first == count
+	}
+	return
+}
+
+// One refinement deadline per frame for every model on screen, so two
+// big tiles share MESH_REFINE_BUDGET instead of each taking it.
+@(private = "file")
+refine_frame: u32
+@(private = "file")
+refine_deadline: time.Tick
 
 // Clay renderer hook for the Custom command, clipped to the tile so
 // zoom can't bleed over neighboring rows.
 stl_draw :: proc(view: ^Stl_View, bounds: clay.BoundingBox) {
-	stl_update(view)
+	w := i32(bounds.width * UI_SCALE / UI_ZOOM)
+	h := i32(bounds.height * UI_SCALE / UI_ZOOM)
+	// Drags stay sharp unless the last full-size pass was too slow to
+	// redo every frame (a slow machine, or per-pixel texture sampling).
+	downscaled :=
+		orbit_drag == &view.orbit &&
+		orbit_moved &&
+		view.pass_time > ORBIT_PASS_BUDGET &&
+		max(w, h) > ORBIT_RASTER_SIZE
+	if downscaled {
+		ratio := f32(ORBIT_RASTER_SIZE) / f32(max(w, h))
+		w = max(1, i32(f32(w) * ratio))
+		h = max(1, i32(f32(h) * ratio))
+	}
+	if w <= 0 || h <= 0 {
+		return
+	}
 
-	// Textures need per-pixel sampling; the large-mesh SDL fallback only colors vertices.
-	if len(view.tris) / 9 <= RASTER_MAX_TRIS || len(view.insp.images) > 0 {
-		w := i32(bounds.width * UI_SCALE / UI_ZOOM)
-		h := i32(bounds.height * UI_SCALE / UI_ZOOM)
-		if orbit_drag == &view.orbit && orbit_moved && max(w, h) > ORBIT_RASTER_SIZE {
-			ratio := f32(ORBIT_RASTER_SIZE) / f32(max(w, h))
-			w = max(1, i32(f32(w) * ratio))
-			h = max(1, i32(f32(h) * ratio))
-		}
-		if w > 0 && h > 0 {
-			rebuilt := stl_raster(view, w, h)
-			rl.DrawTextureRect(
-				&view.raster_tex,
-				bounds.x,
-				bounds.y,
-				bounds.width,
-				bounds.height,
-				{255, 255, 255, 255},
-			)
-			cx := bounds.x + bounds.width / 2
-			cy := bounds.y + bounds.height / 2
-			scale := min(bounds.width, bounds.height) * 0.45 * view.zoom
-			okey := [5]f32{cx, cy, scale, view.yaw, view.pitch}
-			if rebuilt || view.over_built != okey {
-				view.over_built = okey
-				build_overlay(view, cx, cy, scale)
+	// A new key starts a pass. A big model puts its stand-in on screen
+	// in this frame and leaves the full mesh to later ones.
+	// ponytail: the stand-in is built from the rest pose, so a posed
+	// FBX skips it and rasterizes in full every change; re-cluster the
+	// posed tris if a big animated model shows up.
+	full := Raster_Mesh {
+		pos = view.tris,
+		rot = view.rot,
+	}
+	stand_in := len(view.proxy.src) > 0 && !view.insp.posed
+	key := [5]f32{f32(w), f32(h), view.zoom, view.yaw, view.pitch}
+	started := view.built != key
+	pass_start := time.tick_now()
+	if started {
+		view.built = key
+		cy, sy := math.cos(view.yaw), math.sin(view.yaw)
+		cp, sp := math.cos(view.pitch), math.sin(view.pitch)
+		view.basis = {{cy, 0, sy}, {sy * sp, cp, -cy * sp}, {-sy * cp, sp, cy * cp}}
+		view.rotated, view.refined, view.strip_next = false, false, {}
+		raster_clear(view, w, h)
+		if stand_in {
+			proxy := Raster_Mesh {
+				pos = view.proxy.pos,
+				rot = view.proxy.rot,
+				nrm = view.proxy.nrm,
+				src = view.proxy.src,
 			}
-			if len(view.over) > 0 {
-				rl.DrawTrianglesClipped(
-					view.over[:],
-					bounds.x,
-					bounds.y,
-					bounds.width,
-					bounds.height,
-				)
-			}
-			return
+			next: [RASTER_THREADS_MAX]int
+			raster_rotate(view, proxy)
+			raster_strips(view, proxy, next[:], {})
+			rl.UpdateTexturePixels(&view.raster_tex, raw_data(view.pix))
+			raster_clear(view, w, h)
 		}
 	}
 
-	stl_build_verts(
-		view,
-		bounds.x + bounds.width / 2,
-		bounds.y + bounds.height / 2,
-		min(bounds.width, bounds.height) * 0.45 * view.zoom,
+	// Small models finish in one go; a big one's full pass spends the
+	// frame's shared budget and shows only once complete.
+	finished := false
+	if !view.refined && !(started && stand_in) {
+		deadline: time.Tick
+		if stand_in {
+			if refine_frame != anim_frame || refine_deadline == {} {
+				refine_frame = anim_frame
+				refine_deadline = time.tick_add(time.tick_now(), MESH_REFINE_BUDGET)
+			}
+			deadline = refine_deadline
+		}
+		if !view.rotated {
+			raster_rotate(view, full)
+			view.rotated = true
+		}
+		finished = raster_strips(view, full, view.strip_next[:], deadline)
+		view.refined = finished
+		if finished {
+			rl.UpdateTexturePixels(&view.raster_tex, raw_data(view.pix))
+		}
+	}
+	if started && !downscaled {
+		view.pass_time = time.tick_since(pass_start)
+	}
+	if !view.refined {
+		anim_moving += 1 // keep frames coming until the full pass lands
+	}
+
+	rl.DrawTextureRect(
+		&view.raster_tex,
+		bounds.x,
+		bounds.y,
+		bounds.width,
+		bounds.height,
+		{255, 255, 255, 255},
 	)
 
-	texture: ^rl.Texture2D
-	if view.insp.mode == .Uv_Checker && view.insp.uv != nil {
-		texture = checker_texture()
+	cx := bounds.x + bounds.width / 2
+	cy := bounds.y + bounds.height / 2
+	scale := min(bounds.width, bounds.height) * 0.45 * view.zoom
+	okey := [5]f32{cx, cy, scale, view.yaw, view.pitch}
+	if finished || view.over_built != okey {
+		view.over_built = okey
+		build_overlay(view, cx, cy, scale)
 	}
-	rl.DrawTrianglesClipped(view.verts, bounds.x, bounds.y, bounds.width, bounds.height, texture)
 	if len(view.over) > 0 {
 		rl.DrawTrianglesClipped(view.over[:], bounds.x, bounds.y, bounds.width, bounds.height)
 	}
@@ -514,9 +757,10 @@ stl_view_free :: proc(view: ^Stl_View) {
 	delete(view.tris)
 	delete(view.norms)
 	delete(view.rot)
-	delete(view.shade)
-	delete(view.order)
-	delete(view.verts)
+	delete(view.proxy.pos)
+	delete(view.proxy.nrm)
+	delete(view.proxy.rot)
+	delete(view.proxy.src)
 	delete(view.pix)
 	delete(view.zbuf)
 	rl.UnloadTexture(view.raster_tex)

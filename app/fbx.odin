@@ -281,7 +281,6 @@ fbx_apply_pose :: proc(view: ^Stl_View, payload: []u8) -> bool {
 	for &v in view.insp.vnrm {v = transmute(f32)fbx_wire_u32(&r)}
 	view.insp.posed = view.insp.anim >= 0
 	stl_face_normals(view)
-	view.dirty = true
 	view.built = {}
 	return true
 }
