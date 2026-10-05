@@ -9,9 +9,8 @@
 //   build_overlay     → wireframe / vertex-normal quads, drawn after
 //   inspector_panel   → the sidebar itself
 //
-// Modes needing data a format doesn't carry (skin weights, materials,
-// UVs) stay listed but unavailable, so the panel doesn't reshuffle
-// between files.
+// Modes needing data the file doesn't carry (skin weights, materials,
+// UVs, or a mesh small enough for overlays) are left off the panel.
 package main
 
 import "core:fmt"
@@ -158,6 +157,7 @@ heat :: proc(t: f32) -> [3]f32 {
 		clamp(1.2 - v * 2.4, 0, 1),
 	}
 }
+
 // The view-space normal at each corner of a triangle.
 @(private)
 model_corner_normals :: proc(view: ^Stl_View, tri: int) -> (out: [3][3]f32) {
@@ -166,7 +166,6 @@ model_corner_normals :: proc(view: ^Stl_View, tri: int) -> (out: [3][3]f32) {
 	}
 	return
 }
-
 
 // One color per corner of a triangle: the whole inspector, per mode.
 // `normals` are view-space corner normals; the stand-in passes its
@@ -366,31 +365,10 @@ inspector_panel :: proc(view: ^Stl_View, height: f32) {
 	) {
 		clay.Text(tr("Model inspector"), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
 
-		insp_caption("MiWireCap", tr("WIREFRAME"), len(WIRE_COLORS) - 1)
-		if clay.UI(clay.ID("MiWireRow"))(
-		{layout = {childGap = 4, sizing = {width = clay.SizingGrow()}}},
-		) {
-			for color, i in WIRE_COLORS {
-				on := view.insp.wire == i || (i == 0 && view.insp.wire <= 0)
-				if clay.UI(clay.ID("MiWire", u32(i)))(
-				{
-					layout = {
-						sizing = {width = clay.SizingFixed(20), height = clay.SizingFixed(20)},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = i == 0 ? ROW_BG : {color.r * 255, color.g * 255, color.b * 255, 255},
-					cornerRadius = rr(4),
-					border = {color = on ? ACCENT : ELEVATED_BORDER, width = bw()},
-				},
-				) {
-					if i == 0 {
-						clay.Text(
-							ICON_CLOSE,
-							{fontId = FONT_ICON, fontSize = 9, textColor = TEXT_DIM},
-						)
-					}
-				}
-			}
+		// The overlay shares the wireframe mode's triangle ceiling.
+		if mode_ready(view, .Wireframe) {
+			insp_caption("MiWireCap", tr("WIREFRAME"), len(WIRE_COLORS) - 1)
+			insp_wire_row(view)
 		}
 
 		insp_toggle_row(view)
@@ -406,6 +384,33 @@ inspector_panel :: proc(view: ^Stl_View, height: f32) {
 	scrollbar(clay.ID("MiPanel"))
 }
 
+// The overlay color swatches; the first one turns the overlay off.
+@(private = "file")
+insp_wire_row :: proc(view: ^Stl_View) {
+	if clay.UI(clay.ID("MiWireRow"))(
+	{layout = {childGap = 4, sizing = {width = clay.SizingGrow()}}},
+	) {
+		for color, i in WIRE_COLORS {
+			on := view.insp.wire == i || (i == 0 && view.insp.wire <= 0)
+			if clay.UI(clay.ID("MiWire", u32(i)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(20), height = clay.SizingFixed(20)},
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = i == 0 ? ROW_BG : {color.r * 255, color.g * 255, color.b * 255, 255},
+				cornerRadius = rr(4),
+				border = {color = on ? ACCENT : ELEVATED_BORDER, width = bw()},
+			},
+			) {
+				if i == 0 {
+					clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 9, textColor = TEXT_DIM})
+				}
+			}
+		}
+	}
+}
+
 // ALL-CAPS eyebrow with the count of pickable rows, as in the rest of
 // the settings panes.
 @(private = "file")
@@ -418,8 +423,9 @@ insp_caption :: proc(id: string, label: string, count: int) {
 	}
 }
 
-// Caption plus one row per mode. Unavailable rows stay visible and
-// dimmed, so the panel keeps its shape across files.
+// Caption plus one row per mode the file has data for; a section with
+// none is left out entirely. Row ids keep the mode's index, so the
+// click pass matches them whatever is hidden.
 @(private = "file")
 insp_section :: proc(view: ^Stl_View, section: Insp_Section) {
 	ready := 0
@@ -428,10 +434,15 @@ insp_section :: proc(view: ^Stl_View, section: Insp_Section) {
 			ready += 1
 		}
 	}
+	if ready == 0 {
+		return
+	}
 	insp_caption(fmt.tprintf("%sCap", section.id), tr(section.label), ready)
 
 	for row, i in section.rows {
-		available := mode_ready(view, row.mode)
+		if !mode_ready(view, row.mode) {
+			continue
+		}
 		selected := view.insp.mode == row.mode
 		if clay.UI(clay.ID(section.id, u32(i)))(
 		{
@@ -440,11 +451,11 @@ insp_section :: proc(view: ^Stl_View, section: Insp_Section) {
 				padding = {left = 6, right = 6, top = 5, bottom = 5},
 				childAlignment = {y = .Center},
 			},
-			backgroundColor = selected ? ACCENT : (available && hovered() ? HOVER : ROW_BG),
+			backgroundColor = selected ? ACCENT : (hovered() ? HOVER : ROW_BG),
 			cornerRadius = rr(6),
 		},
 		) {
-			color := selected ? PLATE : (available ? TEXT : TEXT_DIM)
+			color := selected ? PLATE : TEXT
 			clay.Text(tr(row.label), {fontId = FONT_BODY, fontSize = 11, textColor = color})
 		}
 	}
