@@ -256,9 +256,11 @@ text_attachment_layout :: proc(t: ^testing.T) {
 		sender = strings.clone("Max"),
 	}
 	defer message_free(msg)
-	append(&msg.att_names, strings.clone("audit.jsonl"), strings.clone("notes.md"))
-	append(&msg.codes, Att_Item(^Code_View){code, 0})
-	append(&msg.txts, Att_Item(^Txt_View){markdown, 1})
+	append(
+		&msg.attachments,
+		Att_Slot{name = strings.clone("audit.jsonl"), kind = .Code, state = .Ready, view = code},
+		Att_Slot{name = strings.clone("notes.md"), kind = .Text, state = .Ready, view = markdown},
+	)
 	previous := clay.GetCurrentContext()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 800})
@@ -271,7 +273,7 @@ text_attachment_layout :: proc(t: ^testing.T) {
 	clay.BeginLayout()
 	message_row(0, msg)
 	commands := clay.EndLayout(0)
-	for id, i in ([]clay.ElementId{clay.ID("MsgCode", 0), clay.ID("MsgTxt", 0)}) {
+	for id, i in ([]clay.ElementId{clay.ID("MsgCode", 0), clay.ID("MsgTxt", 1)}) {
 		box := clay.GetElementData(id).boundingBox
 		testing.expect_value(t, box.width, i == 0 ? f32(480) : f32(320))
 		testing.expect(t, box.height <= 320)

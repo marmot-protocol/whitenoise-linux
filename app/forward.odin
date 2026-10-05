@@ -348,7 +348,7 @@ do_forward :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 	index := forward_source(ui)
 	if index < 0 || dest < 0 || dest >= len(ui.chats) {return}
 	msg := ui.messages[index]
-	if msg.body == "" && len(msg.att_names) == 0 {return}
+	if msg.body == "" && len(msg.attachments) == 0 {return}
 	info := profile_info(client, ui.account_ref)
 	send_ticket += 1
 	p := Pending_Send {
@@ -361,7 +361,7 @@ do_forward :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 		body          = strings.clone(msg.body),
 		effect        = msg.effect,
 	}
-	if len(msg.att_names) > 0 {
+	if len(msg.attachments) > 0 {
 		p.sticker = sticker_ref_clone(msg.sticker)
 		p.forward = forward_snapshot(ui, client)
 	}

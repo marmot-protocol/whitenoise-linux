@@ -35,9 +35,13 @@ transcript_owns_loaded_window :: proc(t: ^testing.T) {
 	}
 	append(&ui.chats, Chat_Row_Ui{group_id = "group", title = "Title"})
 	append(&ui.messages, Msg_Ui{id = "first", body = body, sender = "Alice", at_full = "now"})
-	append(&ui.messages[0].att_names, "missing.png", "file.pdf", "")
-	ui.messages[0].att_rejected[2] = "Invalid attachment."
-	defer {delete(ui.messages[0].att_names); delete(ui.messages[0].att_rejected)
+	append(
+		&ui.messages[0].attachments,
+		Att_Slot{name = "missing.png"},
+		Att_Slot{name = "file.pdf"},
+		Att_Slot{state = .Rejected, rejection = "Invalid attachment."},
+	)
+	defer {delete(ui.messages[0].attachments)
 		delete(ui.messages)
 		delete(ui.chats)}
 	export_chat(&ui, nil, .Html)

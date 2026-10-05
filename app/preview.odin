@@ -8,7 +8,6 @@ package main
 import "base:runtime"
 import "core:fmt"
 import "core:mem"
-import "core:slice"
 import "core:strings"
 import "core:sync"
 import "core:thread"
@@ -296,38 +295,22 @@ clone_bytes :: proc(bytes: []u8) -> []u8 {
 preview_show_slides :: proc(ui: ^Ui_State, msg_id: string, att: int) {
 	preview_close()
 	for msg in ui.messages {
-		// Merge loaded and failed images back into attachment order.
-		row := make([dynamic]Slide, context.temp_allocator)
-		for entry in msg.images {
-			append(
-				&row,
-				Slide {
-					msg.id,
-					msg.att_names[entry.att],
-					entry.att,
-					entry.view,
-					msg.att_keys[entry.att],
-				},
-			)
-		}
-		for entry in msg.img_failed {
-			append(&row, Slide{msg.id, msg.att_names[entry.att], entry.att, nil, ""})
-		}
-		slice.sort_by(row[:], proc(a, b: Slide) -> bool {
-			return a.att < b.att
-		})
-		for s in row {
-			if s.msg_id == msg_id && s.att == att {
+		// Loaded and failed images alike, in attachment order.
+		for slot, i in msg.attachments {
+			if slot.kind != .Image && slot.kind != .Sticker {continue}
+			if slot.state != .Ready && slot.state != .Failed {continue}
+			if msg.id == msg_id && i == att {
 				preview.slide = len(preview.slides)
 			}
+			tex, ready := slot.view.(^rl.Texture2D)
 			append(
 				&preview.slides,
 				Slide {
-					strings.clone(s.msg_id),
-					strings.clone(s.name),
-					s.att,
-					s.tex,
-					strings.clone(s.key),
+					strings.clone(msg.id),
+					strings.clone(slot.name),
+					i,
+					tex,
+					strings.clone(ready ? slot.key : ""),
 				},
 			)
 		}

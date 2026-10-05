@@ -16,13 +16,6 @@ import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
-// A tile-list element: the rendered view plus the media index it
-// came from, so every tile can name its attachment to the save flow.
-Att_Item :: struct($V: typeid) {
-	view: V,
-	att:  int,
-}
-
 // One attachment pick: enough to re-find the media reference later
 // (records are freed after every timeline load, so nothing marmot
 // owns can be retained).

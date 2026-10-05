@@ -27,7 +27,7 @@ message_matches :: proc(
 	   old.theme_name != "" ||
 	   record.tags_len != 0 ||
 	   record.media_len != 0 ||
-	   len(old.att_names) != 0 ||
+	   len(old.attachments) != 0 ||
 	   record.reactions.by_emoji_len != 0 ||
 	   len(old.reactions) != 0 ||
 	   record.reply_to_message_id_hex != nil ||
@@ -108,35 +108,12 @@ message_free :: proc(msg: Msg_Ui) {
 		blocks_free(opt.blocks)
 	}
 	delete(msg.poll_opts)
-	for name in msg.att_names {
-		delete(name)
+	// Views and textures belong to the session caches; slots own only strings.
+	for slot in msg.attachments {
+		delete(slot.name)
+		delete(slot.key)
 	}
-	for key in msg.att_keys {
-		delete(key)
-	}
-	for entry in msg.img_failed {
-		delete(entry.view)
-	}
-	delete(msg.att_names)
-	delete(msg.att_keys)
-	delete(msg.att_rejected)
-	delete(msg.img_failed)
-	delete(msg.files)
-	delete(msg.media_pending)
-	// Views and textures belong to the session caches, only arrays belong here.
-	delete(msg.images)
-	delete(msg.models)
-	delete(msg.videos)
-	delete(msg.audios)
-	delete(msg.gcodes)
-	delete(msg.pdfs)
-	delete(msg.arcs)
-	delete(msg.tors)
-	delete(msg.xdcs)
-	delete(msg.txts)
-	delete(msg.codes)
-	delete(msg.fonts)
-	delete(msg.nes)
+	delete(msg.attachments)
 }
 
 @(private)

@@ -51,11 +51,6 @@ Media_Key :: struct {
 	key:  string,
 	kind: Media_Kind,
 }
-@(private)
-Media_Pending :: struct {
-	index: int,
-	kind:  Media_Kind,
-}
 
 // UI owns the queue and caches. Workers own individual jobs until done;
 // only the UI creates textures or publishes views into session caches.
@@ -217,75 +212,78 @@ media_attach :: proc(
 	outcome: ^marmot.Media_Attachment_Outcome,
 	emoji: string, // NIP-30 shortcode this attachment defines, "" otherwise
 ) {
+	// marmot lists outcomes in imeta order with attachment_index equal to
+	// the position, so appending keeps slot index = source index.
 	if outcome.tag == .REJECTED {
-		index := int(outcome.body.rejected.attachment_index)
-		resize(&msg.att_names, index + 1)
-		resize(&msg.att_keys, index + 1)
-		msg.att_rejected[index] = media_rejection_text(outcome.body.rejected.rejection.kind)
+		assert(int(outcome.body.rejected.attachment_index) == len(msg.attachments))
+		append(
+			&msg.attachments,
+			Att_Slot {
+				state = .Rejected,
+				rejection = media_rejection_text(outcome.body.rejected.rejection.kind),
+			},
+		)
 		return
 	}
-	index := int(outcome.body.accepted.attachment_index)
+	assert(int(outcome.body.accepted.attachment_index) == len(msg.attachments))
 	ref := &outcome.body.accepted.reference
 	name := ref.file_name != nil ? string(ref.file_name) : ""
 	key := ref.plaintext_sha256 != nil ? string(ref.plaintext_sha256) : name
-	resize(&msg.att_names, index + 1)
-	resize(&msg.att_keys, index + 1)
-	msg.att_names[index] = strings.clone(name != "" ? name : "attachment")
-	msg.att_keys[index] = strings.clone(key)
 	kind := media_kind(name, ref.media_type != nil ? string(ref.media_type) : "")
 	if key == msg.sticker.sha && msg.sticker.sha != "" {kind = .Sticker}
-	if emoji != "" {kind = .Emoji; key = emoji}
-	view, seen := media_cached(kind, key)
-	if !seen {
-		media_enqueue(client, account, group, ref, kind, key)
-		if kind != .Emoji {append(&msg.media_pending, Media_Pending{index, kind})}
-		return
-	}
-	media_ready(msg, kind, key, index, view)
+	// A NIP-30 emoji asset caches under its shortcode and is drawn by it,
+	// never in the row, so its slot needs no loading state.
+	cache_key := key
+	if emoji != "" {kind, cache_key = .Emoji, emoji}
+	append(
+		&msg.attachments,
+		Att_Slot {
+			name = strings.clone(name != "" ? name : "attachment"),
+			key = strings.clone(key),
+			kind = kind,
+		},
+	)
+	view, seen := media_cached(kind, cache_key)
+	if !seen {media_enqueue(client, account, group, ref, kind, cache_key)}
+	if !seen && kind != .Emoji {return}
+	media_ready(&msg.attachments[len(msg.attachments) - 1], view)
 }
 
+// Resolve a slot from its cache entry. A nil view is a failed download
+// or decode; kinds with nothing to decode stay ready without a view.
 @(private)
-media_ready :: proc(msg: ^Msg_Ui, kind: Media_Kind, key: string, index: int, view: rawptr) {
-	if kind == .Emoji {return}
+media_ready :: proc(slot: ^Att_Slot, view: rawptr) {
+	slot.state = .Ready
+	if slot.kind == .File || slot.kind == .Emoji {return}
 	if view == nil {
-		#partial switch kind {
-		case .Image, .Sticker:
-			media_insert(&msg.img_failed, Att_Item(string){strings.clone(key), index})
-		case .Mesh, .Gcode, .Video, .Loop, .Pdf:
-			msg.media_failed = true
-		case:
-			append(&msg.files, index)
-			slice.sort(msg.files[:])
-		}
+		slot.state = .Failed
 		return
 	}
-	switch kind {
+	switch slot.kind {
 	case .Image, .Sticker:
-		media_insert(&msg.images, Att_Item(^rl.Texture2D){(^rl.Texture2D)(view), index})
+		slot.view = (^rl.Texture2D)(view)
 	case .Mesh:
-		media_insert(&msg.models, Att_Item(^Stl_View){(^Stl_View)(view), index})
+		slot.view = (^Stl_View)(view)
 	case .Gcode:
-		media_insert(&msg.gcodes, Att_Item(^Gcode_View){(^Gcode_View)(view), index})
-	case .Video, .Loop:
-		media_insert(&msg.videos, Att_Item(^Video_View){(^Video_View)(view), index})
-	case .Audio:
-		media_insert(&msg.audios, Att_Item(^Video_View){(^Video_View)(view), index})
+		slot.view = (^Gcode_View)(view)
+	case .Video, .Loop, .Audio:
+		slot.view = (^Video_View)(view)
 	case .Pdf:
-		media_insert(&msg.pdfs, Att_Item(^Pdf_View){(^Pdf_View)(view), index})
+		slot.view = (^Pdf_View)(view)
 	case .Xdc:
-		media_insert(&msg.xdcs, Att_Item(^Xdc_View){(^Xdc_View)(view), index})
+		slot.view = (^Xdc_View)(view)
 	case .Arc:
-		media_insert(&msg.arcs, Att_Item(^Arc_View){(^Arc_View)(view), index})
+		slot.view = (^Arc_View)(view)
 	case .Torrent:
-		media_insert(&msg.tors, Att_Item(^Tor_View){(^Tor_View)(view), index})
+		slot.view = (^Tor_View)(view)
 	case .Text:
-		media_insert(&msg.txts, Att_Item(^Txt_View){(^Txt_View)(view), index})
+		slot.view = (^Txt_View)(view)
 	case .Code:
-		media_insert(&msg.codes, Att_Item(^Code_View){(^Code_View)(view), index})
+		slot.view = (^Code_View)(view)
 	case .Font:
-		media_insert(&msg.fonts, Att_Item(^Ttf_View){(^Ttf_View)(view), index})
+		slot.view = (^Ttf_View)(view)
 	case .Nes:
-		media_insert(&msg.nes, Att_Item(^Nes_View){(^Nes_View)(view), index})
+		slot.view = (^Nes_View)(view)
 	case .File, .Emoji, .Original:
 	}
 }
@@ -603,11 +601,12 @@ media_drain :: proc(ui: ^Ui_State) {
 				msg.row_height = 0
 				ui.scroll_pending ||= at_bottom
 			}
-			for j := len(msg.media_pending) - 1; j >= 0; j -= 1 {
-				p := msg.media_pending[j]
-				if p.kind != job.kind || msg.att_keys[p.index] != job.key {continue}
-				media_ready(&msg, p.kind, job.key, p.index, view)
-				ordered_remove(&msg.media_pending, j)
+			// Several slots, in one message or many, can borrow one view.
+			for &slot in msg.attachments {
+				if slot.state != .Loading ||
+				   slot.kind != job.kind ||
+				   slot.key != job.key {continue}
+				media_ready(&slot, view)
 				msg.row_height = 0
 				ui.scroll_pending ||= at_bottom
 			}
@@ -637,12 +636,4 @@ media_stop :: proc() {
 		media_job_free(job)
 	}
 	clear(&media_jobs)
-}
-
-@(private)
-media_insert :: proc(items: ^[dynamic]Att_Item($T), entry: Att_Item(T)) {
-	append(items, entry)
-	for i := len(items^) - 1; i > 0 && items^[i - 1].att > items^[i].att; i -= 1 {
-		items^[i - 1], items^[i] = items^[i], items^[i - 1]
-	}
 }

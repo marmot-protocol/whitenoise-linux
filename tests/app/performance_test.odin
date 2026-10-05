@@ -50,10 +50,16 @@ message_storage_released :: proc(t: ^testing.T) {
 			Edit_Version{at = strings.clone("12:00"), text = strings.clone("old")},
 		)
 		append(&msg.history[0].blocks, Md_Block_Ui{text = strings.clone("old")})
-		append(&msg.att_names, strings.clone("picture.png"))
-		append(&msg.att_keys, strings.clone("hash"))
-		append(&msg.img_failed, Att_Item(string){strings.clone("hash"), 0})
-		append(&msg.media_pending, Media_Pending{1, .Image})
+		append(
+			&msg.attachments,
+			Att_Slot {
+				name = strings.clone("picture.png"),
+				key = strings.clone("hash"),
+				kind = .Image,
+				state = .Failed,
+			},
+			Att_Slot{name = strings.clone("next.png"), key = strings.clone("next"), kind = .Image},
+		)
 		message_free(msg)
 	}
 	testing.expect_value(t, len(track.allocation_map), 0)
@@ -141,11 +147,6 @@ media_reference_owned :: proc(t: ^testing.T) {
 	locator.value = "changed"
 	testing.expect_value(t, string(job.reference.locators[0].kind), "blossom")
 	testing.expect_value(t, string(job.reference.locators[0].value), "https://example.test/blob")
-	items: [dynamic]Att_Item(int)
-	defer delete(items)
-	media_insert(&items, Att_Item(int){3, 3})
-	media_insert(&items, Att_Item(int){1, 1})
-	testing.expect_value(t, items[0].att, 1)
 }
 
 @(test)
@@ -217,15 +218,19 @@ performance_media :: proc(t: ^testing.T) {
 		media_drain(&ui)
 	}
 	testing.expect_value(t, len(media_jobs), 0)
-	testing.expect_value(t, len(ui.messages[0].media_pending), 0)
-	testing.expect_value(t, len(ui.messages[0].txts), 3)
-	testing.expect_value(t, len(ui.messages[0].images), 1)
-	testing.expect_value(t, len(ui.messages[0].fonts), 1)
-	testing.expect_value(t, ui.messages[0].images[0].view.width, i32(72))
-	testing.expect_value(t, ui.messages[0].fonts[0].view.w, i32(640))
-	for entry, i in ui.messages[0].txts {
-		testing.expect_value(t, entry.att, i)
-		testing.expect_value(t, entry.view.blocks[0].text, fmt.tprintf("File %d", i))
+	slots := ui.messages[0].attachments[:]
+	testing.expect_value(t, len(slots), 5)
+	for slot in slots {testing.expect_value(t, slot.state, Att_State.Ready)}
+	for i in 0 ..< 3 {
+		if text, ok := slots[i].view.(^Txt_View); testing.expect(t, ok) {
+			testing.expect_value(t, text.blocks[0].text, fmt.tprintf("File %d", i))
+		}
+	}
+	if image, ok := slots[3].view.(^rl.Texture2D); testing.expect(t, ok) {
+		testing.expect_value(t, image.width, i32(72))
+	}
+	if font, ok := slots[4].view.(^Ttf_View); testing.expect(t, ok) {
+		testing.expect_value(t, font.w, i32(640))
 	}
 	fmt.printf("media workers=%d completed=5 timeline_reloads=0\n", MEDIA_WORKERS)
 	media_stop()

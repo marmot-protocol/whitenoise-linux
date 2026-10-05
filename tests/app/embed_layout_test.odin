@@ -41,9 +41,11 @@ embed_layout :: proc(t: ^testing.T) {
 			sender = "Sender",
 			mine   = true,
 		}
-		append(&msg.images, Att_Item(^rl.Texture2D){&tex, 0})
-		append(&msg.att_names, "screenshot.png")
-		defer {delete(msg.images); delete(msg.att_names)}
+		append(
+			&msg.attachments,
+			Att_Slot{name = "screenshot.png", kind = .Image, state = .Ready, view = &tex},
+		)
+		defer delete(msg.attachments)
 		for width in ([]f32{280, 800}) {
 			for frame in 0 ..< 3 {
 				clay.BeginLayout()

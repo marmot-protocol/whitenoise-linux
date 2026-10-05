@@ -271,6 +271,51 @@ Md_Block_Ui :: struct {
 	cell_fonts:         [][]string,
 }
 
+// One message attachment at its source imeta position. Rejected and
+// loading attachments keep their slots, so a slot's index is the index
+// save, download and forward hand back to marmot. Views are borrowed:
+// the kind's session cache (media_textures, video_views, ...) owns them.
+//
+//   imeta 0      1      2         3      4
+//         .File  .Image .Image    .Pdf   .Image
+//         Ready  Ready  Rejected  Failed Loading
+@(private)
+Att_Slot :: struct {
+	name:      string, // owned display name, "" when rejected
+	key:       string, // owned cache key (plaintext sha256), "" when rejected
+	rejection: string, // static translatable text while .Rejected
+	view:      Att_View, // set while .Ready, except for kinds with nothing to decode
+	kind:      Media_Kind,
+	state:     Att_State,
+}
+
+@(private)
+Att_State :: enum u8 {
+	Loading, // download queued; media_drain resolves it
+	Ready, // view set, or a kind with no inline renderer (.File, .Emoji)
+	Failed, // the cache holds a nil view: the download or decode failed
+	Rejected, // marmot refused the imeta tag
+}
+
+// Media_Kind picks the variant in media_ready, the only assignment.
+// .Video, .Loop and .Audio share ^Video_View; .Image and .Sticker
+// share ^rl.Texture2D.
+@(private)
+Att_View :: union {
+	^rl.Texture2D,
+	^Stl_View,
+	^Gcode_View,
+	^Video_View,
+	^Pdf_View,
+	^Xdc_View,
+	^Arc_View,
+	^Tor_View,
+	^Txt_View,
+	^Code_View,
+	^Ttf_View,
+	^Nes_View,
+}
+
 Msg_Ui :: struct {
 	excerpt:             Excerpt,
 	sticker:             Sticker_Ref,
@@ -290,24 +335,7 @@ Msg_Ui :: struct {
 	reply_text:          string,
 	reply_image:         string, // first parent image's session cache key
 	reply_id:            string, // parent message id, the preview's jump target
-	images:              [dynamic]Att_Item(^rl.Texture2D), // downloaded attachments, heap ptrs for clay
-	models:              [dynamic]Att_Item(^Stl_View), // STL attachments, owned by the stl_views cache
-	videos:              [dynamic]Att_Item(^Video_View), // video attachments, owned by the video_views cache
-	audios:              [dynamic]Att_Item(^Video_View), // audio attachments, same cache (mpv plays, no frames)
-	gcodes:              [dynamic]Att_Item(^Gcode_View), // g-code attachments, owned by the gcode_views cache
-	pdfs:                [dynamic]Att_Item(^Pdf_View), // pdf attachments, owned by the pdf_views cache
-	arcs:                [dynamic]Att_Item(^Arc_View), // archive attachments, owned by the arc_views cache
-	tors:                [dynamic]Att_Item(^Tor_View), // torrent metainfo, owned by the tor_views cache
-	xdcs:                [dynamic]Att_Item(^Xdc_View), // webxdc apps, owned by the xdc_views cache
-	txts:                [dynamic]Att_Item(^Txt_View), // text/markdown attachments, owned by the txt_views cache
-	codes:               [dynamic]Att_Item(^Code_View), // source attachments, owned by the code_views cache
-	fonts:               [dynamic]Att_Item(^Ttf_View), // font attachments, owned by the ttf_views cache
-	nes:                 [dynamic]Att_Item(^Nes_View), // NES cartridges, owned by the nes_views cache
-	att_names:           [dynamic]string, // every media reference by index, for the ctx-menu save rows
-	att_keys:            [dynamic]string, // cache key (plaintext sha256) per media index
-	att_rejected:        map[int]string, // source index to static, translatable rejection text
-	files:               [dynamic]int, // att_names indices with no inline renderer (chip rows)
-	img_failed:          [dynamic]Att_Item(string), // failed image cells: cache key + media index
+	attachments:         [dynamic]Att_Slot, // one per imeta tag; position = source attachment index
 	at:                  string, // HH:MM
 	at_full:             string, // full date + time, the stamp's hover tooltip
 	day:                 string, // YYYY-MM-DD or "Today", for day markers
@@ -322,8 +350,6 @@ Msg_Ui :: struct {
 	theme_swatch:        [THEME_SWATCHES]clay.Color, // parsed once at load, drawn every frame
 	deleted:             bool, // tombstone: placeholder row, no body/actions
 	edited:              bool, // kind-1009 edits applied; body holds the latest
-	media_failed:        bool, // an image attachment failed to download
-	media_pending:       [dynamic]Media_Pending,
 	effect:              int, // ["effect", key] burst id from the event tags, 0 = none
 	history:             [dynamic]Edit_Version,
 	poll_opts:           [dynamic]Poll_Opt_Ui, // MDK projection options; empty = not a poll

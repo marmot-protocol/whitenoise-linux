@@ -83,7 +83,11 @@ sticker_pack_index :: proc(ui: ^Ui_State, coordinate: string) -> int {
 @(private)
 message_sticker :: proc(ui: ^Ui_State, index: u32, msg: Msg_Ui) {
 	tex: ^rl.Texture2D
-	for image in msg.images {if msg.att_keys[image.att] == msg.sticker.sha {tex = image.view; break}}
+	for slot in msg.attachments {
+		if slot.kind != .Sticker {continue}
+		tex = slot.view.(^rl.Texture2D) or_continue
+		break
+	}
 	if tex == nil && ui != nil {
 		for item in ui.stickers {
 			if item.ref.pack == msg.sticker.pack &&
@@ -800,13 +804,13 @@ handle_sticker_panel :: proc(ui: ^Ui_State) {
 		}
 		for msg in ui.messages {
 			if msg.sticker.sha != ui.sticker_selected.sha {continue}
-			for key, i in msg.att_keys {
-				if key != ui.sticker_selected.sha {continue}
+			for slot in msg.attachments {
+				if slot.key != ui.sticker_selected.sha {continue}
 				job := sticker_job_add(.Receive)
 				job.item = {
-					ref = {sha = strings.clone(key), code = strings.clone(label)},
+					ref = {sha = strings.clone(slot.key), code = strings.clone(label)},
 					label = strings.clone(label),
-					mime = strings.clone(media_type_for(msg.att_names[i])),
+					mime = strings.clone(media_type_for(slot.name)),
 				}
 				return
 			}

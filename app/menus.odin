@@ -235,14 +235,14 @@ context_menu :: proc(ui: ^Ui_State) {
 					ctx_item("CtxRead", ICON_COMMENTS, tr("Read aloud"))
 				}
 			}
-			for att_name, i in msg.att_names {
-				if i in msg.att_rejected {
+			for slot, i in msg.attachments {
+				if slot.state == .Rejected {
 					continue
 				}
 				ctx_item(
 					fmt.tprintf("CtxSave%d", i),
 					ICON_DOWNLOAD,
-					fmt.tprintf(tr("Save %s"), att_name),
+					fmt.tprintf(tr("Save %s"), slot.name),
 				)
 			}
 			ctx_item("CtxDelMe", ICON_TRASH, tr("Delete for me"))

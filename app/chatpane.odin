@@ -1075,10 +1075,12 @@ shared_media_grid :: proc(ui: ^Ui_State, col_w: f32) {
 	thumbs := make([dynamic]Thumb, context.temp_allocator)
 	total := 0
 	for i := len(ui.messages) - 1; i >= 0; i -= 1 {
-		for entry in ui.messages[i].images {
+		for slot, att in ui.messages[i].attachments {
+			if slot.kind != .Image && slot.kind != .Sticker {continue}
+			tex := slot.view.(^rl.Texture2D) or_continue
 			total += 1
 			if len(thumbs) < SHARED_MEDIA_CAP {
-				append(&thumbs, Thumb{ui.messages[i].id, entry.att, entry.view})
+				append(&thumbs, Thumb{ui.messages[i].id, att, tex})
 			}
 		}
 	}

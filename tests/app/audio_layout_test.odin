@@ -39,10 +39,11 @@ audio_layout :: proc(t: ^testing.T) {
 			id     = fmt.aprintf("message%d", i),
 			sender = "Danny",
 		}
-		append(&msg.att_names, name)
-		append(&msg.att_keys, name)
 		blob_sizes[name] = i == 0 ? 2500000 : 20300
-		append(&msg.audios, Att_Item(^Video_View){&views[i], 0})
+		append(
+			&msg.attachments,
+			Att_Slot{name = name, key = name, kind = .Audio, state = .Ready, view = &views[i]},
+		)
 		append(&ui.messages, msg)
 	}
 	views[1].transcript = "If you're going to get mad at me every time I do something stupid, then I guess I'll just have to stop doing stupid things."

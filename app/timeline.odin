@@ -2,7 +2,6 @@ package main
 
 import "base:runtime"
 import "core:fmt"
-import "core:slice"
 import "core:strings"
 import "core:time"
 import "core:unicode/utf8"
@@ -141,14 +140,6 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 // Gap between mosaic cells, both axes.
 ALBUM_GAP :: 4
 
-// One album-grid cell: a loaded texture, or (tex nil) a failed
-// download identified by its cache key for the retry click.
-Img_Cell :: struct {
-	tex: ^rl.Texture2D,
-	att: int,
-	key: string,
-}
-
 // Failed image cell under the pointer (its cache key), rebound every
 // build.
 img_retry_hover: string
@@ -216,8 +207,8 @@ drop_nil_views :: proc(views: ^map[string]^$T) {
 // "1.4 MB" when this session has seen the blob's bytes, "" otherwise
 // (the imeta tag carries no size; see blob_sizes).
 att_size_label :: proc(msg: Msg_Ui, att: int) -> string {
-	if att < len(msg.att_keys) {
-		if size, ok := blob_sizes[msg.att_keys[att]]; ok {
+	if att < len(msg.attachments) {
+		if size, ok := blob_sizes[msg.attachments[att].key]; ok {
 			return human_size(size)
 		}
 	}
@@ -601,23 +592,124 @@ count_roll :: proc(slot: u32, count: string, was: string, t: f32) {
 	}
 }
 
-// Each sorted media list advances once while source attachment positions render.
+// Image cells: albums lay out as a justified mosaic. Each row gets one
+// height and cell widths follow each image's aspect
+// (h = row_width / sum(aspects)); extreme ratios are cropped so
+// screenshots cannot collapse into tiny strips. A leading landscape
+// image is promoted to a full-width hero and a greedy fill packs the
+// rest 2-3 per row, stopping once the row is tight enough. The shape
+// therefore varies with the aspect mix, like the telegram album
+// layouter. Failed cells ride along as 4:3 retry plates. `cells` is a
+// run of image slots starting at source index `first`.
 @(private = "file")
-media_at :: proc(
-	items: []Att_Item($T),
-	cursor: ^int,
-	att: int,
-) -> (
-	entry: Att_Item(T),
-	index: int,
-	ok: bool,
-) {
-	index = cursor^
-	if index >= len(items) || items[index].att != att {
-		return
+image_album :: proc(index: u32, msg: Msg_Ui, first: int, cells: []Att_Slot) {
+	aspect :: proc(cell: Att_Slot) -> f32 {
+		if tex, ok := cell.view.(^rl.Texture2D); ok && tex.height > 0 {
+			return clamp(f32(tex.width) / f32(tex.height), 0.5, 3)
+		}
+		return 4.0 / 3.0
 	}
-	cursor^ += 1
-	return items[index], index, true
+	Mosaic_Row :: struct {
+		start, count: int,
+		h:            f32,
+	}
+	n := len(cells)
+	album_w := att_w(n == 1 ? 480 : 400)
+	rows := make([dynamic]Mosaic_Row, context.temp_allocator)
+	i := 0
+	if n >= 3 && aspect(cells[0]) >= 1.15 {
+		append(&rows, Mosaic_Row{0, 1, 0})
+		i = 1
+	}
+	for i < n {
+		start := i
+		sum: f32
+		for i < n && i - start < 3 {
+			sum += aspect(cells[i])
+			i += 1
+			// Tight enough: stop before the row gets short.
+			if (album_w - ALBUM_GAP * f32(i - start - 1)) / sum <= 120 {
+				break
+			}
+		}
+		append(&rows, Mosaic_Row{start, i - start, 0})
+	}
+	for &row in rows {
+		sum: f32
+		for c in cells[row.start:row.start + row.count] {
+			sum += aspect(c)
+		}
+		row.h = min((album_w - ALBUM_GAP * f32(row.count - 1)) / sum, 320)
+	}
+
+	if clay.UI(clay.ID("MsgAlbum", index * 1024 + u32(first)))(
+	{layout = {layoutDirection = .TopToBottom, childGap = ALBUM_GAP}},
+	) {
+		for row in rows {
+			if clay.UI(clay.ID("MsgImgRow", index * 1024 + u32(first + row.start)))(
+			{layout = {childGap = ALBUM_GAP}},
+			) {
+				for cell, k in cells[row.start:row.start + row.count] {
+					att := first + row.start + k
+					cell_id := index * 1024 + u32(att)
+					cw := row.h * aspect(cell)
+					tex, ready := cell.view.(^rl.Texture2D)
+					if !ready {
+						if clay.UI(clay.ID("MsgImgFail", cell_id))(
+						{
+							layout = {
+								sizing = {
+									width = clay.SizingFixed(cw),
+									height = clay.SizingFixed(row.h),
+								},
+								padding = clay.PaddingAll(10),
+								childAlignment = {x = .Center, y = .Center},
+							},
+							backgroundColor = hovered() ? HOVER : PLATE,
+							cornerRadius = rr(8),
+						},
+						) {
+							if hovered() {
+								img_retry_hover = cell.key
+							}
+							clay.Text(
+								tr("Couldn't load image. Click to retry."),
+								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+							)
+						}
+						continue
+					}
+					view := new(Image_Crop, context.temp_allocator)
+					view^ = {
+						kind = .Image_Crop,
+						tex  = tex,
+					}
+					if clay.UI(clay.ID("MsgImage", cell_id))(
+					{
+						layout = {
+							sizing = {
+								width = clay.SizingFixed(cw),
+								height = clay.SizingFixed(row.h),
+							},
+						},
+						custom = {customData = view},
+						cornerRadius = rr(8),
+					},
+					) {
+						// Click opens the lightbox slideshow on this image
+						// (handle_img_click; dl chip wins via att_hover).
+						if hovered() {
+							img_hover = {
+								msg_id = msg.id,
+								att    = att,
+							}
+						}
+						att_dl_button("DlImg", cell_id, msg.id, att, cell.name)
+					}
+				}
+			}
+		}
+	}
 }
 
 // Discord-style grouping: a row continues the one above it when the same
@@ -833,39 +925,23 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				}
 			}
 
-			// Image cells: albums lay out as a justified mosaic. Each row
-			// gets one height and cell widths follow each image's aspect
-			// (h = row_width / sum(aspects)); extreme ratios are cropped so
-			// screenshots cannot collapse into tiny strips. A
-			// leading landscape image is promoted to a full-width hero and
-			// a greedy fill packs the rest 2-3 per row, stopping once the
-			// row is tight enough. The shape therefore varies with the
-			// aspect mix, like the telegram album layouter. Failed cells
-			// ride along as 4:3 retry plates.
-			img_cells := make([dynamic]Img_Cell, context.temp_allocator)
 			if msg.sticker.sha != "" {message_sticker(g_ui, index, msg)}
-			for entry in msg.images {
-				if msg.sticker.sha != "" && msg.att_keys[entry.att] == msg.sticker.sha {continue}
-				append(&img_cells, Img_Cell{entry.view, entry.att, ""})
-			}
-			for entry in msg.img_failed {
-				if msg.sticker.sha != "" && msg.att_keys[entry.att] == msg.sticker.sha {continue}
-				append(&img_cells, Img_Cell{nil, entry.att, entry.view})
-			}
-			slice.sort_by(img_cells[:], proc(a, b: Img_Cell) -> bool {
-				return a.att < b.att
-			})
-			// Keep rejected and loading slots between their accepted siblings.
-			image_pos, video_pos, audio_pos, pdf_pos, model_pos, gcode_pos: int
-			arc_pos, tor_pos, xdc_pos, nes_pos, text_pos, code_pos, font_pos, file_pos, pending_pos: int
-			for att := 0; att < len(msg.att_names); att += 1 {
-				if msg.sticker.sha != "" && msg.att_keys[att] == msg.sticker.sha {
-					if pending_pos < len(msg.media_pending) &&
-					   msg.media_pending[pending_pos].index == att {pending_pos += 1}
+			media_failed := false
+			// Seeds for the markdown and code-line id ranges, which share the
+			// row's index * 4096 band and so stay compact per kind.
+			text_seed, code_seed: u32
+			// Slots render in source order; rejected and loading slots keep
+			// their place between accepted siblings.
+			for att := 0; att < len(msg.attachments); att += 1 {
+				slot := msg.attachments[att]
+				id := index * 1024 + u32(att)
+				// The sticker draws above; an emoji asset draws wherever its
+				// shortcode appears.
+				if slot.kind == .Sticker || slot.kind == .Emoji {
 					continue
 				}
-				if rejection, rejected := msg.att_rejected[att]; rejected {
-					if clay.UI(clay.ID("MediaRejected", index * 1024 + u32(att)))(
+				if slot.state == .Rejected {
+					if clay.UI(clay.ID("MediaRejected", id))(
 					{
 						layout = {padding = clay.PaddingAll(12)},
 						backgroundColor = PLATE,
@@ -873,16 +949,14 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					},
 					) {
 						clay.Text(
-							tr(rejection),
+							tr(slot.rejection),
 							{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 						)
 					}
 					continue
 				}
-				if pending_pos < len(msg.media_pending) &&
-				   msg.media_pending[pending_pos].index == att {
-					pending_pos += 1
-					if clay.UI(clay.ID("MediaLoading", index * 1024 + u32(att)))(
+				if slot.state == .Loading {
+					if clay.UI(clay.ID("MediaLoading", id))(
 					{
 						layout = {padding = clay.PaddingAll(12)},
 						backgroundColor = PLATE,
@@ -896,139 +970,42 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					}
 					continue
 				}
-				// Only adjacent image slots share an album; a rejection breaks it.
-				start := image_pos
-				for image_pos < len(img_cells) &&
-				    img_cells[image_pos].att == att + image_pos - start {
-					image_pos += 1
-				}
-				cells := img_cells[start:image_pos]
-				aspect :: proc(c: Img_Cell) -> f32 {
-					if c.tex != nil && c.tex.height > 0 {
-						return clamp(f32(c.tex.width) / f32(c.tex.height), 0.5, 3)
+				// Only adjacent image slots share an album; a loading or
+				// other slot ends it (rejected slots carry no kind).
+				if slot.kind == .Image {
+					end := att + 1
+					for end < len(msg.attachments) &&
+					    msg.attachments[end].kind == .Image &&
+					    msg.attachments[end].state != .Loading {
+						end += 1
 					}
-					return 4.0 / 3.0
+					image_album(index, msg, att, msg.attachments[att:end])
+					att = end - 1
+					continue
 				}
-				Mosaic_Row :: struct {
-					start, count: int,
-					h:            f32,
-				}
-				n := len(cells)
-				album_w := att_w(n == 1 ? 480 : 400)
-				rows := make([dynamic]Mosaic_Row, context.temp_allocator)
-				i := 0
-				if n >= 3 && aspect(cells[0]) >= 1.15 {
-					append(&rows, Mosaic_Row{0, 1, 0})
-					i = 1
-				}
-				for i < n {
-					start := i
-					sum: f32
-					for i < n && i - start < 3 {
-						sum += aspect(cells[i])
-						i += 1
-						// Tight enough: stop before the row gets short.
-						if (album_w - ALBUM_GAP * f32(i - start - 1)) / sum <= 120 {
-							break
-						}
-					}
-					append(&rows, Mosaic_Row{start, i - start, 0})
-				}
-				for &row in rows {
-					sum: f32
-					for c in cells[row.start:row.start + row.count] {
-						sum += aspect(c)
-					}
-					row.h = min((album_w - ALBUM_GAP * f32(row.count - 1)) / sum, 320)
-				}
-				if len(rows) > 0 {
-					if clay.UI(clay.ID("MsgAlbum", index * 1024 + u32(att)))(
-					{layout = {layoutDirection = .TopToBottom, childGap = ALBUM_GAP}},
-					) {
-						for row in rows {
-							if clay.UI(
-								clay.ID("MsgImgRow", index * 1024 + u32(cells[row.start].att)),
-							)(
-								{layout = {childGap = ALBUM_GAP}},
-							) {
-								for cell in cells[row.start:row.start + row.count] {
-									cell_id := index * 1024 + u32(cell.att)
-									cw := row.h * aspect(cell)
-									if cell.tex != nil {
-										view := new(Image_Crop, context.temp_allocator)
-										view^ = {
-											kind = .Image_Crop,
-											tex  = cell.tex,
-										}
-										if clay.UI(clay.ID("MsgImage", cell_id))(
-										{
-											layout = {
-												sizing = {
-													width = clay.SizingFixed(cw),
-													height = clay.SizingFixed(row.h),
-												},
-											},
-											custom = {customData = view},
-											cornerRadius = rr(8),
-										},
-										) {
-											// Click opens the lightbox slideshow on this
-											// image (handle_img_click; dl chip wins via
-											// att_hover).
-											if hovered() {
-												img_hover = {
-													msg_id = msg.id,
-													att    = cell.att,
-												}
-											}
-											att_dl_button(
-												"DlImg",
-												cell_id,
-												msg.id,
-												cell.att,
-												msg.att_names[cell.att],
-											)
-										}
-									} else {
-										if clay.UI(clay.ID("MsgImgFail", cell_id))(
-										{
-											layout = {
-												sizing = {
-													width = clay.SizingFixed(cw),
-													height = clay.SizingFixed(row.h),
-												},
-												padding = clay.PaddingAll(10),
-												childAlignment = {x = .Center, y = .Center},
-											},
-											backgroundColor = hovered() ? HOVER : PLATE,
-											cornerRadius = rr(8),
-										},
-										) {
-											if hovered() {
-												img_retry_hover = cell.key
-											}
-											clay.Text(
-												tr("Couldn't load image. Click to retry."),
-												{
-													fontId = FONT_BODY,
-													fontSize = 11,
-													textColor = TEXT_DIM,
-												},
-											)
-										}
-									}
-								}
-							}
-						}
+				// Mesh, g-code, video and PDF failures share one retry banner
+				// below the slots; other kinds fall back to a file chip.
+				if slot.state == .Failed {
+					#partial switch slot.kind {
+					case .Mesh, .Gcode, .Video, .Loop, .Pdf:
+						media_failed = true
+						continue
 					}
 				}
-				// Video tiles: the mpv-fed texture, with a play glyph while
-				// paused. Click toggles pause (handle_video).
-				if entry, j, found := media_at(msg.videos[:], &video_pos, att); found {
-					view := entry.view
+				switch view in slot.view {
+				case ^rl.Texture2D: // drawn by image_album or message_sticker
+				case ^Video_View:
+					// Audio tiles: mpv plays through its own ao, no frames;
+					// the tile is the controls.
+					if slot.kind == .Audio {
+						audio_tile(id, msg.id, att, slot.name, att_size_label(msg, att), view)
+						break
+					}
+					// Video tiles: the mpv-fed texture, with a play glyph while
+					// paused. Click toggles pause (handle_video).
 					ratio := view.w > 0 && view.h > 0 ? f32(view.w) / f32(view.h) : 16.0 / 9.0
 					tile_w := min(att_w(), 320 * ratio)
-					if clay.UI(clay.ID("MsgVideo", index * 1024 + u32(j)))(
+					if clay.UI(clay.ID("MsgVideo", id))(
 					{
 						layout = {
 							sizing = {width = clay.SizingFixed(tile_w)},
@@ -1039,17 +1016,11 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						cornerRadius = rr(8),
 					},
 					) {
-						att_dl_button(
-							"DlVid",
-							index * 1024 + u32(j),
-							msg.id,
-							entry.att,
-							msg.att_names[entry.att],
-						)
+						att_dl_button("DlVid", id, msg.id, att, slot.name)
 						if hovered() {
 							video_hover = view
 						}
-						if clay.UI(clay.ID("MsgVideoFull", index * 1024 + u32(j)))(
+						if clay.UI(clay.ID("MsgVideoFull", id))(
 						{
 							layout = {padding = clay.PaddingAll(8)},
 							floating = {
@@ -1064,7 +1035,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						},
 						) {
 							if hovered() {
-								video_full_hover = {view, msg.att_names[entry.att]}
+								video_full_hover = {view, slot.name}
 								tooltip(tr("Fullscreen"))
 							}
 							clay.Text(
@@ -1077,7 +1048,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							)
 						}
 						if view.paused {
-							if clay.UI(clay.ID("MsgVideoPlay", index * 1024 + u32(j)))(
+							if clay.UI(clay.ID("MsgVideoPlay", id))(
 							{
 								layout = {
 									sizing = {
@@ -1102,7 +1073,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						}
 						// Duration stamp, bottom-right.
 						if !view.looping && view.dur > 0 {
-							if clay.UI(clay.ID("MsgVideoDur", index * 1024 + u32(j)))(
+							if clay.UI(clay.ID("MsgVideoDur", id))(
 							{
 								layout = {padding = {left = 6, right = 6, top = 2, bottom = 2}},
 								floating = {
@@ -1127,33 +1098,14 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 								)
 							}
 						}
-						video_scrub_bar(
-							clay.ID("MsgVideoBar", index * 1024 + u32(j)),
-							view,
-							tile_w,
-						)
+						video_scrub_bar(clay.ID("MsgVideoBar", id), view, tile_w)
 					}
-				}
-
-				// Audio tiles: mpv plays through its own ao, no frames; the
-				// tile is the controls.
-				if entry, j, found := media_at(msg.audios[:], &audio_pos, att); found {
-					audio_tile(
-						index * 1024 + u32(j),
-						msg.id,
-						entry.att,
-						msg.att_names[entry.att],
-						att_size_label(msg, entry.att),
-						entry.view,
-					)
-				}
 
 				// PDF tiles: one rendered page; prev/next chips when there
 				// are more.
-				if entry, j, found := media_at(msg.pdfs[:], &pdf_pos, att); found {
-					view := entry.view
+				case ^Pdf_View:
 					ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 0.77
-					if clay.UI(clay.ID("MsgPdf", index * 1024 + u32(j)))(
+					if clay.UI(clay.ID("MsgPdf", id))(
 					{
 						layout = {
 							sizing = {width = clay.SizingFixed(att_w())},
@@ -1164,14 +1116,8 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						cornerRadius = rr(8),
 					},
 					) {
-						att_dl_button(
-							"DlPdf",
-							index * 1024 + u32(j),
-							msg.id,
-							entry.att,
-							msg.att_names[entry.att],
-						)
-						if clay.UI(clay.ID("MsgPdfFull", index * 1024 + u32(j)))(
+						att_dl_button("DlPdf", id, msg.id, att, slot.name)
+						if clay.UI(clay.ID("MsgPdfFull", id))(
 						{
 							layout = {padding = clay.PaddingAll(8)},
 							floating = {
@@ -1186,7 +1132,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						},
 						) {
 							if hovered() {
-								pdf_full_hover = {msg.id, entry.att, msg.att_names[entry.att]}
+								pdf_full_hover = {msg.id, att, slot.name}
 								pdf_full_page = view.page
 								tooltip(tr("Fullscreen"))
 							}
@@ -1200,7 +1146,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							)
 						}
 						if view.pages > 1 {
-							if clay.UI(clay.ID("MsgPdfNav", index * 1024 + u32(j)))(
+							if clay.UI(clay.ID("MsgPdfNav", id))(
 							{
 								layout = {
 									padding = {left = 8, right = 8, top = 4, bottom = 4},
@@ -1211,7 +1157,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 								cornerRadius = rr(12),
 							},
 							) {
-								if clay.UI(clay.ID("MsgPdfPrev", index * 1024 + u32(j)))(
+								if clay.UI(clay.ID("MsgPdfPrev", id))(
 								{layout = {padding = clay.PaddingAll(4)}},
 								) {
 									if hovered() {
@@ -1235,7 +1181,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 										textColor = {255, 255, 255, 230},
 									},
 								)
-								if clay.UI(clay.ID("MsgPdfNext", index * 1024 + u32(j)))(
+								if clay.UI(clay.ID("MsgPdfNext", id))(
 								{layout = {padding = clay.PaddingAll(4)}},
 								) {
 									if hovered() {
@@ -1254,16 +1200,14 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							}
 						}
 					}
-				}
 
 				// 3D tiles: the plate rect comes from clay, the model itself
 				// from a Custom render command. Hover feeds the orbit/zoom
 				// handler. Plate and model are separate elements because clay
 				// folds a backgroundColor into the CUSTOM command instead of
 				// drawing it.
-				if entry, j, found := media_at(msg.models[:], &model_pos, att); found {
-					view := entry.view
-					if clay.UI(clay.ID("MsgModel", index * 1024 + u32(j)))(
+				case ^Stl_View:
+					if clay.UI(clay.ID("MsgModel", id))(
 					{
 						layout = {
 							sizing = {
@@ -1275,14 +1219,8 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						cornerRadius = rr(8),
 					},
 					) {
-						att_dl_button(
-							"DlMesh",
-							index * 1024 + u32(j),
-							msg.id,
-							entry.att,
-							msg.att_names[entry.att],
-						)
-						if clay.UI(clay.ID("MsgModelView", index * 1024 + u32(j)))(
+						att_dl_button("DlMesh", id, msg.id, att, slot.name)
+						if clay.UI(clay.ID("MsgModelView", id))(
 						{
 							layout = {
 								sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()},
@@ -1292,16 +1230,14 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						) {
 							if hovered() {
 								orbit_hover = &view.orbit
-								model_hover = {msg.id, entry.att, msg.att_names[entry.att]}
+								model_hover = {msg.id, att, slot.name}
 							}
 						}
 					}
-				}
 
 				// G-code tiles: same shape plus the print-progress slider.
-				if entry, j, found := media_at(msg.gcodes[:], &gcode_pos, att); found {
-					view := entry.view
-					if clay.UI(clay.ID("MsgGcode", index * 1024 + u32(j)))(
+				case ^Gcode_View:
+					if clay.UI(clay.ID("MsgGcode", id))(
 					{
 						layout = {
 							sizing = {
@@ -1313,14 +1249,8 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						cornerRadius = rr(8),
 					},
 					) {
-						att_dl_button(
-							"DlGc",
-							index * 1024 + u32(j),
-							msg.id,
-							entry.att,
-							msg.att_names[entry.att],
-						)
-						if clay.UI(clay.ID("MsgGcodeView", index * 1024 + u32(j)))(
+						att_dl_button("DlGc", id, msg.id, att, slot.name)
+						if clay.UI(clay.ID("MsgGcodeView", id))(
 						{
 							layout = {
 								sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()},
@@ -1333,7 +1263,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							}
 						}
 					}
-					bar_id := clay.ID("MsgGcodeBar", index * 1024 + u32(j))
+					bar_id := clay.ID("MsgGcodeBar", id)
 					append(&gcode_bars, Gcode_Bar{bar_id, view})
 					if clay.UI(bar_id)(
 					{
@@ -1349,7 +1279,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						cornerRadius = rr(7),
 					},
 					) {
-						if clay.UI(clay.ID("MsgGcodeFill", index * 1024 + u32(j)))(
+						if clay.UI(clay.ID("MsgGcodeFill", id))(
 						{
 							layout = {
 								sizing = {
@@ -1362,24 +1292,22 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						},
 						) {}
 					}
-				}
 
 				// Archive tiles: the file listing; clicking an entry opens it
 				// in the preview modal. An archive holding only a .nes ROM is
 				// a cartridge tile instead.
-				if entry, j, found := media_at(msg.arcs[:], &arc_pos, att); found {
-					view := entry.view
+				case ^Arc_View:
 					if view.nes != nil {
 						rom := view.entries[0].name
 						nes_tile(
 							view.nes,
-							index * 1024 + 512 + u32(j), // clear of plain .nes tile ids
+							id,
 							msg.id,
-							entry.att,
-							msg.att_names[entry.att],
+							att,
+							slot.name,
 							rom[strings.last_index_byte(rom, '/') + 1:],
 						)
-					} else if clay.UI(clay.ID("MsgArc", index * 1024 + u32(j)))(
+					} else if clay.UI(clay.ID("MsgArc", id))(
 					{
 						layout = {
 							layoutDirection = .TopToBottom,
@@ -1391,19 +1319,13 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						cornerRadius = rr(8),
 					},
 					) {
-						att_dl_button(
-							"DlArc",
-							index * 1024 + u32(j),
-							msg.id,
-							entry.att,
-							msg.att_names[entry.att],
-						)
+						att_dl_button("DlArc", id, msg.id, att, slot.name)
 						// The archive's own name, above its listing.
-						if clay.UI(clay.ID("MsgArcName", index * 1024 + u32(j)))(
+						if clay.UI(clay.ID("MsgArcName", id))(
 						{layout = {padding = {left = 6, bottom = 4}}},
 						) {
 							clay.Text(
-								arc_short_name(msg.att_names[entry.att]),
+								arc_short_name(slot.name),
 								{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
 							)
 						}
@@ -1412,19 +1334,17 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							if k >= rows {
 								break
 							}
-							if clay.UI(
-								clay.ID("MsgArcRow", index * 65536 + u32(j) * 4096 + u32(k)),
-							)(
-								{
-									layout = {
-										sizing = {width = clay.SizingGrow()},
-										childGap = 8,
-										padding = {left = 6, right = 6, top = 4, bottom = 4},
-										childAlignment = {y = .Center},
-									},
-									backgroundColor = hovered() ? HOVER : {},
-									cornerRadius = rr(6),
+							if clay.UI(clay.ID_LOCAL("MsgArcRow", u32(k)))(
+							{
+								layout = {
+									sizing = {width = clay.SizingGrow()},
+									childGap = 8,
+									padding = {left = 6, right = 6, top = 4, bottom = 4},
+									childAlignment = {y = .Center},
 								},
+								backgroundColor = hovered() ? HOVER : {},
+								cornerRadius = rr(6),
+							},
 							) {
 								if hovered() {
 									arc_hover = {view, entry.index, entry.name}
@@ -1433,10 +1353,8 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 									entry.name,
 									{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
 								)
-								if clay.UI(
-									clay.ID("MsgArcPad", index * 65536 + u32(j) * 4096 + u32(k)),
-								)(
-									{layout = {sizing = {width = clay.SizingGrow()}}},
+								if clay.UI(clay.ID_LOCAL("MsgArcPad"))(
+								{layout = {sizing = {width = clay.SizingGrow()}}},
 								) {}
 								clay.Text(
 									arc_size_label(entry.size),
@@ -1446,7 +1364,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						}
 						// Tap to list the rest, tap again to fold it back.
 						if len(view.entries) > ARC_TILE_ROWS {
-							if clay.UI(clay.ID("MsgArcMore", index * 1024 + u32(j)))(
+							if clay.UI(clay.ID("MsgArcMore", id))(
 							{
 								layout = {
 									sizing = {width = clay.SizingGrow()},
@@ -1468,46 +1386,22 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							}
 						}
 					}
-				}
 
 				// Torrent tiles: name, file listing, copyable magnet link.
-				if entry, j, found := media_at(msg.tors[:], &tor_pos, att); found {
-					tor_tile(
-						entry.view,
-						index * 1024 + u32(j),
-						msg.id,
-						entry.att,
-						msg.att_names[entry.att],
-					)
-				}
+				case ^Tor_View:
+					tor_tile(view, id, msg.id, att, slot.name)
 
 				// Webxdc app tiles: icon + name, no execution.
-				if entry, j, found := media_at(msg.xdcs[:], &xdc_pos, att); found {
-					xdc_tile(
-						entry.view,
-						index * 1024 + u32(j),
-						msg.id,
-						entry.att,
-						msg.att_names[entry.att],
-					)
-				}
+				case ^Xdc_View:
+					xdc_tile(view, id, msg.id, att, slot.name)
 
 				// NES cartridge tiles: Play runs it in the player modal.
-				if entry, j, found := media_at(msg.nes[:], &nes_pos, att); found {
-					nes_tile(
-						entry.view,
-						index * 1024 + u32(j),
-						msg.id,
-						entry.att,
-						msg.att_names[entry.att],
-						msg.att_names[entry.att],
-					)
-				}
+				case ^Nes_View:
+					nes_tile(view, id, msg.id, att, slot.name, slot.name)
 
 				// Markdown tiles: wrap to the plate, with a bounded scroll area.
-				if entry, j, found := media_at(msg.txts[:], &text_pos, att); found {
-					view := entry.view
-					if clay.UI(clay.ID("MsgTxt", index * 1024 + u32(j)))(
+				case ^Txt_View:
+					if clay.UI(clay.ID("MsgTxt", id))(
 					{
 						layout = {
 							layoutDirection = .TopToBottom,
@@ -1527,17 +1421,11 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						cornerRadius = rr(8),
 					},
 					) {
-						att_dl_button(
-							"DlTxt",
-							index * 1024 + u32(j),
-							msg.id,
-							entry.att,
-							msg.att_names[entry.att],
-						)
+						att_dl_button("DlTxt", id, msg.id, att, slot.name)
 						shown := min(len(view.blocks), TXT_TILE_BLOCKS)
 						md_blocks(
 							view.blocks[:shown],
-							index * 4096 + 2048 + u32(j) * 512,
+							index * 4096 + 2048 + text_seed * 512,
 							wrap_w = att_w() - 20,
 						)
 						if len(view.blocks) > shown {
@@ -1547,13 +1435,12 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							)
 						}
 					}
-				}
+					text_seed += 1
 
 				// Text/source tiles: numbered lines with the file name on top.
 				// Click opens the preview modal (handle_code_click).
-				if entry, j, found := media_at(msg.codes[:], &code_pos, att); found {
-					view := entry.view
-					if clay.UI(clay.ID("MsgCode", index * 1024 + u32(j)))(
+				case ^Code_View:
+					if clay.UI(clay.ID("MsgCode", id))(
 					{
 						layout = {
 							layoutDirection = .TopToBottom,
@@ -1574,20 +1461,14 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					},
 					) {
 						if hovered() {
-							code_hover = {msg.id, entry.att, msg.att_names[entry.att]}
+							code_hover = {msg.id, att, slot.name}
 						}
-						att_dl_button(
-							"DlCode",
-							index * 1024 + u32(j),
-							msg.id,
-							entry.att,
-							msg.att_names[entry.att],
-						)
-						if clay.UI(clay.ID("MsgCodeName", index * 1024 + u32(j)))(
+						att_dl_button("DlCode", id, msg.id, att, slot.name)
+						if clay.UI(clay.ID("MsgCodeName", id))(
 						{layout = {padding = {bottom = 4}, childGap = 8}},
 						) {
 							clay.Text(
-								msg.att_names[entry.att],
+								slot.name,
 								{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
 							)
 							clay.Text(
@@ -1597,22 +1478,21 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						}
 						code_lines(
 							view,
-							index * 4096 + 3072 + u32(j) * 512,
+							index * 4096 + 3072 + code_seed * 512,
 							CODE_TILE_LINES,
 							att_w(480) - 20,
-							clay.ID("MsgCode", index * 1024 + u32(j)),
+							clay.ID("MsgCode", id),
 							// Padding + filename row + gap.
 							28,
 							2,
 						)
 					}
-				}
+					code_seed += 1
 
 				// Font tiles: the rasterized specimen.
-				if entry, j, found := media_at(msg.fonts[:], &font_pos, att); found {
-					view := entry.view
+				case ^Ttf_View:
 					ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 4
-					if clay.UI(clay.ID("MsgFont", index * 1024 + u32(j)))(
+					if clay.UI(clay.ID("MsgFont", id))(
 					{
 						layout = {sizing = {width = clay.SizingFixed(att_w())}},
 						aspectRatio = {ratio},
@@ -1620,23 +1500,14 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						cornerRadius = rr(8),
 					},
 					) {
-						att_dl_button(
-							"DlFont",
-							index * 1024 + u32(j),
-							msg.id,
-							entry.att,
-							msg.att_names[entry.att],
-						)
+						att_dl_button("DlFont", id, msg.id, att, slot.name)
 					}
-				}
 
-				// File chips (no inline renderer): name + size when this
-				// session knows it, offer the download.
-				if file_pos < len(msg.files) && msg.files[file_pos] == att {
-					j := file_pos
-					file_pos += 1
-					att_index := att
-					if clay.UI(clay.ID("MsgFile", index * 1024 + u32(j)))(
+				// File chips (no inline renderer, or a failed download of a
+				// kind without its own retry): name + size when this session
+				// knows it, offer the download.
+				case nil:
+					if clay.UI(clay.ID("MsgFile", id))(
 					{
 						layout = {
 							padding = clay.PaddingAll(10),
@@ -1651,22 +1522,22 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							// group is filled at click time (no ui here).
 							att_hover = {
 								msg_id = msg.id,
-								index  = att_index,
-								name   = msg.att_names[att_index],
+								index  = att,
+								name   = slot.name,
 							}
 						}
 						clay.Text(
 							ICON_DOWNLOAD,
 							{fontId = FONT_ICON, fontSize = 14, textColor = TEXT_DIM},
 						)
-						if clay.UI(clay.ID("MsgFileCol", index * 1024 + u32(j)))(
+						if clay.UI(clay.ID("MsgFileCol", id))(
 						{layout = {layoutDirection = .TopToBottom, childGap = 2}},
 						) {
 							clay.Text(
-								msg.att_names[att_index],
+								slot.name,
 								{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
 							)
-							size := att_size_label(msg, att_index)
+							size := att_size_label(msg, att)
 							clay.Text(
 								len(size) > 0 ? fmt.tprintf(tr("%s · Click to download."), size) : tr("Click to download."),
 								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
@@ -1674,11 +1545,9 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						}
 					}
 				}
-
-				att += max(n - 1, 0)
 			}
 
-			if msg.media_failed {
+			if media_failed {
 				if clay.UI(clay.ID("MsgMediaFail", index))(
 				{
 					layout = {padding = clay.PaddingAll(10)},

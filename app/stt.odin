@@ -207,6 +207,16 @@ stt_stop :: proc(ui: ^Ui_State) {
 	}
 }
 
+// The loaded audio at source index `att`, nil when that slot holds none.
+@(private = "file")
+msg_audio :: proc(msg: Msg_Ui, att: int) -> ^Video_View {
+	if att < 0 || att >= len(msg.attachments) || msg.attachments[att].kind != .Audio {
+		return nil
+	}
+	view, _ := msg.attachments[att].view.(^Video_View)
+	return view
+}
+
 @(private)
 stt_start :: proc(
 	ui: ^Ui_State,
@@ -225,12 +235,8 @@ stt_start :: proc(
 	if message != "" {
 		for msg in ui.messages {
 			if msg.id != message {continue}
-			for entry in msg.audios {
-				if entry.att == attachment {
-					audio = entry.view.data
-					view = entry.view
-				}
-			}
+			view = msg_audio(msg, attachment)
+			if view != nil {audio = view.data}
 		}
 		if len(audio) == 0 || len(audio) > 100 * 1024 * 1024 {
 			toast(ui, tr("Couldn't transcribe this audio. Choose an audio file under 100 MB."))
@@ -321,7 +327,11 @@ stt_finish :: proc(ui: ^Ui_State) {
 stt_tick :: proc(ui: ^Ui_State) {
 	if ui.page == .Chats && ui.prefs.stt_enabled {
 		for msg in ui.messages {
-			for entry in msg.audios {stt_cache_load(entry.view, stt_model(ui.prefs.stt_model))}
+			for slot in msg.attachments {
+				if slot.kind != .Audio {continue}
+				view := slot.view.(^Video_View) or_continue
+				stt_cache_load(view, stt_model(ui.prefs.stt_model))
+			}
 		}
 	}
 	if ui.page == .Settings &&
@@ -430,20 +440,18 @@ stt_tick :: proc(ui: ^Ui_State) {
 	if ui.stt.message != "" {
 		for msg in ui.messages {
 			if msg.id != ui.stt.message {continue}
-			for entry in msg.audios {
-				if entry.att == ui.stt.attachment {
-					delete(entry.view.transcript)
-					entry.view.transcript = strings.clone(text)
-					entry.view.transcript_open = true
-					if !running {
-						entry.view.transcript_done = true
-						if !stt_cache_save(entry.view, ui.stt.selected_model) {
-							toast(ui, tr("Couldn't cache your transcription. Please try again."))
-						}
-					}
-					return
+			view := msg_audio(msg, ui.stt.attachment)
+			if view == nil {continue}
+			delete(view.transcript)
+			view.transcript = strings.clone(text)
+			view.transcript_open = true
+			if !running {
+				view.transcript_done = true
+				if !stt_cache_save(view, ui.stt.selected_model) {
+					toast(ui, tr("Couldn't cache your transcription. Please try again."))
 				}
 			}
+			return
 		}
 		return
 	}

@@ -186,9 +186,16 @@ torrent_tile_layout :: proc(t: ^testing.T) {
 		sender = strings.clone("A"),
 	}
 	defer message_free(msg)
-	append(&msg.att_names, strings.clone("x.torrent"))
-	append(&msg.att_keys, strings.clone("k"))
-	append(&msg.tors, Att_Item(^Tor_View){&view, 0})
+	append(
+		&msg.attachments,
+		Att_Slot {
+			name = strings.clone("x.torrent"),
+			key = strings.clone("k"),
+			kind = .Torrent,
+			state = .Ready,
+			view = &view,
+		},
+	)
 
 	previous := clay.GetCurrentContext()
 	memory: []u8

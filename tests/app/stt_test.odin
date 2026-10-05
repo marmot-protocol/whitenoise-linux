@@ -50,8 +50,11 @@ stt_draft_safety :: proc(t: ^testing.T) {
 			msg := Msg_Ui {
 				id = "audio",
 			}
-			append(&msg.audios, Att_Item(^Video_View){&other, 0})
-			append(&msg.audios, Att_Item(^Video_View){&view, 1})
+			append(
+				&msg.attachments,
+				Att_Slot{kind = .Audio, state = .Ready, view = &other},
+				Att_Slot{kind = .Audio, state = .Ready, view = &view},
+			)
 			append(&ui.messages, msg)
 		}
 		switch scenario {
@@ -82,7 +85,7 @@ stt_draft_safety :: proc(t: ^testing.T) {
 		testing.expect_value(t, other.transcript, "")
 		delete(ui.toast)
 		delete(view.transcript)
-		for msg in ui.messages {delete(msg.audios)}
+		for msg in ui.messages {delete(msg.attachments)}
 		delete(ui.messages)
 		stt_stop(&ui)
 		delete(ui.chats)
@@ -141,7 +144,7 @@ stt_partial_results :: proc(t: ^testing.T) {
 			msg := Msg_Ui {
 				id = "audio",
 			}
-			append(&msg.audios, Att_Item(^Video_View){&view, 0})
+			append(&msg.attachments, Att_Slot{kind = .Audio, state = .Ready, view = &view})
 			append(&ui.messages, msg)
 		}
 		// Bytes beyond the published length must remain invisible.
@@ -178,7 +181,7 @@ stt_partial_results :: proc(t: ^testing.T) {
 		)
 		delete(ui.toast)
 		delete(view.transcript)
-		for msg in ui.messages {delete(msg.audios)}
+		for msg in ui.messages {delete(msg.attachments)}
 		delete(ui.messages)
 		delete(ui.chats)
 		delete(ui.compose)

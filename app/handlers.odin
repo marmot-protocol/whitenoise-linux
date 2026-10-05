@@ -1165,12 +1165,12 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		thread_push(ui, msg.id)
 		return
 	}
-	for att_name, i in msg.att_names {
-		if i in msg.att_rejected {
+	for slot, i in msg.attachments {
+		if slot.state == .Rejected {
 			continue
 		}
 		if clay.PointerOver(clay.ID(fmt.tprintf("CtxSave%d", i))) {
-			start_att_save({ui.chats[ui.selected].group_id, msg.id, i, att_name})
+			start_att_save({ui.chats[ui.selected].group_id, msg.id, i, slot.name})
 			return
 		}
 	}

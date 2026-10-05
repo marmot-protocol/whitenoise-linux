@@ -37,9 +37,11 @@ video_tile_bounds :: proc(t: ^testing.T) {
 		id     = "video",
 		sender = "Alice",
 	}
-	append(&msg.att_names, "video.mp4")
-	append(&msg.videos, Att_Item(^Video_View){&view, 0})
-	defer {delete(msg.att_names); delete(msg.videos)}
+	append(
+		&msg.attachments,
+		Att_Slot{name = "video.mp4", kind = .Video, state = .Ready, view = &view},
+	)
+	defer delete(msg.attachments)
 	for dimensions in ([][2]i32{{1080, 2400}, {1920, 1080}, {1080, 1080}, {0, 0}}) {
 		view.w, view.h = dimensions[0], dimensions[1]
 		clay.SetPointerState({-1, -1}, false)

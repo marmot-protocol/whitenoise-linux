@@ -104,14 +104,14 @@ transcript_snapshot :: proc(ui: ^Ui_State, job: ^Transcript_Job) {
 			r.tags = raw_data(tags)
 			out.record = r
 		}
-		out.attachments = make([]Transcript_Attachment, len(msg.att_names))
-		for name, j in msg.att_names {
+		out.attachments = make([]Transcript_Attachment, len(msg.attachments))
+		for slot, j in msg.attachments {
 			att := &out.attachments[j]
-			att.name = strings.clone(name)
-			if rejection, rejected := msg.att_rejected[j]; rejected {
+			att.name = strings.clone(slot.name)
+			if slot.state == .Rejected {
 				// Locale can change during export. Translate on the UI thread.
-				att.rejection = strings.clone(tr(rejection))
-			} else if strings.has_prefix(media_type_for(name), "image/") {
+				att.rejection = strings.clone(tr(slot.rejection))
+			} else if strings.has_prefix(media_type_for(slot.name), "image/") {
 				job.images += 1
 				if reference := media_reference(record, j); reference != nil {
 					att.reference = new(marmot.Media_Attachment_Reference)

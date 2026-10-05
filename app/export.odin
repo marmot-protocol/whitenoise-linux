@@ -399,11 +399,11 @@ transcript_md :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, b: ^strings.Builder) {
 		if len(msg.body) > 0 {
 			fmt.sbprintln(b, msg.body)
 		}
-		for name, j in msg.att_names {
-			if rejection, rejected := msg.att_rejected[j]; rejected {
-				fmt.sbprintfln(b, "_%s_", tr(rejection))
-			} else if strings.has_prefix(media_type_for(name), "image/") {
-				fmt.sbprintfln(b, "![%s](attachment)", name)
+		for slot in msg.attachments {
+			if slot.state == .Rejected {
+				fmt.sbprintfln(b, "_%s_", tr(slot.rejection))
+			} else if strings.has_prefix(media_type_for(slot.name), "image/") {
+				fmt.sbprintfln(b, "![%s](attachment)", slot.name)
 			}
 		}
 	}
