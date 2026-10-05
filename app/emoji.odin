@@ -10,18 +10,6 @@ import "core:unicode/utf8"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
-quick_tile :: proc(emoji: string) -> ^rl.Texture2D {
-	if tex := emoji_tex(emoji); tex != nil {
-		return tex
-	}
-	for entry, i in QUICK_REACT {
-		if entry.emoji == emoji {
-			return &quick_react_tex[i]
-		}
-	}
-	return nil
-}
-
 // Emoji art sets the user picks in Appearance. Each is staged by
 // scripts/build.sh as res_dir()/emoji/<dir>/ tiles plus the catalog's
 // pixel pack at res_dir()/emoji/<dir>.bin. Noto is first so older

@@ -134,27 +134,12 @@ ICON_CODEPOINTS := []rune {
 	0xF005,
 }
 
-// Quick-reaction strip: vendored Noto
-// 72px tiles, drawn as textures since no installed font rasterizes
-// color emoji.
-QUICK_REACT := [6]struct {
-	emoji: string,
-	png:   []u8,
-} {
-	{"👍", #load("assets/1f44d.png")},
-	{"❤️", #load("assets/2764.png")},
-	{"😂", #load("assets/1f602.png")},
-	{"😮", #load("assets/1f62e.png")},
-	{"😢", #load("assets/1f622.png")},
-	{"🙏", #load("assets/1f64f.png")},
-}
-quick_react_tex: [6]rl.Texture2D
+// Seed for the picker's recents on a fresh settings file.
+QUICK_REACT := [6]string{"👍", "❤️", "😂", "😮", "😢", "🙏"}
 
 @(private)
 timeline_draw_offset: f32
 
-// Tile for a one-tap reaction: the active set first, bundled Noto
-// tiles as fallback, nil = draw the text glyph.
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.RenderCommand) {
 	if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
 		timeline_draw_offset = data.scrollPosition.y
@@ -1015,12 +1000,6 @@ app_main :: proc() {
 	refresh_ui_scale()
 	init_fonts()
 
-	for entry, i in QUICK_REACT {
-		img := rl.LoadImageFromMemory(".png", raw_data(entry.png), i32(len(entry.png)))
-		quick_react_tex[i] = rl.LoadTextureFromImage(img)
-		rl.UnloadImage(img)
-		rl.SetTextureFilter(quick_react_tex[i], .BILINEAR)
-	}
 	load_emoji_catalog()
 	emoji_set_load(ui.prefs.emoji_set)
 	// Before any picker or message needs them, not on first Settings visit.

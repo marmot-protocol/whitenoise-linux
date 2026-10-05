@@ -23,8 +23,8 @@ recent_emoji_survives_restart :: proc(t: ^testing.T) {
 
 	ui: Ui_State
 	load_settings(&ui)
-	for entry, i in QUICK_REACT {
-		testing.expect_value(t, ui.prefs.recent_emoji[i], entry.emoji)
+	for emoji, i in QUICK_REACT {
+		testing.expect_value(t, ui.prefs.recent_emoji[i], emoji)
 	}
 	picks := []string {
 		"🐙",
@@ -84,7 +84,7 @@ recent_emoji_legacy_settings :: proc(t: ^testing.T) {
 	load_settings(&ui)
 	testing.expect_value(t, ui.prefs.zoom_pct, 125)
 	testing.expect_value(t, ui.prefs.recent_searches[0], "retained")
-	for entry, i in QUICK_REACT {
-		testing.expect_value(t, ui.prefs.recent_emoji[i], entry.emoji)
+	for emoji, i in QUICK_REACT {
+		testing.expect_value(t, ui.prefs.recent_emoji[i], emoji)
 	}
 }

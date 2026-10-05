@@ -177,7 +177,7 @@ context_menu :: proc(ui: ^Ui_State) {
 						cornerRadius = rr(8),
 					},
 					) {
-						if tex := quick_tile(emoji); tex != nil {
+						if tex := emoji_tex(emoji); tex != nil {
 							if clay.UI(clay.ID("CtxQuickImg", u32(i)))(
 							{
 								layout = {sizing = {width = clay.SizingFixed(18)}},

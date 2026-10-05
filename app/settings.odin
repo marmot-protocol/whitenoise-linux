@@ -182,8 +182,8 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	ui.prefs = default_prefs()
 	defer {
 		if len(ui.prefs.recent_emoji) == 0 {
-			for entry in QUICK_REACT {
-				append(&ui.prefs.recent_emoji, strings.clone(entry.emoji))
+			for emoji in QUICK_REACT {
+				append(&ui.prefs.recent_emoji, strings.clone(emoji))
 			}
 		}
 	}

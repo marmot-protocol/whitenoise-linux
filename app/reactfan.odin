@@ -197,7 +197,7 @@ fan_layer :: proc(ui: ^Ui_State) {
 			border = {color = picked ? ACCENT : ELEVATED_BORDER, width = bw()},
 		},
 		) {
-			if tex := quick_tile(emoji); tex != nil {
+			if tex := emoji_tex(emoji); tex != nil {
 				if clay.UI(clay.ID("FanTile", u32(i)))(
 				{
 					layout = {sizing = {width = clay.SizingFixed(FAN_TILE * t)}},
