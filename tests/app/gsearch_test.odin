@@ -258,6 +258,11 @@ gs_archived_destination_owns_navigation_metadata :: proc(t: ^testing.T) {
 
 @(test)
 gs_refresh_clears_missing_search_chat :: proc(t: ^testing.T) {
+	// Chat refresh writes the global profile cache and retired_chats. They
+	// outlive this test, so they must not grow in its per-test allocator.
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	context.allocator = runtime.default_context().allocator
 	defer profile_session_clear()
 	rows := [?]marmot.Presented_Chat_Row{{row = {group_id_hex = "visible"}}}
 	list := marmot.Presented_Chat_List {

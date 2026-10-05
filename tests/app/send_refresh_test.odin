@@ -14,6 +14,9 @@ import rl "sdlrl"
 @(test)
 send_reveals_preview :: proc(t: ^testing.T) {
 	context.allocator = runtime.default_context().allocator
+	// queue_send reads the global profile cache.
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
 	old_threads, old_done, old_ticket := send_threads, sends_done, send_ticket

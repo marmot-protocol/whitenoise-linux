@@ -116,6 +116,9 @@ message_reuse_guards :: proc(t: ^testing.T) {
 
 @(test)
 media_reference_owned :: proc(t: ^testing.T) {
+	// media_jobs is process-global; media layout tests swap it too.
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
 	old_jobs, old_inflight := media_jobs, media_inflight
 	media_jobs, media_inflight = {}, nil
 	defer {

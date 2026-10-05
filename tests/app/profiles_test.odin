@@ -1,11 +1,18 @@
 package main
 
+import "base:runtime"
 import "core:strings"
+import "core:sync"
 import "core:testing"
 
 @(test)
 profiles_update_live_views :: proc(t: ^testing.T) {
-	context.allocator = context.temp_allocator
+	// The profile cache is process-global and outlives this test, so it must
+	// not grow in the temp or per-test allocator.
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	context.allocator = runtime.default_context().allocator
+	defer profile_session_clear()
 	hex := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	register_starter_pic(hex, "Before", "", {})
 	ui := Ui_State {
@@ -25,6 +32,16 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	append(&ui.account_pics, "")
 	ui.nicknames[hex] = "Local nickname"
 	ui.peer_name = strings.clone("Before")
+	defer {
+		for member in ui.members {delete(member.name); delete(member.pic_url)}
+		for contact in ui.contacts {delete(contact.name); delete(contact.pic_url)}
+		for account in ui.accounts {delete(account)}
+		for pic in ui.account_pics {delete(pic)}
+		delete(ui.profile_contact.name); delete(ui.profile_contact.pic_url)
+		delete(ui.peer_name); delete(ui.peer_pic)
+		delete(ui.members); delete(ui.contacts); delete(ui.account_ids)
+		delete(ui.accounts); delete(ui.account_pics); delete(ui.nicknames)
+	}
 
 	info := Profile_Info {
 		strings.clone("After"),

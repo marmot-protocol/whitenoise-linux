@@ -7,6 +7,7 @@ import "core:fmt"
 import "core:mem"
 import "core:slice"
 import "core:strings"
+import "core:sync"
 import "core:testing"
 import "core:text/edit"
 import "core:thread"
@@ -124,6 +125,9 @@ contacts_layout :: proc(t: ^testing.T) {
 
 @(test)
 chat_refresh_ownership :: proc(t: ^testing.T) {
+	// retired_chats is process-global; other tests replace chat rows too.
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
 	track: mem.Tracking_Allocator
 	mem.tracking_allocator_init(&track, context.allocator)
 	defer mem.tracking_allocator_destroy(&track)

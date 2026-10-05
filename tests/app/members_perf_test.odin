@@ -7,6 +7,7 @@ import "core:fmt"
 import "core:mem"
 import "core:slice"
 import "core:strings"
+import "core:sync"
 import "core:testing"
 import "core:thread"
 import "core:time"
@@ -214,6 +215,9 @@ large_group_layout :: proc(t: ^testing.T) {
 
 @(test)
 members_snapshot_owned :: proc(t: ^testing.T) {
+	// The profile cache is process-global; seed it under the shared lock.
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	id := "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
 	profile_info(nil, id)
