@@ -495,7 +495,6 @@ folder_action :: proc(id, label: string, primary: bool = false) {
 @(private = "file")
 folder_editor_focus :: proc(ui: ^Ui_State, focus: Focus) {
 	ui.focus = focus
-	body := clay.GetElementData(clay.ID("FolderEditorBody")).boundingBox
 	id := "FolderBox"
 	#partial switch focus {
 	case .FolderColor:
@@ -503,14 +502,7 @@ folder_editor_focus :: proc(ui: ^Ui_State, focus: Focus) {
 	case .FolderRule:
 		id = fmt.tprintf("FolderRuleBox%d", ui.folder_rule_focus)
 	}
-	field := clay.GetElementData(clay.ID(id)).boundingBox
-	scroll := clay.GetScrollContainerData(clay.ID("FolderEditorBody"))
-	if scroll.found {
-		if field.y < body.y {scroll.scrollPosition.y += body.y - field.y}
-		if field.y + field.height > body.y + body.height {
-			scroll.scrollPosition.y -= field.y + field.height - body.y - body.height
-		}
-	}
+	scroll_into_view(clay.ID("FolderEditorBody"), clay.ID(id))
 }
 
 @(private = "file")

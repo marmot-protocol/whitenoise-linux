@@ -332,8 +332,18 @@ handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	} else if ui.focus == .PollOpt {
 		edit_text(ui, &ui.poll_inputs[ui.poll_focus])
 	}
+	// Tab walks question → options and wraps; position 0 is the question,
+	// 1 + i is option i.
+	if step := tab_step(); step != 0 {
+		count := 1 + len(ui.poll_inputs)
+		at := ui.focus == .PollOpt ? 1 + ui.poll_focus : 0
+		at = (at + step + count) %% count
+		ui.focus = at == 0 ? .PollQ : .PollOpt
+		ui.poll_focus = max(at - 1, 0)
+		return
+	}
 	// Enter advances question → options top to bottom, growing a new
-	// row past the last one (the shim has no Tab key).
+	// row past the last one.
 	if rl.IsKeyPressed(.ENTER) {
 		if ui.focus == .PollQ {
 			ui.focus = .PollOpt

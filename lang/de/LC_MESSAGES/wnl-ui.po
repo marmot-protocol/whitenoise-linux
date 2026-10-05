@@ -3874,6 +3874,12 @@ msgstr "Befehl eingeben"
 msgid "Type to search all chats."
 msgstr "Tippe, um alle Chats zu durchsuchen."
 
+msgid "Type your new password again"
+msgstr "Gib dein neues Passwort noch einmal ein"
+
+msgid "Type your password again"
+msgstr "Gib dein Passwort noch einmal ein"
+
 msgid "UPTIME"
 msgstr "LAUFZEIT"
 

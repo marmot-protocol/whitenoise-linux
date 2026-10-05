@@ -105,13 +105,14 @@ handle_vault_pw :: proc(ui: ^Ui_State) {
 	if clicked("VaultPwNew2Box") {
 		ui.vault_pw_focus = .Confirm
 	}
+	tab_focus([]Vault_Pw_Field{.Current, .New, .Confirm}, &ui.vault_pw_focus)
 
 	go := clicked("VaultPwGo")
 	if !go && !rl.IsKeyPressed(.ENTER) {
 		return
 	}
-	// Enter walks down the three boxes (the shim has no Tab key) and the
-	// last one submits; the button submits from wherever the focus is.
+	// Enter walks down the three boxes and the last one submits; the
+	// button submits from wherever the focus is.
 	if !go && ui.vault_pw_focus != .Confirm {
 		ui.vault_pw_focus = Vault_Pw_Field(int(ui.vault_pw_focus) + 1)
 		return
@@ -191,7 +192,7 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			"VaultPwNew2Box",
 			&ui.vault_pw[.Confirm],
 			ui.vault_pw_focus == .Confirm,
-			tr("Your new password"),
+			tr("Type your new password again"),
 		)
 
 		if len(ui.vault_pw_err) > 0 {

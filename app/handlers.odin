@@ -1484,6 +1484,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if field_mouse(ui, &ui.nc_name, "NCName", 14) {
 		ui.focus = .NC_Name
 	}
+	tab_focus([]Focus{.NC_Member, .NC_Name}, &ui.focus)
 	if clicked("NCCancel") || rl.IsKeyPressed(.ESCAPE) {
 		close_new_chat(ui)
 		return

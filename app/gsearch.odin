@@ -904,6 +904,11 @@ handle_gsearch :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		"GsUntil",
 		14,
 	) {ui.focus = .GSearch_Until; pasted = rl.IsMouseButtonPressed(.MIDDLE)}
+	fields := [?]Focus{.GSearch, .GSearch_Sender, .GSearch_Since, .GSearch_Until}
+	boxes := [?]string{"GsInput", "GsSenderInput", "GsSince", "GsUntil"}
+	if at, moved := tab_focus(fields[:], &ui.focus); moved {
+		scroll_into_view(clay.ID("GsBody"), clay.ID(boxes[at]))
+	}
 	buf: ^[dynamic]u8
 	#partial switch ui.focus {
 	case .GSearch:

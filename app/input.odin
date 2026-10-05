@@ -22,6 +22,51 @@ shift_down :: proc() -> bool {
 	return rl.IsKeyDown(.LEFT_SHIFT) || rl.IsKeyDown(.RIGHT_SHIFT)
 }
 
+// Tab / Shift+Tab this frame as a field step: +1, -1, or 0. Ctrl+Tab
+// is not a field step; it cycles chats (main.odin).
+tab_step :: proc() -> int {
+	if !key_hit(.TAB) || ctrl_down() {
+		return 0
+	}
+	return shift_down() ? -1 : 1
+}
+
+// Moves `at` one field along a form's Tab order, wrapping at both ends:
+// {.Name, .About} with .About focused, Tab lands on .Name. A focus
+// outside `order` is left alone. Returns the new position in `order`.
+tab_focus :: proc(order: []$T, at: ^T) -> (index: int, moved: bool) {
+	step := tab_step()
+	if step == 0 {
+		return 0, false
+	}
+	for field, i in order {
+		if field == at^ {
+			index = (i + step + len(order)) %% len(order)
+			at^ = order[index]
+			return index, true
+		}
+	}
+	return 0, false
+}
+
+// Scrolls `container` the least distance that shows all of `field`, so a
+// box focused from the keyboard is never below the fold. Reads last
+// frame's layout.
+scroll_into_view :: proc(container, field: clay.ElementId) {
+	scroll := clay.GetScrollContainerData(container)
+	if !scroll.found {
+		return
+	}
+	view := clay.GetElementData(container).boundingBox
+	box := clay.GetElementData(field).boundingBox
+	if box.y < view.y {
+		scroll.scrollPosition.y += view.y - box.y
+	}
+	if box.y + box.height > view.y + view.height {
+		scroll.scrollPosition.y -= box.y + box.height - view.y - view.height
+	}
+}
+
 // Clipboard hooks for core:text/edit. Paste strips control characters
 // but keeps newlines, matching the old Ctrl+V path.
 clip_set :: proc(_: rawptr, text: string) -> (ok: bool) {

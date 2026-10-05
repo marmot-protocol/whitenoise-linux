@@ -3873,6 +3873,12 @@ msgstr ""
 msgid "Type to search all chats."
 msgstr ""
 
+msgid "Type your new password again"
+msgstr ""
+
+msgid "Type your password again"
+msgstr ""
+
 msgid "UPTIME"
 msgstr ""
 

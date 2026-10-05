@@ -3874,6 +3874,12 @@ msgstr "コマンドを入力"
 msgid "Type to search all chats."
 msgstr "入力してすべてのチャットを検索します。"
 
+msgid "Type your new password again"
+msgstr "新しいパスワードをもう一度入力してください"
+
+msgid "Type your password again"
+msgstr "パスワードをもう一度入力してください"
+
 msgid "UPTIME"
 msgstr "稼働時間"
 

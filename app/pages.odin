@@ -427,6 +427,11 @@ profile_fields :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !ui.profile.editing {
 		return
 	}
+	fields := [?]Focus{.Name, .About, .Nip05, .Lud16}
+	boxes := [?]string{"NameBox", "AboutBox", "Nip05Box", "Lud16Box"}
+	if at, moved := tab_focus(fields[:], &ui.focus); moved {
+		scroll_into_view(clay.ID("ProfilePage"), clay.ID(boxes[at]))
+	}
 	if rl.IsKeyPressed(.ESCAPE) {
 		ui.profile.editing = false
 	}

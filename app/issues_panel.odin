@@ -579,9 +579,7 @@ handle_issues :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		if ui.focus == .Issue_Body &&
 		   rl.IsKeyPressed(.ENTER) &&
 		   !ctrl_down() {ed_insert(ui, &ui.issue_body, "\n")}
-		if rl.IsKeyPressed(
-			.TAB,
-		) {ui.focus = ui.focus == .Issue_Subject ? .Issue_Body : ui.focus == .Issue_Body ? .Issue_Labels : .Issue_Subject}
+		tab_focus(focuses[:], &ui.focus)
 	}
 	if field_mouse(ui, &ui.issue_search, "IssueSearch", 14) {ui.focus = .Issue_Search}
 	if ui.focus == .Issue_Search &&

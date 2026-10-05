@@ -329,6 +329,9 @@ gate_input :: proc(ui: ^Ui_State) {
 	if clicked("GatePw2Box") {
 		gate_confirm = true
 	}
+	if creating {
+		tab_focus([]bool{false, true}, &gate_confirm)
+	}
 
 	// No recovery path: forgetting the password means starting over from
 	// an nsec, so the reset arms first and acts on the second click.
@@ -361,8 +364,8 @@ gate_input :: proc(ui: ^Ui_State) {
 		return
 	}
 
-	// Enter walks from the password to the confirm box (the shim has no
-	// Tab key); the second Enter submits.
+	// Enter walks from the password to the confirm box; the second Enter
+	// submits.
 	if creating && !gate_confirm {
 		gate_confirm = true
 		return
@@ -496,7 +499,7 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 						"GatePw2Box",
 						&gate_pw2,
 						!busy && gate_confirm,
-						tr("Your password"),
+						tr("Type your password again"),
 					)
 				}
 
