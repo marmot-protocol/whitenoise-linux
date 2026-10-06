@@ -113,3 +113,48 @@ ctx_reply_edit_focus :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.editing, "m")
 	testing.expect_value(t, string(ui.compose[:]), "hello")
 }
+
+// Escape closes the chat filter or drops a reply, and never takes the
+// unsent draft with it.
+@(test)
+escape_keeps_draft :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	previous := clay.GetCurrentContext()
+	memory: []u8
+	init_layout(&memory, 32768, {800, 600})
+	defer {
+		clay.SetCurrentContext(previous)
+		delete(memory)
+	}
+
+	ui := Ui_State {
+		selected = 0,
+		row_menu = -1,
+		focus    = .Filter,
+	}
+	defer {
+		delete(ui.accounts)
+		delete(ui.chats)
+		delete(ui.compose)
+		delete(ui.sidebar_filter)
+	}
+	append(&ui.accounts, "Test")
+	append(&ui.chats, Chat_Row_Ui{group_id = "g"})
+	append(&ui.compose, "draft")
+	client: marmot.Client
+	press_escape :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+		rl.PushKey(.ESCAPE, true)
+		handle_chat(ui, client)
+		rl.PushKey(.ESCAPE, false)
+	}
+
+	press_escape(&ui, &client)
+	testing.expect_value(t, ui.focus, Focus.Compose)
+	testing.expect_value(t, string(ui.compose[:]), "draft")
+
+	ui.replying = "m"
+	press_escape(&ui, &client)
+	testing.expect_value(t, ui.replying, "")
+	testing.expect_value(t, string(ui.compose[:]), "draft")
+}

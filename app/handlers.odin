@@ -389,6 +389,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if string(ui.sidebar_filter[:]) != before {
 			refresh_filter_hits(client, ui)
 		}
+		// Escape closed the filter; it must not reach the composer below.
+		if rl.IsKeyPressed(.ESCAPE) {
+			return
+		}
 	}
 
 	if ui.selected < 0 {
@@ -773,12 +777,11 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if rl.IsKeyPressed(.ESCAPE) {
+	// Escape in the composer steps out of an edit or a reply. It never
+	// clears the draft: that would throw away typed text with no way back.
+	if ui.focus == .Compose && rl.IsKeyPressed(.ESCAPE) {
 		if len(ui.editing) > 0 {
 			cancel_edit(ui)
-		} else {
-			clear(&ui.compose)
-			drop_draft(ui)
 		}
 		ui.replying = ""
 	}
