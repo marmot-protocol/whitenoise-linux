@@ -329,10 +329,65 @@ jobs:
       version: ${{ github.ref_name }}
     secrets: inherit
 
+  # The tarball the AUR's whitenoise-linux-bin installs, built on Arch
+  # against Arch's libraries from the same metadata as whitenoise-linux-git.
+  archlinux:
+    if: startsWith(github.ref, 'refs/tags/')
+    name: Arch Linux (x86_64)
+    runs-on: ubuntu-24.04
+    container:
+      image: archlinux:base-devel
+      # arch-package.sh compiles inside a network namespace of its own.
+      options: --privileged
+    steps:
+      - name: Install git
+        run: pacman -Syu --noconfirm --needed git
+
+      - uses: actions/checkout@v4
+
+      - name: Check release version
+        run: bash scripts/version.sh "$GITHUB_REF_NAME"
+
+      - name: Install build dependencies
+        run: |
+          source packaging/arch/whitenoise-linux-git/PKGBUILD
+          pacman -S --noconfirm --needed "${depends[@]}" "${makedepends[@]}"
+
+      # The PKGBUILD's pinned release, checked against its sha256 there.
+      - name: Install Odin
+        run: |
+          source packaging/arch/whitenoise-linux-git/PKGBUILD
+          if [ "$_odin" != "$ODIN_VERSION" ]; then
+            echo "PKGBUILD pins Odin $_odin, this workflow $ODIN_VERSION" >&2
+            exit 1
+          fi
+          curl -sSfL -o /tmp/odin.tar.gz "${source[1]}"
+          echo "${sha256sums[1]}  /tmp/odin.tar.gz" | sha256sum -c -
+          mkdir -p /opt/odin
+          tar -xzf /tmp/odin.tar.gz -C /opt/odin --strip-components=1
+          echo /opt/odin >> "$GITHUB_PATH"
+
+      - name: Build
+        env:
+          WN_RELEASE_VERSION: ${{ github.ref_name }}
+          WN_METRICS_WRITE_TOKEN: ${{ secrets.WN_METRICS_WRITE_TOKEN }}
+          WN_AUDIT_WRITE_TOKEN: ${{ secrets.WN_AUDIT_WRITE_TOKEN }}
+        run: scripts/arch-package.sh
+
+      - name: Remove generated observability credentials
+        if: always()
+        run: rm -f build/observability-tokens.toml
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archlinux
+          path: dist/*-archlinux-x86_64.tar.zst
+          if-no-files-found: error
+
   publish:
     if: startsWith(github.ref, 'refs/tags/')
     name: Publish release
-    needs: [appimage, flatpak, cross]
+    needs: [appimage, flatpak, cross, archlinux]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -379,6 +434,7 @@ jobs:
             dist/*.zsync
             dist/*.flatpak
             dist/*.tar.gz
+            dist/*.tar.zst
             dist/*.zip
             dist/*-Setup.exe
             dist/*.nupkg
@@ -389,3 +445,81 @@ jobs:
           body_path: release-notes.md
           generate_release_notes: ${{ steps.notes.outputs.generate == 'true' }}
           fail_on_unmatched_files: true
+
+  # Point the AUR at the release just published: render whitenoise-linux-bin
+  # for this tag, install it from the release asset in a clean container and
+  # boot it, then push it and whitenoise-linux-git. The push is skipped until
+  # the repository has an AUR_SSH_PRIVATE_KEY secret.
+  aur:
+    if: startsWith(github.ref, 'refs/tags/')
+    name: AUR packages
+    needs: [archlinux, publish]
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    steps:
+      - name: Install tools
+        run: pacman -Syu --noconfirm --needed git openssh namcap
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: archlinux
+          path: dist
+
+      # makepkg refuses to run as root.
+      - name: Render the packages
+        run: |
+          scripts/aur-bin.sh "$GITHUB_REF_NAME" "dist/WhiteNoise-$GITHUB_REF_NAME-archlinux-x86_64.tar.zst" build/aur
+          install -D -m 0644 packaging/arch/whitenoise-linux-git/PKGBUILD build/aur/whitenoise-linux-git/PKGBUILD
+          useradd -m builder
+          chown -R builder build/aur
+          for pkg in whitenoise-linux-bin whitenoise-linux-git; do
+            su builder -c "cd build/aur/$pkg && makepkg --printsrcinfo > .SRCINFO"
+          done
+
+      # makepkg downloads the tarball from the release, which proves the
+      # published URL and checksum. --nodeps leaves the depends to pacman -U,
+      # which pulls them from the repositories, and the headless boot
+      # catches one the list is missing.
+      - name: Install and boot whitenoise-linux-bin
+        run: |
+          su builder -c 'cd build/aur/whitenoise-linux-bin && makepkg --nodeps'
+          pacman -U --noconfirm build/aur/whitenoise-linux-bin/whitenoise-linux-bin-*.pkg.tar.zst
+          namcap build/aur/whitenoise-linux-bin/PKGBUILD build/aur/whitenoise-linux-bin/whitenoise-linux-bin-*.pkg.tar.zst
+          data="$(mktemp -d)"
+          (cd "$data" && SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke whitenoise "$data")
+
+      - name: Check for the AUR key
+        id: key
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          if [ -n "$AUR_SSH_PRIVATE_KEY" ]; then echo "present=true" >> "$GITHUB_OUTPUT"; fi
+
+      # The host key is the ED25519 one https://aur.archlinux.org publishes
+      # (SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4).
+      - name: Push to the AUR
+        if: steps.key.outputs.present == 'true'
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          ssh_dir="$RUNNER_TEMP/aur-ssh"
+          install -d -m 0700 "$ssh_dir"
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          chmod 0600 "$ssh_dir/key"
+          echo 'aur.archlinux.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEuBKrPzbawxA/k2g6NcyV5jmqwJ2s+zpgZGZ7tpLIcN' > "$ssh_dir/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
+          for pkg in whitenoise-linux-bin whitenoise-linux-git; do
+            repo="build/aur-git/$pkg"
+            git clone "ssh://aur@aur.archlinux.org/$pkg.git" "$repo"
+            cp "build/aur/$pkg/PKGBUILD" "build/aur/$pkg/.SRCINFO" "$repo/"
+            git -C "$repo" add PKGBUILD .SRCINFO
+            # whitenoise-linux-git changes only when its recipe does.
+            if git -C "$repo" diff --cached --quiet; then continue; fi
+            git -C "$repo" -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -q -m "Update to $GITHUB_REF_NAME"
+            git -C "$repo" push origin HEAD:master
+          done
+          rm -rf "$ssh_dir"

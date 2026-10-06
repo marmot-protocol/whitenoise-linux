@@ -188,11 +188,25 @@ once with Control-click, Open (or System Settings, Privacy & Security, Open
 Anyway); after that it launches normally. A Developer ID signature and
 notarization need an Apple Developer account.
 
-On Arch, `packaging/arch/PKGBUILD` builds a `whitenoise-linux-git` package against the system SDL3, mpv, and poppler:
+On Arch, install `whitenoise-linux-bin` from the AUR. It installs the
+`WhiteNoise-<version>-archlinux-x86_64.tar.zst` each release ships, which CI
+builds on Arch against the system SDL3, mpv and poppler, so installing
+compiles nothing:
 
 ```sh
-cd packaging/arch && makepkg -si
+yay -S whitenoise-linux-bin
 ```
+
+`whitenoise-linux-git` builds the current master from source instead. Its
+`prepare()` downloads every pinned input and `build()` runs with the network
+off. To build it from a checkout:
+
+```sh
+cd packaging/arch/whitenoise-linux-git && makepkg -si
+```
+
+Both packages conflict with `whitenoise-git`, the Flutter client, because
+both install `/usr/bin/whitenoise`.
 
 ### Versioning
 

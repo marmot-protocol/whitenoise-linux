@@ -1,0 +1,87 @@
+# Maintainer: TBA
+#
+# Builds the current master from source. prepare() downloads every pinned
+# input (`scripts/build.sh fetch`: the sources, assets, speech runtime and
+# Rust crates); build() then compiles with the network off.
+#
+# Odin is the pinned release tarball, not extra/odin, so an Odin update in
+# Arch cannot break the build before the app moves to it. Keep _odin in step
+# with ODIN_VERSION in .github/workflows.
+#
+# This file is also the single source of the package metadata: CI installs
+# its depends and makedepends to build the release tarball
+# (scripts/arch-package.sh), and scripts/aur-bin.sh copies its metadata
+# into whitenoise-linux-bin, the package that installs that tarball.
+#
+# install-tree.sh lays out /usr/bin, /usr/lib/whitenoise-linux and
+# /usr/share/whitenoise-linux, the same tree the AppImage and Flatpak carry
+# (see res_dir and helper_path in app/paths.odin).
+pkgname=whitenoise-linux-git
+pkgver=2026.9.29.1.r0.gf2778b6
+pkgrel=1
+pkgdesc="End-to-end encrypted group chat over Nostr (Marmot client)"
+arch=(x86_64)
+url="https://github.com/marmot-protocol/whitenoise-linux"
+# The app, then what it bundles: MDK, MicroTeX, ufbx and the password list
+# (MIT), Clay (Zlib), the LifeHash avatars (GPL-3.0-or-later, ported from
+# BSD-2-Clause-Patent bc-lifehash), the speech runtime and
+# Noto Emoji (Apache-2.0), Twemoji (CC-BY-4.0), OpenMoji (CC-BY-SA-4.0), the
+# text fonts (OFL-1.1) and the math font (GUST, with DejaVu's terms).
+license=(AGPL-3.0-or-later MIT Zlib GPL-3.0-or-later BSD-2-Clause-Patent Apache-2.0 CC-BY-4.0
+         CC-BY-SA-4.0 OFL-1.1 Bitstream-Vera LicenseRef-GUST-Font-License)
+# Linked (readelf -d NEEDED on the app and its helpers), then what it
+# spawns: xdg-open for links, notify-send for desktop alerts. ttf-dejavu is
+# the fallback behind the bundled faces (DejaVu Sans Mono has no bundled
+# copy).
+depends=(sdl3 libwebp libarchive mpv ffmpeg poppler-glib cairo fontconfig glib2 curl openssl
+         libgcc libstdc++ freetype2 xdg-utils libnotify ttf-dejavu hicolor-icon-theme)
+# webkit2gtk-4.1 here makes build.sh produce wn-webview, which is what the
+# optional dependency below then runs.
+makedepends=(git cargo clang cmake unzip librsvg webkit2gtk-4.1)
+optdepends=(
+  'webkit2gtk-4.1: run webxdc apps attached to messages'
+  'noto-fonts-cjk: Japanese text'
+  'libpulse: notification sound (paplay)'
+  'sound-theme-freedesktop: the notification sound file'
+  'libcanberra: notification sound fallback (canberra-gtk-play)'
+)
+# whitenoise is the Flutter client (whitenoise-git); both install
+# /usr/bin/whitenoise.
+provides=(whitenoise-linux)
+conflicts=(whitenoise-linux whitenoise)
+# !lto: makepkg's -flto=auto turns the sqlite bundled into libmarmot_c.a
+# into GCC bitcode objects, which the clang link Odin drives cannot see
+# (undefined sqlite3_* at link time).
+options=(!lto)
+_odin=dev-2026-09
+_odin_dir=odin-linux-amd64-nightly+2026-09-01
+source=("$pkgname::git+$url.git"
+        "https://github.com/odin-lang/Odin/releases/download/$_odin/odin-linux-amd64-$_odin.tar.gz")
+sha256sums=('SKIP'
+            '167c3e1d7056419dad2e04bb3bd98715b7ff286d4c125f3c5a5ee337c6254283')
+
+pkgver() {
+  cd "$pkgname"
+  local version
+  version="$(bash scripts/version.sh)"
+  printf "%s.r%s.g%s" "${version/+/.}" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+prepare() {
+  cd "$pkgname"
+  export PATH="$srcdir/$_odin_dir:$PATH"
+  scripts/build.sh fetch
+}
+
+build() {
+  cd "$pkgname"
+  export PATH="$srcdir/$_odin_dir:$PATH"
+  CARGO_NET_OFFLINE=true scripts/build.sh
+}
+
+package() {
+  cd "$pkgname"
+  scripts/install-tree.sh "$pkgdir/usr" whitenoise
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  ln -s /usr/share/whitenoise-linux/licenses "$pkgdir/usr/share/licenses/$pkgname/bundled"
+}

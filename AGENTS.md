@@ -209,16 +209,31 @@ to master and hands it to ngit-ci for Blossom. The Flatpak manifest is
 the app inside the GNOME 50 SDK (freedesktop 25.08 base, which is what
 ships webkit2gtk-4.1 for wn-webview; libmpv and poppler as modules,
 network on during the build for cargo and the pinned clones), so it is a
-self-published bundle, not a Flathub submission. `packaging/arch/PKGBUILD` is
-a `-git` package against the system libraries, for `makepkg -si`.
+self-published bundle, not a Flathub submission.
 
-All three install the same tree through `scripts/install-tree.sh
-<prefix> <id>`. The app reads three things from disk at runtime, and
-`res_dir` (`app/paths.odin`) resolves all of them relative to the running
-binary, so that layout is a contract with it:
+Arch gets two AUR packages. `packaging/arch/whitenoise-linux-git/PKGBUILD`
+builds master from source: `prepare()` runs `scripts/build.sh fetch`, which
+downloads every pinned input including the speech runtime and the Rust
+crates, and `build()` compiles with `CARGO_NET_OFFLINE=true`. Odin is the
+pinned release tarball, kept in step with `ODIN_VERSION` in the workflows.
+That PKGBUILD is also the one copy of the package metadata. On a tag, the
+release workflow's `archlinux` job installs its depends and makedepends in
+an `archlinux` container and runs `scripts/arch-package.sh`, which compiles
+inside `unshare --net` and produces
+`WhiteNoise-<tag>-archlinux-x86_64.tar.zst`. The `aur` job then renders
+`whitenoise-linux-bin` for that tarball with `scripts/aur-bin.sh`, installs
+and boots it, and pushes both packages once an `AUR_SSH_PRIVATE_KEY` secret
+exists.
+
+All of them install the same tree through `scripts/install-tree.sh
+<prefix> <id>`. The app reads data and helper programs from disk at runtime,
+and `res_dir` and `helper_path` (`app/paths.odin`) resolve them relative to
+the running binary, so that layout is a contract with them:
 
 ```
 <prefix>/bin/whitenoise
+<prefix>/lib/whitenoise-linux/wn-*                 helper programs
+<prefix>/lib/whitenoise-linux/tts-lib/*.so         the speech runtime
 <prefix>/share/whitenoise-linux/emoji/<set>/*.png  reaction and picker tiles
 <prefix>/share/whitenoise-linux/emoji/<set>.bin    the picker's pixel pack
 <prefix>/share/whitenoise-linux/emoji-catalog.tsv  the picker's search index
@@ -234,8 +249,6 @@ never rely on. **Anything new the app reads from disk at runtime goes under
 defaults to `$XDG_DATA_HOME/whitenoise`, which is what lands the Flatpak's
 data under `~/.var/app/<id>/data`.
 
-<prefix>/lib/whitenoise-linux/wn-*                 helper programs
-<prefix>/lib/whitenoise-linux/tts-lib/*.so         the speech runtime
 Fonts are bundled because the stacks would otherwise depend on the host
 distro's font layout, and the icon face in particular has no substitute (the
 glyphs are Nerd Font private-use codepoints). Noto Sans CJK is the deliberate
