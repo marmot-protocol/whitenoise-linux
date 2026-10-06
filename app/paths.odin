@@ -3,6 +3,7 @@
 //
 // Packaged resources live in usr/share on Linux, resources beside the
 // executable on Windows, and Contents/Resources inside the macOS app.
+// Linux and OpenBSD packages keep helper programs in usr/lib (helper_path).
 // A dev build falls back to the vendor tree staged by scripts/build.sh.
 package main
 
@@ -87,11 +88,22 @@ helper_path :: proc(name: string) -> string {
 	if exe == "" {return ""}
 	filename := name
 	when ODIN_OS == .Windows {filename = strings.concatenate({name, ".exe"}, context.temp_allocator)}
-	path, err := filepath.join({filepath.dir(exe), filename}, context.temp_allocator)
+	dir := filepath.dir(exe)
+	path, err := filepath.join({dir, filename}, context.temp_allocator)
 	if err != nil {return ""}
-	if !os.is_file(path) {
+	when ODIN_OS == .Windows || ODIN_OS == .Darwin {
+		if os.is_file(path) {return path}
 		bundled, bundle_err := filepath.join({res_dir(), filename}, context.temp_allocator)
 		if bundle_err == nil && os.is_file(bundled) {return bundled}
+	} else {
+		// Installed trees keep helpers in <prefix>/lib/whitenoise-linux; a
+		// dev build keeps them beside build/app. The installed directory
+		// wins, so a helper an older layout left in bin/ never shadows it.
+		installed, lib_err := filepath.join(
+			{filepath.dir(dir), "lib", "whitenoise-linux", filename},
+			context.temp_allocator,
+		)
+		if lib_err == nil && os.is_file(installed) {return installed}
 	}
 	return path
 }

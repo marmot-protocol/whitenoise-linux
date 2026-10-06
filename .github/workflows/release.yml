@@ -2,10 +2,12 @@
 # (Linux ARM64 and Windows built on Linux, macOS built on a Mac).
 #
 # Both packages install the same tree, via scripts/install-tree.sh:
-#   * the binary at <prefix>/bin, and the runtime data the app reads from
-#     disk (the emoji sets, the emoji picker catalog, the fonts) at
-#     <prefix>/share/whitenoise-linux. `res_dir` in app/paths.odin resolves
-#     that relative to the binary, so the layout is a contract with it.
+#   * the binary at <prefix>/bin, its helper programs at
+#     <prefix>/lib/whitenoise-linux, and the runtime data the app reads
+#     from disk (the emoji sets, the emoji picker catalog, the fonts) at
+#     <prefix>/share/whitenoise-linux. `res_dir` and `helper_path` in
+#     app/paths.odin resolve those relative to the binary, so the layout
+#     is a contract with them.
 #   * Noto Sans CJK is deliberately NOT bundled: the .ttc is tens of
 #     megabytes, so Japanese falls back to the host's system copy.
 #
@@ -154,18 +156,11 @@ jobs:
           # at it or it bundles everything except the one library that is
           # not installed system-wide.
           export LD_LIBRARY_PATH="/usr/local/sdl3/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          # --executable would copy each helper into usr/bin; --deploy-deps-only
+          # bundles their libraries and points their rpath at usr/lib in place.
           ./linuxdeploy --appdir AppDir \
             --executable AppDir/usr/bin/whitenoise \
-            --executable AppDir/usr/bin/wn-tts \
-            --executable AppDir/usr/bin/wn-stt \
-            --executable AppDir/usr/share/whitenoise-linux/wn-font \
-            --executable AppDir/usr/share/whitenoise-linux/wn-image \
-            --executable AppDir/usr/share/whitenoise-linux/wn-archive \
-            --executable AppDir/usr/share/whitenoise-linux/wn-pdf \
-            --executable AppDir/usr/share/whitenoise-linux/wn-mesh \
-            --executable AppDir/usr/share/whitenoise-linux/wn-fbx \
-            --executable AppDir/usr/share/whitenoise-linux/wn-math \
-            --executable AppDir/usr/share/whitenoise-linux/wn-nes \
+            --deploy-deps-only AppDir/usr/lib/whitenoise-linux \
             --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
           out="WhiteNoise-${GITHUB_REF_NAME}-x86_64.AppImage"

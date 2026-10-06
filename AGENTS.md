@@ -228,10 +228,14 @@ binary, so that layout is a contract with it:
 Without that tree, `res_dir` falls back to `vendor/`, the path this was built
 from, which is what a dev build wants and what a shipped binary must
 never rely on. **Anything new the app reads from disk at runtime goes under
-`res_dir()`, and gets copied there by `install-tree.sh`.** The data dir
+`res_dir()`, and gets copied there by `install-tree.sh`.** Programs go under
+`lib/whitenoise-linux` instead, never `share/`. A dev build finds them beside
+`build/app`. The data dir
 defaults to `$XDG_DATA_HOME/whitenoise`, which is what lands the Flatpak's
 data under `~/.var/app/<id>/data`.
 
+<prefix>/lib/whitenoise-linux/wn-*                 helper programs
+<prefix>/lib/whitenoise-linux/tts-lib/*.so         the speech runtime
 Fonts are bundled because the stacks would otherwise depend on the host
 distro's font layout, and the icon face in particular has no substitute (the
 glyphs are Nerd Font private-use codepoints). Noto Sans CJK is the deliberate

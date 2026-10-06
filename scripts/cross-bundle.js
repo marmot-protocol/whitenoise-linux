@@ -65,32 +65,40 @@ function dependencies(path) {
 }
 
 const queue = Array.from(files(destination)).filter(path => kind(path) === system);
+// Libraries staged before bundling keep their place (Linux's speech runtime
+// lives in usr/lib/whitenoise-linux/tts-lib); the rest are copied to libdir.
+const staged = new Map(queue.map(path => [basename(path), path]));
 const seen = new Set();
 while (queue.length) {
   const path = queue.pop();
   if (seen.has(path)) continue;
   seen.add(path);
+  // Search libdir plus the directory of each dependency found elsewhere.
+  const directories = new Set([libdir]);
   for (const dependency of dependencies(path)) {
     const name = basename(dependency);
     const lower = name.toLowerCase();
     if (system === "windows" && (windowsSystem.has(lower) || lower.startsWith("api-ms-") || lower.startsWith("ext-ms-"))) continue;
     if (system === "linux" && linuxSystem.test(name)) continue;
     if (system === "darwin" && (dependency.startsWith("/usr/lib/") || dependency.startsWith("/System/Library/"))) continue;
-    const target = join(libdir, name);
-    if (!existsSync(target)) {
+    let target = staged.get(name);
+    if (!target) {
+      target = join(libdir, name);
       const source = index.get(lower);
       if (!source) throw new Error(`Unresolved ${system} runtime dependency: ${dependency} (required by ${path})`);
       if (kind(source) !== system) throw new Error(`Wrong target library: ${source}`);
       cpSync(realpathSync(source), target, { preserveTimestamps: true });
+      staged.set(name, target);
       queue.push(target);
     }
+    directories.add(dirname(target));
     if (system === "darwin") run([installNameTool, "-change", dependency, "@rpath/" + name, path]);
   }
-  const libraryPath = relative(dirname(path), libdir) || ".";
+  const libraryPaths = Array.from(directories, directory => relative(dirname(path), directory) || ".");
   if (system === "linux") {
-    run(["patchelf", "--set-rpath", "$ORIGIN/" + libraryPath, path]);
+    run(["patchelf", "--set-rpath", libraryPaths.map(libraryPath => "$ORIGIN/" + libraryPath).join(":"), path]);
   } else if (system === "darwin") {
-    run([installNameTool, "-add_rpath", "@loader_path/" + libraryPath, path]);
+    for (const libraryPath of libraryPaths) run([installNameTool, "-add_rpath", "@loader_path/" + libraryPath, path]);
     if (extname(path) === ".dylib") run([installNameTool, "-id", "@rpath/" + basename(path), path]);
   }
 }

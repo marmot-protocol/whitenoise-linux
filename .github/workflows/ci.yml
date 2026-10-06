@@ -206,18 +206,11 @@ jobs:
           echo "$APPIMAGETOOL_SHA256  appimagetool" | sha256sum -c -
           chmod +x linuxdeploy appimagetool
           export LD_LIBRARY_PATH="/usr/local/sdl3/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          # --executable would copy each helper into usr/bin; --deploy-deps-only
+          # bundles their libraries and points their rpath at usr/lib in place.
           ./linuxdeploy --appdir AppDir \
             --executable AppDir/usr/bin/whitenoise \
-            --executable AppDir/usr/bin/wn-tts \
-            --executable AppDir/usr/bin/wn-stt \
-            --executable AppDir/usr/share/whitenoise-linux/wn-font \
-            --executable AppDir/usr/share/whitenoise-linux/wn-image \
-            --executable AppDir/usr/share/whitenoise-linux/wn-archive \
-            --executable AppDir/usr/share/whitenoise-linux/wn-pdf \
-            --executable AppDir/usr/share/whitenoise-linux/wn-mesh \
-            --executable AppDir/usr/share/whitenoise-linux/wn-fbx \
-            --executable AppDir/usr/share/whitenoise-linux/wn-math \
-            --executable AppDir/usr/share/whitenoise-linux/wn-nes \
+            --deploy-deps-only AppDir/usr/lib/whitenoise-linux \
             --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
           out="WhiteNoise-$(bash scripts/version.sh)-staging-${GITHUB_SHA:0:8}-x86_64.AppImage"

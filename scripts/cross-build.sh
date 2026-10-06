@@ -96,8 +96,10 @@ fi
 
 SYSTEM_LIBS=()
 RPATH=()
+# Linux needs no link-time rpath: cross-bundle.js replaces the RUNPATH of every
+# packaged ELF with one relative to its own place in the package.
 case "$SYSTEM" in
-  Linux) SYSTEM_LIBS=(-pthread -ldl -lm); RPATH=(-Wl,-rpath,'$ORIGIN/../lib:$ORIGIN/../share/whitenoise-linux/tts-lib') ;;
+  Linux) SYSTEM_LIBS=(-pthread -ldl -lm) ;;
   Windows) SYSTEM_LIBS=(-lws2_32 -luserenv -lbcrypt -lntdll -ladvapi32 -lcrypt32 -liphlpapi -lsecur32 -lshell32 -lole32 -luuid -luser32 -lgdi32) ;;
   Darwin) SYSTEM_LIBS=(-framework Security -framework CoreFoundation -framework SystemConfiguration -framework Cocoa -liconv -lresolv); RPATH=(-Wl,-rpath,@executable_path/../Frameworks) ;;
 esac

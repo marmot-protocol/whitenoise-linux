@@ -282,7 +282,7 @@ if [ "$(uname -s)" = Linux ]; then
   TTS="$HERE/vendor/sherpa-onnx"
   for speech in tts stt; do
     cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/app/$speech.c" "$HERE/build/libwnipc.a" \
-      -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib:$ORIGIN/../share/whitenoise-linux/tts-lib' \
+      -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
       $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 libavformat libavcodec libavutil libswresample libcrypto) -pthread -lm -o "$HERE/build/wn-$speech"
   done
 fi

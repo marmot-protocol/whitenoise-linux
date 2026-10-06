@@ -44,8 +44,10 @@ switching accounts or closing the app stops the helper.
 
 Runtime binaries, headers and notices are checksum-pinned by
 `scripts/build-tts.sh`. Linux x86-64 and aarch64 packages are selected by host
-architecture. `install-tree.sh` installs the shared libraries and notices under
-`share/whitenoise-linux/`. The downloaded model includes its MIT license.
+architecture. `install-tree.sh` installs the shared libraries under
+`lib/whitenoise-linux/tts-lib/` and the notices under
+`share/whitenoise-linux/licenses/`. The downloaded model includes its MIT
+license.
 The voice IDs follow the upstream sorted order: F1–F5, then M1–M5.
 
 ## Checks

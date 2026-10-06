@@ -1,8 +1,8 @@
 # Flatpak manifest. Builds the app from this checkout inside the GNOME
 # 50 SDK and installs it with scripts/install-tree.sh, so the /app tree
-# is the same usr/bin + usr/share/whitenoise-linux layout the AppImage
-# carries (res_dir in app/paths.odin resolves it relative to the
-# binary).
+# is the same usr/bin + usr/lib/whitenoise-linux + usr/share/whitenoise-linux
+# layout the AppImage carries (res_dir and helper_path in app/paths.odin
+# resolve it relative to the binary).
 #
 # The GNOME runtime is the freedesktop 25.08 runtime plus the GNOME
 # platform, which is what ships webkit2gtk-4.1 (and the GTK3 it needs):

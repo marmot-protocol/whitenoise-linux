@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # Install the built app and everything it reads at runtime under a
-# prefix, in the layout res_dir (app/paths.odin) expects:
+# prefix, in the layout res_dir and helper_path (app/paths.odin) expect:
 #
 #   <prefix>/bin/whitenoise
+#   <prefix>/lib/whitenoise-linux/{wn-*,tts-lib}
 #   <prefix>/share/whitenoise-linux/{emoji,emoji-catalog.tsv,fonts}
 #   <prefix>/share/{applications,icons,metainfo}/<id>.*
+#
+# Helpers are programs, so they live under lib/, not share/: distribution
+# policy (and Arch's namcap) reserves share/ for architecture-independent
+# data.
 #
 # Usage: install-tree.sh <prefix> <id>
 #   The AppImage passes AppDir/usr and the plain name; the Flatpak passes
@@ -16,7 +21,8 @@ ID="$2"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 
 RES="$PREFIX/share/whitenoise-linux"
-mkdir -p "$PREFIX/bin" "$RES/fonts" "$PREFIX/share/applications" \
+LIB="$PREFIX/lib/whitenoise-linux"
+mkdir -p "$PREFIX/bin" "$LIB" "$RES/fonts" "$PREFIX/share/applications" \
   "$PREFIX/share/icons/hicolor/256x256/apps" "$PREFIX/share/metainfo"
 
 cp "$HERE/build/app" "$PREFIX/bin/whitenoise"
@@ -25,10 +31,10 @@ cp "$HERE/build/app" "$PREFIX/bin/whitenoise"
 # could not start.
 SPEECH=
 if [ "$(uname -s)" = Linux ]; then SPEECH=1; fi
-if [ -n "$SPEECH" ]; then cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$PREFIX/bin/"; fi
+if [ -n "$SPEECH" ]; then cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$LIB/"; fi
 mkdir -p "$RES/licenses"
 cp "$HERE/build/wn-font" "$HERE/build/wn-image" "$HERE/build/wn-archive" "$HERE/build/wn-pdf" \
-  "$HERE/build/wn-mesh" "$HERE/build/wn-fbx" "$HERE/build/wn-math" "$HERE/build/wn-nes" "$RES/"
+  "$HERE/build/wn-mesh" "$HERE/build/wn-fbx" "$HERE/build/wn-math" "$HERE/build/wn-nes" "$LIB/"
 cp "$HERE/app/assets/agents/"*-LICENSE.txt "$RES/licenses/"
 cp "$HERE/vendor/crop-circles/LICENSE" "$RES/licenses/crop-circles.txt"
 cp "$HERE/vendor/common-passwords.LICENSE" "$RES/licenses/seclists.txt"
@@ -49,16 +55,15 @@ cp "$HERE/vendor/fonts/DejaVu-LICENSE.txt" "$RES/licenses/dejavu.txt"
 if [ -n "$SPEECH" ]; then
   cp "$HERE/docs/tts.md" "$RES/licenses/speech-model.md"
   cp "$HERE/docs/stt.md" "$RES/licenses/dictation-model.md"
-  mkdir -p "$RES/tts-lib"
-  cp "$HERE/build/tts-lib/"*.so "$RES/tts-lib/"
+  mkdir -p "$LIB/tts-lib"
+  cp "$HERE/build/tts-lib/"*.so "$LIB/tts-lib/"
 fi
 # The webxdc host process, only when webkit2gtk was present at build time.
 # Never ship it on OpenBSD, including leftovers from earlier installs.
-# The app looks for it beside its own binary.
 if [ "$(uname -s)" = OpenBSD ]; then
-  rm -f "$PREFIX/bin/wn-webview"
+  rm -f "$LIB/wn-webview"
 elif [ -x "$HERE/build/wn-webview" ]; then
-  cp "$HERE/build/wn-webview" "$PREFIX/bin/"
+  cp "$HERE/build/wn-webview" "$LIB/"
 fi
 # Every selectable set: emoji/<set>/ tiles plus the emoji/<set>.bin pack.
 cp -r "$HERE/vendor/emoji" "$RES/"

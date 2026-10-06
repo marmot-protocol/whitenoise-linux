@@ -14,21 +14,29 @@ STAGE="$OUT/package/$NAME"
 # dependency closure with the current build.
 rm -rf "$STAGE"
 EXE=
+# Linux keeps every helper program in the private usr/lib/whitenoise-linux:
+# usr/bin holds only the app, and usr/share only data.
 case "$TARGET" in
   linux-arm64|linux-amd64)
     SYSTEM=linux; BIN="$STAGE/usr/bin"; RES="$STAGE/usr/share/whitenoise-linux"
+    HELPERS="$STAGE/usr/lib/whitenoise-linux"; DECODERS="$HELPERS"
     TRIPLE=aarch64-linux-gnu; [ "$TARGET" = linux-arm64 ] || TRIPLE=x86_64-linux-gnu ;;
-  windows-amd64) SYSTEM=windows; BIN="$STAGE"; RES="$STAGE/resources"; EXE=.exe ;;
+  windows-amd64)
+    SYSTEM=windows; BIN="$STAGE"; RES="$STAGE/resources"; EXE=.exe
+    HELPERS="$BIN"; DECODERS="$RES" ;;
   darwin-amd64|darwin-arm64)
     SYSTEM=darwin; STAGE="$STAGE/White Noise.app"
-    BIN="$STAGE/Contents/MacOS"; RES="$STAGE/Contents/Resources/whitenoise-linux" ;;
+    BIN="$STAGE/Contents/MacOS"; RES="$STAGE/Contents/Resources/whitenoise-linux"
+    HELPERS="$BIN"; DECODERS="$RES" ;;
   *) echo "Unsupported target: $TARGET" >&2; exit 2 ;;
 esac
-mkdir -p "$BIN" "$RES/fonts" "$RES/licenses"
-cp "$OUT/whitenoise$EXE" "$OUT/wn-tts$EXE" "$OUT/wn-stt$EXE" "$BIN/"
-# Decoder helpers are resolved from resources, or beside the app on Windows.
+mkdir -p "$BIN" "$HELPERS" "$RES/fonts" "$RES/licenses"
+cp "$OUT/whitenoise$EXE" "$BIN/"
+cp "$OUT/wn-tts$EXE" "$OUT/wn-stt$EXE" "$HELPERS/"
+# Outside Linux, decoder helpers are resolved from resources, or beside the
+# app on Windows.
 cp "$OUT/wn-font$EXE" "$OUT/wn-image$EXE" "$OUT/wn-archive$EXE" "$OUT/wn-pdf$EXE" \
-  "$OUT/wn-mesh$EXE" "$OUT/wn-fbx$EXE" "$OUT/wn-math$EXE" "$OUT/wn-nes$EXE" "$RES/"
+  "$OUT/wn-mesh$EXE" "$OUT/wn-fbx$EXE" "$OUT/wn-math$EXE" "$OUT/wn-nes$EXE" "$DECODERS/"
 if [ "$SYSTEM" = windows ]; then
   # DLL lookup starts at each helper's executable directory.
   cp "$OUT/wn-font$EXE" "$OUT/wn-image$EXE" "$OUT/wn-archive$EXE" "$OUT/wn-pdf$EXE" \
@@ -64,7 +72,7 @@ if [ "$(uname -s)" = Darwin ]; then CA_BUNDLE=/etc/ssl/cert.pem; fi
 cp "$CA_BUNDLE" "$RES/cacert.pem"
 
 if [ "$SYSTEM" = linux ]; then
-  cp "$OUT/wn-webview" "$PREFIX/bin/curl" "$BIN/"
+  cp "$OUT/wn-webview" "$PREFIX/bin/curl" "$HELPERS/"
   # WebKit and GStreamer load these subprocesses/plugins dynamically: ELF
   # DT_NEEDED alone cannot discover them. Include their data as well.
   mkdir -p "$STAGE/usr/lib" "$STAGE/usr/share"
@@ -131,7 +139,7 @@ fi
 # ONNX can load provider libraries dynamically, outside the loader's import
 # table. Stage the complete pinned runtime before walking its dependencies.
 case "$SYSTEM" in
-  linux) RUNTIME="$STAGE/usr/lib"; SUFFIX='*.so*' ;;
+  linux) RUNTIME="$HELPERS/tts-lib"; SUFFIX='*.so*' ;;
   windows) RUNTIME="$STAGE"; SUFFIX='*.dll' ;;
   darwin) RUNTIME="$STAGE/Contents/Frameworks"; SUFFIX='*.dylib' ;;
 esac

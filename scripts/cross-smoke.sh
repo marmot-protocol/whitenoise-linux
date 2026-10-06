@@ -63,7 +63,8 @@ export SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke
 cd "$work"
 if [ "$target" = linux-arm64 ] || [ "$target" = linux-amd64 ]; then
   # Set the guest path, not LD_LIBRARY_PATH for the host's QEMU executable.
-  libs="$root/usr/lib:$root/usr/share/whitenoise-linux/tts-lib"
+  # Same as the package launcher: the speech runtime resolves via RUNPATH.
+  libs="$root/usr/lib"
   if [ "${#run[@]}" -gt 0 ]; then
     # Only glibc comes from the target distro. Every other dependency must
     # resolve from the shipped package, not the build sysroot.
