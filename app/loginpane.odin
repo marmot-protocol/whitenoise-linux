@@ -318,6 +318,7 @@ login_pane :: proc(ui: ^Ui_State) {
 				nip46_detail(ui.login_error),
 				{fontId = FONT_BODY, fontSize = 14, textColor = DANGER},
 			)
+			micro_button("LoginErrorCopy", tr("Copy error"))
 		}
 		// Floats to the root; the settings page hosts the same modal.
 		if open_now(clay.ID("BackupModal"), ui.backup_mode != .None) {

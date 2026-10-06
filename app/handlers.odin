@@ -37,6 +37,13 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	edit_text(ui, &ui.login_input)
 
+	// The raw runtime error, not the friendlier nip46_detail line, so a bug
+	// report carries the exact failure.
+	if clicked("LoginErrorCopy") && len(ui.login_error) > 0 {
+		copy_text(ui, ui.login_error, tr("Error copied"))
+		return
+	}
+
 	if ui.add_account_open && rl.IsKeyPressed(.ESCAPE) {
 		ui.add_account_open = false
 		clear(&ui.login_input)

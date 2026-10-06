@@ -893,6 +893,9 @@ msgstr "Kopieren"
 msgid "Copy JSON"
 msgstr "JSON kopieren"
 
+msgid "Copy error"
+msgstr "Fehler kopieren"
+
 msgid "Copy image"
 msgstr "Bild kopieren"
 
@@ -1650,6 +1653,9 @@ msgstr "Gib das Passwort ein, mit dem dieses Backup erstellt wurde. Die Einstell
 
 msgid "Enter your password to unlock this device's keys."
 msgstr "Gib dein Passwort ein, um die Schlüssel dieses Geräts zu entsperren."
+
+msgid "Error copied"
+msgstr "Fehler kopiert"
 
 #, c-format
 msgid "Estimated strength: %d bits. Required: %d."

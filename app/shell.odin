@@ -570,6 +570,18 @@ banner_bar :: proc(ui: ^Ui_State) {
 		) {}
 		clay.Text(ui.banner, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 		if clay.UI(clay.ID("BannerGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+		if clay.UI(clay.ID("BannerCopy"))(
+		{
+			layout = {padding = clay.PaddingAll(6)},
+			backgroundColor = hovered() ? HOVER : {},
+			cornerRadius = rr(6),
+		},
+		) {
+			clay.Text(ICON_COPY, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM})
+			if hovered() {
+				tooltip(tr("Copy"))
+			}
+		}
 		if clay.UI(clay.ID("BannerClose"))(
 		{
 			layout = {padding = clay.PaddingAll(6)},

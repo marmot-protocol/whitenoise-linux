@@ -1842,6 +1842,9 @@ app_main :: proc() {
 			if clicked("BannerClose") {
 				ui.banner = "" // borrowed from client_status; never freed here
 			}
+			if clicked("BannerCopy") {
+				copy_text(&ui, ui.banner, tr("Copied"))
+			}
 			update_handle()
 			if clicked("RailCollapse") {
 				toggle_rail(&ui)

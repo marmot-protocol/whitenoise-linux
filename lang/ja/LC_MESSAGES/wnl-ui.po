@@ -893,6 +893,9 @@ msgstr "コピー"
 msgid "Copy JSON"
 msgstr "JSON をコピー"
 
+msgid "Copy error"
+msgstr "エラーをコピー"
+
 msgid "Copy image"
 msgstr "画像をコピー"
 
@@ -1650,6 +1653,9 @@ msgstr "このバックアップの作成時に使ったパスワードを入力
 
 msgid "Enter your password to unlock this device's keys."
 msgstr "この端末の鍵のロックを解除するには、パスワードを入力してください。"
+
+msgid "Error copied"
+msgstr "エラーをコピーしました"
 
 #, c-format
 msgid "Estimated strength: %d bits. Required: %d."

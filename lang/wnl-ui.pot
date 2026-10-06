@@ -892,6 +892,9 @@ msgstr ""
 msgid "Copy JSON"
 msgstr ""
 
+msgid "Copy error"
+msgstr ""
+
 msgid "Copy image"
 msgstr ""
 
@@ -1648,6 +1651,9 @@ msgid "Enter the password this backup was created with. The settings, drafts, cu
 msgstr ""
 
 msgid "Enter your password to unlock this device's keys."
+msgstr ""
+
+msgid "Error copied"
 msgstr ""
 
 #, c-format
