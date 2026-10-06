@@ -5,6 +5,7 @@ package main
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
+import "core:strings"
 import "core:testing"
 import rl "sdlrl"
 
@@ -257,4 +258,100 @@ chat_title_overflow :: proc(t: ^testing.T) {
 		}
 	}
 	set_locale("en")
+}
+
+// A preview too long for its row ends in an ellipsis inside the clip,
+// and the fit stays put frame to frame and follows a rail resize.
+// SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=chat_preview_ellipsis
+@(test)
+chat_preview_ellipsis :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "chat_preview_ellipsis" {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(1400, 600, "Chat previews")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts()
+	load_themes()
+	apply_theme(0, 0)
+	set_locale("en")
+	memory: []u8
+	init_layout(&memory, 32768, {1400, 600})
+	defer delete(memory)
+	ui := Ui_State {
+		selected         = -1,
+		row_menu         = -1,
+		member_menu      = -1,
+		selected_contact = -1,
+	}
+	ui.prefs.rail_w = RAIL_W_MIN
+	ui.prefs.reduce_motion = true
+	append(&ui.accounts, "Test")
+	long_word :=
+		"Pneumonoultramicroscopicsilicovolcanoconiosis" +
+		"Pneumonoultramicroscopicsilicovolcanoconiosis"
+	append(
+		&ui.chats,
+		Chat_Row_Ui{group_id = "a", title = "New group", preview = long_word, tick = .DELIVERED},
+		Chat_Row_Ui {
+			group_id = "b",
+			title = "New group",
+			preview = "日本語の長いメッセージを送ります。マーモットは山に住んでいます。山の上で会いましょう。お弁当と水を忘れないでください。",
+		},
+		Chat_Row_Ui {
+			group_id = "c",
+			title = "Hikers",
+			preview = "Are you still coming to the marmot meetup tonight? Bring snacks 🧀 and water 🥾",
+			tick = .PENDING,
+		},
+		Chat_Row_Ui{group_id = "d", title = "Short", preview = "See you there"},
+	)
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {
+		g_ui, g_prefs = nil, nil
+		delete(ui.accounts); delete(ui.chats); delete(ui.rail_rows)
+		wrap_clear()
+	}
+
+	// Text drawn inside each row's preview clip, joined.
+	shown :: proc(commands: clay.ClayArray(clay.RenderCommand), index: u32) -> (string, bool) {
+		clip := clay.GetElementData(clay.ID("ChatRowPrevClip", index)).boundingBox
+		parts: [dynamic]string
+		parts.allocator = context.temp_allocator
+		inside := true
+		for command in commands.internalArray[:commands.length] {
+			box := command.boundingBox
+			if command.commandType != .Text ||
+			   box.y < clip.y ||
+			   box.y >= clip.y + clip.height ||
+			   box.x < clip.x ||
+			   box.x >= clip.x + clip.width {
+				continue
+			}
+			text := command.renderData.text.stringContents
+			append(&parts, string(text.chars[:text.length]))
+			inside &&= box.x + box.width <= clip.x + clip.width + 0.5
+		}
+		return strings.concatenate(parts[:], context.temp_allocator), inside
+	}
+
+	for rail_w in ([]int{RAIL_W_MIN, RAIL_W_MAX, RAIL_W_MIN}) {
+		ui.prefs.rail_w = rail_w
+		for _ in 0 ..< 3 {anim_snap_all(); build_layout(&ui, 0)}
+		commands := build_layout(&ui, 0)
+		for index in 0 ..< u32(3) {
+			text, inside := shown(commands, index)
+			testing.expect(t, strings.has_suffix(text, "…"), text)
+			testing.expect(t, inside, text)
+			frame := strings.clone(text, context.temp_allocator)
+			again, _ := shown(build_layout(&ui, 0), index)
+			testing.expect_value(t, again, frame)
+			commands = build_layout(&ui, 0)
+		}
+		text, _ := shown(commands, 3)
+		testing.expect_value(t, text, "See you there")
+		rl.BeginDrawing()
+		draw_frame(&commands)
+		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-chat-previews-%d.png", rail_w))
+		rl.EndDrawing()
+	}
 }

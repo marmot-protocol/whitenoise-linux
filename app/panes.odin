@@ -452,12 +452,13 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 									clip = {horizontal = true},
 								},
 								) {
-									body_line(0xC0000 + index, chat.preview, 12, TEXT_DIM)
+									row_preview(index, chat.preview)
 								}
-							}
-							if clay.UI(clay.ID("ChatRowPrevGap", index))(
+							} else if clay.UI(clay.ID("ChatRowPrevGap", index))(
 							{layout = {sizing = {width = clay.SizingGrow()}}},
-							) {}
+							) {
+								// Holds the tick right; a preview's clip grows there itself.
+							}
 							// An unacked optimistic send outranks the stored delivery
 							// state: the row is mid-send, whatever the last confirmed
 							// message says.
@@ -477,6 +478,32 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 			}
 		}
 	}
+}
+
+// The row's one-line preview, ended with an ellipsis inside the
+// ChatRowPrevClip it sits in. That clip is the row's only growing child,
+// so its width is the room left of the tick whatever the text is, and
+// last frame's box is this frame's room. A row's first frame draws the
+// line uncut; the clip hides the overflow until the box exists.
+//   Are you still coming to the marmot meetup to|   clipped
+//   Are you still coming to the marmot meetup…   |   fitted
+@(private)
+row_preview :: proc(index: u32, preview: string) {
+	tile_px := body_tile_size(preview, 12)
+	end := strings.index_byte(preview, '\n')
+	if end < 0 {
+		end = len(preview)
+	}
+	shown := preview
+	clip, laid_out := element_box(clay.ID("ChatRowPrevClip", index))
+	if laid_out &&
+	   (end < len(preview) || rune_fit(preview, 0, end, clip.width, 12, tile_px = tile_px) < end) {
+		// Room for the ellipsis and the 2px gap a chip leaves before it.
+		room := clip.width - rl.MeasureTextLine(FONT_BODY, 12, "…", 0).x - 2
+		cut := rune_fit(preview, 0, end, room, 12, tile_px = tile_px)
+		shown = fmt.tprintf("%s…", strings.trim_right_space(preview[:cut]))
+	}
+	body_line(0xC0000 + index, shown, 12, TEXT_DIM, tile_px = tile_px)
 }
 
 // What the rail row says about this chat's optimistic sends
@@ -1570,7 +1597,7 @@ archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
 				clip = {horizontal = true},
 			},
 			) {
-				body_line(0xC0000 + index, chat.preview, 12, TEXT_DIM)
+				row_preview(index, chat.preview)
 			}
 			if clay.UI(clay.ID("ArchiveRowMeta", index))(
 			{
