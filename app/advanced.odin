@@ -21,7 +21,7 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 
 import marmot "../marmot"
 
-APP_VERSION :: "2026.9.29+1" // YYYY.M.D + increasing build revision
+APP_VERSION :: "2026.10.6+1" // YYYY.M.D + increasing build revision
 
 Audit_File :: struct {
 	path:  string,
