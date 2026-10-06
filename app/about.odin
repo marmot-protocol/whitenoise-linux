@@ -79,8 +79,8 @@ settings_about :: proc(ui: ^Ui_State) {
 	}
 }
 
-// Three accent bars breathing out of phase, then the name: the login
-// card's "///" mark as geometry, so it animates and follows the theme.
+// Three accent bars breathing out of phase, then the name, drawn as
+// geometry so the header animates and follows the theme.
 @(private = "file")
 about_wordmark :: proc() {
 	t := rl.GetTime()

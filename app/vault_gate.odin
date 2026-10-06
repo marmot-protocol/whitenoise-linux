@@ -473,7 +473,7 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 			},
 			) {
 				glow(clay.ID("GateCard"), ACCENT, 0.55, 26)
-				clay.Text("///", {fontId = FONT_TITLE, fontSize = 34, textColor = ACCENT})
+				logo_mark()
 				clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT})
 				clay.Text(
 					creating ? tr("Pick a password. It encrypts everything in the app, and there is no way to recover it.") : tr("Enter your password to unlock this device's keys."),

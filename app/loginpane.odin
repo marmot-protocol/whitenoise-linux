@@ -141,7 +141,7 @@ login_pane :: proc(ui: ^Ui_State) {
 		border = {color = CARD_BORDER, width = bw()},
 	},
 	) {
-		if !pairing {clay.Text("///", {fontId = FONT_TITLE, fontSize = 34, textColor = ACCENT})}
+		if !pairing {logo_mark()}
 		clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT})
 
 		if auth_job != nil {

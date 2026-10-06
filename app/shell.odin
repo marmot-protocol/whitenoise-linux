@@ -727,6 +727,38 @@ tooltip :: proc(text: string, side: Tip_Side = .Below) {
 
 // ── Boot splash ─────────────────────────────────────────────────────
 
+// The logomark (assets/svg/logo.svg) as white on transparent, tinted
+// with ACCENT at draw time so it follows the theme. Rasterized at 3x
+// its 39x30 layout size, so it stays sharp at the default 1.5 zoom on
+// a 2x display.
+@(private = "file")
+LOGO_PNG := #load("assets/logo.png")
+@(private = "file")
+logo_tex: ^rl.Texture2D
+
+// Above the app name on the splash, vault gate and login cards.
+@(private)
+logo_mark :: proc() {
+	if logo_tex == nil {
+		img := rl.LoadImageFromMemory(".png", raw_data(LOGO_PNG), i32(len(LOGO_PNG)))
+		if img.data == nil {
+			return
+		}
+		logo_tex = new(rl.Texture2D)
+		logo_tex^ = rl.LoadTextureFromImage(img)
+		rl.UnloadImage(img)
+		rl.SetTextureFilter(logo_tex^, .BILINEAR)
+	}
+
+	if clay.UI(clay.ID_LOCAL("Logo"))(
+	{
+		layout = {sizing = {clay.SizingFixed(39), clay.SizingFixed(30)}},
+		image = {imageData = logo_tex},
+		overlayColor = ACCENT,
+	},
+	) {}
+}
+
 BOOT_PHASES := []string {
 	N_("Starting the runtime"),
 	N_("Loading your accounts"),
@@ -766,7 +798,7 @@ splash_frame :: proc(step: int) {
 			border = {color = CARD_BORDER, width = bw()},
 		},
 		) {
-			clay.Text("///", {fontId = FONT_TITLE, fontSize = 34, textColor = ACCENT})
+			logo_mark()
 			clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 22, textColor = TEXT})
 			if clay.UI(clay.ID("SplashGap"))(
 			{layout = {sizing = {height = clay.SizingFixed(6)}}},
