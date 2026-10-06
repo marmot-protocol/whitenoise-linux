@@ -8,4 +8,4 @@ Icon=@ID@
 Terminal=false
 Categories=Network;InstantMessaging;Chat;
 MimeType=x-scheme-handler/marmot;
-StartupWMClass=White Noise Linux
+StartupWMClass=@ID@

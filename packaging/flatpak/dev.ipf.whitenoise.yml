@@ -43,6 +43,9 @@ finish-args:
   - --socket=fallback-x11
   - --socket=pulseaudio
   - --device=dri
+  # SDL names the window after the executable ("whitenoise"); the shell
+  # needs the app id to match the exported desktop entry and its icon.
+  - --env=SDL_APP_ID=dev.ipf.whitenoise
   # Desktop alerts go through notify-send; links and the data folder
   # through xdg-open, which the runtime routes to the portal.
   - --talk-name=org.freedesktop.Notifications
