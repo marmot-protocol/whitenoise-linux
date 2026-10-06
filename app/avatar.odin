@@ -2,6 +2,7 @@
 package main
 
 import "core:fmt"
+import "core:math"
 import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -34,7 +35,7 @@ avatar_color :: proc(key: string) -> clay.Color {
 
 hsv :: proc(h, s, v: f32) -> clay.Color {
 	c := v * s
-	x := c * (1 - abs(mod(h / 60, 2) - 1))
+	x := c * (1 - abs(math.mod(h / 60, 2) - 1))
 	m := v - c
 
 	r, g, b: f32
@@ -53,10 +54,6 @@ hsv :: proc(h, s, v: f32) -> clay.Color {
 		r, g, b = c, 0, x
 	}
 	return {(r + m) * 255, (g + m) * 255, (b + m) * 255, 255}
-}
-
-mod :: proc(a, b: f32) -> f32 {
-	return a - b * f32(int(a / b))
 }
 
 // Up to two initials, keeping emoji and accented graphemes intact.
