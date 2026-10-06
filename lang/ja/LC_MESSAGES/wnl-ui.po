@@ -1508,6 +1508,12 @@ msgstr "このグループでは無効です。"
 msgid "Disappearing messages"
 msgstr "消えるメッセージ"
 
+msgid "Discard"
+msgstr "破棄"
+
+msgid "Discard your theme changes?"
+msgstr "テーマの変更を破棄しますか？"
+
 msgid "Discover"
 msgstr "見つける"
 
@@ -3708,6 +3714,9 @@ msgstr "このキーはnsecではありません。確認して、もう一度�
 
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr "チャットが一覧から消えます。後で参加するには新しい招待が必要です。"
+
+msgid "The colors and settings you changed in the editor are lost."
+msgstr "エディターで変更した色と設定は失われます。"
 
 #, c-format
 msgid "The group was renamed to %s"

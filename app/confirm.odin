@@ -24,6 +24,7 @@ Confirm_Kind :: enum {
 	Block,
 	Remove_Contact,
 	Delete_Theme,
+	Discard_Theme_Edit,
 	Delete_Folder,
 	Remove_Member,
 	Promote,
@@ -68,6 +69,10 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_(
 			"Delete this theme?",
 		), N_("Its file is removed from this device. Themes shared into a chat stay there."), N_("Delete")
+	case .Discard_Theme_Edit:
+		return N_(
+			"Discard your theme changes?",
+		), N_("The colors and settings you changed in the editor are lost."), N_("Discard")
 	case .Delete_Folder:
 		return N_(
 			"Delete this folder?",
@@ -267,6 +272,8 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		refresh_after_action(ui, client) // re-phrase rail previews without them
 	case .Delete_Theme:
 		delete_theme(ui, c.idx)
+	case .Discard_Theme_Edit:
+		theme_edit_close(ui, .Discard)
 	case .Delete_Folder:
 		// Folder names are unique; resolve again instead of trusting a stale index.
 		for name, i in ui.prefs.folders {

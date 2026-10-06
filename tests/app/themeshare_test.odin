@@ -7,6 +7,7 @@ import "core:sync"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:testing"
+import rl "sdlrl"
 
 // The slug is a filename and a map key, so anything that could escape
 // either has to be gone.
@@ -256,4 +257,47 @@ test_adopt_theme_replaces_by_slug :: proc(t: ^testing.T) {
 	testing.expect_value(t, second, first)
 	testing.expect(t, second >= 0 && second < len(theme_packs), "reused index is in range")
 	testing.expect_value(t, theme_packs[second].bg, [4]f32{32, 32, 32, 255})
+}
+
+// Escape closes an untouched theme editor at once. After an edit it asks
+// first, and only the confirm throws the edit away.
+@(test)
+test_theme_edit_escape_asks :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	load_themes()
+	packs := len(theme_packs)
+
+	ui: Ui_State
+	defer {
+		for field in ui.theme_fields {delete(field)}
+		delete(ui.theme_fields)
+		delete(ui.theme_flags)
+		delete(ui.theme_last)
+		delete(ui.theme_base)
+		delete(ui.confirm.arg)
+		delete(ui.confirm.name)
+	}
+	press_escape :: proc(ui: ^Ui_State) {
+		rl.PushKey(.ESCAPE, true)
+		handle_theme_edit(ui)
+		rl.PushKey(.ESCAPE, false)
+	}
+
+	theme_edit_open(&ui)
+	press_escape(&ui)
+	testing.expect(t, !ui.theme_edit && ui.confirm.kind == .None)
+	testing.expect_value(t, len(theme_packs), packs)
+
+	theme_edit_open(&ui)
+	append(&ui.theme_fields[0], "x")
+	press_escape(&ui)
+	testing.expect(t, ui.theme_edit, "an edited theme stays open behind the confirm")
+	testing.expect_value(t, ui.confirm.kind, Confirm_Kind.Discard_Theme_Edit)
+
+	run_confirm(&ui, nil)
+	testing.expect(t, !ui.theme_edit && ui.confirm.kind == .None)
+	testing.expect_value(t, len(theme_packs), packs)
 }

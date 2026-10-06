@@ -585,6 +585,7 @@ Ui_State :: struct {
 	theme_slot:                                            int, // the live working pack in theme_packs
 	theme_prev:                                            int, // theme to restore if the edit is cancelled
 	theme_last:                                            string, // last previewed toml, so a still frame reparses nothing
+	theme_base:                                            string, // toml as the editor opened, so Cancel knows if anything changed
 	thread_stack:                                          [dynamic]string, // open thread route, last = current root
 	gs_open:                                               bool, // global cross-chat search modal
 	gs_input:                                              [dynamic]u8, // its query box

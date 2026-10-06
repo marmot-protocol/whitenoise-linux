@@ -288,6 +288,8 @@ theme_edit_open :: proc(ui: ^Ui_State) {
 	ui.theme = ui.theme_slot
 	delete(ui.theme_last)
 	ui.theme_last = "" // forces the first preview
+	delete(ui.theme_base)
+	ui.theme_base = strings.clone(theme_edit_toml(ui))
 	theme_edit_preview(ui)
 }
 
@@ -620,8 +622,13 @@ handle_theme_edit :: proc(ui: ^Ui_State) -> bool {
 	if !ui.theme_edit {
 		return false
 	}
+	// An untouched editor closes at once; edits ask before they are lost.
 	if rl.IsKeyPressed(.ESCAPE) || clicked("ThemeEditCancel") {
-		theme_edit_close(ui, .Discard)
+		if theme_edit_toml(ui) == ui.theme_base {
+			theme_edit_close(ui, .Discard)
+		} else {
+			confirm_ask(ui, .Discard_Theme_Edit, "")
+		}
 		return true
 	}
 	if clicked("ThemeEditSave") {
@@ -687,7 +694,7 @@ Theme_Edit_Exit :: enum {
 }
 
 // Drop the working slot and put the previous theme back.
-@(private = "file")
+@(private)
 theme_edit_close :: proc(ui: ^Ui_State, exit: Theme_Edit_Exit) {
 	if ui.theme_slot >= 0 && ui.theme_slot < len(theme_packs) {
 		ordered_remove(&theme_packs, ui.theme_slot)

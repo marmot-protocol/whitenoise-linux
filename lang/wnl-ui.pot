@@ -1507,6 +1507,12 @@ msgstr ""
 msgid "Disappearing messages"
 msgstr ""
 
+msgid "Discard"
+msgstr ""
+
+msgid "Discard your theme changes?"
+msgstr ""
+
 msgid "Discover"
 msgstr ""
 
@@ -3706,6 +3712,9 @@ msgid "That key isn't an nsec. Double-check it and try again."
 msgstr ""
 
 msgid "The chat leaves your list. Joining later needs a new invite."
+msgstr ""
+
+msgid "The colors and settings you changed in the editor are lost."
 msgstr ""
 
 #, c-format

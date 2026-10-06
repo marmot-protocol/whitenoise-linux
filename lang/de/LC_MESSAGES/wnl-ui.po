@@ -1508,6 +1508,12 @@ msgstr "Für diese Gruppe deaktiviert."
 msgid "Disappearing messages"
 msgstr "Selbstlöschende Nachrichten"
 
+msgid "Discard"
+msgstr "Verwerfen"
+
+msgid "Discard your theme changes?"
+msgstr "Änderungen am Theme verwerfen?"
+
 msgid "Discover"
 msgstr "Entdecken"
 
@@ -3708,6 +3714,9 @@ msgstr "Dieser Schlüssel ist kein nsec. Überprüfe ihn und versuche es erneut.
 
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr "Der Chat verschwindet aus deiner Liste. Für einen späteren Beitritt brauchst du eine neue Einladung."
+
+msgid "The colors and settings you changed in the editor are lost."
+msgstr "Die Farben und Einstellungen, die du im Editor geändert hast, gehen verloren."
 
 #, c-format
 msgid "The group was renamed to %s"
