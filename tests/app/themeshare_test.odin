@@ -1,5 +1,6 @@
 package main
 
+import "core:math"
 import "core:os"
 import "core:strings"
 import "core:sync"
@@ -163,6 +164,39 @@ test_builtin_packs_legible :: proc(t: ^testing.T) {
 			)
 		}
 	}
+}
+
+// Mention chips are filled with the accent and inked with ink_on, so
+// the ink must reach WCAG AA (4.5:1) on any fill. The gray sweep
+// crosses the black/white tie near #777777, where a luma rule picks
+// white at 4.48:1; amber and navy are the light and dark extremes.
+@(test)
+test_ink_on_reads_on_any_fill :: proc(t: ^testing.T) {
+	linear :: proc(c: f32) -> f64 {
+		c := f64(c) / 255
+		return c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4)
+	}
+	lum :: proc(c: clay.Color) -> f64 {
+		return 0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b)
+	}
+	contrast :: proc(a, b: clay.Color) -> f64 {
+		hi, lo := max(lum(a), lum(b)), min(lum(a), lum(b))
+		return (hi + 0.05) / (lo + 0.05)
+	}
+
+	fills: [258]clay.Color = {
+		0 = {255, 193, 7, 255},
+		1 = {0, 0, 128, 255},
+	}
+	for v in 0 ..< 256 {
+		fills[2 + v] = {f32(v), f32(v), f32(v), 255}
+	}
+	for fill in fills {
+		ratio := contrast(ink_on(fill), fill)
+		testing.expectf(t, ratio >= 4.5, "ink on %v reads at %.2f:1", fill, ratio)
+	}
+	testing.expect_value(t, ink_on({255, 193, 7, 255}), BLACK)
+	testing.expect_value(t, ink_on({0, 0, 128, 255}), WHITE)
 }
 
 // The active pack is read every frame by layout while the index is

@@ -27,6 +27,11 @@ g_client: ^marmot.Client
 // Mention chip under the pointer (account hex), rebound every build.
 mention_hover: string
 
+// Horizontal inset of a mention chip's fill. render_segs pads with it
+// and body_atom measures with it, so wrapping matches the drawn chip.
+@(private)
+MENTION_PAD_X :: 5
+
 // ── token parsing ───────────────────────────────────────────────────
 
 // npub/nprofile bech32 → pubkey hex ("" when undecodable). nprofile
@@ -76,8 +81,11 @@ body_atom :: proc(text: string, at: int, size: u16) -> (end: int, width: f32) {
 		end, hx, ok = marmot_link_at(text, at)
 		if !ok {return 0, 0}
 	}
+	// Both insets, the avatar-to-label gap, the avatar (one line tall),
+	// then the label.
 	width =
-		6 +
+		2 * MENTION_PAD_X +
+		2 +
 		f32(size) +
 		rl.MeasureTextLine(FONT_TITLE, size, fmt.tprintf("@%s", mention_label(hx)), 0).x
 	return end, width

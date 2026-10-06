@@ -4,6 +4,7 @@
 package main
 
 import "core:fmt"
+import "core:math"
 import "core:os"
 import "core:slice"
 import "core:strconv"
@@ -189,6 +190,20 @@ luma :: proc(c: clay.Color) -> f32 {
 
 BLACK :: clay.Color{0, 0, 0, 255}
 WHITE :: clay.Color{255, 255, 255, 255}
+
+// Black or white, whichever has the higher WCAG contrast on fill. The
+// two tie at relative luminance 0.179, where (L + 0.05)^2 = 0.05 * 1.05,
+// so the winner always reaches at least 4.58:1 (amber gets black, navy
+// gets white).
+@(private)
+ink_on :: proc(fill: clay.Color) -> clay.Color {
+	linear :: proc(c: f32) -> f32 {
+		c := c / 255
+		return c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4)
+	}
+	lum := 0.2126 * linear(fill.r) + 0.7152 * linear(fill.g) + 0.0722 * linear(fill.b)
+	return lum > 0.179 ? BLACK : WHITE
+}
 
 // Toward the page's own extreme: on a dark theme "up" is lighter, on a
 // light one it is darker, so one derivation rule serves both.

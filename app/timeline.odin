@@ -2331,19 +2331,22 @@ render_segs :: proc(
 				styled_text(seg.text, seg.fonts, font_size, ACCENT)
 			}
 		} else if chips && len(seg.hex) > 0 {
-			// Chip tinted by the account's stable avatar hue; a mention
-			// of me gets the accent border. Click opens the profile.
+			// Chip filled with the exact accent and inked black or white,
+			// whichever contrasts more, so it reads on every accent slot
+			// of every pack. A mention of me gets a TEXT border, which
+			// stands apart from both the fill and the page. Click opens
+			// the profile.
 			me := g_ui != nil && seg.hex == g_ui.account_ref
 			if clay.UI(clay.ID("SegMention", id * 128 + u32(k)))(
 			{
 				layout = {
-					padding = {left = 2, right = 2, top = 1, bottom = 1},
+					padding = {left = MENTION_PAD_X, right = MENTION_PAD_X, top = 1, bottom = 1},
 					childGap = 2,
 					childAlignment = {y = .Center},
 				},
-				backgroundColor = avatar_color(seg.hex),
+				backgroundColor = ACCENT,
 				cornerRadius = rr(7),
-				border = me ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
+				border = me ? clay.BorderElementConfig{color = TEXT, width = bw()} : {},
 			},
 			) {
 				over := hovered()
@@ -2364,7 +2367,7 @@ render_segs :: proc(
 					{
 						fontId = FONT_TITLE,
 						fontSize = font_size,
-						textColor = {255, 255, 255, 235},
+						textColor = ink_on(ACCENT),
 						userData = rawptr(
 							uintptr(
 								len(seg.fonts) > 0 ? seg.fonts[0] & (TEXT_ADDED | TEXT_REMOVED) : 0,
