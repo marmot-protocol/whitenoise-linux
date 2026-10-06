@@ -173,12 +173,12 @@ crop_circle_layout :: proc(t: ^testing.T) {
 		commands := clay.EndLayout(0)
 		testing.expect_value(
 			t,
-			clay.GetElementData(clay.ID("PeerCircle", 0)).found,
+			clay.GetElementData(clay.ID("ProfileCardCircle", PEER_CARD_ID)).found,
 			photo_url != "",
 		)
 		mention := clay.ID("MentionAvatar", 70 * 128).id
 		testing.expect(t, !clay.GetElementData(clay.ID("PeepReveal", mention)).found)
-		for id in ([]clay.ElementId{clay.ID("PeepPhoto", mention), clay.ID("PeerAvatar", 0)}) {
+		for id in ([]clay.ElementId{clay.ID("PeepPhoto", mention), clay.ID("ProfileCardAvatar", PEER_CARD_ID)}) {
 			drawn := false
 			for command in commands.internalArray[:commands.length] {
 				if command.commandType != .Image ||
@@ -368,7 +368,10 @@ crop_circle_layout :: proc(t: ^testing.T) {
 			}
 			if pane == 3 {
 				testing.expect(t, clay.GetElementData(clay.ID("PeerViewProfile")).found)
-				testing.expect(t, !clay.GetElementData(clay.ID("PeerCircle", 0)).found)
+				testing.expect(
+					t,
+					!clay.GetElementData(clay.ID("ProfileCardCircle", PEER_CARD_ID)).found,
+				)
 			}
 			if (pane == 6 || pane == 7) && frame == 2 {
 				prefix := pane == 6 ? "Profile" : "Contact"

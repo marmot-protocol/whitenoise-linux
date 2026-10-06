@@ -34,6 +34,14 @@ Profile_Info :: struct {
 	name:    string,
 	pic_url: string,
 	nip05:   string,
+	about:   string,
+	banner:  string,
+}
+
+@(private)
+profile_info_free :: proc(info: Profile_Info) {
+	delete(info.name); delete(info.pic_url); delete(info.nip05)
+	delete(info.about); delete(info.banner)
 }
 
 // account hex → kind-0 essentials, shared by the visible UI snapshots.
@@ -98,7 +106,7 @@ profile_reads_stop :: proc() {
 	if batch := profile_batch; batch != nil {
 		thread.join(batch.worker)
 		thread.destroy(batch.worker)
-		for info in batch.infos {delete(info.name); delete(info.pic_url); delete(info.nip05)}
+		for info in batch.infos {profile_info_free(info)}
 		for id in batch.ids {delete(id)}
 		delete(batch.ids); delete(batch.infos); delete(batch.ok); free(batch)
 		profile_batch = nil
@@ -143,6 +151,8 @@ read_profile :: proc(client: ^marmot.Client, hex: string) -> (Profile_Info, bool
 			info.pic_url = strings.clone(string(meta.picture))
 		}
 		if meta.nip05 != nil {info.nip05 = strings.clone(string(meta.nip05))}
+		if meta.about != nil {info.about = strings.clone(string(meta.about))}
+		if meta.banner != nil {info.banner = strings.clone(string(meta.banner))}
 		marmot.user_profile_metadata_free(meta)
 	}
 	return info, true
@@ -165,7 +175,7 @@ register_starter_pic :: proc(hex: string, name: string, url: string, image: rl.I
 		pic_url = strings.clone(url)
 	}
 	if old, ok := profile_cache[hex]; ok {
-		delete(old.name); delete(old.pic_url); delete(old.nip05)
+		profile_info_free(old)
 		profile_cache[hex] = {
 			name    = strings.clone(name),
 			pic_url = pic_url,
@@ -355,9 +365,7 @@ drain_refresh :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
 	old := profile_cache[hex]
 	if old == info {
-		delete(info.name)
-		delete(info.pic_url)
-		delete(info.nip05)
+		profile_info_free(info)
 		return false
 	}
 	profile_cache[hex] = info
@@ -410,9 +418,7 @@ update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
 		ui.accounts[i] = strings.clone(name)
 		ui.account_pics[i] = strings.clone(info.pic_url)
 	}
-	delete(old.name)
-	delete(old.pic_url)
-	delete(old.nip05)
+	profile_info_free(old)
 	return true
 }
 
@@ -665,7 +671,7 @@ stop_pic_worker :: proc() {
 profile_session_clear :: proc() {
 	session_textures_clear(&pic_textures)
 	for key, info in profile_cache {
-		delete(key); delete(info.name); delete(info.pic_url); delete(info.nip05)
+		delete(key); profile_info_free(info)
 	}
 	clear(&profile_cache)
 	clear(&profile_order)

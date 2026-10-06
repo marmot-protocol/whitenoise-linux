@@ -3984,10 +3984,10 @@ msgstr ""
 msgid "View as hex"
 msgstr ""
 
-msgid "View full profile"
+msgid "View keyboard shortcuts"
 msgstr ""
 
-msgid "View keyboard shortcuts"
+msgid "View profile"
 msgstr ""
 
 msgid "View raw event"

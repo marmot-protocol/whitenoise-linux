@@ -44,9 +44,9 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	}
 
 	info := Profile_Info {
-		strings.clone("After"),
-		strings.clone("https://example.org/new.png"),
-		strings.clone("after@example.org"),
+		name    = strings.clone("After"),
+		pic_url = strings.clone("https://example.org/new.png"),
+		nip05   = strings.clone("after@example.org"),
 	}
 	testing.expect(t, update_profile(&ui, hex, info))
 	testing.expect_value(t, profile_info(nil, hex).name, "After")
@@ -72,7 +72,11 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 		!update_profile(
 			&ui,
 			hex,
-			{strings.clone(info.name), strings.clone(info.pic_url), strings.clone(info.nip05)},
+			{
+				name = strings.clone(info.name),
+				pic_url = strings.clone(info.pic_url),
+				nip05 = strings.clone(info.nip05),
+			},
 		),
 	)
 	testing.expect_value(t, raw_data(ui.members[0].pic_url), before)

@@ -667,19 +667,13 @@ open_peer :: proc(
 	ui.peer_open = true
 }
 
-// Peer-profile popup with a jump to the full profile for any public key.
+// Peer-profile popup: the same card a bare mention draws, carrying
+// copy-npub and a jump to the full profile for any public key.
 peer_modal :: proc(ui: ^Ui_State) {
+	width := modal_w(clay.ID("PeerModal"), 400)
 	if clay.UI(clay.ID("PeerModal"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("PeerModal"), 400))},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(20),
-			childGap = 14,
-		},
-		backgroundColor = CARD,
-		cornerRadius = rr(16),
-		border = {color = CARD_BORDER, width = bw()},
+		layout = {sizing = {width = clay.SizingFixed(width)}},
 		floating = {
 			attachTo = .Root,
 			zIndex = 13,
@@ -688,56 +682,7 @@ peer_modal :: proc(ui: ^Ui_State) {
 		},
 	},
 	) {
-		if clay.UI(clay.ID("PeerHead"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 14,
-				childAlignment = {y = .Center},
-			},
-		},
-		) {
-			photo := url_pic(ui.peer_pic)
-			avatar("PeerAvatar", 0, ui.peer_hex, ui.peer_name, 56, photo)
-			if clay.UI(clay.ID("PeerHeadCol"))(
-			{layout = {layoutDirection = .TopToBottom, childGap = 3}},
-			) {
-				clay.Text(ui.peer_name, {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
-				if clay.UI(clay.ID("PeerFingerprint"))(
-				{layout = {childGap = 6, childAlignment = {y = .Center}}},
-				) {
-					if photo != nil {
-						crop_circle("PeerCircle", 0, ui.peer_hex, 24)
-					}
-					clay.Text(
-						npub_tail(ui.peer_npub),
-						{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
-					)
-				}
-			}
-			if clay.UI(clay.ID("PeerHeadGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-			if clay.UI(clay.ID("PeerClose"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(7),
-			},
-			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
-			}
-		}
-
-		if clay.UI(clay.ID("PeerActions"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-		) {
-			micro_button("PeerCopyNpub", tr("Copy npub"))
-			micro_button("PeerViewProfile", tr("View full profile"))
-		}
+		profile_card(PEER_CARD_ID, ui.peer_hex, width, .Peer_Popup)
 	}
 }
 

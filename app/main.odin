@@ -1552,6 +1552,7 @@ app_main :: proc() {
 			media_retry_hover = false
 			reply_jump_hover = ""
 			mention_hover = ""
+			profile_card_hover = ""
 			clear(&drag_targets)
 			clear(&gcode_bars)
 			clear(&video_bars)
@@ -1977,6 +1978,7 @@ app_main :: proc() {
 			handle_model_click(&ui, client)
 			handle_code_click(&ui, client)
 			handle_pdf_full(&ui, client)
+			handle_profile_card_click(&ui, client)
 			handle_mention_click(&ui, client)
 			handle_img_retry(&ui, client)
 			handle_media_retry(&ui, client)

@@ -339,7 +339,7 @@ session_media_clear :: proc() {
 	nes_hover = {}
 	stt_hover = {}
 	att_hover = {}
-	mention_hover, link_hover, img_link_hover = "", "", ""
+	mention_hover, link_hover, img_link_hover, profile_card_hover = "", "", "", ""
 }
 
 @(private = "file")

@@ -588,6 +588,12 @@ render_range :: proc(
 					bounds.height,
 					view.tex,
 				)
+			case .Banner:
+				tint := clay.Color{255, 255, 255, 255}
+				if len(overlay_colors) > 0 && overlay_colors[len(overlay_colors) - 1] != 0 {
+					tint = overlay_colors[len(overlay_colors) - 1]
+				}
+				banner_draw((^Banner_View)(data), bounds, tint)
 			case .Image_Crop:
 				tex := (^Image_Crop)(data).tex
 				if tex.width <= 0 || tex.height <= 0 {continue}

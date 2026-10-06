@@ -3985,11 +3985,11 @@ msgstr "Anzeigen"
 msgid "View as hex"
 msgstr "Als Hex anzeigen"
 
-msgid "View full profile"
-msgstr "Vollständiges Profil anzeigen"
-
 msgid "View keyboard shortcuts"
 msgstr "Tastenkürzel ansehen"
+
+msgid "View profile"
+msgstr "Profil ansehen"
 
 msgid "View raw event"
 msgstr "Rohes Ereignis anzeigen"

@@ -3985,11 +3985,11 @@ msgstr "Visualizza"
 msgid "View as hex"
 msgstr "Visualizza in esadecimale"
 
-msgid "View full profile"
-msgstr "Visualizza il profilo completo"
-
 msgid "View keyboard shortcuts"
 msgstr "Vedi le scorciatoie da tastiera"
+
+msgid "View profile"
+msgstr "Vedi il profilo"
 
 msgid "View raw event"
 msgstr "Visualizza evento grezzo"

@@ -3985,11 +3985,11 @@ msgstr "表示"
 msgid "View as hex"
 msgstr "16進数で表示"
 
-msgid "View full profile"
-msgstr "プロフィール全体を表示"
-
 msgid "View keyboard shortcuts"
 msgstr "キーボードショートカットを表示"
+
+msgid "View profile"
+msgstr "プロフィールを表示"
 
 msgid "View raw event"
 msgstr "生イベントを表示"

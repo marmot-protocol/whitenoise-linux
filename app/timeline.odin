@@ -1680,13 +1680,22 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			if giphy_message_url(msg.body) != "" {
 				gh_cards_on = false
 			}
+			// A body that is one bare npub/nprofile becomes that person's
+			// card. Either way the text itself is not drawn.
+			replaced := giphy
+			if !giphy && !msg.deleted && len(msg.secrets) == 0 {
+				if hex := bare_mention_hex(msg.body); len(hex) > 0 {
+					profile_card(index * 4096, hex, att_w(360), .Message)
+					replaced = true
+				}
+			}
 
 			cropped :=
-				!giphy &&
+				!replaced &&
 				len(msg.blocks) == 0 &&
 				!msg.deleted &&
 				message_excerpt(index * 4096, msg.body, TEXT, msg.excerpt)
-			if !giphy && !cropped && len(msg.blocks) == 0 && len(msg.body) > 0 {
+			if !replaced && !cropped && len(msg.blocks) == 0 && len(msg.body) > 0 {
 				body_text(index * 4096, msg.body, 14, TEXT, true, emoji = .Jumbo)
 			}
 
@@ -1704,7 +1713,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				)
 			}
 
-			if !giphy &&
+			if !replaced &&
 			   len(msg.secrets) == 0 &&
 			   !cropped &&
 			   excerpt_body(
