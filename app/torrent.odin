@@ -506,39 +506,10 @@ tor_fit :: proc(text: string, width: f32, font, size: u16) -> string {
 		return text
 	}
 	half := max(0, (width - rl.MeasureTextLine(font, size, "…", 0).x) / 2)
-
-	cuts := tor_cuts(text)
-
-	// Longest head that fits in half: the last cut whose prefix fits.
-	lo, hi := 0, len(cuts) - 1
-	for lo < hi {
-		mid := (lo + hi + 1) / 2
-		if rl.MeasureTextLine(font, size, text[:cuts[mid]], 0).x <=
-		   half {lo = mid} else {hi = mid - 1}
-	}
-	head := lo
-
-	// Longest tail that fits in half: the first cut past the head whose
-	// suffix fits (the last cut, an empty suffix, always does).
-	lo, hi = head, len(cuts) - 1
-	for lo < hi {
-		mid := (lo + hi) / 2
-		if rl.MeasureTextLine(font, size, text[cuts[mid]:], 0).x <=
-		   half {hi = mid} else {lo = mid + 1}
-	}
-	return fmt.tprintf("%s…%s", text[:cuts[head]], text[cuts[lo]:])
-}
-
-// Rune starts plus the end, so searches never cut inside a UTF-8
-// sequence.
-@(private = "file")
-tor_cuts :: proc(text: string) -> []int {
-	cuts := make([dynamic]int, 0, len(text) + 1, context.temp_allocator)
-	for i in 0 ..< len(text) {
-		if text[i] & 0xc0 != 0x80 {append(&cuts, i)}
-	}
-	append(&cuts, len(text))
-	return cuts[:]
+	head := text_fit(text, half, font, size, .Head)
+	// The tail is searched past the head, so the two never overlap.
+	tail := head + text_fit(text[head:], half, font, size, .Tail)
+	return fmt.tprintf("%s…%s", text[:head], text[tail:])
 }
 
 // Closed, the tile is the header and the magnet button. A click on the

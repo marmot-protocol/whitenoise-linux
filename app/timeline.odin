@@ -2265,7 +2265,7 @@ image_link :: proc(id: u32, url: string, size: u16, width: f32) {
 		if clay.UI(clay.ID("ImageLinkUrl", id))({}) {
 			// Plain, single line: body_text would turn an npub inside the host into a mention chip.
 			clay.Text(
-				group_file_label(url, inner_w, FONT_BODY, size),
+				text_ellipsis(url, inner_w, FONT_BODY, size),
 				{fontId = FONT_BODY, fontSize = size, textColor = ACCENT, wrapMode = .None},
 			)
 			if hovered() {link_hover = url}

@@ -582,7 +582,7 @@ group_file_card :: proc(ui: ^Ui_State, job: ^Group_Files_Job, index: int, width:
 			{layout = {sizing = {width = clay.SizingGrow()}}},
 			) {
 				clay.Text(
-					group_file_label(name, width - 20, FONT_TITLE, 12),
+					text_ellipsis(name, width - 20, FONT_TITLE, 12),
 					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT, wrapMode = .None},
 				)
 			}
@@ -605,7 +605,7 @@ group_file_card :: proc(ui: ^Ui_State, job: ^Group_Files_Job, index: int, width:
 				},
 				) {
 					clay.Text(
-						group_file_label(
+						text_ellipsis(
 							group_sender_label(ui, string(file.record.sender)),
 							width - 50,
 							FONT_BODY,
@@ -642,22 +642,6 @@ group_file_card :: proc(ui: ^Ui_State, job: ^Group_Files_Job, index: int, width:
 			}
 		}
 	}
-}
-
-// Fit whole UTF-8 characters without allocating a scroll container per label.
-@(private)
-group_file_label :: proc(text: string, width: f32, font, size: u16) -> string {
-	if rl.MeasureTextLine(font, size, text, 0).x <= width {return text}
-	available := max(0, width - rl.MeasureTextLine(font, size, "…", 0).x)
-	lo, hi := 0, len(text)
-	for lo < hi {
-		mid := (lo + hi + 1) / 2
-		cut := mid
-		for cut < len(text) && (u8(text[cut]) & 0xc0) == 0x80 {cut += 1}
-		if rl.MeasureTextLine(font, size, text[:cut], 0).x <=
-		   available {lo = cut} else {hi = mid - 1}
-	}
-	return fmt.tprintf("%s…", text[:lo])
 }
 
 @(private)

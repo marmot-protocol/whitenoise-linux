@@ -1,7 +1,10 @@
 package main
 
 import "base:runtime"
+import "core:fmt"
 import "core:strings"
+
+import rl "sdlrl"
 
 @(private)
 Wrap_Key :: struct {
@@ -127,4 +130,54 @@ wrapped_lines :: proc(
 	wrap_cache[key] = owned
 	wrap_bytes += bytes
 	return owned
+}
+
+// Which end of a string text_fit keeps.
+@(private)
+Fit_End :: enum {
+	Head, // text[:cut]
+	Tail, // text[cut:]
+}
+
+// Byte offset of the widest cut, on a UTF-8 rune boundary, whose kept
+// end of one-font `text` is no wider than `width`. Binary search over
+// byte offsets snapped back onto rune starts: log2(len) measurements
+// rather than one per rune. The empty end always fits, so 0 (.Head) or
+// len(text) (.Tail) is the floor.
+@(private)
+text_fit :: proc(text: string, width: f32, font, size: u16, keep: Fit_End) -> int {
+	lo, hi := 0, len(text)
+	switch keep {
+	case .Head:
+		for lo < hi {
+			mid := (lo + hi + 1) / 2
+			if rl.MeasureTextLine(font, size, text[:rune_snap(text, mid)], 0).x <= width {
+				lo = mid
+			} else {
+				hi = mid - 1
+			}
+		}
+	case .Tail:
+		for lo < hi {
+			mid := (lo + hi) / 2
+			if rl.MeasureTextLine(font, size, text[rune_snap(text, mid):], 0).x <= width {
+				hi = mid
+			} else {
+				lo = mid + 1
+			}
+		}
+	}
+	return rune_snap(text, lo)
+}
+
+// Shorten one-font text to `width` with a trailing ellipsis, so a label
+// needs no clip element of its own:
+//   Mountain marmot at sunrise.png  ->  Mountain marmot at su…
+@(private)
+text_ellipsis :: proc(text: string, width: f32, font, size: u16) -> string {
+	if rl.MeasureTextLine(font, size, text, 0).x <= width {
+		return text
+	}
+	room := max(0, width - rl.MeasureTextLine(font, size, "…", 0).x)
+	return fmt.tprintf("%s…", text[:text_fit(text, room, font, size, .Head)])
 }

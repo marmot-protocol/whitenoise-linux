@@ -116,7 +116,7 @@ group_files_layout :: proc(t: ^testing.T) {
 	init_fonts()
 	for label in ([]string{"Short.png", "日本語の長いファイル名.png", "Mountain marmot.png"}) {
 		width := rl.MeasureTextLine(FONT_TITLE, 12, label, 0).x / 2
-		short := group_file_label(label, width, FONT_TITLE, 12)
+		short := text_ellipsis(label, width, FONT_TITLE, 12)
 		testing.expect(t, strings.has_suffix(short, "…"))
 		testing.expect(t, rl.MeasureTextLine(FONT_TITLE, 12, short, 0).x <= width)
 		testing.expect(t, strings.has_prefix(label, strings.trim_suffix(short, "…")))
