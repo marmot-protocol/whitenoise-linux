@@ -806,7 +806,7 @@ nev_card_excerpt :: proc(id: u32, key: string, card: Nev_Card, width: f32, summa
 	description := len(summary) > 0 ? summary : card.content
 	base := 0x20000000 + id * 64
 	full :=
-		card.excerpt.expanded ||
+		excerpt_expanded(card.excerpt) ||
 		card.excerpt.changed != {} &&
 			motion_on() &&
 			time.tick_since(card.excerpt.changed) < EXCERPT_DURATION
@@ -837,7 +837,7 @@ nev_card_excerpt :: proc(id: u32, key: string, card: Nev_Card, width: f32, summa
 		) {
 			if hovered() {nev_more_hover, nev_more_id = key, base + 5}
 			clay.Text(
-				card.excerpt.expanded ? tr("Show less") : tr("Read more"),
+				excerpt_expanded(card.excerpt) ? tr("Show less") : tr("Read more"),
 				{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
 			)
 		}

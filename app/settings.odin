@@ -46,6 +46,7 @@ Prefs :: struct {
 	zoom_pct:              int, // 100 = the default 1.5 render scale
 	scroll_speed:          int, // wheel multiplier in percent; 200 = 2x raw
 	centered_chat:         bool,
+	auto_expand_messages:  bool,
 	reduce_motion:         bool, // snaps every transition; nothing animates
 	body_font:             int, // message-body px delta; -2/0/+2 = small/default/large
 	emoji_set:             Emoji_Set, // art for the picker, reactions and message emoji

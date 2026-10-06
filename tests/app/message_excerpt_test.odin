@@ -203,6 +203,56 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 			}
 		}
 	}
+	// The preference opens new bodies, but never overrides Show less.
+	for markdown in ([]bool{false, true}) {
+		state: Excerpt
+		for step in 0 ..< 6 {
+			ui.prefs.auto_expand_messages = step != 0 && step != 3
+			ui.prefs.reduce_motion = false
+			if step == 2 || step == 5 {excerpt_toggle(&state, 99)}
+			if step == 5 {state.changed = time.tick_add(time.tick_now(), -EXCERPT_DURATION)}
+			clear(&sel_lines)
+			clay.BeginLayout()
+			if clay.UI(clay.ID("AutoExpandTest"))(
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(700)}}},
+			) {
+				testing.expect(
+					t,
+					excerpt_body(
+						99,
+						"1\n2\n3\n4\n5\n6\n7",
+						markdown ? rows[:] : nil,
+						state,
+						700,
+						TEXT,
+					),
+				)
+				message_more(99, state)
+			}
+			commands := clay.EndLayout(0)
+			expanded := step == 1 || step == 5
+			testing.expect_value(t, len(sel_lines), expanded ? 7 : MESSAGE_LINES)
+			testing.expect(
+				t,
+				clay.GetElementData(clay.ID("ExcerptClip", 99)).boundingBox.height > 0,
+			)
+			if step == 1 {
+				rl.BeginDrawing()
+				clay_raylib_render(&commands)
+				rl.TakeScreenshot(
+					markdown ? "/tmp/wn-auto-markdown.png" : "/tmp/wn-auto-plain.png",
+				)
+				rl.EndDrawing()
+			}
+		}
+	}
+	clay.BeginLayout()
+	if clay.UI(clay.ID("AutoExpandShort"))({layout = {layoutDirection = .TopToBottom}}) {
+		testing.expect(t, !excerpt_body(99, "Short message", nil, {}, 700, TEXT))
+		testing.expect(t, !excerpt_body(100, "", rows[:1], {}, 700, TEXT))
+	}
+	clay.EndLayout(0)
+	ui.prefs.auto_expand_messages = false
 	ui.prefs.reduce_motion = true
 	list := parse_md_text(
 		"asked astra:\n\n• Jeff has related work, but I found no duplicate of #1961:\n\n" +

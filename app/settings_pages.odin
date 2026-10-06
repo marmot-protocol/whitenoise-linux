@@ -347,7 +347,9 @@ settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
 		     "RowMotion",
 		     "TgMotion",
 		     "RowCentered",
-		     "TgCentered":
+		     "TgCentered",
+		     "RowAutoExpand",
+		     "TgAutoExpand":
 			return 1
 		case "RowAvatarShape", "AvatarShapeChip", "RowCropShape", "CropShapeChip":
 			return 2
@@ -1336,6 +1338,16 @@ settings_appearance :: proc(ui: ^Ui_State) {
 					),
 				)
 			}
+			if clay.UI(clay.ID("RowAutoExpand"))(settings_row()) {
+				settings_check(
+					"TgAutoExpand",
+					ui.prefs.auto_expand_messages,
+					tr("Automatically expand long messages"),
+					tr(
+						"Show long messages and event cards in full. You can still choose Show less.",
+					),
+				)
+			}
 		}
 	}
 }
@@ -1714,6 +1726,9 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 		flip(ui, &ui.prefs.reduce_motion)
 	case "TgCentered":
 		flip(ui, &ui.prefs.centered_chat)
+	case "TgAutoExpand":
+		flip(ui, &ui.prefs.auto_expand_messages)
+		for &msg in ui.messages {msg.row_height = 0}
 	case "TgNotify":
 		flip(ui, &ui.prefs.notify_desktop)
 	case "TgSound":

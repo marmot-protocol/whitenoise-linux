@@ -36,6 +36,13 @@ SETTINGS_TASKS := []Settings_Task {
 	{.Appearance, N_("Change the scroll speed"), "RowScroll", "mouse wheel", false},
 	{.Appearance, N_("Reduce motion"), "RowMotion", "animation accessibility", false},
 	{.Appearance, N_("Centre the conversation"), "RowCentered", "layout width centred", false},
+	{
+		.Appearance,
+		N_("Automatically expand long messages"),
+		"RowAutoExpand",
+		"read more collapse event cards",
+		false,
+	},
 	{.Appearance, N_("Share this theme"), "RowThemeShare", "edit custom theme", false},
 	{.General, N_("Change the interface language"), "RowLang", "locale translation", true},
 	{.General, N_("Launch at login"), "RowLaunch", "startup autostart", true},

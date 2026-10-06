@@ -435,6 +435,9 @@ msgstr "監査ログ"
 msgid "Aug"
 msgstr "8月"
 
+msgid "Automatically expand long messages"
+msgstr "長いメッセージを自動的に展開"
+
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr "画像と対応ウェブサイトのプレビューを自動的に読み込みます。配信元の運営者にはあなたのIPアドレスが見えます。オフにするとリンクのプレビューの自動読み込みは停止しますが、添付ファイルのダウンロードは継続されます。"
 
@@ -3533,6 +3536,9 @@ msgstr "ヒントを表示"
 
 msgid "Show less"
 msgstr "折りたたむ"
+
+msgid "Show long messages and event cards in full. You can still choose Show less."
+msgstr "長いメッセージとイベントカードを全文表示します。「表示を減らす」で折りたたむこともできます。"
 
 msgid "Show maps from OpenStreetMap?"
 msgstr "OpenStreetMap の地図を表示しますか?"

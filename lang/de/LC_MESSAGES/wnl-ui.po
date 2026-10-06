@@ -435,6 +435,9 @@ msgstr "Audit-Protokolle"
 msgid "Aug"
 msgstr "Aug."
 
+msgid "Automatically expand long messages"
+msgstr "Lange Nachrichten automatisch aufklappen"
+
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr "Vorschauen von Bildern und unterstützten Websites werden automatisch geladen. Deren Betreiber können deine IP-Adresse sehen. Wenn du dies ausschaltest, werden Linkvorschauen nicht mehr automatisch geladen. Anhänge werden weiterhin heruntergeladen."
 
@@ -3533,6 +3536,9 @@ msgstr "Hinweis anzeigen"
 
 msgid "Show less"
 msgstr "Weniger anzeigen"
+
+msgid "Show long messages and event cards in full. You can still choose Show less."
+msgstr "Zeigt lange Nachrichten und Ereigniskarten vollständig an. Du kannst weiterhin Weniger anzeigen wählen."
 
 msgid "Show maps from OpenStreetMap?"
 msgstr "Karten von OpenStreetMap anzeigen?"

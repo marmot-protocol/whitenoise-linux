@@ -3233,6 +3233,7 @@ EXCERPT_DURATION :: 100 * time.Millisecond
 @(private)
 Excerpt :: struct {
 	expanded:                   bool,
+	manual:                     bool, // a per-message choice overrides the preference
 	changed:                    time.Tick,
 	from_height, closed_height: f32,
 }
@@ -3244,14 +3245,21 @@ Excerpt_Source :: enum {
 }
 
 @(private)
+excerpt_expanded :: proc(state: Excerpt) -> bool {
+	return state.expanded || !state.manual && g_prefs != nil && g_prefs.auto_expand_messages
+}
+
+@(private)
 excerpt_toggle :: proc(state: ^Excerpt, id: u32) {
 	state.from_height = clay.GetElementData(clay.ID("ExcerptClip", id)).boundingBox.height
-	if !state.expanded &&
-	   (state.changed == {} || time.tick_since(state.changed) >= EXCERPT_DURATION) {
+	expanded := excerpt_expanded(state^)
+	if !expanded && (state.changed == {} || time.tick_since(state.changed) >= EXCERPT_DURATION) {
 		state.closed_height = state.from_height
 	}
-	state.expanded = !state.expanded
-	state.changed = time.tick_now()
+	state.expanded = !expanded
+	state.manual = true
+	// An automatically opened body has no measured closed height yet.
+	state.changed = state.expanded || state.closed_height > 0 ? time.tick_now() : time.Tick{}
 }
 
 @(private)
@@ -3266,14 +3274,15 @@ excerpt_body :: proc(
 	emoji := Emoji_Scale.Inline,
 ) -> bool {
 	if len(text) == 0 && len(blocks) == 0 {return false}
+	expanded := excerpt_expanded(state)
 	progress :=
 		state.changed == {} || !motion_on() ? f32(1) : clamp(f32(time.tick_since(state.changed)) / f32(EXCERPT_DURATION), 0, 1)
 	moving := progress < 1
-	limit := state.expanded || moving ? max(int) : MESSAGE_LINES
+	limit := expanded || moving ? max(int) : MESSAGE_LINES
 	height := clay.SizingFit()
 	if moving {
 		full := clay.GetElementData(clay.ID("ExcerptBody", id)).boundingBox.height
-		target := state.expanded ? full : state.closed_height
+		target := expanded ? full : state.closed_height
 		eased := progress * progress * (3 - 2 * progress)
 		height = clay.SizingFixed(state.from_height + (target - state.from_height) * eased)
 		anim_moving += 1
@@ -3295,8 +3304,19 @@ excerpt_body :: proc(
 		},
 		) {
 			if len(blocks) > 0 {
+				lines: int
 				more =
-					md_blocks(blocks, id, source == .Message, width, limit, emoji = emoji) || more
+					md_blocks(
+						blocks,
+						id,
+						source == .Message,
+						width,
+						limit,
+						lines_used = &lines,
+						emoji = emoji,
+					) ||
+					more
+				more ||= lines > MESSAGE_LINES
 			} else {
 				more =
 					body_text(
@@ -3339,7 +3359,7 @@ message_more :: proc(id: u32, state: Excerpt = {}) {
 	},
 	) {
 		clay.Text(
-			state.expanded ? tr("Show less") : tr("Read more"),
+			excerpt_expanded(state) ? tr("Show less") : tr("Read more"),
 			{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
 		)
 	}
