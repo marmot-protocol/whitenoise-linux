@@ -2,7 +2,8 @@
 // mention chips in bodies, and the mentions inbox behind the
 // chat-header bell.
 //
-// The composer inserts "@npub1... " (at + bare npub + space). Bodies
+// The composer inserts "@npub1... " (at + bare npub + space) and draws
+// every profile token as a chip the caret steps over whole. Bodies
 // recognize npub1/nprofile1 tokens bare, "@"-prefixed, or "nostr:"-
 // prefixed; the inbox counts incoming messages whose current text
 // carries a token resolving to the local account.
@@ -28,7 +29,7 @@ g_client: ^marmot.Client
 mention_hover: string
 
 // Horizontal inset of a mention chip's fill. render_segs pads with it
-// and body_atom measures with it, so wrapping matches the drawn chip.
+// and chip_w measures with it, so wrapping matches the drawn chip.
 @(private)
 MENTION_PAD_X :: 5
 
@@ -67,6 +68,14 @@ mention_label :: proc(hx: string) -> string {
 	return short_hex(hx)
 }
 
+// Drawn chip width: both insets, the avatar-to-label gap, the avatar
+// (one line tall), then the label.
+@(private)
+chip_w :: proc(hx: string, size: u16) -> f32 {
+	label := fmt.tprintf("@%s", mention_label(hx))
+	return 2 * MENTION_PAD_X + 2 + f32(size) + rl.MeasureTextLine(FONT_TITLE, size, label, 0).x
+}
+
 // Wrapping and pointer hit testing use the same displayed chip width.
 @(private)
 body_atom :: proc(text: string, at: int, size: u16) -> (end: int, width: f32) {
@@ -81,14 +90,7 @@ body_atom :: proc(text: string, at: int, size: u16) -> (end: int, width: f32) {
 		end, hx, ok = marmot_link_at(text, at)
 		if !ok {return 0, 0}
 	}
-	// Both insets, the avatar-to-label gap, the avatar (one line tall),
-	// then the label.
-	width =
-		2 * MENTION_PAD_X +
-		2 +
-		f32(size) +
-		rl.MeasureTextLine(FONT_TITLE, size, fmt.tprintf("@%s", mention_label(hx)), 0).x
-	return end, width
+	return end, chip_w(hx, size)
 }
 
 // True when text carries a token resolving to my_hex.
@@ -127,6 +129,69 @@ handle_mention_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // ── composer @-autocomplete ─────────────────────────────────────────
 
 MENTION_CANDS_MAX :: 8
+
+// Composer chip at text[at:]: profile tokens and marmot://profile
+// links. Event and malformed references stay raw while being typed.
+@(private)
+compose_atom :: proc(text: string, at: int) -> (end: int, width: f32) {
+	hx: string
+	ok: bool
+	end, hx, ok = mention_at(text, at)
+	if !ok {
+		end, hx, ok = marmot_link_at(text, at)
+	}
+	if !ok {
+		return 0, 0
+	}
+	return end, chip_w(hx, BODY_FS)
+}
+
+// The chip [start, end) strictly containing pos. Tokens hold no
+// spaces, so the walk starts at the space before pos and consumes
+// chips left to right, as the line layout does.
+@(private)
+compose_atom_over :: proc(text: string, pos: int) -> (start, end: int, ok: bool) {
+	if pos <= 0 || pos >= len(text) {
+		return
+	}
+	i := pos
+	for i > 0 && text[i - 1] != ' ' && text[i - 1] != '\n' {
+		i -= 1
+	}
+	for i < pos {
+		next, _ := compose_atom(text, i)
+		if next <= i {
+			i += 1
+			continue
+		}
+		if next > pos {
+			return i, next, true
+		}
+		i = next
+	}
+	return
+}
+
+// Composer caret steps: one grapheme, or a whole chip. A step into a
+// chip lands on its far edge, so Backspace after "@npub1..." removes
+// the mention instead of leaving a broken token.
+@(private)
+compose_prev :: proc(text: string, pos: int) -> int {
+	lo := prev_grapheme(text, pos)
+	if start, _, ok := compose_atom_over(text, lo); ok {
+		return start
+	}
+	return lo
+}
+
+@(private)
+compose_next :: proc(text: string, pos: int) -> int {
+	hi := next_grapheme(text, pos)
+	if _, end, ok := compose_atom_over(text, hi); ok {
+		return end
+	}
+	return hi
+}
 
 // Find an active trigger token ("@name", ":smile") ending at the caret:
 // the trigger sits at the start or after whitespace, no whitespace

@@ -260,12 +260,7 @@ set_lines :: proc(ed: ^edit.State, multiline: bool) {
 	lines := compose_lines(text)
 	for line, i in lines {
 		if head > line[1] {continue}
-		x: f32
-		it := utf8.decode_grapheme_iterator_make(text[line[0]:head])
-		for cluster, _ in rl.grapheme_iterate(&it) {
-			x +=
-				text_emoji(cluster) != nil ? 18 : rl.MeasureTextLine(FONT_BODY, BODY_FS, cluster, 0).x
-		}
+		x := compose_width(text[line[0]:head])
 		if i > 0 {
 			prev := lines[i - 1]
 			ed.up_index = prev[0] + hit_compose_line(text[prev[0]:prev[1]], x)
@@ -317,6 +312,9 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 		buf == &gate_pw2 ||
 		vault_pw_field(ui, buf)
 	set_lines(ed, multiline)
+	// Composer chips are one caret step (mentions.odin).
+	prev_step := multiline ? compose_prev : prev_grapheme
+	next_step := multiline ? compose_next : next_grapheme
 
 	if key_hit(.BACKSPACE) {
 		switch {
@@ -326,7 +324,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 			edit.selection_delete(ed)
 		case:
 			pos := ed.selection[0]
-			lo := prev_grapheme(string(ed.builder.buf[:]), pos)
+			lo := prev_step(string(ed.builder.buf[:]), pos)
 			if lo < pos {
 				edit.remove(ed, lo, pos)
 				ed.selection = {lo, lo}
@@ -341,7 +339,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 			edit.selection_delete(ed)
 		case:
 			pos := ed.selection[0]
-			hi := next_grapheme(string(ed.builder.buf[:]), pos)
+			hi := next_step(string(ed.builder.buf[:]), pos)
 			if hi > pos {
 				edit.remove(ed, pos, hi)
 			}
@@ -354,12 +352,12 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 		case ctrl:
 			edit.perform_command(ed, .Word_Left)
 		case shift:
-			ed.selection[0] = prev_grapheme(string(ed.builder.buf[:]), ed.selection[0])
+			ed.selection[0] = prev_step(string(ed.builder.buf[:]), ed.selection[0])
 		case edit.has_selection(ed):
 			lo, _ := edit.sorted_selection(ed)
 			ed.selection = {lo, lo}
 		case:
-			pos := prev_grapheme(string(ed.builder.buf[:]), ed.selection[0])
+			pos := prev_step(string(ed.builder.buf[:]), ed.selection[0])
 			ed.selection = {pos, pos}
 		}
 	}
@@ -370,12 +368,12 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 		case ctrl:
 			edit.perform_command(ed, .Word_Right)
 		case shift:
-			ed.selection[0] = next_grapheme(string(ed.builder.buf[:]), ed.selection[0])
+			ed.selection[0] = next_step(string(ed.builder.buf[:]), ed.selection[0])
 		case edit.has_selection(ed):
 			_, hi := edit.sorted_selection(ed)
 			ed.selection = {hi, hi}
 		case:
-			pos := next_grapheme(string(ed.builder.buf[:]), ed.selection[0])
+			pos := next_step(string(ed.builder.buf[:]), ed.selection[0])
 			ed.selection = {pos, pos}
 		}
 	}
@@ -597,11 +595,22 @@ field_mouse :: proc(
 }
 
 // Byte offset nearest to x in one composer line, mirroring the widths
-// compose_line draws: emoji graphemes as 18px tiles, text per glyph.
+// compose_line draws: mention chips whole, emoji graphemes as 18px
+// tiles, text per glyph. A chip only yields its two edges.
 hit_compose_line :: proc(line: string, x: f32) -> int {
 	pen: f32 = 0
+	skip := 0
 	it := utf8.decode_grapheme_iterator_make(line)
 	for cluster, g in rl.grapheme_iterate(&it) {
+		if g.byte_index < skip {continue}
+		if end, width := compose_atom(line, g.byte_index); end > g.byte_index {
+			if x < pen + width / 2 {
+				return g.byte_index
+			}
+			pen += width
+			skip = end
+			continue
+		}
 		adv := rl.MeasureTextLine(FONT_BODY, BODY_FS, cluster, 0).x
 		if text_emoji(cluster) != nil {adv = 18}
 		if x < pen + adv / 2 {
@@ -610,6 +619,26 @@ hit_compose_line :: proc(line: string, x: f32) -> int {
 		pen += adv
 	}
 	return len(line)
+}
+
+// Pen advance across a composer line prefix, with hit_compose_line's
+// widths. Up/Down keep this x on the neighbouring line.
+@(private = "file")
+compose_width :: proc(line: string) -> f32 {
+	pen: f32 = 0
+	skip := 0
+	it := utf8.decode_grapheme_iterator_make(line)
+	for cluster, g in rl.grapheme_iterate(&it) {
+		if g.byte_index < skip {continue}
+		if end, width := compose_atom(line, g.byte_index); end > g.byte_index {
+			pen += width
+			skip = end
+			continue
+		}
+		pen +=
+			text_emoji(cluster) != nil ? 18 : rl.MeasureTextLine(FONT_BODY, BODY_FS, cluster, 0).x
+	}
+	return pen
 }
 
 // Composer mouse: press focuses and places the caret in the tapped

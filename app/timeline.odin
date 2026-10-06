@@ -2273,9 +2273,10 @@ image_link :: proc(id: u32, url: string, size: u16, width: f32) {
 	}
 }
 
-// Emit segments inline into the current parent element. chips draws
-// mention segs as name plates (bodies); composer lines keep the raw
-// token so caret hit-mapping stays byte-accurate.
+// Emit segments inline into the current parent element. Mention segs
+// always draw as name plates; chips (bodies) also draws cards and
+// links, and makes the plates clickable. Composer lines keep other
+// tokens raw, and step over a plate whole (compose_atom).
 render_segs :: proc(
 	id: u32,
 	segs: []Inline_Seg,
@@ -2330,12 +2331,12 @@ render_segs :: proc(
 				}
 				styled_text(seg.text, seg.fonts, font_size, ACCENT)
 			}
-		} else if chips && len(seg.hex) > 0 {
+		} else if len(seg.hex) > 0 {
 			// Chip filled with the exact accent and inked black or white,
 			// whichever contrasts more, so it reads on every accent slot
 			// of every pack. A mention of me gets a TEXT border, which
 			// stands apart from both the fill and the page. Click opens
-			// the profile.
+			// the profile in bodies; in the composer it places the caret.
 			me := g_ui != nil && seg.hex == g_ui.account_ref
 			if clay.UI(clay.ID("SegMention", id * 128 + u32(k)))(
 			{
@@ -2349,7 +2350,7 @@ render_segs :: proc(
 				border = me ? clay.BorderElementConfig{color = TEXT, width = bw()} : {},
 			},
 			) {
-				over := hovered()
+				over := chips && hovered()
 				if over {
 					mention_hover = seg.hex
 				}
@@ -3432,14 +3433,21 @@ rune_fit :: proc(
 		i := at + grapheme.byte_index
 		if i < skip {continue}
 		literal := text_literal(fonts, i)
-		if mode != .Compose && !literal {
-			if next, atom_width := body_atom(text[:end], i, font_size); next > i {
-				adv := atom_width + (i > at ? 2 : 0)
-				if i > at && pen + adv > width {return i}
-				pen += adv
-				skip, previous_emoji = next, true
-				continue
-			}
+		// Chips are atoms; composer segments sit flush, bodies 2px apart.
+		next, atom_width := 0, f32(0)
+		switch {
+		case literal:
+		case mode == .Compose:
+			next, atom_width = compose_atom(text[:end], i)
+		case:
+			next, atom_width = body_atom(text[:end], i, font_size)
+			if i > at {atom_width += 2}
+		}
+		if next > i {
+			if i > at && pen + atom_width > width {return i}
+			pen += atom_width
+			skip, previous_emoji = next, true
+			continue
 		}
 		adv := rl.MeasureTextLine(text_font(fonts, i), font_size, cluster, 0).x
 		emoji := !literal && text_emoji(cluster) != nil

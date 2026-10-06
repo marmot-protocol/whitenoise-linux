@@ -198,4 +198,16 @@ composer_layout :: proc(t: ^testing.T) {
 			}
 		}
 	}
+	// A mention draws as a chip as wide as wrapping and hit tests measure it.
+	npub := hex_npub("66675158e6338fe89fda418e42a0bf2a7a2b132504dd347f015a18971b644430")
+	defer delete(npub)
+	ed_set(&ui, &ui.compose, fmt.tprintf("hi @%s ok", npub))
+	build_layout(&ui, 0)
+	_, width := compose_atom(string(ui.compose[:]), 3)
+	chip := clay.GetElementData(clay.ID("SegMention", 0xE00 * 128 + 1))
+	testing.expect(
+		t,
+		chip.found && abs(chip.boundingBox.width - width) < 0.01,
+		"composer mentions render as chips",
+	)
 }

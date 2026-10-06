@@ -5,6 +5,7 @@
 package main
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import "core:fmt"
 import "core:strings"
 import "core:sync"
 import "core:testing"
@@ -96,4 +97,33 @@ grapheme_boundaries :: proc(t: ^testing.T) {
 	// Ends clamp.
 	testing.expect_value(t, prev_grapheme("abc", 0), 0)
 	testing.expect_value(t, next_grapheme("abc", 3), 3)
+}
+
+// A composer mention chip is one caret unit: steps and clicks land on
+// its edges, never inside the token it draws over.
+@(test)
+composer_mention_steps :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	rl.SetPixelScale(1)
+	npub := hex_npub("66675158e6338fe89fda418e42a0bf2a7a2b132504dd347f015a18971b644430")
+	defer delete(npub)
+	text := fmt.tprintf("hi @%s ok", npub)
+	start, end := 3, 4 + len(npub)
+
+	testing.expect_value(t, compose_prev(text, end), start)
+	testing.expect_value(t, compose_next(text, start), end)
+	testing.expect_value(t, compose_prev(text, start), start - 1)
+	testing.expect_value(t, compose_next(text, end), end + 1)
+
+	lead: f32
+	for r in "hi " {lead += rl.MeasureTextLine(FONT_BODY, BODY_FS, fmt.tprint(r), 0).x}
+	atom_end, width := compose_atom(text, start)
+	testing.expect_value(t, atom_end, end)
+	testing.expect_value(t, hit_compose_line(text, lead + width * 0.25), start)
+	testing.expect_value(t, hit_compose_line(text, lead + width * 0.75), end)
+
+	// A token broken by typing stays plain text, stepped per grapheme.
+	broken := fmt.tprintf("hi @%sx", npub)
+	testing.expect_value(t, compose_prev(broken, len(broken)), len(broken) - 1)
 }
