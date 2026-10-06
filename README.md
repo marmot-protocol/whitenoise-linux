@@ -585,10 +585,11 @@ host or the Rust library restart the host; the vault stays unlocked for the
 To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `just build` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
 
 The current pin is MDK 0.12.0. The build applies the patches listed in
-`scripts/build.sh`.
+`scripts/build.sh`. NIP-46 C sessions and Windows portability come from
+upstream MDK.
 Poll creation, voting, and tallies use MDK's native poll APIs and timeline
 projection. `patches/mdk-poll-context.patch` preserves thread and issue context
-through native creation. MDK disallows poll creation in unnamed two-person
+through native creation. MDK supports poll creation in direct and group
 conversations. A multiple-choice vote must retain at least one selection.
 Poll cards stay compact in wide chats and wrap option labels in narrow panes.
 Checkmarks identify your selections.
