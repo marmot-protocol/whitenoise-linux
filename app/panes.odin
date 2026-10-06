@@ -1894,26 +1894,6 @@ header_label :: proc(label: string, active: bool) {
 	}
 }
 
-theme_chip :: proc(id_str: string, label: string, active: bool) {
-	is_icon := len(label) == 3 && u8(label[0]) >= 0xEE
-	if clay.UI(clay.ID(id_str))(
-	{
-		layout = {padding = {left = 14, right = 14, top = 8, bottom = 8}},
-		backgroundColor = active ? ACCENT : ROW_BG,
-		cornerRadius = rr(8),
-	},
-	) {
-		clay.Text(
-			label,
-			{
-				fontId = is_icon ? FONT_ICON : FONT_BODY,
-				fontSize = 14,
-				textColor = active ? ON_ACCENT : TEXT,
-			},
-		)
-	}
-}
-
 // One LABEL · input row of the profile edit form.
 form_row :: proc(
 	ui: ^Ui_State,
