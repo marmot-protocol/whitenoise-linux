@@ -77,6 +77,7 @@ open_link :: proc(ui: ^Ui_State, url: string) {
 	ui.link_url = strings.clone(url)
 	ui.link_trust = false
 	ui.link_open = true
+	kb_focus = "" // Tab starts over at Cancel
 }
 
 spawn_link :: proc(ui: ^Ui_State, url: string) {
@@ -185,9 +186,12 @@ link_modal :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
+					padding = clay.PaddingAll(4), // room for kb_ring
 					childGap = 10,
 					childAlignment = {y = .Center},
 				},
+				border = kb_focus == "LinkTrust" ? kb_ring(ACCENT) : {},
+				cornerRadius = rr(6),
 			},
 			) {
 				toggle("LinkTrust", ui.link_trust)
@@ -206,7 +210,7 @@ link_modal :: proc(ui: ^Ui_State) {
 				layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(9),
-				border = {color = FIELD_BORDER, width = bw()},
+				border = kb_focus == "LinkCancel" ? kb_ring(ACCENT) : {color = FIELD_BORDER, width = bw()},
 			},
 			) {
 				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
@@ -217,6 +221,7 @@ link_modal :: proc(ui: ^Ui_State) {
 				layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
 				backgroundColor = hovered() ? ACCENT_DIM : ACCENT,
 				cornerRadius = rr(9),
+				border = kb_focus == "LinkGo" ? kb_ring(TEXT) : {},
 			},
 			) {
 				clay.Text(action, {fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT})
@@ -225,21 +230,47 @@ link_modal :: proc(ui: ^Ui_State) {
 	}
 }
 
+// The modal's controls in Tab order. OpenBSD has no trust switch.
+when ODIN_OS != .OpenBSD {
+	@(private = "file")
+	link_controls := [?]string{"LinkCancel", "LinkTrust", "LinkGo"}
+} else {
+	@(private = "file")
+	link_controls := [?]string{"LinkCancel", "LinkGo"}
+}
+
+// Escape cancels. Tab walks the controls and Space or Enter presses the
+// focused one; Enter with none focused opens. A click outside the card
+// cancels.
 handle_link_modal :: proc(ui: ^Ui_State) {
 	if rl.IsKeyPressed(.ESCAPE) {
 		ui.link_open = false
 		return
 	}
-	if !mouse_released() && !rl.IsKeyPressed(.ENTER) {
+
+	hit := ""
+	switch control_keys(link_controls[:]) {
+	case .Moved:
 		return
-	}
-	when ODIN_OS != .OpenBSD {
-		if clay.PointerOver(clay.ID("LinkTrust")) {
-			ui.link_trust = !ui.link_trust
-			return
+	case .Pressed:
+		hit = kb_focus
+	case .None:
+		if rl.IsKeyPressed(.ENTER) {
+			hit = "LinkGo"
+		} else if mouse_released() {
+			hit = clay.PointerOver(clay.ID("LinkModal")) ? "" : "LinkCancel"
+			for id in link_controls {
+				if clicked(id) {
+					hit = id
+				}
+			}
 		}
 	}
-	if clicked("LinkGo") || rl.IsKeyPressed(.ENTER) {
+
+	switch hit {
+	case "LinkTrust":
+		ui.link_trust = !ui.link_trust
+	case "LinkGo":
 		when ODIN_OS != .OpenBSD {
 			if ui.link_trust {
 				append(&ui.prefs.trusted_sites, strings.clone(url_host(ui.link_url)))
@@ -248,9 +279,7 @@ handle_link_modal :: proc(ui: ^Ui_State) {
 		}
 		spawn_link(ui, ui.link_url)
 		ui.link_open = false
-		return
-	}
-	if clicked("LinkCancel") || !clay.PointerOver(clay.ID("LinkModal")) {
+	case "LinkCancel":
 		ui.link_open = false
 	}
 }

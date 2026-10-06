@@ -181,6 +181,10 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
+	if ui.page == .Settings && settings_switch_keys(ui, client) {
+		return
+	}
+
 	if !mouse_released() {
 		return
 	}

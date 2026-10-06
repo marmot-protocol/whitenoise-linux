@@ -158,16 +158,29 @@ settings_group :: proc(label: string) {
 	}
 }
 
+// The switches settings_check drew this frame, in layout order: the Tab
+// order for the keyboard and the hit list for clicks. A page holds at
+// most a handful, so a fixed array covers every page.
+@(private)
+settings_check_ids: [32]string
+@(private)
+settings_check_count: int
+
 @(private)
 settings_check :: proc(id_str: string, checked: bool, title: string, sub: string) {
+	if settings_check_count < len(settings_check_ids) {
+		settings_check_ids[settings_check_count] = id_str
+		settings_check_count += 1
+	}
 	if clay.UI(clay.ID(id_str))(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow()},
 			childGap = 9,
-			padding = {top = 3, bottom = 3},
+			padding = {left = 4, right = 4, top = 3, bottom = 3}, // room for kb_ring
 		},
 		backgroundColor = hovered() ? HOVER : {},
+		border = kb_focus == id_str ? kb_ring(ACCENT) : {},
 		cornerRadius = rr(2),
 	},
 	) {
@@ -1671,6 +1684,88 @@ flip :: proc(ui: ^Ui_State, flag: ^bool) {
 	save_settings(ui)
 }
 
+// Flips the settings switch drawn as `id`, from a click or the keyboard.
+@(private)
+settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
+	switch id {
+	case "TgStt":
+		flip(ui, &ui.prefs.stt_enabled)
+		if !ui.prefs.stt_enabled {
+			stt_stop(ui)
+		}
+	case "TgTts":
+		flip(ui, &ui.prefs.tts_enabled)
+		if !ui.prefs.tts_enabled {
+			tts_stop(ui)
+		}
+	case "TgLaunch":
+		when ODIN_OS != .OpenBSD {
+			flip(ui, &ui.prefs.launch_at_login)
+			apply_autostart(ui.prefs.launch_at_login)
+		}
+	case "TgTray":
+		flip(ui, &ui.prefs.start_in_tray)
+	case "TgMinTray":
+		flip(ui, &ui.prefs.minimize_tray)
+		apply_tray(ui)
+	case "TgRestore":
+		flip(ui, &ui.prefs.restore_last_chat)
+	case "TgMotion":
+		flip(ui, &ui.prefs.reduce_motion)
+	case "TgCentered":
+		flip(ui, &ui.prefs.centered_chat)
+	case "TgNotify":
+		flip(ui, &ui.prefs.notify_desktop)
+	case "TgSound":
+		flip(ui, &ui.prefs.notify_sound)
+	case "TgUiSounds":
+		flip(ui, &ui.prefs.ui_sounds)
+		// Play the thing being turned on, so the toggle answers.
+		if ui.prefs.ui_sounds {
+			play_sound(.Receive)
+		}
+	case "TgPreview":
+		flip(ui, &ui.prefs.notify_preview)
+	case "TgLinkPreviews":
+		flip(ui, &ui.prefs.disable_link_previews)
+	case "TgTelemetry":
+		set_telemetry(ui, client, !ui.telemetry_enabled)
+	case "TgAudit":
+		set_audit(ui, client, !ui.audit_enabled)
+	case "TgDevMode":
+		flip(ui, &ui.prefs.dev_mode)
+	}
+}
+
+// Tab and Shift+Tab walk the page's switches, Space or Enter flips the
+// focused one. Not while a settings text box has focus, so Space still
+// types into it. Runs before the release gate in handle_pages.
+@(private)
+settings_switch_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
+	FIELDS :: bit_set[Focus] {
+		.Relay,
+		.Inbox,
+		.Fetch,
+		.Client,
+		.Gm,
+		.KP,
+		.EmojiName,
+		.SettingsSearch,
+	}
+	if ui.focus in FIELDS {
+		return false
+	}
+	switch control_keys(settings_check_ids[:settings_check_count]) {
+	case .None:
+		return false
+	case .Moved:
+		scroll_into_view(clay.ID("SettingsPage"), clay.ID(kb_focus))
+	case .Pressed:
+		settings_flip(ui, client, kb_focus)
+	}
+	return true
+}
+
 handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !custom_emoji_scanned {
 		custom_emoji_scan()
@@ -1782,6 +1877,13 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
+	for id in settings_check_ids[:settings_check_count] {
+		if clicked(id) {
+			settings_flip(ui, client, id)
+			return
+		}
+	}
+
 	switch ui.settings_section {
 	case .Home:
 		return
@@ -1802,20 +1904,6 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				}
 			}
 		}
-		if clicked("TgStt") {
-			flip(ui, &ui.prefs.stt_enabled)
-			if !ui.prefs.stt_enabled {
-				stt_stop(ui)
-			}
-			return
-		}
-		if clicked("TgTts") {
-			flip(ui, &ui.prefs.tts_enabled)
-			if !ui.prefs.tts_enabled {
-				tts_stop(ui)
-			}
-			return
-		}
 		if ui.prefs.tts_enabled {
 			for _, i in TTS_VOICES {
 				if clicked(fmt.tprintf("TtsPreview%d", i)) {
@@ -1834,26 +1922,6 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 
 	case .General:
-		when ODIN_OS != .OpenBSD {
-			if clay.PointerOver(clay.ID("TgLaunch")) {
-				flip(ui, &ui.prefs.launch_at_login)
-				apply_autostart(ui.prefs.launch_at_login)
-				return
-			}
-		}
-		if clay.PointerOver(clay.ID("TgTray")) {
-			flip(ui, &ui.prefs.start_in_tray)
-			return
-		}
-		if clay.PointerOver(clay.ID("TgMinTray")) {
-			flip(ui, &ui.prefs.minimize_tray)
-			apply_tray(ui)
-			return
-		}
-		if clay.PointerOver(clay.ID("TgRestore")) {
-			flip(ui, &ui.prefs.restore_last_chat)
-			return
-		}
 		if clicked("LangChange") {
 			ui.lang_open = true
 			return
@@ -2016,36 +2084,8 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			confirm_ask(ui, .Delete_Theme, "", active_pack(ui).name, active_theme(ui))
 			return
 		}
-		if clay.PointerOver(clay.ID("TgMotion")) {
-			flip(ui, &ui.prefs.reduce_motion)
-			return
-		}
-		if clay.PointerOver(clay.ID("TgCentered")) {
-			flip(ui, &ui.prefs.centered_chat)
-			return
-		}
 
 	case .Notifications:
-		if clay.PointerOver(clay.ID("TgNotify")) {
-			flip(ui, &ui.prefs.notify_desktop)
-			return
-		}
-		if clay.PointerOver(clay.ID("TgSound")) {
-			flip(ui, &ui.prefs.notify_sound)
-			return
-		}
-		if clay.PointerOver(clay.ID("TgUiSounds")) {
-			flip(ui, &ui.prefs.ui_sounds)
-			// Play the thing being turned on, so the toggle answers.
-			if ui.prefs.ui_sounds {
-				play_sound(.Receive)
-			}
-			return
-		}
-		if clay.PointerOver(clay.ID("TgPreview")) {
-			flip(ui, &ui.prefs.notify_preview)
-			return
-		}
 		if clicked("NotifyTest") {
 			do_notify(
 				ui,

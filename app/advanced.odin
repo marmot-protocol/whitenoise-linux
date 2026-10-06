@@ -228,22 +228,6 @@ audit_delete_id :: proc(index: int) -> string {
 // ── Interactions ────────────────────────────────────────────────────
 
 handle_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if clay.PointerOver(clay.ID("TgLinkPreviews")) {
-		flip(ui, &ui.prefs.disable_link_previews)
-		return
-	}
-	if clay.PointerOver(clay.ID("TgTelemetry")) {
-		set_telemetry(ui, client, !ui.telemetry_enabled)
-		return
-	}
-	if clay.PointerOver(clay.ID("TgAudit")) {
-		set_audit(ui, client, !ui.audit_enabled)
-		return
-	}
-	if clay.PointerOver(clay.ID("TgDevMode")) {
-		flip(ui, &ui.prefs.dev_mode)
-		return
-	}
 	if clicked("AuditRefresh") {
 		audit_scan(ui, client)
 		return

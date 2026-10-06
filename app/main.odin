@@ -144,6 +144,10 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 	if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
 		timeline_draw_offset = data.scrollPosition.y
 	}
+	settings_check_count = 0 // settings_check lists this frame's switches
+	if mouse_pressed() {
+		kb_focus = ""
+	}
 	clay.BeginLayout()
 
 	page_advance(ui)

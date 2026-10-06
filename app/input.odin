@@ -49,6 +49,54 @@ tab_focus :: proc(order: []$T, at: ^T) -> (index: int, moved: bool) {
 	return 0, false
 }
 
+// Keyboard focus on a button or switch, as its clay id string. Ids are
+// string literals, so this never dangles. "" means no control has it;
+// a mouse press clears it (build_layout), the way the pointer takes
+// over from the keyboard.
+kb_focus: string
+
+Control_Key :: enum {
+	None,
+	Moved, // Tab or Shift+Tab moved kb_focus
+	Pressed, // Space or Enter pressed the control kb_focus names
+}
+
+// Keyboard walk over one surface's controls, listed in visual order.
+// Tab enters at the first control (Shift+Tab at the last) and wraps;
+// Space or Enter presses the focused one. The caller runs the press
+// exactly as it runs a click on that id.
+control_keys :: proc(order: []string) -> Control_Key {
+	if len(order) == 0 {
+		return .None
+	}
+	if step := tab_step(); step != 0 {
+		at := step > 0 ? -1 : len(order) // outside: step onto an end
+		for id, i in order {
+			if id == kb_focus {
+				at = i
+			}
+		}
+		kb_focus = order[(at + step + len(order)) %% len(order)]
+		return .Moved
+	}
+	if !rl.IsKeyPressed(.SPACE) && !rl.IsKeyPressed(.ENTER) {
+		return .None
+	}
+	for id in order {
+		if id == kb_focus {
+			return .Pressed
+		}
+	}
+	return .None
+}
+
+// The ring a keyboard-focused control wears. 2px so it reads apart from
+// a hairline border; the caller picks a color that contrasts with the
+// fill (ACCENT on a plain control, TEXT on an accent one).
+kb_ring :: proc(color: clay.Color) -> clay.BorderElementConfig {
+	return {color = color, width = {2, 2, 2, 2, 0}}
+}
+
 // Scrolls `container` the least distance that shows all of `field`, so a
 // box focused from the keyboard is never below the fold. Reads last
 // frame's layout.
