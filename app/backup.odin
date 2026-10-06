@@ -10,7 +10,7 @@
 //
 //   files ──manifest json──► plaintext ──XChaCha20-Poly1305──► .wnbk
 //                                             ▲
-//                       password ──scrypt─────┘  (nip49.odin's scrypt)
+//                       password ──scrypt─────┘  (scrypt.odin)
 package main
 
 import "core:crypto"
