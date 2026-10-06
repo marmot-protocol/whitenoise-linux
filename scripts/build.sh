@@ -29,6 +29,21 @@ fi
 if [ "$(uname -s)" = OpenBSD ]; then
   ulimit -d "$(ulimit -Hd)"
 fi
+# `fetch` downloads everything a later plain build would: the sources and
+# assets (`sources`), the speech runtime, and the Rust crates. A packager
+# can then compile with the network off, as the Arch packages do:
+#
+#   scripts/build.sh fetch                          network
+#   CARGO_NET_OFFLINE=true scripts/build.sh         no network
+if [ "${1:-}" = fetch ]; then
+  bash "$HERE/scripts/build.sh" sources
+  if [ "$(uname -s)" = Linux ]; then
+    bash "$HERE/scripts/build-tts.sh"
+  fi
+  # Inside vendor/mdk so rustup, when present, installs the pinned toolchain.
+  (cd "$HERE/vendor/mdk" && cargo fetch --locked --target "$(rustc -vV | sed -n 's/^host: //p')")
+  exit 0
+fi
 # Cross builds share source pins and assets, but never stage host objects.
 if [ -n "${WN_TARGET:-}" ] && [ "${1:-}" != sources ]; then
   exec bash "$HERE/scripts/cross-build.sh" "$WN_TARGET"
