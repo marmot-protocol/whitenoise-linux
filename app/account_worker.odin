@@ -182,6 +182,8 @@ account_worker :: proc(t: ^thread.Thread) {
 			len(DEFAULT_RELAYS),
 			raw_data(DEFAULT_RELAYS),
 			len(DEFAULT_RELAYS),
+			nil,
+			0,
 		)
 	case .Key_Package:
 		status =

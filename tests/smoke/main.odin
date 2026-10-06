@@ -44,7 +44,7 @@ main :: proc() {
 
 	// Error taxonomy: unknown account maps to its typed status.
 	nsec: ^marmot.Account_Summary
-	if marmot.login(client, "not-an-identity", nil, 0, nil, 0, &nsec) == .OK {
+	if marmot.login(client, "not-an-identity", nil, 0, nil, 0, nil, 0, &nsec) == .OK {
 		fail("bogus login unexpectedly succeeded")
 	}
 	fmt.printfln("smoke: bogus login rejected: %s", marmot.last_error())

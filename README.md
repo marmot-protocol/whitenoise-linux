@@ -33,7 +33,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Export the loaded chat window as HTML or Markdown from the members panel. HTML prepares embedded images in the background and shows image progress before opening the save dialog. Unavailable images appear as notes in the transcript. Leaving the chat or changing accounts discards an unfinished export.
 - Emoji search accepts names and shortcodes, such as `100` for hundred points and `thumbsup` for thumbs up. Shortcodes work with or without surrounding colons.
 - The emoji picker's eight most recent choices survive app restarts, newest first.
-- Custom `:shortcode:` emoji use NIP-30. The image goes out as an encrypted attachment, and the message carries an `["emoji", shortcode, url]` tag pointing at that attachment's Blossom URL. Reactions work the same way: a `:shortcode:` reaction carries its own `imeta` and emoji tag. Forwards keep the tags. `patches/mdk-tagged-media.patch` adds `marmot_send_tagged_media` and `marmot_react_with_media`, and keeps the media key for reaction images the way it does for chat media.
+- Custom `:shortcode:` emoji use NIP-30. The image goes out as an encrypted attachment, and the message carries an `["emoji", shortcode, url]` tag pointing at that attachment's Blossom URL. Reactions work the same way: a `:shortcode:` reaction carries its own `imeta` and emoji tag. Forwards keep the tags. MDK's `marmot_send_tagged_media` and `marmot_react_with_media` send them, and MDK keeps the media key for reaction images the way it does for chat media.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
 - Forwarded attachments download and prepare in the background. A status strip names the destination and stays visible through preparation and sending, even if you switch chats. Failed forwards can be retried from the destination chat.
 - Per-chat unread tracking, surfaced as rail badges.
@@ -583,9 +583,8 @@ host or the Rust library restart the host; the vault stays unlocked for the
 
 To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `just build` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
 
-The current pin is MDK 0.11.0. The build applies the patches listed in
-`scripts/build.sh`, including `patches/mdk-app-components.patch` for the
-unmerged group app-component API used by issue tracking.
+The current pin is MDK 0.12.0. The build applies the patches listed in
+`scripts/build.sh`.
 Poll creation, voting, and tallies use MDK's native poll APIs and timeline
 projection. `patches/mdk-poll-context.patch` preserves thread and issue context
 through native creation. MDK disallows poll creation in unnamed two-person

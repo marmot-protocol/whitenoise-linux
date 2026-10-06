@@ -1,6 +1,8 @@
+diff --git a/crates/fs-private/src/lib.rs b/crates/fs-private/src/lib.rs
+index 3b6b0ce1..29097f0f 100644
 --- a/crates/fs-private/src/lib.rs
 +++ b/crates/fs-private/src/lib.rs
-@@ -198,9 +198,9 @@
+@@ -280,9 +280,9 @@ impl PreparedDirectory {
  /// complete authorized path (or deepest complete existing ancestor) with
  /// `O_NOFOLLOW_ANY`, then operate descriptor-relative below that anchor. This
  /// avoids independently opening sandbox-managed ancestors such as `/private`
@@ -13,7 +15,7 @@
  #[cfg(unix)]
  pub fn prepare_directory_path(
      path: &Path,
-@@ -276,9 +276,9 @@
+@@ -358,9 +358,9 @@ pub fn prepare_directory_path(
  
      #[cfg(target_vendor = "apple")]
      let (mut current, components, mut current_path) = open_apple_authorized_ancestor(path)?;
@@ -26,7 +28,7 @@
      let (mut current, mut current_path): (OwnedFd, PathBuf) = {
          let start = if path.is_absolute() {
              Path::new("/")
-@@ -297,7 +297,7 @@
+@@ -379,7 +379,7 @@ pub fn prepare_directory_path(
          components.drain(..depth);
          (directory.into(), anchor)
      };
@@ -35,7 +37,7 @@
      let (mut current, mut current_path): (OwnedFd, PathBuf) = {
          let start = if path.is_absolute() {
              Path::new("/")
-@@ -468,11 +468,14 @@
+@@ -550,11 +550,14 @@ pub fn prepare_directory_path(
  /// denies, as its component depth, opened value, and path.
  ///
  /// Probing continues past denied prefixes and stops at the first missing one.
@@ -51,7 +53,7 @@
  fn open_walk_anchor<T>(
      root: &Path,
      components: &[std::ffi::OsString],
-@@ -492,6 +495,8 @@
+@@ -574,6 +577,8 @@ fn open_walk_anchor<T>(
              // A denied ancestor is the only obstacle this anchor exists for,
              // so keep descending but drop the candidates above it.
              Err(error) if error.kind() == io::ErrorKind::PermissionDenied => anchor = None,
@@ -60,7 +62,7 @@
              Err(error) if error.kind() == io::ErrorKind::NotFound => break,
              // A symlinked prefix reports ELOOP or ENOTDIR depending on the
              // platform, and a non-directory prefix is unusable either way.
-@@ -1395,6 +1400,59 @@
+@@ -1492,6 +1497,59 @@ mod unix_tests {
          );
      }
  

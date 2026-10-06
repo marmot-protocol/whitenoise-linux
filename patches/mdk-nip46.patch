@@ -1,10 +1,10 @@
 diff --git a/Cargo.lock b/Cargo.lock
-index 40802c7f..a678a5d8 100644
+index 562fcf6e..79b9d01d 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
 @@ -3627,14 +3627,19 @@ dependencies = [
  name = "marmot-c"
- version = "0.11.0"
+ version = "0.12.0"
  dependencies = [
 + "futures",
   "keyring-core",
@@ -395,10 +395,10 @@ index c4161204..ba4c8334 100644
          let signature_value = Signature::from_slice(&signature).map_err(|err| err.to_string())?;
          proof_event
 diff --git a/crates/marmot-app/src/lib.rs b/crates/marmot-app/src/lib.rs
-index e286a854..e82bf60e 100644
+index 19e1b1d7..954b9e81 100644
 --- a/crates/marmot-app/src/lib.rs
 +++ b/crates/marmot-app/src/lib.rs
-@@ -6665,13 +6665,17 @@ impl MarmotApp {
+@@ -6816,13 +6816,17 @@ impl MarmotApp {
          if public_key.to_hex() != account.account_id_hex {
              return Err(AppError::ExternalSignerMismatch);
          }
@@ -423,10 +423,10 @@ index e286a854..e82bf60e 100644
              .lock()
              .unwrap_or_else(|poisoned| poisoned.into_inner())
 diff --git a/crates/marmot-app/src/runtime/mod.rs b/crates/marmot-app/src/runtime/mod.rs
-index cd573284..f75a275f 100644
+index cabbcc27..f355c78e 100644
 --- a/crates/marmot-app/src/runtime/mod.rs
 +++ b/crates/marmot-app/src/runtime/mod.rs
-@@ -1230,6 +1230,9 @@ pub struct AccountSetupRequest {
+@@ -1234,6 +1234,9 @@ pub struct AccountSetupRequest {
      /// Public directory indexers. Existing accounts use them for reads;
      /// generated accounts also copy relay lists and kind-0 metadata to them.
      pub discovery_relays: Vec<TransportEndpoint>,
@@ -436,7 +436,7 @@ index cd573284..f75a275f 100644
      pub publish_missing_relay_lists: bool,
      pub publish_initial_key_package: bool,
  }
-@@ -2720,7 +2723,15 @@ impl MarmotAppRuntime {
+@@ -2743,7 +2746,15 @@ impl MarmotAppRuntime {
          message_tags: Vec<Vec<String>>,
      ) -> Result<SendSummary, AppError> {
          self.accounts
@@ -453,7 +453,7 @@ index cd573284..f75a275f 100644
              .await
      }
  
-@@ -8037,7 +8048,7 @@ impl AccountManager {
+@@ -8080,7 +8091,7 @@ impl AccountManager {
                  let current_status = if let Some(status) = recent_relay_lists {
                      status
                  } else {
@@ -462,7 +462,7 @@ index cd573284..f75a275f 100644
                          &self.shared.app_performance_telemetry(),
                          ACCOUNT_DIRECTORY_PREFLIGHT_WAIT,
                          "import_relay_list_status",
-@@ -8047,27 +8058,33 @@ impl AccountManager {
+@@ -8090,27 +8101,33 @@ impl AccountManager {
                          ),
                      )
                      .await
@@ -517,7 +517,7 @@ index cd573284..f75a275f 100644
                          }
                      }
                  };
-@@ -8148,18 +8165,6 @@ impl AccountManager {
+@@ -8191,18 +8208,6 @@ impl AccountManager {
          Ok(())
      }
  
@@ -537,10 +537,10 @@ index cd573284..f75a275f 100644
          &self,
          label: &str,
 diff --git a/crates/marmot-app/src/runtime/tests.rs b/crates/marmot-app/src/runtime/tests.rs
-index 87137594..ab871910 100644
+index da90ac07..150e1fa2 100644
 --- a/crates/marmot-app/src/runtime/tests.rs
 +++ b/crates/marmot-app/src/runtime/tests.rs
-@@ -614,7 +614,7 @@ fn generated_account_birth_marks_cutover_scan_complete_before_session_open() {
+@@ -646,7 +646,7 @@ fn generated_account_birth_marks_cutover_scan_complete_before_session_open() {
  }
  
  #[tokio::test]
@@ -549,7 +549,7 @@ index 87137594..ab871910 100644
      let directory = tempfile::tempdir().unwrap();
      let home = AccountHome::open(directory.path());
      let keys = nostr::prelude::Keys::generate();
-@@ -635,7 +635,7 @@ async fn failed_import_relay_discovery_does_not_publish_default_lists() {
+@@ -667,7 +667,7 @@ async fn failed_import_relay_discovery_does_not_publish_default_lists() {
                  // A non-WebSocket bootstrap endpoint makes the bounded
                  // fallback discovery fail before any dial.
                  bootstrap_relays: vec![TransportEndpoint("https://directory.invalid".into())],
@@ -558,7 +558,7 @@ index 87137594..ab871910 100644
                  ..AccountSetupRequest::default()
              },
              true,
-@@ -643,9 +643,9 @@ async fn failed_import_relay_discovery_does_not_publish_default_lists() {
+@@ -675,9 +675,9 @@ async fn failed_import_relay_discovery_does_not_publish_default_lists() {
              None,
          )
          .await
@@ -689,7 +689,7 @@ index d310f444..014d7088 100644
  fn salt_publication_never_replaces_existing_bytes() {
      let dir = tempfile::tempdir().unwrap();
 diff --git a/crates/marmot-c/API-REFERENCE.md b/crates/marmot-c/API-REFERENCE.md
-index f343d895..39d1bc8d 100644
+index 933e8dad..21014905 100644
 --- a/crates/marmot-c/API-REFERENCE.md
 +++ b/crates/marmot-c/API-REFERENCE.md
 @@ -16,6 +16,10 @@ explicit cancel operation. The source parity allowlist deliberately excludes Uni
@@ -703,7 +703,7 @@ index f343d895..39d1bc8d 100644
  Prefer `marmot_client_new_with_configuration` when combining options, prepared chat and
  conversation windows for standard screens, and attachment history/access/controls for
  new media UI. Older primitives remain supported. `marmot_set_audit_log_tracker_config`
-@@ -2742,6 +2746,106 @@ Free a message update returned by this library. NULL is a no-op.
+@@ -2772,6 +2776,106 @@ Free a message update returned by this library. NULL is a no-op.
  <details>
  <summary>marmot_n…</summary>
  
@@ -811,7 +811,7 @@ index f343d895..39d1bc8d 100644
  
  ```c
 diff --git a/crates/marmot-c/CHANGELOG.md b/crates/marmot-c/CHANGELOG.md
-index 81a54d30..ac36af24 100644
+index 3b6dcf04..1307b2d2 100644
 --- a/crates/marmot-c/CHANGELOG.md
 +++ b/crates/marmot-c/CHANGELOG.md
 @@ -7,6 +7,30 @@ Versions track the workspace version; releases are tagged `marmotc-v<version>`.
@@ -842,6 +842,14 @@ index 81a54d30..ac36af24 100644
 +  relay discovery fails. Observed signed lists, including explicit-empty lists,
 +  are preserved.
 +
+ ## [0.12.0] - 2026-10-02
+ 
+ Recompile against the matching `marmot.h` and library: several signatures and
+@@ -52,7 +76,6 @@ record layouts changed. See the [client upgrade guide](../../docs/integration/0.
+   their own notification permission, channel, and foreground policy. No C ABI
+   layout changes. (marmot-protocol/whitenoise-android#2984)
+ 
+-
  ## [0.11.0] - 2026-09-29
  
  ### Added
@@ -867,25 +875,12 @@ index 13747a47..11d18ab2 100644
  nostr-relay-builder.workspace = true
  transport-quic-broker.workspace = true
 diff --git a/crates/marmot-c/README.md b/crates/marmot-c/README.md
-index dbf25ee6..5688dea9 100644
+index 378f026b..10bcc43f 100644
 --- a/crates/marmot-c/README.md
 +++ b/crates/marmot-c/README.md
-@@ -21,9 +21,9 @@ The [0.10.4 → 0.11.0 integration guide](../../docs/integration/0.11.0.md) expl
- the current record, enum, error and schema changes. Every supported release has a
- companion in the [integration index](../../docs/integration/README.md).
- Read the exact version's header and docs; C record layout compatibility is not implied
--by a shared major/minor number. External-signer onboarding/login/registration remain
--UniFFI-only until a C signer callback interface exists; the host secret-store vtable
--is already supported and is a different interface.
-+by a shared major/minor number. The concrete `marmot_nip46_*` adapter supports remote
-+signer login and registration. Arbitrary host signer callbacks and external-signer
-+onboarding remain UniFFI-only. The host secret-store vtable is a separate interface.
- 
- The 0.10.4 [local-send contract](../marmot-uniffi/LOCAL-SENDS.md) adds token-aware
- send/reply/draft/upload calls. C calls block until local acceptance (or upload then
-@@ -201,6 +201,57 @@ system `hardware_model`, platform and app version. Free its returned config with
- The legacy config/setter retains its binary layout, ignores `device_label`, and returns that field as NULL;
- it never reinterprets an old device name as a hardware model. Both setters use the same v4-only upload gate.
+@@ -257,6 +257,57 @@ opaque targets, `marmot_read_avatar_assets` for bounded local bytes (at most 16
+ `marmot_clear_avatar_cache` for explicit local removal. Free returned lists with their matching
+ `marmot_avatar_asset_list_free` / `marmot_avatar_bytes_list_free` functions.
  
 +## NIP-46 accounts
 +
@@ -938,15 +933,15 @@ index dbf25ee6..5688dea9 100644
 +cargo run --release -p marmot-c --example nip46_smoke
 +```
 +
- ## Rules of the road
+ ## History may be incomplete notices
  
- - Every fallible function returns `MarmotStatus` (`MARMOT_STATUS_OK` is
+ `marmot_history_notices` blocks on the account worker, reads local durable state only, and writes an owned
 diff --git a/crates/marmot-c/examples/nip46_smoke.rs b/crates/marmot-c/examples/nip46_smoke.rs
 new file mode 100644
-index 00000000..638fdc3d
+index 00000000..62cb3c7d
 --- /dev/null
 +++ b/crates/marmot-c/examples/nip46_smoke.rs
-@@ -0,0 +1,1235 @@
+@@ -0,0 +1,1246 @@
 +//! Real loopback NIP-46 smoke against the public C ABI. No public relay or keychain is used.
 +//! Run from the MDK workspace: cargo run -p marmot-c --example nip46_smoke
 +//! The fixture decrypts kind:24133 requests, signs with distinct user keys, and encrypts responses.
@@ -1234,6 +1229,8 @@ index 00000000..638fdc3d
 +                    1,
 +                    bootstrap.as_ptr(),
 +                    bootstrap.len(),
++                    ptr::null(),
++                    0,
 +                    &mut out,
 +                )
 +            },
@@ -1761,7 +1758,16 @@ index 00000000..638fdc3d
 +    let mut local = ptr::null_mut();
 +    check(
 +        unsafe {
-+            marmot_create_identity(client.0, relays.as_ptr(), 1, relays.as_ptr(), 1, &mut local)
++            marmot_create_identity(
++                client.0,
++                relays.as_ptr(),
++                1,
++                relays.as_ptr(),
++                1,
++                ptr::null(),
++                0,
++                &mut local,
++            )
 +        },
 +        "local identity",
 +    );
@@ -2183,7 +2189,7 @@ index 00000000..638fdc3d
 +    Ok(())
 +}
 diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
-index 67dfc27d..95b526cb 100644
+index c6e9d0c3..dcad1361 100644
 --- a/crates/marmot-c/include/marmot.h
 +++ b/crates/marmot-c/include/marmot.h
 @@ -1185,6 +1185,12 @@ typedef struct MarmotMessageDraftRevision MarmotMessageDraftRevision;
@@ -2199,125 +2205,7 @@ index 67dfc27d..95b526cb 100644
  /**
   * Opaque handle to the notification pipeline: local-notification
   * updates produced by the runtime.
-@@ -3623,6 +3629,16 @@ typedef struct MarmotAuditOtlpConfigV5 {
-   bool allow_loopback_dev;
- } MarmotAuditOtlpConfigV5;
- 
-+/**
-+ * One borrowed row of a string matrix (e.g. one Nostr tag's values in
-+ * `marmot_send_custom_event`). Borrowed input only: never freed or
-+ * retained. `(NULL, 0)` is an empty row.
-+ */
-+typedef struct MarmotStringArray {
-+  const char *const *values;
-+  uintptr_t values_len;
-+} MarmotStringArray;
-+
- /**
-  * One attachment to encrypt and upload. Borrowed input only: the
-  * plaintext bytes are copied, never retained or freed.
-@@ -4091,16 +4107,6 @@ typedef struct MarmotCreateGroupOptions {
-   uint64_t disappearing_message_secs;
- } MarmotCreateGroupOptions;
- 
--/**
-- * One borrowed row of a string matrix (e.g. one Nostr tag's values in
-- * `marmot_send_custom_event`). Borrowed input only: never freed or
-- * retained. `(NULL, 0)` is an empty row.
-- */
--typedef struct MarmotStringArray {
--  const char *const *values;
--  uintptr_t values_len;
--} MarmotStringArray;
--
- /**
-  * One endpoint's dial verdict. Free the list with
-  * `marmot_relay_endpoint_classification_list_free`.
-@@ -8324,15 +8330,48 @@ MarmotStatus marmot_send_media_attachments(const struct MarmotClient *client,
-                                            const char *caption,
-                                            struct MarmotSendSummary **out);
- 
--/** Send uploaded attachments as one kind-9 message with additional
-- * tags, such as NIP-30 emoji tags. imeta tags are rejected. The tags
-- * and output follow marmot_send_custom_event ownership rules. */
--MarmotStatus marmot_send_tagged_media(const struct MarmotClient *client, const char *account_ref, const char *group_id_hex, const struct MarmotMediaAttachmentReference *attachments, uintptr_t attachments_len, const struct MarmotStringArray *tags, uintptr_t tags_len, const char *caption, struct MarmotSendSummary **out);
-+/**
-+ * Send previously uploaded attachments as one kind-9 message that also
-+ * carries application `tags` (for example NIP-30 `emoji` tags), each row
-+ * a `(char **, len)` pair. imeta tags are rejected. Free with
-+ * `marmot_send_summary_free`.
-+ *
-+ * # Safety
-+ * `client` must be a live handle; strings valid; `attachments` must
-+ * point to `attachments_len` valid caller-owned structs; `tags` to
-+ * `tags_len` valid rows (or NULL with length 0); `out` valid.
-+ */
-+MarmotStatus marmot_send_tagged_media(const struct MarmotClient *client,
-+                                      const char *account_ref,
-+                                      const char *group_id_hex,
-+                                      const struct MarmotMediaAttachmentReference *attachments,
-+                                      uintptr_t attachments_len,
-+                                      const struct MarmotStringArray *tags,
-+                                      uintptr_t tags_len,
-+                                      const char *caption,
-+                                      struct MarmotSendSummary **out);
- 
--/** React with a custom emoji image: uploaded attachments become imeta
-- * tags on the kind-7 and `tags` name them (NIP-30 emoji). imeta rows in
-- * `tags` are rejected. Free `out` with marmot_send_summary_free. */
--MarmotStatus marmot_react_with_media(const struct MarmotClient *client, const char *account_ref, const char *group_id_hex, const char *target_message_id, const char *emoji, const struct MarmotMediaAttachmentReference *attachments, uintptr_t attachments_len, const struct MarmotStringArray *tags, uintptr_t tags_len, struct MarmotSendSummary **out);
-+/**
-+ * React with a custom emoji image. `attachments` (already uploaded)
-+ * become `imeta` tags on the kind-7 and `tags` name them, e.g. NIP-30
-+ * `["emoji", shortcode, url]` for `emoji` == `:shortcode:`. imeta rows
-+ * in `tags` are rejected. Free with `marmot_send_summary_free`.
-+ *
-+ * # Safety
-+ * `client` must be a live handle; strings valid; `attachments` must
-+ * point to `attachments_len` valid structs and `tags` to `tags_len`
-+ * valid rows (each NULL with length 0 allowed); `out` valid.
-+ */
-+MarmotStatus marmot_react_with_media(const struct MarmotClient *client,
-+                                     const char *account_ref,
-+                                     const char *group_id_hex,
-+                                     const char *target_message_id,
-+                                     const char *emoji,
-+                                     const struct MarmotMediaAttachmentReference *attachments,
-+                                     uintptr_t attachments_len,
-+                                     const struct MarmotStringArray *tags,
-+                                     uintptr_t tags_len,
-+                                     struct MarmotSendSummary **out);
- 
- /**
-  * Send one previously uploaded attachment as a message. Free with
-@@ -8655,9 +8694,23 @@ MarmotStatus marmot_build_media_imeta_tag(const struct MarmotClient *client,
-                                           const struct MarmotMediaAttachmentReference *reference,
-                                           struct MarmotMessageTag **out);
- 
--/** Send kind-9 text with additional tags. The tags and output follow
-- * marmot_send_custom_event ownership rules. imeta tags are rejected. */
--MarmotStatus marmot_send_tagged_text(const struct MarmotClient *client, const char *account_ref, const char *group_id_hex, const struct MarmotStringArray *tags, uintptr_t tags_len, const char *content, struct MarmotSendSummary **out);
-+/**
-+ * Send kind-9 text with additional application tags. `tags` is a flat
-+ * array of `tags_len` tag rows, each row a `(char **, len)` pair of
-+ * string values. Free with `marmot_send_summary_free`.
-+ *
-+ * # Safety
-+ * `client` must be a live handle; strings valid; `tags` must point to
-+ * `tags_len` valid rows (or be NULL with length 0), each row's values
-+ * pointer holding its stated length; `out` valid.
-+ */
-+MarmotStatus marmot_send_tagged_text(const struct MarmotClient *client,
-+                                     const char *account_ref,
-+                                     const char *group_id_hex,
-+                                     const struct MarmotStringArray *tags,
-+                                     uintptr_t tags_len,
-+                                     const char *content,
-+                                     struct MarmotSendSummary **out);
- 
- /**
-  * Send a custom application event into the group. `tags` is a flat
-@@ -9092,6 +9145,94 @@ MarmotStatus marmot_report_message(const struct MarmotClient *client,
+@@ -9205,6 +9211,97 @@ MarmotStatus marmot_report_message(const struct MarmotClient *client,
   */
  MarmotStatus marmot_verify_public_nostr_event_json(const char *event_json, uint8_t *out);
  
@@ -2355,6 +2243,7 @@ index 67dfc27d..95b526cb 100644
 +
 +/**
 + * Set up an external account using the verified stable signer instance.
++ * inbox_relays sets kind-10050 independently; NULL/0 uses default_relays.
 + * # Safety
 + * All pointers must be valid for the call; relay arrays follow ordinary C ABI
 + * str-array ownership. Out summary is freed with marmot_account_summary_free.
@@ -2365,6 +2254,8 @@ index 67dfc27d..95b526cb 100644
 +                                uintptr_t default_len,
 +                                const char *const *bootstrap_relays,
 +                                uintptr_t bootstrap_len,
++                                const char *const *inbox_relays,
++                                uintptr_t inbox_len,
 +                                struct MarmotAccountSummary **out);
 +
 +/**
@@ -2426,10 +2317,10 @@ index 5be90794..84ccdd66 100644
  pub mod status;
 diff --git a/crates/marmot-c/src/nip46.rs b/crates/marmot-c/src/nip46.rs
 new file mode 100644
-index 00000000..95032012
+index 00000000..a16e34cc
 --- /dev/null
 +++ b/crates/marmot-c/src/nip46.rs
-@@ -0,0 +1,1189 @@
+@@ -0,0 +1,1196 @@
 +//! NIP-46 C sessions. Each session has an independently driven transport, so
 +//! synchronous MLS identity-proof callbacks never depend on the calling runtime.
 +
@@ -3370,6 +3261,7 @@ index 00000000..95032012
 +}
 +
 +/// Set up an external account using the verified stable signer instance.
++/// inbox_relays sets kind-10050 independently; NULL/0 uses default_relays.
 +/// # Safety
 +/// All pointers must be valid for the call; relay arrays follow ordinary C ABI
 +/// str-array ownership. Out summary is freed with marmot_account_summary_free.
@@ -3381,6 +3273,8 @@ index 00000000..95032012
 +    default_len: usize,
 +    bootstrap_relays: *const *const c_char,
 +    bootstrap_len: usize,
++    inbox_relays: *const *const c_char,
++    inbox_len: usize,
 +    out: *mut *mut MarmotAccountSummary,
 +) -> MarmotStatus {
 +    ffi_guard(|| {
@@ -3406,6 +3300,10 @@ index 00000000..95032012
 +            Ok(relays) => relays,
 +            Err(status) => return status,
 +        };
++        let inbox = match unsafe { str_array(inbox_relays, inbox_len) } {
++            Ok(relays) => relays,
++            Err(status) => return status,
++        };
 +        let user = match session.inner.call(Operation::Connect, REQUEST_TIMEOUT) {
 +            Ok(user) => match user.as_str() {
 +                Some(user) => user.to_owned(),
@@ -3417,7 +3315,7 @@ index 00000000..95032012
 +        match client.block_on(
 +            client
 +                .marmot
-+                .login_external_signer(user, signer, defaults, bootstrap),
++                .login_external_signer(user, signer, defaults, bootstrap, inbox),
 +        ) {
 +            Ok(summary) => {
 +                unsafe { out.write(memory::boxed(MarmotAccountSummary::from(summary))) };
@@ -3620,10 +3518,10 @@ index 00000000..95032012
 +    }
 +}
 diff --git a/crates/transport-nostr-adapter/src/sdk_client.rs b/crates/transport-nostr-adapter/src/sdk_client.rs
-index 1ceee363..8f8f7c79 100644
+index e3e05c6b..278e74cf 100644
 --- a/crates/transport-nostr-adapter/src/sdk_client.rs
 +++ b/crates/transport-nostr-adapter/src/sdk_client.rs
-@@ -3079,7 +3079,12 @@ async fn event_for_publish_with_signer(
+@@ -3083,7 +3083,12 @@ async fn event_for_publish_with_signer(
          .custom_created_at(NostrTimestamp::from_secs(event.created_at))
          .finalize_async(signer)
          .await

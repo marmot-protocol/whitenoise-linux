@@ -2086,6 +2086,8 @@ auth_worker :: proc(t: ^thread.Thread) {
 				   len(ONBOARDING_RELAYS),
 				   raw_data(ONBOARDING_RELAYS),
 				   len(ONBOARDING_RELAYS),
+				   nil,
+				   0,
 				   &summary,
 			   ) !=
 			   .OK {

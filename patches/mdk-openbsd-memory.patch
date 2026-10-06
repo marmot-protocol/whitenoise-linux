@@ -1,7 +1,8 @@
+diff --git a/crates/marmot-c/c-bindings.sh b/crates/marmot-c/c-bindings.sh
+index 2b229991..3838e7f9 100755
 --- a/crates/marmot-c/c-bindings.sh
 +++ b/crates/marmot-c/c-bindings.sh
-@@ -19,6 +19,14 @@
- if [[ "$(uname -s)" == "Darwin" ]]; then
+@@ -20,6 +20,14 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
      export CARGO_PROFILE_RELEASE_STRIP=none
  fi
  
@@ -15,3 +16,4 @@
 +
  CRATE_DIR="$(cd "$(dirname "$0")" && pwd)"
  WORKSPACE_DIR="$(cd "$CRATE_DIR/../.." && pwd)"
+ TARGET_DIR="${CARGO_TARGET_DIR:-$WORKSPACE_DIR/target}"

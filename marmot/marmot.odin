@@ -923,13 +923,13 @@ Media_Upload_Attachment_Request :: struct {
 }
 
 Media_Upload_Request :: struct {
-	message_tags:     [^]Message_Tag,
-	message_tags_len: uint,
 	attachments:      [^]Media_Upload_Attachment_Request,
 	attachments_len:  uint,
 	caption:          cstring, // nullable
 	send:             bool,
 	blossom_server:   cstring, // nullable
+	message_tags:     [^]Message_Tag,
+	message_tags_len: uint,
 }
 
 Media_Upload_Attachment_Result :: struct {
@@ -1246,7 +1246,7 @@ foreign lib {
 	nip46_uri :: proc(session: ^Nip46_Session, out: ^cstring) -> Status ---
 	nip46_connect :: proc(session: ^Nip46_Session, out_user_hex: ^cstring) -> Status ---
 	nip46_export :: proc(session: ^Nip46_Session, out_config_json: ^cstring) -> Status ---
-	nip46_login :: proc(client: ^Client, session: ^Nip46_Session, default_relays: [^]cstring, default_len: uint, bootstrap_relays: [^]cstring, bootstrap_len: uint, out: ^^Account_Summary) -> Status ---
+	nip46_login :: proc(client: ^Client, session: ^Nip46_Session, default_relays: [^]cstring, default_len: uint, bootstrap_relays: [^]cstring, bootstrap_len: uint, inbox_relays: [^]cstring, inbox_len: uint, out: ^^Account_Summary) -> Status ---
 	nip46_register :: proc(client: ^Client, account_ref: cstring, session: ^Nip46_Session) -> Status ---
 	nip46_state :: proc(session: ^Nip46_Session, out_json: ^cstring) -> Status ---
 	nip46_cancel :: proc(session: ^Nip46_Session) ---
@@ -1268,7 +1268,7 @@ foreign lib {
 
 	set_account_nip65_relays :: proc(client: ^Client, account_ref: cstring, relays: [^]cstring, relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Relay_Lists) -> Status ---
 	set_account_inbox_relays :: proc(client: ^Client, account_ref: cstring, relays: [^]cstring, relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Relay_Lists) -> Status ---
-	publish_relay_lists :: proc(client: ^Client, account_ref: cstring, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint) -> Status ---
+	publish_relay_lists :: proc(client: ^Client, account_ref: cstring, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, inbox_relays: [^]cstring, inbox_relays_len: uint) -> Status ---
 	account_relay_lists_free :: proc(ptr: ^Account_Relay_Lists) ---
 
 	relay_health :: proc(client: ^Client, out: ^^Relay_Health) -> Status ---
@@ -1456,8 +1456,9 @@ foreign lib {
 	@(link_name = "marmot_presented_chat_list_snapshot_free")
 	presented_chat_list_free :: proc(list: ^Presented_Chat_List) ---
 
-	create_identity :: proc(client: ^Client, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Summary) -> Status ---
-	login :: proc(client: ^Client, identity: cstring, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Summary) -> Status ---
+	// Empty inbox_relays declares default_relays as the kind-10050 list too.
+	create_identity :: proc(client: ^Client, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, inbox_relays: [^]cstring, inbox_relays_len: uint, out: ^^Account_Summary) -> Status ---
+	login :: proc(client: ^Client, identity: cstring, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, inbox_relays: [^]cstring, inbox_relays_len: uint, out: ^^Account_Summary) -> Status ---
 }
 
 // Copy the thread-local error detail into an Odin string and release

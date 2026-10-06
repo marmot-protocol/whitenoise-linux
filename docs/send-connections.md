@@ -54,7 +54,8 @@ excluded from the real-network results above.
 
 ## Reproduce
 
-The Linux build applies `patches/mdk-send-connections.patch`. From `vendor/mdk`:
+MDK 0.12.0 ships a reworked version of this change (#1961), so the Linux build
+no longer patches it. The tests below are upstream. From `vendor/mdk`:
 
 ```sh
 CC=clang cargo test --release --locked -p marmot-app --test relay_runtime publish_socket_isolation -- --exact
@@ -65,7 +66,7 @@ SEND_RELAYS=wss://relay.eu.whitenoise.chat,wss://relay.us.whitenoise.chat \
 
 The second command publishes real test traffic. Omit `SEND_RELAYS` for the
 local connection-count diagnostic. To build a baseline, retain the identical
-test harness and reverse only the patch's `src/relay_plane/mod.rs` hunk, then
+test harness and reverse only the publishing change in `src/relay_plane/mod.rs`, then
 build and copy the executable before restoring the publishing change.
 
 ## Limits

@@ -216,14 +216,14 @@ index 6531e14a..ec2baeb3 100644
              Err(AppError::Io(io::Error::new(
                  io::ErrorKind::Unsupported,
 diff --git a/crates/marmot-forensics/src/lib.rs b/crates/marmot-forensics/src/lib.rs
-index e66f631e..00787865 100644
+index 228e2823..c8571e12 100644
 --- a/crates/marmot-forensics/src/lib.rs
 +++ b/crates/marmot-forensics/src/lib.rs
 @@ -1,5 +1,4 @@
  pub mod audit;
 -#[cfg(unix)]
  pub mod local_delivery;
- /// Inactive next-version Welcome contract; does not change recorder output.
+ /// Opt-in v5 record contract written by new app audit sessions; v4 stays frozen.
  pub mod v5;
 diff --git a/crates/marmot-forensics/src/local_delivery.rs b/crates/marmot-forensics/src/local_delivery.rs
 index 76598f95..3ea0d9e3 100644

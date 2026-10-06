@@ -639,6 +639,8 @@ import_identity_blocking :: proc(
 		   len(ONBOARDING_RELAYS),
 		   raw_data(ONBOARDING_RELAYS),
 		   len(ONBOARDING_RELAYS),
+		   nil,
+		   0,
 		   &summary,
 	   ) !=
 	   .OK {
@@ -670,6 +672,8 @@ create_identity_blocking :: proc(
 		   len(DEFAULT_RELAYS),
 		   raw_data(DEFAULT_RELAYS),
 		   len(DEFAULT_RELAYS),
+		   nil,
+		   0,
 		   &summary,
 	   ) !=
 	   .OK {

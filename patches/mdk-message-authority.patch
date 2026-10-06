@@ -1,8 +1,8 @@
 diff --git a/crates/marmot-app/src/messages/intents.rs b/crates/marmot-app/src/messages/intents.rs
-index 57be67e1..d69bdd4f 100644
+index d42d92a0..02fc671e 100644
 --- a/crates/marmot-app/src/messages/intents.rs
 +++ b/crates/marmot-app/src/messages/intents.rs
-@@ -710,7 +710,16 @@ pub(crate) fn build_inner_event_with_media_reply(
+@@ -738,7 +738,16 @@ pub(crate) fn build_inner_event_with_media_reply(
              content,
          } => {
              validate_custom_event_kind(*kind)?;
@@ -20,7 +20,7 @@ index 57be67e1..d69bdd4f 100644
          }
      }
  }
-@@ -876,6 +885,21 @@ mod mention_tests {
+@@ -927,6 +936,21 @@ mod mention_tests {
      use super::*;
      use crate::ids::{nprofile_for_account_id, npub_for_account_id};
  
@@ -43,13 +43,13 @@ index 57be67e1..d69bdd4f 100644
          nostr::prelude::Keys::generate().public_key().to_hex()
      }
 diff --git a/crates/marmot-app/tests/relay_runtime.rs b/crates/marmot-app/tests/relay_runtime.rs
-index abb890fe..24d8c388 100644
+index a321ef53..be3e0ea8 100644
 --- a/crates/marmot-app/tests/relay_runtime.rs
 +++ b/crates/marmot-app/tests/relay_runtime.rs
-@@ -15855,3 +15855,187 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
-     bob.shutdown().await;
+@@ -16380,5 +16380,190 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
      carol.shutdown().await;
  }
+ 
 +#[tokio::test]
 +async fn linux_issue_two_clients() {
 +    let alice_dir = tempfile::tempdir().unwrap();
@@ -234,8 +234,11 @@ index abb890fe..24d8c388 100644
 +    bob_rt.shutdown_and_close().await.unwrap();
 +    alice_rt.shutdown_and_close().await.unwrap();
 +}
++
+ #[path = "relay_runtime/attachment_retention.rs"]
+ mod attachment_retention;
 diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
-index ce1baaa8..794e9d4a 100644
+index 4f517eb8..ba03f70a 100644
 --- a/crates/marmot-c/include/marmot.h
 +++ b/crates/marmot-c/include/marmot.h
 @@ -3050,6 +3050,15 @@ typedef struct MarmotAppMessageRecord {
@@ -333,10 +336,10 @@ index f63023f2..e2885a49 100644
 +    }
 +}
 diff --git a/crates/storage-sqlite/src/timeline.rs b/crates/storage-sqlite/src/timeline.rs
-index dbd464a0..4c3e1a72 100644
+index a5f6b0ed..6ce93a15 100644
 --- a/crates/storage-sqlite/src/timeline.rs
 +++ b/crates/storage-sqlite/src/timeline.rs
-@@ -79,6 +79,9 @@ const DEFAULT_TIMELINE_LIMIT: usize = 50;
+@@ -80,6 +80,9 @@ const DEFAULT_TIMELINE_LIMIT: usize = 50;
  /// window owners should not exceed it.
  pub const MAX_TIMELINE_LIMIT: usize = 200;
  
@@ -346,7 +349,7 @@ index dbd464a0..4c3e1a72 100644
  /// The invalidation reason a locally-sent row carries when its publish reached
  /// no one. Storage owns the literal because it is both a stored column value
  /// and a projection predicate (a retracted own send stays visible as `failed`
-@@ -800,7 +803,7 @@ impl SqliteAccountStorage {
+@@ -801,7 +804,7 @@ impl SqliteAccountStorage {
                              authority_context = ?3,
                              moderation_grant = CASE
                                  WHEN kind = 5 AND authority_state = 0 THEN moderation_grant
@@ -355,7 +358,7 @@ index dbd464a0..4c3e1a72 100644
                                  ELSE 0
                              END
                           WHERE group_id_hex = ?1 AND message_id_hex = ?2 AND authority_state != 2",
-@@ -3869,6 +3872,9 @@ fn timeline_row_from_app_event(event: &RawAppEvent) -> TimelineRow {
+@@ -3890,6 +3893,9 @@ fn timeline_row_from_app_event(event: &RawAppEvent) -> TimelineRow {
  /// Ordinary chat replies can still target a custom row — reply linkage is
  /// derived from the replying event's own tags, not the target's.
  fn timeline_row_from_custom_event(event: &RawAppEvent) -> TimelineRow {
@@ -416,10 +419,10 @@ index f5302712..ebfd888e 100644
                      END
                   WHERE group_id_hex = ?1 AND message_id_hex = ?2 AND authority_state != 2",
 diff --git a/crates/storage-sqlite/src/timeline/tests.rs b/crates/storage-sqlite/src/timeline/tests.rs
-index 8a37f988..cc51dd7f 100644
+index 7f3334f7..953ffa36 100644
 --- a/crates/storage-sqlite/src/timeline/tests.rs
 +++ b/crates/storage-sqlite/src/timeline/tests.rs
-@@ -4167,3 +4167,26 @@ fn system_reactions_survive_replay_reopen_and_retract_without_replacing_target()
+@@ -4383,3 +4383,26 @@ fn system_reactions_survive_replay_reopen_and_retract_without_replacing_target()
      assert_eq!(list(&store), [baseline]);
      store.close().unwrap();
  }

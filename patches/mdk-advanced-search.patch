@@ -1,7 +1,427 @@
+diff --git a/crates/agent-connector/src/timeline.rs b/crates/agent-connector/src/timeline.rs
+index 9a59447c..4ae13c34 100644
+--- a/crates/agent-connector/src/timeline.rs
++++ b/crates/agent-connector/src/timeline.rs
+@@ -70,6 +70,7 @@ impl AgentConnector {
+                     after_message_id: after.as_ref().map(|cursor| cursor.message_id_hex.clone()),
+                     limit: Some(limit as usize),
+                 },
++                ..Default::default()
+             },
+         )?;
+         bounded_timeline_page_response(
+diff --git a/crates/cli/src/commands/messages.rs b/crates/cli/src/commands/messages.rs
+index 4c612984..0f0ff2a0 100644
+--- a/crates/cli/src/commands/messages.rs
++++ b/crates/cli/src/commands/messages.rs
+@@ -560,6 +560,7 @@ fn handle_message_timeline_command(
+                         after_message_id,
+                         limit,
+                     },
++                    ..Default::default()
+                 },
+             )?;
+             timeline_page_output(app, &account.account_id_hex, page, None)
+@@ -581,10 +582,12 @@ fn handle_message_timeline_command(
+                         .map(|group| normalize_group_id_hex(&group))
+                         .transpose()?,
+                     search: Some(query.clone()),
++                    search_wall_clock: true,
+                     pagination: TimelinePagination {
+                         limit,
+                         ..TimelinePagination::default()
+                     },
++                    ..Default::default()
+                 },
+             )?;
+             timeline_page_output(app, &account.account_id_hex, page, Some(query))
+diff --git a/crates/cli/src/daemon/subscriptions.rs b/crates/cli/src/daemon/subscriptions.rs
+index 6e78cd49..f2649c94 100644
+--- a/crates/cli/src/daemon/subscriptions.rs
++++ b/crates/cli/src/daemon/subscriptions.rs
+@@ -270,6 +270,7 @@ pub(crate) async fn handle_timeline_messages_subscription(
+                     limit,
+                     ..marmot_app::TimelinePagination::default()
+                 },
++                ..Default::default()
+             },
+         )
+         .await
+diff --git a/crates/marmot-app/src/client/retention.rs b/crates/marmot-app/src/client/retention.rs
+index c5712bc2..5bb4db44 100644
+--- a/crates/marmot-app/src/client/retention.rs
++++ b/crates/marmot-app/src/client/retention.rs
+@@ -235,6 +235,7 @@ impl AppClient {
+                         after_message_id: None,
+                         limit: Some(RETENTION_SWEEP_TIMELINE_PAGE_LIMIT),
+                     },
++                    ..Default::default()
+                 },
+             )?;
+             let scan_page = RetentionTimelineScanPage {
+diff --git a/crates/marmot-app/src/lib.rs b/crates/marmot-app/src/lib.rs
+index 6fb1c0d1..19e1b1d7 100644
+--- a/crates/marmot-app/src/lib.rs
++++ b/crates/marmot-app/src/lib.rs
+@@ -267,10 +267,10 @@ pub use relay_telemetry_export::{
+ pub use storage_sqlite::{
+     ChatConversationKind, ChatListAttachmentKind, ChatListAvatar, ChatListMessageDeliveryState,
+     ChatListMessagePreview, ChatListQuery, ChatListRow, DeletionSource, ExistingDirectConversation,
+-    MAX_TIMELINE_LIMIT, SelfMembership, TimelineEditHistoryPage, TimelineEditSummary,
+-    TimelineEditVersion, TimelineMessageQuery, TimelineMessageRecord, TimelinePage,
+-    TimelinePagination, TimelineReactionSummary, TimelineReplyPreview, TimelineUserReaction,
+-    select_reusable_direct_conversation,
++    MAX_TIMELINE_LIMIT, SelfMembership, TimelineAttachmentType, TimelineEditHistoryPage,
++    TimelineEditSummary, TimelineEditVersion, TimelineMessageQuery, TimelineMessageRecord,
++    TimelinePage, TimelinePagination, TimelineReactionSummary, TimelineReplyPreview,
++    TimelineUserReaction, select_reusable_direct_conversation,
+ };
+ pub use transport_nostr_adapter::{
+     DurationHistogramSnapshot, HistogramBucket, NostrAdapterMetrics, RelayDeliverySpread,
+diff --git a/crates/marmot-app/src/runtime/event_routing.rs b/crates/marmot-app/src/runtime/event_routing.rs
+index d93fda70..eb11ce5c 100644
+--- a/crates/marmot-app/src/runtime/event_routing.rs
++++ b/crates/marmot-app/src/runtime/event_routing.rs
+@@ -62,10 +62,12 @@ pub(crate) fn projection_update_matches_query(
+ pub(crate) fn timeline_query_can_apply_projection_delta(query: &TimelineMessageQuery) -> bool {
+     // Projection application already derives canonical-vs-wall ordering from
+     // this field, so global windows can safely merge per-group deltas.
+-    query
+-        .search
+-        .as_ref()
+-        .is_none_or(|search| search.trim().is_empty())
++    query.search.as_ref().is_none_or(|search| search.is_empty())
++        && query.sender.is_none()
++        && query.since.is_none()
++        && query.until.is_none()
++        && query.attachment_type == crate::TimelineAttachmentType::Any
++        && !query.search_wall_clock
+         && query.pagination.before.is_none()
+         && query.pagination.before_message_id.is_none()
+         && query.pagination.after.is_none()
+diff --git a/crates/marmot-app/src/runtime/subscriptions.rs b/crates/marmot-app/src/runtime/subscriptions.rs
+index e8f72ac7..a96973d0 100644
+--- a/crates/marmot-app/src/runtime/subscriptions.rs
++++ b/crates/marmot-app/src/runtime/subscriptions.rs
+@@ -223,6 +223,12 @@ impl TimelineWindow {
+     /// always reconstitutes it.
+     pub(crate) fn refresh_query(&self) -> TimelineMessageQuery {
+         let mut query = self.head_refresh_query();
++        query.cursor_group_id = self
++            .page
++            .messages
++            .last()
++            .filter(|_| !self.anchored_to_head())
++            .map(|newest| newest.group_id_hex.clone());
+         let limit = self.page.messages.len().max(1);
+         query.pagination = match self.page.messages.last() {
+             // Detached: re-fetch the loaded range ending exactly at the newest
+@@ -302,6 +308,7 @@ impl TimelineWindowHandle {
+                 return Ok(window.page.clone());
+             };
+             let mut query = window.base_query.clone();
++            query.cursor_group_id = Some(oldest.group_id_hex.clone());
+             query.pagination = TimelinePagination {
+                 before: Some(oldest.timeline_at),
+                 before_message_id: Some(oldest.message_id_hex.clone()),
+@@ -322,7 +329,8 @@ impl TimelineWindowHandle {
+         }
+         let mut window = self.lock();
+         let limit = window.window_limit;
+-        let canonical_group_order = window.base_query.group_id_hex.is_some();
++        let canonical_group_order =
++            window.base_query.group_id_hex.is_some() && !window.base_query.search_wall_clock;
+         merge_timeline_window_with_order(
+             &mut window.page,
+             older,
+@@ -348,6 +356,7 @@ impl TimelineWindowHandle {
+                 return Ok(window.page.clone());
+             };
+             let mut query = window.base_query.clone();
++            query.cursor_group_id = Some(newest.group_id_hex.clone());
+             query.pagination = TimelinePagination {
+                 after: Some(newest.timeline_at),
+                 after_message_id: Some(newest.message_id_hex.clone()),
+@@ -368,7 +377,8 @@ impl TimelineWindowHandle {
+         }
+         let mut window = self.lock();
+         let limit = window.window_limit;
+-        let canonical_group_order = window.base_query.group_id_hex.is_some();
++        let canonical_group_order =
++            window.base_query.group_id_hex.is_some() && !window.base_query.search_wall_clock;
+         merge_timeline_window_with_order(
+             &mut window.page,
+             newer,
+@@ -385,7 +395,8 @@ impl TimelineWindowHandle {
+     fn apply_projection(&self, update: &AppProjectionUpdate) {
+         let mut window = self.lock();
+         let limit = window.window_limit;
+-        let canonical_group_order = window.base_query.group_id_hex.is_some();
++        let canonical_group_order =
++            window.base_query.group_id_hex.is_some() && !window.base_query.search_wall_clock;
+         apply_projection_to_window(&mut window.page, update, limit, canonical_group_order);
+         window.bump_generation();
+     }
+@@ -527,11 +538,19 @@ impl RuntimeTimelineMessagesSubscription {
+ fn timeline_record_order_key(
+     message: &TimelineMessageRecord,
+     canonical_group_order: bool,
+-) -> (u8, u64, u8, u64, &str) {
++) -> (u8, u64, u8, u64, &str, &str) {
+     if canonical_group_order {
+-        message.canonical_order_key()
++        let (class, primary, phase, at, id) = message.canonical_order_key();
++        (class, primary, phase, at, id, &message.group_id_hex)
+     } else {
+-        (0, message.timeline_at, 0, 0, &message.message_id_hex)
++        (
++            0,
++            message.timeline_at,
++            0,
++            0,
++            &message.message_id_hex,
++            &message.group_id_hex,
++        )
+     }
+ }
+ 
+@@ -596,12 +615,12 @@ pub(crate) fn apply_projection_to_window(
+ ) {
+     let anchored = !window.has_more_after;
+     // A detached window must suppress anything sorting strictly after its
+-    // query-order upper bound. Own only the message id so delta application can
++    // query-order upper bound. Own only the cursor ids so delta application can
+     // mutate the window without cloning the newest record's payload.
+     let newest_order = window.messages.last().map(|newest| {
+-        let (class, primary, phase, at, id) =
++        let (class, primary, phase, at, id, group) =
+             timeline_record_order_key(newest, canonical_group_order);
+-        (class, primary, phase, at, id.to_owned())
++        (class, primary, phase, at, id.to_owned(), group.to_owned())
+     });
+     if update.timeline_changes.is_empty() {
+         for message in &update.timeline_messages {
+@@ -655,7 +674,7 @@ fn insert_live_message(
+     messages: &mut Vec<TimelineMessageRecord>,
+     message: TimelineMessageRecord,
+     anchored: bool,
+-    newest_order: Option<&(u8, u64, u8, u64, String)>,
++    newest_order: Option<&(u8, u64, u8, u64, String, String)>,
+     canonical_group_order: bool,
+ ) {
+     if let Some(existing) = messages.iter_mut().find(|existing| {
+@@ -667,7 +686,14 @@ fn insert_live_message(
+     }
+     let within_window = newest_order.is_some_and(|newest| {
+         timeline_record_order_key(&message, canonical_group_order)
+-            <= (newest.0, newest.1, newest.2, newest.3, newest.4.as_str())
++            <= (
++                newest.0,
++                newest.1,
++                newest.2,
++                newest.3,
++                newest.4.as_str(),
++                newest.5.as_str(),
++            )
+     });
+     if anchored || within_window {
+         messages.push(message);
+@@ -1180,11 +1206,10 @@ impl MarmotAppRuntime {
+         })
+         .await?;
+         // The subscription owns the window, so the re-query base carries only the
+-        // durable filter (group + search); pagination is supplied per call.
++        // durable filters and ordering; pagination is supplied per call.
+         let base_query = TimelineMessageQuery {
+-            group_id_hex: query.group_id_hex.clone(),
+-            search: query.search.clone(),
+             pagination: TimelinePagination::default(),
++            ..query.clone()
+         };
+         // Deltas are applicable iff the base query is an unfiltered, unpaginated
+         // tail. Search-scoped windows cannot be reconstructed from a projection
+diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
+index 21f1352f..c6e9d0c3 100644
+--- a/crates/marmot-c/include/marmot.h
++++ b/crates/marmot-c/include/marmot.h
+@@ -3726,7 +3726,7 @@ typedef struct MarmotTimelineMessageQuery {
+    */
+   const char *group_id_hex;
+   /**
+-   * Substring search. Nullable.
++   * Literal substring search; whitespace and SQL wildcards are literal. Nullable.
+    */
+   const char *search;
+   /**
+@@ -3753,6 +3753,32 @@ typedef struct MarmotTimelineMessageQuery {
+    */
+   uint8_t has_limit;
+   uint32_t limit;
++  /**
++   * Exact sender pubkey. Nullable.
++   */
++  const char *sender;
++  /**
++   * Inclusive Unix seconds on timeline_at.
++   */
++  uint8_t has_since;
++  uint64_t since;
++  /**
++   * Exclusive Unix seconds on timeline_at.
++   */
++  uint8_t has_until;
++  uint64_t until;
++  /**
++   * 0 any, 1 image, 2 video, 3 audio, 4 other file, 5 any attachment.
++   */
++  uint32_t attachment_type;
++  /**
++   * Timestamp + message-id ordering, including group-restricted searches.
++   */
++  uint8_t search_wall_clock;
++  /**
++   * Cursor's group tie-breaker; required for account-wide wall-clock search.
++   */
++  const char *cursor_group_id;
+ } MarmotTimelineMessageQuery;
+ 
+ /**
+diff --git a/crates/marmot-c/src/types/timeline.rs b/crates/marmot-c/src/types/timeline.rs
+index 6f83c6fd..476ddeae 100644
+--- a/crates/marmot-c/src/types/timeline.rs
++++ b/crates/marmot-c/src/types/timeline.rs
+@@ -26,7 +26,7 @@ use crate::memory::{CFree, c_bool, free_c_string, optional_str, owned_c_string};
+ pub struct MarmotTimelineMessageQuery {
+     /// Restrict to one group. Nullable for the account-wide tail.
+     pub group_id_hex: *const c_char,
+-    /// Substring search. Nullable.
++    /// Literal substring search; whitespace and SQL wildcards are literal. Nullable.
+     pub search: *const c_char,
+     /// Only messages before this timeline timestamp; set `has_before`
+     /// (`uint8_t` boolean: nonzero is true, as for every `has_` flag here).
+@@ -42,6 +42,20 @@ pub struct MarmotTimelineMessageQuery {
+     /// Page-size cap; set `has_limit`.
+     pub has_limit: u8,
+     pub limit: u32,
++    /// Exact sender pubkey. Nullable.
++    pub sender: *const c_char,
++    /// Inclusive Unix seconds on timeline_at.
++    pub has_since: u8,
++    pub since: u64,
++    /// Exclusive Unix seconds on timeline_at.
++    pub has_until: u8,
++    pub until: u64,
++    /// 0 any, 1 image, 2 video, 3 audio, 4 other file, 5 any attachment.
++    pub attachment_type: u32,
++    /// Timestamp + message-id ordering, including group-restricted searches.
++    pub search_wall_clock: u8,
++    /// Cursor's group tie-breaker; required for account-wide wall-clock search.
++    pub cursor_group_id: *const c_char,
+ }
+ 
+ impl MarmotTimelineMessageQuery {
+@@ -56,6 +70,12 @@ impl MarmotTimelineMessageQuery {
+             after: c_bool(self.has_after).then_some(self.after),
+             after_message_id: unsafe { optional_str(self.after_message_id) }?,
+             limit: c_bool(self.has_limit).then_some(self.limit),
++            sender: unsafe { optional_str(self.sender) }?,
++            since: c_bool(self.has_since).then_some(self.since),
++            until: c_bool(self.has_until).then_some(self.until),
++            attachment_type: self.attachment_type,
++            search_wall_clock: c_bool(self.search_wall_clock),
++            cursor_group_id: unsafe { optional_str(self.cursor_group_id) }?,
+         })
+     }
+ }
+diff --git a/crates/marmot-uniffi/src/commands/subscription.rs b/crates/marmot-uniffi/src/commands/subscription.rs
+index 1c431407..85e6a715 100644
+--- a/crates/marmot-uniffi/src/commands/subscription.rs
++++ b/crates/marmot-uniffi/src/commands/subscription.rs
+@@ -104,6 +104,7 @@ impl Marmot {
+                 limit: limit.map(|value| value as usize),
+                 ..TimelinePagination::default()
+             },
++            ..Default::default()
+         };
+         let inner = self
+             .runtime
+diff --git a/crates/marmot-uniffi/src/conversions/timeline.rs b/crates/marmot-uniffi/src/conversions/timeline.rs
+index 7d237626..51e9c2bd 100644
+--- a/crates/marmot-uniffi/src/conversions/timeline.rs
++++ b/crates/marmot-uniffi/src/conversions/timeline.rs
+@@ -203,6 +203,12 @@ pub struct TimelineMessageQueryFfi {
+     pub after: Option<u64>,
+     pub after_message_id: Option<String>,
+     pub limit: Option<u32>,
++    pub sender: Option<String>,
++    pub since: Option<u64>,
++    pub until: Option<u64>,
++    pub attachment_type: u32,
++    pub search_wall_clock: bool,
++    pub cursor_group_id: Option<String>,
+ }
+ 
+ #[derive(Clone, Debug, uniffi::Record)]
+diff --git a/crates/marmot-uniffi/src/lib.rs b/crates/marmot-uniffi/src/lib.rs
+index 2e86eeb2..d271e5f7 100644
+--- a/crates/marmot-uniffi/src/lib.rs
++++ b/crates/marmot-uniffi/src/lib.rs
+@@ -172,10 +172,25 @@ pub(crate) fn timeline_query_from_ffi(
+ ) -> Result<TimelineMessageQuery, MarmotKitError> {
+     Ok(TimelineMessageQuery {
+         group_id_hex: optional_group_id_hex(query.group_id_hex)?,
+-        search: query.search.and_then(|value| {
+-            let value = value.trim().to_owned();
+-            (!value.is_empty()).then_some(value)
+-        }),
++        search: query.search.filter(|value| !value.is_empty()),
++        sender: query.sender,
++        since: query.since,
++        until: query.until,
++        attachment_type: match query.attachment_type {
++            0 => marmot_app::TimelineAttachmentType::Any,
++            1 => marmot_app::TimelineAttachmentType::Image,
++            2 => marmot_app::TimelineAttachmentType::Video,
++            3 => marmot_app::TimelineAttachmentType::Audio,
++            4 => marmot_app::TimelineAttachmentType::File,
++            5 => marmot_app::TimelineAttachmentType::Attachment,
++            _ => {
++                return Err(MarmotKitError::Runtime {
++                    details: "invalid attachment search type".to_owned(),
++                });
++            }
++        },
++        search_wall_clock: query.search_wall_clock,
++        cursor_group_id: optional_group_id_hex(query.cursor_group_id)?,
+         pagination: TimelinePagination {
+             before: query.before,
+             before_message_id: optional_message_id_hex(query.before_message_id)?,
+diff --git a/crates/storage-sqlite/src/lib.rs b/crates/storage-sqlite/src/lib.rs
+index ea25aed8..a2b07b72 100644
+--- a/crates/storage-sqlite/src/lib.rs
++++ b/crates/storage-sqlite/src/lib.rs
+@@ -129,11 +129,11 @@ pub use timeline::{
+     ConversationOpenError, ConversationOpenQuery, ConversationOpenReadState,
+     ConversationOpenSnapshot, ConversationOpenTarget, ConversationPresentationPage,
+     ConversationWindowQuery, DeletionSource, LOCAL_PUBLISH_FAILED_REASON, MAX_TIMELINE_LIMIT,
+-    SecurePruneAppEventsResult, StoredAppEvent, TimelineEditHistoryPage, TimelineEditSummary,
+-    TimelineEditVersion, TimelineMessageChange, TimelineMessageQuery, TimelineMessageRecord,
+-    TimelineMessageTarget, TimelinePage, TimelinePagination, TimelineProjectionUpdate,
+-    TimelineReactionSummary, TimelineRemoveReason, TimelineReplyPreview, TimelineUpdateTrigger,
+-    TimelineUserReaction,
++    SecurePruneAppEventsResult, StoredAppEvent, TimelineAttachmentType, TimelineEditHistoryPage,
++    TimelineEditSummary, TimelineEditVersion, TimelineMessageChange, TimelineMessageQuery,
++    TimelineMessageRecord, TimelineMessageTarget, TimelinePage, TimelinePagination,
++    TimelineProjectionUpdate, TimelineReactionSummary, TimelineRemoveReason, TimelineReplyPreview,
++    TimelineUpdateTrigger, TimelineUserReaction,
+ };
+ pub use transport_reconciliation::{
+     TRANSPORT_RECONCILIATION_MAX_ITEMS_PER_ROUTE, TRANSPORT_RECONCILIATION_RETENTION_SECS,
 diff --git a/crates/storage-sqlite/src/timeline.rs b/crates/storage-sqlite/src/timeline.rs
+index 6edc44bf..c531270c 100644
 --- a/crates/storage-sqlite/src/timeline.rs
 +++ b/crates/storage-sqlite/src/timeline.rs
-@@ -184,8 +184,33 @@
+@@ -185,8 +185,33 @@ pub struct TimelinePagination {
  #[derive(Clone, Debug, Default, PartialEq, Eq)]
  pub struct TimelineMessageQuery {
      pub group_id_hex: Option<String>,
@@ -35,7 +455,7 @@ diff --git a/crates/storage-sqlite/src/timeline.rs b/crates/storage-sqlite/src/t
  }
  
  /// Origin of the accepted deletion selected by MDK. Meaningful only when `deleted`.
-@@ -1516,7 +1541,8 @@
+@@ -1517,7 +1542,8 @@ impl SqliteAccountStorage {
          canonical_group_order: bool,
          hide_blocked: bool,
      ) -> StorageResult<TimelinePage> {
@@ -45,7 +465,7 @@ diff --git a/crates/storage-sqlite/src/timeline.rs b/crates/storage-sqlite/src/t
          let mut pagination = validate_pagination(&query.pagination)?;
          let conn = self.lock()?;
          if canonical_group_order
-@@ -3497,19 +3523,74 @@
+@@ -3518,19 +3544,74 @@ fn timeline_query_sql(
          clauses.push("timeline.group_id_hex = ?".to_owned());
          params.push(rusqlite::types::Value::Text(group_id_hex.clone()));
      }
@@ -126,7 +546,7 @@ diff --git a/crates/storage-sqlite/src/timeline.rs b/crates/storage-sqlite/src/t
          (CursorDirection::Before, Some((class, primary, phase, at, id))) => {
              let comparison = if pagination.inclusive { "<=" } else { "<" };
              clauses.push(format!(
-@@ -3572,6 +3653,12 @@
+@@ -3593,6 +3674,12 @@ fn timeline_query_sql(
          format!("WHERE {}", clauses.join(" AND "))
      };
      let order_sql = match (canonical_group_order, pagination.direction) {
@@ -139,7 +559,7 @@ diff --git a/crates/storage-sqlite/src/timeline.rs b/crates/storage-sqlite/src/t
          (true, CursorDirection::After) => TIMELINE_GROUP_ORDER_BY_ASC,
          (true, CursorDirection::None | CursorDirection::Before) => TIMELINE_GROUP_ORDER_BY_DESC,
          (false, CursorDirection::After) => TIMELINE_WALL_ORDER_BY_ASC,
-@@ -3872,9 +3959,9 @@
+@@ -3893,9 +3980,9 @@ fn timeline_row_from_app_event(event: &RawAppEvent) -> TimelineRow {
  /// Ordinary chat replies can still target a custom row — reply linkage is
  /// derived from the replying event's own tags, not the target's.
  fn timeline_row_from_custom_event(event: &RawAppEvent) -> TimelineRow {
@@ -153,12 +573,14 @@ diff --git a/crates/storage-sqlite/src/timeline.rs b/crates/storage-sqlite/src/t
          reply_to_message_id_hex: None,
          ..timeline_row_from_app_event(event)
 diff --git a/crates/storage-sqlite/src/timeline/tests.rs b/crates/storage-sqlite/src/timeline/tests.rs
+index 953ffa36..b32f49f2 100644
 --- a/crates/storage-sqlite/src/timeline/tests.rs
 +++ b/crates/storage-sqlite/src/timeline/tests.rs
-@@ -1448,6 +1448,285 @@
+@@ -1663,6 +1663,285 @@ fn pagination_rejects_half_and_double_cursors() {
+     );
  }
  
- #[test]
++#[test]
 +fn advanced_search_pages_all_history_with_equal_timestamp_cursors() {
 +    let store = SqliteAccountStorage::in_memory().unwrap();
 +    for index in 0..257 {
@@ -437,11 +859,10 @@ diff --git a/crates/storage-sqlite/src/timeline/tests.rs b/crates/storage-sqlite
 +    );
 +}
 +
-+#[test]
+ #[test]
  fn before_inclusive_cursor_keeps_window_rows_over_newer_same_second_rows() {
      let store = SqliteAccountStorage::in_memory().unwrap();
-     // Four rows; b/c/d all share second 20. A scrolled-back window ends at
-@@ -1475,6 +1754,7 @@
+@@ -1691,6 +1970,7 @@ fn before_inclusive_cursor_keeps_window_rows_over_newer_same_second_rows() {
              limit: Some(2),
              ..TimelinePagination::default()
          },
@@ -449,7 +870,7 @@ diff --git a/crates/storage-sqlite/src/timeline/tests.rs b/crates/storage-sqlite
      };
  
      // Inclusive: the tight descending LIMIT must NOT be spent on c/d; the
-@@ -4173,20 +4453,48 @@
+@@ -4389,20 +4669,48 @@ fn comment_chat_features() {
      let store = SqliteAccountStorage::in_memory().unwrap();
      let mut comment = chat("comment", "alice", 1, "original");
      comment.kind = COMMENT_KIND;
@@ -505,409 +926,3 @@ diff --git a/crates/storage-sqlite/src/timeline/tests.rs b/crates/storage-sqlite
 +            .deleted
 +    );
  }
-diff --git a/crates/marmot-uniffi/src/lib.rs b/crates/marmot-uniffi/src/lib.rs
---- a/crates/marmot-uniffi/src/lib.rs
-+++ b/crates/marmot-uniffi/src/lib.rs
-@@ -172,10 +172,25 @@
- ) -> Result<TimelineMessageQuery, MarmotKitError> {
-     Ok(TimelineMessageQuery {
-         group_id_hex: optional_group_id_hex(query.group_id_hex)?,
--        search: query.search.and_then(|value| {
--            let value = value.trim().to_owned();
--            (!value.is_empty()).then_some(value)
--        }),
-+        search: query.search.filter(|value| !value.is_empty()),
-+        sender: query.sender,
-+        since: query.since,
-+        until: query.until,
-+        attachment_type: match query.attachment_type {
-+            0 => marmot_app::TimelineAttachmentType::Any,
-+            1 => marmot_app::TimelineAttachmentType::Image,
-+            2 => marmot_app::TimelineAttachmentType::Video,
-+            3 => marmot_app::TimelineAttachmentType::Audio,
-+            4 => marmot_app::TimelineAttachmentType::File,
-+            5 => marmot_app::TimelineAttachmentType::Attachment,
-+            _ => {
-+                return Err(MarmotKitError::Runtime {
-+                    details: "invalid attachment search type".to_owned(),
-+                });
-+            }
-+        },
-+        search_wall_clock: query.search_wall_clock,
-+        cursor_group_id: optional_group_id_hex(query.cursor_group_id)?,
-         pagination: TimelinePagination {
-             before: query.before,
-             before_message_id: optional_message_id_hex(query.before_message_id)?,
-diff --git a/crates/marmot-uniffi/src/conversions/timeline.rs b/crates/marmot-uniffi/src/conversions/timeline.rs
---- a/crates/marmot-uniffi/src/conversions/timeline.rs
-+++ b/crates/marmot-uniffi/src/conversions/timeline.rs
-@@ -165,6 +165,12 @@
-     pub after: Option<u64>,
-     pub after_message_id: Option<String>,
-     pub limit: Option<u32>,
-+    pub sender: Option<String>,
-+    pub since: Option<u64>,
-+    pub until: Option<u64>,
-+    pub attachment_type: u32,
-+    pub search_wall_clock: bool,
-+    pub cursor_group_id: Option<String>,
- }
- 
- #[derive(Clone, Debug, uniffi::Record)]
-diff --git a/crates/marmot-c/src/types/timeline.rs b/crates/marmot-c/src/types/timeline.rs
---- a/crates/marmot-c/src/types/timeline.rs
-+++ b/crates/marmot-c/src/types/timeline.rs
-@@ -26,7 +26,7 @@
- pub struct MarmotTimelineMessageQuery {
-     /// Restrict to one group. Nullable for the account-wide tail.
-     pub group_id_hex: *const c_char,
--    /// Substring search. Nullable.
-+    /// Literal substring search; whitespace and SQL wildcards are literal. Nullable.
-     pub search: *const c_char,
-     /// Only messages before this timeline timestamp; set `has_before`
-     /// (`uint8_t` boolean: nonzero is true, as for every `has_` flag here).
-@@ -42,6 +42,20 @@
-     /// Page-size cap; set `has_limit`.
-     pub has_limit: u8,
-     pub limit: u32,
-+    /// Exact sender pubkey. Nullable.
-+    pub sender: *const c_char,
-+    /// Inclusive Unix seconds on timeline_at.
-+    pub has_since: u8,
-+    pub since: u64,
-+    /// Exclusive Unix seconds on timeline_at.
-+    pub has_until: u8,
-+    pub until: u64,
-+    /// 0 any, 1 image, 2 video, 3 audio, 4 other file, 5 any attachment.
-+    pub attachment_type: u32,
-+    /// Timestamp + message-id ordering, including group-restricted searches.
-+    pub search_wall_clock: u8,
-+    /// Cursor's group tie-breaker; required for account-wide wall-clock search.
-+    pub cursor_group_id: *const c_char,
- }
- 
- impl MarmotTimelineMessageQuery {
-@@ -56,6 +70,12 @@
-             after: c_bool(self.has_after).then_some(self.after),
-             after_message_id: unsafe { optional_str(self.after_message_id) }?,
-             limit: c_bool(self.has_limit).then_some(self.limit),
-+            sender: unsafe { optional_str(self.sender) }?,
-+            since: c_bool(self.has_since).then_some(self.since),
-+            until: c_bool(self.has_until).then_some(self.until),
-+            attachment_type: self.attachment_type,
-+            search_wall_clock: c_bool(self.search_wall_clock),
-+            cursor_group_id: unsafe { optional_str(self.cursor_group_id) }?,
-         })
-     }
- }
-diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
---- a/crates/marmot-c/include/marmot.h
-+++ b/crates/marmot-c/include/marmot.h
-@@ -3712,7 +3712,7 @@
-    */
-   const char *group_id_hex;
-   /**
--   * Substring search. Nullable.
-+   * Literal substring search; whitespace and SQL wildcards are literal. Nullable.
-    */
-   const char *search;
-   /**
-@@ -3739,6 +3739,32 @@
-    */
-   uint8_t has_limit;
-   uint32_t limit;
-+  /**
-+   * Exact sender pubkey. Nullable.
-+   */
-+  const char *sender;
-+  /**
-+   * Inclusive Unix seconds on timeline_at.
-+   */
-+  uint8_t has_since;
-+  uint64_t since;
-+  /**
-+   * Exclusive Unix seconds on timeline_at.
-+   */
-+  uint8_t has_until;
-+  uint64_t until;
-+  /**
-+   * 0 any, 1 image, 2 video, 3 audio, 4 other file, 5 any attachment.
-+   */
-+  uint32_t attachment_type;
-+  /**
-+   * Timestamp + message-id ordering, including group-restricted searches.
-+   */
-+  uint8_t search_wall_clock;
-+  /**
-+   * Cursor's group tie-breaker; required for account-wide wall-clock search.
-+   */
-+  const char *cursor_group_id;
- } MarmotTimelineMessageQuery;
- 
- /**
-diff --git a/crates/agent-connector/src/timeline.rs b/crates/agent-connector/src/timeline.rs
---- a/crates/agent-connector/src/timeline.rs
-+++ b/crates/agent-connector/src/timeline.rs
-@@ -70,6 +70,7 @@
-                     after_message_id: after.as_ref().map(|cursor| cursor.message_id_hex.clone()),
-                     limit: Some(limit as usize),
-                 },
-+                ..Default::default()
-             },
-         )?;
-         bounded_timeline_page_response(
-diff --git a/crates/cli/src/commands/messages.rs b/crates/cli/src/commands/messages.rs
---- a/crates/cli/src/commands/messages.rs
-+++ b/crates/cli/src/commands/messages.rs
-@@ -560,6 +560,7 @@
-                         after_message_id,
-                         limit,
-                     },
-+                    ..Default::default()
-                 },
-             )?;
-             timeline_page_output(app, &account.account_id_hex, page, None)
-@@ -581,10 +582,12 @@
-                         .map(|group| normalize_group_id_hex(&group))
-                         .transpose()?,
-                     search: Some(query.clone()),
-+                    search_wall_clock: true,
-                     pagination: TimelinePagination {
-                         limit,
-                         ..TimelinePagination::default()
-                     },
-+                    ..Default::default()
-                 },
-             )?;
-             timeline_page_output(app, &account.account_id_hex, page, Some(query))
-diff --git a/crates/cli/src/daemon/subscriptions.rs b/crates/cli/src/daemon/subscriptions.rs
---- a/crates/cli/src/daemon/subscriptions.rs
-+++ b/crates/cli/src/daemon/subscriptions.rs
-@@ -270,6 +270,7 @@
-                     limit,
-                     ..marmot_app::TimelinePagination::default()
-                 },
-+                ..Default::default()
-             },
-         )
-         .await
-diff --git a/crates/marmot-app/src/client/retention.rs b/crates/marmot-app/src/client/retention.rs
---- a/crates/marmot-app/src/client/retention.rs
-+++ b/crates/marmot-app/src/client/retention.rs
-@@ -235,6 +235,7 @@
-                         after_message_id: None,
-                         limit: Some(RETENTION_SWEEP_TIMELINE_PAGE_LIMIT),
-                     },
-+                    ..Default::default()
-                 },
-             )?;
-             let scan_page = RetentionTimelineScanPage {
-diff --git a/crates/marmot-app/src/runtime/subscriptions.rs b/crates/marmot-app/src/runtime/subscriptions.rs
---- a/crates/marmot-app/src/runtime/subscriptions.rs
-+++ b/crates/marmot-app/src/runtime/subscriptions.rs
-@@ -223,6 +223,12 @@
-     /// always reconstitutes it.
-     pub(crate) fn refresh_query(&self) -> TimelineMessageQuery {
-         let mut query = self.head_refresh_query();
-+        query.cursor_group_id = self
-+            .page
-+            .messages
-+            .last()
-+            .filter(|_| !self.anchored_to_head())
-+            .map(|newest| newest.group_id_hex.clone());
-         let limit = self.page.messages.len().max(1);
-         query.pagination = match self.page.messages.last() {
-             // Detached: re-fetch the loaded range ending exactly at the newest
-@@ -302,6 +308,7 @@
-                 return Ok(window.page.clone());
-             };
-             let mut query = window.base_query.clone();
-+            query.cursor_group_id = Some(oldest.group_id_hex.clone());
-             query.pagination = TimelinePagination {
-                 before: Some(oldest.timeline_at),
-                 before_message_id: Some(oldest.message_id_hex.clone()),
-@@ -322,7 +329,8 @@
-         }
-         let mut window = self.lock();
-         let limit = window.window_limit;
--        let canonical_group_order = window.base_query.group_id_hex.is_some();
-+        let canonical_group_order =
-+            window.base_query.group_id_hex.is_some() && !window.base_query.search_wall_clock;
-         merge_timeline_window_with_order(
-             &mut window.page,
-             older,
-@@ -348,6 +356,7 @@
-                 return Ok(window.page.clone());
-             };
-             let mut query = window.base_query.clone();
-+            query.cursor_group_id = Some(newest.group_id_hex.clone());
-             query.pagination = TimelinePagination {
-                 after: Some(newest.timeline_at),
-                 after_message_id: Some(newest.message_id_hex.clone()),
-@@ -368,7 +377,8 @@
-         }
-         let mut window = self.lock();
-         let limit = window.window_limit;
--        let canonical_group_order = window.base_query.group_id_hex.is_some();
-+        let canonical_group_order =
-+            window.base_query.group_id_hex.is_some() && !window.base_query.search_wall_clock;
-         merge_timeline_window_with_order(
-             &mut window.page,
-             newer,
-@@ -385,7 +395,8 @@
-     fn apply_projection(&self, update: &AppProjectionUpdate) {
-         let mut window = self.lock();
-         let limit = window.window_limit;
--        let canonical_group_order = window.base_query.group_id_hex.is_some();
-+        let canonical_group_order =
-+            window.base_query.group_id_hex.is_some() && !window.base_query.search_wall_clock;
-         apply_projection_to_window(&mut window.page, update, limit, canonical_group_order);
-         window.bump_generation();
-     }
-@@ -527,11 +538,19 @@
- fn timeline_record_order_key(
-     message: &TimelineMessageRecord,
-     canonical_group_order: bool,
--) -> (u8, u64, u8, u64, &str) {
-+) -> (u8, u64, u8, u64, &str, &str) {
-     if canonical_group_order {
--        message.canonical_order_key()
-+        let (class, primary, phase, at, id) = message.canonical_order_key();
-+        (class, primary, phase, at, id, &message.group_id_hex)
-     } else {
--        (0, message.timeline_at, 0, 0, &message.message_id_hex)
-+        (
-+            0,
-+            message.timeline_at,
-+            0,
-+            0,
-+            &message.message_id_hex,
-+            &message.group_id_hex,
-+        )
-     }
- }
- 
-@@ -596,12 +615,12 @@
- ) {
-     let anchored = !window.has_more_after;
-     // A detached window must suppress anything sorting strictly after its
--    // query-order upper bound. Own only the message id so delta application can
-+    // query-order upper bound. Own only the cursor ids so delta application can
-     // mutate the window without cloning the newest record's payload.
-     let newest_order = window.messages.last().map(|newest| {
--        let (class, primary, phase, at, id) =
-+        let (class, primary, phase, at, id, group) =
-             timeline_record_order_key(newest, canonical_group_order);
--        (class, primary, phase, at, id.to_owned())
-+        (class, primary, phase, at, id.to_owned(), group.to_owned())
-     });
-     if update.timeline_changes.is_empty() {
-         for message in &update.timeline_messages {
-@@ -655,7 +674,7 @@
-     messages: &mut Vec<TimelineMessageRecord>,
-     message: TimelineMessageRecord,
-     anchored: bool,
--    newest_order: Option<&(u8, u64, u8, u64, String)>,
-+    newest_order: Option<&(u8, u64, u8, u64, String, String)>,
-     canonical_group_order: bool,
- ) {
-     if let Some(existing) = messages.iter_mut().find(|existing| {
-@@ -667,7 +686,14 @@
-     }
-     let within_window = newest_order.is_some_and(|newest| {
-         timeline_record_order_key(&message, canonical_group_order)
--            <= (newest.0, newest.1, newest.2, newest.3, newest.4.as_str())
-+            <= (
-+                newest.0,
-+                newest.1,
-+                newest.2,
-+                newest.3,
-+                newest.4.as_str(),
-+                newest.5.as_str(),
-+            )
-     });
-     if anchored || within_window {
-         messages.push(message);
-@@ -1180,11 +1206,10 @@
-         })
-         .await?;
-         // The subscription owns the window, so the re-query base carries only the
--        // durable filter (group + search); pagination is supplied per call.
-+        // durable filters and ordering; pagination is supplied per call.
-         let base_query = TimelineMessageQuery {
--            group_id_hex: query.group_id_hex.clone(),
--            search: query.search.clone(),
-             pagination: TimelinePagination::default(),
-+            ..query.clone()
-         };
-         // Deltas are applicable iff the base query is an unfiltered, unpaginated
-         // tail. Search-scoped windows cannot be reconstructed from a projection
-diff --git a/crates/marmot-app/src/runtime/event_routing.rs b/crates/marmot-app/src/runtime/event_routing.rs
---- a/crates/marmot-app/src/runtime/event_routing.rs
-+++ b/crates/marmot-app/src/runtime/event_routing.rs
-@@ -62,10 +62,12 @@
- pub(crate) fn timeline_query_can_apply_projection_delta(query: &TimelineMessageQuery) -> bool {
-     // Projection application already derives canonical-vs-wall ordering from
-     // this field, so global windows can safely merge per-group deltas.
--    query
--        .search
--        .as_ref()
--        .is_none_or(|search| search.trim().is_empty())
-+    query.search.as_ref().is_none_or(|search| search.is_empty())
-+        && query.sender.is_none()
-+        && query.since.is_none()
-+        && query.until.is_none()
-+        && query.attachment_type == crate::TimelineAttachmentType::Any
-+        && !query.search_wall_clock
-         && query.pagination.before.is_none()
-         && query.pagination.before_message_id.is_none()
-         && query.pagination.after.is_none()
-diff --git a/crates/marmot-uniffi/src/commands/subscription.rs b/crates/marmot-uniffi/src/commands/subscription.rs
---- a/crates/marmot-uniffi/src/commands/subscription.rs
-+++ b/crates/marmot-uniffi/src/commands/subscription.rs
-@@ -104,6 +104,7 @@
-                 limit: limit.map(|value| value as usize),
-                 ..TimelinePagination::default()
-             },
-+            ..Default::default()
-         };
-         let inner = self
-             .runtime
-diff --git a/crates/storage-sqlite/src/lib.rs b/crates/storage-sqlite/src/lib.rs
---- a/crates/storage-sqlite/src/lib.rs
-+++ b/crates/storage-sqlite/src/lib.rs
-@@ -129,11 +129,11 @@
-     ConversationOpenError, ConversationOpenQuery, ConversationOpenReadState,
-     ConversationOpenSnapshot, ConversationOpenTarget, ConversationPresentationPage,
-     ConversationWindowQuery, DeletionSource, LOCAL_PUBLISH_FAILED_REASON, MAX_TIMELINE_LIMIT,
--    SecurePruneAppEventsResult, StoredAppEvent, TimelineEditHistoryPage, TimelineEditSummary,
--    TimelineEditVersion, TimelineMessageChange, TimelineMessageQuery, TimelineMessageRecord,
--    TimelineMessageTarget, TimelinePage, TimelinePagination, TimelineProjectionUpdate,
--    TimelineReactionSummary, TimelineRemoveReason, TimelineReplyPreview, TimelineUpdateTrigger,
--    TimelineUserReaction,
-+    SecurePruneAppEventsResult, StoredAppEvent, TimelineAttachmentType, TimelineEditHistoryPage,
-+    TimelineEditSummary, TimelineEditVersion, TimelineMessageChange, TimelineMessageQuery,
-+    TimelineMessageRecord, TimelineMessageTarget, TimelinePage, TimelinePagination,
-+    TimelineProjectionUpdate, TimelineReactionSummary, TimelineRemoveReason, TimelineReplyPreview,
-+    TimelineUpdateTrigger, TimelineUserReaction,
- };
- pub use transport_reconciliation::{
-     TRANSPORT_RECONCILIATION_MAX_ITEMS_PER_ROUTE, TRANSPORT_RECONCILIATION_RETENTION_SECS,
-diff --git a/crates/marmot-app/src/lib.rs b/crates/marmot-app/src/lib.rs
---- a/crates/marmot-app/src/lib.rs
-+++ b/crates/marmot-app/src/lib.rs
-@@ -266,10 +266,10 @@
- pub use storage_sqlite::{
-     ChatConversationKind, ChatListAttachmentKind, ChatListAvatar, ChatListMessageDeliveryState,
-     ChatListMessagePreview, ChatListQuery, ChatListRow, DeletionSource, ExistingDirectConversation,
--    MAX_TIMELINE_LIMIT, SelfMembership, TimelineEditHistoryPage, TimelineEditSummary,
--    TimelineEditVersion, TimelineMessageQuery, TimelineMessageRecord, TimelinePage,
--    TimelinePagination, TimelineReactionSummary, TimelineReplyPreview, TimelineUserReaction,
--    select_reusable_direct_conversation,
-+    MAX_TIMELINE_LIMIT, SelfMembership, TimelineAttachmentType, TimelineEditHistoryPage,
-+    TimelineEditSummary, TimelineEditVersion, TimelineMessageQuery, TimelineMessageRecord,
-+    TimelinePage, TimelinePagination, TimelineReactionSummary, TimelineReplyPreview,
-+    TimelineUserReaction, select_reusable_direct_conversation,
- };
- pub use transport_nostr_adapter::{
-     DurationHistogramSnapshot, HistogramBucket, NostrAdapterMetrics, RelayDeliverySpread,

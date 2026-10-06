@@ -35,11 +35,10 @@ artwork can remain on disk.
 
 ## Marmot API
 
-`patches/mdk-message-tags.patch` adds `message_tags` to media upload requests
-and `send_tagged_text` for kind-9 text. Empty tags preserve existing behavior.
+MDK provides `message_tags` on media upload requests and `send_tagged_text`
+for kind-9 text. Empty tags preserve existing behavior.
 Additional tags are limited to 64 rows and 16 KiB; generated `imeta` references
-cannot be overridden. The C ABI changes, so the build rebuilds the bundled
-library and binding together. Kind-9 effects use `["effect", effect_name]` and
+cannot be overridden. Kind-9 effects use `["effect", effect_name]` and
 share the normal send, reply, thread, and offline paths.
 
 Validation includes signed pack parsing, encrypted storage, message tags,
