@@ -2153,13 +2153,9 @@ settings_fields :: proc(ui: ^Ui_State) {
 			ui.focus = .EmojiName
 		}
 		// Runs every frame (the release-gated handler would miss keys):
-		// Enter saves the shortcode, Escape drops the staged file.
-		if ui.focus == .EmojiName {
-			if rl.IsKeyPressed(.ENTER) && len(ui.emoji_name) > 0 {
-				save_staged_emoji(ui)
-			} else if rl.IsKeyPressed(.ESCAPE) {
-				cancel_staged_emoji(ui)
-			}
+		// Enter saves the shortcode; settings_escape drops the staged file.
+		if ui.focus == .EmojiName && rl.IsKeyPressed(.ENTER) && len(ui.emoji_name) > 0 {
+			save_staged_emoji(ui)
 		}
 	}
 }

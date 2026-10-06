@@ -2,7 +2,11 @@ package main
 
 import "base:runtime"
 import "core:os"
+import "core:sync"
 import "core:testing"
+
+import marmot "../marmot"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(test)
@@ -128,6 +132,51 @@ test_phone_detail :: proc(t: ^testing.T) {
 		ui.page == .Chats && !phone_detail(&ui),
 		"back from settings returns to the chat list",
 	)
+}
+
+// Escape on a settings page lets go of a focused box first, then steps
+// back one level per press, out to the chat list.
+@(test)
+test_settings_escape :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	previous := clay.GetCurrentContext()
+	memory: []u8
+	init_layout(&memory, 32768, {800, 600})
+	defer {
+		clay.SetCurrentContext(previous)
+		delete(memory)
+	}
+
+	ui: Ui_State
+	defer {
+		delete(ui.accounts)
+		delete(ui.settings_search)
+	}
+	append(&ui.accounts, "Test")
+	client: marmot.Client
+	press_escape :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+		rl.PushKey(.ESCAPE, true)
+		handle_pages(ui, client)
+		rl.PushKey(.ESCAPE, false)
+	}
+
+	settings_open(&ui, nil, .Folders)
+	press_escape(&ui, &client)
+	testing.expect(t, ui.page == .Settings && ui.settings_section == .Home)
+	press_escape(&ui, &client)
+	testing.expect_value(t, ui.page, Page.Chats)
+
+	settings_open(&ui, nil, .Appearance, 1, level = .Sheet)
+	append(&ui.settings_search, "dark")
+	ui.focus = .SettingsSearch
+	press_escape(&ui, &client)
+	testing.expect(t, ui.focus == .Compose && len(ui.settings_search) == 0)
+	testing.expect(t, ui.settings_section == .Appearance && ui.settings_level == .Sheet)
+	press_escape(&ui, &client)
+	testing.expect(t, ui.settings_section == .Appearance && ui.settings_level == .Menu)
+	press_escape(&ui, &client)
+	testing.expect_value(t, ui.settings_section, Settings_Section.Home)
 }
 
 @(test)

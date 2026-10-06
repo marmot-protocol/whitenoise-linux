@@ -826,6 +826,40 @@ settings_open :: proc(
 	}
 }
 
+// Step back one level: sheet -> its category menu -> All categories ->
+// the chat list. Sections without a menu go straight to All categories.
+@(private)
+settings_back :: proc(ui: ^Ui_State) {
+	switch {
+	case ui.settings_section == .Home:
+		ui.page = .Chats
+	case settings_on_menu(ui) || !settings_has_menu(ui.settings_section):
+		settings_open(ui, nil, .Home)
+	case:
+		settings_open(ui, nil, ui.settings_section)
+	}
+}
+
+// The settings page's one Escape owner, run after its modals had their
+// turn. A focused box lets go first: a relay box keeps its text, the
+// search box clears, a staged emoji drops. The next Escape steps back.
+@(private)
+settings_escape :: proc(ui: ^Ui_State) -> bool {
+	if !rl.IsKeyPressed(.ESCAPE) {return false}
+	#partial switch ui.focus {
+	case .Compose:
+		settings_back(ui)
+		return true
+	case .SettingsSearch:
+		clear(&ui.settings_search)
+		ui.settings_scroll_pending = true
+	case .EmojiName:
+		cancel_staged_emoji(ui)
+	}
+	ui.focus = .Compose
+	return true
+}
+
 @(private)
 settings_search_field :: proc(ui: ^Ui_State) {
 	if ui.lang_open || ui.shortcuts_open || ui.theme_menu_open || ui.export_open {return}
@@ -833,10 +867,6 @@ settings_search_field :: proc(ui: ^Ui_State) {
 	if ui.focus != .SettingsSearch {return}
 	before := avatar_hash(string(ui.settings_search[:]))
 	edit_text(ui, &ui.settings_search)
-	if rl.IsKeyPressed(.ESCAPE) {
-		clear(&ui.settings_search)
-		ui.focus = .Compose
-	}
 	if before != avatar_hash(string(ui.settings_search[:])) {
 		// The task pane searches from any page; results live on home.
 		if ui.settings_section != .Home {
