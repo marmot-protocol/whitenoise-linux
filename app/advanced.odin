@@ -46,6 +46,42 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					),
 				)
 			}
+			if clay.UI(clay.ID("RowMaps"))(settings_row()) {
+				settings_check(
+					"TgMaps",
+					ui.prefs.map_consent,
+					tr("Location maps"),
+					tr(GEO_DISCLOSURE),
+				)
+			}
+			// Always stacked: four product names don't fit beside the text.
+			if clay.UI(clay.ID("RowMapBrowser"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					padding = {top = 4, bottom = 4},
+					childGap = 8,
+				},
+			},
+			) {
+				row_labels(
+					tr("Open locations in"),
+					tr(
+						"Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap.",
+					),
+				)
+				if clay.UI(clay.ID("MapBrowserChoices"))({layout = {childGap = 6}}) {
+					for name, browser in MAP_BROWSER_NAMES {
+						settings_option(
+							"MapBrowserChip",
+							u32(browser),
+							name,
+							ui.prefs.map_browser == browser,
+						)
+					}
+				}
+			}
 			if clay.UI(clay.ID("RowTelemetry"))(settings_row()) {
 				settings_check(
 					"TgTelemetry",
@@ -228,6 +264,13 @@ audit_delete_id :: proc(index: int) -> string {
 // ── Interactions ────────────────────────────────────────────────────
 
 handle_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	for _, browser in MAP_BROWSER_NAMES {
+		if clay.PointerOver(clay.ID("MapBrowserChip", u32(browser))) {
+			ui.prefs.map_browser = browser
+			save_settings(ui)
+			return
+		}
+	}
 	if clicked("AuditRefresh") {
 		audit_scan(ui, client)
 		return

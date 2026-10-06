@@ -36,6 +36,7 @@ import "core:time"
 import "core:crypto"
 import "core:crypto/argon2id"
 import "core:crypto/chacha20poly1305"
+import "core:crypto/hmac"
 import "core:crypto/sha2"
 import "core:encoding/hex"
 import "core:encoding/json"
@@ -499,7 +500,8 @@ vault_relock :: proc() {
 //   offline-queue.json     unsent sends
 //   stickers/              library.bin and personal images
 //   gifs/                  library.bin and saved GIF blobs
-//   media-cache/           attachments, profile-*.bin avatars, *.stt transcripts
+//   media-cache/           attachments, profile-*.bin avatars, *.stt transcripts,
+//                          tile-*.bin map tiles (geo.odin)
 //
 // The unlock gate joins blob writers, then calls this. session_stop
 // has already joined them on the lock path; vault_stores_quiesce runs
@@ -693,4 +695,21 @@ vault_open_blob :: proc(sealed: []u8, allocator := context.allocator) -> ([]u8, 
 		return nil, false
 	}
 	return open_xchacha(key[:], sealed, allocator)
+}
+
+// File name for a sealed blob whose plain name would itself say too
+// much: a map tile's URL names a place. Hex HMAC-SHA256 under the blob
+// key, with a domain prefix so the tag is never an input elsewhere.
+// False while the vault is locked.
+vault_blob_name :: proc(label: string, allocator := context.temp_allocator) -> (string, bool) {
+	DOMAIN :: "whitenoise-linux/blob-name/v1\x00"
+	key: [VAULT_KEY_LEN]u8
+	defer mem.zero(&key, size_of(key))
+	if !blob_key(key[:]) {
+		return "", false
+	}
+	msg := strings.concatenate({DOMAIN, label}, context.temp_allocator)
+	tag: [32]u8
+	hmac.sum(.SHA256, tag[:], transmute([]u8)msg, key[:])
+	return string(hex.encode(tag[:], allocator)), true
 }

@@ -85,9 +85,11 @@ wrapped_lines :: proc(
 					}
 					if text[scan] != 'h' {continue}
 					if next, url, ok := url_at(text[:end], scan); ok {
-						if _, card := gh_ref(url);
-						   card || hn_ref(url) != "" || nev_image_url(url) {
+						if link_card(url) {
 							card_at, card_end = scan, next
+							// Android's "Location: <url>" puts its caption
+							// on the card's row, where render_segs drops it.
+							if strings.trim_space(text[at:scan]) == GEO_CAPTION {card_at = at}
 							break
 						}
 						scan = next - 1

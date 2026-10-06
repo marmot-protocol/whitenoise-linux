@@ -25,7 +25,6 @@ import "core:crypto/hash"
 import "core:encoding/hex"
 import "core:encoding/json"
 import "core:fmt"
-import "core:math"
 import "core:os"
 import "core:strconv"
 import "core:strings"
@@ -947,70 +946,14 @@ nev_geocache_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 		}
 	}
 	if len(c.geohash) == 0 {return}
-	map_url := fmt.tprintf(
-		"https://www.openstreetmap.org/?mlat=%.6f&mlon=%.6f#map=16/%.6f/%.6f",
-		c.lat,
-		c.lon,
-		c.lat,
-		c.lon,
-	)
+	// The geohash's precision picks the zoom: a coarse hash only says the area.
 	zoom := min(15, len(c.geohash) * 2 + 2)
-	tiles := f64(u32(1) << uint(zoom))
-	x := (c.lon + 180) / 360 * tiles
-	lat := clamp(c.lat, -85.05112878, 85.05112878) * math.PI / 180
-	y := clamp(
-		(1 - math.ln(math.tan(lat) + 1 / math.cos(lat)) / math.PI) / 2 * tiles,
-		0,
-		tiles - 0.000001,
-	)
-	tile_url := fmt.tprintf("https://tile.openstreetmap.org/%d/%d/%d.png", zoom, int(x), int(y))
-	size := min(width, 256)
-	pin_size := f32(14)
-	tex: ^rl.Texture2D
-	box := clay.GetElementData(clay.ID("NevMap", id))
-	// Only request the visible tile. The shared disk cache retains it across runs.
-	if box.found &&
-	   box.boundingBox.y + box.boundingBox.height > 0 &&
-	   box.boundingBox.y < f32(rl.GetScreenHeight()) / UI_ZOOM {tex = nev_img(tile_url)}
-	if clay.UI(clay.ID("NevMap", id))(
-	{
-		layout = {
-			sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)},
-			padding = {
-				left = u16(
-					clamp(f32(x - math.floor(x)) * size - pin_size / 2, 0, size - pin_size),
-				),
-				top = u16(clamp(f32(y - math.floor(y)) * size - pin_size / 2, 0, size - pin_size)),
-			},
-		},
-		image = {imageData = tex},
-	},
-	) {
-		if hovered() {link_hover = map_url}
-		if clay.UI(clay.ID("NevMapPin", id))(
-		{
-			layout = {
-				sizing = {width = clay.SizingFixed(pin_size), height = clay.SizingFixed(pin_size)},
-			},
-			backgroundColor = ACCENT,
-			cornerRadius = clay.CornerRadiusAll(pin_size / 2),
-			border = {color = BG, width = {left = 2, right = 2, top = 2, bottom = 2}},
-		},
-		) {}
-	}
-	if clay.UI(clay.ID("NevMapCredit", id))(
-	{layout = {sizing = {width = clay.SizingFixed(width)}}},
-	) {
-		if hovered() {link_hover = "https://www.openstreetmap.org/copyright"}
-		body_text(base + 6, tr("© OpenStreetMap contributors"), 10, TEXT_DIM, wrap_w = width)
-	}
+	geo_map(id, c.geohash, {c.lat, c.lon}, zoom, width, min(width, 256))
+	open_url, open_label := geo_open(c.geohash, {c.lat, c.lon}, zoom)
 	if clay.UI(clay.ID("NevMapOpen", id))(
 	{layout = {sizing = {width = clay.SizingFixed(width)}, padding = {top = 4, bottom = 4}}},
 	) {
-		if hovered() {link_hover = map_url}
-		clay.Text(
-			tr("Open in OpenStreetMap"),
-			{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
-		)
+		if hovered() {link_hover = open_url}
+		clay.Text(open_label, {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
 	}
 }

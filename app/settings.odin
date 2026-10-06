@@ -71,6 +71,8 @@ Prefs :: struct {
 	trusted_sites:         [dynamic]string,
 	disable_link_previews: bool, // zero keeps automatic previews on for older settings
 	gif_consent:           bool, // accepted that GIF searches go to GifSnap
+	map_consent:           bool, // accepted that shared-location maps load from OpenStreetMap
+	map_browser:           Map_Browser, // where "Open in" sends a shared location (geo.odin)
 	// Nostr event cards (nevent.odin): where referenced events are
 	// pulled from, and the user's own "open in" web client, a URL
 	// with {id} standing for the nevent/note token.
@@ -243,6 +245,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 		clamp(int(ui.prefs.crop_avatar_shape), 0, int(Crop_Shape.Rounded)),
 	)
 	ui.prefs.emoji_set = Emoji_Set(clamp(int(ui.prefs.emoji_set), 0, int(max(Emoji_Set))))
+	ui.prefs.map_browser = Map_Browser(clamp(int(ui.prefs.map_browser), 0, int(max(Map_Browser))))
 	// ponytail: an empty list reads as "older settings.json", so the
 	// defaults come back; a user who wants no fetch relays at all
 	// cannot have that yet.

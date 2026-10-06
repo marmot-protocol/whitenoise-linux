@@ -1675,6 +1675,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 
 			// Bodies draw a card in place of every GitHub link they hold.
 			gh_cards_on = true
+			geo_owner = msg.id
 			giphy := !msg.deleted && giphy_message(index, msg.body)
 			// GIPHY already owns the download, including its loading fallback.
 			if giphy_message_url(msg.body) != "" {
@@ -1729,6 +1730,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			}
 
 			gh_cards_on = false
+			geo_owner = ""
 
 			if len(msg.secrets) > 0 && !msg.deleted {
 				for layer in 0 ..= len(msg.secrets) {
@@ -2242,6 +2244,14 @@ link_cards_enabled :: proc() -> bool {
 	return gh_cards_on && (g_ui == nil || !g_ui.prefs.disable_link_previews)
 }
 
+// A URL drawn as a card of its own row rather than as a link run.
+@(private)
+link_card :: proc(url: string) -> bool {
+	_, gh := gh_ref(url)
+	_, geo := geo_ref(url)
+	return gh || geo || hn_ref(url) != "" || nev_image_url(url)
+}
+
 // Keep the original clickable link in every state, including loading and failure.
 @(private)
 image_link :: proc(id: u32, url: string, size: u16, width: f32) {
@@ -2295,6 +2305,13 @@ render_segs :: proc(
 	chips := false,
 ) {
 	for seg, k in segs {
+		// Android's "Location: " caption; the location card says it.
+		if chips &&
+		   link_cards_enabled() &&
+		   k + 1 < len(segs) &&
+		   strings.trim_space(seg.text) == GEO_CAPTION {
+			if _, geo := geo_ref(segs[k + 1].url); geo {continue}
+		}
 		if seg.tex != nil {
 			if clay.UI(clay.ID("SegEmoji", id * 128 + u32(k)))(
 			{
@@ -2311,6 +2328,8 @@ render_segs :: proc(
 			gh_card(id * 128 + u32(k), ref)
 		} else if key := hn_ref(seg.url); chips && link_cards_enabled() && key != "" {
 			hn_card(id * 128 + u32(k), key, seg.url)
+		} else if link, geo := geo_ref(seg.url); chips && link_cards_enabled() && geo {
+			geo_card(id * 128 + u32(k), seg.url, link)
 		} else if chips && link_cards_enabled() && len(seg.evid) > 0 {
 			// A referenced Nostr event is drawn as its own card, in
 			// place of the token.
@@ -2566,9 +2585,7 @@ body_line :: proc(
 		// text runs and lose the card, so a line holding one draws
 		// unselected; the copy still carries the token.
 		for seg in inline_segs(text, fonts, links, offset) {
-			_, gh := gh_ref(seg.url)
-			if link_cards_enabled() &&
-			   (len(seg.evid) > 0 || gh || hn_ref(seg.url) != "" || nev_image_url(seg.url)) {
+			if link_cards_enabled() && (len(seg.evid) > 0 || link_card(seg.url)) {
 				sel = {-1, -1}
 				break
 			}

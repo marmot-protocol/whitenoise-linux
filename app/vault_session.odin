@@ -326,6 +326,7 @@ session_media_clear :: proc() {
 	profile_session_clear()
 	clear(&blob_sizes)
 	orbit_hover, orbit_drag = nil, nil
+	geo_hover, geo_drag, geo_action = "", "", .None
 	video_hover = nil
 	video_full_hover = {}
 	pdf_flip_hover = nil

@@ -1500,7 +1500,7 @@ app_main :: proc() {
 			}
 			wheel.x *= f32(ui.prefs.scroll_speed) / 100
 			wheel.y *= f32(ui.prefs.scroll_speed) / 100
-			if orbit_hover != nil {
+			if orbit_hover != nil || geo_hover != "" {
 				wheel = {}
 			}
 			// Wheel notches land in a residual that drains a fraction per
@@ -1526,6 +1526,7 @@ app_main :: proc() {
 			)
 
 			orbit_hover = nil // rebound by the build when a tile is hovered
+			geo_hover, geo_action = "", .None
 			link_hover = ""
 			nev_more_hover = ""
 			nev_retry_hover = ""
@@ -1768,6 +1769,7 @@ app_main :: proc() {
 			drain_gh()
 			drain_hn()
 			drain_nev()
+			drain_geo()
 			drain_stickers(&ui, client)
 			gif_drain(&ui)
 
@@ -1912,6 +1914,8 @@ app_main :: proc() {
 					&ui,
 					sel_dragging ||
 					orbit_hover != nil ||
+					geo_hover != "" ||
+					geo_drag != "" ||
 					modal_open(&ui) ||
 					fan_open() ||
 					video_bar_active(),
@@ -1935,6 +1939,7 @@ app_main :: proc() {
 					if nev_hint_hover != "" && mouse_released() && !modal_open(&ui) {
 						preview_message(nev_cards[nev_hint_hover].geocache.hint)
 					}
+					handle_geo(&ui)
 				}
 			}
 			// Text input follows the field, not the window: it drives the

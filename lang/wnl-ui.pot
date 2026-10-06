@@ -892,6 +892,9 @@ msgstr ""
 msgid "Copy JSON"
 msgstr ""
 
+msgid "Copy coordinates"
+msgstr ""
+
 msgid "Copy error"
 msgstr ""
 
@@ -1084,6 +1087,9 @@ msgid "Couldn't load issues. Please try again."
 msgstr ""
 
 msgid "Couldn't load messages. Please try again."
+msgstr ""
+
+msgid "Couldn't load the map. Please try again."
 msgstr ""
 
 msgid "Couldn't load the pack. Check your relay settings and try again."
@@ -2167,6 +2173,9 @@ msgstr ""
 msgid "LOCAL"
 msgstr ""
 
+msgid "LOCATION"
+msgstr ""
+
 msgid "Labels"
 msgstr ""
 
@@ -2236,6 +2245,9 @@ msgstr ""
 msgid "Loading full resolution…"
 msgstr ""
 
+msgid "Loading map"
+msgstr ""
+
 msgid "Loading messages for export..."
 msgstr ""
 
@@ -2261,6 +2273,9 @@ msgid "Local files, cached media, and encrypted backups."
 msgstr ""
 
 msgid "Location"
+msgstr ""
+
+msgid "Location maps"
 msgstr ""
 
 msgid "Lock now"
@@ -2606,6 +2621,9 @@ msgstr ""
 msgid "Nothing is read aloud"
 msgstr ""
 
+msgid "Nothing loads until you accept. You can change this in Settings > Advanced."
+msgstr ""
+
 msgid "Notifications"
 msgstr ""
 
@@ -2663,6 +2681,15 @@ msgstr ""
 msgid "Open folder"
 msgstr ""
 
+msgid "Open in Apple Maps"
+msgstr ""
+
+msgid "Open in Google Maps"
+msgstr ""
+
+msgid "Open in Kagi Maps"
+msgstr ""
+
 msgid "Open in OpenStreetMap"
 msgstr ""
 
@@ -2670,6 +2697,9 @@ msgid "Open in browser"
 msgstr ""
 
 msgid "Open in client"
+msgstr ""
+
+msgid "Open locations in"
 msgstr ""
 
 msgid "Open this link?"
@@ -3005,6 +3035,9 @@ msgid "Reading your contacts file and checking existing contacts..."
 msgstr ""
 
 msgid "Recent"
+msgstr ""
+
+msgid "Recenter"
 msgstr ""
 
 #, c-format
@@ -3464,6 +3497,9 @@ msgstr ""
 msgid "Shared by all ten voices and 31 languages. Downloads once."
 msgstr ""
 
+msgid "Shared location"
+msgstr ""
+
 msgid "Shared media"
 msgstr ""
 
@@ -3479,6 +3515,9 @@ msgstr ""
 msgid "Show"
 msgstr ""
 
+msgid "Show a map for each shared location. Map images load from tile.openstreetmap.org, which sees your IP address and the area you view. Place names load from nominatim.openstreetmap.org, which receives the location rounded to about 100 m. Map images are cached on this device, encrypted, up to 1 GB."
+msgstr ""
+
 msgid "Show as QR"
 msgstr ""
 
@@ -3492,6 +3531,9 @@ msgid "Show hint"
 msgstr ""
 
 msgid "Show less"
+msgstr ""
+
+msgid "Show maps from OpenStreetMap?"
 msgstr ""
 
 msgid "Show message preview"
@@ -4063,6 +4105,9 @@ msgid "Where"
 msgstr ""
 
 msgid "Where a message goes"
+msgstr ""
+
+msgid "Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap."
 msgstr ""
 
 msgid "Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these."

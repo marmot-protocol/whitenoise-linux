@@ -893,6 +893,9 @@ msgstr "コピー"
 msgid "Copy JSON"
 msgstr "JSON をコピー"
 
+msgid "Copy coordinates"
+msgstr "座標をコピー"
+
 msgid "Copy error"
 msgstr "エラーをコピー"
 
@@ -1086,6 +1089,9 @@ msgstr "報告を読み込めませんでした。もう一度お試しくださ
 
 msgid "Couldn't load messages. Please try again."
 msgstr "メッセージを読み込めませんでした。もう一度お試しください。"
+
+msgid "Couldn't load the map. Please try again."
+msgstr "地図を読み込めませんでした。もう一度お試しください。"
 
 msgid "Couldn't load the pack. Check your relay settings and try again."
 msgstr "パックを読み込めませんでした。リレーの設定を確認して、もう一度お試しください。"
@@ -2168,6 +2174,9 @@ msgstr "読み込み済み"
 msgid "LOCAL"
 msgstr "ローカル"
 
+msgid "LOCATION"
+msgstr "位置情報"
+
 msgid "Labels"
 msgstr "ラベル"
 
@@ -2237,6 +2246,9 @@ msgstr "メッセージ本文を文字どおり検索"
 msgid "Loading full resolution…"
 msgstr "フル解像度で読み込み中…"
 
+msgid "Loading map"
+msgstr "地図を読み込み中"
+
 msgid "Loading messages for export..."
 msgstr "エクスポートするメッセージを読み込み中..."
 
@@ -2263,6 +2275,9 @@ msgstr "ローカルファイル、メディアキャッシュ、暗号化バッ
 
 msgid "Location"
 msgstr "場所"
+
+msgid "Location maps"
+msgstr "位置情報の地図"
 
 msgid "Lock now"
 msgstr "今すぐロック"
@@ -2607,6 +2622,9 @@ msgstr "自分用メモ"
 msgid "Nothing is read aloud"
 msgstr "読み上げられません"
 
+msgid "Nothing loads until you accept. You can change this in Settings > Advanced."
+msgstr "同意するまで何も読み込まれません。設定 > 詳細 で変更できます。"
+
 msgid "Notifications"
 msgstr "通知"
 
@@ -2664,6 +2682,15 @@ msgstr "イベントを開くクライアント"
 msgid "Open folder"
 msgstr "フォルダを開く"
 
+msgid "Open in Apple Maps"
+msgstr "Apple マップで開く"
+
+msgid "Open in Google Maps"
+msgstr "Google マップで開く"
+
+msgid "Open in Kagi Maps"
+msgstr "Kagi Maps で開く"
+
 msgid "Open in OpenStreetMap"
 msgstr "OpenStreetMapで開く"
 
@@ -2672,6 +2699,9 @@ msgstr "ブラウザで開く"
 
 msgid "Open in client"
 msgstr "クライアントで開く"
+
+msgid "Open locations in"
+msgstr "位置情報を開くサービス"
 
 msgid "Open this link?"
 msgstr "このリンクを開きますか？"
@@ -3007,6 +3037,9 @@ msgstr "連絡先ファイルを読み取り、既存の連絡先を確認して
 
 msgid "Recent"
 msgstr "最近"
+
+msgid "Recenter"
+msgstr "中心に戻す"
 
 #, c-format
 msgid "Record %d has an invalid npub. Correct it and import again."
@@ -3465,6 +3498,9 @@ msgstr "利用状況と診断情報を共有"
 msgid "Shared by all ten voices and 31 languages. Downloads once."
 msgstr "10種類の音声と31言語すべてで共通です。ダウンロードは一度だけです。"
 
+msgid "Shared location"
+msgstr "共有された位置情報"
+
 msgid "Shared media"
 msgstr "共有メディア"
 
@@ -3480,6 +3516,9 @@ msgstr "メッセージの送信時、受信時、送信失敗時に短い音を
 msgid "Show"
 msgstr "表示"
 
+msgid "Show a map for each shared location. Map images load from tile.openstreetmap.org, which sees your IP address and the area you view. Place names load from nominatim.openstreetmap.org, which receives the location rounded to about 100 m. Map images are cached on this device, encrypted, up to 1 GB."
+msgstr "共有された位置情報ごとに地図を表示します。地図画像は tile.openstreetmap.org から読み込まれ、IP アドレスと表示している範囲が相手に伝わります。地名は nominatim.openstreetmap.org から読み込まれ、約 100 m に丸めた位置情報が送信されます。地図画像は暗号化してこのデバイスに最大 1 GB まで保存されます。"
+
 msgid "Show as QR"
 msgstr "QR コードで表示"
 
@@ -3494,6 +3533,9 @@ msgstr "ヒントを表示"
 
 msgid "Show less"
 msgstr "折りたたむ"
+
+msgid "Show maps from OpenStreetMap?"
+msgstr "OpenStreetMap の地図を表示しますか?"
 
 msgid "Show message preview"
 msgstr "メッセージのプレビューを表示"
@@ -4065,6 +4107,9 @@ msgstr "保存場所"
 
 msgid "Where a message goes"
 msgstr "メッセージの経路"
+
+msgid "Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap."
+msgstr "共有された位置情報をカードから開くときに使うサイトです。そのサイトに位置情報が送られます。カード上の地図画像は常に OpenStreetMap から読み込まれます。"
 
 msgid "Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these."
 msgstr "リンクされたNostrイベント（nevent、note）の取得元です。チャットがこれらのリレーに触れることはありません。"

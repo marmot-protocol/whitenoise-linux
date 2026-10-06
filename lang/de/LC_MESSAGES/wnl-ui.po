@@ -893,6 +893,9 @@ msgstr "Kopieren"
 msgid "Copy JSON"
 msgstr "JSON kopieren"
 
+msgid "Copy coordinates"
+msgstr "Koordinaten kopieren"
+
 msgid "Copy error"
 msgstr "Fehler kopieren"
 
@@ -1086,6 +1089,9 @@ msgstr "Meldungen konnten nicht geladen werden. Bitte versuche es erneut."
 
 msgid "Couldn't load messages. Please try again."
 msgstr "Die Nachrichten konnten nicht geladen werden. Bitte versuche es erneut."
+
+msgid "Couldn't load the map. Please try again."
+msgstr "Die Karte konnte nicht geladen werden. Bitte versuche es erneut."
 
 msgid "Couldn't load the pack. Check your relay settings and try again."
 msgstr "Das Paket konnte nicht geladen werden. Prüfe deine Relay-Einstellungen und versuche es erneut."
@@ -2168,6 +2174,9 @@ msgstr "GELADEN"
 msgid "LOCAL"
 msgstr "LOKAL"
 
+msgid "LOCATION"
+msgstr "STANDORT"
+
 msgid "Labels"
 msgstr "Labels"
 
@@ -2237,6 +2246,9 @@ msgstr "Wörtlicher Nachrichtentext"
 msgid "Loading full resolution…"
 msgstr "Volle Auflösung wird geladen…"
 
+msgid "Loading map"
+msgstr "Karte wird geladen"
+
 msgid "Loading messages for export..."
 msgstr "Nachrichten für den Export werden geladen..."
 
@@ -2263,6 +2275,9 @@ msgstr "Verwalte lokale Dateien, zwischengespeicherte Medien und verschlüsselte
 
 msgid "Location"
 msgstr "Speicherort"
+
+msgid "Location maps"
+msgstr "Standortkarten"
 
 msgid "Lock now"
 msgstr "Jetzt sperren"
@@ -2607,6 +2622,9 @@ msgstr "Eigene Notizen"
 msgid "Nothing is read aloud"
 msgstr "Nichts wird vorgelesen"
 
+msgid "Nothing loads until you accept. You can change this in Settings > Advanced."
+msgstr "Nichts wird geladen, bevor du zustimmst. Du kannst das unter Einstellungen > Erweitert ändern."
+
 msgid "Notifications"
 msgstr "Benachrichtigungen"
 
@@ -2664,6 +2682,15 @@ msgstr "Ereignisse öffnen in"
 msgid "Open folder"
 msgstr "Ordner öffnen"
 
+msgid "Open in Apple Maps"
+msgstr "In Apple Maps öffnen"
+
+msgid "Open in Google Maps"
+msgstr "In Google Maps öffnen"
+
+msgid "Open in Kagi Maps"
+msgstr "In Kagi Maps öffnen"
+
 msgid "Open in OpenStreetMap"
 msgstr "In OpenStreetMap öffnen"
 
@@ -2672,6 +2699,9 @@ msgstr "Im Browser öffnen"
 
 msgid "Open in client"
 msgstr "Im Client öffnen"
+
+msgid "Open locations in"
+msgstr "Standorte öffnen in"
 
 msgid "Open this link?"
 msgstr "Diesen Link öffnen?"
@@ -3007,6 +3037,9 @@ msgstr "Deine Kontaktdatei wird gelesen und vorhandene Kontakte werden geprüft.
 
 msgid "Recent"
 msgstr "Zuletzt verwendet"
+
+msgid "Recenter"
+msgstr "Zentrieren"
 
 #, c-format
 msgid "Record %d has an invalid npub. Correct it and import again."
@@ -3465,6 +3498,9 @@ msgstr "Nutzung und Diagnose teilen"
 msgid "Shared by all ten voices and 31 languages. Downloads once."
 msgstr "Wird von allen zehn Stimmen und 31 Sprachen verwendet. Wird einmal heruntergeladen."
 
+msgid "Shared location"
+msgstr "Geteilter Standort"
+
 msgid "Shared media"
 msgstr "Geteilte Medien"
 
@@ -3480,6 +3516,9 @@ msgstr "Kurze Töne, wenn eine Nachricht rausgeht, ankommt oder nicht gesendet w
 msgid "Show"
 msgstr "Anzeigen"
 
+msgid "Show a map for each shared location. Map images load from tile.openstreetmap.org, which sees your IP address and the area you view. Place names load from nominatim.openstreetmap.org, which receives the location rounded to about 100 m. Map images are cached on this device, encrypted, up to 1 GB."
+msgstr "Zeigt für jeden geteilten Standort eine Karte. Kartenbilder werden von tile.openstreetmap.org geladen, das deine IP-Adresse und den angesehenen Bereich sieht. Ortsnamen werden von nominatim.openstreetmap.org geladen, das den Standort auf etwa 100 m gerundet erhält. Kartenbilder werden verschlüsselt auf diesem Gerät gespeichert, bis zu 1 GB."
+
 msgid "Show as QR"
 msgstr "Als QR anzeigen"
 
@@ -3494,6 +3533,9 @@ msgstr "Hinweis anzeigen"
 
 msgid "Show less"
 msgstr "Weniger anzeigen"
+
+msgid "Show maps from OpenStreetMap?"
+msgstr "Karten von OpenStreetMap anzeigen?"
 
 msgid "Show message preview"
 msgstr "Nachrichtenvorschau anzeigen"
@@ -4065,6 +4107,9 @@ msgstr "Ort"
 
 msgid "Where a message goes"
 msgstr "Welchen Weg eine Nachricht nimmt"
+
+msgid "Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap."
+msgstr "Wo sich ein geteilter Standort von seiner Karte aus öffnet. Diese Website erhält den Standort. Die Kartenbilder in der Karte werden immer von OpenStreetMap geladen."
 
 msgid "Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these."
 msgstr "Von hier werden verlinkte Nostr-Ereignisse (nevent, note) geladen. Deine Chats berühren diese Relays nie."

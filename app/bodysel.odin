@@ -231,7 +231,8 @@ handle_body_sel :: proc(ui: ^Ui_State) {
 
 	if rl.IsMouseButtonPressed(.LEFT) {
 		line, offset, ok := sel_hit(ui, mx, my, false)
-		if !ok {
+		// A press on a location map pans it (geo.odin).
+		if !ok || geo_hover != "" || geo_action != .None {
 			sel_clear(ui) // a press anywhere else drops the selection
 			return
 		}

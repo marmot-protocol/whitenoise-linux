@@ -1728,6 +1728,8 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 		flip(ui, &ui.prefs.notify_preview)
 	case "TgLinkPreviews":
 		flip(ui, &ui.prefs.disable_link_previews)
+	case "TgMaps":
+		flip(ui, &ui.prefs.map_consent)
 	case "TgTelemetry":
 		set_telemetry(ui, client, !ui.telemetry_enabled)
 	case "TgAudit":
