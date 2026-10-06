@@ -78,9 +78,9 @@ offline_path :: proc(allocator := context.temp_allocator) -> string {
 save_offline :: proc(ui: ^Ui_State) {
 	items := make([dynamic]Offline_Item, context.temp_allocator)
 	for p in ui.pending {
-		// An unresolved forward has no upload bytes yet. Persisting just its
-		// body would silently turn a failed attachment forward into a text send.
+		// Unresolved media preparations have no upload bytes to persist yet.
 		if p.dismissed ||
+		   p.gif != nil ||
 		   p.forward != nil ||
 		   (p.account_ref != "" && p.account_ref != ui.account_ref) {
 			continue

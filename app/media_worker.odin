@@ -116,6 +116,7 @@ media_kind :: proc(name, mime: string) -> Media_Kind {
 media_cached :: proc(kind: Media_Kind, key: string) -> (rawptr, bool) {
 	switch kind {
 	case .Image:
+		if v, ok := video_views[key]; ok && v != nil {return &v.tex, true}
 		v, ok := media_textures[key]; return v, ok
 	case .Sticker:
 		v, ok := media_textures[fmt.tprintf("sticker:%s", key)]; return v, ok
@@ -258,6 +259,12 @@ media_ready :: proc(slot: ^Att_Slot, view: rawptr) {
 	if view == nil {
 		slot.state = .Failed
 		return
+	}
+	if slot.kind == .Image {
+		if animation := video_views[slot.key]; animation != nil {
+			slot.kind, slot.view = .Loop, animation
+			return
+		}
 	}
 	switch slot.kind {
 	case .Image, .Sticker:
@@ -440,6 +447,15 @@ media_worker :: proc(t: ^thread.Thread) {
 	case .Sticker:
 		job.image = image_fit(sticker_image(bytes, string(job.reference.media_type)), STICKER_PX)
 	case .Image:
+		// Animated WebP cannot use the still-image decoder.
+		if len(bytes) >= 30 &&
+		   string(bytes[:4]) == "RIFF" &&
+		   string(bytes[8:16]) == "WEBPVP8X" &&
+		   bytes[20] & 2 != 0 {
+			job.view = video_view_make(bytes, .Loop, .Prepare)
+			bytes = nil
+			break
+		}
 		job.image = image_fit(
 			rl.LoadImageFromMemory("", raw_data(bytes), i32(len(bytes))),
 			TIMELINE_IMAGE_PX,
@@ -489,6 +505,12 @@ media_publish :: proc(job: ^Media_Job) {
 	key := job.kind == .Sticker ? fmt.aprintf("sticker:%s", job.key) : strings.clone(job.key)
 	switch job.kind {
 	case .Image, .Sticker, .Emoji, .Font, .Original:
+		if job.kind == .Image && job.view != nil {
+			view := (^Video_View)(job.view)
+			view.tex = rl.CreateStreamTexture(view.w, view.h)
+			video_views[key] = view
+			break
+		}
 		tex :=
 			job.kind == .Sticker ? sticker_texture_load(job.image) : rl.LoadTextureFromImage(job.image)
 		if job.kind == .Font {

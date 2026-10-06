@@ -62,7 +62,7 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 			) {
 				clay.Text(p.sender, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
 				clay.Text(
-					p.failed ? "failed" : p.queued ? "queued" : p.forward != nil ? tr("Preparing attachments…") : "sending…",
+					p.failed ? "failed" : p.queued ? "queued" : p.gif != nil ? tr("Sending...") : p.forward != nil ? tr("Preparing attachments…") : "sending…",
 					{fontId = FONT_BODY, fontSize = 11, textColor = p.failed ? DANGER : TEXT_LO},
 				)
 				if can_delete {
@@ -78,6 +78,32 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 							{fontId = FONT_BODY, fontSize = 11, textColor = DANGER},
 						)
 					}
+				}
+			}
+
+			if p.gif != nil && !p.failed {
+				anim_moving += 1
+				if clay.UI(clay.ID("PendingGifTrack", index))(
+				{
+					layout = {
+						sizing = {width = clay.SizingFixed(100), height = clay.SizingFixed(3)},
+					},
+					backgroundColor = FIELD_BORDER,
+				},
+				) {
+					if clay.UI(clay.ID("PendingGifBar", index))(
+					{
+						layout = {
+							sizing = {width = clay.SizingFixed(30), height = clay.SizingFixed(3)},
+						},
+						floating = {
+							attachTo = .Parent,
+							offset = {f32(anim_frame % 90) / 90 * 70, 0},
+							attachment = {element = .LeftTop, parent = .LeftTop},
+						},
+						backgroundColor = ACCENT,
+					},
+					) {}
 				}
 			}
 

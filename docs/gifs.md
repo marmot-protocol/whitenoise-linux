@@ -8,9 +8,10 @@ saved GIFs. Loading dots appear while searches and previews are pending.
 GIFs that fail to load disappear. An error appears if none can load.
 
 Hover to animate a GIF, or use Tab and the arrow keys to browse. Click a GIF
-or press Enter on a focused tile to add it as an attachment. Your draft and
-reply stay intact; send the message from the composer as usual. Reduced
-motion disables hover playback.
+or press Enter on a focused tile to send it immediately. The picker closes
+without adding a composer attachment. Your draft, reply, and other staged
+files stay intact. A pending message shows preparation and sending status;
+click a failed message to retry. Reduced motion disables hover playback.
 
 The star saves a GIF to **Saved**, where it remains available offline.
 Click its star again to remove it. Saved files and their index are encrypted
@@ -19,9 +20,10 @@ saved GIF searches run locally. GifSnap is a best-effort external service.
 
 Search requests have a 30-second timeout; media downloads have a 10-second
 timeout. Results load from GifSnap's media CDN. GIF and animated WebP
-attachments retain their original format, including when saved offline.
+messages retain their original format and loop in the timeline, including
+when saved offline.
 Downloads are limited to 24 MiB and animation canvases to 4096 pixels per side.
-The picker uses the existing thumbnail worker and attachment send path.
+The picker uses the existing thumbnail worker and encrypted media send path.
 
 ## GIFs shared from iOS
 

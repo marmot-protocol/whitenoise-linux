@@ -1,5 +1,6 @@
 package main
 
+import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:crypto/hash"
@@ -214,12 +215,48 @@ gif_data :: proc(t: ^testing.T) {
 	testing.expect(t, len(gif_read(sha)) == 0, "corrupt saved files are not staged")
 }
 
+@(test)
+gif_send_failure :: proc(t: ^testing.T) {
+	context.allocator = runtime.default_context().allocator
+	sync.lock(&test_home_lock); defer sync.unlock(&test_home_lock)
+	ui := Ui_State {
+		picker_open = true,
+		account_ref = "original-account",
+	}
+	append(&ui.chats, Chat_Row_Ui{group_id = "original-group"})
+	old_ui := g_ui; g_ui = &ui; defer {g_ui = old_ui}
+	defer {
+		for &p in ui.pending {free_pending(&p)}
+		delete(ui.pending); delete(ui.chats); delete(ui.client_status); delete(ui.jump_id)
+	}
+	gif_send(&ui, nil, Gif_Item{url = "https://invalid.test/animation.gif"})
+	testing.expect_value(t, len(ui.pending), 1)
+	testing.expect(t, !ui.picker_open && reload_jobs_busy())
+	ui.account_ref = "other-account"
+	ui.chats[0].group_id = "other-group"
+	thread.join(ui.pending[0].gif.worker)
+	drain_gif_sends(&ui, nil)
+	testing.expect(t, ui.pending[0].failed && ui.pending[0].gif != nil)
+	testing.expect_value(t, len(ui.pending[0].atts), 0)
+	testing.expect_value(t, ui.pending[0].account_ref, "original-account")
+	testing.expect_value(t, ui.pending[0].group_id, "original-group")
+	testing.expect(t, !reload_jobs_busy(), "a failed preparation must not block reload")
+	ui.pending[0].failed = false
+	spawn_send(&ui, nil, &ui.pending[0])
+	ui.pending[0].dismissed = true
+	thread.join(ui.pending[0].gif.worker)
+	drain_gif_sends(&ui, nil)
+	testing.expect(t, len(ui.pending) == 0, "dismissal must not publish a late GIF")
+}
+
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=gif_keyboard
 @(test)
 gif_keyboard :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "gif_keyboard" {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(900, 760, "GIF keyboard regression"); defer rl.CloseWindow()
+	old_threads, old_done, old_ticket := send_threads, sends_done, send_ticket
+	send_threads, sends_done = {}, {}
 	UI_ZOOM, UI_SCALE = 1, 1
 	init_fonts()
 	memory: []u8; init_layout(&memory, 32768, {900, 760}); defer delete(memory)
@@ -243,6 +280,16 @@ gif_keyboard :: proc(t: ^testing.T) {
 	append(&ui.compose, "Keep your draft")
 	g_ui, g_prefs = &ui, &ui.prefs; defer {g_ui, g_prefs = nil, nil}
 	defer gif_stop(&ui)
+	defer {
+		for worker in send_threads {thread.join(worker); thread.destroy(worker)}
+		for done in sends_done {delete(done.err); for id in done.ids {delete(id)}; delete(done.ids)}
+		delete(send_threads); delete(sends_done)
+		send_threads, sends_done, send_ticket = old_threads, old_done, old_ticket
+		for &p in ui.pending {free_pending(&p)}
+		delete(ui.pending); ui.pending = {}
+		for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
+		delete(ui.staged)
+	}
 	image := rl.LoadImage("vendor/emoji/noto/1f9ab.png")
 	defer rl.UnloadImage(image)
 	for i in 0 ..< 8 {
@@ -289,7 +336,7 @@ gif_keyboard :: proc(t: ^testing.T) {
 	// An in-flight search must not swallow typing or publish an obsolete response.
 	ui.gif_saved = false
 	job := gif_start(&ui, .Search); job.query = strings.clone("old query")
-	rl.PushChar('c'); handle_gif_picker(&ui)
+	rl.PushChar('c'); handle_gif_picker(&ui, nil)
 	testing.expect_value(t, string(ui.picker_filter[:]), "c")
 	testing.expect(t, ui.gif_due > rl.GetTime())
 	job.worker = thread.create_and_start(proc() {})
@@ -316,13 +363,13 @@ gif_keyboard :: proc(t: ^testing.T) {
 	_, last_loading, _ := gif_thumb(ui.gif_hits[GIF_PAGE_SIZE - 1], GIF_PAGE_SIZE - 1)
 	testing.expect(t, first_loading && !last_loading, "offscreen thumbnails are not requested")
 	clay.SetPointerState({0, 0}, false)
-	handle_gif_picker(&ui)
+	handle_gif_picker(&ui, nil)
 	testing.expect(t, ui.gif_job == nil, "do not fetch more metadata at the top")
 	scroll := clay.GetScrollContainerData(clay.ID("GifGrid"))
 	scroll.scrollPosition.y =
 		scroll.scrollContainerDimensions.height - scroll.contentDimensions.height
 	position := scroll.scrollPosition.y
-	handle_gif_picker(&ui)
+	handle_gif_picker(&ui, nil)
 	testing.expect(t, ui.gif_job != nil, "reaching the end requests the next page")
 	if ui.gif_job != nil {
 		testing.expect_value(t, ui.gif_job.page, 2)
@@ -359,8 +406,10 @@ gif_keyboard :: proc(t: ^testing.T) {
 	gif_retry(&ui)
 	testing.expect_value(t, len(gif_matches(&ui)), GIF_PAGE_SIZE + 1)
 	ui.gif_saved = true
-	// Stage through the real control. It preserves the draft and reply and never sends.
+	// Picking queues a send immediately, without consuming the draft or its files.
 	bytes, _ := base64.decode("R0lGODlhAQABAIAAAAAAAP///yH5BAAAAAAALAAAAAABAAEAAAIBRAA7")
+	draft, _ := base64.decode("R0lGODlhAQABAIAAAAAAAP///yH5BAAAAAAALAAAAAABAAEAAAIBRAA7")
+	stage_bytes(&ui, "draft.gif", draft)
 	ui.gif_view = video_view_make(bytes, .Loop)
 	ui.gif_library[0].url = strings.clone("https://gifsnap.com/test")
 	ui.gif_selected = gif_item_clone(ui.gif_library[0])
@@ -368,21 +417,85 @@ gif_keyboard :: proc(t: ^testing.T) {
 	for _ in 0 ..< 8 {anim_frame += 1; build_layout(&ui, 0)}
 	press(t, &ui, clay.ID("GifTile", 0))
 	testing.expect_value(t, len(ui.staged), 1)
+	testing.expect_value(t, ui.staged[0].name, "draft.gif")
+	testing.expect_value(t, len(ui.pending), 1)
+	testing.expect_value(t, ui.pending[0].reply_to, "reply-target")
+	gif_send(&ui, nil, ui.gif_selected)
+	testing.expect(t, len(ui.pending) == 1, "a closing picker cannot send twice")
 	testing.expect_value(t, string(ui.compose[:]), "Keep your draft")
 	testing.expect_value(t, ui.replying, "reply-target")
 	testing.expect(t, !ui.picker_open && ui.focus == .Compose)
-	if len(ui.staged) ==
-	   1 {testing.expect_value(t, ui.staged[0].media_type, "image/gif"); remove_staged(&ui, 0)}
+	thread.join(ui.pending[0].gif.worker)
+	drain_gif_sends(&ui, nil)
+	testing.expect(t, ui.pending[0].gif == nil)
+	testing.expect_value(t, len(ui.pending[0].atts), 1)
+	if len(ui.pending[0].atts) != 1 {return}
+	testing.expect_value(t, ui.pending[0].atts[0].media_type, "image/gif")
+	testing.expect_value(t, string(ui.pending[0].atts[0].data), string(draft))
 	webp, webp_err := base64.decode(GIF_WEBP_FIXTURE)
 	testing.expect(t, webp_err == nil)
 	ui.gif_view = video_view_make(webp, .Loop)
 	ui.picker_open = true
-	gif_choose(&ui, ui.gif_selected, .Stage)
+	gif_send(&ui, nil, ui.gif_selected)
 	testing.expect_value(t, len(ui.staged), 1)
-	if len(ui.staged) == 1 {
-		testing.expect_value(t, ui.staged[0].name, "animation.webp")
-		testing.expect_value(t, ui.staged[0].media_type, "image/webp")
-		remove_staged(&ui, 0)
+	testing.expect_value(t, len(ui.pending), 2)
+	thread.join(ui.pending[1].gif.worker)
+	drain_gif_sends(&ui, nil)
+	testing.expect_value(t, len(ui.pending[1].atts), 1)
+	if len(ui.pending[1].atts) != 1 {return}
+	testing.expect_value(t, ui.pending[1].atts[0].name, "animation.webp")
+	testing.expect_value(t, ui.pending[1].atts[0].media_type, "image/webp")
+	// Received animated WebP must become a looping tile, not a failed still image.
+	{
+		sync.lock(&test_home_lock); defer sync.unlock(&test_home_lock)
+		old_home := data_home; data_home = "/tmp/wn-gif-animated-media-test"
+		defer {vault_lock(); os.remove_all(data_home); data_home = old_home}
+		os.make_directory(data_home)
+		testing.expect_value(t, vault_create("test"), Vault_Err.None)
+		bytes := ui.pending[1].atts[0].data
+		sha := string(hex.encode(hash.hash_bytes(.SHA256, bytes, context.temp_allocator)))
+		defer delete(sha)
+		sealed, sealed_ok := vault_seal_blob(bytes, context.temp_allocator)
+		testing.expect(t, sealed_ok)
+		os.make_directory(media_cache_dir())
+		testing.expect(
+			t,
+			os.write_entire_file(fmt.tprintf("%s/%s.bin", media_cache_dir(), sha), sealed) == nil,
+		)
+		ref := marmot.Media_Attachment_Reference {
+			file_name        = "animation.webp",
+			media_type       = "image/webp",
+			plaintext_sha256 = strings.clone_to_cstring(sha, context.temp_allocator),
+		}
+		job := Media_Job {
+			kind      = .Image,
+			key       = sha,
+			reference = ref,
+		}
+		worker := thread.create(media_worker); worker.data = &job
+		thread.start(worker); thread.join(worker); thread.destroy(worker)
+		view := (^Video_View)(job.view)
+		testing.expect(t, view != nil)
+		if view == nil {return}
+		defer video_view_free(view)
+		testing.expect(t, view.looping && !view.failed && job.image.data == nil)
+		old_views, old_sizes := video_views, blob_sizes
+		video_views, blob_sizes = {}, {}
+		defer {
+			for key in video_views {delete(key)}; delete(video_views)
+			for key in blob_sizes {delete(key)}; delete(blob_sizes)
+			video_views, blob_sizes = old_views, old_sizes
+		}
+		media_publish(&job)
+		msg: Msg_Ui
+		defer message_free(msg)
+		outcome := marmot.Media_Attachment_Outcome {
+			body = {accepted = {0, ref}},
+		}
+		media_attach(&msg, nil, "", "", &outcome, "")
+		testing.expect_value(t, msg.attachments[0].state, Att_State.Ready)
+		testing.expect_value(t, msg.attachments[0].kind, Media_Kind.Loop)
+		testing.expect(t, msg.attachments[0].view == view)
 	}
 	ui.picker_mode = .Quick_Reaction; ui.gif_tab = true
 	open_picker(&ui, ""); testing.expect(t, !ui.gif_tab)

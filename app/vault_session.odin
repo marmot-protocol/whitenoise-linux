@@ -95,6 +95,7 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	agent_shutdown()
 	// These owners publish textures on the render thread; join only here.
 	if ui.gif_job != nil && ui.gif_job.worker != nil {thread.join(ui.gif_job.worker)}
+	for p in ui.pending {if p.gif != nil {thread.join(p.gif.worker)}}
 	for job in media_jobs {if job.worker != nil {thread.join(job.worker)}}
 	for job in sticker_jobs {if job.worker != nil {thread.join(job.worker)}}
 	if client != nil {

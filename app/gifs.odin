@@ -1,5 +1,6 @@
 package main
 
+import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:crypto/hash"
 import "core:encoding/endian"
@@ -29,7 +30,6 @@ Gif_Item :: struct {
 @(private)
 Gif_Action :: enum {
 	Preview,
-	Stage,
 	Save,
 }
 @(private)
@@ -37,6 +37,7 @@ Gif_Op :: enum {
 	Library,
 	Search,
 	Preview,
+	Send,
 	Save,
 	Remove,
 }
@@ -49,6 +50,7 @@ Gif_Job :: struct {
 	data, index:         []u8,
 	items:               [dynamic]Gif_Item,
 	view:                ^Video_View,
+	image:               rl.Image,
 	page:                int,
 	more:                bool,
 	action:              Gif_Action,
@@ -296,11 +298,16 @@ gif_worker :: proc(t: ^thread.Thread) {
 		plain, ok := vault_open_blob(sealed, context.temp_allocator)
 		if !ok || json.unmarshal(plain, &job.items) != nil {return}
 		job.error = ""
-	case .Preview:
+	case .Preview, .Send:
 		job.error = N_("Couldn't load GIFs. Please try again.")
-		if job.item.sha != "" {
+		if job.op == .Send && job.view != nil {
+			// Join mpv's borrower off-thread before moving its downloaded bytes.
+			video_view_stop(job.view)
+			job.data, job.view.data = job.view.data, nil
+		}
+		if len(job.data) == 0 && job.item.sha != "" {
 			job.data = gif_read(job.item.sha)
-		} else if gif_asset_url(job.item.url) {
+		} else if len(job.data) == 0 && gif_asset_url(job.item.url) {
 			buffer := make([]u8, GIF_BYTES_LIMIT, context.temp_allocator)
 			n := wn_https_get(
 				strings.clone_to_cstring(job.item.url, context.temp_allocator),
@@ -311,6 +318,14 @@ gif_worker :: proc(t: ^thread.Thread) {
 			if n > 0 {job.data = slice.clone(buffer[:n])}
 		}
 		if !gif_valid(job.data) {return}
+		if job.op == .Send {
+			// The still-image helper cannot decode animated WebP; a poster is optional.
+			if string(job.data[:4]) != "RIFF" || job.data[20] & 2 == 0 {
+				job.image = rl.LoadImageFromMemory("", raw_data(job.data), i32(len(job.data)))
+			}
+			job.error = ""
+			return
+		}
 		job.view = video_view_make(job.data, .Loop, .Prepare)
 		job.data = nil
 		if job.view.failed {return}
@@ -340,6 +355,7 @@ gif_job_free :: proc(job: ^Gif_Job) {
 	for item in job.items {gif_item_free(item)}
 	delete(job.items)
 	if job.view != nil {video_view_free(job.view)}
+	rl.UnloadImage(job.image)
 	free(job)
 }
 
@@ -382,7 +398,8 @@ gif_drain :: proc(ui: ^Ui_State) {
 	}
 	if job.op == .Search && len(ui.gif_hits) > 0 {ui.gif_error = ""}
 	if job.error == "" && !stale {
-		switch job.op {
+		// Send preparations belong to pending rows, not the picker.
+		#partial switch job.op {
 		case .Search:
 			append(&ui.gif_hits, ..job.items[:])
 			ui.gif_page, ui.gif_more = job.page, job.more && len(job.items) > 0
@@ -461,6 +478,10 @@ gif_save :: proc(ui: ^Ui_State, op: Gif_Op) {
 @(private)
 gif_stop :: proc(ui: ^Ui_State) {
 	ui.picker_open = false
+	for &p in ui.pending {
+		if p.gif == nil {continue}
+		gif_job_free(p.gif); p.gif = nil
+	}
 	if job := ui.gif_job; job != nil {
 		if job.worker == nil {gif_drain(ui)}
 		thread.join(job.worker); gif_drain(ui)
@@ -500,25 +521,103 @@ gif_same :: proc(a, b: Gif_Item) -> bool {
 @(private)
 gif_choose :: proc(ui: ^Ui_State, item: Gif_Item, action: Gif_Action) {
 	if ui.gif_job != nil {return}
-	if action == .Stage &&
-	   (ui.selected < 0 ||
-			   ui.selected >= len(ui.chats) ||
-			   ui.editing != "" ||
-			   ui.compose_issue != "") {return}
 	if ui.gif_view == nil || ui.gif_view.failed || !gif_same(item, ui.gif_selected) {
 		job := gif_start(ui, .Preview); job.item = gif_item_clone(item); job.action = action
 		return
 	}
 	switch action {
 	case .Preview:
-	case .Stage:
-		data := ui.gif_view.data
-		name := string(data[:4]) == "RIFF" ? "animation.webp" : "animation.gif"
-		stage_bytes(ui, name, slice.clone(data))
-		ui.picker_open = false; ui.focus = .Compose
-		video_view_free(ui.gif_view); ui.gif_view = nil
 	case .Save:
 		gif_save(ui, ui.gif_selected.sha == "" ? .Save : .Remove)
+	}
+}
+
+@(private)
+gif_send :: proc(ui: ^Ui_State, client: ^marmot.Client, item: Gif_Item) {
+	if !ui.picker_open ||
+	   ui.gif_job != nil ||
+	   ui.selected < 0 ||
+	   ui.selected >= len(ui.chats) ||
+	   ui.editing != "" ||
+	   ui.compose_issue != "" {return}
+	job := new(Gif_Job)
+	job.op, job.item = .Send, gif_item_clone(item)
+	if ui.gif_view != nil && !ui.gif_view.failed && gif_same(item, ui.gif_selected) {
+		job.view, ui.gif_view = ui.gif_view, nil
+	}
+	info := profile_info(client, ui.account_ref)
+	send_ticket += 1
+	append(
+		&ui.pending,
+		Pending_Send {
+			gif = job,
+			ticket = send_ticket,
+			visible_since = time.tick_now(),
+			account_ref = strings.clone(ui.account_ref),
+			group_id = strings.clone(ui.chats[ui.selected].group_id),
+			sender = strings.clone(info.name != "" ? info.name : "you"),
+			body = strings.clone("GIF"),
+			reply_to = strings.clone(thread_cur(ui) == "" ? ui.replying : ""),
+			thread = strings.clone(thread_cur(ui)),
+		},
+	)
+	spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
+	close_picker(ui)
+	ui.scroll_pending = true
+	delete(ui.jump_id); ui.jump_id = ""
+	if ui.gif_view != nil {video_view_free(ui.gif_view); ui.gif_view = nil}
+}
+
+@(private)
+gif_send_start :: proc(p: ^Pending_Send) {
+	job := p.gif
+	if job.worker != nil {
+		thread.join(job.worker); thread.destroy(job.worker)
+		job.worker = nil
+		delete(job.data); job.data = nil
+		rl.UnloadImage(job.image); job.image = {}
+	}
+	job.error = ""
+	p.sending_since = time.tick_now()
+	job.worker = thread.create(gif_worker)
+	job.worker.data = job
+	thread.start(job.worker)
+}
+
+@(private)
+drain_gif_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	for i := len(ui.pending) - 1; i >= 0; i -= 1 {
+		p := &ui.pending[i]
+		job := p.gif
+		if job == nil || p.failed || !thread.is_done(job.worker) {continue}
+		thread.join(job.worker)
+		if p.dismissed {free_pending(p); ordered_remove(&ui.pending, i); continue}
+		if job.error != "" {
+			p.failed = true
+			set_status(ui, strings.clone(tr(job.error)), .Error)
+			continue
+		}
+		name := string(job.data[:4]) == "RIFF" ? "animation.webp" : "animation.gif"
+		tex: ^rl.Texture2D
+		dim: string
+		if job.image.data != nil {
+			tex = new(rl.Texture2D)
+			tex^ = rl.LoadTextureFromImage(job.image)
+			dim = fmt.aprintf("%dx%d", job.image.width, job.image.height)
+		}
+		append(
+			&p.atts,
+			Pending_Att {
+				name = strings.clone(name),
+				media_type = media_type_for(name),
+				dim = dim,
+				data = job.data,
+				tex = tex,
+			},
+		)
+		job.data = nil
+		gif_job_free(job); p.gif = nil
+		spawn_send(ui, client, p)
 	}
 }
 
@@ -769,7 +868,7 @@ gif_consent_panel :: proc() {
 }
 
 @(private)
-handle_gif_picker :: proc(ui: ^Ui_State) {
+handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if rl.IsKeyPressed(.ESCAPE) || mouse_released() && !clay.PointerOver(clay.ID("PickerPanel")) {
 		ui.picker_open = false; ui.focus = .Compose; return
 	}
@@ -829,7 +928,7 @@ handle_gif_picker :: proc(ui: ^Ui_State) {
 	for i, at in matches {
 		if clicked_indexed("GifSave", u32(i)) {gif_choose(ui, items[i], .Save); return}
 		if clicked_indexed("GifTile", u32(i)) ||
-		   rl.IsKeyPressed(.ENTER) && ui.gif_focus == at {gif_choose(ui, items[i], .Stage); return}
+		   rl.IsKeyPressed(.ENTER) && ui.gif_focus == at {gif_send(ui, client, items[i]); return}
 		if gif_visible(i) &&
 		   (clay.PointerOver(clay.ID("GifTile", u32(i))) || ui.gif_focus == at) {hover = i}
 	}

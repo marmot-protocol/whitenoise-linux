@@ -522,6 +522,7 @@ members_clear :: proc(ui: ^Ui_State) {
 //                (grayed row)          (mutex)     (drop row + reload,
 //                                                   or mark failed)
 Pending_Send :: struct {
+	gif:           ^Gif_Job, // selected GIF while its upload bytes are preparing
 	forward:       ^Forward_Job, // source snapshot while attachments are preparing
 	forward_title: string, // destination label retained through send completion
 	account_ref:   string, // pinned for forwards; empty uses the current account
@@ -857,6 +858,7 @@ send_worker :: proc(t: ^thread.Thread) {
 }
 
 spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
+	if p.gif != nil {gif_send_start(p); return}
 	if p.forward != nil {forward_start(p); return}
 	p.sending_since = time.tick_now()
 	job := new(Send_Job)
@@ -952,6 +954,7 @@ attach_body_emoji :: proc(p: ^Pending_Send, body: string) {
 }
 
 free_pending :: proc(p: ^Pending_Send) {
+	if p.gif != nil {gif_job_free(p.gif)}
 	forward_free(p.forward)
 	delete(p.forward_title)
 	delete(p.account_ref)
@@ -1040,6 +1043,7 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 // Frame-loop drain: settle acked/failed sends and reap worker threads.
 drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	drain_gif_sends(ui, client)
 	drain_forwards(ui, client)
 	for i := len(send_threads) - 1; i >= 0; i -= 1 {
 		if thread.is_done(send_threads[i]) {
@@ -2025,7 +2029,7 @@ reload_jobs_busy :: proc() -> bool {
 	// Preparation can finish between frames, before its upload is spawned.
 	if g_ui != nil {
 		for p in g_ui.pending {
-			if p.forward != nil && !p.failed && !p.dismissed {return true}
+			if (p.forward != nil || p.gif != nil) && !p.failed && !p.dismissed {return true}
 		}
 	}
 	for worker in send_threads {

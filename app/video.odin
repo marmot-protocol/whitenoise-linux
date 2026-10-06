@@ -218,13 +218,20 @@ adopt_size :: proc(view: ^Video_View) -> bool {
 
 // The modal preview owns its own mpv instance; the render context
 // must go before the handle (mpv requirement).
-video_view_free :: proc(view: ^Video_View) {
+@(private)
+video_view_stop :: proc(view: ^Video_View) {
 	if view.rctx != nil {
 		mpv_render_context_free(view.rctx)
+		view.rctx = nil
 	}
 	if view.mpv != nil {
 		mpv_terminate_destroy(view.mpv)
+		view.mpv = nil
 	}
+}
+
+video_view_free :: proc(view: ^Video_View) {
+	video_view_stop(view)
 	rl.UnloadTexture(view.tex)
 	mem.zero_slice(view.buf)
 	mem.zero_slice(transmute([]u8)view.transcript)
