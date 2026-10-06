@@ -112,8 +112,9 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 	return "", "", ""
 }
 
-// One clipped line of a message, so the confirm names what it acts on.
-// Attachment-only rows have no body and get no subject card.
+// One clipped line of a message, cut between runes: the confirm's
+// subject card, the reply banner and the thread breadcrumb. Attachment-
+// only rows have no body and get no subject card.
 msg_preview :: proc(msg: Msg_Ui) -> string {
 	line := msg.body
 	if nl := strings.index_byte(line, '\n'); nl >= 0 {

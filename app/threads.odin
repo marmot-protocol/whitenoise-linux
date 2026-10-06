@@ -107,9 +107,8 @@ thread_bar :: proc(ui: ^Ui_State) {
 			if msg.id != cur {
 				continue
 			}
-			snippet := msg.body[:min(len(msg.body), 48)]
 			clay.Text(
-				fmt.tprintf("%s: %s", msg.sender, snippet),
+				fmt.tprintf("%s: %s", msg.sender, msg_preview(msg)),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
 			)
 			break

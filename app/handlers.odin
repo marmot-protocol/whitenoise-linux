@@ -1236,7 +1236,7 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 @(private = "file")
 start_reply :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 	ui.replying = msg.id
-	ui.reply_hint = fmt.aprintf("%s: %s", msg.sender, msg.body[:min(len(msg.body), 60)])
+	ui.reply_hint = fmt.aprintf("%s: %s", msg.sender, msg_preview(msg))
 	ui.focus = .Compose
 }
 
