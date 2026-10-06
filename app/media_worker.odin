@@ -421,6 +421,7 @@ media_worker :: proc(t: ^thread.Thread) {
 			strings.clone_to_cstring(job.key, context.temp_allocator),
 			raw_data(buffer),
 			uint(len(buffer)),
+			HTTPS_TIMEOUT_MS,
 		)
 		if n <= 0 || !gif_valid(buffer[:n]) {return}
 		bytes = slice.clone(buffer[:n])

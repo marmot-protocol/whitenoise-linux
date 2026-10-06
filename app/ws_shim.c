@@ -332,7 +332,7 @@ static size_t sticker_write(void *data, size_t size, size_t count, void *opaque)
 }
 
 // Pack assets are bounded even when a server omits Content-Length.
-int wn_https_get(const char *url, unsigned char *out, size_t cap) {
+int wn_https_get(const char *url, unsigned char *out, size_t cap, long timeout_ms) {
     CURL *curl = curl_easy_init();
     if (!curl) {
         return -1;
@@ -346,7 +346,7 @@ int wn_https_get(const char *url, unsigned char *out, size_t cap) {
     curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "https");
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 3L);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 10000L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, timeout_ms);
     curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, sticker_write);

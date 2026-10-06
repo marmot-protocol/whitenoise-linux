@@ -17,7 +17,10 @@ Click its star again to remove it. Saved files and their index are encrypted
 with your vault under `<data-dir>/gifs/`. Search text is sent to GifSnap;
 saved GIF searches run locally. GifSnap is a best-effort external service.
 
-Downloads are limited to 24 MiB and GIF canvases to 4096 pixels per side.
+Search requests have a 30-second timeout; media downloads have a 10-second
+timeout. Results load from GifSnap's media CDN. GIF and animated WebP
+attachments retain their original format, including when saved offline.
+Downloads are limited to 24 MiB and animation canvases to 4096 pixels per side.
 The picker uses the existing thumbnail worker and attachment send path.
 
 ## GIFs shared from iOS

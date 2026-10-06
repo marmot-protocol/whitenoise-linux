@@ -559,6 +559,7 @@ pic_worker :: proc(_: ^thread.Thread) {
 				strings.clone_to_cstring(url[len("image:"):], context.temp_allocator),
 				raw_data(buffer),
 				uint(len(buffer)),
+				HTTPS_TIMEOUT_MS,
 			)
 			if n > 0 {data = make([]u8, int(n)); copy(data, buffer[:n])}
 		} else {

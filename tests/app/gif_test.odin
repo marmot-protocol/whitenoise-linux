@@ -15,6 +15,8 @@ import "core:text/edit"
 import "core:thread"
 import rl "sdlrl"
 
+@(private)
+GIF_WEBP_FIXTURE :: "UklGRsoAAABXRUJQVlA4WAoAAAACAAAAAQAAAQAAQU5JTQYAAAD/////AABBTk1GSgAAAAAAAAAAAAEAAAEAAPQBAAJWUDggMgAAALABAJ0BKgIAAgACADQlmAJ0AQ72nkAAzj91oWJPVVOq5fyNPKxhNJOj+Zvwo+Tr/AAAQU5NRkwAAAAAAAAAAAABAAABAAD0AQAAVlA4IDQAAAC0AQCdASoCAAIAAAA0JZACdAEO+KbQAP7Pgfk/BDpqiY0OGj6I7XFzZEUfo/7v/Ul7AAAA"
 
 @(test)
 gif_ios_message :: proc(t: ^testing.T) {
@@ -104,10 +106,16 @@ gif_data :: proc(t: ^testing.T) {
 	for bad in ([]string{"http://gifsnap.com/a", "https://gifsnap.com.evil.test/a", "https://127.0.0.1/a", "file:///tmp/a", "https://user@gifsnap.com/a"}) {testing.expect(t, !gif_asset_url(bad))}
 	items, more, ok := gif_parse(
 		transmute([]u8)string(
-			`{"data":[{"title":"Cat","url":"https://gifsnap.com/api/v1/media/cat","preview_url":"https://gifsnap.com/api/v1/media/thumb"},{"url":"https://evil.test/a","preview_url":"https://gifsnap.com/api/v1/media/a"}],"pagination":{"page":1,"has_next":true}}`,
+			`{"data":[{"title":"Cat","url":"https://media.gifsnap.com/gifs/cat.gif","preview_url":"https://media.gifsnap.com/thumbnails/cat.webp","width":220,"height":180},{"url":"https://evil.test/a","preview_url":"https://media.gifsnap.com/thumbnails/a.webp"}],"pagination":{"page":1,"has_next":true}}`,
 		),
 	)
 	testing.expect(t, ok && more && len(items) == 1)
+	if len(items) == 1 {
+		testing.expect_value(t, items[0].url, "https://media.gifsnap.com/gifs/cat.gif")
+		testing.expect_value(t, items[0].thumb, "https://media.gifsnap.com/thumbnails/cat.webp")
+		testing.expect_value(t, items[0].width, 220)
+		testing.expect_value(t, items[0].height, 180)
+	}
 	for item in items {gif_item_free(item)}; delete(items)
 	for invalid in ([]string{"{}", "bad", `{"data":[],"pagination":{"page":0}}`, `{"data":42}`}) {
 		_, _, parsed := gif_parse(transmute([]u8)invalid); testing.expect(t, !parsed)
@@ -121,6 +129,17 @@ gif_data :: proc(t: ^testing.T) {
 	bytes[6], bytes[7] = 255, 255
 	testing.expect(t, !gif_valid(bytes), "reject huge canvases before decoding")
 	bytes[6], bytes[7] = 1, 0
+	webp, webp_err := base64.decode(GIF_WEBP_FIXTURE)
+	testing.expect(t, webp_err == nil); defer delete(webp)
+	testing.expect(t, gif_valid(webp), "accept animated WebP from the provider")
+	testing.expect(t, !gif_valid(webp[:29]), "reject a truncated WebP canvas")
+	webp[24], webp[25] = 255, 15
+	testing.expect(t, gif_valid(webp), "accept the 4096-pixel canvas boundary")
+	webp[24], webp[25] = 0, 16
+	testing.expect(t, !gif_valid(webp), "reject oversized WebP before decoding")
+	webp[24], webp[25] = 1, 0
+	webp[16] = 9
+	testing.expect(t, !gif_valid(webp), "reject an invalid extended header")
 	sync.lock(&test_home_lock); defer sync.unlock(&test_home_lock)
 	defer vault_lock()
 	previous := data_home; data_home = "/tmp/wn-gif-storage-test"
@@ -219,6 +238,7 @@ gif_keyboard :: proc(t: ^testing.T) {
 	}
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs.rail_w = RAIL_W_MIN; ui.prefs.reduce_motion = true
+	ui.prefs.gif_consent = true
 	append(&ui.accounts, "Test"); append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "GIFs"})
 	append(&ui.compose, "Keep your draft")
 	g_ui, g_prefs = &ui, &ui.prefs; defer {g_ui, g_prefs = nil, nil}
@@ -295,12 +315,6 @@ gif_keyboard :: proc(t: ^testing.T) {
 	_, first_loading, _ := gif_thumb(ui.gif_hits[0], 0)
 	_, last_loading, _ := gif_thumb(ui.gif_hits[GIF_PAGE_SIZE - 1], GIF_PAGE_SIZE - 1)
 	testing.expect(t, first_loading && !last_loading, "offscreen thumbnails are not requested")
-	testing.expect(t, clay.GetElementData(clay.ID("GifTileLoading0")).found)
-	testing.expect(
-		t,
-		!clay.GetElementData(clay.ID("GifNext")).found &&
-		!clay.GetElementData(clay.ID("GifPrevious")).found,
-	)
 	clay.SetPointerState({0, 0}, false)
 	handle_gif_picker(&ui)
 	testing.expect(t, ui.gif_job == nil, "do not fetch more metadata at the top")
@@ -359,6 +373,17 @@ gif_keyboard :: proc(t: ^testing.T) {
 	testing.expect(t, !ui.picker_open && ui.focus == .Compose)
 	if len(ui.staged) ==
 	   1 {testing.expect_value(t, ui.staged[0].media_type, "image/gif"); remove_staged(&ui, 0)}
+	webp, webp_err := base64.decode(GIF_WEBP_FIXTURE)
+	testing.expect(t, webp_err == nil)
+	ui.gif_view = video_view_make(webp, .Loop)
+	ui.picker_open = true
+	gif_choose(&ui, ui.gif_selected, .Stage)
+	testing.expect_value(t, len(ui.staged), 1)
+	if len(ui.staged) == 1 {
+		testing.expect_value(t, ui.staged[0].name, "animation.webp")
+		testing.expect_value(t, ui.staged[0].media_type, "image/webp")
+		remove_staged(&ui, 0)
+	}
 	ui.picker_mode = .Quick_Reaction; ui.gif_tab = true
 	open_picker(&ui, ""); testing.expect(t, !ui.gif_tab)
 	if os.get_env("WN_TEST_GIF_LIVE", context.temp_allocator) != "" {

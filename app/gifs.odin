@@ -2,6 +2,7 @@ package main
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:crypto/hash"
+import "core:encoding/endian"
 import "core:encoding/hex"
 import "core:encoding/json"
 import "core:fmt"
@@ -76,7 +77,9 @@ gif_asset_url :: proc(url: string) -> bool {
 	scheme, host, _, _, _ := net.split_url(url, context.temp_allocator)
 	return(
 		scheme == "https" &&
-		(host == "gifsnap.com" || host == "pub-9502c4126a384b90aa92ed45d7f6c379.r2.dev") \
+		(host == "gifsnap.com" ||
+				host == "media.gifsnap.com" ||
+				host == "pub-9502c4126a384b90aa92ed45d7f6c379.r2.dev") \
 	)
 }
 
@@ -115,8 +118,20 @@ gif_parse :: proc(bytes: []u8) -> (items: [dynamic]Gif_Item, more, ok: bool) {
 @(private)
 gif_valid :: proc(bytes: []u8) -> bool {
 	if len(bytes) < 13 || len(bytes) > GIF_BYTES_LIMIT {return false}
-	if string(bytes[:6]) != "GIF87a" && string(bytes[:6]) != "GIF89a" {return false}
-	w, h := int(bytes[6]) | int(bytes[7]) << 8, int(bytes[8]) | int(bytes[9]) << 8
+	w, h: int
+	if string(bytes[:6]) == "GIF87a" || string(bytes[:6]) == "GIF89a" {
+		w, h = int(bytes[6]) | int(bytes[7]) << 8, int(bytes[8]) | int(bytes[9]) << 8
+	} else {
+		// Animated WebP stores its logical canvas in the extended header.
+		if len(bytes) < 30 ||
+		   string(bytes[:4]) != "RIFF" ||
+		   string(bytes[8:16]) != "WEBPVP8X" {return false}
+		size, _ := endian.get_u32(bytes[4:8], .Little)
+		header_size, _ := endian.get_u32(bytes[16:20], .Little)
+		if size != u32(len(bytes) - 8) || header_size != 10 {return false}
+		w = 1 + (int(bytes[24]) | int(bytes[25]) << 8 | int(bytes[26]) << 16)
+		h = 1 + (int(bytes[27]) | int(bytes[28]) << 8 | int(bytes[29]) << 16)
+	}
 	return w > 0 && h > 0 && w <= 4096 && h <= 4096 && w * h <= 4096 * 4096
 }
 
@@ -268,6 +283,7 @@ gif_worker :: proc(t: ^thread.Thread) {
 			strings.clone_to_cstring(job.input, context.temp_allocator),
 			raw_data(buffer),
 			uint(len(buffer)),
+			30_000,
 		)
 		ok: bool
 		if n > 0 {job.items, job.more, ok = gif_parse(buffer[:n])}
@@ -290,6 +306,7 @@ gif_worker :: proc(t: ^thread.Thread) {
 				strings.clone_to_cstring(job.item.url, context.temp_allocator),
 				raw_data(buffer),
 				uint(len(buffer)),
+				HTTPS_TIMEOUT_MS,
 			)
 			if n > 0 {job.data = slice.clone(buffer[:n])}
 		}
@@ -495,7 +512,9 @@ gif_choose :: proc(ui: ^Ui_State, item: Gif_Item, action: Gif_Action) {
 	switch action {
 	case .Preview:
 	case .Stage:
-		stage_bytes(ui, "animation.gif", slice.clone(ui.gif_view.data))
+		data := ui.gif_view.data
+		name := string(data[:4]) == "RIFF" ? "animation.webp" : "animation.gif"
+		stage_bytes(ui, name, slice.clone(data))
 		ui.picker_open = false; ui.focus = .Compose
 		video_view_free(ui.gif_view); ui.gif_view = nil
 	case .Save:

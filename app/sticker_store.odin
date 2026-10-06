@@ -54,9 +54,12 @@ sticker_textures: map[string]^rl.Texture2D
 @(private)
 sticker_requested: map[string]bool
 
+@(private)
+HTTPS_TIMEOUT_MS :: c.long(10_000)
+
 @(private, default_calling_convention = "c")
 foreign _ {
-	wn_https_get :: proc(url: cstring, out: [^]u8, cap: c.size_t) -> c.int ---
+	wn_https_get :: proc(url: cstring, out: [^]u8, cap: c.size_t, timeout_ms: c.long) -> c.int ---
 }
 
 @(private)
@@ -264,6 +267,7 @@ sticker_worker :: proc(t: ^thread.Thread) {
 				strings.clone_to_cstring(job.item.url, context.temp_allocator),
 				raw_data(buffer),
 				uint(len(buffer)),
+				HTTPS_TIMEOUT_MS,
 			)
 			if n > 0 {job.data = make([]u8, int(n)); copy(job.data, buffer[:n])}
 		}
