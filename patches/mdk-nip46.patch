@@ -1,7 +1,7 @@
-diff --git a/Cargo.lock b/Cargo.lock
+diff --git c/Cargo.lock i/Cargo.lock
 index 562fcf6e..79b9d01d 100644
---- a/Cargo.lock
-+++ b/Cargo.lock
+--- c/Cargo.lock
++++ i/Cargo.lock
 @@ -3627,14 +3627,19 @@ dependencies = [
  name = "marmot-c"
  version = "0.12.0"
@@ -22,10 +22,25 @@ index 562fcf6e..79b9d01d 100644
   "zeroize",
  ]
  
-diff --git a/crates/marmot-account/src/home.rs b/crates/marmot-account/src/home.rs
-index e61c80f9..3beffa22 100644
---- a/crates/marmot-account/src/home.rs
-+++ b/crates/marmot-account/src/home.rs
+diff --git c/crates/cgka-conformance-simulator/tests/tracing_audit.rs i/crates/cgka-conformance-simulator/tests/tracing_audit.rs
+index a5e17b7f..c7b3b6f6 100644
+--- c/crates/cgka-conformance-simulator/tests/tracing_audit.rs
++++ i/crates/cgka-conformance-simulator/tests/tracing_audit.rs
+@@ -205,8 +205,9 @@ fn is_cli_binary(path: &Path) -> bool {
+         return true;
+     }
+ 
++    // Cargo builds `bin/` and `examples/` targets as standalone executables.
+     path.components()
+-        .any(|component| matches!(component.as_os_str().to_str(), Some("bin")))
++        .any(|component| matches!(component.as_os_str().to_str(), Some("bin" | "examples")))
+ }
+ 
+ fn workspace_root() -> PathBuf {
+diff --git c/crates/marmot-account/src/home.rs i/crates/marmot-account/src/home.rs
+index e61c80f9..705e76e5 100644
+--- c/crates/marmot-account/src/home.rs
++++ i/crates/marmot-account/src/home.rs
 @@ -18,6 +18,7 @@ use crate::secret_store::{
  };
  
@@ -149,22 +164,32 @@ index e61c80f9..3beffa22 100644
      /// List the complete account catalog or report a read error. Unlike `accounts`,
      /// this never hides an account whose record cannot be read or decoded.
      /// Metadata-probe errors also propagate: an inaccessible directory is not an
-@@ -1030,6 +1125,11 @@ impl AccountHome {
+@@ -1030,6 +1125,21 @@ impl AccountHome {
          let live_dir = self.account_dir(&account.label);
          let tombstone = self.move_account_dir_to_tombstone(&account.label, &live_dir)?;
  
-+        if account.external_signing {
-+            self.secret_store
-+                .remove_secret(&external_database_credential(&account))?;
++        // The wipe already committed. An early return would report a completed
++        // removal as failed and skip the secret scrub below, so warn and continue.
++        if account.external_signing
++            && self
++                .secret_store
++                .remove_secret(&external_database_credential(&account))
++                .is_err()
++        {
++            tracing::warn!(
++                target: TRACE_TARGET,
++                method = "remove_account",
++                "failed to remove external database credential after wipe commit"
++            );
 +        }
 +
          // Drop the signing secret unless a twin record still depends on a
          // shared (account-id-keyed) credential. For the local-file store the
          // secret lived inside the account directory we just renamed, so this is
-diff --git a/crates/marmot-account/src/lib.rs b/crates/marmot-account/src/lib.rs
+diff --git c/crates/marmot-account/src/lib.rs i/crates/marmot-account/src/lib.rs
 index f3391735..3388ff20 100644
---- a/crates/marmot-account/src/lib.rs
-+++ b/crates/marmot-account/src/lib.rs
+--- c/crates/marmot-account/src/lib.rs
++++ i/crates/marmot-account/src/lib.rs
 @@ -18,7 +18,8 @@ mod time;
  pub use error::{AccountError, AccountHomeError, AccountHomeResult, AccountResult};
  pub use home::{
@@ -175,10 +200,10 @@ index f3391735..3388ff20 100644
  };
  pub use key_package::{
      KeyPackagePublication, KeyPackagePublishError, KeyPackagePublishReceipt, KeyPackagePublisher,
-diff --git a/crates/marmot-account/tests/home.rs b/crates/marmot-account/tests/home.rs
+diff --git c/crates/marmot-account/tests/home.rs i/crates/marmot-account/tests/home.rs
 index 85fb738c..360fb6d4 100644
---- a/crates/marmot-account/tests/home.rs
-+++ b/crates/marmot-account/tests/home.rs
+--- c/crates/marmot-account/tests/home.rs
++++ i/crates/marmot-account/tests/home.rs
 @@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex, Once};
  
  use marmot_account::{
@@ -275,26 +300,35 @@ index 85fb738c..360fb6d4 100644
  #[test]
  fn account_home_rejects_external_signer_upgrade_for_local_identity() {
      let dir = tempfile::tempdir().unwrap();
-diff --git a/crates/marmot-app/src/directory/methods.rs b/crates/marmot-app/src/directory/methods.rs
-index fa3cf1a5..a6131cd6 100644
---- a/crates/marmot-app/src/directory/methods.rs
-+++ b/crates/marmot-app/src/directory/methods.rs
-@@ -266,7 +266,10 @@ impl MarmotApp {
+diff --git c/crates/marmot-app/src/directory/methods.rs i/crates/marmot-app/src/directory/methods.rs
+index fa3cf1a5..bdbdd1e2 100644
+--- c/crates/marmot-app/src/directory/methods.rs
++++ i/crates/marmot-app/src/directory/methods.rs
+@@ -244,6 +244,7 @@ impl MarmotApp {
+         let mut records = first.records;
+         let first_observed =
+             fresh_relay_list_status_from_records(&account_id_hex, records.clone(), freshness).value;
++        let observed_outboxes = first_observed.nip65.created_at > 0;
+         let first_hop = merge_relay_list_status(cached.clone(), first_observed);
+         let outbox_relays = self.retain_safe_discovered_endpoints(
+             first_hop
+@@ -266,7 +267,11 @@ impl MarmotApp {
                  .await
              {
                  Ok(second) => {
 -                    complete &= second.complete;
-+                    // Once signed NIP-65 metadata identifies the account's
-+                    // outboxes, their completed read establishes inbox absence.
-+                    // An unavailable discovery indexer cannot veto that read.
-+                    complete = second.complete;
++                    // Once freshly observed NIP-65 metadata identifies the
++                    // account's outboxes, their completed read establishes inbox
++                    // absence; an unavailable discovery indexer cannot veto it.
++                    // Cached-only outboxes may be stale and prove nothing.
++                    complete = second.complete && (complete || observed_outboxes);
                      records.extend(second.records);
                  }
                  Err(_) => complete = false,
-diff --git a/crates/marmot-app/src/external_signer.rs b/crates/marmot-app/src/external_signer.rs
+diff --git c/crates/marmot-app/src/external_signer.rs i/crates/marmot-app/src/external_signer.rs
 index c4161204..ba4c8334 100644
---- a/crates/marmot-app/src/external_signer.rs
-+++ b/crates/marmot-app/src/external_signer.rs
+--- c/crates/marmot-app/src/external_signer.rs
++++ i/crates/marmot-app/src/external_signer.rs
 @@ -1,5 +1,5 @@
  use std::fmt;
 -use std::sync::Arc;
@@ -394,10 +428,10 @@ index c4161204..ba4c8334 100644
          let proof_event = request.proof_event()?;
          let signature_value = Signature::from_slice(&signature).map_err(|err| err.to_string())?;
          proof_event
-diff --git a/crates/marmot-app/src/lib.rs b/crates/marmot-app/src/lib.rs
+diff --git c/crates/marmot-app/src/lib.rs i/crates/marmot-app/src/lib.rs
 index 19e1b1d7..954b9e81 100644
---- a/crates/marmot-app/src/lib.rs
-+++ b/crates/marmot-app/src/lib.rs
+--- c/crates/marmot-app/src/lib.rs
++++ i/crates/marmot-app/src/lib.rs
 @@ -6816,13 +6816,17 @@ impl MarmotApp {
          if public_key.to_hex() != account.account_id_hex {
              return Err(AppError::ExternalSignerMismatch);
@@ -422,10 +456,10 @@ index 19e1b1d7..954b9e81 100644
          self.account_publish_clients
              .lock()
              .unwrap_or_else(|poisoned| poisoned.into_inner())
-diff --git a/crates/marmot-app/src/runtime/mod.rs b/crates/marmot-app/src/runtime/mod.rs
+diff --git c/crates/marmot-app/src/runtime/mod.rs i/crates/marmot-app/src/runtime/mod.rs
 index cabbcc27..f355c78e 100644
---- a/crates/marmot-app/src/runtime/mod.rs
-+++ b/crates/marmot-app/src/runtime/mod.rs
+--- c/crates/marmot-app/src/runtime/mod.rs
++++ i/crates/marmot-app/src/runtime/mod.rs
 @@ -1234,6 +1234,9 @@ pub struct AccountSetupRequest {
      /// Public directory indexers. Existing accounts use them for reads;
      /// generated accounts also copy relay lists and kind-0 metadata to them.
@@ -536,10 +570,10 @@ index cabbcc27..f355c78e 100644
      async fn publish_relay_lists_for_new_account(
          &self,
          label: &str,
-diff --git a/crates/marmot-app/src/runtime/tests.rs b/crates/marmot-app/src/runtime/tests.rs
+diff --git c/crates/marmot-app/src/runtime/tests.rs i/crates/marmot-app/src/runtime/tests.rs
 index da90ac07..150e1fa2 100644
---- a/crates/marmot-app/src/runtime/tests.rs
-+++ b/crates/marmot-app/src/runtime/tests.rs
+--- c/crates/marmot-app/src/runtime/tests.rs
++++ i/crates/marmot-app/src/runtime/tests.rs
 @@ -646,7 +646,7 @@ fn generated_account_birth_marks_cutover_scan_complete_before_session_open() {
  }
  
@@ -570,10 +604,10 @@ index da90ac07..150e1fa2 100644
      assert!(matches!(error, AppError::RelayDirectory(_)));
  }
  
-diff --git a/crates/marmot-app/src/sqlcipher.rs b/crates/marmot-app/src/sqlcipher.rs
+diff --git c/crates/marmot-app/src/sqlcipher.rs i/crates/marmot-app/src/sqlcipher.rs
 index ebbc9ffd..26c700e5 100644
---- a/crates/marmot-app/src/sqlcipher.rs
-+++ b/crates/marmot-app/src/sqlcipher.rs
+--- c/crates/marmot-app/src/sqlcipher.rs
++++ i/crates/marmot-app/src/sqlcipher.rs
 @@ -33,7 +33,6 @@ use storage_sqlite::{SqlCipherHardening, SqlCipherKey, open_hardened_sqlcipher};
  use zeroize::Zeroizing;
  
@@ -635,10 +669,10 @@ index ebbc9ffd..26c700e5 100644
      fn external_sqlcipher_salt(
          &self,
          db_path: &Path,
-diff --git a/crates/marmot-app/src/sqlcipher/concurrency_tests.rs b/crates/marmot-app/src/sqlcipher/concurrency_tests.rs
+diff --git c/crates/marmot-app/src/sqlcipher/concurrency_tests.rs i/crates/marmot-app/src/sqlcipher/concurrency_tests.rs
 index d310f444..014d7088 100644
---- a/crates/marmot-app/src/sqlcipher/concurrency_tests.rs
-+++ b/crates/marmot-app/src/sqlcipher/concurrency_tests.rs
+--- c/crates/marmot-app/src/sqlcipher/concurrency_tests.rs
++++ i/crates/marmot-app/src/sqlcipher/concurrency_tests.rs
 @@ -97,48 +97,6 @@ fn android_publication_competing_salts_preserve_database_reopenability() {
      }
  }
@@ -688,10 +722,10 @@ index d310f444..014d7088 100644
  #[test]
  fn salt_publication_never_replaces_existing_bytes() {
      let dir = tempfile::tempdir().unwrap();
-diff --git a/crates/marmot-c/API-REFERENCE.md b/crates/marmot-c/API-REFERENCE.md
+diff --git c/crates/marmot-c/API-REFERENCE.md i/crates/marmot-c/API-REFERENCE.md
 index 933e8dad..21014905 100644
---- a/crates/marmot-c/API-REFERENCE.md
-+++ b/crates/marmot-c/API-REFERENCE.md
+--- c/crates/marmot-c/API-REFERENCE.md
++++ i/crates/marmot-c/API-REFERENCE.md
 @@ -16,6 +16,10 @@ explicit cancel operation. The source parity allowlist deliberately excludes Uni
  three external-signer entry points: `register_external_signer`, `login_external_signer`,
  and `begin_external_signer_onboarding`.
@@ -810,11 +844,11 @@ index 933e8dad..21014905 100644
  ### `marmot_normalize_member_ref`
  
  ```c
-diff --git a/crates/marmot-c/CHANGELOG.md b/crates/marmot-c/CHANGELOG.md
-index 3b6dcf04..1307b2d2 100644
---- a/crates/marmot-c/CHANGELOG.md
-+++ b/crates/marmot-c/CHANGELOG.md
-@@ -7,6 +7,30 @@ Versions track the workspace version; releases are tagged `marmotc-v<version>`.
+diff --git c/crates/marmot-c/CHANGELOG.md i/crates/marmot-c/CHANGELOG.md
+index 3b6dcf04..ecd01e14 100644
+--- c/crates/marmot-c/CHANGELOG.md
++++ i/crates/marmot-c/CHANGELOG.md
+@@ -7,6 +7,31 @@ Versions track the workspace version; releases are tagged `marmotc-v<version>`.
  
  ## [Unreleased]
  
@@ -833,11 +867,12 @@ index 3b6dcf04..1307b2d2 100644
 +
 +- NIP-46 signing requests contain only `kind`, `content`, `tags`, and `created_at`.
 +  SDK-only event IDs and public keys stay local for response verification.
-+- Publication signing failures retain the event kind and underlying signer error.
-+- NIP-46 request publication failures retain the failed relay URLs and rejection
-+  messages instead of reporting only that the remote signer is unavailable.
++- Publication signing failures report the event kind. Signer error text stays
++  out of the message because it can carry relay URLs.
++- NIP-46 request publication failures report how many relays rejected the
++  request, without relay URLs or relay-supplied text.
 +- Account onboarding can establish inbox-list absence from a completed read of
-+  the advertised outboxes even when a discovery indexer is unavailable.
++  freshly discovered outboxes even when a discovery indexer is unavailable.
 +- Imported and external-signer accounts can use caller-authorized defaults when
 +  relay discovery fails. Observed signed lists, including explicit-empty lists,
 +  are preserved.
@@ -845,7 +880,7 @@ index 3b6dcf04..1307b2d2 100644
  ## [0.12.0] - 2026-10-02
  
  Recompile against the matching `marmot.h` and library: several signatures and
-@@ -52,7 +76,6 @@ record layouts changed. See the [client upgrade guide](../../docs/integration/0.
+@@ -52,7 +77,6 @@ record layouts changed. See the [client upgrade guide](../../docs/integration/0.
    their own notification permission, channel, and foreground policy. No C ABI
    layout changes. (marmot-protocol/whitenoise-android#2984)
  
@@ -853,10 +888,10 @@ index 3b6dcf04..1307b2d2 100644
  ## [0.11.0] - 2026-09-29
  
  ### Added
-diff --git a/crates/marmot-c/Cargo.toml b/crates/marmot-c/Cargo.toml
+diff --git c/crates/marmot-c/Cargo.toml i/crates/marmot-c/Cargo.toml
 index 13747a47..11d18ab2 100644
---- a/crates/marmot-c/Cargo.toml
-+++ b/crates/marmot-c/Cargo.toml
+--- c/crates/marmot-c/Cargo.toml
++++ i/crates/marmot-c/Cargo.toml
 @@ -24,10 +24,15 @@ tokio = { workspace = true, features = ["io-util", "net", "rt-multi-thread", "ti
  libc.workspace = true
  # Holds a host-supplied secret-key hex only as long as the boundary needs it.
@@ -874,11 +909,11 @@ index 13747a47..11d18ab2 100644
 -nostr.workspace = true
  nostr-relay-builder.workspace = true
  transport-quic-broker.workspace = true
-diff --git a/crates/marmot-c/README.md b/crates/marmot-c/README.md
-index 378f026b..10bcc43f 100644
---- a/crates/marmot-c/README.md
-+++ b/crates/marmot-c/README.md
-@@ -257,6 +257,57 @@ opaque targets, `marmot_read_avatar_assets` for bounded local bytes (at most 16
+diff --git c/crates/marmot-c/README.md i/crates/marmot-c/README.md
+index 378f026b..12667464 100644
+--- c/crates/marmot-c/README.md
++++ i/crates/marmot-c/README.md
+@@ -257,6 +257,58 @@ opaque targets, `marmot_read_avatar_assets` for bounded local bytes (at most 16
  `marmot_clear_avatar_cache` for explicit local removal. Free returned lists with their matching
  `marmot_avatar_asset_list_free` / `marmot_avatar_bytes_list_free` functions.
  
@@ -899,7 +934,8 @@ index 378f026b..10bcc43f 100644
 +   previous signer relays in place; other errors fail connection.
 +3. Call `marmot_nip46_login` off the UI thread to create or reopen the external
 +   account. It signs real MLS identity proofs and KeyPackages through the signer.
-+   Supply default messaging relays for lists that cannot be discovered. Login
++   Supply default messaging relays for lists that cannot be discovered. Set
++   `inbox_relays` separately, or pass `NULL, 0` to use the defaults for both lists. Login
 +   may publish those defaults after directory failure, but preserves every signed
 +   list already observed, including an explicit-empty declaration. The normal
 +   local-key login path uses the same fallback policy.
@@ -936,12 +972,12 @@ index 378f026b..10bcc43f 100644
  ## History may be incomplete notices
  
  `marmot_history_notices` blocks on the account worker, reads local durable state only, and writes an owned
-diff --git a/crates/marmot-c/examples/nip46_smoke.rs b/crates/marmot-c/examples/nip46_smoke.rs
+diff --git c/crates/marmot-c/examples/nip46_smoke.rs i/crates/marmot-c/examples/nip46_smoke.rs
 new file mode 100644
-index 00000000..62cb3c7d
+index 00000000..6b037366
 --- /dev/null
-+++ b/crates/marmot-c/examples/nip46_smoke.rs
-@@ -0,0 +1,1246 @@
++++ i/crates/marmot-c/examples/nip46_smoke.rs
+@@ -0,0 +1,1233 @@
 +//! Real loopback NIP-46 smoke against the public C ABI. No public relay or keychain is used.
 +//! Run from the MDK workspace: cargo run -p marmot-c --example nip46_smoke
 +//! The fixture decrypts kind:24133 requests, signs with distinct user keys, and encrypts responses.
@@ -1323,11 +1359,6 @@ index 00000000..62cb3c7d
 +    task: tokio::task::JoinHandle<Result<()>>,
 +}
 +
-+enum DirectorySeed {
-+    Outbox,
-+    Absent,
-+}
-+
 +fn wire(author: &Keys, recipient: PublicKey, payload: &Value) -> Result<Event> {
 +    let encrypted = nip44::encrypt(
 +        author.secret_key(),
@@ -1359,7 +1390,7 @@ index 00000000..62cb3c7d
 +}
 +
 +impl Fixture {
-+    async fn start(relay: &str, next_relay: Option<&str>, seed: DirectorySeed) -> Result<Self> {
++    async fn start(relay: &str, next_relay: Option<&str>) -> Result<Self> {
 +        let bunker = Keys::generate();
 +        let user = Keys::generate();
 +        assert_ne!(bunker.public_key(), user.public_key());
@@ -1380,11 +1411,8 @@ index 00000000..62cb3c7d
 +            (Kind::InboxRelays, "relay"),
 +            (Kind::MlsKeyPackageRelays, "relay"),
 +        ] {
-+            // Neither identity has an inbox list. One advertises an outbox;
-+            // the other needs caller-authorized defaults after discovery fails.
-+            if kind == Kind::InboxRelays
-+                || (kind == Kind::RelayList && matches!(seed, DirectorySeed::Absent))
-+            {
++            // Each identity advertises an outbox but has no inbox list.
++            if kind == Kind::InboxRelays {
 +                continue;
 +            }
 +            let event = EventBuilder::new(kind, "")
@@ -1638,23 +1666,24 @@ index 00000000..62cb3c7d
 +            break;
 +        }
 +    }
-+    let evidence = fixture.controls.evidence.lock().expect("evidence mutex");
-+    assert!(
-+        evidence.peak_pending >= 2,
-+        "fixture must observe interleaved in-flight requests"
-+    );
-+    let fast = evidence
-+        .replies
-+        .iter()
-+        .position(|id| id == "smoke-fast")
-+        .expect("fast response");
-+    let slow = evidence
-+        .replies
-+        .iter()
-+        .position(|id| id == "smoke-slow")
-+        .expect("slow response");
-+    assert!(fast < slow, "fixture must deliberately answer out of order");
-+    drop(evidence);
++    {
++        let evidence = fixture.controls.evidence.lock().expect("evidence mutex");
++        assert!(
++            evidence.peak_pending >= 2,
++            "fixture must observe interleaved in-flight requests"
++        );
++        let fast = evidence
++            .replies
++            .iter()
++            .position(|id| id == "smoke-fast")
++            .expect("fast response");
++        let slow = evidence
++            .replies
++            .iter()
++            .position(|id| id == "smoke-slow")
++            .expect("slow response");
++        assert!(fast < slow, "fixture must deliberately answer out of order");
++    }
 +    client.shutdown().await;
 +    Ok(())
 +}
@@ -1741,12 +1770,8 @@ index 00000000..62cb3c7d
 +    );
 +    runtime.block_on(replacement.run())?;
 +    let replacement_url = runtime.block_on(replacement.url()).to_string();
-+    let fixture_a = runtime.block_on(Fixture::start(
-+        &relay_url,
-+        Some(&replacement_url),
-+        DirectorySeed::Outbox,
-+    ))?;
-+    let fixture_b = runtime.block_on(Fixture::start(&relay_url, None, DirectorySeed::Absent))?;
++    let fixture_a = runtime.block_on(Fixture::start(&relay_url, Some(&replacement_url)))?;
++    let fixture_b = runtime.block_on(Fixture::start(&relay_url, None))?;
 +    assert_ne!(fixture_a.bunker.public_key(), fixture_b.bunker.public_key());
 +    assert_ne!(fixture_a.user.public_key(), fixture_b.user.public_key());
 +    let root = tempfile::tempdir()?;
@@ -1931,13 +1956,12 @@ index 00000000..62cb3c7d
 +                .any(|event| event.kind == Kind::InboxRelays),
 +            "missing inbox must bootstrap through NIP46"
 +        );
-+        assert_eq!(
-+            evidence
++        assert!(
++            !evidence
 +                .signed
 +                .iter()
 +                .any(|event| event.kind == Kind::RelayList),
-+            fixture.user.public_key() == fixture_b.user.public_key(),
-+            "fallback must publish an unknown outbox but preserve an observed signed outbox"
++            "an observed signed outbox must stay unchanged"
 +        );
 +        for event in &evidence.signed {
 +            event.verify()?;
@@ -1948,9 +1972,7 @@ index 00000000..62cb3c7d
 +    println!(
 +        "PASS incomplete indexer does not veto authoritative outbox absence and remote-signed inbox bootstrap"
 +    );
-+    println!(
-+        "PASS failed relay discovery bootstraps caller defaults without overwriting observed signed lists"
-+    );
++    println!("PASS inbox bootstrap preserves the observed signed outbox");
 +
 +    let export_a = session_a.export();
 +    let export_b = session_b.export();
@@ -1990,12 +2012,8 @@ index 00000000..62cb3c7d
 +    *request_gate.0.lock().unwrap() = None;
 +    assert_ne!(rejected, MarmotStatus::Ok);
 +    assert!(
-+        detail.contains("signer request denied by relay"),
-+        "lost relay rejection: {detail}"
-+    );
-+    assert!(
-+        detail.contains(&replacement_url),
-+        "lost failed relay URL: {detail}"
++        !detail.contains("signer request denied by relay") && !detail.contains(&replacement_url),
++        "relay URLs and relay-supplied text must stay out of error details: {detail}"
 +    );
 +    check(
 +        client.profile(&account_a, "after-relay-rejection"),
@@ -2005,7 +2023,7 @@ index 00000000..62cb3c7d
 +        client.profile(&account_b, "other-after-relay-rejection"),
 +        "other signer remains usable",
 +    );
-+    println!("PASS relay rejection survives publication and the session recovers");
++    println!("PASS relay rejection stays privacy-safe and the session recovers");
 +
 +    fixture_a.controls.approval.store(true, Ordering::SeqCst);
 +    std::thread::scope(|scope| -> Result<()> {
@@ -2148,10 +2166,15 @@ index 00000000..62cb3c7d
 +    // No acknowledgement: local credentials must still be revoked, bounded by native timeout.
 +    fixture_a.controls.offline.store(true, Ordering::SeqCst);
 +    let started = std::time::Instant::now();
-+    let _courtesy_status = unsafe { marmot_nip46_logout(session_a.0) };
++    let courtesy_status = unsafe { marmot_nip46_logout(session_a.0) };
 +    assert!(
-+        started.elapsed() < Duration::from_secs(40),
++        started.elapsed() < Duration::from_secs(10),
 +        "logout must be bounded without remote acknowledgement"
++    );
++    assert_eq!(
++        courtesy_status,
++        MarmotStatus::Timeout,
++        "offline signer cannot acknowledge logout"
 +    );
 +    assert_eq!(session_a.state()["state"], "logged_out");
 +    let mut rejected = ptr::null_mut();
@@ -2188,10 +2211,10 @@ index 00000000..62cb3c7d
 +    );
 +    Ok(())
 +}
-diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
+diff --git c/crates/marmot-c/include/marmot.h i/crates/marmot-c/include/marmot.h
 index c6e9d0c3..dcad1361 100644
---- a/crates/marmot-c/include/marmot.h
-+++ b/crates/marmot-c/include/marmot.h
+--- c/crates/marmot-c/include/marmot.h
++++ i/crates/marmot-c/include/marmot.h
 @@ -1185,6 +1185,12 @@ typedef struct MarmotMessageDraftRevision MarmotMessageDraftRevision;
   */
  typedef struct MarmotMessagesSubscription MarmotMessagesSubscription;
@@ -2303,10 +2326,10 @@ index c6e9d0c3..dcad1361 100644
  /**
   * Free a value of this type returned by this library. NULL
   * is a no-op.
-diff --git a/crates/marmot-c/src/lib.rs b/crates/marmot-c/src/lib.rs
+diff --git c/crates/marmot-c/src/lib.rs i/crates/marmot-c/src/lib.rs
 index 5be90794..84ccdd66 100644
---- a/crates/marmot-c/src/lib.rs
-+++ b/crates/marmot-c/src/lib.rs
+--- c/crates/marmot-c/src/lib.rs
++++ i/crates/marmot-c/src/lib.rs
 @@ -27,6 +27,7 @@ pub mod attachment_history;
  pub mod commands;
  pub(crate) mod macros;
@@ -2315,12 +2338,12 @@ index 5be90794..84ccdd66 100644
  pub mod publisher;
  pub mod secret_store;
  pub mod status;
-diff --git a/crates/marmot-c/src/nip46.rs b/crates/marmot-c/src/nip46.rs
+diff --git c/crates/marmot-c/src/nip46.rs i/crates/marmot-c/src/nip46.rs
 new file mode 100644
-index 00000000..a16e34cc
+index 00000000..e9b3d00f
 --- /dev/null
-+++ b/crates/marmot-c/src/nip46.rs
-@@ -0,0 +1,1196 @@
++++ i/crates/marmot-c/src/nip46.rs
+@@ -0,0 +1,1204 @@
 +//! NIP-46 C sessions. Each session has an independently driven transport, so
 +//! synchronous MLS identity-proof callbacks never depend on the calling runtime.
 +
@@ -2387,18 +2410,6 @@ index 00000000..a16e34cc
 +            Self::Cancelled => "remote signer request cancelled".into(),
 +            Self::LoggedOut => "remote signer session logged out".into(),
 +            Self::Unsupported => "remote signer does not support the method".into(),
-+        }
-+    }
-+    fn ffi(self) -> MarmotKitError {
-+        match self {
-+            Self::Rejected | Self::Cancelled => MarmotKitError::ExternalSignerRejected,
-+            Self::Mismatch => MarmotKitError::ExternalSignerMismatch,
-+            Self::RelayPublish(detail) => {
-+                MarmotKitError::ExternalSignerUnavailable { account: detail }
-+            }
-+            _ => MarmotKitError::ExternalSignerUnavailable {
-+                account: self.detail().into(),
-+            },
 +        }
 +    }
 +    fn status(self) -> MarmotStatus {
@@ -2513,7 +2524,7 @@ index 00000000..a16e34cc
 +}
 +
 +impl Session {
-+    fn new(owner: Arc<Marmot>, mut config: Config) -> Result<MarmotNip46Session> {
++    fn spawn(owner: Arc<Marmot>, mut config: Config) -> Result<MarmotNip46Session> {
 +        let keys = match config.client_secret.as_deref() {
 +            Some(secret) => Keys::new(SecretKey::from_hex(secret).map_err(|_| Error::Invalid)?),
 +            None => Keys::generate(),
@@ -2684,6 +2695,20 @@ index 00000000..a16e34cc
 +    fn pinned_user(&self) -> Result<PublicKey> {
 +        lock(&self.credentials).user.ok_or(Error::Unavailable)
 +    }
++    /// `ExternalSignerUnavailable.account` is the account id, never a detail;
++    /// it stays empty before pairing pins a user.
++    fn signer_error(&self, error: Error) -> MarmotKitError {
++        match error {
++            Error::Rejected | Error::Cancelled => MarmotKitError::ExternalSignerRejected,
++            Error::Mismatch => MarmotKitError::ExternalSignerMismatch,
++            _ => MarmotKitError::ExternalSignerUnavailable {
++                account: self
++                    .pinned_user()
++                    .map(|user| user.to_hex())
++                    .unwrap_or_default(),
++            },
++        }
++    }
 +    fn export(&self) -> Result<String> {
 +        let data = lock(&self.credentials);
 +        let keys = data.keys.as_ref().ok_or(Error::LoggedOut)?;
@@ -2709,31 +2734,33 @@ index 00000000..a16e34cc
 +    ) -> std::result::Result<String, MarmotKitError> {
 +        self.call(Operation::Rpc(method, params), REQUEST_TIMEOUT)
 +            .and_then(|value| value.as_str().map(ToOwned::to_owned).ok_or(Error::Invalid))
-+            .map_err(Error::ffi)
++            .map_err(|error| self.signer_error(error))
 +    }
 +}
 +
 +impl ExternalAccountSignerFfi for Session {
 +    fn public_key(&self) -> std::result::Result<String, MarmotKitError> {
 +        if *self.cancel.borrow() || lock(&self.credentials).keys.is_none() {
-+            return Err(Error::Cancelled.ffi());
++            return Err(self.signer_error(Error::Cancelled));
 +        }
 +        // Identity lookup is offline: MDK compares this pinned user identity.
 +        // Worker activation can request a fresh proof; its first signing
 +        // operation re-verifies the user remotely on the independent transport.
 +        self.pinned_user()
 +            .map(|key| key.to_hex())
-+            .map_err(Error::ffi)
++            .map_err(|error| self.signer_error(error))
 +    }
 +    fn sign_event(
 +        &self,
 +        unsigned_event_json: String,
 +    ) -> std::result::Result<String, MarmotKitError> {
-+        let unsigned =
-+            UnsignedEvent::from_json(&unsigned_event_json).map_err(|_| Error::Invalid.ffi())?;
-+        let expected_user = self.pinned_user().map_err(Error::ffi)?;
++        let unsigned = UnsignedEvent::from_json(&unsigned_event_json)
++            .map_err(|_| self.signer_error(Error::Invalid))?;
++        let expected_user = self
++            .pinned_user()
++            .map_err(|error| self.signer_error(error))?;
 +        if unsigned.pubkey != expected_user {
-+            return Err(Error::Mismatch.ffi());
++            return Err(self.signer_error(Error::Mismatch));
 +        }
 +        // NIP-46 sends only these fields. Keep the SDK's id and pinned pubkey
 +        // locally to verify that the returned event is exactly the requested one.
@@ -2743,9 +2770,10 @@ index 00000000..a16e34cc
 +            tags: &unsigned.tags,
 +            created_at: unsigned.created_at,
 +        };
-+        let payload = serde_json::to_string(&request).map_err(|_| Error::Invalid.ffi())?;
++        let payload =
++            serde_json::to_string(&request).map_err(|_| self.signer_error(Error::Invalid))?;
 +        let result = self.rpc_string("sign_event", vec![payload])?;
-+        let event = Event::from_json(&result).map_err(|_| Error::Invalid.ffi())?;
++        let event = Event::from_json(&result).map_err(|_| self.signer_error(Error::Invalid))?;
 +        if event.pubkey != expected_user
 +            || event.kind != unsigned.kind
 +            || event.created_at != unsigned.created_at
@@ -2753,9 +2781,11 @@ index 00000000..a16e34cc
 +            || event.tags != unsigned.tags
 +            || unsigned.id.is_some_and(|id| id != event.id)
 +        {
-+            return Err(Error::Mismatch.ffi());
++            return Err(self.signer_error(Error::Mismatch));
 +        }
-+        event.verify().map_err(|_| Error::Mismatch.ffi())?;
++        event
++            .verify()
++            .map_err(|_| self.signer_error(Error::Mismatch))?;
 +        Ok(result)
 +    }
 +    fn nip04_encrypt(
@@ -2855,13 +2885,14 @@ index 00000000..a16e34cc
 +            .tag(remote)
 +            .finalize(keys)
 +            .map_err(|_| Error::Invalid)?;
-+        let output = self.client.send_event(&event).await.map_err(|error| {
-+            Error::RelayPublish(format!("NIP-46 request relay publication failed: {error}"))
++        // Relay URLs and relay-supplied text stay out of error details.
++        let output = self.client.send_event(&event).await.map_err(|_| {
++            Error::RelayPublish("NIP-46 request relay publication failed".to_owned())
 +        })?;
 +        if output.success.is_empty() {
 +            return Err(Error::RelayPublish(format!(
-+                "NIP-46 request rejected by relays: {:?}",
-+                output.failed
++                "NIP-46 request rejected by {} relay(s)",
++                output.failed.len()
 +            )));
 +        }
 +        Ok(())
@@ -2872,10 +2903,10 @@ index 00000000..a16e34cc
 +        expected: Option<PublicKey>,
 +    ) -> Result<(PublicKey, Value)> {
 +        while let Some(notification) = self.notifications.next().await {
-+            if let ClientNotification::Event { event, .. } = notification {
-+                if let Some(payload) = validated_payload(&event, keys, expected) {
-+                    return Ok((event.pubkey, payload));
-+                }
++            if let ClientNotification::Event { event, .. } = notification
++                && let Some(payload) = validated_payload(&event, keys, expected)
++            {
++                return Ok((event.pubkey, payload));
 +            }
 +        }
 +        Err(Error::Unavailable)
@@ -3180,7 +3211,7 @@ index 00000000..a16e34cc
 +            Ok(config) => config,
 +            Err(_) => return Error::Invalid.status(),
 +        };
-+        match Session::new(client.marmot.clone(), config) {
++        match Session::spawn(client.marmot.clone(), config) {
 +            Ok(session) => {
 +                unsafe { out.write(memory::boxed(session)) };
 +                MarmotStatus::Ok
@@ -3517,28 +3548,27 @@ index 00000000..a16e34cc
 +        ));
 +    }
 +}
-diff --git a/crates/transport-nostr-adapter/src/sdk_client.rs b/crates/transport-nostr-adapter/src/sdk_client.rs
-index e3e05c6b..278e74cf 100644
---- a/crates/transport-nostr-adapter/src/sdk_client.rs
-+++ b/crates/transport-nostr-adapter/src/sdk_client.rs
-@@ -3083,7 +3083,12 @@ async fn event_for_publish_with_signer(
+diff --git c/crates/transport-nostr-adapter/src/sdk_client.rs i/crates/transport-nostr-adapter/src/sdk_client.rs
+index e3e05c6b..cd6ecaa7 100644
+--- c/crates/transport-nostr-adapter/src/sdk_client.rs
++++ i/crates/transport-nostr-adapter/src/sdk_client.rs
+@@ -3083,7 +3083,11 @@ async fn event_for_publish_with_signer(
          .custom_created_at(NostrTimestamp::from_secs(event.created_at))
          .finalize_async(signer)
          .await
 -        .map_err(|_| TransportAdapterError::Publish("sign event failed".to_owned()))
-+        .map_err(|error| {
-+            TransportAdapterError::Publish(format!(
-+                "sign event failed for kind {}: {error}",
-+                event.kind
-+            ))
++        // Signer text can carry relay URLs or remote detail, and this Display
++        // reaches upper-layer logs.
++        .map_err(|_| {
++            TransportAdapterError::Publish(format!("sign event failed for kind {}", event.kind))
 +        })
  }
  
  fn parse_endpoints(
-diff --git a/docs/external-signer-accounts.md b/docs/external-signer-accounts.md
+diff --git c/docs/external-signer-accounts.md i/docs/external-signer-accounts.md
 index 3956cf93..39e699a8 100644
---- a/docs/external-signer-accounts.md
-+++ b/docs/external-signer-accounts.md
+--- c/docs/external-signer-accounts.md
++++ i/docs/external-signer-accounts.md
 @@ -20,11 +20,17 @@ account worker only after the client registers a signer callback for the account
  Public/tracked accounts have both flags set to `false`.
  
