@@ -30,6 +30,7 @@ Folder_Rule_Kind :: enum {
 	Fewer_Than, // the group has fewer than `count` people
 	More_Than, // the group has more than `count` people
 	Unread, // the chat has unread messages or a manual unread mark
+	Has_Draft, // the chat has unsent composer text saved
 }
 
 @(private)
@@ -70,7 +71,11 @@ FOLDER_RULE_LABELS := [Folder_Rule_Kind]string {
 	.Fewer_Than = N_("Fewer than"),
 	.More_Than  = N_("More than"),
 	.Unread     = N_("Has unread messages"),
+	.Has_Draft  = N_("Has a draft"),
 }
+
+@(private = "file")
+ICON_DRAFT :: "\uf044"
 
 @(private = "file")
 FOLDER_RULE_ICONS := [Folder_Rule_Kind]string {
@@ -79,6 +84,7 @@ FOLDER_RULE_ICONS := [Folder_Rule_Kind]string {
 	.Fewer_Than = ICON_PEOPLE,
 	.More_Than  = ICON_PEOPLE,
 	.Unread     = ICON_ENVELOPE,
+	.Has_Draft  = ICON_DRAFT,
 }
 
 // What the rules read about one chat, gathered once per frame.
@@ -86,6 +92,7 @@ FOLDER_RULE_ICONS := [Folder_Rule_Kind]string {
 Chat_Facts :: struct {
 	title:   string, // lowercased
 	unread:  bool,
+	draft:   bool,
 	members: []string, // pubkey hex, including you
 	known:   bool, // members were read; size rules never guess
 }
@@ -103,6 +110,8 @@ folder_rule_holds :: proc(rule: Folder_Rule, facts: Chat_Facts) -> bool {
 		return facts.known && len(facts.members) > rule.count
 	case .Unread:
 		return facts.unread
+	case .Has_Draft:
+		return facts.draft
 	}
 	return false
 }
@@ -135,6 +144,7 @@ chat_folder_slot :: proc(ui: ^Ui_State, chat: ^Chat_Row_Ui, slots: map[string]in
 	facts := Chat_Facts {
 		title   = strings.to_lower(chat.title, context.temp_allocator),
 		unread  = chat.unread > 0 || ui.prefs.unread_ids[chat.group_id],
+		draft   = chat.group_id in ui.drafts,
 		members = members,
 		known   = known,
 	}
@@ -246,7 +256,7 @@ folder_rules_store :: proc(ui: ^Ui_State, name: string, set: Folder_Rules) {
 
 @(private = "file")
 folder_rule_typed :: proc(kind: Folder_Rule_Kind) -> bool {
-	return kind != .Unread
+	return kind != .Unread && kind != .Has_Draft
 }
 
 @(private = "file")
@@ -294,7 +304,7 @@ folder_rules_load :: proc(ui: ^Ui_State, name: string) {
 			delete(npub)
 		case .Fewer_Than, .More_Than:
 			append(&draft.input, fmt.tprintf("%d", rule.count))
-		case .Unread:
+		case .Unread, .Has_Draft:
 		}
 		append(&ui.folder_rules, draft)
 	}
@@ -330,7 +340,7 @@ folder_rules_parse :: proc(ui: ^Ui_State) -> (set: Folder_Rules, bad: int, why: 
 				return {}, i, tr("Enter the number of people as a whole number and try again.")
 			}
 			rule.count = count
-		case .Unread:
+		case .Unread, .Has_Draft:
 		}
 		append(&set.rules, rule)
 	}

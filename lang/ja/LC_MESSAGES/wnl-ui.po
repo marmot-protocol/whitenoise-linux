@@ -1900,6 +1900,9 @@ msgstr "フォルダ別"
 msgid "Hard shadows"
 msgstr "くっきりした影"
 
+msgid "Has a draft"
+msgstr "下書きがある"
+
 msgid "Has member"
 msgstr "メンバーを含む"
 

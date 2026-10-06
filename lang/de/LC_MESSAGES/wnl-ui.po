@@ -1900,6 +1900,9 @@ msgstr "Gruppiert"
 msgid "Hard shadows"
 msgstr "Harte Schatten"
 
+msgid "Has a draft"
+msgstr "Hat einen Entwurf"
+
 msgid "Has member"
 msgstr "Hat Mitglied"
 

@@ -1899,6 +1899,9 @@ msgstr ""
 msgid "Hard shadows"
 msgstr ""
 
+msgid "Has a draft"
+msgstr ""
+
 msgid "Has member"
 msgstr ""
 

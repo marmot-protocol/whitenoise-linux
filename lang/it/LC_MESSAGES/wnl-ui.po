@@ -1900,6 +1900,9 @@ msgstr "Raggruppate"
 msgid "Hard shadows"
 msgstr "Ombre nette"
 
+msgid "Has a draft"
+msgstr "Ha una bozza"
+
 msgid "Has member"
 msgstr "Ha il membro"
 

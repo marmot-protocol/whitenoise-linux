@@ -90,11 +90,15 @@ chat_folder_sections_keep_order_and_count_unread :: proc(t: ^testing.T) {
 @(test)
 folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
 	ui: Ui_State
-	append(&ui.prefs.folders, "Unread", "Small", "Acme")
+	append(&ui.prefs.folders, "Unread", "Drafts", "Small", "Acme")
 	unread := Folder_Rules {
 		match = .Any,
 	}
 	append(&unread.rules, Folder_Rule{kind = .Unread})
+	drafts := Folder_Rules {
+		match = .Any,
+	}
+	append(&drafts.rules, Folder_Rule{kind = .Has_Draft})
 	small := Folder_Rules {
 		match = .All,
 	}
@@ -112,6 +116,7 @@ folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
 		Folder_Rule{kind = .More_Than, count = 10},
 	)
 	ui.prefs.folder_rules["Unread"] = unread
+	ui.prefs.folder_rules["Drafts"] = drafts
 	ui.prefs.folder_rules["Small"] = small
 	ui.prefs.folder_rules["Acme"] = acme
 	append(
@@ -125,10 +130,13 @@ folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
 		Chat_Row_Ui{group_id = "big", title = "Town hall"},
 		Chat_Row_Ui{group_id = "stale", title = "acme ops"},
 		Chat_Row_Ui{group_id = "kept-unfiled", title = "Acme alerts", unread = 2},
+		Chat_Row_Ui{group_id = "drafted", title = "Acme planning"},
 	)
 	ui.prefs.folder_of["placed"] = "Acme" // by hand, over the Unread rule
 	ui.prefs.folder_of["stale"] = "Removed folder" // gone, so rules decide
 	ui.prefs.folder_of["kept-unfiled"] = "" // by hand into Unfiled, over every rule
+	ui.drafts["drafted"] = "see you at 5"
+	ui.drafts["unread"] = "later"
 	big := make([]string, 11)
 	for &id in big {id = "someone"}
 	ui.chat_members["dm-bob"] = []string{"me", "bob"}
@@ -137,24 +145,27 @@ folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
 	defer {
 		delete(ui.prefs.folders)
 		delete(unread.rules)
+		delete(drafts.rules)
 		delete(small.rules)
 		delete(acme.rules)
 		delete(ui.prefs.folder_rules)
 		delete(ui.prefs.folder_of)
+		delete(ui.drafts)
 		delete(ui.chats)
 		delete(big)
 		delete(ui.chat_members)
 	}
 
-	order := []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
+	order := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 	sections, grouped := chat_folder_sections(&ui, order, context.allocator)
 	defer delete(sections)
 	defer delete(grouped)
-	if !testing.expect_value(t, len(sections), 4) {return}
+	if !testing.expect_value(t, len(sections), 5) {return}
 
-	// "unread" also names Acme, but Unread comes first in folder order.
+	// "unread" also names Acme and has a draft, but Unread comes first in
+	// folder order. "drafted" names Acme too, but Drafts comes first.
 	// "unread-members" has no member list yet, so no size rule holds.
-	expected := [][]int{{1}, {2}, {0, 5, 6, 7}, {3, 4, 8}}
+	expected := [][]int{{1}, {9}, {2}, {0, 5, 6, 7}, {3, 4, 8}}
 	for rows, slot in expected {
 		section := sections[slot]
 		if !testing.expect_value(t, section.count, len(rows)) {continue}
