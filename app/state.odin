@@ -714,7 +714,7 @@ Ui_State :: struct {
 	keys_nsec_show:                                        bool, // its unmask toggle
 	keys_confirm:                                          string, // armed danger button id ("" = none)
 	audit_enabled:                                         bool, // marmot audit_log_settings.enabled
-	telemetry_enabled:                                     bool, // marmot relay_telemetry_settings.export_enabled
+	telemetry_enabled:                                     bool, // marmot diagnostics_settings.decision == .Granted
 	audit_files:                                           [dynamic]Audit_File, // audit-*.jsonl on disk
 	audit_scanned:                                         bool,
 	debug_tab:                                             int, // 0 = state, 1 = raw events, 2 = key packages

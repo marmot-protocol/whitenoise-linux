@@ -350,11 +350,6 @@ Chat_List_Row :: struct {
 	leave_requested_at_ms:       u64,
 }
 
-Chat_List_Row_List :: struct {
-	items: [^]Chat_List_Row,
-	len:   uint,
-}
-
 // Selected names and avatars from the runtime, including unnamed DMs.
 Presentation_Text :: struct {
 	tag:  enum i32 {
@@ -1180,11 +1175,6 @@ Account_Summary_List :: struct {
 
 // ── Observability: relay telemetry + audit logs ──────────────────────
 
-Relay_Telemetry_Settings :: struct {
-	export_enabled:          bool,
-	export_interval_seconds: u64,
-}
-
 // OTLP route for the telemetry exporter. Borrowed input.
 Relay_Telemetry_Resource :: struct {
 	service_version:         cstring,
@@ -1286,10 +1276,7 @@ foreign lib {
 
 	// Observability. The *_settings pairs gate whether anything is
 	// recorded or sent; the *_config calls only say where it would go.
-	relay_telemetry_settings :: proc(client: ^Client, out: ^^Relay_Telemetry_Settings) -> Status ---
-	set_relay_telemetry_settings :: proc(client: ^Client, settings: ^Relay_Telemetry_Settings, out: ^^Relay_Telemetry_Settings) -> Status ---
 	set_relay_telemetry_runtime_config :: proc(client: ^Client, config: ^Relay_Telemetry_Runtime_Config) -> Status ---
-	relay_telemetry_settings_free :: proc(ptr: ^Relay_Telemetry_Settings) ---
 	telemetry_install_id :: proc(client: ^Client, out: ^cstring) -> Status ---
 
 	audit_log_settings :: proc(client: ^Client, out: ^^Audit_Log_Settings) -> Status ---
@@ -1464,9 +1451,7 @@ foreign lib {
 	parse_markdown :: proc(client: ^Client, text: cstring, out: ^^Markdown_Document) -> Status ---
 	markdown_document_free :: proc(ptr: ^Markdown_Document) ---
 
-	chat_list :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out: ^^Chat_List_Row_List) -> Status ---
 	chat_list_row_free :: proc(ptr: ^Chat_List_Row) ---
-	chat_list_row_list_free :: proc(list: ^Chat_List_Row_List) ---
 	presented_chat_list :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out: ^^Presented_Chat_List) -> Status ---
 	@(link_name = "marmot_presented_chat_list_snapshot_free")
 	presented_chat_list_free :: proc(list: ^Presented_Chat_List) ---
