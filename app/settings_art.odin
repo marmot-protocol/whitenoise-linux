@@ -29,6 +29,7 @@ Settings_Art :: enum {
 	Security,
 	Privacy,
 	Audit_Logs,
+	Agents,
 }
 
 // Debug and KP reuse the toolbox and identity illustrations respectively.
@@ -47,6 +48,7 @@ SECTION_ART := [Settings_Section]Settings_Art {
 	.About         = .About,
 	.Debug         = .Advanced,
 	.KP            = .Keys,
+	.Agents        = .Agents,
 }
 
 // Original artwork. SVG sources and the embedded transparent PNGs live
@@ -78,6 +80,7 @@ SETTINGS_ART := [Settings_Art]struct {
 	.Security      = {"settings-art://security", #load("assets/settings/security.png")},
 	.Privacy       = {"settings-art://privacy", #load("assets/settings/privacy.png")},
 	.Audit_Logs    = {"settings-art://audit-logs", #load("assets/settings/audit-logs.png")},
+	.Agents        = {"settings-art://agents", #load("assets/settings/agents.png")},
 }
 
 @(private)

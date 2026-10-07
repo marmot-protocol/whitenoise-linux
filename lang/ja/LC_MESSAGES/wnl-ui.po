@@ -152,6 +152,10 @@ msgid "%s dismissed %s as admin"
 msgstr "%sさんが%sさんの管理者権限を解除しました"
 
 #, c-format
+msgid "%s guide"
+msgstr "%sのガイド"
+
+#, c-format
 msgid "%s is no longer an admin"
 msgstr "%sさんは管理者ではなくなりました"
 
@@ -247,6 +251,9 @@ msgstr "操作"
 msgid "ACTIVE"
 msgstr "使用中"
 
+msgid "AI agents"
+msgstr "AIエージェント"
+
 msgid "ANIMATION"
 msgstr "アニメーション"
 
@@ -323,6 +330,9 @@ msgstr "管理者はメンバーの追加や削除、グループ情報の変更
 
 msgid "Advanced"
 msgstr "詳細"
+
+msgid "Agent connector documentation"
+msgstr "エージェントコネクターのドキュメント"
 
 msgid "Aggregate connection counter from the relay pool."
 msgstr "リレープール全体の接続数です。"
@@ -458,6 +468,9 @@ msgstr "チャットに戻る"
 
 msgid "Back to chats"
 msgstr "チャットに戻る"
+
+msgid "Back to connectors"
+msgstr "コネクターに戻る"
 
 msgid "Back to issues"
 msgstr "報告の一覧に戻る"
@@ -638,6 +651,9 @@ msgstr "チャット一覧の読み込みに失敗しました: %s"
 msgid "Chat options"
 msgstr "チャットのオプション"
 
+msgid "Chat with AI agents, end-to-end encrypted like any other chat. Each agent runs on a computer or server you control, using its own account."
+msgstr "AIエージェントとのチャットも、他のチャットと同様にエンドツーエンドで暗号化されます。各エージェントは、あなたが管理するコンピューターやサーバー上で、専用のアカウントを使って動作します。"
+
 #, c-format
 msgid "Chat: %s"
 msgstr "チャット: %s"
@@ -741,6 +757,9 @@ msgstr "公開先を選択"
 msgid "Circle"
 msgstr "円"
 
+msgid "Claude Code CLI coding agent"
+msgstr "Claude Code CLIのコーディングエージェント"
+
 msgid "Clear cache"
 msgstr "キャッシュを消去"
 
@@ -837,6 +856,15 @@ msgstr "表示を確認"
 msgid "Confirm: delete this vault"
 msgstr "確認: この保管庫を削除"
 
+msgid "Connect an AI agent"
+msgstr "AIエージェントを接続"
+
+msgid "Connect an AI agent using your public key and a setup prompt."
+msgstr "公開鍵とセットアップ用プロンプトを使ってAIエージェントを接続します。"
+
+msgid "Connect an agent you run and trust."
+msgstr "ご自身で運用する信頼できるエージェントを接続します。"
+
 msgid "Connect to relays"
 msgstr "リレーに接続"
 
@@ -866,6 +894,9 @@ msgstr "リモート署名者に接続しています。このアカウントを
 
 msgid "Connection cancelled."
 msgstr "接続をキャンセルしました。"
+
+msgid "Connector guide"
+msgstr "コネクターガイド"
 
 msgid "Contact"
 msgstr "連絡先"
@@ -922,6 +953,12 @@ msgstr "npub をコピー"
 
 msgid "Copy pairing link"
 msgstr "ペアリングリンクをコピー"
+
+msgid "Copy prompt"
+msgstr "プロンプトをコピー"
+
+msgid "Copy public key"
+msgstr "公開鍵をコピー"
 
 msgid "Copy text"
 msgstr "テキストをコピー"
@@ -2064,6 +2101,12 @@ msgstr "現在のセッションを調べる"
 msgid "Inspect the current session."
 msgstr "現在のセッションを確認します。"
 
+msgid "Install and verify"
+msgstr "インストールと検証"
+
+msgid "Install scripts, health checks, and troubleshooting."
+msgstr "インストールスクリプト、動作確認、トラブルシューティング。"
+
 msgid "Interface"
 msgstr "インターフェース"
 
@@ -2320,6 +2363,9 @@ msgstr "Namecoin名を検索しています。"
 
 msgid "Looking up..."
 msgstr "検索中..."
+
+msgid "MANUAL SETUP"
+msgstr "手動セットアップ"
 
 msgid "MATERIAL CHANNELS"
 msgstr "マテリアルチャンネル"
@@ -2694,6 +2740,9 @@ msgstr "アクセント上の文字"
 msgid "On sale"
 msgstr "販売中"
 
+msgid "Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest."
+msgstr "エージェントからnpubを受け取ったら、「新しいチャット」から会話を始めてください。以降の手順はコネクターのドキュメントをご覧ください。"
+
 msgid "One-tap reactions"
 msgstr "ワンタップリアクション"
 
@@ -2738,6 +2787,12 @@ msgstr "位置情報を開くサービス"
 
 msgid "Open this link?"
 msgstr "このリンクを開きますか？"
+
+msgid "Open-source coding agent"
+msgstr "オープンソースのコーディングエージェント"
+
+msgid "OpenAI Codex CLI coding agent"
+msgstr "OpenAI Codex CLIのコーディングエージェント"
 
 msgid "Opening in your browser"
 msgstr "ブラウザで開いています"
@@ -2813,6 +2868,10 @@ msgstr "パネル 2"
 
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "パックのリンクを貼り付けると、追加する前にステッカーを確認できます。"
+
+#, c-format
+msgid "Paste this into %s. Review the installation plan before approving changes."
+msgstr "このプロンプトを%sに貼り付けてください。変更を承認する前に、インストール計画を確認してください。"
 
 msgid "Path copied"
 msgstr "パスをコピーしました"
@@ -2962,8 +3021,14 @@ msgstr "プロジェクト"
 msgid "Promote"
 msgstr "管理者にする"
 
+msgid "Prompt copied. Paste it into your agent."
+msgstr "プロンプトをコピーしました。エージェントに貼り付けてください。"
+
 msgid "Public key (npub)"
 msgstr "公開鍵 (npub)"
+
+msgid "Public key copied"
+msgstr "公開鍵をコピーしました"
 
 msgid "Public key, safe to share."
 msgstr "公開鍵。共有して問題ありません。"
@@ -3220,6 +3285,9 @@ msgstr "秘密鍵を表示 (nsec)"
 msgid "Reveal your secret key"
 msgstr "秘密鍵を表示"
 
+msgid "Review and approve"
+msgstr "確認と承認"
+
 msgid "Review signer approval link"
 msgstr "署名者の承認リンクを確認"
 
@@ -3430,6 +3498,9 @@ msgstr "報告を選択"
 msgid "Select an issue to read its discussion."
 msgstr "報告を選択すると、その議論を読めます。"
 
+msgid "Self-hosted personal AI assistant"
+msgstr "セルフホスト型のパーソナルAIアシスタント"
+
 msgid "Send"
 msgstr "送信"
 
@@ -3471,6 +3542,10 @@ msgstr "9月"
 msgid "Set"
 msgstr "設定済み"
 
+#, c-format
+msgid "Set up %s"
+msgstr "%sをセットアップ"
+
 msgid "Settings"
 msgstr "設定"
 
@@ -3497,6 +3572,9 @@ msgstr "設定: 通知"
 
 msgid "Settings: storage"
 msgstr "設定: ストレージ"
+
+msgid "Setup prompts for connecting an AI agent to White Noise."
+msgstr "AIエージェントをWhite Noiseに接続するためのセットアップ用プロンプトです。"
 
 msgid "Shadow card"
 msgstr "影（カード）"
@@ -3764,6 +3842,9 @@ msgstr "タスク"
 msgid "Teal"
 msgstr "青緑"
 
+msgid "Terminal agent by Nous Research"
+msgstr "Nous Researchのターミナルエージェント"
+
 #, c-format
 msgid "Terrain: %d/5"
 msgstr "地形: %d/5"
@@ -3852,6 +3933,9 @@ msgstr "%sにテーマを共有しました"
 msgid "Themes, text size, and the look of your conversations."
 msgstr "テーマ、文字サイズ、会話の見た目を設定します。"
 
+msgid "These are installation prompts. Choose your agent, review its prompt, and paste it into that agent to connect it to White Noise. The prompt includes your public npub, never your private key, and asks the agent to explain the connector before requesting your approval to install it. Use only an agent you run and trust."
+msgstr "これらはインストール用のプロンプトです。エージェントを選び、プロンプトの内容を確認してから、そのエージェントに貼り付けてWhite Noiseに接続してください。プロンプトには公開npubが含まれますが、秘密鍵は決して含まれません。また、インストールの承認を求める前にコネクターについて説明するよう、エージェントに指示します。ご自身で運用する信頼できるエージェントのみを使用してください。"
+
 msgid "They can be added to a chat."
 msgstr "チャットに追加できます。"
 
@@ -3866,6 +3950,26 @@ msgstr "このグループの新しいメッセージにアクセスできなく
 
 msgid "They stay in the group as a regular member."
 msgstr "一般メンバーとしてグループに残ります。"
+
+#, c-format
+msgid "This is an installation prompt for connecting this Claude Code setup to White Noise through Marmot. Read the authoritative Claude Code harness guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/claude/marmot/README.md and the evergreen connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Confirm prerequisites: Claude Code CLI is installed, authenticated, and available on PATH, and this machine uses the same public relay set as my current account in the White Noise app. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, use the checksum-verified install-claude-marmot.sh release flow, bootstrap wn-agent for that npub with the allowed welcomer, and verify wn-claude --version. Then reply with your agent npub and ask me to invite it from White Noise and send a test message from this allowed npub over the configured relays. Do not report setup complete until wn-claude returns a reply through White Noise; if that round trip cannot be verified automatically, clearly mark device verification required."
+msgstr "これは、このClaude Code環境をMarmot経由でWhite Noiseに接続するためのインストール用プロンプトです。https://github.com/marmot-protocol/mdk/blob/master/integrations/claude/marmot/README.md にある公式のClaude Codeハーネスガイドと、https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md にある継続更新のコネクターガイドを読んでください。コネクターの仕組みと、インストールによって何が変更されるかを私に説明してください。前提条件を確認してください。Claude Code CLIがインストール済みで、認証済みかつPATHから実行できること、そしてこのマシンがWhite Noiseアプリで現在使用している私のアカウントと同じ公開リレー群を使用していることが必要です。その後、私の公開npub: %s を使ったインストール手順を提案し、変更を加える前に私の承認を求めてください。私が承認したら、チェックサムで検証されたinstall-claude-marmot.shのリリース版インストール手順を使用し、許可されたwelcomerを指定してそのnpub用のwn-agentを初期設定し、wn-claude --versionを確認してください。その後、エージェントのnpubを返信し、White Noiseからそのエージェントを招待して、この許可されたnpubから設定済みのリレー経由でテストメッセージを送るよう私に依頼してください。wn-claudeがWhite Noiseを通じて返信するまで、セットアップ完了と報告しないでください。この往復通信を自動で検証できない場合は、端末での検証が必要であることを明記してください。"
+
+#, c-format
+msgid "This is an installation prompt for connecting this Codex setup to White Noise through Marmot. Read the authoritative Codex harness guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/codex/marmot/README.md and the evergreen connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Confirm prerequisites: Codex CLI is installed, authenticated, and available on PATH, and this machine uses the same public relay set as my current account in the White Noise app. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, use the checksum-verified install-codex-marmot.sh release flow, bootstrap wn-agent for that npub with the allowed welcomer, and verify wn-codex --version. Then reply with your agent npub and ask me to invite it from White Noise and send a test message from this allowed npub over the configured relays. Do not report setup complete until wn-codex returns a reply through White Noise; if that round trip cannot be verified automatically, clearly mark device verification required."
+msgstr "これは、このCodex環境をMarmot経由でWhite Noiseに接続するためのインストール用プロンプトです。https://github.com/marmot-protocol/mdk/blob/master/integrations/codex/marmot/README.md にある公式のCodexハーネスガイドと、https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md にある継続更新のコネクターガイドを読んでください。コネクターの仕組みと、インストールによって何が変更されるかを私に説明してください。前提条件を確認してください。Codex CLIがインストール済みで、認証済みかつPATHから実行できること、そしてこのマシンがWhite Noiseアプリで現在使用している私のアカウントと同じ公開リレー群を使用していることが必要です。その後、私の公開npub: %s を使ったインストール手順を提案し、変更を加える前に私の承認を求めてください。私が承認したら、チェックサムで検証されたinstall-codex-marmot.shのリリース版インストール手順を使用し、許可されたwelcomerを指定してそのnpub用のwn-agentを初期設定し、wn-codex --versionを確認してください。その後、エージェントのnpubを返信し、White Noiseからそのエージェントを招待して、この許可されたnpubから設定済みのリレー経由でテストメッセージを送るよう私に依頼してください。wn-codexがWhite Noiseを通じて返信するまで、セットアップ完了と報告しないでください。この往復通信を自動で検証できない場合は、端末での検証が必要であることを明記してください。"
+
+#, c-format
+msgid "This is an installation prompt for connecting this Hermes installation to White Noise through Marmot. Read the latest connector guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/hermes/marmot/README.md / https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, install and verify the connector, then reply with your agent npub. Before proposing changes, confirm the intended Hermes profile, Hermes home, Marmot home/socket, agent account and service, and gateway instance; do not assume the default profile or overwrite another installation. Use the checksum-verified Hermes installer flow. Distinguish invite authorization from message-sender authorization. Guide me through the invitation from my current account in the White Noise app and a test message, and verify that the selected profile replies in White Noise before calling pairing complete."
+msgstr "これは、このHermes環境をMarmot経由でWhite Noiseに接続するためのインストール用プロンプトです。https://github.com/marmot-protocol/mdk/blob/master/integrations/hermes/marmot/README.md / https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md にある最新のコネクターガイドを読んでください。コネクターの仕組みと、インストールによって何が変更されるかを私に説明してください。その後、私の公開npub: %s を使ったインストール手順を提案し、変更を加える前に私の承認を求めてください。私が承認したら、コネクターをインストールして検証し、エージェントのnpubを返信してください。変更を提案する前に、対象のHermesプロファイル、Hermesホーム、Marmotホームとソケット、エージェントのアカウントとサービス、ゲートウェイインスタンスを確認してください。デフォルトのプロファイルを使うと決めつけたり、別のインストール環境を上書きしたりしないでください。チェックサムで検証されたHermesインストーラーの手順を使用してください。招待の認可とメッセージ送信者の認可を区別してください。White Noiseアプリで現在使用している私のアカウントからの招待とテストメッセージの送信を案内し、選択したプロファイルがWhite Noiseで返信することを確認してから、ペアリング完了としてください。"
+
+#, c-format
+msgid "This is an installation prompt for connecting this OpenClaw instance to White Noise through Marmot. Read the latest connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, install and verify the connector, then reply with your agent npub."
+msgstr "これは、このOpenClawインスタンスをMarmot経由でWhite Noiseに接続するためのインストール用プロンプトです。https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md にある最新のコネクターガイドを読んでください。コネクターの仕組みと、インストールによって何が変更されるかを私に説明してください。その後、私の公開npub: %s を使ったインストール手順を提案し、変更を加える前に私の承認を求めてください。私が承認したら、コネクターをインストールして検証し、エージェントのnpubを返信してください。"
+
+#, c-format
+msgid "This is an installation prompt for connecting this OpenCode setup to White Noise through Marmot. Read the latest connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, install and verify the connector, then reply with your agent npub."
+msgstr "これは、このOpenCode環境をMarmot経由でWhite Noiseに接続するためのインストール用プロンプトです。https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md にある最新のコネクターガイドを読んでください。コネクターの仕組みと、インストールによって何が変更されるかを私に説明してください。その後、私の公開npub: %s を使ったインストール手順を提案し、変更を加える前に私の承認を求めてください。私が承認したら、コネクターをインストールして検証し、エージェントのnpubを返信してください。"
 
 msgid "This is what a message alert looks like."
 msgstr "メッセージ通知はこのように表示されます。"
@@ -3911,6 +4015,10 @@ msgid "Timings"
 msgstr "処理時間"
 
 msgid "Title"
+msgstr "タイトル"
+
+#, fuzzy
+msgid "Title font"
 msgstr "タイトル"
 
 msgid "Today"
@@ -4036,6 +4144,9 @@ msgstr "アップロード済みの絵文字"
 msgid "Uploading picture"
 msgstr "画像をアップロードしています"
 
+msgid "Use a separate group for each project and start with its location and context. Session controls vary by connector; check its guide before using resume or branch commands."
+msgstr "プロジェクトごとに別のグループを使い、最初にプロジェクトの場所と背景情報を伝えてください。セッションの操作方法はコネクターによって異なります。再開や分岐のコマンドを使う前に、そのコネクターのガイドを確認してください。"
+
 msgid "Use a shorter search."
 msgstr "検索キーワードを短くしてください。"
 
@@ -4044,6 +4155,9 @@ msgstr "別の鍵を使う"
 
 msgid "Use emoji image"
 msgstr "絵文字の画像を使用"
+
+msgid "Use only an agent you run and trust. Your private key is never included."
+msgstr "ご自身で運用する信頼できるエージェントだけに使用してください。秘密鍵は決して含まれません。"
 
 msgid "Use this theme"
 msgstr "このテーマを使う"
@@ -4291,6 +4405,12 @@ msgstr "秘密鍵はリモート署名者に保存されます。この端末で
 
 msgid "Your profile"
 msgstr "あなたのプロフィール"
+
+msgid "Your public key"
+msgstr "あなたの公開鍵"
+
+msgid "Your public key is unavailable. Choose another account and try again."
+msgstr "公開鍵を取得できません。別のアカウントを選んで、もう一度お試しください。"
 
 msgid "Your public key. Safe to share."
 msgstr "公開鍵。共有して問題ありません。"

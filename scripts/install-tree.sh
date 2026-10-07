@@ -29,6 +29,7 @@ if [ -n "$SPEECH" ]; then cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$PREFIX/
 mkdir -p "$RES/licenses"
 cp "$HERE/build/wn-font" "$HERE/build/wn-image" "$HERE/build/wn-archive" "$HERE/build/wn-pdf" \
   "$HERE/build/wn-mesh" "$HERE/build/wn-fbx" "$HERE/build/wn-math" "$HERE/build/wn-nes" "$RES/"
+cp "$HERE/app/assets/agents/"*-LICENSE.txt "$RES/licenses/"
 cp "$HERE/vendor/crop-circles/LICENSE" "$RES/licenses/crop-circles.txt"
 cp "$HERE/vendor/common-passwords.LICENSE" "$RES/licenses/seclists.txt"
 cp "$HERE/vendor/crop-circles/README.txt" "$RES/licenses/crop-circles-notices.txt"

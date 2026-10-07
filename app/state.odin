@@ -737,6 +737,7 @@ Ui_State :: struct {
 	settings_tab:                                          int,
 	settings_anchor:                                       string, // borrowed control ID for a task link
 	settings_scroll_pending:                               bool,
+	agent_connector:                                       int, // 0 = connector list; 1..5 = prompt review
 	prefs:                                                 Prefs, // settings-page knobs (settings.odin)
 	tts:                                                   Tts_State,
 	stt:                                                   Stt_State,

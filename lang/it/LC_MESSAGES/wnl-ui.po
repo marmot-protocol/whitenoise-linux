@@ -152,6 +152,10 @@ msgid "%s dismissed %s as admin"
 msgstr "%s ha revocato il ruolo di admin a %s"
 
 #, c-format
+msgid "%s guide"
+msgstr "Guida di %s"
+
+#, c-format
 msgid "%s is no longer an admin"
 msgstr "%s non è più admin"
 
@@ -247,6 +251,9 @@ msgstr "AZIONI"
 msgid "ACTIVE"
 msgstr "ATTIVO"
 
+msgid "AI agents"
+msgstr "Agenti IA"
+
 msgid "ANIMATION"
 msgstr "ANIMAZIONE"
 
@@ -323,6 +330,9 @@ msgstr "Gli admin possono aggiungere e rimuovere membri e modificare i dettagli 
 
 msgid "Advanced"
 msgstr "Avanzate"
+
+msgid "Agent connector documentation"
+msgstr "Documentazione del connettore per agenti"
 
 msgid "Aggregate connection counter from the relay pool."
 msgstr "Contatore connessioni aggregato dal pool relay."
@@ -458,6 +468,9 @@ msgstr "Torna alla chat"
 
 msgid "Back to chats"
 msgstr "Torna alle chat"
+
+msgid "Back to connectors"
+msgstr "Torna ai connettori"
 
 msgid "Back to issues"
 msgstr "Torna alle segnalazioni"
@@ -638,6 +651,9 @@ msgstr "Caricamento dell'elenco chat non riuscito: %s"
 msgid "Chat options"
 msgstr "Opzioni chat"
 
+msgid "Chat with AI agents, end-to-end encrypted like any other chat. Each agent runs on a computer or server you control, using its own account."
+msgstr "Chatta con gli agenti IA con crittografia end-to-end, come in qualsiasi altra chat. Ogni agente viene eseguito su un computer o server che controlli, usando un proprio account."
+
 #, c-format
 msgid "Chat: %s"
 msgstr "Chat: %s"
@@ -741,6 +757,9 @@ msgstr "Scegli dove pubblichi"
 msgid "Circle"
 msgstr "Cerchio"
 
+msgid "Claude Code CLI coding agent"
+msgstr "Agente di programmazione Claude Code CLI"
+
 msgid "Clear cache"
 msgstr "Svuota cache"
 
@@ -837,6 +856,15 @@ msgstr "Conferma e mostra"
 msgid "Confirm: delete this vault"
 msgstr "Conferma: elimina questa cassaforte"
 
+msgid "Connect an AI agent"
+msgstr "Collega un agente IA"
+
+msgid "Connect an AI agent using your public key and a setup prompt."
+msgstr "Collega un agente IA usando la tua chiave pubblica e un prompt di configurazione."
+
+msgid "Connect an agent you run and trust."
+msgstr "Collega un agente che gestisci e di cui ti fidi."
+
 msgid "Connect to relays"
 msgstr "Connettiti ai relay"
 
@@ -866,6 +894,9 @@ msgstr "Connessione al tuo firmatario remoto in corso. Approva la connessione ne
 
 msgid "Connection cancelled."
 msgstr "Connessione annullata."
+
+msgid "Connector guide"
+msgstr "Guida del connettore"
 
 msgid "Contact"
 msgstr "Contatto"
@@ -922,6 +953,12 @@ msgstr "Copia npub"
 
 msgid "Copy pairing link"
 msgstr "Copia link di abbinamento"
+
+msgid "Copy prompt"
+msgstr "Copia prompt"
+
+msgid "Copy public key"
+msgstr "Copia chiave pubblica"
 
 msgid "Copy text"
 msgstr "Copia testo"
@@ -2064,6 +2101,12 @@ msgstr "Esamina la sessione corrente"
 msgid "Inspect the current session."
 msgstr "Esamina la sessione corrente."
 
+msgid "Install and verify"
+msgstr "Installa e verifica"
+
+msgid "Install scripts, health checks, and troubleshooting."
+msgstr "Script di installazione, controlli di funzionamento e risoluzione dei problemi."
+
 msgid "Interface"
 msgstr "Interfaccia"
 
@@ -2320,6 +2363,9 @@ msgstr "Ricerca del nome Namecoin in corso."
 
 msgid "Looking up..."
 msgstr "Ricerca in corso..."
+
+msgid "MANUAL SETUP"
+msgstr "CONFIGURAZIONE MANUALE"
 
 msgid "MATERIAL CHANNELS"
 msgstr "CANALI DEL MATERIALE"
@@ -2694,6 +2740,9 @@ msgstr "Su accento"
 msgid "On sale"
 msgstr "In vendita"
 
+msgid "Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest."
+msgstr "Quando l'agente ti fornisce il suo npub, usa Nuova chat per avviare una conversazione con lui. La documentazione del connettore spiega il resto."
+
 msgid "One-tap reactions"
 msgstr "Reazioni con un tocco"
 
@@ -2738,6 +2787,12 @@ msgstr "Apri le posizioni in"
 
 msgid "Open this link?"
 msgstr "Aprire questo link?"
+
+msgid "Open-source coding agent"
+msgstr "Agente di programmazione open source"
+
+msgid "OpenAI Codex CLI coding agent"
+msgstr "Agente di programmazione OpenAI Codex CLI"
 
 msgid "Opening in your browser"
 msgstr "Apertura nel browser"
@@ -2813,6 +2868,10 @@ msgstr "Pannello 2"
 
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "Incolla il link di un pacchetto per vedere gli adesivi prima di aggiungerlo."
+
+#, c-format
+msgid "Paste this into %s. Review the installation plan before approving changes."
+msgstr "Incolla questo prompt in %s. Verifica il piano di installazione prima di approvare le modifiche."
 
 msgid "Path copied"
 msgstr "Percorso copiato"
@@ -2962,8 +3021,14 @@ msgstr "Progetti"
 msgid "Promote"
 msgstr "Promuovi"
 
+msgid "Prompt copied. Paste it into your agent."
+msgstr "Prompt copiato. Incollalo nel tuo agente."
+
 msgid "Public key (npub)"
 msgstr "Chiave pubblica (npub)"
+
+msgid "Public key copied"
+msgstr "Chiave pubblica copiata"
 
 msgid "Public key, safe to share."
 msgstr "Chiave pubblica, sicura da condividere."
@@ -3220,6 +3285,9 @@ msgstr "Mostra chiave privata (nsec)"
 msgid "Reveal your secret key"
 msgstr "Mostra la tua chiave segreta"
 
+msgid "Review and approve"
+msgstr "Verifica e approva"
+
 msgid "Review signer approval link"
 msgstr "Controlla il link di approvazione del firmatario"
 
@@ -3430,6 +3498,9 @@ msgstr "Seleziona una segnalazione"
 msgid "Select an issue to read its discussion."
 msgstr "Seleziona una segnalazione per leggere la discussione."
 
+msgid "Self-hosted personal AI assistant"
+msgstr "Assistente IA personale ospitato sul tuo computer o server"
+
 msgid "Send"
 msgstr "Invia"
 
@@ -3471,6 +3542,10 @@ msgstr "set"
 msgid "Set"
 msgstr "Impostata"
 
+#, c-format
+msgid "Set up %s"
+msgstr "Configura %s"
+
 msgid "Settings"
 msgstr "Impostazioni"
 
@@ -3497,6 +3572,9 @@ msgstr "Impostazioni: notifiche"
 
 msgid "Settings: storage"
 msgstr "Impostazioni: archiviazione"
+
+msgid "Setup prompts for connecting an AI agent to White Noise."
+msgstr "Prompt di configurazione per collegare un agente IA a White Noise."
 
 msgid "Shadow card"
 msgstr "Ombra scheda"
@@ -3764,6 +3842,9 @@ msgstr "Attività"
 msgid "Teal"
 msgstr "Verde acqua"
 
+msgid "Terminal agent by Nous Research"
+msgstr "Agente da terminale di Nous Research"
+
 #, c-format
 msgid "Terrain: %d/5"
 msgstr "Terreno: %d/5"
@@ -3852,6 +3933,9 @@ msgstr "Tema condiviso con %s"
 msgid "Themes, text size, and the look of your conversations."
 msgstr "Temi, dimensione del testo e aspetto delle tue conversazioni."
 
+msgid "These are installation prompts. Choose your agent, review its prompt, and paste it into that agent to connect it to White Noise. The prompt includes your public npub, never your private key, and asks the agent to explain the connector before requesting your approval to install it. Use only an agent you run and trust."
+msgstr "Questi sono prompt di installazione. Scegli il tuo agente, leggi il suo prompt e incollalo nell'agente per collegarlo a White Noise. Il prompt include il tuo npub pubblico, mai la tua chiave privata, e chiede all'agente di spiegare il connettore prima di richiedere la tua approvazione per installarlo. Usa solo un agente che gestisci e di cui ti fidi."
+
 msgid "They can be added to a chat."
 msgstr "Può essere aggiunto a una chat."
 
@@ -3866,6 +3950,26 @@ msgstr "Perde l'accesso ai nuovi messaggi di questo gruppo."
 
 msgid "They stay in the group as a regular member."
 msgstr "Resta nel gruppo come membro normale."
+
+#, c-format
+msgid "This is an installation prompt for connecting this Claude Code setup to White Noise through Marmot. Read the authoritative Claude Code harness guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/claude/marmot/README.md and the evergreen connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Confirm prerequisites: Claude Code CLI is installed, authenticated, and available on PATH, and this machine uses the same public relay set as my current account in the White Noise app. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, use the checksum-verified install-claude-marmot.sh release flow, bootstrap wn-agent for that npub with the allowed welcomer, and verify wn-claude --version. Then reply with your agent npub and ask me to invite it from White Noise and send a test message from this allowed npub over the configured relays. Do not report setup complete until wn-claude returns a reply through White Noise; if that round trip cannot be verified automatically, clearly mark device verification required."
+msgstr "Questo è un prompt di installazione per collegare questa configurazione di Claude Code a White Noise tramite Marmot. Leggi la guida di riferimento dell'harness di Claude Code su https://github.com/marmot-protocol/mdk/blob/master/integrations/claude/marmot/README.md e la guida del connettore mantenuta aggiornata su https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Spiegami come funziona il connettore e cosa cambierà con l'installazione. Conferma i prerequisiti: Claude Code CLI è installato, autenticato e disponibile nel PATH, e questa macchina usa lo stesso insieme di relay pubblici del mio account attuale nell'app White Noise. Poi proponi i passaggi di installazione per il mio npub pubblico: %s, e chiedi la mia approvazione prima di apportare qualsiasi modifica. Dopo la mia approvazione, usa la procedura di rilascio di install-claude-marmot.sh con verifica del checksum, inizializza wn-agent per quel npub con il welcomer autorizzato e verifica wn-claude --version. Poi rispondi con il tuo npub di agente e chiedimi di invitarlo da White Noise e di inviare un messaggio di prova da questo npub autorizzato tramite i relay configurati. Non dichiarare completata la configurazione finché wn-claude non restituisce una risposta tramite White Noise; se questo scambio di andata e ritorno non può essere verificato automaticamente, indica chiaramente che è richiesta una verifica sul dispositivo."
+
+#, c-format
+msgid "This is an installation prompt for connecting this Codex setup to White Noise through Marmot. Read the authoritative Codex harness guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/codex/marmot/README.md and the evergreen connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Confirm prerequisites: Codex CLI is installed, authenticated, and available on PATH, and this machine uses the same public relay set as my current account in the White Noise app. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, use the checksum-verified install-codex-marmot.sh release flow, bootstrap wn-agent for that npub with the allowed welcomer, and verify wn-codex --version. Then reply with your agent npub and ask me to invite it from White Noise and send a test message from this allowed npub over the configured relays. Do not report setup complete until wn-codex returns a reply through White Noise; if that round trip cannot be verified automatically, clearly mark device verification required."
+msgstr "Questo è un prompt di installazione per collegare questa configurazione di Codex a White Noise tramite Marmot. Leggi la guida di riferimento dell'harness di Codex su https://github.com/marmot-protocol/mdk/blob/master/integrations/codex/marmot/README.md e la guida del connettore mantenuta aggiornata su https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Spiegami come funziona il connettore e cosa cambierà con l'installazione. Conferma i prerequisiti: Codex CLI è installato, autenticato e disponibile nel PATH, e questa macchina usa lo stesso insieme di relay pubblici del mio account attuale nell'app White Noise. Poi proponi i passaggi di installazione per il mio npub pubblico: %s, e chiedi la mia approvazione prima di apportare qualsiasi modifica. Dopo la mia approvazione, usa la procedura di rilascio di install-codex-marmot.sh con verifica del checksum, inizializza wn-agent per quel npub con il welcomer autorizzato e verifica wn-codex --version. Poi rispondi con il tuo npub di agente e chiedimi di invitarlo da White Noise e di inviare un messaggio di prova da questo npub autorizzato tramite i relay configurati. Non dichiarare completata la configurazione finché wn-codex non restituisce una risposta tramite White Noise; se questo scambio di andata e ritorno non può essere verificato automaticamente, indica chiaramente che è richiesta una verifica sul dispositivo."
+
+#, c-format
+msgid "This is an installation prompt for connecting this Hermes installation to White Noise through Marmot. Read the latest connector guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/hermes/marmot/README.md / https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, install and verify the connector, then reply with your agent npub. Before proposing changes, confirm the intended Hermes profile, Hermes home, Marmot home/socket, agent account and service, and gateway instance; do not assume the default profile or overwrite another installation. Use the checksum-verified Hermes installer flow. Distinguish invite authorization from message-sender authorization. Guide me through the invitation from my current account in the White Noise app and a test message, and verify that the selected profile replies in White Noise before calling pairing complete."
+msgstr "Questo è un prompt di installazione per collegare questa installazione di Hermes a White Noise tramite Marmot. Leggi la guida più recente del connettore su https://github.com/marmot-protocol/mdk/blob/master/integrations/hermes/marmot/README.md / https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Spiegami come funziona il connettore e cosa cambierà con l'installazione. Poi proponi i passaggi di installazione per il mio npub pubblico: %s, e chiedi la mia approvazione prima di apportare qualsiasi modifica. Dopo la mia approvazione, installa e verifica il connettore, poi rispondi con il tuo npub di agente. Prima di proporre modifiche, conferma il profilo Hermes previsto, la directory home di Hermes, la directory home e il socket di Marmot, l'account e il servizio dell'agente e l'istanza del gateway; non dare per scontato il profilo predefinito e non sovrascrivere un'altra installazione. Usa la procedura di installazione di Hermes con verifica del checksum. Distingui l'autorizzazione agli inviti dall'autorizzazione dei mittenti dei messaggi. Guidami nell'invio dell'invito dal mio account attuale nell'app White Noise e di un messaggio di prova, e verifica che il profilo selezionato risponda in White Noise prima di dichiarare completato l'abbinamento."
+
+#, c-format
+msgid "This is an installation prompt for connecting this OpenClaw instance to White Noise through Marmot. Read the latest connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, install and verify the connector, then reply with your agent npub."
+msgstr "Questo è un prompt di installazione per collegare questa istanza di OpenClaw a White Noise tramite Marmot. Leggi la guida più recente del connettore su https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Spiegami come funziona il connettore e cosa cambierà con l'installazione. Poi proponi i passaggi di installazione per il mio npub pubblico: %s, e chiedi la mia approvazione prima di apportare qualsiasi modifica. Dopo la mia approvazione, installa e verifica il connettore, poi rispondi con il tuo npub di agente."
+
+#, c-format
+msgid "This is an installation prompt for connecting this OpenCode setup to White Noise through Marmot. Read the latest connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, install and verify the connector, then reply with your agent npub."
+msgstr "Questo è un prompt di installazione per collegare questa configurazione di OpenCode a White Noise tramite Marmot. Leggi la guida più recente del connettore su https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Spiegami come funziona il connettore e cosa cambierà con l'installazione. Poi proponi i passaggi di installazione per il mio npub pubblico: %s, e chiedi la mia approvazione prima di apportare qualsiasi modifica. Dopo la mia approvazione, installa e verifica il connettore, poi rispondi con il tuo npub di agente."
 
 msgid "This is what a message alert looks like."
 msgstr "Ecco come appare l'avviso di un messaggio."
@@ -3911,6 +4015,10 @@ msgid "Timings"
 msgstr "Tempi"
 
 msgid "Title"
+msgstr "Titolo"
+
+#, fuzzy
+msgid "Title font"
 msgstr "Titolo"
 
 msgid "Today"
@@ -4036,6 +4144,9 @@ msgstr "Emoji caricate"
 msgid "Uploading picture"
 msgstr "Caricamento dell'immagine"
 
+msgid "Use a separate group for each project and start with its location and context. Session controls vary by connector; check its guide before using resume or branch commands."
+msgstr "Usa un gruppo separato per ogni progetto e inizia indicando dove si trova e il suo contesto. I comandi di gestione delle sessioni variano a seconda del connettore; consulta la sua guida prima di usare i comandi resume o branch."
+
 msgid "Use a shorter search."
 msgstr "Usa una ricerca più breve."
 
@@ -4044,6 +4155,9 @@ msgstr "Usa un'altra chiave"
 
 msgid "Use emoji image"
 msgstr "Usa immagine emoji"
+
+msgid "Use only an agent you run and trust. Your private key is never included."
+msgstr "Usa solo un agente che gestisci e di cui ti fidi. La tua chiave privata non viene mai inclusa."
 
 msgid "Use this theme"
 msgstr "Usa questo tema"
@@ -4291,6 +4405,12 @@ msgstr "La tua chiave privata resta nel tuo firmatario remoto. Su questo disposi
 
 msgid "Your profile"
 msgstr "Il tuo profilo"
+
+msgid "Your public key"
+msgstr "La tua chiave pubblica"
+
+msgid "Your public key is unavailable. Choose another account and try again."
+msgstr "La tua chiave pubblica non è disponibile. Scegli un altro account e riprova."
 
 msgid "Your public key. Safe to share."
 msgstr "La tua chiave pubblica. Sicura da condividere."

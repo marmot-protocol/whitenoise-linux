@@ -29,6 +29,7 @@ Settings_Section :: enum {
 	About,
 	Debug, // dev-mode only
 	KP, // dev-mode only
+	Agents,
 }
 
 // A category opens on its menu of tasks and pages; a task or page opens its
@@ -55,6 +56,7 @@ SETTINGS_SECTIONS := [Settings_Section]struct {
 	.About         = {N_("About"), ICON_INFO},
 	.Debug         = {N_("Debug"), ICON_BUG},
 	.KP            = {N_("KP inspector"), ICON_KEY},
+	.Agents        = {N_("AI agents"), ICON_CODE},
 }
 
 STUB_STATUS :: "Not available in the odin port yet."
@@ -523,6 +525,8 @@ settings_description :: proc(section: Settings_Section) -> string {
 		return N_("Inspect application state and events.")
 	case .KP:
 		return N_("Inspect published MLS key packages.")
+	case .Agents:
+		return N_("Connect an AI agent using your public key and a setup prompt.")
 	}
 	return ""
 }
@@ -641,6 +645,8 @@ settings_pane :: proc(ui: ^Ui_State) {
 							settings_debug(ui)
 						case .KP:
 							settings_kp(ui)
+						case .Agents:
+							settings_agents(ui)
 						}
 					}
 					// Related links follow the page when the pane can't sit beside it.
@@ -2329,6 +2335,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if theme_handled {return}
 	if settings_handle_navigation(ui, client) {return}
 	if settings_theme_action(ui, theme_pressed) {return}
+	if ui.settings_section == .Agents && handle_agents(ui) {return}
 
 	if !mouse_released() {
 		return
@@ -2578,6 +2585,8 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	case .KP:
 		handle_kp(ui, client)
+	case .Agents:
+	// Keyboard and mouse actions are handled before the release-only dispatch.
 	}
 }
 

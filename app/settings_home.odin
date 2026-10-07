@@ -21,6 +21,13 @@ Settings_Task :: struct {
 
 @(private)
 SETTINGS_TASKS := []Settings_Task {
+	{
+		.Agents,
+		N_("Connect an AI agent"),
+		"AgentConnectors",
+		"hermes openclaw opencode codex claude code installation setup npub",
+		true,
+	},
 	{.Appearance, N_("Change the theme"), "RowTheme", "appearance colors look", true},
 	{.Appearance, N_("Change the message text size"), "RowBodyFont", "font accessibility", true},
 	{.Appearance, N_("Choose an emoji style"), "RowEmojiSet", "noto twemoji openmoji look", true},
@@ -196,6 +203,10 @@ SETTINGS_SEE_ALSO := [Settings_Section][]Settings_Task {
 	},
 	.Debug         = []Settings_Task{{.Advanced, N_("Record audit logs"), "RowAudit", "", false}},
 	.KP            = []Settings_Task{{.Keys, N_("Publish a key package"), "KpStatus", "", false}},
+	.Agents        = []Settings_Task {
+		{.Keys, N_("Copy your public key"), "NpubRow", "", false},
+		{.Network, N_("Choose where people reach you"), "AddInboxRow", "", false},
+	},
 }
 
 // The "Troubleshooters" box: a symptom in the user's words, linked to the
@@ -252,6 +263,7 @@ SETTINGS_SUMMARIES := [Settings_Section]string {
 	.About         = N_("Learn about White Noise."),
 	.Debug         = N_("Inspect the current session."),
 	.KP            = N_("Inspect MLS key packages."),
+	.Agents        = N_("Setup prompts for connecting an AI agent to White Noise."),
 }
 
 // How a pane link is marked: the target category's art, or a help mark.
@@ -749,7 +761,7 @@ settings_home :: proc(ui: ^Ui_State) {
 
 	// Icon and name only; the summary moves to a tooltip.
 	settings_pick_heading(tr("Pick a category"))
-	categories := [9]Settings_Section {
+	categories := [10]Settings_Section {
 		.Appearance,
 		.General,
 		.Folders,
@@ -759,6 +771,7 @@ settings_home :: proc(ui: ^Ui_State) {
 		.Keys,
 		.Storage,
 		.Advanced,
+		.Agents,
 	}
 	columns := settings_main_w(ui) >= 600 ? 2 : 1
 	rows := (len(categories) + columns - 1) / columns
@@ -822,6 +835,7 @@ settings_open :: proc(
 ) {
 	if !settings_available(ui, section) {return}
 	settings_theme_preview_reset(ui)
+	ui.agent_connector = 0
 	level := level
 	if anchor != "" || !settings_has_menu(section) {level = .Sheet}
 	target_tab := anchor == "" ? tab : settings_target_tab(section, anchor)
