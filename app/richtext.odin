@@ -468,7 +468,10 @@ compose_cache: struct {
 // so every byte keeps exactly one row and caret
 // hit-mapping stays byte-accurate.
 compose_lines :: proc(text: string) -> [][2]int {
-	context.allocator = runtime.default_context().allocator
+	// Only the wrap cache uses the process heap. Mention lookups inherit the
+	// caller's allocator so queued profile IDs stay owned by the UI heap.
+	allocator := runtime.default_context().allocator
+	compose_cache.lines.allocator = allocator
 	width := compose_wrap_w()
 	keep := 0
 	start := 0
@@ -506,8 +509,8 @@ compose_lines :: proc(text: string) -> [][2]int {
 		}
 		start = end + 1
 	}
-	delete(compose_cache.text)
-	compose_cache.text = strings.clone(text)
+	delete(compose_cache.text, allocator)
+	compose_cache.text = strings.clone(text, allocator)
 	compose_cache.width, compose_cache.scale = width, UI_SCALE
 	return compose_cache.lines[:]
 }

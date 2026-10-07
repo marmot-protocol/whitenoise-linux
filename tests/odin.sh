@@ -15,7 +15,7 @@ trap 'rm -rf "$fixture"' EXIT
 cp -a "$HERE/app" "$fixture/app"
 cp -a "$HERE/tests/app/." "$fixture/app/"
 # Internal tests share the source file's private symbols.
-for module in nevent vault_gate vault_pw tick; do
+for module in nevent profiles vault_gate vault_pw tick; do
   sed '/^package main$/d' "$fixture/app/${module}_internal_test.odin" >> "$fixture/app/$module.odin"
   rm "$fixture/app/${module}_internal_test.odin"
 done

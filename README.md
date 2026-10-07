@@ -592,6 +592,10 @@ before releasing `test_home_lock`. The test allocator resets after each test;
 leaving its strings in the vault lets a later worker free them with the wrong
 allocator.
 
+Composer wrapping allocates its cache on the process heap without changing
+the caller's allocator. Mention measurement can queue profile reads; those
+IDs must stay on the UI heap that frees completed batches.
+
 Use `tr("text")` for UI strings and `tr("%d item", "%d items", count)` for
 counted labels, then format the returned string with the count. The latter
 selects the first catalog entry for one and the second for every other count.
