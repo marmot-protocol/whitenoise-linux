@@ -201,7 +201,13 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			case .Archived:
 				load_archived(client, ui)
 			case .Settings:
-				settings_open(ui, client, .Home)
+				settings_open(
+					ui,
+					client,
+					ui.settings_section,
+					tab = ui.settings_tab,
+					level = ui.settings_level,
+				)
 			case .Profile:
 				load_profile(client, ui)
 			}

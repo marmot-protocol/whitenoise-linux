@@ -25,6 +25,12 @@ Prefs :: struct {
 	restore_last_chat:     bool,
 	last_chat:             string, // group id to reopen on launch
 	last_account:          string, // account hex chosen last; boot opens on it
+	page:                  Page,
+	settings_section:      Settings_Section,
+	settings_tab:          int,
+	settings_level:        Settings_Level,
+	unread_only:           bool,
+	window_w, window_h:    i32, // window points, not renderer pixels
 	notes_group:           string, // group id of the solo "Notes to self" chat
 	locale:                string, // en/it/de/ja; catalogs applied via i18n.odin
 	hour12:                bool,
@@ -102,6 +108,8 @@ default_prefs :: proc() -> Prefs {
 		message_lines     = DEFAULT_MESSAGE_LINES,
 		rail_w            = RAIL_W_DEFAULT,
 		panel_w           = PANEL_W_DEFAULT,
+		window_w          = 1024,
+		window_h          = 700,
 	}
 	for emoji in DEFAULT_QUICK_REACTIONS {
 		append(&p.quick_reactions, strings.clone(emoji))
@@ -233,6 +241,27 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 		ui.prefs = settings.prefs
 	}
 	ui.prefs.message_lines = max(ui.prefs.message_lines, 0)
+	if ui.prefs.window_w <= 0 {ui.prefs.window_w = 1024}
+	if ui.prefs.window_h <= 0 {ui.prefs.window_h = 700}
+	if int(ui.prefs.page) < 0 || ui.prefs.page > max(Page) {ui.prefs.page = .Chats}
+	if int(ui.prefs.settings_section) < 0 ||
+	   ui.prefs.settings_section > max(Settings_Section) ||
+	   !settings_available(ui, ui.prefs.settings_section) {
+		ui.prefs.settings_section = .Home
+	}
+	ui.prefs.settings_tab = clamp(
+		ui.prefs.settings_tab,
+		0,
+		max(len(settings_tabs(ui.prefs.settings_section)) - 1, 0),
+	)
+	if int(ui.prefs.settings_level) < 0 || ui.prefs.settings_level > max(Settings_Level) {
+		ui.prefs.settings_level = .Menu
+	}
+	ui.page = ui.prefs.page
+	ui.settings_section = ui.prefs.settings_section
+	ui.settings_tab = ui.prefs.settings_tab
+	ui.settings_level = ui.prefs.settings_level
+	ui.unread_only = ui.prefs.unread_only
 	// Fields added after prefs shipped: 0 means an older settings.json.
 	if ui.prefs.scroll_speed == 0 {
 		ui.prefs.scroll_speed = 200
@@ -301,6 +330,7 @@ settings_discard_private :: proc(nicknames, drafts: map[string]string, blocked: 
 save_settings :: proc(ui: ^Ui_State, background := false) {
 	timing_start := time.tick_now()
 	defer local_timing_end(.settings_save, timing_start)
+	remember_workspace(ui)
 	ui.settings_dirty = false
 
 	blocked := make([dynamic]string, context.temp_allocator)
@@ -340,6 +370,22 @@ save_settings :: proc(ui: ^Ui_State, background := false) {
 Settings_Work :: struct {
 	worker: ^thread.Thread,
 	data:   []u8,
+}
+
+// Snapshot at frame end so every navigation path uses the same writer.
+@(private)
+remember_workspace :: proc(ui: ^Ui_State) {
+	if ui.prefs.page == ui.page &&
+	   ui.prefs.settings_section == ui.settings_section &&
+	   ui.prefs.settings_tab == ui.settings_tab &&
+	   ui.prefs.settings_level == ui.settings_level &&
+	   ui.prefs.unread_only == ui.unread_only {return}
+	ui.prefs.page = ui.page
+	ui.prefs.settings_section = ui.settings_section
+	ui.prefs.settings_tab = ui.settings_tab
+	ui.prefs.settings_level = ui.settings_level
+	ui.prefs.unread_only = ui.unread_only
+	ui.settings_dirty = true
 }
 
 // A single writer preserves call order across chat switches and other prefs.

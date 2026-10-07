@@ -488,6 +488,11 @@ found remain unchanged.
 
 The data directory is the app's first argument and defaults to `~/.local/share/whitenoise`. It holds the vault, the media cache, the offline queue, and any custom theme packs you drop in its `themes/` subdirectory. UI preferences (theme, accent, locale, notification toggles, nicknames) live separately in `$XDG_CONFIG_HOME/whitenoise/settings.json`.
 
+The app restores your last page, settings section and tab, the rail's Unread
+filter, and window size after a restart. Reopening Settings returns to the
+section you left. These preferences are independent of General's
+"Restore last chat" toggle, which controls only the selected conversation.
+
 Telemetry and audit logs use built-in endpoints. To override them, create
 `$XDG_CONFIG_HOME/whitenoise/observability.toml` (or
 `~/.config/whitenoise/observability.toml` when `XDG_CONFIG_HOME` is unset).

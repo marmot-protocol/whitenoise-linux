@@ -855,6 +855,34 @@ settings_open :: proc(
 	}
 }
 
+@(private)
+restore_workspace :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	ui.page = ui.prefs.page
+	ui.settings_section = ui.prefs.settings_section
+	ui.settings_tab = ui.prefs.settings_tab
+	ui.settings_level = ui.prefs.settings_level
+	ui.unread_only = ui.prefs.unread_only
+	if ui.page == .Settings {
+		settings_open(
+			ui,
+			client,
+			ui.settings_section,
+			tab = ui.settings_tab,
+			level = ui.settings_level,
+		)
+		return
+	}
+	if client == nil {return}
+	#partial switch ui.page {
+	case .Contacts:
+		load_contacts(client, ui, .Details)
+	case .Archived:
+		load_archived(client, ui)
+	case .Profile:
+		load_profile(client, ui)
+	}
+}
+
 // Step back one level: sheet -> its category menu -> All categories ->
 // the chat list. Sections without a menu go straight to All categories.
 @(private)

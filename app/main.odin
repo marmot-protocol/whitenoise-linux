@@ -978,7 +978,7 @@ app_main :: proc() {
 	init_layout(&memory, 32768, {1024, 700})
 	defer delete(memory)
 
-	win_w, win_h := i32(1024), i32(700)
+	win_w, win_h := ui.prefs.window_w, ui.prefs.window_h
 	if tw := os.get_env("WN_TEST_WINDOW", context.temp_allocator); tw != "" {
 		if x := strings.index_byte(tw, 'x'); x > 0 {
 			w, _ := strconv.parse_int(tw[:x])
@@ -1045,6 +1045,7 @@ app_main :: proc() {
 		g_ui = &ui
 		g_client = client
 		if client != nil {nip46_attach_all()}
+		restore_workspace(&ui, client)
 		if mode := os.get_env("WN_TEST_NIP46", context.temp_allocator);
 		   mode != "" && client != nil {
 			ui.add_account_open = len(ui.accounts) > 0
@@ -1325,6 +1326,12 @@ app_main :: proc() {
 					)
 				}
 				win_was = win_now
+				if win_now.x > 0 &&
+				   win_now.y > 0 &&
+				   (ui.prefs.window_w != win_now.x || ui.prefs.window_h != win_now.y) {
+					ui.prefs.window_w, ui.prefs.window_h = win_now.x, win_now.y
+					ui.settings_dirty = true
+				}
 			}
 
 			start_live(&live, client, ui.account_ref) // no-op once running
@@ -1758,6 +1765,7 @@ app_main :: proc() {
 			)
 
 			post_start := time.tick_now()
+			remember_workspace(&ui)
 			if ui.settings_dirty {save_settings(&ui, background = true)}
 			settings_drain(&ui)
 			// Profile pictures fetched by the curl worker decode here (the
@@ -2188,6 +2196,7 @@ app_main :: proc() {
 		}
 
 		// Persist the open chat's half-written draft across restarts.
+		remember_workspace(&ui)
 		messages_collect()
 		chats_collect()
 		stash_draft(&ui)
