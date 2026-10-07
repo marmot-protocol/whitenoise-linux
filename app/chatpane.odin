@@ -1372,25 +1372,138 @@ nc_action_row :: proc(id, icon, title, detail: string) {
 }
 
 @(private)
-nc_contact_matches :: proc(ui: ^Ui_State) -> []Contact_Order {
-	filter := strings.to_lower(strings.trim_space(string(ui.nc_search[:])), context.temp_allocator)
+nc_contact_matches :: proc(ui: ^Ui_State, query: string) -> []Contact_Order {
+	filter := strings.to_lower(strings.trim_space(query), context.temp_allocator)
 	rows := contact_order(ui, ui.nc_contacts[:])
+	// Short queries search names, not the shared npub prefix or single hex digits.
+	key_query := len(filter) >= 4
 	count := 0
 	for row in rows {
 		contact := ui.nc_contacts[row.idx]
 		if filter != "" &&
 		   !strings.contains(row.key, filter) &&
-		   !strings.contains(contact.npub, filter) &&
-		   !strings.contains(contact.id_hex, filter) {continue}
+		   (!key_query ||
+				   (!strings.contains(contact.npub, filter) &&
+						   !strings.contains(contact.id_hex, filter))) {continue}
 		rows[count] = row
 		count += 1
 	}
 	return rows[:count]
 }
 
+@(private)
+nc_member_ref :: proc(ui: ^Ui_State) -> string {
+	if ui.nc_page == .Group &&
+	   ui.nc_member_choice > 0 &&
+	   ui.nc_member_choice <= len(ui.nc_contacts) {
+		contact := ui.nc_contacts[ui.nc_member_choice - 1]
+		if string(ui.nc_member[:]) == contact_label(ui, contact) {return contact.id_hex}
+	}
+	member := strings.trim_space(string(ui.nc_member[:]))
+	if ui.nc_page != .Group || member == "" {return member}
+	if nc_is_bit(member) || strings.contains(member, "@") {return member}
+	if ref := marmot_link_ref(member); ref != "" {member = ref}
+	return deeplink_hex(member)
+}
+
+@(private)
+NC_MEMBER_H :: f32(48)
+
+@(private = "file")
+nc_member_options :: proc(ui: ^Ui_State) {
+	if ui.nc_page != .Group ||
+	   ui.focus != .NC_Member ||
+	   ui.nc_member_choice != 0 ||
+	   nc_pending_label(ui) != "" {return}
+	field := clay.GetElementData(clay.ID("NCMember"))
+	if !field.found {return}
+	rows := nc_contact_matches(ui, string(ui.nc_member[:]))
+	count := len(rows)
+	ui.nc_contact_sel = clamp(ui.nc_contact_sel, 0, max(0, count - 1))
+	below :=
+		clay.GetElementData(clay.ID("NCCreate")).boundingBox.y -
+		field.boundingBox.y -
+		field.boundingBox.height -
+		4
+	header := clay.GetElementData(clay.ID("NCHeader")).boundingBox
+	above := field.boundingBox.y - header.y - header.height - 4
+	up := below < NC_MEMBER_H * 2 && above > below
+	height := min(
+		f32(max(1, count)) * NC_MEMBER_H,
+		NC_MEMBER_H * 5,
+		max(NC_MEMBER_H, up ? above : below),
+	)
+	if clay.UI(clay.ID("NCMemberOptions"))(
+	{
+		layout = {
+			sizing = {clay.SizingFixed(field.boundingBox.width), clay.SizingFixed(height)},
+			layoutDirection = .TopToBottom,
+		},
+		backgroundColor = CARD,
+		border = {color = CARD_BORDER, width = bw()},
+		cornerRadius = rr(8),
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		floating = {
+			attachTo = .ElementWithId,
+			parentId = clay.ID("NCMember").id,
+			zIndex = 15,
+			offset = {0, up ? -4 : 4},
+			attachment = {
+				element = up ? .LeftBottom : .LeftTop,
+				parent = up ? .LeftTop : .LeftBottom,
+			},
+		},
+	},
+	) {
+		data := clay.GetScrollContainerData(clay.ID("NCMemberOptions"))
+		if data.found {data.scrollPosition.y = clamp(data.scrollPosition.y, -max(0, f32(count) * NC_MEMBER_H - height), 0)}
+		first := data.found ? clamp(int(-data.scrollPosition.y / NC_MEMBER_H), 0, count) : 0
+		last := min(first + 7, count)
+		if clay.UI(clay.ID("NCMemberBefore"))(
+		{layout = {sizing = {height = clay.SizingFixed(f32(first) * NC_MEMBER_H)}}},
+		) {}
+		if count == 0 {
+			clay.Text(
+				tr("No matching contacts"),
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			)
+		}
+		for row, i in rows[first:last] {
+			contact := ui.nc_contacts[row.idx]
+			if clay.UI(clay.ID("NCMemberOption", u32(row.idx)))(
+			{
+				layout = {
+					sizing = {clay.SizingGrow(), clay.SizingFixed(NC_MEMBER_H)},
+					padding = {left = 10, right = 10},
+					childGap = 10,
+					childAlignment = {y = .Center},
+				},
+				backgroundColor = first + i == ui.nc_contact_sel ? SELECTED : hovered() ? HOVER : {},
+				clip = {horizontal = true},
+			},
+			) {
+				avatar(
+					"NCMemberAvatar",
+					u32(row.idx),
+					contact.id_hex,
+					contact_label(ui, contact),
+					28,
+					url_pic(contact.pic_url),
+				)
+				row_labels(contact_label(ui, contact), npub_tail(contact.npub))
+				if hovered() {cursor_raise(.Pointer)}
+			}
+		}
+		if clay.UI(clay.ID("NCMemberAfter"))(
+		{layout = {sizing = {height = clay.SizingFixed(f32(count - last) * NC_MEMBER_H)}}},
+		) {}
+	}
+	scrollbar(clay.ID("NCMemberOptions"), 16)
+}
+
 @(private = "file")
 nc_contact_list :: proc(ui: ^Ui_State) {
-	rows := nc_contact_matches(ui)
+	rows := nc_contact_matches(ui, string(ui.nc_search[:]))
 	count := len(rows)
 	ui.nc_contact_sel = clamp(ui.nc_contact_sel, 0, max(0, count - 1))
 	if clay.UI(clay.ID("NCContactsCaption"))(
@@ -1643,19 +1756,19 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 						)
 					}
 					clay.Text(
-						group ? tr("First member (optional)") : tr("Nostr address"),
+						group ? tr("First member") : tr("Nostr address"),
 						{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
 					)
 					input_box(
 						ui,
 						"NCMember",
 						&ui.nc_member,
-						tr("npub, hex, name@domain, or .bit"),
+						group ? tr("Search contacts...") : tr("npub, hex, name@domain, or .bit"),
 						ui.focus == .NC_Member,
 						0,
 					)
 					clay.Text(
-						group ? tr("You can invite more people after creating your group.") : tr("Paste an npub, a hex public key, a profile link, or a verified name."),
+						group ? ui.nc_member_choice > 0 ? npub_tail(ui.nc_contacts[ui.nc_member_choice - 1].npub) : tr("Choose a contact or paste a Nostr address.") : tr("Paste an npub, a hex public key, a profile link, or a verified name."),
 						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 					)
 				}
@@ -1667,12 +1780,12 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 			}
 			if ui.nc_page != .Contacts {
 				label :=
-					pending != "" ? pending : strings.contains(string(ui.nc_member[:]), "@") || nc_is_bit(string(ui.nc_member[:])) ? tr("Look up") : group ? tr("Create group") : tr("Start chat")
+					pending != "" ? pending : ui.nc_member_choice == 0 && (strings.contains(string(ui.nc_member[:]), "@") || nc_is_bit(string(ui.nc_member[:]))) ? tr("Look up") : group ? tr("Create group") : tr("Start chat")
 				login_big_button(
 					"NCCreate",
 					label,
 					true,
-					pending != "" || (!group && len(strings.trim_space(string(ui.nc_member[:]))) == 0) ? .Disabled : .Enabled,
+					pending != "" || nc_member_ref(ui) == "" ? .Disabled : .Enabled,
 				)
 			}
 			if clay.UI(clay.ID("NCPrivacy"))(
@@ -1691,6 +1804,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 				)
 			}
+			nc_member_options(ui)
 		}
 	}
 }

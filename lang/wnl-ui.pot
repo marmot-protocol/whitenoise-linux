@@ -680,6 +680,9 @@ msgstr ""
 msgid "Chip text"
 msgstr ""
 
+msgid "Choose a contact or paste a Nostr address."
+msgstr ""
+
 msgid "Choose a contacts CSV or JSON export to import."
 msgstr ""
 
@@ -1771,7 +1774,7 @@ msgstr ""
 msgid "Finishing the cancelled connection."
 msgstr ""
 
-msgid "First member (optional)"
+msgid "First member"
 msgstr ""
 
 msgid "Fit"
@@ -4225,9 +4228,6 @@ msgid "You"
 msgstr ""
 
 msgid "You are signed out, but your signer record could not be removed from the encrypted vault."
-msgstr ""
-
-msgid "You can invite more people after creating your group."
 msgstr ""
 
 msgid "You can't send messages to someone you blocked."

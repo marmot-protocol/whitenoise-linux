@@ -1492,20 +1492,42 @@ open_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.nc_page = .Contacts
 	ui.focus = .NC_Search
 	ui.nc_contact_sel = 0
+	ui.nc_member_choice = 0
+	ed_set(ui, &ui.nc_member, "")
 	clear(&ui.nc_search)
 	nc_contacts_free(&ui.nc_contacts)
 	job := account_job_new(ui, client, .Read_Contacts)
 	account_job_start(job)
 }
 
+@(private = "file")
+nc_member_choose :: proc(ui: ^Ui_State, index: int) {
+	ui.nc_member_choice = index + 1
+	ed_set(ui, &ui.nc_member, contact_label(ui, ui.nc_contacts[index]))
+}
+
 // The picker and both forms keep the same asynchronous create/lookup path.
 handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if ui.nc_page == .Group &&
+	   ui.focus == .NC_Member &&
+	   ui.nc_member_choice == 0 &&
+	   rl.IsKeyPressed(.ESCAPE) {
+		ui.focus = .NC_Name
+		return
+	}
 	if clicked("NCCancel") || rl.IsKeyPressed(.ESCAPE) {
 		close_new_chat(ui)
 		return
 	}
 	if nc_pending_label(ui) != "" {return}
 	edit_text(ui, active_buf(ui))
+	if ui.nc_member_choice > 0 &&
+	   (ui.nc_member_choice > len(ui.nc_contacts) ||
+			   string(ui.nc_member[:]) !=
+				   contact_label(ui, ui.nc_contacts[ui.nc_member_choice - 1])) {
+		ui.nc_member_choice = 0
+		ui.nc_contact_sel = 0
+	}
 
 	if clicked("NCBack") {
 		ui.nc_page = .Contacts
@@ -1515,12 +1537,15 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("NCGroup") || clicked("NCAddress") {
 		ui.nc_page = clicked("NCGroup") ? .Group : .Address
 		ui.focus = ui.nc_page == .Group ? .NC_Name : .NC_Member
+		ui.nc_member_choice = 0
+		ui.nc_contact_sel = 0
+		ed_set(ui, &ui.nc_member, "")
 		return
 	}
 	if ui.nc_page == .Contacts {
 		if field_mouse(ui, &ui.nc_search, "NCSearch", 14) {ui.focus = .NC_Search}
 		if rl.IsKeyPressed(.UP) || rl.IsKeyPressed(.DOWN) || rl.IsKeyPressed(.ENTER) {
-			rows := nc_contact_matches(ui)
+			rows := nc_contact_matches(ui, string(ui.nc_search[:]))
 			if len(rows) == 0 {return}
 			step := rl.IsKeyPressed(.UP) ? -1 : rl.IsKeyPressed(.DOWN) ? 1 : 0
 			ui.nc_contact_sel = clamp(ui.nc_contact_sel + step, 0, len(rows) - 1)
@@ -1553,6 +1578,32 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.focus = .NC_Name
 	}
 	if ui.nc_page == .Group {tab_focus([]Focus{.NC_Name, .NC_Member}, &ui.focus)}
+	if ui.nc_page == .Group && ui.focus == .NC_Member && ui.nc_member_choice == 0 {
+		rows := nc_contact_matches(ui, string(ui.nc_member[:]))
+		if len(rows) > 0 && (key_hit(.UP) || key_hit(.DOWN) || rl.IsKeyPressed(.ENTER)) {
+			step := key_hit(.UP) ? -1 : key_hit(.DOWN) ? 1 : 0
+			ui.nc_contact_sel = clamp(ui.nc_contact_sel + step, 0, len(rows) - 1)
+			if rl.IsKeyPressed(.ENTER) {
+				nc_member_choose(ui, rows[ui.nc_contact_sel].idx)
+				return // Selection must not also create the group.
+			}
+			if data := clay.GetScrollContainerData(clay.ID("NCMemberOptions")); data.found {
+				y := f32(ui.nc_contact_sel) * NC_MEMBER_H
+				if y < -data.scrollPosition.y {data.scrollPosition.y = -y}
+				if bottom := y + NC_MEMBER_H - data.scrollContainerDimensions.height;
+				   bottom > -data.scrollPosition.y {data.scrollPosition.y = -bottom}
+			}
+		}
+		if mouse_released() {
+			for row in rows {
+				if !clay.PointerOver(clay.ID("NCMemberOption", u32(row.idx))) {continue}
+				nc_member_choose(ui, row.idx)
+				return
+			}
+			if !clay.PointerOver(clay.ID("NCMember")) &&
+			   !clay.PointerOver(clay.ID("NCMemberOptions")) {ui.focus = .NC_Name}
+		}
+	}
 	if ui.nc_page == .Group && clicked("NCPicFile") {
 		ui.picking_ncpic = true
 		rl.OpenFileDialog(false)
@@ -1572,8 +1623,8 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		name :=
 			ui.nc_page == .Group && len(ui.nc_name) > 0 ? string(ui.nc_name[:]) : tr("New group")
 
-		member := strings.trim_space(string(ui.nc_member[:]))
-		if ui.nc_page == .Address && member == "" {return}
+		member := nc_member_ref(ui)
+		if member == "" {return}
 		// A pasted marmot:// profile link reduces to its bare reference.
 		if ref := marmot_link_ref(member); len(ref) > 0 {
 			member = ref
@@ -1660,6 +1711,7 @@ close_new_chat :: proc(ui: ^Ui_State) {
 // the group-image worker, clear the form, jump to the new chat. Shared
 // by the direct-input path and the Namecoin resolve callback.
 new_chat_create_and_open :: proc(ui: ^Ui_State, client: ^marmot.Client, name, member: string) {
+	if strings.trim_space(member) == "" {return}
 	job := account_job_new(ui, client, .Create_Chat); if job == nil {return}
 	job.title = strings.clone(name); job.target = strings.clone(member); job.open_chat = true
 	job.form = true

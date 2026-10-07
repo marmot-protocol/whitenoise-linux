@@ -681,6 +681,9 @@ msgstr "Contorno chip"
 msgid "Chip text"
 msgstr "Testo chip"
 
+msgid "Choose a contact or paste a Nostr address."
+msgstr "Scegli un contatto o incolla un indirizzo Nostr."
+
 msgid "Choose a contacts CSV or JSON export to import."
 msgstr "Scegli un'esportazione dei contatti CSV o JSON da importare."
 
@@ -1772,8 +1775,8 @@ msgstr "Termina dettatura"
 msgid "Finishing the cancelled connection."
 msgstr "Chiusura della connessione annullata."
 
-msgid "First member (optional)"
-msgstr "Primo membro (facoltativo)"
+msgid "First member"
+msgstr "Primo membro"
 
 msgid "Fit"
 msgstr "Adatta"
@@ -4227,9 +4230,6 @@ msgstr "Tu"
 
 msgid "You are signed out, but your signer record could not be removed from the encrypted vault."
 msgstr "Hai effettuato la disconnessione, ma non è stato possibile rimuovere il record del tuo firmatario dalla cassaforte cifrata."
-
-msgid "You can invite more people after creating your group."
-msgstr "Puoi invitare altre persone dopo aver creato il tuo gruppo."
 
 msgid "You can't send messages to someone you blocked."
 msgstr "Non puoi inviare messaggi a qualcuno che hai bloccato."

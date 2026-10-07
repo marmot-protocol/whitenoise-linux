@@ -58,6 +58,66 @@ contacts_named_first :: proc(t: ^testing.T) {
 }
 
 @(test)
+new_group_member_selection :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	ui := Ui_State {
+		nc_page          = .Group,
+		nc_member_choice = 2,
+	}
+	append(
+		&ui.nc_contacts,
+		Contact_Ui{id_hex = "first", name = "Alex"},
+		Contact_Ui{id_hex = "second", name = "Alex"},
+	)
+	append(&ui.nc_member, "Alex")
+	// Duplicate names must resolve to the selected contact, not the first match.
+	testing.expect_value(t, nc_member_ref(&ui), "second")
+	ui.nc_page = .Address
+	testing.expect_value(t, nc_member_ref(&ui), "Alex")
+	ui.nc_page = .Group
+	clear(&ui.nc_member)
+	append(&ui.nc_member, "Al")
+	testing.expect_value(t, nc_member_ref(&ui), "")
+	clear(&ui.nc_member)
+	append(&ui.nc_member, "  npub1d6qfwzfzzexwg39v98msg2nv3v7ey8jpwr4dv5fy9hd3pucusmpqasx9s6  ")
+	testing.expect_value(
+		t,
+		nc_member_ref(&ui),
+		"6e80970922164ce444ac29f7042a6c8b3d921e4170ead651242ddb10f31c86c2",
+	)
+	clear(&ui.nc_member)
+	testing.expect_value(t, nc_member_ref(&ui), "")
+}
+
+@(test)
+new_chat_contact_filter :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	ui: Ui_State
+	append(
+		&ui.nc_contacts,
+		Contact_Ui {
+			id_hex = "6e80970922164ce444ac29f7042a6c8b3d921e4170ead651242ddb10f31c86c2",
+			name = "Alex",
+			npub = "npub1d6qfwzfzzexwg39v98msg2nv3v7ey8jpwr4dv5fy9hd3pucusmpqasx9s6",
+		},
+		Contact_Ui {
+			id_hex = "94b5223af9e91c9754927111eadc5f77a3bbc64ed6f48e669af08edd6f857045",
+			name = "Bob",
+			npub = "npub1jj6jywheaywfw4yjwyg74hzlw73mh3jw6m6gue567z8d6mu9wpzsu0xmaa",
+		},
+	)
+	ui.nicknames[ui.nc_contacts[0].id_hex] = "Pat"
+	queries := []string{"p", " pAt ", "NPUB1D6QFW", "6e809709"}
+	for query in queries {
+		rows := nc_contact_matches(&ui, query)
+		testing.expect_value(t, len(rows), 1)
+		if len(rows) ==
+		   1 {testing.expect_value(t, ui.nc_contacts[rows[0].idx].id_hex, ui.nc_contacts[0].id_hex)}
+	}
+	testing.expect_value(t, len(nc_contact_matches(&ui, "not a contact")), 0)
+}
+
+@(test)
 groups_do_not_add_contacts :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
 	ui: Ui_State
