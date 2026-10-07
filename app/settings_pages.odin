@@ -1038,6 +1038,77 @@ SCROLL_SPEED_LABELS := []string{"1x", "1.5x", "2x", "3x"}
 BODY_FONT_DELTAS := []int{-2, 0, 2}
 BODY_FONT_LABELS := []string{N_("Small"), N_("Default"), N_("Large")}
 
+@(private)
+THEME_PREVIEW_DELAY :: f64(0.12)
+
+@(private)
+Theme_Preview_End :: enum {
+	Restore,
+	Commit,
+}
+
+// Browsing changes the live tokens, never the committed slot or preferences.
+// apply_theme restores the entire pack, including font and structural metrics.
+@(private)
+settings_theme_preview_reset :: proc(ui: ^Ui_State, end: Theme_Preview_End = .Restore) {
+	if end == .Restore && ui.theme_preview_active {
+		apply_theme(ui.theme, ui.accent)
+		clear(&anim_cols)
+		anim_moving += 1
+	}
+	ui.theme_preview_active = false
+	ui.theme_candidate = -1
+	ui.theme_candidate_since = 0
+}
+
+// Run before layout as well as page input: palette commands and other modals
+// can leave Settings without passing through its own navigation handler.
+@(private)
+settings_theme_preview_guard :: proc(ui: ^Ui_State) {
+	if !ui.theme_menu_open && !ui.theme_preview_active {return}
+	if !ui.theme_menu_open ||
+	   ui.page != .Settings ||
+	   ui.settings_section != .Appearance ||
+	   settings_on_menu(ui) ||
+	   ui.settings_tab != 0 ||
+	   ui.add_account_open ||
+	   modal_open(ui) {
+		settings_theme_preview_reset(ui)
+		ui.theme_menu_open = false
+	}
+}
+
+@(private)
+settings_theme_preview_hover :: proc(ui: ^Ui_State) {
+	candidate := -1
+	for _, i in theme_packs {
+		if clay.PointerOver(clay.ID("ThemeOpt", u32(i))) {
+			candidate = i
+			break
+		}
+	}
+	if candidate < 0 {
+		settings_theme_preview_reset(ui)
+		return
+	}
+	now := rl.GetTime()
+	if candidate != ui.theme_candidate {
+		ui.theme_candidate = candidate
+		ui.theme_candidate_since = now
+	}
+	if ui.theme_preview_active && ui.theme_preview == candidate {return}
+	deadline := ui.theme_candidate_since + THEME_PREVIEW_DELAY
+	if now < deadline {
+		frame_deadline = min(frame_deadline, deadline)
+		return
+	}
+	apply_theme(candidate, ui.accent)
+	clear(&anim_cols)
+	ui.theme_preview = candidate
+	ui.theme_preview_active = true
+	anim_moving += 1 // present the new palette before the idle wait
+}
+
 // Sample conversation rendered with the active theme and actual text-size preference.
 // It never replaces the user's theme with a canned palette.
 settings_conversation_preview :: proc(ui: ^Ui_State) {
@@ -1102,6 +1173,10 @@ settings_conversation_preview :: proc(ui: ^Ui_State) {
 }
 
 settings_appearance :: proc(ui: ^Ui_State) {
+	preview_theme := active_theme(ui)
+	if ui.theme_preview_active && ui.theme_preview >= 0 && ui.theme_preview < len(theme_packs) {
+		preview_theme = ui.theme_preview
+	}
 	if ui.settings_tab != 2 {settings_conversation_preview(ui)}
 	switch ui.settings_tab {
 	case 0:
@@ -1142,15 +1217,9 @@ settings_appearance :: proc(ui: ^Ui_State) {
 					clay.Text("▾", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 
 					if open_now(clay.ID("ThemeMenu"), ui.theme_menu_open) {
-						menu_w := fit_w(172, 8)
+						menu_w := fit_w(220, 8)
 						menu_h := min(f32(240), f32(rl.GetScreenHeight()) / UI_ZOOM - 16)
-						anchor, _ := element_box(clay.ID("ThemeDrop"))
-						x, y := panel_pos(
-							anchor.x + anchor.width - menu_w,
-							anchor.y + anchor.height + rise(clay.ID("ThemeMenu")),
-							menu_w,
-							menu_h,
-						)
+						x, y := panel_pos(ui.theme_menu_x, ui.theme_menu_y, menu_w, menu_h)
 						if clay.UI(clay.ID("ThemeMenu"))(
 						{
 							layout = {
@@ -1162,10 +1231,18 @@ settings_appearance :: proc(ui: ^Ui_State) {
 								padding = clay.PaddingAll(6),
 								childGap = 2,
 							},
-							floating = {attachTo = .Root, zIndex = 12, offset = {x, y}},
+							floating = {
+								attachTo = .Root,
+								zIndex = 12,
+								offset = {x, y + rise(clay.ID("ThemeMenu"))},
+							},
 							backgroundColor = CARD,
 							cornerRadius = rr(2),
-							clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+							clip = {
+								horizontal = true,
+								vertical = true,
+								childOffset = clay.GetScrollOffset(),
+							},
 							border = {color = ELEVATED_BORDER, width = bw()},
 						},
 						) {
@@ -1179,12 +1256,15 @@ settings_appearance :: proc(ui: ^Ui_State) {
 								if clay.UI(clay.ID("ThemeOpt", u32(i)))(
 								{
 									layout = {
-										sizing = {width = clay.SizingGrow()},
+										sizing = {
+											width = clay.SizingGrow(),
+											height = clay.SizingFixed(34),
+										},
 										padding = clay.PaddingAll(8),
 										childGap = 8,
 										childAlignment = {y = .Center},
 									},
-									backgroundColor = ui.theme == i ? SELECTED : (hovered() ? HOVER : {}),
+									backgroundColor = hovered() ? HOVER : (ui.theme == i ? SELECTED : {}),
 									cornerRadius = rr(2),
 								},
 								) {
@@ -1206,7 +1286,8 @@ settings_appearance :: proc(ui: ^Ui_State) {
 										{
 											fontId = FONT_BODY,
 											fontSize = 13,
-											textColor = ui.theme == i ? ACCENT : TEXT,
+											textColor = hovered() || ui.theme == i ? ACCENT : TEXT,
+											wrapMode = .None,
 										},
 									)
 								}
@@ -1232,7 +1313,7 @@ settings_appearance :: proc(ui: ^Ui_State) {
 										height = clay.SizingFixed(18),
 									},
 								},
-								backgroundColor = active_pack(ui).accent_base[i],
+								backgroundColor = len(theme_packs) > 0 ? theme_packs[preview_theme].accent_base[i] : default_pack().accent_base[i],
 								cornerRadius = rr(2),
 								border = ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
 							},
@@ -1908,18 +1989,26 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if ui.theme_menu_open {
+		if rl.IsKeyPressed(.ESCAPE) {
+			settings_theme_preview_reset(ui)
+			ui.theme_menu_open = false
+			return
+		}
 		if mouse_released() {
 			for _, i in theme_packs {
 				if clay.PointerOver(clay.ID("ThemeOpt", u32(i))) {
+					// The rendered preview is already live; only this click commits.
+					settings_theme_preview_reset(ui, .Commit)
+					ui.theme_menu_open = false
 					theme_switch(ui, i, ui.accent)
-					break
+					return
 				}
 			}
+			settings_theme_preview_reset(ui)
 			ui.theme_menu_open = false
+			return
 		}
-		if rl.IsKeyPressed(.ESCAPE) {
-			ui.theme_menu_open = false
-		}
+		settings_theme_preview_hover(ui)
 		return
 	}
 
@@ -2095,6 +2184,10 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 		}
 		if clicked("ThemeDrop") {
+			settings_theme_preview_reset(ui)
+			anchor, _ := element_box(clay.ID("ThemeDrop"))
+			ui.theme_menu_x = anchor.x + anchor.width - fit_w(220, 8)
+			ui.theme_menu_y = anchor.y + anchor.height
 			ui.theme_menu_open = true
 			return
 		}

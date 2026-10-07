@@ -9,6 +9,63 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
+// Palette globals, filled from the active Theme_Pack (themes/*.toml
+// packs, embedded and parsed in theme.odin).
+ACCENT_NAMES := [5]string{N_("Mint"), N_("Ocean"), N_("Berry"), N_("Coral"), N_("Lavender")}
+
+BG := clay.Color{6, 7, 8, 255}
+CARD := clay.Color{15, 19, 24, 255}
+CARD_BORDER := clay.Color{20, 24, 29, 255}
+STATUS_BAR := clay.Color{11, 13, 15, 255}
+RAIL_BG := clay.Color{15, 19, 24, 255} // in-card strips; blends with CARD
+ROW_BG := clay.Color{10, 13, 17, 255} // fields, chips
+FIELD_BORDER := clay.Color{31, 36, 42, 255}
+HOVER := clay.Color{13, 17, 20, 255}
+SELECTED := clay.Color{18, 40, 32, 255}
+PLATE := clay.Color{20, 26, 33, 255}
+DIVIDER := clay.Color{26, 31, 37, 255}
+ELEVATED_BORDER := clay.Color{36, 42, 49, 255}
+BORDER_2 := clay.Color{20, 24, 29, 255}
+ON_ACCENT := clay.Color{10, 20, 16, 255}
+ACCENT := clay.Color{114, 240, 176, 255}
+ACCENT_DIM := clay.Color{61, 214, 138, 255}
+TEXT := clay.Color{228, 231, 236, 255}
+TEXT_DIM := clay.Color{156, 163, 175, 255}
+TEXT_LO := clay.Color{107, 114, 128, 255}
+DANGER := clay.Color{255, 90, 90, 255}
+DANGER_SOFT := clay.Color{255, 90, 90, 38}
+DANGER_BORDER := clay.Color{255, 90, 90, 110}
+WARNING := clay.Color{235, 180, 70, 255}
+WARNING_SOFT := clay.Color{235, 180, 70, 38}
+WARNING_BORDER := clay.Color{235, 180, 70, 110}
+TEXT_VLO := clay.Color{75, 82, 96, 255}
+PANEL := clay.Color{15, 19, 24, 255}
+FIELD_HOVER := clay.Color{18, 23, 28, 255}
+CODE_PLATE := clay.Color{255, 255, 255, 16}
+CARD_WELL := clay.Color{20, 26, 33, 255}
+TOP_GLINT := clay.Color{255, 255, 255, 10}
+AVATAR_RING := clay.Color{255, 255, 255, 32}
+ACCENT_GLOW := clay.Color{114, 240, 176, 51}
+ACCENT_HI := clay.Color{150, 245, 195, 255}
+
+// Depth: the scrim behind a modal, the tint a raised surface drops,
+// and the two edges a bevelled one is lit and shaded with.
+OVERLAY := clay.Color{0, 0, 0, 115}
+OVERLAY_STRONG := clay.Color{0, 0, 0, 230}
+VIGNETTE := clay.Color{0, 0, 0, 128}
+SHADOW_CARD := clay.Color{0, 0, 0, 208}
+SHADOW_POPOVER := clay.Color{0, 0, 0, 102}
+BEVEL_HI := clay.Color{255, 255, 255, 40}
+BEVEL_LO := clay.Color{0, 0, 0, 90}
+
+// Chrome that floats over a picture, so it cannot take its colors
+// from the page behind it.
+MEDIA_BACKDROP := clay.Color{3, 4, 4, 255}
+MEDIA_CHIP_BG := clay.Color{0, 0, 0, 184}
+MEDIA_CHIP_FG := clay.Color{255, 255, 255, 255}
+MEDIA_CHIP_OUTLINE := clay.Color{255, 255, 255, 102}
+MEDIA_CONTROL_BG := clay.Color{255, 255, 255, 34}
+
 apply_theme :: proc(theme: int, accent: int) {
 	if len(theme_packs) == 0 {
 		return
@@ -29,7 +86,7 @@ apply_theme :: proc(theme: int, accent: int) {
 	DIVIDER = pack.divider
 	ELEVATED_BORDER = pack.elevated_border
 	BORDER_2 = pack.border_2
-	ON_ACCENT = pack.on_accent
+	ON_ACCENT = pack.on_accent[slot]
 	ACCENT = pack.accent_base[slot]
 	ACCENT_DIM = pack.accent_dim[slot]
 	TEXT = pack.text_hi
@@ -678,6 +735,11 @@ Ui_State :: struct {
 	lang_open:                                             bool, // interface-language modal
 	shortcuts_open:                                        bool, // keyboard-shortcuts modal
 	theme_menu_open:                                       bool, // Appearance theme dropdown
+	theme_preview_active:                                  bool,
+	theme_preview:                                         int,
+	theme_candidate:                                       int,
+	theme_candidate_since:                                 f64,
+	theme_menu_x, theme_menu_y:                            f32,
 	picking_emoji:                                         bool, // route the next picked file to custom emoji
 	picking_backup:                                        bool, // route the next picked file to the backup import
 	backup_mode:                                           Backup_Mode, // "" = closed; else the password modal

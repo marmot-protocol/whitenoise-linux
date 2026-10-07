@@ -72,6 +72,116 @@ theme_str_key :: proc(t: ^testing.T) {
 }
 
 @(test)
+theme_tokens_and_hints :: proc(t: ^testing.T) {
+	pack := parse_theme(
+		"Typed",
+		"typed",
+		`
+[colors]
+bg = "#01020380"
+bg-2 = "#11223344"
+overlay = "#12345678"
+banner = "#abcdef90"
+shadow-float = "#10203040"
+media-chip-outline = "#30405060"
+accent-hi = [
+    "#11223344",
+    "#22334455",
+    "#33445566",
+    "#44556677",
+    "#55667788",
+]
+[style]
+r-scale = 0.75
+glow-r = 7
+shadow-y = 4
+bubble-r = 12
+hover-dur = 80
+transition-dur = 160
+transition-dur = not-a-number
+pixel-metrics = true
+synth-grid = true
+paper-doodles = true
+scanlines = true
+hard-shadow = true
+focus-glow = true
+bevel = true
+outline-surfaces = true
+selected-inverts-text = true
+bracket-labels = true
+motion-fast = true
+font = "Example Font"
+backdrop = "waves"
+`,
+		default_pack(),
+	)
+	defer {delete(pack.font); delete(pack.backdrop)}
+	testing.expect_value(t, pack.bg, [4]f32{1, 2, 3, 128})
+	testing.expect_value(t, pack.banner, [4]f32{171, 205, 239, 144})
+	testing.expect_value(t, pack.shadow_float, [4]f32{16, 32, 48, 64})
+	testing.expect_value(t, pack.media_chip_outline, [4]f32{48, 64, 80, 96})
+	testing.expect_value(t, pack.accent_hi[4], [4]f32{85, 102, 119, 136})
+	testing.expect_value(t, pack.r_scale, f32(0.75))
+	testing.expect_value(t, pack.glow_r, f32(7))
+	testing.expect_value(t, pack.shadow_y, f32(4))
+	testing.expect_value(t, pack.bubble_r, f32(12))
+	testing.expect_value(t, pack.hover_dur, f32(80))
+	testing.expect_value(t, pack.transition_dur, f32(160))
+	testing.expect(
+		t,
+		pack.pixel_metrics && pack.synth_grid && pack.paper_doodles && pack.scanlines,
+	)
+	testing.expect(t, pack.hard_shadow && pack.focus_glow && pack.bevel && pack.outline_surfaces)
+	testing.expect(t, pack.selected_inverts_text && pack.bracket_labels && pack.motion_fast)
+	testing.expect_value(t, pack.font, "Example Font")
+	testing.expect_value(t, pack.backdrop, "waves")
+	testing.expect_value(t, theme_field_hint(&pack, {token = .Bg}), "#01020380")
+	testing.expect_value(t, theme_field_hint(&pack, {token = .Bg_2}), "#11223344")
+	testing.expect_value(t, theme_field_hint(&pack, {token = .Overlay}), "#12345678")
+	testing.expect_value(t, theme_field_hint(&pack, {token = .Accent_Hi, slot = 4}), "#55667788")
+	testing.expect_value(t, theme_field_hint(&pack, {token = .R_Scale}), "0.75")
+	testing.expect_value(t, theme_field_hint(&pack, {token = .Glow_R}), "7")
+	testing.expect_value(t, theme_field_hint(&pack, {token = .Name}), "Typed")
+	testing.expect_value(t, theme_field_hint(&pack, {token = .Font}), "Example Font")
+	testing.expect_value(t, theme_field_hint(&pack, {token = .Bevel}), "true")
+}
+
+@(test)
+theme_accent_inheritance :: proc(t: ^testing.T) {
+	ACCENTS :: `accent-base = [
+    "#000000ff",
+    "#ffffffff",
+    "#ffc107ff",
+    "#000080ff",
+    "#777777ff",
+]
+`
+	base := parse_theme("Base", "base", TEST_THEME, default_pack())
+	child := parse_theme("Child", "child", "base = \"base\"\n" + ACCENTS, base)
+	grandchild := parse_theme("Grandchild", "grandchild", "base = \"child\"\n", child)
+	for pack in ([2]Theme_Pack{child, grandchild}) {
+		for fill, slot in pack.accent_base {
+			testing.expect(t, theme_test_contrast(pack.on_accent[slot], fill) >= 4.5)
+		}
+		testing.expect_value(t, pack.on_accent[0], [4]f32{255, 255, 255, 255})
+		testing.expect_value(t, pack.on_accent[1], [4]f32{0, 0, 0, 255})
+	}
+	base = parse_theme("Explicit", "explicit", "on-accent = \"#12345678\"\n", default_pack())
+	child = parse_theme("Child", "child", "base = \"explicit\"\n" + ACCENTS, base)
+	grandchild = parse_theme("Grandchild", "grandchild", "base = \"child\"\n", child)
+	for pack in ([3]Theme_Pack{base, child, grandchild}) {
+		for ink in pack.on_accent {testing.expect_value(t, ink, [4]f32{18, 52, 86, 120})}
+	}
+	child = parse_theme(
+		"Replace",
+		"replace",
+		"base = \"explicit\"\non-accent = \"#abcdef80\"\n",
+		base,
+	)
+	for ink in child.on_accent {testing.expect_value(t, ink, [4]f32{171, 205, 239, 128})}
+}
+
+@(test)
 theme_system_palette :: proc(t: ^testing.T) {
 	for source in ([]string{"background = \"#101020\"\nforeground = \"#eeeeff\"\naccent = \"#88aaff\"\ncolor1 = \"#ff5566\"", "background = '#ffffff' # light\nforeground = '#112233'\naccent = '#445566'\nred = '#ff5566'"}) {
 		pack, ok := parse_system_theme(source)

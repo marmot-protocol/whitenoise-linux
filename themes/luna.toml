@@ -18,7 +18,7 @@ text-hi = "#17264aff"
 text-mid = "#3b4c69ff"
 text-lo = "#54617aff"
 text-vlo = "#67738aff"
-on-accent = "#ffffffff"
+
 bevel-hi = "#ffffffff"
 bevel-lo = "#7a8baaff"
 top-glint = "#ffffffb8"

@@ -68,7 +68,9 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 
 **Look & feel**
 
-- Eight themes (dark, light, AMOLED, retro, terminal, crayon, synthwave, chalkboard) and five accent colors, all data-driven from `themes/*.toml`. Drop your own pack in the data dir.
+- Eighteen bundled themes and five accent colors, all data-driven from `themes/*.toml`. Drop your own pack in the data dir.
+- Hover over a theme in Settings > Appearance to preview it. Leaving the menu or pressing Escape restores your theme; clicking saves the choice.
+- Button text derives separately for each accent color using sRGB contrast. Custom packs can set `on-accent` to override the text color for all five accents.
 - English, Italian, German, and Japanese, switchable at runtime, including search dialogs, theme notifications, and confirmation errors.
 - Native desktop notifications, a command palette, and full keyboard navigation.
 - Chat transitions follow the conversation, not its position in the list. New messages can reorder the list without sliding the open chat.
@@ -542,7 +544,7 @@ A few design choices are worth knowing before you dig in:
 
 - **Optimistic rendering.** Sending, reacting, and unreacting apply locally and repaint immediately, then reconcile against Marmot's response. The UI never blocks on the network round-trip.
 - **Two upload paths.** Chat attachments go through Marmot's encrypted MIP-04 path, readable only by group members. Profile pictures take the deliberately public Blossom path.
-- **Data-driven themes.** Every color, metric, and capability flag comes from a `themes/*.toml` pack. A new component reads the globals; it never branches on which theme is active.
+- **Data-driven themes.** Every color, metric, and capability flag comes from a `themes/*.toml` pack. The parser and editor share one token-to-field table in `app/theme.odin`; `app/state.odin` owns the live colors. A new component reads the globals; it never branches on which theme is active. Fullscreen media uses `media-backdrop` and `media-chip-bg` for its backdrop and floating header.
 - **Standard math.** Motion, decoration and sound synthesis call `core:math` directly, evaluating `f64` phases before narrowing to `f32`. Checkmark strokes use `math.sqrt` with a minimum normalization length of 0.001.
 
 For the deeper details, see [`AGENTS.md`](AGENTS.md).

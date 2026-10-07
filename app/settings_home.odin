@@ -803,6 +803,8 @@ settings_open :: proc(
 	level: Settings_Level = .Menu,
 ) {
 	if !settings_available(ui, section) {return}
+	settings_theme_preview_reset(ui)
+	ui.theme_menu_open = false
 	level := level
 	if anchor != "" || !settings_has_menu(section) {level = .Sheet}
 	target_tab := anchor == "" ? tab : settings_target_tab(section, anchor)

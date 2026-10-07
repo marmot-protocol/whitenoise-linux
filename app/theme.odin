@@ -47,7 +47,9 @@ Theme_Pack :: struct {
 	status_bar, banner, canvas_top:                         clay.Color,
 	text_hi, text_mid, text_lo, text_vlo:                   clay.Color,
 	field, field_hover, field_border, hover, plate:         clay.Color,
-	plate_inset, code_plate, card_well, divider, on_accent: clay.Color,
+	plate_inset, code_plate, card_well, divider:            clay.Color,
+	on_accent:                                              [5]clay.Color,
+	on_accent_explicit:                                     bool, // scalar override inherited by every accent slot
 	elevated_border, border_2:                              clay.Color,
 	danger, danger_soft, danger_border:                     clay.Color,
 	warning, warning_soft, warning_border:                  clay.Color,
@@ -73,6 +75,194 @@ Theme_Pack :: struct {
 	backdrop:                                               string, // named scene behind the conversation, "" = none
 	custom:                                                 bool, // from <data-dir>/themes, so it can be deleted
 	bg_2:                                                   clay.Color, // second stop of the page wash, a == 0 = flat
+}
+
+@(private)
+Theme_Token :: enum {
+	Name,
+	Font,
+	Backdrop,
+	Bg,
+	Bg_2,
+	Panel,
+	Panel_2,
+	Rail,
+	Elevated,
+	Card_Border,
+	Elevated_Border,
+	Border_2,
+	Status_Bar,
+	Banner,
+	Canvas_Top,
+	Text_Hi,
+	Text_Mid,
+	Text_Lo,
+	Text_Vlo,
+	Field,
+	Field_Hover,
+	Field_Border,
+	Hover,
+	Plate,
+	Plate_Inset,
+	Code_Plate,
+	Card_Well,
+	Divider,
+	Danger,
+	Danger_Soft,
+	Danger_Border,
+	Warning,
+	Warning_Soft,
+	Warning_Border,
+	Overlay,
+	Overlay_Strong,
+	Vignette,
+	Shadow_Soft,
+	Shadow_Card,
+	Shadow_Popover,
+	Shadow_Float,
+	Bevel_Hi,
+	Bevel_Lo,
+	Top_Glint,
+	Avatar_Ring,
+	Media_Backdrop,
+	Media_Chip_Bg,
+	Media_Chip_Fg,
+	Media_Chip_Outline,
+	Media_Control_Bg,
+	On_Accent,
+	Accent_Base,
+	Accent_Hi,
+	Accent_Dim,
+	Accent_Surface,
+	Accent_Glow,
+	R_Scale,
+	Border_W,
+	Glow_R,
+	Shadow_Y,
+	Bubble_R,
+	Hover_Dur,
+	Transition_Dur,
+	Pixel_Metrics,
+	Synth_Grid,
+	Paper_Doodles,
+	Scanlines,
+	Hard_Shadow,
+	Focus_Glow,
+	Bevel,
+	Outline_Surfaces,
+	Selected_Inverts_Text,
+	Bracket_Labels,
+	Motion_Fast,
+}
+
+@(private)
+Theme_Token_Kind :: enum {
+	Color,
+	Colors,
+	Ink,
+	Number,
+	Flag,
+	Text,
+}
+
+@(private)
+Theme_Token_Descriptor :: struct {
+	key:    string,
+	kind:   Theme_Token_Kind,
+	offset: uintptr,
+}
+
+// One key-to-storage contract for parsing and the editor. Offsets are
+// compile-time constants; the kind determines the pointed-to type.
+@(private)
+THEME_TOKENS := [Theme_Token]Theme_Token_Descriptor {
+	.Name                  = {"name", .Text, offset_of(Theme_Pack, name)},
+	.Font                  = {"font", .Text, offset_of(Theme_Pack, font)},
+	.Backdrop              = {"backdrop", .Text, offset_of(Theme_Pack, backdrop)},
+	.Bg                    = {"bg", .Color, offset_of(Theme_Pack, bg)},
+	.Bg_2                  = {"bg-2", .Color, offset_of(Theme_Pack, bg_2)},
+	.Panel                 = {"panel", .Color, offset_of(Theme_Pack, panel)},
+	.Panel_2               = {"panel-2", .Color, offset_of(Theme_Pack, panel_2)},
+	.Rail                  = {"rail", .Color, offset_of(Theme_Pack, rail)},
+	.Elevated              = {"elevated", .Color, offset_of(Theme_Pack, elevated)},
+	.Card_Border           = {"card-border", .Color, offset_of(Theme_Pack, card_border)},
+	.Elevated_Border       = {"elevated-border", .Color, offset_of(Theme_Pack, elevated_border)},
+	.Border_2              = {"border-2", .Color, offset_of(Theme_Pack, border_2)},
+	.Status_Bar            = {"status-bar", .Color, offset_of(Theme_Pack, status_bar)},
+	.Banner                = {"banner", .Color, offset_of(Theme_Pack, banner)},
+	.Canvas_Top            = {"canvas-top", .Color, offset_of(Theme_Pack, canvas_top)},
+	.Text_Hi               = {"text-hi", .Color, offset_of(Theme_Pack, text_hi)},
+	.Text_Mid              = {"text-mid", .Color, offset_of(Theme_Pack, text_mid)},
+	.Text_Lo               = {"text-lo", .Color, offset_of(Theme_Pack, text_lo)},
+	.Text_Vlo              = {"text-vlo", .Color, offset_of(Theme_Pack, text_vlo)},
+	.Field                 = {"field", .Color, offset_of(Theme_Pack, field)},
+	.Field_Hover           = {"field-hover", .Color, offset_of(Theme_Pack, field_hover)},
+	.Field_Border          = {"field-border", .Color, offset_of(Theme_Pack, field_border)},
+	.Hover                 = {"hover", .Color, offset_of(Theme_Pack, hover)},
+	.Plate                 = {"plate", .Color, offset_of(Theme_Pack, plate)},
+	.Plate_Inset           = {"plate-inset", .Color, offset_of(Theme_Pack, plate_inset)},
+	.Code_Plate            = {"code-plate", .Color, offset_of(Theme_Pack, code_plate)},
+	.Card_Well             = {"card-well", .Color, offset_of(Theme_Pack, card_well)},
+	.Divider               = {"divider", .Color, offset_of(Theme_Pack, divider)},
+	.On_Accent             = {"on-accent", .Ink, offset_of(Theme_Pack, on_accent)},
+	.Danger                = {"danger", .Color, offset_of(Theme_Pack, danger)},
+	.Danger_Soft           = {"danger-soft", .Color, offset_of(Theme_Pack, danger_soft)},
+	.Danger_Border         = {"danger-border", .Color, offset_of(Theme_Pack, danger_border)},
+	.Warning               = {"warning", .Color, offset_of(Theme_Pack, warning)},
+	.Warning_Soft          = {"warning-soft", .Color, offset_of(Theme_Pack, warning_soft)},
+	.Warning_Border        = {"warning-border", .Color, offset_of(Theme_Pack, warning_border)},
+	.Overlay               = {"overlay", .Color, offset_of(Theme_Pack, overlay)},
+	.Overlay_Strong        = {"overlay-strong", .Color, offset_of(Theme_Pack, overlay_strong)},
+	.Vignette              = {"vignette", .Color, offset_of(Theme_Pack, vignette)},
+	.Shadow_Soft           = {"shadow-soft", .Color, offset_of(Theme_Pack, shadow_soft)},
+	.Shadow_Card           = {"shadow-card", .Color, offset_of(Theme_Pack, shadow_card)},
+	.Shadow_Popover        = {"shadow-popover", .Color, offset_of(Theme_Pack, shadow_popover)},
+	.Shadow_Float          = {"shadow-float", .Color, offset_of(Theme_Pack, shadow_float)},
+	.Bevel_Hi              = {"bevel-hi", .Color, offset_of(Theme_Pack, bevel_hi)},
+	.Bevel_Lo              = {"bevel-lo", .Color, offset_of(Theme_Pack, bevel_lo)},
+	.Top_Glint             = {"top-glint", .Color, offset_of(Theme_Pack, top_glint)},
+	.Avatar_Ring           = {"avatar-ring", .Color, offset_of(Theme_Pack, avatar_ring)},
+	.Media_Backdrop        = {"media-backdrop", .Color, offset_of(Theme_Pack, media_backdrop)},
+	.Media_Chip_Bg         = {"media-chip-bg", .Color, offset_of(Theme_Pack, media_chip_bg)},
+	.Media_Chip_Fg         = {"media-chip-fg", .Color, offset_of(Theme_Pack, media_chip_fg)},
+	.Media_Chip_Outline    = {
+		"media-chip-outline",
+		.Color,
+		offset_of(Theme_Pack, media_chip_outline),
+	},
+	.Media_Control_Bg      = {"media-control-bg", .Color, offset_of(Theme_Pack, media_control_bg)},
+	.Accent_Base           = {"accent-base", .Colors, offset_of(Theme_Pack, accent_base)},
+	.Accent_Hi             = {"accent-hi", .Colors, offset_of(Theme_Pack, accent_hi)},
+	.Accent_Dim            = {"accent-dim", .Colors, offset_of(Theme_Pack, accent_dim)},
+	.Accent_Surface        = {"accent-surface", .Colors, offset_of(Theme_Pack, accent_surface)},
+	.Accent_Glow           = {"accent-glow", .Colors, offset_of(Theme_Pack, accent_glow)},
+	.R_Scale               = {"r-scale", .Number, offset_of(Theme_Pack, r_scale)},
+	.Border_W              = {"border-w", .Number, offset_of(Theme_Pack, border_w)},
+	.Glow_R                = {"glow-r", .Number, offset_of(Theme_Pack, glow_r)},
+	.Shadow_Y              = {"shadow-y", .Number, offset_of(Theme_Pack, shadow_y)},
+	.Bubble_R              = {"bubble-r", .Number, offset_of(Theme_Pack, bubble_r)},
+	.Hover_Dur             = {"hover-dur", .Number, offset_of(Theme_Pack, hover_dur)},
+	.Transition_Dur        = {"transition-dur", .Number, offset_of(Theme_Pack, transition_dur)},
+	.Pixel_Metrics         = {"pixel-metrics", .Flag, offset_of(Theme_Pack, pixel_metrics)},
+	.Synth_Grid            = {"synth-grid", .Flag, offset_of(Theme_Pack, synth_grid)},
+	.Paper_Doodles         = {"paper-doodles", .Flag, offset_of(Theme_Pack, paper_doodles)},
+	.Scanlines             = {"scanlines", .Flag, offset_of(Theme_Pack, scanlines)},
+	.Hard_Shadow           = {"hard-shadow", .Flag, offset_of(Theme_Pack, hard_shadow)},
+	.Focus_Glow            = {"focus-glow", .Flag, offset_of(Theme_Pack, focus_glow)},
+	.Bevel                 = {"bevel", .Flag, offset_of(Theme_Pack, bevel)},
+	.Outline_Surfaces      = {"outline-surfaces", .Flag, offset_of(Theme_Pack, outline_surfaces)},
+	.Selected_Inverts_Text = {
+		"selected-inverts-text",
+		.Flag,
+		offset_of(Theme_Pack, selected_inverts_text),
+	},
+	.Bracket_Labels        = {"bracket-labels", .Flag, offset_of(Theme_Pack, bracket_labels)},
+	.Motion_Fast           = {"motion-fast", .Flag, offset_of(Theme_Pack, motion_fast)},
+}
+
+@(private)
+theme_token_pointer :: proc(pack: ^Theme_Pack, token: Theme_Token) -> rawptr {
+	return rawptr(uintptr(pack) + THEME_TOKENS[token].offset)
 }
 
 theme_packs: [dynamic]Theme_Pack
@@ -202,7 +392,9 @@ ink_on :: proc(fill: clay.Color) -> clay.Color {
 		return c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4)
 	}
 	lum := 0.2126 * linear(fill.r) + 0.7152 * linear(fill.g) + 0.0722 * linear(fill.b)
-	return lum > 0.179 ? BLACK : WHITE
+	black_contrast := (lum + 0.05) / 0.05
+	white_contrast := 1.05 / (lum + 0.05)
+	return black_contrast >= white_contrast ? BLACK : WHITE
 }
 
 // Toward the page's own extreme: on a dark theme "up" is lighter, on a
@@ -270,10 +462,6 @@ derive_pack :: proc(p: ^Theme_Pack, present: map[string]bool) {
 		if !has(present, "accent-dim") {p.accent_dim[i] = mix(base, BLACK, 0.30)}
 		if !has(present, "accent-surface") {p.accent_surface[i] = mix(p.bg, base, 0.18)}
 		if !has(present, "accent-glow") {p.accent_glow[i] = alpha(base, 51)}
-	}
-	if !has(present, "on-accent") {
-		// Ink on the accent, picked for contrast rather than declared.
-		p.on_accent = luma(p.accent_base[0]) > 0.6 ? BLACK : WHITE
 	}
 
 	// Status colors keep their hue and take their soft/border pair from
@@ -421,90 +609,9 @@ parse_theme :: proc(name: string, mode: string, source: string, base: Theme_Pack
 	pack := base
 	pack.name = name
 	pack.mode = mode
+	inherits := len(toml_str_key(source, "base")) > 0
+	if !inherits {pack.on_accent_explicit = false}
 
-	scalars := map[string]^clay.Color {
-		"bg"                 = &pack.bg,
-		"bg-2"               = &pack.bg_2,
-		"panel"              = &pack.panel,
-		"panel-2"            = &pack.panel_2,
-		"rail"               = &pack.rail,
-		"elevated"           = &pack.elevated,
-		"card-border"        = &pack.card_border,
-		"elevated-border"    = &pack.elevated_border,
-		"border-2"           = &pack.border_2,
-		"status-bar"         = &pack.status_bar,
-		"banner"             = &pack.banner,
-		"canvas-top"         = &pack.canvas_top,
-		"text-hi"            = &pack.text_hi,
-		"text-mid"           = &pack.text_mid,
-		"text-lo"            = &pack.text_lo,
-		"text-vlo"           = &pack.text_vlo,
-		"field"              = &pack.field,
-		"field-hover"        = &pack.field_hover,
-		"field-border"       = &pack.field_border,
-		"hover"              = &pack.hover,
-		"plate"              = &pack.plate,
-		"plate-inset"        = &pack.plate_inset,
-		"code-plate"         = &pack.code_plate,
-		"card-well"          = &pack.card_well,
-		"divider"            = &pack.divider,
-		"on-accent"          = &pack.on_accent,
-		"danger"             = &pack.danger,
-		"danger-soft"        = &pack.danger_soft,
-		"danger-border"      = &pack.danger_border,
-		"warning"            = &pack.warning,
-		"warning-soft"       = &pack.warning_soft,
-		"warning-border"     = &pack.warning_border,
-		"overlay"            = &pack.overlay,
-		"overlay-strong"     = &pack.overlay_strong,
-		"vignette"           = &pack.vignette,
-		"shadow-soft"        = &pack.shadow_soft,
-		"shadow-card"        = &pack.shadow_card,
-		"shadow-popover"     = &pack.shadow_popover,
-		"shadow-float"       = &pack.shadow_float,
-		"bevel-hi"           = &pack.bevel_hi,
-		"bevel-lo"           = &pack.bevel_lo,
-		"top-glint"          = &pack.top_glint,
-		"avatar-ring"        = &pack.avatar_ring,
-		"media-backdrop"     = &pack.media_backdrop,
-		"media-chip-bg"      = &pack.media_chip_bg,
-		"media-chip-fg"      = &pack.media_chip_fg,
-		"media-chip-outline" = &pack.media_chip_outline,
-		"media-control-bg"   = &pack.media_control_bg,
-	}
-	defer delete(scalars)
-	tables := map[string]^[5]clay.Color {
-		"accent-base"    = &pack.accent_base,
-		"accent-hi"      = &pack.accent_hi,
-		"accent-dim"     = &pack.accent_dim,
-		"accent-surface" = &pack.accent_surface,
-		"accent-glow"    = &pack.accent_glow,
-	}
-	defer delete(tables)
-	floats := map[string]^f32 {
-		"r-scale"        = &pack.r_scale,
-		"border-w"       = &pack.border_w,
-		"glow-r"         = &pack.glow_r,
-		"shadow-y"       = &pack.shadow_y,
-		"bubble-r"       = &pack.bubble_r,
-		"hover-dur"      = &pack.hover_dur,
-		"transition-dur" = &pack.transition_dur,
-	}
-	defer delete(floats)
-	bools := map[string]^bool {
-		"pixel-metrics"         = &pack.pixel_metrics,
-		"synth-grid"            = &pack.synth_grid,
-		"paper-doodles"         = &pack.paper_doodles,
-		"scanlines"             = &pack.scanlines,
-		"hard-shadow"           = &pack.hard_shadow,
-		"focus-glow"            = &pack.focus_glow,
-		"bevel"                 = &pack.bevel,
-		"outline-surfaces"      = &pack.outline_surfaces,
-		"selected-inverts-text" = &pack.selected_inverts_text,
-		"bracket-labels"        = &pack.bracket_labels,
-		"motion-fast"           = &pack.motion_fast,
-	}
-	defer delete(bools)
 
 	// Which keys the source actually set; everything else is derived.
 	present := make(map[string]bool, allocator = context.temp_allocator)
@@ -543,41 +650,44 @@ parse_theme :: proc(name: string, mode: string, source: string, base: Theme_Pack
 		key := strings.trim_space(trimmed[:eq])
 		value := strings.trim_space(trimmed[eq + 1:])
 
-		if entry, ok := tables[key]; ok {
-			table = entry
-			table_index = 0
-			present[key] = true
-			continue
-		}
-		if entry, ok := scalars[key]; ok {
-			entry^ = parse_hex_color(value)
-			present[key] = true
-			continue
-		}
-		if entry, ok := floats[key]; ok {
-			if v, float_ok := strconv.parse_f32(value); float_ok {
-				entry^ = v
-				present[key] = true
+		for descriptor, token in THEME_TOKENS {
+			if descriptor.key != key || token == .Name {continue}
+			entry := theme_token_pointer(&pack, token)
+			switch descriptor.kind {
+			case .Colors:
+				table = cast(^[5]clay.Color)entry
+				table_index = 0
+			case .Color:
+				(cast(^clay.Color)entry)^ = parse_hex_color(value)
+			case .Ink:
+				ink := parse_hex_color(value)
+				for &slot in (cast(^[5]clay.Color)entry)^ {slot = ink}
+				pack.on_accent_explicit = true
+			case .Number:
+				v, ok := strconv.parse_f32(value)
+				if !ok {continue}
+				(cast(^f32)entry)^ = v
+			case .Flag:
+				(cast(^bool)entry)^ = value == "true"
+			case .Text:
+				(cast(^string)entry)^ = strings.clone(strings.trim(value, "\""))
 			}
-			continue
-		}
-		if entry, ok := bools[key]; ok {
-			entry^ = value == "true"
 			present[key] = true
-			continue
-		}
-		if key == "font" {
-			pack.font = strings.clone(strings.trim(value, "\""))
-		}
-		if key == "backdrop" {
-			pack.backdrop = strings.clone(strings.trim(value, "\""))
+			break
 		}
 	}
 
 	// A pack that names a base inherits the rest from it; one that
 	// names none derives, which is what lets a theme be a dozen lines.
-	if len(toml_str_key(source, "base")) == 0 {
+	if !inherits {
 		derive_pack(&pack, present)
+	}
+	// An inherited scalar override stays explicit. Otherwise changing an
+	// accent, even in a child pack, must pick its own maximum-contrast ink.
+	if !pack.on_accent_explicit {
+		for fill, i in pack.accent_base {
+			pack.on_accent[i] = ink_on(fill)
+		}
 	}
 	return pack
 }

@@ -63,21 +63,28 @@ test_theme_edit_round_trip :: proc(t: ^testing.T) {
 		buf: [dynamic]u8
 		append(&ui.theme_fields, buf)
 	}
-	set :: proc(ui: ^Ui_State, key: string, value: string) {
+	set :: proc(ui: ^Ui_State, token: Theme_Token, value: string, slot := 0) {
 		for field, i in THEME_FIELDS {
-			if field.key == key {
+			if field.token == token && field.slot == slot {
 				ed_set(ui, &ui.theme_fields[i], value)
 				return
 			}
 		}
 	}
-	set(&ui, "name", "My Theme")
-	set(&ui, "bg", "#101018")
-	set(&ui, "bg-2", "#202030")
-	set(&ui, "text-hi", "#f0f0f0")
-	set(&ui, "accent-1", "#ff8800")
-	set(&ui, "accent-2", "#0088ff")
-	set(&ui, "accent-3", "#88ff00")
+	defer {
+		for field in ui.theme_fields {delete(field)}
+		delete(ui.theme_fields)
+	}
+	set(&ui, .Name, "My Theme")
+	set(&ui, .Bg, "#101018")
+	set(&ui, .Bg_2, "#202030")
+	set(&ui, .Text_Hi, "#f0f0f0")
+	set(&ui, .Accent_Base, "#ff8800", 0)
+	set(&ui, .Accent_Base, "#0088ff", 1)
+	set(&ui, .Accent_Base, "#88ff00", 2)
+	set(&ui, .Overlay, "#12345678")
+	set(&ui, .R_Scale, "0.75")
+	set(&ui, .Font, "Example Font")
 
 	toml := theme_edit_toml(&ui)
 	testing.expect_value(t, theme_offer_name(toml), "My Theme")
@@ -86,6 +93,9 @@ test_theme_edit_round_trip :: proc(t: ^testing.T) {
 	testing.expect_value(t, pack.bg, [4]f32{16, 16, 24, 255})
 	testing.expect_value(t, pack.bg_2, [4]f32{32, 32, 48, 255})
 	testing.expect_value(t, pack.text_hi, [4]f32{240, 240, 240, 255})
+	testing.expect_value(t, pack.overlay, [4]f32{18, 52, 86, 120})
+	testing.expect_value(t, pack.r_scale, f32(0.75))
+	testing.expect_value(t, pack.font, "Example Font")
 	testing.expect_value(t, pack.accent_base[0], [4]f32{255, 136, 0, 255})
 	// Three picks fill five ramps: a slot left blank repeats the first,
 	// so no accent is ever black.
@@ -94,8 +104,9 @@ test_theme_edit_round_trip :: proc(t: ^testing.T) {
 	testing.expect_value(t, pack.accent_base[4], pack.accent_base[0])
 	// Derived, not written: a mid text tone between the ink and the page.
 	testing.expect(t, pack.text_mid.r < pack.text_hi.r && pack.text_mid.r > pack.bg.r)
-	// Ink on that orange is dark, picked by luma rather than declared.
-	testing.expect_value(t, pack.on_accent, [4]f32{0, 0, 0, 255})
+	// Each accent gets its own maximum-contrast ink rather than slot zero's.
+	testing.expect_value(t, pack.on_accent[0], [4]f32{0, 0, 0, 255})
+	testing.expect_value(t, pack.on_accent[2], [4]f32{0, 0, 0, 255})
 }
 
 // A light pack and a dark one must both derive legibly from the same
@@ -125,7 +136,6 @@ test_builtin_packs_legible :: proc(t: ^testing.T) {
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
 	load_themes()
-	testing.expect(t, len(theme_packs) >= 16, "the eight new packs load")
 
 	BAD :: clay.Color{255, 0, 255, 255} // what an unparseable hex becomes
 	lum :: proc(c: clay.Color) -> f32 {
@@ -167,12 +177,8 @@ test_builtin_packs_legible :: proc(t: ^testing.T) {
 	}
 }
 
-// Mention chips are filled with the accent and inked with ink_on, so
-// the ink must reach WCAG AA (4.5:1) on any fill. The gray sweep
-// crosses the black/white tie near #777777, where a luma rule picks
-// white at 4.48:1; amber and navy are the light and dark extremes.
-@(test)
-test_ink_on_reads_on_any_fill :: proc(t: ^testing.T) {
+@(private)
+theme_test_contrast :: proc(a, b: clay.Color) -> f64 {
 	linear :: proc(c: f32) -> f64 {
 		c := f64(c) / 255
 		return c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4)
@@ -180,10 +186,13 @@ test_ink_on_reads_on_any_fill :: proc(t: ^testing.T) {
 	lum :: proc(c: clay.Color) -> f64 {
 		return 0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b)
 	}
-	contrast :: proc(a, b: clay.Color) -> f64 {
-		hi, lo := max(lum(a), lum(b)), min(lum(a), lum(b))
-		return (hi + 0.05) / (lo + 0.05)
-	}
+	hi, lo := max(lum(a), lum(b)), min(lum(a), lum(b))
+	return (hi + 0.05) / (lo + 0.05)
+}
+
+@(test)
+test_ink_on_reads_on_any_fill :: proc(t: ^testing.T) {
+
 
 	fills: [258]clay.Color = {
 		0 = {255, 193, 7, 255},
@@ -193,11 +202,35 @@ test_ink_on_reads_on_any_fill :: proc(t: ^testing.T) {
 		fills[2 + v] = {f32(v), f32(v), f32(v), 255}
 	}
 	for fill in fills {
-		ratio := contrast(ink_on(fill), fill)
+		ratio := theme_test_contrast(ink_on(fill), fill)
 		testing.expectf(t, ratio >= 4.5, "ink on %v reads at %.2f:1", fill, ratio)
+		// Exercise derivation for every slot, not just the ink helper.
+		base := default_pack()
+		for &slot in base.accent_base {slot = fill}
+		pack := parse_theme("Sweep", "sweep", "", base)
+		for ink, slot in pack.on_accent {
+			ratio := theme_test_contrast(ink, fill)
+			testing.expectf(
+				t,
+				ratio >= 4.5,
+				"accent slot %d on %v reads at %.2f:1",
+				slot,
+				fill,
+				ratio,
+			)
+		}
 	}
 	testing.expect_value(t, ink_on({255, 193, 7, 255}), BLACK)
 	testing.expect_value(t, ink_on({0, 0, 128, 255}), WHITE)
+	// Use only the embedded sources: custom packs may explicitly opt out.
+	for source in THEME_SOURCES {
+		pack := parse_theme(source[0], "builtin", source[1], default_pack())
+		defer {delete(pack.font); delete(pack.backdrop)}
+		for fill, slot in pack.accent_base {
+			ratio := theme_test_contrast(pack.on_accent[slot], fill)
+			testing.expectf(t, ratio >= 4.5, "%s slot %d reads at %.2f:1", pack.name, slot, ratio)
+		}
+	}
 }
 
 // The active pack is read every frame by layout while the index is

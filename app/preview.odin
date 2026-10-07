@@ -710,7 +710,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 			offset = {0, full ? 0 : rise(clay.ID("PvModal"))},
 			attachment = {element = .CenterCenter, parent = .CenterCenter},
 		},
-		backgroundColor = full ? clay.Color{0, 0, 0, 255} : CARD,
+		backgroundColor = full ? MEDIA_BACKDROP : CARD,
 		cornerRadius = rr(full ? 0 : 12),
 		border = {color = ELEVATED_BORDER, width = full ? clay.BorderWidth{} : bw()},
 	},
@@ -725,12 +725,12 @@ preview_modal :: proc(ui: ^Ui_State) {
 				childAlignment = {y = .Center},
 			},
 			floating = full ? clay.FloatingElementConfig{attachTo = .Parent, zIndex = 15, offset = {-12, 12}, attachment = {element = .RightTop, parent = .RightTop}} : {},
-			backgroundColor = full ? clay.Color{0, 0, 0, 150} : {},
+			backgroundColor = full ? MEDIA_CHIP_BG : {},
 		},
 		) {
 			clay.Text(
 				arc_short_name(slides ? preview.slides[preview.slide].name : preview.name),
-				{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
+				{fontId = FONT_TITLE, fontSize = 13, textColor = full ? MEDIA_CHIP_FG : TEXT},
 			)
 			if clay.UI(clay.ID("PvHeadPad"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if preview.kind == .Message && ui.prefs.tts_enabled {

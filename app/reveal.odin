@@ -54,6 +54,8 @@ reveal: Reveal
 // Pick a theme. The change is deferred to the end of this frame so the
 // frame still on screen (the old theme) is the one captured.
 theme_switch :: proc(ui: ^Ui_State, theme: int, accent: int) {
+	settings_theme_preview_reset(ui)
+	ui.theme_menu_open = false
 	if !motion_on() || reveal.armed {
 		apply_theme(theme, accent)
 		ui.theme, ui.accent = theme, accent

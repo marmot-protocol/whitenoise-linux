@@ -1568,6 +1568,7 @@ app_main :: proc() {
 					tl_offset = data.scrollPosition.y
 				}
 			}
+			settings_theme_preview_guard(&ui)
 			render_commands := build_layout(&ui, rl.GetFrameTime())
 			if !layout_overflow && settings_resolve_scroll(&ui) {
 				render_commands = build_layout(&ui, 0)

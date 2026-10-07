@@ -95,7 +95,8 @@ poll_system_theme :: proc(ui: ^Ui_State, now: f64) {
 				theme_packs[system_theme_index] = pack
 				delete(system_theme_source)
 				system_theme_source = strings.clone(source)
-				if ui.theme == system_theme_index {apply_theme(ui.theme, ui.accent)}
+				live_theme := ui.theme_preview_active ? ui.theme_preview : ui.theme
+				if live_theme == system_theme_index {apply_theme(live_theme, ui.accent)}
 			}
 		}
 	}

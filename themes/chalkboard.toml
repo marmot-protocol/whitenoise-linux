@@ -18,7 +18,7 @@ text-mid = "#b6b8a8ff"
 text-lo = "#889084ff"
 text-vlo = "#5c665eff"
 hover = "#2e3c33ff"
-on-accent = "#1e2a23ff"
+
 bevel-hi = "#ece9d8ff"
 bevel-lo = "#1b2620ff"
 danger = "#e27a6eff"
