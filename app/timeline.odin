@@ -3251,7 +3251,7 @@ body_text :: proc(
 }
 
 @(private)
-MESSAGE_LINES :: 6
+DEFAULT_MESSAGE_LINES :: 6
 
 @(private)
 EXCERPT_DURATION :: 100 * time.Millisecond
@@ -3259,7 +3259,6 @@ EXCERPT_DURATION :: 100 * time.Millisecond
 @(private)
 Excerpt :: struct {
 	expanded:                   bool,
-	manual:                     bool, // a per-message choice overrides the preference
 	changed:                    time.Tick,
 	from_height, closed_height: f32,
 }
@@ -3271,21 +3270,20 @@ Excerpt_Source :: enum {
 }
 
 @(private)
-excerpt_expanded :: proc(state: Excerpt) -> bool {
-	return state.expanded || !state.manual && g_prefs != nil && g_prefs.auto_expand_messages
+message_line_limit :: proc() -> int {
+	if g_prefs == nil {return DEFAULT_MESSAGE_LINES}
+	return g_prefs.message_lines > 0 ? g_prefs.message_lines : max(int)
 }
 
 @(private)
 excerpt_toggle :: proc(state: ^Excerpt, id: u32) {
 	state.from_height = clay.GetElementData(clay.ID("ExcerptClip", id)).boundingBox.height
-	expanded := excerpt_expanded(state^)
-	if !expanded && (state.changed == {} || time.tick_since(state.changed) >= EXCERPT_DURATION) {
+	if !state.expanded &&
+	   (state.changed == {} || time.tick_since(state.changed) >= EXCERPT_DURATION) {
 		state.closed_height = state.from_height
 	}
-	state.expanded = !expanded
-	state.manual = true
-	// An automatically opened body has no measured closed height yet.
-	state.changed = state.expanded || state.closed_height > 0 ? time.tick_now() : time.Tick{}
+	state.expanded = !state.expanded
+	state.changed = time.tick_now()
 }
 
 @(private)
@@ -3300,15 +3298,15 @@ excerpt_body :: proc(
 	emoji := Emoji_Scale.Inline,
 ) -> bool {
 	if len(text) == 0 && len(blocks) == 0 {return false}
-	expanded := excerpt_expanded(state)
+	threshold := message_line_limit()
 	progress :=
 		state.changed == {} || !motion_on() ? f32(1) : clamp(f32(time.tick_since(state.changed)) / f32(EXCERPT_DURATION), 0, 1)
-	moving := progress < 1
-	limit := expanded || moving ? max(int) : MESSAGE_LINES
+	moving := threshold < max(int) && progress < 1
+	limit := state.expanded || moving ? max(int) : threshold
 	height := clay.SizingFit()
 	if moving {
 		full := clay.GetElementData(clay.ID("ExcerptBody", id)).boundingBox.height
-		target := expanded ? full : state.closed_height
+		target := state.expanded ? full : state.closed_height
 		eased := progress * progress * (3 - 2 * progress)
 		height = clay.SizingFixed(state.from_height + (target - state.from_height) * eased)
 		anim_moving += 1
@@ -3342,7 +3340,7 @@ excerpt_body :: proc(
 						emoji = emoji,
 					) ||
 					more
-				more ||= lines > MESSAGE_LINES
+				more ||= lines > threshold
 			} else {
 				more =
 					body_text(
@@ -3355,18 +3353,20 @@ excerpt_body :: proc(
 						limit,
 						emoji = emoji,
 					) >
-						MESSAGE_LINES ||
+						threshold ||
 					more
 			}
 		}
 	}
-	return more
+	return threshold < max(int) && more
 }
 
 // Plain fallback for pending messages and records without parsed blocks.
 @(private)
 message_excerpt :: proc(id: u32, text: string, color: clay.Color, state: Excerpt = {}) -> bool {
-	if len(wrapped_lines(text, body_wrap_w(), BODY_FS)) <= MESSAGE_LINES {return false}
+	threshold := message_line_limit()
+	if threshold == max(int) ||
+	   len(wrapped_lines(text, body_wrap_w(), BODY_FS)) <= threshold {return false}
 	cards := gh_cards_on
 	gh_cards_on = false
 	excerpt_body(id, text, nil, state, body_wrap_w(), color)
@@ -3377,6 +3377,7 @@ message_excerpt :: proc(id: u32, text: string, color: clay.Color, state: Excerpt
 
 @(private)
 message_more :: proc(id: u32, state: Excerpt = {}) {
+	if message_line_limit() == max(int) {return}
 	if clay.UI(clay.ID("MessageMore", id))(
 	{
 		layout = {padding = {top = 4, bottom = 4}},
@@ -3385,7 +3386,7 @@ message_more :: proc(id: u32, state: Excerpt = {}) {
 	},
 	) {
 		clay.Text(
-			excerpt_expanded(state) ? tr("Show less") : tr("Read more"),
+			state.expanded ? tr("Show less") : tr("Read more"),
 			{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
 		)
 	}

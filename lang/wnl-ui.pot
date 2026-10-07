@@ -431,9 +431,6 @@ msgstr ""
 msgid "Aug"
 msgstr ""
 
-msgid "Automatically expand long messages"
-msgstr ""
-
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr ""
 
@@ -792,6 +789,9 @@ msgid "Code plate"
 msgstr ""
 
 msgid "Coffee"
+msgstr ""
+
+msgid "Collapse messages and event cards after this many lines. Set to 0 to never collapse."
 msgstr ""
 
 msgid "Collapse the chat list"
@@ -2392,6 +2392,9 @@ msgstr ""
 msgid "Message copied"
 msgstr ""
 
+msgid "Message line limit"
+msgstr ""
+
 msgid "Message menu"
 msgstr ""
 
@@ -3567,9 +3570,6 @@ msgid "Show hint"
 msgstr ""
 
 msgid "Show less"
-msgstr ""
-
-msgid "Show long messages and event cards in full. You can still choose Show less."
 msgstr ""
 
 msgid "Show maps from OpenStreetMap?"

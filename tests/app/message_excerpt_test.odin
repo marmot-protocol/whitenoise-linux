@@ -23,6 +23,7 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 	init_layout(&memory, 32768, {900, 700})
 	defer delete(memory)
 	ui: Ui_State
+	ui.prefs.message_lines = DEFAULT_MESSAGE_LINES
 	ui.prefs.reduce_motion = true
 	ui.prefs.tts_enabled = true
 	g_ui, g_prefs = &ui, &ui.prefs
@@ -38,7 +39,7 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 		}
 		clay.EndLayout(0)
 		if i > 0 {
-			testing.expect_value(t, len(sel_lines), MESSAGE_LINES)
+			testing.expect_value(t, len(sel_lines), DEFAULT_MESSAGE_LINES)
 			testing.expect(t, sel_lines[5].start + len(sel_lines[5].text) < len(text))
 			testing.expect(t, clay.GetElementData(clay.ID("MessageMore", 17)).found)
 		}
@@ -87,11 +88,11 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 			) {message_row(2, msg)}
 			commands := clay.EndLayout(0)
 			if frame < 2 {continue}
-			testing.expect_value(t, len(sel_lines), MESSAGE_LINES)
+			testing.expect_value(t, len(sel_lines), DEFAULT_MESSAGE_LINES)
 			testing.expect_value(
 				t,
 				clay.GetElementData(clay.ID("MessageMore", 2 * 4096)).found,
-				count > MESSAGE_LINES,
+				count > DEFAULT_MESSAGE_LINES,
 			)
 			testing.expect(t, clay.GetElementData(clay.ID("MsgQuoteBar", 2 * 4096 + 3 * 16)).found)
 			for cmd in commands.internalArray[:commands.length] {
@@ -180,14 +181,6 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 					}
 					if frame == 8 ||
 					   reduced && frame >= 5 {testing.expect_value(t, height, closed)}
-					label_found := false
-					for cmd in commands.internalArray[:commands.length] {
-						if cmd.commandType != .Text {continue}
-						text := cmd.renderData.text.stringContents
-						if string(text.chars[:text.length]) ==
-						   (state.expanded ? "Show less" : "Read more") {label_found = true}
-					}
-					testing.expect(t, label_found)
 					testing.expect_value(t, preview.kind, Preview_Kind.None)
 					if markdown &&
 					   !reduced &&
@@ -203,56 +196,47 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 			}
 		}
 	}
-	// The preference opens new bodies, but never overrides Show less.
+	// Thresholds include the exact boundary and 0, even with an old toggle in flight.
 	for markdown in ([]bool{false, true}) {
-		state: Excerpt
-		for step in 0 ..< 6 {
-			ui.prefs.auto_expand_messages = step != 0 && step != 3
-			ui.prefs.reduce_motion = false
-			if step == 2 || step == 5 {excerpt_toggle(&state, 99)}
-			if step == 5 {state.changed = time.tick_add(time.tick_now(), -EXCERPT_DURATION)}
+		for threshold in ([]int{1, 3, 6, 7, 8, 0}) {
+			ui.prefs.message_lines = threshold
+			ui.prefs.reduce_motion = true
+			state: Excerpt
+			if threshold == 0 {state = {
+					expanded = true,
+					changed  = time.tick_now(),
+				}; ui.prefs.reduce_motion = false}
 			clear(&sel_lines)
 			clay.BeginLayout()
-			if clay.UI(clay.ID("AutoExpandTest"))(
+			if clay.UI(clay.ID("ThresholdTest"))(
 			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(700)}}},
 			) {
-				testing.expect(
-					t,
-					excerpt_body(
-						99,
-						"1\n2\n3\n4\n5\n6\n7",
-						markdown ? rows[:] : nil,
-						state,
-						700,
-						TEXT,
-					),
-				)
-				message_more(99, state)
+				if markdown {
+					if excerpt_body(99, "", rows[:], state, 700, TEXT) {message_more(99, state)}
+				} else if !message_excerpt(99, "1\n2\n3\n4\n5\n6\n7", TEXT, state) {
+					body_text(99, "1\n2\n3\n4\n5\n6\n7", BODY_FS, TEXT, true)
+				}
 			}
 			commands := clay.EndLayout(0)
-			expanded := step == 1 || step == 5
-			testing.expect_value(t, len(sel_lines), expanded ? 7 : MESSAGE_LINES)
-			testing.expect(
-				t,
-				clay.GetElementData(clay.ID("ExcerptClip", 99)).boundingBox.height > 0,
-			)
-			if step == 1 {
+			cropped := threshold > 0 && threshold < 7
+			testing.expect_value(t, len(sel_lines), cropped ? threshold : 7)
+			testing.expect_value(t, clay.GetElementData(clay.ID("MessageMore", 99)).found, cropped)
+			if threshold == 0 {
+				testing.expect_value(
+					t,
+					sel_lines[len(sel_lines) - 1].text,
+					markdown ? "hidden tail" : "7",
+				)
 				rl.BeginDrawing()
 				clay_raylib_render(&commands)
 				rl.TakeScreenshot(
-					markdown ? "/tmp/wn-auto-markdown.png" : "/tmp/wn-auto-plain.png",
+					markdown ? "/tmp/wn-unlimited-markdown.png" : "/tmp/wn-unlimited-plain.png",
 				)
 				rl.EndDrawing()
 			}
 		}
 	}
-	clay.BeginLayout()
-	if clay.UI(clay.ID("AutoExpandShort"))({layout = {layoutDirection = .TopToBottom}}) {
-		testing.expect(t, !excerpt_body(99, "Short message", nil, {}, 700, TEXT))
-		testing.expect(t, !excerpt_body(100, "", rows[:1], {}, 700, TEXT))
-	}
-	clay.EndLayout(0)
-	ui.prefs.auto_expand_messages = false
+	ui.prefs.message_lines = DEFAULT_MESSAGE_LINES
 	ui.prefs.reduce_motion = true
 	list := parse_md_text(
 		"asked astra:\n\n• Jeff has related work, but I found no duplicate of #1961:\n\n" +
@@ -262,7 +246,7 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 		"Our group-message and push connection reuse remains distinct. #1955 is the one to coordinate with when merging.",
 	)
 	defer blocks_free(list)
-	for limit in ([]int{MESSAGE_LINES, max(int)}) {
+	for limit in ([]int{DEFAULT_MESSAGE_LINES, max(int)}) {
 		clear(&sel_lines)
 		clay.BeginLayout()
 		if clay.UI(clay.ID("ListExcerptTest"))(
@@ -277,7 +261,7 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 		},
 		) {
 			cropped := md_blocks(list[:], 0, true, 640, limit)
-			testing.expect_value(t, cropped, limit == MESSAGE_LINES)
+			testing.expect_value(t, cropped, limit == DEFAULT_MESSAGE_LINES)
 			if cropped {message_more(0)}
 		}
 		commands := clay.EndLayout(0)
@@ -288,13 +272,13 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 		)
 		testing.expect(
 			t,
-			len(sel_lines) >= MESSAGE_LINES,
+			len(sel_lines) >= DEFAULT_MESSAGE_LINES,
 			"blank lines leave room for six text lines",
 		)
 		rl.BeginDrawing()
 		clay_raylib_render(&commands)
 		rl.TakeScreenshot(
-			limit == MESSAGE_LINES ? "/tmp/wn-list-excerpt.png" : "/tmp/wn-list-full.png",
+			limit == DEFAULT_MESSAGE_LINES ? "/tmp/wn-list-excerpt.png" : "/tmp/wn-list-full.png",
 		)
 		rl.EndDrawing()
 	}

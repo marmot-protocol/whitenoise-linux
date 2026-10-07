@@ -46,7 +46,7 @@ Prefs :: struct {
 	zoom_pct:              int, // 100 = the default 1.5 render scale
 	scroll_speed:          int, // wheel multiplier in percent; 200 = 2x raw
 	centered_chat:         bool,
-	auto_expand_messages:  bool,
+	message_lines:         int, // 0 never collapses message bodies
 	reduce_motion:         bool, // snaps every transition; nothing animates
 	body_font:             int, // message-body px delta; -2/0/+2 = small/default/large
 	emoji_set:             Emoji_Set, // art for the picker, reactions and message emoji
@@ -99,6 +99,7 @@ default_prefs :: proc() -> Prefs {
 		notify_preview    = true,
 		zoom_pct          = 100,
 		scroll_speed      = 200,
+		message_lines     = DEFAULT_MESSAGE_LINES,
 		rail_w            = RAIL_W_DEFAULT,
 		panel_w           = PANEL_W_DEFAULT,
 	}
@@ -197,7 +198,9 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	if read_err != nil {
 		return
 	}
-	settings: Settings
+	settings := Settings {
+		prefs = {message_lines = DEFAULT_MESSAGE_LINES},
+	}
 	if json.unmarshal(data, &settings) != nil {
 		settings_discard_private(settings.nicknames, settings.drafts, settings.blocked)
 		return
@@ -229,6 +232,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 		delete(ui.prefs.fetch_relays)
 		ui.prefs = settings.prefs
 	}
+	ui.prefs.message_lines = max(ui.prefs.message_lines, 0)
 	// Fields added after prefs shipped: 0 means an older settings.json.
 	if ui.prefs.scroll_speed == 0 {
 		ui.prefs.scroll_speed = 200

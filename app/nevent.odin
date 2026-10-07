@@ -806,7 +806,8 @@ nev_card_excerpt :: proc(id: u32, key: string, card: Nev_Card, width: f32, summa
 	description := len(summary) > 0 ? summary : card.content
 	base := 0x20000000 + id * 64
 	full :=
-		excerpt_expanded(card.excerpt) ||
+		message_line_limit() == max(int) ||
+		card.excerpt.expanded ||
 		card.excerpt.changed != {} &&
 			motion_on() &&
 			time.tick_since(card.excerpt.changed) < EXCERPT_DURATION
@@ -831,13 +832,14 @@ nev_card_excerpt :: proc(id: u32, key: string, card: Nev_Card, width: f32, summa
 		blocks = with_mission
 	}
 	more := excerpt_body(base + 5, description, blocks, card.excerpt, width, TEXT_DIM, .Embed)
-	if more || len(summary) > 0 && summary != card.content || len(card.geocache.mission) > 0 {
+	if message_line_limit() < max(int) &&
+	   (more || len(summary) > 0 && summary != card.content || len(card.geocache.mission) > 0) {
 		if clay.UI(clay.ID("NevMore", id))(
 		{layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}},
 		) {
 			if hovered() {nev_more_hover, nev_more_id = key, base + 5}
 			clay.Text(
-				excerpt_expanded(card.excerpt) ? tr("Show less") : tr("Read more"),
+				card.excerpt.expanded ? tr("Show less") : tr("Read more"),
 				{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
 			)
 		}

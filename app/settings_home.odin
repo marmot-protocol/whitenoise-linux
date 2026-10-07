@@ -38,9 +38,9 @@ SETTINGS_TASKS := []Settings_Task {
 	{.Appearance, N_("Centre the conversation"), "RowCentered", "layout width centred", false},
 	{
 		.Appearance,
-		N_("Automatically expand long messages"),
-		"RowAutoExpand",
-		"read more collapse event cards",
+		N_("Message line limit"),
+		"RowMessageLines",
+		"read more collapse expand event cards lines threshold",
 		false,
 	},
 	{.Appearance, N_("Share this theme"), "RowThemeShare", "edit custom theme", false},

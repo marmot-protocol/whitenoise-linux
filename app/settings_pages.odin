@@ -348,8 +348,10 @@ settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
 		     "TgMotion",
 		     "RowCentered",
 		     "TgCentered",
-		     "RowAutoExpand",
-		     "TgAutoExpand":
+		     "RowMessageLines",
+		     "MessageLinesMinus",
+		     "MessageLinesPlus",
+		     "MessageLinesReset":
 			return 1
 		case "RowAvatarShape", "AvatarShapeChip", "RowCropShape", "CropShapeChip":
 			return 2
@@ -1338,15 +1340,69 @@ settings_appearance :: proc(ui: ^Ui_State) {
 					),
 				)
 			}
-			if clay.UI(clay.ID("RowAutoExpand"))(settings_row()) {
-				settings_check(
-					"TgAutoExpand",
-					ui.prefs.auto_expand_messages,
-					tr("Automatically expand long messages"),
+			if clay.UI(clay.ID("RowMessageLines"))(settings_row(true)) {
+				row_labels(
+					tr("Message line limit"),
 					tr(
-						"Show long messages and event cards in full. You can still choose Show less.",
+						"Collapse messages and event cards after this many lines. Set to 0 to never collapse.",
 					),
 				)
+				if clay.UI(clay.ID("MessageLinesChoices"))(
+				{layout = {childGap = 12, childAlignment = {y = .Center}}},
+				) {
+					if clay.UI(clay.ID("MessageLinesStepper"))(
+					{
+						layout = {padding = clay.PaddingAll(2), childAlignment = {y = .Center}},
+						backgroundColor = CARD,
+						border = {color = FIELD_BORDER, width = bw()},
+						cornerRadius = rr(7),
+					},
+					) {
+						for id, i in ([3]string{"MessageLinesMinus", "MessageLinesValue", "MessageLinesPlus"}) {
+							action := i == 2 || i == 0 && ui.prefs.message_lines > 0
+							if clay.UI(clay.ID(id))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFit({min = i == 1 ? 44 : 28}),
+										height = clay.SizingFixed(28),
+									},
+									padding = {
+										left = 6,
+										right = 6,
+										top = action ? press_down(clay.ID(id)) : 0,
+									},
+									childAlignment = {x = .Center, y = .Center},
+								},
+								backgroundColor = action && hovered() ? HOVER : {},
+								cornerRadius = rr(4),
+							},
+							) {
+								label :=
+									i == 1 ? fmt.tprintf("%d", ui.prefs.message_lines) : i == 0 ? "-" : "+"
+								clay.Text(
+									label,
+									{
+										fontId = FONT_BODY,
+										fontSize = i == 1 ? 13 : 16,
+										textColor = i == 1 ? TEXT : action ? TEXT_DIM : TEXT_LO,
+									},
+								)
+							}
+						}
+					}
+					if clay.UI(clay.ID("MessageLinesReset"))(
+					{
+						layout = {
+							padding = {left = 6, right = 6},
+							sizing = {height = clay.SizingFixed(32)},
+							childAlignment = {y = .Center},
+						},
+						backgroundColor = hovered() ? HOVER : {},
+						cornerRadius = rr(4),
+					},
+					) {clay.Text(tr("Reset"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})}
+				}
 			}
 		}
 	}
@@ -1726,9 +1782,6 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 		flip(ui, &ui.prefs.reduce_motion)
 	case "TgCentered":
 		flip(ui, &ui.prefs.centered_chat)
-	case "TgAutoExpand":
-		flip(ui, &ui.prefs.auto_expand_messages)
-		for &msg in ui.messages {msg.row_height = 0}
 	case "TgNotify":
 		flip(ui, &ui.prefs.notify_desktop)
 	case "TgSound":
@@ -2013,6 +2066,20 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_keys(ui, client)
 
 	case .Appearance:
+		if clicked("MessageLinesMinus") ||
+		   clicked("MessageLinesPlus") ||
+		   clicked("MessageLinesReset") {
+			lines := ui.prefs.message_lines
+			if clicked("MessageLinesMinus") {lines = max(lines - 1, 0)}
+			if clicked("MessageLinesPlus") && lines < max(int) {lines += 1}
+			if clicked("MessageLinesReset") {lines = DEFAULT_MESSAGE_LINES}
+			ui.prefs.message_lines = lines
+			for &msg in ui.messages {msg.excerpt = {}; msg.row_height = 0}
+			for &pending in ui.pending {pending.excerpt = {}}
+			for _, &card in nev_cards {card.excerpt = {}}
+			save_settings(ui)
+			return
+		}
 		for _, shape in AVATAR_SHAPE_NAMES {
 			if clay.PointerOver(clay.ID("AvatarShapeChip", u32(shape))) {
 				ui.prefs.avatar_shape = shape

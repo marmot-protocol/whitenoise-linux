@@ -20,8 +20,9 @@ embed_layout :: proc(t: ^testing.T) {
 	init_layout(&memory, 32768, {900, 900})
 	defer delete(memory)
 	ui: Ui_State
-	g_ui = &ui
-	defer {g_ui = nil; wrap_clear(); preview_close()}
+	ui.prefs.message_lines = DEFAULT_MESSAGE_LINES
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {g_ui, g_prefs = nil, nil; wrap_clear(); preview_close()}
 	for dim, n in ([][2]int{{8000, 200}, {200, 8000}, {800, 600}}) {
 		pixels := make([]u8, dim[0] * dim[1] * 4)
 		for y in 0 ..< dim[1] {
@@ -131,47 +132,23 @@ embed_layout :: proc(t: ^testing.T) {
 		clay.SetLayoutDimensions({900, 900})
 	}
 	key := strings.repeat("a", 64, context.temp_allocator)
-	for kind in NEV_TEXT_KINDS {
-		for count in ([]int{6, 7}) {
-			text := strings.repeat("line\n", count - 1, context.temp_allocator)
-			text = fmt.tprintf("%sfinal line", text)
-			for parsed in 0 ..< 2 {
-				card := Nev_Card {
-					kind    = kind,
-					done    = true,
-					raw     = "{}",
-					content = text,
-				}
-				if parsed == 1 {
-					for i in 0 ..< count {append(&card.blocks, Md_Block_Ui{kind = .Para, text = strings.clone(i == count - 1 ? "final line" : "line")})}
-				}
-				defer blocks_free(card.blocks)
-				nev_cards[key] = card
-				clay.BeginLayout()
-				if clay.UI(clay.ID("NostrTest"))(
-				{
-					layout = {
-						layoutDirection = .TopToBottom,
-						sizing = {width = clay.SizingFixed(400)},
-					},
-				},
-				) {nev_card(99, key, "note", nil)}
-				commands := clay.EndLayout(0)
-				testing.expect_value(
-					t,
-					clay.GetElementData(clay.ID("NevMore", 99)).found,
-					count > MESSAGE_LINES,
-				)
-				for command in commands.internalArray[:commands.length] {
-					if command.commandType != .Text || count == MESSAGE_LINES {continue}
-					text := command.renderData.text.stringContents
-					testing.expect(
-						t,
-						!strings.contains(string(text.chars[:text.length]), "final line"),
-					)
-				}
-				for expanded in ([]bool{true, false}) {
-					card.excerpt.expanded = expanded
+	for threshold in ([]int{3, DEFAULT_MESSAGE_LINES, 0}) {
+		ui.prefs.message_lines = threshold
+		for kind in NEV_TEXT_KINDS {
+			for count in ([]int{6, 7}) {
+				text := strings.repeat("line\n", count - 1, context.temp_allocator)
+				text = fmt.tprintf("%sfinal line", text)
+				for parsed in 0 ..< 2 {
+					card := Nev_Card {
+						kind    = kind,
+						done    = true,
+						raw     = "{}",
+						content = text,
+					}
+					if parsed == 1 {
+						for i in 0 ..< count {append(&card.blocks, Md_Block_Ui{kind = .Para, text = strings.clone(i == count - 1 ? "final line" : "line")})}
+					}
+					defer blocks_free(card.blocks)
 					nev_cards[key] = card
 					clay.BeginLayout()
 					if clay.UI(clay.ID("NostrTest"))(
@@ -181,21 +158,52 @@ embed_layout :: proc(t: ^testing.T) {
 							sizing = {width = clay.SizingFixed(400)},
 						},
 					},
-					) {
-						nev_card(99, key, "note", nil)
-					}
-					commands = clay.EndLayout(0)
-					found_tail, found_close := false, false
+					) {nev_card(99, key, "note", nil)}
+					commands := clay.EndLayout(0)
+					cropped := threshold > 0 && count > threshold
+					testing.expect_value(
+						t,
+						clay.GetElementData(clay.ID("NevMore", 99)).found,
+						cropped,
+					)
 					for command in commands.internalArray[:commands.length] {
-						if command.commandType != .Text {continue}
+						if command.commandType != .Text || !cropped {continue}
 						text := command.renderData.text.stringContents
-						part := string(text.chars[:text.length])
-						found_tail = found_tail || strings.contains(part, "final line")
-						found_close = found_close || part == "Show less"
+						testing.expect(
+							t,
+							!strings.contains(string(text.chars[:text.length]), "final line"),
+						)
 					}
-					testing.expect_value(t, found_tail, expanded || count == MESSAGE_LINES)
-					testing.expect_value(t, found_close, expanded)
-					testing.expect_value(t, preview.kind, Preview_Kind.None)
+					for expanded in ([]bool{true, false}) {
+						card.excerpt.expanded = expanded
+						nev_cards[key] = card
+						clay.BeginLayout()
+						if clay.UI(clay.ID("NostrTest"))(
+						{
+							layout = {
+								layoutDirection = .TopToBottom,
+								sizing = {width = clay.SizingFixed(400)},
+							},
+						},
+						) {
+							nev_card(99, key, "note", nil)
+						}
+						commands = clay.EndLayout(0)
+						found_tail := false
+						for command in commands.internalArray[:commands.length] {
+							if command.commandType != .Text {continue}
+							text := command.renderData.text.stringContents
+							part := string(text.chars[:text.length])
+							found_tail = found_tail || strings.contains(part, "final line")
+						}
+						testing.expect_value(t, found_tail, expanded || !cropped)
+						testing.expect_value(
+							t,
+							clay.GetElementData(clay.ID("NevMore", 99)).found,
+							threshold > 0 && (expanded || cropped),
+						)
+						testing.expect_value(t, preview.kind, Preview_Kind.None)
+					}
 				}
 			}
 		}

@@ -432,9 +432,6 @@ msgstr "Log di audit"
 msgid "Aug"
 msgstr "ago"
 
-msgid "Automatically expand long messages"
-msgstr "Espandi automaticamente i messaggi lunghi"
-
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr "Carica automaticamente le anteprime di immagini e siti web supportati. I loro gestori possono vedere il tuo indirizzo IP. Disattivare questa opzione interrompe le anteprime automatiche dei link, non i download degli allegati."
 
@@ -794,6 +791,9 @@ msgstr "Piastra codice"
 
 msgid "Coffee"
 msgstr "Caffè"
+
+msgid "Collapse messages and event cards after this many lines. Set to 0 to never collapse."
+msgstr "Comprimi i messaggi e le schede degli eventi dopo questo numero di righe. Imposta 0 per non comprimerli mai."
 
 msgid "Collapse the chat list"
 msgstr "Comprimi l'elenco delle chat"
@@ -2393,6 +2393,9 @@ msgstr "Messaggio"
 msgid "Message copied"
 msgstr "Messaggio copiato"
 
+msgid "Message line limit"
+msgstr "Limite di righe dei messaggi"
+
 msgid "Message menu"
 msgstr "Menu del messaggio"
 
@@ -3569,9 +3572,6 @@ msgstr "Mostra indizio"
 
 msgid "Show less"
 msgstr "Mostra meno"
-
-msgid "Show long messages and event cards in full. You can still choose Show less."
-msgstr "Mostra per intero i messaggi lunghi e le schede degli eventi. Puoi comunque scegliere Mostra meno."
 
 msgid "Show maps from OpenStreetMap?"
 msgstr "Mostrare le mappe di OpenStreetMap?"
