@@ -79,6 +79,32 @@ if [ "$target" = linux-arm64 ] || [ "$target" = linux-amd64 ]; then
     ln -s /tmp "$runtime/tmp"
     run+=(-L "$runtime")
     run+=(-E "LD_LIBRARY_PATH=$libs")
+    # QEMU user-mode execve hands the next executable to the host kernel;
+    # neither -L nor -E follows a decoder's empty-environment exec. Give the
+    # app a temporary package view whose helpers explicitly re-enter QEMU.
+    # The original, read-only package still supplies every ELF and library.
+    view="$work/package"
+    mkdir -p "$view"
+    cp -as "$root/." "$view/"
+    # /proc/self/exe must name the view, not resolve a symlink back to root.
+    rm "$view/usr/bin/whitenoise"
+    cp "$exe" "$view/usr/bin/whitenoise"
+    qemu="$(command -v "qemu-$cpu")"
+    for helper in "$root/usr/bin/"* "$root/usr/share/whitenoise-linux/"wn-*; do
+      [ -f "$helper" ] && [ -x "$helper" ] || continue
+      [ "$helper" != "$exe" ] || continue
+      file --brief "$helper" | grep -q '^ELF ' || continue
+      wrapper="$view/${helper#"$root"/}"
+      rm "$wrapper"
+      # Bash's %q keeps arbitrary package paths literal even with no env.
+      {
+        printf '#!/bin/bash\nexec '
+        printf '%q ' "$qemu" -L "$runtime" -E "LD_LIBRARY_PATH=$libs" "$helper"
+        printf '"$@"\n'
+      } > "$wrapper"
+      chmod +x "$wrapper"
+    done
+    exe="$view/usr/bin/whitenoise"
   else
     export LD_LIBRARY_PATH="$libs"
   fi

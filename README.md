@@ -436,8 +436,11 @@ filesystem or syscall sandbox. Video parsing remains in the main process.
 `.github/workflows/cross.yml` is called by CI and tagged releases. Its Linux
 ARM64 and Windows jobs extract the shipped archive and require a headless
 launch to produce a screenshot under QEMU or Wine. No compiler runs under
-those emulators. Its macOS jobs build both bundles on a GitHub Apple silicon
-runner and launch each one there, the Intel bundle through Rosetta. Its
+those emulators. The cross-architecture Linux smoke uses a temporary package
+view with helper launchers that re-enter QEMU, including helpers launched with
+an empty environment. It runs the shipped executables and libraries, with only
+glibc supplied by the target sysroot. The macOS jobs build and launch both
+bundles on Apple silicon, using Rosetta for the Intel bundle. Its
 OpenBSD job boots the OpenBSD 7.9 image from
 [cross-platform-actions](https://github.com/cross-platform-actions/action)
 under QEMU, builds and packages inside it, and launches the packaged binary
@@ -591,6 +594,12 @@ Vault fixtures must release `g_vault` with `vault_lock()` or `vault_delete()`
 before releasing `test_home_lock`. The test allocator resets after each test;
 leaving its strings in the vault lets a later worker free them with the wrong
 allocator.
+
+Theme and font registries outlive individual tests. Fixtures that populate
+them use `runtime.default_context().allocator`. Tests that replace `g_ui` take
+`clay_test_mutex` before `test_home_lock` when both are needed. Use nonfatal
+expectations while holding these locks: Odin's `fail_now` skips deferred
+unlocks and can stall the suite.
 
 Composer wrapping allocates its cache on the process heap without changing
 the caller's allocator. Mention measurement can queue profile reads; those

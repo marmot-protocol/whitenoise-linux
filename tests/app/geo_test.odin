@@ -79,9 +79,12 @@ geo_card_lines :: proc(t: ^testing.T) {
 // opens at the card's zoom. Each link, pasted back, is a card again.
 @(test)
 geo_open_sites :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	previous_ui := g_ui
 	ui: Ui_State
 	g_ui = &ui
-	defer g_ui = nil
+	defer g_ui = previous_ui
 	pin := Geo_Point{-33.86882, 151.20929}
 	want := [Map_Browser]string {
 		.OpenStreetMap = "https://www.openstreetmap.org/?mlat=-33.868820&mlon=151.209290#map=15/-33.86882/151.20929",

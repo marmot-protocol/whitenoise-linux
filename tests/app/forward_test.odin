@@ -72,6 +72,8 @@ forward_snapshot_survives_source_changes :: proc(t: ^testing.T) {
 @(test)
 forward_failure_retry_and_dismissal :: proc(t: ^testing.T) {
 	context.allocator = runtime.default_context().allocator
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
 	old_threads := send_threads

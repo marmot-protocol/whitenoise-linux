@@ -1,6 +1,7 @@
 package main
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import "base:runtime"
 import "core:fmt"
 import "core:testing"
 import rl "sdlrl"
@@ -8,6 +9,7 @@ import rl "sdlrl"
 @(test)
 audio_layout :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "audio_layout" {return}
+	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(720, 900, "Audio messages")
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1

@@ -218,6 +218,8 @@ gif_data :: proc(t: ^testing.T) {
 @(test)
 gif_send_failure :: proc(t: ^testing.T) {
 	context.allocator = runtime.default_context().allocator
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
 	sync.lock(&test_home_lock); defer sync.unlock(&test_home_lock)
 	ui := Ui_State {
 		picker_open = true,

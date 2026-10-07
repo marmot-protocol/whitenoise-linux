@@ -1,5 +1,6 @@
 package main
 
+import "base:runtime"
 import "core:math"
 import "core:os"
 import "core:strings"
@@ -110,6 +111,7 @@ test_theme_edit_round_trip :: proc(t: ^testing.T) {
 	testing.expect_value(t, theme_offer_name(toml), "My Theme")
 
 	pack := parse_theme("My Theme", "mytheme", toml, default_pack())
+	defer delete(pack.font)
 	testing.expect_value(t, pack.bg, [4]f32{16, 16, 24, 255})
 	testing.expect_value(t, pack.bg_2, [4]f32{32, 32, 48, 255})
 	testing.expect_value(t, pack.text_hi, [4]f32{240, 240, 240, 255})
@@ -150,50 +152,23 @@ test_derive_both_polarities :: proc(t: ^testing.T) {
 // catches a mistyped hex in a hand-written pack.
 @(test)
 test_builtin_packs_legible :: proc(t: ^testing.T) {
-	// load_themes rebuilds the global theme_packs; see the adopt test.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
-	sync.lock(&test_home_lock)
-	defer sync.unlock(&test_home_lock)
-	load_themes()
-
 	BAD :: clay.Color{255, 0, 255, 255} // what an unparseable hex becomes
 	lum :: proc(c: clay.Color) -> f32 {
 		return (c.r * 0.299 + c.g * 0.587 + c.b * 0.114) / 255
 	}
-	for pack in theme_packs {
+	// Built-ins are complete definitions. Do not include machine-local packs
+	// or retain a test-arena allocation in the process-global theme registry.
+	for source in THEME_SOURCES {
+		pack := parse_theme(source.name, source.mode, source.source, default_pack())
+		defer {delete(pack.font); delete(pack.font_title); delete(pack.backdrop)}
 		gap := abs(lum(pack.text_hi) - lum(pack.bg))
-		if gap < 0.35 {
-			testing.fail_now(
-				t,
-				strings.concatenate(
-					{pack.name, ": text and background are too close"},
-					context.temp_allocator,
-				),
-			)
-		}
+		testing.expectf(t, gap >= 0.35, "%s: text and background are too close", pack.name)
 		// A magenta channel triple is what parse_hex_color returns for
 		// an unparseable value, so it doubles as a typo detector.
 		for accent in pack.accent_base {
-			if accent == BAD {
-				testing.fail_now(
-					t,
-					strings.concatenate(
-						{pack.name, ": unparseable accent"},
-						context.temp_allocator,
-					),
-				)
-			}
+			testing.expectf(t, accent != BAD, "%s: unparseable accent", pack.name)
 		}
-		if pack.bg == BAD {
-			testing.fail_now(
-				t,
-				strings.concatenate(
-					{pack.name, ": unparseable background"},
-					context.temp_allocator,
-				),
-			)
-		}
+		testing.expectf(t, pack.bg != BAD, "%s: unparseable background", pack.name)
 	}
 }
 
@@ -264,6 +239,8 @@ test_active_pack_clamps :: proc(t: ^testing.T) {
 	defer sync.unlock(&clay_test_mutex)
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
+	// The runner frees its test arena on return; the registry outlives it.
+	context.allocator = runtime.default_context().allocator
 	load_themes()
 	ui: Ui_State
 
@@ -285,6 +262,7 @@ test_adopt_theme_replaces_by_slug :: proc(t: ^testing.T) {
 	defer sync.unlock(&clay_test_mutex)
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
+	context.allocator = runtime.default_context().allocator
 	dir, dir_err := os.make_directory_temp("", "wn-theme-test", context.temp_allocator)
 	if dir_err != nil {
 		return // no writable temp dir; the path is exercised elsewhere
@@ -320,6 +298,7 @@ test_theme_edit_escape_asks :: proc(t: ^testing.T) {
 	defer sync.unlock(&clay_test_mutex)
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
+	context.allocator = runtime.default_context().allocator
 	load_themes()
 	packs := len(theme_packs)
 

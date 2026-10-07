@@ -1,6 +1,7 @@
 package main
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import "base:runtime"
 import "core:fmt"
 import "core:testing"
 import rl "sdlrl"
@@ -10,6 +11,7 @@ stt_layout :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "stt_layout" {
 		return
 	}
+	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(720, 700, "Dictation")
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
