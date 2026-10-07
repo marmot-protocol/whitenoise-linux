@@ -756,9 +756,9 @@ contact_label :: proc(ui: ^Ui_State, c: Contact_Ui) -> string {
 	return c.name
 }
 
-contact_order :: proc(ui: ^Ui_State) -> []Contact_Order {
-	rows := make([]Contact_Order, len(ui.contacts), context.temp_allocator)
-	for contact, i in ui.contacts {
+contact_order :: proc(ui: ^Ui_State, contacts: []Contact_Ui) -> []Contact_Order {
+	rows := make([]Contact_Order, len(contacts), context.temp_allocator)
+	for contact, i in contacts {
 		label := contact_label(ui, contact)
 		rows[i] = {
 			strings.to_lower(label, context.temp_allocator),
@@ -781,13 +781,20 @@ npub_tail :: proc(npub: string) -> string {
 	return fmt.tprintf("%s...%s", npub[:10], npub[len(npub) - 6:])
 }
 
-load_contacts :: proc(client: ^marmot.Client, ui: ^Ui_State) {
+@(private)
+Contact_Load :: enum {
+	Details,
+	Picker,
+}
+
+load_contacts :: proc(client: ^marmot.Client, ui: ^Ui_State, mode: Contact_Load) -> bool {
 	timing_start := time.tick_now()
 	defer local_timing_end(.contacts_load, timing_start)
 	clear(&ui.contacts)
 	clear(&ui.dm_peer)
 	indices := make(map[string]int, allocator = context.temp_allocator)
-	load_follows(client, ui, &indices)
+	if !load_follows(client, ui, &indices, mode) {return false}
+	if mode == .Picker {return true}
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 
 	for chat in ui.chats {
@@ -800,6 +807,7 @@ load_contacts :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 
 		contact_groups(ui, chat, members.items[:members.len], indices)
 	}
+	return true
 }
 
 // Shared membership enriches saved contacts without creating new ones.
@@ -834,12 +842,16 @@ contact_groups :: proc(
 
 // Only the account's explicitly saved NIP-02 follows are contacts.
 @(private = "file")
-load_follows :: proc(client: ^marmot.Client, ui: ^Ui_State, indices: ^map[string]int) {
+load_follows :: proc(
+	client: ^marmot.Client,
+	ui: ^Ui_State,
+	indices: ^map[string]int,
+	mode: Contact_Load,
+) -> bool {
 	follows: ^marmot.String_List
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	if marmot.account_follows(client, account, &follows) != .OK || follows == nil {
-		return
-	}
+	if marmot.account_follows(client, account, &follows) != .OK {return false}
+	if follows == nil {return true}
 	defer marmot.string_list_free(follows)
 
 	for i in 0 ..< follows.len {
@@ -866,17 +878,29 @@ load_follows :: proc(client: ^marmot.Client, ui: ^Ui_State, indices: ^map[string
 			npub_str = strings.clone(string(npub_c))
 			marmot.string_free(npub_c)
 		}
+		picture: string
+		if mode == .Picker {
+			// Workers must not touch the UI-owned profile cache or its queue.
+			meta: ^marmot.User_Profile_Metadata
+			if marmot.user_profile(client, follows.items[i], &meta) == .OK && meta != nil {
+				if meta.picture != nil {picture = strings.clone(string(meta.picture))}
+				marmot.user_profile_metadata_free(meta)
+			}
+		} else {
+			picture = strings.clone(profile_info(client, id).pic_url)
+		}
 		append(
 			&ui.contacts,
 			Contact_Ui {
 				id_hex = strings.clone(id),
 				name = strings.clone(name),
-				pic_url = strings.clone(profile_info(client, id).pic_url),
+				pic_url = picture,
 				npub = npub_str,
 			},
 		)
 		marmot.string_free(resolved)
 	}
+	return true
 }
 
 load_profile :: proc(client: ^marmot.Client, ui: ^Ui_State) {

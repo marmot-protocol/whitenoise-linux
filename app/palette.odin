@@ -304,7 +304,7 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		switch page {
 		case .Chats:
 		case .Contacts:
-			load_contacts(client, ui)
+			load_contacts(client, ui, .Details)
 		case .Archived:
 			load_archived(client, ui)
 		case .Settings:
@@ -327,8 +327,7 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		goto_page(ui, client, .Profile)
 	case .New_Chat:
 		ui.page = .Chats
-		ui.new_chat_open = true
-		ui.focus = .NC_Member
+		open_new_chat(ui, client)
 	case .Notes_To_Self:
 		open_notes(ui, client)
 	case .Search_All:

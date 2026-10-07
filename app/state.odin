@@ -205,6 +205,7 @@ Focus :: enum {
 	Ov, // Openverse image-search query box
 	NC_Member,
 	NC_Name,
+	NC_Search,
 	Filter, // sidebar chat filter
 	Picker, // emoji-picker search box
 	Name, // profile display name
@@ -722,6 +723,10 @@ Ui_State :: struct {
 	debug_text:                                            string, // timing names spaced for wrapping; Copy keeps the original JSON
 	debug_json:                                            string, // composed snapshot shown on the Debug page
 	new_chat_open:                                         bool,
+	nc_page:                                               Nc_Page,
+	nc_search:                                             [dynamic]u8,
+	nc_contacts:                                           [dynamic]Contact_Ui,
+	nc_contact_sel:                                        int,
 	nc_member:                                             [dynamic]u8, // npub/hex/NIP-05 for a DM; empty = own group
 	nip05_ticket:                                          int,
 	nc_name:                                               [dynamic]u8,

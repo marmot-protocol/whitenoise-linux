@@ -357,7 +357,7 @@ phone_back :: proc(ui: ^Ui_State) {
 // Close whatever the detail was showing, which puts the rail back.
 phone_back_action :: proc(ui: ^Ui_State) {
 	if ui.new_chat_open {
-		ui.new_chat_open = false
+		close_new_chat(ui)
 		return
 	}
 	if ui.add_account_open {

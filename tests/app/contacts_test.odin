@@ -49,12 +49,12 @@ contacts_named_first :: proc(t: ^testing.T) {
 	)
 	ui.nicknames["nickname"] = "Bob"
 	expected := [6]int{2, 1, 4, 3, 5, 0}
-	for row, i in contact_order(&ui) {
+	for row, i in contact_order(&ui, ui.contacts[:]) {
 		testing.expect_value(t, row.idx, expected[i])
 	}
 	// A fetched profile joins the named section on the next frame.
 	ui.contacts[0].name = "Aaron"
-	testing.expect_value(t, contact_order(&ui)[1].idx, 0)
+	testing.expect_value(t, contact_order(&ui, ui.contacts[:])[1].idx, 0)
 }
 
 @(test)

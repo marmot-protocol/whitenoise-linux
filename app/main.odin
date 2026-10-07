@@ -510,7 +510,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 										HEADER_H :: f32(22)
 										GAP :: f32(6)
 										y: f32
-										for order in contact_order(ui) {
+										for order in contact_order(ui, ui.contacts[:]) {
 											if len(filter) > 0 &&
 											   !strings.contains(order.key, filter) {
 												continue
@@ -743,6 +743,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 					) {
 						// No rail on screen to click back to.
 						if single_pane() &&
+						   !ui.new_chat_open &&
 						   (ui.page != .Settings || ui.settings_section == .Home) {
 							phone_back(ui)
 						}
@@ -1139,7 +1140,7 @@ app_main :: proc() {
 			switch os.get_env("WN_TEST_PAGE", context.allocator) {
 			case "contacts":
 				ui.page = .Contacts
-				load_contacts(client, &ui)
+				load_contacts(client, &ui, .Details)
 			case "archived":
 				ui.page = .Archived
 				load_archived(client, &ui)
@@ -1879,6 +1880,9 @@ app_main :: proc() {
 				handle_vault_pw(&ui)
 			} else if ui.sticker_open {
 				handle_sticker_panel(&ui)
+			} else if ui.picker_open {
+				// Closing the picker still consumes this frame's input.
+				handle_picker(&ui, client)
 			} else if ui.gs_open {
 				handle_gsearch(&ui, client)
 			} else if ui.folder_menu_open {

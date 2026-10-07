@@ -282,9 +282,6 @@ msgstr "Aktion fehlgeschlagen: %s"
 msgid "Add"
 msgstr "Hinzufügen"
 
-msgid "Add a contact for a direct chat, or leave it empty for a group of your own."
-msgstr "Füge einen Kontakt für einen Direktchat hinzu oder lass das Feld leer für eine eigene Gruppe."
-
 msgid "Add account"
 msgstr "Konto hinzufügen"
 
@@ -714,6 +711,9 @@ msgstr "Wähle ein oder zwei Emojis. Alle Mitglieder sehen dasselbe Bild."
 msgid "Choose one-tap reactions"
 msgstr "Schnellreaktionen wählen"
 
+msgid "Choose someone to talk to."
+msgstr "Wähle jemanden zum Chatten aus."
+
 msgid "Choose the crop circle shape"
 msgstr "Kornkreis-Form wählen"
 
@@ -836,6 +836,9 @@ msgstr "Bestätigen: diesen Tresor löschen"
 
 msgid "Connect to relays"
 msgstr "Mit Relays verbinden"
+
+msgid "Connect with a Nostr address."
+msgstr "Verbinde dich über eine Nostr-Adresse."
 
 msgid "Connect with a bunker link"
 msgstr "Mit einem bunker-Link verbinden"
@@ -1115,6 +1118,9 @@ msgstr "Die Laufzeiten konnten nicht geladen werden. Bitte versuche es erneut."
 msgid "Couldn't load your GIFs. Please try again."
 msgstr "Deine GIFs konnten nicht geladen werden. Bitte versuche es erneut."
 
+msgid "Couldn't load your contacts. Please try again."
+msgstr "Deine Kontakte konnten nicht geladen werden. Bitte versuche es erneut."
+
 msgid "Couldn't load your stickers. Please try again."
 msgstr "Deine Sticker konnten nicht geladen werden. Bitte versuche es erneut."
 
@@ -1332,6 +1338,9 @@ msgstr "Ordner erstellen"
 
 msgid "Create from emoji"
 msgstr "Aus Emoji erstellen"
+
+msgid "Create group"
+msgstr "Gruppe erstellen"
 
 msgid "Create issue"
 msgstr "Meldung erstellen"
@@ -1763,6 +1772,9 @@ msgstr "Diktat beenden"
 msgid "Finishing the cancelled connection."
 msgstr "Die abgebrochene Verbindung wird geschlossen."
 
+msgid "First member (optional)"
+msgstr "Erstes Mitglied (optional)"
+
 msgid "Fit"
 msgstr "Einpassen"
 
@@ -1872,6 +1884,9 @@ msgstr "Erste Schritte"
 
 msgid "Gift"
 msgstr "Geschenk"
+
+msgid "Give your group a name and a photo."
+msgstr "Gib deiner Gruppe einen Namen und ein Foto."
 
 msgid "Go to archive"
 msgstr "Zum Archiv"
@@ -2264,6 +2279,9 @@ msgstr "Weitere Treffer aus dem lokalen Verlauf werden geladen…"
 msgid "Loading your accounts"
 msgstr "Deine Konten werden geladen"
 
+msgid "Loading your contacts"
+msgstr "Deine Kontakte werden geladen"
+
 msgid "Loading your key packages"
 msgstr "Deine Schlüsselpakete werden geladen"
 
@@ -2564,6 +2582,9 @@ msgstr "Keine Treffer."
 msgid "No matching chats"
 msgstr "Keine passenden Chats"
 
+msgid "No matching contacts"
+msgstr "Keine passenden Kontakte"
+
 msgid "No matching messages"
 msgstr "Keine passenden Nachrichten"
 
@@ -2600,6 +2621,9 @@ msgstr "Hier sind noch keine Sticker."
 
 msgid "No trusted sites."
 msgstr "Keine vertrauenswürdigen Websites."
+
+msgid "Nostr address"
+msgstr "Nostr-Adresse"
 
 msgid "Not downloaded"
 msgstr "Nicht heruntergeladen"
@@ -2783,6 +2807,12 @@ msgstr "Panel 2"
 
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "Füge einen Paketlink ein, um die Sticker vor dem Hinzufügen anzusehen."
+
+msgid "Paste a public key or look up a name."
+msgstr "Füge einen öffentlichen Schlüssel ein oder suche einen Namen."
+
+msgid "Paste an npub, a hex public key, a profile link, or a verified name."
+msgstr "Füge einen npub, einen öffentlichen Hex-Schlüssel, einen Profillink oder einen verifizierten Namen ein."
 
 msgid "Path copied"
 msgstr "Pfad kopiert"
@@ -3625,6 +3655,9 @@ msgstr "Sprache zu Text"
 msgid "Square"
 msgstr "Quadratisch"
 
+msgid "Start a group and invite people."
+msgstr "Erstelle eine Gruppe und lade andere ein."
+
 msgid "Start chat"
 msgstr "Chat starten"
 
@@ -3928,6 +3961,9 @@ msgstr "Vertrauenswürdige Websites"
 msgid "Try a different search."
 msgstr "Versuche eine andere Suche."
 
+msgid "Try another name or use a Nostr address."
+msgstr "Versuche einen anderen Namen oder nutze eine Nostr-Adresse."
+
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "Schalte animierte Übergänge, Flugbewegungen und Effekte aus. Zustände ändern sich weiterhin, nichts bewegt sich."
 
@@ -4002,6 +4038,12 @@ msgstr "Hochgeladene Emojis"
 
 msgid "Uploading picture"
 msgstr "Bild wird hochgeladen"
+
+msgid "Use a Nostr address"
+msgstr "Nostr-Adresse verwenden"
+
+msgid "Use a Nostr address to start your first conversation."
+msgstr "Nutze eine Nostr-Adresse, um deine erste Unterhaltung zu beginnen."
 
 msgid "Use a shorter search."
 msgstr "Verwende einen kürzeren Suchbegriff."
@@ -4186,6 +4228,9 @@ msgstr "Du"
 msgid "You are signed out, but your signer record could not be removed from the encrypted vault."
 msgstr "Du bist abgemeldet, aber dein Signer-Eintrag konnte nicht aus dem verschlüsselten Tresor entfernt werden."
 
+msgid "You can invite more people after creating your group."
+msgstr "Du kannst weitere Personen einladen, nachdem du deine Gruppe erstellt hast."
+
 msgid "You can't send messages to someone you blocked."
 msgstr "Du kannst Personen, die du blockiert hast, keine Nachrichten senden."
 
@@ -4341,9 +4386,6 @@ msgstr "npub oder Hex-Pubkey"
 
 msgid "npub, hex, name@domain, or .bit"
 msgstr "npub, Hex, name@domain oder .bit"
-
-msgid "npub, hex, name@domain, or .bit (optional)"
-msgstr "npub, Hex, name@domain oder .bit (optional)"
 
 msgid "opened there"
 msgstr "dort geöffnet"

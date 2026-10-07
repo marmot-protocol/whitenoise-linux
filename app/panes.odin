@@ -662,7 +662,7 @@ open_peer :: proc(
 	ui.peer_pic = strings.clone(pic_url)
 	ui.peer_npub = hex_npub(hex_id)
 	if len(ui.contacts) == 0 {
-		load_contacts(client, ui)
+		load_contacts(client, ui, .Details)
 	}
 	ui.peer_open = true
 }

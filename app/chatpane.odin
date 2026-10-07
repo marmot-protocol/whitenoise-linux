@@ -1304,46 +1304,393 @@ empty_timeline :: proc(ui: ^Ui_State) {
 	}
 }
 
+@(private)
+Nc_Page :: enum {
+	Contacts,
+	Address,
+	Group,
+}
+
+@(private)
+NC_CONTACT_H :: f32(64)
+
+@(private)
+nc_pending_label :: proc(ui: ^Ui_State) -> string {
+	for job in account_jobs {
+		if job.account == ui.account_ref && job.kind == .Create_Chat && job.form {
+			return tr("Creating your chat")
+		}
+	}
+	if ui.nip05_ticket != 0 {return tr("Looking up...")}
+	for pending in nc_pending {
+		if pending.account == ui.account_ref && pending.intent == .New_Chat {
+			return tr("Looking up the Namecoin name.")
+		}
+	}
+	return ""
+}
+
+// Both shortcut rows use the same generous hit target as the contact list.
+@(private = "file")
+nc_action_row :: proc(id, icon, title, detail: string) {
+	if clay.UI(clay.ID(id))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = clay.PaddingAll(12),
+			childGap = 14,
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = hovered() ? HOVER : ROW_BG,
+		cornerRadius = rr(12),
+	},
+	) {
+		if clay.UI(clay.ID(id, 1))(
+		{
+			layout = {
+				sizing = {clay.SizingFixed(40), clay.SizingFixed(40)},
+				childAlignment = {x = .Center, y = .Center},
+			},
+			backgroundColor = HOVER,
+			cornerRadius = rr(20),
+		},
+		) {clay.Text(icon, {fontId = FONT_ICON, fontSize = 16, textColor = ACCENT})}
+		if clay.UI(clay.ID(id, 2))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = 4,
+			},
+		},
+		) {
+			clay.Text(title, {fontId = FONT_TITLE, fontSize = 15, textColor = TEXT})
+			clay.Text(detail, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		}
+		clay.Text(ICON_RIGHT, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO})
+	}
+}
+
+@(private)
+nc_contact_matches :: proc(ui: ^Ui_State) -> []Contact_Order {
+	filter := strings.to_lower(strings.trim_space(string(ui.nc_search[:])), context.temp_allocator)
+	rows := contact_order(ui, ui.nc_contacts[:])
+	count := 0
+	for row in rows {
+		contact := ui.nc_contacts[row.idx]
+		if filter != "" &&
+		   !strings.contains(row.key, filter) &&
+		   !strings.contains(contact.npub, filter) &&
+		   !strings.contains(contact.id_hex, filter) {continue}
+		rows[count] = row
+		count += 1
+	}
+	return rows[:count]
+}
+
+@(private = "file")
+nc_contact_list :: proc(ui: ^Ui_State) {
+	rows := nc_contact_matches(ui)
+	count := len(rows)
+	ui.nc_contact_sel = clamp(ui.nc_contact_sel, 0, max(0, count - 1))
+	if clay.UI(clay.ID("NCContactsCaption"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = {top = 14, bottom = 4},
+			childGap = 8,
+		},
+	},
+	) {
+		eyebrow(tr("CONTACTS"))
+		clay.Text(
+			fmt.tprintf("%d", count),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+		)
+	}
+	if clay.UI(clay.ID("NCContacts"))(
+	{
+		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+	},
+	) {
+		if count == 0 {
+			loading := false
+			for job in account_jobs {if job.account == ui.account_ref && job.kind == .Read_Contacts {loading = true; break}}
+			if clay.UI(clay.ID("NCEmptyContacts"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 8,
+					padding = {top = 12, bottom = 12},
+				},
+			},
+			) {
+				clay.Text(
+					loading ? tr("Loading your contacts") : len(ui.nc_search) > 0 ? tr("No matching contacts") : tr("No contacts yet"),
+					{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT},
+				)
+				if loading {busy_bar("NCContactsBusy")} else {
+					clay.Text(
+						len(ui.nc_search) > 0 ? tr("Try another name or use a Nostr address.") : tr("Use a Nostr address to start your first conversation."),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					)
+				}
+			}
+		} else {
+			ROW_H :: NC_CONTACT_H
+			data := clay.GetScrollContainerData(clay.ID("NCContacts"))
+			height :=
+				data.found ? data.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
+			offset :=
+				data.found ? clamp(-data.scrollPosition.y, 0, max(0, f32(count) * ROW_H - height)) : 0
+			if data.found {data.scrollPosition.y = -offset}
+			first := clamp(int(offset / ROW_H) - 2, 0, count)
+			last := clamp(int((offset + height) / ROW_H) + 3, first, count)
+			if first >
+			   0 {if clay.UI(clay.ID("NCContactsTop"))({layout = {sizing = {height = clay.SizingFixed(f32(first) * ROW_H)}}}) {}}
+			for row, visible in rows[first:last] {
+				contact := ui.nc_contacts[row.idx]
+				if clay.UI(clay.ID("NCContact", u32(row.idx)))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(ROW_H)},
+						padding = {left = 12, right = 12},
+						childGap = 14,
+						childAlignment = {y = .Center},
+					},
+					backgroundColor = hovered() || ui.focus == .NC_Search && ui.nc_contact_sel == first + visible ? HOVER : clay.Color{},
+					cornerRadius = rr(10),
+				},
+				) {
+					avatar(
+						"NCContactAvatar",
+						u32(row.idx),
+						contact.id_hex,
+						contact_label(ui, contact),
+						40,
+						url_pic(contact.pic_url),
+					)
+					if clay.UI(clay.ID("NCContactText", u32(row.idx)))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 4,
+						},
+						clip = {horizontal = true},
+					},
+					) {
+						clay.Text(
+							contact_label(ui, contact),
+							{
+								fontId = FONT_TITLE,
+								fontSize = 15,
+								textColor = TEXT,
+								wrapMode = .None,
+							},
+						)
+						clay.Text(
+							npub_tail(contact.npub),
+							{
+								fontId = FONT_MONO,
+								fontSize = 11,
+								textColor = TEXT_DIM,
+								wrapMode = .None,
+							},
+						)
+					}
+					clay.Text(ICON_CHATS, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
+				}
+			}
+			if last <
+			   count {if clay.UI(clay.ID("NCContactsBottom"))({layout = {sizing = {height = clay.SizingFixed(f32(count - last) * ROW_H)}}}) {}}
+		}
+	}
+	scrollbar(clay.ID("NCContacts"))
+}
+
 new_chat_pane :: proc(ui: ^Ui_State) {
+	pending := nc_pending_label(ui)
+	group := ui.nc_page == .Group
 	if clay.UI(clay.ID("NewChatPane"))(
 	{
 		layout = {
 			sizing = {clay.SizingGrow(), clay.SizingGrow()},
+			padding = clay.PaddingAll(24),
 			layoutDirection = .TopToBottom,
-			childAlignment = {x = .Center, y = .Center},
-			childGap = 12,
+			childAlignment = {x = .Center},
 		},
 	},
 	) {
-		clay.Text(tr("New chat"), {fontId = FONT_TITLE, fontSize = 24, textColor = TEXT})
-		clay.Text(
-			tr("Add a contact for a direct chat, or leave it empty for a group of your own."),
-			{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
-		)
-		input_box(
-			ui,
-			"NCMember",
-			&ui.nc_member,
-			tr("npub, hex, name@domain, or .bit (optional)"),
-			ui.focus == .NC_Member,
-		)
-		input_box(ui, "NCName", &ui.nc_name, tr("Group name"), ui.focus == .NC_Name)
-		if clay.UI(clay.ID("NCPicRow"))(
-		{layout = {childGap = 12, childAlignment = {y = .Center}}},
+		if clay.UI(clay.ID("NCContent"))(
+		{
+			layout = {
+				sizing = {clay.SizingGrow({max = 640}), clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = 12,
+			},
+		},
 		) {
-			avatar("NCPic", 0, "", string(ui.nc_name[:]), 48, nc_pic_tex(ui))
-			micro_button("NCPicFile", tr("Choose image"))
-			micro_button("NCPicEmoji", tr("Create from emoji"))
-			if len(ui.nc_pic.data) > 0 {
-				micro_button("NCPicRemove", tr("Remove"))
+			if clay.UI(clay.ID("NCHeader"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childAlignment = {y = .Center},
+					childGap = 12,
+					padding = {bottom = 8},
+				},
+			},
+			) {
+				if ui.nc_page != .Contacts {header_chip("NCBack", ICON_REPLY, false, tr("Back"))}
+				if clay.UI(clay.ID("NCTitle"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						childGap = 6,
+					},
+				},
+				) {
+					clay.Text(
+						group ? tr("New group") : tr("New chat"),
+						{fontId = FONT_TITLE, fontSize = 26, textColor = TEXT},
+					)
+					clay.Text(
+						group ? tr("Give your group a name and a photo.") : ui.nc_page == .Address ? tr("Connect with a Nostr address.") : tr("Choose someone to talk to."),
+						{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+					)
+				}
+				header_chip("NCCancel", ICON_CLOSE, false, tr("Cancel"))
 			}
-		}
-		if clay.UI(clay.ID("NCButtons"))({layout = {childGap = 12}}) {
-			login_button(
-				"NCCreate",
-				ui.nip05_ticket != 0 ? tr("Looking up...") : strings.contains(string(ui.nc_member[:]), "@") ? tr("Look up") : tr("Create"),
-			)
-			login_button("NCCancel", tr("Cancel"))
+			if ui.nc_page == .Contacts {
+				input_box(
+					ui,
+					"NCSearch",
+					&ui.nc_search,
+					tr("Search contacts..."),
+					ui.focus == .NC_Search,
+					0,
+				)
+				nc_action_row(
+					"NCGroup",
+					ICON_PEOPLE,
+					tr("New group"),
+					tr("Start a group and invite people."),
+				)
+				nc_action_row(
+					"NCAddress",
+					ICON_KEY,
+					tr("Use a Nostr address"),
+					tr("Paste a public key or look up a name."),
+				)
+				nc_contact_list(ui)
+			} else {
+				if clay.UI(clay.ID("NCForm"))(
+				{
+					layout = {
+						sizing = {clay.SizingGrow(), clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						childGap = 10,
+					},
+					clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+				},
+				) {
+					if group {
+						if clay.UI(clay.ID("NCPicture"))(
+						{
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								padding = {bottom = 8},
+								childAlignment = {y = .Center},
+								childGap = 16,
+							},
+						},
+						) {
+							if len(ui.nc_pic.data) > 0 || len(ui.nc_name) > 0 {
+								avatar("NCPic", 0, "", string(ui.nc_name[:]), 64, nc_pic_tex(ui))
+							} else if clay.UI(clay.ID("NCPicPlaceholder"))(
+							{
+								layout = {
+									sizing = {clay.SizingFixed(64), clay.SizingFixed(64)},
+									childAlignment = {x = .Center, y = .Center},
+								},
+								backgroundColor = HOVER,
+								cornerRadius = rr(32),
+							},
+							) {clay.Text(ICON_PEOPLE, {fontId = FONT_ICON, fontSize = 24, textColor = ACCENT})}
+							if clay.UI(clay.ID("NCPicActions"))(
+							{layout = {layoutDirection = .TopToBottom, childGap = 8}},
+							) {
+								micro_button("NCPicFile", tr("Choose image"))
+								micro_button("NCPicEmoji", tr("Create from emoji"))
+								if len(ui.nc_pic.data) >
+								   0 {micro_button("NCPicRemove", tr("Remove"))}
+							}
+						}
+						clay.Text(
+							tr("Group name"),
+							{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
+						)
+						input_box(
+							ui,
+							"NCName",
+							&ui.nc_name,
+							tr("Group name"),
+							ui.focus == .NC_Name,
+							0,
+						)
+					}
+					clay.Text(
+						group ? tr("First member (optional)") : tr("Nostr address"),
+						{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
+					)
+					input_box(
+						ui,
+						"NCMember",
+						&ui.nc_member,
+						tr("npub, hex, name@domain, or .bit"),
+						ui.focus == .NC_Member,
+						0,
+					)
+					clay.Text(
+						group ? tr("You can invite more people after creating your group.") : tr("Paste an npub, a hex public key, a profile link, or a verified name."),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					)
+				}
+				scrollbar(clay.ID("NCForm"))
+			}
+			if pending != "" {
+				clay.Text(pending, {fontId = FONT_BODY, fontSize = 13, textColor = ACCENT})
+				busy_bar("NCBusy")
+			}
+			if ui.nc_page != .Contacts {
+				label :=
+					pending != "" ? pending : strings.contains(string(ui.nc_member[:]), "@") || nc_is_bit(string(ui.nc_member[:])) ? tr("Look up") : group ? tr("Create group") : tr("Start chat")
+				login_big_button(
+					"NCCreate",
+					label,
+					true,
+					pending != "" || (!group && len(strings.trim_space(string(ui.nc_member[:]))) == 0) ? .Disabled : .Enabled,
+				)
+			}
+			if clay.UI(clay.ID("NCPrivacy"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childAlignment = {x = .Center, y = .Center},
+					childGap = 8,
+					padding = {top = 4},
+				},
+			},
+			) {
+				clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
+				clay.Text(
+					tr("End-to-end encrypted"),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				)
+			}
 		}
 	}
 }

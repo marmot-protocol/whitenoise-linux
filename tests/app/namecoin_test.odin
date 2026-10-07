@@ -403,6 +403,22 @@ nc_pending_queue_lifecycle :: proc(t: ^testing.T) {
 	testing.expect(t, found_group_2)
 
 	nc_pending_reset()
+
+	// Closing the form must not let a late lookup create a chat.
+	nc_pending_push("alice.bit", .New_Chat, "acct-A", "", "Cancelled")
+	nc_pending_push("bob.bit", .Invite, "acct-A", "group-1")
+	nc_pending_push("carol.bit", .New_Chat, "acct-B", "", "Other account")
+	ui := Ui_State {
+		account_ref   = "acct-A",
+		new_chat_open = true,
+		nip05_ticket  = 7,
+	}
+	close_new_chat(&ui)
+	testing.expect(t, !ui.new_chat_open && ui.nip05_ticket == 0)
+	testing.expect_value(t, len(nc_pending), 2)
+	testing.expect_value(t, nc_pending[0].identifier, "bob.bit")
+	testing.expect_value(t, nc_pending[1].identifier, "carol.bit")
+	nc_pending_reset()
 }
 
 // ── id/ identity records: no cross-shape substitution ─────────────

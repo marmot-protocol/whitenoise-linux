@@ -282,9 +282,6 @@ msgstr "操作に失敗しました: %s"
 msgid "Add"
 msgstr "追加"
 
-msgid "Add a contact for a direct chat, or leave it empty for a group of your own."
-msgstr "連絡先を追加すると個別チャットになります。空欄のままにすると自分だけのグループになります。"
-
 msgid "Add account"
 msgstr "アカウントを追加"
 
@@ -714,6 +711,9 @@ msgstr "絵文字を1つか2つ選択してください。すべてのメンバ�
 msgid "Choose one-tap reactions"
 msgstr "ワンタップリアクションを選択"
 
+msgid "Choose someone to talk to."
+msgstr "会話する相手を選んでください。"
+
 msgid "Choose the crop circle shape"
 msgstr "ミステリーサークルの形状を選択"
 
@@ -836,6 +836,9 @@ msgstr "確認: この保管庫を削除"
 
 msgid "Connect to relays"
 msgstr "リレーに接続"
+
+msgid "Connect with a Nostr address."
+msgstr "Nostrアドレスでつながれます。"
 
 msgid "Connect with a bunker link"
 msgstr "bunker リンクで接続"
@@ -1115,6 +1118,9 @@ msgstr "処理時間を読み込めませんでした。もう一度お試しく
 msgid "Couldn't load your GIFs. Please try again."
 msgstr "保存したGIFを読み込めませんでした。もう一度お試しください。"
 
+msgid "Couldn't load your contacts. Please try again."
+msgstr "連絡先を読み込めませんでした。もう一度お試しください。"
+
 msgid "Couldn't load your stickers. Please try again."
 msgstr "ステッカーを読み込めませんでした。もう一度お試しください。"
 
@@ -1332,6 +1338,9 @@ msgstr "フォルダを作成"
 
 msgid "Create from emoji"
 msgstr "絵文字から作成"
+
+msgid "Create group"
+msgstr "グループを作成"
 
 msgid "Create issue"
 msgstr "報告を作成"
@@ -1763,6 +1772,9 @@ msgstr "音声入力を完了"
 msgid "Finishing the cancelled connection."
 msgstr "キャンセルした接続を閉じています。"
 
+msgid "First member (optional)"
+msgstr "最初のメンバー（任意）"
+
 msgid "Fit"
 msgstr "全体を表示"
 
@@ -1872,6 +1884,9 @@ msgstr "はじめに"
 
 msgid "Gift"
 msgstr "ギフト"
+
+msgid "Give your group a name and a photo."
+msgstr "グループの名前と写真を設定してください。"
 
 msgid "Go to archive"
 msgstr "アーカイブへ移動"
@@ -2264,6 +2279,9 @@ msgstr "端末の履歴から追加の検索結果を読み込み中…"
 msgid "Loading your accounts"
 msgstr "アカウントを読み込んでいます"
 
+msgid "Loading your contacts"
+msgstr "連絡先を読み込んでいます"
+
 msgid "Loading your key packages"
 msgstr "鍵パッケージを読み込んでいます"
 
@@ -2564,6 +2582,9 @@ msgstr "一致する結果はありません。"
 msgid "No matching chats"
 msgstr "一致するチャットはありません"
 
+msgid "No matching contacts"
+msgstr "一致する連絡先はありません"
+
 msgid "No matching messages"
 msgstr "一致するメッセージはありません"
 
@@ -2600,6 +2621,9 @@ msgstr "まだステッカーがありません。"
 
 msgid "No trusted sites."
 msgstr "信頼済みのサイトはありません。"
+
+msgid "Nostr address"
+msgstr "Nostrアドレス"
 
 msgid "Not downloaded"
 msgstr "未ダウンロード"
@@ -2783,6 +2807,12 @@ msgstr "パネル 2"
 
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "パックのリンクを貼り付けると、追加する前にステッカーを確認できます。"
+
+msgid "Paste a public key or look up a name."
+msgstr "公開鍵を貼り付けるか、名前を検索してください。"
+
+msgid "Paste an npub, a hex public key, a profile link, or a verified name."
+msgstr "npub、16進数の公開鍵、プロフィールのリンク、または認証済みの名前を貼り付けてください。"
 
 msgid "Path copied"
 msgstr "パスをコピーしました"
@@ -3625,6 +3655,9 @@ msgstr "音声認識"
 msgid "Square"
 msgstr "四角"
 
+msgid "Start a group and invite people."
+msgstr "グループを作成して、ほかの人を招待できます。"
+
 msgid "Start chat"
 msgstr "チャットを開始"
 
@@ -3928,6 +3961,9 @@ msgstr "信頼済みのリンク先"
 msgid "Try a different search."
 msgstr "別の検索語を試してください。"
 
+msgid "Try another name or use a Nostr address."
+msgstr "別の名前で検索するか、Nostrアドレスを使ってください。"
+
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "アニメーションによる切り替え、移動、エフェクトをオフにします。状態は変わりますが、何も動きません。"
 
@@ -4002,6 +4038,12 @@ msgstr "アップロード済みの絵文字"
 
 msgid "Uploading picture"
 msgstr "画像をアップロードしています"
+
+msgid "Use a Nostr address"
+msgstr "Nostrアドレスを使用"
+
+msgid "Use a Nostr address to start your first conversation."
+msgstr "Nostrアドレスを使うと、最初の会話を始められます。"
 
 msgid "Use a shorter search."
 msgstr "検索キーワードを短くしてください。"
@@ -4186,6 +4228,9 @@ msgstr "あなた"
 msgid "You are signed out, but your signer record could not be removed from the encrypted vault."
 msgstr "サインアウトしましたが、署名者の記録を暗号化された保管庫から削除できませんでした。"
 
+msgid "You can invite more people after creating your group."
+msgstr "グループを作成した後で、ほかの人を招待できます。"
+
 msgid "You can't send messages to someone you blocked."
 msgstr "ブロックした相手にはメッセージを送信できません。"
 
@@ -4341,9 +4386,6 @@ msgstr "npubまたは16進数の公開鍵"
 
 msgid "npub, hex, name@domain, or .bit"
 msgstr "npub、16進数、name@domain、または .bit"
-
-msgid "npub, hex, name@domain, or .bit (optional)"
-msgstr "npub、16進数、name@domain、または .bit（任意）"
 
 msgid "opened there"
 msgstr "相手側で復号"

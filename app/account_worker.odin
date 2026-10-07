@@ -20,6 +20,7 @@ Account_Operation :: enum {
 	Key_Package,
 	Read_Key_Packages,
 	Unfollow,
+	Read_Contacts,
 	Create_Chat,
 	Accept,
 	Decline,
@@ -39,6 +40,7 @@ Account_Job :: struct {
 	fresh, notes, form, open_chat, departed:      bool,
 	accepted:                                     u64,
 	key_rows:                                     [dynamic]Kp_Row,
+	contacts:                                     [dynamic]Contact_Ui,
 	worker:                                       ^thread.Thread,
 	signer:                                       ^Nip46_Account,
 }
@@ -197,6 +199,16 @@ account_worker :: proc(t: ^thread.Thread) {
 		out: ^marmot.String_List
 		status = marmot.unfollow_user(job.client, account, target, &out)
 		if out != nil {marmot.string_list_free(out)}
+	case .Read_Contacts:
+		// The picker needs saved people, not every group's membership.
+		snapshot := Ui_State {
+			account_ref = job.account,
+		}
+		if !load_contacts(job.client, &snapshot, .Picker) {
+			job.error = strings.clone(tr("Couldn't load your contacts. Please try again."))
+		}
+		job.contacts = snapshot.contacts
+		status = .OK
 	case .Create_Chat:
 		members: []cstring
 		if job.target != "" {members = []cstring{target}}
@@ -260,6 +272,7 @@ account_job_free :: proc(job: ^Account_Job, join: Account_Join = .Pending) {
 	for text in job.fields {delete(text)}
 	for relay in job.relays {delete(relay)}
 	kp_rows_free(&job.key_rows); delete(job.key_rows)
+	nc_contacts_free(&job.contacts)
 	delete(job.relays); delete(job.pic_data); free(job)
 }
 @(private)
@@ -320,8 +333,12 @@ account_job_drain :: proc(ui: ^Ui_State) {
 				case .Relays:
 					set_status(ui, tr("Relay lists republished."), .Info)
 				case .Unfollow:
-					load_contacts(job.client, ui)
+					load_contacts(job.client, ui, .Details)
 					ui.selected_contact = min(ui.selected_contact, len(ui.contacts) - 1)
+				case .Read_Contacts:
+					nc_contacts_free(&ui.nc_contacts)
+					ui.nc_contacts = job.contacts
+					job.contacts = {}
 				case .Create_Chat:
 					if job.notes {delete(ui.prefs.notes_group); ui.prefs.notes_group = strings.clone(job.result); ui.prefs.pinned[strings.clone(job.result)] = true; save_settings(ui)}
 					load_chat_list(job.client, job.account, ui)
@@ -369,6 +386,8 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 		return tr("Loading your key packages")
 	case .Unfollow:
 		return tr("Updating your contacts")
+	case .Read_Contacts:
+		return tr("Loading your contacts")
 	case .Create_Chat:
 		return tr("Creating your chat")
 	case .Accept:

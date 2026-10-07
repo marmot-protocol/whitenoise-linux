@@ -221,8 +221,7 @@ handle_onboard :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		return true
 	}
 	if clicked("StepChat") {
-		ui.new_chat_open = true
-		ui.focus = .NC_Member
+		open_new_chat(ui, client)
 		return true
 	}
 	return false
