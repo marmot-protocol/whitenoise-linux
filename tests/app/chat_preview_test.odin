@@ -1,7 +1,9 @@
 package main
 
 import marmot "../marmot"
+import "core:os"
 import "core:strings"
+import "core:sync"
 import "core:testing"
 import "core:unicode/utf8"
 
@@ -27,6 +29,170 @@ chat_hidden_preview :: proc(t: ^testing.T) {
 		testing.expect(t, strings.has_suffix(preview, "…"))
 	}
 	testing.expect_value(t, chat_preview("👩🏽‍💻 hello"), "👩🏽‍💻 hello")
+}
+
+@(test)
+chat_markdown_reading_preview :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	previous_ui := g_ui
+	defer {g_ui = previous_ui}
+	ui: Ui_State
+	ui.blocked = make(map[string]bool, context.temp_allocator)
+	ui.blocked["blocked"] = true
+	g_ui = &ui
+	dir, err := os.make_directory_temp("/tmp", "wn-chat-preview-*", context.temp_allocator)
+	if !testing.expect_value(t, err, nil) {return}
+	defer os.remove_all(dir)
+	client: ^marmot.Client
+	store := vault_secret_store()
+	if !testing.expect_value(
+		t,
+		marmot.client_new_with_secret_store(
+			strings.clone_to_cstring(dir, context.temp_allocator),
+			nil,
+			0,
+			&store,
+			&client,
+		),
+		marmot.Status.OK,
+	) {return}
+	defer marmot.client_free(client)
+	for tc in ([]struct {
+			body, want: string,
+		}{{"**not-bold** and [a link](https://example.com)", "not-bold and a link"}, {"# Heading\n\nFirst *paragraph*.\n\n> Quoted **words**\n\n- one\n- two\n\n```text\n**literal** [code](url)\n```", "Heading First paragraph. Quoted words one two **literal** [code](url)"}, {"first  \nsecond\n\n`**inline code**`", "first second **inline code**"}, {"| **Name** | Value |\n| --- | --- |\n| [label](https://example.com) | `raw()` |", "Name Value label raw()"}, {strings.concatenate({"**Visible**", secret_fixture("[hidden payload](https://secret.example)")}, context.temp_allocator), "Visible"}, {secret_fixture("**Only hidden payload**"), ""}, {strings.concatenate({"[", strings.repeat("日", 100, context.temp_allocator), "](https://example.com)"}, context.temp_allocator), strings.concatenate({strings.repeat("日", 85, context.temp_allocator), "…"}, context.temp_allocator)}}) {
+		for sender in ([]cstring{"peer", "self"}) {
+			last := marmot.Chat_List_Message_Preview {
+				plaintext = strings.clone_to_cstring(tc.body, context.temp_allocator),
+				sender    = sender,
+				kind      = 9,
+			}
+			row := marmot.Presented_Chat_Row {
+				row = {group_id_hex = "group", last_message = &last},
+			}
+			preview := row_to_ui(client, &row, "self")
+			want := tc.want
+			if sender == "self" && want != "" {
+				// The sent prefix participates in the UTF-8 byte cap.
+				if strings.has_suffix(want, "…") {
+					want = strings.concatenate(
+						{"You: ", strings.repeat("日", 83, context.temp_allocator), "…"},
+						context.temp_allocator,
+					)
+				} else {
+					want = strings.concatenate({"You: ", want}, context.temp_allocator)
+				}
+			}
+			testing.expect_value(t, preview.preview, want)
+			testing.expect(t, utf8.valid_string(preview.preview))
+			chat_free(preview)
+			// UI adoption consumes a prepared worker snapshot, including empty
+			// entries, without parsing the retained source again.
+			prepared, _ := chat_row_preview(client, &row.row, "self", nil)
+			previews := make(map[string]string, context.temp_allocator)
+			previews["group"] = prepared
+			last.plaintext = "**not the prepared preview**"
+			adopted := row_to_ui(nil, &row, "self", nil, previews)
+			testing.expect_value(t, adopted.preview, want)
+			chat_free(adopted)
+		}
+	}
+	// A blocked newest message falls back to reading text from the same
+	// bounded timeline window, skipping payloads that the timeline hides.
+	records := [?]marmot.Timeline_Message_Record {
+		{
+			kind = 9,
+			plaintext = "**older** [link](https://example.com)",
+			direction = "sent",
+			sender = "self",
+		},
+		{
+			kind = 9,
+			plaintext = strings.clone_to_cstring(secret_fixture("hidden"), context.temp_allocator),
+			sender = "peer",
+		},
+		{kind = KIND_POLL_VOTE, plaintext = "vote payload", sender = "peer"},
+		{kind = 9, plaintext = "blocked newest text", sender = "blocked"},
+	}
+	page := marmot.Timeline_Page {
+		messages     = raw_data(records[:]),
+		messages_len = len(records),
+	}
+	last := marmot.Chat_List_Message_Preview {
+		kind      = 9,
+		plaintext = "blocked newest text",
+		sender    = "blocked",
+	}
+	row := marmot.Presented_Chat_Row {
+		row = {group_id_hex = "fallback", last_message = &last},
+	}
+	prepared, system_page := chat_row_preview(client, &row.row, "self", ui.blocked, &page, .Worker)
+	testing.expect_value(t, prepared, "You: older link")
+	testing.expect_value(t, system_page, nil)
+	previews := make(map[string]string, context.temp_allocator)
+	previews["fallback"] = prepared
+	fallback := row_to_ui(nil, &row, "self", nil, previews)
+	testing.expect_value(t, fallback.preview, "You: older link")
+	chat_free(fallback)
+	// A fallback system is retained for the existing UI label resolver,
+	// rather than resolving profile/UI state on the worker.
+	system := marmot.Group_System_Event {
+		system_type          = "member_added",
+		actor_display_name   = "Alice",
+		subject_display_name = "Bob",
+	}
+	records[2] = {
+		kind         = 1210,
+		group_system = &system,
+	}
+	prepared, system_page = chat_row_preview(client, &row.row, "self", ui.blocked, &page, .Worker)
+	testing.expect_value(t, system_page, &page)
+	pages := make(map[string]^marmot.Timeline_Page, context.temp_allocator)
+	pages["fallback"] = system_page
+	summary := row_to_ui(nil, &row, "self", pages)
+	testing.expect_value(t, summary.preview, "Alice added Bob")
+	chat_free(summary)
+}
+
+@(test)
+chat_blocked_and_system_preview :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	previous_ui := g_ui
+	defer {g_ui = previous_ui}
+	ui: Ui_State
+	ui.blocked = make(map[string]bool, context.temp_allocator)
+	ui.blocked["blocked"] = true
+	g_ui = &ui
+	last := marmot.Chat_List_Message_Preview {
+		plaintext = "private blocked text",
+		sender    = "blocked",
+		kind      = 9,
+	}
+	row := marmot.Presented_Chat_Row {
+		row = {group_id_hex = "group", last_message = &last},
+	}
+	blocked := row_to_ui(nil, &row, "self")
+	testing.expect_value(t, blocked.preview, "")
+	testing.expect(t, blocked.last_blocked)
+	chat_free(blocked)
+	// A sent message is not hidden by a blocked entry for its own account.
+	last.sender = "self"
+	ui.blocked["self"] = true
+	mine := row_to_ui(nil, &row, "self")
+	testing.expect_value(t, mine.preview, "You: private blocked text")
+	chat_free(mine)
+	system := marmot.Group_System_Event {
+		system_type        = "group_renamed",
+		actor_display_name = "Alice",
+		name               = "**literal group name**",
+	}
+	last.kind = 1210
+	last.group_system = &system
+	last.plaintext = "{\"system\":\"payload\"}"
+	summary := row_to_ui(nil, &row, "self")
+	testing.expect_value(t, summary.preview, "Alice renamed the group to **literal group name**")
+	chat_free(summary)
 }
 
 @(test)

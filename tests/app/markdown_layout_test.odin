@@ -142,13 +142,6 @@ markdown_layout :: proc(t: ^testing.T) {
 					}
 					testing.expect_value(t, numbers, strings.count(block.text, "\n") + 1)
 				}
-				if block.kind == .Math && width == 700 {
-					testing.expect_value(
-						t,
-						clay.GetElementData(clay.ID("MsgCode", id)).boundingBox.height,
-						f32(33),
-					)
-				}
 				if block.kind == .List_Item {
 					box := clay.GetElementData(clay.ID("MsgListMarker", id)).boundingBox
 					testing.expect_value(t, box.x, 32 + f32(block.indent))

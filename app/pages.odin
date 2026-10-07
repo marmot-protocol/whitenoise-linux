@@ -836,6 +836,7 @@ extract_inlines :: proc(
 	count: uint,
 	fonts: ^strings.Builder = nil,
 	font: u8 = FONT_BODY,
+	links: ^[dynamic]Inline_Link = nil,
 ) {
 	for i in 0 ..< count {
 		node := &inlines[i]
@@ -859,6 +860,7 @@ extract_inlines :: proc(
 				fonts,
 				((font & TEXT_FONT_MASK) == FONT_TITLE || (font & TEXT_FONT_MASK) == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_ITALIC) |
 				(font & ~TEXT_FONT_MASK),
+				links,
 			)
 			continue
 		case .STRONG:
@@ -869,6 +871,7 @@ extract_inlines :: proc(
 				fonts,
 				((font & TEXT_FONT_MASK) == FONT_ITALIC || (font & TEXT_FONT_MASK) == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_TITLE) |
 				(font & ~TEXT_FONT_MASK),
+				links,
 			)
 			continue
 		case .STRIKETHROUGH:
@@ -878,6 +881,7 @@ extract_inlines :: proc(
 				node.body.strikethrough.children_len,
 				fonts,
 				font | TEXT_STRIKE,
+				links,
 			)
 			continue
 		case .LINK:
@@ -887,14 +891,15 @@ extract_inlines :: proc(
 				node.body.link.children_len,
 				fonts,
 				font,
+				links,
 			)
 			dest := string(node.body.link.dest)
-			if nev_image_url(dest) && !strings.has_suffix(strings.to_string(builder^), dest) {
-				start := strings.builder_len(builder^)
-				strings.write_string(builder, fmt.tprintf(" (%s)", dest))
-				if fonts != nil {
-					for _ in start ..< strings.builder_len(builder^) {strings.write_byte(fonts, font)}
-				}
+			if _, _, ok := url_at(dest, 0);
+			   links != nil && ok && strings.builder_len(builder^) > start {
+				append(
+					links,
+					Inline_Link{start, strings.builder_len(builder^), strings.clone(dest)},
+				)
 			}
 			continue
 		case .AUTOLINK:
@@ -919,10 +924,11 @@ inline_text :: proc(
 	count: uint,
 	fonts: ^string = nil,
 	font: u8 = FONT_BODY,
+	links: ^[dynamic]Inline_Link = nil,
 ) -> string {
 	builder := strings.builder_make(context.temp_allocator)
 	styles := strings.builder_make(context.temp_allocator)
-	extract_inlines(&builder, inlines, count, fonts != nil ? &styles : nil, font)
+	extract_inlines(&builder, inlines, count, fonts != nil ? &styles : nil, font, links)
 	if fonts != nil && len(strings.trim(strings.to_string(styles), "\x00")) > 0 {
 		fonts^ = strings.clone(strings.to_string(styles))
 	}
@@ -957,6 +963,7 @@ convert_blocks :: proc(
 				block.body.paragraph.inlines,
 				block.body.paragraph.inlines_len,
 				&row.fonts,
+				links = &row.links,
 			)
 			append(out, row)
 		case .HEADING:
@@ -969,6 +976,7 @@ convert_blocks :: proc(
 				block.body.heading.inlines_len,
 				&row.fonts,
 				FONT_TITLE,
+				&row.links,
 			)
 			append(out, row)
 		case .CODE_BLOCK:
@@ -1017,6 +1025,7 @@ convert_blocks :: proc(
 				// blocks flatten after it.
 				body_text: string
 				fonts: string
+				links: [dynamic]Inline_Link
 				body_start := uint(0)
 				if item.blocks_len > 0 && item.blocks[0].tag == .PARAGRAPH {
 					body_start = 1
@@ -1024,8 +1033,10 @@ convert_blocks :: proc(
 						item.blocks[0].body.paragraph.inlines,
 						item.blocks[0].body.paragraph.inlines_len,
 						&fonts,
+						links = &links,
 					)
 				}
+				for &link in links {link.start += len(prefix); link.end += len(prefix)}
 				if len(fonts) > 0 {
 					body_fonts := fonts
 					fonts = strings.concatenate(
@@ -1041,6 +1052,7 @@ convert_blocks :: proc(
 						kind = .List_Item,
 						text = strings.clone(fmt.tprintf("%s%s", prefix, body_text)),
 						fonts = fonts,
+						links = links,
 						marker_len = len(prefix),
 						blank_lines_before = gap,
 					},
@@ -1065,25 +1077,30 @@ convert_blocks :: proc(
 			t := &block.body.table
 			cells := make([][]string, int(t.rows_len) + 1)
 			fonts := make([][]string, len(cells))
+			links := make([][][dynamic]Inline_Link, len(cells))
 			hdr := make([]string, int(t.header_len))
 			fonts[0] = make([]string, len(hdr))
+			links[0] = make([][dynamic]Inline_Link, len(hdr))
 			for j in 0 ..< t.header_len {
 				hdr[j] = inline_text(
 					t.header[j].inlines,
 					t.header[j].inlines_len,
 					&fonts[0][j],
 					FONT_TITLE,
+					&links[0][j],
 				)
 			}
 			cells[0] = hdr
 			for r in 0 ..< t.rows_len {
 				row := make([]string, int(t.rows[r].cells_len))
 				fonts[r + 1] = make([]string, len(row))
+				links[r + 1] = make([][dynamic]Inline_Link, len(row))
 				for j in 0 ..< t.rows[r].cells_len {
 					row[j] = inline_text(
 						t.rows[r].cells[j].inlines,
 						t.rows[r].cells[j].inlines_len,
 						&fonts[r + 1][j],
+						links = &links[r + 1][j],
 					)
 				}
 				cells[int(r) + 1] = row
@@ -1096,6 +1113,7 @@ convert_blocks :: proc(
 					kind = .Table,
 					cells = cells,
 					cell_fonts = fonts,
+					cell_links = links,
 					alignments = alignments,
 				},
 			)
@@ -1225,76 +1243,6 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	return client
 }
 
-// Whether this plaintext is a webxdc state update, which feeds the
-// running app and never renders (timeline or preview).
-@(private = "file")
-is_xdc_blob :: proc(text: string) -> bool {
-	return strings.has_prefix(strings.trim_space(text), XDC_SENTINEL)
-}
-
-// The rail preview for a chat whose newest record can't speak for
-// itself: a kind-1210 system payload (raw JSON), a webxdc state blob,
-// or a message from someone you blocked. Re-reads the newest window (a
-// local query) and phrases the newest displayable record the way the
-// timeline does, skipping what the timeline skips or collapses.
-// Temp-allocated; "" when nothing qualifies.
-@(private = "file")
-window_preview :: proc(
-	client: ^marmot.Client,
-	account_ref: string,
-	row: ^marmot.Chat_List_Row,
-) -> string {
-	if client == nil {
-		return ""
-	}
-	query := marmot.Timeline_Message_Query {
-		group_id_hex = row.group_id_hex,
-		has_limit    = true,
-		limit        = 16,
-	}
-	page: ^marmot.Timeline_Page
-	account := strings.clone_to_cstring(account_ref, context.temp_allocator)
-	if marmot.timeline_messages(client, account, &query, &page) != .OK {
-		return ""
-	}
-	defer marmot.timeline_page_free(page)
-	return preview_text(client, page)
-}
-
-@(private = "file")
-preview_text :: proc(client: ^marmot.Client, page: ^marmot.Timeline_Page) -> string {
-	if page == nil {return ""}
-	for i := int(page.messages_len) - 1; i >= 0; i -= 1 {
-		record := &page.messages[i]
-		if record.kind == 1009 || record.kind == 5 || record.kind == KIND_POLL_VOTE {
-			continue
-		}
-		if record.kind == 1210 {
-			if record.group_system != nil {
-				// system_text can hand back ev.text, which borrows the
-				// page freed on return; copy before it goes.
-				return strings.clone(
-					system_text(client, record.group_system),
-					context.temp_allocator,
-				)
-			}
-			continue
-		}
-		if record.sender != nil && g_ui != nil && g_ui.blocked[string(record.sender)] {
-			continue
-		}
-		text := record.plaintext != nil ? string(record.plaintext) : ""
-		if len(text) == 0 || is_xdc_blob(text) {
-			continue
-		}
-		if record.direction != nil && string(record.direction) == "sent" {
-			return fmt.tprintf("You: %s", text)
-		}
-		return strings.clone(text, context.temp_allocator) // text borrows the page
-	}
-	return ""
-}
-
 @(private)
 CHAT_ATTACHMENT_AUDIO :: i32(2) // MarmotChatListAttachmentKind::Audio
 
@@ -1307,6 +1255,7 @@ row_to_ui :: proc(
 	presented: ^marmot.Presented_Chat_Row,
 	account_ref: string,
 	previews: map[string]^marmot.Timeline_Page = nil,
+	reading_previews: map[string]string = nil,
 ) -> Chat_Row_Ui {
 	row := &presented.row
 	presentation := &presented.presentation
@@ -1337,39 +1286,19 @@ row_to_ui :: proc(
 			row.last_message.sender != nil &&
 			g_ui != nil &&
 			g_ui.blocked[string(row.last_message.sender)]
-		if row.last_message.plaintext != nil {
-			preview = string(row.last_message.plaintext)
-		}
-		if strings.trim_space(preview) == "" &&
-		   !row.last_message.deleted &&
-		   row.last_message.has_attachment_kind &&
-		   row.last_message.attachment_kind == CHAT_ATTACHMENT_AUDIO {
-			preview = tr("Audio message")
-		}
-		if mine && strings.trim_space(preview) != "" {
-			preview = fmt.tprintf(tr("You: %s"), preview)
-		}
-		// A kind-1210 payload or a webxdc state blob can't speak for
-		// itself; show the newest displayable record instead (already
-		// phrased, so no "You:" prefix on top).
-		xdc := is_xdc_blob(
-			row.last_message.plaintext != nil ? string(row.last_message.plaintext) : "",
+	}
+	if prepared, read := reading_previews[string(row.group_id_hex)]; read {
+		preview = prepared
+	} else {
+		blocked_senders: map[string]bool
+		if g_ui != nil {blocked_senders = g_ui.blocked}
+		preview, _ = chat_row_preview(
+			client,
+			row,
+			account_ref,
+			blocked_senders,
+			previews[string(row.group_id_hex)],
 		)
-		if row.last_message.kind == 1210 && row.last_message.group_system != nil {
-			preview = system_text(client, row.last_message.group_system)
-		} else if row.last_message.kind == 1210 || xdc || blocked {
-			phrased: string
-			if page, read := previews[string(row.group_id_hex)]; read {
-				phrased = preview_text(client, page)
-			} else {
-				phrased = window_preview(client, account_ref, row)
-			}
-			if len(phrased) > 0 {
-				preview = phrased
-			} else if xdc || blocked {
-				preview = "" // never the raw blob, never a blocked sender's text
-			}
-		}
 	}
 
 	tick := marmot.Delivery_State.NOT_APPLICABLE
@@ -1380,7 +1309,7 @@ row_to_ui :: proc(
 	return Chat_Row_Ui {
 		group_id     = strings.clone(string(row.group_id_hex)),
 		title        = strings.clone(title),
-		preview      = strings.clone(chat_preview(preview)),
+		preview      = strings.clone(preview),
 		at           = format_when(row.activity_sort_at),
 		unread       = row.unread_count,
 		pending      = row.pending_confirmation,
@@ -1438,7 +1367,16 @@ chat_list_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
 	}
 	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.rows_len))
 	for i in 0 ..< rows.rows_len {
-		append(&fresh, row_to_ui(job.client, &rows.rows[i], string(job.account), job.previews))
+		append(
+			&fresh,
+			row_to_ui(
+				job.client,
+				&rows.rows[i],
+				string(job.account),
+				job.previews,
+				job.reading_previews,
+			),
+		)
 	}
 	chats_replace(&ui.chats, fresh)
 	if search_group != "" {

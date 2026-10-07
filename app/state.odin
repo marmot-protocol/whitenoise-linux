@@ -318,6 +318,7 @@ Md_Block_Ui :: struct {
 	text:               string,
 	blank_lines_before: u8,
 	fonts:              string, // owned font id and style flags per UTF-8 byte
+	links:              [dynamic]Inline_Link, // owned destinations over visible text byte ranges
 	level:              int, // heading level
 	marker_len:         int, // list marker bytes, including the trailing space
 	indent:             u16,
@@ -327,6 +328,7 @@ Md_Block_Ui :: struct {
 	code_kinds:         string, // owned token kind per UTF-8 byte
 	cells:              [][]string, // table rows, row 0 = header
 	cell_fonts:         [][]string,
+	cell_links:         [][][dynamic]Inline_Link,
 }
 
 // One message attachment at its source imeta position. Rejected and

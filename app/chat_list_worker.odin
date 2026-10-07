@@ -7,16 +7,17 @@ import "core:time"
 
 @(private)
 Chat_List_Work :: struct {
-	worker:       ^thread.Thread,
-	client:       ^marmot.Client,
-	account:      cstring,
-	rows:         ^marmot.Presented_Chat_List,
-	previews:     map[string]^marmot.Timeline_Page, // keys borrow rows; nil means a failed preview read
-	blocked:      map[string]bool, // owned copy of ui.blocked; the worker must not read Ui_State
-	members:      map[string][]string, // group id to member pubkey hex, read only when read_members
-	read_members: bool, // some folder rule looks at membership
-	err:          string,
-	revision:     u64,
+	worker:           ^thread.Thread,
+	client:           ^marmot.Client,
+	account:          cstring,
+	rows:             ^marmot.Presented_Chat_List,
+	previews:         map[string]^marmot.Timeline_Page, // only fallback system pages; keys borrow rows
+	reading_previews: map[string]string, // keys borrow rows; owned, final reading previews
+	blocked:          map[string]bool, // owned copy of ui.blocked; the worker must not read Ui_State
+	members:          map[string][]string, // group id to member pubkey hex, read only when read_members
+	read_members:     bool, // some folder rule looks at membership
+	err:              string,
+	revision:         u64,
 }
 
 @(private)
@@ -43,26 +44,22 @@ chat_list_read :: proc(job: ^Chat_List_Work) {
 	for i in 0 ..< job.rows.rows_len {
 		row := &job.rows.rows[i].row
 		last := row.last_message
+		// System summaries resolve profile labels through UI-owned caches.
 		if last != nil && last.kind == 1210 && last.group_system != nil {continue}
-		// A blocked sender's message never previews: row_to_ui phrases
-		// the newest one from someone else out of this page instead.
-		blocked := last != nil && last.sender != nil && job.blocked[string(last.sender)]
-		if last == nil ||
-		   (!blocked &&
-				   last.kind != 1210 &&
-				   !strings.has_prefix(
-						   strings.trim_space(string(last.plaintext)),
-						   XDC_SENTINEL,
-					   )) {continue}
-		query := marmot.Timeline_Message_Query {
-			group_id_hex = row.group_id_hex,
-			has_limit    = true,
-			limit        = 16,
+		// Parsing and blocked-sender fallback reads finish before UI adoption;
+		// even an empty preview is prepared, so adoption never retries the read.
+		preview, system_page := chat_row_preview(
+			job.client,
+			row,
+			string(job.account),
+			job.blocked,
+			mode = .Worker,
+		)
+		if system_page != nil {
+			job.previews[string(row.group_id_hex)] = system_page
+		} else {
+			job.reading_previews[string(row.group_id_hex)] = strings.clone(preview)
 		}
-		page: ^marmot.Timeline_Page
-		// The selected preview remains usable if its richer timeline is unavailable.
-		if marmot.timeline_messages(job.client, job.account, &query, &page) != .OK {page = nil}
-		job.previews[string(row.group_id_hex)] = page
 	}
 }
 
@@ -79,6 +76,8 @@ chat_list_free :: proc(job: ^Chat_List_Work) {
 	if job.worker != nil {thread.join(job.worker); thread.destroy(job.worker)}
 	for _, page in job.previews {if page != nil {marmot.timeline_page_free(page)}}
 	delete(job.previews)
+	for _, preview in job.reading_previews {delete(preview)}
+	delete(job.reading_previews)
 	for hex in job.blocked {delete(hex)}
 	delete(job.blocked)
 	chat_members_free(&job.members)

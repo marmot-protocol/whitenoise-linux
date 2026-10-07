@@ -2,6 +2,7 @@ package main
 
 import marmot "../marmot"
 import "core:mem"
+import "core:strings"
 
 // A reload may run inside a click handler. Keep the previous rows alive
 // until every handler and render command for that frame has finished.
@@ -57,6 +58,7 @@ blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 		mem.zero_slice(transmute([]u8)block.text)
 		delete(block.text)
 		delete(block.fonts)
+		links_free(block.links)
 		delete(block.alignments)
 		delete(block.code_kinds)
 		for row in block.cell_fonts {
@@ -64,6 +66,11 @@ blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 			delete(row)
 		}
 		delete(block.cell_fonts)
+		for row in block.cell_links {
+			for links in row {links_free(links)}
+			delete(row)
+		}
+		delete(block.cell_links)
 		for row in block.cells {
 			for cell in row {
 				mem.zero_slice(transmute([]u8)cell)
@@ -74,6 +81,33 @@ blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 		delete(block.cells)
 	}
 	delete(blocks)
+}
+
+// Clone only the destinations belonging to a retained visible-text slice.
+@(private)
+links_clone :: proc(
+	links: []Inline_Link,
+	lo: int = 0,
+	hi: int = max(int),
+) -> [dynamic]Inline_Link {
+	copy: [dynamic]Inline_Link
+	for link in links {
+		if link.end <= lo || link.start >= hi {continue}
+		append(
+			&copy,
+			Inline_Link{max(link.start, lo) - lo, min(link.end, hi) - lo, strings.clone(link.url)},
+		)
+	}
+	return copy
+}
+
+@(private)
+links_free :: proc(links: [dynamic]Inline_Link) {
+	for link in links {
+		mem.zero_slice(transmute([]u8)link.url)
+		delete(link.url)
+	}
+	delete(links)
 }
 
 @(private)

@@ -196,6 +196,7 @@ preview_message :: proc(text: string, blocks: []Md_Block_Ui = nil) {
 		owned := block
 		owned.text = strings.clone(block.text)
 		owned.fonts = strings.clone(block.fonts)
+		owned.links = links_clone(block.links[:])
 		owned.code_kinds = strings.clone(block.code_kinds)
 		owned.alignments = make([]marmot.Markdown_Alignment, len(block.alignments))
 		copy(owned.alignments, block.alignments)
@@ -205,6 +206,11 @@ preview_message :: proc(text: string, blocks: []Md_Block_Ui = nil) {
 			for fonts, c in row {owned.cell_fonts[r][c] = strings.clone(fonts)}
 		}
 		owned.cells = make([][]string, len(block.cells))
+		owned.cell_links = make([][][dynamic]Inline_Link, len(block.cell_links))
+		for row, r in block.cell_links {
+			owned.cell_links[r] = make([][dynamic]Inline_Link, len(row))
+			for links, c in row {owned.cell_links[r][c] = links_clone(links[:])}
+		}
 		for row, r in block.cells {
 			owned.cells[r] = make([]string, len(row))
 			for cell, c in row {owned.cells[r][c] = strings.clone(cell)}

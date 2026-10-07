@@ -273,6 +273,7 @@ nev_split_images :: proc(blocks: ^[dynamic]Md_Block_Ui) {
 						kind = .Para,
 						text = strings.clone(before),
 						fonts = strings.clone(text_fonts(block.fonts, lo, lo + len(before))),
+						links = links_clone(block.links[:], lo, lo + len(before)),
 					},
 				)
 			}
@@ -288,12 +289,14 @@ nev_split_images :: proc(blocks: ^[dynamic]Md_Block_Ui) {
 					kind = .Para,
 					text = strings.clone(after),
 					fonts = strings.clone(text_fonts(block.fonts, lo, lo + len(after))),
+					links = links_clone(block.links[:], lo, lo + len(after)),
 				},
 			)
 		}
 		out[first].blank_lines_before = block.blank_lines_before
 		delete(block.text)
 		delete(block.fonts)
+		links_free(block.links)
 	}
 	delete(blocks^)
 	blocks^ = out
