@@ -26,7 +26,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 **Messaging**
 
 - One-to-one and group chats, end-to-end encrypted through Marmot's MLS, with sealed-sender invites over NIP-59.
-- New chat opens a searchable contact picker. Choose a contact, use a Nostr address, or select New group to set its name and photo. Groups require a first member: type to filter your contacts and select one, or paste a Nostr address.
+- New chat opens a searchable contact picker. Choose a contact or select New group to set its name and photo. Groups require a first member: type to filter your contacts and select one, or paste a Nostr address.
 - Group settings show name, description, photo, disappearing-message, and issue-tracking controls only to admins. Other members can view the group's name, description, photo, and current disappearing-message timer in full units, such as "90 days".
 - Only group admins can promote, demote, or remove members. Nicknames change your local labels and remain available to other members.
 - Markdown bodies (with typeset `$$` math blocks), reactions, replies, edits with history, forwarding, and search.

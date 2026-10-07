@@ -840,9 +840,6 @@ msgstr "Bestätigen: diesen Tresor löschen"
 msgid "Connect to relays"
 msgstr "Mit Relays verbinden"
 
-msgid "Connect with a Nostr address."
-msgstr "Verbinde dich über eine Nostr-Adresse."
-
 msgid "Connect with a bunker link"
 msgstr "Mit einem bunker-Link verbinden"
 
@@ -2628,9 +2625,6 @@ msgstr "Hier sind noch keine Sticker."
 msgid "No trusted sites."
 msgstr "Keine vertrauenswürdigen Websites."
 
-msgid "Nostr address"
-msgstr "Nostr-Adresse"
-
 msgid "Not downloaded"
 msgstr "Nicht heruntergeladen"
 
@@ -2813,12 +2807,6 @@ msgstr "Panel 2"
 
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "Füge einen Paketlink ein, um die Sticker vor dem Hinzufügen anzusehen."
-
-msgid "Paste a public key or look up a name."
-msgstr "Füge einen öffentlichen Schlüssel ein oder suche einen Namen."
-
-msgid "Paste an npub, a hex public key, a profile link, or a verified name."
-msgstr "Füge einen npub, einen öffentlichen Hex-Schlüssel, einen Profillink oder einen verifizierten Namen ein."
 
 msgid "Path copied"
 msgstr "Pfad kopiert"
@@ -3964,9 +3952,6 @@ msgstr "Vertrauenswürdige Websites"
 msgid "Try a different search."
 msgstr "Versuche eine andere Suche."
 
-msgid "Try another name or use a Nostr address."
-msgstr "Versuche einen anderen Namen oder nutze eine Nostr-Adresse."
-
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "Schalte animierte Übergänge, Flugbewegungen und Effekte aus. Zustände ändern sich weiterhin, nichts bewegt sich."
 
@@ -4041,12 +4026,6 @@ msgstr "Hochgeladene Emojis"
 
 msgid "Uploading picture"
 msgstr "Bild wird hochgeladen"
-
-msgid "Use a Nostr address"
-msgstr "Nostr-Adresse verwenden"
-
-msgid "Use a Nostr address to start your first conversation."
-msgstr "Nutze eine Nostr-Adresse, um deine erste Unterhaltung zu beginnen."
 
 msgid "Use a shorter search."
 msgstr "Verwende einen kürzeren Suchbegriff."

@@ -839,9 +839,6 @@ msgstr ""
 msgid "Connect to relays"
 msgstr ""
 
-msgid "Connect with a Nostr address."
-msgstr ""
-
 msgid "Connect with a bunker link"
 msgstr ""
 
@@ -2627,9 +2624,6 @@ msgstr ""
 msgid "No trusted sites."
 msgstr ""
 
-msgid "Nostr address"
-msgstr ""
-
 msgid "Not downloaded"
 msgstr ""
 
@@ -2811,12 +2805,6 @@ msgid "Panel 2"
 msgstr ""
 
 msgid "Paste a pack link to preview its stickers before adding it."
-msgstr ""
-
-msgid "Paste a public key or look up a name."
-msgstr ""
-
-msgid "Paste an npub, a hex public key, a profile link, or a verified name."
 msgstr ""
 
 msgid "Path copied"
@@ -3963,9 +3951,6 @@ msgstr ""
 msgid "Try a different search."
 msgstr ""
 
-msgid "Try another name or use a Nostr address."
-msgstr ""
-
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
 
@@ -4039,12 +4024,6 @@ msgid "Uploaded emoji"
 msgstr ""
 
 msgid "Uploading picture"
-msgstr ""
-
-msgid "Use a Nostr address"
-msgstr ""
-
-msgid "Use a Nostr address to start your first conversation."
 msgstr ""
 
 msgid "Use a shorter search."

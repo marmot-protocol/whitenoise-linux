@@ -1506,7 +1506,7 @@ nc_member_choose :: proc(ui: ^Ui_State, index: int) {
 	ed_set(ui, &ui.nc_member, contact_label(ui, ui.nc_contacts[index]))
 }
 
-// The picker and both forms keep the same asynchronous create/lookup path.
+// Contact selection and the group form share asynchronous creation.
 handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.nc_page == .Group &&
 	   ui.focus == .NC_Member &&
@@ -1534,9 +1534,9 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.focus = .NC_Search
 		return
 	}
-	if clicked("NCGroup") || clicked("NCAddress") {
-		ui.nc_page = clicked("NCGroup") ? .Group : .Address
-		ui.focus = ui.nc_page == .Group ? .NC_Name : .NC_Member
+	if clicked("NCGroup") {
+		ui.nc_page = .Group
+		ui.focus = .NC_Name
 		ui.nc_member_choice = 0
 		ui.nc_contact_sel = 0
 		ed_set(ui, &ui.nc_member, "")
@@ -1574,11 +1574,11 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if field_mouse(ui, &ui.nc_member, "NCMember", 14) {
 		ui.focus = .NC_Member
 	}
-	if ui.nc_page == .Group && field_mouse(ui, &ui.nc_name, "NCName", 14) {
+	if field_mouse(ui, &ui.nc_name, "NCName", 14) {
 		ui.focus = .NC_Name
 	}
-	if ui.nc_page == .Group {tab_focus([]Focus{.NC_Name, .NC_Member}, &ui.focus)}
-	if ui.nc_page == .Group && ui.focus == .NC_Member && ui.nc_member_choice == 0 {
+	tab_focus([]Focus{.NC_Name, .NC_Member}, &ui.focus)
+	if ui.focus == .NC_Member && ui.nc_member_choice == 0 {
 		rows := nc_contact_matches(ui, string(ui.nc_member[:]))
 		if len(rows) > 0 && (key_hit(.UP) || key_hit(.DOWN) || rl.IsKeyPressed(.ENTER)) {
 			step := key_hit(.UP) ? -1 : key_hit(.DOWN) ? 1 : 0
@@ -1604,12 +1604,12 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			   !clay.PointerOver(clay.ID("NCMemberOptions")) {ui.focus = .NC_Name}
 		}
 	}
-	if ui.nc_page == .Group && clicked("NCPicFile") {
+	if clicked("NCPicFile") {
 		ui.picking_ncpic = true
 		rl.OpenFileDialog(false)
 		return
 	}
-	if ui.nc_page == .Group && clicked("NCPicEmoji") {
+	if clicked("NCPicEmoji") {
 		open_emoji_mix(ui, .New_Chat)
 		return
 	}
@@ -1620,15 +1620,10 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if clicked("NCCreate") || rl.IsKeyPressed(.ENTER) {
 		if ui.nip05_ticket != 0 {return}
-		name :=
-			ui.nc_page == .Group && len(ui.nc_name) > 0 ? string(ui.nc_name[:]) : tr("New group")
+		name := len(ui.nc_name) > 0 ? string(ui.nc_name[:]) : tr("New group")
 
 		member := nc_member_ref(ui)
 		if member == "" {return}
-		// A pasted marmot:// profile link reduces to its bare reference.
-		if ref := marmot_link_ref(member); len(ref) > 0 {
-			member = ref
-		}
 
 		// `.bit` / `d/` / `id/` go through the Namecoin resolver;
 		// other `@` addresses stay on the existing NIP-05 lookup path.

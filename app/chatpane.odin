@@ -1307,7 +1307,6 @@ empty_timeline :: proc(ui: ^Ui_State) {
 @(private)
 Nc_Page :: enum {
 	Contacts,
-	Address,
 	Group,
 }
 
@@ -1393,14 +1392,12 @@ nc_contact_matches :: proc(ui: ^Ui_State, query: string) -> []Contact_Order {
 
 @(private)
 nc_member_ref :: proc(ui: ^Ui_State) -> string {
-	if ui.nc_page == .Group &&
-	   ui.nc_member_choice > 0 &&
-	   ui.nc_member_choice <= len(ui.nc_contacts) {
+	if ui.nc_member_choice > 0 && ui.nc_member_choice <= len(ui.nc_contacts) {
 		contact := ui.nc_contacts[ui.nc_member_choice - 1]
 		if string(ui.nc_member[:]) == contact_label(ui, contact) {return contact.id_hex}
 	}
 	member := strings.trim_space(string(ui.nc_member[:]))
-	if ui.nc_page != .Group || member == "" {return member}
+	if member == "" {return member}
 	if nc_is_bit(member) || strings.contains(member, "@") {return member}
 	if ref := marmot_link_ref(member); ref != "" {member = ref}
 	return deeplink_hex(member)
@@ -1544,12 +1541,7 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 					loading ? tr("Loading your contacts") : len(ui.nc_search) > 0 ? tr("No matching contacts") : tr("No contacts yet"),
 					{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT},
 				)
-				if loading {busy_bar("NCContactsBusy")} else {
-					clay.Text(
-						len(ui.nc_search) > 0 ? tr("Try another name or use a Nostr address.") : tr("Use a Nostr address to start your first conversation."),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-					)
-				}
+				if loading {busy_bar("NCContactsBusy")}
 			}
 		} else {
 			ROW_H :: NC_CONTACT_H
@@ -1671,7 +1663,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 						{fontId = FONT_TITLE, fontSize = 26, textColor = TEXT},
 					)
 					clay.Text(
-						group ? tr("Give your group a name and a photo.") : ui.nc_page == .Address ? tr("Connect with a Nostr address.") : tr("Choose someone to talk to."),
+						group ? tr("Give your group a name and a photo.") : tr("Choose someone to talk to."),
 						{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
 					)
 				}
@@ -1692,12 +1684,6 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 					tr("New group"),
 					tr("Start a group and invite people."),
 				)
-				nc_action_row(
-					"NCAddress",
-					ICON_KEY,
-					tr("Use a Nostr address"),
-					tr("Paste a public key or look up a name."),
-				)
 				nc_contact_list(ui)
 			} else {
 				if clay.UI(clay.ID("NCForm"))(
@@ -1710,65 +1696,55 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 					clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 				},
 				) {
-					if group {
-						if clay.UI(clay.ID("NCPicture"))(
+					if clay.UI(clay.ID("NCPicture"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							padding = {bottom = 8},
+							childAlignment = {y = .Center},
+							childGap = 16,
+						},
+					},
+					) {
+						if len(ui.nc_pic.data) > 0 || len(ui.nc_name) > 0 {
+							avatar("NCPic", 0, "", string(ui.nc_name[:]), 64, nc_pic_tex(ui))
+						} else if clay.UI(clay.ID("NCPicPlaceholder"))(
 						{
 							layout = {
-								sizing = {width = clay.SizingGrow()},
-								padding = {bottom = 8},
-								childAlignment = {y = .Center},
-								childGap = 16,
+								sizing = {clay.SizingFixed(64), clay.SizingFixed(64)},
+								childAlignment = {x = .Center, y = .Center},
 							},
+							backgroundColor = HOVER,
+							cornerRadius = rr(32),
 						},
+						) {clay.Text(ICON_PEOPLE, {fontId = FONT_ICON, fontSize = 24, textColor = ACCENT})}
+						if clay.UI(clay.ID("NCPicActions"))(
+						{layout = {layoutDirection = .TopToBottom, childGap = 8}},
 						) {
-							if len(ui.nc_pic.data) > 0 || len(ui.nc_name) > 0 {
-								avatar("NCPic", 0, "", string(ui.nc_name[:]), 64, nc_pic_tex(ui))
-							} else if clay.UI(clay.ID("NCPicPlaceholder"))(
-							{
-								layout = {
-									sizing = {clay.SizingFixed(64), clay.SizingFixed(64)},
-									childAlignment = {x = .Center, y = .Center},
-								},
-								backgroundColor = HOVER,
-								cornerRadius = rr(32),
-							},
-							) {clay.Text(ICON_PEOPLE, {fontId = FONT_ICON, fontSize = 24, textColor = ACCENT})}
-							if clay.UI(clay.ID("NCPicActions"))(
-							{layout = {layoutDirection = .TopToBottom, childGap = 8}},
-							) {
-								micro_button("NCPicFile", tr("Choose image"))
-								micro_button("NCPicEmoji", tr("Create from emoji"))
-								if len(ui.nc_pic.data) >
-								   0 {micro_button("NCPicRemove", tr("Remove"))}
-							}
+							micro_button("NCPicFile", tr("Choose image"))
+							micro_button("NCPicEmoji", tr("Create from emoji"))
+							if len(ui.nc_pic.data) > 0 {micro_button("NCPicRemove", tr("Remove"))}
 						}
-						clay.Text(
-							tr("Group name"),
-							{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
-						)
-						input_box(
-							ui,
-							"NCName",
-							&ui.nc_name,
-							tr("Group name"),
-							ui.focus == .NC_Name,
-							0,
-						)
 					}
 					clay.Text(
-						group ? tr("First member") : tr("Nostr address"),
+						tr("Group name"),
+						{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
+					)
+					input_box(ui, "NCName", &ui.nc_name, tr("Group name"), ui.focus == .NC_Name, 0)
+					clay.Text(
+						tr("First member"),
 						{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
 					)
 					input_box(
 						ui,
 						"NCMember",
 						&ui.nc_member,
-						group ? tr("Search contacts...") : tr("npub, hex, name@domain, or .bit"),
+						tr("Search contacts..."),
 						ui.focus == .NC_Member,
 						0,
 					)
 					clay.Text(
-						group ? ui.nc_member_choice > 0 ? npub_tail(ui.nc_contacts[ui.nc_member_choice - 1].npub) : tr("Choose a contact or paste a Nostr address.") : tr("Paste an npub, a hex public key, a profile link, or a verified name."),
+						ui.nc_member_choice > 0 ? npub_tail(ui.nc_contacts[ui.nc_member_choice - 1].npub) : tr("Choose a contact or paste a Nostr address."),
 						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 					)
 				}
@@ -1780,7 +1756,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 			}
 			if ui.nc_page != .Contacts {
 				label :=
-					pending != "" ? pending : ui.nc_member_choice == 0 && (strings.contains(string(ui.nc_member[:]), "@") || nc_is_bit(string(ui.nc_member[:]))) ? tr("Look up") : group ? tr("Create group") : tr("Start chat")
+					pending != "" ? pending : ui.nc_member_choice == 0 && (strings.contains(string(ui.nc_member[:]), "@") || nc_is_bit(string(ui.nc_member[:]))) ? tr("Look up") : tr("Create group")
 				login_big_button(
 					"NCCreate",
 					label,

@@ -72,9 +72,6 @@ new_group_member_selection :: proc(t: ^testing.T) {
 	append(&ui.nc_member, "Alex")
 	// Duplicate names must resolve to the selected contact, not the first match.
 	testing.expect_value(t, nc_member_ref(&ui), "second")
-	ui.nc_page = .Address
-	testing.expect_value(t, nc_member_ref(&ui), "Alex")
-	ui.nc_page = .Group
 	clear(&ui.nc_member)
 	append(&ui.nc_member, "Al")
 	testing.expect_value(t, nc_member_ref(&ui), "")
