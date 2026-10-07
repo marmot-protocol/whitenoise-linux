@@ -221,7 +221,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 						border = {color = FIELD_BORDER, width = {left = 1}},
 					},
 					) {
-						id := audit_delete_id(i)
+						id := audit_delete_id(file.path)
 						settings_button(
 							id,
 							ui.keys_confirm == id ? tr("Confirm delete") : tr("Delete"),
@@ -255,10 +255,11 @@ settings_advanced :: proc(ui: ^Ui_State) {
 	}
 }
 
-// Per-row id for the two-step delete; hashed as a plain string to dodge
-// the indexed-id binding bug (PORT.md Quirks).
-audit_delete_id :: proc(index: int) -> string {
-	return fmt.tprintf("AuditDelete%d", index)
+// Two-step delete id, keyed to the file path so a rescan that reorders
+// the list cannot confirm a different row. A plain string dodges the
+// indexed-id binding bug (PORT.md Quirks).
+audit_delete_id :: proc(path: string) -> string {
+	return fmt.tprintf("AuditDelete:%s", path)
 }
 
 // ── Interactions ────────────────────────────────────────────────────
@@ -275,10 +276,10 @@ handle_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		audit_scan(ui, client)
 		return
 	}
-	for file, i in ui.audit_files {
-		id := audit_delete_id(i)
+	for file in ui.audit_files {
+		id := audit_delete_id(file.path)
 		if clicked(id) {
-			if armed(ui, id) {
+			if owned_arm(ui, id) {
 				audit_delete(ui, client, file.path)
 			}
 			return
@@ -302,7 +303,7 @@ handle_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		return
 	}
-	ui.keys_confirm = "" // a click anywhere else disarms
+	keys_disarm(ui) // a click anywhere else disarms
 }
 
 // ── Telemetry and audit settings ────────────────────────────────────
@@ -375,6 +376,9 @@ set_audit :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
 // ── Audit-log files ─────────────────────────────────────────────────
 
 audit_scan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	// A fresh listing invalidates a pending delete. The id is also the
+	// path, so a confirm that survived would still name the same file.
+	keys_disarm(ui)
 	for &f in ui.audit_files {
 		delete(f.path)
 		delete(f.name)

@@ -1916,11 +1916,18 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if !admin || !clicked(fmt.tprintf("RetChip%d", i)) || ui.group_retention == secs {
 			continue
 		}
-		// Optimistic: the chip flips now, the relay commit runs on the
-		// op worker; drain_ops reloads the timeline on the ack (the
-		// timer-change system row) and re-snapshots on failure.
-		ui.group_retention = secs
-		spawn_op(ui, client, .Retention, "", "", secs)
+		if ui.selected < 0 || ui.selected >= len(ui.chats) {
+			return
+		}
+		// The chip stays put until the modal is confirmed. Cancel leaves
+		// the timer where it was. arg is the group, idx is the seconds.
+		confirm_ask(
+			ui,
+			.Retention,
+			ui.chats[ui.selected].group_id,
+			retention_text(secs),
+			int(secs),
+		)
 		return
 	}
 

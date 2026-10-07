@@ -601,6 +601,9 @@ msgstr ""
 msgid "Centred conversation"
 msgstr ""
 
+msgid "Change disappearing messages?"
+msgstr ""
+
 msgid "Change password"
 msgstr ""
 
@@ -629,6 +632,9 @@ msgid "Change the theme"
 msgstr ""
 
 msgid "Change the time format"
+msgstr ""
+
+msgid "Change timer"
 msgstr ""
 
 msgid "Change vault password"
@@ -993,6 +999,9 @@ msgid "Couldn't change audit logs. %s"
 msgstr ""
 
 msgid "Couldn't change diagnostics sharing. Please try again."
+msgstr ""
+
+msgid "Couldn't change disappearing messages. Please try again."
 msgstr ""
 
 msgid "Couldn't change the password. Please try again."
@@ -1484,6 +1493,9 @@ msgid "Delete this message?"
 msgstr ""
 
 msgid "Delete this theme?"
+msgstr ""
+
+msgid "Delete this vault"
 msgstr ""
 
 msgid "Deleted. Recording continues in a fresh file."
@@ -2453,6 +2465,12 @@ msgstr ""
 msgid "Message text size"
 msgstr ""
 
+msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
+msgstr ""
+
+msgid "Messages already in the chat, and new ones, are deleted for everyone after this time."
+msgstr ""
+
 msgid "Messages aren't arriving"
 msgstr ""
 
@@ -2550,9 +2568,6 @@ msgid "New issue"
 msgstr ""
 
 msgid "New message"
-msgstr ""
-
-msgid "New messages are deleted for everyone after this time."
 msgstr ""
 
 msgid "New name"
@@ -3832,7 +3847,7 @@ msgstr ""
 msgid "Takes effect on the next launch."
 msgstr ""
 
-msgid "Tap one to remove it."
+msgid "Tap one, then confirm, to remove it."
 msgstr ""
 
 msgid "Tasks"
@@ -4146,9 +4161,6 @@ msgid "Use a separate group for each project and start with its location and con
 msgstr ""
 
 msgid "Use a shorter search."
-msgstr ""
-
-msgid "Use another key"
 msgstr ""
 
 msgid "Use emoji image"

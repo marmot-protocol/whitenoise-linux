@@ -602,6 +602,10 @@ msgstr "会話を中央に表示"
 msgid "Centred conversation"
 msgstr "会話を中央に配置"
 
+#, fuzzy
+msgid "Change disappearing messages?"
+msgstr "消えるメッセージ"
+
 msgid "Change password"
 msgstr "パスワードを変更"
 
@@ -631,6 +635,10 @@ msgstr "テーマを変更"
 
 msgid "Change the time format"
 msgstr "時刻の形式を変更"
+
+#, fuzzy
+msgid "Change timer"
+msgstr "テーマを変更"
 
 msgid "Change vault password"
 msgstr "保管庫のパスワードを変更"
@@ -995,6 +1003,10 @@ msgstr "監査ログを変更できませんでした。%s"
 
 msgid "Couldn't change diagnostics sharing. Please try again."
 msgstr "診断情報の共有設定を変更できませんでした。もう一度お試しください。"
+
+#, fuzzy
+msgid "Couldn't change disappearing messages. Please try again."
+msgstr "メッセージを検索できませんでした。もう一度お試しください。"
 
 msgid "Couldn't change the password. Please try again."
 msgstr "パスワードを変更できませんでした。もう一度お試しください。"
@@ -1486,6 +1498,10 @@ msgstr "このメッセージを削除しますか？"
 
 msgid "Delete this theme?"
 msgstr "このテーマを削除しますか？"
+
+#, fuzzy
+msgid "Delete this vault"
+msgstr "確認: この保管庫を削除"
 
 msgid "Deleted. Recording continues in a fresh file."
 msgstr "削除しました。記録は新しいファイルで続きます。"
@@ -2454,6 +2470,13 @@ msgstr "メッセージのテキストをコピーしました"
 msgid "Message text size"
 msgstr "メッセージの文字サイズ"
 
+msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
+msgstr ""
+
+#, fuzzy
+msgid "Messages already in the chat, and new ones, are deleted for everyone after this time."
+msgstr "新しいメッセージはこの時間が経つと全員から削除されます。"
+
 msgid "Messages aren't arriving"
 msgstr "メッセージが届きません"
 
@@ -2552,9 +2575,6 @@ msgstr "新しい報告"
 
 msgid "New message"
 msgstr "新しいメッセージ"
-
-msgid "New messages are deleted for everyone after this time."
-msgstr "新しいメッセージはこの時間が経つと全員から削除されます。"
 
 msgid "New name"
 msgstr "新しい名前"
@@ -3833,7 +3853,8 @@ msgstr "テイク %d"
 msgid "Takes effect on the next launch."
 msgstr "次回の起動時に反映されます。"
 
-msgid "Tap one to remove it."
+#, fuzzy
+msgid "Tap one, then confirm, to remove it."
 msgstr "タップすると削除できます。"
 
 msgid "Tasks"
@@ -4149,9 +4170,6 @@ msgstr "プロジェクトごとに別のグループを使い、最初にプロ
 
 msgid "Use a shorter search."
 msgstr "検索キーワードを短くしてください。"
-
-msgid "Use another key"
-msgstr "別の鍵を使う"
 
 msgid "Use emoji image"
 msgstr "絵文字の画像を使用"

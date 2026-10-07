@@ -44,6 +44,24 @@ emoji_code :: proc(name: string) -> string {
 	return name
 }
 
+// First click arms this file. The second removes it. The arm is the
+// filename, so a rescan that reorders the chips cannot confirm another.
+emoji_remove :: proc(ui: ^Ui_State, name: string) {
+	if !owned_arm(ui, fmt.tprintf("EmojiDelete:%s", name)) {
+		return
+	}
+	os.remove(fmt.tprintf("%s/%s", emoji_dir(), name))
+	if old, ok := custom_emoji_textures[name]; ok {
+		if old != nil {
+			rl.UnloadTexture(old^)
+			free(old)
+		}
+		key, _ := delete_key(&custom_emoji_textures, name)
+		delete(key)
+	}
+	custom_emoji_scan()
+}
+
 custom_emoji_scan :: proc() {
 	custom_emoji_scanned = true
 	for name in custom_emoji_names {

@@ -3,6 +3,7 @@ package main
 import gate_runtime "base:runtime"
 import gate_sync "core:sync"
 import gate_testing "core:testing"
+import edit "core:text/edit"
 
 // Submit once and wait out the unlock worker. True when the vault opened.
 gate_submit :: proc(ui: ^Ui_State) -> bool {
@@ -114,4 +115,61 @@ vault_gate_manual_relock :: proc(t: ^gate_testing.T) {
 	gate_testing.expect(t, gate_submit(&ui))
 	value, found := vault_get("account:alice", context.temp_allocator)
 	gate_testing.expect(t, found && value == "signing-secret")
+}
+
+@(test)
+vault_gate_reset_disarms :: proc(t: ^gate_testing.T) {
+	context.allocator = gate_runtime.default_context().allocator
+	gate_sync.lock(&clay_test_mutex)
+	defer gate_sync.unlock(&clay_test_mutex)
+	gate_sync.lock(&test_home_lock)
+	defer gate_sync.unlock(&test_home_lock)
+	home, err := os.make_directory_temp("", "wn-gate-disarm", context.temp_allocator)
+	if !gate_testing.expect(t, err == nil) {return}
+	defer os.remove_all(home)
+	old_home := data_home
+	data_home = home
+	defer {
+		vault_delete()
+		data_home = old_home
+		gate_close()
+		gate_confirm = false
+		gate_err = ""
+		gate_reset_armed = false
+	}
+	previous := clay.GetCurrentContext()
+	memory: []u8
+	init_layout(&memory, 32768, {800, 700})
+	defer {clay.SetCurrentContext(previous); delete(memory)}
+	ui: Ui_State
+	edit.init(&ui.ed, context.allocator, context.allocator)
+	defer edit.destroy(&ui.ed)
+	clay.BeginLayout()
+	clay.EndLayout(0)
+	rl.PushKey(.ENTER, false)
+	for rl.GetCharPressed() != 0 {}
+
+	gate_reset_armed = true
+	rl.PushChar('x')
+	gate_input(&ui)
+	gate_testing.expect(t, !gate_reset_armed, "a keystroke disarms vault deletion")
+	gate_testing.expect(t, !vault_exists(), "disarming must not delete the vault")
+	gate_testing.expect_value(t, len(gate_pw), 1)
+
+	gate_testing.expect_value(t, vault_create("right"), Vault_Err.None)
+	clear(&gate_pw)
+	append(&gate_pw, "nope")
+	rl.PushKey(.ENTER, true)
+	defer rl.PushKey(.ENTER, false)
+	gate_input(&ui)
+	gate_testing.expect(t, gate_job.worker != nil)
+	gate_reset_armed = true
+	for gate_job.worker != nil {
+		if gate_poll() {
+			gate_testing.expect(t, false, "wrong password must not open the vault")
+			return
+		}
+	}
+	gate_testing.expect(t, !gate_reset_armed, "a failed unlock disarms vault deletion")
+	gate_testing.expect(t, vault_exists())
 }

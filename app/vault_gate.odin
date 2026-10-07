@@ -232,6 +232,7 @@ gate_poll :: proc() -> bool {
 		mem.zero_slice(gate_pw[:])
 		clear(&gate_pw)
 	}
+	gate_reset_armed = false
 	return false
 }
 
@@ -322,6 +323,28 @@ gate_input :: proc(ui: ^Ui_State) {
 	}
 	creating := !vault_exists()
 
+	focus := gate_confirm
+	// Only while delete is armed: a keystroke has to drop that arm, and
+	// the copy exists so the comparison can see what changed.
+	snap := gate_reset_armed
+	pw, pw2: string
+	if snap && len(gate_pw) > 0 {
+		pw = strings.clone(string(gate_pw[:]))
+	}
+	if snap && len(gate_pw2) > 0 {
+		pw2 = strings.clone(string(gate_pw2[:]))
+	}
+	defer if snap {
+		// clone("") is a literal, so only the non-empty copies are freed.
+		if len(pw) > 0 {
+			mem.zero_slice(transmute([]u8)pw)
+			delete(pw)
+		}
+		if len(pw2) > 0 {
+			mem.zero_slice(transmute([]u8)pw2)
+			delete(pw2)
+		}
+	}
 	edit_text(ui, gate_confirm && creating ? &gate_pw2 : &gate_pw)
 	if clicked("GatePwBox") {
 		gate_confirm = false
@@ -332,10 +355,25 @@ gate_input :: proc(ui: ^Ui_State) {
 	if creating {
 		tab_focus([]bool{false, true}, &gate_confirm)
 	}
+	// Typing, switching fields, or submitting an unlock is not the
+	// delete. Any of those drops the armed state.
+	other :=
+		clicked("GatePwBox") ||
+		clicked("GatePw2Box") ||
+		clicked("GateGo") ||
+		rl.IsKeyPressed(.ENTER) ||
+		gate_confirm != focus
+	if snap && (string(gate_pw[:]) != pw || string(gate_pw2[:]) != pw2) {
+		other = true
+	}
 
 	// No recovery path: forgetting the password means starting over from
 	// an nsec, so the reset arms first and acts on the second click.
 	if clicked("GateReset") {
+		if other {
+			gate_reset_armed = false
+			return
+		}
 		if !gate_reset_armed {
 			gate_reset_armed = true
 			return
@@ -347,6 +385,9 @@ gate_input :: proc(ui: ^Ui_State) {
 		clear(&gate_pw2)
 		gate_err = ""
 		return
+	}
+	if other {
+		gate_reset_armed = false
 	}
 
 	if !clicked("GateGo") && !rl.IsKeyPressed(.ENTER) {
@@ -532,7 +573,7 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				if !creating && !busy {
 					micro_button(
 						"GateReset",
-						gate_reset_armed ? tr("Confirm: delete this vault") : tr("Use another key"),
+						gate_reset_armed ? tr("Confirm: delete this vault") : tr("Delete this vault"),
 						DANGER,
 					)
 				}

@@ -602,6 +602,10 @@ msgstr "Centra la conversazione"
 msgid "Centred conversation"
 msgstr "Conversazione centrata"
 
+#, fuzzy
+msgid "Change disappearing messages?"
+msgstr "Messaggi effimeri"
+
 msgid "Change password"
 msgstr "Cambia password"
 
@@ -631,6 +635,10 @@ msgstr "Cambia il tema"
 
 msgid "Change the time format"
 msgstr "Cambia il formato dell'ora"
+
+#, fuzzy
+msgid "Change timer"
+msgstr "Cambia il tema"
 
 msgid "Change vault password"
 msgstr "Cambia la password della cassaforte"
@@ -995,6 +1003,10 @@ msgstr "Impossibile modificare i log di audit. %s"
 
 msgid "Couldn't change diagnostics sharing. Please try again."
 msgstr "Impossibile modificare la condivisione della diagnostica. Riprova."
+
+#, fuzzy
+msgid "Couldn't change disappearing messages. Please try again."
+msgstr "Impossibile cercare i messaggi. Riprova."
 
 msgid "Couldn't change the password. Please try again."
 msgstr "Impossibile cambiare la password. Riprova."
@@ -1486,6 +1498,10 @@ msgstr "Eliminare questo messaggio?"
 
 msgid "Delete this theme?"
 msgstr "Eliminare questo tema?"
+
+#, fuzzy
+msgid "Delete this vault"
+msgstr "Conferma: elimina questa cassaforte"
 
 msgid "Deleted. Recording continues in a fresh file."
 msgstr "Eliminato. La registrazione continua in un nuovo file."
@@ -2454,6 +2470,13 @@ msgstr "Testo del messaggio copiato"
 msgid "Message text size"
 msgstr "Dimensione del testo dei messaggi"
 
+msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
+msgstr ""
+
+#, fuzzy
+msgid "Messages already in the chat, and new ones, are deleted for everyone after this time."
+msgstr "I nuovi messaggi vengono eliminati per tutti dopo questo tempo."
+
 msgid "Messages aren't arriving"
 msgstr "I messaggi non arrivano"
 
@@ -2552,9 +2575,6 @@ msgstr "Nuova segnalazione"
 
 msgid "New message"
 msgstr "Nuovo messaggio"
-
-msgid "New messages are deleted for everyone after this time."
-msgstr "I nuovi messaggi vengono eliminati per tutti dopo questo tempo."
 
 msgid "New name"
 msgstr "Nuovo nome"
@@ -3833,7 +3853,8 @@ msgstr "Take %d"
 msgid "Takes effect on the next launch."
 msgstr "Ha effetto al prossimo avvio."
 
-msgid "Tap one to remove it."
+#, fuzzy
+msgid "Tap one, then confirm, to remove it."
 msgstr "Toccane una per rimuoverla."
 
 msgid "Tasks"
@@ -4149,9 +4170,6 @@ msgstr "Usa un gruppo separato per ogni progetto e inizia indicando dove si trov
 
 msgid "Use a shorter search."
 msgstr "Usa una ricerca più breve."
-
-msgid "Use another key"
-msgstr "Usa un'altra chiave"
 
 msgid "Use emoji image"
 msgstr "Usa immagine emoji"

@@ -751,7 +751,9 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 	if clay.UI(clay.ID("InfoTimerCard"))(info_card()) {
 		row_labels(
 			tr("Disappearing messages"),
-			tr("New messages are deleted for everyone after this time."),
+			tr(
+				"Messages already in the chat, and new ones, are deleted for everyone after this time.",
+			),
 		)
 		labels := [len(RETENTION_SECS)]string{N_("Off"), "1h", "1d", "1w", "4w"}
 		// Members see the current timer without controls to change it.
@@ -1033,7 +1035,7 @@ member_rows :: proc(ui: ^Ui_State) {
 // array, so chip N here is chip N there.
 RETENTION_SECS :: [5]u64{0, 3600, 86400, 604800, 2419200}
 
-@(private = "file")
+@(private)
 retention_text :: proc(secs: u64) -> string {
 	if secs == 0 {return tr("Off")}
 	units := [?]struct {

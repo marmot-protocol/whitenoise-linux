@@ -314,7 +314,7 @@ handle_storage :: proc(ui: ^Ui_State) {
 		}
 		return
 	}
-	ui.keys_confirm = "" // a click anywhere else disarms
+	keys_disarm(ui) // a click anywhere else disarms
 }
 
 // The modal owns input while open, on the settings page and on the

@@ -147,7 +147,7 @@ keys_forget :: proc(ui: ^Ui_State) {
 		ui.keys_nsec = ""
 	}
 	ui.keys_nsec_show = false
-	ui.keys_confirm = ""
+	keys_disarm(ui)
 }
 
 reveal_nsec :: proc(ui: ^Ui_State, client: ^marmot.Client) {
@@ -424,14 +424,58 @@ keys_key_lines :: proc(id: string, key: string, width: f32) {
 
 // ── Interactions ────────────────────────────────────────────────────
 
+// Bumped whenever an arm is set or consumed. A click that leaves it
+// unchanged is "anywhere else" and disarms. See handle_settings.
+@(private)
+confirm_serial: int
+
+@(private)
+confirm_touch :: proc() {
+	confirm_serial += 1
+}
+
+// Path-keyed confirms ("AuditDelete:/…", "EmojiDelete:file.png") are
+// cloned into keys_confirm. Literal button ids are not, and must not
+// be freed.
+@(private)
+confirm_owned :: proc(id: string) -> bool {
+	return strings.has_prefix(id, "AuditDelete:") || strings.has_prefix(id, "EmojiDelete:")
+}
+
+@(private)
+keys_disarm :: proc(ui: ^Ui_State) {
+	if confirm_owned(ui.keys_confirm) {
+		delete(ui.keys_confirm)
+	}
+	ui.keys_confirm = ""
+}
+
 // Two-step: the first click arms the button, the second acts. Returns
 // true once the caller may perform the action.
 armed :: proc(ui: ^Ui_State, btn_id: string) -> bool {
 	if ui.keys_confirm == btn_id {
-		ui.keys_confirm = ""
+		keys_disarm(ui)
+		confirm_touch()
 		return true
 	}
+	keys_disarm(ui)
 	ui.keys_confirm = btn_id
+	confirm_touch()
+	return false
+}
+
+// Same two-step, but id is a stable subject (a file path or emoji
+// filename) that has to outlive this frame's temp strings.
+@(private)
+owned_arm :: proc(ui: ^Ui_State, id: string) -> bool {
+	if ui.keys_confirm == id {
+		keys_disarm(ui)
+		confirm_touch()
+		return true
+	}
+	keys_disarm(ui)
+	ui.keys_confirm = strings.clone(id)
+	confirm_touch()
 	return false
 }
 

@@ -1,6 +1,7 @@
 // One confirm modal for every destructive action: ask before deleting,
 // leaving, blocking, removing a member, changing admin rights,
-// declining an invite, or dropping a relay.
+// declining an invite, dropping a relay, or changing a group's
+// disappearing-message timer.
 //
 // Call sites hand over the intent (kind + subject) instead of acting;
 // run_confirm performs it once the user says yes. The two-step "arm the
@@ -35,6 +36,7 @@ Confirm_Kind :: enum {
 	Remove_Inbox,
 	Sign_Out,
 	Remove_Account,
+	Retention, // disappearing-message timer; seconds ride Confirm.idx
 }
 
 Confirm :: struct {
@@ -113,6 +115,10 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_(
 			"Remove this account?",
 		), N_("Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."), N_("Remove")
+	case .Retention:
+		return N_(
+			"Change disappearing messages?",
+		), N_("Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."), N_("Change timer")
 	}
 	return "", "", ""
 }
@@ -300,6 +306,31 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		account_job_start(account_job_new(ui, client, .Sign_Out, c.arg))
 	case .Remove_Account:
 		account_job_start(account_job_new(ui, client, .Remove, c.arg))
+	case .Retention:
+		// idx is the captured duration. The open chat must still be the
+		// group named in arg; a later selection is not a substitute.
+		secs: u64
+		known := false
+		if c.idx >= 0 {
+			secs = u64(c.idx)
+			for preset in RETENTION_SECS {
+				if preset == secs {
+					known = true
+					break
+				}
+			}
+		}
+		open := ui.selected >= 0 && ui.selected < len(ui.chats)
+		if known && open && len(c.arg) > 0 && ui.chats[ui.selected].group_id == c.arg {
+			ui.group_retention = secs
+			spawn_op(ui, client, .Retention, "", "", secs)
+		} else {
+			set_status(
+				ui,
+				strings.clone(tr("Couldn't change disappearing messages. Please try again.")),
+				.Error,
+			)
+		}
 	}
 }
 

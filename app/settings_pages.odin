@@ -940,7 +940,7 @@ settings_general :: proc(ui: ^Ui_State) {
 			row := settings_row()
 			row.layout.layoutDirection = .TopToBottom
 			if clay.UI(clay.ID("RowEmoji"))(row) {
-				row_labels(tr("Uploaded emoji"), tr("Tap one to remove it."))
+				row_labels(tr("Uploaded emoji"), tr("Tap one, then confirm, to remove it."))
 				for name, i in custom_emoji_names {
 					if clay.UI(clay.ID("EmojiChip", u32(i)))(
 					{
@@ -962,9 +962,14 @@ settings_general :: proc(ui: ^Ui_State) {
 							},
 							) {}
 						}
+						armed_emoji := ui.keys_confirm == fmt.tprintf("EmojiDelete:%s", name)
 						clay.Text(
-							fmt.tprintf(":%s:", emoji_code(name)),
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+							armed_emoji ? tr("Confirm delete") : fmt.tprintf(":%s:", emoji_code(name)),
+							{
+								fontId = FONT_BODY,
+								fontSize = 12,
+								textColor = armed_emoji ? DANGER : TEXT_DIM,
+							},
 						)
 					}
 				}
@@ -2340,13 +2345,21 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !mouse_released() {
 		return
 	}
+	// A click that does not arm or fire a danger control disarms whatever
+	// was waiting. confirm_touch advances the serial when the arm changes.
+	serial := confirm_serial
+	defer {
+		if serial == confirm_serial {
+			keys_disarm(ui)
+		}
+	}
 
 	for _, i in settings_tabs(ui.settings_section) {
 		if clay.PointerOver(clay.ID("SettingsTab", u32(i))) && ui.settings_tab != i {
 			if ui.settings_section == .Keys {
 				keys_forget(ui)
 			} else {
-				ui.keys_confirm = ""
+				keys_disarm(ui)
 			}
 			settings_theme_preview_reset(ui)
 			if ui.settings_section == .Appearance && i == 0 {
@@ -2453,8 +2466,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		for name, i in custom_emoji_names {
 			if clay.PointerOver(clay.ID("EmojiChip", u32(i))) {
-				os.remove(fmt.tprintf("%s/%s", emoji_dir(), name))
-				custom_emoji_scan()
+				emoji_remove(ui, name)
 				return
 			}
 		}
