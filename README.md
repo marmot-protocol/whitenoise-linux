@@ -558,8 +558,9 @@ Sidecar palettes, title faces, and background artwork are pinned to
 `3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f`. Run
 `bun scripts/render-sidecar-themes.ts` with Chromium installed to regenerate
 the embedded 1280×800 background images from the source CSS and SVGs.
-Backgrounds scale with the window; browser animations and component-surface
-gradients are not reproduced. `font-title` selects a bundled display face
+Backgrounds keep their aspect ratio and fill the window, centered with excess
+cropped at the edges. Browser animations and component-surface gradients are
+not reproduced. `font-title` selects a bundled display face
 separately from the body `font`. Font licences, source hashes, and conversion
 details are in `assets/fonts/sidecar/` and installed with the fonts. The native
 text engine does not provide browser OpenType shaping.

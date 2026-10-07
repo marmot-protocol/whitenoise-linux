@@ -116,8 +116,14 @@ WASH_BANDS :: 32
 wash_draw :: proc(bounds: clay.BoundingBox) {
 	if THEME_WALLPAPER != nil {
 		// One wall, anchored to the window even inside a scrolled timeline.
+		// Cover with one scale factor; crop excess rather than stretch the artwork.
 		// ponytail: a 1280x800 raster scales with the window; regenerate at higher
 		// resolution or port tiled layers if large-window detail needs more pixels.
+		window_w := f64(rl.GetScreenWidth()) / f64(UI_ZOOM)
+		window_h := f64(rl.GetScreenHeight()) / f64(UI_ZOOM)
+		scale := max(window_w / f64(THEME_WALLPAPER.width), window_h / f64(THEME_WALLPAPER.height))
+		image_w := f64(THEME_WALLPAPER.width) * scale
+		image_h := f64(THEME_WALLPAPER.height) * scale
 		rl.BeginScissorMode(
 			i32(math.floor(bounds.x)),
 			i32(math.floor(bounds.y)),
@@ -126,10 +132,10 @@ wash_draw :: proc(bounds: clay.BoundingBox) {
 		)
 		rl.DrawTextureRect(
 			THEME_WALLPAPER,
-			0,
-			0,
-			f32(rl.GetScreenWidth()) / UI_ZOOM,
-			f32(rl.GetScreenHeight()) / UI_ZOOM,
+			f32((window_w - image_w) / 2),
+			f32((window_h - image_h) / 2),
+			f32(image_w),
+			f32(image_h),
 			{255, 255, 255, 255},
 		)
 		rl.EndScissorMode()
