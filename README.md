@@ -32,6 +32,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Markdown bodies (with typeset `$$` math blocks), reactions, replies, edits with history, forwarding, and search.
 - HTTP(S) Markdown links keep their labels and destinations. Hover shows the URL; opening a link uses the external-link guard. Chat-list previews show reading text without Markdown markup.
 - Settings > Appearance > Interface sets the message line limit. Messages and event cards collapse after 6 lines by default; 0 shows them in full without Read more.
+- Settings > AI agents offers setup prompts for Hermes, OpenClaw, OpenCode, Codex, and Claude Code. Review and copy a prompt containing your active account's public npub, then paste it into an agent you run and trust. The page also has public-key copying and connector documentation. White Noise does not install anything or share your private key.
 - Ctrl+K searches literal text in locally stored history, including archived chats. Filter by chat, sender, UTC date range, or attachment type, and use More results to page through matches. Opening a result returns to Chats and loads older history when needed. Closing search preserves its query and results; switching accounts clears them. Unsynced messages are not searched.
 - Export the loaded chat window as HTML or Markdown from the members panel. HTML prepares embedded images in the background and shows image progress before opening the save dialog. Unavailable images appear as notes in the transcript. Leaving the chat or changing accounts discards an unfinished export.
 - Emoji search accepts names and shortcodes, such as `100` for hundred points and `thumbsup` for thumbs up. Shortcodes work with or without surrounding colons.
@@ -415,6 +416,9 @@ It locks that policy and pledges `stdio rpath` before reading PDF bytes.
 
 The image, archive, PDF, mesh, FBX, math and NES helpers share a 1 GiB memory limit,
 no inherited environment and only input, output and a null error stream.
+On macOS, the address-space limit adds that budget to all startup mappings,
+including Rosetta's reserved regions. Mach's basic task counter omits those
+regions even though the kernel includes them when checking the limit.
 Image, archive, PDF, mesh and math helpers
 have five CPU seconds and ten seconds wall time; the parent requires exact
 reply framing, end of stream and successful exit. FBX helpers have a ten-second

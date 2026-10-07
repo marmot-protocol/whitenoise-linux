@@ -15,6 +15,7 @@
 #endif
 #ifdef __APPLE__
 #include <mach/mach.h>
+#include <mach/mach_vm.h>
 #endif
 
 typedef enum {
@@ -51,14 +52,26 @@ static inline int wn_decoder_limits(WnDecoderLifetime lifetime) {
     struct rlimit cpu = {5, 5};
     struct rlimit core = {0, 0};
 #ifdef __APPLE__
-    struct mach_task_basic_info info;
-    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
-    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&info, &count) !=
-            KERN_SUCCESS ||
-        info.virtual_size > RLIM_INFINITY - WN_IMAGE_MEMORY_MAX) {
-        return 0;
+    /* Count top-level mappings: task_info omits Rosetta's reserved regions,
+     * but RLIMIT_AS includes them when validating the limit. */
+    mach_vm_address_t address = 0;
+    for (;;) {
+        mach_vm_size_t size = 0;
+        natural_t depth = 0;
+        vm_region_submap_info_data_64_t info;
+        mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT_64;
+        kern_return_t result = mach_vm_region_recurse(mach_task_self(), &address, &size, &depth,
+                                                      (vm_region_recurse_info_t)&info, &count);
+        if (result == KERN_INVALID_ADDRESS) {
+            break;
+        }
+        if (result != KERN_SUCCESS || size > RLIM_INFINITY - memory.rlim_cur ||
+            address > UINT64_MAX - size) {
+            return 0;
+        }
+        memory.rlim_cur += size;
+        address += size;
     }
-    memory.rlim_cur += info.virtual_size;
     memory.rlim_max = memory.rlim_cur;
 #endif
 #ifdef RLIMIT_AS

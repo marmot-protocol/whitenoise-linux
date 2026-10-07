@@ -382,6 +382,12 @@ jobs:
           name: clang-crash-${{ matrix.target }}
           path: build/clang-crash/
           if-no-files-found: ignore
+      - name: Check decoder memory limits
+        run: |
+          cpu=arm64
+          if [ '${{ matrix.target }}' = darwin-amd64 ]; then cpu=x86_64; fi
+          clang -arch "$cpu" -O2 -Wall -Wextra -Werror tests/decoder-limits-test.c -o build/decoder-limits-test
+          arch "-$cpu" build/decoder-limits-test
       - name: Extract and execute shipped package
         run: |
           source "$RUNNER_TEMP/tools/env"

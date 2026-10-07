@@ -716,6 +716,8 @@ if [ "${1:-}" = test ]; then
   cc -O2 -Wall -Wextra "$HERE/tests/ws-frame-test.c" \
     $(pkg-config --cflags --libs libcurl) -o "$HERE/build/ws-frame-test"
   "$HERE/build/ws-frame-test"
+  cc -O2 -Wall -Wextra "$HERE/tests/decoder-limits-test.c" -o "$HERE/build/decoder-limits-test"
+  "$HERE/build/decoder-limits-test"
   cc -O2 -Wall -Wextra -I"${IMAGE_ODIN%/}/vendor/stb/src" "$HERE/tests/image-test.c" \
     "$HERE/build/libwndecoder.a" $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/image-test"
   "$HERE/build/image-test" "$HERE/build/wn-image"
