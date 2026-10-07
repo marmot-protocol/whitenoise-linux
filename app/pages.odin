@@ -96,7 +96,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if ui.page == .Settings {
 		settings_fields(ui) // press-phase focus clicks for text boxes
-		if ui.lang_open || ui.shortcuts_open || ui.theme_menu_open || ui.export_open {
+		if ui.lang_open || ui.shortcuts_open || ui.export_open {
 			handle_settings(ui, client) // open modals capture Esc every frame
 			return
 		}
@@ -176,6 +176,9 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.page == .Settings && (settings_escape(ui) || settings_switch_keys(ui, client)) {
 		return
 	}
+	// Theme browsing needs hover deadlines and keyboard input on every frame,
+	// not just the pointer release used by the remaining page actions.
+	if ui.page == .Settings {handle_settings(ui, client)}
 
 	if !mouse_released() {
 		return
@@ -189,6 +192,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	for page in Page {
 		if clay.PointerOver(clay.ID("Nav", u32(page))) && ui.page != page {
+			settings_theme_preview_reset(ui)
 			ui.page = page
 			switch page {
 			case .Chats:
@@ -225,10 +229,6 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				return
 			}
 		}
-	}
-
-	if ui.page == .Settings {
-		handle_settings(ui, client)
 	}
 
 	if ui.page == .Profile {

@@ -1,23 +1,71 @@
-# Warm brick and aged paper: a light theme that is not white, with
-# fibre drifting in the window light.
+# Sidecar: sandstone after dark, warm ivory trim, gold lamplight and ivy.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/brownstone.css
+# Shared component roles: styles.css at the same pinned revision.
 name = "Brownstone"
 
 [colors]
-bg = "#f0e6d9ff"
-bg-2 = "#e3d4c1ff"
-text-hi = "#2b1f19ff"
-danger = "#9a3123ff"
-warning = "#9c6d1fff"
+bg = "#120c0aff"
+bg-2 = "#180f0cff"
+# Velvet gradient stops; native surfaces use a single color.
+panel = "#1b1310ff"
+panel-2 = "#150e0cff"
+rail = "#180f0cff"
+elevated = "#1b1310ff"
+plate = "#1b1310ff"
+status-bar = "#1b1310ff"
+banner = "#241a15ff"
+canvas-top = "#120c0aff"
+text-hi = "#f2e7ddff"
+text-mid = "#d8c7b8ff"
+text-lo = "#a89383ff"
+text-vlo = "#7a6a5eff"
+# First stop of input-bg; CSS hover changes the rim, not the field fill.
+field = "#080504a6"
+field-hover = "#080504a6"
+field-border = "#c98b5e2e"
+hover = "#c98b5e21"
+card-border = "#c98b5e2e"
+elevated-border = "#c98b5e52"
+border-2 = "#c98b5e2e"
+divider = "#c98b5e2e"
+avatar-ring = "#c98b5e52"
+card-well = "#1e151199"
+plate-inset = "#1e151166"
+code-plate = "#c98b5e1f"
+danger = "#c4574aff"
+danger-soft = "#c4574a1f"
+danger-border = "#c4574a73"
+warning = "#c4574aff"
+warning-soft = "#c4574a1a"
+warning-border = "#c4574a4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#0000008c"
+shadow-card = "#00000073"
+shadow-popover = "#00000099"
+shadow-float = "#00000073"
+top-glint = "#ffffff0f"
+bevel-hi = "#ffffff0f"
+bevel-lo = "#00000000"
 accent-base = [
-    "#8a4629ff",
-    "#5a6a4dff",
-    "#75573aff",
-    "#8e5039ff",
-    "#665069ff",
+    "#e0a94aff",
+    "#f0c46bff",
+    "#b4643aff",
+    "#c98b5eff",
+    "#8fa05eff",
 ]
 
 [style]
-backdrop = "dust"
-outline-surfaces = true
-r-scale = 0.6
+backdrop = "image:masonry"
+font = "Manrope"
+font-title = "Bitter"
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 1.0
 border-w = 1.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

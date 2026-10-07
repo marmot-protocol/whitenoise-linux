@@ -66,6 +66,9 @@ MEDIA_CHIP_FG := clay.Color{255, 255, 255, 255}
 MEDIA_CHIP_OUTLINE := clay.Color{255, 255, 255, 102}
 MEDIA_CONTROL_BG := clay.Color{255, 255, 255, 34}
 
+@(private)
+THEME_WALLPAPER: ^rl.Texture2D
+
 apply_theme :: proc(theme: int, accent: int) {
 	if len(theme_packs) == 0 {
 		return
@@ -142,8 +145,11 @@ apply_theme :: proc(theme: int, accent: int) {
 	BRACKET_LABELS = pack.bracket_labels
 	MOTION_FAST = pack.motion_fast
 	THEME_FONT = pack.font
+	THEME_FONT_TITLE = pack.font_title
+	apply_theme_fonts()
 	BACKDROP = pack.backdrop
 	BG_2 = pack.bg_2
+	THEME_WALLPAPER = pack.wallpaper
 
 	// The legacy per-scene flags still name a backdrop, so the packs
 	// written before the token keep their scene.
@@ -736,12 +742,11 @@ Ui_State :: struct {
 	stt:                                                   Stt_State,
 	lang_open:                                             bool, // interface-language modal
 	shortcuts_open:                                        bool, // keyboard-shortcuts modal
-	theme_menu_open:                                       bool, // Appearance theme dropdown
+	theme_tone:                                            Theme_Tone, // gallery browsing filter, never a committed theme
 	theme_preview_active:                                  bool,
 	theme_preview:                                         int,
 	theme_candidate:                                       int,
 	theme_candidate_since:                                 f64,
-	theme_menu_x, theme_menu_y:                            f32,
 	picking_emoji:                                         bool, // route the next picked file to custom emoji
 	picking_backup:                                        bool, // route the next picked file to the backup import
 	backup_mode:                                           Backup_Mode, // "" = closed; else the password modal

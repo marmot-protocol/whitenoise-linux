@@ -1,0 +1,75 @@
+# Sidecar by dmnyc: warm black stage, crimson lamps, ivory lettering and brass edges.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/jazz-age.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Jazz Age"
+
+[colors]
+bg = "#0c0908ff"
+bg-2 = "#120d0bff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#16110fff"
+panel-2 = "#110c0bff"
+rail = "#120d0bff"
+elevated = "#16110fff"
+plate = "#16110fff"
+status-bar = "#0c0908ff"
+banner = "#2a1a17ff"
+canvas-top = "#0c0908ff"
+text-hi = "#f3e7cfff"
+text-mid = "#e2d3b8ff"
+text-lo = "#bba78cff"
+text-vlo = "#b3a189ff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#0a0706ff"
+field-hover = "#0a0706ff"
+field-border = "#b8864b38"
+hover = "#f3e7cf17"
+card-border = "#b8864b38"
+elevated-border = "#f3e7cf52"
+border-2 = "#b8864b38"
+divider = "#b8864b38"
+avatar-ring = "#f3e7cf52"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#07050499"
+plate-inset = "#07050466"
+code-plate = "#f3e7cf1f"
+danger = "#ffb14aff"
+danger-soft = "#ffb14a1f"
+danger-border = "#ffb14a73"
+warning = "#ffb14aff"
+warning-soft = "#ffb14a1a"
+warning-border = "#ffb14a4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#00000099"
+shadow-card = "#00000080"
+shadow-popover = "#00000099"
+shadow-float = "#00000099"
+top-glint = "#fff0dc0a"
+bevel-hi = "#fff0dc0a"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#f58a95ff",
+    "#e0324bff",
+    "#e2d3b8ff",
+    "#f3e7cfff",
+    "#b8864bff",
+]
+
+[style]
+backdrop = "image:jazz-stage"
+font = "Manrope"
+font-title = "Fascinate"
+# Fascinate is the source title-card face. Federo balance lettering and keyboard furniture have no
+# separate native typography or layout role.
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 1.0
+border-w = 1.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

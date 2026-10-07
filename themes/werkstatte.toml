@@ -1,0 +1,76 @@
+# Sidecar by dmnyc: cool painted metal, square Secession rules, bronze ink and gold leaf.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/werkstatte.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Werkstätte"
+
+[colors]
+bg = "#e8eaeeff"
+bg-2 = "#dfe2e7ff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#fafbfcff"
+panel-2 = "#f0f2f5ff"
+rail = "#dfe2e7ff"
+elevated = "#fafbfcff"
+plate = "#fafbfcff"
+status-bar = "#fafbfcff"
+banner = "#dfe2e7ff"
+canvas-top = "#e8eaeeff"
+text-hi = "#15171cff"
+text-mid = "#2c3038ff"
+text-lo = "#565c66ff"
+text-vlo = "#5c636cff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#fafbfcff"
+field-hover = "#fafbfcff"
+field-border = "#15171c26"
+hover = "#15171c16"
+card-border = "#15171c26"
+elevated-border = "#15171c4d"
+border-2 = "#15171c26"
+divider = "#15171c26"
+avatar-ring = "#15171c4d"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#dfe2e799"
+plate-inset = "#dfe2e766"
+code-plate = "#15171c1f"
+danger = "#8c1d22ff"
+danger-soft = "#8c1d221f"
+danger-border = "#8c1d2273"
+warning = "#8c1d22ff"
+warning-soft = "#8c1d221a"
+warning-border = "#8c1d224d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#15171c1a"
+shadow-card = "#15171c12"
+shadow-popover = "#00000099"
+shadow-float = "#15171c29"
+top-glint = "#ffffffd9"
+bevel-hi = "#ffffffd9"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#3f3a22ff",
+    "#c9a227ff",
+    "#8c1d22ff",
+    "#2c3038ff",
+    "#96791fff",
+]
+
+[style]
+backdrop = "image:secession-grid"
+font = "Manrope"
+font-title = "Syncopate"
+# Square native furniture follows the source blanket rule. Syncopate is the source unicase face; the
+# browser-only 0.77 display scale has no native theme token.
+bevel = false
+hard-shadow = false
+outline-surfaces = true
+focus-glow = true
+r-scale = 0.0
+border-w = 1.0
+glow-r = 3.0
+shadow-y = 4
+bubble-r = 0.0
+hover-dur = 150.0
+transition-dur = 150.0

@@ -1,0 +1,76 @@
+# Sidecar by dmnyc: black split-flap strips, ivory characters and boarding yellow.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/departures.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Departures"
+
+[colors]
+bg = "#141413ff"
+bg-2 = "#10100fff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#0e0e0dff"
+panel-2 = "#0a0a09ff"
+rail = "#10100fff"
+elevated = "#0e0e0dff"
+plate = "#0e0e0dff"
+status-bar = "#0e0e0dff"
+banner = "#1d1d1cff"
+canvas-top = "#141413ff"
+text-hi = "#f2f1eaff"
+text-mid = "#dcdbd3ff"
+text-lo = "#a9a79dff"
+text-vlo = "#a09e94ff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#0a0a09ff"
+field-hover = "#0a0a09ff"
+field-border = "#f2f1ea29"
+hover = "#f2f1ea17"
+card-border = "#f2f1ea24"
+elevated-border = "#f2f1ea61"
+border-2 = "#f2f1ea29"
+divider = "#f2f1ea29"
+avatar-ring = "#f2f1ea61"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#06060599"
+plate-inset = "#06060566"
+code-plate = "#f2f1ea1f"
+danger = "#ff8a70ff"
+danger-soft = "#ff8a701f"
+danger-border = "#ff8a7073"
+warning = "#ff8a70ff"
+warning-soft = "#ff8a701a"
+warning-border = "#ff8a704d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#00000099"
+shadow-card = "#00000080"
+shadow-popover = "#00000099"
+shadow-float = "#0000008c"
+top-glint = "#00000000"
+bevel-hi = "#00000000"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#f5c400ff",
+    "#dcdbd3ff",
+    "#f2f1eaff",
+    "#ff8a70ff",
+    "#8fdba4ff",
+]
+
+[style]
+backdrop = "image:split-flaps"
+font = "Manrope"
+font-title = "Barlow Condensed"
+# The source strips have 2px corners, with 3px controls; native radius scaling keeps the narrow strip
+# geometry without replacing the chat layout.
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 0.166667
+border-w = 1.0
+glow-r = 3.0
+shadow-y = 4
+bubble-r = 2.0
+hover-dur = 150.0
+transition-dur = 150.0

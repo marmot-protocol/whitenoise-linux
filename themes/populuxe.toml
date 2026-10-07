@@ -1,0 +1,73 @@
+# Sidecar by dmnyc: white stock over cream, motel lettering, teal and coral printing inks.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/populuxe.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Populuxe"
+
+[colors]
+bg = "#fffdf9ff"
+bg-2 = "#f9f1e4ff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#ffffffff"
+panel-2 = "#f5eadaff"
+rail = "#f9f1e4ff"
+elevated = "#ffffffff"
+plate = "#ffffffff"
+status-bar = "#ffffffff"
+banner = "#f9f1e4ff"
+canvas-top = "#fffdf9ff"
+text-hi = "#1c1a17ff"
+text-mid = "#006774ff"
+text-lo = "#35504fff"
+text-vlo = "#6e6656ff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#ffffffff"
+field-hover = "#ffffffff"
+field-border = "#1c1a1726"
+hover = "#1c1a1716"
+card-border = "#1c1a1726"
+elevated-border = "#1c1a1747"
+border-2 = "#1c1a1726"
+divider = "#1c1a1726"
+avatar-ring = "#1c1a1747"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#f9f1e499"
+plate-inset = "#f9f1e466"
+code-plate = "#1c1a171f"
+danger = "#792830ff"
+danger-soft = "#7928301f"
+danger-border = "#79283073"
+warning = "#792830ff"
+warning-soft = "#7928301a"
+warning-border = "#7928304d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#1c1a171a"
+shadow-card = "#1c1a1712"
+shadow-popover = "#00000099"
+shadow-float = "#1c1a1729"
+top-glint = "#ffffffcc"
+bevel-hi = "#ffffffcc"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#7e661dff",
+    "#006774ff",
+    "#f3713dff",
+    "#00505aff",
+    "#dc4a3cff",
+]
+
+[style]
+backdrop = "image:circle-lattice"
+font = "Manrope"
+font-title = "Rowdies"
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 1.0
+border-w = 1.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

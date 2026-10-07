@@ -54,6 +54,7 @@ parse_system_theme :: proc(source: string) -> (Theme_Pack, bool) {
 	}
 	pack := parse_theme(N_("System"), "@system", strings.to_string(b), default_pack())
 	pack.source = strings.clone(strings.to_string(b))
+	pack.collection = .System
 	return pack, true
 }
 

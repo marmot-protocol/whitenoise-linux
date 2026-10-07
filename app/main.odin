@@ -153,6 +153,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 	page_advance(ui)
 
 	logged_in := len(ui.accounts) > 0
+	page_backdrop := wash_payload()
 
 	if clay.UI(clay.ID("Root"))(
 	{
@@ -160,8 +161,8 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 		// clay emits an element's Custom command before its own fill, so
 		// a washed pack leaves the fill out and lets the gradient be the
 		// page: it covers the window opaquely either way.
-		backgroundColor = BG_2.a > 0 ? clay.Color{} : BG,
-		custom = {customData = wash_payload()},
+		backgroundColor = page_backdrop != nil ? clay.Color{} : BG,
+		custom = {customData = page_backdrop},
 	},
 	) {
 		// Logged out: the sign-in card alone on the canvas (no sidebar,
@@ -737,7 +738,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 							padding = {top = page_push ? 0 : u16((1 - page_t) * PAGE_SLIDE)},
 						},
 						clip = {horizontal = hide_main},
-						backgroundColor = hide_main ? {} : CARD,
+						backgroundColor = hide_main ? {} : decor_canvas_fill(),
 						border = {color = DIVIDER, width = {left = u16(BORDER_W)}},
 					},
 					) {
@@ -1004,6 +1005,7 @@ app_main :: proc() {
 	rl.SetTargetFPS(60)
 	refresh_ui_scale()
 	init_fonts()
+	init_decor()
 
 	load_emoji_catalog()
 	emoji_set_load(ui.prefs.emoji_set)

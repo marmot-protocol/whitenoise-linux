@@ -1,0 +1,73 @@
+# Sidecar by dmnyc: oat paper and loam, moss ink, eucalyptus and fly-agaric red.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/mycelium.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Mycelium"
+
+[colors]
+bg = "#f1eadfff"
+bg-2 = "#e9e0d1ff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#fffdf8ff"
+panel-2 = "#f7f1e6ff"
+rail = "#e9e0d1ff"
+elevated = "#fffdf8ff"
+plate = "#fffdf8ff"
+status-bar = "#fffdf8ff"
+banner = "#e9e0d1ff"
+canvas-top = "#f1eadfff"
+text-hi = "#2a2118ff"
+text-mid = "#4a3a2aff"
+text-lo = "#54483bff"
+text-vlo = "#62554aff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#fffdf8ff"
+field-hover = "#fffdf8ff"
+field-border = "#4a3a2a26"
+hover = "#4a3a2a17"
+card-border = "#4a3a2a26"
+elevated-border = "#4a3a2a47"
+border-2 = "#4a3a2a26"
+divider = "#4a3a2a26"
+avatar-ring = "#4a3a2a47"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#e9e0d199"
+plate-inset = "#e9e0d166"
+code-plate = "#4a3a2a1f"
+danger = "#9a2e22ff"
+danger-soft = "#9a2e221f"
+danger-border = "#9a2e2273"
+warning = "#a33a2aff"
+warning-soft = "#a33a2a1a"
+warning-border = "#a33a2a4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#3c2d191c"
+shadow-card = "#3c2d1914"
+shadow-popover = "#00000099"
+shadow-float = "#3c2d192e"
+top-glint = "#ffffffbf"
+bevel-hi = "#ffffffbf"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#4a6b3aff",
+    "#c98a3aff",
+    "#38532bff",
+    "#46655eff",
+    "#a5352bff",
+]
+
+[style]
+backdrop = "image:fungal-threads"
+font = "Manrope"
+font-title = "Fraunces"
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 1.0
+border-w = 1.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

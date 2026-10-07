@@ -247,7 +247,7 @@ settings_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
 			childAlignment = {x = .Center, y = .Center},
 		},
 		backgroundColor = hovered() ? HOVER : CARD,
-		border = {color = color.a != 0 ? color : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+		border = kb_focus == id_str ? kb_ring(ACCENT) : clay.BorderElementConfig{color = color.a != 0 ? color : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
 		cornerRadius = rr(7),
 	},
 	) {
@@ -429,7 +429,11 @@ settings_tab_strip :: proc(ui: ^Ui_State) {
 			) {
 				clay.Text(
 					tr(page.label),
-					{fontId = FONT_TITLE, fontSize = 12, textColor = selected ? ACCENT : TEXT_DIM},
+					{
+						fontId = ui.settings_section == .Appearance && ui.settings_tab == 0 ? FONT_GALLERY_BOLD : FONT_TITLE,
+						fontSize = 12,
+						textColor = selected ? ACCENT : TEXT_DIM,
+					},
 				)
 			}
 		}
@@ -1065,16 +1069,15 @@ settings_theme_preview_reset :: proc(ui: ^Ui_State, end: Theme_Preview_End = .Re
 // can leave Settings without passing through its own navigation handler.
 @(private)
 settings_theme_preview_guard :: proc(ui: ^Ui_State) {
-	if !ui.theme_menu_open && !ui.theme_preview_active {return}
-	if !ui.theme_menu_open ||
-	   ui.page != .Settings ||
+	if !ui.theme_preview_active && ui.theme_candidate < 0 {return}
+	if ui.page != .Settings ||
 	   ui.settings_section != .Appearance ||
 	   settings_on_menu(ui) ||
 	   ui.settings_tab != 0 ||
 	   ui.add_account_open ||
+	   ui.focus == .SettingsSearch ||
 	   modal_open(ui) {
 		settings_theme_preview_reset(ui)
-		ui.theme_menu_open = false
 	}
 }
 
@@ -1172,130 +1175,363 @@ settings_conversation_preview :: proc(ui: ^Ui_State) {
 	}
 }
 
+@(private)
+theme_collection_header :: proc(collection: Theme_Collection) {
+	if clay.UI(clay.ID("ThemeCollection", u32(collection)))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(30)},
+			childAlignment = {y = .Center},
+		},
+	},
+	) {
+		label := "White Noise"
+		switch collection {
+		case .White_Noise:
+		case .Sidecar:
+			label = "Sidecar"
+		case .Custom:
+			label = tr("Your themes")
+		case .System:
+			label = tr("System")
+		}
+		clay.Text(label, {fontId = FONT_GALLERY_BOLD, fontSize = 15, textColor = TEXT})
+	}
+}
+
+// Keyboard labels outlive a frame; Clay still uses the stable indexed tile IDs.
+@(private)
+theme_tile_keys: [dynamic]string
+@(private)
+theme_control_order: [dynamic]string
+
+@(private)
+THEME_ACCENT_KEYS := [5]string {
+	"ThemeAccent0",
+	"ThemeAccent1",
+	"ThemeAccent2",
+	"ThemeAccent3",
+	"ThemeAccent4",
+}
+
+@(private)
+theme_gallery_collection :: proc(i: int) -> Theme_Collection {
+	pack := &theme_packs[i]
+	return i == system_theme_index ? .System : (pack.custom ? .Custom : pack.collection)
+}
+
+@(private)
+theme_gallery_visible :: proc(ui: ^Ui_State, i: int) -> bool {
+	return theme_packs[i].tone == ui.theme_tone
+}
+
+@(private)
+theme_tone_button :: proc(ui: ^Ui_State, tone: Theme_Tone, id, label: string) {
+	append(&theme_control_order, id)
+	selected := ui.theme_tone == tone
+	if clay.UI(clay.ID(id))(
+	{
+		layout = {
+			sizing = {clay.SizingGrow({max = 90}), clay.SizingFixed(34)},
+			childAlignment = {x = .Center, y = .Center},
+		},
+		backgroundColor = selected ? SELECTED : (hovered() ? HOVER : CARD),
+		border = {
+			color = kb_focus == id || selected ? ACCENT : FIELD_BORDER,
+			width = {2, 2, 2, 2, 0},
+		},
+		cornerRadius = clay.CornerRadiusAll(6),
+	},
+	) {
+		clay.Text(label, {fontId = FONT_GALLERY_BOLD, fontSize = 13, textColor = TEXT})
+	}
+}
+
+@(private)
+theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
+	pack := &theme_packs[i]
+	append(&theme_control_order, theme_tile_keys[i])
+	selected := ui.theme == i
+	accent := pack.accent_base[ui.accent]
+	if clay.UI(clay.ID("ThemeOpt", u32(i)))(
+	{
+		layout = {
+			sizing = {clay.SizingFixed(width), clay.SizingFixed(160)},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(4),
+			childGap = 4,
+		},
+		backgroundColor = pack.panel,
+		border = {
+			color = selected || kb_focus == theme_tile_keys[i] ? ACCENT : (hovered() ? TEXT_DIM : FIELD_BORDER),
+			width = {2, 2, 2, 2, 0},
+		},
+		cornerRadius = clay.CornerRadiusAll(8),
+	},
+	) {
+		if clay.UI(clay.ID("ThemeOptArtwork", u32(i)))(
+		{
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingFixed(108)},
+				padding = clay.PaddingAll(8),
+				childGap = 8,
+			},
+			backgroundColor = pack.bg,
+			image = {imageData = pack.wallpaper},
+			cornerRadius = clay.CornerRadiusAll(4),
+		},
+		) {
+			if clay.UI(clay.ID_LOCAL("MiniRail"))(
+			{
+				layout = {
+					sizing = {clay.SizingFixed(22), clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					padding = clay.PaddingAll(5),
+					childGap = 5,
+				},
+				backgroundColor = pack.rail,
+				cornerRadius = clay.CornerRadiusAll(3),
+			},
+			) {
+				for n in 0 ..< 3 {
+					if clay.UI(clay.ID_LOCAL("MiniAvatar", u32(n)))(
+					{
+						layout = {sizing = {clay.SizingFixed(12), clay.SizingFixed(12)}},
+						backgroundColor = n == 0 ? accent : pack.panel_2,
+						cornerRadius = clay.CornerRadiusAll(6),
+					},
+					) {}
+				}
+			}
+			if clay.UI(clay.ID_LOCAL("MiniChat"))(
+			{
+				layout = {
+					sizing = {clay.SizingGrow(), clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 6,
+				},
+			},
+			) {
+				if clay.UI(clay.ID_LOCAL("MiniReceived"))(
+				{
+					layout = {
+						sizing = {clay.SizingGrow(), clay.SizingFixed(36)},
+						layoutDirection = .TopToBottom,
+						padding = clay.PaddingAll(6),
+						childGap = 4,
+					},
+					backgroundColor = pack.plate,
+					cornerRadius = clay.CornerRadiusAll(4),
+				},
+				) {
+					if clay.UI(clay.ID_LOCAL("MiniAuthor"))(
+					{
+						layout = {sizing = {clay.SizingFixed(28), clay.SizingFixed(3)}},
+						backgroundColor = accent,
+					},
+					) {}
+					if clay.UI(clay.ID_LOCAL("MiniLine"))(
+					{
+						layout = {sizing = {clay.SizingGrow(), clay.SizingFixed(3)}},
+						backgroundColor = pack.text_mid,
+					},
+					) {}
+					if clay.UI(clay.ID_LOCAL("MiniShortLine"))(
+					{
+						layout = {sizing = {clay.SizingFixed(36), clay.SizingFixed(3)}},
+						backgroundColor = pack.text_lo,
+					},
+					) {}
+				}
+				if clay.UI(clay.ID_LOCAL("MiniSent"))(
+				{
+					layout = {
+						sizing = {clay.SizingGrow(), clay.SizingFixed(22)},
+						padding = clay.PaddingAll(6),
+						childAlignment = {x = .Right},
+					},
+					backgroundColor = pack.accent_surface[ui.accent],
+					cornerRadius = clay.CornerRadiusAll(4),
+				},
+				) {
+					if clay.UI(clay.ID_LOCAL("MiniSentLine"))(
+					{
+						layout = {sizing = {clay.SizingFixed(36), clay.SizingFixed(3)}},
+						backgroundColor = pack.text_mid,
+					},
+					) {}
+				}
+				if clay.UI(clay.ID_LOCAL("MiniComposer"))(
+				{
+					layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}},
+					backgroundColor = pack.field,
+					cornerRadius = clay.CornerRadiusAll(3),
+				},
+				) {}
+			}
+		}
+		if clay.UI(clay.ID("ThemeOptTitle", u32(i)))(
+		{
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingFixed(40)},
+				padding = {left = 6, right = 6},
+				childGap = 6,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
+			if clay.UI(clay.ID_LOCAL("TitleText"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 3,
+				},
+			},
+			) {
+				clay.Text(
+					pack.custom ? pack.name : tr(pack.name),
+					{fontId = pack.preview_font, fontSize = 13, textColor = pack.text_hi},
+				)
+				if selected && theme_gallery_collection(i) == .Sidecar {
+					if clay.UI(clay.ID("ThemeTileNotice", u32(i)))({}) {
+						clay.Text(
+							tr("Theme from Sidecar by dmnyc."),
+							{fontId = FONT_GALLERY_TITLE, fontSize = 9, textColor = pack.text_mid},
+						)
+					}
+				}
+			}
+			if selected {
+				if clay.UI(clay.ID("ThemeOptCheck", u32(i)))(
+				{
+					layout = {
+						sizing = {clay.SizingFixed(18), clay.SizingFixed(18)},
+						childAlignment = {x = .Center, y = .Center},
+					},
+					backgroundColor = accent,
+					cornerRadius = clay.CornerRadiusAll(9),
+				},
+				) {
+					clay.Text(
+						ICON_CHECK,
+						{fontId = FONT_ICON, fontSize = 11, textColor = pack.on_accent[ui.accent]},
+					)
+				}
+			}
+		}
+	}
+}
+
+@(private)
+settings_theme_gallery :: proc(ui: ^Ui_State) {
+	clear(&theme_control_order)
+	for len(theme_tile_keys) < len(theme_packs) {
+		append(&theme_tile_keys, fmt.aprintf("ThemeOpt%d", len(theme_tile_keys)))
+	}
+	// SettingsSheet's padding is already excluded here, including narrow windows.
+	width := settings_body_width(ui)
+	columns := max(1, int((width + 12) / 196))
+	tile_width := (width - f32(columns - 1) * 12) / f32(columns)
+	if clay.UI(clay.ID("RowTheme"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			childGap = 12,
+		},
+	},
+	) {
+		clay.Text(tr("Theme"), {fontId = FONT_GALLERY_BOLD, fontSize = 20, textColor = TEXT})
+		clay.Text(
+			tr("Pick the whole app's look."),
+			{fontId = FONT_GALLERY_TITLE, fontSize = 12, textColor = TEXT_DIM},
+		)
+		if clay.UI(clay.ID("ThemeSelectedName"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = 4,
+			},
+		},
+		) {
+			selected := active_theme(ui)
+			if len(theme_packs) > 0 {
+				clay.Text(
+					theme_packs[selected].custom ? theme_packs[selected].name : tr(theme_packs[selected].name),
+					{fontId = FONT_GALLERY_BOLD, fontSize = 14, textColor = TEXT},
+				)
+			}
+			if len(theme_packs) > 0 && theme_gallery_collection(selected) == .Sidecar {
+				if clay.UI(clay.ID("ThemeSourceNotice"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {
+					clay.Text(
+						tr("Theme from Sidecar by dmnyc."),
+						{fontId = FONT_GALLERY_TITLE, fontSize = 11, textColor = TEXT_DIM},
+					)
+				}
+			}
+		}
+		if clay.UI(clay.ID("ThemeToneFilters"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+		) {
+			theme_tone_button(ui, .Dark, "ThemeToneDark", tr("Dark"))
+			theme_tone_button(ui, .Light, "ThemeToneLight", tr("Light"))
+		}
+		for collection in ([]Theme_Collection{.System, .White_Noise, .Sidecar, .Custom}) {
+			count := 0
+			for _, i in theme_packs {
+				if theme_gallery_collection(i) == collection &&
+				   theme_gallery_visible(ui, i) {count += 1}
+			}
+			if count == 0 {continue}
+			theme_collection_header(collection)
+			cursor := 0
+			for row in 0 ..< (count + columns - 1) / columns {
+				if clay.UI(
+					clay.ID(
+						"ThemeGalleryRow",
+						u32(collection) + u32(row) * (u32(Theme_Collection.System) + 1),
+					),
+				)(
+					{layout = {sizing = {width = clay.SizingGrow()}, childGap = 12}},
+				) {
+					placed := 0
+					for cursor < len(theme_packs) && placed < columns {
+						i := cursor
+						cursor += 1
+						if theme_gallery_collection(i) != collection ||
+						   !theme_gallery_visible(ui, i) {continue}
+						theme_gallery_tile(ui, i, tile_width)
+						placed += 1
+					}
+				}
+			}
+		}
+	}
+}
+
 settings_appearance :: proc(ui: ^Ui_State) {
 	preview_theme := active_theme(ui)
 	if ui.theme_preview_active && ui.theme_preview >= 0 && ui.theme_preview < len(theme_packs) {
 		preview_theme = ui.theme_preview
 	}
-	if ui.settings_tab != 2 {settings_conversation_preview(ui)}
+	if ui.settings_tab == 1 {settings_conversation_preview(ui)}
 	switch ui.settings_tab {
 	case 0:
-		if clay.UI(clay.ID("ThemeGroup"))(settings_box()) {
-			settings_group(tr("Theme"))
-			if clay.UI(clay.ID("RowTheme"))(settings_row(true)) {
-				row_labels(tr("Theme"), tr("Pick the whole app's look."))
-				if clay.UI(clay.ID("ThemeDrop"))(
-				{
-					layout = {
-						sizing = {
-							width = clay.SizingFit({min = 160}),
-							height = clay.SizingFixed(30),
-						},
-						padding = {left = 8, right = 8},
-						childGap = 8,
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = hovered() ? HOVER : CARD,
-					cornerRadius = rr(7),
-					border = {color = FIELD_BORDER, width = bw()},
-				},
-				) {
-					if clay.UI(clay.ID("ThemeDropSwatch"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingFixed(12), height = clay.SizingFixed(12)},
-						},
-						backgroundColor = active_pack(ui).bg,
-						cornerRadius = rr(4),
-						border = {color = FIELD_BORDER, width = bw()},
-					},
-					) {}
-					clay.Text(
-						tr(active_pack(ui).name),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
-					)
-					clay.Text("▾", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
-
-					if open_now(clay.ID("ThemeMenu"), ui.theme_menu_open) {
-						menu_w := fit_w(220, 8)
-						menu_h := min(f32(240), f32(rl.GetScreenHeight()) / UI_ZOOM - 16)
-						x, y := panel_pos(ui.theme_menu_x, ui.theme_menu_y, menu_w, menu_h)
-						if clay.UI(clay.ID("ThemeMenu"))(
-						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(menu_w),
-									height = clay.SizingFit({max = menu_h}),
-								},
-								layoutDirection = .TopToBottom,
-								padding = clay.PaddingAll(6),
-								childGap = 2,
-							},
-							floating = {
-								attachTo = .Root,
-								zIndex = 12,
-								offset = {x, y + rise(clay.ID("ThemeMenu"))},
-							},
-							backgroundColor = CARD,
-							cornerRadius = rr(2),
-							clip = {
-								horizontal = true,
-								vertical = true,
-								childOffset = clay.GetScrollOffset(),
-							},
-							border = {color = ELEVATED_BORDER, width = bw()},
-						},
-						) {
-							for _, n in theme_packs {
-								i := n
-								if system_theme_index >= 0 {
-									i =
-										n == 0 ? system_theme_index : (n <= system_theme_index ? n - 1 : n)
-								}
-								pack := theme_packs[i]
-								if clay.UI(clay.ID("ThemeOpt", u32(i)))(
-								{
-									layout = {
-										sizing = {
-											width = clay.SizingGrow(),
-											height = clay.SizingFixed(34),
-										},
-										padding = clay.PaddingAll(8),
-										childGap = 8,
-										childAlignment = {y = .Center},
-									},
-									backgroundColor = hovered() ? HOVER : (ui.theme == i ? SELECTED : {}),
-									cornerRadius = rr(2),
-								},
-								) {
-									if clay.UI(clay.ID("ThemeOptSwatch", u32(i)))(
-									{
-										layout = {
-											sizing = {
-												width = clay.SizingFixed(12),
-												height = clay.SizingFixed(12),
-											},
-										},
-										backgroundColor = pack.bg,
-										cornerRadius = rr(4),
-										border = {color = FIELD_BORDER, width = bw()},
-									},
-									) {}
-									clay.Text(
-										tr(pack.name),
-										{
-											fontId = FONT_BODY,
-											fontSize = 13,
-											textColor = hovered() || ui.theme == i ? ACCENT : TEXT,
-											wrapMode = .None,
-										},
-									)
-								}
-							}
-						}
-					}
-				}
-			}
+		settings_theme_gallery(ui)
+		if clay.UI(clay.ID("ThemeGroup"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = 12,
+			},
+		},
+		) {
+			settings_conversation_preview(ui)
 			if ui.theme != system_theme_index {
 				if clay.UI(clay.ID("RowAccent"))(settings_row(true)) {
 					row_labels(tr("Accent color"), "")
@@ -1305,6 +1541,7 @@ settings_appearance :: proc(ui: ^Ui_State) {
 					)
 					if clay.UI(clay.ID("AccentChoices"))({layout = {childGap = 10}}) {
 						for _, i in ACCENT_NAMES {
+							append(&theme_control_order, THEME_ACCENT_KEYS[i])
 							if clay.UI(clay.ID("AccentDot", u32(i)))(
 							{
 								layout = {
@@ -1315,7 +1552,7 @@ settings_appearance :: proc(ui: ^Ui_State) {
 								},
 								backgroundColor = len(theme_packs) > 0 ? theme_packs[preview_theme].accent_base[i] : default_pack().accent_base[i],
 								cornerRadius = rr(2),
-								border = ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
+								border = kb_focus == THEME_ACCENT_KEYS[i] || ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
 							},
 							) {}
 						}
@@ -1328,9 +1565,11 @@ settings_appearance :: proc(ui: ^Ui_State) {
 					tr("Pick a chat to send it to. They choose whether to use it."),
 				)
 				if clay.UI(clay.ID("ThemeShareActions"))({layout = {childGap = 8}}) {
+					append(&theme_control_order, "ThemeShareBtn", "ThemeEditBtn")
 					settings_button("ThemeShareBtn", tr("Share to chat"))
 					settings_button("ThemeEditBtn", tr("Edit"))
 					if active_pack(ui).custom {
+						append(&theme_control_order, "ThemeDeleteBtn")
 						settings_button("ThemeDeleteBtn", tr("Delete"), DANGER)
 					}
 				}
@@ -1917,6 +2156,104 @@ settings_switch_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	return true
 }
 
+@(private)
+settings_theme_input :: proc(ui: ^Ui_State) -> (handled: bool, pressed: string) {
+	if ui.page != .Settings ||
+	   ui.settings_section != .Appearance ||
+	   settings_on_menu(ui) ||
+	   ui.settings_tab != 0 ||
+	   modal_open(ui) ||
+	   ui.add_account_open {
+		settings_theme_preview_reset(ui)
+		return
+	}
+	if rl.IsKeyPressed(.ESCAPE) || ui.focus == .SettingsSearch {
+		settings_theme_preview_reset(ui)
+		return rl.IsKeyPressed(.ESCAPE), ""
+	}
+	pressed = ""
+	switch control_keys(theme_control_order[:]) {
+	case .Moved:
+		settings_theme_preview_reset(ui)
+		field := clay.ID(kb_focus)
+		for key, i in theme_tile_keys {
+			if key == kb_focus {field = clay.ID("ThemeOpt", u32(i)); break}
+		}
+		for key, i in THEME_ACCENT_KEYS {
+			if key == kb_focus {field = clay.ID("AccentDot", u32(i)); break}
+		}
+		scroll_into_view(clay.ID("SettingsPage"), field)
+		return true, ""
+	case .Pressed:
+		pressed = kb_focus
+	case .None:
+	}
+	if pressed == "ThemeToneDark" ||
+	   pressed == "ThemeToneLight" ||
+	   (mouse_released() && (clicked("ThemeToneDark") || clicked("ThemeToneLight"))) {
+		tone: Theme_Tone =
+			pressed == "ThemeToneLight" || (mouse_released() && clicked("ThemeToneLight")) ? .Light : .Dark
+		settings_theme_preview_reset(ui)
+		ui.theme_tone = tone
+		return true, ""
+	}
+	for _, i in theme_packs {
+		if !theme_gallery_visible(ui, i) {continue}
+		if (mouse_released() && clay.PointerOver(clay.ID("ThemeOpt", u32(i)))) ||
+		   (i < len(theme_tile_keys) && pressed != "" && pressed == theme_tile_keys[i]) {
+			settings_theme_preview_reset(ui, .Commit)
+			theme_switch(ui, i, ui.accent)
+			return true, ""
+		}
+	}
+	for key, i in THEME_ACCENT_KEYS {
+		if pressed == key {
+			theme_switch(ui, ui.theme, i)
+			return true, ""
+		}
+	}
+	if pressed != "" {settings_theme_preview_reset(ui)} else {settings_theme_preview_hover(ui)}
+	return false, pressed
+}
+
+@(private)
+settings_theme_action :: proc(ui: ^Ui_State, pressed: string) -> bool {
+	if ui.settings_section != .Appearance ||
+	   settings_on_menu(ui) ||
+	   ui.settings_tab != 0 {return false}
+	pressed := pressed
+	if pressed == "" && mouse_released() {
+		for id in ([]string{"ThemeShareBtn", "ThemeEditBtn", "ThemeDeleteBtn"}) {
+			if clicked(id) {pressed = id; break}
+		}
+	}
+	switch pressed {
+	case "ThemeShareBtn":
+		settings_theme_preview_reset(ui)
+		if len(ui.chats) == 0 {
+			set_status(ui, strings.clone(tr("No chats to share with yet.")), .Info)
+			return true
+		}
+		ui.fwd_open = true
+		ui.fwd_kind = .Theme
+		clear(&ui.fwd_filter)
+		ui.focus = .Fwd
+		return true
+	case "ThemeEditBtn":
+		settings_theme_preview_reset(ui)
+		theme_edit_open(ui)
+		return true
+	case "ThemeDeleteBtn":
+		i := active_theme(ui)
+		if len(theme_packs) > 0 && theme_packs[i].custom {
+			settings_theme_preview_reset(ui)
+			confirm_ask(ui, .Delete_Theme, "", theme_packs[i].name, i)
+			return true
+		}
+	}
+	return false
+}
+
 handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !custom_emoji_scanned {
 		custom_emoji_scan()
@@ -1988,31 +2325,10 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		return
 	}
-	if ui.theme_menu_open {
-		if rl.IsKeyPressed(.ESCAPE) {
-			settings_theme_preview_reset(ui)
-			ui.theme_menu_open = false
-			return
-		}
-		if mouse_released() {
-			for _, i in theme_packs {
-				if clay.PointerOver(clay.ID("ThemeOpt", u32(i))) {
-					// The rendered preview is already live; only this click commits.
-					settings_theme_preview_reset(ui, .Commit)
-					ui.theme_menu_open = false
-					theme_switch(ui, i, ui.accent)
-					return
-				}
-			}
-			settings_theme_preview_reset(ui)
-			ui.theme_menu_open = false
-			return
-		}
-		settings_theme_preview_hover(ui)
-		return
-	}
-
+	theme_handled, theme_pressed := settings_theme_input(ui)
+	if theme_handled {return}
 	if settings_handle_navigation(ui, client) {return}
+	if settings_theme_action(ui, theme_pressed) {return}
 
 	if !mouse_released() {
 		return
@@ -2025,7 +2341,12 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			} else {
 				ui.keys_confirm = ""
 			}
-			ui.settings_tab = i
+			settings_theme_preview_reset(ui)
+			if ui.settings_section == .Appearance && i == 0 {
+				settings_open(ui, client, .Appearance, tab = 0, level = .Sheet)
+			} else {
+				ui.settings_tab = i
+			}
 			ui.settings_anchor = ""
 			ui.settings_scroll_pending = true
 			ui.focus = .Compose
@@ -2183,14 +2504,6 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				return
 			}
 		}
-		if clicked("ThemeDrop") {
-			settings_theme_preview_reset(ui)
-			anchor, _ := element_box(clay.ID("ThemeDrop"))
-			ui.theme_menu_x = anchor.x + anchor.width - fit_w(220, 8)
-			ui.theme_menu_y = anchor.y + anchor.height
-			ui.theme_menu_open = true
-			return
-		}
 		for _, i in ACCENT_NAMES {
 			if clay.PointerOver(clay.ID("AccentDot", u32(i))) {
 				theme_switch(ui, ui.theme, i)
@@ -2236,29 +2549,6 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			ui.prefs.zoom_pct = 100
 			apply_zoom(ui)
 			save_settings(ui)
-			return
-		}
-		if clicked("ThemeShareBtn") {
-			if len(ui.chats) == 0 {
-				set_status(ui, strings.clone(tr("No chats to share with yet.")), .Info)
-				return
-			}
-			ui.fwd_open = true
-			ui.fwd_kind = .Theme
-			clear(&ui.fwd_filter)
-			ui.focus = .Fwd
-			return
-		}
-		if clicked("ThemeEditBtn") {
-			theme_edit_open(ui)
-			return
-		}
-		if clicked("ThemeDeleteBtn") && theme_packs[ui.theme].custom {
-			confirm_ask(ui, .Delete_Theme, "", theme_packs[ui.theme].name, ui.theme)
-			return
-		}
-		if clicked("ThemeDeleteBtn") && active_pack(ui).custom {
-			confirm_ask(ui, .Delete_Theme, "", active_pack(ui).name, active_theme(ui))
 			return
 		}
 

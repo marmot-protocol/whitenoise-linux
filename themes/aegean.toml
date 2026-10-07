@@ -1,24 +1,71 @@
-# Whitewash and deep water: bright, airy, one strong blue, with slow
-# swells across the page.
+# Sidecar: whitewashed plaster, sea-light cards, cobalt doors and Cinzel capitals.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/aegean.css
+# Shared component roles: styles.css at the same pinned revision.
 name = "Aegean"
 
 [colors]
-bg = "#f5f8f9ff"
-bg-2 = "#e2edf0ff"
-text-hi = "#13303cff"
-danger = "#b03a2eff"
-warning = "#a8791fff"
+bg = "#f7f8f8ff"
+bg-2 = "#e2ecf8ff"
+# Velvet gradient stops; native surfaces use a single color.
+panel = "#ffffffff"
+panel-2 = "#e8f1fcff"
+rail = "#e2ecf8ff"
+elevated = "#ffffffff"
+plate = "#ffffffff"
+status-bar = "#ffffffff"
+banner = "#e2ecf8ff"
+canvas-top = "#f7f8f8ff"
+text-hi = "#14232eff"
+text-mid = "#2c3e4cff"
+text-lo = "#5a6b78ff"
+text-vlo = "#7c8c99ff"
+field = "#ffffffff"
+field-hover = "#ffffffff"
+field-border = "#0b57a429"
+hover = "#0b57a41a"
+card-border = "#0b57a429"
+elevated-border = "#0b57a44d"
+border-2 = "#0b57a429"
+divider = "#0b57a429"
+avatar-ring = "#0b57a44d"
+card-well = "#edf1f499"
+plate-inset = "#edf1f466"
+code-plate = "#0b57a41f"
+danger = "#a8432aff"
+danger-soft = "#a8432a1f"
+danger-border = "#a8432a73"
+warning = "#a8432aff"
+warning-soft = "#a8432a1a"
+warning-border = "#a8432a4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#0b2a421a"
+shadow-card = "#0b2a4214"
+shadow-popover = "#00000099"
+shadow-float = "#0b2a422e"
+top-glint = "#ffffffb3"
+bevel-hi = "#ffffffb3"
+bevel-lo = "#00000000"
+# Cobalt is the source gold/UI-ink role; terracotta stays semantic.
 accent-base = [
-    "#1c6b86ff",
-    "#2b8fa8ff",
-    "#3a7566ff",
-    "#bd6f2aff",
-    "#556894ff",
+    "#0b57a4ff",
+    "#1565c0ff",
+    "#2a7bd4ff",
+    "#0b4f94ff",
+    "#4f6b3aff",
 ]
 
 [style]
-backdrop = "waves"
+backdrop = "image:meander"
+font = "Manrope"
+font-title = "Cinzel"
+bevel = false
+hard-shadow = false
+outline-surfaces = false
 focus-glow = true
-r-scale = 1.4
+r-scale = 1.0
 border-w = 1.0
-glow-r = 6.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

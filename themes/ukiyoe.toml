@@ -1,0 +1,73 @@
+# Sidecar by dmnyc: pale print sky, cloud paper, Prussian blue and yellow-green cliff pigment.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/ukiyo-e.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Ukiyo-e"
+
+[colors]
+bg = "#d8e6eeff"
+bg-2 = "#cadbe6ff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#fbfaf5ff"
+panel-2 = "#f1f1eaff"
+rail = "#cadbe6ff"
+elevated = "#fbfaf5ff"
+plate = "#fbfaf5ff"
+status-bar = "#fbfaf5ff"
+banner = "#cadbe6ff"
+canvas-top = "#d8e6eeff"
+text-hi = "#1b2624ff"
+text-mid = "#1b3a5cff"
+text-lo = "#454c52ff"
+text-vlo = "#50575dff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#fbfaf5ff"
+field-hover = "#fbfaf5ff"
+field-border = "#1d46742e"
+hover = "#1d467417"
+card-border = "#1d46742e"
+elevated-border = "#1d467452"
+border-2 = "#1d46742e"
+divider = "#1d46742e"
+avatar-ring = "#1d467452"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#cadbe699"
+plate-inset = "#cadbe666"
+code-plate = "#1d46741f"
+danger = "#9e2a1fff"
+danger-soft = "#9e2a1f1f"
+danger-border = "#9e2a1f73"
+warning = "#963d19ff"
+warning-soft = "#963d191a"
+warning-border = "#963d194d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#142d4621"
+shadow-card = "#142d4617"
+shadow-popover = "#00000099"
+shadow-float = "#142d4633"
+top-glint = "#ffffffbf"
+bevel-hi = "#ffffffbf"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#1d4674ff",
+    "#b8912fff",
+    "#2f5e8aff",
+    "#c9c471ff",
+    "#12345aff",
+]
+
+[style]
+backdrop = "image:woodblock-waves"
+font = "Manrope"
+font-title = "Kaisei Decol"
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 1.0
+border-w = 1.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

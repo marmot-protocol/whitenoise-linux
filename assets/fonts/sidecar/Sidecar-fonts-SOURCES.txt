@@ -1,0 +1,173 @@
+Sidecar theme font provenance
+
+Source repository: https://github.com/dmnyc/sidecar
+Pinned revision: 3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f
+Raw prefix: https://raw.githubusercontent.com/dmnyc/sidecar/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/
+Source families remain theme-token identifiers; converted font metadata may
+use renamed families to respect SIL OFL reserved names. These aliases select
+the same source outlines, not substitute faces.
+
+Initial eight-theme conversion: fontTools 4.61.1 with Brotli 1.2.0.
+TTFont(source, recalcTimestamp=False); font.flavor=None; save as SFNT TTF.
+No glyph subsetting, outline editing, synthetic bold, or added glyphs.
+Bitter, Josefin Sans, Cinzel: instantiateVariableFont at wght=700 and all
+other axes at their source defaults, inplace=True, before saving.
+Other WOFF2 faces are decompressed to SFNT without weight changes.
+Special Elite is an unmodified byte-identical original TTF.
+For reserved-name faces, name-table IDs 1/16 become the new family,
+IDs 3/4/6 become family-700 / family Bold / compact-family-Bold, and
+ID 17 becomes Bold. Copyright and license metadata are preserved.
+Playfair Display -> WN Velvet Display
+Bitter -> WN Mason Display
+Limelight -> WN Cinema Display
+Josefin Sans -> WN Deco Display
+
+Body: Manrope 400; optional Manrope title selection uses the real 700.
+Display: Playfair 700, upright Noto Serif Display Condensed ExtraBold,
+Bitter 700, original Nixie Gothic, original Limelight, Josefin Sans 700,
+Cinzel 700, and original Special Elite. Film Noir uses the upright display
+cut because the native app has one display role, not a wallet balance role.
+
+All original OFL/Apache license texts and Sidecar NOTICE are retained.
+OFL-NixieGothic.txt is byte-identical to the source .md license record.
+Special Elite attribution: Copyright (c) 2010 Brian J. Bonislawsky DBA
+Astigmatic (AOETI), Apache License 2.0; see LICENSE-SpecialElite.txt and
+Sidecar-NOTICE.txt.
+
+Source SHA-256 (files below fonts/ unless NOTICE):
+849290ef12a2eeb9af5c11924120d11aa4ae8b435ed3347d7fc8bc240c293ca3  fonts/manrope-400.woff2
+d2a12c85a831e4b5db341767d0347fa3d1361d22a1fcb3e361a16b6c90080f71  fonts/manrope-700.woff2
+28453852ea165c47b5a941be00e418402e1407002ed87507f062a1e316328fe6  fonts/playfair-700.woff2
+bb8ee01e11db6d12235b81ba3155e7369c0a07b261a5d672da86ed51ba5fa129  fonts/noto-serif-display-cond.woff2
+261cfc4d27941b2774efba0a2b03872ddc001dca4423aa3ce278e80301423c1b  fonts/bitter-var.woff2
+4d59ad19a8970dffbb4e2944d6e421a021aa14f1d5ca86189c60470108017d39  fonts/nixie-gothic.woff2
+827f262b7fb36d28521cf228abb26007d83f2aad8c7ad19403d12d867cca0e2b  fonts/limelight.woff2
+444f5c461acc0dd1f5c4636c7e27c976a08ca62818717855bbe709b3ae04d086  fonts/josefin-sans-var.woff2
+ef95296c778719c3d658a8284d65078100450948851b9114485ada01d9d3d3f8  fonts/cinzel-var.woff2
+a776fcb4ceb8bdf03e2967688ebdad42680de5b91a7e62c17e718ae212d14bc4  fonts/special-elite.ttf
+d826ab6583b12c26807d8716a545bdbbb672df04f48608a364ba9efdbe501c30  fonts/OFL-Manrope.txt
+c052aafd2a71e90bcee6e69f475029d430a10d548c08ffcae350171f0e9668b1  fonts/OFL-PlayfairDisplay.txt
+5e0da210fb04058a8c0087985d2d456b931c2579811a49655721d3cf0c36b6d6  fonts/OFL-NotoSerifDisplay.txt
+152a1e283e23b42c4940da4c72f2f5bebaa17969cb77c76d7af05903846006f1  fonts/OFL-Bitter.txt
+ec96352a723d16b677421270e43ed853ed7cd0a2b37d8582405218105705ddaa  fonts/OFL-NixieGothic.md
+6b53fb03a50914cc382f4d025ee595c17c43f24ae870f840bc51969d3e316c7e  fonts/OFL-Limelight.txt
+aee5a4081e8a52f80428b30f178b719d115f18dad3e1fa15a986163e1078a85b  fonts/OFL-JosefinSans.txt
+f2b3029aba64c378bf0963b62945eee15e564fe4330b934c8f2eb058282b5e83  fonts/OFL-Cinzel.txt
+22e29f185e070740965cb9eda09afbb6ab67a2c21b3cedea24bdcf8e29e09922  fonts/LICENSE-SpecialElite.txt
+44b0eca3391f2b1520e69d0beb0737a45929d7eede9c0b0a3621009be58ef8b3  NOTICE
+
+Bundled SFNT SHA-256:
+bbc5b16214071277028f042faa7c36e2f65319ea36c1f9c8f3b418ebd8e58102  sidecar-manrope-400.ttf
+2c6676b83f409840e9bbc9df9a6c315b2bb3f6a48f9074522a13087585fad7c6  sidecar-manrope-700.ttf
+fb8177ef97af54be442489a3175101ef1f62a597d7a910f97f6e9ff8f1d48a5f  sidecar-playfair-700.ttf
+7fd55886955bdd626b2f0ece030d1bdf042c6f240ffc5dc6a6bf24ac97f286f0  sidecar-noto-serif-display-cond.ttf
+b6da4c0f372dcb14937ead6716b83d47bc3ebf851739d2745ca91a3a6288d43b  sidecar-bitter-700.ttf
+d048b96f703b9f5989a91a52874763fc1b3c5d528f952ffc67fb7dbfb7a6264f  sidecar-nixie-gothic.ttf
+392fde7697ea55e6fb92c2b6cd824b1fab9cb4281a3e1169842a90827b645964  sidecar-limelight.ttf
+d07ff4fa293c1b6f220990818ab89ec935ccd1b3fa0a5fb6b75583ba2fab52c5  sidecar-josefin-sans-700.ttf
+f1ae7adc9e9f58abe52142cb2ba21149654032dc3a474b1d844301ea689ed0f0  sidecar-cinzel-700.ttf
+a776fcb4ceb8bdf03e2967688ebdad42680de5b91a7e62c17e718ae212d14bc4  sidecar-special-elite.ttf
+
+
+Remaining Sidecar themes (same pinned revision):
+Bauhaus: Jost 700; Ben Day: Bangers Regular; Cast Iron: Impressed Metal.
+Constellation: Cormorant Garamond 700, with source lining-number mappings.
+Departures: Barlow Condensed 600, matching its title/picker CSS override.
+Jazz Age: Fascinate Regular, matching --font-title on the source view titles
+and picker; Federo is the wallet/display role and is not loaded in the native
+app's single title role. Manrope remains the native body face.
+Mycelium: Fraunces 700 at opsz=24, the native settings title's optical size;
+SOFT=100 and WONK are already pinned in the source file. The source retains
+only opsz and wght variable axes; both are instantiated for the SFNT build.
+Populuxe: Rowdies Regular (the source intentionally does not use its Bold).
+Turnstile: Pathway Gothic One Regular; Ukiyo-e: Kaisei Decol Medium 500;
+Wabi-sabi: Yuji Syuku Regular; Werkstätte: Syncopate 700.
+Sleepy Hollow: Hollow Figures (Cormorant 700) -> IM FELL English SC Regular
+-> full Cormorant 700 -> Manrope 700 -> the existing native fallbacks.
+
+All new WOFF2 files are decompressed with the conversion above, retaining
+all source outlines and glyphs. Jost and Cormorant instantiate wght=700;
+Fraunces instantiates wght=700, opsz=24. Single-weight files retain their
+original outlines and weights: no synthetic bold. Impressed Metal is a
+byte-identical original TTF, including its original embedding flags.
+Converted reserved-name faces are renamed in name-table IDs 1/2/3/4/6/16/17:
+IM FELL English SC -> WN Hollow Book Regular
+Pathway Gothic One -> WN Transit Gothic Regular
+Fascinate -> WN Broadway Display Regular
+Cormorant's modified cmap builds also use distinct family metadata:
+Cormorant Garamond -> WN Atlas Display Bold / WN Hollow Figures Bold.
+All copyright, authorship and license records remain in the fonts.
+
+For Constellation and Sleepy Hollow, source CSS requests lining-nums. The
+native rune renderer does not execute GSUB. Each Unicode cmap entry in
+WN Atlas Display is therefore remapped through the source GSUB 'lnum'
+SingleSubst mappings (digits and the currency signs supplied by that
+feature). This selects existing source glyphs; it does not draw, invent,
+or copy outlines from another face. WN Hollow Figures starts from that
+same static lining build, then restricts its Unicode cmap to the precise
+CSS unicode-range: U+0030-0039, U+002C, U+002E, U+00A0, U+202F. Unavailable
+source mappings remain unavailable and fall through the declared stack;
+no glyphs are added. Letters therefore select Fell, not the numeral face
+or Liberation Sans; characters Fell lacks next select full Cormorant.
+
+The native renderer still has no runtime OpenType feature selection:
+tabular-nums, ligatures and contextual substitutions are not implemented.
+Lining figures are baked only where source CSS requires them globally.
+Fraunces optical sizing is fixed at the native title size, not continuous
+with each text size. Japanese source files contain the source's Latin
+subsets only: its repository supplies no other subsets. Existing platform
+CJK stacks cover Japanese outside these source subsets. Shared source
+fallback faces (Jost, Limelight, Cormorant and Manrope) are reused by the
+font-file cache; all stacks preload once, never during theme hover.
+
+Every added face retains its upstream OFL or Apache license beside it.
+Syncopate: Copyright (c) 2010 Brian J. Bonislawsky DBA Astigmatic (AOETI),
+Apache License 2.0; see LICENSE-Syncopate.txt. Impressed Metal: Graham
+Meade / GemFonts, copyright GemFonts98, freeware per the upstream record;
+see LICENSE-ImpressedMetal.txt, including the recorded restricted fsType
+question. That provenance is preserved, not silently relicensed.
+
+Additional source SHA-256 (files below fonts/):
+235d8f8964bfdf105fc0c3e4c77b5e70f31bee1dad611d59318b5f2a5cb64d90  fonts/jost-var.woff2
+1af3438a4d5f0ed2bdbc5751a5a67ebf6d537334161184b7fbb68503ef0ea0c5  fonts/OFL-Jost.txt
+41bfac3447cedcd00a41e9196d75a5ab9aa65161215b345b787861055fa5491e  fonts/bangers.woff2
+630dd5a307c0657b094d324e069b390edf90182fe5003639e06c02a0e5769af7  fonts/OFL-Bangers.txt
+985eeb14fd49122913ac0d9a2aaf68e15702c9319365f3648eae2bd555138cd7  fonts/impressed-metal.ttf
+1efb9a14e74b2c35d2d1116481f97c3ec5decc5c203311395c984db1d3d50f5c  fonts/LICENSE-ImpressedMetal.txt
+d80df8ff5aecd299a61549f9e29ab1ed0b9b05f4ea71d50fe978e07d5240b235  fonts/cormorant-garamond-var.woff2
+60700d351cac4650c51f3f9db318d2a420f8b45052dba2715eb5fec41f0f6956  fonts/OFL-CormorantGaramond.txt
+c6d77f0d08886b660a39dd1488125e2c47209a1fcb747a0b30ef7891dcf381a3  fonts/barlow-condensed-600.woff2
+186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f  fonts/OFL-BarlowCondensed.txt
+92e76eb173b7e6db6c40480c0e9e25820828d7305d24808946e02cec2561ca4a  fonts/fraunces-soft-var.woff2
+bdf4c22802eaf804f998195871c6b8938aac2ac14b2d78a8bd66a6f1eced833b  fonts/OFL-Fraunces.txt
+26f312aa09cf2241c629ba26791dbd199381dbb3b33ad4659974c62ea5e30769  fonts/rowdies.woff2
+c585309492415154b9ad6401a9e0c5d9e3f9b2e92b71146d968e5bd4305ac74b  fonts/OFL-Rowdies.txt
+783713c223eb6060acec18516ab65f61da1d6be5c8acb483d9abab40b2e7d3d4  fonts/im-fell-english-sc.woff2
+0a309c81986d6bb8be0ea37e36f7d89596066a368da4da113b7d19c59337a32f  fonts/OFL-IMFellEnglishSC.txt
+29bf3340f46a4cae6d7ec1eac5c5c12ece822494f2b7d911aed83cf03d719a9b  fonts/pathway-gothic-one.woff2
+ad4275c6aa3ddcf5ed3f0a788732e13ba57799b1d8deb00de3fc2a928ea70ea2  fonts/OFL-PathwayGothicOne.txt
+2f00d1bb96cacdc475812bdae1bb29f3e65196a2f62a6a598619682d10c90759  fonts/kaisei-decol-500.woff2
+6c5445d4febbf6d84025b874a85c51e7e4bfa7495279eccdb4c317a6de857b46  fonts/OFL-KaiseiDecol.txt
+c6b52ca044bbb665ca4bdf1e01ae437d63708423d11b80cfdb56a8b6fcf374ab  fonts/yuji-syuku.woff2
+ef7c85c72ae94381c8bc4832ae4e6fbabdeafa2bb8a31313cd75dce95a690256  fonts/OFL-YujiSyuku.txt
+aa9a4cbbdcee06afbdcbbca08b53c56bcee70816cf1a56d329980a60cd00e12e  fonts/syncopate-700.woff2
+cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  fonts/LICENSE-Syncopate.txt
+38a062aed682b076e64a10ddf3c3d7640df04925e52015a5a5a7d3b379b87665  fonts/fascinate.woff2
+a7fe1f3d23034092b015aaeb53d2ecbc9e592be96b10bdfbcf8700ec6a6ffc97  fonts/OFL-Fascinate.txt
+
+Additional bundled SFNT SHA-256:
+ca616dcf25fd227b0ef16a37bf89f59af9a15c3dbc5ca02cf0f1ab397b996e96  sidecar-jost-700.ttf
+aa5b09c33fb9bc74f426b5c009feb1222a76c5bdb0cca7156e766de0c8b459b7  sidecar-bangers.ttf
+985eeb14fd49122913ac0d9a2aaf68e15702c9319365f3648eae2bd555138cd7  sidecar-impressed-metal.ttf
+3c4eaf15934df0eaf49fd3bade177d9bfeb10607f58c72baf9942671df018026  sidecar-cormorant-garamond-700.ttf
+c1d7804d89967d23de6a51aaa17294e8debf12b76b51e6633d660cc97cccbfcf  sidecar-barlow-condensed-600.ttf
+6a6b7be33c7d6840d784e7c6207bc133318f453318b33e9e811bb6a27b1b4fb2  sidecar-fraunces-soft-700.ttf
+472df0ab0bd8af26ebdf9cfae37efb0e1302807f577a73c2799ccd56b9c776c4  sidecar-rowdies.ttf
+7646765d83d79b011b7918b013c9f24f3d2b5e28ce202006d4e70367e40feaa2  sidecar-im-fell-english-sc.ttf
+c70e24d5da168a2a65664c33c455fab8a7bd0a31412e27aaf493866e4ee3eab6  sidecar-pathway-gothic-one.ttf
+6ae1c982cca1930249e6675f6b1f3f6f6a77ce45d0e8c9f72e95e08860c9b6e5  sidecar-kaisei-decol-500.ttf
+f7a049c0c2c40efa5ab03e0cb0ac2502df5b3c2b2eff5c5e4a54a1ce61e7fa9f  sidecar-yuji-syuku.ttf
+25f20652ccfd9cc581d5f0012f9c0312e00f9cfc7bd4ec4552864cdff0c90bfe  sidecar-syncopate-700.ttf
+31178f2534e045fb21f3da0ee165487fe96aa2aacf5590eb077f64c8c521e3aa  sidecar-fascinate.ttf
+14975a1d920a172b1bc12034b92353adb2c26262010906d5f2c8ef8addf6640e  sidecar-hollow-figures-700.ttf
+

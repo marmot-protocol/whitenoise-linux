@@ -1,26 +1,72 @@
-# Nixie tubes behind glass: orange numerals glowing in a dark case,
-# with the faint scan of the display.
+# Sidecar: cold steel chassis, warm tube ink, steel rims and coral error ink.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/nixie.css
+# Shared component roles: styles.css at the same pinned revision.
 name = "Nixie"
 
 [colors]
-bg = "#07060aff"
-bg-2 = "#0f0c12ff"
-panel = "#131017ff"
-text-hi = "#f6cf9eff"
-danger = "#e0512fff"
-warning = "#d9973aff"
+bg = "#07080aff"
+bg-2 = "#0c0e12ff"
+# Velvet gradient stops; native surfaces use a single color.
+panel = "#11141aff"
+panel-2 = "#171b22ff"
+rail = "#0c0e12ff"
+elevated = "#11141aff"
+plate = "#11141aff"
+status-bar = "#11141aff"
+banner = "#11141aff"
+canvas-top = "#07080aff"
+text-hi = "#edf1f5ff"
+text-mid = "#d3dae2ff"
+text-lo = "#a0aebcff"
+text-vlo = "#778491ff"
+# Nixie inherits the shared input gradient; native uses its first stop.
+field = "#08021499"
+field-hover = "#08021499"
+field-border = "#a8bed621"
+hover = "#ff6a3024"
+card-border = "#a8bed621"
+elevated-border = "#a8bed642"
+border-2 = "#a8bed621"
+divider = "#a8bed621"
+avatar-ring = "#a8bed642"
+card-well = "#0c0e1299"
+plate-inset = "#0c0e1266"
+code-plate = "#a8bed61f"
+danger = "#ff7d8cff"
+danger-soft = "#ff7d8c1f"
+danger-border = "#ff7d8c73"
+warning = "#ffb454ff"
+warning-soft = "#ffb4541a"
+warning-border = "#ffb4544d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#0000009e"
+shadow-card = "#00000080"
+shadow-popover = "#00000099"
+shadow-float = "#00000073"
+top-glint = "#c8dcf00d"
+bevel-hi = "#c8dcf00d"
+bevel-lo = "#00000000"
+# Pale incandescent UI ink is primary; discharge glows remain wallet-specific upstream.
 accent-base = [
-    "#e8862bff",
-    "#f0a95cff",
-    "#d96f18ff",
-    "#c25a10ff",
-    "#f3c68eff",
+    "#ffd2abff",
+    "#ff7a3cff",
+    "#ffb454ff",
+    "#d8e3eeff",
+    "#8fb6cfff",
 ]
 
 [style]
-backdrop = "scan"
+backdrop = "image:mesh"
+font = "Manrope"
+font-title = "Nixie Gothic"
+bevel = false
+hard-shadow = false
+outline-surfaces = false
 focus-glow = true
-r-scale = 0.4
+r-scale = 1.0
 border-w = 1.0
-glow-r = 7.0
-font = "JetBrains Mono"
+glow-r = 3.0
+shadow-y = 2.0
+hover-dur = 150.0
+transition-dur = 150.0

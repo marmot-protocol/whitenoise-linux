@@ -1,0 +1,76 @@
+# Sidecar by dmnyc: comic paper, black keylines and red, yellow and blue printing plates.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/ben-day.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Ben Day"
+
+[colors]
+bg = "#fdfbf4ff"
+bg-2 = "#f3eedfff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#ffffffff"
+panel-2 = "#ffffffff"
+rail = "#f3eedfff"
+elevated = "#ffffffff"
+plate = "#ffffffff"
+status-bar = "#ffffffff"
+banner = "#f3eedfff"
+canvas-top = "#fdfbf4ff"
+text-hi = "#111111ff"
+text-mid = "#2a2a2aff"
+text-lo = "#404040ff"
+text-vlo = "#505050ff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#ffffffff"
+field-hover = "#ffffffff"
+field-border = "#111111ff"
+hover = "#11111117"
+card-border = "#111111ff"
+elevated-border = "#111111ff"
+border-2 = "#11111138"
+divider = "#11111138"
+avatar-ring = "#111111ff"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#f3eedf99"
+plate-inset = "#f3eedf66"
+code-plate = "#1111111f"
+danger = "#b00d26ff"
+danger-soft = "#b00d261f"
+danger-border = "#b00d2673"
+warning = "#b00d26ff"
+warning-soft = "#b00d261a"
+warning-border = "#b00d264d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#00000000"
+shadow-card = "#111111ff"
+shadow-popover = "#111111ff"
+shadow-float = "#111111ff"
+top-glint = "#00000000"
+bevel-hi = "#00000000"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#111111ff",
+    "#c8102eff",
+    "#ffd400ff",
+    "#144a8cff",
+    "#1a5fb4ff",
+]
+
+[style]
+backdrop = "image:comic-dots"
+font = "Manrope"
+font-title = "Bangers"
+# Component keylines replace the root hairlines on cards and fields; shadows are sharp ink drops,
+# never blurred. Speech bubbles keep the source balloon radius.
+bevel = false
+hard-shadow = true
+outline-surfaces = true
+focus-glow = true
+r-scale = 0.0
+border-w = 2
+glow-r = 3.0
+shadow-y = 3
+bubble-r = 18.0
+hover-dur = 150.0
+transition-dur = 150.0

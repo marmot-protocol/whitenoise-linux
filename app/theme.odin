@@ -13,26 +13,59 @@ import "core:strings"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 
 import marmot "../marmot"
+import rl "sdlrl"
 
-THEME_SOURCES := [][2]string {
-	{"Dark", #load("../themes/dark.toml", string)},
-	{"Light", #load("../themes/light.toml", string)},
-	{"AMOLED", #load("../themes/amoled.toml", string)},
-	{"Retro", #load("../themes/retro.toml", string)},
-	{"Terminal", #load("../themes/terminal.toml", string)},
-	{"Crayon", #load("../themes/crayon.toml", string)},
-	{"Synthwave", #load("../themes/synthwave.toml", string)},
-	{"Chalkboard", #load("../themes/chalkboard.toml", string)},
-	{"Speakeasy", #load("../themes/speakeasy.toml", string)},
-	{"Film Noir", #load("../themes/filmnoir.toml", string)},
-	{"Brownstone", #load("../themes/brownstone.toml", string)},
-	{"Nixie", #load("../themes/nixie.toml", string)},
-	{"Metropolis", #load("../themes/metropolis.toml", string)},
-	{"Industria", #load("../themes/industria.toml", string)},
-	{"Aegean", #load("../themes/aegean.toml", string)},
-	{"Par Avion", #load("../themes/paravion.toml", string)},
-	{"Luna", #load("../themes/luna.toml", string)},
-	{"Luna Dark", #load("../themes/lunadark.toml", string)},
+@(private)
+Theme_Collection :: enum {
+	White_Noise,
+	Sidecar,
+	Custom,
+	System,
+}
+
+@(private)
+Theme_Tone :: enum {
+	Dark,
+	Light,
+}
+
+// Keep the original indices stable; collection headers change presentation only.
+@(private)
+THEME_SOURCES := []struct {
+	name, mode, source: string,
+	collection:         Theme_Collection,
+} {
+	{"Dark", "dark", #load("../themes/dark.toml", string), .White_Noise},
+	{"Light", "light", #load("../themes/light.toml", string), .White_Noise},
+	{"AMOLED", "amoled", #load("../themes/amoled.toml", string), .White_Noise},
+	{"Retro", "retro", #load("../themes/retro.toml", string), .White_Noise},
+	{"Terminal", "terminal", #load("../themes/terminal.toml", string), .White_Noise},
+	{"Crayon", "crayon", #load("../themes/crayon.toml", string), .White_Noise},
+	{"Synthwave", "synthwave", #load("../themes/synthwave.toml", string), .White_Noise},
+	{"Chalkboard", "chalkboard", #load("../themes/chalkboard.toml", string), .White_Noise},
+	{"Speakeasy", "speakeasy", #load("../themes/speakeasy.toml", string), .Sidecar},
+	{"Film Noir", "filmnoir", #load("../themes/filmnoir.toml", string), .Sidecar},
+	{"Brownstone", "brownstone", #load("../themes/brownstone.toml", string), .Sidecar},
+	{"Nixie", "nixie", #load("../themes/nixie.toml", string), .Sidecar},
+	{"Metropolis", "metropolis", #load("../themes/metropolis.toml", string), .Sidecar},
+	{"Art Deco", "industria", #load("../themes/industria.toml", string), .Sidecar},
+	{"Aegean", "aegean", #load("../themes/aegean.toml", string), .Sidecar},
+	{"Par Avion", "paravion", #load("../themes/paravion.toml", string), .Sidecar},
+	{"Luna", "luna", #load("../themes/luna.toml", string), .White_Noise},
+	{"Luna Dark", "lunadark", #load("../themes/lunadark.toml", string), .White_Noise},
+	{"Bauhaus", "bauhaus", #load("../themes/bauhaus.toml", string), .Sidecar},
+	{"Ben Day", "benday", #load("../themes/benday.toml", string), .Sidecar},
+	{"Cast Iron", "castiron", #load("../themes/castiron.toml", string), .Sidecar},
+	{"Constellation", "constellation", #load("../themes/constellation.toml", string), .Sidecar},
+	{"Departures", "departures", #load("../themes/departures.toml", string), .Sidecar},
+	{"Jazz Age", "jazzage", #load("../themes/jazzage.toml", string), .Sidecar},
+	{"Mycelium", "mycelium", #load("../themes/mycelium.toml", string), .Sidecar},
+	{"Populuxe", "populuxe", #load("../themes/populuxe.toml", string), .Sidecar},
+	{"Sleepy Hollow", "sleepyhollow", #load("../themes/sleepyhollow.toml", string), .Sidecar},
+	{"Turnstile", "turnstile", #load("../themes/turnstile.toml", string), .Sidecar},
+	{"Ukiyo-e", "ukiyoe", #load("../themes/ukiyoe.toml", string), .Sidecar},
+	{"Wabi-sabi", "wabisabi", #load("../themes/wabisabi.toml", string), .Sidecar},
+	{"Werkstätte", "werkstatte", #load("../themes/werkstatte.toml", string), .Sidecar},
 }
 
 // A pack is written as seeds plus overrides: anything a pack does not
@@ -72,8 +105,13 @@ Theme_Pack :: struct {
 	hard_shadow, focus_glow, bevel, outline_surfaces:       bool,
 	selected_inverts_text, bracket_labels, motion_fast:     bool,
 	font:                                                   string, // family name, "" = the default stack
+	font_title:                                             string, // display family, "" = the default bold stack
 	backdrop:                                               string, // named scene behind the conversation, "" = none
 	custom:                                                 bool, // from <data-dir>/themes, so it can be deleted
+	collection:                                             Theme_Collection,
+	tone:                                                   Theme_Tone,
+	wallpaper:                                              ^rl.Texture2D, // borrowed from the preloaded decor array
+	preview_font:                                           u16,
 	bg_2:                                                   clay.Color, // second stop of the page wash, a == 0 = flat
 }
 
@@ -81,6 +119,7 @@ Theme_Pack :: struct {
 Theme_Token :: enum {
 	Name,
 	Font,
+	Font_Title,
 	Backdrop,
 	Bg,
 	Bg_2,
@@ -178,6 +217,7 @@ Theme_Token_Descriptor :: struct {
 THEME_TOKENS := [Theme_Token]Theme_Token_Descriptor {
 	.Name                  = {"name", .Text, offset_of(Theme_Pack, name)},
 	.Font                  = {"font", .Text, offset_of(Theme_Pack, font)},
+	.Font_Title            = {"font-title", .Text, offset_of(Theme_Pack, font_title)},
 	.Backdrop              = {"backdrop", .Text, offset_of(Theme_Pack, backdrop)},
 	.Bg                    = {"bg", .Color, offset_of(Theme_Pack, bg)},
 	.Bg_2                  = {"bg-2", .Color, offset_of(Theme_Pack, bg_2)},
@@ -285,6 +325,7 @@ SELECTED_INVERTS_TEXT := false // the selected row flips its ink
 BRACKET_LABELS := false // captions render as [LABEL]
 MOTION_FAST := false // shorter, snappier transitions
 THEME_FONT := "" // family the pack asks for, "" = the default stack
+THEME_FONT_TITLE := "" // display family, "" = the default bold stack
 
 // Depth and motion geometry, in px and ms.
 GLOW_R: f32 = 3
@@ -344,6 +385,7 @@ parse_hex_color :: proc(value: string) -> clay.Color {
 // that names no base.
 default_pack :: proc() -> Theme_Pack {
 	return {
+		preview_font = FONT_GALLERY_TITLE,
 		r_scale = 1,
 		border_w = 1,
 		glow_r = 3,
@@ -577,6 +619,7 @@ adopt_theme :: proc(toml: string) -> int {
 	)
 	pack.source = strings.clone(toml)
 	pack.custom = true
+	pack.collection = .Custom
 	for existing, i in theme_packs {
 		if existing.mode == slug {
 			theme_packs[i] = pack
@@ -689,6 +732,11 @@ parse_theme :: proc(name: string, mode: string, source: string, base: Theme_Pack
 			pack.on_accent[i] = ink_on(fill)
 		}
 	}
+	// Compute browsing metadata once; inherited background/font overrides count too.
+	pack.tone = ink_on(pack.bg) == BLACK ? .Light : .Dark
+	pack.wallpaper = decor_texture(pack.backdrop)
+	font := theme_font_stack(pack.font_title, .Title)
+	pack.preview_font = font == FONT_TITLE ? FONT_GALLERY_TITLE : font
 	return pack
 }
 
@@ -727,12 +775,10 @@ load_themes :: proc() {
 	// copy of every pack.
 	clear(&theme_packs)
 	for source in THEME_SOURCES {
-		// The mode is the key `base` refers to and the name a user file
-		// must not collide with, so it stays one lowercase word.
-		mode, _ := strings.replace_all(strings.to_lower(source[0]), " ", "")
-		base := resolve_base(toml_str_key(source[1], "base"))
-		pack := parse_theme(source[0], mode, source[1], base)
-		pack.source = source[1]
+		base := resolve_base(toml_str_key(source.source, "base"))
+		pack := parse_theme(source.name, source.mode, source.source, base)
+		pack.source = source.source
+		pack.collection = source.collection
 		append(&theme_packs, pack)
 	}
 
@@ -765,6 +811,7 @@ load_themes :: proc() {
 		pack := parse_theme(strings.clone(name), mode, text, base)
 		pack.source = strings.clone(text)
 		pack.custom = true
+		pack.collection = .Custom
 		append(&theme_packs, pack)
 	}
 }

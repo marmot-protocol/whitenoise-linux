@@ -1396,6 +1396,9 @@ msgstr "ANZEIGENAME"
 msgid "Danger"
 msgstr "Gefahr"
 
+msgid "Dark"
+msgstr "Dunkel"
+
 msgid "Date format"
 msgstr "Datumsformat"
 
@@ -2239,6 +2242,9 @@ msgstr "Diese Gruppe verlassen?"
 
 msgid "Leaving your group"
 msgstr "Deine Gruppe wird verlassen"
+
+msgid "Light"
+msgstr "Hell"
 
 msgid "Lime"
 msgstr "Limettengrün"
@@ -3833,6 +3839,9 @@ msgstr "Theme angewendet"
 msgid "Theme deleted"
 msgstr "Theme gelöscht"
 
+msgid "Theme from Sidecar by dmnyc."
+msgstr "Theme aus Sidecar von dmnyc."
+
 msgid "Theme saved"
 msgstr "Theme gespeichert"
 
@@ -4300,6 +4309,9 @@ msgstr "Deine Signer-Sitzung ist beendet."
 
 msgid "Your stickers"
 msgstr "Deine Sticker"
+
+msgid "Your themes"
+msgstr "Deine Themes"
 
 msgid "Zoom in"
 msgstr "Vergrößern"

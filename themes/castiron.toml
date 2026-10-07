@@ -1,0 +1,75 @@
+# Sidecar by dmnyc: void-black cast plates, warm steel inks and impressed outline lettering.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/cast-iron.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Cast Iron"
+
+[colors]
+bg = "#050404ff"
+bg-2 = "#0a0908ff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#0e0c0bff"
+panel-2 = "#131110ff"
+rail = "#0a0908ff"
+elevated = "#0e0c0bff"
+plate = "#0e0c0bff"
+status-bar = "#0e0c0bff"
+banner = "#161310ff"
+canvas-top = "#050404ff"
+text-hi = "#a59d8bff"
+text-mid = "#938b7aff"
+text-lo = "#857d6cff"
+text-vlo = "#575144ff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#020202ff"
+field-hover = "#020202ff"
+field-border = "#d8d1c409"
+hover = "#c5bdaf17"
+card-border = "#d8d1c409"
+elevated-border = "#d8d1c40e"
+border-2 = "#d8d1c409"
+divider = "#d8d1c409"
+avatar-ring = "#d8d1c40e"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#05040499"
+plate-inset = "#05040466"
+code-plate = "#d8d1c41f"
+danger = "#a86652ff"
+danger-soft = "#a866521f"
+danger-border = "#a8665273"
+warning = "#a98f6fff"
+warning-soft = "#a98f6f1a"
+warning-border = "#a98f6f4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#00000099"
+shadow-card = "#00000080"
+shadow-popover = "#00000099"
+shadow-float = "#00000099"
+top-glint = "#d8d1c40e"
+bevel-hi = "#d8d1c40e"
+bevel-lo = "#00000080"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#b9b19fff",
+    "#8f887aff",
+    "#aaa294ff",
+    "#948c79ff",
+    "#968e7cff",
+]
+
+[style]
+backdrop = "image:cast-metal"
+font = "Manrope"
+font-title = "Impressed Metal"
+# The input is the top stop of the reversed #020202 / #0b0a08 / #171310 well; native scalar fills
+# cannot reproduce its full ramp.
+bevel = true
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 1.0
+border-w = 1.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

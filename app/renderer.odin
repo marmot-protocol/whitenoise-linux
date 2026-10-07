@@ -54,6 +54,113 @@ refresh_ui_scale :: proc() {
 	rl.SetPixelScale(UI_SCALE)
 }
 
+// Physical stack IDs stay below profile fonts (32+). Native text, markdown
+// emphasis and input measurement keep their existing logical role IDs.
+@(private)
+FONT_GALLERY_BOLD :: u16(30)
+@(private)
+FONT_GALLERY_TITLE :: u16(31)
+
+@(private)
+THEME_FONTS := []struct {
+	family, file, bold_file: string,
+	id:                      u16,
+	fallback_files:          []string,
+} {
+	{"Manrope", "sidecar-manrope-400.ttf", "sidecar-manrope-700.ttf", 6, nil},
+	{"Playfair Display", "sidecar-playfair-700.ttf", "", 8, nil},
+	{"Noto Serif Display Condensed", "sidecar-noto-serif-display-cond.ttf", "", 9, nil},
+	{"Bitter", "sidecar-bitter-700.ttf", "", 10, nil},
+	{"Nixie Gothic", "sidecar-nixie-gothic.ttf", "", 11, nil},
+	{"Limelight", "sidecar-limelight.ttf", "", 12, nil},
+	{"Josefin Sans", "sidecar-josefin-sans-700.ttf", "", 13, nil},
+	{"Cinzel", "sidecar-cinzel-700.ttf", "", 14, nil},
+	{"Special Elite", "sidecar-special-elite.ttf", "", 15, nil},
+	{"Jost", "sidecar-jost-700.ttf", "", 16, {"sidecar-manrope-700.ttf"}},
+	{"Bangers", "sidecar-bangers.ttf", "", 17, {"sidecar-manrope-700.ttf"}},
+	{
+		"Impressed Metal",
+		"sidecar-impressed-metal.ttf",
+		"",
+		18,
+		{"sidecar-jost-700.ttf", "sidecar-manrope-700.ttf"},
+	},
+	{
+		"Cormorant Garamond",
+		"sidecar-cormorant-garamond-700.ttf",
+		"",
+		19,
+		{"sidecar-manrope-700.ttf"},
+	},
+	{"Barlow Condensed", "sidecar-barlow-condensed-600.ttf", "", 20, {"sidecar-manrope-700.ttf"}},
+	{
+		"Fascinate",
+		"sidecar-fascinate.ttf",
+		"",
+		21,
+		{"sidecar-limelight.ttf", "sidecar-manrope-700.ttf"},
+	},
+	{"Fraunces", "sidecar-fraunces-soft-700.ttf", "", 22, {"sidecar-manrope-700.ttf"}},
+	{"Rowdies", "sidecar-rowdies.ttf", "", 23, {"sidecar-manrope-700.ttf"}},
+	{
+		"IM FELL English SC",
+		"sidecar-im-fell-english-sc.ttf",
+		"",
+		24,
+		{"sidecar-cormorant-garamond-700.ttf", "sidecar-manrope-700.ttf"},
+	},
+	{"Pathway Gothic One", "sidecar-pathway-gothic-one.ttf", "", 25, {"sidecar-manrope-700.ttf"}},
+	{"Kaisei Decol", "sidecar-kaisei-decol-500.ttf", "", 26, {"sidecar-manrope-700.ttf"}},
+	{"Yuji Syuku", "sidecar-yuji-syuku.ttf", "", 27, {"sidecar-manrope-700.ttf"}},
+	{"Syncopate", "sidecar-syncopate-700.ttf", "", 28, {"sidecar-manrope-700.ttf"}},
+	// The CSS unicode-range face owns only digits and their separators.
+	// Letters must reach Fell before the complete Cormorant fallback.
+	{
+		"Hollow Figures",
+		"sidecar-hollow-figures-700.ttf",
+		"",
+		29,
+		{
+			"sidecar-im-fell-english-sc.ttf",
+			"sidecar-cormorant-garamond-700.ttf",
+			"sidecar-manrope-700.ttf",
+		},
+	},
+}
+
+@(private)
+Theme_Font_Role :: enum {
+	Body,
+	Title,
+}
+
+@(private)
+theme_font_stack :: proc(family: string, role: Theme_Font_Role) -> u16 {
+	for face in THEME_FONTS {
+		if face.family == family {
+			return face.id + (role == .Title && face.bold_file != "" ? u16(1) : u16(0))
+		}
+	}
+	return role == .Title ? FONT_TITLE : FONT_BODY
+}
+
+@(private)
+theme_fonts_loaded: bool
+
+@(private)
+apply_theme_fonts :: proc() {
+	if !theme_fonts_loaded {return}
+	body_changed := rl.SelectFontStack(FONT_BODY, theme_font_stack(THEME_FONT, .Body))
+	title_changed := rl.SelectFontStack(FONT_TITLE, theme_font_stack(THEME_FONT_TITLE, .Title))
+	if !body_changed && !title_changed {return}
+	// Logical IDs are stable, so geometry caches cannot detect this switch.
+	wrap_clear()
+	if clay.GetCurrentContext() != nil {
+		clay.ResetMeasureTextCache()
+		anim_snap_all()
+	}
+}
+
 init_fonts :: proc() {
 	timing_start := time.tick_now()
 	defer local_timing_end(.fonts_init, timing_start)
@@ -61,11 +168,29 @@ init_fonts :: proc() {
 	// A packaged build ships its own copy of each face; res_font puts it
 	// at the head of the stack so the binary never depends on which
 	// fonts the host distro happens to have installed.
-	stack :: proc(id: u16, bundled: string, candidates: []cstring, fallbacks: []cstring) {
+	stack :: proc(
+		id: u16,
+		bundled: string,
+		candidates: []cstring,
+		fallbacks: []cstring,
+		base: string = "",
+		source_fallbacks: []string = nil,
+	) {
 		paths := make([dynamic]cstring, context.temp_allocator)
-		if font := res_font(bundled); font != nil {
-			append(&paths, font)
+		font := res_font(bundled)
+		defer delete(font)
+		if font != nil {append(&paths, font)}
+		fallback_start := len(paths)
+		for name in source_fallbacks {
+			if path := res_font(name); path != nil {
+				append(&paths, path)
+			}
 		}
+		fallback_end := len(paths)
+		defer {for path in paths[fallback_start:fallback_end] {delete(path)}}
+		base_font: cstring
+		if base != "" {base_font = res_font(base); append(&paths, base_font)}
+		defer delete(base_font)
 		append(&paths, ..candidates)
 		append(&paths, ..fallbacks)
 		if id != FONT_ICON {
@@ -89,13 +214,13 @@ init_fonts :: proc() {
 				)
 			}
 		}
+		fallback_fonts: [3]cstring
+		defer {for path in fallback_fonts {delete(path)}}
 		if id != FONT_ICON {
-			append(
-				&paths,
-				res_font("NotoSansMath-Regular.ttf"),
-				res_font("NotoSansSymbols-Regular.ttf"),
-				res_font("NotoSansSymbols2-Regular.ttf"),
-			)
+			for name, i in ([]string{"NotoSansMath-Regular.ttf", "NotoSansSymbols-Regular.ttf", "NotoSansSymbols2-Regular.ttf"}) {
+				fallback_fonts[i] = res_font(name)
+				append(&paths, fallback_fonts[i])
+			}
 		}
 		rl.LoadFontStack(id, paths[:], text_emoji)
 	}
@@ -124,6 +249,38 @@ init_fonts :: proc() {
 	stack(FONT_MONO, "LiberationMono-Regular.ttf", MONO_CANDIDATES, CJK_CANDIDATES)
 	stack(FONT_ICON, "JetBrainsMonoNerdFont-Regular.ttf", ICON_CANDIDATES, nil)
 	rl.IconFont = FONT_ICON // ink-boxed, so icons center in their buttons
+	for face in THEME_FONTS {
+		if face.bold_file != "" {
+			stack(
+				face.id,
+				face.file,
+				FONT_CANDIDATES,
+				CJK_CANDIDATES,
+				"LiberationSans-Regular.ttf",
+			)
+			stack(
+				face.id + 1,
+				face.bold_file,
+				TITLE_CANDIDATES,
+				CJK_BOLD_CANDIDATES,
+				"LiberationSans-Bold.ttf",
+			)
+		} else {
+			stack(
+				face.id,
+				face.file,
+				TITLE_CANDIDATES,
+				CJK_BOLD_CANDIDATES,
+				"LiberationSans-Bold.ttf",
+				face.fallback_files,
+			)
+		}
+	}
+	// Gallery typography remains stable while live previews change the app's aliases.
+	rl.SelectFontStack(FONT_GALLERY_BOLD, theme_font_stack("Manrope", .Title))
+	rl.SelectFontStack(FONT_GALLERY_TITLE, FONT_TITLE)
+	theme_fonts_loaded = true
+	apply_theme_fonts()
 }
 
 // Hand-drawn themes re-jitter every outline eight times a second, the

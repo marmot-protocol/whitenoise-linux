@@ -29,6 +29,26 @@ test_theme_slug :: proc(t: ^testing.T) {
 	)
 }
 
+@(test)
+test_theme_tone_inheritance :: proc(t: ^testing.T) {
+	// Overriding an inherited background must move the pack between gallery filters.
+	night := parse_theme("Night", "night", "bg = \"#090909\"", default_pack())
+	paper := parse_theme(
+		"Paper",
+		"paper",
+		"base = \"night\"\nbg = \"#f9f9f9\"\ntext-hi = \"#090909\"",
+		night,
+	)
+	ink := parse_theme(
+		"Ink",
+		"ink",
+		"base = \"paper\"\nbg = \"#090909\"\ntext-hi = \"#f9f9f9\"",
+		paper,
+	)
+	testing.expect_value(t, paper.tone, Theme_Tone.Light)
+	testing.expect_value(t, ink.tone, Theme_Tone.Dark)
+}
+
 // An incoming pack is untrusted: only a sized, named, seeded one is
 // worth offering.
 @(test)
@@ -224,8 +244,8 @@ test_ink_on_reads_on_any_fill :: proc(t: ^testing.T) {
 	testing.expect_value(t, ink_on({0, 0, 128, 255}), WHITE)
 	// Use only the embedded sources: custom packs may explicitly opt out.
 	for source in THEME_SOURCES {
-		pack := parse_theme(source[0], "builtin", source[1], default_pack())
-		defer {delete(pack.font); delete(pack.backdrop)}
+		pack := parse_theme(source.name, source.mode, source.source, default_pack())
+		defer {delete(pack.font); delete(pack.font_title); delete(pack.backdrop)}
 		for fill, slot in pack.accent_base {
 			ratio := theme_test_contrast(pack.on_accent[slot], fill)
 			testing.expectf(t, ratio >= 4.5, "%s slot %d reads at %.2f:1", pack.name, slot, ratio)

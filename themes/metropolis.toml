@@ -1,24 +1,72 @@
-# Deco skyline at dusk: cold concrete, chrome verticals, one gold seam.
+# Sidecar: soot, ochre concrete, tarnished brass and Limelight poster lettering.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/metropolis.css
+# Shared component roles: styles.css at the same pinned revision.
 name = "Metropolis"
 
 [colors]
-bg = "#10151aff"
-bg-2 = "#1a2129ff"
-text-hi = "#e4e8ecff"
-danger = "#a94a3fff"
-warning = "#bb9445ff"
+bg = "#0d0c0aff"
+bg-2 = "#14120fff"
+# Velvet gradient stops; native surfaces use a single color.
+panel = "#1b1815ff"
+panel-2 = "#241f1aff"
+rail = "#14120fff"
+elevated = "#1b1815ff"
+plate = "#1b1815ff"
+status-bar = "#1b1815ff"
+banner = "#241f1aff"
+canvas-top = "#0d0c0aff"
+text-hi = "#e8e0d0ff"
+text-mid = "#c9bfacff"
+text-lo = "#9a8f7cff"
+text-vlo = "#6e6557ff"
+field = "#14120fff"
+field-hover = "#14120fff"
+field-border = "#a8843c2e"
+hover = "#a8843c1f"
+card-border = "#a8843c2e"
+elevated-border = "#a8843c57"
+border-2 = "#a8843c2e"
+divider = "#a8843c2e"
+avatar-ring = "#a8843c57"
+card-well = "#14120f99"
+plate-inset = "#14120f66"
+code-plate = "#a8843c1f"
+danger = "#e66152ff"
+danger-soft = "#e661521f"
+danger-border = "#e6615273"
+warning = "#e9a85eff"
+warning-soft = "#e9a85e1a"
+warning-border = "#e9a85e4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#000000a8"
+shadow-card = "#00000085"
+shadow-popover = "#00000099"
+shadow-float = "#00000073"
+top-glint = "#e8e0d00b"
+bevel-hi = "#e8e0d00b"
+bevel-lo = "#00000000"
+# Brass UI ink is primary, not the darker metallic fill or the transient arc flash.
 accent-base = [
-    "#c0a054ff",
-    "#76838fff",
-    "#8f9daaff",
-    "#a4854fff",
-    "#586674ff",
+    "#d3a94eff",
+    "#c87f4aff",
+    "#e8c46bff",
+    "#c9a45cff",
+    "#dcc084ff",
 ]
 
 [style]
-backdrop = "deco"
-bevel = true
-outline-surfaces = true
-bracket-labels = true
-r-scale = 0.0
+backdrop = "image:rays"
+font = "Manrope"
+font-title = "Limelight"
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+bracket-labels = false
+focus-glow = true
+r-scale = 1.0
 border-w = 1.0
+glow-r = 3.0
+shadow-y = 7.0
+hover-dur = 150.0
+transition-dur = 150.0

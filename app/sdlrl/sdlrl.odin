@@ -103,35 +103,36 @@ TextureFilter :: enum {
 
 @(private)
 State :: struct {
-	window:        ^sdl.Window,
-	renderer:      ^sdl.Renderer,
-	image_helper:  cstring,
-	quit:          bool,
-	fullscreen:    bool,
+	window:         ^sdl.Window,
+	renderer:       ^sdl.Renderer,
+	image_helper:   cstring,
+	quit:           bool,
+	fullscreen:     bool,
 	// per-frame input
-	pressed:       [KeyboardKey]bool,
-	repeated:      [KeyboardKey]bool,
-	down:          [KeyboardKey]bool,
-	m_pressed:     [MouseButton]bool,
-	m_released:    [MouseButton]bool,
-	m_down:        [MouseButton]bool,
-	m_clicks:      u8, // click count of this frame's LEFT press (2 = double)
-	wheel:         Vector2,
-	chars:         [dynamic]rune,
-	preedit:       string,
+	pressed:        [KeyboardKey]bool,
+	repeated:       [KeyboardKey]bool,
+	down:           [KeyboardKey]bool,
+	m_pressed:      [MouseButton]bool,
+	m_released:     [MouseButton]bool,
+	m_down:         [MouseButton]bool,
+	m_clicks:       u8, // click count of this frame's LEFT press (2 = double)
+	wheel:          Vector2,
+	chars:          [dynamic]rune,
+	preedit:        string,
 	// timing
-	last_frame_ns: u64,
-	frame_dt:      f32,
-	density:       f32, // output pixels per window point
-	touch:         bool, // a touch screen is attached
-	text_input:    bool, // text-input-v3 enabled (raises a phone's keyboard)
+	last_frame_ns:  u64,
+	frame_dt:       f32,
+	density:        f32, // output pixels per window point
+	touch:          bool, // a touch screen is attached
+	text_input:     bool, // text-input-v3 enabled (raises a phone's keyboard)
 	// text engine
-	pixel_scale:   f32, // glyph rasterization multiplier (dpi * zoom)
-	fonts:         [dynamic]Font_File,
-	stacks:        map[u16][]int, // font id -> indices into fonts
-	glyphs:        map[u64]Glyph,
-	ascents:       map[u64]f32, // (file, px) -> ascent in atlas px
-	text_image:    proc(text: string) -> ^Texture2D,
+	pixel_scale:    f32, // glyph rasterization multiplier (dpi * zoom)
+	fonts:          [dynamic]Font_File,
+	stacks:         map[u16][]int, // font id -> indices into fonts
+	font_selection: map[u16]u16, // logical id -> preloaded stack id
+	glyphs:         map[u64]Glyph,
+	ascents:        map[u64]f32, // (file, px) -> ascent in atlas px
+	text_image:     proc(text: string) -> ^Texture2D,
 }
 
 @(private)
@@ -1289,7 +1290,25 @@ LoadFontStack :: proc(
 			append(&indices, found)
 		}
 	}
+	delete(state.stacks[font_id])
 	state.stacks[font_id] = indices[:]
+	state.font_selection[font_id] = font_id
+}
+
+// Select a logical role without loading files or touching glyph
+// ownership. Selection is one level deep; physical stacks never alias.
+SelectFontStack :: proc(font_id, stack_id: u16) -> bool {
+	if _, loaded := state.stacks[stack_id]; !loaded {return false}
+	if current, registered := state.font_selection[font_id];
+	   registered && current == stack_id {return false}
+	state.font_selection[font_id] = stack_id
+	return true
+}
+
+@(private)
+selected_font_stack :: proc(font_id: u16) -> u16 {
+	if selected, ok := state.font_selection[font_id]; ok {return selected}
+	return font_id
 }
 
 @(private)
@@ -1413,6 +1432,7 @@ grapheme_iterate :: proc(
 // Width/height of one line at the given logical size, matching what
 // DrawTextLine paints. Height is the font size, clay's convention.
 MeasureTextLine :: proc(font_id: u16, size: u16, text: string, letter_spacing: f32) -> Vector2 {
+	stack_id := selected_font_stack(font_id)
 	px := u16(f32(size) * state.pixel_scale + 0.5)
 	width: f32 = 0
 	it := utf8.decode_grapheme_iterator_make(text)
@@ -1423,7 +1443,7 @@ MeasureTextLine :: proc(font_id: u16, size: u16, text: string, letter_spacing: f
 		}
 		for r in cluster {
 			if r == 0xFE0E || r == 0xFE0F || r == 0x200D {continue}
-			glyph, _ := get_glyph(font_id, px, r)
+			glyph, _ := get_glyph(stack_id, px, r)
 			width += glyph.advance / state.pixel_scale + letter_spacing
 		}
 	}
@@ -1441,6 +1461,7 @@ DrawTextLine :: proc(
 	letter_spacing: f32,
 	color: Color,
 ) {
+	stack_id := selected_font_stack(font_id)
 	px := u16(f32(size) * state.pixel_scale + 0.5)
 	pen := x
 	it := utf8.decode_grapheme_iterator_make(text)
@@ -1454,7 +1475,7 @@ DrawTextLine :: proc(
 		}
 		for r in cluster {
 			if r == 0xFE0E || r == 0xFE0F || r == 0x200D {continue}
-			glyph, file := get_glyph(font_id, px, r)
+			glyph, file := get_glyph(stack_id, px, r)
 			if glyph.tex != nil {
 				sdl.SetTextureColorMod(glyph.tex, color.r, color.g, color.b)
 				sdl.SetTextureAlphaMod(glyph.tex, color.a)

@@ -1,25 +1,73 @@
-# Prohibition back room: oxblood leather, aged brass, one low lamp.
-# Deco fan behind the conversation, warm falloff toward the floor.
+# Sidecar: violet velvet, brass accents and Playfair display lettering.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/speakeasy.css
+# Shared component roles: styles.css at the same pinned revision.
 name = "Speakeasy"
 
 [colors]
-bg = "#170e10ff"
-bg-2 = "#241419ff"
-text-hi = "#efe0ccff"
-danger = "#b4442fff"
-warning = "#c8913aff"
+bg = "#0a0118ff"
+bg-2 = "#140428ff"
+# Velvet gradient stops; native surfaces use a single color.
+panel = "#23114aff"
+panel-2 = "#160a30ff"
+rail = "#140428ff"
+elevated = "#23114aff"
+plate = "#23114aff"
+status-bar = "#23114aff"
+banner = "#3a2470ff"
+canvas-top = "#0a0118ff"
+text-hi = "#f1e8f8ff"
+text-mid = "#e8d5f0ff"
+text-lo = "#9a86c4ff"
+text-vlo = "#6f5fa0ff"
+# First stop of the shared input gradient; hover changes the rim, not the fill.
+field = "#08021499"
+field-hover = "#08021499"
+field-border = "#a78bfa29"
+hover = "#a78bfa1a"
+card-border = "#a78bfa29"
+elevated-border = "#a78bfa47"
+border-2 = "#a78bfa29"
+divider = "#a78bfa29"
+avatar-ring = "#a78bfa47"
+# Wells use the shared preview/quote opacities; inline code uses the border wash.
+card-well = "#08021499"
+plate-inset = "#08021466"
+code-plate = "#a78bfa1f"
+danger = "#f0566bff"
+danger-soft = "#f0566b1f"
+danger-border = "#f0566b73"
+warning = "#ffb38aff"
+warning-soft = "#ffb38a1a"
+warning-border = "#ffb38a4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#00000073"
+shadow-card = "#00000059"
+shadow-popover = "#00000099"
+shadow-float = "#00000073"
+top-glint = "#ffffff0d"
+bevel-hi = "#ffffff0d"
+bevel-lo = "#00000000"
+# Gold is the default UI ink; every alternative comes from the source brand palette.
 accent-base = [
-    "#b8933fff",
-    "#7d6136ff",
-    "#8f3b38ff",
-    "#5c6b4dff",
-    "#6f5068ff",
+    "#cba14eff",
+    "#ea772fff",
+    "#f4a64bff",
+    "#a78bfaff",
+    "#bda1ffff",
 ]
 
 [style]
-backdrop = "deco"
-bevel = true
+backdrop = "image:quilt"
+font = "Manrope"
+font-title = "Playfair Display"
+bevel = false
+hard-shadow = false
+outline-surfaces = false
 focus-glow = true
-r-scale = 0.7
+r-scale = 1.0
 border-w = 1.0
-glow-r = 5.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

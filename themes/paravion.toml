@@ -1,23 +1,71 @@
-# Airmail: kraft envelope, the red-and-blue border band, faded stamp.
+# Sidecar: manila envelope, letter-paper cards, navy pen and airmail red.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/par-avion.css
+# Shared component roles: styles.css at the same pinned revision.
 name = "Par Avion"
 
 [colors]
-bg = "#ece2cfff"
-bg-2 = "#ded0b6ff"
-panel = "#f4ecdcff"
-text-hi = "#282722ff"
-danger = "#a62f27ff"
-warning = "#9d7420ff"
+bg = "#f5f0e4ff"
+bg-2 = "#e9e0ccff"
+# Velvet gradient stops; native surfaces use a single color.
+panel = "#fcfaf3ff"
+panel-2 = "#f1eadaff"
+rail = "#e9e0ccff"
+elevated = "#fcfaf3ff"
+plate = "#fcfaf3ff"
+status-bar = "#fcfaf3ff"
+banner = "#e9e0ccff"
+canvas-top = "#f5f0e4ff"
+text-hi = "#211e19ff"
+text-mid = "#1d3a6bff"
+text-lo = "#5a4c3bff"
+text-vlo = "#706048ff"
+field = "#fcfaf3ff"
+field-hover = "#fcfaf3ff"
+field-border = "#1d3a6b29"
+hover = "#1d3a6b17"
+card-border = "#1d3a6b29"
+elevated-border = "#1d3a6b4d"
+border-2 = "#1d3a6b29"
+divider = "#1d3a6b29"
+avatar-ring = "#1d3a6b4d"
+card-well = "#e9e0cc99"
+plate-inset = "#e9e0cc66"
+code-plate = "#1d3a6b1f"
+danger = "#a02c2eff"
+danger-soft = "#a02c2e1f"
+danger-border = "#a02c2e73"
+warning = "#8e2226ff"
+warning-soft = "#8e22261a"
+warning-border = "#8e22264d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#3c2d191f"
+shadow-card = "#3c2d1914"
+shadow-popover = "#00000099"
+shadow-float = "#3c2d192e"
+top-glint = "#ffffffbf"
+bevel-hi = "#ffffffbf"
+bevel-lo = "#00000000"
+# The pen blue is the affirmative UI accent, never the red stamp.
 accent-base = [
-    "#245080ff",
-    "#a62f27ff",
-    "#7f7353ff",
-    "#456a94ff",
-    "#8f6236ff",
+    "#1b4c8cff",
+    "#14304fff",
+    "#c0272dff",
+    "#b0872cff",
+    "#3d6b3eff",
 ]
 
 [style]
-backdrop = "airmail"
-outline-surfaces = true
-r-scale = 0.8
+backdrop = "image:airmail-map"
+font = "Manrope"
+font-title = "Special Elite"
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 1.0
 border-w = 1.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

@@ -67,6 +67,7 @@ cp "$HERE/vendor/emoji-catalog.tsv" "$RES/"
 # byte-identical faces.
 cp "$HERE"/vendor/fonts/*.ttf "$RES/fonts/"
 cp "$HERE/vendor/fonts/Noto-LICENSE.txt" "$RES/licenses/noto-fonts.txt"
+cp "$HERE/assets/fonts/sidecar/"*.txt "$RES/licenses/"
 
 sed "s|@ID@|$ID|g" "$HERE/assets/whitenoise-linux.desktop" \
   > "$PREFIX/share/applications/$ID.desktop"

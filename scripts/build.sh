@@ -535,11 +535,14 @@ fi
 #   LiberationSans-{Regular,Bold,Italic,BoldItalic}.ttf
 #   LiberationMono-Regular.ttf         body, emphasis, mono
 FONTS="$HERE/vendor/fonts"
+# Theme faces are converted once from the pinned Sidecar revision, with
+# licences and conversion provenance retained alongside the committed TTFs.
+mkdir -p "$FONTS"
+cp "$HERE/assets/fonts/sidecar/"*.ttf "$HERE/assets/fonts/sidecar/"*.txt "$FONTS/"
 NERD_ZIP_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.zip"
 NERD_ZIP_SHA="fab782a66f7d3019da64f6572db9fc5d3a4bcb19f9fa13e2d8a62e3693d6396e"
 LIBERATION_URL="https://github.com/liberationfonts/liberation-fonts/files/7261482/liberation-fonts-ttf-2.1.5.tar.gz"
 LIBERATION_SHA="7191c669bf38899f73a2094ed00f7b800553364f90e2637010a69c0e268f25d0"
-mkdir -p "$FONTS"
 if [ ! -f "$FONTS/JetBrainsMonoNerdFont-Regular.ttf" ]; then
   TMP="$(mktemp -d)"
   curl -sSfL -o "$TMP/jbmono.zip" "$NERD_ZIP_URL"
@@ -747,5 +750,6 @@ if [ "${1:-}" = test ]; then
   "$HERE/build/speech-decode-test"
   env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES=settings_viewport
+  SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES=theme_gallery_interactions
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app/sdlrl
 fi

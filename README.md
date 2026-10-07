@@ -69,8 +69,9 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 
 **Look & feel**
 
-- Eighteen bundled themes and five accent colors, all data-driven from `themes/*.toml`. Drop your own pack in the data dir.
-- Hover over a theme in Settings > Appearance to preview it. Leaving the menu or pressing Escape restores your theme; clicking saves the choice.
+- Thirty-one bundled themes and five accent colors, all data-driven from `themes/*.toml`. Drop your own pack in the data dir.
+- Settings > Appearance > Theme opens a gallery with separate Dark and Light views and bold collection headings. Hover over a tile to preview it. Leaving the tile or pressing Escape restores your theme; clicking saves the choice.
+- The Sidecar collection contains all 21 themes from [dmnyc's Sidecar](https://github.com/dmnyc/sidecar). Selecting one shows its source credit on the page and the selected tile. Collection headings have no links.
 - Button text derives separately for each accent color using sRGB contrast. Custom packs can set `on-accent` to override the text color for all five accents.
 - English, Italian, German, and Japanese, switchable at runtime, including search dialogs, theme notifications, and confirmation errors.
 - Native desktop notifications, a command palette, and full keyboard navigation.
@@ -547,6 +548,16 @@ A few design choices are worth knowing before you dig in:
 - **Two upload paths.** Chat attachments go through Marmot's encrypted MIP-04 path, readable only by group members. Profile pictures take the deliberately public Blossom path.
 - **Data-driven themes.** Every color, metric, and capability flag comes from a `themes/*.toml` pack. The parser and editor share one token-to-field table in `app/theme.odin`; `app/state.odin` owns the live colors. A new component reads the globals; it never branches on which theme is active. Fullscreen media uses `media-backdrop` and `media-chip-bg` for its backdrop and floating header.
 - **Standard math.** Motion, decoration and sound synthesis call `core:math` directly, evaluating `f64` phases before narrowing to `f32`. Checkmark strokes use `math.sqrt` with a minimum normalization length of 0.001.
+
+Sidecar palettes, title faces, and background artwork are pinned to
+`3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f`. Run
+`bun scripts/render-sidecar-themes.ts` with Chromium installed to regenerate
+the embedded 1280×800 background images from the source CSS and SVGs.
+Backgrounds scale with the window; browser animations and component-surface
+gradients are not reproduced. `font-title` selects a bundled display face
+separately from the body `font`. Font licences, source hashes, and conversion
+details are in `assets/fonts/sidecar/` and installed with the fonts. The native
+text engine does not provide browser OpenType shaping.
 
 For the deeper details, see [`AGENTS.md`](AGENTS.md).
 

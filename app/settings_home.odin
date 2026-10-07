@@ -485,6 +485,11 @@ settings_pane_link :: proc(
 	art: Settings_Art,
 	label: string,
 ) {
+	gallery :=
+		g_ui != nil &&
+		g_ui.settings_section == .Appearance &&
+		!settings_on_menu(g_ui) &&
+		g_ui.settings_tab == 0
 	if clay.UI(id)(
 	{
 		layout = {
@@ -512,7 +517,11 @@ settings_pane_link :: proc(
 		}
 		clay.Text(
 			label,
-			{fontId = FONT_BODY, fontSize = 12, textColor = hovered() ? ACCENT : TEXT_DIM},
+			{
+				fontId = gallery ? FONT_GALLERY_TITLE : FONT_BODY,
+				fontSize = 12,
+				textColor = hovered() ? ACCENT : TEXT_DIM,
+			},
 		)
 	}
 }
@@ -530,6 +539,7 @@ settings_pick_heading :: proc(text: string) {
 @(private)
 settings_banner :: proc(ui: ^Ui_State) {
 	section := ui.settings_section
+	gallery := section == .Appearance && !settings_on_menu(ui) && ui.settings_tab == 0
 	if clay.UI(clay.ID("SettingsHead"))(
 	{
 		layout = {
@@ -553,11 +563,19 @@ settings_banner :: proc(ui: ^Ui_State) {
 		) {
 			clay.Text(
 				tr(SETTINGS_SECTIONS[section].label),
-				{fontId = FONT_TITLE, fontSize = 16, textColor = ON_ACCENT},
+				{
+					fontId = gallery ? FONT_GALLERY_BOLD : FONT_TITLE,
+					fontSize = 16,
+					textColor = ON_ACCENT,
+				},
 			)
 			clay.Text(
 				tr(settings_description(section)),
-				{fontId = FONT_BODY, fontSize = 11, textColor = ON_ACCENT},
+				{
+					fontId = gallery ? FONT_GALLERY_TITLE : FONT_BODY,
+					fontSize = 11,
+					textColor = ON_ACCENT,
+				},
 			)
 		}
 	}
@@ -804,10 +822,12 @@ settings_open :: proc(
 ) {
 	if !settings_available(ui, section) {return}
 	settings_theme_preview_reset(ui)
-	ui.theme_menu_open = false
 	level := level
 	if anchor != "" || !settings_has_menu(section) {level = .Sheet}
 	target_tab := anchor == "" ? tab : settings_target_tab(section, anchor)
+	if section == .Appearance && level == .Sheet && target_tab == 0 && len(theme_packs) > 0 {
+		ui.theme_tone = theme_packs[active_theme(ui)].tone
+	}
 	if section != .Keys ||
 	   ui.settings_section != .Keys ||
 	   target_tab != ui.settings_tab ||
@@ -855,6 +875,7 @@ settings_back :: proc(ui: ^Ui_State) {
 @(private)
 settings_escape :: proc(ui: ^Ui_State) -> bool {
 	if !rl.IsKeyPressed(.ESCAPE) {return false}
+	settings_theme_preview_reset(ui)
 	#partial switch ui.focus {
 	case .Compose:
 		settings_back(ui)
@@ -871,9 +892,10 @@ settings_escape :: proc(ui: ^Ui_State) -> bool {
 
 @(private)
 settings_search_field :: proc(ui: ^Ui_State) {
-	if ui.lang_open || ui.shortcuts_open || ui.theme_menu_open || ui.export_open {return}
+	if ui.lang_open || ui.shortcuts_open || ui.export_open {return}
 	if field_mouse(ui, &ui.settings_search, "SettingsSearchBox", 12) {ui.focus = .SettingsSearch}
 	if ui.focus != .SettingsSearch {return}
+	settings_theme_preview_reset(ui)
 	before := avatar_hash(string(ui.settings_search[:]))
 	edit_text(ui, &ui.settings_search)
 	if before != avatar_hash(string(ui.settings_search[:])) {

@@ -1,0 +1,75 @@
+# Sidecar by dmnyc: slate stoneware, rice-paper ink, kintsugi gold and persimmon glaze.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/wabi-sabi.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Wabi-sabi"
+
+[colors]
+bg = "#131518ff"
+bg-2 = "#181a1eff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#22252aff"
+panel-2 = "#1a1c20ff"
+rail = "#181a1eff"
+elevated = "#22252aff"
+plate = "#22252aff"
+status-bar = "#22252aff"
+banner = "#2a2e34ff"
+canvas-top = "#131518ff"
+text-hi = "#ece6daff"
+text-mid = "#d3ccbfff"
+text-lo = "#a8a194ff"
+text-vlo = "#857f74ff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#0a0b0d99"
+field-hover = "#0a0b0d99"
+field-border = "#a7b6c224"
+hover = "#a7b6c21c"
+card-border = "#a7b6c224"
+elevated-border = "#a7b6c242"
+border-2 = "#a7b6c224"
+divider = "#a7b6c224"
+avatar-ring = "#a7b6c242"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#0c0d0f99"
+plate-inset = "#0c0d0f66"
+code-plate = "#a7b6c21f"
+danger = "#da6f62ff"
+danger-soft = "#da6f621f"
+danger-border = "#da6f6273"
+warning = "#d08a5cff"
+warning-soft = "#d08a5c1a"
+warning-border = "#d08a5c4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#00000080"
+shadow-card = "#00000066"
+shadow-popover = "#00000099"
+shadow-float = "#00000080"
+top-glint = "#ffffff0a"
+bevel-hi = "#ffffff0a"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#d9ae55ff",
+    "#c98a4bff",
+    "#e8c170ff",
+    "#a7b6c2ff",
+    "#bac7d1ff",
+]
+
+[style]
+backdrop = "image:kintsugi"
+font = "Manrope"
+font-title = "Yuji Syuku"
+# Native input uses the first rgba(10, 11, 13, 0.6) gradient stop; the slate surface palette and gold
+# seam wallpaper remain source-derived.
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 1.0
+border-w = 1.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

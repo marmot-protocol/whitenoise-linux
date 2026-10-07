@@ -1,17 +1,6 @@
-// Theme decor layers, the ui/theme-decor port. Three scenes, picked by
-// the active pack's capability flags and mounted as the Timeline
-// element's Custom payload: clay emits the Custom command before the
-// element's children, so a scene paints behind the messages, inside the
-// timeline bounds.
-//
-//   synth-grid    a vanishing-point rail fan whose rungs roll toward
-//                 the viewer, with the whole floor leaning on the mouse
-//   paper-doodles slow motes drifting across the page (the doodles
-//                 themselves are path art with no cheap equivalent)
-//   scanlines     CRT lines plus a bright band rolling down the screen
-//
-// All three are drawn from geometry rather than assets, so they follow
-// the accent color and cost one triangle batch a frame.
+// Theme decor layers. Page washes and wallpapers mount on the root;
+// geometric scenes mount on the Timeline's Custom payload. Clay draws
+// each payload before its children, keeping content above the scene.
 package main
 
 import "core:math"
@@ -52,11 +41,72 @@ airmail_decor := Decor_View {
 	kind = .Airmail,
 }
 
+// Rendered from Sidecar's pinned CSS; scripts/render-sidecar-themes.ts regenerates them.
+// These are scene assets, not theme identities. Custom packs can select them too.
+@(private = "file")
+DECOR_IMAGES := [?]struct {
+	name: string,
+	png:  []u8,
+} {
+	{"image:quilt", #load("assets/themes/quilt.png")},
+	{"image:film", #load("assets/themes/film.png")},
+	{"image:masonry", #load("assets/themes/masonry.png")},
+	{"image:mesh", #load("assets/themes/mesh.png")},
+	{"image:rays", #load("assets/themes/rays.png")},
+	{"image:sunburst", #load("assets/themes/sunburst.png")},
+	{"image:meander", #load("assets/themes/meander.png")},
+	{"image:airmail-map", #load("assets/themes/airmail-map.png")},
+	{"image:circle-grid", #load("assets/themes/circle-grid.png")},
+	{"image:comic-dots", #load("assets/themes/comic-dots.png")},
+	{"image:cast-metal", #load("assets/themes/cast-metal.png")},
+	{"image:star-atlas", #load("assets/themes/star-atlas.png")},
+	{"image:split-flaps", #load("assets/themes/split-flaps.png")},
+	{"image:jazz-stage", #load("assets/themes/jazz-stage.png")},
+	{"image:fungal-threads", #load("assets/themes/fungal-threads.png")},
+	{"image:circle-lattice", #load("assets/themes/circle-lattice.png")},
+	{"image:hollow-night", #load("assets/themes/hollow-night.png")},
+	{"image:subway-tile", #load("assets/themes/subway-tile.png")},
+	{"image:woodblock-waves", #load("assets/themes/woodblock-waves.png")},
+	{"image:kintsugi", #load("assets/themes/kintsugi.png")},
+	{"image:secession-grid", #load("assets/themes/secession-grid.png")},
+}
+@(private = "file")
+decor_images: [len(DECOR_IMAGES)]rl.Texture2D
+
+@(private)
+init_decor :: proc() {
+	// Preload before the event loop: hovering never decodes or uploads a wallpaper.
+	// SDL owns these textures and destroys them with the renderer, including reload.
+	for image, i in DECOR_IMAGES {
+		decoded := rl.LoadImageFromMemory(".png", raw_data(image.png), i32(len(image.png)))
+		assert(decoded.data != nil, "Couldn't decode bundled theme wallpaper")
+		decor_images[i] = rl.LoadTextureFromImage(decoded)
+		rl.UnloadImage(decoded)
+		assert(decor_images[i].tex != nil, "Couldn't upload bundled theme wallpaper")
+	}
+}
+
+@(private)
+decor_texture :: proc(backdrop: string) -> ^rl.Texture2D {
+	for image, i in DECOR_IMAGES {
+		if image.name == backdrop {
+			return &decor_images[i]
+		}
+	}
+	return nil
+}
+
 // The page's own gradient, mounted on the root rather than the
 // timeline so it runs under the rail and the panels too. nil when the
 // pack names no second stop, which leaves the flat BG fill.
 wash_payload :: proc() -> rawptr {
-	return BG_2.a > 0 ? &wash_decor : nil
+	return THEME_WALLPAPER != nil || BG_2.a > 0 ? &wash_decor : nil
+}
+
+@(private)
+decor_canvas_fill :: proc() -> clay.Color {
+	// Page content sits on the wallpaper; dialogs and sheets keep their own surfaces.
+	return THEME_WALLPAPER != nil ? clay.Color{} : CARD
 }
 
 // A vertical wash from BG to BG_2, in bands. Cheap, and the only
@@ -64,6 +114,28 @@ wash_payload :: proc() -> rawptr {
 WASH_BANDS :: 32
 
 wash_draw :: proc(bounds: clay.BoundingBox) {
+	if THEME_WALLPAPER != nil {
+		// One wall, anchored to the window even inside a scrolled timeline.
+		// ponytail: a 1280x800 raster scales with the window; regenerate at higher
+		// resolution or port tiled layers if large-window detail needs more pixels.
+		rl.BeginScissorMode(
+			i32(math.floor(bounds.x)),
+			i32(math.floor(bounds.y)),
+			i32(math.ceil(bounds.width)),
+			i32(math.ceil(bounds.height)),
+		)
+		rl.DrawTextureRect(
+			THEME_WALLPAPER,
+			0,
+			0,
+			f32(rl.GetScreenWidth()) / UI_ZOOM,
+			f32(rl.GetScreenHeight()) / UI_ZOOM,
+			{255, 255, 255, 255},
+		)
+		rl.EndScissorMode()
+		return
+	}
+
 	h := bounds.height / WASH_BANDS + 1
 	for i in 0 ..< WASH_BANDS {
 		t := f32(i) / f32(WASH_BANDS - 1)
@@ -87,6 +159,10 @@ wash_draw :: proc(bounds: clay.BoundingBox) {
 // so the timeline mounts decor without branching on theme identity.
 // Animated scenes disappear under reduced motion and must not prevent idle.
 decor_payload :: proc() -> rawptr {
+	if THEME_WALLPAPER != nil {
+		return nil // The root already paints the fixed wall behind the transparent canvas.
+	}
+
 	animated: rawptr
 	switch BACKDROP {
 	case "synth":

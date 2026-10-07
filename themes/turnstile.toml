@@ -1,0 +1,77 @@
+# Sidecar by dmnyc: daylight station tile, square enamel plates, green and cobalt signs.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/turnstile.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Turnstile"
+
+[colors]
+bg = "#f3f0e7ff"
+bg-2 = "#eae5d8ff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#faf8f2ff"
+panel-2 = "#f6f3eaff"
+rail = "#eae5d8ff"
+elevated = "#faf8f2ff"
+plate = "#faf8f2ff"
+status-bar = "#faf8f2ff"
+banner = "#eae5d8ff"
+canvas-top = "#f3f0e7ff"
+text-hi = "#151a1eff"
+text-mid = "#2a2f33ff"
+text-lo = "#42474bff"
+text-vlo = "#4a4f53ff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#ffffffff"
+field-hover = "#ffffffff"
+field-border = "#151a1e99"
+hover = "#151a1e17"
+card-border = "#151a1eff"
+elevated-border = "#151a1eff"
+border-2 = "#151a1e33"
+divider = "#151a1e33"
+avatar-ring = "#151a1eff"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#eae5d899"
+plate-inset = "#eae5d866"
+code-plate = "#151a1e1f"
+danger = "#9c2a1cff"
+danger-soft = "#9c2a1c1f"
+danger-border = "#9c2a1c73"
+warning = "#9c2a1cff"
+warning-soft = "#9c2a1c1a"
+warning-border = "#9c2a1c4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#151a1e2e"
+shadow-card = "#151a1e2e"
+shadow-popover = "#151a1e38"
+shadow-float = "#151a1e38"
+top-glint = "#00000000"
+bevel-hi = "#00000000"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#1f4a3bff",
+    "#1e2e78ff",
+    "#9c2a1cff",
+    "#6fa59aff",
+    "#b3541eff",
+]
+
+[style]
+backdrop = "image:subway-tile"
+font = "Manrope"
+font-title = "Pathway Gothic One"
+# Enamel component overrides supply firm field borders and plate keylines. Native outer borders
+# replace the CSS inset plate line; Archivo and Crimson tablet lettering remain source-only component
+# roles.
+bevel = false
+hard-shadow = false
+outline-surfaces = true
+focus-glow = true
+r-scale = 0.0
+border-w = 1.5
+glow-r = 3.0
+shadow-y = 1
+bubble-r = 0.0
+hover-dur = 150.0
+transition-dur = 150.0

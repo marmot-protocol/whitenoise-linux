@@ -1,0 +1,73 @@
+# Sidecar by dmnyc: whitewashed plaster, primary-color planes and black drawing rules.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/bauhaus.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Bauhaus"
+
+[colors]
+bg = "#f4f4f0ff"
+bg-2 = "#eaeae4ff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#ffffffff"
+panel-2 = "#f7f7f3ff"
+rail = "#eaeae4ff"
+elevated = "#ffffffff"
+plate = "#ffffffff"
+status-bar = "#ffffffff"
+banner = "#eaeae4ff"
+canvas-top = "#f4f4f0ff"
+text-hi = "#111111ff"
+text-mid = "#33333aff"
+text-lo = "#55555fff"
+text-vlo = "#64646eff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#ffffffff"
+field-hover = "#ffffffff"
+field-border = "#11111129"
+hover = "#11111117"
+card-border = "#11111129"
+elevated-border = "#1111114d"
+border-2 = "#11111129"
+divider = "#11111129"
+avatar-ring = "#1111114d"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#eaeae499"
+plate-inset = "#eaeae466"
+code-plate = "#1111111f"
+danger = "#c9161cff"
+danger-soft = "#c9161c1f"
+danger-border = "#c9161c73"
+warning = "#c9161cff"
+warning-soft = "#c9161c1a"
+warning-border = "#c9161c4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#1111111a"
+shadow-card = "#11111114"
+shadow-popover = "#00000099"
+shadow-float = "#1111112e"
+top-glint = "#ffffffbf"
+bevel-hi = "#ffffffbf"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#b33d18ff",
+    "#0057ffff",
+    "#ffd400ff",
+    "#0043c8ff",
+    "#e1552bff",
+]
+
+[style]
+backdrop = "image:circle-grid"
+font = "Manrope"
+font-title = "Jost"
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 1.0
+border-w = 1.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

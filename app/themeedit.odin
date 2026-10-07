@@ -40,6 +40,7 @@ Theme_Field :: struct {
 THEME_FIELDS := []Theme_Field {
 	{N_("IDENTITY"), N_("Name"), .Name, .Text, 0},
 	{"", N_("Font"), .Font, .Text, 0},
+	{"", N_("Title font"), .Font_Title, .Text, 0},
 	{N_("SEEDS"), N_("Background"), .Bg, .Color, 0},
 	{"", N_("Background 2"), .Bg_2, .Color, 0},
 	{"", N_("Text"), .Text_Hi, .Color, 0},
@@ -165,6 +166,8 @@ theme_edit_open :: proc(ui: ^Ui_State) {
 		#partial switch field.token {
 		case .Name:
 			append(&buf, fmt.tprintf(tr("%s copy"), pack.name))
+		case .Font, .Font_Title:
+			append(&buf, (cast(^string)theme_token_pointer(&pack, field.token))^)
 		case .Bg, .Text_Hi, .Danger:
 			append(&buf, theme_field_hint(&pack, field))
 		case .Accent_Base:
@@ -292,8 +295,10 @@ theme_edit_toml :: proc(ui: ^Ui_State) -> string {
 	if len(ui.theme_backdrop) > 0 {
 		fmt.sbprintfln(&b, "%s = \"%s\"", THEME_TOKENS[.Backdrop].key, ui.theme_backdrop)
 	}
-	if font := val(ui, idx(.Font)); len(font) > 0 {
-		fmt.sbprintfln(&b, "%s = \"%s\"", THEME_TOKENS[.Font].key, font)
+	for token in ([]Theme_Token{.Font, .Font_Title}) {
+		if font := val(ui, idx(token)); len(font) > 0 {
+			fmt.sbprintfln(&b, "%s = \"%s\"", THEME_TOKENS[token].key, font)
+		}
 	}
 	return strings.to_string(b)
 }

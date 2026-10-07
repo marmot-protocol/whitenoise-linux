@@ -1,0 +1,75 @@
+# Sidecar by dmnyc: indigo night, moon gold, pumpkin light and old-book small caps.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/sleepy-hollow.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Sleepy Hollow"
+
+[colors]
+bg = "#0b0a14ff"
+bg-2 = "#100e1bff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#1a1726ff"
+panel-2 = "#13111eff"
+rail = "#100e1bff"
+elevated = "#1a1726ff"
+plate = "#1a1726ff"
+status-bar = "#1a1726ff"
+banner = "#242036ff"
+canvas-top = "#0b0a14ff"
+text-hi = "#ece5d3ff"
+text-mid = "#d3cbb8ff"
+text-lo = "#a9a2b4ff"
+text-vlo = "#827c92ff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#05040a99"
+field-hover = "#05040a99"
+field-border = "#ebb86726"
+hover = "#ebb8671c"
+card-border = "#ebb86726"
+elevated-border = "#ebb8674d"
+border-2 = "#ebb86726"
+divider = "#ebb86726"
+avatar-ring = "#ebb8674d"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#06050b99"
+plate-inset = "#06050b66"
+code-plate = "#ebb8671f"
+danger = "#e57867ff"
+danger-soft = "#e578671f"
+danger-border = "#e5786773"
+warning = "#e9875aff"
+warning-soft = "#e9875a1a"
+warning-border = "#e9875a4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#00000099"
+shadow-card = "#00000080"
+shadow-popover = "#00000099"
+shadow-float = "#00000099"
+top-glint = "#ffffff0a"
+bevel-hi = "#ffffff0a"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#ebb867ff",
+    "#e48a32ff",
+    "#f4c98aff",
+    "#b9b3d6ff",
+    "#cdc7e3ff",
+]
+
+[style]
+backdrop = "image:hollow-night"
+font = "Manrope"
+font-title = "Hollow Figures"
+# Hollow Figures resolves source Cormorant lining digits over IM FELL English SC letters. The input
+# uses the first rgba(5, 4, 10, 0.6) gradient stop.
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 1.0
+border-w = 1.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0

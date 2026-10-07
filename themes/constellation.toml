@@ -1,0 +1,75 @@
+# Sidecar by dmnyc: brown-black atlas plates, antique engraving gold and parchment ink.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/constellation.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Constellation"
+
+[colors]
+bg = "#0e0c09ff"
+bg-2 = "#13110dff"
+# Velvet gradient stops map to separate native scalar surfaces.
+panel = "#1e1b15ff"
+panel-2 = "#16140fff"
+rail = "#13110dff"
+elevated = "#1e1b15ff"
+plate = "#1e1b15ff"
+status-bar = "#1e1b15ff"
+banner = "#252119ff"
+canvas-top = "#0e0c09ff"
+text-hi = "#eae1ccff"
+text-mid = "#d2c7aeff"
+text-lo = "#a89d86ff"
+text-vlo = "#7f7663ff"
+# The source field fill is unchanged on hover; only its rim changes.
+field = "#06050499"
+field-hover = "#06050499"
+field-border = "#c9aa6c29"
+hover = "#c9aa6c1c"
+card-border = "#c9aa6c29"
+elevated-border = "#c9aa6c4d"
+border-2 = "#c9aa6c29"
+divider = "#c9aa6c29"
+avatar-ring = "#c9aa6c4d"
+# Shared preview and quote well opacities, with the border wash for code.
+card-well = "#09080699"
+plate-inset = "#09080666"
+code-plate = "#c9aa6c1f"
+danger = "#dc7b6eff"
+danger-soft = "#dc7b6e1f"
+danger-border = "#dc7b6e73"
+warning = "#d89a6aff"
+warning-soft = "#d89a6a1a"
+warning-border = "#d89a6a4d"
+overlay = "#05000ca8"
+overlay-strong = "#080214b8"
+shadow-soft = "#0000008c"
+shadow-card = "#00000073"
+shadow-popover = "#00000099"
+shadow-float = "#0000008c"
+top-glint = "#ffffff0a"
+bevel-hi = "#ffffff0a"
+bevel-lo = "#00000000"
+# Source UI ink is first; all five choices use automatic per-slot contrast.
+accent-base = [
+    "#c9aa6cff",
+    "#e3c98cff",
+    "#d9c08aff",
+    "#e6d6aeff",
+    "#8fb894ff",
+]
+
+[style]
+backdrop = "image:star-atlas"
+font = "Manrope"
+font-title = "Cormorant Garamond"
+# Native input uses the first rgba(6, 5, 4, 0.6) gradient stop; card surfaces retain the two velvet
+# stops as separate scalar roles.
+bevel = false
+hard-shadow = false
+outline-surfaces = false
+focus-glow = true
+r-scale = 1.0
+border-w = 1.0
+glow-r = 3.0
+shadow-y = 6.0
+hover-dur = 150.0
+transition-dur = 150.0
