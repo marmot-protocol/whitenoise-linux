@@ -843,6 +843,9 @@ extract_inlines :: proc(
 	fonts: ^strings.Builder = nil,
 	font: u8 = FONT_BODY,
 	links: ^[dynamic]Inline_Link = nil,
+	timestamps: ^[dynamic]Md_Timestamp = nil,
+	timestamp_row: int = -1,
+	timestamp_cell: int = 0,
 ) {
 	for i in 0 ..< count {
 		node := &inlines[i]
@@ -867,6 +870,9 @@ extract_inlines :: proc(
 				((font & TEXT_FONT_MASK) == FONT_TITLE || (font & TEXT_FONT_MASK) == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_ITALIC) |
 				(font & ~TEXT_FONT_MASK),
 				links,
+				timestamps,
+				timestamp_row,
+				timestamp_cell,
 			)
 			continue
 		case .STRONG:
@@ -878,6 +884,9 @@ extract_inlines :: proc(
 				((font & TEXT_FONT_MASK) == FONT_ITALIC || (font & TEXT_FONT_MASK) == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_TITLE) |
 				(font & ~TEXT_FONT_MASK),
 				links,
+				timestamps,
+				timestamp_row,
+				timestamp_cell,
 			)
 			continue
 		case .STRIKETHROUGH:
@@ -888,6 +897,9 @@ extract_inlines :: proc(
 				fonts,
 				font | TEXT_STRIKE,
 				links,
+				timestamps,
+				timestamp_row,
+				timestamp_cell,
 			)
 			continue
 		case .LINK:
@@ -898,13 +910,20 @@ extract_inlines :: proc(
 				fonts,
 				font,
 				links,
+				timestamps,
+				timestamp_row,
+				timestamp_cell,
 			)
 			dest := string(node.body.link.dest)
 			if _, _, ok := url_at(dest, 0);
 			   links != nil && ok && strings.builder_len(builder^) > start {
 				append(
 					links,
-					Inline_Link{start, strings.builder_len(builder^), strings.clone(dest)},
+					Inline_Link {
+						start = start,
+						end = strings.builder_len(builder^),
+						url = strings.clone(dest),
+					},
 				)
 			}
 			continue
@@ -918,6 +937,31 @@ extract_inlines :: proc(
 			strings.write_string(builder, string(node.body.image.dest))
 		case .NOSTR_MENTION, .NOSTR_URI:
 			strings.write_string(builder, string(node.body.nostr_mention.entity.bech32))
+		case .TIMESTAMP:
+			stamp := node.body.timestamp
+			if timestamps == nil {
+				strings.write_string(
+					builder,
+					timestamp_label(
+						stamp.unix_seconds,
+						stamp.style,
+						time.time_to_unix(time.now()),
+					),
+				)
+			} else {
+				strings.write_string(builder, timestamp_token(stamp.unix_seconds, stamp.style))
+				append(
+					timestamps,
+					Md_Timestamp {
+						start,
+						strings.builder_len(builder^),
+						stamp.unix_seconds,
+						stamp.style,
+						timestamp_row,
+						timestamp_cell,
+					},
+				)
+			}
 		}
 		if fonts != nil {
 			for _ in start ..< strings.builder_len(builder^) {strings.write_byte(fonts, style)}
@@ -931,10 +975,23 @@ inline_text :: proc(
 	fonts: ^string = nil,
 	font: u8 = FONT_BODY,
 	links: ^[dynamic]Inline_Link = nil,
+	timestamps: ^[dynamic]Md_Timestamp = nil,
+	timestamp_row: int = -1,
+	timestamp_cell: int = 0,
 ) -> string {
 	builder := strings.builder_make(context.temp_allocator)
 	styles := strings.builder_make(context.temp_allocator)
-	extract_inlines(&builder, inlines, count, fonts != nil ? &styles : nil, font, links)
+	extract_inlines(
+		&builder,
+		inlines,
+		count,
+		fonts != nil ? &styles : nil,
+		font,
+		links,
+		timestamps,
+		timestamp_row,
+		timestamp_cell,
+	)
 	if fonts != nil && len(strings.trim(strings.to_string(styles), "\x00")) > 0 {
 		fonts^ = strings.clone(strings.to_string(styles))
 	}
@@ -970,6 +1027,7 @@ convert_blocks :: proc(
 				block.body.paragraph.inlines_len,
 				&row.fonts,
 				links = &row.links,
+				timestamps = &row.timestamps,
 			)
 			append(out, row)
 		case .HEADING:
@@ -983,6 +1041,7 @@ convert_blocks :: proc(
 				&row.fonts,
 				FONT_TITLE,
 				&row.links,
+				&row.timestamps,
 			)
 			append(out, row)
 		case .CODE_BLOCK:
@@ -1032,6 +1091,7 @@ convert_blocks :: proc(
 				body_text: string
 				fonts: string
 				links: [dynamic]Inline_Link
+				timestamps: [dynamic]Md_Timestamp
 				body_start := uint(0)
 				if item.blocks_len > 0 && item.blocks[0].tag == .PARAGRAPH {
 					body_start = 1
@@ -1040,9 +1100,11 @@ convert_blocks :: proc(
 						item.blocks[0].body.paragraph.inlines_len,
 						&fonts,
 						links = &links,
+						timestamps = &timestamps,
 					)
 				}
 				for &link in links {link.start += len(prefix); link.end += len(prefix)}
+				for &stamp in timestamps {stamp.start += len(prefix); stamp.end += len(prefix)}
 				if len(fonts) > 0 {
 					body_fonts := fonts
 					fonts = strings.concatenate(
@@ -1059,6 +1121,7 @@ convert_blocks :: proc(
 						text = strings.clone(fmt.tprintf("%s%s", prefix, body_text)),
 						fonts = fonts,
 						links = links,
+						timestamps = timestamps,
 						marker_len = len(prefix),
 						blank_lines_before = gap,
 					},
@@ -1081,6 +1144,7 @@ convert_blocks :: proc(
 			append(out, Md_Block_Ui{kind = .Rule})
 		case .TABLE:
 			t := &block.body.table
+			timestamps: [dynamic]Md_Timestamp
 			cells := make([][]string, int(t.rows_len) + 1)
 			fonts := make([][]string, len(cells))
 			links := make([][][dynamic]Inline_Link, len(cells))
@@ -1094,6 +1158,9 @@ convert_blocks :: proc(
 					&fonts[0][j],
 					FONT_TITLE,
 					&links[0][j],
+					&timestamps,
+					0,
+					int(j),
 				)
 			}
 			cells[0] = hdr
@@ -1107,6 +1174,9 @@ convert_blocks :: proc(
 						t.rows[r].cells[j].inlines_len,
 						&fonts[r + 1][j],
 						links = &links[r + 1][j],
+						timestamps = &timestamps,
+						timestamp_row = int(r) + 1,
+						timestamp_cell = int(j),
 					)
 				}
 				cells[int(r) + 1] = row
@@ -1120,6 +1190,7 @@ convert_blocks :: proc(
 					cells = cells,
 					cell_fonts = fonts,
 					cell_links = links,
+					timestamps = timestamps,
 					alignments = alignments,
 				},
 			)

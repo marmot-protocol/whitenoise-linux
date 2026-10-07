@@ -36,8 +36,16 @@ msgid "%d day"
 msgstr "%d giorno"
 
 #, c-format
+msgid "%d day ago"
+msgstr "%d giorno fa"
+
+#, c-format
 msgid "%d days"
 msgstr "%d giorni"
+
+#, c-format
+msgid "%d days ago"
+msgstr "%d giorni fa"
 
 #, c-format
 msgid "%d edit"
@@ -56,8 +64,16 @@ msgid "%d hour"
 msgstr "%d ora"
 
 #, c-format
+msgid "%d hour ago"
+msgstr "%d ora fa"
+
+#, c-format
 msgid "%d hours"
 msgstr "%d ore"
+
+#, c-format
+msgid "%d hours ago"
+msgstr "%d ore fa"
 
 #, c-format
 msgid "%d member"
@@ -72,8 +88,24 @@ msgid "%d minute"
 msgstr "%d minuto"
 
 #, c-format
+msgid "%d minute ago"
+msgstr "%d minuto fa"
+
+#, c-format
 msgid "%d minutes"
 msgstr "%d minuti"
+
+#, c-format
+msgid "%d minutes ago"
+msgstr "%d minuti fa"
+
+#, c-format
+msgid "%d month ago"
+msgstr "%d mese fa"
+
+#, c-format
+msgid "%d months ago"
+msgstr "%d mesi fa"
 
 #, c-format
 msgid "%d of %d connected"
@@ -116,12 +148,28 @@ msgid "%d second"
 msgstr "%d secondo"
 
 #, c-format
+msgid "%d second ago"
+msgstr "%d secondo fa"
+
+#, c-format
 msgid "%d seconds"
 msgstr "%d secondi"
 
 #, c-format
+msgid "%d seconds ago"
+msgstr "%d secondi fa"
+
+#, c-format
 msgid "%d votes"
 msgstr "%d voti"
+
+#, c-format
+msgid "%d year ago"
+msgstr "%d anno fa"
+
+#, c-format
+msgid "%d years ago"
+msgstr "%d anni fa"
 
 #, c-format
 msgid "%d/%d RELAYS"
@@ -4494,6 +4542,54 @@ msgstr "non riuscito · tocca per riprovare"
 
 msgid "flat"
 msgstr "piatto"
+
+#, c-format
+msgid "in %d day"
+msgstr "tra %d giorno"
+
+#, c-format
+msgid "in %d days"
+msgstr "tra %d giorni"
+
+#, c-format
+msgid "in %d hour"
+msgstr "tra %d ora"
+
+#, c-format
+msgid "in %d hours"
+msgstr "tra %d ore"
+
+#, c-format
+msgid "in %d minute"
+msgstr "tra %d minuto"
+
+#, c-format
+msgid "in %d minutes"
+msgstr "tra %d minuti"
+
+#, c-format
+msgid "in %d month"
+msgstr "tra %d mese"
+
+#, c-format
+msgid "in %d months"
+msgstr "tra %d mesi"
+
+#, c-format
+msgid "in %d second"
+msgstr "tra %d secondo"
+
+#, c-format
+msgid "in %d seconds"
+msgstr "tra %d secondi"
+
+#, c-format
+msgid "in %d year"
+msgstr "tra %d anno"
+
+#, c-format
+msgid "in %d years"
+msgstr "tra %d anni"
 
 msgid "inbox"
 msgstr "in entrata"

@@ -59,6 +59,7 @@ blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 		delete(block.text)
 		delete(block.fonts)
 		links_free(block.links)
+		delete(block.timestamps)
 		delete(block.alignments)
 		delete(block.code_kinds)
 		for row in block.cell_fonts {
@@ -95,7 +96,11 @@ links_clone :: proc(
 		if link.end <= lo || link.start >= hi {continue}
 		append(
 			&copy,
-			Inline_Link{max(link.start, lo) - lo, min(link.end, hi) - lo, strings.clone(link.url)},
+			Inline_Link {
+				start = max(link.start, lo) - lo,
+				end = min(link.end, hi) - lo,
+				url = strings.clone(link.url),
+			},
 		)
 	}
 	return copy

@@ -36,7 +36,15 @@ msgid "%d day"
 msgstr ""
 
 #, c-format
+msgid "%d day ago"
+msgstr ""
+
+#, c-format
 msgid "%d days"
+msgstr ""
+
+#, c-format
+msgid "%d days ago"
 msgstr ""
 
 #, c-format
@@ -56,7 +64,15 @@ msgid "%d hour"
 msgstr ""
 
 #, c-format
+msgid "%d hour ago"
+msgstr ""
+
+#, c-format
 msgid "%d hours"
+msgstr ""
+
+#, c-format
+msgid "%d hours ago"
 msgstr ""
 
 #, c-format
@@ -72,7 +88,23 @@ msgid "%d minute"
 msgstr ""
 
 #, c-format
+msgid "%d minute ago"
+msgstr ""
+
+#, c-format
 msgid "%d minutes"
+msgstr ""
+
+#, c-format
+msgid "%d minutes ago"
+msgstr ""
+
+#, c-format
+msgid "%d month ago"
+msgstr ""
+
+#, c-format
+msgid "%d months ago"
 msgstr ""
 
 #, c-format
@@ -116,11 +148,27 @@ msgid "%d second"
 msgstr ""
 
 #, c-format
+msgid "%d second ago"
+msgstr ""
+
+#, c-format
 msgid "%d seconds"
 msgstr ""
 
 #, c-format
+msgid "%d seconds ago"
+msgstr ""
+
+#, c-format
 msgid "%d votes"
+msgstr ""
+
+#, c-format
+msgid "%d year ago"
+msgstr ""
+
+#, c-format
+msgid "%d years ago"
 msgstr ""
 
 #, c-format
@@ -4485,6 +4533,54 @@ msgid "failed · tap to retry"
 msgstr ""
 
 msgid "flat"
+msgstr ""
+
+#, c-format
+msgid "in %d day"
+msgstr ""
+
+#, c-format
+msgid "in %d days"
+msgstr ""
+
+#, c-format
+msgid "in %d hour"
+msgstr ""
+
+#, c-format
+msgid "in %d hours"
+msgstr ""
+
+#, c-format
+msgid "in %d minute"
+msgstr ""
+
+#, c-format
+msgid "in %d minutes"
+msgstr ""
+
+#, c-format
+msgid "in %d month"
+msgstr ""
+
+#, c-format
+msgid "in %d months"
+msgstr ""
+
+#, c-format
+msgid "in %d second"
+msgstr ""
+
+#, c-format
+msgid "in %d seconds"
+msgstr ""
+
+#, c-format
+msgid "in %d year"
+msgstr ""
+
+#, c-format
+msgid "in %d years"
 msgstr ""
 
 msgid "inbox"

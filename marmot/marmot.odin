@@ -471,6 +471,19 @@ Markdown_Inline_Tag :: enum i32 {
 	MATH,
 	NOSTR_MENTION,
 	NOSTR_URI,
+	TIMESTAMP,
+}
+
+Markdown_Timestamp_Style :: enum i32 {
+	SHORT_TIME,
+	LONG_TIME,
+	SHORT_DATE,
+	LONG_DATE,
+	SHORT_DATE_TIME,
+	LONG_DATE_TIME,
+	COMPACT_DATE_TIME,
+	COMPACT_DATE_TIME_SECONDS,
+	RELATIVE,
 }
 
 Markdown_Children :: struct {
@@ -524,6 +537,10 @@ Markdown_Inline :: struct {
 		},
 		nostr_uri:     struct {
 			entity: Markdown_Nostr_Entity,
+		},
+		timestamp:     struct {
+			unix_seconds: i64,
+			style:        Markdown_Timestamp_Style,
 		},
 	},
 }

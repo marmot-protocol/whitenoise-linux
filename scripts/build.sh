@@ -41,7 +41,7 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-MDK_PATCHES=("$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-openbsd-unveil.patch" "$HERE/patches/mdk-openbsd-memory.patch" "$HERE/patches/mdk-advanced-search.patch")
+MDK_PATCHES=("$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-openbsd-unveil.patch" "$HERE/patches/mdk-openbsd-memory.patch" "$HERE/patches/mdk-advanced-search.patch" "$HERE/patches/mdk-markdown-timestamps.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
@@ -276,6 +276,8 @@ ar rcs "$HERE/build/libwnipc.a" "$HERE/build/helper_ipc.o"
 # Attachment parsers run in helpers sharing one bounded pipe client.
 cc -c -O2 -fPIC -pthread "$HERE/app/decoder_ipc.c" -o "$HERE/build/decoder_ipc.o"
 ar rcs "$HERE/build/libwndecoder.a" "$HERE/build/decoder_ipc.o"
+cc -c -O2 -fPIC -Wall -Wextra "$HERE/app/timestamp.c" -o "$HERE/build/timestamp.o"
+ar rcs "$HERE/build/libwntimestamp.a" "$HERE/build/timestamp.o"
 IMAGE_ODIN="$(env -u ODIN_ROOT odin root)"
 cc -O2 -Wall -Wextra -I"${IMAGE_ODIN%/}/vendor/stb/src" "$HERE/app/image.c" \
   $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/wn-image"
@@ -718,6 +720,8 @@ if [ "${1:-}" = test ]; then
   "$HERE/build/ws-frame-test"
   cc -O2 -Wall -Wextra "$HERE/tests/decoder-limits-test.c" -o "$HERE/build/decoder-limits-test"
   "$HERE/build/decoder-limits-test"
+  cc -O2 -Wall -Wextra "$HERE/tests/timestamp-test.c" "$HERE/build/libwntimestamp.a" -o "$HERE/build/timestamp-test"
+  "$HERE/build/timestamp-test"
   cc -O2 -Wall -Wextra -I"${IMAGE_ODIN%/}/vendor/stb/src" "$HERE/tests/image-test.c" \
     "$HERE/build/libwndecoder.a" $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/image-test"
   "$HERE/build/image-test" "$HERE/build/wn-image"

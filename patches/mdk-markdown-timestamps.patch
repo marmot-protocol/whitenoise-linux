@@ -1,0 +1,608 @@
+diff --git i/crates/marmot-app/src/messages/intents.rs w/crates/marmot-app/src/messages/intents.rs
+index 1893225e..b76b0ddf 100644
+--- i/crates/marmot-app/src/messages/intents.rs
++++ w/crates/marmot-app/src/messages/intents.rs
+@@ -156,6 +156,7 @@ fn collect_inline_mention_hexes(inlines: &[marmot_markdown::Inline], out: &mut V
+             | Inline::HardBreak
+             | Inline::Code(_)
+             | Inline::Autolink { .. }
++            | Inline::Timestamp { .. }
+             | Inline::Math(_) => {}
+         }
+     }
+diff --git i/crates/marmot-c/include/marmot.h w/crates/marmot-c/include/marmot.h
+index 22ada264..7b049520 100644
+--- i/crates/marmot-c/include/marmot.h
++++ w/crates/marmot-c/include/marmot.h
+@@ -524,6 +524,21 @@ typedef enum MarmotMarkdownNostrHrp {
+   MARMOT_MARKDOWN_NOSTR_HRP_NRELAY,
+ } MarmotMarkdownNostrHrp;
+ 
++/**
++ * Timestamp presentation style; hosts format using the device locale and time zone.
++ */
++typedef enum MarmotMarkdownTimestampStyle {
++  MARMOT_MARKDOWN_TIMESTAMP_STYLE_SHORT_TIME,
++  MARMOT_MARKDOWN_TIMESTAMP_STYLE_LONG_TIME,
++  MARMOT_MARKDOWN_TIMESTAMP_STYLE_SHORT_DATE,
++  MARMOT_MARKDOWN_TIMESTAMP_STYLE_LONG_DATE,
++  MARMOT_MARKDOWN_TIMESTAMP_STYLE_SHORT_DATE_TIME,
++  MARMOT_MARKDOWN_TIMESTAMP_STYLE_LONG_DATE_TIME,
++  MARMOT_MARKDOWN_TIMESTAMP_STYLE_COMPACT_DATE_TIME,
++  MARMOT_MARKDOWN_TIMESTAMP_STYLE_COMPACT_DATE_TIME_SECONDS,
++  MARMOT_MARKDOWN_TIMESTAMP_STYLE_RELATIVE,
++} MarmotMarkdownTimestampStyle;
++
+ /**
+  * How a fenced/indented code block was written.
+  */
+@@ -2490,6 +2505,10 @@ typedef enum MarmotMarkdownInline_Tag {
+   MARMOT_MARKDOWN_INLINE_MATH,
+   MARMOT_MARKDOWN_INLINE_NOSTR_MENTION,
+   MARMOT_MARKDOWN_INLINE_NOSTR_URI,
++  /**
++   * Signed Unix seconds and presentation style, without an allocated label.
++   */
++  MARMOT_MARKDOWN_INLINE_TIMESTAMP,
+ } MarmotMarkdownInline_Tag;
+ 
+ typedef struct MarmotMarkdownInline_Text_Body {
+@@ -2555,6 +2574,11 @@ typedef struct MarmotMarkdownInline_NostrUri_Body {
+   struct MarmotMarkdownNostrEntity entity;
+ } MarmotMarkdownInline_NostrUri_Body;
+ 
++typedef struct MarmotMarkdownInline_Timestamp_Body {
++  int64_t unix_seconds;
++  enum MarmotMarkdownTimestampStyle style;
++} MarmotMarkdownInline_Timestamp_Body;
++
+ typedef struct MarmotMarkdownInline {
+   MarmotMarkdownInline_Tag tag;
+   union {
+@@ -2569,6 +2593,7 @@ typedef struct MarmotMarkdownInline {
+     MarmotMarkdownInline_Math_Body MATH;
+     MarmotMarkdownInline_NostrMention_Body NOSTR_MENTION;
+     MarmotMarkdownInline_NostrUri_Body NOSTR_URI;
++    MarmotMarkdownInline_Timestamp_Body TIMESTAMP;
+   };
+ } MarmotMarkdownInline;
+ 
+diff --git i/crates/marmot-c/src/types/markdown.rs w/crates/marmot-c/src/types/markdown.rs
+index a3c3cca3..6366e3fe 100644
+--- i/crates/marmot-c/src/types/markdown.rs
++++ w/crates/marmot-c/src/types/markdown.rs
+@@ -12,6 +12,7 @@ use marmot_uniffi::{
+     MarkdownAlignmentFfi, MarkdownAutolinkKindFfi, MarkdownBlockFfi, MarkdownCodeBlockKindFfi,
+     MarkdownDocumentFfi, MarkdownInlineFfi, MarkdownLinkDestinationKindFfi, MarkdownListItemFfi,
+     MarkdownListKindFfi, MarkdownNostrEntityFfi, MarkdownNostrHrpFfi, MarkdownTableCellFfi,
++    MarkdownTimestampStyleFfi,
+ };
+ 
+ use crate::macros::{c_enum, c_mirror};
+@@ -82,6 +83,21 @@ c_mirror! {
+     }
+ }
+ 
++c_enum! {
++    /// Timestamp presentation style; hosts format using the device locale and time zone.
++    MarmotMarkdownTimestampStyle from MarkdownTimestampStyleFfi {
++        ShortTime,
++        LongTime,
++        ShortDate,
++        LongDate,
++        ShortDateTime,
++        LongDateTime,
++        CompactDateTime,
++        CompactDateTimeSeconds,
++        Relative,
++    }
++}
++
+ /// One inline Markdown node. Child arrays are owned by the parent; free
+ /// only the document root.
+ #[repr(C)]
+@@ -136,6 +152,11 @@ pub enum MarmotMarkdownInline {
+     NostrUri {
+         entity: MarmotMarkdownNostrEntity,
+     },
++    /// Signed Unix seconds and presentation style, without an allocated label.
++    Timestamp {
++        unix_seconds: i64,
++        style: MarmotMarkdownTimestampStyle,
++    },
+ }
+ 
+ fn inline_vec(children: Vec<MarkdownInlineFfi>) -> (*mut MarmotMarkdownInline, usize) {
+@@ -222,6 +243,13 @@ impl From<MarkdownInlineFfi> for MarmotMarkdownInline {
+             MarkdownInlineFfi::NostrUri { entity } => Self::NostrUri {
+                 entity: entity.into(),
+             },
++            MarkdownInlineFfi::Timestamp {
++                unix_seconds,
++                style,
++            } => Self::Timestamp {
++                unix_seconds,
++                style: style.into(),
++            },
+         }
+     }
+ }
+@@ -233,7 +261,7 @@ impl CFree for MarmotMarkdownInline {
+                 Self::Text { content } | Self::Code { content } | Self::Math { content } => {
+                     free_c_string(*content)
+                 }
+-                Self::SoftBreak | Self::HardBreak => {}
++                Self::SoftBreak | Self::HardBreak | Self::Timestamp { .. } => {}
+                 Self::Emph {
+                     children,
+                     children_len,
+diff --git i/crates/marmot-markdown/src/ast.rs w/crates/marmot-markdown/src/ast.rs
+index e7145b94..c644a6c1 100644
+--- i/crates/marmot-markdown/src/ast.rs
++++ w/crates/marmot-markdown/src/ast.rs
+@@ -127,6 +127,36 @@ pub enum Inline {
+     Math(String),
+     NostrMention(NostrEntity),
+     NostrUri(NostrEntity),
++    /// A device-local display timestamp; never preformatted by the parser.
++    Timestamp {
++        /// Signed seconds since the Unix epoch, not milliseconds.
++        unix_seconds: i64,
++        style: TimestampStyle,
++    },
++}
++
++/// Timestamp styles, formatted using the renderer's current locale,
++/// timezone and clock. Relative displays must refresh as time passes.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++pub enum TimestampStyle {
++    /// `t`: hours and minutes.
++    ShortTime,
++    /// `T`: hours, minutes and seconds.
++    LongTime,
++    /// `d`: numeric date.
++    ShortDate,
++    /// `D`: date with a spelled-out month.
++    LongDate,
++    /// `f` (also the omitted-style default): long date and short time.
++    ShortDateTime,
++    /// `F`: weekday, long date and short time.
++    LongDateTime,
++    /// `s`: numeric date and short time.
++    CompactDateTime,
++    /// `S`: numeric date and time including seconds.
++    CompactDateTimeSeconds,
++    /// `R`: live relative time, such as "in 30 minutes" or "2 hours ago".
++    Relative,
+ }
+ 
+ #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+diff --git i/crates/marmot-markdown/src/inline.rs w/crates/marmot-markdown/src/inline.rs
+index 21cb9010..bc91c1b8 100644
+--- i/crates/marmot-markdown/src/inline.rs
++++ w/crates/marmot-markdown/src/inline.rs
+@@ -10,6 +10,7 @@ use std::collections::HashMap;
+ 
+ use crate::ast::{
+     AutolinkKind, Block, Document, Inline, ListItem, NostrEntity, NostrHrp, TableCell,
++    TimestampStyle,
+ };
+ use crate::block::LinkRef;
+ use crate::destination::{classify_autolink_destination, classify_link_destination};
+@@ -413,7 +414,11 @@ pub(crate) fn tokenize(raw: &str, refs: &HashMap<String, LinkRef>) -> Vec<Inline
+                 }
+             }
+             b'<' => {
+-                if let Some((url, end)) = try_uri_autolink(bytes, i) {
++                if let Some((timestamp, end)) = try_timestamp(bytes, i) {
++                    flush_text(&mut out, &mut buf, &delims);
++                    out.push(timestamp);
++                    i = end;
++                } else if let Some((url, end)) = try_uri_autolink(bytes, i) {
+                     flush_text(&mut out, &mut buf, &delims);
+                     let classification = classify_autolink_destination(&url, AutolinkKind::Uri);
+                     out.push(Inline::Autolink {
+@@ -1081,6 +1086,62 @@ fn absorb_link(
+ // Autolinks + raw HTML
+ // ---------------------------------------------------------------------------
+ 
++/// Recognize source syntax before entity decoding. No locale, timezone or
++/// clock is captured: clients format the immutable instant at render time.
++fn try_timestamp(bytes: &[u8], i: usize) -> Option<(Inline, usize)> {
++    if !bytes[i..].starts_with(b"<t:") {
++        return None;
++    }
++
++    let start = i + 3;
++    let mut end = start;
++    if bytes.get(end) == Some(&b'-') {
++        end += 1;
++    }
++    let digits = end;
++    while bytes.get(end).is_some_and(u8::is_ascii_digit) {
++        end += 1;
++    }
++    if end == digits {
++        return None;
++    }
++    let unix_seconds = std::str::from_utf8(&bytes[start..end])
++        .ok()?
++        .parse::<i64>()
++        .ok()?;
++
++    let style = if bytes.get(end) == Some(&b':') {
++        end += 1;
++        let style = match bytes.get(end)? {
++            b't' => TimestampStyle::ShortTime,
++            b'T' => TimestampStyle::LongTime,
++            b'd' => TimestampStyle::ShortDate,
++            b'D' => TimestampStyle::LongDate,
++            b'f' => TimestampStyle::ShortDateTime,
++            b'F' => TimestampStyle::LongDateTime,
++            b's' => TimestampStyle::CompactDateTime,
++            b'S' => TimestampStyle::CompactDateTimeSeconds,
++            b'R' => TimestampStyle::Relative,
++            _ => return None,
++        };
++        end += 1;
++        style
++    } else {
++        TimestampStyle::ShortDateTime
++    };
++    if bytes.get(end) != Some(&b'>') {
++        return None;
++    }
++
++    Some((
++        Inline::Timestamp {
++            unix_seconds,
++            style,
++        },
++        end + 1,
++    ))
++}
++
+ /// Prefixes recognized as bare (unbracketed) URLs.
+ ///
+ /// **Order matters:** `whitenoise-staging://` must come before `whitenoise://`
+diff --git i/crates/marmot-markdown/src/lib.rs w/crates/marmot-markdown/src/lib.rs
+index 93734a5c..4deb7fd9 100644
+--- i/crates/marmot-markdown/src/lib.rs
++++ w/crates/marmot-markdown/src/lib.rs
+@@ -31,8 +31,9 @@
+ //! Unlike CommonMark proper, this parser **does not** recognize general HTML
+ //! blocks or raw HTML inlines. Tag-like sequences (`<div>`, `<!-- ... -->`,
+ //! etc.) are passed through as literal text and HTML-escaped at render
+-//! time. Only autolinks — `<scheme:body>` and `<email@host>` — get
+-//! structured treatment, plus a bounded [`Block::Details`] extension for
++//! time. Autolinks (`<scheme:body>` and `<email@host>`) and local-time
++//! timestamps (`<t:seconds[:style]>`) get structured treatment, plus
++//! a bounded [`Block::Details`] extension for
+ //! structural `<details>` / `<summary>` lines (see the crate README).
+ //!
+ //! ## Untrusted destinations
+@@ -75,7 +76,7 @@ pub const MAX_SOURCE_BLANK_LINES: u8 = block::MAX_SOURCE_BLANK_LINES;
+ 
+ pub use ast::{
+     Alignment, AutolinkKind, Block, CodeBlockKind, Document, Inline, LinkDestinationKind, ListItem,
+-    ListKind, NostrEntity, NostrHrp, TableCell,
++    ListKind, NostrEntity, NostrHrp, TableCell, TimestampStyle,
+ };
+ pub use destination::classify_link_destination;
+ 
+@@ -87,6 +88,10 @@ pub use destination::classify_link_destination;
+ /// - GFM tables (`| h | k |\n| - | - |\n| 1 | 2 |`).
+ /// - GFM strikethrough (`~~foo~~`).
+ /// - GFM task-list items (`- [ ]`, `- [x]`).
++/// - Local-time timestamps (`<t:1791280800:F>`), emitted as [`Inline::Timestamp`]
++///   with signed Unix seconds and a [`TimestampStyle`]. Styles are `t`, `T`,
++///   `d`, `D`, `f`, `F`, `s`, `S`, `R`; omitted style defaults to `f`.
++///   Device-local formatting and live relative updates belong to renderers.
+ /// - Bare URLs (GFM-style extended autolinks) for the schemes `http://`,
+ ///   `https://`, `mailto:`, `tel:`, `marmot://`, `whitenoise://`, and
+ ///   `whitenoise-staging://`, plus bare `www.` host/path forms. `www.`
+diff --git i/crates/marmot-markdown/tests/common/render.rs w/crates/marmot-markdown/tests/common/render.rs
+index 3795800c..1998321e 100644
+--- i/crates/marmot-markdown/tests/common/render.rs
++++ w/crates/marmot-markdown/tests/common/render.rs
+@@ -7,7 +7,7 @@
+ 
+ #![allow(dead_code, unused_imports)]
+ 
+-use marmot_markdown::{Alignment, AutolinkKind, Block, Document, Inline, ListKind};
++use marmot_markdown::{Alignment, AutolinkKind, Block, Document, Inline, ListKind, TimestampStyle};
+ 
+ pub fn render(doc: &Document) -> String {
+     let mut out = String::new();
+@@ -241,6 +241,12 @@ fn render_inline(i: &Inline, out: &mut String) {
+                 escape(&e.bech32)
+             ));
+         }
++        Inline::Timestamp {
++            unix_seconds,
++            style,
++        } => {
++            out.push_str(&escape(&timestamp_text(*unix_seconds, *style)));
++        }
+     }
+ }
+ 
+@@ -258,10 +264,33 @@ fn collect_text(inlines: &[Inline], out: &mut String) {
+             Inline::Autolink { url, .. } => out.push_str(url),
+             Inline::Math(s) => out.push_str(s),
+             Inline::NostrMention(e) | Inline::NostrUri(e) => out.push_str(&e.bech32),
++            Inline::Timestamp {
++                unix_seconds,
++                style,
++            } => {
++                out.push_str(&timestamp_text(*unix_seconds, *style));
++            }
+         }
+     }
+ }
+ 
++// The CommonMark oracle is static; preserve a canonical token rather than
++// capturing this test machine's clock, timezone or locale.
++pub fn timestamp_text(seconds: i64, style: TimestampStyle) -> String {
++    let suffix = match style {
++        TimestampStyle::ShortTime => 't',
++        TimestampStyle::LongTime => 'T',
++        TimestampStyle::ShortDate => 'd',
++        TimestampStyle::LongDate => 'D',
++        TimestampStyle::ShortDateTime => 'f',
++        TimestampStyle::LongDateTime => 'F',
++        TimestampStyle::CompactDateTime => 's',
++        TimestampStyle::CompactDateTimeSeconds => 'S',
++        TimestampStyle::Relative => 'R',
++    };
++    format!("<t:{seconds}:{suffix}>")
++}
++
+ /// HTML-escape text content (`&`, `<`, `>`, `"`).
+ fn escape(s: &str) -> String {
+     let mut out = String::with_capacity(s.len());
+diff --git i/crates/marmot-markdown/tests/details_regressions.rs w/crates/marmot-markdown/tests/details_regressions.rs
+index 732265de..22742ec6 100644
+--- i/crates/marmot-markdown/tests/details_regressions.rs
++++ w/crates/marmot-markdown/tests/details_regressions.rs
+@@ -50,6 +50,12 @@ fn texts(doc: &marmot_markdown::Document) -> String {
+                 Inline::NostrMention(entity) | Inline::NostrUri(entity) => {
+                     out.push_str(&entity.bech32);
+                 }
++                Inline::Timestamp {
++                    unix_seconds,
++                    style,
++                } => {
++                    out.push_str(&common::render::timestamp_text(*unix_seconds, *style));
++                }
+             }
+         }
+     }
+diff --git i/crates/marmot-markdown/tests/unit_inlines.rs w/crates/marmot-markdown/tests/unit_inlines.rs
+index 8d0c2f37..b07713b0 100644
+--- i/crates/marmot-markdown/tests/unit_inlines.rs
++++ w/crates/marmot-markdown/tests/unit_inlines.rs
+@@ -1,4 +1,4 @@
+-use marmot_markdown::Inline;
++use marmot_markdown::{Block, Inline, TimestampStyle, parse};
+ 
+ mod common;
+ use common::{code, em, parse_inlines, t};
+@@ -7,6 +7,128 @@ fn math(s: &str) -> Inline {
+     Inline::Math(s.to_string())
+ }
+ 
++#[test]
++fn timestamp_styles() {
++    for (suffix, style) in [
++        ("", TimestampStyle::ShortDateTime),
++        (":t", TimestampStyle::ShortTime),
++        (":T", TimestampStyle::LongTime),
++        (":d", TimestampStyle::ShortDate),
++        (":D", TimestampStyle::LongDate),
++        (":f", TimestampStyle::ShortDateTime),
++        (":F", TimestampStyle::LongDateTime),
++        (":s", TimestampStyle::CompactDateTime),
++        (":S", TimestampStyle::CompactDateTimeSeconds),
++        (":R", TimestampStyle::Relative),
++    ] {
++        assert_eq!(
++            parse_inlines(&format!("<t:1791280800{suffix}>")),
++            vec![Inline::Timestamp {
++                unix_seconds: 1791280800,
++                style
++            }],
++            "style {suffix}"
++        );
++    }
++}
++
++#[test]
++fn timestamp_signed_seconds() {
++    for seconds in [i64::MIN, -1, 0, 1791280800, i64::MAX] {
++        assert_eq!(
++            parse_inlines(&format!("<t:{seconds}:R>")),
++            vec![Inline::Timestamp {
++                unix_seconds: seconds,
++                style: TimestampStyle::Relative,
++            }]
++        );
++    }
++    assert_eq!(
++        parse_inlines("<t:0001:t>"),
++        vec![Inline::Timestamp {
++            unix_seconds: 1,
++            style: TimestampStyle::ShortTime,
++        }]
++    );
++}
++
++#[test]
++fn invalid_timestamp_text() {
++    for source in [
++        "<t:>",
++        "<t::R>",
++        "<t:-:R>",
++        "<t:+1:R>",
++        "<t:1.5:R>",
++        "<t:1:r>",
++        "<t:1:x>",
++        "<t:1:>",
++        "<t:1:RR>",
++        "<t:1:R:>",
++        "<t: 1:R>",
++        "<t:1 :R>",
++        "<t:1: R>",
++        "<t:1:R >",
++        "<t:1:R",
++        "<T:1:R>",
++        "<t:١:R>",
++        "<t:9223372036854775808:R>",
++        "<t:-9223372036854775809:R>",
++    ] {
++        assert_eq!(parse_inlines(source), vec![t(source)], "{source}");
++    }
++}
++
++#[test]
++fn timestamp_source_only() {
++    for source in [r"\<t:1:R>", "&lt;t:1:R&gt;", "<t:&#49;:R>", "<t:1:&#82;>"] {
++        assert!(
++            !parse_inlines(source)
++                .iter()
++                .any(|inline| matches!(inline, Inline::Timestamp { .. })),
++            "{source}"
++        );
++    }
++    assert_eq!(parse_inlines("`<t:1:R>`"), vec![code("<t:1:R>")]);
++    assert_eq!(parse_inlines("$<t:1:R>$"), vec![math("<t:1:R>")]);
++    for source in ["```\n<t:1:R>\n```", "    <t:1:R>"] {
++        assert!(
++            matches!(parse(source).blocks.as_slice(), [Block::CodeBlock { content, .. }] if content == "<t:1:R>\n")
++        );
++    }
++}
++
++#[test]
++fn timestamp_inline_composition() {
++    let timestamp = Inline::Timestamp {
++        unix_seconds: 1,
++        style: TimestampStyle::Relative,
++    };
++    assert_eq!(
++        parse_inlines("é<t:1:R><t:2:F>!"),
++        vec![
++            t("é"),
++            timestamp.clone(),
++            Inline::Timestamp {
++                unix_seconds: 2,
++                style: TimestampStyle::LongDateTime
++            },
++            t("!")
++        ]
++    );
++    assert_eq!(
++        parse_inlines("**<t:1:R>**"),
++        vec![Inline::Strong(vec![timestamp.clone()])]
++    );
++    assert!(
++        matches!(parse_inlines("[<t:1:R>](https://example.com)").as_slice(), [Inline::Link { children, .. }] if children == std::slice::from_ref(&timestamp))
++    );
++    assert!(
++        matches!(parse("<details>\n<summary><t:1:R></summary>\n<t:1:R>\n</details>").blocks.as_slice(), [Block::Details { summary, body, .. }]
++        if summary == std::slice::from_ref(&timestamp) && matches!(body.as_slice(), [Block::Paragraph { inlines }] if inlines == &[timestamp]))
++    );
++}
++
+ // ----- Plain text + breaks --------------------------------------------
+ 
+ #[test]
+diff --git i/crates/marmot-uniffi/src/lib.rs w/crates/marmot-uniffi/src/lib.rs
+index d271e5f7..85f3d605 100644
+--- i/crates/marmot-uniffi/src/lib.rs
++++ w/crates/marmot-uniffi/src/lib.rs
+@@ -52,6 +52,7 @@ pub use markdown::{
+     MarkdownAlignmentFfi, MarkdownAutolinkKindFfi, MarkdownBlockFfi, MarkdownCodeBlockKindFfi,
+     MarkdownDocumentFfi, MarkdownInlineFfi, MarkdownLinkDestinationKindFfi, MarkdownListItemFfi,
+     MarkdownListKindFfi, MarkdownNostrEntityFfi, MarkdownNostrHrpFfi, MarkdownTableCellFfi,
++    MarkdownTimestampStyleFfi,
+ };
+ pub use secret_store::SecretStore;
+ pub use subscriptions::ConversationWindowSubscription;
+diff --git i/crates/marmot-uniffi/src/markdown.rs w/crates/marmot-uniffi/src/markdown.rs
+index 1b2bf447..0f9cb427 100644
+--- i/crates/marmot-uniffi/src/markdown.rs
++++ w/crates/marmot-uniffi/src/markdown.rs
+@@ -13,6 +13,7 @@ use marmot_markdown::{
+     CodeBlockKind as MdCodeBlockKind, Document as MdDocument, Inline as MdInline,
+     LinkDestinationKind as MdLinkDestinationKind, ListItem as MdListItem, ListKind as MdListKind,
+     NostrEntity as MdNostrEntity, NostrHrp as MdNostrHrp, TableCell as MdTableCell,
++    TimestampStyle as MdTimestampStyle,
+ };
+ 
+ const MAX_FFI_MARKDOWN_DEPTH: usize = 128;
+@@ -157,6 +158,34 @@ pub enum MarkdownInlineFfi {
+     NostrUri {
+         entity: MarkdownNostrEntityFfi,
+     },
++    /// Signed Unix seconds and a display style, formatted by the host at render time.
++    Timestamp {
++        unix_seconds: i64,
++        style: MarkdownTimestampStyleFfi,
++    },
++}
++
++/// Timestamp display styles, using the device locale and timezone.
++#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
++pub enum MarkdownTimestampStyleFfi {
++    /// `t`: time without seconds.
++    ShortTime,
++    /// `T`: time including seconds.
++    LongTime,
++    /// `d`: short date.
++    ShortDate,
++    /// `D`: long date.
++    LongDate,
++    /// `f` or omitted: long date and time without seconds.
++    ShortDateTime,
++    /// `F`: weekday, long date and time without seconds.
++    LongDateTime,
++    /// `s`: short date and time without seconds.
++    CompactDateTime,
++    /// `S`: short date and time including seconds.
++    CompactDateTimeSeconds,
++    /// `R`: time relative to the host's current clock; refresh while visible.
++    Relative,
+ }
+ 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+@@ -435,6 +464,29 @@ fn markdown_inline_from_md(value: MdInline, depth: usize) -> MarkdownInlineFfi {
+         MdInline::NostrUri(entity) => MarkdownInlineFfi::NostrUri {
+             entity: entity.into(),
+         },
++        MdInline::Timestamp {
++            unix_seconds,
++            style,
++        } => MarkdownInlineFfi::Timestamp {
++            unix_seconds,
++            style: style.into(),
++        },
++    }
++}
++
++impl From<MdTimestampStyle> for MarkdownTimestampStyleFfi {
++    fn from(value: MdTimestampStyle) -> Self {
++        match value {
++            MdTimestampStyle::ShortTime => Self::ShortTime,
++            MdTimestampStyle::LongTime => Self::LongTime,
++            MdTimestampStyle::ShortDate => Self::ShortDate,
++            MdTimestampStyle::LongDate => Self::LongDate,
++            MdTimestampStyle::ShortDateTime => Self::ShortDateTime,
++            MdTimestampStyle::LongDateTime => Self::LongDateTime,
++            MdTimestampStyle::CompactDateTime => Self::CompactDateTime,
++            MdTimestampStyle::CompactDateTimeSeconds => Self::CompactDateTimeSeconds,
++            MdTimestampStyle::Relative => Self::Relative,
++        }
+     }
+ }
+ 

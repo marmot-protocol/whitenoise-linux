@@ -701,7 +701,7 @@ Tip_Side :: enum {
 	Right,
 }
 
-tooltip :: proc(text: string, side: Tip_Side = .Below) {
+tooltip :: proc(text: string, side: Tip_Side = .Below, shift_x: f32 = 0) {
 	attach: clay.FloatingAttachPoints
 	offset: clay.Vector2
 	switch side {
@@ -724,6 +724,7 @@ tooltip :: proc(text: string, side: Tip_Side = .Below) {
 		}
 		offset = {8, 0}
 	}
+	offset.x += shift_x
 	if clay.UI(clay.ID_LOCAL("Tip"))(
 	{
 		layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},

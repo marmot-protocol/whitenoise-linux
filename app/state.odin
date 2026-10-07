@@ -322,6 +322,7 @@ Md_Kind :: enum {
 Md_Block_Ui :: struct {
 	kind:               Md_Kind,
 	text:               string,
+	timestamps:         [dynamic]Md_Timestamp, // canonical token ranges, formatted only for display
 	blank_lines_before: u8,
 	fonts:              string, // owned font id and style flags per UTF-8 byte
 	links:              [dynamic]Inline_Link, // owned destinations over visible text byte ranges
@@ -335,6 +336,14 @@ Md_Block_Ui :: struct {
 	cells:              [][]string, // table rows, row 0 = header
 	cell_fonts:         [][]string,
 	cell_links:         [][][dynamic]Inline_Link,
+}
+
+@(private)
+Md_Timestamp :: struct {
+	start, end: int,
+	seconds:    i64,
+	style:      marmot.Markdown_Timestamp_Style,
+	row, cell:  int, // row -1 = block text; otherwise table coordinates
 }
 
 // One message attachment at its source imeta position. Rejected and

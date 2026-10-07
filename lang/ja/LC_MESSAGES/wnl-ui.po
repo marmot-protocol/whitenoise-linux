@@ -36,8 +36,16 @@ msgid "%d day"
 msgstr "%d日"
 
 #, c-format
+msgid "%d day ago"
+msgstr "%d日前"
+
+#, c-format
 msgid "%d days"
 msgstr "%d日"
+
+#, c-format
+msgid "%d days ago"
+msgstr "%d日前"
 
 #, c-format
 msgid "%d edit"
@@ -56,8 +64,16 @@ msgid "%d hour"
 msgstr "%d時間"
 
 #, c-format
+msgid "%d hour ago"
+msgstr "%d時間前"
+
+#, c-format
 msgid "%d hours"
 msgstr "%d時間"
+
+#, c-format
+msgid "%d hours ago"
+msgstr "%d時間前"
 
 #, c-format
 msgid "%d member"
@@ -72,8 +88,24 @@ msgid "%d minute"
 msgstr "%d分"
 
 #, c-format
+msgid "%d minute ago"
+msgstr "%d分前"
+
+#, c-format
 msgid "%d minutes"
 msgstr "%d分"
+
+#, c-format
+msgid "%d minutes ago"
+msgstr "%d分前"
+
+#, c-format
+msgid "%d month ago"
+msgstr "%dか月前"
+
+#, c-format
+msgid "%d months ago"
+msgstr "%dか月前"
 
 #, c-format
 msgid "%d of %d connected"
@@ -116,12 +148,28 @@ msgid "%d second"
 msgstr "%d秒"
 
 #, c-format
+msgid "%d second ago"
+msgstr "%d秒前"
+
+#, c-format
 msgid "%d seconds"
 msgstr "%d秒"
 
 #, c-format
+msgid "%d seconds ago"
+msgstr "%d秒前"
+
+#, c-format
 msgid "%d votes"
 msgstr "%d票"
+
+#, c-format
+msgid "%d year ago"
+msgstr "%d年前"
+
+#, c-format
+msgid "%d years ago"
+msgstr "%d年前"
 
 #, c-format
 msgid "%d/%d RELAYS"
@@ -4494,6 +4542,54 @@ msgstr "失敗 · タップして再試行"
 
 msgid "flat"
 msgstr "フラット"
+
+#, c-format
+msgid "in %d day"
+msgstr "%d日後"
+
+#, c-format
+msgid "in %d days"
+msgstr "%d日後"
+
+#, c-format
+msgid "in %d hour"
+msgstr "%d時間後"
+
+#, c-format
+msgid "in %d hours"
+msgstr "%d時間後"
+
+#, c-format
+msgid "in %d minute"
+msgstr "%d分後"
+
+#, c-format
+msgid "in %d minutes"
+msgstr "%d分後"
+
+#, c-format
+msgid "in %d month"
+msgstr "%dか月後"
+
+#, c-format
+msgid "in %d months"
+msgstr "%dか月後"
+
+#, c-format
+msgid "in %d second"
+msgstr "%d秒後"
+
+#, c-format
+msgid "in %d seconds"
+msgstr "%d秒後"
+
+#, c-format
+msgid "in %d year"
+msgstr "%d年後"
+
+#, c-format
+msgid "in %d years"
+msgstr "%d年後"
 
 msgid "inbox"
 msgstr "受信"

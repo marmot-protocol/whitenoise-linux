@@ -197,6 +197,7 @@ preview_message :: proc(text: string, blocks: []Md_Block_Ui = nil) {
 		owned.text = strings.clone(block.text)
 		owned.fonts = strings.clone(block.fonts)
 		owned.links = links_clone(block.links[:])
+		owned.timestamps = timestamps_clone(block.timestamps[:])
 		owned.code_kinds = strings.clone(block.code_kinds)
 		owned.alignments = make([]marmot.Markdown_Alignment, len(block.alignments))
 		copy(owned.alignments, block.alignments)

@@ -77,6 +77,8 @@ fi
 "$AR" rcs "$OUT/libwnipc.a" "$OUT/ipc.o"
 "$CC" "${CFLAGS[@]}" -c "$HERE/app/decoder_ipc.c" -o "$OUT/decoder_ipc.o"
 "$AR" rcs "$OUT/libwndecoder.a" "$OUT/decoder_ipc.o"
+"$CC" "${CFLAGS[@]}" -c "$HERE/app/timestamp.c" -o "$OUT/timestamp.o"
+"$AR" rcs "$OUT/libwntimestamp.a" "$OUT/timestamp.o"
 MICROTEX_STAMP="$({ pin microtex; cat "$HERE"/patches/microtex-*.patch; } | sha256sum | cut -d' ' -f1)"
 if ! stamp_fresh "$OUT/microtex/lib/libmicrotex.a" "$OUT/microtex.stamp" "$MICROTEX_STAMP"; then
   rm -rf "$OUT/microtex"
@@ -182,7 +184,7 @@ if [ "$SYSTEM" = Windows ]; then
   WINDOWS_LINK=("${WINDOWS_RUNTIME[@]}" "$OUT/velopack/libvelopack_libc.dll.a")
 fi
 "$CC" "${CFLAGS[@]}" "$OUT/app.o" "${WINDOWS_LINK[@]}" \
-  "$OUT/libwnws.a" "$OUT/libwnipc.a" "$OUT/libwndecoder.a" \
+  "$OUT/libwnws.a" "$OUT/libwnipc.a" "$OUT/libwndecoder.a" "$OUT/libwntimestamp.a" \
   "$OUT/clay/clay.a" "$OUT/stb/stb.a" "$OUT/libmarmot_c.a" \
   $(pkg-config --libs sdl3 mpv libcurl openssl) \
   "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/whitenoise$EXE"

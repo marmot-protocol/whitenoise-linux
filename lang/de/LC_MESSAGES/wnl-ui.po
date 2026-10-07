@@ -36,8 +36,16 @@ msgid "%d day"
 msgstr "%d Tag"
 
 #, c-format
+msgid "%d day ago"
+msgstr "vor %d Tag"
+
+#, c-format
 msgid "%d days"
 msgstr "%d Tage"
+
+#, c-format
+msgid "%d days ago"
+msgstr "vor %d Tagen"
 
 #, c-format
 msgid "%d edit"
@@ -56,8 +64,16 @@ msgid "%d hour"
 msgstr "%d Stunde"
 
 #, c-format
+msgid "%d hour ago"
+msgstr "vor %d Stunde"
+
+#, c-format
 msgid "%d hours"
 msgstr "%d Stunden"
+
+#, c-format
+msgid "%d hours ago"
+msgstr "vor %d Stunden"
 
 #, c-format
 msgid "%d member"
@@ -72,8 +88,24 @@ msgid "%d minute"
 msgstr "%d Minute"
 
 #, c-format
+msgid "%d minute ago"
+msgstr "vor %d Minute"
+
+#, c-format
 msgid "%d minutes"
 msgstr "%d Minuten"
+
+#, c-format
+msgid "%d minutes ago"
+msgstr "vor %d Minuten"
+
+#, c-format
+msgid "%d month ago"
+msgstr "vor %d Monat"
+
+#, c-format
+msgid "%d months ago"
+msgstr "vor %d Monaten"
 
 #, c-format
 msgid "%d of %d connected"
@@ -116,12 +148,28 @@ msgid "%d second"
 msgstr "%d Sekunde"
 
 #, c-format
+msgid "%d second ago"
+msgstr "vor %d Sekunde"
+
+#, c-format
 msgid "%d seconds"
 msgstr "%d Sekunden"
 
 #, c-format
+msgid "%d seconds ago"
+msgstr "vor %d Sekunden"
+
+#, c-format
 msgid "%d votes"
 msgstr "%d Stimmen"
+
+#, c-format
+msgid "%d year ago"
+msgstr "vor %d Jahr"
+
+#, c-format
+msgid "%d years ago"
+msgstr "vor %d Jahren"
 
 #, c-format
 msgid "%d/%d RELAYS"
@@ -4494,6 +4542,54 @@ msgstr "fehlgeschlagen · tippen zum Wiederholen"
 
 msgid "flat"
 msgstr "einfarbig"
+
+#, c-format
+msgid "in %d day"
+msgstr "in %d Tag"
+
+#, c-format
+msgid "in %d days"
+msgstr "in %d Tagen"
+
+#, c-format
+msgid "in %d hour"
+msgstr "in %d Stunde"
+
+#, c-format
+msgid "in %d hours"
+msgstr "in %d Stunden"
+
+#, c-format
+msgid "in %d minute"
+msgstr "in %d Minute"
+
+#, c-format
+msgid "in %d minutes"
+msgstr "in %d Minuten"
+
+#, c-format
+msgid "in %d month"
+msgstr "in %d Monat"
+
+#, c-format
+msgid "in %d months"
+msgstr "in %d Monaten"
+
+#, c-format
+msgid "in %d second"
+msgstr "in %d Sekunde"
+
+#, c-format
+msgid "in %d seconds"
+msgstr "in %d Sekunden"
+
+#, c-format
+msgid "in %d year"
+msgstr "in %d Jahr"
+
+#, c-format
+msgid "in %d years"
+msgstr "in %d Jahren"
 
 msgid "inbox"
 msgstr "Empfang"

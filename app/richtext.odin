@@ -36,12 +36,14 @@ Inline_Seg :: struct {
 	evid:    string, // nevent/note event id hex, "" = not one (nevent.odin)
 	hints:   []string, // the nevent's relay hints
 	fx:      u8, // glyph-effect bits from {name} markup (effects.odin)
+	stamp:   ^Md_Timestamp,
 }
 
 @(private)
 Inline_Link :: struct {
 	start, end: int,
 	url:        string,
+	stamp:      ^Md_Timestamp, // borrowed source timestamp for this render
 }
 
 // Split text into text runs and emoji clusters (VS16/ZWJ ride along;
@@ -72,7 +74,12 @@ inline_segs :: proc(
 			}
 			append(
 				&segs,
-				Inline_Seg{text = text[i:end], url = link.url, fonts = text_fonts(fonts, i, end)},
+				Inline_Seg {
+					text = text[i:end],
+					url = link.url,
+					fonts = text_fonts(fonts, i, end),
+					stamp = link.stamp,
+				},
 			)
 			i, plain_start = end, end
 			continue
@@ -351,9 +358,14 @@ render_segs :: proc(
 			) {
 				if hovered() {
 					link_hover = seg.url
-					tooltip(seg.url)
+					if seg.stamp != nil {timestamp_tooltip(seg.stamp)} else {tooltip(seg.url)}
 				}
 				styled_text(seg.text, seg.fonts, font_size, ACCENT)
+			}
+		} else if seg.stamp != nil {
+			if clay.UI(clay.ID("SegTimestamp", id * 128 + u32(k)))({}) {
+				if hovered() {timestamp_tooltip(seg.stamp)}
+				styled_text(seg.text, seg.fonts, font_size, color)
 			}
 		} else if len(seg.hex) > 0 {
 			// Chip filled with the exact accent and inked black or white,
@@ -816,8 +828,8 @@ md_blocks :: proc(
 	remaining := max_lines
 	defer {if lines_used != nil {lines_used^ = max_lines - remaining}}
 	for j := 0; j < len(blocks); j += 1 {
-		block := blocks[j]
 		if remaining <= 0 {return true}
+		block := blocks[j]
 		block_id := id_base + u32(j) * 16
 		gap_lines := int(block.blank_lines_before)
 		if j == 0 && quote_level > 0 {gap_lines = 0}
@@ -897,6 +909,8 @@ md_blocks :: proc(
 			continue
 		}
 		width := max(f32(1), available - indent)
+		if len(block.timestamps) >
+		   0 {block = timestamp_block(block, time.time_to_unix(time.now()))}
 		if clay.UI(clay.ID("MdBlock", block_id))(
 		{
 			layout = {
@@ -1189,15 +1203,17 @@ body_text :: proc(
 		for link_index < len(links) && links[link_index].end <= at + link_offset {link_index += 1}
 		if link_index < len(links) && links[link_index].start <= at + link_offset {
 			link := links[link_index]
-			append(&runs, Inline_Link{link.start - link_offset, link.end - link_offset, link.url})
-			at = link.end - link_offset
+			link.start -= link_offset
+			link.end -= link_offset
+			append(&runs, link)
+			at = link.end
 			continue
 		}
 		end :=
 			link_index < len(links) ? min(len(text), links[link_index].start - link_offset) : len(text)
 		if text_literal(fonts, at) {at += 1; continue}
 		if end, url, ok := url_at(text[:end], at); ok {
-			append(&runs, Inline_Link{at, end, url})
+			append(&runs, Inline_Link{start = at, end = end, url = url})
 			at = end
 		} else {at += 1}
 	}
