@@ -198,6 +198,9 @@ size_t wn_timestamp_format(int64_t seconds, int style, char *out, size_t capacit
 #include <langinfo.h>
 #include <locale.h>
 #include <time.h>
+#ifdef __APPLE__
+#include <xlocale.h>
+#endif
 
 /* POSIX supplies a short date pattern but no long-date API. Expand its
  * fields into full month/year names while retaining the locale's order.
