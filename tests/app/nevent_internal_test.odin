@@ -3,6 +3,167 @@ package main
 import "base:runtime"
 import "core:testing"
 
+// SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=pull_request_card_layout
+@(test)
+pull_request_card_layout :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "pull_request_card_layout" {return}
+	context.allocator = runtime.default_context().allocator
+	dir, err := os.make_directory_temp("/tmp", "wn-pr-*", context.temp_allocator)
+	if !testing.expect_value(t, err, nil) {return}
+	defer os.remove_all(dir)
+	client: ^marmot.Client
+	store := vault_secret_store()
+	if !testing.expect_value(
+		t,
+		marmot.client_new_with_secret_store(
+			strings.clone_to_cstring(dir, context.temp_allocator),
+			nil,
+			0,
+			&store,
+			&client,
+		),
+		marmot.Status.OK,
+	) {return}
+	defer marmot.client_free(client)
+	rl.InitWindow(1200, 720, "Pull request preview")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	load_themes()
+	init_fonts()
+	memory: []u8
+	init_layout(&memory, 32768, {1200, 720})
+	defer delete(memory)
+	ui: Ui_State
+	ui.prefs.event_client = DEFAULT_EVENT_CLIENT
+	ui.prefs.reduce_motion = true
+	ui.nicknames["author"] = "Contributor"
+	g_ui, g_prefs, g_client = &ui, &ui.prefs, client
+	defer {g_ui, g_prefs, g_client = nil, nil, nil; wrap_clear(); delete(ui.nicknames)}
+	gh_cards_on = true
+	defer {gh_cards_on = false}
+	token :: "note13ze9zdt8ulg08ggc4g9ycmpen5ltscc4hvfy8seceu578zlvkyzsq77jau"
+	reported :: "nevent1qqs9vsvh2tklhuxfjy3f6vjuekf7n8xkvzlpawecgn386ravz3rm6nqprpmhxue69uhhyetvv9ujucmevfjhyem40yhxv7tf06mqr7"
+	_, reference := nostr_at(reported, 0)
+	if !testing.expect_value(t, reference.kind, Nostr_Kind.Event) {return}
+	card_id :: u32(100 * 8 * 128)
+	_, key, _, _ := nevent_at(token, 0)
+	for subject, index in ([]string{`["subject","Fix relay reconnects"]`, `["subject"],["subject",42]`, `["subject","Fix relay reconnects without interrupting conversations on unreliable networks"]`}) {
+		ui.nicknames["author"] =
+			index == 2 ? "Contributor with a long display name" : "Contributor"
+		event := fmt.tprintf(
+			`{{"kind":1618,"pubkey":"author","created_at":1791417600,"content":"Keep **messages** flowing.\n\nfixes\n%s","tags":[%s]}}`,
+			reported,
+			subject,
+		)
+		append(&nev_fresh, struct {
+			id:   string,
+			card: Nev_Card,
+		}{key, nev_parse(transmute([]u8)event, .Event)})
+		drain_nev()
+		for theme in ([]int{0, 1}) {
+			apply_theme(theme, 0)
+			for width in ([]f32{240, 360, 520}) {
+				for frame in 0 ..< 3 {
+					clay.BeginLayout()
+					if clay.UI(clay.ID("Timeline"))(
+					{
+						layout = {
+							layoutDirection = .TopToBottom,
+							sizing = {
+								width = clay.SizingFixed(width + 78),
+								height = clay.SizingGrow(),
+							},
+							padding = clay.PaddingAll(16),
+						},
+						backgroundColor = BG,
+					},
+					) {
+						if clay.UI(clay.ID("PullRequestBubble"))(
+						{
+							layout = {
+								layoutDirection = .TopToBottom,
+								sizing = {width = clay.SizingFixed(width + 32)},
+								padding = clay.PaddingAll(16),
+								childGap = 10,
+							},
+							backgroundColor = CARD,
+							cornerRadius = rr(14),
+						},
+						) {
+							clay.Text(
+								"Shared pull request",
+								{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
+							)
+							body_text(100, token, BODY_FS, TEXT, wrap_w = width)
+						}
+					}
+					commands := clay.EndLayout(0)
+					if frame < 2 {continue}
+					shown := strings.builder_make(context.temp_allocator)
+					bold := false
+					title_bold := index != 0
+					box := clay.GetElementData(clay.ID("PullRequestBubble")).boundingBox
+					card_box := clay.GetElementData(clay.ID("NevCard", card_id)).boundingBox
+					testing.expect(t, card_box.width <= width)
+					if width ==
+					   520 {testing.expect(t, card_box.width >= 480, "A wide chat must give the pull request enough reading room.")}
+					for command in commands.internalArray[:commands.length] {
+						if command.commandType != .Text {continue}
+						text := command.renderData.text.stringContents
+						part := string(text.chars[:text.length])
+						strings.write_string(&shown, part)
+						if part == "messages" {bold = command.renderData.text.fontId == FONT_TITLE}
+						if strings.contains(
+							part,
+							"Fix relay",
+						) {title_bold = command.renderData.text.fontId == FONT_TITLE}
+						testing.expect(
+							t,
+							command.boundingBox.x >= box.x &&
+							command.boundingBox.x + command.boundingBox.width <= box.x + box.width,
+							part,
+						)
+					}
+					visible := strings.to_string(shown)
+					testing.expect(t, strings.contains(visible, "Contributor"))
+					testing.expect(t, strings.contains(visible, "Keep messages flowing."))
+					testing.expect(
+						t,
+						strings.contains(visible, reported),
+						"The complete reference must remain readable after wrapping.",
+					)
+					testing.expect(t, bold)
+					testing.expect(t, title_bold)
+					testing.expect(
+						t,
+						!strings.contains(visible, "pubkey") && !strings.contains(visible, "**"),
+					)
+					if index ==
+					   0 {testing.expect(t, strings.contains(visible, "Fix relay reconnects"))}
+					rl.BeginDrawing()
+					clay_raylib_render(&commands)
+					rl.TakeScreenshot(
+						fmt.ctprintf(
+							"/tmp/wn-pull-request-%d-%d-%d.png",
+							index,
+							theme,
+							int(width),
+						),
+					)
+					rl.EndDrawing()
+				}
+			}
+		}
+		card := nev_cards[key]
+		blocks_free(card.blocks)
+		delete(
+			card.raw,
+		); delete(card.content); delete(card.pubkey); delete(card.stamp); delete(card.subject)
+		delete(card.subject_fonts)
+		delete_key(&nev_cards, key)
+	}
+}
+
 // Isolated layout fixtures seed the session-only image cache without a network request.
 @(private)
 nev_test_image :: proc(url: string, tex: ^rl.Texture2D) {

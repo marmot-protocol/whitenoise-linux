@@ -1191,6 +1191,7 @@ body_text :: proc(
 	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
 	tile_px := body_tile_size(text, font_size, emoji)
 	mode: Wrap_Mode = link_cards_enabled() ? .Cards : .Text
+	if mode == .Cards && nev_depth > 0 {mode = .Links}
 	lines := wrapped_lines(text, wrap, font_size, mode, fonts, tile_px)
 	count := len(lines)
 	lines = lines[:min(len(lines), max_lines)]
@@ -1212,6 +1213,15 @@ body_text :: proc(
 		end :=
 			link_index < len(links) ? min(len(text), links[link_index].start - link_offset) : len(text)
 		if text_literal(fonts, at) {at += 1; continue}
+		// Keep the full token's byte range before splitting it into lines.
+		// Empty destinations draw plain text, not invalid partial references.
+		if mode != .Cards {
+			if next, _, _, ok := nevent_at(text[:end], at); ok {
+				append(&runs, Inline_Link{start = at, end = next})
+				at = next
+				continue
+			}
+		}
 		if end, url, ok := url_at(text[:end], at); ok {
 			append(&runs, Inline_Link{start = at, end = end, url = url})
 			at = end
@@ -1492,7 +1502,7 @@ wrap_break :: proc(
 	for word < fit && text[word] == ' ' {
 		word += 1
 	}
-	if mode != .Compose && !text_literal(fonts, word) {
+	if mode == .Cards && !text_literal(fonts, word) {
 		if tok_end, _, _, is_event := nevent_at(text, word);
 		   is_event && tok_end <= end {return tok_end}
 	}

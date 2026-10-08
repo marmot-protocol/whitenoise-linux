@@ -4,9 +4,10 @@
 // The event is pulled by id from the user's fetch relays (Settings →
 // Network, ditto + primal by default) plus any relay hints the nevent
 // carries, on its own thread, and cached twice: in memory for the
-// session and as <home>/events/<id>.json across runs. Kind 1 (and the
-// kind-11/1111 reply shapes) render as author + text; any other kind
-// shows the raw event JSON. A note's text goes through marmot's
+// session and as <home>/events/<id>.json across runs. Notes, replies,
+// articles and pull requests render as author + text; product and
+// geocache cards show their metadata. Other kinds show raw event JSON.
+// Text goes through marmot's
 // markdown parser like a chat body; image links are fetched into memory
 // for this session and drawn inline. Every card offers one
 // "Open in client" button, the web client set in Settings → Network.
@@ -55,20 +56,25 @@ NEV_MAX :: 256 * 1024
 NEV_TIMEOUT_MS :: 6000
 
 // Kinds drawn as author + text. Everything else is raw JSON.
-NEV_TEXT_KINDS := []i64{1, 11, 1111, 30023}
+NEV_TEXT_KINDS := []i64{1, 11, 1111, NEV_PULL_REQUEST_KIND, 30023}
+
+@(private = "file")
+NEV_PULL_REQUEST_KIND :: 1618
 
 Nev_Card :: struct {
-	excerpt:  Excerpt,
-	product:  Nev_Product,
-	geocache: Nev_Geocache,
-	done:     bool, // fetch finished; raw == "" then means not found
-	kind:     i64,
-	pubkey:   string,
-	content:  string,
-	created:  i64,
-	stamp:    string, // created formatted for the header, set on drain
-	raw:      string, // pretty-printed event JSON
-	blocks:   [dynamic]Md_Block_Ui, // content as markdown blocks, built on drain
+	excerpt:       Excerpt,
+	product:       Nev_Product,
+	geocache:      Nev_Geocache,
+	done:          bool, // fetch finished; raw == "" then means not found
+	kind:          i64,
+	pubkey:        string,
+	content:       string,
+	subject:       string, // NIP-34 pull request title, owned
+	subject_fonts: string, // cached title font map for bounded wrapping
+	created:       i64,
+	stamp:         string, // created formatted for the header, set on drain
+	raw:           string, // pretty-printed event JSON
+	blocks:        [dynamic]Md_Block_Ui, // content as markdown blocks, built on drain
 }
 
 // event id hex → card. An entry appears the frame the token is first
@@ -94,9 +100,9 @@ nev_img_fresh: [dynamic]struct {
 	data: []u8, // owned, nil = miss
 }
 
-// Cards nest (a note quoting a note); a card inside a card draws its
-// tokens as text so a self-quote cannot recurse.
-@(private = "file")
+// Body wrapping keeps nested event references as plain text, so a
+// self-quote cannot recurse or escape the card's content width.
+@(private)
 nev_depth: int
 
 @(private = "file")
@@ -194,7 +200,8 @@ nev_worker :: proc(job: ^Nev_Job) {
 				if len(fresh.raw) == 0 {
 					continue
 				}
-				delete(card.raw); delete(card.content); delete(card.pubkey)
+				delete(card.raw); delete(card.content); delete(card.pubkey); delete(card.subject)
+				delete(card.subject_fonts)
 				for value in ([]string{card.product.title, card.product.summary, card.product.image, card.product.price, card.product.availability, card.product.stock, card.product.location}) {delete(value)}
 				for value in ([]string{card.geocache.name, card.geocache.image, card.geocache.hint, card.geocache.size, card.geocache.mission, card.geocache.geohash}) {delete(value)}
 				card = fresh
@@ -440,6 +447,20 @@ nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_
 	card.pubkey = strings.clone(pubkey)
 	if card.kind == NEV_PRODUCT_KIND {card.product = nev_product_parse(ev)}
 	if card.kind == NEV_GEOCACHE_KIND {card.geocache = nev_geocache_parse(ev)}
+	if card.kind == NEV_PULL_REQUEST_KIND {
+		tags, _ := ev["tags"].(json.Array)
+		for tag in tags {
+			values, ok := tag.(json.Array)
+			if !ok || len(values) < 2 {continue}
+			name, _ := values[0].(json.String)
+			subject, is_string := values[1].(json.String)
+			if name != "subject" || !is_string {continue}
+			card.subject = strings.clone(subject)
+			font := [1]u8{FONT_TITLE}
+			card.subject_fonts = strings.repeat(string(font[:]), len(subject))
+			break
+		}
+	}
 	if content, ok := ev["content"].(json.String); ok {
 		card.content = strings.clone(content)
 	}
@@ -564,10 +585,6 @@ nev_lookup :: proc(evid: string, token: string, hints: []string = nil) -> Nev_Ca
 // The card itself, drawn where the token was written. token is the
 // bech32 as written (minus any nostr: prefix), what the button opens.
 nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
-	if nev_depth > 0 {
-		clay.Text(token, {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_DIM})
-		return
-	}
 	card := nev_lookup(evid, token, hints)
 	nev_depth += 1
 	defer {nev_depth -= 1}
@@ -578,18 +595,21 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			textual = true
 		}
 	}
-	inner_w := att_w() - 24
+	pull_request := card.kind == NEV_PULL_REQUEST_KIND && len(card.raw) > 0
+	width := att_w(pull_request ? 520 : 320)
+	padding := u16(pull_request ? 20 : 12)
+	inner_w := width - f32(padding * 2)
 
 	if clay.UI(clay.ID("NevCard", id))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(att_w())},
+			sizing = {width = clay.SizingFixed(width)},
 			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(12),
-			childGap = 6,
+			padding = clay.PaddingAll(padding),
+			childGap = pull_request ? 18 : 6,
 		},
 		backgroundColor = PLATE,
-		cornerRadius = rr(10),
+		cornerRadius = rr(pull_request ? 16 : 10),
 		border = {color = CARD_BORDER, width = bw()},
 	},
 	) {
@@ -602,7 +622,22 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			},
 		},
 		) {
-			clay.Text(ICON_GLOBE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
+			if pull_request {
+				if clay.UI(clay.ID("NevPullIcon", id))(
+				{
+					layout = {
+						sizing = {clay.SizingFixed(32), clay.SizingFixed(32)},
+						childAlignment = {x = .Center, y = .Center},
+					},
+					backgroundColor = fade(ACCENT, 0.1),
+					cornerRadius = rr(8),
+				},
+				) {
+					clay.Text("\uf407", {fontId = FONT_ICON, fontSize = 17, textColor = ACCENT})
+				}
+			} else {
+				clay.Text(ICON_GLOBE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
+			}
 			switch {
 			case len(card.raw) == 0:
 				eyebrow(tr("NOSTR EVENT"))
@@ -610,6 +645,11 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 				eyebrow(tr("PRODUCT"))
 			case card.kind == NEV_GEOCACHE_KIND:
 				eyebrow(tr("GEOCACHE"))
+			case card.kind == NEV_PULL_REQUEST_KIND:
+				clay.Text(
+					tr("PULL REQUEST"),
+					{fontId = FONT_BODY, fontSize = 10, textColor = ACCENT, letterSpacing = 1},
+				)
 			case textual:
 				eyebrow(tr("NOTE"))
 			case:
@@ -619,6 +659,7 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 				)
 			}
 			if len(card.pubkey) > 0 &&
+			   !pull_request &&
 			   card.kind != NEV_PRODUCT_KIND &&
 			   card.kind != NEV_GEOCACHE_KIND {
 				clay.Text(
@@ -649,7 +690,73 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 		case card.kind == NEV_GEOCACHE_KIND:
 			nev_geocache_card(id, evid, card, inner_w)
 		case textual:
-			nev_card_excerpt(id, evid, card, inner_w)
+			if pull_request {
+				if clay.UI(clay.ID("NevPullTitle", id))(
+				{
+					layout = {
+						sizing = {width = clay.SizingFixed(inner_w)},
+						layoutDirection = .TopToBottom,
+						childGap = 6,
+					},
+				},
+				) {
+					if len(card.subject) > 0 {
+						lines := wrapped_lines(
+							card.subject,
+							inner_w,
+							20,
+							.Text,
+							card.subject_fonts,
+						)
+						for line, i in lines[:min(len(lines), 3)] {
+							text := card.subject[line.start:line.end]
+							if i == 2 &&
+							   len(lines) >
+								   3 {text = text_ellipsis(card.subject[line.start:], inner_w, FONT_TITLE, 20)}
+							clay.Text(
+								text,
+								{
+									fontId = FONT_TITLE,
+									fontSize = 20,
+									textColor = TEXT,
+									wrapMode = .None,
+								},
+							)
+						}
+					}
+					if len(card.pubkey) > 0 {
+						clay.Text(
+							text_ellipsis(mention_label(card.pubkey), inner_w, FONT_BODY, 12),
+							{
+								fontId = FONT_BODY,
+								fontSize = 12,
+								textColor = TEXT_DIM,
+								wrapMode = .None,
+							},
+						)
+					}
+					if len(card.stamp) > 0 {
+						body_text(0x32000000 + id, card.stamp, 11, TEXT_LO, wrap_w = inner_w)
+					}
+				}
+			}
+			if pull_request {
+				if clay.UI(clay.ID("NevPullBody", id))(
+				{
+					layout = {
+						layoutDirection = .TopToBottom,
+						sizing = {width = clay.SizingGrow()},
+						padding = {top = 16},
+						childGap = 8,
+					},
+					border = {color = DIVIDER, width = {top = 1}},
+				},
+				) {
+					nev_card_excerpt(id, evid, card, inner_w)
+				}
+			} else {
+				nev_card_excerpt(id, evid, card, inner_w)
+			}
 		case:
 			nev_card_excerpt(id, evid, card, inner_w, card.raw)
 		}
@@ -666,10 +773,20 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			)
 			if clay.UI(clay.ID("NevOpen", id))(
 			{
-				layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
-				backgroundColor = hovered() ? HOVER : {},
+				layout = {
+					sizing = {width = pull_request ? clay.SizingGrow() : clay.SizingFit()},
+					padding = {
+						left = 10,
+						right = 10,
+						top = pull_request ? 10 : 5,
+						bottom = pull_request ? 10 : 5,
+					},
+					childGap = 6,
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = hovered() ? HOVER : (pull_request ? fade(ACCENT, 0.08) : clay.Color{}),
 				cornerRadius = rr(7),
-				border = {color = FIELD_BORDER, width = bw()},
+				border = {color = pull_request ? fade(ACCENT, 0.25) : FIELD_BORDER, width = bw()},
 			},
 			) {
 				if hovered() {
@@ -677,8 +794,15 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 				}
 				clay.Text(
 					tr("Open in client"),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+					{
+						fontId = FONT_BODY,
+						fontSize = pull_request ? 12 : 11,
+						textColor = pull_request ? ACCENT : TEXT_DIM,
+					},
 				)
+				if pull_request {
+					clay.Text("\uf08e", {fontId = FONT_ICON, fontSize = 11, textColor = ACCENT})
+				}
 			}
 		}
 	}

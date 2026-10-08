@@ -20,6 +20,7 @@ Wrap_Key :: struct {
 Wrap_Mode :: enum {
 	Text,
 	Cards,
+	Links, // web cards, but event references stay wrapped text inside an event card
 	Compose,
 }
 @(private)
@@ -76,12 +77,14 @@ wrapped_lines :: proc(
 			// Cards occupy a whole row, even when their URL is wider
 			// than the column. Keep source offsets for selection/copy.
 			card_at, card_end := end, end
-			if mode == .Cards {
+			if mode == .Cards || mode == .Links {
 				for scan := at; scan < end; scan += 1 {
 					if text_literal(fonts, scan) {continue}
-					if next, _, _, ok := nevent_at(text[:end], scan); ok {
-						card_at, card_end = scan, next
-						break
+					if mode == .Cards {
+						if next, _, _, ok := nevent_at(text[:end], scan); ok {
+							card_at, card_end = scan, next
+							break
+						}
 					}
 					if text[scan] != 'h' {continue}
 					if next, url, ok := url_at(text[:end], scan); ok {
