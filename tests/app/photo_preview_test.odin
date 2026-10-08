@@ -4,6 +4,45 @@ import "core:encoding/base64"
 import "core:os"
 import "core:strings"
 import "core:testing"
+import rl "sdlrl"
+
+@(test)
+photo_crop_pixels :: proc(t: ^testing.T) {
+	// Distinct RGBA pixels, including alpha, expose offsets/stride mistakes.
+	pixels: [4 * 3 * 4]u8
+	for i in 0..<12 {
+		pixels[i * 4 + 0] = u8(i)
+		pixels[i * 4 + 1] = u8(100 + i)
+		pixels[i * 4 + 2] = 200
+		pixels[i * 4 + 3] = u8(20 + i)
+	}
+	source := rl.Image{data = &pixels[0], width = 4, height = 3}
+	draft, ok := photo_crop_draft(source, {true, 1, 1, 2})
+	if !testing.expect(t, ok) {return}
+	defer pic_draft_free(&draft)
+	testing.expect_value(t, draft.media_type, "image/png")
+	decoded := rl.LoadImageFromMemory(".png", raw_data(draft.data), i32(len(draft.data)))
+	if !testing.expect(t, decoded.data != nil) {return}
+	defer rl.UnloadImage(decoded)
+	testing.expect_value(t, decoded.width, i32(2))
+	testing.expect_value(t, decoded.height, i32(2))
+	actual := ([^]u8)(decoded.data)[:16]
+	for original, i in ([]int{5, 6, 9, 10}) {
+		for channel in 0..<4 {testing.expect_value(t, actual[i * 4 + channel], pixels[original * 4 + channel])}
+	}
+	bad, bad_ok := photo_crop_draft(source, {true, 3, 1, 2})
+	testing.expect(t, !bad_ok && bad.data == nil && bad.image.data == nil)
+	p := Photo_Preview{draft = {image = source}}
+	photo_crop_start(&p)
+	testing.expect_value(t, p.crop.side, i32(3))
+	p.crop.x = 100; p.crop.y = -100; p.crop.side = 2
+	photo_crop_clamp(&p)
+	testing.expect_value(t, p.crop.x, i32(2))
+	testing.expect_value(t, p.crop.y, i32(0))
+	photo_crop_resize(&p, 100)
+	testing.expect_value(t, p.crop.side, i32(3))
+	testing.expect_value(t, p.crop.x, i32(1))
+}
 
 // Real encoded fixture, decoded by the same helper used for native picks.
 photo_test_bytes :: proc() -> []u8 {

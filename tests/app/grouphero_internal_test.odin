@@ -60,6 +60,26 @@ photo_preview_flow :: proc(t: ^testing.T) {
 			testing.expect(t, box.found)
 			testing.expect(t, box.boundingBox.y >= 0 && box.boundingBox.y + box.boundingBox.height <= 300)
 		}
+		// Exercise Crop and Reset through real modal hit testing. Neither may
+		// dispatch uploads or replace the source/committed avatar.
+		original_data := ui.photo.draft.data
+		box := clay.GetElementData(clay.ID("PhotoCrop")).boundingBox
+		clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+		forced_release = true
+		handle_photo_preview(&ui, nil)
+		forced_release = false
+		testing.expect(t, ui.photo.crop.active)
+		photo_test_layout(&ui)
+		testing.expect(t, clay.GetElementData(clay.ID("PhotoCropBox")).found)
+		box = clay.GetElementData(clay.ID("PhotoReset")).boundingBox
+		clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+		forced_release = true
+		handle_photo_preview(&ui, nil)
+		forced_release = false
+		testing.expect(t, !ui.photo.crop.active)
+		testing.expect(t, raw_data(ui.photo.draft.data) == raw_data(original_data))
+		testing.expect(t, !ppic_busy && len(gimg_queue) == 0 && len(gpic_local) == 0)
+		photo_crop_start(&ui.photo)
 		captured := photo_input_capture(&ui)
 		photo_cancel(&ui)
 		testing.expect(t, captured && !photo_input_capture(&ui), "The closing frame retains its input latch")
@@ -91,11 +111,54 @@ photo_preview_flow :: proc(t: ^testing.T) {
 	client: ^marmot.Client
 	if !testing.expect_value(t, marmot.client_new(strings.clone_to_cstring(dir, context.temp_allocator), nil, 0, &client), marmot.Status.OK) {return}
 	defer marmot.client_free(client)
+	defer photo_crop_stop()
+	// Cancellation wins even if encoding has completed before this frame.
+	photo_crop_start(&ui.photo)
 	photo_use(&ui, client)
+	crop_job := ui.photo.crop_job
+	if !testing.expect(t, crop_job != nil) {return}
+	thread.join(crop_job.worker)
+	photo_test_layout(&ui)
+	testing.expect(t, clay.GetElementData(clay.ID("PhotoCropBusy")).found)
+	photo_crop_drain(&ui, client, false)
+	testing.expect_value(t, len(gimg_queue), 0)
+	rl.PushKey(.ESCAPE, true)
+	handle_photo_preview(&ui, client)
+	rl.PushKey(.ESCAPE, false)
+	photo_crop_drain(&ui, client)
+	testing.expect(t, !photo_input_capture(&ui) && len(gimg_queue) == 0)
+
+	// A completed crop cannot upload after permission/account/busy changes.
+	for invalidation in ([]string{"permission", "account", "busy"}) {
+		testing.expect(t, photo_pick_begin(&ui, .Group))
+		photo_pick_complete(&ui, []string{path})
+		photo_crop_start(&ui.photo)
+		photo_use(&ui, client)
+		thread.join(ui.photo.crop_job.worker)
+		switch invalidation {
+		case "permission": ui.members[0].is_admin = false
+		case "account": ui.account_ref = "account-b"
+		case "busy": ppic_busy = true
+		}
+		photo_crop_drain(&ui, client)
+		testing.expect(t, !photo_input_capture(&ui) && len(gimg_queue) == 0)
+		ui.members[0].is_admin = true; ui.account_ref = "account-a"; ppic_busy = false
+	}
+	// Use runs a real encoder worker, then transfers only the PNG result.
+	testing.expect(t, photo_pick_begin(&ui, .Group))
+	photo_pick_complete(&ui, []string{path})
+	photo_crop_start(&ui.photo)
+	photo_use(&ui, client)
+	testing.expect(t, ui.photo.crop_job != nil && len(gimg_queue) == 0)
+	thread.join(ui.photo.crop_job.worker)
+	photo_crop_drain(&ui, client)
 	testing.expect_value(t, len(gimg_queue), 1)
 	testing.expect_value(t, gimg_queue[0].account, "account-a")
 	testing.expect_value(t, gimg_queue[0].group_id, "group-a")
-	testing.expect_value(t, len(gimg_queue[0].data), len(bytes))
+	testing.expect_value(t, gimg_queue[0].media_type, "image/png")
+	uploaded := rl.LoadImageFromMemory(".png", raw_data(gimg_queue[0].data), i32(len(gimg_queue[0].data)))
+	testing.expect(t, uploaded.data != nil && uploaded.width == 1 && uploaded.height == 1)
+	rl.UnloadImage(uploaded)
 	testing.expect(t, ui.photo.draft.data == nil && ui.photo.texture.tex == nil)
 	photo_use(&ui, client)
 	testing.expect(t, len(gimg_queue) == 1, "Use transfers the draft exactly once")

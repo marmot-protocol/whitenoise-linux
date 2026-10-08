@@ -306,7 +306,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 				confirm_modal(ui)
 			}
 			// No exit animation: Cancel immediately releases its texture.
-			if ui.photo.draft.image.data != nil {photo_preview_modal(ui)}
+			if photo_image(&ui.photo).data != nil {photo_preview_modal(ui)}
 			// No close animation: web_close tears down the child process, so
 			// nothing may draw the modal after it.
 			if web_modal.open {
@@ -823,7 +823,7 @@ app_main :: proc() {
 			// Latch before drains can invalidate a preview. Its closing frame
 			// still owns input, including global shortcuts and media handlers.
 			photo_captured := photo_input_capture(&ui)
-			photo_interactive := ui.photo.draft.image.data != nil
+			photo_interactive := photo_image(&ui.photo).data != nil
 			defer messages_collect()
 			defer chats_collect()
 			defer {if wrap_flush {wrap_clear()}}
@@ -918,6 +918,7 @@ app_main :: proc() {
 
 			// Interface zoom shortcuts (Ctrl + / - / 0).
 			photo_check_target(&ui)
+			photo_crop_drain(&ui, client, false)
 			if !photo_captured && (rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL)) {
 				if rl.IsKeyPressed(.EQUAL) {
 					ui.prefs.zoom_pct += 10
