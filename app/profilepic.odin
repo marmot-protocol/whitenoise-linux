@@ -4,12 +4,11 @@
 // trips, so a one-shot thread runs them; drain_ppic hands the URL back
 // to the frame loop, which owns texture creation.
 //
-//   pick → set_profile_pic (read/validate) → ppic_worker (upload +
+//   pick → photo preview → Use → ppic_worker (upload +
 //   publish) → drain_ppic (round texture + my_pic_url)
 package main
 
 import "core:fmt"
-import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:thread"
@@ -40,50 +39,16 @@ ppic_err: string
 @(private = "file")
 ppic_ready: bool
 
-// A file picked for the profile picture: validate it decodes, then
-// hand the bytes to the one-shot worker.
-set_profile_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
-	if ppic_busy {
-		return
-	}
-	data, read_err := os.read_entire_file(path, context.allocator)
-	if read_err != nil {
-		set_status(ui, fmt.aprintf(tr("Couldn't read %s."), path), .Error)
-		return
-	}
-
-	base := path
-	if slash := strings.last_index_byte(path, '/'); slash >= 0 {
-		base = path[slash + 1:]
-	}
-	media_type := media_type_for(base)
-	if !strings.has_prefix(media_type, "image/") {
-		delete(data)
-		set_status(ui, strings.clone(tr("Couldn't use that file. Choose a PNG or JPEG.")), .Error)
-		return
-	}
-	ext := strings.clone_to_cstring(
-		fmt.tprintf(".%s", strings.trim_prefix(media_type, "image/")),
-		context.temp_allocator,
-	)
-	image := rl.LoadImageFromMemory(ext, raw_data(data), i32(len(data)))
-	if image.data == nil {
-		delete(data)
-		set_status(
-			ui,
-			strings.clone(tr("Couldn't decode the image. Choose a PNG or JPEG.")),
-			.Error,
-		)
-		return
-	}
-	rl.UnloadImage(image)
-
+// Use has revalidated the captured account and busy state. Takes the draft.
+@(private)
+upload_profile_pic :: proc(client: ^marmot.Client, account: string, draft: Pic_Draft) {
+	rl.UnloadImage(draft.image)
 	ppic_busy = true
 	ppic_job = {
 		client     = client,
-		account    = strings.clone(ui.account_ref),
-		data       = data,
-		media_type = media_type,
+		account    = strings.clone(account),
+		data       = draft.data,
+		media_type = draft.media_type,
 	}
 	append(&send_threads, thread.create_and_start(ppic_worker))
 }
@@ -180,12 +145,23 @@ drain_ppic :: proc(ui: ^Ui_State) {
 			register_local_pic(url, image)
 			rl.UnloadImage(image)
 		}
-		ui.my_pic_url = url
-		ui.profile.pic_set = true
+		adopt_profile_pic(ui, ppic_job.account, url)
 	}
 
 	delete(ppic_job.data)
 	delete(ppic_job.account)
 	ppic_job = {}
 	ppic_busy = false
+}
+
+// The result belongs to the submitting account, not the currently open pane.
+// Cache registration remains useful across switches, but URL ownership does not.
+@(private)
+adopt_profile_pic :: proc(ui: ^Ui_State, account, url: string) {
+	if ui.account_ref == account && !account_departing(account) {
+		ui.my_pic_url = url
+		ui.profile.pic_set = true
+	} else {
+		delete(url)
+	}
 }

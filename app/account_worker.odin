@@ -305,6 +305,7 @@ account_job_drain :: proc(ui: ^Ui_State) {
 				}; job.pic_data = nil}
 		}
 		if job.departed {
+			if ui.photo.account == job.account {photo_cancel(ui)}
 			if job.signer != nil {
 				item := job.signer
 				for candidate, n in nip46_accounts {if candidate == item {ordered_remove(&nip46_accounts, n); break}}
@@ -344,6 +345,7 @@ account_job_drain :: proc(ui: ^Ui_State) {
 					load_chat_list(job.client, job.account, ui)
 					if job.open_chat {if job.form {clear(&ui.nc_member); clear(&ui.nc_name)}; ui.focus = .Compose; ui.page = .Chats; ui.new_chat_open = false; select_by_id(ui, job.client, job.result)}
 				case .Leave, .Decline:
+					if ui.photo.account == job.account && ui.photo.group == job.group {photo_cancel(ui)}
 					if ui.selected >= 0 &&
 					   ui.chats[ui.selected].group_id ==
 						   job.group {ui.selected = -1; ui.show_members = false}

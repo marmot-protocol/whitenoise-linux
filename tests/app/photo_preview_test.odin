@@ -1,0 +1,104 @@
+package main
+
+import "core:encoding/base64"
+import "core:os"
+import "core:strings"
+import "core:testing"
+
+// Real encoded fixture, decoded by the same helper used for native picks.
+photo_test_bytes :: proc() -> []u8 {
+	bytes, _ := base64.decode("UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA")
+	return bytes
+}
+
+photo_test_ui :: proc() -> Ui_State {
+	ui := Ui_State{account_ref = "account-a", selected = 0}
+	append(&ui.account_ids, "account-a")
+	append(&ui.chats, Chat_Row_Ui{group_id = "group-a"})
+	append(&ui.members, Member_Ui{is_self = true, is_admin = true})
+	return ui
+}
+
+photo_test_free :: proc(ui: ^Ui_State) {
+	photo_cancel(ui)
+	delete(ui.account_ids); delete(ui.chats); delete(ui.members)
+	delete(ui.client_status)
+}
+
+@(test)
+photo_preview_targets :: proc(t: ^testing.T) {
+	ui := photo_test_ui()
+	defer photo_test_free(&ui)
+	testing.expect(t, photo_pick_begin(&ui, .Group))
+	testing.expect_value(t, ui.photo.account, "account-a")
+	testing.expect_value(t, ui.photo.group, "group-a")
+	testing.expect(t, !photo_pick_begin(&ui, .Profile), "An outstanding pick cannot be retargeted")
+	ui.account_ref = "account-b"
+	photo_check_target(&ui)
+	testing.expect_value(t, ui.photo.kind, Photo_Kind.None)
+	testing.expect(t, ui.photo.pending && photo_input_capture(&ui), "Invalidation retains the callback tombstone")
+	photo_pick_complete(&ui, []string{"/does/not/exist.png"})
+	testing.expect(t, !photo_input_capture(&ui))
+	testing.expect_value(t, len(ui.staged), 0)
+
+	ui.account_ref = "account-a"
+	testing.expect(t, photo_pick_begin(&ui, .Group))
+	ui.chats[0].group_id = "group-b"
+	testing.expect(t, !photo_target_valid(&ui))
+	photo_pick_complete(&ui, nil)
+	testing.expect(t, !photo_input_capture(&ui), "Native cancellation consumes the intent")
+	ui.chats[0].group_id = "group-a"
+	testing.expect(t, photo_pick_begin(&ui, .Group))
+	ui.photo.pending = false
+	ui.members[0].is_admin = false
+	testing.expect(t, !photo_target_valid(&ui))
+	ui.members[0].is_admin = true
+	ui.selected = -1
+	testing.expect(t, !photo_target_valid(&ui))
+	ui.selected = 0
+	clear(&ui.account_ids)
+	testing.expect(t, !photo_target_valid(&ui), "Removed accounts cannot confirm")
+	append(&ui.account_ids, "account-a")
+	job := Account_Job{account = "account-a", group = "group-a", kind = .Leave}
+	old_jobs := account_jobs
+	account_jobs = {}
+	append(&account_jobs, &job)
+	defer {delete(account_jobs); account_jobs = old_jobs}
+	testing.expect(t, !photo_target_valid(&ui))
+	job.kind = .Remove
+	testing.expect(t, !photo_target_valid(&ui))
+}
+
+@(test)
+photo_preview_invalid_files :: proc(t: ^testing.T) {
+	ui := photo_test_ui()
+	defer photo_test_free(&ui)
+	dir, err := os.make_directory_temp("", "wn-photo-validation", context.temp_allocator)
+	if !testing.expect(t, err == nil) {return}
+	defer os.remove_all(dir)
+	for name in ([]string{"bad.png", "not-an-image.txt"}) {
+		path := strings.concatenate({dir, "/", name}, context.temp_allocator)
+		testing.expect(t, os.write_entire_file(path, []u8{1, 2, 3}) == nil)
+		testing.expect(t, photo_pick_begin(&ui, .Profile))
+		photo_pick_complete(&ui, []string{path})
+		testing.expect(t, !photo_input_capture(&ui))
+		testing.expect(t, ui.photo.draft.data == nil && ui.photo.draft.image.data == nil)
+		delete(ui.client_status); ui.client_status = ""
+	}
+	testing.expect(t, photo_pick_begin(&ui, .Profile))
+	photo_pick_complete(&ui, []string{"/does/not/exist.png"})
+	testing.expect(t, !photo_input_capture(&ui))
+	testing.expect(t, !ppic_busy && !gimg_writes_pending())
+}
+
+@(test)
+photo_profile_result_account :: proc(t: ^testing.T) {
+	ui := Ui_State{account_ref = "account-b", my_pic_url = "existing-b"}
+	adopt_profile_pic(&ui, "account-a", strings.clone("uploaded-a"))
+	testing.expect_value(t, ui.my_pic_url, "existing-b")
+	testing.expect(t, !ui.profile.pic_set)
+	adopt_profile_pic(&ui, "account-b", strings.clone("uploaded-b"))
+	testing.expect_value(t, ui.my_pic_url, "uploaded-b")
+	testing.expect(t, ui.profile.pic_set)
+	delete(ui.my_pic_url)
+}

@@ -608,6 +608,7 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 		ui.pal_open ||
 		ui.link_open ||
 		ui.confirm.kind != .None ||
+		photo_input_capture(ui) ||
 		ui.hist_open ||
 		ui.raw_open ||
 		ui.enc_open ||

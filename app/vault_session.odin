@@ -162,6 +162,8 @@ editor_forget :: proc(ui: ^Ui_State) {
 
 @(private)
 lock_scrub_ui :: proc(ui: ^Ui_State) {
+	if ui.photo.pending {rl.DiscardFileDialogResult()}
+	photo_cancel(ui)
 	login_pair_clear(ui)
 	delete(ui.account_signing); ui.account_signing = {}
 	editor_forget(ui)

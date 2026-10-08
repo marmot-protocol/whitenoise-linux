@@ -1329,6 +1329,7 @@ drop_draft :: proc(ui: ^Ui_State) {
 // Select a chat, load its timeline, and clear the unread badge by
 // marking the newest message read.
 select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int) {
+	if ui.photo.kind == .Group {photo_cancel(ui)}
 	index := requested_index
 	ui.gs_jump_pending = false
 	ui.nip05_ticket = 0
