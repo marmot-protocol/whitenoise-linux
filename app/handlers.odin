@@ -908,6 +908,8 @@ media_type_for :: proc(name: string) -> string {
 		return "video/webm"
 	case ".mp3":
 		return "audio/mpeg"
+	case ".m4a":
+		return "audio/mp4"
 	case ".ogg":
 		return "audio/ogg"
 	case ".wav":

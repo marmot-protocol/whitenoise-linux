@@ -9,6 +9,17 @@ import "core:text/edit"
 import "core:time"
 
 @(test)
+stt_m4a_attachment :: proc(t: ^testing.T) {
+	for mime in ([]string{"audio/mp4", "video/mp4", "application/octet-stream", ""}) {
+		for name in ([]string{"recording.m4a", "recording.M4A"}) {
+			testing.expect_value(t, media_kind(name, mime), Media_Kind.Audio)
+		}
+	}
+	testing.expect_value(t, media_type_for("recording.M4A"), "audio/mp4")
+	testing.expect_value(t, media_kind("movie.mp4", "video/mp4"), Media_Kind.Video)
+}
+
+@(test)
 stt_draft_safety :: proc(t: ^testing.T) {
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)

@@ -83,11 +83,12 @@ media_kind :: proc(name, mime: string) -> Media_Kind {
 	if is_model_name(lower) || strings.has_prefix(mime, "model/") {return .Mesh}
 	if strings.has_suffix(lower, ".gcode") || strings.has_suffix(lower, ".gco") {return .Gcode}
 	if strings.has_suffix(lower, ".gif") || mime == "image/gif" {return .Loop}
-	if is_video_name(lower) || strings.has_prefix(mime, "video/") {return .Video}
-	if strings.has_prefix(mime, "audio/") {return .Audio}
+	// Audio containers such as M4A can arrive with a generic video/mp4 MIME type.
 	for ext in ([]string{".mp3", ".ogg", ".flac", ".m4a", ".wav"}) {
 		if strings.has_suffix(lower, ext) {return .Audio}
 	}
+	if is_video_name(lower) || strings.has_prefix(mime, "video/") {return .Video}
+	if strings.has_prefix(mime, "audio/") {return .Audio}
 	if strings.has_suffix(lower, ".pdf") || mime == "application/pdf" {return .Pdf}
 	if is_xdc_name(lower) {
 		when ODIN_OS == .OpenBSD {
