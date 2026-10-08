@@ -449,6 +449,15 @@ OpenBSD job boots the OpenBSD 7.9 image from
 under QEMU, builds and packages inside it, and launches the packaged binary
 headless there.
 
+Platform-specific Odin code can be checked from Linux before building a package:
+
+```sh
+odin check app -target:windows_amd64 -define:WN_TARGET=windows-amd64
+odin check app -target:openbsd_amd64 -vet-unused-imports
+```
+
+These commands type-check the app; they do not link it or verify runtime behavior.
+
 The app shows the version written in `APP_VERSION` (`app/advanced.odin`); a
 tag does not change it, and `release.yml` rejects a tag that does not match
 it. `just release` (`scripts/release.sh`) keeps the two together: on a clean,

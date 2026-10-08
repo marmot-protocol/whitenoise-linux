@@ -3,7 +3,6 @@ package main
 import "base:runtime"
 import "core:fmt"
 import "core:os"
-import "core:strings"
 
 // Encode bytes, not runes: SOCKS5 credentials are UTF-8 byte strings.
 @(private)
@@ -54,24 +53,9 @@ tool_exec :: proc(
 				)
 				when ODIN_OS != .OpenBSD {
 					// A child-only override keeps secrets out of argv and off disk.
-					source := desc.env
-					if source == nil {
-						env_err: os.Error
-						source, env_err = os.environ(context.temp_allocator)
-						if env_err != nil {return {}, nil, nil, env_err}
-					}
-					environment := make([dynamic]string, context.temp_allocator)
-					for entry in source {
-						separator := strings.index_byte(entry, '=')
-						if separator < 0 {continue}
-						key := entry[:separator]
-						if strings.has_suffix(key, "_proxy") || strings.has_suffix(key, "_PROXY") {
-							continue
-						}
-						append(&environment, entry)
-					}
-					append(&environment, fmt.tprintf("all_proxy=%s", credential_proxy))
-					desc.env = environment[:]
+					env_err: os.Error
+					desc.env, env_err = proxy_child_env(desc.env, credential_proxy)
+					if env_err != nil {return {}, nil, nil, env_err}
 				}
 			} else {
 				append(&args, "--proxy", fmt.tprintf("socks5h://%s", proxy))

@@ -12,7 +12,7 @@ import "core:strings"
 
 when ODIN_OS == .Windows {
 	foreign import bundle_crt "system:ucrt"
-	@(private = "file")
+	@(private)
 	foreign bundle_crt {
 		@(link_name = "_putenv_s")
 		set_c_env :: proc "c" (key, value: cstring) -> i32 ---
