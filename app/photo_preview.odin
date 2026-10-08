@@ -20,7 +20,8 @@ Photo_Preview :: struct {
 	crop_job: ^Photo_Crop_Job,
 	crop_drag: bool,
 	crop_pointer: rl.Vector2,
-	crop_origin: [2]i32,
+	crop_origin: Photo_Crop,
+	crop_corner: int, // 0 moves; 1..4 resize top-left, top-right, bottom-left, bottom-right
 }
 
 @(private)
@@ -148,12 +149,10 @@ handle_photo_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		photo_crop_start(&ui.photo)
 		return
 	}
-	if clicked("PhotoReset") {
+	if clicked("PhotoOriginal") {
 		ui.photo.crop = {}; ui.photo.crop_drag = false
 		return
 	}
-	if clicked("PhotoSmaller") {photo_crop_resize(&ui.photo, 0.9); return}
-	if clicked("PhotoLarger") {photo_crop_resize(&ui.photo, 1.1); return}
 	if rl.IsKeyPressed(.ENTER) || clicked("PhotoUse") {
 		photo_use(ui, client)
 	}
@@ -175,11 +174,35 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("PhotoImage"))({layout = {sizing = {width = clay.SizingFixed(f32(image.width) * scale), height = clay.SizingFixed(f32(image.height) * scale)}}, image = {imageData = &ui.photo.texture}}) {
 			if ui.photo.crop.active {
 				crop := ui.photo.crop
+				x, y, side := f32(crop.x) * scale, f32(crop.y) * scale, f32(crop.side) * scale
+				w, h := f32(image.width) * scale, f32(image.height) * scale
+				// Four non-overlapping shades leave the selected pixels untouched.
+				for shade, i in ([4][4]f32{{0, 0, w, y}, {0, y + side, w, h - y - side}, {0, y, x, side}, {x + side, y, w - x - side, side}}) {
+					if shade[2] <= 0 || shade[3] <= 0 {continue}
+					if clay.UI(clay.ID("PhotoCropShade", u32(i)))({
+						layout = {sizing = {width = clay.SizingFixed(shade[2]), height = clay.SizingFixed(shade[3])}},
+						backgroundColor = {0, 0, 0, 140},
+						floating = {attachTo = .Parent, pointerCaptureMode = .Passthrough, zIndex = 21, offset = {shade[0], shade[1]}, attachment = {element = .LeftTop, parent = .LeftTop}},
+					}) {}
+				}
 				if clay.UI(clay.ID("PhotoCropBox"))({
-					layout = {sizing = {width = clay.SizingFixed(f32(crop.side) * scale), height = clay.SizingFixed(f32(crop.side) * scale)}},
+					layout = {sizing = {width = clay.SizingFixed(side), height = clay.SizingFixed(side)}},
 					border = {color = ACCENT, width = {left = 2, right = 2, top = 2, bottom = 2}},
-					floating = {attachTo = .Parent, pointerCaptureMode = .Passthrough, zIndex = 21, offset = {f32(crop.x) * scale, f32(crop.y) * scale}, attachment = {element = .LeftTop, parent = .LeftTop}},
+					floating = {attachTo = .Parent, pointerCaptureMode = .Passthrough, zIndex = 21, offset = {x, y}, attachment = {element = .LeftTop, parent = .LeftTop}},
 				}) {}
+				for corner, i in ([4][2]f32{{x, y}, {x + side, y}, {x, y + side}, {x + side, y + side}}) {
+					// A 24px hit area surrounds each visible 12px handle.
+					if clay.UI(clay.ID("PhotoCropHandle", u32(i + 1)))({
+						layout = {sizing = {width = clay.SizingFixed(24), height = clay.SizingFixed(24)}, childAlignment = {x = .Center, y = .Center}},
+						floating = {attachTo = .Parent, pointerCaptureMode = .Passthrough, zIndex = 22, offset = {corner[0] - 12, corner[1] - 12}, attachment = {element = .LeftTop, parent = .LeftTop}},
+					}) {
+						if clay.UI(clay.ID("PhotoCropGrip", u32(i + 1)))({
+							layout = {sizing = {width = clay.SizingFixed(12), height = clay.SizingFixed(12)}},
+							backgroundColor = {255, 255, 255, 255}, cornerRadius = rr(2),
+							border = {color = ACCENT, width = {left = 2, right = 2, top = 2, bottom = 2}},
+						}) {}
+					}
+				}
 			}
 		}
 		if ui.photo.crop_job != nil {
@@ -189,15 +212,13 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 		} else {
 			if clay.UI(clay.ID("PhotoCropActions"))({layout = {childGap = 8}}) {
 				if ui.photo.crop.active {
-					micro_button("PhotoReset", tr("Reset"))
-					micro_button("PhotoSmaller", "−")
-					micro_button("PhotoLarger", "+")
+					micro_button("PhotoOriginal", tr("Use original"))
 				} else {
 					micro_button("PhotoCrop", tr("Crop"))
 				}
 			}
 			if ui.photo.crop.active {
-				clay.Text(tr("Drag to move. Scroll to resize."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+				clay.Text(tr("Drag inside to move. Drag a corner to resize."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 			}
 		}
 		if clay.UI(clay.ID("PhotoActions"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}}) {

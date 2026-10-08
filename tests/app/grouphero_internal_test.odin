@@ -60,7 +60,7 @@ photo_preview_flow :: proc(t: ^testing.T) {
 			testing.expect(t, box.found)
 			testing.expect(t, box.boundingBox.y >= 0 && box.boundingBox.y + box.boundingBox.height <= 300)
 		}
-		// Exercise Crop and Reset through real modal hit testing. Neither may
+		// Exercise Crop and Use original through real modal hit testing. Neither may
 		// dispatch uploads or replace the source/committed avatar.
 		original_data := ui.photo.draft.data
 		box := clay.GetElementData(clay.ID("PhotoCrop")).boundingBox
@@ -71,7 +71,34 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		testing.expect(t, ui.photo.crop.active)
 		photo_test_layout(&ui)
 		testing.expect(t, clay.GetElementData(clay.ID("PhotoCropBox")).found)
-		box = clay.GetElementData(clay.ID("PhotoReset")).boundingBox
+		for i in 1..=4 {
+			handle := clay.GetElementData(clay.ID("PhotoCropHandle", u32(i)))
+			testing.expect(t, handle.found && handle.boundingBox.width == 24 && handle.boundingBox.height == 24)
+			// Real button state and Clay hit testing select the resize mode,
+			// rather than starting an interior move or dispatching an upload.
+			clay.SetPointerState({handle.boundingBox.x + 12, handle.boundingBox.y + 12}, true)
+			rl.PushMouseButton(.LEFT, true)
+			handle_photo_preview(&ui, nil)
+			testing.expect(t, ui.photo.crop_drag)
+			testing.expect_value(t, ui.photo.crop_corner, i)
+			rl.PushMouseButton(.LEFT, false)
+			handle_photo_preview(&ui, nil)
+			testing.expect(t, !ui.photo.crop_drag && ui.photo.crop.active)
+		}
+		crop_box := clay.GetElementData(clay.ID("PhotoCropBox")).boundingBox
+		clay.SetPointerState({crop_box.x + crop_box.width / 2, crop_box.y + crop_box.height / 2}, true)
+		rl.PushMouseButton(.LEFT, true)
+		handle_photo_preview(&ui, nil)
+		testing.expect(t, ui.photo.crop_drag && ui.photo.crop_corner == 0)
+		// Releasing outside during an active drag ends it without Cancel.
+		clay.SetPointerState({0, 0}, false)
+		rl.PushMouseButton(.LEFT, false)
+		handle_photo_preview(&ui, nil)
+		testing.expect(t, !ui.photo.crop_drag && ui.photo.crop.active)
+		rl.WindowShouldClose() // clear injected per-frame flags
+		testing.expect(t, !clay.GetElementData(clay.ID("PhotoSmaller")).found)
+		testing.expect(t, !clay.GetElementData(clay.ID("PhotoLarger")).found)
+		box = clay.GetElementData(clay.ID("PhotoOriginal")).boundingBox
 		clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
 		forced_release = true
 		handle_photo_preview(&ui, nil)
@@ -85,6 +112,36 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		testing.expect(t, captured && !photo_input_capture(&ui), "The closing frame retains its input latch")
 		testing.expect(t, ui.photo.draft.data == nil && ui.photo.texture.tex == nil)
 	}
+
+	// A one-pixel crop in a larger source has overlapping handle hit areas.
+	// Each actual corner remains selectable, including bottom/right at minimum size.
+	pixels: [10 * 10 * 4]u8
+	tiny := Ui_State{photo = {draft = {image = {data = &pixels[0], width = 10, height = 10}}, crop = {true, 4, 4, 1}}}
+	photo_test_layout(&tiny)
+	image_box := clay.GetElementData(clay.ID("PhotoImage")).boundingBox
+	selected_box := clay.GetElementData(clay.ID("PhotoCropBox")).boundingBox
+	shaded_area := f32(0)
+	for i in 0..<4 {
+		shade := clay.GetElementData(clay.ID("PhotoCropShade", u32(i)))
+		testing.expect(t, shade.found)
+		b := shade.boundingBox
+		testing.expect(t, b.x >= image_box.x && b.y >= image_box.y)
+		testing.expect(t, b.x + b.width <= image_box.x + image_box.width && b.y + b.height <= image_box.y + image_box.height)
+		testing.expect(t, b.x + b.width <= selected_box.x || b.x >= selected_box.x + selected_box.width || b.y + b.height <= selected_box.y || b.y >= selected_box.y + selected_box.height)
+		shaded_area += b.width * b.height
+	}
+	testing.expect_value(t, shaded_area, image_box.width * image_box.height - selected_box.width * selected_box.height)
+	for i in 1..=4 {
+		handle := clay.GetElementData(clay.ID("PhotoCropHandle", u32(i))).boundingBox
+		clay.SetPointerState({handle.x + 12, handle.y + 12}, true)
+		rl.PushMouseButton(.LEFT, true)
+		photo_crop_input(&tiny.photo)
+		testing.expect(t, tiny.photo.crop_drag)
+		testing.expect_value(t, tiny.photo.crop_corner, i)
+		rl.PushMouseButton(.LEFT, false)
+		photo_crop_input(&tiny.photo)
+	}
+	rl.WindowShouldClose()
 
 	// Replacement frees the earlier decoded draft and texture.
 	testing.expect(t, photo_pick_begin(&ui, .Group))

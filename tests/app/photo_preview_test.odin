@@ -44,6 +44,39 @@ photo_crop_pixels :: proc(t: ^testing.T) {
 	testing.expect_value(t, p.crop.x, i32(1))
 }
 
+@(test)
+photo_crop_corner_resize :: proc(t: ^testing.T) {
+	p := Photo_Preview{draft = {image = {width = 800, height = 600}}}
+	origin := Photo_Crop{true, 200, 150, 200}
+	for corner in 1..=4 {
+		p.crop, p.crop_origin, p.crop_corner = origin, origin, corner
+		left := corner == 1 || corner == 3
+		top := corner == 1 || corner == 2
+		anchor_x := origin.x + (left ? origin.side : 0)
+		anchor_y := origin.y + (top ? origin.side : 0)
+		for delta in ([]f32{80, -80, 2000, -2000}) {
+			photo_crop_drag_to(&p, left ? -delta : delta, top ? -delta : delta)
+			testing.expect(t, p.crop.side >= 1 && p.crop.x >= 0 && p.crop.y >= 0)
+			testing.expect(t, p.crop.x + p.crop.side <= 800 && p.crop.y + p.crop.side <= 600)
+			testing.expect_value(t, p.crop.x + (left ? p.crop.side : 0), anchor_x)
+			testing.expect_value(t, p.crop.y + (top ? p.crop.side : 0), anchor_y)
+			if delta == 80 {testing.expect_value(t, p.crop.side, i32(280))}
+			if delta == -80 {testing.expect_value(t, p.crop.side, i32(120))}
+			if delta == -2000 {testing.expect_value(t, p.crop.side, i32(1))}
+		}
+		// One-axis drags still resize a square, with no pointer-jump on press.
+		photo_crop_drag_to(&p, 0, 0)
+		testing.expect_value(t, p.crop, origin)
+		photo_crop_drag_to(&p, left ? f32(-80) : f32(80), 0)
+		testing.expect_value(t, p.crop.side, i32(240))
+	}
+	p.crop, p.crop_origin, p.crop_corner = origin, origin, 0
+	photo_crop_drag_to(&p, 35, -20)
+	testing.expect_value(t, p.crop, Photo_Crop{true, 235, 130, 200})
+	photo_crop_drag_to(&p, 2000, -2000)
+	testing.expect_value(t, p.crop, Photo_Crop{true, 600, 0, 200})
+}
+
 // Real encoded fixture, decoded by the same helper used for native picks.
 photo_test_bytes :: proc() -> []u8 {
 	bytes, _ := base64.decode("UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA")

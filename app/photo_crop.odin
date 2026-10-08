@@ -1,5 +1,5 @@
 // Optional square crop for native avatar picks. Keep the source draft intact
-// until Use so Reset and Cancel never touch the committed avatar.
+// until Use so Use original and Cancel never touch the committed avatar.
 package main
 
 import "base:runtime"
@@ -44,6 +44,29 @@ photo_crop_resize :: proc(p: ^Photo_Preview, factor: f32) {
 	photo_crop_clamp(p)
 }
 
+// Keep the opposite corner anchored. Project the pointer onto the square's
+// diagonal, then limit the side before computing x/y so edges never drift.
+@(private)
+photo_crop_drag_to :: proc(p: ^Photo_Preview, dx, dy: f32) {
+	origin := p.crop_origin
+	if p.crop_corner == 0 {
+		p.crop.x = origin.x + i32(dx)
+		p.crop.y = origin.y + i32(dy)
+		photo_crop_clamp(p)
+		return
+	}
+	left := p.crop_corner == 1 || p.crop_corner == 3
+	top := p.crop_corner == 1 || p.crop_corner == 2
+	anchor_x := origin.x + (left ? origin.side : 0)
+	anchor_y := origin.y + (top ? origin.side : 0)
+	limit_x := left ? anchor_x : p.draft.image.width - anchor_x
+	limit_y := top ? anchor_y : p.draft.image.height - anchor_y
+	delta := ((left ? -dx : dx) + (top ? -dy : dy)) / 2
+	p.crop.side = clamp(origin.side + i32(delta), i32(1), min(limit_x, limit_y))
+	p.crop.x = left ? anchor_x - p.crop.side : anchor_x
+	p.crop.y = top ? anchor_y - p.crop.side : anchor_y
+}
+
 // Pointer coordinates are logical layout pixels; the crop stays in source
 // pixels so window size and interface zoom cannot change the encoded region.
 @(private)
@@ -54,18 +77,34 @@ photo_crop_input :: proc(p: ^Photo_Preview) {
 	scale := box.boundingBox.width / f32(p.draft.image.width)
 	mouse := rl.GetMousePosition()
 	mouse.x /= UI_ZOOM; mouse.y /= UI_ZOOM
-	if rl.IsMouseButtonPressed(.LEFT) && clay.PointerOver(clay.ID("PhotoCropBox")) {
-		p.crop_drag = true
-		p.crop_pointer = mouse
-		p.crop_origin = {p.crop.x, p.crop.y}
+	if rl.IsMouseButtonPressed(.LEFT) {
+		corner := 0
+		nearest := f32(1e30)
+		pointer := clay.GetPointerState().position
+		// Handles win over moving the interior. At very small crop sizes,
+		// choose the nearest corner rather than letting overlapping hits
+		// make the bottom/right handles unreachable.
+		for i in 1..=4 {
+			id := clay.ID("PhotoCropHandle", u32(i))
+			if !clay.PointerOver(id) {continue}
+			handle := clay.GetElementData(id).boundingBox
+			dx := pointer.x - (handle.x + handle.width / 2)
+			dy := pointer.y - (handle.y + handle.height / 2)
+			distance := dx * dx + dy * dy
+			if distance < nearest {corner, nearest = i, distance}
+		}
+		if corner != 0 || clay.PointerOver(clay.ID("PhotoCropBox")) {
+			p.crop_drag = true
+			p.crop_corner = corner
+			p.crop_pointer = mouse
+			p.crop_origin = p.crop
+		}
 	}
 	if p.crop_drag && rl.IsMouseButtonDown(.LEFT) {
-		p.crop.x = p.crop_origin.x + i32((mouse.x - p.crop_pointer.x) / scale)
-		p.crop.y = p.crop_origin.y + i32((mouse.y - p.crop_pointer.y) / scale)
-		photo_crop_clamp(p)
+		photo_crop_drag_to(p, (mouse.x - p.crop_pointer.x) / scale, (mouse.y - p.crop_pointer.y) / scale)
 	}
 	if !rl.IsMouseButtonDown(.LEFT) {p.crop_drag = false}
-	if clay.PointerOver(clay.ID("PhotoImage")) {
+	if !p.crop_drag && clay.PointerOver(clay.ID("PhotoImage")) {
 		wheel := rl.GetMouseWheelMoveV().y
 		if wheel != 0 {photo_crop_resize(p, wheel > 0 ? f32(0.9) : f32(1.1))}
 	}
