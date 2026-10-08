@@ -31,11 +31,15 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 						   ui.focus == .Inbox ||
 						   ui.focus == .Fetch ||
 						   ui.focus == .Client ||
+						   ui.focus == .Socks5 ||
+						   ui.focus == .Socks5User ||
+						   ui.focus == .Socks5Password ||
 						   ui.focus == .Gm ||
 						   ui.focus == .KP ||
 						   ui.focus == .EmojiName ||
 						   ui.focus == .ExportPw))) &&
-	   !ui.new_chat_open {
+	   !ui.new_chat_open &&
+	   !(ui.focus in SOCKS5_FIELDS && ui.socks5_job != nil) {
 		edit_text(ui, active_buf(ui))
 	}
 

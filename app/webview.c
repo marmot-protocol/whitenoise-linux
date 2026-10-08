@@ -30,6 +30,7 @@
 
 #include "webview.h"
 #include "helper_ipc.h"
+#include "proxy_credentials.h"
 
 #define WN_TICK_MS 16 // ~60Hz draw
 
@@ -313,6 +314,32 @@ int main(int argc, char **argv) {
         return 2;
     }
     const char *url = argv[1];
+    const char *proxy = g_getenv("WN_SOCKS5_PROXY");
+    const char *username, *password;
+    int authentication = wn_proxy_credentials(&username, &password);
+    if (authentication < 0 || (authentication && (!proxy || !*proxy))) {
+        g_printerr("wn-webview: invalid SOCKS5 credentials\n");
+        return 2;
+    }
+    if (proxy && *proxy) {
+        // Validate before adding secrets: GIO logs malformed proxy URIs.
+        char *endpoint = g_strdup_printf("socks5://%s", proxy);
+        GUri *parsed = g_uri_parse(endpoint, G_URI_FLAGS_NONE, NULL);
+        GInetAddress *address = parsed && g_uri_get_host(parsed)
+                                    ? g_inet_address_new_from_string(g_uri_get_host(parsed))
+                                    : NULL;
+        gboolean valid = address && !g_uri_get_userinfo(parsed) && g_uri_get_port(parsed) > 0 &&
+                         g_uri_get_port(parsed) <= 65535 && !*g_uri_get_path(parsed) &&
+                         !g_uri_get_query(parsed) && !g_uri_get_fragment(parsed);
+        g_clear_object(&address);
+        if (parsed)
+            g_uri_unref(parsed);
+        g_free(endpoint);
+        if (!valid) {
+            g_printerr("wn-webview: invalid SOCKS5 endpoint\n");
+            return 2;
+        }
+    }
     // argv[3]/argv[4] are the buffer's capacity, not the page size: the
     // parent asks for a size per frame through the shared header.
     int w = atoi(argv[3]);
@@ -350,6 +377,30 @@ int main(int argc, char **argv) {
 
     // Ephemeral: nothing the app stores outlives the process.
     WebKitWebsiteDataManager *data = webkit_website_data_manager_new_ephemeral();
+    if (proxy && *proxy) {
+        char *uri;
+        if (authentication) {
+            // GProxyAddressEnumerator decodes userinfo for GSocks5Proxy's
+            // RFC 1929 handshake, rather than WebKit's HTTP authentication signal.
+            char *user = g_uri_escape_string(username, NULL, FALSE);
+            char *pass = g_uri_escape_string(password, NULL, FALSE);
+            uri = g_strdup_printf("socks5://%s:%s@%s", user, pass, proxy);
+            g_free(user);
+            g_free(pass);
+        } else {
+            uri = g_strdup_printf("socks5://%s", proxy);
+        }
+        WebKitNetworkProxySettings *settings = webkit_network_proxy_settings_new(uri, NULL);
+        if (!settings) {
+            g_free(uri);
+            g_printerr("wn-webview: cannot configure SOCKS5 proxy\n");
+            return 2;
+        }
+        webkit_website_data_manager_set_network_proxy_settings(
+            data, WEBKIT_NETWORK_PROXY_MODE_CUSTOM, settings);
+        webkit_network_proxy_settings_free(settings);
+        g_free(uri);
+    }
     WebKitWebContext *context = webkit_web_context_new_with_website_data_manager(data);
     WebKitUserContentManager *ucm = webkit_user_content_manager_new();
     web->view = g_object_new(WEBKIT_TYPE_WEB_VIEW, "web-context", context, "user-content-manager",

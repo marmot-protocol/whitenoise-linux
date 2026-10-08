@@ -141,10 +141,15 @@ login_pane :: proc(ui: ^Ui_State) {
 		border = {color = CARD_BORDER, width = bw()},
 	},
 	) {
-		if !pairing {logo_mark()}
-		clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT})
+		if !ui.socks5_login_open {
+			if !pairing {logo_mark()}
+			clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT})
+		}
 
-		if auth_job != nil {
+		if ui.socks5_login_open {
+			settings_socks5(ui)
+			micro_button("LoginProxyBack", tr("Back"))
+		} else if auth_job != nil {
 			// The round trip runs on the sign-in worker; this is the only
 			// thing the card offers until drain_auth picks it up.
 			minting := auth_job.method == .Create
@@ -259,6 +264,7 @@ login_pane :: proc(ui: ^Ui_State) {
 			{layout = {sizing = {height = clay.SizingFixed(10)}}},
 			) {}
 			micro_button("LoginBackup", tr("Import backup"))
+			micro_button("LoginProxy", tr("SOCKS5 proxy"))
 		} else {
 			clay.Text(
 				ui.login_method == .Bunker ? tr("Connect your remote signer") : ui.login_method == .Pair ? tr("Pair with your remote signer") : tr("Import a key"),

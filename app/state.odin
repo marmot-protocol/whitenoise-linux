@@ -286,6 +286,9 @@ Focus :: enum {
 	Inbox, // settings inbox-relay box
 	Fetch, // settings event-fetch-relay box
 	Client, // settings event web-client box
+	Socks5, // settings SOCKS5 endpoint box
+	Socks5User,
+	Socks5Password,
 	Gm, // settings GM-message box
 	ExportPw, // export-ncryptsec password box
 	BackupPw, // backup create/import password box
@@ -779,6 +782,17 @@ Ui_State :: struct {
 	inbox_input:                                           [dynamic]u8, // settings inbox-relay box
 	fetch_input:                                           [dynamic]u8, // settings event-fetch-relay box
 	client_input:                                          [dynamic]u8, // settings event web-client box, mirrors prefs.event_client
+	socks5_input:                                          [dynamic]u8, // proxy form draft; owns its bytes
+	socks5_username:                                       [dynamic]u8,
+	socks5_password:                                       [dynamic]u8,
+	socks5_enabled:                                        bool,
+	socks5_auth:                                           bool,
+	socks5_initialized:                                    bool,
+	socks5_saved:                                          bool,
+	socks5_save_error:                                     bool,
+	socks5_load_error:                                     bool,
+	socks5_job:                                            ^Socks5_Work,
+	socks5_login_open:                                     bool,
 	gm_input:                                              [dynamic]u8, // settings GM-message box, mirrors prefs.gm_text
 	health:                                                marmot.Relay_Health, // relay-pool counters (network.odin)
 	health_ok:                                             bool, // a relay_health call has succeeded

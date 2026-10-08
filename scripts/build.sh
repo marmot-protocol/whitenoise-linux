@@ -41,7 +41,7 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-MDK_PATCHES=("$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-openbsd-unveil.patch" "$HERE/patches/mdk-openbsd-memory.patch" "$HERE/patches/mdk-advanced-search.patch" "$HERE/patches/mdk-markdown-timestamps.patch")
+MDK_PATCHES=("$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-poll-context.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-openbsd-unveil.patch" "$HERE/patches/mdk-openbsd-memory.patch" "$HERE/patches/mdk-advanced-search.patch" "$HERE/patches/mdk-markdown-timestamps.patch" "$HERE/patches/mdk-socks5-proxy.patch" "$HERE/patches/mdk-socks5-auth.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
@@ -204,7 +204,9 @@ fi
 mkdir -p "$HERE/build/ws"
 if [ ! -f "$HERE/build/libwnws.a" ] || \
    [ "$HERE/app/ws_shim.c" -nt "$HERE/build/libwnws.a" ] || \
-   [ "$HERE/app/nc_shim.c" -nt "$HERE/build/libwnws.a" ]; then
+   [ "$HERE/app/nc_shim.c" -nt "$HERE/build/libwnws.a" ] || \
+   [ "$HERE/app/network_proxy.h" -nt "$HERE/build/libwnws.a" ] || \
+   [ "$HERE/app/proxy_credentials.h" -nt "$HERE/build/libwnws.a" ]; then
   cc -c -O2 -fPIC $(pkg-config --cflags libcurl) "$HERE/app/ws_shim.c" -o "$HERE/build/ws/ws_shim.o"
   cc -c -O2 -fPIC $(pkg-config --cflags libcurl) "$HERE/app/nc_shim.c" -o "$HERE/build/ws/nc_shim.o"
   rm -f "$HERE/build/libwnws.a"
@@ -314,7 +316,7 @@ fi
 if [ "$(uname -s)" = OpenBSD ]; then
   echo "==> webxdc apps are disabled on OpenBSD"
 elif pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
-  if [ ! -f "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.c" -nt "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.h" -nt "$HERE/build/wn-webview" ] || [ "$HERE/build/libwnipc.a" -nt "$HERE/build/wn-webview" ]; then
+  if [ ! -f "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.c" -nt "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.h" -nt "$HERE/build/wn-webview" ] || [ "$HERE/app/proxy_credentials.h" -nt "$HERE/build/wn-webview" ] || [ "$HERE/build/libwnipc.a" -nt "$HERE/build/wn-webview" ]; then
     cc -O2 "$HERE/app/webview.c" "$HERE/build/libwnipc.a" -pthread -o "$HERE/build/wn-webview" \
       $(pkg-config --cflags --libs webkit2gtk-4.1)
   fi
@@ -718,6 +720,9 @@ if [ "${1:-}" = test ]; then
   cc -O2 -Wall -Wextra "$HERE/tests/ws-frame-test.c" \
     $(pkg-config --cflags --libs libcurl) -o "$HERE/build/ws-frame-test"
   "$HERE/build/ws-frame-test"
+  cc -O2 -Wall -Wextra "$HERE/tests/proxy-credentials-test.c" \
+    $(pkg-config --cflags --libs libcurl) -o "$HERE/build/proxy-credentials-test"
+  "$HERE/build/proxy-credentials-test"
   cc -O2 -Wall -Wextra "$HERE/tests/decoder-limits-test.c" -o "$HERE/build/decoder-limits-test"
   "$HERE/build/decoder-limits-test"
   cc -O2 -Wall -Wextra "$HERE/tests/timestamp-test.c" "$HERE/build/libwntimestamp.a" -o "$HERE/build/timestamp-test"

@@ -700,6 +700,9 @@ msgstr "保管庫のパスワードを変更"
 msgid "Change..."
 msgstr "変更..."
 
+msgid "Changes require a restart; the current connection is unchanged."
+msgstr "変更には再起動が必要です。現在の接続は変更されません。"
+
 #, c-format
 msgid "Chat list failed: %s"
 msgstr "チャット一覧の読み込みに失敗しました: %s"
@@ -891,6 +894,9 @@ msgstr "コメント"
 msgid "Config"
 msgstr "設定ファイル"
 
+msgid "Configure a SOCKS5 proxy"
+msgstr "SOCKS5 プロキシを設定"
+
 msgid "Confirm"
 msgstr "確認"
 
@@ -1075,6 +1081,9 @@ msgstr "アカウント操作を完了できませんでした。もう一度お
 msgid "Couldn't complete your account action. Please try again. (%s)"
 msgstr "アカウント操作を完了できませんでした。もう一度お試しください。(%s)"
 
+msgid "Couldn't configure the proxy. Please try again."
+msgstr "プロキシを設定できませんでした。もう一度お試しください。"
+
 #, c-format
 msgid "Couldn't copy %s. Please try again."
 msgstr "%sをコピーできませんでした。もう一度お試しください。"
@@ -1192,6 +1201,9 @@ msgstr "報告を読み込めませんでした。もう一度お試しくださ
 
 msgid "Couldn't load messages. Please try again."
 msgstr "メッセージを読み込めませんでした。もう一度お試しください。"
+
+msgid "Couldn't load proxy credentials. Enter them again and save."
+msgstr "プロキシの認証情報を読み込めませんでした。もう一度入力して保存してください。"
 
 msgid "Couldn't load the map. Please try again."
 msgstr "地図を読み込めませんでした。もう一度お試しください。"
@@ -1323,6 +1335,9 @@ msgstr "秘密鍵を表示できませんでした。%s"
 #, c-format
 msgid "Couldn't save %s. Please try again."
 msgstr "%sを保存できませんでした。もう一度お試しください。"
+
+msgid "Couldn't save proxy credentials. Please try again."
+msgstr "プロキシの認証情報を保存できませんでした。もう一度お試しください。"
 
 msgid "Couldn't save the GIF. Please try again."
 msgstr "GIFを保存できませんでした。もう一度お試しください。"
@@ -1755,8 +1770,14 @@ msgstr "エンドツーエンド暗号化"
 msgid "Enter a color as #RRGGBB."
 msgstr "色を #RRGGBB 形式で入力してください。"
 
+msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
+msgstr "数値の IPv4 アドレス、または角括弧で囲んだ IPv6 アドレスと、1 から 65535 のポートを入力してください。"
+
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "ステッカー名を1〜64文字で入力してください。"
+
+msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
+msgstr "ユーザー名とパスワードを、それぞれ UTF-8 で 1 から 255 バイトで入力してください。"
 
 msgid "Enter an issue title and description."
 msgstr "報告のタイトルと説明を入力してください。"
@@ -1824,6 +1845,12 @@ msgstr "暗号化された鍵をエクスポート (ncryptsec)"
 
 msgid "Export key"
 msgstr "鍵をエクスポート"
+
+msgid "External browsers and other apps do not use this setting."
+msgstr "外部ブラウザーや他のアプリには、この設定は適用されません。"
+
+msgid "External browsers, other apps, and Windows app updates do not use this setting."
+msgstr "外部ブラウザー、他のアプリ、Windows でのアプリ更新にはこの設定は適用されません。"
 
 msgid "FILES"
 msgstr "ファイル"
@@ -2781,6 +2808,9 @@ msgstr "通知が表示されません"
 msgid "Nov"
 msgstr "11月"
 
+msgid "Numeric IP and port only: 127.0.0.1:9050 or [::1]:9050. No URLs or hostnames."
+msgstr "数値の IP アドレスとポートのみ使用できます（127.0.0.1:9050 または [::1]:9050）。URL やホスト名は使用できません。"
+
 msgid "OFFLINE"
 msgstr "オフライン"
 
@@ -2934,6 +2964,9 @@ msgstr "パネル"
 msgid "Panel 2"
 msgstr "パネル 2"
 
+msgid "Password"
+msgstr "パスワード"
+
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "パックのリンクを貼り付けると、追加する前にステッカーを確認できます。"
 
@@ -3055,6 +3088,9 @@ msgstr "文字起こしを準備しています..."
 
 msgid "Press Ctrl P for the command palette."
 msgstr "Ctrl P を押すとコマンドパレットが開きます。"
+
+msgid "Press Enter to save; Escape returns to the switches."
+msgstr "Enter で保存し、Escape でスイッチに戻ります。"
 
 msgid "Preview"
 msgstr "試聴"
@@ -3235,6 +3271,9 @@ msgstr "標準"
 msgid "Relay lists republished."
 msgstr "リレーリストを再公開しました。"
 
+msgid "Relay names are resolved by your proxy. Media host checks still use your local DNS."
+msgstr "リレー名はプロキシが名前解決します。メディアのホスト確認には引き続きローカル DNS を使用します。"
+
 msgid "Relay status unavailable"
 msgstr "リレーの状態を取得できません"
 
@@ -3405,6 +3444,9 @@ msgstr "サイト"
 msgid "SKIN"
 msgstr "スキン"
 
+msgid "SOCKS5 proxy"
+msgstr "SOCKS5 プロキシ"
+
 msgid "STATE SNAPSHOT"
 msgstr "状態スナップショット"
 
@@ -3445,6 +3487,9 @@ msgstr "保存して使用"
 msgid "Save attachment"
 msgstr "添付ファイルを保存"
 
+msgid "Save changes, then restart White Noise to apply them."
+msgstr "変更を保存してから、White Noise を再起動して適用してください。"
+
 msgid "Save file"
 msgstr "ファイルを保存"
 
@@ -3457,6 +3502,12 @@ msgstr "保存済み"
 #, c-format
 msgid "Saved %s."
 msgstr "%sを保存しました。"
+
+msgid "Saved. Restart White Noise to apply this connection setting."
+msgstr "保存しました。この接続設定を適用するには White Noise を再起動してください。"
+
+msgid "Saving your proxy settings and encrypted credentials."
+msgstr "プロキシ設定と暗号化した認証情報を保存しています。"
 
 msgid "Say GM (once a day)"
 msgstr "GMを送信（1日1回）"
@@ -4213,6 +4264,9 @@ msgstr "アップロード済みの絵文字"
 msgid "Uploading picture"
 msgstr "画像をアップロードしています"
 
+msgid "Use a SOCKS5 proxy"
+msgstr "SOCKS5 プロキシを使う"
+
 msgid "Use a separate group for each project and start with its location and context. Session controls vary by connector; check its guide before using resume or branch commands."
 msgstr "プロジェクトごとに別のグループを使い、最初にプロジェクトの場所と背景情報を伝えてください。セッションの操作方法はコネクターによって異なります。再開や分岐のコマンドを使う前に、そのコネクターのガイドを確認してください。"
 
@@ -4230,6 +4284,9 @@ msgstr "このテーマを使う"
 
 msgid "Use unrelated words or a password-manager password."
 msgstr "関連のない単語を組み合わせるか、パスワードマネージャーで生成したパスワードを使用してください。"
+
+msgid "Use username and password"
+msgstr "ユーザー名とパスワードを使う"
 
 msgid "Use valid YYYY-MM-DD UTC dates with the start on or before the end."
 msgstr "YYYY-MM-DD形式の有効なUTC日付を入力してください。開始日は終了日以前にしてください。"
@@ -4471,6 +4528,9 @@ msgstr "秘密鍵はリモート署名者に保存されます。この端末で
 
 msgid "Your profile"
 msgstr "あなたのプロフィール"
+
+msgid "Your proxy credentials are stored in your encrypted vault."
+msgstr "プロキシの認証情報は暗号化された保管庫に保存されます。"
 
 msgid "Your public key"
 msgstr "あなたの公開鍵"

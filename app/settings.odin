@@ -85,6 +85,8 @@ Prefs :: struct {
 	// with {id} standing for the nevent/note token.
 	fetch_relays:          [dynamic]string,
 	event_client:          string,
+	socks5_proxy:          string, // numeric IP:port; empty disables; applied on next launch
+	socks5_auth:           bool, // credentials live in the encrypted vault, never preferences
 	dev_mode:              bool, // shows the Debug / KP inspector sections
 	last_backup:           i64, // unix seconds of the last backup written; 0 = never
 }

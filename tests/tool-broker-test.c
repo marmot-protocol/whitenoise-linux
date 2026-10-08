@@ -88,33 +88,37 @@ int main(void) {
         assert(snprintf(denied_url, sizeof denied_url, "file://%s", secret) <
                (int)sizeof denied_url);
         const char *read_allowed[] = {"-q", "-sS", allowed_url};
-        assert(wn_tools_run(WN_TOOL_CURL, read_allowed, 3, &out, &length, &errors, &errors_length,
-                            &status) == 0);
+        assert(wn_tools_run(WN_TOOL_CURL, read_allowed, 3, NULL, &out, &length, &errors,
+                            &errors_length, &status) == 0);
         assert(status == 0 && length == 9 && !memcmp(out, "permitted", 9));
         free(out);
         free(errors);
         const char *read_denied[] = {"-q", "-sS", denied_url};
-        assert(wn_tools_run(WN_TOOL_CURL, read_denied, 3, &out, &length, &errors, &errors_length,
-                            &status) == 0);
+        assert(wn_tools_run(WN_TOOL_CURL, read_denied, 3, NULL, &out, &length, &errors,
+                            &errors_length, &status) == 0);
         assert(status != 0 && length == 0);
         free(out);
         free(errors);
         const char *save_allowed[] = {"-q", "-sS", "--output", copied, allowed_url};
-        assert(wn_tools_run(WN_TOOL_CURL, save_allowed, 5, &out, &length, &errors, &errors_length,
-                            &status) == 0);
+        assert(wn_tools_run(WN_TOOL_CURL, save_allowed, 5, NULL, &out, &length, &errors,
+                            &errors_length, &status) == 0);
         assert(status == 0);
         free(out);
         free(errors);
         const char *save_denied[] = {"-q", "-sS", "--output", rejected, allowed_url};
-        assert(wn_tools_run(WN_TOOL_CURL, save_denied, 5, &out, &length, &errors, &errors_length,
-                            &status) == 0);
+        assert(wn_tools_run(WN_TOOL_CURL, save_denied, 5, NULL, &out, &length, &errors,
+                            &errors_length, &status) == 0);
         assert(status != 0);
         free(out);
         free(errors);
-        assert(wn_tools_run(999, NULL, 0, &out, &length, &errors, &errors_length, &status) ==
+        assert(wn_tools_run(999, NULL, 0, NULL, &out, &length, &errors, &errors_length, &status) ==
                EINVAL);
-        assert(wn_tools_run(WN_TOOL_CURL, NULL, 65, &out, &length, &errors, &errors_length,
+        assert(wn_tools_run(WN_TOOL_CURL, NULL, 65, NULL, &out, &length, &errors, &errors_length,
                             &status) == E2BIG);
+        assert(wn_tools_run(WN_TOOL_NOTIFY, NULL, 0, "socks5h://127.0.0.1:9050", &out, &length,
+                            &errors, &errors_length, &status) == EINVAL);
+        assert(wn_tools_run(WN_TOOL_CURL, read_allowed, 3, "http://127.0.0.1:9050", &out, &length,
+                            &errors, &errors_length, &status) == EINVAL);
         wn_tools_stop();
         _exit(0);
     }

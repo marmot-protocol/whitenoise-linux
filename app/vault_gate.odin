@@ -421,8 +421,13 @@ gate_input :: proc(ui: ^Ui_State) {
 	gate_start(creating)
 }
 
-// Shared with the change-password modal (vault_pw.odin), the other
-// place a vault password gets typed.
+// Shared with the change-password modal and proxy credentials.
+@(private)
+Secret_Field_View :: enum {
+	Masked,
+	Plain,
+}
+
 @(private)
 gate_field :: proc(
 	ui: ^Ui_State,
@@ -430,6 +435,7 @@ gate_field :: proc(
 	buf: ^[dynamic]u8,
 	focused: bool,
 	placeholder: string,
+	view: Secret_Field_View = .Masked,
 ) {
 	if clay.UI(clay.ID(id_str))(
 	{
@@ -449,7 +455,9 @@ gate_field :: proc(
 		if focused {
 			glow(clay.ID(id_str), ACCENT, 0.35 + clamp((pop - 1) * 3, 0, 0.65), 18)
 		}
-		if len(buf) == 0 {
+		if view == .Plain {
+			field_text(ui, id_str, buf, placeholder, focused, 15)
+		} else if len(buf) == 0 {
 			// Caret before the hint, where typing will start.
 			if focused {
 				caret(16)

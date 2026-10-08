@@ -461,8 +461,34 @@ app_main :: proc() {
 	load_themes()
 	defer stop_system_theme()
 	load_settings(&ui, .Preferences)
+	// Freeze networking configuration before starting any workers. Settings
+	// edits take effect on restart, not halfway through an active request.
+	if err := os.set_env("WN_SOCKS5_PROXY", ui.prefs.socks5_proxy); err != nil {
+		fmt.eprintfln("Cannot configure SOCKS5 proxy: %v", err)
+		return
+	}
+	when ODIN_OS == .Windows {
+		if set_c_env(
+			   "WN_SOCKS5_PROXY",
+			   strings.clone_to_cstring(ui.prefs.socks5_proxy, context.temp_allocator),
+		   ) !=
+		   0 {
+			fmt.eprintln("Cannot configure SOCKS5 proxy for network helpers")
+			return
+		}
+	}
 	append(&ui.client_input, ..transmute([]u8)ui.prefs.event_client)
 	append(&ui.gm_input, ..transmute([]u8)ui.prefs.gm_text)
+	for key in ([2]string{"WN_SOCKS5_USERNAME", "WN_SOCKS5_PASSWORD"}) {
+		if os.set_env(key, "") != nil {return}
+		when ODIN_OS == .Windows {if set_c_env(strings.clone_to_cstring(key, context.temp_allocator), "") != 0 {return}}
+	}
+	defer {
+		for key in ([2]string{"WN_SOCKS5_USERNAME", "WN_SOCKS5_PASSWORD"}) {
+			os.unset_env(key)
+			when ODIN_OS == .Windows {set_c_env(strings.clone_to_cstring(key, context.temp_allocator), "")}
+		}
+	}
 	set_locale(ui.prefs.locale)
 	g_prefs = &ui.prefs
 	apply_theme(ui.theme, ui.accent)
@@ -515,6 +541,7 @@ app_main :: proc() {
 	local_timing_end(.linux_startup_before_vault, startup_start)
 	update_start(os.get_env("WN_TEST_UPDATE_FEED", context.temp_allocator))
 	defer update_stop()
+	proxy_ready := true
 	for first_session := true;; first_session = false {
 		if !vault_gate(&ui) {
 			if ui.lock_requested {vault_relock()} else {vault_lock()}
@@ -522,8 +549,16 @@ app_main :: proc() {
 			return
 		}
 		load_session_settings(&ui)
-		start_pic_worker()
-		start_gimg_worker()
+		if first_session {
+			proxy_ready = socks5_configure(&ui)
+			if !proxy_ready &&
+			   ui.login_error ==
+				   "" {ui.login_error = strings.clone(tr("Couldn't configure the proxy. Please try again."))}
+		}
+		if proxy_ready {
+			start_pic_worker()
+			start_gimg_worker()
+		}
 		// Tray icon for either tray pref; start-in-tray also hides the
 		// window, honored at boot only, after the unlock.
 		apply_tray(&ui)
@@ -534,7 +569,8 @@ app_main :: proc() {
 		ready_started := time.tick_now()
 		startup_ready := ready_started
 		splash_frame(0)
-		client := boot_marmot(home, &ui)
+		client: ^marmot.Client
+		if proxy_ready {client = boot_marmot(home, &ui)}
 		splash_frame(1)
 		// The boot line already showed on the splash; don't repeat it as a
 		// banner over the first screen.
@@ -955,6 +991,7 @@ app_main :: proc() {
 			// selection (select-to-copy), except from the masked nsec field.
 			if rl.IsMouseButtonReleased(.LEFT) && text_drag != nil {
 				if text_drag != &ui.login_input &&
+				   text_drag != &ui.socks5_password &&
 				   ui.ed_target == text_drag &&
 				   ui.ed.selection[0] != ui.ed.selection[1] {
 					buf := (^[dynamic]u8)(text_drag)
@@ -1263,6 +1300,7 @@ app_main :: proc() {
 
 			post_start := time.tick_now()
 			remember_workspace(&ui)
+			socks5_drain(&ui)
 			if ui.settings_dirty {save_settings(&ui, background = true)}
 			settings_drain(&ui)
 			// Profile pictures fetched by the curl worker decode here (the

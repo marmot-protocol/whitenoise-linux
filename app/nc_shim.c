@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "network_proxy.h"
 
 static int64_t nc_now_ms(void) {
 #ifdef _WIN32
@@ -386,7 +387,7 @@ int wn_nc_call(const char *url, const char *req, const char *pin, int want_id, c
     int debug = getenv("WN_NC_DEBUG") != NULL;
     curl_easy_setopt(c, CURLOPT_VERBOSE, (long)debug);
     int result = -1;
-    if (curl_easy_perform(c) != CURLE_OK) {
+    if (wn_curl_proxy(c) != CURLE_OK || curl_easy_perform(c) != CURLE_OK) {
         goto done;
     }
 

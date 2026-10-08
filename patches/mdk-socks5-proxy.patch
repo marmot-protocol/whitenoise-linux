@@ -1,0 +1,566 @@
+diff --git i/Cargo.toml w/Cargo.toml
+index 1aacaedc..d2ef72f2 100644
+--- i/Cargo.toml
++++ w/Cargo.toml
+@@ -95,7 +95,7 @@ url = "2"
+ psl = "2"
+ chacha20poly1305 = "0.10"
+ bytes = "1"
+-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
++reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream", "socks"] }
+ zeroize = "1"
+ keyring-core = "1"
+ quinn = { version = "0.11", default-features = false, features = ["log", "platform-verifier", "runtime-tokio", "rustls-ring"] }
+diff --git i/crates/marmot-app/src/collector_host_safety.rs w/crates/marmot-app/src/collector_host_safety.rs
+index 65187b05..429c9395 100644
+--- i/crates/marmot-app/src/collector_host_safety.rs
++++ w/crates/marmot-app/src/collector_host_safety.rs
+@@ -46,10 +46,8 @@ impl PinnedCollector {
+         &self,
+         builder: reqwest::ClientBuilder,
+     ) -> Result<reqwest::Client, CollectorRequestError> {
+-        builder
+-            // Proxies can resolve the original hostname themselves, bypassing
+-            // the validated addresses. This exporter always dials directly.
+-            .no_proxy()
++        crate::network_proxy::http_builder(builder)
++            .map_err(|_| CollectorRequestError)?
+             .redirect(reqwest::redirect::Policy::none())
+             .connect_timeout(CONNECT_TIMEOUT)
+             .timeout(REQUEST_TIMEOUT)
+diff --git i/crates/marmot-app/src/collector_host_safety/tests.rs w/crates/marmot-app/src/collector_host_safety/tests.rs
+index b4786938..96dbc863 100644
+--- i/crates/marmot-app/src/collector_host_safety/tests.rs
++++ w/crates/marmot-app/src/collector_host_safety/tests.rs
+@@ -235,6 +235,151 @@ async fn every_attempt_resolves_fresh_and_checks_host_and_port() {
+ }
+ 
+ struct ForbiddenDns(Arc<AtomicUsize>);
++
++// Run the environment-sensitive consumer in a subprocess so parallel tests
++// never observe changes to their process-wide network policy.
++#[tokio::test]
++async fn socks5_pins_dns_fail_closed() {
++    const CHILD: &str = "WN_PROXY_ROUTING_TEST_CHILD";
++    if let Ok(origin) = std::env::var(CHILD) {
++        let calls = Arc::new(AtomicUsize::new(0));
++        let pin = resolve(
++            &format!("http://localhost:{origin}/metrics"),
++            &["127.0.0.1"],
++        )
++        .await
++        .unwrap();
++        let client = pin
++            .build_client_from(
++                reqwest::Client::builder().dns_resolver(Arc::new(ForbiddenDns(calls.clone()))),
++            )
++            .unwrap();
++        assert!(
++            client
++                .post(pin.url.clone())
++                .send()
++                .await
++                .unwrap()
++                .status()
++                .is_success()
++        );
++        assert_eq!(
++            calls.load(Ordering::SeqCst),
++            0,
++            "SOCKS must use the validated pin"
++        );
++
++        let relays = crate::network_proxy::nostr_builder().build();
++        relays.add_relay("wss://proxy-dns.invalid").await.unwrap();
++        assert!(
++            relays
++                .try_connect_relay("wss://proxy-dns.invalid", Duration::from_secs(5))
++                .await
++                .is_err()
++        );
++        relays.shutdown().await;
++
++        // The proxy has closed. A new connection must fail, even though a
++        // direct origin listener is reachable and NO_PROXY matches everything.
++        let client = pin.build_client().unwrap();
++        assert!(client.post(pin.url).send().await.is_err());
++        return;
++    }
++
++    let origin = TcpListener::bind("127.0.0.1:0").await.unwrap();
++    let origin_port = origin.local_addr().unwrap().port();
++    let proxy = TcpListener::bind("127.0.0.1:0").await.unwrap();
++    let proxy_addr = proxy.local_addr().unwrap();
++    let server = tokio::spawn(async move {
++        let serve = async {
++            for relay in [false, true] {
++                let (mut stream, _) = proxy.accept().await.unwrap();
++                let mut greeting = [0; 2];
++                stream.read_exact(&mut greeting).await.unwrap();
++                assert_eq!(greeting[0], 5);
++                let mut methods = vec![0; greeting[1] as usize];
++                stream.read_exact(&mut methods).await.unwrap();
++                assert!(methods.contains(&0));
++                stream.write_all(&[5, 0]).await.unwrap();
++                let mut request = [0; 4];
++                stream.read_exact(&mut request).await.unwrap();
++                assert_eq!(&request[..3], &[5, 1, 0]);
++                if relay {
++                    assert_eq!(request[3], 3, "relay DNS must be proxy-side");
++                    let len = stream.read_u8().await.unwrap() as usize;
++                    let mut domain = vec![0; len];
++                    stream.read_exact(&mut domain).await.unwrap();
++                    assert_eq!(domain, b"proxy-dns.invalid");
++                    assert_eq!(stream.read_u16().await.unwrap(), 443);
++                    stream
++                        .write_all(&[5, 4, 0, 1, 0, 0, 0, 0, 0, 0])
++                        .await
++                        .unwrap();
++                } else {
++                    assert_eq!(
++                        request[3], 1,
++                        "HTTP must send the vetted IP, not the hostname"
++                    );
++                    let mut ip = [0; 4];
++                    stream.read_exact(&mut ip).await.unwrap();
++                    assert_eq!(ip, [127, 0, 0, 1]);
++                    assert_eq!(stream.read_u16().await.unwrap(), origin_port);
++                    stream
++                        .write_all(&[5, 0, 0, 1, 127, 0, 0, 1, 0, 0])
++                        .await
++                        .unwrap();
++                    let mut headers = Vec::new();
++                    while !headers.ends_with(b"\r\n\r\n") {
++                        headers.push(stream.read_u8().await.unwrap());
++                        assert!(headers.len() < 8192);
++                    }
++                    let headers = String::from_utf8(headers).unwrap().to_lowercase();
++                    assert!(headers.starts_with("post /metrics http/1.1\r\n"));
++                    assert!(headers.contains(&format!("host: localhost:{origin_port}\r\n")));
++                    stream
++                        .write_all(
++                            b"HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
++                        )
++                        .await
++                        .unwrap();
++                }
++            }
++        };
++        tokio::time::timeout(Duration::from_secs(20), serve)
++            .await
++            .unwrap();
++    });
++    let output = tokio::task::spawn_blocking(move || {
++        std::process::Command::new(std::env::current_exe().unwrap())
++            .args([
++                "--exact",
++                "collector_host_safety::tests::socks5_pins_dns_fail_closed",
++                "--nocapture",
++            ])
++            .env(CHILD, origin_port.to_string())
++            .env("WN_SOCKS5_PROXY", proxy_addr.to_string())
++            .env("ALL_PROXY", "http://127.0.0.1:1")
++            .env("NO_PROXY", "*")
++            .output()
++            .unwrap()
++    })
++    .await
++    .unwrap();
++    server.await.unwrap();
++    assert!(
++        output.status.success(),
++        "{}\n{}",
++        String::from_utf8_lossy(&output.stdout),
++        String::from_utf8_lossy(&output.stderr)
++    );
++    assert!(
++        tokio::time::timeout(Duration::from_millis(100), origin.accept())
++            .await
++            .is_err(),
++        "explicit proxy failure must not dial the origin directly"
++    );
++}
++
+ impl reqwest::dns::Resolve for ForbiddenDns {
+     fn resolve(&self, _: reqwest::dns::Name) -> reqwest::dns::Resolving {
+         self.0.fetch_add(1, Ordering::SeqCst);
+diff --git i/crates/marmot-app/src/directory/open_ranking.rs w/crates/marmot-app/src/directory/open_ranking.rs
+index b5112bf1..5611b910 100644
+--- i/crates/marmot-app/src/directory/open_ranking.rs
++++ w/crates/marmot-app/src/directory/open_ranking.rs
+@@ -173,12 +173,12 @@ async fn open_ranking_http_client(url: &Url) -> Result<reqwest::Client, String>
+     {
+         return Err("Open Ranking provider URL is unsafe".to_owned());
+     }
+-    let mut builder = reqwest::Client::builder()
++    let mut builder = crate::network_proxy::http_builder(reqwest::Client::builder())
++        .map_err(str::to_owned)?
+         .redirect(reqwest::redirect::Policy::none())
+         .connect_timeout(OPEN_RANKING_TIMEOUT)
+         .read_timeout(OPEN_RANKING_TIMEOUT)
+         .timeout(OPEN_RANKING_TIMEOUT)
+-        .no_proxy()
+         .no_gzip()
+         .no_brotli()
+         .no_zstd()
+diff --git i/crates/marmot-app/src/lib.rs w/crates/marmot-app/src/lib.rs
+index 1f9bd221..724e10d5 100644
+--- i/crates/marmot-app/src/lib.rs
++++ w/crates/marmot-app/src/lib.rs
+@@ -56,8 +56,7 @@ use marmot_account::{
+     TransportRoutingPolicy,
+ };
+ use nostr_sdk::prelude::{
+-    Client as NostrSdkClient, EventBuilder, FinalizeUnsignedEvent, Kind, PublicKey, Tag,
+-    Timestamp as NostrTimestamp,
++    EventBuilder, FinalizeUnsignedEvent, Kind, PublicKey, Tag, Timestamp as NostrTimestamp,
+ };
+ use rand::RngCore;
+ use rand::rngs::OsRng;
+@@ -81,6 +80,7 @@ pub use user_blocks::{BlockListSnapshot, BlockedUser};
+ mod agent_streams;
+ mod app_telemetry;
+ mod collector_host_safety;
++mod network_proxy;
+ pub mod product_analytics;
+ pub use product_analytics::*;
+ mod audit_log;
+@@ -1642,6 +1642,7 @@ impl MarmotApp {
+         account_home: AccountHome,
+         config: MarmotAppConfig,
+     ) -> Result<Self, AppError> {
++        network_proxy::socks5_proxy().map_err(network_proxy::config_error)?;
+         let root = root.as_ref().to_path_buf();
+         let lease = MarmotRootRuntimeLease::try_acquire(&root)?;
+         audit_log::cleanup_legacy_audit_logs(&root);
+@@ -6769,7 +6770,7 @@ impl MarmotApp {
+         clients
+             .entry(account_id_hex.to_owned())
+             .or_insert_with(|| {
+-                let client = NostrSdkClient::builder()
++                let client = network_proxy::nostr_builder()
+                     .authenticator(nostr_sdk::authenticator::SignerAuthenticator::new(
+                         transport_nostr_peeler::SdkSigner(signer.clone()),
+                     ))
+diff --git i/crates/marmot-app/src/media/blossom.rs w/crates/marmot-app/src/media/blossom.rs
+index f2b43a18..160add74 100644
+--- i/crates/marmot-app/src/media/blossom.rs
++++ w/crates/marmot-app/src/media/blossom.rs
+@@ -1248,11 +1248,11 @@ fn build_pinned_media_http_client_from_builder(
+     pin: Option<(String, Vec<SocketAddr>)>,
+     read_timeout: Option<Duration>,
+ ) -> Result<reqwest::Client, AppError> {
+-    let mut builder = builder
++    let mut builder = crate::network_proxy::http_builder(builder)
++        .map_err(crate::network_proxy::config_error)?
+         .redirect(reqwest::redirect::Policy::none())
+         .connect_timeout(MEDIA_HTTP_CONNECT_TIMEOUT)
+         .timeout(MEDIA_HTTP_TOTAL_TIMEOUT)
+-        .no_proxy()
+         .no_gzip()
+         .no_brotli()
+         .no_zstd()
+diff --git i/crates/marmot-app/src/network_proxy.rs w/crates/marmot-app/src/network_proxy.rs
+new file mode 100644
+index 00000000..02258c27
+--- /dev/null
++++ w/crates/marmot-app/src/network_proxy.rs
+@@ -0,0 +1,113 @@
++//! Explicit process-wide SOCKS5 routing. HTTP keeps its validated DNS pins;
++//! relay hostnames are resolved by the proxy through the SDK's SOCKS5 transport.
++
++use std::net::SocketAddr;
++
++use nostr_sdk::prelude::{Client, ClientBuilder, Error};
++use nostr_sdk::transport::websocket::{WebSocketSink, WebSocketStream, WebSocketTransport};
++
++pub(crate) const CONFIG_ERROR: &str = "WN_SOCKS5_PROXY must be a numeric IP address and nonzero port (127.0.0.1:9050 or [::1]:9050); SOCKS5 authentication is not supported";
++
++pub(crate) fn socks5_proxy() -> Result<Option<SocketAddr>, &'static str> {
++    match std::env::var("WN_SOCKS5_PROXY") {
++        Err(std::env::VarError::NotPresent) => Ok(None),
++        Ok(value) if value.is_empty() => Ok(None),
++        Ok(value) => parse_proxy(&value).map(Some),
++        Err(std::env::VarError::NotUnicode(_)) => Err(CONFIG_ERROR),
++    }
++}
++
++fn parse_proxy(value: &str) -> Result<SocketAddr, &'static str> {
++    value
++        .parse::<SocketAddr>()
++        .ok()
++        .filter(|addr| addr.port() != 0)
++        .ok_or(CONFIG_ERROR)
++}
++
++pub(crate) fn config_error(detail: &'static str) -> crate::AppError {
++    std::io::Error::new(std::io::ErrorKind::InvalidInput, detail).into()
++}
++
++pub(crate) fn nostr_builder() -> ClientBuilder {
++    let builder = Client::builder();
++    match socks5_proxy() {
++        Ok(Some(addr)) => builder.proxy(nostr_sdk::proxy::Proxy::all(addr)),
++        Ok(None) => builder,
++        // Legacy infallible constructors must never silently dial directly.
++        // Production open reports this configuration error before construction.
++        Err(detail) => builder.websocket_transport(BlockedTransport(detail)),
++    }
++}
++
++#[derive(Debug)]
++struct BlockedTransport(&'static str);
++
++impl WebSocketTransport for BlockedTransport {
++    fn support_ping(&self) -> bool {
++        false
++    }
++
++    fn connect<'a>(
++        &'a self,
++        _url: &'a nostr_sdk::prelude::Url,
++        _proxy: Option<SocketAddr>,
++    ) -> futures::future::BoxFuture<'a, Result<(WebSocketSink, WebSocketStream), Error>> {
++        Box::pin(async move {
++            Err(Error::transport(std::io::Error::new(
++                std::io::ErrorKind::InvalidInput,
++                self.0,
++            )))
++        })
++    }
++}
++
++pub(crate) fn http_builder(
++    builder: reqwest::ClientBuilder,
++) -> Result<reqwest::ClientBuilder, &'static str> {
++    // Remove explicit and environment proxies first: NO_PROXY must not bypass
++    // the chosen proxy, and ALL_PROXY must not replace it.
++    let builder = builder.no_proxy();
++    match socks5_proxy()? {
++        Some(addr) => {
++            // socks5h would ignore resolve_to_addrs and allow proxy-side DNS
++            // rebinding into private services. socks5 sends the vetted IP while
++            // reqwest retains the original URL for TLS/SNI and the Host header.
++            let proxy =
++                reqwest::Proxy::all(format!("socks5://{addr}")).map_err(|_| CONFIG_ERROR)?;
++            Ok(builder.proxy(proxy))
++        }
++        None => Ok(builder),
++    }
++}
++
++pub(crate) fn require_direct_transport() -> Result<(), crate::AppError> {
++    if socks5_proxy().map_err(config_error)?.is_some() {
++        return Err(std::io::Error::new(
++            std::io::ErrorKind::Unsupported,
++            "QUIC agent previews are unavailable while WN_SOCKS5_PROXY is enabled; SOCKS5 TCP routing cannot carry QUIC",
++        )
++        .into());
++    }
++    Ok(())
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn numeric_proxy_addresses_only() {
++        assert!(parse_proxy("127.0.0.1:9050").is_ok());
++        assert!(parse_proxy("[::1]:9050").is_ok());
++        for value in [
++            "localhost:9050",
++            "socks5://127.0.0.1:9050",
++            "user:pass@127.0.0.1:9050",
++            "127.0.0.1:0",
++            " 127.0.0.1:9050",
++        ] {
++            assert!(parse_proxy(value).is_err());
++        }
++    }
++}
+diff --git i/crates/marmot-app/src/relay_plane/directory.rs w/crates/marmot-app/src/relay_plane/directory.rs
+index 32abc9a8..a83a8683 100644
+--- i/crates/marmot-app/src/relay_plane/directory.rs
++++ w/crates/marmot-app/src/relay_plane/directory.rs
+@@ -601,7 +601,7 @@ impl DirectoryRelayPlane {
+ // challenge must not trigger a failed authentication attempt that
+ // closes the SDK's active fetch before its events arrive.
+ pub(super) fn anonymous_directory_client() -> NostrSdkClient {
+-    NostrSdkClient::builder().build()
++    crate::network_proxy::nostr_builder().build()
+ }
+ 
+ impl NostrSdkDirectoryRelayFetcher {
+@@ -749,7 +749,7 @@ impl DirectoryRelayFetcher for NostrSdkDirectoryRelayFetcher {
+         use DirectoryInspectionError::*;
+         // The signer belongs to this request only, never to a shared mutable
+         // directory client that could authenticate as another account.
+-        let builder = NostrSdkClient::builder();
++        let builder = crate::network_proxy::nostr_builder();
+         let client = ScopedInspectionClient(match signer {
+             Some(signer) => builder
+                 .authenticator(nostr_sdk::authenticator::SignerAuthenticator::new(
+diff --git i/crates/marmot-app/src/relay_plane/mod.rs w/crates/marmot-app/src/relay_plane/mod.rs
+index 07d8842c..c2d70a23 100644
+--- i/crates/marmot-app/src/relay_plane/mod.rs
++++ w/crates/marmot-app/src/relay_plane/mod.rs
+@@ -1422,7 +1422,7 @@ impl MarmotRelayPlane {
+             .transport
+             .sdk_relay_client
+             .as_ref()
+-            .map(|_| NostrSdkRelayClient::from_builder(NostrSdkClient::builder()));
++            .map(|_| NostrSdkRelayClient::from_builder(crate::network_proxy::nostr_builder()));
+         MarmotRelayPlaneAccountAdapter {
+             account_id,
+             relay_plane: self.clone(),
+diff --git i/crates/marmot-app/src/runtime/agent_publisher.rs w/crates/marmot-app/src/runtime/agent_publisher.rs
+index 9b01df4e..fc2966a7 100644
+--- i/crates/marmot-app/src/runtime/agent_publisher.rs
++++ w/crates/marmot-app/src/runtime/agent_publisher.rs
+@@ -75,6 +75,7 @@ impl MarmotAppRuntime {
+         options: AgentPublisherOptions,
+     ) -> Result<Arc<AgentPublisher>, AppError> {
+         self.shared.lifecycle().ensure_running()?;
++        crate::network_proxy::require_direct_transport()?;
+         if options.chunk_bytes == 0
+             || options.chunk_bytes > AGENT_TEXT_STREAM_MAX_PLAINTEXT_FRAME_LEN as usize
+         {
+diff --git i/crates/marmot-app/src/runtime/agent_stream_watch.rs w/crates/marmot-app/src/runtime/agent_stream_watch.rs
+index de7893ea..1df0584f 100644
+--- i/crates/marmot-app/src/runtime/agent_stream_watch.rs
++++ w/crates/marmot-app/src/runtime/agent_stream_watch.rs
+@@ -62,6 +62,7 @@ impl MarmotAppRuntime {
+         options: AgentStreamWatchOptions,
+     ) -> Result<RuntimeAgentStreamWatch, AppError> {
+         self.shared.lifecycle().ensure_running()?;
++        crate::network_proxy::require_direct_transport()?;
+         let group_id_hex = hex::encode(group_id.as_slice());
+         let app = self.accounts.app.clone();
+         let account_ref_for_query = account_ref.to_owned();
+diff --git i/crates/marmot-c/src/nip46.rs w/crates/marmot-c/src/nip46.rs
+index e9b3d00f..2198bcd8 100644
+--- i/crates/marmot-c/src/nip46.rs
++++ w/crates/marmot-c/src/nip46.rs
+@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
+ use serde_json::{Value, json};
+ use std::{
+     ffi::c_char,
++    net::SocketAddr,
+     pin::Pin,
+     sync::{Arc, Mutex, Weak, mpsc as sync_mpsc},
+     thread,
+@@ -43,6 +44,7 @@ struct SignRequest<'a> {
+ #[derive(Clone, Debug, PartialEq, Eq)]
+ enum Error {
+     Invalid,
++    ProxyConfig,
+     Unavailable,
+     RelayPublish(String),
+     Rejected,
+@@ -56,6 +58,7 @@ impl Error {
+     fn detail(&self) -> std::borrow::Cow<'static, str> {
+         match self {
+             Self::Invalid => "invalid NIP-46 configuration or protocol response".into(),
++            Self::ProxyConfig => "WN_SOCKS5_PROXY must be a numeric IP address and nonzero port (127.0.0.1:9050 or [::1]:9050); SOCKS5 authentication is not supported".into(),
+             Self::Unavailable => "remote signer unavailable".into(),
+             Self::RelayPublish(detail) => std::borrow::Cow::Owned(detail.clone()),
+             Self::Rejected => "remote signer rejected the request".into(),
+@@ -69,7 +72,7 @@ impl Error {
+     fn status(self) -> MarmotStatus {
+         set_last_error(self.detail().as_ref());
+         match self {
+-            Self::Invalid => MarmotStatus::InvalidArgument,
++            Self::Invalid | Self::ProxyConfig => MarmotStatus::InvalidArgument,
+             Self::Timeout => MarmotStatus::Timeout,
+             Self::Rejected | Self::Cancelled => MarmotStatus::ExternalSignerRejected,
+             Self::Mismatch => MarmotStatus::ExternalSignerMismatch,
+@@ -179,6 +182,18 @@ fn checked_relays(owner: &Marmot, relays: Vec<String>) -> Result<Vec<RelayUrl>>
+ 
+ impl Session {
+     fn spawn(owner: Arc<Marmot>, mut config: Config) -> Result<MarmotNip46Session> {
++        let proxy = match std::env::var("WN_SOCKS5_PROXY") {
++            Err(std::env::VarError::NotPresent) => None,
++            Ok(value) if value.is_empty() => None,
++            Ok(value) => Some(
++                value
++                    .parse::<SocketAddr>()
++                    .ok()
++                    .filter(|addr| addr.port() != 0)
++                    .ok_or(Error::ProxyConfig)?,
++            ),
++            Err(std::env::VarError::NotUnicode(_)) => return Err(Error::ProxyConfig),
++        };
+         let keys = match config.client_secret.as_deref() {
+             Some(secret) => Keys::new(SecretKey::from_hex(secret).map_err(|_| Error::Invalid)?),
+             None => Keys::generate(),
+@@ -281,7 +296,7 @@ impl Session {
+                     .build()
+                 {
+                     Ok(runtime) => {
+-                        runtime.block_on(run_transport(transport, receiver, cancellation))
++                        runtime.block_on(run_transport(transport, receiver, cancellation, proxy))
+                     }
+                     Err(_) => transport.set_state(
+                         "unavailable",
+@@ -478,8 +493,12 @@ struct Transport {
+     configured: Vec<RelayUrl>,
+ }
+ impl Transport {
+-    fn new() -> Self {
+-        let client = Client::default();
++    fn new(proxy: Option<SocketAddr>) -> Self {
++        let mut builder = Client::builder();
++        if let Some(addr) = proxy {
++            builder = builder.proxy(nostr_sdk::proxy::Proxy::all(addr));
++        }
++        let client = builder.build();
+         let notifications = client.notifications();
+         Self {
+             client,
+@@ -765,8 +784,9 @@ async fn run_transport(
+     session: Arc<Session>,
+     mut commands: mpsc::Receiver<Command>,
+     mut cancel: watch::Receiver<bool>,
++    proxy: Option<SocketAddr>,
+ ) {
+-    let mut transport = Transport::new();
++    let mut transport = Transport::new(proxy);
+     loop {
+         let command = tokio::select! {
+             biased;
+diff --git i/crates/transport-nostr-adapter/src/sdk_client.rs w/crates/transport-nostr-adapter/src/sdk_client.rs
+index cd6ecaa7..f6f3f066 100644
+--- i/crates/transport-nostr-adapter/src/sdk_client.rs
++++ w/crates/transport-nostr-adapter/src/sdk_client.rs
+@@ -729,9 +729,29 @@ impl NostrSdkRelayClient {
+                 "account signer changed without removing prior context".to_owned(),
+             ));
+         }
+-        let builder = Client::builder().authenticator(
++        let mut builder = Client::builder().authenticator(
+             nostr_sdk::authenticator::SignerAuthenticator::new(SdkSigner(signer.clone())),
+         );
++        // Account receive/history pools are independent SDK clients, so they
++        // must carry the explicit process routing policy as well.
++        let invalid_proxy = || {
++            TransportAdapterError::Subscription(
++            "WN_SOCKS5_PROXY must be a numeric IP address and nonzero port (127.0.0.1:9050 or [::1]:9050); SOCKS5 authentication is not supported".to_owned(),
++        )
++        };
++        match std::env::var("WN_SOCKS5_PROXY") {
++            Err(std::env::VarError::NotPresent) => {}
++            Ok(value) if value.is_empty() => {}
++            Ok(value) => {
++                let addr = value
++                    .parse::<std::net::SocketAddr>()
++                    .ok()
++                    .filter(|addr| addr.port() != 0)
++                    .ok_or_else(invalid_proxy)?;
++                builder = builder.proxy(nostr_sdk::proxy::Proxy::all(addr));
++            }
++            Err(std::env::VarError::NotUnicode(_)) => return Err(invalid_proxy()),
++        }
+         let mut context = Self::from_builder(builder);
+         context.signer = Some(SdkSigner(signer));
+         context.account_id = Some(account_id.clone());

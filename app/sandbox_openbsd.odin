@@ -24,7 +24,7 @@ foreign main_sandbox {
 	wn_helpers_stop :: proc() ---
 	wn_tools_start :: proc() -> c.int ---
 	wn_tools_stop :: proc() ---
-	wn_tools_run :: proc(operation: c.int, arguments: [^]cstring, count: c.size_t, output: ^[^]u8, output_size: ^c.size_t, errors: ^[^]u8, errors_size: ^c.size_t, exit_code: ^c.int) -> c.int ---
+	wn_tools_run :: proc(operation: c.int, arguments: [^]cstring, count: c.size_t, proxy: cstring, output: ^[^]u8, output_size: ^c.size_t, errors: ^[^]u8, errors_size: ^c.size_t, exit_code: ^c.int) -> c.int ---
 	wn_tools_submit_notification :: proc(arguments: [^]cstring, count: c.size_t) -> c.int ---
 }
 
@@ -121,6 +121,7 @@ sandbox_tool_exec :: proc(
 	operation: c.int,
 	args: []string,
 	allocator: runtime.Allocator,
+	proxy: string = "",
 ) -> (
 	state: os.Process_State,
 	stdout: []u8,
@@ -138,6 +139,7 @@ sandbox_tool_exec :: proc(
 		operation,
 		raw_data(arguments),
 		c.size_t(len(args)),
+		strings.clone_to_cstring(proxy, context.temp_allocator),
 		&output,
 		&output_size,
 		&errors,

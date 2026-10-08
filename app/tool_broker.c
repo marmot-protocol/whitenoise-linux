@@ -112,7 +112,7 @@ struct dialog_request {
 };
 
 struct request {
-    uint32_t operation, count, bytes;
+    uint32_t operation, count, bytes, proxy_bytes;
 };
 struct response {
     int32_t error, status;
@@ -205,11 +205,38 @@ static void serve_request(int channel) {
     unsigned char *buffers[2] = {NULL, NULL};
     size_t lengths[2] = {0, 0}, capacities[2] = {0, 0};
     char arguments[ARG_LIMIT];
+    char proxy[2048], proxy_environment[sizeof proxy + sizeof "all_proxy="];
+    char *curl_environment[sizeof tool_environment / sizeof tool_environment[0] + 1];
     char *argv[ARG_COUNT + 2];
     if (transfer(channel, &request, sizeof request, 0) || request.operation < WN_TOOL_CURL ||
         request.operation > WN_TOOL_SAVE_DIALOG || request.count > ARG_COUNT ||
-        request.bytes > ARG_LIMIT || transfer(channel, arguments, request.bytes, 0)) {
+        request.bytes > ARG_LIMIT || request.proxy_bytes > sizeof proxy ||
+        (request.proxy_bytes && request.operation != WN_TOOL_CURL) ||
+        transfer(channel, arguments, request.bytes, 0) ||
+        transfer(channel, proxy, request.proxy_bytes, 0)) {
         goto done;
+    }
+    char **child_environment = tool_environment;
+    if (request.proxy_bytes) {
+        if (request.proxy_bytes < 11 ||
+            strnlen(proxy, request.proxy_bytes) != request.proxy_bytes - 1 ||
+            strncmp(proxy, "socks5h://", 9) != 0)
+            goto done;
+        // Only curl receives credentials. The protocol never puts them in argv
+        // or broadens the frozen executable/filesystem policy.
+        size_t count = 0;
+        for (size_t i = 0; tool_environment[i]; ++i) {
+            const char *entry = tool_environment[i];
+            if (!strncmp(entry, "http_proxy=", 11) || !strncmp(entry, "https_proxy=", 12) ||
+                !strncmp(entry, "all_proxy=", 10) || !strncmp(entry, "HTTP_PROXY=", 11) ||
+                !strncmp(entry, "HTTPS_PROXY=", 12) || !strncmp(entry, "ALL_PROXY=", 10))
+                continue;
+            curl_environment[count++] = tool_environment[i];
+        }
+        snprintf(proxy_environment, sizeof proxy_environment, "all_proxy=%s", proxy);
+        curl_environment[count++] = proxy_environment;
+        curl_environment[count] = NULL;
+        child_environment = curl_environment;
     }
     if (!tools[request.operation][0]) {
         response.error = ENOENT;
@@ -265,9 +292,9 @@ static void serve_request(int channel) {
         }
 #ifdef __OpenBSD__
         /* This prestarted broker retains its locked policy across exec. */
-        __real_execve(argv[0], argv, tool_environment);
+        __real_execve(argv[0], argv, child_environment);
 #else
-        execve(argv[0], argv, tool_environment);
+        execve(argv[0], argv, child_environment);
 #endif
         _exit(127);
     }
@@ -469,10 +496,16 @@ void wn_tools_stop(void) {
     }
 }
 
-static int open_request(int operation, const char *const *arguments, size_t count, int *channel) {
+static int open_request(int operation, const char *const *arguments, size_t count,
+                        const char *proxy, int *channel) {
     if (count > ARG_COUNT) {
         return E2BIG;
     }
+    size_t proxy_bytes = proxy && *proxy ? strnlen(proxy, 2048) + 1 : 0;
+    if (proxy_bytes > 2048 || (proxy_bytes && operation != WN_TOOL_CURL))
+        return EINVAL;
+    if (proxy_bytes && (proxy_bytes < 11 || strncmp(proxy, "socks5h://", 9)))
+        return EINVAL;
     char payload[ARG_LIMIT];
     size_t length = 0;
     for (size_t i = 0; i < count; ++i) {
@@ -500,9 +533,11 @@ static int open_request(int operation, const char *const *arguments, size_t coun
     int sent = broker_fd < 0 ? -1 : send_channel(channels[1]);
     pthread_mutex_unlock(&broker_send);
     close(channels[1]);
-    struct request request = {(uint32_t)operation, (uint32_t)count, (uint32_t)length};
+    struct request request = {(uint32_t)operation, (uint32_t)count, (uint32_t)length,
+                              (uint32_t)proxy_bytes};
     if (sent || transfer(channels[0], &request, sizeof request, 1) ||
-        transfer(channels[0], payload, length, 1)) {
+        transfer(channels[0], payload, length, 1) ||
+        transfer(channels[0], (void *)proxy, proxy_bytes, 1)) {
         close(channels[0]);
         return EIO;
     }
@@ -515,21 +550,22 @@ int wn_tools_submit_notification(const char *const *arguments, size_t count) {
         return ENOENT;
     }
     int channel;
-    int error = open_request(WN_TOOL_NOTIFY, arguments, count, &channel);
+    int error = open_request(WN_TOOL_NOTIFY, arguments, count, NULL, &channel);
     if (!error) {
         close(channel); /* broker owns completion; errors go to stderr */
     }
     return error;
 }
 
-int wn_tools_run(int operation, const char *const *arguments, size_t count, unsigned char **output,
-                 size_t *output_size, unsigned char **errors, size_t *errors_size, int *exit_code) {
+int wn_tools_run(int operation, const char *const *arguments, size_t count, const char *proxy,
+                 unsigned char **output, size_t *output_size, unsigned char **errors,
+                 size_t *errors_size, int *exit_code) {
     *output = NULL;
     *errors = NULL;
     *output_size = *errors_size = 0;
     *exit_code = -1;
     int channel;
-    int result = open_request(operation, arguments, count, &channel);
+    int result = open_request(operation, arguments, count, proxy, &channel);
     if (result) {
         return result;
     }
@@ -598,7 +634,7 @@ static void *dialog_worker(void *opaque) {
     int error = n < 0 || n >= (int)sizeof initial
                     ? ENAMETOOLONG
                     : wn_tools_run(request->save ? WN_TOOL_SAVE_DIALOG : WN_TOOL_OPEN_DIALOG, args,
-                                   count, &output, &length, &errors, &errors_length, &status);
+                                   count, NULL, &output, &length, &errors, &errors_length, &status);
     char **paths = NULL;
     char *text = NULL;
     if (!error && status == 0) {

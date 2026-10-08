@@ -700,6 +700,9 @@ msgstr "Cambia la password del vault"
 msgid "Change..."
 msgstr "Cambia..."
 
+msgid "Changes require a restart; the current connection is unchanged."
+msgstr "Le modifiche richiedono un riavvio; la connessione attuale resta invariata."
+
 #, c-format
 msgid "Chat list failed: %s"
 msgstr "Caricamento dell'elenco chat non riuscito: %s"
@@ -891,6 +894,9 @@ msgstr "Commento"
 msgid "Config"
 msgstr "Configurazione"
 
+msgid "Configure a SOCKS5 proxy"
+msgstr "Configura un proxy SOCKS5"
+
 msgid "Confirm"
 msgstr "Conferma"
 
@@ -1075,6 +1081,9 @@ msgstr "Impossibile completare la tua azione sull'account. Riprova."
 msgid "Couldn't complete your account action. Please try again. (%s)"
 msgstr "Impossibile completare la tua azione sull'account. Riprova. (%s)"
 
+msgid "Couldn't configure the proxy. Please try again."
+msgstr "Impossibile configurare il proxy. Riprova."
+
 #, c-format
 msgid "Couldn't copy %s. Please try again."
 msgstr "Impossibile copiare %s. Riprova."
@@ -1192,6 +1201,9 @@ msgstr "Impossibile caricare le segnalazioni. Riprova."
 
 msgid "Couldn't load messages. Please try again."
 msgstr "Impossibile caricare i messaggi. Riprova."
+
+msgid "Couldn't load proxy credentials. Enter them again and save."
+msgstr "Impossibile caricare le credenziali del proxy. Inseriscile di nuovo e salva."
 
 msgid "Couldn't load the map. Please try again."
 msgstr "Impossibile caricare la mappa. Riprova."
@@ -1323,6 +1335,9 @@ msgstr "Impossibile mostrare la tua chiave privata. %s"
 #, c-format
 msgid "Couldn't save %s. Please try again."
 msgstr "Impossibile salvare %s. Riprova."
+
+msgid "Couldn't save proxy credentials. Please try again."
+msgstr "Impossibile salvare le credenziali del proxy. Riprova."
 
 msgid "Couldn't save the GIF. Please try again."
 msgstr "Impossibile salvare la GIF. Riprova."
@@ -1755,8 +1770,14 @@ msgstr "Crittografato end-to-end"
 msgid "Enter a color as #RRGGBB."
 msgstr "Inserisci un colore nel formato #RRGGBB."
 
+msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
+msgstr "Inserisci un indirizzo IPv4 numerico o IPv6 tra parentesi quadre con una porta da 1 a 65535."
+
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "Inserisci un nome per l'adesivo da 1 a 64 caratteri."
+
+msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
+msgstr "Inserisci nome utente e password, ciascuno da 1 a 255 byte UTF-8."
 
 msgid "Enter an issue title and description."
 msgstr "Inserisci un titolo e una descrizione."
@@ -1824,6 +1845,12 @@ msgstr "Esporta chiave crittografata (ncryptsec)"
 
 msgid "Export key"
 msgstr "Esporta chiave"
+
+msgid "External browsers and other apps do not use this setting."
+msgstr "I browser esterni e le altre app non usano questa impostazione."
+
+msgid "External browsers, other apps, and Windows app updates do not use this setting."
+msgstr "I browser esterni, le altre app e gli aggiornamenti dell'app su Windows non usano questa impostazione."
 
 msgid "FILES"
 msgstr "FILE"
@@ -2781,6 +2808,9 @@ msgstr "Le notifiche non compaiono"
 msgid "Nov"
 msgstr "nov"
 
+msgid "Numeric IP and port only: 127.0.0.1:9050 or [::1]:9050. No URLs or hostnames."
+msgstr "Solo IP numerico e porta: 127.0.0.1:9050 o [::1]:9050. Non inserire URL o nomi host."
+
 msgid "OFFLINE"
 msgstr "OFFLINE"
 
@@ -2934,6 +2964,9 @@ msgstr "Pannello"
 msgid "Panel 2"
 msgstr "Pannello 2"
 
+msgid "Password"
+msgstr "Password"
+
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "Incolla il link di un pacchetto per vedere gli adesivi prima di aggiungerlo."
 
@@ -3055,6 +3088,9 @@ msgstr "Preparazione della trascrizione..."
 
 msgid "Press Ctrl P for the command palette."
 msgstr "Premi Ctrl P per la tavolozza dei comandi."
+
+msgid "Press Enter to save; Escape returns to the switches."
+msgstr "Premi Invio per salvare; Esc torna agli interruttori."
 
 msgid "Preview"
 msgstr "Anteprima"
@@ -3235,6 +3271,9 @@ msgstr "Normale"
 msgid "Relay lists republished."
 msgstr "Elenchi relay ripubblicati."
 
+msgid "Relay names are resolved by your proxy. Media host checks still use your local DNS."
+msgstr "I nomi dei relay vengono risolti dal tuo proxy. I controlli sugli host dei media usano ancora il tuo DNS locale."
+
 msgid "Relay status unavailable"
 msgstr "Stato dei relay non disponibile"
 
@@ -3405,6 +3444,9 @@ msgstr "SITO"
 msgid "SKIN"
 msgstr "SKIN"
 
+msgid "SOCKS5 proxy"
+msgstr "Proxy SOCKS5"
+
 msgid "STATE SNAPSHOT"
 msgstr "ISTANTANEA STATO"
 
@@ -3445,6 +3487,9 @@ msgstr "Salva e usa"
 msgid "Save attachment"
 msgstr "Salva allegato"
 
+msgid "Save changes, then restart White Noise to apply them."
+msgstr "Salva le modifiche, poi riavvia White Noise per applicarle."
+
 msgid "Save file"
 msgstr "Salva file"
 
@@ -3457,6 +3502,12 @@ msgstr "Salvate"
 #, c-format
 msgid "Saved %s."
 msgstr "%s salvato."
+
+msgid "Saved. Restart White Noise to apply this connection setting."
+msgstr "Salvato. Riavvia White Noise per applicare questa impostazione di connessione."
+
+msgid "Saving your proxy settings and encrypted credentials."
+msgstr "Le impostazioni del proxy e le credenziali cifrate vengono salvate."
 
 msgid "Say GM (once a day)"
 msgstr "Di' GM (una volta al giorno)"
@@ -4213,6 +4264,9 @@ msgstr "Emoji caricate"
 msgid "Uploading picture"
 msgstr "Caricamento dell'immagine"
 
+msgid "Use a SOCKS5 proxy"
+msgstr "Usa un proxy SOCKS5"
+
 msgid "Use a separate group for each project and start with its location and context. Session controls vary by connector; check its guide before using resume or branch commands."
 msgstr "Usa un gruppo separato per ogni progetto e inizia indicando dove si trova e il suo contesto. I comandi di gestione delle sessioni variano a seconda del connettore; consulta la sua guida prima di usare i comandi resume o branch."
 
@@ -4230,6 +4284,9 @@ msgstr "Usa questo tema"
 
 msgid "Use unrelated words or a password-manager password."
 msgstr "Usa parole non correlate o una password generata da un gestore di password."
+
+msgid "Use username and password"
+msgstr "Usa nome utente e password"
 
 msgid "Use valid YYYY-MM-DD UTC dates with the start on or before the end."
 msgstr "Usa date UTC valide nel formato YYYY-MM-DD. La data iniziale non deve essere successiva a quella finale."
@@ -4471,6 +4528,9 @@ msgstr "La tua chiave privata resta nel tuo firmatario remoto. Su questo disposi
 
 msgid "Your profile"
 msgstr "Il tuo profilo"
+
+msgid "Your proxy credentials are stored in your encrypted vault."
+msgstr "Le credenziali del proxy sono salvate nella tua cassaforte cifrata."
 
 msgid "Your public key"
 msgstr "La tua chiave pubblica"

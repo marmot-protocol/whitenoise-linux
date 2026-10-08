@@ -7,8 +7,14 @@
 // worker pool when the stall gets noticed.
 package main
 
+import "core:encoding/json"
 import "core:fmt"
+import "core:mem"
+import "core:net"
+import "core:os"
 import "core:strings"
+import "core:thread"
+import "core:unicode/utf8"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -26,6 +32,7 @@ health_last: f64 = -1
 settings_network :: proc(ui: ^Ui_State) {
 	narrow := settings_body_width(ui) < 400
 	if ui.settings_tab == 0 {
+		settings_socks5(ui)
 		if clay.UI(clay.ID("NetworkStatusGroup"))(
 		{
 			layout = {
@@ -204,6 +211,332 @@ settings_network :: proc(ui: ^Ui_State) {
 	}
 }
 
+// Match the SDK's SocketAddr syntax without DNS lookups or accepting credentials.
+@(private)
+socks5_proxy_valid :: proc(endpoint: string) -> bool {
+	if len(endpoint) == 0 {return false}
+	host, port_text: string
+	if endpoint[0] == '[' {
+		end := strings.last_index(endpoint, "]:")
+		if end < 2 {return false}
+		host, port_text = endpoint[1:end], endpoint[end + 2:]
+		for ch in host {
+			if !(ch >= '0' && ch <= '9') &&
+			   !(ch >= 'a' && ch <= 'f') &&
+			   !(ch >= 'A' && ch <= 'F') &&
+			   ch != ':' &&
+			   ch != '.' {return false}
+		}
+		_, ok := net.parse_ip6_address(host)
+		if !ok {return false}
+		if strings.contains(host, ".") {
+			last := strings.last_index(host, ":")
+			if last < 0 || !socks5_ipv4_valid(host[last + 1:]) {return false}
+		}
+	} else {
+		if strings.count(endpoint, ":") != 1 {return false}
+		end := strings.last_index(endpoint, ":")
+		host, port_text = endpoint[:end], endpoint[end + 1:]
+		if !socks5_ipv4_valid(host) {return false}
+	}
+	if len(port_text) == 0 {return false}
+	port := 0
+	for ch in port_text {
+		if ch < '0' || ch > '9' {return false}
+		port = port * 10 + int(ch - '0')
+		if port > 65535 {return false}
+	}
+	return port > 0
+}
+
+@(private = "file")
+socks5_ipv4_valid :: proc(host: string) -> bool {
+	// Rust SocketAddr rejects ambiguous leading zeros, even in decimal octets.
+	start := 0
+	pieces := 0
+	for i in 0 ..= len(host) {
+		if i < len(host) && host[i] != '.' {continue}
+		piece := host[start:i]
+		if len(piece) == 0 || len(piece) > 3 || (len(piece) > 1 && piece[0] == '0') {return false}
+		value := 0
+		for ch in piece {
+			if ch < '0' || ch > '9' {return false}
+			value = value * 10 + int(ch - '0')
+		}
+		if value > 255 {return false}
+		pieces += 1
+		start = i + 1
+	}
+	return pieces == 4
+}
+
+@(private)
+settings_socks5 :: proc(ui: ^Ui_State) {
+	if !ui.socks5_initialized {
+		ui.socks5_enabled = ui.prefs.socks5_proxy != ""
+		ui.socks5_auth = ui.prefs.socks5_auth
+		address := ui.socks5_enabled ? ui.prefs.socks5_proxy : "127.0.0.1:9050"
+		append(&ui.socks5_input, ..transmute([]u8)address)
+		if ui.socks5_auth {
+			credentials, ok := socks5_load_auth()
+			ui.socks5_load_error = !ok
+			if ok {
+				append(&ui.socks5_username, ..transmute([]u8)credentials.username)
+				append(&ui.socks5_password, ..transmute([]u8)credentials.password)
+			}
+			for value in ([2]string{credentials.username, credentials.password}) {mem.zero_slice(transmute([]u8)value)}
+		}
+		ui.socks5_initialized = true
+	}
+	if clay.UI(clay.ID("NetworkProxyGroup"))(settings_box()) {
+		settings_group(tr("SOCKS5 proxy"))
+		settings_check(
+			"TgSocks5",
+			ui.socks5_enabled,
+			tr("Use a SOCKS5 proxy"),
+			tr("Save changes, then restart White Noise to apply them."),
+		)
+		if ui.socks5_enabled {
+			settings_input(
+				ui,
+				"Socks5Box",
+				&ui.socks5_input,
+				"127.0.0.1:9050",
+				ui.focus == .Socks5,
+			)
+			clay.Text(
+				tr(
+					"Numeric IP and port only: 127.0.0.1:9050 or [::1]:9050. No URLs or hostnames.",
+				),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+			settings_check(
+				"TgSocks5Auth",
+				ui.socks5_auth,
+				tr("Use username and password"),
+				tr("Your proxy credentials are stored in your encrypted vault."),
+			)
+			if ui.socks5_auth {
+				if clay.UI(clay.ID("Socks5Credentials"))(
+				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}},
+				) {
+					gate_field(
+						ui,
+						"Socks5UserBox",
+						&ui.socks5_username,
+						ui.focus == .Socks5User,
+						tr("Username"),
+						.Plain,
+					)
+					gate_field(
+						ui,
+						"Socks5PasswordBox",
+						&ui.socks5_password,
+						ui.focus == .Socks5Password,
+						tr("Password"),
+					)
+				}
+			}
+		}
+		valid := socks5_form_valid(ui)
+		settings_button("SaveSocks5", tr("Save"), valid && ui.socks5_job == nil ? TEXT : TEXT_DIM)
+		clay.Text(
+			tr("Press Enter to save; Escape returns to the switches."),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+		)
+		status := tr("Changes require a restart; the current connection is unchanged.")
+		if ui.socks5_job != nil {
+			status = tr("Saving your proxy settings and encrypted credentials.")
+			busy_bar("Socks5SaveProgress")
+		} else if ui.socks5_save_error {
+			status = tr("Couldn't save proxy credentials. Please try again.")
+		} else if ui.socks5_load_error {
+			status = tr("Couldn't load proxy credentials. Enter them again and save.")
+		} else if ui.socks5_enabled && !socks5_proxy_valid(string(ui.socks5_input[:])) {
+			status = tr(
+				"Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535.",
+			)
+		} else if !valid {
+			status = tr("Enter a username and password, each between 1 and 255 UTF-8 bytes.")
+		} else if ui.socks5_saved &&
+		   (ui.socks5_enabled ? string(ui.socks5_input[:]) : "") == ui.prefs.socks5_proxy {
+			status = tr("Saved. Restart White Noise to apply this connection setting.")
+		}
+		clay.Text(status, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		clay.Text(
+			tr(
+				"Relay names are resolved by your proxy. Media host checks still use your local DNS.",
+			),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+		)
+		external_note: string
+		when ODIN_OS == .Windows {
+			external_note = tr(
+				"External browsers, other apps, and Windows app updates do not use this setting.",
+			)
+		} else {
+			external_note = tr("External browsers and other apps do not use this setting.")
+		}
+		clay.Text(external_note, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+	}
+}
+
+@(private)
+save_socks5 :: proc(ui: ^Ui_State) {
+	if ui.socks5_job != nil || !socks5_form_valid(ui) {return}
+	job := new(Socks5_Work)
+	job.address = strings.clone(ui.socks5_enabled ? string(ui.socks5_input[:]) : "")
+	job.auth = ui.socks5_enabled && ui.socks5_auth
+	if job.auth {
+		credentials := Socks5_Credentials {
+			string(ui.socks5_username[:]),
+			string(ui.socks5_password[:]),
+		}
+		data, err := json.marshal(credentials)
+		if err != nil {
+			delete(job.address); free(job)
+			ui.socks5_save_error = true
+			return
+		}
+		job.credentials = data
+	}
+	job.worker = thread.create(proc(t: ^thread.Thread) {
+		context.allocator = reload_allocator()
+		defer free_all(context.temp_allocator)
+		job := (^Socks5_Work)(t.data)
+		job.err =
+			job.auth ? vault_set(SOCKS5_VAULT_KEY, string(job.credentials)) : vault_remove(SOCKS5_VAULT_KEY)
+		frame_wake()
+	})
+	job.worker.data = job
+	ui.socks5_job = job
+	ui.socks5_saved = false
+	ui.socks5_save_error = false
+	thread.start(job.worker)
+}
+
+@(private = "file")
+SOCKS5_VAULT_KEY :: "network:socks5"
+
+@(private)
+SOCKS5_FIELDS :: bit_set[Focus]{.Socks5, .Socks5User, .Socks5Password}
+
+@(private = "file")
+Socks5_Credentials :: struct {
+	username, password: string,
+}
+
+@(private)
+Socks5_Work :: struct {
+	worker:      ^thread.Thread,
+	address:     string,
+	credentials: []u8,
+	auth:        bool,
+	err:         Vault_Err,
+}
+
+@(private)
+socks5_auth_valid :: proc(username, password: string) -> bool {
+	for value in ([2]string{username, password}) {
+		if len(value) < 1 ||
+		   len(value) > 255 ||
+		   strings.contains(value, "\x00") ||
+		   !utf8.valid_string(value) {return false}
+	}
+	return true
+}
+
+@(private = "file")
+socks5_form_valid :: proc(ui: ^Ui_State) -> bool {
+	if !ui.socks5_enabled {return true}
+	return(
+		socks5_proxy_valid(string(ui.socks5_input[:])) &&
+		(!ui.socks5_auth ||
+				socks5_auth_valid(string(ui.socks5_username[:]), string(ui.socks5_password[:]))) \
+	)
+}
+
+@(private = "file")
+socks5_load_auth :: proc() -> (credentials: Socks5_Credentials, ok: bool) {
+	data, found := vault_get(SOCKS5_VAULT_KEY, context.temp_allocator)
+	defer mem.zero_slice(transmute([]u8)data)
+	if !found {return}
+	if json.unmarshal(transmute([]u8)data, &credentials, allocator = context.temp_allocator) !=
+	   nil {return}
+	ok = socks5_auth_valid(credentials.username, credentials.password)
+	return
+}
+
+// Freeze credentials once per process, after unlock and before network workers.
+@(private)
+socks5_configure :: proc(ui: ^Ui_State) -> bool {
+	credentials: Socks5_Credentials
+	defer {for value in ([2]string{credentials.username, credentials.password}) {mem.zero_slice(transmute([]u8)value)}}
+	if ui.prefs.socks5_proxy != "" && ui.prefs.socks5_auth {
+		ok: bool
+		credentials, ok = socks5_load_auth()
+		if !ok {
+			ui.login_error = strings.clone(
+				tr("Couldn't load proxy credentials. Enter them again and save."),
+			)
+			return false
+		}
+	}
+	keys := [2]string{"WN_SOCKS5_USERNAME", "WN_SOCKS5_PASSWORD"}
+	values := [2]string{credentials.username, credentials.password}
+	for key, i in keys {
+		if os.set_env(key, values[i]) != nil {return false}
+		when ODIN_OS == .Windows {
+			if set_c_env(
+				   strings.clone_to_cstring(key, context.temp_allocator),
+				   strings.clone_to_cstring(values[i], context.temp_allocator),
+			   ) !=
+			   0 {return false}
+		}
+	}
+	return true
+}
+
+@(private)
+socks5_drain :: proc(ui: ^Ui_State) {
+	job := ui.socks5_job
+	if job == nil || !thread.is_done(job.worker) {return}
+	thread.join(job.worker)
+	thread.destroy(job.worker)
+	ui.socks5_save_error = job.err != .None
+	if job.err == .None {
+		delete(ui.prefs.socks5_proxy)
+		ui.prefs.socks5_proxy, job.address = job.address, ""
+		ui.prefs.socks5_auth = job.auth
+		ui.socks5_saved = true
+		ui.socks5_load_error = false
+		ui.settings_dirty = true
+	}
+	mem.zero_slice(job.credentials)
+	delete(job.credentials)
+	delete(job.address)
+	free(job)
+	ui.socks5_job = nil
+}
+
+@(private)
+socks5_stop :: proc(ui: ^Ui_State) {
+	if ui.socks5_job == nil {return}
+	thread.join(ui.socks5_job.worker)
+	socks5_drain(ui)
+}
+
+@(private)
+socks5_fields :: proc(ui: ^Ui_State) {
+	if ui.socks5_job != nil || !ui.socks5_enabled {return}
+	if field_mouse(ui, &ui.socks5_input, "Socks5Box", 14) {ui.focus = .Socks5}
+	if !ui.socks5_auth {return}
+	if field_mouse(ui, &ui.socks5_username, "Socks5UserBox", 15) {ui.focus = .Socks5User}
+	if clicked("Socks5PasswordBox") {ui.focus = .Socks5Password}
+	if ui.focus in
+	   SOCKS5_FIELDS {tab_focus([]Focus{.Socks5, .Socks5User, .Socks5Password}, &ui.focus)}
+}
+
 // Shared compact field; preserve input sizing and focus behavior across settings pages.
 settings_input :: proc(
 	ui: ^Ui_State,
@@ -355,6 +688,10 @@ reload_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // ── Clicks ──────────────────────────────────────────────────────────
 
 handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if clicked("SaveSocks5") {
+		save_socks5(ui)
+		return
+	}
 	if clicked("NetRefresh") {
 		health_refresh(ui, client)
 		reload_profile(ui, client)

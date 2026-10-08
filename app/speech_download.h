@@ -1,6 +1,7 @@
 // Shared by the TTS and STT helpers; the including file supplies its manifest.
 #include <openssl/evp.h>
 #include <glib/gstdio.h>
+#include "network_proxy.h"
 static int valid_file(const char *path, const ModelFile *model) {
     GStatBuf st;
     if (g_stat(path, &st) || st.st_size < 0 || (size_t)st.st_size != model->size) {
@@ -94,7 +95,7 @@ static int ensure_model(const char *dir, const ModelFile *model) {
         curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 60L);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, download_write);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &download);
-        ok = curl_easy_perform(curl) == CURLE_OK;
+        ok = wn_curl_proxy(curl) == CURLE_OK && curl_easy_perform(curl) == CURLE_OK;
         curl_easy_cleanup(curl);
         g_free(url);
     }

@@ -291,6 +291,8 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 	ed := &ui.ed
 	prev_sel := ed.selection
 	prev_len := len(buf)
+	prev_edit := ed.last_edit_time
+	prev_undo, prev_redo := len(ed.undo), len(ed.redo)
 
 	for ch := rl.GetCharPressed(); ch != 0; ch = rl.GetCharPressed() {
 		if ch < 32 {
@@ -308,6 +310,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 		buf == &ui.login_input ||
 		buf == &ui.export_pw ||
 		buf == &ui.backup_pw ||
+		buf == &ui.socks5_password ||
 		buf == &gate_pw ||
 		buf == &gate_pw2 ||
 		vault_pw_field(ui, buf)
@@ -420,6 +423,10 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 	// ed_view is the live buffer; buf only gets it back in ed_end.
 	if ed.selection != prev_sel || len(ui.ed_view.buf) != prev_len {
 		caret_wake()
+	}
+	if ui.focus in SOCKS5_FIELDS &&
+	   (ed.last_edit_time != prev_edit || len(ed.undo) != prev_undo || len(ed.redo) != prev_redo) {
+		ui.socks5_saved = false
 	}
 
 	// Select-to-copy, the Linux primary selection.

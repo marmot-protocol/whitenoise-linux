@@ -2087,6 +2087,16 @@ flip :: proc(ui: ^Ui_State, flag: ^bool) {
 @(private)
 settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 	switch id {
+	case "TgSocks5":
+		if ui.socks5_job != nil {return}
+		ui.socks5_enabled = !ui.socks5_enabled
+		ui.socks5_saved = false
+		ui.focus = .Socks5
+	case "TgSocks5Auth":
+		if ui.socks5_job != nil {return}
+		ui.socks5_auth = !ui.socks5_auth
+		ui.socks5_saved = false
+		ui.focus = ui.socks5_auth ? .Socks5User : .Socks5
 	case "TgStt":
 		flip(ui, &ui.prefs.stt_enabled)
 		if !ui.prefs.stt_enabled {
@@ -2148,6 +2158,9 @@ settings_switch_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		.Inbox,
 		.Fetch,
 		.Client,
+		.Socks5,
+		.Socks5User,
+		.Socks5Password,
 		.Gm,
 		.KP,
 		.EmojiName,
@@ -2618,6 +2631,13 @@ settings_fields :: proc(ui: ^Ui_State) {
 		}
 		if field_mouse(ui, &ui.client_input, "ClientBox", 14) {
 			ui.focus = .Client
+		}
+		if ui.settings_tab == 0 {
+			socks5_fields(ui)
+			if ui.focus in SOCKS5_FIELDS {
+				if rl.IsKeyPressed(.ENTER) {save_socks5(ui)}
+				if rl.IsKeyPressed(.ESCAPE) {ui.focus = .Compose}
+			}
 		}
 	}
 	if ui.settings_section == .KP {

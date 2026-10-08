@@ -122,6 +122,13 @@ SETTINGS_TASKS := []Settings_Task {
 		true,
 	},
 	{.Network, N_("Republish your relay lists"), "RowRepublish", "sync nostr", true},
+	{
+		.Network,
+		N_("Configure a SOCKS5 proxy"),
+		"NetworkProxyGroup",
+		"proxy socks socks5 tor privacy network connection",
+		true,
+	},
 	{.Network, N_("Choose where events open"), "ClientBox", "web client browser links", false},
 	{.Keys, N_("Copy your public key"), "NpubRow", "identity npub", true},
 	{.Keys, N_("Publish a key package"), "KpStatus", "mls invite identity", true},

@@ -15,9 +15,33 @@ import marmot "../marmot"
 
 handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for item, i in nip46_accounts {if mouse_released() && clay.PointerOver(clay.ID("SignerApproval", u32(i))) {nip46_auth_url(ui, item.state.auth_url); return}}
-	if client == nil || (len(ui.accounts) > 0 && !ui.add_account_open) {
+	if len(ui.accounts) > 0 && !ui.add_account_open {
 		return
 	}
+	// Proxy setup remains available if runtime construction failed, and before
+	// creating or connecting an identity.
+	if clicked("LoginProxy") {
+		ui.socks5_login_open = true
+		return
+	}
+	if ui.socks5_login_open {
+		if clicked("LoginProxyBack") {
+			ui.socks5_login_open = false
+			ui.focus = .Compose
+			return
+		}
+		if clicked("TgSocks5") {settings_flip(ui, client, "TgSocks5")}
+		if clicked("TgSocks5Auth") {settings_flip(ui, client, "TgSocks5Auth")}
+		socks5_fields(ui)
+		if ui.socks5_enabled && ui.socks5_job == nil {
+			if ui.focus in SOCKS5_FIELDS {edit_text(ui, active_buf(ui))}
+		}
+		if clicked("SaveSocks5") ||
+		   (ui.focus in SOCKS5_FIELDS && rl.IsKeyPressed(.ENTER)) {save_socks5(ui)}
+		if rl.IsKeyPressed(.ESCAPE) {ui.focus = .Compose}
+		return
+	}
+	if client == nil {return}
 	if auth_job != nil {
 		if clicked("LoginCancel") || rl.IsKeyPressed(.ESCAPE) {
 			if auth_job.session != nil {
@@ -172,6 +196,11 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 	if ui.focus == .Client {
 		return &ui.client_input
 	}
+	if ui.focus == .Socks5 {
+		return &ui.socks5_input
+	}
+	if ui.focus == .Socks5User {return &ui.socks5_username}
+	if ui.focus == .Socks5Password {return &ui.socks5_password}
 	if ui.focus == .Gm {
 		return &ui.gm_input
 	}

@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "network_proxy.h"
 
 static int64_t now_ms(void) {
 #ifdef _WIN32
@@ -255,7 +256,7 @@ int wn_ws_fetch(const char *url, const char *req, char *out, size_t cap, long ti
     int debug = getenv("WN_WS_DEBUG") != NULL;
     curl_easy_setopt(c, CURLOPT_VERBOSE, (long)debug);
     int result = -1;
-    if (curl_easy_perform(c) != CURLE_OK) {
+    if (wn_curl_proxy(c) != CURLE_OK || curl_easy_perform(c) != CURLE_OK) {
         goto done;
     }
 
@@ -351,7 +352,10 @@ int wn_https_get(const char *url, unsigned char *out, size_t cap, long timeout_m
     curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, sticker_write);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
-    CURLcode status = curl_easy_perform(curl);
+    CURLcode status = wn_curl_proxy(curl);
+    if (status == CURLE_OK) {
+        status = curl_easy_perform(curl);
+    }
     curl_easy_cleanup(curl);
     return status == CURLE_OK ? (int)buffer.len : -1;
 }

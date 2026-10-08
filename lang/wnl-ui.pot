@@ -697,6 +697,9 @@ msgstr ""
 msgid "Change..."
 msgstr ""
 
+msgid "Changes require a restart; the current connection is unchanged."
+msgstr ""
+
 #, c-format
 msgid "Chat list failed: %s"
 msgstr ""
@@ -888,6 +891,9 @@ msgstr ""
 msgid "Config"
 msgstr ""
 
+msgid "Configure a SOCKS5 proxy"
+msgstr ""
+
 msgid "Confirm"
 msgstr ""
 
@@ -1071,6 +1077,9 @@ msgstr ""
 msgid "Couldn't complete your account action. Please try again. (%s)"
 msgstr ""
 
+msgid "Couldn't configure the proxy. Please try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't copy %s. Please try again."
 msgstr ""
@@ -1187,6 +1196,9 @@ msgid "Couldn't load issues. Please try again."
 msgstr ""
 
 msgid "Couldn't load messages. Please try again."
+msgstr ""
+
+msgid "Couldn't load proxy credentials. Enter them again and save."
 msgstr ""
 
 msgid "Couldn't load the map. Please try again."
@@ -1318,6 +1330,9 @@ msgstr ""
 
 #, c-format
 msgid "Couldn't save %s. Please try again."
+msgstr ""
+
+msgid "Couldn't save proxy credentials. Please try again."
 msgstr ""
 
 msgid "Couldn't save the GIF. Please try again."
@@ -1750,7 +1765,13 @@ msgstr ""
 msgid "Enter a color as #RRGGBB."
 msgstr ""
 
+msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
+msgstr ""
+
 msgid "Enter a sticker name of 1 to 64 characters."
+msgstr ""
+
+msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
 msgstr ""
 
 msgid "Enter an issue title and description."
@@ -1818,6 +1839,12 @@ msgid "Export encrypted key (ncryptsec)"
 msgstr ""
 
 msgid "Export key"
+msgstr ""
+
+msgid "External browsers and other apps do not use this setting."
+msgstr ""
+
+msgid "External browsers, other apps, and Windows app updates do not use this setting."
 msgstr ""
 
 msgid "FILES"
@@ -2775,6 +2802,9 @@ msgstr ""
 msgid "Nov"
 msgstr ""
 
+msgid "Numeric IP and port only: 127.0.0.1:9050 or [::1]:9050. No URLs or hostnames."
+msgstr ""
+
 msgid "OFFLINE"
 msgstr ""
 
@@ -2928,6 +2958,9 @@ msgstr ""
 msgid "Panel 2"
 msgstr ""
 
+msgid "Password"
+msgstr ""
+
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr ""
 
@@ -3048,6 +3081,9 @@ msgid "Preparing transcription..."
 msgstr ""
 
 msgid "Press Ctrl P for the command palette."
+msgstr ""
+
+msgid "Press Enter to save; Escape returns to the switches."
 msgstr ""
 
 msgid "Preview"
@@ -3229,6 +3265,9 @@ msgstr ""
 msgid "Relay lists republished."
 msgstr ""
 
+msgid "Relay names are resolved by your proxy. Media host checks still use your local DNS."
+msgstr ""
+
 msgid "Relay status unavailable"
 msgstr ""
 
@@ -3399,6 +3438,9 @@ msgstr ""
 msgid "SKIN"
 msgstr ""
 
+msgid "SOCKS5 proxy"
+msgstr ""
+
 msgid "STATE SNAPSHOT"
 msgstr ""
 
@@ -3439,6 +3481,9 @@ msgstr ""
 msgid "Save attachment"
 msgstr ""
 
+msgid "Save changes, then restart White Noise to apply them."
+msgstr ""
+
 msgid "Save file"
 msgstr ""
 
@@ -3450,6 +3495,12 @@ msgstr ""
 
 #, c-format
 msgid "Saved %s."
+msgstr ""
+
+msgid "Saved. Restart White Noise to apply this connection setting."
+msgstr ""
+
+msgid "Saving your proxy settings and encrypted credentials."
 msgstr ""
 
 msgid "Say GM (once a day)"
@@ -4205,6 +4256,9 @@ msgstr ""
 msgid "Uploading picture"
 msgstr ""
 
+msgid "Use a SOCKS5 proxy"
+msgstr ""
+
 msgid "Use a separate group for each project and start with its location and context. Session controls vary by connector; check its guide before using resume or branch commands."
 msgstr ""
 
@@ -4221,6 +4275,9 @@ msgid "Use this theme"
 msgstr ""
 
 msgid "Use unrelated words or a password-manager password."
+msgstr ""
+
+msgid "Use username and password"
 msgstr ""
 
 msgid "Use valid YYYY-MM-DD UTC dates with the start on or before the end."
@@ -4462,6 +4519,9 @@ msgid "Your private key stays in your remote signer. Reveal and export are unava
 msgstr ""
 
 msgid "Your profile"
+msgstr ""
+
+msgid "Your proxy credentials are stored in your encrypted vault."
 msgstr ""
 
 msgid "Your public key"
