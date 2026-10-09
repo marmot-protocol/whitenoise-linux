@@ -76,6 +76,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 **Look & feel**
 
 - Thirty-one bundled themes and five accent colors, all data-driven from `themes/*.toml`. Drop your own pack in the data dir.
+- AMOLED uses pure black backgrounds, white text, and neutral gray controls and borders. All five accent colors remain available.
 - Settings > Appearance > Theme opens a gallery with separate Dark and Light views and bold collection headings. Hover over a tile to preview it. Leaving the tile or pressing Escape restores your theme; clicking saves the choice.
 - The Sidecar collection contains all 21 themes from [dmnyc's Sidecar](https://github.com/dmnyc/sidecar). Selecting one shows its source credit on the page and the selected tile. Collection headings have no links.
 - Button text derives separately for each accent color using sRGB contrast. Custom packs can set `on-accent` to override the text color for all five accents.
