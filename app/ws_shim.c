@@ -17,6 +17,7 @@
 #include <poll.h>
 #endif
 #include <curl/curl.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -213,11 +214,37 @@ static void ws_key(char out[25]) {
     out[24] = 0;
 }
 
-// Send `req` (a Nostr REQ array) to `url` (wss:// or ws://) and copy
-// the first message beginning with ["EVENT" into out. Returns its
-// length; 0 when EOSE/CLOSED/NOTICE arrives first; -1 when the dial or
-// the handshake fails. The caller frees nothing.
-int wn_ws_fetch(const char *url, const char *req, char *out, size_t cap, long timeout_ms) {
+// Single-event callers receive one frame; collection callers receive
+// newline-delimited EVENT frames until EOSE or the bounded event limit.
+enum ws_result_format { WS_SINGLE_EVENT, WS_EVENT_LINES };
+
+// Relays may pretty-print JSON. Remove whitespace outside strings so each
+// collected frame occupies one line without changing string contents.
+static size_t ws_compact_json(char *message, size_t length) {
+    size_t written = 0;
+    int quoted = 0, escaped = 0;
+    for (size_t i = 0; i < length; ++i) {
+        char byte = message[i];
+        if (!quoted && (byte == ' ' || byte == '\t' || byte == '\r' || byte == '\n')) {
+            continue;
+        }
+        message[written++] = byte;
+        if (escaped) {
+            escaped = 0;
+        } else if (quoted && byte == '\\') {
+            escaped = 1;
+        } else if (byte == '"') {
+            quoted = !quoted;
+        }
+    }
+    return written;
+}
+
+static int ws_query(const char *url, const char *req, char *out, size_t cap, long timeout_ms,
+                    size_t max_events, enum ws_result_format format) {
+    if (cap == 0 || cap > INT_MAX || max_events == 0) {
+        return -1;
+    }
     int64_t deadline = now_ms() + timeout_ms;
     const char *rest = strstr(url, "://");
     if (!rest) {
@@ -296,17 +323,41 @@ int wn_ws_fetch(const char *url, const char *req, char *out, size_t cap, long ti
     if (send_text(c, req, deadline) < 0) {
         goto done;
     }
-    result = 0;
+    result = format == WS_SINGLE_EVENT ? 0 : -1;
+    size_t used = 0, events = 0;
     for (;;) {
-        long n = recv_message(c, (unsigned char *)out, cap, deadline);
+        size_t available = cap - used;
+        if (format == WS_EVENT_LINES) {
+            if (available <= 1) {
+                break;
+            }
+            available -= 1;
+        }
+        char *message = out + used;
+        long n = recv_message(c, (unsigned char *)message, available, deadline);
         if (n < 0) {
             break;
         }
-        if (n >= 8 && strncmp(out, "[\"EVENT\"", 8) == 0) {
-            result = (int)n;
+        if (format == WS_EVENT_LINES) {
+            n = (long)ws_compact_json(message, (size_t)n);
+        }
+        if (n >= 8 && strncmp(message, "[\"EVENT\"", 8) == 0) {
+            if (format == WS_SINGLE_EVENT) {
+                result = (int)n;
+                break;
+            }
+            used += (size_t)n;
+            out[used++] = '\n';
+            result = (int)used;
+            if (++events == max_events) {
+                break;
+            }
+        }
+        if (n >= 7 && strncmp(message, "[\"EOSE\"", 7) == 0) {
+            result = (int)used;
             break;
         }
-        if (n >= 7 && (strncmp(out, "[\"EOSE\"", 7) == 0 || strncmp(out, "[\"CLOSED\"", 9) == 0)) {
+        if (n >= 9 && strncmp(message, "[\"CLOSED\"", 9) == 0) {
             break;
         }
     }
@@ -314,6 +365,17 @@ int wn_ws_fetch(const char *url, const char *req, char *out, size_t cap, long ti
 done:
     curl_easy_cleanup(c);
     return result;
+}
+
+// Returns the first EVENT frame, zero on EOSE, or -1 on connection failure.
+int wn_ws_fetch(const char *url, const char *req, char *out, size_t cap, long timeout_ms) {
+    return ws_query(url, req, out, cap, timeout_ms, 1, WS_SINGLE_EVENT);
+}
+
+// Returns bounded NDJSON EVENT frames, zero on empty EOSE, or -1 on failure.
+int wn_ws_fetch_many(const char *url, const char *req, char *out, size_t cap, long timeout_ms,
+                     size_t max_events) {
+    return ws_query(url, req, out, cap, timeout_ms, max_events, WS_EVENT_LINES);
 }
 
 struct sticker_buffer {

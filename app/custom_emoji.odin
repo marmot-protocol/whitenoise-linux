@@ -1,8 +1,8 @@
 package main
 
-// Custom :shortcode: emoji. PNGs live under <config>/emoji/, one file
-// per emoji; the filename stem is the shortcode, so the directory IS
-// the persisted shortcode → image map. A message using one ships the
+// Custom :shortcode: emoji live under <config>/emoji/, with imported
+// sets in manifest-tracked subdirectories. The basename stem is the
+// shortcode. A message using one ships the
 // image alongside it with a NIP-30 emoji tag, so it renders for the
 // group too; see emoji_tags in workers.odin.
 
@@ -38,15 +38,23 @@ emoji_dir :: proc(allocator := context.temp_allocator) -> string {
 
 // Shortcode of a stored file: the filename stem ("party.png" → "party").
 emoji_code :: proc(name: string) -> string {
+	name := emoji_basename(name)
 	if dot := strings.last_index_byte(name, '.'); dot > 0 {
 		return name[:dot]
 	}
 	return name
 }
 
+@(private)
+emoji_basename :: proc(name: string) -> string {
+	if slash := strings.last_index_byte(name, '/'); slash >= 0 {return name[slash + 1:]}
+	return name
+}
+
 // First click arms this file. The second removes it. The arm is the
 // filename, so a rescan that reorders the chips cannot confirm another.
 emoji_remove :: proc(ui: ^Ui_State, name: string) {
+	if ui.emoji_sets_job != nil && ui.emoji_sets_job.op == .Import {return}
 	if !owned_arm(ui, fmt.tprintf("EmojiDelete:%s", name)) {
 		return
 	}
@@ -63,26 +71,15 @@ emoji_remove :: proc(ui: ^Ui_State, name: string) {
 }
 
 custom_emoji_scan :: proc() {
+	// The worker owns disk publication until drain; never block a frame on IO.
+	if g_ui != nil && g_ui.emoji_sets_job != nil && g_ui.emoji_sets_job.op == .Import {return}
 	custom_emoji_scanned = true
 	for name in custom_emoji_names {
 		delete(name)
 	}
 	clear(&custom_emoji_names)
-
-	dir, err := os.open(emoji_dir())
-	if err != nil {
-		return
-	}
-	defer os.close(dir)
-	entries, read_err := os.read_dir(dir, -1, context.temp_allocator)
-	if read_err != nil {
-		return
-	}
-	for entry in entries {
-		if entry.type != .Directory {
-			append(&custom_emoji_names, strings.clone(entry.name))
-		}
-	}
+	emoji_sources_clear()
+	emoji_scan_files(emoji_dir(), &custom_emoji_names, &emoji_sources)
 }
 
 custom_emoji_texture :: proc(name: string) -> ^rl.Texture2D {
@@ -247,6 +244,7 @@ cancel_staged_emoji :: proc(ui: ^Ui_State) {
 // is sanitized to [a-z0-9_], NIP-30's shortcode alphabet, which is
 // also safe as a filename.
 save_staged_emoji :: proc(ui: ^Ui_State) {
+	if ui.emoji_sets_job != nil && ui.emoji_sets_job.op == .Import {return}
 	code := strings.builder_make(context.temp_allocator)
 	for c in ui.emoji_name {
 		switch {
@@ -368,7 +366,7 @@ emoji_payload :: proc(code: string) -> (name: string, data: []u8) {
 		if err != nil {
 			return "", nil
 		}
-		return strings.clone(file), bytes
+		return strings.clone(emoji_basename(file)), bytes
 	}
 	for b in BUILTIN_EMOJI {
 		if b.code == code {

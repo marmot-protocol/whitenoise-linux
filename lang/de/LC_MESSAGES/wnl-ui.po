@@ -56,6 +56,14 @@ msgid "%d edits"
 msgstr "%d Bearbeitungen"
 
 #, c-format
+msgid "%d emoji"
+msgstr "%d Emojis"
+
+#, c-format
+msgid "%d emoji previews couldn't be loaded."
+msgstr "%d Emoji-Vorschauen konnten nicht geladen werden."
+
+#, c-format
 msgid "%d files"
 msgstr "%d Dateien"
 
@@ -110,6 +118,10 @@ msgstr "vor %d Monaten"
 #, c-format
 msgid "%d of %d connected"
 msgstr "%d von %d verbunden"
+
+#, c-format
+msgid "%d of %d processed"
+msgstr "%d von %d verarbeitet"
 
 #, c-format
 msgid "%d of %d relays are up."
@@ -490,6 +502,9 @@ msgstr "Audit-Protokolle"
 msgid "Aug"
 msgstr "Aug."
 
+msgid "Author"
+msgstr "Autor"
+
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr "Vorschauen von Bildern und unterstützten Websites werden automatisch geladen. Deren Betreiber können deine IP-Adresse sehen. Wenn du dies ausschaltest, werden Linkvorschauen nicht mehr automatisch geladen. Anhänge werden weiterhin heruntergeladen."
 
@@ -522,6 +537,9 @@ msgstr "Zurück zu den Konnektoren"
 
 msgid "Back to issues"
 msgstr "Zurück zu den Meldungen"
+
+msgid "Back to sets"
+msgstr "Zurück zu den Sets"
 
 msgid "Back up everything"
 msgstr "Alles sichern"
@@ -583,6 +601,9 @@ msgstr "Rahmenbreite"
 
 msgid "Bracket labels"
 msgstr "Beschriftungen in Klammern"
+
+msgid "Browse emoji sets"
+msgstr "Emoji-Sets durchsuchen"
 
 msgid "Bubble radius"
 msgstr "Blasenradius"
@@ -963,9 +984,15 @@ msgstr "Konnektor-Anleitung"
 msgid "Contact"
 msgstr "Kontakt"
 
+msgid "Contacts first, then A-Z"
+msgstr "Kontakte zuerst, dann A-Z"
+
 #, c-format
 msgid "Contacts imported: %d added, %d skipped, %d failed."
 msgstr "Kontakte importiert: %d hinzugefügt, %d übersprungen, %d fehlgeschlagen."
+
+msgid "Contacts only"
+msgstr "Nur Kontakte"
 
 msgid "Continue"
 msgstr "Weiter"
@@ -1813,6 +1840,9 @@ msgstr "Ereignis-ID"
 msgid "Everyone in the group sees the new name."
 msgstr "Alle in der Gruppe sehen den neuen Namen."
 
+msgid "Existing shortcodes are never replaced."
+msgstr "Vorhandene Shortcodes werden niemals ersetzt."
+
 msgid "Exit fullscreen"
 msgstr "Vollbild verlassen"
 
@@ -2082,6 +2112,9 @@ msgstr "Ausgeblendet"
 msgid "Hide"
 msgstr "Ausblenden"
 
+msgid "Hide emoji sets"
+msgstr "Emoji-Sets ausblenden"
+
 msgid "Hide hidden message"
 msgstr "Versteckte Nachricht ausblenden"
 
@@ -2134,6 +2167,10 @@ msgstr "Bilder und Dateien, die auf diesem Gerät bleiben, damit sie nicht doppe
 msgid "Images processed: %d of %d"
 msgstr "Verarbeitete Bilder: %d von %d"
 
+#, c-format
+msgid "Import :%s:"
+msgstr ":%s: importieren"
+
 msgid "Import a backup"
 msgstr "Backup importieren"
 
@@ -2152,12 +2189,22 @@ msgstr "Kontakte importieren"
 msgid "Import image"
 msgstr "Bild importieren"
 
+msgid "Import set"
+msgstr "Set importieren"
+
 msgid "Import..."
 msgstr "Importieren..."
 
 #, c-format
+msgid "Imported %d emoji; skipped %d existing shortcodes; failed %d."
+msgstr "%d Emojis importiert; %d vorhandene Shortcodes übersprungen; %d fehlgeschlagen."
+
+#, c-format
 msgid "Importing contacts: %d of %d"
 msgstr "Kontakte werden importiert: %d von %d"
+
+msgid "Importing emoji"
+msgstr "Emojis werden importiert"
 
 msgid "Incoming messages"
 msgstr "Eingehende Nachrichten"
@@ -2400,6 +2447,12 @@ msgstr "Aufnahme läuft... Beende sie, wenn du fertig bist (maximal 30 Sekunden)
 
 msgid "Literal message text"
 msgstr "Wörtlicher Nachrichtentext"
+
+msgid "Loading emoji previews"
+msgstr "Emoji-Vorschauen werden geladen"
+
+msgid "Loading emoji sets"
+msgstr "Emoji-Sets werden geladen"
 
 msgid "Loading full resolution…"
 msgstr "Volle Auflösung wird geladen…"
@@ -2657,6 +2710,9 @@ msgstr "Neuer Name"
 msgid "News"
 msgstr "Nachrichten"
 
+msgid "Next"
+msgstr "Weiter"
+
 msgid "Next / previous chat"
 msgstr "Nächster / vorheriger Chat"
 
@@ -2701,6 +2757,15 @@ msgstr "Keine Beschreibung."
 
 msgid "No emoji selected"
 msgstr "Kein Emoji ausgewählt"
+
+msgid "No emoji sets found. Check your fetch relays and try again."
+msgstr "Keine Emoji-Sets gefunden. Prüfe deine Abruf-Relays und versuche es erneut."
+
+msgid "No emoji sets found. Refresh to try again, or check your event-fetch relays."
+msgstr "Keine Emoji-Sets gefunden. Aktualisiere die Liste oder prüfe deine Ereignis-Abruf-Relays."
+
+msgid "No emoji sets match your search."
+msgstr "Keine Emoji-Sets entsprechen deiner Suche."
 
 msgid "No files match these filters."
 msgstr "Keine Dateien entsprechen diesen Filtern."
@@ -2749,6 +2814,9 @@ msgstr "Noch keine Erwähnungen."
 
 msgid "No messages yet"
 msgstr "Noch keine Nachrichten"
+
+msgid "No preview available"
+msgstr "Keine Vorschau verfügbar"
 
 msgid "No preview for this file type. Save it, or read the bytes."
 msgstr "Für diesen Dateityp gibt es keine Vorschau. Speichere die Datei oder sieh dir die Bytes an."
@@ -2949,6 +3017,10 @@ msgstr "Link oder Adresse des Pakets"
 msgid "Pack your settings, drafts, custom emoji, and themes into one encrypted file."
 msgstr "Packe deine Einstellungen, Entwürfe, benutzerdefinierten Emojis und Themes in eine verschlüsselte Datei."
 
+#, c-format
+msgid "Page %d of %d"
+msgstr "Seite %d von %d"
+
 msgid "Pair with a remote signer"
 msgstr "Mit einem Remote-Signer koppeln"
 
@@ -3098,6 +3170,9 @@ msgstr "Anhören"
 msgid "Preview pack"
 msgstr "Paketvorschau"
 
+msgid "Previous"
+msgstr "Zurück"
+
 msgid "Previous / next in the media viewer"
 msgstr "Vorheriges / nächstes in der Medienansicht"
 
@@ -3240,6 +3315,9 @@ msgstr "Deine Kontaktdatei wird gelesen und vorhandene Kontakte werden geprüft.
 msgid "Recent"
 msgstr "Zuletzt verwendet"
 
+msgid "Recent sets from your event-fetch relays. Previews contact image hosts."
+msgstr "Aktuelle Sets von deinen Ereignis-Abruf-Relays. Vorschauen kontaktieren die Bildserver."
+
 msgid "Recenter"
 msgstr "Zentrieren"
 
@@ -3282,6 +3360,9 @@ msgstr "Relays"
 
 msgid "Relays carry your encrypted messages. The defaults are already configured."
 msgstr "Relays übertragen deine verschlüsselten Nachrichten. Die Standard-Relays sind bereits eingerichtet."
+
+msgid "Reload previews"
+msgstr "Vorschauen neu laden"
 
 msgid "Remove"
 msgstr "Entfernen"
@@ -3569,6 +3650,9 @@ msgstr "Bilder mit offener Lizenz suchen"
 msgid "Search results"
 msgstr "Suchergebnisse"
 
+msgid "Search set title, author, or shortcode"
+msgstr "Set-Titel, Autor oder Shortcode suchen"
+
 msgid "Search stickers"
 msgstr "Sticker suchen"
 
@@ -3664,6 +3748,10 @@ msgstr "Festgelegt"
 #, c-format
 msgid "Set up %s"
 msgstr "%s einrichten"
+
+#, c-format
+msgid "Set: %s"
+msgstr "Set: %s"
 
 msgid "Settings"
 msgstr "Einstellungen"
@@ -3952,9 +4040,8 @@ msgstr "Take %d"
 msgid "Takes effect on the next launch."
 msgstr "Wird beim nächsten Start wirksam."
 
-#, fuzzy
 msgid "Tap one, then confirm, to remove it."
-msgstr "Tippe eines an, um es zu entfernen."
+msgstr "Tippe eines an und bestätige, um es zu entfernen."
 
 msgid "Tasks"
 msgstr "Aufgaben"
@@ -4245,6 +4332,9 @@ msgstr "Offen"
 
 msgid "Unsupported attachment format."
 msgstr "Nicht unterstütztes Anhangformat."
+
+msgid "Untitled emoji set"
+msgstr "Unbenanntes Emoji-Set"
 
 msgid "Updates"
 msgstr "Updates"

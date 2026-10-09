@@ -71,6 +71,7 @@ Model_Kind :: enum u8 {
 	Hidden_Border, // rainbow outline around a zero-width message carrier
 	Avatar_Hinge, // a photo cover rotating around its top-center pivot
 	Banner, // a profile card's banner photo under rounded top corners
+	Spinner, // animated loading arc
 }
 
 // Shared orbit state: drag rotates, wheel zooms; one handler serves

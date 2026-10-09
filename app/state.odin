@@ -293,6 +293,7 @@ Focus :: enum {
 	ExportPw, // export-ncryptsec password box
 	BackupPw, // backup create/import password box
 	EmojiName, // custom-emoji shortcode box
+	EmojiSetsQuery, // emoji-set browser local search
 	Folder, // folder-modal name box
 	FolderColor, // custom folder RGB input
 	FolderRule, // folder-editor rule box, index in ui.folder_rule_focus
@@ -774,6 +775,17 @@ Ui_State :: struct {
 	cache_scanned:                                         bool,
 	emoji_staged:                                          string, // picked emoji file awaiting its shortcode
 	emoji_name:                                            [dynamic]u8, // its shortcode box
+	emoji_sets:                                            [dynamic]Nostr_Emoji_Set,
+	emoji_sets_query:                                      [dynamic]u8,
+	emoji_sets_job:                                        ^Emoji_Set_Job,
+	emoji_sets_cover:                                      ^Emoji_Set_Job,
+	emoji_sets_contacts:                                   map[string]bool,
+	emoji_sets_order:                                      [dynamic]int,
+	emoji_sets_page:                                       int,
+	emoji_sets_selected:                                   int,
+	emoji_sets_open:                                       bool,
+	emoji_sets_error:                                      string,
+	emoji_sets_notice:                                     string,
 	picker_mode:                                           Picker_Mode,
 	gemoji:                                                [dynamic]string, // emoji picked for a group image, tap order
 	gemoji_pic:                                            Pic_Draft, // their current render

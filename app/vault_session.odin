@@ -137,6 +137,7 @@ session_stop :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 	delete(live.dirty_groups); live.dirty_groups = {}
 	forward_stop(ui)
 	sticker_stop()
+	emoji_sets_stop(ui)
 	gif_stop(ui)
 	media_stop()
 }

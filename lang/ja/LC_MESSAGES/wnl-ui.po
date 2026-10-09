@@ -56,6 +56,14 @@ msgid "%d edits"
 msgstr "%d件の編集"
 
 #, c-format
+msgid "%d emoji"
+msgstr "絵文字%d件"
+
+#, c-format
+msgid "%d emoji previews couldn't be loaded."
+msgstr "絵文字のプレビューを%d件読み込めませんでした。"
+
+#, c-format
 msgid "%d files"
 msgstr "%d 個のファイル"
 
@@ -110,6 +118,10 @@ msgstr "%dか月前"
 #, c-format
 msgid "%d of %d connected"
 msgstr "%d / %d 件接続済み"
+
+#, c-format
+msgid "%d of %d processed"
+msgstr "%d / %d 件処理済み"
 
 #, c-format
 msgid "%d of %d relays are up."
@@ -490,6 +502,9 @@ msgstr "監査ログ"
 msgid "Aug"
 msgstr "8月"
 
+msgid "Author"
+msgstr "作者"
+
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr "画像と対応ウェブサイトのプレビューを自動的に読み込みます。配信元の運営者にはあなたのIPアドレスが見えます。オフにするとリンクのプレビューの自動読み込みは停止しますが、添付ファイルのダウンロードは継続されます。"
 
@@ -522,6 +537,9 @@ msgstr "コネクターに戻る"
 
 msgid "Back to issues"
 msgstr "報告の一覧に戻る"
+
+msgid "Back to sets"
+msgstr "セットの一覧に戻る"
 
 msgid "Back up everything"
 msgstr "すべてをバックアップ"
@@ -583,6 +601,9 @@ msgstr "枠線の幅"
 
 msgid "Bracket labels"
 msgstr "角かっこのラベル"
+
+msgid "Browse emoji sets"
+msgstr "絵文字セットを探す"
 
 msgid "Bubble radius"
 msgstr "吹き出しの角の半径"
@@ -963,9 +984,15 @@ msgstr "コネクターガイド"
 msgid "Contact"
 msgstr "連絡先"
 
+msgid "Contacts first, then A-Z"
+msgstr "連絡先を優先し、次にA-Z順"
+
 #, c-format
 msgid "Contacts imported: %d added, %d skipped, %d failed."
 msgstr "連絡先のインポート：追加%d件、スキップ%d件、失敗%d件。"
+
+msgid "Contacts only"
+msgstr "連絡先のみ"
 
 msgid "Continue"
 msgstr "続行"
@@ -1813,6 +1840,9 @@ msgstr "イベントID"
 msgid "Everyone in the group sees the new name."
 msgstr "新しい名前はグループの全員に表示されます。"
 
+msgid "Existing shortcodes are never replaced."
+msgstr "既存のショートコードは置き換えません。"
+
 msgid "Exit fullscreen"
 msgstr "全画面表示を終了"
 
@@ -2082,6 +2112,9 @@ msgstr "非表示"
 msgid "Hide"
 msgstr "隠す"
 
+msgid "Hide emoji sets"
+msgstr "絵文字セットを隠す"
+
 msgid "Hide hidden message"
 msgstr "隠されたメッセージを非表示"
 
@@ -2134,6 +2167,10 @@ msgstr "同じものを二度ダウンロードしないようにこの端末に
 msgid "Images processed: %d of %d"
 msgstr "処理済み画像: %d / %d"
 
+#, c-format
+msgid "Import :%s:"
+msgstr ":%s: をインポート"
+
 msgid "Import a backup"
 msgstr "バックアップをインポート"
 
@@ -2152,12 +2189,22 @@ msgstr "連絡先をインポート"
 msgid "Import image"
 msgstr "画像を読み込む"
 
+msgid "Import set"
+msgstr "セットをインポート"
+
 msgid "Import..."
 msgstr "インポート..."
 
 #, c-format
+msgid "Imported %d emoji; skipped %d existing shortcodes; failed %d."
+msgstr "絵文字を%d件インポートしました。既存のショートコード%d件をスキップし、%d件が失敗しました。"
+
+#, c-format
 msgid "Importing contacts: %d of %d"
 msgstr "連絡先をインポート中：%d / %d"
+
+msgid "Importing emoji"
+msgstr "絵文字をインポートしています"
 
 msgid "Incoming messages"
 msgstr "受信メッセージ"
@@ -2400,6 +2447,12 @@ msgstr "聞き取り中です。話し終えたら完了してください（最
 
 msgid "Literal message text"
 msgstr "メッセージ本文を文字どおり検索"
+
+msgid "Loading emoji previews"
+msgstr "絵文字のプレビューを読み込んでいます"
+
+msgid "Loading emoji sets"
+msgstr "絵文字セットを読み込んでいます"
 
 msgid "Loading full resolution…"
 msgstr "フル解像度で読み込み中…"
@@ -2657,6 +2710,9 @@ msgstr "新しい名前"
 msgid "News"
 msgstr "ニュース"
 
+msgid "Next"
+msgstr "次へ"
+
 msgid "Next / previous chat"
 msgstr "次のチャット / 前のチャット"
 
@@ -2701,6 +2757,15 @@ msgstr "説明はありません。"
 
 msgid "No emoji selected"
 msgstr "絵文字が選択されていません"
+
+msgid "No emoji sets found. Check your fetch relays and try again."
+msgstr "絵文字セットが見つかりませんでした。取得用リレーを確認して、もう一度お試しください。"
+
+msgid "No emoji sets found. Refresh to try again, or check your event-fetch relays."
+msgstr "絵文字セットが見つかりませんでした。更新するか、イベント取得用リレーを確認してください。"
+
+msgid "No emoji sets match your search."
+msgstr "検索に一致する絵文字セットはありません。"
 
 msgid "No files match these filters."
 msgstr "このフィルターに一致するファイルはありません。"
@@ -2749,6 +2814,9 @@ msgstr "まだメンションはありません。"
 
 msgid "No messages yet"
 msgstr "まだメッセージはありません"
+
+msgid "No preview available"
+msgstr "プレビューはありません"
 
 msgid "No preview for this file type. Save it, or read the bytes."
 msgstr "この種類のファイルはプレビューできません。保存するか、バイトを表示してください。"
@@ -2949,6 +3017,10 @@ msgstr "パックのリンクまたはアドレス"
 msgid "Pack your settings, drafts, custom emoji, and themes into one encrypted file."
 msgstr "設定、下書き、カスタム絵文字、テーマを1つの暗号化ファイルにまとめます。"
 
+#, c-format
+msgid "Page %d of %d"
+msgstr "%d / %d ページ"
+
 msgid "Pair with a remote signer"
 msgstr "リモート署名者とペアリング"
 
@@ -3098,6 +3170,9 @@ msgstr "試聴"
 msgid "Preview pack"
 msgstr "パックをプレビュー"
 
+msgid "Previous"
+msgstr "前へ"
+
 msgid "Previous / next in the media viewer"
 msgstr "メディアビューアーで前 / 次へ"
 
@@ -3240,6 +3315,9 @@ msgstr "連絡先ファイルを読み取り、既存の連絡先を確認して
 msgid "Recent"
 msgstr "最近"
 
+msgid "Recent sets from your event-fetch relays. Previews contact image hosts."
+msgstr "イベント取得用リレーの最近のセットです。プレビューは画像の配信元に接続します。"
+
 msgid "Recenter"
 msgstr "中心に戻す"
 
@@ -3282,6 +3360,9 @@ msgstr "リレー"
 
 msgid "Relays carry your encrypted messages. The defaults are already configured."
 msgstr "リレーは暗号化されたメッセージを運びます。デフォルトのリレーはすでに設定されています。"
+
+msgid "Reload previews"
+msgstr "プレビューを再読み込み"
 
 msgid "Remove"
 msgstr "削除"
@@ -3569,6 +3650,9 @@ msgstr "オープンライセンスの画像を検索"
 msgid "Search results"
 msgstr "検索結果"
 
+msgid "Search set title, author, or shortcode"
+msgstr "セット名、作者、ショートコードで検索"
+
 msgid "Search stickers"
 msgstr "ステッカーを検索"
 
@@ -3664,6 +3748,10 @@ msgstr "設定済み"
 #, c-format
 msgid "Set up %s"
 msgstr "%sをセットアップ"
+
+#, c-format
+msgid "Set: %s"
+msgstr "セット: %s"
 
 msgid "Settings"
 msgstr "設定"
@@ -3952,9 +4040,8 @@ msgstr "テイク %d"
 msgid "Takes effect on the next launch."
 msgstr "次回の起動時に反映されます。"
 
-#, fuzzy
 msgid "Tap one, then confirm, to remove it."
-msgstr "タップすると削除できます。"
+msgstr "削除する絵文字をタップして確認してください。"
 
 msgid "Tasks"
 msgstr "タスク"
@@ -4245,6 +4332,9 @@ msgstr "未解決"
 
 msgid "Unsupported attachment format."
 msgstr "この添付ファイルの形式には対応していません。"
+
+msgid "Untitled emoji set"
+msgstr "無題の絵文字セット"
 
 msgid "Updates"
 msgstr "アップデート"

@@ -23,6 +23,10 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if client == nil || len(ui.accounts) == 0 || ui.add_account_open {
 		return
 	}
+	if ui.page == .Settings && mention_hover != "" && mouse_released() {
+		handle_mention_click(ui, client)
+		return
+	}
 
 	if (ui.page == .Profile ||
 		   (ui.page == .Settings &&
@@ -37,10 +41,17 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 						   ui.focus == .Gm ||
 						   ui.focus == .KP ||
 						   ui.focus == .EmojiName ||
+						   ui.focus == .EmojiSetsQuery ||
 						   ui.focus == .ExportPw))) &&
 	   !ui.new_chat_open &&
 	   !(ui.focus in SOCKS5_FIELDS && ui.socks5_job != nil) {
-		edit_text(ui, active_buf(ui))
+		if ui.focus == .EmojiSetsQuery {
+			before := avatar_hash(string(ui.emoji_sets_query[:]))
+			edit_text(ui, &ui.emoji_sets_query)
+			if before != avatar_hash(string(ui.emoji_sets_query[:])) {ui.emoji_sets_page = 0}
+		} else {
+			edit_text(ui, active_buf(ui))
+		}
 	}
 
 	// The theme editor and the theme-share picker are raised from

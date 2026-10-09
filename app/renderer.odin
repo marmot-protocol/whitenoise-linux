@@ -678,6 +678,41 @@ render_range :: proc(
 			switch (^Model_Kind)(data)^ {
 			case .Mesh:
 				stl_draw((^Stl_View)(data), bounds)
+			case .Spinner:
+				vertices: [18 * 6]rl.Vertex
+				phase := rl.GetTime() * 5
+				radius := min(bounds.width, bounds.height) * 0.4
+				for i in 0 ..< 18 {
+					a := phase + f64(i) * math.TAU / 24
+					b := a + math.TAU / 24
+					points := [4][2]f32 {
+						{f32(math.cos(a)), f32(math.sin(a))} * radius,
+						{f32(math.cos(b)), f32(math.sin(b))} * radius,
+						{f32(math.cos(b)), f32(math.sin(b))} * (radius - 2),
+						{f32(math.cos(a)), f32(math.sin(a))} * (radius - 2),
+					}
+					for corner, k in ([6]int{0, 1, 2, 0, 2, 3}) {
+						vertices[i * 6 + k] = {
+							position = {
+								bounds.x + bounds.width / 2 + points[corner].x,
+								bounds.y + bounds.height / 2 + points[corner].y,
+							},
+							color    = {
+								ACCENT.r / 255,
+								ACCENT.g / 255,
+								ACCENT.b / 255,
+								ACCENT.a / 255,
+							},
+						}
+					}
+				}
+				rl.DrawTrianglesClipped(
+					vertices[:],
+					bounds.x,
+					bounds.y,
+					bounds.width,
+					bounds.height,
+				)
 			case .Gcode:
 				gcode_draw((^Gcode_View)(data), bounds)
 			case .Synth:

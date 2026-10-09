@@ -56,6 +56,11 @@ int main(void) {
     memset(overflow + 5, 0xff, 8);
     memset(overflow + 13, 'x', 128);
     check_frame(overflow, sizeof overflow, 32, -1, NULL);
+    char pretty[] = " [\n  \"EVENT\", \"wn\", {\"content\": \"a b\\n\\\"c\\\" \\\\\"}\n ] ";
+    const char *compact = "[\"EVENT\",\"wn\",{\"content\":\"a b\\n\\\"c\\\" \\\\\"}]";
+    size_t compact_len = ws_compact_json(pretty, strlen(pretty));
+    assert(compact_len == strlen(compact));
+    assert(memcmp(pretty, compact, compact_len) == 0);
     puts("websocket frames: exact bounds, fragmentation and length overflow passed");
     return 0;
 }

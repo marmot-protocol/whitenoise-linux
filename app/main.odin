@@ -436,6 +436,7 @@ app_main :: proc() {
 
 	ui: Ui_State
 	ui.selected = -1
+	ui.emoji_sets_selected = -1
 	ui.selected_contact = -1
 	ui.mention_dismissed = -1
 	ui.shortcode_dismissed = -1
@@ -747,13 +748,7 @@ app_main :: proc() {
 					load_profile(client, &ui)
 				} else {
 					info := profile_info(client, hx)
-					open_peer(
-						&ui,
-						client,
-						hx,
-						len(info.name) > 0 ? info.name : short_hex(hx),
-						info.pic_url,
-					)
+					open_peer(&ui, client, hx, profile_label(client, hx), info.pic_url)
 				}
 			}
 		}
@@ -1318,6 +1313,7 @@ app_main :: proc() {
 			drain_nev()
 			drain_geo()
 			drain_stickers(&ui, client)
+			emoji_sets_drain(&ui)
 			gif_drain(&ui)
 
 			// Files picked in the async SDL dialog land here; they become

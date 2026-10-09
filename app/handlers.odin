@@ -213,6 +213,9 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 	if ui.focus == .EmojiName {
 		return &ui.emoji_name
 	}
+	if ui.focus == .EmojiSetsQuery {
+		return &ui.emoji_sets_query
+	}
 	return &ui.compose
 }
 

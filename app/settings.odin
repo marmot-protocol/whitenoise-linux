@@ -36,6 +36,7 @@ Prefs :: struct {
 	hour12:                bool,
 	date_format:           int, // index into DATE_FORMATS
 	quick_reactions:       [dynamic]string,
+	emoji_contacts_only:   bool,
 	recent_emoji:          [dynamic]string, // emoji picker, newest first, max 8
 	recent_searches:       [dynamic]string, // global search, newest first, max 8
 	mention_read:          [dynamic]string, // seen mention message ids, capped

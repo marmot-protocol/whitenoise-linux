@@ -5,6 +5,7 @@ import "core:encoding/base64"
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:sync"
 import "core:sys/windows"
 
 _ :: base64
@@ -100,15 +101,19 @@ settings_row :: proc(stacked: bool = false) -> clay.ElementDeclaration {
 }
 
 settings_content_width :: proc(ui: ^Ui_State) -> f32 {
+	available := max(120, settings_main_w(ui) - (settings_main_w(ui) < 560 ? 24 : 48))
+	if ui.settings_section == .Appearance {
+		return available
+	}
 	menu := ui.settings_section == .Home || settings_on_menu(ui)
-	return min(
-		menu ? 900 : (ui.settings_section == .General ? 560 : 740),
-		max(120, settings_main_w(ui) - (settings_main_w(ui) < 560 ? 24 : 48)),
-	)
+	return min(menu ? 900 : (ui.settings_section == .General ? 560 : 740), available)
 }
 
 @(private)
 settings_body_width :: proc(ui: ^Ui_State) -> f32 {
+	if ui.settings_section == .Appearance {
+		return appearance_layout(ui).controls
+	}
 	return max(120, settings_content_width(ui) - (settings_main_w(ui) < 560 ? 16 : 32))
 }
 
@@ -272,11 +277,6 @@ SETTINGS_GENERAL_TABS := []Settings_Page {
 	{N_("Language"), .Language},
 	{N_("Messaging"), .Messaging},
 }
-SETTINGS_APPEARANCE_TABS := []Settings_Page {
-	{N_("Theme"), .Appearance},
-	{N_("Interface"), .Interface},
-	{N_("Avatars"), .Avatars},
-}
 SETTINGS_SPEECH_TABS := []Settings_Page {
 	{N_("Dictation"), .Speech},
 	{N_("Read aloud"), .Read_Aloud},
@@ -300,8 +300,6 @@ settings_tabs :: proc(section: Settings_Section) -> []Settings_Page {
 	#partial switch section {
 	case .General:
 		return SETTINGS_GENERAL_TABS
-	case .Appearance:
-		return SETTINGS_APPEARANCE_TABS
 	case .Speech:
 		return SETTINGS_SPEECH_TABS
 	case .Network:
@@ -328,36 +326,15 @@ settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
 		     "RowEmoji",
 		     "EmojiAdd",
 		     "EmojiNameBox",
+		     "EmojiSetsBrowse",
+		     "EmojiSetsQuery",
 		     "RowGm",
 		     "GmBox",
 		     "RowShortcuts",
 		     "ShortcutsView":
 			return 2
 		}
-	case .Appearance:
-		switch anchor {
-		case "RowZoom",
-		     "ZoomMinus",
-		     "ZoomPlus",
-		     "ZoomReset",
-		     "RowBodyFont",
-		     "BodyFontChip",
-		     "RowEmojiSet",
-		     "EmojiSetChip",
-		     "RowScroll",
-		     "ScrollChip",
-		     "RowMotion",
-		     "TgMotion",
-		     "RowCentered",
-		     "TgCentered",
-		     "RowMessageLines",
-		     "MessageLinesMinus",
-		     "MessageLinesPlus",
-		     "MessageLinesReset":
-			return 1
-		case "RowAvatarShape", "AvatarShapeChip", "RowCropShape", "CropShapeChip":
-			return 2
-		}
+
 	case .Speech:
 		switch anchor {
 		case "RowTts", "TgTts", "TtsModel", "TtsVoice":
@@ -570,7 +547,7 @@ settings_pane :: proc(ui: ^Ui_State) {
 					sizing = {clay.SizingGrow(), clay.SizingGrow()},
 					layoutDirection = .TopToBottom,
 					padding = clay.PaddingAll(settings_main_w(ui) < 560 ? 12 : 24),
-					childAlignment = {x = .Center},
+					childAlignment = {x = ui.settings_section == .Appearance ? .Left : .Center},
 				},
 				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 			},
@@ -937,6 +914,7 @@ settings_general :: proc(ui: ^Ui_State) {
 
 		if clay.UI(clay.ID("CustomEmojiGroup"))(settings_box()) {
 			settings_group(tr("Custom emoji"))
+			emoji_busy := ui.emoji_sets_job != nil
 			row := settings_row()
 			row.layout.layoutDirection = .TopToBottom
 			if clay.UI(clay.ID("RowEmoji"))(row) {
@@ -949,7 +927,7 @@ settings_general :: proc(ui: ^Ui_State) {
 							childGap = 5,
 							childAlignment = {y = .Center},
 						},
-						backgroundColor = hovered() ? HOVER : ROW_BG,
+						backgroundColor = hovered() && !emoji_busy ? HOVER : ROW_BG,
 						cornerRadius = rr(6),
 					},
 					) {
@@ -962,7 +940,8 @@ settings_general :: proc(ui: ^Ui_State) {
 							},
 							) {}
 						}
-						armed_emoji := ui.keys_confirm == fmt.tprintf("EmojiDelete:%s", name)
+						armed_emoji :=
+							!emoji_busy && ui.keys_confirm == fmt.tprintf("EmojiDelete:%s", name)
 						clay.Text(
 							armed_emoji ? tr("Confirm delete") : fmt.tprintf(":%s:", emoji_code(name)),
 							{
@@ -971,15 +950,24 @@ settings_general :: proc(ui: ^Ui_State) {
 								textColor = armed_emoji ? DANGER : TEXT_DIM,
 							},
 						)
+						title, author, coordinate := emoji_source_for(name)
+						if coordinate != "" {
+							if clay.UI(clay.ID("EmojiSource", u32(i)))(
+							{
+								layout = {
+									sizing = {width = clay.SizingGrow()},
+									layoutDirection = .TopToBottom,
+									childGap = 2,
+								},
+							},
+							) {
+								emoji_set_text(fmt.tprintf(tr("Set: %s"), title))
+								emoji_set_author(0x481000 + u32(i), author)
+							}
+						}
 					}
 				}
-				if clay.UI(clay.ID("EmojiAdd"))(
-				{
-					layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
-					backgroundColor = hovered() ? HOVER : {},
-					cornerRadius = rr(6),
-				},
-				) {
+				if !emoji_busy do if clay.UI(clay.ID("EmojiAdd"))({layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
 					clay.Text("+", {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
 				}
 			}
@@ -1007,10 +995,11 @@ settings_general :: proc(ui: ^Ui_State) {
 						ui.focus == .EmojiName,
 						min(220, settings_body_width(ui) - 200),
 					)
-					settings_button("EmojiSave", tr("Save"))
+					if !emoji_busy {settings_button("EmojiSave", tr("Save"))}
 					settings_button("EmojiCancel", tr("Cancel"))
 				}
 			}
+			emoji_sets_panel(ui)
 		}
 
 		if clay.UI(clay.ID("GmGroup"))(settings_box()) {
@@ -1031,6 +1020,387 @@ settings_general :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("RowShortcuts"))(settings_row()) {
 				row_labels(tr("Keyboard shortcuts"), "")
 				settings_button("ShortcutsView", tr("View"))
+			}
+		}
+	}
+}
+
+@(private)
+emoji_set_text :: proc(text: string, color: clay.Color = {}) {
+	clay.Text(
+		text,
+		{fontId = FONT_BODY, fontSize = 12, textColor = color.a != 0 ? color : TEXT_DIM},
+	)
+}
+
+@(private)
+emoji_set_matches :: proc(set: ^Nostr_Emoji_Set, query: string) -> bool {
+	if query == "" {return true}
+	if strings.contains(set.sort_title, query) ||
+	   strings.contains(set.author, query) ||
+	   strings.contains(hex_npub(set.author), query) ||
+	   strings.contains(
+		   strings.to_lower(mention_label(set.author), context.temp_allocator),
+		   query,
+	   ) {return true}
+	for item in set.items {
+		if strings.contains(
+			strings.to_lower(item.code, context.temp_allocator),
+			query,
+		) {return true}
+	}
+	return false
+}
+
+@(private)
+emoji_spinner_kind: Model_Kind = .Spinner
+
+@(private)
+emoji_sets_spinner :: proc(id: string, index: u32 = 0) {
+	if clay.UI(clay.ID(id, index))(
+	{
+		layout = {sizing = {width = clay.SizingFixed(20), height = clay.SizingFixed(20)}},
+		custom = {customData = &emoji_spinner_kind},
+	},
+	) {}
+	anim_moving += 1
+}
+
+@(private)
+emoji_set_author :: proc(id: u32, author: string) {
+	if clay.UI(clay.ID("EmojiSetAuthor", id))(
+	{layout = {childGap = 6, childAlignment = {y = .Center}}},
+	) {
+		emoji_set_text(tr("Author"))
+		render_segs(id, []Inline_Seg{{hex = author}}, 12, TEXT, 12, true)
+	}
+}
+
+@(private)
+emoji_sets_feedback :: proc(ui: ^Ui_State) {
+	if job := ui.emoji_sets_job; job != nil {
+		if clay.UI(clay.ID("EmojiSetsLoading"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 10,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
+			emoji_sets_spinner("EmojiSetsSpinner")
+			if hovered() {
+				label := tr("Loading emoji sets")
+				if job.op == .Preview {label = tr("Loading emoji previews")}
+				if job.op == .Import {label = tr("Importing emoji")}
+				tooltip(label)
+			}
+			if job.op == .Browse {
+				busy_bar("EmojiSetsBusy")
+			} else {
+				total := sync.atomic_load(&job.total)
+				progress := sync.atomic_load(&job.progress)
+				if clay.UI(clay.ID("EmojiSetsTrack"))(
+				{
+					layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(3)}},
+					backgroundColor = ROW_BG,
+				},
+				) {
+					if clay.UI(clay.ID("EmojiSetsFill"))(
+					{
+						layout = {
+							sizing = {
+								width = clay.SizingPercent(
+									total > 0 ? clamp(f32(progress) / f32(total), 0, 1) : 0,
+								),
+								height = clay.SizingFixed(3),
+							},
+						},
+						backgroundColor = ACCENT,
+					},
+					) {}
+					if hovered() {tooltip(fmt.tprintf(tr("%d of %d processed"), progress, total))}
+				}
+			}
+		}
+	}
+	if ui.emoji_sets_error != "" {emoji_set_text(tr(ui.emoji_sets_error), DANGER)}
+	if ui.emoji_sets_notice != "" {emoji_set_text(ui.emoji_sets_notice, ACCENT)}
+}
+
+@(private)
+emoji_sets_panel :: proc(ui: ^Ui_State) {
+	busy := ui.emoji_sets_job != nil
+	settings_button(
+		"EmojiSetsBrowse",
+		ui.emoji_sets_open ? tr("Hide emoji sets") : tr("Browse emoji sets"),
+		busy ? TEXT_DIM : clay.Color{},
+	)
+	if !ui.emoji_sets_open {return}
+	if clay.UI(clay.ID("EmojiSetsPanel"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			childGap = 12,
+		},
+	},
+	) {
+		index := ui.emoji_sets_selected
+		selected := index >= 0 && index < len(ui.emoji_sets)
+		if !selected {
+			emoji_sets_order(ui)
+			settings_input(
+				ui,
+				"EmojiSetsQuery",
+				&ui.emoji_sets_query,
+				tr("Search set title, author, or shortcode"),
+				ui.focus == .EmojiSetsQuery,
+			)
+			if clay.UI(clay.ID("EmojiSetsToolbar"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 12,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				settings_button("EmojiSetsRefresh", tr("Refresh"), busy ? TEXT_DIM : clay.Color{})
+				emoji_set_text(tr("Contacts first, then A-Z"))
+				if hovered(
+					
+				) {tooltip(tr("Recent sets from your event-fetch relays. Previews contact image hosts."))}
+			}
+			emoji_sets_feedback(ui)
+			if clay.UI(clay.ID("EmojiSetsContactFilter"))(settings_row()) {
+				settings_check(
+					"TgEmojiContacts",
+					ui.prefs.emoji_contacts_only,
+					tr("Contacts only"),
+					"",
+				)
+			}
+			query := strings.to_lower(
+				strings.trim_space(string(ui.emoji_sets_query[:])),
+				context.temp_allocator,
+			)
+			matched := 0
+			matches: [EMOJI_SET_LIMIT]int
+			for i in ui.emoji_sets_order {
+				if !emoji_set_matches(&ui.emoji_sets[i], query) {continue}
+				matches[matched] = i; matched += 1
+			}
+			pages := max(1, (matched + 3) / 4)
+			ui.emoji_sets_page = clamp(ui.emoji_sets_page, 0, pages - 1)
+			first := ui.emoji_sets_page * 4
+			for i in matches[first:min(first + 4, matched)] {
+				set := &ui.emoji_sets[i]
+				if clay.UI(clay.ID("EmojiSetRow", u32(i)))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(88)},
+						padding = clay.PaddingAll(12),
+						childGap = 14,
+						childAlignment = {y = .Center},
+					},
+					backgroundColor = hovered() && !busy ? HOVER : ROW_BG,
+					cornerRadius = rr(8),
+					border = {color = FIELD_BORDER, width = bw()},
+				},
+				) {
+					if clay.UI(clay.ID("EmojiSetCover", u32(i)))(
+					{
+						layout = {
+							sizing = {width = clay.SizingFixed(48), height = clay.SizingFixed(48)},
+							childAlignment = {x = .Center, y = .Center},
+						},
+						backgroundColor = PANEL,
+						cornerRadius = rr(6),
+					},
+					) {
+						texture: ^rl.Texture2D
+						for item in set.items {if item.texture != nil {texture = item.texture; break}}
+						if texture != nil {
+							if clay.UI(clay.ID("EmojiSetCoverImage", u32(i)))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFixed(40),
+										height = clay.SizingFixed(40),
+									},
+								},
+								image = {imageData = texture},
+								aspectRatio = {1},
+							},
+							) {}
+						} else if !set.cover_done ||
+						   (ui.emoji_sets_cover != nil && ui.emoji_sets_cover.index == i) {
+							emoji_sets_spinner("EmojiSetCoverSpinner", u32(i))
+						} else {
+							emoji_set_text("?")
+							if hovered() {tooltip(tr("No preview available"))}
+						}
+					}
+					if clay.UI(clay.ID("EmojiSetRowBody", u32(i)))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 8,
+						},
+					},
+					) {
+						clay.Text(
+							text_ellipsis(
+								set.title,
+								settings_body_width(ui) - 130,
+								FONT_TITLE,
+								14,
+							),
+							{
+								fontId = FONT_TITLE,
+								fontSize = 14,
+								textColor = TEXT,
+								wrapMode = .None,
+							},
+						)
+						if clay.UI(clay.ID("EmojiSetRowMeta", u32(i)))(
+						{layout = {childGap = 14, childAlignment = {y = .Center}}},
+						) {
+							emoji_set_author(0x480000 + u32(i), set.author)
+							emoji_set_text(fmt.tprintf(tr("%d emoji"), len(set.items)))
+						}
+					}
+				}
+			}
+			if matched == 0 &&
+			   !busy {emoji_set_text(len(ui.emoji_sets) == 0 ? tr("No emoji sets found. Refresh to try again, or check your event-fetch relays.") : tr("No emoji sets match your search."))}
+			if pages > 1 do if clay.UI(clay.ID("EmojiSetsPages"))({layout = {childGap = 12, childAlignment = {y = .Center}}}) {
+				settings_button("EmojiSetsPrev", tr("Previous"), ui.emoji_sets_page == 0 ? TEXT_DIM : clay.Color{})
+				emoji_set_text(fmt.tprintf(tr("Page %d of %d"), ui.emoji_sets_page + 1, pages))
+				settings_button("EmojiSetsNext", tr("Next"), ui.emoji_sets_page + 1 == pages ? TEXT_DIM : clay.Color{})
+			}
+			return
+		}
+		set := &ui.emoji_sets[index]
+		settings_button("EmojiSetsBack", tr("Back to sets"), busy ? TEXT_DIM : clay.Color{})
+		clay.Text(
+			text_ellipsis(set.title, settings_body_width(ui) - 48, FONT_TITLE, 18),
+			{fontId = FONT_TITLE, fontSize = 18, textColor = TEXT, wrapMode = .None},
+		)
+		if hovered() {tooltip(fmt.tprintf("%s\n%s", set.title, set.coordinate))}
+		emoji_set_author(0x482000, set.author)
+		emoji_set_text(fmt.tprintf(tr("%d emoji"), len(set.items)))
+		if set.description !=
+		   "" {emoji_set_text(text_ellipsis(set.description, settings_body_width(ui) - 48, FONT_BODY, 12))}
+		if clay.UI(clay.ID("EmojiSetActions"))({layout = {childGap = 10}}) {
+			settings_button("EmojiSetsImport", tr("Import set"), busy ? TEXT_DIM : clay.Color{})
+			if hovered() {tooltip(tr("Existing shortcodes are never replaced."))}
+			settings_button(
+				"EmojiSetsPreview",
+				tr("Reload previews"),
+				busy ? TEXT_DIM : clay.Color{},
+			)
+		}
+		emoji_sets_feedback(ui)
+		columns := max(1, int((settings_body_width(ui) - 48) / 100))
+		for first := 0; first < len(set.items); first += columns {
+			if clay.UI(clay.ID("EmojiSetGrid", u32(first)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(84)},
+					childGap = 8,
+				},
+			},
+			) {
+				for i in first ..< min(first + columns, len(set.items)) {
+					item := &set.items[i]
+					if clay.UI(clay.ID("EmojiSetCell", u32(i)))(
+					{
+						layout = {
+							sizing = {width = clay.SizingFixed(92), height = clay.SizingFixed(84)},
+							layoutDirection = .TopToBottom,
+							childGap = 6,
+							childAlignment = {x = .Center, y = .Center},
+						},
+						backgroundColor = ROW_BG,
+						cornerRadius = rr(6),
+					},
+					) {
+						if clay.UI(clay.ID("EmojiSetTileTools", u32(i)))(
+						{layout = {childGap = 6, childAlignment = {y = .Center}}},
+						) {
+							if clay.UI(clay.ID("EmojiSetArt", u32(i)))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFixed(40),
+										height = clay.SizingFixed(40),
+									},
+									childAlignment = {x = .Center, y = .Center},
+								},
+							},
+							) {
+								if item.texture != nil {
+									if clay.UI(clay.ID("EmojiSetImage", u32(i)))(
+									{
+										layout = {
+											sizing = {
+												width = clay.SizingFixed(40),
+												height = clay.SizingFixed(40),
+											},
+										},
+										image = {imageData = item.texture},
+										aspectRatio = {1},
+									},
+									) {}
+								} else if busy &&
+								   ui.emoji_sets_job.op == .Preview &&
+								   !item.preview_done {
+									emoji_sets_spinner("EmojiSetItemSpinner", u32(i))
+								} else {emoji_set_text("?")}
+							}
+							if clay.UI(clay.ID("EmojiSetImportItem", u32(i)))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFixed(22),
+										height = clay.SizingFixed(22),
+									},
+									childAlignment = {x = .Center, y = .Center},
+								},
+								backgroundColor = busy ? ROW_BG : (hovered() ? ACCENT_DIM : ACCENT),
+								cornerRadius = rr(5),
+							},
+							) {
+								if busy &&
+								   ui.emoji_sets_job.op == .Import &&
+								   ui.emoji_sets_job.item_index == i {
+									emoji_sets_spinner("EmojiSetImportSpinner", u32(i))
+								} else {clay.Text(
+										"+",
+										{
+											fontId = FONT_TITLE,
+											fontSize = 16,
+											textColor = busy ? TEXT_DIM : ink_on(ACCENT),
+										},
+									)}
+								if hovered() {tooltip(fmt.tprintf(tr("Import :%s:"), item.code))}
+							}
+						}
+						clay.Text(
+							text_ellipsis(fmt.tprintf(":%s:", item.code), 80, FONT_BODY, 11),
+							{
+								fontId = FONT_BODY,
+								fontSize = 11,
+								textColor = TEXT_DIM,
+								wrapMode = .None,
+							},
+						)
+						if hovered() {tooltip(fmt.tprintf(":%s:", item.code))}
+					}
+				}
 			}
 		}
 	}
@@ -1123,68 +1493,6 @@ settings_theme_preview_hover :: proc(ui: ^Ui_State) {
 	anim_moving += 1 // present the new palette before the idle wait
 }
 
-// Sample conversation rendered with the active theme and actual text-size preference.
-// It never replaces the user's theme with a canned palette.
-settings_conversation_preview :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("SettingsConversationPreview"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(8),
-			childGap = 4,
-			childAlignment = {x = ui.prefs.centered_chat ? .Center : .Left},
-		},
-		backgroundColor = PANEL,
-		border = {color = FIELD_BORDER, width = bw()},
-		cornerRadius = rr(4),
-	},
-	) {
-		clay.Text(
-			tr("Conversation preview"),
-			{fontId = FONT_TITLE, fontSize = 11, textColor = TEXT_DIM},
-		)
-		if clay.UI(clay.ID("SettingsPreviewReceived"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow({max = ui.prefs.centered_chat ? 620 : 900})},
-				layoutDirection = .TopToBottom,
-				childGap = 3,
-				padding = clay.PaddingAll(6),
-			},
-			backgroundColor = PLATE,
-			cornerRadius = rr(BUBBLE_R),
-		},
-		) {
-			if clay.UI(clay.ID("SettingsPreviewAuthor"))(
-			{layout = {childGap = 8, childAlignment = {y = .Center}}},
-			) {
-				avatar("SettingsPreviewAvatar", 0, "settings-preview", tr("A friend"), 20)
-				clay.Text(tr("A friend"), {fontId = FONT_TITLE, fontSize = 11, textColor = ACCENT})
-			}
-			clay.Text(
-				tr("A little more room for conversation."),
-				{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
-			)
-		}
-		if clay.UI(clay.ID("SettingsPreviewSent"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow({max = ui.prefs.centered_chat ? 620 : 900})},
-				padding = clay.PaddingAll(6),
-				childAlignment = {x = .Right},
-			},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(BUBBLE_R),
-		},
-		) {
-			clay.Text(
-				tr("That feels right."),
-				{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
-			)
-		}
-	}
-}
 
 @(private)
 theme_collection_header :: proc(collection: Theme_Collection) {
@@ -1435,13 +1743,10 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 }
 
 @(private)
-settings_theme_gallery :: proc(ui: ^Ui_State) {
-	clear(&theme_control_order)
+settings_theme_gallery :: proc(ui: ^Ui_State, width: f32) {
 	for len(theme_tile_keys) < len(theme_packs) {
 		append(&theme_tile_keys, fmt.aprintf("ThemeOpt%d", len(theme_tile_keys)))
 	}
-	// SettingsSheet's padding is already excluded here, including narrow windows.
-	width := settings_body_width(ui)
 	columns := max(1, int((width + 12) / 196))
 	tile_width := (width - f32(columns - 1) * 12) / f32(columns)
 	if clay.UI(clay.ID("RowTheme"))(
@@ -1485,12 +1790,6 @@ settings_theme_gallery :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		if clay.UI(clay.ID("ThemeToneFilters"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-		) {
-			theme_tone_button(ui, .Dark, "ThemeToneDark", tr("Dark"))
-			theme_tone_button(ui, .Light, "ThemeToneLight", tr("Light"))
-		}
 		for collection in ([]Theme_Collection{.System, .White_Noise, .Sidecar, .Custom}) {
 			count := 0
 			for _, i in theme_packs {
@@ -1524,220 +1823,6 @@ settings_theme_gallery :: proc(ui: ^Ui_State) {
 	}
 }
 
-settings_appearance :: proc(ui: ^Ui_State) {
-	preview_theme := active_theme(ui)
-	if ui.theme_preview_active && ui.theme_preview >= 0 && ui.theme_preview < len(theme_packs) {
-		preview_theme = ui.theme_preview
-	}
-	if ui.settings_tab == 1 {settings_conversation_preview(ui)}
-	switch ui.settings_tab {
-	case 0:
-		settings_theme_gallery(ui)
-		if clay.UI(clay.ID("ThemeGroup"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 12,
-			},
-		},
-		) {
-			settings_conversation_preview(ui)
-			if ui.theme != system_theme_index {
-				if clay.UI(clay.ID("RowAccent"))(settings_row(true)) {
-					row_labels(tr("Accent color"), "")
-					clay.Text(
-						tr(ACCENT_NAMES[ui.accent]),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-					)
-					if clay.UI(clay.ID("AccentChoices"))({layout = {childGap = 10}}) {
-						for _, i in ACCENT_NAMES {
-							append(&theme_control_order, THEME_ACCENT_KEYS[i])
-							if clay.UI(clay.ID("AccentDot", u32(i)))(
-							{
-								layout = {
-									sizing = {
-										width = clay.SizingFixed(18),
-										height = clay.SizingFixed(18),
-									},
-								},
-								backgroundColor = len(theme_packs) > 0 ? theme_packs[preview_theme].accent_base[i] : default_pack().accent_base[i],
-								cornerRadius = rr(2),
-								border = kb_focus == THEME_ACCENT_KEYS[i] || ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
-							},
-							) {}
-						}
-					}
-				}
-			}
-			if clay.UI(clay.ID("RowThemeShare"))(settings_row(true)) {
-				row_labels(
-					tr("Share this theme"),
-					tr("Pick a chat to send it to. They choose whether to use it."),
-				)
-				if clay.UI(clay.ID("ThemeShareActions"))({layout = {childGap = 8}}) {
-					append(&theme_control_order, "ThemeShareBtn", "ThemeEditBtn")
-					settings_button("ThemeShareBtn", tr("Share to chat"))
-					settings_button("ThemeEditBtn", tr("Edit"))
-					if active_pack(ui).custom {
-						append(&theme_control_order, "ThemeDeleteBtn")
-						settings_button("ThemeDeleteBtn", tr("Delete"), DANGER)
-					}
-				}
-			}
-
-		}
-	case 2:
-		settings_avatar_choices(ui)
-
-	case 1:
-		if clay.UI(clay.ID("InterfaceGroup"))(settings_box()) {
-			settings_group(tr("Interface"))
-			if clay.UI(clay.ID("RowZoom"))(settings_row(true)) {
-				row_labels(tr("Interface zoom"), tr("Also Ctrl + / - / 0."))
-				if clay.UI(clay.ID("ZoomChoices"))(
-				{layout = {childGap = 8, childAlignment = {y = .Center}}},
-				) {
-					clay.Text(
-						fmt.tprintf("%d%%", ui.prefs.zoom_pct),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-					)
-					settings_button("ZoomMinus", "-")
-					settings_button("ZoomPlus", "+")
-					settings_button("ZoomReset", tr("Reset"))
-				}
-			}
-			if clay.UI(clay.ID("RowBodyFont"))(settings_row(true)) {
-				row_labels(
-					tr("Message text size"),
-					tr("Applies to message bodies and the composer."),
-				)
-				if clay.UI(clay.ID("BodyFontChoices"))({layout = {childGap = 6}}) {
-					for label, i in BODY_FONT_LABELS {
-						settings_option(
-							"BodyFontChip",
-							u32(i),
-							tr(label),
-							ui.prefs.body_font == BODY_FONT_DELTAS[i],
-						)
-					}
-				}
-			}
-			if clay.UI(clay.ID("RowEmojiSet"))(settings_row(true)) {
-				row_labels(
-					tr("Emoji style"),
-					tr("Applies to the picker, reactions and emoji in messages."),
-				)
-				if clay.UI(clay.ID("EmojiSetChoices"))({layout = {childGap = 6}}) {
-					for name, set in EMOJI_SET_NAMES {
-						settings_option("EmojiSetChip", u32(set), name, ui.prefs.emoji_set == set)
-					}
-				}
-			}
-			if clay.UI(clay.ID("RowScroll"))(settings_row(true)) {
-				row_labels(tr("Scroll speed"), tr("How far the mouse wheel moves the view."))
-				if clay.UI(clay.ID("ScrollChoices"))({layout = {childGap = 6}}) {
-					for label, i in SCROLL_SPEED_LABELS {
-						settings_option(
-							"ScrollChip",
-							u32(i),
-							label,
-							ui.prefs.scroll_speed == SCROLL_SPEEDS[i],
-						)
-					}
-				}
-			}
-		}
-
-		if clay.UI(clay.ID("LayoutGroup"))(settings_box()) {
-			settings_group(tr("Layout"))
-			if clay.UI(clay.ID("RowMotion"))(settings_row()) {
-				settings_check(
-					"TgMotion",
-					ui.prefs.reduce_motion,
-					tr("Reduce motion"),
-					tr(
-						"Turn off animated transitions, flights and effects. State still changes, nothing moves.",
-					),
-				)
-			}
-			if clay.UI(clay.ID("RowCentered"))(settings_row()) {
-				settings_check(
-					"TgCentered",
-					ui.prefs.centered_chat,
-					tr("Centred conversation"),
-					tr(
-						"Keep the open conversation on a comfortable reading measure instead of filling the width.",
-					),
-				)
-			}
-			if clay.UI(clay.ID("RowMessageLines"))(settings_row(true)) {
-				row_labels(
-					tr("Message line limit"),
-					tr(
-						"Collapse messages and event cards after this many lines. Set to 0 to never collapse.",
-					),
-				)
-				if clay.UI(clay.ID("MessageLinesChoices"))(
-				{layout = {childGap = 12, childAlignment = {y = .Center}}},
-				) {
-					if clay.UI(clay.ID("MessageLinesStepper"))(
-					{
-						layout = {padding = clay.PaddingAll(2), childAlignment = {y = .Center}},
-						backgroundColor = CARD,
-						border = {color = FIELD_BORDER, width = bw()},
-						cornerRadius = rr(7),
-					},
-					) {
-						for id, i in ([3]string{"MessageLinesMinus", "MessageLinesValue", "MessageLinesPlus"}) {
-							action := i == 2 || i == 0 && ui.prefs.message_lines > 0
-							if clay.UI(clay.ID(id))(
-							{
-								layout = {
-									sizing = {
-										width = clay.SizingFit({min = i == 1 ? 44 : 28}),
-										height = clay.SizingFixed(28),
-									},
-									padding = {
-										left = 6,
-										right = 6,
-										top = action ? press_down(clay.ID(id)) : 0,
-									},
-									childAlignment = {x = .Center, y = .Center},
-								},
-								backgroundColor = action && hovered() ? HOVER : {},
-								cornerRadius = rr(4),
-							},
-							) {
-								label :=
-									i == 1 ? fmt.tprintf("%d", ui.prefs.message_lines) : i == 0 ? "-" : "+"
-								clay.Text(
-									label,
-									{
-										fontId = FONT_BODY,
-										fontSize = i == 1 ? 13 : 16,
-										textColor = i == 1 ? TEXT : action ? TEXT_DIM : TEXT_LO,
-									},
-								)
-							}
-						}
-					}
-					if clay.UI(clay.ID("MessageLinesReset"))(
-					{
-						layout = {
-							padding = {left = 6, right = 6},
-							sizing = {height = clay.SizingFixed(32)},
-							childAlignment = {y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(4),
-					},
-					) {clay.Text(tr("Reset"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})}
-				}
-			}
-		}
-	}
-}
 
 // ── Notifications ───────────────────────────────────────────────────
 
@@ -2123,6 +2208,9 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 		flip(ui, &ui.prefs.reduce_motion)
 	case "TgCentered":
 		flip(ui, &ui.prefs.centered_chat)
+	case "TgEmojiContacts":
+		flip(ui, &ui.prefs.emoji_contacts_only)
+		ui.emoji_sets_page = 0
 	case "TgNotify":
 		flip(ui, &ui.prefs.notify_desktop)
 	case "TgSound":
@@ -2164,6 +2252,7 @@ settings_switch_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		.Gm,
 		.KP,
 		.EmojiName,
+		.EmojiSetsQuery,
 		.SettingsSearch,
 	}
 	if ui.focus in FIELDS {
@@ -2375,11 +2464,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				keys_disarm(ui)
 			}
 			settings_theme_preview_reset(ui)
-			if ui.settings_section == .Appearance && i == 0 {
-				settings_open(ui, client, .Appearance, tab = 0, level = .Sheet)
-			} else {
-				ui.settings_tab = i
-			}
+			ui.settings_tab = i
 			ui.settings_anchor = ""
 			ui.settings_scroll_pending = true
 			ui.focus = .Compose
@@ -2435,6 +2520,55 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 
 	case .General:
+		if ui.settings_tab == 2 {
+			if clicked("EmojiSetsBrowse") && ui.emoji_sets_job == nil {
+				ui.emoji_sets_open = !ui.emoji_sets_open
+				if ui.emoji_sets_open && len(ui.emoji_sets) == 0 && ui.emoji_sets_job == nil {
+					ui.emoji_sets_selected = -1
+					emoji_sets_job_start(ui, .Browse)
+				}
+				if !ui.emoji_sets_open && ui.focus == .EmojiSetsQuery {ui.focus = .Compose}
+				return
+			}
+			if ui.emoji_sets_open && ui.emoji_sets_job == nil {
+				if clicked("EmojiSetsRefresh") {emoji_sets_job_start(ui, .Browse); return}
+				if clicked(
+					"EmojiSetsBack",
+				) {ui.emoji_sets_selected = -1; ui.focus = .Compose; return}
+				if clicked("EmojiSetsPrev") &&
+				   ui.emoji_sets_page > 0 {ui.emoji_sets_page -= 1; return}
+				if clicked("EmojiSetsNext") {ui.emoji_sets_page += 1; return}
+				query := strings.to_lower(
+					strings.trim_space(string(ui.emoji_sets_query[:])),
+					context.temp_allocator,
+				)
+				for &set, i in ui.emoji_sets {
+					if ui.emoji_sets_selected < 0 &&
+					   emoji_set_matches(&set, query) &&
+					   clay.PointerOver(clay.ID("EmojiSetRow", u32(i))) {
+						ui.emoji_sets_selected = i
+						ui.focus = .Compose
+						emoji_sets_job_start(ui, .Preview, i)
+						return
+					}
+				}
+				index := ui.emoji_sets_selected
+				if index >= 0 && index < len(ui.emoji_sets) {
+					if clicked(
+						"EmojiSetsPreview",
+					) {emoji_sets_job_start(ui, .Preview, index); return}
+					if clicked(
+						"EmojiSetsImport",
+					) {emoji_sets_job_start(ui, .Import, index); return}
+					for _, i in ui.emoji_sets[index].items {
+						if clay.PointerOver(clay.ID("EmojiSetImportItem", u32(i))) {
+							emoji_sets_job_start(ui, .Import, index, i)
+							return
+						}
+					}
+				}
+			}
+		}
 		if clicked("LangChange") {
 			ui.lang_open = true
 			return
@@ -2478,17 +2612,17 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		for name, i in custom_emoji_names {
-			if clay.PointerOver(clay.ID("EmojiChip", u32(i))) {
+			if ui.emoji_sets_job == nil && clay.PointerOver(clay.ID("EmojiChip", u32(i))) {
 				emoji_remove(ui, name)
 				return
 			}
 		}
-		if clicked("EmojiAdd") {
+		if clicked("EmojiAdd") && ui.emoji_sets_job == nil {
 			ui.picking_emoji = true
 			rl.OpenFileDialog(true)
 			return
 		}
-		if clicked("EmojiSave") && len(ui.emoji_name) > 0 {
+		if clicked("EmojiSave") && len(ui.emoji_name) > 0 && ui.emoji_sets_job == nil {
 			save_staged_emoji(ui)
 			return
 		}
@@ -2646,6 +2780,11 @@ settings_fields :: proc(ui: ^Ui_State) {
 		}
 	}
 	if ui.settings_section == .General && ui.settings_tab == 2 {
+		if ui.emoji_sets_open &&
+		   ui.emoji_sets_selected < 0 &&
+		   field_mouse(ui, &ui.emoji_sets_query, "EmojiSetsQuery", 14) {
+			ui.focus = .EmojiSetsQuery
+		}
 		if field_mouse(ui, &ui.gm_input, "GmBox", 14) {
 			ui.focus = .Gm
 		}
@@ -2662,7 +2801,10 @@ settings_fields :: proc(ui: ^Ui_State) {
 		}
 		// Runs every frame (the release-gated handler would miss keys):
 		// Enter saves the shortcode; settings_escape drops the staged file.
-		if ui.focus == .EmojiName && rl.IsKeyPressed(.ENTER) && len(ui.emoji_name) > 0 {
+		if ui.focus == .EmojiName &&
+		   rl.IsKeyPressed(.ENTER) &&
+		   len(ui.emoji_name) > 0 &&
+		   ui.emoji_sets_job == nil {
 			save_staged_emoji(ui)
 		}
 	}
