@@ -206,6 +206,7 @@ nev_worker :: proc(job: ^Nev_Job) {
 				delete(card.raw); delete(card.content); delete(card.pubkey); delete(card.subject)
 				delete(card.subject_fonts)
 				delete(card.highlight.comment); delete(card.highlight.surrounding)
+				delete(card.highlight.fonts)
 				for source in card.highlight.sources {delete(source.text); delete(source.url)}
 				for author in card.highlight.authors {delete(author.pubkey); delete(author.role)}
 				delete(card.highlight.sources); delete(card.highlight.authors)
@@ -524,25 +525,9 @@ drain_nev :: proc() {
 			card.stamp = format_full(u64(card.created))
 		}
 		if card.kind == NEV_HIGHLIGHT_KIND {
-			// NIP-84 text is a literal quotation, not executable markdown.
-			quote := card.content
-			at := strings.index(card.highlight.surrounding, card.content)
-			if len(card.content) > 0 && at >= 0 {quote = card.highlight.surrounding}
-			if len(quote) > 0 {
-				standalone := quote == card.content
-				fonts := make([]u8, len(quote))
-				for &font, i in fonts {
-					selected := standalone || i >= at && i < at + len(card.content)
-					font = u8(selected ? FONT_TITLE : FONT_BODY)
-				}
-				block := Md_Block_Ui {
-					kind  = .Para,
-					text  = strings.clone(quote),
-					fonts = string(fonts),
-				}
-				append(&block.links, Inline_Link{start = 0, end = len(quote)})
-				append(&card.blocks, block)
-			}
+			// Cache the quote's font map; the literal text stays in card.content.
+			font := [1]u8{u8(FONT_TITLE)}
+			card.highlight.fonts = strings.repeat(string(font[:]), len(card.content))
 		} else if card.kind != 0 &&
 		   card.kind != 16767 &&
 		   len(card.content) > 0 &&
@@ -628,8 +613,8 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 	}
 	pull_request := card.kind == NEV_PULL_REQUEST_KIND && len(card.raw) > 0
 	highlight := card.kind == NEV_HIGHLIGHT_KIND && len(card.raw) > 0
-	width := att_w(pull_request ? 520 : (highlight ? 460 : 320))
-	padding := u16(pull_request ? 20 : (highlight ? 16 : 12))
+	width := att_w(pull_request || highlight ? 520 : 320)
+	padding := u16(pull_request || highlight ? 20 : 12)
 	inner_w := width - f32(padding * 2)
 
 	if clay.UI(clay.ID("NevCard", id))(
@@ -638,11 +623,11 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			sizing = {width = clay.SizingFixed(width)},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(padding),
-			childGap = pull_request ? 18 : (highlight ? 12 : 6),
+			childGap = pull_request || highlight ? 18 : 6,
 		},
 		backgroundColor = PLATE,
-		cornerRadius = rr(pull_request ? 16 : 10),
-		border = {color = CARD_BORDER, width = bw()},
+		cornerRadius = rr(pull_request || highlight ? 16 : 10),
+		border = {color = highlight ? fade(ACCENT, 0.18) : CARD_BORDER, width = bw()},
 	},
 	) {
 		if clay.UI(clay.ID("NevCardHead", id))(
@@ -669,10 +654,10 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 				}
 			} else {
 				clay.Text(
-					highlight ? "\uf10d" : ICON_GLOBE,
+					highlight ? "\uf02e" : ICON_GLOBE,
 					{
 						fontId = FONT_ICON,
-						fontSize = highlight ? 16 : 11,
+						fontSize = highlight ? 12 : 11,
 						textColor = highlight ? ACCENT : TEXT_LO,
 					},
 				)
@@ -821,19 +806,24 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			if clay.UI(clay.ID("NevOpen", id))(
 			{
 				layout = {
-					sizing = {width = pull_request ? clay.SizingGrow() : clay.SizingFit()},
+					sizing = {
+						width = pull_request || highlight ? clay.SizingGrow() : clay.SizingFit(),
+					},
 					padding = {
 						left = 10,
 						right = 10,
-						top = pull_request ? 10 : 5,
-						bottom = pull_request ? 10 : 5,
+						top = pull_request || highlight ? 10 : 5,
+						bottom = pull_request || highlight ? 10 : 5,
 					},
 					childGap = 6,
 					childAlignment = {x = .Center, y = .Center},
 				},
-				backgroundColor = hovered() ? HOVER : (pull_request ? fade(ACCENT, 0.08) : clay.Color{}),
+				backgroundColor = hovered() ? HOVER : (pull_request ? fade(ACCENT, 0.08) : (highlight ? fade(ACCENT, 0.06) : clay.Color{})),
 				cornerRadius = rr(7),
-				border = {color = pull_request ? fade(ACCENT, 0.25) : FIELD_BORDER, width = bw()},
+				border = {
+					color = pull_request ? fade(ACCENT, 0.25) : (highlight ? fade(ACCENT, 0.18) : FIELD_BORDER),
+					width = bw(),
+				},
 			},
 			) {
 				if hovered() {
@@ -843,11 +833,11 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 					tr("Open in client"),
 					{
 						fontId = FONT_BODY,
-						fontSize = pull_request ? 12 : 11,
-						textColor = pull_request ? ACCENT : TEXT_DIM,
+						fontSize = pull_request || highlight ? 12 : 11,
+						textColor = pull_request || highlight ? ACCENT : TEXT_DIM,
 					},
 				)
-				if pull_request {
+				if pull_request || highlight {
 					clay.Text("\uf08e", {fontId = FONT_ICON, fontSize = 11, textColor = ACCENT})
 				}
 			}
@@ -874,6 +864,7 @@ Nev_Attribution :: struct {
 @(private = "file")
 Nev_Highlight :: struct {
 	comment, surrounding: string,
+	fonts:                string, // cached literal quotation font map
 	sources:              [dynamic]Nev_Source,
 	authors:              [dynamic]Nev_Attribution,
 }
@@ -982,9 +973,46 @@ nev_highlight_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 	state := card.excerpt
 	state.changed = {}
 	base := 0x24000000 + id * 64
-	body_text(base, mention_label(card.pubkey), 12, TEXT_DIM, wrap_w = width, max_lines = 2)
-	if len(card.stamp) > 0 {body_text(base + 1, card.stamp, 10, TEXT_LO, wrap_w = width)}
-	more := false
+	if clay.UI(clay.ID("NevHighlightByline", id))(
+	{
+		layout = {
+			sizing = {width = clay.SizingFixed(width)},
+			childGap = 10,
+			childAlignment = {y = .Center},
+		},
+	},
+	) {
+		name := mention_label(card.pubkey)
+		avatar(
+			"NevHighlightAvatar",
+			id,
+			card.pubkey,
+			name,
+			32,
+			url_pic(profile_info(g_client, card.pubkey).pic_url),
+		)
+		if clay.UI(clay.ID("NevHighlightBylineText", id))(
+		{
+			layout = {
+				sizing = {width = clay.SizingFixed(max(width - 42, 1))},
+				layoutDirection = .TopToBottom,
+				childGap = 4,
+			},
+		},
+		) {
+			clay.Text(
+				text_ellipsis(name, max(width - 42, 1), FONT_TITLE, 13),
+				{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
+			)
+			if len(card.stamp) > 0 {
+				clay.Text(
+					text_ellipsis(card.stamp, max(width - 42, 1), FONT_BODY, 10),
+					{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO, wrapMode = .None},
+				)
+			}
+		}
+	}
+	more := state.expanded
 	if len(h.comment) > 0 {
 		if clay.UI(clay.ID("NevHighlightComment", id))(
 		{layout = {sizing = {width = clay.SizingFixed(width)}, layoutDirection = .TopToBottom}},
@@ -995,93 +1023,116 @@ nev_highlight_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 		layout = {
 			sizing = {width = clay.SizingFixed(width)},
 			layoutDirection = .TopToBottom,
-			padding = {left = 14, right = 12, top = 12, bottom = 12},
-			childGap = 8,
+			padding = {left = 18, right = 16, top = 18, bottom = 16},
+			childGap = 12,
 		},
-		backgroundColor = fade(ACCENT, 0.07),
-		cornerRadius = rr(7),
-		border = {color = ACCENT, width = {left = max(BORDER_W, 3)}},
+		backgroundColor = fade(ACCENT, 0.045),
+		cornerRadius = rr(10),
+		border = {color = fade(ACCENT, 0.65), width = {left = max(BORDER_W, 2)}},
 	},
 	) {
-		quote_w := max(width - 26, 1)
+		quote_w := max(width - 34, 1)
+		clay.Text("\uf10d", {fontId = FONT_ICON, fontSize = 26, textColor = fade(ACCENT, 0.55)})
 		if len(card.content) == 0 {
-			body_text(base + 2, tr("Media highlight"), BODY_FS, TEXT_DIM, wrap_w = quote_w)
-		} else {
-			blocks := card.blocks[:]
-			snippet: [1]Md_Block_Ui
-			if !state.expanded && len(blocks) > 0 && message_line_limit() < max(int) {
-				block := blocks[0]
-				at := strings.index(block.text, card.content)
-				if at > 0 {
-					lines := wrapped_lines(
-						block.text[:at],
-						quote_w,
-						BODY_FS,
-						.Text,
-						block.fonts[:at],
-					)
-					keep := min(2, message_line_limit() - 1)
-					if len(lines) > keep {
-						start := keep == 0 ? at : lines[len(lines) - keep].start
-						block.text, block.fonts = block.text[start:], block.fonts[start:]
-						snippet[0] = block
-						blocks = snippet[:]
-						more = true
-					}
-				}
-			}
-			more =
-				excerpt_body(base + 5, card.content, blocks, state, quote_w, TEXT, .Embed) || more
+			body_text(base + 2, tr("Media highlight"), 18, TEXT_DIM, wrap_w = quote_w)
 		}
-		if len(h.surrounding) > 0 &&
-		   (len(card.content) == 0 || !strings.contains(h.surrounding, card.content)) {
-			limit := card.excerpt.expanded ? max(int) : message_line_limit()
-			more =
-				body_text(
-					base + 3,
-					h.surrounding,
-					12,
-					TEXT_LO,
-					wrap_w = quote_w,
-					max_lines = limit,
-				) >
-					message_line_limit() ||
-				more
+		// Context keeps its original order, but never shares the quote's type scale.
+		passages := [3]string{"", card.content, h.surrounding}
+		if at := strings.index(h.surrounding, card.content); len(card.content) > 0 && at >= 0 {
+			passages[0] = strings.trim_space(h.surrounding[:at])
+			passages[2] = strings.trim_space(h.surrounding[at + len(card.content):])
+		}
+		for passage, index in passages {
+			if len(passage) == 0 {continue}
+			selected := index == 1
+			size := u16(selected ? (width < 260 ? 19 : 22) : 12)
+			limit :=
+				state.expanded || message_line_limit() == max(int) ? max(int) : (selected ? message_line_limit() : 2)
+			text := passage
+			if index == 0 && limit < max(int) {
+				lines := wrapped_lines(passage, quote_w, size, .Text)
+				if len(lines) >
+				   limit {text = passage[lines[len(lines) - limit].start:]; more = true}
+			}
+			panel :=
+				selected ? clay.ID("ExcerptBody", base + 5) : clay.ID("NevHighlightContext", id * 4 + u32(index))
+			if clay.UI(panel)(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(quote_w)},
+					layoutDirection = .TopToBottom,
+					childGap = selected ? 5 : 2,
+				},
+			},
+			) {
+				literal := [1]Inline_Link{{start = 0, end = len(text)}}
+				more =
+					body_text(
+						base + 5 + u32(index),
+						text,
+						size,
+						selected ? TEXT : TEXT_DIM,
+						wrap_w = quote_w,
+						max_lines = limit,
+						fonts = selected ? h.fonts : "",
+						links = literal[:],
+					) >
+						limit ||
+					more
+			}
 		}
 		for author, index in h.authors {
 			if clay.UI(clay.ID("NevHighlightAuthor", id * 64 + u32(index)))(
 			{
 				layout = {
 					sizing = {width = clay.SizingFixed(quote_w)},
-					layoutDirection = .TopToBottom,
+					padding = {top = 12},
+					childGap = 8,
+					childAlignment = {y = .Center},
 				},
+				border = {color = fade(ACCENT, 0.12), width = {top = BORDER_W}},
 			},
 			) {
+				name := mention_label(author.pubkey)
+				avatar(
+					"NevHighlightAuthorAvatar",
+					id * 64 + u32(index),
+					author.pubkey,
+					name,
+					20,
+					url_pic(profile_info(g_client, author.pubkey).pic_url),
+				)
 				label := author.role == "editor" ? tr("Editor: %s") : tr("Author: %s")
-				body_text(
-					base + 16 + u32(index),
-					fmt.tprintf(label, mention_label(author.pubkey)),
-					11,
-					TEXT_DIM,
-					wrap_w = quote_w,
-					max_lines = 2,
+				clay.Text(
+					text_ellipsis(fmt.tprintf(label, name), max(quote_w - 28, 1), FONT_BODY, 11),
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None},
 				)
 			}
 		}
 	}
 	if more && message_line_limit() < max(int) {
 		if clay.UI(clay.ID("NevMore", id))(
-		{layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}},
+		{
+			layout = {
+				padding = {left = 10, right = 10, top = 6, bottom = 6},
+				childGap = 6,
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = hovered() ? HOVER : fade(ACCENT, 0.06),
+			cornerRadius = rr(6),
+		},
 		) {
 			if hovered() {nev_more_hover, nev_more_id = key, base + 5}
 			clay.Text(
 				card.excerpt.expanded ? tr("Show less") : tr("Read more"),
 				{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
 			)
+			clay.Text(
+				card.excerpt.expanded ? "\uf106" : "\uf107",
+				{fontId = FONT_ICON, fontSize = 12, textColor = ACCENT},
+			)
 		}
 	}
-	if len(h.sources) >
-	   0 {clay.Text(tr("Source"), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO})}
 	for source, index in h.sources {
 		url := source.url
 		_, ref := nostr_at(source.text, 0)
@@ -1095,28 +1146,65 @@ nev_highlight_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 				)
 			}
 		}
+		title, detail := source.text, tr("Source")
+		if ref.kind == .Event || ref.kind == .Address {
+			title = len(ref.identifier) > 0 ? ref.identifier : tr("NOSTR EVENT")
+			detail = len(url) > 0 ? url_host(url) : ref.token
+		} else if end, _, valid := url_at(source.text, 0); valid && end == len(source.text) {
+			title = url_host(source.text)
+			start := strings.index(source.text, "://") + 3 + len(title)
+			path := strings.trim_left(source.text[start:], "/")
+			if cut := strings.index_any(path, "?#"); cut >= 0 {path = path[:cut]}
+			if len(path) > 0 {detail = path}
+		} else if len(url) > 0 {detail = url_host(url)}
 		if clay.UI(clay.ID("NevHighlightSource", id * 64 + u32(index)))(
 		{
 			layout = {
 				sizing = {width = clay.SizingFixed(width)},
-				layoutDirection = .TopToBottom,
-				padding = {top = 4, bottom = 4},
+				padding = clay.PaddingAll(12),
+				childGap = 10,
+				childAlignment = {y = .Center},
 			},
-			backgroundColor = hovered() && len(url) > 0 ? HOVER : clay.Color{},
-			cornerRadius = rr(4),
+			backgroundColor = hovered() && len(url) > 0 ? HOVER : CARD,
+			cornerRadius = rr(9),
+			border = {color = CARD_BORDER, width = bw()},
 		},
 		) {
 			if hovered() && len(url) > 0 {link_hover = url}
-			link := [1]Inline_Link{{start = 0, end = len(source.text)}}
-			body_text(
-				base + 32 + u32(index),
-				source.text,
-				11,
-				len(url) > 0 ? ACCENT : TEXT_LO,
-				wrap_w = width,
-				max_lines = 2,
-				links = link[:],
-			)
+			if clay.UI(clay.ID("NevHighlightSourceIcon", id * 64 + u32(index)))(
+			{
+				layout = {
+					sizing = {clay.SizingFixed(28), clay.SizingFixed(28)},
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = fade(ACCENT, 0.09),
+				cornerRadius = rr(7),
+			},
+			) {clay.Text(ref.kind == .Event || ref.kind == .Address ? "\uf02d" : "\uf0c1", {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})}
+			if clay.UI(clay.ID("NevHighlightSourceText", id * 64 + u32(index)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(max(width - 84, 1))},
+					layoutDirection = .TopToBottom,
+					childGap = 4,
+				},
+			},
+			) {
+				clay.Text(
+					text_ellipsis(title, max(width - 84, 1), FONT_TITLE, 12),
+					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT, wrapMode = .None},
+				)
+				clay.Text(
+					text_ellipsis(detail, max(width - 84, 1), FONT_BODY, 10),
+					{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO, wrapMode = .None},
+				)
+			}
+			if clay.UI(clay.ID("NevHighlightSourceArrow", id * 64 + u32(index)))(
+			{layout = {sizing = {width = clay.SizingFixed(12)}, childAlignment = {x = .Center}}},
+			) {
+				if len(url) >
+				   0 {clay.Text("\uf08e", {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM})}
+			}
 		}
 	}
 }

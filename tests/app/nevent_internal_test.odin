@@ -7,6 +7,7 @@ import "core:testing"
 nev_highlight_test_free :: proc(card: Nev_Card) {
 	blocks_free(card.blocks)
 	for value in ([]string{card.raw, card.content, card.pubkey, card.stamp, card.subject, card.subject_fonts, card.highlight.comment, card.highlight.surrounding}) {delete(value)}
+	delete(card.highlight.fonts)
 	for source in card.highlight.sources {delete(source.text); delete(source.url)}
 	for author in card.highlight.authors {delete(author.pubkey); delete(author.role)}
 	delete(card.highlight.sources)
@@ -225,7 +226,7 @@ highlight_card_layout :: proc(t: ^testing.T) {
 	)
 	for fixture, index in ([]struct {
 			content, comment, surrounding: string,
-		}{{"**BOLDMARK**", "Commentary above the selected passage.", "Quiet prefix **BOLDMARK** quiet suffix."}, {"", "A comment on a media-only passage.", ""}, {"QUOTEMISMATCH", "Commentary about a different context.", "CONTEXTMISMATCH describes the surrounding document, not the quotation."}, {long_quote, long_comment, ""}, {"**LEADINGMARK**", "Commentary on a selection late in its surrounding passage.", leading_context}}) {
+		}{{"**BOLDMARK**", "Commentary above the selected passage.", "Quiet prefix **BOLDMARK** quiet suffix."}, {"", "A comment on a media-only passage.", ""}, {"QUOTEMISMATCH", "Commentary about a different context.", "CONTEXTMISMATCH describes the surrounding document, not the quotation."}, {long_quote, long_comment, ""}, {"**LEADINGMARK**", "Commentary on a selection late in its surrounding passage.", leading_context}, {long_quote, "", ""}}) {
 		content_json, _ := json.marshal(fixture.content)
 		comment_json, _ := json.marshal(fixture.comment)
 		context_json, _ := json.marshal(fixture.surrounding)
@@ -298,7 +299,7 @@ highlight_card_layout :: proc(t: ^testing.T) {
 							clay.ID("NevHighlightAuthor", card_id * 64),
 						)
 						testing.expect(t, card_box.width > 0 && card_box.width <= width + 0.1)
-						testing.expect(t, quote.found && comment.found)
+						testing.expect(t, quote.found)
 						testing.expect(
 							t,
 							attribution.found &&
@@ -313,6 +314,7 @@ highlight_card_layout :: proc(t: ^testing.T) {
 							testing.expect_value(t, nev_more_id, excerpt_id)
 						}
 						for box in ([]clay.BoundingBox{quote.boundingBox, comment.boundingBox}) {
+							if box.width == 0 {continue}
 							testing.expect(
 								t,
 								box.x >= card_box.x &&
@@ -322,12 +324,8 @@ highlight_card_layout :: proc(t: ^testing.T) {
 								"Highlight panels must remain contained by the event card.",
 							)
 						}
-						testing.expect(
-							t,
-							comment.boundingBox.y + comment.boundingBox.height <=
-							quote.boundingBox.y + 0.1,
-							"Commentary must sit above the quotation.",
-						)
+						if len(fixture.comment) >
+						   0 {testing.expect(t, comment.boundingBox.y + comment.boundingBox.height <= quote.boundingBox.y + 0.1, "Commentary must sit above the quotation.")}
 						shown := strings.builder_make(context.temp_allocator)
 						quote_text := strings.builder_make(context.temp_allocator)
 						selection_text := strings.builder_make(context.temp_allocator)
@@ -347,8 +345,9 @@ highlight_card_layout :: proc(t: ^testing.T) {
 							)
 							if box.y >= quote.boundingBox.y &&
 							   box.y < quote.boundingBox.y + quote.boundingBox.height {
-								if box.y <
-								   attribution.boundingBox.y {strings.write_string(&quote_text, part)}
+								if box.y < attribution.boundingBox.y &&
+								   data.fontId !=
+									   FONT_ICON {strings.write_string(&quote_text, part)}
 								if strings.contains(part, "BOLDMARK") ||
 								   strings.contains(
 									   part,
@@ -460,7 +459,14 @@ highlight_card_layout :: proc(t: ^testing.T) {
 								t,
 								clay.GetElementData(clay.ID("NevMore", card_id)).found,
 							)
-							if expanded {testing.expect(t, nev_highlight_test_compact(selected) == nev_highlight_test_compact(fixture.surrounding), "Expansion must restore the full surrounding passage.")}
+							if expanded {testing.expect(t, nev_highlight_test_compact(quoted) == nev_highlight_test_compact(fixture.surrounding), "Expansion must restore the full surrounding passage.")}
+						case 5:
+							testing.expect(
+								t,
+								clay.GetElementData(clay.ID("NevMore", card_id)).found,
+								"A highlight without commentary must remain collapsible after expansion.",
+							)
+							if expanded {testing.expect(t, nev_highlight_test_compact(selected) == nev_highlight_test_compact(fixture.content), "A standalone highlight must preserve its complete quotation.")}
 						}
 						rl.BeginDrawing()
 						clay_raylib_render(&commands)
