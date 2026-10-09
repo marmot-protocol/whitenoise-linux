@@ -872,9 +872,8 @@ extract_inlines :: proc(
 		case .CODE:
 			strings.write_string(builder, string(node.body.code.content))
 			style = FONT_MONO | TEXT_CODE | (font & TEXT_STRIKE)
-		case .SOFT_BREAK:
-			strings.write_rune(builder, ' ')
-		case .HARD_BREAK:
+		case .SOFT_BREAK, .HARD_BREAK:
+			// Chat messages keep the sender's line breaks, including soft breaks.
 			strings.write_rune(builder, '\n')
 		case .EMPH:
 			extract_inlines(
