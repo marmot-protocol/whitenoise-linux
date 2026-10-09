@@ -39,6 +39,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Export the loaded chat window as HTML or Markdown from the members panel. HTML prepares embedded images in the background and shows image progress before opening the save dialog. Unavailable images appear as notes in the transcript. Leaving the chat or changing accounts discards an unfinished export.
 - Emoji search accepts names and shortcodes, such as `100` for hundred points and `thumbsup` for thumbs up. Shortcodes work with or without surrounding colons.
 - The emoji picker's eight most recent choices survive app restarts, newest first.
+- Settings > General > Messaging > Custom emoji browses recent [NIP-51 kind-30030 emoji sets](https://github.com/nostr-protocol/nips/blob/master/51.md) from your event-fetch relays. Search the results by title, signer, or shortcode, preview a set, then import its images. Set titles and verified signer keys stay visible with imported emoji after a restart. Imports preserve existing shortcodes and report skipped entries and failed downloads. Previewing and importing contact the sets' HTTPS image hosts; PNG, JPEG, GIF, and WebP are supported when the image decoder accepts them.
 - Custom `:shortcode:` emoji use NIP-30. The image goes out as an encrypted attachment, and the message carries an `["emoji", shortcode, url]` tag pointing at that attachment's Blossom URL. Reactions work the same way: a `:shortcode:` reaction carries its own `imeta` and emoji tag. Forwards keep the tags. MDK's `marmot_send_tagged_media` and `marmot_react_with_media` send them, and MDK keeps the media key for reaction images the way it does for chat media.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
 - Forwarded attachments download and prepare in the background. A status strip names the destination and stays visible through preparation and sending, even if you switch chats. Failed forwards can be retried from the destination chat.
@@ -668,6 +669,10 @@ To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; t
 The current pin is MDK 0.12.0. The build applies the patches listed in
 `scripts/build.sh`. NIP-46 C sessions and Windows portability come from
 upstream MDK.
+Staging recognizes an already-applied prefix of the patch series and applies
+only the remaining patches. Appending a patch does not require resetting
+`vendor/mdk`, even when earlier patches overlap. Conflicting local edits still
+stop staging.
 Poll creation, voting, and tallies use MDK's native poll APIs and timeline
 projection. `patches/mdk-poll-context.patch` preserves thread and issue context
 through native creation. MDK supports poll creation in direct and group
@@ -678,6 +683,8 @@ Checkmarks identify your selections.
 Validate MDK patch changes by applying the full `MDK_PATCHES` list, in order,
 to a clean checkout of `mdk-commit`, then checking the already-patched tree.
 A successful reverse check alone can hide an invalid old-file path.
+Run `bash tests/mdk-patches-test.sh` to check fresh staging, reruns, appended
+overlapping patches, and conflicting local edits.
 
 Publishing workflows read `WN_METRICS_WRITE_TOKEN` and `WN_AUDIT_WRITE_TOKEN`
 from CI secrets. Configure both on GitHub and on trusted ngit/act publishing

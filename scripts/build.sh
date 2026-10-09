@@ -58,30 +58,8 @@ if [ "$(git -C "$MDK" rev-parse HEAD)" != "$MDK_PIN" ]; then
   rm -rf "$BUNDLE"
 fi
 
-# Later patches can change an earlier patch's reverse-check context. Compare
-# the complete series in a temporary index without changing the checkout.
-mdk_series_applied() (
-  index="$(mktemp "$MDK/.wn-index.XXXXXX")"
-  trap 'rm -f "$index"' EXIT
-  export GIT_INDEX_FILE="$index"
-  git -C "$MDK" read-tree HEAD || return 1
-  for patch in "${MDK_PATCHES[@]}"; do
-    git -C "$MDK" apply --cached "$patch" || return 1
-  done
-  git -C "$MDK" diff --quiet --no-ext-diff
-)
-
 # Apply Linux integration changes to a fresh or partially patched checkout.
-if ! mdk_series_applied; then
-  for patch in "${MDK_PATCHES[@]}"; do
-    if git -C "$MDK" apply --check "$patch" 2>/dev/null; then
-      git -C "$MDK" apply "$patch"
-    elif ! git -C "$MDK" apply --reverse --check "$patch" 2>/dev/null; then
-      echo "==> MDK patch conflicts with vendor/mdk: $patch" >&2
-      exit 1
-    fi
-  done
-fi
+bash "$HERE/scripts/apply-mdk-patches.sh" "$MDK" "${MDK_PATCHES[@]}"
 PATCHES_HASH="$(sha256sum "${MDK_PATCHES[@]}")"
 if [ "${1:-}" != sources ] && { [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ] || [ "$(cat "$BUNDLE/.mdk-patches" 2>/dev/null || true)" != "$PATCHES_HASH" ]; }; then
   RUST_ENV=()
@@ -720,6 +698,7 @@ echo "==> Done: $HERE/build/{smoke,app}"
 # does after the build.
 if [ "${1:-}" = test ]; then
   bash "$HERE/tests/version-test.sh"
+  bash "$HERE/tests/mdk-patches-test.sh"
   cc -O2 -Wall -Wextra "$HERE/tests/ws-frame-test.c" \
     $(pkg-config --cflags --libs libcurl) -o "$HERE/build/ws-frame-test"
   "$HERE/build/ws-frame-test"
