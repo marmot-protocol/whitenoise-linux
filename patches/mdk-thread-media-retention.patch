@@ -1,0 +1,146 @@
+diff --git a/crates/storage-sqlite/CHANGELOG.md b/crates/storage-sqlite/CHANGELOG.md
+index 3ad67e95..8078e57a 100644
+--- a/crates/storage-sqlite/CHANGELOG.md
++++ b/crates/storage-sqlite/CHANGELOG.md
+@@ -17,6 +17,12 @@
+   migrated in-memory database per process instead of replaying every migration
+   for each open. Harnesses that open thousands of databases use it.
+ 
++### Fixed
++
++- Kind-1111 thread replies and kind-1621 issues retain V1/V2 media epoch
++  secrets for attachments and NIP-30 emoji images. Pruning the final media
++  reference retires the epoch secret for custom events and reactions too.
++
+ ## 0.12.0 - 2026-10-02
+ 
+ Account storage advances from migration 98 through 101 on first open; downgrade
+diff --git a/crates/storage-sqlite/src/encrypted_media_secrets.rs b/crates/storage-sqlite/src/encrypted_media_secrets.rs
+index d006b52a..62c1084a 100644
+--- a/crates/storage-sqlite/src/encrypted_media_secrets.rs
++++ b/crates/storage-sqlite/src/encrypted_media_secrets.rs
+@@ -13,6 +13,9 @@ use cgka_traits::app_event::{MARMOT_APP_EVENT_KIND_CHAT, MARMOT_APP_EVENT_KIND_R
+ use cgka_traits::storage::{StorageError, StorageResult};
+ use rusqlite::{Connection, OptionalExtension, params};
+ 
++const COMMENT_KIND: u64 = 1111;
++const ISSUE_KIND: u64 = 1621;
++
+ impl SqliteAccountStorage {
+     pub fn remember_encrypted_media_epoch_secret(
+         &self,
+@@ -241,9 +244,11 @@ pub(crate) fn replace_encrypted_media_secret_references_for_parts_tx(
+     )
+     .storage()?;
+ 
+-    // Reactions carry imeta for NIP-30 custom emoji images.
+-    if (kind == MARMOT_APP_EVENT_KIND_CHAT || kind == MARMOT_APP_EVENT_KIND_REACTION)
+-        && let Some(source_epoch) = source_epoch
++    // Comments and issues carry attachments; reactions carry NIP-30 images.
++    if matches!(
++        kind,
++        MARMOT_APP_EVENT_KIND_CHAT | MARMOT_APP_EVENT_KIND_REACTION | COMMENT_KIND | ISSUE_KIND
++    ) && let Some(source_epoch) = source_epoch
+     {
+         let source_epoch = u64_to_i64(source_epoch)?;
+         let component_ids = encrypted_media_component_ids(tags);
+@@ -703,6 +708,85 @@ mod tests {
+         assert_eq!(epochs, vec![8]);
+     }
+ 
++    #[test]
++    fn custom_imeta_retains_secret() {
++        for (kind, id, content) in [
++            (COMMENT_KIND, "thread", ""),
++            (COMMENT_KIND, "emoji", ":party:"),
++            (ISSUE_KIND, "issue", "Description"),
++        ] {
++            for (version, component_id) in [
++                (
++                    ENCRYPTED_MEDIA_FORMAT_V1,
++                    GROUP_ENCRYPTED_MEDIA_V1_COMPONENT_ID,
++                ),
++                (
++                    ENCRYPTED_MEDIA_FORMAT_V2,
++                    GROUP_ENCRYPTED_MEDIA_V2_COMPONENT_ID,
++                ),
++            ] {
++                let store = SqliteAccountStorage::in_memory().unwrap();
++                store
++                    .remember_encrypted_media_epoch_secret("aa", component_id, 7, &[1; 32])
++                    .unwrap();
++                store.record_app_event(&media_event("old", 10, 7)).unwrap();
++                let mut custom = media_event_with_versions(id, 20, 7, &[version]);
++                custom.kind = kind;
++                custom.plaintext = content.to_owned();
++                custom.tags.push(vec!["e".into(), "old".into()]);
++                if id == "emoji" {
++                    custom.tags.push(vec![
++                        "emoji".into(),
++                        "party".into(),
++                        "https://blossom.example/image".into(),
++                    ]);
++                }
++                if kind == ISSUE_KIND {
++                    custom
++                        .tags
++                        .push(vec!["subject".into(), "Media issue".into()]);
++                }
++                store.record_app_event(&custom).unwrap();
++                assert!(secret_is_referenced(&store, "aa", component_id, 7));
++
++                let partial = store
++                    .secure_prune_app_events_before("aa", 15, "local", &no_mentions)
++                    .unwrap();
++                assert_eq!(partial.pruned_messages, 1);
++                assert_eq!(partial.pruned_media_epoch_secrets, 0, "{id}: {version}");
++                assert_eq!(
++                    store
++                        .encrypted_media_epoch_secret("aa", component_id, 7)
++                        .unwrap(),
++                    Some(vec![1; 32]),
++                    "{id}: {version}"
++                );
++
++                let final_sweep = store
++                    .secure_prune_app_events_before("aa", 21, "local", &no_mentions)
++                    .unwrap();
++                assert_eq!(final_sweep.pruned_messages, 1);
++                assert_eq!(final_sweep.pruned_media_epoch_secrets, 1);
++                assert_eq!(
++                    store
++                        .encrypted_media_epoch_secret("aa", component_id, 7)
++                        .unwrap(),
++                    None
++                );
++                store
++                    .remember_encrypted_media_epoch_secret("aa", component_id, 7, &[1; 32])
++                    .unwrap();
++                assert_eq!(
++                    store
++                        .encrypted_media_epoch_secret("aa", component_id, 7)
++                        .unwrap(),
++                    None,
++                    "pruned custom media must not resurrect its epoch"
++                );
++            }
++        }
++    }
++
+     #[test]
+     fn shared_epoch_secret_survives_partial_sweep_until_final_reference() {
+         let store = SqliteAccountStorage::in_memory().unwrap();
+diff --git a/crates/storage-sqlite/src/timeline.rs b/crates/storage-sqlite/src/timeline.rs
+index ec4b42ee..f4d9c5b4 100644
+--- a/crates/storage-sqlite/src/timeline.rs
++++ b/crates/storage-sqlite/src/timeline.rs
+@@ -1771,8 +1771,7 @@ fn secure_prune_selected_app_events_tx(
+                 .extend(tag_values(&event.tags, EVENT_REF_TAG).map(ToOwned::to_owned));
+         }
+         collect_media_ciphertext_hashes(&event.tags, &mut media_ciphertext_sha256);
+-        if event.kind == MARMOT_APP_EVENT_KIND_CHAT
+-            && !encrypted_media_component_ids(&event.tags).is_empty()
++        if !encrypted_media_component_ids(&event.tags).is_empty()
+             && let Some(source_epoch) = event.source_epoch
+         {
+             retiring_media_epochs.insert(u64_to_i64(source_epoch)?);
