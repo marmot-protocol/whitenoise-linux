@@ -31,5 +31,7 @@ fi
 LINK_ARGS=()
 if [ "$(uname -s)" = OpenBSD ]; then
   LINK_ARGS=('-extra-linker-flags:-Wl,--wrap=execve,--exclude-libs=libmarmot_c.a')
+elif [ "$(uname -s)" = Linux ]; then
+  LINK_ARGS=('-extra-linker-flags:-Wl,--exclude-libs=libmarmot_c.a')
 fi
 odin test "$fixture/$package" -out:"$fixture/test" "${LINK_ARGS[@]}" "$@"

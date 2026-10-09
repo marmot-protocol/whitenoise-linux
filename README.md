@@ -223,6 +223,10 @@ The native Linux build extracts speech, font, and emoji archives without
 restoring ownership, so it can run as root inside Flatpak's restricted user
 namespace.
 
+Native Linux builds, Linux tarballs, and app test binaries hide the symbols
+in `libmarmot_c.a` from shared libraries. This keeps Marmot's bundled OpenSSL
+separate from libcurl's shared TLS libraries during certificate verification.
+
 The build also packs each emoji set's catalog PNGs into `emoji/<set>.bin`.
 The app reads the active set's fixed-size RGBA data at startup (and again
 when you pick another set in Appearance) and uploads only visible picker

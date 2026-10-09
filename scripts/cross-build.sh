@@ -179,11 +179,14 @@ odin build "$HERE/nes-decoder" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET
 # target driver; MicroTeX and Cairo belong only to the math helper.
 odin build "$HERE/app" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
   -o:speed -build-mode:obj -out:"$OUT/app.o"
-WINDOWS_LINK=()
+APP_LINK_ARGS=()
 if [ "$SYSTEM" = Windows ]; then
-  WINDOWS_LINK=("${WINDOWS_RUNTIME[@]}" "$OUT/velopack/libvelopack_libc.dll.a")
+  APP_LINK_ARGS=("${WINDOWS_RUNTIME[@]}" "$OUT/velopack/libvelopack_libc.dll.a")
+elif [ "$SYSTEM" = Linux ]; then
+  # System libssl must not resolve crypto calls to Marmot's bundled OpenSSL.
+  APP_LINK_ARGS=(-Wl,--exclude-libs=libmarmot_c.a)
 fi
-"$CC" "${CFLAGS[@]}" "$OUT/app.o" "${WINDOWS_LINK[@]}" \
+"$CC" "${CFLAGS[@]}" "$OUT/app.o" "${APP_LINK_ARGS[@]}" \
   "$OUT/libwnws.a" "$OUT/libwnipc.a" "$OUT/libwndecoder.a" "$OUT/libwntimestamp.a" \
   "$OUT/clay/clay.a" "$OUT/stb/stb.a" "$OUT/libmarmot_c.a" \
   $(pkg-config --libs sdl3 mpv libcurl openssl) \

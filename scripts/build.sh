@@ -682,6 +682,9 @@ if [ "$(uname -s)" = OpenBSD ]; then
   done
   # Keep bundled OpenSSL/SQLCipher symbols private: system libcurl uses LibreSSL.
   APP_LINK_ARGS=('-extra-linker-flags:-Wl,--wrap=execve,--exclude-libs=libmarmot_c.a')
+elif [ "$(uname -s)" = Linux ]; then
+  # System libssl must not resolve crypto calls to Marmot's bundled OpenSSL.
+  APP_LINK_ARGS=('-extra-linker-flags:-Wl,--exclude-libs=libmarmot_c.a')
 fi
 
 env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/model-decoder" -o:speed -out:"$HERE/build/wn-mesh"
