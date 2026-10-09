@@ -630,72 +630,65 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 		border = {color = highlight ? fade(ACCENT, 0.18) : CARD_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("NevCardHead", id))(
-		{
-			layout = {
-				sizing = {width = clay.SizingFixed(inner_w)},
-				childGap = 8,
-				childAlignment = {y = .Center},
-			},
-		},
-		) {
-			if pull_request {
-				if clay.UI(clay.ID("NevPullIcon", id))(
-				{
-					layout = {
-						sizing = {clay.SizingFixed(32), clay.SizingFixed(32)},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = fade(ACCENT, 0.1),
-					cornerRadius = rr(8),
+		if !highlight {
+			// Keep Clay's deferred close inside the guard.
+			if clay.UI(clay.ID("NevCardHead", id))(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(inner_w)},
+					childGap = 8,
+					childAlignment = {y = .Center},
 				},
-				) {
-					clay.Text("\uf407", {fontId = FONT_ICON, fontSize = 17, textColor = ACCENT})
-				}
-			} else {
-				clay.Text(
-					highlight ? "\uf02e" : ICON_GLOBE,
+			},
+			) {
+				if pull_request {
+					if clay.UI(clay.ID("NevPullIcon", id))(
 					{
-						fontId = FONT_ICON,
-						fontSize = highlight ? 12 : 11,
-						textColor = highlight ? ACCENT : TEXT_LO,
+						layout = {
+							sizing = {clay.SizingFixed(32), clay.SizingFixed(32)},
+							childAlignment = {x = .Center, y = .Center},
+						},
+						backgroundColor = fade(ACCENT, 0.1),
+						cornerRadius = rr(8),
 					},
-				)
-			}
-			switch {
-			case len(card.raw) == 0:
-				eyebrow(tr("NOSTR EVENT"))
-			case card.kind == NEV_PRODUCT_KIND:
-				eyebrow(tr("PRODUCT"))
-			case card.kind == NEV_GEOCACHE_KIND:
-				eyebrow(tr("GEOCACHE"))
-			case card.kind == NEV_HIGHLIGHT_KIND:
-				clay.Text(
-					tr("HIGHLIGHT"),
-					{fontId = FONT_BODY, fontSize = 10, textColor = ACCENT, letterSpacing = 1},
-				)
-			case card.kind == NEV_PULL_REQUEST_KIND:
-				clay.Text(
-					tr("PULL REQUEST"),
-					{fontId = FONT_BODY, fontSize = 10, textColor = ACCENT, letterSpacing = 1},
-				)
-			case textual:
-				eyebrow(tr("NOTE"))
-			case:
-				clay.Text(
-					fmt.tprintf(tr("KIND %d"), card.kind),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
-				)
-			}
-			if len(card.pubkey) > 0 &&
-			   !pull_request &&
-			   !highlight &&
-			   card.kind != NEV_PRODUCT_KIND &&
-			   card.kind != NEV_GEOCACHE_KIND {
-				clay.Text(
-					fmt.tprintf("%s · %s", mention_label(card.pubkey), card.stamp),
-					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
-				)
+					) {
+						clay.Text(
+							"\uf407",
+							{fontId = FONT_ICON, fontSize = 17, textColor = ACCENT},
+						)
+					}
+				} else {
+					clay.Text(ICON_GLOBE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
+				}
+				switch {
+				case len(card.raw) == 0:
+					eyebrow(tr("NOSTR EVENT"))
+				case card.kind == NEV_PRODUCT_KIND:
+					eyebrow(tr("PRODUCT"))
+				case card.kind == NEV_GEOCACHE_KIND:
+					eyebrow(tr("GEOCACHE"))
+				case card.kind == NEV_PULL_REQUEST_KIND:
+					clay.Text(
+						tr("PULL REQUEST"),
+						{fontId = FONT_BODY, fontSize = 10, textColor = ACCENT, letterSpacing = 1},
+					)
+				case textual:
+					eyebrow(tr("NOTE"))
+				case:
+					clay.Text(
+						fmt.tprintf(tr("KIND %d"), card.kind),
+						{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+					)
+				}
+				if len(card.pubkey) > 0 &&
+				   !pull_request &&
+				   card.kind != NEV_PRODUCT_KIND &&
+				   card.kind != NEV_GEOCACHE_KIND {
+					clay.Text(
+						fmt.tprintf("%s · %s", mention_label(card.pubkey), card.stamp),
+						{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
+					)
+				}
 			}
 		}
 
