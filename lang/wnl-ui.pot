@@ -504,6 +504,9 @@ msgstr ""
 msgid "Author"
 msgstr ""
 
+msgid "Author: %s"
+msgstr ""
+
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr ""
 
@@ -1759,6 +1762,9 @@ msgstr ""
 msgid "Editing message"
 msgstr ""
 
+msgid "Editor: %s"
+msgstr ""
+
 msgid "Elevated"
 msgstr ""
 
@@ -2081,6 +2087,9 @@ msgid "Group settings"
 msgstr ""
 
 msgid "Grouped"
+msgstr ""
+
+msgid "HIGHLIGHT"
 msgstr ""
 
 msgid "Hard shadows"
@@ -2567,6 +2576,9 @@ msgid "Media cache"
 msgstr ""
 
 msgid "Media cache cleared."
+msgstr ""
+
+msgid "Media highlight"
 msgstr ""
 
 msgid "Members"
@@ -3917,6 +3929,9 @@ msgid "Sort chats by recent activity"
 msgstr ""
 
 msgid "Sounds don't play"
+msgstr ""
+
+msgid "Source"
 msgstr ""
 
 msgid "Speech"

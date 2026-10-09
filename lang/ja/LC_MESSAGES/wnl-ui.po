@@ -505,6 +505,9 @@ msgstr "8月"
 msgid "Author"
 msgstr "作者"
 
+msgid "Author: %s"
+msgstr "著者: %s"
+
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr "画像と対応ウェブサイトのプレビューを自動的に読み込みます。配信元の運営者にはあなたのIPアドレスが見えます。オフにするとリンクのプレビューの自動読み込みは停止しますが、添付ファイルのダウンロードは継続されます。"
 
@@ -1764,6 +1767,9 @@ msgstr "最後に送ったメッセージを編集（入力欄が空のとき）
 msgid "Editing message"
 msgstr "メッセージを編集中"
 
+msgid "Editor: %s"
+msgstr "編集者: %s"
+
 msgid "Elevated"
 msgstr "浮き上がり面"
 
@@ -2087,6 +2093,9 @@ msgstr "グループ設定"
 
 msgid "Grouped"
 msgstr "フォルダ別"
+
+msgid "HIGHLIGHT"
+msgstr "ハイライト"
 
 msgid "Hard shadows"
 msgstr "くっきりした影"
@@ -2573,6 +2582,9 @@ msgstr "メディアキャッシュ"
 
 msgid "Media cache cleared."
 msgstr "メディアキャッシュを消去しました。"
+
+msgid "Media highlight"
+msgstr "メディアのハイライト"
 
 msgid "Members"
 msgstr "メンバー"
@@ -3924,6 +3936,9 @@ msgstr "最近のアクティビティ順にチャットを並べ替え"
 
 msgid "Sounds don't play"
 msgstr "音が鳴りません"
+
+msgid "Source"
+msgstr "出典"
 
 msgid "Speech"
 msgstr "音声"

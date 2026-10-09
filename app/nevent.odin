@@ -6,8 +6,10 @@
 // carries, on its own thread, and cached twice: in memory for the
 // session and as <home>/events/<id>.json across runs. Notes, replies,
 // articles and pull requests render as author + text; product and
-// geocache cards show their metadata. Other kinds show raw event JSON.
-// Text goes through marmot's
+// geocache cards show their metadata. Highlights quote the selected
+// text with context, commentary and source attribution. Other kinds
+// show raw event JSON.
+// Note text goes through marmot's
 // markdown parser like a chat body; image links are fetched into memory
 // for this session and drawn inline. Every card offers one
 // "Open in client" button, the web client set in Settings → Network.
@@ -65,6 +67,7 @@ Nev_Card :: struct {
 	excerpt:       Excerpt,
 	product:       Nev_Product,
 	geocache:      Nev_Geocache,
+	highlight:     Nev_Highlight,
 	done:          bool, // fetch finished; raw == "" then means not found
 	kind:          i64,
 	pubkey:        string,
@@ -202,6 +205,10 @@ nev_worker :: proc(job: ^Nev_Job) {
 				}
 				delete(card.raw); delete(card.content); delete(card.pubkey); delete(card.subject)
 				delete(card.subject_fonts)
+				delete(card.highlight.comment); delete(card.highlight.surrounding)
+				for source in card.highlight.sources {delete(source.text); delete(source.url)}
+				for author in card.highlight.authors {delete(author.pubkey); delete(author.role)}
+				delete(card.highlight.sources); delete(card.highlight.authors)
 				for value in ([]string{card.product.title, card.product.summary, card.product.image, card.product.price, card.product.availability, card.product.stock, card.product.location}) {delete(value)}
 				for value in ([]string{card.geocache.name, card.geocache.image, card.geocache.hint, card.geocache.size, card.geocache.mission, card.geocache.geohash}) {delete(value)}
 				card = fresh
@@ -447,6 +454,7 @@ nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_
 	card.pubkey = strings.clone(pubkey)
 	if card.kind == NEV_PRODUCT_KIND {card.product = nev_product_parse(ev)}
 	if card.kind == NEV_GEOCACHE_KIND {card.geocache = nev_geocache_parse(ev)}
+	if card.kind == NEV_HIGHLIGHT_KIND {card.highlight = nev_highlight_parse(ev)}
 	if card.kind == NEV_PULL_REQUEST_KIND {
 		tags, _ := ev["tags"].(json.Array)
 		for tag in tags {
@@ -515,7 +523,30 @@ drain_nev :: proc() {
 		if card.created > 0 {
 			card.stamp = format_full(u64(card.created))
 		}
-		if card.kind != 0 && card.kind != 16767 && len(card.content) > 0 && g_client != nil {
+		if card.kind == NEV_HIGHLIGHT_KIND {
+			// NIP-84 text is a literal quotation, not executable markdown.
+			quote := card.content
+			at := strings.index(card.highlight.surrounding, card.content)
+			if len(card.content) > 0 && at >= 0 {quote = card.highlight.surrounding}
+			if len(quote) > 0 {
+				standalone := quote == card.content
+				fonts := make([]u8, len(quote))
+				for &font, i in fonts {
+					selected := standalone || i >= at && i < at + len(card.content)
+					font = u8(selected ? FONT_TITLE : FONT_BODY)
+				}
+				block := Md_Block_Ui {
+					kind  = .Para,
+					text  = strings.clone(quote),
+					fonts = string(fonts),
+				}
+				append(&block.links, Inline_Link{start = 0, end = len(quote)})
+				append(&card.blocks, block)
+			}
+		} else if card.kind != 0 &&
+		   card.kind != 16767 &&
+		   len(card.content) > 0 &&
+		   g_client != nil {
 			doc: ^marmot.Markdown_Document
 			if marmot.parse_markdown(
 				   g_client,
@@ -596,8 +627,9 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 		}
 	}
 	pull_request := card.kind == NEV_PULL_REQUEST_KIND && len(card.raw) > 0
-	width := att_w(pull_request ? 520 : 320)
-	padding := u16(pull_request ? 20 : 12)
+	highlight := card.kind == NEV_HIGHLIGHT_KIND && len(card.raw) > 0
+	width := att_w(pull_request ? 520 : (highlight ? 460 : 320))
+	padding := u16(pull_request ? 20 : (highlight ? 16 : 12))
 	inner_w := width - f32(padding * 2)
 
 	if clay.UI(clay.ID("NevCard", id))(
@@ -606,7 +638,7 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			sizing = {width = clay.SizingFixed(width)},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(padding),
-			childGap = pull_request ? 18 : 6,
+			childGap = pull_request ? 18 : (highlight ? 12 : 6),
 		},
 		backgroundColor = PLATE,
 		cornerRadius = rr(pull_request ? 16 : 10),
@@ -636,7 +668,14 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 					clay.Text("\uf407", {fontId = FONT_ICON, fontSize = 17, textColor = ACCENT})
 				}
 			} else {
-				clay.Text(ICON_GLOBE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
+				clay.Text(
+					highlight ? "\uf10d" : ICON_GLOBE,
+					{
+						fontId = FONT_ICON,
+						fontSize = highlight ? 16 : 11,
+						textColor = highlight ? ACCENT : TEXT_LO,
+					},
+				)
 			}
 			switch {
 			case len(card.raw) == 0:
@@ -645,6 +684,11 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 				eyebrow(tr("PRODUCT"))
 			case card.kind == NEV_GEOCACHE_KIND:
 				eyebrow(tr("GEOCACHE"))
+			case card.kind == NEV_HIGHLIGHT_KIND:
+				clay.Text(
+					tr("HIGHLIGHT"),
+					{fontId = FONT_BODY, fontSize = 10, textColor = ACCENT, letterSpacing = 1},
+				)
 			case card.kind == NEV_PULL_REQUEST_KIND:
 				clay.Text(
 					tr("PULL REQUEST"),
@@ -660,6 +704,7 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			}
 			if len(card.pubkey) > 0 &&
 			   !pull_request &&
+			   !highlight &&
 			   card.kind != NEV_PRODUCT_KIND &&
 			   card.kind != NEV_GEOCACHE_KIND {
 				clay.Text(
@@ -689,6 +734,8 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			nev_product_card(id, evid, card, inner_w)
 		case card.kind == NEV_GEOCACHE_KIND:
 			nev_geocache_card(id, evid, card, inner_w)
+		case card.kind == NEV_HIGHLIGHT_KIND:
+			nev_highlight_card(id, evid, card, inner_w)
 		case textual:
 			if pull_request {
 				if clay.UI(clay.ID("NevPullTitle", id))(
@@ -810,6 +857,269 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 
 @(private)
 NEV_PRODUCT_KIND :: 30402
+
+@(private = "file")
+NEV_HIGHLIGHT_KIND :: 9802
+
+@(private = "file")
+Nev_Source :: struct {
+	text, url: string,
+}
+
+@(private = "file")
+Nev_Attribution :: struct {
+	pubkey, role: string,
+}
+
+@(private = "file")
+Nev_Highlight :: struct {
+	comment, surrounding: string,
+	sources:              [dynamic]Nev_Source,
+	authors:              [dynamic]Nev_Attribution,
+}
+
+// Convert NIP-84 event/address sources without fetching or nesting another card.
+@(private = "file")
+nev_highlight_ref :: proc(name, value: string) -> string {
+	digest: [32]u8
+	if name == "e" {
+		bytes, valid := hex.decode_into_buffer(transmute([]u8)value, digest[:])
+		if !valid || len(bytes) != len(digest) {return ""}
+		return bech32_encode("note", digest[:])
+	}
+	first := strings.index(value, ":")
+	if first < 0 {return ""}
+	second := strings.index(value[first + 1:], ":")
+	if second < 0 {return ""}
+	second += first + 1
+	kind, valid := strconv.parse_u64(value[:first])
+	if !valid || kind > u64(max(u32)) {return ""}
+	bytes, decoded := hex.decode_into_buffer(transmute([]u8)value[first + 1:second], digest[:])
+	identifier := value[second + 1:]
+	if !decoded || len(bytes) != len(digest) || len(identifier) > 255 {return ""}
+	data: [297]u8
+	data[0], data[1] = 0, u8(len(identifier))
+	copy(data[2:], transmute([]u8)identifier)
+	at := 2 + len(identifier)
+	data[at], data[at + 1] = 2, 32
+	copy(data[at + 2:], digest[:])
+	at += 34
+	data[at], data[at + 1] = 3, 4
+	for i in 0 ..< 4 {data[at + 2 + i] = u8(kind >> (24 - u32(i) * 8))}
+	token := bech32_encode("naddr", data[:at + 6])
+	_, ref := nostr_at(token, 0)
+	if ref.kind == .Address {return token}
+	delete(token)
+	return ""
+}
+
+@(private = "file")
+nev_highlight_parse :: proc(ev: json.Object) -> (h: Nev_Highlight) {
+	tags, _ := ev["tags"].(json.Array)
+	comment_seen, context_seen := false, false
+	// Explicit source URLs lead; comment mentions must never become attribution.
+	for pass in 0 ..< 2 {
+		for tag in tags {
+			values, ok := tag.(json.Array)
+			if !ok || len(values) < 2 {continue}
+			name, _ := values[0].(json.String)
+			value, is_string := values[1].(json.String)
+			if !is_string {continue}
+			role: json.String
+			if len(values) > 2 {role, _ = values[len(values) - 1].(json.String)}
+			explicit := name == "r" && role == "source"
+			if explicit != (pass == 0) {continue}
+			text := string(value)
+			source: Nev_Source
+			switch name {
+			case "comment":
+				if !comment_seen {h.comment = strings.clone(text); comment_seen = true}
+			case "context":
+				if !context_seen {h.surrounding = strings.clone(text); context_seen = true}
+			case "p":
+				if role == "mention" {continue}
+				digest: [32]u8
+				bytes, valid := hex.decode_into_buffer(transmute([]u8)text, digest[:])
+				if !valid || len(bytes) != len(digest) {continue}
+				// A three-field p-tag ends in its relay hint, not a role.
+				author_role := len(values) >= 4 ? string(role) : "author"
+				if author_role == "" {author_role = "author"}
+				if author_role != "editor" && author_role != "author" {continue}
+				append(
+					&h.authors,
+					Nev_Attribution{strings.clone(text), strings.clone(author_role)},
+				)
+			case "r", "i":
+				if role == "mention" || len(text) == 0 {continue}
+				source.text = text
+				url := text
+				if name == "i" {
+					url = ""
+					if len(values) > 2 {hint, _ := values[2].(json.String); url = string(hint)}
+				}
+				if end, _, valid := url_at(url, 0); valid && end == len(url) {source.url = url}
+			case "a", "e":
+				if role == "mention" {continue}
+				source.text = nev_highlight_ref(string(name), text)
+				if len(source.text) > 0 {append(&h.sources, source)}
+				continue
+			}
+			if len(source.text) > 0 {
+				append(
+					&h.sources,
+					Nev_Source{strings.clone(source.text), strings.clone(source.url)},
+				)
+			}
+		}
+	}
+	return
+}
+
+@(private = "file")
+nev_highlight_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
+	h := card.highlight
+	// Both panels expand together; one measured height cannot animate both.
+	state := card.excerpt
+	state.changed = {}
+	base := 0x24000000 + id * 64
+	body_text(base, mention_label(card.pubkey), 12, TEXT_DIM, wrap_w = width, max_lines = 2)
+	if len(card.stamp) > 0 {body_text(base + 1, card.stamp, 10, TEXT_LO, wrap_w = width)}
+	more := false
+	if len(h.comment) > 0 {
+		if clay.UI(clay.ID("NevHighlightComment", id))(
+		{layout = {sizing = {width = clay.SizingFixed(width)}, layoutDirection = .TopToBottom}},
+		) {more = excerpt_body(base + 10, h.comment, nil, state, width, TEXT, .Embed)}
+	}
+	if clay.UI(clay.ID("NevHighlightQuote", id))(
+	{
+		layout = {
+			sizing = {width = clay.SizingFixed(width)},
+			layoutDirection = .TopToBottom,
+			padding = {left = 14, right = 12, top = 12, bottom = 12},
+			childGap = 8,
+		},
+		backgroundColor = fade(ACCENT, 0.07),
+		cornerRadius = rr(7),
+		border = {color = ACCENT, width = {left = max(BORDER_W, 3)}},
+	},
+	) {
+		quote_w := max(width - 26, 1)
+		if len(card.content) == 0 {
+			body_text(base + 2, tr("Media highlight"), BODY_FS, TEXT_DIM, wrap_w = quote_w)
+		} else {
+			blocks := card.blocks[:]
+			snippet: [1]Md_Block_Ui
+			if !state.expanded && len(blocks) > 0 && message_line_limit() < max(int) {
+				block := blocks[0]
+				at := strings.index(block.text, card.content)
+				if at > 0 {
+					lines := wrapped_lines(
+						block.text[:at],
+						quote_w,
+						BODY_FS,
+						.Text,
+						block.fonts[:at],
+					)
+					keep := min(2, message_line_limit() - 1)
+					if len(lines) > keep {
+						start := keep == 0 ? at : lines[len(lines) - keep].start
+						block.text, block.fonts = block.text[start:], block.fonts[start:]
+						snippet[0] = block
+						blocks = snippet[:]
+						more = true
+					}
+				}
+			}
+			more =
+				excerpt_body(base + 5, card.content, blocks, state, quote_w, TEXT, .Embed) || more
+		}
+		if len(h.surrounding) > 0 &&
+		   (len(card.content) == 0 || !strings.contains(h.surrounding, card.content)) {
+			limit := card.excerpt.expanded ? max(int) : message_line_limit()
+			more =
+				body_text(
+					base + 3,
+					h.surrounding,
+					12,
+					TEXT_LO,
+					wrap_w = quote_w,
+					max_lines = limit,
+				) >
+					message_line_limit() ||
+				more
+		}
+		for author, index in h.authors {
+			if clay.UI(clay.ID("NevHighlightAuthor", id * 64 + u32(index)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(quote_w)},
+					layoutDirection = .TopToBottom,
+				},
+			},
+			) {
+				label := author.role == "editor" ? tr("Editor: %s") : tr("Author: %s")
+				body_text(
+					base + 16 + u32(index),
+					fmt.tprintf(label, mention_label(author.pubkey)),
+					11,
+					TEXT_DIM,
+					wrap_w = quote_w,
+					max_lines = 2,
+				)
+			}
+		}
+	}
+	if more && message_line_limit() < max(int) {
+		if clay.UI(clay.ID("NevMore", id))(
+		{layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}},
+		) {
+			if hovered() {nev_more_hover, nev_more_id = key, base + 5}
+			clay.Text(
+				card.excerpt.expanded ? tr("Show less") : tr("Read more"),
+				{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
+			)
+		}
+	}
+	if len(h.sources) >
+	   0 {clay.Text(tr("Source"), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO})}
+	for source, index in h.sources {
+		url := source.url
+		_, ref := nostr_at(source.text, 0)
+		if (ref.kind == .Event || ref.kind == .Address) && g_ui != nil {
+			if strings.contains(g_ui.prefs.event_client, "{id}") {
+				url, _ = strings.replace_all(
+					g_ui.prefs.event_client,
+					"{id}",
+					ref.token,
+					context.temp_allocator,
+				)
+			}
+		}
+		if clay.UI(clay.ID("NevHighlightSource", id * 64 + u32(index)))(
+		{
+			layout = {
+				sizing = {width = clay.SizingFixed(width)},
+				layoutDirection = .TopToBottom,
+				padding = {top = 4, bottom = 4},
+			},
+			backgroundColor = hovered() && len(url) > 0 ? HOVER : clay.Color{},
+			cornerRadius = rr(4),
+		},
+		) {
+			if hovered() && len(url) > 0 {link_hover = url}
+			link := [1]Inline_Link{{start = 0, end = len(source.text)}}
+			body_text(
+				base + 32 + u32(index),
+				source.text,
+				11,
+				len(url) > 0 ? ACCENT : TEXT_LO,
+				wrap_w = width,
+				max_lines = 2,
+				links = link[:],
+			)
+		}
+	}
+}
 
 @(private)
 Nev_Product :: struct {

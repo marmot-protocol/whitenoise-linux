@@ -505,6 +505,9 @@ msgstr "ago"
 msgid "Author"
 msgstr "Autore"
 
+msgid "Author: %s"
+msgstr "Autore: %s"
+
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr "Carica automaticamente le anteprime di immagini e siti web supportati. I loro gestori possono vedere il tuo indirizzo IP. Disattivare questa opzione interrompe le anteprime automatiche dei link, non i download degli allegati."
 
@@ -1764,6 +1767,9 @@ msgstr "Modifica il tuo ultimo messaggio (campo di scrittura vuoto)"
 msgid "Editing message"
 msgstr "Modifica del messaggio in corso"
 
+msgid "Editor: %s"
+msgstr "Redattore: %s"
+
 msgid "Elevated"
 msgstr "Rialzato"
 
@@ -2087,6 +2093,9 @@ msgstr "Impostazioni del gruppo"
 
 msgid "Grouped"
 msgstr "Raggruppate"
+
+msgid "HIGHLIGHT"
+msgstr "EVIDENZIAZIONE"
 
 msgid "Hard shadows"
 msgstr "Ombre nette"
@@ -2573,6 +2582,9 @@ msgstr "Cache multimediale"
 
 msgid "Media cache cleared."
 msgstr "Cache multimediale svuotata."
+
+msgid "Media highlight"
+msgstr "Evidenziazione multimediale"
 
 msgid "Members"
 msgstr "Membri"
@@ -3924,6 +3936,9 @@ msgstr "Ordina le chat per attività recente"
 
 msgid "Sounds don't play"
 msgstr "I suoni non si sentono"
+
+msgid "Source"
+msgstr "Fonte"
 
 msgid "Speech"
 msgstr "Voce"

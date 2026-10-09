@@ -505,6 +505,9 @@ msgstr "Aug."
 msgid "Author"
 msgstr "Autor"
 
+msgid "Author: %s"
+msgstr "Autor: %s"
+
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr "Vorschauen von Bildern und unterstützten Websites werden automatisch geladen. Deren Betreiber können deine IP-Adresse sehen. Wenn du dies ausschaltest, werden Linkvorschauen nicht mehr automatisch geladen. Anhänge werden weiterhin heruntergeladen."
 
@@ -1764,6 +1767,9 @@ msgstr "Deine letzte Nachricht bearbeiten (leeres Eingabefeld)"
 msgid "Editing message"
 msgstr "Nachricht wird bearbeitet"
 
+msgid "Editor: %s"
+msgstr "Redakteur: %s"
+
 msgid "Elevated"
 msgstr "Erhöht"
 
@@ -2087,6 +2093,9 @@ msgstr "Gruppeneinstellungen"
 
 msgid "Grouped"
 msgstr "Gruppiert"
+
+msgid "HIGHLIGHT"
+msgstr "MARKIERUNG"
 
 msgid "Hard shadows"
 msgstr "Harte Schatten"
@@ -2573,6 +2582,9 @@ msgstr "Medien-Cache"
 
 msgid "Media cache cleared."
 msgstr "Medien-Cache geleert."
+
+msgid "Media highlight"
+msgstr "Medienmarkierung"
 
 msgid "Members"
 msgstr "Mitglieder"
@@ -3924,6 +3936,9 @@ msgstr "Chats nach letzter Aktivität sortieren"
 
 msgid "Sounds don't play"
 msgstr "Töne werden nicht abgespielt"
+
+msgid "Source"
+msgstr "Quelle"
 
 msgid "Speech"
 msgstr "Sprache & Stimme"
