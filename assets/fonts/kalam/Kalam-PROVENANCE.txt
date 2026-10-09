@@ -1,0 +1,19 @@
+Kalam Regular and Bold, unmodified TrueType fonts
+Copyright (c) 2014, Indian Type Foundry (info@indiantypefoundry.com).
+License: SIL Open Font License 1.1; see Kalam-OFL.txt.
+
+Source repository: https://github.com/google/fonts
+Pinned revision: 6e4b84c976cadb3c49a40fd9a1c203e4f7fcf2da
+Source directory: ofl/kalam
+Retrieved from:
+https://raw.githubusercontent.com/google/fonts/6e4b84c976cadb3c49a40fd9a1c203e4f7fcf2da/ofl/kalam/Kalam-Regular.ttf
+https://raw.githubusercontent.com/google/fonts/6e4b84c976cadb3c49a40fd9a1c203e4f7fcf2da/ofl/kalam/Kalam-Bold.ttf
+https://raw.githubusercontent.com/google/fonts/6e4b84c976cadb3c49a40fd9a1c203e4f7fcf2da/ofl/kalam/OFL.txt
+
+SHA-256:
+57cecb63d4608019371954274ae1d8c397764debd5b19d4a33c1efa4dc923c0b  Kalam-Regular.ttf
+2f6576601db015d4f6c08678120277fc8510b98c06e932ce7a6a9cbff4cbdded  Kalam-Bold.ttf
+f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f  Kalam-OFL.txt
+
+The app stages these committed files to vendor/fonts and packages the fonts,
+license and provenance with its resources. No system handwritten font is needed.

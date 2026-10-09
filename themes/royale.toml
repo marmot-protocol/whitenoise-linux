@@ -1,0 +1,60 @@
+# Windows XP Royale / Energy Blue: pearl dialogs and polished royal-blue chrome.
+name = "Royale"
+accent-name-1 = "Energy Blue"
+accent-name-2 = "Media Center green"
+accent-name-3 = "Lagoon teal"
+accent-name-4 = "Copper amber"
+accent-name-5 = "Velvet violet"
+
+[colors]
+bg = "#eef0f2ff"
+bg-2 = "#e7ebf0ff"
+panel = "#fafaf6ff"
+panel-2 = "#f1f3f5ff"
+rail = "#e1e7f0ff"
+elevated = "#e5ecf7ff"
+status-bar = "#dce5f2ff"
+banner = "#e5ecf7ff"
+canvas-top = "#f4f6f8ff"
+field = "#ffffffff"
+field-hover = "#f4f8ffff"
+field-border = "#6e86a5ff"
+card-border = "#8297b5ff"
+elevated-border = "#5379adff"
+border-2 = "#a0aec2ff"
+divider = "#b3c0d2ff"
+plate = "#fcfcf8ff"
+card-well = "#e4e9f0ff"
+hover = "#dce5f3ff"
+text-hi = "#182b45ff"
+text-mid = "#34465fff"
+text-lo = "#46566dff"
+text-vlo = "#536177ff"
+
+bevel-hi = "#ffffffff"
+bevel-lo = "#8092afff"
+top-glint = "#ffffffd0"
+danger = "#ad302bff"
+warning = "#855400ff"
+accent-base = [
+    "#245db5ff",
+    "#326a3bff",
+    "#006979ff",
+    "#87560cff",
+    "#64489aff",
+]
+
+[style]
+saturation = 1
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
+bevel = true
+outline-surfaces = true
+motion-fast = true
+r-scale = 0.6
+border-w = 1.0
+bubble-r = 7.0
+shadow-y = 2.0
+hover-dur = 80
+transition-dur = 100

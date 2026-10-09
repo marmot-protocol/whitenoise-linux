@@ -1,0 +1,60 @@
+# Royale after dark: charcoal dialogs, deep Energy Blue chrome and blue edge glints.
+name = "Royale Dark"
+accent-name-1 = "Energy Blue"
+accent-name-2 = "Media Center green"
+accent-name-3 = "Lagoon teal"
+accent-name-4 = "Copper amber"
+accent-name-5 = "Velvet violet"
+
+[colors]
+bg = "#20252cff"
+bg-2 = "#1b2028ff"
+panel = "#292f38ff"
+panel-2 = "#2d3540ff"
+rail = "#182940ff"
+elevated = "#243957ff"
+status-bar = "#1b2f4dff"
+banner = "#243957ff"
+canvas-top = "#232c39ff"
+field = "#171d26ff"
+field-hover = "#232f40ff"
+field-border = "#6d88adff"
+card-border = "#607b9eff"
+elevated-border = "#7e9fceff"
+border-2 = "#536a88ff"
+divider = "#46566dff"
+plate = "#313a47ff"
+card-well = "#192331ff"
+hover = "#304660ff"
+text-hi = "#f2f5fbff"
+text-mid = "#d4deecff"
+text-lo = "#becbdbff"
+text-vlo = "#a8b9cfff"
+
+bevel-hi = "#7395c3ff"
+bevel-lo = "#0c1523ff"
+top-glint = "#b8d7ff68"
+danger = "#ff9c96ff"
+warning = "#efc577ff"
+accent-base = [
+    "#79a6f0ff",
+    "#94c785ff",
+    "#70c8d1ff",
+    "#e9b868ff",
+    "#b7a2dfff",
+]
+
+[style]
+saturation = 1
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
+bevel = true
+outline-surfaces = true
+motion-fast = true
+r-scale = 0.6
+border-w = 1.0
+bubble-r = 7.0
+shadow-y = 2.0
+hover-dur = 80
+transition-dur = 100
