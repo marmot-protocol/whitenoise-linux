@@ -206,12 +206,8 @@ peephole_avatar :: proc(
 		if reveal < 1 {
 			if clay.UI(clay.ID("PeepCover", outer.id))(
 			{
-				floating = {
-					attachTo = .Parent,
-					clipTo = .AttachedParent,
-					pointerCaptureMode = .Passthrough,
-					attachment = {element = .LeftTop, parent = .LeftTop},
-				},
+				// Only the swinging cover needs to overlap the revealed fingerprint.
+				floating = reveal > 0 ? clay.FloatingElementConfig{attachTo = .Parent, clipTo = .AttachedParent, pointerCaptureMode = .Passthrough, attachment = {element = .LeftTop, parent = .LeftTop}} : {},
 			},
 			) {
 				avatar("PeepPhoto", outer.id, key, name, size, photo, ring, reveal * 180)

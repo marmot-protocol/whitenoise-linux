@@ -643,6 +643,10 @@ Composer wrapping allocates its cache on the process heap without changing
 the caller's allocator. Mention measurement can queue profile reads; those
 IDs must stay on the UI heap that frees completed batches.
 
+Closed avatar covers stay in normal layout flow so sidebar mentions retain
+both the preview's horizontal clip and the chat list's vertical clip. Only a
+partly open cover floats over its revealed fingerprint.
+
 Use `tr("text")` for UI strings and `tr("%d item", "%d items", count)` for
 counted labels, then format the returned string with the count. The latter
 selects the first catalog entry for one and the second for every other count.

@@ -162,6 +162,48 @@ crop_circle_layout :: proc(t: ^testing.T) {
 	defer {g_ui, g_prefs = nil, nil; wrap_clear()}
 	mention_width: f32
 	clay.SetPointerState({-1, -1}, false)
+	// Nested preview clips must keep the avatar inside the sidebar's vertical clip.
+	for photo_url, frame in ([]string{"", square_url}) {
+		if photo_url != "" {
+			testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone(photo_url)}))
+		}
+		clay.BeginLayout()
+		if clay.UI(clay.ID("MentionSidebar"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingFixed(300), height = clay.SizingFixed(24)},
+				padding = {top = 20},
+			},
+			clip = {vertical = true},
+			backgroundColor = CARD,
+		},
+		) {
+			if clay.UI(clay.ID("ChatRowPrevClip", 0))(
+			{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+			) {
+				body_line(71, fmt.tprintf("Told ya @%s", ui.profile.npub), 12, TEXT_DIM)
+			}
+		}
+		commands := clay.EndLayout(0)
+		depth := 0
+		drawn := false
+		avatar_id :=
+			clay.ID("AvatarImage", clay.ID("PeepPhoto", clay.ID("MentionAvatar", 71 * 128 + 1).id).id).id
+		for command in commands.internalArray[:commands.length] {
+			if command.commandType == .ScissorStart {depth += 1}
+			if command.commandType == .ScissorEnd {depth -= 1}
+			if command.commandType == .Image && command.id == avatar_id {
+				drawn = true
+				testing.expect(t, depth == 2, "mention avatars must retain both sidebar clips")
+			}
+		}
+		testing.expect(t, drawn, "the preview must render its mention avatar")
+		rl.BeginDrawing()
+		clay_raylib_render(&commands)
+		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-sidebar-mention-%d.png", frame))
+		rl.EndDrawing()
+	}
+	testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone("")}))
 	for photo_url in ([]string{"", square_url, ""}) {
 		if photo_url != "" || profile_info(nil, key).pic_url != "" {
 			testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone(photo_url)}))
