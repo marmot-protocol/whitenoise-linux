@@ -690,10 +690,12 @@ emoji_sets_order :: proc(ui: ^Ui_State) {
 	// Discovery is already A-Z. Stable partitions keep contacts first without
 	// moving set storage underneath preview/import jobs.
 	for set, i in ui.emoji_sets {
+		if len(set.items) == 0 {continue}
 		if ui.emoji_sets_contacts[set.author] {append(&ui.emoji_sets_order, i)}
 	}
 	if ui.prefs.emoji_contacts_only {return}
 	for set, i in ui.emoji_sets {
+		if len(set.items) == 0 {continue}
 		if !ui.emoji_sets_contacts[set.author] {append(&ui.emoji_sets_order, i)}
 	}
 }

@@ -205,20 +205,23 @@ emoji_set_contact_order :: proc(t: ^testing.T) {
 		Nostr_Emoji_Set{title = "Alpha", author = first},
 		Nostr_Emoji_Set{title = "Beta", author = first},
 		Nostr_Emoji_Set{title = "Zeta", author = second},
+		Nostr_Emoji_Set{title = "Empty stranger set", author = first},
+		Nostr_Emoji_Set{title = "Empty contact set", author = second},
 	)
+	for &set in ui.emoji_sets[:3] {append(&set.items, Nostr_Emoji_Item{code = "fox"})}
 	append(&ui.contacts, Contact_Ui{id_hex = second})
 	emoji_sets_order(&ui)
 	testing.expect(
 		t,
 		slice.equal(ui.emoji_sets_order[:], []int{2, 0, 1}),
-		"contacts precede alphabetically earlier strangers",
+		"contacts precede strangers and empty sets stay hidden",
 	)
 	ui.prefs.emoji_contacts_only = true
 	emoji_sets_order(&ui)
 	testing.expect(
 		t,
 		slice.equal(ui.emoji_sets_order[:], []int{2}),
-		"contacts-only hides every non-contact set",
+		"contacts-only hides non-contact sets and empty contact sets",
 	)
 	clear(&ui.contacts)
 	emoji_sets_order(&ui)
@@ -232,6 +235,6 @@ emoji_set_contact_order :: proc(t: ^testing.T) {
 	testing.expect(
 		t,
 		slice.equal(ui.emoji_sets_order[:], []int{0, 1, 2}),
-		"showing all sets restores A-Z within the non-contact group",
+		"showing all sets restores A-Z without revealing empty sets",
 	)
 }
