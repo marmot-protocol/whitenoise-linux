@@ -44,8 +44,9 @@ compose_profile_ownership :: proc(t: ^profile_testing.T) {
 	token := "@npub1klkk3vrzme455yh9rl2jshq7rc8dpegj3ndf82c3ks2sk40dxt7qulx3vt"
 	id := mention_hex(token)
 	profile_testing.expect_value(t, len(id), 64)
-	// The renderer's glyph map outlives the profile allocation tracker.
-	rl.MeasureTextLine(FONT_TITLE, BODY_FS, fmt.tprintf("@%s", short_hex(id)), 0)
+	// Glyph and rail-animation caches outlive the profile allocation tracker.
+	rl.MeasureTextLine(FONT_TITLE, BODY_FS, fmt.tprintf("@%s", profile_fallback(id)), 0)
+	compose_wrap_w()
 
 	track: profile_mem.Tracking_Allocator
 	profile_mem.tracking_allocator_init(&track, context.allocator)

@@ -48,6 +48,10 @@ profile_info_free :: proc(info: Profile_Info) {
 @(private = "file")
 profile_cache: map[string]Profile_Info
 
+// UI-owned aliases stay separate from kind-0 metadata and are built once per key.
+@(private = "file")
+profile_aliases: map[string]string
+
 @(private = "file")
 PROFILE_BATCH :: 32
 @(private = "file")
@@ -158,10 +162,28 @@ read_profile :: proc(client: ^marmot.Client, hex: string) -> (Profile_Info, bool
 	return info, true
 }
 
-// Display label for an account: kind-0 name, else truncated hex.
+// Pure fallback generation also serves workers without touching UI caches.
+@(private)
+profile_fallback :: proc(hex: string) -> string {
+	npub := hex_npub(hex)
+	defer delete(npub)
+	name, _ := starter_identity(npub)
+	return name
+}
+
+// Display label for an account: kind-0 name, else a stable adjective and animal.
 profile_label :: proc(client: ^marmot.Client, hex: string) -> string {
 	info := profile_info(client, hex)
-	return len(info.name) > 0 ? info.name : short_hex(hex)
+	if len(info.name) > 0 {return info.name}
+	return profile_alias(hex)
+}
+
+@(private)
+profile_alias :: proc(hex: string) -> string {
+	if name, ok := profile_aliases[hex]; ok {return name}
+	name := strings.clone(profile_fallback(hex))
+	profile_aliases[strings.clone(hex)] = name
+	return name
 }
 
 // Seed the session caches for a freshly generated account: the
@@ -370,7 +392,7 @@ update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
 	}
 	profile_cache[hex] = info
 	wrap_flush = true
-	name := len(info.name) > 0 ? info.name : short_hex(hex)
+	name := profile_label(nil, hex)
 	for &member in ui.members {
 		if member.id_hex != hex {
 			continue
@@ -676,6 +698,8 @@ profile_session_clear :: proc() {
 	}
 	clear(&profile_cache)
 	clear(&profile_order)
+	for key, name in profile_aliases {delete(key); delete(name)}
+	delete(profile_aliases); profile_aliases = nil
 }
 
 // Upload generated fingerprints and decode photos into round avatar textures.

@@ -6,6 +6,32 @@ import "core:sync"
 import "core:testing"
 
 @(test)
+profiles_loading_alias :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	context.allocator = runtime.default_context().allocator
+	defer profile_session_clear()
+	hex := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	label := strings.clone(profile_label(nil, hex))
+	defer delete(label)
+	words := strings.split(label, " ", context.temp_allocator)
+	testing.expect(t, len(words) == 2, "loading label is an adjective and animal")
+	testing.expect(t, label != short_hex(hex), "loading label is not a public key")
+	testing.expect(t, profile_info(nil, hex).name == "", "alias is not profile metadata")
+
+	ui: Ui_State
+	testing.expect(t, update_profile(&ui, hex, {about = strings.clone("About")}))
+	testing.expect(t, profile_label(nil, hex) == label, "nameless metadata keeps the alias")
+	testing.expect(t, update_profile(&ui, hex, {name = strings.clone("Published name")}))
+	testing.expect_value(t, profile_label(nil, hex), "Published name")
+	testing.expect(t, update_profile(&ui, hex, {}))
+	testing.expect(t, profile_label(nil, hex) == label, "cleared metadata restores the alias")
+
+	profile_session_clear()
+	testing.expect(t, profile_label(nil, hex) == label, "alias survives a fresh session")
+}
+
+@(test)
 profiles_update_live_views :: proc(t: ^testing.T) {
 	// The profile cache is process-global and outlives this test, so it must
 	// not grow in the temp or per-test allocator.
@@ -82,9 +108,9 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	testing.expect_value(t, raw_data(ui.members[0].pic_url), before)
 	delete_key(&ui.nicknames, hex)
 	testing.expect(t, update_profile(&ui, hex, {}))
-	testing.expect_value(t, ui.members[0].name, short_hex(hex))
-	testing.expect_value(t, ui.contacts[0].name, short_hex(hex))
-	testing.expect_value(t, ui.peer_name, short_hex(hex))
+	testing.expect_value(t, ui.members[0].name, profile_label(nil, hex))
+	testing.expect_value(t, ui.contacts[0].name, profile_label(nil, hex))
+	testing.expect_value(t, ui.peer_name, profile_label(nil, hex))
 	testing.expect_value(t, ui.members[0].pic_url, "")
 	testing.expect_value(t, ui.contacts[0].pic_url, "")
 	testing.expect_value(t, ui.profile_contact.pic_url, "")

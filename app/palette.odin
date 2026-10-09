@@ -81,14 +81,14 @@ COMMANDS := [Cmd]struct {
 
 PAL_ROWS_MAX :: 9
 
-// Display name of a stored account, falling back to its short hex.
+// Display name of a stored account, falling back to its deterministic alias.
 account_label :: proc(ui: ^Ui_State, hex_id: string) -> string {
 	for id, i in ui.account_ids {
 		if id == hex_id {
 			return ui.accounts[i]
 		}
 	}
-	return short_hex(hex_id)
+	return profile_label(nil, hex_id)
 }
 
 pal_open_modal :: proc(ui: ^Ui_State) {

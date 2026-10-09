@@ -193,7 +193,7 @@ shell_navigation :: proc(ui: ^Ui_State) {
 			"RailAvatar",
 			0,
 			ui.account_ref,
-			short_hex(ui.account_ref),
+			profile_label(nil, ui.account_ref),
 			36,
 			url_pic(ui.my_pic_url),
 		)

@@ -486,7 +486,7 @@ members_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, details: ^marmot.Gr
 		} else if member.is_self {
 			name = "you"
 		} else {
-			name = short_hex(string(member.member_id_hex))
+			name = profile_label(client, string(member.member_id_hex))
 		}
 		append(
 			&ui.members,

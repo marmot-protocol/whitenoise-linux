@@ -15,7 +15,7 @@ Settings_Avatar_Preview :: struct {
 @(private)
 settings_avatar_choices :: proc(ui: ^Ui_State) {
 	key := ui.account_ref
-	name := len(ui.profile.name) > 0 ? ui.profile.name : short_hex(key)
+	name := len(ui.profile.name) > 0 ? ui.profile.name : profile_label(nil, key)
 	photo := url_pic(ui.my_pic_url)
 	generated: [Crop_Shape]^rl.Texture2D
 	if len(key) == 64 || len(key) == 32 {
@@ -125,7 +125,7 @@ settings_avatar_preview_grid :: proc(
 						childAlignment = {x = .Center},
 					},
 					backgroundColor = active ? SELECTED : hovered() ? HOVER : {},
-					border = {color = active ? ACCENT : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+					border = kb_focus == fmt.tprintf("%s%d", id, i) ? kb_ring(ACCENT) : clay.BorderElementConfig{color = active ? ACCENT : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
 					cornerRadius = rr(8),
 				},
 				) {

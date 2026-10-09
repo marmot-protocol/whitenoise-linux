@@ -227,7 +227,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			info := profile_info(client, sender)
 			label := info.name
 			if len(label) == 0 {
-				label = mine ? "you" : short_hex(sender)
+				label = mine ? "you" : profile_label(client, sender)
 			}
 			append(
 				&ui.messages,
@@ -249,12 +249,12 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			continue
 		}
 
-		// Sender label + picture from the kind-0 cache; hex fallback
+		// Sender label + picture from the kind-0 cache; deterministic alias
 		// (or "you") when the profile is unknown.
 		info := profile_info(client, sender)
 		label := info.name
 		if len(label) == 0 {
-			label = mine ? "you" : short_hex(sender)
+			label = mine ? "you" : profile_label(client, sender)
 		}
 
 		if old, found := previous_ids[id_str];
@@ -763,7 +763,7 @@ contact_order :: proc(ui: ^Ui_State, contacts: []Contact_Ui) -> []Contact_Order 
 		rows[i] = {
 			strings.to_lower(label, context.temp_allocator),
 			i,
-			label == "" || label == short_hex(contact.id_hex),
+			label == "" || label == profile_alias(contact.id_hex),
 		}
 	}
 	slice.sort_by(rows, proc(a, b: Contact_Order) -> bool {
@@ -867,9 +867,11 @@ load_follows :: proc(
 		}
 		indices[strings.clone(id, context.temp_allocator)] = len(ui.contacts)
 
-		name := short_hex(id)
+		name := profile_fallback(id)
 		resolved: cstring
-		if marmot.display_name(client, follows.items[i], &resolved) == .OK && resolved != nil {
+		if marmot.display_name(client, follows.items[i], &resolved) == .OK &&
+		   resolved != nil &&
+		   len(string(resolved)) > 0 {
 			name = string(resolved)
 		}
 		npub_str: string

@@ -1,6 +1,8 @@
 package main
 
 import marmot "../marmot"
+import "base:runtime"
+import "core:sync"
 import "core:testing"
 
 @(test)
@@ -36,11 +38,16 @@ view_unsaved_profile :: proc(t: ^testing.T) {
 
 @(test)
 contacts_named_first :: proc(t: ^testing.T) {
-	context.allocator = context.temp_allocator
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	context.allocator = runtime.default_context().allocator
+	defer profile_session_clear()
 	ui: Ui_State
+	defer {delete(ui.contacts); delete(ui.nicknames)}
+	hex := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	append(
 		&ui.contacts,
-		Contact_Ui{id_hex = "0123456789abcdef", name = short_hex("0123456789abcdef")},
+		Contact_Ui{id_hex = hex, name = profile_alias(hex)},
 		Contact_Ui{id_hex = "alice", name = "Alice"},
 		Contact_Ui{id_hex = "number", name = "123"},
 		Contact_Ui{id_hex = "emoji", name = "⚡ Dee Kay ⚡"},

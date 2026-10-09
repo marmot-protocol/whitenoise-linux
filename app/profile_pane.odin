@@ -1,7 +1,7 @@
 package main
 
-import "core:fmt"
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import "core:fmt"
 
 // The Profile page's rail, in place of the chat list: the accounts on
 // this device (tap to switch), and the two settings sections that own
@@ -322,7 +322,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					"ProfileAvatar",
 					0,
 					ui.account_ref,
-					len(ui.profile.name) > 0 ? ui.profile.name : short_hex(ui.account_ref),
+					len(ui.profile.name) > 0 ? ui.profile.name : profile_label(nil, ui.account_ref),
 					96,
 					url_pic(ui.my_pic_url),
 				)

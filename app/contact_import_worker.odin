@@ -120,10 +120,11 @@ contacts_import_worker :: proc(t: ^thread.Thread) {
 			} else {
 				// Published names belong to the contact, not the importer.
 				// The SDK accepts the public key only; nickname/block are local.
-				name := short_hex(key)
+				name := profile_fallback(key)
 				resolved: cstring
 				if marmot.display_name(job.client, user, &resolved) == .OK &&
-				   resolved != nil {name = string(resolved)}
+				   resolved != nil &&
+				   len(string(resolved)) > 0 {name = string(resolved)}
 				append(
 					&job.imported,
 					Contact_Import_Added {

@@ -63,7 +63,7 @@ handle_profile_card_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	hx := profile_card_hover
 	profile_card_hover = ""
 	info := profile_info(client, hx)
-	open_peer(ui, client, hx, len(info.name) > 0 ? info.name : short_hex(hx), info.pic_url)
+	open_peer(ui, client, hx, profile_label(client, hx), info.pic_url)
 	view_peer_profile(ui, client)
 }
 

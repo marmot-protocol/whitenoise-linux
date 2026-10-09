@@ -199,7 +199,8 @@ settings_keys :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("KeysIdentityGroup"))(settings_box()) {
 			settings_group(tr("Keys & identity"))
 			if clay.UI(clay.ID("KeysProfile"))(settings_row()) {
-				name := len(ui.profile.name) > 0 ? ui.profile.name : short_hex(ui.account_ref)
+				name :=
+					len(ui.profile.name) > 0 ? ui.profile.name : profile_label(nil, ui.account_ref)
 				avatar("KeysAvatar", 0, ui.account_ref, name, 44, url_pic(ui.my_pic_url))
 				if clay.UI(clay.ID("KeysProfileName"))(
 				{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},

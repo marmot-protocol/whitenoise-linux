@@ -52,20 +52,14 @@ mention_at :: proc(text: string, i: int) -> (end: int, hx: string, ok: bool) {
 }
 
 // Chip label: local nickname first, then the kind-0 name, then the
-// truncated hex. profile_info memoizes, so this is a map read per call.
+// deterministic alias. profile_label memoizes names and aliases.
 mention_label :: proc(hx: string) -> string {
 	if g_ui != nil {
 		if nick, has := g_ui.nicknames[hx]; has && len(nick) > 0 {
 			return nick
 		}
 	}
-	if g_client != nil {
-		info := profile_info(g_client, hx)
-		if len(info.name) > 0 {
-			return info.name
-		}
-	}
-	return short_hex(hx)
+	return profile_label(g_client, hx)
 }
 
 // Drawn chip width: both insets, the avatar-to-label gap, the avatar
@@ -123,7 +117,7 @@ handle_mention_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	info := profile_info(client, hx)
-	open_peer(ui, client, hx, len(info.name) > 0 ? info.name : short_hex(hx), info.pic_url)
+	open_peer(ui, client, hx, profile_label(client, hx), info.pic_url)
 }
 
 // ── composer @-autocomplete ─────────────────────────────────────────
