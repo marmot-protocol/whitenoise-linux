@@ -3418,6 +3418,9 @@ msgstr "この端末からアカウントを削除しています"
 msgid "Rename"
 msgstr "名前を変更"
 
+msgid "Rendering toolpaths"
+msgstr "印刷経路を描画しています"
+
 msgid "Reopen"
 msgstr "再開"
 

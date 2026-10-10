@@ -3418,6 +3418,9 @@ msgstr "Dein Konto wird von diesem Gerät entfernt"
 msgid "Rename"
 msgstr "Umbenennen"
 
+msgid "Rendering toolpaths"
+msgstr "Druckpfade werden dargestellt"
+
 msgid "Reopen"
 msgstr "Wieder öffnen"
 

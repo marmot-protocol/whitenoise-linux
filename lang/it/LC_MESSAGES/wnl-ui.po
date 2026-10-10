@@ -3418,6 +3418,9 @@ msgstr "Rimozione del tuo account da questo dispositivo"
 msgid "Rename"
 msgstr "Rinomina"
 
+msgid "Rendering toolpaths"
+msgstr "Visualizzazione dei percorsi di stampa"
+
 msgid "Reopen"
 msgstr "Riapri"
 

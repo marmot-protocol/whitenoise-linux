@@ -404,6 +404,11 @@ Neither cgltf nor ufbx is linked into the main application.
 FBX triangles are not subdivided after import; animation poses the imported
 geometry without changing its topology.
 
+G-code previews draw shaded, rounded toolpaths with depth testing and 2x
+supersampling. The slider selects the printed portion; orbit and zoom change
+the camera. Large previews show raster progress as toolpaths appear. Stroke
+width is a visual approximation, not a measured nozzle or extrusion width.
+
 Math blocks are rendered by `wn-math`; MicroTeX is no longer linked into the
 main application. Each request accepts at most 4,096 source bytes and returns
 at most 8 MiB of straight RGBA pixels, with dimensions no larger than 4,096.
