@@ -1,8 +1,8 @@
 diff --git a/crates/marmot-app/src/messages/intents.rs b/crates/marmot-app/src/messages/intents.rs
-index d42d92a0..02fc671e 100644
+index 7ee5b799..1c34184c 100644
 --- a/crates/marmot-app/src/messages/intents.rs
 +++ b/crates/marmot-app/src/messages/intents.rs
-@@ -738,7 +738,16 @@ pub(crate) fn build_inner_event_with_media_reply(
+@@ -739,7 +739,16 @@ pub(crate) fn build_inner_event_with_media_reply(
              content,
          } => {
              validate_custom_event_kind(*kind)?;
@@ -20,7 +20,7 @@ index d42d92a0..02fc671e 100644
          }
      }
  }
-@@ -927,6 +936,21 @@ mod mention_tests {
+@@ -928,6 +937,21 @@ mod mention_tests {
      use super::*;
      use crate::ids::{nprofile_for_account_id, npub_for_account_id};
  
@@ -43,10 +43,10 @@ index d42d92a0..02fc671e 100644
          nostr::prelude::Keys::generate().public_key().to_hex()
      }
 diff --git a/crates/marmot-app/tests/relay_runtime.rs b/crates/marmot-app/tests/relay_runtime.rs
-index a321ef53..be3e0ea8 100644
+index 87e77b10..b48878e7 100644
 --- a/crates/marmot-app/tests/relay_runtime.rs
 +++ b/crates/marmot-app/tests/relay_runtime.rs
-@@ -16380,5 +16380,190 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
+@@ -16698,5 +16698,190 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
      carol.shutdown().await;
  }
  
@@ -238,10 +238,10 @@ index a321ef53..be3e0ea8 100644
  #[path = "relay_runtime/attachment_retention.rs"]
  mod attachment_retention;
 diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
-index 4f517eb8..ba03f70a 100644
+index 4f27ce06..5799347c 100644
 --- a/crates/marmot-c/include/marmot.h
 +++ b/crates/marmot-c/include/marmot.h
-@@ -3050,6 +3050,15 @@ typedef struct MarmotAppMessageRecord {
+@@ -3462,6 +3462,15 @@ typedef struct MarmotAppMessageRecord {
     * Local wall-clock time when this device observed the delivery.
     */
    uint64_t received_at;
@@ -335,10 +335,10 @@ index f63023f2..e2885a49 100644
 +        }
 +    }
 +}
-diff --git a/crates/storage-sqlite/src/timeline.rs b/crates/storage-sqlite/src/timeline.rs
-index a5f6b0ed..6ce93a15 100644
---- a/crates/storage-sqlite/src/timeline.rs
-+++ b/crates/storage-sqlite/src/timeline.rs
+diff --git a/crates/storage-sqlite/src/app/timeline.rs b/crates/storage-sqlite/src/app/timeline.rs
+index 041cb834..918211fe 100644
+--- a/crates/storage-sqlite/src/app/timeline.rs
++++ b/crates/storage-sqlite/src/app/timeline.rs
 @@ -80,6 +80,9 @@ const DEFAULT_TIMELINE_LIMIT: usize = 50;
  /// window owners should not exceed it.
  pub const MAX_TIMELINE_LIMIT: usize = 200;
@@ -349,7 +349,7 @@ index a5f6b0ed..6ce93a15 100644
  /// The invalidation reason a locally-sent row carries when its publish reached
  /// no one. Storage owns the literal because it is both a stored column value
  /// and a projection predicate (a retracted own send stays visible as `failed`
-@@ -801,7 +804,7 @@ impl SqliteAccountStorage {
+@@ -801,7 +804,7 @@ impl SqliteAppStorage {
                              authority_context = ?3,
                              moderation_grant = CASE
                                  WHEN kind = 5 AND authority_state = 0 THEN moderation_grant
@@ -358,7 +358,7 @@ index a5f6b0ed..6ce93a15 100644
                                  ELSE 0
                              END
                           WHERE group_id_hex = ?1 AND message_id_hex = ?2 AND authority_state != 2",
-@@ -3890,6 +3893,9 @@ fn timeline_row_from_app_event(event: &RawAppEvent) -> TimelineRow {
+@@ -3901,6 +3904,9 @@ fn timeline_row_from_app_event(event: &RawAppEvent) -> TimelineRow {
  /// Ordinary chat replies can still target a custom row — reply linkage is
  /// derived from the replying event's own tags, not the target's.
  fn timeline_row_from_custom_event(event: &RawAppEvent) -> TimelineRow {
@@ -368,11 +368,11 @@ index a5f6b0ed..6ce93a15 100644
      TimelineRow {
          reply_to_message_id_hex: None,
          ..timeline_row_from_app_event(event)
-diff --git a/crates/storage-sqlite/src/timeline/edits.rs b/crates/storage-sqlite/src/timeline/edits.rs
-index 2bacf722..81bebd1d 100644
---- a/crates/storage-sqlite/src/timeline/edits.rs
-+++ b/crates/storage-sqlite/src/timeline/edits.rs
-@@ -61,7 +61,10 @@ fn resolve<'a>(
+diff --git a/crates/storage-sqlite/src/app/timeline/edits.rs b/crates/storage-sqlite/src/app/timeline/edits.rs
+index 6163da95..307b6775 100644
+--- a/crates/storage-sqlite/src/app/timeline/edits.rs
++++ b/crates/storage-sqlite/src/app/timeline/edits.rs
+@@ -62,7 +62,10 @@ fn resolve<'a>(
      edits: impl Iterator<Item = &'a RawAppEvent>,
      deleted: &HashSet<String>,
  ) -> Vec<TimelineEditVersion> {
@@ -384,7 +384,7 @@ index 2bacf722..81bebd1d 100644
          return Vec::new();
      }
      let mut versions = edits
-@@ -92,7 +95,10 @@ pub(super) fn accepted_versions_tx(
+@@ -93,7 +96,10 @@ pub(super) fn accepted_versions_tx(
      conn: &Connection,
      row: &TimelineRow,
  ) -> StorageResult<Vec<TimelineEditVersion>> {
@@ -396,7 +396,7 @@ index 2bacf722..81bebd1d 100644
          return Ok(Vec::new());
      }
      let edits = app_events_targeting_message_tx(
-@@ -137,7 +143,7 @@ impl SqliteAccountStorage {
+@@ -138,7 +144,7 @@ impl SqliteAppStorage {
              let visible: bool = conn
                  .query_row_cached(
                      "SELECT EXISTS(SELECT 1 FROM visible_message_timeline
@@ -405,11 +405,11 @@ index 2bacf722..81bebd1d 100644
                   AND deleted=0 AND invalidation_status IS NULL)",
                      params![group, target],
                      |r| r.get(0),
-diff --git a/crates/storage-sqlite/src/timeline/reports.rs b/crates/storage-sqlite/src/timeline/reports.rs
-index f5302712..ebfd888e 100644
---- a/crates/storage-sqlite/src/timeline/reports.rs
-+++ b/crates/storage-sqlite/src/timeline/reports.rs
-@@ -208,7 +208,7 @@ impl SqliteAccountStorage {
+diff --git a/crates/storage-sqlite/src/app/timeline/reports.rs b/crates/storage-sqlite/src/app/timeline/reports.rs
+index 72f28701..bffbe552 100644
+--- a/crates/storage-sqlite/src/app/timeline/reports.rs
++++ b/crates/storage-sqlite/src/app/timeline/reports.rs
+@@ -211,7 +211,7 @@ impl SqliteAppStorage {
                      authority_context = ?3,
                      moderation_grant = CASE
                          WHEN kind = 5 AND authority_state = 0 THEN moderation_grant
@@ -418,18 +418,18 @@ index f5302712..ebfd888e 100644
                          ELSE 0
                      END
                   WHERE group_id_hex = ?1 AND message_id_hex = ?2 AND authority_state != 2",
-diff --git a/crates/storage-sqlite/src/timeline/tests.rs b/crates/storage-sqlite/src/timeline/tests.rs
-index 7f3334f7..953ffa36 100644
---- a/crates/storage-sqlite/src/timeline/tests.rs
-+++ b/crates/storage-sqlite/src/timeline/tests.rs
-@@ -4383,3 +4383,26 @@ fn system_reactions_survive_replay_reopen_and_retract_without_replacing_target()
-     assert_eq!(list(&store), [baseline]);
+diff --git a/crates/storage-sqlite/src/app/timeline/tests.rs b/crates/storage-sqlite/src/app/timeline/tests.rs
+index a0ca7fdb..9a27402b 100644
+--- a/crates/storage-sqlite/src/app/timeline/tests.rs
++++ b/crates/storage-sqlite/src/app/timeline/tests.rs
+@@ -4398,3 +4398,26 @@ fn system_reactions_survive_replay_reopen_and_retract_without_replacing_target()
+     assert_eq!(list(&store.app_storage()), [baseline]);
      store.close().unwrap();
  }
 +
 +#[test]
 +fn comment_chat_features() {
-+    let store = SqliteAccountStorage::in_memory().unwrap();
++    let store = SqliteAccountStorage::in_memory().unwrap().app_storage();
 +    let mut comment = chat("comment", "alice", 1, "original");
 +    comment.kind = COMMENT_KIND;
 +    comment.tags = vec![vec!["e".into(), "issue".into()], vec!["imeta".into(), "url https://example.com/image.png".into(), "m image/png".into()]];

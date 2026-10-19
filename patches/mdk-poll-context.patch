@@ -1,8 +1,8 @@
-diff --git c/crates/marmot-app/src/messages/intents.rs i/crates/marmot-app/src/messages/intents.rs
-index 02fc671e..1893225e 100644
---- c/crates/marmot-app/src/messages/intents.rs
-+++ i/crates/marmot-app/src/messages/intents.rs
-@@ -240,6 +240,7 @@ pub(crate) enum AppMessageIntent {
+diff --git a/crates/marmot-app/src/messages/intents.rs b/crates/marmot-app/src/messages/intents.rs
+index 1c34184c..b76b0ddf 100644
+--- a/crates/marmot-app/src/messages/intents.rs
++++ b/crates/marmot-app/src/messages/intents.rs
+@@ -241,6 +241,7 @@ pub(crate) enum AppMessageIntent {
          options: Vec<String>,
          poll_type: PollType,
          ends_at: Option<u64>,
@@ -10,7 +10,7 @@ index 02fc671e..1893225e 100644
      },
      PollResponse {
          poll_event_id: String,
-@@ -466,9 +467,24 @@ pub(crate) fn build_inner_event_with_media_reply(
+@@ -467,9 +468,24 @@ pub(crate) fn build_inner_event_with_media_reply(
              options,
              poll_type,
              ends_at,
@@ -36,7 +36,7 @@ index 02fc671e..1893225e 100644
              Ok(event(MARMOT_APP_EVENT_KIND_POLL, tags, question.clone()))
          }
          AppMessageIntent::PollResponse {
-@@ -1174,6 +1190,47 @@ mod mention_tests {
+@@ -1175,6 +1191,47 @@ mod mention_tests {
      }
  }
  
@@ -84,11 +84,11 @@ index 02fc671e..1893225e 100644
  #[cfg(test)]
  mod reporting_tests {
      use super::*;
-diff --git c/crates/marmot-app/src/runtime/commands.rs i/crates/marmot-app/src/runtime/commands.rs
-index 041fbb16..49874975 100644
---- c/crates/marmot-app/src/runtime/commands.rs
-+++ i/crates/marmot-app/src/runtime/commands.rs
-@@ -1762,6 +1762,7 @@ impl AccountManager {
+diff --git a/crates/marmot-app/src/runtime/commands.rs b/crates/marmot-app/src/runtime/commands.rs
+index 81aed439..2e34a4ac 100644
+--- a/crates/marmot-app/src/runtime/commands.rs
++++ b/crates/marmot-app/src/runtime/commands.rs
+@@ -1813,6 +1813,7 @@ impl AccountManager {
          options: Vec<String>,
          poll_type: cgka_traits::PollType,
          ends_at: Option<u64>,
@@ -96,7 +96,7 @@ index 041fbb16..49874975 100644
      ) -> Result<SendSummary, AppError> {
          self.send_app_event(
              account_ref,
-@@ -1771,6 +1772,7 @@ impl AccountManager {
+@@ -1822,6 +1823,7 @@ impl AccountManager {
                  options,
                  poll_type,
                  ends_at,
@@ -104,11 +104,11 @@ index 041fbb16..49874975 100644
              },
          )
          .await
-diff --git c/crates/marmot-app/src/runtime/mod.rs i/crates/marmot-app/src/runtime/mod.rs
-index b0ac3fb1..f1d2a10f 100644
---- c/crates/marmot-app/src/runtime/mod.rs
-+++ i/crates/marmot-app/src/runtime/mod.rs
-@@ -2731,6 +2731,8 @@ impl MarmotAppRuntime {
+diff --git a/crates/marmot-app/src/runtime/mod.rs b/crates/marmot-app/src/runtime/mod.rs
+index bd0deeaf..43c0d67d 100644
+--- a/crates/marmot-app/src/runtime/mod.rs
++++ b/crates/marmot-app/src/runtime/mod.rs
+@@ -2819,6 +2819,8 @@ impl MarmotAppRuntime {
      }
  
      /// Create an encrypted NIP-88 poll in a direct or group conversation.
@@ -117,7 +117,7 @@ index b0ac3fb1..f1d2a10f 100644
      pub async fn create_poll(
          &self,
          account_ref: &str,
-@@ -2739,9 +2741,18 @@ impl MarmotAppRuntime {
+@@ -2827,9 +2829,18 @@ impl MarmotAppRuntime {
          options: Vec<String>,
          poll_type: cgka_traits::PollType,
          ends_at: Option<u64>,
@@ -137,10 +137,10 @@ index b0ac3fb1..f1d2a10f 100644
              .await
      }
  
-diff --git c/crates/marmot-app/src/runtime/tests.rs w/crates/marmot-app/src/runtime/tests.rs
-index 02732eff..735d7ab0 100644
---- c/crates/marmot-app/src/runtime/tests.rs
-+++ w/crates/marmot-app/src/runtime/tests.rs
+diff --git a/crates/marmot-app/src/runtime/tests.rs b/crates/marmot-app/src/runtime/tests.rs
+index a3cb9a74..d1fde793 100644
+--- a/crates/marmot-app/src/runtime/tests.rs
++++ b/crates/marmot-app/src/runtime/tests.rs
 @@ -290,6 +290,7 @@ async fn polls_can_be_created_and_voted_in_direct_and_group_conversations() {
              vec!["Yes".into(), "No".into()],
              cgka_traits::PollType::SingleChoice,
@@ -173,15 +173,15 @@ index 02732eff..735d7ab0 100644
          )
          .await
          .unwrap();
-diff --git c/crates/marmot-app/tests/relay_runtime.rs i/crates/marmot-app/tests/relay_runtime.rs
-index ffeca19f..56d09099 100644
---- c/crates/marmot-app/tests/relay_runtime.rs
-+++ i/crates/marmot-app/tests/relay_runtime.rs
-@@ -3838,6 +3838,120 @@ async fn app_runtime_custom_events_roundtrip_and_filter_by_kind() {
+diff --git a/crates/marmot-app/tests/relay_runtime.rs b/crates/marmot-app/tests/relay_runtime.rs
+index b48878e7..a7a29a66 100644
+--- a/crates/marmot-app/tests/relay_runtime.rs
++++ b/crates/marmot-app/tests/relay_runtime.rs
+@@ -3856,6 +3856,120 @@ async fn app_runtime_custom_events_roundtrip_and_filter_by_kind() {
      runtime.shutdown().await;
  }
  
-+#[tokio::test]
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 +async fn native_polls_keep_context() {
 +    let dir = tempfile::tempdir().unwrap();
 +    let (_relay, app, url) = mock_app(&dir).await;
@@ -295,14 +295,14 @@ index ffeca19f..56d09099 100644
 +    runtime.shutdown_and_close().await.unwrap();
 +}
 +
- #[tokio::test]
+ #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
  async fn app_runtime_delete_group_local_removes_projection_without_publishing_leave() {
      let dir = tempfile::tempdir().unwrap();
-diff --git c/crates/marmot-c/include/marmot.h i/crates/marmot-c/include/marmot.h
-index 80323ea7..527a1064 100644
---- c/crates/marmot-c/include/marmot.h
-+++ i/crates/marmot-c/include/marmot.h
-@@ -8770,11 +8770,13 @@ MarmotStatus marmot_send_custom_event(const struct MarmotClient *client,
+diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
+index 5799347c..809bb86e 100644
+--- a/crates/marmot-c/include/marmot.h
++++ b/crates/marmot-c/include/marmot.h
+@@ -9585,11 +9585,13 @@ MarmotStatus marmot_send_custom_event(const struct MarmotClient *client,
  /**
   * Create an encrypted NIP-88 poll in a direct or group conversation. Option ids use `"0"`
   * through `"9"`. Free `out` with `marmot_send_summary_free`.
@@ -317,7 +317,7 @@ index 80323ea7..527a1064 100644
   */
  MarmotStatus marmot_create_poll(const struct MarmotClient *client,
                                  const char *account_ref,
-@@ -8785,6 +8787,8 @@ MarmotStatus marmot_create_poll(const struct MarmotClient *client,
+@@ -9600,6 +9602,8 @@ MarmotStatus marmot_create_poll(const struct MarmotClient *client,
                                  uint32_t poll_type,
                                  uint8_t has_ends_at,
                                  uint64_t ends_at,
@@ -326,11 +326,11 @@ index 80323ea7..527a1064 100644
                                  struct MarmotSendSummary **out);
  
  /**
-diff --git c/crates/marmot-c/src/commands.rs i/crates/marmot-c/src/commands.rs
-index ddd2960f..8b91e222 100644
---- c/crates/marmot-c/src/commands.rs
-+++ i/crates/marmot-c/src/commands.rs
-@@ -2523,11 +2523,13 @@ pub unsafe extern "C" fn marmot_send_custom_event(
+diff --git a/crates/marmot-c/src/commands.rs b/crates/marmot-c/src/commands.rs
+index 172a2c2e..6f7c84a6 100644
+--- a/crates/marmot-c/src/commands.rs
++++ b/crates/marmot-c/src/commands.rs
+@@ -2650,11 +2650,13 @@ pub unsafe extern "C" fn marmot_send_custom_event(
  
  /// Create an encrypted NIP-88 poll in a direct or group conversation. Option ids use `"0"`
  /// through `"9"`. Free `out` with `marmot_send_summary_free`.
@@ -345,7 +345,7 @@ index ddd2960f..8b91e222 100644
  #[unsafe(no_mangle)]
  pub unsafe extern "C" fn marmot_create_poll(
      client: *const MarmotClient,
-@@ -2539,6 +2541,8 @@ pub unsafe extern "C" fn marmot_create_poll(
+@@ -2666,6 +2668,8 @@ pub unsafe extern "C" fn marmot_create_poll(
      poll_type: u32,
      has_ends_at: u8,
      ends_at: u64,
@@ -354,7 +354,7 @@ index ddd2960f..8b91e222 100644
      out: *mut *mut MarmotSendSummary,
  ) -> MarmotStatus {
      ffi_guard(|| {
-@@ -2549,6 +2553,9 @@ pub unsafe extern "C" fn marmot_create_poll(
+@@ -2676,6 +2680,9 @@ pub unsafe extern "C" fn marmot_create_poll(
          let question = try_arg!(unsafe { required_str(question) });
          let options = try_arg!(unsafe { str_array(options, options_len) });
          let poll_type = try_arg!(MarmotPollType::from_c(poll_type));
@@ -364,7 +364,7 @@ index ddd2960f..8b91e222 100644
          unsafe {
              deliver(
                  client.block_on(client.marmot.create_poll(
-@@ -2558,6 +2565,7 @@ pub unsafe extern "C" fn marmot_create_poll(
+@@ -2685,6 +2692,7 @@ pub unsafe extern "C" fn marmot_create_poll(
                      options,
                      poll_type.to_ffi(),
                      (has_ends_at != 0).then_some(ends_at),
@@ -372,11 +372,11 @@ index ddd2960f..8b91e222 100644
                  )),
                  out,
              )
-diff --git c/crates/marmot-uniffi/src/commands/message.rs i/crates/marmot-uniffi/src/commands/message.rs
-index f1a65561..a2a12241 100644
---- c/crates/marmot-uniffi/src/commands/message.rs
-+++ i/crates/marmot-uniffi/src/commands/message.rs
-@@ -225,7 +225,8 @@ impl Marmot {
+diff --git a/crates/marmot-uniffi/src/commands/message.rs b/crates/marmot-uniffi/src/commands/message.rs
+index 9007fa0e..bd8a14b3 100644
+--- a/crates/marmot-uniffi/src/commands/message.rs
++++ b/crates/marmot-uniffi/src/commands/message.rs
+@@ -229,7 +229,8 @@ impl Marmot {
      }
  
      /// Create an encrypted NIP-88 poll in a direct or group conversation. Option ids use
@@ -386,7 +386,7 @@ index f1a65561..a2a12241 100644
      pub async fn create_poll(
          &self,
          account_ref: String,
-@@ -234,6 +235,7 @@ impl Marmot {
+@@ -238,6 +239,7 @@ impl Marmot {
          options: Vec<String>,
          poll_type: PollTypeFfi,
          ends_at: Option<u64>,
@@ -394,7 +394,7 @@ index f1a65561..a2a12241 100644
      ) -> Result<SendSummaryFfi, MarmotKitError> {
          let group_id = group_id_from_hex(&group_id_hex)?;
          let summary = self
-@@ -245,6 +247,7 @@ impl Marmot {
+@@ -249,6 +251,7 @@ impl Marmot {
                  options,
                  poll_type.into(),
                  ends_at,
@@ -402,11 +402,11 @@ index f1a65561..a2a12241 100644
              )
              .await?;
          Ok(summary.into())
-diff --git c/crates/storage-sqlite/src/timeline.rs i/crates/storage-sqlite/src/timeline.rs
-index 8e46e4f7..d0bd3bf5 100644
---- c/crates/storage-sqlite/src/timeline.rs
-+++ i/crates/storage-sqlite/src/timeline.rs
-@@ -2154,7 +2154,7 @@ fn project_single_message_timeline_tx(
+diff --git a/crates/storage-sqlite/src/app/timeline.rs b/crates/storage-sqlite/src/app/timeline.rs
+index 918211fe..ed88e31c 100644
+--- a/crates/storage-sqlite/src/app/timeline.rs
++++ b/crates/storage-sqlite/src/app/timeline.rs
+@@ -2142,7 +2142,7 @@ fn project_single_message_timeline_tx(
  
      let mut stream_start = None;
      let mut row = match event.kind {
@@ -415,7 +415,7 @@ index 8e46e4f7..d0bd3bf5 100644
          MARMOT_APP_EVENT_KIND_AGENT_ACTIVITY
          | MARMOT_APP_EVENT_KIND_AGENT_OPERATION
          | MARMOT_APP_EVENT_KIND_GROUP_SYSTEM => timeline_row_from_app_event(&event),
-@@ -3691,7 +3691,7 @@ fn project_group_events(events: Vec<RawAppEvent>) -> (Vec<TimelineRow>, Vec<Stre
+@@ -3679,7 +3679,7 @@ fn project_group_events(events: Vec<RawAppEvent>) -> (Vec<TimelineRow>, Vec<Stre
  
      for event in &events {
          match event.kind {

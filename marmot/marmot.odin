@@ -123,14 +123,27 @@ Status :: enum i32 {
 	ATTACHMENT_MODE_REQUIRED                     = 93,
 	ATTACHMENT_ACCOUNT_SIGNED_OUT                = 94,
 	INVALID_APP_COMPONENT                        = 95,
+	MODERATION_REPORTING_NOT_CONFIGURED           = 96,
+	INVALID_MODERATION_REPORT_CONFIG             = 97,
+	INVALID_REPORTED_PUBLIC_KEY                  = 98,
+	CANNOT_REPORT_SELF                           = 99,
+	MODERATION_REPORT_RATE_LIMITED               = 100,
+	GROUP_CATCHING_UP                            = 101,
+	GROUP_COMMIT_UNDELIVERED                      = 102,
+	INVALID_PUBLIC_EVENT_REFERENCES               = 103,
+	DIRECTORY_LOOKUP_INCOMPLETE                   = 104,
+	INVALID_EDIT_TARGET                          = 105,
+	STORAGE_FULL                                 = 106,
 }
 
 // Opaque runtime handle.
 Client :: struct {}
 Nip46_Session :: struct {}
+Deployment :: struct {}
+Chat_List_Draft_Version :: struct {}
 
 // Host-supplied storage for account signing keys, passed to
-// client_new_with_secret_store instead of letting marmot use the
+// Client_Options.store instead of letting marmot use the
 // platform keychain. The signing key crosses as secret-key hex; an
 // account is identified by its label plus account_id_hex.
 //
@@ -182,6 +195,18 @@ Secret_Store :: struct {
 	// Optional; fires when the last runtime reference is released.
 	destroy:                   proc "c" (user_data: rawptr),
 }
+
+// Borrowed during construction; zero fields preserve MDK's native defaults.
+Client_Options :: struct {
+	relay_policy: u32,
+	cursor_persistence: u32,
+	client_name: cstring,
+	store: ^Secret_Store,
+	attachment_acquisition_mode: u32,
+}
+
+#assert(offset_of(Client_Options, store) == 16)
+#assert(size_of(Client_Options) == 32)
 
 // Opaque subscription handle; free before the client that created it.
 Chat_List_Subscription :: struct {}
@@ -398,6 +423,7 @@ Selected_Avatar :: struct {
 // preview and actions are unread mirrors of MarmotSelectedChatPreview and
 // MarmotChatListRowActions, kept for layout.
 Presented_Chat_Row :: struct {
+	draft_version: ^Chat_List_Draft_Version,
 	preview:      struct {
 		tag:   i32,
 		draft: struct {
@@ -436,7 +462,8 @@ Presented_Chat_List :: struct {
 
 #assert(size_of(Presentation_Text) == 24)
 #assert(size_of(Selected_Avatar) == 56)
-#assert(size_of(Presented_Chat_Row) == 376)
+#assert(offset_of(Presented_Chat_Row, preview) == 8)
+#assert(size_of(Presented_Chat_Row) == 384)
 #assert(size_of(Presented_Chat_List) == 40)
 
 Send_Accept_Disposition :: enum i32 {
@@ -1209,16 +1236,11 @@ Relay_Telemetry_Runtime_Config :: struct {
 	resource:                   ^Relay_Telemetry_Resource,
 }
 
-// Audit-log content posture; the default keeps identifiers hashed.
-Audit_Data_Mode :: enum i32 {
-	OBFUSCATED_SENSITIVE_DATA,
-	FULL_DATA,
+Audit_Log_Settings :: struct {
+	enabled: bool,
 }
 
-Audit_Log_Settings :: struct {
-	enabled:   bool,
-	data_mode: Audit_Data_Mode,
-}
+#assert(size_of(Audit_Log_Settings) == 1)
 
 Audit_Log_File :: struct {
 	account_ref:        cstring,
@@ -1254,6 +1276,9 @@ Audit_Log_Tracker_Config :: struct {
 
 @(default_calling_convention = "c", link_prefix = "marmot_")
 foreign lib {
+	deployment_white_noise :: proc(out: ^^Deployment) -> Status ---
+	deployment_free :: proc(deployment: ^Deployment) ---
+	client_new_with_deployment :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, options: ^Client_Options, deployment: ^Deployment, out_client: ^^Client) -> Status ---
 	client_new :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, out_client: ^^Client) -> Status ---
 	client_new_with_secret_store :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, store: ^Secret_Store, out_client: ^^Client) -> Status ---
 	client_start :: proc(client: ^Client) -> Status ---

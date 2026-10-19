@@ -1245,11 +1245,22 @@ boot_worker :: proc(t: ^thread.Thread) {
 	// run for the client's whole life.
 	store := vault_secret_store()
 
-	job.status = marmot.client_new_with_secret_store(
+	// Select White Noise's services explicitly, independent of MDK's
+	// eventual neutral constructor default. Construction copies deployment.
+	deployment: ^marmot.Deployment
+	job.status = marmot.deployment_white_noise(&deployment)
+	if job.status != .OK {
+		job.error = marmot.last_error()
+		return
+	}
+	defer marmot.deployment_free(deployment)
+	options := marmot.Client_Options {store = &store}
+	job.status = marmot.client_new_with_deployment(
 		strings.clone_to_cstring(job.home),
 		raw_data(relays),
 		len(relays),
-		&store,
+		&options,
+		deployment,
 		&job.client,
 	)
 	if job.status != .OK {

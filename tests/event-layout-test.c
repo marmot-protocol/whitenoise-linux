@@ -60,7 +60,12 @@ _Static_assert(sizeof(MarmotTimelineReplyPreview) == 120, "reply preview stride"
 _Static_assert(offsetof(MarmotTimelineReplyPreview, media) == 80, "reply preview media");
 
 _Static_assert(sizeof(MarmotChatListMessagePreview) == 152, "chat preview stride");
-_Static_assert(sizeof(MarmotPresentedChatRow) == 376, "presented row stride");
+_Static_assert(offsetof(MarmotPresentedChatRow, draft_version) == 0, "borrowed draft version");
+_Static_assert(offsetof(MarmotPresentedChatRow, preview) == 8, "presented preview alignment");
+_Static_assert(sizeof(MarmotPresentedChatRow) == 384, "presented row stride");
+_Static_assert(sizeof(MarmotAuditLogSettings) == 1, "audit enable flag only");
+_Static_assert(offsetof(MarmotClientOptions, store) == 16, "host secret store");
+_Static_assert(sizeof(MarmotClientOptions) == 32, "client options stride");
 _Static_assert(sizeof(MarmotGroupSystemEvent) == 104, "system event stride");
 _Static_assert(sizeof(MarmotAppMessageRecord) == 176, "raw message stride");
 _Static_assert(offsetof(MarmotAppMessageRecord, has_moderation_grant) == 168, "source authority");

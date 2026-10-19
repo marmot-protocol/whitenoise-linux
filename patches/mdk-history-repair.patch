@@ -1,8 +1,8 @@
 diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
-index ece47ef9..21f1352f 100644
+index 809bb86e..4c033021 100644
 --- a/crates/marmot-c/include/marmot.h
 +++ b/crates/marmot-c/include/marmot.h
-@@ -6952,6 +6952,16 @@ MarmotStatus marmot_secure_delete_expired(const struct MarmotClient *client,
+@@ -7730,6 +7730,16 @@ MarmotStatus marmot_secure_delete_expired(const struct MarmotClient *client,
   */
  MarmotStatus marmot_catch_up_accounts(const struct MarmotClient *client);
  
@@ -20,10 +20,10 @@ index ece47ef9..21f1352f 100644
   * Per-account notification switches. Free with
   * `marmot_notification_settings_free`.
 diff --git a/crates/marmot-c/src/commands.rs b/crates/marmot-c/src/commands.rs
-index bfacd073..2504251f 100644
+index 6f7c84a6..cfeee24c 100644
 --- a/crates/marmot-c/src/commands.rs
 +++ b/crates/marmot-c/src/commands.rs
-@@ -863,6 +863,7 @@ c_cmd! {
+@@ -892,6 +892,7 @@ c_cmd! {
      /// One-time catch-up across every running account (e.g. after a push
      /// wake).
      async fn marmot_catch_up_accounts() -> unit = catch_up_accounts;
@@ -32,10 +32,10 @@ index bfacd073..2504251f 100644
      /// Per-account notification switches. Free with
      /// `marmot_notification_settings_free`.
 diff --git a/crates/marmot-uniffi/src/commands/notification.rs b/crates/marmot-uniffi/src/commands/notification.rs
-index d85219fe..1e75aa8e 100644
+index ac9890e9..75deac53 100644
 --- a/crates/marmot-uniffi/src/commands/notification.rs
 +++ b/crates/marmot-uniffi/src/commands/notification.rs
-@@ -47,6 +47,12 @@ impl Marmot {
+@@ -48,6 +48,12 @@ impl Marmot {
          Ok(())
      }
  

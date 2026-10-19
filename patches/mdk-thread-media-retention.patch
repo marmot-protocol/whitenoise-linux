@@ -1,10 +1,10 @@
 diff --git a/crates/storage-sqlite/CHANGELOG.md b/crates/storage-sqlite/CHANGELOG.md
-index 3ad67e95..8078e57a 100644
+index 25e65bb8..80cbf9dd 100644
 --- a/crates/storage-sqlite/CHANGELOG.md
 +++ b/crates/storage-sqlite/CHANGELOG.md
-@@ -17,6 +17,12 @@
-   migrated in-memory database per process instead of replaying every migration
-   for each open. Harnesses that open thousands of databases use it.
+@@ -219,6 +219,12 @@ is unsupported.
+   Roster membership is materialized once per deletion statement instead of
+   rescanning the JSON roster for every stored destination.
  
 +### Fixed
 +
@@ -15,21 +15,21 @@ index 3ad67e95..8078e57a 100644
  ## 0.12.0 - 2026-10-02
  
  Account storage advances from migration 98 through 101 on first open; downgrade
-diff --git a/crates/storage-sqlite/src/encrypted_media_secrets.rs b/crates/storage-sqlite/src/encrypted_media_secrets.rs
-index d006b52a..62c1084a 100644
---- a/crates/storage-sqlite/src/encrypted_media_secrets.rs
-+++ b/crates/storage-sqlite/src/encrypted_media_secrets.rs
-@@ -13,6 +13,9 @@ use cgka_traits::app_event::{MARMOT_APP_EVENT_KIND_CHAT, MARMOT_APP_EVENT_KIND_R
+diff --git a/crates/storage-sqlite/src/app/encrypted_media_secrets.rs b/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
+index 53df3bbf..0c20a716 100644
+--- a/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
++++ b/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
+@@ -14,6 +14,9 @@ use cgka_traits::app_event::{MARMOT_APP_EVENT_KIND_CHAT, MARMOT_APP_EVENT_KIND_R
  use cgka_traits::storage::{StorageError, StorageResult};
  use rusqlite::{Connection, OptionalExtension, params};
  
 +const COMMENT_KIND: u64 = 1111;
 +const ISSUE_KIND: u64 = 1621;
 +
- impl SqliteAccountStorage {
+ impl SqliteAppStorage {
      pub fn remember_encrypted_media_epoch_secret(
          &self,
-@@ -241,9 +244,11 @@ pub(crate) fn replace_encrypted_media_secret_references_for_parts_tx(
+@@ -242,9 +245,11 @@ pub(crate) fn replace_encrypted_media_secret_references_for_parts_tx(
      )
      .storage()?;
  
@@ -44,7 +44,7 @@ index d006b52a..62c1084a 100644
      {
          let source_epoch = u64_to_i64(source_epoch)?;
          let component_ids = encrypted_media_component_ids(tags);
-@@ -703,6 +708,85 @@ mod tests {
+@@ -710,6 +715,86 @@ mod tests {
          assert_eq!(epochs, vec![8]);
      }
  
@@ -66,10 +66,11 @@ index d006b52a..62c1084a 100644
 +                ),
 +            ] {
 +                let store = SqliteAccountStorage::in_memory().unwrap();
-+                store
++                let app = store.app_storage();
++                app
 +                    .remember_encrypted_media_epoch_secret("aa", component_id, 7, &[1; 32])
 +                    .unwrap();
-+                store.record_app_event(&media_event("old", 10, 7)).unwrap();
++                app.record_app_event(&media_event("old", 10, 7)).unwrap();
 +                let mut custom = media_event_with_versions(id, 20, 7, &[version]);
 +                custom.kind = kind;
 +                custom.plaintext = content.to_owned();
@@ -86,38 +87,38 @@ index d006b52a..62c1084a 100644
 +                        .tags
 +                        .push(vec!["subject".into(), "Media issue".into()]);
 +                }
-+                store.record_app_event(&custom).unwrap();
++                app.record_app_event(&custom).unwrap();
 +                assert!(secret_is_referenced(&store, "aa", component_id, 7));
 +
-+                let partial = store
++                let partial = app
 +                    .secure_prune_app_events_before("aa", 15, "local", &no_mentions)
 +                    .unwrap();
 +                assert_eq!(partial.pruned_messages, 1);
 +                assert_eq!(partial.pruned_media_epoch_secrets, 0, "{id}: {version}");
 +                assert_eq!(
-+                    store
++                    app
 +                        .encrypted_media_epoch_secret("aa", component_id, 7)
 +                        .unwrap(),
 +                    Some(vec![1; 32]),
 +                    "{id}: {version}"
 +                );
 +
-+                let final_sweep = store
++                let final_sweep = app
 +                    .secure_prune_app_events_before("aa", 21, "local", &no_mentions)
 +                    .unwrap();
 +                assert_eq!(final_sweep.pruned_messages, 1);
 +                assert_eq!(final_sweep.pruned_media_epoch_secrets, 1);
 +                assert_eq!(
-+                    store
++                    app
 +                        .encrypted_media_epoch_secret("aa", component_id, 7)
 +                        .unwrap(),
 +                    None
 +                );
-+                store
++                app
 +                    .remember_encrypted_media_epoch_secret("aa", component_id, 7, &[1; 32])
 +                    .unwrap();
 +                assert_eq!(
-+                    store
++                    app
 +                        .encrypted_media_epoch_secret("aa", component_id, 7)
 +                        .unwrap(),
 +                    None,
@@ -130,11 +131,11 @@ index d006b52a..62c1084a 100644
      #[test]
      fn shared_epoch_secret_survives_partial_sweep_until_final_reference() {
          let store = SqliteAccountStorage::in_memory().unwrap();
-diff --git a/crates/storage-sqlite/src/timeline.rs b/crates/storage-sqlite/src/timeline.rs
-index ec4b42ee..f4d9c5b4 100644
---- a/crates/storage-sqlite/src/timeline.rs
-+++ b/crates/storage-sqlite/src/timeline.rs
-@@ -1771,8 +1771,7 @@ fn secure_prune_selected_app_events_tx(
+diff --git a/crates/storage-sqlite/src/app/timeline.rs b/crates/storage-sqlite/src/app/timeline.rs
+index fa0a7bb2..fd88727a 100644
+--- a/crates/storage-sqlite/src/app/timeline.rs
++++ b/crates/storage-sqlite/src/app/timeline.rs
+@@ -1787,8 +1787,7 @@ fn secure_prune_selected_app_events_tx(
                  .extend(tag_values(&event.tags, EVENT_REF_TAG).map(ToOwned::to_owned));
          }
          collect_media_ciphertext_hashes(&event.tags, &mut media_ciphertext_sha256);

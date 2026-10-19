@@ -341,10 +341,9 @@ set_telemetry :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
 	marmot.diagnostics_settings_free(out)
 }
 
-// Flip the recorder, keeping the runtime's content posture.
+// Flip the recorder.
 set_audit :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
-	cur: ^marmot.Audit_Log_Settings
-	if client == nil || marmot.audit_log_settings(client, &cur) != .OK {
+	if client == nil {
 		set_status(
 			ui,
 			fmt.aprintf(tr("Couldn't change audit logs. %s"), marmot.last_error()),
@@ -353,10 +352,8 @@ set_audit :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
 		return
 	}
 	next := marmot.Audit_Log_Settings {
-		enabled   = on,
-		data_mode = cur.data_mode,
+		enabled = on,
 	}
-	marmot.audit_log_settings_free(cur)
 
 	out: ^marmot.Audit_Log_Settings
 	if marmot.set_audit_log_settings(client, &next, &out) != .OK {
