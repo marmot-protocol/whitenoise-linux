@@ -62,6 +62,8 @@ accent-base = [
 ]
 
 [style]
+noir = false
+saturation = 1
 backdrop = "image:mesh"
 font = "Manrope"
 font-title = "Nixie Gothic"

@@ -2861,6 +2861,9 @@ msgstr "Hier sind noch keine Sticker."
 msgid "No trusted sites."
 msgstr "Keine vertrauenswürdigen Websites."
 
+msgid "Noir film treatment"
+msgstr "Noir-Filmeffekt"
+
 msgid "Not downloaded"
 msgstr "Nicht heruntergeladen"
 
@@ -3572,6 +3575,9 @@ msgstr "SYNCHRONISIERUNG"
 
 msgid "Safe to share. This is how people find you."
 msgstr "Sicher zum Teilen. Darüber finden dich andere."
+
+msgid "Saturation"
+msgstr "Sättigung"
 
 msgid "Save"
 msgstr "Speichern"

@@ -92,6 +92,7 @@ THEME_FIELDS := []Theme_Field {
 	{"", N_("Chip outline"), .Media_Chip_Outline, .Color, 0},
 	{"", N_("Control background"), .Media_Control_Bg, .Color, 0},
 	{N_("METRICS"), N_("Corner scale"), .R_Scale, .Number, 0},
+	{"", N_("Saturation"), .Saturation, .Number, 0},
 	{"", N_("Border width"), .Border_W, .Number, 0},
 	{"", N_("Focus glow radius"), .Glow_R, .Number, 0},
 	{"", N_("Shadow offset"), .Shadow_Y, .Number, 0},
@@ -113,6 +114,7 @@ THEME_FLAGS := []struct {
 	{N_("Invert selected text"), .Selected_Inverts_Text},
 	{N_("Fast motion"), .Motion_Fast},
 	{N_("Pixel metrics"), .Pixel_Metrics},
+	{N_("Noir film treatment"), .Noir},
 }
 
 // "" is a valid pick: no scene at all.
@@ -179,7 +181,7 @@ theme_edit_open :: proc(ui: ^Ui_State) {
 		     .Accent_Name_4,
 		     .Accent_Name_5:
 			append(&buf, (cast(^string)theme_token_pointer(&pack, field.token))^)
-		case .Bg, .Text_Hi, .Danger:
+		case .Bg, .Text_Hi, .Danger, .Saturation:
 			append(&buf, theme_field_hint(&pack, field))
 		case .Accent_Base:
 			if field.slot < 3 {append(&buf, theme_field_hint(&pack, field))}

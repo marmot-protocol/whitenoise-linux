@@ -45,6 +45,7 @@ accent-base = [
 ]
 
 [style]
+noir = false
 saturation = 1
 avatar-erase = false
 font-scale = 1

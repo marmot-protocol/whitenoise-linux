@@ -347,6 +347,12 @@ PAGE_PUSH :: f32(0.03) // how far the outgoing page pulls away from the eye
 // is far too slow per frame; a texture that simply isn't cleared yet
 // costs nothing.
 draw_frame :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand)) {
+	if rl.Noir && (g_prefs == nil || !g_prefs.reduce_motion) {
+		GRAIN_HZ :: 24
+		frame := rl.GetTime() * GRAIN_HZ
+		rl.NoirFrame = u32(u64(frame) & 0xffff)
+		frame_deadline = min(frame_deadline, (f64(u64(frame)) + 1) / GRAIN_HZ)
+	}
 	if page_held {
 		page_held = false
 		if !rl.CopyTarget(HOLD_SLOT, FRAME_SLOT) {

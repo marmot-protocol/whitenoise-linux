@@ -110,7 +110,10 @@ test_theme_edit_round_trip :: proc(t: ^testing.T) {
 	set(&ui, .Accent_Base, "#88ff00", 2)
 	set(&ui, .Overlay, "#12345678")
 	set(&ui, .R_Scale, "0.75")
+	set(&ui, .Saturation, "0.25")
 	set(&ui, .Font, "Example Font")
+	for flag in THEME_FLAGS {append(&ui.theme_flags, flag.token == .Noir)}
+	defer delete(ui.theme_flags)
 
 	toml := theme_edit_toml(&ui)
 	testing.expect_value(t, theme_offer_name(toml), "My Theme")
@@ -122,7 +125,9 @@ test_theme_edit_round_trip :: proc(t: ^testing.T) {
 	testing.expect_value(t, pack.text_hi, [4]f32{240, 240, 240, 255})
 	testing.expect_value(t, pack.overlay, [4]f32{18, 52, 86, 120})
 	testing.expect_value(t, pack.r_scale, f32(0.75))
+	testing.expect_value(t, pack.saturation, f32(0.25))
 	testing.expect_value(t, pack.font, "Example Font")
+	testing.expect(t, pack.noir)
 	testing.expect_value(
 		t,
 		pack.accent_names,

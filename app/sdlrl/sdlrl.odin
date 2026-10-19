@@ -237,14 +237,13 @@ InitWindow :: proc(width, height: i32, title: cstring, image_helper: string = IM
 			fmt.eprintfln("sdl: init failed: %s", sdl.GetError())
 			os.exit(1)
 		}
-		sdl.CreateWindowAndRenderer(
+		state.window = sdl.CreateWindow(
 			title,
 			c.int(width),
 			c.int(height),
 			{.RESIZABLE, .HIGH_PIXEL_DENSITY},
-			&state.window,
-			&state.renderer,
 		)
+		if state.window != nil {state.renderer = create_view_renderer(state.window)}
 	}
 	if state.window == nil || state.renderer == nil {
 		fmt.eprintfln("sdl: window failed: %s", sdl.GetError())
@@ -261,6 +260,7 @@ InitWindow :: proc(width, height: i32, title: cstring, image_helper: string = IM
 	state.touch = n > 0
 	_ = sdl.SetRenderVSync(state.renderer, 1)
 	_ = sdl.SetRenderDrawBlendMode(state.renderer, {.BLEND})
+	init_saturation()
 	// Text input stays off until a field asks for it: on Wayland it
 	// drives text-input-v3, and enabling it for the life of the window
 	// keeps an on-screen keyboard (squeekboard, and friends) up over
@@ -569,6 +569,7 @@ CloseWindow :: proc() {
 	if tray != nil {sdl.DestroyTray(tray); tray = nil}
 	if tray_surface != nil {sdl.DestroySurface(tray_surface); tray_surface = nil}
 	for cursor in cursors {if cursor != nil {sdl.DestroyCursor(cursor)}}
+	close_saturation()
 	when #config(WN_RELOAD, false) {
 		sdl.SetRenderTarget(state.renderer, nil)
 		sdl.SetRenderClipRect(state.renderer, nil)
@@ -722,6 +723,7 @@ Preedit :: proc() -> string {
 }
 
 BeginDrawing :: proc() {
+	begin_saturation()
 	sdl.SetRenderScale(state.renderer, 1, 1)
 	sdl.SetRenderDrawColor(state.renderer, 0, 0, 0, 255)
 	sdl.RenderClear(state.renderer)
@@ -746,6 +748,7 @@ EndMode2D :: proc() {
 }
 
 EndDrawing :: proc() {
+	ApplySaturation()
 	sdl.RenderPresent(state.renderer)
 	now := sdl.GetTicksNS()
 	state.frame_dt = f32(now - state.last_frame_ns) / 1e9
@@ -816,6 +819,7 @@ GetTime :: proc() -> f64 {
 }
 
 TakeScreenshot :: proc(path: cstring) {
+	ApplySaturation()
 	surface := sdl.RenderReadPixels(state.renderer, nil)
 	if surface == nil {
 		fmt.eprintfln("sdl: screenshot failed: %s", sdl.GetError())
@@ -1610,8 +1614,7 @@ CaptureFrame :: proc() -> Texture2D {
 
 // ── Off-screen targets ──────────────────────────────────────────────
 //
-// SDL_Renderer has no shaders, but it does have render targets, and a
-// target is enough for the two things the app could not do without one:
+// Render targets handle the two layer effects the app needs:
 // draw a whole subtree at an opacity, and blur what is behind a modal.
 //
 // The blur is a bilinear downsample chain. Halving with LINEAR sampling

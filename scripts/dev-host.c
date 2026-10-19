@@ -32,14 +32,32 @@ static void stop(int sig) {
     stopping = 1;
 }
 
+static SDL_Renderer *create_view_renderer(SDL_Window *target) {
+    const char *hint = SDL_GetHint(SDL_HINT_RENDER_DRIVER);
+    if (hint && strcmp(hint, "gpu")) {
+        return SDL_CreateRenderer(target, NULL);
+    }
+    SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "gpu");
+    SDL_SetPointerProperty(props, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, target);
+    SDL_SetBooleanProperty(props, SDL_PROP_RENDERER_CREATE_GPU_SHADERS_SPIRV_BOOLEAN, true);
+    SDL_SetBooleanProperty(props, SDL_PROP_RENDERER_CREATE_GPU_SHADERS_MSL_BOOLEAN, true);
+    SDL_SetBooleanProperty(props, SDL_PROP_RENDERER_CREATE_GPU_SHADERS_DXIL_BOOLEAN, true);
+    SDL_Renderer *result = SDL_CreateRendererWithProperties(props);
+    SDL_DestroyProperties(props);
+    return result ? result : SDL_CreateRenderer(target, NULL);
+}
+
 SDL_Window *wn_dev_window(int width, int height, const char *title, SDL_Renderer **out) {
     if (!window) {
         if (!SDL_Init(SDL_INIT_VIDEO)) {
             return NULL;
         }
-        SDL_CreateWindowAndRenderer(title, width, height,
-                                    SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY, &window,
-                                    &renderer);
+        window = SDL_CreateWindow(title, width, height,
+                                  SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+        if (window) {
+            renderer = create_view_renderer(window);
+        }
         if (window) {
             fprintf(stderr, "dev: window=%u\n", SDL_GetWindowID(window));
         }

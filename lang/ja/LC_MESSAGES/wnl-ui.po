@@ -2861,6 +2861,9 @@ msgstr "まだステッカーがありません。"
 msgid "No trusted sites."
 msgstr "信頼済みのサイトはありません。"
 
+msgid "Noir film treatment"
+msgstr "フィルムノワール風の効果"
+
 msgid "Not downloaded"
 msgstr "未ダウンロード"
 
@@ -3572,6 +3575,9 @@ msgstr "同期中"
 
 msgid "Safe to share. This is how people find you."
 msgstr "共有しても安全です。ほかの人はこれであなたを見つけます。"
+
+msgid "Saturation"
+msgstr "彩度"
 
 msgid "Save"
 msgstr "保存"

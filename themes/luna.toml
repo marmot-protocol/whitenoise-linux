@@ -38,6 +38,8 @@ accent-base = [
 ]
 
 [style]
+noir = false
+saturation = 1
 bevel = true
 outline-surfaces = true
 motion-fast = true

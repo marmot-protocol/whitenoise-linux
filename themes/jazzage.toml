@@ -63,6 +63,8 @@ accent-base = [
 ]
 
 [style]
+noir = false
+saturation = 1
 backdrop = "image:jazz-stage"
 font = "Manrope"
 font-title = "Fascinate"

@@ -2855,6 +2855,9 @@ msgstr ""
 msgid "No trusted sites."
 msgstr ""
 
+msgid "Noir film treatment"
+msgstr ""
+
 msgid "Not downloaded"
 msgstr ""
 
@@ -3565,6 +3568,9 @@ msgid "SYNCING"
 msgstr ""
 
 msgid "Safe to share. This is how people find you."
+msgstr ""
+
+msgid "Saturation"
 msgstr ""
 
 msgid "Save"

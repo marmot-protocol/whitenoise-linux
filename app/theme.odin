@@ -103,8 +103,10 @@ Theme_Pack :: struct {
 	// [style] structural metrics, the capability flags this renderer
 	// honours, and the motion durations.
 	r_scale, border_w, glow_r, shadow_y, bubble_r:          f32,
+	saturation:                                             f32,
 	hover_dur, transition_dur:                              f32,
 	pixel_metrics, synth_grid, paper_doodles, scanlines:    bool,
+	noir:                                                   bool,
 	hard_shadow, focus_glow, bevel, outline_surfaces:       bool,
 	selected_inverts_text, bracket_labels, motion_fast:     bool,
 	font:                                                   string, // family name, "" = the default stack
@@ -183,6 +185,7 @@ Theme_Token :: enum {
 	Accent_Surface,
 	Accent_Glow,
 	R_Scale,
+	Saturation,
 	Border_W,
 	Glow_R,
 	Shadow_Y,
@@ -200,6 +203,7 @@ Theme_Token :: enum {
 	Selected_Inverts_Text,
 	Bracket_Labels,
 	Motion_Fast,
+	Noir,
 }
 
 @(private)
@@ -306,6 +310,7 @@ THEME_TOKENS := [Theme_Token]Theme_Token_Descriptor {
 	.Accent_Surface        = {"accent-surface", .Colors, offset_of(Theme_Pack, accent_surface)},
 	.Accent_Glow           = {"accent-glow", .Colors, offset_of(Theme_Pack, accent_glow)},
 	.R_Scale               = {"r-scale", .Number, offset_of(Theme_Pack, r_scale)},
+	.Saturation            = {"saturation", .Number, offset_of(Theme_Pack, saturation)},
 	.Border_W              = {"border-w", .Number, offset_of(Theme_Pack, border_w)},
 	.Glow_R                = {"glow-r", .Number, offset_of(Theme_Pack, glow_r)},
 	.Shadow_Y              = {"shadow-y", .Number, offset_of(Theme_Pack, shadow_y)},
@@ -315,6 +320,7 @@ THEME_TOKENS := [Theme_Token]Theme_Token_Descriptor {
 	.Pixel_Metrics         = {"pixel-metrics", .Flag, offset_of(Theme_Pack, pixel_metrics)},
 	.Synth_Grid            = {"synth-grid", .Flag, offset_of(Theme_Pack, synth_grid)},
 	.Paper_Doodles         = {"paper-doodles", .Flag, offset_of(Theme_Pack, paper_doodles)},
+	.Noir                  = {"noir", .Flag, offset_of(Theme_Pack, noir)},
 	.Scanlines             = {"scanlines", .Flag, offset_of(Theme_Pack, scanlines)},
 	.Hard_Shadow           = {"hard-shadow", .Flag, offset_of(Theme_Pack, hard_shadow)},
 	.Focus_Glow            = {"focus-glow", .Flag, offset_of(Theme_Pack, focus_glow)},
@@ -417,6 +423,7 @@ default_pack :: proc() -> Theme_Pack {
 		preview_font = FONT_GALLERY_TITLE,
 		accent_names = {"Accent 1", "Accent 2", "Accent 3", "Accent 4", "Accent 5"},
 		r_scale = 1,
+		saturation = 1,
 		border_w = 1,
 		glow_r = 3,
 		shadow_y = 2,

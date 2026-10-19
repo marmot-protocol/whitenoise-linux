@@ -1,12 +1,12 @@
 # Sidecar: black-and-white film, silver UI ink and red only for destructive actions.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/film-noir.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Film Noir"
 accent-name-1 = "Screen silver"
 accent-name-2 = "Smoke gray"
 accent-name-3 = "Reel silver"
 accent-name-4 = "Spotlight gray"
 accent-name-5 = "Projector pearl"
-# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/film-noir.css
-# Shared component roles: styles.css at the same pinned revision.
-name = "Film Noir"
 
 [colors]
 bg = "#0a0a0aff"
@@ -63,6 +63,8 @@ accent-base = [
 ]
 
 [style]
+saturation = 0
+noir = true
 backdrop = "image:film"
 font = "Manrope"
 font-title = "Noto Serif Display Condensed"

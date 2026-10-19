@@ -57,6 +57,28 @@ theme_parse :: proc(t: ^testing.T) {
 }
 
 @(test)
+theme_amoled_monochrome :: proc(t: ^testing.T) {
+	pack := parse_theme("AMOLED", "amoled", #load("../themes/amoled.toml", string), default_pack())
+	defer delete(pack.font)
+
+	for descriptor, token in THEME_TOKENS {
+		entry := theme_token_pointer(&pack, token)
+		#partial switch descriptor.kind {
+		case .Color:
+			color := (cast(^[4]f32)entry)^
+			testing.expect(t, color == BLACK || color == WHITE)
+		case .Colors, .Ink:
+			for color in (cast(^[5][4]f32)entry)^ {
+				testing.expect(t, color == BLACK || color == WHITE)
+			}
+		}
+	}
+	for fill, slot in pack.accent_base {
+		testing.expect(t, theme_test_contrast(pack.on_accent[slot], fill) >= 4.5)
+	}
+}
+
+@(test)
 theme_inherit :: proc(t: ^testing.T) {
 	base := parse_theme("Base", "base", TEST_THEME, default_pack())
 	defer {for label in base.accent_names {delete(label)}}

@@ -2861,6 +2861,9 @@ msgstr "Qui non ci sono ancora adesivi."
 msgid "No trusted sites."
 msgstr "Nessun sito affidabile."
 
+msgid "Noir film treatment"
+msgstr "Effetto film noir"
+
 msgid "Not downloaded"
 msgstr "Non scaricato"
 
@@ -3572,6 +3575,9 @@ msgstr "SINCRONIZZAZIONE"
 
 msgid "Safe to share. This is how people find you."
 msgstr "Sicura da condividere. È così che gli altri ti trovano."
+
+msgid "Saturation"
+msgstr "Saturazione"
 
 msgid "Save"
 msgstr "Salva"

@@ -78,7 +78,8 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 **Look & feel**
 
 - Thirty-three bundled themes and five accent colors, all data-driven from `themes/*.toml`. Each pack defines its accent labels with `accent-name-1` through `accent-name-5`, matching the order of `accent-base`. The theme editor preserves these labels. Drop your own pack in the data dir.
-- AMOLED uses pure black backgrounds, white text, and neutral gray controls and borders. All five accent colors remain available.
+- AMOLED uses black and white theme colors and hides its accent chooser. A whole-view pass reduces color saturation to 25%, including avatars, emoji, and media.
+- Film Noir adds visible, moving film grain to the whole view, including photos and video. Reduce motion freezes the grain; the filter adds no contrast or vignette.
 - Settings > Appearance > Centred conversation centers the message timeline and composer in a column at most 720px wide. Narrower windows use the available width; turning it off restores full width.
 - Settings > Appearance puts controls, the theme gallery, and a live conversation preview side by side on wide windows. Medium windows put controls beside stacked themes and preview; all three panels scroll independently. Narrow windows stack them on one page. The preview uses the normal chat renderer with a fictional marmot conversation, not your messages or draft.
 - The theme gallery has separate Dark and Light views and collection headings. Hover over a tile to preview it. Leaving the tile or pressing Escape restores your theme; clicking saves the choice.

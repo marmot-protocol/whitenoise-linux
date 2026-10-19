@@ -63,6 +63,8 @@ accent-base = [
 ]
 
 [style]
+noir = false
+saturation = 1
 backdrop = "image:circle-grid"
 font = "Manrope"
 font-title = "Jost"

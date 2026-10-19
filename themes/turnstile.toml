@@ -63,6 +63,8 @@ accent-base = [
 ]
 
 [style]
+noir = false
+saturation = 1
 backdrop = "image:subway-tile"
 font = "Manrope"
 font-title = "Pathway Gothic One"

@@ -63,6 +63,8 @@ accent-base = [
 ]
 
 [style]
+noir = false
+saturation = 1
 backdrop = "image:kintsugi"
 font = "Manrope"
 font-title = "Yuji Syuku"

@@ -1251,6 +1251,7 @@ app_main :: proc() {
 			draw_frame(&render_commands)
 			rl.EndMode2D()
 			local_timing_end(.frame_draw, draw_start)
+			devctl_draw()
 			// Before EndDrawing: the backbuffer is undefined after present,
 			// and reading it back then crashes inside Mesa on a frame whose
 			// window was just resized.
@@ -1270,7 +1271,6 @@ app_main :: proc() {
 					break
 				}
 			}
-			devctl_draw()
 			present_start := time.tick_now()
 			rl.EndDrawing()
 			local_timing_end(.frame_present, present_start)
