@@ -11,7 +11,8 @@
 # a module here would cost an hour of CI per release. The 25.08 base
 # keeps the rust-stable and llvm21 SDK extensions below valid.
 #
-# The SDK already ships SDL3, libarchive, curl, cairo, glib and ffmpeg.
+# The SDK ships SDL 3.2; GPU render states require SDL 3.4 or newer,
+# built below. It also ships libarchive, curl, cairo, glib and ffmpeg.
 # What the app links beyond that is built as modules here: libass and
 # libplacebo only because libmpv requires them, poppler for the PDF
 # viewer. Video tiles are software-rendered, so mpv is built without GL
@@ -62,6 +63,20 @@ cleanup:
   - /odin
 
 modules:
+  - name: sdl3
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DSDL_SHARED=ON
+      - -DSDL_STATIC=OFF
+      - -DSDL_TEST_LIBRARY=OFF
+      - -DSDL_TESTS=OFF
+    sources:
+      - type: git
+        url: https://github.com/libsdl-org/SDL.git
+        tag: release-3.4.14
+        commit: 147a8ee32dbf9ac02f3794964490687b6bbda1bc
+
   - name: libass
     buildsystem: meson
     config-opts:
@@ -155,7 +170,7 @@ modules:
       env:
         CARGO_HOME: /run/build/whitenoise-linux/cargo
         # Odin's `foreign import "system:…"` ignores LDFLAGS; this is how
-        # the linker finds the libmpv and poppler built above.
+        # the linker finds SDL3, libmpv and poppler built above.
         LIBRARY_PATH: /app/lib
     build-commands:
       # Fetch sources before restoring outputs: build.sh must create the MDK

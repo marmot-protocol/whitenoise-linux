@@ -5,6 +5,7 @@
 package main
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:sync"
@@ -105,6 +106,8 @@ grapheme_boundaries :: proc(t: ^testing.T) {
 composer_mention_steps :: proc(t: ^testing.T) {
 	sync.lock(&clay_test_mutex)
 	defer sync.unlock(&clay_test_mutex)
+	context.allocator = runtime.default_context().allocator
+	defer profile_session_clear()
 	rl.SetPixelScale(1)
 	npub := hex_npub("66675158e6338fe89fda418e42a0bf2a7a2b132504dd347f015a18971b644430")
 	defer delete(npub)

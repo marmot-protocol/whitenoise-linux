@@ -203,7 +203,7 @@ About, diagnostics, AppImage, Flatpak, and Arch packaging use this version.
 
 ## Build from source
 
-You need `just`, the [Odin compiler](https://odin-lang.org/docs/install/), a C and C++ compiler, CMake, and a Rust toolchain (Marmot's C bundle is built from source). Plus SDL3 and the media libraries the viewers bind.
+You need `just`, the [Odin compiler](https://odin-lang.org/docs/install/), a C and C++ compiler, CMake, and a Rust toolchain (Marmot's C bundle is built from source). Plus SDL 3.4 or newer and the media libraries the viewers bind. Flatpak bundles SDL because the GNOME 50 SDK ships SDL 3.2.
 
 **Debian / Ubuntu** (SDL3 needs 25.04 or newer, or a source build):
 
@@ -655,6 +655,9 @@ them use `runtime.default_context().allocator`. Tests that replace `g_ui` take
 `clay_test_mutex` before `test_home_lock` when both are needed. Use nonfatal
 expectations while holding these locks: Odin's `fail_now` skips deferred
 unlocks and can stall the suite.
+
+Mention-chip fixtures also populate the global profile caches. Use the runtime
+allocator and defer `profile_session_clear()` while holding `clay_test_mutex`.
 
 Composer wrapping allocates its cache on the process heap without changing
 the caller's allocator. Mention measurement can queue profile reads; those
