@@ -672,7 +672,17 @@ if [ "$(uname -s)" = OpenBSD ]; then
   APP_LINK_ARGS=('-extra-linker-flags:-Wl,--wrap=execve,--exclude-libs=libmarmot_c.a')
 elif [ "$(uname -s)" = Linux ]; then
   # System libssl must not resolve crypto calls to Marmot's bundled OpenSSL.
-  APP_LINK_ARGS=('-extra-linker-flags:-Wl,--exclude-libs=libmarmot_c.a')
+  link_flags='-Wl,--exclude-libs=libmarmot_c.a'
+  # clang searches LIBRARY_PATH after its system dirs (GCC searches it
+  # first), so the Flatpak's /app/lib SDL 3.4 would lose to the SDK's
+  # SDL 3.2. Explicit -L dirs precede the system ones.
+  IFS=: read -ra lib_dirs <<<"${LIBRARY_PATH:-}"
+  for dir in "${lib_dirs[@]}"; do
+    if [ -n "$dir" ]; then
+      link_flags+=" -L$dir"
+    fi
+  done
+  APP_LINK_ARGS=("-extra-linker-flags:$link_flags")
 fi
 
 env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/model-decoder" -o:speed -out:"$HERE/build/wn-mesh"

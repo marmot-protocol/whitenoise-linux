@@ -171,6 +171,7 @@ modules:
         CARGO_HOME: /run/build/whitenoise-linux/cargo
         # Odin's `foreign import "system:…"` ignores LDFLAGS; this is how
         # the linker finds SDL3, libmpv and poppler built above.
+        # scripts/build.sh passes it as -L so SDL 3.4 wins over the SDK's.
         LIBRARY_PATH: /app/lib
     build-commands:
       # Fetch sources before restoring outputs: build.sh must create the MDK
