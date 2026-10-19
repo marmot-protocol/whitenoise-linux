@@ -2211,6 +2211,10 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 		flip(ui, &ui.prefs.restore_last_chat)
 	case "TgMotion":
 		flip(ui, &ui.prefs.reduce_motion)
+	case "TgHandDrawn":
+		flip(ui, &ui.prefs.hand_drawn_disabled)
+		apply_theme(active_theme(ui), ui.accent)
+		clear(&anim_cols)
 	case "TgCentered":
 		flip(ui, &ui.prefs.centered_chat)
 	case "TgEmojiContacts":

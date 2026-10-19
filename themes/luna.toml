@@ -1,10 +1,10 @@
 # Windows XP Luna: warm dialog panels, blue chrome, and raised controls.
+name = "Luna"
 accent-name-1 = "Start-menu green"
 accent-name-2 = "Luna blue"
 accent-name-3 = "Desktop raspberry"
 accent-name-4 = "Autumn copper"
 accent-name-5 = "Classic violet"
-name = "Luna"
 
 [colors]
 bg = "#ece9d8ff"
@@ -40,6 +40,9 @@ accent-base = [
 [style]
 noir = false
 saturation = 1
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
 bevel = true
 outline-surfaces = true
 motion-fast = true

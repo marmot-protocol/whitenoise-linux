@@ -18,6 +18,13 @@ Avatar_Hinge :: struct {
 	angle: f32,
 }
 
+@(private)
+Avatar_Erase :: struct {
+	kind:     Model_Kind,
+	tex:      ^rl.Texture2D,
+	progress: f32,
+}
+
 // FNV-1a over the identity key. Stable for a given account.
 avatar_hash :: proc(key: string) -> u32 {
 	hash: u32 = 2166136261
@@ -82,6 +89,7 @@ avatar :: proc(
 	tex: ^rl.Texture2D = nil,
 	ring: clay.Color = {},
 	hinge_angle: f32 = 0,
+	erase_progress: f32 = -1,
 ) {
 	tex := tex
 	radius := size / 2
@@ -91,6 +99,7 @@ avatar :: proc(
 		tex = url_pic(fmt.tprintf("%s:%s", CROP_SHAPE_PREFIX[shape], key))
 		if shape == .Square {radius = 0}
 		if shape == .Rounded {radius = size * 0.2}
+		if CHALK_DRAWN {tex = shaped_avatar(tex, "square")}
 	} else {
 		shape := g_ui != nil ? g_ui.prefs.avatar_shape : Avatar_Shape.Circle
 		if shape == .Square {radius = 0}
@@ -119,7 +128,14 @@ avatar :: proc(
 				imageData = tex,
 			}
 			custom: clay.CustomElementConfig
-			if hinge_angle != 0 {
+			if erase_progress >= 0 {
+				view := new(Avatar_Erase, context.temp_allocator)
+				view^ = {.Avatar_Erase, tex, erase_progress}
+				image = {}
+				custom = {
+					customData = view,
+				}
+			} else if hinge_angle != 0 {
 				view := new(Avatar_Hinge, context.temp_allocator)
 				view^ = {
 					kind  = .Avatar_Hinge,
@@ -206,11 +222,24 @@ peephole_avatar :: proc(
 		if reveal < 1 {
 			if clay.UI(clay.ID("PeepCover", outer.id))(
 			{
-				// Only the swinging cover needs to overlap the revealed fingerprint.
+				// The remaining photo sits over the fingerprint while it is revealed.
 				floating = reveal > 0 ? clay.FloatingElementConfig{attachTo = .Parent, clipTo = .AttachedParent, pointerCaptureMode = .Passthrough, attachment = {element = .LeftTop, parent = .LeftTop}} : {},
 			},
 			) {
-				avatar("PeepPhoto", outer.id, key, name, size, photo, ring, reveal * 180)
+				if AVATAR_ERASE {
+					avatar(
+						"PeepPhoto",
+						outer.id,
+						key,
+						name,
+						size,
+						photo,
+						ring,
+						erase_progress = reveal,
+					)
+				} else {
+					avatar("PeepPhoto", outer.id, key, name, size, photo, ring, reveal * 180)
+				}
 			}
 		}
 	}

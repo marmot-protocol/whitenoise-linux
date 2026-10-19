@@ -54,8 +54,8 @@ refresh_ui_scale :: proc() {
 	rl.SetPixelScale(UI_SCALE)
 }
 
-// Physical stack IDs stay below profile fonts (32+). Native text, markdown
-// emphasis and input measurement keep their existing logical role IDs.
+// Theme stacks occupy 6..29 and 96..97; profile fonts reserve 32..95.
+// Native text, markdown and input measurement retain their logical role IDs.
 @(private)
 FONT_GALLERY_BOLD :: u16(30)
 @(private)
@@ -113,6 +113,7 @@ THEME_FONTS := []struct {
 	{"Kaisei Decol", "sidecar-kaisei-decol-500.ttf", "", 26, {"sidecar-manrope-700.ttf"}},
 	{"Yuji Syuku", "sidecar-yuji-syuku.ttf", "", 27, {"sidecar-manrope-700.ttf"}},
 	{"Syncopate", "sidecar-syncopate-700.ttf", "", 28, {"sidecar-manrope-700.ttf"}},
+	{"Kalam", "Kalam-Regular.ttf", "Kalam-Bold.ttf", 96, nil},
 	// The CSS unicode-range face owns only digits and their separators.
 	// Letters must reach Fell before the complete Cormorant fallback.
 	{
@@ -148,11 +149,28 @@ theme_font_stack :: proc(family: string, role: Theme_Font_Role) -> u16 {
 theme_fonts_loaded: bool
 
 @(private)
+applied_text_scale: f32 = 1
+
+@(private)
 apply_theme_fonts :: proc() {
 	if !theme_fonts_loaded {return}
 	body_changed := rl.SelectFontStack(FONT_BODY, theme_font_stack(THEME_FONT, .Body))
 	title_changed := rl.SelectFontStack(FONT_TITLE, theme_font_stack(THEME_FONT_TITLE, .Title))
-	if !body_changed && !title_changed {return}
+	italic_changed := rl.SelectFontStack(
+		FONT_ITALIC,
+		CHALK_DRAWN ? theme_font_stack(THEME_FONT, .Body) : FONT_ITALIC,
+	)
+	bold_italic_changed := rl.SelectFontStack(
+		FONT_BOLD_ITALIC,
+		CHALK_DRAWN ? theme_font_stack(THEME_FONT_TITLE, .Title) : FONT_BOLD_ITALIC,
+	)
+	scale_changed := applied_text_scale != rl.TextScale
+	applied_text_scale = rl.TextScale
+	if !body_changed &&
+	   !title_changed &&
+	   !italic_changed &&
+	   !bold_italic_changed &&
+	   !scale_changed {return}
 	// Logical IDs are stable, so geometry caches cannot detect this switch.
 	wrap_clear()
 	if clay.GetCurrentContext() != nil {
@@ -291,7 +309,7 @@ BOIL_HZ :: 8
 BOIL_AMP :: f32(0.9)
 
 boil :: proc(id: u32, edge: u32) -> f32 {
-	if !PAPER_DECOR {
+	if !PAPER_DECOR || CHALK_DRAWN {
 		return 0
 	}
 	frame_deadline = min(frame_deadline, (f64(u64(rl.GetTime() * BOIL_HZ)) + 1) / BOIL_HZ)
@@ -347,6 +365,7 @@ PAGE_PUSH :: f32(0.03) // how far the outgoing page pulls away from the eye
 // is far too slow per frame; a texture that simply isn't cleared yet
 // costs nothing.
 draw_frame :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand)) {
+	rl.ChalkDrawn = CHALK_DRAWN
 	if rl.Noir && (g_prefs == nil || !g_prefs.reduce_motion) {
 		GRAIN_HZ :: 24
 		frame := rl.GetTime() * GRAIN_HZ
@@ -753,6 +772,49 @@ render_range :: proc(
 				   overlay_colors[len(overlay_colors) - 1] !=
 					   0 {tint = overlay_colors[len(overlay_colors) - 1]}
 				profile_background_draw((^Profile_Background)(data), bounds, clay_color(tint))
+			case .Avatar_Erase:
+				view := (^Avatar_Erase)(data)
+				tint := clay.Color{255, 255, 255, 255}
+				if len(overlay_colors) > 0 && overlay_colors[len(overlay_colors) - 1] != 0 {
+					tint = overlay_colors[len(overlay_colors) - 1]
+				}
+				// Alternating sweeps erase the photo, not its geometry. Fixed ragged
+				// edges move only with hover progress; reversal redraws the same strokes.
+				vertices: [9 * 6]rl.Vertex
+				used := 0
+				for strip in 0 ..< 96 {
+					row := strip / 8
+					removed := clamp(view.progress * 12 - f32(row), 0, 1)
+					if removed >= 1 {continue}
+					y0, y1 := f32(strip) / 96, f32(strip + 1) / 96
+					if removed == 0 {y1 = 1}
+					front := removed
+					if removed > 0 {
+						h := (u32(strip) * 0x9e3779b9) ~ u32(strip * 31)
+						front = clamp(front + (f32(h % 101) / 100 - 0.5) * 0.025, 0, 1)
+					}
+					x0, x1 := row % 2 == 0 ? front : 0, row % 2 == 0 ? 1 : 1 - front
+					for uv, k in ([6]rl.Vector2{{x0, y0}, {x1, y0}, {x1, y1}, {x0, y0}, {x1, y1}, {x0, y1}}) {
+						vertices[used + k] = {
+							position  = {
+								bounds.x + uv.x * bounds.width,
+								bounds.y + uv.y * bounds.height,
+							},
+							color     = {tint.r / 255, tint.g / 255, tint.b / 255, tint.a / 255},
+							tex_coord = {uv.x, uv.y},
+						}
+					}
+					used += 6
+					if removed == 0 {break}
+				}
+				rl.DrawTrianglesClipped(
+					vertices[:used],
+					bounds.x,
+					bounds.y,
+					bounds.width,
+					bounds.height,
+					view.tex,
+				)
 			case .Avatar_Hinge:
 				view := (^Avatar_Hinge)(data)
 				angle := view.angle * math.PI / 180

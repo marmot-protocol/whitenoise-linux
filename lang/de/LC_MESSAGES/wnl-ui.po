@@ -674,6 +674,9 @@ msgstr "Unterhaltung zentrieren"
 msgid "Centred conversation"
 msgstr "Zentrierte Unterhaltung"
 
+msgid "Chalk-drawn surfaces"
+msgstr "Mit Kreide gezeichnete Flächen"
+
 #, fuzzy
 msgid "Change disappearing messages?"
 msgstr "Selbstlöschende Nachrichten"
@@ -1830,6 +1833,9 @@ msgstr "Gib das Passwort ein, mit dem dieses Backup erstellt wurde. Die Einstell
 msgid "Enter your password to unlock this device's keys."
 msgstr "Gib dein Passwort ein, um die Schlüssel dieses Geräts zu entsperren."
 
+msgid "Erase avatar reveal"
+msgstr "Avatar beim Aufdecken ausradieren"
+
 msgid "Error copied"
 msgstr "Fehler kopiert"
 
@@ -1978,6 +1984,9 @@ msgstr "Ordnerregeln folgen"
 msgid "Font"
 msgstr "Schriftart"
 
+msgid "Font scale"
+msgstr "Schriftgröße"
+
 msgid "Fonts"
 msgstr "Schriftarten"
 
@@ -2096,6 +2105,9 @@ msgstr "Gruppiert"
 
 msgid "HIGHLIGHT"
 msgstr "MARKIERUNG"
+
+msgid "Hand-drawn filter"
+msgstr "Handgezeichneter Filter"
 
 msgid "Hard shadows"
 msgstr "Harte Schatten"
@@ -4116,6 +4128,9 @@ msgstr "Text mittel"
 #, c-format
 msgid "Text: %s"
 msgstr "Text: %s"
+
+msgid "Textured strokes and sketched avatars. Shapes stay fixed."
+msgstr "Texturierte Striche und skizzierte Avatare. Formen bleiben unverändert."
 
 msgid "That feels right."
 msgstr "So fühlt es sich richtig an."

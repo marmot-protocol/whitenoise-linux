@@ -85,6 +85,8 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - The theme gallery has separate Dark and Light views and collection headings. Hover over a tile to preview it. Leaving the tile or pressing Escape restores your theme; clicking saves the choice.
 - The Sidecar collection contains all 21 themes from [dmnyc's Sidecar](https://github.com/dmnyc/sidecar). Selecting one shows its source credit on the page and the selected tile. Collection headings have no links.
 - Royale and Royale Dark use XP Royale's blue chrome with pearl or charcoal surfaces and bevelled controls.
+- Chalkboard and Crayon use bundled Kalam lettering at 125%, textured surfaces, fixed rough strokes, and sketched avatars. The Hand-drawn filter toggle in Appearance turns the material effect off without changing the palette or lettering size. This filter preference is shared by both themes.
+- Chalkboard erases the photo to reveal its identity fingerprint on avatar hover, then redraws the photo when the pointer leaves. Other themes keep the swivel reveal.
 - Terminal uses a fixed green accent and hides its accent chooser.
 - Button text derives separately for each accent color using sRGB contrast. Custom packs can set `on-accent` to override the text color for all five accents.
 - English, Italian, German, and Japanese, switchable at runtime, including search dialogs, theme notifications, and confirmation errors.

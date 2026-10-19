@@ -674,6 +674,9 @@ msgstr "Centra la conversazione"
 msgid "Centred conversation"
 msgstr "Conversazione centrata"
 
+msgid "Chalk-drawn surfaces"
+msgstr "Superfici disegnate col gesso"
+
 #, fuzzy
 msgid "Change disappearing messages?"
 msgstr "Messaggi effimeri"
@@ -1830,6 +1833,9 @@ msgstr "Inserisci la password con cui è stato creato questo backup. Impostazion
 msgid "Enter your password to unlock this device's keys."
 msgstr "Inserisci la tua password per sbloccare le chiavi di questo dispositivo."
 
+msgid "Erase avatar reveal"
+msgstr "Cancella l'avatar per rivelarlo"
+
 msgid "Error copied"
 msgstr "Errore copiato"
 
@@ -1978,6 +1984,9 @@ msgstr "Segui le regole delle cartelle"
 msgid "Font"
 msgstr "Carattere"
 
+msgid "Font scale"
+msgstr "Scala del carattere"
+
 msgid "Fonts"
 msgstr "Caratteri"
 
@@ -2096,6 +2105,9 @@ msgstr "Raggruppate"
 
 msgid "HIGHLIGHT"
 msgstr "EVIDENZIAZIONE"
+
+msgid "Hand-drawn filter"
+msgstr "Filtro disegnato a mano"
 
 msgid "Hard shadows"
 msgstr "Ombre nette"
@@ -4116,6 +4128,9 @@ msgstr "Testo medio"
 #, c-format
 msgid "Text: %s"
 msgstr "Testo: %s"
+
+msgid "Textured strokes and sketched avatars. Shapes stay fixed."
+msgstr "Tratti con texture e avatar abbozzati. Le forme restano fisse."
 
 msgid "That feels right."
 msgstr "Così va bene."

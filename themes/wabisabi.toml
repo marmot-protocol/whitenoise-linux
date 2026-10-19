@@ -1,12 +1,12 @@
 # Sidecar by dmnyc: slate stoneware, rice-paper ink, kintsugi gold and persimmon glaze.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/wabi-sabi.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Wabi-sabi"
 accent-name-1 = "Kintsugi gold"
 accent-name-2 = "Persimmon glaze"
 accent-name-3 = "Golden seam"
 accent-name-4 = "Stoneware blue-gray"
 accent-name-5 = "Ash glaze"
-# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/wabi-sabi.css
-# Shared component roles: styles.css at the same pinned revision.
-name = "Wabi-sabi"
 
 [colors]
 bg = "#131518ff"
@@ -65,6 +65,9 @@ accent-base = [
 [style]
 noir = false
 saturation = 1
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
 backdrop = "image:kintsugi"
 font = "Manrope"
 font-title = "Yuji Syuku"

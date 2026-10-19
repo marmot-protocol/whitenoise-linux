@@ -521,6 +521,16 @@ FONTS="$HERE/vendor/fonts"
 # licences and conversion provenance retained alongside the committed TTFs.
 mkdir -p "$FONTS"
 cp "$HERE/assets/fonts/sidecar/"*.ttf "$HERE/assets/fonts/sidecar/"*.txt "$FONTS/"
+# Kalam is committed unmodified at the revision documented by its provenance.
+# Check source bytes before staging so every target gets the same handwriting.
+while read -r file sha; do
+  echo "$sha  $HERE/assets/fonts/kalam/$file" | sha256sum -c -
+done <<'KALAM'
+Kalam-Regular.ttf 57cecb63d4608019371954274ae1d8c397764debd5b19d4a33c1efa4dc923c0b
+Kalam-Bold.ttf 2f6576601db015d4f6c08678120277fc8510b98c06e932ce7a6a9cbff4cbdded
+Kalam-OFL.txt f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f
+KALAM
+cp "$HERE/assets/fonts/kalam/"*.ttf "$HERE/assets/fonts/kalam/"*.txt "$FONTS/"
 NERD_ZIP_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.zip"
 NERD_ZIP_SHA="fab782a66f7d3019da64f6572db9fc5d3a4bcb19f9fa13e2d8a62e3693d6396e"
 LIBERATION_URL="https://github.com/liberationfonts/liberation-fonts/files/7261482/liberation-fonts-ttf-2.1.5.tar.gz"

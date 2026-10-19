@@ -1,12 +1,12 @@
 # Sidecar: soot, ochre concrete, tarnished brass and Limelight poster lettering.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/metropolis.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Metropolis"
 accent-name-1 = "Tower brass"
 accent-name-2 = "Machine copper"
 accent-name-3 = "Searchlight gold"
 accent-name-4 = "Tarnished brass"
 accent-name-5 = "Ochre concrete"
-# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/metropolis.css
-# Shared component roles: styles.css at the same pinned revision.
-name = "Metropolis"
 
 [colors]
 bg = "#0d0c0aff"
@@ -63,6 +63,9 @@ accent-base = [
 [style]
 noir = false
 saturation = 1
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
 backdrop = "image:rays"
 font = "Manrope"
 font-title = "Limelight"

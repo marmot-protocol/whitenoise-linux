@@ -1,12 +1,12 @@
 # Sidecar: sandstone after dark, warm ivory trim, gold lamplight and ivy.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/brownstone.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Brownstone"
 accent-name-1 = "Lamplight gold"
 accent-name-2 = "Window amber"
 accent-name-3 = "Fired terracotta"
 accent-name-4 = "Sandstone copper"
 accent-name-5 = "Ivy green"
-# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/brownstone.css
-# Shared component roles: styles.css at the same pinned revision.
-name = "Brownstone"
 
 [colors]
 bg = "#120c0aff"
@@ -63,6 +63,9 @@ accent-base = [
 [style]
 noir = false
 saturation = 1
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
 backdrop = "image:masonry"
 font = "Manrope"
 font-title = "Bitter"

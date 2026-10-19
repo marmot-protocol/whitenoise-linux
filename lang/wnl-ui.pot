@@ -673,6 +673,9 @@ msgstr ""
 msgid "Centred conversation"
 msgstr ""
 
+msgid "Chalk-drawn surfaces"
+msgstr ""
+
 msgid "Change disappearing messages?"
 msgstr ""
 
@@ -1825,6 +1828,9 @@ msgstr ""
 msgid "Enter your password to unlock this device's keys."
 msgstr ""
 
+msgid "Erase avatar reveal"
+msgstr ""
+
 msgid "Error copied"
 msgstr ""
 
@@ -1973,6 +1979,9 @@ msgstr ""
 msgid "Font"
 msgstr ""
 
+msgid "Font scale"
+msgstr ""
+
 msgid "Fonts"
 msgstr ""
 
@@ -2090,6 +2099,9 @@ msgid "Grouped"
 msgstr ""
 
 msgid "HIGHLIGHT"
+msgstr ""
+
+msgid "Hand-drawn filter"
 msgstr ""
 
 msgid "Hard shadows"
@@ -4109,6 +4121,9 @@ msgstr ""
 
 #, c-format
 msgid "Text: %s"
+msgstr ""
+
+msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr ""
 
 msgid "That feels right."

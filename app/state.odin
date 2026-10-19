@@ -134,8 +134,12 @@ apply_theme :: proc(theme: int, accent: int) {
 	TRANSITION_DUR = pack.transition_dur
 	SYNTH_GRID = pack.synth_grid
 	PAPER_DECOR = pack.paper_doodles
+	CHALK_DRAWN = pack.chalk_drawn && (g_prefs == nil || !g_prefs.hand_drawn_disabled)
+	rl.ChalkDrawn = CHALK_DRAWN
+	rl.TextScale = pack.font_scale
 	rl.Saturation = pack.saturation
 	rl.Noir = pack.noir
+	AVATAR_ERASE = pack.avatar_erase
 	SCANLINES = pack.scanlines
 	HARD_SHADOW = pack.hard_shadow
 	FOCUS_GLOW = pack.focus_glow

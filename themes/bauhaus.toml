@@ -1,12 +1,12 @@
 # Sidecar by dmnyc: whitewashed plaster, primary-color planes and black drawing rules.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/bauhaus.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Bauhaus"
 accent-name-1 = "Brick vermilion"
 accent-name-2 = "Primary blue"
 accent-name-3 = "Primary yellow"
 accent-name-4 = "Deep ultramarine"
 accent-name-5 = "Vermilion plane"
-# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/bauhaus.css
-# Shared component roles: styles.css at the same pinned revision.
-name = "Bauhaus"
 
 [colors]
 bg = "#f4f4f0ff"
@@ -65,6 +65,9 @@ accent-base = [
 [style]
 noir = false
 saturation = 1
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
 backdrop = "image:circle-grid"
 font = "Manrope"
 font-title = "Jost"

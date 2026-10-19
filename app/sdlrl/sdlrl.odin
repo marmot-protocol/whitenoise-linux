@@ -581,6 +581,8 @@ CloseWindow :: proc() {
 		sdl.DestroyWindow(state.window)
 		sdl.Quit()
 	}
+	// Renderer destruction (or the reload texture registry) owns these textures.
+	chalk_grain, chalk_stroke = nil, nil
 }
 
 SetTargetFPS :: proc(fps: i32) {} 	// vsync paces the loop
@@ -1068,6 +1070,19 @@ set_color :: proc(color: Color) {
 }
 
 DrawRectangleRec :: proc(x, y, w, h: f32, color: Color) {
+	if ChalkDrawn {
+		if w <= 0 || h <= 0 || color.a == 0 {return}
+		if min(w, h) <= 4 {
+			if w >= h {
+				chalk_line(x, y + h / 2, x + w, y + h / 2, h, color)
+			} else {
+				chalk_line(x + w / 2, y, x + w / 2, y + h, w, color)
+			}
+		} else {
+			chalk_surface(x, y, w, h, 0, color)
+		}
+		return
+	}
 	set_color(color)
 	rect := sdl.FRect{x, y, w, h}
 	sdl.RenderFillRect(state.renderer, &rect)
@@ -1111,6 +1126,10 @@ EndScissorMode :: proc() {
 
 // Filled rounded rectangle, ported from clay_renderer_SDL3.c.
 DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
+	if ChalkDrawn {
+		chalk_surface(x, y, w, h, corner_radius, color)
+		return
+	}
 	fcolor := sdl.FColor {
 		f32(color.r) / 255,
 		f32(color.g) / 255,
@@ -1200,6 +1219,10 @@ DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
 // Border corner arc as a filled annular sector (triangle strip), so
 // it stays solid at any render scale.
 DrawArc :: proc(cx, cy, radius, start_deg, end_deg, thickness: f32, color: Color) {
+	if ChalkDrawn {
+		chalk_arc(cx, cy, radius, start_deg, end_deg, thickness, color)
+		return
+	}
 	fcolor := sdl.FColor {
 		f32(color.r) / 255,
 		f32(color.g) / 255,
@@ -1353,7 +1376,9 @@ get_glyph :: proc(font_id: u16, px: u16, r: rune) -> (Glyph, int) {
 		}
 	}
 
-	key := glyph_key(file, px, r)
+	// Separate cached chalk coverage from the untouched face. Switching back
+	// to any other theme restores its original glyph textures immediately.
+	key := glyph_key(file, px, r) | (ChalkDrawn ? u64(1) << 39 : 0)
 	if cached, hit := state.glyphs[key]; hit {
 		return cached, file
 	}
@@ -1377,6 +1402,14 @@ get_glyph :: proc(font_id: u16, px: u16, r: rune) -> (Glyph, int) {
 			rgba[i * 4 + 1] = 255
 			rgba[i * 4 + 2] = 255
 			rgba[i * 4 + 3] = bitmap[i]
+			if ChalkDrawn {
+				grain := chalk_hash(u32(i) ~ u32(r))
+				// Small static pores, not missing strokes: body text remains
+				// readable at 11 px, and icons keep their recognizable silhouette.
+				rgba[i * 4 + 3] = u8(
+					u32(bitmap[i]) * (grain % 19 == 0 ? 145 : 218 + grain % 38) / 255,
+				)
+			}
 		}
 		tex := sdl.CreateTexture(state.renderer, .RGBA32, .STATIC, i32(w), i32(h))
 		track_texture(tex)
@@ -1435,14 +1468,17 @@ grapheme_iterate :: proc(
 
 // Width/height of one line at the given logical size, matching what
 // DrawTextLine paints. Height is the font size, clay's convention.
+TextScale: f32 = 1
+
 MeasureTextLine :: proc(font_id: u16, size: u16, text: string, letter_spacing: f32) -> Vector2 {
+	logical_size := f32(size) * (font_id == IconFont ? 1 : TextScale)
 	stack_id := selected_font_stack(font_id)
-	px := u16(f32(size) * state.pixel_scale + 0.5)
+	px := u16(logical_size * state.pixel_scale + 0.5)
 	width: f32 = 0
 	it := utf8.decode_grapheme_iterator_make(text)
 	for cluster, _ in grapheme_iterate(&it) {
 		if font_id != IconFont && state.text_image != nil && state.text_image(cluster) != nil {
-			width += f32(size) + letter_spacing
+			width += logical_size + letter_spacing
 			continue
 		}
 		for r in cluster {
@@ -1451,7 +1487,7 @@ MeasureTextLine :: proc(font_id: u16, size: u16, text: string, letter_spacing: f
 			width += glyph.advance / state.pixel_scale + letter_spacing
 		}
 	}
-	return {width, f32(size)}
+	return {width, logical_size}
 }
 
 // Draw one line of text with per-rune font fallback. Coordinates are
@@ -1465,15 +1501,16 @@ DrawTextLine :: proc(
 	letter_spacing: f32,
 	color: Color,
 ) {
+	logical_size := f32(size) * (font_id == IconFont ? 1 : TextScale)
 	stack_id := selected_font_stack(font_id)
-	px := u16(f32(size) * state.pixel_scale + 0.5)
+	px := u16(logical_size * state.pixel_scale + 0.5)
 	pen := x
 	it := utf8.decode_grapheme_iterator_make(text)
 	for cluster, _ in grapheme_iterate(&it) {
 		if font_id != IconFont && state.text_image != nil {
 			if tex := state.text_image(cluster); tex != nil {
-				DrawTextureRect(tex, pen, y, f32(size), f32(size), {255, 255, 255, color.a})
-				pen += f32(size) + letter_spacing
+				DrawTextureRect(tex, pen, y, logical_size, logical_size, {255, 255, 255, color.a})
+				pen += logical_size + letter_spacing
 				continue
 			}
 		}
@@ -1491,13 +1528,21 @@ DrawTextLine :: proc(
 				// line box instead, so a square button holds it dead center.
 				top := y + (ascent + f32(glyph.yoff)) / ps
 				if glyph.icon {
-					top = y + (f32(size) - f32(glyph.h) / ps) / 2
+					top = y + (logical_size - f32(glyph.h) / ps) / 2
 				}
 				dest := sdl.FRect {
 					math.round((pen + f32(glyph.xoff) / ps) * ps) / ps,
 					math.round(top * ps) / ps,
 					f32(glyph.w) / ps,
 					f32(glyph.h) / ps,
+				}
+				if ChalkDrawn {
+					sdl.SetTextureAlphaMod(glyph.tex, u8(u32(color.a) * 22 / 100))
+					dust := dest
+					dust.x -= 0.35 / ps
+					dust.y += 0.35 / ps
+					sdl.RenderTexture(state.renderer, glyph.tex, nil, &dust)
+					sdl.SetTextureAlphaMod(glyph.tex, color.a)
 				}
 				sdl.RenderTexture(state.renderer, glyph.tex, nil, &dest)
 			}

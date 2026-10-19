@@ -1,12 +1,12 @@
 # Sidecar by dmnyc: cool painted metal, square Secession rules, bronze ink and gold leaf.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/werkstatte.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Werkstätte"
 accent-name-1 = "Bronze ink"
 accent-name-2 = "Secession gold"
 accent-name-3 = "Lacquer crimson"
 accent-name-4 = "Graphite metal"
 accent-name-5 = "Aged gold leaf"
-# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/werkstatte.css
-# Shared component roles: styles.css at the same pinned revision.
-name = "Werkstätte"
 
 [colors]
 bg = "#e8eaeeff"
@@ -65,6 +65,9 @@ accent-base = [
 [style]
 noir = false
 saturation = 1
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
 backdrop = "image:secession-grid"
 font = "Manrope"
 font-title = "Syncopate"

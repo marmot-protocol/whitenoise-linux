@@ -93,6 +93,9 @@ accent-surface = [
 [style]
 noir = false
 saturation = 0.25
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
 focus-glow = false
 font = "JetBrains Mono"
 r-scale = 1.0

@@ -714,11 +714,7 @@ drain_pics :: proc() {
 		switch f.kind {
 		case .Generated:
 			if f.pixels != nil {
-				tex = new(rl.Texture2D)
-				tex^ = rl.LoadTextureFromImage(
-					{data = raw_data(f.pixels), width = f.side, height = f.side},
-				)
-				delete(f.pixels)
+				tex = photo_install(f.pixels, f.side, "square")
 			}
 		case .Photo:
 			if f.pixels != nil {tex = photo_install(f.pixels, f.side)}

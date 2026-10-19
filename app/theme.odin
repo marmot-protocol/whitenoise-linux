@@ -103,9 +103,12 @@ Theme_Pack :: struct {
 	// [style] structural metrics, the capability flags this renderer
 	// honours, and the motion durations.
 	r_scale, border_w, glow_r, shadow_y, bubble_r:          f32,
+	font_scale:                                             f32,
 	saturation:                                             f32,
 	hover_dur, transition_dur:                              f32,
 	pixel_metrics, synth_grid, paper_doodles, scanlines:    bool,
+	chalk_drawn:                                            bool,
+	avatar_erase:                                           bool,
 	noir:                                                   bool,
 	hard_shadow, focus_glow, bevel, outline_surfaces:       bool,
 	selected_inverts_text, bracket_labels, motion_fast:     bool,
@@ -185,6 +188,7 @@ Theme_Token :: enum {
 	Accent_Surface,
 	Accent_Glow,
 	R_Scale,
+	Font_Scale,
 	Saturation,
 	Border_W,
 	Glow_R,
@@ -203,6 +207,8 @@ Theme_Token :: enum {
 	Selected_Inverts_Text,
 	Bracket_Labels,
 	Motion_Fast,
+	Chalk_Drawn,
+	Avatar_Erase,
 	Noir,
 }
 
@@ -310,6 +316,7 @@ THEME_TOKENS := [Theme_Token]Theme_Token_Descriptor {
 	.Accent_Surface        = {"accent-surface", .Colors, offset_of(Theme_Pack, accent_surface)},
 	.Accent_Glow           = {"accent-glow", .Colors, offset_of(Theme_Pack, accent_glow)},
 	.R_Scale               = {"r-scale", .Number, offset_of(Theme_Pack, r_scale)},
+	.Font_Scale            = {"font-scale", .Number, offset_of(Theme_Pack, font_scale)},
 	.Saturation            = {"saturation", .Number, offset_of(Theme_Pack, saturation)},
 	.Border_W              = {"border-w", .Number, offset_of(Theme_Pack, border_w)},
 	.Glow_R                = {"glow-r", .Number, offset_of(Theme_Pack, glow_r)},
@@ -320,6 +327,8 @@ THEME_TOKENS := [Theme_Token]Theme_Token_Descriptor {
 	.Pixel_Metrics         = {"pixel-metrics", .Flag, offset_of(Theme_Pack, pixel_metrics)},
 	.Synth_Grid            = {"synth-grid", .Flag, offset_of(Theme_Pack, synth_grid)},
 	.Paper_Doodles         = {"paper-doodles", .Flag, offset_of(Theme_Pack, paper_doodles)},
+	.Chalk_Drawn           = {"chalk-drawn", .Flag, offset_of(Theme_Pack, chalk_drawn)},
+	.Avatar_Erase          = {"avatar-erase", .Flag, offset_of(Theme_Pack, avatar_erase)},
 	.Noir                  = {"noir", .Flag, offset_of(Theme_Pack, noir)},
 	.Scanlines             = {"scanlines", .Flag, offset_of(Theme_Pack, scanlines)},
 	.Hard_Shadow           = {"hard-shadow", .Flag, offset_of(Theme_Pack, hard_shadow)},
@@ -349,6 +358,8 @@ R_SCALE: f32 = 1
 BORDER_W: u16 = 1
 SYNTH_GRID := false // the synthwave chat backdrop, a capability flag
 PAPER_DECOR := false // drifting motes and hand-drawn boiling borders
+CHALK_DRAWN := false // board-grain surfaces and chalk marks throughout the UI
+AVATAR_ERASE := false // erase a photo cover instead of swivelling it
 SCANLINES := false // CRT scanlines and roll behind the conversation
 BACKDROP := "" // the named scene behind the conversation (decor.odin)
 BG_2 := clay.Color{} // second stop of the page wash, a == 0 means flat
@@ -423,6 +434,7 @@ default_pack :: proc() -> Theme_Pack {
 		preview_font = FONT_GALLERY_TITLE,
 		accent_names = {"Accent 1", "Accent 2", "Accent 3", "Accent 4", "Accent 5"},
 		r_scale = 1,
+		font_scale = 1,
 		saturation = 1,
 		border_w = 1,
 		glow_r = 3,

@@ -65,6 +65,9 @@ accent-base = [
 [style]
 saturation = 0
 noir = true
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
 backdrop = "image:film"
 font = "Manrope"
 font-title = "Noto Serif Display Condensed"

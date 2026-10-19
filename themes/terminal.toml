@@ -102,6 +102,9 @@ accent-surface = [
 [style]
 noir = false
 saturation = 1
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
 hard-shadow = false
 focus-glow = false
 motion-fast = true

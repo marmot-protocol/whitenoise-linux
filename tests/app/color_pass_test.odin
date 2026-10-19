@@ -13,12 +13,13 @@ whole_view_color_pass :: proc(t: ^testing.T) {
 	home, err := os.make_directory_temp("", "wn-color-pass", context.temp_allocator)
 	if !testing.expect(t, err == nil) {return}
 	defer os.remove_all(home)
-	old_saturation, old_noir := rl.Saturation, rl.Noir
-	defer {rl.Saturation = old_saturation; rl.Noir = old_noir}
+	old_saturation, old_noir, old_chalk := rl.Saturation, rl.Noir, rl.ChalkDrawn
+	defer {rl.Saturation = old_saturation; rl.Noir = old_noir; rl.ChalkDrawn = old_chalk}
 	old_frame := rl.NoirFrame
 	defer {rl.NoirFrame = old_frame}
 	rl.InitWindow(64, 32, "Whole-view color pass")
 	defer rl.CloseWindow()
+	rl.ChalkDrawn = false
 	rl.Noir = false
 	pixels := [16]u8{255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 128, 128, 128, 255}
 	image := rl.Image {

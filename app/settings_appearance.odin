@@ -12,6 +12,7 @@ APPEARANCE_CONTROLS := []struct {
 	{"ZoomMinus", "ZoomMinus", 0},
 	{"ZoomPlus", "ZoomPlus", 0},
 	{"ZoomReset", "ZoomReset", 0},
+	{"TgHandDrawn", "TgHandDrawn", 0},
 	{"BodyFontChip0", "BodyFontChip", 0},
 	{"BodyFontChip1", "BodyFontChip", 1},
 	{"BodyFontChip2", "BodyFontChip", 2},
@@ -145,7 +146,7 @@ appearance_control_input :: proc(ui: ^Ui_State, pressed: string) -> bool {
 		if pressed != entry.key && !(mouse_released() && clay.PointerOver(control)) {
 			continue
 		}
-		if entry.id == "TgMotion" || entry.id == "TgCentered" {
+		if entry.id == "TgMotion" || entry.id == "TgCentered" || entry.id == "TgHandDrawn" {
 			settings_flip(ui, nil, entry.id)
 		} else {
 			appearance_activate(ui, control)
@@ -301,6 +302,16 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 	}
 	if clay.UI(clay.ID("InterfaceGroup"))(settings_box()) {
 		settings_group(tr("Interface"))
+		if len(theme_packs) > 0 && theme_packs[preview_theme].chalk_drawn {
+			if clay.UI(clay.ID("RowHandDrawn"))(settings_row()) {
+				settings_check(
+					"TgHandDrawn",
+					!ui.prefs.hand_drawn_disabled,
+					tr("Hand-drawn filter"),
+					tr("Textured strokes and sketched avatars. Shapes stay fixed."),
+				)
+			}
+		}
 		if clay.UI(clay.ID("RowZoom"))(settings_row(true)) {
 			row_labels(tr("Interface zoom"), tr("Also Ctrl + / - / 0."))
 			if clay.UI(clay.ID("ZoomChoices"))(
@@ -443,6 +454,8 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 	}
 	settings_avatar_choices(ui)
 	for control in APPEARANCE_CONTROLS {
+		if control.id == "TgHandDrawn" &&
+		   (len(theme_packs) == 0 || !theme_packs[preview_theme].chalk_drawn) {continue}
 		append(&theme_control_order, control.key)
 	}
 	if clay.UI(clay.ID("ThemeActionsGroup"))(settings_box()) {

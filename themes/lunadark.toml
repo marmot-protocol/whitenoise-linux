@@ -1,10 +1,10 @@
 # Luna after dark: navy chrome and slate panels with the same raised edges.
+name = "Luna Dark"
 accent-name-1 = "Moonlit lime"
 accent-name-2 = "Night-chrome blue"
 accent-name-3 = "Moonrise rose"
 accent-name-4 = "Dusk apricot"
 accent-name-5 = "Moonlit lilac"
-name = "Luna Dark"
 
 [colors]
 bg = "#172033ff"
@@ -40,6 +40,9 @@ accent-base = [
 [style]
 noir = false
 saturation = 1
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
 bevel = true
 outline-surfaces = true
 motion-fast = true

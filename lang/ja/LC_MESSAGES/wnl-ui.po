@@ -674,6 +674,9 @@ msgstr "会話を中央に表示"
 msgid "Centred conversation"
 msgstr "会話を中央に配置"
 
+msgid "Chalk-drawn surfaces"
+msgstr "チョークで描いた背景"
+
 #, fuzzy
 msgid "Change disappearing messages?"
 msgstr "消えるメッセージ"
@@ -1830,6 +1833,9 @@ msgstr "このバックアップの作成時に使ったパスワードを入力
 msgid "Enter your password to unlock this device's keys."
 msgstr "この端末の鍵のロックを解除するには、パスワードを入力してください。"
 
+msgid "Erase avatar reveal"
+msgstr "消してアバターの下を表示"
+
 msgid "Error copied"
 msgstr "エラーをコピーしました"
 
@@ -1978,6 +1984,9 @@ msgstr "フォルダのルールに従う"
 msgid "Font"
 msgstr "フォント"
 
+msgid "Font scale"
+msgstr "文字の拡大率"
+
 msgid "Fonts"
 msgstr "フォント"
 
@@ -2096,6 +2105,9 @@ msgstr "フォルダ別"
 
 msgid "HIGHLIGHT"
 msgstr "ハイライト"
+
+msgid "Hand-drawn filter"
+msgstr "手描きフィルター"
 
 msgid "Hard shadows"
 msgstr "くっきりした影"
@@ -4116,6 +4128,9 @@ msgstr "テキスト（中）"
 #, c-format
 msgid "Text: %s"
 msgstr "本文: %s"
+
+msgid "Textured strokes and sketched avatars. Shapes stay fixed."
+msgstr "質感のある線とスケッチ風のアバターです。形は動きません。"
 
 msgid "That feels right."
 msgstr "ちょうどいい感じですね。"

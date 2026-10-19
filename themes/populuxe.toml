@@ -1,12 +1,12 @@
 # Sidecar by dmnyc: white stock over cream, motel lettering, teal and coral printing inks.
+# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/populuxe.css
+# Shared component roles: styles.css at the same pinned revision.
+name = "Populuxe"
 accent-name-1 = "Motel brass"
 accent-name-2 = "Diner teal"
 accent-name-3 = "Atomic orange"
 accent-name-4 = "Petrol enamel"
 accent-name-5 = "Coral sign"
-# https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/populuxe.css
-# Shared component roles: styles.css at the same pinned revision.
-name = "Populuxe"
 
 [colors]
 bg = "#fffdf9ff"
@@ -65,6 +65,9 @@ accent-base = [
 [style]
 noir = false
 saturation = 1
+avatar-erase = false
+font-scale = 1
+chalk-drawn = false
 backdrop = "image:circle-lattice"
 font = "Manrope"
 font-title = "Rowdies"
