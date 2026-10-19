@@ -6,6 +6,9 @@ import "core:strings"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
+@(private)
+CHAT_WIDTH_MAX :: f32(720)
+
 chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 	preview := ui.chat_preview_w > 0
 
@@ -207,6 +210,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 			layout = {
 				sizing = {clay.SizingGrow(), preview ? clay.SizingFit() : clay.SizingGrow()},
 				layoutDirection = .LeftToRight,
+				childAlignment = {x = .Center},
 			},
 		},
 		) {
@@ -221,20 +225,16 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 			} else if clay.UI(clay.ID("ChatColumn"))(
 			{
 				layout = {
-					sizing = {clay.SizingGrow(), preview ? clay.SizingFit() : clay.SizingGrow()},
+					sizing = {
+						ui.prefs.centered_chat ? clay.SizingGrow({max = CHAT_WIDTH_MAX}) : clay.SizingGrow(),
+						preview ? clay.SizingFit() : clay.SizingGrow(),
+					},
 					layoutDirection = .TopToBottom,
 				},
 			},
 			) {
 				// Timeline: a real scroll container, top-anchored.
 				// Loads jump to the newest message.
-				// Centred conversation pads to a ~720 reading measure.
-				side_pad := u16(0)
-				if ui.prefs.centered_chat {
-					if pane := page_w(ui); pane > 720 {
-						side_pad = u16((pane - 720) / 2)
-					}
-				}
 				// The thread route's push/pop transition: content slides
 				// home from a small offset.
 				cur := thread_cur(ui)
@@ -246,12 +246,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 							preview ? clay.SizingFit({min = 260}) : clay.SizingGrow(),
 						},
 						layoutDirection = .TopToBottom,
-						padding = {
-							left = side_pad + u16(thread_slide()),
-							right = side_pad,
-							top = 8,
-							bottom = 8,
-						},
+						padding = {left = u16(thread_slide()), top = 8, bottom = 8},
 						childGap = 2,
 					},
 					clip = {vertical = !preview, childOffset = clay.GetScrollOffset()},

@@ -463,6 +463,11 @@ render_segs :: proc(
 compose_wrap_w :: proc() -> f32 {
 	box := clay.GetElementData(clay.ID("ComposeClip"))
 	width := g_ui != nil ? page_w(g_ui) - 64 - CARET_W : 480
+	if g_ui != nil &&
+	   g_ui.prefs.centered_chat &&
+	   !(g_ui.issues_open && g_ui.issue_setting == .Enabled) {
+		width = min(width, CHAT_WIDTH_MAX - 64 - CARET_W)
+	}
 	if box.found &&
 	   box.boundingBox.width > CARET_W {width = min(width, box.boundingBox.width - CARET_W)}
 	return max(width, 1)
@@ -1428,6 +1433,9 @@ body_wrap_w :: proc() -> f32 {
 	}
 	avail := page_w(g_ui)
 	if g_ui.issues_open {avail = tl.boundingBox.width - (page_w(g_ui) < 720 ? 40 : 64)}
+	if g_ui.prefs.centered_chat && !(g_ui.issues_open && g_ui.issue_setting == .Enabled) {
+		avail = min(avail, CHAT_WIDTH_MAX)
+	}
 	return max(min(tl.boundingBox.width, avail) - MSG_ROW_CHROME, 120)
 }
 
