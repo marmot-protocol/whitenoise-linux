@@ -1220,12 +1220,12 @@ body_text :: proc(
 		if text_literal(fonts, at) {at += 1; continue}
 		// Keep the full token's byte range before splitting it into lines.
 		// Empty destinations draw plain text, not invalid partial references.
-		if mode != .Cards {
-			if next, _, _, ok := nevent_at(text[:end], at); ok {
+		if next, ref := nostr_at(text[:end], at); ref.kind != .None {
+			if mode != .Cards && (ref.kind == .Event || ref.kind == .Address) {
 				append(&runs, Inline_Link{start = at, end = next})
-				at = next
-				continue
 			}
+			at = next
+			continue
 		}
 		if end, url, ok := url_at(text[:end], at); ok {
 			append(&runs, Inline_Link{start = at, end = end, url = url})

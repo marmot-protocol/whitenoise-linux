@@ -147,6 +147,38 @@ nostr_reference_cases :: proc(t: ^testing.T) {
 	}
 }
 
+@(test)
+njump_references :: proc(t: ^testing.T) {
+	event := strings.trim_prefix(TEST_PRIMAL, "https://primal.net/e/")
+	_, payload, _ := bech32_decode(event)
+	profile := bech32_encode("nprofile", payload)
+	defer delete(profile)
+	for token in ([]string{event, "note1evtv9rerzqa6g6wt2pjuw9vhkkza2zq2p9qfn6aa4kdkrmumdpssy3nw7z", "npub1klkk3vrzme455yh9rl2jshq7rc8dpegj3ndf82c3ks2sk40dxt7qulx3vt", profile, TEST_NADDR}) {
+		_, expected := nostr_at(fmt.tprintf("nostr:%s", token), 0)
+		testing.expect(t, expected.kind != .None && expected.kind != .Invalid)
+		for prefix in ([]string{"https://njump.me/", "http://njump.me/"}) {
+			url := fmt.tprintf("%s%s", prefix, token)
+			text := fmt.tprintf("see (%s), next", url)
+			end, ref := nostr_at(text, 5)
+			testing.expect_value(t, end, 5 + len(url))
+			testing.expect_value(t, ref.kind, expected.kind)
+			testing.expect_value(t, ref.key, expected.key)
+			testing.expect_value(t, ref.author, expected.author)
+			testing.expect_value(t, ref.identifier, expected.identifier)
+			testing.expect_value(t, ref.event_kind, expected.event_kind)
+			testing.expect_value(t, ref.token, token)
+			testing.expect_value(t, len(ref.relays), len(expected.relays))
+			for relay, i in ref.relays {testing.expect_value(t, relay, expected.relays[i])}
+		}
+	}
+	for prefix in ([]string{"https://njump.me.evil/", "https://njump.me@evil/", "https://example.com/", "https://njump.me/other/"}) {
+		_, ref := nostr_at(fmt.tprintf("%s%s", prefix, TEST_NADDR), 0)
+		testing.expect_value(t, ref.kind, Nostr_Kind.None)
+	}
+	_, invalid := nostr_at("https://njump.me/nevent1qqqq", 0)
+	testing.expect_value(t, invalid.kind, Nostr_Kind.Invalid)
+}
+
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=mention_wrap_layout
 @(test)
 mention_wrap_layout :: proc(t: ^testing.T) {

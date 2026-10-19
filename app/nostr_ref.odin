@@ -39,6 +39,9 @@ nostr_at :: proc(text: string, at: int) -> (end: int, ref: Nostr_Ref) {
 		text[start:],
 		"https://primal.net/e/",
 	) {start += len("https://primal.net/e/")}
+	for p in ([]string{"https://njump.me/", "http://njump.me/"}) {
+		if strings.has_prefix(text[start:], p) {start += len(p); break}
+	}
 	prefix := ""
 	for p in ([]string{"npub1", "nprofile1", "note1", "nevent1", "naddr1"}) {
 		if len(text) - start >= len(p) &&
