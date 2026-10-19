@@ -35,7 +35,10 @@ fi
 export PATH="$ODIN:$PATH"
 
 bash "$HERE/scripts/build.sh"
-cargo test --manifest-path "$HERE/vendor/mdk/Cargo.toml" -p fs-private --lib
+# One thread: OpenBSD spawns by fork+exec, so a child forked by one test
+# briefly holds another test's flock lease after its owner drops it, and
+# the immediate reacquire fails with EWOULDBLOCK.
+cargo test --manifest-path "$HERE/vendor/mdk/Cargo.toml" -p fs-private --lib -- --test-threads=1
 cc -O2 -Wall -Wextra "$HERE/tests/ws-frame-test.c" \
   $(pkg-config --cflags --libs libcurl) -o "$HERE/build/ws-frame-test"
 "$HERE/build/ws-frame-test"
