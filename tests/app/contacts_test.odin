@@ -95,8 +95,13 @@ new_group_member_selection :: proc(t: ^testing.T) {
 
 @(test)
 new_chat_contact_filter :: proc(t: ^testing.T) {
-	context.allocator = context.temp_allocator
+	// Ordering inserts each row's alias into the process-global profile cache.
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	context.allocator = runtime.default_context().allocator
+	defer profile_session_clear()
 	ui: Ui_State
+	defer {delete(ui.nc_contacts); delete(ui.nicknames)}
 	append(
 		&ui.nc_contacts,
 		Contact_Ui {
