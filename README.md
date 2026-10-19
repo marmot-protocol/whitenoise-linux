@@ -77,12 +77,13 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 
 **Look & feel**
 
-- Thirty-one bundled themes and five accent colors, all data-driven from `themes/*.toml`. Each pack defines its accent labels with `accent-name-1` through `accent-name-5`, matching the order of `accent-base`. The theme editor preserves these labels. Drop your own pack in the data dir.
+- Thirty-three bundled themes and five accent colors, all data-driven from `themes/*.toml`. Each pack defines its accent labels with `accent-name-1` through `accent-name-5`, matching the order of `accent-base`. The theme editor preserves these labels. Drop your own pack in the data dir.
 - AMOLED uses pure black backgrounds, white text, and neutral gray controls and borders. All five accent colors remain available.
 - Settings > Appearance > Centred conversation centers the message timeline and composer in a column at most 720px wide. Narrower windows use the available width; turning it off restores full width.
 - Settings > Appearance puts controls, the theme gallery, and a live conversation preview side by side on wide windows. Medium windows put controls beside stacked themes and preview; all three panels scroll independently. Narrow windows stack them on one page. The preview uses the normal chat renderer with a fictional marmot conversation, not your messages or draft.
 - The theme gallery has separate Dark and Light views and collection headings. Hover over a tile to preview it. Leaving the tile or pressing Escape restores your theme; clicking saves the choice.
 - The Sidecar collection contains all 21 themes from [dmnyc's Sidecar](https://github.com/dmnyc/sidecar). Selecting one shows its source credit on the page and the selected tile. Collection headings have no links.
+- Royale and Royale Dark use XP Royale's blue chrome with pearl or charcoal surfaces and bevelled controls.
 - Terminal uses a fixed green accent and hides its accent chooser.
 - Button text derives separately for each accent color using sRGB contrast. Custom packs can set `on-accent` to override the text color for all five accents.
 - English, Italian, German, and Japanese, switchable at runtime, including search dialogs, theme notifications, and confirmation errors.
