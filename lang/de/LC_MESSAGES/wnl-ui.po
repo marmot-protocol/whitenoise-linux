@@ -3671,6 +3671,9 @@ msgstr "Archivierte Chats durchsuchen..."
 msgid "Search contacts..."
 msgstr "Kontakte durchsuchen..."
 
+msgid "Search emoji..."
+msgstr "Emoji suchen..."
+
 msgid "Search everywhere"
 msgstr "Überall suchen"
 

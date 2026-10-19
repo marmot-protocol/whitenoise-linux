@@ -76,5 +76,7 @@ po_catalogs :: proc(t: ^testing.T) {
 		testing.expect(t, len(out) > 150, "catalog too small")
 		_, ok := out["Launch at login"]
 		testing.expect(t, ok, "missing a settings msgid")
+		_, search_ok := out["Search emoji..."]
+		testing.expect(t, search_ok, "missing the emoji picker search placeholder")
 	}
 }
