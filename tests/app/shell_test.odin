@@ -174,9 +174,9 @@ test_settings_escape :: proc(t: ^testing.T) {
 	testing.expect(t, ui.focus == .Compose && len(ui.settings_search) == 0)
 	testing.expect(t, ui.settings_section == .Appearance && ui.settings_level == .Sheet)
 	press_escape(&ui, &client)
-	testing.expect(t, ui.settings_section == .Appearance && ui.settings_level == .Menu)
-	press_escape(&ui, &client)
 	testing.expect_value(t, ui.settings_section, Settings_Section.Home)
+	press_escape(&ui, &client)
+	testing.expect_value(t, ui.page, Page.Chats)
 }
 
 @(test)

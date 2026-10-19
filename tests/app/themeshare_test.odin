@@ -97,6 +97,11 @@ test_theme_edit_round_trip :: proc(t: ^testing.T) {
 		delete(ui.theme_fields)
 	}
 	set(&ui, .Name, "My Theme")
+	set(&ui, .Accent_Name_1, "Copper")
+	set(&ui, .Accent_Name_2, "Glacier", 1)
+	set(&ui, .Accent_Name_3, "Lime", 2)
+	set(&ui, .Accent_Name_4, "Ember", 3)
+	set(&ui, .Accent_Name_5, "Heather", 4)
 	set(&ui, .Bg, "#101018")
 	set(&ui, .Bg_2, "#202030")
 	set(&ui, .Text_Hi, "#f0f0f0")
@@ -111,13 +116,18 @@ test_theme_edit_round_trip :: proc(t: ^testing.T) {
 	testing.expect_value(t, theme_offer_name(toml), "My Theme")
 
 	pack := parse_theme("My Theme", "mytheme", toml, default_pack())
-	defer delete(pack.font)
+	defer {delete(pack.font); for label in pack.accent_names {delete(label)}}
 	testing.expect_value(t, pack.bg, [4]f32{16, 16, 24, 255})
 	testing.expect_value(t, pack.bg_2, [4]f32{32, 32, 48, 255})
 	testing.expect_value(t, pack.text_hi, [4]f32{240, 240, 240, 255})
 	testing.expect_value(t, pack.overlay, [4]f32{18, 52, 86, 120})
 	testing.expect_value(t, pack.r_scale, f32(0.75))
 	testing.expect_value(t, pack.font, "Example Font")
+	testing.expect_value(
+		t,
+		pack.accent_names,
+		[5]string{"Copper", "Glacier", "Lime", "Ember", "Heather"},
+	)
 	testing.expect_value(t, pack.accent_base[0], [4]f32{255, 136, 0, 255})
 	// Three picks fill five ramps: a slot left blank repeats the first,
 	// so no accent is ever black.
@@ -160,7 +170,8 @@ test_builtin_packs_legible :: proc(t: ^testing.T) {
 	// or retain a test-arena allocation in the process-global theme registry.
 	for source in THEME_SOURCES {
 		pack := parse_theme(source.name, source.mode, source.source, default_pack())
-		defer {delete(pack.font); delete(pack.font_title); delete(pack.backdrop)}
+		defer {delete(pack.font); delete(pack.font_title); delete(pack.backdrop)
+			for label in pack.accent_names {delete(label)}}
 		gap := abs(lum(pack.text_hi) - lum(pack.bg))
 		testing.expectf(t, gap >= 0.35, "%s: text and background are too close", pack.name)
 		// A magenta channel triple is what parse_hex_color returns for
@@ -220,7 +231,8 @@ test_ink_on_reads_on_any_fill :: proc(t: ^testing.T) {
 	// Use only the embedded sources: custom packs may explicitly opt out.
 	for source in THEME_SOURCES {
 		pack := parse_theme(source.name, source.mode, source.source, default_pack())
-		defer {delete(pack.font); delete(pack.font_title); delete(pack.backdrop)}
+		defer {delete(pack.font); delete(pack.font_title); delete(pack.backdrop)
+			for label in pack.accent_names {delete(label)}}
 		for fill, slot in pack.accent_base {
 			ratio := theme_test_contrast(pack.on_accent[slot], fill)
 			testing.expectf(t, ratio >= 4.5, "%s slot %d reads at %.2f:1", pack.name, slot, ratio)

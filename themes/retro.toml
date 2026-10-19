@@ -1,4 +1,9 @@
 name = "Retro"
+accent-name-1 = "Coin gold"
+accent-name-2 = "Arcade blue"
+accent-name-3 = "Pixel pink"
+accent-name-4 = "Power-up orange"
+accent-name-5 = "Sprite lilac"
 
 [colors]
 bg = "#0d0d28ff"

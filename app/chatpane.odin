@@ -6,11 +6,16 @@ import "core:strings"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
-chat_pane :: proc(ui: ^Ui_State) {
-	chat := ui.chats[ui.selected]
+chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
+	preview := ui.chat_preview_w > 0
 
 	if clay.UI(clay.ID("ChatPane"))(
-	{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom}},
+	{
+		layout = {
+			sizing = {clay.SizingGrow(), preview ? clay.SizingFit() : clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+		},
+	},
 	) {
 		if open_now(clay.ID("CtxMenu"), ui.ctx_open) &&
 		   ui.ctx_msg >= 0 &&
@@ -200,7 +205,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("ChatBody"))(
 		{
 			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				sizing = {clay.SizingGrow(), preview ? clay.SizingFit() : clay.SizingGrow()},
 				layoutDirection = .LeftToRight,
 			},
 		},
@@ -216,7 +221,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 			} else if clay.UI(clay.ID("ChatColumn"))(
 			{
 				layout = {
-					sizing = {clay.SizingGrow(), clay.SizingGrow()},
+					sizing = {clay.SizingGrow(), preview ? clay.SizingFit() : clay.SizingGrow()},
 					layoutDirection = .TopToBottom,
 				},
 			},
@@ -236,7 +241,10 @@ chat_pane :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("Timeline"))(
 				{
 					layout = {
-						sizing = {clay.SizingGrow(), clay.SizingGrow()},
+						sizing = {
+							clay.SizingGrow(),
+							preview ? clay.SizingFit({min = 260}) : clay.SizingGrow(),
+						},
 						layoutDirection = .TopToBottom,
 						padding = {
 							left = side_pad + u16(thread_slide()),
@@ -246,7 +254,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 						},
 						childGap = 2,
 					},
-					clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+					clip = {vertical = !preview, childOffset = clay.GetScrollOffset()},
 					// The theme's decor scene: clay emits the Custom
 					// command before the children, so it paints behind
 					// the messages.
@@ -319,7 +327,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 								{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
 							)
 						}
-					} else if len(ui.messages) == 0 && len(ui.pending) == 0 {
+					} else if len(messages) == 0 && len(ui.pending) == 0 {
 						empty_timeline(ui)
 					}
 					// The thread route filters the one timeline: the main
@@ -332,7 +340,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 					run: Msg_Run
 					wrap_w := body_wrap_w()
 					blocked_at := -1 // first row of the blocked run in progress
-					for msg, i in ui.messages {
+					for msg, i in messages {
 						if msg.thread_of != cur {
 							continue
 						}
@@ -383,7 +391,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 								) {}
 							}
 						}
-						if i == 0 || msg.day != ui.messages[i - 1].day {
+						if i == 0 || msg.day != messages[i - 1].day {
 							run = {}
 							blocked_at = -1
 							if clay.UI(clay.ID("DayMarker", u32(i)))(
@@ -421,7 +429,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 									ui.blocked_open[msg.id],
 								)
 							}
-							if !ui.blocked_open[ui.messages[blocked_at].id] {continue}
+							if !ui.blocked_open[messages[blocked_at].id] {continue}
 						}
 						head := msg_run_step(&run, msg, wrap_w)
 						if timeline_skip(ui, msg) {
@@ -1987,7 +1995,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 			}
 			scrollbar(clay.ID("StagedRow"))
 		}
-		if voice.stream != nil {
+		if ui.chat_preview_w == 0 && voice.stream != nil {
 			voice_bar()
 		} else if clay.UI(clay.ID("ComposeBox"))(
 		{
@@ -2038,7 +2046,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 					},
 				},
 				) {
-					if len(ui.compose) == 0 && len(rl.Preedit()) == 0 {
+					if len(ui.compose) == 0 && (ui.chat_preview_w > 0 || len(rl.Preedit()) == 0) {
 						compose_view.row = 0
 						if clay.UI(clay.ID("ComposeLine", 0))(
 						{layout = {childGap = 1, childAlignment = {y = .Center}}},

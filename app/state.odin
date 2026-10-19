@@ -11,8 +11,6 @@ import marmot "../marmot"
 
 // Palette globals, filled from the active Theme_Pack (themes/*.toml
 // packs, embedded and parsed in theme.odin).
-ACCENT_NAMES := [5]string{N_("Mint"), N_("Ocean"), N_("Berry"), N_("Coral"), N_("Lavender")}
-
 BG := clay.Color{6, 7, 8, 255}
 CARD := clay.Color{15, 19, 24, 255}
 CARD_BORDER := clay.Color{20, 24, 29, 255}
@@ -541,6 +539,7 @@ Ui_State :: struct {
 	sticker_focus:                                         int,
 	sticker_page:                                          Sticker_Page,
 	timeline_metric:                                       [4]f32,
+	chat_preview_w:                                        f32, // isolated Appearance chat viewport; zero for real chats
 	messages_group, messages_account:                      string,
 	account_ref:                                           string, // active account's full hex; "" when logged out
 	account_ids:                                           [dynamic]string, // full hex per switcher row

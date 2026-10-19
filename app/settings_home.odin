@@ -315,7 +315,7 @@ settings_task_matches :: proc(ui: ^Ui_State, task: Settings_Task, query: string)
 // straight onto their sheet instead of a menu with one entry.
 @(private)
 settings_has_menu :: proc(section: Settings_Section) -> bool {
-	if section == .Home {return false}
+	if section == .Home || section == .Appearance {return false}
 	count := 0
 	for task in SETTINGS_TASKS {
 		if task.section == section {count += 1}
@@ -829,8 +829,8 @@ settings_home :: proc(ui: ^Ui_State) {
 	}
 }
 
-// A task link (anchor set) or a single-task section lands on the sheet;
-// a bare category opens on its menu.
+// Task links, single-task sections and the Appearance workbench open directly;
+// other bare categories open on their menu.
 @(private)
 settings_open :: proc(
 	ui: ^Ui_State,
@@ -845,7 +845,8 @@ settings_open :: proc(
 	ui.agent_connector = 0
 	level := level
 	if anchor != "" || !settings_has_menu(section) {level = .Sheet}
-	target_tab := anchor == "" ? tab : settings_target_tab(section, anchor)
+	target_tab :=
+		section == .Appearance ? 0 : (anchor == "" ? tab : settings_target_tab(section, anchor))
 	if section == .Appearance && level == .Sheet && target_tab == 0 && len(theme_packs) > 0 {
 		ui.theme_tone = theme_packs[active_theme(ui)].tone
 	}
@@ -1032,8 +1033,18 @@ settings_handle_navigation :: proc(ui: ^Ui_State, client: ^marmot.Client) -> boo
 @(private)
 settings_resolve_scroll :: proc(ui: ^Ui_State) -> bool {
 	if ui.page != .Settings || !ui.settings_scroll_pending {return false}
-	data := clay.GetScrollContainerData(clay.ID("SettingsPage"))
-	page := clay.GetElementData(clay.ID("SettingsPage"))
+	container := clay.ID("SettingsPage")
+	if ui.settings_section == .Appearance && appearance_layout(ui).columns > 1 {
+		container = appearance_scroll(ui, clay.ID(ui.settings_anchor))
+		for id in ([4]string{"SettingsPage", "AppearanceControls", "AppearanceThemes", "AppearancePreview"}) {
+			if clay.ID(id).id == container.id {continue}
+			if scroll := clay.GetScrollContainerData(clay.ID(id)); scroll.found {
+				scroll.scrollPosition^ = {}
+			}
+		}
+	}
+	data := clay.GetScrollContainerData(container)
+	page := clay.GetElementData(container)
 	if !data.found || !page.found {return false}
 	target: f32
 	if ui.settings_anchor != "" {

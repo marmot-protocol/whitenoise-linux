@@ -1,4 +1,9 @@
 name = "Terminal"
+accent-name-1 = "Phosphor green"
+accent-name-2 = "Phosphor green"
+accent-name-3 = "Phosphor green"
+accent-name-4 = "Phosphor green"
+accent-name-5 = "Phosphor green"
 
 [colors]
 bg = "#0a0e0aff"
@@ -60,38 +65,38 @@ avatar-ring = "#ffffff20"
 selected-uses-base = false
 accent-base = [
     "#33ff66ff",
-    "#33ccffff",
-    "#ff66aaff",
-    "#ffaa33ff",
-    "#bb88ffff",
+    "#33ff66ff",
+    "#33ff66ff",
+    "#33ff66ff",
+    "#33ff66ff",
 ]
 accent-hi = [
     "#66ff99ff",
-    "#66ddffff",
-    "#ff99ccff",
-    "#ffcc66ff",
-    "#ccaaffff",
+    "#66ff99ff",
+    "#66ff99ff",
+    "#66ff99ff",
+    "#66ff99ff",
 ]
 accent-dim = [
     "#22aa44ff",
-    "#2299ccff",
-    "#cc4488ff",
-    "#cc8822ff",
-    "#8866ccff",
+    "#22aa44ff",
+    "#22aa44ff",
+    "#22aa44ff",
+    "#22aa44ff",
 ]
 accent-glow = [
     "#33ff6618",
-    "#33ccff18",
-    "#ff66aa18",
-    "#ffaa3318",
-    "#bb88ff18",
+    "#33ff6618",
+    "#33ff6618",
+    "#33ff6618",
+    "#33ff6618",
 ]
 accent-surface = [
     "#0e2614ff",
-    "#0a1e2eff",
-    "#2e0e1eff",
-    "#2e200aff",
-    "#1a0e2eff",
+    "#0e2614ff",
+    "#0e2614ff",
+    "#0e2614ff",
+    "#0e2614ff",
 ]
 
 [style]

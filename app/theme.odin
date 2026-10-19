@@ -97,6 +97,7 @@ Theme_Pack :: struct {
 	media_chip_outline, media_control_bg:                   clay.Color,
 	accent_base, accent_hi, accent_dim:                     [5]clay.Color,
 	accent_surface, accent_glow:                            [5]clay.Color,
+	accent_names:                                           [5]string,
 	// [style] structural metrics, the capability flags this renderer
 	// honours, and the motion durations.
 	r_scale, border_w, glow_r, shadow_y, bubble_r:          f32,
@@ -121,6 +122,11 @@ Theme_Token :: enum {
 	Font,
 	Font_Title,
 	Backdrop,
+	Accent_Name_1,
+	Accent_Name_2,
+	Accent_Name_3,
+	Accent_Name_4,
+	Accent_Name_5,
 	Bg,
 	Bg_2,
 	Panel,
@@ -219,6 +225,27 @@ THEME_TOKENS := [Theme_Token]Theme_Token_Descriptor {
 	.Font                  = {"font", .Text, offset_of(Theme_Pack, font)},
 	.Font_Title            = {"font-title", .Text, offset_of(Theme_Pack, font_title)},
 	.Backdrop              = {"backdrop", .Text, offset_of(Theme_Pack, backdrop)},
+	.Accent_Name_1         = {"accent-name-1", .Text, offset_of(Theme_Pack, accent_names)},
+	.Accent_Name_2         = {
+		"accent-name-2",
+		.Text,
+		offset_of(Theme_Pack, accent_names) + size_of(string),
+	},
+	.Accent_Name_3         = {
+		"accent-name-3",
+		.Text,
+		offset_of(Theme_Pack, accent_names) + 2 * size_of(string),
+	},
+	.Accent_Name_4         = {
+		"accent-name-4",
+		.Text,
+		offset_of(Theme_Pack, accent_names) + 3 * size_of(string),
+	},
+	.Accent_Name_5         = {
+		"accent-name-5",
+		.Text,
+		offset_of(Theme_Pack, accent_names) + 4 * size_of(string),
+	},
 	.Bg                    = {"bg", .Color, offset_of(Theme_Pack, bg)},
 	.Bg_2                  = {"bg-2", .Color, offset_of(Theme_Pack, bg_2)},
 	.Panel                 = {"panel", .Color, offset_of(Theme_Pack, panel)},
@@ -386,6 +413,7 @@ parse_hex_color :: proc(value: string) -> clay.Color {
 default_pack :: proc() -> Theme_Pack {
 	return {
 		preview_font = FONT_GALLERY_TITLE,
+		accent_names = {"Accent 1", "Accent 2", "Accent 3", "Accent 4", "Accent 5"},
 		r_scale = 1,
 		border_w = 1,
 		glow_r = 3,

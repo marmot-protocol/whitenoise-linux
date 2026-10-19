@@ -1,4 +1,9 @@
 name = "AMOLED"
+accent-name-1 = "OLED white"
+accent-name-2 = "OLED white"
+accent-name-3 = "OLED white"
+accent-name-4 = "OLED white"
+accent-name-5 = "OLED white"
 
 [colors]
 bg = "#000000ff"

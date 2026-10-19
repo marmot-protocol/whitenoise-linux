@@ -224,21 +224,51 @@ theme_gallery_interactions :: proc(t: ^testing.T) {
 	clay.SetPointerState({-10, -10}, false)
 	kb_focus = ""
 	last_focus := fmt.tprintf("ThemeOpt%d", custom_index)
-	for _ in 0 ..< len(theme_packs) + 20 {
+	control_focus := []string {
+		"ZoomPlus",
+		"BodyFontChip0",
+		"EmojiSetChip0",
+		"ScrollChip0",
+		"TgMotion",
+		"TgCentered",
+		"MessageLinesPlus",
+		"AvatarShapeChip0",
+		"CropShapeChip0",
+		"ThemeShareBtn",
+		"ThemeToneDark",
+		"ThemeToneLight",
+	}
+	visited := make([]bool, len(control_focus), context.temp_allocator)
+	for _ in 0 ..< 256 {
 		rl.PushKey(.TAB, true)
 		handle_settings(&ui, nil)
 		rl.PushKey(.TAB, false)
 		gallery_frames(&ui)
-		if kb_focus == last_focus {break}
+		for key, i in control_focus {
+			if kb_focus == key {visited[i] = true}
+		}
+		all_controls := true
+		for seen in visited {all_controls = all_controls && seen}
+		if kb_focus == last_focus && all_controls {break}
+	}
+	for key, i in control_focus {
+		testing.expectf(
+			t,
+			visited[i],
+			"Tab must reach %s in the same Appearance workbench as the gallery",
+			key,
+		)
 	}
 	testing.expect(t, kb_focus == last_focus, "Tab must reach the final custom tile")
 	focused := clay.GetElementData(clay.ID("ThemeOpt", u32(custom_index))).boundingBox
-	focus_page := clay.GetElementData(clay.ID("SettingsPage")).boundingBox
-	testing.expect(
+	focus_page := clay.GetElementData(settings_test_gallery_scroll_id()).boundingBox
+	testing.expectf(
 		t,
-		focused.y >= focus_page.y &&
-		focused.y + focused.height <= focus_page.y + focus_page.height,
-		"Keyboard traversal must reveal the focused tile inside the page",
+		focused.y >= focus_page.y - 0.1 &&
+		focused.y + focused.height <= focus_page.y + focus_page.height + 0.1,
+		"Keyboard traversal must reveal the focused tile %v inside its gallery scroll viewport %v",
+		focused,
+		focus_page,
 	)
 	rl.PushKey(.ENTER, true)
 	handle_settings(&ui, nil)
@@ -249,21 +279,26 @@ theme_gallery_interactions :: proc(t: ^testing.T) {
 	for size in ([]struct {
 			w, h: i32,
 			zoom: f32,
-		}{{390, 360, 1}, {740, 500, 1}, {1440, 1000, 1.5}}) {
+		}{{390, 360, 1}, {740, 500, 1}, {1440, 1000, 1.5}, {2560, 1080, 1}, {3440, 1440, 1}, {2560, 1080, 2}, {1440, 1000, 2}, {2560, 480, 1}}) {
 		rl.SetWindowSize(size.w, size.h)
 		UI_ZOOM = size.zoom
 		viewport := clay.Dimensions{f32(size.w) / UI_ZOOM, f32(size.h) / UI_ZOOM}
 		clay.SetLayoutDimensions(viewport)
-		settings_open(&ui, nil, .Appearance, anchor = "RowTheme")
+		ui.theme = native
+		apply_theme(ui.theme, ui.accent)
+		settings_open(&ui, nil, .Appearance)
 		ui.theme_tone = custom.tone
 		gallery_frames(&ui)
-		page := clay.GetElementData(clay.ID("SettingsPage")).boundingBox
+		settings_test_appearance_panels(t)
+		page := clay.GetElementData(settings_test_gallery_scroll_id()).boundingBox
 		for pack, i in theme_packs {
 			if pack.tone != ui.theme_tone {continue}
 			box := clay.GetElementData(clay.ID("ThemeOpt", u32(i))).boundingBox
 			testing.expect(
 				t,
-				box.width > 0 && box.x >= page.x && box.x + box.width <= page.x + page.width,
+				box.width > 0 &&
+				box.x >= page.x - 0.1 &&
+				box.x + box.width <= page.x + page.width + 0.1,
 				"Responsive gallery rows must keep every tile inside the available sheet width",
 			)
 		}
@@ -279,8 +314,8 @@ theme_gallery_interactions :: proc(t: ^testing.T) {
 		testing.expect(
 			t,
 			tile.found &&
-			box.x >= page.x &&
-			box.x + box.width <= page.x + page.width &&
+			box.x >= page.x - 0.1 &&
+			box.x + box.width <= page.x + page.width + 0.1 &&
 			box.y >= page.y &&
 			box.y + box.height <= page.y + page.height,
 			"Wheel scrolling must expose the complete final tile at narrow, short and zoomed sizes",
@@ -289,8 +324,54 @@ theme_gallery_interactions :: proc(t: ^testing.T) {
 		testing.expect(
 			t,
 			clay.PointerOver(clay.ID("ThemeOpt", u32(custom_index))),
-			"The final tile must remain reachable through the page clip",
+			"The final tile must remain reachable through its gallery viewport clip",
 		)
+		forced_release = true
+		handle_settings(&ui, nil)
+		forced_release = false
+		gallery_frames(&ui)
+		testing.expect(
+			t,
+			ui.theme == custom_index &&
+			!ui.theme_preview_active &&
+			clay.GetElementData(clay.ID("ThemeOptCheck", u32(custom_index))).found,
+			"Clicking the wheel-revealed final tile must commit it at every viewport size",
+		)
+		if settings_test_appearance_wide() {
+			ui.theme = native
+			apply_theme(ui.theme, ui.accent)
+			settings_open(&ui, nil, .Appearance)
+			ui.theme_tone = custom.tone
+			gallery_frames(&ui)
+			clay.SetPointerState({-10, -10}, false)
+			kb_focus = ""
+			for _ in 0 ..< 256 {
+				rl.PushKey(.TAB, true)
+				handle_settings(&ui, nil)
+				rl.PushKey(.TAB, false)
+				gallery_frames(&ui)
+				if kb_focus == last_focus {break}
+			}
+			focused_tile := clay.GetElementData(clay.ID("ThemeOpt", u32(custom_index))).boundingBox
+			gallery_clip := clay.GetElementData(settings_test_gallery_scroll_id()).boundingBox
+			testing.expect(
+				t,
+				kb_focus == last_focus &&
+				focused_tile.y >= gallery_clip.y &&
+				focused_tile.y + focused_tile.height <= gallery_clip.y + gallery_clip.height,
+				"Wide keyboard traversal must reveal the final tile inside the independently scrolling gallery",
+			)
+			rl.PushKey(.ENTER, true)
+			handle_settings(&ui, nil)
+			rl.PushKey(.ENTER, false)
+			gallery_frames(&ui)
+			testing.expect(
+				t,
+				ui.theme == custom_index,
+				"Enter must commit the final tile in the wide workbench",
+			)
+			kb_focus = ""
+		}
 	}
 }
 
@@ -301,7 +382,7 @@ gallery_frames :: proc(ui: ^Ui_State) {
 
 @(private)
 gallery_point :: proc(ui: ^Ui_State, id: clay.ElementId) {
-	scroll_into_view(clay.ID("SettingsPage"), id)
+	scroll_into_view(settings_test_gallery_scroll_id(), id)
 	gallery_frames(ui)
 	box := clay.GetElementData(id).boundingBox
 	clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)

@@ -279,6 +279,7 @@ fit_w :: proc(w: f32, margin: f32 = 12) -> f32 {
 
 // Match the actual shell allocation, including the draggable separator.
 page_w :: proc(ui: ^Ui_State) -> f32 {
+	if ui.chat_preview_w > 0 {return ui.chat_preview_w}
 	width := f32(rl.GetScreenWidth()) / UI_ZOOM
 	if single_pane() {
 		return phone_detail(ui) ? width : 0

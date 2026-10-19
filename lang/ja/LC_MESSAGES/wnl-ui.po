@@ -2139,8 +2139,14 @@ msgstr "ホバー ms"
 msgid "How far the mouse wheel moves the view."
 msgstr "マウスホイールで表示が移動する量です。"
 
+msgid "I did. Very important marmot business."
+msgstr "私です。大事なマーモットのお仕事です。"
+
 msgid "I have an nsec"
 msgstr "nsecを持っています"
+
+msgid "I packed snacks for the expedition. 🥕"
+msgstr "探検のおやつを持ってきました。🥕"
 
 msgid "ICON"
 msgstr "アイコン"
@@ -2564,6 +2570,9 @@ msgstr "未読にする"
 
 msgid "Marmot"
 msgstr "マーモット"
+
+msgid "Marmot meadow"
+msgstr "マーモットの草原"
 
 msgid "Match all rules"
 msgstr "すべてのルールに一致"
@@ -3072,6 +3081,9 @@ msgstr "連絡先"
 
 msgid "People can't invite you"
 msgstr "ほかの人があなたを招待できません"
+
+msgid "Perfect. Wake me up when it's spring."
+msgstr "最高です。春になったら起こしてください。"
 
 msgid "Pets"
 msgstr "ペット"
@@ -3992,6 +4004,9 @@ msgstr "管理者を辞める"
 msgid "Step down as admin?"
 msgstr "管理者を辞めますか？"
 
+msgid "Step one: find a warm rock. Step two: become one."
+msgstr "まず、暖かい岩を見つけます。次に、自分も岩になります。"
+
 msgid "Sticker"
 msgstr "ステッカー"
 
@@ -4527,6 +4542,9 @@ msgstr "White Noise があなたの秘密鍵を見ることはありません。
 #, c-format
 msgid "White Noise · %d unread"
 msgstr "White Noise · 未読%d件"
+
+msgid "Who put a sun lounger outside the burrow?"
+msgstr "巣穴の前にデッキチェアを置いたのは誰ですか？"
 
 msgid "Wireframe"
 msgstr "ワイヤーフレーム"

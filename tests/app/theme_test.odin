@@ -13,6 +13,11 @@ theme_hex_color :: proc(t: ^testing.T) {
 }
 
 TEST_THEME :: `name = "Test"
+accent-name-1 = "Coin gold"
+accent-name-2 = "Pixel blue"
+accent-name-3 = "Arcade pink"
+accent-name-4 = "Sunset orange"
+accent-name-5 = "Orchid"
 
 [colors]
 bg = "#010203ff"
@@ -35,10 +40,16 @@ border-w = 2.0
 @(test)
 theme_parse :: proc(t: ^testing.T) {
 	pack := parse_theme("Test", "test", TEST_THEME, default_pack())
+	defer {for label in pack.accent_names {delete(label)}}
 	testing.expect_value(t, pack.bg, [4]f32{1, 2, 3, 255})
 	testing.expect_value(t, pack.text_hi, [4]f32{244, 239, 221, 255})
 	testing.expect_value(t, pack.accent_base[1], [4]f32{107, 140, 255, 255})
 	testing.expect_value(t, pack.accent_base[4], [4]f32{201, 160, 220, 255})
+	testing.expect_value(
+		t,
+		pack.accent_names,
+		[5]string{"Coin gold", "Pixel blue", "Arcade pink", "Sunset orange", "Orchid"},
+	)
 	testing.expect_value(t, pack.r_scale, f32(0))
 	testing.expect_value(t, pack.border_w, f32(2))
 	testing.expect(t, pack.pixel_metrics)
@@ -48,17 +59,25 @@ theme_parse :: proc(t: ^testing.T) {
 @(test)
 theme_inherit :: proc(t: ^testing.T) {
 	base := parse_theme("Base", "base", TEST_THEME, default_pack())
+	defer {for label in base.accent_names {delete(label)}}
 	child := parse_theme(
 		"Child",
 		"child",
-		"base = \"base\"\n\n[colors]\nbg = \"#050607ff\"\n",
+		"base = \"base\"\naccent-name-3 = \"Rose\"\n\n[colors]\nbg = \"#050607ff\"\n",
 		base,
 	)
+	defer delete(child.accent_names[2])
 
 	// Overridden key takes; everything else rides the base.
 	testing.expect_value(t, child.bg, [4]f32{5, 6, 7, 255})
 	testing.expect_value(t, child.text_hi, base.text_hi)
 	testing.expect_value(t, child.accent_base[2], base.accent_base[2])
+	testing.expect_value(
+		t,
+		child.accent_names,
+		[5]string{"Coin gold", "Pixel blue", "Rose", "Sunset orange", "Orchid"},
+	)
+	testing.expect_value(t, base.accent_names[2], "Arcade pink")
 	testing.expect_value(t, child.r_scale, f32(0))
 	testing.expect(t, child.pixel_metrics)
 	testing.expect_value(t, child.name, "Child")
@@ -158,6 +177,7 @@ theme_accent_inheritance :: proc(t: ^testing.T) {
 `
 	base := parse_theme("Base", "base", TEST_THEME, default_pack())
 	child := parse_theme("Child", "child", "base = \"base\"\n" + ACCENTS, base)
+	defer {for label in base.accent_names {delete(label)}}
 	grandchild := parse_theme("Grandchild", "grandchild", "base = \"child\"\n", child)
 	for pack in ([2]Theme_Pack{child, grandchild}) {
 		for fill, slot in pack.accent_base {

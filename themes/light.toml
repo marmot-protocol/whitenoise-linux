@@ -1,4 +1,9 @@
 name = "Light"
+accent-name-1 = "Jade green"
+accent-name-2 = "Harbor blue"
+accent-name-3 = "Raspberry rose"
+accent-name-4 = "Burnt orange"
+accent-name-5 = "Iris violet"
 
 [colors]
 bg = "#f6f2eaff"

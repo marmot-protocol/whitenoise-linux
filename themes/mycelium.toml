@@ -1,4 +1,9 @@
 # Sidecar by dmnyc: oat paper and loam, moss ink, eucalyptus and fly-agaric red.
+accent-name-1 = "Moss ink"
+accent-name-2 = "Chanterelle ochre"
+accent-name-3 = "Forest-floor green"
+accent-name-4 = "Eucalyptus leaf"
+accent-name-5 = "Fly-agaric red"
 # https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/mycelium.css
 # Shared component roles: styles.css at the same pinned revision.
 name = "Mycelium"

@@ -2139,8 +2139,14 @@ msgstr "Hover ms"
 msgid "How far the mouse wheel moves the view."
 msgstr "Wie weit das Mausrad die Ansicht bewegt."
 
+msgid "I did. Very important marmot business."
+msgstr "Ich. Sehr wichtige Murmeltierangelegenheiten."
+
 msgid "I have an nsec"
 msgstr "Ich habe einen nsec"
+
+msgid "I packed snacks for the expedition. 🥕"
+msgstr "Ich habe Proviant für die Expedition eingepackt. 🥕"
 
 msgid "ICON"
 msgstr "SYMBOL"
@@ -2564,6 +2570,9 @@ msgstr "Als ungelesen markieren"
 
 msgid "Marmot"
 msgstr "Murmeltier"
+
+msgid "Marmot meadow"
+msgstr "Murmeltierwiese"
 
 msgid "Match all rules"
 msgstr "Alle Regeln erfüllen"
@@ -3072,6 +3081,9 @@ msgstr "Kontakte"
 
 msgid "People can't invite you"
 msgstr "Andere können dich nicht einladen"
+
+msgid "Perfect. Wake me up when it's spring."
+msgstr "Perfekt. Weck mich, wenn es Frühling ist."
 
 msgid "Pets"
 msgstr "Haustiere"
@@ -3992,6 +4004,9 @@ msgstr "Zurücktreten"
 msgid "Step down as admin?"
 msgstr "Als Admin zurücktreten?"
 
+msgid "Step one: find a warm rock. Step two: become one."
+msgstr "Schritt eins: einen warmen Felsen finden. Schritt zwei: selbst einer werden."
+
 msgid "Sticker"
 msgstr "Sticker"
 
@@ -4527,6 +4542,9 @@ msgstr "White Noise sieht deinen privaten Schlüssel nie. Er liegt nur auf diese
 #, c-format
 msgid "White Noise · %d unread"
 msgstr "White Noise · %d ungelesen"
+
+msgid "Who put a sun lounger outside the burrow?"
+msgstr "Wer hat die Sonnenliege vor den Bau gestellt?"
 
 msgid "Wireframe"
 msgstr "Drahtgitter"

@@ -309,7 +309,7 @@ crop_circle_layout :: proc(t: ^testing.T) {
 		)
 		anim_tick(1.0 / 60)
 		clay.BeginLayout()
-		chat_pane(&ui)
+		chat_pane(&ui, ui.chats[ui.selected], ui.messages[:])
 		_ = clay.EndLayout(0)
 		avatar := clay.ID("ChatHeadAvatar", 0)
 		reveal := clay.GetElementData(clay.ID("PeepReveal", avatar.id))
@@ -329,7 +329,8 @@ crop_circle_layout :: proc(t: ^testing.T) {
 		testing.expect(t, want != nil)
 		for pane in 0 ..< 2 {
 			clay.BeginLayout()
-			if pane == 0 {encryption_modal(&ui, ui.chats[0])} else {chat_pane(&ui)}
+			if pane ==
+			   0 {encryption_modal(&ui, ui.chats[0])} else {chat_pane(&ui, ui.chats[ui.selected], ui.messages[:])}
 			commands := clay.EndLayout(0)
 			drawn := false
 			for command in commands.internalArray[:commands.length] {
@@ -379,7 +380,7 @@ crop_circle_layout :: proc(t: ^testing.T) {
 				case 4:
 					encryption_modal(&ui, ui.chats[0])
 				case 5:
-					chat_pane(&ui)
+					chat_pane(&ui, ui.chats[ui.selected], ui.messages[:])
 				case 6:
 					profile_pane(&ui)
 				case 7:

@@ -1,4 +1,9 @@
 # Sidecar: cold steel chassis, warm tube ink, steel rims and coral error ink.
+accent-name-1 = "Filament peach"
+accent-name-2 = "Tube orange"
+accent-name-3 = "Discharge amber"
+accent-name-4 = "Chassis silver"
+accent-name-5 = "Cold steel blue"
 # https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/nixie.css
 # Shared component roles: styles.css at the same pinned revision.
 name = "Nixie"

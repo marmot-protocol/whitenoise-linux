@@ -1,4 +1,9 @@
 # Sidecar by dmnyc: void-black cast plates, warm steel inks and impressed outline lettering.
+accent-name-1 = "Warm steel"
+accent-name-2 = "Foundry gray"
+accent-name-3 = "Pewter patina"
+accent-name-4 = "Aged iron"
+accent-name-5 = "Cast-metal taupe"
 # https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/cast-iron.css
 # Shared component roles: styles.css at the same pinned revision.
 name = "Cast Iron"

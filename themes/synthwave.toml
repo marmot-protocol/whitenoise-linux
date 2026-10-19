@@ -1,4 +1,9 @@
 name = "Synthwave"
+accent-name-1 = "Laser teal"
+accent-name-2 = "Neon cyan"
+accent-name-3 = "Hot neon pink"
+accent-name-4 = "Sunset neon"
+accent-name-5 = "Ultraviolet"
 
 [colors]
 bg = "#0e0420ff"

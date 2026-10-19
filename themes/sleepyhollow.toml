@@ -1,4 +1,9 @@
 # Sidecar by dmnyc: indigo night, moon gold, pumpkin light and old-book small caps.
+accent-name-1 = "Harvest moon gold"
+accent-name-2 = "Pumpkin lantern"
+accent-name-3 = "Candlelit amber"
+accent-name-4 = "Ghostly lavender"
+accent-name-5 = "Moonlit wisteria"
 # https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/sleepy-hollow.css
 # Shared component roles: styles.css at the same pinned revision.
 name = "Sleepy Hollow"

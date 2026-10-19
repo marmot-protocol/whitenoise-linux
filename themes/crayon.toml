@@ -1,4 +1,9 @@
 name = "Sketch"
+accent-name-1 = "Viridian paint"
+accent-name-2 = "Prussian wash"
+accent-name-3 = "Carmine crayon"
+accent-name-4 = "Burnt sienna"
+accent-name-5 = "Violet pencil"
 
 [colors]
 bg = "#f4eedfff"

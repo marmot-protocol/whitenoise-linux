@@ -1,4 +1,9 @@
 # Sidecar by dmnyc: pale print sky, cloud paper, Prussian blue and yellow-green cliff pigment.
+accent-name-1 = "Prussian blue"
+accent-name-2 = "Woodblock ochre"
+accent-name-3 = "Wave blue"
+accent-name-4 = "Cliff yellow-green"
+accent-name-5 = "Deep indigo ink"
 # https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/ukiyo-e.css
 # Shared component roles: styles.css at the same pinned revision.
 name = "Ukiyo-e"

@@ -2,6 +2,7 @@ package main
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
+import "core:fmt"
 import "core:math"
 import "core:testing"
 import rl "sdlrl"
@@ -32,12 +33,15 @@ settings_viewport :: proc(t: ^testing.T) {
 	defer {delete(ui.account_ids); delete(ui.account_signing)}
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
+	append(&ui.compose, "PRIVATE_DRAFT")
+	append(&ui.messages, Msg_Ui{body = "PRIVATE_MESSAGE"})
+	defer {delete(ui.compose); delete(ui.messages)}
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil}
 	for size in ([]struct {
 			w, h: i32,
 			zoom: f32,
-		}{{740, 500, 1}, {390, 360, 1}, {1440, 1000, 1.5}}) {
+		}{{740, 500, 1}, {390, 360, 1}, {1440, 1000, 1.5}, {1568, 1001, 1}, {1568, 733, 1}, {2102, 1342, 1.5}, {2872, 1342, 1.5}, {2560, 1080, 1}, {3440, 1440, 1}, {2560, 1080, 2}, {1440, 1000, 2}, {2560, 480, 1}}) {
 		rl.SetWindowSize(size.w, size.h)
 		UI_ZOOM = size.zoom
 		viewport := clay.Dimensions{f32(size.w) / UI_ZOOM, f32(size.h) / UI_ZOOM}
@@ -45,7 +49,8 @@ settings_viewport :: proc(t: ^testing.T) {
 		for target in ([]struct {
 				section: Settings_Section,
 				anchor:  string,
-			}{{.Home, ""}, {.Keys, ""}, {.General, "RowLang"}, {.Network, "AddRelayRow"}, {.Network, "AddFetchRow"}, {.Network, "ClientBox"}, {.Keys, "NpubRow"}, {.Keys, "KpStatus"}, {.Keys, "RowRotate"}, {.Keys, "RowVaultPw"}, {.Keys, "RowReveal"}, {.Advanced, "RowTelemetry"}, {.Advanced, "RowAudit"}, {.Advanced, "RowDevMode"}, {.Appearance, "RowTheme"}}) {
+			}{{.Home, ""}, {.Keys, ""}, {.General, "RowLang"}, {.Network, "AddRelayRow"}, {.Network, "AddFetchRow"}, {.Network, "ClientBox"}, {.Keys, "NpubRow"}, {.Keys, "KpStatus"}, {.Keys, "RowRotate"}, {.Keys, "RowVaultPw"}, {.Keys, "RowReveal"}, {.Advanced, "RowTelemetry"}, {.Advanced, "RowAudit"}, {.Advanced, "RowDevMode"}, {.Appearance, ""}}) {
+			if target.section == .Appearance {ui.settings_tab = 2}
 			settings_open(&ui, nil, target.section, anchor = target.anchor)
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
 			root := clay.GetElementData(clay.ID("SettingsRoot"))
@@ -60,6 +65,15 @@ settings_viewport :: proc(t: ^testing.T) {
 					t,
 					clay.GetElementData(clay.ID(target.anchor)).found,
 					"A settings deep link must render its destination control",
+				)
+			} else if target.section == .Appearance {
+				testing.expect_value(t, ui.settings_tab, 0)
+				testing.expect(
+					t,
+					clay.GetElementData(clay.ID("SettingsSheet")).found &&
+					!clay.GetElementData(clay.ID("SettingsPageIcon", 0)).found &&
+					!clay.GetElementData(clay.ID("SettingsTabs")).found,
+					"Opening Appearance must show its workbench directly, without a category menu or tabs",
 				)
 			} else if target.section != .Home {
 				testing.expect(
@@ -81,7 +95,59 @@ settings_viewport :: proc(t: ^testing.T) {
 				)
 			}
 		}
+		for anchor in SETTINGS_TEST_APPEARANCE_ANCHORS {
+			settings_open(&ui, nil, .Appearance, anchor = anchor)
+			for _ in 0 ..< 3 {settings_test_frame(&ui)}
+			testing.expect_value(t, ui.settings_tab, 0)
+			scroll_id := clay.ID("SettingsPage")
+			if settings_test_appearance_wide() {
+				scroll_id = clay.ID(
+					anchor == "RowTheme" ? "AppearanceThemes" : "AppearanceControls",
+				)
+			}
+			clip := clay.GetElementData(scroll_id).boundingBox
+			destination := clay.GetElementData(clay.ID(anchor)).boundingBox
+			testing.expectf(
+				t,
+				destination.y >= clip.y - 0.1 && destination.y < clip.y + clip.height,
+				"An Appearance deep link must reveal %s inside its own scroll viewport",
+				anchor,
+			)
+			for other in SETTINGS_TEST_APPEARANCE_ANCHORS {
+				testing.expectf(
+					t,
+					clay.GetElementData(clay.ID(other)).found,
+					"Opening %s must leave %s in the same Appearance workbench",
+					anchor,
+					other,
+				)
+			}
+		}
+		settings_open(&ui, nil, .Appearance)
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
+		settings_test_appearance_panels(t)
+		commands := settings_test_frame(&ui)
+		for command in commands.internalArray[:commands.length] {
+			if command.commandType != .Text {continue}
+			text := command.renderData.text.stringContents
+			shown := string(text.chars[:text.length])
+			testing.expect(
+				t,
+				shown != "PRIVATE_DRAFT" && shown != "PRIVATE_MESSAGE",
+				"Appearance must never render your live draft or message history",
+			)
+		}
+		testing.expect_value(t, string(ui.compose[:]), "PRIVATE_DRAFT")
+		testing.expect_value(t, ui.messages[0].body, "PRIVATE_MESSAGE")
+		rl.BeginDrawing()
+		rl.DrawRectangleRec(0, 0, f32(size.w), f32(size.h), clay_color(BG))
+		rl.BeginMode2D({zoom = UI_ZOOM})
+		clay_raylib_render(&commands)
+		rl.EndMode2D()
+		rl.TakeScreenshot(
+			fmt.ctprintf("/tmp/wn-appearance-%dx%d-%v.png", size.w, size.h, size.zoom),
+		)
+		rl.EndDrawing()
 		page := clay.GetElementData(clay.ID("SettingsPage"))
 		b := page.boundingBox
 		// Clay's f32 size distribution can accumulate subpixel boundary error.
@@ -94,19 +160,31 @@ settings_viewport :: proc(t: ^testing.T) {
 			b.y >= 0 &&
 			b.x + b.width <= viewport.width + 0.1 &&
 			b.y + b.height <= viewport.height + 0.1,
-			"The theme gallery viewport %v must fit %v",
+			"The Appearance workbench viewport %v must fit %v",
 			b,
 			viewport,
 		) {return}
 		// Wheel input must reach the clipped final row, not just a correctly sized box.
 		// The wheel arrives inside a frame, as in the app: a second scroll update
 		// without a layout between drops containers and their offsets.
+		b = clay.GetElementData(settings_test_gallery_scroll_id()).boundingBox
 		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
 		last := -1
+		bottom: f32 = -1
 		for pack, i in theme_packs {
-			if pack.tone == ui.theme_tone && i != system_theme_index {last = i}
+			if pack.tone != ui.theme_tone || i == system_theme_index {continue}
+			tile := clay.GetElementData(clay.ID("ThemeOpt", u32(i)))
+			if tile.found && tile.boundingBox.y + tile.boundingBox.height > bottom {
+				last, bottom = i, tile.boundingBox.y + tile.boundingBox.height
+			}
 		}
 		if !testing.expect(t, last >= 0) {return}
+		if settings_test_appearance_wide() {
+			settings_test_scroll_panel(t, &ui, "AppearanceThemes", clay.ID("ThemeOpt", u32(last)))
+			settings_test_scroll_panel(t, &ui, "AppearanceControls", clay.ID("RowCropShape"))
+			settings_test_scroll_panel(t, &ui, "AppearancePreview", clay.ID("Composer"))
+			clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
+		}
 		for _ in 0 ..< 128 {
 			row := clay.GetElementData(clay.ID("ThemeOpt", u32(last))).boundingBox
 			if row.y >= b.y && row.y + row.height <= b.y + b.height {break}
@@ -124,7 +202,7 @@ settings_viewport :: proc(t: ^testing.T) {
 		testing.expect(
 			t,
 			clay.PointerOver(clay.ID("ThemeOpt", u32(last))),
-			"The final theme tile must remain clickable inside the page clip",
+			"The final theme tile must remain clickable inside its scroll viewport",
 		)
 		ui.account_ref = "viewport-remote"
 		settings_open(&ui, nil, .Keys, anchor = "RowVaultPw")
@@ -223,15 +301,168 @@ settings_viewport :: proc(t: ^testing.T) {
 }
 
 @(private)
-settings_test_frame :: proc(ui: ^Ui_State, wheel: clay.Vector2 = {}) {
+SETTINGS_TEST_APPEARANCE_ANCHORS := []string {
+	"RowTheme",
+	"RowAccent",
+	"RowThemeShare",
+	"RowZoom",
+	"RowBodyFont",
+	"RowEmojiSet",
+	"RowScroll",
+	"RowMotion",
+	"RowCentered",
+	"RowMessageLines",
+	"RowAvatarShape",
+	"RowCropShape",
+}
+
+@(private)
+settings_test_appearance_panels :: proc(t: ^testing.T) {
+	page := clay.GetElementData(clay.ID("SettingsPage")).boundingBox
+	for id in ([]string{"AppearanceControls", "AppearanceThemes", "AppearancePreview"}) {
+		panel := clay.GetElementData(clay.ID(id))
+		box := panel.boundingBox
+		testing.expectf(
+			t,
+			panel.found &&
+			box.width > 0 &&
+			box.height > 0 &&
+			box.x >= page.x - 0.1 &&
+			box.x + box.width <= page.x + page.width + 0.1,
+			"The %s panel must fit the Appearance viewport horizontally",
+			id,
+		)
+		if settings_test_appearance_wide() {
+			testing.expectf(
+				t,
+				box.y >= page.y - 0.1 &&
+				box.y + box.height <= page.y + page.height + 0.1 &&
+				clay.GetScrollContainerData(clay.ID(id)).found,
+				"Wide %s %v must be a vertically bounded independent scroll viewport inside %v",
+				id,
+				box,
+				page,
+			)
+		}
+	}
+	controls := clay.GetElementData(clay.ID("AppearanceControls")).boundingBox
+	themes := clay.GetElementData(clay.ID("AppearanceThemes")).boundingBox
+	preview := clay.GetElementData(clay.ID("AppearancePreview")).boundingBox
+	if themes.x + themes.width <= preview.x + 0.1 {
+		testing.expect(
+			t,
+			controls.x + controls.width <= themes.x + 0.1 &&
+			themes.x + themes.width <= preview.x + 0.1 &&
+			math.abs(controls.y - themes.y) <= 0.1 &&
+			math.abs(themes.y - preview.y) <= 0.1,
+			"Wide Appearance must place controls, themes and live preview side by side",
+		)
+	} else if settings_test_appearance_wide() {
+		testing.expect(
+			t,
+			controls.x + controls.width <= themes.x + 0.1 &&
+			themes.y + themes.height <= preview.y + 0.1 &&
+			math.abs(themes.x - preview.x) <= 0.1 &&
+			math.abs(controls.y - themes.y) <= 0.1,
+			"Intermediate Appearance must split controls from independently scrolling themes and preview",
+		)
+	} else {
+		testing.expect(
+			t,
+			controls.y + controls.height <= preview.y + 0.1 &&
+			preview.y + preview.height <= themes.y + 0.1 &&
+			math.abs(controls.x - preview.x) <= 0.1 &&
+			math.abs(preview.x - themes.x) <= 0.1,
+			"Narrow Appearance must stack controls, live preview and themes without overlap",
+		)
+	}
+}
+
+@(private)
+settings_test_appearance_wide :: proc() -> bool {
+	return clay.GetScrollContainerData(clay.ID("AppearanceControls")).found
+}
+
+@(private)
+settings_test_gallery_scroll_id :: proc() -> clay.ElementId {
+	return clay.ID(settings_test_appearance_wide() ? "AppearanceThemes" : "SettingsPage")
+}
+
+@(private)
+settings_test_scroll_panel :: proc(
+	t: ^testing.T,
+	ui: ^Ui_State,
+	panel_id: string,
+	destination: clay.ElementId,
+) {
+	ids := [4]string{"AppearanceControls", "AppearanceThemes", "AppearancePreview", "SettingsPage"}
+	offsets: [4]clay.Vector2
+	boxes: [4]clay.BoundingBox
+	tracked: [4]bool
+	for id, i in ids {
+		data := clay.GetScrollContainerData(clay.ID(id))
+		tracked[i] = data.found
+		if data.found {offsets[i] = data.scrollPosition^}
+		boxes[i] = clay.GetElementData(clay.ID(id)).boundingBox
+	}
+	panel := clay.GetElementData(clay.ID(panel_id)).boundingBox
+	data := clay.GetScrollContainerData(clay.ID(panel_id))
+	if !testing.expect(
+		t,
+		data.found,
+		"Every wide Appearance panel must scroll independently",
+	) {return}
+	clay.SetPointerState({panel.x + panel.width / 2, panel.y + panel.height / 2}, false)
+	for _ in 0 ..< 128 {
+		box := clay.GetElementData(destination).boundingBox
+		if box.y >= panel.y && box.y + box.height <= panel.y + panel.height {break}
+		settings_test_frame(ui, {0, -8})
+		for _ in 0 ..< 2 {settings_test_frame(ui)}
+	}
+	target := clay.GetElementData(destination)
+	box := target.boundingBox
+	testing.expectf(
+		t,
+		target.found && box.y >= panel.y && box.y + box.height <= panel.y + panel.height,
+		"Scrolling %s must reveal its final content without moving another panel",
+		panel_id,
+	)
+	for id, i in ids {
+		if id == panel_id {continue}
+		if tracked[i] {
+			other := clay.GetScrollContainerData(clay.ID(id))
+			testing.expectf(
+				t,
+				other.found && other.scrollPosition^ == offsets[i],
+				"Scrolling %s must preserve %s's scroll offset",
+				panel_id,
+				id,
+			)
+		}
+		testing.expectf(
+			t,
+			clay.GetElementData(clay.ID(id)).boundingBox == boxes[i],
+			"Scrolling %s must not move %s",
+			panel_id,
+			id,
+		)
+	}
+}
+
+@(private)
+settings_test_frame :: proc(
+	ui: ^Ui_State,
+	wheel: clay.Vector2 = {},
+) -> clay.ClayArray(clay.RenderCommand) {
 	anim_tick(1.0 / 60)
 	clay.UpdateScrollContainers(false, wheel, 1.0 / 60)
 	clay.BeginLayout()
 	settings_pane(ui)
-	clay.EndLayout(0)
+	commands := clay.EndLayout(0)
 	if settings_resolve_scroll(ui) {
 		clay.BeginLayout()
 		settings_pane(ui)
-		clay.EndLayout(0)
+		commands = clay.EndLayout(0)
 	}
+	return commands
 }

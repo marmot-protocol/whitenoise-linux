@@ -1,4 +1,9 @@
 # Sidecar: whitewashed plaster, sea-light cards, cobalt doors and Cinzel capitals.
+accent-name-1 = "Cobalt door"
+accent-name-2 = "Aegean blue"
+accent-name-3 = "Sea-light blue"
+accent-name-4 = "Deep harbor blue"
+accent-name-5 = "Olive grove"
 # https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/aegean.css
 # Shared component roles: styles.css at the same pinned revision.
 name = "Aegean"

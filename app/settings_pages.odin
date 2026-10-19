@@ -235,7 +235,7 @@ settings_option :: proc(id_str: string, index: u32, label: string, selected: boo
 			childAlignment = {y = .Center},
 		},
 		backgroundColor = selected ? SELECTED : (hovered() ? HOVER : CARD),
-		border = {color = selected ? ACCENT : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+		border = kb_focus == fmt.tprintf("%s%d", id_str, index) ? kb_ring(ACCENT) : clay.BorderElementConfig{color = selected ? ACCENT : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
 		cornerRadius = rr(6),
 	},
 	) {
@@ -408,11 +408,7 @@ settings_tab_strip :: proc(ui: ^Ui_State) {
 			) {
 				clay.Text(
 					tr(page.label),
-					{
-						fontId = ui.settings_section == .Appearance && ui.settings_tab == 0 ? FONT_GALLERY_BOLD : FONT_TITLE,
-						fontSize = 12,
-						textColor = selected ? ACCENT : TEXT_DIM,
-					},
+					{fontId = FONT_TITLE, fontSize = 12, textColor = selected ? ACCENT : TEXT_DIM},
 				)
 			}
 		}
@@ -510,6 +506,10 @@ settings_description :: proc(section: Settings_Section) -> string {
 
 settings_pane :: proc(ui: ^Ui_State) {
 	wide := settings_wide(ui)
+	workbench := ui.settings_section == .Appearance && appearance_layout(ui).columns > 1
+	// A scroll parent does not shrink growing children to its viewport.
+	// Bound the workbench to the last layout's page height before Clay sizes its columns.
+	workbench_h := max(1, clay.GetElementData(clay.ID("SettingsPage")).boundingBox.height - 48)
 	if clay.UI(clay.ID("SettingsRoot"))(
 	{layout = {sizing = {clay.SizingFixed(page_w(ui)), clay.SizingGrow()}}},
 	) {
@@ -555,7 +555,10 @@ settings_pane :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("SettingsContent"))(
 				{
 					layout = {
-						sizing = {width = clay.SizingFixed(settings_content_width(ui))},
+						sizing = {
+							clay.SizingFixed(settings_content_width(ui)),
+							workbench ? clay.SizingFixed(workbench_h) : clay.SizingFit(),
+						},
 						layoutDirection = .TopToBottom,
 						childGap = 0,
 					},
@@ -587,7 +590,10 @@ settings_pane :: proc(ui: ^Ui_State) {
 					} else if clay.UI(clay.ID("SettingsSheet"))(
 					{
 						layout = {
-							sizing = {width = clay.SizingGrow()},
+							sizing = {
+								clay.SizingGrow(),
+								workbench ? clay.SizingGrow() : clay.SizingFit(),
+							},
 							layoutDirection = .TopToBottom,
 							padding = clay.PaddingAll(settings_main_w(ui) < 560 ? 8 : 16),
 							childGap = 18,
@@ -1454,7 +1460,6 @@ settings_theme_preview_guard :: proc(ui: ^Ui_State) {
 	if ui.page != .Settings ||
 	   ui.settings_section != .Appearance ||
 	   settings_on_menu(ui) ||
-	   ui.settings_tab != 0 ||
 	   ui.add_account_open ||
 	   ui.focus == .SettingsSearch ||
 	   modal_open(ui) {
@@ -2241,6 +2246,9 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 // types into it. Runs before the release gate in handle_pages.
 @(private)
 settings_switch_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
+	if ui.settings_section == .Appearance {
+		return false // The workbench has one order for switches, chips and themes.
+	}
 	FIELDS :: bit_set[Focus] {
 		.Relay,
 		.Inbox,
@@ -2274,7 +2282,6 @@ settings_theme_input :: proc(ui: ^Ui_State) -> (handled: bool, pressed: string) 
 	if ui.page != .Settings ||
 	   ui.settings_section != .Appearance ||
 	   settings_on_menu(ui) ||
-	   ui.settings_tab != 0 ||
 	   modal_open(ui) ||
 	   ui.add_account_open {
 		settings_theme_preview_reset(ui)
@@ -2295,7 +2302,10 @@ settings_theme_input :: proc(ui: ^Ui_State) -> (handled: bool, pressed: string) 
 		for key, i in THEME_ACCENT_KEYS {
 			if key == kb_focus {field = clay.ID("AccentDot", u32(i)); break}
 		}
-		scroll_into_view(clay.ID("SettingsPage"), field)
+		for control in APPEARANCE_CONTROLS {
+			if control.key == kb_focus {field = clay.ID(control.id, control.index); break}
+		}
+		scroll_into_view(appearance_scroll(ui, field), field)
 		return true, ""
 	case .Pressed:
 		pressed = kb_focus
@@ -2320,7 +2330,9 @@ settings_theme_input :: proc(ui: ^Ui_State) -> (handled: bool, pressed: string) 
 		}
 	}
 	for key, i in THEME_ACCENT_KEYS {
-		if pressed == key {
+		if ui.theme != system_theme_index &&
+		   (pressed == key ||
+				   (mouse_released() && clay.PointerOver(clay.ID("AccentDot", u32(i))))) {
 			theme_switch(ui, ui.theme, i)
 			return true, ""
 		}
@@ -2331,9 +2343,7 @@ settings_theme_input :: proc(ui: ^Ui_State) -> (handled: bool, pressed: string) 
 
 @(private)
 settings_theme_action :: proc(ui: ^Ui_State, pressed: string) -> bool {
-	if ui.settings_section != .Appearance ||
-	   settings_on_menu(ui) ||
-	   ui.settings_tab != 0 {return false}
+	if ui.settings_section != .Appearance || settings_on_menu(ui) {return false}
 	pressed := pressed
 	if pressed == "" && mouse_released() {
 		for id in ([]string{"ThemeShareBtn", "ThemeEditBtn", "ThemeDeleteBtn"}) {
@@ -2442,6 +2452,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if theme_handled {return}
 	if settings_handle_navigation(ui, client) {return}
 	if settings_theme_action(ui, theme_pressed) {return}
+	if ui.settings_section == .Appearance && appearance_control_input(ui, theme_pressed) {return}
 	if ui.settings_section == .Agents && handle_agents(ui) {return}
 
 	if !mouse_released() {
@@ -2642,81 +2653,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_keys(ui, client)
 
 	case .Appearance:
-		if clicked("MessageLinesMinus") ||
-		   clicked("MessageLinesPlus") ||
-		   clicked("MessageLinesReset") {
-			lines := ui.prefs.message_lines
-			if clicked("MessageLinesMinus") {lines = max(lines - 1, 0)}
-			if clicked("MessageLinesPlus") && lines < max(int) {lines += 1}
-			if clicked("MessageLinesReset") {lines = DEFAULT_MESSAGE_LINES}
-			ui.prefs.message_lines = lines
-			for &msg in ui.messages {msg.excerpt = {}; msg.row_height = 0}
-			for &pending in ui.pending {pending.excerpt = {}}
-			for _, &card in nev_cards {card.excerpt = {}}
-			save_settings(ui)
-			return
-		}
-		for _, shape in AVATAR_SHAPE_NAMES {
-			if clay.PointerOver(clay.ID("AvatarShapeChip", u32(shape))) {
-				ui.prefs.avatar_shape = shape
-				save_settings(ui)
-				return
-			}
-		}
-		for _, shape in CROP_SHAPE_NAMES {
-			if clay.PointerOver(clay.ID("CropShapeChip", u32(shape))) {
-				ui.prefs.crop_avatar_shape = shape
-				save_settings(ui)
-				return
-			}
-		}
-		for _, i in ACCENT_NAMES {
-			if clay.PointerOver(clay.ID("AccentDot", u32(i))) {
-				theme_switch(ui, ui.theme, i)
-				return
-			}
-		}
-		for _, i in BODY_FONT_DELTAS {
-			if clay.PointerOver(clay.ID("BodyFontChip", u32(i))) {
-				ui.prefs.body_font = BODY_FONT_DELTAS[i]
-				apply_zoom(ui)
-				save_settings(ui)
-				return
-			}
-		}
-		for _, i in SCROLL_SPEEDS {
-			if clay.PointerOver(clay.ID("ScrollChip", u32(i))) {
-				ui.prefs.scroll_speed = SCROLL_SPEEDS[i]
-				save_settings(ui)
-				return
-			}
-		}
-		for _, set in EMOJI_SET_NAMES {
-			if clay.PointerOver(clay.ID("EmojiSetChip", u32(set))) {
-				ui.prefs.emoji_set = set
-				emoji_set_load(set)
-				save_settings(ui)
-				return
-			}
-		}
-		if clicked("ZoomMinus") {
-			ui.prefs.zoom_pct -= 10
-			apply_zoom(ui)
-			save_settings(ui)
-			return
-		}
-		if clicked("ZoomPlus") {
-			ui.prefs.zoom_pct += 10
-			apply_zoom(ui)
-			save_settings(ui)
-			return
-		}
-		if clicked("ZoomReset") {
-			ui.prefs.zoom_pct = 100
-			apply_zoom(ui)
-			save_settings(ui)
-			return
-		}
+		return
 
 	case .Notifications:
 		if clicked("NotifyTest") {

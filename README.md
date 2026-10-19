@@ -34,7 +34,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Markdown bodies preserve single newlines. HTTP(S) links keep their labels and destinations. Hover shows the URL; opening a link uses the external-link guard. Chat-list previews show reading text without Markdown markup.
 - Linked Nostr pull requests (kind 1618, NIP-34) use a pull-request icon, a bold subject, separate author and timestamp lines, and a Markdown description. Long subjects wrap to three lines with an ellipsis. A full-width Open in client button uses your configured Nostr web client.
 - Markdown timestamps such as `<t:1791280800:F>` display in your current timezone with a clock icon. Hover over a timestamp to see its absolute local date/time and original token. Styles `t`, `T`, `d`, `D`, `f`, `F`, `s`, `S`, and `R` cover time, date, combined, and live relative labels; omitting the style selects `f`. Linux, macOS, and Windows use the system date/time locale; OpenBSD uses C-locale date names. Invalid tokens stay literal, and unsupported dates remain readable tokens.
-- Settings > Appearance > Interface sets the message line limit. Messages and event cards collapse after 6 lines by default; 0 shows them in full without Read more.
+- Settings > Appearance sets the message line limit. Messages and event cards collapse after 6 lines by default; 0 shows them in full without Read more.
 - Settings > AI agents offers setup prompts for Hermes, OpenClaw, OpenCode, Codex, and Claude Code. Review and copy a prompt containing your active account's public npub, then paste it into an agent you run and trust. Copy prompt is the main action, with a secondary Copy public key button and links to connector documentation. White Noise does not install anything or share your private key.
 - Ctrl+K searches literal text in locally stored history, including archived chats. Filter by chat, sender, UTC date range, or attachment type, and use More results to page through matches. Opening a result returns to Chats and loads older history when needed. Closing search preserves its query and results; switching accounts clears them. Unsynced messages are not searched.
 - Export the loaded chat window as HTML or Markdown from the members panel. HTML prepares embedded images in the background and shows image progress before opening the save dialog. Unavailable images appear as notes in the transcript. Leaving the chat or changing accounts discards an unfinished export.
@@ -76,10 +76,12 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 
 **Look & feel**
 
-- Thirty-one bundled themes and five accent colors, all data-driven from `themes/*.toml`. Drop your own pack in the data dir.
+- Thirty-one bundled themes and five accent colors, all data-driven from `themes/*.toml`. Each pack defines its accent labels with `accent-name-1` through `accent-name-5`, matching the order of `accent-base`. The theme editor preserves these labels. Drop your own pack in the data dir.
 - AMOLED uses pure black backgrounds, white text, and neutral gray controls and borders. All five accent colors remain available.
-- Settings > Appearance > Theme opens a gallery with separate Dark and Light views and bold collection headings. Hover over a tile to preview it. Leaving the tile or pressing Escape restores your theme; clicking saves the choice.
+- Settings > Appearance puts controls, the theme gallery, and a live conversation preview side by side on wide windows. Medium windows put controls beside stacked themes and preview; all three panels scroll independently. Narrow windows stack them on one page. The preview uses the normal chat renderer with a fictional marmot conversation, not your messages or draft.
+- The theme gallery has separate Dark and Light views and collection headings. Hover over a tile to preview it. Leaving the tile or pressing Escape restores your theme; clicking saves the choice.
 - The Sidecar collection contains all 21 themes from [dmnyc's Sidecar](https://github.com/dmnyc/sidecar). Selecting one shows its source credit on the page and the selected tile. Collection headings have no links.
+- Terminal uses a fixed green accent and hides its accent chooser.
 - Button text derives separately for each accent color using sRGB contrast. Custom packs can set `on-accent` to override the text color for all five accents.
 - English, Italian, German, and Japanese, switchable at runtime, including search dialogs, theme notifications, and confirmation errors.
 - Native desktop notifications, a command palette, and full keyboard navigation.

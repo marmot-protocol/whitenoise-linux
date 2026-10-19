@@ -28,11 +28,7 @@ workspace_load_boundaries :: proc(t: ^testing.T) {
 		section: Settings_Section,
 		tab:     int,
 	} {
-		{
-			`"window_w":-1,"window_h":0,"settings_section":6,"settings_tab":999`,
-			.Appearance,
-			len(SETTINGS_APPEARANCE_TABS) - 1,
-		},
+		{`"window_w":-1,"window_h":0,"settings_section":6,"settings_tab":999`, .Appearance, 0},
 		{`"window_w":0,"window_h":-1,"settings_section":4,"settings_tab":-1`, .Network, 0},
 		{`"settings_section":11,"settings_tab":3,"dev_mode":false`, .Home, 0},
 		{`"settings_section":999,"settings_tab":3`, .Home, 0},

@@ -1,4 +1,9 @@
 # Sidecar by dmnyc: slate stoneware, rice-paper ink, kintsugi gold and persimmon glaze.
+accent-name-1 = "Kintsugi gold"
+accent-name-2 = "Persimmon glaze"
+accent-name-3 = "Golden seam"
+accent-name-4 = "Stoneware blue-gray"
+accent-name-5 = "Ash glaze"
 # https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/wabi-sabi.css
 # Shared component roles: styles.css at the same pinned revision.
 name = "Wabi-sabi"

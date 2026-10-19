@@ -41,6 +41,11 @@ THEME_FIELDS := []Theme_Field {
 	{N_("IDENTITY"), N_("Name"), .Name, .Text, 0},
 	{"", N_("Font"), .Font, .Text, 0},
 	{"", N_("Title font"), .Font_Title, .Text, 0},
+	{"", N_("Accent %s"), .Accent_Name_1, .Text, 0},
+	{"", N_("Accent %s"), .Accent_Name_2, .Text, 1},
+	{"", N_("Accent %s"), .Accent_Name_3, .Text, 2},
+	{"", N_("Accent %s"), .Accent_Name_4, .Text, 3},
+	{"", N_("Accent %s"), .Accent_Name_5, .Text, 4},
 	{N_("SEEDS"), N_("Background"), .Bg, .Color, 0},
 	{"", N_("Background 2"), .Bg_2, .Color, 0},
 	{"", N_("Text"), .Text_Hi, .Color, 0},
@@ -166,7 +171,13 @@ theme_edit_open :: proc(ui: ^Ui_State) {
 		#partial switch field.token {
 		case .Name:
 			append(&buf, fmt.tprintf(tr("%s copy"), pack.name))
-		case .Font, .Font_Title:
+		case .Font,
+		     .Font_Title,
+		     .Accent_Name_1,
+		     .Accent_Name_2,
+		     .Accent_Name_3,
+		     .Accent_Name_4,
+		     .Accent_Name_5:
 			append(&buf, (cast(^string)theme_token_pointer(&pack, field.token))^)
 		case .Bg, .Text_Hi, .Danger:
 			append(&buf, theme_field_hint(&pack, field))
@@ -241,6 +252,11 @@ theme_edit_toml :: proc(ui: ^Ui_State) -> string {
 	}
 	fmt.sbprintfln(&b, "# Written by the theme editor.")
 	fmt.sbprintfln(&b, "%s = \"%s\"", THEME_TOKENS[.Name].key, name)
+	for token, slot in ([5]Theme_Token{.Accent_Name_1, .Accent_Name_2, .Accent_Name_3, .Accent_Name_4, .Accent_Name_5}) {
+		if label := val(ui, idx(token, slot)); len(label) > 0 {
+			fmt.sbprintfln(&b, "%s = \"%s\"", THEME_TOKENS[token].key, label)
+		}
+	}
 	fmt.sbprintln(&b, "")
 	fmt.sbprintln(&b, "[colors]")
 
@@ -493,14 +509,9 @@ theme_field_row :: proc(ui: ^Ui_State, live: ^Theme_Pack, field: Theme_Field, i:
 			) {}
 		}
 		focused := ui.focus == .ThemeSeed && ui.theme_edit_idx == i
-		input_box(
-			ui,
-			fmt.tprintf("ThemeSeedBox%d", i),
-			&ui.theme_fields[i],
-			tr(theme_field_hint(live, field)),
-			focused,
-			130,
-		)
+		hint := theme_field_hint(live, field)
+		if field.token < .Accent_Name_1 || field.token > .Accent_Name_5 {hint = tr(hint)}
+		input_box(ui, fmt.tprintf("ThemeSeedBox%d", i), &ui.theme_fields[i], hint, focused, 130)
 	}
 }
 

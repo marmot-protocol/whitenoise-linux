@@ -2139,8 +2139,14 @@ msgstr "Passaggio ms"
 msgid "How far the mouse wheel moves the view."
 msgstr "Quanto si sposta la vista con la rotellina del mouse."
 
+msgid "I did. Very important marmot business."
+msgstr "Io. Affari da marmotta molto importanti."
+
 msgid "I have an nsec"
 msgstr "Ho un nsec"
+
+msgid "I packed snacks for the expedition. 🥕"
+msgstr "Ho portato degli spuntini per la spedizione. 🥕"
 
 msgid "ICON"
 msgstr "ICONA"
@@ -2564,6 +2570,9 @@ msgstr "Segna come non letta"
 
 msgid "Marmot"
 msgstr "Marmotta"
+
+msgid "Marmot meadow"
+msgstr "Prato delle marmotte"
 
 msgid "Match all rules"
 msgstr "Tutte le regole"
@@ -3072,6 +3081,9 @@ msgstr "Contatti"
 
 msgid "People can't invite you"
 msgstr "Gli altri non riescono a invitarti"
+
+msgid "Perfect. Wake me up when it's spring."
+msgstr "Perfetto. Svegliami quando arriva la primavera."
 
 msgid "Pets"
 msgstr "Animali"
@@ -3992,6 +4004,9 @@ msgstr "Rinuncia"
 msgid "Step down as admin?"
 msgstr "Rinunciare al ruolo di admin?"
 
+msgid "Step one: find a warm rock. Step two: become one."
+msgstr "Primo passo: trovare una roccia calda. Secondo passo: diventarlo."
+
 msgid "Sticker"
 msgstr "Adesivo"
 
@@ -4527,6 +4542,9 @@ msgstr "White Noise non vede mai la tua chiave privata. Resta solo su questo dis
 #, c-format
 msgid "White Noise · %d unread"
 msgstr "White Noise · %d non letti"
+
+msgid "Who put a sun lounger outside the burrow?"
+msgstr "Chi ha messo una sdraio fuori dalla tana?"
 
 msgid "Wireframe"
 msgstr "Wireframe"

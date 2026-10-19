@@ -264,7 +264,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 							switch ui.page {
 							case .Chats:
 								if ui.selected >= 0 {
-									chat_pane(ui)
+									chat_pane(ui, ui.chats[ui.selected], ui.messages[:])
 								} else if len(ui.chats) == 0 {
 									get_started_pane(ui)
 								} else {

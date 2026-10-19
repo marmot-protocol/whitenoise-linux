@@ -1,4 +1,9 @@
 # Sidecar by dmnyc: brown-black atlas plates, antique engraving gold and parchment ink.
+accent-name-1 = "Atlas gold"
+accent-name-2 = "Starlight gold"
+accent-name-3 = "Engraving brass"
+accent-name-4 = "Celestial parchment"
+accent-name-5 = "Aurora sage"
 # https://github.com/dmnyc/sidecar/blob/3aaebf9dc7beb9924c6e1f9bc060cecbc1be6f8f/themes/constellation.css
 # Shared component roles: styles.css at the same pinned revision.
 name = "Constellation"

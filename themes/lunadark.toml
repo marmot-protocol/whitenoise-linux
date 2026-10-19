@@ -1,4 +1,9 @@
 # Luna after dark: navy chrome and slate panels with the same raised edges.
+accent-name-1 = "Moonlit lime"
+accent-name-2 = "Night-chrome blue"
+accent-name-3 = "Moonrise rose"
+accent-name-4 = "Dusk apricot"
+accent-name-5 = "Moonlit lilac"
 name = "Luna Dark"
 
 [colors]

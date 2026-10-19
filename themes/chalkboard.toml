@@ -1,4 +1,9 @@
 name = "Chalkboard"
+accent-name-1 = "Chalk green"
+accent-name-2 = "Chalk blue"
+accent-name-3 = "Chalk pink"
+accent-name-4 = "Chalk ochre"
+accent-name-5 = "Chalk lilac"
 
 [colors]
 bg = "#243029ff"

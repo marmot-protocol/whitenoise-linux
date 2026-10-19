@@ -371,8 +371,8 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		theme_switch(ui, (ui.theme + 1) % max(len(theme_packs), 1), ui.accent)
 		toast(ui, tr(theme_packs[ui.theme].name))
 	case .Next_Accent:
-		theme_switch(ui, ui.theme, (ui.accent + 1) % len(ACCENT_NAMES))
-		toast(ui, tr(ACCENT_NAMES[ui.accent]))
+		theme_switch(ui, ui.theme, (ui.accent + 1) % len(active_pack(ui).accent_names))
+		toast(ui, active_pack(ui).accent_names[ui.accent])
 	case .Toggle_Centered:
 		flip(ui, &ui.prefs.centered_chat)
 	case .Toggle_Dev:
