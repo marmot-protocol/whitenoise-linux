@@ -2671,6 +2671,12 @@ msgstr "人数が次より多い"
 msgid "Move to folder"
 msgstr "フォルダに移動"
 
+msgid "Multi-device is coming very soon™."
+msgstr "マルチデバイス対応はまもなく登場します™。"
+
+msgid "Multi-device isn't built yet. Each device that signs in with this key keeps its own separate chats. Groups and messages from your other devices won't appear here, and new invites reach only one of your devices."
+msgstr "マルチデバイスにはまだ対応していません。この鍵でサインインした端末は、それぞれ別のチャットを持ちます。ほかの端末のグループやメッセージはここに表示されず、新しい招待はどれか1台の端末にしか届きません。"
+
 msgid "Multilingual. Detects your language automatically."
 msgstr "多言語対応です。言語を自動で検出します。"
 

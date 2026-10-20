@@ -2665,6 +2665,12 @@ msgstr ""
 msgid "Move to folder"
 msgstr ""
 
+msgid "Multi-device is coming very soon™."
+msgstr ""
+
+msgid "Multi-device isn't built yet. Each device that signs in with this key keeps its own separate chats. Groups and messages from your other devices won't appear here, and new invites reach only one of your devices."
+msgstr ""
+
 msgid "Multilingual. Detects your language automatically."
 msgstr ""
 

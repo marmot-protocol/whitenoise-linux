@@ -317,6 +317,22 @@ login_pane :: proc(ui: ^Ui_State) {
 					ui.login_method == .Pair ? tr("Create pairing link") : tr("Continue"),
 				)
 			}
+			// Every form here signs in an existing identity. Each installation
+			// publishes its own key package and keeps its own MLS state, so a
+			// second device starts with none of the first one's chats.
+			if clay.UI(clay.ID("LoginGapC"))(
+			{layout = {sizing = {height = clay.SizingFixed(6)}}},
+			) {}
+			clay.Text(
+				tr(
+					"Multi-device isn't built yet. Each device that signs in with this key keeps its own separate chats. Groups and messages from your other devices won't appear here, and new invites reach only one of your devices.",
+				),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO, textAlignment = .Center},
+			)
+			clay.Text(
+				tr("Multi-device is coming very soon™."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, textAlignment = .Center},
+			)
 		}
 
 		if len(ui.login_error) > 0 {

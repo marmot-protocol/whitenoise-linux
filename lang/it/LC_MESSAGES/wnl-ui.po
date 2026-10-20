@@ -2671,6 +2671,12 @@ msgstr "Più di"
 msgid "Move to folder"
 msgstr "Sposta nella cartella"
 
+msgid "Multi-device is coming very soon™."
+msgstr "Il multi-dispositivo arriverà molto presto™."
+
+msgid "Multi-device isn't built yet. Each device that signs in with this key keeps its own separate chats. Groups and messages from your other devices won't appear here, and new invites reach only one of your devices."
+msgstr "Il multi-dispositivo non è ancora disponibile. Ogni dispositivo che accede con questa chiave ha le proprie chat separate. I gruppi e i messaggi dei tuoi altri dispositivi non compariranno qui, e i nuovi inviti arrivano solo a uno dei tuoi dispositivi."
+
 msgid "Multilingual. Detects your language automatically."
 msgstr "Multilingue. Rileva automaticamente la tua lingua."
 
