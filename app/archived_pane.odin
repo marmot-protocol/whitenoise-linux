@@ -1,8 +1,8 @@
 package main
 
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:strings"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 
 @(private)
 archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
@@ -281,7 +281,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 						{fontId = FONT_ICON, fontSize = 32, textColor = TEXT_LO},
 					)
 					clay.Text(
-						len(ui.archived) == 0 ? tr("No archived chats") : tr("No matching chats"),
+						len(filter) == 0 ? tr("No archived chats") : tr("No matching chats"),
 						{
 							fontId = FONT_TITLE,
 							fontSize = 18,
@@ -290,7 +290,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 						},
 					)
 					clay.Text(
-						len(ui.archived) == 0 ? tr("Chats you archive will appear here.") : tr("Try a different search."),
+						len(filter) == 0 ? tr("Chats you archive will appear here.") : tr("Try a different search."),
 						{
 							fontId = FONT_BODY,
 							fontSize = 14,
