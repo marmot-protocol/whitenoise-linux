@@ -119,10 +119,12 @@ forward_modal :: proc(ui: ^Ui_State) {
 			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
+			shown := 0
 			for chat, i in ui.chats {
 				if !fwd_visible(ui, i) {
 					continue
 				}
+				shown += 1
 				if clay.UI(clay.ID("FwdRow", u32(i)))(
 				{
 					layout = {
@@ -137,6 +139,22 @@ forward_modal :: proc(ui: ^Ui_State) {
 				) {
 					avatar("FwdAvatar", u32(i), chat.avatar_key, chat.title, 30, chat_pic(chat))
 					clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+				}
+			}
+			if shown == 0 {
+				if clay.UI(clay.ID("FwdEmpty"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						padding = {left = 10, right = 10, top = 16, bottom = 16},
+						childAlignment = {x = .Center},
+					},
+				},
+				) {
+					clay.Text(
+						len(ui.fwd_filter) > 0 ? tr("No chats match your filter.") : ui.fwd_kind == .Message ? tr("You have no other chats to forward this to.") : tr("You have no chats to share this with."),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					)
 				}
 			}
 		}
