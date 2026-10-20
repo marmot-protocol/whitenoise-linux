@@ -2430,6 +2430,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 					delete(ui.prefs.locale)
 					ui.prefs.locale = strings.clone(pair[0])
 					set_locale(ui.prefs.locale)
+					ui.stamp_day = 0 // month names and "Today" change language
 					save_settings(ui)
 					ui.lang_open = false
 					return
@@ -2591,6 +2592,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		for i in 0 ..< 2 {
 			if clay.PointerOver(clay.ID("TimeFmt", u32(i))) {
 				ui.prefs.hour12 = i == 1
+				ui.stamp_day = 0
 				save_settings(ui)
 				return
 			}
@@ -2598,6 +2600,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		for _, i in DATE_FORMATS {
 			if clay.PointerOver(clay.ID("DateFmt", u32(i))) {
 				ui.prefs.date_format = i
+				ui.stamp_day = 0
 				save_settings(ui)
 				return
 			}

@@ -568,69 +568,6 @@ short_hex :: proc(s: string) -> string {
 	return fmt.tprintf("%s...", s[:12])
 }
 
-// HH:MM local time from a timeline timestamp (seconds or millis).
-format_when :: proc(at: u64) -> string {
-	seconds := local_seconds(at)
-	minutes_of_day := (seconds / 60) % (24 * 60)
-	hour := minutes_of_day / 60
-	if g_prefs != nil && g_prefs.hour12 {
-		suffix := hour < 12 ? "AM" : "PM"
-		display := hour % 12
-		if display == 0 {
-			display = 12
-		}
-		return fmt.aprintf("%d:%02d %s", display, minutes_of_day % 60, suffix)
-	}
-	return fmt.aprintf("%02d:%02d", hour, minutes_of_day % 60)
-}
-
-MONTH_ABBREV := []string {
-	N_("Jan"),
-	N_("Feb"),
-	N_("Mar"),
-	N_("Apr"),
-	N_("May"),
-	N_("Jun"),
-	N_("Jul"),
-	N_("Aug"),
-	N_("Sep"),
-	N_("Oct"),
-	N_("Nov"),
-	N_("Dec"),
-}
-
-// Full stamp for the timestamp hover tooltip: "Aug 25, 2026 · 09:14".
-format_full :: proc(at: u64) -> string {
-	seconds := local_seconds(at)
-	stamp := time.unix(i64(seconds), 0)
-	year, month, day := time.date(stamp)
-	when_str := format_when(at)
-	defer delete(when_str)
-	return fmt.aprintf("%s %d, %04d · %s", tr(MONTH_ABBREV[int(month) - 1]), day, year, when_str)
-}
-
-// Day-marker label: "Today" for the current local date, else per the
-// General-settings date format.
-format_day :: proc(at: u64) -> string {
-	seconds := local_seconds(at)
-	stamp := time.unix(i64(seconds), 0)
-	year, month, day := time.date(stamp)
-
-	now := u64(time.now()._nsec) / 1_000_000_000
-	now_y, now_m, now_d := time.date(time.unix(i64(local_seconds(now)), 0))
-	if year == now_y && month == now_m && day == now_d {
-		return strings.clone(tr("Today"))
-	}
-	format := g_prefs != nil ? g_prefs.date_format : 2
-	switch format {
-	case 0:
-		return fmt.aprintf("%s %d", tr(MONTH_ABBREV[int(month) - 1]), day)
-	case 1:
-		return fmt.aprintf("%d %s", day, tr(MONTH_ABBREV[int(month) - 1]))
-	}
-	return fmt.aprintf("%04d-%02d-%02d", year, int(month), day)
-}
-
 // Register an nsec with marmot. Blocks on the relay round trip, so the
 // UI calls it through the sign-in worker (workers.odin); the returned
 // hex and error are cloned into `allocator` for the UI thread to adopt.
@@ -1254,7 +1191,9 @@ boot_worker :: proc(t: ^thread.Thread) {
 		return
 	}
 	defer marmot.deployment_free(deployment)
-	options := marmot.Client_Options {store = &store}
+	options := marmot.Client_Options {
+		store = &store,
+	}
 	job.status = marmot.client_new_with_deployment(
 		strings.clone_to_cstring(job.home),
 		raw_data(relays),
@@ -1412,7 +1351,8 @@ row_to_ui :: proc(
 		group_id     = strings.clone(string(row.group_id_hex)),
 		title        = strings.clone(title),
 		preview      = strings.clone(preview),
-		at           = format_when(row.activity_sort_at),
+		at           = format_activity(row.activity_sort_at),
+		activity_at  = row.activity_sort_at,
 		unread       = row.unread_count,
 		pending      = row.pending_confirmation,
 		stable       = row.lifecycle_state == .STABLE,

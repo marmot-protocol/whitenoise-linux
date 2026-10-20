@@ -22,8 +22,8 @@ Gs_Hit :: struct {
 	title:   string, // chat title
 	sender:  string, // display label, "you" for own
 	snippet: string, // one flattened line around the match
-	at:      string, // full date + time stamp
-	when_at: u64, // sort key
+	at:      string, // day label + clock, as the chat dates it
+	when_at: u64, // sort key, and the source for reformatting `at`
 }
 
 // Case fold + latin-1 diacritic strip: "É" matches "e". A tiny fold
@@ -161,38 +161,111 @@ gs_close :: proc(ui: ^Ui_State) {
 	ui.gs_loading = false
 }
 
-// UI dates are UTC calendar days. The end day includes all its seconds.
-gs_day :: proc(text: string) -> (seconds: u64, valid: bool) {
-	if len(text) != 10 || text[4] != '-' || text[7] != '-' {return 0, false}
-	year, month, day := 0, 0, 0
-	for c, i in transmute([]u8)text {
-		if i == 4 || i == 7 {continue}
-		if c < '0' || c > '9' {return 0, false}
-		if i <
-		   4 {year = year * 10 + int(c - '0')} else if i < 7 {month = month * 10 + int(c - '0')} else {day = day * 10 + int(c - '0')}
+// local_seconds reads larger epochs as milliseconds (from year 5138 on).
+@(private = "file")
+GS_YEAR_MAX :: 5000
+
+// An unsigned decimal of `min_len` to `max_len` digits; -1 otherwise.
+@(private = "file")
+gs_number :: proc(text: string, min_len, max_len: int) -> int {
+	if len(text) < min_len || len(text) > max_len {return -1}
+	value := 0
+	for c in transmute([]u8)text {
+		if c < '0' || c > '9' {return -1}
+		value = value * 10 + int(c - '0')
 	}
-	if year < 1970 || month < 1 || month > 12 {return 0, false}
+	return value
+}
+
+// 1-12 for a month abbreviation in the interface language or English,
+// ignoring case and a trailing period ("Okt." = "okt"); 0 otherwise.
+@(private = "file")
+gs_month :: proc(text: string) -> int {
+	word := strings.trim_suffix(text, ".")
+	for name, i in MONTH_ABBREV {
+		if strings.equal_fold(word, strings.trim_suffix(tr(name), ".")) ||
+		   strings.equal_fold(word, name) {
+			return i + 1
+		}
+	}
+	return 0
+}
+
+// Filter days are local calendar days, typed the way the app shows dates:
+// "Oct 3", "Oct 3, 2026", "3 Oct 2026" or "2026-10-03", whatever the Date
+// format setting. A missing year means this one. Returns days since the
+// epoch on the local calendar.
+gs_day :: proc(text: string) -> (days: i64, valid: bool) {
+	parts := strings.fields_proc(
+		text,
+		proc(r: rune) -> bool {return r == ' ' || r == ','},
+		context.temp_allocator,
+	)
+	year, month, day := -1, -1, -1
+	switch len(parts) {
+	case 1:
+		iso := parts[0]
+		if len(iso) != 10 || iso[4] != '-' || iso[7] != '-' {return 0, false}
+		year, month, day =
+			gs_number(iso[:4], 4, 4), gs_number(iso[5:7], 2, 2), gs_number(iso[8:], 2, 2)
+	case 2, 3:
+		year = int(local_time(now_unix()).year)
+		if len(parts) == 3 {year = gs_number(parts[2], 4, 4)}
+		// The month word may come before or after the day: "Oct 3", "3 Oct".
+		if month = gs_month(parts[0]); month > 0 {
+			day = gs_number(parts[1], 1, 2)
+		} else if month = gs_month(parts[1]); month > 0 {
+			day = gs_number(parts[0], 1, 2)
+		}
+	case:
+		return 0, false
+	}
+	if year < 1970 || year > GS_YEAR_MAX || month < 1 || month > 12 {return 0, false}
 	leap := year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 	months := [12]int{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
 	if leap {months[1] = 29}
 	if day < 1 || day > months[month - 1] {return 0, false}
 	previous := year - 1
-	days := 365 * (year - 1970) + previous / 4 - previous / 100 + previous / 400 - 477
-	for i in 0 ..< month - 1 {days += months[i]}
-	days += day - 1
-	return u64(days) * 86400, true
+	count := 365 * (year - 1970) + previous / 4 - previous / 100 + previous / 400 - 477
+	for i in 0 ..< month - 1 {count += months[i]}
+	count += day - 1
+	return i64(count), true
 }
 
+// The instant a local calendar day starts. local_seconds maps an instant
+// to wall-clock seconds; two fixed-point steps invert it across an offset
+// change between the guess and the answer.
+@(private = "file")
+gs_day_start :: proc(days: i64) -> u64 {
+	wall := days * 86400
+	at := wall
+	for _ in 0 ..< 2 {
+		at = max(at, 0)
+		at = wall - (i64(local_seconds(u64(at))) - at)
+	}
+	return u64(max(at, 0))
+}
+
+// A sample date in the user's Date format, for placeholders and errors.
+@(private = "file")
+gs_date_example :: proc() -> string {
+	return date_text({year = 2026, month = 6, day = 12}, .Show, context.temp_allocator)
+}
+
+// The end day includes all its seconds: until is the next day's start.
 gs_dates :: proc(ui: ^Ui_State) -> (since, until: u64, valid: bool) {
 	valid = true
 	if len(ui.gs_since) > 0 {
-		since, valid = gs_day(string(ui.gs_since[:]))
+		days: i64
+		days, valid = gs_day(string(ui.gs_since[:]))
 		if !valid {return}
+		since = gs_day_start(days)
 	}
 	if len(ui.gs_until) > 0 {
-		until, valid = gs_day(string(ui.gs_until[:]))
+		days: i64
+		days, valid = gs_day(string(ui.gs_until[:]))
 		if !valid {return}
-		until += 86400
+		until = gs_day_start(days + 1)
 	}
 	if len(ui.gs_since) > 0 && len(ui.gs_until) > 0 && since >= until {valid = false}
 	return
@@ -268,8 +341,9 @@ gs_refresh :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if !dates_valid {
-		ui.gs_error = strings.clone(
-			tr("Use valid YYYY-MM-DD UTC dates with the start on or before the end."),
+		ui.gs_error = fmt.aprintf(
+			tr("Enter dates like %s, with the start on or before the end."),
+			gs_date_example(),
 		)
 		return
 	}
@@ -656,14 +730,14 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					clay.Text(
-						tr("Start day (UTC)"),
+						tr("Start day"),
 						{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 					)
 					settings_input(
 						ui,
 						"GsSince",
 						&ui.gs_since,
-						"YYYY-MM-DD",
+						gs_date_example(),
 						ui.focus == .GSearch_Since,
 					)
 				}
@@ -677,14 +751,14 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					clay.Text(
-						tr("End day (UTC, inclusive)"),
+						tr("End day (inclusive)"),
 						{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 					)
 					settings_input(
 						ui,
 						"GsUntil",
 						&ui.gs_until,
-						"YYYY-MM-DD",
+						gs_date_example(),
 						ui.focus == .GSearch_Until,
 					)
 				}

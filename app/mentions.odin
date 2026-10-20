@@ -400,7 +400,7 @@ Mention_Hit :: struct {
 	title:   string, // chat title
 	sender:  string, // display label
 	snippet: string,
-	at:      string, // full date + time
+	at:      string, // day label + clock, as the chat dates it
 	when_at: u64,
 	unread:  bool, // not in the persisted read set at refresh time
 }

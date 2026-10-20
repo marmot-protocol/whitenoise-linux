@@ -19,26 +19,33 @@ settings_conversation_preview :: proc(ui: ^Ui_State) {
 		avatar_key = "marmot-preview",
 		title      = tr("Marmot meadow"),
 	}
+	// Sample afternoon stamps, on the clock the user picked.
+	clock := [?]string {
+		clock_text({hour = 14, minute = 2}, .Omit, context.temp_allocator),
+		clock_text({hour = 14, minute = 3}, .Omit, context.temp_allocator),
+		clock_text({hour = 14, minute = 4}, .Omit, context.temp_allocator),
+		clock_text({hour = 14, minute = 5}, .Omit, context.temp_allocator),
+	}
 	messages := [?]Msg_Ui {
 		{
 			sender = "Pip",
 			sender_id = "preview-pip",
 			body = tr("Who put a sun lounger outside the burrow?"),
-			at = "14:02",
+			at = clock[0],
 			sort_at = 1,
 		},
 		{
 			sender = "Maple",
 			sender_id = "preview-maple",
 			body = tr("I did. Very important marmot business."),
-			at = "14:03",
+			at = clock[1],
 			sort_at = 2,
 		},
 		{
 			sender = "Maple",
 			sender_id = "preview-maple",
 			body = tr("Step one: find a warm rock. Step two: become one."),
-			at = "14:03",
+			at = clock[1],
 			sort_at = 3,
 		},
 		{
@@ -46,7 +53,7 @@ settings_conversation_preview :: proc(ui: ^Ui_State) {
 			sender_id = "preview-you",
 			mine = true,
 			body = tr("I packed snacks for the expedition. 🥕"),
-			at = "14:04",
+			at = clock[2],
 			sort_at = 4,
 			reply_from = "Pip",
 			reply_text = tr("Who put a sun lounger outside the burrow?"),
@@ -55,7 +62,7 @@ settings_conversation_preview :: proc(ui: ^Ui_State) {
 			sender = "Pip",
 			sender_id = "preview-pip",
 			body = tr("Perfect. Wake me up when it's spring."),
-			at = "14:05",
+			at = clock[3],
 			sort_at = 5,
 		},
 	}

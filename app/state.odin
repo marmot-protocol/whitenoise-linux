@@ -204,7 +204,8 @@ Chat_Row_Ui :: struct {
 	group_id:     string, // group_id_hex, the chat's stable key
 	title:        string,
 	preview:      string,
-	at:           string, // last-activity HH:MM
+	at:           string, // last activity: clock today, "Yesterday", else the date
+	activity_at:  u64, // activity_sort_at, so `at` can be reformatted
 	unread:       u64,
 	pending:      bool, // invite awaiting accept/decline
 	stable:       bool, // MLS lifecycle stable (session established)
@@ -421,7 +422,7 @@ Msg_Ui :: struct {
 	attachments:         [dynamic]Att_Slot, // one per imeta tag; position = source attachment index
 	at:                  string, // HH:MM
 	at_full:             string, // full date + time, the stamp's hover tooltip
-	day:                 string, // YYYY-MM-DD or "Today", for day markers
+	day:                 string, // "Today" or the date, for day markers
 	sort_at:             u64, // record timeline_at, the render order key
 	mls_order:           int, // position in the marmot page, the read cursor's order
 	mine:                bool,
@@ -583,6 +584,7 @@ Ui_State :: struct {
 	rail_rows:                                             [dynamic]int, // chat indices as rendered in the rail, for Ctrl+Tab cycling
 	rail_peek:                                             bool, // chat list opened by hand in a window too narrow for it; see toggle_rail
 	messages:                                              [dynamic]Msg_Ui, // selected chat's timeline
+	stamp_day:                                             i64, // local day the cached stamps were formatted on; 0 = reformat next frame
 	transcript:                                            ^Transcript_Job,
 	pending:                                               [dynamic]Pending_Send, // optimistic sends awaiting ack
 	react_pending:                                         [dynamic]Pending_React, // optimistic reactions awaiting ack

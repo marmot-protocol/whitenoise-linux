@@ -2,7 +2,6 @@ package main
 
 import "core:c"
 import "core:fmt"
-import "core:strings"
 
 import marmot "../marmot"
 
@@ -10,7 +9,7 @@ foreign import timestamp_lib {WN_BUILD_DIR + "/libwntimestamp.a"}
 
 @(private = "file", default_calling_convention = "c")
 foreign timestamp_lib {
-	wn_timestamp_format :: proc(seconds: i64, style: c.int, out: [^]u8, capacity: c.size_t) -> c.size_t ---
+	wn_timestamp_local :: proc(seconds: i64, out: ^Local_Time) -> c.int ---
 }
 
 @(private)
@@ -54,18 +53,36 @@ timestamp_relative :: proc(seconds, now: i64) -> string {
 	return fmt.tprintf(tr(pattern), count)
 }
 
-// Resolve at display time: relative labels use the current clock, and the
-// native formatter re-reads the device's timezone and locale each call.
+// Resolve at display time: relative labels use the current clock, the
+// native lookup re-reads the device's timezone each call, and absolute
+// labels follow the Date format and Time format settings:
+//
+//   t    2:30 PM        f s  Oct 6, 2026 · 2:30 PM
+//   T    2:30:00 PM     S    Oct 6, 2026 · 2:30:00 PM
+//   d D  Oct 6, 2026    F    Tuesday, Oct 6, 2026 · 2:30 PM
 @(private)
 timestamp_label :: proc(seconds: i64, style: marmot.Markdown_Timestamp_Style, now: i64) -> string {
 	if style == .RELATIVE {return timestamp_relative(seconds, now)}
-	buffer: [4096]u8
-	length := wn_timestamp_format(
-		seconds,
-		c.int(style),
-		raw_data(buffer[:]),
-		c.size_t(len(buffer)),
-	)
-	if length == 0 || length >= c.size_t(len(buffer)) {return timestamp_token(seconds, style)}
-	return strings.clone(string(buffer[:int(length)]), context.temp_allocator)
+	local: Local_Time
+	if wn_timestamp_local(seconds, &local) == 0 {return timestamp_token(seconds, style)}
+	context.allocator = context.temp_allocator
+	#partial switch style {
+	case .SHORT_TIME:
+		return clock_text(local, .Omit)
+	case .LONG_TIME:
+		return clock_text(local, .Show)
+	case .SHORT_DATE, .LONG_DATE:
+		return date_text(local, .Show)
+	case .SHORT_DATE_TIME, .COMPACT_DATE_TIME:
+		return date_clock_text(local, .Omit)
+	case .COMPACT_DATE_TIME_SECONDS:
+		return date_clock_text(local, .Show)
+	case .LONG_DATE_TIME:
+		return fmt.aprintf(
+			"%s, %s",
+			tr(WEEKDAY_NAMES[local.weekday]),
+			date_clock_text(local, .Omit),
+		)
+	}
+	return timestamp_token(seconds, style)
 }

@@ -1797,8 +1797,8 @@ msgstr "Attivato per questo gruppo."
 msgid "Encrypted key copied"
 msgstr "Chiave crittografata copiata"
 
-msgid "End day (UTC, inclusive)"
-msgstr "Giorno finale (UTC, incluso)"
+msgid "End day (inclusive)"
+msgstr "Giorno finale (incluso)"
 
 msgid "End-to-end encrypted"
 msgstr "Crittografato end-to-end"
@@ -1817,6 +1817,10 @@ msgstr "Inserisci nome utente e password, ciascuno da 1 a 255 byte UTF-8."
 
 msgid "Enter an issue title and description."
 msgstr "Inserisci un titolo e una descrizione."
+
+#, c-format
+msgid "Enter dates like %s, with the start on or before the end."
+msgstr "Inserisci date come %s. La data iniziale non deve essere successiva a quella finale."
 
 msgid "Enter publishes, Escape cancels."
 msgstr "Invio pubblica, Esc annulla."
@@ -2005,6 +2009,9 @@ msgstr "Inoltra a"
 #, c-format
 msgid "Forwarding to %s…"
 msgstr "Inoltro a %s…"
+
+msgid "Friday"
+msgstr "venerdì"
 
 msgid "From emoji"
 msgstr "Da emoji"
@@ -2655,6 +2662,9 @@ msgstr "Menta"
 
 msgid "Model inspector"
 msgstr "Ispettore del modello"
+
+msgid "Monday"
+msgstr "lunedì"
 
 msgid "Money"
 msgstr "Denaro"
@@ -3597,6 +3607,9 @@ msgstr "Sicura da condividere. È così che gli altri ti trovano."
 msgid "Saturation"
 msgstr "Saturazione"
 
+msgid "Saturday"
+msgstr "sabato"
+
 msgid "Save"
 msgstr "Salva"
 
@@ -4000,8 +4013,8 @@ msgstr "Crea un gruppo e invita altre persone."
 msgid "Start chat"
 msgstr "Avvia chat"
 
-msgid "Start day (UTC)"
-msgstr "Giorno iniziale (UTC)"
+msgid "Start day"
+msgstr "Giorno iniziale"
 
 msgid "Start minimized to tray"
 msgstr "Avvia ridotto a icona nell'area di notifica"
@@ -4071,6 +4084,9 @@ msgstr "Salvato su questo dispositivo, non ancora pubblicato su alcun relay."
 
 msgid "Study"
 msgstr "Studio"
+
+msgid "Sunday"
+msgstr "domenica"
 
 msgid "Support"
 msgstr "Assistenza"
@@ -4275,6 +4291,9 @@ msgstr "Tre passaggi e puoi inviare il tuo primo messaggio."
 msgid "Through: %s"
 msgstr "Fino al: %s"
 
+msgid "Thursday"
+msgstr "giovedì"
+
 msgid "Time format"
 msgstr "Formato ora"
 
@@ -4338,6 +4357,9 @@ msgstr "Siti affidabili per i link"
 
 msgid "Try a different search."
 msgstr "Prova un'altra ricerca."
+
+msgid "Tuesday"
+msgstr "martedì"
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "Disattiva transizioni animate, voli ed effetti. Lo stato cambia comunque, ma nulla si muove."
@@ -4441,9 +4463,6 @@ msgstr "Usa parole non correlate o una password generata da un gestore di passwo
 msgid "Use username and password"
 msgstr "Usa nome utente e password"
 
-msgid "Use valid YYYY-MM-DD UTC dates with the start on or before the end."
-msgstr "Usa date UTC valide nel formato YYYY-MM-DD. La data iniziale non deve essere successiva a quella finale."
-
 msgid "Used for generated user and group avatars."
 msgstr "Usata per gli avatar generati di utenti e gruppi."
 
@@ -4518,6 +4537,9 @@ msgstr "App Webxdc"
 
 msgid "Webxdc apps are only supported on Linux."
 msgstr "Le app Webxdc sono supportate solo su Linux."
+
+msgid "Wednesday"
+msgstr "mercoledì"
 
 msgid "What is shared"
 msgstr "Dati condivisi"
@@ -4605,6 +4627,9 @@ msgstr "I TUOI ADESIVI"
 
 msgid "Yellow"
 msgstr "Giallo"
+
+msgid "Yesterday"
+msgstr "Ieri"
 
 msgid "You"
 msgstr "Tu"

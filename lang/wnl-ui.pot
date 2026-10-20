@@ -1792,7 +1792,7 @@ msgstr ""
 msgid "Encrypted key copied"
 msgstr ""
 
-msgid "End day (UTC, inclusive)"
+msgid "End day (inclusive)"
 msgstr ""
 
 msgid "End-to-end encrypted"
@@ -1811,6 +1811,10 @@ msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
 msgstr ""
 
 msgid "Enter an issue title and description."
+msgstr ""
+
+#, c-format
+msgid "Enter dates like %s, with the start on or before the end."
 msgstr ""
 
 msgid "Enter publishes, Escape cancels."
@@ -1999,6 +2003,9 @@ msgstr ""
 
 #, c-format
 msgid "Forwarding to %s…"
+msgstr ""
+
+msgid "Friday"
 msgstr ""
 
 msgid "From emoji"
@@ -2648,6 +2655,9 @@ msgid "Mint"
 msgstr ""
 
 msgid "Model inspector"
+msgstr ""
+
+msgid "Monday"
 msgstr ""
 
 msgid "Money"
@@ -3591,6 +3601,9 @@ msgstr ""
 msgid "Saturation"
 msgstr ""
 
+msgid "Saturday"
+msgstr ""
+
 msgid "Save"
 msgstr ""
 
@@ -3994,7 +4007,7 @@ msgstr ""
 msgid "Start chat"
 msgstr ""
 
-msgid "Start day (UTC)"
+msgid "Start day"
 msgstr ""
 
 msgid "Start minimized to tray"
@@ -4064,6 +4077,9 @@ msgid "Stored on this device, not published to any relay yet."
 msgstr ""
 
 msgid "Study"
+msgstr ""
+
+msgid "Sunday"
 msgstr ""
 
 msgid "Support"
@@ -4269,6 +4285,9 @@ msgstr ""
 msgid "Through: %s"
 msgstr ""
 
+msgid "Thursday"
+msgstr ""
+
 msgid "Time format"
 msgstr ""
 
@@ -4330,6 +4349,9 @@ msgid "Trusted link sites"
 msgstr ""
 
 msgid "Try a different search."
+msgstr ""
+
+msgid "Tuesday"
 msgstr ""
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
@@ -4434,9 +4456,6 @@ msgstr ""
 msgid "Use username and password"
 msgstr ""
 
-msgid "Use valid YYYY-MM-DD UTC dates with the start on or before the end."
-msgstr ""
-
 msgid "Used for generated user and group avatars."
 msgstr ""
 
@@ -4510,6 +4529,9 @@ msgid "Webxdc app"
 msgstr ""
 
 msgid "Webxdc apps are only supported on Linux."
+msgstr ""
+
+msgid "Wednesday"
 msgstr ""
 
 msgid "What is shared"
@@ -4597,6 +4619,9 @@ msgid "YOUR STICKERS"
 msgstr ""
 
 msgid "Yellow"
+msgstr ""
+
+msgid "Yesterday"
 msgstr ""
 
 msgid "You"

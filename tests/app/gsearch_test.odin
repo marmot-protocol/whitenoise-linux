@@ -61,23 +61,31 @@ gs_snippet_keeps_mentions :: proc(t: ^testing.T) {
 }
 
 @(test)
-gs_utc_date_boundaries :: proc(t: ^testing.T) {
+gs_local_date_boundaries :: proc(t: ^testing.T) {
 	ui: Ui_State
 	defer {delete(ui.gs_since); delete(ui.gs_until)}
-	append(&ui.gs_since, "1970-01-01")
-	append(&ui.gs_until, "1970-01-01")
-	since, until, valid := gs_dates(&ui)
-	testing.expect(t, valid)
-	testing.expect_value(t, since, u64(0))
-	testing.expect_value(t, until, u64(86400))
-	clear(&ui.gs_since); clear(&ui.gs_until)
+	// Bounds are the local midnights around the day, in any timezone.
 	append(&ui.gs_since, "2000-02-29")
 	append(&ui.gs_until, "2000-02-29")
-	since, until, valid = gs_dates(&ui)
+	since, until, valid := gs_dates(&ui)
 	testing.expect(t, valid)
-	testing.expect_value(t, since, u64(951782400))
-	testing.expect_value(t, until, u64(951868800))
-	for bad in ([]string{"2100-02-29", "2025-02-29", "2026-04-31", "1969-12-31", "2026-1-01", "2026-10-00", "2026-10-01 "}) {
+	testing.expect_value(t, local_seconds(since), u64(951782400))
+	testing.expect_value(t, local_seconds(until), u64(951868800))
+
+	// Every displayed date form names the same day.
+	iso, _ := gs_day("2000-02-29")
+	for form in ([]string{"Feb 29, 2000", "29 Feb 2000", "feb. 29 2000", " Feb 29 , 2000 "}) {
+		days, ok := gs_day(form)
+		testing.expect(t, ok && days == iso, form)
+	}
+
+	// A missing year is the current local year.
+	this_year := local_time(now_unix()).year
+	days, ok := gs_day("Jan 1")
+	dated, _ := gs_day(fmt.tprintf("Jan 1, %d", this_year))
+	testing.expect(t, ok && days == dated, "Jan 1 without a year")
+
+	for bad in ([]string{"2100-02-29", "2025-02-29", "2026-04-31", "1969-12-31", "2026-1-01", "2026-10-00", "Feb 30", "Smarch 3", "3", "Oct 3 26", "Oct Oct", "Oct 3 2026 1"}) {
 		_, ok := gs_day(bad)
 		testing.expect(t, !ok, bad)
 	}
@@ -90,7 +98,7 @@ gs_utc_date_boundaries :: proc(t: ^testing.T) {
 	since, until, valid = gs_dates(&ui)
 	testing.expect(t, valid)
 	testing.expect_value(t, since, u64(0))
-	testing.expect_value(t, until, u64(1790899200))
+	testing.expect_value(t, local_seconds(until), u64(1790899200))
 }
 
 @(test)

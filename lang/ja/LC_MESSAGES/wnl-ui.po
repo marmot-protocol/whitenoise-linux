@@ -1797,8 +1797,8 @@ msgstr "このグループでは有効です。"
 msgid "Encrypted key copied"
 msgstr "暗号化された鍵をコピーしました"
 
-msgid "End day (UTC, inclusive)"
-msgstr "終了日（UTC、その日を含む）"
+msgid "End day (inclusive)"
+msgstr "終了日（その日を含む）"
 
 msgid "End-to-end encrypted"
 msgstr "エンドツーエンド暗号化"
@@ -1817,6 +1817,10 @@ msgstr "ユーザー名とパスワードを、それぞれ UTF-8 で 1 から 2
 
 msgid "Enter an issue title and description."
 msgstr "報告のタイトルと説明を入力してください。"
+
+#, c-format
+msgid "Enter dates like %s, with the start on or before the end."
+msgstr "%s のように日付を入力してください。開始日は終了日以前にしてください。"
 
 msgid "Enter publishes, Escape cancels."
 msgstr "Enter で公開、Escape でキャンセルします。"
@@ -2005,6 +2009,9 @@ msgstr "転送先"
 #, c-format
 msgid "Forwarding to %s…"
 msgstr "%sに転送中…"
+
+msgid "Friday"
+msgstr "金曜日"
 
 msgid "From emoji"
 msgstr "絵文字から"
@@ -2655,6 +2662,9 @@ msgstr "ミント"
 
 msgid "Model inspector"
 msgstr "モデルインスペクター"
+
+msgid "Monday"
+msgstr "月曜日"
 
 msgid "Money"
 msgstr "お金"
@@ -3597,6 +3607,9 @@ msgstr "共有しても安全です。ほかの人はこれであなたを見つ
 msgid "Saturation"
 msgstr "彩度"
 
+msgid "Saturday"
+msgstr "土曜日"
+
 msgid "Save"
 msgstr "保存"
 
@@ -4000,8 +4013,8 @@ msgstr "グループを作成して、ほかの人を招待できます。"
 msgid "Start chat"
 msgstr "チャットを開始"
 
-msgid "Start day (UTC)"
-msgstr "開始日（UTC）"
+msgid "Start day"
+msgstr "開始日"
 
 msgid "Start minimized to tray"
 msgstr "トレイに最小化して起動"
@@ -4071,6 +4084,9 @@ msgstr "この端末に保存されていますが、まだどのリレーにも
 
 msgid "Study"
 msgstr "勉強"
+
+msgid "Sunday"
+msgstr "日曜日"
 
 msgid "Support"
 msgstr "サポート"
@@ -4275,6 +4291,9 @@ msgstr "3 つの手順で最初のメッセージを送れます。"
 msgid "Through: %s"
 msgstr "終了: %s"
 
+msgid "Thursday"
+msgstr "木曜日"
+
 msgid "Time format"
 msgstr "時刻形式"
 
@@ -4338,6 +4357,9 @@ msgstr "信頼済みのリンク先"
 
 msgid "Try a different search."
 msgstr "別の検索語を試してください。"
+
+msgid "Tuesday"
+msgstr "火曜日"
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "アニメーションによる切り替え、移動、エフェクトをオフにします。状態は変わりますが、何も動きません。"
@@ -4441,9 +4463,6 @@ msgstr "関連のない単語を組み合わせるか、パスワードマネー
 msgid "Use username and password"
 msgstr "ユーザー名とパスワードを使う"
 
-msgid "Use valid YYYY-MM-DD UTC dates with the start on or before the end."
-msgstr "YYYY-MM-DD形式の有効なUTC日付を入力してください。開始日は終了日以前にしてください。"
-
 msgid "Used for generated user and group avatars."
 msgstr "ユーザーやグループの自動生成アバターに使用します。"
 
@@ -4518,6 +4537,9 @@ msgstr "Webxdc アプリ"
 
 msgid "Webxdc apps are only supported on Linux."
 msgstr "WebxdcアプリはLinuxでのみサポートされています。"
+
+msgid "Wednesday"
+msgstr "水曜日"
 
 msgid "What is shared"
 msgstr "共有されるデータ"
@@ -4605,6 +4627,9 @@ msgstr "あなたのステッカー"
 
 msgid "Yellow"
 msgstr "黄"
+
+msgid "Yesterday"
+msgstr "昨日"
 
 msgid "You"
 msgstr "あなた"

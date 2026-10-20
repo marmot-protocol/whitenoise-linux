@@ -494,6 +494,7 @@ app_main :: proc() {
 	}
 	set_locale(ui.prefs.locale)
 	g_prefs = &ui.prefs
+	ui.stamp_day = local_day(now_unix()) // rows loaded below are stamped today
 	apply_theme(ui.theme, ui.accent)
 
 	// Headroom over clay's defaults (8192 elements): per-letter effect
@@ -828,6 +829,7 @@ app_main :: proc() {
 			defer chats_collect()
 			defer {if wrap_flush {wrap_clear()}}
 			poll_system_theme(&ui, rl.GetTime())
+			if stamps_tick(&ui) {live.refresh_dirty = true}
 
 			focused := rl.IsWindowFocused()
 			if focused && !focused_was {

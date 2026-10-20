@@ -400,7 +400,7 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 									hit.sender == "you" ? "you" : profile_label(client, hit.sender)
 								name := strings.clone(label)
 								delete(hit.sender); hit.sender = name
-								hit.at = format_full(hit.when_at)
+								hit.at = format_day_clock(hit.when_at)
 								if kind == .Global {
 									append(&ui.gs_hits, hit)
 								} else {
