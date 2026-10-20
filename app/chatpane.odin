@@ -1408,6 +1408,32 @@ nc_member_ref :: proc(ui: ^Ui_State) -> string {
 	return deeplink_hex(member)
 }
 
+// Pubkey hex of a pasted npub, nprofile, hex key or marmot://profile link;
+// "" for anything else and for your own key.
+@(private)
+nc_address_hex :: proc(ui: ^Ui_State, text: string) -> string {
+	ref := strings.trim_space(text)
+	if link := marmot_link_ref(ref); link != "" {ref = link}
+	hx := deeplink_hex(ref)
+	if strings.equal_fold(hx, ui.account_ref) {return ""}
+	return hx
+}
+
+@(private)
+Nc_Member_Menu :: enum {
+	Hidden,
+	Contacts,
+	No_Matches,
+}
+
+// An empty field or an address Create group accepts is not a failed search.
+@(private)
+nc_member_menu :: proc(query: string, matches: int, accepted: bool) -> Nc_Member_Menu {
+	if matches > 0 {return .Contacts}
+	if strings.trim_space(query) == "" || accepted {return .Hidden}
+	return .No_Matches
+}
+
 @(private)
 NC_MEMBER_H :: f32(48)
 
@@ -1421,6 +1447,7 @@ nc_member_options :: proc(ui: ^Ui_State) {
 	if !field.found {return}
 	rows := nc_contact_matches(ui, string(ui.nc_member[:]))
 	count := len(rows)
+	if nc_member_menu(string(ui.nc_member[:]), count, nc_member_ref(ui) != "") == .Hidden {return}
 	ui.nc_contact_sel = clamp(ui.nc_contact_sel, 0, max(0, count - 1))
 	below :=
 		clay.GetElementData(clay.ID("NCCreate")).boundingBox.y -
@@ -1532,7 +1559,17 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 		if count == 0 {
 			loading := false
 			for job in account_jobs {if job.account == ui.account_ref && job.kind == .Read_Contacts {loading = true; break}}
-			if clay.UI(clay.ID("NCEmptyContacts"))(
+			address := nc_address_hex(ui, string(ui.nc_search[:]))
+			if address != "" {
+				npub := hex_npub(address)
+				defer delete(npub)
+				nc_action_row(
+					"NCStartAddress",
+					ICON_CHATS,
+					tr("Start a chat with this public key"),
+					npub_tail(npub),
+				)
+			} else if clay.UI(clay.ID("NCEmptyContacts"))(
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
@@ -1542,10 +1579,17 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
+				searching := len(strings.trim_space(string(ui.nc_search[:]))) > 0
 				clay.Text(
-					loading ? tr("Loading your contacts") : len(ui.nc_search) > 0 ? tr("No matching contacts") : tr("No contacts yet"),
+					loading ? tr("Loading your contacts") : searching ? tr("No matching contacts") : tr("No contacts yet"),
 					{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT},
 				)
+				if !loading {
+					clay.Text(
+						searching ? tr("To start a chat with someone new, paste their public key.") : tr("People you follow show up here. To start a chat now, paste someone's public key in the field above."),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					)
+				}
 				if loading {busy_bar("NCContactsBusy")}
 			}
 		} else {
@@ -1624,6 +1668,8 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 new_chat_pane :: proc(ui: ^Ui_State) {
 	pending := nc_pending_label(ui)
 	group := ui.nc_page == .Group
+	no_contacts := len(ui.nc_contacts) == 0
+	for job in account_jobs {if job.account == ui.account_ref && job.kind == .Read_Contacts {no_contacts = false; break}}
 	if clay.UI(clay.ID("NewChatPane"))(
 	{
 		layout = {
@@ -1668,7 +1714,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 						{fontId = FONT_TITLE, fontSize = 26, textColor = TEXT},
 					)
 					clay.Text(
-						group ? tr("Give your group a name and a photo.") : tr("Choose someone to talk to."),
+						group ? tr("Give your group a name and a photo.") : no_contacts ? tr("Paste someone's public key to start a chat.") : tr("Choose someone to talk to."),
 						{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
 					)
 				}
@@ -1679,7 +1725,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 					ui,
 					"NCSearch",
 					&ui.nc_search,
-					tr("Search contacts..."),
+					tr("Search contacts or paste a public key..."),
 					ui.focus == .NC_Search,
 					0,
 				)
@@ -1748,10 +1794,16 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 						ui.focus == .NC_Member,
 						0,
 					)
-					clay.Text(
-						ui.nc_member_choice > 0 ? npub_tail(ui.nc_contacts[ui.nc_member_choice - 1].npub) : tr("Choose a contact or paste a Nostr address."),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-					)
+					hint := tr("Choose a contact or paste a Nostr address.")
+					if ui.nc_member_choice > 0 {
+						hint = npub_tail(ui.nc_contacts[ui.nc_member_choice - 1].npub)
+					} else if address := nc_address_hex(ui, string(ui.nc_member[:]));
+					   address != "" {
+						npub := hex_npub(address)
+						defer delete(npub)
+						hint = fmt.tprintf(tr("%s will be added to the group."), npub_tail(npub))
+					}
+					clay.Text(hint, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
 				}
 				scrollbar(clay.ID("NCForm"))
 			}

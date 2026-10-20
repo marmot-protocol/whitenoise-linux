@@ -1585,6 +1585,14 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if ui.nc_page == .Contacts {
 		if field_mouse(ui, &ui.nc_search, "NCSearch", 14) {ui.focus = .NC_Search}
+		// A pasted key with no matching contact starts a chat with that person.
+		if address := nc_address_hex(ui, string(ui.nc_search[:]));
+		   address != "" &&
+		   len(nc_contact_matches(ui, string(ui.nc_search[:]))) == 0 &&
+		   (clicked("NCStartAddress") || rl.IsKeyPressed(.ENTER)) {
+			new_chat_create_and_open(ui, client, profile_label(client, address), address)
+			return
+		}
 		if rl.IsKeyPressed(.UP) || rl.IsKeyPressed(.DOWN) || rl.IsKeyPressed(.ENTER) {
 			rows := nc_contact_matches(ui, string(ui.nc_search[:]))
 			if len(rows) == 0 {return}
