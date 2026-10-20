@@ -116,6 +116,10 @@ msgid "%d months ago"
 msgstr ""
 
 #, c-format
+msgid "%d of %d"
+msgstr ""
+
+#, c-format
 msgid "%d of %d connected"
 msgstr ""
 
@@ -245,6 +249,10 @@ msgstr ""
 
 #, c-format
 msgid "%s was removed from the group"
+msgstr ""
+
+#, c-format
+msgid "%s will be added to the group."
 msgstr ""
 
 #, c-format
@@ -852,6 +860,9 @@ msgstr ""
 msgid "Clear effect"
 msgstr ""
 
+msgid "Clear filters"
+msgstr ""
+
 msgid "Clear search"
 msgstr ""
 
@@ -985,6 +996,9 @@ msgid "Connector guide"
 msgstr ""
 
 msgid "Contact"
+msgstr ""
+
+msgid "Contact list collapsed"
 msgstr ""
 
 msgid "Contacts first, then A-Z"
@@ -1719,6 +1733,9 @@ msgstr ""
 msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder it."
 msgstr ""
 
+msgid "Drag a folder to reorder it. Your chats appear here once you have some."
+msgstr ""
+
 msgid "Drop here"
 msgstr ""
 
@@ -1926,6 +1943,9 @@ msgstr ""
 msgid "Files"
 msgstr ""
 
+msgid "Files shared in this chat will appear here."
+msgstr ""
+
 msgid "Filter chats"
 msgstr ""
 
@@ -2105,6 +2125,9 @@ msgstr ""
 msgid "Grouped"
 msgstr ""
 
+msgid "Grouped sorts your chats into folders, and you have none yet."
+msgstr ""
+
 msgid "HIGHLIGHT"
 msgstr ""
 
@@ -2201,6 +2224,9 @@ msgid "Import :%s:"
 msgstr ""
 
 msgid "Import a backup"
+msgstr ""
+
+msgid "Import a contacts CSV or JSON export to add people."
 msgstr ""
 
 msgid "Import a key"
@@ -2783,6 +2809,9 @@ msgstr ""
 msgid "No chat is open. Select one and refresh."
 msgstr ""
 
+msgid "No chats match your filter."
+msgstr ""
+
 msgid "No chats to share with yet."
 msgstr ""
 
@@ -2798,6 +2827,9 @@ msgstr ""
 msgid "No description."
 msgstr ""
 
+msgid "No emoji match your search."
+msgstr ""
+
 msgid "No emoji selected"
 msgstr ""
 
@@ -2811,6 +2843,9 @@ msgid "No emoji sets match your search."
 msgstr ""
 
 msgid "No files match these filters."
+msgstr ""
+
+msgid "No files yet."
 msgstr ""
 
 msgid "No folders match your search."
@@ -2858,6 +2893,10 @@ msgstr ""
 msgid "No messages yet"
 msgstr ""
 
+#, c-format
+msgid "No one in this chat matches @%s."
+msgstr ""
+
 msgid "No preview available"
 msgstr ""
 
@@ -2881,6 +2920,9 @@ msgid "No stickers here yet."
 msgstr ""
 
 msgid "No trusted sites."
+msgstr ""
+
+msgid "No unread chats"
 msgstr ""
 
 msgid "Noir film treatment"
@@ -2994,6 +3036,9 @@ msgstr ""
 msgid "Open in client"
 msgstr ""
 
+msgid "Open it again with › in the left column or the button below."
+msgstr ""
+
 msgid "Open locations in"
 msgstr ""
 
@@ -3088,6 +3133,9 @@ msgstr ""
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr ""
 
+msgid "Paste someone's public key to start a chat."
+msgstr ""
+
 #, c-format
 msgid "Paste this into %s. Review the installation plan before approving changes."
 msgstr ""
@@ -3105,6 +3153,9 @@ msgid "People"
 msgstr ""
 
 msgid "People can't invite you"
+msgstr ""
+
+msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
 msgstr ""
 
 msgid "Perfect. Wake me up when it's spring."
@@ -3681,6 +3732,9 @@ msgstr ""
 msgid "Search archived chats..."
 msgstr ""
 
+msgid "Search contacts or paste a public key..."
+msgstr ""
+
 msgid "Search contacts..."
 msgstr ""
 
@@ -3898,7 +3952,13 @@ msgstr ""
 msgid "Show a map for each shared location. Map images load from tile.openstreetmap.org, which sees your IP address and the area you view. Place names load from nominatim.openstreetmap.org, which receives the location rounded to about 100 m. Map images are cached on this device, encrypted, up to 1 GB."
 msgstr ""
 
+msgid "Show all chats"
+msgstr ""
+
 msgid "Show as QR"
+msgstr ""
+
+msgid "Show contact list"
 msgstr ""
 
 msgid "Show fewer files"
@@ -3999,6 +4059,9 @@ msgid "Speech to text"
 msgstr ""
 
 msgid "Square"
+msgstr ""
+
+msgid "Start a chat with this public key"
 msgstr ""
 
 msgid "Start a group and invite people."
@@ -4303,6 +4366,9 @@ msgstr ""
 msgid "Title font"
 msgstr ""
 
+msgid "To start a chat with someone new, paste their public key."
+msgstr ""
+
 msgid "Today"
 msgstr ""
 
@@ -4430,6 +4496,12 @@ msgid "Uploaded emoji"
 msgstr ""
 
 msgid "Uploading picture"
+msgstr ""
+
+msgid "Use New folder to create a folder, then drag a chat onto it."
+msgstr ""
+
+msgid "Use New folder to create a folder. Your chats appear here once you have some."
 msgstr ""
 
 msgid "Use a SOCKS5 proxy"
@@ -4633,6 +4705,15 @@ msgstr ""
 msgid "You can't send messages to someone you blocked."
 msgstr ""
 
+msgid "You have no chats to share this with."
+msgstr ""
+
+msgid "You have no other chats to forward this to."
+msgstr ""
+
+msgid "You have read every chat."
+msgstr ""
+
 msgid "You have the latest version."
 msgstr ""
 
@@ -4662,6 +4743,9 @@ msgid "Your account has a pending action. Complete it before reconnecting your s
 msgstr ""
 
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
+msgstr ""
+
+msgid "Your chats appear here once you have some."
 msgstr ""
 
 msgid "Your current password"

@@ -116,6 +116,10 @@ msgid "%d months ago"
 msgstr "%dか月前"
 
 #, c-format
+msgid "%d of %d"
+msgstr "%d / %d"
+
+#, c-format
 msgid "%d of %d connected"
 msgstr "%d / %d 件接続済み"
 
@@ -246,6 +250,10 @@ msgstr "%sさんが管理者になりました"
 #, c-format
 msgid "%s was removed from the group"
 msgstr "%sさんがグループから削除されました"
+
+#, c-format
+msgid "%s will be added to the group."
+msgstr "%s がグループに追加されます。"
 
 #, c-format
 msgid "%s · Click to download."
@@ -855,6 +863,9 @@ msgstr "キャッシュした添付ファイルを削除"
 msgid "Clear effect"
 msgstr "エフェクトを解除"
 
+msgid "Clear filters"
+msgstr "フィルターをクリア"
+
 msgid "Clear search"
 msgstr "検索をクリア"
 
@@ -989,6 +1000,9 @@ msgstr "コネクターガイド"
 
 msgid "Contact"
 msgstr "連絡先"
+
+msgid "Contact list collapsed"
+msgstr "連絡先リストは折りたたまれています"
 
 msgid "Contacts first, then A-Z"
 msgstr "連絡先を優先し、次にA-Z順"
@@ -1724,6 +1738,9 @@ msgstr "ダウンロード"
 msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder it."
 msgstr "チャットをフォルダにドラッグするとそこに置かれます。フォルダをドラッグすると並べ替えられます。"
 
+msgid "Drag a folder to reorder it. Your chats appear here once you have some."
+msgstr "フォルダをドラッグすると並べ替えられます。チャットができるとここに表示されます。"
+
 msgid "Drop here"
 msgstr "ここにドロップ"
 
@@ -1931,6 +1948,9 @@ msgstr "入力欄のホバー"
 msgid "Files"
 msgstr "ファイル"
 
+msgid "Files shared in this chat will appear here."
+msgstr "このチャットで共有されたファイルはここに表示されます。"
+
 msgid "Filter chats"
 msgstr "チャットを絞り込む"
 
@@ -2110,6 +2130,9 @@ msgstr "グループ設定"
 msgid "Grouped"
 msgstr "フォルダ別"
 
+msgid "Grouped sorts your chats into folders, and you have none yet."
+msgstr "「フォルダ別」ではチャットをフォルダごとに分けますが、まだフォルダがありません。"
+
 msgid "HIGHLIGHT"
 msgstr "ハイライト"
 
@@ -2207,6 +2230,9 @@ msgstr ":%s: をインポート"
 
 msgid "Import a backup"
 msgstr "バックアップをインポート"
+
+msgid "Import a contacts CSV or JSON export to add people."
+msgstr "連絡先のCSVまたはJSONエクスポートをインポートすると、相手を追加できます。"
 
 msgid "Import a key"
 msgstr "鍵をインポート"
@@ -2789,6 +2815,9 @@ msgstr "この端末ではまだバックアップを作成していません。
 msgid "No chat is open. Select one and refresh."
 msgstr "チャットが開かれていません。チャットを選択して更新してください。"
 
+msgid "No chats match your filter."
+msgstr "フィルターに一致するチャットはありません。"
+
 msgid "No chats to share with yet."
 msgstr "共有できるチャットはまだありません。"
 
@@ -2804,6 +2833,9 @@ msgstr "連絡先がまだありません"
 msgid "No description."
 msgstr "説明はありません。"
 
+msgid "No emoji match your search."
+msgstr "検索に一致する絵文字はありません。"
+
 msgid "No emoji selected"
 msgstr "絵文字が選択されていません"
 
@@ -2818,6 +2850,9 @@ msgstr "検索に一致する絵文字セットはありません。"
 
 msgid "No files match these filters."
 msgstr "このフィルターに一致するファイルはありません。"
+
+msgid "No files yet."
+msgstr "ファイルはまだありません。"
 
 msgid "No folders match your search."
 msgstr "検索に一致するフォルダはありません。"
@@ -2864,6 +2899,10 @@ msgstr "まだメンションはありません。"
 msgid "No messages yet"
 msgstr "まだメッセージはありません"
 
+#, c-format
+msgid "No one in this chat matches @%s."
+msgstr "このチャットに @%s に一致する人はいません。"
+
 msgid "No preview available"
 msgstr "プレビューはありません"
 
@@ -2888,6 +2927,9 @@ msgstr "まだステッカーがありません。"
 
 msgid "No trusted sites."
 msgstr "信頼済みのサイトはありません。"
+
+msgid "No unread chats"
+msgstr "未読のチャットはありません"
 
 msgid "Noir film treatment"
 msgstr "フィルムノワール風の効果"
@@ -3000,6 +3042,9 @@ msgstr "ブラウザで開く"
 msgid "Open in client"
 msgstr "クライアントで開く"
 
+msgid "Open it again with › in the left column or the button below."
+msgstr "左の列の › または下のボタンで再び開けます。"
+
 msgid "Open locations in"
 msgstr "位置情報を開くサービス"
 
@@ -3094,6 +3139,9 @@ msgstr "パスワード"
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "パックのリンクを貼り付けると、追加する前にステッカーを確認できます。"
 
+msgid "Paste someone's public key to start a chat."
+msgstr "相手の公開鍵を貼り付けてチャットを始めてください。"
+
 #, c-format
 msgid "Paste this into %s. Review the installation plan before approving changes."
 msgstr "このプロンプトを%sに貼り付けてください。変更を承認する前に、インストール計画を確認してください。"
@@ -3112,6 +3160,9 @@ msgstr "連絡先"
 
 msgid "People can't invite you"
 msgstr "ほかの人があなたを招待できません"
+
+msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
+msgstr "フォローしている人がここに表示されます。今すぐチャットを始めるには、上の欄に相手の公開鍵を貼り付けてください。"
 
 msgid "Perfect. Wake me up when it's spring."
 msgstr "最高です。春になったら起こしてください。"
@@ -3687,6 +3738,9 @@ msgstr "すべてのチャットを検索"
 msgid "Search archived chats..."
 msgstr "アーカイブしたチャットを検索..."
 
+msgid "Search contacts or paste a public key..."
+msgstr "連絡先を検索するか、公開鍵を貼り付け..."
+
 msgid "Search contacts..."
 msgstr "連絡先を検索..."
 
@@ -3904,8 +3958,14 @@ msgstr "表示"
 msgid "Show a map for each shared location. Map images load from tile.openstreetmap.org, which sees your IP address and the area you view. Place names load from nominatim.openstreetmap.org, which receives the location rounded to about 100 m. Map images are cached on this device, encrypted, up to 1 GB."
 msgstr "共有された位置情報ごとに地図を表示します。地図画像は tile.openstreetmap.org から読み込まれ、IP アドレスと表示している範囲が相手に伝わります。地名は nominatim.openstreetmap.org から読み込まれ、約 100 m に丸めた位置情報が送信されます。地図画像は暗号化してこのデバイスに最大 1 GB まで保存されます。"
 
+msgid "Show all chats"
+msgstr "すべてのチャットを表示"
+
 msgid "Show as QR"
 msgstr "QR コードで表示"
+
+msgid "Show contact list"
+msgstr "連絡先リストを表示"
 
 msgid "Show fewer files"
 msgstr "表示するファイルを減らす"
@@ -4006,6 +4066,9 @@ msgstr "音声認識"
 
 msgid "Square"
 msgstr "四角"
+
+msgid "Start a chat with this public key"
+msgstr "この公開鍵でチャットを始める"
 
 msgid "Start a group and invite people."
 msgstr "グループを作成して、ほかの人を招待できます。"
@@ -4310,6 +4373,9 @@ msgstr "タイトル"
 msgid "Title font"
 msgstr "タイトル"
 
+msgid "To start a chat with someone new, paste their public key."
+msgstr "新しい相手とチャットを始めるには、その人の公開鍵を貼り付けてください。"
+
 msgid "Today"
 msgstr "今日"
 
@@ -4438,6 +4504,12 @@ msgstr "アップロード済みの絵文字"
 
 msgid "Uploading picture"
 msgstr "画像をアップロードしています"
+
+msgid "Use New folder to create a folder, then drag a chat onto it."
+msgstr "「新しいフォルダ」でフォルダを作成し、チャットをそこにドラッグしてください。"
+
+msgid "Use New folder to create a folder. Your chats appear here once you have some."
+msgstr "「新しいフォルダ」でフォルダを作成してください。チャットができるとここに表示されます。"
 
 msgid "Use a SOCKS5 proxy"
 msgstr "SOCKS5 プロキシを使う"
@@ -4640,6 +4712,15 @@ msgstr "サインアウトしましたが、署名者の記録を暗号化され
 msgid "You can't send messages to someone you blocked."
 msgstr "ブロックした相手にはメッセージを送信できません。"
 
+msgid "You have no chats to share this with."
+msgstr "共有先にできるチャットはありません。"
+
+msgid "You have no other chats to forward this to."
+msgstr "転送先にできる他のチャットはありません。"
+
+msgid "You have read every chat."
+msgstr "すべてのチャットを既読にしました。"
+
 msgid "You have the latest version."
 msgstr "最新バージョンです。"
 
@@ -4670,6 +4751,9 @@ msgstr "このアカウントには保留中の操作があります。署名者
 
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr "アカウントは削除されましたが、署名者の記録を暗号化された保管庫から削除できませんでした。"
+
+msgid "Your chats appear here once you have some."
+msgstr "チャットができるとここに表示されます。"
 
 msgid "Your current password"
 msgstr "現在のパスワード"

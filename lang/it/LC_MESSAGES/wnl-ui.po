@@ -116,6 +116,10 @@ msgid "%d months ago"
 msgstr "%d mesi fa"
 
 #, c-format
+msgid "%d of %d"
+msgstr "%d di %d"
+
+#, c-format
 msgid "%d of %d connected"
 msgstr "%d di %d connessi"
 
@@ -246,6 +250,10 @@ msgstr "%s è stato nominato admin"
 #, c-format
 msgid "%s was removed from the group"
 msgstr "%s è stato rimosso dal gruppo"
+
+#, c-format
+msgid "%s will be added to the group."
+msgstr "%s verrà aggiunto al gruppo."
 
 #, c-format
 msgid "%s · Click to download."
@@ -855,6 +863,9 @@ msgstr "Svuota gli allegati in cache"
 msgid "Clear effect"
 msgstr "Rimuovi effetto"
 
+msgid "Clear filters"
+msgstr "Cancella filtri"
+
 msgid "Clear search"
 msgstr "Cancella ricerca"
 
@@ -989,6 +1000,9 @@ msgstr "Guida del connettore"
 
 msgid "Contact"
 msgstr "Contatto"
+
+msgid "Contact list collapsed"
+msgstr "Elenco contatti compresso"
 
 msgid "Contacts first, then A-Z"
 msgstr "Prima i contatti, poi A-Z"
@@ -1724,6 +1738,9 @@ msgstr "Download"
 msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder it."
 msgstr "Trascina una chat su una cartella per tenerla lì, o trascina una cartella per riordinarla."
 
+msgid "Drag a folder to reorder it. Your chats appear here once you have some."
+msgstr "Trascina una cartella per riordinarla. Le tue chat appariranno qui quando ne avrai."
+
 msgid "Drop here"
 msgstr "Rilascia qui"
 
@@ -1931,6 +1948,9 @@ msgstr "Campo al passaggio"
 msgid "Files"
 msgstr "File"
 
+msgid "Files shared in this chat will appear here."
+msgstr "I file condivisi in questa chat appariranno qui."
+
 msgid "Filter chats"
 msgstr "Filtra le chat"
 
@@ -2110,6 +2130,9 @@ msgstr "Impostazioni del gruppo"
 msgid "Grouped"
 msgstr "Raggruppate"
 
+msgid "Grouped sorts your chats into folders, and you have none yet."
+msgstr "Raggruppate ordina le tue chat in cartelle, ma non ne hai ancora nessuna."
+
 msgid "HIGHLIGHT"
 msgstr "EVIDENZIAZIONE"
 
@@ -2207,6 +2230,9 @@ msgstr "Importa :%s:"
 
 msgid "Import a backup"
 msgstr "Importa un backup"
+
+msgid "Import a contacts CSV or JSON export to add people."
+msgstr "Importa un'esportazione dei contatti CSV o JSON per aggiungere persone."
 
 msgid "Import a key"
 msgstr "Importa una chiave"
@@ -2789,6 +2815,9 @@ msgstr "Ancora nessun backup creato da questo dispositivo."
 msgid "No chat is open. Select one and refresh."
 msgstr "Nessuna chat aperta. Selezionane una e aggiorna."
 
+msgid "No chats match your filter."
+msgstr "Nessuna chat corrisponde al tuo filtro."
+
 msgid "No chats to share with yet."
 msgstr "Ancora nessuna chat con cui condividere."
 
@@ -2804,6 +2833,9 @@ msgstr "Ancora nessun contatto"
 msgid "No description."
 msgstr "Nessuna descrizione."
 
+msgid "No emoji match your search."
+msgstr "Nessuna emoji corrisponde alla tua ricerca."
+
 msgid "No emoji selected"
 msgstr "Nessuna emoji selezionata"
 
@@ -2818,6 +2850,9 @@ msgstr "Nessun set di emoji corrisponde alla ricerca."
 
 msgid "No files match these filters."
 msgstr "Nessun file corrisponde a questi filtri."
+
+msgid "No files yet."
+msgstr "Ancora nessun file."
 
 msgid "No folders match your search."
 msgstr "Nessuna cartella corrisponde alla ricerca."
@@ -2864,6 +2899,10 @@ msgstr "Ancora nessuna menzione."
 msgid "No messages yet"
 msgstr "Ancora nessun messaggio"
 
+#, c-format
+msgid "No one in this chat matches @%s."
+msgstr "Nessuno in questa chat corrisponde a @%s."
+
 msgid "No preview available"
 msgstr "Anteprima non disponibile"
 
@@ -2888,6 +2927,9 @@ msgstr "Qui non ci sono ancora adesivi."
 
 msgid "No trusted sites."
 msgstr "Nessun sito affidabile."
+
+msgid "No unread chats"
+msgstr "Nessuna chat non letta"
 
 msgid "Noir film treatment"
 msgstr "Effetto film noir"
@@ -3000,6 +3042,9 @@ msgstr "Apri nel browser"
 msgid "Open in client"
 msgstr "Apri nel client"
 
+msgid "Open it again with › in the left column or the button below."
+msgstr "Riaprilo con › nella colonna di sinistra o con il pulsante qui sotto."
+
 msgid "Open locations in"
 msgstr "Apri le posizioni in"
 
@@ -3094,6 +3139,9 @@ msgstr "Password"
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "Incolla il link di un pacchetto per vedere gli adesivi prima di aggiungerlo."
 
+msgid "Paste someone's public key to start a chat."
+msgstr "Incolla la chiave pubblica di qualcuno per avviare una chat."
+
 #, c-format
 msgid "Paste this into %s. Review the installation plan before approving changes."
 msgstr "Incolla questo prompt in %s. Verifica il piano di installazione prima di approvare le modifiche."
@@ -3112,6 +3160,9 @@ msgstr "Contatti"
 
 msgid "People can't invite you"
 msgstr "Gli altri non riescono a invitarti"
+
+msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
+msgstr "Qui compaiono le persone che segui. Per avviare subito una chat, incolla la chiave pubblica di qualcuno nel campo qui sopra."
 
 msgid "Perfect. Wake me up when it's spring."
 msgstr "Perfetto. Svegliami quando arriva la primavera."
@@ -3687,6 +3738,9 @@ msgstr "Cerca in tutte le chat"
 msgid "Search archived chats..."
 msgstr "Cerca nelle chat archiviate..."
 
+msgid "Search contacts or paste a public key..."
+msgstr "Cerca contatti o incolla una chiave pubblica..."
+
 msgid "Search contacts..."
 msgstr "Cerca contatti..."
 
@@ -3904,8 +3958,14 @@ msgstr "Mostra"
 msgid "Show a map for each shared location. Map images load from tile.openstreetmap.org, which sees your IP address and the area you view. Place names load from nominatim.openstreetmap.org, which receives the location rounded to about 100 m. Map images are cached on this device, encrypted, up to 1 GB."
 msgstr "Mostra una mappa per ogni posizione condivisa. Le immagini della mappa vengono caricate da tile.openstreetmap.org, che vede il tuo indirizzo IP e la zona che guardi. I nomi dei luoghi vengono caricati da nominatim.openstreetmap.org, che riceve la posizione arrotondata a circa 100 m. Le immagini della mappa vengono salvate su questo dispositivo, cifrate, fino a 1 GB."
 
+msgid "Show all chats"
+msgstr "Mostra tutte le chat"
+
 msgid "Show as QR"
 msgstr "Mostra come QR"
+
+msgid "Show contact list"
+msgstr "Mostra l'elenco contatti"
 
 msgid "Show fewer files"
 msgstr "Mostra meno file"
@@ -4006,6 +4066,9 @@ msgstr "Da voce a testo"
 
 msgid "Square"
 msgstr "Quadrato"
+
+msgid "Start a chat with this public key"
+msgstr "Avvia una chat con questa chiave pubblica"
 
 msgid "Start a group and invite people."
 msgstr "Crea un gruppo e invita altre persone."
@@ -4310,6 +4373,9 @@ msgstr "Titolo"
 msgid "Title font"
 msgstr "Titolo"
 
+msgid "To start a chat with someone new, paste their public key."
+msgstr "Per avviare una chat con una persona nuova, incolla la sua chiave pubblica."
+
 msgid "Today"
 msgstr "Oggi"
 
@@ -4438,6 +4504,12 @@ msgstr "Emoji caricate"
 
 msgid "Uploading picture"
 msgstr "Caricamento dell'immagine"
+
+msgid "Use New folder to create a folder, then drag a chat onto it."
+msgstr "Usa Nuova cartella per creare una cartella, poi trascina una chat al suo interno."
+
+msgid "Use New folder to create a folder. Your chats appear here once you have some."
+msgstr "Usa Nuova cartella per creare una cartella. Le tue chat appariranno qui quando ne avrai."
 
 msgid "Use a SOCKS5 proxy"
 msgstr "Usa un proxy SOCKS5"
@@ -4640,6 +4712,15 @@ msgstr "Hai effettuato la disconnessione, ma non è stato possibile rimuovere il
 msgid "You can't send messages to someone you blocked."
 msgstr "Non puoi inviare messaggi a qualcuno che hai bloccato."
 
+msgid "You have no chats to share this with."
+msgstr "Non hai chat con cui condividerlo."
+
+msgid "You have no other chats to forward this to."
+msgstr "Non hai altre chat a cui inoltrarlo."
+
+msgid "You have read every chat."
+msgstr "Hai letto tutte le chat."
+
 msgid "You have the latest version."
 msgstr "Hai la versione più recente."
 
@@ -4670,6 +4751,9 @@ msgstr "Il tuo account ha un'azione in sospeso. Completala prima di riconnettere
 
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr "Il tuo account è stato rimosso, ma non è stato possibile rimuovere il record del suo firmatario dalla cassaforte cifrata."
+
+msgid "Your chats appear here once you have some."
+msgstr "Le tue chat appariranno qui quando ne avrai."
 
 msgid "Your current password"
 msgstr "La tua password attuale"
