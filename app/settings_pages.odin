@@ -702,18 +702,36 @@ settings_folders :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
-				clay.Text(
-					tr(
+				// Only describe drag targets and checkboxes the board actually shows.
+				has_folders, has_chats := len(ui.prefs.folders) > 0, len(ui.chats) > 0
+				intro: string
+				switch {
+				case has_folders && has_chats:
+					intro = tr(
 						"Drag a chat onto a folder to keep it there, or drag a folder to reorder it.",
-					),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
-				)
-				clay.Text(
-					tr(
-						"A checked box means you placed the chat by hand. Clear it to let folder rules decide.",
-					),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-				)
+					)
+				case has_chats:
+					intro = tr("Use New folder to create a folder, then drag a chat onto it.")
+				case has_folders && len(ui.prefs.folders) > 1:
+					intro = tr(
+						"Drag a folder to reorder it. Your chats appear here once you have some.",
+					)
+				case has_folders:
+					intro = tr("Your chats appear here once you have some.")
+				case:
+					intro = tr(
+						"Use New folder to create a folder. Your chats appear here once you have some.",
+					)
+				}
+				clay.Text(intro, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+				if has_folders && has_chats {
+					clay.Text(
+						tr(
+							"A checked box means you placed the chat by hand. Clear it to let folder rules decide.",
+						),
+						{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+					)
+				}
 			}
 			settings_button("SettingsFolderNew", tr("New folder"), ACCENT)
 		}
