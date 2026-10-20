@@ -784,6 +784,12 @@ emoji_picker :: proc(ui: ^Ui_State) {
 				view.found && view.scrollContainerDimensions.height > 0 ? view.scrollContainerDimensions.height : height
 			bottom := top + view_height
 			y := len(custom) > 0 ? PICKER_CELL_W : 0
+			if len(matches) == 0 && len(custom) == 0 {
+				clay.Text(
+					tr("No emoji match your search."),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				)
+			}
 			for row_start := 0; row_start < len(matches); row_start += cols {
 				visible := y + PICKER_CELL_W >= top - PICKER_CELL_W && y <= bottom + PICKER_CELL_W
 				y += PICKER_CELL_W
