@@ -748,7 +748,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 				ui,
 				"PickerSearch",
 				&ui.picker_filter,
-				"search...",
+				tr("Search emoji..."),
 				ui.focus == .Picker,
 				13,
 				TEXT_LO,

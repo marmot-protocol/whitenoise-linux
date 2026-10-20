@@ -3671,6 +3671,9 @@ msgstr "アーカイブしたチャットを検索..."
 msgid "Search contacts..."
 msgstr "連絡先を検索..."
 
+msgid "Search emoji..."
+msgstr "絵文字を検索..."
+
 msgid "Search everywhere"
 msgstr "すべてを検索"
 

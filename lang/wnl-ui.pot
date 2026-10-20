@@ -3665,6 +3665,9 @@ msgstr ""
 msgid "Search contacts..."
 msgstr ""
 
+msgid "Search emoji..."
+msgstr ""
+
 msgid "Search everywhere"
 msgstr ""
 
