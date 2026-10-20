@@ -352,6 +352,7 @@ session_media_clear :: proc() {
 	stt_hover = {}
 	att_hover = {}
 	mention_hover, link_hover, img_link_hover, profile_card_hover = "", "", "", ""
+	md_code_hover = ""
 }
 
 @(private = "file")

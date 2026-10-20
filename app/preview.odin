@@ -743,6 +743,9 @@ preview_modal :: proc(ui: ^Ui_State) {
 			if preview.kind == .Message && ui.prefs.tts_enabled {
 				micro_button("PvRead", tr("Read aloud"))
 			}
+			if preview.kind == .Code {
+				micro_button("PvCopyCode", tr("Copy"))
+			}
 			stored := !slides || preview.slides[preview.slide].msg_id != ""
 			if stored &&
 			   (preview.kind == .Image || (slides && preview.slides[preview.slide].tex != nil)) {
@@ -1333,6 +1336,11 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if preview.kind == .Message && clicked("PvRead") {
 		tts_read(ui, string(preview.bytes))
+		return
+	}
+	if preview.kind == .Code && clicked("PvCopyCode") {
+		// The original bytes: the view's source has its tabs expanded.
+		copy_text(ui, string(preview.bytes), tr("Copied"))
 		return
 	}
 	if preview.kind == .Image || preview.kind == .Slides {

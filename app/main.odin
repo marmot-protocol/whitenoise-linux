@@ -1076,6 +1076,7 @@ app_main :: proc() {
 			orbit_hover = nil // rebound by the build when a tile is hovered
 			geo_hover, geo_action = "", .None
 			link_hover = ""
+			md_code_hover = ""
 			nev_more_hover = ""
 			nev_retry_hover = ""
 			nev_hint_hover = ""
@@ -1411,7 +1412,8 @@ app_main :: proc() {
 			// link guard, then the palette, then the older modals. Global
 			// search opens on Ctrl+K, the palette on Ctrl+P.
 			if photo_captured {
-				if photo_interactive && photo_input_capture(&ui) {handle_photo_preview(&ui, client)}
+				if photo_interactive &&
+				   photo_input_capture(&ui) {handle_photo_preview(&ui, client)}
 			} else if ui.confirm.kind != .None {
 				handle_confirm(&ui, client)
 			} else if ui.link_open {
@@ -1462,7 +1464,11 @@ app_main :: proc() {
 			// message bodies: a drag that selected something swallows the
 			// release, so dragging across a link doesn't open it.
 			photo_captured = photo_captured || photo_input_capture(&ui)
-			if !photo_captured && !ui.pal_open && !ui.link_open && !ui.gs_open && ui.confirm.kind == .None {
+			if !photo_captured &&
+			   !ui.pal_open &&
+			   !ui.link_open &&
+			   !ui.gs_open &&
+			   ui.confirm.kind == .None {
 				handle_body_sel(&ui)
 				handle_body_copy(&ui)
 				// A press that missed a body drags the timeline instead, and
@@ -1480,6 +1486,9 @@ app_main :: proc() {
 				)
 				if len(ui.sel_copy) == 0 && !drag_moved {
 					handle_link_click(&ui)
+					if md_code_hover != "" && mouse_released() {
+						copy_text(&ui, md_code_hover, tr("Copied"))
+					}
 					if nev_retry_hover != "" && mouse_released() && !modal_open(&ui) {
 						for key, card in nev_cards {
 							if key != nev_retry_hover || !card.done || len(card.raw) > 0 {continue}
@@ -1674,7 +1683,8 @@ app_main :: proc() {
 			if frame == 12 {
 				// Exercise native photo completion without a desktop file picker.
 				if path := os.get_env("WN_TEST_PHOTO", context.temp_allocator); path != "" {
-					kind: Photo_Kind = os.get_env("WN_TEST_PAGE", context.temp_allocator) == "group" ? .Group : .Profile
+					kind: Photo_Kind =
+						os.get_env("WN_TEST_PAGE", context.temp_allocator) == "group" ? .Group : .Profile
 					if photo_pick_begin(&ui, kind) {photo_pick_complete(&ui, []string{path})}
 				}
 				if url := os.get_env("WN_TEST_LINK", context.temp_allocator); url != "" {

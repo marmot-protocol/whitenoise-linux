@@ -695,6 +695,10 @@ body_line :: proc(
 MD_TABLE_COL_MAX :: 140
 MD_TABLE_PAD :: 7
 
+// Source of the code plate whose copy button is under the pointer this
+// frame, rebound every build; the click copies it after layout.
+md_code_hover: string
+
 @(private)
 md_hover :: proc(depth: u16, rest: clay.Color = {}) -> clay.Color {
 	if !clay.Hovered() {return rest}
@@ -1019,59 +1023,98 @@ md_blocks :: proc(
 				fallthrough
 			case .Code:
 				text := block.kind == .Math ? strings.trim_right(block.text, "\n") : block.text
+				// Lines on the left, copy button in the top-right corner:
+				//   +-----------------------------+
+				//   | 1  fn main() {         [cp] |
+				//   | 2      run()                |
+				//   +-----------------------------+
+				// The 7px rim plus the 3px line inset keeps text 10px from the
+				// edge, and a one-line plate stays as tall as the 19px button.
 				if clay.UI(clay.ID("MsgCode", block_id))(
 				{
 					layout = {
-						layoutDirection = .TopToBottom,
 						sizing = {width = clay.SizingGrow()},
-						padding = clay.PaddingAll(10),
-						childGap = 3,
+						padding = {left = 10, right = 7, top = 7, bottom = 7},
+						childGap = 6,
 					},
 					backgroundColor = CODE_PLATE,
 					cornerRadius = rr(6),
 					border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
 				},
 				) {
-					font := [1]u8{FONT_MONO | (block.kind == .Math ? TEXT_MATH : TEXT_CODE)}
-					fonts := strings.repeat(string(font[:]), len(text), context.temp_allocator)
-					gutter :=
-						block.kind == .Code ? rl.MeasureTextLine(FONT_MONO, 11, fmt.tprintf("%d", strings.count(block.text, "\n") + 1), 0).x + 10 : 0
-					lines := wrapped_lines(
-						text,
-						max(f32(1), width - 20 - gutter),
-						13,
-						fonts = fonts,
-					)
-					used = len(lines)
-					number, scanned := 1, 0
-					for line in lines[:min(used, remaining)] {
-						for scanned < line.start {
-							if block.text[scanned] == '\n' {number += 1}
-							scanned += 1
-						}
-						if clay.UI()({layout = {sizing = {height = clay.SizingFixed(13)}}}) {
-							if block.kind == .Code {
-								if clay.UI()(
-								{
-									layout = {
-										sizing = {width = clay.SizingFixed(gutter)},
-										padding = {right = 10},
-										childAlignment = {x = .Right},
-									},
-								},
-								) {
-									if line.start == 0 ||
-									   block.text[line.start - 1] ==
-										   '\n' {clay.Text(fmt.tprintf("%d", number), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})}
-								}
+					if clay.UI(clay.ID("MsgCodeLines", block_id))(
+					{
+						layout = {
+							layoutDirection = .TopToBottom,
+							sizing = {width = clay.SizingGrow()},
+							padding = {top = 3, bottom = 3},
+							childGap = 3,
+						},
+					},
+					) {
+						font := [1]u8{FONT_MONO | (block.kind == .Math ? TEXT_MATH : TEXT_CODE)}
+						fonts := strings.repeat(string(font[:]), len(text), context.temp_allocator)
+						gutter :=
+							block.kind == .Code ? rl.MeasureTextLine(FONT_MONO, 11, fmt.tprintf("%d", strings.count(block.text, "\n") + 1), 0).x + 10 : 0
+						// Plate rim (10 + 7), copy button (19) and its gap (6).
+						lines := wrapped_lines(
+							text,
+							max(f32(1), width - 42 - gutter),
+							13,
+							fonts = fonts,
+						)
+						used = len(lines)
+						number, scanned := 1, 0
+						for line in lines[:min(used, remaining)] {
+							for scanned < line.start {
+								if block.text[scanned] == '\n' {number += 1}
+								scanned += 1
 							}
-							md_code_text(
-								block.text[line.start:line.end],
-								text_fonts(block.code_kinds, line.start, line.end),
-								13,
-								text_fonts(block.fonts, line.start, line.end),
-							)
+							if clay.UI()({layout = {sizing = {height = clay.SizingFixed(13)}}}) {
+								if block.kind == .Code {
+									if clay.UI()(
+									{
+										layout = {
+											sizing = {width = clay.SizingFixed(gutter)},
+											padding = {right = 10},
+											childAlignment = {x = .Right},
+										},
+									},
+									) {
+										if line.start == 0 ||
+										   block.text[line.start - 1] ==
+											   '\n' {clay.Text(fmt.tprintf("%d", number), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})}
+									}
+								}
+								md_code_text(
+									block.text[line.start:line.end],
+									text_fonts(block.code_kinds, line.start, line.end),
+									13,
+									text_fonts(block.fonts, line.start, line.end),
+								)
+							}
 						}
+					}
+					if clay.UI(clay.ID("MsgCodeCopy", block_id))(
+					{
+						layout = {
+							sizing = {width = clay.SizingFixed(19), height = clay.SizingFixed(19)},
+							childAlignment = {x = .Center, y = .Center},
+						},
+						backgroundColor = hovered() ? HOVER : {},
+						cornerRadius = rr(4),
+					},
+					) {
+						copy_color := TEXT_LO
+						if hovered() {
+							md_code_hover = text
+							copy_color = TEXT
+							tooltip(tr("Copy"))
+						}
+						clay.Text(
+							ICON_COPY,
+							{fontId = FONT_ICON, fontSize = 11, textColor = copy_color},
+						)
 					}
 				}
 			case .List_Item:
