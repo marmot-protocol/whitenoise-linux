@@ -267,7 +267,11 @@ mention_update :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			break
 		}
 	}
+	// Zero matches over loaded members still opens the popover, as a
+	// note saying so; members still loading (or failed) show nothing.
 	if len(ui.mention_cands) == 0 {
+		ui.mention_sel = 0
+		ui.mention_active = len(ui.members) > 0
 		return
 	}
 	ui.mention_sel = clamp(ui.mention_sel, 0, len(ui.mention_cands) - 1)
@@ -312,6 +316,11 @@ handle_mention :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		ui.mention_active = false
 		return true
 	}
+	// The no-match note has nothing to pick: arrows do nothing and Enter
+	// falls through to send, as it did before the note existed.
+	if n == 0 {
+		return false
+	}
 	if key_hit(.UP) {
 		ui.mention_sel = (ui.mention_sel + n - 1) % n
 	}
@@ -355,6 +364,21 @@ mention_popover :: proc(ui: ^Ui_State) {
 		},
 	},
 	) {
+		if len(ui.mention_cands) == 0 {
+			_, _, head := field_sel(ui, &ui.compose)
+			_, query, _ := detect_token(string(ui.compose[:]), head, '@')
+			if clay.UI(clay.ID("MentionNone"))({layout = {padding = clay.PaddingAll(6)}}) {
+				clay.Text(
+					text_ellipsis(
+						fmt.tprintf(tr("No one in this chat matches @%s."), query),
+						256,
+						FONT_BODY,
+						13,
+					),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM, wrapMode = .None},
+				)
+			}
+		}
 		for mi, i in ui.mention_cands {
 			member := ui.members[mi]
 			sel := i == ui.mention_sel
