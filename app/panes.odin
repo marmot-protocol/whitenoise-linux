@@ -1,12 +1,12 @@
 package main
 
-import "core:math"
+import marmot "../marmot"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:encoding/hex"
 import "core:fmt"
+import "core:math"
 import "core:strings"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
-import marmot "../marmot"
 
 Row_Chip :: enum {
 	Archive,
@@ -108,16 +108,42 @@ chat_folder_sections :: proc(
 	return sections, ordered
 }
 
-// One scroll container owns both headers and conversations. Each section
-// windows its rows at its real offset; collapsed rows leave keyboard order.
+// Why the chat list shows no rows. The search text outranks the Unread
+// pill: it is the part you can edit, so its message names it.
 @(private)
-chat_rail :: proc(ui: ^Ui_State) {
+Chat_Rail_Empty :: enum {
+	None,
+	No_Chats,
+	No_Matches,
+	No_Unread,
+}
+
+@(private)
+chat_rail_empty :: proc(total, rows: int, query, unread_only: bool) -> Chat_Rail_Empty {
+	switch {
+	case rows > 0:
+		return .None
+	case total == 0:
+		return .No_Chats
+	case query:
+		return .No_Matches
+	case unread_only:
+		return .No_Unread
+	}
+	return .No_Chats
+}
+
+// The rail's chats in rail order under the search text and the Unread
+// pill, and how many it holds unfiltered. The header counts both.
+@(private)
+chat_rail_matches :: proc(ui: ^Ui_State) -> (matched: []int, total: int) {
 	filter := strings.to_lower(string(ui.sidebar_filter[:]), context.temp_allocator)
 	order := rail_order(ui.chats[:], ui.prefs.pinned)
 	count := 0
 	for i in order {
 		chat := &ui.chats[i]
 		if chat.search_only {continue}
+		total += 1
 		if len(filter) > 0 &&
 		   !strings.contains(strings.to_lower(chat.title, context.temp_allocator), filter) &&
 		   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {continue}
@@ -125,17 +151,32 @@ chat_rail :: proc(ui: ^Ui_State) {
 		order[count] = i
 		count += 1
 	}
+	return order[:count], total
+}
+
+// One scroll container owns both headers and conversations. Each section
+// windows its rows at its real offset; collapsed rows leave keyboard order.
+@(private)
+chat_rail :: proc(ui: ^Ui_State, matched: []int, total: int) {
 	clear(&ui.rail_rows)
-	matched := order[:count]
+	offset_y: f32
+	if !ui.prefs.recent_chats && len(ui.prefs.folders) == 0 && total > 0 {
+		chat_rail_hint(
+			"ChatGroupHint",
+			tr("Grouped sorts your chats into folders, and you have none yet."),
+			"ChatGroupNewFolder",
+			tr("New folder"),
+		)
+		// The rows below window from where they start; last frame's
+		// height of the hint is close enough.
+		if data := clay.GetElementData(clay.ID("ChatGroupHint")); data.found {
+			offset_y = data.boundingBox.height + 2
+		}
+	}
 	if ui.prefs.recent_chats || len(ui.prefs.folders) == 0 {
 		append(&ui.rail_rows, ..matched)
-		chat_rows_window(ui, ui.chats[:], matched, clay.ID("ChatList"), .Archive, 2)
-		if len(matched) == 0 {
-			clay.Text(
-				tr("No chats yet"),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-			)
-		}
+		chat_rows_window(ui, ui.chats[:], matched, clay.ID("ChatList"), .Archive, 2, offset_y)
+		chat_rail_empty_note(ui, len(matched), total)
 		return
 	}
 
@@ -172,8 +213,52 @@ chat_rail :: proc(ui: ^Ui_State) {
 		chat_rows_window(ui, ui.chats[:], rows, clay.ID("ChatList"), .Archive, 2, y, u32(i))
 		y += f32(len(rows)) * (chat_row_height() + 2)
 	}
-	if len(matched) == 0 {
+	chat_rail_empty_note(ui, len(matched), total)
+}
+
+@(private = "file")
+chat_rail_empty_note :: proc(ui: ^Ui_State, rows, total: int) {
+	switch chat_rail_empty(total, rows, len(ui.sidebar_filter) > 0, ui.unread_only) {
+	case .None:
+	case .No_Chats:
 		clay.Text(tr("No chats yet"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+	case .No_Matches:
+		chat_rail_hint(
+			"ChatListNoMatch",
+			tr("Try a different search."),
+			"ChatListClearSearch",
+			tr("Clear search"),
+			tr("No matching chats"),
+		)
+	case .No_Unread:
+		chat_rail_hint(
+			"ChatListNoUnread",
+			tr("You have read every chat."),
+			"ChatListShowAll",
+			tr("Show all chats"),
+			tr("No unread chats"),
+		)
+	}
+}
+
+// A short note in the chat list with one way out of the state it names.
+@(private = "file")
+chat_rail_hint :: proc(id_str, sub, button_id, button: string, title := "") {
+	if clay.UI(clay.ID(id_str))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			padding = {left = 4, right = 4, top = 6, bottom = 8},
+			childGap = 6,
+		},
+	},
+	) {
+		if len(title) > 0 {
+			clay.Text(title, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+		}
+		clay.Text(sub, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		micro_button(button_id, button)
 	}
 }
 

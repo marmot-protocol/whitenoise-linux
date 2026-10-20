@@ -403,12 +403,18 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	if clicked("AllPill") {
+	if clicked("AllPill") || clicked("ChatListShowAll") {
 		ui.unread_only = false
 		return
 	}
 	if clicked("UnreadPill") {
 		ui.unread_only = true
+		return
+	}
+	if clicked("ChatListClearSearch") {
+		clear(&ui.sidebar_filter)
+		refresh_filter_hits(client, ui)
+		ui.focus = .Filter
 		return
 	}
 	if field_mouse(ui, &ui.sidebar_filter, "FilterBox") {

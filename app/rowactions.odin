@@ -379,6 +379,10 @@ handle_folder_navigation :: proc(ui: ^Ui_State) -> bool {
 		open_folder_menu(ui)
 		return true
 	}
+	if clicked("ChatGroupNewFolder") {
+		open_folder_modal(ui)
+		return true
+	}
 	if clicked("ChatViewBtn") {
 		ui.prefs.recent_chats = !ui.prefs.recent_chats
 		if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {

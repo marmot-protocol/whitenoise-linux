@@ -257,7 +257,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if ui.page == .Contacts {
-		if clicked("ContactsImportBtn") {
+		if clicked("ContactsImportBtn") || clicked("NoContactsImport") {
 			if ui.contact_import != nil || ui.picking_contacts {return}
 			ui.picking_contacts = true
 			set_status(ui, tr("Choose a contacts CSV or JSON export to import."), .Info)
@@ -270,6 +270,15 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if clicked("ContactsJsonBtn") {
 			export_contacts(ui, .Json)
+			return
+		}
+		if clicked("ContactsClearSearch") {
+			clear(&ui.sidebar_filter)
+			ui.focus = .Filter
+			return
+		}
+		if clicked("ContactsShowList") {
+			toggle_rail(ui)
 			return
 		}
 		for contact, i in ui.contacts {

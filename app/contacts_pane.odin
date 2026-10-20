@@ -1,14 +1,113 @@
 package main
 
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:strings"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
+
+// What the contact pane says with no contact open. An empty list has
+// nothing to select, and a collapsed one is not on screen to select from.
+@(private)
+Contact_Note :: enum {
+	Pick,
+	No_Contacts,
+	Collapsed,
+}
+
+@(private)
+contact_note :: proc(contacts: int, collapsed: bool) -> Contact_Note {
+	if contacts == 0 {
+		return .No_Contacts
+	}
+	if collapsed {
+		return .Collapsed
+	}
+	return .Pick
+}
+
+// Why the rail's contact list shows no rows: a search that matched no
+// one is not the same as having no contacts.
+@(private)
+Contacts_Empty :: enum {
+	None,
+	No_Contacts,
+	No_Matches,
+}
+
+@(private)
+contacts_empty :: proc(total, shown, query_len: int) -> Contacts_Empty {
+	if shown > 0 {
+		return .None
+	}
+	if query_len > 0 {
+		return .No_Matches
+	}
+	if total == 0 {
+		return .No_Contacts
+	}
+	return .None
+}
+
+// The rail's contacts in display order, narrowed by its search box.
+@(private)
+contact_rail_matches :: proc(ui: ^Ui_State) -> []Contact_Order {
+	filter := strings.to_lower(string(ui.sidebar_filter[:]), context.temp_allocator)
+	all := contact_order(ui, ui.contacts[:])
+	if len(filter) == 0 {
+		return all
+	}
+	shown := 0
+	for order in all {
+		if strings.contains(order.key, filter) {
+			all[shown] = order
+			shown += 1
+		}
+	}
+	return all[:shown]
+}
+
+// centered_note with one action under it.
+@(private = "file")
+contact_action_note :: proc(id_str, title, sub, button_id, button: string) {
+	if clay.UI(clay.ID(id_str))(
+	{
+		layout = {
+			sizing = {clay.SizingGrow(), clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			childAlignment = {x = .Center, y = .Center},
+			childGap = 8,
+		},
+	},
+	) {
+		clay.Text(title, {fontId = FONT_TITLE, fontSize = 24, textColor = TEXT_DIM})
+		clay.Text(sub, {fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM})
+		micro_button(button_id, button)
+	}
+}
 
 contacts_pane :: proc(ui: ^Ui_State) {
 	contact, found := shown_contact(ui)
 	if !found {
-		centered_note("PickContact", tr("Contact"), tr("Select a contact from the list."))
+		switch contact_note(len(ui.contacts), !single_pane() && rail_narrow(ui)) {
+		case .No_Contacts:
+			contact_action_note(
+				"NoContacts",
+				tr("No contacts yet"),
+				tr("Import a contacts CSV or JSON export to add people."),
+				"NoContactsImport",
+				tr("Import contacts"),
+			)
+		case .Collapsed:
+			contact_action_note(
+				"ContactsCollapsed",
+				tr("Contact list collapsed"),
+				tr("Open it again with › in the left column or the button below."),
+				"ContactsShowList",
+				tr("Show contact list"),
+			)
+		case .Pick:
+			centered_note("PickContact", tr("Contact"), tr("Select a contact from the list."))
+		}
 		return
 	}
 
