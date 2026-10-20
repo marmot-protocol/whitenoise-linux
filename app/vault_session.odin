@@ -82,6 +82,7 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	account_jobs_stop()
 	stop_gimg_worker()
 	stop_pic_worker()
+	photo_crop_stop()
 	contact_import_stop(ui)
 	retention_stop()
 	for worker in send_threads {thread.join(worker); thread.destroy(worker)}
@@ -116,6 +117,8 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 
 @(private)
 session_stop :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
+	// Detach the preview on the frame thread before joining pixel-only jobs.
+	photo_cancel(ui)
 	job := Session_Stop{client, ui, live}
 	worker := thread.create(session_stop_worker)
 	worker.data = &job
@@ -162,6 +165,8 @@ editor_forget :: proc(ui: ^Ui_State) {
 
 @(private)
 lock_scrub_ui :: proc(ui: ^Ui_State) {
+	if ui.photo.pending {rl.DiscardFileDialogResult()}
+	photo_cancel(ui)
 	login_pair_clear(ui)
 	delete(ui.account_signing); ui.account_signing = {}
 	editor_forget(ui)

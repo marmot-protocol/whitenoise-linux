@@ -152,8 +152,7 @@ handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	if ui.gpic_menu_open {
 		if clicked("GpicFile") {
 			ui.gpic_menu_open = false
-			ui.picking_gpic = true
-			rl.OpenFileDialog(false)
+			if photo_pick_begin(ui, .Group) {rl.OpenFileDialog(false)}
 			return true
 		}
 		if clicked("GpicSearch") {
@@ -199,16 +198,6 @@ save_description :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	job.target = strings.clone(string(ui.desc_input[:])); account_job_start(job)
 }
 
-// A file picked for the open group's photo.
-set_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
-	if ui.selected < 0 {
-		return
-	}
-	if draft, ok := load_pic_draft(ui, path); ok {
-		upload_group_pic(ui, client, ui.chats[ui.selected].group_id, draft)
-	}
-}
-
 // Read and decode a picked image file; errors go to the status line.
 load_pic_draft :: proc(ui: ^Ui_State, path: string) -> (draft: Pic_Draft, ok: bool) {
 	data, read_err := os.read_entire_file(path, context.allocator)
@@ -248,6 +237,11 @@ load_pic_draft :: proc(ui: ^Ui_State, path: string) -> (draft: Pic_Draft, ok: bo
 // worker, which encrypts and uploads them to Blossom and commits them
 // as the group image. Takes ownership of `draft`.
 upload_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, gid: string, draft: Pic_Draft) {
+	upload_group_pic_for(client, ui.account_ref, gid, draft)
+}
+
+@(private)
+upload_group_pic_for :: proc(client: ^marmot.Client, account, gid: string, draft: Pic_Draft) {
 	url := fmt.tprintf("group://%s", gid)
 	register_local_pic(url, draft.image)
 	rl.UnloadImage(draft.image)
@@ -261,7 +255,7 @@ upload_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, gid: string, dra
 		Gimg_Job {
 			kind = .Upload,
 			client = client,
-			account = strings.clone(ui.account_ref),
+			account = strings.clone(account),
 			group_id = strings.clone(gid),
 			data = draft.data,
 			media_type = draft.media_type,

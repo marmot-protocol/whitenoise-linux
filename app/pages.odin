@@ -524,8 +524,7 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.profile.editing &&
 	   (clicked("ChangePicBtn") || clicked("ProfileAvatarPick")) &&
 	   !ppic_busy {
-		ui.picking_ppic = true
-		rl.OpenFileDialog(false)
+		if photo_pick_begin(ui, .Profile) {rl.OpenFileDialog(false); return}
 	}
 
 	if clicked("PublishProfileBtn") {
@@ -808,6 +807,7 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 
 @(private)
 finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
+	photo_cancel(ui)
 	keys_forget(ui); close_export(ui)
 	session_string_forget(&ui.profile.nsec)
 	kp_rows_free(&ui.kp_list); ui.kp_fetched = false

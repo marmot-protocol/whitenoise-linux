@@ -325,12 +325,35 @@ picked_paths: [dynamic]string
 picked_callbacks: c.int
 
 @(private)
+picked_pending: int // outstanding opens, including callbacks not yet consumed
+
+@(private)
+picked_discard: bool
+
+// Lock can destroy Ui_State before an outstanding native dialog returns.
+// Drop its payload in the shim too, so the next session cannot attach it.
+DiscardFileDialogResult :: proc() {
+	sync.lock(&picked_mutex)
+	defer sync.unlock(&picked_mutex)
+	picked_discard = picked_pending > 0
+	for path in picked_paths {delete(path)}
+	delete(picked_paths); picked_paths = {}
+}
+
+FileDialogPending :: proc() -> bool {
+	sync.lock(&picked_mutex)
+	defer sync.unlock(&picked_mutex)
+	return picked_pending > 0
+}
+
+@(private)
 dialog_cb :: proc "c" (userdata: rawptr, filelist: [^]cstring, filter: c.int) {
 	context = runtime.default_context()
 	context.allocator = callback_allocator
 	sync.lock(&picked_mutex)
 	defer sync.unlock(&picked_mutex)
 	picked_callbacks += 1
+	if picked_discard {return}
 	if filelist == nil {
 		fmt.eprintfln("sdl: file dialog failed: %s", sdl.GetError())
 		return
@@ -342,6 +365,9 @@ dialog_cb :: proc "c" (userdata: rawptr, filelist: [^]cstring, filter: c.int) {
 
 // Open the native multi-select file picker (async; see PickedFiles).
 OpenFileDialog :: proc(allow_many: bool) {
+	sync.lock(&picked_mutex)
+	picked_pending += 1
+	sync.unlock(&picked_mutex)
 	when ODIN_OS == .OpenBSD {
 		confined_dialog(allow_many ? .Open_Many : .Open_One, nil, dialog_cb)
 	} else when #config(WN_RELOAD, false) {
@@ -357,6 +383,10 @@ PickedFiles :: proc(completed: ^bool = nil) -> [dynamic]string {
 	sync.lock(&picked_mutex)
 	defer sync.unlock(&picked_mutex)
 	if completed != nil {completed^ = picked_callbacks > 0}
+	if picked_callbacks > 0 {
+		picked_pending = max(0, picked_pending - int(picked_callbacks))
+		if picked_pending == 0 {picked_discard = false}
+	}
 	out := picked_paths
 	picked_paths = {}
 	when #config(WN_RELOAD, false) {wn_dev_dialogs_consumed(picked_callbacks)}

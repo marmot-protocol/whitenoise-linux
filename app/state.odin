@@ -631,9 +631,8 @@ Ui_State :: struct {
 	desc_input:                                            [dynamic]u8, // hero description editor
 	desc_editing:                                          bool,
 	gpic_menu_open:                                        bool, // hero "Change photo" chooser row
-	picking_gpic:                                          bool, // route the next picked file to the group photo
 	picking_ncpic:                                         bool, // route the next picked file to the new-chat group image
-	picking_ppic:                                          bool, // route the next picked file to the profile picture
+	photo:                                                 Photo_Preview,
 	ov_open:                                               bool, // Openverse image-search modal
 	ov_input:                                              [dynamic]u8, // its query box
 	focus:                                                 Focus,

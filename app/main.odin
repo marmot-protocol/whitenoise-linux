@@ -305,6 +305,8 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			if open_now(clay.ID("ConfirmModal"), ui.confirm.kind != .None) {
 				confirm_modal(ui)
 			}
+			// No exit animation: Cancel immediately releases its texture.
+			if photo_image(&ui.photo).data != nil {photo_preview_modal(ui)}
 			// No close animation: web_close tears down the child process, so
 			// nothing may draw the modal after it.
 			if web_modal.open {
@@ -818,6 +820,10 @@ app_main :: proc() {
 			if ui.lock_requested {lock_wait_frame(); break}
 			if dev_reload_poll(&ui) {break}
 			defer free_all(context.temp_allocator)
+			// Latch before drains can invalidate a preview. Its closing frame
+			// still owns input, including global shortcuts and media handlers.
+			photo_captured := photo_input_capture(&ui)
+			photo_interactive := photo_image(&ui.photo).data != nil
 			defer messages_collect()
 			defer chats_collect()
 			defer {if wrap_flush {wrap_clear()}}
@@ -911,7 +917,9 @@ app_main :: proc() {
 			tray_tick(&ui) // unread total in the tray tooltip
 
 			// Interface zoom shortcuts (Ctrl + / - / 0).
-			if rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL) {
+			photo_check_target(&ui)
+			photo_crop_drain(&ui, client, false)
+			if !photo_captured && (rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL)) {
 				if rl.IsKeyPressed(.EQUAL) {
 					ui.prefs.zoom_pct += 10
 					apply_zoom(&ui)
@@ -984,7 +992,7 @@ app_main :: proc() {
 			}
 			// A drag-selection ending with text selected feeds the primary
 			// selection (select-to-copy), except from the masked nsec field.
-			if rl.IsMouseButtonReleased(.LEFT) && text_drag != nil {
+			if !photo_captured && rl.IsMouseButtonReleased(.LEFT) && text_drag != nil {
 				if text_drag != &ui.login_input &&
 				   text_drag != &ui.socks5_password &&
 				   ui.ed_target == text_drag &&
@@ -1017,6 +1025,7 @@ app_main :: proc() {
 			// Wheel over a 3D tile (hover from last frame's build) zooms
 			// the model instead of scrolling the timeline.
 			wheel := rl.GetMouseWheelMoveV()
+			if photo_captured {wheel = {}; scroll_residual = {}}
 			// Ctrl + wheel zooms the interface; the wheel is consumed so
 			// it doesn't also scroll.
 			if ctrl_down() && wheel.y != 0 {
@@ -1321,9 +1330,12 @@ app_main :: proc() {
 			// the group photo when the hero chooser asked.
 			pick_completed := false
 			picked := rl.PickedFiles(&pick_completed)
-			if pick_completed && len(picked) == 0 {ui.picking_contacts = false}
+			photo_route := ui.photo.pending
+			if photo_route && pick_completed {photo_pick_complete(&ui, picked[:])}
 			for path in picked {
-				if ui.picking_contacts {
+				if photo_route {
+					// Already consumed as a photo (or discarded tombstone).
+				} else if ui.picking_contacts {
 					contacts_import_start(&ui, client, path)
 				} else if ui.picking_sticker {
 					job := sticker_job_add(.Import)
@@ -1332,29 +1344,24 @@ app_main :: proc() {
 					backup_stage(&ui, path)
 				} else if ui.picking_emoji {
 					stage_emoji(&ui, path)
-				} else if ui.picking_gpic {
-					set_group_pic(&ui, client, path)
 				} else if ui.picking_ncpic {
 					if draft, ok := load_pic_draft(&ui, path); ok {
 						nc_pic_set(&ui, draft)
 					}
-				} else if ui.picking_ppic {
-					set_profile_pic(&ui, client, path)
 				} else {
 					stage_file(&ui, path)
 				}
 				delete(path)
 			}
-			if len(picked) > 0 {
+			if pick_completed {
 				ui.picking_sticker = false
 				ui.picking_emoji = false
-				ui.picking_gpic = false
 				ui.picking_ncpic = false
-				ui.picking_ppic = false
 				ui.picking_backup = false
 				ui.picking_contacts = false
 			}
 			delete(picked)
+			photo_captured = photo_captured || photo_input_capture(&ui)
 
 			if tc := os.get_env("WN_TEST_COMPOSE", context.temp_allocator); tc != "" {
 				// Semicolon-separated "N:text" entries. Text lands in the
@@ -1369,39 +1376,43 @@ app_main :: proc() {
 			}
 
 			long_press_tick() // before any handler reads long_pressed
-			if clicked("LockNow") {
-				lock_now(&ui)
-				lock_wait_frame()
-				break
-			}
-			handle_gutters(&ui)
-			if clicked("SttCancel") {
-				stt_stop(&ui)
-			}
-			if clicked("SttFinish") {
-				stt_finish(&ui)
-			}
-			if clicked("TtsStopGlobal") {
-				tts_stop(&ui)
-			}
-			if clicked("BannerClose") {
-				ui.banner = "" // borrowed from client_status; never freed here
-			}
-			if clicked("BannerCopy") {
-				copy_text(&ui, ui.banner, tr("Copied"))
-			}
-			update_handle()
-			if clicked("RailCollapse") {
-				toggle_rail(&ui)
-			}
-			if clicked("PhoneBack") {
-				phone_back_action(&ui)
+			if !photo_captured {
+				if clicked("LockNow") {
+					lock_now(&ui)
+					lock_wait_frame()
+					break
+				}
+				handle_gutters(&ui)
+				if clicked("SttCancel") {
+					stt_stop(&ui)
+				}
+				if clicked("SttFinish") {
+					stt_finish(&ui)
+				}
+				if clicked("TtsStopGlobal") {
+					tts_stop(&ui)
+				}
+				if clicked("BannerClose") {
+					ui.banner = "" // borrowed from client_status; never freed here
+				}
+				if clicked("BannerCopy") {
+					copy_text(&ui, ui.banner, tr("Copied"))
+				}
+				update_handle()
+				if clicked("RailCollapse") {
+					toggle_rail(&ui)
+				}
+				if clicked("PhoneBack") {
+					phone_back_action(&ui)
+				}
 			}
 
 			// Modal capture order: a confirm sits over everything, then the
 			// link guard, then the palette, then the older modals. Global
 			// search opens on Ctrl+K, the palette on Ctrl+P.
-			if ui.confirm.kind != .None {
+			if photo_captured {
+				if photo_interactive && photo_input_capture(&ui) {handle_photo_preview(&ui, client)}
+			} else if ui.confirm.kind != .None {
 				handle_confirm(&ui, client)
 			} else if ui.link_open {
 				handle_link_modal(&ui)
@@ -1450,7 +1461,8 @@ app_main :: proc() {
 			if ui.lock_requested {lock_wait_frame(); break}
 			// message bodies: a drag that selected something swallows the
 			// release, so dragging across a link doesn't open it.
-			if !ui.pal_open && !ui.link_open && !ui.gs_open && ui.confirm.kind == .None {
+			photo_captured = photo_captured || photo_input_capture(&ui)
+			if !photo_captured && !ui.pal_open && !ui.link_open && !ui.gs_open && ui.confirm.kind == .None {
 				handle_body_sel(&ui)
 				handle_body_copy(&ui)
 				// A press that missed a body drags the timeline instead, and
@@ -1496,6 +1508,10 @@ app_main :: proc() {
 			// hardware (phosh/squeekboard) whether that reads as helpful or
 			// as in the way; if it is in the way, the fix is a focus state
 			// that starts empty on a tap_size() window and fills on a tap.
+			if photo_captured {
+				text_field_live = false
+				for rl.GetCharPressed() != 0 {}
+			}
 			rl.SetTextInput(text_field_live)
 			if text_field_live {
 				rl.SetTextInputArea(
@@ -1506,37 +1522,39 @@ app_main :: proc() {
 				)
 			}
 			text_field_live = false
-			handle_orbit()
-			handle_gcode_bar()
-			handle_anim_bar()
-			if mouse_released() && stt_hover.message != "" {
-				if stt_hover.action == .Toggle {
-					stt_hover.view.transcript_open = !stt_hover.view.transcript_open
-				} else if stt_hover.action == .Cancel {
-					stt_stop(&ui)
-				} else {
-					stt_start(&ui, stt_hover.message, stt_hover.attachment)
+			if !photo_captured {
+				handle_orbit()
+				handle_gcode_bar()
+				handle_anim_bar()
+				if mouse_released() && stt_hover.message != "" {
+					if stt_hover.action == .Toggle {
+						stt_hover.view.transcript_open = !stt_hover.view.transcript_open
+					} else if stt_hover.action == .Cancel {
+						stt_stop(&ui)
+					} else {
+						stt_start(&ui, stt_hover.message, stt_hover.attachment)
+					}
 				}
+				handle_video()
+				handle_video_bar()
+				handle_pdf()
+				handle_preview(&ui, client)
+				handle_arc_click(&ui)
+				handle_tor_click(&ui)
+				handle_xdc_click(&ui, client)
+				handle_web_input(&ui)
+				handle_nes_click(&ui)
+				handle_att_click(&ui)
+				handle_img_click(&ui, client)
+				handle_model_click(&ui, client)
+				handle_code_click(&ui, client)
+				handle_pdf_full(&ui, client)
+				handle_profile_card_click(&ui, client)
+				handle_mention_click(&ui, client)
+				handle_img_retry(&ui, client)
+				handle_media_retry(&ui, client)
+				handle_reply_jump(&ui)
 			}
-			handle_video()
-			handle_video_bar()
-			handle_pdf()
-			handle_preview(&ui, client)
-			handle_arc_click(&ui)
-			handle_tor_click(&ui)
-			handle_xdc_click(&ui, client)
-			handle_web_input(&ui)
-			handle_nes_click(&ui)
-			handle_att_click(&ui)
-			handle_img_click(&ui, client)
-			handle_model_click(&ui, client)
-			handle_code_click(&ui, client)
-			handle_pdf_full(&ui, client)
-			handle_profile_card_click(&ui, client)
-			handle_mention_click(&ui, client)
-			handle_img_retry(&ui, client)
-			handle_media_retry(&ui, client)
-			handle_reply_jump(&ui)
 			// Drain after input: Enter finishing dictation must not send its result.
 			stt_tick(&ui)
 
@@ -1654,6 +1672,11 @@ app_main :: proc() {
 			// the modal otherwise opens only from a chat.
 			// WN_TEST_LINK=<url> raises the external-link guard on a URL.
 			if frame == 12 {
+				// Exercise native photo completion without a desktop file picker.
+				if path := os.get_env("WN_TEST_PHOTO", context.temp_allocator); path != "" {
+					kind: Photo_Kind = os.get_env("WN_TEST_PAGE", context.temp_allocator) == "group" ? .Group : .Profile
+					if photo_pick_begin(&ui, kind) {photo_pick_complete(&ui, []string{path})}
+				}
 				if url := os.get_env("WN_TEST_LINK", context.temp_allocator); url != "" {
 					open_link(&ui, url)
 				}
