@@ -232,11 +232,19 @@ group_files_tick :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 }
 
 @(private)
-group_file_matches :: proc(ui: ^Ui_State, file: Group_File) -> bool {
+group_file_visible :: proc(ui: ^Ui_State, file: Group_File) -> bool {
 	record := file.record
 	if ui.hidden[string(record.message_id_hex)] {return false}
-	if record.has_retention_expires_at &&
-	   record.retention_expires_at <= u64(time.now()._nsec / 1_000_000_000) {return false}
+	return(
+		!record.has_retention_expires_at ||
+		record.retention_expires_at > u64(time.now()._nsec / 1_000_000_000) \
+	)
+}
+
+@(private)
+group_file_matches :: proc(ui: ^Ui_State, file: Group_File) -> bool {
+	record := file.record
+	if !group_file_visible(ui, file) {return false}
 	return(
 		(ui.group_files_type == .All || ui.group_files_type == file.kind) &&
 		(ui.group_files_sender == "" || ui.group_files_sender == string(record.sender)) \
@@ -256,7 +264,18 @@ group_files_panel :: proc(ui: ^Ui_State) {
 	job := group_files_job
 	ready := job != nil && job.worker == nil && !sync.atomic_load(&job.cancel)
 	matches := make([dynamic]int, context.temp_allocator)
-	if ready {for file, i in job.files {if group_file_matches(ui, file) {append(&matches, i)}}}
+	visible := 0
+	if ready {
+		for file, i in job.files {
+			if !group_file_visible(ui, file) {
+				continue
+			}
+			visible += 1
+			if group_file_matches(ui, file) {
+				append(&matches, i)
+			}
+		}
+	}
 	if clay.UI(clay.ID("GroupFilesPanel"))(
 	{
 		layout = {
@@ -452,11 +471,24 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			}
 			scrollbar(clay.ID("GroupFilesOptions"), 10)
 		}
-		if len(matches) == 0 {
-			clay.Text(
-				tr("No files match these filters."),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+		if visible == 0 {
+			centered_note(
+				"GroupFilesEmpty",
+				tr("No files yet."),
+				tr("Files shared in this chat will appear here."),
 			)
+			return
+		}
+		if len(matches) == 0 {
+			if clay.UI(clay.ID("GroupFilesNoMatch"))(
+			{layout = {childGap = 10, childAlignment = {y = .Center}}},
+			) {
+				clay.Text(
+					tr("No files match these filters."),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				)
+				micro_button("GroupFilesReset", tr("Clear filters"))
+			}
 		}
 		if clay.UI(clay.ID("GroupFilesList"))(
 		{
@@ -655,6 +687,10 @@ handle_group_files :: proc(ui: ^Ui_State) {
 	if job == nil || job.worker != nil {return}
 	if clicked("GroupFilesRefresh") {sync.atomic_store(&job.cancel, true); return}
 	if job.err != "" {return}
+	if clicked("GroupFilesReset") {
+		ui.group_files_type, ui.group_files_sender, ui.group_files_menu = .All, "", .None
+		return
+	}
 	if rl.IsKeyPressed(.TAB) {
 		ui.group_files_menu = ui.group_files_menu == .Type ? .Sender : .Type
 		ui.group_files_option = 0
