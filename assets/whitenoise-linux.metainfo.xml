@@ -1,23 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
   <id>@ID@</id>
-  <name>White Noise Linux</name>
-  <summary>End-to-end encrypted group chat over Nostr</summary>
+  <name>White Noise</name>
+  <summary>Encrypted group chat over Nostr</summary>
   <developer id="dev.ipf">
     <name>Marmot Protocol</name>
   </developer>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>AGPL-3.0-or-later</project_license>
   <description>
-    <p>White Noise Linux is a desktop client for Marmot: MLS group messaging carried over Nostr relays. No phone number, no central server, and every secret lives in one password-encrypted vault.</p>
+    <p>White Noise is a desktop client for Marmot: MLS group messaging carried over Nostr relays. You get the forward secrecy and post-compromise security of MLS with a portable Nostr identity you own. There is no phone number and no central server.</p>
+    <ul>
+      <li>One-to-one and group chats, end-to-end encrypted with MLS</li>
+      <li>Replies, reactions, edits with history, forwarding and search</li>
+      <li>Markdown messages with typeset math</li>
+      <li>Photos, video, PDFs, archives and 3D models viewed inside the app</li>
+      <li>Every secret kept in one password-encrypted vault</li>
+    </ul>
   </description>
   <launchable type="desktop-id">@ID@.desktop</launchable>
   <url type="homepage">https://github.com/marmot-protocol/whitenoise-linux</url>
   <url type="bugtracker">https://github.com/marmot-protocol/whitenoise-linux/issues</url>
+  <url type="vcs-browser">https://github.com/marmot-protocol/whitenoise-linux</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>A group chat with replies and reactions</caption>
+      <image>https://raw.githubusercontent.com/marmot-protocol/whitenoise-linux/master/assets/screenshot.png</image>
+    </screenshot>
+  </screenshots>
+  <branding>
+    <color type="primary" scheme_preference="light">#f6f2ea</color>
+    <color type="primary" scheme_preference="dark">#060708</color>
+  </branding>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
   <provides>
     <binary>whitenoise</binary>
   </provides>
   <content_rating type="oars-1.1">
     <content_attribute id="social-chat">intense</content_attribute>
   </content_rating>
+  <!-- scripts/release.sh adds one entry per release, newest first. -->
+  <releases>
+    <release version="2026.10.6+1" date="2026-10-06"/>
+    <release version="2026.9.29+1" date="2026-09-29"/>
+    <release version="2026.9.27+1" date="2026-09-28"/>
+  </releases>
 </component>

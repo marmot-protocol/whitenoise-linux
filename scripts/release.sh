@@ -9,8 +9,9 @@
 #      stdin and printing notes (default: claude -p --model haiku).
 #   3. The notes open in $VISUAL/$EDITOR (vim by default) for editing, then
 #      you confirm. Nothing is committed, tagged or pushed before that.
-#   4. The version bump is committed, the tag is created with the notes as
-#      its message, and master plus the tag are pushed to both remotes.
+#   4. The version bump and a metainfo <release> entry are committed, the
+#      tag is created with the notes as its message, and master plus the
+#      tag are pushed to both remotes.
 #
 # The tag reaching `github` starts .github/workflows/release.yml. It builds
 # every package and then creates the GitHub release, titled from the tag's
@@ -124,8 +125,13 @@ esac
 
 sed "s/^APP_VERSION :: \"[^\"]*\"/APP_VERSION :: \"$version\"/" app/advanced.odin >app/advanced.odin.tmp
 mv app/advanced.odin.tmp app/advanced.odin
+# Software centers (GNOME Software, Discover, Flathub) list the version
+# and date from the metainfo's newest <release>.
+METAINFO=assets/whitenoise-linux.metainfo.xml
+sed "s|^  <releases>\$|&\n    <release version=\"$version\" date=\"$(date +%F)\"/>|" "$METAINFO" >"$METAINFO.tmp"
+mv "$METAINFO.tmp" "$METAINFO"
 bash scripts/version.sh "$tag" >/dev/null
-git commit -q -m "Release $version" app/advanced.odin
+git commit -q -m "Release $version" app/advanced.odin "$METAINFO"
 # verbatim: the default cleanup strips lines starting with "#", which would
 # drop the Markdown headings.
 { printf 'White Noise %s\n\n' "$version"; cat "$notes"; } | git tag -a "$tag" --cleanup=verbatim -F -
