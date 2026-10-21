@@ -1,0 +1,31 @@
+# Zapstore listing, in zsp's zapstore.yaml format. The Zapstore relay reads
+# `repository` and `pubkey` to whitelist the publisher on its first event;
+# scripts/zapstore.ts reads the rest when a release is published.
+repository: https://github.com/marmot-protocol/whitenoise-linux
+pubkey: npub1ven4zk8xxw873876gx8y9g9l9fazkye9qnwnglcptgvfwxmygscqsxddfh
+
+name: White Noise
+summary: Encrypted group chat over Nostr
+description: |
+  White Noise is a desktop client for Marmot: MLS group messaging carried
+  over Nostr relays. You get the forward secrecy and post-compromise
+  security of MLS with a portable Nostr identity you own. There is no phone
+  number and no central server.
+
+  - One-to-one and group chats, end-to-end encrypted with MLS
+  - Replies, reactions, edits with history, forwarding and search
+  - Markdown messages with typeset math
+  - Photos, video, PDFs, archives and 3D models viewed inside the app
+  - Every secret kept in one password-encrypted vault
+tags:
+  - nostr
+  - messaging
+  - chat
+  - encryption
+license: AGPL-3.0-or-later
+website: https://github.com/marmot-protocol/whitenoise-linux
+
+# Paths are served from the release tag on raw.githubusercontent.com.
+icon: assets/whitenoise-linux.png
+images:
+  - assets/screenshot.png

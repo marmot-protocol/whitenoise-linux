@@ -233,6 +233,15 @@ and boots it, renders the from-source `whitenoise-linux` with
 and checks its sources, and pushes all three once an `AUR_SSH_PRIVATE_KEY`
 secret exists.
 
+The `zapstore` job announces each release's AppImage on Zapstore's relay
+with `scripts/zapstore.ts`: NIP-82 app, asset and release events (kinds
+32267, 3063, 30063) tagged `linux-x86_64`, signed by `nak` with the
+`ZAPSTORE_SIGNER` secret (bunker URL or nsec). Zapstore's own publisher,
+zsp, handles only APKs. The listing metadata and the publisher pubkey live
+in `zapstore.yaml`; the relay whitelists that pubkey by fetching the file
+from the repository on the first publish. Zapstore's clients list only
+Android apps today, so the events have no store page yet.
+
 All of them install the same tree through `scripts/install-tree.sh
 <prefix> <id>`. The app reads data and helper programs from disk at runtime,
 and `res_dir` and `helper_path` (`app/paths.odin`) resolve them relative to
