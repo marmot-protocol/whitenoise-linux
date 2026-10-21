@@ -42,9 +42,9 @@ switching accounts or closing the app stops the helper.
   with the pinned speech runtime. It executes the multilingual model locally
   without adding Python or a service.
 
-Runtime binaries, headers and notices are checksum-pinned by
-`scripts/build-tts.sh`. Linux x86-64 and aarch64 packages are selected by host
-architecture. `install-tree.sh` installs the shared libraries under
+Runtime binaries, headers and notices are checksum-pinned in `DEPS_PIN` and
+staged by `scripts/build-tts.sh`. Linux x86-64 and aarch64 packages are
+selected by host architecture. `install-tree.sh` installs the shared libraries under
 `lib/whitenoise-linux/tts-lib/` and the notices under
 `share/whitenoise-linux/licenses/`. The downloaded model includes its MIT
 license.

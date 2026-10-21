@@ -124,8 +124,9 @@ including case changes and simple letter substitutions. It does not penalize
 individual words inside a passphrase or require particular character classes.
 Use unrelated words or a password-manager password.
 
-The corpus is staged at `vendor/common-passwords.txt`, pinned by `seclists-commit`
-in `DEPS_PIN`, and embedded in the app. The check runs offline.
+The corpus is staged at `vendor/common-passwords.txt`, pinned by
+`seclists-passwords-file` in `DEPS_PIN`, and embedded in the app. The check
+runs offline.
 
 This heuristic does not measure entropy, model a full dictionary attack, or
 predict cracking time. It scores the first 100 Unicode characters to bound

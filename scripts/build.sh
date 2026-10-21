@@ -3,9 +3,16 @@
 # `just test` builds, then runs the app package's tests.
 #
 # Every third-party revision this build pins lives in DEPS_PIN, one
-# `<name>-commit = <sha>` line each. vendor/mdk is cloned at mdk-commit and
-# its C bundle staged by upstream's own c-bindings.sh; both steps are skipped
-# when already present. Then the Odin packages build against the staticlib.
+# `<name>-commit = <sha>` line per git checkout and one
+# `<name>-file = <sha256> <url>` line per download (scripts/fetch.sh).
+# vendor/mdk is cloned at mdk-commit and its C bundle staged by upstream's
+# own c-bindings.sh; both steps are skipped when already present. Then the
+# Odin packages build against the staticlib.
+#
+# Offline builds: run `scripts/build.sh fetch` (below) with network, or
+# place each `-commit` checkout at vendor/<name> and each `-file` download
+# at vendor/downloads/<name> and make marmot-c's crates available to cargo
+# (scripts/aur-source.sh). Either way the build then fetches nothing.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
@@ -51,6 +58,8 @@ fi
 bash "$HERE/scripts/version.sh" >/dev/null
 # One pinned revision out of DEPS_PIN, by name.
 pin() { sed -n "s/^$1-commit = //p" "$HERE/DEPS_PIN"; }
+# One pinned download, by name; prints its path under vendor/downloads.
+fetch() { bash "$HERE/scripts/fetch.sh" "$1" </dev/null; }
 
 MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
@@ -322,7 +331,8 @@ fi
 # Appearance, for the picker packs and reaction chips (any emoji, not
 # just the embedded quick-react six). Licence texts go to emoji-licenses.
 #
-#   vendor/emoji/noto/      googlefonts/noto-emoji at noto-emoji-commit (Apache 2.0)
+#   vendor/emoji/noto/      googlefonts/noto-emoji at noto-emoji-commit (Apache 2.0),
+#                           from the subset archive pinned as noto-emoji-file
 #   vendor/emoji/twemoji/   twemoji-assets crate SVGs, sha256-pinned (CC-BY 4.0)
 #   vendor/emoji/openmoji/  OpenMoji release SVG zip, sha256-pinned (CC BY-SA 4.0)
 #
@@ -380,20 +390,23 @@ emoji_rasterize() {
   ' sh "$1" "$EMOJI_SIDE"
 }
 
-NOTO="$HERE/vendor/noto-emoji"
-NOTO_PIN="$(pin noto-emoji)"
-if [ ! -d "$NOTO" ]; then
-  git clone --filter=blob:none --depth 1 --no-checkout https://github.com/googlefonts/noto-emoji.git "$NOTO"
-fi
-# Set on every run so a clone made for another tile size switches folders.
-git -C "$NOTO" sparse-checkout set --no-cone "/2D/png/$EMOJI_SIDE/" "/3D/png/$EMOJI_SIDE/" /LICENSE
-if [ ! -f "$NOTO/LICENSE" ] || [ "$(git -C "$NOTO" rev-parse HEAD)" != "$NOTO_PIN" ]; then
-  git -C "$NOTO" fetch --filter=blob:none --depth 1 origin "$NOTO_PIN"
-  git -C "$NOTO" checkout --detach "$NOTO_PIN"
+# Noto's 128px PNGs exist only inside its 1.5 GB repository, so the pin is
+# a subset archive of noto-emoji-commit made by scripts/noto-emoji-subset.sh.
+# A new archive restages the set.
+NOTO_PIN="$(sed -n 's/^noto-emoji-file = //p' "$HERE/DEPS_PIN")"
+NOTO_STAMP="$HERE/vendor/.emoji-noto-pin"
+if [ "$(cat "$NOTO_STAMP" 2>/dev/null || true)" != "$NOTO_PIN" ]; then
   rm -rf "$EMOJI/noto"
 fi
 if [ ! -d "$EMOJI/noto" ]; then
+  NOTO_ARCHIVE="$(fetch noto-emoji)"
   TMP="$(mktemp -d "$HERE/vendor/.emoji.XXXXXX")"
+  tar "${TAR_OWNER[@]}" -xzf "$NOTO_ARCHIVE" -C "$TMP"
+  NOTO="$(echo "$TMP"/noto-emoji-*)"
+  if [ ! -d "$NOTO/2D/png/$EMOJI_SIDE" ]; then
+    echo "==> The Noto archive has no ${EMOJI_SIDE}px tiles; rebuild it with scripts/noto-emoji-subset.sh." >&2
+    exit 1
+  fi
   # The classic 2D set has no flags (Noto's font build waves them from
   # region-flags). The 3D set's flags are that same waved art, so stage
   # 3D first and let 2D overwrite everything it has.
@@ -403,15 +416,13 @@ if [ ! -d "$EMOJI/noto" ]; then
   cp "$NOTO/LICENSE" "$EMOJI_LICENSES/noto-emoji.txt"
   mv "$TMP/tiles" "$EMOJI/noto"
   rm -rf "$TMP"
+  printf '%s\n' "$NOTO_PIN" > "$NOTO_STAMP"
 fi
 
-TWEMOJI_URL="https://static.crates.io/crates/twemoji-assets/twemoji-assets-1.5.1+17.0.2.crate"
-TWEMOJI_SHA="6857896b4a287e70f8197ab8fb9d68b3c43bb7ae97595aceaf2d11c21b93d9e9"
 if [ ! -d "$EMOJI/twemoji" ]; then
+  TWEMOJI_CRATE="$(fetch twemoji)"
   TMP="$(mktemp -d "$HERE/vendor/.emoji.XXXXXX")"
-  curl -sSfL -A "whitenoise-build" -o "$TMP/twemoji.crate" "$TWEMOJI_URL"
-  echo "$TWEMOJI_SHA  $TMP/twemoji.crate" | sha256sum -c -
-  tar "${TAR_OWNER[@]}" -xzf "$TMP/twemoji.crate" -C "$TMP"
+  tar "${TAR_OWNER[@]}" -xzf "$TWEMOJI_CRATE" -C "$TMP"
   mkdir "$TMP/tiles"
   emoji_rasterize "$TMP/png" "$TMP"/twemoji-assets-*/assets/svg
   emoji_stage "$TMP/tiles" "$TMP"/png/*.png
@@ -424,22 +435,13 @@ if [ ! -d "$EMOJI/twemoji" ]; then
   rm -rf "$TMP"
 fi
 
-OPENMOJI_URL="https://github.com/hfg-gmuend/openmoji/releases/download/17.0.0/openmoji-svg-color.zip"
-OPENMOJI_SHA="59b0cd9f6fe033818fc02585cea42bea9fba5d68a4d3a3639bfe5d5cc3805689"
-OPENMOJI_LICENSE_URL="https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/LICENSE.txt"
-OPENMOJI_LICENSE_SHA="5e436ff8ffbb77d8607220e9bce20c8915d860010feeb6c1ebef5a85688e9b39"
-OPENMOJI_DATA_URL="https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/data/openmoji.json"
-OPENMOJI_DATA_SHA="ab181dd523021dfbe2b98a13d96ab384b7b3014d17815261bc267fb39d9a211b"
 if [ ! -d "$EMOJI/openmoji" ] || [ ! -f "$EMOJI/openmoji-extras.tsv" ]; then
   rm -rf "$EMOJI/openmoji"
+  OPENMOJI_ZIP="$(fetch openmoji)"
+  OPENMOJI_LICENSE="$(fetch openmoji-license)"
+  OPENMOJI_DATA="$(fetch openmoji-data)"
   TMP="$(mktemp -d "$HERE/vendor/.emoji.XXXXXX")"
-  curl -sSfL -o "$TMP/openmoji.zip" "$OPENMOJI_URL"
-  echo "$OPENMOJI_SHA  $TMP/openmoji.zip" | sha256sum -c -
-  curl -sSfL -o "$TMP/LICENSE.txt" "$OPENMOJI_LICENSE_URL"
-  echo "$OPENMOJI_LICENSE_SHA  $TMP/LICENSE.txt" | sha256sum -c -
-  curl -sSfL -o "$TMP/openmoji.json" "$OPENMOJI_DATA_URL"
-  echo "$OPENMOJI_DATA_SHA  $TMP/openmoji.json" | sha256sum -c -
-  unzip -qo "$TMP/openmoji.zip" -d "$TMP/svg"
+  unzip -qo "$OPENMOJI_ZIP" -d "$TMP/svg"
   emoji_rasterize "$TMP/png" "$TMP/svg"
   mkdir "$TMP/tiles"
   emoji_stage "$TMP/tiles" "$TMP"/png/*.png
@@ -467,12 +469,12 @@ if [ ! -d "$EMOJI/openmoji" ] || [ ! -f "$EMOJI/openmoji-extras.tsv" ]; then
         printf "%s\t%s %s %s\n", emoji, name, tags, own
       }
     }
-  ' "$TMP/openmoji.json" > "$TMP/extras.tsv"
+  ' "$OPENMOJI_DATA" > "$TMP/extras.tsv"
   {
     echo "All emojis designed by OpenMoji, the open-source emoji and icon project."
     echo "https://openmoji.org/ License: CC BY-SA 4.0"
     echo
-    cat "$TMP/LICENSE.txt"
+    cat "$OPENMOJI_LICENSE"
   } > "$EMOJI_LICENSES/openmoji.txt"
   mv "$TMP/tiles" "$EMOJI/openmoji"
   mv "$TMP/extras.tsv" "$EMOJI/openmoji-extras.tsv"
@@ -486,8 +488,9 @@ printf '%s\n' "$EMOJI_SIDE" > "$EMOJI_SIDE_STAMP"
 CATALOG="$HERE/vendor/emoji-catalog.tsv"
 CATALOG_VERSION="emojis-0.6.4-aliases-1"
 if [ ! -f "$CATALOG" ] || [ "$(cat "$HERE/vendor/.emoji-catalog-version" 2>/dev/null || true)" != "$CATALOG_VERSION" ]; then
+  EMOJIS_CRATE="$(fetch emojis)"
   TMP="$(mktemp -d)"
-  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/emojis/emojis-0.6.4.crate" | tar "${TAR_OWNER[@]}" -xzf - -C "$TMP"
+  tar "${TAR_OWNER[@]}" -xzf "$EMOJIS_CRATE" -C "$TMP"
   # Only emoji, name and aliases are quoted in the pinned generated records.
   awk -F '"' '
     /Emoji { emoji: / {
@@ -509,18 +512,11 @@ fi
 bash "$HERE/scripts/build-emoji-pack.sh"
 
 # Common passwords are compiled into the app, never fetched during a check.
-PASSWORDS="$HERE/vendor/common-passwords.txt"
-PASSWORDS_PIN="$(pin seclists)"
-if [ ! -f "$PASSWORDS" ] || [ ! -f "$HERE/vendor/common-passwords.LICENSE" ] || [ "$(cat "$HERE/vendor/.common-passwords-pin" 2>/dev/null || true)" != "$PASSWORDS_PIN" ]; then
-  TMP="$(mktemp -d)"
-  PASSWORDS_URL="https://raw.githubusercontent.com/danielmiessler/SecLists/$PASSWORDS_PIN"
-  curl -sSfL "$PASSWORDS_URL/Passwords/Common-Credentials/10k-most-common.txt" -o "$TMP/common-passwords.txt"
-  curl -sSfL "$PASSWORDS_URL/LICENSE" -o "$TMP/common-passwords.LICENSE"
-  mv "$TMP/common-passwords.txt" "$PASSWORDS"
-  mv "$TMP/common-passwords.LICENSE" "$HERE/vendor/common-passwords.LICENSE"
-  printf '%s\n' "$PASSWORDS_PIN" > "$HERE/vendor/.common-passwords-pin"
-  rm -rf "$TMP"
-fi
+# Copied on every run, so a new pin always reaches the #load path.
+PASSWORDS="$(fetch seclists-passwords)"
+PASSWORDS_LICENSE="$(fetch seclists-license)"
+cp "$PASSWORDS" "$HERE/vendor/common-passwords.txt"
+cp "$PASSWORDS_LICENSE" "$HERE/vendor/common-passwords.LICENSE"
 
 # Bundled fonts, staged like the emoji tiles above so every package ships
 # byte-identical faces regardless of the build host's font packages.
@@ -546,23 +542,15 @@ Kalam-Bold.ttf 2f6576601db015d4f6c08678120277fc8510b98c06e932ce7a6a9cbff4cbdded
 Kalam-OFL.txt f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f
 KALAM
 cp "$HERE/assets/fonts/kalam/"*.ttf "$HERE/assets/fonts/kalam/"*.txt "$FONTS/"
-NERD_ZIP_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.zip"
-NERD_ZIP_SHA="fab782a66f7d3019da64f6572db9fc5d3a4bcb19f9fa13e2d8a62e3693d6396e"
-LIBERATION_URL="https://github.com/liberationfonts/liberation-fonts/files/7261482/liberation-fonts-ttf-2.1.5.tar.gz"
-LIBERATION_SHA="7191c669bf38899f73a2094ed00f7b800553364f90e2637010a69c0e268f25d0"
 if [ ! -f "$FONTS/JetBrainsMonoNerdFont-Regular.ttf" ]; then
-  TMP="$(mktemp -d)"
-  curl -sSfL -o "$TMP/jbmono.zip" "$NERD_ZIP_URL"
-  echo "$NERD_ZIP_SHA  $TMP/jbmono.zip" | sha256sum -c -
-  unzip -qo "$TMP/jbmono.zip" JetBrainsMonoNerdFont-Regular.ttf -d "$FONTS"
-  rm -rf "$TMP"
+  NERD_ZIP="$(fetch nerd-fonts)"
+  unzip -qo "$NERD_ZIP" JetBrainsMonoNerdFont-Regular.ttf -d "$FONTS"
 fi
 if [ ! -f "$FONTS/LiberationSans-Regular.ttf" ] || [ ! -f "$FONTS/LiberationSans-Italic.ttf" ] || [ ! -f "$FONTS/LiberationSans-BoldItalic.ttf" ]; then
+  LIBERATION="$(fetch liberation-fonts)"
   TMP="$(mktemp -d)"
-  curl -sSfL -o "$TMP/liberation.tar.gz" "$LIBERATION_URL"
-  echo "$LIBERATION_SHA  $TMP/liberation.tar.gz" | sha256sum -c -
   # Extract whole, then copy: --strip-components/--wildcards are GNU-only.
-  tar "${TAR_OWNER[@]}" -xzf "$TMP/liberation.tar.gz" -C "$TMP"
+  tar "${TAR_OWNER[@]}" -xzf "$LIBERATION" -C "$TMP"
   for face in LiberationSans-Regular LiberationSans-Bold LiberationSans-Italic LiberationSans-BoldItalic LiberationMono-Regular; do
     cp "$TMP"/liberation-fonts-ttf-*/"$face.ttf" "$FONTS/"
   done
@@ -571,22 +559,19 @@ fi
 
 # Decorative profile names need mathematical alphabets and symbols that
 # Liberation lacks. Keep the OFL faces identical across packages.
-NOTO_URL="https://raw.githubusercontent.com/notofonts/noto-fonts/ffebf8c1ee449e544955a7e813c54f9b73848eac"
-while read -r file sha; do
+while read -r file name; do
   if [ ! -f "$FONTS/$file" ]; then
-    curl -sSfL "$NOTO_URL/hinted/ttf/${file%-Regular.ttf}/$file" -o "$FONTS/$file.tmp"
-    echo "$sha  $FONTS/$file.tmp" | sha256sum -c -
-    mv "$FONTS/$file.tmp" "$FONTS/$file"
+    face="$(fetch "$name")"
+    cp "$face" "$FONTS/$file"
   fi
 done <<'FONTS'
-NotoSansMath-Regular.ttf 80b61fd613d3519197e64fff6f7e71fdc7f3e6526440ea4115b554ef7fd59af7
-NotoSansSymbols-Regular.ttf 8f02f31959bbdf6061547a188248e13f84dc5fdd940326ec494675f453f072bb
-NotoSansSymbols2-Regular.ttf 630846d528dbe4c4981370a4d0a9475a1fd1491a129bb411f8e157cdb5de13c6
+NotoSansMath-Regular.ttf noto-sans-math
+NotoSansSymbols-Regular.ttf noto-sans-symbols
+NotoSansSymbols2-Regular.ttf noto-sans-symbols2
 FONTS
 if [ ! -f "$FONTS/Noto-LICENSE.txt" ]; then
-  curl -sSfL "$NOTO_URL/LICENSE" -o "$FONTS/Noto-LICENSE.txt.tmp"
-  echo "0dab92d0544f7b233403f14b84a663bdbfa746982eda629e7f4f9ffe1b036feb  $FONTS/Noto-LICENSE.txt.tmp" | sha256sum -c -
-  mv "$FONTS/Noto-LICENSE.txt.tmp" "$FONTS/Noto-LICENSE.txt"
+  NOTO_LICENSE="$(fetch noto-fonts-license)"
+  cp "$NOTO_LICENSE" "$FONTS/Noto-LICENSE.txt"
 fi
 
 # The math font (TeX Gyre DejaVu Math, app/math.odin) is under the GUST
@@ -597,9 +582,8 @@ fi
 # SHA-256: 2bd69affc3da00715116f713f57eab9707e96daf3562ad0215987b15b9c16f73
 cp "$HERE/assets/fonts/GUST-FONT-LICENSE.txt" "$FONTS/GUST-FONT-LICENSE.txt"
 if [ ! -f "$FONTS/DejaVu-LICENSE.txt" ]; then
-  curl -sSfL https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/version_2_37/LICENSE -o "$FONTS/DejaVu-LICENSE.txt.tmp"
-  echo "7a083b136e64d064794c3419751e5c7dd10d2f64c108fe5ba161eae5e5958a93  $FONTS/DejaVu-LICENSE.txt.tmp" | sha256sum -c -
-  mv "$FONTS/DejaVu-LICENSE.txt.tmp" "$FONTS/DejaVu-LICENSE.txt"
+  DEJAVU_LICENSE="$(fetch dejavu-license)"
+  cp "$DEJAVU_LICENSE" "$FONTS/DejaVu-LICENSE.txt"
 fi
 
 mkdir -p "$HERE/build"

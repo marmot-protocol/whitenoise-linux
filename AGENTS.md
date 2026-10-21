@@ -32,16 +32,18 @@ output is already present, so only the first run is slow:
   `nes-decoder/` builds `build/wn-nes`, the NES emulator session behind
   the player modal (`app/nes.odin`).
 - `vendor/emoji/{noto,twemoji,openmoji}`, the three 128x128 PNG sets the user
-  picks between in Appearance: Noto from a sparse clone at
-  `noto-emoji-commit`, Twemoji and OpenMoji rasterized from the SVGs in
+  picks between in Appearance: Noto from a subset archive of
+  `noto-emoji-commit` (`scripts/noto-emoji-subset.sh`, published on the
+  `deps` GitHub release), Twemoji and OpenMoji rasterized from the SVGs in
   sha256-pinned archives with `rsvg-convert`.
   Staging renames every tile to lowercase hex codepoints joined by `-` with
   VS16 dropped. `vendor/emoji/openmoji-extras.tsv` lists the emoji only
   OpenMoji draws. Their licences land in `vendor/emoji-licenses`, and
   `vendor/emoji-catalog.tsv` comes from a pinned crates.io tarball.
-- `vendor/common-passwords.txt` and its MIT license from SecLists at
-  `seclists-commit` in `DEPS_PIN`. The Odin password-strength check embeds the
-  corpus with `#load`; there is no runtime file lookup or network request.
+- `vendor/common-passwords.txt` and its MIT license from SecLists, pinned by
+  `seclists-passwords-file` in `DEPS_PIN`. The Odin password-strength check
+  embeds the corpus with `#load`; there is no runtime file lookup or network
+  request.
 - `vendor/microtex` at its pinned `openmath` commit with
   `patches/microtex-isolation.patch`, `patches/microtex-libcxx-includes.patch`
   and `patches/microtex-locale-fallback.patch` applied, built by CMake into
@@ -62,9 +64,13 @@ output is already present, so only the first run is slow:
   and its futex waits to treat `EAGAIN`, `EINTR` and `ECANCELED` as wakeups
   instead of panicking.
 
-`DEPS_PIN` holds every third-party revision as `<name>-commit = <sha>`, one
-per line. Bumping one is a one-line edit; `just build` re-checks out and
-rebuilds on the next run.
+`DEPS_PIN` holds every third-party input, one per line: each git checkout as
+`<name>-commit = <sha>`, each download as `<name>-file = <sha256> <url>`.
+`scripts/fetch.sh <name>` downloads a `-file` pin to `vendor/downloads/<name>`
+and reuses a file already there with the pinned digest, which is how packagers
+build offline. Bumping a pin is a one-line edit; `just build` re-checks out and
+rebuilds on the next run (a new Twemoji or OpenMoji archive also needs
+`vendor/emoji/<set>` removed; Noto restages by itself).
 
 OpenBSD runs only from a root-owned, non-group/other-writable installation
 with protected ancestry. `scripts/openbsd-build.sh` stages one as root, then
