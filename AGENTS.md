@@ -237,7 +237,9 @@ The `zapstore` job announces each release's AppImage on Zapstore's relay
 with `scripts/zapstore.ts`: NIP-82 app, asset and release events (kinds
 32267, 3063, 30063) tagged `linux-x86_64`, signed by `nak` with the
 `ZAPSTORE_SIGNER` secret (bunker URL or nsec). Zapstore's own publisher,
-zsp, handles only APKs. The listing metadata and the publisher pubkey live
+zsp, handles only APKs. `scripts/zapstore-sign.sh [tag]` does the same from
+your machine, prompting for the signer, so the key need not live in CI.
+The listing metadata and the publisher pubkey live
 in `zapstore.yaml`; the relay whitelists that pubkey by fetching the file
 from the repository on the first publish. Zapstore's clients list only
 Android apps today, so the events have no store page yet.

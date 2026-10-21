@@ -11,6 +11,9 @@
 // nak signs them (ZAPSTORE_SIGNER: a bunker URL or nsec) and publishes each
 // to every relay below; a relay refusing one fails the run.
 //
+// Runs in the release workflow, or from your machine through
+// scripts/zapstore-sign.sh, which keeps the signer out of CI.
+//
 //   ZAPSTORE_SIGNER=bunker://... scripts/zapstore.ts v2026.10.21-build.1 \
 //     dist/WhiteNoise-v2026.10.21-build.1-x86_64.AppImage
 //
@@ -41,12 +44,23 @@ if (!signer) {
   process.exit(2);
 }
 
+// v2026.10.21-build.1 is APP_VERSION 2026.10.21+1 (scripts/version.sh). Read
+// from the tag, not the checkout, so any checkout can publish any release.
+const tagVersion = tag.match(/^v(\d{4}\.\d+\.\d+)-build\.(\d+)$/);
+if (!tagVersion) {
+  console.error(`Release tag must look like v2026.10.21-build.1, got '${tag}'.`);
+  process.exit(2);
+}
+const version = `${tagVersion[1]}+${tagVersion[2]}`;
+
 const root = `${import.meta.dir}/..`;
-const version = (await $`bash ${root}/scripts/version.sh ${tag}`.text()).trim();
 const commit = (await $`git -C ${root} rev-parse ${`${tag}^{commit}`}`.text()).trim();
 // The notes scripts/release.sh wrote into the tag, as on the GitHub release.
 const notes = (await $`git -C ${root} tag -l ${"--format=%(contents:body)"} ${tag}`.text()).trim();
 const config = Bun.YAML.parse(await Bun.file(`${root}/zapstore.yaml`).text());
+// Zapstore whitelists only zapstore.yaml's pubkey. Another key's events would
+// be refused there but still land on the other relays, so refuse them first.
+const publisher = (await $`nak decode ${config.pubkey}`.text()).trim();
 
 // zapstore.yaml names repository files; serve them from the tag.
 const fileUrl = (path: string) => `https://raw.githubusercontent.com/${GITHUB}/${tag}/${path}`;
@@ -62,6 +76,9 @@ async function publish(event: { kind: number; content: string; tags: string[][] 
   const signed = await $`nak event < ${new Response(JSON.stringify(event))}`
     .env({ ...process.env, NOSTR_SECRET_KEY: signer })
     .json();
+  if (signed.pubkey !== publisher) {
+    throw new Error(`ZAPSTORE_SIGNER signs as ${signed.pubkey}; zapstore.yaml publishes as ${publisher}.`);
+  }
   for (const relay of RELAYS) {
     await $`nak event ${relay} < ${new Response(JSON.stringify(signed))}`.quiet();
   }
