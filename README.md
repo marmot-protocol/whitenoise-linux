@@ -514,6 +514,11 @@ and pushes `master` and the tag to both remotes. The tag reaching GitHub
 starts the release build. `just release --dry-run` prints the version and
 tag without changing anything.
 
+`just publish` (`scripts/publish.sh`) does all of that, waits for the
+release workflow to publish the GitHub release, then signs its AppImage and
+Flatpak for Zapstore with your bunker or nsec. `just publish <tag>` publishes
+an existing release to Zapstore.
+
 Tagged releases publish the Windows installer, the portable zip, and
 Velopack's feed (`releases.win.json`, `assets.win.json`, `RELEASES`, and the
 `.nupkg` packages) to the GitHub release. The job first downloads the previous

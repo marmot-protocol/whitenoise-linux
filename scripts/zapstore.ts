@@ -1,28 +1,30 @@
 #!/usr/bin/env bun
-// Publish one release to Zapstore as NIP-82 events, all marked
+// Publish one GitHub release to Zapstore as NIP-82 events, all marked
 // linux-x86_64:
 //
 //   app      kind 32267  name, description, icon, screenshots (zapstore.yaml)
-//   asset    kind 3063   the AppImage: sha256, size, download URL
-//   release  kind 30063  version and notes, pointing at the asset
+//   asset    kind 3063   one per package (AppImage, Flatpak): sha256, size,
+//                        download URL, variant
+//   release  kind 30063  version and notes, pointing at the assets
 //
 // zsp, Zapstore's own publisher, only handles APKs, so this builds the
-// events zsp builds for Android with the Linux platform and AppImage tags.
+// events zsp builds for Android with the Linux platform and package tags.
 // nak signs them (ZAPSTORE_SIGNER: a bunker URL or nsec) and publishes each
 // to every relay below; a relay refusing one fails the run.
 //
-// Runs in the release workflow, or from your machine through
-// scripts/zapstore-sign.sh, which keeps the signer out of CI.
+// scripts/publish.sh runs it once the GitHub release exists, with the
+// release's files downloaded and checked against its SHA256SUMS.txt:
 //
 //   ZAPSTORE_SIGNER=bunker://... scripts/zapstore.ts v2026.10.21-build.1 \
-//     dist/WhiteNoise-v2026.10.21-build.1-x86_64.AppImage
+//     WhiteNoise-v2026.10.21-build.1-x86_64.AppImage \
+//     WhiteNoise-v2026.10.21-build.1-x86_64.flatpak
 //
 // Zapstore's Android app and zapstore.dev list only android-arm64-v8a
 // today, so these events are reachable by NIP-82 queries but have no store
 // page yet.
 //
-// ponytail: the icon, screenshots and AppImage are GitHub URLs, not Blossom
-// blobs; the asset event's sha256 still pins the AppImage. Upgrade: upload
+// ponytail: the icon, screenshots and packages are GitHub URLs, not Blossom
+// blobs; each asset event's sha256 still pins its package. Upgrade: upload
 // them with `nak blossom upload` to Zapstore's server.
 import { $ } from "bun";
 
@@ -32,10 +34,16 @@ const RELAYS = ["wss://relay.zapstore.dev", "wss://relay.cyberguy.fyi"];
 // The Zapstore catalog community; zsp adds it to every app it publishes.
 const CATALOG = "acfeaea6e51420e8068fac446ca9d17d7a9ef6a5d20d93894e50fee3d4902a84";
 const GITHUB = "marmot-protocol/whitenoise-linux";
+// The packages a release can list, by file suffix: MIME type, and the
+// variant tag clients choose between.
+const FORMATS = [
+  { suffix: ".AppImage", mime: "application/vnd.appimage", variant: "appimage" },
+  { suffix: ".flatpak", mime: "application/vnd.flatpak", variant: "flatpak" },
+];
 
-const [tag, appimage] = Bun.argv.slice(2);
-if (!tag || !appimage) {
-  console.error("Usage: scripts/zapstore.ts <tag> <AppImage>");
+const [tag, ...packages] = Bun.argv.slice(2);
+if (!tag || packages.length === 0) {
+  console.error("Usage: scripts/zapstore.ts <tag> <package>...");
   process.exit(2);
 }
 const signer = process.env.ZAPSTORE_SIGNER;
@@ -64,11 +72,22 @@ const publisher = (await $`nak decode ${config.pubkey}`.text()).trim();
 
 // zapstore.yaml names repository files; serve them from the tag.
 const fileUrl = (path: string) => `https://raw.githubusercontent.com/${GITHUB}/${tag}/${path}`;
-const appimageName = appimage.split("/").pop();
-const file = Bun.file(appimage);
-const hasher = new Bun.CryptoHasher("sha256");
-for await (const chunk of file.stream()) {
-  hasher.update(chunk);
+// Hash every package before signing anything, so a bad path or an unknown
+// format fails before the first event goes out.
+const assets = [];
+for (const path of packages) {
+  const name = path.split("/").pop()!;
+  const format = FORMATS.find((f) => name.endsWith(f.suffix));
+  if (!format) {
+    console.error(`${name} is not an AppImage or a Flatpak bundle.`);
+    process.exit(2);
+  }
+  const file = Bun.file(path);
+  const hasher = new Bun.CryptoHasher("sha256");
+  for await (const chunk of file.stream()) {
+    hasher.update(chunk);
+  }
+  assets.push({ name, format, size: file.size, sha256: hasher.digest("hex") });
 }
 
 // Sign once, then send the same signed event to each relay in turn.
@@ -104,21 +123,27 @@ await publish({
   ],
 });
 
-const assetId = await publish({
-  kind: 3063,
-  content: "",
-  tags: [
-    ["i", APP_ID],
-    ["x", hasher.digest("hex")],
-    ["version", version],
-    ["url", `https://github.com/${GITHUB}/releases/download/${tag}/${appimageName}`],
-    ["m", "application/vnd.appimage"],
-    ["size", String(file.size)],
-    ["f", PLATFORM],
-    ["filename", appimageName],
-    ["commit", commit],
-  ],
-});
+const assetIds = [];
+for (const asset of assets) {
+  assetIds.push(
+    await publish({
+      kind: 3063,
+      content: "",
+      tags: [
+        ["i", APP_ID],
+        ["x", asset.sha256],
+        ["version", version],
+        ["url", `https://github.com/${GITHUB}/releases/download/${tag}/${asset.name}`],
+        ["m", asset.format.mime],
+        ["size", String(asset.size)],
+        ["f", PLATFORM],
+        ["filename", asset.name],
+        ["variant", asset.format.variant],
+        ["commit", commit],
+      ],
+    }),
+  );
+}
 
 await publish({
   kind: 30063,
@@ -129,6 +154,6 @@ await publish({
     ["d", `${APP_ID}@${version}`],
     ["c", "main"],
     ["f", PLATFORM],
-    ["e", assetId],
+    ...assetIds.map((id) => ["e", id]),
   ],
 });

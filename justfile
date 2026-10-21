@@ -35,3 +35,7 @@ translations:
 # Bump APP_VERSION to today, tag v<date>-build.<n>, push to both remotes.
 release *args:
     @scripts/release.sh "$@"
+
+# Cut a release, wait for GitHub to publish it, then sign it for Zapstore.
+publish *args:
+    @scripts/publish.sh "$@"
