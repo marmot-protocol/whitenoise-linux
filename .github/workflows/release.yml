@@ -447,9 +447,10 @@ jobs:
           fail_on_unmatched_files: true
 
   # Point the AUR at the release just published: render whitenoise-linux-bin
-  # for this tag, install it from the release asset in a clean container and
-  # boot it, then push it and whitenoise-linux-git. The push is skipped until
-  # the repository has an AUR_SSH_PRIVATE_KEY secret.
+  # and the from-source whitenoise-linux for this tag, install the former
+  # from the release asset in a clean container and boot it, check every
+  # source of the latter, then push both and whitenoise-linux-git. The push
+  # is skipped until the repository has an AUR_SSH_PRIVATE_KEY secret.
   aur:
     if: startsWith(github.ref, 'refs/tags/')
     name: AUR packages
@@ -474,6 +475,7 @@ jobs:
           install -D -m 0644 packaging/arch/whitenoise-linux-git/PKGBUILD build/aur/whitenoise-linux-git/PKGBUILD
           useradd -m builder
           chown -R builder build/aur
+          su builder -c "scripts/aur-source.sh '$GITHUB_REF_NAME' build/aur"
           for pkg in whitenoise-linux-bin whitenoise-linux-git; do
             su builder -c "cd build/aur/$pkg && makepkg --printsrcinfo > .SRCINFO"
           done
@@ -489,6 +491,11 @@ jobs:
           namcap build/aur/whitenoise-linux-bin/PKGBUILD build/aur/whitenoise-linux-bin/whitenoise-linux-bin-*.pkg.tar.zst
           data="$(mktemp -d)"
           (cd "$data" && SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke whitenoise "$data")
+
+      # Downloads every pinned source the from-source package lists and
+      # checks its digest; the archlinux job already built the same inputs.
+      - name: Verify whitenoise-linux sources
+        run: su builder -c 'cd build/aur/whitenoise-linux && makepkg --verifysource --nodeps'
 
       - name: Check for the AUR key
         id: key
@@ -510,7 +517,7 @@ jobs:
           chmod 0600 "$ssh_dir/key"
           echo 'aur.archlinux.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEuBKrPzbawxA/k2g6NcyV5jmqwJ2s+zpgZGZ7tpLIcN' > "$ssh_dir/known_hosts"
           export GIT_SSH_COMMAND="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
-          for pkg in whitenoise-linux-bin whitenoise-linux-git; do
+          for pkg in whitenoise-linux whitenoise-linux-bin whitenoise-linux-git; do
             repo="build/aur-git/$pkg"
             git clone "ssh://aur@aur.archlinux.org/$pkg.git" "$repo"
             cp "build/aur/$pkg/PKGBUILD" "build/aur/$pkg/.SRCINFO" "$repo/"

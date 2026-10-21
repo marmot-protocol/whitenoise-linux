@@ -217,7 +217,7 @@ ships webkit2gtk-4.1 for wn-webview; libmpv and poppler as modules,
 network on during the build for cargo and the pinned clones), so it is a
 self-published bundle, not a Flathub submission.
 
-Arch gets two AUR packages. `packaging/arch/whitenoise-linux-git/PKGBUILD`
+Arch gets three AUR packages. `packaging/arch/whitenoise-linux-git/PKGBUILD`
 builds master from source: `prepare()` runs `scripts/build.sh fetch`, which
 downloads every pinned input including the speech runtime and the Rust
 crates, and `build()` compiles with `CARGO_NET_OFFLINE=true`. Odin is the
@@ -228,8 +228,10 @@ an `archlinux` container and runs `scripts/arch-package.sh`, which compiles
 inside `unshare --net` and produces
 `WhiteNoise-<tag>-archlinux-x86_64.tar.zst`. The `aur` job then renders
 `whitenoise-linux-bin` for that tarball with `scripts/aur-bin.sh`, installs
-and boots it, and pushes both packages once an `AUR_SSH_PRIVATE_KEY` secret
-exists.
+and boots it, renders the from-source `whitenoise-linux` with
+`scripts/aur-source.sh` (every `DEPS_PIN` entry becomes a checksummed source)
+and checks its sources, and pushes all three once an `AUR_SSH_PRIVATE_KEY`
+secret exists.
 
 All of them install the same tree through `scripts/install-tree.sh
 <prefix> <id>`. The app reads data and helper programs from disk at runtime,

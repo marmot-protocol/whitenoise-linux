@@ -198,7 +198,16 @@ compiles nothing:
 yay -S whitenoise-linux-bin
 ```
 
-`whitenoise-linux-git` builds the current master from source instead. Its
+`whitenoise-linux` builds the latest release from source. Every input it
+needs is a checksummed source in its PKGBUILD, generated from `DEPS_PIN` by
+`scripts/aur-source.sh`, and `build()` runs with the network off. Expect a
+long first build: it compiles the Rust Marmot library.
+
+```sh
+yay -S whitenoise-linux
+```
+
+`whitenoise-linux-git` builds the current master from source. Its
 `prepare()` downloads every pinned input and `build()` runs with the network
 off. To build it from a checkout:
 
@@ -206,8 +215,8 @@ off. To build it from a checkout:
 cd packaging/arch/whitenoise-linux-git && makepkg -si
 ```
 
-Both packages conflict with `whitenoise-git`, the Flutter client, because
-both install `/usr/bin/whitenoise`.
+The three packages conflict with each other and with `whitenoise-git`, the
+Flutter client, because all of them install `/usr/bin/whitenoise`.
 
 ### Versioning
 
