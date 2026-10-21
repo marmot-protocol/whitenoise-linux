@@ -236,6 +236,10 @@ msgid "%s removed %s"
 msgstr "%s ha rimosso %s"
 
 #, c-format
+msgid "%s removed the group name"
+msgstr "%s ha rimosso il nome del gruppo"
+
+#, c-format
 msgid "%s renamed the group to %s"
 msgstr "%s ha rinominato il gruppo in %s"
 
@@ -1145,6 +1149,9 @@ msgstr "Impossibile creare un'identità. %s"
 msgid "Couldn't create the backup. Please try again."
 msgstr "Impossibile creare il backup. Riprova."
 
+msgid "Couldn't create the group. Enter a name and try again."
+msgstr "Impossibile creare il gruppo. Inserisci un nome e riprova."
+
 msgid "Couldn't create the vault. Please try again."
 msgstr "Impossibile creare la cassaforte. Riprova."
 
@@ -1364,6 +1371,9 @@ msgstr "Impossibile rimuovere la GIF. Riprova."
 
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "Impossibile rimuovere il file salvato. Riprova."
+
+msgid "Couldn't rename the group. Enter a name and try again."
+msgstr "Impossibile rinominare il gruppo. Inserisci un nome e riprova."
 
 msgid "Couldn't render that emoji. Choose another one."
 msgstr "Impossibile disegnare questa emoji. Scegline un'altra."
@@ -4235,6 +4245,9 @@ msgstr "La chat esce dal tuo elenco. Per unirti più avanti serve un nuovo invit
 msgid "The colors and settings you changed in the editor are lost."
 msgstr "I colori e le impostazioni che hai cambiato nell'editor andranno persi."
 
+msgid "The group name was removed"
+msgstr "Il nome del gruppo è stato rimosso"
+
 #, c-format
 msgid "The group was renamed to %s"
 msgstr "Il gruppo è stato rinominato in %s"
@@ -4299,6 +4312,9 @@ msgstr "Perde l'accesso ai nuovi messaggi di questo gruppo."
 
 msgid "They stay in the group as a regular member."
 msgstr "Resta nel gruppo come membro normale."
+
+msgid "This has no visible text, so the GM button sends GM."
+msgstr "Non contiene testo visibile, quindi il pulsante GM invia GM."
 
 #, c-format
 msgid "This is an installation prompt for connecting this Claude Code setup to White Noise through Marmot. Read the authoritative Claude Code harness guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/claude/marmot/README.md and the evergreen connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Confirm prerequisites: Claude Code CLI is installed, authenticated, and available on PATH, and this machine uses the same public relay set as my current account in the White Noise app. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, use the checksum-verified install-claude-marmot.sh release flow, bootstrap wn-agent for that npub with the allowed welcomer, and verify wn-claude --version. Then reply with your agent npub and ask me to invite it from White Noise and send a test message from this allowed npub over the configured relays. Do not report setup complete until wn-claude returns a reply through White Noise; if that round trip cannot be verified automatically, clearly mark device verification required."

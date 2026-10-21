@@ -236,6 +236,10 @@ msgid "%s removed %s"
 msgstr "%sさんが%sさんを削除しました"
 
 #, c-format
+msgid "%s removed the group name"
+msgstr "%sさんがグループ名を削除しました"
+
+#, c-format
 msgid "%s renamed the group to %s"
 msgstr "%sさんがグループ名を%sに変更しました"
 
@@ -1145,6 +1149,9 @@ msgstr "IDを作成できませんでした。%s"
 msgid "Couldn't create the backup. Please try again."
 msgstr "バックアップを作成できませんでした。もう一度お試しください。"
 
+msgid "Couldn't create the group. Enter a name and try again."
+msgstr "グループを作成できませんでした。名前を入力して、もう一度お試しください。"
+
 msgid "Couldn't create the vault. Please try again."
 msgstr "保管庫を作成できませんでした。もう一度お試しください。"
 
@@ -1364,6 +1371,9 @@ msgstr "GIFを削除できませんでした。もう一度お試しください
 
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "保存したファイルを削除できませんでした。もう一度お試しください。"
+
+msgid "Couldn't rename the group. Enter a name and try again."
+msgstr "グループ名を変更できませんでした。名前を入力して、もう一度お試しください。"
 
 msgid "Couldn't render that emoji. Choose another one."
 msgstr "その絵文字を描画できません。別の絵文字を選択してください。"
@@ -4235,6 +4245,9 @@ msgstr "チャットが一覧から消えます。後で参加するには新し
 msgid "The colors and settings you changed in the editor are lost."
 msgstr "エディターで変更した色と設定は失われます。"
 
+msgid "The group name was removed"
+msgstr "グループ名が削除されました"
+
 #, c-format
 msgid "The group was renamed to %s"
 msgstr "グループ名が%sに変更されました"
@@ -4299,6 +4312,9 @@ msgstr "このグループの新しいメッセージにアクセスできなく
 
 msgid "They stay in the group as a regular member."
 msgstr "一般メンバーとしてグループに残ります。"
+
+msgid "This has no visible text, so the GM button sends GM."
+msgstr "表示される文字がないため、GMボタンはGMを送信します。"
 
 #, c-format
 msgid "This is an installation prompt for connecting this Claude Code setup to White Noise through Marmot. Read the authoritative Claude Code harness guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/claude/marmot/README.md and the evergreen connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Confirm prerequisites: Claude Code CLI is installed, authenticated, and available on PATH, and this machine uses the same public relay set as my current account in the White Noise app. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, use the checksum-verified install-claude-marmot.sh release flow, bootstrap wn-agent for that npub with the allowed welcomer, and verify wn-claude --version. Then reply with your agent npub and ask me to invite it from White Noise and send a test message from this allowed npub over the configured relays. Do not report setup complete until wn-claude returns a reply through White Noise; if that round trip cannot be verified automatically, clearly mark device verification required."

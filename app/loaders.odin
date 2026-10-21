@@ -601,7 +601,8 @@ system_text :: proc(
 		}
 	}
 	kind := ev.system_type != nil ? string(ev.system_type) : ""
-	name := ev.name != nil ? string(ev.name) : ""
+	// A name of only spaces leaves the group unnamed, like MDK's title.
+	name := ev.name != nil ? strings.trim_space(string(ev.name)) : ""
 
 	switch {
 	case kind == "member_added" && len(actor) > 0 && len(subject) > 0:
@@ -628,6 +629,10 @@ system_text :: proc(
 		return fmt.tprintf(tr("%s renamed the group to %s"), actor, name)
 	case kind == "group_renamed" && len(name) > 0:
 		return fmt.tprintf(tr("The group was renamed to %s"), name)
+	case kind == "group_renamed" && len(actor) > 0:
+		return fmt.tprintf(tr("%s removed the group name"), actor)
+	case kind == "group_renamed":
+		return tr("The group name was removed")
 	case kind == "group_avatar_changed" && len(actor) > 0:
 		return fmt.tprintf(tr("%s changed the group photo"), actor)
 	case kind == "disappearing_timer_changed" && len(actor) > 0:

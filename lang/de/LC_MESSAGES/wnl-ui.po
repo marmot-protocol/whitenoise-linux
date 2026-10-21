@@ -236,6 +236,10 @@ msgid "%s removed %s"
 msgstr "%s hat %s entfernt"
 
 #, c-format
+msgid "%s removed the group name"
+msgstr "%s hat den Gruppennamen entfernt"
+
+#, c-format
 msgid "%s renamed the group to %s"
 msgstr "%s hat die Gruppe in %s umbenannt"
 
@@ -1145,6 +1149,9 @@ msgstr "Die Identität konnte nicht erstellt werden. %s"
 msgid "Couldn't create the backup. Please try again."
 msgstr "Das Backup konnte nicht erstellt werden. Bitte versuche es erneut."
 
+msgid "Couldn't create the group. Enter a name and try again."
+msgstr "Die Gruppe konnte nicht erstellt werden. Gib einen Namen ein und versuche es erneut."
+
 msgid "Couldn't create the vault. Please try again."
 msgstr "Der Tresor konnte nicht erstellt werden. Bitte versuche es erneut."
 
@@ -1364,6 +1371,9 @@ msgstr "Das GIF konnte nicht entfernt werden. Bitte versuche es erneut."
 
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "Die gespeicherte Datei konnte nicht entfernt werden. Bitte versuche es erneut."
+
+msgid "Couldn't rename the group. Enter a name and try again."
+msgstr "Die Gruppe konnte nicht umbenannt werden. Gib einen Namen ein und versuche es erneut."
 
 msgid "Couldn't render that emoji. Choose another one."
 msgstr "Dieses Emoji kann nicht dargestellt werden. Wähle ein anderes."
@@ -4235,6 +4245,9 @@ msgstr "Der Chat verschwindet aus deiner Liste. Für einen späteren Beitritt br
 msgid "The colors and settings you changed in the editor are lost."
 msgstr "Die Farben und Einstellungen, die du im Editor geändert hast, gehen verloren."
 
+msgid "The group name was removed"
+msgstr "Der Gruppenname wurde entfernt"
+
 #, c-format
 msgid "The group was renamed to %s"
 msgstr "Die Gruppe wurde in %s umbenannt"
@@ -4299,6 +4312,9 @@ msgstr "Die Person verliert den Zugriff auf neue Nachrichten in dieser Gruppe."
 
 msgid "They stay in the group as a regular member."
 msgstr "Die Person bleibt als normales Mitglied in der Gruppe."
+
+msgid "This has no visible text, so the GM button sends GM."
+msgstr "Das enthält keinen sichtbaren Text, daher sendet die GM-Taste GM."
 
 #, c-format
 msgid "This is an installation prompt for connecting this Claude Code setup to White Noise through Marmot. Read the authoritative Claude Code harness guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/claude/marmot/README.md and the evergreen connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Confirm prerequisites: Claude Code CLI is installed, authenticated, and available on PATH, and this machine uses the same public relay set as my current account in the White Noise app. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, use the checksum-verified install-claude-marmot.sh release flow, bootstrap wn-agent for that npub with the allowed welcomer, and verify wn-claude --version. Then reply with your agent npub and ask me to invite it from White Noise and send a test message from this allowed npub over the configured relays. Do not report setup complete until wn-claude returns a reply through White Noise; if that round trip cannot be verified automatically, clearly mark device verification required."

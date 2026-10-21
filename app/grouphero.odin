@@ -125,8 +125,9 @@ group_hero :: proc(ui: ^Ui_State) {
 				micro_button("DescCancel", tr("Cancel"))
 			}
 		} else {
-			if len(ui.group_desc) > 0 {
-				clay.Text(ui.group_desc, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			// Other clients may have published a description of only spaces.
+			if desc := strings.trim_space(ui.group_desc); len(desc) > 0 {
+				clay.Text(desc, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 			} else {
 				clay.Text(
 					tr("No description."),
@@ -192,10 +193,12 @@ handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	return false
 }
 
-// Publish the edited description; an empty field clears it.
+// Publish the edited description; a field that trims to empty clears it.
 save_description :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	job := account_job_new(ui, client, .Description); if job == nil {return}
-	job.target = strings.clone(string(ui.desc_input[:])); account_job_start(job)
+	job.target = strings.clone(
+		strings.trim_space(string(ui.desc_input[:])),
+	); account_job_start(job)
 }
 
 // Read and decode a picked image file; errors go to the status line.

@@ -236,6 +236,10 @@ msgid "%s removed %s"
 msgstr ""
 
 #, c-format
+msgid "%s removed the group name"
+msgstr ""
+
+#, c-format
 msgid "%s renamed the group to %s"
 msgstr ""
 
@@ -1141,6 +1145,9 @@ msgstr ""
 msgid "Couldn't create the backup. Please try again."
 msgstr ""
 
+msgid "Couldn't create the group. Enter a name and try again."
+msgstr ""
+
 msgid "Couldn't create the vault. Please try again."
 msgstr ""
 
@@ -1359,6 +1366,9 @@ msgid "Couldn't remove the GIF. Please try again."
 msgstr ""
 
 msgid "Couldn't remove the saved file. Please try again."
+msgstr ""
+
+msgid "Couldn't rename the group. Enter a name and try again."
 msgstr ""
 
 msgid "Couldn't render that emoji. Choose another one."
@@ -4229,6 +4239,9 @@ msgstr ""
 msgid "The colors and settings you changed in the editor are lost."
 msgstr ""
 
+msgid "The group name was removed"
+msgstr ""
+
 #, c-format
 msgid "The group was renamed to %s"
 msgstr ""
@@ -4292,6 +4305,9 @@ msgid "They lose access to new messages in this group."
 msgstr ""
 
 msgid "They stay in the group as a regular member."
+msgstr ""
+
+msgid "This has no visible text, so the GM button sends GM."
 msgstr ""
 
 #, c-format

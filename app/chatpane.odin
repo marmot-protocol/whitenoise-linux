@@ -1757,8 +1757,10 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 						},
 					},
 					) {
-						if len(ui.nc_pic.data) > 0 || len(ui.nc_name) > 0 {
-							avatar("NCPic", 0, "", string(ui.nc_name[:]), 64, nc_pic_tex(ui))
+						// Previewed from the trimmed name the group is created with.
+						name := strings.trim_space(string(ui.nc_name[:]))
+						if len(ui.nc_pic.data) > 0 || len(name) > 0 {
+							avatar("NCPic", 0, "", name, 64, nc_pic_tex(ui))
 						} else if clay.UI(clay.ID("NCPicPlaceholder"))(
 						{
 							layout = {
@@ -1814,12 +1816,12 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 			if ui.nc_page != .Contacts {
 				label :=
 					pending != "" ? pending : ui.nc_member_choice == 0 && (strings.contains(string(ui.nc_member[:]), "@") || nc_is_bit(string(ui.nc_member[:]))) ? tr("Look up") : tr("Create group")
-				login_big_button(
-					"NCCreate",
-					label,
-					true,
-					pending != "" || nc_member_ref(ui) == "" ? .Disabled : .Enabled,
-				)
+				// A NIP-05 lookup only fills in the member, so it needs no name yet.
+				member := nc_member_ref(ui)
+				nip05 := !nc_is_bit(member) && strings.contains(member, "@")
+				named := strings.trim_space(string(ui.nc_name[:])) != ""
+				ready := pending == "" && member != "" && (named || nip05)
+				login_big_button("NCCreate", label, true, ready ? .Enabled : .Disabled)
 			}
 			if clay.UI(clay.ID("NCPrivacy"))(
 			{

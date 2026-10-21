@@ -1036,6 +1036,12 @@ settings_general :: proc(ui: ^Ui_State) {
 					tr("What the GM button sends. You can use it once a day in each chat."),
 				)
 				settings_input(ui, "GmBox", &ui.gm_input, GM_DEFAULT, ui.focus == .Gm)
+				if len(ui.gm_input) > 0 && ui.prefs.gm_text == "" {
+					clay.Text(
+						tr("This has no visible text, so the GM button sends GM."),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					)
+				}
 			}
 		}
 
@@ -2751,9 +2757,10 @@ settings_fields :: proc(ui: ^Ui_State) {
 			ui.focus = .Gm
 		}
 		// Commits every keystroke; the frame loop writes it in the background.
-		if string(ui.gm_input[:]) != ui.prefs.gm_text {
+		// Stored trimmed, so a box of only spaces saves as unset.
+		if gm := strings.trim_space(string(ui.gm_input[:])); gm != ui.prefs.gm_text {
 			delete(ui.prefs.gm_text)
-			ui.prefs.gm_text = strings.clone(string(ui.gm_input[:]))
+			ui.prefs.gm_text = strings.clone(gm)
 			ui.settings_dirty = true
 		}
 	}

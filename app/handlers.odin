@@ -860,8 +860,11 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		((rl.IsKeyPressed(.ENTER) && !shift_down()) || clicked("SendBtn") || test_send_now)
 	test_send_now = false
 	// Staged attachments send on their own only outside an edit (an
-	// edit needs text and never sends them).
-	if send && (len(ui.compose) > 0 || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
+	// edit needs text and never sends them). A composer of only
+	// whitespace counts as empty: it stays put rather than sending a
+	// blank row.
+	has_text := strings.trim_space(string(ui.compose[:])) != ""
+	if send && (has_text || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
 		// Sending finishes a trailing emoticon: "ok :D" goes out as "ok 😃".
 		ed_begin(ui, &ui.compose)
 		ui.ed.selection = {len(ui.compose), len(ui.compose)}
@@ -869,10 +872,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ed_end(ui, &ui.compose)
 
 		// The message leaves the composer rather than appearing above it.
-		if len(ui.editing) == 0 && len(ui.compose) > 0 {
+		if len(ui.editing) == 0 && has_text {
 			send_arc(ui, string(ui.compose[:]))
 		}
-		if len(ui.compose) > 0 {
+		if has_text {
 			if len(ui.editing) > 0 {
 				queue_edit(ui, client)
 				return
@@ -1669,17 +1672,28 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if clicked("NCCreate") || rl.IsKeyPressed(.ENTER) {
 		if ui.nip05_ticket != 0 {return}
-		name := len(ui.nc_name) > 0 ? string(ui.nc_name[:]) : tr("New group")
-
 		member := nc_member_ref(ui)
-		if member == "" {return}
 
 		// `.bit` / `d/` / `id/` go through the Namecoin resolver;
-		// other `@` addresses stay on the existing NIP-05 lookup path.
+		// other `@` addresses stay on the existing NIP-05 lookup path,
+		// which only fills in the member field.
 		if len(member) > 0 && !nc_is_bit(member) && strings.contains(member, "@") {
 			ui.nip05_ticket = spawn_op(ui, client, .Lookup_Member, member, "")
 			return
 		}
+
+		// A filled-in default would make every unnamed group look the same.
+		name := strings.trim_space(string(ui.nc_name[:]))
+		if name == "" {
+			ui.focus = .NC_Name
+			set_status(
+				ui,
+				strings.clone(tr("Couldn't create the group. Enter a name and try again.")),
+				.Error,
+			)
+			return
+		}
+		if member == "" {return}
 
 		// Route .bit / d/ / id/ through the Namecoin resolver first.
 		if len(member) > 0 && nc_is_bit(member) {
@@ -1939,7 +1953,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if admin && clicked("RenameBtn") && len(ui.rename_input) > 0 {
+	if admin && clicked("RenameBtn") {
 		start_rename(ui, client)
 		return
 	}
@@ -2089,9 +2103,19 @@ admin_op :: proc(ui: ^Ui_State, client: ^marmot.Client, op: string, member_ref: 
 }
 
 // Optimistic rename: the rail row and header flip now, the commit runs
-// on the op worker, and drain_ops re-snapshots either way.
+// on the op worker, and drain_ops re-snapshots either way. A name that
+// trims to empty is refused rather than published as a blank title.
 start_rename :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	name := string(ui.rename_input[:])
+	name := strings.trim_space(string(ui.rename_input[:]))
+	if name == "" {
+		ui.focus = .Rename
+		set_status(
+			ui,
+			strings.clone(tr("Couldn't rename the group. Enter a name and try again.")),
+			.Error,
+		)
+		return
+	}
 	chat := &ui.chats[ui.selected]
 	delete(chat.title)
 	chat.title = strings.clone(name)

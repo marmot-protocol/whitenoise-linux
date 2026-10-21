@@ -27,6 +27,9 @@ system_text_participants :: proc(t: ^testing.T) {
 		{"member_left", "Alice", nil, nil, "Alice left the group"},
 		{"group_renamed", "Alice", nil, "Friends", "Alice renamed the group to Friends"},
 		{"group_renamed", nil, nil, "Friends", "The group was renamed to Friends"},
+		{"group_renamed", "Alice", nil, "  Friends ", "Alice renamed the group to Friends"},
+		{"group_renamed", "Alice", nil, "   ", "Alice removed the group name"},
+		{"group_renamed", nil, nil, "", "The group name was removed"},
 		{"group_avatar_changed", "Alice", nil, nil, "Alice changed the group photo"},
 		{
 			"disappearing_timer_changed",
