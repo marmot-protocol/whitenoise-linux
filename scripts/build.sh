@@ -60,6 +60,16 @@ bash "$HERE/scripts/version.sh" >/dev/null
 pin() { sed -n "s/^$1-commit = //p" "$HERE/DEPS_PIN"; }
 # One pinned download, by name; prints its path under vendor/downloads.
 fetch() { bash "$HERE/scripts/fetch.sh" "$1" </dev/null; }
+# git apply inside build/<dir>. A source tarball unpacked inside some other
+# repository (an AUR helper's clone of the PKGBUILD) is not a repository of
+# its own, so git would use the outer one and silently skip every path
+# outside the current directory. Stopping discovery at build/ applies the
+# patch as a plain one in every layout, or fails loudly.
+apply_in_build() {
+  local dir="$1"
+  shift
+  GIT_CEILING_DIRECTORIES="$HERE/build" git -C "$HERE/build/$dir" apply "$@"
+}
 
 MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
@@ -159,7 +169,7 @@ if [ ! -f "$HERE/build/clay/clay.a" ] || [ "$CLAY_STALE" = 1 ]; then
   mkdir -p "$HERE/build/clay"
   cp "$CLAY/clay.h" "$HERE/build/clay/clay.h"
   for patch in "${CLAY_PATCHES[@]}"; do
-    git -C "$HERE" apply --directory=build/clay "$patch"
+    apply_in_build clay "$patch"
   done
   cc -x c -c -DCLAY_IMPLEMENTATION -fPIC -O2 "$HERE/build/clay/clay.h" -o "$HERE/build/clay/clay.o"
   ar rcs "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.o"
@@ -660,9 +670,9 @@ if [ "$(uname -s)" = OpenBSD ]; then
     fi
   done
   for patch in "$HERE"/patches/odin-openbsd-*.patch; do
-    if git -C "$HERE" apply --directory=build/odin-root --check "$patch" 2>/dev/null; then
-      git -C "$HERE" apply --directory=build/odin-root "$patch"
-    elif ! git -C "$HERE" apply --directory=build/odin-root --reverse --check "$patch" 2>/dev/null; then
+    if apply_in_build odin-root --check "$patch" 2>/dev/null; then
+      apply_in_build odin-root "$patch"
+    elif ! apply_in_build odin-root --reverse --check "$patch" 2>/dev/null; then
       echo "==> $(basename "$patch") conflicts with the installed compiler" >&2
       exit 1
     fi
