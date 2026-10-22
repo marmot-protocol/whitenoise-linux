@@ -127,14 +127,19 @@ case "$TARGET" in
 esac
 fetch "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.7/$archive" "$TTS/runtime.tar.bz2" "$digest"
 tar --no-same-owner -xjf "$TTS/runtime.tar.bz2" --strip-components=1 -C "$TTS"
-fetch "https://raw.githubusercontent.com/k2-fsa/sherpa-onnx/$(pin sherpa-onnx)/sherpa-onnx/c-api/c-api.h" \
-  "$TTS/include/sherpa-onnx/c-api/c-api.h" 426db2c6acfb51e02143aece67c45779fae699d961c7c26ccf6f1388fdeaa2df
-fetch "https://raw.githubusercontent.com/k2-fsa/sherpa-onnx/$(pin sherpa-onnx)/LICENSE" \
-  "$TTS/LICENSE" cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30
-fetch https://raw.githubusercontent.com/microsoft/onnxruntime/v1.27.1/LICENSE \
-  "$TTS/LICENSE-onnxruntime" 2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c
-fetch https://raw.githubusercontent.com/microsoft/onnxruntime/v1.27.1/ThirdPartyNotices.txt \
-  "$TTS/ThirdPartyNotices-onnxruntime.txt" 0e07b95f3a8d6230037707c5c4a2b554d12c4cb67369669ac255635528ffcee2
+# Header and licenses are file pins. pin() only reads <name>-commit, and
+# sherpa-onnx has none, so $(pin sherpa-onnx) fetched a 404.
+pinned_file() {
+  local line digest url
+  line="$(sed -n "s/^$1-file = //p" "$HERE/DEPS_PIN")"
+  digest="${line%% *}"
+  url="${line#* }"
+  fetch "$url" "$2" "$digest"
+}
+pinned_file sherpa-onnx-header "$TTS/include/sherpa-onnx/c-api/c-api.h"
+pinned_file sherpa-onnx-license "$TTS/LICENSE"
+pinned_file onnxruntime-license "$TTS/LICENSE-onnxruntime"
+pinned_file onnxruntime-notices "$TTS/ThirdPartyNotices-onnxruntime.txt"
 if [ "$SYSTEM" = Windows ]; then
   # GNU ld accepts PE import libraries, but using gendef/dlltool makes the ABI
   # explicit and avoids depending on Microsoft's import-library format.
