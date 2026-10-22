@@ -21,14 +21,24 @@ main :: proc() {
 	}
 	home := strings.clone_to_cstring(os.args[1])
 
+	deployment: ^marmot.Deployment
+	if marmot.deployment_white_noise(&deployment) != .OK {
+		fail("deployment_white_noise")
+	}
+	defer marmot.deployment_free(deployment)
+
 	// NULL root path must be rejected at the binding layer.
 	client: ^marmot.Client
-	if marmot.client_new(nil, nil, 0, &client) != .NULL_POINTER {
+	if marmot.client_new(nil, nil, 0, deployment, &client) != .NULL_POINTER {
 		fail("NULL root_path not rejected")
+	}
+	// A deployment is required, even for a valid root path.
+	if marmot.client_new(home, nil, 0, nil, &client) != .NULL_POINTER {
+		fail("NULL deployment not rejected")
 	}
 
 	relays := []cstring{"wss://relay.example.org"}
-	if marmot.client_new(home, raw_data(relays), 1, &client) != .OK {
+	if marmot.client_new(home, raw_data(relays), 1, deployment, &client) != .OK {
 		fail("client_new")
 	}
 	fmt.println("smoke: client constructed")

@@ -22,6 +22,13 @@ compose_profile_ownership :: proc(t: ^profile_testing.T) {
 	dir, err := os.make_directory_temp("/tmp", "wn-profile-ownership-*", context.temp_allocator)
 	if !profile_testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
+	deployment: ^marmot.Deployment
+	if !profile_testing.expect_value(
+		t,
+		marmot.deployment_white_noise(&deployment),
+		marmot.Status.OK,
+	) {return}
+	defer marmot.deployment_free(deployment)
 	client: ^marmot.Client
 	store := vault_secret_store()
 	if !profile_testing.expect_value(
@@ -31,6 +38,7 @@ compose_profile_ownership :: proc(t: ^profile_testing.T) {
 			nil,
 			0,
 			&store,
+			deployment,
 			&client,
 		),
 		marmot.Status.OK,

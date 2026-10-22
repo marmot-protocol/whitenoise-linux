@@ -2135,7 +2135,6 @@ Msg_Op :: enum {
 	Poll_Create,
 	Poll_Vote,
 	Retry_Convergence,
-	Repair_History,
 	Retention, // disappearing-timer change; the seconds ride Op_Job.secs
 	Rename, // group rename; the new name rides Op_Job.target
 	Invite, // member ops: the member ref rides Op_Job.target

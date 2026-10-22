@@ -379,7 +379,7 @@ display, before starting attachment workers, the vault or Marmot. It keeps
 networking, display/audio access and read-write access to the canonical
 Marmot data, app settings and Downloads directories. Runtime resources are
 read-only. Temporary files and caches stay under the data directory.
-The MDK filesystem patch anchors directory creation inside the unveiled data
+MDK anchors directory creation inside the unveiled data
 tree; it does not require opening `/`.
 
 SQLCipher's C build uses OpenBSD's concealed allocators instead of unsupported
@@ -716,11 +716,14 @@ host or the Rust library restart the host; the vault stays unlocked for the
 
 To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `just build` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
 
-The current pin is MDK master at `88f725831b06` (0.13.0). The build applies
+The current pin is MDK master at `77f22e35499a` (0.14.0-dev). The build applies
 the patches listed in `scripts/build.sh`. NIP-46 C sessions, Windows
-portability, SOCKS5 routing, and Markdown timestamps come from upstream MDK.
+portability, OpenBSD sandbox support, SOCKS5 routing, and Markdown timestamps
+come from upstream MDK.
 The app supplies White Noise's deployment services explicitly when creating
-the Marmot client.
+the Marmot client; every C constructor requires a deployment.
+History catch-up uses MDK's ordered replay and account-owned recovery.
+The `retry-convergence` dev command retries convergence for the selected group.
 Staging recognizes an already-applied prefix of the patch series and applies
 only the remaining patches. Appending a patch does not require resetting
 `vendor/mdk`, even when earlier patches overlap. Conflicting local edits still

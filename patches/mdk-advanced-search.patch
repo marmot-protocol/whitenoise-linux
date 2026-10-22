@@ -1,7 +1,7 @@
-diff --git a/crates/agent-connector/src/timeline.rs b/crates/agent-connector/src/timeline.rs
-index 9a59447c..4ae13c34 100644
---- a/crates/agent-connector/src/timeline.rs
-+++ b/crates/agent-connector/src/timeline.rs
+diff --git i/crates/agent-connector/src/timeline.rs w/crates/agent-connector/src/timeline.rs
+index 9a59447c5..4ae13c34f 100644
+--- i/crates/agent-connector/src/timeline.rs
++++ w/crates/agent-connector/src/timeline.rs
 @@ -70,6 +70,7 @@ impl AgentConnector {
                      after_message_id: after.as_ref().map(|cursor| cursor.message_id_hex.clone()),
                      limit: Some(limit as usize),
@@ -10,11 +10,11 @@ index 9a59447c..4ae13c34 100644
              },
          )?;
          bounded_timeline_page_response(
-diff --git a/crates/cli/src/commands/messages.rs b/crates/cli/src/commands/messages.rs
-index 4c612984..0f0ff2a0 100644
---- a/crates/cli/src/commands/messages.rs
-+++ b/crates/cli/src/commands/messages.rs
-@@ -560,6 +560,7 @@ fn handle_message_timeline_command(
+diff --git i/crates/cli/src/commands/messages.rs w/crates/cli/src/commands/messages.rs
+index 635191747..88e142dec 100644
+--- i/crates/cli/src/commands/messages.rs
++++ w/crates/cli/src/commands/messages.rs
+@@ -559,6 +559,7 @@ fn handle_message_timeline_command(
                          after_message_id,
                          limit,
                      },
@@ -22,7 +22,7 @@ index 4c612984..0f0ff2a0 100644
                  },
              )?;
              timeline_page_output(app, &account.account_id_hex, page, None)
-@@ -581,10 +582,12 @@ fn handle_message_timeline_command(
+@@ -580,10 +581,12 @@ fn handle_message_timeline_command(
                          .map(|group| normalize_group_id_hex(&group))
                          .transpose()?,
                      search: Some(query.clone()),
@@ -35,10 +35,10 @@ index 4c612984..0f0ff2a0 100644
                  },
              )?;
              timeline_page_output(app, &account.account_id_hex, page, Some(query))
-diff --git a/crates/cli/src/daemon/subscriptions.rs b/crates/cli/src/daemon/subscriptions.rs
-index 6b884e63..7afca962 100644
---- a/crates/cli/src/daemon/subscriptions.rs
-+++ b/crates/cli/src/daemon/subscriptions.rs
+diff --git i/crates/cli/src/daemon/subscriptions.rs w/crates/cli/src/daemon/subscriptions.rs
+index 6b884e635..7afca9628 100644
+--- i/crates/cli/src/daemon/subscriptions.rs
++++ w/crates/cli/src/daemon/subscriptions.rs
 @@ -270,6 +270,7 @@ pub(crate) async fn handle_timeline_messages_subscription(
                      limit,
                      ..marmot_app::TimelinePagination::default()
@@ -47,23 +47,11 @@ index 6b884e63..7afca962 100644
              },
          )
          .await
-diff --git a/crates/marmot-app/src/client/retention.rs b/crates/marmot-app/src/client/retention.rs
-index c5712bc2..5bb4db44 100644
---- a/crates/marmot-app/src/client/retention.rs
-+++ b/crates/marmot-app/src/client/retention.rs
-@@ -235,6 +235,7 @@ impl AppClient {
-                         after_message_id: None,
-                         limit: Some(RETENTION_SWEEP_TIMELINE_PAGE_LIMIT),
-                     },
-+                    ..Default::default()
-                 },
-             )?;
-             let scan_page = RetentionTimelineScanPage {
-diff --git a/crates/marmot-app/src/lib.rs b/crates/marmot-app/src/lib.rs
-index c3bfa8d9..4881b0fe 100644
---- a/crates/marmot-app/src/lib.rs
-+++ b/crates/marmot-app/src/lib.rs
-@@ -291,10 +291,10 @@ pub use relay_telemetry_export::{
+diff --git i/crates/marmot-app/src/lib.rs w/crates/marmot-app/src/lib.rs
+index 3a7b7b0f5..002f31b3f 100644
+--- i/crates/marmot-app/src/lib.rs
++++ w/crates/marmot-app/src/lib.rs
+@@ -305,10 +305,10 @@ pub use relay_telemetry_export::{
  pub use storage_sqlite::{
      ChatConversationKind, ChatListAttachmentKind, ChatListAvatar, ChatListMessageDeliveryState,
      ChatListMessagePreview, ChatListQuery, ChatListRow, DeletionSource, ExistingDirectConversation,
@@ -76,12 +64,12 @@ index c3bfa8d9..4881b0fe 100644
 +    TimelinePage, TimelinePagination, TimelineReactionSummary, TimelineReplyPreview,
 +    TimelineUserReaction, select_reusable_direct_conversation,
  };
- pub use transport_nostr::{
-     EngineReorgMetrics, MarmotRelayPlane, MarmotRelayPlaneAccountAdapter,
-diff --git a/crates/marmot-app/src/runtime/event_routing.rs b/crates/marmot-app/src/runtime/event_routing.rs
-index 902ec6d7..daf1beeb 100644
---- a/crates/marmot-app/src/runtime/event_routing.rs
-+++ b/crates/marmot-app/src/runtime/event_routing.rs
+ #[cfg(test)]
+ use transport_nostr::DirectoryRelayEventRecord as RelayEventRecord;
+diff --git i/crates/marmot-app/src/runtime/event_routing.rs w/crates/marmot-app/src/runtime/event_routing.rs
+index 902ec6d76..daf1beeb9 100644
+--- i/crates/marmot-app/src/runtime/event_routing.rs
++++ w/crates/marmot-app/src/runtime/event_routing.rs
 @@ -62,10 +62,12 @@ pub(crate) fn projection_update_matches_query(
  pub(crate) fn timeline_query_can_apply_projection_delta(query: &TimelineMessageQuery) -> bool {
      // Projection application already derives canonical-vs-wall ordering from
@@ -99,10 +87,10 @@ index 902ec6d7..daf1beeb 100644
          && query.pagination.before.is_none()
          && query.pagination.before_message_id.is_none()
          && query.pagination.after.is_none()
-diff --git a/crates/marmot-app/src/runtime/subscriptions.rs b/crates/marmot-app/src/runtime/subscriptions.rs
-index ff799537..e663a655 100644
---- a/crates/marmot-app/src/runtime/subscriptions.rs
-+++ b/crates/marmot-app/src/runtime/subscriptions.rs
+diff --git i/crates/marmot-app/src/runtime/subscriptions.rs w/crates/marmot-app/src/runtime/subscriptions.rs
+index 279688652..fee7735ee 100644
+--- i/crates/marmot-app/src/runtime/subscriptions.rs
++++ w/crates/marmot-app/src/runtime/subscriptions.rs
 @@ -227,6 +227,12 @@ impl TimelineWindow {
      /// always reconstitutes it.
      pub(crate) fn refresh_query(&self) -> TimelineMessageQuery {
@@ -226,7 +214,7 @@ index ff799537..e663a655 100644
      });
      if anchored || within_window {
          messages.push(message);
-@@ -1184,11 +1210,10 @@ impl MarmotAppRuntime {
+@@ -1185,11 +1211,10 @@ impl MarmotAppRuntime {
          })
          .await?;
          // The subscription owns the window, so the re-query base carries only the
@@ -240,11 +228,11 @@ index ff799537..e663a655 100644
          };
          // Deltas are applicable iff the base query is an unfiltered, unpaginated
          // tail. Search-scoped windows cannot be reconstructed from a projection
-diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
-index 4c033021..9a722ccd 100644
---- a/crates/marmot-c/include/marmot.h
-+++ b/crates/marmot-c/include/marmot.h
-@@ -4169,7 +4169,7 @@ typedef struct MarmotTimelineMessageQuery {
+diff --git i/crates/marmot-c/include/marmot.h w/crates/marmot-c/include/marmot.h
+index 7b4d33327..c2db8c2ba 100644
+--- i/crates/marmot-c/include/marmot.h
++++ w/crates/marmot-c/include/marmot.h
+@@ -4189,7 +4189,7 @@ typedef struct MarmotTimelineMessageQuery {
     */
    const char *group_id_hex;
    /**
@@ -253,7 +241,7 @@ index 4c033021..9a722ccd 100644
     */
    const char *search;
    /**
-@@ -4196,6 +4196,32 @@ typedef struct MarmotTimelineMessageQuery {
+@@ -4216,6 +4216,32 @@ typedef struct MarmotTimelineMessageQuery {
     */
    uint8_t has_limit;
    uint32_t limit;
@@ -286,10 +274,10 @@ index 4c033021..9a722ccd 100644
  } MarmotTimelineMessageQuery;
  
  /**
-diff --git a/crates/marmot-c/src/types/timeline.rs b/crates/marmot-c/src/types/timeline.rs
-index 6a2caee2..b5c242ec 100644
---- a/crates/marmot-c/src/types/timeline.rs
-+++ b/crates/marmot-c/src/types/timeline.rs
+diff --git i/crates/marmot-c/src/types/timeline.rs w/crates/marmot-c/src/types/timeline.rs
+index 6a2caee21..b5c242ec8 100644
+--- i/crates/marmot-c/src/types/timeline.rs
++++ w/crates/marmot-c/src/types/timeline.rs
 @@ -26,7 +26,7 @@ use crate::memory::{CFree, c_bool, free_c_string, optional_str, owned_c_string};
  pub struct MarmotTimelineMessageQuery {
      /// Restrict to one group. Nullable for the account-wide tail.
@@ -333,10 +321,10 @@ index 6a2caee2..b5c242ec 100644
          })
      }
  }
-diff --git a/crates/marmot-uniffi/src/commands/subscription.rs b/crates/marmot-uniffi/src/commands/subscription.rs
-index 334d7fe9..c24de08a 100644
---- a/crates/marmot-uniffi/src/commands/subscription.rs
-+++ b/crates/marmot-uniffi/src/commands/subscription.rs
+diff --git i/crates/marmot-uniffi/src/commands/subscription.rs w/crates/marmot-uniffi/src/commands/subscription.rs
+index 334d7fe9e..c24de08a1 100644
+--- i/crates/marmot-uniffi/src/commands/subscription.rs
++++ w/crates/marmot-uniffi/src/commands/subscription.rs
 @@ -105,6 +105,7 @@ impl Marmot {
                  limit: limit.map(|value| value as usize),
                  ..TimelinePagination::default()
@@ -345,10 +333,10 @@ index 334d7fe9..c24de08a 100644
          };
          let inner = self
              .runtime
-diff --git a/crates/marmot-uniffi/src/conversions/timeline.rs b/crates/marmot-uniffi/src/conversions/timeline.rs
-index 2174fc12..a7515c04 100644
---- a/crates/marmot-uniffi/src/conversions/timeline.rs
-+++ b/crates/marmot-uniffi/src/conversions/timeline.rs
+diff --git i/crates/marmot-uniffi/src/conversions/timeline.rs w/crates/marmot-uniffi/src/conversions/timeline.rs
+index 2174fc122..a7515c042 100644
+--- i/crates/marmot-uniffi/src/conversions/timeline.rs
++++ w/crates/marmot-uniffi/src/conversions/timeline.rs
 @@ -203,6 +203,12 @@ pub struct TimelineMessageQueryFfi {
      pub after: Option<u64>,
      pub after_message_id: Option<String>,
@@ -362,10 +350,10 @@ index 2174fc12..a7515c04 100644
  }
  
  #[derive(Clone, Debug, uniffi::Record)]
-diff --git a/crates/marmot-uniffi/src/lib.rs b/crates/marmot-uniffi/src/lib.rs
-index 6971fafd..5b0cc360 100644
---- a/crates/marmot-uniffi/src/lib.rs
-+++ b/crates/marmot-uniffi/src/lib.rs
+diff --git i/crates/marmot-uniffi/src/lib.rs w/crates/marmot-uniffi/src/lib.rs
+index 34eb15d4c..b47b14b2d 100644
+--- i/crates/marmot-uniffi/src/lib.rs
++++ w/crates/marmot-uniffi/src/lib.rs
 @@ -184,10 +184,25 @@ pub(crate) fn timeline_query_from_ffi(
  ) -> Result<TimelineMessageQuery, MarmotKitError> {
      Ok(TimelineMessageQuery {
@@ -396,10 +384,10 @@ index 6971fafd..5b0cc360 100644
          pagination: TimelinePagination {
              before: query.before,
              before_message_id: optional_message_id_hex(query.before_message_id)?,
-diff --git a/crates/storage-sqlite/src/app/timeline.rs b/crates/storage-sqlite/src/app/timeline.rs
-index ed88e31c..fa0a7bb2 100644
---- a/crates/storage-sqlite/src/app/timeline.rs
-+++ b/crates/storage-sqlite/src/app/timeline.rs
+diff --git i/crates/storage-sqlite/src/app/timeline.rs w/crates/storage-sqlite/src/app/timeline.rs
+index ed88e31c0..fa0a7bb26 100644
+--- i/crates/storage-sqlite/src/app/timeline.rs
++++ w/crates/storage-sqlite/src/app/timeline.rs
 @@ -185,8 +185,33 @@ pub struct TimelinePagination {
  #[derive(Clone, Debug, Default, PartialEq, Eq)]
  pub struct TimelineMessageQuery {
@@ -551,10 +539,10 @@ index ed88e31c..fa0a7bb2 100644
      TimelineRow {
          reply_to_message_id_hex: None,
          ..timeline_row_from_app_event(event)
-diff --git a/crates/storage-sqlite/src/app/timeline/tests.rs b/crates/storage-sqlite/src/app/timeline/tests.rs
-index 9a27402b..e99aff0a 100644
---- a/crates/storage-sqlite/src/app/timeline/tests.rs
-+++ b/crates/storage-sqlite/src/app/timeline/tests.rs
+diff --git i/crates/storage-sqlite/src/app/timeline/tests.rs w/crates/storage-sqlite/src/app/timeline/tests.rs
+index 21806ff01..cef2cabb5 100644
+--- i/crates/storage-sqlite/src/app/timeline/tests.rs
++++ w/crates/storage-sqlite/src/app/timeline/tests.rs
 @@ -1657,6 +1657,285 @@ fn pagination_rejects_half_and_double_cursors() {
      );
  }
@@ -905,11 +893,11 @@ index 9a27402b..e99aff0a 100644
 +            .deleted
 +    );
  }
-diff --git a/crates/storage-sqlite/src/lib.rs b/crates/storage-sqlite/src/lib.rs
-index 6f1330b4..41a00c79 100644
---- a/crates/storage-sqlite/src/lib.rs
-+++ b/crates/storage-sqlite/src/lib.rs
-@@ -102,11 +102,11 @@ pub use app::timeline::{
+diff --git i/crates/storage-sqlite/src/lib.rs w/crates/storage-sqlite/src/lib.rs
+index 06d3dcd1f..94573531c 100644
+--- i/crates/storage-sqlite/src/lib.rs
++++ w/crates/storage-sqlite/src/lib.rs
+@@ -106,11 +106,11 @@ pub use app::timeline::{
      ConversationOpenError, ConversationOpenQuery, ConversationOpenReadState,
      ConversationOpenSnapshot, ConversationOpenTarget, ConversationPresentationPage,
      ConversationWindowQuery, DeletionSource, LOCAL_PUBLISH_FAILED_REASON, MAX_TIMELINE_LIMIT,

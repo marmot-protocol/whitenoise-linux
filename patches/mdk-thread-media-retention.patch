@@ -1,8 +1,8 @@
-diff --git a/crates/storage-sqlite/CHANGELOG.md b/crates/storage-sqlite/CHANGELOG.md
-index 25e65bb8..80cbf9dd 100644
---- a/crates/storage-sqlite/CHANGELOG.md
-+++ b/crates/storage-sqlite/CHANGELOG.md
-@@ -219,6 +219,12 @@ is unsupported.
+diff --git i/crates/storage-sqlite/CHANGELOG.md w/crates/storage-sqlite/CHANGELOG.md
+index 12b721ed1..d67b1e219 100644
+--- i/crates/storage-sqlite/CHANGELOG.md
++++ w/crates/storage-sqlite/CHANGELOG.md
+@@ -298,6 +298,12 @@ is unsupported.
    Roster membership is materialized once per deletion statement instead of
    rescanning the JSON roster for every stored destination.
  
@@ -15,10 +15,10 @@ index 25e65bb8..80cbf9dd 100644
  ## 0.12.0 - 2026-10-02
  
  Account storage advances from migration 98 through 101 on first open; downgrade
-diff --git a/crates/storage-sqlite/src/app/encrypted_media_secrets.rs b/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
-index 53df3bbf..0c20a716 100644
---- a/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
-+++ b/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
+diff --git i/crates/storage-sqlite/src/app/encrypted_media_secrets.rs w/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
+index 53df3bbff..0c20a716e 100644
+--- i/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
++++ w/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
 @@ -14,6 +14,9 @@ use cgka_traits::app_event::{MARMOT_APP_EVENT_KIND_CHAT, MARMOT_APP_EVENT_KIND_R
  use cgka_traits::storage::{StorageError, StorageResult};
  use rusqlite::{Connection, OptionalExtension, params};
@@ -131,10 +131,10 @@ index 53df3bbf..0c20a716 100644
      #[test]
      fn shared_epoch_secret_survives_partial_sweep_until_final_reference() {
          let store = SqliteAccountStorage::in_memory().unwrap();
-diff --git a/crates/storage-sqlite/src/app/timeline.rs b/crates/storage-sqlite/src/app/timeline.rs
-index fa0a7bb2..fd88727a 100644
---- a/crates/storage-sqlite/src/app/timeline.rs
-+++ b/crates/storage-sqlite/src/app/timeline.rs
+diff --git i/crates/storage-sqlite/src/app/timeline.rs w/crates/storage-sqlite/src/app/timeline.rs
+index fa0a7bb26..fd88727a5 100644
+--- i/crates/storage-sqlite/src/app/timeline.rs
++++ w/crates/storage-sqlite/src/app/timeline.rs
 @@ -1787,8 +1787,7 @@ fn secure_prune_selected_app_events_tx(
                  .extend(tag_values(&event.tags, EVENT_REF_TAG).map(ToOwned::to_owned));
          }

@@ -18,6 +18,13 @@ hidden_message_perf :: proc(t: ^testing.T) {
 	dir, err := os.make_directory_temp("/tmp", "wn-secret-perf-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
+	deployment: ^marmot.Deployment
+	if !testing.expect_value(
+		t,
+		marmot.deployment_white_noise(&deployment),
+		marmot.Status.OK,
+	) {return}
+	defer marmot.deployment_free(deployment)
 	client: ^marmot.Client
 	store := vault_secret_store()
 	if !testing.expect_value(
@@ -27,6 +34,7 @@ hidden_message_perf :: proc(t: ^testing.T) {
 			nil,
 			0,
 			&store,
+			deployment,
 			&client,
 		),
 		marmot.Status.OK,

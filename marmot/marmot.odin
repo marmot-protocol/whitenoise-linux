@@ -123,17 +123,18 @@ Status :: enum i32 {
 	ATTACHMENT_MODE_REQUIRED                     = 93,
 	ATTACHMENT_ACCOUNT_SIGNED_OUT                = 94,
 	INVALID_APP_COMPONENT                        = 95,
-	MODERATION_REPORTING_NOT_CONFIGURED           = 96,
+	MODERATION_REPORTING_NOT_CONFIGURED          = 96,
 	INVALID_MODERATION_REPORT_CONFIG             = 97,
 	INVALID_REPORTED_PUBLIC_KEY                  = 98,
 	CANNOT_REPORT_SELF                           = 99,
 	MODERATION_REPORT_RATE_LIMITED               = 100,
 	GROUP_CATCHING_UP                            = 101,
-	GROUP_COMMIT_UNDELIVERED                      = 102,
-	INVALID_PUBLIC_EVENT_REFERENCES               = 103,
-	DIRECTORY_LOOKUP_INCOMPLETE                   = 104,
+	GROUP_COMMIT_UNDELIVERED                     = 102,
+	INVALID_PUBLIC_EVENT_REFERENCES              = 103,
+	DIRECTORY_LOOKUP_INCOMPLETE                  = 104,
 	INVALID_EDIT_TARGET                          = 105,
 	STORAGE_FULL                                 = 106,
+	FOLLOW_LIST_TOO_LARGE                        = 107,
 }
 
 // Opaque runtime handle.
@@ -198,10 +199,10 @@ Secret_Store :: struct {
 
 // Borrowed during construction; zero fields preserve MDK's native defaults.
 Client_Options :: struct {
-	relay_policy: u32,
-	cursor_persistence: u32,
-	client_name: cstring,
-	store: ^Secret_Store,
+	relay_policy:                u32,
+	cursor_persistence:          u32,
+	client_name:                 cstring,
+	store:                       ^Secret_Store,
 	attachment_acquisition_mode: u32,
 }
 
@@ -424,7 +425,7 @@ Selected_Avatar :: struct {
 // MarmotChatListRowActions, kept for layout.
 Presented_Chat_Row :: struct {
 	draft_version: ^Chat_List_Draft_Version,
-	preview:      struct {
+	preview:       struct {
 		tag:   i32,
 		draft: struct {
 			text:                cstring,
@@ -434,9 +435,9 @@ Presented_Chat_Row :: struct {
 			attachment_kind:     i32,
 		},
 	},
-	actions:      [10]bool,
-	row:          Chat_List_Row,
-	presentation: struct {
+	actions:       [10]bool,
+	row:           Chat_List_Row,
+	presentation:  struct {
 		title:                       Presentation_Text,
 		avatar:                      Selected_Avatar,
 		title_source, avatar_source: Presentation_Source,
@@ -447,7 +448,7 @@ Presented_Chat_Row :: struct {
 			Fallback,
 		},
 	},
-	avatar_asset: rawptr,
+	avatar_asset:  rawptr,
 }
 
 Presented_Chat_List :: struct {
@@ -1174,7 +1175,6 @@ Retention_Sweep_Status :: enum i32 {
 	PRUNED,
 	DEFERRED_CLOCK_SKEW,
 	DEFERRED_UNREAD,
-	DEFERRED_SCAN_EXHAUSTED,
 	FAILED,
 }
 
@@ -1278,9 +1278,9 @@ Audit_Log_Tracker_Config :: struct {
 foreign lib {
 	deployment_white_noise :: proc(out: ^^Deployment) -> Status ---
 	deployment_free :: proc(deployment: ^Deployment) ---
-	client_new_with_deployment :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, options: ^Client_Options, deployment: ^Deployment, out_client: ^^Client) -> Status ---
-	client_new :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, out_client: ^^Client) -> Status ---
-	client_new_with_secret_store :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, store: ^Secret_Store, out_client: ^^Client) -> Status ---
+	client_new_with_configuration :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, options: ^Client_Options, deployment: ^Deployment, out_client: ^^Client) -> Status ---
+	client_new :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, deployment: ^Deployment, out_client: ^^Client) -> Status ---
+	client_new_with_secret_store :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, store: ^Secret_Store, deployment: ^Deployment, out_client: ^^Client) -> Status ---
 	client_start :: proc(client: ^Client) -> Status ---
 	client_shutdown :: proc(client: ^Client) -> Status ---
 	client_free :: proc(client: ^Client) ---
@@ -1391,7 +1391,6 @@ foreign lib {
 	group_mls_state :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Mls_State_Head) -> Status ---
 	app_group_mls_state_free :: proc(ptr: ^Group_Mls_State_Head) ---
 	retry_group_convergence :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Send_Summary) -> Status ---
-	repair_full_history :: proc(client: ^Client, account_ref: cstring) -> Status ---
 
 	invite_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Send_Summary) -> Status ---
 	remove_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Send_Summary) -> Status ---

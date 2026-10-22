@@ -3,7 +3,7 @@
 //
 //   main ──► vault_gate ──► vault_open/create ──► boot_marmot
 //                                                     │
-//                          marmot_client_new_with_deployment(options.store)
+//                          marmot_client_new_with_configuration(options.store)
 //                                                     │
 //   marmot ──► ss_load/write/... ──► g_vault["account:<label>"]
 //

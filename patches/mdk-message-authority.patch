@@ -1,7 +1,7 @@
-diff --git a/crates/marmot-app/src/messages/intents.rs b/crates/marmot-app/src/messages/intents.rs
-index 7ee5b799..1c34184c 100644
---- a/crates/marmot-app/src/messages/intents.rs
-+++ b/crates/marmot-app/src/messages/intents.rs
+diff --git c/crates/marmot-app/src/messages/intents.rs i/crates/marmot-app/src/messages/intents.rs
+index 7ee5b799f..1c34184c0 100644
+--- c/crates/marmot-app/src/messages/intents.rs
++++ i/crates/marmot-app/src/messages/intents.rs
 @@ -739,7 +739,16 @@ pub(crate) fn build_inner_event_with_media_reply(
              content,
          } => {
@@ -42,11 +42,11 @@ index 7ee5b799..1c34184c 100644
      fn valid_pubkey_hex() -> String {
          nostr::prelude::Keys::generate().public_key().to_hex()
      }
-diff --git a/crates/marmot-app/tests/relay_runtime.rs b/crates/marmot-app/tests/relay_runtime.rs
-index 87e77b10..b48878e7 100644
---- a/crates/marmot-app/tests/relay_runtime.rs
-+++ b/crates/marmot-app/tests/relay_runtime.rs
-@@ -16698,5 +16698,190 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
+diff --git c/crates/marmot-app/tests/relay_runtime.rs i/crates/marmot-app/tests/relay_runtime.rs
+index 24b8f6d15..89850bff4 100644
+--- c/crates/marmot-app/tests/relay_runtime.rs
++++ i/crates/marmot-app/tests/relay_runtime.rs
+@@ -16899,6 +16899,191 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
      carol.shutdown().await;
  }
  
@@ -58,7 +58,7 @@ index 87e77b10..b48878e7 100644
 +    let bob_app = MarmotApp::with_relay_and_config(
 +        bob_dir.path(),
 +        url.clone(),
-+        MarmotAppConfig::default().with_allow_loopback_relay_endpoints(true),
++        MarmotAppConfig::white_noise().with_allow_loopback_relay_endpoints(true),
 +    );
 +    let alice_rt = MarmotAppRuntime::new(alice_app.clone());
 +    let bob_rt = MarmotAppRuntime::new(bob_app.clone());
@@ -219,7 +219,7 @@ index 87e77b10..b48878e7 100644
 +    let reopened = MarmotApp::with_relay_and_config(
 +        bob_dir.path(),
 +        url,
-+        MarmotAppConfig::default().with_allow_loopback_relay_endpoints(true),
++        MarmotAppConfig::white_noise().with_allow_loopback_relay_endpoints(true),
 +    );
 +    let bob_rt = MarmotAppRuntime::new(reopened.clone());
 +    bob_rt.reconcile_accounts().await.unwrap();
@@ -237,11 +237,12 @@ index 87e77b10..b48878e7 100644
 +
  #[path = "relay_runtime/attachment_retention.rs"]
  mod attachment_retention;
-diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
-index 4f27ce06..5799347c 100644
---- a/crates/marmot-c/include/marmot.h
-+++ b/crates/marmot-c/include/marmot.h
-@@ -3462,6 +3462,15 @@ typedef struct MarmotAppMessageRecord {
+ 
+diff --git c/crates/marmot-c/include/marmot.h i/crates/marmot-c/include/marmot.h
+index 278284467..e3681898c 100644
+--- c/crates/marmot-c/include/marmot.h
++++ i/crates/marmot-c/include/marmot.h
+@@ -3482,6 +3482,15 @@ typedef struct MarmotAppMessageRecord {
     * Local wall-clock time when this device observed the delivery.
     */
    uint64_t received_at;
@@ -257,10 +258,10 @@ index 4f27ce06..5799347c 100644
  } MarmotAppMessageRecord;
  
  /**
-diff --git a/crates/marmot-c/src/types/message.rs b/crates/marmot-c/src/types/message.rs
-index b0459027..32cd0976 100644
---- a/crates/marmot-c/src/types/message.rs
-+++ b/crates/marmot-c/src/types/message.rs
+diff --git c/crates/marmot-c/src/types/message.rs i/crates/marmot-c/src/types/message.rs
+index e475ecaf1..0fa1da078 100644
+--- c/crates/marmot-c/src/types/message.rs
++++ i/crates/marmot-c/src/types/message.rs
 @@ -35,6 +35,9 @@ c_mirror! {
          copy recorded_at: u64,
          /// Local wall-clock time when this device observed the delivery.
@@ -271,10 +272,10 @@ index b0459027..32cd0976 100644
      }
  }
  
-diff --git a/crates/marmot-uniffi/src/conversions/message.rs b/crates/marmot-uniffi/src/conversions/message.rs
-index f63023f2..e2885a49 100644
---- a/crates/marmot-uniffi/src/conversions/message.rs
-+++ b/crates/marmot-uniffi/src/conversions/message.rs
+diff --git c/crates/marmot-uniffi/src/conversions/message.rs i/crates/marmot-uniffi/src/conversions/message.rs
+index 241df8b31..e00c65003 100644
+--- c/crates/marmot-uniffi/src/conversions/message.rs
++++ i/crates/marmot-uniffi/src/conversions/message.rs
 @@ -29,6 +29,9 @@ pub struct AppMessageRecordFfi {
      pub recorded_at: u64,
      /// Local wall-clock time when this device observed the delivery.
@@ -294,7 +295,7 @@ index f63023f2..e2885a49 100644
          }
      }
  }
-@@ -218,3 +223,40 @@ impl From<RuntimeMessageUpdate> for MessageUpdateFfi {
+@@ -216,3 +221,40 @@ impl From<RuntimeMessageUpdate> for MessageUpdateFfi {
          }
      }
  }
@@ -335,10 +336,10 @@ index f63023f2..e2885a49 100644
 +        }
 +    }
 +}
-diff --git a/crates/storage-sqlite/src/app/timeline.rs b/crates/storage-sqlite/src/app/timeline.rs
-index 041cb834..918211fe 100644
---- a/crates/storage-sqlite/src/app/timeline.rs
-+++ b/crates/storage-sqlite/src/app/timeline.rs
+diff --git c/crates/storage-sqlite/src/app/timeline.rs i/crates/storage-sqlite/src/app/timeline.rs
+index 041cb8342..918211fef 100644
+--- c/crates/storage-sqlite/src/app/timeline.rs
++++ i/crates/storage-sqlite/src/app/timeline.rs
 @@ -80,6 +80,9 @@ const DEFAULT_TIMELINE_LIMIT: usize = 50;
  /// window owners should not exceed it.
  pub const MAX_TIMELINE_LIMIT: usize = 200;
@@ -368,10 +369,10 @@ index 041cb834..918211fe 100644
      TimelineRow {
          reply_to_message_id_hex: None,
          ..timeline_row_from_app_event(event)
-diff --git a/crates/storage-sqlite/src/app/timeline/edits.rs b/crates/storage-sqlite/src/app/timeline/edits.rs
-index 6163da95..307b6775 100644
---- a/crates/storage-sqlite/src/app/timeline/edits.rs
-+++ b/crates/storage-sqlite/src/app/timeline/edits.rs
+diff --git c/crates/storage-sqlite/src/app/timeline/edits.rs i/crates/storage-sqlite/src/app/timeline/edits.rs
+index 6163da95e..307b67759 100644
+--- c/crates/storage-sqlite/src/app/timeline/edits.rs
++++ i/crates/storage-sqlite/src/app/timeline/edits.rs
 @@ -62,7 +62,10 @@ fn resolve<'a>(
      edits: impl Iterator<Item = &'a RawAppEvent>,
      deleted: &HashSet<String>,
@@ -405,10 +406,10 @@ index 6163da95..307b6775 100644
                   AND deleted=0 AND invalidation_status IS NULL)",
                      params![group, target],
                      |r| r.get(0),
-diff --git a/crates/storage-sqlite/src/app/timeline/reports.rs b/crates/storage-sqlite/src/app/timeline/reports.rs
-index 72f28701..bffbe552 100644
---- a/crates/storage-sqlite/src/app/timeline/reports.rs
-+++ b/crates/storage-sqlite/src/app/timeline/reports.rs
+diff --git c/crates/storage-sqlite/src/app/timeline/reports.rs i/crates/storage-sqlite/src/app/timeline/reports.rs
+index 72f287010..bffbe5527 100644
+--- c/crates/storage-sqlite/src/app/timeline/reports.rs
++++ i/crates/storage-sqlite/src/app/timeline/reports.rs
 @@ -211,7 +211,7 @@ impl SqliteAppStorage {
                      authority_context = ?3,
                      moderation_grant = CASE
@@ -418,10 +419,10 @@ index 72f28701..bffbe552 100644
                          ELSE 0
                      END
                   WHERE group_id_hex = ?1 AND message_id_hex = ?2 AND authority_state != 2",
-diff --git a/crates/storage-sqlite/src/app/timeline/tests.rs b/crates/storage-sqlite/src/app/timeline/tests.rs
-index a0ca7fdb..9a27402b 100644
---- a/crates/storage-sqlite/src/app/timeline/tests.rs
-+++ b/crates/storage-sqlite/src/app/timeline/tests.rs
+diff --git c/crates/storage-sqlite/src/app/timeline/tests.rs i/crates/storage-sqlite/src/app/timeline/tests.rs
+index 1fc7cc14a..21806ff01 100644
+--- c/crates/storage-sqlite/src/app/timeline/tests.rs
++++ i/crates/storage-sqlite/src/app/timeline/tests.rs
 @@ -4398,3 +4398,26 @@ fn system_reactions_survive_replay_reopen_and_retract_without_replacing_target()
      assert_eq!(list(&store.app_storage()), [baseline]);
      store.close().unwrap();
@@ -449,10 +450,10 @@ index a0ca7fdb..9a27402b 100644
 +    store.record_app_event(&delete("delete", "alice", "comment", 4)).unwrap();
 +    assert!(store.timeline_message(group, "comment").unwrap().unwrap().deleted);
 +}
-diff --git a/crates/traits/src/reporting.rs b/crates/traits/src/reporting.rs
-index 66f20d71..66db2105 100644
---- a/crates/traits/src/reporting.rs
-+++ b/crates/traits/src/reporting.rs
+diff --git c/crates/traits/src/reporting.rs i/crates/traits/src/reporting.rs
+index 66f20d714..66db2105f 100644
+--- c/crates/traits/src/reporting.rs
++++ i/crates/traits/src/reporting.rs
 @@ -3,9 +3,16 @@ use serde::{Deserialize, Serialize};
  
  use crate::app_event::{MARMOT_APP_EVENT_KIND_REMOVE, MARMOT_APP_EVENT_KIND_REVIEW};

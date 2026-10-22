@@ -1260,8 +1260,6 @@ op_worker :: proc(t: ^thread.Thread) {
 		status = .OK
 	case .Retry_Convergence:
 		status = marmot.retry_group_convergence(job.client, job.account, job.group, &summary)
-	case .Repair_History:
-		status = marmot.repair_full_history(job.client, job.account)
 	case .History:
 		before: u64
 		before_id: cstring
@@ -1459,7 +1457,7 @@ op_worker :: proc(t: ^thread.Thread) {
 		if err == "" {err = strings.clone(N_("Group action unavailable."))}
 	}
 	done.err = err
-	if (job.op == .Retry_Convergence || job.op == .Repair_History) && string(job.target) != "" {
+	if job.op == .Retry_Convergence && string(job.target) != "" {
 		report := fmt.tprintf("status=%v\nerror=%s\n", status, err)
 		if write_err := os.write_entire_file(
 			string(job.target),

@@ -6,7 +6,9 @@ import "core:testing"
 
 photo_test_layout :: proc(ui: ^Ui_State) {
 	clay.BeginLayout()
-	if clay.UI(clay.ID("PhotoTestRoot"))({layout = {sizing = {width = clay.SizingFixed(320), height = clay.SizingFixed(300)}}}) {
+	if clay.UI(clay.ID("PhotoTestRoot"))(
+	{layout = {sizing = {width = clay.SizingFixed(320), height = clay.SizingFixed(300)}}},
+	) {
 		photo_preview_modal(ui)
 	}
 	clay.EndLayout(1.0 / 60)
@@ -53,12 +55,19 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		testing.expect(t, photo_pick_begin(&ui, kind))
 		photo_pick_complete(&ui, []string{path})
 		testing.expect(t, ui.photo.texture.tex != nil && ui.photo.draft.image.data != nil)
-		testing.expect(t, !ppic_busy && len(gimg_queue) == 0 && len(gpic_local) == 0, "Staging does not dispatch or change the avatar")
+		testing.expect(
+			t,
+			!ppic_busy && len(gimg_queue) == 0 && len(gpic_local) == 0,
+			"Staging does not dispatch or change the avatar",
+		)
 		photo_test_layout(&ui)
 		for id in ([]string{"PhotoPreview", "PhotoImage", "PhotoUse", "PhotoCancel"}) {
 			box := clay.GetElementData(clay.ID(id))
 			testing.expect(t, box.found)
-			testing.expect(t, box.boundingBox.y >= 0 && box.boundingBox.y + box.boundingBox.height <= 300)
+			testing.expect(
+				t,
+				box.boundingBox.y >= 0 && box.boundingBox.y + box.boundingBox.height <= 300,
+			)
 		}
 		// Exercise Crop and Use original through real modal hit testing. Neither may
 		// dispatch uploads or replace the source/committed avatar.
@@ -71,9 +80,12 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		testing.expect(t, ui.photo.crop.active)
 		photo_test_layout(&ui)
 		testing.expect(t, clay.GetElementData(clay.ID("PhotoCropBox")).found)
-		for i in 1..=4 {
+		for i in 1 ..= 4 {
 			handle := clay.GetElementData(clay.ID("PhotoCropHandle", u32(i)))
-			testing.expect(t, handle.found && handle.boundingBox.width == 24 && handle.boundingBox.height == 24)
+			testing.expect(
+				t,
+				handle.found && handle.boundingBox.width == 24 && handle.boundingBox.height == 24,
+			)
 			// Real button state and Clay hit testing select the resize mode,
 			// rather than starting an interior move or dispatching an upload.
 			clay.SetPointerState({handle.boundingBox.x + 12, handle.boundingBox.y + 12}, true)
@@ -86,7 +98,10 @@ photo_preview_flow :: proc(t: ^testing.T) {
 			testing.expect(t, !ui.photo.crop_drag && ui.photo.crop.active)
 		}
 		crop_box := clay.GetElementData(clay.ID("PhotoCropBox")).boundingBox
-		clay.SetPointerState({crop_box.x + crop_box.width / 2, crop_box.y + crop_box.height / 2}, true)
+		clay.SetPointerState(
+			{crop_box.x + crop_box.width / 2, crop_box.y + crop_box.height / 2},
+			true,
+		)
 		rl.PushMouseButton(.LEFT, true)
 		handle_photo_preview(&ui, nil)
 		testing.expect(t, ui.photo.crop_drag && ui.photo.crop_corner == 0)
@@ -109,29 +124,52 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		photo_crop_start(&ui.photo)
 		captured := photo_input_capture(&ui)
 		photo_cancel(&ui)
-		testing.expect(t, captured && !photo_input_capture(&ui), "The closing frame retains its input latch")
+		testing.expect(
+			t,
+			captured && !photo_input_capture(&ui),
+			"The closing frame retains its input latch",
+		)
 		testing.expect(t, ui.photo.draft.data == nil && ui.photo.texture.tex == nil)
 	}
 
 	// A one-pixel crop in a larger source has overlapping handle hit areas.
 	// Each actual corner remains selectable, including bottom/right at minimum size.
 	pixels: [10 * 10 * 4]u8
-	tiny := Ui_State{photo = {draft = {image = {data = &pixels[0], width = 10, height = 10}}, crop = {true, 4, 4, 1}}}
+	tiny := Ui_State {
+		photo = {
+			draft = {image = {data = &pixels[0], width = 10, height = 10}},
+			crop = {true, 4, 4, 1},
+		},
+	}
 	photo_test_layout(&tiny)
 	image_box := clay.GetElementData(clay.ID("PhotoImage")).boundingBox
 	selected_box := clay.GetElementData(clay.ID("PhotoCropBox")).boundingBox
 	shaded_area := f32(0)
-	for i in 0..<4 {
+	for i in 0 ..< 4 {
 		shade := clay.GetElementData(clay.ID("PhotoCropShade", u32(i)))
 		testing.expect(t, shade.found)
 		b := shade.boundingBox
 		testing.expect(t, b.x >= image_box.x && b.y >= image_box.y)
-		testing.expect(t, b.x + b.width <= image_box.x + image_box.width && b.y + b.height <= image_box.y + image_box.height)
-		testing.expect(t, b.x + b.width <= selected_box.x || b.x >= selected_box.x + selected_box.width || b.y + b.height <= selected_box.y || b.y >= selected_box.y + selected_box.height)
+		testing.expect(
+			t,
+			b.x + b.width <= image_box.x + image_box.width &&
+			b.y + b.height <= image_box.y + image_box.height,
+		)
+		testing.expect(
+			t,
+			b.x + b.width <= selected_box.x ||
+			b.x >= selected_box.x + selected_box.width ||
+			b.y + b.height <= selected_box.y ||
+			b.y >= selected_box.y + selected_box.height,
+		)
 		shaded_area += b.width * b.height
 	}
-	testing.expect_value(t, shaded_area, image_box.width * image_box.height - selected_box.width * selected_box.height)
-	for i in 1..=4 {
+	testing.expect_value(
+		t,
+		shaded_area,
+		image_box.width * image_box.height - selected_box.width * selected_box.height,
+	)
+	for i in 1 ..= 4 {
 		handle := clay.GetElementData(clay.ID("PhotoCropHandle", u32(i))).boundingBox
 		clay.SetPointerState({handle.x + 12, handle.y + 12}, true)
 		rl.PushMouseButton(.LEFT, true)
@@ -155,7 +193,10 @@ photo_preview_flow :: proc(t: ^testing.T) {
 	ppic_busy = true
 	testing.expect(t, !photo_can_use(&ui))
 	ppic_busy = false
-	job := Account_Job{account = "account-a", kind = .Profile}
+	job := Account_Job {
+		account = "account-a",
+		kind    = .Profile,
+	}
 	old_jobs := account_jobs
 	account_jobs = {}
 	defer {delete(account_jobs); account_jobs = old_jobs}
@@ -165,8 +206,25 @@ photo_preview_flow :: proc(t: ^testing.T) {
 	testing.expect(t, photo_can_use(&ui))
 
 	// Real runtime handle; no image worker is started in this queue test.
+	deployment: ^marmot.Deployment
+	if !testing.expect_value(
+		t,
+		marmot.deployment_white_noise(&deployment),
+		marmot.Status.OK,
+	) {return}
+	defer marmot.deployment_free(deployment)
 	client: ^marmot.Client
-	if !testing.expect_value(t, marmot.client_new(strings.clone_to_cstring(dir, context.temp_allocator), nil, 0, &client), marmot.Status.OK) {return}
+	if !testing.expect_value(
+		t,
+		marmot.client_new(
+			strings.clone_to_cstring(dir, context.temp_allocator),
+			nil,
+			0,
+			deployment,
+			&client,
+		),
+		marmot.Status.OK,
+	) {return}
 	defer marmot.client_free(client)
 	defer photo_crop_stop()
 	// Cancellation wins even if encoding has completed before this frame.
@@ -193,9 +251,12 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		photo_use(&ui, client)
 		thread.join(ui.photo.crop_job.worker)
 		switch invalidation {
-		case "permission": ui.members[0].is_admin = false
-		case "account": ui.account_ref = "account-b"
-		case "busy": ppic_busy = true
+		case "permission":
+			ui.members[0].is_admin = false
+		case "account":
+			ui.account_ref = "account-b"
+		case "busy":
+			ppic_busy = true
 		}
 		photo_crop_drain(&ui, client)
 		testing.expect(t, !photo_input_capture(&ui) && len(gimg_queue) == 0)
@@ -213,7 +274,11 @@ photo_preview_flow :: proc(t: ^testing.T) {
 	testing.expect_value(t, gimg_queue[0].account, "account-a")
 	testing.expect_value(t, gimg_queue[0].group_id, "group-a")
 	testing.expect_value(t, gimg_queue[0].media_type, "image/png")
-	uploaded := rl.LoadImageFromMemory(".png", raw_data(gimg_queue[0].data), i32(len(gimg_queue[0].data)))
+	uploaded := rl.LoadImageFromMemory(
+		".png",
+		raw_data(gimg_queue[0].data),
+		i32(len(gimg_queue[0].data)),
+	)
 	testing.expect(t, uploaded.data != nil && uploaded.width == 1 && uploaded.height == 1)
 	rl.UnloadImage(uploaded)
 	testing.expect(t, ui.photo.draft.data == nil && ui.photo.texture.tex == nil)
@@ -272,7 +337,9 @@ photo_preview_flow :: proc(t: ^testing.T) {
 
 	testing.expect(t, photo_pick_begin(&ui, .Profile))
 	photo_pick_complete(&ui, []string{path})
-	locked := Ui_State{photo = ui.photo}
+	locked := Ui_State {
+		photo = ui.photo,
+	}
 	ui.photo = {}
 	lock_scrub_ui(&locked)
 	testing.expect(t, !photo_input_capture(&locked))
