@@ -5,7 +5,7 @@
 // Network, ditto + primal by default) plus any relay hints the nevent
 // carries, on its own thread, and cached twice: in memory for the
 // session and as <home>/events/<id>.json across runs. Notes, replies,
-// articles and pull requests render as author + text; product and
+// articles, pull requests and issues render as author + text; product and
 // geocache cards show their metadata. Highlights quote the selected
 // text with context, commentary and source attribution. Other kinds
 // show raw event JSON.
@@ -58,10 +58,13 @@ NEV_MAX :: 256 * 1024
 NEV_TIMEOUT_MS :: 6000
 
 // Kinds drawn as author + text. Everything else is raw JSON.
-NEV_TEXT_KINDS := []i64{1, 11, 1111, NEV_PULL_REQUEST_KIND, 30023}
+NEV_TEXT_KINDS := []i64{1, 11, 1111, NEV_PULL_REQUEST_KIND, NEV_ISSUE_KIND, 30023}
 
 @(private = "file")
 NEV_PULL_REQUEST_KIND :: 1618
+
+@(private = "file")
+NEV_ISSUE_KIND :: 1621
 
 Nev_Card :: struct {
 	excerpt:       Excerpt,
@@ -72,7 +75,7 @@ Nev_Card :: struct {
 	kind:          i64,
 	pubkey:        string,
 	content:       string,
-	subject:       string, // NIP-34 pull request title, owned
+	subject:       string, // NIP-34 pull request or issue title, owned
 	subject_fonts: string, // cached title font map for bounded wrapping
 	created:       i64,
 	stamp:         string, // created formatted for the header, set on drain
@@ -456,7 +459,7 @@ nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_
 	if card.kind == NEV_PRODUCT_KIND {card.product = nev_product_parse(ev)}
 	if card.kind == NEV_GEOCACHE_KIND {card.geocache = nev_geocache_parse(ev)}
 	if card.kind == NEV_HIGHLIGHT_KIND {card.highlight = nev_highlight_parse(ev)}
-	if card.kind == NEV_PULL_REQUEST_KIND {
+	if card.kind == NEV_PULL_REQUEST_KIND || card.kind == NEV_ISSUE_KIND {
 		tags, _ := ev["tags"].(json.Array)
 		for tag in tags {
 			values, ok := tag.(json.Array)
@@ -611,10 +614,11 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			textual = true
 		}
 	}
-	pull_request := card.kind == NEV_PULL_REQUEST_KIND && len(card.raw) > 0
+	git_card :=
+		(card.kind == NEV_PULL_REQUEST_KIND || card.kind == NEV_ISSUE_KIND) && len(card.raw) > 0
 	highlight := card.kind == NEV_HIGHLIGHT_KIND && len(card.raw) > 0
-	width := att_w(pull_request || highlight ? 520 : 320)
-	padding := u16(pull_request || highlight ? 20 : 12)
+	width := att_w(git_card || highlight ? 520 : 320)
+	padding := u16(git_card || highlight ? 20 : 12)
 	inner_w := width - f32(padding * 2)
 
 	if clay.UI(clay.ID("NevCard", id))(
@@ -623,10 +627,10 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			sizing = {width = clay.SizingFixed(width)},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(padding),
-			childGap = pull_request || highlight ? 18 : 6,
+			childGap = git_card || highlight ? 18 : 6,
 		},
 		backgroundColor = PLATE,
-		cornerRadius = rr(pull_request || highlight ? 16 : 10),
+		cornerRadius = rr(git_card || highlight ? 16 : 10),
 		border = {color = highlight ? fade(ACCENT, 0.18) : CARD_BORDER, width = bw()},
 	},
 	) {
@@ -641,8 +645,8 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 				},
 			},
 			) {
-				if pull_request {
-					if clay.UI(clay.ID("NevPullIcon", id))(
+				if git_card {
+					if clay.UI(clay.ID("NevGitIcon", id))(
 					{
 						layout = {
 							sizing = {clay.SizingFixed(32), clay.SizingFixed(32)},
@@ -653,7 +657,7 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 					},
 					) {
 						clay.Text(
-							"\uf407",
+							card.kind == NEV_ISSUE_KIND ? "\uf41b" : "\uf407",
 							{fontId = FONT_ICON, fontSize = 17, textColor = ACCENT},
 						)
 					}
@@ -667,9 +671,9 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 					eyebrow(tr("PRODUCT"))
 				case card.kind == NEV_GEOCACHE_KIND:
 					eyebrow(tr("GEOCACHE"))
-				case card.kind == NEV_PULL_REQUEST_KIND:
+				case git_card:
 					clay.Text(
-						tr("PULL REQUEST"),
+						card.kind == NEV_ISSUE_KIND ? tr("ISSUE") : tr("PULL REQUEST"),
 						{fontId = FONT_BODY, fontSize = 10, textColor = ACCENT, letterSpacing = 1},
 					)
 				case textual:
@@ -681,7 +685,7 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 					)
 				}
 				if len(card.pubkey) > 0 &&
-				   !pull_request &&
+				   !git_card &&
 				   card.kind != NEV_PRODUCT_KIND &&
 				   card.kind != NEV_GEOCACHE_KIND {
 					clay.Text(
@@ -715,8 +719,8 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 		case card.kind == NEV_HIGHLIGHT_KIND:
 			nev_highlight_card(id, evid, card, inner_w)
 		case textual:
-			if pull_request {
-				if clay.UI(clay.ID("NevPullTitle", id))(
+			if git_card {
+				if clay.UI(clay.ID("NevGitTitle", id))(
 				{
 					layout = {
 						sizing = {width = clay.SizingFixed(inner_w)},
@@ -765,8 +769,8 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 					}
 				}
 			}
-			if pull_request {
-				if clay.UI(clay.ID("NevPullBody", id))(
+			if git_card {
+				if clay.UI(clay.ID("NevGitBody", id))(
 				{
 					layout = {
 						layoutDirection = .TopToBottom,
@@ -800,21 +804,21 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			{
 				layout = {
 					sizing = {
-						width = pull_request || highlight ? clay.SizingGrow() : clay.SizingFit(),
+						width = git_card || highlight ? clay.SizingGrow() : clay.SizingFit(),
 					},
 					padding = {
 						left = 10,
 						right = 10,
-						top = pull_request || highlight ? 10 : 5,
-						bottom = pull_request || highlight ? 10 : 5,
+						top = git_card || highlight ? 10 : 5,
+						bottom = git_card || highlight ? 10 : 5,
 					},
 					childGap = 6,
 					childAlignment = {x = .Center, y = .Center},
 				},
-				backgroundColor = hovered() ? HOVER : (pull_request ? fade(ACCENT, 0.08) : (highlight ? fade(ACCENT, 0.06) : clay.Color{})),
+				backgroundColor = hovered() ? HOVER : (git_card ? fade(ACCENT, 0.08) : (highlight ? fade(ACCENT, 0.06) : clay.Color{})),
 				cornerRadius = rr(7),
 				border = {
-					color = pull_request ? fade(ACCENT, 0.25) : (highlight ? fade(ACCENT, 0.18) : FIELD_BORDER),
+					color = git_card ? fade(ACCENT, 0.25) : (highlight ? fade(ACCENT, 0.18) : FIELD_BORDER),
 					width = bw(),
 				},
 			},
@@ -826,11 +830,11 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 					tr("Open in client"),
 					{
 						fontId = FONT_BODY,
-						fontSize = pull_request || highlight ? 12 : 11,
-						textColor = pull_request || highlight ? ACCENT : TEXT_DIM,
+						fontSize = git_card || highlight ? 12 : 11,
+						textColor = git_card || highlight ? ACCENT : TEXT_DIM,
 					},
 				)
-				if pull_request || highlight {
+				if git_card || highlight {
 					clay.Text("\uf08e", {fontId = FONT_ICON, fontSize = 11, textColor = ACCENT})
 				}
 			}

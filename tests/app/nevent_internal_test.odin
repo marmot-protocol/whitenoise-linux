@@ -491,12 +491,12 @@ highlight_card_layout :: proc(t: ^testing.T) {
 	}
 }
 
-// SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=pull_request_card_layout
+// SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=git_card_layout
 @(test)
-pull_request_card_layout :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "pull_request_card_layout" {return}
+git_card_layout :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "git_card_layout" {return}
 	context.allocator = runtime.default_context().allocator
-	dir, err := os.make_directory_temp("/tmp", "wn-pr-*", context.temp_allocator)
+	dir, err := os.make_directory_temp("/tmp", "wn-git-card-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
 	client: ^marmot.Client
@@ -513,7 +513,7 @@ pull_request_card_layout :: proc(t: ^testing.T) {
 		marmot.Status.OK,
 	) {return}
 	defer marmot.client_free(client)
-	rl.InitWindow(1200, 720, "Pull request preview")
+	rl.InitWindow(1200, 720, "Git event preview")
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
 	load_themes()
@@ -535,13 +535,17 @@ pull_request_card_layout :: proc(t: ^testing.T) {
 	if !testing.expect_value(t, reference.kind, Nostr_Kind.Event) {return}
 	card_id :: u32(100 * 8 * 128)
 	_, key, _, _ := nevent_at(token, 0)
-	for subject, index in ([]string{`["subject","Fix relay reconnects"]`, `["subject"],["subject",42]`, `["subject","Fix relay reconnects without interrupting conversations on unreliable networks"]`}) {
+	for fixture, index in ([]struct {
+			kind:    i64,
+			subject: string,
+		}{{1618, `["subject","Fix relay reconnects"]`}, {1618, `["subject"],["subject",42]`}, {1618, `["subject","Fix relay reconnects without interrupting conversations on unreliable networks"]`}, {1621, `["subject","Fix relay reconnects"]`}, {1621, `["subject"],["subject",42]`}, {1621, `["subject","Fix relay reconnects without interrupting conversations on unreliable networks"]`}, {1621, ""}, {1621, `["subject",""]`}}) {
 		ui.nicknames["author"] =
-			index == 2 ? "Contributor with a long display name" : "Contributor"
+			index % 3 == 2 ? "Contributor with a long display name" : "Contributor"
 		event := fmt.tprintf(
-			`{{"kind":1618,"pubkey":"author","created_at":1791417600,"content":"Keep **messages** flowing.\n\nfixes\n%s","tags":[%s]}}`,
+			`{{"kind":%d,"pubkey":"author","created_at":1791417600,"content":"Keep **messages** flowing.\n\nfixes\n%s","tags":[%s]}}`,
+			fixture.kind,
 			reported,
-			subject,
+			fixture.subject,
 		)
 		append(&nev_fresh, struct {
 			id:   string,
@@ -566,7 +570,7 @@ pull_request_card_layout :: proc(t: ^testing.T) {
 						backgroundColor = BG,
 					},
 					) {
-						if clay.UI(clay.ID("PullRequestBubble"))(
+						if clay.UI(clay.ID("GitEventBubble"))(
 						{
 							layout = {
 								layoutDirection = .TopToBottom,
@@ -579,7 +583,7 @@ pull_request_card_layout :: proc(t: ^testing.T) {
 						},
 						) {
 							clay.Text(
-								"Shared pull request",
+								fixture.kind == 1621 ? "Shared issue" : "Shared pull request",
 								{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
 							)
 							body_text(100, token, BODY_FS, TEXT, wrap_w = width)
@@ -589,12 +593,12 @@ pull_request_card_layout :: proc(t: ^testing.T) {
 					if frame < 2 {continue}
 					shown := strings.builder_make(context.temp_allocator)
 					bold := false
-					title_bold := index != 0
-					box := clay.GetElementData(clay.ID("PullRequestBubble")).boundingBox
+					title_bold := index % 3 != 0 || index >= 6
+					box := clay.GetElementData(clay.ID("GitEventBubble")).boundingBox
 					card_box := clay.GetElementData(clay.ID("NevCard", card_id)).boundingBox
 					testing.expect(t, card_box.width <= width)
 					if width ==
-					   520 {testing.expect(t, card_box.width >= 480, "A wide chat must give the pull request enough reading room.")}
+					   520 {testing.expect(t, card_box.width >= 480, "A wide chat must give the Git event enough reading room.")}
 					for command in commands.internalArray[:commands.length] {
 						if command.commandType != .Text {continue}
 						text := command.renderData.text.stringContents
@@ -613,6 +617,10 @@ pull_request_card_layout :: proc(t: ^testing.T) {
 						)
 					}
 					visible := strings.to_string(shown)
+					testing.expect(
+						t,
+						strings.contains(visible, fixture.kind == 1621 ? "ISSUE" : "PULL REQUEST"),
+					)
 					testing.expect(t, strings.contains(visible, "Contributor"))
 					testing.expect(t, strings.contains(visible, "Keep messages flowing."))
 					testing.expect(
@@ -626,13 +634,15 @@ pull_request_card_layout :: proc(t: ^testing.T) {
 						t,
 						!strings.contains(visible, "pubkey") && !strings.contains(visible, "**"),
 					)
-					if index ==
-					   0 {testing.expect(t, strings.contains(visible, "Fix relay reconnects"))}
+					if index == 0 ||
+					   index ==
+						   3 {testing.expect(t, strings.contains(visible, "Fix relay reconnects"))}
 					rl.BeginDrawing()
 					clay_raylib_render(&commands)
 					rl.TakeScreenshot(
 						fmt.ctprintf(
-							"/tmp/wn-pull-request-%d-%d-%d.png",
+							"/tmp/wn-git-card-%d-%d-%d-%d.png",
+							fixture.kind,
 							index,
 							theme,
 							int(width),
