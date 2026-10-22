@@ -1,6 +1,7 @@
 package main
 
 import "base:runtime"
+import "core:fmt"
 import "core:os"
 import "core:sync"
 import "core:testing"
@@ -17,8 +18,287 @@ test_rail_fits :: proc(t: ^testing.T) {
 		testing.expect(t, rail_fits(threshold, rail_w))
 		testing.expect(t, rail_fits(threshold + 1, rail_w))
 	}
-	testing.expect(t, !rail_fits(780, RAIL_W_MIN), "collapse at the reported window width")
+	testing.expect(
+		t,
+		rail_fits(f32(1024) / zoom_for_width(1024), RAIL_W_DEFAULT),
+		"the default window must show the list at desktop zoom",
+	)
 	testing.expect(t, rail_fits(1200, RAIL_W_DEFAULT), "restore the list in a wide window")
+}
+
+// Exercise the shell consumer, not just its fit calculation: after unlocking
+// and opening a chat the default window must contain both the list and chat.
+// SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=rail_default_window
+@(test)
+rail_default_window :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "rail_default_window" {return}
+	context.allocator = runtime.default_context().allocator
+	dir, err := os.make_directory_temp("/tmp", "wn-rail-default-*", context.temp_allocator)
+	if !testing.expect_value(t, err, nil) {return}
+	defer os.remove_all(dir)
+	previous_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
+	os.set_env("XDG_CONFIG_HOME", dir)
+	defer os.set_env("XDG_CONFIG_HOME", previous_config)
+	ui := Ui_State {
+		page             = .Chats,
+		selected         = -1,
+		selected_contact = -1,
+		row_menu         = -1,
+		member_menu      = -1,
+		prefs            = default_prefs(),
+	}
+	defer {
+		for value in ui.prefs.quick_reactions {delete(value)}
+		delete(ui.prefs.quick_reactions)
+		for value in ui.prefs.fetch_relays {delete(value)}
+		delete(ui.prefs.fetch_relays)
+		delete(ui.prefs.event_client)
+		delete(ui.accounts)
+		delete(ui.chats)
+		delete(ui.rail_rows)
+		delete(ui.compose)
+		wrap_clear()
+	}
+	ui.prefs.reduce_motion = true
+	append(&ui.accounts, "Test")
+	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Compact chat"})
+	rl.InitWindow(i32(ui.prefs.window_w), i32(ui.prefs.window_h), "Default chat list")
+	defer rl.CloseWindow()
+	UI_ZOOM = zoom_for_width(i32(ui.prefs.window_w)) * f32(ui.prefs.zoom_pct) / 100
+	refresh_ui_scale()
+	init_fonts()
+	window_w := f32(rl.GetScreenWidth()) / UI_ZOOM
+	window_h := f32(rl.GetScreenHeight()) / UI_ZOOM
+	memory: []u8
+	init_layout(&memory, 32768, {window_w, window_h})
+	defer delete(memory)
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {g_ui, g_prefs = nil, nil}
+	for selected in ([]int{-1, 0}) {
+		ui.selected = selected
+		for _ in 0 ..< 3 {
+			anim_tick(1.0 / 60)
+			build_layout(&ui, 0)
+		}
+		list := clay.GetElementData(clay.ID("ChatList"))
+		row := clay.GetElementData(clay.ID("ChatRow", 0))
+		rail := clay.GetElementData(clay.ID("Rail")).boundingBox
+		testing.expect(
+			t,
+			list.found && list.boundingBox.width > 0 && list.boundingBox.height > 0,
+			"chat list stays visible",
+		)
+		testing.expect(
+			t,
+			row.found &&
+			row.boundingBox.width > 0 &&
+			row.boundingBox.x >= rail.x &&
+			row.boundingBox.x + row.boundingBox.width <= rail.x + rail.width + 0.1,
+			"chat row remains inside the expanded rail",
+		)
+		if selected >= 0 {
+			for id in ([]string{"ChatPane", "ChatBody", "Composer"}) {
+				pane := clay.GetElementData(clay.ID(id))
+				testing.expect(
+					t,
+					pane.found &&
+					pane.boundingBox.width > 0 &&
+					pane.boundingBox.x >= rail.x + rail.width &&
+					pane.boundingBox.x + pane.boundingBox.width <= window_w + 0.1,
+					id,
+				)
+			}
+		}
+	}
+	toggle_rail(&ui)
+	anim_tick(1.0 / 60)
+	build_layout(&ui, 0)
+	testing.expect(t, ui.prefs.rail_collapsed, "explicit collapse remains respected")
+	testing.expect(t, !clay.GetElementData(clay.ID("ChatList")).found)
+	toggle_rail(&ui)
+	anim_tick(1.0 / 60)
+	build_layout(&ui, 0)
+	testing.expect(t, clay.GetElementData(clay.ID("ChatList")).found, "expand restores the list")
+	rl.SetWindowSize(720, ui.prefs.window_h)
+	UI_ZOOM = zoom_for_width(720) * f32(ui.prefs.zoom_pct) / 100
+	refresh_ui_scale()
+	clay.SetLayoutDimensions({720 / UI_ZOOM, f32(ui.prefs.window_h) / UI_ZOOM})
+	for _ in 0 ..< 3 {
+		anim_tick(1.0 / 60)
+		build_layout(&ui, 0)
+	}
+	testing.expect(t, !clay.GetElementData(clay.ID("ChatList")).found)
+	testing.expect(
+		t,
+		clay.GetElementData(clay.ID("ChatPane")).found,
+		"small windows show the open chat",
+	)
+	ui.selected = -1
+	for _ in 0 ..< 3 {
+		anim_tick(1.0 / 60)
+		build_layout(&ui, 0)
+	}
+	testing.expect(
+		t,
+		clay.GetElementData(clay.ID("ChatList")).found,
+		"back reveals the single-pane list",
+	)
+	testing.expect(t, !clay.GetElementData(clay.ID("ChatPane")).found)
+}
+
+@(test)
+status_bar_viewports :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "status_bar_viewports" {return}
+	context.allocator = runtime.default_context().allocator
+	dir, err := os.make_directory_temp("/tmp", "wn-status-viewport-*", context.temp_allocator)
+	if !testing.expect_value(t, err, nil) {return}
+	defer os.remove_all(dir)
+	previous_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
+	os.set_env("XDG_CONFIG_HOME", dir)
+	defer os.set_env("XDG_CONFIG_HOME", previous_config)
+	rl.InitWindow(1024, 700, "Status bar viewports")
+	defer rl.CloseWindow()
+	init_fonts()
+	load_themes()
+	apply_theme(0, 0)
+	ui := Ui_State {
+		selected    = -1,
+		row_menu    = -1,
+		member_menu = -1,
+		prefs       = default_prefs(),
+	}
+	ui.prefs.reduce_motion = true
+	append(&ui.accounts, "Viewport")
+	append(&ui.account_ids, "viewport")
+	append(&ui.account_pics, "")
+	append(&ui.account_npubs, "")
+	for i in 0 ..< 12 {append(&ui.chats, Chat_Row_Ui{group_id = fmt.tprintf("group-%d", i), title = fmt.tprintf("Group %d", i)})}
+	defer {
+		delete(
+			ui.accounts,
+		); delete(ui.account_ids); delete(ui.account_pics); delete(ui.account_npubs); delete(ui.chats)
+		for value in ui.prefs.quick_reactions {delete(value)}
+		delete(ui.prefs.quick_reactions)
+		for value in ui.prefs.fetch_relays {delete(value)}
+		delete(ui.prefs.fetch_relays); delete(ui.prefs.event_client)
+	}
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {g_ui, g_prefs = nil, nil}
+	memory: []u8
+	init_layout(&memory, 32768, {1024, 700})
+	defer delete(memory)
+	for size in ([][2]i32{{1024, 700}, {780, 520}, {2560, 1080}, {2560, 480}}) {
+		rl.SetWindowSize(size[0], size[1])
+		for zoom in ([]f32{1.5, 3}) {
+			UI_ZOOM = zoom
+			refresh_ui_scale()
+			clay.SetLayoutDimensions({f32(size[0]) / zoom, f32(size[1]) / zoom})
+			for page in ([]Page{.Profile, .Settings}) {
+				ui.page = page
+				for section in ([]Settings_Section{.Folders, .Appearance}) {
+					if page == .Profile && section == .Appearance {continue}
+					settings_open(&ui, nil, section)
+					ui.page = page
+					if page == .Profile {
+						if data := clay.GetScrollContainerData(clay.ID("ProfilePage"));
+						   data.found {data.scrollPosition^ = {}}
+					}
+					for _ in 0 ..< 4 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+					viewport := clay.ID(page == .Profile ? "ProfilePage" : "SettingsPage")
+					box := clay.GetElementData(viewport).boundingBox
+					status := clay.GetElementData(clay.ID("StatusBar")).boundingBox
+					testing.expectf(
+						t,
+						box.height > 0 &&
+						box.y + box.height <= status.y + 0.1 &&
+						status.y + status.height <= f32(size[1]) / zoom + 0.1,
+						"Page %v section %v viewport %v must end above status %v",
+						page,
+						section,
+						box,
+						status,
+					)
+					if page == .Profile {
+						avatar := clay.GetElementData(clay.ID("ProfileAvatarPick")).boundingBox
+						y := status.y + status.height - 2
+						if avatar.y <= y && avatar.y + avatar.height > y {
+							commands := build_layout(&ui, 0)
+							path := fmt.ctprintf("%s/profile-clip.png", dir)
+							rl.BeginDrawing()
+							rl.BeginMode2D({zoom = UI_ZOOM})
+							clay_raylib_render(&commands)
+							rl.EndMode2D()
+							rl.TakeScreenshot(path)
+							rl.EndDrawing()
+							image := rl.LoadImage(path)
+							if testing.expect(
+								t,
+								image.data != nil,
+								"Profile clipping screenshot must decode",
+							) {
+								x := int((avatar.x + avatar.width / 2) * UI_ZOOM)
+								i := (int(y * UI_ZOOM) * int(image.width) + x) * 4
+								color := clay_color(STATUS_BAR)
+								testing.expect(
+									t,
+									image.data[i] == color.r &&
+									image.data[i + 1] == color.g &&
+									image.data[i + 2] == color.b,
+									"The floating profile avatar must not paint over the status bar",
+								)
+							}
+							rl.UnloadImage(image)
+						}
+					}
+					target := clay.ID(page == .Profile ? "SignOutBtn" : "ZoomMinus")
+					if page == .Settings && section == .Folders {
+						target = clay.ID("BoardChat", 11)
+						for id in ([]string{"SettingsPage", "FolderBoard"}) {
+							data := clay.GetScrollContainerData(clay.ID(id))
+							if data.found {data.scrollPosition.y = min(0, data.scrollContainerDimensions.height - data.contentDimensions.height)}
+							for _ in 0 ..< 3 {build_layout(&ui, 0)}
+						}
+					}
+					owner := viewport
+					if page == .Settings &&
+					   section == .Appearance {owner = appearance_scroll(&ui, target)}
+					scroll_into_view(owner, target)
+					for _ in 0 ..< 3 {build_layout(&ui, 0)}
+					control := clay.GetElementData(target)
+					b := control.boundingBox
+					if page == .Settings && section == .Appearance {
+						ui.prefs.zoom_pct = 190
+						appearance_activate(&ui, clay.ID("ZoomPlus"))
+						clay.SetLayoutDimensions({f32(size[0]) / UI_ZOOM, f32(size[1]) / UI_ZOOM})
+						for _ in 0 ..< 2 {
+							build_layout(&ui, 0)
+							if settings_resolve_scroll(&ui) {build_layout(&ui, 0)}
+						}
+						control = clay.GetElementData(target)
+						b = control.boundingBox
+						box = clay.GetElementData(viewport).boundingBox
+						status = clay.GetElementData(clay.ID("StatusBar")).boundingBox
+					}
+					testing.expectf(
+						t,
+						control.found && b.y >= box.y && b.y + b.height <= status.y + 0.1,
+						"Page %v section %v control at %v must fit viewport %v above status %v",
+						page,
+						section,
+						b,
+						box,
+						status,
+					)
+					clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
+					testing.expect(
+						t,
+						clay.PointerOver(target) && !clay.PointerOver(clay.ID("StatusBar")),
+						"Scrolled controls must receive input instead of the status bar",
+					)
+				}
+			}
+		}
+	}
 }
 
 // A two-card window too narrow for the saved rail collapses it on its
@@ -30,7 +310,7 @@ test_rail_fits :: proc(t: ^testing.T) {
 rail_expand_narrow :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "rail_expand_narrow" {return}
 	context.allocator = runtime.default_context().allocator
-	rl.InitWindow(780, 700, "Rail expand")
+	rl.InitWindow(600, 700, "Rail expand")
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
 	home :: "/tmp/wn-odin-rail-test"

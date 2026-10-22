@@ -29,7 +29,10 @@ RAIL_W_DEFAULT :: 340
 RAIL_W_MIN :: 300
 RAIL_W_MAX :: 560
 RAIL_W_COLLAPSED :: 60
-PAGE_W_MIN :: f32(560) // Room for the conversation and its header controls.
+// The compact chat header drops its avatar and badge at narrow widths.
+// Reserve a usable conversation, not the full-width header: at the default
+// 1024-point window and 1.5x zoom the page beside the rail has 337 units.
+PAGE_W_MIN :: f32(320)
 
 PANEL_W_DEFAULT :: 280
 PANEL_W_MIN :: 220
@@ -187,6 +190,7 @@ shell_navigation :: proc(ui: ^Ui_State) {
 			childAlignment = {x = .Center},
 		},
 		backgroundColor = BG,
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 	},
 	) {
 		avatar(
@@ -235,6 +239,7 @@ shell_navigation :: proc(ui: ^Ui_State) {
 		nav_button(.Settings, ui.page == .Settings)
 		nav_indicator(ui)
 	}
+	scrollbar(clay.ID("RailTop"))
 }
 
 // ── Narrow windows ──────────────────────────────────────────────────

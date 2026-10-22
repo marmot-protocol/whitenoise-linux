@@ -309,6 +309,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 				layout = {sizing = {width = clay.SizingFixed(96), height = clay.SizingFixed(96)}},
 				floating = {
 					attachTo = .Parent,
+					clipTo = .AttachedParent,
 					zIndex = 5,
 					offset = {24, 40},
 					attachment = {element = .LeftTop, parent = .LeftTop},
@@ -335,6 +336,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 						},
 						floating = {
 							attachTo = .Parent,
+							clipTo = .AttachedParent,
 							zIndex = 6,
 							offset = {2, 2},
 							attachment = {element = .RightBottom, parent = .RightBottom},

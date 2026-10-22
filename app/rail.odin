@@ -19,6 +19,11 @@ rail_content :: proc(ui: ^Ui_State) {
 			childGap = 8,
 		},
 		backgroundColor = PANEL,
+		// Account rows must scroll rather than raise the shell's minimum height.
+		clip = {
+			vertical = ui.page == .Profile,
+			childOffset = ui.page == .Profile ? clay.GetScrollOffset() : clay.Vector2{},
+		},
 	},
 	) {
 		// The header counts what the chat list below shows.
@@ -373,4 +378,5 @@ rail_content :: proc(ui: ^Ui_State) {
 		}
 
 	}
+	if ui.page == .Profile {scrollbar(clay.ID("RailContent"))}
 }

@@ -226,24 +226,18 @@ appearance_activate :: proc(ui: ^Ui_State, control: clay.ElementId) {
 	}
 	if control == clay.ID("ZoomMinus") {
 		ui.prefs.zoom_pct -= 10
-		apply_zoom(ui)
-		save_settings(ui)
-		return
-	}
-	if control == clay.ID("ZoomPlus") {
+	} else if control == clay.ID("ZoomPlus") {
 		ui.prefs.zoom_pct += 10
-		apply_zoom(ui)
-		save_settings(ui)
-		return
-	}
-	if control == clay.ID("ZoomReset") {
+	} else if control == clay.ID("ZoomReset") {
 		ui.prefs.zoom_pct = 100
-		apply_zoom(ui)
-		save_settings(ui)
+	} else {
 		return
 	}
-
-
+	apply_zoom(ui)
+	// Resolve against the resized page, including a switch between columns.
+	ui.settings_anchor = "ZoomChoices"
+	ui.settings_scroll_pending = true
+	save_settings(ui)
 }
 
 

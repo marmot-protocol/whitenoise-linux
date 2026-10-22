@@ -178,6 +178,15 @@ packaged `wn-archive` and `wn-pdf` helpers, not in the UI process.
   and friends each build their part of the clay tree directly from `Ui_State`.
   Follow that: no widget objects, no retained view tree.
 
+Shell widths are logical pixels after `UI_ZOOM`. The default 1024x700 window
+must show the chat list beside a compact conversation unless you collapse it.
+Navigation and profile account lists scroll without raising the shell's
+minimum height. Pages clip and scroll above the status bar; floating page
+decorations inherit that clip. Appearance zoom changes keep `ZoomChoices`
+visible after reflow through the deferred settings scroll.
+`tests/app/shell_test.odin` exercises these boundaries through `build_layout`,
+including the status bar, at default, short, and zoomed window sizes.
+
 ### Themes
 
 A theme is a `themes/*.toml` pack, `#load`ed at build time and parsed into a
