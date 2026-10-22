@@ -32,7 +32,7 @@ test-reload:
 translations:
     @scripts/update-translations.sh
 
-# Bump APP_VERSION to today, tag v<date>-build.<n>, push to both remotes.
+# Release origin/master: bump APP_VERSION, tag v<date>-build.<n>, push both remotes.
 release *args:
     @scripts/release.sh "$@"
 

@@ -9,9 +9,10 @@
 #      stdin and printing notes (default: claude -p --model haiku).
 #   3. The notes open in $VISUAL/$EDITOR (vim by default) for editing, then
 #      you confirm. Nothing is committed, tagged or pushed before that.
-#   4. The version bump and a metainfo <release> entry are committed, the
-#      tag is created with the notes as its message, and master plus the
-#      tag are pushed to both remotes.
+#   4. The version bump and a metainfo <release> entry are committed on top
+#      of origin/master (in a detached worktree, so a dirty checkout or
+#      another branch is left alone), the tag is created with the notes as
+#      its message, and that commit plus the tag are pushed to both remotes.
 #
 # The tag reaching `github` starts .github/workflows/release.yml. It builds
 # every package and then creates the GitHub release, titled from the tag's
@@ -32,26 +33,32 @@ REMOTES=(origin github)
 NOTES_CMD="${WN_NOTES_CMD:-claude -p --model haiku}"
 EDITOR_CMD="${VISUAL:-${EDITOR:-vim}}"
 
-# Release only a clean, current master: the tag must name what CI builds.
-if [ "$(git branch --show-current)" != master ]; then
-  echo "Releases are cut from master." >&2
-  exit 1
-fi
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  echo "Commit or stash your changes first." >&2
-  exit 1
-fi
+# Release origin/master, not the working tree. A detached worktree keeps a
+# dirty checkout or another branch out of the commit CI will build.
 if [ -z "$DRY_RUN" ] && [ ! -t 0 ]; then
   echo "Run this from a terminal: the notes open in your editor." >&2
   exit 1
 fi
 for remote in "${REMOTES[@]}"; do
   git fetch -q --tags "$remote" master
-  if ! git merge-base --is-ancestor "$remote/master" HEAD; then
-    echo "master is behind $remote/master; pull first." >&2
-    exit 1
-  fi
 done
+if ! git merge-base --is-ancestor github/master origin/master; then
+  echo "github/master is not contained in origin/master." >&2
+  exit 1
+fi
+
+root="$(pwd)"
+work="$(mktemp -d)"
+cleanup() {
+  cd "$root"
+  if [ -n "${work:-}" ]; then
+    git worktree remove --force "$work" 2>/dev/null || rm -rf "$work"
+  fi
+  rm -f "${notes:-}"
+}
+trap cleanup EXIT
+git worktree add --detach -q "$work" origin/master
+cd "$work"
 
 current="$(bash scripts/version.sh)"
 today="$(date +%Y).$((10#$(date +%m))).$((10#$(date +%d)))"
@@ -66,7 +73,7 @@ fi
 
 # The commits since the previous release; the first release has no tag to
 # start from, so it looks at the most recent 50.
-previous="$(git tag -l 'v*-build.*' --sort=-creatordate | head -n 1)"
+previous="$(git tag -l 'v*-build.*' --sort=-creatordate --merged HEAD | head -n 1)"
 if [ -n "$previous" ]; then
   commits="$(git log --no-merges --format='- %s%n%w(0,2,2)%b' "$previous..HEAD")"
   since="since $previous"
@@ -81,7 +88,6 @@ fi
 echo "Release $tag: APP_VERSION $current -> $version, commits $since, push to ${REMOTES[*]}"
 
 notes="$(mktemp)"
-trap 'rm -f "$notes"' EXIT
 echo "Drafting release notes with: $NOTES_CMD"
 if ! {
   cat <<'PROMPT'
@@ -136,7 +142,8 @@ git commit -q -m "Release $version" app/advanced.odin "$METAINFO"
 # drop the Markdown headings.
 { printf 'White Noise %s\n\n' "$version"; cat "$notes"; } | git tag -a "$tag" --cleanup=verbatim -F -
 for remote in "${REMOTES[@]}"; do
-  git push "$remote" master "$tag"
+  git push "$remote" HEAD:master "$tag"
 done
-echo "Pushed $tag. GitHub builds every package, then publishes the release:"
+echo "Pushed $tag from origin/master. This checkout was left as it was."
+echo "GitHub builds every package, then publishes the release:"
 echo "https://github.com/marmot-protocol/whitenoise-linux/actions"
