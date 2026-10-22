@@ -1332,8 +1332,8 @@ msgid "Couldn't reach your signer. Please try again."
 msgstr "署名者に接続できませんでした。もう一度お試しください。"
 
 #, c-format
-msgid "Couldn't read %s."
-msgstr "%sを読み取れませんでした。"
+msgid "Couldn't read %s. Please try again."
+msgstr "%sを読み取れませんでした。もう一度お試しください。"
 
 msgid "Couldn't read that pubkey. Double-check it and try again."
 msgstr "その公開鍵を読み取れませんでした。確認してもう一度お試しください。"
@@ -1750,6 +1750,9 @@ msgstr "チャットをフォルダにドラッグするとそこに置かれま
 
 msgid "Drag a folder to reorder it. Your chats appear here once you have some."
 msgstr "フォルダをドラッグすると並べ替えられます。チャットができるとここに表示されます。"
+
+msgid "Drop files to attach"
+msgstr "ファイルをドロップして添付"
 
 msgid "Drop here"
 msgstr "ここにドロップ"
@@ -3264,6 +3267,9 @@ msgstr "%sへの添付ファイルを準備中…"
 
 msgid "Preparing attachments…"
 msgstr "添付ファイルを準備中…"
+
+msgid "Preparing attachment…"
+msgstr "添付ファイルを準備しています…"
 
 msgid "Preparing dictation..."
 msgstr "音声入力を準備しています..."

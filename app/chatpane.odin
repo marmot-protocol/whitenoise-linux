@@ -459,6 +459,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 				chat_composer(ui)
 			}
 		}
+		chat_drop_overlay(ui)
 	}
 }
 
@@ -2013,7 +2014,11 @@ chat_composer :: proc(ui: ^Ui_State) {
 						}
 						if clay.UI(clay.ID("StagedName", u32(i)))(
 						{
-							layout = {sizing = {width = clay.SizingGrow()}},
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								layoutDirection = .TopToBottom,
+								childGap = 4,
+							},
 							clip = {horizontal = true},
 						},
 						) {
@@ -2026,6 +2031,13 @@ chat_composer :: proc(ui: ^Ui_State) {
 									wrapMode = .None,
 								},
 							)
+							if f.load != nil {
+								clay.Text(
+									tr("Preparing attachment…"),
+									{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+								)
+								busy_bar(fmt.tprintf("StagedBusy%d", i))
+							}
 						}
 						if clay.UI(clay.ID("StagedX", u32(i)))(
 						{

@@ -1332,8 +1332,8 @@ msgid "Couldn't reach your signer. Please try again."
 msgstr "Dein Signer konnte nicht erreicht werden. Bitte versuche es erneut."
 
 #, c-format
-msgid "Couldn't read %s."
-msgstr "%s konnte nicht gelesen werden."
+msgid "Couldn't read %s. Please try again."
+msgstr "%s konnte nicht gelesen werden. Bitte versuche es erneut."
 
 msgid "Couldn't read that pubkey. Double-check it and try again."
 msgstr "Dieser Pubkey konnte nicht gelesen werden. Überprüfe ihn und versuche es erneut."
@@ -1750,6 +1750,9 @@ msgstr "Ziehe einen Chat auf einen Ordner, um ihn dort zu behalten, oder ziehe e
 
 msgid "Drag a folder to reorder it. Your chats appear here once you have some."
 msgstr "Zieh einen Ordner, um die Reihenfolge zu ändern. Deine Chats erscheinen hier, sobald du welche hast."
+
+msgid "Drop files to attach"
+msgstr "Dateien zum Anhängen ablegen"
 
 msgid "Drop here"
 msgstr "Hier ablegen"
@@ -3264,6 +3267,9 @@ msgstr "Anhänge für %s werden vorbereitet…"
 
 msgid "Preparing attachments…"
 msgstr "Anhänge werden vorbereitet…"
+
+msgid "Preparing attachment…"
+msgstr "Anhang wird vorbereitet…"
 
 msgid "Preparing dictation..."
 msgstr "Diktat wird vorbereitet..."

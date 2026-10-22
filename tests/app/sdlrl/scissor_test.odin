@@ -1,11 +1,14 @@
 package sdlrl
 
+import "core:sync"
 import "core:testing"
 import sdl "vendor:sdl3"
 
 // Run headlessly: SDL_VIDEODRIVER=dummy tests/odin.sh app/sdlrl
 @(test)
 test_nested_scissor :: proc(t: ^testing.T) {
+	sync.lock(&sdl_test_mutex)
+	defer sync.unlock(&sdl_test_mutex)
 	InitWindow(100, 100, "Nested clipping")
 	defer CloseWindow()
 	defer delete(clip_stack)

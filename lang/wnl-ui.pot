@@ -1328,7 +1328,7 @@ msgid "Couldn't reach your signer. Please try again."
 msgstr ""
 
 #, c-format
-msgid "Couldn't read %s."
+msgid "Couldn't read %s. Please try again."
 msgstr ""
 
 msgid "Couldn't read that pubkey. Double-check it and try again."
@@ -1744,6 +1744,9 @@ msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder i
 msgstr ""
 
 msgid "Drag a folder to reorder it. Your chats appear here once you have some."
+msgstr ""
+
+msgid "Drop files to attach"
 msgstr ""
 
 msgid "Drop here"
@@ -3257,6 +3260,9 @@ msgid "Preparing attachments for %s…"
 msgstr ""
 
 msgid "Preparing attachments…"
+msgstr ""
+
+msgid "Preparing attachment…"
 msgstr ""
 
 msgid "Preparing dictation..."

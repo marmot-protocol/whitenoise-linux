@@ -1,9 +1,12 @@
 package sdlrl
 
+import "core:sync"
 import "core:testing"
 
 @(test)
 photo_dialog_tombstone :: proc(t: ^testing.T) {
+	sync.lock(&sdl_test_mutex)
+	defer sync.unlock(&sdl_test_mutex)
 	old_allocator := callback_allocator
 	callback_allocator = context.allocator
 	defer {callback_allocator = old_allocator}

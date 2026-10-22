@@ -903,6 +903,7 @@ app_main :: proc() {
 			media_drain(&ui)
 			agent_tick(&ui, tl_at_bottom ? .Follow : .Hold)
 			drain_sends(&ui, client)
+			stage_files_tick(&ui)
 			tts_tick(&ui)
 			drain_ops(&ui, client)
 			drain_nc_intents(&ui, client) // Namecoin .bit resolutions land here
@@ -983,6 +984,7 @@ app_main :: proc() {
 			// scaled and handed to clay.
 			devctl_poll(&ui, client, int(frame), &pointer)
 			if ui.lock_requested {lock_now(&ui); lock_wait_frame(); break}
+			handle_file_drop(&ui) // publish preparation chips before this frame's layout
 			pointer.x /= UI_ZOOM
 			pointer.y /= UI_ZOOM
 			clay.SetPointerState(pointer, rl.IsMouseButtonDown(.LEFT))

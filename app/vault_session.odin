@@ -79,6 +79,7 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	save_settings(ui)
 	settings_stop(ui)
 	auth_stop()
+	stage_files_stop()
 	account_jobs_stop()
 	stop_gimg_worker()
 	stop_pic_worker()

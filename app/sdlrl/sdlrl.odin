@@ -36,6 +36,11 @@ Vector2 :: struct {
 	x, y: f32,
 }
 
+Dropped_File :: struct {
+	path:     string,
+	position: Vector2, // this batch's completed drop position in window points
+}
+
 Color :: struct {
 	r, g, b, a: u8,
 }
@@ -119,6 +124,10 @@ State :: struct {
 	wheel:          Vector2,
 	chars:          [dynamic]rune,
 	preedit:        string,
+	drop_active:    bool,
+	drop_position:  Vector2, // SDL drop coordinates, independent of mouse motion
+	drop_paths:     [dynamic]string, // incomplete batch, never exposed to callers
+	dropped_files:  [dynamic]Dropped_File, // completed batches, valid for one frame
 	// timing
 	last_frame_ns:  u64,
 	frame_dt:       f32,
@@ -394,6 +403,40 @@ PickedFiles :: proc(completed: ^bool = nil) -> [dynamic]string {
 	return out
 }
 
+// SDL ends a drag with DROP_COMPLETE, including leave/cancel with no files.
+// This is separate from native picker results and does not follow mouse motion:
+// Wayland can deliver drop positions without changing SDL's mouse position.
+FileDropActive :: proc() -> bool {
+	return state.drop_active
+}
+
+FileDropPosition :: proc() -> Vector2 {
+	return state.drop_position
+}
+
+// Drain only completed batches. The caller owns the array and every path.
+// Unconsumed results expire at the next WindowShouldClose, including on locked
+// surfaces that never route dropped files to a composer.
+DroppedFiles :: proc() -> [dynamic]Dropped_File {
+	out := state.dropped_files
+	state.dropped_files = {}
+	return out
+}
+
+@(private)
+clear_drop_paths :: proc(paths: ^[dynamic]string) {
+	for path in paths^ {delete(path)}
+	delete(paths^)
+	paths^ = {}
+}
+
+@(private)
+clear_dropped_files :: proc() {
+	for file in state.dropped_files {delete(file.path)}
+	delete(state.dropped_files)
+	state.dropped_files = {}
+}
+
 // Save dialog, same async shape as the picker but its own list so a
 // save can't be mistaken for a composer attachment. The native dialog
 // owns the overwrite confirmation.
@@ -593,6 +636,10 @@ ShowWindow :: proc() {
 
 CloseWindow :: proc() {
 	when #config(WN_RELOAD, false) {wn_dev_wait_dialogs()}
+	clear_drop_paths(&state.drop_paths)
+	clear_dropped_files()
+	state.drop_active = false
+	state.drop_position = {}
 	delete(state.image_helper)
 	state.image_helper = nil
 	_ = sdl.StopTextInput(state.window)
@@ -657,6 +704,7 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 	}
 	state.wheel = {}
 	clear(&state.chars)
+	clear_dropped_files()
 
 	// The density is not fixed for the window's life: snapping to a
 	// monitor with another scale changes it, and everything sized in
@@ -738,6 +786,32 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 			set_preedit("")
 		case .TEXT_EDITING:
 			set_preedit(string(event.edit.text))
+		case .DROP_BEGIN, .DROP_POSITION, .DROP_FILE, .DROP_COMPLETE:
+			if event.drop.windowID != sdl.GetWindowID(state.window) {continue}
+			#partial switch event.type {
+			case .DROP_BEGIN:
+				// A fresh begin replaces an abandoned, incomplete batch. Begin
+				// has no coordinates; position/file/complete supply window points.
+				clear_drop_paths(&state.drop_paths)
+				state.drop_active = true
+				state.drop_position = GetMousePosition()
+			case .DROP_POSITION, .DROP_FILE:
+				if !state.drop_active {continue}
+				state.drop_position = {event.drop.x, event.drop.y}
+				if event.type == .DROP_FILE && event.drop.data != nil {
+					// SDL owns this temporary payload. Copy before polling again;
+					// unlike SDL2, SDL3 drop data must not be SDL_free'd here.
+					append(&state.drop_paths, strings.clone(string(event.drop.data)))
+				}
+			case .DROP_COMPLETE:
+				if !state.drop_active {continue}
+				state.drop_active = false
+				state.drop_position = {event.drop.x, event.drop.y}
+				for path in state.drop_paths {
+					append(&state.dropped_files, Dropped_File{path, state.drop_position})
+				}
+				clear(&state.drop_paths)
+			}
 		}
 	}
 	return state.quit

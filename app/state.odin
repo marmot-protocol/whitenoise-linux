@@ -230,6 +230,7 @@ Staged_File :: struct {
 	media_type: string, // static literal from media_type_for, never freed
 	data:       []u8,
 	tex:        ^rl.Texture2D, // nil for non-images
+	load:       ^Stage_Load, // pending file read/decode; never passed to a send
 }
 
 Reaction_Ui :: struct {

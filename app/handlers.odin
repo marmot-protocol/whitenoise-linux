@@ -1,7 +1,6 @@
 package main
 
 import "core:fmt"
-import "core:os"
 import "core:strconv"
 import "core:strings"
 import "core:text/edit"
@@ -857,7 +856,8 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	send :=
 		blocked_dm == "" &&
-		((rl.IsKeyPressed(.ENTER) && !shift_down()) || clicked("SendBtn") || test_send_now)
+		((rl.IsKeyPressed(.ENTER) && !shift_down()) || clicked("SendBtn") || test_send_now) &&
+		stage_files_ready(ui)
 	test_send_now = false
 	// Staged attachments send on their own only outside an edit (an
 	// edit needs text and never sends them). A composer of only
@@ -946,24 +946,31 @@ media_type_for :: proc(name: string) -> string {
 	return "application/octet-stream"
 }
 
-// Read one picked file into the staged row; images also decode a
-// thumbnail texture (reused as the send's dim).
+// Keep the placeholder in its draft while the worker reads and decodes.
 stage_file :: proc(ui: ^Ui_State, path: string) {
-	data, read_err := os.read_entire_file(path, context.allocator)
-	if read_err != nil {
-		set_status(ui, fmt.aprintf(tr("Couldn't read %s."), path), .Error)
-		return
-	}
-
 	base := path
 	if slash := strings.last_index_byte(path, '/'); slash >= 0 {
 		base = path[slash + 1:]
 	}
-	stage_bytes(ui, base, data)
+	when ODIN_OS == .Windows {
+		if slash := strings.last_index_byte(base, '\\'); slash >= 0 {base = base[slash + 1:]}
+	}
+	job := new(Stage_Load)
+	job.path = strings.clone(path)
+	job.media_type = media_type_for(base)
+	job.index = len(stage_loads)
+	append(&stage_loads, job)
+	append(
+		&ui.staged,
+		Staged_File{name = strings.clone(base), media_type = job.media_type, load = job},
+	)
+	job.worker = thread.create(stage_file_worker)
+	job.worker.data = job
+	thread.start(job.worker)
 }
 
-// Stage bytes already in memory (a picked file's, or a pasted
-// picture's). Takes ownership of data; images also decode a thumbnail
+// Stage bytes already in memory (a pasted picture's). Takes ownership
+// of data; images also decode a thumbnail
 // texture, reused as the send's dim.
 stage_bytes :: proc(ui: ^Ui_State, base: string, data: []u8) {
 	f := Staged_File {
@@ -988,6 +995,10 @@ stage_bytes :: proc(ui: ^Ui_State, base: string, data: []u8) {
 
 remove_staged :: proc(ui: ^Ui_State, index: int) {
 	f := &ui.staged[index]
+	if f.load != nil {
+		f.load.detached = true
+		if f.load.worker == nil {stage_load_free(f.load)}
+	}
 	if f.tex != nil {
 		rl.UnloadTexture(f.tex^)
 		free(f.tex)
