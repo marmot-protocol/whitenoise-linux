@@ -46,6 +46,8 @@ if [ "${1:-}" = fetch ]; then
   bash "$HERE/scripts/build.sh" sources
   if [ "$(uname -s)" = Linux ]; then
     bash "$HERE/scripts/build-tts.sh"
+  elif [ "$(uname -s)" = Darwin ]; then
+    bash "$HERE/scripts/fetch.sh" sparkle >/dev/null
   fi
   # Inside vendor/mdk so rustup, when present, installs the pinned toolchain.
   (cd "$HERE/vendor/mdk" && cargo fetch --locked --target "$(rustc -vV | sed -n 's/^host: //p')")
@@ -643,6 +645,13 @@ if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendo
 fi
 
 APP_LINK_ARGS=()
+if [ "$(uname -s)" = Linux ]; then
+  bash "$HERE/scripts/build-appimage-updater.sh" bridge
+elif [ "$(uname -s)" = Darwin ]; then
+  SPARKLE="$(bash "$HERE/scripts/build-sparkle-updater.sh" "$HERE/build")"
+  cc -fobjc-arc -fblocks -F"$SPARKLE" -c "$HERE/app/updater_sparkle.m" -o "$HERE/build/updater_sparkle.o"
+  ar rcs "$HERE/build/libwnsparkle.a" "$HERE/build/updater_sparkle.o"
+fi
 if [ "$(uname -s)" = OpenBSD ]; then
   # Point only this compiler overlay at the private SDL, never the system copy.
   if [ -L "$OVERLAY/vendor/sdl3" ] || [ ! -d "$OVERLAY/vendor/sdl3" ]; then

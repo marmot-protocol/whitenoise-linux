@@ -29,6 +29,19 @@ source "$HERE/scripts/cross-toolchain.sh"
 bash "$HERE/scripts/build.sh" sources
 source "$HERE/scripts/cross-deps.sh"
 
+# Sparkle's signed universal framework is kept out of dependency relocation.
+# The bridge loads it only from an installed app bundle after SDL starts.
+SPARKLE=
+if [ "$SYSTEM" = Darwin ]; then
+  SPARKLE="$(bash "$HERE/scripts/build-sparkle-updater.sh" "$OUT")"
+  "$CC" "${CFLAGS[@]}" -fobjc-arc -fblocks -F"$SPARKLE" \
+    -c "$HERE/app/updater_sparkle.m" -o "$OUT/updater_sparkle.o"
+  "$AR" rcs "$OUT/libwnsparkle.a" "$OUT/updater_sparkle.o"
+elif [ "$SYSTEM" = Linux ]; then
+  CC="$CC" AR="$AR" CFLAGS="${CFLAGS[*]}" \
+    bash "$HERE/scripts/build-appimage-updater.sh" bridge "$OUT"
+fi
+
 # The Rust build is the slowest step (13-15 min on CI runners). Skip it when
 # libmarmot_c.a was built from the same MDK commit and patches for this
 # target. Toolchain and dependency-prefix edits deliberately do not count:
@@ -101,7 +114,7 @@ RPATH=()
 case "$SYSTEM" in
   Linux) SYSTEM_LIBS=(-pthread -ldl -lm) ;;
   Windows) SYSTEM_LIBS=(-lws2_32 -luserenv -lbcrypt -lntdll -ladvapi32 -lcrypt32 -liphlpapi -lsecur32 -lshell32 -lole32 -luuid -luser32 -lgdi32) ;;
-  Darwin) SYSTEM_LIBS=(-framework Security -framework CoreFoundation -framework SystemConfiguration -framework Cocoa -liconv -lresolv); RPATH=(-Wl,-rpath,@executable_path/../Frameworks) ;;
+  Darwin) SYSTEM_LIBS=(-framework Security -framework CoreFoundation -framework SystemConfiguration -framework Cocoa -lobjc -liconv -lresolv); RPATH=(-Wl,-rpath,@executable_path/../Frameworks) ;;
 esac
 HELPER_ENTRY=()
 if [ "$SYSTEM" = Windows ]; then HELPER_ENTRY=(-municode); fi
@@ -186,7 +199,9 @@ if [ "$SYSTEM" = Windows ]; then
   APP_LINK_ARGS=("${WINDOWS_RUNTIME[@]}" "$OUT/velopack/libvelopack_libc.dll.a")
 elif [ "$SYSTEM" = Linux ]; then
   # System libssl must not resolve crypto calls to Marmot's bundled OpenSSL.
-  APP_LINK_ARGS=(-Wl,--exclude-libs=libmarmot_c.a)
+  APP_LINK_ARGS=(-Wl,--exclude-libs=libmarmot_c.a "$OUT/libwnappimage.a")
+elif [ "$SYSTEM" = Darwin ]; then
+  APP_LINK_ARGS=("$OUT/libwnsparkle.a")
 fi
 "$CC" "${CFLAGS[@]}" "$OUT/app.o" "${APP_LINK_ARGS[@]}" \
   "$OUT/libwnws.a" "$OUT/libwnipc.a" "$OUT/libwndecoder.a" "$OUT/libwntimestamp.a" \
@@ -196,4 +211,5 @@ fi
 # Export only paths consumed by packaging; do not serialize credentials/SDKs.
 export WN_CROSS_PREFIX="$PREFIX" WN_CROSS_SYSROOT="$SYSROOT" WN_CROSS_TTS="$TTS"
 export WN_CROSS_WINDOWS_RUNTIME="${LLVM_MINGW:-}" WN_CROSS_VELOPACK="${VELOPACK:-}"
+export WN_CROSS_SPARKLE="$SPARKLE"
 bash "$HERE/scripts/cross-package.sh" "$TARGET"

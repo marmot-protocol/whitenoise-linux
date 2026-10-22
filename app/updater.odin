@@ -1,4 +1,5 @@
-// Windows self-updates through Velopack.
+// Packaged updates: Velopack on Windows, AppImageUpdate on Linux,
+// and Sparkle's native controller on macOS.
 //
 // Setup.exe and the portable zip both install Update.exe beside the app.
 // A background worker asks GitHub releases for a newer build, downloads
@@ -13,7 +14,7 @@
 //   wait_exit_then_apply ─────────────────────────────▶  waits for exit,
 //   push QUIT, normal shutdown                            swaps, relaunches
 //
-// Every other platform leaves the phase at .Off, so nothing here renders.
+// Other installations leave the phase at .Off and remain system-managed.
 package main
 
 import "core:fmt"
@@ -23,7 +24,7 @@ import "core:thread"
 import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
-import sdl "vendor:sdl3"
+import rl "sdlrl"
 
 @(private = "file")
 UPDATE_REPO :: "https://github.com/marmot-protocol/whitenoise-linux"
@@ -31,7 +32,7 @@ UPDATE_REPO :: "https://github.com/marmot-protocol/whitenoise-linux"
 UPDATE_INTERVAL :: 6 * time.Hour
 
 Update_Phase :: enum u8 {
-	Off, // not a Velopack install (dev build, other OS): no UI
+	Off, // development or system-managed installation: no UI
 	Idle, // last check found nothing newer
 	Checking,
 	Downloading,
@@ -183,6 +184,12 @@ update_start :: proc(test_feed: string) {
 		updater.phase = .Idle
 		updater.worker = thread.create(update_worker)
 		thread.start(updater.worker)
+	} else when ODIN_OS == .Linux {
+		mode: Update_Mode = .Manual
+		if g_prefs != nil && g_prefs.auto_updates {mode = .Automatic}
+		appimage_update_start(test_feed, mode)
+	} else when ODIN_OS == .Darwin {
+		macos_update_start()
 	}
 }
 
@@ -199,15 +206,26 @@ update_stop :: proc() {
 		vpkc_free_update_manager(updater.manager)
 		vpkc_free_source(updater.source)
 		updater = {}
+	} else when ODIN_OS == .Linux {
+		when !#config(WN_RELOAD, false) {appimage_update_prepare_exit()}
+		appimage_update_stop()
+	} else when ODIN_OS == .Darwin {
+		macos_update_stop()
 	}
 }
 
 update_phase :: proc() -> Update_Phase {
+	when ODIN_OS == .Linux {
+		return appimage_update_phase()
+	} else when ODIN_OS == .Darwin {
+		return macos_update_available() || macos_update_status() != "" ? .Idle : .Off
+	}
 	return sync.atomic_load(&updater.phase)
 }
 
 @(private = "file")
 update_version :: proc() -> string {
+	when ODIN_OS == .Linux {return appimage_update_version()}
 	// Velopack spells the revision "-build.N" (see cross-package.sh); show
 	// the app's own "YYYY.M.D+N" form, as About does.
 	version := string(updater.version[:updater.version_len])
@@ -236,15 +254,20 @@ update_apply :: proc() {
 			sync.atomic_store(&updater.phase, .Failed)
 			return
 		}
+	} else when ODIN_OS == .Linux {
+		if !appimage_update_apply() {return}
+	} else {
+		return
 	}
-	event: sdl.Event
-	event.type = .QUIT
-	_ = sdl.PushEvent(&event)
+	rl.RequestQuit()
 }
 
 // Status bar strip shown once a downloaded update is waiting.
 update_bar :: proc() {
-	if update_phase() != .Ready || updater.dismissed {
+	phase := update_phase()
+	busy := false
+	when ODIN_OS == .Linux {busy = phase == .Checking || phase == .Downloading}
+	if !busy && (phase != .Ready || updater.dismissed) {
 		return
 	}
 	if clay.UI(clay.ID("UpdateBar"))(
@@ -258,13 +281,82 @@ update_bar :: proc() {
 		backgroundColor = STATUS_BAR,
 	},
 	) {
-		micro_button("UpdateRestart", tr("Restart now"), ACCENT)
-		micro_button("UpdateLater", tr("Later"))
-		clay.Text(
-			fmt.tprintf(tr("White Noise %s is ready to install."), update_version()),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-		)
+		if busy {
+			clay.Text(
+				update_status(phase),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+			update_feedback("UpdateBarProgress", phase)
+		} else {
+			micro_button("UpdateRestart", tr("Restart now"), ACCENT)
+			micro_button("UpdateLater", tr("Later"))
+			clay.Text(
+				fmt.tprintf(tr("White Noise %s is ready to install."), update_version()),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+		}
 	}
+}
+
+@(private = "file")
+update_status :: proc(phase: Update_Phase) -> string {
+	when ODIN_OS == .Linux {
+		if phase == .Failed {return tr(appimage_update_status())}
+		if phase == .Idle {return tr("Check for a newer version.")}
+	}
+	switch phase {
+	case .Off, .Idle:
+		return tr("You have the latest version.")
+	case .Checking:
+		return tr("Checking for updates.")
+	case .Downloading:
+		return tr("Downloading an update.")
+	case .Ready:
+		return fmt.tprintf(tr("White Noise %s is ready to install."), update_version())
+	case .Failed:
+		return tr("Couldn't check for updates. Please try again.")
+	}
+	return ""
+}
+
+@(private = "file")
+update_feedback :: proc(id: string, phase: Update_Phase) {
+	progress: i32 = -1
+	when ODIN_OS == .Linux {
+		if phase == .Downloading {progress = appimage_update_progress()}
+	}
+	if progress < 0 {
+		busy_bar(id)
+		clay.Text(
+			tr("Progress is indeterminate."),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+		)
+		return
+	}
+	if clay.UI(clay.ID(id))(
+	{
+		layout = {sizing = {clay.SizingFixed(180), clay.SizingFixed(4)}},
+		backgroundColor = ROW_BG,
+		cornerRadius = rr(2),
+	},
+	) {
+		if clay.UI(clay.ID(id, 1))(
+		{
+			layout = {
+				sizing = {
+					clay.SizingPercent(f32(clamp(progress, 0, 100)) / 100),
+					clay.SizingFixed(4),
+				},
+			},
+			backgroundColor = ACCENT,
+			cornerRadius = rr(2),
+		},
+		) {}
+	}
+	clay.Text(
+		fmt.tprintf("%d%%", progress),
+		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+	)
 }
 
 // Settings → About row: current state plus a manual check.
@@ -275,6 +367,32 @@ update_settings_row :: proc() {
 	}
 	if clay.UI(clay.ID("AboutUpdateGroup"))(settings_box()) {
 		settings_group(tr("Updates"))
+		when ODIN_OS == .Darwin {
+			if status := macos_update_status(); status != "" {
+				clay.Text(tr(status), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
+			}
+			if macos_update_available() {
+				settings_check(
+					"TgUpdates",
+					macos_update_auto(),
+					tr("Automatically check for updates"),
+					tr("Sparkle manages update checks and downloads."),
+				)
+				if macos_update_can_check() {settings_button("UpdateCheck", tr("Check now"))}
+			}
+			return
+		} else when ODIN_OS == .Linux {
+			if g_prefs != nil {
+				settings_check(
+					"TgUpdates",
+					g_prefs.auto_updates,
+					tr("Automatically download updates"),
+					tr(
+						"Check every six hours and download signed updates. Restart when you choose.",
+					),
+				)
+			}
+		}
 		if clay.UI(clay.ID("AboutUpdateRow"))(
 		{
 			layout = {
@@ -284,20 +402,7 @@ update_settings_row :: proc() {
 			},
 		},
 		) {
-			status: string
-			switch phase {
-			case .Off, .Idle:
-				status = tr("You have the latest version.")
-			case .Checking:
-				status = tr("Checking for updates.")
-			case .Downloading:
-				status = tr("Downloading an update.")
-			case .Ready:
-				status = fmt.tprintf(tr("White Noise %s is ready to install."), update_version())
-			case .Failed:
-				status = tr("Couldn't check for updates. Please try again.")
-			}
-			clay.Text(status, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
+			clay.Text(update_status(phase), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
 			if clay.UI(clay.ID("AboutUpdateGap"))(
 			{layout = {sizing = {width = clay.SizingGrow()}}},
 			) {}
@@ -307,6 +412,8 @@ update_settings_row :: proc() {
 				settings_button("UpdateCheck", tr("Check now"))
 			}
 		}
+		if phase == .Checking ||
+		   phase == .Downloading {update_feedback("UpdateSettingsProgress", phase)}
 	}
 }
 
@@ -318,7 +425,14 @@ update_handle :: proc() {
 		updater.dismissed = true
 	}
 	if clicked("UpdateCheck") {
-		sync.atomic_store(&updater.phase, .Checking) // immediate feedback; the worker is idle
-		sync.sema_post(&updater.wake)
+		updater.dismissed = false
+		when ODIN_OS == .Linux {
+			appimage_update_check()
+		} else when ODIN_OS == .Darwin {
+			if macos_update_can_check() {macos_update_check()}
+		} else when ODIN_OS == .Windows {
+			sync.atomic_store(&updater.phase, .Checking)
+			sync.sema_post(&updater.wake)
+		}
 	}
 }

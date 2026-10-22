@@ -272,6 +272,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 	defer gate_join()
 	shot := os.get_env("WN_SHOT", context.temp_allocator) != ""
 	for frame := 0; !rl.WindowShouldClose(); frame += 1 {
+		when ODIN_OS == .Darwin {macos_update_tick()}
 		if dev_reload_poll() {return false}
 		defer free_all(context.temp_allocator)
 		anim_tick(rl.GetFrameTime()) // the gate runs its own loop, so it steps its own motion

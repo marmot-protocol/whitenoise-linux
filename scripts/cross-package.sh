@@ -119,6 +119,16 @@ else
   cp "$HERE/vendor/libplacebo/LICENSE" "$RES/licenses/libplacebo.txt"
 fi
 if [ "$SYSTEM" = darwin ]; then
+  SPARKLE="${WN_CROSS_SPARKLE:?cross-build.sh must provide Sparkle distribution}"
+  read -r MAC_BUILD_VERSION MAC_DISPLAY_VERSION < <(bun "$HERE/scripts/sparkle-package.js" versions "$VERSION")
+  SPARKLE_PUBLIC_KEY="$(tr -d '\r\n' < "$HERE/packaging/sparkle-public-key.txt")"
+  if [[ ! "$SPARKLE_PUBLIC_KEY" =~ ^[A-Za-z0-9+/]{43}=$ ]]; then
+    echo 'Invalid committed Sparkle Ed25519 public key' >&2; exit 2
+  fi
+  # No unsigned release feed: fail before packaging an advertised update.
+  if { [ -n "${WN_RELEASE_VERSION:-}" ] || [ "${GITHUB_REF_TYPE:-}" = tag ]; } && [ -z "${WN_SPARKLE_PRIVATE_KEY:-}" ]; then
+    echo 'macOS release packaging requires WN_SPARKLE_PRIVATE_KEY' >&2; exit 2
+  fi
   mkdir -p "$STAGE/Contents/Frameworks"
   cat > "$STAGE/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -128,7 +138,13 @@ if [ "$SYSTEM" = darwin ]; then
 <key>CFBundleIdentifier</key><string>dev.ipf.whitenoise</string>
 <key>CFBundleName</key><string>White Noise</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>$VERSION</string>
+<key>CFBundleShortVersionString</key><string>$MAC_DISPLAY_VERSION</string>
+<key>CFBundleVersion</key><string>$MAC_BUILD_VERSION</string>
+<key>SUFeedURL</key><string>https://github.com/marmot-protocol/whitenoise-linux/releases/latest/download/appcast-${TARGET#darwin-}.xml</string>
+<key>SUPublicEDKey</key><string>$SPARKLE_PUBLIC_KEY</string>
+<key>SUVerifyUpdateBeforeExtraction</key><true/>
+<key>SURequireSignedFeed</key><true/>
+<key>SUSignedFeedFailureExpirationInterval</key><integer>0</integer>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>NSMicrophoneUsageDescription</key><string>Record voice messages and transcribe speech.</string>
 <key>NSHighResolutionCapable</key><true/>
@@ -160,6 +176,21 @@ if [ "$SYSTEM" = windows ]; then
     "$RES/wn-mesh.exe" "$RES/wn-fbx.exe" "$RES/wn-math.exe" "$RES/wn-nes.exe"
 fi
 if [ "$SYSTEM" = darwin ]; then
+  # Do not let cross-bundle relocate, flatten, or invalidate Sparkle's nested
+  # helpers. ditto retains the versioned framework symlinks and permissions.
+  ditto "$SPARKLE/Sparkle.framework" "$STAGE/Contents/Frameworks/Sparkle.framework"
+  cp "$SPARKLE/LICENSE" "$RES/licenses/sparkle.txt"
+  # Upstream's Developer-ID helpers cannot authenticate an ad-hoc host over
+  # Sparkle IPC. Re-sign the intact nested code inside-out for this host,
+  # preserving helper entitlements. This is NOT publisher authentication;
+  # only the mandatory EdDSA archive/feed signatures establish update trust.
+  SPARKLE_FRAMEWORK="$STAGE/Contents/Frameworks/Sparkle.framework"
+  for service in "$SPARKLE_FRAMEWORK/Versions/B/XPCServices/"*.xpc; do
+    codesign --force --sign - --timestamp=none --preserve-metadata=entitlements "$service"
+  done
+  codesign --force --sign - --timestamp=none --preserve-metadata=entitlements "$SPARKLE_FRAMEWORK/Versions/B/Autoupdate"
+  codesign --force --sign - --timestamp=none --preserve-metadata=entitlements "$SPARKLE_FRAMEWORK/Versions/B/Updater.app"
+  codesign --force --sign - --timestamp=none --preserve-metadata=entitlements "$SPARKLE_FRAMEWORK"
   # Install-name changes above invalidate signatures, and Apple silicon runs
   # no unsigned code. Sign every Mach-O file inside-out (helpers also live in
   # Resources, which --deep skips), then the bundle. Ad-hoc: no Developer ID
@@ -178,7 +209,7 @@ if [ "$SYSTEM" = darwin ]; then
       esac
     done
   }
-  sign_macho < <(find "$STAGE/Contents" -type f ! -path "$STAGE/Contents/MacOS/*" -print0)
+  sign_macho < <(find "$STAGE/Contents" -type f ! -path "$STAGE/Contents/MacOS/*" ! -path "$SPARKLE_FRAMEWORK/*" -print0)
   sign_macho < <(find "$STAGE/Contents/MacOS" -type f -print0)
   codesign --force --sign - --timestamp=none "$STAGE"
   codesign --verify --strict --deep "$STAGE"
@@ -227,5 +258,10 @@ elif [ "$SYSTEM" = windows ]; then
   (cd "$OUT/package" && zip -qr "$HERE/dist/$NAME.zip" "$NAME")
 else
   tar -C "$OUT/package" -czf "$HERE/dist/$NAME.tar.gz" "$NAME"
+  if [ "$SYSTEM" = darwin ] && [ -n "${WN_SPARKLE_PRIVATE_KEY:-}" ]; then
+    bun "$HERE/scripts/sparkle-package.js" publish "$HERE/dist/$NAME.tar.gz" "$VERSION" \
+      "${TARGET#darwin-}" "$SPARKLE" "$HERE/packaging/sparkle-public-key.txt" \
+      "$HERE/dist/appcast-${TARGET#darwin-}.xml"
+  fi
 fi
 printf 'Packaged %s\n' "$NAME"

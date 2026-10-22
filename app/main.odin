@@ -425,6 +425,10 @@ app_main :: proc() {
 			home = os.args[1]
 		}
 	}
+	when ODIN_OS == .Darwin {
+		relaunch_home := macos_update_relaunch_home()
+		if len(os.args) <= 1 {home = relaunch_home} else {delete(relaunch_home)}
+	}
 	if len(home) == 0 {
 		data, err := os.user_data_dir(context.temp_allocator)
 		if err != nil {
@@ -818,6 +822,7 @@ app_main :: proc() {
 		frame_input: bool
 		for !rl.WindowShouldClose(&frame_input) {
 			frame_start := time.tick_now()
+			when ODIN_OS == .Darwin {macos_update_tick()}
 			if ui.lock_requested {lock_wait_frame(); break}
 			if dev_reload_poll(&ui) {break}
 			defer free_all(context.temp_allocator)

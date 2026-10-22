@@ -180,6 +180,32 @@ button. The portable zip updates the same way, in place. A build run from
 anywhere else (a development build, a staging zip) has no updater and shows
 no update UI.
 
+AppImage builds use [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate)
+for signed delta updates. In Settings, About, choose "Check now" to check and
+download, or enable "Automatically download updates" to check at launch and
+every six hours. Automatic downloads are off until you enable them. Downloads
+show progress without blocking chat. "Restart now" saves your drafts and
+relaunches the updated AppImage with the same data directory. "Later" leaves
+the current version running; a normal quit installs the download for your next
+launch. The updater preserves the original filename and
+keeps the previous image for rollback. Updates must carry a valid signature
+from the installed image's signing key and a newer version, including the
+same-day revision. The AppImage must be in a writable, privately controlled directory.
+
+macOS builds use [Sparkle](https://sparkle-project.org) for update checks,
+download progress, and installation. Settings, About has "Check now" and an
+automatic-checking preference. Sparkle asks for permission to check
+automatically and verifies the update archive's Ed25519 signature before
+extraction. Installing an update saves your drafts before quitting and
+preserves your data directory on relaunch.
+
+AppImage and macOS update checks are disabled while a SOCKS5 proxy is
+configured, because their update frameworks cannot use the app's proxy
+settings safely. Download a release manually instead. Flatpak, AUR, other
+tarballs, and development builds do not use these self-updaters. Existing
+AppImage and macOS versions without an updater need one manual upgrade to
+an updater-capable release.
+
 Windows and macOS builds do not run webxdc (`.xdc`) apps. Linux retains its
 WebKitGTK webxdc viewer. Ordinary attachments, video, PDFs, 3D previews,
 speech and dictation are not disabled on the other targets.
@@ -533,6 +559,23 @@ base64 keystore file, such as a `.p12`) or secret `JSIGN_KEYSTORE` (a cloud
 keystore name or endpoint). Local builds sign when the same `JSIGN_*`
 variables are passed to the container. Staging builds (a non-release version)
 keep a plain zip and never join the update feed.
+
+AppImage releases require the `WN_APPIMAGE_SIGNING_KEY` Actions secret, an
+armored GPG private key matching `packaging/appimage-update-key.asc`.
+`scripts/sign-appimage.sh` embeds that identity and the signature in the
+image. Build its isolated updater with `scripts/build-appimage-updater.sh`
+and stage with `WN_PACKAGE_APPIMAGE=1 scripts/install-tree.sh AppDir/usr whitenoise`.
+Ordinary Linux builds compile only the small process bridge and do not build
+or ship the delta updater.
+
+macOS releases require `WN_SPARKLE_PRIVATE_KEY`, a base64 Ed25519 seed
+matching `packaging/sparkle-public-key.txt`. Each architecture publishes its
+own signed update archive and `appcast-<arch>.xml` on the GitHub release.
+The public keys are committed; private keys stay in Actions secrets and
+maintainer backups. Missing or mismatched release keys fail packaging.
+Sparkle archive signatures authenticate updates independently of the
+bundle's ad-hoc code signature; they do not add Developer ID signing or
+notarization.
 
 ngit staging uses `.ngit/act/workflows/release-cross.yml` alongside the
 existing x86-64 AppImage workflow. The act worker needs Podman with working

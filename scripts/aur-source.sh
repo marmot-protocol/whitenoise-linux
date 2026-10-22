@@ -61,7 +61,7 @@ done
 # Every download build.sh and build-tts.sh fetch on x86_64.
 files=()
 while read -r name sha url; do
-  if [ "$name" = sherpa-onnx-aarch64 ]; then
+  if [ "$name" = sherpa-onnx-aarch64 ] || [ "$name" = sparkle ]; then
     continue
   fi
   sources+=("$name::$url")

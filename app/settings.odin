@@ -16,6 +16,7 @@ import "core:thread"
 Prefs :: struct {
 	// General
 	launch_at_login:       bool,
+	auto_updates:          bool, // AppImage checks/downloads; opt-in, macOS uses Sparkle defaults
 	tts_enabled:           bool,
 	stt_enabled:           bool,
 	stt_model:             string,

@@ -1,0 +1,46 @@
+diff --git a/src/signing/signaturevalidator.cpp b/src/signing/signaturevalidator.cpp
+--- a/src/signing/signaturevalidator.cpp
++++ b/src/signing/signaturevalidator.cpp
+@@ -166,7 +166,7 @@
+             SignatureValidationResult::ResultType resultType = SignatureValidationResult::ResultType::SUCCESS;
+ 
+             // there should not be more than one signature, but we don't know for sure
+-            do {
++            for (; signature != nullptr; signature = signature->next) {
+                 fingerprints.emplace_back(signature->fpr);
+ 
+                 message << "Signature checked for key with fingerprint " << signature->fpr << ": ";
+@@ -224,7 +224,7 @@
+                 }
+ 
+                 message << join(summaryInfos, ", ") << std::endl;
+-            } while (signature->next != nullptr);
++            }
+ 
+             switch (resultType) {
+                 case SignatureValidationResult::ResultType::SUCCESS: {
+@@ -314,6 +314,7 @@
+         explicit Private() {
+             std::string tempGpgHomeDirTemplate = std::filesystem::temp_directory_path() / "appimageupdate-XXXXXX";
+             std::vector<char> tempGpgHomeDirCStr(tempGpgHomeDirTemplate.begin(), tempGpgHomeDirTemplate.end());
++            tempGpgHomeDirCStr.push_back('\0');
+ 
+             if (mkdtemp(tempGpgHomeDirCStr.data()) == nullptr) {
+                 const auto error = errno;
+diff --git a/src/updater/updater.cpp b/src/updater/updater.cpp
+--- a/src/updater/updater.cpp
++++ b/src/updater/updater.cpp
+@@ -224,7 +224,12 @@
+         }
+     }
+ 
+-    Updater::~Updater() = default;
++    Updater::~Updater() {
++        if (d->thread != nullptr) {
++            d->thread->join();
++            delete d->thread;
++        }
++    }
+ 
+     void Updater::runUpdate() {
+         // alias for private function

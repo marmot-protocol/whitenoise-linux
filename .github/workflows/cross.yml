@@ -18,6 +18,8 @@ on:
         required: false
       JSIGN_STOREPASS:
         required: false
+      WN_SPARKLE_PRIVATE_KEY:
+        required: false
   workflow_dispatch:
     inputs:
       version:
@@ -297,6 +299,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install pinned build tools
         run: scripts/macos-setup.sh "$RUNNER_TEMP/tools"
+      - name: Require macOS release signing key
+        if: inputs.version != '' || github.ref_type == 'tag'
+        env:
+          WN_SPARKLE_PRIVATE_KEY: ${{ secrets.WN_SPARKLE_PRIVATE_KEY }}
+        run: test -n "$WN_SPARKLE_PRIVATE_KEY" || { echo 'Missing WN_SPARKLE_PRIVATE_KEY for macOS release' >&2; exit 1; }
       # vcpkg's binary cache and the marmot-c archive, as in the Linux job:
       # keyed on their inputs and saved right after the build.
       - name: Restore vcpkg binary cache
@@ -333,6 +340,7 @@ jobs:
       - name: Build and package
         env:
           WN_RELEASE_VERSION: ${{ inputs.version }}
+          WN_SPARKLE_PRIVATE_KEY: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && (inputs.version != '' || github.ref_type == 'tag') && secrets.WN_SPARKLE_PRIVATE_KEY || '' }}
           WN_METRICS_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
           WN_AUDIT_WRITE_TOKEN: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         run: |
@@ -390,6 +398,15 @@ jobs:
           arch "-$cpu" build/decoder-limits-test
           clang -arch "$cpu" -O2 -Wall -Wextra -Werror tests/timestamp-test.c app/timestamp.c -o build/timestamp-test
           arch "-$cpu" build/timestamp-test
+      - name: Check Sparkle metadata, publisher trust, and nonbundle behavior
+        run: |
+          source "$RUNNER_TEMP/tools/env"
+          bun test tests/sparkle-package.test.js
+          cpu=arm64
+          if [ '${{ matrix.target }}' = darwin-amd64 ]; then cpu=x86_64; fi
+          clang -arch "$cpu" -O2 -Wall -Wextra -Werror tests/sparkle-bridge-test.c \
+            build/cross/${{ matrix.target }}/libwnsparkle.a -framework Cocoa -lobjc -o build/sparkle-bridge-test
+          arch "-$cpu" build/sparkle-bridge-test
       - name: Extract and execute shipped package
         run: |
           source "$RUNNER_TEMP/tools/env"
@@ -401,7 +418,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cross-${{ matrix.target }}
-          path: dist/*-${{ matrix.target }}.tar.gz
+          path: |
+            dist/*-${{ matrix.target }}.tar.gz
+            dist/appcast-${{ matrix.target == 'darwin-arm64' && 'arm64' || 'amd64' }}.xml
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:

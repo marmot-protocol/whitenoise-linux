@@ -516,7 +516,23 @@ msgstr ""
 msgid "Author"
 msgstr ""
 
+#, c-format
 msgid "Author: %s"
+msgstr ""
+
+msgid "Automatic AppImage updates are unavailable with SOCKS5 enabled. Update the AppImage manually."
+msgstr ""
+
+msgid "Automatic updates are disabled in development builds."
+msgstr ""
+
+msgid "Automatic updates require the installed macOS app bundle."
+msgstr ""
+
+msgid "Automatically check for updates"
+msgstr ""
+
+msgid "Automatically download updates"
 msgstr ""
 
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
@@ -760,6 +776,12 @@ msgid "Chats that match file here automatically. People counts include you. A ch
 msgstr ""
 
 msgid "Chats you archive will appear here."
+msgstr ""
+
+msgid "Check every six hours and download signed updates. Restart when you choose."
+msgstr ""
+
+msgid "Check for a newer version."
 msgstr ""
 
 msgid "Check now"
@@ -1268,6 +1290,9 @@ msgstr ""
 msgid "Couldn't load the timeline. %s"
 msgstr ""
 
+msgid "Couldn't load the updater. Please try again."
+msgstr ""
+
 msgid "Couldn't load this event. Check your relay settings and try again."
 msgstr ""
 
@@ -1448,6 +1473,12 @@ msgstr ""
 msgid "Couldn't start reading aloud. Please try again."
 msgstr ""
 
+msgid "Couldn't start the AppImage updater. Please try again."
+msgstr ""
+
+msgid "Couldn't start the updater. Please try again."
+msgstr ""
+
 msgid "Couldn't start transcription. Please try again."
 msgstr ""
 
@@ -1481,6 +1512,9 @@ msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr ""
 
 msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
+msgstr ""
+
+msgid "Couldn't verify the update. Please try again."
 msgstr ""
 
 msgid "Couldn't verify your signer. Reconnect to the intended signer."
@@ -1795,6 +1829,7 @@ msgstr ""
 msgid "Editing message"
 msgstr ""
 
+#, c-format
 msgid "Editor: %s"
 msgstr ""
 
@@ -4065,6 +4100,9 @@ msgstr ""
 msgid "Source"
 msgstr ""
 
+msgid "Sparkle manages update checks and downloads."
+msgstr ""
+
 msgid "Speech"
 msgstr ""
 
@@ -4237,6 +4275,12 @@ msgid "That isn't your current password. Double-check it and try again."
 msgstr ""
 
 msgid "That key isn't an nsec. Double-check it and try again."
+msgstr ""
+
+msgid "The AppImage folder is not writable. Move it to a writable folder to enable updates."
+msgstr ""
+
+msgid "The AppImage folder is shared or has unsafe permissions. Move it to a private folder to enable updates."
 msgstr ""
 
 msgid "The chat leaves your list. Joining later needs a new invite."
@@ -4503,6 +4547,9 @@ msgid "Untitled emoji set"
 msgstr ""
 
 msgid "Updates"
+msgstr ""
+
+msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot safely use the app's explicit proxy. Disable the proxy and restart to update, or install an authenticated release manually."
 msgstr ""
 
 msgid "Updating issue tracking..."

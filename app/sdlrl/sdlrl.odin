@@ -621,6 +621,11 @@ SetHideOnClose :: proc(on: bool) {
 	hide_on_close = on
 }
 
+// Main-thread application actions must not be swallowed as close-to-tray events.
+RequestQuit :: proc() {
+	state.quit = true
+}
+
 SetWindowSize :: proc(w, h: i32) {
 	_ = sdl.SetWindowSize(state.window, c.int(w), c.int(h))
 }

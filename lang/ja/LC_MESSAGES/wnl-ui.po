@@ -517,8 +517,24 @@ msgstr "8月"
 msgid "Author"
 msgstr "作者"
 
+#, c-format
 msgid "Author: %s"
 msgstr "著者: %s"
+
+msgid "Automatic AppImage updates are unavailable with SOCKS5 enabled. Update the AppImage manually."
+msgstr "SOCKS5が有効な間はAppImageの自動アップデートを利用できません。AppImageを手動でアップデートしてください。"
+
+msgid "Automatic updates are disabled in development builds."
+msgstr "開発ビルドでは自動アップデートが無効になっています。"
+
+msgid "Automatic updates require the installed macOS app bundle."
+msgstr "自動アップデートにはインストール済みのmacOSアプリバンドルが必要です。"
+
+msgid "Automatically check for updates"
+msgstr "アップデートを自動的に確認"
+
+msgid "Automatically download updates"
+msgstr "アップデートを自動的にダウンロード"
 
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr "画像と対応ウェブサイトのプレビューを自動的に読み込みます。配信元の運営者にはあなたのIPアドレスが見えます。オフにするとリンクのプレビューの自動読み込みは停止しますが、添付ファイルのダウンロードは継続されます。"
@@ -764,6 +780,12 @@ msgstr "条件に合うチャットは自動でここに入ります。人数に
 
 msgid "Chats you archive will appear here."
 msgstr "アーカイブしたチャットがここに表示されます。"
+
+msgid "Check every six hours and download signed updates. Restart when you choose."
+msgstr "6時間ごとに確認し、署名付きのアップデートをダウンロードします。再起動は好きなタイミングで行えます。"
+
+msgid "Check for a newer version."
+msgstr "新しいバージョンを確認します。"
 
 msgid "Check now"
 msgstr "今すぐ確認"
@@ -1272,6 +1294,9 @@ msgstr "ステッカーを読み込めませんでした。もう一度お試し
 msgid "Couldn't load the timeline. %s"
 msgstr "タイムラインを読み込めませんでした。%s"
 
+msgid "Couldn't load the updater. Please try again."
+msgstr "アップデーターを読み込めませんでした。もう一度お試しください。"
+
 msgid "Couldn't load this event. Check your relay settings and try again."
 msgstr "このイベントを読み込めませんでした。リレー設定を確認して、もう一度お試しください。"
 
@@ -1452,6 +1477,12 @@ msgstr "%sを起動できませんでした。このカートリッジの種類�
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "読み上げを開始できませんでした。もう一度お試しください。"
 
+msgid "Couldn't start the AppImage updater. Please try again."
+msgstr "AppImageのアップデーターを起動できませんでした。もう一度お試しください。"
+
+msgid "Couldn't start the updater. Please try again."
+msgstr "アップデーターを起動できませんでした。もう一度お試しください。"
+
 msgid "Couldn't start transcription. Please try again."
 msgstr "文字起こしを開始できませんでした。もう一度お試しください。"
 
@@ -1486,6 +1517,9 @@ msgstr "そのテーマを使用できませんでした。このバージョン
 
 msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
 msgstr "ステッカーを使用できませんでした。4096ピクセル以下の静止画PNG、WebP、JPEGを選んでください。"
+
+msgid "Couldn't verify the update. Please try again."
+msgstr "アップデートを検証できませんでした。もう一度お試しください。"
 
 msgid "Couldn't verify your signer. Reconnect to the intended signer."
 msgstr "署名者を検証できませんでした。目的の署名者に再接続してください。"
@@ -1800,6 +1834,7 @@ msgstr "最後に送ったメッセージを編集（入力欄が空のとき）
 msgid "Editing message"
 msgstr "メッセージを編集中"
 
+#, c-format
 msgid "Editor: %s"
 msgstr "編集者: %s"
 
@@ -4071,6 +4106,9 @@ msgstr "音が鳴りません"
 msgid "Source"
 msgstr "出典"
 
+msgid "Sparkle manages update checks and downloads."
+msgstr "Sparkleがアップデートの確認とダウンロードを管理します。"
+
 msgid "Speech"
 msgstr "音声"
 
@@ -4244,6 +4282,12 @@ msgstr "現在のパスワードと一致しません。確認して、もう一
 
 msgid "That key isn't an nsec. Double-check it and try again."
 msgstr "このキーはnsecではありません。確認して、もう一度お試しください。"
+
+msgid "The AppImage folder is not writable. Move it to a writable folder to enable updates."
+msgstr "AppImageのフォルダーに書き込めません。アップデートを有効にするには、AppImageを書き込み可能なフォルダーに移動してください。"
+
+msgid "The AppImage folder is shared or has unsafe permissions. Move it to a private folder to enable updates."
+msgstr "AppImageのフォルダーは共有されているか、アクセス権限が安全ではありません。アップデートを有効にするには、AppImageを自分専用のフォルダーに移動してください。"
 
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr "チャットが一覧から消えます。後で参加するには新しい招待が必要です。"
@@ -4511,6 +4555,9 @@ msgstr "無題の絵文字セット"
 
 msgid "Updates"
 msgstr "アップデート"
+
+msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot safely use the app's explicit proxy. Disable the proxy and restart to update, or install an authenticated release manually."
+msgstr "SOCKS5プロキシが設定されている間はアップデートが無効になります。Sparkleはアプリのプロキシを安全に使用できません。プロキシを無効にして再起動するか、認証済みのリリースを手動でインストールしてください。"
 
 msgid "Updating issue tracking..."
 msgstr "問題の追跡を更新しています..."

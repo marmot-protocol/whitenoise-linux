@@ -55,7 +55,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            pkg-config cmake ninja-build clang git curl \
+            pkg-config cmake ninja-build clang git curl gnupg libgpgme-dev libboost-filesystem-dev nlohmann-json3-dev \
+            autoconf automake libtool libgcrypt20-dev libx11-dev libxpm-dev liblzma-dev libzstd-dev libfuse-dev zlib1g-dev patchelf librsvg2-dev zsync squashfs-tools \
             libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
             libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev libxtst-dev \
             file desktop-file-utils wget ca-certificates unzip librsvg2-bin
@@ -133,7 +134,19 @@ jobs:
         if: always()
         run: rm -f build/observability-tokens.toml
 
+      - name: Build AppImage updater
+        run: bash scripts/build-appimage-updater.sh
+
+      - name: Install pinned Bun for update smoke
+        run: |
+          curl -fsSL https://github.com/oven-sh/bun/releases/download/bun-v1.3.10/bun-linux-x64.zip -o "$RUNNER_TEMP/bun.zip"
+          echo "f57bc0187e39623de716ba3a389fda5486b2d7be7131a980ba54dc7b733d2e08  $RUNNER_TEMP/bun.zip" | sha256sum -c -
+          unzip -qo "$RUNNER_TEMP/bun.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/bun-linux-x64" >> "$GITHUB_PATH"
+
       - name: Assemble AppDir
+        env:
+          WN_PACKAGE_APPIMAGE: "1"
         run: |
           rm -rf AppDir
           scripts/install-tree.sh AppDir/usr whitenoise
@@ -149,7 +162,12 @@ jobs:
           echo "$APPIMAGETOOL_SHA256  appimagetool" | sha256sum -c -
           chmod +x linuxdeploy appimagetool
 
+      - name: Exercise signed AppImage upgrades
+        run: bun tests/appimage-update-smoke.ts ./appimagetool ./build/wn-appimage-update
+
       - name: Build AppImage
+        env:
+          WN_APPIMAGE_SIGNING_KEY: ${{ secrets.WN_APPIMAGE_SIGNING_KEY }}
         run: |
           set -euo pipefail
           # SDL3 lives outside the default search path, so point linuxdeploy
@@ -164,10 +182,7 @@ jobs:
             --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
           out="WhiteNoise-${GITHUB_REF_NAME}-x86_64.AppImage"
-          # -u embeds update info and emits a .zsync next to the AppImage,
-          # so AppImageUpdate can delta-update against the latest release.
-          ./appimagetool -u "gh-releases-zsync|marmot-protocol|whitenoise-linux|latest|WhiteNoise-*-x86_64.AppImage.zsync" \
-            AppDir "$out"
+          bash scripts/sign-appimage.sh ./appimagetool AppDir "$out"
           echo "APPIMAGE_NAME=$out" >> "$GITHUB_ENV"
 
       # A smoke test of the packaged artifact, not of the app: SDL's dummy
@@ -439,11 +454,13 @@ jobs:
             dist/*-Setup.exe
             dist/*.nupkg
             dist/*.win.json
+            dist/appcast-*.xml
             dist/RELEASES
             dist/SHA256SUMS.txt
           name: ${{ steps.notes.outputs.name || github.ref_name }}
           body_path: release-notes.md
           generate_release_notes: ${{ steps.notes.outputs.generate == 'true' }}
+          prerelease: false
           fail_on_unmatched_files: true
 
   # Point the AUR at the release just published: render whitenoise-linux-bin

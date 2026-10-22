@@ -517,8 +517,24 @@ msgstr "Aug."
 msgid "Author"
 msgstr "Autor"
 
+#, c-format
 msgid "Author: %s"
 msgstr "Autor: %s"
+
+msgid "Automatic AppImage updates are unavailable with SOCKS5 enabled. Update the AppImage manually."
+msgstr "Automatische AppImage-Updates sind mit aktiviertem SOCKS5 nicht verfügbar. Aktualisiere das AppImage manuell."
+
+msgid "Automatic updates are disabled in development builds."
+msgstr "In Entwicklungsbuilds sind automatische Updates deaktiviert."
+
+msgid "Automatic updates require the installed macOS app bundle."
+msgstr "Automatische Updates benötigen das installierte macOS-App-Bundle."
+
+msgid "Automatically check for updates"
+msgstr "Automatisch nach Updates suchen"
+
+msgid "Automatically download updates"
+msgstr "Updates automatisch herunterladen"
 
 msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
 msgstr "Vorschauen von Bildern und unterstützten Websites werden automatisch geladen. Deren Betreiber können deine IP-Adresse sehen. Wenn du dies ausschaltest, werden Linkvorschauen nicht mehr automatisch geladen. Anhänge werden weiterhin heruntergeladen."
@@ -764,6 +780,12 @@ msgstr "Passende Chats landen automatisch hier. Die Personenzahl schließt dich 
 
 msgid "Chats you archive will appear here."
 msgstr "Chats, die du archivierst, erscheinen hier."
+
+msgid "Check every six hours and download signed updates. Restart when you choose."
+msgstr "Alle sechs Stunden nach Updates suchen und signierte Updates herunterladen. Du entscheidest, wann du neu startest."
+
+msgid "Check for a newer version."
+msgstr "Nach einer neueren Version suchen."
 
 msgid "Check now"
 msgstr "Jetzt prüfen"
@@ -1272,6 +1294,9 @@ msgstr "Der Sticker konnte nicht geladen werden. Bitte versuche es erneut."
 msgid "Couldn't load the timeline. %s"
 msgstr "Der Verlauf konnte nicht geladen werden. %s"
 
+msgid "Couldn't load the updater. Please try again."
+msgstr "Der Updater konnte nicht geladen werden. Bitte versuche es erneut."
+
 msgid "Couldn't load this event. Check your relay settings and try again."
 msgstr "Dieses Ereignis konnte nicht geladen werden. Prüfe deine Relay-Einstellungen und versuche es erneut."
 
@@ -1452,6 +1477,12 @@ msgstr "%s konnte nicht gestartet werden. Dieser Modultyp wird nicht unterstütz
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "Das Vorlesen konnte nicht gestartet werden. Bitte versuche es erneut."
 
+msgid "Couldn't start the AppImage updater. Please try again."
+msgstr "Der AppImage-Updater konnte nicht gestartet werden. Bitte versuche es erneut."
+
+msgid "Couldn't start the updater. Please try again."
+msgstr "Der Updater konnte nicht gestartet werden. Bitte versuche es erneut."
+
 msgid "Couldn't start transcription. Please try again."
 msgstr "Die Transkription konnte nicht gestartet werden. Bitte versuche es erneut."
 
@@ -1486,6 +1517,9 @@ msgstr "Dieses Theme konnte nicht verwendet werden. Es ist kein Theme, das diese
 
 msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
 msgstr "Der Sticker konnte nicht verwendet werden. Wähle eine statische PNG-, WebP- oder JPEG-Datei mit höchstens 4096 Pixeln."
+
+msgid "Couldn't verify the update. Please try again."
+msgstr "Das Update konnte nicht überprüft werden. Bitte versuche es erneut."
 
 msgid "Couldn't verify your signer. Reconnect to the intended signer."
 msgstr "Dein Signer konnte nicht überprüft werden. Verbinde dich erneut mit dem gewünschten Signer."
@@ -1800,6 +1834,7 @@ msgstr "Deine letzte Nachricht bearbeiten (leeres Eingabefeld)"
 msgid "Editing message"
 msgstr "Nachricht wird bearbeitet"
 
+#, c-format
 msgid "Editor: %s"
 msgstr "Redakteur: %s"
 
@@ -4071,6 +4106,9 @@ msgstr "Töne werden nicht abgespielt"
 msgid "Source"
 msgstr "Quelle"
 
+msgid "Sparkle manages update checks and downloads."
+msgstr "Sparkle übernimmt die Suche nach Updates und deren Download."
+
 msgid "Speech"
 msgstr "Sprache & Stimme"
 
@@ -4244,6 +4282,12 @@ msgstr "Das ist nicht dein aktuelles Passwort. Überprüfe es und versuche es er
 
 msgid "That key isn't an nsec. Double-check it and try again."
 msgstr "Dieser Schlüssel ist kein nsec. Überprüfe ihn und versuche es erneut."
+
+msgid "The AppImage folder is not writable. Move it to a writable folder to enable updates."
+msgstr "Der AppImage-Ordner ist nicht beschreibbar. Verschiebe das AppImage in einen beschreibbaren Ordner, um Updates zu aktivieren."
+
+msgid "The AppImage folder is shared or has unsafe permissions. Move it to a private folder to enable updates."
+msgstr "Der AppImage-Ordner wird gemeinsam genutzt oder hat unsichere Zugriffsrechte. Verschiebe das AppImage in einen privaten Ordner, um Updates zu aktivieren."
 
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr "Der Chat verschwindet aus deiner Liste. Für einen späteren Beitritt brauchst du eine neue Einladung."
@@ -4511,6 +4555,9 @@ msgstr "Unbenanntes Emoji-Set"
 
 msgid "Updates"
 msgstr "Updates"
+
+msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot safely use the app's explicit proxy. Disable the proxy and restart to update, or install an authenticated release manually."
+msgstr "Updates sind deaktiviert, solange ein SOCKS5-Proxy eingerichtet ist. Sparkle kann den Proxy der App nicht sicher verwenden. Deaktiviere den Proxy und starte die App zum Aktualisieren neu, oder installiere eine authentifizierte Version manuell."
 
 msgid "Updating issue tracking..."
 msgstr "Meldungsverfolgung wird aktualisiert..."

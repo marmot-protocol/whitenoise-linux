@@ -35,6 +35,10 @@ if [ -n "$SPEECH" ]; then cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$LIB/"; 
 mkdir -p "$RES/licenses"
 cp "$HERE/build/wn-font" "$HERE/build/wn-image" "$HERE/build/wn-archive" "$HERE/build/wn-pdf" \
   "$HERE/build/wn-mesh" "$HERE/build/wn-fbx" "$HERE/build/wn-math" "$HERE/build/wn-nes" "$LIB/"
+if [ "${WN_PACKAGE_APPIMAGE:-}" = 1 ]; then
+  cp "$HERE/build/wn-appimage-update" "$LIB/"
+  cp -a "$HERE/build/appimage-update-lib" "$LIB/"
+fi
 cp "$HERE/app/assets/agents/"*-LICENSE.txt "$RES/licenses/"
 cp "$HERE/vendor/crop-circles/LICENSE" "$RES/licenses/crop-circles.txt"
 cp "$HERE/vendor/common-passwords.LICENSE" "$RES/licenses/seclists.txt"

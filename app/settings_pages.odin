@@ -2233,6 +2233,13 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 		apply_tray(ui)
 	case "TgRestore":
 		flip(ui, &ui.prefs.restore_last_chat)
+	case "TgUpdates":
+		when ODIN_OS == .Linux {
+			flip(ui, &ui.prefs.auto_updates)
+			appimage_update_set_mode(ui.prefs.auto_updates ? .Automatic : .Manual)
+		} else when ODIN_OS == .Darwin {
+			macos_update_set_auto(!macos_update_auto())
+		}
 	case "TgMotion":
 		flip(ui, &ui.prefs.reduce_motion)
 	case "TgHandDrawn":
