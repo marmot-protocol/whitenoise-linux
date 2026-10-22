@@ -6,16 +6,19 @@ import "core:strings"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
-login_button :: proc(id_str: string, label: string) {
+login_button :: proc(id_str: string, label: string, primary: bool = false) {
 	if clay.UI(clay.ID(id_str))(
 	{
 		layout = {padding = {left = 18, right = 18, top = 10, bottom = 10}},
-		backgroundColor = hovered() ? ACCENT : ROW_BG,
+		backgroundColor = hovered() || primary ? ACCENT : ROW_BG,
 		cornerRadius = rr(8),
 		border = bevel_border(),
 	},
 	) {
-		clay.Text(label, {fontId = FONT_BODY, fontSize = 16, textColor = hovered() ? BG : TEXT})
+		clay.Text(
+			label,
+			{fontId = FONT_BODY, fontSize = 16, textColor = primary ? ON_ACCENT : hovered() ? BG : TEXT},
+		)
 	}
 }
 
