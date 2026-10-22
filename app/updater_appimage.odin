@@ -1,3 +1,4 @@
+#+build linux
 package main
 
 import "core:strings"
