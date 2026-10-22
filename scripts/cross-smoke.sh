@@ -91,7 +91,12 @@ if [ "$target" = linux-arm64 ] || [ "$target" = linux-amd64 ]; then
     rm "$view/usr/bin/whitenoise"
     cp "$exe" "$view/usr/bin/whitenoise"
     qemu="$(command -v "qemu-$cpu")"
-    for helper in "$root/usr/bin/"* "$root/usr/share/whitenoise-linux/"wn-*; do
+    # Linux packages put decoder programs in usr/lib/whitenoise-linux, not
+    # usr/bin or usr/share. An unwrapped aarch64 helper is exec'd by the host.
+    for helper in "$root/usr/bin/"* \
+      "$root/usr/lib/whitenoise-linux/"wn-* \
+      "$root/usr/lib/whitenoise-linux/curl" \
+      "$root/usr/share/whitenoise-linux/"wn-*; do
       [ -f "$helper" ] && [ -x "$helper" ] || continue
       [ "$helper" != "$exe" ] || continue
       file --brief "$helper" | grep -q '^ELF ' || continue
