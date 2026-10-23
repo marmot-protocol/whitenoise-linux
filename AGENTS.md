@@ -191,6 +191,11 @@ visible after reflow through the deferred settings scroll.
 `tests/app/shell_test.odin` exercises these boundaries through `build_layout`,
 including the status bar, at default, short, and zoomed window sizes.
 
+Video tiles render at up to 480 pixels wide. The preview requests its displayed
+physical width, including UI zoom and display density, capped at the source
+width. Resizing repaints paused frames too. Closing a shared fullscreen player
+returns its texture to the inline cap without restarting playback.
+
 Chats keeps DMs and groups in one inbox, with Unread, Groups and Archived
 filters. `Chat_Row_Ui.conversation_kind` preserves the engine's type; UNKNOWN
 falls back to a DM only for an unnamed two-member conversation. Named pairs

@@ -140,6 +140,7 @@ video_tile_bounds :: proc(t: ^testing.T) {
 	testing.expect_value(t, preview.vid.time, 50)
 	if render {
 		view.w, view.h = 1080, 2400
+		view.dw, view.dh = 1080, 2400
 		clay.SetLayoutDimensions({f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())})
 		clay.BeginLayout()
 		preview_modal(&ui)

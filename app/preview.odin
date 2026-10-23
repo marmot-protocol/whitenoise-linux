@@ -640,8 +640,13 @@ preview_close :: proc() {
 	if !preview_shown && preview.name == "" {
 		return
 	}
-	if preview.vid != nil && !preview.vid_shared {
-		video_view_free(preview.vid)
+	if preview.vid != nil {
+		if preview.vid_shared {
+			preview.vid.max_width = 0
+			preview.vid.sized = false
+		} else {
+			video_view_free(preview.vid)
+		}
 	}
 	if preview.mesh != nil {
 		stl_view_free(preview.mesh)
@@ -925,9 +930,14 @@ preview_modal :: proc(ui: ^Ui_State) {
 					}
 					break
 				}
-				ratio := view.w > 0 && view.h > 0 ? f32(view.w) / f32(view.h) : 16.0 / 9.0
+				ratio := view.dw > 0 && view.dh > 0 ? f32(view.dw) / f32(view.dh) : 16.0 / 9.0
 				vw :=
 					full ? min(f32(rl.GetScreenWidth()) / UI_ZOOM, max_h * ratio) : min(fit_w(480), max(1, max_h - PV_CHROME - 30) * ratio)
+				width := max(1, i32(vw * UI_SCALE + 0.5))
+				if view.max_width != width {
+					view.max_width = width
+					view.sized = false // repaint even when playback is paused
+				}
 				if clay.UI(clay.ID("PvVideo"))(
 				{
 					layout = {

@@ -20,8 +20,7 @@ import "core:time"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
-// Texture cap; the tile is 320 layout px (480 physical at UI_ZOOM),
-// mpv's sw scaler brings larger videos down to this.
+// Inline texture cap; previews request their displayed physical width.
 VIDEO_MAX_TEX_W :: 480
 VIDEO_SW_FORMAT: cstring : "rgb0" // R,G,B,X bytes; texture blend is off
 
@@ -33,6 +32,7 @@ Video_View :: struct {
 	tex:                              rl.Texture2D, // streaming; &tex is the clay imageData
 	buf:                              []u8, // sw render target, w*h*4
 	w, h:                             i32, // texture size (placeholder until mpv reports)
+	max_width:                        i32, // preview's physical width; zero uses the inline cap
 	sized:                            bool, // real video dimensions adopted
 	paused:                           bool,
 	looping:                          bool, // GIF mode: autoplay, loop, no scrub bar
@@ -195,9 +195,8 @@ video_view_make :: proc(
 	return view
 }
 
-// Once mpv knows the real dimensions, size the texture to the video's
-// aspect (capped) so the tile stops being a 16:9 placeholder. Returns
-// whether the texture was replaced, which costs its contents.
+// Fit the render target to the requested width without upscaling the source.
+// Returns whether the texture was replaced, which costs its contents.
 @(private = "file")
 adopt_size :: proc(view: ^Video_View) -> bool {
 	w, h := view.dw, view.dh
@@ -206,8 +205,12 @@ adopt_size :: proc(view: ^Video_View) -> bool {
 	}
 	view.sized = true
 
-	tw := min(i64(VIDEO_MAX_TEX_W), w)
+	limit := view.max_width > 0 ? view.max_width : VIDEO_MAX_TEX_W
+	tw := min(i64(limit), w)
 	th := max(1, h * tw / w)
+	if i64(view.w) == tw && i64(view.h) == th {
+		return false
+	}
 	view.w, view.h = i32(tw), i32(th)
 	delete(view.buf)
 	view.buf = make([]u8, int(tw) * int(th) * 4)
@@ -244,8 +247,8 @@ video_view_free :: proc(view: ^Video_View) {
 
 // Per-frame service pass for every live embed (timeline cache plus
 // the preview modal's video); runs on the render thread (texture
-// updates must). mpv decodes on its own threads, the sw blit here is
-// tile-sized and cheap.
+// updates must). mpv decodes on its own threads; only the preview renders
+// above the inline texture cap.
 advance_videos :: proc() {
 	start := time.tick_now()
 	for _, view in video_views {
