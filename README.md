@@ -860,8 +860,8 @@ History catch-up uses MDK's ordered replay and account-owned recovery.
 The `retry-convergence` dev command retries convergence for the selected group.
 Staging recognizes an already-applied prefix of the patch series and applies
 only the remaining patches. Appending a patch does not require resetting
-`vendor/mdk`, even when earlier patches overlap. Conflicting local edits still
-stop staging.
+`vendor/mdk`, even when earlier patches overlap. Local edits outside the files
+touched by the patches are preserved. Conflicting local edits still stop staging.
 Poll creation, voting, and tallies use MDK's native poll APIs and timeline
 projection. `patches/mdk-poll-context.patch` preserves thread and issue context
 through native creation. MDK supports poll creation in direct and group
@@ -873,7 +873,7 @@ Validate MDK patch changes by applying the full `MDK_PATCHES` list, in order,
 to a clean checkout of `mdk-commit`, then checking the already-patched tree.
 A successful reverse check alone can hide an invalid old-file path.
 Run `bash tests/mdk-patches-test.sh` to check fresh staging, reruns, appended
-overlapping patches, and conflicting local edits.
+overlapping patches, preserved unrelated source edits, and conflicting local edits.
 
 Publishing workflows read `WN_METRICS_WRITE_TOKEN` and `WN_AUDIT_WRITE_TOKEN`
 from CI secrets. Configure both on GitHub and on trusted ngit/act publishing

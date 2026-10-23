@@ -7,15 +7,25 @@ MDK_PATCHES=("$@")
 # Compare whole prefixes: later patches can alter earlier reverse-check context.
 mdk_applied_prefix() (
   index="$(mktemp "$MDK/.wn-index.XXXXXX")"
-  trap 'rm -f "$index"' EXIT
+  trap 'rm -f "$index" "$index.paths"' EXIT
   export GIT_INDEX_FILE="$index"
   git -C "$MDK" read-tree HEAD || return 1
+  paths=()
   for patch in "${MDK_PATCHES[@]}"; do
     git -C "$MDK" apply --cached "$patch" || return 1
+    # Keep each prefix's paths, including files a later patch restores to HEAD.
+    git -C "$MDK" diff --cached --name-only --no-renames -z HEAD >"$index.paths" || return 1
+    while IFS= read -r -d '' path; do
+      paths+=("$path")
+    done <"$index.paths"
   done
 
   remaining="${#MDK_PATCHES[@]}"
-  while ! git -C "$MDK" diff --quiet --no-ext-diff; do
+  if [ "${#paths[@]}" -eq 0 ]; then
+    printf '%s\n' "$remaining"
+    return
+  fi
+  while ! git --literal-pathspecs -C "$MDK" diff --quiet --no-ext-diff -- "${paths[@]}"; do
     if [ "$remaining" -eq 0 ]; then
       return 1
     fi

@@ -26,6 +26,7 @@ SOURCE="$MDK/src/lib.rs"
 original='deployment argument was NULL'
 changed="$original [wn-rebuild-$TARGET-${EVIDENCE##*/}]"
 dirty=0
+wine_prefix=
 report() {
   printf '%s\n' "$*"
   if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then printf '%s\n' "$*" >>"$GITHUB_STEP_SUMMARY"; fi
@@ -35,19 +36,36 @@ cleanup() {
   trap - EXIT
   if [ "$dirty" = 1 ]; then
     if cp "$EVIDENCE/lib.rs.original" "$SOURCE"; then
+      dirty=0
       report "Restored MDK source after failure; cached artifacts may still contain the sentinel."
     else
       report "ERROR: restore $SOURCE from $EVIDENCE/lib.rs.original manually."
-      exit 1
+      result=1
     fi
   fi
-  rm -f "$EVIDENCE/lib.rs.original"
+  if [ "$dirty" = 0 ]; then
+    rm -f "$EVIDENCE/lib.rs.original"
+  fi
+  if [ -n "$wine_prefix" ]; then
+    # Wine's dosdevices/z: points at /; never keep its state in uploaded proof.
+    # Stop and reap its server before removing the private runtime directory.
+    if WINEPREFIX="$wine_prefix" wineserver -k && WINEPREFIX="$wine_prefix" wineserver -w; then
+      rm -rf "$wine_prefix"
+    else
+      report "ERROR: could not stop Wine; retained runtime state: $wine_prefix"
+      result=1
+    fi
+  fi
   if [ "$result" != 0 ]; then report "FAIL: $TARGET (exit $result); diagnostics: $EVIDENCE"; fi
   exit "$result"
 }
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
+trap 'exit 129' HUP
+if [ "$TARGET" = windows-amd64 ]; then
+  wine_prefix="$(mktemp -d /tmp/wn-mdk-wine.XXXXXXXX)"
+fi
 
 # Source toolchain setup only in a subshell: its exported target CC and flags
 # must not change the next build's compiler-environment cache fingerprint.
@@ -58,6 +76,8 @@ probe() (
   native | openbsd-amd64)
     cc="${CC:-clang}"
     if [ "$(uname -s)" = Linux ]; then libs+=(-ldl); fi
+    # Match marmot/marmot.odin: OpenBSD's Rust std unwinds through libc++abi.
+    if [ "$(uname -s)" = OpenBSD ]; then libs+=(-lc++abi); fi
     archive="$MDK/output/lib/libmarmot_c.a"
     ;;
   *)
@@ -70,7 +90,7 @@ probe() (
     if [ "$SYSTEM" = Windows ]; then
       binary+=.exe
       libs=(-lws2_32 -luserenv -lbcrypt -lntdll -ladvapi32 -lcrypt32 -liphlpapi -lsecur32 -lshell32 -lole32 -luuid -luser32 -lgdi32)
-      export WINEPREFIX="$EVIDENCE/wine" WINEPATH="$LLVM_MINGW/x86_64-w64-mingw32/bin${WINEPATH:+;$WINEPATH}"
+      export WINEPREFIX="$wine_prefix" WINEPATH="$LLVM_MINGW/x86_64-w64-mingw32/bin${WINEPATH:+;$WINEPATH}"
       run=(xvfb-run -a wine)
     else
       libs+=(-ldl)
