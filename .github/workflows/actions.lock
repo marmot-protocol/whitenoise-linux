@@ -5,9 +5,15 @@ version: 'v0.0.3'
 workflows:
     '.github/workflows/wn-build-server-smoke.yml':
         - 'actions/checkout@v4'
+        - 'actions/upload-artifact@v4'
 dependencies:
     'actions/checkout@v4':
         ref: 'v4'
         commit: 'sha1-11d5960a326750d5838078e36cf38b85af677262'
         owner_id: 44036562
         repo_id: 197814629
+    'actions/upload-artifact@v4':
+        ref: 'v4'
+        commit: 'sha1-ea165f8d65b6e75b540449e92b4886f43607fa02'
+        owner_id: 44036562
+        repo_id: 192625955

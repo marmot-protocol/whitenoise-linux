@@ -1,4 +1,4 @@
-name: WN real build on Arch
+name: WN cross-build verification on Arch
 
 on:
   push:
@@ -8,20 +8,75 @@ permissions:
   contents: read
 
 jobs:
-  smoke:
+  cross:
+    name: Build and boot ${{ matrix.target }}
     runs-on: [self-hosted, Linux, X64, wn-build-server, arch]
-    timeout-minutes: 60
+    timeout-minutes: 180
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        target: [linux-amd64, linux-arm64, windows-amd64]
     steps:
       - uses: actions/checkout@v4
-      - name: Build White Noise
+        with:
+          clean: false
+      - name: Build the repository's cross-toolchain image
+        run: podman build -f packaging/cross/Containerfile -t whitenoise-cross packaging/cross
+      - name: Cross compile and package
+        run: |
+          mkdir -p "$HOME/.cache/vcpkg/archives"
+          podman run --rm -v "$PWD:/work" -v "$HOME/.cache/vcpkg:/root/.cache/vcpkg" \
+            whitenoise-cross '${{ matrix.target }}'
+      - name: Extract and execute the shipped package
         shell: bash
         run: |
           set -euo pipefail
-          test "$(id -un)" = runner
-          test "$(cat /sys/fs/cgroup/system.slice/github-runner.service/cpu.max)" = '1280000 100000'
-          scripts/build.sh
-      - name: Run the built application headless
-        shell: bash
-        run: |
-          set -euo pipefail
-          SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke ./build/app "$(mktemp -d)"
+          target='${{ matrix.target }}'
+          smoke="build/cross-smoke/$target"
+          mkdir -p "$smoke" build/cross-evidence
+          if [ "$target" = windows-amd64 ]; then
+            unzip -q dist/*-windows-amd64.zip -d "$smoke"
+          else
+            tar -xzf dist/*-"$target".tar.gz -C "$smoke"
+          fi
+          root=$(find "$smoke" -mindepth 1 -maxdepth 1 -type d -print -quit)
+          mounts=(-v "$PWD/$root:/release:ro" -v "$PWD/scripts/cross-smoke.sh:/cross-smoke.sh:ro")
+          mounts+=(-v "$PWD/build/cross-evidence:/evidence")
+          args=("$target" /release)
+          if [ "$target" = linux-arm64 ]; then
+            mounts+=(-v "$PWD/build/cross/linux-arm64/sysroot:/target-sysroot:ro")
+            args+=(/target-sysroot)
+          fi
+          podman run --rm --init --workdir /evidence --entrypoint bash "${mounts[@]}" \
+            whitenoise-cross /cross-smoke.sh "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-${{ matrix.target }}
+          path: |
+            dist/*-${{ matrix.target }}.*
+            build/cross-evidence/${{ matrix.target }}.png
+          if-no-files-found: warn
+
+  openbsd:
+    name: Build and boot openbsd-amd64
+    needs: cross
+    if: ${{ !cancelled() }}
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch]
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Build, package, and boot inside OpenBSD 7.9
+        run: bash scripts/wn-server-openbsd-smoke.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-openbsd-amd64
+          path: |
+            dist/*-openbsd-amd64.tar.gz
+            build/openbsd/wn-odin-shot*.png
+            build/openbsd/vm-console.log
+          if-no-files-found: warn
