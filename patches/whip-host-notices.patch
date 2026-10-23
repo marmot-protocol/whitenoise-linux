@@ -1,16 +1,11 @@
 diff --git a/src/gui/app.odin b/src/gui/app.odin
 --- a/src/gui/app.odin
 +++ b/src/gui/app.odin
-@@ -65,7 +65,8 @@
- 	pane_info:      map[proto.Pane_Id]Pane_Info,
- 	info_dirty:     bool,
- 	info_pending:   bool,
--	panes:          map[proto.Pane_Id]^Pane_View,
-+	panes:          map[proto.Pane_Id]^Pane_View,
-+	host_notice:    Host_Notice_Fn, // embedded hosts own attention and delivery
- 	view_ws:        model.Id, // project shown in this window
- 	view_index:     int, // its index, to fall back to a neighbour
- 	tab_choice:     map[model.Id]model.Id, // project -> tab this window shows
+@@ -69,3 +69,4 @@
+ 	panes:            map[proto.Pane_Id]^Pane_View,
++	host_notice:      Host_Notice_Fn, // embedded hosts own attention and delivery
+ 	view_ws:          model.Id, // project shown in this window
+ 	view_index:       int, // its index, to fall back to a neighbour
 diff --git a/src/gui/notices.odin b/src/gui/notices.odin
 --- a/src/gui/notices.odin
 +++ b/src/gui/notices.odin
@@ -86,52 +81,26 @@ diff --git a/src/gui/notices.odin b/src/gui/notices.odin
 diff --git a/src/gui/views.odin b/src/gui/views.odin
 --- a/src/gui/views.odin
 +++ b/src/gui/views.odin
-@@ -135,27 +135,27 @@
- // Session keeps its existing all-pane cache; narrower contexts allocate only
- // replicas belonging to their binding, not to whichever tab another UI chose.
- @(private)
--view_needs_pane :: proc(app: ^App, id: proto.Pane_Id) -> bool {
+@@ -156,5 +156,5 @@
+ view_needs_pane :: proc(app: ^App, id: proto.Pane_Id) -> bool {
 -	if !view_has_content(app) {
--		return false
--	}
--	loc, ok := model.find_pane(&app.session, id)
--	if !ok {
--		return false
--	}
--	ws := &app.session.workspaces[loc.ws]
--	switch app.target.kind {
--	case .Session:
--		return true
--	case .Project:
--		return ws.id == app.target.id
--	case .Tab:
--		return ws.tabs[loc.tab].id == app.target.id
--	case .Projects, .Tabs:
--		return false
--	}
--	return false
--}
-+view_needs_pane :: proc(app: ^App, id: proto.Pane_Id) -> bool {
 +	if !view_has_content(app) && !(app.target.kind == .Projects && app.host_notice != nil) {
-+		return false
-+	}
-+	loc, ok := model.find_pane(&app.session, id)
-+	if !ok {
-+		return false
-+	}
-+	ws := &app.session.workspaces[loc.ws]
-+	switch app.target.kind {
+ 		return false
+ 	}
+ 	loc, ok := model.find_pane(&app.session, id)
+@@ -165,7 +165,7 @@
+ 	switch app.target.kind {
+-	case .Session:
 +	case .Session, .Projects:
-+		return true
-+	case .Project:
-+		return ws.id == app.target.id
-+	case .Tab:
-+		return ws.tabs[loc.tab].id == app.target.id
+ 		return true
+ 	case .Project:
+ 		return ws.id == app.target.id
+ 	case .Tab:
+ 		return ws.tabs[loc.tab].id == app.target.id
+@@ -172,5 +172,5 @@
+ 	case .Pane:
+ 		return id == app.target.pane
+-	case .Projects, .Tabs:
 +	case .Tabs:
-+		return false
-+	}
-+	return false
-+}
- 
- // Creation hints are scoped too. A fixed tab accepts focus within itself,
- // but creating a sibling tab must not change this context's identity.
+ 		return false
+ 	}

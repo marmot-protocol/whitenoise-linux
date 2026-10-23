@@ -938,6 +938,9 @@ msgstr "Fai clic per modificare, trascina per riordinare."
 msgid "Close"
 msgstr "Chiudi"
 
+msgid "Close pane"
+msgstr "Chiudi riquadro"
+
 msgid "Close tab"
 msgstr "Chiudi scheda"
 
@@ -2779,6 +2782,9 @@ msgstr "Tutte le regole"
 msgid "Match any rule"
 msgstr "Almeno una regola"
 
+msgid "Maximize or restore pane"
+msgstr "Massimizza o ripristina il riquadro"
+
 msgid "May"
 msgstr "mag"
 
@@ -4262,6 +4268,12 @@ msgstr "Modello vocale"
 
 msgid "Speech to text"
 msgstr "Da voce a testo"
+
+msgid "Split down"
+msgstr "Dividi in basso"
+
+msgid "Split right"
+msgstr "Dividi a destra"
 
 msgid "Square"
 msgstr "Quadrato"

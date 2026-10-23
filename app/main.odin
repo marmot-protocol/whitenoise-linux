@@ -1596,6 +1596,7 @@ app_main :: proc() {
 				ui.whip_tabs[ui.whip_project],
 			)
 			whip_sync_tabs(&ui)
+			whip_controls(&ui)
 			for notice in rl.WhipNotices() {
 				do_notify(
 					&ui,

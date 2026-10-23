@@ -37,6 +37,18 @@ when #config(WN_WHIP, false) {
 	@(private)
 	whip_visible: bool
 	@(private)
+	whip_enabled: bool
+	@(private)
+	whip_control: Whip_Control
+	@(private)
+	whip_new_pending: int
+	@(private)
+	whip_created_tab: whip_model.Id
+	@(private)
+	whip_split_pending: int
+	@(private)
+	whip_created_focus: proto.Pane_Id
+	@(private)
 	whip_server_mutex: sync.Mutex
 	@(private)
 	Whip_Create_Job :: struct {
@@ -194,9 +206,9 @@ when #config(WN_WHIP, false) {
 		if status == .Ready && (reconnect || whip_failed) {
 			// Closing the last project stops Whip's server. Creation can start
 			// a new one; its old observer and terminal sockets cannot be reused.
-			if whip_ui != nil {whip.destroy_sdl(whip_ui); whip_ui = nil}
+			whip_panes_close()
 			if whip_catalog != nil {whip.destroy_sdl(whip_catalog); whip_catalog = nil}
-			clear(&whip_projects); clear(&whip_tabs)
+			clear(&whip_projects); whip_tabs_trim(0)
 			whip_failed = false
 			sync.atomic_store(&whip_started, 1)
 		}
@@ -271,18 +283,7 @@ when #config(WN_WHIP, false) {
 			}
 			if !found {return .Missing}
 		}
-		if whip_ui != nil {
-			switch whip.view_status(whip_ui.view) {
-			case .Missing:
-				return .Missing
-			case .Stopped:
-				return .Failed
-			case .Pending:
-				return .Starting
-			case .Ready:
-				return .Ready
-			}
-		}
+		if whip_catalog != nil && whip.view_status(whip_catalog.view) == .Ready {return .Ready}
 		if whip_worker != nil {return .Starting}
 		return .Idle
 	}
@@ -293,6 +294,149 @@ when #config(WN_WHIP, false) {
 
 	WhipTabs :: proc() -> []Whip_Tab {
 		return whip_tabs[:]
+	}
+
+	WhipControlPoll :: proc() -> Whip_Control {
+		control := whip_control
+		whip_control = {}
+		return control
+	}
+
+	// Whip owns chord decoding and pane-local actions. Navigation changes
+	// the host's stable selection, never a mounted Pane context's binding.
+	@(private)
+	whip_host_action :: proc(
+		app: ^whip.App,
+		action: whip.Action,
+		target: whip_model.Id,
+		pane: proto.Pane_Id = 0,
+	) -> bool {
+		if whip_ui == nil || app != whip_ui.view {return false}
+		if action == .View_Hint {
+			if u32(target) == whip_tab {
+				if whip_split_pending == 0 {return false}
+				whip_split_pending -= 1
+				whip_created_focus = pane
+			} else {
+				if whip_new_pending == 0 {return false}
+				whip_new_pending -= 1
+				whip_created_tab = target
+			}
+			return true
+		}
+		if action == .Detach {whip_control.detach = true; return true}
+		if action == .Toggle_Sidebar {whip_control.sidebar = !whip_control.sidebar; return true}
+		if action == .Select_Project {
+			if wi, ok := whip_model.find_workspace(&whip_catalog.view.session, target); ok {
+				whip_control.project, whip_control.tab =
+					u32(whip_catalog.view.session.workspaces[wi].id), 0
+				whip_control.selection = true
+			}
+			return true
+		}
+		if action == .Select_Tab {
+			if wi, _, ok := whip_model.find_tab(&whip_catalog.view.session, target); ok {
+				whip_control.project, whip_control.tab =
+					u32(whip_catalog.view.session.workspaces[wi].id), u32(target)
+				whip_control.selection = true
+			}
+			return true
+		}
+		wi, ti, ok := whip_model.find_tab(&whip_catalog.view.session, whip_model.Id(whip_tab))
+		if !ok {return false}
+		ws := &whip_catalog.view.session.workspaces[wi]
+		tab := &ws.tabs[ti]
+		#partial switch action {
+		case .Split_Right, .Split_Down:
+			whip_split_pending += 1
+			whip_control.work = .New_Pane
+			whip_zoom = 0
+			whip.send_split(
+				app,
+				proto.Pane_Id(whip_focused),
+				action == .Split_Right ? .Right : .Down,
+			)
+		case .Focus_Left, .Focus_Down, .Focus_Up, .Focus_Right:
+			whip_pane_neighbor(
+				tab,
+				whip_model.Direction(int(action) - int(whip.Action.Focus_Left)),
+			)
+		case .Zoom:
+			whip_zoom = whip_zoom == whip_focused ? 0 : whip_focused
+		case .Resize_Mode:
+			app.mode = .Resize
+		case .Resize_Left, .Resize_Right, .Resize_Up, .Resize_Down:
+			axis :=
+				action == .Resize_Left || action == .Resize_Right ? whip_model.Axis.Right : .Down
+			if index, found := whip_model.ancestor_split(tab, proto.Pane_Id(whip_focused), axis);
+			   found {
+				delta :=
+					action == .Resize_Left || action == .Resize_Up ? -whip.RESIZE_STEP : whip.RESIZE_STEP
+				WhipPaneRatio(int(index), tab.nodes[index].ratio + f32(delta))
+			}
+		case .Close_Pane:
+			leaves := 0
+			for node in tab.nodes {if node.kind == .Leaf {leaves += 1}}
+			if leaves == 1 {return whip_host_action(app, .Close_Tab, 0)}
+			whip.send_close(app, .Pane, whip_focused)
+		case .New_Tab:
+			whip_new_pending += 1
+			whip_control.work = .New_Tab
+			whip.send_new_tab(app, ws.id, proto.Pane_Id(whip_focused))
+		case .New_Workspace:
+			whip_new_pending += 1
+			whip_control.work = .New_Project
+			whip.send_id(app, .New_Workspace, whip_focused)
+		case .Next_Tab, .Prev_Tab:
+			step := action == .Next_Tab ? 1 : len(ws.tabs) - 1
+			whip_control.project, whip_control.tab =
+				u32(ws.id), u32(ws.tabs[(ti + step) % len(ws.tabs)].id)
+			whip_control.selection = true
+		case .Next_Workspace, .Prev_Workspace:
+			step := action == .Next_Workspace ? 1 : len(whip_catalog.view.session.workspaces) - 1
+			whip_control.project, whip_control.tab =
+				u32(
+					whip_catalog.view.session.workspaces[(wi + step) % len(whip_catalog.view.session.workspaces)].id,
+				),
+				0
+			whip_control.selection = true
+		case .Close_Tab, .Close_Workspace:
+			if action == .Close_Tab && len(ws.tabs) > 1 {
+				next := ti == len(ws.tabs) - 1 ? ti - 1 : ti + 1
+				whip_control.project, whip_control.tab = u32(ws.id), u32(ws.tabs[next].id)
+				whip_control.selection = true
+			} else if len(whip_catalog.view.session.workspaces) > 1 {
+				next := wi == len(whip_catalog.view.session.workspaces) - 1 ? wi - 1 : wi + 1
+				whip_control.project, whip_control.tab =
+					u32(whip_catalog.view.session.workspaces[next].id), 0
+				whip_control.selection = true
+			} else {
+				whip_control.detach = true
+			}
+			whip.send_close(
+				app,
+				action == .Close_Tab ? .Tab : .Workspace,
+				u32(action == .Close_Tab ? tab.id : ws.id),
+			)
+		case .Rename_Tab:
+			whip.start_rename(app, .Tab, tab.id, tab.name)
+		case .Rename_Workspace:
+			whip.start_rename(app, .Workspace, ws.id, whip_model.workspace_label(ws))
+		case .Toggle_Device:
+			whip.device_toggle(app)
+		case .Navigate:
+			app.mode, app.nav_index = .Navigate, wi
+			whip_control.projects = true
+		case:
+			return false
+		}
+		return true
+	}
+
+	@(private)
+	whip_tabs_trim :: proc(count: int) {
+		for tab in whip_tabs[count:] {delete(tab.name)}
+		resize(&whip_tabs, count)
 	}
 
 	WhipNotices :: proc() -> []Whip_Notice {
@@ -323,7 +467,8 @@ when #config(WN_WHIP, false) {
 		if whip_visible &&
 		   IsWindowFocused() &&
 		   u32(project.id) == whip_project &&
-		   u32(tab.id) == whip_tab {
+		   u32(tab.id) == whip_tab &&
+		   (whip_zoom == 0 || whip_zoom == u32(pane)) {
 			pv.attention = false
 			return
 		}
@@ -349,7 +494,7 @@ when #config(WN_WHIP, false) {
 		wi, ti, ok := whip_model.find_tab(&app.session, whip_model.Id(whip_tab))
 		if !ok || u32(app.session.workspaces[wi].id) != whip_project {return}
 		for node in app.session.workspaces[wi].tabs[ti].nodes {
-			if node.kind == .Leaf {
+			if node.kind == .Leaf && (whip_zoom == 0 || whip_zoom == u32(node.pane)) {
 				if pv := app.panes[node.pane]; pv != nil {pv.attention = false}
 			}
 		}
@@ -371,10 +516,11 @@ when #config(WN_WHIP, false) {
 	// Called after host handlers, so a newly opened modal owns the next input.
 	WhipFrame :: proc(visibility: Whip_Visibility, project, tab: u32) {
 		whip_notices_clear()
-		was_visible := whip_visible
 		whip_visible = visibility == .Visible
+		whip_enabled = visibility != .Hidden
 		if project != whip_project || tab != whip_tab {
-			if whip_ui != nil {whip.destroy_sdl(whip_ui); whip_ui = nil}
+			if whip_ui != nil {whip.set_focus(whip_ui.view, .Blurred)}
+			whip_ui, whip_zoom = nil, 0
 			whip_project, whip_tab = project, tab
 		}
 		if visibility != .Hidden && WhipState() == .Idle && WhipAvailable() {
@@ -399,24 +545,32 @@ when #config(WN_WHIP, false) {
 		}
 		if whip_catalog != nil {
 			whip.update(whip_catalog.view)
+			whip_panes_sync()
 			whip_attention_seen()
 			clear(&whip_projects)
-			clear(&whip_tabs)
-			for &entry in whip.projects(whip_catalog.view) {
+			tab_count := 0
+			for &entry, project_index in whip.projects(whip_catalog.view) {
 				project_waiting := 0
 				for &tab, i in whip.tabs(whip_catalog.view, entry.id) {
 					waiting := whip_waiting(&tab)
 					project_waiting += waiting
 					if u32(entry.id) == whip_project {
-						append(
-							&whip_tabs,
-							Whip_Tab {
-								id = u32(tab.id),
-								name = whip.tab_label(whip_catalog.view, &tab),
-								active = i == entry.active,
-								waiting = waiting,
-							},
-						)
+						// SDK shortening can return frame-arena text. Own changed
+						// labels until the next projection, without copying every frame.
+						label := whip.tab_label(whip_catalog.view, &tab)
+						name := tab_count < len(whip_tabs) ? whip_tabs[tab_count].name : ""
+						if name != label {delete(name); name = strings.clone(label)}
+						item := Whip_Tab {
+							id      = u32(tab.id),
+							name    = name,
+							active  = i == entry.active,
+							waiting = waiting,
+						}
+						if tab_count <
+						   len(
+							   whip_tabs,
+						   ) {whip_tabs[tab_count] = item} else {append(&whip_tabs, item)}
+						tab_count += 1
 					}
 				}
 				append(
@@ -427,55 +581,92 @@ when #config(WN_WHIP, false) {
 						dir = entry.dir,
 						tabs = len(entry.tabs),
 						waiting = project_waiting,
+						navigating = whip_ui != nil &&
+						whip_ui.view.mode == .Navigate &&
+						whip_ui.view.nav_index == project_index,
 					},
 				)
 			}
+			whip_tabs_trim(tab_count)
 			if !whip_catalog.view.running {whip_failed = true}
 		}
+		whip_panes_update()
 		if whip_ui != nil {
-			if whip_visible && !was_visible {whip.set_focus(whip_ui.view, .Focused)}
-			if !whip_visible {
-				whip.set_focus(whip_ui.view, .Blurred)
-				whip.set_bounds(whip_ui.view, {})
+			// View can precede its Layout in the stream. Resolve the stable ID
+			// only after feed has applied the model that contains the new tab.
+			if whip_created_tab != 0 {
+				if _, _, found := whip_model.find_tab(
+					&whip_catalog.view.session,
+					whip_created_tab,
+				); found {
+					whip_host_action(whip_ui.view, .Select_Tab, whip_created_tab)
+					whip_created_tab = 0
+					if whip_new_pending == 0 {whip_control.work = .Complete}
+				}
 			}
-			whip.update(whip_ui.view)
-			if !whip_ui.view.running {whip_failed = true}
+			if whip_created_focus != 0 {
+				if _, found := whip_model.find_pane(
+					&whip_catalog.view.session,
+					whip_created_focus,
+				); found {
+					whip_pane_focus(u32(whip_created_focus))
+					whip_created_focus = 0
+					if whip_split_pending == 0 {whip_control.work = .Complete}
+				}
+			}
+			if whip_ui != nil && !whip_ui.view.running {
+				whip_failed = true
+				if whip_new_pending > 0 {whip_new_pending = 0; whip_control.work = .Complete}
+				whip_created_tab = 0
+			}
 		}
 	}
 
 	@(private)
 	whip_event :: proc(event: sdl.Event) -> bool {
-		if whip_ui != nil && whip_visible && !whip_failed {
-			return whip.event(whip_ui.view, event)
+		if whip_visible && !whip_failed {
+			#partial switch event.type {
+			case .MOUSE_MOTION, .MOUSE_BUTTON_DOWN, .MOUSE_BUTTON_UP, .MOUSE_WHEEL:
+				for _, ui in whip_mounts {
+					if ui.view.mouse.drag != .None {return whip.event(ui.view, event)}
+				}
+				x, y: f32
+				#partial switch event.type {
+				case .MOUSE_MOTION:
+					x, y = event.motion.x, event.motion.y
+				case .MOUSE_BUTTON_DOWN, .MOUSE_BUTTON_UP:
+					x, y = event.button.x, event.button.y
+				case .MOUSE_WHEEL:
+					x, y = event.wheel.mouse_x, event.wheel.mouse_y
+				}
+				density := sdl.GetWindowPixelDensity(state.window)
+				for id, ui in whip_mounts {
+					bounds := ui.view.bounds
+					inside :=
+						int(x * density) >= bounds.x &&
+						int(y * density) >= bounds.y &&
+						int(x * density) < bounds.x + bounds.w &&
+						int(y * density) < bounds.y + bounds.h
+					if inside &&
+					   (event.type == .MOUSE_BUTTON_DOWN ||
+							   event.type == .MOUSE_MOTION &&
+								   ui.view.config.focus_follows_mouse) {whip_pane_focus(id)}
+					if inside {return whip.event(ui.view, event)}
+				}
+				return false
+			}
+		}
+		if whip_ui != nil &&
+		   !whip_failed &&
+		   (whip_visible || whip_enabled && whip_ui.view.mode == .Navigate) {
+			navigating := whip_ui.view.mode == .Navigate
+			consumed := whip.event(whip_ui.view, event)
+			if navigating && whip_ui.view.mode != .Navigate && !whip_control.selection {
+				whip_host_action(whip_ui.view, .Select_Tab, whip_model.Id(whip_tab))
+			}
+			return consumed
 		}
 		return false
-	}
-
-	// Clay supplies logical bounds; Whip uses physical framebuffer pixels.
-	DrawWhip :: proc(x, y, w, h: f32) {
-		if whip_failed ||
-		   whip_catalog == nil ||
-		   whip_project == 0 ||
-		   whip_tab == 0 ||
-		   WhipState() == .Missing {return}
-		sx, sy: f32
-		sdl.GetRenderScale(state.renderer, &sx, &sy)
-		bounds := whip_model.Rect{int(x * sx), int(y * sy), int(w * sx), int(h * sy)}
-		if bounds.w <= 0 || bounds.h <= 0 {return}
-		if whip_ui == nil {
-			whip_ui = whip.create_sdl(
-				state.window,
-				state.renderer,
-				"default",
-				bounds,
-				{kind = .Tab, id = whip_model.Id(whip_tab)},
-			)
-			if whip_ui == nil {whip_failed = true; return}
-			whip.set_notice_handler(whip_ui.view, whip_host_notice)
-			whip.set_focus(whip_ui.view, .Focused)
-		}
-		whip.set_bounds(whip_ui.view, bounds)
-		if !whip.render_sdl(whip_ui) {whip_failed = true}
 	}
 
 	WhipClose :: proc() {
@@ -485,13 +676,14 @@ when #config(WN_WHIP, false) {
 			thread.join(whip_worker)
 			thread.destroy(whip_worker)
 		}
-		if whip_ui != nil {whip.destroy_sdl(whip_ui)}
+		whip_panes_close()
 		if whip_catalog != nil {whip.destroy_sdl(whip_catalog)}
 		whip_notices_clear()
 		delete(whip_notices)
 		whip_notices = {}
 		whip_notice_allocator = {}
 		delete(whip_projects)
+		whip_tabs_trim(0)
 		delete(whip_tabs)
 		whip_projects = {}
 		whip_tabs = {}
@@ -499,5 +691,9 @@ when #config(WN_WHIP, false) {
 		whip_project, whip_tab = 0, 0
 		whip_ui, whip_worker = nil, nil
 		whip_started, whip_failed, whip_visible = 0, false, false
+		whip_enabled, whip_control = false, {}
+		whip_new_pending = 0
+		whip_created_tab = 0
+		whip_split_pending, whip_created_focus = 0, 0
 	}
 }

@@ -195,6 +195,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Theme browsing needs hover deadlines and keyboard input on every frame,
 	// not just the pointer release used by the remaining page actions.
 	if ui.page == .Settings {handle_settings(ui, client)}
+	if ui.page == .Whip {whip_pane_input(ui)}
 
 	if !mouse_released() {
 		return

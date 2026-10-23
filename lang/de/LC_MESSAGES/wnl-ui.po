@@ -938,6 +938,9 @@ msgstr "Klicke zum Bearbeiten, ziehe zum Umsortieren."
 msgid "Close"
 msgstr "Schließen"
 
+msgid "Close pane"
+msgstr "Bereich schließen"
+
 msgid "Close tab"
 msgstr "Tab schließen"
 
@@ -2779,6 +2782,9 @@ msgstr "Alle Regeln erfüllen"
 msgid "Match any rule"
 msgstr "Eine Regel erfüllen"
 
+msgid "Maximize or restore pane"
+msgstr "Bereich maximieren oder wiederherstellen"
+
 msgid "May"
 msgstr "Mai"
 
@@ -4262,6 +4268,12 @@ msgstr "Sprachmodell"
 
 msgid "Speech to text"
 msgstr "Sprache zu Text"
+
+msgid "Split down"
+msgstr "Nach unten teilen"
+
+msgid "Split right"
+msgstr "Nach rechts teilen"
 
 msgid "Square"
 msgstr "Quadratisch"

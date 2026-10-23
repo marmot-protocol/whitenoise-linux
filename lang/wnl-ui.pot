@@ -935,6 +935,9 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
+msgid "Close pane"
+msgstr ""
+
 msgid "Close tab"
 msgstr ""
 
@@ -2774,6 +2777,9 @@ msgstr ""
 msgid "Match any rule"
 msgstr ""
 
+msgid "Maximize or restore pane"
+msgstr ""
+
 msgid "May"
 msgstr ""
 
@@ -4255,6 +4261,12 @@ msgid "Speech model"
 msgstr ""
 
 msgid "Speech to text"
+msgstr ""
+
+msgid "Split down"
+msgstr ""
+
+msgid "Split right"
 msgstr ""
 
 msgid "Square"

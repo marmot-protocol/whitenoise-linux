@@ -13,6 +13,7 @@ wn_whip_flags() {
     if [ -e "$bridge" ]; then
       rm "$bridge" || return $?
     fi
+    rm -f "$root/app/sdlrl/whip_panes_native.odin" || return $?
     return 0
   fi
   whip="$(cd "$whip" && pwd)" || return $?
@@ -40,14 +41,15 @@ wn_whip_flags() {
 
   # Keep the installed sibling read-only. The host hook changes no protocol
   # or Ghostty ABI; the installed library's compatibility ID stays unchanged.
-  local overlay patch source_stamp staged
+  local overlay patch controls source_stamp staged
   overlay="$root/build/whip-embed"
   patch="$root/patches/whip-host-notices.patch"
+  controls="$root/patches/whip-host-controls.patch"
   source_stamp="$(
     set -o pipefail
     {
       find "$whip/src" -type f ! -name .env ! -name '*.env' -print0 | sort -z | xargs -0 -r sha256sum || exit $?
-      sha256sum "$patch"
+      sha256sum "$patch" "$controls"
     } | sha256sum
   )" || return $?
   if [ ! -f "$overlay/.source-stamp" ] || [ "$(cat "$overlay/.source-stamp")" != "$source_stamp" ]; then
@@ -59,6 +61,8 @@ wn_whip_flags() {
       ln -s "$whip/vendor" "$staged/vendor" &&
       env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
         GIT_CEILING_DIRECTORIES="$root/build" git -C "$staged" apply "$patch" &&
+      env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+        GIT_CEILING_DIRECTORIES="$root/build" git -C "$staged" apply "$controls" &&
       printf '%s\n' "$source_stamp" > "$staged/.source-stamp"
     }; then
       rm -rf "$staged"
@@ -71,6 +75,9 @@ wn_whip_flags() {
   fi
   if ! cmp -s "$root/whip-embed/bridge.odin" "$bridge"; then
     cp "$root/whip-embed/bridge.odin" "$bridge" || return $?
+  fi
+  if ! cmp -s "$root/whip-embed/panes.odin" "$root/app/sdlrl/whip_panes_native.odin"; then
+    cp "$root/whip-embed/panes.odin" "$root/app/sdlrl/whip_panes_native.odin" || return $?
   fi
   WHIP_ARGS=(
     -define:WN_WHIP=true

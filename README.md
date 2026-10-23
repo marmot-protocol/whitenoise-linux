@@ -341,9 +341,18 @@ built Ghostty library. Build Whip first, then rebuild White Noise. The sidebar
 shows Whip only while that executable is installed. Selecting it attaches to
 Whip's `default` session, starting its server if needed. Projects appear as
 White Noise sidebar rows with their directory, tab count and selected accent.
-The tab strip also uses White Noise controls; Whip renders the selected tab's
-terminal panes. New project opens a folder picker, then selects the created
-project. Tabs can be opened and closed from the tab strip.
+White Noise owns the tab strip, pane headers and draggable splitters. Each
+pane has its own Whip rendering context inside its assigned slot. Tab titles
+follow standalone Whip's naming rules, including live terminal titles and
+emoji. New project opens a folder picker, then selects the created project.
+Tabs and panes can be opened and closed from their native controls.
+
+Whip's keyboard shortcuts work while its content has focus. Ctrl+T and Ctrl+W
+open and close tabs; Ctrl+Shift+Left/Right switches tabs. Ctrl+N creates a
+project in the focused pane's directory, and Ctrl+Shift+Up/Down switches
+projects. Ctrl+Alt+V and Ctrl+Alt+Minus split panes. Pane focus, zoom, resize,
+find, clipboard and rename shortcuts keep Whip's bindings. Ctrl+Alt+/ opens
+Whip's shortcut help; Ctrl+Alt+Q returns to Chats without stopping shells.
 
 Every project starts with a crop-circle avatar derived from its folder.
 Click the avatar to choose and crop a picture, or restore its crop circle.
@@ -353,17 +362,18 @@ folder; the original image file is not needed afterward.
 
 Bells and terminal notifications from unseen panes show the same animated
 unread badges as chats, on their tab, project and Whip navigation button.
-Viewing the tab clears its waiting state. Desktop alerts use your White Noise
-notification, sound and preview settings. On narrow windows, Back returns to
+Viewing a pane clears its waiting state; a pane hidden by zoom stays unread.
+Desktop alerts use your White Noise notification, sound and preview settings.
+On narrow windows, Back returns to
 the project list. Switching pages or closing White Noise leaves the session's
 shells running.
 
 Whip is optional. Builds without that sibling checkout and cross releases
 omit the integration. Native build scripts stage its Odin bridge from
-`whip-embed/bridge.odin`; they do not build or modify the sibling checkout.
-An isolated source copy under `build/whip-embed/` applies the host-notice patch
-so terminal notifications follow White Noise's settings without duplicate
-Whip alerts.
+`whip-embed/`; they do not build or modify the sibling checkout. An isolated
+source copy under `build/whip-embed/` applies the host-notice and host-control
+patches so navigation uses White Noise controls and terminal notifications
+follow its settings without duplicate Whip alerts.
 
 ### Cross releases
 

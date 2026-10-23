@@ -8,13 +8,46 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(private)
-whip_payload: Model_Kind = .Whip
+Whip_Payload :: struct {
+	kind: Model_Kind,
+	pane: u32,
+}
+
+@(private)
+whip_pane_work: bool
 
 @(private)
 Whip_Tab_Op :: enum {
 	None,
 	New,
 	Close,
+}
+
+@(private)
+whip_controls :: proc(ui: ^Ui_State) {
+	control := rl.WhipControlPoll()
+	switch control.work {
+	case .New_Tab:
+		ui.whip_tab_op, ui.whip_tab_project = .New, ui.whip_project
+	case .New_Project:
+		ui.whip_creating = true
+	case .New_Pane:
+		whip_pane_work = true
+	case .Complete:
+		ui.whip_tab_op, ui.whip_creating = .None, false
+		whip_pane_work = false
+	case .None:
+	}
+	if control.selection {
+		ui.whip_project, ui.whip_detail = control.project, true
+		if control.tab != 0 {ui.whip_tabs[control.project] = control.tab}
+	}
+	if control.sidebar {toggle_rail(ui)}
+	if control.projects {
+		if single_pane() {ui.whip_detail = false} else if rail_narrow(ui) {toggle_rail(ui)}
+	}
+	if control.detach {ui.page = .Chats}
+	if ui.page != .Whip {whip_pane_work = false}
 }
 
 @(private)
@@ -212,6 +245,7 @@ whip_rail :: proc(ui: ^Ui_State) {
 				},
 				backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
 				cornerRadius = rr(6),
+				border = project.navigating ? kb_ring(ACCENT) : clay.BorderElementConfig{},
 			},
 			) {
 				if hovered() {cursor_raise(.Pointer)}
@@ -283,6 +317,14 @@ whip_pane :: proc(ui: ^Ui_State) {
 		return
 	}
 	if ui.whip_project != 0 && status != .Missing {whip_tabbar(ui)}
+	if whip_pane_work {
+		clay.Text(tr("Opening Whip…"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		clay.Text(
+			tr("Progress is indeterminate."),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+		)
+		busy_bar("WhipPaneBusy")
+	}
 	if clay.UI(clay.ID("WhipPage"))(
 	{
 		layout = {
@@ -292,10 +334,9 @@ whip_pane :: proc(ui: ^Ui_State) {
 			childGap = 12,
 		},
 		clip = {horizontal = true, vertical = true},
-		custom = {customData = status != .Missing ? &whip_payload : nil},
 	},
 	) {
-		if status == .Ready {return}
+		if status == .Ready {whip_pane_tree(); return}
 		clay.Text("Whip", {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
 		if status == .Missing {
 			clay.Text(

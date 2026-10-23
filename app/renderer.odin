@@ -702,7 +702,8 @@ render_range :: proc(
 			data := render_command.renderData.custom.customData
 			switch (^Model_Kind)(data)^ {
 			case .Whip:
-				rl.DrawWhip(bounds.x, bounds.y, bounds.width, bounds.height)
+				pane := (^Whip_Payload)(data)
+				rl.DrawWhipPane(pane.pane, bounds.x, bounds.y, bounds.width, bounds.height)
 			case .Mesh:
 				stl_draw((^Stl_View)(data), bounds)
 			case .Spinner:

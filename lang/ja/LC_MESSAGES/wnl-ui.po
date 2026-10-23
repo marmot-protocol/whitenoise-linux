@@ -938,6 +938,9 @@ msgstr "クリックで編集、ドラッグで並べ替えます。"
 msgid "Close"
 msgstr "閉じる"
 
+msgid "Close pane"
+msgstr "ペインを閉じる"
+
 msgid "Close tab"
 msgstr "タブを閉じる"
 
@@ -2779,6 +2782,9 @@ msgstr "すべてのルールに一致"
 msgid "Match any rule"
 msgstr "いずれかのルールに一致"
 
+msgid "Maximize or restore pane"
+msgstr "ペインを最大化または元に戻す"
+
 msgid "May"
 msgstr "5月"
 
@@ -4262,6 +4268,12 @@ msgstr "音声モデル"
 
 msgid "Speech to text"
 msgstr "音声認識"
+
+msgid "Split down"
+msgstr "下に分割"
+
+msgid "Split right"
+msgstr "右に分割"
 
 msgid "Square"
 msgstr "四角"
