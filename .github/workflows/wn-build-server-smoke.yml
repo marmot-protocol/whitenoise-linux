@@ -15,7 +15,7 @@ env:
 jobs:
   native:
     name: Verify native cached source-content rebuilds
-    runs-on: [self-hosted, Linux, X64, wn-build-server, arch]
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-2]
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -52,12 +52,18 @@ jobs:
 
   cross:
     name: Build and boot ${{ matrix.target }}
-    runs-on: [self-hosted, Linux, X64, wn-build-server, arch]
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, "${{ matrix.cache-slot }}"]
     timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
-        target: [linux-amd64, linux-arm64, windows-amd64]
+        include:
+          - target: linux-amd64
+            cache-slot: wn-cache-2
+          - target: linux-arm64
+            cache-slot: wn-cache-2
+          - target: windows-amd64
+            cache-slot: wn-cache-1
     steps:
       - uses: actions/checkout@v4
         with:
@@ -144,7 +150,7 @@ jobs:
 
   openbsd:
     name: Build and boot openbsd-amd64
-    runs-on: [self-hosted, Linux, X64, wn-build-server, arch]
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-1]
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4

@@ -857,6 +857,10 @@ step summary. Other targets are `linux-amd64`, `linux-arm64`, `windows-amd64`
 (inside the cross-build container), and `openbsd-amd64` (inside the guest).
 The build-server smoke workflow queues these five jobs together on two isolated
 runner slots, with six build threads per job and shared CPU/memory limits.
+Native and Linux jobs use `wn-cache-2`; Windows and OpenBSD use `wn-cache-1`.
+This keeps targets on warmed caches while both slots can build concurrently.
+MicroTeX is cached per target and slot, including its sources, patches, toolchain,
+and build flags; application `.c` and `.odin` edits do not rebuild it.
 It does not change the default-branch runner routing or include macOS.
 
 The current pin is MDK master at `c8210585cab6` (0.14.0-dev). The build applies
