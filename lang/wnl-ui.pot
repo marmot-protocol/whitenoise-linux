@@ -4789,6 +4789,9 @@ msgstr ""
 msgid "You have no chats to share this with."
 msgstr ""
 
+msgid "You have no folders yet. Create one with New folder."
+msgstr ""
+
 msgid "You have no other chats to forward this to."
 msgstr ""
 

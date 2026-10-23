@@ -4796,6 +4796,9 @@ msgstr "Non puoi inviare messaggi a qualcuno che hai bloccato."
 msgid "You have no chats to share this with."
 msgstr "Non hai chat con cui condividerlo."
 
+msgid "You have no folders yet. Create one with New folder."
+msgstr "Non hai ancora cartelle. Creane una con Nuova cartella."
+
 msgid "You have no other chats to forward this to."
 msgstr "Non hai altre chat a cui inoltrarlo."
 

@@ -410,6 +410,13 @@ handle_folder_navigation :: proc(ui: ^Ui_State) -> bool {
 	return false
 }
 
+// A short destination list can be scanned without a filter. Keep this based
+// on all folders, not search matches, so a query cannot hide its own field.
+@(private)
+folder_searchable :: proc(ui: ^Ui_State) -> bool {
+	return len(ui.prefs.folders) > 5
+}
+
 @(private)
 open_folder_modal :: proc(ui: ^Ui_State, gid: string = "", rename: int = -1) {
 	delete(ui.folder_gid)
@@ -439,7 +446,7 @@ open_folder_modal :: proc(ui: ^Ui_State, gid: string = "", rename: int = -1) {
 	}
 	ui.folder_menu_open = false
 	ui.folder_open = true
-	ui.focus = .Folder
+	ui.focus = ui.folder_mode != .Move || folder_searchable(ui) ? .Folder : .Compose
 }
 
 @(private = "file")
@@ -738,37 +745,40 @@ folder_modal :: proc(ui: ^Ui_State) {
 		}
 		if moving {
 			clay.Text(
-				tr("Choose a destination for this chat."),
+				len(ui.prefs.folders) == 0 ? tr("You have no folders yet. Create one with New folder.") : tr("Choose a destination for this chat."),
 				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 			)
-			if clay.UI(clay.ID("FolderSearchBox"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(40)},
-					padding = {left = 12, right = 12},
-					childGap = 10,
-					childAlignment = {y = .Center},
+			if folder_searchable(ui) {
+				if clay.UI(clay.ID("FolderSearchBox"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(40)},
+						padding = {left = 12, right = 12},
+						childGap = 10,
+						childAlignment = {y = .Center},
+					},
+					backgroundColor = ROW_BG,
+					cornerRadius = rr(9),
+					border = {color = ui.focus == .Folder ? ACCENT : FIELD_BORDER, width = bw()},
 				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(9),
-				border = {color = ui.focus == .Folder ? ACCENT : FIELD_BORDER, width = bw()},
-			},
-			) {
-				clay.Text(ICON_SEARCH, {fontId = FONT_ICON, fontSize = 13, textColor = TEXT_LO})
-				field_text(
-					ui,
-					"FolderSearchBox",
-					&ui.folder_search,
-					tr("Search folders..."),
-					ui.focus == .Folder,
-					13,
-					TEXT_LO,
-				)
+				) {
+					clay.Text(
+						ICON_SEARCH,
+						{fontId = FONT_ICON, fontSize = 13, textColor = TEXT_LO},
+					)
+					field_text(
+						ui,
+						"FolderSearchBox",
+						&ui.folder_search,
+						tr("Search folders..."),
+						ui.focus == .Folder,
+						13,
+						TEXT_LO,
+					)
+				}
 			}
-			query := strings.to_lower(
-				strings.trim_space(string(ui.folder_search[:])),
-				context.temp_allocator,
-			)
+			query :=
+				folder_searchable(ui) ? strings.to_lower(strings.trim_space(string(ui.folder_search[:])), context.temp_allocator) : ""
 			current := ui.prefs.folder_of[ui.folder_gid]
 			has_current := false
 			destinations := make([]int, len(ui.prefs.folders), context.temp_allocator)
@@ -970,7 +980,7 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if rl.IsKeyPressed(.ESCAPE) || clicked("FolderCancel") {
 		if ui.folder_mode == .Create && ui.folder_gid != "" {
 			ui.folder_mode = .Move
-			ui.focus = .Folder
+			ui.focus = folder_searchable(ui) ? .Folder : .Compose
 		} else {
 			close_folder_modal(ui)
 		}
@@ -978,10 +988,12 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if ui.folder_mode == .Move {
-		edit_text(ui, &ui.folder_search)
-		if field_mouse(ui, &ui.folder_search, "FolderSearchBox") {
-			ui.focus = .Folder
-			return
+		if folder_searchable(ui) {
+			edit_text(ui, &ui.folder_search)
+			if field_mouse(ui, &ui.folder_search, "FolderSearchBox") {
+				ui.focus = .Folder
+				return
+			}
 		}
 		if clicked("FolderNew") {
 			ui.folder_mode = .Create
