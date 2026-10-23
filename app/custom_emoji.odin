@@ -257,6 +257,13 @@ save_staged_emoji :: proc(ui: ^Ui_State) {
 		}
 	}
 	if strings.builder_len(code) == 0 {
+		// Each rejected save needs feedback, even after dismissing the same error.
+		ui.banner_seen = ""
+		set_status(
+			ui,
+			tr("Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name."),
+			.Error,
+		)
 		return
 	}
 	data, read_err := os.read_entire_file(ui.emoji_staged, context.temp_allocator)

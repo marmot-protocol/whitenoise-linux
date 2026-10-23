@@ -1433,6 +1433,9 @@ msgstr "ステッカーを保存できませんでした。画像の読み込み
 msgid "Couldn't save the theme. Check the name and colors and try again."
 msgstr "テーマを保存できませんでした。名前と色を確認して、もう一度お試しください。"
 
+msgid "Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name."
+msgstr "絵文字を保存できませんでした。名前にASCII英字、数字、アンダースコア、ハイフンのいずれかを1文字以上含めてください。"
+
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "署名者のセッションを暗号化された保管庫に保存できませんでした。もう一度お試しください。"
 

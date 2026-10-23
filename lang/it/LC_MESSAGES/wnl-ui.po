@@ -1433,6 +1433,9 @@ msgstr "Impossibile salvare l'adesivo. Attendi il caricamento dell'immagine e ri
 msgid "Couldn't save the theme. Check the name and colors and try again."
 msgstr "Impossibile salvare il tema. Controlla il nome e i colori e riprova."
 
+msgid "Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name."
+msgstr "Impossibile salvare la tua emoji. Includi nel nome almeno una lettera ASCII, una cifra, un trattino basso o un trattino."
+
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "Impossibile salvare la sessione del tuo firmatario nella cassaforte cifrata. Riprova."
 
