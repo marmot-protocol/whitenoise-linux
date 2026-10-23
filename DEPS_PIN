@@ -36,3 +36,4 @@ appimageupdate-libappimage-commit = d326d15c8a9299d3f135be8282f6545b32805996
 appimageupdate-cpr-commit = 3139b2682f0b1d6af8c7ae48cf400f9d9988deec
 appimageupdate-args-commit = 114200a9ad5fe06c8dea76e15d92325695cf3e34
 appimageupdate-xdgutils-commit = d7da7ed523fafa5ddd8ec6e2208714de99c7c233
+orchard-source-file = 6a67db0dcb5f07d9e3295eb54ca9468d5d3f12d3d17f36e1a2f7ab8c2aadb8d9 https://codeload.github.com/Letdown2491/orchard/tar.gz/0b28f1d64b4f2d2453a7c289ad3e40e89a195ca0

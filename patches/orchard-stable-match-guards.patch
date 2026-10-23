@@ -1,0 +1,19 @@
+diff --git a/crates/orchard-core/src/oci.rs b/crates/orchard-core/src/oci.rs
+--- a/crates/orchard-core/src/oci.rs
++++ b/crates/orchard-core/src/oci.rs
+@@ -105,9 +105,11 @@ impl Location {
+             // an explicit scheme wins over the localhost default; it
+             // must be stripped before the slash split
+-            let (scheme, rest) = match rest {
+-                r if let Some(host) = r.strip_prefix("http://") => (Some("http"), host),
+-                r if let Some(host) = r.strip_prefix("https://") => (Some("https"), host),
+-                r => (None, r),
++            let (scheme, rest) = if let Some(host) = rest.strip_prefix("http://") {
++                (Some("http"), host)
++            } else if let Some(host) = rest.strip_prefix("https://") {
++                (Some("https"), host)
++            } else {
++                (None, rest)
+             };
+             // Registry = up to the first slash; the tag is a trailing colon
+             // in the repository part (a registry port lives before it).

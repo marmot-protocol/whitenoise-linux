@@ -1,4 +1,4 @@
-# Release: Linux x86_64 AppImage/Flatpak plus the cross.yml packages
+# Release: Linux x86_64 AppImage/Flatpak/Orchard plus the cross.yml packages
 # (Linux ARM64 and Windows built on Linux, macOS built on a Mac).
 #
 # Both packages install the same tree, via scripts/install-tree.sh:
@@ -204,8 +204,36 @@ jobs:
             ${{ env.APPIMAGE_NAME }}.zsync
           if-no-files-found: error
 
+  orchard-publisher:
+    name: Orchard publisher (x86_64)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache publisher sources and Rust build
+        uses: actions/cache@v4
+        with:
+          path: |
+            vendor/downloads/orchard-source
+            build/orchard-source
+            build/orchard-target
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: orchard-publisher-ubuntu24-x64-${{ hashFiles('DEPS_PIN', 'scripts/build-orchard.sh', 'patches/orchard-*.patch') }}
+
+      - name: Build pinned publisher only
+        run: scripts/build-orchard.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orchard-publisher
+          path: build/orchard-publish
+          if-no-files-found: error
+
   flatpak:
     name: Flatpak (x86_64)
+    needs: orchard-publisher
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
@@ -331,6 +359,48 @@ jobs:
           flatpak run --user --env=SDL_VIDEODRIVER=dummy --env=WN_SHOT=1 \
             --env=WN_VAULT_PW=ci-smoke "$FLATPAK_ID" "$(mktemp -d)"
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: orchard-publisher
+          path: build
+
+      - name: Prepare unsigned Orchard components
+        shell: bash
+        run: |
+          chmod +x build/orchard-publish
+          args=()
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then args+=("$GITHUB_REF_NAME"); fi
+          scripts/orchard-package.sh build/flatpak build/orchard-release "${args[@]}"
+
+      # Install the archived bytes, not the preparer's internal layout. Remove
+      # only the app already tested above so Flatpak cannot reuse that install;
+      # leave its GNOME 50 runtime available for the OCI installation.
+      - name: Install and run the Orchard archive headless
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(flatpak --version)"
+          version="${version##* }"
+          IFS=. read -r major minor patch <<< "$version"
+          if (( major < 1 || (major == 1 && minor < 18) )); then
+            echo "::error::OCI installation requires Flatpak 1.18+, found $version"
+            exit 1
+          fi
+          layout="$(mktemp -d)"
+          trap 'rm -rf "$layout"' EXIT
+          tar -xzf build/orchard-release/dev.ipf.whitenoise-linux-x86_64.oci.tgz -C "$layout"
+          flatpak uninstall --user -y --noninteractive "$FLATPAK_ID"
+          flatpak install --user -y --noninteractive --no-deps "oci:$layout"
+          test "$(flatpak info --user --show-ref "$FLATPAK_ID//stable")" = "app/$FLATPAK_ID/x86_64/stable"
+          flatpak run --user --env=SDL_VIDEODRIVER=dummy --env=WN_SHOT=1 \
+            --env=WN_VAULT_PW=ci-smoke "$FLATPAK_ID//stable" "$(mktemp -d)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orchard
+          path: build/orchard-release/*
+          if-no-files-found: error
+
       - uses: actions/upload-artifact@v4
         with:
           name: flatpak
@@ -412,9 +482,10 @@ jobs:
           path: dist
           merge-multiple: true
 
-      # Smoke screenshots from the cross jobs are CI evidence, not release files.
+      # Smoke screenshots and the internal publisher are CI artifacts, not
+      # release files. Keep both out of checksums and the public release.
       - name: Drop CI evidence
-        run: rm -f dist/*.png
+        run: rm -f dist/*.png dist/orchard-publish
 
       # One checksum file over everything the release ships, so a
       # download can be verified without trusting the release page alone.
@@ -448,6 +519,10 @@ jobs:
             dist/*.AppImage
             dist/*.zsync
             dist/*.flatpak
+            dist/*.asset.json
+            dist/*.manifest.json
+            dist/[0-9a-f][0-9a-f][0-9a-f][0-9a-f]*
+            dist/*.oci.tgz
             dist/*.tar.gz
             dist/*.tar.zst
             dist/*.zip

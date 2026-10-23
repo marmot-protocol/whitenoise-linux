@@ -151,7 +151,15 @@ chmod +x WhiteNoise-*-x86_64.AppImage
 
 Japanese text is the one exception: Noto Sans CJK is tens of megabytes, so it is not bundled and comes from your system instead (`noto-fonts-cjk` on Arch, `fonts-noto-cjk` on Debian and Ubuntu).
 
-Each release also ships a Flatpak bundle on the GNOME 50 runtime:
+For Flatpak updates, install [Orchard](https://github.com/Letdown2491/orchard)
+0.3 or newer and find White Noise in its Orchard catalog. Check the publisher
+against `orchard.txt` in this repository, then choose Verify and install.
+Orchard verifies the signed release and each OCI component before installation;
+subsequent updates are managed by Orchard, outside White Noise's sandbox.
+The package uses the GNOME 50 runtime and currently supports x86-64.
+
+Each release also ships a standalone Flatpak bundle for manual installation.
+This download does not set up an update remote:
 
 ```sh
 flatpak install --user WhiteNoise-*-x86_64.flatpak
@@ -542,9 +550,30 @@ starts the release build. `just release --dry-run` prints the version and
 tag without changing anything.
 
 `just publish` (`scripts/publish.sh`) does all of that, waits for the
-release workflow to publish the GitHub release, then signs its AppImage and
-Flatpak for Zapstore with your bunker or nsec. `just publish <tag>` publishes
-an existing release to Zapstore.
+release workflow to publish the GitHub release, then signs its AppImage,
+Flatpak bundle, and Orchard OCI components with your bunker or nsec.
+One NIP-82 release lists all five assets and is sent to
+`wss://relay.cyberguy.fyi`, `wss://relay.orchard.rocks`,
+`wss://relay.ditto.pub`, and `wss://relay.zapstore.dev`.
+`just publish <tag>` announces an existing release the same way.
+Both stores use the publisher in `zapstore.yaml`; `orchard.txt`
+records that public key for Orchard's repository check.
+
+The Flatpak build prepares Orchard's manifest, config, layer, and bootstrap
+The release publisher is the White Noise identity,
+`npub1whtn0s68y3cs98zysa4nxrfzss5g5snhndv35tk5m2sudsr7ltms48r3ec`.
+Run `just publish` (or `just publish <tag>` for a built release), paste its
+`bunker://` URL at the hidden signer prompt, and approve the seven NIP-46
+signing requests: one kind 32267 listing, five kind 3063 assets, and one
+kind 30063 release. The publisher checks the returned signing key before
+sending each event. The bunker URL stays out of command arguments and
+shell history; exporting the White Noise private key is not required.
+
+OCI archive from the finished sandbox tree. These files and their checksums
+are hosted on the GitHub release; a registry account and another signing key
+are not needed. Preparation uses the Orchard revision in `DEPS_PIN` and
+does not publish events. The signed announcement happens during
+`just publish`, so a tag push alone does not add a version to Orchard.
 
 Tagged releases publish the Windows installer, the portable zip, and
 Velopack's feed (`releases.win.json`, `assets.win.json`, `RELEASES`, and the

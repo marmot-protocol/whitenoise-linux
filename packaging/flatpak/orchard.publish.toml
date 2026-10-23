@@ -1,0 +1,15 @@
+# Required preparation fields only. The signed listing comes from zapstore.yaml.
+# orchard-package.sh overrides the version and stages the adjacent tree.
+[app]
+id = "dev.ipf.whitenoise"
+name = "White Noise"
+summary = "Encrypted group chat over Nostr"
+
+[release]
+version = "2026.10.22+1" # ORCHARD_PUBLISH_VERSION always overrides this.
+channel = "stable"
+arch = "linux-x86_64"
+platforms = ["linux-x86_64"]
+
+[artifact]
+tree = "tree"
