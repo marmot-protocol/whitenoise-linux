@@ -19,16 +19,30 @@
 # first line with the notes as its body. It refuses a tag that does not
 # match APP_VERSION (scripts/version.sh).
 #
-# Usage: scripts/release.sh [--dry-run]   (dry run: print the plan and draft)
+# Usage: scripts/release.sh [--dry-run] [--tag-output FILE]
+# --tag-output writes the pushed tag for callers whose HEAD stays unchanged.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 DRY_RUN=
-case "${1:-}" in
-  --dry-run) DRY_RUN=1 ;;
-  "") ;;
-  *) echo "Usage: scripts/release.sh [--dry-run]" >&2; exit 2 ;;
-esac
+TAG_OUTPUT=
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --dry-run) DRY_RUN=1; shift ;;
+    --tag-output)
+      if [ "$#" -lt 2 ] || [[ -z "$2" || "$2" == --* ]]; then
+        echo '--tag-output requires a file path.' >&2
+        exit 2
+      fi
+      case "$2" in
+        /*) TAG_OUTPUT="$2" ;;
+        *) TAG_OUTPUT="$PWD/$2" ;;
+      esac
+      shift 2
+      ;;
+    *) echo "Usage: scripts/release.sh [--dry-run] [--tag-output FILE]" >&2; exit 2 ;;
+  esac
+done
 REMOTES=(origin github)
 NOTES_CMD="${WN_NOTES_CMD:-claude -p --model haiku}"
 EDITOR_CMD="${VISUAL:-${EDITOR:-vim}}"
@@ -144,6 +158,7 @@ git commit -q -m "Release $version" app/advanced.odin "$METAINFO"
 for remote in "${REMOTES[@]}"; do
   git push "$remote" HEAD:master "$tag"
 done
+if [ -n "$TAG_OUTPUT" ]; then printf '%s\n' "$tag" > "$TAG_OUTPUT"; fi
 echo "Pushed $tag from origin/master. This checkout was left as it was."
 echo "GitHub builds every package, then publishes the release:"
 echo "https://github.com/marmot-protocol/whitenoise-linux/actions"

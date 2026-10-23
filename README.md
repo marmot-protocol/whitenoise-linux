@@ -555,11 +555,14 @@ Flatpak bundle, and Orchard OCI components with your bunker or nsec.
 One NIP-82 release lists all five assets and is sent to
 `wss://relay.cyberguy.fyi`, `wss://relay.orchard.rocks`,
 `wss://relay.ditto.pub`, and `wss://relay.zapstore.dev`.
-`just publish <tag>` announces an existing release the same way.
+`just publish <tag>` waits for and announces an existing release without
+creating another one. Use it to resume publication after the tag was pushed.
 Both stores use the publisher in `zapstore.yaml`; `orchard.txt`
 records that public key for Orchard's repository check.
 
-The Flatpak build prepares Orchard's manifest, config, layer, and bootstrap
+Run `bash tests/release-test.sh` to check the release-to-publish tag handoff
+with signed commits and local remotes, without publishing publicly.
+
 The release publisher is the White Noise identity,
 `npub1whtn0s68y3cs98zysa4nxrfzss5g5snhndv35tk5m2sudsr7ltms48r3ec`.
 Run `just publish` (or `just publish <tag>` for a built release), paste its

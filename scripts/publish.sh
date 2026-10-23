@@ -51,16 +51,25 @@ case "$ZAPSTORE_SIGNER" in
     ;;
 esac
 
-# 1. GitHub
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+
+# 1. GitHub. release.sh deliberately leaves this checkout's HEAD unchanged.
 if [ "$#" -eq 0 ]; then
-  scripts/release.sh
-  TAG="$(git tag --points-at HEAD 'v*-build.*')"
+  scripts/release.sh --tag-output "$WORK/release-tag"
+  if [ ! -s "$WORK/release-tag" ]; then
+    echo 'No release was created; publication stopped.' >&2
+    exit 1
+  fi
+  TAG="$(<"$WORK/release-tag")"
 else
   TAG="$1"
-  if [[ ! "$TAG" =~ ^v[0-9]{4}\.([1-9]|1[0-2])\.([1-9]|[12][0-9]|3[01])-build\.([1-9][0-9]*)$ ]]; then
-    echo "Expected a release tag like v2026.10.21-build.1, got '$TAG'." >&2
-    exit 2
-  fi
+fi
+if [[ ! "$TAG" =~ ^v[0-9]{4}\.([1-9]|1[0-2])\.([1-9]|[12][0-9]|3[01])-build\.([1-9][0-9]*)$ ]]; then
+  echo "Expected a release tag like v2026.10.21-build.1, got '$TAG'." >&2
+  exit 2
+fi
+if [ "$#" -gt 0 ]; then
   git fetch -q "https://github.com/$REPO" "refs/tags/$TAG:refs/tags/$TAG"
 fi
 
@@ -83,14 +92,18 @@ FLATPAK="WhiteNoise-$TAG-x86_64.flatpak"
 ORCHARD=dev.ipf.whitenoise-linux-x86_64
 METADATA="$ORCHARD.asset.json"
 MANIFEST="$ORCHARD.manifest.json"
-WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
 echo "Downloading packages and Orchard manifest for $TAG"
 if ! gh release download "$TAG" -R "$REPO" -D "$WORK" \
   -p "$APPIMAGE" -p "$FLATPAK" -p "$METADATA" -p "$MANIFEST" -p SHA256SUMS.txt; then
   echo "Release $TAG must contain both packages, Orchard metadata/manifest and SHA256SUMS.txt." >&2
   exit 1
 fi
+for file in "$APPIMAGE" "$FLATPAK" "$METADATA" "$MANIFEST" SHA256SUMS.txt; do
+  if [ ! -s "$WORK/$file" ]; then
+    echo "Release $TAG is missing $file. Publication stopped." >&2
+    exit 1
+  fi
+done
 # Read only two exact bare-hash filenames, never arbitrary metadata paths or
 # broad release patterns. Full metadata, descriptors and bytes are validated
 # by zapstore.ts before the first signature. The bootstrap .oci.tgz is not an
