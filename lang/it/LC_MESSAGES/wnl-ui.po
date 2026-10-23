@@ -2917,6 +2917,9 @@ msgstr "Nessun relay in entrata."
 msgid "No issues found."
 msgstr "Nessuna segnalazione trovata."
 
+msgid "No issues yet"
+msgstr "Ancora nessuna segnalazione"
+
 msgid "No key package on this device or its relays."
 msgstr "Nessun pacchetto chiavi su questo dispositivo o sui suoi relay."
 
@@ -3101,6 +3104,9 @@ msgstr "Riaprilo con › nella colonna di sinistra o con il pulsante qui sotto."
 
 msgid "Open locations in"
 msgstr "Apri le posizioni in"
+
+msgid "Open the first issue to share a problem with your group."
+msgstr "Apri la prima segnalazione per condividere un problema con il tuo gruppo."
 
 msgid "Open this link?"
 msgstr "Aprire questo link?"

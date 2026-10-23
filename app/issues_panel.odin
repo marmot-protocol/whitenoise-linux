@@ -123,8 +123,48 @@ issue_author :: proc(ui: ^Ui_State, record: ^marmot.App_Message_Record, index: u
 @(private)
 issues_panel :: proc(ui: ^Ui_State) {
 	narrow := page_w(ui) < 720
+	if len(ui.issues) == 0 && !ui.issue_new {
+		if clay.UI(clay.ID("IssueNoIssues"))(
+		{
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+			},
+		},
+		) {
+			if clay.UI(clay.ID("IssueNoIssuesCopy"))(
+			{
+				layout = {
+					sizing = {clay.SizingGrow(), clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					padding = clay.PaddingAll(24),
+					childGap = 16,
+					childAlignment = {x = .Center, y = .Center},
+				},
+			},
+			) {
+				clay.Text(ICON_COMMENTS, {fontId = FONT_ICON, fontSize = 32, textColor = TEXT_LO})
+				clay.Text(
+					tr("No issues yet"),
+					{fontId = FONT_TITLE, fontSize = 22, textColor = TEXT},
+				)
+				clay.Text(
+					tr("Open the first issue to share a problem with your group."),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				)
+				issue_button("IssueNew", tr("New issue"))
+			}
+			if clay.UI(clay.ID("IssueNoIssuesFooter"))(
+			{
+				layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(16)},
+				border = {color = DIVIDER, width = {top = 1}},
+			},
+			) {micro_button("IssueClose", tr("Back to chat"))}
+		}
+		return
+	}
 	detail := ui.issue_new || ui.issue_selected != ""
-	if !narrow || !detail {
+	if len(ui.issues) > 0 && (!narrow || !detail) {
 		if clay.UI(clay.ID("IssueSidebar"))(
 		{
 			layout = {
@@ -320,7 +360,7 @@ issues_panel :: proc(ui: ^Ui_State) {
 	}
 	if narrow && !detail {return}
 	pad: u16 = narrow ? 20 : 32
-	width := max(f32(100), page_w(ui) - (narrow ? 0 : 300) - f32(pad * 2))
+	width := max(f32(100), page_w(ui) - (narrow || len(ui.issues) == 0 ? 0 : 300) - f32(pad * 2))
 	if clay.UI(clay.ID("IssueDetail"))(
 	{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom}},
 	) {

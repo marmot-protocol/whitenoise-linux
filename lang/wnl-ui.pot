@@ -2911,6 +2911,9 @@ msgstr ""
 msgid "No issues found."
 msgstr ""
 
+msgid "No issues yet"
+msgstr ""
+
 msgid "No key package on this device or its relays."
 msgstr ""
 
@@ -3094,6 +3097,9 @@ msgid "Open it again with › in the left column or the button below."
 msgstr ""
 
 msgid "Open locations in"
+msgstr ""
+
+msgid "Open the first issue to share a problem with your group."
 msgstr ""
 
 msgid "Open this link?"
