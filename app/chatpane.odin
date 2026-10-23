@@ -1580,14 +1580,16 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
-				searching := len(strings.trim_space(string(ui.nc_search[:]))) > 0
+				query := strings.trim_space(string(ui.nc_search[:]))
+				searching := len(query) > 0
+				invalid_key := strings.has_prefix(strings.to_lower(query, context.temp_allocator), "npub1") && deeplink_hex(query) == ""
 				clay.Text(
-					loading ? tr("Loading your contacts") : searching ? tr("No matching contacts") : tr("No contacts yet"),
+					invalid_key ? tr("This key has a typo.") : loading ? tr("Loading your contacts") : searching ? tr("No matching contacts") : tr("No contacts yet"),
 					{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT},
 				)
-				if !loading {
+				if invalid_key || !loading {
 					clay.Text(
-						searching ? tr("To start a chat with someone new, paste their public key.") : tr("People you follow show up here. To start a chat now, paste someone's public key in the field above."),
+						invalid_key ? tr("Check each character against the original and try again.") : searching ? tr("To start a chat with someone new, paste their public key.") : tr("People you follow show up here. To start a chat now, paste someone's public key in the field above."),
 						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 					)
 				}
