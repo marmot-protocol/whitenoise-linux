@@ -48,8 +48,10 @@ cleanup() {
   fi
   if [ -n "$wine_prefix" ]; then
     # Wine's dosdevices/z: points at /; never keep its state in uploaded proof.
-    # Stop and reap its server before removing the private runtime directory.
-    if WINEPREFIX="$wine_prefix" wineserver -k && WINEPREFIX="$wine_prefix" wineserver -w; then
+    # -k returns 1 if the server already exited; -w must still confirm shutdown.
+    local wine_stop=0
+    WINEPREFIX="$wine_prefix" wineserver -k || wine_stop=$?
+    if ((wine_stop <= 1)) && WINEPREFIX="$wine_prefix" wineserver -w; then
       rm -rf "$wine_prefix"
     else
       report "ERROR: could not stop Wine; retained runtime state: $wine_prefix"
