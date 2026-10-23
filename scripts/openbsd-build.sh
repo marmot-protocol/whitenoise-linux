@@ -5,7 +5,7 @@
 #
 # Build dependencies (the workflow installs them):
 #   pkg_add bash git cmake ninja gmake coreutils llvm%21 rust unzip-- \
-#     sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify librsvg
+#     sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify zstd
 # Media libraries and desktop tools remain system packages; SDL is linked
 # statically below. Speech (reading aloud, dictation) is not built:
 # sherpa-onnx publishes no OpenBSD runtime.

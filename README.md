@@ -272,13 +272,13 @@ You need `just`, the [Odin compiler](https://odin-lang.org/docs/install/), a C a
 sudo apt-get install -y just pkg-config cmake clang git curl \
   libsdl3-dev libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libglib2.0-dev \
   libcurl4-openssl-dev libssl-dev libfreetype-dev libwebp-dev \
-  libavformat-dev libavcodec-dev libavutil-dev libswresample-dev librsvg2-bin
+  libavformat-dev libavcodec-dev libavutil-dev libswresample-dev zstd
 ```
 
 **Arch:**
 
 ```sh
-sudo pacman -S --needed just odin rust cmake sdl3 libarchive mpv ffmpeg poppler-glib cairo glib2 curl openssl freetype2 libwebp librsvg
+sudo pacman -S --needed just odin rust cmake sdl3 libarchive mpv ffmpeg poppler-glib cairo glib2 curl openssl freetype2 libwebp zstd
 ```
 
 **Then:**
@@ -290,7 +290,10 @@ just build
 just run
 ```
 
-The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx, MicroTeX and the Noto, Twemoji and OpenMoji emoji sets (rasterizing the latter two from SVG with `rsvg-convert`), and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
+The first build clones the pinned Marmot revision and builds its C bundle,
+fetches Clay, ufbx and MicroTeX, and extracts the SHA-256-pinned emoji bundle
+with `zstd`. It also builds Odin's STB archives when the installation lacks
+them. Later builds reuse the staged dependencies.
 
 The native Linux build extracts speech, font, and emoji archives without
 restoring ownership, so it can run as root inside Flatpak's restricted user
@@ -300,12 +303,25 @@ Native Linux builds, Linux tarballs, and app test binaries hide the symbols
 in `libmarmot_c.a` from shared libraries. This keeps Marmot's bundled OpenSSL
 separate from libcurl's shared TLS libraries during certificate verification.
 
-The build also packs each emoji set's catalog PNGs into `emoji/<set>.bin`.
+The emoji bundle contains each set's PNGs, catalog, licenses and
+`emoji/<set>.bin` pixel pack. Cold font and emoji staging measured
+0.86-1.62 seconds on a Ryzen AI MAX+ 395 across three fresh-output runs,
+including archive verification and extraction, but excluding downloads and
+without flushing filesystem caches. The bundle download is about 85 MB;
+its independently compressed sets are extracted concurrently.
+
+Maintainers regenerate the bundle with `bash scripts/emoji-bundle.sh`,
+using librsvg 2.62.3, cairo 1.18.4 and Odin's STB headers. The script uses
+the upstream pins in `DEPS_PIN` and fixed archive metadata. Upload its
+output to the `deps` release, then update `emoji-bundle-file` with the
+printed SHA-256 and download URL. Normal builds need no SVG renderer or
+host emoji-packer compilation.
+
 The app reads the active set's fixed-size RGBA data at startup (and again
 when you pick another set in Appearance) and uploads only visible picker
 rows, so opening, scrolling, and searching do not launch PNG decoders for
-catalog emoji. Each pack is about 38 MiB uncompressed (OpenMoji's 49 MiB,
-with its own extra emoji), so the three add about 127 MiB of resources;
+catalog emoji. Each pack is about 119 MiB uncompressed (OpenMoji's 153 MiB,
+with its own extra emoji), so the three add about 391 MiB of resources;
 only the active one is resident. They ship beside `emoji-catalog.tsv` in
 every package.
 
@@ -377,7 +393,7 @@ the pinned Odin release from source (OpenBSD has no Odin package), runs
 
 ```sh
 doas pkg_add bash git cmake ninja gmake coreutils llvm%21 rust unzip-- \
-  sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify librsvg
+  sdl3 libarchive libwebp mpv poppler cairo curl glib2 ffmpeg zenity libnotify zstd
 bash scripts/openbsd-build.sh
 ```
 
@@ -542,10 +558,11 @@ These commands type-check the app; they do not link it or verify runtime behavio
 
 The app shows the version written in `APP_VERSION` (`app/advanced.odin`); a
 tag does not change it, and `release.yml` rejects a tag that does not match
-it. `just release` (`scripts/release.sh`) keeps the two together: on a clean,
-current `master` it sets `APP_VERSION` to today's date with the next revision
-(`2026.9.27+1`, then `+2` the same day), commits, tags `v2026.9.27-build.1`,
-and pushes `master` and the tag to both remotes. The tag reaching GitHub
+it. `just release` (`scripts/release.sh`) keeps the two together: it takes
+`origin/master` (a dirty checkout or another branch is left untouched), sets
+`APP_VERSION` to today's date with the next revision (`2026.9.27+1`, then
+`+2` the same day), commits that on top, tags `v2026.9.27-build.1`, and
+pushes the result and the tag to both remotes. The tag reaching GitHub
 starts the release build. `just release --dry-run` prints the version and
 tag without changing anything.
 
@@ -572,6 +589,7 @@ kind 30063 release. The publisher checks the returned signing key before
 sending each event. The bunker URL stays out of command arguments and
 shell history; exporting the White Noise private key is not required.
 
+The Flatpak build prepares Orchard's manifest, config, layer, and bootstrap
 OCI archive from the finished sandbox tree. These files and their checksums
 are hosted on the GitHub release; a registry account and another signing key
 are not needed. Preparation uses the Orchard revision in `DEPS_PIN` and
@@ -608,6 +626,21 @@ maintainer backups. Missing or mismatched release keys fail packaging.
 Sparkle archive signatures authenticate updates independently of the
 bundle's ad-hoc code signature; they do not add Developer ID signing or
 notarization.
+
+To store a generated key backup in KeePass, close that database in the GUI
+and run:
+
+```sh
+scripts/store-release-keys.sh /path/to/passwords.kdbx /path/to/key-backup
+```
+
+The script uses the native or Flatpak KeePassXC CLI and prompts for the
+database password. It creates `White Noise release signing keys` with the
+AppImage private key, Sparkle seed and Sparkle PEM as attachments, then
+reads each one back for comparison. Reruns verify existing attachments and
+add missing ones, but stop if a stored key differs. Nothing is overwritten;
+source keys are not deleted. Pass KeePassXC unlock options after the two
+paths if needed, for example `-k /path/to/keyfile` or `--no-password`.
 
 ngit staging uses `.ngit/act/workflows/release-cross.yml` alongside the
 existing x86-64 AppImage workflow. The act worker needs Podman with working

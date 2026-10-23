@@ -32,14 +32,16 @@ output is already present, so only the first run is slow:
   `nes-decoder/` builds `build/wn-nes`, the NES emulator session behind
   the player modal (`app/nes.odin`).
 - `vendor/emoji/{noto,twemoji,openmoji}`, the three 128x128 PNG sets the user
-  picks between in Appearance: Noto from a subset archive of
-  `noto-emoji-commit` (`scripts/noto-emoji-subset.sh`, published on the
-  `deps` GitHub release), Twemoji and OpenMoji rasterized from the SVGs in
-  sha256-pinned archives with `rsvg-convert`.
-  Staging renames every tile to lowercase hex codepoints joined by `-` with
-  VS16 dropped. `vendor/emoji/openmoji-extras.tsv` lists the emoji only
-  OpenMoji draws. Their licences land in `vendor/emoji-licenses`, and
-  `vendor/emoji-catalog.tsv` comes from a pinned crates.io tarball.
+  picks between in Appearance, come from the `emoji-bundle-file` pin.
+  `scripts/build-emoji.sh` verifies and extracts the zstd archive, including
+  the catalog, pixel packs and licenses. Normal builds do not rasterize SVGs
+  or compile an emoji packer. Maintainers run `scripts/emoji-bundle.sh` to
+  regenerate it from the upstream pins with librsvg 2.62.3, cairo 1.18.4
+  and Odin's STB headers, upload it to the `deps` release, then update the
+  bundle pin. `scripts/emoji-source.sh` retains the source recipe: lowercase
+  hex filenames with VS16 dropped, OpenMoji extras in
+  `vendor/emoji/openmoji-extras.tsv`, licenses in `vendor/emoji-licenses`,
+  and the search catalog from the pinned emojis crate.
 - `vendor/common-passwords.txt` and its MIT license from SecLists, pinned by
   `seclists-passwords-file` in `DEPS_PIN`. The Odin password-strength check
   embeds the corpus with `#load`; there is no runtime file lookup or network
@@ -69,8 +71,8 @@ output is already present, so only the first run is slow:
 `scripts/fetch.sh <name>` downloads a `-file` pin to `vendor/downloads/<name>`
 and reuses a file already there with the pinned digest, which is how packagers
 build offline. Bumping a pin is a one-line edit; `just build` re-checks out and
-rebuilds on the next run (a new Twemoji or OpenMoji archive also needs
-`vendor/emoji/<set>` removed; Noto restages by itself).
+rebuilds on the next run. Emoji source pin changes also require regenerating
+the bundle and updating `emoji-bundle-file`.
 
 OpenBSD runs only from a root-owned, non-group/other-writable installation
 with protected ancestry. `scripts/openbsd-build.sh` stages one as root, then
@@ -137,8 +139,9 @@ the offline queue. UI prefs are a separate JSON blob at
 ### System dependencies
 
 Odin (a recent nightly; CI pins one in `.github/workflows/ci.yml`), a C and
-C++ compiler, CMake, a Rust toolchain for `marmot-c`, and `rsvg-convert`
-(librsvg) to stage the emoji sets. Then SDL3 plus
+C++ compiler, CMake, a Rust toolchain for `marmot-c`, and `zstd` to stage
+the emoji bundle. `rsvg-convert` is only needed to regenerate that bundle.
+Then SDL3 plus
 `libarchive` (`archive.c`), `libmpv` (`mpv.odin`), `poppler-glib` + `glib` +
 `gobject` + `fontconfig` (`pdf.c`), `cairo` (`pdf.c`, `math.odin`) and `libcurl`
 (`ws_shim.c`, the nevent card fetch). Archive and PDF parsing run in the

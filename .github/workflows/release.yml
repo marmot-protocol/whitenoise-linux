@@ -59,7 +59,7 @@ jobs:
             autoconf automake libtool libgcrypt20-dev libx11-dev libxpm-dev liblzma-dev libzstd-dev libfuse-dev zlib1g-dev patchelf librsvg2-dev zsync squashfs-tools \
             libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
             libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev libxtst-dev \
-            file desktop-file-utils wget ca-certificates unzip librsvg2-bin
+            file desktop-file-utils wget ca-certificates unzip zstd
 
       # actions/cache restores as the runner user, which cannot create
       # directories under /usr/local.

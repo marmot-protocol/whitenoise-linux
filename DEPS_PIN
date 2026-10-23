@@ -14,6 +14,7 @@ openmoji-file = 59b0cd9f6fe033818fc02585cea42bea9fba5d68a4d3a3639bfe5d5cc3805689
 openmoji-license-file = 5e436ff8ffbb77d8607220e9bce20c8915d860010feeb6c1ebef5a85688e9b39 https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/LICENSE.txt
 openmoji-data-file = ab181dd523021dfbe2b98a13d96ab384b7b3014d17815261bc267fb39d9a211b https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/data/openmoji.json
 emojis-file = 99e1f1df1f181f2539bac8bf027d31ca5ffbf9e559e3f2d09413b9107b5c02f4 https://static.crates.io/crates/emojis/emojis-0.6.4.crate
+emoji-bundle-file = 976afafc664c81af592b259c1c70c71211569afad3a2cbda3398473b7d44296e https://github.com/marmot-protocol/whitenoise-linux/releases/download/deps/emoji-128-5f3a33430b56652790319244b8578768b26b32b9e0b996379b15a2a48320006a.tar?download=1
 seclists-passwords-file = 68782d6a4a19a4768d5f15dd66bd534e7a33055cc755411e33f16d18c50fdcce https://raw.githubusercontent.com/danielmiessler/SecLists/c5a05259b61cc60dee828ad1bf92c288c7e97ea0/Passwords/Common-Credentials/10k-most-common.txt
 seclists-license-file = 3dbdc93d5f8829de0941744841730a09c106d0732e5ae0e98ca1d77be7ded66c https://raw.githubusercontent.com/danielmiessler/SecLists/c5a05259b61cc60dee828ad1bf92c288c7e97ea0/LICENSE
 nerd-fonts-file = fab782a66f7d3019da64f6572db9fc5d3a4bcb19f9fa13e2d8a62e3693d6396e https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.zip

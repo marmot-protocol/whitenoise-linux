@@ -42,7 +42,7 @@ emoji_pack: []u8
 emoji_tex_cache: map[string]^rl.Texture2D
 
 @(private)
-EMOJI_SIDE :: 128 // matches scripts/build.sh and scripts/emoji-pack.c
+EMOJI_SIDE :: 128 // matches scripts/emoji-source.sh and scripts/emoji-pack.c
 @(private)
 EMOJI_RECORD_BYTES :: 1 + EMOJI_SIDE * EMOJI_SIDE * 4
 @(private)

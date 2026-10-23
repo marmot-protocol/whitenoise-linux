@@ -37,7 +37,7 @@ depends=(sdl3 libwebp libarchive mpv ffmpeg poppler-glib cairo fontconfig glib2 
          libgcc libstdc++ freetype2 xdg-utils libnotify ttf-dejavu hicolor-icon-theme)
 # webkit2gtk-4.1 here makes build.sh produce wn-webview, which is what the
 # optional dependency below then runs.
-makedepends=(git cargo clang cmake unzip librsvg webkit2gtk-4.1)
+makedepends=(git cargo clang cmake unzip zstd webkit2gtk-4.1)
 optdepends=(
   'webkit2gtk-4.1: run webxdc apps attached to messages'
   'noto-fonts-cjk: Japanese text'

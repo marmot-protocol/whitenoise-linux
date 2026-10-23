@@ -1,5 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
-// Tile side; matches EMOJI_SIDE in scripts/build.sh and app/emoji.odin.
+// Tile side; matches EMOJI_SIDE in scripts/emoji-source.sh and app/emoji.odin.
 #define SIDE 128
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
@@ -29,7 +29,7 @@ static void io_fail(const char *path) {
     exit(1);
 }
 
-// The staged tile name (scripts/build.sh emoji_stage): lowercase hex
+// The staged tile name (scripts/emoji-source.sh emoji_stage): lowercase hex
 // codepoints joined by '-', VS16 dropped (U+23 U+FE0F U+20E3 -> 23-20e3.png).
 static void filename(char *name, size_t capacity, const unsigned char *s, size_t len) {
     size_t used = 0;
