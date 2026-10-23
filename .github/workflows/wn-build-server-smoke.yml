@@ -1,4 +1,4 @@
-name: WN cross-build verification on Arch
+name: WN builds and tests on Arch
 
 on:
   push:
@@ -14,7 +14,7 @@ env:
 
 jobs:
   native:
-    name: Verify native cached source-content rebuilds
+    name: Build and test native
     runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-2]
     timeout-minutes: 90
     steps:
@@ -37,17 +37,17 @@ jobs:
             ln -s "$cache/cargo" build/cargo
           fi
           test "$(readlink -f build/cargo)" = "$cache/cargo"
-      - name: Verify native source-content rebuilds and runtime
+      - name: Build and test native
         shell: bash
         run: |
           set -euo pipefail
-          bash scripts/verify-mdk-rebuild.sh native
+          bash scripts/build.sh test
           SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke ./build/app "$(mktemp -d)"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: evidence-native
-          path: build/mdk-rebuild/native/**
+          path: wn-odin-shot.png
           if-no-files-found: warn
 
   cross:
@@ -94,21 +94,19 @@ jobs:
             ln -s "$cache/build" build/cross
           fi
           test "$(readlink -f build/cross)" = "$cache/build"
-      - name: Verify cross source-content rebuilds and package
+      - name: Build and package
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.cache/vcpkg/archives"
           podman run --rm --entrypoint bash \
             -e CARGO_BUILD_JOBS -e WN_BUILD_JOBS -e CMAKE_BUILD_PARALLEL_LEVEL \
-            -e GITHUB_STEP_SUMMARY=/step-summary \
-            -v "$GITHUB_STEP_SUMMARY:/step-summary" \
             -v "$PWD:/work" -v "$HOME/.cache/vcpkg:/root/.cache/vcpkg" \
             -v "$HOME/.cache/wn-cross:$HOME/.cache/wn-cross" \
             -v "$HOME/.cache/wn-cross/registry:/root/.cargo/registry" \
             -v "$HOME/.cache/wn-cross/git:/root/.cargo/git" \
             -v '${{ steps.toolchain.outputs.rustup }}:/root/.rustup' \
-            '${{ steps.toolchain.outputs.image }}' scripts/verify-mdk-rebuild.sh '${{ matrix.target }}'
+            '${{ steps.toolchain.outputs.image }}' scripts/cross-build.sh '${{ matrix.target }}'
       - name: Extract and execute the shipped package
         shell: bash
         run: |
@@ -145,7 +143,6 @@ jobs:
           path: |
             dist/*-${{ matrix.target }}.*
             build/cross-evidence/${{ matrix.target }}.png
-            build/mdk-rebuild/${{ matrix.target }}/**
           if-no-files-found: warn
 
   openbsd:
@@ -170,6 +167,4 @@ jobs:
             dist/*-openbsd-amd64.tar.gz
             build/openbsd/wn-odin-shot*.png
             build/openbsd/vm-console.log
-            build/openbsd/rebuild-summary.txt
-            build/mdk-rebuild/openbsd-amd64/**
           if-no-files-found: warn

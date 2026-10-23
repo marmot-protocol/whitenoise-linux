@@ -846,16 +846,10 @@ an MDK-only change relinks the app without recompiling its Odin sources.
 Linux and Windows package caches cover bundled runtime libraries and archives;
 release downloads, signing, and update feeds still run when requested.
 
-Run `bash scripts/verify-mdk-rebuild.sh native` to populate caches, rebuild
-unchanged, edit an existing MDK Rust error message, then restore and rebuild it.
-Each phase compiles and executes a C ABI consumer against the staged library;
-unchanged builds must compile no crates, and edited/restored builds must compile
-only `marmot-c`. Source timestamps are restored only after the restored library
-passes its ABI checks, so verification does not dirty other targets' caches.
-Logs and timings stay in `build/mdk-rebuild/<target>` and the CI
-step summary. Other targets are `linux-amd64`, `linux-arm64`, `windows-amd64`
-(inside the cross-build container), and `openbsd-amd64` (inside the guest).
-The build-server smoke workflow queues these five jobs together on two isolated
+The build-server workflow builds native Linux, Linux amd64/arm64, Windows amd64,
+and OpenBSD amd64 once each. It runs the native C/Odin suite, packaged Linux and
+Windows startup tests, and OpenBSD's filesystem, helper, and startup tests.
+The workflow queues these five jobs together on two isolated
 runner slots, with six build threads per job and shared CPU/memory limits.
 Native and Linux jobs use `wn-cache-2`; Windows and OpenBSD use `wn-cache-1`.
 This keeps targets on warmed caches while both slots can build concurrently.

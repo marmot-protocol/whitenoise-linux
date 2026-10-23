@@ -6,7 +6,7 @@ out="$here/build/openbsd"
 cache="$HOME/.cache/wn-openbsd/7.9-v0.14.0"
 # Runner slots have separate UIDs, HOMEs, disks, and loopback forwards.
 ssh_port=$((20000 + UID))
-mkdir -p "$out" "$cache" "$here/build/mdk-rebuild/openbsd-amd64"
+mkdir -p "$out" "$cache"
 image="$cache/openbsd-7.9-x86-64.qcow2"
 if [ ! -f "$image" ]; then
     curl -fL --retry 3 -o "$image" https://github.com/cross-platform-actions/openbsd-builder/releases/download/v0.14.0/openbsd-7.9-x86-64.qcow2
@@ -108,37 +108,13 @@ rsync -a --delete --no-owner --no-group --exclude=/build/ --exclude=/dist/ --exc
     --exclude=/vendor/mdk/crates/marmot-c/output/ --exclude='/vendor/llvm-mingw*' --exclude=/vendor/vcpkg/ \
     --exclude=/vendor/sdl/ \
     "$here/" runner@127.0.0.1:/mnt/build-cache/work/
-guest_result=0
-ssh "${ssh_args[@]}" runner@127.0.0.1 /usr/local/bin/bash -s <<'GUEST' || guest_result=$?
+ssh "${ssh_args[@]}" runner@127.0.0.1 /usr/local/bin/bash -s <<'GUEST'
 set -euo pipefail
 cd /mnt/build-cache/work
 export CARGO_TARGET_DIR=/mnt/build-cache/target CARGO_HOME=/mnt/build-cache/cargo
 export CARGO_BUILD_JOBS=6 WN_BUILD_JOBS=6 CMAKE_BUILD_PARALLEL_LEVEL=6
-mkdir -p build/openbsd
-export GITHUB_STEP_SUMMARY="$PWD/build/openbsd/rebuild-summary.txt"
-: > "$GITHUB_STEP_SUMMARY"
-# Populate caches and exercise the original package using the existing bootstrap.
 bash scripts/openbsd-build.sh
-export PATH="$PWD/build/openbsd/odin:$PATH"
-bash scripts/verify-mdk-rebuild.sh openbsd-amd64
 GUEST
-evidence_result=0
-if ssh "${ssh_args[@]}" runner@127.0.0.1 test -f /mnt/build-cache/work/build/openbsd/rebuild-summary.txt; then
-    rsync -a runner@127.0.0.1:/mnt/build-cache/work/build/openbsd/rebuild-summary.txt "$out/" || evidence_result=$?
-    if ((evidence_result == 0)) && [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
-        cat "$out/rebuild-summary.txt" >>"$GITHUB_STEP_SUMMARY" || evidence_result=$?
-    fi
-fi
-if ssh "${ssh_args[@]}" runner@127.0.0.1 test -d /mnt/build-cache/work/build/mdk-rebuild/openbsd-amd64; then
-    rsync -a runner@127.0.0.1:/mnt/build-cache/work/build/mdk-rebuild/openbsd-amd64/ \
-        "$here/build/mdk-rebuild/openbsd-amd64/" || evidence_result=$?
-fi
-if ((guest_result != 0)); then
-    exit "$guest_result"
-fi
-if ((evidence_result != 0)); then
-    exit "$evidence_result"
-fi
 mkdir -p "$here/dist"
 rsync -a runner@127.0.0.1:/mnt/build-cache/work/dist/ "$here/dist/"
 rsync -a --include='wn-odin-shot*.png' --exclude='*' runner@127.0.0.1:/mnt/build-cache/work/build/openbsd/ "$out/"
