@@ -165,6 +165,7 @@ when #config(WN_RELOAD, false) {
 		Open_One,
 		Open_Many,
 		Save,
+		Open_Folder,
 	}
 	foreign _ {
 		@(private)
@@ -383,6 +384,23 @@ OpenFileDialog :: proc(allow_many: bool) {
 		wn_dev_dialog(allow_many ? .Open_Many : .Open_One, dialog_cb, nil)
 	} else {
 		sdl.ShowOpenFileDialog(dialog_cb, nil, state.window, nil, 0, nil, allow_many)
+	}
+}
+
+// Folder selection shares the picked queue and reload-safe callback lifecycle.
+OpenFolderDialog :: proc() {
+	sync.lock(&picked_mutex)
+	picked_pending += 1
+	sync.unlock(&picked_mutex)
+	when ODIN_OS == .Linux {
+		when #config(WN_RELOAD, false) {
+			wn_dev_dialog(.Open_Folder, dialog_cb, nil)
+		} else {
+			sdl.ShowOpenFolderDialog(dialog_cb, nil, state.window, nil, false)
+		}
+	} else {
+		sdl.SetError("Folder selection is not supported on this platform")
+		dialog_cb(nil, nil, -1)
 	}
 }
 

@@ -506,40 +506,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 								)
 							}
 							if chat.unread > 0 {
-								// A badge that just went up swells and rocks: the one
-								// motion in the rail that has to survive peripheral
-								// vision.
-								count := fmt.tprintf("%d", chat.unread)
-								pop, _, _ := bump(clay.ID("ChatRowBadge", index).id, count)
-								pad := bump_pad(pop)
-								rock := u16(clamp((pop - 1) * 8, 0, 3))
-								if clay.UI(clay.ID("ChatRowBadge", index))(
-								{
-									layout = {
-										padding = {
-											left = 7 + pad + rock,
-											right = 7 + pad - min(rock, 7),
-											top = 2,
-											bottom = 2,
-										},
-									},
-									backgroundColor = ACCENT,
-									cornerRadius = rr(9),
-								},
-								) {
-									// A badge that just went up carries light with it,
-									// which is what catches the eye off to the side.
-									glow(
-										clay.ID("ChatRowBadge", index),
-										ACCENT,
-										clamp((pop - 1) * 4, 0, 1),
-										12,
-									)
-									clay.Text(
-										count,
-										{fontId = FONT_BODY, fontSize = 12, textColor = BG},
-									)
-								}
+								unread_badge(clay.ID("ChatRowBadge", index), chat.unread)
 							}
 							clay.Text(
 								chat.at,
@@ -899,6 +866,28 @@ accounts_modal :: proc(ui: ^Ui_State) {
 	}
 }
 
+// Shared by conversations and terminal work waiting for attention.
+@(private)
+unread_badge :: proc(id: clay.ElementId, unread: u64) {
+	if unread == 0 {return}
+	count := fmt.tprintf("%d", unread)
+	pop, _, _ := bump(id.id, count)
+	pad := bump_pad(pop)
+	rock := u16(clamp((pop - 1) * 8, 0, 3))
+	if clay.UI(id)(
+	{
+		layout = {
+			padding = {left = 7 + pad + rock, right = 7 + pad - min(rock, 7), top = 2, bottom = 2},
+		},
+		backgroundColor = ACCENT,
+		cornerRadius = rr(9),
+	},
+	) {
+		glow(id, ACCENT, clamp((pop - 1) * 4, 0, 1), 12)
+		clay.Text(count, {fontId = FONT_BODY, fontSize = 12, textColor = BG})
+	}
+}
+
 nav_button :: proc(page: Page, active: bool) {
 	// A fixed target keeps the vertical rail stable across icon fonts
 	// and remains usable on touch screens.
@@ -922,6 +911,21 @@ nav_button :: proc(page: Page, active: bool) {
 			PAGE_ICONS[page],
 			{fontId = FONT_ICON, fontSize = 17, textColor = active ? ACCENT : TEXT_DIM},
 		)
+		if page == .Whip {
+			waiting: u64
+			for project in rl.WhipProjects() {waiting += u64(project.waiting)}
+			if waiting > 0 {
+				if clay.UI(clay.ID("WhipNavBadge"))(
+				{
+					floating = {
+						attachTo = .Parent,
+						attachment = {element = .CenterCenter, parent = .RightTop},
+						zIndex = 2,
+					},
+				},
+				) {unread_badge(clay.ID("WhipNavUnread"), waiting)}
+			}
+		}
 	}
 }
 

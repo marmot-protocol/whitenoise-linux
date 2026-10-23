@@ -310,6 +310,9 @@ msgstr "ひとこと自己紹介"
 msgid "A little more room for conversation."
 msgstr "会話のスペースが少し広くなりました。"
 
+msgid "A terminal is waiting for you."
+msgstr "ターミナルがあなたの操作を待っています。"
+
 msgid "ABOUT"
 msgstr "自己紹介"
 
@@ -731,6 +734,9 @@ msgstr "写真を変更"
 msgid "Change picture"
 msgstr "画像を変更"
 
+msgid "Change project avatar"
+msgstr "プロジェクトのアバターを変更"
+
 msgid "Change rule type"
 msgstr "ルールの種類を変更"
 
@@ -845,6 +851,9 @@ msgstr "このチャットの移動先を選んでください。"
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr "既知の送信者を選択するか、64文字の16進数の公開鍵を入力してください。"
 
+msgid "Choose a project folder."
+msgstr "プロジェクトのフォルダーを選択してください。"
+
 msgid "Choose a sign-in method."
 msgstr "サインイン方法を選んでください。"
 
@@ -929,6 +938,9 @@ msgstr "クリックで編集、ドラッグで並べ替えます。"
 msgid "Close"
 msgstr "閉じる"
 
+msgid "Close tab"
+msgstr "タブを閉じる"
+
 msgid "Close to tray"
 msgstr "閉じたらトレイに格納"
 
@@ -937,6 +949,9 @@ msgstr "終了"
 
 msgid "Closing connections and clearing this session."
 msgstr "接続を閉じて、このセッションを消去しています。"
+
+msgid "Closing tab…"
+msgstr "タブを閉じています…"
 
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr "ウィンドウを閉じると非表示になります。トレイアイコンには未読の合計数が表示され、そこから再表示できます。"
@@ -958,6 +973,9 @@ msgstr "この行数を超えるメッセージとイベントカードを折り
 
 msgid "Collapse the chat list"
 msgstr "チャット一覧を折りたたむ"
+
+msgid "Collapse the project list"
+msgstr "プロジェクト一覧を折りたたむ"
 
 msgid "Collapse transcription"
 msgstr "文字起こしを折りたたむ"
@@ -1160,6 +1178,12 @@ msgstr "パスワードを変更できませんでした。もう一度お試し
 msgid "Couldn't check for updates. Please try again."
 msgstr "アップデートを確認できませんでした。もう一度お試しください。"
 
+msgid "Couldn't choose a folder. Close your open file picker and try again."
+msgstr "フォルダーを選択できませんでした。開いているファイル選択画面を閉じて、もう一度お試しください。"
+
+msgid "Couldn't close the tab. Please try again."
+msgstr "タブを閉じられませんでした。もう一度お試しください。"
+
 msgid "Couldn't complete the signer request. Please try again."
 msgstr "署名者への要求を完了できませんでした。もう一度お試しください。"
 
@@ -1192,6 +1216,12 @@ msgstr "バックアップを作成できませんでした。もう一度お試
 
 msgid "Couldn't create the group. Enter a name and try again."
 msgstr "グループを作成できませんでした。名前を入力して、もう一度お試しください。"
+
+msgid "Couldn't create the project. Please try again."
+msgstr "プロジェクトを作成できませんでした。もう一度お試しください。"
+
+msgid "Couldn't create the tab. Please try again."
+msgstr "タブを作成できませんでした。もう一度お試しください。"
 
 msgid "Couldn't create the vault. Please try again."
 msgstr "保管庫を作成できませんでした。もう一度お試しください。"
@@ -1394,6 +1424,9 @@ msgstr "バックアップを読み取れませんでした。もう一度お試
 msgid "Couldn't read the image. Please try again."
 msgstr "画像を読み取れませんでした。もう一度お試しください。"
 
+msgid "Couldn't read the project photo. Please try again."
+msgstr "プロジェクトの写真を読み込めませんでした。もう一度お試しください。"
+
 msgid "Couldn't read the vault file. Please try again."
 msgstr "保管庫ファイルを読み取れませんでした。もう一度お試しください。"
 
@@ -1448,6 +1481,9 @@ msgstr "GIFを保存できませんでした。もう一度お試しください
 
 msgid "Couldn't save the edit. Please try again."
 msgstr "編集を保存できませんでした。もう一度お試しください。"
+
+msgid "Couldn't save the project photo. Please try again."
+msgstr "プロジェクトの写真を保存できませんでした。もう一度お試しください。"
 
 msgid "Couldn't save the sticker. Wait for its image to load and try again."
 msgstr "ステッカーを保存できませんでした。画像の読み込みが完了してから、もう一度お試しください。"
@@ -1590,6 +1626,12 @@ msgstr "作成者"
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "パスワードで暗号化したNIP-49形式の鍵を作成します。安全に保存したり、別のクライアントに移したりできます。"
+
+msgid "Creating project…"
+msgstr "プロジェクトを作成しています…"
+
+msgid "Creating tab…"
+msgstr "タブを作成しています…"
 
 msgid "Creating your chat"
 msgstr "チャットを作成しています"
@@ -1975,6 +2017,9 @@ msgstr "全画面表示を終了"
 
 msgid "Expand the chat list"
 msgstr "チャット一覧を展開"
+
+msgid "Expand the project list"
+msgstr "プロジェクト一覧を展開"
 
 msgid "Export"
 msgstr "エクスポート"
@@ -2891,6 +2936,12 @@ msgstr "新しいメッセージ"
 msgid "New name"
 msgstr "新しい名前"
 
+msgid "New project"
+msgstr "新しいプロジェクト"
+
+msgid "New tab"
+msgstr "新しいタブ"
+
 msgid "News"
 msgstr "ニュース"
 
@@ -3023,6 +3074,9 @@ msgstr "プレビューはありません"
 
 msgid "No preview for this file type. Save it, or read the bytes."
 msgstr "この種類のファイルはプレビューできません。保存するか、バイトを表示してください。"
+
+msgid "No projects yet"
+msgstr "まだプロジェクトはありません"
 
 #, c-format
 msgid "No record with id %s in this chat's window."
@@ -3385,6 +3439,9 @@ msgstr "添付ファイルを準備しています…"
 msgid "Preparing dictation..."
 msgstr "音声入力を準備しています..."
 
+msgid "Preparing project photo…"
+msgstr "プロジェクトの写真を準備しています…"
+
 msgid "Preparing speech..."
 msgstr "読み上げを準備しています..."
 
@@ -3426,6 +3483,9 @@ msgstr "プロフィール"
 
 msgid "Progress is indeterminate."
 msgstr "進捗率は未確定です。"
+
+msgid "Project created."
+msgstr "プロジェクトを作成しました。"
 
 msgid "Projects"
 msgstr "プロジェクト"
@@ -3832,6 +3892,9 @@ msgstr "%sを保存しました。"
 msgid "Saved. Restart White Noise to apply this connection setting."
 msgstr "保存しました。この接続設定を適用するには White Noise を再起動してください。"
 
+msgid "Saving project photo…"
+msgstr "プロジェクトの写真を保存しています…"
+
 msgid "Saving your proxy settings and encrypted credentials."
 msgstr "プロキシ設定と暗号化した認証情報を保存しています。"
 
@@ -3945,6 +4008,9 @@ msgstr "リストから連絡先を選択してください。"
 
 msgid "Select a model to download it for dictation and audio messages."
 msgstr "音声入力や音声メッセージに使用するモデルを選択してダウンロードします。"
+
+msgid "Select a project"
+msgstr "プロジェクトを選択"
 
 msgid "Select an issue"
 msgstr "報告を選択"
@@ -4489,6 +4555,9 @@ msgstr "このペアリングリンクは QR コードには長すぎます。�
 msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
 msgstr "このパスワードは推測されやすいものです。関連のない単語を組み合わせるか、パスワードマネージャーで生成したパスワードを使用してください。"
 
+msgid "This project is no longer available."
+msgstr "このプロジェクトは利用できなくなりました。"
+
 msgid "This session"
 msgstr "現在のセッション"
 
@@ -4679,6 +4748,9 @@ msgstr "プロジェクトごとに別のグループを使い、最初にプロ
 
 msgid "Use a shorter search."
 msgstr "検索キーワードを短くしてください。"
+
+msgid "Use crop circle"
+msgstr "クロップサークルを使用"
 
 msgid "Use emoji image"
 msgstr "絵文字の画像を使用"

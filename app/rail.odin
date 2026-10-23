@@ -39,6 +39,8 @@ rail_content :: proc(ui: ^Ui_State) {
 		// Profile replaces the conversation list with accounts.
 		if ui.page == .Profile {
 			profile_rail(ui)
+		} else if ui.page == .Whip {
+			whip_rail(ui)
 		} else {
 			// Section header: CHATS/CONTACTS count + new-chat button.
 			if clay.UI(clay.ID("RailHead"))(

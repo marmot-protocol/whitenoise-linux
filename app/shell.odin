@@ -107,7 +107,7 @@ rail_width :: proc(ui: ^Ui_State) -> f32 {
 	}
 	// Standalone pages leave the saved sidebar width and animation
 	// untouched so returning to another tab restores its layout.
-	if ui.page == .Archived || ui.page == .Settings || ui.page == .Whip {
+	if ui.page == .Archived || ui.page == .Settings {
 		return RAIL_W_COLLAPSED
 	}
 	// Resize immediately; preserving the pref restores the list when it fits.
@@ -146,7 +146,7 @@ rail_full_w :: proc(ui: ^Ui_State) -> f32 {
 // only flip the pref, since their rail width says nothing about it.
 @(private)
 toggle_rail :: proc(ui: ^Ui_State) {
-	if single_pane() || ui.page == .Archived || ui.page == .Settings || ui.page == .Whip {
+	if single_pane() || ui.page == .Archived || ui.page == .Settings {
 		ui.rail_peek = false
 		ui.prefs.rail_collapsed = !ui.prefs.rail_collapsed
 	} else if rail_narrow(ui) {
@@ -211,7 +211,7 @@ shell_navigation :: proc(ui: ^Ui_State) {
 			nav_button(page, ui.page == page)
 		}
 		if rl.WhipAvailable() {nav_button(.Whip, ui.page == .Whip)}
-		if !single_pane() && ui.page != .Archived && ui.page != .Settings && ui.page != .Whip {
+		if !single_pane() && ui.page != .Archived && ui.page != .Settings {
 			if clay.UI(clay.ID("RailCollapse"))(
 			{
 				layout = {
@@ -225,7 +225,7 @@ shell_navigation :: proc(ui: ^Ui_State) {
 				collapsed := rail_narrow(ui)
 				if hovered() {
 					tooltip(
-						collapsed ? tr("Expand the chat list") : tr("Collapse the chat list"),
+						ui.page == .Whip ? (collapsed ? tr("Expand the project list") : tr("Collapse the project list")) : (collapsed ? tr("Expand the chat list") : tr("Collapse the chat list")),
 						.Right,
 					)
 				}
@@ -336,7 +336,9 @@ phone_detail :: proc(ui: ^Ui_State) -> bool {
 		return ui.selected >= 0
 	case .Contacts:
 		return ui.selected_contact >= 0
-	case .Settings, .Archived, .Profile, .Whip:
+	case .Whip:
+		return ui.whip_detail
+	case .Settings, .Archived, .Profile:
 		return true
 	}
 	return false
@@ -378,7 +380,9 @@ phone_back_action :: proc(ui: ^Ui_State) {
 		ui.selected_contact = -1
 	case .Settings:
 		settings_back(ui)
-	case .Archived, .Profile, .Whip:
+	case .Whip:
+		ui.whip_detail = false
+	case .Archived, .Profile:
 		ui.page = .Chats // no list half of their own to fall back to
 	}
 }

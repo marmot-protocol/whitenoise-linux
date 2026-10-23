@@ -1351,6 +1351,35 @@ app_main :: proc() {
 			drain_stickers(&ui, client)
 			emoji_sets_drain(&ui)
 			gif_drain(&ui)
+			whip_avatar_drain(&ui)
+			switch status, project := rl.WhipCreatePoll(); status {
+			case .Ready:
+				ui.whip_creating = false
+				ui.whip_project, ui.whip_detail = project, true
+				set_status(&ui, tr("Project created."), .Info)
+			case .Failed:
+				ui.whip_creating = false
+				set_status(&ui, tr("Couldn't create the project. Please try again."), .Error)
+			case .Idle, .Creating:
+			}
+
+			switch status, tab := rl.WhipTabPoll(); status {
+			case .Ready:
+				if ui.whip_tab_op == .New {
+					ui.whip_tabs[ui.whip_tab_project] = tab
+				} else if ui.whip_tabs[ui.whip_tab_project] == tab {
+					delete_key(&ui.whip_tabs, ui.whip_tab_project)
+				}
+				ui.whip_tab_op = .None
+			case .Failed:
+				set_status(
+					&ui,
+					ui.whip_tab_op == .New ? tr("Couldn't create the tab. Please try again.") : tr("Couldn't close the tab. Please try again."),
+					.Error,
+				)
+				ui.whip_tab_op = .None
+			case .Idle, .Creating:
+			}
 
 			// Files picked in the async SDL dialog land here; they become
 			// composer chips, custom emoji when the settings "+" asked, or
@@ -1359,8 +1388,20 @@ app_main :: proc() {
 			picked := rl.PickedFiles(&pick_completed)
 			photo_route := ui.photo.pending
 			if photo_route && pick_completed {photo_pick_complete(&ui, picked[:])}
+			project_route := ui.whip_picking_project
+			if project_route && pick_completed {
+				ui.whip_picking_project = false
+				if len(picked) > 0 {
+					ui.whip_creating = rl.WhipCreate(picked[0])
+					set_status(
+						&ui,
+						ui.whip_creating ? tr("Creating project…") : tr("Couldn't create the project. Please try again."),
+						ui.whip_creating ? .Info : .Error,
+					)
+				}
+			}
 			for path in picked {
-				if photo_route {
+				if photo_route || project_route {
 					// Already consumed as a photo (or discarded tombstone).
 				} else if ui.picking_contacts {
 					contacts_import_start(&ui, client, path)
@@ -1548,8 +1589,21 @@ app_main :: proc() {
 				for rl.GetCharPressed() != 0 {}
 			}
 			whip_active := ui.page == .Whip && !ui.add_account_open && !modal_open(&ui)
-			rl.WhipFrame(whip_active ? .Visible : .Hidden)
-			rl.SetTextInput(text_field_live || whip_active)
+			whip_content := whip_active && (!single_pane() || ui.whip_detail)
+			rl.WhipFrame(
+				whip_active ? (whip_content ? .Visible : .Projects) : .Hidden,
+				ui.whip_project,
+				ui.whip_tabs[ui.whip_project],
+			)
+			whip_sync_tabs(&ui)
+			for notice in rl.WhipNotices() {
+				do_notify(
+					&ui,
+					notice.title != "" ? notice.title : "Whip",
+					notice.body != "" ? notice.body : tr("A terminal is waiting for you."),
+				)
+			}
+			rl.SetTextInput(text_field_live || whip_content)
 			if text_field_live {
 				rl.SetTextInputArea(
 					i32(caret_box.x * UI_ZOOM),
@@ -1796,6 +1850,7 @@ app_main :: proc() {
 		// Shutdown order matters: closing the runtime makes the blocking
 		// subscription read return CLOSED (worker exits), then the sub is
 		// freed before the client that created it.
+		whip_avatar_stop(&ui)
 		session_stop(&ui, client, &live)
 		preview_close()
 		web_close()

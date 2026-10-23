@@ -244,12 +244,59 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			case .Profile:
 				load_profile(client, ui)
 			case .Whip:
+				ui.whip_detail = false
 			}
 			return
 		}
 	}
 
-	if ui.page == .Whip && clicked("WhipRetry") {rl.WhipClose()}
+	if ui.page == .Whip {
+		if clicked("WhipRetry") || clicked("WhipRailRetry") {rl.WhipClose()}
+		if clicked("WhipNewProject") && !ui.whip_picking_project && !ui.whip_creating {
+			if rl.FileDialogPending() || photo_input_capture(ui) {
+				set_status(
+					ui,
+					tr("Couldn't choose a folder. Close your open file picker and try again."),
+					.Info,
+				)
+				return
+			}
+			ui.whip_picking_project = true
+			rl.OpenFolderDialog()
+			return
+		}
+		for project in rl.WhipProjects() {
+			if clay.PointerOver(clay.ID("WhipProjectAvatar", project.id)) {
+				if photo_pick_begin(ui, .Whip, project.dir) {rl.OpenFileDialog(false)}
+				return
+			}
+			if clay.PointerOver(clay.ID("WhipProject", project.id)) {
+				ui.whip_project = project.id
+				ui.whip_detail = true
+				return
+			}
+		}
+		if ui.whip_tab_op == .None {
+			if clicked("WhipNewTab") && rl.WhipTabChange(.New, ui.whip_project) {
+				ui.whip_tab_op, ui.whip_tab_project = .New, ui.whip_project
+				return
+			}
+			for tab in rl.WhipTabs() {
+				if clay.PointerOver(clay.ID("WhipTabClose", tab.id)) {
+					if rl.WhipTabChange(.Close, tab.id) {
+						ui.whip_tab_op, ui.whip_tab_project = .Close, ui.whip_project
+					}
+					return
+				}
+			}
+		}
+		for tab in rl.WhipTabs() {
+			if clay.PointerOver(clay.ID("WhipTab", tab.id)) {
+				ui.whip_tabs[ui.whip_project] = tab.id
+				return
+			}
+		}
+	}
 
 	// Archive actions live here because handle_chat only runs on Chats.
 	if ui.page == .Archived {

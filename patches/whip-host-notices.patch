@@ -1,0 +1,137 @@
+diff --git a/src/gui/app.odin b/src/gui/app.odin
+--- a/src/gui/app.odin
++++ b/src/gui/app.odin
+@@ -65,7 +65,8 @@
+ 	pane_info:      map[proto.Pane_Id]Pane_Info,
+ 	info_dirty:     bool,
+ 	info_pending:   bool,
+-	panes:          map[proto.Pane_Id]^Pane_View,
++	panes:          map[proto.Pane_Id]^Pane_View,
++	host_notice:    Host_Notice_Fn, // embedded hosts own attention and delivery
+ 	view_ws:        model.Id, // project shown in this window
+ 	view_index:     int, // its index, to fall back to a neighbour
+ 	tab_choice:     map[model.Id]model.Id, // project -> tab this window shows
+diff --git a/src/gui/notices.odin b/src/gui/notices.odin
+--- a/src/gui/notices.odin
++++ b/src/gui/notices.odin
+@@ -16,7 +16,15 @@
+ import "whip:model"
+ import "whip:proto"
+ 
+-notices_install :: proc(term: gh.Terminal) {
++// Embedded hosts intercept notices before standalone attention/desktop effects.
++// Install immediately after create and before the first update/replay.
++Host_Notice_Fn :: #type proc(app: ^App, pane: proto.Pane_Id, title, body: string)
++
++set_notice_handler :: proc(app: ^App, handler: Host_Notice_Fn) {
++	if app != nil {app.host_notice = handler}
++}
++
++notices_install :: proc(term: gh.Terminal) {
+ 	gh.terminal_set(term, .Bell, rawptr(on_bell))
+ 	gh.terminal_set(term, .Desktop_Notification, rawptr(on_notification))
+ 	gh.terminal_set(term, .Progress_Report, rawptr(on_progress))
+@@ -62,13 +70,16 @@
+ on_bell :: proc "c" (t: gh.Terminal, userdata: rawptr) {
+ 	app := (^App)(userdata)
+ 	context = app.ctx
+-	pv := view_of(app, t)
+-	if pv == nil || pane_in_sight(app, pv.id) {
+-		return
+-	}
+-	pv.attention = true
+-	app.force_draw = true
+-	if !app.focused {
++	pv := view_of(app, t)
++	if pv == nil {return}
++	if app.host_notice != nil {
++		app.host_notice(app, pv.id, "", "")
++		return
++	}
++	if pane_in_sight(app, pv.id) {return}
++	pv.attention = true
++	app.force_draw = true
++	if !app.focused {
+ 		sdl.FlashWindow(app.window, .UNTIL_FOCUSED)
+ 	}
+ }
+@@ -77,15 +88,18 @@
+ on_notification :: proc "c" (t: gh.Terminal, userdata: rawptr, n: ^gh.Desktop_Notification) {
+ 	app := (^App)(userdata)
+ 	context = app.ctx
+-	pv := view_of(app, t)
+-	if pv == nil || pane_in_sight(app, pv.id) {
+-		return
+-	}
+-	pv.attention = true
+-	app.force_draw = true
+-
+-	title := string(n.title.ptr[:n.title.len])
+-	body := string(n.body.ptr[:n.body.len])
++	pv := view_of(app, t)
++	if pv == nil {return}
++	title := string(n.title.ptr[:n.title.len])
++	body := string(n.body.ptr[:n.body.len])
++	if app.host_notice != nil {
++		app.host_notice(app, pv.id, title, body)
++		return
++	}
++	if pane_in_sight(app, pv.id) {return}
++	pv.attention = true
++	app.force_draw = true
++
+ 	if title == "" {
+ 		title = pane_label(app, pv.id)
+ 	}
+diff --git a/src/gui/views.odin b/src/gui/views.odin
+--- a/src/gui/views.odin
++++ b/src/gui/views.odin
+@@ -135,27 +135,27 @@
+ // Session keeps its existing all-pane cache; narrower contexts allocate only
+ // replicas belonging to their binding, not to whichever tab another UI chose.
+ @(private)
+-view_needs_pane :: proc(app: ^App, id: proto.Pane_Id) -> bool {
+-	if !view_has_content(app) {
+-		return false
+-	}
+-	loc, ok := model.find_pane(&app.session, id)
+-	if !ok {
+-		return false
+-	}
+-	ws := &app.session.workspaces[loc.ws]
+-	switch app.target.kind {
+-	case .Session:
+-		return true
+-	case .Project:
+-		return ws.id == app.target.id
+-	case .Tab:
+-		return ws.tabs[loc.tab].id == app.target.id
+-	case .Projects, .Tabs:
+-		return false
+-	}
+-	return false
+-}
++view_needs_pane :: proc(app: ^App, id: proto.Pane_Id) -> bool {
++	if !view_has_content(app) && !(app.target.kind == .Projects && app.host_notice != nil) {
++		return false
++	}
++	loc, ok := model.find_pane(&app.session, id)
++	if !ok {
++		return false
++	}
++	ws := &app.session.workspaces[loc.ws]
++	switch app.target.kind {
++	case .Session, .Projects:
++		return true
++	case .Project:
++		return ws.id == app.target.id
++	case .Tab:
++		return ws.tabs[loc.tab].id == app.target.id
++	case .Tabs:
++		return false
++	}
++	return false
++}
+ 
+ // Creation hints are scoped too. A fixed tab accepts focus within itself,
+ // but creating a sibling tab must not change this context's identity.

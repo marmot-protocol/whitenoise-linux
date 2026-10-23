@@ -338,14 +338,32 @@ builds publish releases.
 
 On Linux, native builds detect an executable `../whip/build/whip` and its
 built Ghostty library. Build Whip first, then rebuild White Noise. The sidebar
-shows Whip only while that executable is installed. Selecting it embeds the
-native terminal UI in the conversation area and attaches to Whip's `default`
-session, starting its server if needed. Switching pages or closing White Noise
-leaves the session's shells running.
+shows Whip only while that executable is installed. Selecting it attaches to
+Whip's `default` session, starting its server if needed. Projects appear as
+White Noise sidebar rows with their directory, tab count and selected accent.
+The tab strip also uses White Noise controls; Whip renders the selected tab's
+terminal panes. New project opens a folder picker, then selects the created
+project. Tabs can be opened and closed from the tab strip.
+
+Every project starts with a crop-circle avatar derived from its folder.
+Click the avatar to choose and crop a picture, or restore its crop circle.
+The choice is saved by folder, so renaming or recreating the project keeps
+its picture. Pictures are copied into the config directory's `whip-avatars/`
+folder; the original image file is not needed afterward.
+
+Bells and terminal notifications from unseen panes show the same animated
+unread badges as chats, on their tab, project and Whip navigation button.
+Viewing the tab clears its waiting state. Desktop alerts use your White Noise
+notification, sound and preview settings. On narrow windows, Back returns to
+the project list. Switching pages or closing White Noise leaves the session's
+shells running.
 
 Whip is optional. Builds without that sibling checkout and cross releases
 omit the integration. Native build scripts stage its Odin bridge from
-`whip-embed/bridge.odin`; they do not build or modify Whip.
+`whip-embed/bridge.odin`; they do not build or modify the sibling checkout.
+An isolated source copy under `build/whip-embed/` applies the host-notice patch
+so terminal notifications follow White Noise's settings without duplicate
+Whip alerts.
 
 ### Cross releases
 

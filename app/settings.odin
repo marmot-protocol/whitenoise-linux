@@ -76,6 +76,7 @@ Prefs :: struct {
 	folder_icons:          map[string]int, // folder name → FOLDER_ICONS index
 	folder_colors:         map[string]u32, // folder name → RGB; absent uses the theme accent
 	folder_rules:          map[string]Folder_Rules, // folder name → automatic filing rules
+	whip_avatars:          map[string]string, // canonical project folder → owned image basename
 	// Advanced (telemetry/audit toggles live in marmot's shared
 	// sqlite, not here)
 	trusted_sites:         [dynamic]string,

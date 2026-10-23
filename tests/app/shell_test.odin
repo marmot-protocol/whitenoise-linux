@@ -413,10 +413,13 @@ test_phone_detail :: proc(t: ^testing.T) {
 		"back from settings returns to the chat list",
 	)
 	ui.page = .Whip
-	testing.expect(t, phone_detail(&ui), "Whip replaces the list on narrow windows")
+	testing.expect(t, !phone_detail(&ui), "Whip opens its project list on narrow windows")
+	ui.whip_project, ui.whip_detail = 42, true
+	testing.expect(t, phone_detail(&ui), "a selected project opens its terminal")
 	phone_back_action(&ui)
-	testing.expect_value(t, ui.page, Page.Chats)
-	testing.expect(t, !phone_detail(&ui), "back from Whip returns to the chat list")
+	testing.expect_value(t, ui.page, Page.Whip)
+	testing.expect_value(t, ui.whip_project, u32(42))
+	testing.expect(t, !phone_detail(&ui), "back returns to projects without losing selection")
 	if !rl.WhipAvailable() {
 		ui.prefs.page = .Whip
 		restore_workspace(&ui, nil)

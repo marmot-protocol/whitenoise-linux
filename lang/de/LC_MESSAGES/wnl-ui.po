@@ -310,6 +310,9 @@ msgstr "Eine Zeile über dich"
 msgid "A little more room for conversation."
 msgstr "Ein bisschen mehr Platz für Gespräche."
 
+msgid "A terminal is waiting for you."
+msgstr "Ein Terminal wartet auf dich."
+
 msgid "ABOUT"
 msgstr "ÜBER DICH"
 
@@ -731,6 +734,9 @@ msgstr "Foto ändern"
 msgid "Change picture"
 msgstr "Bild ändern"
 
+msgid "Change project avatar"
+msgstr "Projektavatar ändern"
+
 msgid "Change rule type"
 msgstr "Regeltyp ändern"
 
@@ -845,6 +851,9 @@ msgstr "Wähle einen Zielordner für diesen Chat."
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr "Wähle einen bekannten Absender oder gib einen öffentlichen Hex-Schlüssel mit 64 Zeichen ein."
 
+msgid "Choose a project folder."
+msgstr "Wähle einen Projektordner."
+
 msgid "Choose a sign-in method."
 msgstr "Wähle eine Anmeldemethode."
 
@@ -929,6 +938,9 @@ msgstr "Klicke zum Bearbeiten, ziehe zum Umsortieren."
 msgid "Close"
 msgstr "Schließen"
 
+msgid "Close tab"
+msgstr "Tab schließen"
+
 msgid "Close to tray"
 msgstr "In den Tray schließen"
 
@@ -937,6 +949,9 @@ msgstr "Geschlossen"
 
 msgid "Closing connections and clearing this session."
 msgstr "Verbindungen werden geschlossen und diese Sitzung wird gelöscht."
+
+msgid "Closing tab…"
+msgstr "Tab wird geschlossen…"
 
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr "Beim Schließen wird das Fenster ausgeblendet. Das Tray-Symbol zeigt die Zahl deiner ungelesenen Nachrichten und holt das Fenster zurück."
@@ -958,6 +973,9 @@ msgstr "Klappt Nachrichten und Ereigniskarten nach dieser Anzahl von Zeilen ein.
 
 msgid "Collapse the chat list"
 msgstr "Chatliste einklappen"
+
+msgid "Collapse the project list"
+msgstr "Projektliste einklappen"
 
 msgid "Collapse transcription"
 msgstr "Transkription einklappen"
@@ -1160,6 +1178,12 @@ msgstr "Das Passwort konnte nicht geändert werden. Bitte versuche es erneut."
 msgid "Couldn't check for updates. Please try again."
 msgstr "Nach Updates konnte nicht gesucht werden. Bitte versuche es erneut."
 
+msgid "Couldn't choose a folder. Close your open file picker and try again."
+msgstr "Es konnte kein Ordner ausgewählt werden. Schließe deine geöffnete Dateiauswahl und versuche es erneut."
+
+msgid "Couldn't close the tab. Please try again."
+msgstr "Der Tab konnte nicht geschlossen werden. Bitte versuche es erneut."
+
 msgid "Couldn't complete the signer request. Please try again."
 msgstr "Die Signer-Anfrage konnte nicht abgeschlossen werden. Bitte versuche es erneut."
 
@@ -1192,6 +1216,12 @@ msgstr "Das Backup konnte nicht erstellt werden. Bitte versuche es erneut."
 
 msgid "Couldn't create the group. Enter a name and try again."
 msgstr "Die Gruppe konnte nicht erstellt werden. Gib einen Namen ein und versuche es erneut."
+
+msgid "Couldn't create the project. Please try again."
+msgstr "Das Projekt konnte nicht erstellt werden. Bitte versuche es erneut."
+
+msgid "Couldn't create the tab. Please try again."
+msgstr "Der Tab konnte nicht erstellt werden. Bitte versuche es erneut."
 
 msgid "Couldn't create the vault. Please try again."
 msgstr "Der Tresor konnte nicht erstellt werden. Bitte versuche es erneut."
@@ -1394,6 +1424,9 @@ msgstr "Das Backup konnte nicht gelesen werden. Bitte versuche es erneut."
 msgid "Couldn't read the image. Please try again."
 msgstr "Das Bild konnte nicht gelesen werden. Bitte versuche es erneut."
 
+msgid "Couldn't read the project photo. Please try again."
+msgstr "Das Projektfoto konnte nicht gelesen werden. Bitte versuche es erneut."
+
 msgid "Couldn't read the vault file. Please try again."
 msgstr "Die Tresordatei konnte nicht gelesen werden. Bitte versuche es erneut."
 
@@ -1448,6 +1481,9 @@ msgstr "Das GIF konnte nicht gespeichert werden. Bitte versuche es erneut."
 
 msgid "Couldn't save the edit. Please try again."
 msgstr "Die Änderung konnte nicht gespeichert werden. Bitte versuche es erneut."
+
+msgid "Couldn't save the project photo. Please try again."
+msgstr "Das Projektfoto konnte nicht gespeichert werden. Bitte versuche es erneut."
 
 msgid "Couldn't save the sticker. Wait for its image to load and try again."
 msgstr "Der Sticker konnte nicht gespeichert werden. Warte, bis das Bild geladen ist, und versuche es erneut."
@@ -1590,6 +1626,12 @@ msgstr "Erstellt mit"
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "Erstellt einen mit einem Passwort verschlüsselten NIP-49-Schlüssel, den du sicher aufbewahren oder in einen anderen Client übertragen kannst."
+
+msgid "Creating project…"
+msgstr "Projekt wird erstellt…"
+
+msgid "Creating tab…"
+msgstr "Tab wird erstellt…"
 
 msgid "Creating your chat"
 msgstr "Dein Chat wird erstellt"
@@ -1975,6 +2017,9 @@ msgstr "Vollbild verlassen"
 
 msgid "Expand the chat list"
 msgstr "Chatliste ausklappen"
+
+msgid "Expand the project list"
+msgstr "Projektliste ausklappen"
 
 msgid "Export"
 msgstr "Exportieren"
@@ -2891,6 +2936,12 @@ msgstr "Neue Nachricht"
 msgid "New name"
 msgstr "Neuer Name"
 
+msgid "New project"
+msgstr "Neues Projekt"
+
+msgid "New tab"
+msgstr "Neuer Tab"
+
 msgid "News"
 msgstr "Nachrichten"
 
@@ -3023,6 +3074,9 @@ msgstr "Keine Vorschau verfügbar"
 
 msgid "No preview for this file type. Save it, or read the bytes."
 msgstr "Für diesen Dateityp gibt es keine Vorschau. Speichere die Datei oder sieh dir die Bytes an."
+
+msgid "No projects yet"
+msgstr "Noch keine Projekte"
 
 #, c-format
 msgid "No record with id %s in this chat's window."
@@ -3385,6 +3439,9 @@ msgstr "Anhang wird vorbereitet…"
 msgid "Preparing dictation..."
 msgstr "Diktat wird vorbereitet..."
 
+msgid "Preparing project photo…"
+msgstr "Projektfoto wird vorbereitet…"
+
 msgid "Preparing speech..."
 msgstr "Sprachausgabe wird vorbereitet..."
 
@@ -3426,6 +3483,9 @@ msgstr "Profil"
 
 msgid "Progress is indeterminate."
 msgstr "Der Fortschritt ist unbestimmt."
+
+msgid "Project created."
+msgstr "Projekt erstellt."
 
 msgid "Projects"
 msgstr "Projekte"
@@ -3832,6 +3892,9 @@ msgstr "%s gespeichert."
 msgid "Saved. Restart White Noise to apply this connection setting."
 msgstr "Gespeichert. Starte White Noise neu, um diese Verbindungseinstellung anzuwenden."
 
+msgid "Saving project photo…"
+msgstr "Projektfoto wird gespeichert…"
+
 msgid "Saving your proxy settings and encrypted credentials."
 msgstr "Deine Proxy-Einstellungen und verschlüsselten Zugangsdaten werden gespeichert."
 
@@ -3945,6 +4008,9 @@ msgstr "Wähle einen Kontakt aus der Liste."
 
 msgid "Select a model to download it for dictation and audio messages."
 msgstr "Wähle ein Modell, um es für Diktate und Audionachrichten herunterzuladen."
+
+msgid "Select a project"
+msgstr "Projekt auswählen"
 
 msgid "Select an issue"
 msgstr "Wähle eine Meldung"
@@ -4489,6 +4555,9 @@ msgstr "Dieser Kopplungslink ist für einen QR-Code zu lang. Verwende Kopplungsl
 msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
 msgstr "Dieses Passwort ist zu leicht zu erraten. Verwende unzusammenhängende Wörter oder ein von einem Passwortmanager erzeugtes Passwort."
 
+msgid "This project is no longer available."
+msgstr "Dieses Projekt ist nicht mehr verfügbar."
+
 msgid "This session"
 msgstr "Diese Sitzung"
 
@@ -4679,6 +4748,9 @@ msgstr "Verwende für jedes Projekt eine eigene Gruppe und beginne mit dem Speic
 
 msgid "Use a shorter search."
 msgstr "Verwende einen kürzeren Suchbegriff."
+
+msgid "Use crop circle"
+msgstr "Kornkreis verwenden"
 
 msgid "Use emoji image"
 msgstr "Emoji-Bild verwenden"

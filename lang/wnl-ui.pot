@@ -310,6 +310,9 @@ msgstr ""
 msgid "A little more room for conversation."
 msgstr ""
 
+msgid "A terminal is waiting for you."
+msgstr ""
+
 msgid "ABOUT"
 msgstr ""
 
@@ -729,6 +732,9 @@ msgstr ""
 msgid "Change picture"
 msgstr ""
 
+msgid "Change project avatar"
+msgstr ""
+
 msgid "Change rule type"
 msgstr ""
 
@@ -842,6 +848,9 @@ msgstr ""
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr ""
 
+msgid "Choose a project folder."
+msgstr ""
+
 msgid "Choose a sign-in method."
 msgstr ""
 
@@ -926,6 +935,9 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
+msgid "Close tab"
+msgstr ""
+
 msgid "Close to tray"
 msgstr ""
 
@@ -933,6 +945,9 @@ msgid "Closed"
 msgstr ""
 
 msgid "Closing connections and clearing this session."
+msgstr ""
+
+msgid "Closing tab…"
 msgstr ""
 
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
@@ -954,6 +969,9 @@ msgid "Collapse messages and event cards after this many lines. Set to 0 to neve
 msgstr ""
 
 msgid "Collapse the chat list"
+msgstr ""
+
+msgid "Collapse the project list"
 msgstr ""
 
 msgid "Collapse transcription"
@@ -1156,6 +1174,12 @@ msgstr ""
 msgid "Couldn't check for updates. Please try again."
 msgstr ""
 
+msgid "Couldn't choose a folder. Close your open file picker and try again."
+msgstr ""
+
+msgid "Couldn't close the tab. Please try again."
+msgstr ""
+
 msgid "Couldn't complete the signer request. Please try again."
 msgstr ""
 
@@ -1187,6 +1211,12 @@ msgid "Couldn't create the backup. Please try again."
 msgstr ""
 
 msgid "Couldn't create the group. Enter a name and try again."
+msgstr ""
+
+msgid "Couldn't create the project. Please try again."
+msgstr ""
+
+msgid "Couldn't create the tab. Please try again."
 msgstr ""
 
 msgid "Couldn't create the vault. Please try again."
@@ -1390,6 +1420,9 @@ msgstr ""
 msgid "Couldn't read the image. Please try again."
 msgstr ""
 
+msgid "Couldn't read the project photo. Please try again."
+msgstr ""
+
 msgid "Couldn't read the vault file. Please try again."
 msgstr ""
 
@@ -1443,6 +1476,9 @@ msgid "Couldn't save the GIF. Please try again."
 msgstr ""
 
 msgid "Couldn't save the edit. Please try again."
+msgstr ""
+
+msgid "Couldn't save the project photo. Please try again."
 msgstr ""
 
 msgid "Couldn't save the sticker. Wait for its image to load and try again."
@@ -1585,6 +1621,12 @@ msgid "Created by"
 msgstr ""
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
+msgstr ""
+
+msgid "Creating project…"
+msgstr ""
+
+msgid "Creating tab…"
 msgstr ""
 
 msgid "Creating your chat"
@@ -1969,6 +2011,9 @@ msgid "Exit fullscreen"
 msgstr ""
 
 msgid "Expand the chat list"
+msgstr ""
+
+msgid "Expand the project list"
 msgstr ""
 
 msgid "Export"
@@ -2885,6 +2930,12 @@ msgstr ""
 msgid "New name"
 msgstr ""
 
+msgid "New project"
+msgstr ""
+
+msgid "New tab"
+msgstr ""
+
 msgid "News"
 msgstr ""
 
@@ -3016,6 +3067,9 @@ msgid "No preview available"
 msgstr ""
 
 msgid "No preview for this file type. Save it, or read the bytes."
+msgstr ""
+
+msgid "No projects yet"
 msgstr ""
 
 #, c-format
@@ -3379,6 +3433,9 @@ msgstr ""
 msgid "Preparing dictation..."
 msgstr ""
 
+msgid "Preparing project photo…"
+msgstr ""
+
 msgid "Preparing speech..."
 msgstr ""
 
@@ -3419,6 +3476,9 @@ msgid "Profile"
 msgstr ""
 
 msgid "Progress is indeterminate."
+msgstr ""
+
+msgid "Project created."
 msgstr ""
 
 msgid "Projects"
@@ -3826,6 +3886,9 @@ msgstr ""
 msgid "Saved. Restart White Noise to apply this connection setting."
 msgstr ""
 
+msgid "Saving project photo…"
+msgstr ""
+
 msgid "Saving your proxy settings and encrypted credentials."
 msgstr ""
 
@@ -3938,6 +4001,9 @@ msgid "Select a contact from the list."
 msgstr ""
 
 msgid "Select a model to download it for dictation and audio messages."
+msgstr ""
+
+msgid "Select a project"
 msgstr ""
 
 msgid "Select an issue"
@@ -4483,6 +4549,9 @@ msgstr ""
 msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
 msgstr ""
 
+msgid "This project is no longer available."
+msgstr ""
+
 msgid "This session"
 msgstr ""
 
@@ -4671,6 +4740,9 @@ msgid "Use a separate group for each project and start with its location and con
 msgstr ""
 
 msgid "Use a shorter search."
+msgstr ""
+
+msgid "Use crop circle"
 msgstr ""
 
 msgid "Use emoji image"

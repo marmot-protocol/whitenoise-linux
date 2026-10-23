@@ -582,6 +582,14 @@ Ui_State :: struct {
 	lud16_input:                                           [dynamic]u8, // profile lightning-address draft
 	relay_input:                                           [dynamic]u8, // profile add-relay draft
 	page:                                                  Page,
+	whip_project:                                          u32, // stable Whip project ID, not its row index
+	whip_detail:                                           bool, // project content rather than its list on narrow windows
+	whip_picking_project:                                  bool, // captures the native folder-dialog completion
+	whip_creating:                                         bool,
+	whip_tabs:                                             map[u32]u32, // project ID -> selected tab ID
+	whip_tab_op:                                           Whip_Tab_Op,
+	whip_tab_project:                                      u32, // captured owner of an asynchronous tab action
+	whip_avatar_job:                                       ^Whip_Avatar_Job,
 	chats:                                                 [dynamic]Chat_Row_Ui,
 	chat_members:                                          map[string][]string, // group id → member pubkey hex, for folder rules
 	chat_members_read:                                     bool, // the last chat-list read asked for chat_members
