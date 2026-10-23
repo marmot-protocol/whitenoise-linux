@@ -36,6 +36,12 @@ jobs:
           printf '#include <stdio.h>\nint main(void) { puts("wn-build-server native build passed"); return 0; }\n' > "$RUNNER_TEMP/smoke.c"
           clang -Wall -Wextra -Werror "$RUNNER_TEMP/smoke.c" -o "$RUNNER_TEMP/smoke"
           test "$("$RUNNER_TEMP/smoke")" = 'wn-build-server native build passed'
+      - name: Compile and execute a Rust package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo init --bin --name wn-runner-smoke "$RUNNER_TEMP/cargo-smoke"
+          test "$(cargo run --quiet --manifest-path "$RUNNER_TEMP/cargo-smoke/Cargo.toml")" = 'Hello, world!'
       - name: Run a rootless container
         shell: bash
         run: |
