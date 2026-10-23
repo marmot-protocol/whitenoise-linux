@@ -23,10 +23,15 @@ source "$HERE/scripts/build-cache.sh"
 native_key() {
   build_cache_key "$NATIVE_ENV $1" "$HERE/scripts/build.sh" "$HERE"/app/*.h "${@:2}"
 }
+native_compile_key() {
+  # Static vendor archives do not link shared libraries. OpenBSD reorders
+  # libc and libcrypto at boot, without changing compilation inputs.
+  build_cache_key "$NATIVE_COMPILE_ENV $1" "$HERE/scripts/build.sh" "${@:2}"
+}
 native_env() {
   local tool module word file dir
   local -a tool_command include_dirs link_dirs module_dirs module_libs
-  local inputs=() flags=()
+  local inputs=() link_inputs=() flags=()
   for tool in cc c++ ar odin cmake; do
     inputs+=("$(command -v "$tool")")
   done
@@ -56,7 +61,7 @@ native_env() {
   fi
   for module in libcurl cairo libwebp libarchive poppler-glib fontconfig freetype2 sdl3 glib-2.0 libavformat libavcodec libavutil libswresample libcrypto webkit2gtk-4.1 mpv; do
     if pkg-config --exists "$module"; then
-      flags+=("$(pkg-config --cflags --libs "$module")")
+      flags+=("$module $(pkg-config --modversion "$module"): $(pkg-config --cflags --libs "$module")")
       dir="$(pkg-config --variable=includedir "$module")"
       if [ -d "$dir" ] && [ "$dir" != /usr/include ] && [ "$dir" != /usr/local/include ]; then inputs+=("$dir"); fi
       read -r -a module_dirs <<<"$(pkg-config --libs-only-L "$module")"
@@ -66,11 +71,11 @@ native_env() {
           [ -n "$dir" ] || continue
           dir="${dir#-L}"
           for file in "$dir/lib${word#-l}.so"* "$dir/lib${word#-l}.dylib" "$dir/lib${word#-l}.a"; do
-            if [ -f "$file" ]; then inputs+=("$file"); fi
+            if [ -f "$file" ]; then link_inputs+=("$file"); fi
           done
         done
         for file in "$(cc -print-file-name="lib${word#-l}.so")" "$(cc -print-file-name="lib${word#-l}.a")" "$(cc -print-file-name="lib${word#-l}.dylib")"; do
-          if [ -f "$file" ]; then inputs+=("$file"); fi
+          if [ -f "$file" ]; then link_inputs+=("$file"); fi
         done
       done
     fi
@@ -86,12 +91,13 @@ native_env() {
   if [ -n "$dir" ] && [ -d "$dir/include" ]; then inputs+=("$dir/include"); fi
   for word in libc.so libc.so.6 libm.so libm.so.6 libpthread.so libdl.so libc++.so libc++abi.so libstdc++.so libstdc++.so.6 libgcc.a libgcc_s.so; do
     file="$(c++ -print-file-name="$word")"
-    if [ -f "$file" ]; then inputs+=("$file"); fi
+    if [ -f "$file" ]; then link_inputs+=("$file"); fi
     for dir in "${link_dirs[@]}"; do
-      if [ -n "$dir" ] && [ -f "$dir/$word" ]; then inputs+=("$dir/$word"); fi
+      if [ -n "$dir" ] && [ -f "$dir/$word" ]; then link_inputs+=("$dir/$word"); fi
     done
   done
-  NATIVE_ENV="$(build_cache_key "$(uname -sm); $(cc --version); $(c++ --version); $(odin version); ${flags[*]}; ${CC:-}; ${CXX:-}; ${AR:-}; ${CFLAGS:-}; ${CXXFLAGS:-}; ${CPPFLAGS:-}; ${LDFLAGS:-}; ${LIBRARY_PATH:-}; ${CPATH:-}; ${C_INCLUDE_PATH:-}; ${CPLUS_INCLUDE_PATH:-}; ${SDKROOT:-}; ${MACOSX_DEPLOYMENT_TARGET:-}" "${inputs[@]}")"
+  NATIVE_COMPILE_ENV="$(build_cache_key "$(uname -sm); $(cc --version); $(c++ --version); $(odin version); ${flags[*]}; ${link_inputs[*]}; ${CC:-}; ${CXX:-}; ${AR:-}; ${CFLAGS:-}; ${CXXFLAGS:-}; ${CPPFLAGS:-}; ${LDFLAGS:-}; ${LIBRARY_PATH:-}; ${CPATH:-}; ${C_INCLUDE_PATH:-}; ${CPLUS_INCLUDE_PATH:-}; ${SDKROOT:-}; ${MACOSX_DEPLOYMENT_TARGET:-}" "${inputs[@]}")"
+  NATIVE_ENV="$(build_cache_key "$NATIVE_COMPILE_ENV" "${link_inputs[@]}")"
 }
 # Regenerate before cross dispatch and sources/stage exits as well.
 bash "$HERE/scripts/observability.sh"
@@ -232,7 +238,7 @@ if [ "$(uname -s)" = OpenBSD ] && [ "${1:-}" != sources ]; then
     git -C "$SDL" fetch origin "$SDL_PIN"
     git -C "$SDL" checkout --detach "$SDL_PIN"
   fi
-  SDL_STAMP="$(native_key 'SDL Release PIC NO_SHARED_MEMORY static no-dlopen-notes' "$SDL")"
+  SDL_STAMP="$(native_compile_key 'SDL Release PIC NO_SHARED_MEMORY static no-dlopen-notes' "$SDL")"
   if ! build_cache_fresh "$SDL_STAMP" "$HERE/build/sdl/stamp" "$HERE/build/sdl/lib/libSDL3.a" "$HERE/build/sdl/include"; then
     rm -f "$HERE/build/sdl/stamp"
     rm -rf "$HERE/build/sdl-cmake"
@@ -375,7 +381,7 @@ for patch in "${MICROTEX_PATCHES[@]}"; do
   fi
 done
 if [ "${1:-}" != sources ]; then
-  MICROTEX_STAMP="$(native_key 'MicroTeX Release PIC STATIC CWRAPPER no-log no-debug no-font-find' "$MICROTEX" "${MICROTEX_PATCHES[@]}")"
+  MICROTEX_STAMP="$(native_compile_key 'MicroTeX Release PIC STATIC CWRAPPER no-log no-debug no-font-find' "$MICROTEX" "${MICROTEX_PATCHES[@]}")"
   if ! build_cache_fresh "$MICROTEX_STAMP" "$HERE/build/microtex/stamp" "$HERE/build/microtex/lib/libmicrotex.a" "$HERE/build/microtex/lib/microtexconfig.h"; then
     rm -rf "$HERE/build/microtex"
     cmake -S "$MICROTEX" -B "$HERE/build/microtex" -DCMAKE_BUILD_TYPE=Release \
