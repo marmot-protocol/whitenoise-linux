@@ -1210,9 +1210,6 @@ msgstr "Impossibile esportare la chat. Riprova."
 msgid "Couldn't export the key. %s"
 msgstr "Impossibile esportare la chiave. %s"
 
-msgid "Couldn't find that pack. Enter a sticker pack naddr or coordinate."
-msgstr "Impossibile trovare quel pacchetto. Inserisci il naddr o le coordinate di un pacchetto di adesivi."
-
 msgid "Couldn't finish dictation. Please try again."
 msgstr "Impossibile completare la dettatura. Riprova."
 
@@ -1882,6 +1879,9 @@ msgstr "Inserisci un nome per l'adesivo da 1 a 64 caratteri."
 
 msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
 msgstr "Inserisci nome utente e password, ciascuno da 1 a 255 byte UTF-8."
+
+msgid "Enter a valid pack link or address."
+msgstr "Inserisci un link o un indirizzo valido per il pacchetto."
 
 msgid "Enter an issue title and description."
 msgstr "Inserisci un titolo e una descrizione."

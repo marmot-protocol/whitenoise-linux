@@ -148,9 +148,7 @@ sticker_show :: proc(ui: ^Ui_State, ref: Sticker_Ref) {
 @(private)
 sticker_open_pack :: proc(ui: ^Ui_State, coordinate, relay: string) {
 	if !sticker_coordinate(coordinate) {
-		ui.sticker_error = N_(
-			"Couldn't find that pack. Enter a sticker pack naddr or coordinate.",
-		); return
+		ui.sticker_error = N_("Enter a valid pack link or address."); return
 	}
 	if ui.sticker_loading {return}
 	ui.sticker_page = .Pack
@@ -170,6 +168,7 @@ sticker_open_pack :: proc(ui: ^Ui_State, coordinate, relay: string) {
 		for item in ui.stickers {if item.ref.pack == coordinate {append(&ui.sticker_preview, sticker_item_clone(item))}}
 		return
 	}
+	ui.sticker_pack.relay = strings.clone(relay)
 	ui.sticker_loading = true
 	job := sticker_job_add(.Pack)
 	job.input = strings.clone(coordinate)
@@ -652,7 +651,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 			}
 			if ui.sticker_error != "" {
 				sticker_copy(5, tr(ui.sticker_error), width - 40, 13, DANGER)
-				sticker_control("StickerRetry", 0, tr("Retry"))
+				if ui.sticker_page != .AddPack {sticker_control("StickerRetry", 0, tr("Retry"))}
 			}
 		}
 		scrollbar(clay.ID("StickerContent", u32(ui.sticker_page)), 16)
@@ -823,7 +822,8 @@ handle_sticker_panel :: proc(ui: ^Ui_State) {
 		ui.sticker_error = ""
 		if ui.sticker_pack.coordinate != "" && len(ui.sticker_preview) == 0 {
 			coordinate := strings.clone(ui.sticker_pack.coordinate); defer delete(coordinate)
-			sticker_open_pack(ui, coordinate, ui.sticker_selected.relay)
+			relay := strings.clone(ui.sticker_pack.relay); defer delete(relay)
+			sticker_open_pack(ui, coordinate, relay)
 		} else {
 			for item in ui.sticker_preview {
 				if tex, seen := sticker_textures[item.ref.sha]; seen && tex == nil {
