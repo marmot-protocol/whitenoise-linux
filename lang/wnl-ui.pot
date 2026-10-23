@@ -778,6 +778,9 @@ msgstr ""
 msgid "Chats you archive will appear here."
 msgstr ""
 
+msgid "Check each character against the original and try again."
+msgstr ""
+
 msgid "Check every six hours and download signed updates. Restart when you choose."
 msgstr ""
 
@@ -4384,6 +4387,9 @@ msgid "This is what a message alert looks like."
 msgstr ""
 
 msgid "This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."
+msgstr ""
+
+msgid "This key has a typo."
 msgstr ""
 
 msgid "This leaves White Noise and opens in your browser."

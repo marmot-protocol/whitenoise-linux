@@ -781,6 +781,9 @@ msgstr "Le chat corrispondenti finiscono qui automaticamente. Il numero di perso
 msgid "Chats you archive will appear here."
 msgstr "Le chat che archivi appariranno qui."
 
+msgid "Check each character against the original and try again."
+msgstr "Confronta ogni carattere con l'originale e riprova."
+
 msgid "Check every six hours and download signed updates. Restart when you choose."
 msgstr "Controlla ogni sei ore e scarica gli aggiornamenti firmati. Riavvia quando vuoi."
 
@@ -4391,6 +4394,9 @@ msgstr "Ecco come appare l'avviso di un messaggio."
 
 msgid "This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."
 msgstr "Questa è la tua chiave segreta, crittografata con la password che hai inserito. Chiunque possieda questa stringa e quella password controlla la tua identità."
+
+msgid "This key has a typo."
+msgstr "Questa chiave contiene un errore di battitura."
 
 msgid "This leaves White Noise and opens in your browser."
 msgstr "Questo esce da White Noise e si apre nel tuo browser."

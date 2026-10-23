@@ -781,6 +781,9 @@ msgstr "条件に合うチャットは自動でここに入ります。人数に
 msgid "Chats you archive will appear here."
 msgstr "アーカイブしたチャットがここに表示されます。"
 
+msgid "Check each character against the original and try again."
+msgstr "各文字を元のキーと照合して、もう一度試してください。"
+
 msgid "Check every six hours and download signed updates. Restart when you choose."
 msgstr "6時間ごとに確認し、署名付きのアップデートをダウンロードします。再起動は好きなタイミングで行えます。"
 
@@ -4391,6 +4394,9 @@ msgstr "メッセージ通知はこのように表示されます。"
 
 msgid "This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."
 msgstr "これは、入力したパスワードで暗号化されたあなたの秘密鍵です。この文字列とパスワードを持つ人は、あなたの ID を操作できます。"
+
+msgid "This key has a typo."
+msgstr "このキーには入力ミスがあります。"
 
 msgid "This leaves White Noise and opens in your browser."
 msgstr "White Noise を離れて、ブラウザで開きます。"
