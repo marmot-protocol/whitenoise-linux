@@ -16,6 +16,83 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
+source "$HERE/scripts/build-cache.sh"
+# Keep native dependency identity separate from app sources: an app or MDK
+# edit must not rebuild independent C helpers. System headers are read once,
+# not once per helper; only resolved link libraries are read, never lib dirs.
+native_key() {
+  build_cache_key "$NATIVE_ENV $1" "$HERE/scripts/build.sh" "$HERE"/app/*.h "${@:2}"
+}
+native_env() {
+  local tool module word file dir
+  local -a tool_command include_dirs link_dirs module_dirs module_libs
+  local inputs=() flags=()
+  for tool in cc c++ ar odin cmake; do
+    inputs+=("$(command -v "$tool")")
+  done
+  for tool in "${CC:-cc}" "${CXX:-c++}" "${AR:-ar}"; do
+    read -r -a tool_command <<<"$tool"
+    inputs+=("$(command -v "${tool_command[0]}")")
+  done
+  IFS=: read -r -a include_dirs <<<"${CPATH:-}:${C_INCLUDE_PATH:-}:${CPLUS_INCLUDE_PATH:-}"
+  IFS=: read -r -a link_dirs <<<"${LIBRARY_PATH:-}"
+  for dir in "${include_dirs[@]}"; do
+    if [ -n "$dir" ]; then inputs+=("$dir"); fi
+  done
+  for dir in /usr/include /usr/local/include; do
+    if [ -d "$dir" ]; then inputs+=("$dir"); fi
+  done
+  if [ "$(uname -s)" = Darwin ]; then
+    # macos-setup.sh provides GNU tools; Xcode's selected SDK is outside
+    # /usr/include. Hash used SDK headers/stubs, not the entire SDK tree.
+    dir="${SDKROOT:-$(xcrun --show-sdk-path)}"
+    inputs+=("$dir/usr/include" "$dir/SDKSettings.json")
+    for module in Cocoa AppKit Foundation Security CoreFoundation SystemConfiguration; do
+      inputs+=("$dir/System/Library/Frameworks/$module.framework")
+    done
+    for file in libSystem libc++ libc++abi libobjc; do
+      inputs+=("$dir/usr/lib/$file.tbd")
+    done
+  fi
+  for module in libcurl cairo libwebp libarchive poppler-glib fontconfig freetype2 sdl3 glib-2.0 libavformat libavcodec libavutil libswresample libcrypto webkit2gtk-4.1 mpv; do
+    if pkg-config --exists "$module"; then
+      flags+=("$(pkg-config --cflags --libs "$module")")
+      dir="$(pkg-config --variable=includedir "$module")"
+      if [ -d "$dir" ] && [ "$dir" != /usr/include ] && [ "$dir" != /usr/local/include ]; then inputs+=("$dir"); fi
+      read -r -a module_dirs <<<"$(pkg-config --libs-only-L "$module")"
+      read -r -a module_libs <<<"$(pkg-config --libs-only-l "$module")"
+      for word in "${module_libs[@]}"; do
+        for dir in "${module_dirs[@]}" "${link_dirs[@]}"; do
+          [ -n "$dir" ] || continue
+          dir="${dir#-L}"
+          for file in "$dir/lib${word#-l}.so"* "$dir/lib${word#-l}.dylib" "$dir/lib${word#-l}.a"; do
+            if [ -f "$file" ]; then inputs+=("$file"); fi
+          done
+        done
+        for file in "$(cc -print-file-name="lib${word#-l}.so")" "$(cc -print-file-name="lib${word#-l}.a")" "$(cc -print-file-name="lib${word#-l}.dylib")"; do
+          if [ -f "$file" ]; then inputs+=("$file"); fi
+        done
+      done
+    fi
+  done
+  for file in "$(cc -print-file-name=include)" "$(c++ -print-file-name=include)" "$(cc -print-prog-name=ld)"; do
+    if [ -e "$file" ]; then
+      inputs+=("$file")
+    elif command -v "$file" >/dev/null 2>&1; then
+      inputs+=("$(command -v "$file")")
+    fi
+  done
+  dir="$(cc -print-resource-dir 2>/dev/null || true)"
+  if [ -n "$dir" ] && [ -d "$dir/include" ]; then inputs+=("$dir/include"); fi
+  for word in libc.so libc.so.6 libm.so libm.so.6 libpthread.so libdl.so libc++.so libc++abi.so libstdc++.so libstdc++.so.6 libgcc.a libgcc_s.so; do
+    file="$(c++ -print-file-name="$word")"
+    if [ -f "$file" ]; then inputs+=("$file"); fi
+    for dir in "${link_dirs[@]}"; do
+      if [ -n "$dir" ] && [ -f "$dir/$word" ]; then inputs+=("$dir/$word"); fi
+    done
+  done
+  NATIVE_ENV="$(build_cache_key "$(uname -sm); $(cc --version); $(c++ --version); $(odin version); ${flags[*]}; ${CC:-}; ${CXX:-}; ${AR:-}; ${CFLAGS:-}; ${CXXFLAGS:-}; ${CPPFLAGS:-}; ${LDFLAGS:-}; ${LIBRARY_PATH:-}; ${CPATH:-}; ${C_INCLUDE_PATH:-}; ${CPLUS_INCLUDE_PATH:-}; ${SDKROOT:-}; ${MACOSX_DEPLOYMENT_TARGET:-}" "${inputs[@]}")"
+}
 # Regenerate before cross dispatch and sources/stage exits as well.
 bash "$HERE/scripts/observability.sh"
 # OpenBSD's coreutils package installs GNU sha256sum as gsha256sum; its own
@@ -113,7 +190,7 @@ if [ "${1:-}" != sources ]; then
   MDK_BUILD_ENV="$({
     (cd "$MDK" && export PATH="$HOME/.cargo/bin:$PATH" && env "${RUST_ENV[@]}" rustc -vV && cargo -vV)
     for tool in "${CC:-clang}" "${CXX:-c++}" "${AR:-ar}"; do
-      read -r -a tool_command <<< "$tool"
+      read -r -a tool_command <<<"$tool"
       printf '%s\n' "$tool"
       if ! "${tool_command[@]}" --version 2>&1; then
         sha256sum "$(command -v "${tool_command[0]}")"
@@ -122,21 +199,23 @@ if [ "${1:-}" != sources ]; then
     printf '%s\n' "${RUST_ENV[@]}" 'OTLP_EXPORT=1'
     env | LC_ALL=C sort | while IFS= read -r setting; do
       case "$setting" in
-        CC=*|CC_*=*|CXX=*|CXX_*=*|AR=*|AR_*=*|CFLAGS*=*|CXXFLAGS*=*|CPPFLAGS*=*|LDFLAGS*=*|RUSTFLAGS=*|CARGO_ENCODED_RUSTFLAGS=*|RUSTC*=*|RUSTUP_TOOLCHAIN=*|CARGO_BUILD_*=*|CARGO_TARGET_*=*|CARGO_PROFILE_*=*|PKG_CONFIG*=*|OPENSSL*=*|LIBSQLITE3*=*|SQLITE3*=*|SDKROOT=*|MACOSX_DEPLOYMENT_TARGET=*|PRODUCT_ANALYTICS_EXPORT=*)
-          printf '%s\n' "$setting" ;;
+      CC=* | CC_*=* | CXX=* | CXX_*=* | AR=* | AR_*=* | CFLAGS*=* | CXXFLAGS*=* | CPPFLAGS*=* | LDFLAGS*=* | RUSTFLAGS=* | CARGO_ENCODED_RUSTFLAGS=* | RUSTC*=* | RUSTUP_TOOLCHAIN=* | CARGO_BUILD_*=* | CARGO_TARGET_*=* | CARGO_PROFILE_*=* | PKG_CONFIG*=* | OPENSSL*=* | LIBSQLITE3*=* | SQLITE3*=* | SDKROOT=* | MACOSX_DEPLOYMENT_TARGET=* | PRODUCT_ANALYTICS_EXPORT=*)
+        printf '%s\n' "$setting"
+        ;;
       esac
     done
   } | sha256sum | cut -d' ' -f1)"
   # An explicit CARGO_TARGET_DIR supplies the root, with the same isolation.
   MDK_CARGO_TARGET="${CARGO_TARGET_DIR:-$HERE/build/cargo/native}/$MDK_BUILD_ENV"
   case "$MDK_CARGO_TARGET" in
-    /*) ;;
-    *) MDK_CARGO_TARGET="$PWD/$MDK_CARGO_TARGET" ;;
+  /*) ;;
+  *) MDK_CARGO_TARGET="$PWD/$MDK_CARGO_TARGET" ;;
   esac
   # GCC folds SQLCipher's TLS seed into overflowing relocations (sqlcipher#600).
   env "${RUST_ENV[@]}" CC="${CC:-clang}" OTLP_EXPORT=1 CARGO_TARGET_DIR="$MDK_CARGO_TARGET" \
     "$MDK/crates/marmot-c/c-bindings.sh"
-  printf '%s\n' "$PATCHES_HASH" > "$BUNDLE/.mdk-patches"
+  printf '%s\n' "$PATCHES_HASH" >"$BUNDLE/.mdk-patches"
+  native_env
 fi
 
 # OpenBSD pledge cannot permit SysV shared memory. Link the XPutImage-capable
@@ -153,8 +232,10 @@ if [ "$(uname -s)" = OpenBSD ] && [ "${1:-}" != sources ]; then
     git -C "$SDL" fetch origin "$SDL_PIN"
     git -C "$SDL" checkout --detach "$SDL_PIN"
   fi
-  SDL_STAMP="$SDL_PIN NO_SHARED_MEMORY static no-dlopen-notes"
-  if [ ! -f "$HERE/build/sdl/lib/libSDL3.a" ] || [ "$(cat "$HERE/build/sdl/stamp" 2>/dev/null || true)" != "$SDL_STAMP" ]; then
+  SDL_STAMP="$(native_key 'SDL Release PIC NO_SHARED_MEMORY static no-dlopen-notes' "$SDL")"
+  if ! build_cache_fresh "$SDL_STAMP" "$HERE/build/sdl/stamp" "$HERE/build/sdl/lib/libSDL3.a" "$HERE/build/sdl/include"; then
+    rm -f "$HERE/build/sdl/stamp"
+    rm -rf "$HERE/build/sdl-cmake"
     cmake -S "$SDL" -B "$HERE/build/sdl-cmake" -G Ninja \
       -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$HERE/build/sdl" \
       -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
@@ -163,12 +244,17 @@ if [ "$(uname -s)" = OpenBSD ] && [ "${1:-}" != sources ]; then
       -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST_LIBRARY=OFF
     cmake --build "$HERE/build/sdl-cmake" -j"$(getconf NPROCESSORS_ONLN)"
     cmake --install "$HERE/build/sdl-cmake"
-    printf '%s\n' "$SDL_STAMP" > "$HERE/build/sdl/stamp"
+    build_cache_store "$SDL_STAMP" "$HERE/build/sdl/stamp" "$HERE/build/sdl/lib/libSDL3.a" "$HERE/build/sdl/include"
   fi
-  cc -O2 -fPIC -pthread -c "$HERE/app/main_sandbox.c" -o "$HERE/build/main_sandbox.o"
-  cc -O2 -fPIC -pthread -c "$HERE/app/tool_broker.c" -o "$HERE/build/tool_broker.o"
-  cc -O2 -fPIC -c "$HERE/app/helper_broker.c" -o "$HERE/build/helper_broker.o"
-  ar rcs "$HERE/build/libwnsandbox.a" "$HERE/build/main_sandbox.o" "$HERE/build/tool_broker.o" "$HERE/build/helper_broker.o"
+  SANDBOX_KEY="$(native_key 'sandbox O2 PIC pthread' "$HERE/app/main_sandbox.c" "$HERE/app/tool_broker.c" "$HERE/app/helper_broker.c")"
+  if ! build_cache_fresh "$SANDBOX_KEY" "$HERE/build/sandbox.stamp" "$HERE/build/libwnsandbox.a"; then
+    rm -f "$HERE/build/sandbox.stamp" "$HERE/build/libwnsandbox.a"
+    cc -O2 -fPIC -pthread -c "$HERE/app/main_sandbox.c" -o "$HERE/build/main_sandbox.o"
+    cc -O2 -fPIC -pthread -c "$HERE/app/tool_broker.c" -o "$HERE/build/tool_broker.o"
+    cc -O2 -fPIC -c "$HERE/app/helper_broker.c" -o "$HERE/build/helper_broker.o"
+    ar rcs "$HERE/build/libwnsandbox.a" "$HERE/build/main_sandbox.o" "$HERE/build/tool_broker.o" "$HERE/build/helper_broker.o"
+    build_cache_store "$SANDBOX_KEY" "$HERE/build/sandbox.stamp" "$HERE/build/libwnsandbox.a"
+  fi
 fi
 
 CLAY="$HERE/vendor/clay"
@@ -184,26 +270,25 @@ if git -C "$CLAY" apply --check "$HERE/patches/clay-openbsd.patch" 2>/dev/null; 
 fi
 
 if [ "${1:-}" != sources ]; then
-# Rebuild Clay: the upstream prebuilt archive has the slot-reuse bug too.
-# clay-scroll-target.patch keeps a clipped label from swallowing the wheel.
-# clay-float-layer.patch keeps a z-less float (the text caret) above the
-# floating panel it sits in.
-CLAY_LIB="$CLAY/bindings/odin/clay-odin/linux/clay.a"
-CLAY_PATCHES=("$HERE/patches/clay-hashmap.patch" "$HERE/patches/clay-scroll-target.patch" "$HERE/patches/clay-float-layer.patch")
-CLAY_STALE=0
-for f in "$CLAY/clay.h" "${CLAY_PATCHES[@]}"; do
-  if [ "$f" -nt "$HERE/build/clay/clay.a" ]; then CLAY_STALE=1; fi
-done
-if [ ! -f "$HERE/build/clay/clay.a" ] || [ "$CLAY_STALE" = 1 ]; then
-  mkdir -p "$HERE/build/clay"
-  cp "$CLAY/clay.h" "$HERE/build/clay/clay.h"
-  for patch in "${CLAY_PATCHES[@]}"; do
-    apply_in_build clay "$patch"
-  done
-  cc -x c -c -DCLAY_IMPLEMENTATION -fPIC -O2 "$HERE/build/clay/clay.h" -o "$HERE/build/clay/clay.o"
-  ar rcs "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.o"
-fi
-cp "$HERE/build/clay/clay.a" "$CLAY_LIB"
+  # Rebuild Clay: the upstream prebuilt archive has the slot-reuse bug too.
+  # clay-scroll-target.patch keeps a clipped label from swallowing the wheel.
+  # clay-float-layer.patch keeps a z-less float (the text caret) above the
+  # floating panel it sits in.
+  CLAY_LIB="$CLAY/bindings/odin/clay-odin/linux/clay.a"
+  CLAY_PATCHES=("$HERE/patches/clay-hashmap.patch" "$HERE/patches/clay-scroll-target.patch" "$HERE/patches/clay-float-layer.patch")
+  CLAY_KEY="$(native_key 'clay C PIC O2 CLAY_IMPLEMENTATION' "$CLAY/clay.h" "${CLAY_PATCHES[@]}")"
+  if ! build_cache_fresh "$CLAY_KEY" "$HERE/build/clay/stamp" "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.h"; then
+    rm -f "$HERE/build/clay/stamp" "$HERE/build/clay/clay.a"
+    mkdir -p "$HERE/build/clay"
+    cp "$CLAY/clay.h" "$HERE/build/clay/clay.h"
+    for patch in "${CLAY_PATCHES[@]}"; do
+      apply_in_build clay "$patch"
+    done
+    cc -x c -c -DCLAY_IMPLEMENTATION -fPIC -O2 "$HERE/build/clay/clay.h" -o "$HERE/build/clay/clay.o"
+    ar rcs "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.o"
+    build_cache_store "$CLAY_KEY" "$HERE/build/clay/stamp" "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.h"
+  fi
+  cp "$HERE/build/clay/clay.a" "$CLAY_LIB"
 fi
 
 # Local LifeHash avatars. The relay's Git server does not support shallow clones.
@@ -231,28 +316,27 @@ if [ "$(git -C "$UFBX" rev-parse HEAD)" != "$UFBX_PIN" ]; then
 fi
 
 if [ "${1:-}" != sources ]; then
-mkdir -p "$HERE/build/fbx"
-# The stamp names the ufbx pin the object was built from, so a CI cache
-# restored from another pin rebuilds instead of linking a stale object.
-if [ ! -f "$HERE/build/fbx/ufbx.o" ] || [ "$(cat "$HERE/build/fbx/ufbx.stamp" 2>/dev/null || true)" != "$UFBX_PIN" ]; then
-  cc -c -O2 -fPIC "$UFBX/ufbx.c" -o "$HERE/build/fbx/ufbx.o"
-  echo "$UFBX_PIN" > "$HERE/build/fbx/ufbx.stamp"
-fi
+  mkdir -p "$HERE/build/fbx"
+  UFBX_KEY="$(native_key 'ufbx O2 PIC' "$UFBX/ufbx.c" "$UFBX/ufbx.h")"
+  if ! build_cache_fresh "$UFBX_KEY" "$HERE/build/fbx/ufbx.stamp" "$HERE/build/fbx/ufbx.o"; then
+    rm -f "$HERE/build/fbx/ufbx.stamp"
+    cc -c -O2 -fPIC "$UFBX/ufbx.c" -o "$HERE/build/fbx/ufbx.o"
+    build_cache_store "$UFBX_KEY" "$HERE/build/fbx/ufbx.stamp" "$HERE/build/fbx/ufbx.o"
+  fi
 
-# Nostr event fetch (nevent cards) and Namecoin `.bit` NIP-05 resolution:
-# both use one-shot websocket clients over libcurl's raw socket, framed
-# in app/ws_shim.c (Nostr REQ) and app/nc_shim.c (ElectrumX JSON-RPC).
-mkdir -p "$HERE/build/ws"
-if [ ! -f "$HERE/build/libwnws.a" ] || \
-   [ "$HERE/app/ws_shim.c" -nt "$HERE/build/libwnws.a" ] || \
-   [ "$HERE/app/nc_shim.c" -nt "$HERE/build/libwnws.a" ] || \
-   [ "$HERE/app/network_proxy.h" -nt "$HERE/build/libwnws.a" ] || \
-   [ "$HERE/app/proxy_credentials.h" -nt "$HERE/build/libwnws.a" ]; then
-  cc -c -O2 -fPIC $(pkg-config --cflags libcurl) "$HERE/app/ws_shim.c" -o "$HERE/build/ws/ws_shim.o"
-  cc -c -O2 -fPIC $(pkg-config --cflags libcurl) "$HERE/app/nc_shim.c" -o "$HERE/build/ws/nc_shim.o"
-  rm -f "$HERE/build/libwnws.a"
-  ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o" "$HERE/build/ws/nc_shim.o"
-fi
+  # Nostr event fetch (nevent cards) and Namecoin `.bit` NIP-05 resolution:
+  # both use one-shot websocket clients over libcurl's raw socket, framed
+  # in app/ws_shim.c (Nostr REQ) and app/nc_shim.c (ElectrumX JSON-RPC).
+  mkdir -p "$HERE/build/ws"
+  WS_KEY="$(native_key 'websocket O2 PIC curl' "$HERE/app/ws_shim.c" "$HERE/app/nc_shim.c")"
+  if ! build_cache_fresh "$WS_KEY" "$HERE/build/ws/stamp" "$HERE/build/libwnws.a"; then
+    rm -f "$HERE/build/ws/stamp"
+    cc -c -O2 -fPIC $(pkg-config --cflags libcurl) "$HERE/app/ws_shim.c" -o "$HERE/build/ws/ws_shim.o"
+    cc -c -O2 -fPIC $(pkg-config --cflags libcurl) "$HERE/app/nc_shim.c" -o "$HERE/build/ws/nc_shim.o"
+    rm -f "$HERE/build/libwnws.a"
+    ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o" "$HERE/build/ws/nc_shim.o"
+    build_cache_store "$WS_KEY" "$HERE/build/ws/stamp" "$HERE/build/libwnws.a"
+  fi
 fi
 
 # Math blocks: MicroTeX (MIT) typesets TeX into a draw-command stream and
@@ -291,79 +375,132 @@ for patch in "${MICROTEX_PATCHES[@]}"; do
   fi
 done
 if [ "${1:-}" != sources ]; then
-# MicroTeX is rebuilt only when its pin or patches change. The stamp makes
-# that explicit: a restored CI cache has older mtimes than the fresh clone,
-# so CMake's own staleness check would rebuild everything.
-MICROTEX_STAMP="$({ echo "$MICROTEX_PIN"; cat "${MICROTEX_PATCHES[@]}"; } | sha256sum | cut -d' ' -f1)"
-if [ ! -f "$HERE/build/microtex/lib/libmicrotex.a" ] || [ "$(cat "$HERE/build/microtex/stamp" 2>/dev/null || true)" != "$MICROTEX_STAMP" ]; then
-  rm -rf "$HERE/build/microtex"
-  cmake -S "$MICROTEX" -B "$HERE/build/microtex" -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_STATIC=ON -DHAVE_CWRAPPER=ON \
-    -DHAVE_LOG=OFF -DGRAPHICS_DEBUG=OFF -DHAVE_AUTO_FONT_FIND=OFF
-  cmake --build "$HERE/build/microtex" --target microtex -j"$(getconf NPROCESSORS_ONLN)"
-  echo "$MICROTEX_STAMP" > "$HERE/build/microtex/stamp"
-  rm -f "$HERE/build/libwnmath.a"
-fi
-mkdir -p "$HERE/build/math"
-if [ ! -f "$HERE/build/libwnmath.a" ] || [ "$HERE/app/math_shim.cpp" -nt "$HERE/build/libwnmath.a" ] || [ "$HERE/app/decoder_ipc.h" -nt "$HERE/build/libwnmath.a" ] || [ "$HERE/app/decoder_limits.h" -nt "$HERE/build/libwnmath.a" ] || [ "${MICROTEX_PATCHES[0]}" -nt "$HERE/build/libwnmath.a" ]; then
-  c++ -std=c++17 -c -O2 -fPIC -Wall -Wextra -DHAVE_CWRAPPER -isystem "$MICROTEX/lib" -isystem "$HERE/build/microtex/lib" \
-    $(pkg-config --cflags cairo) "$HERE/app/math_shim.cpp" -o "$HERE/build/math/math_shim.o"
-  rm -f "$HERE/build/libwnmath.a"
-  ar rcs "$HERE/build/libwnmath.a" "$HERE/build/math/math_shim.o"
-fi
-
-# Parent/child IPC is shared by speech and the webxdc host.
-cc -c -O2 -fPIC -pthread "$HERE/app/helper_ipc.c" -o "$HERE/build/helper_ipc.o"
-ar rcs "$HERE/build/libwnipc.a" "$HERE/build/helper_ipc.o"
-
-# Attachment parsers run in helpers sharing one bounded pipe client.
-cc -c -O2 -fPIC -pthread "$HERE/app/decoder_ipc.c" -o "$HERE/build/decoder_ipc.o"
-ar rcs "$HERE/build/libwndecoder.a" "$HERE/build/decoder_ipc.o"
-cc -c -O2 -fPIC -Wall -Wextra "$HERE/app/timestamp.c" -o "$HERE/build/timestamp.o"
-ar rcs "$HERE/build/libwntimestamp.a" "$HERE/build/timestamp.o"
-IMAGE_ODIN="$(env -u ODIN_ROOT odin root)"
-cc -O2 -Wall -Wextra -I"${IMAGE_ODIN%/}/vendor/stb/src" "$HERE/app/image.c" \
-  $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/wn-image"
-cc -O2 -Wall -Wextra "$HERE/app/archive.c" \
-  $(pkg-config --cflags --libs libarchive) -o "$HERE/build/wn-archive"
-cc -O2 -Wall -Wextra "$HERE/app/pdf.c" \
-  $(pkg-config --cflags --libs poppler-glib cairo fontconfig) -lm -o "$HERE/build/wn-pdf"
-cc -O2 -Wall -Wextra -I"$UFBX" "$HERE/app/fbx_helper.c" "$HERE/app/fbx_shim.c" \
-  "$HERE/build/fbx/ufbx.o" -lm -o "$HERE/build/wn-fbx"
-cc -c -O2 -fPIC "$HERE/app/mesh_limits.c" -o "$HERE/build/mesh_limits.o"
-ar rcs "$HERE/build/libwnmesh.a" "$HERE/build/mesh_limits.o"
-
-# FreeType decodes profile web fonts for the existing SFNT text renderer.
-cc -O2 -Wall -Wextra "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) -o "$HERE/build/wn-font"
-
-# Speech helpers use the pinned multilingual CPU runtime, which sherpa-onnx
-# only publishes for Linux (and the cross targets'). Elsewhere (OpenBSD) the
-# helpers are not built and reading aloud/dictation report that they could
-# not start.
-if [ "$(uname -s)" = Linux ]; then
-  bash "$HERE/scripts/build-tts.sh"
-  TTS="$HERE/vendor/sherpa-onnx"
-  for speech in tts stt; do
-    cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/app/$speech.c" "$HERE/build/libwnipc.a" \
-      -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
-      $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 libavformat libavcodec libavutil libswresample libcrypto) -pthread -lm -o "$HERE/build/wn-$speech"
-  done
-fi
-
-# wn-webview: the process that runs a webxdc app offscreen and hands
-# the app its pixels through shared memory. Optional: without
-# webkit2gtk-4.1 there is no viewer, and .xdc attachments stay inert.
-# OpenBSD never builds or runs the host, even with WebKit installed.
-if [ "$(uname -s)" = OpenBSD ]; then
-  echo "==> webxdc apps are disabled on OpenBSD"
-elif pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
-  if [ ! -f "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.c" -nt "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.h" -nt "$HERE/build/wn-webview" ] || [ "$HERE/app/proxy_credentials.h" -nt "$HERE/build/wn-webview" ] || [ "$HERE/build/libwnipc.a" -nt "$HERE/build/wn-webview" ]; then
-    cc -O2 "$HERE/app/webview.c" "$HERE/build/libwnipc.a" -pthread -o "$HERE/build/wn-webview" \
-      $(pkg-config --cflags --libs webkit2gtk-4.1)
+  MICROTEX_STAMP="$(native_key 'MicroTeX Release PIC STATIC CWRAPPER no-log no-debug no-font-find' "$MICROTEX" "${MICROTEX_PATCHES[@]}")"
+  if ! build_cache_fresh "$MICROTEX_STAMP" "$HERE/build/microtex/stamp" "$HERE/build/microtex/lib/libmicrotex.a" "$HERE/build/microtex/lib/microtexconfig.h"; then
+    rm -rf "$HERE/build/microtex"
+    cmake -S "$MICROTEX" -B "$HERE/build/microtex" -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_STATIC=ON -DHAVE_CWRAPPER=ON \
+      -DHAVE_LOG=OFF -DGRAPHICS_DEBUG=OFF -DHAVE_AUTO_FONT_FIND=OFF
+    cmake --build "$HERE/build/microtex" --target microtex -j"$(getconf NPROCESSORS_ONLN)"
+    build_cache_store "$MICROTEX_STAMP" "$HERE/build/microtex/stamp" "$HERE/build/microtex/lib/libmicrotex.a" "$HERE/build/microtex/lib/microtexconfig.h"
+    rm -f "$HERE/build/libwnmath.a"
   fi
-else
-  echo "==> webkit2gtk-4.1 not found: webxdc apps will not run"
-fi
+  mkdir -p "$HERE/build/math"
+  MATH_KEY="$(native_key 'math C++17 O2 PIC Wall Wextra HAVE_CWRAPPER cairo' "$HERE/app/math_shim.cpp" "$MICROTEX/lib" "$HERE/build/microtex/lib/microtexconfig.h")"
+  if ! build_cache_fresh "$MATH_KEY" "$HERE/build/math/stamp" "$HERE/build/libwnmath.a"; then
+    rm -f "$HERE/build/math/stamp"
+    c++ -std=c++17 -c -O2 -fPIC -Wall -Wextra -DHAVE_CWRAPPER -isystem "$MICROTEX/lib" -isystem "$HERE/build/microtex/lib" \
+      $(pkg-config --cflags cairo) "$HERE/app/math_shim.cpp" -o "$HERE/build/math/math_shim.o"
+    rm -f "$HERE/build/libwnmath.a"
+    ar rcs "$HERE/build/libwnmath.a" "$HERE/build/math/math_shim.o"
+    build_cache_store "$MATH_KEY" "$HERE/build/math/stamp" "$HERE/build/libwnmath.a"
+  fi
+
+  # Parent/child IPC is shared by speech and the webxdc host.
+  IPC_KEY="$(native_key 'IPC O2 PIC pthread' "$HERE/app/helper_ipc.c")"
+  if ! build_cache_fresh "$IPC_KEY" "$HERE/build/ipc.stamp" "$HERE/build/libwnipc.a"; then
+    rm -f "$HERE/build/ipc.stamp" "$HERE/build/libwnipc.a"
+    cc -c -O2 -fPIC -pthread "$HERE/app/helper_ipc.c" -o "$HERE/build/helper_ipc.o"
+    ar rcs "$HERE/build/libwnipc.a" "$HERE/build/helper_ipc.o"
+    build_cache_store "$IPC_KEY" "$HERE/build/ipc.stamp" "$HERE/build/libwnipc.a"
+  fi
+
+  # Attachment parsers run in helpers sharing one bounded pipe client.
+  DECODER_KEY="$(native_key 'decoder IPC O2 PIC pthread' "$HERE/app/decoder_ipc.c")"
+  if ! build_cache_fresh "$DECODER_KEY" "$HERE/build/decoder.stamp" "$HERE/build/libwndecoder.a"; then
+    rm -f "$HERE/build/decoder.stamp" "$HERE/build/libwndecoder.a"
+    cc -c -O2 -fPIC -pthread "$HERE/app/decoder_ipc.c" -o "$HERE/build/decoder_ipc.o"
+    ar rcs "$HERE/build/libwndecoder.a" "$HERE/build/decoder_ipc.o"
+    build_cache_store "$DECODER_KEY" "$HERE/build/decoder.stamp" "$HERE/build/libwndecoder.a"
+  fi
+  TIMESTAMP_KEY="$(native_key 'timestamp O2 PIC Wall Wextra' "$HERE/app/timestamp.c")"
+  if ! build_cache_fresh "$TIMESTAMP_KEY" "$HERE/build/timestamp.stamp" "$HERE/build/libwntimestamp.a"; then
+    rm -f "$HERE/build/timestamp.stamp" "$HERE/build/libwntimestamp.a"
+    cc -c -O2 -fPIC -Wall -Wextra "$HERE/app/timestamp.c" -o "$HERE/build/timestamp.o"
+    ar rcs "$HERE/build/libwntimestamp.a" "$HERE/build/timestamp.o"
+    build_cache_store "$TIMESTAMP_KEY" "$HERE/build/timestamp.stamp" "$HERE/build/libwntimestamp.a"
+  fi
+  IMAGE_ODIN="$(env -u ODIN_ROOT odin root)"
+  IMAGE_KEY="$(native_key 'image O2 Wall Wextra webp m' "$HERE/app/image.c" "${IMAGE_ODIN%/}/vendor/stb/src")"
+  if ! build_cache_fresh "$IMAGE_KEY" "$HERE/build/image.stamp" "$HERE/build/wn-image"; then
+    rm -f "$HERE/build/image.stamp" "$HERE/build/wn-image"
+    cc -O2 -Wall -Wextra -I"${IMAGE_ODIN%/}/vendor/stb/src" "$HERE/app/image.c" \
+      $(pkg-config --cflags --libs libwebp) -lm -o "$HERE/build/wn-image"
+    build_cache_store "$IMAGE_KEY" "$HERE/build/image.stamp" "$HERE/build/wn-image"
+  fi
+  ARCHIVE_KEY="$(native_key 'archive O2 Wall Wextra libarchive' "$HERE/app/archive.c")"
+  if ! build_cache_fresh "$ARCHIVE_KEY" "$HERE/build/archive.stamp" "$HERE/build/wn-archive"; then
+    rm -f "$HERE/build/archive.stamp" "$HERE/build/wn-archive"
+    cc -O2 -Wall -Wextra "$HERE/app/archive.c" \
+      $(pkg-config --cflags --libs libarchive) -o "$HERE/build/wn-archive"
+    build_cache_store "$ARCHIVE_KEY" "$HERE/build/archive.stamp" "$HERE/build/wn-archive"
+  fi
+  PDF_KEY="$(native_key 'pdf O2 Wall Wextra poppler-glib cairo fontconfig m' "$HERE/app/pdf.c")"
+  if ! build_cache_fresh "$PDF_KEY" "$HERE/build/pdf.stamp" "$HERE/build/wn-pdf"; then
+    rm -f "$HERE/build/pdf.stamp" "$HERE/build/wn-pdf"
+    cc -O2 -Wall -Wextra "$HERE/app/pdf.c" \
+      $(pkg-config --cflags --libs poppler-glib cairo fontconfig) -lm -o "$HERE/build/wn-pdf"
+    build_cache_store "$PDF_KEY" "$HERE/build/pdf.stamp" "$HERE/build/wn-pdf"
+  fi
+  FBX_KEY="$(native_key 'fbx O2 Wall Wextra m' "$HERE/app/fbx_helper.c" "$HERE/app/fbx_shim.c" "$UFBX/ufbx.h" "$HERE/build/fbx/ufbx.o")"
+  if ! build_cache_fresh "$FBX_KEY" "$HERE/build/fbx/stamp" "$HERE/build/wn-fbx"; then
+    rm -f "$HERE/build/fbx/stamp" "$HERE/build/wn-fbx"
+    cc -O2 -Wall -Wextra -I"$UFBX" "$HERE/app/fbx_helper.c" "$HERE/app/fbx_shim.c" \
+      "$HERE/build/fbx/ufbx.o" -lm -o "$HERE/build/wn-fbx"
+    build_cache_store "$FBX_KEY" "$HERE/build/fbx/stamp" "$HERE/build/wn-fbx"
+  fi
+  MESH_KEY="$(native_key 'mesh limits O2 PIC' "$HERE/app/mesh_limits.c")"
+  if ! build_cache_fresh "$MESH_KEY" "$HERE/build/mesh.stamp" "$HERE/build/libwnmesh.a"; then
+    rm -f "$HERE/build/mesh.stamp" "$HERE/build/libwnmesh.a"
+    cc -c -O2 -fPIC "$HERE/app/mesh_limits.c" -o "$HERE/build/mesh_limits.o"
+    ar rcs "$HERE/build/libwnmesh.a" "$HERE/build/mesh_limits.o"
+    build_cache_store "$MESH_KEY" "$HERE/build/mesh.stamp" "$HERE/build/libwnmesh.a"
+  fi
+
+  # FreeType decodes profile web fonts for the existing SFNT text renderer.
+  FONT_KEY="$(native_key 'font O2 Wall Wextra freetype2' "$HERE/app/font.c")"
+  if ! build_cache_fresh "$FONT_KEY" "$HERE/build/font.stamp" "$HERE/build/wn-font"; then
+    rm -f "$HERE/build/font.stamp" "$HERE/build/wn-font"
+    cc -O2 -Wall -Wextra "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) -o "$HERE/build/wn-font"
+    build_cache_store "$FONT_KEY" "$HERE/build/font.stamp" "$HERE/build/wn-font"
+  fi
+
+  # Speech helpers use the pinned multilingual CPU runtime, which sherpa-onnx
+  # only publishes for Linux (and the cross targets'). Elsewhere (OpenBSD) the
+  # helpers are not built and reading aloud/dictation report that they could
+  # not start.
+  if [ "$(uname -s)" = Linux ]; then
+    bash "$HERE/scripts/build-tts.sh"
+    TTS="$HERE/vendor/sherpa-onnx"
+    for speech in tts stt; do
+      SPEECH_KEY="$(native_key "speech $speech O2 Wall Wextra sdl3 curl glib av crypto pthread m ORIGIN/tts-lib" "$HERE/app/$speech.c" "$HERE/build/libwnipc.a" "$TTS/include" "$TTS/lib")"
+      if ! build_cache_fresh "$SPEECH_KEY" "$HERE/build/$speech.stamp" "$HERE/build/wn-$speech"; then
+        rm -f "$HERE/build/$speech.stamp" "$HERE/build/wn-$speech"
+        cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/app/$speech.c" "$HERE/build/libwnipc.a" \
+          -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
+          $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 libavformat libavcodec libavutil libswresample libcrypto) -pthread -lm -o "$HERE/build/wn-$speech"
+        build_cache_store "$SPEECH_KEY" "$HERE/build/$speech.stamp" "$HERE/build/wn-$speech"
+      fi
+    done
+  fi
+
+  # wn-webview: the process that runs a webxdc app offscreen and hands
+  # the app its pixels through shared memory. Optional: without
+  # webkit2gtk-4.1 there is no viewer, and .xdc attachments stay inert.
+  # OpenBSD never builds or runs the host, even with WebKit installed.
+  if [ "$(uname -s)" = OpenBSD ]; then
+    echo "==> webxdc apps are disabled on OpenBSD"
+  elif pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
+    WEBVIEW_KEY="$(native_key 'webview O2 pthread webkit2gtk-4.1' "$HERE/app/webview.c" "$HERE/build/libwnipc.a")"
+    if ! build_cache_fresh "$WEBVIEW_KEY" "$HERE/build/webview.stamp" "$HERE/build/wn-webview"; then
+      rm -f "$HERE/build/webview.stamp" "$HERE/build/wn-webview"
+      cc -O2 "$HERE/app/webview.c" "$HERE/build/libwnipc.a" -pthread -o "$HERE/build/wn-webview" \
+        $(pkg-config --cflags --libs webkit2gtk-4.1)
+      build_cache_store "$WEBVIEW_KEY" "$HERE/build/webview.stamp" "$HERE/build/wn-webview"
+    fi
+  else
+    echo "==> webkit2gtk-4.1 not found: webxdc apps will not run"
+  fi
 fi
 
 # Emoji tiles, catalog and pixel packs are generated once by maintainers.
@@ -457,10 +594,15 @@ fi
 # name the archives for Linux only (below).
 SYS_ODIN="$(env -u ODIN_ROOT odin root)"
 SYS_ODIN="${SYS_ODIN%/}"
+ODIN_SYS_KEY="$(native_key 'Odin overlay stb cgltf' "$SYS_ODIN/base" "$SYS_ODIN/core" "$SYS_ODIN/shared" "$SYS_ODIN/vendor/stb" "$SYS_ODIN/vendor/cgltf" "$SYS_ODIN/vendor/sdl3" "$HERE"/patches/odin-openbsd-*.patch)"
 ODIN_ROOT_ARG=()
+OVERLAY_REBUILT=0
 if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendor/cgltf/lib/cgltf.a" ] || [ "$(uname -s)" = OpenBSD ]; then
   OVERLAY="$HERE/build/odin-root"
-  if [ ! -f "$OVERLAY/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$OVERLAY/vendor/cgltf/lib/cgltf.a" ]; then
+  OVERLAY_OUTPUTS=("$OVERLAY/base" "$OVERLAY/core" "$OVERLAY/shared" "$OVERLAY/vendor/stb" "$OVERLAY/vendor/cgltf" "$OVERLAY/vendor/sdl3")
+  if ! build_cache_fresh "$ODIN_SYS_KEY" "$HERE/build/odin-root.stamp" "${OVERLAY_OUTPUTS[@]}"; then
+    rm -f "$HERE/build/odin-root.stamp"
+    OVERLAY_REBUILT=1
     # An older overlay symlinks vendor/cgltf to the read-only install;
     # start over rather than copy into it. rm -rf does not follow links.
     rm -rf "$OVERLAY"
@@ -468,11 +610,11 @@ if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendo
     ln -sfn "$SYS_ODIN/base" "$SYS_ODIN/core" "$SYS_ODIN/shared" "$OVERLAY/"
     for entry in "$SYS_ODIN/vendor"/*; do
       case "$(basename "$entry")" in
-        stb | cgltf)
-          cp -r "$entry" "$OVERLAY/vendor/"
-          chmod -R u+w "$OVERLAY/vendor/$(basename "$entry")"
-          ;;
-        *) ln -sfn "$entry" "$OVERLAY/vendor/" ;;
+      stb | cgltf)
+        cp -r "$entry" "$OVERLAY/vendor/"
+        chmod -R u+w "$OVERLAY/vendor/$(basename "$entry")"
+        ;;
+      *) ln -sfn "$entry" "$OVERLAY/vendor/" ;;
       esac
     done
     ODIN_ROOT="$OVERLAY" "$OVERLAY/vendor/stb/src/build_stb.sh"
@@ -492,7 +634,12 @@ fi
 
 APP_LINK_ARGS=()
 if [ "$(uname -s)" = Linux ]; then
-  bash "$HERE/scripts/build-appimage-updater.sh" bridge
+  APPIMAGE_KEY="$(native_key 'AppImage bridge C11 O2 PIC pthread' "$HERE/scripts/build-appimage-updater.sh" "$HERE/app/appimage_update_client.c")"
+  if ! build_cache_fresh "$APPIMAGE_KEY" "$HERE/build/appimage-bridge.stamp" "$HERE/build/libwnappimage.a"; then
+    rm -f "$HERE/build/appimage-bridge.stamp" "$HERE/build/libwnappimage.a"
+    bash "$HERE/scripts/build-appimage-updater.sh" bridge
+    build_cache_store "$APPIMAGE_KEY" "$HERE/build/appimage-bridge.stamp" "$HERE/build/libwnappimage.a"
+  fi
 elif [ "$(uname -s)" = Darwin ]; then
   SPARKLE="$(bash "$HERE/scripts/build-sparkle-updater.sh" "$HERE/build")"
   cc -fobjc-arc -fblocks -F"$SPARKLE" -c "$HERE/app/updater_sparkle.m" -o "$HERE/build/updater_sparkle.o"
@@ -505,7 +652,7 @@ if [ "$(uname -s)" = OpenBSD ]; then
     cp -R "$SYS_ODIN/vendor/sdl3" "$OVERLAY/vendor/sdl3"
   fi
   printf 'package sdl3\n@(export) foreign import lib {"../../../sdl/lib/libSDL3.a", "system:pthread", "system:m", "system:usbhid"}\n' \
-    > "$OVERLAY/vendor/sdl3/sdl3__foreign.odin"
+    >"$OVERLAY/vendor/sdl3/sdl3__foreign.odin"
   # OpenBSD has no O_EXEC: Odin's pre-open would require read permission,
   # allowing writable hardlinks to helpers. Probe execute permission instead.
   # Odin's OpenBSD futex waits also panic on EAGAIN, EINTR and ECANCELED,
@@ -548,10 +695,31 @@ elif [ "$(uname -s)" = Linux ]; then
   done
   APP_LINK_ARGS=("-extra-linker-flags:$link_flags")
 fi
+if [ "$OVERLAY_REBUILT" = 1 ]; then
+  # OpenBSD modifies core and SDL bindings above; publish only their final form.
+  build_cache_store "$ODIN_SYS_KEY" "$HERE/build/odin-root.stamp" "${OVERLAY_OUTPUTS[@]}"
+fi
 
-env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/model-decoder" -o:speed -out:"$HERE/build/wn-mesh"
-env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/math-decoder" -o:speed -out:"$HERE/build/wn-math"
-env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/nes-decoder" -o:speed -out:"$HERE/build/wn-nes"
+ACTIVE_ODIN="${OVERLAY:-${ODIN_ROOT:-$SYS_ODIN}}"
+ODIN_ENV="$(native_key "Odin native $ODIN_SYS_KEY ${ODIN_ROOT_ARG[*]}" "$ACTIVE_ODIN/base" "$ACTIVE_ODIN/core" "$ACTIVE_ODIN/vendor/stb" "$ACTIVE_ODIN/vendor/cgltf" "$ACTIVE_ODIN/vendor/sdl3")"
+MESH_ODIN_KEY="$(native_key "mesh Odin speed $ODIN_ENV" "$HERE/model-decoder" "$HERE/build/libwnmesh.a")"
+if ! build_cache_fresh "$MESH_ODIN_KEY" "$HERE/build/mesh-odin.stamp" "$HERE/build/wn-mesh"; then
+  rm -f "$HERE/build/mesh-odin.stamp" "$HERE/build/wn-mesh"
+  env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/model-decoder" -o:speed -out:"$HERE/build/wn-mesh"
+  build_cache_store "$MESH_ODIN_KEY" "$HERE/build/mesh-odin.stamp" "$HERE/build/wn-mesh"
+fi
+MATH_ODIN_KEY="$(native_key "math Odin speed $ODIN_ENV" "$HERE/math-decoder" "$HERE/build/libwnmath.a" "$HERE/build/microtex/lib/libmicrotex.a" "$MICROTEX/res/tex-gyre/texgyredejavu-math.clm2")"
+if ! build_cache_fresh "$MATH_ODIN_KEY" "$HERE/build/math-odin.stamp" "$HERE/build/wn-math"; then
+  rm -f "$HERE/build/math-odin.stamp" "$HERE/build/wn-math"
+  env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/math-decoder" -o:speed -out:"$HERE/build/wn-math"
+  build_cache_store "$MATH_ODIN_KEY" "$HERE/build/math-odin.stamp" "$HERE/build/wn-math"
+fi
+NES_ODIN_KEY="$(native_key "nes Odin speed $ODIN_ENV" "$HERE/nes-decoder" "$HERE/build/libwnmesh.a")"
+if ! build_cache_fresh "$NES_ODIN_KEY" "$HERE/build/nes-odin.stamp" "$HERE/build/wn-nes"; then
+  rm -f "$HERE/build/nes-odin.stamp" "$HERE/build/wn-nes"
+  env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/nes-decoder" -o:speed -out:"$HERE/build/wn-nes"
+  build_cache_store "$NES_ODIN_KEY" "$HERE/build/nes-odin.stamp" "$HERE/build/wn-nes"
+fi
 
 # The dev host builds a reloadable library after staging these same inputs.
 if [ "${1:-}" = stage ]; then
@@ -561,11 +729,27 @@ fi
 # Remove the previous binaries first: overwriting one that is still
 # mapped by a running instance leaves a half-written file whose next
 # run segfaults in libc's init, long before main.
-rm -f "$HERE/build/smoke" "$HERE/build/app"
-odin build "$HERE/tests/smoke" -out:"$HERE/build/smoke"
+SMOKE_ODIN="$(odin root)"
+SMOKE_KEY="$(native_key "smoke Odin default $ODIN_SYS_KEY ${ODIN_ROOT:-}" "$SMOKE_ODIN/base" "$SMOKE_ODIN/core" "$HERE/tests/smoke" "$HERE/marmot" "$BUNDLE/lib/libmarmot_c.a")"
+if ! build_cache_fresh "$SMOKE_KEY" "$HERE/build/smoke.stamp" "$HERE/build/smoke"; then
+  rm -f "$HERE/build/smoke.stamp" "$HERE/build/smoke"
+  odin build "$HERE/tests/smoke" -out:"$HERE/build/smoke"
+  build_cache_store "$SMOKE_KEY" "$HERE/build/smoke.stamp" "$HERE/build/smoke"
+fi
 # -o:speed: the STL orbit path needs it (200k tris: 20ms/step at
 # -o:minimal vs 3.4ms; 60fps budget is 16.6ms).
-env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" -o:speed "${APP_LINK_ARGS[@]}" -out:"$HERE/build/app"
+APP_LIBS=("$BUNDLE/lib/libmarmot_c.a" "$HERE/build/libwnipc.a" "$HERE/build/libwndecoder.a" "$HERE/build/libwntimestamp.a" "$HERE/build/libwnws.a")
+case "$(uname -s)" in
+Linux) APP_LIBS+=("$HERE/build/libwnappimage.a") ;;
+Darwin) APP_LIBS+=("$HERE/build/libwnsparkle.a") ;;
+OpenBSD) APP_LIBS+=("$HERE/build/libwnsandbox.a" "$HERE/build/sdl/lib/libSDL3.a") ;;
+esac
+APP_KEY="$(native_key "app Odin speed $ODIN_ENV ${APP_LINK_ARGS[*]}" "$HERE/app" "$HERE/marmot" "$HERE/lang" "$HERE/themes" "$CROP" "$CLAY/bindings/odin/clay-odin" "$HERE/vendor/common-passwords.txt" "$HERE/build/observability-tokens.toml" "${APP_LIBS[@]}")"
+if ! build_cache_fresh "$APP_KEY" "$HERE/build/app.stamp" "$HERE/build/app"; then
+  rm -f "$HERE/build/app.stamp" "$HERE/build/app"
+  env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" -o:speed "${APP_LINK_ARGS[@]}" -out:"$HERE/build/app"
+  build_cache_store "$APP_KEY" "$HERE/build/app.stamp" "$HERE/build/app"
+fi
 # Unused imports: fatal in CI, a warning locally so a work-in-progress
 # import does not block a build.
 if ! env "${ODIN_ROOT_ARG[@]}" "$HERE/scripts/vet-imports.sh"; then
@@ -581,6 +765,7 @@ echo "==> Done: $HERE/build/{smoke,app}"
 # `just test` also runs the app package's test procs, which is what CI
 # does after the build.
 if [ "${1:-}" = test ]; then
+  bash "$HERE/tests/build-cache-test.sh"
   bash "$HERE/tests/version-test.sh"
   bash "$HERE/tests/mdk-patches-test.sh"
   bash "$HERE/tests/emoji-bundle-test.sh"

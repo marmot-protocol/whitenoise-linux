@@ -143,7 +143,7 @@ phase() {
 
 report "### MDK cached source rebuild: $TARGET"
 phase populated "$original"
-cp "$SOURCE" "$EVIDENCE/lib.rs.original"
+cp -p "$SOURCE" "$EVIDENCE/lib.rs.original"
 phase unchanged "$original"
 source_text="$(cat "$SOURCE")"
 needle="set_last_error(\"$original\");"
@@ -164,4 +164,7 @@ phase edited "$changed"
 cp "$EVIDENCE/lib.rs.original" "$SOURCE"
 dirty=0
 phase restored "$original"
+# Only after proving the restored artifact, avoid invalidating other targets'
+# Cargo caches merely because this verification temporarily edited the source.
+touch -r "$EVIDENCE/lib.rs.original" "$SOURCE"
 report "PASS: $TARGET cached, unchanged, source-edited, and source-restored ABI behavior; evidence: $EVIDENCE"
