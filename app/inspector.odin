@@ -724,6 +724,7 @@ model_texture_color :: proc(
 	basis: [5][3]f32,
 	fallback: rl.FColor,
 ) -> rl.FColor {
+	if tri < 0 || tri >= len(view.insp.mat) {return fallback}
 	index := int(view.insp.mat[tri])
 	if index < 0 || index >= len(view.insp.textures) {return fallback}
 	textures := &view.insp.textures[index]
