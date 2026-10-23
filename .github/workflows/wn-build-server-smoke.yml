@@ -1,0 +1,45 @@
+name: WN build server smoke
+
+on:
+  push:
+    branches: [wn-build-server-smoke-20261023]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify host and privilege boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -un)" = runner
+          test "$(hostname)" = wn-build-server
+          if sudo -n true 2>/dev/null; then
+            echo 'Runner must not have passwordless sudo.'
+            exit 1
+          fi
+          test "$(cat /sys/fs/cgroup/system.slice/github-runner.service/cpu.max)" = '1280000 100000'
+          cat /etc/os-release
+          git --version
+          clang --version
+          cmake --version
+          podman --version
+      - name: Compile and execute a native binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '#include <stdio.h>\nint main(void) { puts("wn-build-server native build passed"); return 0; }\n' > "$RUNNER_TEMP/smoke.c"
+          clang -Wall -Wextra -Werror "$RUNNER_TEMP/smoke.c" -o "$RUNNER_TEMP/smoke"
+          test "$("$RUNNER_TEMP/smoke")" = 'wn-build-server native build passed'
+      - name: Run a rootless container
+        shell: bash
+        run: |
+          set -euo pipefail
+          podman info --format '{{.Host.Security.Rootless}}' | tee "$RUNNER_TEMP/rootless"
+          test "$(cat "$RUNNER_TEMP/rootless")" = true
+          podman run --rm docker.io/library/alpine:3.22 sh -c 'test "$(id -u)" = 0 && echo rootless-container-passed'
