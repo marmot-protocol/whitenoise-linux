@@ -396,7 +396,7 @@ gate_input :: proc(ui: ^Ui_State) {
 	}
 	password := string(gate_pw[:])
 	if len(password) == 0 {
-		gate_err = tr("Pick a password first.")
+		gate_err = creating ? tr("Pick a password first.") : tr("Type your password first.")
 		return
 	}
 	if creating && password_bits(password, &gate_check) < PASSWORD_MIN_BITS {
