@@ -5,7 +5,7 @@
 // draws through sdlrl, the SDL3 shim that kept raylib's call shapes.
 //
 // Usage: app [home-dir]   (default: $XDG_DATA_HOME/whitenoise)
-// Env: WN_SHOT=1 captures wn-odin-shot.png after a few frames and exits.
+// Env: WN_SHOT=1 writes wn-odin-shot.png in the working directory, then exits.
 //      WN_VAULT_PW unlocks (or creates) the vault without the gate.
 //      WN_TEST_PREVIEW=<path> opens the preview modal on a local file.
 //      WN_TEST_WEB=<url> opens the webxdc modal on a URL.
@@ -157,7 +157,10 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 
 	if clay.UI(clay.ID("Root"))(
 	{
-		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom},
+		layout = {
+			sizing = {clay.SizingGrow(), clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+		},
 		// clay emits an element's Custom command before its own fill, so
 		// a washed pack leaves the fill out and lets the gradient be the
 		// page: it covers the window opaquely either way.
@@ -195,14 +198,19 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 					{
 						layout = {
 							sizing = {
-								width = clay.SizingFixed(rail_width(ui)),
+								width = clay.SizingFixed(
+									rail_width(ui),
+								),
 								height = clay.SizingGrow(),
 							},
 							layoutDirection = .LeftToRight,
 						},
 						// Only while it is moving: a list that no longer fits slides
 						// out of view instead of spilling into the conversation.
-						clip = {horizontal = rail_open(ui) > 0 && rail_open(ui) < 1},
+						clip = {
+							horizontal = rail_open(ui) > 0 &&
+							rail_open(ui) < 1,
+						},
 						backgroundColor = CARD,
 					},
 					) {
@@ -232,26 +240,38 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 								height = clay.SizingGrow(),
 							},
 							layoutDirection = .TopToBottom,
-							padding = {top = page_push ? 0 : u16((1 - page_t) * PAGE_SLIDE)},
+							padding = {
+								top = page_push ? 0 : u16((1 - page_t) * PAGE_SLIDE),
+							},
 						},
 						clip = {horizontal = hide_main},
 						backgroundColor = hide_main ? {} : decor_canvas_fill(),
-						border = {color = DIVIDER, width = {left = u16(BORDER_W)}},
+						border = {
+							color = DIVIDER,
+							width = {left = u16(BORDER_W)},
+						},
 					},
 					) {
 						// No rail on screen to click back to.
 						if single_pane() &&
 						   !ui.new_chat_open &&
-						   (ui.page != .Settings || ui.settings_section == .Home) {
+						   (ui.page != .Settings ||
+								   ui.settings_section == .Home) {
 							phone_back(ui)
 						}
 						if !logged_in || ui.add_account_open {
 							if clay.UI(clay.ID("Main"))(
 							{
 								layout = {
-									sizing = {clay.SizingGrow(), clay.SizingGrow()},
+									sizing = {
+										clay.SizingGrow(),
+										clay.SizingGrow(),
+									},
 									layoutDirection = .TopToBottom,
-									childAlignment = {x = .Center, y = .Center},
+									childAlignment = {
+										x = .Center,
+										y = .Center,
+									},
 									childGap = 12,
 								},
 							},
@@ -264,13 +284,19 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 							switch ui.page {
 							case .Chats:
 								if ui.selected >= 0 {
-									chat_pane(ui, ui.chats[ui.selected], ui.messages[:])
+									chat_pane(
+										ui,
+										ui.chats[ui.selected],
+										ui.messages[:],
+									)
 								} else if len(ui.chats) == 0 {
 									get_started_pane(ui)
 								} else {
 									centered_note(
 										"PickChat",
-										tr("Select a chat"),
+										tr(
+											"Select a chat",
+										),
 										ui.client_status,
 									)
 								}
@@ -395,7 +421,10 @@ update_title :: proc(ui: ^Ui_State) {
 		return
 	}
 	rl.SetWindowTitle(
-		strings.clone_to_cstring(fmt.tprintf("(%d) %s", total, WIN_TITLE), context.temp_allocator),
+		strings.clone_to_cstring(
+			fmt.tprintf("(%d) %s", total, WIN_TITLE),
+			context.temp_allocator,
+		),
 	)
 }
 
@@ -591,7 +620,8 @@ app_main :: proc() {
 		   mode != "" && client != nil {
 			ui.add_account_open = len(ui.accounts) > 0
 			ui.login_method = mode == "bunker" ? .Bunker : .Pair
-			if mode == "pair" {start_remote_auth(&ui, client, .Pair, string(DEFAULT_RELAYS[0]))}
+			if mode ==
+			   "pair" {start_remote_auth(&ui, client, .Pair, string(DEFAULT_RELAYS[0]))}
 		}
 		if client != nil && len(ui.account_ref) > 0 {
 			load_offline(&ui) // restore queued sends; first flush_queued tick retries them
@@ -619,7 +649,8 @@ app_main :: proc() {
 					w, _ := strconv.parse_int(tr_env[:x])
 					h, _ := strconv.parse_int(tr_env[x + 1:at])
 					n, _ := strconv.parse_int(rest)
-					test_resize_w, test_resize_h, test_resize_frame = i32(w), i32(h), n
+					test_resize_w, test_resize_h, test_resize_frame =
+						i32(w), i32(h), n
 				}
 			}
 		}
@@ -651,7 +682,10 @@ app_main :: proc() {
 			   .OK {
 				set_status(
 					&ui,
-					fmt.aprintf("create group failed: %s", marmot.last_error()),
+					fmt.aprintf(
+						"create group failed: %s",
+						marmot.last_error(),
+					),
 					.Error,
 				)
 			} else {
@@ -755,7 +789,13 @@ app_main :: proc() {
 					load_profile(client, &ui)
 				} else {
 					info := profile_info(client, hx)
-					open_peer(&ui, client, hx, profile_label(client, hx), info.pic_url)
+					open_peer(
+						&ui,
+						client,
+						hx,
+						profile_label(client, hx),
+						info.pic_url,
+					)
 				}
 			}
 		}
@@ -869,7 +909,8 @@ app_main :: proc() {
 				win_was = win_now
 				if win_now.x > 0 &&
 				   win_now.y > 0 &&
-				   (ui.prefs.window_w != win_now.x || ui.prefs.window_h != win_now.y) {
+				   (ui.prefs.window_w != win_now.x ||
+						   ui.prefs.window_h != win_now.y) {
 					ui.prefs.window_w, ui.prefs.window_h = win_now.x, win_now.y
 					ui.settings_dirty = true
 				}
@@ -887,7 +928,13 @@ app_main :: proc() {
 				test_peer_pending = false
 				for msg in ui.messages {
 					if !msg.mine && msg.sender_id != "" {
-						open_peer(&ui, client, msg.sender_id, msg.sender, msg.pic_url)
+						open_peer(
+							&ui,
+							client,
+							msg.sender_id,
+							msg.sender,
+							msg.pic_url,
+						)
 						break
 					}
 				}
@@ -896,7 +943,8 @@ app_main :: proc() {
 			if !ui.timeline_loading && test_thread_pending && ui.selected >= 0 {
 				test_thread_pending = false
 				for i := len(ui.messages) - 1; i >= 0; i -= 1 {
-					if ui.messages[i].thread_of == "" && !ui.messages[i].system {
+					if ui.messages[i].thread_of == "" &&
+					   !ui.messages[i].system {
 						thread_push(&ui, ui.messages[i].id)
 						break
 					}
@@ -927,7 +975,8 @@ app_main :: proc() {
 			// Interface zoom shortcuts (Ctrl + / - / 0).
 			photo_check_target(&ui)
 			photo_crop_drain(&ui, client, false)
-			if !photo_captured && (rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL)) {
+			if !photo_captured &&
+			   (rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL)) {
 				if rl.IsKeyPressed(.EQUAL) {
 					ui.prefs.zoom_pct += 10
 					apply_zoom(&ui)
@@ -1009,7 +1058,10 @@ app_main :: proc() {
 					buf := (^[dynamic]u8)(text_drag)
 					lo, hi, _ := field_sel(&ui, buf)
 					rl.SetPrimaryText(
-						strings.clone_to_cstring(string(buf[lo:hi]), context.temp_allocator),
+						strings.clone_to_cstring(
+							string(buf[lo:hi]),
+							context.temp_allocator,
+						),
 					)
 				}
 			}
@@ -1020,7 +1072,8 @@ app_main :: proc() {
 			}
 
 			if os.get_env("WN_DEBUG_INPUT", context.temp_allocator) != "" {
-				if rl.IsMouseButtonPressed(.LEFT) || rl.IsMouseButtonReleased(.LEFT) {
+				if rl.IsMouseButtonPressed(.LEFT) ||
+				   rl.IsMouseButtonReleased(.LEFT) {
 					fmt.eprintfln(
 						"input: pos=%v down=%v pressed=%v released=%v over_nav1=%v",
 						rl.GetMousePosition(),
@@ -1064,7 +1117,8 @@ app_main :: proc() {
 			// frame, so a scroll glides to a stop instead of stepping.
 			scroll_residual += transmute(clay.Vector2)wheel
 			// The chat list follows wheel input immediately.
-			drain := clay.PointerOver(clay.ID("ChatList")) ? f32(1) : anim_drain(SCROLL_DRAIN)
+			drain :=
+				clay.PointerOver(clay.ID("ChatList")) ? f32(1) : anim_drain(SCROLL_DRAIN)
 			step := clay.Vector2{scroll_residual.x * drain, scroll_residual.y * drain}
 			scroll_residual -= step
 			if abs(scroll_residual.x) < 0.01 {
@@ -1079,7 +1133,10 @@ app_main :: proc() {
 			scroll_jumped = false
 			clay.UpdateScrollContainers(false, step, rl.GetFrameTime())
 			clay.SetLayoutDimensions(
-				{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
+				{
+					f32(rl.GetScreenWidth()) / UI_ZOOM,
+					f32(rl.GetScreenHeight()) / UI_ZOOM,
+				},
 			)
 
 			orbit_hover = nil // rebound by the build when a tile is hovered
@@ -1121,7 +1178,8 @@ app_main :: proc() {
 			local_timing_end(.frame_update, frame_start)
 			build_start := time.tick_now()
 			if !tl_restore {
-				if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
+				if data := clay.GetScrollContainerData(clay.ID("Timeline"));
+				   data.found {
 					tl_offset = data.scrollPosition.y
 				}
 			}
@@ -1131,7 +1189,8 @@ app_main :: proc() {
 				render_commands = build_layout(&ui, 0)
 			}
 			if tl_restore && !layout_overflow {
-				if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
+				if data := clay.GetScrollContainerData(clay.ID("Timeline"));
+				   data.found {
 					data.scrollPosition.y = tl_offset
 					render_commands = build_layout(&ui, rl.GetFrameTime())
 				}
@@ -1150,7 +1209,8 @@ app_main :: proc() {
 			if data := clay.GetScrollContainerData(clay.ID("Timeline"));
 			   data.found && !layout_overflow {
 				overflow := max(
-					data.contentDimensions.height - data.scrollContainerDimensions.height,
+					data.contentDimensions.height -
+					data.scrollContainerDimensions.height,
 					0,
 				)
 				container := [2]f32 {
@@ -1163,7 +1223,8 @@ app_main :: proc() {
 					render_commands = build_layout(&ui, rl.GetFrameTime())
 					data = clay.GetScrollContainerData(clay.ID("Timeline"))
 					overflow = max(
-						data.contentDimensions.height - data.scrollContainerDimensions.height,
+						data.contentDimensions.height -
+						data.scrollContainerDimensions.height,
 						0,
 					)
 					data.scrollPosition.y = -overflow
@@ -1188,7 +1249,10 @@ app_main :: proc() {
 				init_layout(
 					&memory,
 					clay.GetMaxElementCount() * 2,
-					{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
+					{
+						f32(rl.GetScreenWidth()) / UI_ZOOM,
+						f32(rl.GetScreenHeight()) / UI_ZOOM,
+					},
 				)
 				tl_restore = true
 				continue
@@ -1215,7 +1279,9 @@ app_main :: proc() {
 					}
 					row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
 					tl := clay.GetElementData(clay.ID("Timeline"))
-					scroll_data := clay.GetScrollContainerData(clay.ID("Timeline"))
+					scroll_data := clay.GetScrollContainerData(
+						clay.ID("Timeline"),
+					)
 					if row.found && tl.found && scroll_data.found {
 						overflow := max(
 							scroll_data.contentDimensions.height -
@@ -1223,8 +1289,10 @@ app_main :: proc() {
 							0,
 						)
 						delta :=
-							(row.boundingBox.y + row.boundingBox.height / 2) -
-							(tl.boundingBox.y + tl.boundingBox.height / 2)
+							(row.boundingBox.y +
+								row.boundingBox.height / 2) -
+							(tl.boundingBox.y +
+									tl.boundingBox.height / 2)
 						scroll_data.scrollPosition.y = clamp(
 							scroll_data.scrollPosition.y - delta,
 							-overflow,
@@ -1283,7 +1351,9 @@ app_main :: proc() {
 			// exit. One run yields a whole animation timeline.
 			if burst_hi > 0 && frame + 1 >= burst_lo {
 				if frame + 1 <= burst_hi {
-					rl.TakeScreenshot(fmt.ctprintf("wn-odin-burst-%04d.png", frame + 1))
+					rl.TakeScreenshot(
+						fmt.ctprintf("wn-odin-burst-%04d.png", frame + 1),
+					)
 				}
 				if frame + 1 >= burst_hi {
 					rl.EndDrawing()
@@ -1498,22 +1568,32 @@ app_main :: proc() {
 					if md_code_hover != "" && mouse_released() {
 						copy_text(&ui, md_code_hover, tr("Copied"))
 					}
-					if nev_retry_hover != "" && mouse_released() && !modal_open(&ui) {
+					if nev_retry_hover != "" &&
+					   mouse_released() &&
+					   !modal_open(&ui) {
 						for key, card in nev_cards {
-							if key != nev_retry_hover || !card.done || len(card.raw) > 0 {continue}
+							if key != nev_retry_hover ||
+							   !card.done ||
+							   len(card.raw) > 0 {continue}
 							delete_key(&nev_cards, key)
 							delete(key)
 							break
 						}
 					}
-					if nev_more_hover != "" && mouse_released() && !modal_open(&ui) {
+					if nev_more_hover != "" &&
+					   mouse_released() &&
+					   !modal_open(&ui) {
 						card := nev_cards[nev_more_hover]
 						excerpt_toggle(&card.excerpt, nev_more_id)
 						nev_cards[nev_more_hover] = card
 						for &msg in ui.messages {msg.row_height = 0}
 					}
-					if nev_hint_hover != "" && mouse_released() && !modal_open(&ui) {
-						preview_message(nev_cards[nev_hint_hover].geocache.hint)
+					if nev_hint_hover != "" &&
+					   mouse_released() &&
+					   !modal_open(&ui) {
+						preview_message(
+							nev_cards[nev_hint_hover].geocache.hint,
+						)
 					}
 					handle_geo(&ui)
 				}
@@ -1550,7 +1630,11 @@ app_main :: proc() {
 					} else if stt_hover.action == .Cancel {
 						stt_stop(&ui)
 					} else {
-						stt_start(&ui, stt_hover.message, stt_hover.attachment)
+						stt_start(
+							&ui,
+							stt_hover.message,
+							stt_hover.attachment,
+						)
 					}
 				}
 				handle_video()
@@ -1596,7 +1680,13 @@ app_main :: proc() {
 				wait_start := time.tick_now()
 				defer local_timing_end(.linux_frame_idle_wait, wait_start)
 				rl.Wait(
-					u32(clamp((frame_deadline - rl.GetTime()) * 1000, 1, f64(IDLE_REFRESH_MS))),
+					u32(
+						clamp(
+							(frame_deadline - rl.GetTime()) * 1000,
+							1,
+							f64(IDLE_REFRESH_MS),
+						),
+					),
 				)
 			}
 
@@ -1609,19 +1699,32 @@ app_main :: proc() {
 						rl.GetScreenWidth(), rl.GetScreenHeight()
 				}
 				t := f32(frame - test_resize_frame + 1) / f32(test_resize_ramp)
-				w := test_resize_from_w + i32(f32(test_resize_w - test_resize_from_w) * t)
-				h := test_resize_from_h + i32(f32(test_resize_h - test_resize_from_h) * t)
+				w :=
+					test_resize_from_w +
+					i32(f32(test_resize_w - test_resize_from_w) * t)
+				h :=
+					test_resize_from_h +
+					i32(f32(test_resize_h - test_resize_from_h) * t)
 				rl.SetWindowSize(w, h)
 			}
 			if test_send != "" && frame == 10 && client != nil && len(ui.chats) > 0 {
 				summary: ^marmot.Send_Summary
-				account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-				group := strings.clone_to_cstring(ui.chats[0].group_id, context.temp_allocator)
+				account := strings.clone_to_cstring(
+					ui.account_ref,
+					context.temp_allocator,
+				)
+				group := strings.clone_to_cstring(
+					ui.chats[0].group_id,
+					context.temp_allocator,
+				)
 				if marmot.send_text(
 					   client,
 					   account,
 					   group,
-					   strings.clone_to_cstring(test_send, context.temp_allocator),
+					   strings.clone_to_cstring(
+						   test_send,
+						   context.temp_allocator,
+					   ),
 					   &summary,
 				   ) ==
 				   .OK {
@@ -1629,32 +1732,50 @@ app_main :: proc() {
 				}
 			}
 			if frame == 10 && ui.selected >= 0 {
-				if media_path := os.get_env("WN_TEST_MEDIA", context.allocator); media_path != "" {
-					data, read_err := os.read_entire_file(media_path, context.temp_allocator)
+				if media_path := os.get_env("WN_TEST_MEDIA", context.allocator);
+				   media_path != "" {
+					data, read_err := os.read_entire_file(
+						media_path,
+						context.temp_allocator,
+					)
 					if read_err == nil {
-						attachment := marmot.Media_Upload_Attachment_Request {
-							file_name     = strings.clone_to_cstring(
-								media_path,
-								context.temp_allocator,
-							),
-							media_type    = "image/png",
-							plaintext     = raw_data(data),
-							plaintext_len = len(data),
-						}
+						attachment :=
+							marmot.Media_Upload_Attachment_Request {
+								file_name     = strings.clone_to_cstring(
+									media_path,
+									context.temp_allocator,
+								),
+								media_type    = "image/png",
+								plaintext     = raw_data(data),
+								plaintext_len = len(data),
+							}
 						request := marmot.Media_Upload_Request {
-							attachments     = &attachment,
-							attachments_len = 1,
-							caption         = "attachment test",
-							send            = true,
-						}
+								attachments     = &attachment,
+								attachments_len = 1,
+								caption         = "attachment test",
+								send            = true,
+							}
 						result: ^marmot.Media_Upload_Result
-						account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+						account := strings.clone_to_cstring(
+							ui.account_ref,
+							context.temp_allocator,
+						)
 						group := strings.clone_to_cstring(
 							ui.chats[ui.selected].group_id,
 							context.temp_allocator,
 						)
-						if marmot.upload_media(client, account, group, &request, &result) != .OK {
-							fmt.eprintfln("media: upload failed: %s", marmot.last_error())
+						if marmot.upload_media(
+							   client,
+							   account,
+							   group,
+							   &request,
+							   &result,
+						   ) !=
+						   .OK {
+							fmt.eprintfln(
+								"media: upload failed: %s",
+								marmot.last_error(),
+							)
 						} else {
 							fmt.eprintfln(
 								"media: uploaded %d attachment(s)",
@@ -1667,7 +1788,8 @@ app_main :: proc() {
 				}
 			}
 			if frame == 5 && ui.selected >= 0 {
-				if seed := os.get_env("WN_TEST_COMPOSE", context.allocator); seed != "" {
+				if seed := os.get_env("WN_TEST_COMPOSE", context.allocator);
+				   seed != "" {
 					ed_set(&ui, &ui.compose, seed)
 					ui.ed_target = &ui.compose
 					mid := rune_snap(seed, len(seed) / 2)
@@ -1691,46 +1813,78 @@ app_main :: proc() {
 			// WN_TEST_LINK=<url> raises the external-link guard on a URL.
 			if frame == 12 {
 				// Exercise native photo completion without a desktop file picker.
-				if path := os.get_env("WN_TEST_PHOTO", context.temp_allocator); path != "" {
+				if path := os.get_env("WN_TEST_PHOTO", context.temp_allocator);
+				   path != "" {
 					kind: Photo_Kind =
 						os.get_env("WN_TEST_PAGE", context.temp_allocator) == "group" ? .Group : .Profile
-					if photo_pick_begin(&ui, kind) {photo_pick_complete(&ui, []string{path})}
+					if photo_pick_begin(
+						&ui,
+						kind,
+					) {photo_pick_complete(&ui, []string{path})}
 				}
-				if url := os.get_env("WN_TEST_LINK", context.temp_allocator); url != "" {
+				if url := os.get_env("WN_TEST_LINK", context.temp_allocator);
+				   url != "" {
 					open_link(&ui, url)
 				}
 			}
 			if frame == 12 && !web_modal.open {
-				if url := os.get_env("WN_TEST_WEB", context.temp_allocator); url != "" {
+				if url := os.get_env("WN_TEST_WEB", context.temp_allocator);
+				   url != "" {
 					web_open(url, "test")
 				}
-				if path := os.get_env("WN_TEST_XDC", context.temp_allocator); path != "" {
-					if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
-						if view := xdc_view_make(bytes, path); view != nil {
-							xdc_launch(&ui, client, view, "test-session", "test-group")
+				if path := os.get_env("WN_TEST_XDC", context.temp_allocator);
+				   path != "" {
+					if bytes, err := os.read_entire_file(
+						path,
+						context.allocator,
+					); err == nil {
+						if view := xdc_view_make(bytes, path);
+						   view != nil {
+							xdc_launch(
+								&ui,
+								client,
+								view,
+								"test-session",
+								"test-group",
+							)
 						} else {
-							fmt.eprintfln("webxdc: %s is not a webxdc app", path)
+							fmt.eprintfln(
+								"webxdc: %s is not a webxdc app",
+								path,
+							)
 						}
 					}
 				}
 			}
 			if frame == 12 && !preview_shown {
-				if path := os.get_env("WN_TEST_NES", context.temp_allocator); path != "" {
-					if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
+				if path := os.get_env("WN_TEST_NES", context.temp_allocator);
+				   path != "" {
+					if bytes, err := os.read_entire_file(
+						path,
+						context.allocator,
+					); err == nil {
 						if view := nes_view_make(bytes); view != nil {
 							nes_play(&ui, view, path)
 						} else {
-							fmt.eprintfln("nes: %s has no iNES header", path)
+							fmt.eprintfln(
+								"nes: %s has no iNES header",
+								path,
+							)
 						}
 					}
 				}
-				if path := os.get_env("WN_TEST_PREVIEW", context.temp_allocator); path != "" {
-					if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
+				if path := os.get_env("WN_TEST_PREVIEW", context.temp_allocator);
+				   path != "" {
+					if bytes, err := os.read_entire_file(
+						path,
+						context.allocator,
+					); err == nil {
 						preview_show(path, bytes) // the extension is what dispatches
 					}
 				}
 			}
-			if frame == 22 && os.get_env("WN_TEST_HIST", context.temp_allocator) != "" {
+			if frame == 22 &&
+			   os.get_env("WN_TEST_HIST", context.temp_allocator) != "" {
 				for msg, i in ui.messages {
 					if msg.edited {
 						ui.hist_open = true
@@ -1750,9 +1904,16 @@ app_main :: proc() {
 			}
 			if frame == 12 && ui.selected >= 0 && len(ui.messages) > 0 {
 				if os.get_env("WN_TEST_REACT", context.allocator) != "" {
-					message_op(&ui, client, .React, ui.messages[len(ui.messages) - 1].id, "👍")
+					message_op(
+						&ui,
+						client,
+						.React,
+						ui.messages[len(ui.messages) - 1].id,
+						"👍",
+					)
 				}
-				if edit_to := os.get_env("WN_TEST_EDIT", context.allocator); edit_to != "" {
+				if edit_to := os.get_env("WN_TEST_EDIT", context.allocator);
+				   edit_to != "" {
 					for msg in ui.messages {
 						if msg.mine {
 							clear(&ui.compose)
@@ -1792,7 +1953,8 @@ app_main :: proc() {
 			   done.op == .Lookup_Member ||
 			   done.op == .History ||
 			   done.op == .Issue ||
-			   done.op == .Issue_Setting {edit_result_free(done)} else {delete(done.err)}
+			   done.op ==
+				   .Issue_Setting {edit_result_free(done)} else {delete(done.err)}
 		}
 		delete(ops_done); ops_done = {}
 		for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
