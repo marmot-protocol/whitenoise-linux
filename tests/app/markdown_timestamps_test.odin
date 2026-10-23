@@ -6,11 +6,14 @@ import "base:runtime"
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:sync"
 import "core:testing"
 import rl "sdlrl"
 
 @(test)
 markdown_timestamps :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	dir, err := os.make_directory_temp("/tmp", "wn-timestamps-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}

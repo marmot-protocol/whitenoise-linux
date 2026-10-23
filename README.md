@@ -849,6 +849,7 @@ release downloads, signing, and update feeds still run when requested.
 The build-server workflow builds native Linux, Linux amd64/arm64, Windows amd64,
 and OpenBSD amd64 once each. It runs the native C/Odin suite, packaged Linux and
 Windows startup tests, and OpenBSD's filesystem, helper, and startup tests.
+The native runner signs temporary Git fixtures with a dedicated CI test key.
 The workflow queues these five jobs together on two isolated
 runner slots, with six build threads per job and shared CPU/memory limits.
 Native and Linux jobs use `wn-cache-2`; Windows and OpenBSD use `wn-cache-1`.
