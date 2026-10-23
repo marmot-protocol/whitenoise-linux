@@ -841,8 +841,9 @@ a previously staged Marmot library as proof that its inputs are unchanged.
 
 Native and cross builds also cache C/C++ helpers and Odin outputs by input
 contents, compiler, target, and flags. Output manifests detect missing or
-corrupted files. Cross builds cache Odin objects separately from linking, so
-an MDK-only change relinks the app without recompiling its Odin sources.
+corrupted files. Native Linux/OpenBSD and cross builds cache Odin objects
+separately from linking, so an MDK-only change relinks the app without
+recompiling its Odin sources.
 Linux and Windows package caches cover bundled runtime libraries and archives;
 release downloads, signing, and update feeds still run when requested.
 
@@ -856,9 +857,9 @@ Native and Linux jobs use `wn-cache-2`; Windows and OpenBSD use `wn-cache-1`.
 This keeps targets on warmed caches while both slots can build concurrently.
 MicroTeX is cached per target and slot, including its sources, patches, toolchain,
 and build flags; application `.c` and `.odin` edits do not rebuild it.
-Native SDL and MicroTeX archive keys track SDK headers and versions separately
-from shared-library contents. OpenBSD's boot-time library reordering does not
-invalidate those archives; link-dependent outputs still track library contents.
+Native SDL, MicroTeX, Odin overlay, and Odin object keys track SDK headers and
+versions separately from shared-library contents. OpenBSD's boot-time library
+reordering invalidates linked executables, not these compiled outputs.
 It does not change the default-branch runner routing or include macOS.
 
 The current pin is MDK master at `c8210585cab6` (0.14.0-dev). The build applies

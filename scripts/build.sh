@@ -28,6 +28,71 @@ native_compile_key() {
   # libc and libcrypto at boot, without changing compilation inputs.
   build_cache_key "$NATIVE_COMPILE_ENV $1" "$HERE/scripts/build.sh" "${@:2}"
 }
+native_odin_build() {
+  local name="$1" package="$2" root="$3" mode="$4" object_key="$5" link_key="$6"
+  shift 6
+  local binary="$HERE/build/$name" command signature arg
+  local -a options=() args=() libraries=()
+  case "$mode" in
+  speed) options=(-o:speed) ;;
+  default) ;;
+  *)
+    echo "Unknown Odin optimization mode: $mode" >&2
+    return 2
+    ;;
+  esac
+  printf -v signature '%q ' "$root" "$mode" "$@"
+  object_key="$(build_cache_key "Odin object $object_key $signature single-module")"
+  # Leave macOS's compiler-managed framework linking unchanged.
+  if [ "$(uname -s)" = Darwin ]; then
+    link_key="$(build_cache_key "$object_key $link_key")"
+    if ! build_cache_fresh "$link_key" "$binary.link.stamp" "$binary"; then
+      rm -f "$binary.link.stamp" "$binary"
+      env ODIN_ROOT="$root" odin build "$package" "${options[@]}" "$@" -out:"$binary"
+      build_cache_store "$link_key" "$binary.link.stamp" "$binary"
+    fi
+    return
+  fi
+  if build_cache_fresh "$object_key" "$binary.object.stamp" "$binary.o" "$binary.link.args"; then
+    echo "==> native cache hit: $name object"
+  else
+    echo "==> Compiling native $name"
+    rm -f "$binary.object.stamp" "$binary.o" "$binary.link.args"
+    # This compiles without linking and retains Odin's native entry point and
+    # linker hardening. Decode arguments as data, never as a shell command.
+    command="$(env ODIN_ROOT="$root" odin build "$package" "${options[@]}" "$@" \
+      -use-single-module -keep-temp-files -print-linker-flags -out:"$binary")"
+    case "$command" in
+    *$'\n'* | clang)
+      echo 'Unexpected multiline or empty Odin linker recipe.' >&2
+      return 1
+      ;;
+    clang\ *) ;;
+    *)
+      echo "Unsupported Odin linker recipe: $command" >&2
+      return 1
+      ;;
+    esac
+    printf '%s\n' "${command#clang }" | xargs printf '%s\0' >"$binary.link.args"
+    build_cache_store "$object_key" "$binary.object.stamp" "$binary.o" "$binary.link.args"
+  fi
+  while IFS= read -r -d '' arg; do
+    args+=("$arg")
+    case "$arg" in
+    -l:/*) libraries+=("${arg#-l:}") ;;
+    /*.a | /*.o | /*.so | /*.so.* | /*.dylib) libraries+=("$arg") ;;
+    esac
+  done <"$binary.link.args"
+  link_key="$(build_cache_key "$link_key" "$(command -v clang)" "$binary.o" "$binary.link.args" "${libraries[@]}")"
+  if build_cache_fresh "$link_key" "$binary.link.stamp" "$binary"; then
+    echo "==> native cache hit: $name link"
+  else
+    echo "==> Linking native $name"
+    rm -f "$binary.link.stamp" "$binary"
+    clang "${args[@]}"
+    build_cache_store "$link_key" "$binary.link.stamp" "$binary"
+  fi
+}
 native_env() {
   local tool module word file dir
   local -a tool_command include_dirs link_dirs module_dirs module_libs
@@ -600,7 +665,7 @@ fi
 # name the archives for Linux only (below).
 SYS_ODIN="$(env -u ODIN_ROOT odin root)"
 SYS_ODIN="${SYS_ODIN%/}"
-ODIN_SYS_KEY="$(native_key 'Odin overlay stb cgltf' "$SYS_ODIN/base" "$SYS_ODIN/core" "$SYS_ODIN/shared" "$SYS_ODIN/vendor/stb" "$SYS_ODIN/vendor/cgltf" "$SYS_ODIN/vendor/sdl3" "$HERE"/patches/odin-openbsd-*.patch)"
+ODIN_SYS_KEY="$(native_compile_key 'Odin overlay stb cgltf' "$SYS_ODIN/base" "$SYS_ODIN/core" "$SYS_ODIN/shared" "$SYS_ODIN/vendor/stb" "$SYS_ODIN/vendor/cgltf" "$SYS_ODIN/vendor/sdl3" "$HERE"/patches/odin-openbsd-*.patch)"
 ODIN_ROOT_ARG=()
 OVERLAY_REBUILT=0
 if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendor/cgltf/lib/cgltf.a" ] || [ "$(uname -s)" = OpenBSD ]; then
@@ -707,25 +772,22 @@ if [ "$OVERLAY_REBUILT" = 1 ]; then
 fi
 
 ACTIVE_ODIN="${OVERLAY:-${ODIN_ROOT:-$SYS_ODIN}}"
-ODIN_ENV="$(native_key "Odin native $ODIN_SYS_KEY ${ODIN_ROOT_ARG[*]}" "$ACTIVE_ODIN/base" "$ACTIVE_ODIN/core" "$ACTIVE_ODIN/vendor/stb" "$ACTIVE_ODIN/vendor/cgltf" "$ACTIVE_ODIN/vendor/sdl3")"
-MESH_ODIN_KEY="$(native_key "mesh Odin speed $ODIN_ENV" "$HERE/model-decoder" "$HERE/build/libwnmesh.a")"
-if ! build_cache_fresh "$MESH_ODIN_KEY" "$HERE/build/mesh-odin.stamp" "$HERE/build/wn-mesh"; then
-  rm -f "$HERE/build/mesh-odin.stamp" "$HERE/build/wn-mesh"
-  env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/model-decoder" -o:speed -out:"$HERE/build/wn-mesh"
-  build_cache_store "$MESH_ODIN_KEY" "$HERE/build/mesh-odin.stamp" "$HERE/build/wn-mesh"
-fi
-MATH_ODIN_KEY="$(native_key "math Odin speed $ODIN_ENV" "$HERE/math-decoder" "$HERE/build/libwnmath.a" "$HERE/build/microtex/lib/libmicrotex.a" "$MICROTEX/res/tex-gyre/texgyredejavu-math.clm2")"
-if ! build_cache_fresh "$MATH_ODIN_KEY" "$HERE/build/math-odin.stamp" "$HERE/build/wn-math"; then
-  rm -f "$HERE/build/math-odin.stamp" "$HERE/build/wn-math"
-  env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/math-decoder" -o:speed -out:"$HERE/build/wn-math"
-  build_cache_store "$MATH_ODIN_KEY" "$HERE/build/math-odin.stamp" "$HERE/build/wn-math"
-fi
-NES_ODIN_KEY="$(native_key "nes Odin speed $ODIN_ENV" "$HERE/nes-decoder" "$HERE/build/libwnmesh.a")"
-if ! build_cache_fresh "$NES_ODIN_KEY" "$HERE/build/nes-odin.stamp" "$HERE/build/wn-nes"; then
-  rm -f "$HERE/build/nes-odin.stamp" "$HERE/build/wn-nes"
-  env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/nes-decoder" -o:speed -out:"$HERE/build/wn-nes"
-  build_cache_store "$NES_ODIN_KEY" "$HERE/build/nes-odin.stamp" "$HERE/build/wn-nes"
-fi
+ODIN_INPUTS=("$ACTIVE_ODIN/base" "$ACTIVE_ODIN/core" "$ACTIVE_ODIN/shared")
+ODIN_LIST="$(mktemp)"
+find -L "$ACTIVE_ODIN/vendor" \( -name .git -o -name .hg -o -name .svn -o -name .env -o -name '*.env' \) -prune -o -name '*.odin' -print0 >"$ODIN_LIST"
+while IFS= read -r -d '' entry; do ODIN_INPUTS+=("$entry"); done <"$ODIN_LIST"
+rm -f "$ODIN_LIST"
+ODIN_ENV="$(native_compile_key "Odin sources $ACTIVE_ODIN" "${ODIN_INPUTS[@]}")"
+ODIN_LINK_ENV="$(native_key "Odin native $ODIN_SYS_KEY ${ODIN_ROOT_ARG[*]}" "$ACTIVE_ODIN/base" "$ACTIVE_ODIN/core" "$ACTIVE_ODIN/vendor/stb" "$ACTIVE_ODIN/vendor/cgltf" "$ACTIVE_ODIN/vendor/sdl3")"
+MESH_OBJECT_KEY="$(native_compile_key "mesh Odin speed $ODIN_ENV" "$HERE/model-decoder")"
+MESH_ODIN_KEY="$(native_key "mesh Odin speed $ODIN_LINK_ENV" "$HERE/model-decoder" "$HERE/build/libwnmesh.a")"
+native_odin_build wn-mesh "$HERE/model-decoder" "$ACTIVE_ODIN" speed "$MESH_OBJECT_KEY" "$MESH_ODIN_KEY"
+MATH_OBJECT_KEY="$(native_compile_key "math Odin speed $ODIN_ENV" "$HERE/math-decoder" "$MICROTEX/res/tex-gyre/texgyredejavu-math.clm2")"
+MATH_ODIN_KEY="$(native_key "math Odin speed $ODIN_LINK_ENV" "$HERE/math-decoder" "$HERE/build/libwnmath.a" "$HERE/build/microtex/lib/libmicrotex.a" "$MICROTEX/res/tex-gyre/texgyredejavu-math.clm2")"
+native_odin_build wn-math "$HERE/math-decoder" "$ACTIVE_ODIN" speed "$MATH_OBJECT_KEY" "$MATH_ODIN_KEY"
+NES_OBJECT_KEY="$(native_compile_key "nes Odin speed $ODIN_ENV" "$HERE/nes-decoder")"
+NES_ODIN_KEY="$(native_key "nes Odin speed $ODIN_LINK_ENV" "$HERE/nes-decoder" "$HERE/build/libwnmesh.a")"
+native_odin_build wn-nes "$HERE/nes-decoder" "$ACTIVE_ODIN" speed "$NES_OBJECT_KEY" "$NES_ODIN_KEY"
 
 # The dev host builds a reloadable library after staging these same inputs.
 if [ "${1:-}" = stage ]; then
@@ -736,12 +798,9 @@ fi
 # mapped by a running instance leaves a half-written file whose next
 # run segfaults in libc's init, long before main.
 SMOKE_ODIN="$(odin root)"
+SMOKE_OBJECT_KEY="$(native_compile_key "smoke Odin default $SMOKE_ODIN" "$SMOKE_ODIN/base" "$SMOKE_ODIN/core" "$SMOKE_ODIN/shared" "$HERE/tests/smoke" "$HERE/marmot")"
 SMOKE_KEY="$(native_key "smoke Odin default $ODIN_SYS_KEY ${ODIN_ROOT:-}" "$SMOKE_ODIN/base" "$SMOKE_ODIN/core" "$HERE/tests/smoke" "$HERE/marmot" "$BUNDLE/lib/libmarmot_c.a")"
-if ! build_cache_fresh "$SMOKE_KEY" "$HERE/build/smoke.stamp" "$HERE/build/smoke"; then
-  rm -f "$HERE/build/smoke.stamp" "$HERE/build/smoke"
-  odin build "$HERE/tests/smoke" -out:"$HERE/build/smoke"
-  build_cache_store "$SMOKE_KEY" "$HERE/build/smoke.stamp" "$HERE/build/smoke"
-fi
+native_odin_build smoke "$HERE/tests/smoke" "$SMOKE_ODIN" default "$SMOKE_OBJECT_KEY" "$SMOKE_KEY"
 # -o:speed: the STL orbit path needs it (200k tris: 20ms/step at
 # -o:minimal vs 3.4ms; 60fps budget is 16.6ms).
 APP_LIBS=("$BUNDLE/lib/libmarmot_c.a" "$HERE/build/libwnipc.a" "$HERE/build/libwndecoder.a" "$HERE/build/libwntimestamp.a" "$HERE/build/libwnws.a")
@@ -750,12 +809,10 @@ Linux) APP_LIBS+=("$HERE/build/libwnappimage.a") ;;
 Darwin) APP_LIBS+=("$HERE/build/libwnsparkle.a") ;;
 OpenBSD) APP_LIBS+=("$HERE/build/libwnsandbox.a" "$HERE/build/sdl/lib/libSDL3.a") ;;
 esac
-APP_KEY="$(native_key "app Odin speed $ODIN_ENV ${APP_LINK_ARGS[*]}" "$HERE/app" "$HERE/marmot" "$HERE/lang" "$HERE/themes" "$CROP" "$CLAY/bindings/odin/clay-odin" "$HERE/vendor/common-passwords.txt" "$HERE/build/observability-tokens.toml" "${APP_LIBS[@]}")"
-if ! build_cache_fresh "$APP_KEY" "$HERE/build/app.stamp" "$HERE/build/app"; then
-  rm -f "$HERE/build/app.stamp" "$HERE/build/app"
-  env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" -o:speed "${APP_LINK_ARGS[@]}" -out:"$HERE/build/app"
-  build_cache_store "$APP_KEY" "$HERE/build/app.stamp" "$HERE/build/app"
-fi
+APP_INPUTS=("$HERE/app" "$HERE/marmot" "$HERE/lang" "$HERE/themes" "$CROP" "$CLAY/bindings/odin/clay-odin" "$HERE/vendor/common-passwords.txt" "$HERE/build/observability-tokens.toml")
+APP_OBJECT_KEY="$(native_compile_key "app Odin speed $ODIN_ENV" "${APP_INPUTS[@]}")"
+APP_KEY="$(native_key "app Odin speed $ODIN_LINK_ENV ${APP_LINK_ARGS[*]}" "${APP_INPUTS[@]}" "${APP_LIBS[@]}")"
+native_odin_build app "$HERE/app" "$ACTIVE_ODIN" speed "$APP_OBJECT_KEY" "$APP_KEY" "${APP_LINK_ARGS[@]}"
 # Unused imports: fatal in CI, a warning locally so a work-in-progress
 # import does not block a build.
 if ! env "${ODIN_ROOT_ARG[@]}" "$HERE/scripts/vet-imports.sh"; then
