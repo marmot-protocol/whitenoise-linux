@@ -2944,6 +2944,9 @@ msgstr "Keine Empfangs-Relays."
 msgid "No issues found."
 msgstr "Keine Meldungen gefunden."
 
+msgid "No issues yet"
+msgstr "Noch keine Issues"
+
 msgid "No key package on this device or its relays."
 msgstr "Kein Schlüsselpaket auf diesem Gerät oder seinen Relays."
 
@@ -3128,6 +3131,9 @@ msgstr "Öffne sie wieder mit › in der linken Spalte oder mit der Schaltfläch
 
 msgid "Open locations in"
 msgstr "Standorte öffnen in"
+
+msgid "Open the first issue to share a problem with your group."
+msgstr "Eröffne das erste Issue, um ein Problem mit deiner Gruppe zu teilen."
 
 msgid "Open this link?"
 msgstr "Diesen Link öffnen?"

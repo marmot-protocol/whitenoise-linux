@@ -2944,6 +2944,9 @@ msgstr "受信リレーはありません。"
 msgid "No issues found."
 msgstr "報告が見つかりませんでした。"
 
+msgid "No issues yet"
+msgstr "まだ課題はありません"
+
 msgid "No key package on this device or its relays."
 msgstr "この端末にもそのリレーにもキーパッケージがありません。"
 
@@ -3128,6 +3131,9 @@ msgstr "左の列の › または下のボタンで再び開けます。"
 
 msgid "Open locations in"
 msgstr "位置情報を開くサービス"
+
+msgid "Open the first issue to share a problem with your group."
+msgstr "最初の課題を作成して、グループに問題を共有しましょう。"
 
 msgid "Open this link?"
 msgstr "このリンクを開きますか？"
