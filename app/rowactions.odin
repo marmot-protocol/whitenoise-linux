@@ -1058,7 +1058,11 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if clicked("FolderSave") || rl.IsKeyPressed(.ENTER) {
 		name := strings.trim_space(string(ui.folder_input[:]))
-		if name == "" {return}
+		if name == "" {
+			toast(ui, tr("Enter a folder name."))
+			folder_editor_focus(ui, .Folder)
+			return
+		}
 		for folder, i in ui.prefs.folders {
 			if folder == name && (ui.folder_mode != .Edit || i != ui.folder_rename) {
 				toast(ui, tr("Folder names must be unique. Choose a different name."))

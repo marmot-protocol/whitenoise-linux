@@ -1883,6 +1883,9 @@ msgstr "Ende-zu-Ende-verschlüsselt"
 msgid "Enter a color as #RRGGBB."
 msgstr "Gib eine Farbe im Format #RRGGBB ein."
 
+msgid "Enter a folder name."
+msgstr "Gib einen Ordnernamen ein."
+
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr "Gib eine numerische IPv4-Adresse oder eine IPv6-Adresse in eckigen Klammern mit einem Port von 1 bis 65535 ein."
 

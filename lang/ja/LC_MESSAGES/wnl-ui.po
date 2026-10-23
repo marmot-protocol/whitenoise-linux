@@ -1883,6 +1883,9 @@ msgstr "エンドツーエンド暗号化"
 msgid "Enter a color as #RRGGBB."
 msgstr "色を #RRGGBB 形式で入力してください。"
 
+msgid "Enter a folder name."
+msgstr "フォルダー名を入力してください。"
+
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr "数値の IPv4 アドレス、または角括弧で囲んだ IPv6 アドレスと、1 から 65535 のポートを入力してください。"
 
