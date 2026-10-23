@@ -64,6 +64,10 @@ msgid "%d emoji previews couldn't be loaded."
 msgstr ""
 
 #, c-format
+msgid "%d file"
+msgstr ""
+
+#, c-format
 msgid "%d files"
 msgstr ""
 
@@ -3204,6 +3208,9 @@ msgstr ""
 msgid "PASSWORD"
 msgstr ""
 
+msgid "PATCH"
+msgstr ""
+
 msgid "PRODUCT"
 msgstr ""
 
@@ -4619,6 +4626,9 @@ msgid "Unsupported attachment format."
 msgstr ""
 
 msgid "Untitled emoji set"
+msgstr ""
+
+msgid "Untitled patch"
 msgstr ""
 
 msgid "Updates"

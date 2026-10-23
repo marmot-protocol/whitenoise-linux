@@ -6,6 +6,7 @@ import "core:testing"
 @(private)
 nev_highlight_test_free :: proc(card: Nev_Card) {
 	blocks_free(card.blocks)
+	delete(card.patch.repository); delete(card.patch.series); delete(card.patch.lines)
 	for value in ([]string{card.raw, card.content, card.pubkey, card.stamp, card.subject, card.subject_fonts, card.highlight.comment, card.highlight.surrounding}) {delete(value)}
 	delete(card.highlight.fonts)
 	for source in card.highlight.sources {delete(source.text); delete(source.url)}
@@ -676,6 +677,122 @@ git_card_layout :: proc(t: ^testing.T) {
 		delete(card.subject_fonts)
 		delete_key(&nev_cards, key)
 	}
+}
+
+// SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=patch_card_layout
+@(test)
+patch_card_layout :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "patch_card_layout" {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(1200, 1400, "Patch event preview")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	load_themes()
+	init_fonts()
+	memory: []u8
+	init_layout(&memory, 32768, {1200, 1400})
+	defer delete(memory)
+	ui: Ui_State
+	ui.prefs.event_client = DEFAULT_EVENT_CLIENT
+	ui.prefs.reduce_motion = true
+	ui.prefs.message_lines = DEFAULT_MESSAGE_LINES
+	ui.nicknames["author"] = "yukidama"
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {g_ui, g_prefs = nil, nil; wrap_clear(); delete(ui.nicknames)}
+	token :: "note13ze9zdt8ulg08ggc4g9ycmpen5ltscc4hvfy8seceu578zlvkyzsq77jau"
+	event :: `{"kind":1617,"pubkey":"author","created_at":1792776017,"tags":[["a","30617:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:whitenoise-linux"]],"content":"From 0123456789abcdef Mon Sep 17 00:00:00 2001\nFrom: Contributor <dev@example.com>\nSubject: [PATCH v2 1/2] Guard missing model texture\n material assignments\n\nKeep models with missing materials readable.\n\n---\n app/mesh.odin | 3 ++-\n 1 file changed, 2 insertions(+), 1 deletion(-)\n\ndiff --git a/app/mesh.odin b/app/mesh.odin\nindex 1234567..abcdef0 100644\n--- a/app/mesh.odin\n+++ b/app/mesh.odin\n@@ -1,2 +1,3 @@\n mesh := load_model(path)\n-draw(mesh.materials[0])\n+if len(mesh.materials) > 0 {\n+    draw(mesh.materials[0])\n-- \n2.50.0\n"}`
+	card := nev_parse(transmute([]u8)string(event), .Event)
+	card.stamp = format_full(u64(card.created))
+	defer nev_highlight_test_free(card)
+	nev_cards[token] = card
+	defer delete_key(&nev_cards, token)
+	for theme in ([]int{0, 1}) {
+		apply_theme(theme, 0)
+		for width in ([]f32{240, 520}) {
+			for expanded in ([]bool{false, true}) {
+				card.excerpt.expanded = expanded
+				nev_cards[token] = card
+				for frame in 0 ..< 3 {
+					clay.BeginLayout()
+					if clay.UI(clay.ID("Timeline"))(
+					{
+						layout = {
+							layoutDirection = .TopToBottom,
+							sizing = {width = clay.SizingFixed(width + 78)},
+							padding = clay.PaddingAll(16),
+						},
+						backgroundColor = BG,
+					},
+					) {nev_card(42, token, token, nil)}
+					commands := clay.EndLayout(0)
+					if frame < 2 {continue}
+					box := clay.GetElementData(clay.ID("NevCard", 42)).boundingBox
+					testing.expect(t, box.width <= width)
+					if width == 520 {testing.expect_value(t, box.width, f32(520))}
+					added, removed := false, false
+					for command in commands.internalArray[:commands.length] {
+						if command.commandType != .Text {continue}
+						text := command.renderData.text.stringContents
+						part := string(text.chars[:text.length])
+						testing.expect(
+							t,
+							!strings.contains(part, `"kind":`) &&
+							!strings.contains(part, `"content":`),
+							"Patches must not render as JSON.",
+						)
+						testing.expect(
+							t,
+							command.boundingBox.x >= box.x &&
+							command.boundingBox.x + command.boundingBox.width <=
+								box.x + box.width + 0.1,
+							part,
+						)
+						if strings.contains(
+							part,
+							"+if len",
+						) {added = command.renderData.text.textColor == ACCENT_DIM}
+						if strings.contains(
+							part,
+							"-draw",
+						) {removed = command.renderData.text.textColor == DANGER}
+					}
+					if expanded {testing.expect(t, added && removed, "Expanded patches must distinguish additions and deletions.")}
+					rl.BeginDrawing()
+					clay_raylib_render(&commands)
+					rl.TakeScreenshot(
+						fmt.ctprintf("/tmp/wn-patch-%d-%d-%t.png", theme, int(width), expanded),
+					)
+					rl.EndDrawing()
+				}
+			}
+		}
+	}
+	// One unbroken source line must respect the same row budget as many lines.
+	long_line := strings.repeat("界", 10000, context.temp_allocator)
+	content := fmt.tprintf("diff --git a/long.txt b/long.txt\n@@ -0,0 +1 @@\n+%s\n", long_line)
+	encoded, _ := json.marshal(content, {}, context.temp_allocator)
+	bounded := nev_parse(
+		transmute([]u8)fmt.tprintf(
+			`{{"kind":1617,"pubkey":"author","content":%s}}`,
+			string(encoded),
+		),
+		.Event,
+	)
+	defer nev_highlight_test_free(bounded)
+	bounded.excerpt.expanded = true
+	nev_cards[token] = bounded
+	clay.BeginLayout()
+	if clay.UI(clay.ID("Timeline"))(
+	{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(318)}}},
+	) {nev_card(42, token, token, nil)}
+	commands := clay.EndLayout(0)
+	text_rows := 0
+	for command in commands.internalArray[:commands.length] {if command.commandType == .Text {text_rows += 1}}
+	testing.expect(
+		t,
+		text_rows <= CODE_MODAL_LINES + 20,
+		"Long source lines must not exhaust Clay's element budget.",
+	)
 }
 
 // Isolated layout fixtures seed the session-only image cache without a network request.

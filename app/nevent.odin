@@ -5,7 +5,8 @@
 // Network, ditto + primal by default) plus any relay hints the nevent
 // carries, on its own thread, and cached twice: in memory for the
 // session and as <home>/events/<id>.json across runs. Notes, replies,
-// articles, pull requests and issues render as author + text; product and
+// articles, pull requests and issues render as author + text; patches
+// show their mail subject, description and a literal, colored diff. Product and
 // geocache cards show their metadata. Highlights quote the selected
 // text with context, commentary and source attribution. Other kinds
 // show raw event JSON.
@@ -61,6 +62,9 @@ NEV_TIMEOUT_MS :: 6000
 NEV_TEXT_KINDS := []i64{1, 11, 1111, NEV_PULL_REQUEST_KIND, NEV_ISSUE_KIND, 30023}
 
 @(private = "file")
+NEV_PATCH_KIND :: 1617
+
+@(private = "file")
 NEV_PULL_REQUEST_KIND :: 1618
 
 @(private = "file")
@@ -71,11 +75,12 @@ Nev_Card :: struct {
 	product:       Nev_Product,
 	geocache:      Nev_Geocache,
 	highlight:     Nev_Highlight,
+	patch:         Nev_Patch,
 	done:          bool, // fetch finished; raw == "" then means not found
 	kind:          i64,
 	pubkey:        string,
 	content:       string,
-	subject:       string, // NIP-34 pull request or issue title, owned
+	subject:       string, // NIP-34 patch, pull request or issue title, owned
 	subject_fonts: string, // cached title font map for bounded wrapping
 	created:       i64,
 	stamp:         string, // created formatted for the header, set on drain
@@ -208,6 +213,7 @@ nev_worker :: proc(job: ^Nev_Job) {
 				}
 				delete(card.raw); delete(card.content); delete(card.pubkey); delete(card.subject)
 				delete(card.subject_fonts)
+				delete(card.patch.repository); delete(card.patch.series); delete(card.patch.lines)
 				delete(card.highlight.comment); delete(card.highlight.surrounding)
 				delete(card.highlight.fonts)
 				for source in card.highlight.sources {delete(source.text); delete(source.url)}
@@ -476,6 +482,7 @@ nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_
 	if content, ok := ev["content"].(json.String); ok {
 		card.content = strings.clone(content)
 	}
+	if card.kind == NEV_PATCH_KIND {nev_patch_parse(&card, ev)}
 	if created, ok := ev["created_at"].(json.Float); ok {
 		card.created = i64(created)
 	}
@@ -493,29 +500,41 @@ nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_
 	return
 }
 
-// Mono text as lines that fit `width`: clay wraps on spaces only, and
-// a 64-hex id or a long URL has none, so each line is chopped every
-// `cols` runes. The mono face makes a rune count a width. Used by the
-// event card's JSON and the link guard's URL.
-mono_lines :: proc(text: string, width: f32, color: clay.Color) {
+// Hard-wrap literal text, including unbroken ids and URLs. ASCII uses the
+// mono cell width; Unicode fallback glyphs can be wider than one cell.
+mono_lines :: proc(
+	text: string,
+	width: f32,
+	color: clay.Color,
+	limit: int = max(int),
+) -> (
+	used: int,
+	complete: bool,
+) {
 	rest_text := text
 	col_w := rl.MeasureTextLine(FONT_MONO, 11, "0", 0).x
-	cols := max(int(width / max(col_w, 1)), 8)
 	for line in strings.split_lines_iterator(&rest_text) {
 		rest := line
 		for len(rest) > 0 {
-			cut := len(rest)
-			if utf8.rune_count_in_string(rest) > cols {
-				cut = 0
-				for _ in 0 ..< cols {
-					_, w := utf8.decode_rune_in_string(rest[cut:])
-					cut += w
-				}
+			if used >= limit {return used, false}
+			cut := 0
+			line_width := f32(0)
+			for cut < len(rest) {
+				_, w := utf8.decode_rune_in_string(rest[cut:])
+				cell := col_w
+				if w > 1 ||
+				   rest[cut] ==
+					   '\t' {cell = rl.MeasureTextLine(FONT_MONO, 11, rest[cut:cut + w], 0).x}
+				if cut > 0 && line_width + cell > width {break}
+				line_width += cell
+				cut += w
 			}
 			clay.Text(rest[:cut], {fontId = FONT_MONO, fontSize = 11, textColor = color})
+			used += 1
 			rest = rest[cut:]
 		}
 	}
+	return used, true
 }
 
 // Frame-loop drain: publish finished fetches to the render side.
@@ -532,6 +551,7 @@ drain_nev :: proc() {
 			font := [1]u8{u8(FONT_TITLE)}
 			card.highlight.fonts = strings.repeat(string(font[:]), len(card.content))
 		} else if card.kind != 0 &&
+		   card.kind != NEV_PATCH_KIND &&
 		   card.kind != 16767 &&
 		   len(card.content) > 0 &&
 		   g_client != nil {
@@ -615,7 +635,10 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 		}
 	}
 	git_card :=
-		(card.kind == NEV_PULL_REQUEST_KIND || card.kind == NEV_ISSUE_KIND) && len(card.raw) > 0
+		(card.kind == NEV_PATCH_KIND ||
+			card.kind == NEV_PULL_REQUEST_KIND ||
+			card.kind == NEV_ISSUE_KIND) &&
+		len(card.raw) > 0
 	highlight := card.kind == NEV_HIGHLIGHT_KIND && len(card.raw) > 0
 	width := att_w(git_card || highlight ? 520 : 320)
 	padding := u16(git_card || highlight ? 20 : 12)
@@ -657,7 +680,7 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 					},
 					) {
 						clay.Text(
-							card.kind == NEV_ISSUE_KIND ? "\uf41b" : "\uf407",
+							card.kind == NEV_PATCH_KIND ? "\uf1d3" : (card.kind == NEV_ISSUE_KIND ? "\uf41b" : "\uf407"),
 							{fontId = FONT_ICON, fontSize = 17, textColor = ACCENT},
 						)
 					}
@@ -673,7 +696,7 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 					eyebrow(tr("GEOCACHE"))
 				case git_card:
 					clay.Text(
-						card.kind == NEV_ISSUE_KIND ? tr("ISSUE") : tr("PULL REQUEST"),
+						card.kind == NEV_PATCH_KIND ? tr("PATCH") : (card.kind == NEV_ISSUE_KIND ? tr("ISSUE") : tr("PULL REQUEST")),
 						{fontId = FONT_BODY, fontSize = 10, textColor = ACCENT, letterSpacing = 1},
 					)
 				case textual:
@@ -718,7 +741,7 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			nev_geocache_card(id, evid, card, inner_w)
 		case card.kind == NEV_HIGHLIGHT_KIND:
 			nev_highlight_card(id, evid, card, inner_w)
-		case textual:
+		case textual || card.kind == NEV_PATCH_KIND:
 			if git_card {
 				if clay.UI(clay.ID("NevGitTitle", id))(
 				{
@@ -781,7 +804,11 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 					border = {color = DIVIDER, width = {top = 1}},
 				},
 				) {
-					nev_card_excerpt(id, evid, card, inner_w)
+					if card.kind == NEV_PATCH_KIND {
+						nev_patch_card(id, evid, card, inner_w)
+					} else {
+						nev_card_excerpt(id, evid, card, inner_w)
+					}
 				}
 			} else {
 				nev_card_excerpt(id, evid, card, inner_w)

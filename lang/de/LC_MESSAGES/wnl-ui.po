@@ -64,6 +64,10 @@ msgid "%d emoji previews couldn't be loaded."
 msgstr "%d Emoji-Vorschauen konnten nicht geladen werden."
 
 #, c-format
+msgid "%d file"
+msgstr "%d Datei"
+
+#, c-format
 msgid "%d files"
 msgstr "%d Dateien"
 
@@ -3210,6 +3214,9 @@ msgstr "Besitzer"
 msgid "PASSWORD"
 msgstr "PASSWORT"
 
+msgid "PATCH"
+msgstr "PATCH"
+
 msgid "PRODUCT"
 msgstr "PRODUKT"
 
@@ -4627,6 +4634,9 @@ msgstr "Nicht unterstütztes Anhangformat."
 
 msgid "Untitled emoji set"
 msgstr "Unbenanntes Emoji-Set"
+
+msgid "Untitled patch"
+msgstr "Patch ohne Titel"
 
 msgid "Updates"
 msgstr "Updates"

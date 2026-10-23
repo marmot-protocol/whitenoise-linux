@@ -64,6 +64,10 @@ msgid "%d emoji previews couldn't be loaded."
 msgstr "絵文字のプレビューを%d件読み込めませんでした。"
 
 #, c-format
+msgid "%d file"
+msgstr "%d 個のファイル"
+
+#, c-format
 msgid "%d files"
 msgstr "%d 個のファイル"
 
@@ -3210,6 +3214,9 @@ msgstr "所有者"
 msgid "PASSWORD"
 msgstr "パスワード"
 
+msgid "PATCH"
+msgstr "パッチ"
+
 msgid "PRODUCT"
 msgstr "商品"
 
@@ -4627,6 +4634,9 @@ msgstr "この添付ファイルの形式には対応していません。"
 
 msgid "Untitled emoji set"
 msgstr "無題の絵文字セット"
+
+msgid "Untitled patch"
+msgstr "無題のパッチ"
 
 msgid "Updates"
 msgstr "アップデート"
