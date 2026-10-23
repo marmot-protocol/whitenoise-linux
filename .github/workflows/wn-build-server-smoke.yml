@@ -7,9 +7,14 @@ on:
 permissions:
   contents: read
 
+env:
+  CARGO_BUILD_JOBS: 6
+  WN_BUILD_JOBS: 6
+  CMAKE_BUILD_PARALLEL_LEVEL: 6
+
 jobs:
   native:
-    name: Verify native cold, warm, and changed-input builds
+    name: Verify native cached source-content rebuilds
     runs-on: [self-hosted, Linux, X64, wn-build-server, arch]
     timeout-minutes: 90
     steps:
@@ -32,29 +37,24 @@ jobs:
             ln -s "$cache/cargo" build/cargo
           fi
           test "$(readlink -f build/cargo)" = "$cache/cargo"
-      - name: Build and measure native cache reuse
+      - name: Verify native source-content rebuilds and runtime
         shell: bash
         run: |
           set -euo pipefail
-          SECONDS=0
-          scripts/build.sh
-          printf 'Initial native build: %s seconds\n' "$SECONDS" >> "$GITHUB_STEP_SUMMARY"
-          SECONDS=0
-          scripts/build.sh
-          printf 'Unchanged native build: %s seconds\n' "$SECONDS" >> "$GITHUB_STEP_SUMMARY"
-          touch vendor/mdk/crates/marmot-c/src/lib.rs
-          SECONDS=0
-          scripts/build.sh
-          printf 'MDK crate invalidation build: %s seconds\n' "$SECONDS" >> "$GITHUB_STEP_SUMMARY"
+          bash scripts/verify-mdk-rebuild.sh native
           SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke ./build/app "$(mktemp -d)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-native
+          path: build/mdk-rebuild/native/**
+          if-no-files-found: warn
 
   cross:
     name: Build and boot ${{ matrix.target }}
-    needs: native
     runs-on: [self-hosted, Linux, X64, wn-build-server, arch]
     timeout-minutes: 180
     strategy:
-      max-parallel: 1
       fail-fast: false
       matrix:
         target: [linux-amd64, linux-arm64, windows-amd64]
@@ -88,21 +88,21 @@ jobs:
             ln -s "$cache/build" build/cross
           fi
           test "$(readlink -f build/cross)" = "$cache/build"
-      - name: Cross compile and package
+      - name: Verify cross source-content rebuilds and package
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.cache/vcpkg/archives"
-          for phase in initial unchanged; do
-            SECONDS=0
-            podman run --rm -v "$PWD:/work" -v "$HOME/.cache/vcpkg:/root/.cache/vcpkg" \
-              -v "$HOME/.cache/wn-cross:$HOME/.cache/wn-cross" \
-              -v "$HOME/.cache/wn-cross/registry:/root/.cargo/registry" \
-              -v "$HOME/.cache/wn-cross/git:/root/.cargo/git" \
-              -v '${{ steps.toolchain.outputs.rustup }}:/root/.rustup' \
-              '${{ steps.toolchain.outputs.image }}' '${{ matrix.target }}'
-            printf '%s %s build: %s seconds\n' '${{ matrix.target }}' "$phase" "$SECONDS" >> "$GITHUB_STEP_SUMMARY"
-          done
+          podman run --rm --entrypoint bash \
+            -e CARGO_BUILD_JOBS -e WN_BUILD_JOBS -e CMAKE_BUILD_PARALLEL_LEVEL \
+            -e GITHUB_STEP_SUMMARY=/step-summary \
+            -v "$GITHUB_STEP_SUMMARY:/step-summary" \
+            -v "$PWD:/work" -v "$HOME/.cache/vcpkg:/root/.cache/vcpkg" \
+            -v "$HOME/.cache/wn-cross:$HOME/.cache/wn-cross" \
+            -v "$HOME/.cache/wn-cross/registry:/root/.cargo/registry" \
+            -v "$HOME/.cache/wn-cross/git:/root/.cargo/git" \
+            -v '${{ steps.toolchain.outputs.rustup }}:/root/.rustup' \
+            '${{ steps.toolchain.outputs.image }}' scripts/verify-mdk-rebuild.sh '${{ matrix.target }}'
       - name: Extract and execute the shipped package
         shell: bash
         run: |
@@ -139,12 +139,11 @@ jobs:
           path: |
             dist/*-${{ matrix.target }}.*
             build/cross-evidence/${{ matrix.target }}.png
+            build/mdk-rebuild/${{ matrix.target }}/**
           if-no-files-found: warn
 
   openbsd:
     name: Build and boot openbsd-amd64
-    needs: cross
-    if: ${{ !cancelled() }}
     runs-on: [self-hosted, Linux, X64, wn-build-server, arch]
     timeout-minutes: 180
     steps:
@@ -156,11 +155,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for phase in initial unchanged; do
-            SECONDS=0
-            bash scripts/wn-server-openbsd-smoke.sh
-            printf 'OpenBSD %s build: %s seconds\n' "$phase" "$SECONDS" >> "$GITHUB_STEP_SUMMARY"
-          done
+          bash scripts/wn-server-openbsd-smoke.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -169,4 +164,6 @@ jobs:
             dist/*-openbsd-amd64.tar.gz
             build/openbsd/wn-odin-shot*.png
             build/openbsd/vm-console.log
+            build/openbsd/rebuild-summary.txt
+            build/mdk-rebuild/openbsd-amd64/**
           if-no-files-found: warn

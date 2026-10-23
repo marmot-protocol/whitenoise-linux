@@ -839,6 +839,17 @@ inputs rebuilds the affected dependency. CI restores Cargo state from older
 source revisions within the same compiler/target boundary, rather than treating
 a previously staged Marmot library as proof that its inputs are unchanged.
 
+Run `bash scripts/verify-mdk-rebuild.sh native` to populate caches, rebuild
+unchanged, edit an existing MDK Rust error message, then restore and rebuild it.
+Each phase compiles and executes a C ABI consumer against the staged library;
+unchanged builds must compile no crates, and edited/restored builds must compile
+only `marmot-c`. Logs and timings stay in `build/mdk-rebuild/<target>` and the CI
+step summary. Other targets are `linux-amd64`, `linux-arm64`, `windows-amd64`
+(inside the cross-build container), and `openbsd-amd64` (inside the guest).
+The build-server smoke workflow queues these five jobs together on two isolated
+runner slots, with six build threads per job and shared CPU/memory limits.
+It does not change the default-branch runner routing or include macOS.
+
 The current pin is MDK master at `c8210585cab6` (0.14.0-dev). The build applies
 the patches listed in `scripts/build.sh`. NIP-46 C sessions, Windows
 portability, OpenBSD sandbox support, SOCKS5 routing, and Markdown timestamps

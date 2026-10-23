@@ -4,7 +4,9 @@ set -euo pipefail
 here=$(pwd)
 out="$here/build/openbsd"
 cache="$HOME/.cache/wn-openbsd/7.9-v0.14.0"
-mkdir -p "$out" "$cache"
+# Runner slots have separate UIDs, HOMEs, disks, and loopback forwards.
+ssh_port=$((20000 + UID))
+mkdir -p "$out" "$cache" "$here/build/mdk-rebuild/openbsd-amd64"
 image="$cache/openbsd-7.9-x86-64.qcow2"
 if [ ! -f "$image" ]; then
     curl -fL --retry 3 -o "$image" https://github.com/cross-platform-actions/openbsd-builder/releases/download/v0.14.0/openbsd-7.9-x86-64.qcow2
@@ -32,18 +34,18 @@ cp /usr/share/edk2/x64/OVMF_VARS.4m.fd "$out/OVMF_VARS.fd"
 available=$(</proc/meminfo)
 available=${available#*MemAvailable:}
 available=${available%%kB*}
-if ((available < 48 * 1024 * 1024)); then
-    echo 'OpenBSD VM needs 40 GiB plus an 8 GiB host reserve.' >&2
+if ((available < 28 * 1024 * 1024)); then
+    echo 'OpenBSD VM needs 20 GiB plus an 8 GiB host reserve.' >&2
     exit 1
 fi
-qemu-system-x86_64 -machine q35,accel=kvm -cpu host,-pdpe1gb -smp 12 -m 40G \
+qemu-system-x86_64 -machine q35,accel=kvm -cpu host,-pdpe1gb -smp 6 -m 20G \
     -drive if=pflash,format=raw,unit=0,file=/usr/share/edk2/x64/OVMF_CODE.4m.fd,readonly=on \
     -drive "if=pflash,format=raw,unit=1,file=$out/OVMF_VARS.fd" \
     -device virtio-scsi-pci -device scsi-hd,drive=os,bootindex=0 \
     -drive "if=none,file=$cache/root.qcow2,id=os,format=qcow2" \
     -device scsi-hd,drive=res -drive "if=none,file=$out/resources.raw,id=res,format=raw" \
     -device scsi-hd,drive=build -drive "if=none,file=$cache/build.qcow2,id=build,format=qcow2" \
-    -device e1000,netdev=net -netdev user,id=net,hostfwd=tcp:127.0.0.1:29847-:22 \
+    -device e1000,netdev=net -netdev "user,id=net,hostfwd=tcp:127.0.0.1:$ssh_port-:22" \
     -display none -monitor none -serial "file:$out/vm-console.log" &
 vm_pid=$!
 cleanup() {
@@ -66,7 +68,7 @@ cleanup() {
     exit "$result"
 }
 trap cleanup EXIT
-ssh_args=(-i "$key" -p 29847 -o BatchMode=yes -o ConnectTimeout=2 -o StrictHostKeyChecking=accept-new -o "UserKnownHostsFile=$cache/known_hosts")
+ssh_args=(-i "$key" -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=2 -o StrictHostKeyChecking=accept-new -o "UserKnownHostsFile=$cache/known_hosts")
 ready=no
 for attempt in $(seq 1 120); do
     if ssh "${ssh_args[@]}" runner@127.0.0.1 true 2>/dev/null; then
@@ -101,17 +103,42 @@ mkdir -p /mnt/build-cache/work
 sudo sync
 GUEST
 touch "$cache/build.ready"
-export RSYNC_RSH="ssh -i $key -p 29847 -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$cache/known_hosts"
+export RSYNC_RSH="ssh -i $key -p $ssh_port -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$cache/known_hosts"
 rsync -a --delete --no-owner --no-group --exclude=/build/ --exclude=/dist/ --exclude=/vendor/mdk/target/ \
     --exclude=/vendor/mdk/crates/marmot-c/output/ --exclude='/vendor/llvm-mingw*' --exclude=/vendor/vcpkg/ \
     --exclude=/vendor/sdl/ \
     "$here/" runner@127.0.0.1:/mnt/build-cache/work/
-ssh "${ssh_args[@]}" runner@127.0.0.1 /usr/local/bin/bash -s <<'GUEST'
+guest_result=0
+ssh "${ssh_args[@]}" runner@127.0.0.1 /usr/local/bin/bash -s <<'GUEST' || guest_result=$?
 set -euo pipefail
 cd /mnt/build-cache/work
 export CARGO_TARGET_DIR=/mnt/build-cache/target CARGO_HOME=/mnt/build-cache/cargo
+export CARGO_BUILD_JOBS=6 WN_BUILD_JOBS=6 CMAKE_BUILD_PARALLEL_LEVEL=6
+mkdir -p build/openbsd
+export GITHUB_STEP_SUMMARY="$PWD/build/openbsd/rebuild-summary.txt"
+: > "$GITHUB_STEP_SUMMARY"
+# Populate caches and exercise the original package using the existing bootstrap.
 bash scripts/openbsd-build.sh
+export PATH="$PWD/build/openbsd/odin:$PATH"
+bash scripts/verify-mdk-rebuild.sh openbsd-amd64
 GUEST
+evidence_result=0
+if ssh "${ssh_args[@]}" runner@127.0.0.1 test -f /mnt/build-cache/work/build/openbsd/rebuild-summary.txt; then
+    rsync -a runner@127.0.0.1:/mnt/build-cache/work/build/openbsd/rebuild-summary.txt "$out/" || evidence_result=$?
+    if ((evidence_result == 0)) && [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+        cat "$out/rebuild-summary.txt" >>"$GITHUB_STEP_SUMMARY" || evidence_result=$?
+    fi
+fi
+if ssh "${ssh_args[@]}" runner@127.0.0.1 test -d /mnt/build-cache/work/build/mdk-rebuild/openbsd-amd64; then
+    rsync -a runner@127.0.0.1:/mnt/build-cache/work/build/mdk-rebuild/openbsd-amd64/ \
+        "$here/build/mdk-rebuild/openbsd-amd64/" || evidence_result=$?
+fi
+if ((guest_result != 0)); then
+    exit "$guest_result"
+fi
+if ((evidence_result != 0)); then
+    exit "$evidence_result"
+fi
 mkdir -p "$here/dist"
 rsync -a runner@127.0.0.1:/mnt/build-cache/work/dist/ "$here/dist/"
 rsync -a --include='wn-odin-shot*.png' --exclude='*' runner@127.0.0.1:/mnt/build-cache/work/build/openbsd/ "$out/"
