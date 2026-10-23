@@ -60,7 +60,7 @@ rail_content :: proc(ui: ^Ui_State) {
 					}
 				} else if ui.page == .Chats {
 					count = fmt.tprintf("%d", chat_total)
-					if len(ui.sidebar_filter) > 0 || ui.unread_only {
+					if len(ui.sidebar_filter) > 0 || ui.chat_filter != .Chats {
 						count = fmt.tprintf(tr("%d of %d"), len(chat_rows), chat_total)
 					}
 				}
@@ -140,15 +140,21 @@ rail_content :: proc(ui: ^Ui_State) {
 					TEXT_LO,
 				)
 			}
-			if ui.page == .Chats {
+			if ui.page == .Chats || ui.page == .Archived {
 				if clay.UI(clay.ID("ChatFilters"))(
-				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
+				{
+					layout = {sizing = {width = clay.SizingGrow()}, childGap = 4},
+					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+				},
 				) {
-					for label, t in ([2]string{tr("All"), tr("Unread")}) {
-						active := ui.unread_only == (t == 1)
-						if clay.UI(clay.ID(t == 0 ? "AllPill" : "UnreadPill"))(
+					labels := [4]string{tr("Chats"), tr("Unread"), tr("Groups"), tr("Archived")}
+					ids := [4]string{"AllPill", "UnreadPill", "GroupsPill", "ArchivedPill"}
+					for label, t in labels {
+						active :=
+							ui.page == .Archived ? t == int(Chat_Filter.Archived) : t == int(ui.chat_filter)
+						if clay.UI(clay.ID(ids[t]))(
 						{
-							layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
+							layout = {padding = {left = 8, right = 8, top = 5, bottom = 5}},
 							backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
 							cornerRadius = rr(6),
 						},
@@ -163,25 +169,23 @@ rail_content :: proc(ui: ^Ui_State) {
 							)
 						}
 					}
-					if clay.UI(clay.ID("ChatFiltersGap"))(
-					{layout = {sizing = {width = clay.SizingGrow()}}},
-					) {}
-					if clay.UI(clay.ID("ChatViewBtn"))(
-					{
-						layout = {padding = {left = 6, right = 6, top = 5, bottom = 5}},
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(6),
-					},
-					) {
-						clay.Text(
-							ui.prefs.recent_chats ? tr("Recent") : tr("Grouped"),
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				}
+				if ui.page == .Chats &&
+				   clay.UI(clay.ID("ChatViewBtn"))(
+				   {
+					   layout = {padding = {left = 6, right = 6, top = 5, bottom = 5}},
+					   backgroundColor = hovered() ? HOVER : {},
+					   cornerRadius = rr(6),
+				   },
+				   ) {
+					clay.Text(
+						ui.prefs.recent_chats ? tr("Recent") : tr("Grouped"),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					)
+					if hovered() {
+						tooltip(
+							ui.prefs.recent_chats ? tr("Group chats by folder") : tr("Sort chats by recent activity"),
 						)
-						if hovered() {
-							tooltip(
-								ui.prefs.recent_chats ? tr("Group chats by folder") : tr("Sort chats by recent activity"),
-							)
-						}
 					}
 				}
 			}

@@ -6,6 +6,7 @@ import "core:os"
 import "core:strings"
 import "core:thread"
 import "core:time"
+import "core:unicode"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -203,6 +204,22 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("RailAvatar") {
 		ui.accounts_open = true
 		return
+	}
+
+	if ui.page == .Chats || ui.page == .Archived {
+		ids := [4]string{"AllPill", "UnreadPill", "GroupsPill", "ArchivedPill"}
+		for scope in Chat_Filter {
+			if !clicked(ids[int(scope)]) &&
+			   !(scope == .Chats && clicked("ChatListShowAll")) {continue}
+			ui.chat_filter = scope
+			ui.page = .Chats
+			if scope == .Archived {load_archived(client, ui)}
+			clear(&ui.rail_rows)
+			if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
+				data.scrollPosition.y = 0
+			}
+			return
+		}
 	}
 
 	for page in Page {
@@ -1297,6 +1314,63 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 CHAT_ATTACHMENT_AUDIO :: i32(2) // MarmotChatListAttachmentKind::Audio
 
 // Snapshot the account's chat list into UI-owned strings.
+// Match Android's absent-name test after unsafe controls/formatting are
+// stripped. ZWJ/ZWNJ remain meaningful in shaping and emoji sequences.
+@(private)
+chat_name_is_unnamed :: proc(name: string) -> bool {
+	for r in name {
+		if r == 0x200c || r == 0x200d {return false}
+		if unicode.is_space(r) || unicode.is_control(r) {continue}
+		stripped := false
+		for span in ([][2]rune{{0xad, 0xad}, {0x34f, 0x34f}, {0x600, 0x605}, {0x61c, 0x61c}, {0x6dd, 0x6dd}, {0x70f, 0x70f}, {0x890, 0x891}, {0x8e2, 0x8e2}, {0x180e, 0x180e}, {0x200b, 0x200f}, {0x202a, 0x202e}, {0x2060, 0x2064}, {0x2066, 0x206f}, {0xfeff, 0xfeff}, {0xfff9, 0xfffb}, {0x110bd, 0x110bd}, {0x110cd, 0x110cd}, {0x13430, 0x13455}, {0x1bca0, 0x1bca3}, {0x1d173, 0x1d17a}, {0xe0000, 0xe007f}, {0xe0100, 0xe01ef}}) {
+			if r >= span[0] && r <= span[1] {stripped = true; break}
+		}
+		if !stripped {return false}
+	}
+	return true
+}
+
+@(private)
+chat_conversation_kind :: proc(
+	kind: marmot.Chat_Conversation_Kind,
+	name: string,
+	member_count: int,
+) -> marmot.Chat_Conversation_Kind {
+	if kind != .UNKNOWN {return kind}
+	if !chat_name_is_unnamed(name) {return .GROUP}
+	// A failed/unresolved roster is not evidence of a two-member DM.
+	return member_count == 2 ? .DIRECT : .GROUP
+}
+
+@(private)
+chat_row_identity :: proc(
+	presented: ^marmot.Presented_Chat_Row,
+	account: string,
+	members: map[string][]string,
+) -> (
+	kind: marmot.Chat_Conversation_Kind,
+	peer: string,
+) {
+	row := &presented.row
+	ids, have_members := members[string(row.group_id_hex)]
+	count := -1
+	if have_members {
+		count = len(ids)
+	} else if title := presented.presentation.title;
+	   title.tag == .Unnamed_Group && title.body.unnamed_group.has_member_count {
+		count = int(title.body.unnamed_group.member_count)
+	}
+	kind = chat_conversation_kind(row.conversation_kind, string(row.group_name), count)
+	if kind != .DIRECT || row.pending_confirmation {return kind, ""}
+	if have_members {
+		for id in ids {if id != "" && !strings.equal_fold(id, account) {return kind, id}}
+		return kind, ""
+	}
+	peer = string(presented.presentation.peer_id)
+	if strings.equal_fold(peer, account) {peer = ""}
+	return
+}
+
 // One marmot chat-list row into a UI row; shared by the rail
 // (load_chat_list) and the archive page (load_archived) so both render
 // identically (avatar, time, "You:" prefix, delivery tick).
@@ -1306,9 +1380,17 @@ row_to_ui :: proc(
 	account_ref: string,
 	previews: map[string]^marmot.Timeline_Page = nil,
 	reading_previews: map[string]string = nil,
+	members: map[string][]string = nil,
 ) -> Chat_Row_Ui {
 	row := &presented.row
 	presentation := &presented.presentation
+	kind, peer := chat_row_identity(presented, account_ref, members)
+	avatar_key := string(row.group_id_hex)
+	if kind == .DIRECT {
+		if row.pending_confirmation &&
+		   presentation.peer_id != nil {avatar_key = string(presentation.peer_id)}
+		if peer != "" {avatar_key = peer}
+	}
 	title: string
 	switch presentation.title.tag {
 	case .Literal:
@@ -1357,32 +1439,32 @@ row_to_ui :: proc(
 	}
 
 	return Chat_Row_Ui {
-		group_id     = strings.clone(string(row.group_id_hex)),
-		title        = strings.clone(title),
-		preview      = strings.clone(preview),
-		at           = format_activity(row.activity_sort_at),
-		activity_at  = row.activity_sort_at,
-		unread       = row.unread_count,
-		pending      = row.pending_confirmation,
-		stable       = row.lifecycle_state == .STABLE,
-		tick         = tick,
-		first_unread = strings.clone(
+		group_id          = strings.clone(string(row.group_id_hex)),
+		conversation_kind = kind,
+		peer_hex          = strings.clone(peer),
+		title             = strings.clone(title),
+		preview           = strings.clone(preview),
+		at                = format_activity(row.activity_sort_at),
+		activity_at       = row.activity_sort_at,
+		unread            = row.unread_count,
+		pending           = row.pending_confirmation,
+		stable            = row.lifecycle_state == .STABLE,
+		tick              = tick,
+		first_unread      = strings.clone(
 			row.first_unread_message_id_hex != nil ? string(row.first_unread_message_id_hex) : "",
 		),
-		avatar_url   = strings.clone(avatar_url),
-		avatar_key   = strings.clone(
-			row.conversation_kind == .DIRECT && presentation.peer_id != nil ? string(presentation.peer_id) : string(row.group_id_hex),
-		),
-		image_hash   = strings.clone(image_hash),
+		avatar_url        = strings.clone(avatar_url),
+		avatar_key        = strings.clone(avatar_key),
+		image_hash        = strings.clone(image_hash),
 		// marmot's mute OR the local one from the row menu (its C API
 		// has no mute setter); the notification gate reads this flag.
-		muted        = row.muted || (g_prefs != nil && g_prefs.muted_ids[string(row.group_id_hex)]),
-		last_id      = strings.clone(
+		muted             = row.muted || (g_prefs != nil && g_prefs.muted_ids[string(row.group_id_hex)]),
+		last_id           = strings.clone(
 			row.last_message != nil && row.last_message.message_id_hex != nil ? string(row.last_message.message_id_hex) : "",
 		),
-		last_kind    = row.last_message != nil ? row.last_message.kind : 0,
-		last_mine    = mine,
-		last_blocked = blocked,
+		last_kind         = row.last_message != nil ? row.last_message.kind : 0,
+		last_mine         = mine,
+		last_blocked      = blocked,
 	}
 }
 
@@ -1426,6 +1508,7 @@ chat_list_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
 				string(job.account),
 				job.previews,
 				job.reading_previews,
+				ui.chat_members,
 			),
 		)
 	}

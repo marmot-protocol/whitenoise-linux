@@ -59,7 +59,8 @@ chat_pic :: proc(chat: Chat_Row_Ui) -> ^rl.Texture2D {
 
 group_hero :: proc(ui: ^Ui_State) {
 	chat := ui.chats[ui.selected]
-	admin := self_is_admin(ui)
+	dm := chat_is_dm(chat)
+	admin := !dm && self_is_admin(ui)
 	if clay.UI(clay.ID("GroupHero"))(
 	{
 		layout = {
@@ -81,6 +82,26 @@ group_hero :: proc(ui: ^Ui_State) {
 			admin && clay.PointerOver(clay.ID("HeroAvatar", 0)) ? .Open : .Closed,
 		)
 		clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
+		if dm {
+			peer := chat_peer(ui)
+			if peer != "" {
+				npub := hex_npub(peer)
+				defer delete(npub)
+				clay.Text(
+					tr("Public key"),
+					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM},
+				)
+				clay.Text(
+					npub_tail(npub),
+					{fontId = FONT_MONO, fontSize = 12, textColor = TEXT_DIM},
+				)
+				micro_button("DmCopyKey", tr("Copy public key"))
+				micro_button("DmAbout", tr("About"))
+				micro_button("DmStartGroup", tr("Start group"))
+				micro_button("DmAddToGroup", tr("Add to group"))
+			}
+			return
+		}
 		clay.Text(
 			fmt.tprintf(
 				tr(len(ui.members) == 1 ? N_("%d member") : N_("%d members")),
@@ -143,7 +164,7 @@ group_hero :: proc(ui: ^Ui_State) {
 
 // Hero clicks; true when the frame's input was consumed.
 handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
-	if !self_is_admin(ui) {
+	if selected_chat_is_dm(ui) || !self_is_admin(ui) {
 		return false
 	}
 	if clicked("HeroPicBtn") || (mouse_released() && clay.PointerOver(clay.ID("HeroAvatar", 0))) {
@@ -195,6 +216,7 @@ handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 
 // Publish the edited description; a field that trims to empty clears it.
 save_description :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if selected_chat_is_dm(ui) || !self_is_admin(ui) {return}
 	job := account_job_new(ui, client, .Description); if job == nil {return}
 	job.target = strings.clone(
 		strings.trim_space(string(ui.desc_input[:])),

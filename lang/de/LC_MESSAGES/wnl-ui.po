@@ -388,6 +388,9 @@ msgstr "Regel hinzufügen"
 msgid "Add someone by npub, or make a group of your own."
 msgstr "Füge jemanden per npub hinzu oder erstelle eine eigene Gruppe."
 
+msgid "Add to group"
+msgstr "Zu einer Gruppe hinzufügen"
+
 msgid "Added to your stickers"
 msgstr "Zu deinen Stickern hinzugefügt"
 
@@ -477,6 +480,9 @@ msgstr "Apr."
 
 msgid "Archive"
 msgstr "Archivieren"
+
+msgid "Archived"
+msgstr "Archiviert"
 
 msgid "Archived chats"
 msgstr "Archivierte Chats"
@@ -757,6 +763,9 @@ msgstr "Ändern..."
 
 msgid "Changes require a restart; the current connection is unchanged."
 msgstr "Änderungen erfordern einen Neustart; die aktuelle Verbindung bleibt unverändert."
+
+msgid "Chat details"
+msgstr "Chatdetails"
 
 #, c-format
 msgid "Chat list failed: %s"
@@ -2187,6 +2196,12 @@ msgstr "Gruppiert"
 msgid "Grouped sorts your chats into folders, and you have none yet."
 msgstr "Gruppiert sortiert deine Chats in Ordner, aber du hast noch keine."
 
+msgid "Groups"
+msgstr "Gruppen"
+
+msgid "Groups you join will appear here."
+msgstr "Gruppen, denen du beitrittst, erscheinen hier."
+
 msgid "HIGHLIGHT"
 msgstr "MARKIERUNG"
 
@@ -2529,8 +2544,14 @@ msgstr "Erfahre mehr über White Noise."
 msgid "Leave"
 msgstr "Verlassen"
 
+msgid "Leave chat"
+msgstr "Chat verlassen"
+
 msgid "Leave group"
 msgstr "Gruppe verlassen"
+
+msgid "Leave this chat?"
+msgstr "Diesen Chat verlassen?"
 
 msgid "Leave this group?"
 msgstr "Diese Gruppe verlassen?"
@@ -2585,6 +2606,9 @@ msgstr "Weitere Treffer aus dem lokalen Verlauf werden geladen…"
 
 msgid "Loading your accounts"
 msgstr "Deine Konten werden geladen"
+
+msgid "Loading your archived chats"
+msgstr "Deine archivierten Chats werden geladen"
 
 msgid "Loading your contacts"
 msgstr "Deine Kontakte werden geladen"
@@ -2910,6 +2934,9 @@ msgstr "Noch keine Dateien."
 
 msgid "No folders match your search."
 msgstr "Keine Ordner entsprechen deiner Suche."
+
+msgid "No groups yet"
+msgstr "Noch keine Gruppen"
 
 msgid "No inbox relays."
 msgstr "Keine Empfangs-Relays."
@@ -3365,6 +3392,9 @@ msgstr "Ernennen"
 
 msgid "Prompt copied. Paste it into your agent."
 msgstr "Anweisung kopiert. Füge sie in deinen Agenten ein."
+
+msgid "Public key"
+msgstr "Öffentlicher Schlüssel"
 
 msgid "Public key (npub)"
 msgstr "Öffentlicher Schlüssel (npub)"
@@ -4139,6 +4169,9 @@ msgstr "Chat starten"
 msgid "Start day"
 msgstr "Starttag"
 
+msgid "Start group"
+msgstr "Gruppe erstellen"
+
 msgid "Start minimized to tray"
 msgstr "Minimiert im Tray starten"
 
@@ -4795,6 +4828,9 @@ msgstr "Du kannst Personen, die du blockiert hast, keine Nachrichten senden."
 
 msgid "You have no chats to share this with."
 msgstr "Du hast keine Chats, mit denen du das teilen kannst."
+
+msgid "You have no groups to add this person to."
+msgstr "Du hast keine Gruppen, zu denen du diese Person hinzufügen kannst."
 
 msgid "You have no other chats to forward this to."
 msgstr "Du hast keine anderen Chats, an die du das weiterleiten kannst."

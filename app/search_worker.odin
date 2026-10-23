@@ -39,6 +39,7 @@ Search_Job :: struct {
 	cancel:         bool, // atomic; stop obsolete work between store reads
 	hits:           [dynamic]Gs_Hit,
 	chats:          ^marmot.Presented_Chat_List,
+	members:        map[string][]string, // current rosters for legacy conversation classification
 	read_chats:     bool,
 	matched:        [dynamic]string,
 	err:            string,
@@ -61,6 +62,7 @@ search_free :: proc(job: ^Search_Job) {
 	for hit in job.hits {gs_free_hit(hit)}
 	delete(job.hits)
 	if job.chats != nil {marmot.presented_chat_list_free(job.chats)}
+	chat_members_free(&job.members)
 	for group in job.matched {delete(group)}
 	delete(job.matched)
 	delete(job.account); delete(job.input); delete(job.err)
@@ -235,6 +237,7 @@ search_global_page :: proc(job: ^Search_Job, account: cstring) {
 			job.err = marmot.last_error()
 			return
 		}
+		chat_identity_members_fetch(job.client, account, job.chats, &job.members)
 	}
 	if job.input == "" &&
 	   job.group == "" &&
@@ -374,7 +377,7 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 							if !job.append_page {gs_clear_hits(ui)}
 							if job.chats != nil {
 								fresh := make([dynamic]Chat_Row_Ui, 0, int(job.chats.rows_len))
-								for i in 0 ..< job.chats.rows_len {append(&fresh, row_to_ui(client, &job.chats.rows[i], ui.account_ref))}
+								for i in 0 ..< job.chats.rows_len {append(&fresh, row_to_ui(client, &job.chats.rows[i], ui.account_ref, members = job.members))}
 								chats_replace(&ui.gs_chats, fresh)
 							}
 							for chat in ui.gs_chats {titles[chat.group_id] = chat.title}

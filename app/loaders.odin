@@ -724,24 +724,13 @@ record_json :: proc(
 // Archived chats: same call as the rail with include_archived, kept
 // to only the archived rows.
 load_archived :: proc(client: ^marmot.Client, ui: ^Ui_State) {
-	timing_start := time.tick_now()
-	defer local_timing_end(.archived_chat_list_load, timing_start)
-	rows: ^marmot.Presented_Chat_List
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	if marmot.presented_chat_list(client, account, true, &rows) != .OK {
-		return
-	}
-	defer marmot.presented_chat_list_free(rows)
-
-	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.rows_len))
-	for i in 0 ..< rows.rows_len {
-		row := &rows.rows[i]
-		if !row.row.archived {
-			continue
-		}
-		append(&fresh, row_to_ui(client, row, ui.account_ref))
-	}
-	chats_replace(&ui.archived, fresh)
+	job := account_job_new(ui, client, .Read_Archived)
+	if job == nil {return}
+	job.chat_list.client = client
+	job.chat_list.account = strings.clone_to_cstring(ui.account_ref)
+	job.chat_list.include_archived = true
+	chat_list_snapshot(&job.chat_list, ui)
+	account_job_start(job)
 }
 
 // Named contacts first, then unresolved ids, each case-insensitive; key is
@@ -796,7 +785,6 @@ load_contacts :: proc(client: ^marmot.Client, ui: ^Ui_State, mode: Contact_Load)
 	timing_start := time.tick_now()
 	defer local_timing_end(.contacts_load, timing_start)
 	clear(&ui.contacts)
-	clear(&ui.dm_peer)
 	indices := make(map[string]int, allocator = context.temp_allocator)
 	if !load_follows(client, ui, &indices, mode) {return false}
 	if mode == .Picker {return true}
@@ -816,7 +804,6 @@ load_contacts :: proc(client: ^marmot.Client, ui: ^Ui_State, mode: Contact_Load)
 }
 
 // Shared membership enriches saved contacts without creating new ones.
-// Keep every 1:1 peer mapped, including people outside the contact list.
 @(private)
 contact_groups :: proc(
 	ui: ^Ui_State,
@@ -829,9 +816,7 @@ contact_groups :: proc(
 			continue
 		}
 		id := string(member.member_id_hex)
-		if len(members) == 2 {
-			ui.dm_peer[strings.clone(chat.group_id)] = strings.clone(id)
-		}
+		if id == "" || strings.equal_fold(id, ui.account_ref) {continue}
 		if index, ok := indices[id]; ok {
 			append(
 				&ui.contacts[index].groups,

@@ -1,8 +1,22 @@
 package main
 
+import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:strings"
+
+@(private)
+select_archived_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
+	if index < 0 || index >= len(ui.archived) {return}
+	id := ui.archived[index].group_id
+	for chat, i in ui.chats {
+		if chat.group_id == id {select_chat(ui, client, i); return}
+	}
+	chat := chat_clone(ui.archived[index])
+	chat.search_only = true
+	append(&ui.chats, chat)
+	select_chat(ui, client, len(ui.chats) - 1)
+}
 
 @(private)
 archived_row :: proc(index: u32, chat: Chat_Row_Ui) {

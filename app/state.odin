@@ -201,25 +201,27 @@ MONO_CANDIDATES := []cstring {
 }
 
 Chat_Row_Ui :: struct {
-	group_id:     string, // group_id_hex, the chat's stable key
-	title:        string,
-	preview:      string,
-	at:           string, // last activity: clock today, "Yesterday", else the date
-	activity_at:  u64, // activity_sort_at, so `at` can be reformatted
-	unread:       u64,
-	pending:      bool, // invite awaiting accept/decline
-	stable:       bool, // MLS lifecycle stable (session established)
-	tick:         marmot.Delivery_State,
-	first_unread: string, // first unread message id, "" = none
-	avatar_url:   string, // chat picture URL, "" = none
-	avatar_key:   string, // peer public key for a DM, otherwise group id
-	image_hash:   string, // encrypted-Blossom avatar hash, "" = none
-	muted:        bool, // marmot's per-chat mute, suppresses notifications
-	last_id:      string, // latest message id, "" = none (notification dedupe)
-	last_kind:    u64, // latest message's event kind
-	last_mine:    bool, // latest message is an own send
-	last_blocked: bool, // latest message is from someone you blocked (no preview, no alert)
-	search_only:  bool, // archived search destination, hidden from the active rail
+	group_id:          string, // group_id_hex, the chat's stable key
+	conversation_kind: marmot.Chat_Conversation_Kind, // resolved at snapshot adoption, never inferred from title
+	peer_hex:          string, // accepted DM counterparty; owned independently of avatar selection
+	title:             string,
+	preview:           string,
+	at:                string, // last activity: clock today, "Yesterday", else the date
+	activity_at:       u64, // activity_sort_at, so `at` can be reformatted
+	unread:            u64,
+	pending:           bool, // invite awaiting accept/decline
+	stable:            bool, // MLS lifecycle stable (session established)
+	tick:              marmot.Delivery_State,
+	first_unread:      string, // first unread message id, "" = none
+	avatar_url:        string, // chat picture URL, "" = none
+	avatar_key:        string, // peer public key for a DM, otherwise group id
+	image_hash:        string, // encrypted-Blossom avatar hash, "" = none
+	muted:             bool, // marmot's per-chat mute, suppresses notifications
+	last_id:           string, // latest message id, "" = none (notification dedupe)
+	last_kind:         u64, // latest message's event kind
+	last_mine:         bool, // latest message is an own send
+	last_blocked:      bool, // latest message is from someone you blocked (no preview, no alert)
+	search_only:       bool, // archived search destination, hidden from the active rail
 }
 
 // One picked-but-unsent attachment, shown as a chip above the composer.
@@ -464,6 +466,14 @@ Page :: enum {
 	Archived,
 	Settings,
 	Profile,
+}
+
+@(private)
+Chat_Filter :: enum {
+	Chats,
+	Unread,
+	Groups,
+	Archived,
 }
 
 Member_Ui :: struct {
@@ -725,12 +735,11 @@ Ui_State :: struct {
 	blocked:                                               map[string]bool, // account hex → locally blocked (settings.json)
 	blocked_open:                                          map[string]bool, // first message id of a blocked run revealed in this chat visit
 	hidden:                                                map[string]bool, // message id → "Delete for me" hide (hidden.json)
-	dm_peer:                                               map[string]string, // 1:1 group id → peer hex, from load_contacts
 	nick_input:                                            [dynamic]u8, // contact-page nickname editor
 	qr_open:                                               bool, // contact QR modal
 	qr_tex:                                                ^rl.Texture2D,
 	qr_npub:                                               string,
-	unread_only:                                           bool, // rail "Unread" pill filter
+	chat_filter:                                           Chat_Filter, // mutually exclusive inbox scope
 	row_menu:                                              int, // right-clicked rail chat index, -1 = closed
 	row_menu_x:                                            f32, // its panel anchor, layout coords
 	row_menu_y:                                            f32,

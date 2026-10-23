@@ -438,12 +438,14 @@ GS_ATTACHMENT_LABELS := [6]string {
 gs_keep_open_chat :: proc(ui: ^Ui_State, group: string) {
 	if group == "" {return}
 	for chat in ui.chats {if chat.group_id == group {return}}
-	for chat in ui.gs_chats {
-		if chat.group_id != group {continue}
-		copy := chat_clone(chat)
-		copy.search_only = true
-		append(&ui.chats, copy)
-		return
+	for source in ([][]Chat_Row_Ui{ui.gs_chats[:], ui.archived[:]}) {
+		for chat in source {
+			if chat.group_id != group {continue}
+			copy := chat_clone(chat)
+			copy.search_only = true
+			append(&ui.chats, copy)
+			return
+		}
 	}
 }
 

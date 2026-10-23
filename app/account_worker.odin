@@ -21,6 +21,7 @@ Account_Operation :: enum {
 	Read_Key_Packages,
 	Unfollow,
 	Read_Contacts,
+	Read_Archived,
 	Create_Chat,
 	Accept,
 	Decline,
@@ -41,6 +42,7 @@ Account_Job :: struct {
 	accepted:                                     u64,
 	key_rows:                                     [dynamic]Kp_Row,
 	contacts:                                     [dynamic]Contact_Ui,
+	chat_list:                                    Chat_List_Work,
 	worker:                                       ^thread.Thread,
 	signer:                                       ^Nip46_Account,
 }
@@ -66,7 +68,10 @@ account_job_new :: proc(
 	signer := nip46_find(owner)
 	// Leaving an account never waits on its signer: a dead one is a reason to remove it.
 	leaving := kind == .Sign_Out || kind == .Remove
-	if !leaving && signer != nil && (signer.attach != nil || !signer.registered) {
+	if !leaving &&
+	   kind != .Read_Archived &&
+	   signer != nil &&
+	   (signer.attach != nil || !signer.registered) {
 		if kind ==
 		   .Switch {signer.switch_requested = true; if signer.attach == nil {nip46_attach_start(signer)}}
 		set_status(
@@ -103,6 +108,9 @@ account_worker :: proc(t: ^thread.Thread) {
 	status: marmot.Status
 	summary: ^marmot.Send_Summary
 	switch job.kind {
+	case .Read_Archived:
+		chat_list_read(&job.chat_list)
+		if job.chat_list.err != "" {job.error = strings.clone(job.chat_list.err)}
 	case .Switch:
 		out: ^marmot.Account_Summary
 		status = marmot.sign_in_account(job.client, account, &out)
@@ -273,6 +281,7 @@ account_job_free :: proc(job: ^Account_Job, join: Account_Join = .Pending) {
 	for relay in job.relays {delete(relay)}
 	kp_rows_free(&job.key_rows); delete(job.key_rows)
 	nc_contacts_free(&job.contacts)
+	chat_list_free(&job.chat_list)
 	delete(job.relays); delete(job.pic_data); free(job)
 }
 @(private)
@@ -340,12 +349,34 @@ account_job_drain :: proc(ui: ^Ui_State) {
 					nc_contacts_free(&ui.nc_contacts)
 					ui.nc_contacts = job.contacts
 					job.contacts = {}
+				case .Read_Archived:
+					fresh := make([dynamic]Chat_Row_Ui)
+					if rows := job.chat_list.rows; rows != nil {
+						for i in 0 ..< rows.rows_len {
+							row := &rows.rows[i]
+							if !row.row.archived {continue}
+							append(
+								&fresh,
+								row_to_ui(
+									job.client,
+									row,
+									job.account,
+									job.chat_list.previews,
+									job.chat_list.reading_previews,
+									job.chat_list.members,
+								),
+							)
+						}
+					}
+					chats_replace(&ui.archived, fresh)
+					clear(&ui.rail_rows)
 				case .Create_Chat:
 					if job.notes {delete(ui.prefs.notes_group); ui.prefs.notes_group = strings.clone(job.result); ui.prefs.pinned[strings.clone(job.result)] = true; save_settings(ui)}
 					load_chat_list(job.client, job.account, ui)
 					if job.open_chat {if job.form {clear(&ui.nc_member); clear(&ui.nc_name)}; ui.focus = .Compose; ui.page = .Chats; ui.new_chat_open = false; select_by_id(ui, job.client, job.result)}
 				case .Leave, .Decline:
-					if ui.photo.account == job.account && ui.photo.group == job.group {photo_cancel(ui)}
+					if ui.photo.account == job.account &&
+					   ui.photo.group == job.group {photo_cancel(ui)}
 					if ui.selected >= 0 &&
 					   ui.chats[ui.selected].group_id ==
 						   job.group {ui.selected = -1; ui.show_members = false}
@@ -390,6 +421,8 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 		return tr("Updating your contacts")
 	case .Read_Contacts:
 		return tr("Loading your contacts")
+	case .Read_Archived:
+		return tr("Loading your archived chats")
 	case .Create_Chat:
 		return tr("Creating your chat")
 	case .Accept:

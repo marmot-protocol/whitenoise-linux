@@ -388,6 +388,9 @@ msgstr "ルールを追加"
 msgid "Add someone by npub, or make a group of your own."
 msgstr "npub で相手を追加するか、自分だけのグループを作成してください。"
 
+msgid "Add to group"
+msgstr "グループに追加"
+
 msgid "Added to your stickers"
 msgstr "ステッカーに追加済み"
 
@@ -477,6 +480,9 @@ msgstr "4月"
 
 msgid "Archive"
 msgstr "アーカイブ"
+
+msgid "Archived"
+msgstr "アーカイブ済み"
 
 msgid "Archived chats"
 msgstr "アーカイブしたチャット"
@@ -757,6 +763,9 @@ msgstr "変更..."
 
 msgid "Changes require a restart; the current connection is unchanged."
 msgstr "変更には再起動が必要です。現在の接続は変更されません。"
+
+msgid "Chat details"
+msgstr "チャットの詳細"
 
 #, c-format
 msgid "Chat list failed: %s"
@@ -2187,6 +2196,12 @@ msgstr "フォルダ別"
 msgid "Grouped sorts your chats into folders, and you have none yet."
 msgstr "「フォルダ別」ではチャットをフォルダごとに分けますが、まだフォルダがありません。"
 
+msgid "Groups"
+msgstr "グループ"
+
+msgid "Groups you join will appear here."
+msgstr "参加したグループがここに表示されます。"
+
 msgid "HIGHLIGHT"
 msgstr "ハイライト"
 
@@ -2529,8 +2544,14 @@ msgstr "White Noise について紹介します。"
 msgid "Leave"
 msgstr "退出"
 
+msgid "Leave chat"
+msgstr "チャットから退出"
+
 msgid "Leave group"
 msgstr "グループを退出"
+
+msgid "Leave this chat?"
+msgstr "このチャットから退出しますか？"
 
 msgid "Leave this group?"
 msgstr "このグループを退出しますか？"
@@ -2585,6 +2606,9 @@ msgstr "端末の履歴から追加の検索結果を読み込み中…"
 
 msgid "Loading your accounts"
 msgstr "アカウントを読み込んでいます"
+
+msgid "Loading your archived chats"
+msgstr "アーカイブ済みのチャットを読み込んでいます"
 
 msgid "Loading your contacts"
 msgstr "連絡先を読み込んでいます"
@@ -2910,6 +2934,9 @@ msgstr "ファイルはまだありません。"
 
 msgid "No folders match your search."
 msgstr "検索に一致するフォルダはありません。"
+
+msgid "No groups yet"
+msgstr "グループはまだありません"
 
 msgid "No inbox relays."
 msgstr "受信リレーはありません。"
@@ -3365,6 +3392,9 @@ msgstr "管理者にする"
 
 msgid "Prompt copied. Paste it into your agent."
 msgstr "プロンプトをコピーしました。エージェントに貼り付けてください。"
+
+msgid "Public key"
+msgstr "公開鍵"
 
 msgid "Public key (npub)"
 msgstr "公開鍵 (npub)"
@@ -4139,6 +4169,9 @@ msgstr "チャットを開始"
 msgid "Start day"
 msgstr "開始日"
 
+msgid "Start group"
+msgstr "グループを作成"
+
 msgid "Start minimized to tray"
 msgstr "トレイに最小化して起動"
 
@@ -4795,6 +4828,9 @@ msgstr "ブロックした相手にはメッセージを送信できません。
 
 msgid "You have no chats to share this with."
 msgstr "共有先にできるチャットはありません。"
+
+msgid "You have no groups to add this person to."
+msgstr "この人を追加できるグループがありません。"
 
 msgid "You have no other chats to forward this to."
 msgstr "転送先にできる他のチャットはありません。"

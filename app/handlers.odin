@@ -294,7 +294,9 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if handle_folder_navigation(ui) {
 		return
 	}
-	if ui.page == .Chats && (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) {
+	if ui.page == .Chats &&
+	   ui.chat_filter != .Archived &&
+	   (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) {
 		for _, i in ui.chats {
 			if clay.PointerOver(clay.ID("ChatRow", u32(i))) {
 				open_row_menu(ui, i)
@@ -308,14 +310,25 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if msg.sticker.sha != "" &&
 			   clicked_indexed("MessageSticker", u32(i)) {sticker_show(ui, msg.sticker); return}
 		}
-		for _, i in ui.chats {
-			if clay.PointerOver(clay.ID("ChatMenu", u32(i))) {
-				open_row_menu(ui, i)
-				return
+		if ui.chat_filter == .Archived {
+			for _, i in ui.archived {
+				if clicked_indexed("ChatUnarch", u32(i)) {
+					set_archived(ui, client, ui.archived[i].group_id, false)
+					load_archived(client, ui)
+					return
+				}
+				if clicked_indexed("ChatRow", u32(i)) {select_archived_chat(ui, client, i); return}
 			}
-			if clay.PointerOver(clay.ID("ChatRow", u32(i))) {
-				select_chat(ui, client, i)
-				break
+		} else {
+			for _, i in ui.chats {
+				if clay.PointerOver(clay.ID("ChatMenu", u32(i))) {
+					open_row_menu(ui, i)
+					return
+				}
+				if clay.PointerOver(clay.ID("ChatRow", u32(i))) {
+					select_chat(ui, client, i)
+					break
+				}
 			}
 		}
 		// Tap a failed optimistic row to retry the send.
@@ -402,14 +415,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	if clicked("AllPill") || clicked("ChatListShowAll") {
-		ui.unread_only = false
-		return
-	}
-	if clicked("UnreadPill") {
-		ui.unread_only = true
-		return
-	}
 	if clicked("ChatListClearSearch") {
 		clear(&ui.sidebar_filter)
 		refresh_filter_hits(client, ui)
@@ -513,7 +518,8 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if ui.issues_open && !ui.show_members {
-		if clicked("MembersBtn") {open_group_info(ui, client, .Members); return}
+		if !selected_chat_is_dm(ui) &&
+		   clicked("MembersBtn") {open_group_info(ui, client, .Members); return}
 		if handle_issues(ui, client) {return}
 	}
 	if ui.group_files_open && !clicked("MembersBtn") && !clicked("SearchBtn") {
@@ -526,6 +532,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// A DM with someone you blocked has no composer to type into.
 	blocked_dm := blocked_peer(ui)
 	if ui.focus != .Filter &&
+	   !(ui.show_members && selected_chat_is_dm(ui)) &&
 	   !web_modal.open &&
 	   (ui.stt.file == nil || ui.stt.message != "") &&
 	   blocked_dm == "" {
@@ -652,7 +659,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		save_settings(ui)
 		return
 	}
-	if clicked("MembersBtn") {
+	if !selected_chat_is_dm(ui) && clicked("MembersBtn") {
 		if ui.show_members && ui.info_tab == .Members {
 			close_group_info(ui)
 			return
@@ -1409,6 +1416,8 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 // Show one page of the selected chat's group info, closing whatever pane
 // it replaces. Focus lands in that page's text box, so typing goes there.
 open_group_info :: proc(ui: ^Ui_State, client: ^marmot.Client, tab: Info_Tab) {
+	if ui.selected < 0 || ui.selected >= len(ui.chats) {return}
+	dm := selected_chat_is_dm(ui)
 	ui.group_files_open = false
 	if ui.issues_open {
 		ui.issues_open = false
@@ -1418,8 +1427,8 @@ open_group_info :: proc(ui: ^Ui_State, client: ^marmot.Client, tab: Info_Tab) {
 		load_members(client, ui)
 	}
 	ui.show_members = true
-	ui.info_tab = tab
-	ui.focus = tab == .Members ? .Invite : .Rename
+	ui.info_tab = dm ? .Settings : tab
+	ui.focus = dm ? .Compose : tab == .Members ? .Invite : .Rename
 	ui.desc_editing = false
 	ui.gpic_menu_open = false
 	ui.member_menu = -1
@@ -1876,12 +1885,57 @@ drain_nc_intents :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 }
 
+// Person actions only target an accepted, resolved direct-chat peer.
+@(private = "file")
+handle_dm_details :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
+	peer := chat_peer(ui)
+	if peer == "" {return false}
+	if clicked("DmCopyKey") {
+		npub := hex_npub(peer)
+		defer delete(npub)
+		if npub != "" {copy_text(ui, npub, tr("Public key copied"))}
+		return true
+	}
+	if clicked("DmAbout") {
+		chat := ui.chats[ui.selected]
+		open_peer(ui, client, peer, chat.title, chat.avatar_url)
+		view_peer_profile(ui, client)
+		return true
+	}
+	if clicked("DmStartGroup") {
+		// open_new_chat resets the form; snapshot its peer before it does.
+		member := strings.clone(peer)
+		defer delete(member)
+		close_group_info(ui)
+		open_new_chat(ui, client)
+		ui.nc_page = .Group
+		ed_set(ui, &ui.nc_member, member)
+		clear(&ui.nc_name)
+		ui.focus = .NC_Name
+		return true
+	}
+	if clicked("DmAddToGroup") {
+		delete(ui.fwd_msg)
+		delete(ui.fwd_source)
+		ui.fwd_msg = strings.clone(peer)
+		ui.fwd_source = strings.clone(ui.chats[ui.selected].group_id)
+		ui.fwd_kind = .Add_Member
+		clear(&ui.fwd_filter)
+		ui.fwd_open = true
+		ui.focus = .Fwd
+		return true
+	}
+	return false
+}
+
 // Member admin actions and the invite box.
 handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	admin := self_is_admin(ui)
+	dm := selected_chat_is_dm(ui)
+	admin := !dm && self_is_admin(ui)
+	if dm && handle_dm_details(ui, client) {return}
 	// Member-row nickname editor: Enter saves (empty clears), Escape
 	// drops it without saving. load_members refreshes the row name.
-	if ui.member_nick >= 0 && ui.member_nick < len(ui.members) && ui.focus == .Nick {
+	if !dm && ui.member_nick >= 0 && ui.member_nick < len(ui.members) && ui.focus == .Nick {
 		if rl.IsKeyPressed(.ENTER) {
 			id := ui.members[ui.member_nick].id_hex
 			nick := strings.trim_space(string(ui.nick_input[:]))
@@ -1903,7 +1957,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	// The open "⋯" menu owns the click; anything outside it closes it.
-	if ui.member_menu >= 0 {
+	if !dm && ui.member_menu >= 0 {
 		if handle_member_menu(ui) {
 			return
 		}
@@ -1929,6 +1983,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if mouse_released() {
 		for member, i in ui.members {
+			if dm {break}
 			if clay.PointerOver(clay.ID("MemberMenuBtn", u32(i))) {
 				open_member_menu(ui, i)
 				return
@@ -1949,10 +2004,10 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	if field_mouse(ui, &ui.invite_input, "InviteBox") {
+	if admin && field_mouse(ui, &ui.invite_input, "InviteBox") {
 		ui.focus = .Invite
 	}
-	if ui.member_nick >= 0 && field_mouse(ui, &ui.nick_input, "MemberNickBox") {
+	if !dm && ui.member_nick >= 0 && field_mouse(ui, &ui.nick_input, "MemberNickBox") {
 		ui.focus = .Nick
 	}
 	if admin && field_mouse(ui, &ui.rename_input, "RenameBox") {
@@ -1960,7 +2015,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if clicked("LeaveBtn") {
-		confirm_ask(ui, .Leave_Group, "", ui.chats[ui.selected].title)
+		confirm_ask(ui, dm ? .Leave_Chat : .Leave_Group, "", ui.chats[ui.selected].title)
 		return
 	}
 
@@ -1987,7 +2042,9 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if admin && clicked("IssueRetry") {issues_refresh(); return}
 	for secs, i in RETENTION_SECS {
-		if !admin || !clicked(fmt.tprintf("RetChip%d", i)) || ui.group_retention == secs {
+		if !self_is_admin(ui) ||
+		   !clicked(fmt.tprintf("RetChip%d", i)) ||
+		   ui.group_retention == secs {
 			continue
 		}
 		if ui.selected < 0 || ui.selected >= len(ui.chats) {
@@ -2017,7 +2074,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if (rl.IsKeyPressed(.ENTER) || clicked("InviteBtn")) &&
 	   ui.focus == .Invite &&
-	   self_is_admin(ui) &&
+	   admin &&
 	   len(ui.invite_input) > 0 {
 		if ui.nip05_ticket != 0 {return}
 		input := string(ui.invite_input[:])
@@ -2031,7 +2088,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		clear(&ui.invite_input)
 	}
-	if rl.IsKeyPressed(.ENTER) && ui.focus == .Rename && len(ui.rename_input) > 0 {
+	if admin && rl.IsKeyPressed(.ENTER) && ui.focus == .Rename && len(ui.rename_input) > 0 {
 		start_rename(ui, client)
 	}
 }
@@ -2042,6 +2099,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // caller before the resolve completes; drain_nc_intents in the frame
 // loop finishes the invite once the resolver lands.
 invite_member :: proc(ui: ^Ui_State, client: ^marmot.Client, member_ref: string) {
+	if selected_chat_is_dm(ui) || !self_is_admin(ui) {return}
 	trimmed := strings.trim_space(member_ref)
 	if !nc_is_bit(trimmed) {
 		admin_op(ui, client, "invite", trimmed)
@@ -2099,6 +2157,7 @@ invite_member :: proc(ui: ^Ui_State, client: ^marmot.Client, member_ref: string)
 // Admin commits are relay round trips; they run on the op worker and
 // the member list reloads when drain_ops adopts the ack.
 admin_op :: proc(ui: ^Ui_State, client: ^marmot.Client, op: string, member_ref: string) {
+	if selected_chat_is_dm(ui) || !self_is_admin(ui) {return}
 	kind: Msg_Op
 	switch op {
 	case "invite":
@@ -2117,6 +2176,7 @@ admin_op :: proc(ui: ^Ui_State, client: ^marmot.Client, op: string, member_ref: 
 // on the op worker, and drain_ops re-snapshots either way. A name that
 // trims to empty is refused rather than published as a blank title.
 start_rename :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if selected_chat_is_dm(ui) || !self_is_admin(ui) {return}
 	name := strings.trim_space(string(ui.rename_input[:]))
 	if name == "" {
 		ui.focus = .Rename

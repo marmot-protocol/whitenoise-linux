@@ -190,6 +190,14 @@ visible after reflow through the deferred settings scroll.
 `tests/app/shell_test.odin` exercises these boundaries through `build_layout`,
 including the status bar, at default, short, and zoomed window sizes.
 
+Chats keeps DMs and groups in one inbox, with Unread, Groups and Archived
+filters. `Chat_Row_Ui.conversation_kind` preserves the engine's type; UNKNOWN
+falls back to a DM only for an unnamed two-member conversation. Named pairs
+remain groups. Accepted DMs keep an owned `peer_hex` for profile actions;
+pending invitations never expose those actions. DM details omit group editing
+and membership controls. Archived conversations open without being restored;
+their list loads through the account worker with visible progress.
+
 ### Themes
 
 A theme is a `themes/*.toml` pack, `#load`ed at build time and parsed into a

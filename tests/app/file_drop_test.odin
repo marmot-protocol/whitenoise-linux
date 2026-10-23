@@ -37,7 +37,7 @@ chat_drop_boundaries :: proc(t: ^testing.T) {
 	}
 	append(&ui.accounts, "account")
 	append(&ui.chats, Chat_Row_Ui{group_id = "chat"})
-	defer {delete(ui.accounts); delete(ui.chats); delete(ui.blocked); delete(ui.dm_peer)}
+	defer {delete(ui.accounts); delete(ui.chats); delete(ui.blocked)}
 	for scale in ([]f32{1, 1.875}) {
 		UI_ZOOM = scale
 		testing.expect(t, chat_drop_target(&ui, {200 * scale, 0}))
@@ -67,7 +67,8 @@ chat_drop_boundaries :: proc(t: ^testing.T) {
 	ui.chats[0].pending = true
 	testing.expect(t, !chat_drop_target(&ui, position), "unaccepted invite is not writable")
 	ui.chats[0].pending = false
-	ui.dm_peer["chat"] = "blocked"
+	ui.chats[0].conversation_kind = .DIRECT
+	ui.chats[0].peer_hex = "blocked"
 	ui.blocked["blocked"] = true
 	testing.expect(t, !chat_drop_target(&ui, position), "blocked DM has no composer")
 	ui.blocked["blocked"] = false

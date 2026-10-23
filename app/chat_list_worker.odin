@@ -16,6 +16,7 @@ Chat_List_Work :: struct {
 	blocked:          map[string]bool, // owned copy of ui.blocked; the worker must not read Ui_State
 	members:          map[string][]string, // group id to member pubkey hex, read only when read_members
 	read_members:     bool, // some folder rule looks at membership
+	include_archived: bool,
 	err:              string,
 	revision:         u64,
 }
@@ -34,13 +35,15 @@ chat_list_snapshot :: proc(job: ^Chat_List_Work, ui: ^Ui_State) {
 chat_list_read :: proc(job: ^Chat_List_Work) {
 	started := time.tick_now()
 	defer local_timing_end(.chat_list_load, started)
-	if marmot.presented_chat_list(job.client, job.account, false, &job.rows) != .OK {
+	if marmot.presented_chat_list(job.client, job.account, job.include_archived, &job.rows) !=
+	   .OK {
 		job.err = marmot.last_error()
 		return
 	}
 	if job.read_members {
 		chat_members_fetch(job.client, job.account, job.rows, &job.members)
 	}
+	chat_identity_members_fetch(job.client, job.account, job.rows, &job.members)
 	for i in 0 ..< job.rows.rows_len {
 		row := &job.rows.rows[i].row
 		last := row.last_message
@@ -69,6 +72,35 @@ chat_list_worker :: proc(t: ^thread.Thread) {
 	defer frame_wake()
 	defer free_all(context.temp_allocator)
 	chat_list_read((^Chat_List_Work)(t.data))
+}
+
+// group_members reads the local roster. Resolve legacy UNKNOWN conversations
+// here (and in archive/search loaders), never by doing I/O from UI helpers.
+@(private)
+chat_identity_members_fetch :: proc(
+	client: ^marmot.Client,
+	account: cstring,
+	rows: ^marmot.Presented_Chat_List,
+	members: ^map[string][]string,
+) {
+	if rows == nil {return}
+	for i in 0 ..< rows.rows_len {
+		presented := &rows.rows[i]
+		row := &presented.row
+		group := string(row.group_id_hex)
+		if group in members^ {continue} 	// reuse folder-rule roster reads
+		if !(row.conversation_kind == .UNKNOWN && chat_name_is_unnamed(string(row.group_name))) &&
+		   !(row.conversation_kind == .DIRECT &&
+				   !row.pending_confirmation &&
+				   string(presented.presentation.peer_id) == "") {continue}
+		list: ^marmot.Group_Member_Record_List
+		if marmot.group_members(client, account, row.group_id_hex, &list) != .OK ||
+		   list == nil {continue}
+		ids := make([]string, list.len)
+		for member, j in list.items[:list.len] {ids[j] = strings.clone(string(member.member_id_hex))}
+		marmot.app_group_member_record_list_free(list)
+		members^[strings.clone(group)] = ids
+	}
 }
 
 @(private)

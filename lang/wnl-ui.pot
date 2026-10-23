@@ -387,6 +387,9 @@ msgstr ""
 msgid "Add someone by npub, or make a group of your own."
 msgstr ""
 
+msgid "Add to group"
+msgstr ""
+
 msgid "Added to your stickers"
 msgstr ""
 
@@ -475,6 +478,9 @@ msgid "Apr"
 msgstr ""
 
 msgid "Archive"
+msgstr ""
+
+msgid "Archived"
 msgstr ""
 
 msgid "Archived chats"
@@ -753,6 +759,9 @@ msgid "Change..."
 msgstr ""
 
 msgid "Changes require a restart; the current connection is unchanged."
+msgstr ""
+
+msgid "Chat details"
 msgstr ""
 
 #, c-format
@@ -2182,6 +2191,12 @@ msgstr ""
 msgid "Grouped sorts your chats into folders, and you have none yet."
 msgstr ""
 
+msgid "Groups"
+msgstr ""
+
+msgid "Groups you join will appear here."
+msgstr ""
+
 msgid "HIGHLIGHT"
 msgstr ""
 
@@ -2524,7 +2539,13 @@ msgstr ""
 msgid "Leave"
 msgstr ""
 
+msgid "Leave chat"
+msgstr ""
+
 msgid "Leave group"
+msgstr ""
+
+msgid "Leave this chat?"
 msgstr ""
 
 msgid "Leave this group?"
@@ -2579,6 +2600,9 @@ msgid "Loading more matches from local history…"
 msgstr ""
 
 msgid "Loading your accounts"
+msgstr ""
+
+msgid "Loading your archived chats"
 msgstr ""
 
 msgid "Loading your contacts"
@@ -2903,6 +2927,9 @@ msgid "No files yet."
 msgstr ""
 
 msgid "No folders match your search."
+msgstr ""
+
+msgid "No groups yet"
 msgstr ""
 
 msgid "No inbox relays."
@@ -3358,6 +3385,9 @@ msgid "Promote"
 msgstr ""
 
 msgid "Prompt copied. Paste it into your agent."
+msgstr ""
+
+msgid "Public key"
 msgstr ""
 
 msgid "Public key (npub)"
@@ -4133,6 +4163,9 @@ msgstr ""
 msgid "Start day"
 msgstr ""
 
+msgid "Start group"
+msgstr ""
+
 msgid "Start minimized to tray"
 msgstr ""
 
@@ -4787,6 +4820,9 @@ msgid "You can't send messages to someone you blocked."
 msgstr ""
 
 msgid "You have no chats to share this with."
+msgstr ""
+
+msgid "You have no groups to add this person to."
 msgstr ""
 
 msgid "You have no other chats to forward this to."
