@@ -41,13 +41,14 @@ checkout appimageupdate-libappimage AppImageCommunity/libappimage
 checkout appimageupdate-cpr libcpr/cpr
 checkout appimageupdate-args Taywee/args
 checkout appimageupdate-xdgutils AppImageCommunity/xdg-utils-cxx
-# The pinned validator otherwise loops forever on multiple signatures and
-# passes a non-NUL-terminated vector to mkdtemp. Keep the minimal patch local.
-SAFETY_PATCH="$HERE/scripts/appimage-updater/upstream-safety.patch"
-if ! git -C "$SOURCE/appimageupdate" apply --reverse --check "$SAFETY_PATCH" 2>/dev/null; then
-  git -C "$SOURCE/appimageupdate" apply --check "$SAFETY_PATCH"
-  git -C "$SOURCE/appimageupdate" apply "$SAFETY_PATCH"
-fi
+# Keep validator and worker lifetime fixes against the pinned upstream source.
+for patch in upstream-safety gpg-context-lifetime; do
+  PATCH="$HERE/scripts/appimage-updater/$patch.patch"
+  if ! git -C "$SOURCE/appimageupdate" apply --reverse --check "$PATCH" 2>/dev/null; then
+    git -C "$SOURCE/appimageupdate" apply --check "$PATCH"
+    git -C "$SOURCE/appimageupdate" apply "$PATCH"
+  fi
+done
 ZSYNC_PATCH="$HERE/scripts/appimage-updater/zsync-types.patch"
 if ! git -C "$SOURCE/appimageupdate-zsync2" apply --reverse --check "$ZSYNC_PATCH" 2>/dev/null; then
   git -C "$SOURCE/appimageupdate-zsync2" apply --check "$ZSYNC_PATCH"

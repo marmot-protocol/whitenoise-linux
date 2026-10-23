@@ -617,6 +617,8 @@ image. Build its isolated updater with `scripts/build-appimage-updater.sh`
 and stage with `WN_PACKAGE_APPIMAGE=1 scripts/install-tree.sh AppDir/usr whitenoise`.
 Ordinary Linux builds compile only the small process bridge and do not build
 or ship the delta updater.
+The updater closes its GPG context before removing the temporary keyring,
+including when an unsigned or invalid image is rejected.
 
 macOS releases require `WN_SPARKLE_PRIVATE_KEY`, a base64 Ed25519 seed
 matching `packaging/sparkle-public-key.txt`. Each architecture publishes its

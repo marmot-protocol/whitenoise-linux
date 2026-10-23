@@ -1,0 +1,12 @@
+diff --git a/src/signing/signaturevalidator.cpp b/src/signing/signaturevalidator.cpp
+--- a/src/signing/signaturevalidator.cpp
++++ b/src/signing/signaturevalidator.cpp
+@@ -329,6 +329,8 @@
+         }
+ 
+         ~Private() noexcept {
++            // Release the GPG engine before deleting its keyring and locks.
++            context.reset();
+             // clean up temporary home
+             std::filesystem::remove_all(tempGpgHomeDir);
+         }
