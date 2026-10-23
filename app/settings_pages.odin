@@ -2671,7 +2671,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			rl.OpenFileDialog(true)
 			return
 		}
-		if clicked("EmojiSave") && len(ui.emoji_name) > 0 && ui.emoji_sets_job == nil {
+		if clicked("EmojiSave") && ui.emoji_sets_job == nil {
 			save_staged_emoji(ui)
 			return
 		}
@@ -2779,7 +2779,6 @@ settings_fields :: proc(ui: ^Ui_State) {
 		// Enter saves the shortcode; settings_escape drops the staged file.
 		if ui.focus == .EmojiName &&
 		   rl.IsKeyPressed(.ENTER) &&
-		   len(ui.emoji_name) > 0 &&
 		   ui.emoji_sets_job == nil {
 			save_staged_emoji(ui)
 		}
