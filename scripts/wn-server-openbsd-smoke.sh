@@ -104,6 +104,7 @@ touch "$cache/build.ready"
 export RSYNC_RSH="ssh -i $key -p 29847 -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$cache/known_hosts"
 rsync -a --delete --no-owner --no-group --exclude=/build/ --exclude=/dist/ --exclude=/vendor/mdk/target/ \
     --exclude=/vendor/mdk/crates/marmot-c/output/ --exclude='/vendor/llvm-mingw*' --exclude=/vendor/vcpkg/ \
+    --exclude=/vendor/sdl/ \
     "$here/" runner@127.0.0.1:/mnt/build-cache/work/
 ssh "${ssh_args[@]}" runner@127.0.0.1 /usr/local/bin/bash -s <<'GUEST'
 set -euo pipefail
