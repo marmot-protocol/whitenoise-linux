@@ -73,6 +73,7 @@ Model_Kind :: enum u8 {
 	Banner, // a profile card's banner photo under rounded top corners
 	Spinner, // animated loading arc
 	Avatar_Erase, // a photo erased in strokes to reveal its fingerprint
+	Whip, // native embedded terminal
 }
 
 // Shared orbit state: drag rotates, wheel zooms; one handler serves

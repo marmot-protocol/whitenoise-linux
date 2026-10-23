@@ -12,6 +12,7 @@ app | app/sdlrl) ;;
 esac
 shift
 bash "$HERE/scripts/observability.sh"
+source "$HERE/scripts/whip-flags.sh"
 if [ -d "$HERE/build/odin-root" ]; then
   export ODIN_ROOT="$HERE/build/odin-root"
 fi
@@ -24,7 +25,7 @@ fi
 mkdir -p "$HERE/build"
 if [ -n "${WN_ODIN_TEST_BUILD_KEY:-}" ]; then
   source "$HERE/scripts/build-cache.sh"
-  printf -v flags '%q ' "$package" "${LINK_ARGS[@]}" "$@"
+  printf -v flags '%q ' "$package" "${LINK_ARGS[@]}" "${WHIP_ARGS[@]}" "$@"
   key="$(build_cache_key "$WN_ODIN_TEST_BUILD_KEY $flags")"
   variant="$(build_cache_key "$flags")"
   fixture="$HERE/build/odin-test-cache/$variant"
@@ -51,7 +52,7 @@ done
 for helper in wn-archive wn-pdf wn-mesh wn-fbx wn-math wn-font wn-image; do
   ln -s "$HERE/build/$helper" "$fixture/$helper"
 done
-odin test "$fixture/$package" -keep-executable -out:"$fixture/test" "${LINK_ARGS[@]}" "$@"
+odin test "$fixture/$package" -keep-executable -out:"$fixture/test" "${LINK_ARGS[@]}" "${WHIP_ARGS[@]}" "$@"
 if [ -n "${WN_ODIN_TEST_BUILD_KEY:-}" ]; then
   build_cache_store "$key" "$fixture/stamp" "$fixture/test"
 fi

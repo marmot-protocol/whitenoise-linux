@@ -641,6 +641,7 @@ ShowWindow :: proc() {
 
 CloseWindow :: proc() {
 	when #config(WN_RELOAD, false) {wn_dev_wait_dialogs()}
+	WhipClose()
 	clear_drop_paths(&state.drop_paths)
 	clear_dropped_files()
 	state.drop_active = false
@@ -720,6 +721,7 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 	event: sdl.Event
 	for sdl.PollEvent(&event) {
 		if changed != nil {changed^ = true}
+		if whip_event(event) {continue}
 		#partial switch event.type {
 		case .WINDOW_CLOSE_REQUESTED:
 			if hide_on_close {

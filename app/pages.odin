@@ -223,6 +223,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	for page in Page {
+		if page == .Whip && !rl.WhipAvailable() {continue}
 		if clay.PointerOver(clay.ID("Nav", u32(page))) && ui.page != page {
 			settings_theme_preview_reset(ui)
 			ui.page = page
@@ -242,10 +243,13 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				)
 			case .Profile:
 				load_profile(client, ui)
+			case .Whip:
 			}
 			return
 		}
 	}
+
+	if ui.page == .Whip && clicked("WhipRetry") {rl.WhipClose()}
 
 	// Archive actions live here because handle_chat only runs on Chats.
 	if ui.page == .Archived {

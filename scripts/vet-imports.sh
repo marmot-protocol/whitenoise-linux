@@ -11,6 +11,7 @@ cd "$(dirname "$0")/.."
 command -v odin >/dev/null 2>&1 || exit 0
 [ -d vendor/clay ] || exit 0
 
-out="$(odin check app -vet-unused-imports -max-error-count:5000 2>&1)" && exit 0
+source scripts/whip-flags.sh || exit $?
+out="$(odin check app -vet-unused-imports -max-error-count:5000 "${WHIP_ARGS[@]}" 2>&1)" && exit 0
 printf '%s\n' "$out" >&2
 exit 1

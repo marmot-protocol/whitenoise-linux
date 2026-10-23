@@ -282,6 +282,8 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 								settings_pane(ui)
 							case .Profile:
 								profile_pane(ui)
+							case .Whip:
+								whip_pane(ui)
 							}
 						}
 					}
@@ -682,6 +684,8 @@ app_main :: proc() {
 		}
 		if client != nil && len(ui.accounts) > 0 {
 			switch os.get_env("WN_TEST_PAGE", context.allocator) {
+			case "whip":
+				if rl.WhipAvailable() {ui.page = .Whip}
 			case "contacts":
 				ui.page = .Contacts
 				load_contacts(client, &ui, .Details)
@@ -1543,7 +1547,9 @@ app_main :: proc() {
 				text_field_live = false
 				for rl.GetCharPressed() != 0 {}
 			}
-			rl.SetTextInput(text_field_live)
+			whip_active := ui.page == .Whip && !ui.add_account_open && !modal_open(&ui)
+			rl.WhipFrame(whip_active ? .Visible : .Hidden)
+			rl.SetTextInput(text_field_live || whip_active)
 			if text_field_live {
 				rl.SetTextInputArea(
 					i32(caret_box.x * UI_ZOOM),
@@ -1793,6 +1799,7 @@ app_main :: proc() {
 		session_stop(&ui, client, &live)
 		preview_close()
 		web_close()
+		rl.WhipClose()
 		nes_close()
 		lock_scrub_ui(&ui)
 		delete(live.account)

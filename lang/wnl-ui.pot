@@ -1345,6 +1345,9 @@ msgstr ""
 msgid "Couldn't open %s. Please try again."
 msgstr ""
 
+msgid "Couldn't open Whip. Please try again."
+msgstr ""
+
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr ""
 
@@ -3164,6 +3167,9 @@ msgid "Open-source coding agent"
 msgstr ""
 
 msgid "OpenAI Codex CLI coding agent"
+msgstr ""
+
+msgid "Opening Whip…"
 msgstr ""
 
 msgid "Opening in your browser"

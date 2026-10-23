@@ -880,6 +880,7 @@ settings_open :: proc(
 @(private)
 restore_workspace :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.page = ui.prefs.page
+	if ui.page == .Whip && !rl.WhipAvailable() {ui.page = .Chats}
 	ui.settings_section = ui.prefs.settings_section
 	ui.settings_tab = ui.prefs.settings_tab
 	ui.settings_level = ui.prefs.settings_level

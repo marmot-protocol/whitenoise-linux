@@ -701,6 +701,8 @@ render_range :: proc(
 			// 3D tiles; the payload's first field says which kind.
 			data := render_command.renderData.custom.customData
 			switch (^Model_Kind)(data)^ {
+			case .Whip:
+				rl.DrawWhip(bounds.x, bounds.y, bounds.width, bounds.height)
 			case .Mesh:
 				stl_draw((^Stl_View)(data), bounds)
 			case .Spinner:

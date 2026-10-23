@@ -1349,6 +1349,9 @@ msgstr "チャットを既読にできませんでした。もう一度お試し
 msgid "Couldn't open %s. Please try again."
 msgstr "%sを開けませんでした。もう一度お試しください。"
 
+msgid "Couldn't open Whip. Please try again."
+msgstr "Whipを開けませんでした。もう一度お試しください。"
+
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "バックアップを開けませんでした。パスワードを確認して、もう一度お試しください。"
 
@@ -3171,6 +3174,9 @@ msgstr "オープンソースのコーディングエージェント"
 
 msgid "OpenAI Codex CLI coding agent"
 msgstr "OpenAI Codex CLIのコーディングエージェント"
+
+msgid "Opening Whip…"
+msgstr "Whipを開いています…"
 
 msgid "Opening in your browser"
 msgstr "ブラウザで開いています"

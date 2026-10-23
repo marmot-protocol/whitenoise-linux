@@ -955,4 +955,5 @@ NAV_TIPS := [Page]string {
 	.Archived = N_("Archive"),
 	.Settings = N_("Settings"),
 	.Profile  = N_("Your profile"),
+	.Whip     = "Whip",
 }

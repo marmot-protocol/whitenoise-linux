@@ -5,6 +5,9 @@
 # odin build output when built in-package
 /app/app
 
+# Optional Whip bridge staged from whip-embed/ by native build entry points
+/app/sdlrl/whip_native.odin
+
 # local notes, not for the repo
 /report.md
 .stignore

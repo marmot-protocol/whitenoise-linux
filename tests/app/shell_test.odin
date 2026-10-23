@@ -412,6 +412,16 @@ test_phone_detail :: proc(t: ^testing.T) {
 		ui.page == .Chats && !phone_detail(&ui),
 		"back from settings returns to the chat list",
 	)
+	ui.page = .Whip
+	testing.expect(t, phone_detail(&ui), "Whip replaces the list on narrow windows")
+	phone_back_action(&ui)
+	testing.expect_value(t, ui.page, Page.Chats)
+	testing.expect(t, !phone_detail(&ui), "back from Whip returns to the chat list")
+	if !rl.WhipAvailable() {
+		ui.prefs.page = .Whip
+		restore_workspace(&ui, nil)
+		testing.expect_value(t, ui.page, Page.Chats)
+	}
 }
 
 // Escape on a settings page lets go of a focused box first, then steps

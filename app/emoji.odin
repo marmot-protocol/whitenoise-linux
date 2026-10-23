@@ -254,4 +254,5 @@ PAGE_ICONS := [Page]string {
 	.Archived = ICON_ARCHIVE,
 	.Settings = ICON_SETTINGS,
 	.Profile  = ICON_PROFILE,
+	.Whip     = "\ue795",
 }

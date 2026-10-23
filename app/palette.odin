@@ -317,6 +317,7 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 			)
 		case .Profile:
 			load_profile(client, ui)
+		case .Whip:
 		}
 	}
 

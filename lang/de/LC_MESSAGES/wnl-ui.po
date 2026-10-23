@@ -1349,6 +1349,9 @@ msgstr "Der Chat konnte nicht als gelesen markiert werden. Bitte versuche es ern
 msgid "Couldn't open %s. Please try again."
 msgstr "%s konnte nicht geöffnet werden. Bitte versuche es erneut."
 
+msgid "Couldn't open Whip. Please try again."
+msgstr "Whip konnte nicht geöffnet werden. Bitte versuche es erneut."
+
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "Das Backup konnte nicht geöffnet werden. Überprüfe das Passwort und versuche es erneut."
 
@@ -3171,6 +3174,9 @@ msgstr "Open-Source-Programmieragent"
 
 msgid "OpenAI Codex CLI coding agent"
 msgstr "Programmieragent mit OpenAI Codex CLI"
+
+msgid "Opening Whip…"
+msgstr "Whip wird geöffnet…"
 
 msgid "Opening in your browser"
 msgstr "Wird in deinem Browser geöffnet"

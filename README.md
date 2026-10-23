@@ -334,6 +334,19 @@ as native CI. Bragi compiles with the Odin math helper. Cargo target directories
 Flatpak objects are kept separate from native Ubuntu objects. Only tag
 builds publish releases.
 
+### Whip inside White Noise
+
+On Linux, native builds detect an executable `../whip/build/whip` and its
+built Ghostty library. Build Whip first, then rebuild White Noise. The sidebar
+shows Whip only while that executable is installed. Selecting it embeds the
+native terminal UI in the conversation area and attaches to Whip's `default`
+session, starting its server if needed. Switching pages or closing White Noise
+leaves the session's shells running.
+
+Whip is optional. Builds without that sibling checkout and cross releases
+omit the integration. Native build scripts stage its Odin bridge from
+`whip-embed/bridge.odin`; they do not build or modify Whip.
+
 ### Cross releases
 
 `scripts/cross-build.sh TARGET` accepts `linux-arm64`, `linux-amd64`,

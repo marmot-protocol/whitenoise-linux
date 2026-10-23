@@ -466,6 +466,7 @@ Page :: enum {
 	Archived,
 	Settings,
 	Profile,
+	Whip,
 }
 
 @(private)
