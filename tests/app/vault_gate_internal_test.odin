@@ -15,6 +15,53 @@ gate_submit :: proc(ui: ^Ui_State) -> bool {
 }
 
 @(test)
+vault_gate_empty_password_copy :: proc(t: ^gate_testing.T) {
+	context.allocator = gate_runtime.default_context().allocator
+	gate_sync.lock(&clay_test_mutex)
+	defer gate_sync.unlock(&clay_test_mutex)
+	gate_sync.lock(&test_home_lock)
+	defer gate_sync.unlock(&test_home_lock)
+	home, err := os.make_directory_temp("", "wn-gate-empty", context.temp_allocator)
+	if !gate_testing.expect(t, err == nil) {return}
+	defer os.remove_all(home)
+	old_home := data_home
+	data_home = home
+	defer {
+		vault_delete()
+		data_home = old_home
+		gate_close()
+		gate_confirm = false
+		gate_err = ""
+		gate_reset_armed = false
+	}
+	previous := clay.GetCurrentContext()
+	memory: []u8
+	init_layout(&memory, 32768, {800, 700})
+	defer {clay.SetCurrentContext(previous); delete(memory)}
+	ui: Ui_State
+	clay.BeginLayout()
+	clay.EndLayout(0)
+	rl.PushKey(.ENTER, true)
+	defer rl.PushKey(.ENTER, false)
+
+	// First-run creation must still ask the user to choose a password.
+	gate_input(&ui)
+	gate_testing.expect_value(t, gate_err, tr("Pick a password first."))
+	gate_testing.expect(t, gate_job.worker == nil)
+	gate_testing.expect(t, !vault_exists())
+
+	// The same submit on an existing, locked vault must ask for its password.
+	if !gate_testing.expect_value(t, vault_create("right"), Vault_Err.None) {return}
+	vault_relock()
+	gate_input(&ui)
+	gate_testing.expect_value(t, gate_err, tr("Type your password first."))
+	gate_testing.expect(t, gate_job.worker == nil)
+	gate_testing.expect(t, vault_exists())
+	gate_testing.expect(t, !g_vault.unlocked)
+	gate_testing.expect_value(t, len(gate_pw), 0)
+}
+
+@(test)
 vault_gate_password_policy :: proc(t: ^gate_testing.T) {
 	// The unlock worker allocates the blob key on the default heap.
 	context.allocator = gate_runtime.default_context().allocator

@@ -4517,6 +4517,9 @@ msgstr "新しいパスワードをもう一度入力してください"
 msgid "Type your password again"
 msgstr "パスワードをもう一度入力してください"
 
+msgid "Type your password first."
+msgstr "先にパスワードを入力してください。"
+
 msgid "UPTIME"
 msgstr "稼働時間"
 
