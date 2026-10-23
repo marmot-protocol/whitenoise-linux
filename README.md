@@ -792,7 +792,7 @@ host or the Rust library restart the host; the vault stays unlocked for the
 
 To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `just build` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
 
-The current pin is MDK master at `77f22e35499a` (0.14.0-dev). The build applies
+The current pin is MDK master at `c8210585cab6` (0.14.0-dev). The build applies
 the patches listed in `scripts/build.sh`. NIP-46 C sessions, Windows
 portability, OpenBSD sandbox support, SOCKS5 routing, and Markdown timestamps
 come from upstream MDK.
