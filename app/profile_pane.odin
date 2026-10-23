@@ -539,32 +539,34 @@ profile_pane :: proc(ui: ^Ui_State) {
 		}
 
 		// ── Profile fields, viewer rows ────────────────────────────
-		if clay.UI(clay.ID("ProfileEyebrow"))({layout = {padding = {top = 6}}}) {
-			eyebrow(tr("PROFILE"))
-		}
-		if clay.UI(clay.ID("ProfileCard"))(
-		{
-			layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(10),
-			border = {color = FIELD_BORDER, width = bw()},
-		},
-		) {
-			profile_kv(
-				0,
-				tr("Username"),
-				len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : "",
-				font = FONT_BODY,
-			)
-			profile_kv(1, "NIP-05", ui.profile.nip05, font = FONT_BODY)
-			profile_kv(2, "Lightning", ui.profile.lud16, font = FONT_BODY)
-			profile_kv(
-				3,
-				tr("Picture"),
-				ui.profile.pic_set ? tr("Set") : tr("Not set"),
-				true,
-				font = FONT_BODY,
-			)
+		if !ui.profile.editing {
+			if clay.UI(clay.ID("ProfileEyebrow"))({layout = {padding = {top = 6}}}) {
+				eyebrow(tr("PROFILE"))
+			}
+			if clay.UI(clay.ID("ProfileCard"))(
+			{
+				layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom},
+				backgroundColor = ROW_BG,
+				cornerRadius = rr(10),
+				border = {color = FIELD_BORDER, width = bw()},
+			},
+			) {
+				profile_kv(
+					0,
+					tr("Username"),
+					len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : "",
+					font = FONT_BODY,
+				)
+				profile_kv(1, "NIP-05", ui.profile.nip05, font = FONT_BODY)
+				profile_kv(2, "Lightning", ui.profile.lud16, font = FONT_BODY)
+				profile_kv(
+					3,
+					tr("Picture"),
+					ui.profile.pic_set ? tr("Set") : tr("Not set"),
+					true,
+					font = FONT_BODY,
+				)
+			}
 		}
 
 		if clay.UI(clay.ID("SignOutPad"))({layout = {padding = {top = 6}}}) {
