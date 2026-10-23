@@ -6,6 +6,8 @@ WebP or JPEG, or preview a Nostr pack using its naddr or
 it (or press Tab on the selected tile) to manage its image or pack. Arrow keys
 select tiles; Enter sends. The text draft stays in the composer.
 
+When you reply with a sticker, the quoted message appears above the artwork.
+
 Click a received sticker to save a personal image or preview and add its pack.
 Pack installation stores the supported, successfully downloaded images locally.
 Images are limited to 4 MiB and 4096 pixels per dimension. Animated stickers,

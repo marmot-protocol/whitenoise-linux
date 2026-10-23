@@ -187,6 +187,7 @@ media_slots_mixed :: proc(t: ^testing.T) {
 	append(&ui.messages, Msg_Ui{id = strings.clone("mixed"), sender = strings.clone("Alice")})
 	append(&ui.messages, Msg_Ui{id = strings.clone("other"), sender = strings.clone("Bob")})
 	msg, other := &ui.messages[0], &ui.messages[1]
+	msg.reply_text = strings.clone("Original message")
 	msg.sticker.sha = strings.clone("stk")
 	attach :: proc(msg: ^Msg_Ui, index: int, name, key, mime, emoji: string) {
 		outcome := marmot.Media_Attachment_Outcome {
@@ -271,6 +272,12 @@ media_slots_mixed :: proc(t: ^testing.T) {
 	layout(msg^)
 	testing.expect(t, box("MsgAlbum", 1).found && box("MediaLoading", 2).found)
 	testing.expect(t, box("MsgAlbum", 4).found && box("MediaLoading", 6).found)
+	quote := box("MsgReplyPrev", 0)
+	testing.expect(t, quote.found)
+	testing.expect(
+		t,
+		quote.boundingBox.y + quote.boundingBox.height <= box("MsgFile", 0).boundingBox.y,
+	)
 
 	// The text at slot 6 finishes before the image at slot 2.
 	finish("txt", &text)
@@ -290,7 +297,8 @@ media_slots_mixed :: proc(t: ^testing.T) {
 	layout(msg^)
 	testing.expect(t, !box("MsgAlbum", 2).found)
 	testing.expect_value(t, box("MsgImgFail", 2).boundingBox.y, box("MsgImage", 1).boundingBox.y)
-	last_bottom: f32
+	quote = box("MsgReplyPrev", 0)
+	last_bottom := quote.boundingBox.y + quote.boundingBox.height
 	Element :: struct {
 		name: string,
 		att:  u32,
