@@ -1207,9 +1207,6 @@ msgstr "チャットをエクスポートできませんでした。もう一度
 msgid "Couldn't export the key. %s"
 msgstr "鍵をエクスポートできませんでした。%s"
 
-msgid "Couldn't find that pack. Enter a sticker pack naddr or coordinate."
-msgstr "パックが見つかりませんでした。ステッカーパックのnaddrまたは座標を入力してください。"
-
 msgid "Couldn't finish dictation. Please try again."
 msgstr "音声入力を完了できませんでした。もう一度お試しください。"
 
@@ -1879,6 +1876,9 @@ msgstr "ステッカー名を1〜64文字で入力してください。"
 
 msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
 msgstr "ユーザー名とパスワードを、それぞれ UTF-8 で 1 から 255 バイトで入力してください。"
+
+msgid "Enter a valid pack link or address."
+msgstr "有効なパックのリンクまたはアドレスを入力してください。"
 
 msgid "Enter an issue title and description."
 msgstr "報告のタイトルと説明を入力してください。"

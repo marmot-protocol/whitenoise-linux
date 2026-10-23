@@ -600,7 +600,7 @@ if [ "${1:-}" = test ]; then
     -pthread -lm -o "$HERE/build/speech-decode-test"
   "$HERE/build/speech-decode-test"
   env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app
-  for check in rail_default_window rail_expand_narrow status_bar_viewports; do
+  for check in rail_default_window rail_expand_narrow status_bar_viewports sticker_input_validation; do
     SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES="$check"
   done
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES=settings_viewport

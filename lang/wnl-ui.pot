@@ -1203,9 +1203,6 @@ msgstr ""
 msgid "Couldn't export the key. %s"
 msgstr ""
 
-msgid "Couldn't find that pack. Enter a sticker pack naddr or coordinate."
-msgstr ""
-
 msgid "Couldn't finish dictation. Please try again."
 msgstr ""
 
@@ -1873,6 +1870,9 @@ msgid "Enter a sticker name of 1 to 64 characters."
 msgstr ""
 
 msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
+msgstr ""
+
+msgid "Enter a valid pack link or address."
 msgstr ""
 
 msgid "Enter an issue title and description."
