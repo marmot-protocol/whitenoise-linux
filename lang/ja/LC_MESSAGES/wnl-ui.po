@@ -4835,6 +4835,9 @@ msgstr "ブロックした相手にはメッセージを送信できません。
 msgid "You have no chats to share this with."
 msgstr "共有先にできるチャットはありません。"
 
+msgid "You have no folders yet. Create one with New folder."
+msgstr "フォルダはまだありません。「新しいフォルダ」で作成できます。"
+
 msgid "You have no groups to add this person to."
 msgstr "この人を追加できるグループがありません。"
 
