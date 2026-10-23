@@ -42,43 +42,44 @@ elif [ "$SYSTEM" = Linux ]; then
     bash "$HERE/scripts/build-appimage-updater.sh" bridge "$OUT"
 fi
 
-# The Rust build is the slowest step (13-15 min on CI runners). Skip it when
-# libmarmot_c.a was built from the same MDK commit and patches for this
-# target. Toolchain and dependency-prefix edits deliberately do not count:
-# the archive is unlinked Rust, and the final link picks up the prefix. CI
-# caches the archive plus this stamp under a key over the same inputs.
+# Always let Cargo check source/configuration changes, never trust a final
+# archive stamp. MDK pin/patch changes retain unchanged crates; compiler/SDK
+# changes use a separate tree because C build scripts may not detect them.
+RUST_ARGS=(-C "linker=$CC")
+if [ "$SYSTEM" = Linux ]; then RUST_ARGS+=(-C "link-arg=--sysroot=$SYSROOT"); fi
+export "CFLAGS_$RUST_KEY=${CFLAGS[*]}" "CXXFLAGS_$RUST_KEY=${CFLAGS[*]}"
+export "PKG_CONFIG_LIBDIR_$RUST_KEY=$PKG_CONFIG_LIBDIR"
+export "PKG_CONFIG_SYSROOT_DIR_$RUST_KEY=${PKG_CONFIG_SYSROOT_DIR:-}"
+export "CARGO_TARGET_${RUST_UPPER}_RUSTFLAGS=${RUST_ARGS[*]}"
 MARMOT_STAMP="$({
-  git -C "$HERE/vendor/mdk" rev-parse HEAD
-  echo "$RUST_TARGET"
-  cat "$HERE"/patches/mdk-*.patch
+  printf '%s\n' "$TOOLCHAIN_STAMP" "${RUST_ARGS[*]}" "${RUSTFLAGS:-}" "${CARGO_ENCODED_RUSTFLAGS:-}" \
+    "${RUSTC:-}" "${RUSTC_WRAPPER:-}" "${RUSTC_WORKSPACE_WRAPPER:-}"
+  rustc -vV
+  cargo -V
 } | sha256sum | cut -d' ' -f1)"
-if ! stamp_fresh "$OUT/libmarmot_c.a" "$OUT/libmarmot_c.stamp" "$MARMOT_STAMP"; then
-  # Rust host proc macros/build scripts use the host compiler. Only target crates
-  # receive the target C compiler, sysroot and link arguments.
+if ! rustup target list --installed | grep -qx "$RUST_TARGET"; then
   rustup target add "$RUST_TARGET"
-  export "CFLAGS_$RUST_KEY=${CFLAGS[*]}" "CXXFLAGS_$RUST_KEY=${CFLAGS[*]}"
-  export "PKG_CONFIG_LIBDIR_$RUST_KEY=$PKG_CONFIG_LIBDIR"
-  export "PKG_CONFIG_SYSROOT_DIR_$RUST_KEY=${PKG_CONFIG_SYSROOT_DIR:-}"
-  RUST_ARGS=(-C "linker=$CC")
-  if [ "$SYSTEM" = Linux ]; then RUST_ARGS+=(-C "link-arg=--sysroot=$SYSROOT"); fi
-  export "CARGO_TARGET_${RUST_UPPER}_RUSTFLAGS=${RUST_ARGS[*]}"
-  env -u CC -u CXX -u AR -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_SYSROOT_DIR \
-    CARGO_TARGET_DIR="$OUT/cargo" cargo build --manifest-path "$HERE/vendor/mdk/Cargo.toml" \
-    --locked --release --target "$RUST_TARGET" -p marmot-c --features otlp-export
-  cp "$OUT/cargo/$RUST_TARGET/release/libmarmot_c.a" "$OUT/libmarmot_c.a"
-  echo "$MARMOT_STAMP" > "$OUT/libmarmot_c.stamp"
 fi
+# Rust host proc macros/build scripts use the host compiler, not target CC.
+env -u CC -u CXX -u AR -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_SYSROOT_DIR \
+  CARGO_TARGET_DIR="$OUT/cargo/$MARMOT_STAMP" cargo build --manifest-path "$HERE/vendor/mdk/Cargo.toml" \
+  --locked --release --target "$RUST_TARGET" -p marmot-c --features otlp-export
+cp "$OUT/cargo/$MARMOT_STAMP/$RUST_TARGET/release/libmarmot_c.a" "$OUT/libmarmot_c.a"
+echo "$MARMOT_STAMP" > "$OUT/libmarmot_c.stamp"
 
 mkdir -p "$OUT/clay" "$OUT/fbx" "$OUT/math" "$OUT/stb"
 cp "$HERE/vendor/clay/clay.h" "$OUT/clay/clay.h"
+# Cached output may live behind a symlink. Apply directly in its physical
+# directory without discovering the source repository above it.
+CLAY_DIR="$(cd "$OUT/clay" && pwd -P)"
 # clay-mingw-enums.patch only affects _WIN32: the Odin binding assumes MSVC's
 # 4-byte enums there, while Clang for MinGW would pack them to 1 byte.
 for patch in clay-hashmap clay-scroll-target clay-float-layer clay-mingw-enums; do
-  git -C "$HERE" apply --directory="build/cross/$TARGET/clay" "$HERE/patches/$patch.patch"
+  GIT_CEILING_DIRECTORIES="${CLAY_DIR%/*}" git -C "$CLAY_DIR" apply "$HERE/patches/$patch.patch"
 done
 "$CC" "${CFLAGS[@]}" -x c -c -DCLAY_IMPLEMENTATION "$OUT/clay/clay.h" -o "$OUT/clay/clay.o"
 "$AR" rcs "$OUT/clay/clay.a" "$OUT/clay/clay.o"
-UFBX_STAMP="$(pin ufbx)"
+UFBX_STAMP="$TOOLCHAIN_STAMP $(pin ufbx)"
 if ! stamp_fresh "$OUT/fbx/ufbx.o" "$OUT/fbx/ufbx.stamp" "$UFBX_STAMP"; then
   "$CC" "${CFLAGS[@]}" -c "$HERE/vendor/ufbx/ufbx.c" -o "$OUT/fbx/ufbx.o"
   echo "$UFBX_STAMP" > "$OUT/fbx/ufbx.stamp"
@@ -92,7 +93,7 @@ fi
 "$AR" rcs "$OUT/libwndecoder.a" "$OUT/decoder_ipc.o"
 "$CC" "${CFLAGS[@]}" -c "$HERE/app/timestamp.c" -o "$OUT/timestamp.o"
 "$AR" rcs "$OUT/libwntimestamp.a" "$OUT/timestamp.o"
-MICROTEX_STAMP="$({ pin microtex; cat "$HERE"/patches/microtex-*.patch; } | sha256sum | cut -d' ' -f1)"
+MICROTEX_STAMP="$({ echo "$TOOLCHAIN_STAMP"; pin microtex; cat "$HERE"/patches/microtex-*.patch; } | sha256sum | cut -d' ' -f1)"
 if ! stamp_fresh "$OUT/microtex/lib/libmicrotex.a" "$OUT/microtex.stamp" "$MICROTEX_STAMP"; then
   rm -rf "$OUT/microtex"
   cmake -S "$HERE/vendor/microtex" -B "$OUT/microtex" -G Ninja \

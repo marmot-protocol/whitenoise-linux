@@ -827,6 +827,18 @@ host or the Rust library restart the host; the vault stays unlocked for the
 
 To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `just build` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
 
+Keep `build/cargo/native` and `build/cross/<target>/cargo` between builds. Cargo
+checks MDK's inputs on each build and reuses unchanged crates across MDK pin and
+patch changes. Rust and C/C++ compiler versions, target, and build flags select
+separate cache directories. `CARGO_TARGET_DIR` selects the native cache root;
+the build appends its compiler-environment fingerprint.
+
+Cross builds also retain the target sysroot, SDL, speech runtime, and vcpkg
+outputs. Their stamps include the inputs that produced them; changing those
+inputs rebuilds the affected dependency. CI restores Cargo state from older
+source revisions within the same compiler/target boundary, rather than treating
+a previously staged Marmot library as proof that its inputs are unchanged.
+
 The current pin is MDK master at `c8210585cab6` (0.14.0-dev). The build applies
 the patches listed in `scripts/build.sh`. NIP-46 C sessions, Windows
 portability, OpenBSD sandbox support, SOCKS5 routing, and Markdown timestamps

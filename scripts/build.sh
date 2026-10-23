@@ -6,8 +6,8 @@
 # `<name>-commit = <sha>` line per git checkout and one
 # `<name>-file = <sha256> <url>` line per download (scripts/fetch.sh).
 # vendor/mdk is cloned at mdk-commit and its C bundle staged by upstream's
-# own c-bindings.sh; both steps are skipped when already present. Then the
-# Odin packages build against the staticlib.
+# own c-bindings.sh. Cargo reuses unchanged crates in build/cargo/native;
+# then the Odin packages build against the staticlib.
 #
 # Offline builds: run `scripts/build.sh fetch` (below) with network, or
 # place each `-commit` checkout at vendor/<name> and each `-file` download
@@ -97,7 +97,7 @@ fi
 # Apply Linux integration changes to a fresh or partially patched checkout.
 bash "$HERE/scripts/apply-mdk-patches.sh" "$MDK" "${MDK_PATCHES[@]}"
 PATCHES_HASH="$(sha256sum "${MDK_PATCHES[@]}")"
-if [ "${1:-}" != sources ] && { [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ] || [ "$(cat "$BUNDLE/.mdk-patches" 2>/dev/null || true)" != "$PATCHES_HASH" ]; }; then
+if [ "${1:-}" != sources ]; then
   RUST_ENV=()
   if [ "$(uname -s)" = OpenBSD ]; then
     # ponytail: OpenBSD has no rustup, and its rust package (1.94) predates
@@ -106,9 +106,36 @@ if [ "${1:-}" != sources ] && { [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "
     # Drop this once the package reaches vendor/mdk/rust-toolchain.toml.
     RUST_ENV=(RUSTC_BOOTSTRAP=1 RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-Zcrate-attr=feature(cfg_select)")
   fi
+  # Keep artifacts outside vendor/mdk: changing its pin cleans that checkout.
+  # cc-rs does not fingerprint compiler upgrades at the same path, so isolate
+  # compiler/flags environments, but NOT MDK pins/patches. Cargo checks source
+  # changes on every invocation; a final-bundle stamp must never bypass it.
+  MDK_BUILD_ENV="$({
+    (cd "$MDK" && export PATH="$HOME/.cargo/bin:$PATH" && env "${RUST_ENV[@]}" rustc -vV && cargo -vV)
+    for tool in "${CC:-clang}" "${CXX:-c++}" "${AR:-ar}"; do
+      read -r -a tool_command <<< "$tool"
+      printf '%s\n' "$tool"
+      if ! "${tool_command[@]}" --version 2>&1; then
+        sha256sum "$(command -v "${tool_command[0]}")"
+      fi
+    done
+    printf '%s\n' "${RUST_ENV[@]}" 'OTLP_EXPORT=1'
+    env | LC_ALL=C sort | while IFS= read -r setting; do
+      case "$setting" in
+        CC=*|CC_*=*|CXX=*|CXX_*=*|AR=*|AR_*=*|CFLAGS*=*|CXXFLAGS*=*|CPPFLAGS*=*|LDFLAGS*=*|RUSTFLAGS=*|CARGO_ENCODED_RUSTFLAGS=*|RUSTC*=*|RUSTUP_TOOLCHAIN=*|CARGO_BUILD_*=*|CARGO_TARGET_*=*|CARGO_PROFILE_*=*|PKG_CONFIG*=*|OPENSSL*=*|LIBSQLITE3*=*|SQLITE3*=*|SDKROOT=*|MACOSX_DEPLOYMENT_TARGET=*|PRODUCT_ANALYTICS_EXPORT=*)
+          printf '%s\n' "$setting" ;;
+      esac
+    done
+  } | sha256sum | cut -d' ' -f1)"
+  # An explicit CARGO_TARGET_DIR supplies the root, with the same isolation.
+  MDK_CARGO_TARGET="${CARGO_TARGET_DIR:-$HERE/build/cargo/native}/$MDK_BUILD_ENV"
+  case "$MDK_CARGO_TARGET" in
+    /*) ;;
+    *) MDK_CARGO_TARGET="$PWD/$MDK_CARGO_TARGET" ;;
+  esac
   # GCC folds SQLCipher's TLS seed into overflowing relocations (sqlcipher#600).
-  env "${RUST_ENV[@]}" CC="${CC:-clang}" OTLP_EXPORT=1 "$MDK/crates/marmot-c/c-bindings.sh"
-  touch "$BUNDLE/.otlp-export"
+  env "${RUST_ENV[@]}" CC="${CC:-clang}" OTLP_EXPORT=1 CARGO_TARGET_DIR="$MDK_CARGO_TARGET" \
+    "$MDK/crates/marmot-c/c-bindings.sh"
   printf '%s\n' "$PATCHES_HASH" > "$BUNDLE/.mdk-patches"
 fi
 

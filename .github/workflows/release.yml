@@ -110,19 +110,28 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      # The marmot-c bundle ci.yml saved on master for the same pin and
-      # patches; build.sh rebuilds it when the stamp does not match.
+      # Reuse ci.yml's Cargo artifacts, not a final bundle that could hide
+      # changed inputs. build.sh always asks Cargo to check source freshness.
       - name: Fetch sources
         id: sources
         run: |
           scripts/build.sh sources
           echo "mdk=$(sed -n 's/^mdk-commit = //p' DEPS_PIN)" >> "$GITHUB_OUTPUT"
+          echo "toolchain=$(cd vendor/mdk && { rustc -vV; cargo -vV; clang --version; c++ --version; ar --version; } | sha256sum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
-      - name: Restore the marmot-c bundle
+      # Fallback crosses MDK pins/patches within the same host/toolchain.
+      - name: Restore native Cargo state
+        id: cargo-cache
         uses: actions/cache/restore@v4
         with:
-          path: vendor/mdk/crates/marmot-c/output
-          key: marmot-linux-x64-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}
+          path: |
+            build/cargo/native
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-native-v1-ubuntu24-${{ runner.arch }}-${{ steps.sources.outputs.toolchain }}-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}-${{ github.sha }}
+          restore-keys: |
+            cargo-native-v1-ubuntu24-${{ runner.arch }}-${{ steps.sources.outputs.toolchain }}-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}-
+            cargo-native-v1-ubuntu24-${{ runner.arch }}-${{ steps.sources.outputs.toolchain }}-
 
       - name: Build
         env:
@@ -133,6 +142,16 @@ jobs:
       - name: Remove generated observability credentials
         if: always()
         run: rm -f build/observability-tokens.toml
+
+      - name: Save native Cargo state
+        if: always() && steps.cargo-cache.outputs.cache-hit != 'true' && steps.cargo-cache.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build/cargo/native
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
 
       - name: Build AppImage updater
         run: bash scripts/build-appimage-updater.sh
@@ -250,18 +269,28 @@ jobs:
         run: echo "commit=$(sed -n 's/^mdk-commit = //p' DEPS_PIN)" >> "$GITHUB_OUTPUT"
 
       # Keep SDK-built objects separate from native Ubuntu builds.
-      - name: Restore Flatpak Marmot bundle
-        id: marmot-cache
+      # build.sh also partitions targets by the actual SDK compiler/flags.
+      - name: Restore Flatpak Cargo state
+        id: cargo-cache
         uses: actions/cache/restore@v4
         with:
-          path: .flatpak-cache/vendor/mdk/crates/marmot-c/output
-          key: marmot-flatpak-gnome50-x64-${{ steps.mdk.outputs.commit }}-${{ hashFiles('patches/mdk-*.patch') }}
+          path: |
+            .flatpak-cache/build/cargo/native
+            .flatpak-cache/cargo/registry
+            .flatpak-cache/cargo/git
+          key: cargo-native-v1-flatpak-gnome50-x64-${{ hashFiles('packaging/flatpak/*.yml') }}-${{ steps.mdk.outputs.commit }}-${{ hashFiles('patches/mdk-*.patch') }}-${{ github.sha }}
+          restore-keys: |
+            cargo-native-v1-flatpak-gnome50-x64-${{ hashFiles('packaging/flatpak/*.yml') }}-${{ steps.mdk.outputs.commit }}-${{ hashFiles('patches/mdk-*.patch') }}-
+            cargo-native-v1-flatpak-gnome50-x64-${{ hashFiles('packaging/flatpak/*.yml') }}-
 
       - name: Restore Flatpak C dependencies
         id: cdeps-cache
         uses: actions/cache/restore@v4
         with:
-          path: .flatpak-cache/build
+          path: |
+            .flatpak-cache/build/microtex
+            .flatpak-cache/build/fbx/ufbx.o
+            .flatpak-cache/build/fbx/ufbx.stamp
           key: cdeps-flatpak-gnome50-x64-${{ hashFiles('DEPS_PIN', 'patches/microtex-*.patch') }}
           restore-keys: cdeps-flatpak-gnome50-x64-
 
@@ -299,7 +328,8 @@ jobs:
           restore-cache: false
           save-cache: false
 
-      # Export only dependency outputs, never the multi-GB Cargo target tree.
+      # The manifest copies .flatpak-cache into the app module before building;
+      # its CARGO_HOME is cargo/, and native targets live in build/cargo/native.
       # Keep completed dependencies even if a later app compile fails.
       - name: Collect Flatpak dependency outputs
         if: always()
@@ -309,11 +339,16 @@ jobs:
             find build/flatpak-state/build -name observability-tokens.toml -delete
           fi
           source=build/flatpak-state/build/whitenoise-linux
-          bundle=vendor/mdk/crates/marmot-c/output
-          if [ -f "$source/$bundle/.mdk-patches" ]; then
-            mkdir -p ".flatpak-cache/$bundle"
-            cp -a "$source/$bundle/." ".flatpak-cache/$bundle/"
+          if [ -d "$source/build/cargo/native" ]; then
+            mkdir -p .flatpak-cache/build/cargo
+            cp -a "$source/build/cargo/native" .flatpak-cache/build/cargo/
           fi
+          for state in registry git; do
+            if [ -d "$source/cargo/$state" ]; then
+              mkdir -p .flatpak-cache/cargo
+              cp -a "$source/cargo/$state" .flatpak-cache/cargo/
+            fi
+          done
           if [ -f "$source/build/microtex/stamp" ]; then
             mkdir -p .flatpak-cache/build
             cp -a "$source/build/microtex" .flatpak-cache/build/
@@ -323,18 +358,24 @@ jobs:
             cp -a "$source/build/fbx/ufbx.o" "$source/build/fbx/ufbx.stamp" .flatpak-cache/build/fbx/
           fi
 
-      - name: Save Flatpak Marmot bundle
-        if: always() && steps.marmot-cache.outputs.cache-hit != 'true' && hashFiles('.flatpak-cache/vendor/mdk/crates/marmot-c/output/.mdk-patches') != ''
+      - name: Save Flatpak Cargo state
+        if: always() && steps.cargo-cache.outputs.cache-hit != 'true' && steps.cargo-cache.outcome == 'success'
         uses: actions/cache/save@v4
         with:
-          path: .flatpak-cache/vendor/mdk/crates/marmot-c/output
-          key: ${{ steps.marmot-cache.outputs.cache-primary-key }}
+          path: |
+            .flatpak-cache/build/cargo/native
+            .flatpak-cache/cargo/registry
+            .flatpak-cache/cargo/git
+          key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
 
       - name: Save Flatpak C dependencies
         if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles('.flatpak-cache/build/microtex/stamp') != ''
         uses: actions/cache/save@v4
         with:
-          path: .flatpak-cache/build
+          path: |
+            .flatpak-cache/build/microtex
+            .flatpak-cache/build/fbx/ufbx.o
+            .flatpak-cache/build/fbx/ufbx.stamp
           key: ${{ steps.cdeps-cache.outputs.cache-primary-key }}
 
       - name: Save Flatpak modules and downloads

@@ -8,8 +8,49 @@ permissions:
   contents: read
 
 jobs:
+  native:
+    name: Verify native cold, warm, and changed-input builds
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+          persist-credentials: false
+      - name: Preserve native Cargo state outside the checkout
+        run: |
+          cache="$HOME/.cache/wn-native"
+          mkdir -p "$cache" build
+          if [ ! -d "$cache/cargo" ]; then
+            if [ -d build/cargo ] && [ ! -L build/cargo ]; then
+              mv build/cargo "$cache/cargo"
+            else
+              mkdir -p "$cache/cargo"
+            fi
+          fi
+          if [ ! -e build/cargo ]; then
+            ln -s "$cache/cargo" build/cargo
+          fi
+          test "$(readlink -f build/cargo)" = "$cache/cargo"
+      - name: Build and measure native cache reuse
+        shell: bash
+        run: |
+          set -euo pipefail
+          SECONDS=0
+          scripts/build.sh
+          printf 'Initial native build: %s seconds\n' "$SECONDS" >> "$GITHUB_STEP_SUMMARY"
+          SECONDS=0
+          scripts/build.sh
+          printf 'Unchanged native build: %s seconds\n' "$SECONDS" >> "$GITHUB_STEP_SUMMARY"
+          touch vendor/mdk/crates/marmot-c/src/lib.rs
+          SECONDS=0
+          scripts/build.sh
+          printf 'MDK crate invalidation build: %s seconds\n' "$SECONDS" >> "$GITHUB_STEP_SUMMARY"
+          SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke ./build/app "$(mktemp -d)"
+
   cross:
     name: Build and boot ${{ matrix.target }}
+    needs: native
     runs-on: [self-hosted, Linux, X64, wn-build-server, arch]
     timeout-minutes: 180
     strategy:
@@ -21,27 +62,68 @@ jobs:
       - uses: actions/checkout@v4
         with:
           clean: false
+          persist-credentials: false
       - name: Build the repository's cross-toolchain image
-        run: podman build -f packaging/cross/Containerfile -t whitenoise-cross packaging/cross
-      - name: Cross compile and package
+        id: toolchain
+        shell: bash
         run: |
+          set -euo pipefail
+          key=$(sha256sum packaging/cross/Containerfile | cut -d' ' -f1)
+          image="localhost/whitenoise-cross:$key"
+          if ! podman image exists "$image"; then
+            podman build --layers -f packaging/cross/Containerfile -t "$image" packaging/cross
+          fi
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "rustup=wn-rustup-$key" >> "$GITHUB_OUTPUT"
+          cache="$HOME/.cache/wn-cross"
+          mkdir -p "$cache/registry" "$cache/git" build
+          if [ ! -d "$cache/build" ]; then
+            if [ -d build/cross ] && [ ! -L build/cross ]; then
+              mv build/cross "$cache/build"
+            else
+              mkdir -p "$cache/build"
+            fi
+          fi
+          if [ ! -e build/cross ]; then
+            ln -s "$cache/build" build/cross
+          fi
+          test "$(readlink -f build/cross)" = "$cache/build"
+      - name: Cross compile and package
+        shell: bash
+        run: |
+          set -euo pipefail
           mkdir -p "$HOME/.cache/vcpkg/archives"
-          podman run --rm -v "$PWD:/work" -v "$HOME/.cache/vcpkg:/root/.cache/vcpkg" \
-            whitenoise-cross '${{ matrix.target }}'
+          for phase in initial unchanged; do
+            SECONDS=0
+            podman run --rm -v "$PWD:/work" -v "$HOME/.cache/vcpkg:/root/.cache/vcpkg" \
+              -v "$HOME/.cache/wn-cross:$HOME/.cache/wn-cross" \
+              -v "$HOME/.cache/wn-cross/registry:/root/.cargo/registry" \
+              -v "$HOME/.cache/wn-cross/git:/root/.cargo/git" \
+              -v '${{ steps.toolchain.outputs.rustup }}:/root/.rustup' \
+              '${{ steps.toolchain.outputs.image }}' '${{ matrix.target }}'
+            printf '%s %s build: %s seconds\n' '${{ matrix.target }}' "$phase" "$SECONDS" >> "$GITHUB_STEP_SUMMARY"
+          done
       - name: Extract and execute the shipped package
         shell: bash
         run: |
           set -euo pipefail
           target='${{ matrix.target }}'
-          smoke="build/cross-smoke/$target"
-          mkdir -p "$smoke" build/cross-evidence
+          version=$(bash scripts/version.sh)
+          smoke=$(mktemp -d "$RUNNER_TEMP/cross-smoke-$target.XXXXXX")
+          mkdir -p build/cross-evidence
           if [ "$target" = windows-amd64 ]; then
-            unzip -q dist/*-windows-amd64.zip -d "$smoke"
+            if [ -f dist/WhiteNoise-win-Portable.zip ]; then
+              root="$smoke/package"
+              unzip -q dist/WhiteNoise-win-Portable.zip -d "$root"
+            else
+              unzip -q "dist/WhiteNoise-$version-$target.zip" -d "$smoke"
+              root="$smoke/WhiteNoise-$version-$target"
+            fi
           else
-            tar -xzf dist/*-"$target".tar.gz -C "$smoke"
+            tar -xzf "dist/WhiteNoise-$version-$target.tar.gz" -C "$smoke"
+            root="$smoke/WhiteNoise-$version-$target"
           fi
-          root=$(find "$smoke" -mindepth 1 -maxdepth 1 -type d -print -quit)
-          mounts=(-v "$PWD/$root:/release:ro" -v "$PWD/scripts/cross-smoke.sh:/cross-smoke.sh:ro")
+          mounts=(-v "$root:/release:ro" -v "$PWD/scripts/cross-smoke.sh:/cross-smoke.sh:ro")
           mounts+=(-v "$PWD/build/cross-evidence:/evidence")
           args=("$target" /release)
           if [ "$target" = linux-arm64 ]; then
@@ -49,7 +131,7 @@ jobs:
             args+=(/target-sysroot)
           fi
           podman run --rm --init --workdir /evidence --entrypoint bash "${mounts[@]}" \
-            whitenoise-cross /cross-smoke.sh "${args[@]}"
+            '${{ steps.toolchain.outputs.image }}' /cross-smoke.sh "${args[@]}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -69,8 +151,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           clean: false
+          persist-credentials: false
       - name: Build, package, and boot inside OpenBSD 7.9
-        run: bash scripts/wn-server-openbsd-smoke.sh
+        shell: bash
+        run: |
+          set -euo pipefail
+          for phase in initial unchanged; do
+            SECONDS=0
+            bash scripts/wn-server-openbsd-smoke.sh
+            printf 'OpenBSD %s build: %s seconds\n' "$phase" "$SECONDS" >> "$GITHUB_STEP_SUMMARY"
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
