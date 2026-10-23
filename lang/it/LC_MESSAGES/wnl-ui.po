@@ -1914,6 +1914,9 @@ msgstr "Inserisci il numero di persone come numero intero e riprova."
 msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
 msgstr "Inserisci la password con cui è stato creato questo backup. Impostazioni, bozze, emoji personalizzate e temi su questo dispositivo verranno sostituiti."
 
+msgid "Enter your nsec to continue."
+msgstr "Inserisci il tuo nsec per continuare."
+
 msgid "Enter your password to unlock this device's keys."
 msgstr "Inserisci la tua password per sbloccare le chiavi di questo dispositivo."
 
