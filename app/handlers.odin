@@ -108,7 +108,12 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// it reads other input as a public identity, and either way answers
 	// with a raw parse error ("invalid Nostr public key", "invalid nsec
 	// or secret key") that tells the user nothing about the fix.
-	if submitted && ui.login_method == .Import && len(ui.login_input) > 0 {
+	if submitted && ui.login_method == .Import {
+		if len(ui.login_input) == 0 {
+			delete(ui.login_error)
+			ui.login_error = strings.clone(tr("Enter your nsec to continue."))
+			return
+		}
 		hrp, key, ok := bech32_decode(string(ui.login_input[:]))
 		if !ok || hrp != "nsec" || len(key) != 32 {
 			ui.login_error = strings.clone(

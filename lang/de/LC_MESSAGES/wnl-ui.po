@@ -1923,6 +1923,9 @@ msgstr "Gib die Personenzahl als ganze Zahl ein und versuche es erneut."
 msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
 msgstr "Gib das Passwort ein, mit dem dieses Backup erstellt wurde. Die Einstellungen, Entwürfe, benutzerdefinierten Emojis und Themes auf diesem Gerät werden ersetzt."
 
+msgid "Enter your nsec to continue."
+msgstr "Gib deinen nsec ein, um fortzufahren."
+
 msgid "Enter your password to unlock this device's keys."
 msgstr "Gib dein Passwort ein, um die Schlüssel dieses Geräts zu entsperren."
 
