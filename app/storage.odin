@@ -125,6 +125,7 @@ backup_shown: Backup_Mode
 
 backup_close :: proc(ui: ^Ui_State) {
 	ui.backup_mode = .None
+	ui.backup_pw_required = false
 	clear(&ui.backup_pw)
 	delete(ui.backup_blob)
 	ui.backup_blob = nil
@@ -164,6 +165,7 @@ backup_stage :: proc(ui: ^Ui_State, path: string) {
 	delete(ui.backup_blob)
 	ui.backup_blob = data
 	ui.backup_mode = .Import
+	ui.backup_pw_required = false
 	clear(&ui.backup_pw)
 	ui.focus = .BackupPw
 }
@@ -303,6 +305,7 @@ handle_storage :: proc(ui: ^Ui_State) {
 	}
 	if clicked("BackupBtn") {
 		ui.backup_mode = .Create
+		ui.backup_pw_required = false
 		clear(&ui.backup_pw)
 		ui.focus = .BackupPw
 		return
@@ -321,6 +324,9 @@ handle_storage :: proc(ui: ^Ui_State) {
 // login screen alike.
 handle_backup :: proc(ui: ^Ui_State) {
 	edit_text(ui, &ui.backup_pw)
+	if len(ui.backup_pw) > 0 {
+		ui.backup_pw_required = false
+	}
 
 	if rl.IsKeyPressed(.ESCAPE) || clicked("BackupClose") || clicked("BackupCancel") {
 		backup_close(ui)
@@ -333,6 +339,8 @@ handle_backup :: proc(ui: ^Ui_State) {
 		return
 	}
 	if len(ui.backup_pw) == 0 {
+		ui.backup_pw_required = true
+		ui.focus = .BackupPw
 		return
 	}
 	if ui.backup_mode == .Create {
@@ -422,6 +430,17 @@ backup_modal :: proc(ui: ^Ui_State) {
 				if ui.focus == .BackupPw {
 					caret(15)
 				}
+			}
+		}
+
+		if ui.backup_pw_required {
+			if clay.UI(clay.ID("BackupPwError"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {
+				clay.Text(
+					creating ? tr("Enter a password to encrypt your backup.") : tr("Enter the backup password."),
+					{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+				)
 			}
 		}
 

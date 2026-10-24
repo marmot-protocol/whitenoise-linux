@@ -1881,6 +1881,9 @@ msgstr ""
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr ""
 
+msgid "Enter a password to encrypt your backup."
+msgstr ""
+
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr ""
 
@@ -1898,6 +1901,9 @@ msgid "Enter dates like %s, with the start on or before the end."
 msgstr ""
 
 msgid "Enter publishes, Escape cancels."
+msgstr ""
+
+msgid "Enter the backup password."
 msgstr ""
 
 msgid "Enter the member as an npub and try again."

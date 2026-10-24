@@ -1886,6 +1886,9 @@ msgstr "Inserisci un colore nel formato #RRGGBB."
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr "Inserisci un indirizzo IPv4 numerico o IPv6 tra parentesi quadre con una porta da 1 a 65535."
 
+msgid "Enter a password to encrypt your backup."
+msgstr "Inserisci una password per cifrare il tuo backup."
+
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "Inserisci un nome per l'adesivo da 1 a 64 caratteri."
 
@@ -1904,6 +1907,9 @@ msgstr "Inserisci date come %s. La data iniziale non deve essere successiva a qu
 
 msgid "Enter publishes, Escape cancels."
 msgstr "Invio pubblica, Esc annulla."
+
+msgid "Enter the backup password."
+msgstr "Inserisci la password del backup."
 
 msgid "Enter the member as an npub and try again."
 msgstr "Inserisci il membro come npub e riprova."
