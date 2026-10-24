@@ -1262,6 +1262,9 @@ msgstr "Impossibile importare i contatti. Usa l'intestazione CSV name,npub,nickn
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "Impossibile importare l'adesivo. Scegli un'immagine inferiore a 4 MiB."
 
+msgid "Couldn't invite the member. Enter an npub or nprofile and try again."
+msgstr "Impossibile invitare il membro. Inserisci un npub o nprofile e riprova."
+
 #, c-format
 msgid "Couldn't keep %s running. Please try again."
 msgstr "Impossibile mantenere in esecuzione %s. Riprova."
