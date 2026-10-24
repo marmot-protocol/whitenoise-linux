@@ -408,7 +408,7 @@ gate_input :: proc(ui: ^Ui_State) {
 
 	// Enter walks from the password to the confirm box; the second Enter
 	// submits.
-	if creating && !gate_confirm {
+	if creating && !gate_confirm && !clicked("GateGo") {
 		gate_confirm = true
 		return
 	}
@@ -558,7 +558,8 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				) {}
 				ready :=
 					!creating ||
-					password_bits(string(gate_pw[:]), &gate_check) >= PASSWORD_MIN_BITS
+					(password_bits(string(gate_pw[:]), &gate_check) >= PASSWORD_MIN_BITS &&
+							string(gate_pw[:]) == string(gate_pw2[:]))
 				if busy {
 					login_big_button(
 						"GateGo",

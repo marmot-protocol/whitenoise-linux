@@ -220,3 +220,148 @@ vault_gate_reset_disarms :: proc(t: ^gate_testing.T) {
 	gate_testing.expect(t, !gate_reset_armed, "a failed unlock disarms vault deletion")
 	gate_testing.expect(t, vault_exists())
 }
+
+@(test)
+vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
+	context.allocator = gate_runtime.default_context().allocator
+	gate_sync.lock(&clay_test_mutex)
+	defer gate_sync.unlock(&clay_test_mutex)
+	gate_sync.lock(&test_home_lock)
+	defer gate_sync.unlock(&test_home_lock)
+	home, err := os.make_directory_temp("", "wn-gate-confirm", context.temp_allocator)
+	if !gate_testing.expect(t, err == nil) {return}
+	defer os.remove_all(home)
+	old_home := data_home
+	data_home = home
+	defer {
+		gate_join()
+		vault_delete()
+		data_home = old_home
+		gate_close()
+		gate_confirm = false
+		gate_err = ""
+		gate_reset_armed = false
+		rl.PushKey(.ENTER, false)
+		forced_press, forced_release = false, false
+	}
+	previous := clay.GetCurrentContext()
+	memory: []u8
+	init_layout(&memory, 32768, {1024, 700})
+	clay.SetMeasureTextFunction(
+		proc "c" (
+			text: clay.StringSlice,
+			config: ^clay.TextElementConfig,
+			user: rawptr,
+		) -> clay.Dimensions {
+			return {f32(text.length) * f32(config.fontSize) / 2, f32(config.fontSize)}
+		},
+		nil,
+	)
+	defer {clay.SetCurrentContext(previous); delete(memory)}
+	ui: Ui_State
+	edit.init(&ui.ed, context.allocator, context.allocator)
+	defer edit.destroy(&ui.ed)
+	rl.PushKey(.ENTER, false)
+	clay.SetPointerState({-100, -100}, false)
+
+	button_color :: proc(ui: ^Ui_State) -> clay.Color {
+		commands := gate_layout(ui)
+		for command in commands.internalArray[:commands.length] {
+			if command.id == clay.ID("GateGo").id && command.commandType == .Rectangle {
+				return command.renderData.rectangle.backgroundColor
+			}
+		}
+		return {}
+	}
+	click_go :: proc(ui: ^Ui_State) {
+		gate_layout(ui)
+		box := clay.GetElementData(clay.ID("GateGo")).boundingBox
+		point := clay.Vector2{box.x + box.width / 2, box.y + box.height / 2}
+		clay.SetPointerState(point, true)
+		rl.PushMouseButton(.LEFT, true)
+		gate_layout(ui)
+		gate_input(ui)
+		clay.SetPointerState(point, false)
+		rl.PushMouseButton(.LEFT, false)
+		gate_layout(ui)
+		gate_input(ui)
+		clay.SetPointerState({-100, -100}, false)
+	}
+	strong := "marmot on burrowed time thimble lantern"
+	append(&gate_pw, "Password123!")
+	append(&gate_pw2, "Password123!")
+	gate_testing.expect(t, button_color(&ui) == ROW_BG, "matching weak passwords remain disabled")
+	click_go(&ui)
+	gate_testing.expect_value(
+		t,
+		gate_err,
+		tr(
+			"This password is too easy to guess. Use unrelated words or a password-manager password.",
+		),
+	)
+	clear(&gate_pw)
+	append(&gate_pw, strong)
+	gate_confirm = false
+	gate_testing.expect(
+		t,
+		button_color(&ui) == ROW_BG,
+		"mismatched strong password must not light Continue",
+	)
+	click_go(&ui)
+	gate_testing.expect(
+		t,
+		gate_err == tr("The passwords don't match. Type them again."),
+		"first mouse click must validate, not merely move focus",
+	)
+	gate_testing.expect(t, gate_job.worker == nil && !vault_exists())
+	gate_testing.expect(t, gate_confirm)
+
+	// An idle frame cannot launch a job after a rejected click.
+	gate_input(&ui)
+	gate_testing.expect(t, gate_job.worker == nil)
+	clear(&gate_pw2)
+	gate_testing.expect(t, button_color(&ui) == ROW_BG, "empty confirmation remains disabled")
+	gate_confirm = false
+	rl.PushKey(.ENTER, true)
+	gate_input(&ui)
+	rl.PushKey(.ENTER, false)
+	gate_testing.expect(
+		t,
+		gate_confirm && gate_job.worker == nil,
+		"first-field Enter still focuses confirmation",
+	)
+	for r in strong {rl.PushChar(r)}
+	gate_input(&ui)
+	gate_testing.expect_value(t, string(gate_pw2[:]), strong)
+	gate_testing.expect(
+		t,
+		button_color(&ui) == ACCENT,
+		"matching strong passwords enable Continue",
+	)
+	gate_confirm = false
+	click_go(&ui)
+	gate_testing.expect(
+		t,
+		gate_job.worker != nil,
+		"mouse submit must start creation even while the first field has focus",
+	)
+	for gate_job.worker != nil && !gate_poll() {}
+	gate_testing.expect(t, vault_verify(strong))
+
+	// Existing vaults must remain unlockable with their original weak password.
+	vault_delete()
+	gate_testing.expect_value(t, vault_create("x"), Vault_Err.None)
+	vault_relock()
+	clear(&gate_pw)
+	append(&gate_pw, "x")
+	clear(&gate_pw2)
+	gate_testing.expect(
+		t,
+		button_color(&ui) == ACCENT,
+		"unlock ignores create-only strength and confirmation",
+	)
+	click_go(&ui)
+	gate_testing.expect(t, gate_job.worker != nil && !gate_job.creating)
+	for gate_job.worker != nil && !gate_poll() {}
+	gate_testing.expect(t, vault_verify("x"))
+}
