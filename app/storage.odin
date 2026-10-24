@@ -61,8 +61,10 @@ media_load :: proc(
 	if cacheable {
 		// A failed tag (corrupt file, or a blob from another vault) reads
 		// as a miss, which downloads and re-seals it.
-		if sealed, read_err := os.read_entire_file(cache_path(sha), context.temp_allocator);
-		   read_err == nil {
+		if sealed, read_err := os.read_entire_file(
+			cache_path(sha),
+			context.temp_allocator,
+		); read_err == nil {
 			if data, opened := vault_open_blob(sealed); opened {
 				local_timing_end(.media_cache_read, timing_start)
 				return data, true
@@ -81,7 +83,11 @@ media_load :: proc(
 	if cacheable {
 		if sealed, ok := vault_seal_blob(bytes, context.temp_allocator); ok {
 			os.make_directory(media_cache_dir())
-			_ = os.write_entire_file(cache_path(sha), sealed, {.Read_User, .Write_User})
+			_ = os.write_entire_file(
+				cache_path(sha),
+				sealed,
+				{.Read_User, .Write_User},
+			)
 		}
 	}
 	return bytes, true
@@ -125,6 +131,7 @@ backup_shown: Backup_Mode
 
 backup_close :: proc(ui: ^Ui_State) {
 	ui.backup_mode = .None
+	ui.backup_pw_required = false
 	clear(&ui.backup_pw)
 	delete(ui.backup_blob)
 	ui.backup_blob = nil
@@ -164,6 +171,7 @@ backup_stage :: proc(ui: ^Ui_State, path: string) {
 	delete(ui.backup_blob)
 	ui.backup_blob = data
 	ui.backup_mode = .Import
+	ui.backup_pw_required = false
 	clear(&ui.backup_pw)
 	ui.focus = .BackupPw
 }
@@ -251,7 +259,9 @@ settings_storage :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("RowImport"))(settings_row()) {
 			row_labels(
 				tr("Import a backup"),
-				tr("Replaces the settings, drafts, custom emoji, and themes on this device."),
+				tr(
+					"Replaces the settings, drafts, custom emoji, and themes on this device.",
+				),
 			)
 			settings_button(
 				"ImportBtn",
@@ -303,6 +313,7 @@ handle_storage :: proc(ui: ^Ui_State) {
 	}
 	if clicked("BackupBtn") {
 		ui.backup_mode = .Create
+		ui.backup_pw_required = false
 		clear(&ui.backup_pw)
 		ui.focus = .BackupPw
 		return
@@ -321,6 +332,9 @@ handle_storage :: proc(ui: ^Ui_State) {
 // login screen alike.
 handle_backup :: proc(ui: ^Ui_State) {
 	edit_text(ui, &ui.backup_pw)
+	if len(ui.backup_pw) > 0 {
+		ui.backup_pw_required = false
+	}
 
 	if rl.IsKeyPressed(.ESCAPE) || clicked("BackupClose") || clicked("BackupCancel") {
 		backup_close(ui)
@@ -333,6 +347,8 @@ handle_backup :: proc(ui: ^Ui_State) {
 		return
 	}
 	if len(ui.backup_pw) == 0 {
+		ui.backup_pw_required = true
+		ui.focus = .BackupPw
 		return
 	}
 	if ui.backup_mode == .Create {
@@ -385,7 +401,10 @@ backup_modal :: proc(ui: ^Ui_State) {
 				cornerRadius = rr(6),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				clay.Text(
+					ICON_CLOSE,
+					{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
+				)
 			}
 		}
 
@@ -397,13 +416,19 @@ backup_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("BackupPwBox"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFixed(38),
+				},
 				padding = {left = 12, right = 12},
 				childAlignment = {y = .Center},
 			},
 			backgroundColor = ROW_BG,
 			cornerRadius = rr(9),
-			border = {color = ui.focus == .BackupPw ? ACCENT : FIELD_BORDER, width = bw()},
+			border = {
+				color = ui.focus == .BackupPw ? ACCENT : FIELD_BORDER,
+				width = bw(),
+			},
 		},
 		) {
 			if len(ui.backup_pw) == 0 {
@@ -416,7 +441,11 @@ backup_modal :: proc(ui: ^Ui_State) {
 				)
 			} else {
 				clay.Text(
-					strings.repeat("*", min(len(ui.backup_pw), 48), context.temp_allocator),
+					strings.repeat(
+						"*",
+						min(len(ui.backup_pw), 48),
+						context.temp_allocator,
+					),
 					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
 				)
 				if ui.focus == .BackupPw {
@@ -425,8 +454,25 @@ backup_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 
+		if ui.backup_pw_required {
+			if clay.UI(clay.ID("BackupPwError"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {
+				clay.Text(
+					creating ? tr("Enter a password to encrypt your backup.") : tr("Enter the backup password."),
+					{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+				)
+			}
+		}
+
 		if clay.UI(clay.ID("BackupBtns"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}},
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 10,
+				padding = {top = 8},
+			},
+		},
 		) {
 			if clay.UI(clay.ID("BackupCancel"))(
 			{
@@ -436,7 +482,10 @@ backup_modal :: proc(ui: ^Ui_State) {
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+				clay.Text(
+					tr("Cancel"),
+					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
+				)
 			}
 			if clay.UI(clay.ID("BackupBtnsGap"))(
 			{layout = {sizing = {width = clay.SizingGrow()}}},
@@ -450,7 +499,11 @@ backup_modal :: proc(ui: ^Ui_State) {
 			) {
 				clay.Text(
 					creating ? tr("Create backup") : tr("Import backup"),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT},
+					{
+						fontId = FONT_TITLE,
+						fontSize = 13,
+						textColor = ON_ACCENT,
+					},
 				)
 			}
 		}

@@ -1892,6 +1892,9 @@ msgstr "色を #RRGGBB 形式で入力してください。"
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr "数値の IPv4 アドレス、または角括弧で囲んだ IPv6 アドレスと、1 から 65535 のポートを入力してください。"
 
+msgid "Enter a password to encrypt your backup."
+msgstr "バックアップを暗号化するパスワードを入力してください。"
+
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "ステッカー名を1〜64文字で入力してください。"
 
@@ -1913,6 +1916,9 @@ msgstr "%s のように日付を入力してください。開始日は終了日
 
 msgid "Enter publishes, Escape cancels."
 msgstr "Enter で公開、Escape でキャンセルします。"
+
+msgid "Enter the backup password."
+msgstr "バックアップのパスワードを入力してください。"
 
 msgid "Enter the member as an npub and try again."
 msgstr "メンバーを npub で入力して、もう一度お試しください。"

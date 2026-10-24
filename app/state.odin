@@ -781,6 +781,7 @@ Ui_State :: struct {
 	picking_backup:                                        bool, // route the next picked file to the backup import
 	backup_mode:                                           Backup_Mode, // "" = closed; else the password modal
 	backup_pw:                                             [dynamic]u8, // its password box (masked)
+	backup_pw_required:                                    bool, // rejected an empty password in the modal
 	backup_blob:                                           []u8, // the picked .wnbk awaiting its password
 	vault_pw_open:                                         bool, // change-vault-password modal
 	vault_pw:                                              [Vault_Pw_Field][dynamic]u8, // its three boxes (masked)
