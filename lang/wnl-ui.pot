@@ -1893,6 +1893,9 @@ msgstr ""
 msgid "Enter an issue title and description."
 msgstr ""
 
+msgid "Enter at least 2 people. Counts include you."
+msgstr ""
+
 #, c-format
 msgid "Enter dates like %s, with the start on or before the end."
 msgstr ""

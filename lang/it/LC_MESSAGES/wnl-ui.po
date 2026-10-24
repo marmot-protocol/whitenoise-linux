@@ -1898,6 +1898,9 @@ msgstr "Inserisci un link o un indirizzo valido per il pacchetto."
 msgid "Enter an issue title and description."
 msgstr "Inserisci un titolo e una descrizione."
 
+msgid "Enter at least 2 people. Counts include you."
+msgstr "Inserisci almeno 2 persone. Il conteggio include te."
+
 #, c-format
 msgid "Enter dates like %s, with the start on or before the end."
 msgstr "Inserisci date come %s. La data iniziale non deve essere successiva a quella finale."

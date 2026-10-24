@@ -1898,6 +1898,9 @@ msgstr "有効なパックのリンクまたはアドレスを入力してくだ
 msgid "Enter an issue title and description."
 msgstr "報告のタイトルと説明を入力してください。"
 
+msgid "Enter at least 2 people. Counts include you."
+msgstr "2人以上を入力してください。人数にはあなたも含まれます。"
+
 #, c-format
 msgid "Enter dates like %s, with the start on or before the end."
 msgstr "%s のように日付を入力してください。開始日は終了日以前にしてください。"

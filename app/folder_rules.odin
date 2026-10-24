@@ -339,6 +339,10 @@ folder_rules_parse :: proc(ui: ^Ui_State) -> (set: Folder_Rules, bad: int, why: 
 				folder_rules_free(set)
 				return {}, i, tr("Enter the number of people as a whole number and try again.")
 			}
+			if draft.kind == .Fewer_Than && count < 2 {
+				folder_rules_free(set)
+				return {}, i, tr("Enter at least 2 people. Counts include you.")
+			}
 			rule.count = count
 		case .Unread, .Has_Draft:
 		}
@@ -452,7 +456,8 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 				border = {color = focused ? ACCENT : FIELD_BORDER, width = bw()},
 			},
 			) {
-				placeholder := draft.kind == .Has_Member ? "npub1..." : (counts ? "0" : tr("Word"))
+				placeholder :=
+					draft.kind == .Has_Member ? "npub1..." : (counts ? (draft.kind == .Fewer_Than ? "2" : "0") : tr("Word"))
 				field_text(ui, id, &draft.input, placeholder, focused, 13, TEXT_LO)
 			}
 			if counts {

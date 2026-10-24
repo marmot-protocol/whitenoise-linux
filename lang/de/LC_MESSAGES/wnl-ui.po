@@ -1898,6 +1898,9 @@ msgstr "Gib einen gültigen Paketlink oder eine gültige Paketadresse ein."
 msgid "Enter an issue title and description."
 msgstr "Gib einen Titel und eine Beschreibung für die Meldung ein."
 
+msgid "Enter at least 2 people. Counts include you."
+msgstr "Gib mindestens 2 Personen ein. Du wirst mitgezählt."
+
 #, c-format
 msgid "Enter dates like %s, with the start on or before the end."
 msgstr "Gib Daten wie %s ein. Das Startdatum darf nicht nach dem Enddatum liegen."
