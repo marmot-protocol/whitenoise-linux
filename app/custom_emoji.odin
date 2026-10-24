@@ -268,7 +268,8 @@ save_staged_emoji :: proc(ui: ^Ui_State) {
 	}
 	data, read_err := os.read_entire_file(ui.emoji_staged, context.temp_allocator)
 	if read_err != nil {
-		cancel_staged_emoji(ui)
+		ui.banner_seen = ""
+		set_status(ui, tr("Couldn't save your emoji. Please try again."), .Error)
 		return
 	}
 
@@ -279,7 +280,22 @@ save_staged_emoji :: proc(ui: ^Ui_State) {
 	}
 	name := fmt.tprintf("%s%s", strings.to_string(code), ext)
 	os.make_directory(emoji_dir())
-	_ = os.write_entire_file(fmt.tprintf("%s/%s", emoji_dir(), name), data)
+	// Publish only a complete copy, so a failed write cannot truncate an
+	// existing emoji. The private staging directory is removed on every exit.
+	staging, staging_err := os.make_directory_temp(emoji_dir(), ".save-*", context.temp_allocator)
+	if staging_err != nil {
+		ui.banner_seen = ""
+		set_status(ui, tr("Couldn't save your emoji. Please try again."), .Error)
+		return
+	}
+	defer os.remove_all(staging)
+	next := fmt.tprintf("%s/image", staging)
+	if os.write_entire_file(next, data) != nil ||
+	   os.rename(next, fmt.tprintf("%s/%s", emoji_dir(), name)) != nil {
+		ui.banner_seen = ""
+		set_status(ui, tr("Couldn't save your emoji. Please try again."), .Error)
+		return
+	}
 
 	// Drop a stale texture when redefining an existing shortcode.
 	if old, ok := custom_emoji_textures[name]; ok {
