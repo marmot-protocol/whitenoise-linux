@@ -1892,6 +1892,9 @@ msgstr "Crittografato end-to-end"
 msgid "Enter a color as #RRGGBB."
 msgstr "Inserisci un colore nel formato #RRGGBB."
 
+msgid "Enter a folder name."
+msgstr "Inserisci un nome per la cartella."
+
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr "Inserisci un indirizzo IPv4 numerico o IPv6 tra parentesi quadre con una porta da 1 a 65535."
 

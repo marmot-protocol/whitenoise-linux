@@ -1887,6 +1887,9 @@ msgstr ""
 msgid "Enter a color as #RRGGBB."
 msgstr ""
 
+msgid "Enter a folder name."
+msgstr ""
+
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr ""
 
