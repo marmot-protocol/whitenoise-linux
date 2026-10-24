@@ -41,7 +41,7 @@ Math_Key :: struct {
 
 @(private = "file")
 Math_Entry :: struct {
-	tex:   ^rl.Texture2D, // nil: MicroTeX rejected it
+	tex:   ^rl.Texture2D, // nil: Bragi rejected it
 	color: clay.Color, // TEXT when rendered; a theme switch re-renders
 	bytes: int,
 	used:  u32, // anim_frame at the last lookup

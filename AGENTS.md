@@ -46,13 +46,14 @@ output is already present, so only the first run is slow:
   `seclists-passwords-file` in `DEPS_PIN`. The Odin password-strength check
   embeds the corpus with `#load`; there is no runtime file lookup or network
   request.
-- `vendor/microtex` at its pinned `openmath` commit with
-  `patches/microtex-isolation.patch`, `patches/microtex-libcxx-includes.patch`
-  and `patches/microtex-locale-fallback.patch` applied, built by CMake into
-  `build/microtex/lib/libmicrotex.a`; `app/math_shim.cpp` is archived into
-  `build/libwnmath.a` and linked only into `build/wn-math`. The helper embeds
-  its font and exchanges bounded source/RGBA messages with `app/math.odin`.
-  The UI does not link MicroTeX.
+- `vendor/bragi` at its pinned commit, licensed under GPL-3.0. The Odin
+  `math-decoder/` package imports `vendor/bragi/capi`, compiling its exported
+  C API into `build/wn-math` with the helper. `app/math_shim.cpp` replays
+  Bragi drawing commands through Cairo and is archived into `build/libwnmath.a`,
+  linked only into that helper. There is no separate Bragi archive or CMake build.
+  The helper embeds `vendor/bragi/res/tex-gyre/texgyredejavu-math.clm2` and
+  exchanges bounded source/RGBA messages with `app/math.odin`. The UI does
+  not link Bragi.
 - An `ODIN_ROOT` overlay at `build/odin-root`, but **only** when the installed
   Odin is missing `vendor/stb/lib/stb_truetype.a` or `vendor/cgltf/lib/cgltf.a`
   (the Linux release tarball is; `sdlrl` needs stb truetype and image, the
@@ -92,8 +93,8 @@ system LibreSSL callers. Stop workers and SDL before the brokers, then remove
 the private runtime home through `wn_main_sandbox_cleanup()`.
 Cache kernel-version metadata before confinement too: Odin's BSD version
 query uses `KERN_OSREVISION`, which pledge forbids.
-`wn-math` initializes its fixed UTF-8 locale before locking an empty unveil
-tree. Keep untrusted TeX parsing after that lock.
+`wn-math` parses UTF-8 directly and embeds its font, without locale initialization
+or runtime font files. Keep untrusted TeX parsing after the empty unveil tree is locked.
 
 Odin has no incremental compilation, so a full app build is the unit of work
 (~3s at `-o:minimal`, which is what `just dev` uses; release builds use

@@ -291,7 +291,7 @@ just run
 ```
 
 The first build clones the pinned Marmot revision and builds its C bundle,
-fetches Clay, ufbx and MicroTeX, and extracts the SHA-256-pinned emoji bundle
+fetches Clay, ufbx and Bragi, and extracts the SHA-256-pinned emoji bundle
 with `zstd`. It also builds Odin's STB archives when the installation lacks
 them. Later builds reuse the staged dependencies.
 
@@ -328,8 +328,8 @@ every package.
 The release workflow also builds Flatpak on `master` to populate caches that
 later tags can restore. It caches the GNOME 50 module outputs, downloads,
 Git mirrors, and ccache, plus separate Marmot and C dependency outputs.
-Marmot requires an exact pin-and-patch match; MicroTeX and ufbx use the same
-build stamps as native CI. Cargo target directories are not cached, and
+Marmot requires an exact pin-and-patch match; ufbx uses the same build stamp
+as native CI. Bragi compiles with the Odin math helper. Cargo target directories are not cached, and
 Flatpak objects are kept separate from native Ubuntu objects. Only tag
 builds publish releases.
 
@@ -359,8 +359,9 @@ compilers. Windows uses LLVM-MinGW 20260922 with UCRT and libc++, paired with
 Rust's `x86_64-pc-windows-gnullvm` target. Its separate vcpkg triplet avoids
 reusing GCC/MSVCRT libraries. Windows 10 or newer supplies UCRT. Odin emits
 target objects; the target C linker links the app with Marmot, Clay, STB,
-the app shims and media libraries. The C++ linker links `wn-math` with
-MicroTeX and Cairo. Source revisions are pinned in
+the app shims and media libraries. Odin compiles Bragi's C API into the
+`wn-math` object; the C++ linker links it with the Cairo drawing replay shim
+(`libwnmath.a`) and Cairo. Source revisions are pinned in
 `DEPS_PIN`, and Windows/macOS dependency recipes are pinned by the vcpkg
 baseline in `packaging/cross/vcpkg.json`. FFmpeg includes dav1d for CPU AV1
 decoding on Windows and macOS. Speech uses the same pinned upstream
@@ -494,10 +495,12 @@ supersampling. The slider selects the printed portion; orbit and zoom change
 the camera. Large previews show raster progress as toolpaths appear. Stroke
 width is a visual approximation, not a measured nozzle or extrusion width.
 
-Math blocks are rendered by `wn-math`; MicroTeX is no longer linked into the
-main application. Each request accepts at most 4,096 source bytes and returns
+Math blocks are rendered by `wn-math`, which compiles Bragi's Odin C API
+alongside the helper and replays its drawing commands through a C++ Cairo
+shim. The main application does not link Bragi. Each request accepts at most
+4,096 source bytes and returns
 at most 8 MiB of straight RGBA pixels, with dimensions no larger than 4,096.
-The helper embeds its font. Invalid input, a failed helper or an exceeded
+The helper embeds Bragi's TeX Gyre DejaVu Math font. Invalid input, a failed helper or an exceeded
 budget leaves the source text visible instead of rendering it in-process.
 
 NES cartridges run in `wn-nes`, one helper per open game, over the same
@@ -508,8 +511,7 @@ reply, a dead helper or a missed ten-second deadline closes the player.
 
 On OpenBSD, `wn-image`, `wn-archive`, `wn-mesh`, `wn-fbx`, `wn-math` and `wn-nes` lock
 `unveil()` with no filesystem paths and pledge `stdio` before reading input.
-`wn-math` loads its fixed UTF-8 locale before confinement; parsing never
-opens locale files.
+`wn-math` parses UTF-8 directly, without locale initialization or runtime font files.
 `wn-pdf` initializes Fontconfig and the trusted bundled fonts first, then
 unveils the bundle, standard system font trees and Poppler resource directories
 read-only. Directory grants avoid OpenBSD's limit on individual unveiled names.
@@ -855,9 +857,9 @@ The workflow queues these five jobs together on two isolated
 runner slots, with six build threads per job and shared CPU/memory limits.
 Native and Linux jobs use `wn-cache-2`; Windows and OpenBSD use `wn-cache-1`.
 This keeps targets on warmed caches while both slots can build concurrently.
-MicroTeX is cached per target and slot, including its sources, patches, toolchain,
-and build flags; application `.c` and `.odin` edits do not rebuild it.
-Native SDL, MicroTeX, Odin overlay, and Odin object keys track SDK headers and
+Bragi's math-helper object is cached per target and slot, including its sources,
+font, toolchain, and build flags. Unrelated application edits do not rebuild it.
+Native SDL, Odin overlay, and Odin object keys track SDK headers and
 versions separately from shared-library contents. OpenBSD's boot-time library
 reordering invalidates linked executables, not these compiled outputs.
 It does not change the default-branch runner routing or include macOS.

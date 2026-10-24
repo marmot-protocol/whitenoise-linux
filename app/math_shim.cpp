@@ -1,5 +1,5 @@
 // One-shot math helper: untrusted TeX to straight-alpha RGBA pixels.
-// MicroTeX's process-wide macros, colors and switches die with the process;
+// Bragi's process-wide macros, colors and switches die with the process;
 // no parser state or parser code is shared with the UI.
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -17,9 +17,7 @@
 #include <cstring>
 #include <vector>
 
-#include "microtex.h"
-#include "utils/utils.h"
-#include "wrapper/cwrapper.h"
+#include "cwrapper.h"
 
 namespace {
 
@@ -31,7 +29,7 @@ unsigned int no_layout(const char *, FontDesc *) {
     return 0;
 }
 void no_bounds(unsigned int, TextLayoutBounds *b) {
-    microtex_setTextLayoutBounds(b, 0, 0, 0);
+    bragi_setTextLayoutBounds(b, 0, 0, 0);
 }
 void no_release(unsigned int) {
 }
@@ -73,7 +71,7 @@ void set_argb(cairo_t *cr, uint32_t argb) {
 }
 
 void round_rect(cairo_t *cr, float x, float y, float w, float h, float rx, float ry) {
-    // One radius for both axes; MicroTeX only emits these for \fbox-style
+    // One radius for both axes; Bragi only emits these for \fbox-style
     // frames, where rx == ry.
     double r = rx < ry ? rx : ry;
     double d = 3.14159265358979 / 180;
@@ -148,7 +146,7 @@ void paint(cairo_t *cr, Ink &ink, Paint mode, Shape shape) {
 }
 
 // Command ids and argument layouts are documented beside
-// microtex_getDrawingData in lib/wrapper/cwrapper.h.
+// bragi_getDrawingData in capi/include/cwrapper.h.
 bool replay(cairo_t *cr, const uint8_t *data, uint32_t fg) {
     Ink ink{fg, fg, {}};
     uint32_t total;
@@ -296,18 +294,17 @@ bool replay(cairo_t *cr, const uint8_t *data, uint32_t fg) {
 }
 
 // Load the embedded .clm2 font after confinement. Its bytes outlive the
-// single render; MicroTeX and its process-wide tables live until exit.
+// single render; Bragi and its process-wide tables live until exit.
 bool init_font(const uint8_t *font, unsigned long len) {
-    try {
-        microtex_registerCallbacks(no_layout, no_bounds, no_release, no_cached_path);
-        FontMetaPtr meta = microtex_init(len, font);
-        microtex::MicroTeX::setDefaultMathFont(microtex_getFontName(meta));
-        microtex_releaseFontMeta(meta);
-        microtex_setRenderGlyphUsePath(true);
-        return microtex_isInited();
-    } catch (...) {
+    bragi_registerCallbacks(no_layout, no_bounds, no_release, no_cached_path);
+    FontMetaPtr meta = bragi_init(len, font);
+    if (meta == nullptr) {
         return false;
     }
+    bragi_setDefaultMathFont(bragi_getFontName(meta));
+    bragi_releaseFontMeta(meta);
+    bragi_setRenderGlyphUsePath(true);
+    return bragi_isInited();
 }
 
 // Typeset one display-math expression, bounded before drawing allocation.
@@ -317,29 +314,22 @@ uint8_t *render_math(const char *tex, float size, uint32_t argb, uint32_t max_si
     DrawingData data = nullptr;
     cairo_surface_t *surface = nullptr;
     uint8_t *out = nullptr;
-    try {
-        // $$…$$ is display math: big operators with limits above and below,
-        // full-size fractions (TexStyle::display is 0).
-        render = microtex_parseRender(tex, 0, size, size / 3, argb, false, true, 0);
-        // Antialiasing and italic overhang spill a little past the box.
-        int pad = static_cast<int>(size / 8) + 1;
-        int64_t width = static_cast<int64_t>(microtex_getRenderWidth(render)) + 2 * pad;
-        int64_t height = static_cast<int64_t>(microtex_getRenderHeight(render)) + 2 * pad;
-        if (width > 2 * pad && height > 2 * pad && width <= max_side && height <= max_side &&
-            static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * 4 <= max_bytes) {
-            *w = static_cast<int>(width);
-            *h = static_cast<int>(height);
-            data = microtex_getDrawingData(render, pad, pad);
-        }
-    } catch (...) {
-        data = nullptr;
+    // Display math: big operators with limits above and below, full-size fractions.
+    render = bragi_parseRender(tex, 0, size, size / 3, argb, false, true, 0);
+    if (render == nullptr) {
+        return nullptr;
     }
-    try {
-        if (render != nullptr) {
-            microtex_deleteRender(render);
-        }
-    } catch (...) {
+    // Antialiasing and italic overhang spill a little past the box.
+    int pad = static_cast<int>(size / 8) + 1;
+    int64_t width = static_cast<int64_t>(bragi_getRenderWidth(render)) + 2 * pad;
+    int64_t height = static_cast<int64_t>(bragi_getRenderHeight(render)) + 2 * pad;
+    if (width > 2 * pad && height > 2 * pad && width <= max_side && height <= max_side &&
+        static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * 4 <= max_bytes) {
+        *w = static_cast<int>(width);
+        *h = static_cast<int>(height);
+        data = bragi_getDrawingData(render, pad, pad);
     }
+    bragi_deleteRender(render);
     if (data == nullptr) {
         return nullptr;
     }
@@ -349,7 +339,7 @@ uint8_t *render_math(const char *tex, float size, uint32_t argb, uint32_t max_si
     set_argb(cr, argb);
     bool drawn = replay(cr, static_cast<const uint8_t *>(data), argb);
     cairo_destroy(cr);
-    microtex_freeDrawingData(data);
+    bragi_freeDrawingData(data);
     cairo_surface_flush(surface);
 
     if (drawn && cairo_surface_status(surface) == CAIRO_STATUS_SUCCESS) {
@@ -378,9 +368,6 @@ int run(const uint8_t *font, unsigned long length) {
         return 1;
     }
 #ifdef __OpenBSD__
-    // Character classification lazily opens OpenBSD's UTF-8 locale.
-    // Initialize the fixed locale before dropping every filesystem path.
-    (void)microtex::defaultLocale();
     if (unveil(nullptr, nullptr) || pledge("stdio", nullptr)) {
         return 1;
     }

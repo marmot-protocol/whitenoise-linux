@@ -993,7 +993,7 @@ md_blocks :: proc(
 					}
 				}
 			case .Math:
-				// Typeset when MicroTeX accepts it, centered like display
+				// Typeset when Bragi accepts it, centered like display
 				// math; otherwise fall through to the source on the plate.
 				if tex := math_texture(block.text); tex != nil {
 					if clay.UI(clay.ID("MsgMath", block_id))(

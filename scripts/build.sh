@@ -410,57 +410,24 @@ if [ "${1:-}" != sources ]; then
   fi
 fi
 
-# Math blocks: MicroTeX (MIT) typesets TeX into a draw-command stream and
-# app/math_shim.cpp replays it onto a cairo surface. Pinned to the
-# openmath branch: its core is dependency-free C++17, and its C wrapper
-# emits glyphs as paths, so no font rasterizer or GTK stack is involved.
-# The checkout also carries TeX Gyre DejaVu Math pre-converted to MicroTeX's .clm2
-# format, which app/math.odin #loads.
-#
-# patches/microtex-isolation.patch keeps one formula from changing the
-# next: MicroTeX holds \newcommand definitions and \definecolor colors in
-# process-wide maps. The patch bounds macro expansion, refuses to replace
-# built-ins, and adds the resets the shim calls after every render.
-# patches/microtex-libcxx-includes.patch adds headers libstdc++ pulls in
-# transitively but LLVM's libc++ (the Windows and macOS toolchains) does not.
-# patches/microtex-locale-fallback.patch falls back to C.UTF-8 when the host
-# has no en_US.UTF-8, which otherwise fails most renders with an exception.
-MICROTEX="$HERE/vendor/microtex"
-MICROTEX_PIN="$(pin microtex)"
-MICROTEX_PATCHES=("$HERE/patches/microtex-isolation.patch" "$HERE/patches/microtex-libcxx-includes.patch" "$HERE/patches/microtex-locale-fallback.patch")
-if [ ! -d "$MICROTEX" ]; then
-  git clone --filter=blob:none https://github.com/NanoMichael/MicroTeX.git "$MICROTEX"
+# Bragi (GPL-3.0) is compiled with its C API into the Odin math helper.
+# The C++ shim only replays its drawing commands onto a cairo surface.
+# The checkout carries the TeX Gyre DejaVu Math .clm2 font embedded by Odin.
+BRAGI="$HERE/vendor/bragi"
+BRAGI_PIN="$(pin bragi)"
+if [ ! -d "$BRAGI" ]; then
+  git clone --filter=blob:none https://relay.ngit.dev/npub1ven4zk8xxw873876gx8y9g9l9fazkye9qnwnglcptgvfwxmygscqsxddfh/Bragi.git "$BRAGI"
 fi
-if [ "$(git -C "$MICROTEX" rev-parse HEAD)" != "$MICROTEX_PIN" ]; then
-  git -C "$MICROTEX" checkout -- .
-  git -C "$MICROTEX" fetch origin "$MICROTEX_PIN"
-  git -C "$MICROTEX" checkout --detach "$MICROTEX_PIN"
-  rm -rf "$HERE/build/microtex"
+if [ "$(git -C "$BRAGI" rev-parse HEAD)" != "$BRAGI_PIN" ]; then
+  git -C "$BRAGI" fetch origin "$BRAGI_PIN"
+  git -C "$BRAGI" checkout --detach "$BRAGI_PIN"
 fi
-for patch in "${MICROTEX_PATCHES[@]}"; do
-  if git -C "$MICROTEX" apply --check "$patch" 2>/dev/null; then
-    git -C "$MICROTEX" apply "$patch"
-  elif ! git -C "$MICROTEX" apply --reverse --check "$patch" 2>/dev/null; then
-    echo "==> MicroTeX patch conflicts with vendor/microtex: $patch" >&2
-    exit 1
-  fi
-done
 if [ "${1:-}" != sources ]; then
-  MICROTEX_STAMP="$(native_compile_key 'MicroTeX Release PIC STATIC CWRAPPER no-log no-debug no-font-find' "$MICROTEX" "${MICROTEX_PATCHES[@]}")"
-  if ! build_cache_fresh "$MICROTEX_STAMP" "$HERE/build/microtex/stamp" "$HERE/build/microtex/lib/libmicrotex.a" "$HERE/build/microtex/lib/microtexconfig.h"; then
-    rm -rf "$HERE/build/microtex"
-    cmake -S "$MICROTEX" -B "$HERE/build/microtex" -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_STATIC=ON -DHAVE_CWRAPPER=ON \
-      -DHAVE_LOG=OFF -DGRAPHICS_DEBUG=OFF -DHAVE_AUTO_FONT_FIND=OFF
-    cmake --build "$HERE/build/microtex" --target microtex -j"$(getconf NPROCESSORS_ONLN)"
-    build_cache_store "$MICROTEX_STAMP" "$HERE/build/microtex/stamp" "$HERE/build/microtex/lib/libmicrotex.a" "$HERE/build/microtex/lib/microtexconfig.h"
-    rm -f "$HERE/build/libwnmath.a"
-  fi
   mkdir -p "$HERE/build/math"
-  MATH_KEY="$(native_key 'math C++17 O2 PIC Wall Wextra HAVE_CWRAPPER cairo' "$HERE/app/math_shim.cpp" "$MICROTEX/lib" "$HERE/build/microtex/lib/microtexconfig.h")"
+  MATH_KEY="$(native_key 'math C++17 O2 PIC Wall Wextra Bragi cairo' "$HERE/app/math_shim.cpp" "$BRAGI/capi/include")"
   if ! build_cache_fresh "$MATH_KEY" "$HERE/build/math/stamp" "$HERE/build/libwnmath.a"; then
     rm -f "$HERE/build/math/stamp"
-    c++ -std=c++17 -c -O2 -fPIC -Wall -Wextra -DHAVE_CWRAPPER -isystem "$MICROTEX/lib" -isystem "$HERE/build/microtex/lib" \
+    c++ -std=c++17 -c -O2 -fPIC -Wall -Wextra -isystem "$BRAGI/capi/include" \
       $(pkg-config --cflags cairo) "$HERE/app/math_shim.cpp" -o "$HERE/build/math/math_shim.o"
     rm -f "$HERE/build/libwnmath.a"
     ar rcs "$HERE/build/libwnmath.a" "$HERE/build/math/math_shim.o"
@@ -640,8 +607,8 @@ if [ ! -f "$FONTS/Noto-LICENSE.txt" ]; then
   cp "$NOTO_LICENSE" "$FONTS/Noto-LICENSE.txt"
 fi
 
-# The math font (TeX Gyre DejaVu Math, app/math.odin) is under the GUST
-# Font License, with the DejaVu changes in the public domain. MicroTeX's
+# The math font (TeX Gyre DejaVu Math, math-decoder/main.odin) is under the GUST
+# Font License, with the DejaVu changes in the public domain. Bragi's
 # copy ships only a README that names both texts, so stage them here.
 # Keep GUST local: CTAN's regional mirrors are not reliably reachable from CI.
 # Source: https://mirrors.ctan.org/fonts/tex-gyre-math/doc/GUST-FONT-LICENSE.txt
@@ -782,8 +749,8 @@ ODIN_LINK_ENV="$(native_key "Odin native $ODIN_SYS_KEY ${ODIN_ROOT_ARG[*]}" "$AC
 MESH_OBJECT_KEY="$(native_compile_key "mesh Odin speed $ODIN_ENV" "$HERE/model-decoder")"
 MESH_ODIN_KEY="$(native_key "mesh Odin speed $ODIN_LINK_ENV" "$HERE/model-decoder" "$HERE/build/libwnmesh.a")"
 native_odin_build wn-mesh "$HERE/model-decoder" "$ACTIVE_ODIN" speed "$MESH_OBJECT_KEY" "$MESH_ODIN_KEY"
-MATH_OBJECT_KEY="$(native_compile_key "math Odin speed $ODIN_ENV" "$HERE/math-decoder" "$MICROTEX/res/tex-gyre/texgyredejavu-math.clm2")"
-MATH_ODIN_KEY="$(native_key "math Odin speed $ODIN_LINK_ENV" "$HERE/math-decoder" "$HERE/build/libwnmath.a" "$HERE/build/microtex/lib/libmicrotex.a" "$MICROTEX/res/tex-gyre/texgyredejavu-math.clm2")"
+MATH_OBJECT_KEY="$(native_compile_key "math Odin speed $ODIN_ENV" "$HERE/math-decoder" "$BRAGI")"
+MATH_ODIN_KEY="$(native_key "math Odin speed $ODIN_LINK_ENV" "$HERE/math-decoder" "$HERE/build/libwnmath.a" "$BRAGI")"
 native_odin_build wn-math "$HERE/math-decoder" "$ACTIVE_ODIN" speed "$MATH_OBJECT_KEY" "$MATH_ODIN_KEY"
 NES_OBJECT_KEY="$(native_compile_key "nes Odin speed $ODIN_ENV" "$HERE/nes-decoder")"
 NES_ODIN_KEY="$(native_key "nes Odin speed $ODIN_LINK_ENV" "$HERE/nes-decoder" "$HERE/build/libwnmesh.a")"

@@ -48,12 +48,12 @@ if [ -n "$SPEECH" ]; then
   cp "$HERE/vendor/sherpa-onnx/LICENSE-onnxruntime" "$RES/licenses/onnxruntime.txt"
   cp "$HERE/vendor/sherpa-onnx/ThirdPartyNotices-onnxruntime.txt" "$RES/licenses/onnxruntime-third-party.txt"
 fi
-# MicroTeX and the TeX Gyre DejaVu Math font it typesets with are linked
+# Bragi and the TeX Gyre DejaVu Math font it typesets with are compiled
 # and #loaded into wn-math; ship their licenses (the font: GUST Font
 # License, DejaVu changes public domain; texts staged by build.sh).
-cp "$HERE/vendor/microtex/LICENSE" "$RES/licenses/microtex.txt"
+cp "$HERE/vendor/bragi/LICENSE" "$RES/licenses/bragi.txt"
 if [ "$(uname -s)" = OpenBSD ]; then cp "$HERE/vendor/sdl/LICENSE.txt" "$RES/licenses/sdl.txt"; fi
-cp "$HERE/vendor/microtex/res/tex-gyre/README-TeX-Gyre-DejaVu-Math.txt" "$RES/licenses/tex-gyre-dejavu-math.txt"
+cp "$HERE/vendor/bragi/res/tex-gyre/README-TeX-Gyre-DejaVu-Math.txt" "$RES/licenses/tex-gyre-dejavu-math.txt"
 cp "$HERE/vendor/fonts/GUST-FONT-LICENSE.txt" "$RES/licenses/gust-font-license.txt"
 cp "$HERE/vendor/fonts/DejaVu-LICENSE.txt" "$RES/licenses/dejavu.txt"
 if [ -n "$SPEECH" ]; then
