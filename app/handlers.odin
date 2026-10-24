@@ -1558,6 +1558,7 @@ open_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.nc_contact_sel = 0
 	ui.nc_member_choice = 0
 	ed_set(ui, &ui.nc_member, "")
+	ed_set(ui, &ui.nc_name, "")
 	clear(&ui.nc_search)
 	nc_contacts_free(&ui.nc_contacts)
 	job := account_job_new(ui, client, .Read_Contacts)
