@@ -481,6 +481,9 @@ msgstr "4月"
 msgid "Archive"
 msgstr "アーカイブ"
 
+msgid "Archive this chat?"
+msgstr "このチャットをアーカイブしますか？"
+
 msgid "Archived"
 msgstr "アーカイブ済み"
 
@@ -4828,6 +4831,9 @@ msgstr "あなた"
 
 msgid "You are signed out, but your signer record could not be removed from the encrypted vault."
 msgstr "サインアウトしましたが、署名者の記録を暗号化された保管庫から削除できませんでした。"
+
+msgid "You can find it in Archived and restore it to your chat list there."
+msgstr "アーカイブ済みからこのチャットを見つけて、チャットリストに戻すことができます。"
 
 msgid "You can't send messages to someone you blocked."
 msgstr "ブロックした相手にはメッセージを送信できません。"

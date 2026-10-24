@@ -481,6 +481,9 @@ msgstr "Apr."
 msgid "Archive"
 msgstr "Archivieren"
 
+msgid "Archive this chat?"
+msgstr "Diesen Chat archivieren?"
+
 msgid "Archived"
 msgstr "Archiviert"
 
@@ -4828,6 +4831,9 @@ msgstr "Du"
 
 msgid "You are signed out, but your signer record could not be removed from the encrypted vault."
 msgstr "Du bist abgemeldet, aber dein Signer-Eintrag konnte nicht aus dem verschlüsselten Tresor entfernt werden."
+
+msgid "You can find it in Archived and restore it to your chat list there."
+msgstr "Du findest ihn unter Archiviert und kannst ihn dort in deiner Chatliste wiederherstellen."
 
 msgid "You can't send messages to someone you blocked."
 msgstr "Du kannst Personen, die du blockiert hast, keine Nachrichten senden."

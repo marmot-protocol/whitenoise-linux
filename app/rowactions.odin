@@ -898,7 +898,7 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clay.PointerOver(clay.ID("RowArchive")) {
-		set_archived(ui, client, gid, true)
+		confirm_ask(ui, .Archive_Chat, gid, ui.chats[index].title)
 		return
 	}
 	if clay.PointerOver(clay.ID("RowPin")) {
