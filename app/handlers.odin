@@ -913,15 +913,22 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		blocked_dm == "" &&
 		((rl.IsKeyPressed(.ENTER) && !shift_down()) ||
 				clicked("SendBtn") ||
-				test_send_now) &&
-		stage_files_ready(ui)
+				test_send_now)
 	test_send_now = false
 	// Staged attachments send on their own only outside an edit (an
 	// edit needs text and never sends them). A composer of only
 	// whitespace counts as empty: it stays put rather than sending a
 	// blank row.
 	has_text := strings.trim_space(string(ui.compose[:])) != ""
-	if send && (has_text || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
+	if send && !has_text && len(ui.editing) > 0 {
+		// An empty edit cancels like Escape, without sending the restored
+		// draft or any staged attachments in this same frame.
+		cancel_edit(ui)
+		return
+	}
+	if send &&
+	   stage_files_ready(ui) &&
+	   (has_text || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
 		// Sending finishes a trailing emoticon: "ok :D" goes out as "ok 😃".
 		ed_begin(ui, &ui.compose)
 		ui.ed.selection = {len(ui.compose), len(ui.compose)}
