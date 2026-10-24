@@ -33,7 +33,11 @@ builtin_emoji_tex: [len(BUILTIN_EMOJI)]^rl.Texture2D
 
 emoji_dir :: proc(allocator := context.temp_allocator) -> string {
 	path := settings_path(allocator)
-	return fmt.aprintf("%s/emoji", path[:len(path) - len("/settings.json")], allocator = allocator)
+	return fmt.aprintf(
+		"%s/emoji",
+		path[:len(path) - len("/settings.json")],
+		allocator = allocator,
+	)
 }
 
 // Shortcode of a stored file: the filename stem ("party.png" → "party").
@@ -261,14 +265,17 @@ save_staged_emoji :: proc(ui: ^Ui_State) {
 		ui.banner_seen = ""
 		set_status(
 			ui,
-			tr("Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name."),
+			tr(
+				"Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name.",
+			),
 			.Error,
 		)
 		return
 	}
 	data, read_err := os.read_entire_file(ui.emoji_staged, context.temp_allocator)
 	if read_err != nil {
-		cancel_staged_emoji(ui)
+		ui.banner_seen = ""
+		set_status(ui, tr("Couldn't save your emoji. Please try again."), .Error)
 		return
 	}
 
@@ -279,7 +286,26 @@ save_staged_emoji :: proc(ui: ^Ui_State) {
 	}
 	name := fmt.tprintf("%s%s", strings.to_string(code), ext)
 	os.make_directory(emoji_dir())
-	_ = os.write_entire_file(fmt.tprintf("%s/%s", emoji_dir(), name), data)
+	// Publish only a complete copy, so a failed write cannot truncate an
+	// existing emoji. The private staging directory is removed on every exit.
+	staging, staging_err := os.make_directory_temp(
+		emoji_dir(),
+		".save-*",
+		context.temp_allocator,
+	)
+	if staging_err != nil {
+		ui.banner_seen = ""
+		set_status(ui, tr("Couldn't save your emoji. Please try again."), .Error)
+		return
+	}
+	defer os.remove_all(staging)
+	next := fmt.tprintf("%s/image", staging)
+	if os.write_entire_file(next, data) != nil ||
+	   os.rename(next, fmt.tprintf("%s/%s", emoji_dir(), name)) != nil {
+		ui.banner_seen = ""
+		set_status(ui, tr("Couldn't save your emoji. Please try again."), .Error)
+		return
+	}
 
 	// Drop a stale texture when redefining an existing shortcode.
 	if old, ok := custom_emoji_textures[name]; ok {

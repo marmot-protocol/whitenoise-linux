@@ -1444,6 +1444,9 @@ msgstr ""
 msgid "Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name."
 msgstr ""
 
+msgid "Couldn't save your emoji. Please try again."
+msgstr ""
+
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr ""
 

@@ -1448,6 +1448,9 @@ msgstr "Das Theme konnte nicht gespeichert werden. Überprüfe den Namen und die
 msgid "Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name."
 msgstr "Dein Emoji konnte nicht gespeichert werden. Verwende im Namen mindestens einen ASCII-Buchstaben, eine Ziffer, einen Unterstrich oder einen Bindestrich."
 
+msgid "Couldn't save your emoji. Please try again."
+msgstr "Dein Emoji konnte nicht gespeichert werden. Bitte versuche es erneut."
+
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "Deine Signer-Sitzung konnte nicht im verschlüsselten Tresor gespeichert werden. Bitte versuche es erneut."
 
