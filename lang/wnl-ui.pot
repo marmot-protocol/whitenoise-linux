@@ -480,6 +480,9 @@ msgstr ""
 msgid "Archive"
 msgstr ""
 
+msgid "Archive this chat?"
+msgstr ""
+
 msgid "Archived"
 msgstr ""
 
@@ -4820,6 +4823,9 @@ msgid "You"
 msgstr ""
 
 msgid "You are signed out, but your signer record could not be removed from the encrypted vault."
+msgstr ""
+
+msgid "You can find it in Archived and restore it to your chat list there."
 msgstr ""
 
 msgid "You can't send messages to someone you blocked."

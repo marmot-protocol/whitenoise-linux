@@ -23,6 +23,7 @@ Confirm_Kind :: enum {
 	Delete_Me, // hide locally
 	Leave_Group,
 	Leave_Chat,
+	Archive_Chat,
 	Block,
 	Remove_Contact,
 	Delete_Theme,
@@ -45,6 +46,7 @@ Confirm :: struct {
 	arg:  string, // message id, member hex, relay url: whatever the kind acts on
 	name: string, // what the copy names ("Ana", "wss://relay.example")
 	idx:  int, // relay index, for the list removals
+	account: string, // owning account for Archive_Chat
 }
 
 // Title, body, and the danger button's label per kind.
@@ -72,6 +74,10 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_(
 			"Block this contact?",
 		), N_("Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."), N_("Block")
+	case .Archive_Chat:
+		return N_(
+			"Archive this chat?",
+		), N_("You can find it in Archived and restore it to your chat list there."), N_("Archive")
 	case .Delete_Theme:
 		return N_(
 			"Delete this theme?",
@@ -152,11 +158,15 @@ confirm_ask :: proc(
 	// Frees the previous ask's payload, which confirm_close left alone.
 	delete(ui.confirm.arg)
 	delete(ui.confirm.name)
+	delete(ui.confirm.account)
 	ui.confirm = Confirm {
 		kind = kind,
 		arg  = strings.clone(arg),
 		name = strings.clone(name),
 		idx  = idx,
+	}
+	if kind == .Archive_Chat {
+		ui.confirm.account = strings.clone(ui.account_ref)
 	}
 	confirm_shown = kind
 }
@@ -277,6 +287,11 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		load_timeline(client, ui)
 	case .Leave_Group, .Leave_Chat:
 		leave_group(ui, client)
+	case .Archive_Chat:
+		// A background account switch must not retarget the captured intent.
+		if c.account != ui.account_ref {return}
+		// The menu's chat may not be the selected conversation.
+		set_archived(ui, client, c.arg, true)
 	case .Block:
 		ui.blocked[strings.clone(c.arg)] = true
 		save_settings(ui)
