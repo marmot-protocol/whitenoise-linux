@@ -160,7 +160,9 @@ chat_folder_slot :: proc(ui: ^Ui_State, chat: ^Chat_Row_Ui, slots: map[string]in
 folder_rules_need_members :: proc(prefs: Prefs) -> bool {
 	for _, set in prefs.folder_rules {
 		for rule in set.rules {
-			if rule.kind == .Has_Member || rule.kind == .Fewer_Than || rule.kind == .More_Than {
+			if rule.kind == .Has_Member ||
+			   rule.kind == .Fewer_Than ||
+			   rule.kind == .More_Than {
 				return true
 			}
 		}
@@ -339,6 +341,10 @@ folder_rules_parse :: proc(ui: ^Ui_State) -> (set: Folder_Rules, bad: int, why: 
 				folder_rules_free(set)
 				return {}, i, tr("Enter the number of people as a whole number and try again.")
 			}
+			if draft.kind == .Fewer_Than && count < 2 {
+				folder_rules_free(set)
+				return {}, i, tr("Enter at least 2 people. Counts include you.")
+			}
 			rule.count = count
 		case .Unread, .Has_Draft:
 		}
@@ -360,8 +366,16 @@ folder_rules_editor :: proc(ui: ^Ui_State) {
 	)
 	if len(ui.folder_rules) > 1 {
 		if clay.UI(clay.ID("FolderMatch"))({layout = {childGap = 8}}) {
-			folder_match_chip("FolderMatchAll", tr("Match all rules"), ui.folder_match == .All)
-			folder_match_chip("FolderMatchAny", tr("Match any rule"), ui.folder_match == .Any)
+			folder_match_chip(
+				"FolderMatchAll",
+				tr("Match all rules"),
+				ui.folder_match == .All,
+			)
+			folder_match_chip(
+				"FolderMatchAny",
+				tr("Match any rule"),
+				ui.folder_match == .Any,
+			)
 		}
 	}
 	for &draft, i in ui.folder_rules {
@@ -422,9 +436,17 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 			)
 			clay.Text(
 				tr(FOLDER_RULE_LABELS[draft.kind]),
-				{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
+				{
+					fontId = FONT_TITLE,
+					fontSize = 13,
+					textColor = TEXT,
+					wrapMode = .None,
+				},
 			)
-			clay.Text("\u2304", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+			clay.Text(
+				"\u2304",
+				{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM},
+			)
 			if hovered() && !menu_open {
 				tooltip(tr("Change rule type"))
 				cursor_raise(.Pointer)
@@ -452,11 +474,15 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 				border = {color = focused ? ACCENT : FIELD_BORDER, width = bw()},
 			},
 			) {
-				placeholder := draft.kind == .Has_Member ? "npub1..." : (counts ? "0" : tr("Word"))
+				placeholder :=
+					draft.kind == .Has_Member ? "npub1..." : (counts ? (draft.kind == .Fewer_Than ? "2" : "0") : tr("Word"))
 				field_text(ui, id, &draft.input, placeholder, focused, 13, TEXT_LO)
 			}
 			if counts {
-				clay.Text(tr("people"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+				clay.Text(
+					tr("people"),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				)
 			}
 		}
 		// Word and npub boxes fill the row; the rest push remove to the end.
@@ -475,7 +501,10 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 			cornerRadius = rr(7),
 		},
 		) {
-			clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+			clay.Text(
+				ICON_CLOSE,
+				{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
+			)
 			if hovered() {
 				tooltip(tr("Remove rule"))
 				cursor_raise(.Pointer)
@@ -552,7 +581,8 @@ handle_folder_rule_menu :: proc(ui: ^Ui_State) -> bool {
 	if index >= len(ui.folder_rules) {return true}
 	draft := &ui.folder_rules[index]
 	for kind in Folder_Rule_Kind {
-		if !clay.PointerOver(clay.ID(folder_rule_pick_id(kind))) || kind == draft.kind {continue}
+		if !clay.PointerOver(clay.ID(folder_rule_pick_id(kind))) ||
+		   kind == draft.kind {continue}
 		draft.kind = kind
 		clear(&draft.input)
 		if folder_rule_typed(kind) {focus_rule(ui, index)}
