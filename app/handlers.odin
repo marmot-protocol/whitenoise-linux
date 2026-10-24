@@ -2072,12 +2072,21 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if (rl.IsKeyPressed(.ENTER) || clicked("InviteBtn")) &&
-	   ui.focus == .Invite &&
-	   admin &&
-	   len(ui.invite_input) > 0 {
+	if (clicked("InviteBtn") || (rl.IsKeyPressed(.ENTER) && ui.focus == .Invite)) && admin {
 		if ui.nip05_ticket != 0 {return}
 		input := string(ui.invite_input[:])
+		if strings.trim_space(input) == "" {
+			ui.focus = .Invite
+			ui.banner_seen = ""
+			set_status(
+				ui,
+				strings.clone(
+					tr("Couldn't invite the member. Enter an npub or nprofile and try again."),
+				),
+				.Error,
+			)
+			return
+		}
 		if nc_is_bit(strings.trim_space(input)) {
 			invite_member(ui, client, input)
 		} else if strings.contains(input, "@") {

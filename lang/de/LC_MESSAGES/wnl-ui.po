@@ -1259,6 +1259,9 @@ msgstr "Kontakte konnten nicht importiert werden. Verwende den CSV-Header name,n
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "Der Sticker konnte nicht importiert werden. Wähle ein Bild unter 4 MiB."
 
+msgid "Couldn't invite the member. Enter an npub or nprofile and try again."
+msgstr "Das Mitglied konnte nicht eingeladen werden. Gib einen npub oder nprofile ein und versuche es erneut."
+
 #, c-format
 msgid "Couldn't keep %s running. Please try again."
 msgstr "%s konnte nicht weiterlaufen. Bitte versuche es erneut."

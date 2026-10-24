@@ -1259,6 +1259,9 @@ msgstr "連絡先をインポートできませんでした。CSVヘッダーを
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "ステッカーを読み込めませんでした。4 MiB未満の画像を選んでください。"
 
+msgid "Couldn't invite the member. Enter an npub or nprofile and try again."
+msgstr "メンバーを招待できませんでした。npub または nprofile を入力して、もう一度お試しください。"
+
 #, c-format
 msgid "Couldn't keep %s running. Please try again."
 msgstr "%sの実行を続けられませんでした。もう一度お試しください。"

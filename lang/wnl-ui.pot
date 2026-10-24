@@ -1255,6 +1255,9 @@ msgstr ""
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr ""
 
+msgid "Couldn't invite the member. Enter an npub or nprofile and try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't keep %s running. Please try again."
 msgstr ""
