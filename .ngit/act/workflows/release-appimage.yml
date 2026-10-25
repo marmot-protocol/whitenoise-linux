@@ -13,9 +13,8 @@
 # (kind 9841): `upload-artifact` IS "publish to Blossom" here. There is no
 # forge token; optional observability write tokens come from runner secrets.
 #
-# No actions/cache here, unlike the GitHub workflow: act containers are
-# ephemeral and the cache backend is not reliably present, so SDL3 and Odin
-# are fetched each run.
+# The worker image contains the pinned SDK. A repository/trust-scoped mount
+# preserves source checkouts, Cargo state, and content-keyed build outputs.
 #
 # Notes / operator dependencies:
 #   * Blossom publishing requires the coordinator to be started with
@@ -34,8 +33,9 @@ on:
     branches: [master]
 
 env:
-  ODIN_VERSION: dev-2026-09
-  SDL_VERSION: "3.4.14"
+  CARGO_BUILD_JOBS: 6
+  WN_BUILD_JOBS: 6
+  CMAKE_BUILD_PARALLEL_LEVEL: 6
   # The AppImage tooling, pinned by tag and sha256 like everything else
   # this build fetches. Upstream's "continuous" release is mutable, so
   # these use its dated tags instead.
@@ -51,52 +51,27 @@ jobs:
   appimage:
     name: build staging AppImage (x86_64)
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: /var/cache/wn-ci/worktree
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            pkg-config cmake ninja-build clang git curl \
-            libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
-            libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev libxtst-dev \
-            file desktop-file-utils wget ca-certificates unzip zstd
+      - name: Restore the exact source revision and build state
+        working-directory: ${{ github.workspace }}
+        run: bash scripts/ngit-stage.sh
 
-      - name: Build SDL3
-        run: |
-          git clone --depth 1 -b "release-$SDL_VERSION" \
-            https://github.com/libsdl-org/SDL.git /tmp/SDL
-          cmake -S /tmp/SDL -B /tmp/SDL/build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/sdl3
-          cmake --build /tmp/SDL/build
-          sudo cmake --install /tmp/SDL/build
-          echo /usr/local/sdl3/lib | sudo tee /etc/ld.so.conf.d/sdl3.conf
-          sudo ldconfig
-          echo "PKG_CONFIG_PATH=/usr/local/sdl3/lib/pkgconfig" >> "$GITHUB_ENV"
-          echo "LIBRARY_PATH=/usr/local/sdl3/lib" >> "$GITHUB_ENV"
-
-      - name: Install Odin
-        run: |
-          sudo mkdir -p /usr/local/odin
-          curl -sSfL "https://github.com/odin-lang/Odin/releases/download/$ODIN_VERSION/odin-linux-amd64-$ODIN_VERSION.tar.gz" \
-            | sudo tar xz -C /usr/local/odin --strip-components=1
-          sudo chmod +x /usr/local/odin/odin
-          echo /usr/local/odin >> "$GITHUB_PATH"
-
-      # marmot-c is a Rust staticlib built from the mdk revision pinned in
-      # DEPS_PIN.
-      - name: Install Rust
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-            | sh -s -- -y --default-toolchain stable --profile minimal
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-
-      - name: Build
+      - name: Build and test
         env:
           WN_METRICS_WRITE_TOKEN: ${{ secrets.WN_METRICS_WRITE_TOKEN }}
           WN_AUDIT_WRITE_TOKEN: ${{ secrets.WN_AUDIT_WRITE_TOKEN }}
-        run: scripts/build.sh
+        run: |
+          gpg --batch --pinentry-mode loopback --passphrase '' --quick-generate-key \
+            'White Noise CI fixtures <ci-fixtures@whitenoise.invalid>' ed25519 sign 0
+          git config --global user.signingkey ci-fixtures@whitenoise.invalid
+          git config --global commit.gpgsign true
+          bash scripts/build.sh test
 
       - name: Remove generated observability credentials
         if: always()
@@ -114,10 +89,14 @@ jobs:
       - name: Build AppImage
         run: |
           set -euo pipefail
-          wget -q -O linuxdeploy \
-            "https://github.com/linuxdeploy/linuxdeploy/releases/download/$LINUXDEPLOY_VERSION/linuxdeploy-x86_64.AppImage"
-          wget -q -O appimagetool \
-            "https://github.com/AppImage/appimagetool/releases/download/$APPIMAGETOOL_VERSION/appimagetool-x86_64.AppImage"
+          if [ ! -f linuxdeploy ]; then
+            wget -q -O linuxdeploy \
+              "https://github.com/linuxdeploy/linuxdeploy/releases/download/$LINUXDEPLOY_VERSION/linuxdeploy-x86_64.AppImage"
+          fi
+          if [ ! -f appimagetool ]; then
+            wget -q -O appimagetool \
+              "https://github.com/AppImage/appimagetool/releases/download/$APPIMAGETOOL_VERSION/appimagetool-x86_64.AppImage"
+          fi
           echo "$LINUXDEPLOY_SHA256  linuxdeploy" | sha256sum -c -
           echo "$APPIMAGETOOL_SHA256  appimagetool" | sha256sum -c -
           chmod +x linuxdeploy appimagetool
@@ -153,5 +132,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: whitenoise-staging-x86_64
-          path: ${{ env.APPIMAGE_NAME }}
+          path: /var/cache/wn-ci/worktree/${{ env.APPIMAGE_NAME }}
           if-no-files-found: error

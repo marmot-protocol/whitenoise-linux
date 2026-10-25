@@ -1,0 +1,49 @@
+FROM ghcr.io/catthehacker/ubuntu@sha256:62d572b92f9f32d3427b6d220ad1f9dca9c7b6ffad37d295425037dbff78abaf
+
+USER root
+ENV DEBIAN_FRONTEND=noninteractive \
+    CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rustup \
+    CARGO_BUILD_JOBS=6 \
+    CMAKE_BUILD_PARALLEL_LEVEL=6 \
+    WN_BUILD_JOBS=6
+
+RUN apt-get update && apt-get remove -y moby-cli \
+    && apt-get install -y --no-install-recommends \
+    pkg-config cmake ninja-build clang git curl gettext gnupg podman podman-docker \
+    fuse-overlayfs slirp4netns catatonit \
+    libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev \
+    libcurl4-openssl-dev libssl-dev libglib2.0-dev libfreetype-dev \
+    libavformat-dev libavcodec-dev libavutil-dev libswresample-dev libxtst-dev \
+    file desktop-file-utils wget ca-certificates unzip zstd \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /etc/containers \
+    && printf '[engine]\ncgroup_manager="cgroupfs"\nevents_logger="file"\n[containers]\ninit_path="/usr/bin/catatonit"\n' > /etc/containers/containers.conf \
+    && printf '[storage]\ndriver="overlay"\nrunroot="/run/containers/storage"\ngraphroot="/var/lib/containers/storage"\n[storage.options.overlay]\nmount_program="/usr/bin/fuse-overlayfs"\n' > /etc/containers/storage.conf
+
+RUN git init /tmp/SDL \
+    && git -C /tmp/SDL fetch --depth 1 https://github.com/libsdl-org/SDL.git 683181b47cfabd293e3ea409f838915b8297a4fd \
+    && git -C /tmp/SDL checkout --detach FETCH_HEAD \
+    && cmake -S /tmp/SDL -B /tmp/SDL/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/sdl3 \
+    && cmake --build /tmp/SDL/build --parallel 6 \
+    && cmake --install /tmp/SDL/build \
+    && echo /usr/local/sdl3/lib > /etc/ld.so.conf.d/sdl3.conf \
+    && ldconfig \
+    && rm -rf /tmp/SDL
+
+RUN mkdir -p /usr/local/odin \
+    && curl -fL -o /tmp/odin.tar.gz https://github.com/odin-lang/Odin/releases/download/dev-2026-09/odin-linux-amd64-dev-2026-09.tar.gz \
+    && echo '167c3e1d7056419dad2e04bb3bd98715b7ff286d4c125f3c5a5ee337c6254283  /tmp/odin.tar.gz' | sha256sum -c - \
+    && tar -xzf /tmp/odin.tar.gz -C /usr/local/odin --strip-components=1 \
+    && chmod +x /usr/local/odin/odin \
+    && rm /tmp/odin.tar.gz
+
+RUN curl --proto '=https' --tlsv1.2 -fsSL -o /tmp/rustup.sh https://sh.rustup.rs \
+    && sh /tmp/rustup.sh -y --default-toolchain 1.99.1 --profile minimal \
+    && rm /tmp/rustup.sh
+
+ENV PATH=/usr/local/odin:/usr/local/cargo/bin:${PATH} \
+    PKG_CONFIG_PATH=/usr/local/sdl3/lib/pkgconfig \
+    LIBRARY_PATH=/usr/local/sdl3/lib

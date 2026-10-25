@@ -17,7 +17,7 @@ typedef struct {
 #ifdef _WIN32
 #include <windows.h>
 
-/* Signed seconds into the device's current timezone, including its DST
+/* Signed Unix seconds into the device's current timezone, including its DST
  * rule for that year. 0 for instants FILETIME or years 1601..9999 can't
  * hold; the caller keeps the raw token then. */
 int wn_timestamp_local(int64_t seconds, wn_local_time *out) {
@@ -47,7 +47,7 @@ int wn_timestamp_local(int64_t seconds, wn_local_time *out) {
 #else
 #include <time.h>
 
-/* Signed seconds into the device's current timezone; tzset re-reads TZ
+/* Signed Unix seconds into the device's current timezone; tzset re-reads TZ
  * and the zone file on every call. 0 for instants outside years
  * 1..9999 or the platform's time_t; the caller keeps the raw token then. */
 int wn_timestamp_local(int64_t seconds, wn_local_time *out) {

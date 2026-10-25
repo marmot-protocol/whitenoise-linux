@@ -5,7 +5,7 @@
 // draws through sdlrl, the SDL3 shim that kept raylib's call shapes.
 //
 // Usage: app [home-dir]   (default: $XDG_DATA_HOME/whitenoise)
-// Env: WN_SHOT=1 captures wn-odin-shot.png after a few frames and exits.
+// Env: WN_SHOT=1 writes wn-odin-shot.png in the working directory, then exits.
 //      WN_VAULT_PW unlocks (or creates) the vault without the gate.
 //      WN_TEST_PREVIEW=<path> opens the preview modal on a local file.
 //      WN_TEST_WEB=<url> opens the webxdc modal on a URL.

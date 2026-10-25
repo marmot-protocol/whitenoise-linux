@@ -35,15 +35,19 @@ case "$TARGET" in
     SYSTEM=Linux; CC="$TRIPLE-gcc"; CXX="$TRIPLE-g++"
     AR="$TRIPLE-ar"; STRIP="$TRIPLE-strip"; OBJCOPY="$TRIPLE-objcopy"
     SYSROOT="$OUT/sysroot"
-    if [ ! -f "$SYSROOT/.complete" ]; then
+    SYSROOT_PACKAGES=libc6-dev,libstdc++-13-dev,libarchive-dev,libwebp-dev,libmpv-dev,libpoppler-glib-dev,libcairo2-dev,libcurl4-openssl-dev,libssl-dev,libglib2.0-dev,libfreetype-dev,libavformat-dev,libavcodec-dev,libavutil-dev,libswresample-dev,libwebkit2gtk-4.1-dev,libasound2-dev,libpulse-dev,libx11-dev,libxext-dev,libxcursor-dev,libxi-dev,libxfixes-dev,libxrandr-dev,libxss-dev,libxtst-dev,libwayland-dev,libxkbcommon-dev,libegl1-mesa-dev,libgbm-dev,curl,ca-certificates,gstreamer1.0-plugins-good,gstreamer1.0-libav
+    SYSROOT_STAMP="$(printf '%s\n' sysroot-v2 "$DEB_ARCH" "$UBUNTU_MIRROR" noble noble-updates noble-security main universe "$SYSROOT_PACKAGES" | sha256sum | cut -d' ' -f1)"
+    # A complete extraction is reusable only for the same architecture/recipe.
+    if ! stamp_fresh "$SYSROOT/usr" "$SYSROOT/.complete" "$SYSROOT_STAMP"; then
+      rm -rf "$SYSROOT"
       # extract mode downloads and unpacks target packages without chrooting
       # or emulating a compiler; the compilers above are amd64 executables.
       mmdebstrap --mode=root --variant=extract --architectures="$DEB_ARCH" \
-        --include=libc6-dev,libstdc++-13-dev,libarchive-dev,libwebp-dev,libmpv-dev,libpoppler-glib-dev,libcairo2-dev,libcurl4-openssl-dev,libssl-dev,libglib2.0-dev,libfreetype-dev,libavformat-dev,libavcodec-dev,libavutil-dev,libswresample-dev,libwebkit2gtk-4.1-dev,libasound2-dev,libpulse-dev,libx11-dev,libxext-dev,libxcursor-dev,libxi-dev,libxfixes-dev,libxrandr-dev,libxss-dev,libxtst-dev,libwayland-dev,libxkbcommon-dev,libegl1-mesa-dev,libgbm-dev,curl,ca-certificates,gstreamer1.0-plugins-good,gstreamer1.0-libav \
+        --include="$SYSROOT_PACKAGES" \
         noble "$SYSROOT" "deb $UBUNTU_MIRROR noble main universe" \
         "deb $UBUNTU_MIRROR noble-updates main universe" \
         "deb $UBUNTU_MIRROR noble-security main universe"
-      touch "$SYSROOT/.complete"
+      echo "$SYSROOT_STAMP" > "$SYSROOT/.complete"
     fi
     # extract mode does not run usrmerge's maintainer script. Some packages
     # still unpack under /lib, while glibc's linker script names /lib paths
@@ -82,11 +86,14 @@ CLANG
     # LLVM-MinGW supplies the recent WinRT headers required by current GLib.
     # Its UCRT and libc++ ABI must match Rust's gnullvm target, not windows-gnu.
     LLVM_MINGW="$HERE/vendor/llvm-mingw-20260922"
-    mkdir -p "$LLVM_MINGW"
+    LLVM_MINGW_DIGEST=bb7bb7654b33d5aa8712acb837c963b2e0c56352560c76105270a3268c665c21
     fetch https://github.com/mstorsjo/llvm-mingw/releases/download/20260922/llvm-mingw-20260922-ucrt-ubuntu-22.04-x86_64.tar.xz \
-      "$HERE/vendor/llvm-mingw-20260922.tar.xz" bb7bb7654b33d5aa8712acb837c963b2e0c56352560c76105270a3268c665c21
-    if [ ! -x "$LLVM_MINGW/bin/x86_64-w64-mingw32-clang" ]; then
+      "$HERE/vendor/llvm-mingw-20260922.tar.xz" "$LLVM_MINGW_DIGEST"
+    if ! stamp_fresh "$LLVM_MINGW/bin/x86_64-w64-mingw32-clang" "$LLVM_MINGW/.complete" "$LLVM_MINGW_DIGEST"; then
+      rm -rf "$LLVM_MINGW"
+      mkdir -p "$LLVM_MINGW"
       tar -xJf "$HERE/vendor/llvm-mingw-20260922.tar.xz" --strip-components=1 -C "$LLVM_MINGW"
+      echo "$LLVM_MINGW_DIGEST" > "$LLVM_MINGW/.complete"
     fi
     RUST_TARGET=x86_64-pc-windows-gnullvm; ODIN_TARGET=windows_amd64
     CPU=x86_64; SYSTEM=Windows; EXE=.exe
@@ -201,3 +208,26 @@ $MESON_DARWIN
 [properties]
 needs_exe_wrapper = true
 MESON
+# cc-rs does not necessarily track compiler replacement. Keep native outputs
+# and Cargo's C build-script products separate when the compiler/SDK changes.
+TOOLCHAIN_STAMP="$({
+  printf '%s\n' "$TARGET" "${CFLAGS[@]}" "${MACOSX_DEPLOYMENT_TARGET:-}" "${SDKROOT:-}"
+  # Podman's image ID is stable across containers, unlike the container ID.
+  if [ -r /run/.containerenv ]; then sed -n '/^imageid=/p' /run/.containerenv; fi
+  for tool in "$CC" "$CXX" "$(command -v cc)" "$(command -v c++)"; do
+    sha256sum "$tool"
+    "$tool" --version
+  done
+  sha256sum "$AR"
+  if [ "$SYSTEM" = Linux ]; then sha256sum "$(command -v clang)"; fi
+  cat "$OUT/toolchain.cmake" "$OUT/meson.ini" "$HERE/packaging/cross/Containerfile"
+  if [ "$SYSTEM" = Linux ]; then
+    cat "$SYSROOT/.complete"
+    if [ -f "$SYSROOT/var/lib/dpkg/status" ]; then cat "$SYSROOT/var/lib/dpkg/status"; fi
+  fi
+  if [ "$SYSTEM" = Windows ]; then echo "$LLVM_MINGW_DIGEST"; fi
+  if [ "$SYSTEM" = Darwin ]; then
+    xcrun --sdk macosx --show-sdk-version
+    xcrun --sdk macosx --show-sdk-build-version
+  fi
+} | sha256sum | cut -d' ' -f1)"

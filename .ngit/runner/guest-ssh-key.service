@@ -1,0 +1,14 @@
+[Unit]
+Description=Install the per-job SSH public key
+Before=ssh.service
+ConditionCredential=ngit-ci.ssh-authorized-keys
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+LoadCredential=ngit-ci.ssh-authorized-keys
+ExecStart=/usr/bin/install -d -m 0700 /root/.ssh
+ExecStart=/usr/bin/bash -c 'install -m 0600 "$CREDENTIALS_DIRECTORY/ngit-ci.ssh-authorized-keys" /root/.ssh/authorized_keys'
+
+[Install]
+WantedBy=multi-user.target

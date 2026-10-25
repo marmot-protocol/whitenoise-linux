@@ -1,15 +1,25 @@
 #!/usr/bin/env bash
 # Sourced after cross-toolchain.sh; every compiler invocation targets TARGET.
 set -euo pipefail
+# Recipe edits invalidate installed outputs; compiler identity is independent
+# of MDK pins, so changing Rust sources does not reinstall C dependencies.
+DEPS_RECIPE_STAMP="$(sha256sum "$HERE/scripts/cross-deps.sh" | cut -d' ' -f1)"
 if [ "$SYSTEM" = Linux ]; then
   SDL_VERSION=3.4.14
   if [ ! -d "$OUT/SDL" ]; then
     git clone --depth 1 -b "release-$SDL_VERSION" https://github.com/libsdl-org/SDL.git "$OUT/SDL"
   fi
+  if [ "$(git -C "$OUT/SDL" describe --tags --exact-match 2>/dev/null || true)" != "release-$SDL_VERSION" ]; then
+    git -C "$OUT/SDL" fetch --depth 1 origin "refs/tags/release-$SDL_VERSION:refs/tags/release-$SDL_VERSION"
+    git -C "$OUT/SDL" checkout --detach "release-$SDL_VERSION"
+  fi
   if ! WAYLAND_SCANNER="$(command -v wayland-scanner)"; then
     echo 'Install host libwayland-bin: Linux SDL requires a Linux-hosted wayland-scanner.' >&2
     exit 1
   fi
+  SDL_STAMP="$({ printf '%s\n' "$TOOLCHAIN_STAMP" "$DEPS_RECIPE_STAMP" "$SDL_VERSION"; cmake --version; sha256sum "$WAYLAND_SCANNER"; } | sha256sum | cut -d' ' -f1)"
+  if ! stamp_fresh "$PREFIX/lib/pkgconfig/sdl3.pc" "$OUT/sdl.stamp" "$SDL_STAMP"; then
+  rm -rf "$OUT/sdl-build"
   cmake -S "$OUT/SDL" -B "$OUT/sdl-build" -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="$OUT/toolchain.cmake" -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr -DSDL_SHARED=ON -DSDL_STATIC=OFF -DSDL_TESTS=OFF \
@@ -24,10 +34,16 @@ if [ "$SYSTEM" = Linux ]; then
   done
   cmake --build "$OUT/sdl-build" -j"$JOBS"
   DESTDIR="$SYSROOT" cmake --install "$OUT/sdl-build"
+  echo "$SDL_STAMP" > "$OUT/sdl.stamp"
+  fi
 else
   checkout vcpkg https://github.com/microsoft/vcpkg.git "$(pin vcpkg)"
   VCPKG="$HERE/vendor/vcpkg"
-  "$VCPKG/bootstrap-vcpkg.sh" -disableMetrics
+  VCPKG_BOOTSTRAP_STAMP="$(pin vcpkg) $(uname -s)-$(uname -m)"
+  if ! stamp_fresh "$VCPKG/vcpkg" "$VCPKG/.wn-bootstrap.stamp" "$VCPKG_BOOTSTRAP_STAMP"; then
+    "$VCPKG/bootstrap-vcpkg.sh" -disableMetrics
+    echo "$VCPKG_BOOTSTRAP_STAMP" > "$VCPKG/.wn-bootstrap.stamp"
+  fi
   VCPKG_ARCH=x64; [ "$CPU" != aarch64 ] || VCPKG_ARCH=arm64
   VCPKG_SYSTEM="$SYSTEM"; [ "$SYSTEM" != Windows ] || VCPKG_SYSTEM=MinGW
   VCPKG_TRIPLET="$TARGET"
@@ -63,10 +79,17 @@ CMAKE
     *) HOST_TRIPLET=x64-linux ;;
   esac
   # Do not expose target CC/pkg-config to build-machine code generators.
+  VCPKG_STAMP="$({ printf '%s\n' "$TOOLCHAIN_STAMP" "$DEPS_RECIPE_STAMP" "$VCPKG_BOOTSTRAP_STAMP" "$HOST_TRIPLET"; cat "$OUT/triplets/$VCPKG_TRIPLET.cmake" "$HERE/packaging/cross/vcpkg.json"; } | sha256sum | cut -d' ' -f1)"
+  if ! stamp_fresh "$PREFIX/lib/pkgconfig/sdl3.pc" "$OUT/vcpkg.stamp" "$VCPKG_STAMP"; then
+  # Installed package metadata must agree with the compiler too; retain the
+  # ABI-keyed binary archives, not an incompatible installed prefix/status.
+  rm -rf "$OUT/vcpkg-installed"
   env -u CC -u CXX -u AR -u PKG_CONFIG_SYSROOT_DIR -u PKG_CONFIG_LIBDIR \
     "$VCPKG/vcpkg" install --triplet "$VCPKG_TRIPLET" --host-triplet "$HOST_TRIPLET" \
     --overlay-triplets="$OUT/triplets" --x-manifest-root="$HERE/packaging/cross" \
     --x-install-root="$OUT/vcpkg-installed"
+  echo "$VCPKG_STAMP" > "$OUT/vcpkg.stamp"
+  fi
   PREFIX="$OUT/vcpkg-installed/$VCPKG_TRIPLET"
   export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig:$PREFIX/share/pkgconfig"
   export PKG_CONFIG_SYSROOT_DIR=
@@ -78,9 +101,9 @@ CMAKE
   checkout libplacebo https://github.com/haasn/libplacebo.git "$(pin libplacebo)"
   checkout mpv https://github.com/mpv-player/mpv.git "$(pin mpv)"
   MPV_STAGE="$OUT/mpv-stage"
-  MPV_STAMP="$({ pin libplacebo; pin mpv; pin vcpkg; cat "$HERE/packaging/cross/vcpkg.json"; } | sha256sum | cut -d' ' -f1)"
+  MPV_STAMP="$({ printf '%s\n' "$TOOLCHAIN_STAMP" "$DEPS_RECIPE_STAMP" "$VCPKG_STAMP"; pin libplacebo; pin mpv; meson --version; } | sha256sum | cut -d' ' -f1)"
   if ! stamp_fresh "$MPV_STAGE$PREFIX/lib" "$OUT/mpv.stamp" "$MPV_STAMP"; then
-    rm -rf "$MPV_STAGE"
+    rm -rf "$MPV_STAGE" "$OUT/libplacebo" "$OUT/mpv"
     git -C "$HERE/vendor/libplacebo" submodule update --init --recursive
     meson setup "$OUT/libplacebo" "$HERE/vendor/libplacebo" --reconfigure \
       --cross-file "$OUT/meson.ini" --prefix "$PREFIX" --libdir lib --buildtype release \
@@ -101,7 +124,10 @@ CMAKE
     meson install -C "$OUT/mpv" --destdir "$MPV_STAGE"
     echo "$MPV_STAMP" > "$OUT/mpv.stamp"
   fi
-  cp -a "$MPV_STAGE$PREFIX/." "$PREFIX/"
+  if ! stamp_fresh "$PREFIX/lib/pkgconfig/mpv.pc" "$PREFIX/.wn-mpv.stamp" "$MPV_STAMP"; then
+    cp -a "$MPV_STAGE$PREFIX/." "$PREFIX/"
+    echo "$MPV_STAMP" > "$PREFIX/.wn-mpv.stamp"
+  fi
 fi
 
 # Use upstream's pinned CPU C runtime, as the native build does. Target-specific
@@ -126,7 +152,12 @@ case "$TARGET" in
     digest=c51e220217f2ce5d3de211887dc13ad49bf22346a2025a4159591d892008242d ;;
 esac
 fetch "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.7/$archive" "$TTS/runtime.tar.bz2" "$digest"
-tar --no-same-owner -xjf "$TTS/runtime.tar.bz2" --strip-components=1 -C "$TTS"
+if ! stamp_fresh "$TTS/lib" "$TTS/.runtime.stamp" "$digest"; then
+  rm -rf "$TTS/lib" "$TTS/include"
+  tar --no-same-owner -xjf "$TTS/runtime.tar.bz2" --strip-components=1 -C "$TTS"
+  echo "$digest" > "$TTS/.runtime.stamp"
+fi
+mkdir -p "$TTS/include/sherpa-onnx/c-api"
 # Header and licenses are file pins. pin() only reads <name>-commit, and
 # sherpa-onnx has none, so $(pin sherpa-onnx) fetched a 404.
 pinned_file() {
@@ -145,9 +176,13 @@ if [ "$SYSTEM" = Windows ]; then
   # explicit and avoids depending on Microsoft's import-library format.
   SHERPA_DLL="$(find "$TTS" -name sherpa-onnx-c-api.dll -print -quit)"
   test -n "$SHERPA_DLL"
+  TTS_IMPORT_STAMP="$digest $TOOLCHAIN_STAMP $DEPS_RECIPE_STAMP"
+  if ! stamp_fresh "$TTS/lib/libsherpa-onnx-c-api.dll.a" "$TTS/.import.stamp" "$TTS_IMPORT_STAMP"; then
   (cd "$OUT" && gendef "$SHERPA_DLL")
   "$DLLTOOL" -m i386:x86-64 -d "$OUT/sherpa-onnx-c-api.def" \
     -l "$TTS/lib/libsherpa-onnx-c-api.dll.a" -D sherpa-onnx-c-api.dll
+  echo "$TTS_IMPORT_STAMP" > "$TTS/.import.stamp"
+  fi
 fi
 
 # Velopack's C library: the in-app half of Windows self-updates. packaging
@@ -159,15 +194,20 @@ if [ "$SYSTEM" = Windows ]; then
     "$VELOPACK/libc.zip" 63438c5d87b01d93853d0259a0d86eefccea8347914bd84fb58edbb5a71e05da
   fetch "https://raw.githubusercontent.com/velopack/velopack/$VELOPACK_VERSION/LICENSE" \
     "$VELOPACK/LICENSE" 91845db83551c877ebbb1118e0fb92e4e527290d23b995c55dcd438b3293943f
+  VELOPACK_STAMP="$VELOPACK_VERSION $TOOLCHAIN_STAMP $DEPS_RECIPE_STAMP $(sha256sum "$VELOPACK/libc.zip")"
+  if ! stamp_fresh "$VELOPACK/libvelopack_libc.dll.a" "$VELOPACK/.libc.stamp" "$VELOPACK_STAMP"; then
   unzip -o -q -j "$VELOPACK/libc.zip" lib/velopack_libc_win_x64_msvc.dll -d "$VELOPACK/lib"
   # The DLL links its CRT statically and imports only OS DLLs, so the
   # MSVC build loads beside the UCRT app; only the import library is ours.
   (cd "$OUT" && gendef "$VELOPACK/lib/velopack_libc_win_x64_msvc.dll")
   "$DLLTOOL" -m i386:x86-64 -d "$OUT/velopack_libc_win_x64_msvc.def" \
     -l "$VELOPACK/libvelopack_libc.dll.a" -D velopack_libc_win_x64_msvc.dll
+  echo "$VELOPACK_STAMP" > "$VELOPACK/.libc.stamp"
+  fi
   # vpk from a verified local nupkg only: the temporary NuGet config clears
   # every remote source, so the digest above is what gets installed.
-  if [ ! -x "$VELOPACK/vpk/vpk" ]; then
+  if ! stamp_fresh "$VELOPACK/vpk/vpk" "$VELOPACK/.vpk.stamp" "$VELOPACK_VERSION"; then
+    rm -rf "$VELOPACK/vpk"
     feed="$VELOPACK/feed"
     mkdir -p "$feed"
     fetch "https://www.nuget.org/api/v2/package/vpk/$VELOPACK_VERSION" "$feed/vpk.$VELOPACK_VERSION.nupkg" \
@@ -175,5 +215,6 @@ if [ "$SYSTEM" = Windows ]; then
     printf '<configuration><packageSources><clear /><add key="local" value="%s" /></packageSources></configuration>\n' \
       "$feed" > "$feed/nuget.config"
     dotnet tool install vpk --version "$VELOPACK_VERSION" --tool-path "$VELOPACK/vpk" --configfile "$feed/nuget.config"
+    echo "$VELOPACK_VERSION" > "$VELOPACK/.vpk.stamp"
   fi
 fi

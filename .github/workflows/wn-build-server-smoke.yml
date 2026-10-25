@@ -1,0 +1,170 @@
+name: WN builds and tests on Arch
+
+on:
+  push:
+    branches: [wn-build-server-smoke-20261023]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_BUILD_JOBS: 6
+  WN_BUILD_JOBS: 6
+  CMAKE_BUILD_PARALLEL_LEVEL: 6
+
+jobs:
+  native:
+    name: Build and test native
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-2]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+          persist-credentials: false
+      - name: Preserve native Cargo state outside the checkout
+        run: |
+          cache="$HOME/.cache/wn-native"
+          mkdir -p "$cache" build
+          if [ ! -d "$cache/cargo" ]; then
+            if [ -d build/cargo ] && [ ! -L build/cargo ]; then
+              mv build/cargo "$cache/cargo"
+            else
+              mkdir -p "$cache/cargo"
+            fi
+          fi
+          if [ ! -e build/cargo ]; then
+            ln -s "$cache/cargo" build/cargo
+          fi
+          test "$(readlink -f build/cargo)" = "$cache/cargo"
+      - name: Build and test native
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/build.sh test
+          SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke ./build/app "$(mktemp -d)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-native
+          path: wn-odin-shot.png
+          if-no-files-found: warn
+
+  cross:
+    name: Build and boot ${{ matrix.target }}
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, "${{ matrix.cache-slot }}"]
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-amd64
+            cache-slot: wn-cache-2
+          - target: linux-arm64
+            cache-slot: wn-cache-2
+          - target: windows-amd64
+            cache-slot: wn-cache-1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+          persist-credentials: false
+      - name: Build the repository's cross-toolchain image
+        id: toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          key=$(sha256sum packaging/cross/Containerfile | cut -d' ' -f1)
+          image="localhost/whitenoise-cross:$key"
+          if ! podman image exists "$image"; then
+            podman build --layers -f packaging/cross/Containerfile -t "$image" packaging/cross
+          fi
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "rustup=wn-rustup-$key" >> "$GITHUB_OUTPUT"
+          cache="$HOME/.cache/wn-cross"
+          mkdir -p "$cache/registry" "$cache/git" build
+          if [ ! -d "$cache/build" ]; then
+            if [ -d build/cross ] && [ ! -L build/cross ]; then
+              mv build/cross "$cache/build"
+            else
+              mkdir -p "$cache/build"
+            fi
+          fi
+          if [ ! -e build/cross ]; then
+            ln -s "$cache/build" build/cross
+          fi
+          test "$(readlink -f build/cross)" = "$cache/build"
+      - name: Build and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.cache/vcpkg/archives"
+          podman run --rm --entrypoint bash \
+            -e CARGO_BUILD_JOBS -e WN_BUILD_JOBS -e CMAKE_BUILD_PARALLEL_LEVEL \
+            -v "$PWD:/work" -v "$HOME/.cache/vcpkg:/root/.cache/vcpkg" \
+            -v "$HOME/.cache/wn-cross:$HOME/.cache/wn-cross" \
+            -v "$HOME/.cache/wn-cross/registry:/root/.cargo/registry" \
+            -v "$HOME/.cache/wn-cross/git:/root/.cargo/git" \
+            -v '${{ steps.toolchain.outputs.rustup }}:/root/.rustup' \
+            '${{ steps.toolchain.outputs.image }}' scripts/cross-build.sh '${{ matrix.target }}'
+      - name: Extract and execute the shipped package
+        shell: bash
+        run: |
+          set -euo pipefail
+          target='${{ matrix.target }}'
+          version=$(bash scripts/version.sh)
+          smoke=$(mktemp -d "$RUNNER_TEMP/cross-smoke-$target.XXXXXX")
+          mkdir -p build/cross-evidence
+          if [ "$target" = windows-amd64 ]; then
+            if [ -f dist/WhiteNoise-win-Portable.zip ]; then
+              root="$smoke/package"
+              unzip -q dist/WhiteNoise-win-Portable.zip -d "$root"
+            else
+              unzip -q "dist/WhiteNoise-$version-$target.zip" -d "$smoke"
+              root="$smoke/WhiteNoise-$version-$target"
+            fi
+          else
+            tar -xzf "dist/WhiteNoise-$version-$target.tar.gz" -C "$smoke"
+            root="$smoke/WhiteNoise-$version-$target"
+          fi
+          mounts=(-v "$root:/release:ro" -v "$PWD/scripts/cross-smoke.sh:/cross-smoke.sh:ro")
+          mounts+=(-v "$PWD/build/cross-evidence:/evidence")
+          args=("$target" /release)
+          if [ "$target" = linux-arm64 ]; then
+            mounts+=(-v "$PWD/build/cross/linux-arm64/sysroot:/target-sysroot:ro")
+            args+=(/target-sysroot)
+          fi
+          podman run --rm --init --workdir /evidence --entrypoint bash "${mounts[@]}" \
+            '${{ steps.toolchain.outputs.image }}' /cross-smoke.sh "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-${{ matrix.target }}
+          path: |
+            dist/*-${{ matrix.target }}.*
+            build/cross-evidence/${{ matrix.target }}.png
+          if-no-files-found: warn
+
+  openbsd:
+    name: Build and boot openbsd-amd64
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-1]
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+          persist-credentials: false
+      - name: Build, package, and boot inside OpenBSD 7.9
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/wn-server-openbsd-smoke.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-openbsd-amd64
+          path: |
+            dist/*-openbsd-amd64.tar.gz
+            build/openbsd/wn-odin-shot*.png
+            build/openbsd/vm-console.log
+          if-no-files-found: warn

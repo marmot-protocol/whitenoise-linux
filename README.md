@@ -827,6 +827,41 @@ host or the Rust library restart the host; the vault stays unlocked for the
 
 To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `just build` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
 
+Keep `build/cargo/native` and `build/cross/<target>/cargo` between builds. Cargo
+checks MDK's inputs on each build and reuses unchanged crates across MDK pin and
+patch changes. Rust and C/C++ compiler versions, target, and build flags select
+separate cache directories. `CARGO_TARGET_DIR` selects the native cache root;
+the build appends its compiler-environment fingerprint.
+
+Cross builds also retain the target sysroot, SDL, speech runtime, and vcpkg
+outputs. Their stamps include the inputs that produced them; changing those
+inputs rebuilds the affected dependency. CI restores Cargo state from older
+source revisions within the same compiler/target boundary, rather than treating
+a previously staged Marmot library as proof that its inputs are unchanged.
+
+Native and cross builds also cache C/C++ helpers and Odin outputs by input
+contents, compiler, target, and flags. Output manifests detect missing or
+corrupted files. Native Linux/OpenBSD and cross builds cache Odin objects
+separately from linking, so an MDK-only change relinks the app without
+recompiling its Odin sources.
+Linux and Windows package caches cover bundled runtime libraries and archives;
+release downloads, signing, and update feeds still run when requested.
+
+The build-server workflow builds native Linux, Linux amd64/arm64, Windows amd64,
+and OpenBSD amd64 once each. It runs the native C/Odin suite, packaged Linux and
+Windows startup tests, and OpenBSD's filesystem, helper, and startup tests.
+The native runner signs temporary Git fixtures with a dedicated CI test key.
+The workflow queues these five jobs together on two isolated
+runner slots, with six build threads per job and shared CPU/memory limits.
+Native and Linux jobs use `wn-cache-2`; Windows and OpenBSD use `wn-cache-1`.
+This keeps targets on warmed caches while both slots can build concurrently.
+MicroTeX is cached per target and slot, including its sources, patches, toolchain,
+and build flags; application `.c` and `.odin` edits do not rebuild it.
+Native SDL, MicroTeX, Odin overlay, and Odin object keys track SDK headers and
+versions separately from shared-library contents. OpenBSD's boot-time library
+reordering invalidates linked executables, not these compiled outputs.
+It does not change the default-branch runner routing or include macOS.
+
 The current pin is MDK master at `c8210585cab6` (0.14.0-dev). The build applies
 the patches listed in `scripts/build.sh`. NIP-46 C sessions, Windows
 portability, OpenBSD sandbox support, SOCKS5 routing, and Markdown timestamps
@@ -837,8 +872,8 @@ History catch-up uses MDK's ordered replay and account-owned recovery.
 The `retry-convergence` dev command retries convergence for the selected group.
 Staging recognizes an already-applied prefix of the patch series and applies
 only the remaining patches. Appending a patch does not require resetting
-`vendor/mdk`, even when earlier patches overlap. Conflicting local edits still
-stop staging.
+`vendor/mdk`, even when earlier patches overlap. Local edits outside the files
+touched by the patches are preserved. Conflicting local edits still stop staging.
 Poll creation, voting, and tallies use MDK's native poll APIs and timeline
 projection. `patches/mdk-poll-context.patch` preserves thread and issue context
 through native creation. MDK supports poll creation in direct and group
@@ -850,7 +885,7 @@ Validate MDK patch changes by applying the full `MDK_PATCHES` list, in order,
 to a clean checkout of `mdk-commit`, then checking the already-patched tree.
 A successful reverse check alone can hide an invalid old-file path.
 Run `bash tests/mdk-patches-test.sh` to check fresh staging, reruns, appended
-overlapping patches, and conflicting local edits.
+overlapping patches, preserved unrelated source edits, and conflicting local edits.
 
 Publishing workflows read `WN_METRICS_WRITE_TOKEN` and `WN_AUDIT_WRITE_TOKEN`
 from CI secrets. Configure both on GitHub and on trusted ngit/act publishing

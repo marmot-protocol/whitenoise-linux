@@ -17,16 +17,15 @@
 # gates: it is the single source of truth (PO/POT msgfmt validation and
 # normalization). Re-implementing it here would let the two drift apart.
 #
-# The hook operates on *staged* files (git diff --cached), and a fresh
-# actions/checkout stages nothing — so we `git add -A` first to present the
-# whole proposal tree as staged, then run the hook. The hook's normalization
+# The hook operates on staged files. An isolated empty Git index presents
+# the whole proposal tree, regardless of the checkout's existing history.
+# The hook's normalization
 # steps (po-clean, odinfmt, clang-format) auto-fix in place and re-stage rather than
 # failing; we turn any such fix into a failure with a final drift check, so
 # "the hook had to change something" is treated as "not clean" — matching the
 # intent that only an already-clean tree passes.
 #
-# No secrets are available under ngit-ci (${{ secrets.* }} is empty, there is
-# no GITHUB_TOKEN); every tool below is installed from anonymous sources.
+# This gate needs no secrets or GitHub token; tools use anonymous sources.
 
 name: pre-commit
 
@@ -43,32 +42,25 @@ jobs:
       # gettext supplies the msgfmt the hook's catalog checks call.
       - name: Install system deps
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gettext git
+          if ! command -v msgfmt >/dev/null || ! command -v git >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends gettext git
+          fi
 
       - name: Run pre-commit hook against the proposal
         run: |
           set -euo pipefail
-          # ngit-ci's checkout materializes the proposal tree WITHOUT a .git
-          # dir, so `git add -A` would die with "not a git repository". The
-          # hook only needs a staging index, not real history, so initialize a
-          # throwaway repo in place when one isn't present.
-          if ! git rev-parse --git-dir >/dev/null 2>&1; then
-            git init -q
-            git config user.email ci@ngit.local
-            git config user.name  ngit-ci
-          fi
-          # Present the whole checked-out tree as staged so the hook's
-          # `git diff --cached` gates see every file in the proposal.
+          hook_gitdir="$(mktemp -d)"
+          trap 'rm -rf "$hook_gitdir"' EXIT
+          git init -q --bare "$hook_gitdir"
+          export GIT_DIR="$hook_gitdir"
+          export GIT_WORK_TREE="$PWD"
           git add -A
-          # The hook enforces the catalog gates and exits non-zero on any
-          # real failure (which fails this step directly).
+          before="$(git write-tree)"
           bash .githooks/pre-commit
-          # If po-clean rewrote and re-staged anything, the tree wasn't
-          # clean — fail with the diff.
-          if ! git diff --cached --quiet; then
+          if [ "$before" != "$(git write-tree)" ] || ! git diff --quiet; then
             echo "::error::pre-commit normalized files — the proposal is not clean." >&2
             echo "Run scripts/install-hooks.sh once, then commit; the hook will fix these locally:" >&2
-            git --no-pager diff --cached --stat >&2
+            git --no-pager diff --stat "$before" >&2
             exit 1
           fi

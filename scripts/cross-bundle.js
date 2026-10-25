@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // Bundle the target loader's dependency closure without executing target code.
-import { closeSync, cpSync, existsSync, mkdirSync, openSync, readSync, readdirSync, realpathSync } from "node:fs";
+import { closeSync, cpSync, existsSync, mkdirSync, openSync, readSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { basename, dirname, extname, join, relative } from "node:path";
 
 const [system, destination, ...roots] = Bun.argv.slice(2);
@@ -10,8 +10,15 @@ const objdump = process.env.WN_OBJDUMP ?? "objdump";
 const installNameTool = process.env.WN_INSTALL_NAME_TOOL ?? "install_name_tool";
 mkdirSync(libdir, { recursive: true });
 
+function excluded(path) {
+  return path.split(/[\\/]/).some(name => [".git", ".hg", ".svn", ".env"].includes(name) || name.endsWith(".env"));
+}
+
 function* files(root, symlinks = false) {
   for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (excluded(entry.name)) {
+      continue;
+    }
     const path = join(root, entry.name);
     if (entry.isDirectory()) yield* files(path, symlinks);
     else if (entry.isFile() || (symlinks && entry.isSymbolicLink())) yield path;
@@ -24,6 +31,9 @@ for (const root of roots) {
   for (const path of files(root, true)) {
     const name = basename(path);
     if (name.includes(".so") || name.endsWith(".dll") || name.endsWith(".dylib")) {
+      if (!existsSync(path) || !statSync(path).isFile() || excluded(realpathSync(path))) {
+        continue;
+      }
       const key = name.toLowerCase();
       if (!index.has(key)) index.set(key, path);
     }

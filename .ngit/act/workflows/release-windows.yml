@@ -1,0 +1,43 @@
+name: staging-windows
+
+on:
+  push:
+    branches: [master]
+
+env:
+  CARGO_BUILD_JOBS: 6
+  WN_BUILD_JOBS: 6
+  CMAKE_BUILD_PARALLEL_LEVEL: 6
+  WN_RELEASE_VERSION: staging-${{ github.sha }}
+
+jobs:
+  cross:
+    name: Cross windows-amd64 on Linux
+    runs-on: wn-ngit-windows
+    defaults:
+      run:
+        shell: bash
+        working-directory: /var/cache/wn-ci/worktree
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore the exact source revision and build state
+        working-directory: ${{ github.workspace }}
+        run: bash scripts/ngit-stage.sh
+      - name: Build, package, and test Windows
+        env:
+          WN_METRICS_WRITE_TOKEN: ${{ secrets.WN_METRICS_WRITE_TOKEN }}
+          WN_AUDIT_WRITE_TOKEN: ${{ secrets.WN_AUDIT_WRITE_TOKEN }}
+        run: bash scripts/ngit-cross.sh windows-amd64
+      - name: Remove generated observability credentials
+        if: always()
+        run: rm -f build/observability-tokens.toml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whitenoise-staging-windows-amd64
+          path: /var/cache/wn-ci/worktree/dist/*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smoke-windows-amd64
+          path: /var/cache/wn-ci/worktree/build/cross-evidence/windows-amd64.png
+          if-no-files-found: error
