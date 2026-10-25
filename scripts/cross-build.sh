@@ -27,7 +27,7 @@ fi
 export WN_TARGET="$TARGET"
 OUT="$HERE/build/cross/$TARGET"
 JOBS="${WN_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"
-mkdir -p "$OUT"
+mkdir -p "$OUT" "$HERE/vendor"
 # Slow third-party builds write a stamp of their inputs (pins, patches) next
 # to their output and are skipped while it matches. CI caches the outputs
 # plus stamps; a restore from other inputs just fails the check and rebuilds.
