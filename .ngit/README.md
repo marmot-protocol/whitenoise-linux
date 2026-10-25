@@ -61,6 +61,10 @@ RAM; job containers are limited to six CPUs and 20 GiB. The shared host slice
 caps aggregate CI CPU at 80%, with the existing memory guard stopping CI if less
 than 8 GiB remains available.
 
+The native build/test child drops `DAC_OVERRIDE` and `DAC_READ_SEARCH` while
+retaining access to root-owned caches. Read-only-directory fixtures must fail
+at the filesystem boundary, just as they do for an ordinary user.
+
 ## Persistent build state
 
 Each slot has a separate 48 GiB loop-backed cache filesystem, mounted

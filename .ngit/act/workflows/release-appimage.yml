@@ -71,7 +71,8 @@ jobs:
             'White Noise CI fixtures <ci-fixtures@whitenoise.invalid>' ed25519 sign 0
           git config --global user.signingkey ci-fixtures@whitenoise.invalid
           git config --global commit.gpgsign true
-          bash scripts/build.sh test
+          # Preserve root-owned caches, but honor permission-denied fixtures.
+          setpriv --bounding-set=-dac_override,-dac_read_search bash scripts/build.sh test
 
       - name: Remove generated observability credentials
         if: always()
