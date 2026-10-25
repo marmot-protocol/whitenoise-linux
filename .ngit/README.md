@@ -70,7 +70,8 @@ trusted/untrusted authority and evicts idle entries above 44 GiB. The guest's
 
 `act.sh` binds the selected partition's `worker/` into the job at
 `/var/cache/wn-ci`. `scripts/ngit-stage.sh` restores the exact workflow revision
-to the fixed `worktree/` path without discarding ignored build outputs. Cargo
+from the coordinator's shallow checkout to the fixed `worktree/` path without
+discarding ignored build outputs. Cargo
 registries, toolchains, MDK targets, native archives, Odin objects, and AppImage
 tools persist there. `scripts/ngit-cross.sh` also preserves the cross SDK as a
 content-keyed OCI archive and retains its Rust and vcpkg state. Outputs still
