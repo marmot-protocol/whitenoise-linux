@@ -1,66 +1,46 @@
-# ngit-ci uploads each actions artifact to the configured Blossom servers.
-# Requires Podman/user namespaces in the act worker; Apple SDK access is opt-in.
+# Windows uses a separate workflow so each coordinator can claim a whole file.
 name: staging-cross
 
 on:
   push:
     branches: [master]
 
+env:
+  CARGO_BUILD_JOBS: 6
+  WN_BUILD_JOBS: 6
+  CMAKE_BUILD_PARALLEL_LEVEL: 6
+  WN_RELEASE_VERSION: staging-${{ github.sha }}
+
 jobs:
   cross:
-    name: Cross ${{ matrix.target }} on Linux
+    name: Cross linux-arm64 on Linux
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [linux-arm64, windows-amd64]
+    defaults:
+      run:
+        shell: bash
+        working-directory: /var/cache/wn-ci/worktree
     steps:
       - uses: actions/checkout@v4
-      - name: Install Podman
-        run: sudo apt-get update && sudo apt-get install -y podman
-      - name: Build Linux toolchain image
-        run: podman build -f packaging/cross/Containerfile -t whitenoise-cross packaging/cross
-      - name: Cross compile and package
+      - name: Restore the exact source revision and build state
+        working-directory: ${{ github.workspace }}
+        run: bash scripts/ngit-stage.sh
+      - name: Build, package, and test ARM Linux
         env:
-          WN_RELEASE_VERSION: staging-${{ github.sha }}
           WN_METRICS_WRITE_TOKEN: ${{ secrets.WN_METRICS_WRITE_TOKEN }}
           WN_AUDIT_WRITE_TOKEN: ${{ secrets.WN_AUDIT_WRITE_TOKEN }}
-        run: |
-          podman run --rm -v "$PWD:/work" -e WN_RELEASE_VERSION \
-            -e WN_METRICS_WRITE_TOKEN -e WN_AUDIT_WRITE_TOKEN \
-            whitenoise-cross '${{ matrix.target }}'
+        run: bash scripts/ngit-cross.sh linux-arm64
       - name: Remove generated observability credentials
         if: always()
-        run: sudo rm -f build/observability-tokens.toml
-      - name: Extract and execute shipped package
-        run: |
-          mkdir -p build/cross-smoke build/cross-evidence
-          if [ '${{ matrix.target }}' = windows-amd64 ]; then
-            unzip -q dist/*-windows-amd64.zip -d build/cross-smoke
-          else
-            tar -xzf dist/*-linux-arm64.tar.gz -C build/cross-smoke
-          fi
-          root=$(find build/cross-smoke -mindepth 1 -maxdepth 1 -type d -print -quit)
-          mounts=(-v "$PWD/$root:/release:ro" -v "$PWD/scripts/cross-smoke.sh:/cross-smoke.sh:ro")
-          mounts+=(-v "$PWD/build/cross-evidence:/evidence")
-          if [ '${{ matrix.target }}' = linux-arm64 ]; then
-            mounts+=(-v "$PWD/build/cross/linux-arm64/sysroot:/target-sysroot:ro")
-          fi
-          podman run --rm --init --workdir /evidence --entrypoint bash "${mounts[@]}" whitenoise-cross \
-            /cross-smoke.sh '${{ matrix.target }}' /release /target-sysroot
+        run: rm -f build/observability-tokens.toml
       - uses: actions/upload-artifact@v4
         with:
-          name: whitenoise-staging-${{ matrix.target }}
-          path: dist/*-${{ matrix.target }}.*
+          name: whitenoise-staging-linux-arm64
+          path: /var/cache/wn-ci/worktree/dist/*
           if-no-files-found: error
-      # Visual proof of the headless boot, kept apart from the staging files.
       - uses: actions/upload-artifact@v4
         with:
-          name: smoke-${{ matrix.target }}
-          path: build/cross-evidence/${{ matrix.target }}.png
+          name: smoke-linux-arm64
+          path: /var/cache/wn-ci/worktree/build/cross-evidence/linux-arm64.png
           if-no-files-found: error
 
-  # ponytail: no macOS staging yet. macOS packages build on a Mac
-  # (scripts/macos-setup.sh, then scripts/cross-build.sh darwin-*); until the
-  # self-hosted Mac mini joins as an act runner, they come from the GitHub
-  # macos job in .github/workflows/cross.yml.
+# macOS remains on the existing GitHub macOS runner.
