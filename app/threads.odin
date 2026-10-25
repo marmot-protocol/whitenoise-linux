@@ -31,6 +31,7 @@ thread_push :: proc(ui: ^Ui_State, root_id: string) {
 	if root_id == thread_cur(ui) {
 		return // the open thread's own root plate can't re-push it
 	}
+	if ui.location_open {geo_picker_close(ui)}
 	append(&ui.thread_stack, strings.clone(root_id))
 	ui.replying = "" // a reply can't cross into a thread
 	ui.scroll_pending = true
@@ -41,6 +42,7 @@ thread_back :: proc(ui: ^Ui_State) {
 	if len(ui.thread_stack) == 0 {
 		return
 	}
+	if ui.location_open {geo_picker_close(ui)}
 	delete(ui.thread_stack[len(ui.thread_stack) - 1])
 	pop(&ui.thread_stack)
 	ui.scroll_pending = true
@@ -48,6 +50,7 @@ thread_back :: proc(ui: ^Ui_State) {
 }
 
 thread_clear :: proc(ui: ^Ui_State) {
+	if ui.location_open {geo_picker_close(ui)}
 	for id in ui.thread_stack {
 		delete(id)
 	}

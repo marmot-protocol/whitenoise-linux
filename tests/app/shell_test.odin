@@ -389,6 +389,26 @@ test_phone_detail :: proc(t: ^testing.T) {
 	ui.selected = 0
 	testing.expect(t, phone_detail(&ui), "a picked chat shows the page card")
 
+	// Back cancels location without leaving its conversation or consuming
+	// the composer state that was behind the picker.
+	append(&ui.compose, "unsent draft")
+	append(&ui.staged, Staged_File{name = "attachment.txt"})
+	append(&ui.thread_stack, "thread")
+	defer {delete(ui.compose); delete(ui.staged); delete(ui.thread_stack)}
+	ui.replying = "reply"
+	ui.location_open, ui.location_busy = true, true
+	ui.location_request = 7
+	testing.expect(t, modal_open(&ui), "location is a modal")
+	phone_back_action(&ui)
+	testing.expect(t, !ui.location_open && !ui.location_busy, "back closes location")
+	testing.expect_value(t, ui.location_request, u64(8))
+	testing.expect_value(t, ui.selected, 0)
+	testing.expect_value(t, string(ui.compose[:]), "unsent draft")
+	testing.expect_value(t, len(ui.staged), 1)
+	testing.expect_value(t, ui.staged[0].name, "attachment.txt")
+	testing.expect_value(t, ui.replying, "reply")
+	testing.expect_value(t, thread_cur(&ui), "thread")
+
 	// Back closes exactly one level, and the innermost first.
 	ui.new_chat_open = true
 	testing.expect(t, phone_detail(&ui), "the new-chat pane is a detail")

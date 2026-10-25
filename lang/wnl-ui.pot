@@ -842,6 +842,9 @@ msgstr ""
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr ""
 
+msgid "Choose a location before sending."
+msgstr ""
+
 msgid "Choose a sign-in method."
 msgstr ""
 
@@ -1230,6 +1233,9 @@ msgid "Couldn't forward to %s. Open the chat to retry."
 msgstr ""
 
 msgid "Couldn't forward. Please try again."
+msgstr ""
+
+msgid "Couldn't get your location. Check your desktop location permissions or pick a point on the map."
 msgstr ""
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
@@ -1803,6 +1809,9 @@ msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder i
 msgstr ""
 
 msgid "Drag a folder to reorder it. Your chats appear here once you have some."
+msgstr ""
+
+msgid "Drag the map to place the pin, or use your current location."
 msgstr ""
 
 msgid "Drop files to attach"
@@ -3658,6 +3667,9 @@ msgstr ""
 msgid "Republish your relay lists"
 msgstr ""
 
+msgid "Requesting your location. Approve the desktop permission prompt if shown."
+msgstr ""
+
 msgid "Reset"
 msgstr ""
 
@@ -3954,6 +3966,9 @@ msgstr ""
 
 #, c-format
 msgid "Send failed: %s"
+msgstr ""
+
+msgid "Send location"
 msgstr ""
 
 msgid "Send test"
@@ -4667,6 +4682,9 @@ msgstr ""
 msgid "Use a shorter search."
 msgstr ""
 
+msgid "Use current location"
+msgstr ""
+
 msgid "Use emoji image"
 msgstr ""
 
@@ -4912,6 +4930,9 @@ msgid "Your chats appear here once you have some."
 msgstr ""
 
 msgid "Your current password"
+msgstr ""
+
+msgid "Your desktop location service handles the permission request. Nothing is sent to the chat until you choose Send location."
 msgstr ""
 
 msgid "Your disk is filling up"

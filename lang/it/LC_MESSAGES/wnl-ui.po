@@ -845,6 +845,9 @@ msgstr "Scegli una destinazione per questa chat."
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr "Scegli un mittente conosciuto o inserisci una chiave pubblica esadecimale di 64 caratteri."
 
+msgid "Choose a location before sending."
+msgstr "Scegli una posizione prima di inviare."
+
 msgid "Choose a sign-in method."
 msgstr "Scegli un metodo di accesso."
 
@@ -1235,6 +1238,9 @@ msgstr "Impossibile inoltrare a %s. Apri la chat per riprovare."
 
 msgid "Couldn't forward. Please try again."
 msgstr "Impossibile inoltrare. Riprova."
+
+msgid "Couldn't get your location. Check your desktop location permissions or pick a point on the map."
+msgstr "Impossibile ottenere la tua posizione. Controlla i permessi di localizzazione del desktop o scegli un punto sulla mappa."
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "Impossibile rilevare la voce. Parla chiaramente e riprova."
@@ -1809,6 +1815,9 @@ msgstr "Trascina una chat su una cartella per tenerla lì, o trascina una cartel
 
 msgid "Drag a folder to reorder it. Your chats appear here once you have some."
 msgstr "Trascina una cartella per riordinarla. Le tue chat appariranno qui quando ne avrai."
+
+msgid "Drag the map to place the pin, or use your current location."
+msgstr "Trascina la mappa per posizionare il segnaposto, oppure usa la tua posizione attuale."
 
 msgid "Drop files to attach"
 msgstr "Rilascia i file per allegarli"
@@ -3664,6 +3673,9 @@ msgstr "Ripubblica elenchi relay"
 msgid "Republish your relay lists"
 msgstr "Ripubblica le tue liste di relay"
 
+msgid "Requesting your location. Approve the desktop permission prompt if shown."
+msgstr "Richiesta della tua posizione in corso. Autorizza l'accesso nella finestra dei permessi del desktop, se viene mostrata."
+
 msgid "Reset"
 msgstr "Ripristina"
 
@@ -3961,6 +3973,9 @@ msgstr "Invia una notifica di prova"
 #, c-format
 msgid "Send failed: %s"
 msgstr "Invio non riuscito: %s"
+
+msgid "Send location"
+msgstr "Invia posizione"
 
 msgid "Send test"
 msgstr "Invia prova"
@@ -4674,6 +4689,9 @@ msgstr "Usa un gruppo separato per ogni progetto e inizia indicando dove si trov
 msgid "Use a shorter search."
 msgstr "Usa una ricerca più breve."
 
+msgid "Use current location"
+msgstr "Usa la posizione attuale"
+
 msgid "Use emoji image"
 msgstr "Usa immagine emoji"
 
@@ -4920,6 +4938,9 @@ msgstr "Le tue chat appariranno qui quando ne avrai."
 
 msgid "Your current password"
 msgstr "La tua password attuale"
+
+msgid "Your desktop location service handles the permission request. Nothing is sent to the chat until you choose Send location."
+msgstr "Il servizio di localizzazione del desktop gestisce la richiesta di autorizzazione. Nulla viene inviato alla chat finché non scegli Invia posizione."
 
 msgid "Your disk is filling up"
 msgstr "Il disco si sta riempiendo"

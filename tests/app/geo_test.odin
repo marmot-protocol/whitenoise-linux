@@ -7,6 +7,22 @@ import "core:testing"
 import "core:time"
 
 @(test)
+location_coordinates :: proc(t: ^testing.T) {
+	for row in ([]struct {
+			text: string,
+			pin:  Geo_Point,
+		}{{"-90 180\n", {-90, 180}}, {"51.5074 -0.1278\n", {51.5074, -0.1278}}}) {
+		pin, ok := location_parse(transmute([]u8)row.text)
+		testing.expect(t, ok, row.text)
+		testing.expect_value(t, pin, row.pin)
+	}
+	for text in ([]string{"nan 0", "0 inf", "90.0001 0", "0 -180.0001", "1,5 2", "1 2 3", "1", ""}) {
+		_, ok := location_parse(transmute([]u8)text)
+		testing.expect(t, !ok, text)
+	}
+}
+
+@(test)
 geo_links :: proc(t: ^testing.T) {
 	Links :: struct {
 		url:  string,

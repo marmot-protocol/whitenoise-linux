@@ -55,6 +55,11 @@ chat_drop_boundaries :: proc(t: ^testing.T) {
 	ui.confirm.kind = .Delete_All
 	testing.expect(t, !chat_drop_target(&ui, position), "modal captures drops")
 	ui.confirm.kind = .None
+	ui.location_open = true
+	testing.expect(t, modal_open(&ui), "location picker owns the modal backdrop")
+	testing.expect(t, !chat_drop_target(&ui, position), "location picker captures drops")
+	ui.location_open = false
+	testing.expect(t, chat_drop_target(&ui, position), "closing location restores the drop target")
 	ui.editing = "message"
 	testing.expect(t, !chat_drop_target(&ui, position), "editing cannot send attachments")
 	ui.editing = ""

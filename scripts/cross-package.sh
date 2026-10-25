@@ -241,7 +241,7 @@ FONTCONFIG
   cp "$CA_BUNDLE" "$RES/cacert.pem"
 
   if [ "$SYSTEM" = linux ]; then
-    cp "$OUT/wn-webview" "$PREFIX/bin/curl" "$HELPERS/"
+    cp "$OUT/wn-webview" "$OUT/wn-location" "$PREFIX/bin/curl" "$HELPERS/"
     # WebKit and GStreamer load these subprocesses/plugins dynamically: ELF
     # DT_NEEDED alone cannot discover them. Include their data as well.
     mkdir -p "$STAGE/usr/lib" "$STAGE/usr/share"

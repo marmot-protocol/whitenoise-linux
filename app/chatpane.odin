@@ -46,6 +46,9 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 		if open_now(clay.ID("PollModal"), ui.poll_open) {
 			poll_modal(ui)
 		}
+		if open_now(clay.ID("LocationModal"), ui.location_open) {
+			geo_picker(ui)
+		}
 		// No close animation here: preview_close frees the decoded
 		// views, so nothing may draw the modal after it.
 		if open_now(clay.ID("PvModal"), preview_shown) && preview_shown {
@@ -2254,6 +2257,21 @@ chat_composer :: proc(ui: ^Ui_State) {
 						tooltip(tr("Create a poll"))
 					}
 					clay.Text(ICON_POLL, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
+				}
+				if ui.editing == "" {
+					if clay.UI(clay.ID("LocationBtn"))(
+					{
+						layout = {padding = clay.PaddingAll(4)},
+						backgroundColor = hovered() ? HOVER : {},
+						cornerRadius = rr(6),
+					},
+					) {
+						if hovered() {tooltip(tr("Send location"))}
+						clay.Text(
+							ICON_LOCATION,
+							{fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO},
+						)
+					}
 				}
 				// Once a day per chat; lit and inert after it went out.
 				if ui.editing == "" && ui.compose_issue == "" {

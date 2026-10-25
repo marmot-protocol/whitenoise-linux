@@ -227,6 +227,10 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 }
 
 handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if ui.location_open {
+		handle_geo_picker(ui, client)
+		return
+	}
 	if ui.sticker_open || ui.picker_open {return}
 	if preview_shown {return}
 	// A shared theme is taken only on the tap: adopt_theme writes it
@@ -646,6 +650,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("PollBtn") {
 		poll_reset(ui)
 		ui.poll_open = true
+		return
+	}
+	if clicked("LocationBtn") && ui.editing == "" && blocked_dm == "" {
+		geo_picker_open(ui)
 		return
 	}
 	if clicked("GmBtn") {
@@ -1414,6 +1422,7 @@ drop_draft :: proc(ui: ^Ui_State) {
 // Select a chat, load its timeline, and clear the unread badge by
 // marking the newest message read.
 select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int) {
+	if ui.location_open {geo_picker_close(ui)}
 	if ui.photo.kind == .Group {photo_cancel(ui)}
 	index := requested_index
 	ui.gs_jump_pending = false
@@ -1523,6 +1532,7 @@ set_archived :: proc(ui: ^Ui_State, client: ^marmot.Client, group_id: string, ar
 		return
 	}
 	marmot.app_group_record_free(record)
+	if ui.location_open {geo_picker_close(ui)}
 	ui.selected = -1
 	refresh_after_action(ui, client)
 }
@@ -1540,6 +1550,7 @@ refresh_after_action :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			break
 		}
 	}
+	if ui.location_open && ui.selected < 0 {geo_picker_close(ui)}
 }
 
 NOTES_TITLE :: "Notes to self"

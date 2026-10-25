@@ -36,6 +36,7 @@ import "core:sync"
 import "core:thread"
 import "core:time"
 
+import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
@@ -47,6 +48,10 @@ GEO_ZOOM_MIN :: 2
 GEO_ZOOM_MAX :: 19 // the deepest tile.openstreetmap.org serves
 @(private = "file")
 GEO_ZOOM_SHARE :: 15 // streets with names, about 1.2 km across a card
+@(private = "file")
+GEO_PICK_KEY :: "location-picker"
+@(private = "file")
+GEO_PICK_ID :: u32(1048576)
 @(private = "file")
 GEO_MAP_H :: 220
 @(private = "file")
@@ -656,6 +661,7 @@ geo_owner: string
 // message shares a view; add the card's position if that shows up.
 @(private = "file")
 geo_view_key :: proc(key: string) -> string {
+	if key == GEO_PICK_KEY {return key}
 	return fmt.tprintf("%s\x00%s", geo_owner, key)
 }
 
@@ -664,7 +670,7 @@ geo_view_key :: proc(key: string) -> string {
 @(private)
 geo_map :: proc(id: u32, key: string, pin: Geo_Point, zoom: int, w, h: f32) {
 	if g_ui == nil || !g_ui.prefs.map_consent {
-		if !geo_declined {geo_consent(id, w)}
+		if !geo_declined || key == GEO_PICK_KEY {geo_consent(id, w)}
 		return
 	}
 	view_key := geo_view_key(key)
@@ -758,7 +764,7 @@ geo_map :: proc(id: u32, key: string, pin: Geo_Point, zoom: int, w, h: f32) {
 				}
 			}
 		}
-		geo_pin(id, view, pin, w, h)
+		geo_pin(id, view, key == GEO_PICK_KEY ? geo_unproject(view.center) : pin, w, h)
 		geo_controls(id, view)
 		geo_map_status(id, wanted, loaded, failed)
 		if clay.UI(clay.ID("GeoCredit", id))(
@@ -767,6 +773,8 @@ geo_map :: proc(id: u32, key: string, pin: Geo_Point, zoom: int, w, h: f32) {
 			floating = {
 				attachTo = .Parent,
 				clipTo = .AttachedParent,
+				zIndex = id == GEO_PICK_ID ? 12 : 0,
+				pointerCaptureMode = id == GEO_PICK_ID ? .Passthrough : .Capture,
 				attachment = {element = .RightBottom, parent = .RightBottom},
 			},
 			backgroundColor = fade(PLATE, 0.85),
@@ -864,6 +872,7 @@ geo_pin :: proc(id: u32, view: Geo_View, pin: Geo_Point, w, h: f32) {
 			attachTo = .Parent,
 			clipTo = .AttachedParent,
 			pointerCaptureMode = .Passthrough,
+			zIndex = id == GEO_PICK_ID ? 12 : 0,
 			offset = {f32(x), f32(y)},
 			attachment = {element = .CenterCenter, parent = .LeftTop},
 		},
@@ -902,6 +911,8 @@ geo_controls :: proc(id: u32, view: Geo_View) {
 		floating = {
 			attachTo = .Parent,
 			clipTo = .AttachedParent,
+			zIndex = id == GEO_PICK_ID ? 12 : 0,
+			pointerCaptureMode = id == GEO_PICK_ID ? .Passthrough : .Capture,
 			offset = {-8, 8},
 			attachment = {element = .RightTop, parent = .RightTop},
 		},
@@ -955,6 +966,8 @@ geo_map_status :: proc(id: u32, wanted, loaded, failed: int) {
 		floating = {
 			attachTo = .Parent,
 			clipTo = .AttachedParent,
+			zIndex = id == GEO_PICK_ID ? 12 : 0,
+			pointerCaptureMode = id == GEO_PICK_ID ? .Passthrough : .Capture,
 			offset = {8, -8},
 			attachment = {element = .LeftBottom, parent = .LeftBottom},
 		},
@@ -1105,16 +1118,202 @@ geo_card :: proc(id: u32, url: string, link: Geo_Link) {
 
 // ── input ───────────────────────────────────────────────────────────
 
+// The picker owns one reusable view, separate from every timeline card.
+@(private)
+geo_picker_open :: proc(ui: ^Ui_State) {
+	if ui.selected < 0 ||
+	   ui.selected >= len(ui.chats) ||
+	   ui.editing != "" ||
+	   blocked_peer(ui) != "" {return}
+	geo_picker_close(ui)
+	ui.location_open = true
+	ui.location_selected = false
+	ui.location_error = false
+	ui.location_pin = {}
+	ui.location_account = strings.clone(ui.account_ref)
+	ui.location_group = strings.clone(ui.chats[ui.selected].group_id)
+	ui.location_thread = strings.clone(thread_cur(ui))
+	ui.location_issue = strings.clone(ui.compose_issue)
+	view, seen := geo_views[GEO_PICK_KEY]
+	if !seen {view.key = strings.clone(GEO_PICK_KEY)}
+	view.center, view.home = geo_project({}), geo_project({})
+	view.zoom, view.home_z, view.wheel = GEO_ZOOM_MIN, GEO_ZOOM_MIN, 0
+	geo_views[view.key] = view
+}
+
+@(private)
+geo_picker_close :: proc(ui: ^Ui_State) {
+	location_cancel(ui)
+	ui.location_open, ui.location_busy = false, false
+	ui.location_request += 1
+	for value in ([4]^string{&ui.location_account, &ui.location_group, &ui.location_thread, &ui.location_issue}) {
+		delete(value^)
+		value^ = ""
+	}
+	geo_drag = ""
+	ui.focus = .Compose
+}
+
+@(private = "file")
+geo_picker_valid :: proc(ui: ^Ui_State) -> bool {
+	return(
+		ui.location_open &&
+		ui.selected >= 0 &&
+		ui.selected < len(ui.chats) &&
+		ui.account_ref == ui.location_account &&
+		ui.chats[ui.selected].group_id == ui.location_group &&
+		thread_cur(ui) == ui.location_thread &&
+		ui.compose_issue == ui.location_issue &&
+		ui.editing == "" &&
+		blocked_peer(ui) == "" \
+	)
+}
+
+// A device fix sets the pin exactly, even beyond Mercator's latitude limit.
+@(private)
+geo_picker_center :: proc(ui: ^Ui_State, pin: Geo_Point) {
+	ui.location_pin, ui.location_selected = pin, true
+	if view, ok := &geo_views[GEO_PICK_KEY]; ok {
+		view.center, view.home = geo_project(pin), geo_project(pin)
+		view.zoom, view.home_z = GEO_ZOOM_SHARE, GEO_ZOOM_SHARE
+		view.wheel = 0
+	}
+}
+
+// Moving the pin wins over an outstanding device-location request.
+@(private = "file")
+geo_picker_select :: proc(ui: ^Ui_State, at: [2]f64) {
+	location_cancel(ui)
+	ui.location_request += 1
+	ui.location_busy, ui.location_error = false, false
+	ui.location_pin, ui.location_selected = geo_unproject(at), true
+}
+
+@(private)
+geo_picker :: proc(ui: ^Ui_State) {
+	if !ui.location_open {return}
+	if !geo_picker_valid(ui) {geo_picker_close(ui); return}
+	drain_location(ui)
+	w := modal_w(clay.ID("LocationModal"), 640)
+	h := f32(rl.GetScreenHeight()) / UI_ZOOM
+	if clay.UI(clay.ID("LocationModal"))(
+	{
+		layout = {
+			layoutDirection = .TopToBottom,
+			sizing = {clay.SizingFixed(w), clay.SizingFit({max = max(120, h - 40)})},
+			padding = clay.PaddingAll(16),
+			childGap = 10,
+		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		floating = {
+			attachTo = .Root,
+			zIndex = 11,
+			offset = {0, rise(clay.ID("LocationModal"))},
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
+		backgroundColor = CARD,
+		cornerRadius = rr(12),
+		border = {color = ELEVATED_BORDER, width = bw()},
+	},
+	) {
+		clay.Text(tr("Send location"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
+		clay.Text(
+			tr("Drag the map to place the pin, or use your current location."),
+			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+		)
+		geo_map(
+			GEO_PICK_ID,
+			GEO_PICK_KEY,
+			ui.location_pin,
+			GEO_ZOOM_MIN,
+			w - 32,
+			clamp(h - 300, 120, 340),
+		)
+		clay.Text(
+			ui.location_selected ? geo_format(ui.location_pin) : tr("Choose a location before sending."),
+			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+		)
+		if ui.location_busy {
+			clay.Text(
+				tr("Requesting your location. Approve the desktop permission prompt if shown."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+			clay.Text(
+				tr("Progress is indeterminate."),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+			busy_bar("LocationBusy")
+		} else if ui.location_error {
+			clay.Text(
+				tr(
+					"Couldn't get your location. Check your desktop location permissions or pick a point on the map.",
+				),
+				{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+			)
+		} else {
+			clay.Text(
+				tr(
+					"Your desktop location service handles the permission request. Nothing is sent to the chat until you choose Send location.",
+				),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+		}
+		if !ui.location_busy {micro_button("LocationCurrent", tr("Use current location"))}
+		if clay.UI(clay.ID("LocationActions"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+		) {
+			login_button("LocationCancel", tr("Cancel"))
+			if clay.UI(clay.ID("LocationGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
+			if ui.location_selected {login_button("LocationSend", tr("Send location"), primary = true)}
+		}
+	}
+}
+
+@(private)
+handle_geo_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if !ui.location_open {return}
+	if !geo_picker_valid(ui) {geo_picker_close(ui); return}
+	if rl.IsKeyPressed(.ESCAPE) || clicked("LocationCancel") {
+		geo_picker_close(ui)
+		return
+	}
+	if clicked("LocationCurrent") && !ui.location_busy {
+		location_start(ui)
+		return
+	}
+	if clicked("LocationSend") && ui.location_selected && client != nil {
+		body := fmt.tprintf(
+			"Location: https://maps.google.com/maps?q=%.6f,%.6f",
+			ui.location_pin.lat,
+			ui.location_pin.lon,
+		)
+		queue_send(ui, client, body)
+		ui.replying = ""
+		fx_send_armed(ui)
+		play_sound(.Send)
+		geo_picker_close(ui)
+	}
+}
+
 // Drag pans, the wheel zooms about the pointer, and the buttons act on
 // release. Runs after layout; the frame loop zeroes the timeline's
 // wheel while a map is hovered so zooming doesn't also scroll.
 @(private)
 handle_geo :: proc(ui: ^Ui_State) {
+	if modal_open(ui) && !ui.location_open {return}
+	if ui.location_open && !clay.PointerOver(clay.ID("LocationModal")) {return}
+	before := geo_views[GEO_PICK_KEY].center
+	before_zoom := geo_views[GEO_PICK_KEY].zoom
 	// Logical pixels; devctl's pointer when it holds one.
 	mouse := test_pointer_on ? test_pointer : transmute([2]f32)rl.GetMousePosition()
 	mouse /= UI_ZOOM
 	if mouse_pressed() && geo_drag == "" && geo_hover != "" && geo_action == .None {
 		geo_drag, geo_grab = geo_hover, mouse
+		if ui.location_open && geo_hover == GEO_PICK_KEY {
+			geo_picker_select(ui, before)
+		}
 	}
 	if geo_drag != "" {
 		view, ok := &geo_views[geo_drag]
@@ -1138,16 +1337,29 @@ handle_geo :: proc(ui: ^Ui_State) {
 		}
 	}
 
-	if !mouse_released() || modal_open(ui) {return}
+	if ui.location_open {
+		after := geo_views[GEO_PICK_KEY].center
+		if after != before || geo_views[GEO_PICK_KEY].zoom != before_zoom {
+			geo_picker_select(ui, after)
+		}
+	}
+	if !mouse_released() {return}
 	switch geo_action {
 	case .None:
 	case .Zoom_In, .Zoom_Out:
 		if view, ok := &geo_views[geo_action_key]; ok {
+			zoom := view.zoom
 			geo_zoom(view, geo_action == .Zoom_In ? 1 : -1, {})
+			if ui.location_open && view.key == GEO_PICK_KEY && view.zoom != zoom {
+				geo_picker_select(ui, view.center)
+			}
 		}
 	case .Recenter:
 		if view, ok := &geo_views[geo_action_key]; ok {
 			view.center, view.zoom = view.home, view.home_z
+			if ui.location_open && view.key == GEO_PICK_KEY {
+				geo_picker_select(ui, view.center)
+			}
 		}
 	case .Retry:
 		missed := make([dynamic]Geo_Tile_Key, context.temp_allocator)
@@ -1167,6 +1379,7 @@ handle_geo :: proc(ui: ^Ui_State) {
 			save_settings(ui)
 		} else {
 			geo_declined = true
+			if ui.location_open {geo_picker_close(ui)}
 		}
 		// The panel, the map and neither differ in height.
 		for &msg in ui.messages {msg.row_height = 0}

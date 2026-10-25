@@ -135,8 +135,10 @@ composer_layout :: proc(t: ^testing.T) {
 						"Clay must not wrap a manually wrapped line again",
 					)
 				}
-				for id in ([]string{"AttachBtn", "EmojiBtn", "FxBtn", "PollBtn", "DictateBtn", "MicBtn"}) {
-					button := clay.GetElementData(clay.ID(id)).boundingBox
+				for id in ([]string{"AttachBtn", "EmojiBtn", "FxBtn", "PollBtn", "LocationBtn", "DictateBtn", "MicBtn"}) {
+					element := clay.GetElementData(clay.ID(id))
+					testing.expect(t, element.found, id)
+					button := element.boundingBox
 					testing.expect(
 						t,
 						button.y >= clip.y + clip.height,
@@ -209,5 +211,19 @@ composer_layout :: proc(t: ^testing.T) {
 		t,
 		chip.found && abs(chip.boundingBox.width - width) < 0.01,
 		"composer mentions render as chips",
+	)
+	ui.editing = "message"
+	build_layout(&ui, 0)
+	testing.expect(
+		t,
+		!clay.GetElementData(clay.ID("LocationBtn")).found,
+		"editing cannot attach a location",
+	)
+	ui.editing = ""
+	build_layout(&ui, 0)
+	testing.expect(
+		t,
+		clay.GetElementData(clay.ID("LocationBtn")).found,
+		"new messages offer location again",
 	)
 }
