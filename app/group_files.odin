@@ -317,11 +317,14 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("GroupFilesRefresh"))(
 			{
 				layout = {padding = clay.PaddingAll(8)},
-				backgroundColor = hovered() ? HOVER : {},
+				backgroundColor = ready && hovered() ? HOVER : {},
 				cornerRadius = rr(6),
 			},
 			) {
-				clay.Text(tr("Refresh"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+				clay.Text(
+					tr("Refresh"),
+					{fontId = FONT_BODY, fontSize = 12, textColor = ready ? TEXT_DIM : TEXT_LO},
+				)
 			}
 			if clay.UI(clay.ID("GroupFilesBack"))(
 			{
