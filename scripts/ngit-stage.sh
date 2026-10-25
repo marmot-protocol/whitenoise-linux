@@ -10,7 +10,7 @@ fi
 if [ ! -d "$root/.git" ]; then
   git init -q "$root"
 fi
-git -C "$root" fetch --no-tags "$GITHUB_WORKSPACE" "$GITHUB_SHA"
+git -C "$root" fetch --no-tags --update-shallow "$GITHUB_WORKSPACE" "$GITHUB_SHA"
 git -C "$root" checkout --force --detach FETCH_HEAD
 
 # SDK executables stay in the image; additional pinned toolchains persist.
