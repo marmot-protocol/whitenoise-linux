@@ -476,6 +476,30 @@ status_bar :: proc(ui: ^Ui_State) {
 		}
 	}
 	update_bar()
+	if ui.translation.file != nil {
+		if clay.UI(clay.ID("TranslationBar"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				padding = clay.PaddingAll(6),
+				childGap = 4,
+			},
+			backgroundColor = STATUS_BAR,
+		},
+		) {
+			if clay.UI(clay.ID("TranslationBarActions"))(
+			{layout = {childGap = 12, childAlignment = {y = .Center}}},
+			) {
+				micro_button("TranslationStopGlobal", tr("Cancel translation"))
+				clay.Text(
+					translation_status(ui),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				)
+			}
+			translation_progress(ui, "TranslationGlobalProgress")
+		}
+	}
 	if len(ui.banner) > 0 {
 		banner_bar(ui)
 	}

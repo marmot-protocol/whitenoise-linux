@@ -231,6 +231,11 @@ context_menu :: proc(ui: ^Ui_State) {
 			ctx_item("CtxForward", ICON_FORWARD, tr("Forward"))
 			if len(msg.body) > 0 {
 				ctx_item("CtxCopy", ICON_COPY, tr("Copy text"))
+				when ODIN_OS == .Linux {
+					if translation_eligible(ui, msg) {
+						ctx_item("CtxTranslate", ICON_COMMENTS, tr("Translate"))
+					}
+				}
 				if ui.prefs.tts_enabled {
 					ctx_item("CtxRead", ICON_COMMENTS, tr("Read aloud"))
 				}

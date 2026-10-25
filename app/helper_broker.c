@@ -25,8 +25,8 @@
 #endif
 
 static const char *const helper_names[] = {
-    "wn-image",   "wn-archive", "wn-mesh", "wn-fbx", "wn-math",
-    "wn-nes",     "wn-pdf",     "wn-font", "wn-stt", "wn-tts",
+    "wn-image",   "wn-archive", "wn-mesh", "wn-fbx", "wn-math",      "wn-nes",
+    "wn-pdf",     "wn-font",    "wn-stt",  "wn-tts", "wn-translate",
 #ifndef __OpenBSD__
     "wn-webview",
 #endif

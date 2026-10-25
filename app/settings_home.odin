@@ -58,6 +58,34 @@ SETTINGS_TASKS := []Settings_Task {
 	},
 	{.Appearance, N_("Share this theme"), "RowThemeShare", "edit custom theme", false},
 	{.General, N_("Change the interface language"), "RowLang", "locale translation", true},
+	{
+		.General,
+		N_("Translate messages on your device"),
+		"RowTranslation",
+		"translation local offline gemma model download privacy",
+		true,
+	},
+	{
+		.General,
+		N_("Translate received messages automatically"),
+		"RowTranslationAuto",
+		"translation automatic incoming language",
+		false,
+	},
+	{
+		.General,
+		N_("Choose a translation source language"),
+		"RowTranslationSource",
+		"translation detect automatic from",
+		false,
+	},
+	{
+		.General,
+		N_("Choose a translation target language"),
+		"RowTranslationTarget",
+		"translation into output",
+		false,
+	},
 	{.General, N_("Launch at login"), "RowLaunch", "startup autostart", true},
 	{.General, N_("Change the time format"), "RowTimeFmt", "clock 12 24 hour", true},
 	{.General, N_("Choose one-tap reactions"), "RowQuick", "emoji messaging quick", true},
@@ -300,6 +328,9 @@ settings_available :: proc(ui: ^Ui_State, section: Settings_Section) -> bool {
 
 @(private)
 settings_task_matches :: proc(ui: ^Ui_State, task: Settings_Task, query: string) -> bool {
+	when !TRANSLATION_AVAILABLE {
+		if strings.has_prefix(task.anchor, "RowTranslation") {return false}
+	}
 	when ODIN_OS == .OpenBSD {
 		if task.anchor == "RowLaunch" {
 			return false
@@ -855,6 +886,7 @@ settings_open :: proc(
 ) {
 	if !settings_available(ui, section) {return}
 	settings_theme_preview_reset(ui)
+	ui.translation.language_menu = 0
 	ui.agent_connector = 0
 	level := level
 	if anchor != "" || !settings_has_menu(section) {level = .Sheet}
@@ -939,6 +971,12 @@ settings_back :: proc(ui: ^Ui_State) {
 @(private)
 settings_escape :: proc(ui: ^Ui_State) -> bool {
 	if !rl.IsKeyPressed(.ESCAPE) {return false}
+	if ui.settings_section == .General &&
+	   ui.settings_tab == 1 &&
+	   ui.translation.language_menu != 0 {
+		settings_translation_close(ui, ui.translation.language_menu)
+		return true
+	}
 	settings_theme_preview_reset(ui)
 	#partial switch ui.focus {
 	case .Compose:
@@ -1067,6 +1105,12 @@ settings_resolve_scroll :: proc(ui: ^Ui_State) -> bool {
 	}
 	overflow := max(0, data.contentDimensions.height - data.scrollContainerDimensions.height)
 	data.scrollPosition.y = clamp(target, -overflow, 0)
+	if ui.settings_anchor == "TranslationLanguageList" && ui.translation.language_menu != 0 {
+		scroll_into_view(
+			clay.ID("TranslationLanguageList"),
+			clay.ID(fmt.tprintf("TranslationLanguage%d", ui.translation.language_choice)),
+		)
+	}
 	ui.settings_scroll_pending = false
 	return true
 }

@@ -921,6 +921,7 @@ app_main :: proc() {
 			drain_sends(&ui, client)
 			stage_files_tick(&ui)
 			tts_tick(&ui)
+			translation_tick(&ui)
 			drain_ops(&ui, client)
 			drain_nc_intents(&ui, client) // Namecoin .bit resolutions land here
 			web_tick() // webxdc modal: run WebKit, take its pixels
@@ -1424,6 +1425,9 @@ app_main :: proc() {
 				}
 				if clicked("TtsStopGlobal") {
 					tts_stop(&ui)
+				}
+				if clicked("TranslationStopGlobal") {
+					translation_stop(&ui)
 				}
 				if clicked("BannerClose") {
 					ui.banner = "" // borrowed from client_status; never freed here

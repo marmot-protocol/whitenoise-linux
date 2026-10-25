@@ -1701,15 +1701,20 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			// Bodies draw a card in place of every GitHub link they hold.
 			gh_cards_on = true
 			geo_owner = msg.id
-			giphy := !msg.deleted && giphy_message(index, msg.body)
+			rendition := g_ui != nil ? translation_lookup(g_ui, msg) : nil
+			translated := rendition != nil && rendition.phase == .Ready && rendition.show
+			if translated {
+				body_text(index * 4096, rendition.text, 14, TEXT, true)
+			}
+			giphy := !translated && !msg.deleted && giphy_message(index, msg.body)
 			// GIPHY already owns the download, including its loading fallback.
 			if giphy_message_url(msg.body) != "" {
 				gh_cards_on = false
 			}
 			// A body that is one bare npub/nprofile becomes that person's
 			// card. Either way the text itself is not drawn.
-			replaced := giphy
-			if !giphy && !msg.deleted && len(msg.secrets) == 0 {
+			replaced := giphy || translated
+			if !replaced && !msg.deleted && len(msg.secrets) == 0 {
 				if hex := bare_mention_hex(msg.body); len(hex) > 0 {
 					profile_card(index * 4096, hex, att_w(360), .Message)
 					replaced = true
@@ -1756,6 +1761,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 
 			gh_cards_on = false
 			geo_owner = ""
+			if g_ui != nil {translation_controls(g_ui, index, msg)}
 
 			if len(msg.secrets) > 0 && !msg.deleted {
 				for layer in 0 ..= len(msg.secrets) {

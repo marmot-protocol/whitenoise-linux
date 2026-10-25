@@ -47,6 +47,21 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Settings > General > Messaging > Custom emoji browses recent [NIP-51 kind-30030 emoji sets](https://github.com/nostr-protocol/nips/blob/master/51.md) from your event-fetch relays. Sets from your contacts come first, with A-Z ordering within each group and a saved Contacts only filter. Sets with no valid emoji stay hidden. Each row shows artwork and an author mention chip. Search by title, author, or shortcode, then open a set to preview it. Import the whole set or use the + button beside one emoji. Previews appear as each download finishes. Imported emoji keep their set title and verified author after a restart. Imports preserve existing shortcodes and report skipped entries and failed downloads. Browsing previews and importing contact HTTPS image hosts; PNG, JPEG, GIF, and WebP are supported when the image decoder accepts them.
 - Custom `:shortcode:` emoji use NIP-30. The image goes out as an encrypted attachment, and the message carries an `["emoji", shortcode, url]` tag pointing at that attachment's Blossom URL. Reactions work the same way: a `:shortcode:` reaction carries its own `imeta` and emoji tag. Forwards keep the tags. MDK's `marmot_send_tagged_media` and `marmot_react_with_media` send them, and MDK keeps the media key for reaction images the way it does for chat media.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
+- Native Linux builds translate messages on your device with
+  [TranslateGemma 4B Q4_K_M](https://huggingface.co/mradermacher/translategemma-4b-it-GGUF).
+  Enable it in Settings > General > Language > Message translation, choose
+  the target language, then use Translate in a message's context menu.
+  Show original and Show translation switch the displayed text without
+  changing the stored message. Automatic translation processes received
+  messages as you read them. The first translation downloads about 2.5 GB
+  of model files; later translations work offline. Enabling accepts the
+  [Gemma terms](https://ai.google.dev/gemma/terms) and
+  [prohibited use policy](https://ai.google.dev/gemma/prohibited_use_policy).
+  Source detection runs locally with fastText. If it cannot identify the
+  language, choose the source in settings. Results stay in session memory
+  and are discarded when you change chats, accounts, or language settings.
+  Messages beyond the model's input or output token limits fail rather
+  than return a truncated translation.
 - Forwarded attachments download and prepare in the background. A status strip names the destination and stays visible through preparation and sending, even if you switch chats. Failed forwards can be retried from the destination chat.
 - Per-chat unread tracking, surfaced as rail badges.
 - Deleting a chat folder requires confirmation, from both Settings and its context menu. Only the folder is removed; its chats stay in your chat list.
@@ -808,7 +823,7 @@ Before signing in, choose SOCKS5 proxy on the sign-in screen to configure
 the same setting.
 
 The proxy carries relay and remote-signer connections, media transfers,
-link previews, embedded web pages, speech model downloads, and enabled
+link previews, embedded web pages, speech and translation model downloads, and enabled
 telemetry exports. Failed proxied requests do not fall back to direct
 connections. Relay names are resolved through the proxy. Marmot's HTTP host
 checks still use local DNS so downloads and telemetry retain their validated

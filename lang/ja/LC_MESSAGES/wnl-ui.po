@@ -479,6 +479,12 @@ msgstr "アプリ"
 msgid "Apr"
 msgstr "4月"
 
+msgid "Arabic (Egypt)"
+msgstr "アラビア語（エジプト）"
+
+msgid "Arabic (Saudi Arabia)"
+msgstr "アラビア語（サウジアラビア）"
+
 msgid "Archive"
 msgstr "アーカイブ"
 
@@ -604,6 +610,9 @@ msgstr "設定、下書き、カスタム絵文字、テーマがバックアッ
 msgid "Base color"
 msgstr "ベースカラー"
 
+msgid "Bengali"
+msgstr "ベンガル語"
+
 msgid "Bevel light"
 msgstr "ベベル（明）"
 
@@ -652,6 +661,9 @@ msgstr "吹き出しの角の半径"
 msgid "Built with"
 msgstr "使用技術"
 
+msgid "Bulgarian"
+msgstr "ブルガリア語"
+
 msgid "By rule"
 msgstr "ルールで配置"
 
@@ -697,11 +709,17 @@ msgstr "接続をキャンセル"
 msgid "Cancel edit / reply, close panels"
 msgstr "編集や返信をキャンセル、パネルを閉じる"
 
+msgid "Cancel translation"
+msgstr "翻訳をキャンセル"
+
 msgid "Card border"
 msgstr "カードの枠線"
 
 msgid "Card well"
 msgstr "カードのくぼみ"
+
+msgid "Catalan"
+msgstr "カタルーニャ語"
 
 msgid "Center the conversation"
 msgstr "会話を中央に配置"
@@ -818,6 +836,12 @@ msgstr "パスワードを確認して、鍵を復号しています。"
 msgid "Checking..."
 msgstr "確認中..."
 
+msgid "Chinese (Simplified)"
+msgstr "中国語（簡体字）"
+
+msgid "Chinese (Traditional)"
+msgstr "中国語（繁体字）"
+
 msgid "Chinese, English, Japanese, Korean and Cantonese."
 msgstr "中国語、英語、日本語、韓国語、広東語に対応しています。"
 
@@ -856,6 +880,12 @@ msgstr "プロジェクトのフォルダーを選択してください。"
 
 msgid "Choose a sign-in method."
 msgstr "サインイン方法を選んでください。"
+
+msgid "Choose a translation source language"
+msgstr "翻訳元の言語を選択"
+
+msgid "Choose a translation target language"
+msgstr "翻訳先の言語を選択"
 
 msgid "Choose an emoji style"
 msgstr "絵文字のスタイルを選択"
@@ -1257,6 +1287,9 @@ msgstr "音声ファイルをダウンロードできませんでした。もう
 msgid "Couldn't download the speech model. Check your connection and available disk space, then try again."
 msgstr "音声モデルをダウンロードできませんでした。接続とディスクの空き容量を確認して、もう一度お試しください。"
 
+msgid "Couldn't download the translation model. Check your connection and available disk space, then try again."
+msgstr "翻訳モデルをダウンロードできませんでした。接続とディスクの空き容量を確認して、もう一度お試しください。"
+
 msgid "Couldn't export contacts. Please try again."
 msgstr "連絡先をエクスポートできませんでした。もう一度お試しください。"
 
@@ -1282,6 +1315,9 @@ msgstr "現在地を取得できませんでした。デスクトップの位置
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "音声を聞き取れませんでした。はっきり話して、もう一度お試しください。"
+
+msgid "Couldn't identify a supported language. Choose the source language in translation settings and try again."
+msgstr "対応している言語を識別できませんでした。翻訳設定で翻訳元の言語を選んで、もう一度お試しください。"
 
 msgid "Couldn't import contacts. Choose a JSON array of contact records."
 msgstr "連絡先をインポートできませんでした。連絡先レコードのJSON配列を選んでください。"
@@ -1575,6 +1611,9 @@ msgstr "アップデーターを起動できませんでした。もう一度お
 msgid "Couldn't start transcription. Please try again."
 msgstr "文字起こしを開始できませんでした。もう一度お試しください。"
 
+msgid "Couldn't start translation. Reinstall White Noise and try again."
+msgstr "翻訳を開始できませんでした。White Noiseを再インストールして、もう一度お試しください。"
+
 msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
 msgstr "この音声を文字に変換できませんでした。10分未満の録音を選んでください。"
 
@@ -1583,6 +1622,12 @@ msgstr "この音声を文字に変換できませんでした。100 MB未満の
 
 msgid "Couldn't transcribe your speech. Please try again."
 msgstr "音声を文字に変換できませんでした。もう一度お試しください。"
+
+msgid "Couldn't translate this message. Choose a shorter text message."
+msgstr "このメッセージを翻訳できませんでした。より短いテキストメッセージを選んでください。"
+
+msgid "Couldn't translate this message. Please try again."
+msgstr "このメッセージを翻訳できませんでした。もう一度お試しください。"
 
 #, c-format
 msgid "Couldn't unarchive. %s"
@@ -1668,6 +1713,9 @@ msgstr "チャットを作成しています"
 msgid "Creating your vault…"
 msgstr "保管庫を作成しています…"
 
+msgid "Croatian"
+msgstr "クロアチア語"
+
 msgid "Crop"
 msgstr ""
 
@@ -1692,6 +1740,9 @@ msgstr "カスタム絵文字"
 msgid "Cyan"
 msgstr "シアン"
 
+msgid "Czech"
+msgstr "チェコ語"
+
 msgid "DEPTH"
 msgstr "奥行き"
 
@@ -1703,6 +1754,9 @@ msgstr "表示名"
 
 msgid "Danger"
 msgstr "危険"
+
+msgid "Danish"
+msgstr "デンマーク語"
 
 msgid "Dark"
 msgstr "ダーク"
@@ -1792,6 +1846,9 @@ msgstr "デザイン"
 msgid "Desktop notifications"
 msgstr "デスクトップ通知"
 
+msgid "Detect automatically"
+msgstr "自動検出"
+
 msgid "Developer"
 msgstr "開発者"
 
@@ -1880,8 +1937,19 @@ msgstr "ダウンロード済み"
 msgid "Downloading an update."
 msgstr "アップデートをダウンロードしています。"
 
+#, c-format
+msgid "Downloading language detector: %d%%"
+msgstr "言語検出モデルをダウンロードしています: %d%%"
+
 msgid "Downloading speech model..."
 msgstr "音声モデルをダウンロードしています..."
+
+msgid "Downloading translation model..."
+msgstr "翻訳モデルをダウンロードしています..."
+
+#, c-format
+msgid "Downloading translation model: %d%%"
+msgstr "翻訳モデルをダウンロードしています: %d%%"
 
 #, c-format
 msgid "Downloading: %d%%"
@@ -1910,6 +1978,9 @@ msgstr "ここにドロップ"
 
 msgid "Dust"
 msgstr "ほこり"
+
+msgid "Dutch"
+msgstr "オランダ語"
 
 msgid "EDIT PROFILE"
 msgstr "プロフィールを編集"
@@ -1976,6 +2047,9 @@ msgstr "絵文字"
 msgid "Emoji style"
 msgstr "絵文字のスタイル"
 
+msgid "Enable local translation"
+msgstr "端末上での翻訳を有効にする"
+
 msgid "Enabled for this group."
 msgstr "このグループでは有効です。"
 
@@ -1987,6 +2061,9 @@ msgstr "終了日（その日を含む）"
 
 msgid "End-to-end encrypted"
 msgstr "エンドツーエンド暗号化"
+
+msgid "English"
+msgstr "英語"
 
 msgid "Enter a color as #RRGGBB."
 msgstr "色を #RRGGBB 形式で入力してください。"
@@ -2052,6 +2129,9 @@ msgstr "エラーをコピーしました"
 #, c-format
 msgid "Estimated strength: %d bits. Required: %d."
 msgstr "推定強度：%dビット。必要な強度：%dビット。"
+
+msgid "Estonian"
+msgstr "エストニア語"
 
 msgid "Event fetch relays"
 msgstr "イベント取得リレー"
@@ -2140,6 +2220,9 @@ msgstr "ファイル"
 msgid "Files shared in this chat will appear here."
 msgstr "このチャットで共有されたファイルはここに表示されます。"
 
+msgid "Filipino"
+msgstr "フィリピノ語"
+
 msgid "Filter chats"
 msgstr "チャットを絞り込む"
 
@@ -2157,6 +2240,9 @@ msgstr "音声入力を完了"
 
 msgid "Finishing the cancelled connection."
 msgstr "キャンセルした接続を閉じています。"
+
+msgid "Finnish"
+msgstr "フィンランド語"
 
 msgid "First member"
 msgstr "最初のメンバー"
@@ -2222,6 +2308,12 @@ msgstr "転送先"
 msgid "Forwarding to %s…"
 msgstr "%sに転送中…"
 
+msgid "French (Canada)"
+msgstr "フランス語（カナダ）"
+
+msgid "French (France)"
+msgstr "フランス語（フランス）"
+
 msgid "Friday"
 msgstr "金曜日"
 
@@ -2259,6 +2351,12 @@ msgstr "共通のグループ"
 msgid "Games"
 msgstr "ゲーム"
 
+msgid "Gemma prohibited use policy"
+msgstr "Gemmaの禁止事項ポリシー"
+
+msgid "Gemma terms"
+msgstr "Gemmaの利用規約"
+
 msgid "General"
 msgstr "一般"
 
@@ -2267,6 +2365,9 @@ msgstr "新しい鍵を生成"
 
 msgid "Generating your key"
 msgstr "鍵を生成しています"
+
+msgid "German"
+msgstr "ドイツ語"
 
 msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr "表示していないチャットにメッセージが届いたときに通知を受け取ります。"
@@ -2301,6 +2402,9 @@ msgstr "自分のプロフィールへ移動"
 msgid "Gray"
 msgstr "グレー"
 
+msgid "Greek"
+msgstr "ギリシャ語"
+
 msgid "Green"
 msgstr "緑"
 
@@ -2331,6 +2435,9 @@ msgstr "グループ"
 msgid "Groups you join will appear here."
 msgstr "参加したグループがここに表示されます。"
 
+msgid "Gujarati"
+msgstr "グジャラート語"
+
 msgid "Hand-drawn filter"
 msgstr "手描きフィルター"
 
@@ -2349,6 +2456,9 @@ msgstr "未読メッセージがある"
 msgid "Have messages read aloud"
 msgstr "メッセージを読み上げる"
 
+msgid "Hebrew"
+msgstr "ヘブライ語"
+
 msgid "Help"
 msgstr "ヘルプ"
 
@@ -2364,6 +2474,9 @@ msgstr "絵文字セットを隠す"
 msgid "Hide hidden message"
 msgstr "隠されたメッセージを非表示"
 
+msgid "Hindi"
+msgstr "ヒンディー語"
+
 msgid "Home"
 msgstr "ホーム"
 
@@ -2375,6 +2488,9 @@ msgstr "ホバー ms"
 
 msgid "How far the mouse wheel moves the view."
 msgstr "マウスホイールで表示が移動する量です。"
+
+msgid "Hungarian"
+msgstr "ハンガリー語"
 
 msgid "I did. Very important marmot business."
 msgstr "私です。大事なマーモットのお仕事です。"
@@ -2399,6 +2515,9 @@ msgstr "招待"
 
 msgid "ISSUE"
 msgstr "イシュー"
+
+msgid "Icelandic"
+msgstr "アイスランド語"
 
 msgid "Ideas"
 msgstr "アイデア"
@@ -2464,6 +2583,9 @@ msgstr "絵文字をインポートしています"
 msgid "Incoming messages"
 msgstr "受信メッセージ"
 
+msgid "Indonesian"
+msgstr "インドネシア語"
+
 msgid "Info hash"
 msgstr "情報ハッシュ"
 
@@ -2505,6 +2627,13 @@ msgstr "インターフェース"
 
 msgid "Interface language"
 msgstr "インターフェース言語"
+
+#, c-format
+msgid "Interface language (%s)"
+msgstr "表示言語（%s）"
+
+msgid "Interface language (English)"
+msgstr "表示言語（英語）"
 
 msgid "Interface sounds"
 msgstr "インターフェースの効果音"
@@ -2551,6 +2680,9 @@ msgstr "これにより、ほかの人があなたをグループに招待でき
 msgid "It stays for everyone else. You won't see it on this device again."
 msgstr "ほかの人の画面には残ります。この端末では再び表示されません。"
 
+msgid "Italian"
+msgstr "イタリア語"
+
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr "テーマのファイルがこの端末から削除されます。チャットで共有したテーマはそのまま残ります。"
 
@@ -2562,6 +2694,9 @@ msgstr "鍵はこの端末の保管庫に残ります。アカウント画面か
 
 msgid "Jan"
 msgstr "1月"
+
+msgid "Japanese"
+msgstr "日本語"
 
 msgid "Jitsi Meet call"
 msgstr "Jitsi Meet 通話"
@@ -2591,6 +2726,9 @@ msgstr "種類 %d"
 
 msgid "KP inspector"
 msgstr "KP インスペクター"
+
+msgid "Kannada"
+msgstr "カンナダ語"
 
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr "開いている会話を全幅にせず、読みやすい幅に保ちます。"
@@ -2635,6 +2773,9 @@ msgstr "鍵と ID"
 msgid "Known senders"
 msgstr "既知の送信者"
 
+msgid "Korean"
+msgstr "韓国語"
+
 msgid "LINES"
 msgstr "線"
 
@@ -2667,6 +2808,9 @@ msgstr "最後のバックアップ"
 
 msgid "Later"
 msgstr "後で"
+
+msgid "Latvian"
+msgstr "ラトビア語"
 
 msgid "Launch at login"
 msgstr "ログイン時に起動"
@@ -2721,6 +2865,9 @@ msgstr "聞き取り中です。話し終えたら完了してください（最
 
 msgid "Literal message text"
 msgstr "メッセージ本文を文字どおり検索"
+
+msgid "Lithuanian"
+msgstr "リトアニア語"
 
 msgid "Loading emoji previews"
 msgstr "絵文字のプレビューを読み込んでいます"
@@ -2812,6 +2959,9 @@ msgstr "White Noise の動作を自分に合わせて設定します。"
 msgid "Make this member an admin?"
 msgstr "このメンバーを管理者にしますか？"
 
+msgid "Malayalam"
+msgstr "マラヤーラム語"
+
 msgid "Male voice. Supports all reading languages."
 msgstr "男性の声です。すべての読み上げ言語に対応しています。"
 
@@ -2826,6 +2976,9 @@ msgstr "ローカルファイルと暗号化バックアップを管理します
 
 msgid "Mar"
 msgstr "3月"
+
+msgid "Marathi"
+msgstr "マラーティー語"
 
 msgid "Mark read"
 msgstr "既読にする"
@@ -2887,6 +3040,12 @@ msgstr "メッセージのテキストをコピーしました"
 msgid "Message text size"
 msgstr "メッセージの文字サイズ"
 
+msgid "Message translation"
+msgstr "メッセージの翻訳"
+
+msgid "Message translation is available in native Linux builds."
+msgstr "メッセージの翻訳はLinuxネイティブ版で利用できます。"
+
 msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
 msgstr ""
 
@@ -2896,6 +3055,9 @@ msgstr "新しいメッセージはこの時間が経つと全員から削除さ
 
 msgid "Messages aren't arriving"
 msgstr "メッセージが届きません"
+
+msgid "Messages stay on your device. Downloads about 2.5 GB on first translation. Enabling accepts the Gemma terms and prohibited use policy."
+msgstr "メッセージは端末の外に送信されません。初回の翻訳時に約2.5 GBをダウンロードします。有効にすると、Gemmaの利用規約と禁止事項ポリシーに同意したことになります。"
 
 msgid "Messaging"
 msgstr "メッセージ"
@@ -3176,6 +3338,9 @@ msgstr "フィルムノワール風の効果"
 msgid "None"
 msgstr "なし"
 
+msgid "Norwegian"
+msgstr "ノルウェー語"
+
 msgid "Not downloaded"
 msgstr "未ダウンロード"
 
@@ -3445,6 +3610,9 @@ msgstr "フォローしている人がここに表示されます。今すぐチ
 msgid "Perfect. Wake me up when it's spring."
 msgstr "最高です。春になったら起こしてください。"
 
+msgid "Persian"
+msgstr "ペルシャ語"
+
 msgid "Pets"
 msgstr "ペット"
 
@@ -3517,6 +3685,15 @@ msgstr "プレイ"
 msgid "Play interface sounds"
 msgstr "操作音を鳴らす"
 
+msgid "Polish"
+msgstr "ポーランド語"
+
+msgid "Portuguese (Brazil)"
+msgstr "ポルトガル語（ブラジル）"
+
+msgid "Portuguese (Portugal)"
+msgstr "ポルトガル語（ポルトガル）"
+
 msgid "Pre-order"
 msgstr "予約注文"
 
@@ -3551,6 +3728,9 @@ msgstr "プロジェクトの写真を準備しています…"
 
 msgid "Preparing transcription..."
 msgstr "文字起こしを準備しています..."
+
+msgid "Preparing translation model..."
+msgstr "翻訳モデルを準備しています..."
 
 msgid "Press Ctrl P for the command palette."
 msgstr "Ctrl P を押すとコマンドパレットが開きます。"
@@ -3656,6 +3836,9 @@ msgstr "プロフィールをリレーに公開しています。数秒かかり
 
 msgid "Publishing your relay lists"
 msgstr "リレーリストを公開しています"
+
+msgid "Punjabi"
+msgstr "パンジャーブ語"
 
 msgid "Quick reactions"
 msgstr "クイックリアクション"
@@ -3912,6 +4095,9 @@ msgstr "右クリック"
 msgid "Rocket"
 msgstr "ロケット"
 
+msgid "Romanian"
+msgstr "ルーマニア語"
+
 msgid "Rotate"
 msgstr "更新"
 
@@ -3930,6 +4116,9 @@ msgstr "ランタイムの起動に失敗しました: %s"
 
 msgid "Runtime running"
 msgstr "ランタイム実行中"
+
+msgid "Russian"
+msgstr "ロシア語"
 
 msgid "SEARCH"
 msgstr "検索"
@@ -4196,6 +4385,9 @@ msgstr "送信しています..."
 msgid "Sep"
 msgstr "9月"
 
+msgid "Serbian"
+msgstr "セルビア語"
+
 msgid "Set"
 msgstr "設定済み"
 
@@ -4321,6 +4513,12 @@ msgstr "メッセージのプレビューを表示"
 msgid "Show or hide message previews"
 msgstr "メッセージのプレビューを表示または非表示"
 
+msgid "Show original"
+msgstr "原文を表示"
+
+msgid "Show translation"
+msgstr "翻訳を表示"
+
 msgid "Shown on the message menu. Tap one to remove it. Up to 16."
 msgstr "メッセージメニューに表示されます。タップすると削除できます。最大16件です。"
 
@@ -4376,6 +4574,12 @@ msgstr "サイズ: %s"
 msgid "Slanted"
 msgstr "斜め"
 
+msgid "Slovak"
+msgstr "スロバキア語"
+
+msgid "Slovenian"
+msgstr "スロベニア語"
+
 msgid "Small"
 msgstr "小"
 
@@ -4390,6 +4594,12 @@ msgstr "音が鳴りません"
 
 msgid "Source"
 msgstr "出典"
+
+msgid "Source language"
+msgstr "翻訳元の言語"
+
+msgid "Spanish"
+msgstr "スペイン語"
 
 msgid "Sparkle manages update checks and downloads."
 msgstr "Sparkleがアップデートの確認とダウンロードを管理します。"
@@ -4505,6 +4715,15 @@ msgstr "日曜日"
 msgid "Support"
 msgstr "サポート"
 
+msgid "Swahili (Kenya)"
+msgstr "スワヒリ語（ケニア）"
+
+msgid "Swahili (Tanzania)"
+msgstr "スワヒリ語（タンザニア）"
+
+msgid "Swedish"
+msgstr "スウェーデン語"
+
 msgid "Switching your account"
 msgstr "アカウントを切り替えています"
 
@@ -4533,6 +4752,9 @@ msgstr "テイク %d"
 msgid "Takes effect on the next launch."
 msgstr "次回の起動時に反映されます。"
 
+msgid "Tamil"
+msgstr "タミル語"
+
 msgid "Tap one, then confirm, to remove it."
 msgstr "削除する絵文字をタップして確認してください。"
 
@@ -4541,6 +4763,9 @@ msgstr "タスク"
 
 msgid "Teal"
 msgstr "青緑"
+
+msgid "Telugu"
+msgstr "テルグ語"
 
 msgid "Terminal"
 msgstr "ターミナル"
@@ -4579,6 +4804,9 @@ msgstr "本文: %s"
 
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr "質感のある線とスケッチ風のアバターです。形は動きません。"
+
+msgid "Thai"
+msgstr "タイ語"
 
 msgid "That isn't your current password. Double-check it and try again."
 msgstr "現在のパスワードと一致しません。確認して、もう一度お試しください。"
@@ -4801,6 +5029,27 @@ msgstr "文字起こしモデル"
 msgid "Transition ms"
 msgstr "トランジション ms"
 
+msgid "Translate"
+msgstr "翻訳"
+
+msgid "Translate into"
+msgstr "翻訳先の言語"
+
+msgid "Translate messages on your device"
+msgstr "この端末上でメッセージを翻訳できます。"
+
+msgid "Translate received messages automatically"
+msgstr "受信したメッセージを自動で翻訳"
+
+msgid "Translates received messages as you read them. The first translation downloads the local model."
+msgstr "受信したメッセージを読む際に翻訳します。初回の翻訳時に端末用のモデルをダウンロードします。"
+
+msgid "Translating on your device..."
+msgstr "この端末上で翻訳しています..."
+
+msgid "Translations can be inaccurate. The original message is always available."
+msgstr "翻訳は正確でない場合があります。元のメッセージはいつでも確認できます。"
+
 msgid "Travel"
 msgstr "旅行"
 
@@ -4816,12 +5065,14 @@ msgstr "信頼済みのリンク先"
 msgid "Try a different search."
 msgstr "別の検索語を試してください。"
 
-#, fuzzy
 msgid "Try again"
-msgstr "もう一度検索"
+msgstr "再試行"
 
 msgid "Tuesday"
 msgstr "火曜日"
+
+msgid "Turkish"
+msgstr "トルコ語"
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "アニメーションによる切り替え、移動、エフェクトをオフにします。状態は変わりますが、何も動きません。"
@@ -4849,6 +5100,9 @@ msgstr "稼働時間"
 
 msgid "UV checker"
 msgstr "UVチェッカー"
+
+msgid "Ukrainian"
+msgstr "ウクライナ語"
 
 msgid "Unavailable conversation"
 msgstr "利用できない会話"
@@ -4909,6 +5163,9 @@ msgstr "アップロード済みの絵文字"
 
 msgid "Uploading picture"
 msgstr "画像をアップロードしています"
+
+msgid "Urdu"
+msgstr "ウルドゥー語"
 
 msgid "Use"
 msgstr ""
@@ -4984,6 +5241,9 @@ msgstr "頂点法線"
 msgid "Videos"
 msgstr "動画"
 
+msgid "Vietnamese"
+msgstr "ベトナム語"
+
 msgid "View"
 msgstr "表示"
 
@@ -5022,6 +5282,9 @@ msgstr "ワイヤーフレーム"
 
 msgid "Waiting for signer approval"
 msgstr "署名者の承認を待っています"
+
+msgid "Waiting to translate..."
+msgstr "翻訳を待っています..."
 
 msgid "Warning"
 msgstr "警告"
@@ -5268,6 +5531,9 @@ msgstr "縮小"
 
 msgid "Zoom the interface"
 msgstr "画面を拡大・縮小"
+
+msgid "Zulu"
+msgstr "ズールー語"
 
 #, c-format
 msgid "aka %s"

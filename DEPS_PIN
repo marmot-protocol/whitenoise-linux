@@ -38,3 +38,8 @@ appimageupdate-cpr-commit = 3139b2682f0b1d6af8c7ae48cf400f9d9988deec
 appimageupdate-args-commit = 114200a9ad5fe06c8dea76e15d92325695cf3e34
 appimageupdate-xdgutils-commit = d7da7ed523fafa5ddd8ec6e2208714de99c7c233
 orchard-source-file = 6a67db0dcb5f07d9e3295eb54ca9468d5d3f12d3d17f36e1a2f7ab8c2aadb8d9 https://codeload.github.com/Letdown2491/orchard/tar.gz/0b28f1d64b4f2d2453a7c289ad3e40e89a195ca0
+llama-source-file = 716cfd50fba450a43816cd0b0306d2a6b1dbb38686fbe93d205d94ab39267ebe https://codeload.github.com/ggml-org/llama.cpp/tar.gz/7790a9231d85b8af26e87ee60d8ed7373f9713f0
+fasttext-source-file = c8b6cf146839a2716658fa5517a0810beed482caf2fc0bd2f63df10088d8d507 https://codeload.github.com/facebookresearch/fastText/tar.gz/1142dc4c4ecbc19cc16eee5cdd28472e689267e6
+# Runtime-only assets, not build inputs. Keep synchronized with translation_models.h.
+translation-model = 81200d03e843d2ec1ece6eeafe7d13cb6e5211e1fcd336ade55790b683a08330 2489909760 https://huggingface.co/mradermacher/translategemma-4b-it-GGUF/resolve/d37868f759d2f817a43d28dd80cf9f982ffa62fd/translategemma-4b-it.Q4_K_M.gguf
+translation-detector-model = 8f3472cfe8738a7b6099e8e999c3cbfae0dcd15696aac7d7738a8039db603e83 938013 https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.ftz
