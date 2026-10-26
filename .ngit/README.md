@@ -45,7 +45,9 @@ uses the pinned base image, Odin, Rust, and SDL revisions in `runner/Containerfi
 The worker tag is `localhost/wn-ngit-worker:<Containerfile-sha256>`; both
 `runner/slot*.conf` mappings must match the image baked into the guest template.
 A recipe change requires rebuilding that template, not pulling SDK packages in
-every job. Install the guest files before sealing the template:
+every job. After installing a new template or slot mapping, restart both
+coordinator/adapter pairs while idle. Install the guest files before sealing
+the template:
 
 - `act.sh` as `/usr/bin/act`, with the pinned act binary at `/opt/ngit-ci/act`.
 - `guest-cache.service` and `guest-ssh-key.service` as the corresponding
