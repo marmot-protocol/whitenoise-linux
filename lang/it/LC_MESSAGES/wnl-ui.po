@@ -3552,6 +3552,9 @@ msgstr "Premi Ctrl P per la tavolozza dei comandi."
 msgid "Press Enter to save; Escape returns to Network & relays."
 msgstr "Premi Invio per salvare; Esc torna a Rete e relay."
 
+msgid "Press Enter to search."
+msgstr "Premi Invio per cercare."
+
 msgid "Preview"
 msgstr "Anteprima"
 

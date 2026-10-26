@@ -3540,6 +3540,9 @@ msgstr ""
 msgid "Press Enter to save; Escape returns to Network & relays."
 msgstr ""
 
+msgid "Press Enter to search."
+msgstr ""
+
 msgid "Preview"
 msgstr ""
 
