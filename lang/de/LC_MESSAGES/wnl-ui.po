@@ -893,6 +893,9 @@ msgstr "Wähle, wann und wie White Noise dich benachrichtigt."
 msgid "Choose where events open"
 msgstr "Wähle, wo Ereignisse geöffnet werden"
 
+msgid "Choose where git patches open"
+msgstr "Wähle, wo Git-Patches geöffnet werden"
+
 msgid "Choose where people reach you"
 msgstr "Wähle, wo man dich erreicht"
 
@@ -3233,6 +3236,9 @@ msgstr "Ereignisse öffnen in"
 msgid "Open folder"
 msgstr "Ordner öffnen"
 
+msgid "Open git patches in"
+msgstr "Git-Patches öffnen in"
+
 msgid "Open in Apple Maps"
 msgstr "In Apple Maps öffnen"
 
@@ -4550,6 +4556,9 @@ msgstr "Die Gruppe wurde in %s umbenannt"
 
 msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
 msgstr "Das neue Passwort verschlüsselt die Schlüssel dieses Geräts neu. Eine Wiederherstellung gibt es weiterhin nicht: Wenn du es vergisst, musst du mit deinem nsec neu beginnen."
+
+msgid "The ngit web client a patch card opens. That site receives the patch link."
+msgstr "Der ngit-Webclient, in dem eine Patch-Karte geöffnet wird. Diese Seite erhält den Patch-Link."
 
 msgid "The passwords don't match. Type them again."
 msgstr "Die Passwörter stimmen nicht überein. Gib sie erneut ein."

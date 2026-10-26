@@ -679,6 +679,34 @@ git_card_layout :: proc(t: ^testing.T) {
 	}
 }
 
+// Patches open in the chosen ngit client; other kinds keep the event client.
+@(test)
+patch_open_client :: proc(t: ^testing.T) {
+	note :: "note13ze9zdt8ulg08ggc4g9ycmpen5ltscc4hvfy8seceu578zlvkyzsq77jau"
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	previous := g_ui
+	defer {g_ui = previous}
+	ui: Ui_State
+	ui.prefs.event_client = DEFAULT_EVENT_CLIENT
+	g_ui = &ui
+	want := [Git_Client]string {
+		.Committish  = "https://committish.app/" + note,
+		.Gitworkshop = "https://gitworkshop.dev/" + note,
+		.NostrHub    = "https://nostrhub.io/" + note,
+	}
+	testing.expect_value(t, nev_open_url(1617, note), want[.Committish])
+	for url, git in want {
+		ui.prefs.git_client = git
+		testing.expect_value(t, nev_open_url(1617, "nostr:" + note), url)
+		testing.expect_value(t, nev_open_url(1, note), "https://ditto.pub/" + note)
+	}
+	// A patch still opens when the event client template has no {id}.
+	ui.prefs.event_client = ""
+	testing.expect_value(t, nev_open_url(1617, note), want[.NostrHub])
+	testing.expect_value(t, nev_open_url(1, note), "")
+}
+
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=patch_card_layout
 @(test)
 patch_card_layout :: proc(t: ^testing.T) {

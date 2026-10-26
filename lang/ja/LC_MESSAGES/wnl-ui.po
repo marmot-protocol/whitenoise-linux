@@ -893,6 +893,9 @@ msgstr "White Noise が通知するタイミングと方法を設定します。
 msgid "Choose where events open"
 msgstr "イベントを開く場所を選択"
 
+msgid "Choose where git patches open"
+msgstr "Git パッチを開く場所を選択"
+
 msgid "Choose where people reach you"
 msgstr "受信先を選択"
 
@@ -3233,6 +3236,9 @@ msgstr "イベントを開くクライアント"
 msgid "Open folder"
 msgstr "フォルダを開く"
 
+msgid "Open git patches in"
+msgstr "Git パッチを開くクライアント"
+
 msgid "Open in Apple Maps"
 msgstr "Apple マップで開く"
 
@@ -4550,6 +4556,9 @@ msgstr "グループ名が%sに変更されました"
 
 msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
 msgstr "新しいパスワードでこの端末の鍵を再暗号化します。復元する方法はありません。忘れた場合は nsec からやり直すことになります。"
+
+msgid "The ngit web client a patch card opens. That site receives the patch link."
+msgstr "パッチカードを開く ngit ウェブクライアントです。そのサイトにパッチのリンクが送信されます。"
 
 msgid "The passwords don't match. Type them again."
 msgstr "パスワードが一致しません。もう一度入力してください。"

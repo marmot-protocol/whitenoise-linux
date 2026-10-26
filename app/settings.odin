@@ -93,6 +93,7 @@ Prefs :: struct {
 	// with {id} standing for the nevent/note token.
 	fetch_relays:          [dynamic]string,
 	event_client:          string,
+	git_client:            Git_Client, // where a git patch card opens; zero is Committish
 	socks5_proxy:          string, // numeric IP:port; empty disables; applied on next launch
 	socks5_auth:           bool, // credentials live in the encrypted vault, never preferences
 	dev_mode:              bool, // shows the Debug / KP inspector sections
@@ -303,6 +304,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	)
 	ui.prefs.emoji_set = Emoji_Set(clamp(int(ui.prefs.emoji_set), 0, int(max(Emoji_Set))))
 	ui.prefs.map_browser = Map_Browser(clamp(int(ui.prefs.map_browser), 0, int(max(Map_Browser))))
+	ui.prefs.git_client = Git_Client(clamp(int(ui.prefs.git_client), 0, int(max(Git_Client))))
 	// ponytail: an empty list reads as "older settings.json", so the
 	// defaults come back; a user who wants no fetch relays at all
 	// cannot have that yet.

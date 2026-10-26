@@ -890,6 +890,9 @@ msgstr ""
 msgid "Choose where events open"
 msgstr ""
 
+msgid "Choose where git patches open"
+msgstr ""
+
 msgid "Choose where people reach you"
 msgstr ""
 
@@ -3222,6 +3225,9 @@ msgstr ""
 msgid "Open folder"
 msgstr ""
 
+msgid "Open git patches in"
+msgstr ""
+
 msgid "Open in Apple Maps"
 msgstr ""
 
@@ -4537,6 +4543,9 @@ msgid "The group was renamed to %s"
 msgstr ""
 
 msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
+msgstr ""
+
+msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr ""
 
 msgid "The passwords don't match. Type them again."

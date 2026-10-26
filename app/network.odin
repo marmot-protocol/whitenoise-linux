@@ -208,6 +208,19 @@ settings_network :: proc(ui: ^Ui_State) {
 				ui.focus == .Client,
 			)
 		}
+
+		if clay.UI(clay.ID("NetworkGitClientGroup"))(settings_box()) {
+			settings_group(tr("Open git patches in"))
+			clay.Text(
+				tr("The ngit web client a patch card opens. That site receives the patch link."),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+			if clay.UI(clay.ID("GitClientChoices"))({layout = {childGap = 6}}) {
+				for name, git in GIT_CLIENT_NAMES {
+					settings_option("GitClientChip", u32(git), name, ui.prefs.git_client == git)
+				}
+			}
+		}
 	}
 }
 
@@ -740,6 +753,13 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		delete(ui.prefs.event_client)
 		ui.prefs.event_client = strings.clone(string(ui.client_input[:]))
 		save_settings(ui)
+	}
+	for _, git in GIT_CLIENT_NAMES {
+		if clicked_indexed("GitClientChip", u32(git)) {
+			ui.prefs.git_client = git
+			save_settings(ui)
+			return
+		}
 	}
 	handle_profile(ui, client) // outbox add/remove lives with the profile clicks
 }

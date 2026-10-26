@@ -130,6 +130,13 @@ SETTINGS_TASKS := []Settings_Task {
 		true,
 	},
 	{.Network, N_("Choose where events open"), "ClientBox", "web client browser links", false},
+	{
+		.Network,
+		N_("Choose where git patches open"),
+		"NetworkGitClientGroup",
+		"ngit committish gitworkshop nostrhub patch web client links",
+		false,
+	},
 	{.Keys, N_("Copy your public key"), "NpubRow", "identity npub", true},
 	{.Keys, N_("Publish a key package"), "KpStatus", "mls invite identity", true},
 	{.Keys, N_("Change your vault password"), "RowVaultPw", "security encryption secret", true},

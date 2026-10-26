@@ -347,7 +347,8 @@ settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
 		     "AddFetchBtn",
 		     "NetworkFetchGroup",
 		     "ClientBox",
-		     "NetworkClientGroup":
+		     "NetworkClientGroup",
+		     "NetworkGitClientGroup":
 			return 1
 		}
 	case .Keys:
@@ -2777,9 +2778,7 @@ settings_fields :: proc(ui: ^Ui_State) {
 		}
 		// Runs every frame (the release-gated handler would miss keys):
 		// Enter saves the shortcode; settings_escape drops the staged file.
-		if ui.focus == .EmojiName &&
-		   rl.IsKeyPressed(.ENTER) &&
-		   ui.emoji_sets_job == nil {
+		if ui.focus == .EmojiName && rl.IsKeyPressed(.ENTER) && ui.emoji_sets_job == nil {
 			save_staged_emoji(ui)
 		}
 	}

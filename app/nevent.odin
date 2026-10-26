@@ -13,7 +13,8 @@
 // Note text goes through marmot's
 // markdown parser like a chat body; image links are fetched into memory
 // for this session and drawn inline. Every card offers one
-// "Open in client" button, the web client set in Settings → Network.
+// "Open in client" button, the web client set in Settings → Network;
+// patches use the ngit client chosen there instead.
 //
 //   body token ──inline_segs──▶ Inline_Seg.evid ──render_segs──▶ nev_card
 //                                                    │ miss
@@ -51,6 +52,31 @@ foreign wslib {
 
 DEFAULT_FETCH_RELAYS := []string{"wss://relay.ditto.pub", "wss://relay.primal.net"}
 DEFAULT_EVENT_CLIENT :: "https://ditto.pub/{id}"
+
+// The ngit web client a patch card opens instead of the event client.
+// Each resolves a bare nevent/note path to the patch's repository view,
+// e.g. https://committish.app/nevent1….
+@(private)
+Git_Client :: enum {
+	Committish,
+	Gitworkshop,
+	NostrHub,
+}
+
+// Product names, never translated.
+@(private)
+GIT_CLIENT_NAMES := [Git_Client]string {
+	.Committish  = "Committish",
+	.Gitworkshop = "gitworkshop",
+	.NostrHub    = "NostrHub",
+}
+
+@(private = "file")
+GIT_CLIENT_URLS := [Git_Client]string {
+	.Committish  = "https://committish.app/",
+	.Gitworkshop = "https://gitworkshop.dev/",
+	.NostrHub    = "https://nostrhub.io/",
+}
 
 NEV_IMAGE_EXTS := []string{".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
@@ -819,14 +845,7 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 
 		// Hovering binds link_hover, so a click goes through the same
 		// external-link guard as a text link.
-		if g_ui != nil && strings.contains(g_ui.prefs.event_client, "{id}") {
-			_, ref := nostr_at(token, 0)
-			url, _ := strings.replace_all(
-				g_ui.prefs.event_client,
-				"{id}",
-				ref.token,
-				context.temp_allocator,
-			)
+		if url := nev_open_url(card.kind, token); len(url) > 0 {
 			if clay.UI(clay.ID("NevOpen", id))(
 			{
 				layout = {
@@ -871,6 +890,28 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 
 @(private)
 NEV_PRODUCT_KIND :: 30402
+
+// Where a card's "Open in client" goes: patches to the ngit client,
+// everything else to the event client template. Empty hides the button.
+@(private = "file")
+nev_open_url :: proc(kind: i64, token: string) -> string {
+	if g_ui == nil {return ""}
+	_, ref := nostr_at(token, 0)
+	if kind == NEV_PATCH_KIND {
+		return strings.concatenate(
+			{GIT_CLIENT_URLS[g_ui.prefs.git_client], ref.token},
+			context.temp_allocator,
+		)
+	}
+	if !strings.contains(g_ui.prefs.event_client, "{id}") {return ""}
+	url, _ := strings.replace_all(
+		g_ui.prefs.event_client,
+		"{id}",
+		ref.token,
+		context.temp_allocator,
+	)
+	return url
+}
 
 @(private = "file")
 NEV_HIGHLIGHT_KIND :: 9802
