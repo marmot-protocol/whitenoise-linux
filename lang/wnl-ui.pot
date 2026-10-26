@@ -1896,6 +1896,9 @@ msgstr ""
 msgid "EPOCH"
 msgstr ""
 
+msgid "EXTERNAL APP"
+msgstr ""
+
 msgid "Edit"
 msgstr ""
 
@@ -4245,6 +4248,9 @@ msgstr ""
 msgid "Sign out of this account?"
 msgstr ""
 
+msgid "Signal call"
+msgstr ""
+
 msgid "Signer cancelled"
 msgstr ""
 
@@ -4564,6 +4570,9 @@ msgid "They lose access to new messages in this group."
 msgstr ""
 
 msgid "They stay in the group as a regular member."
+msgstr ""
+
+msgid "This call runs in the Signal app, not in White Noise. You need Signal to join."
 msgstr ""
 
 msgid "This has no visible text, so the GM button sends GM."

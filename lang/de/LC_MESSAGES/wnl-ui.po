@@ -1905,6 +1905,9 @@ msgstr "VERSCHLÜSSELTER SCHLÜSSEL (NCRYPTSEC)"
 msgid "EPOCH"
 msgstr "EPOCHE"
 
+msgid "EXTERNAL APP"
+msgstr "EXTERNE APP"
+
 msgid "Edit"
 msgstr "Bearbeiten"
 
@@ -4257,6 +4260,9 @@ msgstr "Abmelden"
 msgid "Sign out of this account?"
 msgstr "Von diesem Konto abmelden?"
 
+msgid "Signal call"
+msgstr "Signal-Anruf"
+
 msgid "Signer cancelled"
 msgstr "Signer-Anfrage abgebrochen"
 
@@ -4577,6 +4583,9 @@ msgstr "Die Person verliert den Zugriff auf neue Nachrichten in dieser Gruppe."
 
 msgid "They stay in the group as a regular member."
 msgstr "Die Person bleibt als normales Mitglied in der Gruppe."
+
+msgid "This call runs in the Signal app, not in White Noise. You need Signal to join."
+msgstr "Dieser Anruf läuft in der Signal-App, nicht in White Noise. Zum Beitreten brauchst du Signal."
 
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "Das enthält keinen sichtbaren Text, daher sendet die GM-Taste GM."

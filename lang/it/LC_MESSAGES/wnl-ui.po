@@ -1905,6 +1905,9 @@ msgstr "CHIAVE CRITTOGRAFATA (NCRYPTSEC)"
 msgid "EPOCH"
 msgstr "EPOCA"
 
+msgid "EXTERNAL APP"
+msgstr "APP ESTERNA"
+
 msgid "Edit"
 msgstr "Modifica"
 
@@ -4257,6 +4260,9 @@ msgstr "Disconnetti"
 msgid "Sign out of this account?"
 msgstr "Disconnettersi da questo account?"
 
+msgid "Signal call"
+msgstr "Chiamata Signal"
+
 msgid "Signer cancelled"
 msgstr "Richiesta al firmatario annullata"
 
@@ -4577,6 +4583,9 @@ msgstr "Perde l'accesso ai nuovi messaggi di questo gruppo."
 
 msgid "They stay in the group as a regular member."
 msgstr "Resta nel gruppo come membro normale."
+
+msgid "This call runs in the Signal app, not in White Noise. You need Signal to join."
+msgstr "Questa chiamata si svolge nell'app Signal, non in White Noise. Per partecipare ti serve Signal."
 
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "Non contiene testo visibile, quindi il pulsante GM invia GM."
