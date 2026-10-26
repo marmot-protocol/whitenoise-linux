@@ -2075,6 +2075,8 @@ chat_composer :: proc(ui: ^Ui_State) {
 									{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
 								)
 								busy_bar(fmt.tprintf("StagedBusy%d", i))
+							} else {
+								clay.Text(human_size(i64(len(f.data))), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})
 							}
 						}
 						if clay.UI(clay.ID("StagedX", u32(i)))(
