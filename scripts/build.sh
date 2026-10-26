@@ -874,6 +874,8 @@ if [ "${1:-}" = test ]; then
     $(pkg-config --cflags --libs glib-2.0 libavformat libavcodec libavutil libswresample) \
     -pthread -lm -o "$HERE/build/speech-decode-test"
   "$HERE/build/speech-decode-test"
+  WN_ODIN_TEST_BUILD_KEY="$(build_cache_key "$APP_OBJECT_KEY $APP_KEY" "$HERE/tests/odin.sh" "$HERE/tests/app" "$HERE/scripts/build-cache.sh")"
+  export WN_ODIN_TEST_BUILD_KEY
   env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app
   for check in rail_default_window rail_expand_narrow status_bar_viewports login_input_required profile_edit_summary sticker_input_validation issues_empty_state folder_picker_dispatch archive_chat_dispatch folder_count_dispatch new_chat_reset_dispatch test_emoji_save_io_dispatch backup_password_dispatch invite_input_dispatch; do
     SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES="$check"

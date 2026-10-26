@@ -6,9 +6,10 @@ if ! mountpoint -q "$cache"; then
   echo 'ngit worker requires its repository/trust-scoped cache.' >&2
   exit 1
 fi
-install -d -m 0700 "$cache/worker"
+work="$cache/worker"
+install -d -m 0700 "$work"
 export DOCKER_HOST=unix:///run/podman/podman.sock
-sandbox_options="--privileged --volume=$cache/worker:/var/cache/wn-ci"
+sandbox_options="--privileged --volume=$work:/var/cache/wn-ci"
 args=(--pull=false)
 container_options=absent
 while (($#)); do
@@ -36,4 +37,11 @@ done
 if [ "$container_options" = absent ]; then
   args+=(--container-options "$sandbox_options")
 fi
-exec /opt/ngit-ci/act "${args[@]}"
+if /opt/ngit-ci/act "${args[@]}"; then
+  result=0
+else
+  result=$?
+fi
+# Flush writeback before the adapter destroys the guest and releases its lease.
+sync -f "$work"
+exit "$result"
