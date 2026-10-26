@@ -416,6 +416,9 @@ msgstr "エージェントコネクターのドキュメント"
 msgid "Aggregate connection counter from the relay pool."
 msgstr "リレープール全体の接続数です。"
 
+msgid "Airmail"
+msgstr "エアメール"
+
 msgid "All"
 msgstr "すべて"
 
@@ -433,9 +436,6 @@ msgstr "すべての送信者"
 
 msgid "All types"
 msgstr "すべての種類"
-
-msgid "Also Ctrl + / - / 0."
-msgstr "Ctrl + / - / 0 でも操作できます。"
 
 msgid "Always open links to this site"
 msgstr "このサイトへのリンクを常に開く"
@@ -499,6 +499,9 @@ msgstr "アーカイブ"
 
 msgid "Arrow keys move. X is A, Z is B, Enter is Start, Shift is Select."
 msgstr "矢印キーで移動します。XがA、ZがB、EnterがStart、ShiftがSelectです。"
+
+msgid "Art deco"
+msgstr "アールデコ"
 
 msgid "Ask a question..."
 msgstr "質問を入力..."
@@ -585,8 +588,8 @@ msgstr "報告の一覧に戻る"
 msgid "Back to sets"
 msgstr "セットの一覧に戻る"
 
-msgid "Back up everything"
-msgstr "すべてをバックアップ"
+msgid "Back up local data"
+msgstr "ローカルデータをバックアップ"
 
 msgid "Background"
 msgstr "背景"
@@ -601,8 +604,8 @@ msgstr "バックアップを作成しました。"
 msgid "Backup imported: %d files restored."
 msgstr "バックアップをインポートしました: %d 件のファイルを復元しました。"
 
-msgid "Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included."
-msgstr "バックアップには、この端末がローカルに保存しているデータが含まれます。鍵とメッセージ履歴は marmot 独自のストアにあるため含まれません。"
+msgid "Backups include your settings, drafts, custom emoji, and themes. Your account keys and message history are not included."
+msgstr "設定、下書き、カスタム絵文字、テーマがバックアップされます。アカウントの鍵とメッセージ履歴は含まれません。"
 
 msgid "Base color"
 msgstr "ベースカラー"
@@ -618,6 +621,9 @@ msgstr "ベベル（暗）"
 
 msgid "Bevelled surfaces"
 msgstr "ベベルのある面"
+
+msgid "Blinds"
+msgstr "ブラインド"
 
 msgid "Block"
 msgstr "ブロック"
@@ -707,12 +713,6 @@ msgid "Card well"
 msgstr "カードのくぼみ"
 
 msgid "Center the conversation"
-msgstr "会話を中央に配置"
-
-msgid "Centre the conversation"
-msgstr "会話を中央に表示"
-
-msgid "Centred conversation"
 msgstr "会話を中央に配置"
 
 msgid "Chalk-drawn surfaces"
@@ -1092,6 +1092,9 @@ msgstr "座標をコピー"
 
 msgid "Copy error"
 msgstr "エラーをコピー"
+
+msgid "Copy group id"
+msgstr "グループIDをコピー"
 
 msgid "Copy image"
 msgstr "画像をコピー"
@@ -1603,6 +1606,9 @@ msgstr "保管庫を作成しています…"
 msgid "Crop circle shape"
 msgstr "ミステリーサークルの形状"
 
+msgid "Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."
+msgstr "Ctrl + +で拡大、Ctrl + -で縮小、Ctrl + 0でリセットします。"
+
 msgid "Current"
 msgstr "現在"
 
@@ -1632,6 +1638,9 @@ msgstr "危険"
 
 msgid "Dark"
 msgstr "ダーク"
+
+msgid "Data folder"
+msgstr "データフォルダー"
 
 msgid "Date format"
 msgstr "日付形式"
@@ -1825,6 +1834,9 @@ msgstr "ファイルをドロップして添付"
 msgid "Drop here"
 msgstr "ここにドロップ"
 
+msgid "Dust"
+msgstr "ほこり"
+
 msgid "EDIT PROFILE"
 msgstr "プロフィールを編集"
 
@@ -1837,8 +1849,8 @@ msgstr "絵文字のグループ画像"
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
 msgstr "暗号化された鍵 (NCRYPTSEC)"
 
-msgid "EPOCH"
-msgstr "エポック"
+msgid "ENCRYPTION REVISION"
+msgstr "暗号化バージョン"
 
 msgid "Edit"
 msgstr "編集"
@@ -2515,17 +2527,14 @@ msgstr "キーパッケージ参照"
 msgid "Key packages"
 msgstr "キーパッケージ"
 
-msgid "Key packages (published to your kind-10051 relay list)"
-msgstr "キーパッケージ（kind-10051 のリレーリストに公開）"
+msgid "Key packages are published to your key package relays."
+msgstr "キーパッケージはキーパッケージ用リレーに公開されます。"
 
 msgid "Keyboard shortcuts"
 msgstr "キーボードショートカット"
 
 msgid "Keys"
 msgstr "鍵"
-
-msgid "Keys & backups"
-msgstr "鍵とバックアップ"
 
 msgid "Keys & identity"
 msgstr "鍵と ID"
@@ -2536,8 +2545,8 @@ msgstr "既知の送信者"
 msgid "LINES"
 msgstr "線"
 
-msgid "LOADED"
-msgstr "読み込み済み"
+msgid "LOADED MESSAGES"
+msgstr "読み込み済みメッセージ"
 
 msgid "LOCAL"
 msgstr "ローカル"
@@ -2583,6 +2592,9 @@ msgstr "退出"
 
 msgid "Leave chat"
 msgstr "チャットから退出"
+
+msgid "Leave empty unless you have one"
+msgstr "お持ちでなければ空欄にしてください"
 
 msgid "Leave group"
 msgstr "グループを退出"
@@ -2658,6 +2670,9 @@ msgstr "読み込んでいます..."
 
 msgid "Loading…"
 msgstr "読み込み中…"
+
+msgid "Local data & backups"
+msgstr "ローカルデータとバックアップ"
 
 msgid "Local files, cached media, and encrypted backups."
 msgstr "ローカルファイル、メディアキャッシュ、暗号化バックアップを管理します。"
@@ -2903,11 +2918,11 @@ msgstr "ニュース"
 msgid "Next"
 msgstr "次へ"
 
-msgid "Next / previous chat"
-msgstr "次のチャット / 前のチャット"
-
 msgid "Next accent color"
 msgstr "次のアクセントカラー"
+
+msgid "Next chat"
+msgstr "次のチャット"
 
 msgid "Next theme"
 msgstr "次のテーマ"
@@ -3055,6 +3070,9 @@ msgstr "未読のチャットはありません"
 msgid "Noir film treatment"
 msgstr "フィルムノワール風の効果"
 
+msgid "None"
+msgstr "なし"
+
 msgid "Not downloaded"
 msgstr "未ダウンロード"
 
@@ -3184,6 +3202,9 @@ msgstr "OpenAI Codex CLIのコーディングエージェント"
 msgid "Opening in your browser"
 msgstr "ブラウザで開いています"
 
+msgid "Optional Nostr identifier (NIP-05), not your email address. This is public."
+msgstr "任意のNostr識別子（NIP-05）です。メールアドレスではありません。この情報は公開されます。"
+
 msgid "Orange"
 msgstr "オレンジ"
 
@@ -3231,6 +3252,9 @@ msgstr "商品"
 
 msgid "PROFILE"
 msgstr "プロフィール"
+
+msgid "PUBLIC PROFILE"
+msgstr "公開プロフィール"
 
 msgid "PULL REQUEST"
 msgstr "プルリクエスト"
@@ -3397,8 +3421,8 @@ msgstr "文字起こしを準備しています..."
 msgid "Press Ctrl P for the command palette."
 msgstr "Ctrl P を押すとコマンドパレットが開きます。"
 
-msgid "Press Enter to save; Escape returns to the switches."
-msgstr "Enter で保存し、Escape でスイッチに戻ります。"
+msgid "Press Enter to save; Escape returns to Network & relays."
+msgstr "Enterで保存します。Escapeで「ネットワークとリレー」に戻ります。"
 
 msgid "Preview"
 msgstr "試聴"
@@ -3411,6 +3435,9 @@ msgstr "前へ"
 
 msgid "Previous / next in the media viewer"
 msgstr "メディアビューアーで前 / 次へ"
+
+msgid "Previous chat"
+msgstr "前のチャット"
 
 msgid "Privacy"
 msgstr "プライバシー"
@@ -3448,6 +3475,9 @@ msgstr "公開鍵 (npub)"
 msgid "Public key copied"
 msgstr "公開鍵をコピーしました"
 
+msgid "Public key or verified address"
+msgstr "公開鍵または認証済みアドレス"
+
 msgid "Public key, safe to share."
 msgstr "公開鍵。共有して問題ありません。"
 
@@ -3469,8 +3499,8 @@ msgstr "公開済み"
 msgid "Published inbox relays"
 msgstr "公開済みの受信リレー"
 
-msgid "Published outbox relays (NIP-65)"
-msgstr "公開済みの送信リレー (NIP-65)"
+msgid "Published outbox relays"
+msgstr "公開済み送信用リレー"
 
 msgid "Publishing your group profile"
 msgstr "グループのプロフィールを公開しています"
@@ -3847,8 +3877,14 @@ msgstr "GMを送信（1日1回）"
 msgid "Scan this pairing code in your signer, or copy the nostrconnect link."
 msgstr "署名者でこのペアリングコードを読み取るか、nostrconnect リンクをコピーしてください。"
 
-msgid "Scan to add"
-msgstr "スキャンして追加"
+msgid "Scan to add this person as a contact."
+msgstr "スキャンすると、この人を連絡先に追加できます。"
+
+msgid "Scan to add you as a contact."
+msgstr "スキャンすると、あなたを連絡先に追加できます。"
+
+msgid "Scanlines"
+msgstr "走査線"
 
 msgid "Science"
 msgstr "科学"
@@ -4290,6 +4326,9 @@ msgstr "安全な場所に保管して、このダイアログを閉じてくだ
 msgid "Stored on this device, not published to any relay yet."
 msgstr "この端末に保存されていますが、まだどのリレーにも公開されていません。"
 
+msgid "Stripes"
+msgstr "ストライプ"
+
 msgid "Study"
 msgstr "勉強"
 
@@ -4301,6 +4340,9 @@ msgstr "サポート"
 
 msgid "Switching your account"
 msgstr "アカウントを切り替えています"
+
+msgid "Synthwave"
+msgstr "シンセウェイヴ"
 
 msgid "System"
 msgstr "システム"
@@ -4408,8 +4450,9 @@ msgstr "署名者への要求をキャンセルしました。"
 msgid "The updated list is published to your relays."
 msgstr "更新したリストがあなたのリレーに公開されます。"
 
-msgid "The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}."
-msgstr "イベントカードから開くウェブクライアントです。イベントの部分には {id} を使います。例: https://primal.net/e/{id}。"
+#, c-format
+msgid "The web client an event card opens. For example %s. %s is replaced with the event id."
+msgstr "イベントカードを開くウェブクライアントです。例：%s。%s はイベントIDに置き換えられます。"
 
 msgid "Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."
 msgstr "この相手のメッセージは表示するまで隠され、個別にメッセージを送ることもできなくなります。何も公開されず、ここで元に戻せます。"
@@ -4491,6 +4534,9 @@ msgstr "White Noise を離れて、ブラウザで開きます。"
 
 msgid "This message was deleted"
 msgstr "このメッセージは削除されました"
+
+msgid "This number increases when the group's encryption keys change."
+msgstr "グループの暗号鍵が変わると、この番号が増えます。"
 
 msgid "This pairing link is too long for a QR code. Use Copy pairing link."
 msgstr "このペアリングリンクは QR コードには長すぎます。「ペアリングリンクをコピー」を使ってください。"
@@ -4716,11 +4762,14 @@ msgstr "公開された形状がないプロフィール画像に使用します
 msgid "Username"
 msgstr "ユーザー名"
 
-msgid "VISIBLE TO ANYONE YOU CHAT WITH"
-msgstr "チャット相手全員に表示されます"
+msgid "VERIFIED ADDRESS"
+msgstr "認証済みアドレス"
 
 msgid "Vault password changed."
 msgstr "保管庫のパスワードを変更しました。"
+
+msgid "Verified address"
+msgstr "認証済みアドレス"
 
 msgid "Verifying download..."
 msgstr "ダウンロードを確認中..."
@@ -4776,6 +4825,9 @@ msgstr "警告"
 msgid "Wave hi"
 msgstr "手を振って挨拶"
 
+msgid "Waves"
+msgstr "波"
+
 msgid "Webxdc app"
 msgstr "Webxdc アプリ"
 
@@ -4818,10 +4870,6 @@ msgstr "あなたが発信する場所です。"
 #, c-format
 msgid "White Noise %s is ready to install."
 msgstr "White Noise %s をインストールする準備ができました。"
-
-#, c-format
-msgid "White Noise %s · odin port"
-msgstr "White Noise %s · Odin版"
 
 msgid "White Noise and this session."
 msgstr "White Noise と現在のセッションについて確認できます。"
@@ -5011,9 +5059,6 @@ msgstr "あなたのテーマ"
 msgid "Zoom in"
 msgstr "拡大"
 
-msgid "Zoom in / out / reset"
-msgstr "拡大 / 縮小 / リセット"
-
 msgid "Zoom out"
 msgstr "縮小"
 
@@ -5117,9 +5162,6 @@ msgstr "npubをコピーしました"
 
 msgid "npub or hex pubkey"
 msgstr "npubまたは16進数の公開鍵"
-
-msgid "npub, hex, name@domain, or .bit"
-msgstr "npub、16進数、name@domain、または .bit"
 
 msgid "opened there"
 msgstr "相手側で復号"

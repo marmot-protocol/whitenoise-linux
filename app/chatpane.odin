@@ -120,33 +120,6 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					cursor_raise(.Pointer)
 				}
 			}
-			// The badge is provenance, not a control, and it is the
-			// widest thing in the row: dropped when the row has to
-			// choose between it and the header actions. The same string is
-			// on the chat's encryption panel.
-			if page_w(ui) >= HEAD_BADGE_W + 160 {
-				if clay.UI(clay.ID("MlsBadge"))(
-				{
-					layout = {
-						padding = {left = 8, right = 8, top = 3, bottom = 3},
-						childGap = 5,
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = hovered() ? ACCENT_DIM : ACCENT,
-					cornerRadius = rr(6),
-				},
-				) {
-					clay.Text(
-						ICON_LOCK,
-						{fontId = FONT_ICON, fontSize = 10, textColor = ON_ACCENT},
-					)
-					crop_circle("MlsCircle", 0, chat.group_id, 18)
-					clay.Text(
-						fmt.tprintf("mls:0x%s", chat.group_id[:min(len(chat.group_id), 6)]),
-						{fontId = FONT_MONO, fontSize = 11, textColor = ON_ACCENT},
-					)
-				}
-			}
 			// Right-pinned chrome; the bell opens the mentions inbox.
 			if clay.UI(clay.ID("ChatHeadGap"))(
 			{layout = {sizing = {width = clay.SizingGrow()}}},
@@ -906,7 +879,7 @@ info_members_page :: proc(ui: ^Ui_State) {
 				ui,
 				"InviteBox",
 				&ui.invite_input,
-				tr("npub, hex, name@domain, or .bit"),
+				tr("Public key or verified address"),
 				.Invite,
 				"InviteBtn",
 				ui.nip05_ticket != 0 ? tr("Looking up...") : strings.contains(string(ui.invite_input[:]), "@") ? tr("Look up") : tr("Invite"),

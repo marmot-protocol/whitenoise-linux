@@ -416,6 +416,9 @@ msgstr "Documentazione del connettore per agenti"
 msgid "Aggregate connection counter from the relay pool."
 msgstr "Contatore connessioni aggregato dal pool relay."
 
+msgid "Airmail"
+msgstr "Posta aerea"
+
 msgid "All"
 msgstr "Tutte"
 
@@ -433,9 +436,6 @@ msgstr "Tutti i mittenti"
 
 msgid "All types"
 msgstr "Tutti i tipi"
-
-msgid "Also Ctrl + / - / 0."
-msgstr "Anche Ctrl + / - / 0."
 
 msgid "Always open links to this site"
 msgstr "Apri sempre i link a questo sito"
@@ -499,6 +499,9 @@ msgstr "Archivi"
 
 msgid "Arrow keys move. X is A, Z is B, Enter is Start, Shift is Select."
 msgstr "Le frecce muovono. X è A, Z è B, Invio è Start, Maiusc è Select."
+
+msgid "Art deco"
+msgstr "Art déco"
 
 msgid "Ask a question..."
 msgstr "Fai una domanda..."
@@ -585,8 +588,8 @@ msgstr "Torna alle segnalazioni"
 msgid "Back to sets"
 msgstr "Torna ai set"
 
-msgid "Back up everything"
-msgstr "Esegui il backup di tutto"
+msgid "Back up local data"
+msgstr "Esegui il backup dei dati locali"
 
 msgid "Background"
 msgstr "Sfondo"
@@ -601,8 +604,8 @@ msgstr "Backup creato."
 msgid "Backup imported: %d files restored."
 msgstr "Backup importato: %d file ripristinati."
 
-msgid "Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included."
-msgstr "I backup contengono ciò che questo dispositivo salva localmente. Le tue chiavi e la cronologia dei messaggi si trovano nell'archivio di marmot e non sono incluse."
+msgid "Backups include your settings, drafts, custom emoji, and themes. Your account keys and message history are not included."
+msgstr "I backup includono impostazioni, bozze, emoji personalizzate e temi. Le chiavi dei tuoi account e la cronologia dei messaggi non sono incluse."
 
 msgid "Base color"
 msgstr "Colore base"
@@ -618,6 +621,9 @@ msgstr "Ombra smussatura"
 
 msgid "Bevelled surfaces"
 msgstr "Superfici smussate"
+
+msgid "Blinds"
+msgstr "Veneziane"
 
 msgid "Block"
 msgstr "Blocca"
@@ -708,12 +714,6 @@ msgstr "Incavo scheda"
 
 msgid "Center the conversation"
 msgstr "Centra la conversazione"
-
-msgid "Centre the conversation"
-msgstr "Centra la conversazione"
-
-msgid "Centred conversation"
-msgstr "Conversazione centrata"
 
 msgid "Chalk-drawn surfaces"
 msgstr "Superfici disegnate col gesso"
@@ -1092,6 +1092,9 @@ msgstr "Copia coordinate"
 
 msgid "Copy error"
 msgstr "Copia errore"
+
+msgid "Copy group id"
+msgstr "Copia l'id del gruppo"
 
 msgid "Copy image"
 msgstr "Copia immagine"
@@ -1603,6 +1606,9 @@ msgstr "Creazione della cassaforte…"
 msgid "Crop circle shape"
 msgstr "Forma dei cerchi nel grano"
 
+msgid "Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."
+msgstr "Ctrl + + per ingrandire, Ctrl + - per ridurre, Ctrl + 0 per ripristinare."
+
 msgid "Current"
 msgstr "Attuale"
 
@@ -1632,6 +1638,9 @@ msgstr "Pericolo"
 
 msgid "Dark"
 msgstr "Scuro"
+
+msgid "Data folder"
+msgstr "Cartella dei dati"
 
 msgid "Date format"
 msgstr "Formato data"
@@ -1825,6 +1834,9 @@ msgstr "Rilascia i file per allegarli"
 msgid "Drop here"
 msgstr "Rilascia qui"
 
+msgid "Dust"
+msgstr "Pulviscolo"
+
 msgid "EDIT PROFILE"
 msgstr "MODIFICA PROFILO"
 
@@ -1837,8 +1849,8 @@ msgstr "IMMAGINE DEL GRUPPO DA EMOJI"
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
 msgstr "CHIAVE CRITTOGRAFATA (NCRYPTSEC)"
 
-msgid "EPOCH"
-msgstr "EPOCA"
+msgid "ENCRYPTION REVISION"
+msgstr "REVISIONE DELLA CRITTOGRAFIA"
 
 msgid "Edit"
 msgstr "Modifica"
@@ -2515,17 +2527,14 @@ msgstr "Riferimento pacchetto chiavi"
 msgid "Key packages"
 msgstr "Pacchetti chiavi"
 
-msgid "Key packages (published to your kind-10051 relay list)"
-msgstr "Pacchetti chiavi (pubblicati sul tuo elenco relay di tipo 10051)"
+msgid "Key packages are published to your key package relays."
+msgstr "I pacchetti chiavi vengono pubblicati sui tuoi relay per i pacchetti chiavi."
 
 msgid "Keyboard shortcuts"
 msgstr "Scorciatoie da tastiera"
 
 msgid "Keys"
 msgstr "Chiavi"
-
-msgid "Keys & backups"
-msgstr "Chiavi e backup"
 
 msgid "Keys & identity"
 msgstr "Chiavi e identità"
@@ -2536,8 +2545,8 @@ msgstr "Mittenti conosciuti"
 msgid "LINES"
 msgstr "LINEE"
 
-msgid "LOADED"
-msgstr "CARICATI"
+msgid "LOADED MESSAGES"
+msgstr "MESSAGGI CARICATI"
 
 msgid "LOCAL"
 msgstr "LOCALE"
@@ -2583,6 +2592,9 @@ msgstr "Lascia"
 
 msgid "Leave chat"
 msgstr "Abbandona la chat"
+
+msgid "Leave empty unless you have one"
+msgstr "Lascia vuoto se non ne hai uno"
 
 msgid "Leave group"
 msgstr "Lascia il gruppo"
@@ -2658,6 +2670,9 @@ msgstr "Caricamento..."
 
 msgid "Loading…"
 msgstr "Caricamento…"
+
+msgid "Local data & backups"
+msgstr "Dati locali e backup"
 
 msgid "Local files, cached media, and encrypted backups."
 msgstr "File locali, contenuti multimediali in cache e backup crittografati."
@@ -2903,11 +2918,11 @@ msgstr "Notizie"
 msgid "Next"
 msgstr "Avanti"
 
-msgid "Next / previous chat"
-msgstr "Chat successiva / precedente"
-
 msgid "Next accent color"
 msgstr "Colore accento successivo"
+
+msgid "Next chat"
+msgstr "Chat successiva"
 
 msgid "Next theme"
 msgstr "Tema successivo"
@@ -3055,6 +3070,9 @@ msgstr "Nessuna chat non letta"
 msgid "Noir film treatment"
 msgstr "Effetto film noir"
 
+msgid "None"
+msgstr "Nessuno"
+
 msgid "Not downloaded"
 msgstr "Non scaricato"
 
@@ -3184,6 +3202,9 @@ msgstr "Agente di programmazione OpenAI Codex CLI"
 msgid "Opening in your browser"
 msgstr "Apertura nel browser"
 
+msgid "Optional Nostr identifier (NIP-05), not your email address. This is public."
+msgstr "Identificativo Nostr facoltativo (NIP-05), non il tuo indirizzo email. È pubblico."
+
 msgid "Orange"
 msgstr "Arancione"
 
@@ -3231,6 +3252,9 @@ msgstr "PRODOTTO"
 
 msgid "PROFILE"
 msgstr "PROFILO"
+
+msgid "PUBLIC PROFILE"
+msgstr "PROFILO PUBBLICO"
 
 msgid "PULL REQUEST"
 msgstr "PULL REQUEST"
@@ -3397,8 +3421,8 @@ msgstr "Preparazione della trascrizione..."
 msgid "Press Ctrl P for the command palette."
 msgstr "Premi Ctrl P per la tavolozza dei comandi."
 
-msgid "Press Enter to save; Escape returns to the switches."
-msgstr "Premi Invio per salvare; Esc torna agli interruttori."
+msgid "Press Enter to save; Escape returns to Network & relays."
+msgstr "Premi Invio per salvare; Esc torna a Rete e relay."
 
 msgid "Preview"
 msgstr "Anteprima"
@@ -3411,6 +3435,9 @@ msgstr "Precedente"
 
 msgid "Previous / next in the media viewer"
 msgstr "Precedente / successivo nel visualizzatore media"
+
+msgid "Previous chat"
+msgstr "Chat precedente"
 
 msgid "Privacy"
 msgstr "Privacy"
@@ -3448,6 +3475,9 @@ msgstr "Chiave pubblica (npub)"
 msgid "Public key copied"
 msgstr "Chiave pubblica copiata"
 
+msgid "Public key or verified address"
+msgstr "Chiave pubblica o indirizzo verificato"
+
 msgid "Public key, safe to share."
 msgstr "Chiave pubblica, sicura da condividere."
 
@@ -3469,8 +3499,8 @@ msgstr "Pubblicato"
 msgid "Published inbox relays"
 msgstr "Relay in entrata pubblicati"
 
-msgid "Published outbox relays (NIP-65)"
-msgstr "Relay in uscita pubblicati (NIP-65)"
+msgid "Published outbox relays"
+msgstr "Relay in uscita pubblicati"
 
 msgid "Publishing your group profile"
 msgstr "Pubblicazione del profilo del tuo gruppo"
@@ -3847,8 +3877,14 @@ msgstr "Di' GM (una volta al giorno)"
 msgid "Scan this pairing code in your signer, or copy the nostrconnect link."
 msgstr "Scansiona questo codice di abbinamento nel tuo firmatario, oppure copia il link nostrconnect."
 
-msgid "Scan to add"
-msgstr "Scansiona per aggiungere"
+msgid "Scan to add this person as a contact."
+msgstr "Scansiona per aggiungere questa persona ai contatti."
+
+msgid "Scan to add you as a contact."
+msgstr "Scansiona per aggiungerti ai contatti."
+
+msgid "Scanlines"
+msgstr "Linee di scansione"
 
 msgid "Science"
 msgstr "Scienza"
@@ -4290,6 +4326,9 @@ msgstr "Conservala in un posto sicuro e chiudi questa finestra. Chiunque la impo
 msgid "Stored on this device, not published to any relay yet."
 msgstr "Salvato su questo dispositivo, non ancora pubblicato su alcun relay."
 
+msgid "Stripes"
+msgstr "Righe"
+
 msgid "Study"
 msgstr "Studio"
 
@@ -4301,6 +4340,9 @@ msgstr "Assistenza"
 
 msgid "Switching your account"
 msgstr "Cambio del tuo account in corso"
+
+msgid "Synthwave"
+msgstr "Synthwave"
 
 msgid "System"
 msgstr "Sistema"
@@ -4408,8 +4450,9 @@ msgstr "La richiesta al firmatario è stata annullata."
 msgid "The updated list is published to your relays."
 msgstr "L'elenco aggiornato viene pubblicato sui tuoi relay."
 
-msgid "The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}."
-msgstr "Il client web in cui si apre una scheda evento, con {id} al posto dell'evento. Per esempio https://primal.net/e/{id}."
+#, c-format
+msgid "The web client an event card opens. For example %s. %s is replaced with the event id."
+msgstr "Il client web in cui si apre una scheda evento. Per esempio %s. %s viene sostituito con l'id dell'evento."
 
 msgid "Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."
 msgstr "I suoi messaggi restano nascosti finché non li mostri e non puoi scrivergli direttamente. Non viene pubblicato nulla e puoi annullare da qui."
@@ -4491,6 +4534,9 @@ msgstr "Questo esce da White Noise e si apre nel tuo browser."
 
 msgid "This message was deleted"
 msgstr "Questo messaggio è stato eliminato"
+
+msgid "This number increases when the group's encryption keys change."
+msgstr "Questo numero aumenta quando cambiano le chiavi di crittografia del gruppo."
 
 msgid "This pairing link is too long for a QR code. Use Copy pairing link."
 msgstr "Questo link di abbinamento è troppo lungo per un codice QR. Usa Copia link di abbinamento."
@@ -4716,11 +4762,14 @@ msgstr "Usata per le foto profilo senza una forma pubblicata."
 msgid "Username"
 msgstr "Nome utente"
 
-msgid "VISIBLE TO ANYONE YOU CHAT WITH"
-msgstr "VISIBILE A CHIUNQUE CON CUI CHATTI"
+msgid "VERIFIED ADDRESS"
+msgstr "INDIRIZZO VERIFICATO"
 
 msgid "Vault password changed."
 msgstr "Password della cassaforte cambiata."
+
+msgid "Verified address"
+msgstr "Indirizzo verificato"
 
 msgid "Verifying download..."
 msgstr "Verifica del download..."
@@ -4776,6 +4825,9 @@ msgstr "Avviso"
 msgid "Wave hi"
 msgstr "Saluta"
 
+msgid "Waves"
+msgstr "Onde"
+
 msgid "Webxdc app"
 msgstr "App Webxdc"
 
@@ -4818,10 +4870,6 @@ msgstr "Dove pubblichi."
 #, c-format
 msgid "White Noise %s is ready to install."
 msgstr "White Noise %s è pronto per l'installazione."
-
-#, c-format
-msgid "White Noise %s · odin port"
-msgstr "White Noise %s · port Odin"
 
 msgid "White Noise and this session."
 msgstr "White Noise e questa sessione."
@@ -5011,9 +5059,6 @@ msgstr "I tuoi temi"
 msgid "Zoom in"
 msgstr "Aumenta lo zoom"
 
-msgid "Zoom in / out / reset"
-msgstr "Aumenta / riduci / ripristina lo zoom"
-
 msgid "Zoom out"
 msgstr "Riduci lo zoom"
 
@@ -5117,9 +5162,6 @@ msgstr "npub copiato"
 
 msgid "npub or hex pubkey"
 msgstr "npub o chiave pubblica esadecimale"
-
-msgid "npub, hex, name@domain, or .bit"
-msgstr "npub, hex, nome@dominio o .bit"
 
 msgid "opened there"
 msgstr "aperto lì"

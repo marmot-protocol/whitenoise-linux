@@ -1970,8 +1970,11 @@ SHORTCUTS := [][2]string {
 	{"Esc", N_("Cancel edit / reply, close panels")},
 	{"Ctrl + K", N_("Search everywhere")},
 	{"Ctrl + P", N_("Command palette")},
-	{"Ctrl + Tab / Shift + Tab", N_("Next / previous chat")},
-	{"Ctrl + / - / 0", N_("Zoom in / out / reset")},
+	{"Ctrl + Tab", N_("Next chat")},
+	{"Ctrl + Shift + Tab", N_("Previous chat")},
+	{"Ctrl + +", N_("Zoom in")},
+	{"Ctrl + -", N_("Zoom out")},
+	{"Ctrl + 0", N_("Reset zoom")},
 	{"← / →", N_("Previous / next in the media viewer")},
 	{N_("Right click"), N_("Message menu")},
 }
@@ -2777,9 +2780,7 @@ settings_fields :: proc(ui: ^Ui_State) {
 		}
 		// Runs every frame (the release-gated handler would miss keys):
 		// Enter saves the shortcode; settings_escape drops the staged file.
-		if ui.focus == .EmojiName &&
-		   rl.IsKeyPressed(.ENTER) &&
-		   ui.emoji_sets_job == nil {
+		if ui.focus == .EmojiName && rl.IsKeyPressed(.ENTER) && ui.emoji_sets_job == nil {
 			save_staged_emoji(ui)
 		}
 	}

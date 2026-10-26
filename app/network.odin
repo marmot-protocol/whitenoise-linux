@@ -69,7 +69,7 @@ settings_network :: proc(ui: ^Ui_State) {
 		}
 
 		if clay.UI(clay.ID("NetworkOutboxGroup"))(settings_box()) {
-			settings_group(tr("Published outbox relays (NIP-65)"))
+			settings_group(tr("Published outbox relays"))
 			clay.Text(
 				tr("Where you publish."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
@@ -195,8 +195,12 @@ settings_network :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("NetworkClientGroup"))(settings_box()) {
 			settings_group(tr("Open events in"))
 			clay.Text(
-				tr(
-					"The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}.",
+				fmt.tprintf(
+					tr(
+						"The web client an event card opens. For example %s. %s is replaced with the event id.",
+					),
+					DEFAULT_EVENT_CLIENT,
+					"{id}",
 				),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
@@ -341,7 +345,7 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 		valid := socks5_form_valid(ui)
 		settings_button("SaveSocks5", tr("Save"), valid && ui.socks5_job == nil ? TEXT : TEXT_DIM)
 		clay.Text(
-			tr("Press Enter to save; Escape returns to the switches."),
+			tr("Press Enter to save; Escape returns to Network & relays."),
 			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 		)
 		status := tr("Changes require a restart; the current connection is unchanged.")

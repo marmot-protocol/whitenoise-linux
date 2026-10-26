@@ -399,7 +399,7 @@ gimg_worker :: proc(_: ^thread.Thread) {
 		}
 		sync.unlock(&gimg_mutex)
 		if !have {
-			time.sleep(100 * time.Millisecond)
+			time.sleep(WORKER_POLL_INTERVAL)
 			continue
 		}
 

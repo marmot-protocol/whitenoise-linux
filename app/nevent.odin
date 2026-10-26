@@ -54,6 +54,9 @@ DEFAULT_EVENT_CLIENT :: "https://ditto.pub/{id}"
 
 NEV_IMAGE_EXTS := []string{".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
+@(private = "file")
+NEV_IMG_MAX_BYTES :: 16 * 1024 * 1024
+
 // One relay's answer must fit here; bigger events show as a miss.
 NEV_MAX :: 256 * 1024
 NEV_TIMEOUT_MS :: 6000
@@ -353,7 +356,7 @@ nev_img_worker :: proc(url: string) {
 				"--max-time",
 				"20",
 				"--max-filesize",
-				"16777216",
+				fmt.tprintf("%d", NEV_IMG_MAX_BYTES),
 				"--",
 				url,
 			},
@@ -361,7 +364,7 @@ nev_img_worker :: proc(url: string) {
 		context.allocator,
 	)
 	delete(stderr)
-	if err != nil || state.exit_code != 0 || len(data) > 16 * 1024 * 1024 {
+	if err != nil || state.exit_code != 0 || len(data) > NEV_IMG_MAX_BYTES {
 		delete(data)
 		data = nil
 	}
@@ -376,7 +379,7 @@ nev_img_worker :: proc(url: string) {
 // Enforce the card's decoded-image budget inside the helper and at its boundary.
 @(private)
 nev_image_decode :: proc(bytes: []u8) -> rl.Image {
-	if len(bytes) < 12 || len(bytes) > 16 * 1024 * 1024 {return {}}
+	if len(bytes) < 12 || len(bytes) > NEV_IMG_MAX_BYTES {return {}}
 	return rl.LoadImageFromMemory(
 		"",
 		raw_data(bytes),

@@ -292,10 +292,6 @@ page_w :: proc(ui: ^Ui_State) -> f32 {
 	return width - rail_width(ui) - (rail_narrow(ui) ? 0 : GUTTER_W)
 }
 
-// Narrowest page card that still fits the chat header's badge beside
-// the title and the three chips. Under it the badge goes.
-HEAD_BADGE_W :: f32(420)
-
 // Narrowest window that still has room for the status bar's shortcut
 // hints after the pills.
 HINTS_W :: f32(760)

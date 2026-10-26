@@ -1,7 +1,7 @@
 package main
 
-import "core:fmt"
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import "core:fmt"
 import rl "sdlrl"
 
 // Centered placeholder with a title and a sub line.
@@ -68,6 +68,7 @@ identity_codes :: proc(
 	key: string,
 	qr: ^rl.Texture2D,
 	width: f32,
+	caption: string,
 	font: u16 = FONT_TITLE,
 ) {
 	FONT_TITLE := font
@@ -107,6 +108,7 @@ identity_codes :: proc(
 				if clay.UI(clay.ID(fmt.tprintf("%sScanCard", prefix)))(
 				{
 					layout = {
+						sizing = {width = clay.SizingFixed(192)},
 						layoutDirection = .TopToBottom,
 						padding = clay.PaddingAll(16),
 						childGap = 12,
@@ -129,9 +131,10 @@ identity_codes :: proc(
 					},
 					) {}
 					clay.Text(
-						tr("Scan to add"),
+						tr("Public key"),
 						{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM},
 					)
+					clay.Text(caption, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 				}
 			}
 		}

@@ -307,7 +307,10 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 			}
 		}
 		if clay.UI(clay.ID("RowZoom"))(settings_row(true)) {
-			row_labels(tr("Interface zoom"), tr("Also Ctrl + / - / 0."))
+			row_labels(
+				tr("Interface zoom"),
+				tr("Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."),
+			)
 			if clay.UI(clay.ID("ZoomChoices"))(
 			{layout = {childGap = 8, childAlignment = {y = .Center}}},
 			) {
@@ -375,7 +378,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 			settings_check(
 				"TgCentered",
 				ui.prefs.centered_chat,
-				tr("Centred conversation"),
+				tr("Center the conversation"),
 				tr(
 					"Keep the open conversation on a comfortable reading measure instead of filling the width.",
 				),

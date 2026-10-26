@@ -121,16 +121,19 @@ THEME_FLAGS := []struct {
 }
 
 // "" is a valid pick: no scene at all.
-THEME_BACKDROPS := []string {
-	"",
-	"deco",
-	"blinds",
-	"stripes",
-	"waves",
-	"airmail",
-	"synth",
-	"dust",
-	"scan",
+@(private = "file")
+THEME_BACKDROPS := []struct {
+	token, label: string,
+} {
+	{"", N_("None")},
+	{"deco", N_("Art deco")},
+	{"blinds", N_("Blinds")},
+	{"stripes", N_("Stripes")},
+	{"waves", N_("Waves")},
+	{"airmail", N_("Airmail")},
+	{"synth", N_("Synthwave")},
+	{"dust", N_("Dust")},
+	{"scan", N_("Scanlines")},
 }
 
 @(private = "file")
@@ -447,12 +450,12 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					for i in row * THEME_BACKDROPS_PER_ROW ..< min((row + 1) * THEME_BACKDROPS_PER_ROW, len(THEME_BACKDROPS)) {
-						name := THEME_BACKDROPS[i]
+						backdrop := THEME_BACKDROPS[i]
 						theme_chip_indexed(
 							"ThemeBackdrop",
 							u32(i),
-							len(name) > 0 ? name : "none",
-							ui.theme_backdrop == name,
+							tr(backdrop.label),
+							ui.theme_backdrop == backdrop.token,
 						)
 					}
 				}
@@ -573,9 +576,9 @@ handle_theme_edit :: proc(ui: ^Ui_State) -> bool {
 			return true
 		}
 	}
-	for name, i in THEME_BACKDROPS {
+	for backdrop, i in THEME_BACKDROPS {
 		if clicked_indexed("ThemeBackdrop", u32(i)) {
-			ui.theme_backdrop = name
+			ui.theme_backdrop = backdrop.token
 			theme_edit_preview(ui)
 			return true
 		}

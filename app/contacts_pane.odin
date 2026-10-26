@@ -314,6 +314,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				contact.id_hex,
 				contact_qr(ui, contact.npub),
 				identity_w,
+				tr("Scan to add this person as a contact."),
 				font = FONT_TITLE,
 			)
 		}

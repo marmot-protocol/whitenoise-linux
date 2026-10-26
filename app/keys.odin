@@ -267,7 +267,7 @@ settings_keys :: proc(ui: ^Ui_State) {
 				settings_button("KpRefresh", tr("Refresh"))
 			}
 			clay.Text(
-				tr("Key packages (published to your kind-10051 relay list)"),
+				tr("Key packages are published to your key package relays."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
 			for row, i in ui.kp_list {

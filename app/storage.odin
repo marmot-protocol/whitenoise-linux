@@ -61,10 +61,8 @@ media_load :: proc(
 	if cacheable {
 		// A failed tag (corrupt file, or a blob from another vault) reads
 		// as a miss, which downloads and re-seals it.
-		if sealed, read_err := os.read_entire_file(
-			cache_path(sha),
-			context.temp_allocator,
-		); read_err == nil {
+		if sealed, read_err := os.read_entire_file(cache_path(sha), context.temp_allocator);
+		   read_err == nil {
 			if data, opened := vault_open_blob(sealed); opened {
 				local_timing_end(.media_cache_read, timing_start)
 				return data, true
@@ -83,11 +81,7 @@ media_load :: proc(
 	if cacheable {
 		if sealed, ok := vault_seal_blob(bytes, context.temp_allocator); ok {
 			os.make_directory(media_cache_dir())
-			_ = os.write_entire_file(
-				cache_path(sha),
-				sealed,
-				{.Read_User, .Write_User},
-			)
+			_ = os.write_entire_file(cache_path(sha), sealed, {.Read_User, .Write_User})
 		}
 	}
 	return bytes, true
@@ -239,7 +233,7 @@ settings_storage :: proc(ui: ^Ui_State) {
 	}
 
 	if clay.UI(clay.ID("StorageBackupsGroup"))(settings_box()) {
-		settings_group(tr("Keys & backups"))
+		settings_group(tr("Local data & backups"))
 		if clay.UI(clay.ID("RowLocation"))(settings_row(true)) {
 			row_labels(tr("Location"), data_home)
 			if clay.UI(clay.ID("LocationActions"))({layout = {childGap = 6}}) {
@@ -249,7 +243,7 @@ settings_storage :: proc(ui: ^Ui_State) {
 		}
 		if clay.UI(clay.ID("RowBackup"))(settings_row()) {
 			row_labels(
-				tr("Back up everything"),
+				tr("Back up local data"),
 				tr(
 					"Pack your settings, drafts, custom emoji, and themes into one encrypted file.",
 				),
@@ -259,9 +253,7 @@ settings_storage :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("RowImport"))(settings_row()) {
 			row_labels(
 				tr("Import a backup"),
-				tr(
-					"Replaces the settings, drafts, custom emoji, and themes on this device.",
-				),
+				tr("Replaces the settings, drafts, custom emoji, and themes on this device."),
 			)
 			settings_button(
 				"ImportBtn",
@@ -274,7 +266,7 @@ settings_storage :: proc(ui: ^Ui_State) {
 		}
 		clay.Text(
 			tr(
-				"Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included.",
+				"Backups include your settings, drafts, custom emoji, and themes. Your account keys and message history are not included.",
 			),
 			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 		)
@@ -401,10 +393,7 @@ backup_modal :: proc(ui: ^Ui_State) {
 				cornerRadius = rr(6),
 			},
 			) {
-				clay.Text(
-					ICON_CLOSE,
-					{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
-				)
+				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
 			}
 		}
 
@@ -416,19 +405,13 @@ backup_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("BackupPwBox"))(
 		{
 			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFixed(38),
-				},
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)},
 				padding = {left = 12, right = 12},
 				childAlignment = {y = .Center},
 			},
 			backgroundColor = ROW_BG,
 			cornerRadius = rr(9),
-			border = {
-				color = ui.focus == .BackupPw ? ACCENT : FIELD_BORDER,
-				width = bw(),
-			},
+			border = {color = ui.focus == .BackupPw ? ACCENT : FIELD_BORDER, width = bw()},
 		},
 		) {
 			if len(ui.backup_pw) == 0 {
@@ -441,11 +424,7 @@ backup_modal :: proc(ui: ^Ui_State) {
 				)
 			} else {
 				clay.Text(
-					strings.repeat(
-						"*",
-						min(len(ui.backup_pw), 48),
-						context.temp_allocator,
-					),
+					strings.repeat("*", min(len(ui.backup_pw), 48), context.temp_allocator),
 					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
 				)
 				if ui.focus == .BackupPw {
@@ -466,13 +445,7 @@ backup_modal :: proc(ui: ^Ui_State) {
 		}
 
 		if clay.UI(clay.ID("BackupBtns"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 10,
-				padding = {top = 8},
-			},
-		},
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}},
 		) {
 			if clay.UI(clay.ID("BackupCancel"))(
 			{
@@ -482,10 +455,7 @@ backup_modal :: proc(ui: ^Ui_State) {
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(
-					tr("Cancel"),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
-				)
+				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			}
 			if clay.UI(clay.ID("BackupBtnsGap"))(
 			{layout = {sizing = {width = clay.SizingGrow()}}},
@@ -499,11 +469,7 @@ backup_modal :: proc(ui: ^Ui_State) {
 			) {
 				clay.Text(
 					creating ? tr("Create backup") : tr("Import backup"),
-					{
-						fontId = FONT_TITLE,
-						fontSize = 13,
-						textColor = ON_ACCENT,
-					},
+					{fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT},
 				)
 			}
 		}

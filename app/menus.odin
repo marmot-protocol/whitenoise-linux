@@ -580,14 +580,18 @@ encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 		}
 
 		if len(ui.enc_epoch) > 0 {
-			eyebrow(tr("EPOCH"))
+			eyebrow(tr("ENCRYPTION REVISION"))
 			clay.Text(ui.enc_epoch, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
+			clay.Text(
+				tr("This number increases when the group's encryption keys change."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
 		}
 
 		if clay.UI(clay.ID("EncActions"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
 		) {
-			micro_button("EncCopyId", tr("Copy"))
+			micro_button("EncCopyId", tr("Copy group id"))
 		}
 	}
 }
