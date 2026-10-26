@@ -18,6 +18,17 @@ ctrl_down :: proc() -> bool {
 	return rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL)
 }
 
+// The modifier for clipboard, select-all and undo shortcuts: Cmd on
+// macOS, where Ctrl+C/V mean nothing to the user, Ctrl elsewhere. Ctrl
+// still works on macOS too. Word motion stays on ctrl_down.
+shortcut_down :: proc() -> bool {
+	when ODIN_OS == .Darwin {
+		return ctrl_down() || rl.IsKeyDown(.LEFT_SUPER) || rl.IsKeyDown(.RIGHT_SUPER)
+	} else {
+		return ctrl_down()
+	}
+}
+
 shift_down :: proc() -> bool {
 	return rl.IsKeyDown(.LEFT_SHIFT) || rl.IsKeyDown(.RIGHT_SHIFT)
 }
@@ -305,6 +316,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 	}
 
 	ctrl := ctrl_down()
+	cmd := shortcut_down()
 	shift := shift_down()
 	masked :=
 		buf == &ui.login_input ||
@@ -397,26 +409,26 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 		edit.perform_command(ed, cmd)
 	}
 
-	if ctrl && rl.IsKeyPressed(.A) {
+	if cmd && rl.IsKeyPressed(.A) {
 		edit.perform_command(ed, .Select_All)
 	}
-	if !masked && ((ctrl && rl.IsKeyPressed(.C)) || (ctrl && rl.IsKeyPressed(.INSERT))) {
+	if !masked && ((cmd && rl.IsKeyPressed(.C)) || (ctrl && rl.IsKeyPressed(.INSERT))) {
 		edit.perform_command(ed, .Copy)
 	}
-	if !masked && ((ctrl && key_hit(.X)) || (shift && !ctrl && key_hit(.DELETE))) {
+	if !masked && ((cmd && key_hit(.X)) || (shift && !ctrl && key_hit(.DELETE))) {
 		edit.perform_command(ed, .Cut)
 	}
-	if (ctrl && key_hit(.V)) || (shift && key_hit(.INSERT)) {
+	if (cmd && key_hit(.V)) || (shift && key_hit(.INSERT)) {
 		// A pasted picture or file becomes a staged attachment; only
 		// a clipboard holding neither falls through to text.
 		if buf != &ui.compose || !paste_clipboard_files(ui) {
 			edit.perform_command(ed, .Paste)
 		}
 	}
-	if ctrl && !shift && key_hit(.Z) {
+	if cmd && !shift && key_hit(.Z) {
 		edit.perform_command(ed, .Undo)
 	}
-	if ctrl && (key_hit(.Y) || (shift && key_hit(.Z))) {
+	if cmd && (key_hit(.Y) || (shift && key_hit(.Z))) {
 		edit.perform_command(ed, .Redo)
 	}
 
