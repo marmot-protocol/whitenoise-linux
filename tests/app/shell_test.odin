@@ -256,7 +256,8 @@ status_bar_viewports :: proc(t: ^testing.T) {
 					}
 					target := clay.ID(page == .Profile ? "SignOutBtn" : "ZoomMinus")
 					if page == .Settings && section == .Folders {
-						target = clay.ID("BoardChat", 11)
+						// Board rows interleave chats (even) and terminals (odd): chat 11 is 22.
+						target = clay.ID("BoardChat", 11 * 2)
 						for id in ([]string{"SettingsPage", "FolderBoard"}) {
 							data := clay.GetScrollContainerData(clay.ID(id))
 							if data.found {data.scrollPosition.y = min(0, data.scrollContainerDimensions.height - data.contentDimensions.height)}
