@@ -1,0 +1,623 @@
+diff --git a/src/gui/app.odin b/src/gui/app.odin
+--- a/src/gui/app.odin
++++ b/src/gui/app.odin
+@@ -67,6 +67,11 @@
+ 	info_dirty:       bool,
+ 	info_pending:     bool,
+ 	panes:            map[proto.Pane_Id]^Pane_View,
++	source:           ^App,
++	followers:        [dynamic]^App,
++	source_layout:    [dynamic]u8,
++	source_apps:      [dynamic]u8,
++	snapshot_jobs:    [dynamic]^Snapshot_Job,
+ 	host_activity:    Host_Activity_Fn, // live output/input only, never snapshots or paint
+ 	host_notice:      Host_Notice_Fn, // embedded hosts own attention and delivery
+ 	host_action:      Host_Action_Fn, // native host navigation, without changing a view's binding
+@@ -189,7 +194,7 @@
+ 			if sdl.WaitEventTimeout(&e, i32(AUTOSCROLL_INTERVAL / time.Millisecond)) {
+ 				handle_event(app, e)
+ 			}
+-		} else if app.motion.moving {
++		} else if app.motion.moving || len(app.snapshot_jobs) > 0 {
+ 			// Mid-animation: take events as they come, then the next frame.
+ 			if sdl.WaitEventTimeout(&e, MOTION_FRAME) {
+ 				handle_event(app, e)
+@@ -227,6 +232,7 @@
+ 	session: string,
+ 	bounds: model.Rect,
+ 	target: View_Target = {},
++	source: ^App = nil,
+ ) -> ^App {
+ 	if window == nil || bounds.w <= 0 || bounds.h <= 0 {
+ 		return nil
+@@ -240,7 +246,7 @@
+ 		fmt.eprintln("whip: start the session server before embedding:", session)
+ 		return nil
+ 	}
+-	return create_connected(window, session, bounds, sock, .Reject, target)
++	return create_connected(window, session, bounds, sock, .Reject, target, source)
+ }
+ 
+ @(private)
+@@ -251,6 +257,7 @@
+ 	sock: posix.FD,
+ 	upgrade: Upgrade_Policy,
+ 	target: View_Target = {},
++	source: ^App = nil,
+ ) -> ^App {
+ 	state := gl_state_save()
+ 	defer gl_state_restore(state)
+@@ -261,6 +268,7 @@
+ 	app.render_context = sdl.GL_GetCurrentContext()
+ 	app.sock = sock
+ 	app.target = target
++	app.source = source
+ 	app.info_dirty = target.kind == .Projects || target.kind == .Tabs
+ 	app.session_name = strings.clone(session)
+ 	app.home = os.get_env("HOME", context.allocator)
+@@ -297,6 +305,10 @@
+ 	if app.reader_thread == nil {
+ 		return nil
+ 	}
++	if source != nil {
++		source_attach(app)
++		if !app.running {return nil}
++	}
+ 	ready = true
+ 	return app
+ }
+@@ -325,8 +337,10 @@
+ 		sdl.FlushEvent(sdl.EventType(app.reader.data_event))
+ 	}
+ 	posix.close(app.sock)
++	snapshot_stop(app)
+ 	search_destroy(&app.search)
+ 	diff_destroy(&app.diff)
++	source_detach(app)
+ 	if app.device_ready {
+ 		device_destroy(app)
+ 	}
+@@ -491,6 +505,7 @@
+ 	sync.mutex_unlock(&app.reader.mutex)
+ 	if !data_ready &&
+ 	   len(app.inbox) == 0 &&
++	   len(app.snapshot_jobs) == 0 &&
+ 	   app.mouse.autoscroll == .None &&
+ 	   (app.device.state == .Off || app.device.state == .Failed) &&
+ 	   app.diff.job == nil &&
+@@ -507,6 +522,11 @@
+ 		app.autoscroll_at = time.tick_now()
+ 	}
+ 	divider_flush(app)
++	// Schedule after an opening frame, and publish only complete snapshots.
++	if len(app.snapshot_jobs) > 0 {
++		snapshot_work(app)
++		if !app.running {return}
++	}
+ 	feed(app)
+ 	view_query_info(app)
+ 	device_update(app)
+
+diff --git a/src/gui/client.odin b/src/gui/client.odin
+--- a/src/gui/client.odin
++++ b/src/gui/client.odin
+@@ -10,10 +10,12 @@
+ 
+ import "core:fmt"
+ import "core:os"
++import "core:slice"
+ import "core:strings"
+ import "core:sync"
+ import "core:sys/linux"
+ import "core:sys/posix"
++import "core:thread"
+ import "core:time"
+ import gl "vendor:OpenGL"
+ import sdl "vendor:sdl3"
+@@ -186,6 +188,13 @@
+ }
+ 
+ send_hello :: proc(app: ^App, size: proto.Size) {
++	if app.source != nil {
++		start := cmd_begin(app, .Control_Hello)
++		proto.put_u32(&app.outbox, proto.VERSION)
++		proto.put_str16(&app.outbox, proto.BUILD_ID)
++		cmd_send(app, start)
++		return
++	}
+ 	cwd, _ := os.get_working_directory(context.temp_allocator)
+ 	start := cmd_begin(app, .Hello)
+ 	proto.put_u32(&app.outbox, proto.VERSION)
+@@ -245,6 +254,9 @@
+ ) -> bool {
+ 	for attempt in 0 ..< 2 {
+ 		send_hello(app, size)
++		// Embedded views report Pending until their reader receives Layout.
++		// A mount uses its source layout and a control-only command connection.
++		if upgrade == .Reject {return true}
+ 		f, ok := read_first_frame(app)
+ 		if !ok {
+ 			fmt.eprintln("whip: server closed the connection")
+@@ -307,6 +319,8 @@
+ 	sync.mutex_unlock(&r.mutex)
+ 
+ 	used := 0
++	started := time.tick_now()
++	yielded := false
+ 	for app.running {
+ 		f, n, status := proto.parse_frame(app.inbox[used:])
+ 		if status == .Invalid {
+@@ -316,11 +330,14 @@
+ 			break
+ 		}
+ 		apply_frame(app, f)
++		source_frame(app, f)
+ 		used += n
++		if used < len(app.inbox) &&
++		   time.tick_since(started) >= 2 * time.Millisecond {yielded = true; break}
+ 	}
+ 	remove_range(&app.inbox, 0, used)
+ 
+-	if closed && app.running {
++	if closed && app.running && !yielded {
+ 		fail(app, "server disconnected")
+ 	}
+ }
+@@ -335,6 +352,18 @@
+ 
+ @(private = "file")
+ apply_frame :: proc(app: ^App, f: proto.Frame) {
++	if f.msg == .Resized || f.msg == .Output {
++		address := proto.Reader {
++			data = f.payload,
++		}
++		pane := proto.Pane_Id(proto.get_u32(&address))
++		if pv := app.panes[pane]; pv != nil && pv.snapshot_job != nil {
++			start := proto.begin_frame(&pv.deferred_frames, f.msg)
++			append(&pv.deferred_frames, ..f.payload)
++			proto.end_frame(&pv.deferred_frames, start)
++			return
++		}
++	}
+ 	r := proto.Reader {
+ 		data = f.payload,
+ 	}
+@@ -390,7 +418,7 @@
+ 			app.info_dirty = true
+ 		}
+ 		if pv := app.panes[pane]; pv != nil && pv.term != nil {
+-			gh.terminal_vt_write(pv.term, raw_data(r.data), len(r.data))
++			if !pv.term_borrowed {gh.terminal_vt_write(pv.term, raw_data(r.data), len(r.data))}
+ 			app.force_draw = true
+ 		}
+ 
+@@ -398,7 +426,7 @@
+ 		pv := app.panes[proto.Pane_Id(proto.get_u32(&r))]
+ 		s := proto.get_size(&r)
+ 		if pv != nil && pv.term != nil && !r.short {
+-			gh.terminal_resize(pv.term, s.cols, s.rows, u32(s.cell_w), u32(s.cell_h))
++			if !pv.term_borrowed {gh.terminal_resize(pv.term, s.cols, s.rows, u32(s.cell_w), u32(s.cell_h))}
+ 			pv.resizing = false
+ 			app.force_draw = true
+ 		}
+@@ -427,20 +455,7 @@
+ 	if !view_needs_pane(app, pane) {
+ 		return
+ 	}
+-	dec: gh.Snapshot_Decoder
+-	if gh.snapshot_decoder_new_buf(nil, &dec, raw_data(data), len(data)) != .Success {
+-		fail(app, "bad snapshot from server")
+-		return
+-	}
+-	defer gh.snapshot_decoder_free(dec)
+-
+-	term: gh.Terminal
+-	if gh.snapshot_decoder_decode(dec, &term) != .Success {
+-		fail(app, "bad snapshot from server")
+-		return
+-	}
+-	gh.configure_graphics(term)
+-
++	if app.source != nil {source_adopt(app, pane); return}
+ 	pv := app.panes[pane]
+ 	if pv == nil {
+ 		pv = new(Pane_View)
+@@ -448,14 +463,26 @@
+ 		view_init(&pv.view)
+ 		pv.view.look = &app.config.colors
+ 		app.panes[pane] = pv
+-	} else {
+-		// A search is bound to the terminal it was made for.
+-		if app.search.handle != nil && app.search.pane == pane {
+-			search_close(app)
+-		}
+-		pane_view_release_term(pv)
+ 	}
++	if pv.snapshot_job != nil {pv.snapshot_job.pane = 0}
++	clear(&pv.deferred_frames)
++	job := new(Snapshot_Job)
++	job.pane = pane
++	job.bytes = make([]u8, len(data))
++	copy(job.bytes, data)
++	pv.snapshot_job = job
++	append(&app.snapshot_jobs, job)
++}
++
++@(private = "file")
++snapshot_install :: proc(app: ^App, pv: ^Pane_View, term: gh.Terminal) {
++	queued := pv.deferred_frames
++	pv.deferred_frames = nil
++	defer delete(queued)
++	if app.search.handle != nil && app.search.pane == pv.id {search_close(app)}
++	pane_view_release_term(pv)
+ 	pv.term = term
++	gh.configure_graphics(term)
+ 	if pv.app_texture != 0 {
+ 		gl.DeleteTextures(1, &pv.app_texture)
+ 		pv.app_texture = 0
+@@ -471,6 +498,96 @@
+ 	gh.terminal_set(term, .Title_Changed, rawptr(on_title_changed))
+ 	config.apply_colors(term, app.config.colors)
+ 	notices_install(term)
++	used := 0
++	for used < len(queued) && app.running {
++		frame, n, status := proto.parse_frame(queued[used:])
++		assert(status == .Complete)
++		apply_frame(app, frame)
++		used += n
++	}
++	for follower in app.followers {
++		if follower.target.pane != pv.id {continue}
++		context = follower.ctx
++		state, ok := ui_state_save(follower)
++		if !ok {fail(follower, "cannot activate mounted renderer"); continue}
++		source_adopt(follower, pv.id)
++		ui_state_restore(state)
++	}
++}
++
++@(private)
++Snapshot_Job :: struct {
++	pane:   proto.Pane_Id, // UI-owned; zero cancels publication, not the worker.
++	worker: ^thread.Thread,
++	bytes:  []u8,
++	term:   gh.Terminal,
++	result: gh.Result,
++}
++
++@(private = "file")
++snapshot_decode :: proc(job: ^Snapshot_Job) {
++	decoder: gh.Snapshot_Decoder
++	job.result = gh.snapshot_decoder_new_buf(nil, &decoder, raw_data(job.bytes), len(job.bytes))
++	defer gh.snapshot_decoder_free(decoder)
++	if job.result == .Success {job.result = gh.snapshot_decoder_decode(decoder, &job.term)}
++}
++
++@(private = "file")
++snapshot_release :: proc(job: ^Snapshot_Job) {
++	if job.term != nil {gh.terminal_free(job.term)}
++	delete(job.bytes)
++	free(job)
++}
++
++// Only pure Ghostty decoding runs on workers. Publication, ordered VT replay,
++// callbacks and every GL operation remain on the SDL thread.
++@(private)
++snapshot_work :: proc(app: ^App) {
++	active := 0
++	index := 0
++	for index < len(app.snapshot_jobs) {
++		job := app.snapshot_jobs[index]
++		if job.worker != nil && !thread.is_done(job.worker) {active += 1; index += 1; continue}
++		if job.worker == nil && job.pane != 0 {index += 1; continue}
++		if job.worker !=
++		   nil {thread.join(job.worker); thread.destroy(job.worker); job.worker = nil}
++		if pv := app.panes[job.pane]; pv != nil && pv.snapshot_job == job {
++			pv.snapshot_job = nil
++			if job.result != .Success {fail(app, "bad snapshot from server"); return}
++			snapshot_install(app, pv, job.term)
++			job.term = nil
++		}
++		snapshot_release(job)
++		app.snapshot_jobs[index] = app.snapshot_jobs[len(app.snapshot_jobs) - 1]
++		resize(&app.snapshot_jobs, len(app.snapshot_jobs) - 1)
++	}
++	for active < 2 {
++		wanted: ^Snapshot_Job
++		for job in app.snapshot_jobs {
++			if job.worker != nil || job.pane == 0 {continue}
++			if wanted == nil {wanted = job}
++			pv := app.panes[job.pane]
++			if pv != nil &&
++			   pv.mount != nil &&
++			   pv.mount.fb_w > 0 &&
++			   pv.mount.fb_h > 0 {wanted = job; break}
++		}
++		if wanted == nil {return}
++		wanted.worker = thread.create_and_start_with_poly_data(wanted, snapshot_decode, context)
++		if wanted.worker == nil {fail(app, "cannot start snapshot decoder"); return}
++		active += 1
++	}
++}
++
++@(private)
++snapshot_stop :: proc(app: ^App) {
++	for job in app.snapshot_jobs {
++		if job.worker != nil {thread.join(job.worker); thread.destroy(job.worker)}
++		if pv := app.panes[job.pane]; pv != nil && pv.snapshot_job == job {pv.snapshot_job = nil}
++		snapshot_release(job)
++	}
++	delete(app.snapshot_jobs)
++	app.snapshot_jobs = nil
+ }
+ 
+ // Titles feed tab labels and the window title; both refresh on redraw.
+@@ -478,3 +595,140 @@
+ on_title_changed :: proc "c" (t: gh.Terminal, userdata: rawptr) {
+ 	(^App)(userdata).force_draw = true
+ }
++
++// The observer reads one server stream. A mounted pane owns its terminal;
++// the observer borrows it for titles and notice callbacks.
++@(private)
++source_attach :: proc(app: ^App) {
++	if app.target.kind != .Pane || app.source.source != nil {
++		fail(app, "a shared source requires a single bound pane")
++		return
++	}
++	layout: [dynamic]u8
++	defer delete(layout)
++	model.encode(&app.source.session, &layout)
++	apply_frame(app, {msg = .Layout, payload = layout[:]})
++	if pv := app.source.panes[app.target.pane]; pv != nil && pv.app_pane {
++		clear(&layout)
++		proto.put_u32(&layout, 1)
++		proto.put_u32(&layout, u32(pv.id))
++		proto.put_str16(&layout, pv.app_title)
++		apply_frame(app, {msg = .App_Panes, payload = layout[:]})
++		if len(pv.app_frame) > 0 {apply_frame(app, {msg = .App_Frame, payload = pv.app_frame})}
++	} else {
++		source_adopt(app, app.target.pane)
++	}
++	if app.running {context = app.source.ctx; append(&app.source.followers, app)}
++}
++
++@(private)
++source_adopt :: proc(app: ^App, pane: proto.Pane_Id) {
++	source := app.source.panes[pane]
++	if source == nil {
++		context = app.source.ctx
++		source = new(Pane_View)
++		source.id = pane
++		view_init(&source.view)
++		source.view.look = &app.source.config.colors
++		app.source.panes[pane] = source
++	}
++	context = app.ctx
++	if source.mount != nil &&
++	   source.mount != app {fail(app, "a terminal already has a mounted owner"); return}
++	source.mount = app
++	if source.term == nil {return}
++	pv := app.panes[pane]
++	if pv != nil && pv.term == source.term {return}
++	if source.term_borrowed {fail(app, "a terminal already has a mounted owner"); return}
++	if pv == nil {
++		pv = new(Pane_View)
++		pv.id = pane
++		view_init(&pv.view)
++		pv.view.look = &app.config.colors
++		app.panes[pane] = pv
++	} else {
++		if app.search.handle != nil && app.search.pane == pane {search_close(app)}
++		pane_view_release_term(pv)
++	}
++	pv.term = source.term
++	source.term_borrowed = true
++	if pv.app_texture != 0 {gl.DeleteTextures(1, &pv.app_texture); pv.app_texture = 0}
++	delete(pv.app_title)
++	pv.app_title, pv.app_pane = "", false
++	pv.requested, pv.resizing = {}, false
++	pv.view.force_full = true
++	config.apply_colors(pv.term, app.config.colors)
++	app.force_draw = true
++}
++
++@(private)
++source_frame :: proc(app: ^App, frame: proto.Frame) {
++	// Queries repeat these payloads. Unchanged replies must not rebuild every
++	// mounted model or switch all GL contexts. Request-specific Pane_Info and
++	// View replies belong only to the connection that issued their command.
++	if frame.msg == .Layout || frame.msg == .App_Panes {
++		saved := frame.msg == .Layout ? &app.source_layout : &app.source_apps
++		if slice.equal(saved^[:], frame.payload) {return}
++		resize(saved, len(frame.payload))
++		copy(saved^[:], frame.payload)
++	}
++	if frame.msg == .Output || frame.msg == .Resized {
++		address := proto.Reader {
++			data = frame.payload,
++		}
++		if pv := app.panes[proto.Pane_Id(proto.get_u32(&address))];
++		   pv != nil && pv.snapshot_job != nil {return}
++	}
++	#partial switch frame.msg {
++	case .Layout, .Snapshot, .Output, .Resized, .App_Panes, .App_Frame:
++	case:
++		return
++	}
++	for follower in app.followers {
++		if !follower.running {continue}
++		context = follower.ctx
++		if frame.msg == .Output || frame.msg == .Resized {
++			apply_frame(follower, frame)
++			continue
++		}
++		state, ok := ui_state_save(follower)
++		if !ok {fail(follower, "cannot activate mounted renderer"); continue}
++		apply_frame(follower, frame)
++		ui_state_restore(state)
++	}
++}
++
++@(private)
++source_detach :: proc(app: ^App) {
++	if source := app.source; source != nil {
++		if pv := source.panes[app.target.pane]; pv != nil && pv.mount == app {pv.mount = nil}
++		for pane, pv in app.panes {
++			original := source.panes[pane]
++			if original == nil || !original.term_borrowed || original.term != pv.term {continue}
++			if pv.gesture != nil {
++				gh.selection_gesture_free(pv.gesture, pv.term)
++				pv.gesture = nil
++			}
++			original.term_borrowed = false
++			pv.term = nil
++		}
++		for follower, i in source.followers {
++			if follower != app {continue}
++			source.followers[i] = source.followers[len(source.followers) - 1]
++			resize(&source.followers, len(source.followers) - 1)
++			break
++		}
++		app.source = nil
++	}
++	for follower in app.followers {
++		follower.source = nil
++		for _, pv in follower.panes {
++			if pv.term != nil {gh.terminal_set(pv.term, .Userdata, follower)}
++		}
++		fail(follower, "terminal source disconnected")
++	}
++	delete(app.followers)
++	app.followers = nil
++	delete(app.source_layout)
++	delete(app.source_apps)
++}
+
+diff --git a/src/gui/panes.odin b/src/gui/panes.odin
+--- a/src/gui/panes.odin
++++ b/src/gui/panes.odin
+@@ -31,6 +31,10 @@
+ Pane_View :: struct {
+ 	id:                    proto.Pane_Id,
+ 	term:                  gh.Terminal, // replica
++	term_borrowed:         bool, // the mounted follower owns this terminal
++	mount:                 ^App,
++	snapshot_job:          ^Snapshot_Job,
++	deferred_frames:       [dynamic]u8, // bytes after the pending snapshot
+ 	view:                  Term_View,
+ 	requested:             proto.Size, // last size asked of the server, to ask once
+ 	resizing:              bool, // requested grid differs until the server acknowledges it
+@@ -44,6 +48,7 @@
+ 	app_pane:              bool,
+ 	app_title:             string,
+ 	app_texture:           u32,
++	app_frame:             []u8, // latest validated observer frame for a late mount
+ 	app_width, app_height: u32,
+ 	app_requested:         [2]u32,
+ 	app_keys:              [768]bool, // evdev keys actually forwarded; released on blur
+@@ -82,6 +87,7 @@
+ 	pane_view_release_term(pv)
+ 	if pv.app_texture != 0 {gl.DeleteTextures(1, &pv.app_texture)}
+ 	delete(pv.app_title)
++	delete(pv.app_frame)
+ 	pane_fonts_destroy(pv)
+ 	view_destroy(&pv.view)
+ 	free(pv)
+@@ -162,6 +168,9 @@
+ 
+ // Frees the replica and the gesture, which holds references into it.
+ pane_view_release_term :: proc(pv: ^Pane_View) {
++	if pv.snapshot_job != nil {pv.snapshot_job.pane = 0; pv.snapshot_job = nil}
++	delete(pv.deferred_frames)
++	pv.deferred_frames = nil
+ 	view_graphics_clear_textures(&pv.view.graphics)
+ 	clear(&pv.view.graphics.quads)
+ 	pv.view.graphics.generation = 0
+@@ -171,9 +180,10 @@
+ 		pv.gesture = nil
+ 	}
+ 	if pv.term != nil {
+-		gh.terminal_free(pv.term)
++		if !pv.term_borrowed {gh.terminal_free(pv.term)}
+ 		pv.term = nil
+ 	}
++	pv.term_borrowed = false
+ }
+ 
+ // The workspace this window shows, or nil before the first layout.
+@@ -314,7 +324,8 @@
+ 	gone: [dynamic]proto.Pane_Id
+ 	gone.allocator = context.temp_allocator
+ 	for id in app.panes {
+-		if !view_needs_pane(app, id) {
++		_, exists := model.find_pane(&app.session, id)
++		if !exists || !view_needs_pane(app, id) {
+ 			append(&gone, id)
+ 		}
+ 	}
+
+diff --git a/src/gui/app_pane.odin b/src/gui/app_pane.odin
+--- a/src/gui/app_pane.odin
++++ b/src/gui/app_pane.odin
+@@ -61,6 +61,7 @@
+ 
+ @(private)
+ app_read_frame :: proc(app: ^App, r: ^proto.Reader) -> bool {
++	payload := r.data
+ 	id := proto.Pane_Id(proto.get_u32(r))
+ 	w, h := proto.get_u32(r), proto.get_u32(r)
+ 	// Divide before multiplying: even hostile u32 dimensions cannot wrap.
+@@ -79,6 +80,15 @@
+ 	limit: i32
+ 	gl.GetIntegerv(gl.MAX_TEXTURE_SIZE, &limit)
+ 	if w > u32(max(limit, 0)) || h > u32(max(limit, 0)) {return false}
++	if app.target.kind == .Projects && app.host_notice != nil {
++		if len(pv.app_frame) != len(payload) {
++			delete(pv.app_frame)
++			pv.app_frame = make([]u8, len(payload))
++		}
++		copy(pv.app_frame, payload)
++		pv.app_width, pv.app_height = w, h
++		return true
++	}
+ 	if pv.app_texture == 0 {
+ 		gl.GenTextures(1, &pv.app_texture)
+ 		gl.ActiveTexture(gl.TEXTURE2)
+
+diff --git a/src/gui/sdl_embed.odin b/src/gui/sdl_embed.odin
+--- a/src/gui/sdl_embed.odin
++++ b/src/gui/sdl_embed.odin
+@@ -31,6 +31,7 @@
+ 	session: string,
+ 	bounds: model.Rect,
+ 	target: View_Target = {},
++	source: ^App = nil,
+ ) -> (
+ 	result: ^SDL_UI,
+ ) {
+@@ -77,7 +78,7 @@
+ 	if !ok {
+ 		return nil
+ 	}
+-	ui.view = create(window, session, bounds, target)
++	ui.view = create(window, session, bounds, target, source)
+ 	if ui.view == nil {
+ 		return nil
+ 	}
+
+diff --git a/src/gui/views.odin b/src/gui/views.odin
+--- a/src/gui/views.odin
++++ b/src/gui/views.odin
+@@ -163,6 +163,10 @@
+ // replicas belonging to their binding, not to whichever tab another UI chose.
+ @(private)
+ view_needs_pane :: proc(app: ^App, id: proto.Pane_Id) -> bool {
++	// Creation snapshots precede the Layout that introduces their IDs.
++	if app.target.kind == .Session ||
++	   app.target.kind == .Projects && app.host_notice != nil {return true}
++	if app.target.kind == .Pane {return id == app.target.pane}
+ 	if !view_has_content(app) && !(app.target.kind == .Projects && app.host_notice != nil) {
+ 		return false
+ 	}
+

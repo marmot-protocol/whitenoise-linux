@@ -25,7 +25,7 @@ static volatile sig_atomic_t stopping;
 static Uint64 next_poll;
 enum ReloadGate { RELOAD_BUSY, RELOAD_READY };
 enum ReloadAction { KEEP_RUNNING, RELOAD_APP, STOP_APP };
-enum DialogKind { DIALOG_OPEN_ONE, DIALOG_OPEN_MANY, DIALOG_SAVE };
+enum DialogKind { DIALOG_OPEN_ONE, DIALOG_OPEN_MANY, DIALOG_SAVE, DIALOG_OPEN_FOLDER };
 
 static void stop(int sig) {
     (void)sig;
@@ -104,6 +104,8 @@ void wn_dev_dialog(enum DialogKind kind, SDL_DialogFileCallback callback, const 
     atomic_fetch_add(&dialogs, 1);
     if (kind == DIALOG_SAVE) {
         SDL_ShowSaveFileDialog(dialog_done, dialog, window, NULL, 0, name);
+    } else if (kind == DIALOG_OPEN_FOLDER) {
+        SDL_ShowOpenFolderDialog(dialog_done, dialog, window, NULL, false);
     } else {
         SDL_ShowOpenFileDialog(dialog_done, dialog, window, NULL, 0, NULL,
                                kind == DIALOG_OPEN_MANY);

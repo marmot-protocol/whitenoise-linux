@@ -209,6 +209,7 @@ Chat_Row_Ui :: struct {
 	at:                string, // last activity: clock today, "Yesterday", else the date
 	activity_at:       u64, // activity_sort_at, so `at` can be reformatted
 	unread:            u64,
+	archived:          bool,
 	pending:           bool, // invite awaiting accept/decline
 	stable:            bool, // MLS lifecycle stable (session established)
 	tick:              marmot.Delivery_State,
@@ -269,6 +270,7 @@ Focus :: enum {
 	Issue_Body,
 	Issue_Labels,
 	Compose,
+	Whip, // an attached terminal owns keyboard input
 	Search,
 	Invite,
 	Rename,
@@ -473,7 +475,7 @@ Chat_Filter :: enum {
 	Chats,
 	Unread,
 	Groups,
-	Archived,
+	Whip = 4, // persisted value; 3 belonged to the archive filter
 }
 
 Member_Ui :: struct {
@@ -581,6 +583,39 @@ Ui_State :: struct {
 	lud16_input:                                           [dynamic]u8, // profile lightning-address draft
 	relay_input:                                           [dynamic]u8, // profile add-relay draft
 	page:                                                  Page,
+	whip_project:                                          u32, // stable Whip project ID, not its row index
+	whip_open:                                             bool, // selected inbox row is a local terminal project
+	whip_picking_project:                                  bool, // captures the native folder-dialog completion
+	whip_creating:                                         bool,
+	whip_tabs:                                             map[u32]u32, // project ID -> selected tab ID
+	whip_scroll_project, whip_scroll_tab:                  u32,
+	whip_scroll_width:                                     f32,
+	whip_scroll_pending:                                   bool,
+	whip_workspace_account:                                string, // owned active-account restore guard
+	whip_workspace_loaded, whip_workspace_pending:         bool,
+	whip_workspace_page:                                   Page,
+	whip_workspace_selected:                               int,
+	whip_workspace_project:                                u32,
+	whip_workspace_open:                                   bool,
+	whip_workspace_filter:                                 Chat_Filter,
+	whip_workspace_focus:                                  Focus,
+	whip_workspace_compose_hash:                           u32,
+	whip_workspace_compose_len:                            int,
+	whip_tab_op:                                           Whip_Tab_Op,
+	whip_tab_project:                                      u32, // captured owner of an asynchronous tab action
+	whip_avatar_job:                                       ^Whip_Avatar_Job,
+	whip_attachments:                                      [dynamic]Whip_Attachment,
+	whip_focus:                                            u32,
+	whip_return_focus:                                     u32,
+	whip_attach_drag, whip_attach_resize:                  u32,
+	whip_attach_origin:                                    rl.Vector2,
+	whip_attach_bounds:                                    clay.BoundingBox,
+	whip_chat_width:                                       f32,
+	whip_dock_width, whip_dock_height:                     f32,
+	whip_dock_drag, whip_dock_wide, whip_dock_release:     bool,
+	whip_dock_pane:                                        u32,
+	whip_dock_offset:                                      f32,
+	whip_dock_bounds:                                      clay.BoundingBox,
 	chats:                                                 [dynamic]Chat_Row_Ui,
 	chat_members:                                          map[string][]string, // group id → member pubkey hex, for folder rules
 	chat_members_read:                                     bool, // the last chat-list read asked for chat_members
@@ -592,9 +627,11 @@ Ui_State :: struct {
 	theme:                                                 int, // index into theme_packs
 	accent:                                                int,
 	selected:                                              int, // index into chats, -1 = none
-	rail_rows:                                             [dynamic]int, // chat indices as rendered in the rail, for Ctrl+Tab cycling
+	rail_rows:                                             [dynamic]Inbox_Row, // rendered conversations and terminal projects for Ctrl+Tab
 	rail_peek:                                             bool, // chat list opened by hand in a window too narrow for it; see toggle_rail
 	messages:                                              [dynamic]Msg_Ui, // selected chat's timeline
+	reading_places:                                        map[string]Reading_Place, // account and group -> message anchor
+	reading_pending:                                       Reading_Place, // borrowed from reading_places until restored
 	stamp_day:                                             i64, // local day the cached stamps were formatted on; 0 = reformat next frame
 	transcript:                                            ^Transcript_Job,
 	pending:                                               [dynamic]Pending_Send, // optimistic sends awaiting ack
@@ -750,7 +787,9 @@ Ui_State :: struct {
 	qr_tex:                                                ^rl.Texture2D,
 	qr_npub:                                               string,
 	chat_filter:                                           Chat_Filter, // mutually exclusive inbox scope
+	chat_folder:                                           string, // recent-mode scope, borrowed from prefs.folders
 	row_menu:                                              int, // right-clicked rail chat index, -1 = closed
+	row_terminal:                                          u32, // stable terminal target, zero for a chat menu
 	row_menu_x:                                            f32, // its panel anchor, layout coords
 	row_menu_y:                                            f32,
 	folder_open:                                           bool, // folder modal (rowactions.odin)

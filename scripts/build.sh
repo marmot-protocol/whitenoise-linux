@@ -633,6 +633,7 @@ mkdir -p "$HERE/build"
 if [ "${1:-}" = sources ]; then
   exit 0
 fi
+source "$HERE/scripts/whip-flags.sh"
 
 # The Linux odin release ships vendor/stb and vendor/cgltf without their
 # built .a archives (sdlrl needs stb truetype + image, the mesh helper
@@ -787,9 +788,13 @@ Darwin) APP_LIBS+=("$HERE/build/libwnsparkle.a") ;;
 OpenBSD) APP_LIBS+=("$HERE/build/libwnsandbox.a" "$HERE/build/sdl/lib/libSDL3.a") ;;
 esac
 APP_INPUTS=("$HERE/app" "$HERE/marmot" "$HERE/lang" "$HERE/themes" "$CROP" "$CLAY/bindings/odin/clay-odin" "$HERE/vendor/common-passwords.txt" "$HERE/build/observability-tokens.toml")
+# whip-flags.sh enables the sibling checkout's sources; their content keys the cache.
+if [ "${#WHIP_ARGS[@]}" -gt 0 ]; then
+  APP_INPUTS+=("$HERE/../whip/src")
+fi
 APP_OBJECT_KEY="$(native_compile_key "app Odin speed $ODIN_ENV" "${APP_INPUTS[@]}")"
 APP_KEY="$(native_key "app Odin speed $ODIN_LINK_ENV ${APP_LINK_ARGS[*]}" "${APP_INPUTS[@]}" "${APP_LIBS[@]}")"
-native_odin_build app "$HERE/app" "$ACTIVE_ODIN" speed "$APP_OBJECT_KEY" "$APP_KEY" "${APP_LINK_ARGS[@]}"
+native_odin_build app "$HERE/app" "$ACTIVE_ODIN" speed "$APP_OBJECT_KEY" "$APP_KEY" "${APP_LINK_ARGS[@]}" "${WHIP_ARGS[@]}"
 # Unused imports: fatal in CI, a warning locally so a work-in-progress
 # import does not block a build.
 if ! env "${ODIN_ROOT_ARG[@]}" "$HERE/scripts/vet-imports.sh"; then
@@ -859,7 +864,7 @@ if [ "${1:-}" = test ]; then
   WN_ODIN_TEST_BUILD_KEY="$(build_cache_key "$APP_OBJECT_KEY $APP_KEY" "$HERE/tests/odin.sh" "$HERE/tests/app" "$HERE/scripts/build-cache.sh")"
   export WN_ODIN_TEST_BUILD_KEY
   env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app
-  for check in rail_default_window rail_expand_narrow status_bar_viewports login_input_required profile_edit_summary sticker_input_validation issues_empty_state folder_picker_dispatch archive_chat_dispatch folder_count_dispatch new_chat_reset_dispatch test_emoji_save_io_dispatch backup_password_dispatch invite_input_dispatch; do
+  for check in rail_default_window rail_expand_narrow status_bar_viewports login_input_required profile_edit_summary sticker_input_validation issues_empty_state folder_picker_dispatch archive_chat_dispatch folder_count_dispatch new_chat_reset_dispatch test_emoji_save_io_dispatch backup_password_dispatch invite_input_dispatch recent_folder_filters; do
     SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES="$check"
   done
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES=settings_viewport

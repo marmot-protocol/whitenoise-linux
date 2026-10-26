@@ -1,0 +1,140 @@
+diff --git a/src/gui/app.odin b/src/gui/app.odin
+--- a/src/gui/app.odin
++++ b/src/gui/app.odin
+@@ -69,3 +69,5 @@
+ 	panes:            map[proto.Pane_Id]^Pane_View,
++	host_activity:    Host_Activity_Fn, // live output/input only, never snapshots or paint
++	host_notice:      Host_Notice_Fn, // embedded hosts own attention and delivery
+ 	view_ws:          model.Id, // project shown in this window
+ 	view_index:       int, // its index, to fall back to a neighbour
+diff --git a/src/gui/notices.odin b/src/gui/notices.odin
+--- a/src/gui/notices.odin
++++ b/src/gui/notices.odin
+@@ -16,7 +16,24 @@
+ import "whip:model"
+ import "whip:proto"
+ 
+-notices_install :: proc(term: gh.Terminal) {
++// Activity follows protocol output and deliberate typed/pasted input, not draw
++// revisions, snapshot installs, resize acknowledgements, or raw focus reports.
++Host_Activity_Kind :: enum {Output, Input}
++Host_Activity_Fn :: #type proc(app: ^App, pane: proto.Pane_Id, kind: Host_Activity_Kind)
++
++set_activity_handler :: proc(app: ^App, handler: Host_Activity_Fn) {
++	if app != nil {app.host_activity = handler}
++}
++
++// Embedded hosts intercept notices before standalone attention/desktop effects.
++// Install immediately after create and before the first update/replay.
++Host_Notice_Fn :: #type proc(app: ^App, pane: proto.Pane_Id, title, body: string)
++
++set_notice_handler :: proc(app: ^App, handler: Host_Notice_Fn) {
++	if app != nil {app.host_notice = handler}
++}
++
++notices_install :: proc(term: gh.Terminal) {
+ 	gh.terminal_set(term, .Bell, rawptr(on_bell))
+ 	gh.terminal_set(term, .Desktop_Notification, rawptr(on_notification))
+ 	gh.terminal_set(term, .Progress_Report, rawptr(on_progress))
+@@ -62,13 +79,16 @@
+ on_bell :: proc "c" (t: gh.Terminal, userdata: rawptr) {
+ 	app := (^App)(userdata)
+ 	context = app.ctx
+-	pv := view_of(app, t)
+-	if pv == nil || pane_in_sight(app, pv.id) {
+-		return
+-	}
+-	pv.attention = true
+-	app.force_draw = true
+-	if !app.focused {
++	pv := view_of(app, t)
++	if pv == nil {return}
++	if app.host_notice != nil {
++		app.host_notice(app, pv.id, "", "")
++		return
++	}
++	if pane_in_sight(app, pv.id) {return}
++	pv.attention = true
++	app.force_draw = true
++	if !app.focused {
+ 		sdl.FlashWindow(app.window, .UNTIL_FOCUSED)
+ 	}
+ }
+@@ -77,15 +97,18 @@
+ on_notification :: proc "c" (t: gh.Terminal, userdata: rawptr, n: ^gh.Desktop_Notification) {
+ 	app := (^App)(userdata)
+ 	context = app.ctx
+-	pv := view_of(app, t)
+-	if pv == nil || pane_in_sight(app, pv.id) {
+-		return
+-	}
+-	pv.attention = true
+-	app.force_draw = true
+-
+-	title := string(n.title.ptr[:n.title.len])
+-	body := string(n.body.ptr[:n.body.len])
++	pv := view_of(app, t)
++	if pv == nil {return}
++	title := string(n.title.ptr[:n.title.len])
++	body := string(n.body.ptr[:n.body.len])
++	if app.host_notice != nil {
++		app.host_notice(app, pv.id, title, body)
++		return
++	}
++	if pane_in_sight(app, pv.id) {return}
++	pv.attention = true
++	app.force_draw = true
++
+ 	if title == "" {
+ 		title = pane_label(app, pv.id)
+ 	}
+diff --git a/src/gui/views.odin b/src/gui/views.odin
+--- a/src/gui/views.odin
++++ b/src/gui/views.odin
+@@ -156,5 +156,5 @@
+ view_needs_pane :: proc(app: ^App, id: proto.Pane_Id) -> bool {
+-	if !view_has_content(app) {
++	if !view_has_content(app) && !(app.target.kind == .Projects && app.host_notice != nil) {
+ 		return false
+ 	}
+ 	loc, ok := model.find_pane(&app.session, id)
+@@ -165,7 +165,7 @@
+ 	switch app.target.kind {
+-	case .Session:
++	case .Session, .Projects:
+ 		return true
+ 	case .Project:
+ 		return ws.id == app.target.id
+ 	case .Tab:
+ 		return ws.tabs[loc.tab].id == app.target.id
+@@ -172,5 +172,5 @@
+ 	case .Pane:
+ 		return id == app.target.pane
+-	case .Projects, .Tabs:
++	case .Tabs:
+ 		return false
+ 	}
+diff --git a/src/gui/client.odin b/src/gui/client.odin
+--- a/src/gui/client.odin
++++ b/src/gui/client.odin
+@@ -204,6 +204,9 @@
+ 	gh.terminal_scroll_viewport(pv.term, {tag = .Bottom})
+ 	gh.terminal_set(pv.term, .Selection, nil)
+ 	send_raw(app, pv.id, data)
++	if app.host_activity != nil {
++		app.host_activity(app, pv.id, .Input)
++	}
+ }
+ 
+ // Sends bytes to a pane without touching its view (mouse and focus
+@@ -375,5 +378,10 @@
+ 	case .Output:
+ 		pane := proto.Pane_Id(proto.get_u32(&r))
++		// Server read_pty emits Output only for new PTY bytes. Initial attach
++		// and slow-client resync carry state as Snapshot, never Output.
++		if !r.short && len(r.data) > 0 && app.host_activity != nil {
++			app.host_activity(app, pane, .Output)
++		}
+ 		if view_needs_info(app, pane) {
+ 			// Titles arrive as output too; navigation contexts do not decode it.
+ 			app.info_dirty = true

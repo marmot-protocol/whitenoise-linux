@@ -301,14 +301,11 @@ msgstr "チェックは、チャットを手動で配置したことを示しま
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "プライベートなグループチャットのためのデスクトップクライアントです。メッセージはこのマシン上で MLS により暗号化され、中身の読めないデータとして Nostr リレーに渡され、グループ内でのみ再び復号されます。"
 
-msgid "A friend"
-msgstr "友だち"
-
 msgid "A line about you"
 msgstr "ひとこと自己紹介"
 
-msgid "A little more room for conversation."
-msgstr "会話のスペースが少し広くなりました。"
+msgid "A terminal is waiting for you."
+msgstr "ターミナルがあなたの操作を待っています。"
 
 msgid "ABOUT"
 msgstr "自己紹介"
@@ -488,9 +485,6 @@ msgstr "アーカイブ"
 msgid "Archive this chat?"
 msgstr "このチャットをアーカイブしますか？"
 
-msgid "Archived"
-msgstr "アーカイブ済み"
-
 msgid "Archived chats"
 msgstr "アーカイブしたチャット"
 
@@ -606,9 +600,6 @@ msgstr "バックアップには、この端末がローカルに保存してい
 
 msgid "Base color"
 msgstr "ベースカラー"
-
-msgid "Berry"
-msgstr "ベリー"
 
 msgid "Bevel light"
 msgstr "ベベル（明）"
@@ -731,6 +722,9 @@ msgstr "写真を変更"
 msgid "Change picture"
 msgstr "画像を変更"
 
+msgid "Change project avatar"
+msgstr "プロジェクトのアバターを変更"
+
 msgid "Change rule type"
 msgstr "ルールの種類を変更"
 
@@ -791,8 +785,8 @@ msgstr "チャット: %s"
 msgid "Chats"
 msgstr "チャット"
 
-msgid "Chats that match file here automatically. People counts include you. A chat you move by hand stays where you put it."
-msgstr "条件に合うチャットは自動でここに入ります。人数にはあなたも含まれます。手動で移動したチャットはその場所に残ります。"
+msgid "Chats and Whip projects that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
+msgstr "条件に一致するチャットとWhipプロジェクトはここに自動で分類されます。人数にはあなたも含まれます。手動で移動した項目は移動先に残ります。"
 
 msgid "Chats you archive will appear here."
 msgstr "アーカイブしたチャットがここに表示されます。"
@@ -842,11 +836,20 @@ msgstr "インポートする連絡先のCSVまたはJSONエクスポートを�
 msgid "Choose a destination for this chat."
 msgstr "このチャットの移動先を選んでください。"
 
+msgid "Choose a destination for this project."
+msgstr "このプロジェクトの移動先を選んでください。"
+
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr "既知の送信者を選択するか、64文字の16進数の公開鍵を入力してください。"
 
 msgid "Choose a location before sending."
 msgstr "送信する前に位置を選んでください。"
+
+msgid "Choose a project folder to open a terminal."
+msgstr "ターミナルを開くプロジェクトフォルダーを選んでください。"
+
+msgid "Choose a project folder."
+msgstr "プロジェクトのフォルダーを選択してください。"
 
 msgid "Choose a sign-in method."
 msgstr "サインイン方法を選んでください。"
@@ -932,6 +935,12 @@ msgstr "クリックで編集、ドラッグで並べ替えます。"
 msgid "Close"
 msgstr "閉じる"
 
+msgid "Close pane"
+msgstr "ペインを閉じる"
+
+msgid "Close tab"
+msgstr "タブを閉じる"
+
 msgid "Close to tray"
 msgstr "閉じたらトレイに格納"
 
@@ -940,6 +949,9 @@ msgstr "終了"
 
 msgid "Closing connections and clearing this session."
 msgstr "接続を閉じて、このセッションを消去しています。"
+
+msgid "Closing tab…"
+msgstr "タブを閉じています…"
 
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr "ウィンドウを閉じると非表示になります。トレイアイコンには未読の合計数が表示され、そこから再表示できます。"
@@ -1126,9 +1138,6 @@ msgstr "このリンクをコピーして、ブラウザで開いてください
 msgid "Copy your public key"
 msgstr "公開鍵をコピー"
 
-msgid "Coral"
-msgstr "コーラル"
-
 msgid "Corner scale"
 msgstr "角の丸みの倍率"
 
@@ -1163,6 +1172,16 @@ msgstr "パスワードを変更できませんでした。もう一度お試し
 msgid "Couldn't check for updates. Please try again."
 msgstr "アップデートを確認できませんでした。もう一度お試しください。"
 
+msgid "Couldn't choose a folder. Close your open file picker and try again."
+msgstr "フォルダーを選択できませんでした。開いているファイル選択画面を閉じて、もう一度お試しください。"
+
+#, fuzzy
+msgid "Couldn't choose a photo. Close your open file picker and try again."
+msgstr "フォルダーを選択できませんでした。開いているファイル選択画面を閉じて、もう一度お試しください。"
+
+msgid "Couldn't close the tab. Please try again."
+msgstr "タブを閉じられませんでした。もう一度お試しください。"
+
 msgid "Couldn't complete the signer request. Please try again."
 msgstr "署名者への要求を完了できませんでした。もう一度お試しください。"
 
@@ -1196,8 +1215,18 @@ msgstr "バックアップを作成できませんでした。もう一度お試
 msgid "Couldn't create the group. Enter a name and try again."
 msgstr "グループを作成できませんでした。名前を入力して、もう一度お試しください。"
 
+msgid "Couldn't create the project. Please try again."
+msgstr "プロジェクトを作成できませんでした。もう一度お試しください。"
+
+msgid "Couldn't create the tab. Please try again."
+msgstr "タブを作成できませんでした。もう一度お試しください。"
+
 msgid "Couldn't create the vault. Please try again."
 msgstr "保管庫を作成できませんでした。もう一度お試しください。"
+
+#, fuzzy
+msgid "Couldn't crop the picture. Please try again."
+msgstr "マイクを開けませんでした。もう一度お試しください。"
 
 msgid "Couldn't decode the image. Choose a PNG or JPEG."
 msgstr "画像をデコードできませんでした。PNGまたはJPEGを選択してください。"
@@ -1355,6 +1384,9 @@ msgstr "チャットを既読にできませんでした。もう一度お試し
 msgid "Couldn't open %s. Please try again."
 msgstr "%sを開けませんでした。もう一度お試しください。"
 
+msgid "Couldn't open Whip. Please try again."
+msgstr "Whipを開けませんでした。もう一度お試しください。"
+
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "バックアップを開けませんでした。パスワードを確認して、もう一度お試しください。"
 
@@ -1366,6 +1398,10 @@ msgstr "音声を再生できませんでした。音声出力を確認して、
 
 msgid "Couldn't play video. Click to retry."
 msgstr "動画を再生できませんでした。クリックして再試行してください。"
+
+#, fuzzy
+msgid "Couldn't preview the picture. Please try again."
+msgstr "編集を保存できませんでした。もう一度お試しください。"
 
 #, c-format
 msgid "Couldn't publish the photo. %s"
@@ -1380,6 +1416,10 @@ msgstr "Namecoinリゾルバーに接続できませんでした。もう一度�
 
 msgid "Couldn't reach your signer. Please try again."
 msgstr "署名者に接続できませんでした。もう一度お試しください。"
+
+#, fuzzy, c-format
+msgid "Couldn't read %s."
+msgstr "チャットをアーカイブできませんでした。%s"
 
 #, c-format
 msgid "Couldn't read %s. Please try again."
@@ -1396,6 +1436,9 @@ msgstr "バックアップを読み取れませんでした。もう一度お試
 
 msgid "Couldn't read the image. Please try again."
 msgstr "画像を読み取れませんでした。もう一度お試しください。"
+
+msgid "Couldn't read the project photo. Please try again."
+msgstr "プロジェクトの写真を読み込めませんでした。もう一度お試しください。"
 
 msgid "Couldn't read the vault file. Please try again."
 msgstr "保管庫ファイルを読み取れませんでした。もう一度お試しください。"
@@ -1451,6 +1494,9 @@ msgstr "GIFを保存できませんでした。もう一度お試しください
 
 msgid "Couldn't save the edit. Please try again."
 msgstr "編集を保存できませんでした。もう一度お試しください。"
+
+msgid "Couldn't save the project photo. Please try again."
+msgstr "プロジェクトの写真を保存できませんでした。もう一度お試しください。"
 
 msgid "Couldn't save the sticker. Wait for its image to load and try again."
 msgstr "ステッカーを保存できませんでした。画像の読み込みが完了してから、もう一度お試しください。"
@@ -1546,6 +1592,10 @@ msgstr "そのファイルは使用できません。PNGまたはJPEGを選択�
 msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr "そのテーマを使用できませんでした。このバージョンで読み込めるテーマではありません。"
 
+#, fuzzy
+msgid "Couldn't use the picture. Wait a moment and try again."
+msgstr "ステッカーを保存できませんでした。画像の読み込みが完了してから、もう一度お試しください。"
+
 msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
 msgstr "ステッカーを使用できませんでした。4096ピクセル以下の静止画PNG、WebP、JPEGを選んでください。"
 
@@ -1594,11 +1644,20 @@ msgstr "作成者"
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "パスワードで暗号化したNIP-49形式の鍵を作成します。安全に保存したり、別のクライアントに移したりできます。"
 
+msgid "Creating project…"
+msgstr "プロジェクトを作成しています…"
+
+msgid "Creating tab…"
+msgstr "タブを作成しています…"
+
 msgid "Creating your chat"
 msgstr "チャットを作成しています"
 
 msgid "Creating your vault…"
 msgstr "保管庫を作成しています…"
+
+msgid "Crop"
+msgstr ""
 
 msgid "Crop circle shape"
 msgstr "ミステリーサークルの形状"
@@ -1785,6 +1844,9 @@ msgstr "議論"
 msgid "Divider"
 msgstr "区切り線"
 
+msgid "Dock to chat"
+msgstr "チャットにドッキング"
+
 msgid "Documents"
 msgstr "文書"
 
@@ -1815,6 +1877,9 @@ msgstr "チャットをフォルダにドラッグするとそこに置かれま
 
 msgid "Drag a folder to reorder it. Your chats appear here once you have some."
 msgstr "フォルダをドラッグすると並べ替えられます。チャットができるとここに表示されます。"
+
+msgid "Drag inside to move. Drag a corner to resize."
+msgstr ""
 
 msgid "Drag the map to place the pin, or use your current location."
 msgstr "地図をドラッグしてピンの位置を決めるか、現在地を使用してください。"
@@ -2081,6 +2146,9 @@ msgstr "フィットネス"
 msgid "Flag"
 msgstr "旗"
 
+msgid "Float"
+msgstr "フローティング表示"
+
 msgid "Focus glow"
 msgstr "フォーカスの光"
 
@@ -2238,9 +2306,6 @@ msgstr "グループ"
 
 msgid "Groups you join will appear here."
 msgstr "参加したグループがここに表示されます。"
-
-msgid "HIGHLIGHT"
-msgstr "ハイライト"
 
 msgid "Hand-drawn filter"
 msgstr "手描きフィルター"
@@ -2438,6 +2503,9 @@ msgstr "選択テキストを反転"
 msgid "Invite"
 msgstr "招待"
 
+msgid "Is Whip"
+msgstr "Whipプロジェクトである"
+
 msgid "Issue title"
 msgstr "報告のタイトル"
 
@@ -2518,6 +2586,9 @@ msgstr "キーパッケージ"
 msgid "Key packages (published to your kind-10051 relay list)"
 msgstr "キーパッケージ（kind-10051 のリレーリストに公開）"
 
+msgid "Keyboard input"
+msgstr "キーボード入力"
+
 msgid "Keyboard shortcuts"
 msgstr "キーボードショートカット"
 
@@ -2568,9 +2639,6 @@ msgstr "後で"
 
 msgid "Launch at login"
 msgstr "ログイン時に起動"
-
-msgid "Lavender"
-msgstr "ラベンダー"
 
 msgid "Layout"
 msgstr "レイアウト"
@@ -2740,6 +2808,9 @@ msgstr "すべてのルールに一致"
 msgid "Match any rule"
 msgstr "いずれかのルールに一致"
 
+msgid "Maximize pane"
+msgstr "ペインを最大化"
+
 msgid "May"
 msgstr "5月"
 
@@ -2797,9 +2868,6 @@ msgstr "メタルネス"
 
 msgid "Micro"
 msgstr "マイクロ"
-
-msgid "Mint"
-msgstr "ミント"
 
 msgid "Model inspector"
 msgstr "モデルインスペクター"
@@ -2897,6 +2965,12 @@ msgstr "新しいメッセージ"
 msgid "New name"
 msgstr "新しい名前"
 
+msgid "New tab"
+msgstr "新しいタブ"
+
+msgid "New terminal"
+msgstr "新しいターミナル"
+
 msgid "News"
 msgstr "ニュース"
 
@@ -2918,6 +2992,9 @@ msgstr "ニックネーム"
 msgid "No GIFs found. Try another search."
 msgstr "GIFが見つかりませんでした。別のキーワードで検索してください。"
 
+msgid "No Whip projects"
+msgstr "Whipプロジェクトはありません"
+
 msgid "No archived chats"
 msgstr "アーカイブしたチャットはありません"
 
@@ -2932,6 +3009,10 @@ msgstr "チャットが開かれていません。チャットを選択して更
 
 msgid "No chats match your filter."
 msgstr "フィルターに一致するチャットはありません。"
+
+#, fuzzy
+msgid "No chats or terminals yet"
+msgstr "共有できるチャットはまだありません。"
 
 msgid "No chats to share with yet."
 msgstr "共有できるチャットはまだありません。"
@@ -3100,9 +3181,6 @@ msgstr "オフライン"
 msgid "ONLINE"
 msgstr "オンライン"
 
-msgid "Ocean"
-msgstr "オーシャン"
-
 msgid "Oct"
 msgstr "10月"
 
@@ -3181,6 +3259,9 @@ msgstr "オープンソースのコーディングエージェント"
 msgid "OpenAI Codex CLI coding agent"
 msgstr "OpenAI Codex CLIのコーディングエージェント"
 
+msgid "Opening Whip…"
+msgstr "Whipを開いています…"
+
 msgid "Opening in your browser"
 msgstr "ブラウザで開いています"
 
@@ -3254,11 +3335,17 @@ msgstr "リモート署名者とペアリング"
 msgid "Pairing link copied"
 msgstr "ペアリングリンクをコピーしました"
 
+msgid "Pane %d of %d"
+msgstr "ペイン %d / %d"
+
 msgid "Panel"
 msgstr "パネル"
 
 msgid "Panel 2"
 msgstr "パネル 2"
+
+msgid "Panes are floating or docked to chats."
+msgstr "ペインはフローティング表示、またはチャットにドッキングされています。"
 
 msgid "Password"
 msgstr "パスワード"
@@ -3388,8 +3475,15 @@ msgstr "添付ファイルを準備しています…"
 msgid "Preparing dictation..."
 msgstr "音声入力を準備しています..."
 
+msgid "Preparing project photo…"
+msgstr "プロジェクトの写真を準備しています…"
+
 msgid "Preparing speech..."
 msgstr "読み上げを準備しています..."
+
+#, fuzzy
+msgid "Preparing the cropped picture…"
+msgstr "プロジェクトの写真を準備しています…"
 
 msgid "Preparing transcription..."
 msgstr "文字起こしを準備しています..."
@@ -3429,6 +3523,9 @@ msgstr "プロフィール"
 
 msgid "Progress is indeterminate."
 msgstr "進捗率は未確定です。"
+
+msgid "Project created."
+msgstr "プロジェクトを作成しました。"
 
 msgid "Projects"
 msgstr "プロジェクト"
@@ -3682,6 +3779,9 @@ msgstr "リセット"
 msgid "Reset zoom"
 msgstr "ズームをリセット"
 
+msgid "Resize terminal"
+msgstr "ターミナルのサイズを変更"
+
 msgid "Resolve"
 msgstr "解決済みにする"
 
@@ -3697,14 +3797,23 @@ msgstr "復元"
 msgid "Restore last selected chat on launch"
 msgstr "起動時に最後のチャットを復元"
 
+msgid "Restore panes"
+msgstr "ペインを元に戻す"
+
 msgid "Restore the default reactions"
 msgstr "デフォルトのリアクションに戻す"
 
 msgid "Restore the last chat on launch"
 msgstr "起動時に前回のチャットを開く"
 
+msgid "Restoring terminal history…"
+msgstr "端末の履歴を復元しています…"
+
 msgid "Retry"
 msgstr "再試行"
+
+msgid "Return to project"
+msgstr "プロジェクトに戻す"
 
 msgid "Reveal"
 msgstr "表示する"
@@ -3838,6 +3947,9 @@ msgstr "%sを保存しました。"
 msgid "Saved. Restart White Noise to apply this connection setting."
 msgstr "保存しました。この接続設定を適用するには White Noise を再起動してください。"
 
+msgid "Saving project photo…"
+msgstr "プロジェクトの写真を保存しています…"
+
 msgid "Saving your proxy settings and encrypted credentials."
 msgstr "プロキシ設定と暗号化した認証情報を保存しています。"
 
@@ -3951,6 +4063,9 @@ msgstr "リストから連絡先を選択してください。"
 
 msgid "Select a model to download it for dictation and audio messages."
 msgstr "音声入力や音声メッセージに使用するモデルを選択してダウンロードします。"
+
+msgid "Select a project"
+msgstr "プロジェクトを選択"
 
 msgid "Select an issue"
 msgstr "報告を選択"
@@ -4206,6 +4321,12 @@ msgstr "音声モデル"
 msgid "Speech to text"
 msgstr "音声認識"
 
+msgid "Split down"
+msgstr "下に分割"
+
+msgid "Split right"
+msgstr "右に分割"
+
 msgid "Square"
 msgstr "四角"
 
@@ -4333,8 +4454,14 @@ msgstr "タスク"
 msgid "Teal"
 msgstr "青緑"
 
+msgid "Terminal"
+msgstr "ターミナル"
+
 msgid "Terminal agent by Nous Research"
 msgstr "Nous Researchのターミナルエージェント"
+
+msgid "Terminal unfocused"
+msgstr "ターミナルは非アクティブ"
 
 #, c-format
 msgid "Terrain: %d/5"
@@ -4364,9 +4491,6 @@ msgstr "本文: %s"
 
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr "質感のある線とスケッチ風のアバターです。形は動きません。"
-
-msgid "That feels right."
-msgstr "ちょうどいい感じですね。"
 
 msgid "That isn't your current password. Double-check it and try again."
 msgstr "現在のパスワードと一致しません。確認して、もう一度お試しください。"
@@ -4498,6 +4622,9 @@ msgstr "このペアリングリンクは QR コードには長すぎます。�
 msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
 msgstr "このパスワードは推測されやすいものです。関連のない単語を組み合わせるか、パスワードマネージャーで生成したパスワードを使用してください。"
 
+msgid "This project is no longer available."
+msgstr "このプロジェクトは利用できなくなりました。"
+
 msgid "This session"
 msgstr "現在のセッション"
 
@@ -4583,6 +4710,10 @@ msgstr "信頼済みのリンク先"
 
 msgid "Try a different search."
 msgstr "別の検索語を試してください。"
+
+#, fuzzy
+msgid "Try again"
+msgstr "もう一度検索"
 
 msgid "Tuesday"
 msgstr "火曜日"
@@ -4674,6 +4805,9 @@ msgstr "アップロード済みの絵文字"
 msgid "Uploading picture"
 msgstr "画像をアップロードしています"
 
+msgid "Use"
+msgstr ""
+
 msgid "Use New folder to create a folder, then drag a chat onto it."
 msgstr "「新しいフォルダ」でフォルダを作成し、チャットをそこにドラッグしてください。"
 
@@ -4689,6 +4823,9 @@ msgstr "プロジェクトごとに別のグループを使い、最初にプロ
 msgid "Use a shorter search."
 msgstr "検索キーワードを短くしてください。"
 
+msgid "Use crop circle"
+msgstr "クロップサークルを使用"
+
 msgid "Use current location"
 msgstr "現在地を使用"
 
@@ -4697,6 +4834,14 @@ msgstr "絵文字の画像を使用"
 
 msgid "Use only an agent you run and trust. Your private key is never included."
 msgstr "ご自身で運用する信頼できるエージェントだけに使用してください。秘密鍵は決して含まれません。"
+
+#, fuzzy
+msgid "Use original"
+msgstr "オリジナル"
+
+#, fuzzy
+msgid "Use this photo?"
+msgstr "このテーマを使う"
 
 msgid "Use this theme"
 msgstr "このテーマを使う"

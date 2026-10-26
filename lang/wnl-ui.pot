@@ -301,13 +301,10 @@ msgstr ""
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr ""
 
-msgid "A friend"
-msgstr ""
-
 msgid "A line about you"
 msgstr ""
 
-msgid "A little more room for conversation."
+msgid "A terminal is waiting for you."
 msgstr ""
 
 msgid "ABOUT"
@@ -487,9 +484,6 @@ msgstr ""
 msgid "Archive this chat?"
 msgstr ""
 
-msgid "Archived"
-msgstr ""
-
 msgid "Archived chats"
 msgstr ""
 
@@ -604,9 +598,6 @@ msgid "Backups hold what this device stores locally. Your keys and message histo
 msgstr ""
 
 msgid "Base color"
-msgstr ""
-
-msgid "Berry"
 msgstr ""
 
 msgid "Bevel light"
@@ -729,6 +720,9 @@ msgstr ""
 msgid "Change picture"
 msgstr ""
 
+msgid "Change project avatar"
+msgstr ""
+
 msgid "Change rule type"
 msgstr ""
 
@@ -788,7 +782,7 @@ msgstr ""
 msgid "Chats"
 msgstr ""
 
-msgid "Chats that match file here automatically. People counts include you. A chat you move by hand stays where you put it."
+msgid "Chats and Whip projects that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
 msgstr ""
 
 msgid "Chats you archive will appear here."
@@ -839,10 +833,19 @@ msgstr ""
 msgid "Choose a destination for this chat."
 msgstr ""
 
+msgid "Choose a destination for this project."
+msgstr ""
+
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr ""
 
 msgid "Choose a location before sending."
+msgstr ""
+
+msgid "Choose a project folder to open a terminal."
+msgstr ""
+
+msgid "Choose a project folder."
 msgstr ""
 
 msgid "Choose a sign-in method."
@@ -929,6 +932,12 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
+msgid "Close pane"
+msgstr ""
+
+msgid "Close tab"
+msgstr ""
+
 msgid "Close to tray"
 msgstr ""
 
@@ -936,6 +945,9 @@ msgid "Closed"
 msgstr ""
 
 msgid "Closing connections and clearing this session."
+msgstr ""
+
+msgid "Closing tab…"
 msgstr ""
 
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
@@ -1123,9 +1135,6 @@ msgstr ""
 msgid "Copy your public key"
 msgstr ""
 
-msgid "Coral"
-msgstr ""
-
 msgid "Corner scale"
 msgstr ""
 
@@ -1157,6 +1166,15 @@ msgid "Couldn't change the password. Please try again."
 msgstr ""
 
 msgid "Couldn't check for updates. Please try again."
+msgstr ""
+
+msgid "Couldn't choose a folder. Close your open file picker and try again."
+msgstr ""
+
+msgid "Couldn't choose a photo. Close your open file picker and try again."
+msgstr ""
+
+msgid "Couldn't close the tab. Please try again."
 msgstr ""
 
 msgid "Couldn't complete the signer request. Please try again."
@@ -1192,7 +1210,16 @@ msgstr ""
 msgid "Couldn't create the group. Enter a name and try again."
 msgstr ""
 
+msgid "Couldn't create the project. Please try again."
+msgstr ""
+
+msgid "Couldn't create the tab. Please try again."
+msgstr ""
+
 msgid "Couldn't create the vault. Please try again."
+msgstr ""
+
+msgid "Couldn't crop the picture. Please try again."
 msgstr ""
 
 msgid "Couldn't decode the image. Choose a PNG or JPEG."
@@ -1351,6 +1378,9 @@ msgstr ""
 msgid "Couldn't open %s. Please try again."
 msgstr ""
 
+msgid "Couldn't open Whip. Please try again."
+msgstr ""
+
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr ""
 
@@ -1361,6 +1391,9 @@ msgid "Couldn't play speech. Check your audio output and try again."
 msgstr ""
 
 msgid "Couldn't play video. Click to retry."
+msgstr ""
+
+msgid "Couldn't preview the picture. Please try again."
 msgstr ""
 
 #, c-format
@@ -1378,6 +1411,10 @@ msgid "Couldn't reach your signer. Please try again."
 msgstr ""
 
 #, c-format
+msgid "Couldn't read %s."
+msgstr ""
+
+#, c-format
 msgid "Couldn't read %s. Please try again."
 msgstr ""
 
@@ -1391,6 +1428,9 @@ msgid "Couldn't read the backup. Please try again."
 msgstr ""
 
 msgid "Couldn't read the image. Please try again."
+msgstr ""
+
+msgid "Couldn't read the project photo. Please try again."
 msgstr ""
 
 msgid "Couldn't read the vault file. Please try again."
@@ -1446,6 +1486,9 @@ msgid "Couldn't save the GIF. Please try again."
 msgstr ""
 
 msgid "Couldn't save the edit. Please try again."
+msgstr ""
+
+msgid "Couldn't save the project photo. Please try again."
 msgstr ""
 
 msgid "Couldn't save the sticker. Wait for its image to load and try again."
@@ -1542,6 +1585,9 @@ msgstr ""
 msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr ""
 
+msgid "Couldn't use the picture. Wait a moment and try again."
+msgstr ""
+
 msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
 msgstr ""
 
@@ -1590,10 +1636,19 @@ msgstr ""
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr ""
 
+msgid "Creating project…"
+msgstr ""
+
+msgid "Creating tab…"
+msgstr ""
+
 msgid "Creating your chat"
 msgstr ""
 
 msgid "Creating your vault…"
+msgstr ""
+
+msgid "Crop"
 msgstr ""
 
 msgid "Crop circle shape"
@@ -1780,6 +1835,9 @@ msgstr ""
 msgid "Divider"
 msgstr ""
 
+msgid "Dock to chat"
+msgstr ""
+
 msgid "Documents"
 msgstr ""
 
@@ -1809,6 +1867,9 @@ msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder i
 msgstr ""
 
 msgid "Drag a folder to reorder it. Your chats appear here once you have some."
+msgstr ""
+
+msgid "Drag inside to move. Drag a corner to resize."
 msgstr ""
 
 msgid "Drag the map to place the pin, or use your current location."
@@ -2076,6 +2137,9 @@ msgstr ""
 msgid "Flag"
 msgstr ""
 
+msgid "Float"
+msgstr ""
+
 msgid "Focus glow"
 msgstr ""
 
@@ -2232,9 +2296,6 @@ msgid "Groups"
 msgstr ""
 
 msgid "Groups you join will appear here."
-msgstr ""
-
-msgid "HIGHLIGHT"
 msgstr ""
 
 msgid "Hand-drawn filter"
@@ -2433,6 +2494,9 @@ msgstr ""
 msgid "Invite"
 msgstr ""
 
+msgid "Is Whip"
+msgstr ""
+
 msgid "Issue title"
 msgstr ""
 
@@ -2513,6 +2577,9 @@ msgstr ""
 msgid "Key packages (published to your kind-10051 relay list)"
 msgstr ""
 
+msgid "Keyboard input"
+msgstr ""
+
 msgid "Keyboard shortcuts"
 msgstr ""
 
@@ -2562,9 +2629,6 @@ msgid "Later"
 msgstr ""
 
 msgid "Launch at login"
-msgstr ""
-
-msgid "Lavender"
 msgstr ""
 
 msgid "Layout"
@@ -2735,6 +2799,9 @@ msgstr ""
 msgid "Match any rule"
 msgstr ""
 
+msgid "Maximize pane"
+msgstr ""
+
 msgid "May"
 msgstr ""
 
@@ -2790,9 +2857,6 @@ msgid "Metalness"
 msgstr ""
 
 msgid "Micro"
-msgstr ""
-
-msgid "Mint"
 msgstr ""
 
 msgid "Model inspector"
@@ -2891,6 +2955,12 @@ msgstr ""
 msgid "New name"
 msgstr ""
 
+msgid "New tab"
+msgstr ""
+
+msgid "New terminal"
+msgstr ""
+
 msgid "News"
 msgstr ""
 
@@ -2912,6 +2982,9 @@ msgstr ""
 msgid "No GIFs found. Try another search."
 msgstr ""
 
+msgid "No Whip projects"
+msgstr ""
+
 msgid "No archived chats"
 msgstr ""
 
@@ -2925,6 +2998,9 @@ msgid "No chat is open. Select one and refresh."
 msgstr ""
 
 msgid "No chats match your filter."
+msgstr ""
+
+msgid "No chats or terminals yet"
 msgstr ""
 
 msgid "No chats to share with yet."
@@ -3094,9 +3170,6 @@ msgstr ""
 msgid "ONLINE"
 msgstr ""
 
-msgid "Ocean"
-msgstr ""
-
 msgid "Oct"
 msgstr ""
 
@@ -3175,6 +3248,9 @@ msgstr ""
 msgid "OpenAI Codex CLI coding agent"
 msgstr ""
 
+msgid "Opening Whip…"
+msgstr ""
+
 msgid "Opening in your browser"
 msgstr ""
 
@@ -3248,10 +3324,16 @@ msgstr ""
 msgid "Pairing link copied"
 msgstr ""
 
+msgid "Pane %d of %d"
+msgstr ""
+
 msgid "Panel"
 msgstr ""
 
 msgid "Panel 2"
+msgstr ""
+
+msgid "Panes are floating or docked to chats."
 msgstr ""
 
 msgid "Password"
@@ -3382,7 +3464,13 @@ msgstr ""
 msgid "Preparing dictation..."
 msgstr ""
 
+msgid "Preparing project photo…"
+msgstr ""
+
 msgid "Preparing speech..."
+msgstr ""
+
+msgid "Preparing the cropped picture…"
 msgstr ""
 
 msgid "Preparing transcription..."
@@ -3422,6 +3510,9 @@ msgid "Profile"
 msgstr ""
 
 msgid "Progress is indeterminate."
+msgstr ""
+
+msgid "Project created."
 msgstr ""
 
 msgid "Projects"
@@ -3676,6 +3767,9 @@ msgstr ""
 msgid "Reset zoom"
 msgstr ""
 
+msgid "Resize terminal"
+msgstr ""
+
 msgid "Resolve"
 msgstr ""
 
@@ -3691,13 +3785,22 @@ msgstr ""
 msgid "Restore last selected chat on launch"
 msgstr ""
 
+msgid "Restore panes"
+msgstr ""
+
 msgid "Restore the default reactions"
 msgstr ""
 
 msgid "Restore the last chat on launch"
 msgstr ""
 
+msgid "Restoring terminal history…"
+msgstr ""
+
 msgid "Retry"
+msgstr ""
+
+msgid "Return to project"
 msgstr ""
 
 msgid "Reveal"
@@ -3832,6 +3935,9 @@ msgstr ""
 msgid "Saved. Restart White Noise to apply this connection setting."
 msgstr ""
 
+msgid "Saving project photo…"
+msgstr ""
+
 msgid "Saving your proxy settings and encrypted credentials."
 msgstr ""
 
@@ -3944,6 +4050,9 @@ msgid "Select a contact from the list."
 msgstr ""
 
 msgid "Select a model to download it for dictation and audio messages."
+msgstr ""
+
+msgid "Select a project"
 msgstr ""
 
 msgid "Select an issue"
@@ -4200,6 +4309,12 @@ msgstr ""
 msgid "Speech to text"
 msgstr ""
 
+msgid "Split down"
+msgstr ""
+
+msgid "Split right"
+msgstr ""
+
 msgid "Square"
 msgstr ""
 
@@ -4327,7 +4442,13 @@ msgstr ""
 msgid "Teal"
 msgstr ""
 
+msgid "Terminal"
+msgstr ""
+
 msgid "Terminal agent by Nous Research"
+msgstr ""
+
+msgid "Terminal unfocused"
 msgstr ""
 
 #, c-format
@@ -4357,9 +4478,6 @@ msgid "Text: %s"
 msgstr ""
 
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
-msgstr ""
-
-msgid "That feels right."
 msgstr ""
 
 msgid "That isn't your current password. Double-check it and try again."
@@ -4492,6 +4610,9 @@ msgstr ""
 msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
 msgstr ""
 
+msgid "This project is no longer available."
+msgstr ""
+
 msgid "This session"
 msgstr ""
 
@@ -4575,6 +4696,9 @@ msgid "Trusted link sites"
 msgstr ""
 
 msgid "Try a different search."
+msgstr ""
+
+msgid "Try again"
 msgstr ""
 
 msgid "Tuesday"
@@ -4667,6 +4791,9 @@ msgstr ""
 msgid "Uploading picture"
 msgstr ""
 
+msgid "Use"
+msgstr ""
+
 msgid "Use New folder to create a folder, then drag a chat onto it."
 msgstr ""
 
@@ -4682,6 +4809,9 @@ msgstr ""
 msgid "Use a shorter search."
 msgstr ""
 
+msgid "Use crop circle"
+msgstr ""
+
 msgid "Use current location"
 msgstr ""
 
@@ -4689,6 +4819,12 @@ msgid "Use emoji image"
 msgstr ""
 
 msgid "Use only an agent you run and trust. Your private key is never included."
+msgstr ""
+
+msgid "Use original"
+msgstr ""
+
+msgid "Use this photo?"
 msgstr ""
 
 msgid "Use this theme"

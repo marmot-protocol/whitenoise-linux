@@ -1,0 +1,147 @@
+diff --git a/src/gui/app.odin b/src/gui/app.odin
+--- a/src/gui/app.odin
++++ b/src/gui/app.odin
+@@ -70,3 +70,4 @@
+ 	host_notice:      Host_Notice_Fn, // embedded hosts own attention and delivery
++	host_action:      Host_Action_Fn, // native host navigation, without changing a view's binding
+ 	view_ws:          model.Id, // project shown in this window
+ 	view_index:       int, // its index, to fall back to a neighbour
+diff --git a/src/gui/keys.odin b/src/gui/keys.odin
+--- a/src/gui/keys.odin
++++ b/src/gui/keys.odin
+@@ -70,6 +70,20 @@
+ 	Font_Decrease,
+ 	Help,
+ 	Diff,
++	Select_Project,
++	Select_Tab,
++	View_Hint,
++	Resize_Left,
++	Resize_Right,
++	Resize_Up,
++	Resize_Down,
+ }
+ 
++// Return true when native host controls own a navigation action.
++Host_Action_Fn :: #type proc(app: ^App, action: Action, target: model.Id, pane: proto.Pane_Id) -> bool
++
++set_action_handler :: proc(app: ^App, handler: Host_Action_Fn) {
++	if app != nil {app.host_action = handler}
++}
++
+ mode_label :: proc(app: ^App) -> string {
+@@ -150,14 +164,14 @@
+ 	case .Resize:
+ 		switch key {
+ 		case 'h', sdl.K_LEFT:
+-			resize_step(app, .Right, -RESIZE_STEP)
++			if app.host_action == nil || !app.host_action(app, .Resize_Left, 0, 0) {resize_step(app, .Right, -RESIZE_STEP)}
+ 		case 'l', sdl.K_RIGHT:
+-			resize_step(app, .Right, RESIZE_STEP)
++			if app.host_action == nil || !app.host_action(app, .Resize_Right, 0, 0) {resize_step(app, .Right, RESIZE_STEP)}
+ 		case 'k', sdl.K_UP:
+-			resize_step(app, .Down, -RESIZE_STEP)
++			if app.host_action == nil || !app.host_action(app, .Resize_Up, 0, 0) {resize_step(app, .Down, -RESIZE_STEP)}
+ 		case 'j', sdl.K_DOWN:
+-			resize_step(app, .Down, RESIZE_STEP)
++			if app.host_action == nil || !app.host_action(app, .Resize_Down, 0, 0) {resize_step(app, .Down, RESIZE_STEP)}
+ 		case sdl.K_ESCAPE, sdl.K_RETURN, 'q', 'r':
+ 			app.mode = .Normal
+ 		}
+ 		return .Consumed
+@@ -180,7 +189,7 @@
+ 			return .Consumed
+ 		}
+ 		if alt && !shift && key >= '1' && key <= '9' {
+-			if view_has_tabs(app) {
++			if view_has_tabs(app) || app.host_action != nil {
+ 				if ws := viewed_workspace(app); ws != nil {
+ 					choose_tab(app, ws, int(key - '1'))
+ 				}
+@@ -355,6 +364,9 @@
+ 
+ @(private = "file")
+ run_action :: proc(app: ^App, action: Action) {
++	if app.host_action != nil && app.host_action(app, action, 0, 0) {
++		return
++	}
+ 	if !view_action_allowed(app, action) {
+ 		return
+ 	}
+@@ -377,7 +389,7 @@
+ 	active := active_tab_index(app, ws)
+ 
+ 	switch action {
+-	case .None:
++	case .None, .Select_Project, .Select_Tab, .View_Hint, .Resize_Left, .Resize_Right, .Resize_Up, .Resize_Down:
+ 	case .New_Tab:
+ 		send_new_tab(app, ws.id, focus)
+ 	case .Split_Right, .Split_Down:
+diff --git a/src/gui/views.odin b/src/gui/views.odin
+--- a/src/gui/views.odin
++++ b/src/gui/views.odin
+@@ -79,6 +79,9 @@
+ 	if app == nil {
+ 		return false
+ 	}
++	if (app.target.kind == .Tab || app.target.kind == .Pane) && app.host_action != nil {
++		return app.host_action(app, .Select_Project, id, 0)
++	}
+ 	wi, ok := model.find_workspace(&app.session, id)
+ 	if !ok {
+ 		return false
+@@ -103,6 +106,9 @@
+ 	if app == nil {
+ 		return false
+ 	}
++	if (app.target.kind == .Tab || app.target.kind == .Pane) && app.host_action != nil {
++		return app.host_action(app, .Select_Tab, id, 0)
++	}
+ 	wi, ti, ok := model.find_tab(&app.session, id)
+ 	if !ok || app.target.kind == .Tab && id != app.target.id {
+ 		return false
+@@ -183,4 +189,7 @@
+ view_apply_hint :: proc(app: ^App, ws, tab: model.Id, pane: proto.Pane_Id) {
++	if app.host_action != nil && app.host_action(app, .View_Hint, tab, pane) {
++		return
++	}
+ 	if app.target.kind == .Pane {return}
+ 	wi, ti, ok := model.find_tab(&app.session, tab)
+ 	if !ok || app.session.workspaces[wi].id != ws {
+diff --git a/src/gui/chrome.odin b/src/gui/chrome.odin
+--- a/src/gui/chrome.odin
++++ b/src/gui/chrome.odin
+@@ -264,12 +264,10 @@
+-	if utf8.rune_count(s) <= MAX_TITLE_CELLS {
+-		return s
+-	}
++	it := utf8.decode_grapheme_iterator_make(s)
+ 	cut := 0
+-	for _, i in s {
+-		if cut == MAX_TITLE_CELLS - 1 {
+-			return strings.concatenate({s[:i], "…"}, context.temp_allocator)
++	for cluster, grapheme in utf8.decode_grapheme_iterate(&it) {
++		if cut == MAX_TITLE_CELLS - 1 && grapheme.byte_index + len(cluster) < len(s) {
++			return strings.concatenate({s[:grapheme.byte_index], "…"}, context.temp_allocator)
+ 		}
+ 		cut += 1
+ 	}
+ 	return s
+ }
+@@ -335,7 +333,7 @@
+ 	if view_has_content(app) && app.target.kind != .Pane {
+ 		draw_cards(app, g, th)
+-		draw_device(app, g, th)
+ 	}
++	if view_has_content(app) {draw_device(app, g, th)}
+ 	if view_has_projects(app) {
+ 		draw_sidebar(app, g, th)
+ 	}
+diff --git a/src/gui/panes.odin b/src/gui/panes.odin
+--- a/src/gui/panes.odin
++++ b/src/gui/panes.odin
+@@ -365,3 +365,4 @@
+ 		g.main = {0, 0, app.fb_w, app.fb_h}
++		device_layout(app, g)
+ 		if active_tab(app) != nil {
+ 			append(&g.leaves, model.Leaf_Rect{app.target.pane, g.main})

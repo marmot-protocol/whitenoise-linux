@@ -380,10 +380,11 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 			ed.selection = {pos, pos}
 		}
 	}
-	if multiline && key_hit(.UP) {
+	inbox_arrow := buf == &ui.compose && ctrl && shift
+	if multiline && !inbox_arrow && key_hit(.UP) {
 		edit.perform_command(ed, shift ? edit.Command.Select_Up : .Up)
 	}
-	if multiline && key_hit(.DOWN) {
+	if multiline && !inbox_arrow && key_hit(.DOWN) {
 		edit.perform_command(ed, shift ? edit.Command.Select_Down : .Down)
 	}
 	if rl.IsKeyPressed(.HOME) {

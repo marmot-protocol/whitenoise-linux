@@ -570,6 +570,9 @@ pic_worker :: proc(_: ^thread.Thread) {
 			pic.pixels, pic.side = crop_circle_pixels(url[len("crop-round:"):], .Circle)
 		} else if strings.has_prefix(url, "crop-rounded:") {
 			pic.pixels, pic.side = crop_circle_pixels(url[len("crop-rounded:"):], .Rounded)
+		} else if strings.has_prefix(url, WHIP_AVATAR_PREFIX) {
+			pic.kind = .Photo
+			data = whip_avatar_read(url[len(WHIP_AVATAR_PREFIX):])
 		} else if strings.has_prefix(url, "gif:") {
 			pic.kind = .Thumbnail
 			data = gif_read(url[len("gif:"):])

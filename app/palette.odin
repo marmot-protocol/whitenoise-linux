@@ -300,6 +300,7 @@ handle_palette :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // clicks do (handle_pages).
 run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 	goto_page :: proc(ui: ^Ui_State, client: ^marmot.Client, page: Page) {
+		whip_workspace_navigation(ui)
 		ui.page = page
 		switch page {
 		case .Chats:
@@ -341,6 +342,7 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 	case .Toggle_Unread:
 		ui.page = .Chats
 		ui.chat_filter = ui.chat_filter == .Unread ? .Chats : .Unread
+		ui.chat_folder = ""
 	case .Toggle_Rail:
 		toggle_rail(ui)
 	case .Toggle_Members:

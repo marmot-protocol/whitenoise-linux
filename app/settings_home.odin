@@ -880,6 +880,7 @@ settings_open :: proc(
 @(private)
 restore_workspace :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.page = ui.prefs.page
+	if ui.page < .Chats || ui.page > max(Page) {ui.page = .Chats}
 	ui.settings_section = ui.prefs.settings_section
 	ui.settings_tab = ui.prefs.settings_tab
 	ui.settings_level = ui.prefs.settings_level
@@ -896,8 +897,6 @@ restore_workspace :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if client == nil {return}
 	#partial switch ui.page {
-	case .Chats:
-		if ui.chat_filter == .Archived {load_archived(client, ui)}
 	case .Contacts:
 		load_contacts(client, ui, .Details)
 	case .Archived:

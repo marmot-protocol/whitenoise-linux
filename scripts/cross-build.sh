@@ -25,6 +25,7 @@ if [ "$(uname -s)" != "$HOST" ]; then
   exit 2
 fi
 export WN_TARGET="$TARGET"
+source "$HERE/scripts/whip-flags.sh"
 OUT="$HERE/build/cross/$TARGET"
 JOBS="${WN_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"
 mkdir -p "$OUT" "$HERE/vendor"
