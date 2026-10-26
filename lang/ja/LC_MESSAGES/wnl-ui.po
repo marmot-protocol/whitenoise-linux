@@ -388,6 +388,9 @@ msgstr "ルールを追加"
 msgid "Add someone by npub, or make a group of your own."
 msgstr "npub で相手を追加するか、自分だけのグループを作成してください。"
 
+msgid "Add to group"
+msgstr "グループに追加"
+
 msgid "Added to your stickers"
 msgstr "ステッカーに追加済み"
 
@@ -477,6 +480,9 @@ msgstr "4月"
 
 msgid "Archive"
 msgstr "アーカイブ"
+
+msgid "Archived"
+msgstr "アーカイブ済み"
 
 msgid "Archived chats"
 msgstr "アーカイブしたチャット"
@@ -758,6 +764,9 @@ msgstr "変更..."
 msgid "Changes require a restart; the current connection is unchanged."
 msgstr "変更には再起動が必要です。現在の接続は変更されません。"
 
+msgid "Chat details"
+msgstr "チャットの詳細"
+
 #, c-format
 msgid "Chat list failed: %s"
 msgstr "チャット一覧の読み込みに失敗しました: %s"
@@ -780,6 +789,9 @@ msgstr "条件に合うチャットは自動でここに入ります。人数に
 
 msgid "Chats you archive will appear here."
 msgstr "アーカイブしたチャットがここに表示されます。"
+
+msgid "Check each character against the original and try again."
+msgstr "各文字を元のキーと照合して、もう一度試してください。"
 
 msgid "Check every six hours and download signed updates. Restart when you choose."
 msgstr "6時間ごとに確認し、署名付きのアップデートをダウンロードします。再起動は好きなタイミングで行えます。"
@@ -1207,9 +1219,6 @@ msgstr "チャットをエクスポートできませんでした。もう一度
 msgid "Couldn't export the key. %s"
 msgstr "鍵をエクスポートできませんでした。%s"
 
-msgid "Couldn't find that pack. Enter a sticker pack naddr or coordinate."
-msgstr "パックが見つかりませんでした。ステッカーパックのnaddrまたは座標を入力してください。"
-
 msgid "Couldn't finish dictation. Please try again."
 msgstr "音声入力を完了できませんでした。もう一度お試しください。"
 
@@ -1432,6 +1441,9 @@ msgstr "ステッカーを保存できませんでした。画像の読み込み
 
 msgid "Couldn't save the theme. Check the name and colors and try again."
 msgstr "テーマを保存できませんでした。名前と色を確認して、もう一度お試しください。"
+
+msgid "Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name."
+msgstr "絵文字を保存できませんでした。名前にASCII英字、数字、アンダースコア、ハイフンのいずれかを1文字以上含めてください。"
 
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "署名者のセッションを暗号化された保管庫に保存できませんでした。もう一度お試しください。"
@@ -1880,6 +1892,9 @@ msgstr "ステッカー名を1〜64文字で入力してください。"
 msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
 msgstr "ユーザー名とパスワードを、それぞれ UTF-8 で 1 から 255 バイトで入力してください。"
 
+msgid "Enter a valid pack link or address."
+msgstr "有効なパックのリンクまたはアドレスを入力してください。"
+
 msgid "Enter an issue title and description."
 msgstr "報告のタイトルと説明を入力してください。"
 
@@ -2180,6 +2195,12 @@ msgstr "フォルダ別"
 
 msgid "Grouped sorts your chats into folders, and you have none yet."
 msgstr "「フォルダ別」ではチャットをフォルダごとに分けますが、まだフォルダがありません。"
+
+msgid "Groups"
+msgstr "グループ"
+
+msgid "Groups you join will appear here."
+msgstr "参加したグループがここに表示されます。"
 
 msgid "HIGHLIGHT"
 msgstr "ハイライト"
@@ -2523,8 +2544,14 @@ msgstr "White Noise について紹介します。"
 msgid "Leave"
 msgstr "退出"
 
+msgid "Leave chat"
+msgstr "チャットから退出"
+
 msgid "Leave group"
 msgstr "グループを退出"
+
+msgid "Leave this chat?"
+msgstr "このチャットから退出しますか？"
 
 msgid "Leave this group?"
 msgstr "このグループを退出しますか？"
@@ -2579,6 +2606,9 @@ msgstr "端末の履歴から追加の検索結果を読み込み中…"
 
 msgid "Loading your accounts"
 msgstr "アカウントを読み込んでいます"
+
+msgid "Loading your archived chats"
+msgstr "アーカイブ済みのチャットを読み込んでいます"
 
 msgid "Loading your contacts"
 msgstr "連絡先を読み込んでいます"
@@ -2905,11 +2935,17 @@ msgstr "ファイルはまだありません。"
 msgid "No folders match your search."
 msgstr "検索に一致するフォルダはありません。"
 
+msgid "No groups yet"
+msgstr "グループはまだありません"
+
 msgid "No inbox relays."
 msgstr "受信リレーはありません。"
 
 msgid "No issues found."
 msgstr "報告が見つかりませんでした。"
+
+msgid "No issues yet"
+msgstr "まだ課題はありません"
 
 msgid "No key package on this device or its relays."
 msgstr "この端末にもそのリレーにもキーパッケージがありません。"
@@ -3095,6 +3131,9 @@ msgstr "左の列の › または下のボタンで再び開けます。"
 
 msgid "Open locations in"
 msgstr "位置情報を開くサービス"
+
+msgid "Open the first issue to share a problem with your group."
+msgstr "最初の課題を作成して、グループに問題を共有しましょう。"
 
 msgid "Open this link?"
 msgstr "このリンクを開きますか？"
@@ -3359,6 +3398,9 @@ msgstr "管理者にする"
 
 msgid "Prompt copied. Paste it into your agent."
 msgstr "プロンプトをコピーしました。エージェントに貼り付けてください。"
+
+msgid "Public key"
+msgstr "公開鍵"
 
 msgid "Public key (npub)"
 msgstr "公開鍵 (npub)"
@@ -4133,6 +4175,9 @@ msgstr "チャットを開始"
 msgid "Start day"
 msgstr "開始日"
 
+msgid "Start group"
+msgstr "グループを作成"
+
 msgid "Start minimized to tray"
 msgstr "トレイに最小化して起動"
 
@@ -4392,6 +4437,9 @@ msgstr "メッセージ通知はこのように表示されます。"
 msgid "This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."
 msgstr "これは、入力したパスワードで暗号化されたあなたの秘密鍵です。この文字列とパスワードを持つ人は、あなたの ID を操作できます。"
 
+msgid "This key has a typo."
+msgstr "このキーには入力ミスがあります。"
+
 msgid "This leaves White Noise and opens in your browser."
 msgstr "White Noise を離れて、ブラウザで開きます。"
 
@@ -4510,6 +4558,9 @@ msgstr "新しいパスワードをもう一度入力してください"
 
 msgid "Type your password again"
 msgstr "パスワードをもう一度入力してください"
+
+msgid "Type your password first."
+msgstr "先にパスワードを入力してください。"
 
 msgid "UPTIME"
 msgstr "稼働時間"
@@ -4783,6 +4834,12 @@ msgstr "ブロックした相手にはメッセージを送信できません。
 
 msgid "You have no chats to share this with."
 msgstr "共有先にできるチャットはありません。"
+
+msgid "You have no folders yet. Create one with New folder."
+msgstr "フォルダはまだありません。「新しいフォルダ」で作成できます。"
+
+msgid "You have no groups to add this person to."
+msgstr "この人を追加できるグループがありません。"
 
 msgid "You have no other chats to forward this to."
 msgstr "転送先にできる他のチャットはありません。"

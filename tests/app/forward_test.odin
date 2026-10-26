@@ -9,6 +9,34 @@ import "core:thread"
 import rl "sdlrl"
 
 @(test)
+add_peer_destinations :: proc(t: ^testing.T) {
+	ui := Ui_State {
+		fwd_kind = .Add_Member,
+	}
+	append(
+		&ui.chats,
+		Chat_Row_Ui{title = "A person", conversation_kind = .DIRECT},
+		Chat_Row_Ui{title = "Two person group", conversation_kind = .GROUP},
+		Chat_Row_Ui{title = "Pending group", conversation_kind = .GROUP, pending = true},
+		Chat_Row_Ui{title = "Unresolved", conversation_kind = .UNKNOWN},
+	)
+	defer {delete(ui.chats); delete(ui.fwd_filter)}
+	ui.selected = 0
+	for _, i in ui.chats {
+		testing.expect_value(t, fwd_visible(&ui, i), i == 1)
+	}
+	append(&ui.fwd_filter, "PERSON GROUP")
+	testing.expect(
+		t,
+		fwd_visible(&ui, 1),
+		"the existing case-insensitive picker filter remains available",
+	)
+	clear(&ui.fwd_filter)
+	append(&ui.fwd_filter, "other")
+	testing.expect(t, !fwd_visible(&ui, 1))
+}
+
+@(test)
 forward_snapshot_survives_source_changes :: proc(t: ^testing.T) {
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)

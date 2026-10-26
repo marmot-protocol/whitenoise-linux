@@ -949,13 +949,26 @@ app_main :: proc() {
 					step := shift_down() ? -1 : 1
 					at := 0 // selection not in the rail: start at the first row
 					for idx, pos in ui.rail_rows {
-						if idx == ui.selected {
+						selected := idx == ui.selected
+						if ui.chat_filter == .Archived {
+							selected =
+								idx < len(ui.archived) &&
+								ui.selected >= 0 &&
+								ui.selected < len(ui.chats) &&
+								ui.archived[idx].group_id == ui.chats[ui.selected].group_id
+						}
+						if selected {
 							at = pos + step
 							break
 						}
 					}
 					n := len(ui.rail_rows)
-					select_chat(&ui, client, ui.rail_rows[(at + n) %% n])
+					index := ui.rail_rows[(at + n) %% n]
+					if ui.chat_filter == .Archived {
+						select_archived_chat(&ui, client, index)
+					} else {
+						select_chat(&ui, client, index)
+					}
 				}
 			}
 

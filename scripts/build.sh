@@ -877,11 +877,12 @@ if [ "${1:-}" = test ]; then
   WN_ODIN_TEST_BUILD_KEY="$(build_cache_key "$APP_OBJECT_KEY $APP_KEY" "$HERE/tests/odin.sh" "$HERE/tests/app" "$HERE/scripts/build-cache.sh")"
   export WN_ODIN_TEST_BUILD_KEY
   env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app
-  for check in rail_default_window rail_expand_narrow status_bar_viewports; do
+  for check in rail_default_window rail_expand_narrow status_bar_viewports profile_edit_summary sticker_input_validation issues_empty_state folder_picker_dispatch; do
     SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES="$check"
   done
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES=settings_viewport
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES=theme_gallery_interactions
+  SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES=test_emoji_save_dispatch
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES=wallpaper_proportions
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app/sdlrl
 fi

@@ -340,7 +340,7 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		gs_open_modal(ui)
 	case .Toggle_Unread:
 		ui.page = .Chats
-		ui.unread_only = !ui.unread_only
+		ui.chat_filter = ui.chat_filter == .Unread ? .Chats : .Unread
 	case .Toggle_Rail:
 		toggle_rail(ui)
 	case .Toggle_Members:

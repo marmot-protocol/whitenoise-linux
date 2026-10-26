@@ -20,12 +20,12 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
-// What a pick in the destination picker sends. Forwarding a message
-// and sharing a theme want the same list and the same filter; only the
-// title and the action differ.
+// Shared destination picker for forwarding, theme sharing and inviting
+// a direct-chat peer through an existing group's member form.
 Fwd_Kind :: enum {
 	Message,
 	Theme,
+	Add_Member,
 }
 
 // Destination rows: every chat except pending invites, matching the
@@ -37,6 +37,7 @@ fwd_visible :: proc(ui: ^Ui_State, index: int) -> bool {
 	if chat.pending || (ui.fwd_kind == .Message && index == ui.selected) {
 		return false
 	}
+	if ui.fwd_kind == .Add_Member && chat.conversation_kind != .GROUP {return false}
 	filter := strings.to_lower(string(ui.fwd_filter[:]), context.temp_allocator)
 	if len(filter) == 0 {
 		return true
@@ -68,7 +69,7 @@ forward_modal :: proc(ui: ^Ui_State) {
 		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
 		) {
 			clay.Text(
-				ui.fwd_kind == .Theme ? tr("Share theme with") : tr("Forward to"),
+				ui.fwd_kind == .Add_Member ? tr("Add to group") : ui.fwd_kind == .Theme ? tr("Share theme with") : tr("Forward to"),
 				{fontId = FONT_TITLE, fontSize = 20, textColor = TEXT},
 			)
 			if clay.UI(clay.ID("FwdHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
@@ -152,7 +153,7 @@ forward_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					clay.Text(
-						len(ui.fwd_filter) > 0 ? tr("No chats match your filter.") : ui.fwd_kind == .Message ? tr("You have no other chats to forward this to.") : tr("You have no chats to share this with."),
+						len(ui.fwd_filter) > 0 ? tr("No chats match your filter.") : ui.fwd_kind == .Add_Member ? tr("You have no groups to add this person to.") : ui.fwd_kind == .Message ? tr("You have no other chats to forward this to.") : tr("You have no chats to share this with."),
 						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 					)
 				}
@@ -453,6 +454,10 @@ handle_forward :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// A forward needs its source message to still exist; a theme share
 	// carries its own payload and does not.
 	stale := ui.fwd_kind == .Message && forward_source(ui) < 0
+	if ui.fwd_kind == .Add_Member {
+		stale = chat_peer(ui) == "" || chat_peer(ui) != ui.fwd_msg
+		if !stale {stale = ui.chats[ui.selected].group_id != ui.fwd_source}
+	}
 	if stale || rl.IsKeyPressed(.ESCAPE) {
 		ui.fwd_open = false
 		ui.focus = .Compose
@@ -472,6 +477,15 @@ handle_forward :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			ui.focus = .Compose
 			if ui.fwd_kind == .Theme {
 				share_theme(ui, client, i)
+			} else if ui.fwd_kind == .Add_Member {
+				// Use the group's own invite form and its existing admin
+				// checks rather than applying member actions to the DM.
+				peer := strings.clone(ui.fwd_msg)
+				defer delete(peer)
+				close_group_info(ui)
+				select_chat(ui, client, i)
+				open_group_info(ui, client, .Members)
+				ed_set(ui, &ui.invite_input, peer)
 			} else {
 				do_forward(ui, client, i)
 			}

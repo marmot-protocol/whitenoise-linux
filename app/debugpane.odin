@@ -127,7 +127,8 @@ debug_state_json :: proc(ui: ^Ui_State) -> string {
 			archived, contacts, messages, pending, members: int,
 			theme, accent:                                  int,
 			locale:                                         string,
-			dev_mode, show_members, unread_only, offline:   bool,
+			chat_filter:                                    string,
+			dev_mode, show_members, offline:                bool,
 		} {
 			account = ui.account_ref,
 			accounts = ui.account_ids[:],
@@ -147,7 +148,7 @@ debug_state_json :: proc(ui: ^Ui_State) -> string {
 			locale = ui.prefs.locale,
 			dev_mode = ui.prefs.dev_mode,
 			show_members = ui.show_members,
-			unread_only = ui.unread_only,
+			chat_filter = fmt.tprintf("%v", ui.chat_filter),
 			offline = !ui.health_ok,
 		}, json_opts(), context.temp_allocator)
 	if err != nil {

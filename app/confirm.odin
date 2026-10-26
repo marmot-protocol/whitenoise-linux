@@ -22,6 +22,7 @@ Confirm_Kind :: enum {
 	Delete_All, // delete for everyone
 	Delete_Me, // hide locally
 	Leave_Group,
+	Leave_Chat,
 	Block,
 	Remove_Contact,
 	Delete_Theme,
@@ -62,6 +63,10 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 	case .Leave_Group:
 		return N_(
 			"Leave this group?",
+		), N_("You stop receiving its messages. Rejoining needs a new invite."), N_("Leave")
+	case .Leave_Chat:
+		return N_(
+			"Leave this chat?",
 		), N_("You stop receiving its messages. Rejoining needs a new invite."), N_("Leave")
 	case .Block:
 		return N_(
@@ -270,7 +275,7 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.hidden[strings.clone(c.arg)] = true
 		save_hidden(ui)
 		load_timeline(client, ui)
-	case .Leave_Group:
+	case .Leave_Group, .Leave_Chat:
 		leave_group(ui, client)
 	case .Block:
 		ui.blocked[strings.clone(c.arg)] = true

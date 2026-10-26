@@ -190,8 +190,6 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	delete(ui.drafts); ui.drafts = {}
 	for key, text in ui.nicknames {delete(key); delete(text)}
 	delete(ui.nicknames); ui.nicknames = {}
-	for key, text in ui.dm_peer {delete(key); delete(text)}
-	delete(ui.dm_peer); ui.dm_peer = {}
 	for file in ui.staged {mem.zero_slice(file.data)}
 	for _, files in ui.staged_drafts {for file in files {mem.zero_slice(file.data)}}
 	mem.zero_slice(ui.backup_blob); delete(ui.backup_blob); ui.backup_blob = nil

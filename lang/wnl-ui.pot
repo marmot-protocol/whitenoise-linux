@@ -387,6 +387,9 @@ msgstr ""
 msgid "Add someone by npub, or make a group of your own."
 msgstr ""
 
+msgid "Add to group"
+msgstr ""
+
 msgid "Added to your stickers"
 msgstr ""
 
@@ -475,6 +478,9 @@ msgid "Apr"
 msgstr ""
 
 msgid "Archive"
+msgstr ""
+
+msgid "Archived"
 msgstr ""
 
 msgid "Archived chats"
@@ -755,6 +761,9 @@ msgstr ""
 msgid "Changes require a restart; the current connection is unchanged."
 msgstr ""
 
+msgid "Chat details"
+msgstr ""
+
 #, c-format
 msgid "Chat list failed: %s"
 msgstr ""
@@ -776,6 +785,9 @@ msgid "Chats that match file here automatically. People counts include you. A ch
 msgstr ""
 
 msgid "Chats you archive will appear here."
+msgstr ""
+
+msgid "Check each character against the original and try again."
 msgstr ""
 
 msgid "Check every six hours and download signed updates. Restart when you choose."
@@ -1203,9 +1215,6 @@ msgstr ""
 msgid "Couldn't export the key. %s"
 msgstr ""
 
-msgid "Couldn't find that pack. Enter a sticker pack naddr or coordinate."
-msgstr ""
-
 msgid "Couldn't finish dictation. Please try again."
 msgstr ""
 
@@ -1427,6 +1436,9 @@ msgid "Couldn't save the sticker. Wait for its image to load and try again."
 msgstr ""
 
 msgid "Couldn't save the theme. Check the name and colors and try again."
+msgstr ""
+
+msgid "Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name."
 msgstr ""
 
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
@@ -1875,6 +1887,9 @@ msgstr ""
 msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
 msgstr ""
 
+msgid "Enter a valid pack link or address."
+msgstr ""
+
 msgid "Enter an issue title and description."
 msgstr ""
 
@@ -2174,6 +2189,12 @@ msgid "Grouped"
 msgstr ""
 
 msgid "Grouped sorts your chats into folders, and you have none yet."
+msgstr ""
+
+msgid "Groups"
+msgstr ""
+
+msgid "Groups you join will appear here."
 msgstr ""
 
 msgid "HIGHLIGHT"
@@ -2518,7 +2539,13 @@ msgstr ""
 msgid "Leave"
 msgstr ""
 
+msgid "Leave chat"
+msgstr ""
+
 msgid "Leave group"
+msgstr ""
+
+msgid "Leave this chat?"
 msgstr ""
 
 msgid "Leave this group?"
@@ -2573,6 +2600,9 @@ msgid "Loading more matches from local history…"
 msgstr ""
 
 msgid "Loading your accounts"
+msgstr ""
+
+msgid "Loading your archived chats"
 msgstr ""
 
 msgid "Loading your contacts"
@@ -2899,10 +2929,16 @@ msgstr ""
 msgid "No folders match your search."
 msgstr ""
 
+msgid "No groups yet"
+msgstr ""
+
 msgid "No inbox relays."
 msgstr ""
 
 msgid "No issues found."
+msgstr ""
+
+msgid "No issues yet"
 msgstr ""
 
 msgid "No key package on this device or its relays."
@@ -3088,6 +3124,9 @@ msgid "Open it again with › in the left column or the button below."
 msgstr ""
 
 msgid "Open locations in"
+msgstr ""
+
+msgid "Open the first issue to share a problem with your group."
 msgstr ""
 
 msgid "Open this link?"
@@ -3352,6 +3391,9 @@ msgid "Promote"
 msgstr ""
 
 msgid "Prompt copied. Paste it into your agent."
+msgstr ""
+
+msgid "Public key"
 msgstr ""
 
 msgid "Public key (npub)"
@@ -4127,6 +4169,9 @@ msgstr ""
 msgid "Start day"
 msgstr ""
 
+msgid "Start group"
+msgstr ""
+
 msgid "Start minimized to tray"
 msgstr ""
 
@@ -4386,6 +4431,9 @@ msgstr ""
 msgid "This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."
 msgstr ""
 
+msgid "This key has a typo."
+msgstr ""
+
 msgid "This leaves White Noise and opens in your browser."
 msgstr ""
 
@@ -4502,6 +4550,9 @@ msgid "Type your new password again"
 msgstr ""
 
 msgid "Type your password again"
+msgstr ""
+
+msgid "Type your password first."
 msgstr ""
 
 msgid "UPTIME"
@@ -4775,6 +4826,12 @@ msgid "You can't send messages to someone you blocked."
 msgstr ""
 
 msgid "You have no chats to share this with."
+msgstr ""
+
+msgid "You have no folders yet. Create one with New folder."
+msgstr ""
+
+msgid "You have no groups to add this person to."
 msgstr ""
 
 msgid "You have no other chats to forward this to."

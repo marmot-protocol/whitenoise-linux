@@ -30,7 +30,7 @@ Prefs :: struct {
 	settings_section:      Settings_Section,
 	settings_tab:          int,
 	settings_level:        Settings_Level,
-	unread_only:           bool,
+	chat_filter:           Chat_Filter,
 	window_w, window_h:    i32, // window points, not renderer pixels
 	notes_group:           string, // group id of the solo "Notes to self" chat
 	locale:                string, // en/it/de/ja; catalogs applied via i18n.odin
@@ -262,11 +262,14 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	if int(ui.prefs.settings_level) < 0 || ui.prefs.settings_level > max(Settings_Level) {
 		ui.prefs.settings_level = .Menu
 	}
+	if int(ui.prefs.chat_filter) < 0 || ui.prefs.chat_filter > max(Chat_Filter) {
+		ui.prefs.chat_filter = .Chats
+	}
 	ui.page = ui.prefs.page
 	ui.settings_section = ui.prefs.settings_section
 	ui.settings_tab = ui.prefs.settings_tab
 	ui.settings_level = ui.prefs.settings_level
-	ui.unread_only = ui.prefs.unread_only
+	ui.chat_filter = ui.prefs.chat_filter
 	// Fields added after prefs shipped: 0 means an older settings.json.
 	if ui.prefs.scroll_speed == 0 {
 		ui.prefs.scroll_speed = 200
@@ -384,12 +387,12 @@ remember_workspace :: proc(ui: ^Ui_State) {
 	   ui.prefs.settings_section == ui.settings_section &&
 	   ui.prefs.settings_tab == ui.settings_tab &&
 	   ui.prefs.settings_level == ui.settings_level &&
-	   ui.prefs.unread_only == ui.unread_only {return}
+	   ui.prefs.chat_filter == ui.chat_filter {return}
 	ui.prefs.page = ui.page
 	ui.prefs.settings_section = ui.settings_section
 	ui.prefs.settings_tab = ui.settings_tab
 	ui.prefs.settings_level = ui.settings_level
-	ui.prefs.unread_only = ui.unread_only
+	ui.prefs.chat_filter = ui.chat_filter
 	ui.settings_dirty = true
 }
 

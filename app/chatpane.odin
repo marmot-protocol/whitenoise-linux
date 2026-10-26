@@ -36,8 +36,8 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 		if open_now(clay.ID("EncModal"), ui.enc_open) {
 			encryption_modal(ui, chat)
 		}
-		if open_now(clay.ID("FwdModal"), ui.fwd_open && ui.fwd_kind == .Message) &&
-		   forward_source(ui) >= 0 {
+		if open_now(clay.ID("FwdModal"), ui.fwd_open && ui.fwd_kind != .Theme) &&
+		   (ui.fwd_kind == .Add_Member || forward_source(ui) >= 0) {
 			forward_modal(ui)
 		}
 		if open_now(clay.ID("OvModal"), ui.ov_open) {
@@ -63,7 +63,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 			backgroundColor = RAIL_BG,
 		},
 		) {
-			// Avatar and title open group settings; the Members chip opens members.
+			// Avatar and title open conversation details.
 			if clay.UI(clay.ID("ChatHeadInfo"))(
 			{
 				layout = {
@@ -87,14 +87,33 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					)
 				}
 				// Keep unbroken titles from widening the pane beyond the window.
-				if clay.UI(clay.ID("ChatHeadTitleClip"))({clip = {horizontal = true}}) {
+				if clay.UI(clay.ID("ChatHeadTitleClip"))(
+				{
+					layout = {layoutDirection = .TopToBottom, childGap = 2},
+					clip = {horizontal = true},
+				},
+				) {
 					clay.Text(
 						chat.title,
 						{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT, wrapMode = .None},
 					)
+					if !chat_is_dm(chat) && len(ui.members) > 0 {
+						clay.Text(
+							fmt.tprintf(
+								tr(len(ui.members) == 1 ? N_("%d member") : N_("%d members")),
+								len(ui.members),
+							),
+							{
+								fontId = FONT_BODY,
+								fontSize = 11,
+								textColor = TEXT_LO,
+								wrapMode = .None,
+							},
+						)
+					}
 				}
 				if hovered() {
-					tooltip(tr("Group settings"))
+					tooltip(chat_is_dm(chat) ? tr("Chat details") : tr("Group settings"))
 					cursor_raise(.Pointer)
 				}
 			}
@@ -140,12 +159,14 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 				ui.show_members && ui.info_tab == .Settings,
 				tr("Settings"),
 			)
-			header_chip(
-				"MembersBtn",
-				ICON_PEOPLE,
-				ui.show_members && ui.info_tab == .Members,
-				tr("Members"),
-			)
+			if !chat_is_dm(chat) {
+				header_chip(
+					"MembersBtn",
+					ICON_PEOPLE,
+					ui.show_members && ui.info_tab == .Members,
+					tr("Members"),
+				)
+			}
 			// The chrome floats over the timeline; only the bottom-most
 			// bar casts, so the shadows don't stack.
 			if len(ui.thread_stack) == 0 {
@@ -467,9 +488,8 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 // That DM keeps its history but loses its composer (blocked_bar).
 @(private)
 blocked_peer :: proc(ui: ^Ui_State) -> string {
-	if ui.selected < 0 {return ""}
-	peer, is_dm := ui.dm_peer[ui.chats[ui.selected].group_id]
-	if !is_dm || !ui.blocked[peer] {return ""}
+	peer := chat_peer(ui)
+	if peer == "" || !ui.blocked[peer] {return ""}
 	return peer
 }
 
@@ -598,7 +618,11 @@ members_panel :: proc(ui: ^Ui_State) {
 				case .Settings:
 					info_settings_page(ui, col_w)
 				case .Members:
-					info_members_page(ui)
+					if selected_chat_is_dm(ui) {
+						info_settings_page(ui, col_w)
+					} else {
+						info_members_page(ui)
+					}
 				}
 			}
 		}
@@ -627,9 +651,10 @@ info_top_bar :: proc(ui: ^Ui_State, col_w: f32) {
 			},
 		},
 		) {
-			members := ui.info_tab == .Members
+			dm := selected_chat_is_dm(ui)
+			members := !dm && ui.info_tab == .Members
 			clay.Text(
-				members ? tr("Members") : tr("Group settings"),
+				dm ? tr("Chat details") : members ? tr("Members") : tr("Group settings"),
 				{fontId = FONT_TITLE, fontSize = 20, textColor = TEXT},
 			)
 			if members {
@@ -731,11 +756,12 @@ info_width :: proc(ui: ^Ui_State) -> f32 {
 @(private = "file")
 info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 	admin := self_is_admin(ui)
+	dm := selected_chat_is_dm(ui)
 	if clay.UI(clay.ID("InfoHeroCard"))(info_card()) {
 		group_hero(ui)
 	}
 
-	if admin {
+	if admin && !dm {
 		if clay.UI(clay.ID("InfoNameCard"))(info_card()) {
 			row_labels(tr("Group name"), tr("Everyone in the group sees the new name."))
 			info_field(
@@ -799,7 +825,7 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 		}
 	}
 
-	if admin {
+	if admin && !dm {
 		if clay.UI(clay.ID("InfoIssuesCard"))(info_card()) {
 			issues_settings(ui)
 		}
@@ -838,7 +864,11 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 	},
 	) {
 		clay.Text(ICON_BAN, {fontId = FONT_ICON, fontSize = 15, textColor = DANGER})
-		row_labels(tr("Leave group"), tr("You will stop receiving its messages."), DANGER)
+		row_labels(
+			dm ? tr("Leave chat") : tr("Leave group"),
+			tr("You will stop receiving its messages."),
+			DANGER,
+		)
 		if hovered() {cursor_raise(.Pointer)}
 	}
 }
@@ -865,6 +895,7 @@ self_is_admin :: proc(ui: ^Ui_State) -> bool {
 // Members: inviting someone (admins only), then everyone in the group.
 @(private = "file")
 info_members_page :: proc(ui: ^Ui_State) {
+	if selected_chat_is_dm(ui) {return}
 	if self_is_admin(ui) {
 		if clay.UI(clay.ID("InfoInviteCard"))(info_card()) {
 			row_labels(tr("Add member"), "")
@@ -1580,14 +1611,18 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
-				searching := len(strings.trim_space(string(ui.nc_search[:]))) > 0
+				query := strings.trim_space(string(ui.nc_search[:]))
+				searching := len(query) > 0
+				invalid_key :=
+					strings.has_prefix(strings.to_lower(query, context.temp_allocator), "npub1") &&
+					deeplink_hex(query) == ""
 				clay.Text(
-					loading ? tr("Loading your contacts") : searching ? tr("No matching contacts") : tr("No contacts yet"),
+					invalid_key ? tr("This key has a typo.") : loading ? tr("Loading your contacts") : searching ? tr("No matching contacts") : tr("No contacts yet"),
 					{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT},
 				)
-				if !loading {
+				if invalid_key || !loading {
 					clay.Text(
-						searching ? tr("To start a chat with someone new, paste their public key.") : tr("People you follow show up here. To start a chat now, paste someone's public key in the field above."),
+						invalid_key ? tr("Check each character against the original and try again.") : searching ? tr("To start a chat with someone new, paste their public key.") : tr("People you follow show up here. To start a chat now, paste someone's public key in the field above."),
 						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 					)
 				}

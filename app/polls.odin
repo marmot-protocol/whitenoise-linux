@@ -249,7 +249,7 @@ poll_modal :: proc(ui: ^Ui_State) {
 			}
 			if clay.UI(clay.ID("PollBtnGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			login_button("PollCancel", tr("Cancel"))
-			login_button("PollCreate", tr("Create"))
+			login_button("PollCreate", tr("Create"), primary = true)
 		}
 	}
 }

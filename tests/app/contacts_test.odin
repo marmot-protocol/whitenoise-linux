@@ -146,11 +146,10 @@ groups_do_not_add_contacts :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.contacts[0].groups[0].title, "Shared")
 	testing.expect_value(t, len(ui.contacts[1].groups), 0)
 
-	// A direct chat still supports blocking without making its peer a contact.
+	// A direct chat must not make its unsaved peer a contact either.
 	direct := []marmot.Group_Member_Record{members[0], members[2]}
-	contact_groups(&ui, Chat_Row_Ui{group_id = "dm"}, direct, indices)
+	contact_groups(&ui, Chat_Row_Ui{group_id = "dm", conversation_kind = .DIRECT}, direct, indices)
 	testing.expect_value(t, len(ui.contacts), 2)
-	testing.expect_value(t, ui.dm_peer["dm"], "acquaintance")
 
 	// Removing a follow must not recreate it from a shared group.
 	clear(&ui.contacts)

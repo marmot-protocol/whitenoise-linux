@@ -949,6 +949,114 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				}
 			}
 
+			// The quoted parent sits above the body it answers; a click
+			// centers that message (handle_reply_jump).
+			// A parent from someone you blocked quotes as a bare
+			// "Blocked message": no author, text or image, and no jump
+			// into their collapsed run.
+			reply_from, reply_text, reply_image := msg.reply_from, msg.reply_text, msg.reply_image
+			reply_blocked := g_ui != nil && g_ui.blocked[msg.reply_from_id]
+			if reply_blocked {
+				reply_from, reply_text, reply_image = "", tr("Blocked message"), ""
+			}
+			if len(reply_from) > 0 || len(reply_text) > 0 || len(reply_image) > 0 {
+				jumpable := len(msg.reply_id) > 0 && !reply_blocked
+				if clay.UI(clay.ID("MsgReplyPrev", index))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						childGap = 8,
+						padding = clay.PaddingAll(8),
+					},
+					backgroundColor = jumpable && hovered() ? HOVER : ROW_BG,
+					cornerRadius = rr(6),
+				},
+				) {
+					if jumpable && hovered() {
+						reply_jump_hover = msg.reply_id
+					}
+					if clay.UI(clay.ID("MsgReplyBar", index))(
+					{
+						layout = {
+							sizing = {width = clay.SizingFixed(3), height = clay.SizingGrow()},
+						},
+						backgroundColor = ACCENT,
+						cornerRadius = rr(2),
+					},
+					) {}
+					if clay.UI(clay.ID("MsgReplyCol", index))(
+					{layout = {layoutDirection = .TopToBottom, childGap = 2}},
+					) {
+						// No author line when the parent is unavailable.
+						if len(reply_from) > 0 {
+							clay.Text(
+								reply_from,
+								{fontId = FONT_TITLE, fontSize = 11, textColor = ACCENT},
+							)
+						}
+						// Wrapped so a long token (a cashu string, a URL)
+						// breaks instead of pushing the bubble off-pane.
+						body_text(
+							index * 4096 + 3072,
+							reply_text,
+							12,
+							TEXT_DIM,
+							wrap_w = body_wrap_w() - 40,
+						)
+						if reply_image != "" {
+							tex, seen := media_textures[reply_image]
+							if !seen {
+								view, found := media_cached(.Sticker, reply_image)
+								tex, seen = (^rl.Texture2D)(view), found
+							}
+							if tex != nil && tex.width > 0 && tex.height > 0 {
+								scale := min(f32(96) / f32(tex.width), f32(64) / f32(tex.height))
+								if clay.UI(clay.ID("MsgReplyImage", index))(
+								{
+									layout = {
+										sizing = {
+											width = clay.SizingFixed(f32(tex.width) * scale),
+											height = clay.SizingFixed(f32(tex.height) * scale),
+										},
+									},
+									image = {imageData = tex},
+									cornerRadius = rr(4),
+								},
+								) {}
+							} else if clay.UI(clay.ID("MsgReplyImage", index))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFixed(96),
+										height = clay.SizingFixed(64),
+									},
+									childAlignment = {x = .Center, y = .Center},
+								},
+								backgroundColor = PLATE,
+								cornerRadius = rr(4),
+							},
+							) {
+								if seen {
+									if hovered() {
+										img_retry_hover = reply_image
+										reply_jump_hover = ""
+									}
+									clay.Text(
+										tr("Couldn't load image. Click to retry."),
+										{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+									)
+								} else {
+									clay.Text(
+										tr("Loading…"),
+										{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+									)
+								}
+							}
+						}
+					}
+				}
+			}
+
 			if msg.sticker.sha != "" {message_sticker(g_ui, index, msg)}
 			media_failed := false
 			// Seeds for the markdown and code-line id ranges, which share the
@@ -1586,114 +1694,6 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						tr("Couldn't load attachment. Click to retry."),
 						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 					)
-				}
-			}
-
-			// The quoted parent sits above the body it answers; a click
-			// centers that message (handle_reply_jump).
-			// A parent from someone you blocked quotes as a bare
-			// "Blocked message": no author, text or image, and no jump
-			// into their collapsed run.
-			reply_from, reply_text, reply_image := msg.reply_from, msg.reply_text, msg.reply_image
-			reply_blocked := g_ui != nil && g_ui.blocked[msg.reply_from_id]
-			if reply_blocked {
-				reply_from, reply_text, reply_image = "", tr("Blocked message"), ""
-			}
-			if len(reply_from) > 0 || len(reply_text) > 0 || len(reply_image) > 0 {
-				jumpable := len(msg.reply_id) > 0 && !reply_blocked
-				if clay.UI(clay.ID("MsgReplyPrev", index))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						childGap = 8,
-						padding = clay.PaddingAll(8),
-					},
-					backgroundColor = jumpable && hovered() ? HOVER : ROW_BG,
-					cornerRadius = rr(6),
-				},
-				) {
-					if jumpable && hovered() {
-						reply_jump_hover = msg.reply_id
-					}
-					if clay.UI(clay.ID("MsgReplyBar", index))(
-					{
-						layout = {
-							sizing = {width = clay.SizingFixed(3), height = clay.SizingGrow()},
-						},
-						backgroundColor = ACCENT,
-						cornerRadius = rr(2),
-					},
-					) {}
-					if clay.UI(clay.ID("MsgReplyCol", index))(
-					{layout = {layoutDirection = .TopToBottom, childGap = 2}},
-					) {
-						// No author line when the parent is unavailable.
-						if len(reply_from) > 0 {
-							clay.Text(
-								reply_from,
-								{fontId = FONT_TITLE, fontSize = 11, textColor = ACCENT},
-							)
-						}
-						// Wrapped so a long token (a cashu string, a URL)
-						// breaks instead of pushing the bubble off-pane.
-						body_text(
-							index * 4096 + 3072,
-							reply_text,
-							12,
-							TEXT_DIM,
-							wrap_w = body_wrap_w() - 40,
-						)
-						if reply_image != "" {
-							tex, seen := media_textures[reply_image]
-							if !seen {
-								view, found := media_cached(.Sticker, reply_image)
-								tex, seen = (^rl.Texture2D)(view), found
-							}
-							if tex != nil && tex.width > 0 && tex.height > 0 {
-								scale := min(f32(96) / f32(tex.width), f32(64) / f32(tex.height))
-								if clay.UI(clay.ID("MsgReplyImage", index))(
-								{
-									layout = {
-										sizing = {
-											width = clay.SizingFixed(f32(tex.width) * scale),
-											height = clay.SizingFixed(f32(tex.height) * scale),
-										},
-									},
-									image = {imageData = tex},
-									cornerRadius = rr(4),
-								},
-								) {}
-							} else if clay.UI(clay.ID("MsgReplyImage", index))(
-							{
-								layout = {
-									sizing = {
-										width = clay.SizingFixed(96),
-										height = clay.SizingFixed(64),
-									},
-									childAlignment = {x = .Center, y = .Center},
-								},
-								backgroundColor = PLATE,
-								cornerRadius = rr(4),
-							},
-							) {
-								if seen {
-									if hovered() {
-										img_retry_hover = reply_image
-										reply_jump_hover = ""
-									}
-									clay.Text(
-										tr("Couldn't load image. Click to retry."),
-										{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-									)
-								} else {
-									clay.Text(
-										tr("Loading…"),
-										{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-									)
-								}
-							}
-						}
-					}
 				}
 			}
 
