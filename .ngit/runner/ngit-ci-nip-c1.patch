@@ -1,0 +1,278 @@
+diff --git a/src/dispatch.rs b/src/dispatch.rs
+--- a/src/dispatch.rs
++++ b/src/dispatch.rs
+@@ -90,14 +90,10 @@
+     pub relay_url: String,
+     pub publisher_pubkey: String,
+     pub job_id: String,
+-    /// The quoted Job Result's `conclusion` tag value, repeated so the
+-    /// Workflow Result stays self-describing per job.
+-    pub conclusion: String,
+ }
+ 
+ impl JobResultQuote {
+-    /// The NIP.md `q` tag: event id, relay, publisher, job id marker, and
+-    /// the quoted Job Result's conclusion.
++    /// The published NIP-C1 `q` tag: event id, relay, publisher, and job id.
+     pub fn tag(&self) -> Tag {
+         Tag::custom(
+             "q",
+@@ -106,7 +102,6 @@
+                 self.relay_url.clone(),
+                 self.publisher_pubkey.clone(),
+                 self.job_id.clone(),
+-                self.conclusion.clone(),
+             ],
+         )
+     }
+@@ -1055,7 +1050,6 @@
+             relay_url: relay_url.clone(),
+             publisher_pubkey: publisher_pubkey.clone(),
+             job_id: outcome.job_id.clone(),
+-            conclusion: outcome.conclusion.as_tag().to_string(),
+         });
+     }
+ 
+@@ -1836,7 +1830,6 @@
+             relay_url: "ws://127.0.0.1:1234".to_string(),
+             publisher_pubkey: keys.public_key().to_hex(),
+             job_id: "test".to_string(),
+-            conclusion: "failure".to_string(),
+         };
+ 
+         let result_tags = workflow_result_tags(
+@@ -1853,8 +1846,7 @@
+         assert_eq!(result_q[0][1], "ws://127.0.0.1:1234");
+         assert_eq!(result_q[0][2], keys.public_key().to_hex());
+         assert_eq!(result_q[0][3], "test");
+-        assert_eq!(result_q[0][4], "failure");
+-        assert_eq!(result_q[0].len(), 5);
++        assert_eq!(result_q[0].len(), 4);
+ 
+         let progress_tags = workflow_progress_tags(
+             &push_context(),
+diff --git a/src/nix_run.rs b/src/nix_run.rs
+--- a/src/nix_run.rs
++++ b/src/nix_run.rs
+@@ -2230,29 +2230,17 @@
+                 } => (diagnostic.as_ref(), &run.result_relays[0]),
+                 _ => return None,
+             };
++            conclusion_of(result)?;
+             Some(JobResultQuote {
+                 event_id: result.id,
+                 relay_url: relay.to_string(),
+                 publisher_pubkey: result.pubkey.to_hex(),
+                 job_id: job_id.clone(),
+-                conclusion: quoted_conclusion(result)?,
+             })
+         })
+         .collect()
+ }
+ 
+-/// The `conclusion` tag of a stored Job Result. Accepted provider results are
+-/// validated to carry one before they are stored, and coordinator-signed
+-/// startup diagnostics are built with one, so `None` only guards against a
+-/// corrupted store entry, which is then left unquoted rather than quoted
+-/// without an outcome.
+-fn quoted_conclusion(result: &Event) -> Option<String> {
+-    result.tags.iter().find_map(|tag| {
+-        let values = tag.as_slice();
+-        (values.len() >= 2 && values[0] == "conclusion").then(|| values[1].clone())
+-    })
+-}
+-
+ fn condition_skipped(job: &crate::nix_run_store::StoredNixJob) -> bool {
+     matches!(&job.state, StoredNixJobState::Failed { diagnostic: Some(event), .. }
+         if conclusion_of(event) == Some("skipped") && event.tags.iter().any(|tag| tag.as_slice() == ["skip-reason", "condition"]))
+diff --git a/src/nix_run_store.rs b/src/nix_run_store.rs
+--- a/src/nix_run_store.rs
++++ b/src/nix_run_store.rs
+@@ -566,21 +566,7 @@
+                 .tags
+                 .iter()
+                 .filter(|tag| tag.as_slice()[0] == key)
+-                .map(|tag| {
+-                    let values = tag.as_slice();
+-                    // Old aggregates omitted only the job conclusion. Match
+-                    // every identity field before supplying it for comparison;
+-                    // never rewrite the signed event or relax modern quotes.
+-                    if key == "q" && values.len() == 5 {
+-                        if let Some(quote) = expected.iter().find(|quote| {
+-                            let required = quote.as_slice();
+-                            required.len() == 6 && &required[..5] == values
+-                        }) {
+-                            return quote.as_slice();
+-                        }
+-                    }
+-                    values
+-                })
++                .map(|tag| tag.as_slice())
+                 .collect::<Vec<_>>();
+             let mut required = expected
+                 .iter()
+@@ -1107,7 +1093,7 @@
+             .iter()
+             .find(|tag| tag.as_slice().get(1) == Some(&result_id))
+             .unwrap();
+-        assert_eq!(&quote.as_slice()[4..], ["build", "failure"]);
++        assert_eq!(&quote.as_slice()[4..], ["build"]);
+     }
+ 
+     #[test]
+@@ -1442,58 +1428,6 @@
+     }
+ 
+     #[test]
+-    fn legacy_and_mixed_job_quotes_preserve_recovery_and_deduplication() {
+-        let keys = Keys::generate();
+-        for legacy_count in [0, 1, 2] {
+-            let mut historical = concluded_with_quotes(&keys);
+-            resign_quotes(&mut historical, &keys, |tags| {
+-                for tag in tags
+-                    .iter_mut()
+-                    .filter(|tag| tag.as_slice()[0] == "q")
+-                    .take(legacy_count)
+-                {
+-                    let mut values = tag.as_slice().to_vec();
+-                    values.pop();
+-                    *tag = Tag::parse(values).unwrap();
+-                }
+-            });
+-            let original_event = historical.workflow_result.clone();
+-            let temp = TempDir::new().unwrap();
+-            let store = NixRunStore::open(temp.path().join("runs")).unwrap();
+-            // Write the historical representation directly, as an old version
+-            // would have done, then exercise the real on-disk recovery path.
+-            atomic_json(&store.path(&historical.run_id), &historical).unwrap();
+-            let mut fresh = run();
+-            fresh.run_id = "02".repeat(32);
+-            store.save(&fresh).unwrap();
+-            let recovered = store.unfinished().unwrap();
+-            assert_eq!(recovered.len(), 1);
+-            assert_eq!(recovered[0].run_id, fresh.run_id);
+-            let found = store
+-                .find_run(
+-                    &historical.trigger,
+-                    &historical.binding.workflow_path,
+-                    &historical.binding.workflow_sha256,
+-                )
+-                .unwrap()
+-                .unwrap();
+-            assert!(found.concluded);
+-            assert_eq!(found.workflow_result, original_event);
+-            assert!(
+-                !store
+-                    .find_run(
+-                        &fresh.trigger,
+-                        &fresh.binding.workflow_path,
+-                        &fresh.binding.workflow_sha256,
+-                    )
+-                    .unwrap()
+-                    .unwrap()
+-                    .concluded
+-            );
+-        }
+-    }
+-
+-    #[test]
+     fn superseded_job_aggregate_survives_terminal_save_and_recovery() {
+         let keys = Keys::generate();
+         let mut run = concluded_with_quotes(&keys);
+@@ -1520,60 +1454,44 @@
+     }
+ 
+     #[test]
+-    fn historical_quote_compatibility_does_not_relax_identity_or_conclusion() {
++    fn reject_mismatched_job_quotes() {
+         let keys = Keys::generate();
+         let original = concluded_with_quotes(&keys);
+-        for legacy in [false, true] {
+-            for mutation in [
+-                "event",
+-                "relay",
+-                "publisher",
+-                "job",
+-                "conclusion",
+-                "missing",
+-                "duplicate",
+-                "extra",
+-            ] {
+-                let mut modified = original.clone();
+-                resign_quotes(&mut modified, &keys, |tags| {
+-                    let index = tags
+-                        .iter()
+-                        .position(|tag| tag.as_slice()[0] == "q")
+-                        .unwrap();
+-                    let mut values = tags[index].as_slice().to_vec();
+-                    if legacy {
+-                        values.pop();
+-                    }
+-                    match mutation {
+-                        "event" => values[1] = "00".repeat(32),
+-                        "relay" => values[2] = "wss://other.example".into(),
+-                        "publisher" => values[3] = Keys::generate().public_key().to_hex(),
+-                        "job" => values[4] = "other".into(),
+-                        "conclusion" => {
+-                            if legacy {
+-                                values.push("success".into());
+-                            } else {
+-                                values[5] = "success".into();
+-                            }
+-                        }
+-                        "extra" => values.push("unexpected".into()),
+-                        "missing" | "duplicate" => {}
+-                        _ => unreachable!(),
+-                    }
+-                    tags[index] = Tag::parse(values).unwrap();
+-                    if mutation == "missing" {
+-                        tags.remove(index);
+-                    }
+-                    if mutation == "duplicate" {
+-                        tags.push(tags[index].clone());
+-                    }
+-                });
+-                modified.workflow_result.as_ref().unwrap().verify().unwrap();
+-                assert!(
+-                    modified.validate().is_err(),
+-                    "legacy={legacy}, mutation={mutation}"
+-                );
+-            }
++        for mutation in [
++            "event",
++            "relay",
++            "publisher",
++            "job",
++            "missing",
++            "duplicate",
++            "extra",
++        ] {
++            let mut modified = original.clone();
++            resign_quotes(&mut modified, &keys, |tags| {
++                let index = tags
++                    .iter()
++                    .position(|tag| tag.as_slice()[0] == "q")
++                    .unwrap();
++                let mut values = tags[index].as_slice().to_vec();
++                match mutation {
++                    "event" => values[1] = "00".repeat(32),
++                    "relay" => values[2] = "wss://other.example".into(),
++                    "publisher" => values[3] = Keys::generate().public_key().to_hex(),
++                    "job" => values[4] = "other".into(),
++                    "extra" => values.push("success".into()),
++                    "missing" | "duplicate" => {}
++                    _ => unreachable!(),
++                }
++                tags[index] = Tag::parse(values).unwrap();
++                if mutation == "missing" {
++                    tags.remove(index);
++                }
++                if mutation == "duplicate" {
++                    tags.push(tags[index].clone());
++                }
++            });
++            modified.workflow_result.as_ref().unwrap().verify().unwrap();
++            assert!(modified.validate().is_err(), "mutation={mutation}");
+         }
+     }
+ 
