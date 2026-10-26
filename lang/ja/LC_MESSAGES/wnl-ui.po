@@ -431,8 +431,8 @@ msgstr "すべての送信者"
 msgid "All types"
 msgstr "すべての種類"
 
-msgid "Also Ctrl + / - / 0."
-msgstr "Ctrl + / - / 0 でも操作できます。"
+msgid "Also Ctrl + plus, Ctrl + minus or Ctrl + 0."
+msgstr "Ctrl + プラス、Ctrl + マイナス、または Ctrl + 0 でも操作できます。"
 
 msgid "Always open links to this site"
 msgstr "このサイトへのリンクを常に開く"
@@ -1664,6 +1664,12 @@ msgstr ""
 
 msgid "Crop circle shape"
 msgstr "ミステリーサークルの形状"
+
+msgid "Ctrl + Tab or Ctrl + Shift + Tab"
+msgstr "Ctrl + Tab または Ctrl + Shift + Tab"
+
+msgid "Ctrl + plus, Ctrl + minus or Ctrl + 0"
+msgstr "Ctrl + プラス、Ctrl + マイナス、または Ctrl + 0"
 
 msgid "Current"
 msgstr "現在"

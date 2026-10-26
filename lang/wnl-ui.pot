@@ -430,7 +430,7 @@ msgstr ""
 msgid "All types"
 msgstr ""
 
-msgid "Also Ctrl + / - / 0."
+msgid "Also Ctrl + plus, Ctrl + minus or Ctrl + 0."
 msgstr ""
 
 msgid "Always open links to this site"
@@ -1655,6 +1655,12 @@ msgid "Crop"
 msgstr ""
 
 msgid "Crop circle shape"
+msgstr ""
+
+msgid "Ctrl + Tab or Ctrl + Shift + Tab"
+msgstr ""
+
+msgid "Ctrl + plus, Ctrl + minus or Ctrl + 0"
 msgstr ""
 
 msgid "Current"

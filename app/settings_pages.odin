@@ -1971,8 +1971,8 @@ SHORTCUTS := [][2]string {
 	{"Esc", N_("Cancel edit / reply, close panels")},
 	{"Ctrl + K", N_("Search everywhere")},
 	{"Ctrl + P", N_("Command palette")},
-	{"Ctrl + Tab / Shift + Tab", N_("Next / previous chat")},
-	{"Ctrl + / - / 0", N_("Zoom in / out / reset")},
+	{N_("Ctrl + Tab or Ctrl + Shift + Tab"), N_("Next / previous chat")},
+	{N_("Ctrl + plus, Ctrl + minus or Ctrl + 0"), N_("Zoom in / out / reset")},
 	{"← / →", N_("Previous / next in the media viewer")},
 	{N_("Right click"), N_("Message menu")},
 }

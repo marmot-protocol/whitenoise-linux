@@ -431,8 +431,8 @@ msgstr "Alle Absender"
 msgid "All types"
 msgstr "Alle Typen"
 
-msgid "Also Ctrl + / - / 0."
-msgstr "Auch Ctrl + / - / 0."
+msgid "Also Ctrl + plus, Ctrl + minus or Ctrl + 0."
+msgstr "Auch Strg + Plus, Strg + Minus oder Strg + 0."
 
 msgid "Always open links to this site"
 msgstr "Links zu dieser Website immer öffnen"
@@ -1664,6 +1664,12 @@ msgstr ""
 
 msgid "Crop circle shape"
 msgstr "Kornkreis-Form"
+
+msgid "Ctrl + Tab or Ctrl + Shift + Tab"
+msgstr "Strg + Tab oder Strg + Umschalt + Tab"
+
+msgid "Ctrl + plus, Ctrl + minus or Ctrl + 0"
+msgstr "Strg + Plus, Strg + Minus oder Strg + 0"
 
 msgid "Current"
 msgstr "Aktuell"
