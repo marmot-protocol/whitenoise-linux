@@ -4718,6 +4718,9 @@ msgstr "Dieses Passwort ist zu leicht zu erraten. Verwende unzusammenhängende W
 msgid "This project is no longer available."
 msgstr "Dieses Projekt ist nicht mehr verfügbar."
 
+msgid "This relay is already in your list."
+msgstr "Dieses Relay ist bereits in deiner Liste."
+
 msgid "This session"
 msgstr "Diese Sitzung"
 

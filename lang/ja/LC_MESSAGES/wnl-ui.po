@@ -4718,6 +4718,9 @@ msgstr "このパスワードは推測されやすいものです。関連のな
 msgid "This project is no longer available."
 msgstr "このプロジェクトは利用できなくなりました。"
 
+msgid "This relay is already in your list."
+msgstr "このリレーはすでにリストに追加されています。"
+
 msgid "This session"
 msgstr "現在のセッション"
 

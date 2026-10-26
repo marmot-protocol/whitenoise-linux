@@ -4718,6 +4718,9 @@ msgstr "Questa password è troppo facile da indovinare. Usa parole non correlate
 msgid "This project is no longer available."
 msgstr "Questo progetto non è più disponibile."
 
+msgid "This relay is already in your list."
+msgstr "Questo relay è già nel tuo elenco."
+
 msgid "This session"
 msgstr "Questa sessione"
 

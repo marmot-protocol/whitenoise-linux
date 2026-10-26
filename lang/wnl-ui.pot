@@ -4706,6 +4706,9 @@ msgstr ""
 msgid "This project is no longer available."
 msgstr ""
 
+msgid "This relay is already in your list."
+msgstr ""
+
 msgid "This session"
 msgstr ""
 

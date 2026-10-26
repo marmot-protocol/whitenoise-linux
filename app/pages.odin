@@ -577,6 +577,12 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if clicked("AddRelayBtn") && len(ui.relay_input) > 0 {
+		if relay_list_contains(ui.profile.nip65[:], ui.relay_input[:]) {
+			ui.focus = .Relay
+			ui.banner_seen = ""
+			set_status(ui, tr("This relay is already in your list."), .Info)
+			return
+		}
 		relays := make([dynamic]cstring, context.temp_allocator)
 		for relay in ui.profile.nip65 {
 			append(&relays, strings.clone_to_cstring(relay, context.temp_allocator))
