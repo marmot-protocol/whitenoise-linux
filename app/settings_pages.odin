@@ -2419,6 +2419,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	// Open modals capture everything while open.
 	if ui.export_open {
+		if len(ui.export_pw) > 0 {ui.export_pw_required = false}
 		if field_mouse(ui, &ui.export_pw, "ExportPwBox", 14) {
 			ui.focus = .ExportPw
 		}
@@ -2427,14 +2428,14 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		// Enter submits the password step.
-		if len(ui.export_result) == 0 && rl.IsKeyPressed(.ENTER) && len(ui.export_pw) > 0 {
+		if len(ui.export_result) == 0 && rl.IsKeyPressed(.ENTER) {
 			do_export(ui, client)
 			return
 		}
 		if !mouse_released() {
 			return
 		}
-		if clicked("ExportGo") && len(ui.export_result) == 0 && len(ui.export_pw) > 0 {
+		if clicked("ExportGo") && len(ui.export_result) == 0 {
 			do_export(ui, client)
 			return
 		}
@@ -2777,9 +2778,7 @@ settings_fields :: proc(ui: ^Ui_State) {
 		}
 		// Runs every frame (the release-gated handler would miss keys):
 		// Enter saves the shortcode; settings_escape drops the staged file.
-		if ui.focus == .EmojiName &&
-		   rl.IsKeyPressed(.ENTER) &&
-		   ui.emoji_sets_job == nil {
+		if ui.focus == .EmojiName && rl.IsKeyPressed(.ENTER) && ui.emoji_sets_job == nil {
 			save_staged_emoji(ui)
 		}
 	}

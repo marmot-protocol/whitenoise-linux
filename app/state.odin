@@ -827,6 +827,7 @@ Ui_State :: struct {
 	health_ok:                                             bool, // a relay_health call has succeeded
 	export_open:                                           bool, // export-ncryptsec modal
 	export_pw:                                             [dynamic]u8, // its password box (masked)
+	export_pw_required:                                    bool, // rejected an empty password in the modal
 	export_result:                                         string, // "" = password step, else the ncryptsec
 	kp_list:                                               [dynamic]Kp_Row, // the account's MLS key packages
 	kp_fetched:                                            bool, // read from marmot at least once
