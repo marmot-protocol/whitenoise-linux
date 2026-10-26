@@ -250,12 +250,13 @@ fmt_clock :: proc(s: f64) -> string {
 // tile is the controls (play/pause, scrub bar, size + position).
 audio_tile :: proc(
 	id: u32,
-	msg_id: string,
+	msg: Msg_Ui,
 	att: int,
 	name: string,
 	size_label: string,
 	view: ^Video_View,
 ) {
+	msg_id := msg.id
 	if clay.UI(clay.ID("MsgAudio", id))(
 	{
 		layout = {
@@ -410,7 +411,15 @@ audio_tile :: proc(
 			}
 		}
 		if view.transcript_open && view.transcript != "" {
-			clay.Text(view.transcript, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+			result := translation_lookup(g_ui, msg, .Transcript, att)
+			text :=
+				result != nil && result.phase == .Ready && result.show ? result.text : view.transcript
+			clay.Text(text, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+			if result != nil {
+				translation_controls(g_ui, id, msg, .Transcript, att)
+			} else if translation_eligible(g_ui, msg, .Transcript, att) {
+				micro_button(fmt.tprintf("TranscriptTranslationStart%d", id), tr("Translate"))
+			}
 		}
 	}
 }
@@ -1131,7 +1140,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					// Audio tiles: mpv plays through its own ao, no frames;
 					// the tile is the controls.
 					if slot.kind == .Audio {
-						audio_tile(id, msg.id, att, slot.name, att_size_label(msg, att), view)
+						audio_tile(id, msg, att, slot.name, att_size_label(msg, att), view)
 						break
 					}
 					// Video tiles: the mpv-fed texture, with a play glyph while

@@ -47,13 +47,15 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Settings > General > Messaging > Custom emoji browses recent [NIP-51 kind-30030 emoji sets](https://github.com/nostr-protocol/nips/blob/master/51.md) from your event-fetch relays. Sets from your contacts come first, with A-Z ordering within each group and a saved Contacts only filter. Sets with no valid emoji stay hidden. Each row shows artwork and an author mention chip. Search by title, author, or shortcode, then open a set to preview it. Import the whole set or use the + button beside one emoji. Previews appear as each download finishes. Imported emoji keep their set title and verified author after a restart. Imports preserve existing shortcodes and report skipped entries and failed downloads. Browsing previews and importing contact HTTPS image hosts; PNG, JPEG, GIF, and WebP are supported when the image decoder accepts them.
 - Custom `:shortcode:` emoji use NIP-30. The image goes out as an encrypted attachment, and the message carries an `["emoji", shortcode, url]` tag pointing at that attachment's Blossom URL. Reactions work the same way: a `:shortcode:` reaction carries its own `imeta` and emoji tag. Forwards keep the tags. MDK's `marmot_send_tagged_media` and `marmot_react_with_media` send them, and MDK keeps the media key for reaction images the way it does for chat media.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
-- Native Linux builds translate messages on your device with
+- Native Linux builds translate messages and audio transcriptions on your device with
   [TranslateGemma 4B Q4_K_M](https://huggingface.co/mradermacher/translategemma-4b-it-GGUF).
   Enable it in Settings > General > Language > Message translation, choose
   the target language, then use Translate in a message's context menu.
+  For audio, finish a transcription and use Translate below its expanded text.
   Show original and Show translation switch the displayed text without
-  changing the stored message. Automatic translation processes received
-  messages as you read them. The first translation downloads about 2.5 GB
+  changing the stored message or original transcription. Automatic translation
+  processes received messages and expanded, completed audio transcriptions as
+  you read them. It does not start transcription. The first translation downloads about 2.5 GB
   of model files; later translations work offline. Enabling accepts the
   [Gemma terms](https://ai.google.dev/gemma/terms) and
   [prohibited use policy](https://ai.google.dev/gemma/prohibited_use_policy).

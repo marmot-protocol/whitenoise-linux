@@ -208,7 +208,7 @@ stt_stop :: proc(ui: ^Ui_State) {
 }
 
 // The loaded audio at source index `att`, nil when that slot holds none.
-@(private = "file")
+@(private)
 msg_audio :: proc(msg: Msg_Ui, att: int) -> ^Video_View {
 	if att < 0 || att >= len(msg.attachments) || msg.attachments[att].kind != .Audio {
 		return nil

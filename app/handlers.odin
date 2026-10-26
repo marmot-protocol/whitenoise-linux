@@ -731,6 +731,16 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if mouse_released() {
 		for msg, i in ui.messages {
 			if translation_action(ui, msg, u32(i)) {return}
+			for slot, attachment in msg.attachments {
+				if slot.kind != .Audio {continue}
+				if translation_action(
+					ui,
+					msg,
+					u32(i) * 1024 + u32(attachment),
+					.Transcript,
+					attachment,
+				) {return}
+			}
 		}
 	}
 

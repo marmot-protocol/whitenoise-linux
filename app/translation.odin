@@ -25,13 +25,27 @@ Translation_Phase :: enum {
 }
 
 @(private)
+Translation_Source :: enum {
+	Body,
+	Transcript,
+}
+
+@(private)
+Translation_Key :: struct {
+	id:         string,
+	source:     Translation_Source,
+	attachment: int,
+}
+
+@(private)
 Translation_Result :: struct {
-	id, original, text: string,
-	error:              string, // static gettext key
-	phase:              Translation_Phase,
-	show:               bool,
-	current:            bool,
-	order:              u64,
+	key:            Translation_Key,
+	original, text: string,
+	error:          string, // static gettext key
+	phase:          Translation_Phase,
+	show:           bool,
+	current:        bool,
+	order:          u64,
 }
 
 @(private)
@@ -41,7 +55,7 @@ Translation_State :: struct {
 	status, model, percent:         u8,
 	account, group, source, target: string,
 	active:                         ^Translation_Result,
-	results:                        map[string]^Translation_Result,
+	results:                        map[Translation_Key]^Translation_Result,
 	order:                          u64,
 	language_menu:                  int,
 	language_choice:                int,
@@ -58,8 +72,22 @@ translation_target :: proc(ui: ^Ui_State) -> string {
 }
 
 @(private)
-translation_eligible :: proc(ui: ^Ui_State, msg: Msg_Ui) -> bool {
+translation_text :: proc(msg: Msg_Ui, source: Translation_Source, attachment: int) -> string {
+	if source == .Body {return msg.body}
+	view := msg_audio(msg, attachment)
+	if view == nil || !view.transcript_done {return ""}
+	return view.transcript
+}
+
+@(private)
+translation_eligible :: proc(
+	ui: ^Ui_State,
+	msg: Msg_Ui,
+	source: Translation_Source = .Body,
+	attachment: int = 0,
+) -> bool {
 	when !TRANSLATION_AVAILABLE {return false}
+	text := translation_text(msg, source, attachment)
 	return(
 		ui != nil &&
 		ui.prefs.translation_enabled &&
@@ -69,9 +97,9 @@ translation_eligible :: proc(ui: ^Ui_State, msg: Msg_Ui) -> bool {
 		len(msg.secrets) == 0 &&
 		msg.theme_name == "" &&
 		!ui.blocked[msg.sender_id] &&
-		len(msg.body) < TRANSLATION_TEXT_CAP &&
-		strings.trim_space(msg.body) != "" &&
-		!strings.contains(msg.body, "\x00") \
+		len(text) < TRANSLATION_TEXT_CAP &&
+		strings.trim_space(text) != "" &&
+		!strings.contains(text, "\x00") \
 	)
 }
 
@@ -90,7 +118,7 @@ translation_stop :: proc(ui: ^Ui_State) {
 
 @(private)
 translation_free :: proc(result: ^Translation_Result) {
-	for value in ([]string{result.id, result.original, result.text}) {
+	for value in ([]string{result.key.id, result.original, result.text}) {
 		mem.zero_slice(transmute([]u8)value)
 		delete(value)
 	}
@@ -124,27 +152,40 @@ translation_bind :: proc(ui: ^Ui_State) {
 	translation_clear(ui)
 	s.account, s.group = strings.clone(ui.account_ref), strings.clone(group)
 	s.source, s.target = strings.clone(source), strings.clone(target)
-	s.results = make(map[string]^Translation_Result)
+	s.results = make(map[Translation_Key]^Translation_Result)
 }
 
 @(private)
-translation_lookup :: proc(ui: ^Ui_State, msg: Msg_Ui) -> ^Translation_Result {
-	if !translation_eligible(ui, msg) {return nil}
-	result := ui.translation.results[msg.id]
-	if result != nil && result.original == msg.body {return result}
+translation_lookup :: proc(
+	ui: ^Ui_State,
+	msg: Msg_Ui,
+	source: Translation_Source = .Body,
+	attachment: int = 0,
+) -> ^Translation_Result {
+	if !translation_eligible(ui, msg, source, attachment) {return nil}
+	result := ui.translation.results[Translation_Key{msg.id, source, attachment}]
+	if result != nil &&
+	   result.original == translation_text(msg, source, attachment) {return result}
 	return nil
 }
 
 @(private)
-translation_request :: proc(ui: ^Ui_State, msg: Msg_Ui) {
-	if !translation_eligible(ui, msg) {return}
+translation_request :: proc(
+	ui: ^Ui_State,
+	msg: Msg_Ui,
+	source: Translation_Source = .Body,
+	attachment: int = 0,
+) {
+	if !translation_eligible(ui, msg, source, attachment) {return}
 	translation_bind(ui)
 	s := &ui.translation
-	if old := s.results[msg.id]; old != nil {
-		if old.original == msg.body &&
+	key := Translation_Key{msg.id, source, attachment}
+	text := translation_text(msg, source, attachment)
+	if old := s.results[key]; old != nil {
+		if old.original == text &&
 		   (old.phase == .Queued || old.phase == .Running || old.phase == .Ready) {return}
 		if s.active == old {translation_stop(ui)}
-		delete_key(&s.results, old.id)
+		delete_key(&s.results, old.key)
 		translation_free(old)
 	}
 	// Bound plaintext session memory. Only completed, least-recent requests can go.
@@ -155,20 +196,20 @@ translation_request :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 			if oldest == nil || result.order < oldest.order {oldest = result}
 		}
 		if oldest == nil {return}
-		delete_key(&s.results, oldest.id)
-		translation_reflow(ui, oldest.id)
+		delete_key(&s.results, oldest.key)
+		translation_reflow(ui, oldest.key.id)
 		translation_free(oldest)
 	}
 	s.order += 1
 	result := new(Translation_Result)
 	result^ = {
-		id       = strings.clone(msg.id),
-		original = strings.clone(msg.body),
+		key      = {strings.clone(msg.id), source, attachment},
+		original = strings.clone(text),
 		phase    = .Queued,
 		show     = true,
 		order    = s.order,
 	}
-	s.results[result.id] = result
+	s.results[result.key] = result
 	for &row in ui.messages {if row.id == msg.id {row.row_height = 0}}
 }
 
@@ -241,15 +282,22 @@ translation_tick :: proc(ui: ^Ui_State) {
 	s := &ui.translation
 	for _, result in s.results {result.current = false}
 	for msg in ui.messages {
-		result := s.results[msg.id]
-		if result !=
-		   nil {result.current = result.original == msg.body && translation_eligible(ui, msg)}
+		for source in Translation_Source {
+			count := source == .Body ? 1 : len(msg.attachments)
+			for attachment in 0 ..< count {
+				result := s.results[Translation_Key{msg.id, source, attachment}]
+				if result == nil {continue}
+				result.current =
+					result.original == translation_text(msg, source, attachment) &&
+					translation_eligible(ui, msg, source, attachment)
+			}
+		}
 	}
 	for _, result in s.results {
 		if result.current {continue}
 		if s.active == result {translation_stop(ui)}
-		delete_key(&s.results, result.id)
-		translation_reflow(ui, result.id)
+		delete_key(&s.results, result.key)
+		translation_reflow(ui, result.key.id)
 		translation_free(result)
 	}
 	if s.file != nil {
@@ -278,7 +326,7 @@ translation_tick :: proc(ui: ^Ui_State) {
 		   .Ready {translation_fail(ui, result, err == nil ? int(state.exit_code) : 2)}
 		wn_ipc_close(s.file)
 		s.file, s.child, s.active = nil, {}, nil
-		translation_reflow(ui, result.id)
+		translation_reflow(ui, result.key.id)
 	}
 	if s.paused {return}
 	// Queue only measured rows in the viewport, not a conversation's entire history.
@@ -292,7 +340,14 @@ translation_tick :: proc(ui: ^Ui_State) {
 				   msg.row_height <= 0 ||
 				   y + msg.row_height < 0 ||
 				   y > view.scrollContainerDimensions.height {continue}
-				if s.results[msg.id] == nil {translation_request(ui, msg)}
+				if s.results[Translation_Key{id = msg.id}] == nil {translation_request(ui, msg)}
+				for _, attachment in msg.attachments {
+					view := msg_audio(msg, attachment)
+					if view == nil || !view.transcript_open {continue}
+					key := Translation_Key{msg.id, .Transcript, attachment}
+					if s.results[key] ==
+					   nil {translation_request(ui, msg, .Transcript, attachment)}
+				}
 			}
 		}
 	}
@@ -317,17 +372,26 @@ translation_status :: proc(ui: ^Ui_State) -> string {
 }
 
 @(private)
-translation_controls :: proc(ui: ^Ui_State, index: u32, msg: Msg_Ui) {
-	result := translation_lookup(ui, msg)
+translation_controls :: proc(
+	ui: ^Ui_State,
+	index: u32,
+	msg: Msg_Ui,
+	source: Translation_Source = .Body,
+	attachment: int = 0,
+) {
+	result := translation_lookup(ui, msg, source, attachment)
 	if result == nil {return}
-	if clay.UI(clay.ID("TranslationControls", index))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			childGap = 4,
+	prefix := source == .Body ? "Translation" : "TranscriptTranslation"
+	if clay.UI(
+		clay.ID(source == .Body ? "TranslationControls" : "TranscriptTranslationControls", index),
+	)(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = 4,
+			},
 		},
-	},
 	) {
 		switch result.phase {
 		case .Queued:
@@ -340,39 +404,53 @@ translation_controls :: proc(ui: ^Ui_State, index: u32, msg: Msg_Ui) {
 				translation_status(ui),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
-			translation_progress(ui, fmt.tprintf("TranslationProgress%d", index))
+			translation_progress(ui, fmt.tprintf("%sProgress%d", prefix, index))
 		case .Ready:
 			micro_button(
-				fmt.tprintf("TranslationToggle%d", index),
+				fmt.tprintf("%sToggle%d", prefix, index),
 				tr(result.show ? N_("Show original") : N_("Show translation")),
 			)
 		case .Failed:
 			clay.Text(tr(result.error), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
-			micro_button(fmt.tprintf("TranslationRetry%d", index), tr("Try again"))
+			micro_button(fmt.tprintf("%sRetry%d", prefix, index), tr("Try again"))
 		case .Cancelled:
-			micro_button(fmt.tprintf("TranslationRetry%d", index), tr("Translate"))
+			micro_button(fmt.tprintf("%sRetry%d", prefix, index), tr("Translate"))
 		}
 		if result.phase == .Queued || result.phase == .Running {
-			micro_button(fmt.tprintf("TranslationCancel%d", index), tr("Cancel translation"))
+			micro_button(fmt.tprintf("%sCancel%d", prefix, index), tr("Cancel translation"))
 		}
 	}
 }
 
 @(private)
-translation_action :: proc(ui: ^Ui_State, msg: Msg_Ui, index: u32) -> bool {
-	result := translation_lookup(ui, msg)
+translation_action :: proc(
+	ui: ^Ui_State,
+	msg: Msg_Ui,
+	index: u32,
+	source: Translation_Source = .Body,
+	attachment: int = 0,
+) -> bool {
+	prefix := source == .Body ? "Translation" : "TranscriptTranslation"
+	if source == .Transcript &&
+	   clicked(fmt.tprintf("%sStart%d", prefix, index)) &&
+	   translation_eligible(ui, msg, source, attachment) {
+		ui.translation.paused = false
+		translation_request(ui, msg, source, attachment)
+		return true
+	}
+	result := translation_lookup(ui, msg, source, attachment)
 	if result == nil {return false}
-	if clicked(fmt.tprintf("TranslationToggle%d", index)) && result.phase == .Ready {
+	if clicked(fmt.tprintf("%sToggle%d", prefix, index)) && result.phase == .Ready {
 		result.show = !result.show
 		translation_reflow(ui, msg.id)
 		return true
 	}
-	if clicked(fmt.tprintf("TranslationRetry%d", index)) {
+	if clicked(fmt.tprintf("%sRetry%d", prefix, index)) {
 		ui.translation.paused = false
-		translation_request(ui, msg)
+		translation_request(ui, msg, source, attachment)
 		return true
 	}
-	if clicked(fmt.tprintf("TranslationCancel%d", index)) {
+	if clicked(fmt.tprintf("%sCancel%d", prefix, index)) {
 		if ui.translation.active == result {translation_stop(ui)} else {result.phase = .Cancelled}
 		return true
 	}
