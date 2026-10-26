@@ -14,6 +14,20 @@ Row_Chip :: enum {
 }
 
 @(private)
+chat_timestamp :: proc(index: u32, chat: Chat_Row_Ui) {
+	if clay.UI(clay.ID("ChatRowTime", index))({}) {
+		clay.Text(
+			chat.at,
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO, wrapMode = .None},
+		)
+		if hovered() && chat.activity_at > 0 && len(chat.at) > 0 {
+			context.allocator = context.temp_allocator
+			tooltip(format_full(chat.activity_at), .Above)
+		}
+	}
+}
+
+@(private)
 chat_row_height :: proc() -> f32 {
 	return 16 + max(36, max(chip_h(), 14) + 20)
 }
@@ -459,10 +473,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							if chat.unread > 0 {
 								unread_badge(clay.ID("ChatRowBadge", index), chat.unread)
 							}
-							clay.Text(
-								chat.at,
-								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
-							)
+							chat_timestamp(index, chat)
 							// Archive and the other row actions live in this menu,
 							// which right-click and long-press also open.
 							if hovered() {
