@@ -2022,6 +2022,9 @@ msgstr "人数を整数で入力して、もう一度お試しください。"
 msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
 msgstr "このバックアップの作成時に使ったパスワードを入力してください。この端末の設定、下書き、カスタム絵文字、テーマは置き換えられます。"
 
+msgid "Enter your bunker link to continue."
+msgstr "続行するには、バンカーリンクを入力してください。"
+
 msgid "Enter your nsec to continue."
 msgstr "続行するにはnsecを入力してください。"
 

@@ -2013,6 +2013,9 @@ msgstr ""
 msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
 msgstr ""
 
+msgid "Enter your bunker link to continue."
+msgstr ""
+
 msgid "Enter your nsec to continue."
 msgstr ""
 
