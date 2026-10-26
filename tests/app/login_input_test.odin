@@ -110,15 +110,50 @@ login_input_required :: proc(t: ^testing.T) {
 		"That key isn't an nsec. Double-check it and try again.",
 	)
 	testing.expect(t, auth_job == nil)
-	// Empty remote-signer forms must not get nsec-specific feedback.
-	for method in ([]Login_Method{.Bunker, .Pair}) {
-		clear(&ui.login_input)
-		delete(ui.login_error); ui.login_error = ""
-		ui.login_method = method
-		rl.PushKey(.ENTER, true)
-		handle_login(&ui, &client)
-		rl.PushKey(.ENTER, false)
-		testing.expect_value(t, ui.login_error, "")
-		testing.expect(t, auth_job == nil)
+	// Both sign-in surfaces submit through the real Bunker button and Enter.
+	for adding in ([]bool{false, true}) {
+		ui.add_account_open = adding
+		if !adding {clear(&ui.accounts)} else {append(&ui.accounts, "Offline fixture")}
+		ui.login_method = .Menu
+		for _ in 0 ..< 3 {frame(&ui)}
+		click(t, &ui, &client, "LoginBunkerBtn")
+		testing.expect_value(t, ui.login_method, Login_Method.Bunker)
+		for language in ([]string{"en", "it", "de", "ja"}) {
+			set_locale(language)
+			for input in ([]string{"", " 	\r\n", "\u00a0\u2003"}) {
+				clear(&ui.login_input)
+				append(&ui.login_input, ..transmute([]u8)input)
+				for keyboard in ([]bool{false, true}) {
+					delete(ui.login_error); ui.login_error = ""
+					for _ in 0 ..< 3 {frame(&ui)}
+					if keyboard {
+						rl.PushKey(.ENTER, true)
+						handle_login(&ui, &client)
+						rl.PushKey(.ENTER, false)
+					} else {click(t, &ui, &client, "LoginGo")}
+					if !testing.expect_value(t, ui.login_error, tr("Enter your bunker link to continue.")) {return}
+					testing.expect(t, auth_job == nil)
+					testing.expect_value(t, string(ui.login_input[:]), input)
+					commands := frame(&ui)
+					visible := false
+					for command in commands.internalArray[:commands.length] {
+						if command.commandType != .Text {continue}
+						text := command.renderData.text.stringContents
+						if string(text.chars[:text.length]) == tr("Enter your bunker link to continue.") {visible = true}
+					}
+					testing.expect(t, visible, "required-link feedback is rendered on the next frame")
+				}
+			}
+		}
 	}
+	set_locale("en")
+	// Pair retains its existing empty-input behavior, without Bunker feedback.
+	clear(&ui.login_input)
+	delete(ui.login_error); ui.login_error = ""
+	ui.login_method = .Pair
+	rl.PushKey(.ENTER, true)
+	handle_login(&ui, &client)
+	rl.PushKey(.ENTER, false)
+	testing.expect_value(t, ui.login_error, "")
+	testing.expect(t, auth_job == nil)
 }

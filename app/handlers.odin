@@ -103,6 +103,11 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	submitted := ui.login_method != .Menu && (rl.IsKeyPressed(.ENTER) || clicked("LoginGo"))
+	if submitted && ui.login_method == .Bunker && strings.trim_space(string(ui.login_input[:])) == "" {
+		delete(ui.login_error)
+		ui.login_error = strings.clone(tr("Enter your bunker link to continue."))
+		return
+	}
 
 	// Reject anything but a well-formed nsec before the runtime sees it:
 	// it reads other input as a public identity, and either way answers
