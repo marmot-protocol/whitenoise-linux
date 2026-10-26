@@ -778,6 +778,9 @@ msgstr ""
 msgid "Chat options"
 msgstr ""
 
+msgid "Chat restored."
+msgstr ""
+
 msgid "Chat with AI agents, end-to-end encrypted like any other chat. Each agent runs on a computer or server you control, using its own account."
 msgstr ""
 
@@ -1355,6 +1358,9 @@ msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr ""
 
 msgid "Couldn't open the microphone. Please try again."
+msgstr ""
+
+msgid "Couldn't open the restored chat. Please try again."
 msgstr ""
 
 msgid "Couldn't play speech. Check your audio output and try again."

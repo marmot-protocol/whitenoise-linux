@@ -1532,17 +1532,46 @@ set_archived :: proc(ui: ^Ui_State, client: ^marmot.Client, group_id: string, ar
 		return
 	}
 	marmot.app_group_record_free(record)
+	// The caller may lend an archived row's id, or a search-only chat's id.
+	// Keep it alive while refreshing the lists that own those rows.
+	restored_id := strings.clone(group_id, context.temp_allocator)
+	stashed_files := !archived && ui.selected >= 0 && len(ui.staged) > 0
+	if !archived {stash_draft(ui); stash_staged(ui)}
 	if ui.location_open {geo_picker_close(ui)}
+	selected := ui.selected
 	ui.selected = -1
-	refresh_after_action(ui, client)
+	refreshed := refresh_after_action(ui, client)
+	if !archived {
+		if !refreshed {
+			// A failed refresh leaves the old list intact.
+			ui.selected = selected >= 0 && selected < len(ui.chats) ? selected : -1
+			// Return only files moved by this action, not an older saved draft.
+			if stashed_files && ui.selected >= 0 {
+				key := compose_draft_key(ui)
+				ui.staged = ui.staged_drafts[key]
+				ui.staged_drafts[key] = {}
+			}
+			return
+		}
+		if !select_by_id(ui, client, restored_id) {
+			set_status(ui, tr("Couldn't open the restored chat. Please try again."), .Error)
+			return
+		}
+		ui.page = .Chats
+		ui.chat_filter = .Chats
+		clear(&ui.sidebar_filter)
+		ui.new_chat_open = false
+		ui.banner_seen = ""
+		set_status(ui, tr("Chat restored."), .Info)
+	}
 }
 
-refresh_after_action :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+refresh_after_action :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	selected_group: string
 	if ui.selected >= 0 {
 		selected_group = ui.chats[ui.selected].group_id
 	}
-	load_chat_list(client, ui.account_ref, ui)
+	if !load_chat_list(client, ui.account_ref, ui) {return false}
 	ui.selected = -1
 	for chat, i in ui.chats {
 		if chat.group_id == selected_group {
@@ -1551,6 +1580,7 @@ refresh_after_action :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 	if ui.location_open && ui.selected < 0 {geo_picker_close(ui)}
+	return true
 }
 
 NOTES_TITLE :: "Notes to self"

@@ -1470,7 +1470,7 @@ row_to_ui :: proc(
 	}
 }
 
-load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_State) {
+load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_State) -> bool {
 	chat_list_revision += 1 // an older background read cannot replace this explicit refresh
 	job := Chat_List_Work {
 		client  = client,
@@ -1480,6 +1480,7 @@ load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_Stat
 	chat_list_snapshot(&job, ui)
 	chat_list_read(&job)
 	chat_list_apply(ui, &job)
+	return job.err == "" && job.rows != nil
 }
 
 @(private)

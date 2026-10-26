@@ -781,6 +781,9 @@ msgstr "Caricamento dell'elenco chat non riuscito: %s"
 msgid "Chat options"
 msgstr "Opzioni chat"
 
+msgid "Chat restored."
+msgstr "Chat ripristinata."
+
 msgid "Chat with AI agents, end-to-end encrypted like any other chat. Each agent runs on a computer or server you control, using its own account."
 msgstr "Chatta con gli agenti IA con crittografia end-to-end, come in qualsiasi altra chat. Ogni agente viene eseguito su un computer o server che controlli, usando un proprio account."
 
@@ -1360,6 +1363,9 @@ msgstr "Impossibile aprire il backup. Ricontrolla la password e riprova."
 
 msgid "Couldn't open the microphone. Please try again."
 msgstr "Impossibile aprire il microfono. Riprova."
+
+msgid "Couldn't open the restored chat. Please try again."
+msgstr "Impossibile aprire la chat ripristinata. Riprova."
 
 msgid "Couldn't play speech. Check your audio output and try again."
 msgstr "Impossibile riprodurre la voce. Controlla l'uscita audio e riprova."
