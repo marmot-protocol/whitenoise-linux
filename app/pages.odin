@@ -705,6 +705,7 @@ do_create_identity :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // `active` is the account to land on (the one just added); empty falls
 // back to the first row, which is what boot and sign-out want.
 after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
+	if ui.location_open {geo_picker_close(ui)}
 	keys_forget(ui); close_export(ui); session_string_forget(&ui.profile.nsec)
 	kp_rows_free(&ui.kp_list); ui.kp_fetched = false
 	delete(ui.kp_own_json); ui.kp_own_json = ""
@@ -770,6 +771,7 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 
 @(private)
 finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
+	if ui.location_open {geo_picker_close(ui)}
 	photo_cancel(ui)
 	keys_forget(ui); close_export(ui)
 	session_string_forget(&ui.profile.nsec)

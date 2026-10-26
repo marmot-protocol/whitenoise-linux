@@ -32,6 +32,7 @@ cp "$HERE/build/app" "$PREFIX/bin/whitenoise"
 SPEECH=
 if [ "$(uname -s)" = Linux ]; then SPEECH=1; fi
 if [ -n "$SPEECH" ]; then cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$LIB/"; fi
+if [ "$(uname -s)" = Linux ]; then cp "$HERE/build/wn-location" "$LIB/"; fi
 mkdir -p "$RES/licenses"
 cp "$HERE/build/wn-font" "$HERE/build/wn-image" "$HERE/build/wn-archive" "$HERE/build/wn-pdf" \
   "$HERE/build/wn-mesh" "$HERE/build/wn-fbx" "$HERE/build/wn-math" "$HERE/build/wn-nes" "$LIB/"

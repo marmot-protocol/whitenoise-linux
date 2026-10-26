@@ -845,6 +845,9 @@ msgstr "このチャットの移動先を選んでください。"
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr "既知の送信者を選択するか、64文字の16進数の公開鍵を入力してください。"
 
+msgid "Choose a location before sending."
+msgstr "送信する前に位置を選んでください。"
+
 msgid "Choose a sign-in method."
 msgstr "サインイン方法を選んでください。"
 
@@ -1235,6 +1238,9 @@ msgstr "%sに転送できませんでした。チャットを開いて再試行�
 
 msgid "Couldn't forward. Please try again."
 msgstr "転送できませんでした。もう一度お試しください。"
+
+msgid "Couldn't get your location. Check your desktop location permissions or pick a point on the map."
+msgstr "現在地を取得できませんでした。デスクトップの位置情報の権限を確認するか、地図上で位置を選んでください。"
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "音声を聞き取れませんでした。はっきり話して、もう一度お試しください。"
@@ -1809,6 +1815,9 @@ msgstr "チャットをフォルダにドラッグするとそこに置かれま
 
 msgid "Drag a folder to reorder it. Your chats appear here once you have some."
 msgstr "フォルダをドラッグすると並べ替えられます。チャットができるとここに表示されます。"
+
+msgid "Drag the map to place the pin, or use your current location."
+msgstr "地図をドラッグしてピンの位置を決めるか、現在地を使用してください。"
 
 msgid "Drop files to attach"
 msgstr "ファイルをドロップして添付"
@@ -3664,6 +3673,9 @@ msgstr "リレーリストを再公開"
 msgid "Republish your relay lists"
 msgstr "リレーリストを再公開"
 
+msgid "Requesting your location. Approve the desktop permission prompt if shown."
+msgstr "現在地を取得しています。デスクトップの許可ダイアログが表示された場合は、アクセスを許可してください。"
+
 msgid "Reset"
 msgstr "リセット"
 
@@ -3961,6 +3973,9 @@ msgstr "テスト通知を送信"
 #, c-format
 msgid "Send failed: %s"
 msgstr "送信に失敗しました: %s"
+
+msgid "Send location"
+msgstr "位置情報を送信"
 
 msgid "Send test"
 msgstr "テスト送信"
@@ -4674,6 +4689,9 @@ msgstr "プロジェクトごとに別のグループを使い、最初にプロ
 msgid "Use a shorter search."
 msgstr "検索キーワードを短くしてください。"
 
+msgid "Use current location"
+msgstr "現在地を使用"
+
 msgid "Use emoji image"
 msgstr "絵文字の画像を使用"
 
@@ -4920,6 +4938,9 @@ msgstr "チャットができるとここに表示されます。"
 
 msgid "Your current password"
 msgstr "現在のパスワード"
+
+msgid "Your desktop location service handles the permission request. Nothing is sent to the chat until you choose Send location."
+msgstr "デスクトップの位置情報サービスが許可のリクエストを処理します。「位置情報を送信」を選ぶまで、チャットには送信されません。"
 
 msgid "Your disk is filling up"
 msgstr "ディスクの空きが少なくなっています"

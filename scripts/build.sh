@@ -480,6 +480,16 @@ if [ "${1:-}" != sources ]; then
       $(pkg-config --cflags --libs poppler-glib cairo fontconfig) -lm -o "$HERE/build/wn-pdf"
     build_cache_store "$PDF_KEY" "$HERE/build/pdf.stamp" "$HERE/build/wn-pdf"
   fi
+  if [ "$(uname -s)" = Linux ]; then
+    # Explicit, permission-backed one-shot location through the desktop portal.
+    LOCATION_KEY="$(native_key 'location O2 Wall Wextra gio m' "$HERE/app/location.c")"
+    if ! build_cache_fresh "$LOCATION_KEY" "$HERE/build/location.stamp" "$HERE/build/wn-location"; then
+      rm -f "$HERE/build/location.stamp" "$HERE/build/wn-location"
+      cc -O2 -Wall -Wextra "$HERE/app/location.c" \
+        $(pkg-config --cflags --libs gio-2.0) -lm -o "$HERE/build/wn-location"
+      build_cache_store "$LOCATION_KEY" "$HERE/build/location.stamp" "$HERE/build/wn-location"
+    fi
+  fi
   FBX_KEY="$(native_key 'fbx O2 Wall Wextra m' "$HERE/app/fbx_helper.c" "$HERE/app/fbx_shim.c" "$UFBX/ufbx.h" "$HERE/build/fbx/ufbx.o")"
   if ! build_cache_fresh "$FBX_KEY" "$HERE/build/fbx/stamp" "$HERE/build/wn-fbx"; then
     rm -f "$HERE/build/fbx/stamp" "$HERE/build/wn-fbx"
@@ -832,6 +842,11 @@ if [ "${1:-}" = test ]; then
   "$HERE/build/clay/scroll-test"
   # Needs the Linux-only speech runtime (see the speech helpers above).
   if [ "$(uname -s)" = Linux ]; then
+    cc -O2 -Wall -Wextra -DWN_LOCATION_TIMEOUT_MS=1000 "$HERE/app/location.c" \
+      $(pkg-config --cflags --libs gio-2.0) -lm -o "$HERE/build/wn-location-test-helper"
+    cc -O2 -Wall -Wextra "$HERE/tests/location-portal-test.c" \
+      $(pkg-config --cflags --libs gio-2.0) -lm -o "$HERE/build/location-portal-test"
+    "$HERE/build/location-portal-test" "$HERE/build/wn-location-test-helper"
     cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/tests/stt-test.c" "$HERE/build/libwnipc.a" \
       -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
       $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 libavformat libavcodec libavutil libswresample libcrypto) -pthread -lm -o "$HERE/build/stt-test"

@@ -322,6 +322,13 @@ for speech in tts stt; do
   fi
 done
 if [ "$SYSTEM" = Linux ]; then
+  LOCATION_KEY="$(cross_pkg_key gio-2.0)"
+  KEY="$(cross_key "$LINK_ID location $LOCATION_KEY" "$HERE/app/location.c" "${APP_HEADERS[@]}")"
+  if ! cross_fresh location "$KEY" "$OUT/wn-location"; then
+    "$CC" "${CFLAGS[@]}" "$HERE/app/location.c" \
+      $(pkg-config --cflags --libs gio-2.0) "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-location"
+    cross_store location "$KEY" "$OUT/wn-location"
+  fi
   WEBVIEW_KEY="$(cross_pkg_key webkit2gtk-4.1)"
   KEY="$(cross_key "$LINK_ID webview $WEBVIEW_KEY" "$HERE/app/webview.c" "${APP_HEADERS[@]}" "$OUT/libwnipc.a")"
   if ! cross_fresh webview "$KEY" "$OUT/wn-webview"; then

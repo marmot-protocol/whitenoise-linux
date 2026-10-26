@@ -94,6 +94,7 @@ ICON_BRUSH :: "\uf1fc"
 ICON_BUG :: "\uf188"
 ICON_DOWNLOAD :: "\uf019"
 ICON_PIN :: "\uf08d"
+ICON_LOCATION :: "\uf041"
 ICON_BELL_OFF :: "\uf1f6"
 ICON_ENVELOPE :: "\uf0e0"
 ICON_ENVELOPE_OPEN :: "\uf2b6"
@@ -132,6 +133,7 @@ ICON_CODEPOINTS := []rune {
 	0xF121,
 	0xF00D,
 	0xF005,
+	0xF041,
 }
 
 // Seed for the picker's recents on a fresh settings file.
@@ -829,6 +831,7 @@ app_main :: proc() {
 			// Latch before drains can invalidate a preview. Its closing frame
 			// still owns input, including global shortcuts and media handlers.
 			photo_captured := photo_input_capture(&ui)
+			location_captured := ui.location_open
 			photo_interactive := photo_image(&ui.photo).data != nil
 			defer messages_collect()
 			defer chats_collect()
@@ -927,7 +930,9 @@ app_main :: proc() {
 			// Interface zoom shortcuts (Ctrl + / - / 0).
 			photo_check_target(&ui)
 			photo_crop_drain(&ui, client, false)
-			if !photo_captured && (rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL)) {
+			if !photo_captured &&
+			   !location_captured &&
+			   (rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL)) {
 				if rl.IsKeyPressed(.EQUAL) {
 					ui.prefs.zoom_pct += 10
 					apply_zoom(&ui)
@@ -1014,7 +1019,10 @@ app_main :: proc() {
 			}
 			// A drag-selection ending with text selected feeds the primary
 			// selection (select-to-copy), except from the masked nsec field.
-			if !photo_captured && rl.IsMouseButtonReleased(.LEFT) && text_drag != nil {
+			if !photo_captured &&
+			   !location_captured &&
+			   rl.IsMouseButtonReleased(.LEFT) &&
+			   text_drag != nil {
 				if text_drag != &ui.login_input &&
 				   text_drag != &ui.socks5_password &&
 				   ui.ed_target == text_drag &&
@@ -1047,10 +1055,16 @@ app_main :: proc() {
 			// Wheel over a 3D tile (hover from last frame's build) zooms
 			// the model instead of scrolling the timeline.
 			wheel := rl.GetMouseWheelMoveV()
-			if photo_captured {wheel = {}; scroll_residual = {}}
+			location_scroll := location_captured || ui.location_open
+			if photo_captured ||
+			   (location_scroll &&
+					   (!ui.location_open || !clay.PointerOver(clay.ID("LocationModal")))) {
+				wheel = {}
+				scroll_residual = {}
+			}
 			// Ctrl + wheel zooms the interface; the wheel is consumed so
 			// it doesn't also scroll.
-			if ctrl_down() && wheel.y != 0 {
+			if !location_scroll && ctrl_down() && wheel.y != 0 {
 				ui.prefs.zoom_pct += wheel.y > 0 ? 10 : -10
 				apply_zoom(&ui)
 				save_settings(&ui)
@@ -1072,6 +1086,7 @@ app_main :: proc() {
 			wheel.y *= f32(ui.prefs.scroll_speed) / 100
 			if orbit_hover != nil || geo_hover != "" {
 				wheel = {}
+				if location_scroll {scroll_residual = {}}
 			}
 			// Wheel notches land in a residual that drains a fraction per
 			// frame, so a scroll glides to a stop instead of stepping.
@@ -1399,7 +1414,8 @@ app_main :: proc() {
 			}
 
 			long_press_tick() // before any handler reads long_pressed
-			if !photo_captured {
+			location_captured = location_captured || ui.location_open
+			if !photo_captured && !location_captured {
 				if clicked("LockNow") {
 					lock_now(&ui)
 					lock_wait_frame()
@@ -1440,6 +1456,12 @@ app_main :: proc() {
 				handle_confirm(&ui, client)
 			} else if ui.link_open {
 				handle_link_modal(&ui)
+			} else if location_captured {
+				if ui.location_open {
+					handle_geo(&ui)
+					handle_geo_picker(&ui, client)
+				}
+				if !ui.location_open {scroll_residual = {}}
 			} else if nes_player.open {
 				handle_nes_input(&ui) // the game owns the keyboard
 			} else if ui.folder_open {
@@ -1487,6 +1509,8 @@ app_main :: proc() {
 			// release, so dragging across a link doesn't open it.
 			photo_captured = photo_captured || photo_input_capture(&ui)
 			if !photo_captured &&
+			   !location_captured &&
+			   !ui.location_open &&
 			   !ui.pal_open &&
 			   !ui.link_open &&
 			   !ui.gs_open &&
@@ -1539,7 +1563,7 @@ app_main :: proc() {
 			// hardware (phosh/squeekboard) whether that reads as helpful or
 			// as in the way; if it is in the way, the fix is a focus state
 			// that starts empty on a tap_size() window and fills on a tap.
-			if photo_captured {
+			if photo_captured || location_captured || ui.location_open {
 				text_field_live = false
 				for rl.GetCharPressed() != 0 {}
 			}
@@ -1553,7 +1577,7 @@ app_main :: proc() {
 				)
 			}
 			text_field_live = false
-			if !photo_captured {
+			if !photo_captured && !location_captured && !ui.location_open {
 				handle_orbit()
 				handle_gcode_bar()
 				handle_anim_bar()

@@ -673,6 +673,16 @@ Ui_State :: struct {
 	poll_inputs:                                           [dynamic][dynamic]u8, // option drafts, blanks skipped
 	poll_focus:                                            int, // which option input has the caret (focus == .PollOpt)
 	poll_multi_in:                                         bool, // modal's multiple-choice toggle
+	location_open:                                         bool,
+	location_selected:                                     bool,
+	location_busy:                                         bool,
+	location_error:                                        bool,
+	location_request:                                      u64,
+	location_pin:                                          Geo_Point,
+	location_account:                                      string,
+	location_group:                                        string,
+	location_thread:                                       string,
+	location_issue:                                        string,
 	theme_edit:                                            bool, // theme-editor modal
 	theme_fields:                                          [dynamic][dynamic]u8, // one box per THEME_FIELDS entry; empty = derive
 	theme_flags:                                           [dynamic]bool, // one per THEME_FLAGS entry

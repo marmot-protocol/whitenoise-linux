@@ -362,6 +362,10 @@ phone_back :: proc(ui: ^Ui_State) {
 
 // Close whatever the detail was showing, which puts the rail back.
 phone_back_action :: proc(ui: ^Ui_State) {
+	if ui.location_open {
+		geo_picker_close(ui)
+		return
+	}
 	if ui.new_chat_open {
 		close_new_chat(ui)
 		return
@@ -620,6 +624,7 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 		ui.fwd_open ||
 		ui.sticker_open ||
 		ui.ov_open ||
+		ui.location_open ||
 		ui.qr_open ||
 		ui.lang_open ||
 		ui.shortcuts_open ||
