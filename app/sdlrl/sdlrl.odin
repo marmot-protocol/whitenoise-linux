@@ -1543,76 +1543,87 @@ get_glyph :: proc(font_id: u16, px: u16, r: rune) -> (Glyph, int) {
 		return {advance = f32(px) / 2}, 0
 	}
 
-	file := stack[0]
-	for candidate in stack {
-		if stbtt.FindGlyphIndex(&state.fonts[candidate].info, r) != 0 {
-			file = candidate
-			break
+	// Private-use text follows the bundled Nerd Font convention. Theme
+	// faces can assign these same codepoints to unrelated glyphs (Kalam).
+	file := -1
+	if font_id != IconFont &&
+	   (r >= 0xE000 && r <= 0xF8FF ||
+			   r >= 0xF0000 && r <= 0xFFFFD ||
+			   r >= 0x100000 && r <= 0x10FFFD) {
+		for candidate in state.stacks[IconFont] {
+			if stbtt.FindGlyphIndex(&state.fonts[candidate].info, r) != 0 {
+				file = candidate
+				break
+			}
+		}
+	}
+	if file < 0 {
+		file = stack[0]
+		for candidate in stack {
+			if stbtt.FindGlyphIndex(&state.fonts[candidate].info, r) != 0 {
+				file = candidate
+				break
+			}
 		}
 	}
 
 	// Separate cached chalk coverage from the untouched face. Switching back
 	// to any other theme restores its original glyph textures immediately.
 	key := glyph_key(file, px, r) | (ChalkDrawn ? u64(1) << 39 : 0)
-	if cached, hit := state.glyphs[key]; hit {
-		return cached, file
-	}
+	glyph, hit := state.glyphs[key]
+	if !hit {
 
-	info := &state.fonts[file].info
-	scale := stbtt.ScaleForPixelHeight(info, f32(px))
-	advance, lsb: c.int
-	stbtt.GetCodepointHMetrics(info, r, &advance, &lsb)
+		info := &state.fonts[file].info
+		scale := stbtt.ScaleForPixelHeight(info, f32(px))
+		advance, lsb: c.int
+		stbtt.GetCodepointHMetrics(info, r, &advance, &lsb)
 
-	glyph := Glyph {
-		advance = f32(advance) * scale,
-		file    = file,
-	}
-	w, h, xoff, yoff: c.int
-	bitmap := stbtt.GetCodepointBitmap(info, scale, scale, r, &w, &h, &xoff, &yoff)
-	if bitmap != nil && w > 0 && h > 0 {
-		defer stbtt.FreeBitmap(bitmap, nil)
-		rgba := make([]u8, int(w) * int(h) * 4, context.temp_allocator)
-		for i in 0 ..< int(w) * int(h) {
-			rgba[i * 4 + 0] = 255
-			rgba[i * 4 + 1] = 255
-			rgba[i * 4 + 2] = 255
-			rgba[i * 4 + 3] = bitmap[i]
-			if ChalkDrawn {
-				grain := chalk_hash(u32(i) ~ u32(r))
-				// Small static pores, not missing strokes: body text remains
-				// readable at 11 px, and icons keep their recognizable silhouette.
-				rgba[i * 4 + 3] = u8(
-					u32(bitmap[i]) * (grain % 19 == 0 ? 145 : 218 + grain % 38) / 255,
-				)
+		glyph = Glyph {
+			advance = f32(advance) * scale,
+			file    = file,
+		}
+		w, h, xoff, yoff: c.int
+		bitmap := stbtt.GetCodepointBitmap(info, scale, scale, r, &w, &h, &xoff, &yoff)
+		if bitmap != nil && w > 0 && h > 0 {
+			defer stbtt.FreeBitmap(bitmap, nil)
+			rgba := make([]u8, int(w) * int(h) * 4, context.temp_allocator)
+			for i in 0 ..< int(w) * int(h) {
+				rgba[i * 4 + 0] = 255
+				rgba[i * 4 + 1] = 255
+				rgba[i * 4 + 2] = 255
+				rgba[i * 4 + 3] = bitmap[i]
+				if ChalkDrawn {
+					grain := chalk_hash(u32(i) ~ u32(r))
+					// Small static pores, not missing strokes: body text remains
+					// readable at 11 px, and icons keep their recognizable silhouette.
+					rgba[i * 4 + 3] = u8(
+						u32(bitmap[i]) * (grain % 19 == 0 ? 145 : 218 + grain % 38) / 255,
+					)
+				}
+			}
+			tex := sdl.CreateTexture(state.renderer, .RGBA32, .STATIC, i32(w), i32(h))
+			track_texture(tex)
+			if tex != nil {
+				sdl.UpdateTexture(tex, nil, raw_data(rgba), w * 4)
+				sdl.SetTextureBlendMode(tex, {.BLEND})
+				sdl.SetTextureScaleMode(tex, .LINEAR)
+				glyph.tex = tex
+				glyph.w = i32(w)
+				glyph.h = i32(h)
+				glyph.xoff = i32(xoff)
+				glyph.yoff = i32(yoff)
 			}
 		}
-		tex := sdl.CreateTexture(state.renderer, .RGBA32, .STATIC, i32(w), i32(h))
-		track_texture(tex)
-		if tex != nil {
-			sdl.UpdateTexture(tex, nil, raw_data(rgba), w * 4)
-			sdl.SetTextureBlendMode(tex, {.BLEND})
-			sdl.SetTextureScaleMode(tex, .LINEAR)
-			glyph.tex = tex
-			glyph.w = i32(w)
-			glyph.h = i32(h)
-			glyph.xoff = i32(xoff)
-			glyph.yoff = i32(yoff)
-
-			// Icon glyphs are laid out by their ink, not by the font's
-			// advance: Nerd Font cells carry wide, asymmetric bearings,
-			// so an advance-sized box leaves the mark visibly off-centre
-			// inside a square button. The box becomes the ink plus a
-			// symmetric bearing, and DrawTextLine centers the ink in it
-			// vertically too.
-			if font_id == IconFont {
-				pad := f32(px) / 8
-				glyph.advance = f32(w) + 2 * pad
-				glyph.xoff = i32(pad)
-				glyph.icon = true
-			}
-		}
+		state.glyphs[key] = glyph
 	}
-	state.glyphs[key] = glyph
+	// Share the raster, but keep button centering out of cached text metrics.
+	// The same Nerd Font glyph can appear inline and in an icon button.
+	if font_id == IconFont && glyph.tex != nil {
+		pad := f32(px) / 8
+		glyph.advance = f32(glyph.w) + 2 * pad
+		glyph.xoff = i32(pad)
+		glyph.icon = true
+	}
 	return glyph, file
 }
 
