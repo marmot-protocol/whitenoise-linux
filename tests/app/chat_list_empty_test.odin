@@ -1,6 +1,43 @@
 package main
 
+import marmot "../marmot"
+import "base:runtime"
+import "core:sync"
 import "core:testing"
+
+@(test)
+archived_inbox_boundary :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	context.allocator = runtime.default_context().allocator
+	defer profile_session_clear()
+	ui := Ui_State{}
+	defer {
+		for chat in ui.chats {chat_free(chat)}
+		delete(ui.chats)
+		delete(ui.prefs.pinned)
+	}
+	row := marmot.Presented_Chat_Row {
+		row = {
+			group_id_hex = "archived",
+			archived = true,
+			conversation_kind = .GROUP,
+			unread_count = 2,
+		},
+	}
+	append(&ui.chats, row_to_ui(nil, &row, "account", nil, nil, nil))
+	append(
+		&ui.chats,
+		chat_clone(Chat_Row_Ui{group_id = "active", conversation_kind = .GROUP, unread = 1}),
+	)
+	ui.prefs.pinned["archived"] = true
+	for scope in ([]Chat_Filter{.Chats, .Unread, .Groups}) {
+		ui.chat_filter = scope
+		rows, total := chat_rail_matches(&ui)
+		testing.expect_value(t, total, 1)
+		testing.expect(t, len(rows) == 1 && ui.chats[rows[0]].group_id == "active")
+	}
+}
 
 @(test)
 inbox_filter_boundaries :: proc(t: ^testing.T) {
@@ -49,23 +86,4 @@ inbox_filter_boundaries :: proc(t: ^testing.T) {
 	ui.filter_hits[2] = true
 	rows, _ = chat_rail_matches(&ui)
 	testing.expect(t, len(rows) == 1 && ui.chats[rows[0]].group_id == "group")
-
-	append(
-		&ui.archived,
-		Chat_Row_Ui {
-			group_id = "old",
-			title = "Old conversation",
-			preview = "project archive",
-			conversation_kind = .DIRECT,
-		},
-	)
-	defer delete(ui.archived)
-	ui.chat_filter = .Archived
-	rows, total = chat_rail_matches(&ui)
-	testing.expect_value(t, total, 1)
-	testing.expect_value(t, len(rows), 0)
-	clear(&ui.sidebar_filter)
-	append(&ui.sidebar_filter, "project")
-	rows, _ = chat_rail_matches(&ui)
-	testing.expect(t, len(rows) == 1 && ui.archived[rows[0]].group_id == "old")
 }

@@ -13,6 +13,7 @@ esac
 shift
 bash "$HERE/scripts/observability.sh"
 source "$HERE/scripts/whip-flags.sh"
+
 if [ -d "$HERE/build/odin-root" ]; then
   export ODIN_ROOT="$HERE/build/odin-root"
 fi
@@ -41,6 +42,9 @@ else
 fi
 cp -a "$HERE/app" "$fixture/app"
 cp -a "$HERE/tests/app/." "$fixture/app/"
+if [ ${#WHIP_ARGS[@]} -eq 0 ]; then
+  rm "$fixture/app/sdlrl/whip_render_test.odin"
+fi
 # Internal tests share the source file's private symbols.
 for module in nevent profiles vault_gate vault_pw tick grouphero video; do
   sed '/^package main$/d' "$fixture/app/${module}_internal_test.odin" >>"$fixture/app/$module.odin"

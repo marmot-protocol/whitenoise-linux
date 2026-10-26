@@ -397,6 +397,7 @@ gs_jump :: proc(ui: ^Ui_State, client: ^marmot.Client, group, msg_id: string) {
 	ui.page = .Chats
 	delete(ui.jump_id)
 	ui.jump_id = id
+	ui.reading_pending = {}
 	ui.gs_jump_pending = true
 	ui.scroll_pending = false
 }

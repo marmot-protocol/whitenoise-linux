@@ -14,7 +14,9 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if ui.focus == .Whip {return}
 	if ui.sticker_open {handle_sticker_panel(ui); return}
+	if len(ui.accounts) > 0 && whip_inbox_input(ui) {return}
 	// Wipe private keys off their page without disarming other settings actions.
 	if ui.page != .Settings ||
 	   (ui.settings_section != .Keys && (len(ui.keys_nsec) > 0 || ui.keys_nsec_show)) {
@@ -195,7 +197,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Theme browsing needs hover deadlines and keyboard input on every frame,
 	// not just the pointer release used by the remaining page actions.
 	if ui.page == .Settings {handle_settings(ui, client)}
-	if ui.page == .Whip {whip_pane_input(ui)}
+	if ui.page == .Chats && ui.whip_open {whip_pane_input(ui)}
 
 	if !mouse_released() {
 		return
@@ -207,24 +209,39 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if ui.page == .Chats || ui.page == .Archived {
-		ids := [4]string{"AllPill", "UnreadPill", "GroupsPill", "ArchivedPill"}
+	if ui.page == .Chats {
+		ids := #sparse[Chat_Filter]string {
+			.Chats  = "AllPill",
+			.Unread = "UnreadPill",
+			.Groups = "GroupsPill",
+			.Whip   = "WhipPill",
+		}
 		for scope in Chat_Filter {
-			if !clicked(ids[int(scope)]) &&
-			   !(scope == .Chats && clicked("ChatListShowAll")) {continue}
+			if scope == .Whip && !rl.WhipAvailable() {continue}
+			if !clicked(ids[scope]) && !(scope == .Chats && clicked("ChatListShowAll")) {continue}
 			ui.chat_filter = scope
+			ui.chat_folder = ""
 			ui.page = .Chats
-			if scope == .Archived {load_archived(client, ui)}
 			clear(&ui.rail_rows)
 			if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
 				data.scrollPosition.y = 0
 			}
 			return
 		}
+		if ui.prefs.recent_chats {
+			for name, i in ui.prefs.folders {
+				if !clay.PointerOver(clay.ID("FolderPill", u32(i))) {continue}
+				ui.chat_filter, ui.chat_folder = .Chats, name
+				clear(&ui.rail_rows)
+				if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
+					data.scrollPosition.y = 0
+				}
+				return
+			}
+		}
 	}
 
 	for page in Page {
-		if page == .Whip && !rl.WhipAvailable() {continue}
 		if clay.PointerOver(clay.ID("Nav", u32(page))) && ui.page != page {
 			settings_theme_preview_reset(ui)
 			ui.page = page
@@ -244,58 +261,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				)
 			case .Profile:
 				load_profile(client, ui)
-			case .Whip:
-				ui.whip_detail = false
 			}
 			return
-		}
-	}
-
-	if ui.page == .Whip {
-		if clicked("WhipRetry") || clicked("WhipRailRetry") {rl.WhipClose()}
-		if clicked("WhipNewProject") && !ui.whip_picking_project && !ui.whip_creating {
-			if rl.FileDialogPending() || photo_input_capture(ui) {
-				set_status(
-					ui,
-					tr("Couldn't choose a folder. Close your open file picker and try again."),
-					.Info,
-				)
-				return
-			}
-			ui.whip_picking_project = true
-			rl.OpenFolderDialog()
-			return
-		}
-		for project in rl.WhipProjects() {
-			if clay.PointerOver(clay.ID("WhipProjectAvatar", project.id)) {
-				if photo_pick_begin(ui, .Whip, project.dir) {rl.OpenFileDialog(false)}
-				return
-			}
-			if clay.PointerOver(clay.ID("WhipProject", project.id)) {
-				ui.whip_project = project.id
-				ui.whip_detail = true
-				return
-			}
-		}
-		if ui.whip_tab_op == .None {
-			if clicked("WhipNewTab") && rl.WhipTabChange(.New, ui.whip_project) {
-				ui.whip_tab_op, ui.whip_tab_project = .New, ui.whip_project
-				return
-			}
-			for tab in rl.WhipTabs() {
-				if clay.PointerOver(clay.ID("WhipTabClose", tab.id)) {
-					if rl.WhipTabChange(.Close, tab.id) {
-						ui.whip_tab_op, ui.whip_tab_project = .Close, ui.whip_project
-					}
-					return
-				}
-			}
-		}
-		for tab in rl.WhipTabs() {
-			if clay.PointerOver(clay.ID("WhipTab", tab.id)) {
-				ui.whip_tabs[ui.whip_project] = tab.id
-				return
-			}
 		}
 	}
 
@@ -817,6 +784,7 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 
 // Activate another already-stored account and reload everything.
 switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
+	whip_workspace_navigation(ui)
 	job := account_job_new(ui, client, .Switch, account_id); account_job_start(job)
 }
 
@@ -1499,6 +1467,7 @@ row_to_ui :: proc(
 		at                = format_activity(row.activity_sort_at),
 		activity_at       = row.activity_sort_at,
 		unread            = row.unread_count,
+		archived          = row.archived,
 		pending           = row.pending_confirmation,
 		stable            = row.lifecycle_state == .STABLE,
 		tick              = tick,

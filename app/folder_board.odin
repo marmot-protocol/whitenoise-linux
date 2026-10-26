@@ -1,8 +1,8 @@
-// The Folders settings page: every chat, grouped the way the rail groups
+// The Folders settings page: every inbox row, grouped the way the rail groups
 // them, with drag and drop.
 //
 //   press ──move > DRAG_MIN──► dragging ──release──► drop
-//     │                          │ chat:   keep it in the section under the pointer
+//     │                          │ row:    keep it in the section under the pointer
 //     └──release──► click        └ folder: move it to the insertion line
 //
 // The board is one scroll container of fixed-height rows, so layout is
@@ -19,7 +19,7 @@ import rl "sdlrl"
 @(private)
 Board_Drag_Kind :: enum {
 	None,
-	Chat,
+	Row,
 	Folder,
 }
 
@@ -27,10 +27,10 @@ Board_Drag_Kind :: enum {
 Board_Drag :: struct {
 	kind:   Board_Drag_Kind,
 	folder: int, // the held folder's index (kind == .Folder)
-	group:  string, // the held chat's group id, owned (kind == .Chat)
+	key:    string, // the held inbox row's stable key, owned (kind == .Row)
 	from:   [2]f32, // press point, logical px
 	active: bool, // moved past DRAG_MIN: the release drops instead of clicking
-	target: int, // section under the pointer (chat) or insertion slot (folder)
+	target: int, // section under the pointer (row) or insertion slot (folder)
 }
 
 @(private = "file")
@@ -51,7 +51,7 @@ BOARD_EDGE :: f32(32) // pointer this close to the top or bottom scrolls a drag
 @(private = "file")
 Board :: struct {
 	sections: []Folder_Section,
-	grouped:  []int,
+	grouped:  []Inbox_Row,
 	tops:     []f32,
 	height:   f32,
 }
@@ -63,8 +63,7 @@ board_section_h :: proc(count: int) -> f32 {
 
 @(private = "file")
 board_build :: proc(ui: ^Ui_State) -> Board {
-	order := rail_order(ui.chats[:], ui.prefs.pinned)
-	sections, grouped := chat_folder_sections(ui, order[:])
+	sections, grouped := inbox_sections(ui, inbox_all(ui))
 	tops := make([]f32, len(sections), context.temp_allocator)
 	y: f32
 	for section, i in sections {
@@ -75,7 +74,7 @@ board_build :: proc(ui: ^Ui_State) -> Board {
 }
 
 // The section at content y, clamped to the first and last; `row` is the
-// chat row inside it, -1 for the header and -2 for the empty slot or gap.
+// inbox row inside it, -1 for the header and -2 for the empty slot or gap.
 @(private = "file")
 board_at :: proc(board: Board, y: f32) -> (section, row: int) {
 	for top, i in board.tops {
@@ -122,16 +121,27 @@ board_folder_slot :: proc(ui: ^Ui_State, board: Board, y: f32) -> int {
 }
 
 @(private = "file")
-board_chat_index :: proc(ui: ^Ui_State, group_id: string) -> int {
-	for chat, i in ui.chats {
-		if chat.group_id == group_id {return i}
+board_find_row :: proc(rows: []Inbox_Row, key: string) -> (Inbox_Row, bool) {
+	for row in rows {
+		if row.key == key {return row, true}
 	}
-	return -1
+	return {}, false
+}
+
+@(private = "file")
+board_row_id :: proc(row: Inbox_Row) -> u32 {
+	return u32(row.index) * 2 + (row.kind == .Terminal ? 1 : 0)
+}
+
+@(private = "file")
+board_row_title :: proc(ui: ^Ui_State, row: Inbox_Row) -> string {
+	if row.kind == .Terminal {return rl.WhipProjects()[row.index].name}
+	return ui.chats[row.index].title
 }
 
 @(private = "file")
 board_drag_clear :: proc(ui: ^Ui_State) {
-	delete(ui.board_drag.group)
+	delete(ui.board_drag.key)
 	ui.board_drag = {}
 }
 
@@ -155,10 +165,11 @@ board_drop :: proc(ui: ^Ui_State) {
 	drag := ui.board_drag
 	switch drag.kind {
 	case .None:
-	case .Chat:
-		if board_chat_index(ui, drag.group) < 0 {return}
+	case .Row:
+		_, exists := board_find_row(inbox_all(ui), drag.key)
+		if !exists {return}
 		name := drag.target < len(ui.prefs.folders) ? ui.prefs.folders[drag.target] : ""
-		folder_place(ui, drag.group, name)
+		folder_place(ui, drag.key, name)
 		save_settings(ui)
 	case .Folder:
 		from, to := drag.folder, drag.target
@@ -186,7 +197,7 @@ handle_folder_board :: proc(ui: ^Ui_State) -> bool {
 			}
 			if !drag.active {return false}
 			board := board_build(ui)
-			if drag.kind == .Chat {
+			if drag.kind == .Row {
 				drag.target, _ = board_at(board, y)
 			} else {
 				drag.target = board_folder_slot(ui, board, y)
@@ -216,10 +227,10 @@ handle_folder_board :: proc(ui: ^Ui_State) -> bool {
 				target = section,
 			}
 		} else if row >= 0 {
-			chat := ui.chats[board.grouped[board.sections[section].start + row]]
+			item := board.grouped[board.sections[section].start + row]
 			drag^ = {
-				kind   = .Chat,
-				group  = strings.clone(chat.group_id),
+				kind   = .Row,
+				key    = strings.clone(item.key),
 				from   = p,
 				target = section,
 			}
@@ -232,10 +243,15 @@ handle_folder_board :: proc(ui: ^Ui_State) -> bool {
 		open_folder_modal(ui)
 		return true
 	}
-	for chat, i in ui.chats {
-		if clay.PointerOver(clay.ID("BoardKeep", u32(i))) {
-			folder_unplace(ui, chat.group_id)
+	for row in inbox_all(ui) {
+		id := board_row_id(row)
+		if clay.PointerOver(clay.ID("BoardKeep", id)) {
+			folder_unplace(ui, row.key)
 			save_settings(ui)
+			return true
+		}
+		if clay.PointerOver(clay.ID("BoardChat", id)) {
+			open_folder_modal(ui, row.key)
 			return true
 		}
 	}
@@ -260,7 +276,7 @@ board_spacer :: proc(id: u32, height: f32) {
 	) {}
 }
 
-// Every chat under its folder header, windowed to what the viewport shows.
+// Every inbox row under its folder header, windowed to the viewport.
 @(private)
 folder_board :: proc(ui: ^Ui_State) {
 	board := board_build(ui)
@@ -299,7 +315,7 @@ folder_board :: proc(ui: ^Ui_State) {
 				board_spacer(id, section_h)
 				continue
 			}
-			target := dragging && drag.kind == .Chat && drag.target == i
+			target := dragging && drag.kind == .Row && drag.target == i
 			insert := dragging && drag.kind == .Folder && drag.target == i
 			board_header(ui, i, section.count, target, insert)
 			if section.count == 0 {
@@ -310,8 +326,8 @@ folder_board :: proc(ui: ^Ui_State) {
 				first := clamp(int((top - row_top) / BOARD_ROW_H), 0, len(rows))
 				last := clamp(int((bottom - row_top) / BOARD_ROW_H) + 1, first, len(rows))
 				board_spacer(id + 1, f32(first) * BOARD_ROW_H)
-				for index in rows[first:last] {
-					board_chat(ui, index, i)
+				for row in rows[first:last] {
+					board_row(ui, row, i)
 				}
 				board_spacer(id + 2, f32(len(rows) - last) * BOARD_ROW_H)
 			}
@@ -320,7 +336,7 @@ folder_board :: proc(ui: ^Ui_State) {
 	}
 	scrollbar(clay.ID("FolderBoard"))
 	if dragging {
-		board_ghost(ui)
+		board_ghost(ui, board.grouped)
 	}
 }
 
@@ -425,18 +441,19 @@ board_empty :: proc(index: int, target: bool) {
 	},
 	) {
 		clay.Text(
-			target ? tr("Drop here") : tr("No chats yet"),
+			target ? tr("Drop here") : tr("No chats or terminals yet"),
 			{fontId = FONT_BODY, fontSize = 12, textColor = target ? ACCENT : TEXT_LO},
 		)
 	}
 }
 
 @(private = "file")
-board_chat :: proc(ui: ^Ui_State, index: int, section: int) {
-	chat := ui.chats[index]
-	held := ui.board_drag.active && ui.board_drag.group == chat.group_id
-	placed := folder_placed(ui, chat.group_id)
-	if clay.UI(clay.ID("BoardChat", u32(index)))(
+board_row :: proc(ui: ^Ui_State, row: Inbox_Row, section: int) {
+	id := board_row_id(row)
+	title := board_row_title(ui, row)
+	held := ui.board_drag.active && ui.board_drag.kind == .Row && ui.board_drag.key == row.key
+	placed := folder_placed(ui, row.key)
+	if clay.UI(clay.ID("BoardChat", id))(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(BOARD_ROW_H)},
@@ -452,12 +469,17 @@ board_chat :: proc(ui: ^Ui_State, index: int, section: int) {
 			ICON_GRIP,
 			{fontId = FONT_ICON, fontSize = 12, textColor = held ? ACCENT : TEXT_LO},
 		)
-		avatar("BoardAvatar", u32(index), chat.avatar_key, chat.title, 24, chat_pic(chat))
-		if clay.UI(clay.ID("BoardChatName", u32(index)))(
+		if row.kind == .Terminal {
+			clay.Text("\ue795", {fontId = FONT_ICON, fontSize = 20, textColor = TEXT_DIM})
+		} else {
+			chat := ui.chats[row.index]
+			avatar("BoardAvatar", id, chat.avatar_key, title, 24, chat_pic(chat))
+		}
+		if clay.UI(clay.ID("BoardChatName", id))(
 		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
 		) {
 			clay.Text(
-				chat.title,
+				title,
 				{
 					fontId = FONT_BODY,
 					fontSize = 13,
@@ -467,7 +489,7 @@ board_chat :: proc(ui: ^Ui_State, index: int, section: int) {
 			)
 		}
 		if placed {
-			board_keep(ui, index)
+			board_keep(ui, id)
 		} else if section < len(ui.prefs.folders) {
 			clay.Text(tr("By rule"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
 		}
@@ -475,10 +497,10 @@ board_chat :: proc(ui: ^Ui_State, index: int, section: int) {
 	}
 }
 
-// The manual-placement checkbox; clearing it hands the chat to the rules.
+// The manual-placement checkbox; clearing it hands the row to the rules.
 @(private = "file")
-board_keep :: proc(ui: ^Ui_State, index: int) {
-	if clay.UI(clay.ID("BoardKeep", u32(index)))(
+board_keep :: proc(ui: ^Ui_State, id: u32) {
+	if clay.UI(clay.ID("BoardKeep", id))(
 	{
 		layout = {
 			padding = {left = 6, right = 6, top = 4, bottom = 4},
@@ -489,7 +511,7 @@ board_keep :: proc(ui: ^Ui_State, index: int) {
 		cornerRadius = rr(4),
 	},
 	) {
-		if clay.UI(clay.ID("BoardKeepBox", u32(index)))(
+		if clay.UI(clay.ID("BoardKeepBox", id))(
 		{
 			layout = {
 				sizing = {clay.SizingFixed(16), clay.SizingFixed(16)},
@@ -512,16 +534,18 @@ board_keep :: proc(ui: ^Ui_State, index: int) {
 
 // What the pointer carries, drawn at the pointer.
 @(private = "file")
-board_ghost :: proc(ui: ^Ui_State) {
+board_ghost :: proc(ui: ^Ui_State, rows: []Inbox_Row) {
 	drag := ui.board_drag
 	label: string
+	icon := ICON_CHATS
 	switch drag.kind {
 	case .None:
 		return
-	case .Chat:
-		index := board_chat_index(ui, drag.group)
-		if index < 0 {return}
-		label = ui.chats[index].title
+	case .Row:
+		row, exists := board_find_row(rows, drag.key)
+		if !exists {return}
+		label = board_row_title(ui, row)
+		if row.kind == .Terminal {icon = "\ue795"}
 	case .Folder:
 		if drag.folder >= len(ui.prefs.folders) {return}
 		label = ui.prefs.folders[drag.folder]
@@ -549,7 +573,7 @@ board_ghost :: proc(ui: ^Ui_State) {
 		if drag.kind == .Folder {
 			folder_icon(ui, label, 14)
 		} else {
-			clay.Text(ICON_CHATS, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
+			clay.Text(icon, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
 		}
 		clay.Text(label, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None})
 	}

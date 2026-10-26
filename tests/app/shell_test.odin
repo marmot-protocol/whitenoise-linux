@@ -110,6 +110,10 @@ rail_default_window :: proc(t: ^testing.T) {
 			}
 		}
 	}
+	ui.new_chat_open, ui.nc_page = true, .Contacts
+	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+	testing.expect_value(t, clay.GetElementData(clay.ID("NCTerminal")).found, rl.WhipAvailable())
+	close_new_chat(&ui)
 	toggle_rail(&ui)
 	anim_tick(1.0 / 60)
 	build_layout(&ui, 0)
@@ -412,19 +416,15 @@ test_phone_detail :: proc(t: ^testing.T) {
 		ui.page == .Chats && !phone_detail(&ui),
 		"back from settings returns to the chat list",
 	)
-	ui.page = .Whip
-	testing.expect(t, !phone_detail(&ui), "Whip opens its project list on narrow windows")
-	ui.whip_project, ui.whip_detail = 42, true
+	ui.page = .Chats
+	testing.expect(t, !phone_detail(&ui), "the unified inbox has no detail before selection")
+	ui.whip_project, ui.whip_open = 42, true
 	testing.expect(t, phone_detail(&ui), "a selected project opens its terminal")
 	phone_back_action(&ui)
-	testing.expect_value(t, ui.page, Page.Whip)
+	testing.expect_value(t, ui.page, Page.Chats)
 	testing.expect_value(t, ui.whip_project, u32(42))
-	testing.expect(t, !phone_detail(&ui), "back returns to projects without losing selection")
-	if !rl.WhipAvailable() {
-		ui.prefs.page = .Whip
-		restore_workspace(&ui, nil)
-		testing.expect_value(t, ui.page, Page.Chats)
-	}
+	testing.expect(t, !ui.whip_open, "back closes the terminal without forgetting its project")
+	testing.expect(t, !phone_detail(&ui), "back returns to the unified inbox")
 }
 
 // Escape on a settings page lets go of a focused box first, then steps

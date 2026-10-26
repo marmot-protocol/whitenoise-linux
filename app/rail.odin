@@ -5,6 +5,14 @@ import "core:fmt"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
+// Shift+wheel scrolls the chat filter row sideways once folders overflow it.
+@(private)
+chat_filter_wheel :: proc(ui: ^Ui_State, wheel: ^rl.Vector2) {
+	if ui.page != .Chats || !shift_down() || !clay.PointerOver(clay.ID("ChatFilters")) {return}
+	wheel.x += wheel.y
+	wheel.y = 0
+}
+
 // The expanded sidebar: section controls and the active page's list.
 @(private)
 rail_content :: proc(ui: ^Ui_State) {
@@ -28,9 +36,23 @@ rail_content :: proc(ui: ^Ui_State) {
 	) {
 		// The header counts what the chat list below shows.
 		chat_rows: []int
+		terminal_rows: []u32
+		inbox: []Inbox_Row
 		chat_total: int
 		if ui.page == .Chats {
 			chat_rows, chat_total = chat_rail_matches(ui)
+			terminal_rows = whip_rail_matches(ui)
+			if rl.WhipAvailable() {chat_total += len(rl.WhipProjects())}
+			inbox = inbox_rows(ui, chat_rows, terminal_rows)
+			if ui.prefs.recent_chats && ui.chat_folder != "" {
+				sections, grouped := inbox_sections(ui, inbox)
+				for name, i in ui.prefs.folders {
+					if name != ui.chat_folder {continue}
+					section := sections[i]
+					inbox = grouped[section.start:section.start + section.count]
+					break
+				}
+			}
 		}
 		contact_rows: []Contact_Order
 		if ui.page == .Contacts {
@@ -39,8 +61,6 @@ rail_content :: proc(ui: ^Ui_State) {
 		// Profile replaces the conversation list with accounts.
 		if ui.page == .Profile {
 			profile_rail(ui)
-		} else if ui.page == .Whip {
-			whip_rail(ui)
 		} else {
 			// Section header: CHATS/CONTACTS count + new-chat button.
 			if clay.UI(clay.ID("RailHead"))(
@@ -62,8 +82,10 @@ rail_content :: proc(ui: ^Ui_State) {
 					}
 				} else if ui.page == .Chats {
 					count = fmt.tprintf("%d", chat_total)
-					if len(ui.sidebar_filter) > 0 || ui.chat_filter != .Chats {
-						count = fmt.tprintf(tr("%d of %d"), len(chat_rows), chat_total)
+					if len(ui.sidebar_filter) > 0 ||
+					   ui.chat_filter != .Chats ||
+					   ui.chat_folder != "" {
+						count = fmt.tprintf(tr("%d of %d"), len(inbox), chat_total)
 					}
 				}
 				clay.Text(head, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
@@ -142,18 +164,28 @@ rail_content :: proc(ui: ^Ui_State) {
 					TEXT_LO,
 				)
 			}
-			if ui.page == .Chats || ui.page == .Archived {
+			if ui.page == .Chats {
 				if clay.UI(clay.ID("ChatFilters"))(
 				{
 					layout = {sizing = {width = clay.SizingGrow()}, childGap = 4},
 					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
 				},
 				) {
-					labels := [4]string{tr("Chats"), tr("Unread"), tr("Groups"), tr("Archived")}
-					ids := [4]string{"AllPill", "UnreadPill", "GroupsPill", "ArchivedPill"}
-					for label, t in labels {
-						active :=
-							ui.page == .Archived ? t == int(Chat_Filter.Archived) : t == int(ui.chat_filter)
+					labels := #sparse[Chat_Filter]string {
+						.Chats  = tr("Chats"),
+						.Unread = tr("Unread"),
+						.Groups = tr("Groups"),
+						.Whip   = "Whip",
+					}
+					ids := #sparse[Chat_Filter]string {
+						.Chats  = "AllPill",
+						.Unread = "UnreadPill",
+						.Groups = "GroupsPill",
+						.Whip   = "WhipPill",
+					}
+					for t in Chat_Filter {
+						if t == .Whip && !rl.WhipAvailable() {continue}
+						active := t == ui.chat_filter && ui.chat_folder == ""
 						if clay.UI(clay.ID(ids[t]))(
 						{
 							layout = {padding = {left = 8, right = 8, top = 5, bottom = 5}},
@@ -162,13 +194,39 @@ rail_content :: proc(ui: ^Ui_State) {
 						},
 						) {
 							clay.Text(
-								label,
+								labels[t],
 								{
 									fontId = FONT_BODY,
 									fontSize = 12,
 									textColor = active ? TEXT : TEXT_DIM,
 								},
 							)
+						}
+					}
+					if ui.prefs.recent_chats {
+						for name, i in ui.prefs.folders {
+							active := name == ui.chat_folder
+							if clay.UI(clay.ID("FolderPill", u32(i)))(
+							{
+								layout = {
+									padding = {left = 8, right = 8, top = 5, bottom = 5},
+									childGap = 4,
+									childAlignment = {y = .Center},
+								},
+								backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
+								cornerRadius = rr(6),
+							},
+							) {
+								folder_icon(ui, name, 12)
+								clay.Text(
+									name,
+									{
+										fontId = FONT_BODY,
+										fontSize = 12,
+										textColor = active ? TEXT : TEXT_DIM,
+									},
+								)
+							}
 						}
 					}
 				}
@@ -368,6 +426,7 @@ rail_content :: proc(ui: ^Ui_State) {
 		}
 
 		if ui.page == .Chats && logged_in && !rail_narrow(ui) {
+			whip_inbox_progress(ui)
 			if clay.UI(clay.ID("ChatList"))(
 			{
 				layout = {
@@ -378,7 +437,7 @@ rail_content :: proc(ui: ^Ui_State) {
 				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 			},
 			) {
-				chat_rail(ui, chat_rows, chat_total)
+				chat_rail(ui, inbox, chat_total)
 			}
 			scrollbar(clay.ID("ChatList"))
 		}

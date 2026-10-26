@@ -1,6 +1,14 @@
 package main
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import "core:fmt"
+import "core:strings"
+
+@(private)
+Reading_Place :: struct {
+	message: string,
+	offset:  f32,
+}
 
 // Measure new rows once, then retain their height while off screen.
 // One viewport of overscan keeps wheel/fling movement ahead of the clip.
@@ -63,5 +71,109 @@ timeline_measure :: proc(ui: ^Ui_State) {
 			0,
 		)
 		scroll_jumped = true
+	}
+}
+
+@(private)
+reading_remember :: proc(ui: ^Ui_State) {
+	if ui.whip_open ||
+	   ui.page != .Chats ||
+	   ui.selected < 0 ||
+	   ui.selected >= len(ui.chats) ||
+	   ui.timeline_loading ||
+	   ui.timeline_paging ||
+	   ui.search_open ||
+	   ui.issues_open ||
+	   thread_cur(ui) != "" ||
+	   ui.jump_id != "" ||
+	   ui.messages_account != ui.account_ref ||
+	   ui.messages_group != ui.chats[ui.selected].group_id ||
+	   clay.GetCurrentContext() == nil {return}
+	data := clay.GetScrollContainerData(clay.ID("Timeline"))
+	view := clay.GetElementData(clay.ID("Timeline"))
+	if !data.found || !view.found {return}
+	key := fmt.tprintf("%s:%s", ui.account_ref, ui.messages_group)
+	place, exists := ui.reading_places[key]
+	if ui.scroll_pending ||
+	   data.scrollPosition.y <=
+		   -max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0) + 1 {
+		if exists {delete(place.message); ui.reading_places[key] = {}}
+		return
+	}
+	for msg, i in ui.messages {
+		if msg.thread_of != "" || msg.system {continue}
+		row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
+		if !row.found ||
+		   row.boundingBox.y + row.boundingBox.height <= view.boundingBox.y {continue}
+		if row.boundingBox.y >= view.boundingBox.y + view.boundingBox.height {break}
+		if exists {delete(place.message)} else {key = strings.clone(key)}
+		ui.reading_places[key] = {strings.clone(msg.id), row.boundingBox.y - view.boundingBox.y}
+		return
+	}
+}
+
+@(private)
+reading_restore :: proc(ui: ^Ui_State) {
+	ui.reading_pending = {}
+	delete(ui.jump_id); ui.jump_id = ""
+	ui.gs_jump_pending, ui.scroll_pending = false, true
+	if ui.selected < 0 || ui.selected >= len(ui.chats) {return}
+	key := fmt.tprintf("%s:%s", ui.account_ref, ui.chats[ui.selected].group_id)
+	place := ui.reading_places[key]
+	if place.message == "" {return}
+	ui.jump_id = strings.clone(place.message)
+	ui.reading_pending = place
+	ui.gs_jump_pending, ui.scroll_pending = true, false
+}
+
+@(private)
+reading_clear :: proc(ui: ^Ui_State) {
+	ui.reading_pending = {}
+	for key, place in ui.reading_places {delete(key); delete(place.message)}
+	delete(ui.reading_places); ui.reading_places = nil
+}
+
+@(private)
+timeline_scroll_apply :: proc(ui: ^Ui_State) {
+	if ui.reading_pending.message != ui.jump_id {ui.reading_pending = {}}
+	if ui.jump_id != "" && !ui.timeline_loading && !ui.timeline_paging && !gs_seek_jump(ui) {
+		aligned := true
+		for msg, i in ui.messages {
+			if msg.id != ui.jump_id {continue}
+			row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
+			view := clay.GetElementData(clay.ID("Timeline"))
+			data := clay.GetScrollContainerData(clay.ID("Timeline"))
+			if row.found && view.found && data.found {
+				delta :=
+					(row.boundingBox.y + row.boundingBox.height / 2) -
+					(view.boundingBox.y + view.boundingBox.height / 2)
+				if ui.reading_pending.message != "" {
+					delta = row.boundingBox.y - view.boundingBox.y - ui.reading_pending.offset
+				}
+				target := clamp(
+					data.scrollPosition.y - delta,
+					-max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+					0,
+				)
+				aligned = abs(target - data.scrollPosition.y) < 1
+				data.scrollPosition.y = target
+				scroll_jumped = true
+				ui.scroll_pending = false
+			}
+			break
+		}
+		if !aligned {return}
+		delete(ui.jump_id); ui.jump_id = ""
+		ui.reading_pending = {}
+	}
+	if ui.scroll_pending && !ui.timeline_loading && !ui.timeline_paging {
+		if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
+			data.scrollPosition.y = -max(
+				data.contentDimensions.height - data.scrollContainerDimensions.height,
+				0,
+			)
+			scroll_jumped = true
+			ui.scroll_pending = false
+		}
 	}
 }

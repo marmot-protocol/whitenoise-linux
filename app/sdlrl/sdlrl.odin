@@ -293,6 +293,8 @@ Cursor_Shape :: enum {
 	Pointer, // over something clickable
 	Text, // over something selectable
 	Grabbing, // dragging the view itself
+	ResizeEW,
+	ResizeNS,
 }
 
 @(private)
@@ -301,6 +303,8 @@ CURSOR_IDS := [Cursor_Shape]sdl.SystemCursor {
 	.Pointer  = .POINTER,
 	.Text     = .TEXT,
 	.Grabbing = .MOVE,
+	.ResizeEW = .EW_RESIZE,
+	.ResizeNS = .NS_RESIZE,
 }
 
 @(private)
@@ -737,9 +741,51 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 	state.density = max(sdl.GetWindowPixelDensity(state.window), 1)
 
 	event: sdl.Event
-	for sdl.PollEvent(&event) {
+	// Apply navigation before reading input intended for its destination.
+	whip_input_yield = false
+	if whip_input_pending() {sdl.PumpEvents()}
+	for !whip_input_yield {
+		// SDL owns queued text storage. Leave commits and their keys in order
+		// until its terminal is ready, without copying an input backlog.
+		defer_input := false
+		if whip_input_pending() &&
+		   sdl.PeepEvents(cast([^]sdl.Event)&event, 1, .PEEKEVENT, .FIRST, .LAST) > 0 &&
+		   !inbox_navigation(event) {
+			defer_input =
+				event.type == .KEY_DOWN ||
+				event.type == .KEY_UP ||
+				event.type == .TEXT_INPUT ||
+				event.type == .TEXT_EDITING
+		}
+		if defer_input {
+			// A pending terminal must not hold the window's Close button hostage.
+			if sdl.PeepEvents(
+				   cast([^]sdl.Event)&event,
+				   1,
+				   .GETEVENT,
+				   .WINDOW_CLOSE_REQUESTED,
+				   .WINDOW_CLOSE_REQUESTED,
+			   ) <=
+				   0 &&
+			   sdl.PeepEvents(cast([^]sdl.Event)&event, 1, .GETEVENT, .QUIT, .QUIT) <= 0 {break}
+		} else if !sdl.PollEvent(&event) {break}
 		if changed != nil {changed^ = true}
-		if whip_event(event) {continue}
+		if inbox_navigation(event) {whip_input_yield = true}
+		captured := whip_event(event)
+		// A held shortcut must survive moving from a terminal into a chat.
+		if captured && (event.type == .KEY_DOWN || event.type == .KEY_UP) {
+			#partial switch event.key.scancode {
+			case .LCTRL:
+				state.down[.LEFT_CONTROL] = event.key.down
+			case .RCTRL:
+				state.down[.RIGHT_CONTROL] = event.key.down
+			case .LSHIFT:
+				state.down[.LEFT_SHIFT] = event.key.down
+			case .RSHIFT:
+				state.down[.RIGHT_SHIFT] = event.key.down
+			}
+		}
+		if captured {continue}
 		#partial switch event.type {
 		case .WINDOW_CLOSE_REQUESTED:
 			if hide_on_close {

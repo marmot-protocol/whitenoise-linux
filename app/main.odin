@@ -141,11 +141,14 @@ QUICK_REACT := [6]string{"👍", "❤️", "😂", "😮", "😢", "🙏"}
 timeline_draw_offset: f32
 
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.RenderCommand) {
+	whip_attach_prune(ui)
+	timeline_draw_offset = 0
 	if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
 		timeline_draw_offset = data.scrollPosition.y
 	}
 	settings_check_count = 0 // settings_check lists this frame's switches
 	if mouse_pressed() {
+		whip_workspace_navigation(ui)
 		kb_focus = ""
 	}
 	clay.BeginLayout()
@@ -263,8 +266,10 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 						} else {
 							switch ui.page {
 							case .Chats:
-								if ui.selected >= 0 {
-									chat_pane(ui, ui.chats[ui.selected], ui.messages[:])
+								if ui.whip_open {
+									whip_pane(ui)
+								} else if ui.selected >= 0 {
+									whip_chat_pane(ui)
 								} else if len(ui.chats) == 0 {
 									get_started_pane(ui)
 								} else {
@@ -282,8 +287,6 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 								settings_pane(ui)
 							case .Profile:
 								profile_pane(ui)
-							case .Whip:
-								whip_pane(ui)
 							}
 						}
 					}
@@ -295,6 +298,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			export_progress(ui)
 			contacts_import_progress(ui)
 			status_bar(ui)
+			whip_attach_overlays(ui)
 
 			// One backdrop for every centered modal, whichever pane drew it.
 			if open_now(clay.ID("ModalVeil"), modal_open(ui)) {
@@ -326,7 +330,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			if open_now(clay.ID("StickerPanel"), ui.sticker_open) {sticker_panel(ui)}
 
 			if open_now(clay.ID("RowMenu"), ui.row_menu >= 0) &&
-			   row_menu_index(ui) < len(ui.chats) {
+			   (ui.row_terminal != 0 || row_menu_index(ui) < len(ui.chats)) {
 				chat_row_menu(ui)
 			}
 			if open_now(clay.ID("MemberMenu"), ui.member_menu >= 0) &&
@@ -360,6 +364,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 	commands := clay.EndLayout(frame_time)
 	timeline_measure(ui)
 	compose_scroll(ui)
+	whip_tab_reveal(ui)
 	return commands
 }
 
@@ -684,8 +689,6 @@ app_main :: proc() {
 		}
 		if client != nil && len(ui.accounts) > 0 {
 			switch os.get_env("WN_TEST_PAGE", context.allocator) {
-			case "whip":
-				if rl.WhipAvailable() {ui.page = .Whip}
 			case "contacts":
 				ui.page = .Contacts
 				load_contacts(client, &ui, .Details)
@@ -807,6 +810,7 @@ app_main :: proc() {
 		   ui.selected < 0 {
 			select_by_id(&ui, client, ui.prefs.last_chat)
 		}
+		whip_workspace_begin(&ui)
 
 		// Last splash beat: the relay pool is polled once here so the status
 		// bar opens with a real count instead of the pre-poll placeholder.
@@ -947,34 +951,8 @@ app_main :: proc() {
 					apply_zoom(&ui)
 					save_settings(&ui)
 				}
-				// Ctrl+Tab / Ctrl+Shift+Tab cycles chats in the rail's
-				// rendered order (last frame's rows), wrapping.
-				if rl.IsKeyPressed(.TAB) && len(ui.rail_rows) > 0 {
-					step := shift_down() ? -1 : 1
-					at := 0 // selection not in the rail: start at the first row
-					for idx, pos in ui.rail_rows {
-						selected := idx == ui.selected
-						if ui.chat_filter == .Archived {
-							selected =
-								idx < len(ui.archived) &&
-								ui.selected >= 0 &&
-								ui.selected < len(ui.chats) &&
-								ui.archived[idx].group_id == ui.chats[ui.selected].group_id
-						}
-						if selected {
-							at = pos + step
-							break
-						}
-					}
-					n := len(ui.rail_rows)
-					index := ui.rail_rows[(at + n) %% n]
-					if ui.chat_filter == .Archived {
-						select_archived_chat(&ui, client, index)
-					} else {
-						select_chat(&ui, client, index)
-					}
-				}
 			}
+			if !photo_captured {inbox_shortcuts(&ui, client)}
 
 			// Synthetic click injection for headless tests: "x,y[,x,y...]",
 			// one click per pair, released every 25 frames from frame 20.
@@ -1060,6 +1038,8 @@ app_main :: proc() {
 				save_settings(&ui)
 				wheel = {}
 			}
+			whip_tab_wheel(&ui, &wheel)
+			chat_filter_wheel(&ui, &wheel)
 			if preview_shown &&
 			   (preview.kind == .Image || preview.kind == .Slides) &&
 			   clay.PointerOver(clay.ID("PvScroll")) {
@@ -1074,14 +1054,23 @@ app_main :: proc() {
 			}
 			wheel.x *= f32(ui.prefs.scroll_speed) / 100
 			wheel.y *= f32(ui.prefs.scroll_speed) / 100
+			if whip_attach_pointer(&ui) {wheel = {}; scroll_residual = {}}
 			if orbit_hover != nil || geo_hover != "" {
 				wheel = {}
+			}
+			if wheel.y != 0 &&
+			   ui.reading_pending.message != "" &&
+			   clay.PointerOver(clay.ID("Timeline")) {
+				ui.reading_pending = {}
+				ui.gs_jump_pending, ui.scroll_pending = false, false
+				delete(ui.jump_id); ui.jump_id = ""
 			}
 			// Wheel notches land in a residual that drains a fraction per
 			// frame, so a scroll glides to a stop instead of stepping.
 			scroll_residual += transmute(clay.Vector2)wheel
-			// The chat list follows wheel input immediately.
-			drain := clay.PointerOver(clay.ID("ChatList")) ? f32(1) : anim_drain(SCROLL_DRAIN)
+			// Conversation and tab navigation follow wheel input immediately.
+			drain :=
+				clay.PointerOver(clay.ID("ChatList")) || clay.PointerOver(clay.ID("WhipTabs")) ? f32(1) : anim_drain(SCROLL_DRAIN)
 			step := clay.Vector2{scroll_residual.x * drain, scroll_residual.y * drain}
 			scroll_residual -= step
 			if abs(scroll_residual.x) < 0.01 {
@@ -1222,57 +1211,12 @@ app_main :: proc() {
 			// the whole send).
 			// Center a global-search hit: the correction is relative to this
 			// frame's laid-out row box, so the current offset doesn't matter.
-			if len(ui.jump_id) > 0 &&
-			   !ui.timeline_loading &&
-			   !ui.timeline_paging &&
-			   !gs_seek_jump(&ui) {
-				for msg, i in ui.messages {
-					if msg.id != ui.jump_id {
-						continue
-					}
-					row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
-					tl := clay.GetElementData(clay.ID("Timeline"))
-					scroll_data := clay.GetScrollContainerData(clay.ID("Timeline"))
-					if row.found && tl.found && scroll_data.found {
-						overflow := max(
-							scroll_data.contentDimensions.height -
-							scroll_data.scrollContainerDimensions.height,
-							0,
-						)
-						delta :=
-							(row.boundingBox.y + row.boundingBox.height / 2) -
-							(tl.boundingBox.y + tl.boundingBox.height / 2)
-						scroll_data.scrollPosition.y = clamp(
-							scroll_data.scrollPosition.y - delta,
-							-overflow,
-							0,
-						)
-						scroll_jumped = true
-						ui.scroll_pending = false
-					}
-					break
-				}
-				delete(ui.jump_id)
-				ui.jump_id = ""
-			}
-			if ui.scroll_pending && !ui.timeline_loading && !ui.timeline_paging {
-				scroll_data := clay.GetScrollContainerData(clay.ID("Timeline"))
-				if scroll_data.found {
-					overflow :=
-						scroll_data.contentDimensions.height -
-						scroll_data.scrollContainerDimensions.height
-					target := overflow > 0 ? -overflow : 0
-					// No glide: the chat box does not animate. Arrivals and
-					// chat opens both snap to the bottom.
-					scroll_data.scrollPosition.y = target
-					scroll_jumped = true
-					ui.scroll_pending = false
-				}
-			}
-			// Anchor and jump corrections happen after layout. Draw their corrected
-			// position in this frame instead of flashing the old position once.
-			if data := clay.GetScrollContainerData(clay.ID("Timeline"));
-			   data.found && abs(data.scrollPosition.y - timeline_draw_offset) > 0.01 {
+			// A remounted timeline can rewrap after its first measurement.
+			// Settle its anchor before drawing, without rebuilding steady frames.
+			for _ in 0 ..< 2 {
+				timeline_scroll_apply(&ui)
+				data := clay.GetScrollContainerData(clay.ID("Timeline"))
+				if !data.found || abs(data.scrollPosition.y - timeline_draw_offset) <= 0.01 {break}
 				render_commands = build_layout(&ui, 0)
 			}
 			video_dbg_build = max(
@@ -1355,7 +1299,10 @@ app_main :: proc() {
 			switch status, project := rl.WhipCreatePoll(); status {
 			case .Ready:
 				ui.whip_creating = false
-				ui.whip_project, ui.whip_detail = project, true
+				whip_open_project(&ui, project)
+				ui.chat_filter = .Chats
+				ui.chat_folder = ""
+				clear(&ui.sidebar_filter)
 				set_status(&ui, tr("Project created."), .Info)
 			case .Failed:
 				ui.whip_creating = false
@@ -1444,7 +1391,8 @@ app_main :: proc() {
 			}
 
 			long_press_tick() // before any handler reads long_pressed
-			if !photo_captured {
+			whip_captured := !photo_captured && whip_attach_input(&ui)
+			if !photo_captured && !whip_captured {
 				if clicked("LockNow") {
 					lock_now(&ui)
 					lock_wait_frame()
@@ -1515,8 +1463,11 @@ app_main :: proc() {
 				gs_open_modal(&ui)
 			} else {
 				handle_login(&ui, client)
-				handle_pages(&ui, client)
-				if ui.page == .Chats && !ui.add_account_open {
+				if !whip_captured && ui.focus != .Whip {handle_pages(&ui, client)}
+				if !whip_captured &&
+				   ui.focus != .Whip &&
+				   ui.page == .Chats &&
+				   !ui.add_account_open {
 					handle_chat(&ui, client)
 				}
 			}
@@ -1532,6 +1483,8 @@ app_main :: proc() {
 			// release, so dragging across a link doesn't open it.
 			photo_captured = photo_captured || photo_input_capture(&ui)
 			if !photo_captured &&
+			   !whip_captured &&
+			   !whip_attach_pointer(&ui) &&
 			   !ui.pal_open &&
 			   !ui.link_open &&
 			   !ui.gs_open &&
@@ -1588,15 +1541,19 @@ app_main :: proc() {
 				text_field_live = false
 				for rl.GetCharPressed() != 0 {}
 			}
-			whip_active := ui.page == .Whip && !ui.add_account_open && !modal_open(&ui)
-			whip_content := whip_active && (!single_pane() || ui.whip_detail)
+			whip_controls(&ui, client)
+			whip_view := whip_visibility(&ui)
 			rl.WhipFrame(
-				whip_active ? (whip_content ? .Visible : .Projects) : .Hidden,
+				whip_view,
 				ui.whip_project,
 				ui.whip_tabs[ui.whip_project],
+				whip_attach_surfaces(&ui),
+				whip_attach_focused(&ui),
 			)
 			whip_sync_tabs(&ui)
-			whip_controls(&ui)
+			whip_activity_sync(&ui)
+			whip_focus_restore(&ui)
+			whip_workspace_sync(&ui)
 			for notice in rl.WhipNotices() {
 				do_notify(
 					&ui,
@@ -1604,7 +1561,12 @@ app_main :: proc() {
 					notice.body != "" ? notice.body : tr("A terminal is waiting for you."),
 				)
 			}
-			rl.SetTextInput(text_field_live || whip_content)
+			rl.SetTextInput(
+				text_field_live ||
+				whip_view == .Visible ||
+				whip_view == .Unfocused ||
+				whip_attach_focused(&ui) != 0,
+			)
 			if text_field_live {
 				rl.SetTextInputArea(
 					i32(caret_box.x * UI_ZOOM),
@@ -1614,7 +1576,7 @@ app_main :: proc() {
 				)
 			}
 			text_field_live = false
-			if !photo_captured {
+			if !photo_captured && !whip_captured && !whip_attach_pointer(&ui) {
 				handle_orbit()
 				handle_gcode_bar()
 				handle_anim_bar()
@@ -1885,6 +1847,7 @@ app_main :: proc() {
 		delete(ui.chats); delete(ui.archived); delete(retired_chats); retired_chats = {}
 		for msg in ui.messages {message_free(msg)}
 		delete(ui.messages)
+		reading_clear(&ui)
 		delete(ui.messages_group)
 		delete(ui.messages_account)
 		wrap_clear()

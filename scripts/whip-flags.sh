@@ -41,15 +41,18 @@ wn_whip_flags() {
 
   # Keep the installed sibling read-only. The host hook changes no protocol
   # or Ghostty ABI; the installed library's compatibility ID stays unchanged.
-  local overlay patch controls source_stamp staged
+  local overlay patch controls render source_patch scale source_stamp staged
   overlay="$root/build/whip-embed"
   patch="$root/patches/whip-host-notices.patch"
   controls="$root/patches/whip-host-controls.patch"
+  render="$root/patches/whip-host-render.patch"
+  source_patch="$root/patches/whip-host-source.patch"
+  scale="$root/patches/whip-host-scale.patch"
   source_stamp="$(
     set -o pipefail
     {
       find "$whip/src" -type f ! -name .env ! -name '*.env' -print0 | sort -z | xargs -0 -r sha256sum || exit $?
-      sha256sum "$patch" "$controls"
+      sha256sum "$patch" "$controls" "$render" "$source_patch" "$scale"
     } | sha256sum
   )" || return $?
   if [ ! -f "$overlay/.source-stamp" ] || [ "$(cat "$overlay/.source-stamp")" != "$source_stamp" ]; then
@@ -63,6 +66,12 @@ wn_whip_flags() {
         GIT_CEILING_DIRECTORIES="$root/build" git -C "$staged" apply "$patch" &&
       env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
         GIT_CEILING_DIRECTORIES="$root/build" git -C "$staged" apply "$controls" &&
+      env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+        GIT_CEILING_DIRECTORIES="$root/build" git -C "$staged" apply "$render" &&
+      env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+        GIT_CEILING_DIRECTORIES="$root/build" git -C "$staged" apply "$source_patch" &&
+      env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+        GIT_CEILING_DIRECTORIES="$root/build" git -C "$staged" apply "$scale" &&
       printf '%s\n' "$source_stamp" > "$staged/.source-stamp"
     }; then
       rm -rf "$staged"

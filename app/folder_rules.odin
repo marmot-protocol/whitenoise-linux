@@ -31,6 +31,7 @@ Folder_Rule_Kind :: enum {
 	More_Than, // the group has more than `count` people
 	Unread, // the chat has unread messages or a manual unread mark
 	Has_Draft, // the chat has unsent composer text saved
+	Is_Whip, // the row is a Whip project, not an engine chat
 }
 
 @(private)
@@ -72,6 +73,7 @@ FOLDER_RULE_LABELS := [Folder_Rule_Kind]string {
 	.More_Than  = N_("More than"),
 	.Unread     = N_("Has unread messages"),
 	.Has_Draft  = N_("Has a draft"),
+	.Is_Whip    = N_("Is Whip"),
 }
 
 @(private = "file")
@@ -85,14 +87,16 @@ FOLDER_RULE_ICONS := [Folder_Rule_Kind]string {
 	.More_Than  = ICON_PEOPLE,
 	.Unread     = ICON_ENVELOPE,
 	.Has_Draft  = ICON_DRAFT,
+	.Is_Whip    = ICON_CODE,
 }
 
-// What the rules read about one chat, gathered once per frame.
+// What the rules read about one inbox row, gathered once per frame.
 @(private)
 Chat_Facts :: struct {
 	title:   string, // lowercased
 	unread:  bool,
 	draft:   bool,
+	whip:    bool,
 	members: []string, // pubkey hex, including you
 	known:   bool, // members were read; size rules never guess
 }
@@ -112,6 +116,8 @@ folder_rule_holds :: proc(rule: Folder_Rule, facts: Chat_Facts) -> bool {
 		return facts.unread
 	case .Has_Draft:
 		return facts.draft
+	case .Is_Whip:
+		return facts.whip
 	}
 	return false
 }
@@ -258,7 +264,7 @@ folder_rules_store :: proc(ui: ^Ui_State, name: string, set: Folder_Rules) {
 
 @(private = "file")
 folder_rule_typed :: proc(kind: Folder_Rule_Kind) -> bool {
-	return kind != .Unread && kind != .Has_Draft
+	return kind != .Unread && kind != .Has_Draft && kind != .Is_Whip
 }
 
 @(private = "file")
@@ -306,7 +312,7 @@ folder_rules_load :: proc(ui: ^Ui_State, name: string) {
 			delete(npub)
 		case .Fewer_Than, .More_Than:
 			append(&draft.input, fmt.tprintf("%d", rule.count))
-		case .Unread, .Has_Draft:
+		case .Unread, .Has_Draft, .Is_Whip:
 		}
 		append(&ui.folder_rules, draft)
 	}
@@ -346,7 +352,7 @@ folder_rules_parse :: proc(ui: ^Ui_State) -> (set: Folder_Rules, bad: int, why: 
 				return {}, i, tr("Enter at least 2 people. Counts include you.")
 			}
 			rule.count = count
-		case .Unread, .Has_Draft:
+		case .Unread, .Has_Draft, .Is_Whip:
 		}
 		append(&set.rules, rule)
 	}
@@ -360,7 +366,7 @@ folder_rules_editor :: proc(ui: ^Ui_State) {
 	eyebrow(tr("RULES"))
 	clay.Text(
 		tr(
-			"Chats that match file here automatically. People counts include you. A chat you move by hand stays where you put it.",
+			"Chats and Whip projects that match file here automatically. People counts include you. Anything you move by hand stays where you put it.",
 		),
 		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
 	)

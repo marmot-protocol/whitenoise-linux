@@ -301,14 +301,8 @@ msgstr "Ein Häkchen heißt, dass du den Chat von Hand abgelegt hast. Entferne e
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "Ein Desktop-Client für private Gruppenchats. Nachrichten werden auf diesem Rechner mit MLS versiegelt, als opake Blobs an Nostr-Relays übergeben und erst innerhalb der Gruppe wieder geöffnet."
 
-msgid "A friend"
-msgstr "Ein Freund"
-
 msgid "A line about you"
 msgstr "Eine Zeile über dich"
-
-msgid "A little more room for conversation."
-msgstr "Ein bisschen mehr Platz für Gespräche."
 
 msgid "A terminal is waiting for you."
 msgstr "Ein Terminal wartet auf dich."
@@ -491,9 +485,6 @@ msgstr "Archivieren"
 msgid "Archive this chat?"
 msgstr "Diesen Chat archivieren?"
 
-msgid "Archived"
-msgstr "Archiviert"
-
 msgid "Archived chats"
 msgstr "Archivierte Chats"
 
@@ -609,9 +600,6 @@ msgstr "Backups enthalten, was dieses Gerät lokal speichert. Deine Schlüssel u
 
 msgid "Base color"
 msgstr "Grundfarbe"
-
-msgid "Berry"
-msgstr "Beere"
 
 msgid "Bevel light"
 msgstr "Fase hell"
@@ -797,8 +785,8 @@ msgstr "Chat: %s"
 msgid "Chats"
 msgstr "Chats"
 
-msgid "Chats that match file here automatically. People counts include you. A chat you move by hand stays where you put it."
-msgstr "Passende Chats landen automatisch hier. Die Personenzahl schließt dich ein. Ein Chat, den du von Hand verschiebst, bleibt, wo du ihn abgelegt hast."
+msgid "Chats and Whip projects that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
+msgstr "Chats und Whip-Projekte, die den Regeln entsprechen, werden hier automatisch einsortiert. Die Personenzahl schließt dich ein. Alles, was du manuell verschiebst, bleibt am gewählten Ort."
 
 msgid "Chats you archive will appear here."
 msgstr "Chats, die du archivierst, erscheinen hier."
@@ -848,8 +836,14 @@ msgstr "Wähle einen CSV- oder JSON-Kontaktexport zum Importieren."
 msgid "Choose a destination for this chat."
 msgstr "Wähle einen Zielordner für diesen Chat."
 
+msgid "Choose a destination for this project."
+msgstr "Wähle ein Ziel für dieses Projekt."
+
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr "Wähle einen bekannten Absender oder gib einen öffentlichen Hex-Schlüssel mit 64 Zeichen ein."
+
+msgid "Choose a project folder to open a terminal."
+msgstr "Wähle einen Projektordner, um ein Terminal zu öffnen."
 
 msgid "Choose a project folder."
 msgstr "Wähle einen Projektordner."
@@ -976,9 +970,6 @@ msgstr "Klappt Nachrichten und Ereigniskarten nach dieser Anzahl von Zeilen ein.
 
 msgid "Collapse the chat list"
 msgstr "Chatliste einklappen"
-
-msgid "Collapse the project list"
-msgstr "Projektliste einklappen"
 
 msgid "Collapse transcription"
 msgstr "Transkription einklappen"
@@ -1144,9 +1135,6 @@ msgstr "Kopiere diesen Link und öffne ihn in deinem Browser."
 msgid "Copy your public key"
 msgstr "Deinen öffentlichen Schlüssel kopieren"
 
-msgid "Coral"
-msgstr "Koralle"
-
 msgid "Corner scale"
 msgstr "Eckenskalierung"
 
@@ -1182,6 +1170,10 @@ msgid "Couldn't check for updates. Please try again."
 msgstr "Nach Updates konnte nicht gesucht werden. Bitte versuche es erneut."
 
 msgid "Couldn't choose a folder. Close your open file picker and try again."
+msgstr "Es konnte kein Ordner ausgewählt werden. Schließe deine geöffnete Dateiauswahl und versuche es erneut."
+
+#, fuzzy
+msgid "Couldn't choose a photo. Close your open file picker and try again."
 msgstr "Es konnte kein Ordner ausgewählt werden. Schließe deine geöffnete Dateiauswahl und versuche es erneut."
 
 msgid "Couldn't close the tab. Please try again."
@@ -1228,6 +1220,10 @@ msgstr "Der Tab konnte nicht erstellt werden. Bitte versuche es erneut."
 
 msgid "Couldn't create the vault. Please try again."
 msgstr "Der Tresor konnte nicht erstellt werden. Bitte versuche es erneut."
+
+#, fuzzy
+msgid "Couldn't crop the picture. Please try again."
+msgstr "Das Mikrofon konnte nicht geöffnet werden. Bitte versuche es erneut."
 
 msgid "Couldn't decode the image. Choose a PNG or JPEG."
 msgstr "Das Bild konnte nicht dekodiert werden. Wähle ein PNG oder JPEG."
@@ -1397,6 +1393,10 @@ msgstr "Die Sprachausgabe konnte nicht wiedergegeben werden. Prüfe deine Audioa
 msgid "Couldn't play video. Click to retry."
 msgstr "Das Video konnte nicht abgespielt werden. Klicke, um es erneut zu versuchen."
 
+#, fuzzy
+msgid "Couldn't preview the picture. Please try again."
+msgstr "Die Änderung konnte nicht gespeichert werden. Bitte versuche es erneut."
+
 #, c-format
 msgid "Couldn't publish the photo. %s"
 msgstr "Das Foto konnte nicht veröffentlicht werden. %s"
@@ -1410,6 +1410,10 @@ msgstr "Die Namecoin-Resolver konnten nicht erreicht werden. Bitte versuche es e
 
 msgid "Couldn't reach your signer. Please try again."
 msgstr "Dein Signer konnte nicht erreicht werden. Bitte versuche es erneut."
+
+#, fuzzy, c-format
+msgid "Couldn't read %s."
+msgstr "Der Chat konnte nicht archiviert werden. %s"
 
 #, c-format
 msgid "Couldn't read %s. Please try again."
@@ -1582,6 +1586,10 @@ msgstr "Diese Datei kann nicht verwendet werden. Wähle ein PNG oder JPEG."
 msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr "Dieses Theme konnte nicht verwendet werden. Es ist kein Theme, das diese Version lesen kann."
 
+#, fuzzy
+msgid "Couldn't use the picture. Wait a moment and try again."
+msgstr "Der Sticker konnte nicht gespeichert werden. Warte, bis das Bild geladen ist, und versuche es erneut."
+
 msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
 msgstr "Der Sticker konnte nicht verwendet werden. Wähle eine statische PNG-, WebP- oder JPEG-Datei mit höchstens 4096 Pixeln."
 
@@ -1641,6 +1649,9 @@ msgstr "Dein Chat wird erstellt"
 
 msgid "Creating your vault…"
 msgstr "Dein Tresor wird erstellt…"
+
+msgid "Crop"
+msgstr ""
 
 msgid "Crop circle shape"
 msgstr "Kornkreis-Form"
@@ -1827,6 +1838,9 @@ msgstr "Diskussion"
 msgid "Divider"
 msgstr "Trennlinie"
 
+msgid "Dock to chat"
+msgstr "Im Chat andocken"
+
 msgid "Documents"
 msgstr "Dokumente"
 
@@ -1857,6 +1871,9 @@ msgstr "Ziehe einen Chat auf einen Ordner, um ihn dort zu behalten, oder ziehe e
 
 msgid "Drag a folder to reorder it. Your chats appear here once you have some."
 msgstr "Zieh einen Ordner, um die Reihenfolge zu ändern. Deine Chats erscheinen hier, sobald du welche hast."
+
+msgid "Drag inside to move. Drag a corner to resize."
+msgstr ""
 
 msgid "Drop files to attach"
 msgstr "Dateien zum Anhängen ablegen"
@@ -2021,9 +2038,6 @@ msgstr "Vollbild verlassen"
 msgid "Expand the chat list"
 msgstr "Chatliste ausklappen"
 
-msgid "Expand the project list"
-msgstr "Projektliste ausklappen"
-
 msgid "Export"
 msgstr "Exportieren"
 
@@ -2122,6 +2136,9 @@ msgstr "Fitness"
 
 msgid "Flag"
 msgstr "Flagge"
+
+msgid "Float"
+msgstr "Schweben lassen"
 
 msgid "Focus glow"
 msgstr "Fokusleuchten"
@@ -2280,9 +2297,6 @@ msgstr "Gruppen"
 
 msgid "Groups you join will appear here."
 msgstr "Gruppen, denen du beitrittst, erscheinen hier."
-
-msgid "HIGHLIGHT"
-msgstr "MARKIERUNG"
 
 msgid "Hand-drawn filter"
 msgstr "Handgezeichneter Filter"
@@ -2480,6 +2494,9 @@ msgstr "Ausgewählten Text invertieren"
 msgid "Invite"
 msgstr "Einladen"
 
+msgid "Is Whip"
+msgstr "Ist Whip"
+
 msgid "Issue title"
 msgstr "Titel der Meldung"
 
@@ -2560,6 +2577,9 @@ msgstr "Schlüsselpakete"
 msgid "Key packages (published to your kind-10051 relay list)"
 msgstr "Schlüsselpakete (veröffentlicht auf den Relays deiner Kind-10051-Liste)"
 
+msgid "Keyboard input"
+msgstr "Tastatureingabe"
+
 msgid "Keyboard shortcuts"
 msgstr "Tastenkürzel"
 
@@ -2610,9 +2630,6 @@ msgstr "Später"
 
 msgid "Launch at login"
 msgstr "Beim Anmelden starten"
-
-msgid "Lavender"
-msgstr "Lavendel"
 
 msgid "Layout"
 msgstr "Layout"
@@ -2782,8 +2799,8 @@ msgstr "Alle Regeln erfüllen"
 msgid "Match any rule"
 msgstr "Eine Regel erfüllen"
 
-msgid "Maximize or restore pane"
-msgstr "Bereich maximieren oder wiederherstellen"
+msgid "Maximize pane"
+msgstr "Bereich maximieren"
 
 msgid "May"
 msgstr "Mai"
@@ -2842,9 +2859,6 @@ msgstr "Metallizität"
 
 msgid "Micro"
 msgstr "Mikro"
-
-msgid "Mint"
-msgstr "Minze"
 
 msgid "Model inspector"
 msgstr "Modellinspektor"
@@ -2942,11 +2956,11 @@ msgstr "Neue Nachricht"
 msgid "New name"
 msgstr "Neuer Name"
 
-msgid "New project"
-msgstr "Neues Projekt"
-
 msgid "New tab"
 msgstr "Neuer Tab"
+
+msgid "New terminal"
+msgstr "Neues Terminal"
 
 msgid "News"
 msgstr "Nachrichten"
@@ -2969,6 +2983,9 @@ msgstr "Spitzname"
 msgid "No GIFs found. Try another search."
 msgstr "Keine GIFs gefunden. Versuche einen anderen Suchbegriff."
 
+msgid "No Whip projects"
+msgstr "Keine Whip-Projekte"
+
 msgid "No archived chats"
 msgstr "Keine archivierten Chats"
 
@@ -2983,6 +3000,10 @@ msgstr "Kein Chat ist geöffnet. Wähle einen aus und aktualisiere."
 
 msgid "No chats match your filter."
 msgstr "Keine Chats passen zu deinem Filter."
+
+#, fuzzy
+msgid "No chats or terminals yet"
+msgstr "Noch keine Chats zum Teilen."
 
 msgid "No chats to share with yet."
 msgstr "Noch keine Chats zum Teilen."
@@ -3081,9 +3102,6 @@ msgstr "Keine Vorschau verfügbar"
 msgid "No preview for this file type. Save it, or read the bytes."
 msgstr "Für diesen Dateityp gibt es keine Vorschau. Speichere die Datei oder sieh dir die Bytes an."
 
-msgid "No projects yet"
-msgstr "Noch keine Projekte"
-
 #, c-format
 msgid "No record with id %s in this chat's window."
 msgstr "Kein Eintrag mit der ID %s im geladenen Bereich dieses Chats."
@@ -3153,9 +3171,6 @@ msgstr "OFFLINE"
 
 msgid "ONLINE"
 msgstr "ONLINE"
-
-msgid "Ocean"
-msgstr "Ozean"
 
 msgid "Oct"
 msgstr "Okt."
@@ -3311,11 +3326,17 @@ msgstr "Mit deinem Remote-Signer koppeln"
 msgid "Pairing link copied"
 msgstr "Kopplungslink kopiert"
 
+msgid "Pane %d of %d"
+msgstr "Bereich %d von %d"
+
 msgid "Panel"
 msgstr "Panel"
 
 msgid "Panel 2"
 msgstr "Panel 2"
+
+msgid "Panes are floating or docked to chats."
+msgstr "Die Bereiche schweben oder sind an Chats angedockt."
 
 msgid "Password"
 msgstr "Passwort"
@@ -3450,6 +3471,10 @@ msgstr "Projektfoto wird vorbereitet…"
 
 msgid "Preparing speech..."
 msgstr "Sprachausgabe wird vorbereitet..."
+
+#, fuzzy
+msgid "Preparing the cropped picture…"
+msgstr "Projektfoto wird vorbereitet…"
 
 msgid "Preparing transcription..."
 msgstr "Transkription wird vorbereitet..."
@@ -3742,6 +3767,9 @@ msgstr "Zurücksetzen"
 msgid "Reset zoom"
 msgstr "Zoom zurücksetzen"
 
+msgid "Resize terminal"
+msgstr "Terminalgröße ändern"
+
 msgid "Resolve"
 msgstr "Als gelöst markieren"
 
@@ -3757,14 +3785,23 @@ msgstr "Wiederherstellen"
 msgid "Restore last selected chat on launch"
 msgstr "Letzten Chat beim Start wiederherstellen"
 
+msgid "Restore panes"
+msgstr "Bereiche wiederherstellen"
+
 msgid "Restore the default reactions"
 msgstr "Standardreaktionen wiederherstellen"
 
 msgid "Restore the last chat on launch"
 msgstr "Letzten Chat beim Start öffnen"
 
+msgid "Restoring terminal history…"
+msgstr "Terminalverlauf wird wiederhergestellt…"
+
 msgid "Retry"
 msgstr "Erneut versuchen"
+
+msgid "Return to project"
+msgstr "Zurück zum Projekt"
 
 msgid "Reveal"
 msgstr "Anzeigen"
@@ -4402,8 +4439,14 @@ msgstr "Aufgaben"
 msgid "Teal"
 msgstr "Blaugrün"
 
+msgid "Terminal"
+msgstr "Terminal"
+
 msgid "Terminal agent by Nous Research"
 msgstr "Terminal-Agent von Nous Research"
+
+msgid "Terminal unfocused"
+msgstr "Terminal ohne Fokus"
 
 #, c-format
 msgid "Terrain: %d/5"
@@ -4433,9 +4476,6 @@ msgstr "Text: %s"
 
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr "Texturierte Striche und skizzierte Avatare. Formen bleiben unverändert."
-
-msgid "That feels right."
-msgstr "So fühlt es sich richtig an."
 
 msgid "That isn't your current password. Double-check it and try again."
 msgstr "Das ist nicht dein aktuelles Passwort. Überprüfe es und versuche es erneut."
@@ -4656,6 +4696,10 @@ msgstr "Vertrauenswürdige Websites"
 msgid "Try a different search."
 msgstr "Versuche eine andere Suche."
 
+#, fuzzy
+msgid "Try again"
+msgstr "Erneut suchen"
+
 msgid "Tuesday"
 msgstr "Dienstag"
 
@@ -4746,6 +4790,9 @@ msgstr "Hochgeladene Emojis"
 msgid "Uploading picture"
 msgstr "Bild wird hochgeladen"
 
+msgid "Use"
+msgstr ""
+
 msgid "Use New folder to create a folder, then drag a chat onto it."
 msgstr "Erstelle mit Neuer Ordner einen Ordner und zieh dann einen Chat hinein."
 
@@ -4769,6 +4816,14 @@ msgstr "Emoji-Bild verwenden"
 
 msgid "Use only an agent you run and trust. Your private key is never included."
 msgstr "Verwende nur einen Agenten, den du selbst betreibst und dem du vertraust. Dein privater Schlüssel wird niemals eingefügt."
+
+#, fuzzy
+msgid "Use original"
+msgstr "Original"
+
+#, fuzzy
+msgid "Use this photo?"
+msgstr "Dieses Theme verwenden"
 
 msgid "Use this theme"
 msgstr "Dieses Theme verwenden"

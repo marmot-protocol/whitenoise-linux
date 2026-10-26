@@ -1,4 +1,4 @@
-// Rail ordering and folder grouping for the chat list.
+// Rail ordering and folder grouping for the mixed inbox.
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 
@@ -35,7 +35,7 @@ rail_order_pins_first :: proc(t: ^testing.T) {
 }
 
 @(test)
-chat_folder_sections_keep_order_and_count_unread :: proc(t: ^testing.T) {
+inbox_sections_keep_order_and_count_unread :: proc(t: ^testing.T) {
 	ui: Ui_State
 	append(&ui.prefs.folders, "Work", "Family")
 	append(
@@ -58,14 +58,18 @@ chat_folder_sections_keep_order_and_count_unread :: proc(t: ^testing.T) {
 	ui.prefs.unread_ids["work-pinned"] = true // Still one unread chat, not two.
 	ui.prefs.unread_ids["unfiled-pinned"] = true
 	ui.prefs.unread_ids["family-pinned"] = true
+	ui.prefs.pinned["work-pinned"] = true
+	ui.prefs.pinned["unfiled-pinned"] = true
+	ui.prefs.pinned["family-pinned"] = true
 	defer delete(ui.chats)
 	defer delete(ui.prefs.folders)
 	defer delete(ui.prefs.folder_of)
 	defer delete(ui.prefs.unread_ids)
+	defer delete(ui.prefs.pinned)
 
-	// The rail has already moved pins first, preserving activity order in each half.
-	order := []int{3, 4, 5, 0, 1, 2, 6, 7}
-	sections, grouped := chat_folder_sections(&ui, order, context.allocator)
+	// The mixed inbox moves pins first, preserving activity order in each half.
+	order := inbox_rows(&ui, []int{0, 1, 2, 3, 4, 5, 6, 7}, nil)
+	sections, grouped := inbox_sections(&ui, order, context.allocator)
 	defer delete(sections)
 	defer delete(grouped)
 	if !testing.expect_value(t, len(sections), 3) {return}
@@ -83,7 +87,8 @@ chat_folder_sections_keep_order_and_count_unread :: proc(t: ^testing.T) {
 		testing.expect_value(t, section.unread, expected[i].unread)
 	}
 	for index, i in ([]int{3, 2, 5, 0, 7, 4, 1, 6}) {
-		testing.expect_value(t, grouped[i], index)
+		testing.expect_value(t, grouped[i].kind, Inbox_Kind.Chat)
+		testing.expect_value(t, grouped[i].index, index)
 	}
 }
 
@@ -156,8 +161,8 @@ folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
 		delete(ui.chat_members)
 	}
 
-	order := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-	sections, grouped := chat_folder_sections(&ui, order, context.allocator)
+	order := inbox_rows(&ui, []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, nil)
+	sections, grouped := inbox_sections(&ui, order, context.allocator)
 	defer delete(sections)
 	defer delete(grouped)
 	if !testing.expect_value(t, len(sections), 5) {return}
@@ -170,9 +175,81 @@ folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
 		section := sections[slot]
 		if !testing.expect_value(t, section.count, len(rows)) {continue}
 		for index, i in rows {
-			testing.expect_value(t, grouped[section.start + i], index)
+			testing.expect_value(t, grouped[section.start + i].kind, Inbox_Kind.Chat)
+			testing.expect_value(t, grouped[section.start + i].index, index)
 		}
 	}
+}
+
+@(test)
+inbox_sections_manual_terminal_moves_preserve_chats :: proc(t: ^testing.T) {
+	ui: Ui_State
+	append(&ui.prefs.folders, "Work", "Family")
+	append(&ui.chats, Chat_Row_Ui{group_id = "ordinary-chat", title = "Work chat"})
+	chat_key := ui.chats[0].group_id
+	terminal_key := "whip:/work/terminal"
+	unfiled_key := "whip:/work/unfiled"
+	folder_place(&ui, chat_key, "Work")
+	folder_place(&ui, terminal_key, "Work")
+	folder_place(&ui, unfiled_key, "")
+	defer {
+		folder_unplace(&ui, chat_key)
+		folder_unplace(&ui, terminal_key)
+		folder_unplace(&ui, unfiled_key)
+		delete(ui.prefs.folder_of)
+		delete(ui.prefs.folders)
+		delete(ui.chats)
+	}
+
+	// Terminal indexes deliberately overlap chats or exceed their bounds.
+	// Manual filing must use the stable key, never look up a fake chat/project.
+	order := []Inbox_Row {
+		{
+			kind = .Terminal,
+			index = 0,
+			project = 41,
+			key = terminal_key,
+			pinned = true,
+			unread = true,
+		},
+		{kind = .Chat, index = 0, key = chat_key},
+		{kind = .Terminal, index = 99, project = 42, key = unfiled_key, unread = true},
+	}
+	sections, grouped := inbox_sections(&ui, order, context.allocator)
+	defer delete(sections)
+	defer delete(grouped)
+	if !testing.expect_value(t, len(sections), 3) {return}
+	if !testing.expect_value(t, len(grouped), 3) {return}
+	testing.expect_value(t, sections[0].start, 0)
+	testing.expect_value(t, sections[0].count, 2)
+	testing.expect_value(t, sections[0].unread, 1)
+	testing.expect_value(t, sections[1].start, 2)
+	testing.expect_value(t, sections[1].count, 0)
+	testing.expect_value(t, sections[2].start, 2)
+	testing.expect_value(t, sections[2].count, 1)
+	testing.expect_value(t, sections[2].unread, 1)
+	for row, i in order {
+		testing.expect_value(t, grouped[i].key, row.key)
+		testing.expect_value(t, grouped[i].kind, row.kind)
+		testing.expect_value(t, grouped[i].project, row.project)
+	}
+
+	folder_place(&ui, terminal_key, "Family")
+	moved_sections, moved := inbox_sections(&ui, order, context.allocator)
+	defer delete(moved_sections)
+	defer delete(moved)
+	testing.expect_value(t, moved_sections[0].start, 0)
+	testing.expect_value(t, moved_sections[0].count, 1)
+	testing.expect_value(t, moved_sections[0].unread, 0)
+	testing.expect_value(t, moved_sections[1].start, 1)
+	testing.expect_value(t, moved_sections[1].count, 1)
+	testing.expect_value(t, moved_sections[1].unread, 1)
+	testing.expect_value(t, moved[0].key, chat_key)
+	testing.expect_value(t, moved[1].key, terminal_key)
+	testing.expect_value(t, moved[2].key, unfiled_key)
+	testing.expect_value(t, ui.prefs.folder_of[chat_key], "Work")
+	testing.expect_value(t, ui.chats[0].group_id, chat_key)
+	testing.expect_value(t, len(ui.chats), 1)
 }
 
 @(test)

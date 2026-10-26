@@ -1,0 +1,238 @@
+diff --git a/src/gui/app.odin b/src/gui/app.odin
+--- a/src/gui/app.odin
++++ b/src/gui/app.odin
+@@ -114,6 +114,7 @@
+ 	frame_revision:   u64,
+ 	frame_w, frame_h: int,
+ 	frame_pending:    bool,
++	fonts_pending:    bool, // reload only while rendering in the owning GL context
+ 	pending_key:      Maybe(Pending_Key),
+ 	preedit:          [dynamic]rune,
+ 	scroll_acc:       f32,
+@@ -233,6 +234,7 @@
+ 	bounds: model.Rect,
+ 	target: View_Target = {},
+ 	source: ^App = nil,
++	font_scale: f32 = 0,
+ ) -> ^App {
+ 	if window == nil || bounds.w <= 0 || bounds.h <= 0 {
+ 		return nil
+@@ -246,7 +248,7 @@
+ 		fmt.eprintln("whip: start the session server before embedding:", session)
+ 		return nil
+ 	}
+-	return create_connected(window, session, bounds, sock, .Reject, target, source)
++	return create_connected(window, session, bounds, sock, .Reject, target, source, font_scale)
+ }
+ 
+ @(private)
+@@ -258,6 +260,7 @@
+ 	upgrade: Upgrade_Policy,
+ 	target: View_Target = {},
+ 	source: ^App = nil,
++	font_scale: f32 = 0,
+ ) -> ^App {
+ 	state := gl_state_save()
+ 	defer gl_state_restore(state)
+@@ -274,7 +277,7 @@
+ 	app.home = os.get_env("HOME", context.allocator)
+ 	app.config = config.load()
+ 	app.show_sidebar = true
+-	app.scale = sdl.GetWindowDisplayScale(window)
++	app.scale = font_scale > 0 ? font_scale : sdl.GetWindowDisplayScale(window)
+ 	set_bounds(app, bounds)
+ 	ready := false
+ 	defer if !ready {
+@@ -388,6 +391,11 @@
+ 		app.fb_w, app.fb_h = max(bounds.w, 0), max(bounds.h, 0)
+ 		app.force_draw ||= size_changed
+ 	}
++	// Hosts set bounds even when compositing a cached texture. Keep the IME
++	// anchor current without rerendering or widening place_ime's visibility.
++	if app.focused && app.frame_ready && bounds.w > 0 && bounds.h > 0 {
++		place_ime(app)
++	}
+ }
+ 
+ set_focus :: proc(app: ^App, focus: Focus) {
+@@ -551,7 +559,7 @@
+ 		app.running &&
+ 		app.fb_w > 0 &&
+ 		app.fb_h > 0 &&
+-		(!app.frame_ready || app.force_draw || app.motion.moving) \
++		(!app.frame_ready || app.force_draw || app.fonts_pending || app.motion.moving) \
+ 	)
+ }
+ 
+@@ -652,11 +660,7 @@
+ 	app.config = next
+ 
+ 	if !same_font {
+-		font.fonts_destroy(&app.fonts)
+-		if !fonts_load(app) {
+-			app.running = false
+-			return
+-		}
++		app.fonts_pending = true
+ 	}
+ 	for _, pv in app.panes {
+ 		if !same_colors && pv.term != nil {
+@@ -674,6 +678,19 @@
+ 	if !needs_frame(app) {
+ 		return app.frame_ready
+ 	}
++	state, ok := ui_state_save(app)
++	if !ok {
++		return false
++	}
++	defer ui_state_restore(state)
++	if app.fonts_pending {
++		font.fonts_destroy(&app.fonts)
++		if !fonts_load(app) {
++			app.running = false
++			return false
++		}
++		app.fonts_pending = false
++	}
+ 	app.frame_pending = true
+ 	if !app.layout_ready {
+ 		return app.frame_ready
+@@ -686,11 +703,6 @@
+ 			return app.frame_ready
+ 		}
+ 	}
+-	state, ok := ui_state_save(app)
+-	if !ok {
+-		return false
+-	}
+-	defer ui_state_restore(state)
+ 	report_focus_change(app)
+ 	notices_seen(app)
+ 
+@@ -830,15 +842,14 @@
+ 	case .WINDOW_PIXEL_SIZE_CHANGED, .WINDOW_EXPOSED:
+ 		app.force_draw = true
+ 	case .WINDOW_DISPLAY_SCALE_CHANGED:
+-		app.scale = sdl.GetWindowDisplayScale(app.window)
+-		font.fonts_destroy(&app.fonts)
+-		if !fonts_load(app) {
+-			fmt.eprintln("whip: font reload failed")
+-			app.running = false
+-			return
+-		}
+-		for _, pv in app.panes {
+-			pv.view.force_full = true
++		// SDL hosts provide display scale and zoom together at render time.
++		// An event must not replace that absolute scale with display DPI alone.
++		if app.render_window == app.window {
++			scale := sdl.GetWindowDisplayScale(app.window)
++			if app.scale != scale {
++				app.scale = scale
++				app.fonts_pending = true
++			}
+ 		}
+ 		app.force_draw = true
+ 	case .WINDOW_FOCUS_GAINED, .WINDOW_FOCUS_LOST:
+diff --git a/src/gui/sdl_embed.odin b/src/gui/sdl_embed.odin
+--- a/src/gui/sdl_embed.odin
++++ b/src/gui/sdl_embed.odin
+@@ -21,6 +21,13 @@
+ 	width, height:               int,
+ 	target_width, target_height: int,
+ 	frame_revision:              u64,
++	scale_pending:               bool, // requested fonts/geometry not yet published
++}
++
++@(private)
++Font_Refresh :: enum {
++	Allow,
++	Defer,
+ }
+ 
+ // SDL video must already be initialized. All calls, including the view's
+@@ -32,6 +39,7 @@
+ 	bounds: model.Rect,
+ 	target: View_Target = {},
+ 	source: ^App = nil,
++	font_scale: f32 = 0,
+ ) -> (
+ 	result: ^SDL_UI,
+ ) {
+@@ -78,7 +86,7 @@
+ 	if !ok {
+ 		return nil
+ 	}
+-	ui.view = create(window, session, bounds, target, source)
++	ui.view = create(window, session, bounds, target, source, font_scale)
+ 	if ui.view == nil {
+ 		return nil
+ 	}
+@@ -90,7 +98,16 @@
+ 
+ // Composites into the current SDL render target without presenting it. Bounds
+ // are physical target pixels; SDL's viewport and clip still constrain drawing.
+-render_sdl :: proc(ui: ^SDL_UI) -> (ok: bool) {
++// font_scale is an absolute multiplier of the configured size at 96 dpi;
++// zero retains the current scale. Hosts can defer costly font reloads while
++// continuing to composite the last valid texture with font_refresh = .Defer.
++render_sdl :: proc(
++	ui: ^SDL_UI,
++	font_scale: f32 = 0,
++	font_refresh: Font_Refresh = .Allow,
++) -> (
++	ok: bool,
++) {
+ 	if ui == nil || ui.view == nil {
+ 		return false
+ 	}
+@@ -99,12 +116,23 @@
+ 	if bounds.w <= 0 || bounds.h <= 0 {
+ 		return false
+ 	}
++	scale_changed := font_scale > 0 && ui.view.scale != font_scale
++	refresh_pending := scale_changed || ui.view.fonts_pending
++	// A real release must still use the metrics that received its press.
++	allow_font_refresh := font_refresh == .Allow && ui.view.mouse.drag == .None
++	ui.scale_pending = refresh_pending
++	if scale_changed && allow_font_refresh {
++		ui.view.scale = font_scale
++		ui.view.fonts_pending = true
++		ui.view.force_draw = true
++	}
+ 	previous_window := sdl.GL_GetCurrentWindow()
+ 	previous_context := sdl.GL_GetCurrentContext()
+ 	defer if !sdl_ui_current(previous_window, previous_context) {
+ 		ok = false
+ 	}
+-	if needs_frame(ui.view) || ui.frame_revision != ui.view.frame_revision {
++	if (!refresh_pending || allow_font_refresh) &&
++	   (needs_frame(ui.view) || ui.frame_revision != ui.view.frame_revision) {
+ 		// Finish queued host batches before touching the bridge's GL context.
+ 		// Warm cached composites never flush, switch, draw, read back or upload.
+ 		if !sdl.FlushRenderer(ui.renderer) {
+@@ -136,6 +164,8 @@
+ 			return false
+ 		}
+ 	}
++	ui.scale_pending =
++		scale_changed && !allow_font_refresh || ui.view.fonts_pending || ui.view.frame_pending
+ 	// An initial snapshot may still be pending. Leave the host surface alone;
+ 	// after publication the last complete frame scales across pending resizes.
+ 	if ui.texture == nil {
+diff --git a/src/gui/panes.odin b/src/gui/panes.odin
+--- a/src/gui/panes.odin
++++ b/src/gui/panes.odin
+@@ -141,12 +141,8 @@
+ 	if delta == pv.font_delta {
+ 		return
+ 	}
+-	pane_fonts_destroy(pv)
+ 	pv.font_delta = delta
+-	if !pane_fonts_load(app, pv) {
+-		app.running = false
+-		return
+-	}
++	app.fonts_pending = true
+ 	pv.view.force_full = true
+ 	app.claim_sizes = true
+ 	app.force_draw = true

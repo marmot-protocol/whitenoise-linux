@@ -48,4 +48,20 @@ workspace_load_boundaries :: proc(t: ^testing.T) {
 		testing.expect_value(t, ui.prefs.window_w, i32(1024))
 		testing.expect_value(t, ui.prefs.window_h, i32(700))
 	}
+	for seed in ([]struct {
+			prefs:  string,
+			page:   Page,
+			filter: Chat_Filter,
+		}{{`"chat_filter":3`, .Archived, .Chats}, {`"chat_filter":4`, .Chats, .Whip}, {`"page":1,"chat_filter":3`, .Contacts, .Chats}, {`"chat_filter":999`, .Chats, .Chats}}) {
+		data := strings.concatenate({`{"prefs":{"zoom_pct":125,`, seed.prefs, `}}`})
+		if !testing.expect(
+			t,
+			os.write_entire_file(settings_path(), transmute([]u8)data) == nil,
+		) {return}
+		ui: Ui_State
+		load_settings(&ui, .Preferences)
+		testing.expect_value(t, ui.page, seed.page)
+		testing.expect_value(t, ui.chat_filter, seed.filter)
+		testing.expect_value(t, ui.prefs.zoom_pct, 125)
+	}
 }

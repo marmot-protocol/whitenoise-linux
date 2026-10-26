@@ -15,7 +15,7 @@ WHIP_AVATAR_PREFIX :: "wn-whip-avatar:"
 
 @(private)
 Whip_Avatar_Key :: struct {
-	folder, crop, basename, url: string,
+	folder, crop, basename, url, inbox: string,
 }
 
 @(private = "file")
@@ -241,7 +241,7 @@ whip_avatar_stop :: proc(ui: ^Ui_State) {
 	}
 	for dir, key in whip_avatar_keys {
 		delete(dir); delete(key.folder); delete(key.crop)
-		delete(key.basename); delete(key.url); free(key)
+		delete(key.basename); delete(key.url); delete(key.inbox); free(key)
 	}
 	delete(whip_avatar_keys); whip_avatar_keys = nil
 }

@@ -210,7 +210,6 @@ shell_navigation :: proc(ui: ^Ui_State) {
 		for page in ([3]Page{.Chats, .Contacts, .Archived}) {
 			nav_button(page, ui.page == page)
 		}
-		if rl.WhipAvailable() {nav_button(.Whip, ui.page == .Whip)}
 		if !single_pane() && ui.page != .Archived && ui.page != .Settings {
 			if clay.UI(clay.ID("RailCollapse"))(
 			{
@@ -225,7 +224,7 @@ shell_navigation :: proc(ui: ^Ui_State) {
 				collapsed := rail_narrow(ui)
 				if hovered() {
 					tooltip(
-						ui.page == .Whip ? (collapsed ? tr("Expand the project list") : tr("Collapse the project list")) : (collapsed ? tr("Expand the chat list") : tr("Collapse the chat list")),
+						collapsed ? tr("Expand the chat list") : tr("Collapse the chat list"),
 						.Right,
 					)
 				}
@@ -286,6 +285,7 @@ fit_w :: proc(w: f32, margin: f32 = 12) -> f32 {
 // Match the actual shell allocation, including the draggable separator.
 page_w :: proc(ui: ^Ui_State) -> f32 {
 	if ui.chat_preview_w > 0 {return ui.chat_preview_w}
+	if ui.whip_chat_width > 0 {return ui.whip_chat_width}
 	width := f32(rl.GetScreenWidth()) / UI_ZOOM
 	if single_pane() {
 		return phone_detail(ui) ? width : 0
@@ -333,11 +333,9 @@ phone_detail :: proc(ui: ^Ui_State) -> bool {
 	}
 	switch ui.page {
 	case .Chats:
-		return ui.selected >= 0
+		return ui.whip_open || ui.selected >= 0
 	case .Contacts:
 		return ui.selected_contact >= 0
-	case .Whip:
-		return ui.whip_detail
 	case .Settings, .Archived, .Profile:
 		return true
 	}
@@ -375,13 +373,12 @@ phone_back_action :: proc(ui: ^Ui_State) {
 	}
 	switch ui.page {
 	case .Chats:
+		ui.whip_open = false
 		ui.selected = -1
 	case .Contacts:
 		ui.selected_contact = -1
 	case .Settings:
 		settings_back(ui)
-	case .Whip:
-		ui.whip_detail = false
 	case .Archived, .Profile:
 		ui.page = .Chats // no list half of their own to fall back to
 	}

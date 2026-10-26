@@ -193,6 +193,7 @@ handle_reply_jump :: proc(ui: ^Ui_State) {
 	}
 	delete(ui.jump_id)
 	ui.jump_id = strings.clone(reply_jump_hover)
+	ui.reading_pending = {}
 	reply_jump_hover = ""
 }
 

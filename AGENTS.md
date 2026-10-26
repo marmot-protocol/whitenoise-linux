@@ -196,13 +196,16 @@ physical width, including UI zoom and display density, capped at the source
 width. Resizing repaints paused frames too. Closing a shared fullscreen player
 returns its texture to the inline cap without restarting playback.
 
-Chats keeps DMs and groups in one inbox, with Unread, Groups and Archived
-filters. `Chat_Row_Ui.conversation_kind` preserves the engine's type; UNKNOWN
+Chats keeps DMs and groups in one inbox, with Unread and Groups filters.
+Archived conversations live on the separate Archive page, not a Chats tab.
+`Chat_Row_Ui.conversation_kind` preserves the engine's type; UNKNOWN
 falls back to a DM only for an unnamed two-member conversation. Named pairs
 remain groups. Accepted DMs keep an owned `peer_hex` for profile actions;
 pending invitations never expose those actions. DM details omit group editing
-and membership controls. Archived conversations open without being restored;
-their list loads through the account worker with visible progress.
+and membership controls. Archived rows appear only in Archived, never in the
+Chats, Unread or Groups filters, even when pinned. Archived conversations open
+without being restored; their list loads through the account worker with
+visible progress.
 
 ### Themes
 

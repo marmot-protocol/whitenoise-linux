@@ -1771,6 +1771,14 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 					tr("New group"),
 					tr("Start a group and invite people."),
 				)
+				if rl.WhipAvailable() {
+					nc_action_row(
+						"NCTerminal",
+						"\ue795",
+						tr("New terminal"),
+						tr("Choose a project folder to open a terminal."),
+					)
+				}
 				nc_contact_list(ui)
 			} else {
 				if clay.UI(clay.ID("NCForm"))(

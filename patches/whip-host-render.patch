@@ -1,0 +1,105 @@
+diff --git a/src/gui/app.odin b/src/gui/app.odin
+--- a/src/gui/app.odin
++++ b/src/gui/app.odin
+@@ -390,7 +390,6 @@ set_focus :: proc(app: ^App, focus: Focus) {
+ 	app.focused = focused
+ 	if focused {
+ 		app.claim_sizes = true
+-		config_reload(app)
+ 	} else {
+ 		density := sdl.GetWindowPixelDensity(app.window)
+ 		for button in ([]u8{sdl.BUTTON_LEFT, sdl.BUTTON_MIDDLE, sdl.BUTTON_RIGHT}) {
+@@ -460,6 +459,9 @@ event :: proc(app: ^App, e: sdl.Event) -> bool {
+ 		if e.type == .MOUSE_BUTTON_DOWN {
+ 			set_focus(app, .Focused)
+ 		}
++	case .WINDOW_FOCUS_GAINED:
++		config_reload(app)
++		return false
+ 	case .WINDOW_FOCUS_LOST:
+ 		set_focus(app, .Blurred)
+ 		return false
+diff --git a/src/gui/mouse.odin b/src/gui/mouse.odin
+--- a/src/gui/mouse.odin
++++ b/src/gui/mouse.odin
+@@ -380,7 +380,8 @@ on_mouse_button :: proc(app: ^App, e: sdl.MouseButtonEvent) {
+ 	ms.x, ms.y = to_fb(app, e.x, e.y)
+ 	button := mouse_button(e.button)
+ 	shift := sdl.GetModState() & sdl.KMOD_SHIFT != {}
+-	app.force_draw = true
++	app.force_draw ||= app.target.kind != .Pane || app.mode != .Normal ||
++		ms.menu.open || app.device.focus
+ 
+ 	if !e.down {
+ 		if ms.drag == .App {
+@@ -494,6 +495,7 @@ on_mouse_button :: proc(app: ^App, e: sdl.MouseButtonEvent) {
+ 			}
+ 		}
+ 		if pv.app_pane {
++			app.force_draw = true
+ 			report_focus_change(app)
+ 			if !inside(pane_inner(&app.geom, hit.rect), ms.x, ms.y) {return}
+ 			app_pointer_move(app, pv, hit.rect)
+@@ -756,9 +758,15 @@ start_selection :: proc(app: ^App, pv: ^Pane_View, rect: model.Rect, timestamp: u64) {
+ 	sel := gh.Selection {
+ 		size = size_of(gh.Selection),
+ 	}
++	previous := gh.Selection{size = size_of(gh.Selection)}
++	selected := gh.terminal_get(pv.term, .Selection, &previous) == .Success
+ 	if gh.selection_gesture_event(pv.gesture, pv.term, ev, &sel) == .Success {
+-		gh.terminal_set(pv.term, .Selection, &sel)
+-	} else {
++		if !selected || previous != sel {
++			gh.terminal_set(pv.term, .Selection, &sel)
++			app.force_draw = true
++		}
++	} else if selected {
+ 		gh.terminal_set(pv.term, .Selection, nil)
++		app.force_draw = true
+ 	}
+ }
+@@ -1124,6 +1135,7 @@ open_menu :: proc(app: ^App, items: []Menu_Action, pane: proto.Pane_Id, tab, ws: model.Id) {
+ 	} else {
+ 		append(&menu.items, ..items)
+ 	}
++	app.force_draw = true
+ 	menu.open = true
+ 	menu.x, menu.y = app.mouse.x, app.mouse.y
+ 	menu.hover = -1
+diff --git a/src/gui/client.odin b/src/gui/client.odin
+--- a/src/gui/client.odin
++++ b/src/gui/client.odin
+@@ -342,6 +342,9 @@ apply_frame :: proc(app: ^App, f: proto.Frame) {
+ 	#partial switch f.msg {
+ 	case .Layout:
+-		app.force_draw = true
++		// Bound pane geometry belongs to the host. Content, resize and focus
++		// events invalidate their own frames; unrelated layout metadata does not.
++		app.force_draw ||= app.target.kind != .Pane || app.mode != .Normal ||
++			!app.layout_ready
+ 		m, ok := model.decode(f.payload)
+ 		if !ok {
+ 			fail(app, "bad layout from server")
+diff --git a/src/gui/app_pane.odin b/src/gui/app_pane.odin
+--- a/src/gui/app_pane.odin
++++ b/src/gui/app_pane.odin
+@@ -44,17 +44,18 @@ app_read_panes :: proc(app: ^App, r: ^proto.Reader) -> bool {
+ 			app.panes[id] = pv
+ 		}
+ 		if !pv.app_pane {
++			app.force_draw = true
+ 			if app.search.handle != nil && app.search.pane == id {search_close(app)}
+ 			pane_view_release_term(pv)
+ 			pv.app_pane = true
+ 			pv.resizing = false
+ 		}
+ 		if pv.app_title != title {
++			app.force_draw = true
+ 			delete(pv.app_title)
+ 			pv.app_title = strings.clone(title)
+ 		}
+ 	}
+-	app.force_draw = true
+ 	return !r.short && len(r.data) == 0
+ }
+ 

@@ -261,8 +261,30 @@ row_menu_index :: proc(ui: ^Ui_State) -> int {
 	return row_menu_shown
 }
 
+// Resolve the stable project id afresh; the borrowed project list can reorder
+// or lose entries while a menu is open. Never fall back to a chat index.
+@(private = "file")
+row_terminal_key :: proc(ui: ^Ui_State) -> string {
+	for project in rl.WhipProjects() {
+		if project.id == ui.row_terminal {return inbox_terminal_key(project.dir)}
+	}
+	return ""
+}
+
 chat_row_menu :: proc(ui: ^Ui_State) {
-	chat := ui.chats[row_menu_index(ui)]
+	terminal := ui.row_terminal != 0
+	key: string
+	if terminal {
+		key = row_terminal_key(ui)
+		if key == "" {
+			ui.row_menu = -1
+			return
+		}
+	} else {
+		index := row_menu_index(ui)
+		if index < 0 || index >= len(ui.chats) {return}
+		key = ui.chats[index].group_id
+	}
 
 	if clay.UI(clay.ID("RowMenu"))(
 	{
@@ -282,23 +304,19 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		ctx_item("RowInfo", ICON_SETTINGS, tr("Group settings"))
-		ctx_item(
-			"RowPin",
-			ICON_PIN,
-			ui.prefs.pinned[chat.group_id] ? tr("Unpin") : tr("Pin to top"),
-		)
-		ctx_item(
-			"RowMute",
-			ICON_BELL_OFF,
-			ui.prefs.muted_ids[chat.group_id] ? tr("Unmute") : tr("Mute"),
-		)
-		ctx_item("RowRead", ICON_ENVELOPE_OPEN, tr("Mark read"))
-		ctx_item("RowUnread", ICON_ENVELOPE, tr("Mark unread"))
+		if !terminal {ctx_item("RowInfo", ICON_SETTINGS, tr("Group settings"))}
+		ctx_item("RowPin", ICON_PIN, ui.prefs.pinned[key] ? tr("Unpin") : tr("Pin to top"))
+		if !terminal {
+			ctx_item("RowMute", ICON_BELL_OFF, ui.prefs.muted_ids[key] ? tr("Unmute") : tr("Mute"))
+			ctx_item("RowRead", ICON_ENVELOPE_OPEN, tr("Mark read"))
+			ctx_item("RowUnread", ICON_ENVELOPE, tr("Mark unread"))
+		}
 		ctx_item("RowFolder", ICON_FOLDER, tr("Move to folder"))
-		ctx_item("RowArchive", ICON_ARCHIVE, tr("Archive"))
-		ctx_item("RowExportHtml", ICON_DOWNLOAD, tr("Export as HTML"))
-		ctx_item("RowExportMd", ICON_DOWNLOAD, tr("Export as Markdown"))
+		if !terminal {
+			ctx_item("RowArchive", ICON_ARCHIVE, tr("Archive"))
+			ctx_item("RowExportHtml", ICON_DOWNLOAD, tr("Export as HTML"))
+			ctx_item("RowExportMd", ICON_DOWNLOAD, tr("Export as Markdown"))
+		}
 	}
 }
 
@@ -385,6 +403,7 @@ handle_folder_navigation :: proc(ui: ^Ui_State) -> bool {
 	}
 	if clicked("ChatViewBtn") {
 		ui.prefs.recent_chats = !ui.prefs.recent_chats
+		ui.chat_folder = ""
 		if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
 			data.scrollPosition.y = 0
 		}
@@ -745,7 +764,7 @@ folder_modal :: proc(ui: ^Ui_State) {
 		}
 		if moving {
 			clay.Text(
-				len(ui.prefs.folders) == 0 ? tr("You have no folders yet. Create one with New folder.") : tr("Choose a destination for this chat."),
+				len(ui.prefs.folders) == 0 ? tr("You have no folders yet. Create one with New folder.") : (strings.has_prefix(ui.folder_gid, "whip:") ? tr("Choose a destination for this project.") : tr("Choose a destination for this chat.")),
 				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 			)
 			if folder_searchable(ui) {
@@ -867,21 +886,52 @@ folder_modal :: proc(ui: ^Ui_State) {
 // (ponytail: rough clamp from an estimated panel size).
 open_row_menu :: proc(ui: ^Ui_State, index: int) {
 	m := rl.GetMousePosition()
+	ui.row_terminal = 0
 	ui.row_menu = index
 	ui.row_menu_x, ui.row_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 230, 320)
 }
 
+@(private)
+open_terminal_menu :: proc(ui: ^Ui_State, id: u32) {
+	if id == 0 {return}
+	ui.row_terminal = id
+	ui.row_menu = -1
+	if row_terminal_key(ui) == "" {return}
+	m := rl.GetMousePosition()
+	ui.row_menu = 0
+	ui.row_menu_x, ui.row_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 230, 82)
+}
+
 // Clicks in the open row menu; anything unhandled closes it.
 handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if ui.row_menu < 0 || ui.row_menu >= len(ui.chats) || rl.IsKeyPressed(.ESCAPE) {
+	terminal := ui.row_terminal != 0
+	if ui.row_menu < 0 || (!terminal && ui.row_menu >= len(ui.chats)) || rl.IsKeyPressed(.ESCAPE) {
 		ui.row_menu = -1
 		return
+	}
+	key: string
+	if terminal {
+		key = row_terminal_key(ui)
+		if key == "" {
+			ui.row_menu = -1
+			return
+		}
 	}
 	if rl.IsMouseButtonPressed(.RIGHT) && !clay.PointerOver(clay.ID("RowMenu")) {
 		ui.row_menu = -1
 		return
 	}
 	if !mouse_released() {
+		return
+	}
+	if terminal {
+		ui.row_menu = -1
+		if clay.PointerOver(clay.ID("RowPin")) {
+			toggle_flag(&ui.prefs.pinned, key)
+			save_settings(ui)
+		} else if clay.PointerOver(clay.ID("RowFolder")) {
+			open_folder_modal(ui, key)
+		}
 		return
 	}
 	index := ui.row_menu
@@ -1102,6 +1152,7 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				delete_key(&ui.prefs.folder_colors, old)
 				folder_rules_drop(ui, old)
 				ui.prefs.folders[ui.folder_rename] = strings.clone(name)
+				if ui.chat_folder == old {ui.chat_folder = ui.prefs.folders[ui.folder_rename]}
 			}
 		} else {
 			append(&ui.prefs.folders, strings.clone(name))
@@ -1130,6 +1181,7 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 @(private)
 delete_folder :: proc(ui: ^Ui_State, index: int) {
 	name := ui.prefs.folders[index]
+	if ui.chat_folder == name {ui.chat_folder = ""}
 	orphans := make([dynamic]string, context.temp_allocator)
 	for gid, folder in ui.prefs.folder_of {
 		if folder == name {
@@ -1154,7 +1206,7 @@ delete_folder :: proc(ui: ^Ui_State, index: int) {
 	save_settings(ui)
 }
 
-// Put the modal's chat in `name` ("" takes it out of every folder).
+// Put the modal's inbox row in `name` ("" hands it back to folder rules).
 @(private = "file")
 assign_folder :: proc(ui: ^Ui_State, name: string) {
 	if ui.folder_gid == "" {return}

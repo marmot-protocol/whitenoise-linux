@@ -70,13 +70,17 @@ Prefs :: struct {
 	muted_ids:             map[string]bool, // folded into the row's muted flag
 	unread_ids:            map[string]bool, // manual unread reminder
 	folders:               [dynamic]string, // user-defined folder names
-	folder_of:             map[string]string, // group id → folder name
+	folder_of:             map[string]string, // chat id or folder-based terminal key → folder name
 	recent_chats:          bool, // false groups the list by folder
 	collapsed_folders:     map[string]bool, // folder name; "" is Unfiled
 	folder_icons:          map[string]int, // folder name → FOLDER_ICONS index
 	folder_colors:         map[string]u32, // folder name → RGB; absent uses the theme accent
 	folder_rules:          map[string]Folder_Rules, // folder name → automatic filing rules
 	whip_avatars:          map[string]string, // canonical project folder → owned image basename
+	whip_activity:         map[string]u64, // canonical project folder → latest observed Unix seconds
+	whip_workspaces:       [dynamic]Whip_Workspace,
+	whip_selected_tabs:    [dynamic]Whip_Saved_Tab,
+	whip_placements:       [dynamic]Whip_Saved_Placement,
 	// Advanced (telemetry/audit toggles live in marmot's shared
 	// sqlite, not here)
 	trusted_sites:         [dynamic]string,
@@ -197,6 +201,7 @@ Settings_Load :: enum {
 }
 
 load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
+	whip_workspace_prefs_free(&ui.prefs)
 	ui.prefs = default_prefs()
 	defer {
 		if len(ui.prefs.recent_emoji) == 0 {
@@ -217,6 +222,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	}
 	if json.unmarshal(data, &settings) != nil {
 		settings_discard_private(settings.nicknames, settings.drafts, settings.blocked)
+		whip_workspace_prefs_free(&settings.prefs)
 		return
 	}
 	ui.theme = clamp(settings.theme, 0, max(len(theme_packs) - 1, 0))
@@ -245,6 +251,8 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 		delete(ui.prefs.quick_reactions)
 		delete(ui.prefs.fetch_relays)
 		ui.prefs = settings.prefs
+	} else {
+		whip_workspace_prefs_free(&settings.prefs)
 	}
 	ui.prefs.message_lines = max(ui.prefs.message_lines, 0)
 	if ui.prefs.window_w <= 0 {ui.prefs.window_w = 1024}
@@ -263,7 +271,13 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	if int(ui.prefs.settings_level) < 0 || ui.prefs.settings_level > max(Settings_Level) {
 		ui.prefs.settings_level = .Menu
 	}
-	if int(ui.prefs.chat_filter) < 0 || ui.prefs.chat_filter > max(Chat_Filter) {
+	// Saved archive-filter workspaces open the dedicated Archive page.
+	if ui.prefs.page == .Chats && int(ui.prefs.chat_filter) == 3 {
+		ui.prefs.page = .Archived
+	}
+	switch ui.prefs.chat_filter {
+	case .Chats, .Unread, .Groups, .Whip:
+	case:
 		ui.prefs.chat_filter = .Chats
 	}
 	ui.page = ui.prefs.page
@@ -384,6 +398,7 @@ Settings_Work :: struct {
 // Snapshot at frame end so every navigation path uses the same writer.
 @(private)
 remember_workspace :: proc(ui: ^Ui_State) {
+	whip_workspace_remember(ui)
 	if ui.prefs.page == ui.page &&
 	   ui.prefs.settings_section == ui.settings_section &&
 	   ui.prefs.settings_tab == ui.settings_tab &&

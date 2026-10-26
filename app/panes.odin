@@ -11,7 +11,6 @@ import rl "sdlrl"
 Row_Chip :: enum {
 	Archive,
 	Unarchive,
-	Archived_Rail,
 }
 
 @(private)
@@ -54,10 +53,7 @@ chat_rows_window :: proc(
 		) {}
 	}
 	for i in order[first:last] {
-		active := chip == .Archive && ui.selected == i
-		if chip == .Archived_Rail && ui.selected >= 0 && ui.selected < len(ui.chats) {
-			active = ui.chats[ui.selected].group_id == rows[i].group_id
-		}
+		active := !ui.whip_open && chip == .Archive && ui.selected == i
 		chat_row(u32(i), rows[i], active, chip)
 	}
 	if last < len(order) {
@@ -72,47 +68,6 @@ Folder_Section :: struct {
 	start, count, unread: int,
 }
 
-// Stable partition: input is already pinned-first, then activity order.
-// Unknown assignments stay visible under Unfiled rather than disappearing;
-// chats nobody placed by hand file by folder rules (chat_folder_slot).
-@(private)
-chat_folder_sections :: proc(
-	ui: ^Ui_State,
-	order: []int,
-	allocator := context.temp_allocator,
-) -> (
-	[]Folder_Section,
-	[]int,
-) {
-	sections := make([]Folder_Section, len(ui.prefs.folders) + 1, allocator)
-	ordered := make([]int, len(order), allocator)
-	slots := make(map[string]int, len(ui.prefs.folders), allocator)
-	defer delete(slots)
-	for name, i in ui.prefs.folders {slots[name] = i}
-	slot_of := make([]int, len(order), context.temp_allocator)
-	for i, k in order {
-		chat := &ui.chats[i]
-		slot := chat_folder_slot(ui, chat, slots)
-		slot_of[k] = slot
-		sections[slot].count += 1
-		if chat.unread > 0 || ui.prefs.unread_ids[chat.group_id] {
-			sections[slot].unread += 1
-		}
-	}
-	start := 0
-	for &section in sections {
-		section.start = start
-		start += section.count
-		section.count = 0
-	}
-	for i, k in order {
-		section := &sections[slot_of[k]]
-		ordered[section.start + section.count] = i
-		section.count += 1
-	}
-	return sections, ordered
-}
-
 // Why the chat list shows no rows. The search text outranks the Unread
 // pill: it is the part you can edit, so its message names it.
 @(private)
@@ -122,7 +77,7 @@ Chat_Rail_Empty :: enum {
 	No_Matches,
 	No_Unread,
 	No_Groups,
-	No_Archived,
+	No_Whip,
 }
 
 @(private)
@@ -130,8 +85,8 @@ chat_rail_empty :: proc(total, rows: int, query: bool, scope: Chat_Filter) -> Ch
 	switch {
 	case rows > 0:
 		return .None
-	case total == 0 && scope == .Archived:
-		return .No_Archived
+	case scope == .Whip && !query:
+		return .No_Whip
 	case total == 0:
 		return .No_Chats
 	case query:
@@ -149,23 +104,17 @@ chat_rail_empty :: proc(total, rows: int, query: bool, scope: Chat_Filter) -> Ch
 @(private)
 chat_rail_matches :: proc(ui: ^Ui_State) -> (matched: []int, total: int) {
 	filter := strings.to_lower(string(ui.sidebar_filter[:]), context.temp_allocator)
-	chats := ui.chat_filter == .Archived ? ui.archived[:] : ui.chats[:]
+	chats := ui.chats[:]
 	order := rail_order(chats, ui.prefs.pinned)
 	count := 0
 	for i in order {
 		chat := &chats[i]
-		if ui.chat_filter != .Archived && chat.search_only {continue}
+		if chat.archived || chat.search_only {continue}
 		total += 1
+		if ui.chat_filter == .Whip {continue}
 		if len(filter) > 0 &&
 		   !strings.contains(strings.to_lower(chat.title, context.temp_allocator), filter) &&
-		   !(ui.chat_filter == .Archived &&
-				   strings.contains(
-					   strings.to_lower(chat.preview, context.temp_allocator),
-					   filter,
-				   )) &&
-		   !(ui.chat_filter != .Archived &&
-				   i < len(ui.filter_hits) &&
-				   ui.filter_hits[i]) {continue}
+		   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {continue}
 		if ui.chat_filter == .Unread &&
 		   chat.unread == 0 &&
 		   !ui.prefs.unread_ids[chat.group_id] {continue}
@@ -179,14 +128,8 @@ chat_rail_matches :: proc(ui: ^Ui_State) -> (matched: []int, total: int) {
 // One scroll container owns both headers and conversations. Each section
 // windows its rows at its real offset; collapsed rows leave keyboard order.
 @(private)
-chat_rail :: proc(ui: ^Ui_State, matched: []int, total: int) {
+chat_rail :: proc(ui: ^Ui_State, ordered: []Inbox_Row, total: int) {
 	clear(&ui.rail_rows)
-	if ui.chat_filter == .Archived {
-		append(&ui.rail_rows, ..matched)
-		chat_rows_window(ui, ui.archived[:], matched, clay.ID("ChatList"), .Archived_Rail, 2)
-		chat_rail_empty_note(ui, len(matched), total)
-		return
-	}
 	offset_y: f32
 	if !ui.prefs.recent_chats && len(ui.prefs.folders) == 0 && total > 0 {
 		chat_rail_hint(
@@ -202,13 +145,16 @@ chat_rail :: proc(ui: ^Ui_State, matched: []int, total: int) {
 		}
 	}
 	if ui.prefs.recent_chats || len(ui.prefs.folders) == 0 {
-		append(&ui.rail_rows, ..matched)
-		chat_rows_window(ui, ui.chats[:], matched, clay.ID("ChatList"), .Archive, 2, offset_y)
-		chat_rail_empty_note(ui, len(matched), total)
+		for &row, i in ordered {
+			row.top = offset_y + f32(i) * (chat_row_height() + 2)
+			append(&ui.rail_rows, row)
+		}
+		inbox_rows_window(ui, ordered, offset_y)
+		chat_rail_empty_note(ui, len(ordered), total)
 		return
 	}
 
-	sections, grouped := chat_folder_sections(ui, matched)
+	sections, grouped := inbox_sections(ui, ordered)
 	y: f32
 	view := clay.GetScrollContainerData(clay.ID("ChatList"))
 	top := view.found ? max(0, -view.scrollPosition.y) : 0
@@ -223,7 +169,10 @@ chat_rail :: proc(ui: ^Ui_State, matched: []int, total: int) {
 		rows := grouped[section.start:section.start + section.count]
 		height: f32 = 36
 		if !collapsed {
-			append(&ui.rail_rows, ..rows)
+			for &row, pos in rows {
+				row.top = y + 36 + f32(pos) * (chat_row_height() + 2)
+				append(&ui.rail_rows, row)
+			}
 			height += f32(len(rows)) * (chat_row_height() + 2)
 		}
 		// Offscreen headers need no text clips. Clay tracks every clip as
@@ -238,18 +187,28 @@ chat_rail :: proc(ui: ^Ui_State, matched: []int, total: int) {
 		folder_header(ui, u32(i), name, section.unread, collapsed)
 		y += 36 // header and the list's 2px gap
 		if collapsed {continue}
-		chat_rows_window(ui, ui.chats[:], rows, clay.ID("ChatList"), .Archive, 2, y, u32(i))
+		inbox_rows_window(ui, rows, y, u32(i))
 		y += f32(len(rows)) * (chat_row_height() + 2)
 	}
-	chat_rail_empty_note(ui, len(matched), total)
+	chat_rail_empty_note(ui, len(ordered), total)
 }
 
 @(private = "file")
 chat_rail_empty_note :: proc(ui: ^Ui_State, rows, total: int) {
-	switch chat_rail_empty(total, rows, len(ui.sidebar_filter) > 0, ui.chat_filter) {
+	switch chat_rail_empty(
+		total,
+		rows,
+		len(ui.sidebar_filter) > 0 || ui.chat_folder != "",
+		ui.chat_filter,
+	) {
 	case .None:
 	case .No_Chats:
 		clay.Text(tr("No chats yet"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+	case .No_Whip:
+		clay.Text(
+			tr("No Whip projects"),
+			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+		)
 	case .No_Matches:
 		chat_rail_hint(
 			"ChatListNoMatch",
@@ -273,14 +232,6 @@ chat_rail_empty_note :: proc(ui: ^Ui_State, rows, total: int) {
 			"ChatListShowAll",
 			tr("Show all chats"),
 			tr("No groups yet"),
-		)
-	case .No_Archived:
-		chat_rail_hint(
-			"ChatListNoArchived",
-			tr("Chats you archive will appear here."),
-			"ChatListShowAll",
-			tr("Show all chats"),
-			tr("No archived chats"),
 		)
 	}
 }
@@ -515,12 +466,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							// Archive and the other row actions live in this menu,
 							// which right-click and long-press also open.
 							if hovered() {
-								if chip == .Archived_Rail {
-									action_chip("ChatUnarch", index, ICON_ARCHIVE)
-									tooltip(tr("Restore"))
-								} else {
-									action_chip("ChatMenu", index, "···")
-								}
+								action_chip("ChatMenu", index, "···")
 							}
 						}
 						if clay.UI(clay.ID("ChatRowPrev", index))(
@@ -911,11 +857,11 @@ nav_button :: proc(page: Page, active: bool) {
 			PAGE_ICONS[page],
 			{fontId = FONT_ICON, fontSize = 17, textColor = active ? ACCENT : TEXT_DIM},
 		)
-		if page == .Whip {
+		if page == .Chats && rl.WhipAvailable() {
 			waiting: u64
 			for project in rl.WhipProjects() {waiting += u64(project.waiting)}
 			if waiting > 0 {
-				if clay.UI(clay.ID("WhipNavBadge"))(
+				if clay.UI(clay.ID("TerminalInboxBadge"))(
 				{
 					floating = {
 						attachTo = .Parent,
@@ -923,7 +869,7 @@ nav_button :: proc(page: Page, active: bool) {
 						zIndex = 2,
 					},
 				},
-				) {unread_badge(clay.ID("WhipNavUnread"), waiting)}
+				) {unread_badge(clay.ID("TerminalInboxUnread"), waiting)}
 			}
 		}
 	}
@@ -959,5 +905,4 @@ NAV_TIPS := [Page]string {
 	.Archived = N_("Archive"),
 	.Settings = N_("Settings"),
 	.Profile  = N_("Your profile"),
-	.Whip     = "Whip",
 }
