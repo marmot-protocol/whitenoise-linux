@@ -26,6 +26,7 @@ Sel_Line :: struct {
 	size:       u16,
 	tile_px:    f32,
 	fonts:      string,
+	mode:       Wrap_Mode, // which links body_text drew as chips
 }
 
 sel_lines: [dynamic]Sel_Line
@@ -48,8 +49,9 @@ sel_register :: proc(
 	size: u16,
 	tile_px: f32,
 	fonts: string = "",
+	mode := Wrap_Mode.Text,
 ) {
-	append(&sel_lines, Sel_Line{id, block, start, text, block_text, size, tile_px, fonts})
+	append(&sel_lines, Sel_Line{id, block, start, text, block_text, size, tile_px, fonts, mode})
 }
 
 // The part of `line` that is selected, as byte offsets into the line.
@@ -95,7 +97,9 @@ sel_offset_in :: proc(line: Sel_Line, mx, my: f32) -> (offset: int, over: bool) 
 	case mx >= b.x + b.width:
 		return line.start + len(line.text), true
 	}
-	return line.start + hit_plain(line.text, mx - b.x, line.size, line.tile_px, line.fonts), true
+	return line.start +
+		hit_plain(line.text, mx - b.x, line.size, line.tile_px, line.fonts, line.mode),
+		true
 }
 
 // The line under the pointer, preferring the block already being

@@ -71,8 +71,14 @@ chip_w :: proc(hx: string, size: u16) -> f32 {
 }
 
 // Wrapping and pointer hit testing use the same displayed chip width.
+// Where link cards draw, an inline GitHub link is a chip too.
 @(private)
-body_atom :: proc(text: string, at: int, size: u16) -> (end: int, width: f32) {
+body_atom :: proc(text: string, at: int, size: u16, mode: Wrap_Mode) -> (end: int, width: f32) {
+	if (mode == .Cards || mode == .Links) && text[at] == 'h' {
+		if url_end, url, ok := url_at(text, at); ok {
+			if ref, gh := gh_ref(url); gh {return url_end, gh_chip_w(ref, size)}
+		}
+	}
 	ref: Nostr_Ref
 	end, ref = nostr_at(text, at)
 	if ref.kind == .Invalid {

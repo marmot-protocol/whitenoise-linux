@@ -504,6 +504,7 @@ hit_plain :: proc(
 	font_size: u16,
 	tile_px: f32 = 0,
 	fonts: string = "",
+	mode := Wrap_Mode.Text,
 ) -> int {
 	pen: f32 = 0
 	previous_emoji := false
@@ -514,7 +515,7 @@ hit_plain :: proc(
 		if i < skip {continue}
 		literal := text_literal(fonts, i)
 		if tile_px > 0 && !literal {
-			if end, width := body_atom(text, i, font_size); end > i {
+			if end, width := body_atom(text, i, font_size, mode); end > i {
 				if i > 0 {pen += 2}
 				if x < pen + width / 2 {return i}
 				if x < pen + width {return end}

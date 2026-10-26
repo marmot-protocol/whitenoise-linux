@@ -1,5 +1,10 @@
-// GitHub pull request and issue links, drawn as a card under the body
-// instead of a bare URL.
+// GitHub pull request and issue links, drawn in place of a bare URL.
+// A link alone on its line becomes a card of its own row; one written
+// inside a sentence becomes a small chip in the text flow:
+//
+//   see [* mdk#12] before merging     inline: gh_chip
+//
+//   https://github.com/o/mdk/pull/12  alone:  gh_card
 //
 // A link only ever names the fetch: owner, repo and number are read
 // out of the URL and rebuilt into an api.github.com path, so a message
@@ -19,6 +24,7 @@ import "core:sync"
 import "core:thread"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import rl "sdlrl"
 
 GH_PREFIX :: "https://github.com/"
 GH_API :: "https://api.github.com/repos/"
@@ -50,10 +56,14 @@ gh_fresh: [dynamic]struct {
 	card: Gh_Card,
 }
 
-// Set while a message body lays out: render_segs draws a card in place
-// of every GitHub link it meets. Off everywhere else, so the composer,
-// reply previews and the preview modal keep plain link text.
+// Set while a message body lays out: render_segs draws a card or chip
+// in place of every GitHub link it meets. Off everywhere else, so the
+// composer, reply previews and the preview modal keep plain link text.
 gh_cards_on: bool
+
+// Space between the chip's icon and its label.
+@(private = "file")
+GH_CHIP_GAP :: 4
 
 // The PR or issue a URL names, or ok = false. Any ?query/#fragment is
 // cut, so the number is the number as written.
@@ -189,8 +199,9 @@ drain_gh :: proc() {
 	clear(&gh_fresh)
 }
 
-// The card itself, drawn where the link it replaces was written.
-gh_card :: proc(id: u32, ref: Gh_Ref) {
+// The cached card for a link, requesting it the first time it is drawn.
+@(private = "file")
+gh_fetch :: proc(ref: Gh_Ref) -> Gh_Card {
 	key := gh_key(ref)
 	card, cached := gh_cards[key]
 	if !cached {
@@ -198,16 +209,73 @@ gh_card :: proc(id: u32, ref: Gh_Ref) {
 		gh_cards[owned] = Gh_Card{}
 		append(&send_threads, thread.create_and_start_with_poly_data(owned, gh_worker))
 	}
+	return card
+}
 
-	badge := ACCENT
-	switch card.state {
+@(private = "file")
+gh_badge :: proc(state: string) -> clay.Color {
+	switch state {
 	case "closed":
-		badge = DANGER
+		return DANGER
 	case "merged":
-		badge = ACCENT_DIM
+		return ACCENT_DIM
 	case "draft":
-		badge = TEXT_LO
+		return TEXT_LO
 	}
+	return ACCENT
+}
+
+@(private = "file")
+gh_icon :: proc(ref: Gh_Ref) -> string {
+	return ref.pull ? "\uf407" : ICON_INFO
+}
+
+// "mdk#12": the chip's label. The owner is left to the tooltip URL.
+@(private = "file")
+gh_label :: proc(ref: Gh_Ref) -> string {
+	return fmt.tprintf("%s#%s", ref.repo, ref.num)
+}
+
+// Drawn chip width, for wrapping and pointer hit testing: both insets,
+// the icon, the gap and the label.
+@(private)
+gh_chip_w :: proc(ref: Gh_Ref, size: u16) -> f32 {
+	icon := rl.MeasureTextLine(FONT_ICON, size, gh_icon(ref), 0).x
+	label := rl.MeasureTextLine(FONT_TITLE, size, gh_label(ref), 0).x
+	return 2 * MENTION_PAD_X + GH_CHIP_GAP + icon + label
+}
+
+// The inline form: state-colored icon and "repo#12", the title on hover.
+gh_chip :: proc(id: u32, ref: Gh_Ref, size: u16) {
+	card := gh_fetch(ref)
+	badge := gh_badge(card.state)
+	if clay.UI(clay.ID("GhChip", id))(
+	{
+		layout = {
+			padding = {left = MENTION_PAD_X, right = MENTION_PAD_X, top = 1, bottom = 1},
+			childGap = GH_CHIP_GAP,
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = fade(badge, hovered() ? 0.24 : 0.12),
+		cornerRadius = rr(7),
+	},
+	) {
+		if hovered() {
+			link_hover = ref.url
+			tooltip(len(card.title) > 0 ? card.title : ref.url)
+		}
+		clay.Text(gh_icon(ref), {fontId = FONT_ICON, fontSize = size, textColor = badge})
+		clay.Text(
+			gh_label(ref),
+			{fontId = FONT_TITLE, fontSize = size, textColor = ACCENT, wrapMode = .None},
+		)
+	}
+}
+
+// The card itself, drawn on its own row where the link was written.
+gh_card :: proc(id: u32, ref: Gh_Ref) {
+	card := gh_fetch(ref)
+	badge := gh_badge(card.state)
 
 	if clay.UI(clay.ID("GhCard", id))(
 	{
@@ -242,10 +310,7 @@ gh_card :: proc(id: u32, ref: Gh_Ref) {
 				cornerRadius = rr(8),
 			},
 			) {
-				clay.Text(
-					ref.pull ? "\uf407" : ICON_INFO,
-					{fontId = FONT_ICON, fontSize = 15, textColor = badge},
-				)
+				clay.Text(gh_icon(ref), {fontId = FONT_ICON, fontSize = 15, textColor = badge})
 			}
 			if clay.UI(clay.ID("GhCardRepo", id))(
 			{

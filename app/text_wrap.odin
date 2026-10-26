@@ -88,7 +88,7 @@ wrapped_lines :: proc(
 					}
 					if text[scan] != 'h' {continue}
 					if next, url, ok := url_at(text[:end], scan); ok {
-						if link_card(url) {
+						if link_card(url, link_place(text, scan, next)) {
 							card_at, card_end = scan, next
 							// Android's "Location: <url>" puts its caption
 							// on the card's row, where render_segs drops it.

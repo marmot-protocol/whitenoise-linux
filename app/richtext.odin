@@ -37,6 +37,7 @@ Inline_Seg :: struct {
 	hints:   []string, // the nevent's relay hints
 	fx:      u8, // glyph-effect bits from {name} markup (effects.odin)
 	stamp:   ^Md_Timestamp,
+	place:   Link_Place, // where the url sits on its source line
 }
 
 @(private)
@@ -44,6 +45,26 @@ Inline_Link :: struct {
 	start, end: int,
 	url:        string,
 	stamp:      ^Md_Timestamp, // borrowed source timestamp for this render
+	place:      Link_Place,
+}
+
+// Where a link sits on its source line. Alone, nothing but spaces
+// share the line, and a GitHub link becomes a card of its own row;
+// Inline, it is part of a sentence and stays a chip in the text flow.
+@(private)
+Link_Place :: enum u8 {
+	Inline,
+	Alone,
+}
+
+@(private)
+link_place :: proc(text: string, at, end: int) -> Link_Place {
+	line_start := strings.last_index_byte(text[:at], '\n') + 1
+	line_end := len(text)
+	if nl := strings.index_byte(text[end:], '\n'); nl >= 0 {line_end = end + nl}
+	if strings.trim_space(text[line_start:at]) != "" {return .Inline}
+	if strings.trim_space(text[end:line_end]) != "" {return .Inline}
+	return .Alone
 }
 
 // Split text into text runs and emoji clusters (VS16/ZWJ ride along;
@@ -79,6 +100,7 @@ inline_segs :: proc(
 					url = link.url,
 					fonts = text_fonts(fonts, i, end),
 					stamp = link.stamp,
+					place = link.place,
 				},
 			)
 			i, plain_start = end, end
@@ -245,13 +267,14 @@ link_cards_enabled :: proc() -> bool {
 	return gh_cards_on && (g_ui == nil || !g_ui.prefs.disable_link_previews)
 }
 
-// A URL drawn as a card of its own row rather than as a link run.
+// A URL drawn as a card of its own row rather than as a link run. A
+// GitHub link is one only when it is alone on its line.
 @(private)
-link_card :: proc(url: string) -> bool {
+link_card :: proc(url: string, place: Link_Place) -> bool {
 	_, gh := gh_ref(url)
 	_, geo := geo_ref(url)
 	_, call := call_link(url)
-	return gh || geo || call || hn_ref(url) != "" || nev_image_url(url)
+	return (gh && place == .Alone) || geo || call || hn_ref(url) != "" || nev_image_url(url)
 }
 
 // Keep the original clickable link in every state, including loading and failure.
@@ -326,9 +349,13 @@ render_segs :: proc(
 		} else if card && nev_image_url(seg.url) {
 			image_link(id * 128 + u32(k), seg.url, font_size, max(1, att_w() - 24))
 		} else if ref, is_gh := gh_ref(seg.url); card && is_gh {
-			// A GitHub PR or issue link is drawn as its own card, in
-			// place of the URL run.
-			gh_card(id * 128 + u32(k), ref)
+			// A GitHub PR or issue link replaces the URL run: a card
+			// when it is alone on its line, a chip inside a sentence.
+			if seg.place == .Alone {
+				gh_card(id * 128 + u32(k), ref)
+			} else {
+				gh_chip(id * 128 + u32(k), ref, font_size)
+			}
 		} else if key := hn_ref(seg.url); card && key != "" {
 			hn_card(id * 128 + u32(k), key, seg.url)
 		} else if link, geo := geo_ref(seg.url); card && geo {
@@ -608,7 +635,7 @@ body_line :: proc(
 		// unselected; the copy still carries the token.
 		for seg in inline_segs(text, fonts, links, offset) {
 			if link_cards_enabled() &&
-			   (len(seg.evid) > 0 || (seg.text == seg.url && link_card(seg.url))) {
+			   (len(seg.evid) > 0 || (seg.text == seg.url && link_card(seg.url, seg.place))) {
 				sel = {-1, -1}
 				break
 			}
@@ -1260,6 +1287,8 @@ body_text :: proc(
 			link := links[link_index]
 			link.start -= link_offset
 			link.end -= link_offset
+			// A link may start before this slice or run past it.
+			link.place = link_place(text, max(link.start, 0), min(link.end, len(text)))
 			append(&runs, link)
 			at = link.end
 			continue
@@ -1277,7 +1306,10 @@ body_text :: proc(
 			continue
 		}
 		if end, url, ok := url_at(text[:end], at); ok {
-			append(&runs, Inline_Link{start = at, end = end, url = url})
+			append(
+				&runs,
+				Inline_Link{start = at, end = end, url = url, place = link_place(text, at, end)},
+			)
 			at = end
 		} else {at += 1}
 	}
@@ -1297,6 +1329,7 @@ body_text :: proc(
 				font_size,
 				tile_px,
 				text_fonts(fonts, line.start, line.end),
+				mode,
 			)
 			body_line(
 				line_id,
@@ -1592,7 +1625,7 @@ rune_fit :: proc(
 		case mode == .Compose:
 			next, atom_width = compose_atom(text[:end], i)
 		case:
-			next, atom_width = body_atom(text[:end], i, font_size)
+			next, atom_width = body_atom(text[:end], i, font_size, mode)
 			if i > at {atom_width += 2}
 		}
 		if next > i {

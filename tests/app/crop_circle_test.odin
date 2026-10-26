@@ -234,7 +234,7 @@ crop_circle_layout :: proc(t: ^testing.T) {
 			}
 			testing.expect(t, drawn, "the primary avatar must keep its photo or fallback")
 		}
-		_, measured := body_atom(fmt.tprintf("@%s", ui.profile.npub), 0, BODY_FS)
+		_, measured := body_atom(fmt.tprintf("@%s", ui.profile.npub), 0, BODY_FS, .Cards)
 		chip := clay.GetElementData(clay.ID("SegMention", 70 * 128)).boundingBox
 		testing.expect(
 			t,
