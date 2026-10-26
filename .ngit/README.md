@@ -33,6 +33,13 @@ and guest-agent binaries come from upstream commit
 `1dde76e67f7606438f38c0ee676a6b64b7e53560`; this is an unreleased source pin,
 not the published 0.1.1 binary release. Binaries live under `/opt/ngit-ci/<commit>/`.
 
+Apply `runner/ngit-ci-artifact-budget.patch` before building the coordinator;
+install it as `ngit-ci-artifact-1g`. The upstream 256 MiB total export limit
+rejects the ARM package even when the per-file upload cap is higher. This patch
+raises the bounded export budget to 1 GiB; coordinator services have a 2 GiB
+memory ceiling. Archive structure, path, file-count, and cancellation checks
+remain unchanged. The adapter and guest-agent binaries use the unmodified pin.
+
 The guest starts from Debian 13's `20261021-2638` generic image. Its SDK image
 uses the pinned base image, Odin, Rust, and SDL revisions in `runner/Containerfile`.
 The worker tag is `localhost/wn-ngit-worker:<Containerfile-sha256>`; both

@@ -1,0 +1,12 @@
+diff --git a/src/runner/mod.rs b/src/runner/mod.rs
+--- a/src/runner/mod.rs
++++ b/src/runner/mod.rs
+@@ -83,7 +83,7 @@
+ 
+ /// Hard total extraction and upload budget for an act export. Prevents raised
+ /// file-count limits from permitting unbounded disk or in-memory blob staging.
+-pub(crate) const MAX_ACT_EXPORT_BYTES: u64 = 256 * 1024 * 1024;
++pub(crate) const MAX_ACT_EXPORT_BYTES: u64 = 1024 * 1024 * 1024;
+ 
+ /// Runner-agnostic inputs for one CI job.
+ #[derive(Debug, Clone)]
