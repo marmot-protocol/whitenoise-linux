@@ -42,7 +42,13 @@ SETTINGS_TASKS := []Settings_Task {
 	},
 	{.Appearance, N_("Change the scroll speed"), "RowScroll", "mouse wheel", false},
 	{.Appearance, N_("Reduce motion"), "RowMotion", "animation accessibility", false},
-	{.Appearance, N_("Centre the conversation"), "RowCentered", "layout width centred", false},
+	{
+		.Appearance,
+		N_("Center the conversation"),
+		"RowCentered",
+		"layout width center centre centered centred",
+		false,
+	},
 	{
 		.Appearance,
 		N_("Message line limit"),
@@ -142,7 +148,7 @@ SETTINGS_TASKS := []Settings_Task {
 	{.Keys, N_("Change your vault password"), "RowVaultPw", "security encryption secret", true},
 	{.Keys, N_("Reveal your secret key"), "RowReveal", "nsec export security", true},
 	{.Storage, N_("Clear cached attachments"), "RowCache", "media space disk", true},
-	{.Storage, N_("Back up everything"), "RowBackup", "export data encrypted", true},
+	{.Storage, N_("Back up local data"), "RowBackup", "export data encrypted", true},
 	{.Storage, N_("Import a backup"), "RowImport", "restore data encrypted", true},
 	{
 		.Storage,
@@ -201,7 +207,7 @@ SETTINGS_SEE_ALSO := [Settings_Section][]Settings_Task {
 		{.Advanced, N_("Record audit logs"), "RowAudit", "", false},
 	},
 	.Keys          = []Settings_Task {
-		{.Storage, N_("Back up everything"), "RowBackup", "", false},
+		{.Storage, N_("Back up local data"), "RowBackup", "", false},
 		{.Network, N_("Choose where people reach you"), "AddInboxRow", "", false},
 	},
 	.Storage       = []Settings_Task {

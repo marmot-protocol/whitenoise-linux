@@ -413,6 +413,9 @@ msgstr "Dokumentation der Agenten-Konnektoren"
 msgid "Aggregate connection counter from the relay pool."
 msgstr "Aggregierter Verbindungszähler aus dem Relay-Pool."
 
+msgid "Airmail"
+msgstr "Luftpost"
+
 msgid "All"
 msgstr "Alle"
 
@@ -430,9 +433,6 @@ msgstr "Alle Absender"
 
 msgid "All types"
 msgstr "Alle Typen"
-
-msgid "Also Ctrl + plus, Ctrl + minus or Ctrl + 0."
-msgstr "Auch Strg + Plus, Strg + Minus oder Strg + 0."
 
 msgid "Always open links to this site"
 msgstr "Links zu dieser Website immer öffnen"
@@ -493,6 +493,9 @@ msgstr "Archive"
 
 msgid "Arrow keys move. X is A, Z is B, Enter is Start, Shift is Select."
 msgstr "Pfeiltasten bewegen. X ist A, Z ist B, Enter ist Start, Umschalt ist Select."
+
+msgid "Art deco"
+msgstr "Art déco"
 
 msgid "Ask a question..."
 msgstr "Stelle eine Frage..."
@@ -579,8 +582,8 @@ msgstr "Zurück zu den Meldungen"
 msgid "Back to sets"
 msgstr "Zurück zu den Sets"
 
-msgid "Back up everything"
-msgstr "Alles sichern"
+msgid "Back up local data"
+msgstr "Lokale Daten sichern"
 
 msgid "Background"
 msgstr "Hintergrund"
@@ -595,8 +598,8 @@ msgstr "Backup erstellt."
 msgid "Backup imported: %d files restored."
 msgstr "Backup importiert: %d Dateien wiederhergestellt."
 
-msgid "Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included."
-msgstr "Backups enthalten, was dieses Gerät lokal speichert. Deine Schlüssel und dein Nachrichtenverlauf liegen im eigenen Speicher von marmot und sind nicht enthalten."
+msgid "Backups include your settings, drafts, custom emoji, and themes. Your account keys and message history are not included."
+msgstr "Sicherungen enthalten deine Einstellungen, Entwürfe, eigenen Emojis und Themes. Deine Kontoschlüssel und dein Nachrichtenverlauf sind nicht enthalten."
 
 msgid "Base color"
 msgstr "Grundfarbe"
@@ -609,6 +612,9 @@ msgstr "Fase dunkel"
 
 msgid "Bevelled surfaces"
 msgstr "Abgeschrägte Flächen"
+
+msgid "Blinds"
+msgstr "Jalousien"
 
 msgid "Block"
 msgstr "Blockieren"
@@ -699,12 +705,6 @@ msgstr "Kartenmulde"
 
 msgid "Center the conversation"
 msgstr "Unterhaltung zentrieren"
-
-msgid "Centre the conversation"
-msgstr "Unterhaltung zentrieren"
-
-msgid "Centred conversation"
-msgstr "Zentrierte Unterhaltung"
 
 msgid "Chalk-drawn surfaces"
 msgstr "Mit Kreide gezeichnete Flächen"
@@ -1107,6 +1107,9 @@ msgstr "Koordinaten kopieren"
 
 msgid "Copy error"
 msgstr "Fehler kopieren"
+
+msgid "Copy group id"
+msgstr "Gruppen-ID kopieren"
 
 msgid "Copy image"
 msgstr "Bild kopieren"
@@ -1665,11 +1668,8 @@ msgstr ""
 msgid "Crop circle shape"
 msgstr "Kornkreis-Form"
 
-msgid "Ctrl + Tab or Ctrl + Shift + Tab"
-msgstr "Strg + Tab oder Strg + Umschalt + Tab"
-
-msgid "Ctrl + plus, Ctrl + minus or Ctrl + 0"
-msgstr "Strg + Plus, Strg + Minus oder Strg + 0"
+msgid "Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."
+msgstr "Ctrl + + zum Vergrößern, Ctrl + - zum Verkleinern, Ctrl + 0 zum Zurücksetzen."
 
 msgid "Current"
 msgstr "Aktuell"
@@ -1700,6 +1700,9 @@ msgstr "Gefahr"
 
 msgid "Dark"
 msgstr "Dunkel"
+
+msgid "Data folder"
+msgstr "Datenordner"
 
 msgid "Date format"
 msgstr "Datumsformat"
@@ -1899,6 +1902,9 @@ msgstr "Dateien zum Anhängen ablegen"
 msgid "Drop here"
 msgstr "Hier ablegen"
 
+msgid "Dust"
+msgstr "Staub"
+
 msgid "EDIT PROFILE"
 msgstr "PROFIL BEARBEITEN"
 
@@ -1911,8 +1917,8 @@ msgstr "GRUPPENBILD AUS EMOJI"
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
 msgstr "VERSCHLÜSSELTER SCHLÜSSEL (NCRYPTSEC)"
 
-msgid "EPOCH"
-msgstr "EPOCHE"
+msgid "ENCRYPTION REVISION"
+msgstr "VERSCHLÜSSELUNGSVERSION"
 
 msgid "Edit"
 msgstr "Bearbeiten"
@@ -2605,8 +2611,8 @@ msgstr "Schlüsselpaket-Ref"
 msgid "Key packages"
 msgstr "Schlüsselpakete"
 
-msgid "Key packages (published to your kind-10051 relay list)"
-msgstr "Schlüsselpakete (veröffentlicht auf den Relays deiner Kind-10051-Liste)"
+msgid "Key packages are published to your key package relays."
+msgstr "Schlüsselpakete werden auf deinen Schlüsselpaket-Relays veröffentlicht."
 
 msgid "Keyboard input"
 msgstr "Tastatureingabe"
@@ -2617,9 +2623,6 @@ msgstr "Tastenkürzel"
 msgid "Keys"
 msgstr "Schlüssel"
 
-msgid "Keys & backups"
-msgstr "Schlüssel & Backups"
-
 msgid "Keys & identity"
 msgstr "Schlüssel & Identität"
 
@@ -2629,8 +2632,8 @@ msgstr "Bekannte Absender"
 msgid "LINES"
 msgstr "LINIEN"
 
-msgid "LOADED"
-msgstr "GELADEN"
+msgid "LOADED MESSAGES"
+msgstr "GELADENE NACHRICHTEN"
 
 msgid "LOCAL"
 msgstr "LOKAL"
@@ -2673,6 +2676,9 @@ msgstr "Verlassen"
 
 msgid "Leave chat"
 msgstr "Chat verlassen"
+
+msgid "Leave empty unless you have one"
+msgstr "Leer lassen, wenn du keine hast"
 
 msgid "Leave group"
 msgstr "Gruppe verlassen"
@@ -2748,6 +2754,9 @@ msgstr "Wird geladen..."
 
 msgid "Loading…"
 msgstr "Wird geladen…"
+
+msgid "Local data & backups"
+msgstr "Lokale Daten und Sicherungen"
 
 msgid "Local files, cached media, and encrypted backups."
 msgstr "Verwalte lokale Dateien, zwischengespeicherte Medien und verschlüsselte Backups."
@@ -2999,11 +3008,11 @@ msgstr "Nachrichten"
 msgid "Next"
 msgstr "Weiter"
 
-msgid "Next / previous chat"
-msgstr "Nächster / vorheriger Chat"
-
 msgid "Next accent color"
 msgstr "Nächste Akzentfarbe"
+
+msgid "Next chat"
+msgstr "Nächster Chat"
 
 msgid "Next theme"
 msgstr "Nächstes Theme"
@@ -3158,6 +3167,9 @@ msgstr "Keine ungelesenen Chats"
 msgid "Noir film treatment"
 msgstr "Noir-Filmeffekt"
 
+msgid "None"
+msgstr "Keiner"
+
 msgid "Not downloaded"
 msgstr "Nicht heruntergeladen"
 
@@ -3305,6 +3317,9 @@ msgstr "Öffnet %s, außerhalb von White Noise."
 msgid "Opens signal.link in your browser. You need the Signal app to join."
 msgstr "Öffnet signal.link in deinem Browser. Zum Beitreten brauchst du die Signal-App."
 
+msgid "Optional Nostr identifier (NIP-05), not your email address. This is public."
+msgstr "Optionale Nostr-Kennung (NIP-05), nicht deine E-Mail-Adresse. Sie ist öffentlich."
+
 msgid "Orange"
 msgstr "Orange"
 
@@ -3352,6 +3367,9 @@ msgstr "PRODUKT"
 
 msgid "PROFILE"
 msgstr "PROFIL"
+
+msgid "PUBLIC PROFILE"
+msgstr "ÖFFENTLICHES PROFIL"
 
 msgid "PULL REQUEST"
 msgstr "PULL REQUEST"
@@ -3531,8 +3549,8 @@ msgstr "Transkription wird vorbereitet..."
 msgid "Press Ctrl P for the command palette."
 msgstr "Drücke Ctrl P für die Befehlspalette."
 
-msgid "Press Enter to save; Escape returns to the switches."
-msgstr "Drücke Eingabe zum Speichern; Escape bringt dich zu den Schaltern zurück."
+msgid "Press Enter to save; Escape returns to Network & relays."
+msgstr "Drücke die Eingabetaste zum Speichern; Escape führt zurück zu Netzwerk und Relays."
 
 msgid "Preview"
 msgstr "Anhören"
@@ -3545,6 +3563,9 @@ msgstr "Zurück"
 
 msgid "Previous / next in the media viewer"
 msgstr "Vorheriges / nächstes in der Medienansicht"
+
+msgid "Previous chat"
+msgstr "Vorheriger Chat"
 
 msgid "Privacy"
 msgstr "Datenschutz"
@@ -3585,6 +3606,9 @@ msgstr "Öffentlicher Schlüssel (npub)"
 msgid "Public key copied"
 msgstr "Öffentlicher Schlüssel kopiert"
 
+msgid "Public key or verified address"
+msgstr "Öffentlicher Schlüssel oder verifizierte Adresse"
+
 msgid "Public key, safe to share."
 msgstr "Öffentlicher Schlüssel, sicher zum Teilen."
 
@@ -3606,8 +3630,8 @@ msgstr "Veröffentlicht"
 msgid "Published inbox relays"
 msgstr "Veröffentlichte Empfangs-Relays"
 
-msgid "Published outbox relays (NIP-65)"
-msgstr "Veröffentlichte Sende-Relays (NIP-65)"
+msgid "Published outbox relays"
+msgstr "Veröffentlichte Ausgangs-Relays"
 
 msgid "Publishing your group profile"
 msgstr "Dein Gruppenprofil wird veröffentlicht"
@@ -3999,8 +4023,14 @@ msgstr "GM sagen (einmal am Tag)"
 msgid "Scan this pairing code in your signer, or copy the nostrconnect link."
 msgstr "Scanne diesen Kopplungscode mit deinem Signer oder kopiere den nostrconnect-Link."
 
-msgid "Scan to add"
-msgstr "Zum Hinzufügen scannen"
+msgid "Scan to add this person as a contact."
+msgstr "Scanne den Code, um diese Person als Kontakt hinzuzufügen."
+
+msgid "Scan to add you as a contact."
+msgstr "Scanne den Code, um dich als Kontakt hinzuzufügen."
+
+msgid "Scanlines"
+msgstr "Scanlinien"
 
 msgid "Science"
 msgstr "Wissenschaft"
@@ -4454,6 +4484,9 @@ msgstr "Bewahre ihn an einem sicheren Ort auf und schließe dieses Fenster. Wer 
 msgid "Stored on this device, not published to any relay yet."
 msgstr "Auf diesem Gerät gespeichert, aber noch auf keinem Relay veröffentlicht."
 
+msgid "Stripes"
+msgstr "Streifen"
+
 msgid "Study"
 msgstr "Lernen"
 
@@ -4465,6 +4498,9 @@ msgstr "Support"
 
 msgid "Switching your account"
 msgstr "Dein Konto wird gewechselt"
+
+msgid "Synthwave"
+msgstr "Synthwave"
 
 msgid "System"
 msgstr "System"
@@ -4581,8 +4617,9 @@ msgstr "Die Signer-Anfrage wurde abgebrochen."
 msgid "The updated list is published to your relays."
 msgstr "Die aktualisierte Liste wird auf deinen Relays veröffentlicht."
 
-msgid "The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}."
-msgstr "Der Web-Client, den eine Ereigniskarte öffnet, mit {id} anstelle des Ereignisses. Zum Beispiel https://primal.net/e/{id}."
+#, c-format
+msgid "The web client an event card opens. For example %s. %s is replaced with the event id."
+msgstr "Der Webclient, in dem eine Ereigniskarte geöffnet wird. Zum Beispiel %s. %s wird durch die Ereignis-ID ersetzt."
 
 msgid "Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."
 msgstr "Die Nachrichten bleiben verborgen, bis du sie einblendest, und du kannst der Person nicht direkt schreiben. Es wird nichts veröffentlicht, und du kannst es hier rückgängig machen."
@@ -4668,6 +4705,9 @@ msgstr "Damit verlässt du White Noise und öffnest den Anruf in %s."
 
 msgid "This message was deleted"
 msgstr "Diese Nachricht wurde gelöscht"
+
+msgid "This number increases when the group's encryption keys change."
+msgstr "Diese Zahl erhöht sich, wenn sich die Verschlüsselungsschlüssel der Gruppe ändern."
 
 msgid "This pairing link is too long for a QR code. Use Copy pairing link."
 msgstr "Dieser Kopplungslink ist für einen QR-Code zu lang. Verwende Kopplungslink kopieren."
@@ -4914,11 +4954,14 @@ msgstr "Wird für Profilbilder ohne veröffentlichte Form verwendet."
 msgid "Username"
 msgstr "Benutzername"
 
-msgid "VISIBLE TO ANYONE YOU CHAT WITH"
-msgstr "SICHTBAR FÜR ALLE, MIT DENEN DU CHATTEST"
+msgid "VERIFIED ADDRESS"
+msgstr "VERIFIZIERTE ADRESSE"
 
 msgid "Vault password changed."
 msgstr "Tresor-Passwort geändert."
+
+msgid "Verified address"
+msgstr "Verifizierte Adresse"
 
 msgid "Verifying download..."
 msgstr "Download wird überprüft..."
@@ -4974,6 +5017,9 @@ msgstr "Warnung"
 msgid "Wave hi"
 msgstr "Zuwinken"
 
+msgid "Waves"
+msgstr "Wellen"
+
 msgid "Webxdc app"
 msgstr "Webxdc-App"
 
@@ -5016,10 +5062,6 @@ msgstr "Wo du veröffentlichst."
 #, c-format
 msgid "White Noise %s is ready to install."
 msgstr "White Noise %s ist bereit zur Installation."
-
-#, c-format
-msgid "White Noise %s · odin port"
-msgstr "White Noise %s · Odin-Port"
 
 msgid "White Noise and this session."
 msgstr "Erfahre mehr über White Noise und diese Sitzung."
@@ -5209,9 +5251,6 @@ msgstr "Deine Themes"
 msgid "Zoom in"
 msgstr "Vergrößern"
 
-msgid "Zoom in / out / reset"
-msgstr "Vergrößern / verkleinern / zurücksetzen"
-
 msgid "Zoom out"
 msgstr "Verkleinern"
 
@@ -5315,9 +5354,6 @@ msgstr "npub kopiert"
 
 msgid "npub or hex pubkey"
 msgstr "npub oder Hex-Pubkey"
-
-msgid "npub, hex, name@domain, or .bit"
-msgstr "npub, Hex, name@domain oder .bit"
 
 msgid "opened there"
 msgstr "dort geöffnet"

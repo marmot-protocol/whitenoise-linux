@@ -284,7 +284,7 @@ refresh_worker :: proc(_: ^thread.Thread) {
 		}
 		sync.unlock(&refresh_mutex)
 		if !have {
-			time.sleep(100 * time.Millisecond)
+			time.sleep(WORKER_POLL_INTERVAL)
 			continue
 		}
 
@@ -554,7 +554,7 @@ pic_worker :: proc(_: ^thread.Thread) {
 		}
 		sync.unlock(&pic_mutex)
 		if !have {
-			time.sleep(100 * time.Millisecond)
+			time.sleep(WORKER_POLL_INTERVAL)
 			continue
 		}
 

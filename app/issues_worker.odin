@@ -35,7 +35,7 @@ issues_worker :: proc(t: ^thread.Thread) {
 		job.requested = false
 		sync.unlock(&job.mutex)
 		if cancel {return}
-		if !requested {time.sleep(100 * time.Millisecond); continue}
+		if !requested {time.sleep(WORKER_POLL_INTERVAL); continue}
 		component: ^marmot.Group_App_Component
 		records: ^marmot.App_Message_List
 		details: ^marmot.Group_Details

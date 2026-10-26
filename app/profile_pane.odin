@@ -217,7 +217,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					{fontId = FONT_TITLE, fontSize = 22, textColor = TEXT},
 				)
 				clay.Text(
-					ui.profile.editing ? tr("EDITING · BROADCAST TO RELAYS ON PUBLISH") : tr("VISIBLE TO ANYONE YOU CHAT WITH"),
+					ui.profile.editing ? tr("EDITING · BROADCAST TO RELAYS ON PUBLISH") : tr("PUBLIC PROFILE"),
 					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2},
 				)
 			}
@@ -432,11 +432,17 @@ profile_pane :: proc(ui: ^Ui_State) {
 				form_row(
 					ui,
 					2,
-					"NIP-05",
+					tr("VERIFIED ADDRESS"),
 					"Nip05Box",
 					&ui.nip05_input,
-					"name@example.com",
+					tr("Leave empty unless you have one"),
 					ui.focus == .Nip05,
+				)
+				clay.Text(
+					tr(
+						"Optional Nostr identifier (NIP-05), not your email address. This is public.",
+					),
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 				)
 				form_row(
 					ui,
@@ -533,6 +539,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					ui.account_ref,
 					ui.profile.qr,
 					identity_w,
+					tr("Scan to add you as a contact."),
 					font = FONT_TITLE,
 				)
 			}
@@ -557,7 +564,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : "",
 					font = FONT_BODY,
 				)
-				profile_kv(1, "NIP-05", ui.profile.nip05, font = FONT_BODY)
+				profile_kv(1, tr("Verified address"), ui.profile.nip05, font = FONT_BODY)
 				profile_kv(2, "Lightning", ui.profile.lud16, font = FONT_BODY)
 				profile_kv(
 					3,

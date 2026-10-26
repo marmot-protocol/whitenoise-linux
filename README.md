@@ -78,6 +78,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - The trash button on an account row (the Accounts switcher or the Profile page) removes that account from this device after you confirm. Its keys and local chats are deleted; its groups are not notified, so other members still see it.
 - Connect with a `bunker://` link or scan/copy a `nostrconnect://` pairing link. Approve requests in your signer; pending operations show their status and approval links.
 - Contacts, private local-only per-contact nicknames, an archive, and npub QR codes.
+- Your profile is public. The optional Verified address field holds a Nostr identifier (NIP-05), not your email address.
 - Profiles without a loaded name show a deterministic adjective and animal, such as "Magnetic Panda", derived from their public key. Published names replace it when loaded; local nicknames take precedence. The npub remains visible on profile cards.
 - Import and export contacts as CSV or JSON from the contacts rail. Imports skip existing contacts and duplicate npubs, restore private nicknames and blocked state, and report added, skipped, and failed records. Published profile names still come from Nostr.
 
@@ -86,7 +87,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Thirty-three bundled themes and five accent colors, all data-driven from `themes/*.toml`. Each pack defines its accent labels with `accent-name-1` through `accent-name-5`, matching the order of `accent-base`. The theme editor preserves these labels. Drop your own pack in the data dir.
 - AMOLED uses black and white theme colors and hides its accent chooser. A whole-view pass reduces color saturation to 25%, including avatars, emoji, and media.
 - Film Noir adds visible, moving film grain to the whole view, including photos and video. Reduce motion freezes the grain; the filter adds no contrast or vignette.
-- Settings > Appearance > Centred conversation centers the message timeline and composer in a column at most 720px wide. Narrower windows use the available width; turning it off restores full width.
+- Settings > Appearance > Center the conversation centers the message timeline and composer in a column at most 720px wide. Settings search accepts both "center" and "centre". Narrower windows use the available width; turning it off restores full width.
 - Settings > Appearance puts controls, the theme gallery, and a live conversation preview side by side on wide windows. Medium windows put controls beside stacked themes and preview; all three panels scroll independently. Narrow windows stack them on one page. The preview uses the normal chat renderer with a fictional marmot conversation, not your messages or draft.
 - The theme gallery has separate Dark and Light views and collection headings. Hover over a tile to preview it. Leaving the tile or pressing Escape restores your theme; clicking saves the choice.
 - The Sidecar collection contains all 21 themes from [dmnyc's Sidecar](https://github.com/dmnyc/sidecar). Selecting one shows its source credit on the page and the selected tile. Collection headings have no links.
@@ -104,7 +105,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 
 - One password-encrypted vault holds every secret (see [Security model](#security-model)).
 - Lock now in the status bar or command palette closes the runtime, clears the vault key and session state, and returns to the password gate without closing the window. Unlock with your vault password to reconnect.
-- Whole-folder encrypted backup and restore, sealed with your vault password.
+- Encrypted backup and restore for settings, drafts, custom emoji, and themes. Account keys and message history are not included.
 - Opt-in OTLP metrics and audit logging, both off until you turn them on in Settings.
 
 ## Security model
@@ -118,7 +119,7 @@ without logging out. Signing out removes the saved session and attempts remote
 logout even if the signer is unavailable. Each account reconnects independently;
 an unavailable signer does not block local accounts.
 
-The flip side is that **there is no recovery**: lose the password and the data is gone. Take a backup if that matters to you; the backup is sealed with the same vault password, so a restore needs exactly one secret.
+The flip side is that **there is no recovery**: lose the password and the data is gone. Export your account key separately; local-data backups do not include account keys or message history.
 
 Creating or changing a vault password requires at least 40 bits of estimated
 strength. The Odin check counts character diversity and discounts repeated

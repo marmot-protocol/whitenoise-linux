@@ -301,7 +301,7 @@ handle_body_copy :: proc(ui: ^Ui_State) {
 	if !ui.sel_on || len(ui.sel_copy) == 0 {
 		return
 	}
-	if !ctrl_down() || !rl.IsKeyPressed(.C) {
+	if !shortcut_down() || !rl.IsKeyPressed(.C) {
 		return
 	}
 	if ui.ed_target != nil && ui.ed.selection[0] != ui.ed.selection[1] {

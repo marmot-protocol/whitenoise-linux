@@ -72,9 +72,10 @@ settings_about :: proc(ui: ^Ui_State) {
 	},
 	) {
 		clay.Text(
-			fmt.tprintf(tr("White Noise %s · odin port"), APP_VERSION),
+			fmt.tprintf("White Noise %s", APP_VERSION),
 			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM},
 		)
+		clay.Text(tr("Data folder"), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_DIM})
 		clay.Text(data_home, {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO})
 	}
 }
@@ -198,7 +199,7 @@ about_readout :: proc(ui: ^Ui_State) {
 			),
 			tr("RELAYS"),
 		},
-		{fmt.tprintf("%d", len(ui.messages)), tr("LOADED")},
+		{fmt.tprintf("%d", len(ui.messages)), tr("LOADED MESSAGES")},
 		{
 			len(theme_packs) > 0 ? tr(theme_packs[clamp(ui.theme, 0, len(theme_packs) - 1)].name) : "—",
 			tr("THEME"),

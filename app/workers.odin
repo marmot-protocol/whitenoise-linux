@@ -14,6 +14,9 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 @(private)
+WORKER_POLL_INTERVAL :: 100 * time.Millisecond
+
+@(private)
 Live_Change :: struct {
 	group, account: string,
 	superseded:     bool,
