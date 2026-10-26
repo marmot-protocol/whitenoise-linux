@@ -1905,9 +1905,6 @@ msgstr "暗号化された鍵 (NCRYPTSEC)"
 msgid "EPOCH"
 msgstr "エポック"
 
-msgid "EXTERNAL APP"
-msgstr "外部アプリ"
-
 msgid "Edit"
 msgstr "編集"
 
@@ -2541,6 +2538,16 @@ msgstr "鍵はこの端末の保管庫に残ります。アカウント画面か
 
 msgid "Jan"
 msgstr "1月"
+
+msgid "Jitsi Meet call"
+msgstr "Jitsi Meet 通話"
+
+#, c-format
+msgid "Join in %s"
+msgstr "%s で参加"
+
+msgid "Join in browser"
+msgstr "ブラウザで参加"
 
 msgid "Jul"
 msgstr "7月"
@@ -3265,8 +3272,23 @@ msgstr "OpenAI Codex CLIのコーディングエージェント"
 msgid "Opening Whip…"
 msgstr "Whipを開いています…"
 
+#, c-format
+msgid "Opening in %s"
+msgstr "%s で開いています"
+
 msgid "Opening in your browser"
 msgstr "ブラウザで開いています"
+
+#, c-format
+msgid "Opens %s in your browser, outside White Noise."
+msgstr "White Noise の外で、ブラウザで %s を開きます。"
+
+#, c-format
+msgid "Opens %s, outside White Noise."
+msgstr "White Noise の外で %s を開きます。"
+
+msgid "Opens signal.link in your browser. You need the Signal app to join."
+msgstr "ブラウザで signal.link を開きます。参加するには Signal アプリが必要です。"
 
 msgid "Orange"
 msgstr "オレンジ"
@@ -4510,6 +4532,9 @@ msgstr "AppImageのフォルダーに書き込めません。アップデート�
 msgid "The AppImage folder is shared or has unsafe permissions. Move it to a private folder to enable updates."
 msgstr "AppImageのフォルダーは共有されているか、アクセス権限が安全ではありません。アップデートを有効にするには、AppImageを自分専用のフォルダーに移動してください。"
 
+msgid "The call runs outside White Noise."
+msgstr "この通話は White Noise の外で行われます。"
+
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr "チャットが一覧から消えます。後で参加するには新しい招待が必要です。"
 
@@ -4584,9 +4609,6 @@ msgstr "このグループの新しいメッセージにアクセスできなく
 msgid "They stay in the group as a regular member."
 msgstr "一般メンバーとしてグループに残ります。"
 
-msgid "This call runs in the Signal app, not in White Noise. You need Signal to join."
-msgstr "この通話は White Noise ではなく Signal アプリで行われます。参加するには Signal が必要です。"
-
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "表示される文字がないため、GMボタンはGMを送信します。"
 
@@ -4621,6 +4643,10 @@ msgstr "このキーには入力ミスがあります。"
 
 msgid "This leaves White Noise and opens in your browser."
 msgstr "White Noise を離れて、ブラウザで開きます。"
+
+#, c-format
+msgid "This leaves White Noise and opens the call in %s."
+msgstr "White Noise を離れ、%s で通話を開きます。"
 
 msgid "This message was deleted"
 msgstr "このメッセージは削除されました"

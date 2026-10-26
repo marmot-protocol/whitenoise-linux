@@ -250,8 +250,8 @@ link_cards_enabled :: proc() -> bool {
 link_card :: proc(url: string) -> bool {
 	_, gh := gh_ref(url)
 	_, geo := geo_ref(url)
-	_, signal := signal_call_key(url)
-	return gh || geo || signal || hn_ref(url) != "" || nev_image_url(url)
+	_, call := call_link(url)
+	return gh || geo || call || hn_ref(url) != "" || nev_image_url(url)
 }
 
 // Keep the original clickable link in every state, including loading and failure.
@@ -333,8 +333,8 @@ render_segs :: proc(
 			hn_card(id * 128 + u32(k), key, seg.url)
 		} else if link, geo := geo_ref(seg.url); card && geo {
 			geo_card(id * 128 + u32(k), seg.url, link)
-		} else if root, signal := signal_call_key(seg.url); card && signal {
-			signal_call_card(id * 128 + u32(k), seg.url, root)
+		} else if call, is_call := call_link(seg.url); card && is_call {
+			call_card(id * 128 + u32(k), seg.url, call)
 		} else if chips && link_cards_enabled() && len(seg.evid) > 0 {
 			// A referenced Nostr event is drawn as its own card, in
 			// place of the token.
@@ -352,6 +352,9 @@ render_segs :: proc(
 		} else if chips && len(seg.url) > 0 {
 			// Links only in bodies: composer lines keep the raw text so
 			// caret hit-mapping stays byte-accurate.
+			// A bare room link on an unknown host may be Jitsi; once the
+			// host answers, the next frame draws it as a call card.
+			if card {jitsi_probe(seg.url)}
 			if clay.UI(clay.ID("SegLink", id * 128 + u32(k)))(
 			{
 				layout = {padding = {left = 2, right = 2}},

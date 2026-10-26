@@ -8,6 +8,7 @@
 // OpenBSD instead offers Copy link; it never hands links to another program.
 package main
 
+import "core:fmt"
 import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -84,6 +85,11 @@ spawn_link :: proc(ui: ^Ui_State, url: string) {
 	when ODIN_OS == .OpenBSD {
 		copy_text(ui, url, tr("Copied"))
 	} else {
+		if target, app := call_app_link(url); target != "" {
+			open_external(target)
+			toast(ui, fmt.tprintf(tr("Opening in %s"), app))
+			return
+		}
 		open_external(url)
 		toast(ui, tr("Opening in your browser"))
 	}
@@ -111,6 +117,9 @@ link_modal :: proc(ui: ^Ui_State) {
 	host := url_host(ui.link_url)
 	title, explanation, action :=
 		tr("Open this link?"), tr("This leaves White Noise and opens in your browser."), tr("Open")
+	if target, app := call_app_link(ui.link_url); target != "" {
+		explanation = fmt.tprintf(tr("This leaves White Noise and opens the call in %s."), app)
+	}
 	when ODIN_OS == .OpenBSD {
 		title = tr("Copy link")
 		explanation = tr("Copy this link and open it in your browser.")

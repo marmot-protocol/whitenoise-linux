@@ -1305,6 +1305,7 @@ app_main :: proc() {
 			drain_ov()
 			drain_gh()
 			drain_hn()
+			drain_jitsi()
 			drain_nev()
 			drain_geo()
 			drain_stickers(&ui, client)

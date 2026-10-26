@@ -1905,9 +1905,6 @@ msgstr "CHIAVE CRITTOGRAFATA (NCRYPTSEC)"
 msgid "EPOCH"
 msgstr "EPOCA"
 
-msgid "EXTERNAL APP"
-msgstr "APP ESTERNA"
-
 msgid "Edit"
 msgstr "Modifica"
 
@@ -2541,6 +2538,16 @@ msgstr "Le sue chiavi restano nella cassaforte di questo dispositivo. Puoi acced
 
 msgid "Jan"
 msgstr "gen"
+
+msgid "Jitsi Meet call"
+msgstr "Chiamata Jitsi Meet"
+
+#, c-format
+msgid "Join in %s"
+msgstr "Partecipa in %s"
+
+msgid "Join in browser"
+msgstr "Partecipa nel browser"
 
 msgid "Jul"
 msgstr "lug"
@@ -3265,8 +3272,23 @@ msgstr "Agente di programmazione OpenAI Codex CLI"
 msgid "Opening Whip…"
 msgstr "Apertura di Whip…"
 
+#, c-format
+msgid "Opening in %s"
+msgstr "Apertura in %s"
+
 msgid "Opening in your browser"
 msgstr "Apertura nel browser"
+
+#, c-format
+msgid "Opens %s in your browser, outside White Noise."
+msgstr "Apre %s nel tuo browser, fuori da White Noise."
+
+#, c-format
+msgid "Opens %s, outside White Noise."
+msgstr "Apre %s, fuori da White Noise."
+
+msgid "Opens signal.link in your browser. You need the Signal app to join."
+msgstr "Apre signal.link nel tuo browser. Per partecipare ti serve l'app Signal."
 
 msgid "Orange"
 msgstr "Arancione"
@@ -4510,6 +4532,9 @@ msgstr "La cartella dell’AppImage non è scrivibile. Sposta l’AppImage in un
 msgid "The AppImage folder is shared or has unsafe permissions. Move it to a private folder to enable updates."
 msgstr "La cartella dell’AppImage è condivisa o ha permessi non sicuri. Sposta l’AppImage in una cartella privata per attivare gli aggiornamenti."
 
+msgid "The call runs outside White Noise."
+msgstr "La chiamata si svolge fuori da White Noise."
+
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr "La chat esce dal tuo elenco. Per unirti più avanti serve un nuovo invito."
 
@@ -4584,9 +4609,6 @@ msgstr "Perde l'accesso ai nuovi messaggi di questo gruppo."
 msgid "They stay in the group as a regular member."
 msgstr "Resta nel gruppo come membro normale."
 
-msgid "This call runs in the Signal app, not in White Noise. You need Signal to join."
-msgstr "Questa chiamata si svolge nell'app Signal, non in White Noise. Per partecipare ti serve Signal."
-
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "Non contiene testo visibile, quindi il pulsante GM invia GM."
 
@@ -4621,6 +4643,10 @@ msgstr "Questa chiave contiene un errore di battitura."
 
 msgid "This leaves White Noise and opens in your browser."
 msgstr "Questo esce da White Noise e si apre nel tuo browser."
+
+#, c-format
+msgid "This leaves White Noise and opens the call in %s."
+msgstr "Esci da White Noise e apri la chiamata in %s."
 
 msgid "This message was deleted"
 msgstr "Questo messaggio è stato eliminato"
