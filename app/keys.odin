@@ -169,6 +169,7 @@ reveal_nsec :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 close_export :: proc(ui: ^Ui_State) {
 	ui.export_open = false
+	ui.export_pw_required = false
 	mem.zero_slice(ui.export_pw[:])
 	clear(&ui.export_pw)
 	delete(ui.export_result)
@@ -180,6 +181,11 @@ close_export :: proc(ui: ^Ui_State) {
 // nsec never enters this process.
 do_export :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !account_local(ui) {close_export(ui); return}
+	ui.export_pw_required = len(ui.export_pw) == 0
+	if ui.export_pw_required {
+		ui.focus = .ExportPw
+		return
+	}
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	pw := strings.clone_to_cstring(string(ui.export_pw[:]), context.temp_allocator)
 	sealed: cstring
@@ -520,6 +526,7 @@ handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("ExportBtn") && account_local(ui) {
 		if armed(ui, "ExportBtn") {
 			ui.export_open = true
+			ui.export_pw_required = false
 			clear(&ui.export_pw)
 			ui.focus = .ExportPw
 		}
@@ -609,6 +616,16 @@ export_modal :: proc(ui: ^Ui_State) {
 					if ui.focus == .ExportPw {
 						caret(15)
 					}
+				}
+			}
+			if ui.export_pw_required {
+				if clay.UI(clay.ID("ExportPwError"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {
+					clay.Text(
+						tr("Pick a password first."),
+						{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+					)
 				}
 			}
 			if clay.UI(clay.ID("ExportBtns"))(
