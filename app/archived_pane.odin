@@ -83,10 +83,7 @@ archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
 				clip = {horizontal = true},
 			},
 			) {
-				clay.Text(
-					chat.at,
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO, wrapMode = .None},
-				)
+				chat_timestamp(index, chat)
 				if chat.muted {
 					clay.Text(
 						ICON_BELL_OFF,
