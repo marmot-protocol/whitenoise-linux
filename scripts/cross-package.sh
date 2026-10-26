@@ -125,8 +125,8 @@ if [ "$SYSTEM" != darwin ]; then
     "$HERE/vendor/emoji" "$HERE/vendor/emoji-licenses" "$HERE/vendor/emoji-catalog.tsv"
     "$HERE/vendor/fonts" "$HERE/vendor/crop-circles/LICENSE"
     "$HERE/vendor/crop-circles/README.txt" "$HERE/vendor/common-passwords.LICENSE"
-    "$HERE/vendor/microtex/LICENSE"
-    "$HERE/vendor/microtex/res/tex-gyre/README-TeX-Gyre-DejaVu-Math.txt"
+    "$HERE/vendor/bragi/LICENSE"
+    "$HERE/vendor/bragi/res/tex-gyre/README-TeX-Gyre-DejaVu-Math.txt"
     "$HERE/docs/tts.md" "$HERE/docs/stt.md" "$TTS/LICENSE"
     "$TTS/LICENSE-onnxruntime" "$TTS/ThirdPartyNotices-onnxruntime.txt")
   for helper in whitenoise wn-tts wn-stt wn-font wn-image wn-archive wn-pdf wn-mesh wn-fbx wn-math wn-nes; do
@@ -229,8 +229,8 @@ FONTCONFIG
   cp "$HERE/vendor/crop-circles/LICENSE" "$RES/licenses/crop-circles.txt"
   cp "$HERE/vendor/common-passwords.LICENSE" "$RES/licenses/seclists.txt"
   cp "$HERE/vendor/crop-circles/README.txt" "$RES/licenses/crop-circles-notices.txt"
-  cp "$HERE/vendor/microtex/LICENSE" "$RES/licenses/microtex.txt"
-  cp "$HERE/vendor/microtex/res/tex-gyre/README-TeX-Gyre-DejaVu-Math.txt" "$RES/licenses/tex-gyre-dejavu-math.txt"
+  cp "$HERE/vendor/bragi/LICENSE" "$RES/licenses/bragi.txt"
+  cp "$HERE/vendor/bragi/res/tex-gyre/README-TeX-Gyre-DejaVu-Math.txt" "$RES/licenses/tex-gyre-dejavu-math.txt"
   cp "$TTS/LICENSE" "$RES/licenses/sherpa-onnx.txt"
   cp "$TTS/LICENSE-onnxruntime" "$RES/licenses/onnxruntime.txt"
   cp "$TTS/ThirdPartyNotices-onnxruntime.txt" "$RES/licenses/onnxruntime-third-party.txt"

@@ -288,10 +288,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            .flatpak-cache/build/microtex
             .flatpak-cache/build/fbx/ufbx.o
             .flatpak-cache/build/fbx/ufbx.stamp
-          key: cdeps-flatpak-gnome50-x64-${{ hashFiles('DEPS_PIN', 'patches/microtex-*.patch') }}
+          key: cdeps-flatpak-gnome50-x64-${{ hashFiles('DEPS_PIN') }}
           restore-keys: cdeps-flatpak-gnome50-x64-
 
       - name: Restore Flatpak modules and downloads
@@ -310,7 +309,7 @@ jobs:
           restore-keys: flatpak-gnome50-x64-
 
       # The app module needs network during the build (scripts/build.sh clones
-      # mdk/clay/ufbx/microtex, cargo fetches crates), which the manifest declares
+      # mdk/clay/ufbx/bragi, cargo fetches crates), which the manifest declares
       # in its build-args; the action passes it through.
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         env:
@@ -349,10 +348,6 @@ jobs:
               cp -a "$source/cargo/$state" .flatpak-cache/cargo/
             fi
           done
-          if [ -f "$source/build/microtex/stamp" ]; then
-            mkdir -p .flatpak-cache/build
-            cp -a "$source/build/microtex" .flatpak-cache/build/
-          fi
           if [ -f "$source/build/fbx/ufbx.stamp" ]; then
             mkdir -p .flatpak-cache/build/fbx
             cp -a "$source/build/fbx/ufbx.o" "$source/build/fbx/ufbx.stamp" .flatpak-cache/build/fbx/
@@ -369,11 +364,10 @@ jobs:
           key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
 
       - name: Save Flatpak C dependencies
-        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles('.flatpak-cache/build/microtex/stamp') != ''
+        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles('.flatpak-cache/build/fbx/ufbx.stamp') != ''
         uses: actions/cache/save@v4
         with:
           path: |
-            .flatpak-cache/build/microtex
             .flatpak-cache/build/fbx/ufbx.o
             .flatpak-cache/build/fbx/ufbx.stamp
           key: ${{ steps.cdeps-cache.outputs.cache-primary-key }}

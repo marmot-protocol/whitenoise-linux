@@ -244,20 +244,10 @@ for stage in ipc decoder_ipc timestamp mesh_limits; do
     cross_store "$stage" "$KEY" "$OUT/$stage.o" "$OUT/lib$archive.a"
   fi
 done
-MICROTEX_STAMP="$(cross_key "microtex $(cmake --version) $(ninja --version)" "$HERE/vendor/microtex" "$HERE"/patches/microtex-*.patch "$OUT/toolchain.cmake")"
-if ! cross_fresh microtex "$MICROTEX_STAMP" "$OUT/microtex/lib/libmicrotex.a" "$OUT/microtex/lib/microtexconfig.h"; then
-  rm -rf "$OUT/microtex"
-  cmake -S "$HERE/vendor/microtex" -B "$OUT/microtex" -G Ninja \
-    -DCMAKE_TOOLCHAIN_FILE="$OUT/toolchain.cmake" -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_STATIC=ON -DHAVE_CWRAPPER=ON \
-    -DHAVE_LOG=OFF -DGRAPHICS_DEBUG=OFF -DHAVE_AUTO_FONT_FIND=OFF
-  cmake --build "$OUT/microtex" --target microtex -j"$JOBS"
-  cross_store microtex "$MICROTEX_STAMP" "$OUT/microtex/lib/libmicrotex.a" "$OUT/microtex/lib/microtexconfig.h"
-fi
-KEY="$(cross_key "math-shim $CAIRO_KEY $MICROTEX_STAMP -std=c++17 -DHAVE_CWRAPPER" "$HERE/app/math_shim.cpp" "${APP_HEADERS[@]}" "$OUT/microtex/lib/microtexconfig.h")"
+KEY="$(cross_key "math-shim $CAIRO_KEY -std=c++17 Bragi" "$HERE/app/math_shim.cpp" "${APP_HEADERS[@]}" "$HERE/vendor/bragi/capi/include")"
 if ! cross_fresh math-shim "$KEY" "$OUT/math/shim.o" "$OUT/libwnmath.a"; then
-  "$CXX" "${CFLAGS[@]}" -std=c++17 -DHAVE_CWRAPPER \
-    -isystem "$HERE/vendor/microtex/lib" -isystem "$OUT/microtex/lib" \
+  "$CXX" "${CFLAGS[@]}" -std=c++17 \
+    -isystem "$HERE/vendor/bragi/capi/include" \
     $(pkg-config --cflags cairo) -c "$HERE/app/math_shim.cpp" -o "$OUT/math/shim.o"
   "$AR" rcs "$OUT/libwnmath.a" "$OUT/math/shim.o"
   cross_store math-shim "$KEY" "$OUT/math/shim.o" "$OUT/libwnmath.a"
@@ -435,16 +425,16 @@ if ! cross_fresh mesh-link "$KEY" "$OUT/wn-mesh$EXE"; then
     -lm "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-mesh$EXE"
   cross_store mesh-link "$KEY" "$OUT/wn-mesh$EXE"
 fi
-KEY="$(cross_key "math-object $ODIN_ID" "$HERE/math-decoder" "$HERE/vendor/microtex/res/tex-gyre/texgyredejavu-math.clm2")"
+KEY="$(cross_key "math-object $ODIN_ID" "$HERE/math-decoder" "$HERE/vendor/bragi")"
 if ! cross_fresh math-object "$KEY" "$OUT/math.o"; then
   odin build "$HERE/math-decoder" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
     -o:speed -build-mode:obj -out:"$OUT/math.o"
   cross_store math-object "$KEY" "$OUT/math.o"
 fi
-KEY="$(cross_key "$LINK_ID math-link $CAIRO_KEY" "$OUT/math.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmath.a" "$OUT/microtex/lib/libmicrotex.a")"
+KEY="$(cross_key "$LINK_ID math-link $CAIRO_KEY" "$OUT/math.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmath.a")"
 if ! cross_fresh math-link "$KEY" "$OUT/wn-math$EXE"; then
   "$CXX" "${CFLAGS[@]}" "$OUT/math.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmath.a" \
-    "$OUT/microtex/lib/libmicrotex.a" $(pkg-config --libs cairo) \
+    $(pkg-config --libs cairo) \
     "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/wn-math$EXE"
   cross_store math-link "$KEY" "$OUT/wn-math$EXE"
 fi
@@ -461,7 +451,7 @@ if ! cross_fresh nes-link "$KEY" "$OUT/wn-nes$EXE"; then
   cross_store nes-link "$KEY" "$OUT/wn-nes$EXE"
 fi
 # Odin does not cross-link different OSes. Link its native object with the
-# target driver; MicroTeX and Cairo belong only to the math helper.
+# target driver; Bragi and Cairo belong only to the math helper.
 # Archive existence is checked by Odin, but archive bytes do not affect an
 # object-only compile. In particular MDK edits must change only the final link.
 KEY="$(cross_key "app-object $ODIN_ID" "$HERE/app" "$HERE/marmot" \

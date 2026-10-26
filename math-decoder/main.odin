@@ -1,5 +1,6 @@
 package main
 
+import _ "../vendor/bragi/capi"
 import "core:c"
 import "core:os"
 
@@ -10,9 +11,9 @@ WN_BUILD_DIR :: "../build" when WN_TARGET == "" else "../build/cross/" + WN_TARG
 @(private = "file")
 WN_CXX_LIBRARY :: "system:stdc++" when ODIN_OS == .Linux else "system:c++"
 when ODIN_OS == .OpenBSD {
-	foreign import renderer {WN_BUILD_DIR + "/libwnmath.a", WN_BUILD_DIR + "/microtex/lib/libmicrotex.a", "system:cairo", "system:c++", "system:c++abi", "system:m"}
+	foreign import renderer {WN_BUILD_DIR + "/libwnmath.a", "system:cairo", "system:c++", "system:c++abi", "system:m"}
 } else {
-	foreign import renderer {WN_BUILD_DIR + "/libwnmath.a", WN_BUILD_DIR + "/microtex/lib/libmicrotex.a", "system:cairo", WN_CXX_LIBRARY, "system:m"}
+	foreign import renderer {WN_BUILD_DIR + "/libwnmath.a", "system:cairo", WN_CXX_LIBRARY, "system:m"}
 }
 @(default_calling_convention = "c", private = "file")
 foreign renderer {
@@ -21,7 +22,7 @@ foreign renderer {
 
 // Trusted TeX Gyre DejaVu math outlines are embedded, never opened at runtime.
 @(private = "file")
-MATH_FONT := #load("../vendor/microtex/res/tex-gyre/texgyredejavu-math.clm2")
+MATH_FONT := #load("../vendor/bragi/res/tex-gyre/texgyredejavu-math.clm2")
 
 main :: proc() {
 	os.exit(int(wn_math_run(raw_data(MATH_FONT), c.ulong(len(MATH_FONT)))))

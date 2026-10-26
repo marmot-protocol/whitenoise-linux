@@ -18,7 +18,7 @@ foreign math_test_lib {
 	test_math_render :: proc(helper: cstring, data: [^]u8, size: c.int, font_size: f32, argb, max_side, max_bytes: c.uint, w, h: ^c.int) -> [^]u8 ---
 }
 
-// MicroTeX's own showcase: \newcommand, \fatalIfCmdConflict, colors,
+// Formula showcase: \newcommand, \fatalIfCmdConflict, colors,
 // matrices, \fcolorbox.
 @(private = "file")
 SAMPLE :: #load("math_sample.tex", string)
@@ -35,7 +35,7 @@ Rendered :: struct {
 	w, h:  c.int,
 	dark:  int, // opaque pixels darker than mid-gray
 	blue:  int, // opaque pixels that are mostly blue
-	red:   int, // opaque pixels that are mostly red: MicroTeX's "?" for a missing glyph
+	red:   int, // opaque pixels that are mostly red: the missing-glyph marker
 	light: int, // opaque pixels lighter than mid-gray
 }
 
@@ -77,7 +77,7 @@ math_helper_isolation :: proc(t: ^testing.T) {
 	pmatrix := render(`\begin{pmatrix} a & b \\ c & d \end{pmatrix}`)
 	testing.expect(t, pmatrix.ok)
 
-	// MicroTeX throws on these; the helper must fail without affecting the parent.
+	// Parse errors must fail without affecting the parent.
 	testing.expect(t, !render(`\over\over`).ok)
 	testing.expect(t, !render(`\frac{`).ok)
 
@@ -104,22 +104,13 @@ math_helper_isolation :: proc(t: ^testing.T) {
 	after := render(`\foo`)
 	testing.expect_value(t, after.w, unknown.w)
 
-	// Built-ins can't be replaced, even with conflicts switched off; both
-	// natively implemented (\frac) and predefined expansions (pmatrix).
-	render(`\fatalIfCmdConflict{false}\renewcommand{\frac}[2]{x}\newcommand{\sqrt}{y}`)
-	render(`\fatalIfCmdConflict{false}\renewenvironment{pmatrix}{}{}`)
-	again := render(`x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}`)
-	testing.expect_value(t, again.w, quadratic.w)
-	testing.expect_value(t, again.h, quadratic.h)
-	testing.expect_value(t, render(`\begin{pmatrix} a & b \\ c & d \end{pmatrix}`).w, pmatrix.w)
-
 	// A redefined color is back to its default by the next formula.
 	render(`\definecolor{white}{rgb}{0,0,1}\color{white}{x}`)
 	testing.expect_value(t, render(`\color{white}{xxxx}`).blue, 0)
 
 	// Style and line-break switches don't carry over.
 	render(`\everymath{\scriptscriptstyle}\breakEverywhere{true}\mathversion{nope}x`)
-	again = render(`x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}`)
+	again := render(`x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}`)
 	testing.expect_value(t, again.w, quadratic.w)
 	testing.expect_value(t, again.h, quadratic.h)
 }

@@ -96,7 +96,7 @@ jobs:
           restore-keys: |
             cross-cargo-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-${{ hashFiles('DEPS_PIN', 'patches/mdk-*.patch', 'scripts/cross-build.sh', 'scripts/cross-toolchain.sh') }}-
             cross-cargo-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-
-      # MicroTeX, ufbx and (Windows) libplacebo + mpv. Each output carries a
+      # ufbx and (Windows) libplacebo + mpv. Each output carries a
       # stamp of its pins and patches, so the newest older entry is a safe
       # fallback: only components whose inputs changed rebuild.
       - name: Restore C dependencies
@@ -104,8 +104,6 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            build/cross/${{ matrix.target }}/microtex
-            build/cross/${{ matrix.target }}/microtex.stamp
             build/cross/${{ matrix.target }}/fbx/ufbx.o
             build/cross/${{ matrix.target }}/fbx/ufbx.stamp
             build/cross/${{ matrix.target }}/mpv-stage
@@ -121,7 +119,7 @@ jobs:
             vendor/vcpkg
             !vendor/vcpkg/buildtrees
             !vendor/vcpkg/packages
-          key: cross-cdeps-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-${{ hashFiles('DEPS_PIN', 'patches/microtex-*.patch', 'packaging/cross/vcpkg.json', 'scripts/cross-build.sh', 'scripts/cross-toolchain.sh', 'scripts/cross-deps.sh') }}
+          key: cross-cdeps-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-${{ hashFiles('DEPS_PIN', 'packaging/cross/vcpkg.json', 'scripts/cross-build.sh', 'scripts/cross-toolchain.sh', 'scripts/cross-deps.sh') }}
           restore-keys: cross-cdeps-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-
       # Tagged releases build a delta from the previous GitHub release.
       # JSIGN_STORETYPE enables optional signing; see README for credentials.
@@ -188,12 +186,10 @@ jobs:
           path: ~/.cache/vcpkg/archives
           key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
       - name: Save C dependencies
-        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/microtex.stamp', matrix.target)) != ''
+        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/fbx/ufbx.stamp', matrix.target)) != ''
         uses: actions/cache/save@v4
         with:
           path: |
-            build/cross/${{ matrix.target }}/microtex
-            build/cross/${{ matrix.target }}/microtex.stamp
             build/cross/${{ matrix.target }}/fbx/ufbx.o
             build/cross/${{ matrix.target }}/fbx/ufbx.stamp
             build/cross/${{ matrix.target }}/mpv-stage
@@ -403,8 +399,6 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            build/cross/${{ matrix.target }}/microtex
-            build/cross/${{ matrix.target }}/microtex.stamp
             build/cross/${{ matrix.target }}/fbx/ufbx.o
             build/cross/${{ matrix.target }}/fbx/ufbx.stamp
             build/cross/${{ matrix.target }}/mpv-stage
@@ -415,7 +409,7 @@ jobs:
             vendor/vcpkg
             !vendor/vcpkg/buildtrees
             !vendor/vcpkg/packages
-          key: cross-cdeps-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-${{ hashFiles('DEPS_PIN', 'patches/microtex-*.patch', 'packaging/cross/vcpkg.json', 'scripts/cross-build.sh', 'scripts/cross-toolchain.sh', 'scripts/cross-deps.sh') }}
+          key: cross-cdeps-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-${{ hashFiles('DEPS_PIN', 'packaging/cross/vcpkg.json', 'scripts/cross-build.sh', 'scripts/cross-toolchain.sh', 'scripts/cross-deps.sh') }}
           restore-keys: cross-cdeps-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-
       - name: Build and package
         env:
@@ -440,12 +434,10 @@ jobs:
             ~/.rustup/toolchains
           key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
       - name: Save C dependencies
-        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/microtex.stamp', matrix.target)) != ''
+        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/fbx/ufbx.stamp', matrix.target)) != ''
         uses: actions/cache/save@v4
         with:
           path: |
-            build/cross/${{ matrix.target }}/microtex
-            build/cross/${{ matrix.target }}/microtex.stamp
             build/cross/${{ matrix.target }}/fbx/ufbx.o
             build/cross/${{ matrix.target }}/fbx/ufbx.stamp
             build/cross/${{ matrix.target }}/mpv-stage

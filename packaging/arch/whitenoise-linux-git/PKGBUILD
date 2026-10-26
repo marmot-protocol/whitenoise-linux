@@ -22,12 +22,12 @@ pkgrel=1
 pkgdesc="End-to-end encrypted group chat over Nostr (Marmot client)"
 arch=(x86_64)
 url="https://github.com/marmot-protocol/whitenoise-linux"
-# The app, then what it bundles: MDK, MicroTeX, ufbx and the password list
-# (MIT), Clay (Zlib), the LifeHash avatars (GPL-3.0-or-later, ported from
+# The app, then what it bundles: MDK, ufbx and the password list (MIT),
+# Bragi (GPL-3.0-only), Clay (Zlib), the LifeHash avatars (GPL-3.0-or-later, ported from
 # BSD-2-Clause-Patent bc-lifehash), the speech runtime and
 # Noto Emoji (Apache-2.0), Twemoji (CC-BY-4.0), OpenMoji (CC-BY-SA-4.0), the
 # text fonts (OFL-1.1) and the math font (GUST, with DejaVu's terms).
-license=(AGPL-3.0-or-later MIT Zlib GPL-3.0-or-later BSD-2-Clause-Patent Apache-2.0 CC-BY-4.0
+license=(AGPL-3.0-or-later MIT GPL-3.0-only Zlib GPL-3.0-or-later BSD-2-Clause-Patent Apache-2.0 CC-BY-4.0
          CC-BY-SA-4.0 OFL-1.1 Bitstream-Vera LicenseRef-GUST-Font-License)
 # Linked (readelf -d NEEDED on the app and its helpers), then what it
 # spawns: xdg-open for links, notify-send for desktop alerts. ttf-dejavu is
