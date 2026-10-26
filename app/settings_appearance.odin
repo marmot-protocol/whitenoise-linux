@@ -307,7 +307,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 			}
 		}
 		if clay.UI(clay.ID("RowZoom"))(settings_row(true)) {
-			row_labels(tr("Interface zoom"), tr("Also Ctrl + / - / 0."))
+			row_labels(tr("Interface zoom"), tr("Also Ctrl + plus, Ctrl + minus or Ctrl + 0."))
 			if clay.UI(clay.ID("ZoomChoices"))(
 			{layout = {childGap = 8, childAlignment = {y = .Center}}},
 			) {
