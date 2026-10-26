@@ -9,7 +9,8 @@ RemainAfterExit=yes
 LoadCredential=ngit-ci.act-cache
 ExecStart=/usr/bin/install -d -m 0700 /run/ngit-ci-act-cache
 ExecStart=/usr/sbin/modprobe 9pnet_virtio
-ExecStart=/usr/bin/mount -t 9p -o trans=virtio,version=9p2000.L,msize=104857600,cache=mmap,nodev,nosuid ngit-ci-act-cache /run/ngit-ci-act-cache
+# The adapter holds an exclusive repository/trust-scoped writer lease.
+ExecStart=/usr/bin/mount -t 9p -o trans=virtio,version=9p2000.L,msize=104857600,cache=loose,nodev,nosuid ngit-ci-act-cache /run/ngit-ci-act-cache
 
 [Install]
 WantedBy=multi-user.target

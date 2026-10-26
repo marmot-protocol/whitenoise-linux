@@ -50,7 +50,8 @@ every job. Install the guest files before sealing the template:
 - The statically linked guest agent as `/usr/bin/ngit-ci-vsock-agent`.
 
 Disable cloud-init and remove the bootstrap authorized key before sealing the
-standalone qcow2 template. Job SSH keys arrive through per-boot systemd
+standalone `/var/lib/ngit-ci-vm/templates/template-exclusive-cache.qcow2` image.
+Job SSH keys arrive through per-boot systemd
 credentials. The host owns the read-only template; worker accounts cannot alter
 it. Keep coordinator state directories private: they contain signing keys.
 
@@ -68,19 +69,33 @@ at the filesystem boundary, just as they do for an ordinary user.
 ## Persistent build state
 
 Each slot has a separate 48 GiB loop-backed cache filesystem, mounted
-`nodev,nosuid,noexec` on the host. The adapter partitions it by repository and
-trusted/untrusted authority and evicts idle entries above 44 GiB. The guest's
-9p mount permits execution, so cached build tools can run inside the VM.
+`nodev,nosuid,noexec` on the host. Remove its empty `lost+found/` after formatting:
+the adapter scans top-level directories as repository partitions.
+The adapter partitions it by repository and trusted/untrusted authority and
+evicts idle entries above 44 GiB. The guest mounts its selected scope with
+`cache=loose`: metadata and data stay cached within the exclusive writer lease.
+Do not modify an active scope from the host or share it with another guest.
+`cache=mmap` failed APT signature/hash checks; `cache=loose` passed the full ARM
+sysroot bootstrap without weakening package authentication.
 
-`act.sh` binds the selected partition's `worker/` into the job at
-`/var/cache/wn-ci`. `scripts/ngit-stage.sh` restores the exact workflow revision
+`act.sh` binds the selected partition's `worker/` directly into the job at
+`/var/cache/wn-ci`, without copying the cache on every run. After act exits,
+including a failed build, `sync -f` flushes writeback before the adapter destroys
+the guest and releases its lease.
+
+`scripts/ngit-stage.sh` restores the exact workflow revision
 from the coordinator's shallow checkout to the fixed `worktree/` path without
-discarding ignored build outputs. Cargo
-registries, toolchains, MDK targets, native archives, Odin objects, and AppImage
+discarding ignored build outputs. Cargo registries, toolchains, MDK targets,
+native archives, Odin objects, and AppImage
 tools persist there. `scripts/ngit-cross.sh` also preserves the cross SDK as a
 content-keyed OCI archive and retains its Rust and vcpkg state. Outputs still
 follow the existing build scripts' input keys; a cache hit does not skip tests
 or packaged-app smoke runs.
+
+Native test executables are keyed by application, test, compiler, library, and
+flag inputs. Unchanged tests execute the cached binary in a fresh process; the
+isolated UI cases remain separate processes. Each flag variant replaces its
+previous executable when inputs change rather than accumulating generations.
 
 ## Requests and results
 

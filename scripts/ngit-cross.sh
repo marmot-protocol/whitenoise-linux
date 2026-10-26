@@ -42,7 +42,7 @@ podman run --rm --network=host --entrypoint bash \
   -v "$cache/cross/git:/root/.cargo/git" -v "$rustup:/root/.rustup" \
   "$image" scripts/cross-build.sh "$target"
 
-version=$(bash scripts/version.sh)
+version=${WN_RELEASE_VERSION:-$(bash scripts/version.sh)}
 smoke=$(mktemp -d)
 if [ "$target" = windows-amd64 ]; then
   if [ -f dist/WhiteNoise-win-Portable.zip ]; then

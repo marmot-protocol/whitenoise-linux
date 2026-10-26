@@ -11,7 +11,7 @@ StateDirectoryMode=0700
 RuntimeDirectory=ngit-ci-adapter-%i
 RuntimeDirectoryMode=0770
 WorkingDirectory=/var/lib/ngit-ci-vm/slot%i
-ExecStart=/opt/ngit-ci/1dde76e67f7606438f38c0ee676a6b64b7e53560/ngit-ci-adapter-microvm --socket=/run/ngit-ci-adapter-%i/adapter.sock --template=/var/lib/ngit-ci-vm/templates/template.qcow2 --state-dir=/var/lib/ngit-ci-vm/slot%i --max-jobs=1 --vcpus=6 --memory-mib=24576 --cache-max-total-bytes=47244640256
+ExecStart=/opt/ngit-ci/1dde76e67f7606438f38c0ee676a6b64b7e53560/ngit-ci-adapter-microvm --socket=/run/ngit-ci-adapter-%i/adapter.sock --template=/var/lib/ngit-ci-vm/templates/template-exclusive-cache.qcow2 --state-dir=/var/lib/ngit-ci-vm/slot%i --max-jobs=1 --vcpus=6 --memory-mib=24576 --cache-max-total-bytes=47244640256
 Slice=github-build.slice
 CPUQuota=640%
 MemoryHigh=25G
