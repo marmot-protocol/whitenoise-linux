@@ -3,6 +3,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 fixture="$(mktemp -d)"
 trap 'rm -rf "$fixture"' EXIT
+ssh-keygen -q -t ed25519 -N '' -f "$fixture/signing-key"
 git init -q "$fixture/mdk"
 cd "$fixture/mdk"
 target='patch [target].txt'
@@ -11,7 +12,9 @@ mkdir -p "$(dirname "$source")"
 printf 'base\ncontext\nend\n' >"$target"
 printf 'pub const SOURCE_SENTINEL: &str = "baseline";\n' >"$source"
 git --literal-pathspecs add "$target" "$source"
-git -c user.name=Fixture -c user.email=fixture@example.invalid commit -S -qm 'Add patch staging fixtures'
+git -c user.name=Fixture -c user.email=fixture@example.invalid \
+  -c gpg.format=ssh -c user.signingkey="$fixture/signing-key" \
+  commit -S -qm 'Add patch staging fixtures'
 base="$(git write-tree)"
 patches=()
 for content in $'one\ncontext\nend' $'one\nchanged\nend' $'three\nchanged\nend'; do

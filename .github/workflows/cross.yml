@@ -481,7 +481,9 @@ jobs:
       - name: Check Sparkle metadata, publisher trust, and nonbundle behavior
         run: |
           source "$RUNNER_TEMP/tools/env"
-          bun test tests/sparkle-package.test.js
+          # Without ./ Bun treats this as a filter and scans build/ and vendor/,
+          # retaining their directory handles before loading the test module.
+          bun test ./tests/sparkle-package.test.js
           cpu=arm64
           if [ '${{ matrix.target }}' = darwin-amd64 ]; then cpu=x86_64; fi
           clang -arch "$cpu" -O2 -Wall -Wextra -Werror tests/sparkle-bridge-test.c \

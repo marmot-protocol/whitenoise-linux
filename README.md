@@ -992,7 +992,9 @@ a previously staged Marmot library as proof that its inputs are unchanged.
 
 Native and cross builds also cache C/C++ helpers and Odin outputs by input
 contents, compiler, target, and flags. Output manifests detect missing or
-corrupted files. Native Linux/OpenBSD and cross builds cache Odin objects
+corrupted files. Dangling SDK symlinks contribute their link metadata to input
+keys; resolving or retargeting them invalidates the cache. Output manifests
+reject dangling links. Native Linux/OpenBSD and cross builds cache Odin objects
 separately from linking, so an MDK-only change relinks the app without
 recompiling its Odin sources.
 Linux and Windows package caches cover bundled runtime libraries and archives;
@@ -1002,6 +1004,7 @@ The build-server workflow builds native Linux, Linux amd64/arm64, Windows amd64,
 and OpenBSD amd64 once each. It runs the native C/Odin suite, packaged Linux and
 Windows startup tests, and OpenBSD's filesystem, helper, and startup tests.
 The native runner signs temporary Git fixtures with a dedicated CI test key.
+The MDK patch-staging test generates its own temporary SSH signing key.
 The workflow queues these five jobs together on two isolated
 runner slots, with six build threads per job and shared CPU/memory limits.
 Native and Linux jobs use `wn-cache-2`; Windows and OpenBSD use `wn-cache-1`.

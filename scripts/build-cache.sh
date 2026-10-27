@@ -14,7 +14,7 @@ build_cache_key() (
   : >"$dir/paths"
   for path in "$@"; do
     case "/$path/" in */.git/* | */.hg/* | */.svn/* | */.env/* | *.env/*) continue ;; esac
-    if [ ! -e "$path" ]; then
+    if [ ! -e "$path" ] && [ ! -L "$path" ]; then
       echo "Missing cache input: $path" >&2
       return 1
     fi
@@ -22,17 +22,22 @@ build_cache_key() (
     find -L "$path" \( -name .git -o -name .hg -o -name .svn -o -name .env -o -name '*.env' \) -prune -o -print0 >>"$dir/paths" || return
   done
   LC_ALL=C "$sort" -zu "$dir/paths" >"$dir/sorted" || return
+  # Resolve names even when SDK symlink targets are absent. The walk rejects
+  # directory cycles, and the checks below still require every node to exist.
   # Resolve in batches rather than launching one process per SDK header.
   : >"$dir/resolved"
   if [ -s "$dir/sorted" ]; then
-    xargs -0 "$resolve" -e -z -- <"$dir/sorted" >"$dir/resolved" || return
+    xargs -0 "$resolve" -m -z -- <"$dir/sorted" >"$dir/resolved" || return
   fi
   : >"$dir/safe"
+  : >"$dir/targets"
   : >"$dir/files"
   : >"$dir/names"
   while IFS= read -r -d '' item && IFS= read -r -d '' real <&3; do
     case "/$real/" in */.git/* | */.hg/* | */.svn/* | */.env/* | *.env/*) continue ;; esac
-    if [ ! -f "$item" ] && [ ! -d "$item" ]; then
+    if [ -f "$item" ] || [ -d "$item" ]; then
+      printf '%s\0' "$item" >>"$dir/targets"
+    elif [ ! -L "$item" ] || [ -e "$item" ]; then
       echo "Unsupported cache input: $item" >&2
       return 1
     fi
@@ -44,8 +49,10 @@ build_cache_key() (
   # No .env is ever opened, including an innocently named link to one.
   {
     printf 'wn-cache-v3\0%s\0' "$identity"
+    if [ -s "$dir/targets" ]; then
+      xargs -0 "$stat" -L --printf='%n\000%f\000' -- <"$dir/targets" || exit 1
+    fi
     if [ -s "$dir/safe" ]; then
-      xargs -0 "$stat" -L --printf='%n\000%f\000' -- <"$dir/safe" || exit 1
       # Non-dereferenced %N includes raw link text (relative vs absolute).
       LC_ALL=C QUOTING_STYLE=shell-escape-always xargs -0 "$stat" --printf='%n\000%f\000%N\000' -- <"$dir/safe" || exit 1
       cat "$dir/names" || exit 1
