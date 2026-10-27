@@ -775,6 +775,9 @@ msgstr "チャット一覧の読み込みに失敗しました: %s"
 msgid "Chat options"
 msgstr "チャットのオプション"
 
+msgid "Chat restored."
+msgstr "チャットを復元しました。"
+
 msgid "Chat with AI agents, end-to-end encrypted like any other chat. Each agent runs on a computer or server you control, using its own account."
 msgstr "AIエージェントとのチャットも、他のチャットと同様にエンドツーエンドで暗号化されます。各エージェントは、あなたが管理するコンピューターやサーバー上で、専用のアカウントを使って動作します。"
 
@@ -1398,6 +1401,9 @@ msgstr "バックアップを開けませんでした。パスワードを確認
 
 msgid "Couldn't open the microphone. Please try again."
 msgstr "マイクを開けませんでした。もう一度お試しください。"
+
+msgid "Couldn't open the restored chat. Please try again."
+msgstr "復元したチャットを開けませんでした。もう一度お試しください。"
 
 msgid "Couldn't play speech. Check your audio output and try again."
 msgstr "音声を再生できませんでした。音声出力を確認して、もう一度お試しください。"
