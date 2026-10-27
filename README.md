@@ -268,6 +268,38 @@ About, diagnostics, AppImage, Flatpak, and Arch packaging use this version.
 
 ## Build from source
 
+### Nix (x86-64 Linux)
+
+The repository's flake supplies the native build tools and libraries in an FHS
+environment; it does not require a global `nix-ld` setup. From this checkout,
+enter the interactive shell and use the existing build commands:
+
+```sh
+nix --extra-experimental-features 'nix-command flakes' develop
+just build
+just run
+```
+
+For a single command, use the app entrypoint instead of `nix develop -c`, because
+the FHS shell hook consumes command arguments:
+
+```sh
+nix --extra-experimental-features 'nix-command flakes' run . -- odin version
+```
+
+The lock pins Odin and OLS to dev-2026-10, while CI uses Odin dev-2026-09.
+Rust is pinned to 1.97.1; install that toolchain with `rustup` if it is not
+already available. Cargo output defaults to `target/nix` in the working
+directory unless `CARGO_TARGET_DIR` is set.
+
+Running the GUI still needs the host desktop session, display/audio sockets,
+and GPU devices. The shell preserves access to host desktop resources,
+including Omarchy Compose data when present. It uses the host driver set on
+NixOS and Nix Mesa elsewhere. The first build still downloads the project's
+pinned source dependencies and resource bundles described below.
+
+### System packages
+
 You need `just`, the [Odin compiler](https://odin-lang.org/docs/install/), a C and C++ compiler, CMake, and a Rust toolchain (Marmot's C bundle is built from source). Plus SDL 3.4 or newer and the media libraries the viewers bind. Flatpak bundles SDL because the GNOME 50 SDK ships SDL 3.2.
 
 **Debian / Ubuntu** (SDL3 needs 25.04 or newer, or a source build):
