@@ -1318,23 +1318,41 @@ DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
 	radius := min(corner_radius, min(w, h) / 2)
 	segments := max(16, int(radius * 0.5))
 
-	vertices := make([dynamic]sdl.Vertex, context.temp_allocator)
-	indices := make([dynamic]c.int, context.temp_allocator)
-	push :: proc(vertices: ^[dynamic]sdl.Vertex, px, py: f32, fcolor: sdl.FColor) -> c.int {
-		append(vertices, sdl.Vertex{position = {px, py}, color = fcolor})
-		return c.int(len(vertices) - 1)
+	STACK_SEGMENTS :: 64
+	vertex_buffer: [16 + 4 * STACK_SEGMENTS]sdl.Vertex
+	index_buffer: [30 + 12 * STACK_SEGMENTS]c.int
+	vertices := vertex_buffer[:]
+	indices := index_buffer[:]
+	if segments > STACK_SEGMENTS {
+		vertices = make([]sdl.Vertex, 16 + 4 * segments, context.temp_allocator)
+		indices = make([]c.int, 30 + 12 * segments, context.temp_allocator)
 	}
-	tri :: proc(indices: ^[dynamic]c.int, a, b, cc: c.int) {
-		append(indices, a, b, cc)
+	vertices = vertices[:16 + 4 * segments]
+	indices = indices[:30 + 12 * segments]
+	vertex_used, index_used: int
+	push :: proc(vertices: []sdl.Vertex, count: ^int, px, py: f32, fcolor: sdl.FColor) -> c.int {
+		index := count^
+		vertices[index] = sdl.Vertex {
+			position = {px, py},
+			color    = fcolor,
+		}
+		count^ += 1
+		return c.int(index)
+	}
+	tri :: proc(indices: []c.int, count: ^int, a, b, cc: c.int) {
+		indices[count^] = a
+		indices[count^ + 1] = b
+		indices[count^ + 2] = cc
+		count^ += 3
 	}
 
 	// center quad
-	tl := push(&vertices, x + radius, y + radius, fcolor)
-	tr := push(&vertices, x + w - radius, y + radius, fcolor)
-	br := push(&vertices, x + w - radius, y + h - radius, fcolor)
-	bl := push(&vertices, x + radius, y + h - radius, fcolor)
-	tri(&indices, tl, tr, bl)
-	tri(&indices, tr, br, bl)
+	tl := push(vertices, &vertex_used, x + radius, y + radius, fcolor)
+	tr := push(vertices, &vertex_used, x + w - radius, y + radius, fcolor)
+	br := push(vertices, &vertex_used, x + w - radius, y + h - radius, fcolor)
+	bl := push(vertices, &vertex_used, x + radius, y + h - radius, fcolor)
+	tri(indices, &index_used, tl, tr, bl)
+	tri(indices, &index_used, tr, br, bl)
 
 	// corner fans
 	step := (math.PI / 2) / f32(segments)
@@ -1348,42 +1366,38 @@ DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
 		{x + radius, y + h - radius, -1, 1, bl},
 	}
 	for corner in corners {
+		v1 := push(vertices, &vertex_used, corner.cx + radius * corner.sx, corner.cy, fcolor)
 		for i in 0 ..< segments {
-			a1 := f32(i) * step
 			a2 := f32(i + 1) * step
-			v1 := push(
-				&vertices,
-				corner.cx + math.cos(a1) * radius * corner.sx,
-				corner.cy + math.sin(a1) * radius * corner.sy,
-				fcolor,
-			)
 			v2 := push(
-				&vertices,
+				vertices,
+				&vertex_used,
 				corner.cx + math.cos(a2) * radius * corner.sx,
 				corner.cy + math.sin(a2) * radius * corner.sy,
 				fcolor,
 			)
-			tri(&indices, corner.center, v1, v2)
+			tri(indices, &index_used, corner.center, v1, v2)
+			v1 = v2
 		}
 	}
 
 	// edge quads
-	et1 := push(&vertices, x + radius, y, fcolor)
-	et2 := push(&vertices, x + w - radius, y, fcolor)
-	tri(&indices, tl, et1, et2)
-	tri(&indices, tr, tl, et2)
-	er1 := push(&vertices, x + w, y + radius, fcolor)
-	er2 := push(&vertices, x + w, y + h - radius, fcolor)
-	tri(&indices, tr, er1, er2)
-	tri(&indices, br, tr, er2)
-	eb1 := push(&vertices, x + w - radius, y + h, fcolor)
-	eb2 := push(&vertices, x + radius, y + h, fcolor)
-	tri(&indices, br, eb1, eb2)
-	tri(&indices, bl, br, eb2)
-	el1 := push(&vertices, x, y + h - radius, fcolor)
-	el2 := push(&vertices, x, y + radius, fcolor)
-	tri(&indices, bl, el1, el2)
-	tri(&indices, tl, bl, el2)
+	et1 := push(vertices, &vertex_used, x + radius, y, fcolor)
+	et2 := push(vertices, &vertex_used, x + w - radius, y, fcolor)
+	tri(indices, &index_used, tl, et1, et2)
+	tri(indices, &index_used, tr, tl, et2)
+	er1 := push(vertices, &vertex_used, x + w, y + radius, fcolor)
+	er2 := push(vertices, &vertex_used, x + w, y + h - radius, fcolor)
+	tri(indices, &index_used, tr, er1, er2)
+	tri(indices, &index_used, br, tr, er2)
+	eb1 := push(vertices, &vertex_used, x + w - radius, y + h, fcolor)
+	eb2 := push(vertices, &vertex_used, x + radius, y + h, fcolor)
+	tri(indices, &index_used, br, eb1, eb2)
+	tri(indices, &index_used, bl, br, eb2)
+	el1 := push(vertices, &vertex_used, x, y + h - radius, fcolor)
+	el2 := push(vertices, &vertex_used, x, y + radius, fcolor)
+	tri(indices, &index_used, bl, el1, el2)
+	tri(indices, &index_used, tl, bl, el2)
 
 	sdl.RenderGeometry(
 		state.renderer,
@@ -1415,27 +1429,41 @@ DrawArc :: proc(cx, cy, radius, start_deg, end_deg, thickness: f32, color: Color
 	segments := max(16, int(radius * 1.5))
 	angle_step := (rad_end - rad_start) / f32(segments)
 
-	vertices := make([dynamic]sdl.Vertex, context.temp_allocator)
-	indices := make([dynamic]c.int, context.temp_allocator)
+	STACK_SEGMENTS :: 64
+	vertex_buffer: [2 * (STACK_SEGMENTS + 1)]sdl.Vertex
+	index_buffer: [6 * STACK_SEGMENTS]c.int
+	vertices := vertex_buffer[:]
+	indices := index_buffer[:]
+	if segments > STACK_SEGMENTS {
+		vertices = make([]sdl.Vertex, 2 * (segments + 1), context.temp_allocator)
+		indices = make([]c.int, 6 * segments, context.temp_allocator)
+	}
+	vertices = vertices[:2 * (segments + 1)]
+	indices = indices[:6 * segments]
 	for i in 0 ..= segments {
 		angle := rad_start + f32(i) * angle_step
 		cos := math.cos(angle)
 		sin := math.sin(angle)
-		append(
-			&vertices,
-			sdl.Vertex{position = {cx + cos * outer, cy + sin * outer}, color = fcolor},
-		)
-		append(
-			&vertices,
-			sdl.Vertex{position = {cx + cos * inner, cy + sin * inner}, color = fcolor},
-		)
+		vertices[i * 2] = {
+			position = {cx + cos * outer, cy + sin * outer},
+			color    = fcolor,
+		}
+		vertices[i * 2 + 1] = {
+			position = {cx + cos * inner, cy + sin * inner},
+			color    = fcolor,
+		}
 	}
 	for i in 0 ..< segments {
 		o0 := c.int(i * 2)
 		i0 := o0 + 1
 		o1 := o0 + 2
 		i1 := o0 + 3
-		append(&indices, o0, i0, o1, i0, i1, o1)
+		indices[i * 6] = o0
+		indices[i * 6 + 1] = i0
+		indices[i * 6 + 2] = o1
+		indices[i * 6 + 3] = i0
+		indices[i * 6 + 4] = i1
+		indices[i * 6 + 5] = o1
 	}
 	sdl.RenderGeometry(
 		state.renderer,

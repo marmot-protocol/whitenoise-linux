@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:mem/virtual"
 import "core:os"
 import "core:path/filepath"
 import "core:strings"
@@ -32,6 +33,7 @@ EMOJI_SET_NAMES := [Emoji_Set]string {
 }
 @(private)
 emoji_set: Emoji_Set
+// Read-only mapped tiles avoid copying the whole pack into the heap.
 @(private)
 emoji_pack: []u8
 
@@ -135,8 +137,7 @@ emoji_set_load :: proc(set: Emoji_Set) {
 	resize(&emoji_catalog, emoji_base_rows)
 	delete(emoji_extras)
 	emoji_extras = nil
-	delete(emoji_pack)
-	emoji_pack = nil
+	emoji_pack_unmap()
 
 	extras := fmt.tprintf("%s/emoji/%s-extras.tsv", res_dir(), EMOJI_SET_DIRS[set])
 	if os.exists(extras) {
@@ -150,10 +151,10 @@ emoji_set_load :: proc(set: Emoji_Set) {
 	}
 
 	path := fmt.tprintf("%s/emoji/%s.bin", res_dir(), EMOJI_SET_DIRS[set])
-	pack, err := os.read_entire_file(path, context.allocator)
+	pack, err := virtual.map_file_from_path(path, {.Read})
 	if err != nil || !emoji_pack_valid(pack, len(emoji_catalog)) {
 		fmt.eprintfln("emoji: missing or invalid pixel pack: %s (%v)", path, err)
-		delete(pack)
+		if pack != nil {virtual.unmap_file(pack)}
 		return
 	}
 	emoji_pack = pack
@@ -163,6 +164,12 @@ emoji_set_load :: proc(set: Emoji_Set) {
 		entry.pixels = pack[offset + 1:offset + EMOJI_RECORD_BYTES]
 		emoji_pixels[entry.emoji] = entry.pixels
 	}
+}
+
+@(private)
+emoji_pack_unmap :: proc() {
+	if emoji_pack != nil {virtual.unmap_file(emoji_pack)}
+	emoji_pack = nil
 }
 
 // Fixed-size RGBA records need no runtime image parser or helper process.

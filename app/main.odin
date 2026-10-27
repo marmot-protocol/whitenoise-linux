@@ -549,6 +549,7 @@ app_main :: proc() {
 
 	load_emoji_catalog()
 	emoji_set_load(ui.prefs.emoji_set)
+	defer emoji_pack_unmap()
 	// Before any picker or message needs them, not on first Settings visit.
 	custom_emoji_scan()
 

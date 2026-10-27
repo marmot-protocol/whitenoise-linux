@@ -171,6 +171,20 @@ Record the build, hardware, renderer/display, window size, dataset, workload,
 network, cache state, sample counts, and warm-up policy with each comparison.
 Run the same workload on the other apps before making comparative claims.
 
+## Emoji memory and drawing buffers
+
+The active emoji pixel pack is mapped read-only. Catalog entries borrow
+pixel slices from that mapping; switching sets clears those slices and the
+texture cache before unmapping the old pack. App shutdown and development
+module reload release the active mapping. Validation still scans every
+record, and textures upload on demand, so mapping avoids the whole-pack
+heap copy without guaranteeing that only displayed tiles become resident.
+
+Rounded rectangles and border arcs use stack buffers through 64 segments.
+Larger shapes allocate exact-size temporary buffers. Rounded corners share
+adjacent segment endpoints instead of calculating and submitting them twice.
+The chalk renderer uses its separate drawing path.
+
 ## Chat switching
 
 Chat selection restores the draft and staged attachments before rendering.
