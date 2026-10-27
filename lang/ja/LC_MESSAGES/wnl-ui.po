@@ -3552,6 +3552,9 @@ msgstr "Ctrl P を押すとコマンドパレットが開きます。"
 msgid "Press Enter to save; Escape returns to Network & relays."
 msgstr "Enterで保存します。Escapeで「ネットワークとリレー」に戻ります。"
 
+msgid "Press Enter to search."
+msgstr "Enter キーを押すと検索できます。"
+
 msgid "Preview"
 msgstr "試聴"
 

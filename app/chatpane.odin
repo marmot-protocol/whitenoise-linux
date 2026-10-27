@@ -170,6 +170,10 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					ui.focus == .Search,
 				)
 			}
+			clay.Text(
+				tr("Press Enter to search."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
 		}
 		// Declared after the header so the bell it attaches to exists.
 		if open_now(clay.ID("MiModal"), ui.mi_open) {

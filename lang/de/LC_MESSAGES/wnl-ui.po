@@ -3552,6 +3552,9 @@ msgstr "Drücke Ctrl P für die Befehlspalette."
 msgid "Press Enter to save; Escape returns to Network & relays."
 msgstr "Drücke die Eingabetaste zum Speichern; Escape führt zurück zu Netzwerk und Relays."
 
+msgid "Press Enter to search."
+msgstr "Drücke die Eingabetaste, um zu suchen."
+
 msgid "Preview"
 msgstr "Anhören"
 
