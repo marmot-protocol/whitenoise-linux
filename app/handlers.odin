@@ -95,6 +95,7 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if clicked("LoginBack") {
 		ui.login_method = .Menu
+		ui.login_error = ""
 		login_pair_clear(ui)
 		clear(&ui.login_input)
 		return
