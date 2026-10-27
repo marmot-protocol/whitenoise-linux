@@ -242,11 +242,8 @@ poll_modal :: proc(ui: ^Ui_State) {
 			},
 		},
 		) {
-			if ui.poll_multi_in {
-				micro_button("PollMulti", tr("Multiple choice"))
-			} else {
-				micro_button("PollMulti", tr("Single choice"))
-			}
+			toggle("PollMulti", ui.poll_multi_in)
+			clay.Text(tr("Multiple choice"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 			if clay.UI(clay.ID("PollBtnGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			login_button("PollCancel", tr("Cancel"))
 			login_button("PollCreate", tr("Create"), primary = true)
