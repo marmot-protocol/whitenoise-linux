@@ -121,6 +121,34 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 				}
 			}
 			// Right-pinned chrome; the bell opens the mentions inbox.
+			// Keep MLS internals out of normal mode and compact headers.
+			if ui.prefs.dev_mode && page_w(ui) >= 580 {
+				if clay.UI(clay.ID("MlsBadge"))(
+				{
+					layout = {
+						padding = {left = 8, right = 8, top = 3, bottom = 3},
+						childGap = 5,
+						childAlignment = {y = .Center},
+					},
+					backgroundColor = hovered() ? ACCENT_DIM : ACCENT,
+					cornerRadius = rr(6),
+				},
+				) {
+					clay.Text(
+						ICON_LOCK,
+						{fontId = FONT_ICON, fontSize = 10, textColor = ON_ACCENT},
+					)
+					crop_circle("MlsCircle", 0, chat.group_id, 18)
+					clay.Text(
+						fmt.tprintf("mls:0x%s", chat.group_id[:min(len(chat.group_id), 6)]),
+						{fontId = FONT_MONO, fontSize = 11, textColor = ON_ACCENT},
+					)
+					if hovered() {
+						tooltip(tr("End-to-end encrypted"))
+						cursor_raise(.Pointer)
+					}
+				}
+			}
 			if clay.UI(clay.ID("ChatHeadGap"))(
 			{layout = {sizing = {width = clay.SizingGrow()}}},
 			) {}
@@ -2061,7 +2089,10 @@ chat_composer :: proc(ui: ^Ui_State) {
 								)
 								busy_bar(fmt.tprintf("StagedBusy%d", i))
 							} else {
-								clay.Text(human_size(i64(len(f.data))), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})
+								clay.Text(
+									human_size(i64(len(f.data))),
+									{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+								)
 							}
 						}
 						if clay.UI(clay.ID("StagedX", u32(i)))(
