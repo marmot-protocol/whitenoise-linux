@@ -44,6 +44,6 @@ keys_confirm_arms :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.keys_confirm, "")
 
 	testing.expect(t, !armed(&ui, "RotateBtn"))
-	testing.expect(t, !armed(&ui, "ExportBtn"))
-	testing.expect_value(t, ui.keys_confirm, "ExportBtn")
+	testing.expect(t, !armed(&ui, "RevealNsecBtn"))
+	testing.expect_value(t, ui.keys_confirm, "RevealNsecBtn")
 }

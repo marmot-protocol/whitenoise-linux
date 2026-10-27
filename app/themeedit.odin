@@ -41,21 +41,21 @@ THEME_FIELDS := []Theme_Field {
 	{N_("IDENTITY"), N_("Name"), .Name, .Text, 0},
 	{"", N_("Font"), .Font, .Text, 0},
 	{"", N_("Title font"), .Font_Title, .Text, 0},
-	{"", N_("Accent %s"), .Accent_Name_1, .Text, 0},
-	{"", N_("Accent %s"), .Accent_Name_2, .Text, 1},
-	{"", N_("Accent %s"), .Accent_Name_3, .Text, 2},
-	{"", N_("Accent %s"), .Accent_Name_4, .Text, 3},
-	{"", N_("Accent %s"), .Accent_Name_5, .Text, 4},
+	{"", N_("Accent %s name"), .Accent_Name_1, .Text, 0},
+	{"", N_("Accent %s name"), .Accent_Name_2, .Text, 1},
+	{"", N_("Accent %s name"), .Accent_Name_3, .Text, 2},
+	{"", N_("Accent %s name"), .Accent_Name_4, .Text, 3},
+	{"", N_("Accent %s name"), .Accent_Name_5, .Text, 4},
 	{N_("SEEDS"), N_("Background"), .Bg, .Color, 0},
 	{"", N_("Background 2"), .Bg_2, .Color, 0},
 	{"", N_("Text"), .Text_Hi, .Color, 0},
 	{"", N_("Danger"), .Danger, .Color, 0},
 	{"", N_("Warning"), .Warning, .Color, 0},
-	{N_("ACCENTS"), N_("Accent %s"), .Accent_Base, .Color, 0},
-	{"", N_("Accent %s"), .Accent_Base, .Color, 1},
-	{"", N_("Accent %s"), .Accent_Base, .Color, 2},
-	{"", N_("Accent %s"), .Accent_Base, .Color, 3},
-	{"", N_("Accent %s"), .Accent_Base, .Color, 4},
+	{N_("ACCENTS"), N_("Accent %s color"), .Accent_Base, .Color, 0},
+	{"", N_("Accent %s color"), .Accent_Base, .Color, 1},
+	{"", N_("Accent %s color"), .Accent_Base, .Color, 2},
+	{"", N_("Accent %s color"), .Accent_Base, .Color, 3},
+	{"", N_("Accent %s color"), .Accent_Base, .Color, 4},
 	{"", N_("On accent"), .On_Accent, .Color, 0},
 	{N_("SURFACES"), N_("Panel"), .Panel, .Color, 0},
 	{"", N_("Panel 2"), .Panel_2, .Color, 0},
@@ -151,7 +151,7 @@ theme_field_hint :: proc(pack: ^Theme_Pack, field: Theme_Field) -> string {
 	switch THEME_TOKENS[field.token].kind {
 	case .Color:
 		color := (cast(^clay.Color)entry)^
-		if field.token == .Bg_2 && color.a == 0 {return N_("flat")}
+		if field.token == .Bg_2 && color.a == 0 {return N_("Flat")}
 		return hex_color(color)
 	case .Colors, .Ink:
 		return hex_color((cast(^[5]clay.Color)entry)^[field.slot])

@@ -333,8 +333,7 @@ settings_keys :: proc(ui: ^Ui_State) {
 						"Creates a NIP-49 key encrypted with a password, safe to store or move to another client.",
 					),
 				)
-				label := ui.keys_confirm == "ExportBtn" ? tr("Confirm") : tr("Export")
-				settings_button("ExportBtn", label)
+				settings_button("ExportBtn", tr("Export"))
 			}
 		}
 	}
@@ -524,12 +523,11 @@ handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("ExportBtn") && account_local(ui) {
-		if armed(ui, "ExportBtn") {
-			ui.export_open = true
-			ui.export_pw_required = false
-			clear(&ui.export_pw)
-			ui.focus = .ExportPw
-		}
+		keys_disarm(ui)
+		ui.export_open = true
+		ui.export_pw_required = false
+		clear(&ui.export_pw)
+		ui.focus = .ExportPw
 		return
 	}
 	ui.keys_confirm = "" // a click anywhere else disarms

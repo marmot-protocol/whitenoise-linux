@@ -258,8 +258,8 @@ login_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("LoginLocalMethods"))(
 			{layout = {sizing = {width = clay.SizingGrow({})}, childGap = 14}},
 			) {
-				login_big_button("LoginImportBtn", tr("I have an nsec"), true)
-				login_big_button("LoginCreate", tr("Generate a new key"), false)
+				login_big_button("LoginImportBtn", tr("Import a secret key (nsec)"), false)
+				login_big_button("LoginCreate", tr("Generate a new key"), true)
 			}
 			if clay.UI(clay.ID("LoginRemoteMethods"))(
 			{layout = {sizing = {width = clay.SizingGrow({})}, childGap = 14}},

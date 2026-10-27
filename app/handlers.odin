@@ -102,7 +102,9 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	submitted := ui.login_method != .Menu && (rl.IsKeyPressed(.ENTER) || clicked("LoginGo"))
-	if submitted && ui.login_method == .Bunker && strings.trim_space(string(ui.login_input[:])) == "" {
+	if submitted &&
+	   ui.login_method == .Bunker &&
+	   strings.trim_space(string(ui.login_input[:])) == "" {
 		delete(ui.login_error)
 		ui.login_error = strings.clone(tr("Enter your bunker link to continue."))
 		return
@@ -598,22 +600,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	// The effect picker captures everything while open.
-	if handle_effects(ui) {
-		return
-	}
-	if clicked("FxBtn") {
-		ui.fx_open = !ui.fx_open
-		return
-	}
-	// The effect picker captures everything while open.
-	if handle_effects(ui) {
-		return
-	}
-	if clicked("FxBtn") {
-		ui.fx_open = !ui.fx_open
-		return
-	}
 	// The effect picker captures everything while open.
 	if handle_effects(ui) {
 		return
@@ -1457,6 +1443,9 @@ open_group_info :: proc(ui: ^Ui_State, client: ^marmot.Client, tab: Info_Tab) {
 	}
 	if !ui.show_members {
 		load_members(client, ui)
+	}
+	if !dm && tab == .Settings && (!ui.show_members || ui.info_tab != .Settings) {
+		ed_set(ui, &ui.rename_input, ui.chats[ui.selected].title)
 	}
 	ui.show_members = true
 	ui.info_tab = dm ? .Settings : tab

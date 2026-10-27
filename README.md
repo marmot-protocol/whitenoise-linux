@@ -27,7 +27,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 
 - One-to-one and group chats, end-to-end encrypted through Marmot's MLS, with sealed-sender invites over NIP-59.
 - New chat opens a searchable contact picker. Choose a contact or select New group to set its name and photo. Groups require a first member: type to filter your contacts and select one, or paste a Nostr address.
-- Group settings show name, description, photo, disappearing-message, and issue-tracking controls only to admins. Other members can view the group's name, description, photo, and current disappearing-message timer in full units, such as "90 days".
+- Group settings show name, description, photo, disappearing-message, and issue-tracking controls only to admins. The rename field starts with the current group name. Other members can view the group's name, description, photo, and current disappearing-message timer in full units, such as "90 days".
 - Only group admins can promote, demote, or remove members. Nicknames change your local labels and remain available to other members.
 - Markdown bodies (with typeset `$` math blocks), reactions, replies, edits with history, forwarding, and search.
 - Linked Nostr highlights (kind 9802, NIP-84) put the selected passage in large type, with quieter context, avatar bylines, and compact source tiles. Cards start with the highlighter's byline, without a kind label. Source tiles identify the domain, event, or structured source. Source links and the full-width Open in client button use the external-link guard. Read more expands the quotation, context, and commentary together. Media-only highlights retain their source tiles.
@@ -84,7 +84,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 
 **Look & feel**
 
-- Thirty-three bundled themes and five accent colors, all data-driven from `themes/*.toml`. Each pack defines its accent labels with `accent-name-1` through `accent-name-5`, matching the order of `accent-base`. The theme editor preserves these labels. Drop your own pack in the data dir.
+- Thirty-three bundled themes and five accent colors, all data-driven from `themes/*.toml`. Each pack defines its accent labels with `accent-name-1` through `accent-name-5`, matching the order of `accent-base`. The theme editor labels accent names separately from accent colors and preserves both. Drop your own pack in the data dir.
 - AMOLED uses black and white theme colors and hides its accent chooser. A whole-view pass reduces color saturation to 25%, including avatars, emoji, and media.
 - Film Noir adds visible, moving film grain to the whole view, including photos and video. Reduce motion freezes the grain; the filter adds no contrast or vignette.
 - Settings > Appearance > Center the conversation centers the message timeline and composer in a column at most 720px wide. Settings search accepts both "center" and "centre". Narrower windows use the available width; turning it off restores full width.
@@ -775,10 +775,16 @@ archives (`--blossom-max-artifact-bytes`, commonly above the default 64 MiB).
 
 ### First run
 
-On first launch, set a vault password, then import or generate an nsec, paste a
-bunker link, or pair with a remote signer. Later launches unlock the same vault.
+On first launch, set a vault password, then choose Generate a new key to create
+your identity. If you already have a secret key, choose Import a secret key
+(nsec). You can also paste a bunker link or pair with a remote signer.
+Later launches unlock the same vault.
 A wrong password cannot decrypt it. **Use another key** deletes the vault and
 its sealed data and returns to account setup.
+
+The get-started card checks for an existing key package before offering to
+publish one. A key package lets other people invite you to encrypted chats.
+Export encrypted key opens its password dialog on the first click.
 
 If relay discovery fails during key import or remote-signer login, missing lists
 use `wss://relay.eu.whitenoise.chat`, `wss://relay.us.whitenoise.chat`,
@@ -799,6 +805,8 @@ proxy, enter a numeric address such as `127.0.0.1:9050` or `[::1]:9050`,
 then choose Save and restart White Noise. Disable the switch, save, and
 restart to return to direct connections. The setting is stored as
 `prefs.socks5_proxy` in `settings.json`; an empty value disables it.
+The address field starts empty unless you have saved a proxy. Restart
+guidance appears after saving succeeds.
 For authentication, enable Use username and password and fill both fields.
 Each accepts 1 to 255 UTF-8 bytes. Credentials are stored in the encrypted
 vault, not `settings.json`; `prefs.socks5_auth` stores only the authentication

@@ -301,6 +301,9 @@ msgstr "チェックは、チャットを手動で配置したことを示しま
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "プライベートなグループチャットのためのデスクトップクライアントです。メッセージはこのマシン上で MLS により暗号化され、中身の読めないデータとして Nostr リレーに渡され、グループ内でのみ再び復号されます。"
 
+msgid "A key package lets people invite you to encrypted chats."
+msgstr "キーパッケージがあると、ほかの人があなたを暗号化チャットに招待できます。"
+
 msgid "A line about you"
 msgstr "ひとこと自己紹介"
 
@@ -337,8 +340,12 @@ msgid "About White Noise"
 msgstr "White Noise について"
 
 #, c-format
-msgid "Accent %s"
-msgstr "アクセント %s"
+msgid "Accent %s color"
+msgstr "アクセント %s の色"
+
+#, c-format
+msgid "Accent %s name"
+msgstr "アクセント %s の名前"
 
 msgid "Accent color"
 msgstr "アクセントカラー"
@@ -762,9 +769,6 @@ msgstr "保管庫のパスワードを変更"
 msgid "Change..."
 msgstr "変更..."
 
-msgid "Changes require a restart; the current connection is unchanged."
-msgstr "変更には再起動が必要です。現在の接続は変更されません。"
-
 msgid "Chat details"
 msgstr "チャットの詳細"
 
@@ -797,11 +801,17 @@ msgstr "各文字を元のキーと照合して、もう一度試してくださ
 msgid "Check every six hours and download signed updates. Restart when you choose."
 msgstr "6時間ごとに確認し、署名付きのアップデートをダウンロードします。再起動は好きなタイミングで行えます。"
 
+msgid "Check for a key package"
+msgstr "キーパッケージを探す"
+
 msgid "Check for a newer version."
 msgstr "新しいバージョンを確認します。"
 
 msgid "Check now"
 msgstr "今すぐ確認"
+
+msgid "Check your key package"
+msgstr "キーパッケージを確認"
 
 msgid "Checking for updates."
 msgstr "アップデートを確認しています。"
@@ -2164,6 +2174,9 @@ msgstr "フィットネス"
 msgid "Flag"
 msgstr "旗"
 
+msgid "Flat"
+msgstr "単色"
+
 msgid "Float"
 msgstr "フローティング表示"
 
@@ -2373,9 +2386,6 @@ msgstr "マウスホイールで表示が移動する量です。"
 msgid "I did. Very important marmot business."
 msgstr "私です。大事なマーモットのお仕事です。"
 
-msgid "I have an nsec"
-msgstr "nsecを持っています"
-
 msgid "I packed snacks for the expedition. 🥕"
 msgstr "探検のおやつを持ってきました。🥕"
 
@@ -2425,6 +2435,9 @@ msgstr "連絡先のCSVまたはJSONエクスポートをインポートする�
 
 msgid "Import a key"
 msgstr "鍵をインポート"
+
+msgid "Import a secret key (nsec)"
+msgstr "秘密鍵（nsec）をインポート"
 
 msgid "Import an image to make your first sticker."
 msgstr "画像を読み込んで最初のステッカーを作成できます。"
@@ -2539,9 +2552,6 @@ msgstr "問題の報告"
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr "チャットの全員の画面から消えます。この操作は取り消せません。"
 
-msgid "It is what lets people invite you to a group."
-msgstr "これにより、ほかの人があなたをグループに招待できるようになります。"
-
 msgid "It stays for everyone else. You won't see it on this device again."
 msgstr "ほかの人の画面には残ります。この端末では再び表示されません。"
 
@@ -2613,9 +2623,6 @@ msgstr "キーパッケージ"
 
 msgid "Key packages are published to your key package relays."
 msgstr "キーパッケージはキーパッケージ用リレーに公開されます。"
-
-msgid "Keyboard input"
-msgstr "キーボード入力"
 
 msgid "Keyboard shortcuts"
 msgstr "キーボードショートカット"
@@ -3392,9 +3399,6 @@ msgstr "リモート署名者とペアリング"
 
 msgid "Pairing link copied"
 msgstr "ペアリングリンクをコピーしました"
-
-msgid "Pane %d of %d"
-msgstr "ペイン %d / %d"
 
 msgid "Panel"
 msgstr "パネル"
@@ -4354,9 +4358,6 @@ msgstr "サインアウトして署名者のセッションを削除していま
 msgid "Signing you in"
 msgstr "サインインしています"
 
-msgid "Single choice"
-msgstr "単一選択"
-
 msgid "Single sided"
 msgstr "片面"
 
@@ -4541,9 +4542,6 @@ msgstr "ターミナル"
 
 msgid "Terminal agent by Nous Research"
 msgstr "Nous Researchのターミナルエージェント"
-
-msgid "Terminal unfocused"
-msgstr "ターミナルは非アクティブ"
 
 #, c-format
 msgid "Terrain: %d/5"
@@ -5291,9 +5289,6 @@ msgstr "編集済み"
 
 msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
-
-msgid "flat"
-msgstr "フラット"
 
 #, c-format
 msgid "in %d day"

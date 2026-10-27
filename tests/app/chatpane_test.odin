@@ -45,8 +45,19 @@ group_settings_permissions :: proc(t: ^testing.T) {
 	defer {
 		g_ui, g_prefs = nil, nil
 		delete(ui.accounts); delete(ui.chats); delete(ui.members)
-		delete(ui.compose); delete(ui.mention_cands)
+		delete(ui.compose); delete(ui.mention_cands); delete(ui.rename_input)
 	}
+	ui.info_tab = .Members
+	ed_set(&ui, &ui.rename_input, "Previous group")
+	open_group_info(&ui, nil, .Settings)
+	testing.expect_value(t, string(ui.rename_input[:]), "Shared group")
+	ed_set(&ui, &ui.rename_input, "Unpublished rename")
+	open_group_info(&ui, nil, .Settings)
+	testing.expect_value(t, string(ui.rename_input[:]), "Unpublished rename")
+	open_group_info(&ui, nil, .Members)
+	ui.chats[0].title = "Updated group"
+	open_group_info(&ui, nil, .Settings)
+	testing.expect_value(t, string(ui.rename_input[:]), "Updated group")
 	// Include demotion with stale editor/menu state and a still-enabled issue setting.
 	for admin, i in ([]bool{false, true, false}) {
 		ui.members[0].is_admin = admin
