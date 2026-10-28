@@ -852,6 +852,10 @@ filter, and window size after a restart. Reopening Settings returns to the
 section you left. These preferences are independent of General's
 "Restore last chat" toggle, which controls only the selected conversation.
 
+Event fetch relays require a `ws://` or `wss://` URL with a host. Local
+addresses, IPv6, ports, paths, and query strings are supported. Malformed
+input stays in the field with a correction message and is not saved.
+
 Set a SOCKS5 proxy under Settings > Network & relays > Relays. Enable the
 proxy, enter a numeric address such as `127.0.0.1:9050` or `[::1]:9050`,
 then choose Save and restart White Noise. Disable the switch, save, and

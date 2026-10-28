@@ -1187,6 +1187,9 @@ msgstr "レコード%dを追加できませんでした。%s リレー設定を�
 msgid "Couldn't add the pack. No supported stickers are available."
 msgstr "パックを追加できませんでした。対応するステッカーがありません。"
 
+msgid "Couldn't add the relay. Enter a ws:// or wss:// URL with a host, such as wss://relay.example.com."
+msgstr "リレーを追加できませんでした。wss://relay.example.com のように、ホストを含む ws:// または wss:// の URL を入力してください。"
+
 #, c-format
 msgid "Couldn't archive. %s"
 msgstr "チャットをアーカイブできませんでした。%s"
