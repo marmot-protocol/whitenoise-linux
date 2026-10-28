@@ -88,6 +88,10 @@ msgid "%d hours ago"
 msgstr ""
 
 #, c-format
+msgid "%d key packages. On this device: %d. On relays: %d."
+msgstr ""
+
+#, c-format
 msgid "%d member"
 msgstr ""
 
@@ -141,10 +145,6 @@ msgstr ""
 
 #, c-format
 msgid "%d of %d shared with you"
-msgstr ""
-
-#, c-format
-msgid "%d published, %d on this device, seen on %d relays."
 msgstr ""
 
 #, c-format
@@ -300,6 +300,10 @@ msgstr ""
 
 #, c-format
 msgid "+%d more"
+msgstr ""
+
+#, c-format
+msgid "1 key package. %s"
 msgstr ""
 
 msgid "1 vote"
@@ -2803,6 +2807,9 @@ msgstr ""
 msgid "Location maps"
 msgstr ""
 
+msgid "Location unknown."
+msgstr ""
+
 msgid "Lock now"
 msgstr ""
 
@@ -3264,10 +3271,32 @@ msgstr ""
 msgid "On"
 msgstr ""
 
+#, c-format
+msgid "On %d relay."
+msgstr ""
+
+#, c-format
+msgid "On %d relays."
+msgstr ""
+
 msgid "On accent"
 msgstr ""
 
+msgid "On relays."
+msgstr ""
+
 msgid "On sale"
+msgstr ""
+
+#, c-format
+msgid "On this device and on %d relay."
+msgstr ""
+
+#, c-format
+msgid "On this device and on %d relays."
+msgstr ""
+
+msgid "On this device and on relays."
 msgstr ""
 
 msgid "Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest."
@@ -3703,10 +3732,6 @@ msgid "RECENT"
 msgstr ""
 
 msgid "RELAY"
-msgstr ""
-
-#, c-format
-msgid "RELAY · %d"
 msgstr ""
 
 msgid "RELAYS"

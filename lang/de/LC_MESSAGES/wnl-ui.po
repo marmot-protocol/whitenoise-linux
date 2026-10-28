@@ -88,6 +88,10 @@ msgid "%d hours ago"
 msgstr "vor %d Stunden"
 
 #, c-format
+msgid "%d key packages. On this device: %d. On relays: %d."
+msgstr "%d Schlüsselpakete. Auf diesem Gerät: %d. Auf Relays: %d."
+
+#, c-format
 msgid "%d member"
 msgstr "%d Mitglied"
 
@@ -142,10 +146,6 @@ msgstr "%d von %d Relays sind erreichbar."
 #, c-format
 msgid "%d of %d shared with you"
 msgstr "%d von %d mit dir gemeinsam"
-
-#, c-format
-msgid "%d published, %d on this device, seen on %d relays."
-msgstr "%d veröffentlicht, %d auf diesem Gerät, auf %d Relays gesehen."
 
 #, c-format
 msgid "%d published, so people can invite you."
@@ -301,6 +301,10 @@ msgstr "(unveröffentlicht)"
 #, c-format
 msgid "+%d more"
 msgstr "+%d weitere"
+
+#, c-format
+msgid "1 key package. %s"
+msgstr "1 Schlüsselpaket. %s"
 
 msgid "1 vote"
 msgstr "1 Stimme"
@@ -2804,6 +2808,9 @@ msgstr "Speicherort"
 msgid "Location maps"
 msgstr "Standortkarten"
 
+msgid "Location unknown."
+msgstr "Speicherort unbekannt."
+
 msgid "Lock now"
 msgstr "Jetzt sperren"
 
@@ -3265,11 +3272,33 @@ msgstr "Aus zeigt nur „Neue Nachricht“ ohne den Text."
 msgid "On"
 msgstr "An"
 
+#, c-format
+msgid "On %d relay."
+msgstr "Auf %d Relay."
+
+#, c-format
+msgid "On %d relays."
+msgstr "Auf %d Relays."
+
 msgid "On accent"
 msgstr "Auf Akzent"
 
+msgid "On relays."
+msgstr "Auf Relays."
+
 msgid "On sale"
 msgstr "Zum Verkauf"
+
+#, c-format
+msgid "On this device and on %d relay."
+msgstr "Auf diesem Gerät und auf %d Relay."
+
+#, c-format
+msgid "On this device and on %d relays."
+msgstr "Auf diesem Gerät und auf %d Relays."
+
+msgid "On this device and on relays."
+msgstr "Auf diesem Gerät und auf Relays."
 
 msgid "Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest."
 msgstr "Sobald der Agent dir seine npub nennt, starte über „Neuer Chat“ eine Unterhaltung mit ihm. Alles Weitere steht in der Konnektor-Dokumentation."
@@ -3705,10 +3734,6 @@ msgstr "ZULETZT"
 
 msgid "RELAY"
 msgstr "RELAY"
-
-#, c-format
-msgid "RELAY · %d"
-msgstr "RELAY · %d"
 
 msgid "RELAYS"
 msgstr "RELAYS"
