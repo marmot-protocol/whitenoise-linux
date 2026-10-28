@@ -331,6 +331,7 @@ jobs:
       # its CARGO_HOME is cargo/, and native targets live in build/cargo/native.
       # Keep completed dependencies even if a later app compile fails.
       - name: Collect Flatpak dependency outputs
+        id: flatpak-outputs
         if: always()
         run: |
           # Remove credentials even when compilation failed, before any cache save.
@@ -351,6 +352,11 @@ jobs:
           if [ -f "$source/build/fbx/ufbx.stamp" ]; then
             mkdir -p .flatpak-cache/build/fbx
             cp -a "$source/build/fbx/ufbx.o" "$source/build/fbx/ufbx.stamp" .flatpak-cache/build/fbx/
+            echo "cdeps=true" >> "$GITHUB_OUTPUT"
+          fi
+          # Check generated files in the container, not through runner hashFiles().
+          if [ -f build/flatpak-state/cache/config ]; then
+            echo "modules=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Save Flatpak Cargo state
@@ -364,7 +370,7 @@ jobs:
           key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
 
       - name: Save Flatpak C dependencies
-        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles('.flatpak-cache/build/fbx/ufbx.stamp') != ''
+        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && steps.flatpak-outputs.outputs.cdeps == 'true'
         uses: actions/cache/save@v4
         with:
           path: |
@@ -374,7 +380,7 @@ jobs:
 
       - name: Save Flatpak modules and downloads
         # The module cache includes the app binary; never save token-bearing builds.
-        if: always() && !startsWith(github.ref, 'refs/tags/') && steps.flatpak-cache.outputs.cache-hit != 'true' && hashFiles('build/flatpak-state/cache/config') != ''
+        if: always() && !startsWith(github.ref, 'refs/tags/') && steps.flatpak-cache.outputs.cache-hit != 'true' && steps.flatpak-outputs.outputs.modules == 'true'
         uses: actions/cache/save@v4
         with:
           path: |

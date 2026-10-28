@@ -370,6 +370,10 @@ as native CI. Bragi compiles with the Odin math helper. Cargo target directories
 Flatpak objects are kept separate from native Ubuntu objects. Only tag
 builds publish releases.
 
+After the Flatpak build, the dependency-collection step reports which cache
+outputs exist. Cache-save conditions use those step outputs rather than
+runner-side `hashFiles()` checks on generated files inside the container.
+
 ### Whip inside White Noise
 
 On Linux, native builds detect an executable `../whip/build/whip` and its
