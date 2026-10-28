@@ -4,8 +4,10 @@ import "core:fmt"
 import "core:testing"
 
 @(test)
-agent_setup_back_returns_to_connectors :: proc(t: ^testing.T) {
+agent_connector_back :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
+	previous_focus := kb_focus
+	defer kb_focus = previous_focus
 	for _, index in AGENT_CONNECTORS {
 		ui := Ui_State {
 			page             = .Settings,
