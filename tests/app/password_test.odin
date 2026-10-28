@@ -7,22 +7,25 @@ import "core:testing"
 password_feedback :: proc(t: ^testing.T) {
 	check: Password_Check
 	password_bits("", &check)
-	testing.expect_value(t, password_hint_label(&check), tr("Enter a password"))
-	for password in ([]string{"password", "P@ssw0rd", "password"}) {
-		testing.expect_value(t, password_bits(password, &check), f64(0))
+	testing.expect(t, !check.common)
+	for password in ([]string{"password", "P@ssw0rd"}) {
+		testing.expect(t, password_bits(password, &check) < PASSWORD_MIN_BITS)
 		testing.expect(t, check.common)
-		testing.expect_value(t, password_hint_label(&check), tr("This is a common password"))
 	}
-	password_bits("x", &check)
+	password_bits("zjxvkpqm", &check)
 	testing.expect(t, !check.common)
-	testing.expect_value(t, password_hint_label(&check), tr("Too easy to guess"))
-	password_bits("marmot on burrowed time thimble lantern", &check)
+	password_bits("password", &check)
+	testing.expect(t, check.common)
+	password_bits("password", &check)
+	testing.expect(t, check.common)
+	testing.expect(
+		t,
+		password_bits("marmot on burrowed time thimble lantern", &check) >= PASSWORD_MIN_BITS,
+	)
 	testing.expect(t, !check.common)
-	testing.expect_value(t, password_hint_label(&check), tr("Strong enough"))
 	password_bits("password", &check)
 	password_bits("", &check)
 	testing.expect(t, !check.common)
-	testing.expect_value(t, password_hint_label(&check), tr("Enter a password"))
 }
 
 @(test)

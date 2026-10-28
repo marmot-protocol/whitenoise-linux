@@ -235,16 +235,15 @@ password_estimate :: proc(password: string) -> (bits: f64, common: bool) {
 }
 
 @(private)
-password_hint_label :: proc(check: ^Password_Check) -> string {
-	if check.length == 0 {return tr("Enter a password")}
-	if check.common {return tr("This is a common password")}
-	return check.bits >= PASSWORD_MIN_BITS ? tr("Strong enough") : tr("Too easy to guess")
-}
-
-@(private)
 password_hint :: proc(check: ^Password_Check) {
+	label := check.bits >= PASSWORD_MIN_BITS ? tr("Strong enough") : tr("Too easy to guess")
+	if check.length == 0 {
+		label = tr("Enter a password")
+	} else if check.common {
+		label = tr("This is a common password")
+	}
 	clay.Text(
-		password_hint_label(check),
+		label,
 		{
 			fontId = FONT_BODY,
 			fontSize = 12,
