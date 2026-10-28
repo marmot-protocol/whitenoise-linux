@@ -219,3 +219,87 @@ forward_success_preserves_destination_and_tags :: proc(t: ^testing.T) {
 		testing.expect_value(t, albums, 1)
 	}
 }
+
+@(test)
+forward_completion_is_atomic :: proc(t: ^testing.T) {
+	for first in ([]int{0, 1}) {
+		for cancelled in ([]int{-1, 0, 1}) {
+			ui := Ui_State {
+				account_ref = "account",
+				toast       = strings.clone("unchanged"),
+			}
+			append(
+				&ui.pending,
+				Pending_Send {
+					ticket = 10,
+					forward_ticket = 10,
+					account_ref = "account",
+					forward_title = "destination",
+				},
+				Pending_Send {
+					ticket = 11,
+					forward_ticket = 10,
+					account_ref = "account",
+					forward_title = "destination",
+				},
+			)
+			defer {delete(ui.pending); delete(ui.toast)}
+			forward_settled(&ui, &ui.pending[first], cancelled == first ? .Cancelled : .Sent)
+			testing.expect(
+				t,
+				ui.toast == "unchanged",
+				"one completed part must not confirm the whole action",
+			)
+			ordered_remove(&ui.pending, first)
+			forward_settled(&ui, &ui.pending[0], cancelled == 1 - first ? .Cancelled : .Sent)
+			if cancelled >= 0 {
+				testing.expect(
+					t,
+					ui.toast == "unchanged",
+					"a cancelled part must suppress full-success feedback",
+				)
+			} else {
+				testing.expect(
+					t,
+					strings.contains(ui.toast, "destination"),
+					"successful completion must identify its destination",
+				)
+			}
+		}
+	}
+	ui := Ui_State {
+		account_ref = "account",
+		toast       = strings.clone("unchanged"),
+	}
+	append(
+		&ui.pending,
+		Pending_Send {
+			ticket = 20,
+			forward_ticket = 20,
+			account_ref = "account",
+			forward_title = "same destination",
+		},
+		Pending_Send {
+			ticket = 21,
+			forward_ticket = 21,
+			account_ref = "account",
+			forward_title = "same destination",
+		},
+	)
+	defer {delete(ui.pending); delete(ui.toast)}
+	forward_settled(&ui, &ui.pending[0], .Sent)
+	testing.expect(
+		t,
+		strings.contains(ui.toast, "same destination"),
+		"a separate forward to the same chat must not block success",
+	)
+	delete(ui.toast)
+	ui.toast = strings.clone("unchanged")
+	ui.account_ref = "another account"
+	forward_settled(&ui, &ui.pending[1], .Sent)
+	testing.expect(
+		t,
+		ui.toast == "unchanged",
+		"a background account must not overwrite the active account's feedback",
+	)
+}

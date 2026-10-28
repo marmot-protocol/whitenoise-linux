@@ -209,6 +209,7 @@ delete_pending :: proc(ui: ^Ui_State, index: int) {
 		save_offline(ui)
 		return
 	}
+	forward_settled(ui, p, .Cancelled)
 	free_pending(p)
 	ordered_remove(&ui.pending, index)
 	save_offline(ui)

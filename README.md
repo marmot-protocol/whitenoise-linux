@@ -31,6 +31,8 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Group settings show name, description, photo, disappearing-message, and issue-tracking controls only to admins. The rename field starts with the current group name. Other members can view the group's name, description, photo, and current disappearing-message timer in full units, such as "90 days".
 - Only group admins can promote, demote, or remove members. Nicknames change your local labels and remain available to other members.
 - Markdown bodies (with typeset `$` math blocks), reactions, replies, edits with history, forwarding, and search.
+- Click Send or press Enter to send; Shift+Enter inserts a new line. Editing a message changes Send to Save. Hover over the attach, emoji, and microphone buttons for their labels.
+- Poll creation keeps your draft open and explains a missing question or fewer than two nonblank options. Multiple choice is an on/off switch; Create is the primary action and Cancel is secondary.
 - Linked Nostr highlights (kind 9802, NIP-84) put the selected passage in large type, with quieter context, avatar bylines, and compact source tiles. Cards start with the highlighter's byline, without a kind label. Source tiles identify the domain, event, or structured source. Source links and the full-width Open in client button use the external-link guard. Read more expands the quotation, context, and commentary together. Media-only highlights retain their source tiles.
 - Markdown bodies preserve single newlines. HTTP(S) links keep their labels and destinations. Hover shows the URL; opening a link uses the external-link guard. Chat-list previews show reading text without Markdown markup.
 - Pasted `https://njump.me/<reference>` and `http://njump.me/<reference>` links render like `nostr:` references: profile chips for `npub`/`nprofile`, event cards for `note`/`nevent`/`naddr`. Event cards use your configured Nostr web client.
@@ -48,7 +50,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Settings > General > Messaging > Custom emoji browses recent [NIP-51 kind-30030 emoji sets](https://github.com/nostr-protocol/nips/blob/master/51.md) from your event-fetch relays. Sets from your contacts come first, with A-Z ordering within each group and a saved Contacts only filter. Sets with no valid emoji stay hidden. Each row shows artwork and an author mention chip. Search by title, author, or shortcode, then open a set to preview it. Import the whole set or use the + button beside one emoji. Previews appear as each download finishes. Imported emoji keep their set title and verified author after a restart. Imports preserve existing shortcodes and report skipped entries and failed downloads. Browsing previews and importing contact HTTPS image hosts; PNG, JPEG, GIF, and WebP are supported when the image decoder accepts them.
 - Custom `:shortcode:` emoji use NIP-30. The image goes out as an encrypted attachment, and the message carries an `["emoji", shortcode, url]` tag pointing at that attachment's Blossom URL. Reactions work the same way: a `:shortcode:` reaction carries its own `imeta` and emoji tag. Forwards keep the tags. MDK's `marmot_send_tagged_media` and `marmot_react_with_media` send them, and MDK keeps the media key for reaction images the way it does for chat media.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
-- Forwarded attachments download and prepare in the background. A status strip names the destination and stays visible through preparation and sending, even if you switch chats. Failed forwards can be retried from the destination chat.
+- Forwarded attachments download and prepare in the background. A status strip names the destination and stays visible through preparation and sending, even if you switch chats. Failed forwards can be retried from the destination chat. A confirmation names the destination after every part succeeds; a partial or cancelled forward does not report full success.
 - Per-chat unread tracking, surfaced as rail badges.
 - Deleting a chat folder requires confirmation, from both Settings and its context menu. Only the folder is removed; its chats stay in your chat list.
 - Folder rules file chats automatically: name includes a word, has a member (npub), has fewer or more than N people (you included), or has unread messages. Each folder matches all of its rules or any one of them. A chat goes to the first folder, in folder order, whose rules match. A chat you move by hand stays in that folder; choosing "Follow folder rules" in the move dialog hands it back to the rules. Member rules read each group's member list on every chat-list refresh, and only while such a rule exists.
@@ -78,7 +80,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - The app opens on the account you used last. For a remote-signer account it starts on a local one and switches once the signer connects.
 - The trash button on an account row (the Accounts switcher or the Profile page) removes that account from this device after you confirm. Its keys and local chats are deleted; its groups are not notified, so other members still see it.
 - Connect with a `bunker://` link or scan/copy a `nostrconnect://` pairing link. Approve requests in your signer; pending operations show their status and approval links.
-- Contacts, private local-only per-contact nicknames, an archive, and npub QR codes.
+- People lists people you follow. Starting a chat does not add someone to People. Private local-only nicknames, an archive, and npub QR codes are also available.
 - Your profile is public. The optional Verified address field holds a Nostr identifier (NIP-05), not your email address.
 - Profiles without a loaded name show a deterministic adjective and animal, such as "Magnetic Panda", derived from their public key. Published names replace it when loaded; local nicknames take precedence. The npub remains visible on profile cards.
 - Import and export contacts as CSV or JSON from the contacts rail. Imports skip existing contacts and duplicate npubs, restore private nicknames and blocked state, and report added, skipped, and failed records. Published profile names still come from Nostr.
@@ -129,6 +131,10 @@ in the [SecLists common-password file](https://github.com/danielmiessler/SecList
 including case changes and simple letter substitutions. It does not penalize
 individual words inside a passphrase or require particular character classes.
 Use unrelated words or a password-manager password.
+
+The password form shows "Too easy to guess" or "Strong enough" rather than a
+numeric bit count. Correcting a weak password clears its strength error without
+requiring another submission; unrelated errors remain until addressed.
 
 The corpus is staged at `vendor/common-passwords.txt`, pinned by
 `seclists-passwords-file` in `DEPS_PIN`, and embedded in the app. The check

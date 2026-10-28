@@ -1198,11 +1198,13 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 			},
 			) {
 				settings_button("EmojiSetsRefresh", tr("Refresh"), busy ? TEXT_DIM : clay.Color{})
-				emoji_set_text(tr("Contacts first, then A-Z"))
-				if hovered(
-					
-				) {tooltip(tr("Recent sets from your event-fetch relays. Previews contact image hosts."))}
+				emoji_set_text(
+					ui.prefs.emoji_contacts_only ? tr("Sort: A-Z") : tr("Sort: Contacts first, then A-Z"),
+				)
 			}
+			emoji_set_text(
+				tr("Recent sets from your event-fetch relays. Previews contact image hosts."),
+			)
 			emoji_sets_feedback(ui)
 			if clay.UI(clay.ID("EmojiSetsContactFilter"))(settings_row()) {
 				settings_check(

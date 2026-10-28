@@ -328,6 +328,7 @@ web_fit :: proc() -> (w, h: f32) {
 
 // The modal: title bar, close, and the page.
 web_modal_draw :: proc(ui: ^Ui_State) {
+	w, h := web_fit()
 	if clay.UI(clay.ID("WebModal"))(
 	{
 		layout = {layoutDirection = .TopToBottom, childGap = 8, padding = clay.PaddingAll(12)},
@@ -343,14 +344,24 @@ web_modal_draw :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("WebBar"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow()},
+				sizing = {width = clay.SizingFixed(w)},
 				childGap = 10,
 				childAlignment = {y = .Center},
 			},
 		},
 		) {
-			clay.Text(web_modal.title, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
-			if clay.UI(clay.ID("WebPad"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if clay.UI(clay.ID("WebTitle"))(
+			{
+				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(24)}},
+				clip = {horizontal = true},
+			},
+			) {
+				clay.Text(
+					web_modal.title,
+					{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None},
+				)
+				if hovered() {tooltip(web_modal.title)}
+			}
 			if clay.UI(clay.ID("WebClose"))(
 			{
 				layout = {padding = {left = 10, right = 10, top = 4, bottom = 4}},
@@ -361,7 +372,6 @@ web_modal_draw :: proc(ui: ^Ui_State) {
 				clay.Text(tr("Close"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 			}
 		}
-		w, h := web_fit()
 		if clay.UI(clay.ID("WebPage"))(
 		{
 			layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}},

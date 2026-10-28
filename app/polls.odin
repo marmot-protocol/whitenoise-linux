@@ -197,6 +197,27 @@ poll_vote :: proc(ui: ^Ui_State, client: ^marmot.Client, msg: ^Msg_Ui, opt: int)
 	play_sound(.Send)
 }
 
+@(private)
+Poll_Error :: enum {
+	None,
+	Question,
+	Options,
+}
+
+@(private)
+poll_input_error :: proc(ui: ^Ui_State) -> Poll_Error {
+	if len(strings.trim_space(string(ui.poll_question[:]))) == 0 {
+		return .Question
+	}
+	count := 0
+	for input in ui.poll_inputs {
+		if len(strings.trim_space(string(input[:]))) == 0 {continue}
+		count += 1
+		if count >= POLL_OPTS_MIN {return .None}
+	}
+	return .Options
+}
+
 // The create-poll modal: question, fixed option rows (blanks are
 // skipped), choice-mode toggle.
 poll_modal :: proc(ui: ^Ui_State) {
@@ -233,6 +254,12 @@ poll_modal :: proc(ui: ^Ui_State) {
 		if len(ui.poll_inputs) < POLL_OPTS_CAP {
 			micro_button("PollAddOpt", tr("Add option"))
 		}
+		if ui.poll_error != .None {
+			clay.Text(
+				ui.poll_error == .Question ? tr("Add a question for your poll.") : tr("Add at least two options."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+			)
+		}
 		if clay.UI(clay.ID("PollBtnRow"))(
 		{
 			layout = {
@@ -253,6 +280,7 @@ poll_modal :: proc(ui: ^Ui_State) {
 
 poll_close :: proc(ui: ^Ui_State) {
 	ui.poll_open = false
+	ui.poll_error = .None
 	ui.focus = .Compose
 }
 
@@ -269,6 +297,7 @@ poll_reset :: proc(ui: ^Ui_State) {
 		append(&ui.poll_inputs, [dynamic]u8{})
 	}
 	ui.poll_multi_in = false
+	ui.poll_error = .None
 	ui.poll_focus = 0
 	ui.focus = .PollQ
 }
@@ -276,6 +305,8 @@ poll_reset :: proc(ui: ^Ui_State) {
 // MDK assigns option ids, validates the poll and authors its event. Only
 // conversation/thread context tags are supplied by the application.
 poll_create :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	ui.poll_error = poll_input_error(ui)
+	if ui.poll_error != .None {return}
 	question := strings.trim_space(string(ui.poll_question[:]))
 	options := make([dynamic]string, 0, len(ui.poll_inputs), context.temp_allocator)
 	for i in 0 ..< len(ui.poll_inputs) {
@@ -284,9 +315,6 @@ poll_create :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			continue
 		}
 		append(&options, label)
-	}
-	if len(question) == 0 || len(options) < POLL_OPTS_MIN {
-		return
 	}
 	tags := make([dynamic][]string, context.temp_allocator)
 
@@ -328,6 +356,9 @@ handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		edit_text(ui, &ui.poll_question)
 	} else if ui.focus == .PollOpt {
 		edit_text(ui, &ui.poll_inputs[ui.poll_focus])
+	}
+	if ui.poll_error != .None {
+		ui.poll_error = poll_input_error(ui)
 	}
 	// Tab walks question → options and wraps; position 0 is the question,
 	// 1 + i is option i.

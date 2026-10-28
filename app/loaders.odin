@@ -635,8 +635,23 @@ system_text :: proc(
 		return tr("The group name was removed")
 	case kind == "group_avatar_changed" && len(actor) > 0:
 		return fmt.tprintf(tr("%s changed the group photo"), actor)
-	case kind == "disappearing_timer_changed" && len(actor) > 0:
-		return fmt.tprintf(tr("%s changed the disappearing message timer"), actor)
+	case kind == "disappearing_timer_changed":
+		if ev.has_new_retention_seconds {
+			if ev.new_retention_seconds == 0 {
+				if len(actor) > 0 {
+					return fmt.tprintf(tr("%s turned off disappearing messages"), actor)
+				}
+				return tr("Disappearing messages were turned off")
+			}
+			duration := retention_text(ev.new_retention_seconds)
+			if len(actor) > 0 {
+				return fmt.tprintf(tr("%s set disappearing messages to %s"), actor, duration)
+			}
+			return fmt.tprintf(tr("Disappearing messages were set to %s"), duration)
+		}
+		if len(actor) > 0 {
+			return fmt.tprintf(tr("%s changed the disappearing message timer"), actor)
+		}
 	case kind == "group_disbanded" && len(actor) > 0:
 		return fmt.tprintf(tr("%s disbanded the group"), actor)
 	}

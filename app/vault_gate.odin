@@ -160,6 +160,8 @@ gate_confirm: bool // the confirm box has focus
 @(private = "file")
 gate_err: string
 @(private = "file")
+gate_err_strength: bool
+@(private = "file")
 gate_reset_armed: bool
 @(private = "file")
 gate_check: Password_Check
@@ -264,6 +266,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 
 	gate_err = ""
 	gate_confirm = false
+	gate_err_strength = false
 	gate_reset_armed = false
 	gate_job = {}
 	devctl_reset_input()
@@ -347,6 +350,12 @@ gate_input :: proc(ui: ^Ui_State) {
 		}
 	}
 	edit_text(ui, gate_confirm && creating ? &gate_pw2 : &gate_pw)
+	if creating &&
+	   gate_err_strength &&
+	   password_bits(string(gate_pw[:]), &gate_check) >= PASSWORD_MIN_BITS {
+		gate_err = ""
+		gate_err_strength = false
+	}
 	if clicked("GatePwBox") {
 		gate_confirm = false
 	}
@@ -385,6 +394,7 @@ gate_input :: proc(ui: ^Ui_State) {
 		clear(&gate_pw)
 		clear(&gate_pw2)
 		gate_err = ""
+		gate_err_strength = false
 		return
 	}
 	if other {
@@ -394,6 +404,7 @@ gate_input :: proc(ui: ^Ui_State) {
 	if !clicked("GateGo") && !rl.IsKeyPressed(.ENTER) {
 		return
 	}
+	gate_err_strength = false
 	password := string(gate_pw[:])
 	if len(password) == 0 {
 		gate_err = creating ? tr("Pick a password first.") : tr("Type your password first.")
@@ -403,6 +414,7 @@ gate_input :: proc(ui: ^Ui_State) {
 		gate_err = tr(
 			"This password is too easy to guess. Use unrelated words or a password-manager password.",
 		)
+		gate_err_strength = true
 		return
 	}
 

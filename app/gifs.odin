@@ -862,7 +862,7 @@ gif_consent_panel :: proc() {
 			{layout = {sizing = {width = clay.SizingGrow()}}},
 			) {}
 			login_button("GifConsentNo", tr("Not now"))
-			login_button("GifConsentYes", tr("Accept"))
+			login_button("GifConsentYes", tr("Accept"), primary = true)
 		}
 	}
 }

@@ -312,7 +312,12 @@ drain_forwards :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if job == nil || p.failed {continue}
 		sync.lock(&job.mutex); done := job.done; sync.unlock(&job.mutex)
 		if !done {continue}
-		if p.dismissed {free_pending(p); ordered_remove(&ui.pending, i); continue}
+		if p.dismissed {
+			forward_settled(ui, p, .Cancelled)
+			free_pending(p)
+			ordered_remove(&ui.pending, i)
+			continue
+		}
 		if !job.ok {
 			p.failed = true
 			set_status(ui, strings.clone(tr("Couldn't forward. Please try again.")), .Error)
@@ -338,13 +343,15 @@ drain_forwards :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if p.body != "" && !all_emoji {
 			send_ticket += 1
 			text = Pending_Send {
-				ticket        = send_ticket,
-				visible_since = p.visible_since,
-				group_id      = strings.clone(p.group_id),
-				account_ref   = strings.clone(p.account_ref),
-				sender        = strings.clone(p.sender),
-				forward_title = strings.clone(p.forward_title),
-				body          = p.body,
+				ticket            = send_ticket,
+				visible_since     = p.visible_since,
+				group_id          = strings.clone(p.group_id),
+				account_ref       = strings.clone(p.account_ref),
+				sender            = strings.clone(p.sender),
+				forward_title     = strings.clone(p.forward_title),
+				forward_ticket    = p.forward_ticket,
+				forward_cancelled = p.forward_cancelled,
+				body              = p.body,
 			}
 			p.body = ""
 			for j := 0; j < len(p.atts); {
@@ -371,14 +378,15 @@ do_forward :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 	info := profile_info(client, ui.account_ref)
 	send_ticket += 1
 	p := Pending_Send {
-		ticket        = send_ticket,
-		visible_since = time.tick_now(),
-		group_id      = strings.clone(ui.chats[dest].group_id),
-		account_ref   = strings.clone(ui.account_ref),
-		forward_title = strings.clone(ui.chats[dest].title),
-		sender        = strings.clone(info.name != "" ? info.name : "you"),
-		body          = strings.clone(msg.body),
-		effect        = msg.effect,
+		ticket         = send_ticket,
+		visible_since  = time.tick_now(),
+		group_id       = strings.clone(ui.chats[dest].group_id),
+		account_ref    = strings.clone(ui.account_ref),
+		forward_title  = strings.clone(ui.chats[dest].title),
+		forward_ticket = send_ticket,
+		sender         = strings.clone(info.name != "" ? info.name : "you"),
+		body           = strings.clone(msg.body),
+		effect         = msg.effect,
 	}
 	if len(msg.attachments) > 0 {
 		p.sticker = sticker_ref_clone(msg.sticker)
@@ -386,6 +394,31 @@ do_forward :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 	}
 	append(&ui.pending, p)
 	spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
+}
+
+@(private)
+Forward_Outcome :: enum {
+	Sent,
+	Cancelled,
+}
+
+// Text and media can acknowledge separately. Confirm only the final part,
+// and never claim a complete forward after any part was cancelled.
+@(private)
+forward_settled :: proc(ui: ^Ui_State, part: ^Pending_Send, outcome: Forward_Outcome) {
+	if part.forward_ticket == 0 {return}
+	waiting := false
+	for &other in ui.pending {
+		if other.ticket == part.ticket || other.forward_ticket != part.forward_ticket {continue}
+		waiting = true
+		if outcome == .Cancelled {other.forward_cancelled = true}
+	}
+	if !waiting &&
+	   outcome == .Sent &&
+	   !part.forward_cancelled &&
+	   part.account_ref == ui.account_ref {
+		toast(ui, fmt.tprintf(tr("Forwarded to %s."), part.forward_title))
+	}
 }
 
 // The destination need not be open. Keep its forwarding status in the shell
