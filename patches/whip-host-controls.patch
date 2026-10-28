@@ -108,6 +108,19 @@ diff --git a/src/gui/views.odin b/src/gui/views.odin
  	if app.target.kind == .Pane {return}
  	wi, ti, ok := model.find_tab(&app.session, tab)
  	if !ok || app.session.workspaces[wi].id != ws {
+diff --git a/src/gui/device.odin b/src/gui/device.odin
+--- a/src/gui/device.odin
++++ b/src/gui/device.odin
+@@ -112,3 +112,3 @@
+ device_visible :: proc(app: ^App) -> bool {
+-	if !view_has_content(app) || app.target.kind == .Pane || active_tab(app) == nil {
++	if !view_has_content(app) || active_tab(app) == nil {
+ 		return false
+@@ -127,3 +127,3 @@
+ device_toggle :: proc(app: ^App) {
+-	if !view_has_content(app) || app.target.kind == .Pane || active_tab(app) == nil {
++	if !view_has_content(app) || active_tab(app) == nil {
+ 		return
 diff --git a/src/gui/chrome.odin b/src/gui/chrome.odin
 --- a/src/gui/chrome.odin
 +++ b/src/gui/chrome.odin
@@ -137,10 +150,32 @@ diff --git a/src/gui/chrome.odin b/src/gui/chrome.odin
  	if view_has_projects(app) {
  		draw_sidebar(app, g, th)
  	}
+diff --git a/src/gui/mouse.odin b/src/gui/mouse.odin
+--- a/src/gui/mouse.odin
++++ b/src/gui/mouse.odin
+@@ -189,5 +189,4 @@
+ 	for r, b in app.button_hits {
+-		if app.target.kind == .Pane {continue}
+ 		switch b {
+ 		case .New_Project:
+ 			if !view_has_projects(app) {
+@@ -209,3 +208,3 @@
+ 	if edge := device_edge(g);
+-	   view_has_content(app) && app.target.kind != .Pane && g.device.w > 0 {
++	   view_has_content(app) && g.device.w > 0 {
+ 		edge.x -= DIVIDER_SLOP
+@@ -217,3 +216,3 @@
+-	if view_has_content(app) && app.target.kind != .Pane && inside(g.device, x, y) {
++	if view_has_content(app) && inside(g.device, x, y) {
+ 		return {kind = .Device}
+ 	}
 diff --git a/src/gui/panes.odin b/src/gui/panes.odin
 --- a/src/gui/panes.odin
 +++ b/src/gui/panes.odin
-@@ -365,3 +365,4 @@
+@@ -363,6 +363,6 @@
+ 	if app.target.kind == .Pane {
+-		app.button_hits = {}
+ 		g.gap, g.radius = 0, 0
  		g.main = {0, 0, app.fb_w, app.fb_h}
 +		device_layout(app, g)
  		if active_tab(app) != nil {

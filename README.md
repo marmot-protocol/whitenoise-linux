@@ -452,6 +452,10 @@ terminal. On a first visit, terminal keystrokes wait for that pane's native
 input context instead of disappearing during initialization. Sidebar search
 keeps the terminal visible while directing text input to the search field.
 
+Ctrl+Alt+A toggles the Android emulator panel beside the focused terminal.
+Click and drag on its screen to send touches. The header buttons send Back,
+Home and Recents or rotate the device. Drag the panel's left edge to resize it.
+
 Returning to a conversation restores the message and position you were reading
 in its main timeline, including after working in Whip. Reading positions are
 kept per account and conversation for the current unlocked session. A chat left

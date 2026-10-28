@@ -97,6 +97,7 @@ when #config(WN_WHIP, false) {
 			"XDG_CONFIG_HOME",
 			"XDG_STATE_HOME",
 			"XDG_DATA_HOME",
+			"ANDROID_AVD_HOME",
 			"SHELL",
 		}
 		previous: [len(keys)]string
@@ -177,6 +178,49 @@ when #config(WN_WHIP, false) {
 		baseline := make([]u8, len(ui.pixels))
 		copy(baseline, ui.pixels)
 		defer delete(baseline)
+		// With no AVD installed, the shortcut must still open a visible error
+		// panel beside the terminal, then return its space when toggled off.
+		device_key := sdl.Event {
+			type = .KEY_DOWN,
+		}
+		device_key.key.windowID = sdl.GetWindowID(state.window)
+		device_key.key.down = true
+		device_key.key.scancode, device_key.key.key = .A, 'a'
+		device_key.key.mod = sdl.KMOD_CTRL | sdl.KMOD_ALT
+		full_width := ui.view.geom.main.w
+		whip_event(device_key)
+		for _ in 0 ..< 30 {frame(project, tab)}
+		testing.expect(
+			t,
+			whip.device_visible(ui.view),
+			"Ctrl+Alt+A opens the embedded Android panel",
+		)
+		testing.expect(
+			t,
+			ui.view.device.state == .Failed &&
+			strings.contains(ui.view.device.status, "No AVD found"),
+		)
+		testing.expect(
+			t,
+			ui.view.geom.device.w > 0 && ui.view.geom.main.w < full_width,
+			"the Android panel reserves space beside the terminal",
+		)
+		testing.expect(t, !slice.equal(baseline, ui.pixels), "the Android error panel is painted")
+		panel := ui.view.geom.device
+		testing.expect_value(
+			t,
+			whip.hit_test(ui.view, panel.x + panel.w / 2, panel.y + panel.h / 2).kind,
+			whip.Hit_Kind.Device,
+		)
+		testing.expect_value(
+			t,
+			whip.hit_test(ui.view, panel.x, panel.y + panel.h / 2).kind,
+			whip.Hit_Kind.Device_Edge,
+		)
+		whip_event(device_key)
+		for _ in 0 ..< 5 {frame(project, tab)}
+		testing.expect(t, !whip.device_visible(ui.view) && ui.view.geom.device.w == 0)
+		testing.expect_value(t, ui.view.geom.main.w, full_width)
 		revision := ui.frame_revision
 		m := ui.view.fonts.metrics
 		x, y: f32
