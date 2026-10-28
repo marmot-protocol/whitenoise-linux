@@ -5,6 +5,7 @@ import "base:runtime"
 import "core:encoding/json"
 import "core:fmt"
 import "core:os"
+import "core:strings"
 import "core:sync"
 import "core:testing"
 import rl "sdlrl"
@@ -66,6 +67,39 @@ theme_gallery_interactions :: proc(t: ^testing.T) {
 	append(&theme_packs, custom)
 	defer resize(&theme_packs, custom_index)
 	ui.theme = native
+	for locale in ([]string{"en", "de", "it", "ja"}) {
+		set_locale(locale)
+		for pack in theme_packs {
+			name := pack.custom ? pack.name : tr(pack.name)
+			query := strings.to_lower(name, context.temp_allocator)
+			matches := 0
+			for task in SETTINGS_TASKS {
+				if task.anchor == "RowTheme" {
+					testing.expectf(
+						t,
+						settings_task_matches(&ui, task, query),
+						"The theme picker must match its displayed name %s in %s",
+						name,
+						locale,
+					)
+				}
+				if settings_task_matches(&ui, task, "gallery custom") {
+					matches += 1
+					testing.expect_value(t, task.anchor, "RowTheme")
+				}
+			}
+			testing.expect_value(t, matches, 1)
+		}
+	}
+	set_locale("ja")
+	for task in SETTINGS_TASKS {
+		if task.anchor != "RowTheme" {continue}
+		testing.expect(t, settings_task_matches(&ui, task, "jazz"))
+		testing.expect(t, settings_task_matches(&ui, task, "theme gallery custom"))
+		testing.expect(t, !settings_task_matches(&ui, task, "absent-theme-name"))
+	}
+	testing.expect_value(t, ui.theme, native)
+	testing.expect(t, !ui.theme_preview_active, "Matching must not select or preview a theme")
 	apply_theme(ui.theme, ui.accent)
 	settings_open(&ui, nil, .Appearance, anchor = "RowTheme")
 	gallery_frames(&ui)

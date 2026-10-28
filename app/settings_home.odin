@@ -307,17 +307,24 @@ settings_task_matches :: proc(ui: ^Ui_State, task: Settings_Task, query: string)
 	}
 	if !settings_available(ui, task.section) {return false}
 	if query == "" {return true}
-	text := strings.to_lower(
-		fmt.tprintf(
-			"%s %s %s %s %s",
-			tr(task.label),
-			task.label,
-			tr(SETTINGS_SECTIONS[task.section].label),
-			SETTINGS_SECTIONS[task.section].label,
-			task.keywords,
-		),
-		context.temp_allocator,
+	text := fmt.tprintf(
+		"%s %s %s %s %s",
+		tr(task.label),
+		task.label,
+		tr(SETTINGS_SECTIONS[task.section].label),
+		SETTINGS_SECTIONS[task.section].label,
+		task.keywords,
 	)
+	if task.anchor == "RowTheme" {
+		names := strings.builder_make(context.temp_allocator)
+		strings.write_string(&names, text)
+		for pack in theme_packs {
+			strings.write_byte(&names, ' ')
+			strings.write_string(&names, pack.custom ? pack.name : tr(pack.name))
+		}
+		text = strings.to_string(names)
+	}
+	text = strings.to_lower(text, context.temp_allocator)
 	for word in strings.fields(query) {
 		if !strings.contains(text, word) {return false}
 	}
