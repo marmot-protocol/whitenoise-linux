@@ -29,6 +29,9 @@ chat_timestamp :: proc(index: u32, chat: Chat_Row_Ui) {
 
 @(private)
 chat_row_height :: proc() -> f32 {
+	// Touch rows keep a 68-unit target without reserving the hover chip,
+	// which floats over the row instead (chat_row).
+	if tap_size() {return 68}
 	return 16 + max(36, max(chip_h(), 14) + 20)
 }
 
@@ -416,7 +419,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							layout = {
 								sizing = {
 									width = clay.SizingGrow(),
-									height = clay.SizingFit({min = chip_h()}),
+									height = clay.SizingFit({min = tap_size() ? 20 : chip_h()}),
 								},
 								childGap = 8,
 								childAlignment = {y = .Center},
@@ -493,8 +496,27 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							}
 							chat_timestamp(index, chat)
 							// Archive and the other row actions live in this menu,
-							// which right-click and long-press also open.
-							if hovered() || tap_size() {
+							// which right-click and long-press also open. A finger
+							// uses long-press; a pointer on a narrow window gets the
+							// chip floating at the row's edge.
+							if tap_size() {
+								if hovered() && !rl.HasTouch() {
+									if clay.UI(clay.ID("ChatMenuFloat", index))(
+									{
+										floating = {
+											attachTo = .ElementWithId,
+											parentId = clay.ID("ChatRowSlide", index).id,
+											attachment = {
+												element = .RightCenter,
+												parent = .RightCenter,
+											},
+											offset = {-6, 0},
+											zIndex = 2,
+										},
+									},
+									) {action_chip("ChatMenu", index, "···")}
+								}
+							} else if hovered() {
 								action_chip("ChatMenu", index, "···")
 							}
 						}
@@ -834,14 +856,7 @@ accounts_modal :: proc(ui: ^Ui_State) {
 		}
 
 		if clay.UI(clay.ID("AcctFoot"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-				childGap = 10,
-				padding = {top = 6},
-			},
-		},
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 6}}},
 		) {
 			if clay.UI(clay.ID("AcctCloseBtn"))(
 			{

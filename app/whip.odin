@@ -183,10 +183,6 @@ whip_inbox_input :: proc(ui: ^Ui_State) -> bool {
 	if !mouse_released() {return false}
 	if clicked("WhipRetry") || clicked("WhipRailRetry") {rl.WhipClose(); return true}
 	for project in rl.WhipProjects() {
-		if clay.PointerOver(clay.ID("WhipProjectMenu", project.id)) {
-			open_terminal_menu(ui, project.id)
-			return true
-		}
 		if clay.PointerOver(clay.ID("WhipProjectAvatar", project.id)) {
 			if photo_pick_begin(ui, .Whip, project.dir) {rl.OpenFileDialog(false)}
 			return true
@@ -537,21 +533,6 @@ whip_project_row :: proc(ui: ^Ui_State, project: rl.Whip_Project) {
 					fmt.tprintf("%d", project.tabs),
 					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
 				)
-			}
-		}
-		if tap_size() {
-			if clay.UI(clay.ID("WhipProjectMenu", project.id))(
-			{
-				layout = {
-					sizing = {clay.SizingFixed(44), clay.SizingFixed(44)},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : ROW_BG,
-				cornerRadius = rr(8),
-			},
-			) {
-				clay.Text("⋯", {fontId = FONT_BODY, fontSize = 20, textColor = TEXT_DIM})
-				if hovered() {cursor_raise(.Pointer); tooltip(tr("More actions"))}
 			}
 		}
 	}

@@ -825,22 +825,6 @@ msg_actions :: proc(index: u32, msg: Msg_Ui) {
 
 MSG_PAD_Y :: u16(6) // a message row's vertical padding
 
-@(private)
-msg_more :: proc(index: u32) {
-	if clay.UI(clay.ID("MsgMore", index))(
-	{
-		layout = {
-			sizing = {width = clay.SizingFixed(44), height = clay.SizingFixed(44)},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : ROW_BG,
-		cornerRadius = rr(8),
-	},
-	) {
-		clay.Text("…", {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT_DIM})
-	}
-}
-
 message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 	// A message that just landed glows in the accent surface and fades
 	// back to the row's normal fill, so the eye is carried to it without
@@ -999,17 +983,16 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						}
 					}
 
-					// Row actions, shown while the row is hovered. Kept before
-					// any grow sibling (after-gap siblings drop in this clay).
+					// Row actions, shown while a pointer hovers the row. Kept
+					// before any grow sibling (after-gap siblings drop in this
+					// clay). Narrow layouts open the same actions from a
+					// right click, a long press, or a tap on touch screens.
 					// A tombstone offers none.
 					if !tap_size() && hovered() && !msg.deleted {
 						msg_actions(index, msg)
 					}
-					if tap_size() && !msg.deleted {msg_more(index)}
 				}
 			}
-
-			if tap_size() && head == .Continued && !msg.deleted {msg_more(index)}
 
 			// The quoted parent sits above the body it answers; a click
 			// centers that message (handle_reply_jump).

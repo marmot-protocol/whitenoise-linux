@@ -331,7 +331,8 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 // Folder menus float at the root so the rail's scroll clip cannot cut them off.
 folder_menu :: proc(ui: ^Ui_State) {
 	width: f32 = single_pane() ? fit_w(280) : 210
-	height: f32 = ui.folder_menu_name == "" ? (tap_size() ? 52 : 40) : (tap_size() ? 97 : 73)
+	items: f32 = ui.folder_menu_name == "" ? 3 : 2
+	height := items * (tap_size() ? 45 : 33) + 7
 	if data := clay.GetElementData(clay.ID("FolderMenu")); data.found {
 		width = max(width, data.boundingBox.width)
 		height = max(height, data.boundingBox.height)
@@ -358,6 +359,8 @@ folder_menu :: proc(ui: ^Ui_State) {
 	) {
 		if ui.folder_menu_name == "" {
 			ctx_item("FolderCreate", ICON_FOLDER, tr("New folder"))
+			ctx_item("ChatsMenuCommands", ICON_CODE, tr("Command palette"))
+			ctx_item("ChatsMenuLock", ICON_LOCK, tr("Lock now"))
 		} else {
 			ctx_item("FolderMenuEdit", ICON_PENCIL, tr("Edit folder"))
 			ctx_item("FolderMenuDelete", ICON_TRASH, tr("Delete"))
@@ -392,6 +395,10 @@ handle_folder_navigation :: proc(ui: ^Ui_State) -> bool {
 			if ui.folder_menu_name == "" {
 				if clay.PointerOver(clay.ID("FolderCreate")) {
 					open_folder_modal(ui)
+				} else if clay.PointerOver(clay.ID("ChatsMenuCommands")) {
+					pal_open_modal(ui)
+				} else if clay.PointerOver(clay.ID("ChatsMenuLock")) {
+					lock_now(ui)
 				}
 			} else {
 				for name, i in ui.prefs.folders {
@@ -903,13 +910,7 @@ folder_modal :: proc(ui: ^Ui_State) {
 			folder_editor(ui, width)
 		}
 		if clay.UI(clay.ID("FolderActions"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-				childGap = 10,
-			},
-		},
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}},
 		) {
 			if moving {
 				folder_action("FolderNew", tr("New folder"))

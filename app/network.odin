@@ -219,7 +219,9 @@ settings_network :: proc(ui: ^Ui_State) {
 				tr("The ngit web client a patch card opens. That site receives the patch link."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
-			if clay.UI(clay.ID("GitClientChoices"))(settings_choices()) {
+			if clay.UI(clay.ID("GitClientChoices"))(
+				settings_choices(clay.ID("GitClientChoices")),
+			) {
 				for name, git in GIT_CLIENT_NAMES {
 					settings_option("GitClientChip", u32(git), name, ui.prefs.git_client == git)
 				}
@@ -333,7 +335,12 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 				tr("Your proxy credentials are stored in your encrypted vault."),
 			)
 			if ui.socks5_auth {
-				if clay.UI(clay.ID("Socks5Credentials"))(settings_choices()) {
+				credentials := settings_choices(clay.ID("Socks5Credentials"))
+				if single_pane() {
+					credentials.layout.layoutDirection = .TopToBottom
+					credentials.clip = {}
+				}
+				if clay.UI(clay.ID("Socks5Credentials"))(credentials) {
 					gate_field(
 						ui,
 						"Socks5UserBox",

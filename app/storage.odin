@@ -216,7 +216,7 @@ settings_storage :: proc(ui: ^Ui_State) {
 					"Images and files kept on this device so they don't download twice, sealed with your vault key.",
 				),
 			)
-			if clay.UI(clay.ID("CacheActions"))(settings_choices()) {
+			if clay.UI(clay.ID("CacheActions"))(settings_choices(clay.ID("CacheActions"))) {
 				clay.Text(
 					human_size(ui.cache_bytes),
 					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
@@ -238,7 +238,7 @@ settings_storage :: proc(ui: ^Ui_State) {
 				text_ellipsis(data_home, settings_body_width(ui) - 48, FONT_BODY, 11),
 			)
 			if hovered() {tooltip(data_home)}
-			if clay.UI(clay.ID("LocationActions"))(settings_choices()) {
+			if clay.UI(clay.ID("LocationActions"))(settings_choices(clay.ID("LocationActions"))) {
 				settings_button("LocCopy", tr("Copy"))
 				when ODIN_OS != .OpenBSD {settings_button("LocOpen", tr("Open folder"))}
 			}
@@ -460,12 +460,13 @@ backup_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		if clay.UI(clay.ID("BackupBtns"))(settings_choices()) {
+		if clay.UI(clay.ID("BackupBtns"))(settings_choices(clay.ID("BackupBtns"))) {
 			if clay.UI(clay.ID("BackupCancel"))(
 			{
 				layout = {
 					sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
 					padding = {left = 22, right = 22, top = 9, bottom = 9},
+					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(9),
@@ -482,6 +483,7 @@ backup_modal :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
 					padding = {left = 22, right = 22, top = 9, bottom = 9},
+					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = creating ? ACCENT : DANGER,
 				cornerRadius = rr(9),

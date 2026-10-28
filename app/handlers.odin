@@ -417,25 +417,37 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_ctx_menu(ui, client)
 		return
 	}
-	if !ui.whip_open &&
-	   (rl.IsMouseButtonPressed(.RIGHT) || long_pressed || mouse_released()) &&
-	   ui.selected >= 0 {
+	if !ui.whip_open && (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) && ui.selected >= 0 {
 		for msg, i in ui.messages {
 			// A tombstone's only menu row is the dev-mode View raw.
 			if msg.deleted && !ui.prefs.dev_mode {
 				continue
 			}
-			if ((rl.IsMouseButtonPressed(.RIGHT) || long_pressed) &&
-				   clay.PointerOver(clay.ID("MsgRow", u32(i)))) ||
-			   clicked_indexed("MsgMore", u32(i)) {
-				m := rl.GetMousePosition()
-				ui.ctx_open = true
-				ui.ctx_msg = i
-				// ponytail: rough clamp from an estimated panel size;
-				// measure the laid-out panel if it ever overflows.
-				ui.ctx_x, ui.ctx_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 240, 330)
+			if clay.PointerOver(clay.ID("MsgRow", u32(i))) {
+				open_msg_menu(ui, i)
 				return
 			}
+		}
+	}
+	if clicked("ChatBack") {
+		phone_back_action(ui)
+		return
+	}
+	// The phone header's overflow menu holds the actions that do not fit
+	// beside the title. Its rows reuse the header chips' ids, so the
+	// handlers below run them unchanged; any other release closes it.
+	if clicked("ChatHeadMore") {
+		ui.chat_head_menu = !ui.chat_head_menu
+		return
+	}
+	if ui.chat_head_menu {
+		if rl.IsKeyPressed(.ESCAPE) {
+			ui.chat_head_menu = false
+			return
+		}
+		if mouse_released() {
+			ui.chat_head_menu = false
+			if !clay.PointerOver(clay.ID("ChatHeadMenu")) {return}
 		}
 	}
 
@@ -816,6 +828,15 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if clay.PointerOver(clay.ID("MsgThread", u32(i))) ||
 			   clay.PointerOver(clay.ID("MsgThreadChip", u32(i))) {
 				thread_push(ui, msg.id)
+				return
+			}
+			// A finger has no hover toolbar: tapping a message's plain
+			// content opens the sheet a long press does.
+			if rl.HasTouch() &&
+			   !msg.deleted &&
+			   msg_tap_free() &&
+			   clay.PointerOver(clay.ID("MsgRow", u32(i))) {
+				open_msg_menu(ui, i)
 				return
 			}
 		}
@@ -1357,6 +1378,53 @@ stash_draft :: proc(ui: ^Ui_State) {
 		return
 	}
 	ui.drafts[strings.clone(gid)] = strings.clone(string(ui.compose[:]))
+}
+
+@(private = "file")
+open_msg_menu :: proc(ui: ^Ui_State, index: int) {
+	m := rl.GetMousePosition()
+	ui.ctx_open = true
+	ui.ctx_msg = index
+	// ponytail: rough clamp from an estimated panel size;
+	// measure the laid-out panel if it ever overflows.
+	ui.ctx_x, ui.ctx_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 240, 330)
+}
+
+// No interactive part of a message is under the pointer: links, mentions,
+// media tiles and their controls each own a tap of their own.
+@(private = "file")
+msg_tap_free :: proc() -> bool {
+	return(
+		link_hover == "" &&
+		md_code_hover == "" &&
+		mention_hover == "" &&
+		reply_jump_hover == "" &&
+		profile_card_hover == "" &&
+		img_link_hover == "" &&
+		img_retry_hover == "" &&
+		!media_retry_hover &&
+		nev_more_hover == "" &&
+		nev_retry_hover == "" &&
+		nev_hint_hover == "" &&
+		video_hover == nil &&
+		video_full_hover == {} &&
+		stt_hover == {} &&
+		att_hover.msg_id == "" &&
+		arc_hover == {} &&
+		arc_more_hover == nil &&
+		tor_open_hover == nil &&
+		tor_hash_hover == nil &&
+		tor_magnet_hover == nil &&
+		xdc_hover == {} &&
+		nes_hover == {} &&
+		img_hover == {} &&
+		model_hover == {} &&
+		code_hover == {} &&
+		pdf_flip_hover == nil &&
+		pdf_full_hover == {} &&
+		orbit_hover == nil &&
+		geo_hover == "" \
+	)
 }
 
 // Forget the selected chat's persisted draft (it was sent or cleared),

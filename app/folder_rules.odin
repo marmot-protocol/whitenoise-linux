@@ -369,7 +369,7 @@ folder_rules_editor :: proc(ui: ^Ui_State) {
 		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
 	)
 	if len(ui.folder_rules) > 1 {
-		if clay.UI(clay.ID("FolderMatch"))(settings_choices()) {
+		if clay.UI(clay.ID("FolderMatch"))(settings_choices(clay.ID("FolderMatch"))) {
 			folder_match_chip("FolderMatchAll", tr("Match all rules"), ui.folder_match == .All)
 			folder_match_chip("FolderMatchAny", tr("Match any rule"), ui.folder_match == .Any)
 		}

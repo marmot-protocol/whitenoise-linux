@@ -176,23 +176,15 @@ archived_pane :: proc(ui: ^Ui_State) {
 					{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
 				)
 			}
-			if clay.UI(clay.ID("ArchiveBack"))(
-			{
-				layout = {
-					sizing = {height = clay.SizingFixed(tap_size() ? 44 : 36)},
-					padding = {left = 12, right = 12},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : ROW_BG,
-				cornerRadius = rr(7),
-				border = {color = FIELD_BORDER, width = bw()},
-			},
-			) {
-				clay.Text(
-					tr("Back to chats"),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM},
-				)
-			}
+			// Phones already show Back and the Chats destination.
+			if !single_pane(
+				
+			) {if clay.UI(clay.ID("ArchiveBack"))({layout = {sizing = {height = clay.SizingFixed(tap_size() ? 44 : 36)}, padding = {left = 12, right = 12}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(7), border = {color = FIELD_BORDER, width = bw()}}) {
+					clay.Text(
+						tr("Back to chats"),
+						{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM},
+					)
+				}}
 		}
 		if clay.UI(clay.ID("ArchiveSearch"))(
 		{

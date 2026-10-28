@@ -31,4 +31,17 @@ touch_mouse_enables_targets :: proc(t: ^testing.T) {
 		IsMouseButtonReleased(.LEFT) && !IsMouseButtonDown(.LEFT),
 		"touch release completes the same input sequence as a mouse click",
 	)
+	testing.expect(
+		t,
+		GetMousePosition().x > -1000,
+		"the release frame keeps the tap position for its click",
+	)
+	WindowShouldClose()
+	testing.expect(t, GetMousePosition().x < -1000, "a lifted finger leaves no hover behind")
+	event.type = .MOUSE_MOTION
+	event.motion.windowID = sdl.GetWindowID(state.window)
+	event.motion.which = 0
+	testing.expect(t, sdl.PushEvent(&event))
+	WindowShouldClose()
+	testing.expect(t, GetMousePosition().x > -1000, "a mouse moving again restores the pointer")
 }

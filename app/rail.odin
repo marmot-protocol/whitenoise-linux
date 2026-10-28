@@ -76,6 +76,18 @@ rail_content :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
+				// A phone has no navigation column, so the account switcher
+				// rides at the head of the inbox.
+				if single_pane() && ui.page == .Chats {
+					avatar(
+						"RailAvatar",
+						0,
+						ui.account_ref,
+						profile_label(nil, ui.account_ref),
+						32,
+						url_pic(ui.my_pic_url),
+					)
+				}
 				head := tr("Chats")
 				count := fmt.tprintf("%d", len(ui.chats))
 				if ui.page == .Contacts {
@@ -186,55 +198,37 @@ rail_content :: proc(ui: ^Ui_State) {
 				)
 			}
 			if ui.page == .Chats {
-				if clay.UI(clay.ID("ChatFilters"))(
+				if clay.UI(clay.ID("ChatFilterRow"))(
 				{
-					layout = {sizing = {width = clay.SizingGrow()}, childGap = 4},
-					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						childGap = 4,
+						childAlignment = {y = .Center},
+					},
 				},
 				) {
-					labels := #sparse[Chat_Filter]string {
-						.Chats  = tr("Chats"),
-						.Unread = tr("Unread"),
-						.Groups = tr("Groups"),
-						.Whip   = "Whip",
-					}
-					ids := #sparse[Chat_Filter]string {
-						.Chats  = "AllPill",
-						.Unread = "UnreadPill",
-						.Groups = "GroupsPill",
-						.Whip   = "WhipPill",
-					}
-					for t in Chat_Filter {
-						if t == .Whip && !rl.WhipAvailable() {continue}
-						active := t == ui.chat_filter && ui.chat_folder == ""
-						if clay.UI(clay.ID(ids[t]))(
-						{
-							layout = {
-								sizing = {
-									width = clay.SizingFit({min = tap_size() ? 44 : 0}),
-									height = clay.SizingFit({min = tap_size() ? 44 : 0}),
-								},
-								padding = {left = 8, right = 8, top = 5, bottom = 5},
-								childAlignment = {x = .Center, y = .Center},
-							},
-							backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-							cornerRadius = rr(6),
-						},
-						) {
-							clay.Text(
-								labels[t],
-								{
-									fontId = FONT_BODY,
-									fontSize = 12,
-									textColor = active ? TEXT : TEXT_DIM,
-								},
-							)
+					if clay.UI(clay.ID("ChatFilters"))(
+					{
+						layout = {sizing = {width = clay.SizingGrow()}, childGap = 4},
+						clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+					},
+					) {
+						labels := #sparse[Chat_Filter]string {
+							.Chats  = tr("Chats"),
+							.Unread = tr("Unread"),
+							.Groups = tr("Groups"),
+							.Whip   = "Whip",
 						}
-					}
-					if ui.prefs.recent_chats {
-						for name, i in ui.prefs.folders {
-							active := name == ui.chat_folder
-							if clay.UI(clay.ID("FolderPill", u32(i)))(
+						ids := #sparse[Chat_Filter]string {
+							.Chats  = "AllPill",
+							.Unread = "UnreadPill",
+							.Groups = "GroupsPill",
+							.Whip   = "WhipPill",
+						}
+						for t in Chat_Filter {
+							if t == .Whip && !rl.WhipAvailable() {continue}
+							active := t == ui.chat_filter && ui.chat_folder == ""
+							if clay.UI(clay.ID(ids[t]))(
 							{
 								layout = {
 									sizing = {
@@ -242,16 +236,14 @@ rail_content :: proc(ui: ^Ui_State) {
 										height = clay.SizingFit({min = tap_size() ? 44 : 0}),
 									},
 									padding = {left = 8, right = 8, top = 5, bottom = 5},
-									childGap = 4,
-									childAlignment = {y = .Center},
+									childAlignment = {x = .Center, y = .Center},
 								},
 								backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
 								cornerRadius = rr(6),
 							},
 							) {
-								folder_icon(ui, name, 12)
 								clay.Text(
-									name,
+									labels[t],
 									{
 										fontId = FONT_BODY,
 										fontSize = 12,
@@ -260,29 +252,59 @@ rail_content :: proc(ui: ^Ui_State) {
 								)
 							}
 						}
+						if ui.prefs.recent_chats {
+							for name, i in ui.prefs.folders {
+								active := name == ui.chat_folder
+								if clay.UI(clay.ID("FolderPill", u32(i)))(
+								{
+									layout = {
+										sizing = {
+											width = clay.SizingFit({min = tap_size() ? 44 : 0}),
+											height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+										},
+										padding = {left = 8, right = 8, top = 5, bottom = 5},
+										childGap = 4,
+										childAlignment = {y = .Center},
+									},
+									backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
+									cornerRadius = rr(6),
+								},
+								) {
+									folder_icon(ui, name, 12)
+									clay.Text(
+										name,
+										{
+											fontId = FONT_BODY,
+											fontSize = 12,
+											textColor = active ? TEXT : TEXT_DIM,
+										},
+									)
+								}
+							}
+						}
 					}
-				}
-				scrollbar(clay.ID("ChatFilters"))
-				if ui.page == .Chats &&
-				   clay.UI(clay.ID("ChatViewBtn"))(
-				   {
-					   layout = {
-						   sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
-						   padding = {left = 6, right = 6, top = 5, bottom = 5},
-						   childAlignment = {y = .Center},
+					scrollbar(clay.ID("ChatFilters"))
+					if ui.page == .Chats &&
+					   clay.UI(clay.ID("ChatViewBtn"))(
+					   {
+						   layout = {
+							   sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
+							   padding = {left = 6, right = 6, top = 5, bottom = 5},
+							   childAlignment = {y = .Center},
+						   },
+						   backgroundColor = hovered() ? HOVER : {},
+						   cornerRadius = rr(6),
 					   },
-					   backgroundColor = hovered() ? HOVER : {},
-					   cornerRadius = rr(6),
-				   },
-				   ) {
-					clay.Text(
-						ui.prefs.recent_chats ? tr("Recent") : tr("Grouped"),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-					)
-					if hovered() {
-						tooltip(
-							ui.prefs.recent_chats ? tr("Group chats by folder") : tr("Sort chats by recent activity"),
+					   ) {
+						clay.Text(
+							ui.prefs.recent_chats ? tr("Recent") : tr("Grouped"),
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 						)
+						if hovered() {
+							tooltip(
+								ui.prefs.recent_chats ? tr("Group chats by folder") : tr("Sort chats by recent activity"),
+							)
+						}
 					}
 				}
 			}

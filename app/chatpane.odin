@@ -9,9 +9,66 @@ import rl "sdlrl"
 @(private)
 CHAT_WIDTH_MAX :: f32(720)
 
+// A square header control: the phone header's Back and overflow buttons.
+@(private = "file")
+header_icon :: proc(id_str: string, glyph: string, label: string) {
+	if clay.UI(clay.ID(id_str))(
+	{
+		layout = {
+			sizing = {width = clay.SizingFixed(44), height = clay.SizingFixed(44)},
+			childAlignment = {x = .Center, y = .Center},
+		},
+		backgroundColor = hovered() ? HOVER : {},
+		cornerRadius = rr(8),
+	},
+	) {
+		if hovered() {tooltip(label)}
+		clay.Text(glyph, {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
+	}
+}
+
+// The phone header's overflow menu. Rows carry the desktop chips' ids,
+// so handle_chat runs them through the same handlers.
+@(private = "file")
+chat_head_menu :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
+	if clay.UI(clay.ID("ChatHeadMenu"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingFixed(fit_w(240))},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(4),
+			childGap = 1,
+		},
+		floating = {
+			attachTo = .ElementWithId,
+			parentId = clay.ID("ChatHeadMore").id,
+			attachment = {element = .RightTop, parent = .RightBottom},
+			offset = {0, 4},
+			zIndex = 12,
+		},
+		backgroundColor = CARD,
+		cornerRadius = rr(10),
+		border = {color = ELEVATED_BORDER, width = bw()},
+	},
+	) {
+		if ui.issue_setting == .Enabled {ctx_item("IssuesBtn", ICON_COMMENTS, tr("Issues"))}
+		ctx_item("FilesBtn", ICON_FOLDER, tr("Files"))
+		unread := mi_unread_count(ui)
+		ctx_item(
+			"BellBtn",
+			ICON_BELL,
+			unread > 0 ? fmt.tprintf("%s (%d)", tr("Mentions"), unread) : tr("Mentions"),
+		)
+		ctx_item("GroupSettingsBtn", ICON_SETTINGS, tr("Settings"))
+		if !chat_is_dm(chat) {ctx_item("MembersBtn", ICON_PEOPLE, tr("Members"))}
+	}
+}
+
 chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 	preview := ui.chat_preview_w > 0
-	short := single_pane() && f32(rl.GetScreenHeight()) / UI_ZOOM < 500
+	// A phone header is one row: Back, the title, Search and an overflow
+	// menu for the remaining chips.
+	phone := single_pane() && !preview
 
 	if clay.UI(clay.ID("ChatPane"))(
 	{
@@ -60,14 +117,14 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 		{
 			layout = {
 				sizing = {width = clay.SizingGrow()},
-				padding = clay.PaddingAll(short ? 6 : single_pane() ? 8 : 14),
-				layoutDirection = single_pane() && !short ? .TopToBottom : .LeftToRight,
-				childGap = 6,
+				padding = phone ? clay.PaddingAll(4) : clay.PaddingAll(14),
+				childGap = phone ? 2 : 6,
 				childAlignment = {y = .Center},
 			},
 			backgroundColor = RAIL_BG,
 		},
 		) {
+			if phone {header_icon("ChatBack", "\u2039", tr("Back"))}
 			// Avatar and title open conversation details.
 			if clay.UI(clay.ID("ChatHeadInfo"))(
 			{
@@ -159,17 +216,11 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					}
 				}
 			}
-			if clay.UI(clay.ID("ChatHeadActions"))(
-			{
-				layout = {
-					sizing = {
-						width = short ? clay.SizingFit({max = max(44, page_w(ui) - 116)}) : single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-					},
-					childGap = single_pane() ? 0 : 6,
-					childAlignment = {y = .Center},
-				},
-				clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
-			},
+			if phone {
+				header_chip("SearchBtn", ICON_SEARCH, ui.search_open, tr("Search"))
+				header_icon("ChatHeadMore", "\u00b7\u00b7\u00b7", tr("Chat options"))
+			} else if clay.UI(clay.ID("ChatHeadActions"))(
+			{layout = {childGap = 6, childAlignment = {y = .Center}}},
 			) {
 				if ui.issue_setting ==
 				   .Enabled {header_chip("IssuesBtn", ICON_COMMENTS, ui.issues_open, tr("Issues"))}
@@ -191,42 +242,44 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					)
 				}
 			}
-			scrollbar(clay.ID("ChatHeadActions"))
 			// The chrome floats over the timeline; only the bottom-most
 			// bar casts, so the shadows don't stack.
 			if len(ui.thread_stack) == 0 {
 				cast_shade(clay.ID("ChatHeader"), .Down, 14, 0.35)
 			}
 		}
-		if ui.search_open {
-			if clay.UI(clay.ID("SearchBox"))(
-			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? 44 : 32),
+		if phone && ui.chat_head_menu {chat_head_menu(ui, chat)}
+		// A nested if: clay.UI's deferred close runs for its enclosing scope,
+		// so it must not sit behind a short-circuited condition.
+		if ui.search_open {if clay.UI(clay.ID("SearchBar"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = 8, right = 8, top = 6, bottom = 6}, childGap = 4}}) {
+				if clay.UI(clay.ID("SearchBox"))(
+				{
+					layout = {
+						sizing = {
+							width = clay.SizingGrow(),
+							height = clay.SizingFixed(tap_size() ? 44 : 32),
+						},
+						padding = {left = 10, right = 10},
+						childAlignment = {y = .Center},
 					},
-					padding = {left = 10, right = 10},
-					childAlignment = {y = .Center},
+					backgroundColor = ROW_BG,
+					cornerRadius = rr(8),
+					border = {color = ui.focus == .Search ? ACCENT : FIELD_BORDER, width = bw()},
 				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(8),
-				border = {color = ui.focus == .Search ? ACCENT : FIELD_BORDER, width = bw()},
-			},
-			) {
-				field_text(
-					ui,
-					"SearchBox",
-					&ui.search_input,
-					tr("Search messages"),
-					ui.focus == .Search,
+				) {
+					field_text(
+						ui,
+						"SearchBox",
+						&ui.search_input,
+						tr("Search messages"),
+						ui.focus == .Search,
+					)
+				}
+				clay.Text(
+					tr("Press Enter to search."),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 				)
-			}
-			clay.Text(
-				tr("Press Enter to search."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-			)
-		}
+			}}
 		// Declared after the header so the bell it attaches to exists.
 		if open_now(clay.ID("MiModal"), ui.mi_open) {
 			mention_inbox(ui)
@@ -1879,7 +1932,6 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 					{
 						layout = {
 							sizing = {width = clay.SizingGrow()},
-							layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 							padding = {bottom = 8},
 							childAlignment = {y = .Center},
 							childGap = 16,

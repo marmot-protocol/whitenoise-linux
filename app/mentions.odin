@@ -575,13 +575,15 @@ mention_inbox :: proc(ui: ^Ui_State) {
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 		floating = {
-			attachTo = single_pane() ? .Root : .ElementWithId,
-			parentId = clay.ID("BellBtn").id,
+			// Phones keep the bell in the header's overflow menu, so the
+			// dropdown hangs from the header instead of over the timeline.
+			attachTo = .ElementWithId,
+			parentId = clay.ID(single_pane() ? "ChatHeader" : "BellBtn").id,
 			zIndex = 13,
-			offset = {0, (single_pane() ? 0 : 8) + rise(clay.ID("MiModal"))},
+			offset = {0, (single_pane() ? 4 : 8) + rise(clay.ID("MiModal"))},
 			attachment = {
-				element = single_pane() ? .CenterCenter : .RightTop,
-				parent = single_pane() ? .CenterCenter : .RightBottom,
+				element = single_pane() ? .CenterTop : .RightTop,
+				parent = single_pane() ? .CenterBottom : .RightBottom,
 			},
 		},
 	},

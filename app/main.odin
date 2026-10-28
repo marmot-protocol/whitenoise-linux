@@ -247,10 +247,13 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 						border = {color = DIVIDER, width = {left = u16(BORDER_W)}},
 					},
 					) {
-						// No rail on screen to click back to.
+						// No rail on screen to click back to. A conversation,
+						// the new-chat form and a settings sheet carry Back in
+						// their own header.
 						if single_pane() &&
 						   !ui.new_chat_open &&
-						   (ui.page != .Settings || ui.settings_section == .Home) {
+						   (ui.page != .Settings || ui.settings_section == .Home) &&
+						   !(ui.page == .Chats && !ui.whip_open && ui.selected >= 0) {
 							phone_back(ui)
 						}
 						if !logged_in || ui.add_account_open {

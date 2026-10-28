@@ -135,6 +135,10 @@ State :: struct {
 	frame_dt:       f32,
 	density:        f32, // output pixels per window point
 	touch:          bool, // a touch screen is attached
+	// A finger leaves no pointer behind. The frame after a touch release
+	// parks it off-window, so hover states and tooltips do not stick.
+	touch_lifting:  bool,
+	touch_lifted:   bool,
 	text_input:     bool, // text-input-v3 enabled (raises a phone's keyboard)
 	// text engine
 	pixel_scale:    f32, // glyph rasterization multiplier (dpi * zoom)
@@ -737,6 +741,9 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 	state.wheel = {}
 	clear(&state.chars)
 	clear_dropped_files()
+	if state.touch_lifting {
+		state.touch_lifting, state.touch_lifted = false, true
+	}
 
 	// The density is not fixed for the window's life: snapping to a
 	// monitor with another scale changes it, and everything sized in
@@ -829,7 +836,11 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 				}
 			}
 		case .MOUSE_BUTTON_DOWN, .MOUSE_BUTTON_UP:
-			if event.button.which == sdl.TOUCH_MOUSEID {state.touch = true}
+			if event.button.which == sdl.TOUCH_MOUSEID {
+				state.touch = true
+				state.touch_lifting = event.type == .MOUSE_BUTTON_UP
+			}
+			if event.type == .MOUSE_BUTTON_DOWN {state.touch_lifted = false}
 			button: MouseButton
 			switch event.button.button {
 			case 1:
@@ -851,6 +862,8 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 				state.m_released[button] = true
 				state.m_down[button] = false
 			}
+		case .MOUSE_MOTION:
+			if event.motion.which != sdl.TOUCH_MOUSEID {state.touch_lifted = false}
 		case .MOUSE_WHEEL:
 			state.wheel.x += event.wheel.x
 			state.wheel.y += event.wheel.y
@@ -1078,6 +1091,9 @@ IsMouseButtonDown :: proc(button: MouseButton) -> bool {
 }
 
 GetMousePosition :: proc() -> Vector2 {
+	if state.touch_lifted {
+		return {-10000, -10000}
+	}
 	x, y: f32
 	_ = sdl.GetMouseState(&x, &y)
 	return {x, y}

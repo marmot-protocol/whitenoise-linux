@@ -322,7 +322,7 @@ dev_print :: proc(path: string, val: any) {
 // is cheaper than freeing a literal.
 @(private = "file")
 dev_set :: proc(val: any, text: string) -> bool {
-	kind := reflect.type_kind(val.id)
+	kind := reflect.type_kind(reflect.typeid_base(val.id))
 	#partial switch kind {
 	case .Boolean:
 		on := text == "true" || text == "1"
@@ -348,6 +348,14 @@ dev_set :: proc(val: any, text: string) -> bool {
 		}
 	case .String:
 		(^string)(val.data)^ = strings.clone(text)
+	case .Enum:
+		// Enum fields take their member name: `set page Settings`.
+		for name, i in reflect.enum_field_names(val.id) {
+			if name == text {
+				return dev_set_int(val, int(reflect.enum_field_values(val.id)[i]))
+			}
+		}
+		return false
 	case:
 		fmt.printfln("devctl: cannot set a %v", kind)
 		return false
@@ -421,6 +429,20 @@ devctl_run :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, line: stri
 		if pos, ok := dev_xy(arg); ok {
 			dev_enqueue(frame, Dev_Input{kind = .Click, pos = pos}, CLICK_HOLD_FRAMES + 2)
 		}
+
+	case "tap":
+		// Click the centre of a laid-out element: `tap SettingsCat 3`.
+		name, _, index_text := strings.partition(arg, " ")
+		index, _ := strconv.parse_int(strings.trim_space(index_text))
+		id := index_text == "" ? clay.ID(name) : clay.ID(name, u32(index))
+		data := clay.GetElementData(id)
+		if !data.found {
+			fmt.printfln("devctl: no element %q", arg)
+			return
+		}
+		box := data.boundingBox
+		centre := [2]f32{(box.x + box.width / 2) * UI_ZOOM, (box.y + box.height / 2) * UI_ZOOM}
+		dev_enqueue(frame, Dev_Input{kind = .Click, pos = centre}, CLICK_HOLD_FRAMES + 2)
 
 	case "drag":
 		from_text, _, rest := strings.partition(arg, " ")
@@ -623,7 +645,8 @@ dev_xy :: proc(arg: string) -> (pos: [2]f32, ok: bool) {
 
 @(private = "file")
 DEV_HELP :: `devctl commands (append one per line to $WN_DEV_CMD)
-  input   move X Y | click X Y | drag X1 Y1 X2 Y2 | key NAME | type TEXT
+  input   move X Y | click X Y | tap ID [INDEX] | drag X1 Y1 X2 Y2 | key NAME
+          type TEXT
           scroll DY [X Y] | unpoint (hand the pointer back)
   memory  get PATH | set PATH VALUE | fields PATH | len PATH | x PATH [BYTES]
           PATH is relative to Ui_State: chats[0].title, prefs.locale

@@ -1,16 +1,18 @@
 diff --git a/clay.h b/clay.h
 --- a/clay.h
 +++ b/clay.h
-@@ -2824,6 +2824,6 @@
-                         for (int32_t i = 0; i < context->scrollContainerDatas.length; ++i) {
+@@ -2824,7 +2824,7 @@
+                         closeClipElement = true;
+                         for (int32_t i = 0; i < context->scrollContainerDatas.length; i++) {
                              Clay__ScrollContainerDataInternal *mapping = Clay__ScrollContainerDataInternalArray_Get(&context->scrollContainerDatas, i);
 -                            if (mapping->layoutElement == currentElement) {
 +                            if (mapping->elementId == currentElement->id) {
                                  scrollOffset = currentElement->config.clip.childOffset;
                                  if (context->externalScrollHandlingEnabled) {
                                      scrollOffset = CLAY__INIT(Clay_Vector2) CLAY__DEFAULT_STRUCT;
-@@ -2950,6 +2950,6 @@
-                     for (int32_t i = 0; i < context->scrollContainerDatas.length; ++i) {
+@@ -2950,7 +2950,7 @@
+                     // This linear scan could theoretically be slow under very strange conditions, but I can't imagine a real UI with more than a few 10's of scroll containers
+                     for (int32_t i = 0; i < context->scrollContainerDatas.length; i++) {
                          Clay__ScrollContainerDataInternal *mapping = Clay__ScrollContainerDataInternalArray_Get(&context->scrollContainerDatas, i);
 -                        if (mapping->layoutElement == currentElement) {
 +                        if (mapping->elementId == currentElement->id) {

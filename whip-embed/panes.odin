@@ -388,6 +388,18 @@ when #config(WN_WHIP, false) {
 		blocked := clamp(int(input_top * sy), 0, bounds.h)
 		hit.y += blocked
 		hit.h -= blocked
+		// A pane scrolled partly out of a host viewport only takes input
+		// where it is drawn, so host chrome over the rest stays usable.
+		if sdl.RenderClipEnabled(state.renderer) {
+			clip: sdl.Rect
+			if sdl.GetRenderClipRect(state.renderer, &clip) {
+				x0 := max(hit.x, int(f32(clip.x) * sx))
+				y0 := max(hit.y, int(f32(clip.y) * sy))
+				x1 := min(hit.x + hit.w, int(f32(clip.x + clip.w) * sx))
+				y1 := min(hit.y + hit.h, int(f32(clip.y + clip.h) * sy))
+				hit = {x0, y0, max(x1 - x0, 0), max(y1 - y0, 0)}
+			}
+		}
 		whip_hit_bounds[pane] = hit
 		status := whip.view_status(ui.view)
 		if status == .Missing || status == .Stopped {return}

@@ -107,7 +107,7 @@ mobile_shell_viewports :: proc(t: ^testing.T) {
 				)
 				continue
 			}
-			for id in ([]string{"ChatPane", "ChatBody", "Composer", "PhoneBack"}) {
+			for id in ([]string{"ChatPane", "ChatBody", "Composer", "ChatBack"}) {
 				data := clay.GetElementData(clay.ID(id))
 				box := data.boundingBox
 				testing.expect(
@@ -144,4 +144,23 @@ mobile_shell_viewports :: proc(t: ^testing.T) {
 	clay.SetPointerState({box.x + 2, box.y + 2}, false)
 	handle_pages(&ui, &client)
 	testing.expect_value(t, ui.settings_section, Settings_Section.Home)
+
+	// Inbox rows scrolled under the navigation bar sit outside the page's
+	// clip, so a tap on a destination reaches the bar, not the row.
+	for _ in 0 ..< 20 {append(&ui.chats, Chat_Row_Ui{group_id = "more", title = "More"})}
+	ui.page, ui.selected = .Chats, -1
+	for _ in 0 ..< 4 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+	box = clay.GetElementData(clay.ID("Nav", u32(Page.Contacts))).boundingBox
+	centre := clay.Vector2{box.x + box.width / 2, box.y + box.height / 2}
+	clay.SetPointerState(centre, false)
+	under := false
+	for i in 0 ..< len(ui.chats) {
+		row := clay.GetElementData(clay.ID("ChatRow", u32(i)))
+		r := row.boundingBox
+		if !row.found || centre.y < r.y || centre.y > r.y + r.height {continue}
+		under = true
+		testing.expect(t, !clay.PointerOver(clay.ID("ChatRow", u32(i))), "hidden row takes no tap")
+	}
+	testing.expect(t, under, "a row is laid out beneath the navigation bar")
+	testing.expect(t, clay.PointerOver(clay.ID("Nav", u32(Page.Contacts))), "the bar takes it")
 }

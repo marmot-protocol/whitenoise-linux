@@ -222,13 +222,7 @@ link_modal :: proc(ui: ^Ui_State) {
 		}
 
 		if clay.UI(clay.ID("LinkActions"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-				childGap = 10,
-			},
-		},
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}},
 		) {
 			if clay.UI(clay.ID("LinkCancel"))(
 			{

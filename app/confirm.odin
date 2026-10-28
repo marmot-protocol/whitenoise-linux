@@ -239,14 +239,7 @@ confirm_modal :: proc(ui: ^Ui_State) {
 		clay.Text(tr(body), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 
 		if clay.UI(clay.ID("ConfirmActions"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-				childGap = 10,
-				padding = {top = 6},
-			},
-		},
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 6}}},
 		) {
 			if clay.UI(clay.ID("ConfirmCancel"))(
 			{

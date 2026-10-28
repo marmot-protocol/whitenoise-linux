@@ -345,8 +345,10 @@ if [ "${1:-}" != sources ]; then
   # clay-scroll-target.patch keeps a clipped label from swallowing the wheel.
   # clay-float-layer.patch keeps a z-less float (the text caret) above the
   # floating panel it sits in.
+  # clay-nested-clip.patch keeps rows scrolled out of an outer clip (under
+  # the phone navigation bar) from taking its clicks.
   CLAY_LIB="$CLAY/bindings/odin/clay-odin/linux/clay.a"
-  CLAY_PATCHES=("$HERE/patches/clay-hashmap.patch" "$HERE/patches/clay-scroll-target.patch" "$HERE/patches/clay-scroll-reflow.patch" "$HERE/patches/clay-float-layer.patch")
+  CLAY_PATCHES=("$HERE/patches/clay-hashmap.patch" "$HERE/patches/clay-scroll-target.patch" "$HERE/patches/clay-scroll-reflow.patch" "$HERE/patches/clay-float-layer.patch" "$HERE/patches/clay-nested-clip.patch")
   CLAY_KEY="$(native_key 'clay C PIC O2 CLAY_IMPLEMENTATION' "$CLAY/clay.h" "${CLAY_PATCHES[@]}")"
   if ! build_cache_fresh "$CLAY_KEY" "$HERE/build/clay/stamp" "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.h"; then
     rm -f "$HERE/build/clay/stamp" "$HERE/build/clay/clay.a"

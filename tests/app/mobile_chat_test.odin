@@ -4,6 +4,7 @@ import "base:runtime"
 import "core:strings"
 import "core:testing"
 
+import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
@@ -84,12 +85,18 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 			send.width >= 44 && send.height >= 44,
 			"send stays touch-sized and pinned",
 		)
-		more := clay.GetElementData(clay.ID("MsgMore", 0))
-		testing.expect(
-			t,
-			more.found && more.boundingBox.width >= 44 && more.boundingBox.height >= 44,
-			"message actions are present without hover",
-		)
+		// One header row: back, title, search and the overflow menu.
+		header := clay.GetElementData(clay.ID("ChatHeader")).boundingBox
+		for id in ([]string{"ChatBack", "SearchBtn", "ChatHeadMore"}) {
+			data := clay.GetElementData(clay.ID(id))
+			box := data.boundingBox
+			testing.expect(
+				t,
+				data.found && box.width >= 44 && box.height >= 44 && inside(box, header),
+				id,
+			)
+		}
+		testing.expect(t, header.height <= 60, "phone header stays one row")
 
 		poll_reset(&ui)
 		for len(ui.poll_inputs) < POLL_OPTS_CAP {append(&ui.poll_inputs, [dynamic]u8{})}
@@ -145,4 +152,26 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		)
 		ui.focus = .Compose
 	}
+
+	// The overflow menu opens on a tap, stays on screen, and closes on a
+	// tap elsewhere.
+	rl.SetWindowSize(360, 640)
+	clay.SetLayoutDimensions({360, 640})
+	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+	forced_release = true
+	defer forced_release = false
+	client: marmot.Client
+	more := clay.GetElementData(clay.ID("ChatHeadMore")).boundingBox
+	clay.SetPointerState({more.x + 2, more.y + 2}, false)
+	handle_chat(&ui, &client)
+	testing.expect(t, ui.chat_head_menu, "overflow tap opens the menu")
+	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+	menu := clay.GetElementData(clay.ID("ChatHeadMenu"))
+	testing.expect(t, menu.found && inside(menu.boundingBox, {0, 0, 360, 640}), "menu on screen")
+	for id in ([]string{"FilesBtn", "BellBtn", "MembersBtn"}) {
+		testing.expect(t, clay.GetElementData(clay.ID(id)).found, id)
+	}
+	clay.SetPointerState({20, 600}, false)
+	handle_chat(&ui, &client)
+	testing.expect(t, !ui.chat_head_menu, "a tap elsewhere closes the menu")
 }

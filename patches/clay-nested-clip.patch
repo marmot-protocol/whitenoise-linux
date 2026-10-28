@@ -1,0 +1,16 @@
+diff --git a/clay.h b/clay.h
+--- a/clay.h
++++ b/clay.h
+@@ -4161,6 +4161,12 @@
+                     found = true;
+                 }
+ 
++                // A clipping element hides its overflowing children, so a
++                // point outside it can reach none of them, however deep.
++                bool clipsChildren = !currentElement->isTextElement && (currentElement->config.clip.horizontal || currentElement->config.clip.vertical);
++                if (clipsChildren && !Clay__PointIsInsideRect(position, elementBox) && !context->externalScrollHandlingEnabled) {
++                    continue;
++                }
+                 for (int32_t i = currentElement->children.length - 1; i >= 0; --i) {
+                     Clay__int32_tArray_Add(&dfsBuffer, currentElement->children.elements[i]);
+                     context->treeNodeVisited.internalArray[dfsBuffer.length - 1] = false; // TODO needs to be ranged checked

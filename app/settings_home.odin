@@ -578,17 +578,29 @@ settings_pick_heading :: proc(text: string) {
 settings_banner :: proc(ui: ^Ui_State) {
 	section := ui.settings_section
 	gallery := section == .Appearance && !settings_on_menu(ui) && ui.settings_tab == 0
+	phone := single_pane()
 	if clay.UI(clay.ID("SettingsHead"))(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow()},
-			padding = {left = 24, right = 24, top = 8, bottom = 8},
-			childGap = 12,
+			padding = {
+				left = phone ? 0 : 24,
+				right = 24,
+				top = phone ? 3 : 8,
+				bottom = phone ? 3 : 8,
+			},
+			childGap = phone ? 6 : 12,
 			childAlignment = {y = .Center},
 		},
 		backgroundColor = ACCENT,
 	},
 	) {
+		// Phones go back from the banner itself instead of a separate bar
+		// above it; the shell's PhoneBack handler runs it.
+		if phone {if clay.UI(clay.ID("PhoneBack"))({layout = {sizing = {clay.SizingFixed(44), clay.SizingFixed(44)}, childAlignment = {x = .Center, y = .Center}}}) {
+				clay.Text("\u2039", {fontId = FONT_TITLE, fontSize = 20, textColor = ON_ACCENT})
+				if hovered() {cursor_raise(.Pointer); tooltip(tr("Back"))}
+			}}
 		settings_illustration("SettingsHeadArt", SECTION_ART[section], 34)
 		if clay.UI(clay.ID("SettingsHeadCol"))(
 		{

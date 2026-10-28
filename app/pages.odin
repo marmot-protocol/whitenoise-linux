@@ -205,7 +205,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	// The rail avatar opens the switcher.
-	if clicked("RailAvatar") || clicked("PhoneAccount") {
+	if clicked("RailAvatar") {
 		ui.accounts_open = true
 		return
 	}

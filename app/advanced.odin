@@ -71,7 +71,9 @@ settings_advanced :: proc(ui: ^Ui_State) {
 						"Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap.",
 					),
 				)
-				if clay.UI(clay.ID("MapBrowserChoices"))(settings_choices()) {
+				if clay.UI(clay.ID("MapBrowserChoices"))(
+					settings_choices(clay.ID("MapBrowserChoices")),
+				) {
 					for name, browser in MAP_BROWSER_NAMES {
 						settings_option(
 							"MapBrowserChip",
@@ -146,7 +148,9 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					relay_row("TrustRow", "TrustRemove", u32(i), site)
 				}
 				if len(ui.prefs.trusted_sites) > 0 {
-					if clay.UI(clay.ID("TrustActions"))(settings_choices()) {
+					if clay.UI(clay.ID("TrustActions"))(
+						settings_choices(clay.ID("TrustActions")),
+					) {
 						label :=
 							ui.keys_confirm == "TrustForgetAll" ? tr("Confirm forget all") : tr("Forget all")
 						settings_button("TrustForgetAll", label, DANGER)

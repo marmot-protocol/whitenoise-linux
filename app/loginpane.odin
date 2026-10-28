@@ -323,8 +323,10 @@ login_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("LoginGapB"))(
 			{layout = {sizing = {height = clay.SizingFixed(10)}}},
 			) {}
-			micro_button("LoginBackup", tr("Import backup"))
-			micro_button("LoginProxy", tr("SOCKS5 proxy"))
+			if clay.UI(clay.ID("LoginExtras"))({layout = {childGap = 10}}) {
+				micro_button("LoginBackup", tr("Import backup"))
+				micro_button("LoginProxy", tr("SOCKS5 proxy"))
+			}
 		} else {
 			clay.Text(
 				ui.login_method == .Bunker ? tr("Connect your remote signer") : ui.login_method == .Pair ? tr("Pair with your remote signer") : tr("Import a key"),
@@ -372,18 +374,13 @@ login_pane :: proc(ui: ^Ui_State) {
 			{layout = {sizing = {height = clay.SizingFixed(6)}}},
 			) {}
 			if clay.UI(clay.ID("LoginButtons"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-					childGap = 12,
-				},
-			},
+			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 12}},
 			) {
 				login_button("LoginBack", tr("Back"))
 				login_button(
 					"LoginGo",
 					ui.login_method == .Pair ? tr("Create pairing link") : tr("Continue"),
+					len(ui.login_input) > 0,
 				)
 			}
 			// Every form here signs in an existing identity. Each installation

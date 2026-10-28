@@ -640,12 +640,13 @@ export_modal :: proc(ui: ^Ui_State) {
 					)
 				}
 			}
-			if clay.UI(clay.ID("ExportBtns"))(settings_choices()) {
+			if clay.UI(clay.ID("ExportBtns"))(settings_choices(clay.ID("ExportBtns"))) {
 				if clay.UI(clay.ID("ExportCancel"))(
 				{
 					layout = {
 						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
 						padding = {left = 22, right = 22, top = 9, bottom = 9},
+						childAlignment = {x = .Center, y = .Center},
 					},
 					backgroundColor = hovered() ? HOVER : {},
 					cornerRadius = rr(9),
@@ -662,6 +663,7 @@ export_modal :: proc(ui: ^Ui_State) {
 					layout = {
 						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
 						padding = {left = 22, right = 22, top = 9, bottom = 9},
+						childAlignment = {x = .Center, y = .Center},
 					},
 					backgroundColor = DANGER,
 					cornerRadius = rr(9),
@@ -732,6 +734,7 @@ export_modal :: proc(ui: ^Ui_State) {
 					layout = {
 						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
 						padding = {left = 22, right = 22, top = 9, bottom = 9},
+						childAlignment = {x = .Center, y = .Center},
 					},
 					backgroundColor = hovered() ? HOVER : {},
 					cornerRadius = rr(9),

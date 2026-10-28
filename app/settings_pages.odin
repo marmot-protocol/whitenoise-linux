@@ -117,15 +117,26 @@ settings_body_width :: proc(ui: ^Ui_State) -> f32 {
 	return max(120, settings_content_width(ui) - (settings_main_w(ui) < 560 ? 16 : 32))
 }
 
-// Long translated choices stay in the page's vertical scroll on phones.
+// A row of choices. On phones it fills the width and scrolls sideways when
+// translated labels outgrow it, instead of stacking into a column. `id` is
+// the row's own element id: it is not open yet, so it cannot be looked up.
 @(private)
-settings_choices :: proc() -> clay.ElementDeclaration {
+settings_choices :: proc(id: clay.ElementId) -> clay.ElementDeclaration {
+	if data := clay.GetScrollContainerData(id);
+	   single_pane() &&
+	   data.found &&
+	   data.contentDimensions.width > data.scrollContainerDimensions.width {
+		append(&drag_targets, id)
+	}
 	return {
 		layout = {
 			sizing = {width = single_pane() ? clay.SizingGrow() : clay.SizingFit()},
-			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 			childGap = 6,
 			childAlignment = {y = .Center},
+		},
+		clip = {
+			horizontal = single_pane(),
+			childOffset = single_pane() ? clay.GetScrollOffset() : {},
 		},
 	}
 }
@@ -410,7 +421,6 @@ settings_tab_strip :: proc(ui: ^Ui_State) {
 			sizing = {width = clay.SizingGrow()},
 			childGap = 2,
 			childAlignment = {y = .Bottom},
-			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 		},
 	},
 	) {
@@ -597,7 +607,9 @@ settings_pane :: proc(ui: ^Ui_State) {
 					},
 				},
 				) {
-					if !wide {
+					// Phone sheets go back through the shell's Back bar; the
+					// category home keeps search and breadcrumbs.
+					if !wide && !(single_pane() && ui.settings_section != .Home) {
 						if clay.UI(clay.ID("SettingsTaskStack"))(
 						{
 							layout = {
@@ -898,14 +910,14 @@ settings_general :: proc(ui: ^Ui_State) {
 			}
 			if clay.UI(clay.ID("RowTimeFmt"))(column) {
 				row_labels(tr("Time format"), "")
-				if clay.UI(clay.ID("TimeFmtCol"))(settings_choices()) {
+				if clay.UI(clay.ID("TimeFmtCol"))(settings_choices(clay.ID("TimeFmtCol"))) {
 					settings_option("TimeFmt", 0, "14:30", !ui.prefs.hour12)
 					settings_option("TimeFmt", 1, "2:30 PM", ui.prefs.hour12)
 				}
 			}
 			if clay.UI(clay.ID("RowDateFmt"))(column) {
 				row_labels(tr("Date format"), "")
-				if clay.UI(clay.ID("DateFmtCol"))(settings_choices()) {
+				if clay.UI(clay.ID("DateFmtCol"))(settings_choices(clay.ID("DateFmtCol"))) {
 					for label, i in DATE_FORMATS {
 						settings_option("DateFmt", u32(i), label, ui.prefs.date_format == i)
 					}
@@ -927,9 +939,35 @@ settings_general :: proc(ui: ^Ui_State) {
 					1,
 					int((settings_body_width(ui) - 24) / (settings_tap_size(24) + 8)),
 				)
-				for first := 0; first < len(ui.prefs.quick_reactions); first += columns {
+				// The add button takes the next grid cell instead of a row of
+				// its own.
+				count := len(ui.prefs.quick_reactions)
+				cells := count + (count < QUICK_MAX ? 1 : 0)
+				for first := 0; first < cells; first += columns {
 					if clay.UI(clay.ID("QuickChoiceRow", u32(first)))({layout = {childGap = 8}}) {
-						for i in first ..< min(first + columns, len(ui.prefs.quick_reactions)) {
+						for i in first ..< min(first + columns, cells) {
+							if i == count {
+								if clay.UI(clay.ID("QuickAdd"))(
+								{
+									layout = {
+										sizing = {
+											clay.SizingFixed(settings_tap_size(24)),
+											clay.SizingFixed(settings_tap_size(24)),
+										},
+										childAlignment = {x = .Center, y = .Center},
+									},
+									backgroundColor = hovered() ? HOVER : {},
+									cornerRadius = rr(6),
+									border = {color = FIELD_BORDER, width = bw()},
+								},
+								) {
+									clay.Text(
+										"+",
+										{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
+									)
+								}
+								continue
+							}
 							emoji := ui.prefs.quick_reactions[i]
 							if clay.UI(clay.ID("QuickChip", u32(i)))(
 							{
@@ -947,7 +985,11 @@ settings_general :: proc(ui: ^Ui_State) {
 								if tex := emoji_tex(emoji); tex != nil {
 									if clay.UI(clay.ID("QuickChipImg", u32(i)))(
 									{
-										layout = {sizing = {width = clay.SizingFixed(16)}},
+										layout = {
+											sizing = {
+												width = clay.SizingFixed(tap_size() ? 22 : 16),
+											},
+										},
 										aspectRatio = {1},
 										image = {imageData = tex},
 									},
@@ -961,9 +1003,6 @@ settings_general :: proc(ui: ^Ui_State) {
 							}
 						}
 					}
-				}
-				if len(ui.prefs.quick_reactions) < QUICK_MAX do if clay.UI(clay.ID("QuickAdd"))({layout = {sizing = {clay.SizingFixed(settings_tap_size(28)), clay.SizingFixed(settings_tap_size(28))}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
-					clay.Text("+", {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
 				}
 			}
 			if clay.UI(clay.ID("RowQuickReset"))(settings_row()) {
@@ -1350,7 +1389,9 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 								wrapMode = .None,
 							},
 						)
-						if clay.UI(clay.ID("EmojiSetRowMeta", u32(i)))(settings_choices()) {
+						if clay.UI(clay.ID("EmojiSetRowMeta", u32(i)))(
+							settings_choices(clay.ID("EmojiSetRowMeta", u32(i))),
+						) {
 							emoji_set_author(0x480000 + u32(i), set.author)
 							emoji_set_text(fmt.tprintf(tr("%d emoji"), len(set.items)))
 						}
@@ -1359,7 +1400,7 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 			}
 			if matched == 0 &&
 			   !busy {emoji_set_text(len(ui.emoji_sets) == 0 ? tr("No emoji sets found. Refresh to try again, or check your event-fetch relays.") : tr("No emoji sets match your search."))}
-			if pages > 1 do if clay.UI(clay.ID("EmojiSetsPages"))(settings_choices()) {
+			if pages > 1 do if clay.UI(clay.ID("EmojiSetsPages"))(settings_choices(clay.ID("EmojiSetsPages"))) {
 				settings_button("EmojiSetsPrev", tr("Previous"), ui.emoji_sets_page == 0 ? TEXT_DIM : clay.Color{})
 				emoji_set_text(fmt.tprintf(tr("Page %d of %d"), ui.emoji_sets_page + 1, pages))
 				settings_button("EmojiSetsNext", tr("Next"), ui.emoji_sets_page + 1 == pages ? TEXT_DIM : clay.Color{})
@@ -1377,7 +1418,7 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 		emoji_set_text(fmt.tprintf(tr("%d emoji"), len(set.items)))
 		if set.description !=
 		   "" {emoji_set_text(text_ellipsis(set.description, settings_body_width(ui) - 48, FONT_BODY, 12))}
-		if clay.UI(clay.ID("EmojiSetActions"))(settings_choices()) {
+		if clay.UI(clay.ID("EmojiSetActions"))(settings_choices(clay.ID("EmojiSetActions"))) {
 			settings_button("EmojiSetsImport", tr("Import set"), busy ? TEXT_DIM : clay.Color{})
 			if hovered() {tooltip(tr("Existing shortcodes are never replaced."))}
 			settings_button(
@@ -2256,7 +2297,11 @@ apply_zoom :: proc(ui: ^Ui_State) {
 	// magnifies less so the layout still gets MIN_UNITS across. The
 	// pref stays a multiplier on top, so 100% means "this window's
 	// natural size" everywhere.
-	zoom := zoom_for_width(rl.GetScreenWidth()) * f32(ui.prefs.zoom_pct) / 100
+	// A touch screen sizes from its short side, so rotating a phone keeps
+	// the same text size and landscape gains room instead of magnifying.
+	base := rl.GetScreenWidth()
+	if rl.HasTouch() && rl.GetScreenHeight() > 0 {base = min(base, rl.GetScreenHeight())}
+	zoom := zoom_for_width(base) * f32(ui.prefs.zoom_pct) / 100
 	changed := zoom != UI_ZOOM
 	UI_ZOOM = zoom
 	// A zoom change is a geometry discontinuity: re-bake glyphs at the

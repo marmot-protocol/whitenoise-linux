@@ -259,11 +259,14 @@ phone_navigation :: proc(ui: ^Ui_State) {
 	   ui.selected >= 0 &&
 	   !ui.new_chat_open &&
 	   !ui.show_members {return}
+	// Short windows (a landscape phone, an open keyboard) keep the icons
+	// and drop the labels.
+	short := f32(rl.GetScreenHeight()) / UI_ZOOM < 420
 	if clay.UI(clay.ID("PhoneNavigation"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(56)},
-			padding = {left = 4, right = 4, top = 4, bottom = 4},
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(short ? 48 : 56)},
+			padding = {left = 4, right = 4, top = short ? 2 : 4, bottom = short ? 2 : 4},
 			childGap = 2,
 		},
 		backgroundColor = RAIL_BG,
@@ -288,10 +291,14 @@ phone_navigation :: proc(ui: ^Ui_State) {
 					PAGE_ICONS[page],
 					{fontId = FONT_ICON, fontSize = 17, textColor = active ? ACCENT : TEXT_DIM},
 				)
-				clay.Text(
-					tr(NAV_TIPS[page]),
-					{fontId = FONT_BODY, fontSize = 10, textColor = active ? TEXT : TEXT_DIM},
-				)
+				if short {
+					if hovered() {tooltip(tr(NAV_TIPS[page]), .Above)}
+				} else {
+					clay.Text(
+						tr(NAV_TIPS[page]),
+						{fontId = FONT_BODY, fontSize = 10, textColor = active ? TEXT : TEXT_DIM},
+					)
+				}
 			}
 		}
 	}
@@ -420,24 +427,6 @@ phone_back :: proc(ui: ^Ui_State) {
 			clay.Text("‹", {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT_DIM})
 			clay.Text(tr("Back"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
 		}
-		if clay.UI(clay.ID("PhoneHeaderGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-		if clay.UI(clay.ID("PhoneAccount"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingFixed(44), height = clay.SizingFixed(44)},
-				childAlignment = {x = .Center, y = .Center},
-			},
-		},
-		) {
-			avatar(
-				"RailAvatar",
-				0,
-				ui.account_ref,
-				profile_label(nil, ui.account_ref),
-				36,
-				url_pic(ui.my_pic_url),
-			)
-		}
 	}
 }
 
@@ -463,6 +452,7 @@ phone_back_action :: proc(ui: ^Ui_State) {
 			ui.settings_dirty = true
 		}
 		compose_keyboard = false
+		ui.chat_head_menu = false
 		ui.whip_open = false
 		ui.selected = -1
 	case .Contacts:
@@ -575,10 +565,17 @@ status_bar :: proc(ui: ^Ui_State) {
 	   ui.selected >= 0 &&
 	   !ui.new_chat_open &&
 	   !ui.show_members {return}
+	state := net_state(ui)
+	// A phone keeps the connection readout for when it needs attention;
+	// Lock now lives in the Chats options menu there.
+	if single_pane() && state == .Online {return}
 	if clay.UI(clay.ID("StatusBar"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(tap_size() ? 44 : 28)},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFixed(single_pane() ? 24 : tap_size() ? 44 : 28),
+			},
 			padding = {left = 10, right = 10},
 			childGap = single_pane() ? 6 : 12,
 			childAlignment = {y = .Center},
@@ -586,7 +583,6 @@ status_bar :: proc(ui: ^Ui_State) {
 		backgroundColor = STATUS_BAR,
 	},
 	) {
-		state := net_state(ui)
 		status_pill(
 			"NetPill",
 			state == .Online ? tr("ONLINE") : state == .Connecting ? tr("CONNECTING") : tr("OFFLINE"),
@@ -605,7 +601,7 @@ status_bar :: proc(ui: ^Ui_State) {
 			)
 		}
 		if clay.UI(clay.ID("StatusGapR"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-		micro_button("LockNow", tr("Lock now"))
+		if !single_pane() {micro_button("LockNow", tr("Lock now"))}
 
 		// Shortcut hints are the first thing to go when the bar cannot
 		// hold everything: they are the only part of it that is not

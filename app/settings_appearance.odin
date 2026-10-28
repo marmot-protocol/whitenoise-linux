@@ -313,7 +313,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				tr("Interface zoom"),
 				tr("Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."),
 			)
-			zoom_choices := settings_choices()
+			zoom_choices := settings_choices(clay.ID("ZoomChoices"))
 			zoom_choices.layout.layoutDirection = .LeftToRight
 			zoom_choices.layout.childGap = 4
 			if clay.UI(clay.ID("ZoomChoices"))(zoom_choices) {
@@ -328,7 +328,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 		}
 		if clay.UI(clay.ID("RowBodyFont"))(settings_row(true)) {
 			row_labels(tr("Message text size"), tr("Applies to message bodies and the composer."))
-			if clay.UI(clay.ID("BodyFontChoices"))(settings_choices()) {
+			if clay.UI(clay.ID("BodyFontChoices"))(settings_choices(clay.ID("BodyFontChoices"))) {
 				for label, i in BODY_FONT_LABELS {
 					settings_option(
 						"BodyFontChip",
@@ -344,7 +344,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				tr("Emoji style"),
 				tr("Applies to the picker, reactions and emoji in messages."),
 			)
-			if clay.UI(clay.ID("EmojiSetChoices"))(settings_choices()) {
+			if clay.UI(clay.ID("EmojiSetChoices"))(settings_choices(clay.ID("EmojiSetChoices"))) {
 				for name, set in EMOJI_SET_NAMES {
 					settings_option("EmojiSetChip", u32(set), name, ui.prefs.emoji_set == set)
 				}
@@ -352,7 +352,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 		}
 		if clay.UI(clay.ID("RowScroll"))(settings_row(true)) {
 			row_labels(tr("Scroll speed"), tr("How far the mouse wheel moves the view."))
-			if clay.UI(clay.ID("ScrollChoices"))(settings_choices()) {
+			if clay.UI(clay.ID("ScrollChoices"))(settings_choices(clay.ID("ScrollChoices"))) {
 				for label, i in SCROLL_SPEED_LABELS {
 					settings_option(
 						"ScrollChip",
@@ -466,7 +466,9 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				tr("Share this theme"),
 				tr("Pick a chat to send it to. They choose whether to use it."),
 			)
-			if clay.UI(clay.ID("ThemeShareActions"))(settings_choices()) {
+			if clay.UI(clay.ID("ThemeShareActions"))(
+				settings_choices(clay.ID("ThemeShareActions")),
+			) {
 				append(&theme_control_order, "ThemeShareBtn", "ThemeEditBtn")
 				settings_button("ThemeShareBtn", tr("Share to chat"))
 				settings_button("ThemeEditBtn", tr("Edit"))

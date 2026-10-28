@@ -521,6 +521,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 						layout = {
 							sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
 							padding = {left = 16, right = 16, top = 9, bottom = 9},
+							childAlignment = {x = .Center, y = .Center},
 						},
 						backgroundColor = ACCENT,
 						cornerRadius = rr(9),

@@ -109,7 +109,12 @@ lists. Use the bottom navigation to switch pages and Back to return from
 a conversation. Back keeps your draft and staged attachments. Settings,
 forms, dialogs and media controls reflow or scroll to fit the window.
 
-Tap a message's menu button for its actions. Drag overflowing toolbars
+Tap or long-press a message for its actions, and long-press a chat for
+its row menu. A conversation's header holds Back, search and a menu with
+files, mentions, settings and members. The Chats menu holds Lock now and
+the command palette. The status bar appears only while you are offline or
+connecting. Rotating a phone keeps the text size; landscape gains room and
+the navigation drops its labels. Drag overflowing toolbars and choice rows
 sideways and page content vertically. Reduce motion keeps direct finger
 scrolling but disables the fling. Tap the composer to activate platform
 text input; opening a conversation does not raise the on-screen keyboard.
@@ -124,7 +129,7 @@ text-input support.
 **Privacy & data**
 
 - One password-encrypted vault holds every secret (see [Security model](#security-model)).
-- Lock now in the status bar or command palette closes the runtime, clears the vault key and session state, and returns to the password gate without closing the window. Unlock with your vault password to reconnect.
+- Lock now in the status bar (the Chats menu on phones) or command palette closes the runtime, clears the vault key and session state, and returns to the password gate without closing the window. Unlock with your vault password to reconnect.
 - Encrypted backup and restore for settings, drafts, custom emoji, and themes. Account keys and message history are not included.
 - Opt-in OTLP metrics and audit logging, both off until you turn them on in Settings.
 
