@@ -924,6 +924,10 @@ restore_workspace :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 @(private)
 settings_back :: proc(ui: ^Ui_State) {
 	switch {
+	case ui.settings_section == .Agents && ui.agent_connector > 0:
+		ui.agent_connector = 0
+		kb_focus = ""
+		ui.settings_scroll_pending = true
 	case ui.settings_section == .Home:
 		ui.page = .Chats
 	case settings_on_menu(ui) || !settings_has_menu(ui.settings_section):

@@ -365,13 +365,7 @@ agent_setup_view :: proc(ui: ^Ui_State, npub: string) {
 					{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT},
 				)
 			}
-			text, _ := strings.replace_all(
-				section.text,
-				npub,
-				npub_tail(npub),
-				context.temp_allocator,
-			)
-			agent_prompt_text(text, width - 40)
+			agent_prompt_text(section.text, width - 40)
 		}
 	}
 	clay.Text(

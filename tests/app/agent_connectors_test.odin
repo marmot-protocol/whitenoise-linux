@@ -4,6 +4,27 @@ import "core:fmt"
 import "core:testing"
 
 @(test)
+agent_setup_back_returns_to_connectors :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	for _, index in AGENT_CONNECTORS {
+		ui := Ui_State {
+			page             = .Settings,
+			settings_section = .Agents,
+			agent_connector  = index + 1,
+		}
+		kb_focus = "AgentCopyPrompt"
+		settings_back(&ui)
+		testing.expect_value(t, ui.page, .Settings)
+		testing.expect_value(t, ui.settings_section, .Agents)
+		testing.expect_value(t, ui.agent_connector, 0)
+		testing.expect_value(t, kb_focus, "")
+		testing.expect(t, ui.settings_scroll_pending)
+		settings_back(&ui)
+		testing.expect_value(t, ui.settings_section, .Home)
+	}
+}
+
+@(test)
 agent_prompt_invalid_index :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
 	npub := "npub1d6qfwzfzzexwg39v98msg2nv3v7ey8jpwr4dv5fy9hd3pucusmpqasx9s6"
