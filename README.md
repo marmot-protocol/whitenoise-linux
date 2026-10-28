@@ -362,17 +362,22 @@ with its own extra emoji), so the three add about 391 MiB of resources;
 only the active one is resident. They ship beside `emoji-catalog.tsv` in
 every package.
 
-The release workflow also builds Flatpak on `master` to populate caches that
-later tags can restore. It caches the GNOME 50 module outputs, downloads,
-Git mirrors, and ccache, plus separate Marmot and C dependency outputs.
-Marmot requires an exact pin-and-patch match; ufbx uses the same build stamp
-as native CI. Bragi compiles with the Odin math helper. Cargo target directories are not cached, and
-Flatpak objects are kept separate from native Ubuntu objects. Only tag
-builds publish releases.
+Trusted Linux CI and release builds run on the two `wn-build-server` slots.
+Podman keeps the Ubuntu 24.04 native/cross, GNOME 50 Flatpak, and Arch build
+environments separate. OpenBSD builds in a persistent KVM guest. Fork PRs
+use ephemeral GitHub-hosted Linux runners; macOS builds stay on Apple
+runners. Release publication and the pre-commit gate remain GitHub-hosted.
 
-After the Flatpak build, the dependency-collection step reports which cache
-outputs exist. Cache-save conditions use those step outputs rather than
-runner-side `hashFiles()` checks on generated files inside the container.
+Each slot retains stamped build outputs, Cargo targets and downloads, and
+vcpkg archives under `~/.cache/wn-github/`, separated by build environment.
+The build scripts still validate their inputs, run tests, and boot freshly
+packaged binaries. Flatpak builds on `master` retain tokenless module state;
+tagged module state is isolated and deleted after upload. Only dependency
+outputs pass between those Flatpak builds. Only tag pushes publish releases.
+
+The server's shared build slice caps the two slots at 80% of its 16 CPUs
+and 50 GiB RAM. A five-second host guard stops CI if available RAM falls
+below 8 GiB. Individual job containers also have CPU and memory limits.
 
 ### Whip inside White Noise
 

@@ -7,83 +7,93 @@ cache="$HOME/.cache/wn-openbsd/7.9-v0.14.0"
 # Runner slots have separate UIDs, HOMEs, disks, and loopback forwards.
 ssh_port=$((20000 + UID))
 mkdir -p "$out" "$cache"
+# Neither a failed build nor a failed sync may publish an earlier run's files.
+rm -rf "$here/dist"
+rm -f "$out"/wn-odin-shot*.png
 image="$cache/openbsd-7.9-x86-64.qcow2"
 if [ ! -f "$image" ]; then
-    curl -fL --retry 3 -o "$image" https://github.com/cross-platform-actions/openbsd-builder/releases/download/v0.14.0/openbsd-7.9-x86-64.qcow2
+  curl -fL --retry 3 -o "$image" https://github.com/cross-platform-actions/openbsd-builder/releases/download/v0.14.0/openbsd-7.9-x86-64.qcow2
 fi
 printf '%s  %s\n' ad05bb9cdf8fb8edf0514ff4c30b124bf0067d20be6d14c49ebf89bbbc55a9c0 "$image" | sha256sum -c -
 key="$cache/vm-ssh-key"
 if [ ! -f "$key" ]; then
-    ssh-keygen -q -t ed25519 -N '' -f "$key"
+  ssh-keygen -q -t ed25519 -N '' -f "$key"
 fi
 truncate -s 40M "$out/resources.raw"
 mkfs.fat -F32 "$out/resources.raw"
 mcopy -o -i "$out/resources.raw" "$key.pub" ::KEYS
 if [ ! -f "$cache/root.qcow2" ]; then
-    qemu-img create -f qcow2 -F qcow2 -b "$image" "$cache/root.qcow2"
+  qemu-img create -f qcow2 -F qcow2 -b "$image" "$cache/root.qcow2"
 fi
 if [ ! -f "$cache/build.qcow2" ]; then
-    qemu-img create -f qcow2 "$cache/build.qcow2" 64G
-    rm -f "$cache/build.ready"
+  qemu-img create -f qcow2 "$cache/build.qcow2" 64G
+  rm -f "$cache/build.ready"
 fi
 disk_mode=reuse
 if [ ! -f "$cache/build.ready" ]; then
-    disk_mode=initialize
+  disk_mode=initialize
 fi
 cp /usr/share/edk2/x64/OVMF_VARS.4m.fd "$out/OVMF_VARS.fd"
 available=$(</proc/meminfo)
 available=${available#*MemAvailable:}
 available=${available%%kB*}
 if ((available < 28 * 1024 * 1024)); then
-    echo 'OpenBSD VM needs 20 GiB plus an 8 GiB host reserve.' >&2
-    exit 1
+  echo 'OpenBSD VM needs 20 GiB plus an 8 GiB host reserve.' >&2
+  exit 1
 fi
 qemu-system-x86_64 -machine q35,accel=kvm -cpu host,-pdpe1gb -smp 6 -m 20G \
-    -drive if=pflash,format=raw,unit=0,file=/usr/share/edk2/x64/OVMF_CODE.4m.fd,readonly=on \
-    -drive "if=pflash,format=raw,unit=1,file=$out/OVMF_VARS.fd" \
-    -device virtio-scsi-pci -device scsi-hd,drive=os,bootindex=0 \
-    -drive "if=none,file=$cache/root.qcow2,id=os,format=qcow2" \
-    -device scsi-hd,drive=res -drive "if=none,file=$out/resources.raw,id=res,format=raw" \
-    -device scsi-hd,drive=build -drive "if=none,file=$cache/build.qcow2,id=build,format=qcow2" \
-    -device e1000,netdev=net -netdev "user,id=net,hostfwd=tcp:127.0.0.1:$ssh_port-:22" \
-    -display none -monitor none -serial "file:$out/vm-console.log" &
+  -drive if=pflash,format=raw,unit=0,file=/usr/share/edk2/x64/OVMF_CODE.4m.fd,readonly=on \
+  -drive "if=pflash,format=raw,unit=1,file=$out/OVMF_VARS.fd" \
+  -device virtio-scsi-pci -device scsi-hd,drive=os,bootindex=0 \
+  -drive "if=none,file=$cache/root.qcow2,id=os,format=qcow2" \
+  -device scsi-hd,drive=res -drive "if=none,file=$out/resources.raw,id=res,format=raw" \
+  -device scsi-hd,drive=build -drive "if=none,file=$cache/build.qcow2,id=build,format=qcow2" \
+  -device e1000,netdev=net -netdev "user,id=net,hostfwd=tcp:127.0.0.1:$ssh_port-:22" \
+  -display none -monitor none -serial "file:$out/vm-console.log" &
 vm_pid=$!
 cleanup() {
-    result=$?
-    if ! kill -0 "$vm_pid" 2>/dev/null; then
-        exit "$result"
-    fi
-    # Guest shutdown flushes both persistent filesystems before QEMU exits.
-    if [[ ${ready:-no} == yes ]] && ssh "${ssh_args[@]}" runner@127.0.0.1 sudo shutdown -p now; then
-        wait "$vm_pid"
-        exit "$result"
-    fi
-    kill "$vm_pid"
-    wait "$vm_pid" || {
-        stopped=$?
-        if ((stopped != 143)); then
-            result=$stopped
-        fi
-    }
+  result=$?
+  if ! kill -0 "$vm_pid" 2>/dev/null; then
     exit "$result"
+  fi
+  # Guest shutdown flushes both persistent filesystems before QEMU exits.
+  if [[ ${ready:-no} == yes ]]; then
+    if ! ssh "${ssh_args[@]}" runner@127.0.0.1 rm -f /mnt/build-cache/work/build/observability-tokens.toml; then
+      result=1
+    fi
+    if ssh "${ssh_args[@]}" runner@127.0.0.1 sudo shutdown -p now; then
+      wait "$vm_pid"
+      exit "$result"
+    fi
+  fi
+  kill "$vm_pid"
+  wait "$vm_pid" || {
+    stopped=$?
+    if ((stopped != 143)); then
+      result=$stopped
+    fi
+  }
+  exit "$result"
 }
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 ssh_args=(-i "$key" -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=2 -o StrictHostKeyChecking=accept-new -o "UserKnownHostsFile=$cache/known_hosts")
 ready=no
 for attempt in $(seq 1 120); do
-    if ssh "${ssh_args[@]}" runner@127.0.0.1 true 2>/dev/null; then
-        ready=yes
-        break
-    fi
-    if ! kill -0 "$vm_pid" 2>/dev/null; then
-        echo 'OpenBSD VM exited before SSH was ready.' >&2
-        exit 1
-    fi
-    sleep 2
+  if ssh "${ssh_args[@]}" runner@127.0.0.1 true 2>/dev/null; then
+    ready=yes
+    break
+  fi
+  if ! kill -0 "$vm_pid" 2>/dev/null; then
+    echo 'OpenBSD VM exited before SSH was ready.' >&2
+    exit 1
+  fi
+  sleep 2
 done
 if [ "$ready" != yes ]; then
-    echo 'OpenBSD SSH readiness timed out; see vm-console.log.' >&2
-    exit 1
+  echo 'OpenBSD SSH readiness timed out; see vm-console.log.' >&2
+  exit 1
 fi
 ssh "${ssh_args[@]}" runner@127.0.0.1 /usr/local/bin/bash -s -- "$disk_mode" <<'GUEST'
 set -euo pipefail
@@ -105,16 +115,26 @@ GUEST
 touch "$cache/build.ready"
 export RSYNC_RSH="ssh -i $key -p $ssh_port -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$cache/known_hosts"
 rsync -a --delete --no-owner --no-group --exclude=/build/ --exclude=/dist/ --exclude=/vendor/mdk/target/ \
-    --exclude=/vendor/mdk/crates/marmot-c/output/ --exclude='/vendor/llvm-mingw*' --exclude=/vendor/vcpkg/ \
-    --exclude=/vendor/sdl/ \
-    "$here/" runner@127.0.0.1:/mnt/build-cache/work/
-ssh "${ssh_args[@]}" runner@127.0.0.1 /usr/local/bin/bash -s <<'GUEST'
+  --exclude=/vendor/mdk/crates/marmot-c/output/ --exclude='/vendor/llvm-mingw*' --exclude=/vendor/vcpkg/ \
+  --exclude=/vendor/sdl/ \
+  "$here/" runner@127.0.0.1:/mnt/build-cache/work/
+{
+  # Send release metadata through SSH stdin, not argv or a file on either disk.
+  printf 'export %s=%q\n' \
+    WN_RELEASE_VERSION "${WN_RELEASE_VERSION:-}" \
+    WN_METRICS_WRITE_TOKEN "${WN_METRICS_WRITE_TOKEN:-}" \
+    WN_AUDIT_WRITE_TOKEN "${WN_AUDIT_WRITE_TOKEN:-}"
+  cat <<'GUEST'
 set -euo pipefail
 cd /mnt/build-cache/work
+trap 'rm -f build/observability-tokens.toml' EXIT
+rm -rf dist
+rm -f build/openbsd/wn-odin-shot*.png build/observability-tokens.toml
 export CARGO_TARGET_DIR=/mnt/build-cache/target CARGO_HOME=/mnt/build-cache/cargo
 export CARGO_BUILD_JOBS=6 WN_BUILD_JOBS=6 CMAKE_BUILD_PARALLEL_LEVEL=6
 bash scripts/openbsd-build.sh
 GUEST
+} | ssh "${ssh_args[@]}" runner@127.0.0.1 /usr/local/bin/bash -s
 mkdir -p "$here/dist"
 rsync -a runner@127.0.0.1:/mnt/build-cache/work/dist/ "$here/dist/"
 rsync -a --include='wn-odin-shot*.png' --exclude='*' runner@127.0.0.1:/mnt/build-cache/work/build/openbsd/ "$out/"

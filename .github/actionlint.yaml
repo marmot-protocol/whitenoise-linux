@@ -1,0 +1,6 @@
+self-hosted-runner:
+  labels:
+    - wn-build-server
+    - arch
+    - wn-cache-1
+    - wn-cache-2

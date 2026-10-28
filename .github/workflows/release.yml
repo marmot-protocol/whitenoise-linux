@@ -18,12 +18,24 @@
 name: Release
 
 on:
+  # A manual run builds and smokes unsigned Flatpak/Orchard and Arch artifacts.
+  # Even when dispatched against a tag, it cannot enter publishing jobs.
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - scripts/ci-container.sh
+      - packaging/ci/**
+      - packaging/flatpak/**
   push:
-    # Default-branch caches are readable by later release tags.
+    # Keep the tokenless Flatpak module cache warm on the default branch.
     branches: [master]
     tags: ["v*"]
 
 env:
+  CARGO_BUILD_JOBS: "6"
+  WN_BUILD_JOBS: "6"
+  CMAKE_BUILD_PARALLEL_LEVEL: "6"
   ODIN_VERSION: dev-2026-09
   SDL_VERSION: "3.4.14"
   FLATPAK_ID: dev.ipf.whitenoise
@@ -40,98 +52,28 @@ env:
 
 jobs:
   appimage:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     name: AppImage (x86_64)
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-1]
+    defaults:
+      run:
+        shell: bash scripts/ci-container.sh run {0}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Start native build container
+        shell: bash
+        run: bash scripts/ci-container.sh start native
 
       - name: Check release version
         run: bash scripts/version.sh "$GITHUB_REF_NAME"
 
-      # The app's own deps, plus the file/desktop utils linuxdeploy
-      # expects.
-      - name: Install system deps
+      - name: Remove stale package outputs
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            pkg-config cmake ninja-build clang git curl gnupg libgpgme-dev libboost-filesystem-dev nlohmann-json3-dev \
-            autoconf automake libtool libgcrypt20-dev libx11-dev libxpm-dev liblzma-dev libzstd-dev libfuse-dev zlib1g-dev patchelf librsvg2-dev zsync squashfs-tools \
-            libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
-            libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev libxtst-dev \
-            file desktop-file-utils wget ca-certificates unzip zstd
-
-      # actions/cache restores as the runner user, which cannot create
-      # directories under /usr/local.
-      - name: Own the cached install prefixes
-        run: sudo install -d -o "$(id -u)" -g "$(id -g)" /usr/local/sdl3 /usr/local/odin
-
-      - name: Cache SDL3
-        id: sdl-cache
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/sdl3
-          key: sdl3-${{ env.SDL_VERSION }}-ubuntu-24.04
-
-      - name: Build SDL3
-        if: steps.sdl-cache.outputs.cache-hit != 'true'
-        run: |
-          git clone --depth 1 -b "release-$SDL_VERSION" \
-            https://github.com/libsdl-org/SDL.git /tmp/SDL
-          cmake -S /tmp/SDL -B /tmp/SDL/build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/sdl3
-          cmake --build /tmp/SDL/build
-          sudo cmake --install /tmp/SDL/build
-
-      - name: Put SDL3 on the linker path
-        run: |
-          echo /usr/local/sdl3/lib | sudo tee /etc/ld.so.conf.d/sdl3.conf
-          sudo ldconfig
-          echo "PKG_CONFIG_PATH=/usr/local/sdl3/lib/pkgconfig" >> "$GITHUB_ENV"
-          echo "LIBRARY_PATH=/usr/local/sdl3/lib" >> "$GITHUB_ENV"
-
-      - name: Cache Odin
-        id: odin-cache
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/odin
-          key: odin-${{ env.ODIN_VERSION }}-ubuntu-24.04
-
-      - name: Install Odin
-        if: steps.odin-cache.outputs.cache-hit != 'true'
-        run: |
-          sudo mkdir -p /usr/local/odin
-          curl -sSfL "https://github.com/odin-lang/Odin/releases/download/$ODIN_VERSION/odin-linux-amd64-$ODIN_VERSION.tar.gz" \
-            | sudo tar xz -C /usr/local/odin --strip-components=1
-          sudo chmod +x /usr/local/odin/odin
-
-      - name: Put Odin on PATH
-        run: echo /usr/local/odin >> "$GITHUB_PATH"
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      # Reuse ci.yml's Cargo artifacts, not a final bundle that could hide
-      # changed inputs. build.sh always asks Cargo to check source freshness.
-      - name: Fetch sources
-        id: sources
-        run: |
-          scripts/build.sh sources
-          echo "mdk=$(sed -n 's/^mdk-commit = //p' DEPS_PIN)" >> "$GITHUB_OUTPUT"
-          echo "toolchain=$(cd vendor/mdk && { rustc -vV; cargo -vV; clang --version; c++ --version; ar --version; } | sha256sum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-
-      # Fallback crosses MDK pins/patches within the same host/toolchain.
-      - name: Restore native Cargo state
-        id: cargo-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            build/cargo/native
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: cargo-native-v1-ubuntu24-${{ runner.arch }}-${{ steps.sources.outputs.toolchain }}-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}-${{ github.sha }}
-          restore-keys: |
-            cargo-native-v1-ubuntu24-${{ runner.arch }}-${{ steps.sources.outputs.toolchain }}-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}-
-            cargo-native-v1-ubuntu24-${{ runner.arch }}-${{ steps.sources.outputs.toolchain }}-
+          rm -rf AppDir
+          rm -f WhiteNoise-*.AppImage WhiteNoise-*.AppImage.zsync build/wn-appimage-update
 
       - name: Build
         env:
@@ -139,29 +81,8 @@ jobs:
           WN_AUDIT_WRITE_TOKEN: ${{ secrets.WN_AUDIT_WRITE_TOKEN }}
         run: scripts/build.sh
 
-      - name: Remove generated observability credentials
-        if: always()
-        run: rm -f build/observability-tokens.toml
-
-      - name: Save native Cargo state
-        if: always() && steps.cargo-cache.outputs.cache-hit != 'true' && steps.cargo-cache.outcome == 'success'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            build/cargo/native
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
-
       - name: Build AppImage updater
         run: bash scripts/build-appimage-updater.sh
-
-      - name: Install pinned Bun for update smoke
-        run: |
-          curl -fsSL https://github.com/oven-sh/bun/releases/download/bun-v1.3.10/bun-linux-x64.zip -o "$RUNNER_TEMP/bun.zip"
-          echo "f57bc0187e39623de716ba3a389fda5486b2d7be7131a980ba54dc7b733d2e08  $RUNNER_TEMP/bun.zip" | sha256sum -c -
-          unzip -qo "$RUNNER_TEMP/bun.zip" -d "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/bun-linux-x64" >> "$GITHUB_PATH"
 
       - name: Assemble AppDir
         env:
@@ -223,26 +144,39 @@ jobs:
             ${{ env.APPIMAGE_NAME }}.zsync
           if-no-files-found: error
 
+      - name: Remove generated observability credentials
+        if: always()
+        run: rm -f build/observability-tokens.toml
+
+      - name: Stop build container
+        if: always()
+        shell: bash
+        run: bash scripts/ci-container.sh stop
+
   orchard-publisher:
     name: Orchard publisher (x86_64)
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-24.04"' || '["self-hosted","Linux","X64","wn-build-server","arch","wn-cache-1"]') }}
+    defaults:
+      run:
+        shell: bash scripts/ci-container.sh run {0}
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache publisher sources and Rust build
-        uses: actions/cache@v4
         with:
-          path: |
-            vendor/downloads/orchard-source
-            build/orchard-source
-            build/orchard-target
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: orchard-publisher-ubuntu24-x64-${{ hashFiles('DEPS_PIN', 'scripts/build-orchard.sh', 'patches/orchard-*.patch') }}
+          persist-credentials: false
+
+      - name: Start native build container
+        shell: bash
+        run: |
+          if ! command -v podman >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y podman
+          fi
+          bash scripts/ci-container.sh start native
 
       - name: Build pinned publisher only
-        run: scripts/build-orchard.sh
+        run: |
+          rm -f build/orchard-publish
+          scripts/build-orchard.sh
 
       - uses: actions/upload-artifact@v4
         with:
@@ -250,95 +184,95 @@ jobs:
           path: build/orchard-publish
           if-no-files-found: error
 
+      - name: Remove generated observability credentials
+        if: always()
+        run: rm -f build/observability-tokens.toml
+
+      - name: Stop build container
+        if: always()
+        shell: bash
+        run: bash scripts/ci-container.sh stop
+
   flatpak:
     name: Flatpak (x86_64)
     needs: orchard-publisher
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
-      options: --privileged
+    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-24.04"' || '["self-hosted","Linux","X64","wn-build-server","arch","wn-cache-2"]') }}
+    defaults:
+      run:
+        shell: bash scripts/ci-container.sh run {0}
+    env:
+      # Tagged module state contains the token-bearing final app. Never reuse
+      # it for master/dispatch, and delete it before the container stops.
+      FLATPAK_STATE_DIR: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && 'build/flatpak-tag-state' || 'build/flatpak-state' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Start Flatpak build container
+        shell: bash
+        run: |
+          if ! command -v podman >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y podman
+          fi
+          bash scripts/ci-container.sh start flatpak
 
       - name: Check release version
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         run: bash scripts/version.sh "$GITHUB_REF_NAME"
 
-      - name: Read Marmot pin
-        id: mdk
-        run: echo "commit=$(sed -n 's/^mdk-commit = //p' DEPS_PIN)" >> "$GITHUB_OUTPUT"
+      - name: Prepare fresh outputs and persistent dependency cache
+        run: |
+          set -euo pipefail
+          # PR refs and branch names can contain '/', unlike release tags.
+          echo "WN_FLATPAK_BUNDLE=WhiteNoise-${GITHUB_REF_NAME//\//-}-x86_64.flatpak" >> "$GITHUB_ENV"
+          rm -rf build/flatpak build/flatpak-repo build/orchard-release build/flatpak-tag-state .flatpak-cache
+          rm -f WhiteNoise-*.flatpak build/orchard-publish
+          mkdir -p .flatpak-cache
+          if [ -d build/flatpak-deps ]; then
+            cp -a build/flatpak-deps/. .flatpak-cache/
+          fi
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-      # Keep SDK-built objects separate from native Ubuntu builds.
-      # build.sh also partitions targets by the actual SDK compiler/flags.
-      - name: Restore Flatpak Cargo state
-        id: cargo-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            .flatpak-cache/build/cargo/native
-            .flatpak-cache/cargo/registry
-            .flatpak-cache/cargo/git
-          key: cargo-native-v1-flatpak-gnome50-x64-${{ hashFiles('packaging/flatpak/*.yml') }}-${{ steps.mdk.outputs.commit }}-${{ hashFiles('patches/mdk-*.patch') }}-${{ github.sha }}
-          restore-keys: |
-            cargo-native-v1-flatpak-gnome50-x64-${{ hashFiles('packaging/flatpak/*.yml') }}-${{ steps.mdk.outputs.commit }}-${{ hashFiles('patches/mdk-*.patch') }}-
-            cargo-native-v1-flatpak-gnome50-x64-${{ hashFiles('packaging/flatpak/*.yml') }}-
-
-      - name: Restore Flatpak C dependencies
-        id: cdeps-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            .flatpak-cache/build/fbx/ufbx.o
-            .flatpak-cache/build/fbx/ufbx.stamp
-          key: cdeps-flatpak-gnome50-x64-${{ hashFiles('DEPS_PIN') }}
-          restore-keys: cdeps-flatpak-gnome50-x64-
-
-      - name: Restore Flatpak modules and downloads
-        id: flatpak-cache
-        # Tagged builds must recompile with their secrets, not reuse the app
-        # cached by a tokenless master build.
-        if: "!startsWith(github.ref, 'refs/tags/')"
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            build/flatpak-state/cache
-            build/flatpak-state/downloads
-            build/flatpak-state/git
-            build/flatpak-state/ccache
-          key: flatpak-gnome50-x64-${{ github.sha }}
-          restore-keys: flatpak-gnome50-x64-
-
-      # The app module needs network during the build (scripts/build.sh clones
-      # mdk/clay/ufbx/bragi, cargo fetches crates), which the manifest declares
-      # in its build-args; the action passes it through.
-      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      # Preserve the action's builder flags, SDK dependency installation and
+      # bundle runtime origin, without running a JavaScript action on the host.
+      - name: Build Flatpak and bundle
         env:
-          WN_METRICS_WRITE_TOKEN: ${{ startsWith(github.ref, 'refs/tags/') && secrets.WN_METRICS_WRITE_TOKEN || '' }}
-          WN_AUDIT_WRITE_TOKEN: ${{ startsWith(github.ref, 'refs/tags/') && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
-        with:
-          manifest-path: packaging/flatpak/${{ env.FLATPAK_ID }}.yml
-          bundle: WhiteNoise-${{ github.ref_name }}-x86_64.flatpak
-          upload-artifact: false
-          build-dir: build/flatpak
-          repo-dir: build/flatpak-repo
-          state-dir: build/flatpak-state
-          keep-build-dirs: true
-          cache: ${{ !startsWith(github.ref, 'refs/tags/') }}
-          restore-cache: false
-          save-cache: false
+          WN_METRICS_WRITE_TOKEN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && secrets.WN_METRICS_WRITE_TOKEN || '' }}
+          WN_AUDIT_WRITE_TOKEN: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
+        run: |
+          set -euo pipefail
+          # The SDK sandbox does not inherit the outer container's build limits.
+          # Keep this resolved manifest beside the original for relative sources.
+          flatpak-builder --show-manifest "packaging/flatpak/$FLATPAK_ID.yml" \
+            | jq '."build-options".env += {"CARGO_BUILD_JOBS":"6","WN_BUILD_JOBS":"6","CMAKE_BUILD_PARALLEL_LEVEL":"6"}' \
+            > packaging/flatpak/ci-manifest.json
+          args=()
+          if [[ "$FLATPAK_STATE_DIR" == build/flatpak-state ]]; then args+=(--ccache); fi
+          xvfb-run --auto-servernum flatpak-builder \
+            --user --install-deps-from=flathub --repo=build/flatpak-repo \
+            --disable-rofiles-fuse --force-clean --keep-build-dirs --jobs=6 \
+            --default-branch=master --arch=x86_64 --subject="Built from $GITHUB_SHA" \
+            --state-dir="$FLATPAK_STATE_DIR" "${args[@]}" \
+            build/flatpak packaging/flatpak/ci-manifest.json
+          flatpak build-bundle build/flatpak-repo \
+            "$WN_FLATPAK_BUNDLE" \
+            --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo \
+            --arch=x86_64 "$FLATPAK_ID" master
 
       # The manifest copies .flatpak-cache into the app module before building;
       # its CARGO_HOME is cargo/, and native targets live in build/cargo/native.
       # Keep completed dependencies even if a later app compile fails.
       - name: Collect Flatpak dependency outputs
-        id: flatpak-outputs
         if: always()
         run: |
-          # Remove credentials even when compilation failed, before any cache save.
-          if [ -d build/flatpak-state/build ]; then
-            find build/flatpak-state/build -name observability-tokens.toml -delete
+          set -euo pipefail
+          # Only dependencies cross the tagged/tokenless state boundary.
+          if [ -d "$FLATPAK_STATE_DIR/build" ]; then
+            find "$FLATPAK_STATE_DIR/build" -name observability-tokens.toml -delete
           fi
-          source=build/flatpak-state/build/whitenoise-linux
+          source="$FLATPAK_STATE_DIR/build/whitenoise-linux"
           if [ -d "$source/build/cargo/native" ]; then
             mkdir -p .flatpak-cache/build/cargo
             cp -a "$source/build/cargo/native" .flatpak-cache/build/cargo/
@@ -352,43 +286,11 @@ jobs:
           if [ -f "$source/build/fbx/ufbx.stamp" ]; then
             mkdir -p .flatpak-cache/build/fbx
             cp -a "$source/build/fbx/ufbx.o" "$source/build/fbx/ufbx.stamp" .flatpak-cache/build/fbx/
-            echo "cdeps=true" >> "$GITHUB_OUTPUT"
           fi
-          # Check generated files in the container, not through runner hashFiles().
-          if [ -f build/flatpak-state/cache/config ]; then
-            echo "modules=true" >> "$GITHUB_OUTPUT"
+          if [ -d .flatpak-cache ]; then
+            mkdir -p build/flatpak-deps
+            cp -a .flatpak-cache/. build/flatpak-deps/
           fi
-
-      - name: Save Flatpak Cargo state
-        if: always() && steps.cargo-cache.outputs.cache-hit != 'true' && steps.cargo-cache.outcome == 'success'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            .flatpak-cache/build/cargo/native
-            .flatpak-cache/cargo/registry
-            .flatpak-cache/cargo/git
-          key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
-
-      - name: Save Flatpak C dependencies
-        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && steps.flatpak-outputs.outputs.cdeps == 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            .flatpak-cache/build/fbx/ufbx.o
-            .flatpak-cache/build/fbx/ufbx.stamp
-          key: ${{ steps.cdeps-cache.outputs.cache-primary-key }}
-
-      - name: Save Flatpak modules and downloads
-        # The module cache includes the app binary; never save token-bearing builds.
-        if: always() && !startsWith(github.ref, 'refs/tags/') && steps.flatpak-cache.outputs.cache-hit != 'true' && steps.flatpak-outputs.outputs.modules == 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            build/flatpak-state/cache
-            build/flatpak-state/downloads
-            build/flatpak-state/git
-            build/flatpak-state/ccache
-          key: ${{ steps.flatpak-cache.outputs.cache-primary-key }}
 
       # Same smoke test as the AppImage: install the bundle and boot it
       # against SDL's dummy driver.
@@ -396,7 +298,7 @@ jobs:
         run: |
           set -euo pipefail
           flatpak install --user -y --noninteractive \
-            "WhiteNoise-${GITHUB_REF_NAME}-x86_64.flatpak"
+            "$WN_FLATPAK_BUNDLE"
           flatpak run --user --env=SDL_VIDEODRIVER=dummy --env=WN_SHOT=1 \
             --env=WN_VAULT_PW=ci-smoke "$FLATPAK_ID" "$(mktemp -d)"
 
@@ -406,18 +308,16 @@ jobs:
           path: build
 
       - name: Prepare unsigned Orchard components
-        shell: bash
         run: |
           chmod +x build/orchard-publish
           args=()
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then args+=("$GITHUB_REF_NAME"); fi
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/tags/* ]]; then args+=("$GITHUB_REF_NAME"); fi
           scripts/orchard-package.sh build/flatpak build/orchard-release "${args[@]}"
 
       # Install the archived bytes, not the preparer's internal layout. Remove
       # only the app already tested above so Flatpak cannot reuse that install;
       # leave its GNOME 50 runtime available for the OCI installation.
       - name: Install and run the Orchard archive headless
-        shell: bash
         run: |
           set -euo pipefail
           version="$(flatpak --version)"
@@ -445,11 +345,29 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: flatpak
-          path: WhiteNoise-${{ github.ref_name }}-x86_64.flatpak
+          path: ${{ env.WN_FLATPAK_BUNDLE }}
           if-no-files-found: error
 
+      - name: Remove generated credentials and tagged module outputs
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -f build/observability-tokens.toml packaging/flatpak/ci-manifest.json
+          if [ -d "$FLATPAK_STATE_DIR/build" ]; then
+            find "$FLATPAK_STATE_DIR/build" -name observability-tokens.toml -delete
+          fi
+          rm -rf build/flatpak-tag-state
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/tags/* ]]; then
+            rm -rf build/flatpak build/flatpak-repo build/orchard-release
+          fi
+
+      - name: Stop build container
+        if: always()
+        shell: bash
+        run: bash scripts/ci-container.sh stop
+
   cross:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     uses: ./.github/workflows/cross.yml
     with:
       version: ${{ github.ref_name }}
@@ -458,20 +376,28 @@ jobs:
   # The tarball the AUR's whitenoise-linux-bin installs, built on Arch
   # against Arch's libraries from the same metadata as whitenoise-linux-git.
   archlinux:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     name: Arch Linux (x86_64)
-    runs-on: ubuntu-24.04
-    container:
-      image: archlinux:base-devel
-      # arch-package.sh compiles inside a network namespace of its own.
-      options: --privileged
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-1]
+    defaults:
+      run:
+        shell: bash scripts/ci-container.sh run {0}
     steps:
-      - name: Install git
-        run: pacman -Syu --noconfirm --needed git
-
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Start Arch build container
+        shell: bash
+        run: bash scripts/ci-container.sh start arch
+
+      - name: Install git and remove stale package outputs
+        run: |
+          pacman -Syu --noconfirm --needed git
+          rm -rf dist build/arch
 
       - name: Check release version
+        if: github.event_name == 'push'
         run: bash scripts/version.sh "$GITHUB_REF_NAME"
 
       - name: Install build dependencies
@@ -495,14 +421,10 @@ jobs:
 
       - name: Build
         env:
-          WN_RELEASE_VERSION: ${{ github.ref_name }}
-          WN_METRICS_WRITE_TOKEN: ${{ secrets.WN_METRICS_WRITE_TOKEN }}
-          WN_AUDIT_WRITE_TOKEN: ${{ secrets.WN_AUDIT_WRITE_TOKEN }}
+          WN_RELEASE_VERSION: ${{ github.event_name == 'push' && github.ref_name || '' }}
+          WN_METRICS_WRITE_TOKEN: ${{ github.event_name == 'push' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
+          WN_AUDIT_WRITE_TOKEN: ${{ github.event_name == 'push' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         run: scripts/arch-package.sh
-
-      - name: Remove generated observability credentials
-        if: always()
-        run: rm -f build/observability-tokens.toml
 
       - uses: actions/upload-artifact@v4
         with:
@@ -510,8 +432,17 @@ jobs:
           path: dist/*-archlinux-x86_64.tar.zst
           if-no-files-found: error
 
+      - name: Remove generated observability credentials
+        if: always()
+        run: rm -f build/observability-tokens.toml
+
+      - name: Stop build container
+        if: always()
+        shell: bash
+        run: bash scripts/ci-container.sh stop
+
   publish:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     name: Publish release
     needs: [appimage, flatpak, cross, archlinux]
     runs-on: ubuntu-24.04
@@ -585,16 +516,26 @@ jobs:
   # source of the latter, then push both and whitenoise-linux-git. The push
   # is skipped until the repository has an AUR_SSH_PRIVATE_KEY secret.
   aur:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     name: AUR packages
     needs: [archlinux, publish]
-    runs-on: ubuntu-24.04
-    container: archlinux:base-devel
+    runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-1]
+    defaults:
+      run:
+        shell: bash scripts/ci-container.sh run {0}
     steps:
-      - name: Install tools
-        run: pacman -Syu --noconfirm --needed git openssh namcap
-
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Start Arch build container
+        shell: bash
+        run: bash scripts/ci-container.sh start arch
+
+      - name: Install tools
+        run: |
+          pacman -Syu --noconfirm --needed git openssh namcap
+          rm -rf dist build/aur build/aur-git
 
       - uses: actions/download-artifact@v4
         with:
@@ -663,3 +604,14 @@ jobs:
             git -C "$repo" push origin HEAD:master
           done
           rm -rf "$ssh_dir"
+
+      - name: Remove AUR credentials
+        if: always()
+        run: |
+          rm -rf "$RUNNER_TEMP/aur-ssh" build/aur-git
+          rm -f build/observability-tokens.toml
+
+      - name: Stop build container
+        if: always()
+        shell: bash
+        run: bash scripts/ci-container.sh stop
