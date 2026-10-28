@@ -4081,6 +4081,9 @@ msgstr "Scienza"
 msgid "Scroll speed"
 msgstr "Velocità di scorrimento"
 
+msgid "Scroll to read the full address."
+msgstr "Scorri per leggere l'indirizzo completo."
+
 msgid "Search"
 msgstr "Cerca"
 

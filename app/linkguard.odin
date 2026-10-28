@@ -79,6 +79,11 @@ open_link :: proc(ui: ^Ui_State, url: string) {
 	ui.link_trust = false
 	ui.link_open = true
 	kb_focus = "" // Tab starts over at Cancel
+	if clay.GetCurrentContext() != nil {
+		if data := clay.GetScrollContainerData(clay.ID("LinkAddress")); data.found {
+			data.scrollPosition^ = {}
+		}
+	}
 }
 
 spawn_link :: proc(ui: ^Ui_State, url: string) {
@@ -172,9 +177,7 @@ link_modal :: proc(ui: ^Ui_State) {
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
-			// Both chopped to the card: an npub host or a nevent URL has no
-			// space to wrap at. The host stays whole (it is what the user is
-			// trusting), just broken across lines.
+			// Keep even an npub host visible in full above the scrollable address.
 			inner := modal_w(clay.ID("LinkModal"), 440) - 64
 			for rest := host; len(rest) > 0; {
 				lo, hi := 1, len(rest)
@@ -187,7 +190,23 @@ link_modal :: proc(ui: ^Ui_State) {
 				clay.Text(rest[:lo], {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
 				rest = rest[lo:]
 			}
-			mono_lines(ui.link_url, inner, TEXT_LO)
+			if clay.UI(clay.ID("LinkAddress"))(
+			{
+				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(18)}},
+				clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+			},
+			) {
+				clay.Text(
+					ui.link_url,
+					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, wrapMode = .None},
+				)
+			}
+			if rl.MeasureTextLine(FONT_MONO, 11, ui.link_url, 0).x > inner {
+				clay.Text(
+					tr("Scroll to read the full address."),
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				)
+			}
 		}
 
 		when ODIN_OS != .OpenBSD {
