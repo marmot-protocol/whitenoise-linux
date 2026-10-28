@@ -191,6 +191,11 @@ visible after reflow through the deferred settings scroll.
 `tests/app/shell_test.odin` exercises these boundaries through `build_layout`,
 including the status bar, at default, short, and zoomed window sizes.
 
+Login and account creation refresh relay health before showing the account,
+discarding snapshots from before its relays were installed. Initialized,
+pending, and connecting relays show CONNECTING; an empty or disconnected
+pool after setup shows OFFLINE.
+
 Video tiles render at up to 480 pixels wide. The preview requests its displayed
 physical width, including UI zoom and display density, capped at the source
 width. Resizing repaints paused frames too. Closing a shared fullscreen player

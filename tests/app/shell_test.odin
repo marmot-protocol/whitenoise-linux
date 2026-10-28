@@ -26,6 +26,31 @@ test_rail_fits :: proc(t: ^testing.T) {
 	testing.expect(t, rail_fits(1200, RAIL_W_DEFAULT), "restore the list in a wide window")
 }
 
+@(test)
+test_initial_relay_state :: proc(t: ^testing.T) {
+	ui := Ui_State{}
+	testing.expect_value(t, net_state(&ui), .Connecting)
+	ui.health_ok = true
+	testing.expect_value(t, net_state(&ui), .Offline)
+	ui.health.total_relays = 2
+	ui.health.disconnected = 2
+	testing.expect_value(t, net_state(&ui), .Offline)
+	ui.health.disconnected = 1
+	ui.health.initialized = 1
+	testing.expect_value(t, net_state(&ui), .Connecting)
+	ui.health.initialized = 0
+	ui.health.connecting = 1
+	testing.expect_value(t, net_state(&ui), .Connecting)
+	ui.health.connecting = 0
+	ui.health.pending = 1
+	testing.expect_value(t, net_state(&ui), .Connecting)
+	ui.health.pending = 0
+	ui.health.connected = 1
+	testing.expect_value(t, net_state(&ui), .Online)
+	ui.health = {}
+	testing.expect_value(t, net_state(&ui), .Offline)
+}
+
 // Exercise the shell consumer, not just its fit calculation: after unlocking
 // and opening a chat the default window must contain both the list and chat.
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=rail_default_window
