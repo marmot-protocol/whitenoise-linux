@@ -1,0 +1,40 @@
+FROM ubuntu:24.04
+ARG ODIN_VERSION=dev-2026-09
+ARG ODIN_SHA256=167c3e1d7056419dad2e04bb3bd98715b7ff286d4c125f3c5a5ee337c6254283
+ARG SDL_VERSION=3.4.14
+ARG BUN_VERSION=1.3.10
+ARG BUN_SHA256=f57bc0187e39623de716ba3a389fda5486b2d7be7131a980ba54dc7b733d2e08
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential clang cmake ninja-build pkg-config git curl ca-certificates \
+    gnupg libgpgme-dev libboost-filesystem-dev nlohmann-json3-dev \
+    autoconf automake libtool libgcrypt20-dev libx11-dev libxpm-dev \
+    liblzma-dev libzstd-dev libfuse-dev zlib1g-dev patchelf librsvg2-dev \
+    zsync squashfs-tools libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev \
+    libcairo2-dev libcurl4-openssl-dev libssl-dev libglib2.0-dev libfreetype-dev \
+    libavformat-dev libavcodec-dev libavutil-dev libswresample-dev libxtst-dev \
+    file desktop-file-utils wget unzip zip zstd gettext util-linux \
+    && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 -b "release-$SDL_VERSION" https://github.com/libsdl-org/SDL.git /tmp/SDL \
+    && cmake -S /tmp/SDL -B /tmp/SDL/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/sdl3 \
+    && cmake --build /tmp/SDL/build --parallel 6 \
+    && cmake --install /tmp/SDL/build \
+    && rm -rf /tmp/SDL \
+    && echo /usr/local/sdl3/lib > /etc/ld.so.conf.d/sdl3.conf \
+    && ldconfig
+RUN mkdir -p /usr/local/odin \
+    && curl -fsSL "https://github.com/odin-lang/Odin/releases/download/${ODIN_VERSION}/odin-linux-amd64-${ODIN_VERSION}.tar.gz" -o /tmp/odin.tar.gz \
+    && echo "$ODIN_SHA256  /tmp/odin.tar.gz" | sha256sum -c - \
+    && tar xzf /tmp/odin.tar.gz -C /usr/local/odin --strip-components=1 \
+    && chmod +x /usr/local/odin/odin && rm /tmp/odin.tar.gz
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --profile minimal --default-toolchain stable
+RUN curl -fsSL "https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-linux-x64.zip" -o /tmp/bun.zip \
+    && echo "$BUN_SHA256  /tmp/bun.zip" | sha256sum -c - \
+    && unzip -q /tmp/bun.zip -d /opt \
+    && ln -s /opt/bun-linux-x64/bun /usr/local/bin/bun && rm /tmp/bun.zip
+ENV PATH=/usr/local/odin:/root/.cargo/bin:$PATH \
+    PKG_CONFIG_PATH=/usr/local/sdl3/lib/pkgconfig \
+    LIBRARY_PATH=/usr/local/sdl3/lib
+WORKDIR /work

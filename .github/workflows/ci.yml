@@ -1,11 +1,4 @@
-# CI: runs on every push to master and every PR. Builds the app and runs its
-# test procs, which is exactly what `just test` does locally.
-#
-# The quality gates (catalog validation) are NOT here: they run via
-# pr-precommit.yml, the byte-identical GitHub mirror of the canonical
-# ngit-ci gate at .ngit/act/workflows/pr-precommit.yml (synced by
-# .githooks/pre-commit). That workflow only fires on PRs; direct pushes to
-# master are gated by the same hook running locally at commit time.
+# Build tests and package smokes. Catalog gates stay in pr-precommit.yml.
 name: CI
 
 on:
@@ -13,160 +6,50 @@ on:
     branches: [master]
   pull_request:
 
-# A new push to a branch/PR cancels the in-flight run for that ref.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  # Pinned so a new Odin release can't break a build without a commit here.
-  ODIN_VERSION: dev-2026-09
-  # SDL3 is not packaged on ubuntu-24.04; build it from source and cache it.
-  SDL_VERSION: "3.4.14"
-  # AppImage tooling for the staging build, pinned like release.yml's.
+  CARGO_BUILD_JOBS: 6
+  WN_BUILD_JOBS: 6
+  CMAKE_BUILD_PARALLEL_LEVEL: 6
   LINUXDEPLOY_VERSION: 1-alpha-20251107-1
   LINUXDEPLOY_SHA256: c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d
   APPIMAGETOOL_VERSION: "1.9.1"
   APPIMAGETOOL_SHA256: ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
-  # The runners have no FUSE; AppImages self-extract instead of mounting.
   APPIMAGE_EXTRACT_AND_RUN: "1"
 
 jobs:
   build:
     name: build + test
-    runs-on: ubuntu-24.04
+    # Fork code must not enter a persistent runner or its caches.
+    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-24.04"' || '["self-hosted","Linux","X64","wn-build-server","arch","wn-cache-2"]') }}
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash scripts/ci-container.sh run {0}
     steps:
       - uses: actions/checkout@v4
-
-      # apt's downloads (~120 MB at ~3 MB/s from the runner mirror) are cached
-      # in a runner-owned directory; the install itself still runs. The saved
-      # key names the exact .deb set, so package updates refresh the cache.
-      - name: Restore apt packages
-        id: apt-cache
-        uses: actions/cache/restore@v4
         with:
-          path: ~/.cache/apt-archives
-          key: apt-ci-ubuntu-24.04
-          restore-keys: apt-ci-ubuntu-24.04-
+          persist-credentials: false
 
-      # libarchive/mpv/poppler/cairo back the archive, video and PDF
-      # viewers (see the `foreign import "system:…"` lines in app/).
-      - name: Install system deps
-        id: apt
+      - name: Start Ubuntu build environment
+        shell: bash
         run: |
-          archives="$HOME/.cache/apt-archives"
-          mkdir -p "$archives/partial"
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends -o "Dir::Cache::Archives=$archives" \
-            pkg-config cmake ninja-build clang git curl \
-            libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
-            libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev gettext zstd \
-            libxtst-dev file desktop-file-utils
-          sudo apt-get autoclean -o "Dir::Cache::Archives=$archives"
-          # apt leaves its lock and partial/ root-only; the cache save reads as the runner.
-          sudo chown -R "$(id -u):$(id -g)" "$archives"
-          echo "key=apt-ci-ubuntu-24.04-$(ls "$archives" | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+          if ! command -v podman >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y podman
+          fi
+          bash scripts/ci-container.sh start native
 
-      - name: Save apt packages
-        if: steps.apt.outputs.key != steps.apt-cache.outputs.cache-matched-key
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.cache/apt-archives
-          key: ${{ steps.apt.outputs.key }}
-
-      # actions/cache restores as the runner user, which cannot create
-      # directories under /usr/local.
-      - name: Own the cached install prefixes
-        run: sudo install -d -o "$(id -u)" -g "$(id -g)" /usr/local/sdl3 /usr/local/odin
-
-      - name: Cache SDL3
-        id: sdl-cache
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/sdl3
-          key: sdl3-${{ env.SDL_VERSION }}-ubuntu-24.04
-
-      - name: Build SDL3
-        if: steps.sdl-cache.outputs.cache-hit != 'true'
-        run: |
-          git clone --depth 1 -b "release-$SDL_VERSION" \
-            https://github.com/libsdl-org/SDL.git /tmp/SDL
-          cmake -S /tmp/SDL -B /tmp/SDL/build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/sdl3
-          cmake --build /tmp/SDL/build
-          sudo cmake --install /tmp/SDL/build
-
-      - name: Put SDL3 on the linker path
-        run: |
-          echo /usr/local/sdl3/lib | sudo tee /etc/ld.so.conf.d/sdl3.conf
-          sudo ldconfig
-          echo "PKG_CONFIG_PATH=/usr/local/sdl3/lib/pkgconfig" >> "$GITHUB_ENV"
-          echo "LIBRARY_PATH=/usr/local/sdl3/lib" >> "$GITHUB_ENV"
-
-      # The linux release ships vendor/stb without its .a archives, so
-      # scripts/build.sh builds them into its own ODIN_ROOT overlay (clang, above).
-      - name: Cache Odin
-        id: odin-cache
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/odin
-          key: odin-${{ env.ODIN_VERSION }}-ubuntu-24.04
-
-      - name: Install Odin
-        if: steps.odin-cache.outputs.cache-hit != 'true'
-        run: |
-          sudo mkdir -p /usr/local/odin
-          curl -sSfL "https://github.com/odin-lang/Odin/releases/download/$ODIN_VERSION/odin-linux-amd64-$ODIN_VERSION.tar.gz" \
-            | sudo tar xz -C /usr/local/odin --strip-components=1
-          sudo chmod +x /usr/local/odin/odin
-
-      - name: Put Odin on PATH
-        run: echo /usr/local/odin >> "$GITHUB_PATH"
-
-      # Cache Cargo state, never a bundle that could bypass its input checks.
-      # build.sh separates compiler/flags environments inside the target root.
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Fetch sources
-        id: sources
-        run: |
-          scripts/build.sh sources
-          echo "mdk=$(sed -n 's/^mdk-commit = //p' DEPS_PIN)" >> "$GITHUB_OUTPUT"
-          echo "toolchain=$(cd vendor/mdk && { rustc -vV; cargo -vV; clang --version; c++ --version; ar --version; } | sha256sum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-
-      # Fallback crosses pins/patches, not compiler/host boundaries. The source
-      # revision makes immutable cache entries refresh after successful builds.
-      - name: Restore native Cargo state
-        id: cargo-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            build/cargo/native
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: cargo-native-v1-ubuntu24-${{ runner.arch }}-${{ steps.sources.outputs.toolchain }}-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}-${{ github.sha }}
-          restore-keys: |
-            cargo-native-v1-ubuntu24-${{ runner.arch }}-${{ steps.sources.outputs.toolchain }}-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}-
-            cargo-native-v1-ubuntu24-${{ runner.arch }}-${{ steps.sources.outputs.toolchain }}-
-
-      # ufbx is stamped with its pin by build.sh, so an older cache entry
-      # is a safe fallback: a changed pin rebuilds the reader object.
-      - name: Restore C dependencies
-        id: cdeps-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            build/fbx/ufbx.o
-            build/fbx/ufbx.stamp
-          key: cdeps-linux-x64-${{ hashFiles('DEPS_PIN') }}
-          restore-keys: cdeps-linux-x64-
-
-      # A test that crashes while holding clay_test_mutex blocks the rest of
-      # the suite forever; fail after an hour instead of GitHub's six.
+      # Fail a hung test instead of occupying a persistent slot indefinitely.
       - name: Build and test
         timeout-minutes: 60
         env:
-          # Only the trusted master staging build embeds publishing credentials.
           WN_METRICS_WRITE_TOKEN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
           WN_AUDIT_WRITE_TOKEN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         run: scripts/build.sh test
@@ -175,32 +58,9 @@ jobs:
         if: always()
         run: rm -f build/observability-tokens.toml
 
-      # Retain compiled dependencies even if a later test/build step fails.
-      - name: Save native Cargo state
-        if: always() && steps.cargo-cache.outputs.cache-hit != 'true' && steps.cargo-cache.outcome == 'success'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            build/cargo/native
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
-
-      - name: Save C dependencies
-        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles('build/fbx/ufbx.stamp') != ''
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            build/fbx/ufbx.o
-            build/fbx/ufbx.stamp
-          key: ${{ steps.cdeps-cache.outputs.cache-primary-key }}
-
-      # The x86_64 Linux package, from the binaries the step above built, as
-      # .ngit/act/workflows/release-appimage.yml does for ngit. No -u: a
-      # staging build must not point AppImageUpdate at the release channel.
+      # Staging packages must not point AppImageUpdate at the release channel.
       - name: Build staging AppImage
         run: |
-          set -euo pipefail
           rm -rf AppDir
           scripts/install-tree.sh AppDir/usr whitenoise
           wget -q -O linuxdeploy \
@@ -211,8 +71,6 @@ jobs:
           echo "$APPIMAGETOOL_SHA256  appimagetool" | sha256sum -c -
           chmod +x linuxdeploy appimagetool
           export LD_LIBRARY_PATH="/usr/local/sdl3/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-          # --executable would copy each helper into usr/bin; --deploy-deps-only
-          # bundles their libraries and points their rpath at usr/lib in place.
           ./linuxdeploy --appdir AppDir \
             --executable AppDir/usr/bin/whitenoise \
             --deploy-deps-only AppDir/usr/lib/whitenoise-linux \
@@ -222,9 +80,6 @@ jobs:
           ./appimagetool AppDir "$out"
           echo "APPIMAGE_NAME=$out" >> "$GITHUB_ENV"
 
-      # Boots the package with SDL's dummy video driver; WN_SHOT exits after a
-      # few frames. Catches a missing bundled library or a res_dir that no
-      # longer finds its data.
       - name: Run the AppImage headless
         run: |
           chmod +x "$APPIMAGE_NAME"
@@ -235,6 +90,11 @@ jobs:
           name: whitenoise-staging-x86_64
           path: ${{ env.APPIMAGE_NAME }}
           if-no-files-found: error
+
+      - name: Stop build environment
+        if: always()
+        shell: bash
+        run: bash scripts/ci-container.sh stop
 
   cross:
     uses: ./.github/workflows/cross.yml

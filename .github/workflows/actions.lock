@@ -4,10 +4,8 @@
 version: 'v0.0.3'
 workflows:
     '.github/workflows/ci.yml':
-        - 'actions/cache@v4'
         - 'actions/checkout@v4'
         - 'actions/upload-artifact@v4'
-        - 'dtolnay/rust-toolchain@stable'
     '.github/workflows/cross.yml':
         - 'actions/cache@v4'
         - 'actions/checkout@v4'
@@ -16,16 +14,10 @@ workflows:
     '.github/workflows/pr-precommit.yml':
         - 'actions/checkout@v4'
     '.github/workflows/release.yml':
-        - 'actions/cache@v4'
         - 'actions/checkout@v4'
         - 'actions/download-artifact@v4'
         - 'actions/upload-artifact@v4'
-        - 'dtolnay/rust-toolchain@stable'
-        - 'flatpak/flatpak-github-actions@v6'
         - 'softprops/action-gh-release@v2'
-    '.github/workflows/wn-build-server-smoke.yml':
-        - 'actions/checkout@v4'
-        - 'actions/upload-artifact@v4'
 dependencies:
     'actions/cache@v4':
         ref: 'v4'
@@ -52,16 +44,6 @@ dependencies:
         commit: 'sha1-e0b9770014ba65d5e0815f15b74031c3a635f641'
         owner_id: 81875667
         repo_id: 358691884
-    'dtolnay/rust-toolchain@stable':
-        ref: 'stable'
-        commit: 'sha1-b725eda525362e7cf34af9a7243cac1e3f01a7ec'
-        owner_id: 1940490
-        repo_id: 260749683
-    'flatpak/flatpak-github-actions@v6':
-        ref: 'v6'
-        commit: 'sha1-79327416609af08178ad73b352877e51450790b3'
-        owner_id: 19473042
-        repo_id: 211923252
     'softprops/action-gh-release@v2':
         ref: 'v2'
         commit: 'sha1-3bb12739c298aeb8a4eeaf626c5b8d85266b0e65'
