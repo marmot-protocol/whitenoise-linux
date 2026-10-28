@@ -476,6 +476,8 @@ in its main timeline, including after working in Whip. Reading positions are
 kept per account and conversation for the current unlocked session. A chat left
 at the newest message still follows the newest messages. Search results, reply
 jumps and Jump to latest take precedence over the saved reading position.
+Click a reply quote to jump to its original message. If the original isn't
+loaded in the current view, a brief notice explains why the view didn't move.
 
 Every project starts with a crop-circle avatar derived from its folder.
 Click the avatar to choose and crop a picture, or restore its crop circle.

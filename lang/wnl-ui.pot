@@ -4653,6 +4653,9 @@ msgstr ""
 msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr ""
 
+msgid "The original message isn't loaded in this view."
+msgstr ""
+
 msgid "The passwords don't match. Type them again."
 msgstr ""
 

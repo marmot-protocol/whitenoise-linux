@@ -4654,6 +4654,9 @@ msgstr "La nuova password crittografa di nuovo le chiavi di questo dispositivo. 
 msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr "Il client web ngit in cui si apre una scheda patch. Quel sito riceve il link alla patch."
 
+msgid "The original message isn't loaded in this view."
+msgstr "Il messaggio originale non è caricato in questa vista."
+
 msgid "The passwords don't match. Type them again."
 msgstr "Le password non corrispondono. Digitale di nuovo."
 
