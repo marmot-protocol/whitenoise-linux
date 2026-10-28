@@ -47,6 +47,14 @@ CLICK_HOLD_FRAMES :: 2
 @(private = "file")
 DRAG_FRAMES :: 12
 
+// Finger gestures run through SDL's own event queue (rl.InjectFinger), so
+// they exercise the touch path: long press, drag scrolling, the pointer
+// parking after a lift. A hold outlasts LONG_PRESS_SECS at 60 fps.
+@(private = "file")
+FINGER_TAP_FRAMES :: 3
+@(private = "file")
+FINGER_HOLD_FRAMES :: 60
+
 @(private = "file")
 Dev_Input_Kind :: enum {
 	Move,
@@ -55,6 +63,7 @@ Dev_Input_Kind :: enum {
 	Key,
 	Text,
 	Scroll,
+	Finger,
 }
 
 @(private = "file")
@@ -62,6 +71,7 @@ Dev_Input :: struct {
 	kind: Dev_Input_Kind,
 	pos:  [2]f32,
 	end:  [2]f32, // Drag: where the release lands
+	lift: int, // Finger: frames from touch-down to lift
 	key:  rl.KeyboardKey,
 	text: string,
 	at:   int, // frame this fires on
@@ -237,6 +247,25 @@ devctl_apply_input :: proc(frame: int, pointer: ^clay.Vector2) {
 				rl.PushWheel(transmute(rl.Vector2)act.pos)
 			} else {
 				done = false
+			}
+
+		case .Finger:
+			// The finger owns the pointer; devctl's synthetic one steps aside.
+			step := frame - act.at
+			t := min(f32(max(step, 0)) / f32(act.lift), 1)
+			at := act.pos + (act.end - act.pos) * t
+			dev_pointer_on, test_pointer_on = false, false
+			switch {
+			case step < 0:
+				done = false
+			case step == 0:
+				rl.InjectFinger(.Down, at.x, at.y)
+				done = false
+			case step < act.lift:
+				if act.end != act.pos {rl.InjectFinger(.Move, at.x, at.y)}
+				done = false
+			case:
+				rl.InjectFinger(.Up, at.x, at.y)
 			}
 		}
 
@@ -432,17 +461,34 @@ devctl_run :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, line: stri
 
 	case "tap":
 		// Click the centre of a laid-out element: `tap SettingsCat 3`.
-		name, _, index_text := strings.partition(arg, " ")
-		index, _ := strconv.parse_int(strings.trim_space(index_text))
-		id := index_text == "" ? clay.ID(name) : clay.ID(name, u32(index))
-		data := clay.GetElementData(id)
-		if !data.found {
-			fmt.printfln("devctl: no element %q", arg)
+		if centre, ok := dev_element(arg); ok {
+			dev_enqueue(frame, Dev_Input{kind = .Click, pos = centre}, CLICK_HOLD_FRAMES + 2)
+		}
+
+	case "ftap", "fhold":
+		// A finger on a point or an element: `ftap 120 300`, `fhold MsgRow 2`.
+		point := len(arg) > 0 && arg[0] >= '0' && arg[0] <= '9'
+		pos: [2]f32
+		ok: bool
+		if point {pos, ok = dev_xy(arg)} else {pos, ok = dev_element(arg)}
+		if !ok {return}
+		lift := verb == "ftap" ? FINGER_TAP_FRAMES : FINGER_HOLD_FRAMES
+		dev_enqueue(frame, Dev_Input{kind = .Finger, pos = pos, end = pos, lift = lift}, lift + 2)
+
+	case "fdrag":
+		from_text, _, rest := strings.partition(arg, " ")
+		from_y, _, to_text := strings.partition(rest, " ")
+		from, from_ok := dev_xy(fmt.tprintf("%s %s", from_text, from_y))
+		to, to_ok := dev_xy(strings.trim_space(to_text))
+		if !from_ok || !to_ok {
+			fmt.println("devctl: fdrag X1 Y1 X2 Y2")
 			return
 		}
-		box := data.boundingBox
-		centre := [2]f32{(box.x + box.width / 2) * UI_ZOOM, (box.y + box.height / 2) * UI_ZOOM}
-		dev_enqueue(frame, Dev_Input{kind = .Click, pos = centre}, CLICK_HOLD_FRAMES + 2)
+		dev_enqueue(
+			frame,
+			Dev_Input{kind = .Finger, pos = from, end = to, lift = DRAG_FRAMES},
+			DRAG_FRAMES + 2,
+		)
 
 	case "drag":
 		from_text, _, rest := strings.partition(arg, " ")
@@ -643,9 +689,26 @@ dev_xy :: proc(arg: string) -> (pos: [2]f32, ok: bool) {
 	return {f32(x), f32(y)}, true
 }
 
+// The window-pixel centre of a laid-out element: "SettingsCat 3".
+@(private = "file")
+dev_element :: proc(arg: string) -> (pos: [2]f32, ok: bool) {
+	name, _, index_text := strings.partition(arg, " ")
+	index, _ := strconv.parse_int(strings.trim_space(index_text))
+	id := index_text == "" ? clay.ID(name) : clay.ID(name, u32(index))
+	data := clay.GetElementData(id)
+	if !data.found {
+		fmt.printfln("devctl: no element %q", arg)
+		return {}, false
+	}
+	box := data.boundingBox
+	return {(box.x + box.width / 2) * UI_ZOOM, (box.y + box.height / 2) * UI_ZOOM}, true
+}
+
 @(private = "file")
 DEV_HELP :: `devctl commands (append one per line to $WN_DEV_CMD)
   input   move X Y | click X Y | tap ID [INDEX] | drag X1 Y1 X2 Y2 | key NAME
+          finger (touch path): ftap X Y|ID [INDEX] | fhold X Y|ID [INDEX]
+          fdrag X1 Y1 X2 Y2
           type TEXT
           scroll DY [X Y] | unpoint (hand the pointer back)
   memory  get PATH | set PATH VALUE | fields PATH | len PATH | x PATH [BYTES]

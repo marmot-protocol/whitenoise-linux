@@ -276,6 +276,9 @@ InitWindow :: proc(width, height: i32, title: cstring, image_helper: string = IM
 		sdl.free(devices)
 	}
 	state.touch = n > 0
+	// Test hook: a headless display has no touch device, so harness runs
+	// that drive the touch layout with devctl's finger commands say so.
+	if os.get_env("WN_TEST_TOUCH", context.temp_allocator) != "" {state.touch = true}
 	_ = sdl.SetRenderVSync(state.renderer, 1)
 	_ = sdl.SetRenderDrawBlendMode(state.renderer, {.BLEND})
 	init_saturation()
@@ -1076,6 +1079,33 @@ PushMouseButton :: proc(button: MouseButton, down: bool) {
 
 PushWheel :: proc(delta: Vector2) {
 	state.wheel = delta
+}
+
+Finger_Phase :: enum {
+	Down,
+	Move,
+	Up,
+}
+
+// Test hook: a finger at window point (x, y). It moves SDL's pointer there
+// and queues the button event SDL synthesizes from a touch, so the frame
+// takes the same path a real tap, hold or drag takes, including the
+// pointer parking after the lift.
+InjectFinger :: proc(phase: Finger_Phase, x, y: f32) {
+	sdl.WarpMouseInWindow(state.window, x, y)
+	if phase == .Move {return}
+	event: sdl.Event
+	event.button = {
+		type     = phase == .Down ? .MOUSE_BUTTON_DOWN : .MOUSE_BUTTON_UP,
+		windowID = sdl.GetWindowID(state.window),
+		which    = sdl.TOUCH_MOUSEID,
+		button   = 1,
+		down     = phase == .Down,
+		clicks   = 1,
+		x        = x,
+		y        = y,
+	}
+	_ = sdl.PushEvent(&event)
 }
 
 IsMouseButtonPressed :: proc(button: MouseButton) -> bool {

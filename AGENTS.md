@@ -128,6 +128,7 @@ drive the app into a given state for screenshots and harness runs.
 | `WN_SHOT` / `WN_SHOT_FRAME` | Capture `wn-odin-shot.png` after N frames, then exit. |
 | `WN_TEST_*` | Drive a specific pane/action on boot; see `main.odin`. |
 | `WN_DEBUG_INPUT` | Log input events. |
+| `WN_TEST_TOUCH` | Treat the display as a touch screen (headless phone runs). devctl's `ftap`, `fhold` and `fdrag` then drive real touch events. |
 | `WN_TEST_LINK` | Raise the external-link guard on a URL at frame 12. |
 | `WN_TEST_UPDATE_FEED` | Windows: point the Velopack updater at a local feed directory instead of GitHub releases (`updater.odin`). |
 | `WN_WS_DEBUG` | Log the websocket handshake behind nevent cards (`ws_shim.c`). |
