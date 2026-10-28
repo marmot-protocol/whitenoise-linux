@@ -178,7 +178,12 @@ contacts_import_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				ui.blocked[id] = added.blocked
 			} else if added.blocked {ui.blocked[strings.clone(id)] = true}
 		}
-		if len(job.imported) > 0 {save_settings(ui, background = true)}
+		if len(job.imported) > 0 {
+			// The batch carries keys and local labels, not shared groups or photos.
+			nc_contacts_free(&ui.contacts)
+			load_contacts(client, ui, .Details)
+			save_settings(ui, background = true)
+		}
 		if job.error != "" {
 			message :=
 				job.error_record > 0 ? fmt.aprintf(tr(job.error), job.error_record) : strings.clone(tr(job.error))

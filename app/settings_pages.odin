@@ -101,7 +101,8 @@ settings_row :: proc(stacked: bool = false) -> clay.ElementDeclaration {
 }
 
 settings_content_width :: proc(ui: ^Ui_State) -> f32 {
-	available := max(120, settings_main_w(ui) - (settings_main_w(ui) < 560 ? 24 : 48))
+	// Reserve the floating scrollbar's width on every sheet, even when it fits.
+	available := max(120, settings_main_w(ui) - (settings_main_w(ui) < 560 ? 32 : 56))
 	if ui.settings_section == .Appearance {
 		return available
 	}
@@ -203,8 +204,21 @@ settings_check_ids: [32]string
 settings_check_count: int
 
 @(private)
-settings_check :: proc(id_str: string, checked: bool, title: string, sub: string) {
-	if settings_check_count < len(settings_check_ids) {
+Settings_Control_State :: enum {
+	Enabled,
+	Disabled,
+}
+
+@(private)
+settings_check :: proc(
+	id_str: string,
+	checked: bool,
+	title: string,
+	sub: string,
+	state: Settings_Control_State = .Enabled,
+) {
+	enabled := state == .Enabled
+	if enabled && settings_check_count < len(settings_check_ids) {
 		settings_check_ids[settings_check_count] = id_str
 		settings_check_count += 1
 	}
@@ -216,7 +230,7 @@ settings_check :: proc(id_str: string, checked: bool, title: string, sub: string
 				height = clay.SizingFit({min = settings_tap_size(22)}),
 			},
 			childGap = 9,
-			childAlignment = {y = .Center},
+			childAlignment = {y = .Top},
 			padding = {
 				left = 4,
 				right = 4,
@@ -224,7 +238,7 @@ settings_check :: proc(id_str: string, checked: bool, title: string, sub: string
 				bottom = single_pane() ? 12 : 3,
 			},
 		},
-		backgroundColor = hovered() ? HOVER : {},
+		backgroundColor = enabled && hovered() ? HOVER : {},
 		border = kb_focus == id_str ? kb_ring(ACCENT) : {},
 		cornerRadius = rr(2),
 	},
@@ -242,7 +256,7 @@ settings_check :: proc(id_str: string, checked: bool, title: string, sub: string
 		) {
 			if checked {clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})}
 		}
-		row_labels(title, sub)
+		row_labels(title, sub, enabled ? TEXT : TEXT_LO)
 	}
 }
 
@@ -283,8 +297,14 @@ settings_option :: proc(id_str: string, index: u32, label: string, selected: boo
 }
 
 @(private)
-settings_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
-	down := press_down(clay.ID(id_str))
+settings_button :: proc(
+	id_str: string,
+	label: string,
+	color: clay.Color = {},
+	state: Settings_Control_State = .Enabled,
+) {
+	enabled := state == .Enabled
+	down := enabled ? press_down(clay.ID(id_str)) : 0
 	if clay.UI(clay.ID(id_str))(
 	{
 		layout = {
@@ -295,14 +315,18 @@ settings_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
 			padding = {left = 12, right = 12, top = down},
 			childAlignment = {x = .Center, y = .Center},
 		},
-		backgroundColor = hovered() ? HOVER : CARD,
-		border = kb_focus == id_str ? kb_ring(ACCENT) : clay.BorderElementConfig{color = color.a != 0 ? color : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+		backgroundColor = enabled && hovered() ? HOVER : CARD,
+		border = enabled && kb_focus == id_str ? kb_ring(ACCENT) : clay.BorderElementConfig{color = enabled && color.a != 0 ? color : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
 		cornerRadius = rr(7),
 	},
 	) {
 		clay.Text(
 			label,
-			{fontId = FONT_BODY, fontSize = 12, textColor = color.a != 0 ? color : TEXT},
+			{
+				fontId = FONT_BODY,
+				fontSize = 12,
+				textColor = !enabled ? TEXT_LO : (color.a != 0 ? color : TEXT),
+			},
 		)
 	}
 }
@@ -549,6 +573,11 @@ settings_description :: proc(section: Settings_Section) -> string {
 
 settings_pane :: proc(ui: ^Ui_State) {
 	wide := settings_wide(ui)
+	pinned_tabs :=
+		single_pane() &&
+		ui.settings_section != .Home &&
+		!settings_on_menu(ui) &&
+		len(settings_tabs(ui.settings_section)) > 0
 	workbench := ui.settings_section == .Appearance && appearance_layout(ui).columns > 1
 	// A scroll parent does not shrink growing children to its viewport.
 	// Bound the workbench to the last layout's page height before Clay sizes its columns.
@@ -584,13 +613,31 @@ settings_pane :: proc(ui: ^Ui_State) {
 		},
 		) {
 			if ui.settings_section != .Home {settings_banner(ui)}
+			if pinned_tabs {
+				if clay.UI(clay.ID("SettingsPinnedTabs"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						padding = {left = 12, right = 20, top = 12},
+					},
+					backgroundColor = BG,
+				},
+				) {settings_tab_strip(ui)}
+			}
 			if clay.UI(clay.ID("SettingsPage"))(
 			{
 				layout = {
 					sizing = {clay.SizingGrow(), clay.SizingGrow()},
 					layoutDirection = .TopToBottom,
-					padding = clay.PaddingAll(settings_main_w(ui) < 560 ? 12 : 24),
-					childAlignment = {x = ui.settings_section == .Appearance ? .Left : .Center},
+					padding = {
+						left = settings_main_w(ui) < 560 ? 12 : 24,
+						right = settings_main_w(ui) < 560 ? 20 : 32,
+						top = pinned_tabs ? 0 : (settings_main_w(ui) < 560 ? 12 : 24),
+						bottom = settings_main_w(ui) < 560 ? 12 : 24,
+					},
+					childAlignment = {
+						x = single_pane() || ui.settings_section == .Appearance ? .Left : .Center,
+					},
 				},
 				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 			},
@@ -609,7 +656,9 @@ settings_pane :: proc(ui: ^Ui_State) {
 				) {
 					// Phone sheets go back through the shell's Back bar; the
 					// category home keeps search and breadcrumbs.
-					if !wide && !(single_pane() && ui.settings_section != .Home) {
+					if !wide &&
+					   !(ui.settings_section != .Home &&
+							   (single_pane() || f32(rl.GetScreenHeight()) / UI_ZOOM < 500)) {
 						if clay.UI(clay.ID("SettingsTaskStack"))(
 						{
 							layout = {
@@ -625,7 +674,7 @@ settings_pane :: proc(ui: ^Ui_State) {
 					}
 					tabs := settings_tabs(ui.settings_section)
 					on_menu := settings_on_menu(ui)
-					if ui.settings_section != .Home && !on_menu {
+					if ui.settings_section != .Home && !on_menu && !pinned_tabs {
 						settings_tab_strip(ui)
 					}
 					if ui.settings_section == .Home {
@@ -693,6 +742,7 @@ settings_pane :: proc(ui: ^Ui_State) {
 						}
 					}
 				}
+				settings_link_flash()
 			}
 			scrollbar(clay.ID("SettingsPage"))
 		}
@@ -711,9 +761,6 @@ settings_pane :: proc(ui: ^Ui_State) {
 	}
 	if open_now(clay.ID("ShortModal"), ui.shortcuts_open) {
 		shortcuts_modal(ui)
-	}
-	if open_now(clay.ID("ExportModal"), ui.export_open) {
-		export_modal(ui)
 	}
 	if open_now(clay.ID("BackupModal"), ui.backup_mode != .None) {
 		backup_modal(ui)
@@ -861,29 +908,30 @@ settings_general :: proc(ui: ^Ui_State) {
 	switch ui.settings_tab {
 	case 0:
 		if clay.UI(clay.ID("StartupGroup"))(settings_box()) {
-			settings_group(tr("Startup"))
 			when ODIN_OS != .OpenBSD {
 				if clay.UI(clay.ID("RowLaunch"))(settings_row()) {
 					settings_check("TgLaunch", ui.prefs.launch_at_login, tr("Launch at login"), "")
 				}
 			}
-			if clay.UI(clay.ID("RowTray"))(settings_row()) {
-				settings_check(
-					"TgTray",
-					ui.prefs.start_in_tray,
-					tr("Start minimized to tray"),
-					tr("Takes effect on the next launch."),
-				)
-			}
-			if clay.UI(clay.ID("RowMinTray"))(settings_row()) {
-				settings_check(
-					"TgMinTray",
-					ui.prefs.minimize_tray,
-					tr("Close to tray"),
-					tr(
-						"Closing the window hides it. The tray icon shows your unread total and brings it back.",
-					),
-				)
+			if !tap_size() {
+				if clay.UI(clay.ID("RowTray"))(settings_row()) {
+					settings_check(
+						"TgTray",
+						ui.prefs.start_in_tray,
+						tr("Start minimized to tray"),
+						tr("Takes effect on the next launch."),
+					)
+				}
+				if clay.UI(clay.ID("RowMinTray"))(settings_row()) {
+					settings_check(
+						"TgMinTray",
+						ui.prefs.minimize_tray,
+						tr("Close to tray"),
+						tr(
+							"Closing the window hides it. The tray icon shows your unread total and brings it back.",
+						),
+					)
+				}
 			}
 			if clay.UI(clay.ID("RowRestore"))(settings_row()) {
 				settings_check(
@@ -897,16 +945,30 @@ settings_general :: proc(ui: ^Ui_State) {
 
 	case 1:
 		if clay.UI(clay.ID("LanguageGroup"))(settings_box()) {
-			settings_group(tr("Language"))
 			column := settings_row()
 			column.layout.layoutDirection = .TopToBottom
 			column.layout.childGap = 8
 			if clay.UI(clay.ID("RowLang"))(column) {
 				row_labels(tr("Interface language"), "")
-				settings_button(
-					"LangChange",
-					fmt.tprintf("%s  ▾", locale_label(ui.prefs.locale)),
-				)
+				if clay.UI(clay.ID("LangChange"))(
+				{
+					layout = {
+						sizing = {height = clay.SizingFixed(settings_tap_size(30))},
+						padding = {left = 12, right = 12},
+						childGap = 10,
+						childAlignment = {y = .Center},
+					},
+					backgroundColor = hovered() ? HOVER : CARD,
+					border = {color = FIELD_BORDER, width = bw()},
+					cornerRadius = rr(7),
+				},
+				) {
+					clay.Text(
+						locale_label(ui.prefs.locale),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
+					)
+					clay.Text(ICON_DOWN, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				}
 			}
 			if clay.UI(clay.ID("RowTimeFmt"))(column) {
 				row_labels(tr("Time format"), "")
@@ -1071,9 +1133,7 @@ settings_general :: proc(ui: ^Ui_State) {
 						}
 					}
 				}
-				if !emoji_busy do if clay.UI(clay.ID("EmojiAdd"))({layout = {sizing = {clay.SizingFixed(settings_tap_size(28)), clay.SizingFixed(settings_tap_size(28))}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
-					clay.Text("+", {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
-				}
+				settings_button("EmojiAdd", "+", emoji_busy ? TEXT_LO : TEXT)
 			}
 			if len(ui.emoji_staged) > 0 {
 				clay.Text(
@@ -1126,11 +1186,13 @@ settings_general :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		if clay.UI(clay.ID("ShortcutsGroup"))(settings_box()) {
-			settings_group(tr("Help"))
-			if clay.UI(clay.ID("RowShortcuts"))(settings_row()) {
-				row_labels(tr("Keyboard shortcuts"), "")
-				settings_button("ShortcutsView", tr("View"))
+		if !tap_size() {
+			if clay.UI(clay.ID("ShortcutsGroup"))(settings_box()) {
+				settings_group(tr("Help"))
+				if clay.UI(clay.ID("RowShortcuts"))(settings_row()) {
+					row_labels(tr("Keyboard shortcuts"), "")
+					settings_button("ShortcutsView", tr("View"))
+				}
 			}
 		}
 	}
@@ -1202,23 +1264,34 @@ emoji_sets_feedback :: proc(ui: ^Ui_State) {
 		{
 			layout = {
 				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
 				childGap = 10,
 				childAlignment = {y = .Center},
 			},
 		},
 		) {
-			emoji_sets_spinner("EmojiSetsSpinner")
-			if hovered() {
-				label := tr("Loading emoji sets")
-				if job.op == .Preview {label = tr("Loading emoji previews")}
-				if job.op == .Import {label = tr("Importing emoji")}
-				tooltip(label)
+			label := tr("Loading emoji sets...")
+			if job.op == .Preview {label = tr("Loading emoji previews...")}
+			if job.op == .Import {label = tr("Importing emoji...")}
+			if clay.UI(clay.ID("EmojiSetsLoadLabel"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 10,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				emoji_sets_spinner("EmojiSetsSpinner")
+				emoji_set_text(label)
 			}
 			if job.op == .Browse {
 				busy_bar("EmojiSetsBusy")
 			} else {
 				total := sync.atomic_load(&job.total)
 				progress := sync.atomic_load(&job.progress)
+				if total >
+				   0 {emoji_set_text(fmt.tprintf(tr("%d of %d processed"), progress, total))}
 				if clay.UI(clay.ID("EmojiSetsTrack"))(
 				{
 					layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(3)}},
@@ -1250,11 +1323,13 @@ emoji_sets_feedback :: proc(ui: ^Ui_State) {
 @(private)
 emoji_sets_panel :: proc(ui: ^Ui_State) {
 	busy := ui.emoji_sets_job != nil
-	settings_button(
-		"EmojiSetsBrowse",
-		ui.emoji_sets_open ? tr("Hide emoji sets") : tr("Browse emoji sets"),
-		busy ? TEXT_DIM : clay.Color{},
-	)
+	if ui.emoji_sets_selected < 0 {
+		settings_button(
+			"EmojiSetsBrowse",
+			ui.emoji_sets_open ? tr("Hide emoji sets") : tr("Browse emoji sets"),
+			busy ? TEXT_DIM : clay.Color{},
+		)
+	}
 	if !ui.emoji_sets_open {return}
 	if clay.UI(clay.ID("EmojiSetsPanel"))(
 	{
@@ -1820,6 +1895,7 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 				childGap = 6,
 				childAlignment = {y = .Center},
 			},
+			backgroundColor = CARD,
 		},
 		) {
 			if clay.UI(clay.ID_LOCAL("TitleText"))(
@@ -1833,13 +1909,13 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 			) {
 				clay.Text(
 					pack.custom ? pack.name : tr(pack.name),
-					{fontId = pack.preview_font, fontSize = 13, textColor = pack.text_hi},
+					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
 				)
 				if selected && theme_gallery_collection(i) == .Sidecar {
 					if clay.UI(clay.ID("ThemeTileNotice", u32(i)))({}) {
 						clay.Text(
 							tr("Theme from Sidecar by dmnyc."),
-							{fontId = FONT_GALLERY_TITLE, fontSize = 9, textColor = pack.text_mid},
+							{fontId = FONT_BODY, fontSize = 9, textColor = TEXT_DIM},
 						)
 					}
 				}
@@ -1870,7 +1946,7 @@ settings_theme_gallery :: proc(ui: ^Ui_State, width: f32) {
 	for len(theme_tile_keys) < len(theme_packs) {
 		append(&theme_tile_keys, fmt.aprintf("ThemeOpt%d", len(theme_tile_keys)))
 	}
-	columns := max(1, int((width + 12) / 196))
+	columns := max(1, int((width + 12) / (single_pane() ? 132 : 196)))
 	tile_width := (width - f32(columns - 1) * 12) / f32(columns)
 	if clay.UI(clay.ID("RowTheme"))(
 	{
@@ -1886,6 +1962,16 @@ settings_theme_gallery :: proc(ui: ^Ui_State, width: f32) {
 			tr("Pick the whole app's look."),
 			{fontId = FONT_GALLERY_TITLE, fontSize = 12, textColor = TEXT_DIM},
 		)
+		clay.Text(
+			tr("Show dark or light themes."),
+			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+		)
+		if clay.UI(clay.ID("ThemeToneFilters"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+		) {
+			theme_tone_button(ui, .Dark, "ThemeToneDark", tr("Dark"))
+			theme_tone_button(ui, .Light, "ThemeToneLight", tr("Light"))
+		}
 		if clay.UI(clay.ID("ThemeSelectedName"))(
 		{
 			layout = {
@@ -1956,19 +2042,17 @@ settings_notifications :: proc(ui: ^Ui_State) {
 			settings_check(
 				"TgNotify",
 				ui.prefs.notify_desktop,
-				tr("Desktop notifications"),
+				tap_size() ? tr("Message notifications") : tr("Desktop notifications"),
 				tr("Get an alert when a message arrives in a chat you're not viewing."),
 			)
 		}
 		if clay.UI(clay.ID("RowSound"))(settings_row()) {
-			settings_check("TgSound", ui.prefs.notify_sound, tr("Play a sound"), "")
-		}
-		if clay.UI(clay.ID("RowUiSounds"))(settings_row()) {
 			settings_check(
-				"TgUiSounds",
-				ui.prefs.ui_sounds,
-				tr("Interface sounds"),
-				tr("Short tones when a message leaves, arrives, or fails to send."),
+				"TgSound",
+				ui.prefs.notify_sound,
+				tr("Play a sound"),
+				"",
+				ui.prefs.notify_desktop ? .Enabled : .Disabled,
 			)
 		}
 		if clay.UI(clay.ID("RowPreview"))(settings_row()) {
@@ -1977,14 +2061,32 @@ settings_notifications :: proc(ui: ^Ui_State) {
 				ui.prefs.notify_preview,
 				tr("Show message preview"),
 				tr("Off shows only \"New message\" without the text."),
+				ui.prefs.notify_desktop ? .Enabled : .Disabled,
 			)
 		}
 		if clay.UI(clay.ID("RowNotifyTest"))(settings_row()) {
 			row_labels(
 				tr("Send a test notification"),
-				tr("See and hear it with today's sound and preview settings."),
+				tr("See and hear it with your current sound and preview settings."),
 			)
-			settings_button("NotifyTest", tr("Send test"))
+			settings_button(
+				"NotifyTest",
+				notify_test_pending ? tr("Sending a test notification...") : tr("Send test"),
+				notify_test_pending ? TEXT_LO : TEXT,
+				notify_test_pending ? .Disabled : .Enabled,
+			)
+			if notify_test_pending {busy_bar("NotifyTestBusy")}
+		}
+	}
+	if clay.UI(clay.ID("InterfaceSoundsGroup"))(settings_box()) {
+		settings_group(tr("Interface sounds"))
+		if clay.UI(clay.ID("RowUiSounds"))(settings_row()) {
+			settings_check(
+				"TgUiSounds",
+				ui.prefs.ui_sounds,
+				tr("Interface sounds"),
+				tr("Short tones when a message leaves, arrives, or fails to send."),
+			)
 		}
 	}
 }
@@ -2106,7 +2208,6 @@ shortcuts_modal :: proc(ui: ^Ui_State) {
 			attachment = {element = .CenterCenter, parent = .CenterCenter},
 		},
 		backgroundColor = CARD,
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
@@ -2137,26 +2238,64 @@ shortcuts_modal :: proc(ui: ^Ui_State) {
 				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
 			}
 		}
-		for pair, i in SHORTCUTS {
-			if clay.UI(clay.ID("ShortRow", u32(i)))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-					childGap = 10,
-					childAlignment = {y = .Center},
+		if rl.HasTouch() {
+			clay.Text(
+				tr("With a keyboard connected"),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+		}
+		if clay.UI(clay.ID("ShortList"))(
+		{
+			layout = {
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFit({max = max(44, modal_h(1200) - 130)}),
 				},
+				layoutDirection = .TopToBottom,
+				childGap = 14,
 			},
-			) {
-				clay.Text(tr(pair[0]), {fontId = FONT_MONO, fontSize = 12, textColor = ACCENT})
-				if clay.UI(clay.ID("ShortRowGap", u32(i)))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {}
-				clay.Text(tr(pair[1]), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
+			for pair, i in SHORTCUTS {
+				if rl.HasTouch() && pair[0] == N_("Right click") {continue}
+				if clay.UI(clay.ID("ShortRow", u32(i)))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+						childGap = single_pane() ? 3 : 10,
+						childAlignment = {y = .Center},
+					},
+				},
+				) {
+					if single_pane() {
+						clay.Text(
+							tr(pair[1]),
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						)
+						clay.Text(
+							tr(pair[0]),
+							{fontId = FONT_MONO, fontSize = 12, textColor = ACCENT},
+						)
+					} else {
+						clay.Text(
+							tr(pair[0]),
+							{fontId = FONT_MONO, fontSize = 12, textColor = ACCENT},
+						)
+						if clay.UI(clay.ID("ShortRowGap", u32(i)))(
+						{layout = {sizing = {width = clay.SizingGrow()}}},
+						) {}
+						clay.Text(
+							tr(pair[1]),
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						)
+					}
+				}
 			}
 		}
 	}
-	scrollbar(clay.ID("ShortModal"), 12)
+	scrollbar(clay.ID("ShortList"), 12)
 }
 
 human_size :: proc(n: i64) -> string {
@@ -2547,9 +2686,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Open modals capture everything while open.
 	if ui.export_open {
 		if len(ui.export_pw) > 0 {ui.export_pw_required = false}
-		if field_mouse(ui, &ui.export_pw, "ExportPwBox", 14) {
-			ui.focus = .ExportPw
-		}
+		export_fields(ui)
 		if rl.IsKeyPressed(.ESCAPE) {
 			close_export(ui)
 			return
@@ -2639,6 +2776,10 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				keys_disarm(ui)
 			}
 			settings_theme_preview_reset(ui)
+			if ui.settings_section == .General && i != 2 {
+				ui.emoji_sets_open = false
+				ui.emoji_sets_selected = -1
+			}
 			ui.settings_tab = i
 			ui.settings_anchor = ""
 			ui.settings_scroll_pending = true
@@ -2664,10 +2805,14 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		// handle_folder_board took every click on this page.
 		return
 	case .Speech:
+		if rl.GetTime() < speech_shift_until {return}
 		if ui.prefs.stt_enabled {
 			for model, i in STT_MODELS {
 				if clay.PointerOver(clay.ID("SttModel", u32(i))) {
 					if clicked("SttCancel") {return}
+					if !ui.stt.ready[i] {
+						if !armed(ui, model.name) {return}
+					}
 					stt_stop(ui)
 					delete(ui.prefs.stt_model)
 					ui.prefs.stt_model = strings.clone(model.name)
@@ -2823,12 +2968,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	case .Notifications:
 		if clicked("NotifyTest") {
-			do_notify(
-				ui,
-				tr("Test notification"),
-				tr("This is what a message alert looks like."),
-				.Always,
-			)
+			notify_test_start(ui)
 			return
 		}
 
@@ -2855,7 +2995,9 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // Focus clicks for the settings text boxes run on press, not release;
 // the frame loop calls this before the release-gated handler.
 settings_fields :: proc(ui: ^Ui_State) {
+	notify_test_tick(ui)
 	settings_search_field(ui)
+	if ui.settings_section == .Keys {keys_fields(ui)}
 	if ui.settings_section == .Network {
 		if field_mouse(ui, &ui.relay_input, "RelayBox", 14) {
 			ui.focus = .Relay

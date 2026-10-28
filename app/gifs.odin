@@ -477,6 +477,8 @@ gif_save :: proc(ui: ^Ui_State, op: Gif_Op) {
 
 @(private)
 gif_stop :: proc(ui: ^Ui_State) {
+	picker_commit_recents(ui)
+	delete(ui.picker_used); ui.picker_used = nil
 	ui.picker_open = false
 	for &p in ui.pending {
 		if p.gif == nil {continue}
@@ -639,10 +641,17 @@ gif_visible :: proc(index: int) -> bool {
 @(private)
 gif_picker :: proc(ui: ^Ui_State) {
 	if !ui.prefs.gif_consent {gif_consent_panel(); return}
-	width := modal_w(clay.ID("PickerPanel"), 560) - 24
+	width := (single_pane() ? fit_w(400, 8) : modal_w(clay.ID("PickerPanel"), 560)) - 24
 	columns := width >= 440 ? 3 : 2
 	cell := (width - f32(columns - 1) * 6) / f32(columns)
-	input_box(ui, "PickerSearch", &ui.picker_filter, tr("Search GIFs"), ui.gif_focus < 0, 0)
+	input_box(
+		ui,
+		"PickerSearch",
+		&ui.picker_filter,
+		tr("Search GIFs"),
+		ui.focus == .Picker && ui.gif_focus < 0,
+		0,
+	)
 	busy := ui.gif_job != nil || ui.gif_due > 0 && !ui.gif_saved
 	if clay.UI(clay.ID("GifSources"))(
 	{
@@ -658,7 +667,7 @@ gif_picker :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("GifSource", u32(i)))(
 			{
 				layout = {
-					sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
+					sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
 					padding = {top = 4, bottom = 7},
 					childAlignment = {y = .Center},
 				},
@@ -775,8 +784,8 @@ gif_picker :: proc(ui: ^Ui_State) {
 						{
 							layout = {
 								sizing = {
-									clay.SizingFixed(tap_size() ? 44 : 28),
-									clay.SizingFixed(tap_size() ? 44 : 28),
+									clay.SizingFixed(tap_size() ? tap_min() : 28),
+									clay.SizingFixed(tap_size() ? tap_min() : 28),
 								},
 								childAlignment = {x = .Center, y = .Center},
 							},
@@ -870,7 +879,7 @@ gif_consent_panel :: proc() {
 			{layout = {sizing = {width = clay.SizingGrow()}}},
 			) {}
 			login_button("GifConsentNo", tr("Not now"))
-			login_button("GifConsentYes", tr("Accept"))
+			login_button("GifConsentYes", tr("Accept"), primary = true)
 		}
 	}
 	scrollbar(clay.ID("GifConsent"), 14)
@@ -879,7 +888,7 @@ gif_consent_panel :: proc() {
 @(private)
 handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if rl.IsKeyPressed(.ESCAPE) || mouse_released() && !clay.PointerOver(clay.ID("PickerPanel")) {
-		ui.picker_open = false; ui.focus = .Compose; return
+		close_picker(ui); return
 	}
 	if !ui.prefs.gif_consent {
 		if clicked("GifConsentNo") {ui.gif_tab = false; return}
@@ -901,9 +910,9 @@ handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.gif_due = saved ? 0 : rl.GetTime() + GIF_SEARCH_DELAY
 		return
 	}
-	if field_mouse(ui, &ui.picker_filter, "PickerSearch") {ui.gif_focus = -1}
+	if field_mouse(ui, &ui.picker_filter, "PickerSearch") {ui.gif_focus = -1; ui.focus = .Picker}
 	if rl.IsKeyPressed(.TAB) {ui.gif_focus = ui.gif_focus < 0 ? 0 : -1}
-	if ui.gif_focus < 0 {edit_text(ui, &ui.picker_filter)}
+	if ui.focus == .Picker && ui.gif_focus < 0 {edit_text(ui, &ui.picker_filter)}
 	if ui.gif_filter != string(ui.picker_filter[:]) {
 		delete(ui.gif_filter); ui.gif_filter = strings.clone(string(ui.picker_filter[:]))
 		ui.gif_due = ui.gif_saved ? 0 : rl.GetTime() + GIF_SEARCH_DELAY

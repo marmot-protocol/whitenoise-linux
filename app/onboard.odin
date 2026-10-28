@@ -1,5 +1,5 @@
 // The first-run checklist, shown on the Chats page while the account
-// has no chats: the three things that have to be true before a message
+// has no chats besides Notes to self: the three things needed before a message
 // can travel, each with the one action that makes it true.
 package main
 
@@ -9,6 +9,27 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 import marmot "../marmot"
+
+// Notes is created automatically, and search destinations are not joined chats.
+@(private)
+onboard_pending :: proc(ui: ^Ui_State) -> bool {
+	for chat in ui.chats {
+		if chat.search_only || chat.title == NOTES_TITLE {
+			continue
+		}
+		if len(ui.prefs.notes_group) > 0 && chat.group_id == ui.prefs.notes_group {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+@(private)
+Onboard_Layout :: enum {
+	Scroll,
+	Inline,
+}
 
 Step :: enum {
 	Relays,
@@ -68,7 +89,7 @@ step_view :: proc(ui: ^Ui_State, step: Step) -> Step_View {
 			false,
 		}
 	case .First_Chat:
-		if len(ui.chats) > 0 {
+		if !onboard_pending(ui) {
 			return {N_("Start your first chat"), N_("Done."), "", true}
 		}
 		return {
@@ -81,24 +102,26 @@ step_view :: proc(ui: ^Ui_State, step: Step) -> Step_View {
 	return {}
 }
 
-// First-run screen shown on the Chats page when no chats exist.
-get_started_pane :: proc(ui: ^Ui_State) {
+// Inline shares the rail's scroll container so Notes and Whip remain reachable.
+get_started_pane :: proc(ui: ^Ui_State, mode: Onboard_Layout = .Scroll) {
 	if clay.UI(clay.ID("GetStarted"))(
 	{
 		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
+			sizing = {clay.SizingGrow(), mode == .Inline ? clay.SizingFit() : clay.SizingGrow()},
 			layoutDirection = .TopToBottom,
 			childAlignment = {
 				x = .Center,
-				y = single_pane() || f32(rl.GetScreenHeight()) / UI_ZOOM < 600 ? .Top : .Center,
+				y = mode == .Inline || single_pane() || f32(rl.GetScreenHeight()) / UI_ZOOM < 600 ? .Top : .Center,
 			},
 			childGap = 14,
 			padding = {top = 12, bottom = 12},
 		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		clip = mode == .Scroll ? clay.ClipElementConfig{vertical = true, childOffset = clay.GetScrollOffset()} : clay.ClipElementConfig{},
 	},
 	) {
-		scrollbar(clay.ID("GetStarted"))
+		if mode == .Scroll {
+			scrollbar(clay.ID("GetStarted"))
+		}
 		if clay.UI(clay.ID("GetStartedCard"))(
 		{
 			layout = {
@@ -193,7 +216,7 @@ get_started_pane :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		if !tap_size() {
+		if mode == .Scroll && !tap_size() {
 			clay.Text(
 				tr("Press Ctrl P for the command palette."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},

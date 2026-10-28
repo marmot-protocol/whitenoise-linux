@@ -263,6 +263,15 @@ status_bar_viewports :: proc(t: ^testing.T) {
 							if data.found {data.scrollPosition.y = min(0, data.scrollContainerDimensions.height - data.contentDimensions.height)}
 							for _ in 0 ..< 3 {build_layout(&ui, 0)}
 						}
+						// Related links can put the page bottom beyond the board's
+						// virtualized rows. Scroll back until the final row mounts.
+						for _ in 0 ..< 64 {
+							if clay.GetElementData(target).found {break}
+							data := clay.GetScrollContainerData(viewport)
+							if !data.found {break}
+							data.scrollPosition.y = min(0, data.scrollPosition.y + 44)
+							for _ in 0 ..< 3 {build_layout(&ui, 0)}
+						}
 					}
 					owner := viewport
 					if page == .Settings &&
@@ -419,6 +428,8 @@ test_phone_detail :: proc(t: ^testing.T) {
 	testing.expect(t, phone_detail(&ui), "the new-chat pane is a detail")
 	phone_back_action(&ui)
 	testing.expect(t, ui.selected == 0, "the chat under the new-chat pane survives")
+	phone_back_action(&ui)
+	testing.expect(t, ui.selected == 0 && thread_cur(&ui) == "", "back leaves the thread first")
 	phone_back_action(&ui)
 	testing.expect(t, !phone_detail(&ui), "back from the chat shows the list")
 

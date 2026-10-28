@@ -21,6 +21,7 @@ Confirm_Kind :: enum {
 	None,
 	Delete_All, // delete for everyone
 	Delete_Me, // hide locally
+	Say_GM,
 	Leave_Group,
 	Leave_Chat,
 	Archive_Chat,
@@ -28,6 +29,7 @@ Confirm_Kind :: enum {
 	Remove_Contact,
 	Delete_Theme,
 	Discard_Theme_Edit,
+	Discard_Profile,
 	Delete_Folder,
 	Remove_Member,
 	Promote,
@@ -60,8 +62,10 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		), N_("It disappears for everyone in the chat. This can't be undone."), N_("Delete for everyone")
 	case .Delete_Me:
 		return N_(
-			"Delete for you?",
+			"Delete this message for you?",
 		), N_("It stays for everyone else. You won't see it on this device again."), N_("Delete for me")
+	case .Say_GM:
+		return N_("Send GM?"), N_("Send your daily GM to this chat?"), N_("Send")
 	case .Leave_Group:
 		return N_(
 			"Leave this group?",
@@ -73,7 +77,7 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 	case .Block:
 		return N_(
 			"Block this contact?",
-		), N_("Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."), N_("Block")
+		), N_("Their messages stay hidden until you show them. Nothing is published, and you can unblock them here."), N_("Block")
 	case .Archive_Chat:
 		return N_(
 			"Archive this chat?",
@@ -86,6 +90,10 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_(
 			"Discard your theme changes?",
 		), N_("The colors and settings you changed in the editor are lost."), N_("Discard")
+	case .Discard_Profile:
+		return N_(
+			"Discard profile changes?",
+		), N_("Your unpublished profile changes are lost."), N_("Discard")
 	case .Delete_Folder:
 		return N_(
 			"Delete this folder?",
@@ -168,6 +176,7 @@ confirm_ask :: proc(
 	if kind == .Archive_Chat {
 		ui.confirm.account = strings.clone(ui.account_ref)
 	}
+	if kind == .Remove_Account {ui.accounts_open = false}
 	confirm_shown = kind
 }
 
@@ -213,7 +222,23 @@ confirm_modal :: proc(ui: ^Ui_State) {
 	) {
 		clay.Text(tr(title), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
 		scrollbar(clay.ID("ConfirmModal"), 17)
-		if len(ui.confirm.name) > 0 {
+		if len(ui.confirm.name) > 0 &&
+		   (shown.kind == .Remove_Account || shown.kind == .Archive_Chat) {
+			if clay.UI(clay.ID("ConfirmAccount"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 10,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				if shown.kind == .Remove_Account {
+					avatar("ConfirmAvatar", 0, ui.confirm.arg, ui.confirm.name, 36)
+				}
+				clay.Text(ui.confirm.name, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
+			}
+		} else if len(ui.confirm.name) > 0 {
 			if clay.UI(clay.ID("ConfirmSubject"))(
 			{
 				layout = {
@@ -226,7 +251,12 @@ confirm_modal :: proc(ui: ^Ui_State) {
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				if single_pane() {
+				if single_pane() &&
+				   shown.kind != .Block &&
+				   shown.kind != .Remove_Contact &&
+				   shown.kind != .Delete_All &&
+				   shown.kind != .Delete_Me &&
+				   shown.kind != .Say_GM {
 					mono_lines(ui.confirm.name, modal_w(clay.ID("ConfirmModal"), 400) - 60, TEXT)
 				} else {
 					clay.Text(
@@ -237,6 +267,9 @@ confirm_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 		clay.Text(tr(body), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		if shown.kind == .Remove_Account && confirm_exportable(ui) {
+			login_big_button("ConfirmExport", tr("Export key first"), true)
+		}
 
 		if clay.UI(clay.ID("ConfirmActions"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 6}}},
@@ -246,7 +279,7 @@ confirm_modal :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 					},
 					padding = {left = 16, right = 16, top = 9, bottom = 9},
 					childAlignment = {x = .Center, y = .Center},
@@ -266,19 +299,26 @@ confirm_modal :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 					},
 					padding = {left = 16, right = 16, top = 9, bottom = 9},
 					childAlignment = {x = .Center, y = .Center},
 				},
-				backgroundColor = hovered() ? DANGER : ROW_BG,
+				backgroundColor = shown.kind == .Say_GM || shown.kind == .Archive_Chat ? ACCENT : (hovered() ? DANGER : ROW_BG),
 				cornerRadius = rr(9),
-				border = {color = DANGER, width = bw()},
+				border = {
+					color = shown.kind == .Say_GM || shown.kind == .Archive_Chat ? ACCENT : DANGER,
+					width = bw(),
+				},
 			},
 			) {
 				clay.Text(
 					tr(action),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = hovered() ? BG : DANGER},
+					{
+						fontId = FONT_TITLE,
+						fontSize = 13,
+						textColor = shown.kind == .Say_GM || shown.kind == .Archive_Chat ? ON_ACCENT : (hovered() ? BG : DANGER),
+					},
 				)
 			}
 		}
@@ -287,7 +327,20 @@ confirm_modal :: proc(ui: ^Ui_State) {
 
 // Input while the modal is open; Enter confirms, Escape and the
 // backdrop cancel.
+@(private = "file")
+confirm_exportable :: proc(ui: ^Ui_State) -> bool {
+	for id, i in ui.account_ids {
+		if id == ui.confirm.arg && i < len(ui.account_signing) {return ui.account_signing[i].local}
+	}
+	return false
+}
+
 handle_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if clicked("ConfirmExport") && ui.confirm.kind == .Remove_Account && confirm_exportable(ui) {
+		open_key_export(ui, ui.confirm.arg)
+		confirm_close(ui)
+		return
+	}
 	if rl.IsKeyPressed(.ESCAPE) {
 		confirm_close(ui)
 		return
@@ -310,6 +363,12 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	switch c.kind {
 	case .None:
+	case .Say_GM:
+		if ui.selected >= 0 &&
+		   ui.chats[ui.selected].group_id == c.arg &&
+		   !ui.chats[ui.selected].archived {
+			gm_send(ui, client)
+		}
 	case .Delete_All, .Delete_Me:
 		if c.kind == .Delete_All {
 			message_op(ui, client, .Delete, c.arg, "")
@@ -332,6 +391,9 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		delete_theme(ui, c.idx)
 	case .Discard_Theme_Edit:
 		theme_edit_close(ui, .Discard)
+	case .Discard_Profile:
+		ui.profile.editing = false
+		ui.focus = .Compose
 	case .Delete_Folder:
 		// Folder names are unique; resolve again instead of trusting a stale index.
 		for name, i in ui.prefs.folders {

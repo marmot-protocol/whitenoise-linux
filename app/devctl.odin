@@ -173,6 +173,7 @@ devctl_apply_input :: proc(frame: int, pointer: ^clay.Vector2) {
 		switch act.kind {
 		case .Move:
 			if frame == act.at {
+				rl.UseMouse()
 				dev_pointer, dev_pointer_on = act.pos, true
 				dev_real_at = {real.x, real.y}
 				pointer^ = transmute(clay.Vector2)act.pos

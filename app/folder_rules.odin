@@ -339,7 +339,10 @@ folder_rules_parse :: proc(ui: ^Ui_State) -> (set: Folder_Rules, bad: int, why: 
 			}
 			rule.value = strings.clone(hex)
 		case .Fewer_Than, .More_Than:
-			if text == "" {continue}
+			if text == "" {
+				folder_rules_free(set)
+				return {}, i, tr("Enter a number of people.")
+			}
 			count, ok := strconv.parse_int(text, 10)
 			if !ok || count < 0 {
 				folder_rules_free(set)
@@ -407,96 +410,112 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 	if clay.UI(clay.ID("FolderRule", u32(index)))(
 	{
 		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = single_pane() ? clay.SizingFit() : clay.SizingFixed(36),
-			},
-			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFit()},
+			layoutDirection = .TopToBottom,
 			childGap = 8,
-			childAlignment = {y = .Center},
+			padding = clay.PaddingAll(8),
 		},
+		border = {color = FIELD_BORDER, width = bw()},
+		cornerRadius = rr(9),
 	},
 	) {
-		if clay.UI(clay.ID("FolderRuleKind", u32(index)))(
+		if clay.UI(clay.ID("FolderRuleHead", u32(index)))(
 		{
 			layout = {
-				sizing = {height = clay.SizingFixed(settings_tap_size(36))},
-				padding = {left = 10, right = 10},
+				sizing = {width = clay.SizingGrow()},
 				childGap = 8,
 				childAlignment = {y = .Center},
 			},
-			backgroundColor = menu_open ? SELECTED : (hovered() ? HOVER : ROW_BG),
-			border = {color = menu_open ? ACCENT : FIELD_BORDER, width = bw()},
-			cornerRadius = rr(9),
 		},
 		) {
-			clay.Text(
-				FOLDER_RULE_ICONS[draft.kind],
-				{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
-			)
-			clay.Text(
-				tr(FOLDER_RULE_LABELS[draft.kind]),
-				{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
-			)
-			clay.Text("\u2304", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
-			if hovered() && !menu_open {
-				tooltip(tr("Change rule type"))
-				cursor_raise(.Pointer)
-			}
-			if menu_open {
-				folder_rule_menu(index)
-			}
-		}
-		if folder_rule_typed(draft.kind) {
-			focused := ui.focus == .FolderRule && ui.folder_rule_focus == index
-			id := folder_rule_box_id(index)
-			counts := folder_rule_counts(draft.kind)
-			if clay.UI(clay.ID(id))(
+			if clay.UI(clay.ID("FolderRuleKind", u32(index)))(
 			{
 				layout = {
 					sizing = {
-						width = counts ? clay.SizingFixed(72) : clay.SizingGrow(),
+						width = clay.SizingGrow(),
 						height = clay.SizingFixed(settings_tap_size(36)),
 					},
-					padding = {left = 12, right = 12},
+					padding = {left = 10, right = 10},
+					childGap = 8,
 					childAlignment = {y = .Center},
 				},
-				backgroundColor = ROW_BG,
+				backgroundColor = menu_open ? SELECTED : (hovered() ? HOVER : ROW_BG),
+				border = {color = menu_open ? ACCENT : FIELD_BORDER, width = bw()},
 				cornerRadius = rr(9),
-				border = {color = focused ? ACCENT : FIELD_BORDER, width = bw()},
 			},
 			) {
-				placeholder :=
-					draft.kind == .Has_Member ? "npub1..." : (counts ? (draft.kind == .Fewer_Than ? "2" : "0") : tr("Word"))
-				field_text(ui, id, &draft.input, placeholder, focused, 13, TEXT_LO)
+				clay.Text(
+					FOLDER_RULE_ICONS[draft.kind],
+					{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
+				)
+				clay.Text(
+					tr(FOLDER_RULE_LABELS[draft.kind]),
+					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
+				)
+				clay.Text("\u2304", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+				if hovered() && !menu_open {
+					tooltip(tr("Change rule type"))
+					cursor_raise(.Pointer)
+				}
+				if menu_open {
+					folder_rule_menu(index)
+				}
 			}
-			if counts {
-				clay.Text(tr("people"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
-			}
-		}
-		// Word and npub boxes fill the row; the rest push remove to the end.
-		if !folder_rule_typed(draft.kind) || folder_rule_counts(draft.kind) {
-			if clay.UI(clay.ID("FolderRuleGap", u32(index)))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-		}
-		if clay.UI(clay.ID("FolderRuleRemove", u32(index)))(
-		{
-			layout = {
-				sizing = {
-					clay.SizingFixed(settings_tap_size(30)),
-					clay.SizingFixed(settings_tap_size(30)),
+			if clay.UI(clay.ID("FolderRuleRemove", u32(index)))(
+			{
+				layout = {
+					sizing = {
+						clay.SizingFixed(settings_tap_size(30)),
+						clay.SizingFixed(settings_tap_size(30)),
+					},
+					childAlignment = {x = .Center, y = .Center},
 				},
-				childAlignment = {x = .Center, y = .Center},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(7),
 			},
-			backgroundColor = hovered() ? HOVER : {},
-			cornerRadius = rr(7),
-		},
-		) {
-			clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
-			if hovered() {
-				tooltip(tr("Remove rule"))
-				cursor_raise(.Pointer)
+			) {
+				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				if hovered() {tooltip(tr("Remove rule")); cursor_raise(.Pointer)}
+			}
+		}
+		if folder_rule_typed(draft.kind) {
+			if clay.UI(clay.ID("FolderRuleValue", u32(index)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 8,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				focused := ui.focus == .FolderRule && ui.folder_rule_focus == index
+				id := folder_rule_box_id(index)
+				counts := folder_rule_counts(draft.kind)
+				if clay.UI(clay.ID(id))(
+				{
+					layout = {
+						sizing = {
+							width = clay.SizingGrow(),
+							height = clay.SizingFixed(settings_tap_size(36)),
+						},
+						padding = {left = 12, right = 12},
+						childAlignment = {y = .Center},
+					},
+					backgroundColor = ROW_BG,
+					cornerRadius = rr(9),
+					border = {color = focused ? ACCENT : FIELD_BORDER, width = bw()},
+				},
+				) {
+					placeholder :=
+						draft.kind == .Has_Member ? "npub1..." : (counts ? tr("Number") : tr("Word"))
+					field_text(ui, id, &draft.input, placeholder, focused, 13, TEXT_LO)
+				}
+				if counts {
+					clay.Text(
+						tr("people"),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					)
+				}
 			}
 		}
 	}

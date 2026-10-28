@@ -201,7 +201,7 @@ link_modal :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = clay.SizingGrow(),
-						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 					},
 					padding = clay.PaddingAll(4), // room for kb_ring
 					// The whole row is the touch target for the trust switch.
@@ -229,7 +229,7 @@ link_modal :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 					},
 					padding = {left = 16, right = 16, top = 9, bottom = 9},
 					childAlignment = {x = .Center, y = .Center},
@@ -249,7 +249,7 @@ link_modal :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 					},
 					padding = {left = 16, right = 16, top = 9, bottom = 9},
 					childAlignment = {x = .Center, y = .Center},

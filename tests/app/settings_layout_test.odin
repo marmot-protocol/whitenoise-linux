@@ -99,6 +99,14 @@ settings_viewport :: proc(t: ^testing.T) {
 			settings_open(&ui, nil, .Appearance, anchor = anchor)
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
 			testing.expect_value(t, ui.settings_tab, 0)
+			if anchor == "RowScroll" && tap_size() {
+				testing.expect(
+					t,
+					!clay.GetElementData(clay.ID(anchor)).found,
+					"Touch Appearance must omit mouse-wheel speed controls",
+				)
+				continue
+			}
 			scroll_id := clay.ID("SettingsPage")
 			if settings_test_appearance_wide() {
 				scroll_id = clay.ID(
@@ -114,6 +122,7 @@ settings_viewport :: proc(t: ^testing.T) {
 				anchor,
 			)
 			for other in SETTINGS_TEST_APPEARANCE_ANCHORS {
+				if other == "RowScroll" && tap_size() {continue}
 				testing.expectf(
 					t,
 					clay.GetElementData(clay.ID(other)).found,
@@ -463,10 +472,12 @@ settings_test_frame :: proc(
 	clay.UpdateScrollContainers(false, wheel, 1.0 / 60)
 	clay.BeginLayout()
 	settings_pane(ui)
+	if open_now(clay.ID("ExportModal"), ui.export_open) {export_modal(ui)}
 	commands := clay.EndLayout(0)
 	if settings_resolve_scroll(ui) {
 		clay.BeginLayout()
 		settings_pane(ui)
+		if open_now(clay.ID("ExportModal"), ui.export_open) {export_modal(ui)}
 		commands = clay.EndLayout(0)
 	}
 	return commands

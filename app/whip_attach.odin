@@ -218,8 +218,8 @@ whip_attach_button :: proc(id: string, pane: u32, label: string) {
 	{
 		layout = {
 			sizing = {
-				width = clay.SizingFit({min = tap_size() ? 44 : 0}),
-				height = clay.SizingFixed(tap_size() ? 44 : 20),
+				width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 20),
 			},
 			padding = {left = 5, right = 5},
 			childAlignment = {y = .Center},
@@ -247,7 +247,7 @@ whip_attached_pane :: proc(ui: ^Ui_State, item: Whip_Attachment) {
 	payload^ = {
 		.Whip,
 		pane.id,
-		floating ? 0 : (show_header ? (tap_size() ? 44 : WHIP_HEADER_H) : WHIP_REVEAL_H),
+		floating ? 0 : (show_header ? (tap_size() ? tap_min() : WHIP_HEADER_H) : WHIP_REVEAL_H),
 	}
 	if clay.UI(root)(
 	{
@@ -275,7 +275,7 @@ whip_attached_pane :: proc(ui: ^Ui_State, item: Whip_Attachment) {
 				layout = {
 					sizing = {
 						floating ? clay.SizingPercent(1) : clay.SizingFixed(max(clay.GetElementData(root).boundingBox.width - 2, 0)),
-						clay.SizingFixed(tap_size() ? 44 : WHIP_HEADER_H),
+						clay.SizingFixed(tap_size() ? tap_min() : WHIP_HEADER_H),
 					},
 					childGap = 3,
 					padding = {left = 5, right = 3},
@@ -319,7 +319,10 @@ whip_attached_pane :: proc(ui: ^Ui_State, item: Whip_Attachment) {
 			if clay.UI(clay.ID("WhipAttachFoot", pane.id))(
 			{
 				layout = {
-					sizing = {clay.SizingPercent(1), clay.SizingFixed(tap_size() ? 44 : 12)},
+					sizing = {
+						clay.SizingPercent(1),
+						clay.SizingFixed(tap_size() ? tap_min() : 12),
+					},
 					childAlignment = {x = .Right},
 				},
 			},
@@ -328,8 +331,8 @@ whip_attached_pane :: proc(ui: ^Ui_State, item: Whip_Attachment) {
 				{
 					layout = {
 						sizing = {
-							clay.SizingFixed(tap_size() ? 44 : 24),
-							clay.SizingFixed(tap_size() ? 44 : 12),
+							clay.SizingFixed(tap_size() ? tap_min() : 24),
+							clay.SizingFixed(tap_size() ? tap_min() : 12),
 						},
 						childAlignment = {x = .Center, y = .Center},
 					},

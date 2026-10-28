@@ -134,6 +134,11 @@ gs_check_account :: proc(ui: ^Ui_State) {
 	gs_clear_hits(ui)
 	for chat in ui.gs_chats {chat_free(chat)}
 	clear(&ui.gs_chats)
+	for id in ui.gs_senders {delete(id)}
+	clear(&ui.gs_senders)
+	ui.gs_filters_open = false
+	delete(ui.gs_flash_id); ui.gs_flash_id = ""
+	ui.gs_flash_until = 0
 	for text in ([]^string{&ui.gs_group, &ui.gs_sender, &ui.gs_cursor_id, &ui.gs_cursor_group, &ui.gs_error, &ui.gs_account}) {delete(text^); text^ = ""}
 	for buffer in ([]^[dynamic]u8{&ui.gs_input, &ui.gs_sender_input, &ui.gs_since, &ui.gs_until}) {clear(buffer)}
 	ui.gs_more, ui.gs_loading, ui.gs_append, ui.gs_resume = false, false, false, false
@@ -151,6 +156,8 @@ gs_open_modal :: proc(ui: ^Ui_State) {
 	ui.gs_open = true
 	ui.focus = .GSearch
 	ui.gs_picker = 0
+	for contact in ui.contacts {gs_add_sender(ui, contact.id_hex)}
+	for member in ui.members {gs_add_sender(ui, member.id_hex)}
 	if len(ui.gs_chats) == 0 {ui.gs_resume = true}
 }
 
@@ -282,12 +289,35 @@ gs_has_filters :: proc(ui: ^Ui_State) -> bool {
 	)
 }
 
+@(private)
+gs_add_sender :: proc(ui: ^Ui_State, key: string) {
+	if key == "" || key == "you" || key == ui.account_ref {return}
+	for id in ui.gs_senders {if id == key {return}}
+	append(&ui.gs_senders, strings.clone(key))
+}
+
+@(private)
+gs_sender_label :: proc(ui: ^Ui_State, key: string) -> string {
+	if key == ui.account_ref {return tr("You")}
+	for contact in ui.contacts {if contact.id_hex == key {return contact_label(ui, contact)}}
+	for member in ui.members {if member.id_hex == key {return member.name}}
+	return sender_label(key)
+}
+
 gs_sender_key :: proc(ui: ^Ui_State) -> (key: string, valid: bool) {
 	text := strings.trim_space(string(ui.gs_sender_input[:]))
 	if text == "" {return "", true}
 	if key := deeplink_hex(text);
 	   key != "" {return strings.to_lower(key, context.temp_allocator), true}
-	if strings.equal_fold(text, tr("you")) && ui.account_ref != "" {return ui.account_ref, true}
+	if strings.equal_fold(text, tr("You")) && ui.account_ref != "" {return ui.account_ref, true}
+	if ui.gs_sender != "" && text == gs_sender_label(ui, ui.gs_sender) {return ui.gs_sender, true}
+	for id in ui.gs_senders {
+		if strings.equal_fold(text, gs_sender_label(ui, id)) ||
+		   strings.equal_fold(text, sender_label(id)) {
+			if key != "" && key != id {return "", false}
+			key = id
+		}
+	}
 	for contact in ui.contacts {
 		if strings.equal_fold(text, contact_label(ui, contact)) ||
 		   strings.equal_fold(text, contact.name) ||
@@ -331,13 +361,17 @@ gs_refresh :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	delete(ui.gs_cursor_group); ui.gs_cursor_group = ""
 	delete(ui.gs_error); ui.gs_error = ""
 	key, sender_valid := gs_sender_key(ui)
-	delete(ui.gs_sender); ui.gs_sender = strings.clone(key)
+	sender := strings.clone(key)
+	delete(ui.gs_sender); ui.gs_sender = sender
+	if sender_valid &&
+	   sender != "" &&
+	   deeplink_hex(strings.trim_space(string(ui.gs_sender_input[:]))) != "" {
+		ed_set(ui, &ui.gs_sender_input, gs_sender_label(ui, sender))
+	}
 	_, _, dates_valid := gs_dates(ui)
 	ui.gs_loading = false
 	if !sender_valid {
-		ui.gs_error = strings.clone(
-			tr("Choose a known sender or enter a 64-character hex public key."),
-		)
+		ui.gs_error = strings.clone(tr("Choose a known sender or enter a public key."))
 		return
 	}
 	if !dates_valid {
@@ -414,6 +448,7 @@ gs_seek_jump :: proc(ui: ^Ui_State) -> bool {
 				ui.scroll_pending = false
 				return true // the next layout must render the selected thread
 			}
+			gs_flash_jump(ui, msg.id)
 			ui.gs_jump_pending = false
 			return false
 		}
@@ -433,6 +468,22 @@ GS_ATTACHMENT_LABELS := [6]string {
 	N_("Audio"),
 	N_("Files"),
 	N_("Any attachment"),
+}
+
+@(private)
+gs_flash_jump :: proc(ui: ^Ui_State, id: string) {
+	delete(ui.gs_flash_id)
+	ui.gs_flash_id = strings.clone(id)
+	ui.gs_flash_until = rl.GetTime() + 2.5
+}
+
+@(private)
+gs_jump_glow :: proc(id: string) -> f32 {
+	if g_ui == nil || id == "" || id != g_ui.gs_flash_id {return 0}
+	left := g_ui.gs_flash_until - rl.GetTime()
+	if left <= 0 {return 0}
+	anim_moving += 1
+	return min(1, f32(left))
 }
 
 // An archived destination is navigation state, not an unarchive operation.
@@ -464,7 +515,10 @@ gs_filter_button :: proc(id, label: string, active: bool) {
 	if clay.UI(clay.ID(id))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(tap_size() ? 44 : 30)},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 30),
+			},
 			padding = {left = 10, right = 10},
 			childGap = 6,
 			childAlignment = {y = .Center},
@@ -487,11 +541,14 @@ gs_filter_button :: proc(id, label: string, active: bool) {
 	}
 }
 
-gs_chip :: proc(index: u32, label: string) {
+gs_chip :: proc(index: u32, label: string, width: f32) {
 	if clay.UI(clay.ID("GsChip", index))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(tap_size() ? 44 : 26)},
+			sizing = {
+				width = clay.SizingFixed(width),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 26),
+			},
 			padding = {left = 8, right = 8},
 			childGap = 6,
 			childAlignment = {y = .Center},
@@ -521,10 +578,9 @@ gs_option :: proc(ui: ^Ui_State, index: int) -> (label, key: string) {
 		return chats[index - 1].title, chats[index - 1].group_id
 	case 2:
 		if index == 0 {return tr("Any sender"), ""}
-		if index == 1 {return tr("you"), ui.account_ref}
-		contact := ui.contacts[index - 2]
-		return fmt.tprintf("%s · %s", contact_label(ui, contact), npub_tail(contact.npub)),
-			contact.id_hex
+		if index == 1 {return tr("You"), ui.account_ref}
+		id := ui.gs_senders[index - 2]
+		return gs_sender_label(ui, id), id
 	case 3:
 		return tr(GS_ATTACHMENT_LABELS[index]), ""
 	}
@@ -533,15 +589,15 @@ gs_option :: proc(ui: ^Ui_State, index: int) -> (label, key: string) {
 
 gs_filter_options :: proc(ui: ^Ui_State) {
 	if ui.gs_picker == 0 {return}
-	row_height := tap_size() ? 44 : 32
+	row_height := tap_size() ? tap_min() : 32
 	count :=
-		ui.gs_picker == 1 ? len(gs_chat_choices(ui)) + 1 : ui.gs_picker == 2 ? len(ui.contacts) + 2 : 6
+		ui.gs_picker == 1 ? len(gs_chat_choices(ui)) + 1 : ui.gs_picker == 2 ? len(ui.gs_senders) + 2 : 6
 	if clay.UI(clay.ID("GsOptions"))(
 	{
 		layout = {
 			sizing = {
 				width = clay.SizingFixed(min(420, modal_w(clay.ID("GsModal"), 560) - 40)),
-				height = clay.SizingFixed(min(modal_h(264), f32(min(count, 6) * row_height))),
+				height = clay.SizingFixed(min(modal_h(264), f32(min(count, 6)) * row_height)),
 			},
 			layoutDirection = .TopToBottom,
 		},
@@ -550,13 +606,13 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 		cornerRadius = rr(8),
 		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		floating = {
-			attachTo = single_pane() ? .Root : .ElementWithId,
-			parentId = clay.ID(ui.gs_picker == 2 ? "GsSenderRow" : "GsFilters").id,
+			attachTo = .ElementWithId,
+			parentId = clay.ID(ui.gs_picker == 1 ? "GsChat" : ui.gs_picker == 2 ? "GsSender" : "GsAttachment").id,
 			zIndex = 15,
 			offset = {0, 4},
 			attachment = {
-				element = single_pane() ? .CenterCenter : .LeftTop,
-				parent = single_pane() ? .CenterCenter : .LeftBottom,
+				element = ui.gs_picker == 3 ? .RightTop : .LeftTop,
+				parent = ui.gs_picker == 3 ? .RightBottom : .LeftBottom,
 			},
 		},
 	},
@@ -565,7 +621,7 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 		first := data.found ? clamp(int(-data.scrollPosition.y / f32(row_height)), 0, count) : 0
 		last := min(first + 8, count)
 		if clay.UI(clay.ID("GsOptionsBefore"))(
-		{layout = {sizing = {height = clay.SizingFixed(f32(first * row_height))}}},
+		{layout = {sizing = {height = clay.SizingFixed(f32(first) * row_height)}}},
 		) {}
 		for i in first ..< last {
 			label, key := gs_option(ui, i)
@@ -598,13 +654,82 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 			}
 		}
 		if clay.UI(clay.ID("GsOptionsAfter"))(
-		{layout = {sizing = {height = clay.SizingFixed(f32((count - last) * row_height))}}},
+		{layout = {sizing = {height = clay.SizingFixed(f32(count - last) * row_height)}}},
 		) {}
 	}
 	scrollbar(clay.ID("GsOptions"), 16)
 }
 
+@(private)
+gs_field :: proc(ui: ^Ui_State, id: string, buf: ^[dynamic]u8, hint: string, focus: Focus) {
+	if clay.UI(clay.ID(id))(
+	{
+		layout = {
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 36),
+			},
+			padding = {left = 12, right = 12},
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = ROW_BG,
+		cornerRadius = rr(8),
+		border = {color = ui.focus == focus ? ACCENT : FIELD_BORDER, width = bw()},
+		clip = {horizontal = true},
+	},
+	) {
+		field_text(ui, id, buf, hint, ui.focus == focus, 13, TEXT_LO)
+	}
+}
+
+@(private)
+gs_snippet_text :: proc(index: u32, text, query: string, arrived: f32) {
+	match := len(query) > 0 ? strings.index(text, query) : -1
+	if match < 0 && len(query) > 0 {
+		for _, at in text {
+			if at + len(query) <= len(text) &&
+			   strings.equal_fold(text[at:at + len(query)], query) {match = at; break}
+		}
+	}
+	width := max(44, modal_w(clay.ID("GsModal"), 560) - 72)
+	for line, i in wrapped_lines(text, width, 12) {
+		if clay.UI(clay.ID("GsSnippetLine", index * 128 + u32(i)))(
+		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+		) {
+			start, end := line.start, line.end
+			if match < 0 || match >= end || match + len(query) <= start {
+				clay.Text(
+					text[start:end],
+					{
+						fontId = FONT_BODY,
+						fontSize = 12,
+						textColor = fade(TEXT_DIM, arrived),
+						wrapMode = .None,
+					},
+				)
+			} else {
+				a, b := max(start, match), min(end, match + len(query))
+				if a >
+				   start {clay.Text(text[start:a], {fontId = FONT_BODY, fontSize = 12, textColor = fade(TEXT_DIM, arrived), wrapMode = .None})}
+				clay.Text(
+					text[a:b],
+					{
+						fontId = FONT_TITLE,
+						fontSize = 12,
+						textColor = fade(ACCENT, arrived),
+						wrapMode = .None,
+					},
+				)
+				if b <
+				   end {clay.Text(text[b:end], {fontId = FONT_BODY, fontSize = 12, textColor = fade(TEXT_DIM, arrived), wrapMode = .None})}
+			}
+		}
+	}
+}
+
 gsearch_modal :: proc(ui: ^Ui_State) {
+	_, sender_valid := gs_sender_key(ui)
+	_, _, dates_valid := gs_dates(ui)
 	if clay.UI(clay.ID("GsModal"))(
 	{
 		layout = {
@@ -639,8 +764,8 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFixed(tap_size() ? 44 : 26),
-						height = clay.SizingFixed(tap_size() ? 44 : 26),
+						width = clay.SizingFixed(tap_size() ? tap_min() : 26),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
 					},
 					childAlignment = {x = .Center, y = .Center},
 				},
@@ -658,16 +783,6 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 			),
 			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
 		)
-		if ui.gs_error != "" {
-			clay.Text(ui.gs_error, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
-			settings_button("GsRetry", tr("Search again"))
-		} else if ui.gs_loading {
-			clay.Text(
-				ui.gs_append ? tr("Loading more matches from local history…") : tr("Searching local history…"),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-			)
-			busy_bar("GsBusy")
-		}
 		if clay.UI(clay.ID("GsBody"))(
 		{
 			layout = {
@@ -684,7 +799,7 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? 44 : 36),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 36),
 					},
 					padding = {left = 12, right = 12},
 					childGap = 8,
@@ -700,126 +815,141 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 					ui,
 					"GsInput",
 					&ui.gs_input,
-					tr("Literal message text"),
+					tr("Search messages"),
 					ui.focus == .GSearch,
 					13,
 					TEXT_LO,
 				)
 			}
 
-			if clay.UI(clay.ID("GsFilters"))(
-			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-			) {
-				gs_filter_button("GsChat", gs_chat_label(ui), ui.gs_group != "")
+			if single_pane() {
 				gs_filter_button(
-					"GsAttachment",
-					tr(GS_ATTACHMENT_LABELS[ui.gs_attachment]),
-					ui.gs_attachment != 0,
+					"GsFiltersToggle",
+					tr("Filters"),
+					ui.gs_filters_open || gs_has_filters(ui),
 				)
 			}
-			if clay.UI(clay.ID("GsSenderRow"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-					childGap = 8,
-				},
-			},
-			) {
-				settings_input(
-					ui,
-					"GsSenderInput",
-					&ui.gs_sender_input,
-					tr("Sender name or hex public key"),
-					ui.focus == .GSearch_Sender,
-				)
-				if clay.UI(clay.ID("GsKnownSenderBox"))(
-				{layout = {sizing = {width = clay.SizingFixed(120)}}},
+			if !single_pane() || ui.gs_filters_open {
+				if clay.UI(clay.ID("GsFilters"))(
+				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
 				) {
-					gs_filter_button("GsSender", tr("Known senders"), ui.gs_picker == 2)
-				}
-			}
-			if clay.UI(clay.ID("GsDates"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-					childGap = 8,
-				},
-			},
-			) {
-				if clay.UI(clay.ID("GsStartCol"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						layoutDirection = .TopToBottom,
-						childGap = 3,
-					},
-				},
-				) {
-					clay.Text(
-						tr("Start day"),
-						{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-					)
-					settings_input(
-						ui,
-						"GsSince",
-						&ui.gs_since,
-						gs_date_example(),
-						ui.focus == .GSearch_Since,
+					gs_filter_button("GsChat", gs_chat_label(ui), ui.gs_group != "")
+					gs_filter_button(
+						"GsAttachment",
+						tr(GS_ATTACHMENT_LABELS[ui.gs_attachment]),
+						ui.gs_attachment != 0,
 					)
 				}
-				if clay.UI(clay.ID("GsEndCol"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						layoutDirection = .TopToBottom,
-						childGap = 3,
-					},
-				},
-				) {
-					clay.Text(
-						tr("End day (inclusive)"),
-						{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-					)
-					settings_input(
-						ui,
-						"GsUntil",
-						&ui.gs_until,
-						gs_date_example(),
-						ui.focus == .GSearch_Until,
-					)
-				}
-			}
-			for row in 0 ..< 2 {
-				present :=
-					row == 0 ? len(ui.gs_input) > 0 || ui.gs_group != "" || len(ui.gs_sender_input) > 0 : len(ui.gs_since) > 0 || len(ui.gs_until) > 0 || ui.gs_attachment != 0
-				if !present {continue}
-				if clay.UI(clay.ID("GsChips", u32(row)))(
+				if clay.UI(clay.ID("GsSenderRow"))(
 				{
 					layout = {
 						sizing = {width = clay.SizingGrow()},
 						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-						childGap = 6,
+						childGap = 8,
 					},
 				},
 				) {
-					if row == 0 {
-						if len(ui.gs_input) >
-						   0 {gs_chip(0, fmt.tprintf(tr("Text: %s"), string(ui.gs_input[:])))}
-						if ui.gs_group !=
-						   "" {gs_chip(1, fmt.tprintf(tr("Chat: %s"), gs_chat_label(ui)))}
-						if len(ui.gs_sender_input) >
-						   0 {gs_chip(2, fmt.tprintf(tr("Sender: %s"), string(ui.gs_sender_input[:])))}
-					} else {
-						if len(ui.gs_since) >
-						   0 {gs_chip(3, fmt.tprintf(tr("From: %s"), string(ui.gs_since[:])))}
-						if len(ui.gs_until) >
-						   0 {gs_chip(4, fmt.tprintf(tr("Through: %s"), string(ui.gs_until[:])))}
-						if ui.gs_attachment !=
-						   0 {gs_chip(5, tr(GS_ATTACHMENT_LABELS[ui.gs_attachment]))}
+					gs_field(
+						ui,
+						"GsSenderInput",
+						&ui.gs_sender_input,
+						tr("Sender name or public key"),
+						.GSearch_Sender,
+					)
+					if clay.UI(clay.ID("GsKnownSenderBox"))(
+					{layout = {sizing = {width = clay.SizingFixed(120)}}},
+					) {
+						gs_filter_button("GsSender", tr("Known senders"), ui.gs_picker == 2)
 					}
 				}
+				if !sender_valid && ui.gs_error != "" {
+					clay.Text(ui.gs_error, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+				}
+				if clay.UI(clay.ID("GsDates"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+						childGap = 8,
+					},
+				},
+				) {
+					if clay.UI(clay.ID("GsStartCol"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 3,
+						},
+					},
+					) {
+						clay.Text(
+							tr("Start day"),
+							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+						)
+						gs_field(ui, "GsSince", &ui.gs_since, tr("Any day"), .GSearch_Since)
+					}
+					if clay.UI(clay.ID("GsEndCol"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 3,
+						},
+					},
+					) {
+						clay.Text(
+							tr("End day (inclusive)"),
+							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+						)
+						gs_field(ui, "GsUntil", &ui.gs_until, tr("Any day"), .GSearch_Until)
+					}
+				}
+				if !dates_valid && sender_valid && ui.gs_error != "" {
+					clay.Text(ui.gs_error, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+				}
+			}
+			if single_pane() && !ui.gs_filters_open {
+				labels: [6]string
+				if ui.gs_group != "" {labels[1] = fmt.tprintf(tr("Chat: %s"), gs_chat_label(ui))}
+				if len(ui.gs_sender_input) >
+				   0 {labels[2] = fmt.tprintf(tr("Sender: %s"), string(ui.gs_sender_input[:]))}
+				if len(ui.gs_since) >
+				   0 {labels[3] = fmt.tprintf(tr("From: %s"), string(ui.gs_since[:]))}
+				if len(ui.gs_until) >
+				   0 {labels[4] = fmt.tprintf(tr("Through: %s"), string(ui.gs_until[:]))}
+				if ui.gs_attachment != 0 {labels[5] = tr(GS_ATTACHMENT_LABELS[ui.gs_attachment])}
+				avail := modal_w(clay.ID("GsModal"), 560) - 46
+				at := 1
+				for at < len(labels) {
+					if labels[at] == "" {at += 1; continue}
+					if clay.UI(clay.ID("GsChips", u32(at)))(
+					{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
+					) {
+						used: f32
+						for at < len(labels) {
+							if labels[at] == "" {at += 1; continue}
+							width := min(
+								avail,
+								rl.MeasureTextLine(FONT_BODY, 11, labels[at], 0).x + 32,
+							)
+							if used > 0 && used + width > avail {break}
+							gs_chip(u32(at), labels[at], width)
+							used += width + 6
+							at += 1
+						}
+					}
+				}
+			}
+			if ui.gs_loading {
+				clay.Text(
+					tr("Searching local history…"),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				)
+				busy_bar("GsBusy")
+			} else if ui.gs_error != "" && sender_valid && dates_valid {
+				clay.Text(ui.gs_error, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+				settings_button("GsRetry", tr("Search again"))
 			}
 
 			empty := len(ui.gs_input) == 0 && !gs_has_filters(ui)
@@ -932,14 +1062,7 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 								},
 							)
 						}
-						clay.Text(
-							hit.snippet,
-							{
-								fontId = FONT_BODY,
-								fontSize = 12,
-								textColor = fade(TEXT_DIM, arrived),
-							},
-						)
+						gs_snippet_text(u32(i), hit.snippet, string(ui.gs_input[:]), arrived)
 					}
 				}
 			}
@@ -967,15 +1090,16 @@ handle_gsearch :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.gs_picker != 0 {
 		if mouse_released() {
 			count :=
-				ui.gs_picker == 1 ? len(gs_chat_choices(ui)) + 1 : ui.gs_picker == 2 ? len(ui.contacts) + 2 : 6
+				ui.gs_picker == 1 ? len(gs_chat_choices(ui)) + 1 : ui.gs_picker == 2 ? len(ui.gs_senders) + 2 : 6
 			for i in 0 ..< count {
 				if !clay.PointerOver(clay.ID("GsOption", u32(i))) {continue}
-				_, key := gs_option(ui, i)
+				label, key := gs_option(ui, i)
 				switch ui.gs_picker {
 				case 1:
 					delete(ui.gs_group); ui.gs_group = strings.clone(key)
 				case 2:
-					ed_set(ui, &ui.gs_sender_input, key)
+					delete(ui.gs_sender); ui.gs_sender = strings.clone(key)
+					ed_set(ui, &ui.gs_sender_input, i == 0 ? "" : label)
 				case 3:
 					ui.gs_attachment = u32(i)
 				}
@@ -998,19 +1122,19 @@ handle_gsearch :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui,
 		&ui.gs_sender_input,
 		"GsSenderInput",
-		14,
+		13,
 	) {ui.focus = .GSearch_Sender; pasted = rl.IsMouseButtonPressed(.MIDDLE)}
 	if field_mouse(
 		ui,
 		&ui.gs_since,
 		"GsSince",
-		14,
+		13,
 	) {ui.focus = .GSearch_Since; pasted = rl.IsMouseButtonPressed(.MIDDLE)}
 	if field_mouse(
 		ui,
 		&ui.gs_until,
 		"GsUntil",
-		14,
+		13,
 	) {ui.focus = .GSearch_Until; pasted = rl.IsMouseButtonPressed(.MIDDLE)}
 	fields := [?]Focus{.GSearch, .GSearch_Sender, .GSearch_Since, .GSearch_Until}
 	boxes := [?]string{"GsInput", "GsSenderInput", "GsSince", "GsUntil"}
@@ -1060,6 +1184,9 @@ handle_gsearch :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
+	if clicked(
+		"GsFiltersToggle",
+	) {ui.gs_filters_open = !ui.gs_filters_open; ui.focus = .GSearch; return}
 	if clicked("GsChat") {ui.gs_picker = 1; return}
 	if clicked("GsSender") {ui.gs_picker = 2; return}
 	if clicked("GsAttachment") {ui.gs_picker = 3; return}

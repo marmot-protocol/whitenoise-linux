@@ -4,6 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:time"
+import "core:unicode"
 import "core:unicode/utf8"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -306,7 +307,9 @@ image_link :: proc(id: u32, url: string, size: u16, width: f32) {
 			img_link_hover = url
 			cursor_raise(.Pointer)
 		}
-		if clay.UI(clay.ID("ImageLinkUrl", id))({}) {
+		if clay.UI(clay.ID("ImageLinkUrl", id))(
+		{border = {color = ACCENT, width = {bottom = 1}}},
+		) {
 			// Plain, single line: body_text would turn an npub inside the host into a mention chip.
 			clay.Text(
 				text_ellipsis(url, inner_w, FONT_BODY, size),
@@ -315,6 +318,50 @@ image_link :: proc(id: u32, url: string, size: u16, width: f32) {
 			if hovered() {link_hover = url}
 		}
 	}
+}
+
+@(private)
+search_text_match :: proc(text, query: string, at: int) -> (start, end: int) {
+	for _, i in text[at:] {
+		pos := at + i
+		matched := true
+		for wanted in query {
+			if pos >= len(text) {matched = false; break}
+			r, size := utf8.decode_rune_in_string(text[pos:])
+			if unicode.to_lower(r) != unicode.to_lower(wanted) {matched = false; break}
+			pos += size
+		}
+		if matched {return at + i, pos}
+	}
+	return -1, -1
+}
+
+// Pre-wrapped message spans can split around a match without changing
+// their line breaks. The accent fill also works in monochrome themes.
+@(private)
+search_text :: proc(text, fonts: string, size: u16, color: clay.Color) -> bool {
+	if g_ui == nil || !g_ui.search_open || timeline_job == nil {return false}
+	query := string(timeline_job.search)
+	if query == "" {return false}
+	start, end := search_text_match(text, query, 0)
+	if start < 0 {return false}
+	if clay.UI()({layout = {childAlignment = {y = .Center}}}) {
+		at := 0
+		for start >= 0 {
+			if start > at {
+				styled_text(text[at:start], text_fonts(fonts, at, start), size, color)
+			}
+			if clay.UI()({backgroundColor = ACCENT}) {
+				styled_text(text[start:end], text_fonts(fonts, start, end), size, ink_on(ACCENT))
+			}
+			at = end
+			start, end = search_text_match(text, query, at)
+		}
+		if at < len(text) {
+			styled_text(text[at:], text_fonts(fonts, at, len(text)), size, color)
+		}
+	}
+	return true
 }
 
 // Emit segments inline into the current parent element. Mention segs
@@ -387,13 +434,16 @@ render_segs :: proc(
 				layout = {padding = {left = 2, right = 2}},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(4),
+				border = {color = ACCENT, width = {bottom = 1}},
 			},
 			) {
 				if hovered() {
 					link_hover = seg.url
 					if seg.stamp != nil {timestamp_tooltip(seg.stamp)} else {tooltip(seg.url)}
 				}
-				styled_text(seg.text, seg.fonts, font_size, ACCENT)
+				if !search_text(seg.text, seg.fonts, font_size, ACCENT) {
+					styled_text(seg.text, seg.fonts, font_size, ACCENT)
+				}
 			}
 		} else if seg.stamp != nil {
 			if clay.UI(clay.ID("SegTimestamp", id * 128 + u32(k)))({}) {
@@ -475,6 +525,9 @@ render_segs :: proc(
 				styled_text(seg.text, seg.fonts, size, tint)
 			}
 		} else {
+			if chips {
+				if search_text(seg.text, seg.fonts, font_size, color) {continue}
+			}
 			if len(seg.fonts) > 0 {
 				styled_text(seg.text, seg.fonts, font_size, color)
 			} else {
@@ -709,7 +762,9 @@ body_line :: proc(
 			return
 		}
 		if clay.UI(clay.ID("BodyLine", id))({layout = {childAlignment = {y = .Center}}}) {
-			clay.Text(text, {fontId = FONT_BODY, fontSize = font_size, textColor = color})
+			if !search_text(text, fonts, font_size, color) {
+				clay.Text(text, {fontId = FONT_BODY, fontSize = font_size, textColor = color})
+			}
 		}
 		return
 	}
@@ -1489,7 +1544,14 @@ message_more :: proc(id: u32, state: Excerpt = {}) {
 	if message_line_limit() == max(int) {return}
 	if clay.UI(clay.ID("MessageMore", id))(
 	{
-		layout = {padding = {top = 4, bottom = 4}},
+		layout = {
+			padding = {top = 4, bottom = 4},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+			},
+			childAlignment = {y = .Center},
+		},
 		backgroundColor = hovered() ? HOVER : {},
 		cornerRadius = rr(4),
 	},
@@ -1508,17 +1570,22 @@ message_more :: proc(id: u32, state: Excerpt = {}) {
 // behind and inflated by its own over-long lines, so after a shrink
 // the rewrap otherwise crawls toward the new width a word per frame.
 body_wrap_w :: proc() -> f32 {
-	MSG_ROW_CHROME :: f32(16 + 16 + 28 + 10 + 8) // paddings, avatar, gap, slack
 	tl := clay.GetElementData(clay.ID("Timeline"))
 	if !tl.found {
 		return 480
 	}
+	chrome := f32(16 + 16 + 8) // paddings and wrap slack
+	notes :=
+		g_ui.selected >= 0 &&
+		g_ui.selected < len(g_ui.chats) &&
+		g_ui.chats[g_ui.selected].group_id == g_ui.prefs.notes_group
+	if !notes {chrome += (tap_size() ? tap_min() : 28) + 10}
 	avail := page_w(g_ui)
 	if g_ui.issues_open {avail = tl.boundingBox.width - (page_w(g_ui) < 720 ? 40 : 64)}
 	if g_ui.prefs.centered_chat && !(g_ui.issues_open && g_ui.issue_setting == .Enabled) {
 		avail = min(avail, CHAT_WIDTH_MAX)
 	}
-	return max(min(tl.boundingBox.width, avail) - MSG_ROW_CHROME, 120)
+	return max(min(tl.boundingBox.width, avail) - chrome, 120)
 }
 
 // Widest an attachment tile draws: its design width, or the message
@@ -1555,10 +1622,39 @@ body_tile_size :: proc(text: string, font_size: u16, scale := Emoji_Scale.Inline
 	if tiles == 0 {
 		return text_px
 	}
-	return scale == .Jumbo ? f32(EMOJI_SIDE) / UI_SCALE : 28
+	// A phone runs at UI_SCALE 1, where native pixels make 128px tiles
+	// that fill half a screen row; cap them near the desktop's size.
+	jumbo := f32(EMOJI_SIDE) / UI_SCALE
+	if single_pane() {jumbo = min(jumbo, 64)}
+	return scale == .Jumbo ? jumbo : 28
 }
 
-// Greedy break at whole words, or whole graphemes in an over-long word.
+@(private)
+wrap_cjk_rune :: proc(r: rune) -> bool {
+	return(
+		(r >= 0x2E80 && r <= 0xA4CF) ||
+		(r >= 0xAC00 && r <= 0xD7AF) ||
+		(r >= 0xF900 && r <= 0xFAFF) ||
+		(r >= 0xFF66 && r <= 0xFF9D) ||
+		(r >= 0x20000 && r <= 0x323AF) \
+	)
+}
+
+@(private)
+wrap_cjk_break :: proc(before, after: rune) -> bool {
+	if !wrap_cjk_rune(before) && !wrap_cjk_rune(after) {return false}
+	// Keep opening punctuation with what follows, and closing marks
+	// with what precedes them. Boundaries are still whole graphemes.
+	return(
+		!strings.contains_rune("([{（［｛〈《「『【〔〖〘〚‘“", before) &&
+		!strings.contains_rune(
+				")]},.!?:;、。，．！？：；）］｝〉》」』】〕〗〙〛’”ー々",
+				after,
+			) \
+	)
+}
+
+// Greedy break at words or CJK characters, keeping graphemes intact.
 wrap_break :: proc(
 	text: string,
 	at, end: int,
@@ -1570,8 +1666,14 @@ wrap_break :: proc(
 ) -> int {
 	// Only measure the current line. Measuring the whole next word
 	// rescans a long unbroken suffix once per line (quadratic work).
-	fit := rune_fit(text, at, end, width, font_size, mode, tile_px, fonts)
+	cjk_cut := at
+	fit := rune_fit(text, at, end, width, font_size, mode, tile_px, fonts, &cjk_cut)
 	if fit == end || text[fit] == ' ' {
+		// The separator belongs to the upper composer row, even if
+		// its invisible advance would exceed the measured viewport.
+		if mode == .Compose {
+			for fit < end && text[fit] == ' ' {fit += 1}
+		}
 		return fit
 	}
 	cut := fit
@@ -1581,6 +1683,7 @@ wrap_break :: proc(
 	for cut > at && text[cut - 1] == ' ' {
 		cut -= 1
 	}
+	if cjk_cut > cut {return cjk_cut}
 	if cut > at {
 		if mode == .Compose {
 			for cut < fit && text[cut] == ' ' {cut += 1}
@@ -1609,14 +1712,21 @@ rune_fit :: proc(
 	mode: Wrap_Mode = .Text,
 	tile_px: f32 = 0,
 	fonts: string = "",
+	cjk_cut: ^int = nil,
 ) -> int {
 	pen: f32 = 0
 	previous_emoji := false
+	previous: rune
 	skip := at
 	it := utf8.decode_grapheme_iterator_make(text[at:end])
 	for cluster, grapheme in rl.grapheme_iterate(&it) {
 		i := at + grapheme.byte_index
 		if i < skip {continue}
+		if cjk_cut != nil {
+			r, _ := utf8.decode_rune_in_string(cluster)
+			if i > at && wrap_cjk_break(previous, r) {cjk_cut^ = i}
+			previous = r
+		}
 		literal := text_literal(fonts, i)
 		// Chips are atoms; composer segments sit flush, bodies 2px apart.
 		next, atom_width := 0, f32(0)
@@ -1632,6 +1742,7 @@ rune_fit :: proc(
 			if i > at && pen + atom_width > width {return i}
 			pen += atom_width
 			skip, previous_emoji = next, true
+			previous = 0
 			continue
 		}
 		adv := rl.MeasureTextLine(text_font(fonts, i), font_size, cluster, 0).x

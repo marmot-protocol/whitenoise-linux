@@ -17,6 +17,7 @@ Vault_Pw_Field :: enum {
 
 vault_pw_begin :: proc(ui: ^Ui_State) {
 	vault_pw_wipe(ui)
+	vault_pw_show = false
 	vault_pw_height = -1
 	ui.vault_pw_open = true
 	ui.vault_pw_focus = .Current
@@ -42,6 +43,7 @@ vault_pw_wipe :: proc(ui: ^Ui_State) {
 // True while one of the three boxes is the buffer being edited, so
 // edit_text masks it and a drag selection can't copy it out.
 vault_pw_field :: proc(ui: ^Ui_State, buf: ^[dynamic]u8) -> bool {
+	if buf == &export_confirm || buf == &backup_confirm {return true}
 	for &field in ui.vault_pw {
 		if buf == &field {
 			return true
@@ -53,6 +55,7 @@ vault_pw_field :: proc(ui: ^Ui_State, buf: ^[dynamic]u8) -> bool {
 @(private = "file")
 vault_pw_apply :: proc(ui: ^Ui_State) {
 	fresh := string(ui.vault_pw[.New][:])
+	vault_pw_error_field = .Current
 
 	if !vault_verify(string(ui.vault_pw[.Current][:])) {
 		ui.vault_pw_err = tr("That isn't your current password. Double-check it and try again.")
@@ -62,11 +65,13 @@ vault_pw_apply :: proc(ui: ^Ui_State) {
 		return
 	}
 	if len(fresh) == 0 {
+		vault_pw_error_field = .New
 		ui.vault_pw_err = tr("Pick a new password first.")
 		ui.vault_pw_focus = .New
 		return
 	}
 	if password_bits(fresh, &ui.vault_pw_check) < PASSWORD_MIN_BITS {
+		vault_pw_error_field = .New
 		ui.vault_pw_err = tr(
 			"This password is too easy to guess. Use unrelated words or a password-manager password.",
 		)
@@ -74,6 +79,7 @@ vault_pw_apply :: proc(ui: ^Ui_State) {
 		return
 	}
 	if fresh != string(ui.vault_pw[.Confirm][:]) {
+		vault_pw_error_field = .Confirm
 		ui.vault_pw_err = tr("The passwords don't match. Type them again.")
 		mem.zero_slice(ui.vault_pw[.Confirm][:])
 		clear(&ui.vault_pw[.Confirm])
@@ -81,6 +87,7 @@ vault_pw_apply :: proc(ui: ^Ui_State) {
 		return
 	}
 	if vault_rekey(fresh) != .None {
+		vault_pw_error_field = .Confirm
 		ui.vault_pw_err = tr("Couldn't change the password. Please try again.")
 		return
 	}
@@ -92,6 +99,27 @@ vault_pw_apply :: proc(ui: ^Ui_State) {
 // The modal owns input while it is open.
 @(private)
 vault_pw_height: i32 = -1
+
+@(private = "file")
+vault_pw_show: bool
+@(private = "file")
+vault_pw_error_field: Vault_Pw_Field
+
+@(private)
+secure_password_hint :: proc(bits: f64) {
+	clay.Text(
+		bits >= PASSWORD_MIN_BITS ? tr("Strong enough") : tr("Weak password"),
+		{
+			fontId = FONT_BODY,
+			fontSize = 12,
+			textColor = bits >= PASSWORD_MIN_BITS ? ACCENT : TEXT_DIM,
+		},
+	)
+	clay.Text(
+		tr("Use unrelated words or a password-manager password."),
+		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+	)
+}
 
 handle_vault_pw :: proc(ui: ^Ui_State) {
 	previous_focus := ui.vault_pw_focus
@@ -106,7 +134,11 @@ handle_vault_pw :: proc(ui: ^Ui_State) {
 			vault_pw_height = rl.GetScreenHeight()
 		}
 	}
+	previous_length := len(ui.vault_pw[ui.vault_pw_focus])
 	edit_text(ui, &ui.vault_pw[ui.vault_pw_focus])
+	if previous_length != len(ui.vault_pw[ui.vault_pw_focus]) &&
+	   vault_pw_error_field == ui.vault_pw_focus {ui.vault_pw_err = ""}
+	if clicked("VaultPwShow") {vault_pw_show = !vault_pw_show; return}
 
 	if rl.IsKeyPressed(.ESCAPE) || clicked("VaultPwClose") || clicked("VaultPwCancel") {
 		vault_pw_close(ui)
@@ -174,8 +206,8 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFixed(tap_size() ? 44 : 24),
-						height = clay.SizingFixed(tap_size() ? 44 : 24),
+						width = clay.SizingFixed(tap_size() ? tap_min() : 24),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 24),
 					},
 					childAlignment = {x = .Center, y = .Center},
 				},
@@ -211,13 +243,21 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			)
 
 			eyebrow(tr("CURRENT PASSWORD"))
+			settings_button(
+				"VaultPwShow",
+				vault_pw_show ? tr("Hide passwords") : tr("Show passwords"),
+			)
 			gate_field(
 				ui,
 				"VaultPwCurBox",
 				&ui.vault_pw[.Current],
 				ui.vault_pw_focus == .Current,
 				tr("Your current password"),
+				vault_pw_show ? .Plain : .Masked,
 			)
+			if ui.vault_pw_err != "" && vault_pw_error_field == .Current {
+				clay.Text(ui.vault_pw_err, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+			}
 			eyebrow(tr("NEW PASSWORD"))
 			gate_field(
 				ui,
@@ -225,8 +265,12 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 				&ui.vault_pw[.New],
 				ui.vault_pw_focus == .New,
 				tr("Your new password"),
+				vault_pw_show ? .Plain : .Masked,
 			)
-			password_hint(bits)
+			if ui.vault_pw_err != "" && vault_pw_error_field == .New {
+				clay.Text(ui.vault_pw_err, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+			}
+			secure_password_hint(bits)
 			eyebrow(tr("CONFIRM NEW PASSWORD"))
 			gate_field(
 				ui,
@@ -234,9 +278,10 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 				&ui.vault_pw[.Confirm],
 				ui.vault_pw_focus == .Confirm,
 				tr("Type your new password again"),
+				vault_pw_show ? .Plain : .Masked,
 			)
 
-			if len(ui.vault_pw_err) > 0 {
+			if len(ui.vault_pw_err) > 0 && vault_pw_error_field == .Confirm {
 				clay.Text(ui.vault_pw_err, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
 			}
 		}
@@ -249,7 +294,7 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 					},
 					padding = {left = 16, right = 16, top = 9, bottom = 9},
 					childAlignment = {x = .Center, y = .Center},
@@ -269,7 +314,7 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 					},
 					padding = {left = 16, right = 16, top = 9, bottom = 9},
 					childAlignment = {x = .Center, y = .Center},

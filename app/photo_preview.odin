@@ -295,13 +295,14 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 				},
 				) {}
 				for corner, i in ([4][2]f32{{x, y}, {x + side, y}, {x, y + side}, {x + side, y + side}}) {
-					// A 24px hit area surrounds each visible 12px handle.
+					// Keep the visible grip and its hit area centered on the corner.
+					hit_size := tap_size() ? tap_min() : 24
 					if clay.UI(clay.ID("PhotoCropHandle", u32(i + 1)))(
 					{
 						layout = {
 							sizing = {
-								width = clay.SizingFixed(tap_size() ? 44 : 24),
-								height = clay.SizingFixed(tap_size() ? 44 : 24),
+								width = clay.SizingFixed(hit_size),
+								height = clay.SizingFixed(hit_size),
 							},
 							childAlignment = {x = .Center, y = .Center},
 						},
@@ -309,7 +310,7 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 							attachTo = .Parent,
 							pointerCaptureMode = .Passthrough,
 							zIndex = 22,
-							offset = {corner[0] - 12, corner[1] - 12},
+							offset = {corner[0] - hit_size / 2, corner[1] - hit_size / 2},
 							attachment = {element = .LeftTop, parent = .LeftTop},
 						},
 					},

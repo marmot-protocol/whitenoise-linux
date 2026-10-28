@@ -7,7 +7,14 @@ import "core:testing"
 photo_test_layout :: proc(ui: ^Ui_State) {
 	clay.BeginLayout()
 	if clay.UI(clay.ID("PhotoTestRoot"))(
-	{layout = {sizing = {width = clay.SizingFixed(320), height = clay.SizingFixed(300)}}},
+	{
+		layout = {
+			sizing = {
+				width = clay.SizingFixed(f32(rl.GetScreenWidth())),
+				height = clay.SizingFixed(f32(rl.GetScreenHeight())),
+			},
+		},
+	},
 	) {
 		photo_preview_modal(ui)
 	}
@@ -82,13 +89,25 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		testing.expect(t, clay.GetElementData(clay.ID("PhotoCropBox")).found)
 		for i in 1 ..= 4 {
 			handle := clay.GetElementData(clay.ID("PhotoCropHandle", u32(i)))
+			size := tap_size() ? f32(44) : f32(24)
 			testing.expect(
 				t,
-				handle.found && handle.boundingBox.width == 24 && handle.boundingBox.height == 24,
+				handle.found &&
+				handle.boundingBox.width == size &&
+				handle.boundingBox.height == size,
+			)
+			crop := clay.GetElementData(clay.ID("PhotoCropBox")).boundingBox
+			corner_x := crop.x + (i == 2 || i == 4 ? crop.width : 0)
+			corner_y := crop.y + (i >= 3 ? crop.height : 0)
+			testing.expect(
+				t,
+				abs(handle.boundingBox.x + size / 2 - corner_x) < 0.1 &&
+				abs(handle.boundingBox.y + size / 2 - corner_y) < 0.1,
+				"Crop hit targets must stay centered on their visible corners",
 			)
 			// Real button state and Clay hit testing select the resize mode,
 			// rather than starting an interior move or dispatching an upload.
-			clay.SetPointerState({handle.boundingBox.x + 12, handle.boundingBox.y + 12}, true)
+			clay.SetPointerState({corner_x, corner_y}, true)
 			rl.PushMouseButton(.LEFT, true)
 			handle_photo_preview(&ui, nil)
 			testing.expect(t, ui.photo.crop_drag)
@@ -97,6 +116,10 @@ photo_preview_flow :: proc(t: ^testing.T) {
 			handle_photo_preview(&ui, nil)
 			testing.expect(t, !ui.photo.crop_drag && ui.photo.crop.active)
 		}
+		// A taller viewport leaves interior space between the finger-sized handles.
+		rl.SetWindowSize(320, 640)
+		clay.SetLayoutDimensions({320, 640})
+		photo_test_layout(&ui)
 		crop_box := clay.GetElementData(clay.ID("PhotoCropBox")).boundingBox
 		clay.SetPointerState(
 			{crop_box.x + crop_box.width / 2, crop_box.y + crop_box.height / 2},
@@ -111,6 +134,9 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		handle_photo_preview(&ui, nil)
 		testing.expect(t, !ui.photo.crop_drag && ui.photo.crop.active)
 		rl.WindowShouldClose() // clear injected per-frame flags
+		rl.SetWindowSize(320, 300)
+		clay.SetLayoutDimensions({320, 300})
+		photo_test_layout(&ui)
 		testing.expect(t, !clay.GetElementData(clay.ID("PhotoSmaller")).found)
 		testing.expect(t, !clay.GetElementData(clay.ID("PhotoLarger")).found)
 		box = clay.GetElementData(clay.ID("PhotoOriginal")).boundingBox
@@ -171,7 +197,7 @@ photo_preview_flow :: proc(t: ^testing.T) {
 	)
 	for i in 1 ..= 4 {
 		handle := clay.GetElementData(clay.ID("PhotoCropHandle", u32(i))).boundingBox
-		clay.SetPointerState({handle.x + 12, handle.y + 12}, true)
+		clay.SetPointerState({handle.x + handle.width / 2, handle.y + handle.height / 2}, true)
 		rl.PushMouseButton(.LEFT, true)
 		photo_crop_input(&tiny.photo)
 		testing.expect(t, tiny.photo.crop_drag)

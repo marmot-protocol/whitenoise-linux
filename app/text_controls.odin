@@ -47,11 +47,6 @@ caret :: proc(h: f32 = 16) {
 		{
 			layout = {sizing = {width = clay.SizingFixed(CARET_W), height = clay.SizingFixed(h)}},
 			backgroundColor = fade(TEXT, alpha),
-			floating = {
-				attachTo = .Parent,
-				clipTo = .AttachedParent,
-				pointerCaptureMode = .Passthrough,
-			},
 		},
 		) {}
 	}
@@ -89,7 +84,7 @@ scrollbar :: proc(container: clay.ElementId, z: i16 = 5) {
 
 	thumb_id := clay.ID("ScrollThumb", container.id)
 	mouse_y := rl.GetMousePosition().y / UI_ZOOM
-	if rl.IsMouseButtonPressed(.LEFT) && clay.PointerOver(thumb_id) {
+	if !rl.TouchActive() && rl.IsMouseButtonPressed(.LEFT) && clay.PointerOver(thumb_id) {
 		scroll_drag = {container.id, mouse_y - y}
 	}
 	dragging := scroll_drag.container == container.id
@@ -106,6 +101,7 @@ scrollbar :: proc(container: clay.ElementId, z: i16 = 5) {
 			parentId = container.id,
 			offset = {-3, y},
 			zIndex = z,
+			pointerCaptureMode = rl.TouchActive() ? .Passthrough : .Capture,
 			attachment = {element = .RightTop, parent = .RightTop},
 		},
 		backgroundColor = dragging || clay.PointerOver(thumb_id) ? ACCENT : FIELD_BORDER,

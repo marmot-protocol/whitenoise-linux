@@ -1,7 +1,6 @@
 package main
 
 import "core:math"
-import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -12,7 +11,7 @@ login_button :: proc(id_str: string, label: string, primary: bool = false) {
 		layout = {
 			sizing = {
 				width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-				height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 			},
 			padding = {left = 18, right = 18, top = 10, bottom = 10},
 			childAlignment = {x = .Center, y = .Center},
@@ -37,6 +36,7 @@ login_button :: proc(id_str: string, label: string, primary: bool = false) {
 Button_State :: enum {
 	Enabled,
 	Disabled,
+	Busy,
 }
 
 // Full-width stacked login button.
@@ -52,9 +52,9 @@ login_big_button :: proc(
 			sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(52)},
 			childAlignment = {x = .Center, y = .Center},
 		},
-		backgroundColor = primary && state == .Enabled ? ACCENT : ROW_BG,
+		backgroundColor = primary && state != .Disabled ? ACCENT : ROW_BG,
 		cornerRadius = rr(10),
-		border = primary ? {} : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
+		border = primary && state != .Disabled ? {} : clay.BorderElementConfig{color = primary ? ACCENT : FIELD_BORDER, width = bw()},
 	},
 	) {
 		if primary && state == .Enabled {
@@ -125,14 +125,13 @@ PAIR_QR_SIZE :: f32(190)
 
 @(private = "file")
 login_progress :: proc(job: ^Auth_Job, detail: string) {
-	progress_dots("LoginDots")
 	busy_bar("LoginBusy")
 	if job.session == nil {return}
 	clay.Text(
 		tr("Keep your signer open. Approve the connection and requested signatures there."),
 		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 	)
-	if detail != "" {
+	if detail != "" && detail != "connecting to remote signer" {
 		clay.Text(nip46_detail(detail), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 	}
 }
@@ -145,8 +144,19 @@ login_form: Login_Method
 @(private)
 login_reveal_frames: int
 
+@(private)
+login_show: bool
+@(private)
+login_input_error: bool
+@(private = "file")
+login_had_error: bool
+
 login_pane :: proc(ui: ^Ui_State) {
 	viewport := rl.Vector2{f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}
+	if (ui.login_error != "") != login_had_error {
+		login_had_error = ui.login_error != ""
+		login_reveal_frames = 2
+	}
 	if viewport != login_viewport || ui.login_method != login_form {
 		login_viewport, login_form = viewport, ui.login_method
 		// The first pass still sees Clay's previous viewport; the next
@@ -157,7 +167,8 @@ login_pane :: proc(ui: ^Ui_State) {
 	   auth_job == nil &&
 	   ui.login_method != .Menu &&
 	   !ui.socks5_login_open {
-		onboard_reveal_field("LoginCard", "LoginInput")
+		onboard_reveal_field("LoginCard", login_had_error ? "LoginFieldError" : "LoginInput")
+		if login_had_error {onboard_reveal_field("LoginCard", "LoginButtons")}
 		login_reveal_frames -= 1
 	}
 	pairing := auth_job != nil && auth_job.session != nil && auth_job.method == .Pair
@@ -170,7 +181,9 @@ login_pane :: proc(ui: ^Ui_State) {
 				height = clay.SizingFit({max = modal_h(1200)}),
 			},
 			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(single_pane() ? 16 : pairing || menu ? 24 : 50),
+			padding = clay.PaddingAll(
+				single_pane() || f32(rl.GetScreenHeight()) / UI_ZOOM < 500 ? 16 : pairing || menu ? 24 : 50,
+			),
 			childGap = 14,
 			childAlignment = {x = .Center},
 		},
@@ -187,8 +200,18 @@ login_pane :: proc(ui: ^Ui_State) {
 		}
 
 		if ui.socks5_login_open {
-			settings_socks5(ui)
+			if clay.UI(clay.ID("LoginProxyHost"))(
+			{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom}},
+			) {
+				settings_socks5(ui)
+			}
 			micro_button("LoginProxyBack", tr("Back"))
+		} else if ui.picking_backup {
+			clay.Text(
+				tr("Opening file picker…"),
+				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT},
+			)
+			busy_bar("LoginFileBusy")
 		} else if auth_job != nil {
 			// The round trip runs on the sign-in worker; this is the only
 			// thing the card offers until drain_auth picks it up.
@@ -209,7 +232,7 @@ login_pane :: proc(ui: ^Ui_State) {
 						sizing = {width = clay.SizingGrow({})},
 						childGap = 20,
 						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-						childAlignment = {y = .Center},
+						childAlignment = {x = .Center, y = .Center},
 					},
 				},
 				) {
@@ -259,7 +282,12 @@ login_pane :: proc(ui: ^Ui_State) {
 							tr(
 								"Scan this pairing code in your signer, or copy the nostrconnect link.",
 							),
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+							{
+								fontId = FONT_BODY,
+								fontSize = 12,
+								textColor = TEXT_DIM,
+								textAlignment = .Center,
+							},
 						)
 					}
 				}
@@ -282,15 +310,15 @@ login_pane :: proc(ui: ^Ui_State) {
 					},
 				},
 				) {
-					if pairing {micro_button("LoginPairCopy", tr("Copy pairing link"))}
-					micro_button("LoginCancel", tr("Cancel connection"))
+					if pairing {login_big_button("LoginPairCopy", tr("Copy pairing link"), true)}
+					login_big_button("LoginCancel", tr("Cancel connection"), false)
 				}
 			}
 			if !pairing {if clay.UI(clay.ID("LoginGapB"))({layout = {sizing = {height = clay.SizingFixed(10)}}}) {}}
 			if !remote {clay.Text(minting ? tr("Publishing your profile to the relays. This takes a few seconds.") : tr("Checking your key with the relays. This takes a few seconds."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})}
 		} else if ui.login_method == .Menu {
 			clay.Text(
-				tr("Sign in to your Nostr identity"),
+				ui.add_account_open ? tr("Add another account") : tr("Add your Nostr identity"),
 				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
 			)
 			if clay.UI(clay.ID("LoginGapA"))(
@@ -338,36 +366,36 @@ login_pane :: proc(ui: ^Ui_State) {
 			eyebrow(
 				ui.login_method == .Bunker ? tr("BUNKER LINK") : ui.login_method == .Pair ? tr("SIGNER RELAY") : "NSEC",
 			)
-			if clay.UI(clay.ID("LoginInput"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(46)},
-					padding = {left = 14, right = 14},
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(10),
-				border = {color = ACCENT, width = bw()},
-				clip = {horizontal = true},
-			},
+			gate_field(
+				ui,
+				"LoginInput",
+				&ui.login_input,
+				true,
+				ui.login_method == .Bunker ? "bunker://..." : ui.login_method == .Pair ? "wss://..." : "nsec1...",
+				login_show || ui.login_method == .Pair ? .Plain : .Masked,
+			)
+			if clay.UI(clay.ID("LoginInputTools"))(
+			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 12}},
 			) {
-				if len(ui.login_input) == 0 {
+				login_button("LoginPaste", tr("Paste"))
+				if ui.login_method !=
+				   .Pair {login_button("LoginShow", login_show ? tr("Hide") : tr("Show"))}
+			}
+			if ui.login_error != "" {
+				if clay.UI(clay.ID("LoginFieldError"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						childGap = 6,
+					},
+				},
+				) {
 					clay.Text(
-						ui.login_method == .Bunker ? "bunker://..." : ui.login_method == .Pair ? "wss://..." : "nsec1...",
-						{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
+						nip46_detail(ui.login_error),
+						{fontId = FONT_BODY, fontSize = 14, textColor = DANGER},
 					)
-				} else if ui.login_method == .Pair {
-					clay.Text(
-						string(ui.login_input[:]),
-						{fontId = FONT_BODY, fontSize = 15, textColor = TEXT},
-					)
-				} else {
-					masked := strings.repeat(
-						"*",
-						min(len(ui.login_input), 48),
-						context.temp_allocator,
-					)
-					clay.Text(masked, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT})
+					if !login_input_error {micro_button("LoginErrorCopy", tr("Copy error"))}
 				}
 			}
 			if clay.UI(clay.ID("LoginGapB"))(
@@ -377,10 +405,11 @@ login_pane :: proc(ui: ^Ui_State) {
 			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 12}},
 			) {
 				login_button("LoginBack", tr("Back"))
-				login_button(
+				login_big_button(
 					"LoginGo",
 					ui.login_method == .Pair ? tr("Create pairing link") : tr("Continue"),
-					len(ui.login_input) > 0,
+					true,
+					len(ui.login_input) > 0 ? .Enabled : .Disabled,
 				)
 			}
 			// Every form here signs in an existing identity. Each installation
@@ -395,18 +424,14 @@ login_pane :: proc(ui: ^Ui_State) {
 				),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO, textAlignment = .Center},
 			)
-			clay.Text(
-				tr("Multi-device is coming very soon™."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, textAlignment = .Center},
-			)
 		}
 
-		if len(ui.login_error) > 0 {
+		if len(ui.login_error) > 0 && (auth_job != nil || ui.login_method == .Menu) {
 			clay.Text(
 				nip46_detail(ui.login_error),
 				{fontId = FONT_BODY, fontSize = 14, textColor = DANGER},
 			)
-			micro_button("LoginErrorCopy", tr("Copy error"))
+			if !login_input_error {micro_button("LoginErrorCopy", tr("Copy error"))}
 		}
 		// Floats to the root; the settings page hosts the same modal.
 		if open_now(clay.ID("BackupModal"), ui.backup_mode != .None) {

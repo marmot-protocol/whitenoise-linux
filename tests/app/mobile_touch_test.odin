@@ -6,7 +6,6 @@ import "core:testing"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
-import sdl "vendor:sdl3"
 
 @(test)
 mobile_touch_scrolling :: proc(t: ^testing.T) {
@@ -27,19 +26,6 @@ mobile_touch_scrolling :: proc(t: ^testing.T) {
 	memory: []u8
 	init_layout(&memory, 32768, {360, 640})
 	defer {clay.SetCurrentContext(previous); delete(memory)}
-	count: i32
-	windows := sdl.GetWindows(&count)
-	defer sdl.free(windows)
-	if !testing.expect(t, count > 0) {return}
-	window := windows[0]
-	event: sdl.Event
-	event.type = .MOUSE_BUTTON_DOWN
-	event.button.windowID = sdl.GetWindowID(window)
-	event.button.which = sdl.TOUCH_MOUSEID
-	event.button.button = 1
-	event.button.down = true
-	testing.expect(t, sdl.PushEvent(&event))
-	rl.WindowShouldClose()
 	for horizontal in ([]bool{false, true}) {
 		clear(&drag_targets)
 		for _ in 0 ..< 3 {
@@ -70,15 +56,15 @@ mobile_touch_scrolling :: proc(t: ^testing.T) {
 			scrollbar(clay.ID("TouchScroll"))
 			clay.EndLayout(0)
 		}
-		sdl.WarpMouseInWindow(window, 200, 200)
+		rl.InjectFinger(.Down, 200, 200)
+		rl.WindowShouldClose()
 		clay.SetPointerState({200, 200}, true)
-		rl.PushMouseButton(.LEFT, true)
 		update_drag_scroll(&ui, false)
 		// Many small moves must become a scroll once total travel passes slop.
 		for step in 1 ..= 10 {
 			x, y :=
 				horizontal ? f32(200 - step * 2) : 200, horizontal ? f32(200) : f32(200 - step * 2)
-			sdl.WarpMouseInWindow(window, x, y)
+			rl.InjectFinger(.Move, x, y)
 			clay.SetPointerState({x, y}, true)
 			rl.WindowShouldClose()
 			update_drag_scroll(&ui, false)
@@ -90,7 +76,8 @@ mobile_touch_scrolling :: proc(t: ^testing.T) {
 			position <= -19,
 			"finger drag scrolls directly even with Reduce motion enabled",
 		)
-		rl.PushMouseButton(.LEFT, false)
+		rl.InjectFinger(.Up, horizontal ? 180 : 200, horizontal ? 200 : 180)
+		rl.WindowShouldClose()
 		update_drag_scroll(&ui, false)
 		testing.expect(
 			t,

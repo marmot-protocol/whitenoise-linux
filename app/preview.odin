@@ -775,7 +775,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("PvCopy"))(
 					{
 						layout = {
-							sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
+							sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
 							padding = {left = 10, right = 10, top = 5, bottom = 5},
 							childAlignment = {y = .Center},
 						},
@@ -793,7 +793,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("PvFull"))(
 					{
 						layout = {
-							sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
+							sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
 							padding = {left = 10, right = 10, top = 5, bottom = 5},
 							childAlignment = {y = .Center},
 						},
@@ -811,7 +811,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("PvSave"))(
 					{
 						layout = {
-							sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
+							sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
 							padding = {left = 10, right = 10, top = 5, bottom = 5},
 							childAlignment = {y = .Center},
 						},
@@ -830,8 +830,8 @@ preview_modal :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFixed(tap_size() ? 44 : 32),
-						height = clay.SizingFixed(tap_size() ? 44 : 26),
+						width = clay.SizingFixed(tap_size() ? tap_min() : 32),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
 					},
 					childAlignment = {x = .Center, y = .Center},
 				},
@@ -1114,7 +1114,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 						layout = {
 							sizing = {
 								width = clay.SizingFixed(fit_w(480)),
-								height = clay.SizingFixed(tap_size() ? 44 : 14),
+								height = clay.SizingFixed(tap_size() ? tap_min() : 14),
 							},
 							padding = {left = 2, right = 2},
 							childAlignment = {y = .Center},
@@ -1181,8 +1181,10 @@ preview_modal :: proc(ui: ^Ui_State) {
 							{
 								layout = {
 									sizing = {
-										width = clay.SizingFit({min = tap_size() ? 44 : 0}),
-										height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+										width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+										height = clay.SizingFit(
+											{min = tap_size() ? tap_min() : 0},
+										),
 									},
 									padding = clay.PaddingAll(4),
 									childAlignment = {x = .Center, y = .Center},
@@ -1214,8 +1216,10 @@ preview_modal :: proc(ui: ^Ui_State) {
 							{
 								layout = {
 									sizing = {
-										width = clay.SizingFit({min = tap_size() ? 44 : 0}),
-										height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+										width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+										height = clay.SizingFit(
+											{min = tap_size() ? tap_min() : 0},
+										),
 									},
 									padding = clay.PaddingAll(4),
 									childAlignment = {x = .Center, y = .Center},
@@ -1407,8 +1411,8 @@ slide_nav :: proc() {
 		{
 			layout = {
 				sizing = {
-					width = clay.SizingFixed(tap_size() ? 44 : 16),
-					height = clay.SizingFixed(tap_size() ? 44 : 24),
+					width = clay.SizingFixed(tap_size() ? tap_min() : 16),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 24),
 				},
 				childAlignment = {x = .Center, y = .Center},
 			},
@@ -1424,8 +1428,8 @@ slide_nav :: proc() {
 		{
 			layout = {
 				sizing = {
-					width = clay.SizingFixed(tap_size() ? 44 : 16),
-					height = clay.SizingFixed(tap_size() ? 44 : 24),
+					width = clay.SizingFixed(tap_size() ? tap_min() : 16),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 24),
 				},
 				childAlignment = {x = .Center, y = .Center},
 			},

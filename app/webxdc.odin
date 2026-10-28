@@ -166,7 +166,7 @@ xdc_tile :: proc(view: ^Xdc_View, id: u32, msg_id: string, att: int, file_name: 
 		   clay.UI(clay.ID("MsgXdcOpen", id))(
 		   {
 			   layout = {
-				   sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
+				   sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
 				   padding = {left = 12, right = 12, top = 6, bottom = 6},
 				   childAlignment = {y = .Center},
 			   },

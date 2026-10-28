@@ -68,7 +68,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 	preview := ui.chat_preview_w > 0
 	// A phone header is one row: Back, the title, Search and an overflow
 	// menu for the remaining chips.
-	phone := single_pane() && !preview
+	phone := single_pane()
 
 	if clay.UI(clay.ID("ChatPane"))(
 	{
@@ -94,9 +94,11 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 		if open_now(clay.ID("EncModal"), ui.enc_open) {
 			encryption_modal(ui, chat)
 		}
-		if open_now(clay.ID("FwdModal"), ui.fwd_open && ui.fwd_kind != .Theme) &&
-		   (ui.fwd_kind == .Add_Member || forward_source(ui) >= 0) {
-			forward_modal(ui)
+		if !preview && ui.fwd_kind != .Theme {
+			if open_now(clay.ID("FwdModal"), ui.fwd_open) &&
+			   (ui.fwd_kind == .Add_Member || forward_source(ui) >= 0) {
+				forward_modal(ui)
+			}
 		}
 		if open_now(clay.ID("OvModal"), ui.ov_open) {
 			openverse_modal(ui)
@@ -124,14 +126,14 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 			backgroundColor = RAIL_BG,
 		},
 		) {
-			if phone {header_icon("ChatBack", "\u2039", tr("Back"))}
+			if phone && !preview {header_icon("ChatBack", "\u2039", tr("Back"))}
 			// Avatar and title open conversation details.
 			if clay.UI(clay.ID("ChatHeadInfo"))(
 			{
 				layout = {
 					sizing = {
 						width = clay.SizingGrow(),
-						height = clay.SizingFit({min = tap_size() ? 44 : 28}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 28}),
 					},
 					padding = {left = 4, right = 8, top = 2, bottom = 2},
 					childGap = 6,
@@ -163,8 +165,14 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					clip = {horizontal = true},
 				},
 				) {
+					title := chat.title
+					if preview {
+						width :=
+							clay.GetElementData(clay.ID("ChatHeadTitleClip")).boundingBox.width
+						if width > 0 {title = text_ellipsis(title, width, FONT_TITLE, 16)}
+					}
 					clay.Text(
-						chat.title,
+						title,
 						{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT, wrapMode = .None},
 					)
 					if !chat_is_dm(chat) && len(ui.members) > 0 {
@@ -217,7 +225,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 				}
 			}
 			if phone {
-				header_chip("SearchBtn", ICON_SEARCH, ui.search_open, tr("Search"))
+				header_icon("SearchBtn", ICON_SEARCH, tr("Search"))
 				header_icon("ChatHeadMore", "\u00b7\u00b7\u00b7", tr("Chat options"))
 			} else if clay.UI(clay.ID("ChatHeadActions"))(
 			{layout = {childGap = 6, childAlignment = {y = .Center}}},
@@ -244,7 +252,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 			}
 			// The chrome floats over the timeline; only the bottom-most
 			// bar casts, so the shadows don't stack.
-			if len(ui.thread_stack) == 0 {
+			if len(ui.thread_stack) == 0 && !preview {
 				cast_shade(clay.ID("ChatHeader"), .Down, 14, 0.35)
 			}
 		}
@@ -257,7 +265,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					layout = {
 						sizing = {
 							width = clay.SizingGrow(),
-							height = clay.SizingFixed(tap_size() ? 44 : 32),
+							height = clay.SizingFixed(tap_size() ? tap_min() : 32),
 						},
 						padding = {left = 10, right = 10},
 						childAlignment = {y = .Center},
@@ -274,11 +282,24 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 						tr("Search messages"),
 						ui.focus == .Search,
 					)
+					if len(ui.search_input) > 0 {
+						header_icon("SearchClear", ICON_CLOSE, tr("Clear search"))
+					}
 				}
-				clay.Text(
-					tr("Press Enter to search."),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-				)
+				if timeline_job != nil && len(timeline_job.search) > 0 {
+					clay.Text(
+						fmt.tprintf(
+							tr(len(ui.messages) == 1 ? N_("%d result") : N_("%d results")),
+							len(ui.messages),
+						),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					)
+				} else {
+					clay.Text(
+						tr("Press Enter to search."),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					)
+				}
 			}}
 		// Declared after the header so the bell it attaches to exists.
 		if open_now(clay.ID("MiModal"), ui.mi_open) {
@@ -300,18 +321,25 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					childGap = 10,
 					childAlignment = {y = .Center},
 				},
-				backgroundColor = ROW_BG,
+				// Not ROW_BG: secondary buttons share that fill and vanished.
+				backgroundColor = CARD,
 			},
 			) {
 				clay.Text(
-					tr("You were invited to this group."),
+					chat_is_dm(chat) ? tr("You were invited to this chat.") : tr("You were invited to this group."),
 					{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
 				)
 				if clay.UI(clay.ID("InviteActions"))(
-				{layout = {childGap = 10, childAlignment = {y = .Center}}},
+				{
+					layout = {
+						sizing = {width = single_pane() ? clay.SizingGrow() : clay.SizingFit()},
+						childGap = 10,
+						childAlignment = {y = .Center},
+					},
+				},
 				) {
-					login_button("InviteAccept", tr("Accept"))
 					login_button("InviteDecline", tr("Decline"))
+					login_button("InviteAccept", tr("Accept"), primary = true)
 				}
 			}
 		}
@@ -624,8 +652,8 @@ compose_chrome_height :: proc() -> f32 {
 compose_tool_layout :: proc() -> clay.LayoutConfig {
 	return {
 		sizing = {
-			width = clay.SizingFit({min = tap_size() ? 44 : 0}),
-			height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+			width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+			height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 		},
 		padding = clay.PaddingAll(4),
 		childAlignment = {x = .Center, y = .Center},
@@ -659,6 +687,12 @@ compose_scroll :: proc(ui: ^Ui_State) {
 	if ui.issues_open && ui.issue_new && !ui.show_members {
 		buf = &ui.issue_body
 		focus = .Issue_Body
+	} else if ui.page == .Profile && ui.profile.editing {
+		buf = &ui.about_input
+		focus = .About
+	} else if ui.show_members && ui.desc_editing {
+		buf = &ui.desc_input
+		focus = .Desc
 	}
 	data := clay.GetScrollContainerData(clay.ID("ComposeClip"))
 	if ui.focus != focus || !data.found {
@@ -779,8 +813,8 @@ info_top_bar :: proc(ui: ^Ui_State, col_w: f32) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFixed(tap_size() ? 44 : 30),
-						height = clay.SizingFixed(tap_size() ? 44 : 30),
+						width = clay.SizingFixed(tap_size() ? tap_min() : 30),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 30),
 					},
 					childAlignment = {x = .Center, y = .Center},
 				},
@@ -840,7 +874,7 @@ info_field :: proc(
 			layout = {
 				sizing = {
 					width = clay.SizingGrow(),
-					height = clay.SizingFixed(tap_size() ? 44 : 36),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 36),
 				},
 				padding = {left = 12, right = 12},
 				childAlignment = {y = .Center},
@@ -852,7 +886,11 @@ info_field :: proc(
 		) {
 			field_text(ui, id_str, buf, hint, ui.focus == focus)
 		}
-		folder_action(button_id, button_label, true)
+		folder_action(
+			button_id,
+			button_label,
+			button_id != "InviteBtn" || len(strings.trim_space(string(buf[:]))) > 0,
+		)
 	}
 }
 
@@ -928,8 +966,8 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 					{
 						layout = {
 							sizing = {
-								width = clay.SizingFit({min = tap_size() ? 44 : 0}),
-								height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+								width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+								height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 							},
 							padding = {left = 14, right = 14, top = 6, bottom = 6},
 							childAlignment = {x = .Center, y = .Center},
@@ -972,8 +1010,10 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 		},
 		) {
 			row_labels(tr("Export chat"), tr("Save a copy of this conversation to a file."))
-			micro_button("ExportHtmlBtn", "HTML")
-			micro_button("ExportMdBtn", "Markdown")
+			if clay.UI(clay.ID("ExportButtons"))({layout = {childGap = 8}}) {
+				micro_button("ExportHtmlBtn", "HTML")
+				micro_button("ExportMdBtn", "Markdown")
+			}
 		}
 	}
 
@@ -1066,7 +1106,7 @@ info_members_page :: proc(ui: ^Ui_State) {
 // near the viewport build names and queue avatars.
 @(private = "file")
 member_rows :: proc(ui: ^Ui_State) {
-	nick_height := tap_size() ? 44 : MEMBER_NICK_HEIGHT
+	nick_height := tap_size() ? tap_min() : MEMBER_NICK_HEIGHT
 	data := clay.GetScrollContainerData(clay.ID("MembersScroll"))
 	view := clay.GetElementData(clay.ID("MembersScroll"))
 	first := clay.GetElementData(clay.ID("MemberRow", 0))
@@ -1083,7 +1123,11 @@ member_rows :: proc(ui: ^Ui_State) {
 			y + MEMBER_HEIGHT >= view.boundingBox.y - 2 * (MEMBER_HEIGHT + MEMBER_GAP) &&
 				y <=
 					view.boundingBox.y + view.boundingBox.height + 2 * (MEMBER_HEIGHT + MEMBER_GAP)
-		y += f32(MEMBER_HEIGHT + MEMBER_GAP + (ui.member_nick == i ? nick_height + MEMBER_GAP : 0))
+		y += f32(
+			MEMBER_HEIGHT +
+			MEMBER_GAP +
+			(ui.member_nick == i ? nick_height + MEMBER_GAP + (tap_size() ? tap_min() : 28) + 30 : 0),
+		)
 		if clay.UI(clay.ID("MemberRow", u32(i)))(
 		{
 			layout = {
@@ -1154,8 +1198,8 @@ member_rows :: proc(ui: ^Ui_State) {
 				{
 					layout = {
 						sizing = {
-							width = clay.SizingFixed(tap_size() ? 44 : 26),
-							height = clay.SizingFixed(tap_size() ? 44 : 26),
+							width = clay.SizingFixed(tap_size() ? tap_min() : 26),
+							height = clay.SizingFixed(tap_size() ? tap_min() : 26),
 						},
 						childAlignment = {x = .Center, y = .Center},
 					},
@@ -1169,7 +1213,13 @@ member_rows :: proc(ui: ^Ui_State) {
 		}
 		// The nickname editor takes the row's place below it.
 		if ui.member_nick == i {
-			if clay.UI(clay.ID("MemberNickBox", u32(i)))(
+			clay.Text(
+				fmt.tprintf(tr("Nickname for %s"), member.name),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+			// Only one editor is open. Keep index zero for the box so its
+			// text child's index one cannot collide with a member index.
+			if clay.UI(clay.ID("MemberNickBox"))(
 			{
 				layout = {
 					sizing = {
@@ -1193,6 +1243,10 @@ member_rows :: proc(ui: ^Ui_State) {
 					12,
 					TEXT_LO,
 				)
+			}
+			if clay.UI(clay.ID("MemberNickActions", u32(i)))({layout = {childGap = 8}}) {
+				folder_action("MemberNickSave", tr("Save"), true)
+				micro_button("MemberNickCancel", tr("Cancel"))
 			}
 		}
 	}
@@ -1310,6 +1364,7 @@ field_text :: proc(
 	font_size: u16 = 13,
 	ph_color: clay.Color = {},
 ) {
+	if focused && rl.HasTouch() {touch_field = clay.ID(id_str)}
 	// Clip inside the parent's padding; keep the selection head in view.
 	view := clay.GetElementData(clay.ID(id_str, 3))
 	offset: f32
@@ -1406,7 +1461,7 @@ input_box :: proc(
 		layout = {
 			sizing = {
 				width = width > 0 && !single_pane() ? clay.SizingFixed(width) : clay.SizingGrow(),
-				height = clay.SizingFixed(tap_size() ? 44 : 38),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 38),
 			},
 			padding = {left = 12, right = 12},
 			childAlignment = {y = .Center},
@@ -1567,6 +1622,18 @@ nc_member_ref :: proc(ui: ^Ui_State) -> string {
 	}
 	member := strings.trim_space(string(ui.nc_member[:]))
 	if member == "" {return member}
+	if strings.contains(member, ",") {
+		out := strings.builder_make(context.temp_allocator)
+		for key in strings.split(member, ",", context.temp_allocator) {
+			ref := strings.trim_space(key)
+			if link := marmot_link_ref(ref); link != "" {ref = link}
+			hx := deeplink_hex(ref)
+			if hx == "" || strings.equal_fold(hx, ui.account_ref) {return ""}
+			if len(out.buf) > 0 {strings.write_byte(&out, '\n')}
+			strings.write_string(&out, hx)
+		}
+		return strings.to_string(out)
+	}
 	if nc_is_bit(member) || strings.contains(member, "@") {return member}
 	if ref := marmot_link_ref(member); ref != "" {member = ref}
 	return deeplink_hex(member)
@@ -1727,12 +1794,55 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 			if address != "" {
 				npub := hex_npub(address)
 				defer delete(npub)
-				nc_action_row(
-					"NCStartAddress",
-					ICON_CHATS,
-					tr("Start a chat with this public key"),
-					npub_tail(npub),
-				)
+				if clay.UI(clay.ID("NCStartAddress"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow(), height = clay.SizingFit({min = 64})},
+						padding = clay.PaddingAll(12),
+						childGap = 12,
+						childAlignment = {y = .Center},
+					},
+					backgroundColor = hovered() ? HOVER : ROW_BG,
+					cornerRadius = rr(10),
+				},
+				) {
+					avatar(
+						"NCAddressAvatar",
+						0,
+						address,
+						sender_label(address),
+						40,
+						url_pic(profile_cached(address).pic_url),
+					)
+					if clay.UI(clay.ID("NCAddressText"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 4,
+						},
+						clip = {horizontal = true},
+					},
+					) {
+						clay.Text(
+							sender_label(address),
+							{
+								fontId = FONT_TITLE,
+								fontSize = 15,
+								textColor = TEXT,
+								wrapMode = .None,
+							},
+						)
+						clay.Text(
+							existing_dm(ui, address) >= 0 ? tr("Open chat") : tr("Start chat"),
+							{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+						)
+						clay.Text(
+							npub_tail(npub),
+							{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
+						)
+					}
+				}
 			} else if clay.UI(clay.ID("NCEmptyContacts"))(
 			{
 				layout = {
@@ -1814,7 +1924,7 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 							},
 						)
 						clay.Text(
-							npub_tail(contact.npub),
+							existing_dm(ui, contact.id_hex) >= 0 ? tr("Open chat") : npub_tail(contact.npub),
 							{
 								fontId = FONT_MONO,
 								fontSize = 11,
@@ -1868,11 +1978,11 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 					sizing = {width = clay.SizingGrow()},
 					childAlignment = {y = .Center},
 					childGap = 12,
-					padding = {bottom = 8},
+					padding = {top = 8, bottom = 8},
 				},
 			},
 			) {
-				if ui.nc_page != .Contacts {header_chip("NCBack", ICON_REPLY, false, tr("Back"))}
+				header_chip(group ? "NCBack" : "NCCancel", "\uf060", false, tr("Back"))
 				if clay.UI(clay.ID("NCTitle"))(
 				{
 					layout = {
@@ -1891,7 +2001,6 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 						{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
 					)
 				}
-				header_chip("NCCancel", ICON_CLOSE, false, tr("Cancel"))
 			}
 			if ui.nc_page == .Contacts {
 				input_box(
@@ -1966,25 +2075,34 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 					)
 					input_box(ui, "NCName", &ui.nc_name, tr("Group name"), ui.focus == .NC_Name, 0)
 					clay.Text(
-						tr("First member"),
+						tr("Members"),
 						{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
 					)
 					input_box(
 						ui,
 						"NCMember",
 						&ui.nc_member,
-						tr("Search contacts..."),
+						tr("Search contacts or paste public keys..."),
 						ui.focus == .NC_Member,
 						0,
 					)
-					hint := tr("Choose a contact or paste a Nostr address.")
+					hint := tr("Choose a contact or paste public keys separated by commas.")
 					if ui.nc_member_choice > 0 {
-						hint = npub_tail(ui.nc_contacts[ui.nc_member_choice - 1].npub)
+						hint = fmt.tprintf(
+							tr("%s will be added to the group."),
+							contact_label(ui, ui.nc_contacts[ui.nc_member_choice - 1]),
+						)
 					} else if address := nc_address_hex(ui, string(ui.nc_member[:]));
 					   address != "" {
-						npub := hex_npub(address)
-						defer delete(npub)
-						hint = fmt.tprintf(tr("%s will be added to the group."), npub_tail(npub))
+						hint = fmt.tprintf(
+							tr("%s will be added to the group."),
+							sender_label(address),
+						)
+					} else if members := nc_member_ref(ui); strings.contains(members, "\n") {
+						hint = fmt.tprintf(
+							tr("%d people will be added to the group."),
+							len(strings.split(members, "\n", context.temp_allocator)),
+						)
 					}
 					clay.Text(hint, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
 				}
@@ -2083,8 +2201,53 @@ issue_editor :: proc(
 	}
 }
 
+@(private = "file")
+compose_more_menu :: proc(ui: ^Ui_State) {
+	if clay.UI(clay.ID("ComposeMoreMenu"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingFixed(fit_w(240))},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(4),
+		},
+		floating = {
+			attachTo = .ElementWithId,
+			parentId = clay.ID("ComposeTools").id,
+			attachment = {element = .LeftBottom, parent = .LeftTop},
+			offset = {0, -6},
+			zIndex = 12,
+		},
+		backgroundColor = CARD,
+		cornerRadius = rr(10),
+		border = {color = ELEVATED_BORDER, width = bw()},
+	},
+	) {
+		if ui.editing == "" {
+			ctx_item("PollBtn", ICON_POLL, tr("Create a poll"))
+			ctx_item("LocationBtn", ICON_LOCATION, tr("Send location"))
+			ctx_item("GmBtn", "", tr("Say GM (once a day)"))
+		}
+		ctx_item("FxBtn", ICON_FX, tr("Send with an effect"))
+		if ui.prefs.stt_enabled {ctx_item("DictateBtn", ICON_MIC, tr("Dictate"))}
+	}
+}
+
 @(private)
 chat_composer :: proc(ui: ^Ui_State) {
+	if ui.selected >= 0 && ui.chats[ui.selected].archived {
+		if clay.UI(clay.ID("ArchivedCompose"))(
+		{
+			layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(16)},
+			backgroundColor = RAIL_BG,
+		},
+		) {
+			clay.Text(
+				tr("This chat is archived. Restore it from Archive to send messages."),
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			)
+		}
+		return
+	}
 	if blocked_peer(ui) != "" {
 		blocked_bar()
 		return
@@ -2116,22 +2279,41 @@ chat_composer :: proc(ui: ^Ui_State) {
 		{
 			layout = {
 				sizing = {width = clay.SizingGrow()},
-				padding = {left = 16, right = 16, top = 6, bottom = 6},
+				padding = {left = 16, right = 8, top = 4, bottom = 4},
 				childGap = 8,
+				childAlignment = {y = .Center},
 			},
-			backgroundColor = RAIL_BG,
+			backgroundColor = ROW_BG,
+			border = {color = ACCENT, width = {left = 3}},
 		},
 		) {
-			clay.Text(
-				text_ellipsis(
-					fmt.tprintf(tr("Replying to: %s"), ui.reply_hint),
-					max(1, page_w(ui) - 120),
-					FONT_BODY,
-					12,
-				),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-			)
-			action_chip("ReplyCancel", 0, tr("Cancel"))
+			from, snippet := tr("Replying"), ui.reply_hint
+			for msg in ui.messages {
+				if msg.id != ui.replying {continue}
+				from, snippet = msg.sender, msg_preview(msg)
+				if nick := ui.nicknames[msg.sender_id]; nick != "" {from = nick}
+				break
+			}
+			if clay.UI(clay.ID("ReplyBannerText"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 2,
+				},
+				clip = {horizontal = true},
+			},
+			) {
+				clay.Text(
+					text_ellipsis(from, max(1, page_w(ui) - 90), FONT_TITLE, 12),
+					{fontId = FONT_TITLE, fontSize = 12, textColor = ACCENT, wrapMode = .None},
+				)
+				clay.Text(
+					text_ellipsis(snippet, max(1, page_w(ui) - 90), FONT_BODY, 12),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, wrapMode = .None},
+				)
+			}
+			header_icon("ReplyCancel", ICON_CLOSE, tr("Cancel reply"))
 		}
 	}
 
@@ -2248,7 +2430,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 			}
 			scrollbar(clay.ID("StagedRow"))
 		}
-		if ui.chat_preview_w == 0 && voice.stream != nil {
+		if ui.chat_preview_w == 0 && voice_active() {
 			voice_bar()
 		} else if clay.UI(clay.ID("ComposeBox"))(
 		{
@@ -2309,7 +2491,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 								caret()
 							}
 							clay.Text(
-								ui.compose_issue != "" ? tr("Write a comment") : tr("Send a message..."),
+								ui.compose_issue != "" ? tr("Write a comment") : (len(ui.thread_stack) > 0 ? tr("Reply in thread…") : tr("Send a message...")),
 								{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_LO},
 							)
 						}
@@ -2338,7 +2520,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? 44 : COMPOSE_TOOLS_H),
+						height = clay.SizingFixed(tap_size() ? tap_min() : COMPOSE_TOOLS_H),
 					},
 					childGap = single_pane() ? 2 : 10,
 					childAlignment = {y = .Center},
@@ -2352,7 +2534,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 						childGap = single_pane() ? 2 : 10,
 						childAlignment = {y = .Center},
 					},
-					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+					clip = {horizontal = !single_pane(), childOffset = clay.GetScrollOffset()},
 				},
 				) {
 					if clay.UI(clay.ID("AttachBtn"))(
@@ -2382,101 +2564,116 @@ chat_composer :: proc(ui: ^Ui_State) {
 							{fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO},
 						)
 					}
-					// Effect picker: arms a burst for the next send.
-					if clay.UI(clay.ID("FxBtn"))(
-					{
-						layout = compose_tool_layout(),
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(6),
-					},
-					) {
-						if open_now(clay.ID("FxPanel"), ui.fx_open) {
-							effect_picker(ui)
-						}
-						if hovered() {
-							tooltip(tr("Send with an effect"))
-						}
-						if tex := emoji_tex(effect_emoji(ui.fx_armed));
-						   ui.fx_armed != 0 && tex != nil {
-							if clay.UI(clay.ID("FxBtnArmed"))(
-							{
-								layout = {sizing = {width = clay.SizingFixed(16)}},
-								aspectRatio = {1},
-								image = {imageData = tex},
-							},
-							) {}
-						} else {
+					if single_pane() {
+						if clay.UI(clay.ID("ComposeMoreBtn"))(
+						{
+							layout = compose_tool_layout(),
+							backgroundColor = ui.compose_more ? SELECTED : (hovered() ? HOVER : {}),
+							cornerRadius = rr(6),
+						},
+						) {
 							clay.Text(
-								ICON_STAR,
-								{
-									fontId = FONT_ICON,
-									fontSize = 14,
-									textColor = ui.fx_armed != 0 ? ACCENT : TEXT_LO,
-								},
+								"+",
+								{fontId = FONT_TITLE, fontSize = 22, textColor = TEXT_DIM},
 							)
 						}
-					}
-					if clay.UI(clay.ID("PollBtn"))(
-					{
-						layout = compose_tool_layout(),
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(6),
-					},
-					) {
-						if hovered() {
-							tooltip(tr("Create a poll"))
-						}
-						clay.Text(
-							ICON_POLL,
-							{fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO},
-						)
-					}
-					if ui.editing == "" {
-						if clay.UI(clay.ID("LocationBtn"))(
+					} else {
+						// Effect picker: arms a burst for the next send.
+						if clay.UI(clay.ID("FxBtn"))(
 						{
 							layout = compose_tool_layout(),
 							backgroundColor = hovered() ? HOVER : {},
 							cornerRadius = rr(6),
 						},
 						) {
-							if hovered() {tooltip(tr("Send location"))}
-							clay.Text(
-								ICON_LOCATION,
-								{fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO},
-							)
+							if open_now(clay.ID("FxPanel"), ui.fx_open) {
+								effect_picker(ui)
+							}
+							if hovered() {
+								tooltip(tr("Send with an effect"))
+							}
+							if tex := emoji_tex(effect_emoji(ui.fx_armed));
+							   ui.fx_armed != 0 && tex != nil {
+								if clay.UI(clay.ID("FxBtnArmed"))(
+								{
+									layout = {sizing = {width = clay.SizingFixed(16)}},
+									aspectRatio = {1},
+									image = {imageData = tex},
+								},
+								) {}
+							} else {
+								clay.Text(
+									ICON_FX,
+									{
+										fontId = FONT_ICON,
+										fontSize = 14,
+										textColor = ui.fx_armed != 0 ? ACCENT : TEXT_LO,
+									},
+								)
+							}
 						}
-					}
-					// Once a day per chat; lit and inert after it went out.
-					if ui.editing == "" && ui.compose_issue == "" {
-						sent := gm_sent_today(ui)
-						if clay.UI(clay.ID("GmBtn"))(
+						if clay.UI(clay.ID("PollBtn"))(
 						{
 							layout = compose_tool_layout(),
-							backgroundColor = hovered() && !sent ? HOVER : {},
+							backgroundColor = hovered() ? HOVER : {},
 							cornerRadius = rr(6),
 						},
 						) {
 							if hovered() {
-								tooltip(
-									sent ? tr("You said GM here today") : tr("Say GM (once a day)"),
-								)
+								tooltip(tr("Create a poll"))
 							}
 							clay.Text(
-								"GM",
-								{
-									fontId = FONT_TITLE,
-									fontSize = 12,
-									textColor = sent ? ACCENT_DIM : TEXT_LO,
-								},
+								ICON_POLL,
+								{fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO},
 							)
 						}
-					}
-					if ui.prefs.stt_enabled {
-						micro_button(
-							"DictateBtn",
-							tr("Dictate"),
-							ui.stt.file != nil ? TEXT_LO : {},
-						)
+						{
+							if clay.UI(clay.ID("LocationBtn"))(
+							{
+								layout = compose_tool_layout(),
+								backgroundColor = hovered() ? HOVER : {},
+								cornerRadius = rr(6),
+							},
+							) {
+								if hovered() {tooltip(tr("Send location"))}
+								clay.Text(
+									ICON_LOCATION,
+									{fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO},
+								)
+							}
+						}
+						// Once a day per chat; lit and inert after it went out.
+						{
+							sent := gm_sent_today(ui)
+							if clay.UI(clay.ID("GmBtn"))(
+							{
+								layout = compose_tool_layout(),
+								backgroundColor = hovered() && !sent ? HOVER : {},
+								cornerRadius = rr(6),
+							},
+							) {
+								if hovered() {
+									tooltip(
+										sent ? tr("You said GM here today") : tr("Say GM (once a day)"),
+									)
+								}
+								clay.Text(
+									"GM",
+									{
+										fontId = FONT_TITLE,
+										fontSize = 12,
+										textColor = sent ? ACCENT_DIM : TEXT_LO,
+									},
+								)
+							}
+						}
+						if ui.prefs.stt_enabled {
+							micro_button(
+								"DictateBtn",
+								tr("Dictate"),
+								ui.stt.file != nil ? TEXT_LO : {},
+							)
+						}
 					}
 					if clay.UI(clay.ID("MicBtn"))(
 					{
@@ -2491,21 +2688,40 @@ chat_composer :: proc(ui: ^Ui_State) {
 						)
 					}
 				}
-				scrollbar(clay.ID("ComposeToolScroll"))
+				if !single_pane() {scrollbar(clay.ID("ComposeToolScroll"))}
 				if tap_size() {
+					ready :=
+						stage_files_ready(ui) &&
+						(strings.trim_space(string(ui.compose[:])) != "" ||
+								(len(ui.staged) > 0 && ui.editing == ""))
 					if clay.UI(clay.ID("SendBtn"))(
 					{
-						layout = compose_tool_layout(),
-						backgroundColor = hovered() ? ACCENT_DIM : ACCENT,
+						layout = {
+							sizing = {
+								width = clay.SizingFit({min = 44}),
+								height = clay.SizingFixed(44),
+							},
+							padding = {left = 12, right = 12},
+							childAlignment = {x = .Center, y = .Center},
+						},
+						backgroundColor = ready ? (hovered() ? ACCENT_DIM : ACCENT) : ROW_BG,
 						cornerRadius = rr(8),
 					},
 					) {
 						clay.Text(
-							tr("Send"),
-							{fontId = FONT_TITLE, fontSize = 12, textColor = ON_ACCENT},
+							ui.editing != "" ? tr("Save") : tr("Send"),
+							{
+								fontId = FONT_TITLE,
+								fontSize = 12,
+								textColor = ready ? ON_ACCENT : TEXT_LO,
+							},
 						)
 					}
 				}
+			}
+			if single_pane() {
+				if ui.compose_more {compose_more_menu(ui)}
+				if open_now(clay.ID("FxPanel"), ui.fx_open) {effect_picker(ui)}
 			}
 		}
 	}

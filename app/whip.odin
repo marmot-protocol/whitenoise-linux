@@ -306,8 +306,8 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 				{
 					layout = {
 						sizing = {
-							width = clay.SizingFit({max = 180}),
-							height = clay.SizingFixed(tap_size() ? 44 : 26),
+							width = single_pane() ? clay.SizingFixed(180) : clay.SizingFit({max = 180}),
+							height = clay.SizingFixed(tap_size() ? tap_min() : 26),
 						},
 						padding = {left = 8, right = 4},
 						childGap = 5,
@@ -319,7 +319,9 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 				},
 				) {
 					if hovered() {cursor_raise(.Pointer)}
-					if clay.UI(clay.ID("WhipTabLabel", tab.id))({clip = {horizontal = true}}) {
+					if clay.UI(clay.ID("WhipTabLabel", tab.id))(
+					{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+					) {
 						clay.Text(
 							fmt.tprintf("%d  %s", i + 1, tab.name),
 							{
@@ -335,8 +337,8 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 						{
 							layout = {
 								sizing = {
-									width = clay.SizingFixed(tap_size() ? 44 : 16),
-									height = clay.SizingFixed(tap_size() ? 44 : 18),
+									width = clay.SizingFixed(tap_size() ? tap_min() : 16),
+									height = clay.SizingFixed(tap_size() ? tap_min() : 18),
 								},
 								childAlignment = {x = .Center, y = .Center},
 							},
@@ -364,8 +366,8 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {
-						clay.SizingFixed(tap_size() ? 44 : 28),
-						clay.SizingFixed(tap_size() ? 44 : 26),
+						clay.SizingFixed(tap_size() ? tap_min() : 28),
+						clay.SizingFixed(tap_size() ? tap_min() : 26),
 					},
 					childAlignment = {x = .Center, y = .Center},
 				},
@@ -468,7 +470,7 @@ whip_project_row :: proc(ui: ^Ui_State, project: rl.Whip_Project) {
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(chat_row_height())},
-			childGap = 10,
+			childGap = 8,
 			childAlignment = {y = .Center},
 			padding = {right = 8},
 		},
@@ -485,7 +487,7 @@ whip_project_row :: proc(ui: ^Ui_State, project: rl.Whip_Project) {
 			cornerRadius = rr(2),
 		},
 		) {}
-		whip_project_avatar(ui, project.id, project.dir, project.name, tap_size() ? 44 : 36)
+		whip_project_avatar(ui, project.id, project.dir, project.name, 36)
 		if clay.PointerOver(clay.ID("WhipProjectAvatar", project.id)) {
 			tooltip(tr("Change project avatar"))
 		}
@@ -495,6 +497,7 @@ whip_project_row :: proc(ui: ^Ui_State, project: rl.Whip_Project) {
 				sizing = {width = clay.SizingGrow()},
 				layoutDirection = .TopToBottom,
 				childGap = 4,
+				padding = {left = 2},
 			},
 			clip = {horizontal = true},
 		},
@@ -525,13 +528,20 @@ whip_project_row :: proc(ui: ^Ui_State, project: rl.Whip_Project) {
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None},
 			)
 		}
-		if clay.UI(clay.ID("WhipProjectCount", project.id))({layout = {padding = {right = 10}}}) {
+		if clay.UI(clay.ID("WhipProjectCount", project.id))(
+		{layout = {layoutDirection = .TopToBottom, childGap = 4, padding = {right = 4}}},
+		) {
+			clay.Text(
+				fmt.tprintf(
+					tr(project.tabs == 1 ? N_("%d terminal") : N_("%d terminals")),
+					project.tabs,
+				),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			)
 			if project.waiting > 0 {
-				unread_badge(clay.ID("WhipProjectBadge", project.id), u64(project.waiting))
-			} else {
 				clay.Text(
-					fmt.tprintf("%d", project.tabs),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+					fmt.tprintf(tr("%d waiting"), project.waiting),
+					{fontId = FONT_BODY, fontSize = 11, textColor = WARNING},
 				)
 			}
 		}

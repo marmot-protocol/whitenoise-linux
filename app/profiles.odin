@@ -178,12 +178,47 @@ profile_label :: proc(client: ^marmot.Client, hex: string) -> string {
 	return profile_alias(hex)
 }
 
+// A DM's title: your nickname for the peer, else their profile label.
+@(private)
+dm_title :: proc(client: ^marmot.Client, peer: string) -> string {
+	if g_ui != nil {
+		if nick := g_ui.nicknames[peer]; len(nick) > 0 {return nick}
+	}
+	return profile_label(client, peer)
+}
+
 @(private)
 profile_alias :: proc(hex: string) -> string {
 	if name, ok := profile_aliases[hex]; ok {return name}
 	name := strings.clone(profile_fallback(hex))
 	profile_aliases[strings.clone(hex)] = name
 	return name
+}
+
+// A label for a chat row's last sender that never grows the profile
+// caches: rows are rebuilt for every chat-list snapshot. Nickname, then a
+// cached profile name, then the generated alias (temp-allocated).
+@(private)
+sender_label :: proc(hex: string) -> string {
+	if g_ui != nil {
+		if nick := g_ui.nicknames[hex]; len(nick) > 0 {return nick}
+	}
+	if info, ok := profile_cache[hex]; ok && len(info.name) > 0 {return info.name}
+	return alias_of(hex)
+}
+
+// The generated alias for hex: cached when profile_alias already made it,
+// otherwise computed into temp memory without growing the cache.
+@(private)
+alias_of :: proc(hex: string) -> string {
+	if name, ok := profile_aliases[hex]; ok {return name}
+	return profile_fallback(hex)
+}
+
+// The cached profile for hex, or none; never queues a read or grows the cache.
+@(private)
+profile_cached :: proc(hex: string) -> Profile_Info {
+	return profile_cache[hex]
 }
 
 // Seed the session caches for a freshly generated account: the

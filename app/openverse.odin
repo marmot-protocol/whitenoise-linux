@@ -79,6 +79,7 @@ ov_search :: proc(ui: ^Ui_State) {
 @(private = "file")
 ov_worker :: proc() {
 	context.allocator = reload_allocator()
+	defer frame_wake() // results or the error repaint without waiting for input
 	q := fmt.aprintf("q=%s", ov_query)
 	defer delete(q)
 	ps := fmt.aprintf("page_size=%d", OV_PAGE_SIZE)
@@ -212,8 +213,8 @@ openverse_modal :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFixed(tap_size() ? 44 : 26),
-						height = clay.SizingFixed(tap_size() ? 44 : 26),
+						width = clay.SizingFixed(tap_size() ? tap_min() : 26),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
 					},
 					childAlignment = {x = .Center, y = .Center},
 				},
@@ -239,7 +240,7 @@ openverse_modal :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? 44 : 36),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 36),
 					},
 					padding = {left = 12, right = 12},
 					childAlignment = {y = .Center},

@@ -34,7 +34,7 @@ settings_about :: proc(ui: ^Ui_State) {
 		settings_group(tr("What it is"))
 		clay.Text(
 			tr(
-				"A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group.",
+				"A client for private group chat. Messages are sealed with MLS on this device, handed to Nostr relays as opaque blobs, and opened again only inside the group.",
 			),
 			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
 		)

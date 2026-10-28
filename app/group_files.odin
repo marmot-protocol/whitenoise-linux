@@ -260,11 +260,15 @@ group_sender_label :: proc(ui: ^Ui_State, id: string) -> string {
 }
 
 @(private)
+group_files_had_senders: bool
+
+@(private)
 group_files_panel :: proc(ui: ^Ui_State) {
 	defer scrollbar(clay.ID("GroupFilesPanel"))
-	option_height := tap_size() ? 44 : GROUP_FILE_OPTION_H
+	option_height := tap_size() ? tap_min() : GROUP_FILE_OPTION_H
 	job := group_files_job
 	ready := job != nil && job.worker == nil && !sync.atomic_load(&job.cancel)
+	if ready {group_files_had_senders = len(job.senders) > 0}
 	matches := make([dynamic]int, context.temp_allocator)
 	visible := 0
 	if ready {
@@ -320,7 +324,7 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("GroupFilesRefresh"))(
 			{
 				layout = {
-					sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
+					sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
 					padding = clay.PaddingAll(8),
 					childAlignment = {y = .Center},
 				},
@@ -337,8 +341,8 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFit({min = tap_size() ? 44 : 0}),
-						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+						width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 					},
 					padding = clay.PaddingAll(8),
 					childAlignment = {x = .Center, y = .Center},
@@ -351,28 +355,18 @@ group_files_panel :: proc(ui: ^Ui_State) {
 				if hovered() {tooltip(tr("Back to chat"))}
 			}
 		}
-		if !ready {
-			clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
-			return
-		}
-		if job.err != "" {
-			clay.Text(
-				tr("Couldn't load files. Please try again."),
-				{fontId = FONT_BODY, fontSize = 13, textColor = DANGER},
-			)
-			return
-		}
 		if clay.UI(clay.ID("GroupFilesFilters"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
 		) {
 			for menu in ([]Group_File_Menu{.Type, .Sender}) {
+				if menu == .Sender && !group_files_had_senders {continue}
 				active := menu == .Type ? ui.group_files_type != .All : ui.group_files_sender != ""
 				if clay.UI(clay.ID("GroupFilesFilter", u32(menu)))(
 				{
 					layout = {
 						sizing = {
 							width = single_pane() ? clay.SizingFixed(max(44, (page_w(ui) - 48) / 2)) : clay.SizingFit({max = max(100, (page_w(ui) - 48) / 2)}),
-							height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+							height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 						},
 						padding = {left = 12, right = 12, top = 8, bottom = 8},
 						childGap = 8,
@@ -415,6 +409,18 @@ group_files_panel :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
+		if !ready {
+			clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			busy_bar("GroupFilesBusy")
+			return
+		}
+		if job.err != "" {
+			clay.Text(
+				tr("Couldn't load files. Please try again."),
+				{fontId = FONT_BODY, fontSize = 13, textColor = DANGER},
+			)
+			return
+		}
 		if ui.group_files_menu != .None {
 			menu := ui.group_files_menu
 			count := menu == .Type ? len(GROUP_FILE_TYPES) : len(job.senders) + 1
@@ -422,9 +428,9 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFixed(min(260, page_w(ui) - 40)),
+						width = clay.SizingFixed(min(260, (page_w(ui) - 48) / 2)),
 						height = clay.SizingFixed(
-							min(modal_h(308), f32(min(count, 7) * option_height)),
+							min(modal_h(308), f32(min(count, 7)) * option_height),
 						),
 					},
 					layoutDirection = .TopToBottom,
@@ -434,14 +440,11 @@ group_files_panel :: proc(ui: ^Ui_State) {
 				cornerRadius = rr(8),
 				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 				floating = {
-					attachTo = single_pane() ? .Root : .ElementWithId,
-					parentId = clay.ID("GroupFilesFilters").id,
+					attachTo = .ElementWithId,
+					parentId = clay.ID("GroupFilesFilter", u32(menu)).id,
 					zIndex = 9,
 					offset = {0, 6},
-					attachment = {
-						element = single_pane() ? .CenterCenter : .LeftTop,
-						parent = single_pane() ? .CenterCenter : .LeftBottom,
-					},
+					attachment = {element = .LeftTop, parent = .LeftBottom},
 				},
 			},
 			) {
@@ -450,7 +453,7 @@ group_files_panel :: proc(ui: ^Ui_State) {
 					data.found ? clamp(int(-data.scrollPosition.y / f32(option_height)), 0, count) : 0
 				last := min(first + 9, count)
 				if clay.UI(clay.ID("GroupOptionsBefore"))(
-				{layout = {sizing = {height = clay.SizingFixed(f32(first * option_height))}}},
+				{layout = {sizing = {height = clay.SizingFixed(f32(first) * option_height)}}},
 				) {}
 				for i in first ..< last {
 					label :=
@@ -490,7 +493,7 @@ group_files_panel :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("GroupOptionsAfter"))(
 				{
 					layout = {
-						sizing = {height = clay.SizingFixed(f32((count - last) * option_height))},
+						sizing = {height = clay.SizingFixed(f32(count - last) * option_height)},
 					},
 				},
 				) {}
@@ -688,8 +691,8 @@ group_file_card :: proc(ui: ^Ui_State, job: ^Group_Files_Job, index: int, width:
 				{
 					layout = {
 						sizing = {
-							width = clay.SizingFit({min = tap_size() ? 44 : 0}),
-							height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+							width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+							height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 						},
 						padding = clay.PaddingAll(6),
 						childAlignment = {x = .Center, y = .Center},

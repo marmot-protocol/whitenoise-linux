@@ -133,12 +133,27 @@ inbox_sections :: proc(
 }
 
 @(private)
+inbox_view :: proc() -> (top, height: f32) {
+	short := f32(rl.GetScreenHeight()) / UI_ZOOM < 480
+	id := clay.ID(short ? "RailContent" : "ChatList")
+	data := clay.GetScrollContainerData(id)
+	height =
+		data.found ? data.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
+	top = data.found ? -data.scrollPosition.y : 0
+	if short && data.found {
+		list := clay.GetElementData(clay.ID("ChatList"))
+		rail := clay.GetElementData(id)
+		if list.found &&
+		   rail.found {top -= list.boundingBox.y - rail.boundingBox.y - data.scrollPosition.y}
+	}
+	return
+}
+
+@(private)
 inbox_rows_window :: proc(ui: ^Ui_State, rows: []Inbox_Row, offset_y: f32, section: u32 = 0) {
 	stride := chat_row_height() + 2
-	data := clay.GetScrollContainerData(clay.ID("ChatList"))
-	height :=
-		data.found ? data.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-	offset := (data.found ? -data.scrollPosition.y : 0) - offset_y
+	top, height := inbox_view()
+	offset := top - offset_y
 	first := clamp(int(offset / stride) - 2, 0, len(rows))
 	last := clamp(int((offset + height) / stride) + 3, first, len(rows))
 	if first > 0 {

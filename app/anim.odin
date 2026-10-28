@@ -525,22 +525,47 @@ drag_on: bool
 @(private = "file")
 drag_id: clay.ElementId // the container this drag grabbed
 
+@(private)
+fling_vel: clay.Vector2
+@(private)
+fling_id: clay.ElementId
+
 // A press that turned into a drag opens no link on release.
 drag_moved: bool
 
 update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
+	if mouse_pressed() || rl.GetMouseWheelMoveV() != {} {fling_vel = {}}
+	if fling_vel != {} {
+		data := clay.GetScrollContainerData(fling_id)
+		if !data.found || !motion_on() {
+			fling_vel = {}
+		} else {
+			overflow := clay.Vector2 {
+				max(data.contentDimensions.width - data.scrollContainerDimensions.width, 0),
+				max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+			}
+			before := data.scrollPosition^
+			step := fling_vel * (anim_drain(8) / 8)
+			data.scrollPosition.x = clamp(before.x + step.x, -overflow.x, 0)
+			data.scrollPosition.y = clamp(before.y + step.y, -overflow.y, 0)
+			fling_vel *= 1 - anim_drain(8)
+			if abs(fling_vel.x) < 5 || data.scrollPosition.x == before.x {fling_vel.x = 0}
+			if abs(fling_vel.y) < 5 || data.scrollPosition.y == before.y {fling_vel.y = 0}
+			anim_moving += 1
+		}
+	}
 	// Touch only. A mouse has a wheel, and grabbing the view with the
 	// left button fights click, text selection, and the link guard.
-	if !rl.HasTouch() {
+	if !rl.TouchActive() {
 		return
 	}
 	point := transmute(clay.Vector2)rl.GetMousePosition() / UI_ZOOM
 
 	if rl.IsMouseButtonReleased(.LEFT) {
-		// Hand the throw to the wheel residual, which already knows how
-		// to spend it and where the ends of the content are.
+		// Keep the throw bound to the grabbed view after the finger lifts.
 		if drag_on && drag_moved && motion_on() {
-			scroll_residual += drag_vel / (CLAY_SCROLL_PIXELS * anim_drain(SCROLL_DRAIN))
+			fling_id = drag_id
+			fling_vel = drag_vel / anim_dt
 		}
 		drag_on, drag_vel = false, {}
 		return
@@ -550,6 +575,15 @@ update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
 		return
 	}
 	if !drag_on {
+		// A press is a tap until it travels. A swipe over content with
+		// nothing to scroll must still not click, or flip a toggle, where
+		// it lifts.
+		if rl.IsMouseButtonPressed(.LEFT) {
+			drag_origin = point
+		} else if !blocked &&
+		   max(abs(point.x - drag_origin.x), abs(point.y - drag_origin.y)) > LONG_PRESS_SLOP {
+			drag_moved = true
+		}
 		if blocked || !rl.IsMouseButtonPressed(.LEFT) {
 			return
 		}

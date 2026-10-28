@@ -8,6 +8,8 @@ import "core:strings"
 @(private)
 select_archived_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 	if index < 0 || index >= len(ui.archived) {return}
+	ui.page = .Chats
+	clear(&ui.sidebar_filter)
 	id := ui.archived[index].group_id
 	for chat, i in ui.chats {
 		if chat.group_id == id {select_chat(ui, client, i); return}
@@ -20,7 +22,7 @@ select_archived_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) 
 
 @(private)
 archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
-	if clay.UI(clay.ID("ChatRow", index))(
+	if clay.UI(clay.ID("ArchivedRow", index))(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(ARCHIVED_ROW_H)},
@@ -101,7 +103,7 @@ archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
 		if clay.UI(clay.ID("ChatUnarch", index))(
 		{
 			layout = {
-				sizing = {height = clay.SizingFixed(tap_size() ? 44 : 40)},
+				sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 40)},
 				padding = {left = 12, right = 12},
 				childAlignment = {x = .Center, y = .Center},
 			},
@@ -179,7 +181,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 			// Phones already show Back and the Chats destination.
 			if !single_pane(
 				
-			) {if clay.UI(clay.ID("ArchiveBack"))({layout = {sizing = {height = clay.SizingFixed(tap_size() ? 44 : 36)}, padding = {left = 12, right = 12}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(7), border = {color = FIELD_BORDER, width = bw()}}) {
+			) {if clay.UI(clay.ID("ArchiveBack"))({layout = {sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 36)}, padding = {left = 12, right = 12}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(7), border = {color = FIELD_BORDER, width = bw()}}) {
 					clay.Text(
 						tr("Back to chats"),
 						{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM},
@@ -201,7 +203,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? 44 : 40),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 40),
 					},
 					padding = {left = 12, right = 12},
 					childGap = 10,
@@ -222,24 +224,6 @@ archived_pane :: proc(ui: ^Ui_State) {
 					13,
 					TEXT_LO,
 				)
-			}
-			if len(ui.sidebar_filter) > 0 {
-				if clay.UI(clay.ID("ArchiveClearSearch"))(
-				{
-					layout = {
-						sizing = {height = clay.SizingFixed(tap_size() ? 44 : 40)},
-						padding = {left = 10, right = 10},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = hovered() ? HOVER : {},
-					cornerRadius = rr(7),
-				},
-				) {
-					clay.Text(
-						tr("Clear search"),
-						{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
-					)
-				}
 			}
 		}
 		filter := strings.to_lower(string(ui.sidebar_filter[:]), context.temp_allocator)
@@ -272,7 +256,16 @@ archived_pane :: proc(ui: ^Ui_State) {
 				.Unarchive,
 				8,
 			)
-			if count == 0 {
+			if count == 0 && len(filter) > 0 {
+				chat_rail_hint(
+					"ArchiveNoMatch",
+					tr("Try a different search."),
+					"ArchiveClearSearch",
+					tr("Clear search"),
+					tr("No matching chats"),
+				)
+			}
+			if count == 0 && len(filter) == 0 {
 				if clay.UI(clay.ID("ArchiveEmpty"))(
 				{
 					layout = {
@@ -289,7 +282,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 						{fontId = FONT_ICON, fontSize = 32, textColor = TEXT_LO},
 					)
 					clay.Text(
-						len(filter) == 0 ? tr("No archived chats") : tr("No matching chats"),
+						tr("No archived chats"),
 						{
 							fontId = FONT_TITLE,
 							fontSize = 18,
@@ -298,7 +291,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 						},
 					)
 					clay.Text(
-						len(filter) == 0 ? tr("Chats you archive will appear here.") : tr("Try a different search."),
+						tr("Chats you archive will appear here."),
 						{
 							fontId = FONT_BODY,
 							fontSize = 14,

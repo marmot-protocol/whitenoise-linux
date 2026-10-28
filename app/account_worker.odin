@@ -19,6 +19,7 @@ Account_Operation :: enum {
 	Relays,
 	Key_Package,
 	Read_Key_Packages,
+	Follow,
 	Unfollow,
 	Read_Contacts,
 	Read_Archived,
@@ -196,19 +197,28 @@ account_worker :: proc(t: ^thread.Thread) {
 			0,
 		)
 	case .Key_Package:
+		// The ABI scalar is the package's byte size, despite its relay-count docs.
 		status =
 			job.fresh ? marmot.publish_new_key_package(job.client, account, &job.accepted) : marmot.republish_key_package(job.client, account, &job.accepted)
 		if status == .OK &&
 		   !kp_rows(job.client, job.account, &job.key_rows) {job.error = marmot.last_error()}
+		job.accepted = 0
+		for row in job.key_rows {
+			if row.relay {job.accepted = max(job.accepted, u64(len(row.relay_urls)))}
+		}
 	case .Read_Key_Packages:
 		status = .OK
 		if !kp_rows(job.client, job.account, &job.key_rows) {job.error = marmot.last_error()}
+	case .Follow:
+		out: ^marmot.String_List
+		status = marmot.follow_user(job.client, account, target, &out)
+		if out != nil {marmot.string_list_free(out)}
 	case .Unfollow:
 		out: ^marmot.String_List
 		status = marmot.unfollow_user(job.client, account, target, &out)
 		if out != nil {marmot.string_list_free(out)}
 	case .Read_Contacts:
-		// The picker needs saved people, not every group's membership.
+		// The chat picker includes both followed people and conversation peers.
 		snapshot := Ui_State {
 			account_ref = job.account,
 		}
@@ -216,10 +226,18 @@ account_worker :: proc(t: ^thread.Thread) {
 			job.error = strings.clone(tr("Couldn't load your contacts. Please try again."))
 		}
 		job.contacts = snapshot.contacts
+		if marmot.presented_chat_list(job.client, account, true, &job.chat_list.rows) == .OK {
+			chat_members_fetch(job.client, account, job.chat_list.rows, &job.chat_list.members)
+		}
 		status = .OK
 	case .Create_Chat:
-		members: []cstring
-		if job.target != "" {members = []cstring{target}}
+		members := make([dynamic]cstring, context.temp_allocator)
+		seen := make(map[string]bool, context.temp_allocator)
+		for peer in strings.split(job.target, "\n", context.temp_allocator) {
+			if peer == "" || seen[peer] {continue}
+			seen[peer] = true
+			append(&members, strings.clone_to_cstring(peer, context.temp_allocator))
+		}
 		out: cstring
 		status = marmot.create_group(
 			job.client,
@@ -339,16 +357,31 @@ account_job_drain :: proc(ui: ^Ui_State) {
 					delete(ui.kp_own_json)
 					ui.kp_own_json = ""
 					if job.kind ==
-					   .Key_Package {set_status(ui, fmt.aprintf(tr("Key package accepted by %d relays."), job.accepted), .Info)}
+					   .Key_Package {set_status(ui, fmt.aprintf(tr("Key package published and found on %d relays."), job.accepted), .Info)}
 				case .Relays:
 					set_status(ui, tr("Relay lists republished."), .Info)
-				case .Unfollow:
+				case .Follow, .Unfollow:
 					load_contacts(job.client, ui, .Details)
-					ui.selected_contact = min(ui.selected_contact, len(ui.contacts) - 1)
+					if job.kind == .Unfollow {
+						key, nick := delete_key(&ui.nicknames, job.target)
+						delete(key); delete(nick)
+						save_settings(ui)
+						clear(&ui.sidebar_filter)
+						reset_profile_view(ui)
+						ui.selected_contact = -1
+					} else {
+						clear(&ui.sidebar_filter)
+						set_status(ui, tr("Contact added."), .Info)
+						if ui.profile_contact.id_hex == job.target {
+							for contact, n in ui.contacts {if contact.id_hex == job.target {ui.selected_contact = n; break}}
+							reset_profile_view(ui)
+						}
+					}
 				case .Read_Contacts:
 					nc_contacts_free(&ui.nc_contacts)
 					ui.nc_contacts = job.contacts
 					job.contacts = {}
+					nc_add_chat_peers(ui, job.client, job.chat_list.members)
 				case .Read_Archived:
 					fresh := make([dynamic]Chat_Row_Ui)
 					if rows := job.chat_list.rows; rows != nil {
@@ -417,7 +450,7 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 		return tr("Publishing your key package")
 	case .Read_Key_Packages:
 		return tr("Loading your key packages")
-	case .Unfollow:
+	case .Follow, .Unfollow:
 		return tr("Updating your contacts")
 	case .Read_Contacts:
 		return tr("Loading your contacts")

@@ -1,6 +1,5 @@
 package main
 
-import "core:fmt"
 import "core:math"
 import "core:mem"
 import "core:sync"
@@ -236,20 +235,40 @@ password_estimate :: proc(password: string) -> f64 {
 
 @(private)
 password_hint :: proc(bits: f64) {
+	passing := bits >= PASSWORD_MIN_BITS
 	clay.Text(
-		fmt.tprintf(
-			tr("Estimated strength: %d bits. Required: %d."),
-			int(bits),
-			PASSWORD_MIN_BITS,
-		),
+		!passing ? tr("Too weak") : bits >= PASSWORD_MIN_BITS * 2 ? tr("Strong") : tr("OK"),
+		{fontId = FONT_BODY, fontSize = 12, textColor = passing ? ACCENT : TEXT_DIM},
+	)
+	if clay.UI(clay.ID("PasswordStrengthTrack"))(
+	{
+		layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(5)}},
+		backgroundColor = ROW_BG,
+		cornerRadius = rr(3),
+	},
+	) {
+		if clay.UI(clay.ID("PasswordStrengthFill"))(
 		{
-			fontId = FONT_BODY,
-			fontSize = 12,
-			textColor = bits >= PASSWORD_MIN_BITS ? ACCENT : TEXT_DIM,
+			layout = {
+				sizing = {
+					width = clay.SizingPercent(f32(clamp(bits / PASSWORD_MIN_BITS, 0, 1))),
+					height = clay.SizingFixed(5),
+				},
+			},
+			backgroundColor = passing ? ACCENT : TEXT_DIM,
+			cornerRadius = rr(3),
 		},
-	)
-	clay.Text(
-		tr("Use unrelated words or a password-manager password."),
-		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-	)
+		) {}
+	}
+	// Keep the fields still when the guidance disappears after passing.
+	if clay.UI(clay.ID("PasswordStrengthHint"))(
+	{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({min = 32})}}},
+	) {
+		if !passing {
+			clay.Text(
+				tr("Use unrelated words or a password-manager password."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+		}
+	}
 }

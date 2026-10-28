@@ -21,7 +21,7 @@ frame_wake :: proc() {
 frame_idle :: proc() -> bool {
 	if anim_moving > 0 ||
 	   scroll_jumped ||
-	   voice.stream != nil ||
+	   voice_active() ||
 	   web_modal.open ||
 	   nes_player.open ||
 	   rl.IsMouseButtonDown(.LEFT) ||

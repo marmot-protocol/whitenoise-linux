@@ -1,0 +1,25 @@
+diff --git a/clay.h b/clay.h
+--- a/clay.h
++++ b/clay.h
+@@ -1729,6 +1729,21 @@
+             return &Clay__MeasureTextCacheItem_DEFAULT;
+         }
+         char current = text->chars[end];
++        // CJK text has no spaces: each ideograph, kana or Hangul syllable
++        // (3-byte UTF-8, U+3000-U+DFFF, and fullwidth forms) ends a word,
++        // so a line can break between characters.
++        unsigned char lead = (unsigned char)current;
++        if (end + 2 < text->length && ((lead >= 0xE3 && lead <= 0xED) || (lead == 0xEF && (unsigned char)text->chars[end + 1] >= 0xBC))) {
++            int32_t length = end + 3 - start;
++            Clay_Dimensions dimensions = Clay__MeasureText(CLAY__INIT(Clay_StringSlice) {.length = length, .chars = &text->chars[start], .baseChars = text->chars}, config, context->measureTextUserData);
++            measured->minWidth = CLAY__MAX(dimensions.width, measured->minWidth);
++            measuredHeight = CLAY__MAX(measuredHeight, dimensions.height);
++            previousWord = Clay__AddMeasuredWord(CLAY__INIT(Clay__MeasuredWord) { .startOffset = start, .length = length, .width = dimensions.width, .next = -1 }, previousWord);
++            lineWidth += dimensions.width;
++            start = end + 3;
++            end = start;
++            continue;
++        }
+         if (current == ' ' || current == '\n') {
+             int32_t length = end - start;
+             Clay_Dimensions dimensions = CLAY__DEFAULT_STRUCT;

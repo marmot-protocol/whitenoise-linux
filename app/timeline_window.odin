@@ -135,6 +135,7 @@ reading_clear :: proc(ui: ^Ui_State) {
 
 @(private)
 timeline_scroll_apply :: proc(ui: ^Ui_State) {
+	if !ui.scroll_pending {ui.scroll_settle = 0}
 	if ui.reading_pending.message != ui.jump_id {ui.reading_pending = {}}
 	if ui.jump_id != "" && !ui.timeline_loading && !ui.timeline_paging && !gs_seek_jump(ui) {
 		aligned := true
@@ -168,12 +169,20 @@ timeline_scroll_apply :: proc(ui: ^Ui_State) {
 	}
 	if ui.scroll_pending && !ui.timeline_loading && !ui.timeline_paging {
 		if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
-			data.scrollPosition.y = -max(
+			target := -max(
 				data.contentDimensions.height - data.scrollContainerDimensions.height,
 				0,
 			)
+			// A jump realizes previously virtual rows. Give their actual heights
+			// a few layouts to settle, but never pin a live chat indefinitely.
+			settled := abs(target - data.scrollPosition.y) < 1
+			data.scrollPosition.y = target
 			scroll_jumped = true
-			ui.scroll_pending = false
+			ui.scroll_settle += 1
+			if (settled && ui.scroll_settle >= 2) || ui.scroll_settle >= 6 {
+				ui.scroll_pending = false
+				ui.scroll_settle = 0
+			}
 		}
 	}
 }

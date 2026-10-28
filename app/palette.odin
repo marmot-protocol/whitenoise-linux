@@ -115,6 +115,9 @@ pal_refresh :: proc(ui: ^Ui_State) {
 
 	for tier in 0 ..< 2 {
 		for cmd in Cmd {
+			if single_pane() && (cmd == .Toggle_Rail || cmd == .Toggle_Centered) {continue}
+			if cmd == .Toggle_Members &&
+			   (ui.selected < 0 || ui.page != .Chats || selected_chat_is_dm(ui)) {continue}
 			hay := gs_fold(fmt.tprintf("%s %s", COMMANDS[cmd].label, COMMANDS[cmd].hint))
 			exact := strings.contains(hay, needle)
 			if len(needle) == 0 {
@@ -126,7 +129,7 @@ pal_refresh :: proc(ui: ^Ui_State) {
 			if tier == 0 && !exact {
 				continue
 			}
-			if tier == 1 && (exact || !gs_subseq(hay, needle)) {
+			if tier == 1 && (len(needle) > 4 || exact || !gs_subseq(hay, needle)) {
 				continue
 			}
 			append(&ui.pal_hits, int(cmd))
@@ -168,7 +171,7 @@ palette_modal :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? 44 : 38),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 38),
 					},
 					padding = {left = 12, right = 12},
 					childGap = 8,
@@ -246,7 +249,7 @@ palette_modal :: proc(ui: ^Ui_State) {
 					layout = {
 						sizing = {
 							width = clay.SizingGrow(),
-							height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+							height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 						},
 						padding = {left = 12, right = 12, top = 8, bottom = 8},
 						childGap = 10,
@@ -301,10 +304,12 @@ palette_modal :: proc(ui: ^Ui_State) {
 				)
 			}
 			if clay.UI(clay.ID("PalFootGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			clay.Text(
-				fmt.tprintf("%d", len(ui.pal_hits)),
-				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
-			)
+			if !tap_size() {
+				clay.Text(
+					fmt.tprintf("%d", len(ui.pal_hits)),
+					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
+				)
+			}
 		}
 	}
 }
@@ -444,7 +449,6 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		apply_zoom(ui)
 		save_settings(ui)
 	case .Shortcuts:
-		ui.page = .Settings
 		ui.shortcuts_open = true
 	case .Sign_Out:
 		confirm_ask(ui, .Sign_Out, ui.account_ref, account_label(ui, ui.account_ref))

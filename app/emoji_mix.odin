@@ -337,13 +337,17 @@ emoji_mix_header :: proc(ui: ^Ui_State) {
 			},
 		},
 		) {
-			if len(ui.gemoji) == 0 {
-				clay.Text(
-					tr("No emoji selected"),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
-				)
-			}
-			if clay.UI(clay.ID("GemojiChips"))({layout = {childGap = 6}}) {
+			if clay.UI(clay.ID("GemojiChips"))(
+			{
+				layout = {
+					sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 26)},
+					childGap = 6,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				if len(ui.gemoji) ==
+				   0 {clay.Text(tr("No emoji selected"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})}
 				for e, i in ui.gemoji {
 					gemoji_chip(u32(i), e)
 				}
@@ -367,8 +371,8 @@ gemoji_chip :: proc(index: u32, emoji: string) {
 	{
 		layout = {
 			sizing = {
-				width = clay.SizingFit({min = tap_size() ? 44 : 0}),
-				height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+				width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 			},
 			padding = {left = 6, right = 8, top = 2, bottom = 2},
 			childGap = 4,

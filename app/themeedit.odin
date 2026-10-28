@@ -356,7 +356,6 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 			childGap = 8,
 		},
 		backgroundColor = CARD,
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(14),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
@@ -388,7 +387,9 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 			layout = {
 				sizing = {
 					width = clay.SizingFixed(theme_edit_width()),
-					height = clay.SizingFixed(max(44, modal_h(THEME_EDIT_H + 170) - 170)),
+					height = clay.SizingFixed(
+						max(44, modal_h(THEME_EDIT_H + 170) - (single_pane() ? 220 : 170)),
+					),
 				},
 				layoutDirection = .TopToBottom,
 				childGap = 3,
@@ -398,7 +399,7 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 		) {
 			for field, i in THEME_FIELDS {
 				if len(field.group) > 0 {
-					if clay.UI(clay.ID("ThemeGroup", u32(i)))(
+					if clay.UI(clay.ID("ThemeEditGroup", u32(i)))(
 					{layout = {padding = {top = 8, bottom = 2}}},
 					) {
 						eyebrow(tr(field.group))
@@ -426,7 +427,7 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 					{
 						layout = {
 							sizing = {width = clay.SizingFixed(theme_edit_width())},
-							layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+							layoutDirection = .LeftToRight,
 							childGap = 10,
 							childAlignment = {y = .Center},
 						},
@@ -450,7 +451,7 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 			) {
 				eyebrow(tr("BACKDROP"))
 			}
-			columns := single_pane() ? 1 : THEME_BACKDROPS_PER_ROW
+			columns := single_pane() ? 2 : THEME_BACKDROPS_PER_ROW
 			for row in 0 ..< (len(THEME_BACKDROPS) + columns - 1) / columns {
 				if clay.UI(clay.ID("ThemeBackdrops", u32(row)))(
 				{
@@ -486,13 +487,25 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 		},
 		) {
 			micro_button("ThemeEditCancel", tr("Cancel"))
-			if clay.UI(clay.ID("ThemeEditGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-			micro_button("ThemeEditSave", tr("Save and use"), ACCENT)
+			if !single_pane() {
+				if clay.UI(clay.ID("ThemeEditGap"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {}
+				micro_button("ThemeEditSave", tr("Save and use"), ACCENT)
+			} else {
+				if clay.UI(clay.ID("ThemeEditSave"))(
+				{
+					layout = {
+						sizing = {clay.SizingGrow(), clay.SizingFixed(settings_tap_size(44))},
+						childAlignment = {x = .Center, y = .Center},
+					},
+					backgroundColor = ACCENT,
+					cornerRadius = rr(7),
+				},
+				) {clay.Text(tr("Save and use"), {fontId = FONT_BODY, fontSize = 12, textColor = ON_ACCENT})}
+			}
 		}
 	}
-	scrollbar(clay.ID("ThemeEdit"), 17)
 }
 
 @(private = "file")
@@ -502,7 +515,8 @@ theme_field_row :: proc(ui: ^Ui_State, live: ^Theme_Pack, field: Theme_Field, i:
 		layout = {
 			sizing = {width = clay.SizingFixed(theme_edit_width())},
 			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-			childGap = 8,
+			childGap = single_pane() ? 4 : 8,
+			padding = {bottom = single_pane() ? 12 : 0},
 			childAlignment = {y = .Center},
 		},
 	},
@@ -513,35 +527,50 @@ theme_field_row :: proc(ui: ^Ui_State, live: ^Theme_Pack, field: Theme_Field, i:
 			label = fmt.tprintf(label, fmt.tprintf("%d", field.slot + 1))
 		}
 		clay.Text(label, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
-		if clay.UI(clay.ID("ThemeSeedGap", u32(i)))(
-		{layout = {sizing = {width = clay.SizingGrow()}}},
-		) {}
-
-		// The swatch shows the effective color: what was typed, or the
-		// derived value the placeholder names.
-		if field.kind == .Color {
-			typed := strings.trim_space(string(ui.theme_fields[i][:]))
-			shown := len(typed) > 0 ? typed : theme_field_hint(live, field)
-			if clay.UI(clay.ID("ThemeSeedSwatch", u32(i)))(
-			{
-				layout = {sizing = {width = clay.SizingFixed(18), height = clay.SizingFixed(18)}},
-				backgroundColor = strings.has_prefix(shown, "#") ? parse_hex_color(shown) : clay.Color{},
-				cornerRadius = rr(4),
-				border = {color = DIVIDER, width = bw()},
-			},
+		if !single_pane() {
+			if clay.UI(clay.ID("ThemeSeedGap", u32(i)))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
 			) {}
 		}
-		focused := ui.focus == .ThemeSeed && ui.theme_edit_idx == i
-		hint := theme_field_hint(live, field)
-		if field.token < .Accent_Name_1 || field.token > .Accent_Name_5 {hint = tr(hint)}
-		input_box(
-			ui,
-			fmt.tprintf("ThemeSeedBox%d", i),
-			&ui.theme_fields[i],
-			hint,
-			focused,
-			single_pane() ? 0 : 130,
-		)
+
+		// Keep the swatch beside the field, not between its label and input.
+		if clay.UI(clay.ID("ThemeSeedValue", u32(i)))(
+		{
+			layout = {
+				sizing = {width = single_pane() ? clay.SizingGrow() : clay.SizingFit()},
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
+			// The swatch shows the effective color: what was typed, or the
+			// derived value the placeholder names.
+			if field.kind == .Color {
+				typed := strings.trim_space(string(ui.theme_fields[i][:]))
+				shown := len(typed) > 0 ? typed : theme_field_hint(live, field)
+				if clay.UI(clay.ID("ThemeSeedSwatch", u32(i)))(
+				{
+					layout = {
+						sizing = {width = clay.SizingFixed(18), height = clay.SizingFixed(18)},
+					},
+					backgroundColor = strings.has_prefix(shown, "#") ? parse_hex_color(shown) : clay.Color{},
+					cornerRadius = rr(4),
+					border = {color = DIVIDER, width = bw()},
+				},
+				) {}
+			}
+			focused := ui.focus == .ThemeSeed && ui.theme_edit_idx == i
+			hint := theme_field_hint(live, field)
+			if field.token < .Accent_Name_1 || field.token > .Accent_Name_5 {hint = tr(hint)}
+			input_box(
+				ui,
+				fmt.tprintf("ThemeSeedBox%d", i),
+				&ui.theme_fields[i],
+				hint,
+				focused,
+				single_pane() ? 0 : 130,
+			)
+		}
 	}
 }
 

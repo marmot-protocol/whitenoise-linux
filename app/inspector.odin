@@ -399,8 +399,8 @@ insp_wire_row :: proc(view: ^Stl_View) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFixed(tap_size() ? 44 : 20),
-						height = clay.SizingFixed(tap_size() ? 44 : 20),
+						width = clay.SizingFixed(tap_size() ? tap_min() : 20),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 20),
 					},
 					childAlignment = {x = .Center, y = .Center},
 				},
@@ -456,7 +456,7 @@ insp_section :: proc(view: ^Stl_View, section: Insp_Section) {
 			layout = {
 				sizing = {
 					width = clay.SizingGrow(),
-					height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+					height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 				},
 				padding = {left = 6, right = 6, top = 5, bottom = 5},
 				childAlignment = {y = .Center},
@@ -478,7 +478,7 @@ insp_toggle_row :: proc(view: ^Stl_View) {
 		layout = {
 			sizing = {
 				width = clay.SizingGrow(),
-				height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 			},
 			padding = {left = 6, right = 6, top = 5, bottom = 5},
 			childGap = 8,
@@ -527,7 +527,7 @@ insp_animation :: proc(view: ^Stl_View) {
 			layout = {
 				sizing = {
 					width = clay.SizingGrow(),
-					height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+					height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 				},
 				padding = {left = 6, right = 6, top = 5, bottom = 5},
 				childAlignment = {y = .Center},
@@ -586,7 +586,7 @@ insp_animation :: proc(view: ^Stl_View) {
 		layout = {
 			sizing = {
 				width = clay.SizingFixed(width),
-				height = clay.SizingFixed(tap_size() ? 44 : 12),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 12),
 			},
 			padding = {left = 2, right = 2},
 			childAlignment = {y = .Center},

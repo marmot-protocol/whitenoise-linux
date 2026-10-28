@@ -408,11 +408,13 @@ fx_send_armed :: proc(ui: ^Ui_State) {
 // ── Composer picker ─────────────────────────────────────────────────
 
 // Small popover over the composer: pick an effect for the next send.
+@(private)
+ICON_FX :: "\U000f0674" // creation: sparkle, not the saved-item star
+
 effect_picker :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("FxPanel"))(
 	{
-		// Right-anchored: the star sits near the window's right edge, so
-		// a left-anchored panel would run off-screen.
+		// The parent is FxBtn on desktop and ComposeBox on phone (overflow tools).
 		layout = {
 			layoutDirection = .TopToBottom,
 			sizing = {
@@ -424,10 +426,10 @@ effect_picker :: proc(ui: ^Ui_State) {
 		},
 		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		floating = {
-			attachTo = single_pane() ? .Root : .Parent,
+			attachTo = .Parent,
 			zIndex = 12,
-			offset = {0, (single_pane() ? 0 : -10) + rise(clay.ID("FxPanel"))},
-			attachment = single_pane() ? clay.FloatingAttachPoints{element = .CenterCenter, parent = .CenterCenter} : clay.FloatingAttachPoints{element = .RightBottom, parent = .RightTop},
+			offset = {0, -10 + rise(clay.ID("FxPanel"))},
+			attachment = {element = .RightBottom, parent = .RightTop},
 		},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
@@ -459,8 +461,8 @@ effect_picker :: proc(ui: ^Ui_State) {
 				{
 					layout = {
 						sizing = {
-							width = clay.SizingFixed(tap_size() ? 44 : 38),
-							height = clay.SizingFixed(tap_size() ? 44 : 38),
+							width = clay.SizingFixed(tap_size() ? tap_min() : 38),
+							height = clay.SizingFixed(tap_size() ? tap_min() : 38),
 						},
 						childAlignment = {x = .Center, y = .Center},
 					},

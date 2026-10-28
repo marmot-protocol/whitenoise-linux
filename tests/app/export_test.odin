@@ -47,8 +47,8 @@ transcript_owns_loaded_window :: proc(t: ^testing.T) {
 	export_chat(&ui, nil, .Html)
 	job := ui.transcript
 	defer export_stop(&ui)
-	transcript_snapshot(&ui, job)
-	// The timeline can be freed/replaced immediately after the snapshot.
+	// export_chat snapshots the open chat's loaded window, so the timeline
+	// can be freed or replaced right after it returns.
 	delete(body); delete(records[0].plaintext)
 	ui.messages[0].body = "Replacement"
 	records[0].plaintext = "replacement raw"

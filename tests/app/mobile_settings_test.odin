@@ -92,7 +92,8 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 		ui.shortcuts_open = true
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
 		mobile_settings_inside(t, clay.ID("ShortModal"), viewport)
-		mobile_settings_reveal(t, &ui, "ShortModal", clay.ID("ShortRow", u32(len(SHORTCUTS) - 1)))
+		last_shortcut := len(SHORTCUTS) - (rl.HasTouch() ? 2 : 1)
+		mobile_settings_reveal(t, &ui, "ShortList", clay.ID("ShortRow", u32(last_shortcut)))
 		ui.shortcuts_open = false
 		for creating in ([]bool{true, false}) {
 			ui.backup_mode = creating ? .Create : .Import
@@ -201,7 +202,13 @@ mobile_settings_reveal :: proc(
 ) {
 	panel := clay.GetElementData(clay.ID(panel_id)).boundingBox
 	data := clay.GetScrollContainerData(clay.ID(panel_id))
-	if !testing.expect(t, data.found, "Settings content must register a scroll viewport") {return}
+	if !testing.expectf(
+		t,
+		data.found,
+		"%s must register a scroll viewport for %s",
+		panel_id,
+		string(id.stringId.chars[:id.stringId.length]),
+	) {return}
 	data.scrollPosition^ = {}
 	settings_test_frame(ui)
 	clay.SetPointerState({panel.x + panel.width / 2, panel.y + panel.height / 2}, false)

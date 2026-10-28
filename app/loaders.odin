@@ -176,6 +176,18 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		id_str := record.message_id_hex != nil ? string(record.message_id_hex) : ""
 		sender := record.sender != nil ? string(record.sender) : "?"
 		mine := record.direction != nil && string(record.direction) == "sent"
+		// Match MDK's chat-list delivery projection. A successful local send
+		// is not a relay acknowledgement until the source event exists.
+		delivery := marmot.Delivery_State.NOT_APPLICABLE
+		if mine {
+			delivery = .PENDING
+			if record.invalidation_status != nil &&
+			   string(record.invalidation_status) == "local_publish_failed" {
+				delivery = .FAILED
+			} else if record.source_message_id_hex != nil {
+				delivery = .DELIVERED
+			}
+		}
 
 		// Also discard our persisted tombstones from before local hiding.
 		if ui.hidden[id_str] || (mine && record.deleted) {
@@ -229,6 +241,9 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			if len(label) == 0 {
 				label = mine ? "you" : profile_label(client, sender)
 			}
+			if nick := ui.nicknames[sender]; len(nick) > 0 && !mine {
+				label = nick
+			}
 			append(
 				&ui.messages,
 				Msg_Ui {
@@ -244,17 +259,22 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 					day = format_day(record.timeline_at),
 					sort_at = record.timeline_at,
 					mine = mine,
+					delivery = delivery,
 				},
 			)
 			continue
 		}
 
 		// Sender label + picture from the kind-0 cache; deterministic alias
-		// (or "you") when the profile is unknown.
+		// (or "you") when the profile is unknown. Your private nickname for
+		// a peer wins, as it does in People and the peer popup.
 		info := profile_info(client, sender)
 		label := info.name
 		if len(label) == 0 {
 			label = mine ? "you" : profile_label(client, sender)
+		}
+		if nick := ui.nicknames[sender]; len(nick) > 0 && !mine {
+			label = nick
 		}
 
 		if old, found := previous_ids[id_str];
@@ -263,6 +283,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		   message_matches(previous[old], record, label, info.pic_url) {
 			msg := previous[old]
 			msg.thread_replies = 0
+			msg.delivery = delivery
 			append(&ui.messages, msg)
 			previous[old] = {} // ownership moved into the new snapshot
 			continue
@@ -323,6 +344,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			day       = format_day(record.timeline_at),
 			sort_at   = record.timeline_at,
 			mine      = mine,
+			delivery  = delivery,
 			edited    = record.edit != nil || (has_edits && len(versions) > 0),
 			effect    = record_effect(record),
 		}
@@ -458,9 +480,14 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			}
 			if record.reply_preview != nil {
 				preview := record.reply_preview
-				msg.reply_from = strings.clone(
-					preview.sender != nil ? profile_label(client, string(preview.sender)) : "?",
-				)
+				reply_label := "?"
+				if preview.sender != nil {
+					reply_label = ui.nicknames[string(preview.sender)]
+					if len(reply_label) == 0 {
+						reply_label = profile_label(client, string(preview.sender))
+					}
+				}
+				msg.reply_from = strings.clone(reply_label)
 				if preview.sender != nil {
 					msg.reply_from_id = strings.clone(string(preview.sender))
 				}
@@ -733,7 +760,7 @@ load_archived :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	account_job_start(job)
 }
 
-// Named contacts first, then unresolved ids, each case-insensitive; key is
+// Display labels alphabetically, blank labels last; key is
 // the lowercased name (also the filter haystack), idx the ui.contacts
 // position. Temp-allocated, rebuilt per frame.
 Contact_Order :: struct {
@@ -747,6 +774,9 @@ contact_label :: proc(ui: ^Ui_State, c: Contact_Ui) -> string {
 	if nick, ok := ui.nicknames[c.id_hex]; ok && len(nick) > 0 {
 		return nick
 	}
+	// A placeholder name upgrades to the cached profile name once it lands;
+	// a lookup only, since this runs for every contact on every frame.
+	if c.name == "" || c.name == alias_of(c.id_hex) {return sender_label(c.id_hex)}
 	return c.name
 }
 
@@ -754,11 +784,11 @@ contact_order :: proc(ui: ^Ui_State, contacts: []Contact_Ui) -> []Contact_Order 
 	rows := make([]Contact_Order, len(contacts), context.temp_allocator)
 	for contact, i in contacts {
 		label := contact_label(ui, contact)
-		rows[i] = {
-			strings.to_lower(label, context.temp_allocator),
-			i,
-			label == "" || label == profile_alias(contact.id_hex),
-		}
+		// No real name yet (empty, or only the generated alias): file it
+		// after the named contacts, in its stored order.
+		unnamed := label == "" || label == alias_of(contact.id_hex)
+		key := unnamed ? contact.name : label
+		rows[i] = {strings.to_lower(key, context.temp_allocator), i, unnamed}
 	}
 	slice.sort_by(rows, proc(a, b: Contact_Order) -> bool {
 		if a.unnamed != b.unnamed {return !a.unnamed}
@@ -812,7 +842,7 @@ contact_groups :: proc(
 	indices: map[string]int,
 ) {
 	for member in members {
-		if member.local || member.member_id_hex == nil {
+		if member.member_id_hex == nil {
 			continue
 		}
 		id := string(member.member_id_hex)

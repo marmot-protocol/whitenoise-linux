@@ -76,7 +76,7 @@ issue_button :: proc(id, label: string) {
 	if clay.UI(clay.ID(id))(
 	{
 		layout = {
-			sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
+			sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
 			padding = {left = 14, right = 14, top = 9, bottom = 9},
 			childAlignment = {x = .Center, y = .Center},
 		},
@@ -221,7 +221,7 @@ issues_panel :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("IssueFilterToggle"))(
 				{
 					layout = {
-						sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
+						sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
 						padding = {top = 3, bottom = 3},
 						childGap = 8,
 						childAlignment = {y = .Center},

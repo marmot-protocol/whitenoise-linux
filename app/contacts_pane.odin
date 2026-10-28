@@ -48,6 +48,26 @@ contacts_empty :: proc(total, shown, query_len: int) -> Contacts_Empty {
 	return .None
 }
 
+@(private)
+contact_saved :: proc(ui: ^Ui_State, hex: string) -> bool {
+	for contact in ui.contacts {if contact.id_hex == hex {return true}}
+	return false
+}
+
+@(private)
+contact_query_hex :: proc(ui: ^Ui_State) -> string {
+	hex := nc_address_hex(ui, string(ui.sidebar_filter[:]))
+	if contact_saved(ui, hex) {return ""}
+	return hex
+}
+
+// Contact placeholders use the same round shape as their eventual photo.
+@(private)
+contact_picture :: proc(contact: Contact_Ui) -> ^rl.Texture2D {
+	if photo := url_pic(contact.pic_url); photo != nil {return photo}
+	return url_pic(fmt.tprintf("crop-round:%s", contact.id_hex))
+}
+
 // The rail's contacts in display order, narrowed by its search box.
 @(private)
 contact_rail_matches :: proc(ui: ^Ui_State) -> []Contact_Order {
@@ -133,43 +153,45 @@ contacts_pane :: proc(ui: ^Ui_State) {
 	},
 	) {
 		// Header strip: icon plate + page title, like the chat header.
-		if clay.UI(clay.ID("ContactHead"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 10,
-				childAlignment = {y = .Center},
-				padding = {bottom = 4},
-			},
-		},
-		) {
-			if clay.UI(clay.ID("ContactHeadIcon"))(
+		if !compact {
+			if clay.UI(clay.ID("ContactHead"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(28)},
-					childAlignment = {x = .Center, y = .Center},
+					sizing = {width = clay.SizingGrow()},
+					childGap = 10,
+					childAlignment = {y = .Center},
+					padding = {bottom = 4},
 				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(8),
-				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
+				if clay.UI(clay.ID("ContactHeadIcon"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(28)},
+						childAlignment = {x = .Center, y = .Center},
+					},
+					backgroundColor = ROW_BG,
+					cornerRadius = rr(8),
+					border = {color = FIELD_BORDER, width = bw()},
+				},
+				) {
+					clay.Text(
+						PAGE_ICONS[Page.Contacts],
+						{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
+					)
+				}
 				clay.Text(
-					PAGE_ICONS[Page.Contacts],
-					{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
+					tr(ui.selected_contact >= 0 ? N_("Contact") : N_("Profile")),
+					{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
 				)
 			}
-			clay.Text(
-				tr(ui.selected_contact >= 0 ? N_("Contact") : N_("Profile")),
-				{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
-			)
+			if clay.UI(clay.ID("ContactHeadRule"))(
+			{
+				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)}},
+				backgroundColor = DIVIDER,
+			},
+			) {}
 		}
-		if clay.UI(clay.ID("ContactHeadRule"))(
-		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)}},
-			backgroundColor = DIVIDER,
-		},
-		) {}
 
 		if clay.UI(clay.ID("ContactHero"))(
 		{
@@ -182,13 +204,14 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			},
 		},
 		) {
+			photo := contact_picture(contact)
 			avatar(
 				"ContactHeroAvatar",
 				0,
-				contact.id_hex,
+				photo == nil ? contact.npub : contact.id_hex,
 				contact.name,
 				52,
-				url_pic(contact.pic_url),
+				photo,
 			)
 			if clay.UI(clay.ID("ContactHeroCol"))(
 			{
@@ -200,15 +223,19 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				clip = {horizontal = true},
 			},
 			) {
+				name_font := title_font != 0 ? title_font : FONT_TITLE
+				name_w := clay.GetElementData(clay.ID("ContactHeroCol")).boundingBox.width
+				if name_w <= 0 {name_w = max(1, page_w(ui) - (compact ? 48 : 240))}
 				clay.Text(
-					contact_label(ui, contact),
-					{
-						fontId = title_font != 0 ? title_font : FONT_TITLE,
-						fontSize = 20,
-						textColor = TEXT,
-						wrapMode = .None,
-					},
+					text_ellipsis(contact_label(ui, contact), name_w, name_font, 20),
+					{fontId = name_font, fontSize = 20, textColor = TEXT, wrapMode = .None},
 				)
+				if ui.blocked[contact.id_hex] {
+					clay.Text(
+						tr("Blocked"),
+						{fontId = FONT_TITLE, fontSize = 12, textColor = DANGER},
+					)
+				}
 				clay.Text(
 					npub_tail(contact.npub),
 					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, wrapMode = .None},
@@ -218,7 +245,12 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				}
 				if contact_label(ui, contact) != contact.name {
 					clay.Text(
-						fmt.tprintf(tr("aka %s"), contact.name),
+						text_ellipsis(
+							fmt.tprintf(tr("aka %s"), contact.name),
+							name_w,
+							FONT_BODY,
+							11,
+						),
 						{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO, wrapMode = .None},
 					)
 				}
@@ -226,7 +258,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("StartChatBtn"))(
 			{
 				layout = {
-					sizing = {height = clay.SizingFixed(tap_size() ? 44 : 38)},
+					sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 38)},
 					padding = {left = 12, right = 12},
 					childGap = 8,
 					childAlignment = {x = .Center, y = .Center},
@@ -251,7 +283,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			layout = {
 				sizing = {
 					width = clay.SizingGrow(),
-					height = clay.SizingFixed(tap_size() ? 44 : 36),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 36),
 				},
 				padding = {left = 12, right = 12},
 				childAlignment = {y = .Center},
@@ -324,7 +356,6 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				font = FONT_TITLE,
 			)
 		}
-		micro_button("QrBtn", tr("Show as QR"))
 
 		if clay.UI(clay.ID("KpEyebrow"))({layout = {padding = {top = 8}}}) {
 			eyebrow(tr("KEY PACKAGE"))
@@ -375,6 +406,12 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("CommonGroups"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom}},
 		) {
+			if len(contact.groups) == 0 {
+				clay.Text(
+					tr("No groups in common."),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				)
+			}
 			for group, i in contact.groups {
 				if i > 0 {
 					if clay.UI(clay.ID("CommonGroupRule", u32(i)))(
@@ -391,7 +428,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 					layout = {
 						sizing = {
 							width = clay.SizingGrow(),
-							height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+							height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 						},
 						padding = {left = 8, right = 8, top = 8, bottom = 8},
 						childGap = 10,
@@ -428,7 +465,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		}
 
 		// Local-only block: nothing is published. Their messages collapse
-		// behind a Show toggle and a 1:1 chat with them loses its composer.
+		// behind a Show toggle. Unblocking is a neutral, reversible action.
 		if clay.UI(clay.ID("ActionsEyebrow"))({layout = {padding = {top = 8}}}) {
 			eyebrow(tr("ACTIONS"))
 		}
@@ -438,7 +475,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			micro_button(
 				"BlockBtn",
 				ui.blocked[contact.id_hex] ? tr("Unblock") : tr("Block"),
-				DANGER,
+				ui.blocked[contact.id_hex] ? TEXT_DIM : DANGER,
 			)
 			if ui.selected_contact >= 0 {
 				micro_button("RemoveContactBtn", tr("Remove contact"), DANGER)
@@ -565,7 +602,7 @@ kp_note :: proc(state: Kp_Probe) -> string {
 // rasterized by the in-app encoder (show_contact_qr).
 qr_modal :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 	width := modal_w(clay.ID("QrModal"), 300)
-	qr_side := max(1, min(260, width - 40))
+	qr_side := max(1, min(260, width - 40, modal_h(420) - 140))
 	if clay.UI(clay.ID("QrModal"))(
 	{
 		layout = {
@@ -579,7 +616,6 @@ qr_modal :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 			childAlignment = {x = .Center},
 		},
 		backgroundColor = CARD,
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
@@ -591,7 +627,7 @@ qr_modal :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 	},
 	) {
 		clay.Text(
-			contact_label(ui, contact),
+			text_ellipsis(contact.name, width - 40, FONT_TITLE, 15),
 			{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT},
 		)
 		if clay.UI(clay.ID("QrImage"))(
@@ -606,7 +642,6 @@ qr_modal :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 		clay.Text(npub_tail(ui.qr_npub), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})
 		micro_button("QrClose", tr("Close"))
 	}
-	scrollbar(clay.ID("QrModal"), 14)
 }
 
 // Rasterize the contact's marmot:// deep link into a texture.

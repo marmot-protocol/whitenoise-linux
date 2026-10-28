@@ -39,8 +39,8 @@ micro_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
 	{
 		layout = {
 			sizing = {
-				width = clay.SizingFit({tap_size() ? 44 : 0, 0}),
-				height = clay.SizingFit({tap_size() ? 44 : 0, 0}),
+				width = clay.SizingFit({tap_size() ? tap_min() : 0, 0}),
+				height = clay.SizingFit({tap_size() ? tap_min() : 0, 0}),
 			},
 			padding = {left = 10, right = 10, top = 5 + down, bottom = 5 - down},
 			childAlignment = {x = .Center, y = .Center},
@@ -157,7 +157,7 @@ theme_chip_indexed :: proc(id_str: string, index: u32, label: string, active: bo
 	if clay.UI(clay.ID(id_str, index))(
 	{
 		layout = {
-			sizing = {height = clay.SizingFit({tap_size() ? 44 : 0, 0})},
+			sizing = {height = clay.SizingFit({tap_size() ? tap_min() : 0, 0})},
 			padding = {left = 14, right = 14, top = 8, bottom = 8},
 			childAlignment = {x = .Center, y = .Center},
 		},
@@ -181,8 +181,8 @@ header_chip :: proc(id_str: string, glyph: string, active: bool, label: string) 
 	{
 		layout = {
 			sizing = {
-				width = clay.SizingFit({min = tap_size() ? 44 : 0}),
-				height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+				width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 			},
 			padding = {left = 10, right = 10, top = pad, bottom = pad},
 			childAlignment = {x = .Center, y = .Center},

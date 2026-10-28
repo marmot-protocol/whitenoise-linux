@@ -139,6 +139,9 @@ msgstr "%d relay su %d sono attivi."
 msgid "%d of %d shared with you"
 msgstr "%d di %d in comune con te"
 
+msgid "%d people will be added to the group."
+msgstr "%d persone verranno aggiunte al gruppo."
+
 #, c-format
 msgid "%d published, %d on this device, seen on %d relays."
 msgstr "%d pubblicati, %d su questo dispositivo, visti su %d relay."
@@ -154,6 +157,12 @@ msgstr "%d risposte"
 #, c-format
 msgid "%d reply"
 msgstr "%d risposta"
+
+msgid "%d result"
+msgstr "%d risultato"
+
+msgid "%d results"
+msgstr "%d risultati"
 
 #, c-format
 msgid "%d rule"
@@ -179,9 +188,21 @@ msgstr "%d secondi"
 msgid "%d seconds ago"
 msgstr "%d secondi fa"
 
+msgid "%d terminal"
+msgstr "%d terminale"
+
+msgid "%d terminals"
+msgstr "%d terminali"
+
+msgid "%d voters"
+msgstr "%d votanti"
+
 #, c-format
 msgid "%d votes"
 msgstr "%d voti"
+
+msgid "%d waiting"
+msgstr "%d in attesa"
 
 #, c-format
 msgid "%d year ago"
@@ -198,6 +219,9 @@ msgstr "%d/%d RELAY"
 #, c-format
 msgid "%s added %s"
 msgstr "%s ha aggiunto %s"
+
+msgid "%s audit log"
+msgstr "Registro di audit: %s"
 
 #, c-format
 msgid "%s changed the disappearing message timer"
@@ -267,6 +291,9 @@ msgstr "%s verrà aggiunto al gruppo."
 msgid "%s · Click to download."
 msgstr "%s · Clicca per scaricare."
 
+msgid "%s: %s"
+msgstr "%s: %s"
+
 msgid "(no display name)"
 msgstr "(nessun nome visualizzato)"
 
@@ -289,6 +316,9 @@ msgstr "+%d altri"
 msgid "1 vote"
 msgstr "1 voto"
 
+msgid "1 voter"
+msgstr "1 votante"
+
 msgid "25 European languages, including English and Italian."
 msgstr "25 lingue europee, tra cui inglese e italiano."
 
@@ -298,6 +328,9 @@ msgstr "Modelli 3D"
 msgid "A checked box means you placed the chat by hand. Clear it to let folder rules decide."
 msgstr "Una casella spuntata indica che hai messo la chat a mano. Togli la spunta per lasciar decidere le regole delle cartelle."
 
+msgid "A client for private group chat. Messages are sealed with MLS on this device, handed to Nostr relays as opaque blobs, and opened again only inside the group."
+msgstr "Un client per chat di gruppo private. I messaggi vengono sigillati con MLS su questo dispositivo, passati ai relay Nostr come dati opachi e riaperti solo all'interno del gruppo."
+
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "Un client desktop per chat di gruppo private. I messaggi vengono sigillati con MLS su questa macchina, consegnati ai relay Nostr come blob opachi e riaperti solo all'interno del gruppo."
 
@@ -306,6 +339,9 @@ msgstr "Un pacchetto chiavi permette agli altri di invitarti nelle chat crittogr
 
 msgid "A line about you"
 msgstr "Una riga su di te"
+
+msgid "A message at this size."
+msgstr "Un messaggio di queste dimensioni."
 
 msgid "A terminal is waiting for you."
 msgstr "Un terminale richiede la tua attenzione."
@@ -369,11 +405,20 @@ msgstr "Azione non riuscita: %s"
 msgid "Add"
 msgstr "Aggiungi"
 
+msgid "Add a question and at least two options."
+msgstr "Aggiungi una domanda e almeno due opzioni."
+
 msgid "Add account"
 msgstr "Aggiungi account"
 
 msgid "Add an option..."
 msgstr "Aggiungi un'opzione..."
+
+msgid "Add another account"
+msgstr "Aggiungi un altro account"
+
+msgid "Add contact"
+msgstr "Aggiungi contatto"
 
 msgid "Add member"
 msgstr "Aggiungi membro"
@@ -396,8 +441,14 @@ msgstr "Aggiungi regola"
 msgid "Add someone by npub, or make a group of your own."
 msgstr "Aggiungi qualcuno tramite npub, oppure crea un gruppo tutto tuo."
 
+msgid "Add someone from their profile or paste their npub above. You can also import a contacts CSV or JSON export."
+msgstr "Aggiungi qualcuno dal suo profilo o incolla il suo npub qui sopra. Puoi anche importare i contatti da un file CSV o JSON."
+
 msgid "Add to group"
 msgstr "Aggiungi a un gruppo"
+
+msgid "Add your Nostr identity"
+msgstr "Aggiungi la tua identità Nostr"
 
 msgid "Added to your stickers"
 msgstr "Aggiunto ai tuoi adesivi"
@@ -458,6 +509,9 @@ msgstr "Un'altra modifica del gruppo ha avuto la precedenza. Controlla le impost
 
 msgid "Any attachment"
 msgstr "Qualsiasi allegato"
+
+msgid "Any day"
+msgstr "Qualsiasi giorno"
 
 msgid "Any sender"
 msgstr "Qualsiasi mittente"
@@ -592,6 +646,9 @@ msgstr "Torna ai set"
 msgid "Back up local data"
 msgstr "Esegui il backup dei dati locali"
 
+msgid "Back up your key"
+msgstr "Fai un backup della tua chiave"
+
 msgid "Background"
 msgstr "Sfondo"
 
@@ -628,6 +685,9 @@ msgstr "Blocca"
 
 msgid "Block this contact?"
 msgstr "Bloccare questo contatto?"
+
+msgid "Blocked"
+msgstr "Bloccato"
 
 msgid "Blocked message"
 msgstr "Messaggio bloccato"
@@ -703,6 +763,9 @@ msgstr "Annulla connessione"
 
 msgid "Cancel edit / reply, close panels"
 msgstr "Annulla modifica / risposta, chiudi i pannelli"
+
+msgid "Cancel reply"
+msgstr "Annulla risposta"
 
 msgid "Card border"
 msgstr "Bordo scheda"
@@ -782,6 +845,9 @@ msgstr "Opzioni chat"
 msgid "Chat restored."
 msgstr "Chat ripristinata."
 
+msgid "Chat settings"
+msgstr "Impostazioni della chat"
+
 msgid "Chat with AI agents, end-to-end encrypted like any other chat. Each agent runs on a computer or server you control, using its own account."
 msgstr "Chatta con gli agenti IA con crittografia end-to-end, come in qualsiasi altra chat. Ogni agente viene eseguito su un computer o server che controlli, usando un proprio account."
 
@@ -816,8 +882,14 @@ msgstr "Verifica ora"
 msgid "Check your key package"
 msgstr "Verifica il tuo pacchetto chiavi"
 
+msgid "Check your system notifications for the test alert."
+msgstr "Cerca l'avviso di prova nelle notifiche di sistema."
+
 msgid "Checking for updates."
 msgstr "Controllo degli aggiornamenti in corso."
+
+msgid "Checking relays..."
+msgstr "Controllo dei relay..."
 
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "Verifica della tua chiave con i relay. Richiede qualche secondo."
@@ -843,6 +915,9 @@ msgstr "Testo chip"
 msgid "Choose a contact or paste a Nostr address."
 msgstr "Scegli un contatto o incolla un indirizzo Nostr."
 
+msgid "Choose a contact or paste public keys separated by commas."
+msgstr "Scegli un contatto o incolla le chiavi pubbliche separate da virgole."
+
 msgid "Choose a contacts CSV or JSON export to import."
 msgstr "Scegli un'esportazione dei contatti CSV o JSON da importare."
 
@@ -854,6 +929,9 @@ msgstr "Scegli una destinazione per questo progetto."
 
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr "Scegli un mittente conosciuto o inserisci una chiave pubblica esadecimale di 64 caratteri."
+
+msgid "Choose a known sender or enter a public key."
+msgstr "Scegli un mittente conosciuto o inserisci una chiave pubblica."
 
 msgid "Choose a location before sending."
 msgstr "Scegli una posizione prima di inviare."
@@ -911,6 +989,9 @@ msgstr "Scegli dove si aprono le patch git"
 
 msgid "Choose where people reach you"
 msgstr "Scegli dove ti raggiungono gli altri"
+
+msgid "Choose where to save the backup."
+msgstr "Scegli dove salvare il backup."
 
 msgid "Choose where you publish"
 msgstr "Scegli dove pubblichi"
@@ -1077,6 +1158,9 @@ msgstr "Guida del connettore"
 msgid "Contact"
 msgstr "Contatto"
 
+msgid "Contact added."
+msgstr "Contatto aggiunto."
+
 msgid "Contact list collapsed"
 msgstr "Elenco contatti compresso"
 
@@ -1163,6 +1247,9 @@ msgstr "Scala angoli"
 #, c-format
 msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr "Impossibile aggiungere il record %d. %s Controlla le impostazioni dei tuoi relay e importa di nuovo."
+
+msgid "Couldn't add that relay. Double-check the address and try again."
+msgstr "Impossibile aggiungere questo relay. Controlla l'indirizzo e riprova."
 
 msgid "Couldn't add the pack. No supported stickers are available."
 msgstr "Impossibile aggiungere il pacchetto. Non ci sono adesivi supportati disponibili."
@@ -1277,6 +1364,9 @@ msgstr "Impossibile esportare la chat. Riprova."
 msgid "Couldn't export the key. %s"
 msgstr "Impossibile esportare la chiave. %s"
 
+msgid "Couldn't find your account on the relays. Check your relay settings and try again."
+msgstr "Impossibile trovare il tuo account sui relay. Controlla le impostazioni dei relay e riprova."
+
 msgid "Couldn't finish dictation. Please try again."
 msgstr "Impossibile completare la dettatura. Riprova."
 
@@ -1289,6 +1379,12 @@ msgstr "Impossibile inoltrare. Riprova."
 
 msgid "Couldn't get your location. Check your desktop location permissions or pick a point on the map."
 msgstr "Impossibile ottenere la tua posizione. Controlla i permessi di localizzazione del desktop o scegli un punto sulla mappa."
+
+msgid "Couldn't get your location. Check your device's location permissions and try again."
+msgstr "Impossibile ottenere la tua posizione. Controlla le autorizzazioni di localizzazione del tuo dispositivo e riprova."
+
+msgid "Couldn't get your location. Check your device's location permissions or pick a point on the map."
+msgstr "Impossibile ottenere la tua posizione. Controlla le autorizzazioni di localizzazione del tuo dispositivo o scegli un punto sulla mappa."
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "Impossibile rilevare la voce. Parla chiaramente e riprova."
@@ -1319,6 +1415,9 @@ msgstr "Impossibile importare i contatti. Usa l'intestazione CSV name,npub,nickn
 
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "Impossibile importare l'adesivo. Scegli un'immagine inferiore a 4 MiB."
+
+msgid "Couldn't invite the member. Enter a public key or verified address and try again."
+msgstr "Non è stato possibile invitare il membro. Inserisci una chiave pubblica o un indirizzo verificato e riprova."
 
 msgid "Couldn't invite the member. Enter an npub or nprofile and try again."
 msgstr "Impossibile invitare il membro. Inserisci un npub o nprofile e riprova."
@@ -1504,6 +1603,9 @@ msgstr "Impossibile risolvere %s su Namecoin. Ricontrollalo e riprova."
 msgid "Couldn't reveal your private key. %s"
 msgstr "Impossibile mostrare la tua chiave privata. %s"
 
+msgid "Couldn't reveal your secret key. Please try again."
+msgstr "Impossibile mostrare la tua chiave segreta. Riprova."
+
 #, c-format
 msgid "Couldn't save %s. Please try again."
 msgstr "Impossibile salvare %s. Riprova."
@@ -1569,6 +1671,9 @@ msgstr "Impossibile condividere il tema. Riprova."
 msgid "Couldn't share the theme. Please try again. %s"
 msgstr "Impossibile condividere il tema. Riprova. %s"
 
+msgid "Couldn't show a notification. Check your system notification settings and try again."
+msgstr "Impossibile mostrare una notifica. Controlla le impostazioni delle notifiche di sistema e riprova."
+
 #, c-format
 msgid "Couldn't start %s. Its cartridge type isn't supported."
 msgstr "Impossibile avviare %s. Il tipo di cartuccia non è supportato."
@@ -1620,6 +1725,12 @@ msgstr "Impossibile salvare l'adesivo. Attendi il caricamento dell'immagine e ri
 
 msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
 msgstr "Impossibile usare l'adesivo. Scegli un PNG, WebP o JPEG statico fino a 4096 pixel."
+
+msgid "Couldn't use this Lightning address. Double-check it and try again."
+msgstr "Impossibile usare questo indirizzo Lightning. Controllalo e riprova."
+
+msgid "Couldn't use this Nostr address. Double-check it and try again."
+msgstr "Impossibile usare questo indirizzo Nostr. Controllalo e riprova."
 
 msgid "Couldn't verify the update. Please try again."
 msgstr "Impossibile verificare l’aggiornamento. Riprova."
@@ -1708,6 +1819,9 @@ msgstr "PROFONDITÀ"
 msgid "DETAILS"
 msgstr "DETTAGLI"
 
+msgid "DEVELOPER TOOLS"
+msgstr "STRUMENTI PER SVILUPPATORI"
+
 msgid "DISPLAY NAME"
 msgstr "NOME VISUALIZZATO"
 
@@ -1741,6 +1855,9 @@ msgstr "Rifiuto del tuo invito"
 msgid "Decode own"
 msgstr "Decodifica i tuoi"
 
+msgid "Decrypting..."
+msgstr "Decifratura in corso..."
+
 msgid "Default"
 msgstr "Predefinito"
 
@@ -1762,8 +1879,14 @@ msgstr "Elimina per me"
 msgid "Delete for you?"
 msgstr "Eliminare per te?"
 
+msgid "Delete keys and chats"
+msgstr "Elimina chiavi e chat"
+
 msgid "Delete this folder?"
 msgstr "Eliminare questa cartella?"
+
+msgid "Delete this message for you?"
+msgstr "Eliminare questo messaggio per te?"
 
 msgid "Delete this message?"
 msgstr "Eliminare questo messaggio?"
@@ -1859,6 +1982,9 @@ msgstr "Messaggi effimeri"
 
 msgid "Discard"
 msgstr "Scarta"
+
+msgid "Discard profile changes?"
+msgstr "Vuoi scartare le modifiche al profilo?"
 
 msgid "Discard your theme changes?"
 msgstr "Scartare le modifiche al tema?"
@@ -2001,8 +2127,14 @@ msgstr "Crittografato end-to-end"
 msgid "Enter a color as #RRGGBB."
 msgstr "Inserisci un colore nel formato #RRGGBB."
 
+msgid "Enter a display name."
+msgstr "Inserisci un nome visualizzato."
+
 msgid "Enter a folder name."
 msgstr "Inserisci un nome per la cartella."
+
+msgid "Enter a number of people."
+msgstr "Inserisci un numero di persone."
 
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr "Inserisci un indirizzo IPv4 numerico o IPv6 tra parentesi quadre con una porta da 1 a 65535."
@@ -2016,6 +2148,9 @@ msgstr "Inserisci un nome per l'adesivo da 1 a 64 caratteri."
 msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
 msgstr "Inserisci nome utente e password, ciascuno da 1 a 255 byte UTF-8."
 
+msgid "Enter a username and password, each up to 255 characters."
+msgstr "Inserisci un nome utente e una password, ciascuno di massimo 255 caratteri."
+
 msgid "Enter a valid pack link or address."
 msgstr "Inserisci un link o un indirizzo valido per il pacchetto."
 
@@ -2028,6 +2163,9 @@ msgstr "Inserisci almeno 2 persone. Il conteggio include te."
 #, c-format
 msgid "Enter dates like %s, with the start on or before the end."
 msgstr "Inserisci date come %s. La data iniziale non deve essere successiva a quella finale."
+
+msgid "Enter moves to the next field, Escape cancels."
+msgstr "Invio passa al campo successivo, Esc annulla."
 
 msgid "Enter publishes, Escape cancels."
 msgstr "Invio pubblica, Esc annulla."
@@ -2108,6 +2246,9 @@ msgstr "Esporta chiave crittografata (ncryptsec)"
 msgid "Export key"
 msgstr "Esporta chiave"
 
+msgid "Export key first"
+msgstr "Prima esporta la chiave"
+
 msgid "External browsers and other apps do not use this setting."
 msgstr "I browser esterni e le altre app non usano questa impostazione."
 
@@ -2116,6 +2257,9 @@ msgstr "I browser esterni, le altre app e gli aggiornamenti dell'app su Windows 
 
 msgid "FILES"
 msgstr "FILE"
+
+msgid "Failed"
+msgstr "Non riuscito"
 
 msgid "Family"
 msgstr "Famiglia"
@@ -2155,6 +2299,9 @@ msgstr "Filtra le chat"
 
 msgid "Filter unread chats"
 msgstr "Filtra le chat non lette"
+
+msgid "Filters"
+msgstr "Filtri"
 
 msgid "Final render"
 msgstr "Render finale"
@@ -2225,11 +2372,17 @@ msgstr "Cibo"
 msgid "Forget all"
 msgstr "Dimentica tutti"
 
+msgid "Forgot password? Start over"
+msgstr "Password dimenticata? Ricomincia"
+
 msgid "Forward"
 msgstr "Inoltra"
 
 msgid "Forward to"
 msgstr "Inoltra a"
+
+msgid "Forwarded to %s"
+msgstr "Inoltrato a %s"
 
 #, c-format
 msgid "Forwarding to %s…"
@@ -2286,6 +2439,9 @@ msgstr "Ricevi un avviso quando arriva un messaggio in una chat che non stai gua
 
 msgid "Get desktop notifications"
 msgstr "Ricevi le notifiche sul desktop"
+
+msgid "Get message notifications"
+msgstr "Ricevi notifiche per i messaggi"
 
 msgid "Get started"
 msgstr "Inizia"
@@ -2376,6 +2532,9 @@ msgstr "Nascondi i set di emoji"
 
 msgid "Hide hidden message"
 msgstr "Nascondi il messaggio nascosto"
+
+msgid "Hide passwords"
+msgstr "Nascondi password"
 
 msgid "Home"
 msgstr "Casa"
@@ -2473,6 +2632,9 @@ msgstr "Importazione dei contatti: %d di %d"
 
 msgid "Importing emoji"
 msgstr "Importazione delle emoji"
+
+msgid "Importing emoji..."
+msgstr "Importazione delle emoji..."
 
 msgid "Incoming messages"
 msgstr "Messaggi in arrivo"
@@ -2611,6 +2773,9 @@ msgstr "Tieni in ordine il tuo elenco di chat senza eliminare le conversazioni."
 msgid "Keep your conversations in order."
 msgstr "Tieni in ordine le tue conversazioni."
 
+msgid "Keep your keys and chats"
+msgstr "Conserva le tue chiavi e chat"
+
 msgid "Keep your signer open. Approve the connection and requested signatures there."
 msgstr "Tieni aperto il tuo firmatario. Approva lì la connessione e le firme richieste."
 
@@ -2621,6 +2786,9 @@ msgstr "Pacchetto chiavi accettato da %d relay."
 msgid "Key package published"
 msgstr "Pacchetto chiavi pubblicato"
 
+msgid "Key package published and found on %d relays."
+msgstr "Pacchetto chiave pubblicato e trovato su %d relay."
+
 msgid "Key package ref"
 msgstr "Riferimento pacchetto chiavi"
 
@@ -2629,6 +2797,9 @@ msgstr "Pacchetti chiavi"
 
 msgid "Key packages are published to your key package relays."
 msgstr "I pacchetti chiavi vengono pubblicati sui tuoi relay per i pacchetti chiavi."
+
+msgid "Key packages let people invite you. Refresh checks the app's default relays for published copies."
+msgstr "I pacchetti chiave permettono agli altri di invitarti. Aggiorna controlla i relay predefiniti dell'app per le copie pubblicate."
 
 msgid "Keyboard shortcuts"
 msgstr "Scorciatoie da tastiera"
@@ -2641,6 +2812,9 @@ msgstr "Chiavi e identità"
 
 msgid "Known senders"
 msgstr "Mittenti conosciuti"
+
+msgid "LIGHTNING"
+msgstr "LIGHTNING"
 
 msgid "LINES"
 msgstr "LINEE"
@@ -2708,8 +2882,14 @@ msgstr "Uscita dal tuo gruppo"
 msgid "Light"
 msgstr "Chiaro"
 
+msgid "Lightning"
+msgstr "Lightning"
+
 msgid "Lime"
 msgstr "Lime"
+
+msgid "Link copied"
+msgstr "Link copiato"
 
 msgid "Link previews"
 msgstr "Anteprime dei link"
@@ -2732,8 +2912,14 @@ msgstr "Testo letterale del messaggio"
 msgid "Loading emoji previews"
 msgstr "Caricamento delle anteprime delle emoji"
 
+msgid "Loading emoji previews..."
+msgstr "Caricamento delle anteprime delle emoji..."
+
 msgid "Loading emoji sets"
 msgstr "Caricamento dei set di emoji"
+
+msgid "Loading emoji sets..."
+msgstr "Caricamento dei set di emoji..."
 
 msgid "Loading full resolution…"
 msgstr "Caricamento della risoluzione completa…"
@@ -2816,6 +3002,9 @@ msgstr "Link magnet copiato"
 msgid "Make White Noise work your way."
 msgstr "Adatta White Noise alle tue esigenze."
 
+msgid "Make everything larger or smaller."
+msgstr "Ingrandisci o riduci tutta l'interfaccia."
+
 msgid "Make this member an admin?"
 msgstr "Rendere admin questo membro?"
 
@@ -2827,6 +3016,9 @@ msgstr "Gestisci"
 
 msgid "Manage connections and published relay lists."
 msgstr "Gestisci le connessioni e gli elenchi relay pubblicati."
+
+msgid "Manage contacts"
+msgstr "Gestisci contatti"
 
 msgid "Manage local files and encrypted backups."
 msgstr "Gestisci i file locali e i backup crittografati."
@@ -2887,6 +3079,9 @@ msgstr "Limite di righe dei messaggi"
 
 msgid "Message menu"
 msgstr "Menu del messaggio"
+
+msgid "Message notifications"
+msgstr "Notifiche dei messaggi"
 
 msgid "Message text copied"
 msgstr "Testo del messaggio copiato"
@@ -2988,6 +3183,9 @@ msgstr "Navigazione"
 msgid "Network & relays"
 msgstr "Rete e relay"
 
+msgid "Never"
+msgstr "Mai"
+
 msgid "Never share it. It is your identity."
 msgstr "Non condividerla mai. È la tua identità."
 
@@ -3032,6 +3230,9 @@ msgstr "Tema successivo"
 
 msgid "Nickname"
 msgstr "Soprannome"
+
+msgid "Nickname for %s"
+msgstr "Soprannome per %s"
 
 msgid "No GIFs found. Try another search."
 msgstr "Nessuna GIF trovata. Prova un'altra ricerca."
@@ -3096,6 +3297,9 @@ msgstr "Ancora nessun file."
 
 msgid "No folders match your search."
 msgstr "Nessuna cartella corrisponde alla ricerca."
+
+msgid "No groups in common."
+msgstr "Nessun gruppo in comune."
 
 msgid "No groups yet"
 msgstr "Ancora nessun gruppo"
@@ -3171,6 +3375,9 @@ msgstr "Nessuna regola"
 msgid "No stickers here yet."
 msgstr "Qui non ci sono ancora adesivi."
 
+msgid "No stickers here yet. Choose Manage to add stickers or sticker packs."
+msgstr "Non ci sono ancora adesivi. Scegli Gestisci per aggiungere adesivi o pacchetti di adesivi."
+
 msgid "No trusted sites."
 msgstr "Nessun sito affidabile."
 
@@ -3198,6 +3405,12 @@ msgstr "Non ancora caricato. Clicca Aggiorna."
 msgid "Not now"
 msgstr "Non ora"
 
+msgid "Not published yet"
+msgstr "Non ancora pubblicato"
+
+msgid "Not sent to relays"
+msgstr "Non inviato ai relay"
+
 msgid "Not set"
 msgstr "Non impostata"
 
@@ -3219,11 +3432,17 @@ msgstr "Le notifiche non compaiono"
 msgid "Nov"
 msgstr "nov"
 
+msgid "Number"
+msgstr "Numero"
+
 msgid "Numeric IP and port only: 127.0.0.1:9050 or [::1]:9050. No URLs or hostnames."
 msgstr "Solo IP numerico e porta: 127.0.0.1:9050 o [::1]:9050. Non inserire URL o nomi host."
 
 msgid "OFFLINE"
 msgstr "OFFLINE"
+
+msgid "OK"
+msgstr "Va bene"
 
 msgid "ONLINE"
 msgstr "ONLINE"
@@ -3240,11 +3459,17 @@ msgstr "Se disattivata, mostra solo \"Nuovo messaggio\" senza il testo."
 msgid "On"
 msgstr "On"
 
+msgid "On %d relays"
+msgstr "Su %d relay"
+
 msgid "On accent"
 msgstr "Su accento"
 
 msgid "On sale"
 msgstr "In vendita"
+
+msgid "On this device"
+msgstr "Su questo dispositivo"
 
 msgid "Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest."
 msgstr "Quando l'agente ti fornisce il suo npub, usa Nuova chat per avviare una conversazione con lui. La documentazione del connettore spiega il resto."
@@ -3263,6 +3488,9 @@ msgstr "Apri"
 
 msgid "Open a chat before inviting someone."
 msgstr "Apri una chat prima di invitare qualcuno."
+
+msgid "Open chat"
+msgstr "Apri chat"
 
 msgid "Open events in"
 msgstr "Apri eventi in"
@@ -3294,6 +3522,9 @@ msgstr "Apri nel client"
 msgid "Open it again with › in the left column or the button below."
 msgstr "Riaprilo con › nella colonna di sinistra o con il pulsante qui sotto."
 
+msgid "Open link"
+msgstr "Apri link"
+
 msgid "Open locations in"
 msgstr "Apri le posizioni in"
 
@@ -3311,6 +3542,9 @@ msgstr "Agente di programmazione OpenAI Codex CLI"
 
 msgid "Opening Whip…"
 msgstr "Apertura di Whip…"
+
+msgid "Opening file picker…"
+msgstr "Apertura della selezione file…"
 
 #, c-format
 msgid "Opening in %s"
@@ -3417,6 +3651,9 @@ msgstr "I riquadri sono mobili o agganciati alle chat."
 
 msgid "Password"
 msgstr "Password"
+
+msgid "Paste"
+msgstr "Incolla"
 
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "Incolla il link di un pacchetto per vedere gli adesivi prima di aggiungerlo."
@@ -3543,6 +3780,9 @@ msgstr "Preparazione dell'allegato…"
 msgid "Preparing dictation..."
 msgstr "Preparazione della dettatura..."
 
+msgid "Preparing download..."
+msgstr "Preparazione del download..."
+
 msgid "Preparing project photo…"
 msgstr "Preparazione della foto del progetto…"
 
@@ -3661,6 +3901,9 @@ msgstr "Pubblicazione del tuo profilo sui relay. Richiede qualche secondo."
 msgid "Publishing your relay lists"
 msgstr "Pubblicazione delle tue liste di relay"
 
+msgid "Queued"
+msgstr "In coda"
+
 msgid "Quick reactions"
 msgstr "Reazioni rapide"
 
@@ -3774,6 +4017,9 @@ msgstr "Relay"
 msgid "Relays carry your encrypted messages. The defaults are already configured."
 msgstr "I relay trasportano i tuoi messaggi crittografati. Quelli predefiniti sono già configurati."
 
+msgid "Relays checked."
+msgstr "Relay controllati."
+
 msgid "Reload previews"
 msgstr "Ricarica le anteprime"
 
@@ -3788,6 +4034,9 @@ msgstr "Rimuovere i diritti di admin?"
 
 msgid "Remove contact"
 msgstr "Rimuovi contatto"
+
+msgid "Remove option"
+msgstr "Rimuovi opzione"
 
 msgid "Remove pack"
 msgstr "Rimuovi pacchetto"
@@ -3834,6 +4083,12 @@ msgstr "Rispondi"
 msgid "Reply in thread"
 msgstr "Rispondi nel thread"
 
+msgid "Reply in thread…"
+msgstr "Rispondi nel thread…"
+
+msgid "Replying"
+msgstr "Risposta"
+
 #, c-format
 msgid "Replying to: %s"
 msgstr "In risposta a: %s"
@@ -3849,6 +4104,9 @@ msgstr "Ripubblica le tue liste di relay"
 
 msgid "Requesting your location. Approve the desktop permission prompt if shown."
 msgstr "Richiesta della tua posizione in corso. Autorizza l'accesso nella finestra dei permessi del desktop, se viene mostrata."
+
+msgid "Requesting your location. Approve the permission prompt if shown."
+msgstr "Richiesta della tua posizione in corso. Approva la richiesta di autorizzazione, se viene mostrata."
 
 msgid "Reset"
 msgstr "Ripristina"
@@ -3901,6 +4159,9 @@ msgstr "Mostra il messaggio nascosto"
 msgid "Reveal private key (nsec)"
 msgstr "Mostra chiave privata (nsec)"
 
+msgid "Reveal secret key (nsec)"
+msgstr "Mostra chiave segreta (nsec)"
+
 msgid "Reveal your secret key"
 msgstr "Mostra la tua chiave segreta"
 
@@ -3938,11 +4199,17 @@ msgstr "Runtime in esecuzione"
 msgid "SEARCH"
 msgstr "CERCA"
 
+msgid "SEE ALSO"
+msgstr "VEDI ANCHE"
+
 msgid "SEEDS"
 msgstr "COLORI BASE"
 
 msgid "SEND WITH EFFECT"
 msgstr "INVIA CON EFFETTO"
+
+msgid "SETTINGS"
+msgstr "IMPOSTAZIONI"
 
 msgid "SHARED THEME"
 msgstr "TEMA CONDIVISO"
@@ -4021,11 +4288,17 @@ msgstr "Salvate"
 msgid "Saved %s."
 msgstr "%s salvato."
 
+msgid "Saved locally. Relay delivery pending."
+msgstr "Salvato su questo dispositivo. In attesa di consegna ai relay."
+
 msgid "Saved. Restart White Noise to apply this connection setting."
 msgstr "Salvato. Riavvia White Noise per applicare questa impostazione di connessione."
 
 msgid "Saving project photo…"
 msgstr "Salvataggio della foto del progetto…"
+
+msgid "Saving vote…"
+msgstr "Salvataggio del voto…"
 
 msgid "Saving your proxy settings and encrypted credentials."
 msgstr "Le impostazioni del proxy e le credenziali cifrate vengono salvate."
@@ -4071,6 +4344,9 @@ msgstr "Cerca nelle chat archiviate..."
 
 msgid "Search contacts or paste a public key..."
 msgstr "Cerca contatti o incolla una chiave pubblica..."
+
+msgid "Search contacts or paste public keys..."
+msgstr "Cerca contatti o incolla chiavi pubbliche..."
 
 msgid "Search contacts..."
 msgstr "Cerca contatti..."
@@ -4135,8 +4411,14 @@ msgstr "Vedi anche"
 msgid "See and hear it with today's sound and preview settings."
 msgstr "Guardala e ascoltala con le impostazioni attuali di suono e anteprima."
 
+msgid "See and hear it with your current sound and preview settings."
+msgstr "Guardala e ascoltala con le tue impostazioni attuali di audio e anteprima."
+
 msgid "See where your data is stored"
 msgstr "Vedi dove sono salvati i tuoi dati"
+
+msgid "Select"
+msgstr "Seleziona"
 
 msgid "Select a chat"
 msgstr "Seleziona una chat"
@@ -4161,6 +4443,9 @@ msgstr "Assistente IA personale ospitato sul tuo computer o server"
 
 msgid "Send"
 msgstr "Invia"
+
+msgid "Send GM?"
+msgstr "Inviare GM?"
 
 msgid "Send a message..."
 msgstr "Invia un messaggio..."
@@ -4187,12 +4472,21 @@ msgstr "Invia il messaggio"
 msgid "Send with an effect"
 msgstr "Invia con un effetto"
 
+msgid "Send your daily GM to this chat?"
+msgstr "Vuoi inviare il tuo GM giornaliero a questa chat?"
+
 msgid "Sender name or hex public key"
 msgstr "Nome del mittente o chiave pubblica esadecimale"
+
+msgid "Sender name or public key"
+msgstr "Nome del mittente o chiave pubblica"
 
 #, c-format
 msgid "Sender: %s"
 msgstr "Mittente: %s"
+
+msgid "Sending a test notification..."
+msgstr "Invio di una notifica di prova..."
 
 msgid "Sending..."
 msgstr "Invio in corso..."
@@ -4280,6 +4574,9 @@ msgstr "Posizione condivisa"
 msgid "Shared media"
 msgstr "Media condivisi"
 
+msgid "Sharing"
+msgstr "Condivisione"
+
 msgid "Shell"
 msgstr "Shell"
 
@@ -4304,6 +4601,9 @@ msgstr "Mostra come QR"
 msgid "Show contact list"
 msgstr "Mostra l'elenco contatti"
 
+msgid "Show dark or light themes."
+msgstr "Mostra i temi scuri o chiari."
+
 msgid "Show fewer files"
 msgstr "Mostra meno file"
 
@@ -4324,6 +4624,9 @@ msgstr "Mostra anteprima del messaggio"
 
 msgid "Show or hide message previews"
 msgstr "Mostra o nascondi l'anteprima dei messaggi"
+
+msgid "Show passwords"
+msgstr "Mostra password"
 
 msgid "Shown on the message menu. Tap one to remove it. Up to 16."
 msgstr "Mostrate nel menu del messaggio. Toccane una per rimuoverla. Fino a 16."
@@ -4413,6 +4716,9 @@ msgstr "Dividi a destra"
 msgid "Square"
 msgstr "Quadrato"
 
+msgid "Start"
+msgstr "Avvia"
+
 msgid "Start a chat with this public key"
 msgstr "Avvia una chat con questa chiave pubblica"
 
@@ -4437,6 +4743,9 @@ msgstr "Avvia la tua prima chat"
 #, c-format
 msgid "Started offline: %s"
 msgstr "Avviato offline: %s"
+
+msgid "Starting microphone…"
+msgstr "Avvio del microfono…"
 
 msgid "Starting the runtime"
 msgstr "Avvio del runtime"
@@ -4497,6 +4806,12 @@ msgstr "Salvato su questo dispositivo, non ancora pubblicato su alcun relay."
 msgid "Stripes"
 msgstr "Righe"
 
+msgid "Strong"
+msgstr "Robusta"
+
+msgid "Strong enough"
+msgstr "Abbastanza forte"
+
 msgid "Study"
 msgstr "Studio"
 
@@ -4527,12 +4842,21 @@ msgstr "TEMA"
 msgid "TIMINGS"
 msgstr "TEMPI"
 
+msgid "TROUBLESHOOTERS"
+msgstr "RISOLUZIONE DEI PROBLEMI"
+
 #, c-format
 msgid "Take %d"
 msgstr "Take %d"
 
 msgid "Takes effect on the next launch."
 msgstr "Ha effetto al prossimo avvio."
+
+msgid "Tap again to download this model."
+msgstr "Tocca di nuovo per scaricare questo modello."
+
+msgid "Tap again to rotate"
+msgstr "Tocca di nuovo per ruotare"
 
 msgid "Tap one, then confirm, to remove it."
 msgstr "Toccane una, poi conferma per rimuoverla."
@@ -4556,6 +4880,9 @@ msgstr "Terreno: %d/5"
 msgid "Test notification"
 msgstr "Notifica di prova"
 
+msgid "Test notification sent."
+msgstr "Notifica di prova inviata."
+
 msgid "Text"
 msgstr "Testo"
 
@@ -4577,6 +4904,9 @@ msgstr "Testo: %s"
 
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr "Tratti con texture e avatar abbozzati. Le forme restano fisse."
+
+msgid "That isn't a bunker link. Double-check it and try again."
+msgstr "Questo non è un link bunker. Controllalo e riprova."
 
 msgid "That isn't your current password. Double-check it and try again."
 msgstr "Non è la tua password attuale. Ricontrollala e riprova."
@@ -4631,6 +4961,9 @@ msgstr "Il client web in cui si apre una scheda evento. Per esempio %s. %s viene
 msgid "Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."
 msgstr "I suoi messaggi restano nascosti finché non li mostri e non puoi scrivergli direttamente. Non viene pubblicato nulla e puoi annullare da qui."
 
+msgid "Their messages stay hidden until you show them. Nothing is published, and you can unblock them here."
+msgstr "I suoi messaggi restano nascosti finché non li mostri. Non viene pubblicato nulla e puoi sbloccare questa persona qui."
+
 msgid "Theme"
 msgstr "Tema"
 
@@ -4670,6 +5003,12 @@ msgstr "Perde l'accesso ai nuovi messaggi di questo gruppo."
 
 msgid "They stay in the group as a regular member."
 msgstr "Resta nel gruppo come membro normale."
+
+msgid "This chat is archived. Restore it from Archive to send messages."
+msgstr "Questa chat è archiviata. Ripristinala dall'Archivio per inviare messaggi."
+
+msgid "This deletes every account key and all chats on this device. You can only sign in again if you have a backup of your secret key."
+msgstr "Questa operazione elimina tutte le chiavi degli account e tutte le chat su questo dispositivo. Puoi accedere di nuovo solo se hai una copia di backup della tua chiave segreta."
 
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "Non contiene testo visibile, quindi il pulsante GM invia GM."
@@ -4771,6 +5110,9 @@ msgstr "Oggi"
 
 msgid "Toggle developer mode"
 msgstr "Attiva/disattiva la modalità sviluppatore"
+
+msgid "Too weak"
+msgstr "Troppo debole"
 
 msgid "Tools"
 msgstr "Strumenti"
@@ -5030,6 +5372,9 @@ msgstr "Saluta"
 msgid "Waves"
 msgstr "Onde"
 
+msgid "Weak password"
+msgstr "Password debole"
+
 msgid "Webxdc app"
 msgstr "App Webxdc"
 
@@ -5095,6 +5440,9 @@ msgstr "Chi ha messo una sdraio fuori dalla tana?"
 msgid "Wireframe"
 msgstr "Wireframe"
 
+msgid "With a keyboard connected"
+msgstr "Con una tastiera collegata"
+
 msgid "Word"
 msgstr "Parola"
 
@@ -5155,14 +5503,23 @@ msgstr "Hai letto tutte le chat."
 msgid "You have the latest version."
 msgstr "Hai la versione più recente."
 
+msgid "You have unsaved changes."
+msgstr "Hai modifiche non salvate."
+
 msgid "You said GM here today"
 msgstr "Oggi hai già detto GM qui"
+
+msgid "You said GM here today."
+msgstr "Oggi hai già detto GM qui."
 
 msgid "You stay in the group, but another admin has to grant the rights back."
 msgstr "Resti nel gruppo, ma un altro admin dovrà riassegnarti i diritti."
 
 msgid "You stop receiving its messages. Rejoining needs a new invite."
 msgstr "Smetterai di ricevere i suoi messaggi. Per rientrare serve un nuovo invito."
+
+msgid "You were invited to this chat."
+msgstr "Hai ricevuto un invito a questa chat."
 
 msgid "You were invited to this group."
 msgstr "Hai ricevuto un invito a questo gruppo."
@@ -5183,6 +5540,9 @@ msgstr "Il tuo account ha un'azione in sospeso. Completala prima di riconnettere
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr "Il tuo account è stato rimosso, ma non è stato possibile rimuovere il record del suo firmatario dalla cassaforte cifrata."
 
+msgid "Your account keys and chats were deleted from this device. Pick a new password to start over."
+msgstr "Le chiavi dei tuoi account e le tue chat sono state eliminate da questo dispositivo. Scegli una nuova password per ricominciare."
+
 msgid "Your chats appear here once you have some."
 msgstr "Le tue chat appariranno qui quando ne avrai."
 
@@ -5191,6 +5551,9 @@ msgstr "La tua password attuale"
 
 msgid "Your desktop location service handles the permission request. Nothing is sent to the chat until you choose Send location."
 msgstr "Il servizio di localizzazione del desktop gestisce la richiesta di autorizzazione. Nulla viene inviato alla chat finché non scegli Invia posizione."
+
+msgid "Your device asks for permission. Nothing is sent to the chat until you choose Send location."
+msgstr "Il tuo dispositivo richiede l'autorizzazione. Non viene inviato nulla alla chat finché non scegli Invia posizione."
 
 msgid "Your disk is filling up"
 msgstr "Il disco si sta riempiendo"
@@ -5203,6 +5566,9 @@ msgstr "La tua identità è sovrana"
 
 msgid "Your identity, key packages, and device security."
 msgstr "La tua identità, i pacchetti chiavi e la sicurezza del dispositivo."
+
+msgid "Your key stays on this device"
+msgstr "La tua chiave resta su questo dispositivo"
 
 msgid "Your name"
 msgstr "Il tuo nome"
@@ -5240,6 +5606,12 @@ msgstr "La tua chiave pubblica non è disponibile. Scegli un altro account e rip
 msgid "Your public key. Safe to share."
 msgstr "La tua chiave pubblica. Sicura da condividere."
 
+msgid "Your secret key stays in your remote signer. Reveal and export are unavailable on this device."
+msgstr "La tua chiave segreta resta nel tuo firmatario remoto. Mostra ed esporta non sono disponibili su questo dispositivo."
+
+msgid "Your secret key stays on this device or in your connected signer. Never share it."
+msgstr "La tua chiave segreta resta su questo dispositivo o nel tuo firmatario collegato. Non condividerla mai."
+
 msgid "Your signer is connected."
 msgstr "Il tuo firmatario è connesso."
 
@@ -5257,6 +5629,9 @@ msgstr "I tuoi adesivi"
 
 msgid "Your themes"
 msgstr "I tuoi temi"
+
+msgid "Your unpublished profile changes are lost."
+msgstr "Le modifiche al profilo non pubblicate andranno perse."
 
 msgid "Zoom in"
 msgstr "Aumenta lo zoom"

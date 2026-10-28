@@ -670,7 +670,7 @@ geo_view_key :: proc(key: string) -> string {
 @(private)
 geo_map :: proc(id: u32, key: string, pin: Geo_Point, zoom: int, w, h: f32) {
 	if g_ui == nil || !g_ui.prefs.map_consent {
-		if !geo_declined || key == GEO_PICK_KEY {geo_consent(id, w)}
+		if !geo_declined {geo_consent(id, w)}
 		return
 	}
 	view_key := geo_view_key(key)
@@ -828,7 +828,11 @@ geo_consent :: proc(id: u32, w: f32) {
 				primary := button.action == .Accept
 				if clay.UI(clay.ID("GeoConsentButton", id * 2 + u32(i)))(
 				{
-					layout = {padding = {left = 14, right = 14, top = 7, bottom = 7}},
+					layout = {
+						sizing = {height = clay.SizingFit({min = 44})},
+						padding = {left = 14, right = 14, top = 7, bottom = 7},
+						childAlignment = {y = .Center},
+					},
 					backgroundColor = primary ? ACCENT : hovered() ? HOVER : PLATE,
 					cornerRadius = rr(7),
 					border = {color = primary ? ACCENT : CARD_BORDER, width = bw()},
@@ -935,8 +939,8 @@ geo_controls :: proc(id: u32, view: Geo_View) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFixed(tap_size() ? 44 : 28),
-						height = clay.SizingFixed(tap_size() ? 44 : 28),
+						width = clay.SizingFixed(tap_size() ? tap_min() : 28),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 28),
 					},
 					childAlignment = {x = .Center, y = .Center},
 				},
@@ -1233,12 +1237,13 @@ geo_picker :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("LocationHeaderGap"))(
 			{layout = {sizing = {width = clay.SizingGrow()}}},
 			) {}
-			micro_button("LocationClose", tr("Close"))
 		}
-		clay.Text(
-			tr("Drag the map to place the pin, or use your current location."),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-		)
+		if ui.prefs.map_consent {
+			clay.Text(
+				tr("Drag the map to place the pin, or use your current location."),
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			)
+		}
 		geo_map(
 			GEO_PICK_ID,
 			GEO_PICK_KEY,
@@ -1253,7 +1258,7 @@ geo_picker :: proc(ui: ^Ui_State) {
 		)
 		if ui.location_busy {
 			clay.Text(
-				tr("Requesting your location. Approve the desktop permission prompt if shown."),
+				tr("Requesting your location. Approve the permission prompt if shown."),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 			)
 			clay.Text(
@@ -1262,16 +1267,19 @@ geo_picker :: proc(ui: ^Ui_State) {
 			)
 			busy_bar("LocationBusy")
 		} else if ui.location_error {
-			clay.Text(
-				tr(
-					"Couldn't get your location. Check your desktop location permissions or pick a point on the map.",
-				),
-				{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+			error_text := tr(
+				"Couldn't get your location. Check your device's location permissions and try again.",
 			)
+			if ui.prefs.map_consent {
+				error_text = tr(
+					"Couldn't get your location. Check your device's location permissions or pick a point on the map.",
+				)
+			}
+			clay.Text(error_text, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
 		} else {
 			clay.Text(
 				tr(
-					"Your desktop location service handles the permission request. Nothing is sent to the chat until you choose Send location.",
+					"Your device asks for permission. Nothing is sent to the chat until you choose Send location.",
 				),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 			)
@@ -1294,7 +1302,7 @@ geo_picker :: proc(ui: ^Ui_State) {
 handle_geo_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !ui.location_open {return}
 	if !geo_picker_valid(ui) {geo_picker_close(ui); return}
-	if rl.IsKeyPressed(.ESCAPE) || clicked("LocationCancel") || clicked("LocationClose") {
+	if rl.IsKeyPressed(.ESCAPE) || clicked("LocationCancel") {
 		geo_picker_close(ui)
 		return
 	}
@@ -1398,7 +1406,6 @@ handle_geo :: proc(ui: ^Ui_State) {
 			save_settings(ui)
 		} else {
 			geo_declined = true
-			if ui.location_open {geo_picker_close(ui)}
 		}
 		// The panel, the map and neither differ in height.
 		for &msg in ui.messages {msg.row_height = 0}

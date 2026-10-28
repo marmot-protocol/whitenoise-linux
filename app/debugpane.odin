@@ -397,6 +397,11 @@ inspect_peer_key_packages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 handle_debug :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for _, i in DEBUG_TABS {
 		if clay.PointerOver(clay.ID("DbgTab", u32(i))) {
+			if ui.debug_tab != i {
+				if scroll := clay.GetScrollContainerData(clay.ID("DbgPlate"));
+				   scroll.found {scroll.scrollPosition^ = {}}
+				fling_vel = {}
+			}
 			ui.debug_tab = i
 			compose_debug_json(ui, client)
 			return

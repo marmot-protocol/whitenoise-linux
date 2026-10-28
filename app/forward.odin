@@ -80,8 +80,8 @@ forward_modal :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFixed(tap_size() ? 44 : 26),
-						height = clay.SizingFixed(tap_size() ? 44 : 26),
+						width = clay.SizingFixed(tap_size() ? tap_min() : 26),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
 					},
 					childAlignment = {x = .Center, y = .Center},
 				},
@@ -93,12 +93,41 @@ forward_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 
+		if ui.fwd_kind == .Message {
+			if source := forward_source(ui); source >= 0 {
+				preview := msg_preview(ui.messages[source])
+				if preview == "" {preview = tr("Attachment")}
+				if clay.UI(clay.ID("FwdPreview"))(
+				{
+					layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
+					backgroundColor = ROW_BG,
+					cornerRadius = rr(6),
+					clip = {horizontal = true},
+				},
+				) {
+					clay.Text(
+						text_ellipsis(
+							preview,
+							modal_w(clay.ID("FwdModal"), 440) - 60,
+							FONT_BODY,
+							13,
+						),
+						{
+							fontId = FONT_BODY,
+							fontSize = 13,
+							textColor = TEXT_DIM,
+							wrapMode = .None,
+						},
+					)
+				}
+			}
+		}
 		if clay.UI(clay.ID("FwdFilter"))(
 		{
 			layout = {
 				sizing = {
 					width = clay.SizingGrow(),
-					height = clay.SizingFixed(tap_size() ? 44 : 36),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 36),
 				},
 				padding = {left = 12, right = 12},
 				childAlignment = {y = .Center},
@@ -122,7 +151,10 @@ forward_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("FwdList"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 320})},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFit({max = max(44, min(320, modal_h(480) - 152))}),
+				},
 				layoutDirection = .TopToBottom,
 				childGap = 2,
 			},

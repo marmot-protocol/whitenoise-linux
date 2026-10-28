@@ -5,8 +5,8 @@
 //     │                          │ row:    keep it in the section under the pointer
 //     └──release──► click        └ folder: move it to the insertion line
 //
-// The board is one scroll container of fixed-height rows, so layout is
-// plain arithmetic: drawing windows it and the pointer maps to a row
+// The board has fixed-height rows, so layout is plain arithmetic:
+// drawing windows it and the pointer maps to a row
 // without asking clay about elements that are not mounted.
 package main
 
@@ -46,6 +46,9 @@ BOARD_EMPTY_H :: f32(32)
 BOARD_GAP :: f32(10)
 @(private = "file")
 BOARD_EDGE :: f32(32) // pointer this close to the top or bottom scrolls a drag
+
+@(private = "file")
+board_create_at: int = -1 // folder count when the board opened Create
 
 // Sections as the rail files them, plus each section's content y.
 @(private = "file")
@@ -101,16 +104,35 @@ board_mouse :: proc() -> [2]f32 {
 	return {m.x / UI_ZOOM, m.y / UI_ZOOM}
 }
 
-// Pointer to board content y; ok is false outside the board.
+// What scrolls the board: on a phone the board grows to its content inside
+// the settings page scroll, so a finger on a row scrolls the page; wider,
+// the board is its own scroll container below the page's actions.
+@(private = "file")
+board_scroller :: proc() -> clay.ElementId {
+	return single_pane() ? clay.ID("SettingsPage") : clay.ID("FolderBoard")
+}
+
+// Pointer to board content y; ok is false outside the visible board.
 @(private = "file")
 board_pointer :: proc() -> (y: f32, ok: bool) {
 	box := clay.GetElementData(clay.ID("FolderBoard"))
-	scroll := clay.GetScrollContainerData(clay.ID("FolderBoard"))
-	if !box.found || !scroll.found {return 0, false}
+	view := clay.GetElementData(board_scroller())
+	if !box.found || !view.found {return 0, false}
 	p := board_mouse()
-	b := box.boundingBox
-	inside := p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height
-	return p.y - b.y - scroll.scrollPosition.y, inside
+	b, v := box.boundingBox, view.boundingBox
+	inside :=
+		p.x >= b.x &&
+		p.x < b.x + b.width &&
+		p.y >= max(b.y, v.y) &&
+		p.y < min(b.y + b.height, v.y + v.height)
+	y = p.y - b.y
+	// The page scroll already moved the board's box; its own scroll did not.
+	if !single_pane() {
+		scroll := clay.GetScrollContainerData(clay.ID("FolderBoard"))
+		if !scroll.found {return 0, false}
+		y -= scroll.scrollPosition.y
+	}
+	return y, inside
 }
 
 // Insertion slot for a held folder: how many folder headers sit above
@@ -149,24 +171,34 @@ board_drag_clear :: proc(ui: ^Ui_State) {
 	ui.board_drag = {}
 }
 
-// Scroll the board while a drag hangs near its top or bottom edge.
+// Scroll the board's container while a drag hangs near its top or bottom
+// edge, faster the deeper the pointer goes, past the edge included.
 @(private = "file")
 board_autoscroll :: proc() {
-	box := clay.GetElementData(clay.ID("FolderBoard"))
-	scroll := clay.GetScrollContainerData(clay.ID("FolderBoard"))
+	id := board_scroller()
+	box := clay.GetElementData(id)
+	scroll := clay.GetScrollContainerData(id)
 	if !box.found || !scroll.found {return}
 	y := board_mouse().y
 	b := box.boundingBox
+	depth: f32
+	if y < b.y + BOARD_EDGE {depth = b.y + BOARD_EDGE - y}
+	if y > b.y + b.height - BOARD_EDGE {depth = b.y + b.height - BOARD_EDGE - y}
+	if depth == 0 {return}
+	speed := clamp(abs(depth) * 15, 120, 1500) // px per second
 	span := max(0, scroll.contentDimensions.height - scroll.scrollContainerDimensions.height)
-	step: f32
-	if y < b.y + BOARD_EDGE {step = 8}
-	if y > b.y + b.height - BOARD_EDGE {step = -8}
-	scroll.scrollPosition.y = clamp(scroll.scrollPosition.y + step, -span, 0)
+	scroll.scrollPosition.y = clamp(
+		scroll.scrollPosition.y + (depth > 0 ? speed : -speed) * anim_dt,
+		-span,
+		0,
+	)
+	anim_moving += 1 // keep frames coming while the finger rests at the edge
 }
 
 @(private = "file")
 board_drop :: proc(ui: ^Ui_State) {
 	drag := ui.board_drag
+	if drag.target < 0 {return}
 	switch drag.kind {
 	case .None:
 	case .Row:
@@ -193,19 +225,28 @@ board_drop :: proc(ui: ^Ui_State) {
 handle_folder_board :: proc(ui: ^Ui_State) -> bool {
 	drag := &ui.board_drag
 	if drag.kind != .None {
-		y, _ := board_pointer()
+		y, inside := board_pointer()
+		// Recompute on release too: the last held frame may have scrolled.
+		board := board_build(ui)
+		drag.target = -1
+		if inside {
+			if drag.kind == .Row {
+				section, _ := board_at(board, y)
+				end :=
+					board.tops[section] +
+					board_section_h(board.sections[section].count) -
+					BOARD_GAP
+				if y < end {drag.target = section}
+			} else {
+				drag.target = board_folder_slot(ui, board, y)
+			}
+		}
 		if rl.IsMouseButtonDown(.LEFT) {
 			d := board_mouse() - drag.from
 			if !drag.active && d.x * d.x + d.y * d.y > DRAG_MIN * DRAG_MIN {
 				drag.active = true
 			}
 			if !drag.active {return false}
-			board := board_build(ui)
-			if drag.kind == .Row {
-				drag.target, _ = board_at(board, y)
-			} else {
-				drag.target = board_folder_slot(ui, board, y)
-			}
 			board_autoscroll()
 			return true
 		}
@@ -246,6 +287,7 @@ handle_folder_board :: proc(ui: ^Ui_State) -> bool {
 
 	if !mouse_released() {return false}
 	if clicked("SettingsFolderNew") {
+		board_create_at = len(ui.prefs.folders)
 		open_folder_modal(ui)
 		return true
 	}
@@ -300,6 +342,31 @@ folder_board :: proc(ui: ^Ui_State) {
 		height = max(120, page.boundingBox.height - used - 30)
 	}
 	height = min(height, board.height)
+	phone := single_pane()
+	if phone {height = board.height}
+	box := clay.GetElementData(clay.ID("FolderBoard"))
+	if board_create_at >= 0 && !ui.folder_open {
+		if board_create_at < len(ui.prefs.folders) && box.found {
+			// The new folder is appended before Unfiled. Reveal its header
+			// arithmetically, even when windowing has not mounted it yet.
+			id := board_scroller()
+			view := clay.GetElementData(id)
+			scroll := clay.GetScrollContainerData(id)
+			if view.found && scroll.found {
+				y := box.boundingBox.y + board.tops[board_create_at]
+				if !phone {y += scroll.scrollPosition.y}
+				h := settings_tap_size(BOARD_HEAD_H) + BOARD_EMPTY_H
+				if y < view.boundingBox.y {
+					scroll.scrollPosition.y += view.boundingBox.y - y
+				} else if y + h > view.boundingBox.y + view.boundingBox.height {
+					scroll.scrollPosition.y -= y + h - view.boundingBox.y - view.boundingBox.height
+				}
+				scroll.scrollPosition.y = min(0, scroll.scrollPosition.y)
+				scroll_jumped = true
+			}
+		}
+		board_create_at = -1
+	}
 
 	if clay.UI(clay.ID("FolderBoard"))(
 	{
@@ -307,12 +374,16 @@ folder_board :: proc(ui: ^Ui_State) {
 			sizing = {clay.SizingGrow(), clay.SizingFixed(height)},
 			layoutDirection = .TopToBottom,
 		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		clip = {vertical = !phone, childOffset = phone ? clay.Vector2{} : clay.GetScrollOffset()},
 	},
 	) {
 		view := clay.GetScrollContainerData(clay.ID("FolderBoard"))
 		top := view.found ? -view.scrollPosition.y - 72 : 0
 		bottom := top + height + 144
+		if phone && page.found && box.found {
+			top = page.boundingBox.y - box.boundingBox.y - 72
+			bottom = top + page.boundingBox.height + 144
+		}
 		for section, i in board.sections {
 			id := u32(i) * 4
 			section_top := board.tops[i]
@@ -344,7 +415,7 @@ folder_board :: proc(ui: ^Ui_State) {
 			board_spacer(id + 3, BOARD_GAP)
 		}
 	}
-	scrollbar(clay.ID("FolderBoard"))
+	if !phone {scrollbar(clay.ID("FolderBoard"))}
 	if dragging {
 		board_ghost(ui, board.grouped)
 	}

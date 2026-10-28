@@ -392,7 +392,7 @@ web_modal_draw :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("WebClose"))(
 			{
 				layout = {
-					sizing = {height = clay.SizingFixed(tap_size() ? 44 : 26)},
+					sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 26)},
 					padding = {left = 10, right = 10},
 					childAlignment = {y = .Center},
 				},

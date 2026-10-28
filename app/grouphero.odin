@@ -118,6 +118,7 @@ group_hero :: proc(ui: ^Ui_State) {
 				layout = {
 					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 					childGap = 8,
+					childAlignment = {x = .Center},
 				},
 			},
 			) {
@@ -128,37 +129,23 @@ group_hero :: proc(ui: ^Ui_State) {
 		}
 
 		if admin && ui.desc_editing {
-			if clay.UI(clay.ID("DescBox"))(
-			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? 44 : 34),
-					},
-					padding = {left = 10, right = 10},
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(8),
-				border = ui.focus == .Desc ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
-			},
-			) {
-				field_text(
-					ui,
-					"DescBox",
-					&ui.desc_input,
-					tr("Describe the group"),
-					ui.focus == .Desc,
-				)
-			}
+			issue_editor(ui, &ui.desc_input, .Desc, tr("Describe the group"), 100)
 			if clay.UI(clay.ID("DescActions"))({layout = {childGap = 8}}) {
-				micro_button("DescSave", tr("Save"))
+				folder_action("DescSave", tr("Save"), true)
 				micro_button("DescCancel", tr("Cancel"))
 			}
 		} else {
 			// Other clients may have published a description of only spaces.
 			if desc := strings.trim_space(ui.group_desc); len(desc) > 0 {
-				clay.Text(desc, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+				clay.Text(
+					desc,
+					{
+						fontId = FONT_BODY,
+						fontSize = 12,
+						textColor = TEXT_DIM,
+						textAlignment = .Center,
+					},
+				)
 			} else {
 				clay.Text(
 					tr("No description."),
@@ -197,6 +184,9 @@ handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 			open_emoji_mix(ui, .Selected_Group)
 			return true
 		}
+		if mouse_released() && !clay.PointerOver(clay.ID("GpicMenu")) {
+			ui.gpic_menu_open = false
+		}
 	}
 
 	if clicked("DescEditBtn") {
@@ -208,16 +198,17 @@ handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	if !ui.desc_editing {
 		return false
 	}
-	if field_mouse(ui, &ui.desc_input, "DescBox") {
-		ui.focus = .Desc
-		return true
-	}
+	compose_mouse(ui, &ui.desc_input, .Desc)
 	if clicked("DescCancel") || rl.IsKeyPressed(.ESCAPE) {
 		ui.desc_editing = false
-		ui.focus = .Rename
+		ui.focus = rl.HasTouch() ? .Compose : .Rename
 		return true
 	}
-	if clicked("DescSave") || (ui.focus == .Desc && rl.IsKeyPressed(.ENTER)) {
+	if ui.focus == .Desc && rl.IsKeyPressed(.ENTER) && !ctrl_down() {
+		ed_insert(ui, &ui.desc_input, "\n")
+		return true
+	}
+	if clicked("DescSave") || (ui.focus == .Desc && ctrl_down() && rl.IsKeyPressed(.ENTER)) {
 		save_description(ui, client)
 		return true
 	}

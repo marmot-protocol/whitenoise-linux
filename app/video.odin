@@ -456,7 +456,7 @@ video_scrub_bar :: proc(id: clay.ElementId, view: ^Video_View, width: f32, z_ind
 		layout = {
 			sizing = {
 				width = clay.SizingFixed(width),
-				height = clay.SizingFixed(tap_size() ? 44 : (expanded ? 14 : 2)),
+				height = clay.SizingFixed(tap_size() ? tap_min() : (expanded ? 14 : 2)),
 			},
 			childAlignment = {y = .Center},
 		},

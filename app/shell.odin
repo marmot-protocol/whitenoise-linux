@@ -246,26 +246,24 @@ shell_navigation :: proc(ui: ^Ui_State) {
 @(private)
 phone_navigation :: proc(ui: ^Ui_State) {
 	if !single_pane() {return}
-	if f32(rl.GetScreenHeight()) / UI_ZOOM < 280 && phone_detail(ui) {return}
-	if compose_keyboard &&
-	   ui.focus == .Compose &&
-	   ui.page == .Chats &&
-	   ui.selected >= 0 &&
-	   !ui.new_chat_open &&
-	   !ui.show_members &&
-	   !modal_open(ui) {return}
-	if f32(rl.GetScreenHeight()) / UI_ZOOM < 320 &&
-	   ui.page == .Chats &&
-	   ui.selected >= 0 &&
-	   !ui.new_chat_open &&
-	   !ui.show_members {return}
+	if rl.HasTouch() && touch_field.id != 0 {return}
+	if rl.HasTouch() && ui.add_account_open && ui.login_method != .Menu {return}
 	// Short windows (a landscape phone, an open keyboard) keep the icons
 	// and drop the labels.
 	short := f32(rl.GetScreenHeight()) / UI_ZOOM < 420
+	label_fs := u16(11 / min(UI_ZOOM, 1) + 0.999)
+	label_w := (f32(rl.GetScreenWidth()) / UI_ZOOM - 16) / 5
+	for page in Page {
+		if rl.MeasureTextLine(FONT_BODY, label_fs, tr(NAV_TIPS[page]), 0).x >
+		   label_w {short = true}
+	}
 	if clay.UI(clay.ID("PhoneNavigation"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(short ? 48 : 56)},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFixed(max(short ? 48 : 56, tap_min() + 8)),
+			},
 			padding = {left = 4, right = 4, top = short ? 2 : 4, bottom = short ? 2 : 4},
 			childGap = 2,
 		},
@@ -296,7 +294,11 @@ phone_navigation :: proc(ui: ^Ui_State) {
 				} else {
 					clay.Text(
 						tr(NAV_TIPS[page]),
-						{fontId = FONT_BODY, fontSize = 10, textColor = active ? TEXT : TEXT_DIM},
+						{
+							fontId = FONT_BODY,
+							fontSize = label_fs,
+							textColor = active ? TEXT : TEXT_DIM,
+						},
 					)
 				}
 			}
@@ -377,9 +379,74 @@ tap_size :: proc() -> bool {
 	return single_pane() || rl.HasTouch()
 }
 
+// Touch targets retain 44 window pixels when a narrow window zooms out.
+@(private)
+tap_min :: proc() -> f32 {
+	return 44 / min(UI_ZOOM, 1)
+}
+
+@(private)
+tab_scrolls: map[u64]clay.Vector2
+@(private)
+tab_previous: Page
+@(private)
+tab_restore: bool
+@(private)
+tab_was_detail: bool
+
+@(private)
+tab_scroll_ids :: proc(page: Page) -> [3]string {
+	switch page {
+	case .Chats:
+		return {"RailContent", "ChatList", ""}
+	case .Contacts:
+		return {"RailContent", "ContactList", "ContactPage"}
+	case .Archived:
+		return {"ArchivedPage", "ArchivedList", ""}
+	case .Settings:
+		return {"SettingsPage", "SettingsTaskPane", ""}
+	case .Profile:
+		return {"ProfilePage", "", ""}
+	}
+	return {}
+}
+
+@(private)
+tab_scroll_save :: proc(ui: ^Ui_State) {
+	for name in tab_scroll_ids(tab_previous) {
+		if name == "" {continue}
+		id := clay.ID(name)
+		if data := clay.GetScrollContainerData(id); data.found {
+			tab_scrolls[u64(tab_previous) << 32 | u64(id.id)] = data.scrollPosition^
+		}
+	}
+	if tab_previous != ui.page || (tab_was_detail && !phone_detail(ui)) {
+		tab_previous = ui.page
+		tab_restore = true
+	}
+	tab_was_detail = phone_detail(ui)
+}
+
+@(private)
+tab_scroll_restore :: proc(ui: ^Ui_State) {
+	if !tab_restore {return}
+	for name in tab_scroll_ids(ui.page) {
+		if name == "" {continue}
+		id := clay.ID(name)
+		if data := clay.GetScrollContainerData(id); data.found {
+			data.scrollPosition^ = tab_scrolls[u64(ui.page) << 32 | u64(id.id)]
+		}
+	}
+	tab_restore = false
+	scroll_jumped = true
+}
+
 // Too narrow for the rail beside the page card.
 single_pane :: proc() -> bool {
-	return f32(rl.GetScreenWidth()) / UI_ZOOM < PHONE_W
+	return(
+		f32(rl.GetScreenWidth()) / UI_ZOOM < PHONE_W ||
+		(rl.HasTouch() && f32(rl.GetScreenHeight()) / UI_ZOOM < 480) \
+	)
 }
 
 // Which half a one-card window is showing: the rail is the list, the
@@ -393,7 +460,7 @@ phone_detail :: proc(ui: ^Ui_State) -> bool {
 	case .Chats:
 		return ui.whip_open || ui.selected >= 0
 	case .Contacts:
-		return ui.selected_contact >= 0
+		return ui.selected_contact >= 0 || len(ui.profile_contact.id_hex) > 0
 	case .Settings, .Archived, .Profile:
 		return true
 	}
@@ -415,7 +482,7 @@ phone_back :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("PhoneBack"))(
 		{
 			layout = {
-				sizing = {height = clay.SizingFixed(44)},
+				sizing = {height = clay.SizingFixed(tap_min())},
 				padding = {left = 12, right = 14, top = 8, bottom = 8},
 				childGap = 6,
 				childAlignment = {y = .Center},
@@ -432,6 +499,10 @@ phone_back :: proc(ui: ^Ui_State) {
 
 // Close whatever the detail was showing, which puts the rail back.
 phone_back_action :: proc(ui: ^Ui_State) {
+	touch_field = {}
+	compose_keyboard = false
+	if ui.picker_open {close_picker(ui); return}
+	if ui.poll_open {poll_close(ui); return}
 	if ui.location_open {
 		geo_picker_close(ui)
 		return
@@ -441,21 +512,43 @@ phone_back_action :: proc(ui: ^Ui_State) {
 		return
 	}
 	if ui.add_account_open {
+		if ui.socks5_login_open {ui.socks5_login_open = false; return}
+		if auth_job == nil && ui.login_method != .Menu {
+			ui.login_method = .Menu
+			clear(&ui.login_input)
+			ui.login_error = ""
+			return
+		}
+		auth_cancel(ui)
 		ui.add_account_open = false
 		return
 	}
 	switch ui.page {
 	case .Chats:
+		if ui.show_members {close_group_info(ui); return}
+		if ui.group_files_open {ui.group_files_open = false; return}
+		if ui.issues_open {ui.issues_open = false; return}
+		if ui.search_open {
+			ui.search_open = false
+			clear(&ui.search_input)
+			ui.focus = .Compose
+			return
+		}
+		if len(ui.thread_stack) > 0 {thread_back(ui); return}
 		if ui.selected >= 0 && ui.selected < len(ui.chats) {
 			stash_draft(ui)
 			stash_staged(ui)
 			ui.settings_dirty = true
+			if ui.chats[ui.selected].archived {ui.page = .Archived}
 		}
 		compose_keyboard = false
+		touch_field = {}
 		ui.chat_head_menu = false
 		ui.whip_open = false
 		ui.selected = -1
 	case .Contacts:
+		if ui.focus == .Nick {save_nickname(ui)}
+		reset_profile_view(ui)
 		ui.selected_contact = -1
 	case .Settings:
 		settings_back(ui)
@@ -566,15 +659,13 @@ status_bar :: proc(ui: ^Ui_State) {
 	   !ui.new_chat_open &&
 	   !ui.show_members {return}
 	state := net_state(ui)
-	// A phone keeps the connection readout for when it needs attention;
-	// Lock now lives in the Chats options menu there.
-	if single_pane() && state == .Online {return}
+	// Reserve the same strip online and offline, so the composer stays put.
 	if clay.UI(clay.ID("StatusBar"))(
 	{
 		layout = {
 			sizing = {
 				width = clay.SizingGrow(),
-				height = clay.SizingFixed(single_pane() ? 24 : tap_size() ? 44 : 28),
+				height = clay.SizingFixed(single_pane() ? 24 : tap_size() ? tap_min() : 28),
 			},
 			padding = {left = 10, right = 10},
 			childGap = single_pane() ? 6 : 12,
@@ -633,6 +724,7 @@ Status_Kind :: enum {
 // text because the text is already translated, so its wording can't
 // tell an error from a notice.
 set_status :: proc(ui: ^Ui_State, text: string, kind: Status_Kind) {
+	if ui.client_status == text {ui.banner_seen = ""}
 	ui.client_status = text
 	ui.client_status_kind = kind
 }
@@ -643,9 +735,15 @@ banner_tick :: proc(ui: ^Ui_State) {
 		return
 	}
 	ui.banner_seen = ui.client_status
+	ui.banner = ""
 	if len(ui.client_status) == 0 {
 		return
 	}
+	if ui.client_status_kind == .Info {
+		toast(ui, ui.client_status)
+		return
+	}
+	ui.toast_until = 0
 	ui.banner = ui.client_status
 	ui.banner_kind = ui.client_status_kind
 }
@@ -676,8 +774,8 @@ banner_bar :: proc(ui: ^Ui_State) {
 		{
 			layout = {
 				sizing = {
-					width = clay.SizingFixed(tap_size() ? 44 : 24),
-					height = clay.SizingFixed(tap_size() ? 44 : 24),
+					width = clay.SizingFixed(tap_size() ? tap_min() : 24),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 24),
 				},
 				childAlignment = {x = .Center, y = .Center},
 			},
@@ -694,8 +792,8 @@ banner_bar :: proc(ui: ^Ui_State) {
 		{
 			layout = {
 				sizing = {
-					width = clay.SizingFixed(tap_size() ? 44 : 24),
-					height = clay.SizingFixed(tap_size() ? 44 : 24),
+					width = clay.SizingFixed(tap_size() ? tap_min() : 24),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 24),
 				},
 				childAlignment = {x = .Center, y = .Center},
 			},
@@ -728,6 +826,7 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 		ui.fwd_open ||
 		ui.sticker_open ||
 		ui.ov_open ||
+		ui.poll_open ||
 		ui.location_open ||
 		ui.qr_open ||
 		ui.lang_open ||
@@ -766,7 +865,7 @@ modal_backdrop :: proc() {
 
 // ── Toast ───────────────────────────────────────────────────────────
 
-TOAST_SECS :: 1.8
+TOAST_SECS :: 4.0
 
 // Transient confirmation for actions with no visible result of their
 // own (copy chips, mostly).
@@ -787,13 +886,27 @@ toast_layer :: proc(ui: ^Ui_State) {
 	if len(ui.toast) == 0 || rl.GetTime() > ui.toast_until {
 		return
 	}
+	frame_deadline = min(frame_deadline, ui.toast_until)
+	bottom: f32 = 60
+	if ui.page == .Chats &&
+	   ui.selected >= 0 &&
+	   !ui.show_members &&
+	   !ui.group_files_open &&
+	   !ui.add_account_open {
+		if composer := clay.GetElementData(clay.ID("Composer")); composer.found {
+			bottom = max(bottom, f32(rl.GetScreenHeight()) / UI_ZOOM - composer.boundingBox.y + 8)
+		}
+	}
 	if clay.UI(clay.ID("Toast"))(
 	{
-		layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
+		layout = {
+			sizing = {width = clay.SizingFit({max = fit_w(420)})},
+			padding = {left = 16, right = 16, top = 9, bottom = 9},
+		},
 		floating = {
 			attachTo = .Root,
 			zIndex = 20,
-			offset = {0, -52},
+			offset = {0, -bottom},
 			attachment = {element = .CenterBottom, parent = .CenterBottom},
 		},
 		backgroundColor = CARD,
@@ -818,39 +931,45 @@ Tip_Side :: enum {
 }
 
 tooltip :: proc(text: string, side: Tip_Side = .Below, shift_x: f32 = 0) {
-	attach: clay.FloatingAttachPoints
-	offset: clay.Vector2
+	if rl.TouchActive() {return}
+	parent := clay.GetElementData(clay.ElementId{id = clay.GetOpenElementId()}).boundingBox
+	width := min(
+		rl.MeasureTextLine(FONT_BODY, 11, text, 0).x + 16,
+		f32(rl.GetScreenWidth()) / UI_ZOOM - 8,
+	)
+	height: f32 = 22
+	offset := clay.Vector2{parent.x + (parent.width - width) / 2, parent.y + parent.height + 6}
 	switch side {
 	case .Below:
-		attach = {
-			element = .CenterTop,
-			parent  = .CenterBottom,
-		}
-		offset = {0, 6}
 	case .Above:
-		attach = {
-			element = .CenterBottom,
-			parent  = .CenterTop,
-		}
-		offset = {0, -6}
+		offset.y = parent.y - height - 6
 	case .Right:
-		attach = {
-			element = .LeftCenter,
-			parent  = .RightCenter,
-		}
-		offset = {8, 0}
+		offset = {parent.x + parent.width + 8, parent.y + (parent.height - height) / 2}
 	}
 	offset.x += shift_x
+	offset.x = clamp(offset.x, 4, max(4, f32(rl.GetScreenWidth()) / UI_ZOOM - width - 4))
+	offset.y = clamp(offset.y, 4, max(4, f32(rl.GetScreenHeight()) / UI_ZOOM - height - 4))
 	if clay.UI(clay.ID_LOCAL("Tip"))(
 	{
-		layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
-		floating = {attachTo = .Parent, zIndex = 18, offset = offset, attachment = attach},
+		layout = {
+			sizing = {width = clay.SizingFixed(width)},
+			padding = {left = 8, right = 8, top = 4, bottom = 4},
+		},
+		floating = {
+			attachTo = .Root,
+			zIndex = 18,
+			offset = offset,
+			pointerCaptureMode = .Passthrough,
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(6),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(text, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT})
+		clay.Text(
+			text_ellipsis(text, width - 16, FONT_BODY, 11),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT},
+		)
 	}
 }
 

@@ -64,8 +64,12 @@ media_outcome_slots :: proc(t: ^testing.T) {
 	ui: Ui_State
 	append(&ui.messages, msg)
 	defer delete(ui.messages)
+	page: marmot.Timeline_Page
+	ui.transcript = new(Transcript_Job)
+	transcript_snapshot(&ui, ui.transcript, &page)
+	defer export_stop(&ui)
 	b := strings.builder_make(context.temp_allocator)
-	transcript_md(&ui, {}, &b)
+	transcript_md(ui.transcript, &b)
 	testing.expect(t, strings.contains(strings.to_string(b), tr(msg.attachments[2].rejection)))
 	testing.expect(t, !strings.contains(strings.to_string(b), "raw detail"))
 

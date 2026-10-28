@@ -143,18 +143,18 @@ QUICK_REACT := [6]string{"👍", "❤️", "😂", "😮", "😢", "🙏"}
 timeline_draw_offset: f32
 
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.RenderCommand) {
+	tab_scroll_save(ui)
 	whip_attach_prune(ui)
 	timeline_draw_offset = 0
 	if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
 		timeline_draw_offset = data.scrollPosition.y
 	}
 	settings_check_count = 0 // settings_check lists this frame's switches
+	if rl.IsKeyPressed(.ESCAPE) {touch_field = {}; compose_keyboard = false}
 	if mouse_pressed() {
+		menu_press = {}
 		whip_workspace_navigation(ui)
 		kb_focus = ""
-		if tap_size() && !clay.PointerOver(clay.ID("ComposeBox")) {
-			compose_keyboard = false
-		}
 	}
 	clay.BeginLayout()
 
@@ -252,7 +252,9 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 						// their own header.
 						if single_pane() &&
 						   !ui.new_chat_open &&
-						   (ui.page != .Settings || ui.settings_section == .Home) &&
+						   (ui.add_account_open ||
+								   ui.page == .Contacts ||
+								   (ui.page == .Chats && ui.whip_open)) &&
 						   !(ui.page == .Chats && !ui.whip_open && ui.selected >= 0) {
 							phone_back(ui)
 						}
@@ -278,13 +280,13 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									whip_pane(ui)
 								} else if ui.selected >= 0 {
 									whip_chat_pane(ui)
-								} else if len(ui.chats) == 0 {
+								} else if onboard_pending(ui) {
 									get_started_pane(ui)
 								} else {
 									centered_note(
 										"PickChat",
 										tr("Select a chat"),
-										ui.client_status,
+										ui.client_status == tr("Runtime running") ? "" : ui.client_status,
 									)
 								}
 							case .Contacts:
@@ -319,6 +321,9 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			}
 			if open_now(clay.ID("ConfirmModal"), ui.confirm.kind != .None) {
 				confirm_modal(ui)
+			}
+			if open_now(clay.ID("ExportModal"), ui.export_open) {
+				export_modal(ui)
 			}
 			// No exit animation: Cancel immediately releases its texture.
 			if photo_image(&ui.photo).data != nil {photo_preview_modal(ui)}
@@ -358,6 +363,9 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			if open_now(clay.ID("PeerModal"), ui.peer_open) {
 				peer_modal(ui)
 			}
+			if ui.page != .Settings {
+				if open_now(clay.ID("ShortModal"), ui.shortcuts_open) {shortcuts_modal(ui)}
+			}
 			if open_now(clay.ID("GsModal"), ui.gs_open) {
 				gsearch_modal(ui)
 			}
@@ -371,6 +379,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 	}
 
 	commands := clay.EndLayout(frame_time)
+	tab_scroll_restore(ui)
 	timeline_measure(ui)
 	compose_scroll(ui)
 	whip_tab_reveal(ui)
@@ -813,12 +822,12 @@ app_main :: proc() {
 			load_timeline(client, &ui)
 		}
 
-		// Reopen the last chat, the General-settings startup toggle.
-		if client != nil &&
-		   ui.prefs.restore_last_chat &&
-		   len(ui.prefs.last_chat) > 0 &&
-		   ui.selected < 0 {
-			select_by_id(&ui, client, ui.prefs.last_chat)
+		// Reopen the last chat, the General-settings startup toggle. After
+		// Lock now, reopen exactly what was open instead: a chat, or none.
+		reopen := ui.prefs.restore_last_chat ? ui.prefs.last_chat : ""
+		if !first_session {reopen = relock_chat}
+		if client != nil && len(reopen) > 0 && ui.selected < 0 {
+			select_by_id(&ui, client, reopen)
 		}
 		whip_workspace_begin(&ui)
 
@@ -1437,6 +1446,40 @@ app_main :: proc() {
 				video_bar_active(),
 			)
 			long_press_tick() // before any handler reads long_pressed
+			blur_field, blur_focus := touch_field, ui.focus
+			if ui.add_account_open {
+				for page in Page {
+					if clicked_indexed("Nav", u32(page)) {
+						auth_cancel(&ui)
+						ui.add_account_open = false
+						break
+					}
+				}
+			}
+			shell_back := clicked("PhoneBack")
+			if single_pane() &&
+			   rl.IsKeyPressed(.ESCAPE) &&
+			   ui.page == .Chats &&
+			   ui.selected >= 0 &&
+			   !ui.add_account_open &&
+			   !modal_open(&ui) &&
+			   !ui.picker_open &&
+			   !ui.poll_open &&
+			   !ui.ctx_open &&
+			   !ui.mi_open &&
+			   !ui.chat_head_menu &&
+			   !ui.mention_active &&
+			   !ui.shortcode_active {
+				if ui.show_members ||
+				   ui.group_files_open ||
+				   ui.issues_open ||
+				   ui.search_open ||
+				   len(ui.thread_stack) > 0 ||
+				   (len(ui.compose) == 0 && ui.editing == "" && ui.replying == "") {
+					shell_back = true
+				}
+			}
+			if shell_back {phone_back_action(&ui)}
 			location_captured = location_captured || ui.location_open
 			whip_captured := !photo_captured && !location_captured && whip_attach_input(&ui)
 			if !photo_captured && !location_captured && !whip_captured {
@@ -1465,15 +1508,14 @@ app_main :: proc() {
 				if clicked("RailCollapse") {
 					toggle_rail(&ui)
 				}
-				if clicked("PhoneBack") {
-					phone_back_action(&ui)
-				}
 			}
 
 			// Modal capture order: a confirm sits over everything, then the
 			// link guard, then the palette, then the older modals. Global
 			// search opens on Ctrl+K, the palette on Ctrl+P.
-			if photo_captured {
+			if shell_back {
+				// The release/Escape belongs only to the layer just popped.
+			} else if photo_captured {
 				if photo_interactive &&
 				   photo_input_capture(&ui) {handle_photo_preview(&ui, client)}
 			} else if ui.confirm.kind != .None {
@@ -1497,6 +1539,11 @@ app_main :: proc() {
 			   ctrl_down() &&
 			   rl.IsKeyPressed(.P) {
 				pal_open_modal(&ui)
+			} else if ui.shortcuts_open {
+				handle_settings(&ui, client)
+			} else if ui.export_open {
+				edit_text(&ui, export_buffer(&ui))
+				handle_settings(&ui, client)
 			} else if ui.backup_mode != .None {
 				handle_backup(&ui)
 			} else if ui.vault_pw_open {
@@ -1544,7 +1591,7 @@ app_main :: proc() {
 			   !ui.link_open &&
 			   !ui.gs_open &&
 			   ui.confirm.kind == .None {
-				if !rl.HasTouch() {handle_body_sel(&ui)}
+				if !rl.TouchActive() {handle_body_sel(&ui)}
 				handle_body_copy(&ui)
 				// A press that missed a body drags the timeline instead, and
 				// a drag that moved is not a click on whatever is under it.
@@ -1573,6 +1620,17 @@ app_main :: proc() {
 					}
 					handle_geo(&ui)
 				}
+			}
+			// Keep the held target still until its release has been dispatched.
+			if mouse_released() &&
+			   touch_field.id != 0 &&
+			   touch_field.id == blur_field.id &&
+			   ui.focus == blur_focus &&
+			   !clay.PointerOver(touch_field) {
+				touch_field = {}
+				compose_keyboard = false
+				ui.focus = .Compose
+				text_field_live = false
 			}
 			// Text input follows the field, not the window: it drives the
 			// IME and it is what raises and dismisses a phone's on-screen

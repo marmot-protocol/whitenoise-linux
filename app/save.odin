@@ -77,8 +77,8 @@ att_dl_button :: proc(id_str: string, id: u32, msg_id: string, att: int, name: s
 	{
 		layout = {
 			sizing = {
-				width = clay.SizingFixed(tap_size() ? 44 : 26),
-				height = clay.SizingFixed(tap_size() ? 44 : 26),
+				width = clay.SizingFixed(tap_size() ? tap_min() : 26),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 26),
 			},
 			childAlignment = {x = .Center, y = .Center},
 		},

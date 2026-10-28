@@ -28,7 +28,7 @@ sticker_control :: proc(id: string, index: u32, label: string, style := Sticker_
 	if clay.UI(clay.ID(id, index))(
 	{
 		layout = {
-			sizing = {height = clay.SizingFixed(tap_size() ? 44 : 34)},
+			sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 34)},
 			padding = {left = 10, right = 10},
 			childAlignment = {y = .Center},
 		},
@@ -127,7 +127,7 @@ message_sticker :: proc(ui: ^Ui_State, index: u32, msg: Msg_Ui) {
 @(private)
 sticker_show :: proc(ui: ^Ui_State, ref: Sticker_Ref) {
 	sticker_library_open(ui)
-	ui.picker_open = false
+	if ui.picker_open {close_picker(ui)}
 	ui.sticker_open = true
 	ui.sticker_page = ref.pack != "" ? .Pack : ref.sha != "" ? .Detail : .Library
 	ui.sticker_loading, ui.sticker_installing = false, false
@@ -252,13 +252,17 @@ sticker_picker :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("StickerPacks"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(tap_size() ? 44 : 34)},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 34),
+			},
 			childGap = 6,
 		},
 		clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
 	},
 	) {
 		sticker_control("StickerAll", 0, tr("All"), ui.sticker_filter == "" ? .Selected : .Normal)
+		sticker_control("StickerManage", 0, tr("Manage"))
 		sticker_control(
 			"StickerRecent",
 			0,
@@ -277,14 +281,25 @@ sticker_picker :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("PickerSearch"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 34),
+			},
 			padding = clay.PaddingAll(8),
 		},
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(6),
 	},
 	) {
-		field_text(ui, "PickerSearch", &ui.picker_filter, tr("Search stickers"), true, 13, TEXT_LO)
+		field_text(
+			ui,
+			"PickerSearch",
+			&ui.picker_filter,
+			tr("Search stickers"),
+			ui.focus == .Picker,
+			13,
+			TEXT_LO,
+		)
 	}
 	if clay.UI(clay.ID("StickerGrid"))(
 	{
@@ -300,7 +315,7 @@ sticker_picker :: proc(ui: ^Ui_State) {
 		if len(matches) == 0 {
 			clay.Text(
 				tr(
-					len(ui.picker_filter) > 0 ? N_("No matching stickers.") : N_("No stickers here yet."),
+					len(ui.picker_filter) > 0 ? N_("No matching stickers.") : N_("No stickers here yet. Choose Manage to add stickers or sticker packs."),
 				),
 				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 			)
@@ -330,8 +345,7 @@ sticker_send :: proc(ui: ^Ui_State, item: Sticker_Item) {
 	job.effect = ui.fx_armed
 	ui.replying = ""
 	ui.fx_armed = 0
-	ui.picker_open = false
-	ui.focus = .Compose
+	close_picker(ui)
 	for sha, i in ui.sticker_recent {if sha == item.ref.sha {delete(sha); ordered_remove(&ui.sticker_recent, i); break}}
 	inject_at(&ui.sticker_recent, 0, strings.clone(item.ref.sha))
 	if len(ui.sticker_recent) > 24 {delete(pop(&ui.sticker_recent))}
@@ -340,8 +354,8 @@ sticker_send :: proc(ui: ^Ui_State, item: Sticker_Item) {
 
 @(private)
 handle_sticker_picker :: proc(ui: ^Ui_State) {
-	edit_text(ui, &ui.picker_filter)
-	field_mouse(ui, &ui.picker_filter, "PickerSearch")
+	if ui.focus == .Picker {edit_text(ui, &ui.picker_filter)}
+	if field_mouse(ui, &ui.picker_filter, "PickerSearch") {ui.focus = .Picker}
 	if clicked_indexed("StickerManage", 0) {sticker_show(ui, {}); return}
 	if clicked_indexed("StickerViewPack", 0) {
 		ref := Sticker_Ref {
@@ -385,8 +399,7 @@ handle_sticker_picker :: proc(ui: ^Ui_State) {
 			   rl.IsKeyPressed(.ENTER) {sticker_send(ui, ui.stickers[index]); return}
 	}
 	if rl.IsKeyPressed(.ESCAPE) ||
-	   mouse_released() &&
-		   !clay.PointerOver(clay.ID("PickerPanel")) {ui.picker_open = false; ui.focus = .Compose}
+	   mouse_released() && !clay.PointerOver(clay.ID("PickerPanel")) {close_picker(ui)}
 }
 
 @(private)

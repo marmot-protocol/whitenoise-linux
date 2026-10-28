@@ -10,6 +10,38 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
+@(private = "file")
+Pending_Poll :: struct {
+	ticket: int,
+	id:     string,
+}
+
+@(private = "file")
+poll_pending: [dynamic]Pending_Poll
+
+@(private = "file")
+poll_voting :: proc(id: string) -> bool {
+	for pending in poll_pending {
+		if pending.id == id {
+			return true
+		}
+	}
+	return false
+}
+
+// Called by drain_ops for every completed ticket. Keeping this outside
+// Msg_Ui preserves the pending marker across unrelated timeline snapshots.
+@(private)
+poll_complete :: proc(ticket: int) {
+	for pending, i in poll_pending {
+		if pending.ticket == ticket {
+			delete(pending.id)
+			ordered_remove(&poll_pending, i)
+			return
+		}
+	}
+}
+
 // Copy the projection before its timeline page is freed. The tally is not
 // reconstructed from the visible page, which may omit older poll responses.
 poll_project :: proc(client: ^marmot.Client, msg: ^Msg_Ui, poll: ^marmot.Poll_Projection) {
@@ -163,10 +195,19 @@ poll_block :: proc(index: u32, msg: Msg_Ui) {
 			}
 		}
 		if clay.UI(clay.ID("MsgPollFoot", index))({layout = {childGap = 8, padding = {top = 4}}}) {
-			clay.Text(
-				msg.poll_total == 1 ? tr("1 vote") : fmt.tprintf(tr("%d votes"), msg.poll_total),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-			)
+			total :=
+				msg.poll_total == 1 ? tr("1 vote") : fmt.tprintf(tr("%d votes"), msg.poll_total)
+			if msg.poll_multi {
+				total =
+					msg.poll_total == 1 ? tr("1 voter") : fmt.tprintf(tr("%d voters"), msg.poll_total)
+			}
+			clay.Text(total, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			if poll_voting(msg.id) {
+				clay.Text(
+					tr("Saving vote…"),
+					{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
+				)
+			}
 			if !msg.poll_open {
 				clay.Text(
 					tr("Voting has ended."),
@@ -190,10 +231,32 @@ poll_selection :: proc(msg: ^Msg_Ui, opt: int) -> []string {
 
 poll_vote :: proc(ui: ^Ui_State, client: ^marmot.Client, msg: ^Msg_Ui, opt: int) {
 	if !msg.poll_open {return}
+	if poll_voting(msg.id) {
+		return
+	}
 	selected := poll_selection(msg, opt)
 	// Native polls require at least one selection; keep the final vote.
 	if len(selected) == 0 {return}
+	// Paint the replacement selection before the worker returns. drain_ops
+	// reloads the authoritative tally on success and on failure.
+	was_voter := false
+	for &option, i in msg.poll_opts {
+		was_voter = was_voter || option.mine
+		picked := msg.poll_multi ? (i == opt ? !option.mine : option.mine) : i == opt
+		if picked != option.mine {
+			if picked {
+				option.count += 1
+			} else if option.count > 0 {
+				option.count -= 1
+			}
+			option.mine = picked
+		}
+	}
+	if !was_voter {
+		msg.poll_total += 1
+	}
 	spawn_poll(ui, client, .Poll_Vote, msg.id, "", selected)
+	append(&poll_pending, Pending_Poll{ticket = op_ticket, id = strings.clone(msg.id)})
 	play_sound(.Send)
 }
 
@@ -224,18 +287,56 @@ poll_modal :: proc(ui: ^Ui_State) {
 	},
 	) {
 		clay.Text(tr("Create poll"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
-		input_box(ui, "PollQBox", &ui.poll_question, tr("Ask a question..."), ui.focus == .PollQ)
+		poll_question_box(ui)
 		for i in 0 ..< len(ui.poll_inputs) {
-			input_box(
-				ui,
-				fmt.tprintf("PollOptBox%d", i),
-				&ui.poll_inputs[i],
-				tr("Add an option..."),
-				ui.focus == .PollOpt && ui.poll_focus == i,
-			)
+			if clay.UI(clay.ID("PollInputRow", u32(i)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 8,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				input_box(
+					ui,
+					fmt.tprintf("PollOptBox%d", i),
+					&ui.poll_inputs[i],
+					tr("Add an option..."),
+					ui.focus == .PollOpt && ui.poll_focus == i,
+					width = 0,
+				)
+				if len(ui.poll_inputs) > POLL_OPTS_MIN {
+					if clay.UI(clay.ID("PollRemoveOpt", u32(i)))(
+					{
+						layout = {
+							sizing = {clay.SizingFixed(44), clay.SizingFixed(44)},
+							childAlignment = {x = .Center, y = .Center},
+						},
+						backgroundColor = hovered() ? HOVER : ROW_BG,
+						cornerRadius = rr(8),
+					},
+					) {
+						clay.Text(
+							ICON_CLOSE,
+							{fontId = FONT_ICON, fontSize = 14, textColor = TEXT_DIM},
+						)
+					}
+					if clay.PointerOver(clay.ID("PollRemoveOpt", u32(i))) {
+						tooltip(tr("Remove option"))
+					}
+				}
+			}
 		}
 		if len(ui.poll_inputs) < POLL_OPTS_CAP {
 			micro_button("PollAddOpt", tr("Add option"))
+		}
+		ready := poll_ready(ui)
+		if !ready {
+			clay.Text(
+				tr("Add a question and at least two options."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
 		}
 		if clay.UI(clay.ID("PollBtnRow"))(
 		{
@@ -248,7 +349,13 @@ poll_modal :: proc(ui: ^Ui_State) {
 		},
 		) {
 			if clay.UI(clay.ID("PollChoiceRow"))(
-			{layout = {childGap = 8, childAlignment = {y = .Center}}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(44)},
+					childGap = 8,
+					childAlignment = {y = .Center},
+				},
+			},
 			) {
 				toggle("PollMulti", ui.poll_multi_in)
 				clay.Text(
@@ -258,14 +365,125 @@ poll_modal :: proc(ui: ^Ui_State) {
 			}
 			if clay.UI(clay.ID("PollBtnGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("PollActions"))(
-			{layout = {childGap = 8, childAlignment = {y = .Center}}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 8,
+					childAlignment = {y = .Center},
+				},
+			},
 			) {
 				login_button("PollCancel", tr("Cancel"))
-				login_button("PollCreate", tr("Create"), primary = true)
+				login_big_button("PollCreate", tr("Create"), true, ready ? .Enabled : .Disabled)
 			}
 		}
 	}
 	scrollbar(clay.ID("PollModal"), 12)
+}
+
+@(private = "file")
+poll_ready :: proc(ui: ^Ui_State) -> bool {
+	if len(strings.trim_space(string(ui.poll_question[:]))) == 0 {
+		return false
+	}
+	count := 0
+	for option in ui.poll_inputs {
+		if len(strings.trim_space(string(option[:]))) > 0 {
+			count += 1
+		}
+	}
+	return count >= POLL_OPTS_MIN
+}
+
+// Keep the modal's question separate from the composer's IDs and wrap
+// cache, but use the same grapheme rendering, selection, and IME spans.
+@(private = "file")
+poll_q_lines :: proc(ui: ^Ui_State) -> []Wrap_Line {
+	box := clay.GetElementData(clay.ID("PollQBox"))
+	width := box.found ? box.boundingBox.width - 20 : modal_w(clay.ID("PollModal"), 460) - 52
+	return wrapped_lines(string(ui.poll_question[:]), max(width - CARET_W, 1), BODY_FS, .Compose)
+}
+
+@(private = "file")
+poll_question_box :: proc(ui: ^Ui_State) {
+	if clay.UI(clay.ID("PollQBox"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFit({min = 80})},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(10),
+		},
+		backgroundColor = ROW_BG,
+		border = ui.focus == .PollQ ? focus_border(true) : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
+		cornerRadius = rr(8),
+	},
+	) {
+		if len(ui.poll_question) == 0 && len(rl.Preedit()) == 0 {
+			if clay.UI(clay.ID("PollQPlaceholder"))({layout = {childAlignment = {y = .Center}}}) {
+				if ui.focus == .PollQ {
+					caret()
+				}
+				clay.Text(
+					tr("Ask a question..."),
+					{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_DIM},
+				)
+			}
+		} else {
+			text := string(ui.poll_question[:])
+			lo, hi, head := field_sel(ui, &ui.poll_question)
+			if ui.focus != .PollQ {
+				head = -1
+			}
+			for line, i in poll_q_lines(ui) {
+				h := head
+				if i > 0 && head == line.start && text[line.start - 1] != '\n' {
+					h = -1
+				}
+				compose_line(0x10000 + u32(i), text, line.start, line.end, lo, hi, h)
+			}
+		}
+	}
+}
+
+@(private = "file")
+poll_q_mouse :: proc(ui: ^Ui_State) -> bool {
+	over := clay.PointerOver(clay.ID("PollQBox"))
+	pressed := over && (rl.HasTouch() ? mouse_released() : mouse_pressed())
+	dragging := !rl.HasTouch() && text_drag == &ui.poll_question && rl.IsMouseButtonDown(.LEFT)
+	if !pressed && !dragging {
+		return false
+	}
+	point := rl.GetMousePosition()
+	point.x /= UI_ZOOM
+	point.y /= UI_ZOOM
+	text := string(ui.poll_question[:])
+	hit := len(text)
+	for line, i in poll_q_lines(ui) {
+		row := clay.GetElementData(clay.ID("ComposeLine", 0x10000 + u32(i)))
+		if row.found && point.y < row.boundingBox.y + row.boundingBox.height {
+			hit =
+				line.start +
+				hit_compose_line(text[line.start:line.end], point.x - row.boundingBox.x)
+			break
+		}
+	}
+	ui.focus = .PollQ
+	if rl.HasTouch() {
+		touch_field = clay.ID("PollQBox")
+	}
+	ed_begin(ui, &ui.poll_question)
+	if pressed && !shift_down() {
+		ui.ed.selection = {hit, hit}
+	} else {
+		ui.ed.selection[0] = hit
+	}
+	ed_end(ui, &ui.poll_question)
+	if !rl.HasTouch() {
+		text_drag = &ui.poll_question
+		text_drag_box = clay.ID("PollQBox")
+	}
+	caret_wake()
+	return true
 }
 
 poll_close :: proc(ui: ^Ui_State) {
@@ -342,7 +560,7 @@ handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if ui.focus == .PollQ {
-		edit_text(ui, &ui.poll_question)
+		edit_text(ui, &ui.poll_question, true)
 	} else if ui.focus == .PollOpt {
 		edit_text(ui, &ui.poll_inputs[ui.poll_focus])
 	}
@@ -356,12 +574,10 @@ handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.poll_focus = max(at - 1, 0)
 		return
 	}
-	// Enter advances question → options top to bottom, growing a new
-	// row past the last one.
+	// Enter inserts a question line; option fields advance top to bottom.
 	if rl.IsKeyPressed(.ENTER) {
 		if ui.focus == .PollQ {
-			ui.focus = .PollOpt
-			ui.poll_focus = 0
+			ed_insert(ui, &ui.poll_question, "\n")
 		} else if ui.poll_focus < len(ui.poll_inputs) - 1 {
 			ui.poll_focus += 1
 		} else if len(ui.poll_inputs) < POLL_OPTS_CAP && len(ui.poll_inputs[ui.poll_focus]) > 0 {
@@ -370,8 +586,7 @@ handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		return
 	}
-	if field_mouse(ui, &ui.poll_question, "PollQBox") {
-		ui.focus = .PollQ
+	if poll_q_mouse(ui) {
 		return
 	}
 	for i in 0 ..< len(ui.poll_inputs) {
@@ -384,21 +599,54 @@ handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !mouse_released() {
 		return
 	}
+	if len(ui.poll_inputs) > POLL_OPTS_MIN {
+		for i in 0 ..< len(ui.poll_inputs) {
+			if !clay.PointerOver(clay.ID("PollRemoveOpt", u32(i))) {
+				continue
+			}
+			// Removing a row moves the remaining buffers. Drop their old
+			// edit pointer before moving them so undo cannot target a neighbour.
+			if ui.ed_target != &ui.poll_question {
+				ui.ed_target = nil
+			}
+			delete(ui.poll_inputs[i])
+			ordered_remove(&ui.poll_inputs, i)
+			if ui.poll_focus > i {
+				ui.poll_focus -= 1
+			}
+			ui.poll_focus = min(ui.poll_focus, len(ui.poll_inputs) - 1)
+			return
+		}
+	}
 	if clay.PointerOver(clay.ID("PollAddOpt")) && len(ui.poll_inputs) < POLL_OPTS_CAP {
 		append(&ui.poll_inputs, [dynamic]u8{})
 		ui.focus = .PollOpt
 		ui.poll_focus = len(ui.poll_inputs) - 1
 		return
 	}
-	if clay.PointerOver(clay.ID("PollMulti")) {
+	if clay.PointerOver(clay.ID("PollChoiceRow")) {
 		ui.poll_multi_in = !ui.poll_multi_in
 		return
 	}
 	if clay.PointerOver(clay.ID("PollCreate")) {
-		poll_create(ui, client)
+		if poll_ready(ui) {
+			poll_create(ui, client)
+		}
 		return
 	}
-	if clay.PointerOver(clay.ID("PollCancel")) || !clay.PointerOver(clay.ID("PollModal")) {
+	if clay.PointerOver(clay.ID("PollCancel")) {
+		poll_close(ui)
+		return
+	}
+	if !clay.PointerOver(clay.ID("PollModal")) {
+		if len(ui.poll_question) > 0 {
+			return
+		}
+		for option in ui.poll_inputs {
+			if len(option) > 0 {
+				return
+			}
+		}
 		poll_close(ui)
 	}
 }

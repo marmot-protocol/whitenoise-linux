@@ -186,7 +186,7 @@ gs_old_result_keeps_seek_target :: proc(t: ^testing.T) {
 		tl_has_more     = true,
 	}
 	append(&ui.messages, Msg_Ui{id = "newer-page-anchor"})
-	defer {delete(ui.messages); delete(ui.jump_id)}
+	defer {delete(ui.messages); delete(ui.jump_id); delete(ui.gs_flash_id)}
 	testing.expect(t, gs_seek_jump(&ui))
 	testing.expect(t, ui.timeline_paging)
 	testing.expect(

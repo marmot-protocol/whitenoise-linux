@@ -298,25 +298,40 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 		layout = {
 			layoutDirection = .TopToBottom,
 			sizing = {
-				width = single_pane() ? clay.SizingFixed(fit_w(280)) : clay.SizingFit({min = 210, max = fit_w(560)}),
-				height = clay.SizingFit({max = modal_h(560)}),
+				width = single_pane() ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : clay.SizingFit({min = 210, max = fit_w(560)}),
+				height = clay.SizingFit({max = single_pane() ? sheet_max_h() : modal_h(560)}),
 			},
 			padding = clay.PaddingAll(4),
 			childGap = 1,
 		},
-		floating = {attachTo = .Root, offset = {x, y + rise(clay.ID("RowMenu"))}, zIndex = 10},
+		floating = {
+			attachTo = .Root,
+			offset = {
+				single_pane() ? 0 : x,
+				(single_pane() ? -sheet_bottom() : y) + rise(clay.ID("RowMenu")),
+			},
+			attachment = {
+				element = single_pane() ? .LeftBottom : .LeftTop,
+				parent = single_pane() ? .LeftBottom : .LeftTop,
+			},
+			zIndex = 10,
+		},
 		backgroundColor = CARD,
 		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if !terminal {ctx_item("RowInfo", ICON_SETTINGS, tr("Group settings"))}
+		if single_pane() {sheet_title(terminal ? key : ui.chats[row_menu_index(ui)].title)}
+		if !terminal {ctx_item("RowInfo", ICON_SETTINGS, chat_is_dm(ui.chats[row_menu_index(ui)]) ? tr("Chat settings") : tr("Group settings"))}
 		ctx_item("RowPin", ICON_PIN, ui.prefs.pinned[key] ? tr("Unpin") : tr("Pin to top"))
 		if !terminal {
 			ctx_item("RowMute", ICON_BELL_OFF, ui.prefs.muted_ids[key] ? tr("Unmute") : tr("Mute"))
-			ctx_item("RowRead", ICON_ENVELOPE_OPEN, tr("Mark read"))
-			ctx_item("RowUnread", ICON_ENVELOPE, tr("Mark unread"))
+			if ui.chats[row_menu_index(ui)].unread > 0 || ui.prefs.unread_ids[key] {
+				ctx_item("RowRead", ICON_ENVELOPE_OPEN, tr("Mark read"))
+			} else {
+				ctx_item("RowUnread", ICON_ENVELOPE, tr("Mark unread"))
+			}
 		}
 		ctx_item("RowFolder", ICON_FOLDER, tr("Move to folder"))
 		if !terminal {
@@ -527,7 +542,7 @@ folder_action :: proc(id, label: string, primary: bool = false) {
 	if clay.UI(clay.ID(id))(
 	{
 		layout = {
-			sizing = {height = clay.SizingFixed(tap_size() ? 44 : 36)},
+			sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 36)},
 			padding = {left = 14, right = 14},
 			childAlignment = {x = .Center, y = .Center},
 		},
@@ -584,7 +599,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 			layout = {
 				sizing = {
 					width = clay.SizingGrow(),
-					height = clay.SizingFixed(tap_size() ? 44 : 40),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 40),
 				},
 				padding = {left = 12, right = 12},
 				childGap = 10,
@@ -611,7 +626,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 		if clay.UI(clay.ID("FolderColorDefault"))(
 		{
 			layout = {
-				sizing = {height = clay.SizingFixed(tap_size() ? 44 : 32)},
+				sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 32)},
 				padding = {left = 10, right = 10},
 				childGap = 8,
 				childAlignment = {y = .Center},
@@ -637,8 +652,8 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 					{
 						layout = {
 							sizing = {
-								width = clay.SizingGrow(),
-								height = clay.SizingFixed(tap_size() ? 44 : 34),
+								width = clay.SizingFixed(tap_size() ? tap_min() : 34),
+								height = clay.SizingFixed(tap_size() ? tap_min() : 34),
 							},
 							childAlignment = {x = .Center, y = .Center},
 						},
@@ -673,7 +688,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 			layout = {
 				sizing = {
 					width = clay.SizingGrow(),
-					height = clay.SizingFixed(tap_size() ? 44 : 36),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 36),
 				},
 				padding = {left = 12, right = 12},
 				childAlignment = {y = .Center},
@@ -693,10 +708,6 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 				TEXT_LO,
 			)
 		}
-		clay.Text(
-			tr("Enter a color as #RRGGBB."),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
-		)
 		eyebrow(tr("ICON"))
 		if clay.UI(clay.ID("FolderIconGrid"))(
 		{
@@ -725,7 +736,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 							layout = {
 								sizing = {
 									width = clay.SizingGrow(),
-									height = clay.SizingFixed(tap_size() ? 44 : 42),
+									height = clay.SizingFixed(tap_size() ? tap_min() : 42),
 								},
 								childAlignment = {x = .Center, y = .Center},
 							},
@@ -793,8 +804,8 @@ folder_modal :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFit({min = tap_size() ? 44 : 0}),
-						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+						width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 					},
 					padding = clay.PaddingAll(7),
 					childAlignment = {x = .Center, y = .Center},
@@ -818,7 +829,7 @@ folder_modal :: proc(ui: ^Ui_State) {
 					layout = {
 						sizing = {
 							width = clay.SizingGrow(),
-							height = clay.SizingFixed(tap_size() ? 44 : 40),
+							height = clay.SizingFixed(tap_size() ? tap_min() : 40),
 						},
 						padding = {left = 12, right = 12},
 						childGap = 10,
@@ -973,6 +984,7 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !mouse_released() {
 		return
 	}
+	if menu_keep(clay.ID("RowMenu")) {return}
 	if terminal {
 		ui.row_menu = -1
 		if clay.PointerOver(clay.ID("RowPin")) {

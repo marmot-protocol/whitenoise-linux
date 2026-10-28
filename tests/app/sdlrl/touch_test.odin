@@ -43,5 +43,14 @@ touch_mouse_enables_targets :: proc(t: ^testing.T) {
 	event.motion.which = 0
 	testing.expect(t, sdl.PushEvent(&event))
 	WindowShouldClose()
+	testing.expect(
+		t,
+		GetMousePosition().x < -1000,
+		"a motion event that did not move the mouse keeps the pointer parked",
+	)
+	event.motion.xrel = 1
+	testing.expect(t, sdl.PushEvent(&event))
+	WindowShouldClose()
 	testing.expect(t, GetMousePosition().x > -1000, "a mouse moving again restores the pointer")
+	testing.expect(t, !TouchActive(), "a moving mouse becomes the active modality")
 }

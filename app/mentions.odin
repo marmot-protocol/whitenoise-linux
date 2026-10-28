@@ -398,7 +398,7 @@ mention_popover :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {
 						width = clay.SizingGrow(),
-						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 					},
 					padding = clay.PaddingAll(6),
 					childGap = 8,
@@ -600,8 +600,8 @@ mention_inbox :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingFixed(tap_size() ? 44 : 24),
-						height = clay.SizingFixed(tap_size() ? 44 : 24),
+						width = clay.SizingFixed(tap_size() ? tap_min() : 24),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 24),
 					},
 					childAlignment = {x = .Center, y = .Center},
 				},

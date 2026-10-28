@@ -53,7 +53,7 @@ whip_pane_tree :: proc(ui: ^Ui_State) {
 		}
 		return
 	}
-	if zoom != 0 {
+	if zoom != 0 && !single_pane() {
 		for pane, i in panes {if pane.id == zoom && !detached[pane.id] {whip_pane_slot(pane, i, zoom); return}}
 	}
 	if single_pane() {
@@ -62,28 +62,52 @@ whip_pane_tree :: proc(ui: ^Ui_State) {
 			layout = {
 				sizing = {clay.SizingGrow(), clay.SizingGrow()},
 				layoutDirection = .TopToBottom,
-				childGap = 8,
+				childGap = 4,
 			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
+			selected := -1
 			for pane, i in panes {
 				if detached[pane.id] {continue}
-				if clay.UI(clay.ID("WhipMobilePane", pane.id))(
+				if selected < 0 || pane.focused {selected = i}
+			}
+			if len(panes) > 1 {
+				if clay.UI(clay.ID("WhipPhoneTabs"))(
 				{
-					layout = {
-						sizing = {
-							clay.SizingGrow(),
-							clay.SizingFixed(max(180, f32(rl.GetScreenHeight()) / UI_ZOOM - 240)),
-						},
-					},
+					layout = {sizing = {clay.SizingGrow(), clay.SizingFixed(44)}, childGap = 4},
+					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
 				},
 				) {
-					whip_pane_slot(pane, i)
+					for pane, i in panes {
+						if detached[pane.id] {continue}
+						if clay.UI(clay.ID("WhipPhonePane", pane.id))(
+						{
+							layout = {
+								sizing = {clay.SizingFixed(140), clay.SizingFixed(44)},
+								padding = {left = 10, right = 10},
+								childAlignment = {y = .Center},
+							},
+							backgroundColor = i == selected ? SELECTED : ROW_BG,
+							cornerRadius = rr(6),
+							clip = {horizontal = true},
+						},
+						) {
+							clay.Text(
+								fmt.tprintf("%d  %s", i + 1, pane.name),
+								{
+									fontId = FONT_BODY,
+									fontSize = 12,
+									textColor = i == selected ? TEXT : TEXT_DIM,
+									wrapMode = .None,
+								},
+							)
+						}
+					}
 				}
+				scrollbar(clay.ID("WhipPhoneTabs"))
 			}
+			if selected >= 0 {whip_pane_slot(panes[selected], selected)}
 		}
-		scrollbar(clay.ID("WhipMobilePanes"))
 		return
 	}
 	whip_node(nodes, root, panes, visible)
@@ -180,9 +204,13 @@ whip_node :: proc(nodes: []rl.Whip_Node, index: int, panes: []rl.Whip_Pane, visi
 @(private)
 whip_pane_slot :: proc(pane: rl.Whip_Pane, index: int, zoom: u32 = 0) {
 	root := clay.ID("WhipPane", pane.id)
-	show_header := whip_header_open(root, clay.ID("WhipPaneHead", pane.id))
+	show_header := !single_pane() && whip_header_open(root, clay.ID("WhipPaneHead", pane.id))
 	payload := new(Whip_Payload, context.temp_allocator)
-	payload^ = {.Whip, pane.id, show_header ? (tap_size() ? 44 : WHIP_HEADER_H) : WHIP_REVEAL_H}
+	payload^ = {
+		.Whip,
+		pane.id,
+		single_pane() ? 0 : (show_header ? (tap_size() ? tap_min() : WHIP_HEADER_H) : WHIP_REVEAL_H),
+	}
 	if clay.UI(root)(
 	{
 		layout = {
@@ -204,7 +232,7 @@ whip_pane_slot :: proc(pane: rl.Whip_Pane, index: int, zoom: u32 = 0) {
 						width = clay.SizingFixed(
 							max(clay.GetElementData(root).boundingBox.width - 2, 0),
 						),
-						height = clay.SizingFixed(tap_size() ? 44 : WHIP_HEADER_H),
+						height = clay.SizingFixed(tap_size() ? tap_min() : WHIP_HEADER_H),
 					},
 					childGap = 4,
 					padding = {left = 6, right = 3},
@@ -321,8 +349,8 @@ whip_pane_button :: proc(
 	{
 		layout = {
 			sizing = {
-				width = clay.SizingFixed(tap_size() ? 44 : 20),
-				height = clay.SizingFixed(tap_size() ? 44 : 20),
+				width = clay.SizingFixed(tap_size() ? tap_min() : 20),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 20),
 			},
 			childAlignment = {x = .Center, y = .Center},
 		},
@@ -405,6 +433,9 @@ whip_pane_input :: proc(ui: ^Ui_State) {
 	}
 	if !mouse_released() {return}
 	for pane in rl.WhipPanes() {
+		if clay.PointerOver(
+			clay.ID("WhipPhonePane", pane.id),
+		) {rl.WhipPaneAct(.Focus, pane.id); return}
 		if clay.PointerOver(
 			clay.ID("WhipDetachedReturn", pane.id),
 		) {whip_attach_rejoin(ui, pane.id); return}
