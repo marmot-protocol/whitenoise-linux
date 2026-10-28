@@ -1,7 +1,70 @@
 package main
 
 import "base:runtime"
+import nev_mem "core:mem"
 import "core:testing"
+
+@(test)
+preview_metadata_ownership :: proc(t: ^testing.T) {
+	track: nev_mem.Tracking_Allocator
+	nev_mem.tracking_allocator_init(&track, context.allocator)
+	defer nev_mem.tracking_allocator_destroy(&track)
+	track.bad_free_callback = nev_mem.tracking_allocator_bad_free_callback_add_to_array
+	context.allocator = nev_mem.tracking_allocator(&track)
+	borrowed_product := Nev_Product {
+		"title",
+		"summary",
+		"image",
+		"price",
+		"availability",
+		"stock",
+		"location",
+	}
+	borrowed_cache := Nev_Geocache {
+		"name",
+		"image",
+		"hint",
+		"size",
+		"mission",
+		"geohash",
+		2,
+		3,
+		42.5,
+		-5.6,
+	}
+	for _ in 0 ..< 3 {
+		product, cache := borrowed_product, borrowed_cache
+		nev_product_clone(&product)
+		nev_geocache_clone(&cache)
+		testing.expect_value(t, product, borrowed_product)
+		testing.expect_value(t, cache, borrowed_cache)
+		testing.expect_value(t, len(track.allocation_map), 13)
+		for field, i in nev_product_strings(&product) {
+			testing.expect(
+				t,
+				raw_data(field^) != raw_data(nev_product_strings(&borrowed_product)[i]^),
+			)
+		}
+		for field, i in nev_geocache_strings(&cache) {
+			testing.expect(
+				t,
+				raw_data(field^) != raw_data(nev_geocache_strings(&borrowed_cache)[i]^),
+			)
+		}
+		nev_product_free(&product)
+		nev_geocache_free(&cache)
+		testing.expect_value(t, product, Nev_Product{})
+		testing.expect_value(
+			t,
+			cache,
+			Nev_Geocache{difficulty = 2, terrain = 3, lat = 42.5, lon = -5.6},
+		)
+		testing.expect_value(t, len(track.allocation_map), 0)
+		nev_product_free(&product)
+		nev_geocache_free(&cache)
+	}
+	testing.expect_value(t, len(track.bad_free_array), 0)
+}
 
 @(private)
 nev_highlight_test_free :: proc(card: Nev_Card) {

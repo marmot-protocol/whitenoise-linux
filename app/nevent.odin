@@ -248,8 +248,8 @@ nev_worker :: proc(job: ^Nev_Job) {
 				for source in card.highlight.sources {delete(source.text); delete(source.url)}
 				for author in card.highlight.authors {delete(author.pubkey); delete(author.role)}
 				delete(card.highlight.sources); delete(card.highlight.authors)
-				for value in ([]string{card.product.title, card.product.summary, card.product.image, card.product.price, card.product.availability, card.product.stock, card.product.location}) {delete(value)}
-				for value in ([]string{card.geocache.name, card.geocache.image, card.geocache.hint, card.geocache.size, card.geocache.mission, card.geocache.geohash}) {delete(value)}
+				nev_product_free(&card.product)
+				nev_geocache_free(&card.geocache)
 				card = fresh
 				found = true
 				os.make_directory(fmt.tprintf("%s/events", data_home))
@@ -1282,6 +1282,30 @@ Nev_Product :: struct {
 	title, summary, image, price, availability, stock, location: string,
 }
 
+// Clone and free share this fixed-size list of owned strings.
+@(private = "file")
+nev_product_strings :: proc(product: ^Nev_Product) -> [7]^string {
+	return {
+		&product.title,
+		&product.summary,
+		&product.image,
+		&product.price,
+		&product.availability,
+		&product.stock,
+		&product.location,
+	}
+}
+
+@(private = "file")
+nev_product_clone :: proc(product: ^Nev_Product) {
+	for field in nev_product_strings(product) {field^ = strings.clone(field^)}
+}
+
+@(private = "file")
+nev_product_free :: proc(product: ^Nev_Product) {
+	for field in nev_product_strings(product) {delete(field^); field^ = ""}
+}
+
 @(private)
 nev_more_hover: string
 @(private)
@@ -1351,9 +1375,7 @@ nev_product_parse :: proc(ev: json.Object) -> (product: Nev_Product) {
 	case visibility == "on-sale" || status == "active":
 		product.availability = N_("On sale")
 	}
-	for field in ([]^string{&product.title, &product.summary, &product.image, &product.price, &product.availability, &product.stock, &product.location}) {
-		field^ = strings.clone(field^)
-	}
+	nev_product_clone(&product)
 	return
 }
 
@@ -1452,6 +1474,22 @@ Nev_Geocache :: struct {
 	lat, lon:                                  f64,
 }
 
+// Only string metadata owns storage; numeric fields remain unchanged.
+@(private = "file")
+nev_geocache_strings :: proc(cache: ^Nev_Geocache) -> [6]^string {
+	return {&cache.name, &cache.image, &cache.hint, &cache.size, &cache.mission, &cache.geohash}
+}
+
+@(private = "file")
+nev_geocache_clone :: proc(cache: ^Nev_Geocache) {
+	for field in nev_geocache_strings(cache) {field^ = strings.clone(field^)}
+}
+
+@(private = "file")
+nev_geocache_free :: proc(cache: ^Nev_Geocache) {
+	for field in nev_geocache_strings(cache) {delete(field^); field^ = ""}
+}
+
 // Geohash alternates longitude and latitude bisections, most significant bit first.
 @(private)
 geohash_coords :: proc(value: string) -> (lat, lon: f64, valid: bool) {
@@ -1514,7 +1552,7 @@ nev_geocache_parse :: proc(ev: json.Object) -> (cache: Nev_Geocache) {
 				   len(cache.geohash) {cache.geohash, cache.lat, cache.lon = text, lat, lon}
 		}
 	}
-	for field in ([]^string{&cache.name, &cache.image, &cache.hint, &cache.size, &cache.mission, &cache.geohash}) {field^ = strings.clone(field^)}
+	nev_geocache_clone(&cache)
 	return
 }
 
