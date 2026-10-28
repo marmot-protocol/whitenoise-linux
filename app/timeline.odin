@@ -1293,7 +1293,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 								if clay.UI(clay.ID("MsgPdfPrev", id))(
 								{layout = {padding = clay.PaddingAll(4)}},
 								) {
-									if hovered() {
+									if view.page > 0 && hovered() {
 										pdf_flip_hover = view
 										pdf_flip_dir = -1
 									}
@@ -1302,7 +1302,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 										{
 											fontId = FONT_TITLE,
 											fontSize = 13,
-											textColor = {255, 255, 255, 230},
+											textColor = {255, 255, 255, view.page > 0 ? 230 : 80},
 										},
 									)
 								}
@@ -1317,7 +1317,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 								if clay.UI(clay.ID("MsgPdfNext", id))(
 								{layout = {padding = clay.PaddingAll(4)}},
 								) {
-									if hovered() {
+									if view.page < view.pages - 1 && hovered() {
 										pdf_flip_hover = view
 										pdf_flip_dir = 1
 									}
@@ -1326,7 +1326,12 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 										{
 											fontId = FONT_TITLE,
 											fontSize = 13,
-											textColor = {255, 255, 255, 230},
+											textColor = {
+												255,
+												255,
+												255,
+												view.page < view.pages - 1 ? 230 : 80,
+											},
 										},
 									)
 								}

@@ -196,6 +196,9 @@ physical width, including UI zoom and display density, capped at the source
 width. Resizing repaints paused frames too. Closing a shared fullscreen player
 returns its texture to the inline cap without restarting playback.
 
+Slideshow and PDF previous/next arrows dim at the first and last item.
+Disabled arrows do not navigate; PDF attachment tiles use the same boundaries.
+
 Chats keeps DMs and groups in one inbox, with Unread and Groups filters.
 Archived conversations live on the separate Archive page, not a Chats tab.
 `Chat_Row_Ui.conversation_kind` preserves the engine's type; UNKNOWN
