@@ -448,7 +448,7 @@ video_bar_active :: proc() -> bool {
 @(private)
 video_scrub_bar :: proc(id: clay.ElementId, view: ^Video_View, width: f32, z_index: i16 = 7) {
 	if view.looping {return}
-	expanded := hovered() || clay.PointerOver(id) || video_bar_drag.view == view
+	expanded := tap_size() || hovered() || clay.PointerOver(id) || video_bar_drag.view == view
 	append(&video_bars, Video_Bar{id, view})
 	frac := view.dur > 0 ? clamp(f32(view.time / view.dur), 0, 1) : 0
 	if clay.UI(id)(
@@ -456,7 +456,7 @@ video_scrub_bar :: proc(id: clay.ElementId, view: ^Video_View, width: f32, z_ind
 		layout = {
 			sizing = {
 				width = clay.SizingFixed(width),
-				height = clay.SizingFixed(expanded ? 14 : 2),
+				height = clay.SizingFixed(tap_size() ? 44 : (expanded ? 14 : 2)),
 			},
 			childAlignment = {y = .Center},
 		},

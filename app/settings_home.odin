@@ -364,7 +364,10 @@ settings_nav_box :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("SettingsSearchBox"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(30)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(settings_tap_size(30)),
+					},
 					padding = {left = 8, right = 8},
 					childGap = 7,
 					childAlignment = {y = .Center},
@@ -525,7 +528,10 @@ settings_pane_link :: proc(
 	if clay.UI(id)(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow()},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFit({min = settings_tap_size(24)}),
+			},
 			padding = {top = 2, bottom = 2},
 			childGap = 8,
 			childAlignment = {y = .Center},
@@ -636,6 +642,10 @@ settings_category_menu :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("SettingsTask", u32(i)))(
 			{
 				layout = {
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFit({min = settings_tap_size(26)}),
+					},
 					padding = {top = 4, bottom = 4},
 					childGap = 10,
 					childAlignment = {y = .Center},

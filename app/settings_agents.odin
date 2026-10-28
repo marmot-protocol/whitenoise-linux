@@ -190,6 +190,7 @@ agent_setup_view :: proc(ui: ^Ui_State, npub: string) {
 		{
 			layout = {
 				sizing = {width = clay.SizingGrow()},
+				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 				childGap = 20,
 				childAlignment = {y = .Center},
 			},
@@ -239,7 +240,7 @@ agent_setup_view :: proc(ui: ^Ui_State, npub: string) {
 			if clay.UI(clay.ID("AgentCopyPrompt"))(
 			{
 				layout = {
-					sizing = {height = clay.SizingFixed(40)},
+					sizing = {height = clay.SizingFixed(settings_tap_size(40))},
 					padding = {left = 20, right = 20},
 					childGap = 10,
 					childAlignment = {x = .Center, y = .Center},
@@ -258,7 +259,7 @@ agent_setup_view :: proc(ui: ^Ui_State, npub: string) {
 			if clay.UI(clay.ID("AgentCopyKey"))(
 			{
 				layout = {
-					sizing = {height = clay.SizingFixed(40)},
+					sizing = {height = clay.SizingFixed(settings_tap_size(40))},
 					padding = {left = 16, right = 16},
 					childGap = 9,
 					childAlignment = {x = .Center, y = .Center},
@@ -295,6 +296,7 @@ agent_setup_view :: proc(ui: ^Ui_State, npub: string) {
 			if clay.UI(clay.ID(id))(
 			{
 				layout = {
+					sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
 					padding = {left = 12, right = 12, top = 8, bottom = 8},
 					childGap = 8,
 					childAlignment = {y = .Center},
@@ -329,7 +331,13 @@ agent_setup_view :: proc(ui: ^Ui_State, npub: string) {
 		},
 		) {
 			if clay.UI(clay.ID_LOCAL("Heading"))(
-			{layout = {childGap = 10, childAlignment = {y = .Center}}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 10,
+					childAlignment = {y = .Center},
+				},
+			},
 			) {
 				if clay.UI(clay.ID_LOCAL("Step"))(
 				{

@@ -73,7 +73,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	// Contact QR modal captures everything while open.
 	if ui.qr_open {
-		if rl.IsKeyPressed(.ESCAPE) ||
+		if clicked("QrClose") ||
+		   rl.IsKeyPressed(.ESCAPE) ||
 		   (mouse_released() && !clay.PointerOver(clay.ID("QrModal"))) {
 			ui.qr_open = false
 		}
@@ -204,7 +205,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	// The rail avatar opens the switcher.
-	if clicked("RailAvatar") {
+	if clicked("RailAvatar") || clicked("PhoneAccount") {
 		ui.accounts_open = true
 		return
 	}
@@ -242,6 +243,17 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	for page in Page {
+		if single_pane() && ui.page == page && clay.PointerOver(clay.ID("Nav", u32(page))) {
+			if page == .Chats {
+				if ui.new_chat_open {close_new_chat(ui)}
+				phone_back_action(ui)
+			} else if page == .Contacts {
+				ui.selected_contact = -1
+			} else if page == .Settings {
+				settings_open(ui, client, .Home)
+			}
+			return
+		}
 		if clay.PointerOver(clay.ID("Nav", u32(page))) && ui.page != page {
 			settings_theme_preview_reset(ui)
 			ui.page = page

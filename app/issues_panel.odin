@@ -76,8 +76,9 @@ issue_button :: proc(id, label: string) {
 	if clay.UI(clay.ID(id))(
 	{
 		layout = {
+			sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
 			padding = {left = 14, right = 14, top = 9, bottom = 9},
-			childAlignment = {x = .Center},
+			childAlignment = {x = .Center, y = .Center},
 		},
 		backgroundColor = hovered() ? ACCENT_HI : ACCENT,
 		cornerRadius = rr(7),
@@ -122,6 +123,8 @@ issue_author :: proc(ui: ^Ui_State, record: ^marmot.App_Message_Record, index: u
 
 @(private)
 issues_panel :: proc(ui: ^Ui_State) {
+	defer scrollbar(clay.ID("IssueSidebar"))
+	defer scrollbar(clay.ID("IssueNoIssues"))
 	narrow := page_w(ui) < 720
 	if len(ui.issues) == 0 && !ui.issue_new {
 		if clay.UI(clay.ID("IssueNoIssues"))(
@@ -130,6 +133,7 @@ issues_panel :: proc(ui: ^Ui_State) {
 				sizing = {clay.SizingGrow(), clay.SizingGrow()},
 				layoutDirection = .TopToBottom,
 			},
+			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
 			if clay.UI(clay.ID("IssueNoIssuesCopy"))(
@@ -171,6 +175,7 @@ issues_panel :: proc(ui: ^Ui_State) {
 				sizing = {narrow ? clay.SizingGrow() : clay.SizingFixed(300), clay.SizingGrow()},
 				layoutDirection = .TopToBottom,
 			},
+			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 			backgroundColor = RAIL_BG,
 			border = {color = DIVIDER, width = {right = 1}},
 		},
@@ -180,8 +185,8 @@ issues_panel :: proc(ui: ^Ui_State) {
 				layout = {
 					sizing = {width = clay.SizingGrow()},
 					layoutDirection = .TopToBottom,
-					padding = clay.PaddingAll(18),
-					childGap = 16,
+					padding = clay.PaddingAll(single_pane() ? 12 : 18),
+					childGap = single_pane() ? 8 : 16,
 				},
 			},
 			) {
@@ -216,6 +221,7 @@ issues_panel :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("IssueFilterToggle"))(
 				{
 					layout = {
+						sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
 						padding = {top = 3, bottom = 3},
 						childGap = 8,
 						childAlignment = {y = .Center},
@@ -235,7 +241,10 @@ issues_panel :: proc(ui: ^Ui_State) {
 						if clay.UI(clay.ID("IssueFilterMenu"))(
 						{
 							layout = {
-								sizing = {width = clay.SizingFixed(180)},
+								sizing = {
+									width = clay.SizingFixed(180),
+									height = clay.SizingFit({max = modal_h(240)}),
+								},
 								padding = clay.PaddingAll(5),
 								layoutDirection = .TopToBottom,
 							},
@@ -243,20 +252,25 @@ issues_panel :: proc(ui: ^Ui_State) {
 							cornerRadius = rr(8),
 							border = {color = ELEVATED_BORDER, width = bw()},
 							floating = {
-								attachTo = .Parent,
+								attachTo = single_pane() ? .Root : .Parent,
 								zIndex = 10,
 								offset = {0, 6},
-								attachment = {element = .LeftTop, parent = .LeftBottom},
+								attachment = {
+									element = single_pane() ? .CenterCenter : .LeftTop,
+									parent = single_pane() ? .CenterCenter : .LeftBottom,
+								},
 							},
+							clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 						},
 						) {for name, i in names {ctx_item(fmt.tprintf("IssueFilter%d", i), ui.issue_filter == i ? ICON_CHECK : "", tr(name))}}
+						scrollbar(clay.ID("IssueFilterMenu"), 11)
 					}
 				}
 			}
 			if clay.UI(clay.ID("IssueList"))(
 			{
 				layout = {
-					sizing = {clay.SizingGrow(), clay.SizingGrow()},
+					sizing = {clay.SizingGrow(), clay.SizingGrow({min = 44})},
 					layoutDirection = .TopToBottom,
 					padding = {left = 8, right = 8},
 					childGap = 2,
@@ -416,6 +430,7 @@ issues_panel :: proc(ui: ^Ui_State) {
 					0,
 				)
 			}
+			scrollbar(clay.ID("IssueForm"))
 			if clay.UI(clay.ID("IssueFormFooter"))(
 			{
 				layout = {
@@ -452,6 +467,7 @@ issues_panel :: proc(ui: ^Ui_State) {
 				{
 					layout = {
 						sizing = {width = clay.SizingGrow()},
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 						childGap = 8,
 						childAlignment = {y = .Center},
 					},
@@ -491,10 +507,20 @@ issues_panel :: proc(ui: ^Ui_State) {
 				},
 				) {
 					crop_circle("IssueIdentityDetail", 0, row.id, 44)
-					clay.Text(
-						issue_tag(record.tags[:record.tags_len], "subject"),
-						{fontId = FONT_TITLE, fontSize = 24, textColor = TEXT},
-					)
+					if single_pane() {
+						body_text(
+							0xD1200000,
+							issue_tag(record.tags[:record.tags_len], "subject"),
+							24,
+							TEXT,
+							wrap_w = max(1, width - 58),
+						)
+					} else {
+						clay.Text(
+							issue_tag(record.tags[:record.tags_len], "subject"),
+							{fontId = FONT_TITLE, fontSize = 24, textColor = TEXT},
+						)
+					}
 				}
 				issue_author(ui, record, 0)
 				if clay.UI(clay.ID("IssueDescription"))(

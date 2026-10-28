@@ -327,11 +327,17 @@ theme_edit_toml :: proc(ui: ^Ui_State) -> string {
 	return strings.to_string(b)
 }
 
-THEME_EDIT_W :: 430 // inner width; rows are fixed to it, because a
-// vertical scroll container sizes to content horizontally, and a
-// growing row would push its input clean out of the modal.
+// Preferred inner width. Rows use the capped modal width: a vertical
+// scroll container sizes to content horizontally, so unconstrained
+// growing rows could push their inputs outside the modal.
+THEME_EDIT_W :: 430
 THEME_EDIT_H :: 440
 THEME_BACKDROPS_PER_ROW :: 5
+
+@(private)
+theme_edit_width :: proc() -> f32 {
+	return max(1, modal_w(clay.ID("ThemeEdit"), THEME_EDIT_W + 36) - 36)
+}
 
 theme_edit_modal :: proc(ui: ^Ui_State) {
 	// The pack as it currently stands, for the placeholders: they have
@@ -341,12 +347,16 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("ThemeEdit"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("ThemeEdit"), THEME_EDIT_W + 36))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("ThemeEdit"), THEME_EDIT_W + 36)),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(18),
 			childGap = 8,
 		},
 		backgroundColor = CARD,
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(14),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
@@ -360,7 +370,7 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("ThemeEditHead"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+				sizing = {width = clay.SizingFixed(theme_edit_width())},
 				layoutDirection = .TopToBottom,
 				childGap = 2,
 			},
@@ -377,8 +387,8 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 		{
 			layout = {
 				sizing = {
-					width = clay.SizingFixed(THEME_EDIT_W),
-					height = clay.SizingFixed(THEME_EDIT_H),
+					width = clay.SizingFixed(theme_edit_width()),
+					height = clay.SizingFixed(max(44, modal_h(THEME_EDIT_H + 170) - 170)),
 				},
 				layoutDirection = .TopToBottom,
 				childGap = 3,
@@ -405,7 +415,7 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("ThemeFlags"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+					sizing = {width = clay.SizingFixed(theme_edit_width())},
 					layoutDirection = .TopToBottom,
 					childGap = 3,
 				},
@@ -415,7 +425,8 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("ThemeFlagRow", u32(i)))(
 					{
 						layout = {
-							sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+							sizing = {width = clay.SizingFixed(theme_edit_width())},
+							layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 							childGap = 10,
 							childAlignment = {y = .Center},
 						},
@@ -439,17 +450,18 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 			) {
 				eyebrow(tr("BACKDROP"))
 			}
-			for row in 0 ..< (len(THEME_BACKDROPS) + THEME_BACKDROPS_PER_ROW - 1) / THEME_BACKDROPS_PER_ROW {
+			columns := single_pane() ? 1 : THEME_BACKDROPS_PER_ROW
+			for row in 0 ..< (len(THEME_BACKDROPS) + columns - 1) / columns {
 				if clay.UI(clay.ID("ThemeBackdrops", u32(row)))(
 				{
 					layout = {
-						sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+						sizing = {width = clay.SizingFixed(theme_edit_width())},
 						childGap = 4,
 						padding = {bottom = 4},
 					},
 				},
 				) {
-					for i in row * THEME_BACKDROPS_PER_ROW ..< min((row + 1) * THEME_BACKDROPS_PER_ROW, len(THEME_BACKDROPS)) {
+					for i in row * columns ..< min((row + 1) * columns, len(THEME_BACKDROPS)) {
 						backdrop := THEME_BACKDROPS[i]
 						theme_chip_indexed(
 							"ThemeBackdrop",
@@ -466,7 +478,8 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("ThemeEditActions"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+				sizing = {width = clay.SizingFixed(theme_edit_width())},
+				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 				childGap = 10,
 				padding = {top = 6},
 			},
@@ -479,6 +492,7 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 			micro_button("ThemeEditSave", tr("Save and use"), ACCENT)
 		}
 	}
+	scrollbar(clay.ID("ThemeEdit"), 17)
 }
 
 @(private = "file")
@@ -486,7 +500,8 @@ theme_field_row :: proc(ui: ^Ui_State, live: ^Theme_Pack, field: Theme_Field, i:
 	if clay.UI(clay.ID("ThemeSeedRow", u32(i)))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+			sizing = {width = clay.SizingFixed(theme_edit_width())},
+			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 			childGap = 8,
 			childAlignment = {y = .Center},
 		},
@@ -519,7 +534,14 @@ theme_field_row :: proc(ui: ^Ui_State, live: ^Theme_Pack, field: Theme_Field, i:
 		focused := ui.focus == .ThemeSeed && ui.theme_edit_idx == i
 		hint := theme_field_hint(live, field)
 		if field.token < .Accent_Name_1 || field.token > .Accent_Name_5 {hint = tr(hint)}
-		input_box(ui, fmt.tprintf("ThemeSeedBox%d", i), &ui.theme_fields[i], hint, focused, 130)
+		input_box(
+			ui,
+			fmt.tprintf("ThemeSeedBox%d", i),
+			&ui.theme_fields[i],
+			hint,
+			focused,
+			single_pane() ? 0 : 130,
+		)
 	}
 }
 

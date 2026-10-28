@@ -58,7 +58,10 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return // a sign-in is in flight; the pane shows its progress
 	}
 
-	edit_text(ui, &ui.login_input)
+	if ui.login_method != .Menu {
+		field_mouse(ui, &ui.login_input, "LoginInput", 16)
+		edit_text(ui, &ui.login_input)
+	}
 
 	// The raw runtime error, not the friendlier nip46_detail line, so a bug
 	// report carries the exact failure.
@@ -414,13 +417,17 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_ctx_menu(ui, client)
 		return
 	}
-	if !ui.whip_open && (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) && ui.selected >= 0 {
+	if !ui.whip_open &&
+	   (rl.IsMouseButtonPressed(.RIGHT) || long_pressed || mouse_released()) &&
+	   ui.selected >= 0 {
 		for msg, i in ui.messages {
 			// A tombstone's only menu row is the dev-mode View raw.
 			if msg.deleted && !ui.prefs.dev_mode {
 				continue
 			}
-			if clay.PointerOver(clay.ID("MsgRow", u32(i))) {
+			if ((rl.IsMouseButtonPressed(.RIGHT) || long_pressed) &&
+				   clay.PointerOver(clay.ID("MsgRow", u32(i)))) ||
+			   clicked_indexed("MsgMore", u32(i)) {
 				m := rl.GetMousePosition()
 				ui.ctx_open = true
 				ui.ctx_msg = i
@@ -1174,6 +1181,10 @@ close_picker :: proc(ui: ^Ui_State) {
 }
 
 handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if clicked("PickerClose") || rl.IsKeyPressed(.ESCAPE) {
+		close_picker(ui)
+		return
+	}
 	if ui.picker_target == "" && ui.picker_mode == .Message {
 		if clicked_indexed(
 			"PickerStickers",
@@ -1191,10 +1202,6 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if ui.sticker_tab {handle_sticker_picker(ui); return}
 	}
 	if ui.picker_mode == .Group_Image && handle_emoji_mix(ui, client) {
-		return
-	}
-	if rl.IsKeyPressed(.ESCAPE) {
-		close_picker(ui)
 		return
 	}
 	edit_text(ui, &ui.picker_filter)

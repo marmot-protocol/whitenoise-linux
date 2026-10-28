@@ -128,7 +128,10 @@ link_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("LinkModal"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("LinkModal"), 440))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("LinkModal"), 440)),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(20),
 			childGap = 12,
@@ -136,6 +139,7 @@ link_modal :: proc(ui: ^Ui_State) {
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		floating = {
 			attachTo = .Root,
 			zIndex = 16,
@@ -144,6 +148,7 @@ link_modal :: proc(ui: ^Ui_State) {
 		},
 	},
 	) {
+		scrollbar(clay.ID("LinkModal"), 17)
 		if clay.UI(clay.ID("LinkHead"))(
 		{
 			layout = {
@@ -194,8 +199,13 @@ link_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("LinkTrustRow"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow()},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+					},
 					padding = clay.PaddingAll(4), // room for kb_ring
+					// The whole row is the touch target for the trust switch.
+					// Space and Enter retain the existing explicit control order.
 					childGap = 10,
 					childAlignment = {y = .Center},
 				},
@@ -212,11 +222,24 @@ link_modal :: proc(ui: ^Ui_State) {
 		}
 
 		if clay.UI(clay.ID("LinkActions"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}},
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+				childGap = 10,
+			},
+		},
 		) {
 			if clay.UI(clay.ID("LinkCancel"))(
 			{
-				layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
+				layout = {
+					sizing = {
+						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
+						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+					},
+					padding = {left = 16, right = 16, top = 9, bottom = 9},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(9),
 				border = kb_focus == "LinkCancel" ? kb_ring(ACCENT) : {color = FIELD_BORDER, width = bw()},
@@ -224,10 +247,19 @@ link_modal :: proc(ui: ^Ui_State) {
 			) {
 				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			}
-			if clay.UI(clay.ID("LinkGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if !single_pane(
+				
+			) {if clay.UI(clay.ID("LinkGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}}
 			if clay.UI(clay.ID("LinkGo"))(
 			{
-				layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
+				layout = {
+					sizing = {
+						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
+						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+					},
+					padding = {left = 16, right = 16, top = 9, bottom = 9},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? ACCENT_DIM : ACCENT,
 				cornerRadius = rr(9),
 				border = kb_focus == "LinkGo" ? kb_ring(TEXT) : {},
@@ -268,6 +300,7 @@ handle_link_modal :: proc(ui: ^Ui_State) {
 			hit = "LinkGo"
 		} else if mouse_released() {
 			hit = clay.PointerOver(clay.ID("LinkModal")) ? "" : "LinkCancel"
+			when ODIN_OS != .OpenBSD {if clicked("LinkTrustRow") {hit = "LinkTrust"}}
 			for id in link_controls {
 				if clicked(id) {
 					hit = id

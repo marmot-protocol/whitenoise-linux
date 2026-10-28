@@ -366,6 +366,10 @@ gemoji_chip :: proc(index: u32, emoji: string) {
 	if clay.UI(clay.ID("GemojiChip", index))(
 	{
 		layout = {
+			sizing = {
+				width = clay.SizingFit({min = tap_size() ? 44 : 0}),
+				height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+			},
 			padding = {left = 6, right = 8, top = 2, bottom = 2},
 			childGap = 4,
 			childAlignment = {y = .Center},

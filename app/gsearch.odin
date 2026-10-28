@@ -464,7 +464,7 @@ gs_filter_button :: proc(id, label: string, active: bool) {
 	if clay.UI(clay.ID(id))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(30)},
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(tap_size() ? 44 : 30)},
 			padding = {left = 10, right = 10},
 			childGap = 6,
 			childAlignment = {y = .Center},
@@ -491,7 +491,7 @@ gs_chip :: proc(index: u32, label: string) {
 	if clay.UI(clay.ID("GsChip", index))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(26)},
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(tap_size() ? 44 : 26)},
 			padding = {left = 8, right = 8},
 			childGap = 6,
 			childAlignment = {y = .Center},
@@ -533,6 +533,7 @@ gs_option :: proc(ui: ^Ui_State, index: int) -> (label, key: string) {
 
 gs_filter_options :: proc(ui: ^Ui_State) {
 	if ui.gs_picker == 0 {return}
+	row_height := tap_size() ? 44 : 32
 	count :=
 		ui.gs_picker == 1 ? len(gs_chat_choices(ui)) + 1 : ui.gs_picker == 2 ? len(ui.contacts) + 2 : 6
 	if clay.UI(clay.ID("GsOptions"))(
@@ -540,7 +541,7 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 		layout = {
 			sizing = {
 				width = clay.SizingFixed(min(420, modal_w(clay.ID("GsModal"), 560) - 40)),
-				height = clay.SizingFixed(f32(min(count, 6) * 32)),
+				height = clay.SizingFixed(min(modal_h(264), f32(min(count, 6) * row_height))),
 			},
 			layoutDirection = .TopToBottom,
 		},
@@ -549,19 +550,22 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 		cornerRadius = rr(8),
 		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		floating = {
-			attachTo = .ElementWithId,
+			attachTo = single_pane() ? .Root : .ElementWithId,
 			parentId = clay.ID(ui.gs_picker == 2 ? "GsSenderRow" : "GsFilters").id,
 			zIndex = 15,
 			offset = {0, 4},
-			attachment = {element = .LeftTop, parent = .LeftBottom},
+			attachment = {
+				element = single_pane() ? .CenterCenter : .LeftTop,
+				parent = single_pane() ? .CenterCenter : .LeftBottom,
+			},
 		},
 	},
 	) {
 		data := clay.GetScrollContainerData(clay.ID("GsOptions"))
-		first := data.found ? clamp(int(-data.scrollPosition.y / 32), 0, count) : 0
+		first := data.found ? clamp(int(-data.scrollPosition.y / f32(row_height)), 0, count) : 0
 		last := min(first + 8, count)
 		if clay.UI(clay.ID("GsOptionsBefore"))(
-		{layout = {sizing = {height = clay.SizingFixed(f32(first * 32))}}},
+		{layout = {sizing = {height = clay.SizingFixed(f32(first * row_height))}}},
 		) {}
 		for i in first ..< last {
 			label, key := gs_option(ui, i)
@@ -570,7 +574,10 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("GsOption", u32(i)))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(32)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(f32(row_height)),
+					},
 					padding = {left = 10, right = 10},
 					childGap = 8,
 					childAlignment = {y = .Center},
@@ -591,7 +598,7 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 			}
 		}
 		if clay.UI(clay.ID("GsOptionsAfter"))(
-		{layout = {sizing = {height = clay.SizingFixed(f32((count - last) * 32))}}},
+		{layout = {sizing = {height = clay.SizingFixed(f32((count - last) * row_height))}}},
 		) {}
 	}
 	scrollbar(clay.ID("GsOptions"), 16)
@@ -631,7 +638,10 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("GsClose"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? 44 : 26),
+						height = clay.SizingFixed(tap_size() ? 44 : 26),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : {},
@@ -672,7 +682,10 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("GsInput"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(tap_size() ? 44 : 36),
+					},
 					padding = {left = 12, right = 12},
 					childGap = 8,
 					childAlignment = {y = .Center},
@@ -705,7 +718,13 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				)
 			}
 			if clay.UI(clay.ID("GsSenderRow"))(
-			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+					childGap = 8,
+				},
+			},
 			) {
 				settings_input(
 					ui,
@@ -721,7 +740,13 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				}
 			}
 			if clay.UI(clay.ID("GsDates"))(
-			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+					childGap = 8,
+				},
+			},
 			) {
 				if clay.UI(clay.ID("GsStartCol"))(
 				{
@@ -771,7 +796,13 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 					row == 0 ? len(ui.gs_input) > 0 || ui.gs_group != "" || len(ui.gs_sender_input) > 0 : len(ui.gs_since) > 0 || len(ui.gs_until) > 0 || ui.gs_attachment != 0
 				if !present {continue}
 				if clay.UI(clay.ID("GsChips", u32(row)))(
-				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+						childGap = 6,
+					},
+				},
 				) {
 					if row == 0 {
 						if len(ui.gs_input) >

@@ -173,19 +173,25 @@ drain_ov :: proc() {
 OV_CELL :: 96
 OV_COLS :: 4
 
+@(private)
+ov_grid :: proc(width: f32) -> (columns: int, cell: f32) {
+	columns = max(1, min(OV_COLS, int((width - 32) / (OV_CELL + 8))))
+	cell = max(1, min(f32(OV_CELL), (width - 40 - f32(columns - 1) * 8) / f32(columns)))
+	return
+}
+
 openverse_modal :: proc(ui: ^Ui_State) {
+	width := modal_w(clay.ID("OvModal"), OV_CELL * OV_COLS + 8 * (OV_COLS - 1) + 40)
+	columns, cell := ov_grid(width)
 	if clay.UI(clay.ID("OvModal"))(
 	{
 		layout = {
-			sizing = {
-				width = clay.SizingFixed(
-					modal_w(clay.ID("OvModal"), OV_CELL * OV_COLS + 8 * (OV_COLS - 1) + 40),
-				),
-			},
+			sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(modal_h(500))},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(20),
 			childGap = 12,
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
@@ -205,7 +211,10 @@ openverse_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("OvClose"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? 44 : 26),
+						height = clay.SizingFixed(tap_size() ? 44 : 26),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : {},
@@ -228,7 +237,10 @@ openverse_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("OvField"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(tap_size() ? 44 : 36),
+					},
 					padding = {left = 12, right = 12},
 					childAlignment = {y = .Center},
 				},
@@ -257,23 +269,23 @@ openverse_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("OvList"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 320})},
+				sizing = {width = clay.SizingGrow(), height = clay.SizingGrow({min = 44})},
 				layoutDirection = .TopToBottom,
 				childGap = 8,
 			},
 			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
-			for row_start := 0; row_start < len(ov_hits); row_start += OV_COLS {
+			for row_start := 0; row_start < len(ov_hits); row_start += columns {
 				if clay.UI(clay.ID("OvGridRow", u32(row_start)))({layout = {childGap = 8}}) {
-					for i in row_start ..< min(row_start + OV_COLS, len(ov_hits)) {
+					for i in row_start ..< min(row_start + columns, len(ov_hits)) {
 						tex := url_pic(ov_hits[i].thumb)
 						if clay.UI(clay.ID("OvCell", u32(i)))(
 						{
 							layout = {
 								sizing = {
-									width = clay.SizingFixed(OV_CELL),
-									height = clay.SizingFixed(OV_CELL),
+									width = clay.SizingFixed(cell),
+									height = clay.SizingFixed(cell),
 								},
 							},
 							backgroundColor = tex == nil ? ROW_BG : {},
@@ -288,6 +300,7 @@ openverse_modal :: proc(ui: ^Ui_State) {
 		}
 		scrollbar(clay.ID("OvList"), 14) // the modal floats at 13
 	}
+	scrollbar(clay.ID("OvModal"), 14)
 }
 
 // Modal input: Escape/backdrop closes, Enter/Search queries, a cell

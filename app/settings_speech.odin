@@ -149,6 +149,7 @@ settings_speech :: proc(ui: ^Ui_State) {
 					{
 						layout = {
 							sizing = {width = clay.SizingGrow()},
+							layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 							padding = {left = 10, right = 8, top = 6, bottom = 6},
 							childGap = 10,
 							childAlignment = {y = .Center},

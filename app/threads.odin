@@ -89,7 +89,14 @@ thread_bar :: proc(ui: ^Ui_State) {
 		cast_shade(clay.ID("ThreadBar"), .Down, 14, 0.35)
 		if clay.UI(clay.ID("ThreadBack"))(
 		{
-			layout = {padding = {left = 10, right = 10, top = 4, bottom = 4}},
+			layout = {
+				sizing = {
+					width = clay.SizingFit({min = tap_size() ? 44 : 0}),
+					height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+				},
+				padding = {left = 10, right = 10, top = 4, bottom = 4},
+				childAlignment = {x = .Center, y = .Center},
+			},
 			backgroundColor = hovered() ? HOVER : {},
 			cornerRadius = rr(6),
 		},
@@ -110,10 +117,14 @@ thread_bar :: proc(ui: ^Ui_State) {
 			if msg.id != cur {
 				continue
 			}
-			clay.Text(
-				fmt.tprintf("%s: %s", msg.sender, msg_preview(msg)),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
-			)
+			if clay.UI(clay.ID("ThreadSummary"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+			) {
+				clay.Text(
+					fmt.tprintf("%s: %s", msg.sender, msg_preview(msg)),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO, wrapMode = .None},
+				)
+			}
 			break
 		}
 	}

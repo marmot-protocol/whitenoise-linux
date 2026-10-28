@@ -1,0 +1,19 @@
+diff --git a/clay.h b/clay.h
+--- a/clay.h
++++ b/clay.h
+@@ -2824,6 +2824,6 @@
+                         for (int32_t i = 0; i < context->scrollContainerDatas.length; ++i) {
+                             Clay__ScrollContainerDataInternal *mapping = Clay__ScrollContainerDataInternalArray_Get(&context->scrollContainerDatas, i);
+-                            if (mapping->layoutElement == currentElement) {
++                            if (mapping->elementId == currentElement->id) {
+                                 scrollOffset = currentElement->config.clip.childOffset;
+                                 if (context->externalScrollHandlingEnabled) {
+                                     scrollOffset = CLAY__INIT(Clay_Vector2) CLAY__DEFAULT_STRUCT;
+@@ -2950,6 +2950,6 @@
+                     for (int32_t i = 0; i < context->scrollContainerDatas.length; ++i) {
+                         Clay__ScrollContainerDataInternal *mapping = Clay__ScrollContainerDataInternalArray_Get(&context->scrollContainerDatas, i);
+-                        if (mapping->layoutElement == currentElement) {
++                        if (mapping->elementId == currentElement->id) {
+                             scrollContainerData = mapping;
+                             mapping->boundingBox = currentElementBoundingBox;
+                             scrollOffset = currentElement->config.clip.childOffset;

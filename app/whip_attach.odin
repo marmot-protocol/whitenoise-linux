@@ -217,7 +217,10 @@ whip_attach_button :: proc(id: string, pane: u32, label: string) {
 	if clay.UI(clay.ID(id, pane))(
 	{
 		layout = {
-			sizing = {height = clay.SizingFixed(20)},
+			sizing = {
+				width = clay.SizingFit({min = tap_size() ? 44 : 0}),
+				height = clay.SizingFixed(tap_size() ? 44 : 20),
+			},
 			padding = {left = 5, right = 5},
 			childAlignment = {y = .Center},
 		},
@@ -241,7 +244,11 @@ whip_attached_pane :: proc(ui: ^Ui_State, item: Whip_Attachment) {
 	root := clay.ID(floating ? "WhipFloat" : "WhipDockPane", pane.id)
 	show_header := floating || whip_header_open(root, clay.ID("WhipAttachHead", pane.id))
 	payload := new(Whip_Payload, context.temp_allocator)
-	payload^ = {.Whip, pane.id, floating ? 0 : (show_header ? WHIP_HEADER_H : WHIP_REVEAL_H)}
+	payload^ = {
+		.Whip,
+		pane.id,
+		floating ? 0 : (show_header ? (tap_size() ? 44 : WHIP_HEADER_H) : WHIP_REVEAL_H),
+	}
 	if clay.UI(root)(
 	{
 		layout = {
@@ -268,7 +275,7 @@ whip_attached_pane :: proc(ui: ^Ui_State, item: Whip_Attachment) {
 				layout = {
 					sizing = {
 						floating ? clay.SizingPercent(1) : clay.SizingFixed(max(clay.GetElementData(root).boundingBox.width - 2, 0)),
-						clay.SizingFixed(WHIP_HEADER_H),
+						clay.SizingFixed(tap_size() ? 44 : WHIP_HEADER_H),
 					},
 					childGap = 3,
 					padding = {left = 5, right = 3},
@@ -312,7 +319,7 @@ whip_attached_pane :: proc(ui: ^Ui_State, item: Whip_Attachment) {
 			if clay.UI(clay.ID("WhipAttachFoot", pane.id))(
 			{
 				layout = {
-					sizing = {clay.SizingPercent(1), clay.SizingFixed(12)},
+					sizing = {clay.SizingPercent(1), clay.SizingFixed(tap_size() ? 44 : 12)},
 					childAlignment = {x = .Right},
 				},
 			},
@@ -320,7 +327,10 @@ whip_attached_pane :: proc(ui: ^Ui_State, item: Whip_Attachment) {
 				if clay.UI(clay.ID("WhipAttachResize", pane.id))(
 				{
 					layout = {
-						sizing = {clay.SizingFixed(24), clay.SizingFixed(12)},
+						sizing = {
+							clay.SizingFixed(tap_size() ? 44 : 24),
+							clay.SizingFixed(tap_size() ? 44 : 12),
+						},
 						childAlignment = {x = .Center, y = .Center},
 					},
 					backgroundColor = hovered() ? ACCENT_GLOW : PLATE,
@@ -401,11 +411,26 @@ whip_chat_pane :: proc(ui: ^Ui_State) {
 				layoutDirection = .TopToBottom,
 				childGap = u16(WHIP_GUTTER),
 			},
-			clip = {horizontal = true, vertical = true},
+			clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
-			for item in ui.whip_attachments {if item.group_id != "" && whip_attach_visible(ui, item) {whip_attached_pane(ui, item)}}
+			for item in ui.whip_attachments {
+				if item.group_id == "" || !whip_attach_visible(ui, item) {continue}
+				if clay.UI(clay.ID("WhipDockItem", item.pane))(
+				{
+					layout = {
+						sizing = {
+							clay.SizingGrow(),
+							wide ? clay.SizingGrow() : clay.SizingFixed(max(120, dock_h)),
+						},
+					},
+				},
+				) {
+					whip_attached_pane(ui, item)
+				}
+			}
 		}
+		if !wide {scrollbar(clay.ID("WhipDockStack"), 8)}
 	}
 }
 

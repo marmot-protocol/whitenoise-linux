@@ -58,7 +58,11 @@ Board :: struct {
 
 @(private = "file")
 board_section_h :: proc(count: int) -> f32 {
-	return BOARD_HEAD_H + (count == 0 ? BOARD_EMPTY_H : f32(count) * BOARD_ROW_H) + BOARD_GAP
+	return(
+		settings_tap_size(BOARD_HEAD_H) +
+		(count == 0 ? BOARD_EMPTY_H : f32(count) * settings_tap_size(BOARD_ROW_H)) +
+		BOARD_GAP \
+	)
 }
 
 @(private = "file")
@@ -80,8 +84,8 @@ board_at :: proc(board: Board, y: f32) -> (section, row: int) {
 	for top, i in board.tops {
 		if i + 1 < len(board.tops) && y >= board.tops[i + 1] {continue}
 		local := y - top
-		if local < BOARD_HEAD_H {return i, -1}
-		row = int((local - BOARD_HEAD_H) / BOARD_ROW_H)
+		if local < settings_tap_size(BOARD_HEAD_H) {return i, -1}
+		row = int((local - settings_tap_size(BOARD_HEAD_H)) / settings_tap_size(BOARD_ROW_H))
 		return i, row < board.sections[i].count ? row : -2
 	}
 	return 0, -2
@@ -115,7 +119,7 @@ board_pointer :: proc() -> (y: f32, ok: bool) {
 board_folder_slot :: proc(ui: ^Ui_State, board: Board, y: f32) -> int {
 	slot := 0
 	for i in 0 ..< len(ui.prefs.folders) {
-		if board.tops[i] + BOARD_HEAD_H / 2 < y {slot = i + 1}
+		if board.tops[i] + settings_tap_size(BOARD_HEAD_H) / 2 < y {slot = i + 1}
 	}
 	return slot
 }
@@ -219,6 +223,8 @@ handle_folder_board :: proc(ui: ^Ui_State) -> bool {
 		board := board_build(ui)
 		section, row := board_at(board, y)
 		p := board_mouse()
+		if single_pane() &&
+		   p.x >= clay.GetElementData(clay.ID("FolderBoard")).boundingBox.x + 44 {return false}
 		if row == -1 && section < len(ui.prefs.folders) {
 			drag^ = {
 				kind   = .Folder,
@@ -322,14 +328,18 @@ folder_board :: proc(ui: ^Ui_State) {
 				board_empty(i, target)
 			} else {
 				rows := board.grouped[section.start:][:section.count]
-				row_top := section_top + BOARD_HEAD_H
-				first := clamp(int((top - row_top) / BOARD_ROW_H), 0, len(rows))
-				last := clamp(int((bottom - row_top) / BOARD_ROW_H) + 1, first, len(rows))
-				board_spacer(id + 1, f32(first) * BOARD_ROW_H)
+				row_top := section_top + settings_tap_size(BOARD_HEAD_H)
+				first := clamp(int((top - row_top) / settings_tap_size(BOARD_ROW_H)), 0, len(rows))
+				last := clamp(
+					int((bottom - row_top) / settings_tap_size(BOARD_ROW_H)) + 1,
+					first,
+					len(rows),
+				)
+				board_spacer(id + 1, f32(first) * settings_tap_size(BOARD_ROW_H))
 				for row in rows[first:last] {
 					board_row(ui, row, i)
 				}
-				board_spacer(id + 2, f32(len(rows) - last) * BOARD_ROW_H)
+				board_spacer(id + 2, f32(len(rows) - last) * settings_tap_size(BOARD_ROW_H))
 			}
 			board_spacer(id + 3, BOARD_GAP)
 		}
@@ -360,7 +370,10 @@ board_header :: proc(ui: ^Ui_State, index, count: int, target, insert: bool) {
 	if clay.UI(clay.ID("BoardHead", u32(index)))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(BOARD_HEAD_H)},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFixed(settings_tap_size(BOARD_HEAD_H)),
+			},
 			padding = {left = 6, right = 18},
 			childGap = 10,
 			childAlignment = {y = .Center},
@@ -407,7 +420,10 @@ board_header :: proc(ui: ^Ui_State, index, count: int, target, insert: bool) {
 			if clay.UI(clay.ID("BoardDelete", u32(index)))(
 			{
 				layout = {
-					sizing = {clay.SizingFixed(26), clay.SizingFixed(26)},
+					sizing = {
+						clay.SizingFixed(settings_tap_size(26)),
+						clay.SizingFixed(settings_tap_size(26)),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : {},
@@ -456,7 +472,10 @@ board_row :: proc(ui: ^Ui_State, row: Inbox_Row, section: int) {
 	if clay.UI(clay.ID("BoardChat", id))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(BOARD_ROW_H)},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFixed(settings_tap_size(BOARD_ROW_H)),
+			},
 			padding = {left = 22, right = 18},
 			childGap = 10,
 			childAlignment = {y = .Center},
@@ -503,6 +522,10 @@ board_keep :: proc(ui: ^Ui_State, id: u32) {
 	if clay.UI(clay.ID("BoardKeep", id))(
 	{
 		layout = {
+			sizing = {
+				width = clay.SizingFit({min = settings_tap_size(28)}),
+				height = clay.SizingFit({min = settings_tap_size(24)}),
+			},
 			padding = {left = 6, right = 6, top = 4, bottom = 4},
 			childGap = 6,
 			childAlignment = {y = .Center},
@@ -524,7 +547,9 @@ board_keep :: proc(ui: ^Ui_State, id: u32) {
 		) {
 			clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
 		}
-		clay.Text(tr("Placed by hand"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		if !single_pane(
+			
+		) {clay.Text(tr("Placed by hand"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})}
 		if hovered() && !ui.board_drag.active {
 			tooltip(tr("Clear to let folder rules decide."))
 			cursor_raise(.Pointer)

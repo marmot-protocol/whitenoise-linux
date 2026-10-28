@@ -17,6 +17,7 @@ Vault_Pw_Field :: enum {
 
 vault_pw_begin :: proc(ui: ^Ui_State) {
 	vault_pw_wipe(ui)
+	vault_pw_height = -1
 	ui.vault_pw_open = true
 	ui.vault_pw_focus = .Current
 	ui.vault_pw_err = ""
@@ -89,7 +90,22 @@ vault_pw_apply :: proc(ui: ^Ui_State) {
 }
 
 // The modal owns input while it is open.
+@(private)
+vault_pw_height: i32 = -1
+
 handle_vault_pw :: proc(ui: ^Ui_State) {
+	previous_focus := ui.vault_pw_focus
+	defer {
+		if previous_focus != ui.vault_pw_focus || vault_pw_height != rl.GetScreenHeight() {
+			ids := [Vault_Pw_Field]string {
+				.Current = "VaultPwCurBox",
+				.New     = "VaultPwNewBox",
+				.Confirm = "VaultPwNew2Box",
+			}
+			onboard_reveal_field("VaultPwBody", ids[ui.vault_pw_focus])
+			vault_pw_height = rl.GetScreenHeight()
+		}
+	}
 	edit_text(ui, &ui.vault_pw[ui.vault_pw_focus])
 
 	if rl.IsKeyPressed(.ESCAPE) || clicked("VaultPwClose") || clicked("VaultPwCancel") {
@@ -121,11 +137,15 @@ handle_vault_pw :: proc(ui: ^Ui_State) {
 }
 
 vault_pw_modal :: proc(ui: ^Ui_State) {
+	bits := password_bits(string(ui.vault_pw[.New][:]), &ui.vault_pw_check)
 	if clay.UI(clay.ID("VaultPwModal"))(
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("VaultPwModal"), 460))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("VaultPwModal"), 460)),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			padding = clay.PaddingAll(18),
 			childGap = 10,
 		},
@@ -152,7 +172,13 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			) {}
 			if clay.UI(clay.ID("VaultPwClose"))(
 			{
-				layout = {padding = clay.PaddingAll(6)},
+				layout = {
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? 44 : 24),
+						height = clay.SizingFixed(tap_size() ? 44 : 24),
+					},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(6),
 			},
@@ -161,42 +187,58 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		clay.Text(
-			tr(
-				"The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec.",
-			),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-		)
+		if clay.UI(clay.ID("VaultPwBody"))(
+		{
+			layout = {
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFit(
+						{max = max(1, modal_h(1200) - (tap_size() ? 150 : 116))},
+					),
+				},
+				layoutDirection = .TopToBottom,
+				childGap = 10,
+			},
+			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
+			scrollbar(clay.ID("VaultPwBody"), 13)
+			clay.Text(
+				tr(
+					"The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec.",
+				),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
 
-		eyebrow(tr("CURRENT PASSWORD"))
-		gate_field(
-			ui,
-			"VaultPwCurBox",
-			&ui.vault_pw[.Current],
-			ui.vault_pw_focus == .Current,
-			tr("Your current password"),
-		)
-		eyebrow(tr("NEW PASSWORD"))
-		gate_field(
-			ui,
-			"VaultPwNewBox",
-			&ui.vault_pw[.New],
-			ui.vault_pw_focus == .New,
-			tr("Your new password"),
-		)
-		bits := password_bits(string(ui.vault_pw[.New][:]), &ui.vault_pw_check)
-		password_hint(bits)
-		eyebrow(tr("CONFIRM NEW PASSWORD"))
-		gate_field(
-			ui,
-			"VaultPwNew2Box",
-			&ui.vault_pw[.Confirm],
-			ui.vault_pw_focus == .Confirm,
-			tr("Type your new password again"),
-		)
+			eyebrow(tr("CURRENT PASSWORD"))
+			gate_field(
+				ui,
+				"VaultPwCurBox",
+				&ui.vault_pw[.Current],
+				ui.vault_pw_focus == .Current,
+				tr("Your current password"),
+			)
+			eyebrow(tr("NEW PASSWORD"))
+			gate_field(
+				ui,
+				"VaultPwNewBox",
+				&ui.vault_pw[.New],
+				ui.vault_pw_focus == .New,
+				tr("Your new password"),
+			)
+			password_hint(bits)
+			eyebrow(tr("CONFIRM NEW PASSWORD"))
+			gate_field(
+				ui,
+				"VaultPwNew2Box",
+				&ui.vault_pw[.Confirm],
+				ui.vault_pw_focus == .Confirm,
+				tr("Type your new password again"),
+			)
 
-		if len(ui.vault_pw_err) > 0 {
-			clay.Text(ui.vault_pw_err, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+			if len(ui.vault_pw_err) > 0 {
+				clay.Text(ui.vault_pw_err, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+			}
 		}
 
 		if clay.UI(clay.ID("VaultPwBtns"))(
@@ -204,7 +246,14 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 		) {
 			if clay.UI(clay.ID("VaultPwCancel"))(
 			{
-				layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+				layout = {
+					sizing = {
+						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
+						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+					},
+					padding = {left = 16, right = 16, top = 9, bottom = 9},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(9),
 				border = {color = FIELD_BORDER, width = bw()},
@@ -212,12 +261,19 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			) {
 				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			}
-			if clay.UI(clay.ID("VaultPwBtnsGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
+			if !single_pane(
+				
+			) {if clay.UI(clay.ID("VaultPwBtnsGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}}
 			if clay.UI(clay.ID("VaultPwGo"))(
 			{
-				layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+				layout = {
+					sizing = {
+						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
+						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+					},
+					padding = {left = 16, right = 16, top = 9, bottom = 9},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = bits >= PASSWORD_MIN_BITS ? ACCENT : ROW_BG,
 				cornerRadius = rr(9),
 			},

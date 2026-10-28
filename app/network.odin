@@ -219,7 +219,7 @@ settings_network :: proc(ui: ^Ui_State) {
 				tr("The ngit web client a patch card opens. That site receives the patch link."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
-			if clay.UI(clay.ID("GitClientChoices"))({layout = {childGap = 6}}) {
+			if clay.UI(clay.ID("GitClientChoices"))(settings_choices()) {
 				for name, git in GIT_CLIENT_NAMES {
 					settings_option("GitClientChip", u32(git), name, ui.prefs.git_client == git)
 				}
@@ -333,9 +333,7 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 				tr("Your proxy credentials are stored in your encrypted vault."),
 			)
 			if ui.socks5_auth {
-				if clay.UI(clay.ID("Socks5Credentials"))(
-				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}},
-				) {
+				if clay.UI(clay.ID("Socks5Credentials"))(settings_choices()) {
 					gate_field(
 						ui,
 						"Socks5UserBox",
@@ -569,7 +567,7 @@ settings_input :: proc(
 		layout = {
 			sizing = {
 				width = width > 0 ? clay.SizingFixed(width) : clay.SizingGrow(),
-				height = clay.SizingFixed(30),
+				height = clay.SizingFixed(settings_tap_size(30)),
 			},
 			padding = {left = 8, right = 8},
 			childAlignment = {y = .Center},
@@ -594,10 +592,13 @@ relay_row :: proc(row_id: string, remove_id: string, index: u32, relay: string) 
 		if clay.UI(clay.ID_LOCAL("RelayAddress"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(30)},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFixed(settings_tap_size(30)),
+				},
 				childAlignment = {y = .Center},
 			},
-			clip = {horizontal = true},
+			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
 			clay.Text(
@@ -608,10 +609,14 @@ relay_row :: proc(row_id: string, remove_id: string, index: u32, relay: string) 
 				tooltip(relay)
 			}
 		}
+		scrollbar(clay.ID_LOCAL("RelayAddress"))
 		if clay.UI(clay.ID(remove_id, index))(
 		{
 			layout = {
-				sizing = {width = clay.SizingFixed(30), height = clay.SizingFixed(30)},
+				sizing = {
+					width = clay.SizingFixed(settings_tap_size(30)),
+					height = clay.SizingFixed(settings_tap_size(30)),
+				},
 				childAlignment = {x = .Center, y = .Center},
 			},
 			backgroundColor = hovered() ? HOVER : {},

@@ -57,6 +57,7 @@ settings_debug :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("DbgPlate"))(
 		{
 			layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(8)},
+			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
 			backgroundColor = PLATE,
 			border = {color = FIELD_BORDER, width = bw()},
 		},
@@ -67,6 +68,7 @@ settings_debug :: proc(ui: ^Ui_State) {
 				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
 			)
 		}
+		scrollbar(clay.ID("DbgPlate"))
 	}
 }
 
@@ -267,6 +269,7 @@ settings_kp :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("KpInspectRow"))(
 		{
 			layout = {
+				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 				sizing = {width = clay.SizingGrow()},
 				childGap = 6,
 				childAlignment = {y = .Center},
@@ -330,6 +333,7 @@ kp_cards :: proc(ui: ^Ui_State, prefix: string, rows: []Kp_Row, empty: string) {
 	if clay.UI(clay.ID(fmt.tprintf("%sRawPlate", prefix)))(
 	{
 		layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(8)},
+		clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
 		backgroundColor = PLATE,
 		border = {color = FIELD_BORDER, width = bw()},
 	},
@@ -339,6 +343,7 @@ kp_cards :: proc(ui: ^Ui_State, prefix: string, rows: []Kp_Row, empty: string) {
 			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
 		)
 	}
+	scrollbar(clay.ID(fmt.tprintf("%sRawPlate", prefix)))
 }
 
 kp_kv :: proc(prefix: string, index: u32, label: string, value: string) {

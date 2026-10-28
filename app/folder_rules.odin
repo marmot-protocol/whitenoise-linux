@@ -369,7 +369,7 @@ folder_rules_editor :: proc(ui: ^Ui_State) {
 		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
 	)
 	if len(ui.folder_rules) > 1 {
-		if clay.UI(clay.ID("FolderMatch"))({layout = {childGap = 8}}) {
+		if clay.UI(clay.ID("FolderMatch"))(settings_choices()) {
 			folder_match_chip("FolderMatchAll", tr("Match all rules"), ui.folder_match == .All)
 			folder_match_chip("FolderMatchAny", tr("Match any rule"), ui.folder_match == .Any)
 		}
@@ -387,7 +387,7 @@ folder_match_chip :: proc(id, label: string, selected: bool) {
 	if clay.UI(clay.ID(id))(
 	{
 		layout = {
-			sizing = {height = clay.SizingFixed(32)},
+			sizing = {height = clay.SizingFixed(settings_tap_size(32))},
 			padding = {left = 12, right = 12},
 			childAlignment = {y = .Center},
 		},
@@ -407,7 +407,11 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 	if clay.UI(clay.ID("FolderRule", u32(index)))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = single_pane() ? clay.SizingFit() : clay.SizingFixed(36),
+			},
+			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 			childGap = 8,
 			childAlignment = {y = .Center},
 		},
@@ -416,7 +420,7 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 		if clay.UI(clay.ID("FolderRuleKind", u32(index)))(
 		{
 			layout = {
-				sizing = {height = clay.SizingFixed(36)},
+				sizing = {height = clay.SizingFixed(settings_tap_size(36))},
 				padding = {left = 10, right = 10},
 				childGap = 8,
 				childAlignment = {y = .Center},
@@ -452,7 +456,7 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 				layout = {
 					sizing = {
 						width = counts ? clay.SizingFixed(72) : clay.SizingGrow(),
-						height = clay.SizingFixed(36),
+						height = clay.SizingFixed(settings_tap_size(36)),
 					},
 					padding = {left = 12, right = 12},
 					childAlignment = {y = .Center},
@@ -479,7 +483,10 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 		if clay.UI(clay.ID("FolderRuleRemove", u32(index)))(
 		{
 			layout = {
-				sizing = {clay.SizingFixed(30), clay.SizingFixed(30)},
+				sizing = {
+					clay.SizingFixed(settings_tap_size(30)),
+					clay.SizingFixed(settings_tap_size(30)),
+				},
 				childAlignment = {x = .Center, y = .Center},
 			},
 			backgroundColor = hovered() ? HOVER : {},
@@ -495,37 +502,37 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 	}
 }
 
-// Floats under the type chip, outside the editor's scroll clip, or above
-// it when the window has no room below.
+// Floats outside the editor's scroll clip and stays within the viewport.
 @(private = "file")
 folder_rule_menu :: proc(index: int) {
 	chip := clay.GetElementData(clay.ID("FolderRuleKind", u32(index)))
 	menu := clay.GetElementData(clay.ID("FolderRuleMenu"))
 	height: f32 = menu.found ? menu.boundingBox.height : 250
-	bottom := chip.boundingBox.y + chip.boundingBox.height + 4 + height
-	below := !chip.found || bottom <= f32(rl.GetScreenHeight()) / UI_ZOOM
-	under := clay.FloatingAttachPoints {
-		element = .LeftTop,
-		parent  = .LeftBottom,
-	}
-	over := clay.FloatingAttachPoints {
-		element = .LeftBottom,
-		parent  = .LeftTop,
-	}
+	width := fit_w(280)
+	x, y := panel_pos(
+		chip.boundingBox.x,
+		chip.boundingBox.y + chip.boundingBox.height + 4,
+		width,
+		min(height, modal_h(1200)),
+	)
 	if clay.UI(clay.ID("FolderRuleMenu"))(
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFit({min = 200})},
+			sizing = {
+				width = clay.SizingFixed(width),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			padding = clay.PaddingAll(4),
 			childGap = 1,
 		},
 		floating = {
-			attachTo = .Parent,
-			offset = {0, below ? 4 : -4},
-			attachment = below ? under : over,
+			attachTo = .Root,
+			offset = {x, y},
+			attachment = {element = .LeftTop, parent = .LeftTop},
 			zIndex = 14,
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		backgroundColor = CARD,
 		cornerRadius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
@@ -539,6 +546,7 @@ folder_rule_menu :: proc(index: int) {
 			)
 		}
 	}
+	scrollbar(clay.ID("FolderRuleMenu"), 15)
 }
 
 @(private = "file")

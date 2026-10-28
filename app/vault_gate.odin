@@ -271,6 +271,8 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 	defer gate_close()
 	defer gate_join()
 	shot := os.get_env("WN_SHOT", context.temp_allocator) != ""
+	previous_height: i32 = -1
+	previous_confirm := gate_confirm
 	for frame := 0; !rl.WindowShouldClose(); frame += 1 {
 		when ODIN_OS == .Darwin {macos_update_tick()}
 		if dev_reload_poll() {return false}
@@ -284,11 +286,22 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		pointer.x /= UI_ZOOM
 		pointer.y /= UI_ZOOM
 		clay.SetPointerState(pointer, rl.IsMouseButtonDown(.LEFT))
+		scroll_residual += transmute(clay.Vector2)rl.GetMouseWheelMoveV()
+		step := scroll_residual * anim_drain(SCROLL_DRAIN)
+		scroll_residual -= step
+		clay.UpdateScrollContainers(false, step, rl.GetFrameTime())
 		clay.SetLayoutDimensions(
 			{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
 		)
 
+		clear(&drag_targets)
 		render_commands := gate_layout(ui)
+		if previous_height != rl.GetScreenHeight() || previous_confirm != gate_confirm {
+			onboard_reveal_field("GateCard", gate_confirm ? "GatePw2Box" : "GatePwBox")
+			previous_height = rl.GetScreenHeight()
+			previous_confirm = gate_confirm
+			render_commands = gate_layout(ui)
+		}
 		rl.BeginDrawing()
 		rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM})
 		clay_raylib_render(&render_commands)
@@ -307,10 +320,19 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 			ui.lock_requested = false
 			return true
 		}
+		update_drag_scroll(ui, false)
 		gate_input(ui)
 		// Same contract as the main loop: the password box is the only
 		// field here, and gate_input's edit_text sets the flag.
 		rl.SetTextInput(text_field_live)
+		if text_field_live {
+			rl.SetTextInputArea(
+				i32(caret_box.x * UI_ZOOM),
+				i32(caret_box.y * UI_ZOOM),
+				i32(max(caret_box.width, 1) * UI_ZOOM),
+				i32(caret_box.height * UI_ZOOM),
+			)
+		}
 		text_field_live = false
 	}
 	return false
@@ -448,6 +470,7 @@ gate_field :: proc(
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(10),
 		border = {color = focused ? ACCENT : FIELD_BORDER, width = bw()},
+		clip = {horizontal = true},
 	},
 	) {
 		// Every character typed kicks the spring, so the field answers
@@ -465,8 +488,13 @@ gate_field :: proc(
 			}
 			clay.Text(placeholder, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
 		} else {
+			count := min(len(buf), 48)
+			if box := clay.GetElementData(clay.ID(id_str)); box.found {
+				star_w := max(rl.MeasureTextLine(FONT_BODY, 15, "*", 0).x, 1)
+				count = min(count, max(1, int((box.boundingBox.width - 40) / star_w)))
+			}
 			clay.Text(
-				strings.repeat("*", min(len(buf), 48), context.temp_allocator),
+				strings.repeat("*", count, context.temp_allocator),
 				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT},
 			)
 			if focused {
@@ -506,7 +534,10 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 			if clay.UI(clay.ID("GateCard"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(fit_w(660))},
+					sizing = {
+						width = clay.SizingFixed(fit_w(660)),
+						height = clay.SizingFit({max = modal_h(1200)}),
+					},
 					layoutDirection = .TopToBottom,
 					padding = {
 						left = single_pane() ? 20 : 50,
@@ -520,9 +551,11 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				backgroundColor = CARD,
 				cornerRadius = rr(16),
 				border = {color = CARD_BORDER, width = bw()},
+				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 			},
 			) {
 				glow(clay.ID("GateCard"), ACCENT, 0.55, 26)
+				scrollbar(clay.ID("GateCard"))
 				logo_mark()
 				clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT})
 				clay.Text(
@@ -594,4 +627,21 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 		}
 	}
 	return clay.EndLayout(rl.GetFrameTime())
+}
+
+// Reveal only on a field or viewport change, never while the user scrolls
+// to an action. Password buffers remain masked and out of the clipboard.
+@(private)
+onboard_reveal_field :: proc(container, field: string) {
+	data := clay.GetScrollContainerData(clay.ID(container))
+	row := clay.GetElementData(clay.ID(field))
+	viewport := clay.GetElementData(clay.ID(container))
+	if !data.found || !row.found || !viewport.found {return}
+	b, r := viewport.boundingBox, row.boundingBox
+	delta := min(r.y - b.y - 8, 0) + max(r.y + r.height - b.y - b.height + 8, 0)
+	data.scrollPosition.y = clamp(
+		data.scrollPosition.y - delta,
+		-max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+		0,
+	)
 }

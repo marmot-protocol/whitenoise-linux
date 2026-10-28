@@ -42,10 +42,10 @@ Confirm_Kind :: enum {
 }
 
 Confirm :: struct {
-	kind: Confirm_Kind,
-	arg:  string, // message id, member hex, relay url: whatever the kind acts on
-	name: string, // what the copy names ("Ana", "wss://relay.example")
-	idx:  int, // relay index, for the list removals
+	kind:    Confirm_Kind,
+	arg:     string, // message id, member hex, relay url: whatever the kind acts on
+	name:    string, // what the copy names ("Ana", "wss://relay.example")
+	idx:     int, // relay index, for the list removals
 	account: string, // owning account for Archive_Chat
 }
 
@@ -191,7 +191,10 @@ confirm_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("ConfirmModal"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("ConfirmModal"), 400))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("ConfirmModal"), 400)),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(20),
 			childGap = 10,
@@ -199,6 +202,7 @@ confirm_modal :: proc(ui: ^Ui_State) {
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		floating = {
 			attachTo = .Root,
 			zIndex = 16,
@@ -208,26 +212,52 @@ confirm_modal :: proc(ui: ^Ui_State) {
 	},
 	) {
 		clay.Text(tr(title), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
+		scrollbar(clay.ID("ConfirmModal"), 17)
 		if len(ui.confirm.name) > 0 {
 			if clay.UI(clay.ID("ConfirmSubject"))(
 			{
-				layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					padding = clay.PaddingAll(10),
+				},
 				backgroundColor = ROW_BG,
 				cornerRadius = rr(8),
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(ui.confirm.name, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
+				if single_pane() {
+					mono_lines(ui.confirm.name, modal_w(clay.ID("ConfirmModal"), 400) - 60, TEXT)
+				} else {
+					clay.Text(
+						ui.confirm.name,
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+					)
+				}
 			}
 		}
 		clay.Text(tr(body), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 
 		if clay.UI(clay.ID("ConfirmActions"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 6}}},
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+				childGap = 10,
+				padding = {top = 6},
+			},
+		},
 		) {
 			if clay.UI(clay.ID("ConfirmCancel"))(
 			{
-				layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
+				layout = {
+					sizing = {
+						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
+						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+					},
+					padding = {left = 16, right = 16, top = 9, bottom = 9},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(9),
 				border = {color = FIELD_BORDER, width = bw()},
@@ -235,10 +265,19 @@ confirm_modal :: proc(ui: ^Ui_State) {
 			) {
 				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			}
-			if clay.UI(clay.ID("ConfirmGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if !single_pane(
+				
+			) {if clay.UI(clay.ID("ConfirmGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}}
 			if clay.UI(clay.ID("ConfirmGo"))(
 			{
-				layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
+				layout = {
+					sizing = {
+						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
+						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+					},
+					padding = {left = 16, right = 16, top = 9, bottom = 9},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? DANGER : ROW_BG,
 				cornerRadius = rr(9),
 				border = {color = DANGER, width = bw()},

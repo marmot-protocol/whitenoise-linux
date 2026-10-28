@@ -114,6 +114,9 @@ Web_Modal :: struct {
 	seen:   u32, // last frame taken from the child
 	open:   bool,
 	down:   bool, // left button is held on the page
+	grab:   [2]f64,
+	last:   [2]f64,
+	drag:   bool,
 }
 
 web_modal: Web_Modal
@@ -284,11 +287,31 @@ handle_web_input :: proc(ui: ^Ui_State) {
 		web_push({kind = .Move, x = x, y = y})
 	}
 	if over && (rl.IsMouseButtonPressed(.LEFT) || forced_press) {
-		web_push({kind = .Down, arg = GDK_BTN_LEFT, x = x, y = y})
+		if !tap_size() {web_push({kind = .Down, arg = GDK_BTN_LEFT, x = x, y = y})}
 		web_modal.down = true
+		web_modal.grab, web_modal.last, web_modal.drag = {x, y}, {x, y}, false
+	}
+	if tap_size() && web_modal.down {
+		if abs(x - web_modal.grab.x) + abs(y - web_modal.grab.y) >
+		   f64(8 * UI_ZOOM) {web_modal.drag = true}
+		if web_modal.drag {
+			web_push(
+				{
+					kind = .Scroll,
+					x = x,
+					y = y,
+					dx = (web_modal.last.x - x) / 50,
+					dy = (web_modal.last.y - y) / 50,
+				},
+			)
+		}
+		web_modal.last = {x, y}
 	}
 	if web_modal.down && (rl.IsMouseButtonReleased(.LEFT) || forced_release) {
-		web_push({kind = .Up, arg = GDK_BTN_LEFT, x = x, y = y})
+		if !tap_size() || !web_modal.drag {
+			if tap_size() {web_push({kind = .Down, arg = GDK_BTN_LEFT, x = x, y = y})}
+			web_push({kind = .Up, arg = GDK_BTN_LEFT, x = x, y = y})
+		}
 		web_modal.down = false
 	}
 	if over && rl.IsMouseButtonPressed(.RIGHT) {
@@ -316,21 +339,29 @@ handle_web_input :: proc(ui: ^Ui_State) {
 	}
 }
 
-// The page keeps its aspect and shrinks to fit the window; the child
-// always renders WEB_W x WEB_H, so this is a scale, not a resize.
+// The helper resizes the CSS viewport too: phones use the available
+// rectangle instead of shrinking a desktop-shaped page into a thumbnail.
 @(private = "file")
 web_fit :: proc() -> (w, h: f32) {
-	max_w := f32(rl.GetScreenWidth()) / UI_ZOOM - WEB_MARGIN
-	max_h := f32(rl.GetScreenHeight()) / UI_ZOOM - WEB_MARGIN - WEB_BAR
+	max_w := max(1, f32(rl.GetScreenWidth()) / UI_ZOOM - WEB_MARGIN)
+	max_h := max(1, f32(rl.GetScreenHeight()) / UI_ZOOM - WEB_MARGIN - (tap_size() ? 52 : WEB_BAR))
+	if single_pane() ||
+	   f32(rl.GetScreenHeight()) / UI_ZOOM < 420 {return min(WEB_W, max_w), min(WEB_H, max_h)}
 	scale := min(f32(1), max_w / WEB_W, max_h / WEB_H)
 	return WEB_W * scale, WEB_H * scale
 }
 
 // The modal: title bar, close, and the page.
 web_modal_draw :: proc(ui: ^Ui_State) {
+	w, h := web_fit()
 	if clay.UI(clay.ID("WebModal"))(
 	{
-		layout = {layoutDirection = .TopToBottom, childGap = 8, padding = clay.PaddingAll(12)},
+		layout = {
+			sizing = {width = clay.SizingFixed(w + 24)},
+			layoutDirection = .TopToBottom,
+			childGap = 8,
+			padding = clay.PaddingAll(12),
+		},
 		floating = {
 			attachTo = .Root,
 			zIndex = 10,
@@ -349,11 +380,22 @@ web_modal_draw :: proc(ui: ^Ui_State) {
 			},
 		},
 		) {
-			clay.Text(web_modal.title, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+			if clay.UI(clay.ID("WebTitle"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+			) {
+				clay.Text(
+					web_modal.title,
+					{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None},
+				)
+			}
 			if clay.UI(clay.ID("WebPad"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("WebClose"))(
 			{
-				layout = {padding = {left = 10, right = 10, top = 4, bottom = 4}},
+				layout = {
+					sizing = {height = clay.SizingFixed(tap_size() ? 44 : 26)},
+					padding = {left = 10, right = 10},
+					childAlignment = {y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : ROW_BG,
 				cornerRadius = rr(6),
 			},
@@ -361,7 +403,6 @@ web_modal_draw :: proc(ui: ^Ui_State) {
 				clay.Text(tr("Close"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 			}
 		}
-		w, h := web_fit()
 		if clay.UI(clay.ID("WebPage"))(
 		{
 			layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}},

@@ -295,8 +295,11 @@ set_lines :: proc(ed: ^edit.State, multiline: bool) {
 // applies it and clears it.
 text_field_live: bool
 
+@(private)
+compose_keyboard: bool
+
 edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
-	text_field_live = true
+	text_field_live = !tap_size() || buf != &ui.compose || compose_keyboard
 	ed_begin(ui, buf)
 	defer ed_end(ui, buf)
 	ed := &ui.ed
@@ -702,6 +705,7 @@ compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Co
 
 	switch {
 	case left:
+		compose_keyboard = true
 		ui.focus = focus
 		ed_begin(ui, buf)
 		text_drag_sentence = {}
@@ -807,6 +811,7 @@ nes_views: map[string]^Nes_View
 g_prefs: ^Prefs
 
 mouse_released :: proc() -> bool {
+	if drag_moved {return false}
 	// A release ending a scrollbar drag must not click what's under
 	// the pointer; the drag clears one frame later in the main loop.
 	// Nor may a text selection dragged out of its field: releasing a

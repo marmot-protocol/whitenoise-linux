@@ -21,6 +21,7 @@ WHIP_REVEAL_H :: f32(6)
 
 @(private)
 whip_header_open :: proc(root, header: clay.ElementId) -> bool {
+	if tap_size() {return true}
 	if clay.PointerOver(header) {return true}
 	if !clay.PointerOver(root) {return false}
 	box := clay.GetElementData(root).boundingBox
@@ -54,6 +55,36 @@ whip_pane_tree :: proc(ui: ^Ui_State) {
 	}
 	if zoom != 0 {
 		for pane, i in panes {if pane.id == zoom && !detached[pane.id] {whip_pane_slot(pane, i, zoom); return}}
+	}
+	if single_pane() {
+		if clay.UI(clay.ID("WhipMobilePanes"))(
+		{
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = 8,
+			},
+			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
+			for pane, i in panes {
+				if detached[pane.id] {continue}
+				if clay.UI(clay.ID("WhipMobilePane", pane.id))(
+				{
+					layout = {
+						sizing = {
+							clay.SizingGrow(),
+							clay.SizingFixed(max(180, f32(rl.GetScreenHeight()) / UI_ZOOM - 240)),
+						},
+					},
+				},
+				) {
+					whip_pane_slot(pane, i)
+				}
+			}
+		}
+		scrollbar(clay.ID("WhipMobilePanes"))
+		return
 	}
 	whip_node(nodes, root, panes, visible)
 }
@@ -151,7 +182,7 @@ whip_pane_slot :: proc(pane: rl.Whip_Pane, index: int, zoom: u32 = 0) {
 	root := clay.ID("WhipPane", pane.id)
 	show_header := whip_header_open(root, clay.ID("WhipPaneHead", pane.id))
 	payload := new(Whip_Payload, context.temp_allocator)
-	payload^ = {.Whip, pane.id, show_header ? WHIP_HEADER_H : WHIP_REVEAL_H}
+	payload^ = {.Whip, pane.id, show_header ? (tap_size() ? 44 : WHIP_HEADER_H) : WHIP_REVEAL_H}
 	if clay.UI(root)(
 	{
 		layout = {
@@ -173,7 +204,7 @@ whip_pane_slot :: proc(pane: rl.Whip_Pane, index: int, zoom: u32 = 0) {
 						width = clay.SizingFixed(
 							max(clay.GetElementData(root).boundingBox.width - 2, 0),
 						),
-						height = clay.SizingFixed(WHIP_HEADER_H),
+						height = clay.SizingFixed(tap_size() ? 44 : WHIP_HEADER_H),
 					},
 					childGap = 4,
 					padding = {left = 6, right = 3},
@@ -289,7 +320,10 @@ whip_pane_button :: proc(
 	if clay.UI(clay.ID(label, pane))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(20), height = clay.SizingFixed(20)},
+			sizing = {
+				width = clay.SizingFixed(tap_size() ? 44 : 20),
+				height = clay.SizingFixed(tap_size() ? 44 : 20),
+			},
 			childAlignment = {x = .Center, y = .Center},
 		},
 		backgroundColor = hovered() ? (action == .Close ? DANGER_SOFT : HOVER) : (selected ? ACCENT_GLOW : {}),

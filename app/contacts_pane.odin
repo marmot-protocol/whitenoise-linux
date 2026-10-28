@@ -118,12 +118,13 @@ contacts_pane :: proc(ui: ^Ui_State) {
 	old := profile_palette(profile_colors(style))
 	defer profile_palette(old)
 	background := profile_background(style)
+	compact := single_pane()
 	if clay.UI(clay.ID("ContactPage"))(
 	{
 		layout = {
 			sizing = {clay.SizingGrow(), clay.SizingGrow()},
 			layoutDirection = .TopToBottom,
-			padding = {left = 24, right = 24, top = 14, bottom = 24},
+			padding = {left = compact ? 12 : 24, right = compact ? 12 : 24, top = 14, bottom = 24},
 			childGap = 10,
 		},
 		backgroundColor = background.customData == nil ? BG : clay.Color{},
@@ -174,6 +175,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		{
 			layout = {
 				sizing = {width = clay.SizingGrow()},
+				layoutDirection = compact ? .TopToBottom : .LeftToRight,
 				childGap = 14,
 				childAlignment = {y = .Center},
 				padding = {top = 10, bottom = 6},
@@ -224,7 +226,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("StartChatBtn"))(
 			{
 				layout = {
-					sizing = {height = clay.SizingFixed(38)},
+					sizing = {height = clay.SizingFixed(tap_size() ? 44 : 38)},
 					padding = {left = 12, right = 12},
 					childGap = 8,
 					childAlignment = {x = .Center, y = .Center},
@@ -247,7 +249,10 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("NickBox"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFixed(tap_size() ? 44 : 36),
+				},
 				padding = {left = 12, right = 12},
 				childAlignment = {y = .Center},
 			},
@@ -283,6 +288,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
+					layoutDirection = compact ? .TopToBottom : .LeftToRight,
 					padding = {left = 16, right = 12, top = 10, bottom = 10},
 					childGap = 12,
 					childAlignment = {y = .Center},
@@ -308,7 +314,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				micro_button("CopyNpubBtn", tr("Copy"))
 			}
 			identity_w := clay.GetElementData(clay.ID("IdentityCard")).boundingBox.width
-			if identity_w <= 0 {identity_w = page_w(ui) - 48}
+			if identity_w <= 0 {identity_w = page_w(ui) - (compact ? 24 : 48)}
 			identity_codes(
 				"Contact",
 				contact.id_hex,
@@ -338,7 +344,13 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		) {
 			state := kp_probes[contact.id_hex]
 			if clay.UI(clay.ID("KpCol"))(
-			{layout = {layoutDirection = .TopToBottom, childGap = 2}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 2,
+				},
+			},
 			) {
 				clay.Text(
 					tr(kp_title(state)),
@@ -377,7 +389,10 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("CommonGroup", u32(i)))(
 				{
 					layout = {
-						sizing = {width = clay.SizingGrow()},
+						sizing = {
+							width = clay.SizingGrow(),
+							height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+						},
 						padding = {left = 8, right = 8, top = 8, bottom = 8},
 						childGap = 10,
 						childAlignment = {y = .Center},
@@ -388,7 +403,13 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				) {
 					avatar("CommonGroupAvatar", u32(i), group.id, group.title, 26)
 					if clay.UI(clay.ID("CommonGroupCol", u32(i)))(
-					{layout = {layoutDirection = .TopToBottom, childGap = 1}},
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 1,
+						},
+					},
 					) {
 						clay.Text(
 							group.title,
@@ -411,7 +432,9 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("ActionsEyebrow"))({layout = {padding = {top = 8}}}) {
 			eyebrow(tr("ACTIONS"))
 		}
-		if clay.UI(clay.ID("ActionsRow"))({layout = {childGap = 8}}) {
+		if clay.UI(clay.ID("ActionsRow"))(
+		{layout = {layoutDirection = compact ? .TopToBottom : .LeftToRight, childGap = 8}},
+		) {
 			micro_button(
 				"BlockBtn",
 				ui.blocked[contact.id_hex] ? tr("Unblock") : tr("Block"),
@@ -482,6 +505,7 @@ contact_relays_card :: proc(font: u16 = FONT_BODY) {
 					childGap = 8,
 					childAlignment = {y = .Center},
 				},
+				clip = {horizontal = single_pane(), childOffset = clay.GetScrollOffset()},
 			},
 			) {
 				clay.Text(
@@ -502,6 +526,7 @@ contact_relays_card :: proc(font: u16 = FONT_BODY) {
 					)
 				}
 			}
+			if single_pane() {scrollbar(clay.ID("RelayShareRow", u32(i)))}
 		}
 	}
 }
@@ -539,15 +564,22 @@ kp_note :: proc(state: Kp_Probe) -> string {
 // Centered QR overlay: the contact's marmot://profile deep link
 // rasterized by the in-app encoder (show_contact_qr).
 qr_modal :: proc(ui: ^Ui_State, contact: Contact_Ui) {
+	width := modal_w(clay.ID("QrModal"), 300)
+	qr_side := max(1, min(260, width - 40))
 	if clay.UI(clay.ID("QrModal"))(
 	{
 		layout = {
+			sizing = {
+				width = clay.SizingFixed(width),
+				height = clay.SizingFit({max = modal_h(420)}),
+			},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(20),
 			childGap = 12,
 			childAlignment = {x = .Center},
 		},
 		backgroundColor = CARD,
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
@@ -564,13 +596,17 @@ qr_modal :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 		)
 		if clay.UI(clay.ID("QrImage"))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(260), height = clay.SizingFixed(260)}},
+			layout = {
+				sizing = {width = clay.SizingFixed(qr_side), height = clay.SizingFixed(qr_side)},
+			},
 			image = {imageData = ui.qr_tex},
 			cornerRadius = rr(8),
 		},
 		) {}
 		clay.Text(npub_tail(ui.qr_npub), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})
+		micro_button("QrClose", tr("Close"))
 	}
+	scrollbar(clay.ID("QrModal"), 14)
 }
 
 // Rasterize the contact's marmot:// deep link into a texture.

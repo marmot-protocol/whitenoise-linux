@@ -113,7 +113,14 @@ group_hero :: proc(ui: ^Ui_State) {
 			micro_button("HeroPicBtn", tr("Change photo"))
 		}
 		if admin && ui.gpic_menu_open {
-			if clay.UI(clay.ID("GpicMenu"))({layout = {childGap = 8}}) {
+			if clay.UI(clay.ID("GpicMenu"))(
+			{
+				layout = {
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+					childGap = 8,
+				},
+			},
+			) {
 				micro_button("GpicFile", tr("From file"))
 				micro_button("GpicEmoji", tr("From emoji"))
 				micro_button("GpicSearch", tr("Search images"))
@@ -124,7 +131,10 @@ group_hero :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("DescBox"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(tap_size() ? 44 : 34),
+					},
 					padding = {left = 10, right = 10},
 					childAlignment = {y = .Center},
 				},

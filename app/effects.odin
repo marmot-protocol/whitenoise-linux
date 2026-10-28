@@ -415,29 +415,53 @@ effect_picker :: proc(ui: ^Ui_State) {
 		// a left-anchored panel would run off-screen.
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(300)},
+			sizing = {
+				width = clay.SizingFixed(fit_w(300)),
+				height = clay.SizingFit({max = modal_h(300)}),
+			},
 			padding = clay.PaddingAll(12),
 			childGap = 8,
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		floating = {
-			attachTo = .Parent,
+			attachTo = single_pane() ? .Root : .Parent,
 			zIndex = 12,
-			offset = {0, -10 + rise(clay.ID("FxPanel"))},
-			attachment = {element = .RightBottom, parent = .RightTop},
+			offset = {0, (single_pane() ? 0 : -10) + rise(clay.ID("FxPanel"))},
+			attachment = single_pane() ? clay.FloatingAttachPoints{element = .CenterCenter, parent = .CenterCenter} : clay.FloatingAttachPoints{element = .RightBottom, parent = .RightTop},
 		},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		eyebrow(tr("SEND WITH EFFECT"))
-		if clay.UI(clay.ID("FxRow"))({layout = {childGap = 6}}) {
+		if clay.UI(clay.ID("FxHead"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 6,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
+			eyebrow(tr("SEND WITH EFFECT"))
+			if clay.UI(clay.ID("FxHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if tap_size() {micro_button("FxClose", tr("Close"))}
+		}
+		if clay.UI(clay.ID("FxRow"))(
+		{
+			layout = {sizing = {width = clay.SizingGrow()}, childGap = 6},
+			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
 			for e, i in EFFECTS {
 				armed := ui.fx_armed == e.id
 				if clay.UI(clay.ID("FxOpt", u32(i)))(
 				{
 					layout = {
-						sizing = {width = clay.SizingFixed(38), height = clay.SizingFixed(38)},
+						sizing = {
+							width = clay.SizingFixed(tap_size() ? 44 : 38),
+							height = clay.SizingFixed(tap_size() ? 44 : 38),
+						},
 						childAlignment = {x = .Center, y = .Center},
 					},
 					backgroundColor = armed ? SELECTED : (hovered() ? HOVER : ROW_BG),
@@ -462,14 +486,16 @@ effect_picker :: proc(ui: ^Ui_State) {
 		if ui.fx_armed != 0 {
 			micro_button("FxClear", tr("Clear effect"))
 		}
+		scrollbar(clay.ID("FxRow"), 13)
 	}
+	scrollbar(clay.ID("FxPanel"), 13)
 }
 
 handle_effects :: proc(ui: ^Ui_State) -> bool {
 	if !ui.fx_open {
 		return false
 	}
-	if rl.IsKeyPressed(.ESCAPE) {
+	if rl.IsKeyPressed(.ESCAPE) || clicked("FxClose") {
 		ui.fx_open = false
 		return true
 	}

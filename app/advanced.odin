@@ -71,9 +71,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 						"Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap.",
 					),
 				)
-				if clay.UI(clay.ID("MapBrowserChoices"))(
-				{layout = {childGap = 6}},
-				) {
+				if clay.UI(clay.ID("MapBrowserChoices"))(settings_choices()) {
 					for name, browser in MAP_BROWSER_NAMES {
 						settings_option(
 							"MapBrowserChip",
@@ -131,9 +129,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("AdvancedTrustedGroup"))(settings_box()) {
 				settings_group(tr("Trusted link sites"))
 				clay.Text(
-					tr(
-						"Links to these exact sites open without confirmation.",
-					),
+					tr("Links to these exact sites open without confirmation."),
 					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 				)
 				if len(ui.prefs.trusted_sites) == 0 {
@@ -142,11 +138,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					) {
 						clay.Text(
 							tr("No trusted sites."),
-							{
-								fontId = FONT_BODY,
-								fontSize = 12,
-								textColor = TEXT_DIM,
-							},
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 						)
 					}
 				}
@@ -154,9 +146,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					relay_row("TrustRow", "TrustRemove", u32(i), site)
 				}
 				if len(ui.prefs.trusted_sites) > 0 {
-					if clay.UI(clay.ID("TrustActions"))(
-					{layout = {childGap = 8}},
-					) {
+					if clay.UI(clay.ID("TrustActions"))(settings_choices()) {
 						label :=
 							ui.keys_confirm == "TrustForgetAll" ? tr("Confirm forget all") : tr("Forget all")
 						settings_button("TrustForgetAll", label, DANGER)
@@ -173,14 +163,13 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					"TgAudit",
 					ui.audit_enabled,
 					tr("Audit logs"),
-					tr(
-						"Record group audit log files on this device. Identifiers are hashed.",
-					),
+					tr("Record group audit log files on this device. Identifiers are hashed."),
 				)
 			}
 			if clay.UI(clay.ID("AuditRefreshRow"))(
 			{
 				layout = {
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 					padding = {top = 8},
 					childGap = 12,
 					childAlignment = {y = .Center},
@@ -194,16 +183,10 @@ settings_advanced :: proc(ui: ^Ui_State) {
 				settings_button("AuditRefresh", tr("Refresh"))
 			}
 			if len(ui.audit_files) == 0 {
-				if clay.UI(clay.ID("RowNoAudit"))(
-				{layout = {padding = {top = 4, bottom = 4}}},
-				) {
+				if clay.UI(clay.ID("RowNoAudit"))({layout = {padding = {top = 4, bottom = 4}}}) {
 					clay.Text(
 						tr("No audit log files."),
-						{
-							fontId = FONT_BODY,
-							fontSize = 12,
-							textColor = TEXT_DIM,
-						},
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 					)
 				}
 			}
@@ -220,11 +203,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					) {
 						if clay.UI(clay.ID("AuditFileName", u32(i)))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingGrow(),
-								},
-							},
+							layout = {sizing = {width = clay.SizingGrow()}},
 							clip = {horizontal = true},
 						},
 						) {
@@ -240,20 +219,13 @@ settings_advanced :: proc(ui: ^Ui_State) {
 						}
 						clay.Text(
 							file.label,
-							{
-								fontId = FONT_BODY,
-								fontSize = 12,
-								textColor = TEXT_DIM,
-							},
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 						)
 					}
 					if clay.UI(clay.ID("AuditDeleteAction", u32(i)))(
 					{
 						layout = {padding = {left = 12}},
-						border = {
-							color = FIELD_BORDER,
-							width = {left = 1},
-						},
+						border = {color = FIELD_BORDER, width = {left = 1}},
 					},
 					) {
 						id := audit_delete_id(file.path)
@@ -369,11 +341,7 @@ set_telemetry :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
 	if client == nil ||
 	   marmot.set_diagnostics_consent(client, on ? .Grant : .Decline, &out) != .OK {
 		ui.telemetry_enabled = false // MDK fails closed if the receipt cannot be saved.
-		set_status(
-			ui,
-			tr("Couldn't change diagnostics sharing. Please try again."),
-			.Error,
-		)
+		set_status(ui, tr("Couldn't change diagnostics sharing. Please try again."), .Error)
 		return
 	}
 	ui.telemetry_enabled = out.decision == .Granted
@@ -478,10 +446,7 @@ audit_delete :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 		   .OK {
 		set_status(
 			ui,
-			fmt.aprintf(
-				tr("Couldn't delete the audit log file. %s"),
-				marmot.last_error(),
-			),
+			fmt.aprintf(tr("Couldn't delete the audit log file. %s"), marmot.last_error()),
 			.Error,
 		)
 		return

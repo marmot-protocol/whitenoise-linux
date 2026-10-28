@@ -9,7 +9,14 @@ import rl "sdlrl"
 login_button :: proc(id_str: string, label: string, primary: bool = false) {
 	if clay.UI(clay.ID(id_str))(
 	{
-		layout = {padding = {left = 18, right = 18, top = 10, bottom = 10}},
+		layout = {
+			sizing = {
+				width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
+				height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+			},
+			padding = {left = 18, right = 18, top = 10, bottom = 10},
+			childAlignment = {x = .Center, y = .Center},
+		},
 		backgroundColor = hovered() || primary ? ACCENT : ROW_BG,
 		cornerRadius = rr(8),
 		border = bevel_border(),
@@ -131,23 +138,49 @@ login_progress :: proc(job: ^Auth_Job, detail: string) {
 }
 
 // Sign-in forms and pending work; pairing keeps its code beside the progress.
+@(private)
+login_viewport: rl.Vector2
+@(private)
+login_form: Login_Method
+@(private)
+login_reveal_frames: int
+
 login_pane :: proc(ui: ^Ui_State) {
+	viewport := rl.Vector2{f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}
+	if viewport != login_viewport || ui.login_method != login_form {
+		login_viewport, login_form = viewport, ui.login_method
+		// The first pass still sees Clay's previous viewport; the next
+		// sees the keyboard-reduced layout and reveals the focused box.
+		login_reveal_frames = 2
+	}
+	if login_reveal_frames > 0 &&
+	   auth_job == nil &&
+	   ui.login_method != .Menu &&
+	   !ui.socks5_login_open {
+		onboard_reveal_field("LoginCard", "LoginInput")
+		login_reveal_frames -= 1
+	}
 	pairing := auth_job != nil && auth_job.session != nil && auth_job.method == .Pair
 	menu := auth_job == nil && ui.login_method == .Menu
 	if clay.UI(clay.ID("LoginCard"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(fit_w(660))},
+			sizing = {
+				width = clay.SizingGrow({max = fit_w(660)}),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(pairing || menu ? 24 : 50),
+			padding = clay.PaddingAll(single_pane() ? 16 : pairing || menu ? 24 : 50),
 			childGap = 14,
 			childAlignment = {x = .Center},
 		},
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 	},
 	) {
+		scrollbar(clay.ID("LoginCard"))
 		if !ui.socks5_login_open {
 			if !pairing {logo_mark()}
 			clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT})
@@ -175,6 +208,7 @@ login_pane :: proc(ui: ^Ui_State) {
 					layout = {
 						sizing = {width = clay.SizingGrow({})},
 						childGap = 20,
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 						childAlignment = {y = .Center},
 					},
 				},
@@ -239,7 +273,14 @@ login_pane :: proc(ui: ^Ui_State) {
 				if auth_job.signer_state.auth_url !=
 				   "" {micro_button("LoginApproval", tr("Review signer approval link"))}
 				if clay.UI(clay.ID("LoginRemoteActions"))(
-				{layout = {childGap = 12, childAlignment = {y = .Center}}},
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+						childGap = 12,
+						childAlignment = {y = .Center},
+					},
+				},
 				) {
 					if pairing {micro_button("LoginPairCopy", tr("Copy pairing link"))}
 					micro_button("LoginCancel", tr("Cancel connection"))
@@ -256,13 +297,25 @@ login_pane :: proc(ui: ^Ui_State) {
 			{layout = {sizing = {height = clay.SizingFixed(10)}}},
 			) {}
 			if clay.UI(clay.ID("LoginLocalMethods"))(
-			{layout = {sizing = {width = clay.SizingGrow({})}, childGap = 14}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow({})},
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+					childGap = 14,
+				},
+			},
 			) {
 				login_big_button("LoginImportBtn", tr("Import a secret key (nsec)"), false)
 				login_big_button("LoginCreate", tr("Generate a new key"), true)
 			}
 			if clay.UI(clay.ID("LoginRemoteMethods"))(
-			{layout = {sizing = {width = clay.SizingGrow({})}, childGap = 14}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow({})},
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+					childGap = 14,
+				},
+			},
 			) {
 				login_big_button("LoginBunkerBtn", tr("Connect with a bunker link"), false)
 				login_big_button("LoginPairBtn", tr("Pair with a remote signer"), false)
@@ -293,6 +346,7 @@ login_pane :: proc(ui: ^Ui_State) {
 				backgroundColor = ROW_BG,
 				cornerRadius = rr(10),
 				border = {color = ACCENT, width = bw()},
+				clip = {horizontal = true},
 			},
 			) {
 				if len(ui.login_input) == 0 {
@@ -317,7 +371,15 @@ login_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("LoginGapB"))(
 			{layout = {sizing = {height = clay.SizingFixed(6)}}},
 			) {}
-			if clay.UI(clay.ID("LoginButtons"))({layout = {childGap = 12}}) {
+			if clay.UI(clay.ID("LoginButtons"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+					childGap = 12,
+				},
+			},
+			) {
 				login_button("LoginBack", tr("Back"))
 				login_button(
 					"LoginGo",

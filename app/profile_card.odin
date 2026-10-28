@@ -145,7 +145,10 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 				if clay.UI(clay.ID("PeerClose"))(
 				{
 					layout = {
-						sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(28)},
+						sizing = {
+							width = clay.SizingFixed(settings_tap_size(28)),
+							height = clay.SizingFixed(settings_tap_size(28)),
+						},
 						childAlignment = {x = .Center, y = .Center},
 					},
 					floating = {
@@ -185,8 +188,12 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 		if clay.UI(clay.ID("ProfileCardActions", id))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(FACE / 2 + 8)},
-				padding = {right = INSET - 4, top = 10},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = single_pane() ? clay.SizingFit() : clay.SizingFixed(FACE / 2 + 8),
+				},
+				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+				padding = {right = INSET - 4, top = single_pane() ? FACE / 2 + 8 : 10},
 				childGap = 8,
 				childAlignment = {x = .Right, y = .Top},
 			},
@@ -292,6 +299,7 @@ card_pill :: proc(id: clay.ElementId, icon, label: string, look: Pill_Look) {
 	if clay.UI(id)(
 	{
 		layout = {
+			sizing = {height = clay.SizingFit({min = settings_tap_size(28)})},
 			padding = {left = 12, right = 12, top = 6, bottom = 6},
 			childGap = 6,
 			childAlignment = {y = .Center},

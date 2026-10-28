@@ -416,7 +416,8 @@ settings_test_scroll_panel :: proc(
 	for _ in 0 ..< 128 {
 		box := clay.GetElementData(destination).boundingBox
 		if box.y >= panel.y && box.y + box.height <= panel.y + panel.height {break}
-		settings_test_frame(ui, {0, -8})
+		wanted := clamp(box.y, panel.y, panel.y + panel.height - box.height)
+		settings_test_frame(ui, {0, (wanted - box.y) / CLAY_SCROLL_PIXELS})
 		for _ in 0 ..< 2 {settings_test_frame(ui)}
 	}
 	target := clay.GetElementData(destination)
@@ -424,8 +425,12 @@ settings_test_scroll_panel :: proc(
 	testing.expectf(
 		t,
 		target.found && box.y >= panel.y && box.y + box.height <= panel.y + panel.height,
-		"Scrolling %s must reveal its final content without moving another panel",
+		"Scrolling %s must reveal final content %v within %v (window %dx%d)",
 		panel_id,
+		box,
+		panel,
+		rl.GetScreenWidth(),
+		rl.GetScreenHeight(),
 	)
 	for id, i in ids {
 		if id == panel_id {continue}

@@ -101,7 +101,7 @@ archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
 		if clay.UI(clay.ID("ChatUnarch", index))(
 		{
 			layout = {
-				sizing = {height = clay.SizingFixed(40)},
+				sizing = {height = clay.SizingFixed(tap_size() ? 44 : 40)},
 				padding = {left = 12, right = 12},
 				childAlignment = {x = .Center, y = .Center},
 			},
@@ -128,6 +128,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 			padding = clay.PaddingAll(compact ? 12 : 24),
 			childGap = 16,
 		},
+		clip = {vertical = single_pane(), childOffset = clay.GetScrollOffset()},
 	},
 	) {
 		if clay.UI(clay.ID("ArchiveHeader"))(
@@ -178,7 +179,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("ArchiveBack"))(
 			{
 				layout = {
-					sizing = {height = clay.SizingFixed(36)},
+					sizing = {height = clay.SizingFixed(tap_size() ? 44 : 36)},
 					padding = {left = 12, right = 12},
 					childAlignment = {x = .Center, y = .Center},
 				},
@@ -197,6 +198,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 		{
 			layout = {
 				sizing = {width = clay.SizingGrow()},
+				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 				childGap = 10,
 				childAlignment = {y = .Center},
 			},
@@ -205,7 +207,10 @@ archived_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("FilterBox"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(40)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(tap_size() ? 44 : 40),
+					},
 					padding = {left = 12, right = 12},
 					childGap = 10,
 					childAlignment = {y = .Center},
@@ -230,7 +235,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("ArchiveClearSearch"))(
 				{
 					layout = {
-						sizing = {height = clay.SizingFixed(40)},
+						sizing = {height = clay.SizingFixed(tap_size() ? 44 : 40)},
 						padding = {left = 10, right = 10},
 						childAlignment = {x = .Center, y = .Center},
 					},
@@ -260,7 +265,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("ArchivedList"))(
 		{
 			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				sizing = {clay.SizingGrow(), clay.SizingGrow({min = single_pane() ? 84 : 0})},
 				layoutDirection = .TopToBottom,
 				childGap = 8,
 			},
@@ -314,4 +319,5 @@ archived_pane :: proc(ui: ^Ui_State) {
 		}
 		scrollbar(clay.ID("ArchivedList"))
 	}
+	if single_pane() {scrollbar(clay.ID("ArchivedPage"))}
 }

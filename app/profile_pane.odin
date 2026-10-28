@@ -37,6 +37,7 @@ profile_rail :: proc(ui: ^Ui_State) {
 					layoutDirection = .TopToBottom,
 					childGap = 2,
 				},
+				clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
 			},
 			) {
 				clay.Text(
@@ -50,6 +51,7 @@ profile_rail :: proc(ui: ^Ui_State) {
 				if i < len(ui.account_signing) &&
 				   ui.account_signing[i].external {nip46_status_ui(ui, ui.account_ids[i], u32(i))}
 			}
+			scrollbar(clay.ID("PrAcctCol", u32(i)))
 			if active {
 				clay.Text(
 					tr("ACTIVE"),
@@ -85,7 +87,10 @@ profile_rail_link :: proc(id_str: string, icon: string, label: string) {
 	if clay.UI(clay.ID(id_str))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow()},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFit({min = settings_tap_size(34)}),
+			},
 			padding = {left = 12, right = 12, top = 9, bottom = 9},
 			childGap = 10,
 			childAlignment = {y = .Center},
@@ -113,6 +118,7 @@ form_row :: proc(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow()},
+			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 			childGap = 12,
 			childAlignment = {y = .Center},
 		},
@@ -146,6 +152,7 @@ profile_kv :: proc(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow()},
+			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 			padding = {left = 16, right = 16, top = 12, bottom = 12},
 			childAlignment = {y = .Center},
 			childGap = 10,
@@ -157,10 +164,22 @@ profile_kv :: proc(
 		if clay.UI(clay.ID("ProfileKvGap", index))(
 		{layout = {sizing = {width = clay.SizingGrow()}}},
 		) {}
-		clay.Text(
-			len(value) > 0 ? value : "—",
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-		)
+		if clay.UI(clay.ID("ProfileKvValue", index))(
+		{
+			layout = {
+				sizing = {
+					width = single_pane() ? clay.SizingGrow() : clay.SizingFit({max = g_ui == nil ? 400 : max(1, page_w(g_ui) - 240)}),
+				},
+			},
+			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
+			clay.Text(
+				len(value) > 0 ? value : "—",
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, wrapMode = .None},
+			)
+		}
+		scrollbar(clay.ID("ProfileKvValue", index))
 		if hovered() {
 			clay.Text(ICON_PENCIL, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
 		}
@@ -191,7 +210,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 		layout = {
 			sizing = {clay.SizingGrow(), clay.SizingGrow()},
 			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(20),
+			padding = clay.PaddingAll(single_pane() ? 12 : 20),
 			childGap = 12,
 		},
 		backgroundColor = background.customData == nil ? BG : clay.Color{},
@@ -204,13 +223,20 @@ profile_pane :: proc(ui: ^Ui_State) {
 		{
 			layout = {
 				sizing = {width = clay.SizingGrow()},
+				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 				childGap = 10,
 				childAlignment = {y = .Center},
 			},
 		},
 		) {
 			if clay.UI(clay.ID("ProfileHeadCol"))(
-			{layout = {layoutDirection = .TopToBottom, childGap = 3}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 3,
+				},
+			},
 			) {
 				clay.Text(
 					tr("Your profile"),
@@ -227,6 +253,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("EditProfileBtn"))(
 			{
 				layout = {
+					sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
 					padding = {left = 14, right = 14, top = 8, bottom = 8},
 					childGap = 8,
 					childAlignment = {y = .Center},
@@ -358,14 +385,26 @@ profile_pane :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
-					padding = {left = 136, right = 24, top = 14, bottom = 18},
+					padding = {
+						left = single_pane() ? 16 : 136,
+						right = single_pane() ? 16 : 24,
+						top = single_pane() ? 60 : 14,
+						bottom = 18,
+					},
 					childGap = 14,
 					childAlignment = {y = .Center},
 				},
 			},
 			) {
 				if clay.UI(clay.ID("ProfileHeroCol"))(
-				{layout = {layoutDirection = .TopToBottom, childGap = 3}},
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						childGap = 3,
+					},
+					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+				},
 				) {
 					// While editing, the hero previews the drafts live.
 					shown_name := ui.profile.editing ? string(ui.name_input[:]) : ui.profile.name
@@ -390,6 +429,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 						)
 					}
 				}
+				scrollbar(clay.ID("ProfileHeroCol"))
 			}
 		}
 
@@ -447,7 +487,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 				form_row(
 					ui,
 					3,
-					"LIGHTNING",
+					tr("LIGHTNING"),
 					"Lud16Box",
 					&ui.lud16_input,
 					"you@wallet.com",
@@ -457,6 +497,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 				{
 					layout = {
 						sizing = {width = clay.SizingGrow()},
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 						childGap = 10,
 						padding = {top = 6},
 						childAlignment = {y = .Center},
@@ -477,7 +518,10 @@ profile_pane :: proc(ui: ^Ui_State) {
 					)
 					if clay.UI(clay.ID("PublishProfileBtn"))(
 					{
-						layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
+						layout = {
+							sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
+							padding = {left = 16, right = 16, top = 9, bottom = 9},
+						},
 						backgroundColor = ACCENT,
 						cornerRadius = rr(9),
 					},
@@ -507,6 +551,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 					padding = {left = 16, right = 12, top = 10, bottom = 10},
 					childGap = 12,
 					childAlignment = {y = .Center},
@@ -565,7 +610,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					font = FONT_BODY,
 				)
 				profile_kv(1, tr("Verified address"), ui.profile.nip05, font = FONT_BODY)
-				profile_kv(2, "Lightning", ui.profile.lud16, font = FONT_BODY)
+				profile_kv(2, tr("Lightning"), ui.profile.lud16, font = FONT_BODY)
 				profile_kv(
 					3,
 					tr("Picture"),

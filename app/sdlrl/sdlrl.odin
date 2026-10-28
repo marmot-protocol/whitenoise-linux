@@ -829,6 +829,7 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 				}
 			}
 		case .MOUSE_BUTTON_DOWN, .MOUSE_BUTTON_UP:
+			if event.button.which == sdl.TOUCH_MOUSEID {state.touch = true}
 			button: MouseButton
 			switch event.button.button {
 			case 1:
@@ -950,12 +951,12 @@ SetTextInput :: proc(on: bool) {
 	if on == state.text_input {
 		return
 	}
-	state.text_input = on
 	if on {
-		_ = sdl.StartTextInput(state.window)
+		state.text_input = sdl.StartTextInput(state.window)
 		return
 	}
 	_ = sdl.StopTextInput(state.window)
+	state.text_input = false
 	set_preedit("") // a half-composed string has nowhere to land now
 }
 

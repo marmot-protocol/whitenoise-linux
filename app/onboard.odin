@@ -6,6 +6,7 @@ package main
 import "core:fmt"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import rl "sdlrl"
 
 import marmot "../marmot"
 
@@ -87,15 +88,21 @@ get_started_pane :: proc(ui: ^Ui_State) {
 		layout = {
 			sizing = {clay.SizingGrow(), clay.SizingGrow()},
 			layoutDirection = .TopToBottom,
-			childAlignment = {x = .Center, y = .Center},
+			childAlignment = {
+				x = .Center,
+				y = single_pane() || f32(rl.GetScreenHeight()) / UI_ZOOM < 600 ? .Top : .Center,
+			},
 			childGap = 14,
+			padding = {top = 12, bottom = 12},
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 	},
 	) {
+		scrollbar(clay.ID("GetStarted"))
 		if clay.UI(clay.ID("GetStartedCard"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingFixed(fit_w(480))},
+				sizing = {width = clay.SizingGrow({max = fit_w(480)})},
 				layoutDirection = .TopToBottom,
 				padding = clay.PaddingAll(single_pane() ? 16 : 24),
 				childGap = 10,
@@ -119,6 +126,7 @@ get_started_pane :: proc(ui: ^Ui_State) {
 						sizing = {width = clay.SizingGrow()},
 						padding = {top = 10, bottom = 10},
 						childGap = 12,
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 						childAlignment = {y = .Center},
 					},
 				},
@@ -185,10 +193,12 @@ get_started_pane :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		clay.Text(
-			tr("Press Ctrl P for the command palette."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
-		)
+		if !tap_size() {
+			clay.Text(
+				tr("Press Ctrl P for the command palette."),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			)
+		}
 	}
 }
 

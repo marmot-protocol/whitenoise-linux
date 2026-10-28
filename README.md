@@ -4,7 +4,7 @@
 
 <h1 align="center">White Noise Linux</h1>
 
-<p align="center"><b>A native desktop client for end-to-end encrypted group chat over Nostr.</b></p>
+<p align="center"><b>A native client for end-to-end encrypted group chat over Nostr.</b></p>
 
 <p align="center">
   <a href="https://github.com/marmot-protocol/whitenoise-linux/actions/workflows/ci.yml"><img src="https://github.com/marmot-protocol/whitenoise-linux/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
@@ -101,6 +101,25 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Native desktop notifications, a command palette, and full keyboard navigation.
 - Chat transitions follow the conversation, not its position in the list. New messages can reorder the list without sliding the open chat.
 - Reduce motion hides animated synth, dust, scan, and wave backdrops, including the vault gate's synth backdrop. Static decorations remain visible.
+
+**Mobile Linux**
+
+Narrow windows show one view at a time, with full-width chat and contact
+lists. Use the bottom navigation to switch pages and Back to return from
+a conversation. Back keeps your draft and staged attachments. Settings,
+forms, dialogs and media controls reflow or scroll to fit the window.
+
+Tap a message's menu button for its actions. Drag overflowing toolbars
+sideways and page content vertically. Reduce motion keeps direct finger
+scrolling but disables the fling. Tap the composer to activate platform
+text input; opening a conversation does not raise the on-screen keyboard.
+On short screens, navigation gives the active view more room; Back restores
+it. Short conversations also hide the status readout, but retain progress
+and error banners.
+
+Linux ARM64 packages use the same interface (see [Install](#install)).
+The compositor supplies the on-screen keyboard through SDL's platform
+text-input support.
 
 **Privacy & data**
 

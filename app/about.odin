@@ -206,7 +206,7 @@ about_readout :: proc(ui: ^Ui_State) {
 		},
 		{uptime_label(), tr("UPTIME")},
 	}
-	columns := settings_body_width(ui) - 24 < 520 ? 2 : 3
+	columns := single_pane() ? 1 : settings_body_width(ui) - 24 < 520 ? 2 : 3
 	if clay.UI(clay.ID("AboutGrid"))(
 	{
 		layout = {
@@ -268,7 +268,7 @@ CREDITS := []string {
 
 @(private = "file")
 about_credits :: proc(ui: ^Ui_State) {
-	columns := settings_body_width(ui) - 24 < 520 ? 3 : 5
+	columns := single_pane() ? 1 : settings_body_width(ui) - 24 < 520 ? 3 : 5
 	if clay.UI(clay.ID("AboutCredits"))(
 	{
 		layout = {

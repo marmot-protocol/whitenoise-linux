@@ -189,7 +189,7 @@ if ! cmp -s "$MARMOT_ARCHIVE" "$OUT/libmarmot_c.a"; then cp "$MARMOT_ARCHIVE" "$
 
 mkdir -p "$OUT/clay" "$OUT/fbx" "$OUT/math" "$OUT/stb"
 CLAY_PATCHES=()
-for patch in clay-hashmap clay-scroll-target clay-float-layer clay-mingw-enums; do
+for patch in clay-hashmap clay-scroll-target clay-scroll-reflow clay-float-layer clay-mingw-enums; do
   CLAY_PATCHES+=("$HERE/patches/$patch.patch")
 done
 KEY="$(cross_key 'clay -x c -DCLAY_IMPLEMENTATION' "$HERE/vendor/clay/clay.h" "${CLAY_PATCHES[@]}")"
@@ -200,7 +200,7 @@ if ! cross_fresh clay "$KEY" "$OUT/clay/clay.h" "$OUT/clay/clay.o" "$OUT/clay/cl
   CLAY_DIR="$(cd "$OUT/clay" && pwd -P)"
   # clay-mingw-enums.patch only affects _WIN32: the Odin binding assumes MSVC's
   # 4-byte enums there, while Clang for MinGW would pack them to 1 byte.
-  for patch in clay-hashmap clay-scroll-target clay-float-layer clay-mingw-enums; do
+  for patch in clay-hashmap clay-scroll-target clay-scroll-reflow clay-float-layer clay-mingw-enums; do
     GIT_CEILING_DIRECTORIES="${CLAY_DIR%/*}" git -C "$CLAY_DIR" apply "$HERE/patches/$patch.patch"
   done
   "$CC" "${CFLAGS[@]}" -x c -c -DCLAY_IMPLEMENTATION "$OUT/clay/clay.h" -o "$OUT/clay/clay.o"

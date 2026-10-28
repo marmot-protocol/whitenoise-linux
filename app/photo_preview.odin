@@ -216,17 +216,21 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 	image := photo_image(&ui.photo)
 	if image.data == nil {return}
 	width := min(f32(400), max(f32(160), f32(rl.GetScreenWidth()) / UI_ZOOM - 24))
-	edge := max(f32(24), min(width - 40, f32(rl.GetScreenHeight()) / UI_ZOOM - 230))
+	edge := max(f32(24), min(width - 40, modal_h(600) - (tap_size() ? 320 : 230)))
 	scale := edge / f32(max(image.width, image.height))
 	if clay.UI(clay.ID("PhotoPreview"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(width)},
+			sizing = {
+				width = clay.SizingFixed(width),
+				height = clay.SizingFit({max = modal_h(600)}),
+			},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(20),
 			childGap = 12,
 			childAlignment = {x = .Center},
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
@@ -295,7 +299,10 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("PhotoCropHandle", u32(i + 1)))(
 					{
 						layout = {
-							sizing = {width = clay.SizingFixed(24), height = clay.SizingFixed(24)},
+							sizing = {
+								width = clay.SizingFixed(tap_size() ? 44 : 24),
+								height = clay.SizingFixed(tap_size() ? 44 : 24),
+							},
 							childAlignment = {x = .Center, y = .Center},
 						},
 						floating = {
@@ -363,4 +370,5 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 			if ui.photo.crop_job == nil {micro_button("PhotoUse", tr("Use"))}
 		}
 	}
+	scrollbar(clay.ID("PhotoPreview"), 21)
 }

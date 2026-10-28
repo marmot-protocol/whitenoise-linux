@@ -388,14 +388,20 @@ inspector_panel :: proc(view: ^Stl_View, height: f32) {
 @(private = "file")
 insp_wire_row :: proc(view: ^Stl_View) {
 	if clay.UI(clay.ID("MiWireRow"))(
-	{layout = {childGap = 4, sizing = {width = clay.SizingGrow()}}},
+	{
+		layout = {childGap = 4, sizing = {width = clay.SizingGrow()}},
+		clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+	},
 	) {
 		for color, i in WIRE_COLORS {
 			on := view.insp.wire == i || (i == 0 && view.insp.wire <= 0)
 			if clay.UI(clay.ID("MiWire", u32(i)))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(20), height = clay.SizingFixed(20)},
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? 44 : 20),
+						height = clay.SizingFixed(tap_size() ? 44 : 20),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = i == 0 ? ROW_BG : {color.r * 255, color.g * 255, color.b * 255, 255},
@@ -409,6 +415,7 @@ insp_wire_row :: proc(view: ^Stl_View) {
 			}
 		}
 	}
+	scrollbar(clay.ID("MiWireRow"), 13)
 }
 
 // ALL-CAPS eyebrow with the count of pickable rows, as in the rest of
@@ -447,7 +454,10 @@ insp_section :: proc(view: ^Stl_View, section: Insp_Section) {
 		if clay.UI(clay.ID(section.id, u32(i)))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow()},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+				},
 				padding = {left = 6, right = 6, top = 5, bottom = 5},
 				childAlignment = {y = .Center},
 			},
@@ -466,7 +476,10 @@ insp_toggle_row :: proc(view: ^Stl_View) {
 	if clay.UI(clay.ID("MiSingle"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow()},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+			},
 			padding = {left = 6, right = 6, top = 5, bottom = 5},
 			childGap = 8,
 			childAlignment = {y = .Center},
@@ -512,7 +525,10 @@ insp_animation :: proc(view: ^Stl_View) {
 		if clay.UI(clay.ID("MiTake", u32(i)))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow()},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+				},
 				padding = {left = 6, right = 6, top = 5, bottom = 5},
 				childAlignment = {y = .Center},
 			},
@@ -568,7 +584,10 @@ insp_animation :: proc(view: ^Stl_View) {
 	if clay.UI(bar_id)(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(12)},
+			sizing = {
+				width = clay.SizingFixed(width),
+				height = clay.SizingFixed(tap_size() ? 44 : 12),
+			},
 			padding = {left = 2, right = 2},
 			childAlignment = {y = .Center},
 		},

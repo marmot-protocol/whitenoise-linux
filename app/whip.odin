@@ -75,8 +75,6 @@ whip_new_project :: proc(ui: ^Ui_State) -> bool {
 	}
 	ui.page = .Chats
 	if single_pane() && phone_detail(ui) {
-		stash_draft(ui)
-		stash_staged(ui)
 		phone_back_action(ui)
 	}
 	ui.whip_picking_project = true
@@ -185,6 +183,10 @@ whip_inbox_input :: proc(ui: ^Ui_State) -> bool {
 	if !mouse_released() {return false}
 	if clicked("WhipRetry") || clicked("WhipRailRetry") {rl.WhipClose(); return true}
 	for project in rl.WhipProjects() {
+		if clay.PointerOver(clay.ID("WhipProjectMenu", project.id)) {
+			open_terminal_menu(ui, project.id)
+			return true
+		}
 		if clay.PointerOver(clay.ID("WhipProjectAvatar", project.id)) {
 			if photo_pick_begin(ui, .Whip, project.dir) {rl.OpenFileDialog(false)}
 			return true
@@ -256,7 +258,7 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("WhipTabBar"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(32)},
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(tap_size() ? 48 : 32)},
 			childAlignment = {y = .Center},
 			padding = {left = 8, right = 8},
 			childGap = 6,
@@ -268,7 +270,9 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("WhipWorkspaceIdentity"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow({max = 144})},
+				sizing = {
+					width = single_pane() ? clay.SizingFixed(22) : clay.SizingGrow({max = 144}),
+				},
 				childGap = 6,
 				childAlignment = {y = .Center},
 			},
@@ -307,7 +311,7 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 					layout = {
 						sizing = {
 							width = clay.SizingFit({max = 180}),
-							height = clay.SizingFixed(26),
+							height = clay.SizingFixed(tap_size() ? 44 : 26),
 						},
 						padding = {left = 8, right = 4},
 						childGap = 5,
@@ -335,8 +339,8 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 						{
 							layout = {
 								sizing = {
-									width = clay.SizingFixed(16),
-									height = clay.SizingFixed(18),
+									width = clay.SizingFixed(tap_size() ? 44 : 16),
+									height = clay.SizingFixed(tap_size() ? 44 : 18),
 								},
 								childAlignment = {x = .Center, y = .Center},
 							},
@@ -363,7 +367,10 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("WhipNewTab"))(
 			{
 				layout = {
-					sizing = {clay.SizingFixed(28), clay.SizingFixed(26)},
+					sizing = {
+						clay.SizingFixed(tap_size() ? 44 : 28),
+						clay.SizingFixed(tap_size() ? 44 : 26),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : ROW_BG,
@@ -413,6 +420,7 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
+	scrollbar(clay.ID("WhipTabs"))
 }
 
 @(private)
@@ -481,7 +489,7 @@ whip_project_row :: proc(ui: ^Ui_State, project: rl.Whip_Project) {
 			cornerRadius = rr(2),
 		},
 		) {}
-		whip_project_avatar(ui, project.id, project.dir, project.name, 36)
+		whip_project_avatar(ui, project.id, project.dir, project.name, tap_size() ? 44 : 36)
 		if clay.PointerOver(clay.ID("WhipProjectAvatar", project.id)) {
 			tooltip(tr("Change project avatar"))
 		}
@@ -529,6 +537,21 @@ whip_project_row :: proc(ui: ^Ui_State, project: rl.Whip_Project) {
 					fmt.tprintf("%d", project.tabs),
 					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
 				)
+			}
+		}
+		if tap_size() {
+			if clay.UI(clay.ID("WhipProjectMenu", project.id))(
+			{
+				layout = {
+					sizing = {clay.SizingFixed(44), clay.SizingFixed(44)},
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = hovered() ? HOVER : ROW_BG,
+				cornerRadius = rr(8),
+			},
+			) {
+				clay.Text("⋯", {fontId = FONT_BODY, fontSize = 20, textColor = TEXT_DIM})
+				if hovered() {cursor_raise(.Pointer); tooltip(tr("More actions"))}
 			}
 		}
 	}

@@ -270,15 +270,17 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 					theme_packs[preview_theme].accent_names[ui.accent],
 					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 				)
-				if clay.UI(clay.ID("AccentChoices"))({layout = {childGap = 10}}) {
+				if clay.UI(clay.ID("AccentChoices"))(
+				{layout = {childGap = single_pane() ? 4 : 10}},
+				) {
 					for name, i in theme_packs[preview_theme].accent_names {
 						append(&theme_control_order, THEME_ACCENT_KEYS[i])
 						if clay.UI(clay.ID("AccentDot", u32(i)))(
 						{
 							layout = {
 								sizing = {
-									width = clay.SizingFixed(18),
-									height = clay.SizingFixed(18),
+									width = clay.SizingFixed(settings_tap_size(18)),
+									height = clay.SizingFixed(settings_tap_size(18)),
 								},
 							},
 							backgroundColor = len(theme_packs) > 0 ? theme_packs[preview_theme].accent_base[i] : default_pack().accent_base[i],
@@ -311,9 +313,10 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				tr("Interface zoom"),
 				tr("Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."),
 			)
-			if clay.UI(clay.ID("ZoomChoices"))(
-			{layout = {childGap = 8, childAlignment = {y = .Center}}},
-			) {
+			zoom_choices := settings_choices()
+			zoom_choices.layout.layoutDirection = .LeftToRight
+			zoom_choices.layout.childGap = 4
+			if clay.UI(clay.ID("ZoomChoices"))(zoom_choices) {
 				clay.Text(
 					fmt.tprintf("%d%%", ui.prefs.zoom_pct),
 					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
@@ -325,7 +328,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 		}
 		if clay.UI(clay.ID("RowBodyFont"))(settings_row(true)) {
 			row_labels(tr("Message text size"), tr("Applies to message bodies and the composer."))
-			if clay.UI(clay.ID("BodyFontChoices"))({layout = {childGap = 6}}) {
+			if clay.UI(clay.ID("BodyFontChoices"))(settings_choices()) {
 				for label, i in BODY_FONT_LABELS {
 					settings_option(
 						"BodyFontChip",
@@ -341,7 +344,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				tr("Emoji style"),
 				tr("Applies to the picker, reactions and emoji in messages."),
 			)
-			if clay.UI(clay.ID("EmojiSetChoices"))({layout = {childGap = 6}}) {
+			if clay.UI(clay.ID("EmojiSetChoices"))(settings_choices()) {
 				for name, set in EMOJI_SET_NAMES {
 					settings_option("EmojiSetChip", u32(set), name, ui.prefs.emoji_set == set)
 				}
@@ -349,7 +352,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 		}
 		if clay.UI(clay.ID("RowScroll"))(settings_row(true)) {
 			row_labels(tr("Scroll speed"), tr("How far the mouse wheel moves the view."))
-			if clay.UI(clay.ID("ScrollChoices"))({layout = {childGap = 6}}) {
+			if clay.UI(clay.ID("ScrollChoices"))(settings_choices()) {
 				for label, i in SCROLL_SPEED_LABELS {
 					settings_option(
 						"ScrollChip",
@@ -408,8 +411,10 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 						{
 							layout = {
 								sizing = {
-									width = clay.SizingFit({min = i == 1 ? 44 : 28}),
-									height = clay.SizingFixed(28),
+									width = clay.SizingFit(
+										{min = settings_tap_size(i == 1 ? 44 : 28)},
+									),
+									height = clay.SizingFixed(settings_tap_size(28)),
 								},
 								padding = {
 									left = 6,
@@ -439,7 +444,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				{
 					layout = {
 						padding = {left = 6, right = 6},
-						sizing = {height = clay.SizingFixed(32)},
+						sizing = {height = clay.SizingFixed(settings_tap_size(32))},
 						childAlignment = {y = .Center},
 					},
 					backgroundColor = hovered() ? HOVER : {},
@@ -461,7 +466,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				tr("Share this theme"),
 				tr("Pick a chat to send it to. They choose whether to use it."),
 			)
-			if clay.UI(clay.ID("ThemeShareActions"))({layout = {childGap = 8}}) {
+			if clay.UI(clay.ID("ThemeShareActions"))(settings_choices()) {
 				append(&theme_control_order, "ThemeShareBtn", "ThemeEditBtn")
 				settings_button("ThemeShareBtn", tr("Share to chat"))
 				settings_button("ThemeEditBtn", tr("Edit"))

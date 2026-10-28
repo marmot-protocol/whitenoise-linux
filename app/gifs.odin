@@ -657,7 +657,11 @@ gif_picker :: proc(ui: ^Ui_State) {
 			selected := ui.gif_saved == saved
 			if clay.UI(clay.ID("GifSource", u32(i)))(
 			{
-				layout = {padding = {top = 4, bottom = 7}},
+				layout = {
+					sizing = {height = clay.SizingFit({min = tap_size() ? 44 : 0})},
+					padding = {top = 4, bottom = 7},
+					childAlignment = {y = .Center},
+				},
 				border = {color = selected ? ACCENT : clay.Color{}, width = {bottom = 2}},
 			},
 			) {
@@ -693,7 +697,7 @@ gif_picker :: proc(ui: ^Ui_State) {
 	for item in ui.gif_library {if item.url != "" {saved_urls[item.url] = true}}
 	if clay.UI(clay.ID("GifGrid"))(
 	{
-		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, childGap = 6},
+		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow({min = 44})}, childGap = 6},
 		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 	},
 	) {
@@ -770,7 +774,10 @@ gif_picker :: proc(ui: ^Ui_State) {
 						if clay.UI(clay.ID("GifSave", u32(i)))(
 						{
 							layout = {
-								sizing = {clay.SizingFixed(28), clay.SizingFixed(28)},
+								sizing = {
+									clay.SizingFixed(tap_size() ? 44 : 28),
+									clay.SizingFixed(tap_size() ? 44 : 28),
+								},
 								childAlignment = {x = .Center, y = .Center},
 							},
 							floating = {
@@ -829,11 +836,12 @@ gif_consent_panel :: proc() {
 	if clay.UI(clay.ID("GifConsent"))(
 	{
 		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
+			sizing = {clay.SizingGrow(), clay.SizingGrow({min = 44})},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(8),
 			childGap = 12,
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 	},
 	) {
 		clay.Text(
@@ -865,6 +873,7 @@ gif_consent_panel :: proc() {
 			login_button("GifConsentYes", tr("Accept"))
 		}
 	}
+	scrollbar(clay.ID("GifConsent"), 14)
 }
 
 @(private)

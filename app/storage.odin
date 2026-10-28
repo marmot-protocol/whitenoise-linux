@@ -216,9 +216,7 @@ settings_storage :: proc(ui: ^Ui_State) {
 					"Images and files kept on this device so they don't download twice, sealed with your vault key.",
 				),
 			)
-			if clay.UI(clay.ID("CacheActions"))(
-			{layout = {childGap = 6, childAlignment = {y = .Center}}},
-			) {
+			if clay.UI(clay.ID("CacheActions"))(settings_choices()) {
 				clay.Text(
 					human_size(ui.cache_bytes),
 					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
@@ -235,8 +233,12 @@ settings_storage :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("StorageBackupsGroup"))(settings_box()) {
 		settings_group(tr("Local data & backups"))
 		if clay.UI(clay.ID("RowLocation"))(settings_row(true)) {
-			row_labels(tr("Location"), data_home)
-			if clay.UI(clay.ID("LocationActions"))({layout = {childGap = 6}}) {
+			row_labels(
+				tr("Location"),
+				text_ellipsis(data_home, settings_body_width(ui) - 48, FONT_BODY, 11),
+			)
+			if hovered() {tooltip(data_home)}
+			if clay.UI(clay.ID("LocationActions"))(settings_choices()) {
 				settings_button("LocCopy", tr("Copy"))
 				when ODIN_OS != .OpenBSD {settings_button("LocOpen", tr("Open folder"))}
 			}
@@ -361,7 +363,10 @@ backup_modal :: proc(ui: ^Ui_State) {
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("BackupModal"), 440))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("BackupModal"), 440)),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			padding = clay.PaddingAll(18),
 			childGap = 10,
 		},
@@ -372,6 +377,7 @@ backup_modal :: proc(ui: ^Ui_State) {
 			attachment = {element = .CenterCenter, parent = .CenterCenter},
 		},
 		backgroundColor = CARD,
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
@@ -388,7 +394,13 @@ backup_modal :: proc(ui: ^Ui_State) {
 			) {}
 			if clay.UI(clay.ID("BackupClose"))(
 			{
-				layout = {padding = clay.PaddingAll(6)},
+				layout = {
+					sizing = {
+						clay.SizingFixed(settings_tap_size(24)),
+						clay.SizingFixed(settings_tap_size(24)),
+					},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(6),
 			},
@@ -405,11 +417,15 @@ backup_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("BackupPwBox"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFixed(settings_tap_size(38)),
+				},
 				padding = {left = 12, right = 12},
 				childAlignment = {y = .Center},
 			},
 			backgroundColor = ROW_BG,
+			clip = {horizontal = true},
 			cornerRadius = rr(9),
 			border = {color = ui.focus == .BackupPw ? ACCENT : FIELD_BORDER, width = bw()},
 		},
@@ -444,12 +460,13 @@ backup_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		if clay.UI(clay.ID("BackupBtns"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}},
-		) {
+		if clay.UI(clay.ID("BackupBtns"))(settings_choices()) {
 			if clay.UI(clay.ID("BackupCancel"))(
 			{
-				layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+				layout = {
+					sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
+					padding = {left = 22, right = 22, top = 9, bottom = 9},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(9),
 				border = {color = FIELD_BORDER, width = bw()},
@@ -462,7 +479,10 @@ backup_modal :: proc(ui: ^Ui_State) {
 			) {}
 			if clay.UI(clay.ID("BackupGo"))(
 			{
-				layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+				layout = {
+					sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
+					padding = {left = 22, right = 22, top = 9, bottom = 9},
+				},
 				backgroundColor = creating ? ACCENT : DANGER,
 				cornerRadius = rr(9),
 			},
@@ -474,4 +494,5 @@ backup_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
+	scrollbar(clay.ID("BackupModal"), 13)
 }

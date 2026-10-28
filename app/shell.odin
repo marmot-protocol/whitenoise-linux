@@ -180,6 +180,7 @@ rail_narrow :: proc(ui: ^Ui_State) -> bool {
 // or collapsed. Existing IDs keep shortcuts and account switching intact.
 @(private)
 shell_navigation :: proc(ui: ^Ui_State) {
+	if single_pane() {return}
 	if clay.UI(clay.ID("RailTop"))(
 	{
 		layout = {
@@ -240,6 +241,60 @@ shell_navigation :: proc(ui: ^Ui_State) {
 		nav_indicator(ui)
 	}
 	scrollbar(clay.ID("RailTop"))
+}
+
+@(private)
+phone_navigation :: proc(ui: ^Ui_State) {
+	if !single_pane() {return}
+	if f32(rl.GetScreenHeight()) / UI_ZOOM < 280 && phone_detail(ui) {return}
+	if compose_keyboard &&
+	   ui.focus == .Compose &&
+	   ui.page == .Chats &&
+	   ui.selected >= 0 &&
+	   !ui.new_chat_open &&
+	   !ui.show_members &&
+	   !modal_open(ui) {return}
+	if f32(rl.GetScreenHeight()) / UI_ZOOM < 320 &&
+	   ui.page == .Chats &&
+	   ui.selected >= 0 &&
+	   !ui.new_chat_open &&
+	   !ui.show_members {return}
+	if clay.UI(clay.ID("PhoneNavigation"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(56)},
+			padding = {left = 4, right = 4, top = 4, bottom = 4},
+			childGap = 2,
+		},
+		backgroundColor = RAIL_BG,
+		border = {color = DIVIDER, width = {top = u16(BORDER_W)}},
+	},
+	) {
+		for page in ([5]Page{.Chats, .Contacts, .Archived, .Profile, .Settings}) {
+			active := ui.page == page
+			if clay.UI(clay.ID("Nav", u32(page)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 4,
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = active ? SELECTED : hovered() ? HOVER : {},
+				cornerRadius = rr(8),
+			},
+			) {
+				clay.Text(
+					PAGE_ICONS[page],
+					{fontId = FONT_ICON, fontSize = 17, textColor = active ? ACCENT : TEXT_DIM},
+				)
+				clay.Text(
+					tr(NAV_TIPS[page]),
+					{fontId = FONT_BODY, fontSize = 10, textColor = active ? TEXT : TEXT_DIM},
+				)
+			}
+		}
+	}
 }
 
 // ── Narrow windows ──────────────────────────────────────────────────
@@ -341,19 +396,48 @@ phone_detail :: proc(ui: ^Ui_State) -> bool {
 // Back chip above the page card, the only way out of the detail when
 // there is no rail on screen to click.
 phone_back :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("PhoneBack"))(
+	if clay.UI(clay.ID("PhoneHeader"))(
 	{
 		layout = {
-			padding = {left = 12, right = 14, top = 8, bottom = 8},
-			childGap = 6,
+			sizing = {width = clay.SizingGrow()},
 			childAlignment = {y = .Center},
+			padding = {right = 12},
 		},
-		backgroundColor = hovered() ? HOVER : {},
-		cornerRadius = rr(9),
 	},
 	) {
-		clay.Text("‹", {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT_DIM})
-		clay.Text(tr("Back"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+		if clay.UI(clay.ID("PhoneBack"))(
+		{
+			layout = {
+				sizing = {height = clay.SizingFixed(44)},
+				padding = {left = 12, right = 14, top = 8, bottom = 8},
+				childGap = 6,
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = hovered() ? HOVER : {},
+			cornerRadius = rr(9),
+		},
+		) {
+			clay.Text("‹", {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT_DIM})
+			clay.Text(tr("Back"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+		}
+		if clay.UI(clay.ID("PhoneHeaderGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+		if clay.UI(clay.ID("PhoneAccount"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingFixed(44), height = clay.SizingFixed(44)},
+				childAlignment = {x = .Center, y = .Center},
+			},
+		},
+		) {
+			avatar(
+				"RailAvatar",
+				0,
+				ui.account_ref,
+				profile_label(nil, ui.account_ref),
+				36,
+				url_pic(ui.my_pic_url),
+			)
+		}
 	}
 }
 
@@ -373,6 +457,12 @@ phone_back_action :: proc(ui: ^Ui_State) {
 	}
 	switch ui.page {
 	case .Chats:
+		if ui.selected >= 0 && ui.selected < len(ui.chats) {
+			stash_draft(ui)
+			stash_staged(ui)
+			ui.settings_dirty = true
+		}
+		compose_keyboard = false
 		ui.whip_open = false
 		ui.selected = -1
 	case .Contacts:
@@ -479,12 +569,18 @@ status_bar :: proc(ui: ^Ui_State) {
 	if len(ui.banner) > 0 {
 		banner_bar(ui)
 	}
+	if single_pane() &&
+	   f32(rl.GetScreenHeight()) / UI_ZOOM < 320 &&
+	   ui.page == .Chats &&
+	   ui.selected >= 0 &&
+	   !ui.new_chat_open &&
+	   !ui.show_members {return}
 	if clay.UI(clay.ID("StatusBar"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(28)},
-			padding = {left = 14, right = 14},
-			childGap = 12,
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(tap_size() ? 44 : 28)},
+			padding = {left = 10, right = 10},
+			childGap = single_pane() ? 6 : 12,
 			childAlignment = {y = .Center},
 		},
 		backgroundColor = STATUS_BAR,
@@ -499,13 +595,15 @@ status_bar :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("StatusGapL"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 
 		syncing := rl.GetTime() - sync_at < SYNCING_SECS
-		status_pill("RelayPill", relay_counter(ui), TEXT_LO, false)
-		status_pill(
-			"SyncPill",
-			syncing ? tr("SYNCING") : tr("SYNCED"),
-			syncing ? ACCENT : TEXT_LO,
-			false,
-		)
+		if !single_pane() {
+			status_pill("RelayPill", relay_counter(ui), TEXT_LO, false)
+			status_pill(
+				"SyncPill",
+				syncing ? tr("SYNCING") : tr("SYNCED"),
+				syncing ? ACCENT : TEXT_LO,
+				false,
+			)
+		}
 		if clay.UI(clay.ID("StatusGapR"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 		micro_button("LockNow", tr("Lock now"))
 
@@ -580,7 +678,13 @@ banner_bar :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("BannerGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 		if clay.UI(clay.ID("BannerCopy"))(
 		{
-			layout = {padding = clay.PaddingAll(6)},
+			layout = {
+				sizing = {
+					width = clay.SizingFixed(tap_size() ? 44 : 24),
+					height = clay.SizingFixed(tap_size() ? 44 : 24),
+				},
+				childAlignment = {x = .Center, y = .Center},
+			},
 			backgroundColor = hovered() ? HOVER : {},
 			cornerRadius = rr(6),
 		},
@@ -592,7 +696,13 @@ banner_bar :: proc(ui: ^Ui_State) {
 		}
 		if clay.UI(clay.ID("BannerClose"))(
 		{
-			layout = {padding = clay.PaddingAll(6)},
+			layout = {
+				sizing = {
+					width = clay.SizingFixed(tap_size() ? 44 : 24),
+					height = clay.SizingFixed(tap_size() ? 44 : 24),
+				},
+				childAlignment = {x = .Center, y = .Center},
+			},
 			backgroundColor = hovered() ? HOVER : {},
 			cornerRadius = rr(6),
 		},

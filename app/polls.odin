@@ -204,10 +204,14 @@ poll_modal :: proc(ui: ^Ui_State) {
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("PollModal"), 460))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("PollModal"), 460)),
+				height = clay.SizingFit({max = modal_h(680)}),
+			},
 			padding = clay.PaddingAll(16),
 			childGap = 10,
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		floating = {
 			attachTo = .Root,
 			zIndex = 11,
@@ -237,18 +241,31 @@ poll_modal :: proc(ui: ^Ui_State) {
 		{
 			layout = {
 				sizing = {width = clay.SizingGrow()},
+				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 				childGap = 8,
 				childAlignment = {y = .Center},
 			},
 		},
 		) {
-			toggle("PollMulti", ui.poll_multi_in)
-			clay.Text(tr("Multiple choice"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+			if clay.UI(clay.ID("PollChoiceRow"))(
+			{layout = {childGap = 8, childAlignment = {y = .Center}}},
+			) {
+				toggle("PollMulti", ui.poll_multi_in)
+				clay.Text(
+					tr("Multiple choice"),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
+				)
+			}
 			if clay.UI(clay.ID("PollBtnGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			login_button("PollCancel", tr("Cancel"))
-			login_button("PollCreate", tr("Create"), primary = true)
+			if clay.UI(clay.ID("PollActions"))(
+			{layout = {childGap = 8, childAlignment = {y = .Center}}},
+			) {
+				login_button("PollCancel", tr("Cancel"))
+				login_button("PollCreate", tr("Create"), primary = true)
+			}
 		}
 	}
+	scrollbar(clay.ID("PollModal"), 12)
 }
 
 poll_close :: proc(ui: ^Ui_State) {

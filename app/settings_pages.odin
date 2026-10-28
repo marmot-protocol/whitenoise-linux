@@ -88,7 +88,7 @@ srow :: proc() -> clay.ElementDeclaration {
 
 // Deliberately separate from srow: profile and other surfaces retain their cards.
 settings_row :: proc(stacked: bool = false) -> clay.ElementDeclaration {
-	stacked := stacked && (g_ui == nil || settings_body_width(g_ui) < 580)
+	stacked := (stacked && (g_ui == nil || settings_body_width(g_ui) < 580)) || single_pane()
 	return {
 		layout = {
 			sizing = {width = clay.SizingGrow()},
@@ -115,6 +115,24 @@ settings_body_width :: proc(ui: ^Ui_State) -> f32 {
 		return appearance_layout(ui).controls
 	}
 	return max(120, settings_content_width(ui) - (settings_main_w(ui) < 560 ? 16 : 32))
+}
+
+// Long translated choices stay in the page's vertical scroll on phones.
+@(private)
+settings_choices :: proc() -> clay.ElementDeclaration {
+	return {
+		layout = {
+			sizing = {width = single_pane() ? clay.SizingGrow() : clay.SizingFit()},
+			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+			childGap = 6,
+			childAlignment = {y = .Center},
+		},
+	}
+}
+
+@(private)
+settings_tap_size :: proc(pointer_size: f32) -> f32 {
+	return tap_size() ? max(44, pointer_size) : pointer_size
 }
 
 @(private)
@@ -182,9 +200,18 @@ settings_check :: proc(id_str: string, checked: bool, title: string, sub: string
 	if clay.UI(clay.ID(id_str))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow()},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFit({min = settings_tap_size(22)}),
+			},
 			childGap = 9,
-			padding = {left = 4, right = 4, top = 3, bottom = 3}, // room for kb_ring
+			childAlignment = {y = .Center},
+			padding = {
+				left = 4,
+				right = 4,
+				top = single_pane() ? 12 : 3,
+				bottom = single_pane() ? 12 : 3,
+			},
 		},
 		backgroundColor = hovered() ? HOVER : {},
 		border = kb_focus == id_str ? kb_ring(ACCENT) : {},
@@ -230,6 +257,7 @@ settings_option :: proc(id_str: string, index: u32, label: string, selected: boo
 	if clay.UI(clay.ID(id_str, index))(
 	{
 		layout = {
+			sizing = {height = clay.SizingFit({min = settings_tap_size(30)})},
 			padding = {left = 10, right = 10, top = 7, bottom = 7},
 			childGap = 6,
 			childAlignment = {y = .Center},
@@ -249,7 +277,10 @@ settings_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
 	if clay.UI(clay.ID(id_str))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFit({min = 56}), height = clay.SizingFixed(30)},
+			sizing = {
+				width = clay.SizingFit({min = 56}),
+				height = clay.SizingFixed(settings_tap_size(30)),
+			},
 			padding = {left = 12, right = 12, top = down},
 			childAlignment = {x = .Center, y = .Center},
 		},
@@ -379,6 +410,7 @@ settings_tab_strip :: proc(ui: ^Ui_State) {
 			sizing = {width = clay.SizingGrow()},
 			childGap = 2,
 			childAlignment = {y = .Bottom},
+			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 		},
 	},
 	) {
@@ -388,8 +420,8 @@ settings_tab_strip :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {
-						width = clay.SizingGrow({max = 120}),
-						height = clay.SizingFixed(selected ? 32 : 29),
+						width = single_pane() ? clay.SizingGrow() : clay.SizingGrow({max = 120}),
+						height = clay.SizingFixed(settings_tap_size(selected ? 32 : 29)),
 					},
 					padding = {left = 8, right = 8},
 					childAlignment = {x = .Center, y = .Center},
@@ -866,14 +898,14 @@ settings_general :: proc(ui: ^Ui_State) {
 			}
 			if clay.UI(clay.ID("RowTimeFmt"))(column) {
 				row_labels(tr("Time format"), "")
-				if clay.UI(clay.ID("TimeFmtCol"))({layout = {childGap = 6}}) {
+				if clay.UI(clay.ID("TimeFmtCol"))(settings_choices()) {
 					settings_option("TimeFmt", 0, "14:30", !ui.prefs.hour12)
 					settings_option("TimeFmt", 1, "2:30 PM", ui.prefs.hour12)
 				}
 			}
 			if clay.UI(clay.ID("RowDateFmt"))(column) {
 				row_labels(tr("Date format"), "")
-				if clay.UI(clay.ID("DateFmtCol"))({layout = {childGap = 6}}) {
+				if clay.UI(clay.ID("DateFmtCol"))(settings_choices()) {
 					for label, i in DATE_FORMATS {
 						settings_option("DateFmt", u32(i), label, ui.prefs.date_format == i)
 					}
@@ -891,7 +923,10 @@ settings_general :: proc(ui: ^Ui_State) {
 					tr("One-tap reactions"),
 					tr("Shown on the message menu. Tap one to remove it. Up to 16."),
 				)
-				columns := max(1, int((settings_body_width(ui) - 24) / 32))
+				columns := max(
+					1,
+					int((settings_body_width(ui) - 24) / (settings_tap_size(24) + 8)),
+				)
 				for first := 0; first < len(ui.prefs.quick_reactions); first += columns {
 					if clay.UI(clay.ID("QuickChoiceRow", u32(first)))({layout = {childGap = 8}}) {
 						for i in first ..< min(first + columns, len(ui.prefs.quick_reactions)) {
@@ -900,8 +935,8 @@ settings_general :: proc(ui: ^Ui_State) {
 							{
 								layout = {
 									sizing = {
-										width = clay.SizingFixed(24),
-										height = clay.SizingFixed(24),
+										width = clay.SizingFixed(settings_tap_size(24)),
+										height = clay.SizingFixed(settings_tap_size(24)),
 									},
 									childAlignment = {x = .Center, y = .Center},
 								},
@@ -927,7 +962,7 @@ settings_general :: proc(ui: ^Ui_State) {
 						}
 					}
 				}
-				if len(ui.prefs.quick_reactions) < QUICK_MAX do if clay.UI(clay.ID("QuickAdd"))({layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
+				if len(ui.prefs.quick_reactions) < QUICK_MAX do if clay.UI(clay.ID("QuickAdd"))({layout = {sizing = {clay.SizingFixed(settings_tap_size(28)), clay.SizingFixed(settings_tap_size(28))}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
 					clay.Text("+", {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
 				}
 			}
@@ -948,6 +983,11 @@ settings_general :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("EmojiChip", u32(i)))(
 					{
 						layout = {
+							sizing = {
+								width = clay.SizingGrow(),
+								height = clay.SizingFit({min = settings_tap_size(24)}),
+							},
+							layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 							padding = {left = 6, right = 8, top = 3, bottom = 3},
 							childGap = 5,
 							childAlignment = {y = .Center},
@@ -992,7 +1032,7 @@ settings_general :: proc(ui: ^Ui_State) {
 						}
 					}
 				}
-				if !emoji_busy do if clay.UI(clay.ID("EmojiAdd"))({layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
+				if !emoji_busy do if clay.UI(clay.ID("EmojiAdd"))({layout = {sizing = {clay.SizingFixed(settings_tap_size(28)), clay.SizingFixed(settings_tap_size(28))}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
 					clay.Text("+", {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
 				}
 			}
@@ -1007,6 +1047,7 @@ settings_general :: proc(ui: ^Ui_State) {
 				{
 					layout = {
 						sizing = {width = clay.SizingGrow()},
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 						childGap = 10,
 						childAlignment = {y = .Center},
 					},
@@ -1018,7 +1059,7 @@ settings_general :: proc(ui: ^Ui_State) {
 						&ui.emoji_name,
 						"party_parrot",
 						ui.focus == .EmojiName,
-						min(220, settings_body_width(ui) - 200),
+						single_pane() ? 0 : min(220, settings_body_width(ui) - 200),
 					)
 					if !emoji_busy {settings_button("EmojiSave", tr("Save"))}
 					settings_button("EmojiCancel", tr("Cancel"))
@@ -1100,11 +1141,19 @@ emoji_sets_spinner :: proc(id: string, index: u32 = 0) {
 @(private)
 emoji_set_author :: proc(id: u32, author: string) {
 	if clay.UI(clay.ID("EmojiSetAuthor", id))(
-	{layout = {childGap = 6, childAlignment = {y = .Center}}},
+	{
+		layout = {
+			sizing = {width = single_pane() ? clay.SizingGrow() : clay.SizingFit()},
+			childGap = 6,
+			childAlignment = {y = .Center},
+		},
+		clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+	},
 	) {
 		emoji_set_text(tr("Author"))
 		render_segs(id, []Inline_Seg{{hex = author}}, 12, TEXT, 12, true)
 	}
+	scrollbar(clay.ID("EmojiSetAuthor", id))
 }
 
 @(private)
@@ -1192,6 +1241,7 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 					childGap = 12,
 					childAlignment = {y = .Center},
 				},
@@ -1230,7 +1280,11 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("EmojiSetRow", u32(i)))(
 				{
 					layout = {
-						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(88)},
+						sizing = {
+							width = clay.SizingGrow(),
+							height = single_pane() ? clay.SizingFit({min = 88}) : clay.SizingFixed(88),
+						},
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 						padding = clay.PaddingAll(12),
 						childGap = 14,
 						childAlignment = {y = .Center},
@@ -1296,9 +1350,7 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 								wrapMode = .None,
 							},
 						)
-						if clay.UI(clay.ID("EmojiSetRowMeta", u32(i)))(
-						{layout = {childGap = 14, childAlignment = {y = .Center}}},
-						) {
+						if clay.UI(clay.ID("EmojiSetRowMeta", u32(i)))(settings_choices()) {
 							emoji_set_author(0x480000 + u32(i), set.author)
 							emoji_set_text(fmt.tprintf(tr("%d emoji"), len(set.items)))
 						}
@@ -1307,7 +1359,7 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 			}
 			if matched == 0 &&
 			   !busy {emoji_set_text(len(ui.emoji_sets) == 0 ? tr("No emoji sets found. Refresh to try again, or check your event-fetch relays.") : tr("No emoji sets match your search."))}
-			if pages > 1 do if clay.UI(clay.ID("EmojiSetsPages"))({layout = {childGap = 12, childAlignment = {y = .Center}}}) {
+			if pages > 1 do if clay.UI(clay.ID("EmojiSetsPages"))(settings_choices()) {
 				settings_button("EmojiSetsPrev", tr("Previous"), ui.emoji_sets_page == 0 ? TEXT_DIM : clay.Color{})
 				emoji_set_text(fmt.tprintf(tr("Page %d of %d"), ui.emoji_sets_page + 1, pages))
 				settings_button("EmojiSetsNext", tr("Next"), ui.emoji_sets_page + 1 == pages ? TEXT_DIM : clay.Color{})
@@ -1325,7 +1377,7 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 		emoji_set_text(fmt.tprintf(tr("%d emoji"), len(set.items)))
 		if set.description !=
 		   "" {emoji_set_text(text_ellipsis(set.description, settings_body_width(ui) - 48, FONT_BODY, 12))}
-		if clay.UI(clay.ID("EmojiSetActions"))({layout = {childGap = 10}}) {
+		if clay.UI(clay.ID("EmojiSetActions"))(settings_choices()) {
 			settings_button("EmojiSetsImport", tr("Import set"), busy ? TEXT_DIM : clay.Color{})
 			if hovered() {tooltip(tr("Existing shortcodes are never replaced."))}
 			settings_button(
@@ -1396,8 +1448,8 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 							{
 								layout = {
 									sizing = {
-										width = clay.SizingFixed(22),
-										height = clay.SizingFixed(22),
+										width = clay.SizingFixed(settings_tap_size(22)),
+										height = clay.SizingFixed(settings_tap_size(22)),
 									},
 									childAlignment = {x = .Center, y = .Center},
 								},
@@ -1903,7 +1955,10 @@ lang_modal :: proc(ui: ^Ui_State) {
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("LangModal"), 280))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("LangModal"), 280)),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			padding = clay.PaddingAll(16),
 			childGap = 6,
 		},
@@ -1914,6 +1969,7 @@ lang_modal :: proc(ui: ^Ui_State) {
 			attachment = {element = .CenterCenter, parent = .CenterCenter},
 		},
 		backgroundColor = CARD,
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
@@ -1930,7 +1986,13 @@ lang_modal :: proc(ui: ^Ui_State) {
 			) {}
 			if clay.UI(clay.ID("LangClose"))(
 			{
-				layout = {padding = clay.PaddingAll(6)},
+				layout = {
+					sizing = {
+						clay.SizingFixed(settings_tap_size(24)),
+						clay.SizingFixed(settings_tap_size(24)),
+					},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(6),
 			},
@@ -1943,7 +2005,10 @@ lang_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("LangOpt", u32(i)))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow()},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFit({min = settings_tap_size(32)}),
+					},
 					padding = clay.PaddingAll(10),
 					childGap = 8,
 					childAlignment = {y = .Center},
@@ -1962,6 +2027,7 @@ lang_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
+	scrollbar(clay.ID("LangModal"), 12)
 }
 
 SHORTCUTS := [][2]string {
@@ -1985,7 +2051,10 @@ shortcuts_modal :: proc(ui: ^Ui_State) {
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("ShortModal"), 340))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("ShortModal"), 340)),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			padding = clay.PaddingAll(16),
 			childGap = 8,
 		},
@@ -1996,6 +2065,7 @@ shortcuts_modal :: proc(ui: ^Ui_State) {
 			attachment = {element = .CenterCenter, parent = .CenterCenter},
 		},
 		backgroundColor = CARD,
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
@@ -2012,7 +2082,13 @@ shortcuts_modal :: proc(ui: ^Ui_State) {
 			) {}
 			if clay.UI(clay.ID("ShortClose"))(
 			{
-				layout = {padding = clay.PaddingAll(6)},
+				layout = {
+					sizing = {
+						clay.SizingFixed(settings_tap_size(24)),
+						clay.SizingFixed(settings_tap_size(24)),
+					},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(6),
 			},
@@ -2025,6 +2101,7 @@ shortcuts_modal :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 					childGap = 10,
 					childAlignment = {y = .Center},
 				},
@@ -2038,6 +2115,7 @@ shortcuts_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
+	scrollbar(clay.ID("ShortModal"), 12)
 }
 
 human_size :: proc(n: i64) -> string {

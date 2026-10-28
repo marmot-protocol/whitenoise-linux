@@ -934,7 +934,10 @@ geo_controls :: proc(id: u32, view: Geo_View) {
 			if clay.UI(clay.ID("GeoButton", id * 4 + u32(i)))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(28)},
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? 44 : 28),
+						height = clay.SizingFixed(tap_size() ? 44 : 28),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : fade(PLATE, 0.92),
@@ -1201,7 +1204,7 @@ geo_picker :: proc(ui: ^Ui_State) {
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {clay.SizingFixed(w), clay.SizingFit({max = max(120, h - 40)})},
+			sizing = {clay.SizingFixed(w), clay.SizingFit({max = modal_h(h - 40)})},
 			padding = clay.PaddingAll(16),
 			childGap = 10,
 		},
@@ -1217,7 +1220,21 @@ geo_picker :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(tr("Send location"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
+		if clay.UI(clay.ID("LocationHeader"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
+			clay.Text(tr("Send location"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
+			if clay.UI(clay.ID("LocationHeaderGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
+			micro_button("LocationClose", tr("Close"))
+		}
 		clay.Text(
 			tr("Drag the map to place the pin, or use your current location."),
 			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
@@ -1270,13 +1287,14 @@ geo_picker :: proc(ui: ^Ui_State) {
 			if ui.location_selected {login_button("LocationSend", tr("Send location"), primary = true)}
 		}
 	}
+	scrollbar(clay.ID("LocationModal"), 12)
 }
 
 @(private)
 handle_geo_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !ui.location_open {return}
 	if !geo_picker_valid(ui) {geo_picker_close(ui); return}
-	if rl.IsKeyPressed(.ESCAPE) || clicked("LocationCancel") {
+	if rl.IsKeyPressed(.ESCAPE) || clicked("LocationCancel") || clicked("LocationClose") {
 		geo_picker_close(ui)
 		return
 	}

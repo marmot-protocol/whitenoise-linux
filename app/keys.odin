@@ -541,7 +541,10 @@ export_modal :: proc(ui: ^Ui_State) {
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("ExportModal"), 440))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("ExportModal"), 440)),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			padding = clay.PaddingAll(18),
 			childGap = 10,
 		},
@@ -552,6 +555,7 @@ export_modal :: proc(ui: ^Ui_State) {
 			attachment = {element = .CenterCenter, parent = .CenterCenter},
 		},
 		backgroundColor = CARD,
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
@@ -568,7 +572,13 @@ export_modal :: proc(ui: ^Ui_State) {
 			) {}
 			if clay.UI(clay.ID("ExportClose"))(
 			{
-				layout = {padding = clay.PaddingAll(6)},
+				layout = {
+					sizing = {
+						clay.SizingFixed(settings_tap_size(24)),
+						clay.SizingFixed(settings_tap_size(24)),
+					},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(6),
 			},
@@ -589,11 +599,15 @@ export_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("ExportPwBox"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(settings_tap_size(38)),
+					},
 					padding = {left = 12, right = 12},
 					childAlignment = {y = .Center},
 				},
 				backgroundColor = ROW_BG,
+				clip = {horizontal = true},
 				cornerRadius = rr(9),
 				border = {color = ui.focus == .ExportPw ? ACCENT : FIELD_BORDER, width = bw()},
 			},
@@ -626,12 +640,13 @@ export_modal :: proc(ui: ^Ui_State) {
 					)
 				}
 			}
-			if clay.UI(clay.ID("ExportBtns"))(
-			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}},
-			) {
+			if clay.UI(clay.ID("ExportBtns"))(settings_choices()) {
 				if clay.UI(clay.ID("ExportCancel"))(
 				{
-					layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+					layout = {
+						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
+						padding = {left = 22, right = 22, top = 9, bottom = 9},
+					},
 					backgroundColor = hovered() ? HOVER : {},
 					cornerRadius = rr(9),
 					border = {color = FIELD_BORDER, width = bw()},
@@ -644,7 +659,10 @@ export_modal :: proc(ui: ^Ui_State) {
 				) {}
 				if clay.UI(clay.ID("ExportGo"))(
 				{
-					layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+					layout = {
+						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
+						padding = {left = 22, right = 22, top = 9, bottom = 9},
+					},
 					backgroundColor = DANGER,
 					cornerRadius = rr(9),
 				},
@@ -680,8 +698,15 @@ export_modal :: proc(ui: ^Ui_State) {
 				// One unbroken token: clay wraps on words only, so chunk
 				// it into fixed slices or the plate blows past the modal.
 				key := ui.export_result
+				columns := max(
+					1,
+					int(
+						(modal_w(clay.ID("ExportModal"), 440) - 56) /
+						max(1, rl.MeasureTextLine(FONT_MONO, 11, "M", 0).x),
+					),
+				)
 				for len(key) > 0 {
-					n := min(len(key), 52)
+					n := min(len(key), columns)
 					clay.Text(key[:n], {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
 					key = key[n:]
 				}
@@ -704,7 +729,10 @@ export_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("ExportDoneRow"))({layout = {padding = {top = 8}}}) {
 				if clay.UI(clay.ID("ExportDone"))(
 				{
-					layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+					layout = {
+						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
+						padding = {left = 22, right = 22, top = 9, bottom = 9},
+					},
 					backgroundColor = hovered() ? HOVER : {},
 					cornerRadius = rr(9),
 					border = {color = FIELD_BORDER, width = bw()},
@@ -715,4 +743,5 @@ export_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
+	scrollbar(clay.ID("ExportModal"), 12)
 }

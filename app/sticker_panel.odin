@@ -28,7 +28,7 @@ sticker_control :: proc(id: string, index: u32, label: string, style := Sticker_
 	if clay.UI(clay.ID(id, index))(
 	{
 		layout = {
-			sizing = {height = clay.SizingFixed(34)},
+			sizing = {height = clay.SizingFixed(tap_size() ? 44 : 34)},
 			padding = {left = 10, right = 10},
 			childAlignment = {y = .Center},
 		},
@@ -252,7 +252,7 @@ sticker_picker :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("StickerPacks"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(tap_size() ? 44 : 34)},
 			childGap = 6,
 		},
 		clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
@@ -273,6 +273,7 @@ sticker_picker :: proc(ui: ^Ui_State) {
 		)
 		for pack, i in ui.sticker_packs {sticker_control("StickerPack", u32(i), pack.title, ui.sticker_filter == pack.coordinate ? .Selected : .Normal)}
 	}
+	scrollbar(clay.ID("StickerPacks"), 13)
 	if clay.UI(clay.ID("PickerSearch"))(
 	{
 		layout = {
@@ -288,7 +289,7 @@ sticker_picker :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("StickerGrid"))(
 	{
 		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
+			sizing = {clay.SizingGrow(), clay.SizingGrow({min = 44})},
 			layoutDirection = .TopToBottom,
 			childGap = 4,
 		},
@@ -406,6 +407,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 			padding = clay.PaddingAll(16),
 			childGap = 16,
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
 		border = {color = CARD_BORDER, width = bw()},
@@ -449,7 +451,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("StickerContent", u32(ui.sticker_page)))(
 		{
 			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				sizing = {clay.SizingGrow(), clay.SizingGrow({min = 44})},
 				layoutDirection = .TopToBottom,
 				childGap = 12,
 			},
@@ -690,6 +692,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
+	scrollbar(clay.ID("StickerPanel"), 16)
 }
 
 @(private)

@@ -351,14 +351,19 @@ handle_mention :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 // The popover, floated above the composer. Declared inside ComposeBox
 // so attachTo .Parent resolves without a forward id reference.
 mention_popover :: proc(ui: ^Ui_State) {
+	height := modal_h(300)
+	if box, ok := element_box(clay.ID("ComposeBox"));
+	   ok {height = max(44, min(height, box.y - 12))}
+	width := max(44, min(280, page_w(ui) - 64))
 	if clay.UI(clay.ID("MentionPop"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(280)},
+			sizing = {width = clay.SizingFixed(width), height = clay.SizingFit({max = height})},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(6),
 			childGap = 2,
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		backgroundColor = CARD,
 		cornerRadius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
@@ -377,7 +382,7 @@ mention_popover :: proc(ui: ^Ui_State) {
 				clay.Text(
 					text_ellipsis(
 						fmt.tprintf(tr("No one in this chat matches @%s."), query),
-						256,
+						width - 24,
 						FONT_BODY,
 						13,
 					),
@@ -391,7 +396,10 @@ mention_popover :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("MentionCand", u32(i)))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow()},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFit({min = tap_size() ? 44 : 0}),
+					},
 					padding = clay.PaddingAll(6),
 					childGap = 8,
 					childAlignment = {y = .Center},
@@ -409,12 +417,13 @@ mention_popover :: proc(ui: ^Ui_State) {
 					url_pic(member.pic_url),
 				)
 				clay.Text(
-					member.name,
+					text_ellipsis(member.name, width - 54, FONT_BODY, 13),
 					{fontId = FONT_BODY, fontSize = 13, textColor = sel ? ACCENT : TEXT},
 				)
 			}
 		}
 	}
+	scrollbar(clay.ID("MentionPop"), 13)
 }
 
 // ── mentions inbox ──────────────────────────────────────────────────
@@ -554,7 +563,10 @@ mention_inbox :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("MiModal"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(fit_w(420))},
+			sizing = {
+				width = clay.SizingFixed(fit_w(420)),
+				height = clay.SizingFit({max = modal_h(500)}),
+			},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(12),
 			childGap = 6,
@@ -563,11 +575,14 @@ mention_inbox :: proc(ui: ^Ui_State) {
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 		floating = {
-			attachTo = .ElementWithId,
+			attachTo = single_pane() ? .Root : .ElementWithId,
 			parentId = clay.ID("BellBtn").id,
 			zIndex = 13,
-			offset = {0, 8 + rise(clay.ID("MiModal"))},
-			attachment = {element = .RightTop, parent = .RightBottom},
+			offset = {0, (single_pane() ? 0 : 8) + rise(clay.ID("MiModal"))},
+			attachment = {
+				element = single_pane() ? .CenterCenter : .RightTop,
+				parent = single_pane() ? .CenterCenter : .RightBottom,
+			},
 		},
 	},
 	) {
@@ -582,7 +597,10 @@ mention_inbox :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("MiClose"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(24), height = clay.SizingFixed(24)},
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? 44 : 24),
+						height = clay.SizingFixed(tap_size() ? 44 : 24),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : {},

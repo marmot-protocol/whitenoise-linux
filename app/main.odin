@@ -152,6 +152,9 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 	if mouse_pressed() {
 		whip_workspace_navigation(ui)
 		kb_focus = ""
+		if tap_size() && !clay.PointerOver(clay.ID("ComposeBox")) {
+			compose_keyboard = false
+		}
 	}
 	clay.BeginLayout()
 
@@ -300,6 +303,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			export_progress(ui)
 			contacts_import_progress(ui)
 			status_bar(ui)
+			phone_navigation(ui)
 			whip_attach_overlays(ui)
 
 			// One backdrop for every centered modal, whichever pane drew it.
@@ -1407,6 +1411,28 @@ app_main :: proc() {
 				}
 			}
 
+			native_drag :=
+				whip_attach_pointer(&ui) ||
+				(web_modal.open && clay.PointerOver(clay.ID("WebPage"))) ||
+				(preview_shown &&
+						(preview.kind == .Image || preview.kind == .Slides) &&
+						clay.PointerOver(clay.ID("PvScroll"))) ||
+				(ui.photo.crop.active && clay.PointerOver(clay.ID("PhotoImage")))
+			for pane in rl.WhipPanes() {
+				if clay.PointerOver(
+					clay.ID("WhipPaneContent", pane.id),
+				) {native_drag = true; break}
+			}
+			update_drag_scroll(
+				&ui,
+				native_drag ||
+				text_drag != nil ||
+				orbit_hover != nil ||
+				geo_hover != "" ||
+				geo_drag != "" ||
+				fan_open() ||
+				video_bar_active(),
+			)
 			long_press_tick() // before any handler reads long_pressed
 			location_captured = location_captured || ui.location_open
 			whip_captured := !photo_captured && !location_captured && whip_attach_input(&ui)
@@ -1515,21 +1541,11 @@ app_main :: proc() {
 			   !ui.link_open &&
 			   !ui.gs_open &&
 			   ui.confirm.kind == .None {
-				handle_body_sel(&ui)
+				if !rl.HasTouch() {handle_body_sel(&ui)}
 				handle_body_copy(&ui)
 				// A press that missed a body drags the timeline instead, and
 				// a drag that moved is not a click on whatever is under it.
 				handle_react_fan(&ui, client)
-				update_drag_scroll(
-					&ui,
-					sel_dragging ||
-					orbit_hover != nil ||
-					geo_hover != "" ||
-					geo_drag != "" ||
-					modal_open(&ui) ||
-					fan_open() ||
-					video_bar_active(),
-				)
 				if len(ui.sel_copy) == 0 && !drag_moved {
 					handle_link_click(&ui)
 					if md_code_hover != "" && mouse_released() {
@@ -1558,11 +1574,6 @@ app_main :: proc() {
 			// Text input follows the field, not the window: it drives the
 			// IME and it is what raises and dismisses a phone's on-screen
 			// keyboard. The area points the compositor at the caret.
-			// ponytail: a chat opens with the composer focused, so on a
-			// phone the keyboard comes up with the chat. TODO: confirm on
-			// hardware (phosh/squeekboard) whether that reads as helpful or
-			// as in the way; if it is in the way, the fix is a focus state
-			// that starts empty on a tap_size() window and fills on a tap.
 			if photo_captured || location_captured || ui.location_open {
 				text_field_live = false
 				for rl.GetCharPressed() != 0 {}

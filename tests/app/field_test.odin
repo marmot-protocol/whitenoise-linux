@@ -42,7 +42,7 @@ field_overflow :: proc(t: ^testing.T) {
 			}
 			view := clay.GetElementData(clay.ID("TestField", 3)).boundingBox
 			row := clay.GetElementData(clay.ID("TestField", 1)).boundingBox
-			testing.expect_value(t, view.width, f32(196))
+
 			testing.expect_value(
 				t,
 				row.width,

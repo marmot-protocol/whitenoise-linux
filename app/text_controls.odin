@@ -73,10 +73,14 @@ scroll_drag: Scroll_Drag
 // something above the modal's zIndex or the thumb paints beneath it.
 scrollbar :: proc(container: clay.ElementId, z: i16 = 5) {
 	data := clay.GetScrollContainerData(container)
+	if data.found &&
+	   (data.contentDimensions.width > data.scrollContainerDimensions.width ||
+			   data.contentDimensions.height > data.scrollContainerDimensions.height) {
+		append(&drag_targets, container)
+	}
 	if !data.found || data.contentDimensions.height <= data.scrollContainerDimensions.height {
 		return
 	}
-	append(&drag_targets, container) // a finger can throw this one
 	track := data.scrollContainerDimensions.height
 	thumb := max(24, track * data.scrollContainerDimensions.height / data.contentDimensions.height)
 	span := data.contentDimensions.height - data.scrollContainerDimensions.height

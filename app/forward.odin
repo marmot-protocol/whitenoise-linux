@@ -49,7 +49,10 @@ forward_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("FwdModal"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("FwdModal"), 440))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("FwdModal"), 440)),
+				height = clay.SizingFit({max = modal_h(480)}),
+			},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(20),
 			childGap = 12,
@@ -76,7 +79,10 @@ forward_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("FwdClose"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? 44 : 26),
+						height = clay.SizingFixed(tap_size() ? 44 : 26),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : {},
@@ -90,7 +96,10 @@ forward_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("FwdFilter"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFixed(tap_size() ? 44 : 36),
+				},
 				padding = {left = 12, right = 12},
 				childAlignment = {y = .Center},
 			},
@@ -139,7 +148,19 @@ forward_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					avatar("FwdAvatar", u32(i), chat.avatar_key, chat.title, 30, chat_pic(chat))
-					clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+					if clay.UI(clay.ID("FwdTitle", u32(i)))(
+					{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+					) {
+						clay.Text(
+							chat.title,
+							{
+								fontId = FONT_TITLE,
+								fontSize = 13,
+								textColor = TEXT,
+								wrapMode = .None,
+							},
+						)
+					}
 				}
 			}
 			if shown == 0 {
