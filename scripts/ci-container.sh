@@ -29,6 +29,9 @@ case "${1:-}" in
         rustup="wn-ci-rustup-$kind-$key"
         if [ "$kind" = cross ]; then rustup="wn-rustup-$key"; fi
         args+=(-v "$rustup:/root/.rustup")
+        if [ "$kind" = native ]; then
+          args+=(--cap-drop=DAC_OVERRIDE --cap-drop=DAC_READ_SEARCH)
+        fi
         ;;
       flatpak)
         image=ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
@@ -52,7 +55,6 @@ case "${1:-}" in
     done
     mkdir -p "$cache/registry" "$cache/git" "$cache/vcpkg"
     podman run --detach --name "$name" --init "${limits[@]}" \
-      --cap-drop=DAC_OVERRIDE --cap-drop=DAC_READ_SEARCH \
       -v "$GITHUB_WORKSPACE:/work" -v "$cache:$cache" \
       -v "$RUNNER_TEMP:$RUNNER_TEMP" \
       -v "$cache/registry:/root/.cargo/registry" -v "$cache/git:/root/.cargo/git" \

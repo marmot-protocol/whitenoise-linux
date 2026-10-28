@@ -18,7 +18,7 @@
 name: Release
 
 on:
-  # A manual run builds and smokes only unsigned Flatpak/Orchard artifacts.
+  # A manual run builds and smokes unsigned Flatpak/Orchard and Arch artifacts.
   # Even when dispatched against a tag, it cannot enter publishing jobs.
   workflow_dispatch:
   pull_request:
@@ -376,7 +376,7 @@ jobs:
   # The tarball the AUR's whitenoise-linux-bin installs, built on Arch
   # against Arch's libraries from the same metadata as whitenoise-linux-git.
   archlinux:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     name: Arch Linux (x86_64)
     runs-on: [self-hosted, Linux, X64, wn-build-server, arch, wn-cache-1]
     defaults:
@@ -397,6 +397,7 @@ jobs:
           rm -rf dist build/arch
 
       - name: Check release version
+        if: github.event_name == 'push'
         run: bash scripts/version.sh "$GITHUB_REF_NAME"
 
       - name: Install build dependencies
@@ -420,9 +421,9 @@ jobs:
 
       - name: Build
         env:
-          WN_RELEASE_VERSION: ${{ github.ref_name }}
-          WN_METRICS_WRITE_TOKEN: ${{ secrets.WN_METRICS_WRITE_TOKEN }}
-          WN_AUDIT_WRITE_TOKEN: ${{ secrets.WN_AUDIT_WRITE_TOKEN }}
+          WN_RELEASE_VERSION: ${{ github.event_name == 'push' && github.ref_name || '' }}
+          WN_METRICS_WRITE_TOKEN: ${{ github.event_name == 'push' && secrets.WN_METRICS_WRITE_TOKEN || '' }}
+          WN_AUDIT_WRITE_TOKEN: ${{ github.event_name == 'push' && secrets.WN_AUDIT_WRITE_TOKEN || '' }}
         run: scripts/arch-package.sh
 
       - uses: actions/upload-artifact@v4
