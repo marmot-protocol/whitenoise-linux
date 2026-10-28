@@ -172,13 +172,15 @@ agent_setup_view :: proc(ui: ^Ui_State, npub: string) {
 	index := ui.agent_connector - 1
 	connector := AGENT_CONNECTORS[index]
 	width := settings_body_width(ui)
+	stacked := width < 420
+	hero_inner := max(1, width - (stacked ? 24 : 48))
 	settings_button("AgentBack", tr("Back to connectors"))
 	if clay.UI(clay.ID("AgentHero"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow()},
+			sizing = {width = clay.SizingFixed(width)},
 			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(24),
+			padding = stacked ? clay.PaddingAll(12) : clay.PaddingAll(24),
 			childGap = 20,
 		},
 		backgroundColor = PANEL,
@@ -189,17 +191,21 @@ agent_setup_view :: proc(ui: ^Ui_State, npub: string) {
 		if clay.UI(clay.ID("AgentHeroIdentity"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow()},
+				sizing = {width = clay.SizingFixed(hero_inner)},
+				layoutDirection = stacked ? .TopToBottom : .LeftToRight,
 				childGap = 20,
 				childAlignment = {y = .Center},
 			},
 		},
 		) {
-			agent_logo(index, width < 420 ? 56 : 72)
+			agent_logo(index, stacked ? 56 : 72)
 			if clay.UI(clay.ID("AgentHeroName"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow()},
+					// Reserve the connector, bridge and both gaps before wrapping the name.
+					sizing = {
+						width = clay.SizingFixed(stacked ? hero_inner : hero_inner - 72 - 79 - 40),
+					},
 					layoutDirection = .TopToBottom,
 					childGap = 7,
 				},
@@ -214,7 +220,15 @@ agent_setup_view :: proc(ui: ^Ui_State, npub: string) {
 					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 				)
 			}
-			if width >= 420 {
+			if clay.UI(clay.ID("AgentHeroBridge"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(79)},
+					childGap = 20,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
 				clay.Text(ICON_RIGHT, {fontId = FONT_ICON, fontSize = 20, textColor = ACCENT})
 				logo_mark()
 			}

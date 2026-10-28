@@ -710,6 +710,7 @@ Ui_State :: struct {
 	poll_inputs:                                           [dynamic][dynamic]u8, // option drafts, blanks skipped
 	poll_focus:                                            int, // which option input has the caret (focus == .PollOpt)
 	poll_multi_in:                                         bool, // modal's multiple-choice toggle
+	poll_error:                                            Poll_Error,
 	location_open:                                         bool,
 	location_selected:                                     bool,
 	location_busy:                                         bool,

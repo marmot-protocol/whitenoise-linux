@@ -28,8 +28,8 @@ msgid "%d bytes"
 msgstr "%d byte"
 
 #, c-format
-msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
-msgstr "%d in connessione, %d in attesa, %d disconnessi, %d inattivi."
+msgid "%d connecting"
+msgstr "%d in connessione"
 
 #, c-format
 msgid "%d day"
@@ -120,6 +120,10 @@ msgid "%d months ago"
 msgstr "%d mesi fa"
 
 #, c-format
+msgid "%d not connected"
+msgstr "%d non connessi"
+
+#, c-format
 msgid "%d of %d"
 msgstr "%d di %d"
 
@@ -182,6 +186,10 @@ msgstr "%d secondi fa"
 #, c-format
 msgid "%d votes"
 msgstr "%d voti"
+
+#, c-format
+msgid "%d waiting to connect"
+msgstr "%d in attesa di connessione"
 
 #, c-format
 msgid "%d year ago"
@@ -248,6 +256,14 @@ msgid "%s renamed the group to %s"
 msgstr "%s ha rinominato il gruppo in %s"
 
 #, c-format
+msgid "%s set disappearing messages to %s"
+msgstr "%s ha impostato i messaggi effimeri su %s"
+
+#, c-format
+msgid "%s turned off disappearing messages"
+msgstr "%s ha disattivato i messaggi effimeri"
+
+#, c-format
 msgid "%s was added to the group"
 msgstr "%s è stato aggiunto al gruppo"
 
@@ -300,6 +316,9 @@ msgstr "Una casella spuntata indica che hai messo la chat a mano. Togli la spunt
 
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "Un client desktop per chat di gruppo private. I messaggi vengono sigillati con MLS su questa macchina, consegnati ai relay Nostr come blob opachi e riaperti solo all'interno del gruppo."
+
+msgid "A display name is required."
+msgstr "È necessario un nome visualizzato."
 
 msgid "A key package lets people invite you to encrypted chats."
 msgstr "Un pacchetto chiavi permette agli altri di invitarti nelle chat crittografate."
@@ -369,11 +388,17 @@ msgstr "Azione non riuscita: %s"
 msgid "Add"
 msgstr "Aggiungi"
 
+msgid "Add a question for your poll."
+msgstr "Aggiungi una domanda per il tuo sondaggio."
+
 msgid "Add account"
 msgstr "Aggiungi account"
 
 msgid "Add an option..."
 msgstr "Aggiungi un'opzione..."
+
+msgid "Add at least two options."
+msgstr "Aggiungi almeno due opzioni."
 
 msgid "Add member"
 msgstr "Aggiungi membro"
@@ -416,9 +441,6 @@ msgstr "Avanzate"
 
 msgid "Agent connector documentation"
 msgstr "Documentazione del connettore per agenti"
-
-msgid "Aggregate connection counter from the relay pool."
-msgstr "Contatore connessioni aggregato dal pool relay."
 
 msgid "Airmail"
 msgstr "Posta aerea"
@@ -509,6 +531,9 @@ msgstr "Fai una domanda..."
 
 msgid "Asking your relays for their key package."
 msgstr "Richiesta del suo pacchetto chiavi ai tuoi relay."
+
+msgid "Attach a file"
+msgstr "Allega un file"
 
 msgid "Attachment"
 msgstr "Allegato"
@@ -716,9 +741,8 @@ msgstr "Centra la conversazione"
 msgid "Chalk-drawn surfaces"
 msgstr "Superfici disegnate col gesso"
 
-#, fuzzy
 msgid "Change disappearing messages?"
-msgstr "Messaggi effimeri"
+msgstr "Modificare i messaggi effimeri?"
 
 msgid "Change password"
 msgstr "Cambia password"
@@ -753,9 +777,8 @@ msgstr "Cambia il tema"
 msgid "Change the time format"
 msgstr "Cambia il formato dell'ora"
 
-#, fuzzy
 msgid "Change timer"
-msgstr "Cambia il tema"
+msgstr "Cambia timer"
 
 msgid "Change vault password"
 msgstr "Cambia la password della cassaforte"
@@ -1080,9 +1103,6 @@ msgstr "Contatto"
 msgid "Contact list collapsed"
 msgstr "Elenco contatti compresso"
 
-msgid "Contacts first, then A-Z"
-msgstr "Prima i contatti, poi A-Z"
-
 #, c-format
 msgid "Contacts imported: %d added, %d skipped, %d failed."
 msgstr "Contatti importati: %d aggiunti, %d saltati, %d non riusciti."
@@ -1181,9 +1201,8 @@ msgstr "Impossibile modificare i log di audit. %s"
 msgid "Couldn't change diagnostics sharing. Please try again."
 msgstr "Impossibile modificare la condivisione della diagnostica. Riprova."
 
-#, fuzzy
 msgid "Couldn't change disappearing messages. Please try again."
-msgstr "Impossibile cercare i messaggi. Riprova."
+msgstr "Impossibile modificare i messaggi effimeri. Riprova."
 
 msgid "Couldn't change the password. Please try again."
 msgstr "Impossibile cambiare la password. Riprova."
@@ -1194,9 +1213,8 @@ msgstr "Impossibile controllare gli aggiornamenti. Riprova."
 msgid "Couldn't choose a folder. Close your open file picker and try again."
 msgstr "Impossibile scegliere una cartella. Chiudi la finestra di selezione dei file aperta e riprova."
 
-#, fuzzy
 msgid "Couldn't choose a photo. Close your open file picker and try again."
-msgstr "Impossibile scegliere una cartella. Chiudi la finestra di selezione dei file aperta e riprova."
+msgstr "Impossibile scegliere una foto. Chiudi la finestra di selezione dei file aperta e riprova."
 
 msgid "Couldn't close the tab. Please try again."
 msgstr "Impossibile chiudere la scheda. Riprova."
@@ -1243,9 +1261,8 @@ msgstr "Impossibile creare la scheda. Riprova."
 msgid "Couldn't create the vault. Please try again."
 msgstr "Impossibile creare la cassaforte. Riprova."
 
-#, fuzzy
 msgid "Couldn't crop the picture. Please try again."
-msgstr "Impossibile aprire il microfono. Riprova."
+msgstr "Impossibile ritagliare l'immagine. Riprova."
 
 msgid "Couldn't decode the image. Choose a PNG or JPEG."
 msgstr "Impossibile decodificare l'immagine. Scegli un PNG o un JPEG."
@@ -1421,9 +1438,8 @@ msgstr "Impossibile riprodurre la voce. Controlla l'uscita audio e riprova."
 msgid "Couldn't play video. Click to retry."
 msgstr "Impossibile riprodurre il video. Clicca per riprovare."
 
-#, fuzzy
 msgid "Couldn't preview the picture. Please try again."
-msgstr "Impossibile salvare la modifica. Riprova."
+msgstr "Impossibile mostrare l'anteprima dell'immagine. Riprova."
 
 #, c-format
 msgid "Couldn't publish the photo. %s"
@@ -1439,9 +1455,9 @@ msgstr "Impossibile raggiungere i resolver Namecoin. Riprova."
 msgid "Couldn't reach your signer. Please try again."
 msgstr "Impossibile raggiungere il tuo firmatario. Riprova."
 
-#, fuzzy, c-format
+#, c-format
 msgid "Couldn't read %s."
-msgstr "Impossibile archiviare la chat. %s"
+msgstr "Impossibile leggere %s."
 
 #, c-format
 msgid "Couldn't read %s. Please try again."
@@ -1614,9 +1630,8 @@ msgstr "Impossibile usare questo file. Scegli un PNG o un JPEG."
 msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr "Impossibile usare quel tema. Non è un tema che questa versione sa leggere."
 
-#, fuzzy
 msgid "Couldn't use the picture. Wait a moment and try again."
-msgstr "Impossibile salvare l'adesivo. Attendi il caricamento dell'immagine e riprova."
+msgstr "Impossibile usare l'immagine. Attendi un momento e riprova."
 
 msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
 msgstr "Impossibile usare l'adesivo. Scegli un PNG, WebP o JPEG statico fino a 4096 pixel."
@@ -1679,7 +1694,7 @@ msgid "Creating your vault…"
 msgstr "Creazione della cassaforte…"
 
 msgid "Crop"
-msgstr ""
+msgstr "Ritaglia"
 
 msgid "Crop circle shape"
 msgstr "Forma dei cerchi nel grano"
@@ -1771,9 +1786,8 @@ msgstr "Eliminare questo messaggio?"
 msgid "Delete this theme?"
 msgstr "Eliminare questo tema?"
 
-#, fuzzy
 msgid "Delete this vault"
-msgstr "Conferma: elimina questa cassaforte"
+msgstr "Elimina questa cassaforte"
 
 msgid "Deleted. Recording continues in a fresh file."
 msgstr "Eliminato. La registrazione continua in un nuovo file."
@@ -1857,6 +1871,13 @@ msgstr "Disattivato per questo gruppo."
 msgid "Disappearing messages"
 msgstr "Messaggi effimeri"
 
+#, c-format
+msgid "Disappearing messages were set to %s"
+msgstr "I messaggi effimeri sono stati impostati su %s"
+
+msgid "Disappearing messages were turned off"
+msgstr "I messaggi effimeri sono stati disattivati"
+
 msgid "Discard"
 msgstr "Scarta"
 
@@ -1907,7 +1928,7 @@ msgid "Drag a folder to reorder it. Your chats appear here once you have some."
 msgstr "Trascina una cartella per riordinarla. Le tue chat appariranno qui quando ne avrai."
 
 msgid "Drag inside to move. Drag a corner to resize."
-msgstr ""
+msgstr "Trascina all'interno per spostare. Trascina un angolo per ridimensionare."
 
 msgid "Drag the map to place the pin, or use your current location."
 msgstr "Trascina la mappa per posizionare il segnaposto, oppure usa la tua posizione attuale."
@@ -2044,6 +2065,12 @@ msgstr "Inserisci il numero di persone come numero intero e riprova."
 msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
 msgstr "Inserisci la password con cui è stato creato questo backup. Impostazioni, bozze, emoji personalizzate e temi su questo dispositivo verranno sostituiti."
 
+msgid "Enter to save. Shift+Enter for a new line."
+msgstr "Invio per salvare. Maiusc+Invio per andare a capo."
+
+msgid "Enter to send. Shift+Enter for a new line."
+msgstr "Invio per inviare. Maiusc+Invio per andare a capo."
+
 msgid "Enter your bunker link to continue."
 msgstr "Inserisci il link del tuo bunker per continuare."
 
@@ -2058,10 +2085,6 @@ msgstr "Cancella l'avatar per rivelarlo"
 
 msgid "Error copied"
 msgstr "Errore copiato"
-
-#, c-format
-msgid "Estimated strength: %d bits. Required: %d."
-msgstr "Resistenza stimata: %d bit. Richiesti: %d."
 
 msgid "Event fetch relays"
 msgstr "Relay per il recupero degli eventi"
@@ -2230,6 +2253,10 @@ msgstr "Inoltra"
 
 msgid "Forward to"
 msgstr "Inoltra a"
+
+#, c-format
+msgid "Forwarded to %s."
+msgstr "Inoltrato a %s."
 
 #, c-format
 msgid "Forwarding to %s…"
@@ -2435,9 +2462,6 @@ msgstr "Importa :%s:"
 
 msgid "Import a backup"
 msgstr "Importa un backup"
-
-msgid "Import a contacts CSV or JSON export to add people."
-msgstr "Importa un'esportazione dei contatti CSV o JSON per aggiungere persone."
 
 msgid "Import a key"
 msgstr "Importa una chiave"
@@ -2895,11 +2919,10 @@ msgid "Message text size"
 msgstr "Dimensione del testo dei messaggi"
 
 msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
-msgstr ""
+msgstr "La modifica riguarda anche i messaggi già presenti nella chat, non solo quelli nuovi. Tutti nel gruppo vedono la modifica."
 
-#, fuzzy
 msgid "Messages already in the chat, and new ones, are deleted for everyone after this time."
-msgstr "I nuovi messaggi vengono eliminati per tutti dopo questo tempo."
+msgstr "I messaggi già presenti nella chat e quelli nuovi vengono eliminati per tutti dopo questo tempo."
 
 msgid "Messages aren't arriving"
 msgstr "I messaggi non arrivano"
@@ -3054,9 +3077,8 @@ msgstr "Nessuna chat aperta. Selezionane una e aggiorna."
 msgid "No chats match your filter."
 msgstr "Nessuna chat corrisponde al tuo filtro."
 
-#, fuzzy
 msgid "No chats or terminals yet"
-msgstr "Ancora nessuna chat con cui condividere."
+msgstr "Ancora nessuna chat o terminale"
 
 msgid "No chats to share with yet."
 msgstr "Ancora nessuna chat con cui condividere."
@@ -3201,6 +3223,9 @@ msgstr "Non ora"
 msgid "Not set"
 msgstr "Non impostata"
 
+msgid "Notes name"
+msgstr "Nome delle note"
+
 msgid "Notes to self"
 msgstr "Note per te"
 
@@ -3257,6 +3282,9 @@ msgstr "Solo gli admin del gruppo possono modificare questa impostazione."
 
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr "Viene rimossa solo la cartella. Le sue chat restano nell'elenco delle chat."
+
+msgid "Only you see this name."
+msgstr "Solo tu vedi questo nome."
 
 msgid "Open"
 msgstr "Apri"
@@ -3443,6 +3471,9 @@ msgstr "Contatti"
 msgid "People can't invite you"
 msgstr "Gli altri non riescono a invitarti"
 
+msgid "People you follow show up here."
+msgstr "Qui compaiono le persone che segui."
+
 msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
 msgstr "Qui compaiono le persone che segui. Per avviare subito una chat, incolla la chiave pubblica di qualcuno nel campo qui sopra."
 
@@ -3549,9 +3580,8 @@ msgstr "Preparazione della foto del progetto…"
 msgid "Preparing speech..."
 msgstr "Preparazione della lettura..."
 
-#, fuzzy
 msgid "Preparing the cropped picture…"
-msgstr "Preparazione della foto del progetto…"
+msgstr "Preparazione dell'immagine ritagliata…"
 
 msgid "Preparing transcription..."
 msgstr "Preparazione della trascrizione..."
@@ -4386,6 +4416,12 @@ msgstr "Venduto"
 msgid "Sort chats by recent activity"
 msgstr "Ordina le chat per attività recente"
 
+msgid "Sort: A-Z"
+msgstr "Ordine: A-Z"
+
+msgid "Sort: Contacts first, then A-Z"
+msgstr "Ordine: prima i contatti, poi A-Z"
+
 msgid "Sounds don't play"
 msgstr "I suoni non si sentono"
 
@@ -4437,6 +4473,9 @@ msgstr "Avvia la tua prima chat"
 #, c-format
 msgid "Started offline: %s"
 msgstr "Avviato offline: %s"
+
+msgid "Starting a chat does not add someone to People. You can also import a contacts CSV or JSON export."
+msgstr "Avviare una chat non aggiunge la persona ai Contatti. Puoi anche importare un'esportazione dei contatti in formato CSV o JSON."
 
 msgid "Starting the runtime"
 msgstr "Avvio del runtime"
@@ -4496,6 +4535,9 @@ msgstr "Salvato su questo dispositivo, non ancora pubblicato su alcun relay."
 
 msgid "Stripes"
 msgstr "Righe"
+
+msgid "Strong enough"
+msgstr "Abbastanza robusta"
 
 msgid "Study"
 msgstr "Studio"
@@ -4656,6 +4698,9 @@ msgstr "Temi, dimensione del testo e aspetto delle tue conversazioni."
 msgid "These are installation prompts. Choose your agent, review its prompt, and paste it into that agent to connect it to White Noise. The prompt includes your public npub, never your private key, and asks the agent to explain the connector before requesting your approval to install it. Use only an agent you run and trust."
 msgstr "Questi sono prompt di installazione. Scegli il tuo agente, leggi il suo prompt e incollalo nell'agente per collegarlo a White Noise. Il prompt include il tuo npub pubblico, mai la tua chiave privata, e chiede all'agente di spiegare il connettore prima di richiedere la tua approvazione per installarlo. Usa solo un agente che gestisci e di cui ti fidi."
 
+msgid "These settings and messages are only yours."
+msgstr "Queste impostazioni e questi messaggi sono solo tuoi."
+
 msgid "They can be added to a chat."
 msgstr "Può essere aggiunto a una chat."
 
@@ -4759,9 +4804,8 @@ msgstr "Tempi"
 msgid "Title"
 msgstr "Titolo"
 
-#, fuzzy
 msgid "Title font"
-msgstr "Titolo"
+msgstr "Carattere del titolo"
 
 msgid "To start a chat with someone new, paste their public key."
 msgstr "Per avviare una chat con una persona nuova, incolla la sua chiave pubblica."
@@ -4771,6 +4815,9 @@ msgstr "Oggi"
 
 msgid "Toggle developer mode"
 msgstr "Attiva/disattiva la modalità sviluppatore"
+
+msgid "Too easy to guess"
+msgstr "Troppo facile da indovinare"
 
 msgid "Tools"
 msgstr "Strumenti"
@@ -4814,9 +4861,8 @@ msgstr "Siti affidabili per i link"
 msgid "Try a different search."
 msgstr "Prova un'altra ricerca."
 
-#, fuzzy
 msgid "Try again"
-msgstr "Cerca di nuovo"
+msgstr "Riprova"
 
 msgid "Tuesday"
 msgstr "martedì"
@@ -4909,7 +4955,7 @@ msgid "Uploading picture"
 msgstr "Caricamento dell'immagine"
 
 msgid "Use"
-msgstr ""
+msgstr "Usa"
 
 msgid "Use New folder to create a folder, then drag a chat onto it."
 msgstr "Usa Nuova cartella per creare una cartella, poi trascina una chat al suo interno."
@@ -4938,13 +4984,11 @@ msgstr "Usa immagine emoji"
 msgid "Use only an agent you run and trust. Your private key is never included."
 msgstr "Usa solo un agente che gestisci e di cui ti fidi. La tua chiave privata non viene mai inclusa."
 
-#, fuzzy
 msgid "Use original"
-msgstr "Originale"
+msgstr "Usa l'originale"
 
-#, fuzzy
 msgid "Use this photo?"
-msgstr "Usa questo tema"
+msgstr "Usare questa foto?"
 
 msgid "Use this theme"
 msgstr "Usa questo tema"
@@ -5011,6 +5055,9 @@ msgstr "Viola"
 
 msgid "Visual fingerprint"
 msgstr "Impronta visiva"
+
+msgid "Voice message"
+msgstr "Messaggio vocale"
 
 msgid "Voting has ended."
 msgstr "La votazione è terminata."
@@ -5161,6 +5208,9 @@ msgstr "Oggi hai già detto GM qui"
 msgid "You stay in the group, but another admin has to grant the rights back."
 msgstr "Resti nel gruppo, ma un altro admin dovrà riassegnarti i diritti."
 
+msgid "You stay in the group, but no other admin can grant your rights back."
+msgstr "Resti nel gruppo, ma nessun altro admin può riassegnarti i diritti."
+
 msgid "You stop receiving its messages. Rejoining needs a new invite."
 msgstr "Smetterai di ricevere i suoi messaggi. Per rientrare serve un nuovo invito."
 
@@ -5194,6 +5244,9 @@ msgstr "Il servizio di localizzazione del desktop gestisce la richiesta di autor
 
 msgid "Your disk is filling up"
 msgstr "Il disco si sta riempiendo"
+
+msgid "Your existing and new notes are deleted after this time."
+msgstr "Le tue note già presenti e quelle nuove vengono eliminate dopo questo tempo."
 
 msgid "Your identity and the secrets on this device."
 msgstr "La tua identità e i segreti su questo dispositivo."
@@ -5380,9 +5433,8 @@ msgstr "relay"
 msgid "sealed here"
 msgstr "sigillato qui"
 
-#, fuzzy
 msgid "you"
-msgstr "Tu"
+msgstr "tu"
 
 msgid "© OpenStreetMap contributors"
 msgstr "© Collaboratori di OpenStreetMap"

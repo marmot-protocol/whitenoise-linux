@@ -7,6 +7,63 @@ import "core:strings"
 import "core:testing"
 import rl "sdlrl"
 
+// SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=web_header_layout
+@(test)
+web_header_layout :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "web_header_layout" {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(1024, 700, "Webxdc title bounds")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts()
+	memory: []u8
+	init_layout(&memory, 32768, {1024, 700})
+	defer delete(memory)
+	previous := web_modal
+	web_modal = Web_Modal {
+		title = strings.repeat("long-webxdc-name-", 30, context.temp_allocator),
+	}
+	defer {web_modal = previous}
+	ui: Ui_State
+	for width in ([]i32{1024, 600, 360}) {
+		rl.SetWindowSize(width, 700)
+		for zoom in ([]f32{1, 1.5, 2}) {
+			UI_ZOOM = zoom
+			refresh_ui_scale()
+			viewport := clay.Dimensions{f32(width) / zoom, 700 / zoom}
+			clay.SetLayoutDimensions(viewport)
+			for _ in 0 ..< 3 {
+				clay.BeginLayout()
+				if clay.UI(clay.ID("WebTestRoot"))(
+				{
+					layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()}},
+					backgroundColor = BG,
+				},
+				) {web_modal_draw(&ui)}
+				commands := clay.EndLayout(0)
+				close := clay.GetElementData(clay.ID("WebClose"))
+				title := clay.GetElementData(clay.ID("WebTitle")).boundingBox
+				testing.expect(t, close.found && close.boundingBox.width > 0)
+				testing.expect(
+					t,
+					title.x + title.width <= close.boundingBox.x + 0.1,
+					"a long title must not cover Close",
+				)
+				testing.expect(
+					t,
+					close.boundingBox.x + close.boundingBox.width <= viewport.width &&
+					close.boundingBox.y + close.boundingBox.height <= viewport.height,
+					"Close stays reachable at narrow and zoomed sizes",
+				)
+				rl.BeginDrawing()
+				clay_raylib_render(&commands)
+				rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-web-header-%d-%.1f.png", width, zoom))
+				rl.EndDrawing()
+			}
+		}
+	}
+}
+
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=embed_layout
 @(test)
 embed_layout :: proc(t: ^testing.T) {

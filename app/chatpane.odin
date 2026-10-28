@@ -229,7 +229,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					tr("You were invited to this group."),
 					{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
 				)
-				login_button("InviteAccept", tr("Accept"))
+				login_button("InviteAccept", tr("Accept"), primary = true)
 				login_button("InviteDecline", tr("Decline"))
 			}
 		}
@@ -765,13 +765,23 @@ info_width :: proc(ui: ^Ui_State) -> f32 {
 info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 	admin := self_is_admin(ui)
 	dm := selected_chat_is_dm(ui)
+	notes := ui.selected >= 0 && ui.chats[ui.selected].group_id == ui.prefs.notes_group
 	if clay.UI(clay.ID("InfoHeroCard"))(info_card()) {
 		group_hero(ui)
+		if notes {
+			clay.Text(
+				tr("These settings and messages are only yours."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+		}
 	}
 
 	if admin && !dm {
 		if clay.UI(clay.ID("InfoNameCard"))(info_card()) {
-			row_labels(tr("Group name"), tr("Everyone in the group sees the new name."))
+			row_labels(
+				notes ? tr("Notes name") : tr("Group name"),
+				notes ? tr("Only you see this name.") : tr("Everyone in the group sees the new name."),
+			)
 			info_field(
 				ui,
 				"RenameBox",
@@ -789,9 +799,7 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 	if clay.UI(clay.ID("InfoTimerCard"))(info_card()) {
 		row_labels(
 			tr("Disappearing messages"),
-			tr(
-				"Messages already in the chat, and new ones, are deleted for everyone after this time.",
-			),
+			notes ? tr("Your existing and new notes are deleted after this time.") : tr("Messages already in the chat, and new ones, are deleted for everyone after this time."),
 		)
 		labels := [len(RETENTION_SECS)]string{N_("Off"), "1h", "1d", "1w", "4w"}
 		// Members see the current timer without controls to change it.
@@ -1960,6 +1968,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 		blocked_bar()
 		return
 	}
+	submit_available := !ui.search_open && (ui.stt.file == nil || ui.stt.message != "")
 
 	// Edit banner: the composer holds a sent message, not a new one.
 	// It stands in for the reply banner, which returns once the edit ends.
@@ -2217,6 +2226,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 				},
 				) {
 					clay.Text(ICON_CLIP, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
+					if hovered() {tooltip(tr("Attach a file"))}
 				}
 				if clay.UI(clay.ID("ComposeGap"))(
 				{layout = {sizing = {width = clay.SizingGrow()}}},
@@ -2229,6 +2239,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 				},
 				) {
 					clay.Text(ICON_SMILE, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
+					if hovered() {tooltip(tr("Emoji"))}
 				}
 				// Effect picker: arms a burst for the next send.
 				if clay.UI(clay.ID("FxBtn"))(
@@ -2327,7 +2338,29 @@ chat_composer :: proc(ui: ^Ui_State) {
 				},
 				) {
 					clay.Text(ICON_MIC, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
+					if hovered() {tooltip(tr("Voice message"))}
 				}
+			}
+		}
+		if submit_available && (ui.chat_preview_w > 0 || voice.stream == nil) {
+			if clay.UI(clay.ID("ComposeSubmitRow"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 8,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				if clay.UI(clay.ID("ComposeSubmitHint"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {
+					clay.Text(
+						ui.editing != "" ? tr("Enter to save. Shift+Enter for a new line.") : tr("Enter to send. Shift+Enter for a new line."),
+						{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+					)
+				}
+				folder_action("SendBtn", ui.editing != "" ? tr("Save") : tr("Send"), true)
 			}
 		}
 	}

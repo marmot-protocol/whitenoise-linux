@@ -28,7 +28,7 @@ msgid "%d bytes"
 msgstr ""
 
 #, c-format
-msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
+msgid "%d connecting"
 msgstr ""
 
 #, c-format
@@ -120,6 +120,10 @@ msgid "%d months ago"
 msgstr ""
 
 #, c-format
+msgid "%d not connected"
+msgstr ""
+
+#, c-format
 msgid "%d of %d"
 msgstr ""
 
@@ -181,6 +185,10 @@ msgstr ""
 
 #, c-format
 msgid "%d votes"
+msgstr ""
+
+#, c-format
+msgid "%d waiting to connect"
 msgstr ""
 
 #, c-format
@@ -248,6 +256,14 @@ msgid "%s renamed the group to %s"
 msgstr ""
 
 #, c-format
+msgid "%s set disappearing messages to %s"
+msgstr ""
+
+#, c-format
+msgid "%s turned off disappearing messages"
+msgstr ""
+
+#, c-format
 msgid "%s was added to the group"
 msgstr ""
 
@@ -299,6 +315,9 @@ msgid "A checked box means you placed the chat by hand. Clear it to let folder r
 msgstr ""
 
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
+msgstr ""
+
+msgid "A display name is required."
 msgstr ""
 
 msgid "A key package lets people invite you to encrypted chats."
@@ -368,10 +387,16 @@ msgstr ""
 msgid "Add"
 msgstr ""
 
+msgid "Add a question for your poll."
+msgstr ""
+
 msgid "Add account"
 msgstr ""
 
 msgid "Add an option..."
+msgstr ""
+
+msgid "Add at least two options."
 msgstr ""
 
 msgid "Add member"
@@ -414,9 +439,6 @@ msgid "Advanced"
 msgstr ""
 
 msgid "Agent connector documentation"
-msgstr ""
-
-msgid "Aggregate connection counter from the relay pool."
 msgstr ""
 
 msgid "Airmail"
@@ -507,6 +529,9 @@ msgid "Ask a question..."
 msgstr ""
 
 msgid "Asking your relays for their key package."
+msgstr ""
+
+msgid "Attach a file"
 msgstr ""
 
 msgid "Attachment"
@@ -1075,9 +1100,6 @@ msgid "Contact"
 msgstr ""
 
 msgid "Contact list collapsed"
-msgstr ""
-
-msgid "Contacts first, then A-Z"
 msgstr ""
 
 #, c-format
@@ -1848,6 +1870,13 @@ msgstr ""
 msgid "Disappearing messages"
 msgstr ""
 
+#, c-format
+msgid "Disappearing messages were set to %s"
+msgstr ""
+
+msgid "Disappearing messages were turned off"
+msgstr ""
+
 msgid "Discard"
 msgstr ""
 
@@ -2035,6 +2064,12 @@ msgstr ""
 msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
 msgstr ""
 
+msgid "Enter to save. Shift+Enter for a new line."
+msgstr ""
+
+msgid "Enter to send. Shift+Enter for a new line."
+msgstr ""
+
 msgid "Enter your bunker link to continue."
 msgstr ""
 
@@ -2048,10 +2083,6 @@ msgid "Erase avatar reveal"
 msgstr ""
 
 msgid "Error copied"
-msgstr ""
-
-#, c-format
-msgid "Estimated strength: %d bits. Required: %d."
 msgstr ""
 
 msgid "Event fetch relays"
@@ -2220,6 +2251,10 @@ msgid "Forward"
 msgstr ""
 
 msgid "Forward to"
+msgstr ""
+
+#, c-format
+msgid "Forwarded to %s."
 msgstr ""
 
 #, c-format
@@ -2425,9 +2460,6 @@ msgid "Import :%s:"
 msgstr ""
 
 msgid "Import a backup"
-msgstr ""
-
-msgid "Import a contacts CSV or JSON export to add people."
 msgstr ""
 
 msgid "Import a key"
@@ -3190,6 +3222,9 @@ msgstr ""
 msgid "Not set"
 msgstr ""
 
+msgid "Notes name"
+msgstr ""
+
 msgid "Notes to self"
 msgstr ""
 
@@ -3245,6 +3280,9 @@ msgid "Only group admins can change this setting."
 msgstr ""
 
 msgid "Only the folder is removed. Its chats stay in your chat list."
+msgstr ""
+
+msgid "Only you see this name."
 msgstr ""
 
 msgid "Open"
@@ -3430,6 +3468,9 @@ msgid "People"
 msgstr ""
 
 msgid "People can't invite you"
+msgstr ""
+
+msgid "People you follow show up here."
 msgstr ""
 
 msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
@@ -4374,6 +4415,12 @@ msgstr ""
 msgid "Sort chats by recent activity"
 msgstr ""
 
+msgid "Sort: A-Z"
+msgstr ""
+
+msgid "Sort: Contacts first, then A-Z"
+msgstr ""
+
 msgid "Sounds don't play"
 msgstr ""
 
@@ -4424,6 +4471,9 @@ msgstr ""
 
 #, c-format
 msgid "Started offline: %s"
+msgstr ""
+
+msgid "Starting a chat does not add someone to People. You can also import a contacts CSV or JSON export."
 msgstr ""
 
 msgid "Starting the runtime"
@@ -4483,6 +4533,9 @@ msgid "Stored on this device, not published to any relay yet."
 msgstr ""
 
 msgid "Stripes"
+msgstr ""
+
+msgid "Strong enough"
 msgstr ""
 
 msgid "Study"
@@ -4644,6 +4697,9 @@ msgstr ""
 msgid "These are installation prompts. Choose your agent, review its prompt, and paste it into that agent to connect it to White Noise. The prompt includes your public npub, never your private key, and asks the agent to explain the connector before requesting your approval to install it. Use only an agent you run and trust."
 msgstr ""
 
+msgid "These settings and messages are only yours."
+msgstr ""
+
 msgid "They can be added to a chat."
 msgstr ""
 
@@ -4757,6 +4813,9 @@ msgid "Today"
 msgstr ""
 
 msgid "Toggle developer mode"
+msgstr ""
+
+msgid "Too easy to guess"
 msgstr ""
 
 msgid "Tools"
@@ -4996,6 +5055,9 @@ msgstr ""
 msgid "Visual fingerprint"
 msgstr ""
 
+msgid "Voice message"
+msgstr ""
+
 msgid "Voting has ended."
 msgstr ""
 
@@ -5145,6 +5207,9 @@ msgstr ""
 msgid "You stay in the group, but another admin has to grant the rights back."
 msgstr ""
 
+msgid "You stay in the group, but no other admin can grant your rights back."
+msgstr ""
+
 msgid "You stop receiving its messages. Rejoining needs a new invite."
 msgstr ""
 
@@ -5177,6 +5242,9 @@ msgid "Your desktop location service handles the permission request. Nothing is 
 msgstr ""
 
 msgid "Your disk is filling up"
+msgstr ""
+
+msgid "Your existing and new notes are deleted after this time."
 msgstr ""
 
 msgid "Your identity and the secrets on this device."

@@ -28,8 +28,8 @@ msgid "%d bytes"
 msgstr "%dバイト"
 
 #, c-format
-msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
-msgstr "接続中 %d、保留中 %d、切断 %d、スリープ中 %d。"
+msgid "%d connecting"
+msgstr "%d件接続中"
 
 #, c-format
 msgid "%d day"
@@ -120,6 +120,10 @@ msgid "%d months ago"
 msgstr "%dか月前"
 
 #, c-format
+msgid "%d not connected"
+msgstr "%d件未接続"
+
+#, c-format
 msgid "%d of %d"
 msgstr "%d / %d"
 
@@ -182,6 +186,10 @@ msgstr "%d秒前"
 #, c-format
 msgid "%d votes"
 msgstr "%d票"
+
+#, c-format
+msgid "%d waiting to connect"
+msgstr "%d件接続待ち"
 
 #, c-format
 msgid "%d year ago"
@@ -248,6 +256,14 @@ msgid "%s renamed the group to %s"
 msgstr "%sさんがグループ名を%sに変更しました"
 
 #, c-format
+msgid "%s set disappearing messages to %s"
+msgstr "%sさんが消えるメッセージのタイマーを%sに設定しました"
+
+#, c-format
+msgid "%s turned off disappearing messages"
+msgstr "%sさんが消えるメッセージをオフにしました"
+
+#, c-format
 msgid "%s was added to the group"
 msgstr "%sさんがグループに追加されました"
 
@@ -300,6 +316,9 @@ msgstr "チェックは、チャットを手動で配置したことを示しま
 
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "プライベートなグループチャットのためのデスクトップクライアントです。メッセージはこのマシン上で MLS により暗号化され、中身の読めないデータとして Nostr リレーに渡され、グループ内でのみ再び復号されます。"
+
+msgid "A display name is required."
+msgstr "表示名を入力してください。"
 
 msgid "A key package lets people invite you to encrypted chats."
 msgstr "キーパッケージがあると、ほかの人があなたを暗号化チャットに招待できます。"
@@ -369,11 +388,17 @@ msgstr "操作に失敗しました: %s"
 msgid "Add"
 msgstr "追加"
 
+msgid "Add a question for your poll."
+msgstr "投票の質問を入力してください。"
+
 msgid "Add account"
 msgstr "アカウントを追加"
 
 msgid "Add an option..."
 msgstr "選択肢を追加..."
+
+msgid "Add at least two options."
+msgstr "選択肢を2つ以上追加してください。"
 
 msgid "Add member"
 msgstr "メンバーを追加"
@@ -416,9 +441,6 @@ msgstr "詳細"
 
 msgid "Agent connector documentation"
 msgstr "エージェントコネクターのドキュメント"
-
-msgid "Aggregate connection counter from the relay pool."
-msgstr "リレープール全体の接続数です。"
 
 msgid "Airmail"
 msgstr "エアメール"
@@ -509,6 +531,9 @@ msgstr "質問を入力..."
 
 msgid "Asking your relays for their key package."
 msgstr "あなたのリレーに相手のキーパッケージを問い合わせています。"
+
+msgid "Attach a file"
+msgstr "ファイルを添付"
 
 msgid "Attachment"
 msgstr "添付ファイル"
@@ -716,9 +741,8 @@ msgstr "会話を中央に配置"
 msgid "Chalk-drawn surfaces"
 msgstr "チョークで描いた背景"
 
-#, fuzzy
 msgid "Change disappearing messages?"
-msgstr "消えるメッセージ"
+msgstr "消えるメッセージの設定を変更しますか？"
 
 msgid "Change password"
 msgstr "パスワードを変更"
@@ -753,9 +777,8 @@ msgstr "テーマを変更"
 msgid "Change the time format"
 msgstr "時刻の形式を変更"
 
-#, fuzzy
 msgid "Change timer"
-msgstr "テーマを変更"
+msgstr "タイマーを変更"
 
 msgid "Change vault password"
 msgstr "保管庫のパスワードを変更"
@@ -1080,9 +1103,6 @@ msgstr "連絡先"
 msgid "Contact list collapsed"
 msgstr "連絡先リストは折りたたまれています"
 
-msgid "Contacts first, then A-Z"
-msgstr "連絡先を優先し、次にA-Z順"
-
 #, c-format
 msgid "Contacts imported: %d added, %d skipped, %d failed."
 msgstr "連絡先のインポート：追加%d件、スキップ%d件、失敗%d件。"
@@ -1181,9 +1201,8 @@ msgstr "監査ログを変更できませんでした。%s"
 msgid "Couldn't change diagnostics sharing. Please try again."
 msgstr "診断情報の共有設定を変更できませんでした。もう一度お試しください。"
 
-#, fuzzy
 msgid "Couldn't change disappearing messages. Please try again."
-msgstr "メッセージを検索できませんでした。もう一度お試しください。"
+msgstr "消えるメッセージの設定を変更できませんでした。もう一度お試しください。"
 
 msgid "Couldn't change the password. Please try again."
 msgstr "パスワードを変更できませんでした。もう一度お試しください。"
@@ -1194,9 +1213,8 @@ msgstr "アップデートを確認できませんでした。もう一度お試
 msgid "Couldn't choose a folder. Close your open file picker and try again."
 msgstr "フォルダーを選択できませんでした。開いているファイル選択画面を閉じて、もう一度お試しください。"
 
-#, fuzzy
 msgid "Couldn't choose a photo. Close your open file picker and try again."
-msgstr "フォルダーを選択できませんでした。開いているファイル選択画面を閉じて、もう一度お試しください。"
+msgstr "写真を選択できませんでした。開いているファイル選択画面を閉じて、もう一度お試しください。"
 
 msgid "Couldn't close the tab. Please try again."
 msgstr "タブを閉じられませんでした。もう一度お試しください。"
@@ -1243,9 +1261,8 @@ msgstr "タブを作成できませんでした。もう一度お試しくださ
 msgid "Couldn't create the vault. Please try again."
 msgstr "保管庫を作成できませんでした。もう一度お試しください。"
 
-#, fuzzy
 msgid "Couldn't crop the picture. Please try again."
-msgstr "マイクを開けませんでした。もう一度お試しください。"
+msgstr "画像を切り抜けませんでした。もう一度お試しください。"
 
 msgid "Couldn't decode the image. Choose a PNG or JPEG."
 msgstr "画像をデコードできませんでした。PNGまたはJPEGを選択してください。"
@@ -1421,9 +1438,8 @@ msgstr "音声を再生できませんでした。音声出力を確認して、
 msgid "Couldn't play video. Click to retry."
 msgstr "動画を再生できませんでした。クリックして再試行してください。"
 
-#, fuzzy
 msgid "Couldn't preview the picture. Please try again."
-msgstr "編集を保存できませんでした。もう一度お試しください。"
+msgstr "画像をプレビューできませんでした。もう一度お試しください。"
 
 #, c-format
 msgid "Couldn't publish the photo. %s"
@@ -1439,9 +1455,9 @@ msgstr "Namecoinリゾルバーに接続できませんでした。もう一度�
 msgid "Couldn't reach your signer. Please try again."
 msgstr "署名者に接続できませんでした。もう一度お試しください。"
 
-#, fuzzy, c-format
+#, c-format
 msgid "Couldn't read %s."
-msgstr "チャットをアーカイブできませんでした。%s"
+msgstr "%sを読み込めませんでした。"
 
 #, c-format
 msgid "Couldn't read %s. Please try again."
@@ -1614,9 +1630,8 @@ msgstr "そのファイルは使用できません。PNGまたはJPEGを選択�
 msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr "そのテーマを使用できませんでした。このバージョンで読み込めるテーマではありません。"
 
-#, fuzzy
 msgid "Couldn't use the picture. Wait a moment and try again."
-msgstr "ステッカーを保存できませんでした。画像の読み込みが完了してから、もう一度お試しください。"
+msgstr "画像を使用できませんでした。少し待ってから、もう一度お試しください。"
 
 msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
 msgstr "ステッカーを使用できませんでした。4096ピクセル以下の静止画PNG、WebP、JPEGを選んでください。"
@@ -1679,7 +1694,7 @@ msgid "Creating your vault…"
 msgstr "保管庫を作成しています…"
 
 msgid "Crop"
-msgstr ""
+msgstr "切り抜き"
 
 msgid "Crop circle shape"
 msgstr "ミステリーサークルの形状"
@@ -1771,9 +1786,8 @@ msgstr "このメッセージを削除しますか？"
 msgid "Delete this theme?"
 msgstr "このテーマを削除しますか？"
 
-#, fuzzy
 msgid "Delete this vault"
-msgstr "確認: この保管庫を削除"
+msgstr "この保管庫を削除"
 
 msgid "Deleted. Recording continues in a fresh file."
 msgstr "削除しました。記録は新しいファイルで続きます。"
@@ -1857,6 +1871,13 @@ msgstr "このグループでは無効です。"
 msgid "Disappearing messages"
 msgstr "消えるメッセージ"
 
+#, c-format
+msgid "Disappearing messages were set to %s"
+msgstr "消えるメッセージのタイマーが%sに設定されました"
+
+msgid "Disappearing messages were turned off"
+msgstr "消えるメッセージがオフになりました"
+
 msgid "Discard"
 msgstr "破棄"
 
@@ -1907,7 +1928,7 @@ msgid "Drag a folder to reorder it. Your chats appear here once you have some."
 msgstr "フォルダをドラッグすると並べ替えられます。チャットができるとここに表示されます。"
 
 msgid "Drag inside to move. Drag a corner to resize."
-msgstr ""
+msgstr "内側をドラッグすると移動します。角をドラッグするとサイズを変更します。"
 
 msgid "Drag the map to place the pin, or use your current location."
 msgstr "地図をドラッグしてピンの位置を決めるか、現在地を使用してください。"
@@ -2044,6 +2065,12 @@ msgstr "人数を整数で入力して、もう一度お試しください。"
 msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
 msgstr "このバックアップの作成時に使ったパスワードを入力してください。この端末の設定、下書き、カスタム絵文字、テーマは置き換えられます。"
 
+msgid "Enter to save. Shift+Enter for a new line."
+msgstr "Enterで保存します。Shift+Enterで改行します。"
+
+msgid "Enter to send. Shift+Enter for a new line."
+msgstr "Enterで送信します。Shift+Enterで改行します。"
+
 msgid "Enter your bunker link to continue."
 msgstr "続行するには、バンカーリンクを入力してください。"
 
@@ -2058,10 +2085,6 @@ msgstr "消してアバターの下を表示"
 
 msgid "Error copied"
 msgstr "エラーをコピーしました"
-
-#, c-format
-msgid "Estimated strength: %d bits. Required: %d."
-msgstr "推定強度：%dビット。必要な強度：%dビット。"
 
 msgid "Event fetch relays"
 msgstr "イベント取得リレー"
@@ -2230,6 +2253,10 @@ msgstr "転送"
 
 msgid "Forward to"
 msgstr "転送先"
+
+#, c-format
+msgid "Forwarded to %s."
+msgstr "%sに転送しました。"
 
 #, c-format
 msgid "Forwarding to %s…"
@@ -2435,9 +2462,6 @@ msgstr ":%s: をインポート"
 
 msgid "Import a backup"
 msgstr "バックアップをインポート"
-
-msgid "Import a contacts CSV or JSON export to add people."
-msgstr "連絡先のCSVまたはJSONエクスポートをインポートすると、相手を追加できます。"
 
 msgid "Import a key"
 msgstr "鍵をインポート"
@@ -2895,11 +2919,10 @@ msgid "Message text size"
 msgstr "メッセージの文字サイズ"
 
 msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
-msgstr ""
+msgstr "新しいメッセージだけでなく、チャット内の既存のメッセージにも適用されます。変更はグループの全員に表示されます。"
 
-#, fuzzy
 msgid "Messages already in the chat, and new ones, are deleted for everyone after this time."
-msgstr "新しいメッセージはこの時間が経つと全員から削除されます。"
+msgstr "チャット内の既存のメッセージも新しいメッセージも、この時間が経つと全員から削除されます。"
 
 msgid "Messages aren't arriving"
 msgstr "メッセージが届きません"
@@ -3054,9 +3077,8 @@ msgstr "チャットが開かれていません。チャットを選択して更
 msgid "No chats match your filter."
 msgstr "フィルターに一致するチャットはありません。"
 
-#, fuzzy
 msgid "No chats or terminals yet"
-msgstr "共有できるチャットはまだありません。"
+msgstr "チャットや端末はまだありません"
 
 msgid "No chats to share with yet."
 msgstr "共有できるチャットはまだありません。"
@@ -3201,6 +3223,9 @@ msgstr "今はしない"
 msgid "Not set"
 msgstr "未設定"
 
+msgid "Notes name"
+msgstr "メモの名前"
+
 msgid "Notes to self"
 msgstr "自分用メモ"
 
@@ -3257,6 +3282,9 @@ msgstr "この設定を変更できるのはグループ管理者だけです。
 
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr "フォルダだけが削除されます。中のチャットはチャット一覧に残ります。"
+
+msgid "Only you see this name."
+msgstr "この名前は、あなたにだけ表示されます。"
 
 msgid "Open"
 msgstr "開く"
@@ -3443,6 +3471,9 @@ msgstr "連絡先"
 msgid "People can't invite you"
 msgstr "ほかの人があなたを招待できません"
 
+msgid "People you follow show up here."
+msgstr "フォローしている人がここに表示されます。"
+
 msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
 msgstr "フォローしている人がここに表示されます。今すぐチャットを始めるには、上の欄に相手の公開鍵を貼り付けてください。"
 
@@ -3549,9 +3580,8 @@ msgstr "プロジェクトの写真を準備しています…"
 msgid "Preparing speech..."
 msgstr "読み上げを準備しています..."
 
-#, fuzzy
 msgid "Preparing the cropped picture…"
-msgstr "プロジェクトの写真を準備しています…"
+msgstr "切り抜いた画像を準備しています…"
 
 msgid "Preparing transcription..."
 msgstr "文字起こしを準備しています..."
@@ -4386,6 +4416,12 @@ msgstr "売却済み"
 msgid "Sort chats by recent activity"
 msgstr "最近のアクティビティ順にチャットを並べ替え"
 
+msgid "Sort: A-Z"
+msgstr "並べ替え: A-Z順"
+
+msgid "Sort: Contacts first, then A-Z"
+msgstr "並べ替え: 連絡先を優先し、次にA-Z順"
+
 msgid "Sounds don't play"
 msgstr "音が鳴りません"
 
@@ -4437,6 +4473,9 @@ msgstr "最初のチャットを開始する"
 #, c-format
 msgid "Started offline: %s"
 msgstr "オフラインで起動しました: %s"
+
+msgid "Starting a chat does not add someone to People. You can also import a contacts CSV or JSON export."
+msgstr "チャットを開始しても、相手は連絡先に追加されません。連絡先のCSVまたはJSONエクスポートをインポートすることもできます。"
 
 msgid "Starting the runtime"
 msgstr "ランタイムを起動しています"
@@ -4496,6 +4535,9 @@ msgstr "この端末に保存されていますが、まだどのリレーにも
 
 msgid "Stripes"
 msgstr "ストライプ"
+
+msgid "Strong enough"
+msgstr "十分な強度です"
 
 msgid "Study"
 msgstr "勉強"
@@ -4656,6 +4698,9 @@ msgstr "テーマ、文字サイズ、会話の見た目を設定します。"
 msgid "These are installation prompts. Choose your agent, review its prompt, and paste it into that agent to connect it to White Noise. The prompt includes your public npub, never your private key, and asks the agent to explain the connector before requesting your approval to install it. Use only an agent you run and trust."
 msgstr "これらはインストール用のプロンプトです。エージェントを選び、プロンプトの内容を確認してから、そのエージェントに貼り付けてWhite Noiseに接続してください。プロンプトには公開npubが含まれますが、秘密鍵は決して含まれません。また、インストールの承認を求める前にコネクターについて説明するよう、エージェントに指示します。ご自身で運用する信頼できるエージェントのみを使用してください。"
 
+msgid "These settings and messages are only yours."
+msgstr "この設定とメッセージは、あなただけのものです。"
+
 msgid "They can be added to a chat."
 msgstr "チャットに追加できます。"
 
@@ -4759,9 +4804,8 @@ msgstr "処理時間"
 msgid "Title"
 msgstr "タイトル"
 
-#, fuzzy
 msgid "Title font"
-msgstr "タイトル"
+msgstr "タイトルのフォント"
 
 msgid "To start a chat with someone new, paste their public key."
 msgstr "新しい相手とチャットを始めるには、その人の公開鍵を貼り付けてください。"
@@ -4771,6 +4815,9 @@ msgstr "今日"
 
 msgid "Toggle developer mode"
 msgstr "開発者モードを切り替え"
+
+msgid "Too easy to guess"
+msgstr "簡単に推測されてしまいます"
 
 msgid "Tools"
 msgstr "ツール"
@@ -4814,9 +4861,8 @@ msgstr "信頼済みのリンク先"
 msgid "Try a different search."
 msgstr "別の検索語を試してください。"
 
-#, fuzzy
 msgid "Try again"
-msgstr "もう一度検索"
+msgstr "再試行"
 
 msgid "Tuesday"
 msgstr "火曜日"
@@ -4909,7 +4955,7 @@ msgid "Uploading picture"
 msgstr "画像をアップロードしています"
 
 msgid "Use"
-msgstr ""
+msgstr "使用"
 
 msgid "Use New folder to create a folder, then drag a chat onto it."
 msgstr "「新しいフォルダ」でフォルダを作成し、チャットをそこにドラッグしてください。"
@@ -4938,13 +4984,11 @@ msgstr "絵文字の画像を使用"
 msgid "Use only an agent you run and trust. Your private key is never included."
 msgstr "ご自身で運用する信頼できるエージェントだけに使用してください。秘密鍵は決して含まれません。"
 
-#, fuzzy
 msgid "Use original"
-msgstr "オリジナル"
+msgstr "元の画像を使用"
 
-#, fuzzy
 msgid "Use this photo?"
-msgstr "このテーマを使う"
+msgstr "この写真を使いますか？"
 
 msgid "Use this theme"
 msgstr "このテーマを使う"
@@ -5011,6 +5055,9 @@ msgstr "紫"
 
 msgid "Visual fingerprint"
 msgstr "視覚的フィンガープリント"
+
+msgid "Voice message"
+msgstr "音声メッセージ"
 
 msgid "Voting has ended."
 msgstr "投票は終了しました。"
@@ -5161,6 +5208,9 @@ msgstr "今日はここでGMを送信済みです"
 msgid "You stay in the group, but another admin has to grant the rights back."
 msgstr "グループには残りますが、権限を戻すには別の管理者による付与が必要です。"
 
+msgid "You stay in the group, but no other admin can grant your rights back."
+msgstr "グループには残りますが、権限を戻せる管理者はほかにいません。"
+
 msgid "You stop receiving its messages. Rejoining needs a new invite."
 msgstr "このグループのメッセージを受信しなくなります。再参加するには新しい招待が必要です。"
 
@@ -5194,6 +5244,9 @@ msgstr "デスクトップの位置情報サービスが許可のリクエスト
 
 msgid "Your disk is filling up"
 msgstr "ディスクの空きが少なくなっています"
+
+msgid "Your existing and new notes are deleted after this time."
+msgstr "既存のメモも新しいメモも、この時間が経つと削除されます。"
 
 msgid "Your identity and the secrets on this device."
 msgstr "あなたの ID と、この端末上の秘密情報を管理します。"
@@ -5380,7 +5433,6 @@ msgstr "リレー"
 msgid "sealed here"
 msgstr "ここで暗号化"
 
-#, fuzzy
 msgid "you"
 msgstr "あなた"
 

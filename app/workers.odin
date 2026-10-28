@@ -525,27 +525,29 @@ members_clear :: proc(ui: ^Ui_State) {
 //                (grayed row)          (mutex)     (drop row + reload,
 //                                                   or mark failed)
 Pending_Send :: struct {
-	gif:           ^Gif_Job, // selected GIF while its upload bytes are preparing
-	forward:       ^Forward_Job, // source snapshot while attachments are preparing
-	forward_title: string, // destination label retained through send completion
-	account_ref:   string, // pinned for forwards; empty uses the current account
-	excerpt:       Excerpt,
-	sticker:       Sticker_Ref,
-	effect:        int,
-	visible_since: time.Tick, // compose action until first presented optimistic row
-	sending_since: time.Tick, // start of the current send attempt
-	ticket:        int, // matches a Send_Done back to its row
-	group_id:      string,
-	sender:        string, // own display label, mirrors confirmed rows
-	body:          string, // composed text; file name for a non-image upload
-	reply_to:      string, // message id, "" = plain send
-	issue:         Issue_Reply,
-	thread:        string, // thread root id, "" = main timeline
-	atts:          [dynamic]Pending_Att, // upload payloads, owned until drained
-	failed:        bool,
-	queued:        bool, // waiting for the auto-retry timer (offline.odin)
-	dismissed:     bool, // hidden during an active send; freed when its worker completes
-	attempts:      int, // failed tries so far, capped by MAX_SEND_ATTEMPTS
+	gif:               ^Gif_Job, // selected GIF while its upload bytes are preparing
+	forward:           ^Forward_Job, // source snapshot while attachments are preparing
+	forward_title:     string, // destination label retained through send completion
+	forward_ticket:    int, // original action shared by its text and media sends
+	forward_cancelled: bool,
+	account_ref:       string, // pinned for forwards; empty uses the current account
+	excerpt:           Excerpt,
+	sticker:           Sticker_Ref,
+	effect:            int,
+	visible_since:     time.Tick, // compose action until first presented optimistic row
+	sending_since:     time.Tick, // start of the current send attempt
+	ticket:            int, // matches a Send_Done back to its row
+	group_id:          string,
+	sender:            string, // own display label, mirrors confirmed rows
+	body:              string, // composed text; file name for a non-image upload
+	reply_to:          string, // message id, "" = plain send
+	issue:             Issue_Reply,
+	thread:            string, // thread root id, "" = main timeline
+	atts:              [dynamic]Pending_Att, // upload payloads, owned until drained
+	failed:            bool,
+	queued:            bool, // waiting for the auto-retry timer (offline.odin)
+	dismissed:         bool, // hidden during an active send; freed when its worker completes
+	attempts:          int, // failed tries so far, capped by MAX_SEND_ATTEMPTS
 }
 
 // One attachment moved out of Staged_File at send time. The worker's
@@ -1114,6 +1116,7 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			fmt.eprintfln("send: ticket=%d settled err=%s", d.ticket, d.err)
 			offline_changed = true
 			if p.dismissed || len(d.err) == 0 {
+				forward_settled(ui, &p, p.dismissed ? .Cancelled : .Sent)
 				if p.dismissed && len(d.ids) > 0 {
 					for id in d.ids {
 						if !ui.hidden[id] {

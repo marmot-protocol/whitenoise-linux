@@ -1,6 +1,5 @@
 package main
 
-import "core:fmt"
 import "core:math"
 import "core:mem"
 import "core:sync"
@@ -237,11 +236,7 @@ password_estimate :: proc(password: string) -> f64 {
 @(private)
 password_hint :: proc(bits: f64) {
 	clay.Text(
-		fmt.tprintf(
-			tr("Estimated strength: %d bits. Required: %d."),
-			int(bits),
-			PASSWORD_MIN_BITS,
-		),
+		bits >= PASSWORD_MIN_BITS ? tr("Strong enough") : tr("Too easy to guess"),
 		{
 			fontId = FONT_BODY,
 			fontSize = 12,

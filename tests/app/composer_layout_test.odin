@@ -135,7 +135,7 @@ composer_layout :: proc(t: ^testing.T) {
 						"Clay must not wrap a manually wrapped line again",
 					)
 				}
-				for id in ([]string{"AttachBtn", "EmojiBtn", "FxBtn", "PollBtn", "LocationBtn", "DictateBtn", "MicBtn"}) {
+				for id in ([]string{"AttachBtn", "EmojiBtn", "FxBtn", "PollBtn", "LocationBtn", "DictateBtn", "MicBtn", "SendBtn"}) {
 					element := clay.GetElementData(clay.ID(id))
 					testing.expect(t, element.found, id)
 					button := element.boundingBox

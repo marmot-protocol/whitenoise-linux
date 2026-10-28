@@ -242,7 +242,13 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	for page in Page {
-		if clay.PointerOver(clay.ID("Nav", u32(page))) && ui.page != page {
+		if clay.PointerOver(clay.ID("Nav", u32(page))) {
+			if ui.page == page {
+				if page == .Chats && !single_pane() && rail_narrow(ui) {
+					toggle_rail(ui)
+				}
+				return
+			}
 			settings_theme_preview_reset(ui)
 			ui.page = page
 			switch page {
@@ -446,7 +452,11 @@ start_dm :: proc(ui: ^Ui_State, client: ^marmot.Client, contact: Contact_Ui) {
 
 // Publish the whole edit form as kind-0 and leave edit mode.
 publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if len(ui.name_input) == 0 {
+	if len(strings.trim_space(string(ui.name_input[:]))) == 0 {
+		ui.focus = .Name
+		scroll_into_view(clay.ID("ProfilePage"), clay.ID("NameBox"))
+		ui.banner_seen = ""
+		set_status(ui, tr("A display name is required."), .Error)
 		return
 	}
 	job := account_job_new(ui, client, .Profile); if job == nil {return}

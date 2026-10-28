@@ -2155,7 +2155,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		clear(&ui.invite_input)
 	}
-	if admin && rl.IsKeyPressed(.ENTER) && ui.focus == .Rename && len(ui.rename_input) > 0 {
+	if admin && rl.IsKeyPressed(.ENTER) && ui.focus == .Rename {
 		start_rename(ui, client)
 	}
 }

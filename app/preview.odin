@@ -572,7 +572,7 @@ copy_preview_image :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ok: bool
 		result, ok = fetch_attachment(ui, client, ui.chats[ui.selected].group_id, s.msg_id, s.att)
 		if !ok {
-			set_status(ui, fmt.aprintf(tr("Couldn't copy %s. Please try again."), s.name), .Error)
+			toast(ui, fmt.tprintf(tr("Couldn't copy %s. Please try again."), s.name))
 			return
 		}
 		bytes = result.plaintext[:result.plaintext_len]
@@ -591,10 +591,10 @@ copy_preview_image :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		// SDL takes ownership before invoking the platform backend, even
 		// when that backend fails. Clearing runs its cleanup exactly once.
 		_ = sdl.ClearClipboardData()
-		set_status(ui, tr("Couldn't copy the image to the clipboard. Please try again."), .Error)
+		toast(ui, tr("Couldn't copy the image to the clipboard. Please try again."))
 		return
 	}
-	set_status(ui, fmt.aprintf(tr("Copied %s."), name), .Info)
+	toast(ui, fmt.tprintf(tr("Copied %s."), name))
 }
 
 @(private = "file")

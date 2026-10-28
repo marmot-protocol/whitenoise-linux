@@ -42,10 +42,10 @@ Confirm_Kind :: enum {
 }
 
 Confirm :: struct {
-	kind: Confirm_Kind,
-	arg:  string, // message id, member hex, relay url: whatever the kind acts on
-	name: string, // what the copy names ("Ana", "wss://relay.example")
-	idx:  int, // relay index, for the list removals
+	kind:    Confirm_Kind,
+	arg:     string, // message id, member hex, relay url: whatever the kind acts on
+	name:    string, // what the copy names ("Ana", "wss://relay.example")
+	idx:     int, // relay index, retention seconds, or other-admin count
 	account: string, // owning account for Archive_Chat
 }
 
@@ -107,6 +107,11 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 			"Remove admin rights?",
 		), N_("They stay in the group as a regular member."), N_("Demote")
 	case .Step_Down:
+		if c.idx == 0 {
+			return N_(
+				"Step down as admin?",
+			), N_("You stay in the group, but no other admin can grant your rights back."), N_("Step down")
+		}
 		return N_(
 			"Step down as admin?",
 		), N_("You stay in the group, but another admin has to grant the rights back."), N_("Step down")
@@ -167,6 +172,14 @@ confirm_ask :: proc(
 	}
 	if kind == .Archive_Chat {
 		ui.confirm.account = strings.clone(ui.account_ref)
+	}
+	if kind == .Step_Down {
+		ui.confirm.idx = 0
+		for member in ui.members {
+			if member.is_admin && !member.is_self {
+				ui.confirm.idx += 1
+			}
+		}
 	}
 	confirm_shown = kind
 }

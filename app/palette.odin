@@ -92,6 +92,7 @@ account_label :: proc(ui: ^Ui_State, hex_id: string) -> string {
 }
 
 pal_open_modal :: proc(ui: ^Ui_State) {
+	ui.mi_open = false
 	ui.pal_open = true
 	stagger_arm(clay.ID("PalModal").id)
 	ui.focus = .Pal

@@ -65,7 +65,9 @@ settings_network :: proc(ui: ^Ui_State) {
 				}
 				settings_button("NetRefresh", tr("Refresh"))
 			}
-			clay.Text(health_detail(ui), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			if detail := health_detail(ui); detail != "" {
+				clay.Text(detail, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			}
 		}
 
 		if clay.UI(clay.ID("NetworkOutboxGroup"))(settings_box()) {
@@ -640,16 +642,24 @@ health_line :: proc(ui: ^Ui_State) -> string {
 
 health_detail :: proc(ui: ^Ui_State) -> string {
 	if !ui.health_ok {
-		return tr("Aggregate connection counter from the relay pool.")
+		return ""
 	}
 	h := ui.health
-	return fmt.tprintf(
-		tr("%d connecting, %d pending, %d disconnected, %d sleeping."),
-		h.connecting,
-		h.pending,
-		h.disconnected,
-		h.sleeping,
-	)
+	parts: [3]string
+	count := 0
+	if h.connecting > 0 {
+		parts[count] = fmt.tprintf(tr("%d connecting"), h.connecting)
+		count += 1
+	}
+	if waiting := h.initialized + h.pending; waiting > 0 {
+		parts[count] = fmt.tprintf(tr("%d waiting to connect"), waiting)
+		count += 1
+	}
+	if unavailable := h.disconnected + h.sleeping + h.terminated + h.banned; unavailable > 0 {
+		parts[count] = fmt.tprintf(tr("%d not connected"), unavailable)
+		count += 1
+	}
+	return strings.join(parts[:count], ", ", context.temp_allocator)
 }
 
 // ── Actions ─────────────────────────────────────────────────────────

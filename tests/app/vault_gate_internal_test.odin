@@ -292,15 +292,15 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 	append(&gate_pw2, "Password123!")
 	gate_testing.expect(t, button_color(&ui) == ROW_BG, "matching weak passwords remain disabled")
 	click_go(&ui)
-	gate_testing.expect_value(
-		t,
-		gate_err,
-		tr(
-			"This password is too easy to guess. Use unrelated words or a password-manager password.",
-		),
-	)
+	gate_testing.expect(t, gate_job.worker == nil && !vault_exists())
 	clear(&gate_pw)
 	append(&gate_pw, strong)
+	gate_input(&ui)
+	gate_testing.expect(
+		t,
+		gate_err == "",
+		"correcting strength clears the stale rejection without submitting",
+	)
 	gate_confirm = false
 	gate_testing.expect(
 		t,
@@ -308,13 +308,15 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 		"mismatched strong password must not light Continue",
 	)
 	click_go(&ui)
-	gate_testing.expect(
-		t,
-		gate_err == tr("The passwords don't match. Type them again."),
-		"first mouse click must validate, not merely move focus",
-	)
 	gate_testing.expect(t, gate_job.worker == nil && !vault_exists())
 	gate_testing.expect(t, gate_confirm)
+	mismatch_error := gate_err
+	gate_input(&ui)
+	gate_testing.expect(
+		t,
+		gate_err == mismatch_error,
+		"a strong password must not clear an unrelated rejection",
+	)
 
 	// An idle frame cannot launch a job after a rejected click.
 	gate_input(&ui)

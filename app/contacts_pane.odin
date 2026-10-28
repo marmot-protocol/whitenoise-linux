@@ -92,8 +92,10 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		case .No_Contacts:
 			contact_action_note(
 				"NoContacts",
-				tr("No contacts yet"),
-				tr("Import a contacts CSV or JSON export to add people."),
+				tr("People you follow show up here."),
+				tr(
+					"Starting a chat does not add someone to People. You can also import a contacts CSV or JSON export.",
+				),
 				"NoContactsImport",
 				tr("Import contacts"),
 			)
