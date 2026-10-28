@@ -2028,6 +2028,9 @@ msgstr "Inserisci un nome per la cartella."
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr "Inserisci un indirizzo IPv4 numerico o IPv6 tra parentesi quadre con una porta da 1 a 65535."
 
+msgid "Enter a password"
+msgstr "Inserisci una password"
+
 msgid "Enter a password to encrypt your backup."
 msgstr "Inserisci una password per cifrare il tuo backup."
 
@@ -4718,6 +4721,9 @@ msgstr "Resta nel gruppo come membro normale."
 
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "Non contiene testo visibile, quindi il pulsante GM invia GM."
+
+msgid "This is a common password"
+msgstr "Questa è una password comune"
 
 #, c-format
 msgid "This is an installation prompt for connecting this Claude Code setup to White Noise through Marmot. Read the authoritative Claude Code harness guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/claude/marmot/README.md and the evergreen connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Confirm prerequisites: Claude Code CLI is installed, authenticated, and available on PATH, and this machine uses the same public relay set as my current account in the White Noise app. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, use the checksum-verified install-claude-marmot.sh release flow, bootstrap wn-agent for that npub with the allowed welcomer, and verify wn-claude --version. Then reply with your agent npub and ask me to invite it from White Noise and send a test message from this allowed npub over the configured relays. Do not report setup complete until wn-claude returns a reply through White Noise; if that round trip cannot be verified automatically, clearly mark device verification required."

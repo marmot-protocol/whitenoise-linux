@@ -554,7 +554,8 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 					tr("Your password"),
 				)
 				if creating {
-					password_hint(password_bits(string(gate_pw[:]), &gate_check))
+					password_bits(string(gate_pw[:]), &gate_check)
+					password_hint(&gate_check)
 					eyebrow(tr("CONFIRM PASSWORD"))
 					gate_field(
 						ui,

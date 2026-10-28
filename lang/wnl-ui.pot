@@ -2027,6 +2027,9 @@ msgstr ""
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr ""
 
+msgid "Enter a password"
+msgstr ""
+
 msgid "Enter a password to encrypt your backup."
 msgstr ""
 
@@ -4716,6 +4719,9 @@ msgid "They stay in the group as a regular member."
 msgstr ""
 
 msgid "This has no visible text, so the GM button sends GM."
+msgstr ""
+
+msgid "This is a common password"
 msgstr ""
 
 #, c-format

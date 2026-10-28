@@ -185,7 +185,7 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			tr("Your new password"),
 		)
 		bits := password_bits(string(ui.vault_pw[.New][:]), &ui.vault_pw_check)
-		password_hint(bits)
+		password_hint(&ui.vault_pw_check)
 		eyebrow(tr("CONFIRM NEW PASSWORD"))
 		gate_field(
 			ui,
