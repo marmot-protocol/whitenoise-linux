@@ -2031,6 +2031,12 @@ msgstr "数値の IPv4 アドレス、または角括弧で囲んだ IPv6 アド
 msgid "Enter a password to encrypt your backup."
 msgstr "バックアップを暗号化するパスワードを入力してください。"
 
+msgid "Enter a relay URL (wss://…)"
+msgstr "リレーのURLを入力してください (wss://…)"
+
+msgid "Enter a relay URL before adding it."
+msgstr "追加するリレーのURLを入力してください。"
+
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "ステッカー名を1〜64文字で入力してください。"
 

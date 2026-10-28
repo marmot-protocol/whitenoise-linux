@@ -586,7 +586,13 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		publish_profile(ui, client)
 	}
 
-	if clicked("AddRelayBtn") && len(ui.relay_input) > 0 {
+	if clicked("AddRelayBtn") {
+		if strings.trim_space(string(ui.relay_input[:])) == "" {
+			ui.focus = .Relay
+			ui.banner_seen = ""
+			set_status(ui, tr("Enter a relay URL before adding it."), .Error)
+			return
+		}
 		if relay_list_contains(ui.profile.nip65[:], ui.relay_input[:]) {
 			ui.focus = .Relay
 			ui.banner_seen = ""

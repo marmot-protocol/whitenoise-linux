@@ -99,7 +99,7 @@ settings_network :: proc(ui: ^Ui_State) {
 					ui,
 					"RelayBox",
 					&ui.relay_input,
-					"wss://relay.example.com",
+					tr("Enter a relay URL (wss://…)"),
 					ui.focus == .Relay,
 				)
 				settings_button("AddRelayBtn", tr("Add"))
@@ -135,7 +135,7 @@ settings_network :: proc(ui: ^Ui_State) {
 					ui,
 					"InboxBox",
 					&ui.inbox_input,
-					"wss://relay.example.com",
+					tr("Enter a relay URL (wss://…)"),
 					ui.focus == .Inbox,
 				)
 				settings_button("AddInboxBtn", tr("Add"))
@@ -187,7 +187,7 @@ settings_network :: proc(ui: ^Ui_State) {
 					ui,
 					"FetchBox",
 					&ui.fetch_input,
-					"wss://relay.example.com",
+					tr("Enter a relay URL (wss://…)"),
 					ui.focus == .Fetch,
 				)
 				settings_button("AddFetchBtn", tr("Add"))
@@ -740,7 +740,13 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		republish_relay_lists(ui, client)
 		return
 	}
-	if clicked("AddInboxBtn") && len(ui.inbox_input) > 0 {
+	if clicked("AddInboxBtn") {
+		if strings.trim_space(string(ui.inbox_input[:])) == "" {
+			ui.focus = .Inbox
+			ui.banner_seen = ""
+			set_status(ui, tr("Enter a relay URL before adding it."), .Error)
+			return
+		}
 		if relay_list_contains(ui.profile.inbox[:], ui.inbox_input[:]) {
 			ui.focus = .Inbox
 			ui.banner_seen = ""
@@ -767,7 +773,13 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	// Fetch relays and the client template are local prefs, so no
 	// confirm and no relay round trip: edit, save, done.
-	if clicked("AddFetchBtn") && len(ui.fetch_input) > 0 {
+	if clicked("AddFetchBtn") {
+		if strings.trim_space(string(ui.fetch_input[:])) == "" {
+			ui.focus = .Fetch
+			ui.banner_seen = ""
+			set_status(ui, tr("Enter a relay URL before adding it."), .Error)
+			return
+		}
 		append(&ui.prefs.fetch_relays, strings.clone(string(ui.fetch_input[:])))
 		clear(&ui.fetch_input)
 		save_settings(ui)
