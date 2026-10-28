@@ -44,16 +44,28 @@ profile_edit_summary :: proc(t: ^testing.T) {
 			clay.EndLayout(0)
 		}
 		testing.expect(t, clay.GetElementData(clay.ID("ProfileForm")).found == editing)
-		testing.expect(t, clay.GetElementData(clay.ID("ProfileEyebrow")).found == !editing,
-			"the PROFILE heading is only present in view mode")
-		testing.expect(t, clay.GetElementData(clay.ID("ProfileCard")).found == !editing,
-			"the stale read-only summary must be absent while editing")
+		testing.expect(
+			t,
+			clay.GetElementData(clay.ID("ProfileEyebrow")).found == !editing,
+			"the PROFILE heading is only present in view mode",
+		)
+		testing.expect(
+			t,
+			clay.GetElementData(clay.ID("ProfileCard")).found == !editing,
+			"the stale read-only summary must be absent while editing",
+		)
 		for i in 0 ..< 4 {
-			testing.expect(t, clay.GetElementData(clay.ID("ProfileKv", u32(i))).found == !editing,
-				"read-only rows must not remain interactive while editing")
+			testing.expect(
+				t,
+				clay.GetElementData(clay.ID("ProfileKv", u32(i))).found == !editing,
+				"read-only rows must not remain interactive while editing",
+			)
 		}
-		testing.expect(t, clay.GetElementData(clay.ID("ProfileIdCard")).found,
-			"identity remains visible in either mode")
+		testing.expect(
+			t,
+			clay.GetElementData(clay.ID("ProfileIdCard")).found,
+			"identity remains visible in either mode",
+		)
 		if editing {
 			for id in ([]string{"NameBox", "AboutBox", "Nip05Box", "Lud16Box", "ChangePicBtn", "PublishProfileBtn"}) {
 				testing.expect(t, clay.GetElementData(clay.ID(id)).found, id)
@@ -92,4 +104,71 @@ profile_edit_summary :: proc(t: ^testing.T) {
 		if string(text.chars[:text.length]) == "saved@example.invalid" {found_saved = true}
 	}
 	testing.expect(t, found_saved, "the restored summary renders the reloaded value")
+}
+
+@(test)
+profile_empty_fields :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "profile_empty_fields" {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(1100, 1100, "Empty profile fields")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts()
+	load_themes()
+	apply_theme(0, 0)
+	memory: []u8
+	init_layout(&memory, 32768, {1100, 1100})
+	defer delete(memory)
+	ui := Ui_State {
+		page = .Profile,
+	}
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {g_ui, g_prefs = nil, nil}
+	defer {
+		delete(ui.name_input); delete(ui.about_input)
+		delete(ui.nip05_input); delete(ui.lud16_input)
+	}
+	for stage in 0 ..< 3 {
+		if stage == 1 {edit_profile_start(&ui)}
+		if stage == 2 {ed_set(&ui, &ui.name_input, "Draft name")}
+		commands: clay.ClayArray(clay.RenderCommand)
+		for _ in 0 ..< 3 {
+			clay.SetPointerState({-100, -100}, false)
+			clay.BeginLayout()
+			profile_pane(&ui)
+			commands = clay.EndLayout(0)
+		}
+		if stage > 0 {
+			for id in ([]string{"NameBox", "AboutBox", "Nip05Box", "Lud16Box"}) {
+				box := clay.GetElementData(clay.ID(id)).boundingBox
+				found_text := false
+				for command in commands.internalArray[:commands.length] {
+					if command.commandType != .Text {continue}
+					bounds := command.boundingBox
+					if bounds.x < box.x ||
+					   bounds.y < box.y ||
+					   bounds.x + bounds.width > box.x + box.width ||
+					   bounds.y + bounds.height > box.y + box.height {continue}
+					found_text = true
+					typed := stage == 2 && id == "NameBox"
+					testing.expect(
+						t,
+						command.renderData.text.textColor == (typed ? TEXT : TEXT_DIM),
+						"empty hints and typed profile values must remain visually distinct",
+					)
+				}
+				testing.expect(t, found_text, "each editable field renders a value or hint")
+			}
+		}
+		testing.expect(
+			t,
+			len(ui.about_input) == 0 && len(ui.nip05_input) == 0 && len(ui.lud16_input) == 0,
+			"hints must never become profile values",
+		)
+		if stage < 2 {
+			testing.expect_value(t, len(ui.name_input), 0)
+		} else {
+			testing.expect_value(t, string(ui.name_input[:]), "Draft name")
+		}
+	}
 }

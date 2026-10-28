@@ -158,7 +158,7 @@ profile_kv :: proc(
 		{layout = {sizing = {width = clay.SizingGrow()}}},
 		) {}
 		clay.Text(
-			len(value) > 0 ? value : "—",
+			len(value) > 0 ? value : tr("Not set"),
 			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 		)
 		if hovered() {
@@ -417,7 +417,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					tr("DISPLAY NAME"),
 					"NameBox",
 					&ui.name_input,
-					tr("Your name"),
+					tr("Not set"),
 					ui.focus == .Name,
 				)
 				form_row(
@@ -426,7 +426,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					tr("ABOUT"),
 					"AboutBox",
 					&ui.about_input,
-					tr("A line about you"),
+					tr("Not set"),
 					ui.focus == .About,
 				)
 				form_row(
@@ -450,7 +450,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					"LIGHTNING",
 					"Lud16Box",
 					&ui.lud16_input,
-					"you@wallet.com",
+					tr("Not set"),
 					ui.focus == .Lud16,
 				)
 				if clay.UI(clay.ID("ProfileFormActions"))(
