@@ -46,9 +46,9 @@ step_view :: proc(ui: ^Ui_State, step: Step) -> Step_View {
 	case .Key_Package:
 		if !ui.kp_fetched {
 			return {
-				N_("Publish your key package"),
-				N_("It is what lets people invite you to a group."),
-				N_("Check now"),
+				N_("Check your key package"),
+				N_("A key package lets people invite you to encrypted chats."),
+				N_("Check for a key package"),
 				false,
 			}
 		}
@@ -62,7 +62,7 @@ step_view :: proc(ui: ^Ui_State, step: Step) -> Step_View {
 		}
 		return {
 			N_("Publish your key package"),
-			N_("It is what lets people invite you to a group."),
+			N_("A key package lets people invite you to encrypted chats."),
 			N_("Publish"),
 			false,
 		}

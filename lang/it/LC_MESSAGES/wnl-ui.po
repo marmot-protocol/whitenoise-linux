@@ -301,6 +301,9 @@ msgstr "Una casella spuntata indica che hai messo la chat a mano. Togli la spunt
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "Un client desktop per chat di gruppo private. I messaggi vengono sigillati con MLS su questa macchina, consegnati ai relay Nostr come blob opachi e riaperti solo all'interno del gruppo."
 
+msgid "A key package lets people invite you to encrypted chats."
+msgstr "Un pacchetto chiavi permette agli altri di invitarti nelle chat crittografate."
+
 msgid "A line about you"
 msgstr "Una riga su di te"
 
@@ -337,8 +340,12 @@ msgid "About White Noise"
 msgstr "Informazioni su White Noise"
 
 #, c-format
-msgid "Accent %s"
-msgstr "Accento %s"
+msgid "Accent %s color"
+msgstr "Colore accento %s"
+
+#, c-format
+msgid "Accent %s name"
+msgstr "Nome accento %s"
 
 msgid "Accent color"
 msgstr "Colore accento"
@@ -762,9 +769,6 @@ msgstr "Cambia la password del vault"
 msgid "Change..."
 msgstr "Cambia..."
 
-msgid "Changes require a restart; the current connection is unchanged."
-msgstr "Le modifiche richiedono un riavvio; la connessione attuale resta invariata."
-
 msgid "Chat details"
 msgstr "Dettagli della chat"
 
@@ -800,11 +804,17 @@ msgstr "Confronta ogni carattere con l'originale e riprova."
 msgid "Check every six hours and download signed updates. Restart when you choose."
 msgstr "Controlla ogni sei ore e scarica gli aggiornamenti firmati. Riavvia quando vuoi."
 
+msgid "Check for a key package"
+msgstr "Cerca un pacchetto chiavi"
+
 msgid "Check for a newer version."
 msgstr "Cerca una versione più recente."
 
 msgid "Check now"
 msgstr "Verifica ora"
+
+msgid "Check your key package"
+msgstr "Verifica il tuo pacchetto chiavi"
 
 msgid "Checking for updates."
 msgstr "Controllo degli aggiornamenti in corso."
@@ -2170,6 +2180,9 @@ msgstr "Fitness"
 msgid "Flag"
 msgstr "Bandiera"
 
+msgid "Flat"
+msgstr "Uniforme"
+
 msgid "Float"
 msgstr "Rendi mobile"
 
@@ -2379,9 +2392,6 @@ msgstr "Quanto si sposta la vista con la rotellina del mouse."
 msgid "I did. Very important marmot business."
 msgstr "Io. Affari da marmotta molto importanti."
 
-msgid "I have an nsec"
-msgstr "Ho un nsec"
-
 msgid "I packed snacks for the expedition. 🥕"
 msgstr "Ho portato degli spuntini per la spedizione. 🥕"
 
@@ -2431,6 +2441,9 @@ msgstr "Importa un'esportazione dei contatti CSV o JSON per aggiungere persone."
 
 msgid "Import a key"
 msgstr "Importa una chiave"
+
+msgid "Import a secret key (nsec)"
+msgstr "Importa una chiave segreta (nsec)"
 
 msgid "Import an image to make your first sticker."
 msgstr "Importa un'immagine per creare il tuo primo adesivo."
@@ -2545,9 +2558,6 @@ msgstr "Segnalazioni"
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr "Scompare per tutti nella chat. Non si può annullare."
 
-msgid "It is what lets people invite you to a group."
-msgstr "È ciò che permette agli altri di invitarti in un gruppo."
-
 msgid "It stays for everyone else. You won't see it on this device again."
 msgstr "Resta visibile per tutti gli altri. Non lo vedrai più su questo dispositivo."
 
@@ -2619,9 +2629,6 @@ msgstr "Pacchetti chiavi"
 
 msgid "Key packages are published to your key package relays."
 msgstr "I pacchetti chiavi vengono pubblicati sui tuoi relay per i pacchetti chiavi."
-
-msgid "Keyboard input"
-msgstr "Input da tastiera"
 
 msgid "Keyboard shortcuts"
 msgstr "Scorciatoie da tastiera"
@@ -3398,9 +3405,6 @@ msgstr "Abbina il tuo firmatario remoto"
 
 msgid "Pairing link copied"
 msgstr "Link di abbinamento copiato"
-
-msgid "Pane %d of %d"
-msgstr "Riquadro %d di %d"
 
 msgid "Panel"
 msgstr "Pannello"
@@ -4360,9 +4364,6 @@ msgstr "Disconnessione e rimozione della sessione del tuo firmatario"
 msgid "Signing you in"
 msgstr "Accesso in corso"
 
-msgid "Single choice"
-msgstr "Scelta singola"
-
 msgid "Single sided"
 msgstr "Lato singolo"
 
@@ -4547,9 +4548,6 @@ msgstr "Terminale"
 
 msgid "Terminal agent by Nous Research"
 msgstr "Agente da terminale di Nous Research"
-
-msgid "Terminal unfocused"
-msgstr "Terminale non attivo"
 
 #, c-format
 msgid "Terrain: %d/5"
@@ -5297,9 +5295,6 @@ msgstr "modificato"
 
 msgid "failed · tap to retry"
 msgstr "non riuscito · tocca per riprovare"
-
-msgid "flat"
-msgstr "piatto"
 
 #, c-format
 msgid "in %d day"

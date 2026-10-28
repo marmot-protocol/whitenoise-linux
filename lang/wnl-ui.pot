@@ -301,6 +301,9 @@ msgstr ""
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr ""
 
+msgid "A key package lets people invite you to encrypted chats."
+msgstr ""
+
 msgid "A line about you"
 msgstr ""
 
@@ -336,7 +339,11 @@ msgid "About White Noise"
 msgstr ""
 
 #, c-format
-msgid "Accent %s"
+msgid "Accent %s color"
+msgstr ""
+
+#, c-format
+msgid "Accent %s name"
 msgstr ""
 
 msgid "Accent color"
@@ -759,9 +766,6 @@ msgstr ""
 msgid "Change..."
 msgstr ""
 
-msgid "Changes require a restart; the current connection is unchanged."
-msgstr ""
-
 msgid "Chat details"
 msgstr ""
 
@@ -797,10 +801,16 @@ msgstr ""
 msgid "Check every six hours and download signed updates. Restart when you choose."
 msgstr ""
 
+msgid "Check for a key package"
+msgstr ""
+
 msgid "Check for a newer version."
 msgstr ""
 
 msgid "Check now"
+msgstr ""
+
+msgid "Check your key package"
 msgstr ""
 
 msgid "Checking for updates."
@@ -2161,6 +2171,9 @@ msgstr ""
 msgid "Flag"
 msgstr ""
 
+msgid "Flat"
+msgstr ""
+
 msgid "Float"
 msgstr ""
 
@@ -2370,9 +2383,6 @@ msgstr ""
 msgid "I did. Very important marmot business."
 msgstr ""
 
-msgid "I have an nsec"
-msgstr ""
-
 msgid "I packed snacks for the expedition. 🥕"
 msgstr ""
 
@@ -2421,6 +2431,9 @@ msgid "Import a contacts CSV or JSON export to add people."
 msgstr ""
 
 msgid "Import a key"
+msgstr ""
+
+msgid "Import a secret key (nsec)"
 msgstr ""
 
 msgid "Import an image to make your first sticker."
@@ -2536,9 +2549,6 @@ msgstr ""
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr ""
 
-msgid "It is what lets people invite you to a group."
-msgstr ""
-
 msgid "It stays for everyone else. You won't see it on this device again."
 msgstr ""
 
@@ -2609,9 +2619,6 @@ msgid "Key packages"
 msgstr ""
 
 msgid "Key packages are published to your key package relays."
-msgstr ""
-
-msgid "Keyboard input"
 msgstr ""
 
 msgid "Keyboard shortcuts"
@@ -3386,9 +3393,6 @@ msgid "Pair with your remote signer"
 msgstr ""
 
 msgid "Pairing link copied"
-msgstr ""
-
-msgid "Pane %d of %d"
 msgstr ""
 
 msgid "Panel"
@@ -4348,9 +4352,6 @@ msgstr ""
 msgid "Signing you in"
 msgstr ""
 
-msgid "Single choice"
-msgstr ""
-
 msgid "Single sided"
 msgstr ""
 
@@ -4534,9 +4535,6 @@ msgid "Terminal"
 msgstr ""
 
 msgid "Terminal agent by Nous Research"
-msgstr ""
-
-msgid "Terminal unfocused"
 msgstr ""
 
 #, c-format
@@ -5280,9 +5278,6 @@ msgid "edited"
 msgstr ""
 
 msgid "failed · tap to retry"
-msgstr ""
-
-msgid "flat"
 msgstr ""
 
 #, c-format

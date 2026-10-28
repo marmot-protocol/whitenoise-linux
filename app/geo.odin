@@ -825,12 +825,13 @@ geo_consent :: proc(id: u32, w: f32) {
 				label:  string,
 			}{{.Decline, tr("Not now")}, {.Accept, tr("Accept")}}
 			for button, i in buttons {
+				primary := button.action == .Accept
 				if clay.UI(clay.ID("GeoConsentButton", id * 2 + u32(i)))(
 				{
 					layout = {padding = {left = 14, right = 14, top = 7, bottom = 7}},
-					backgroundColor = hovered() ? ACCENT : PLATE,
+					backgroundColor = primary ? ACCENT : hovered() ? HOVER : PLATE,
 					cornerRadius = rr(7),
-					border = {color = CARD_BORDER, width = bw()},
+					border = {color = primary ? ACCENT : CARD_BORDER, width = bw()},
 				},
 				) {
 					if hovered() {geo_action = button.action}
@@ -839,7 +840,7 @@ geo_consent :: proc(id: u32, w: f32) {
 						{
 							fontId = FONT_BODY,
 							fontSize = 13,
-							textColor = hovered() ? ink_on(ACCENT) : TEXT,
+							textColor = primary ? ON_ACCENT : TEXT,
 						},
 					)
 				}

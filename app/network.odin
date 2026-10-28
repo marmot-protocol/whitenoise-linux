@@ -292,8 +292,7 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 	if !ui.socks5_initialized {
 		ui.socks5_enabled = ui.prefs.socks5_proxy != ""
 		ui.socks5_auth = ui.prefs.socks5_auth
-		address := ui.socks5_enabled ? ui.prefs.socks5_proxy : "127.0.0.1:9050"
-		append(&ui.socks5_input, ..transmute([]u8)address)
+		append(&ui.socks5_input, ..transmute([]u8)ui.prefs.socks5_proxy)
 		if ui.socks5_auth {
 			credentials, ok := socks5_load_auth()
 			ui.socks5_load_error = !ok
@@ -361,7 +360,7 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 			tr("Press Enter to save; Escape returns to Network & relays."),
 			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 		)
-		status := tr("Changes require a restart; the current connection is unchanged.")
+		status := ""
 		if ui.socks5_job != nil {
 			status = tr("Saving your proxy settings and encrypted credentials.")
 			busy_bar("Socks5SaveProgress")
@@ -379,7 +378,9 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 		   (ui.socks5_enabled ? string(ui.socks5_input[:]) : "") == ui.prefs.socks5_proxy {
 			status = tr("Saved. Restart White Noise to apply this connection setting.")
 		}
-		clay.Text(status, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		if status != "" {
+			clay.Text(status, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		}
 		clay.Text(
 			tr(
 				"Relay names are resolved by your proxy. Media host checks still use your local DNS.",
