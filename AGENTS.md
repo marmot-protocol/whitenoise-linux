@@ -235,6 +235,11 @@ cache and the offline queue seal with the vault's blob subkey.
 A wrong password fails the Poly1305 tag. There is no recovery: "Use another
 key" deletes the vault and everything sealed under it.
 
+The create-vault and change-password hints distinguish empty input, known
+common passwords, other weak passwords, and passwords that meet the existing
+40-bit estimate threshold. Common-password feedback uses the estimator's
+whole-password corpus match; it does not change password acceptance.
+
 ## Packaging
 
 Releases are an AppImage and a Flatpak bundle, built by

@@ -120,6 +120,7 @@ Password_Check :: struct {
 	sample: [PASSWORD_SAMPLE_RUNES * 4]u8,
 	length: int,
 	bits:   f64,
+	common: bool,
 }
 
 // Reuse the estimate until the evaluated prefix changes. Owners wipe the cache
@@ -141,14 +142,14 @@ password_bits :: proc(password: string, check: ^Password_Check) -> f64 {
 	mem.zero_slice(check.sample[:])
 	copy(check.sample[:], transmute([]u8)sample)
 	check.length = len(sample)
-	check.bits = password_estimate(sample)
+	check.bits, check.common = password_estimate(sample)
 	return check.bits
 }
 
 // Known whole passwords use their corpus rank. Otherwise character diversity
 // is discounted by sequences and repeated blocks, not by constituent words.
 @(private = "file")
-password_estimate :: proc(password: string) -> f64 {
+password_estimate :: proc(password: string) -> (bits: f64, common: bool) {
 	chars: [PASSWORD_SAMPLE_RUNES]rune
 	keys: [PASSWORD_BUCKET_COUNT]rune
 	occupied: [PASSWORD_BUCKET_COUNT]bool
@@ -166,8 +167,8 @@ password_estimate :: proc(password: string) -> f64 {
 		chars[count] = char
 		count += 1
 	}
-	if count == 0 {return 0}
-	if bits, found := password_corpus_bits(chars[:count]); found {return bits}
+	if count == 0 {return 0, false}
+	if bits, found := password_corpus_bits(chars[:count]); found {return bits, true}
 
 	logs: [PASSWORD_SAMPLE_RUNES + 1]f64
 	for i in 1 ..= count {logs[i] = math.log2(f64(i))}
@@ -230,16 +231,20 @@ password_estimate :: proc(password: string) -> f64 {
 			}
 		}
 	}
-	return best[count]
+	return best[count], false
 }
 
 @(private)
-password_hint :: proc(bits: f64) {
+password_hint :: proc(check: ^Password_Check) {
+	bits := check.bits
 	passing := bits >= PASSWORD_MIN_BITS
-	clay.Text(
-		bits >= PASSWORD_MIN_BITS ? tr("Strong enough") : tr("Too easy to guess"),
-		{fontId = FONT_BODY, fontSize = 12, textColor = passing ? ACCENT : TEXT_DIM},
-	)
+	label := passing ? tr("Strong enough") : tr("Too easy to guess")
+	if check.length == 0 {
+		label = tr("Enter a password")
+	} else if check.common {
+		label = tr("This is a common password")
+	}
+	clay.Text(label, {fontId = FONT_BODY, fontSize = 12, textColor = passing ? ACCENT : TEXT_DIM})
 	if clay.UI(clay.ID("PasswordStrengthTrack"))(
 	{
 		layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(5)}},

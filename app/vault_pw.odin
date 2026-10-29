@@ -270,7 +270,7 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			if ui.vault_pw_err != "" && vault_pw_error_field == .New {
 				clay.Text(ui.vault_pw_err, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
 			}
-			secure_password_hint(bits)
+			password_hint(&ui.vault_pw_check)
 			eyebrow(tr("CONFIRM NEW PASSWORD"))
 			gate_field(
 				ui,

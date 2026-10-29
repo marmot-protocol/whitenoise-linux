@@ -677,7 +677,8 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 					gate_pw_view,
 				)
 				if creating {
-					password_hint(password_bits(string(gate_pw[:]), &gate_check))
+					password_bits(string(gate_pw[:]), &gate_check)
+					password_hint(&gate_check)
 					if clay.UI(clay.ID("GatePw2Label"))(
 					{
 						layout = {
