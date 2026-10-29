@@ -88,6 +88,10 @@ msgid "%d hours ago"
 msgstr "%d時間前"
 
 #, c-format
+msgid "%d key packages. On this device: %d. On relays: %d."
+msgstr "キーパッケージは %d 件です。この端末に %d 件、リレーに %d 件あります。"
+
+#, c-format
 msgid "%d member"
 msgstr "メンバー%d人"
 
@@ -145,10 +149,6 @@ msgstr "%d / %d 件をあなたと共有"
 
 msgid "%d people will be added to the group."
 msgstr "%d人がグループに追加されます。"
-
-#, c-format
-msgid "%d published, %d on this device, seen on %d relays."
-msgstr "公開済み %d 件、この端末に %d 件、%d 件のリレーで確認済みです。"
 
 #, c-format
 msgid "%d published, so people can invite you."
@@ -328,6 +328,10 @@ msgstr "（未公開）"
 #, c-format
 msgid "+%d more"
 msgstr "+%d 件"
+
+#, c-format
+msgid "1 key package. %s"
+msgstr "キーパッケージは 1 件です。%s"
 
 msgid "1 vote"
 msgstr "1票"
@@ -3002,6 +3006,9 @@ msgstr "場所"
 msgid "Location maps"
 msgstr "位置情報の地図"
 
+msgid "Location unknown."
+msgstr "保存先は不明です。"
+
 msgid "Lock now"
 msgstr "今すぐロック"
 
@@ -3496,17 +3503,33 @@ msgstr "オフにすると、本文を表示せず「新しいメッセージ」
 msgid "On"
 msgstr "オン"
 
-msgid "On %d relays"
-msgstr "%d 個のリレー上"
+#, c-format
+msgid "On %d relay."
+msgstr "%d 件のリレーにあります。"
+
+#, c-format
+msgid "On %d relays."
+msgstr "%d 件のリレーにあります。"
 
 msgid "On accent"
 msgstr "アクセント上の文字"
 
+msgid "On relays."
+msgstr "リレーにあります。"
+
 msgid "On sale"
 msgstr "販売中"
 
-msgid "On this device"
-msgstr "この端末内"
+#, c-format
+msgid "On this device and on %d relay."
+msgstr "この端末と %d 件のリレーにあります。"
+
+#, c-format
+msgid "On this device and on %d relays."
+msgstr "この端末と %d 件のリレーにあります。"
+
+msgid "On this device and on relays."
+msgstr "この端末とリレーにあります。"
 
 msgid "Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest."
 msgstr "エージェントからnpubを受け取ったら、「新しいチャット」から会話を始めてください。以降の手順はコネクターのドキュメントをご覧ください。"
@@ -3960,10 +3983,6 @@ msgstr "最近"
 
 msgid "RELAY"
 msgstr "リレー"
-
-#, c-format
-msgid "RELAY · %d"
-msgstr "リレー · %d"
 
 msgid "RELAYS"
 msgstr "リレー"

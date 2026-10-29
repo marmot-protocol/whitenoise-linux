@@ -863,6 +863,9 @@ its sealed data and returns to account setup.
 
 The get-started card checks for an existing key package before offering to
 publish one. A key package lets other people invite you to encrypted chats.
+Settings > Keys & identity > Key packages counts each package once and lists
+where it is stored. A package can be on this device and on several relays;
+the relay count describes copies of that package, not additional packages.
 Export encrypted key opens its password dialog on the first click.
 
 If relay discovery fails during key import or remote-signer login, missing lists

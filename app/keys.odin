@@ -95,32 +95,54 @@ fetch_key_packages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if job != nil {ui.kp_fetched = true; account_job_start(job)}
 }
 
-// One-line summary above the list: what exists and where it lives.
+// A package can be stored both locally and on relays.
+@(private)
+kp_location :: proc(row: Kp_Row) -> string {
+	if row.relay {
+		if n := len(row.relay_urls); n > 0 {
+			if row.local {
+				return fmt.tprintf(
+					tr(
+						n == 1 ? N_("On this device and on %d relay.") : N_("On this device and on %d relays."),
+					),
+					n,
+				)
+			}
+			return fmt.tprintf(tr(n == 1 ? N_("On %d relay.") : N_("On %d relays.")), n)
+		}
+		return tr(row.local ? N_("On this device and on relays.") : N_("On relays."))
+	}
+	if row.local {
+		return tr("Stored on this device, not published to any relay yet.")
+	}
+	return tr("Location unknown.")
+}
+
+// Count packages once, then describe their overlapping storage locations.
 kp_status_line :: proc(ui: ^Ui_State) -> string {
 	if !ui.kp_fetched {
 		return tr("Not loaded yet. Click Refresh.")
 	}
-	local, published, relays: int
+	if len(ui.kp_list) == 0 {
+		return tr("No key package yet. Publish one so people can invite you.")
+	}
+	if len(ui.kp_list) == 1 {
+		return fmt.tprintf(tr("1 key package. %s"), kp_location(ui.kp_list[0]))
+	}
+	local, published: int
 	for row in ui.kp_list {
 		if row.local {
 			local += 1
 		}
 		if row.relay {
 			published += 1
-			relays = max(relays, len(row.relay_urls))
 		}
 	}
-	if local == 0 && published == 0 {
-		return tr("No key package yet. Publish one so people can invite you.")
-	}
-	if published == 0 {
-		return tr("Stored on this device, not published to any relay yet.")
-	}
 	return fmt.tprintf(
-		tr("%d published, %d on this device, seen on %d relays."),
-		published,
+		tr("%d key packages. On this device: %d. On relays: %d."),
+		len(ui.kp_list),
 		local,
-		relays,
+		published,
 	)
 }
 
@@ -371,10 +393,12 @@ settings_keys :: proc(ui: ^Ui_State) {
 							row.at,
 							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 						)
+						clay.Text(
+							kp_location(row),
+							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+						)
 					}
-					tag :=
-						row.relay ? fmt.tprintf(tr("On %d relays"), len(row.relay_urls)) : tr("On this device")
-					clay.Text(tag, {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_DIM})
+
 				}
 			}
 		}

@@ -88,6 +88,10 @@ msgid "%d hours ago"
 msgstr "%d ore fa"
 
 #, c-format
+msgid "%d key packages. On this device: %d. On relays: %d."
+msgstr "%d pacchetti chiavi. Su questo dispositivo: %d. Sui relay: %d."
+
+#, c-format
 msgid "%d member"
 msgstr "%d membro"
 
@@ -145,10 +149,6 @@ msgstr "%d di %d in comune con te"
 
 msgid "%d people will be added to the group."
 msgstr "%d persone verranno aggiunte al gruppo."
-
-#, c-format
-msgid "%d published, %d on this device, seen on %d relays."
-msgstr "%d pubblicati, %d su questo dispositivo, visti su %d relay."
 
 #, c-format
 msgid "%d published, so people can invite you."
@@ -328,6 +328,10 @@ msgstr "(non pubblicato)"
 #, c-format
 msgid "+%d more"
 msgstr "+%d altri"
+
+#, c-format
+msgid "1 key package. %s"
+msgstr "1 pacchetto chiavi. %s"
 
 msgid "1 vote"
 msgstr "1 voto"
@@ -3002,6 +3006,9 @@ msgstr "Posizione"
 msgid "Location maps"
 msgstr "Mappe delle posizioni"
 
+msgid "Location unknown."
+msgstr "Posizione sconosciuta."
+
 msgid "Lock now"
 msgstr "Blocca ora"
 
@@ -3496,17 +3503,33 @@ msgstr "Se disattivata, mostra solo \"Nuovo messaggio\" senza il testo."
 msgid "On"
 msgstr "On"
 
-msgid "On %d relays"
-msgstr "Su %d relay"
+#, c-format
+msgid "On %d relay."
+msgstr "Su %d relay."
+
+#, c-format
+msgid "On %d relays."
+msgstr "Su %d relay."
 
 msgid "On accent"
 msgstr "Su accento"
 
+msgid "On relays."
+msgstr "Sui relay."
+
 msgid "On sale"
 msgstr "In vendita"
 
-msgid "On this device"
-msgstr "Su questo dispositivo"
+#, c-format
+msgid "On this device and on %d relay."
+msgstr "Su questo dispositivo e su %d relay."
+
+#, c-format
+msgid "On this device and on %d relays."
+msgstr "Su questo dispositivo e su %d relay."
+
+msgid "On this device and on relays."
+msgstr "Su questo dispositivo e sui relay."
 
 msgid "Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest."
 msgstr "Quando l'agente ti fornisce il suo npub, usa Nuova chat per avviare una conversazione con lui. La documentazione del connettore spiega il resto."
@@ -3960,10 +3983,6 @@ msgstr "RECENTI"
 
 msgid "RELAY"
 msgstr "RELAY"
-
-#, c-format
-msgid "RELAY · %d"
-msgstr "RELAY · %d"
 
 msgid "RELAYS"
 msgstr "RELAY"
