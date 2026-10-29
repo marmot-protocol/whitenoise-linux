@@ -878,6 +878,10 @@ filter, and window size after a restart. Reopening Settings returns to the
 section you left. These preferences are independent of General's
 "Restore last chat" toggle, which controls only the selected conversation.
 
+Relay add fields under Network & relays start empty and ask you to enter a
+relay URL. Choosing Add with an empty or whitespace-only field focuses it
+and shows a correction without changing your relay lists.
+
 Set a SOCKS5 proxy under Settings > Network & relays > Relays. Enable the
 proxy, enter a numeric address such as `127.0.0.1:9050` or `[::1]:9050`,
 then choose Save and restart White Noise. Disable the switch, save, and

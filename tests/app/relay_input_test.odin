@@ -133,4 +133,39 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 			testing.expect_value(t, len(account_jobs), 1)
 		}
 	}
+	for kind in 0 ..< 3 {
+		fields := [3]^[dynamic]u8{&ui.relay_input, &ui.inbox_input, &ui.fetch_input}
+		buttons := [3]string{"AddRelayBtn", "AddInboxBtn", "AddFetchBtn"}
+		anchors := [3]string{"AddRelayRow", "AddInboxRow", "AddFetchRow"}
+		focuses := [3]Focus{.Relay, .Inbox, .Fetch}
+		field := fields[kind]
+		ui.settings_tab = kind == 2 ? 1 : 0
+		ui.settings_anchor = anchors[kind]
+		ui.settings_scroll_pending = true
+		fetch_count := len(ui.prefs.fetch_relays)
+		for input in ([]string{"", " \t\u3000"}) {
+			ed_set(&ui, field, input)
+			ui.focus = .Compose
+			ui.client_status, ui.banner, ui.banner_seen = "", "", ""
+			for _ in 0 ..< 3 {frame(&ui)}
+			if !click(t, &ui, client, buttons[kind]) {return}
+			commands := frame(&ui)
+			error := ui.client_status
+			testing.expect(t, error != "", "empty relay input provides feedback")
+			testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
+			testing.expect_value(t, ui.focus, focuses[kind])
+			testing.expect_value(t, string(field[:]), input)
+			testing.expect_value(t, len(account_jobs), 1)
+			testing.expect_value(t, len(ui.profile.nip65), 1)
+			testing.expect_value(t, len(ui.profile.inbox), 1)
+			testing.expect_value(t, len(ui.prefs.fetch_relays), fetch_count)
+			visible := false
+			for command in commands.internalArray[:commands.length] {
+				if command.commandType != .Text {continue}
+				text := command.renderData.text.stringContents
+				visible ||= string(text.chars[:text.length]) == error
+			}
+			testing.expect(t, visible, "empty relay feedback is rendered on the next frame")
+		}
+	}
 }
