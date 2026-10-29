@@ -144,55 +144,49 @@ html_esc :: proc(text: string) -> string {
 export_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	job := ui.transcript
 	if job == nil {return}
-	if ui.account_ref != job.account ||
-	   ui.page != .Chats ||
-	   ui.selected < 0 ||
-	   ui.selected >= len(ui.chats) ||
-	   ui.chats[ui.selected].group_id != job.group {job.stale = true}
+	if ui.account_ref != job.account {job.stale = true}
 	if job.worker != nil {
 		if !thread.is_done(job.worker) {return}
-		if !job.stale {
+		thread.join(job.worker)
+		thread.destroy(job.worker)
+		job.worker = nil
+		if job.stale {export_stop(ui); return}
+		if job.reading {
+			if job.page == nil {
+				set_status(ui, tr("Couldn't export the chat. Please try again."), .Error)
+				export_stop(ui)
+				return
+			}
+			export_page_snapshot(ui, job)
+			marmot.timeline_page_free(job.page)
+			job.page = nil
+			job.reading = false
+		} else {
 			title, _ := strings.replace_all(job.title, "/", "-", context.temp_allocator)
-			start_blob_save(fmt.tprintf("%s.html", title), job.bytes, take_ownership = true)
+			start_blob_save(
+				fmt.tprintf("%s.%s", title, job.kind == .Html ? "html" : "md"),
+				job.bytes,
+				take_ownership = true,
+			)
 			job.bytes = nil
+			export_stop(ui)
+			return
 		}
-		export_stop(ui)
-		return
 	}
 	if job.stale {export_stop(ui); return}
-	if !job.presented || ui.timeline_loading {return}
-	if timeline_page == nil {
-		toast(ui, tr("Couldn't export the chat. Please try again."))
-		export_stop(ui)
-		return
-	}
-	if job.kind == .Markdown {
-		b := strings.builder_make(context.temp_allocator)
-		transcript_md(ui, ui.chats[ui.selected], &b)
-		title, _ := strings.replace_all(job.title, "/", "-", context.temp_allocator)
-		start_blob_save(fmt.tprintf("%s.md", title), b.buf[:])
-		export_stop(ui)
-		return
-	}
-	transcript_snapshot(ui, job)
-	job.worker = thread.create(transcript_worker)
+	if !job.presented {return}
+	job.worker = thread.create(job.reading ? transcript_read : transcript_worker)
 	job.worker.data = job
 	thread.start(job.worker)
 }
 
-// Export the selected chat's loaded window as a transcript file.
-// `index` targets a rail row other than the open one (the row menu);
-// the transcript is built from the loaded timeline, so that row is
-// opened first.
+// A row export reads its own window without changing the selected conversation.
+// The open chat can reuse its already loaded window.
 export_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: Transcript_Kind, index := -1) {
 	if ui.transcript != nil {return}
-	if index >= 0 && index != ui.selected {
-		select_chat(ui, client, index)
-	}
-	if ui.selected < 0 {
-		return
-	}
-	chat := ui.chats[ui.selected]
+	index := index >= 0 ? index : ui.selected
+	if index < 0 || index >= len(ui.chats) {return}
+	chat := ui.chats[index]
 
 	ui.transcript = new(Transcript_Job)
 	ui.transcript^ = {
@@ -201,8 +195,10 @@ export_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: Transcript_Kind
 		group            = strings.clone(chat.group_id),
 		title            = strings.clone(chat.title),
 		kind             = kind,
+		reading          = index != ui.selected || ui.timeline_loading || timeline_page == nil,
 		result_allocator = reload_allocator(),
 	}
+	if !ui.transcript.reading {transcript_snapshot(ui, ui.transcript, timeline_page)}
 }
 
 @(private)
@@ -224,7 +220,7 @@ export_progress :: proc(ui: ^Ui_State) {
 	) {
 		label :=
 			job.kind == .Html ? tr("Preparing HTML export...") : tr("Preparing Markdown export...")
-		if job.worker == nil && ui.timeline_loading {label = tr("Loading messages for export...")}
+		if job.reading {label = tr("Loading messages for export...")}
 		clay.Text(
 			fmt.tprintf("%s %s", label, job.title),
 			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
@@ -383,9 +379,10 @@ inline_image :: proc(
 	)
 }
 
-transcript_md :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, b: ^strings.Builder) {
-	fmt.sbprintfln(b, "# %s", chat.title)
-	for msg in ui.messages {
+@(private)
+transcript_md :: proc(job: ^Transcript_Job, b: ^strings.Builder) {
+	fmt.sbprintfln(b, "# %s", job.title)
+	for msg in job.messages {
 		strings.write_string(b, "\n")
 		if msg.system {
 			fmt.sbprintfln(b, "_%s_ · %s", msg.body, msg.at_full)
@@ -400,8 +397,8 @@ transcript_md :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, b: ^strings.Builder) {
 			fmt.sbprintln(b, msg.body)
 		}
 		for slot in msg.attachments {
-			if slot.state == .Rejected {
-				fmt.sbprintfln(b, "_%s_", tr(slot.rejection))
+			if slot.rejection != "" {
+				fmt.sbprintfln(b, "_%s_", slot.rejection)
 			} else if strings.has_prefix(media_type_for(slot.name), "image/") {
 				fmt.sbprintfln(b, "![%s](attachment)", slot.name)
 			}

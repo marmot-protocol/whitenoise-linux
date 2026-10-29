@@ -431,6 +431,7 @@ Msg_Ui :: struct {
 	sort_at:             u64, // record timeline_at, the render order key
 	mls_order:           int, // position in the marmot page, the read cursor's order
 	mine:                bool,
+	delivery:            marmot.Delivery_State, // local projection versus published relay event
 	system:              bool, // kind-1210 group-system line; body holds the sentence
 	sys_text:            string, // system sentence with profile references for mention chips
 	sys_added_hex:       string, // member_added row: subject hex, "" = not an add
@@ -576,6 +577,7 @@ Ui_State :: struct {
 	profile_contact:                                       Contact_Ui, // viewed profile outside the saved contacts list
 	add_account_open:                                      bool, // show the login pane to add another account
 	scroll_pending:                                        bool, // jump timeline scroll to newest after reload
+	scroll_settle:                                         int, // bounded passes while virtual rows acquire real heights
 	selected_contact:                                      int, // index into contacts, -1 = none
 	name_input:                                            [dynamic]u8, // profile display name draft
 	about_input:                                           [dynamic]u8, // profile about draft
@@ -622,6 +624,7 @@ Ui_State :: struct {
 	archived:                                              [dynamic]Chat_Row_Ui,
 	contacts:                                              [dynamic]Contact_Ui,
 	contact_import:                                        ^Contact_Import_Job,
+	contact_tools_open:                                    bool,
 	picking_contacts:                                      bool, // route the next picked file to contact import
 	profile:                                               Profile_Ui,
 	theme:                                                 int, // index into theme_packs
@@ -735,6 +738,10 @@ Ui_State :: struct {
 	gs_input:                                              [dynamic]u8, // its query box
 	gs_hits:                                               [dynamic]Gs_Hit, // its result cards
 	gs_chats:                                              [dynamic]Chat_Row_Ui, // all local chats, including archives
+	gs_senders:                                            [dynamic]string, // public keys seen across local chats
+	gs_filters_open:                                       bool,
+	gs_flash_id:                                           string,
+	gs_flash_until:                                        f64,
 	gs_account:                                            string, // request and catalog owner
 	gs_group, gs_sender:                                   string, // stable group id and validated sender hex
 	gs_sender_input, gs_since, gs_until:                   [dynamic]u8,
@@ -767,6 +774,7 @@ Ui_State :: struct {
 	shortcode_cands:                                       [dynamic]Shortcode_Cand,
 	shortcode_dismissed:                                   int, // ":" offset Escaped away, -1 = none
 	mi_open:                                               bool, // mentions inbox dropdown
+	chat_head_menu:                                        bool, // phone conversation header's overflow menu
 	mi_account:                                            string, // account owning the displayed mentions
 	mi_hits:                                               [dynamic]Mention_Hit, // its cards, newest first
 	picker_open:                                           bool, // emoji picker
@@ -774,8 +782,10 @@ Ui_State :: struct {
 	picker_x:                                              f32, // panel anchor, layout coords
 	picker_y:                                              f32,
 	picker_filter:                                         [dynamic]u8,
+	picker_used:                                           [dynamic]string, // recents commit on close, never move under a finger
 	sidebar_filter:                                        [dynamic]u8, // rail chat filter
 	filter_hits:                                           [dynamic]bool, // per-chat body match for sidebar_filter
+	filter_previews:                                       [dynamic]string, // matching message snippet, aligned with filter_hits
 	staged:                                                [dynamic]Staged_File, // picked attachments, not yet sent
 	my_pic_url:                                            string, // own kind-0 picture, "" = none
 	nicknames:                                             map[string]string, // account hex → local nickname (settings.json)
@@ -933,6 +943,7 @@ Ui_State :: struct {
 	sel_copy:                                              string, // the selected text, refreshed as the drag moves
 	// Message effects (effects.odin): the composer's armed burst.
 	fx_open:                                               bool, // effect picker popover
+	compose_more:                                          bool, // phone composer tools menu
 	fx_armed:                                              int, // catalog id armed for the next send; 0 = none
 	login_input:                                           [dynamic]u8, // nsec being typed/pasted
 	login_method:                                          Login_Method,

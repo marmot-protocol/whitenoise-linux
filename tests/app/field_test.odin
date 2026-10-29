@@ -42,17 +42,19 @@ field_overflow :: proc(t: ^testing.T) {
 			}
 			view := clay.GetElementData(clay.ID("TestField", 3)).boundingBox
 			row := clay.GetElementData(clay.ID("TestField", 1)).boundingBox
-			testing.expect_value(t, view.width, f32(196))
+
+			// The focused row is its text plus the inline caret ink, which
+			// stays inside the field's scroll clip.
 			testing.expect_value(
 				t,
 				row.width,
-				rl.MeasureTextLine(FONT_BODY, 14, string(ui.nc_member[:]), 0).x,
+				rl.MeasureTextLine(FONT_BODY, 14, string(ui.nc_member[:]), 0).x + CARET_W,
 			)
 			line := clay.GetElementData(clay.ID("ComposeLine", 0)).boundingBox
 			testing.expect_value(
 				t,
 				line.width,
-				rl.MeasureTextLine(FONT_BODY, BODY_FS, string(ui.nc_member[:]), 0).x,
+				rl.MeasureTextLine(FONT_BODY, BODY_FS, string(ui.nc_member[:]), 0).x + CARET_W,
 			)
 			x := row.x + rl.MeasureTextLine(FONT_BODY, 14, string(ui.nc_member[:head]), 0).x
 			testing.expect(t, x >= view.x && x + CARET_W <= view.x + view.width + 0.01)

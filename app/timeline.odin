@@ -53,6 +53,7 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 					childGap = 8,
 					childAlignment = {y = .Center},
 				},
@@ -60,13 +61,17 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 			) {
 				clay.Text(p.sender, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
 				clay.Text(
-					p.failed ? "failed" : p.queued ? "queued" : p.gif != nil ? tr("Sending...") : p.forward != nil ? tr("Preparing attachments…") : "sending…",
+					p.failed ? tr("Failed") : p.queued ? tr("Queued") : p.forward != nil ? tr("Preparing attachments…") : tr("Sending..."),
 					{fontId = FONT_BODY, fontSize = 11, textColor = p.failed ? DANGER : TEXT_LO},
 				)
 				if can_delete {
 					if clay.UI(clay.ID("PendingDelete", index))(
 					{
-						layout = {padding = clay.PaddingAll(4)},
+						layout = {
+							sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
+							padding = clay.PaddingAll(4),
+							childAlignment = {y = .Center},
+						},
 						backgroundColor = hovered() ? HOVER : {},
 						cornerRadius = rr(4),
 					},
@@ -140,7 +145,11 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 			if can_delete {
 				if clay.UI(clay.ID("PendingDeleteEnd", index))(
 				{
-					layout = {padding = clay.PaddingAll(4)},
+					layout = {
+						sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
+						padding = clay.PaddingAll(4),
+						childAlignment = {y = .Center},
+					},
 					backgroundColor = hovered() ? HOVER : {},
 					cornerRadius = rr(4),
 				},
@@ -193,6 +202,7 @@ handle_reply_jump :: proc(ui: ^Ui_State) {
 	}
 	delete(ui.jump_id)
 	ui.jump_id = strings.clone(reply_jump_hover)
+	gs_flash_jump(ui, ui.jump_id)
 	ui.reading_pending = {}
 	reply_jump_hover = ""
 }
@@ -281,7 +291,10 @@ audio_tile :: proc(
 			if clay.UI(clay.ID("MsgAudioPlay", id))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(36), height = clay.SizingFixed(36)},
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? tap_min() : 36),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 36),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = ACCENT,
@@ -299,7 +312,7 @@ audio_tile :: proc(
 			if clay.UI(clay.ID("MsgAudioCol", id))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(max(1, att_w() - 66))},
+					sizing = {width = clay.SizingFixed(max(1, att_w() - (tap_size() ? 74 : 66)))},
 					layoutDirection = .TopToBottom,
 					childGap = 6,
 				},
@@ -319,12 +332,15 @@ audio_tile :: proc(
 
 				bar_id := clay.ID("MsgAudioBar", id)
 				append(&video_bars, Video_Bar{bar_id, view})
-				bar_w := max(1, att_w() - 66)
+				bar_w := max(1, att_w() - (tap_size() ? 74 : 66))
 				frac := view.dur > 0 ? clamp(f32(view.time / view.dur), 0, 1) : 0
 				if clay.UI(bar_id)(
 				{
 					layout = {
-						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(14)},
+						sizing = {
+							width = clay.SizingGrow(),
+							height = clay.SizingFixed(tap_size() ? tap_min() : 14),
+						},
 						padding = {left = 2, right = 2},
 						childAlignment = {y = .Center},
 					},
@@ -347,7 +363,13 @@ audio_tile :: proc(
 				}
 
 				if clay.UI(clay.ID("MsgAudioMeta", id))(
-				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+						childGap = 8,
+					},
+				},
 				) {
 					if len(size_label) > 0 {
 						clay.Text(
@@ -373,7 +395,11 @@ audio_tile :: proc(
 					if clay.UI(clay.ID("AudioTranscribeRow", id))(
 					{
 						layout = {
-							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(31)},
+							sizing = {
+								width = clay.SizingGrow(),
+								height = tap_size() ? clay.SizingFit({min = 44}) : clay.SizingFixed(31),
+							},
+							layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 							childGap = 8,
 							childAlignment = {y = .Center},
 						},
@@ -528,7 +554,8 @@ jump_latest_button :: proc() {
 		return
 	}
 	t := open_t(clay.ID("JumpLatest"))
-	size := JUMP_SIZE * t
+	target_size := tap_size() ? f32(44) : JUMP_SIZE
+	size := target_size * t
 
 	if clay.UI(clay.ID("JumpLatest"))(
 	{
@@ -540,7 +567,8 @@ jump_latest_button :: proc() {
 			attachTo = .ElementWithId,
 			parentId = clay.ID("Timeline").id,
 			zIndex = 8,
-			offset = {-16 - (JUMP_SIZE - size) / 2, -16 + (1 - t) * JUMP_DROP},
+			pointerCaptureMode = .Capture,
+			offset = {-16 - (target_size - size) / 2, -16 + (1 - t) * JUMP_DROP},
 			attachment = {element = .RightBottom, parent = .RightBottom},
 		},
 		backgroundColor = fade(hovered() ? ACCENT : CARD, t),
@@ -786,6 +814,7 @@ msg_run_step :: proc(run: ^Msg_Run, msg: Msg_Ui, wrap_w: f32) -> Msg_Head {
 // row's top-right for a continued one.
 @(private = "file")
 msg_actions :: proc(index: u32, msg: Msg_Ui) {
+	if g_ui != nil && g_ui.selected >= 0 && g_ui.chats[g_ui.selected].archived {return}
 	// A reply can't carry a thread tag, so thread rows
 	// offer Thread (nesting) instead of Reply.
 	if len(msg.thread_of) == 0 || g_ui.compose_issue != "" {
@@ -826,6 +855,15 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 	// The row whose text is in the composer holds the selected fill and
 	// an accent rule, so it is clear which message the edit replaces.
 	editing := g_ui != nil && len(msg.id) > 0 && g_ui.editing == msg.id
+	replying := g_ui != nil && len(msg.id) > 0 && g_ui.replying == msg.id
+	notes :=
+		g_ui != nil &&
+		g_ui.selected >= 0 &&
+		g_ui.selected < len(g_ui.chats) &&
+		g_ui.chats[g_ui.selected].group_id == g_ui.prefs.notes_group
+	base := THEME_WALLPAPER != nil || BACKDROP != "" ? fade(BG, 0.94) : clay.Color{}
+	if msg.mine && !notes {base = mix_color(base, SELECTED, 0.22)}
+	glow := max(fresh * 0.85, gs_jump_glow(msg.id))
 	if clay.UI(clay.ID("MsgRow", index))(
 	{
 		layout = {
@@ -836,20 +874,22 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			padding = {left = 16, right = 16, top = pad_top, bottom = MSG_PAD_Y},
 			childGap = 10,
 		},
-		backgroundColor = editing ? SELECTED : mix_color(hovered() ? HOVER : {}, SELECTED, fresh * 0.85),
-		border = editing ? clay.BorderElementConfig{color = ACCENT, width = {left = 3}} : {},
+		backgroundColor = editing || replying ? SELECTED : mix_color(!rl.HasTouch() && hovered() ? HOVER : base, SELECTED, glow),
+		border = editing || replying ? clay.BorderElementConfig{color = ACCENT, width = {left = 3}} : (msg.mine && !notes ? clay.BorderElementConfig{color = ACCENT_DIM, width = {left = 2}} : {}),
 		clip = collapsing ? clay.ClipElementConfig{vertical = true} : {},
 	},
 	) {
 		row_hovered := hovered()
 		burst_layer(index, msg.id) // particle effect anchored to this row
-		if head == .Full {
+		if notes {
+			// Self notes need no repeated sender identity or avatar gutter.
+		} else if head == .Full {
 			peephole_avatar(
 				"MsgAvatar",
 				index,
 				msg.sender_id,
 				msg.sender,
-				28,
+				tap_size() ? tap_min() : 28,
 				url_pic(msg.pic_url),
 				clay.PointerOver(clay.ID("MsgAvatar", index)) ? .Open : .Closed,
 				fade(ACCENT, fresh),
@@ -859,7 +899,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			if clay.UI(clay.ID("MsgGutter", index))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(28)},
+					sizing = {width = clay.SizingFixed(tap_size() ? tap_min() : 28)},
 					padding = {top = 3},
 					childAlignment = {x = .Center},
 				},
@@ -872,7 +912,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					)
 				}
 			}
-			if row_hovered && !msg.deleted {
+			if !tap_size() && row_hovered && !msg.deleted {
 				if clay.UI(clay.ID("MsgActions", index))(
 				{
 					layout = {childGap = 8},
@@ -902,7 +942,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			// The head reserves an action chip's height whether or not the
 			// chips are showing, so hovering a row doesn't resize it. A
 			// continued row has no head.
-			if head == .Full {
+			if head == .Full && !notes {
 				if clay.UI(clay.ID("MsgHead", index))(
 				{
 					layout = {
@@ -915,36 +955,63 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					},
 				},
 				) {
-					clay.Text(msg.sender, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
-					if clay.UI(clay.ID("MsgTime", index))({layout = {}}) {
-						clay.Text(msg.at, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
-						// Full date on hover.
-						if hovered() && len(msg.at_full) > 0 {
-							if clay.UI(clay.ID("MsgTimeTip", index))(
-							{
-								layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
-								floating = {
-									attachTo = .Parent,
-									zIndex = 12,
-									attachment = {element = .LeftBottom, parent = .LeftTop},
-								},
-								backgroundColor = CARD,
-								cornerRadius = rr(6),
-								border = {color = ELEVATED_BORDER, width = bw()},
+					if clay.UI(clay.ID("MsgSender", index))(
+					{
+						layout = {
+							sizing = {
+								width = tap_size() ? clay.SizingGrow() : clay.SizingFit(),
+								height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
 							},
-							) {
-								clay.Text(
-									msg.at_full,
-									{fontId = FONT_BODY, fontSize = 11, textColor = TEXT},
-								)
-							}
-						}
+						},
+						clip = {horizontal = true},
+					},
+					) {
+						clay.Text(
+							g_ui != nil && g_ui.nicknames[msg.sender_id] != "" ? g_ui.nicknames[msg.sender_id] : msg.sender,
+							{
+								fontId = FONT_TITLE,
+								fontSize = 13,
+								textColor = TEXT,
+								wrapMode = .None,
+							},
+						)
 					}
+					if !tap_size() {if clay.UI(clay.ID("MsgTime", index))({layout = {}}) {
+							clay.Text(
+								msg.at,
+								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+							)
+							// Full date on hover.
+							if hovered() && len(msg.at_full) > 0 {
+								if clay.UI(clay.ID("MsgTimeTip", index))(
+								{
+									layout = {
+										padding = {left = 8, right = 8, top = 4, bottom = 4},
+									},
+									floating = {
+										attachTo = .Parent,
+										zIndex = 12,
+										attachment = {element = .LeftBottom, parent = .LeftTop},
+									},
+									backgroundColor = CARD,
+									cornerRadius = rr(6),
+									border = {color = ELEVATED_BORDER, width = bw()},
+								},
+								) {
+									clay.Text(
+										msg.at_full,
+										{fontId = FONT_BODY, fontSize = 11, textColor = TEXT},
+									)
+								}
+							}
+						}}
 
-					// Row actions, shown while the row is hovered. Kept before
-					// any grow sibling (after-gap siblings drop in this clay).
+					// Row actions, shown while a pointer hovers the row. Kept
+					// before any grow sibling (after-gap siblings drop in this
+					// clay). Narrow layouts open the same actions from a
+					// right click, a long press, or a tap on touch screens.
 					// A tombstone offers none.
-					if hovered() && !msg.deleted {
+					if !tap_size() && hovered() && !msg.deleted {
 						msg_actions(index, msg)
 					}
 				}
@@ -956,6 +1023,9 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			// "Blocked message": no author, text or image, and no jump
 			// into their collapsed run.
 			reply_from, reply_text, reply_image := msg.reply_from, msg.reply_text, msg.reply_image
+			if g_ui != nil &&
+			   g_ui.nicknames[msg.reply_from_id] !=
+				   "" {reply_from = g_ui.nicknames[msg.reply_from_id]}
 			reply_blocked := g_ui != nil && g_ui.blocked[msg.reply_from_id]
 			if reply_blocked {
 				reply_from, reply_text, reply_image = "", tr("Blocked message"), ""
@@ -1155,7 +1225,14 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						}
 						if clay.UI(clay.ID("MsgVideoFull", id))(
 						{
-							layout = {padding = clay.PaddingAll(8)},
+							layout = {
+								sizing = {
+									width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+									height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+								},
+								padding = clay.PaddingAll(8),
+								childAlignment = {x = .Center, y = .Center},
+							},
 							floating = {
 								attachTo = .Parent,
 								clipTo = .AttachedParent,
@@ -1252,7 +1329,14 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						att_dl_button("DlPdf", id, msg.id, att, slot.name)
 						if clay.UI(clay.ID("MsgPdfFull", id))(
 						{
-							layout = {padding = clay.PaddingAll(8)},
+							layout = {
+								sizing = {
+									width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+									height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+								},
+								padding = clay.PaddingAll(8),
+								childAlignment = {x = .Center, y = .Center},
+							},
 							floating = {
 								attachTo = .Parent,
 								clipTo = .AttachedParent,
@@ -1291,7 +1375,20 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							},
 							) {
 								if clay.UI(clay.ID("MsgPdfPrev", id))(
-								{layout = {padding = clay.PaddingAll(4)}},
+								{
+									layout = {
+										sizing = {
+											width = clay.SizingFit(
+												{min = tap_size() ? tap_min() : 0},
+											),
+											height = clay.SizingFit(
+												{min = tap_size() ? tap_min() : 0},
+											),
+										},
+										padding = clay.PaddingAll(4),
+										childAlignment = {x = .Center, y = .Center},
+									},
+								},
 								) {
 									if hovered() {
 										pdf_flip_hover = view
@@ -1315,7 +1412,20 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 									},
 								)
 								if clay.UI(clay.ID("MsgPdfNext", id))(
-								{layout = {padding = clay.PaddingAll(4)}},
+								{
+									layout = {
+										sizing = {
+											width = clay.SizingFit(
+												{min = tap_size() ? tap_min() : 0},
+											),
+											height = clay.SizingFit(
+												{min = tap_size() ? tap_min() : 0},
+											),
+										},
+										padding = clay.PaddingAll(4),
+										childAlignment = {x = .Center, y = .Center},
+									},
+								},
 								) {
 									if hovered() {
 										pdf_flip_hover = view
@@ -1455,7 +1565,13 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						att_dl_button("DlArc", id, msg.id, att, slot.name)
 						// The archive's own name, above its listing.
 						if clay.UI(clay.ID("MsgArcName", id))(
-						{layout = {padding = {left = 6, bottom = 4}}},
+						{
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								padding = {left = 6, bottom = 4},
+							},
+							clip = {horizontal = true},
+						},
 						) {
 							clay.Text(
 								arc_short_name(slot.name),
@@ -1470,7 +1586,12 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							if clay.UI(clay.ID_LOCAL("MsgArcRow", u32(k)))(
 							{
 								layout = {
-									sizing = {width = clay.SizingGrow()},
+									sizing = {
+										width = clay.SizingGrow(),
+										height = clay.SizingFit(
+											{min = tap_size() ? tap_min() : 0},
+										),
+									},
 									childGap = 8,
 									padding = {left = 6, right = 6, top = 4, bottom = 4},
 									childAlignment = {y = .Center},
@@ -1483,7 +1604,12 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 									arc_hover = {view, entry.index, entry.name}
 								}
 								clay.Text(
-									entry.name,
+									text_ellipsis(
+										entry.name,
+										max(1, att_w() - 100),
+										FONT_BODY,
+										12,
+									),
 									{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
 								)
 								if clay.UI(clay.ID_LOCAL("MsgArcPad"))(
@@ -1500,7 +1626,12 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							if clay.UI(clay.ID("MsgArcMore", id))(
 							{
 								layout = {
-									sizing = {width = clay.SizingGrow()},
+									sizing = {
+										width = clay.SizingGrow(),
+										height = clay.SizingFit(
+											{min = tap_size() ? tap_min() : 0},
+										),
+									},
 									padding = {left = 6, right = 6, top = 4, bottom = 4},
 								},
 								backgroundColor = hovered() ? HOVER : {},
@@ -1620,6 +1751,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							2,
 						)
 					}
+					scrollbar(clay.ID("MsgCode", id))
 					code_seed += 1
 
 				// Font tiles: the rasterized specimen.
@@ -1643,6 +1775,10 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					if clay.UI(clay.ID("MsgFile", id))(
 					{
 						layout = {
+							sizing = {
+								width = clay.SizingFixed(att_w()),
+								height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+							},
 							padding = clay.PaddingAll(10),
 							childGap = 10,
 							childAlignment = {y = .Center},
@@ -1664,11 +1800,23 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 							{fontId = FONT_ICON, fontSize = 14, textColor = TEXT_DIM},
 						)
 						if clay.UI(clay.ID("MsgFileCol", id))(
-						{layout = {layoutDirection = .TopToBottom, childGap = 2}},
+						{
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								layoutDirection = .TopToBottom,
+								childGap = 2,
+							},
+							clip = {horizontal = true},
+						},
 						) {
 							clay.Text(
 								slot.name,
-								{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
+								{
+									fontId = FONT_TITLE,
+									fontSize = 12,
+									textColor = TEXT,
+									wrapMode = .None,
+								},
 							)
 							size := att_size_label(msg, att)
 							clay.Text(
@@ -1826,9 +1974,55 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				poll_block(index, msg)
 			}
 
+			if tap_size() || notes || msg.edited {
+				if clay.UI(clay.ID("MsgMeta", index))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						childGap = 8,
+						childAlignment = {y = .Center},
+					},
+				},
+				) {
+					clay.Text(msg.at, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+					if msg.edited {
+						if clay.UI(clay.ID("MsgEdited", index))(
+						{
+							layout = {
+								sizing = {
+									height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+								},
+								childAlignment = {y = .Center},
+							},
+						},
+						) {
+							clay.Text(
+								tr("edited"),
+								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+							)
+						}
+					}
+				}
+			}
+			if msg.mine && msg.delivery == .PENDING {
+				clay.Text(
+					tr("Saved locally. Relay delivery pending."),
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				)
+			} else if msg.mine && msg.delivery == .FAILED {
+				clay.Text(
+					tr("Not sent to relays"),
+					{fontId = FONT_BODY, fontSize = 11, textColor = DANGER},
+				)
+			}
 			// Reactions close the row, under the body.
 			if len(msg.reactions) > 0 {
-				if clay.UI(clay.ID("MsgReactions", index))({layout = {childGap = 6}}) {
+				if clay.UI(clay.ID("MsgReactions", index))(
+				{
+					layout = {sizing = {width = clay.SizingGrow()}, childGap = 6},
+					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+				},
+				) {
 					for chip, j in msg.reactions {
 						slot := index * 1024 + u32(j)
 						// A chip whose count changed swells and settles, and
@@ -1840,6 +2034,10 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 						if clay.UI(clay.ID("MsgReactionChip", slot))(
 						{
 							layout = {
+								sizing = {
+									width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+									height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+								},
 								padding = {left = 8 + pad, right = 8 + pad, top = 3, bottom = 3},
 								childGap = 4,
 								childAlignment = {y = .Center},
@@ -1893,11 +2091,13 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				}
 			}
 
+			scrollbar(clay.ID("MsgReactions", index))
 			// Thread reply count, click opens the panel on this root.
 			if msg.thread_replies > 0 && msg.id != thread_cur(g_ui) {
 				if clay.UI(clay.ID("MsgThreadChip", index))(
 				{
 					layout = {
+						sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
 						padding = {left = 8, right = 8, top = 3, bottom = 3},
 						childGap = 5,
 						childAlignment = {y = .Center},
@@ -1920,17 +2120,6 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				}
 			}
 
-			// Tiny accent "edited" marker, click opens the history modal.
-			if msg.edited {
-				if clay.UI(clay.ID("MsgEdited", index))(
-				{layout = {padding = {top = 1, bottom = 1, right = 4}}},
-				) {
-					clay.Text(
-						tr("edited"),
-						{fontId = FONT_BODY, fontSize = 10, textColor = ACCENT},
-					)
-				}
-			}
 		}
 	}
 }
@@ -1948,7 +2137,7 @@ theme_offer :: proc(index: u32, msg: Msg_Ui) {
 	if clay.UI(clay.ID("ThemeCard", index))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(260)},
+			sizing = {width = clay.SizingFixed(att_w(260))},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(12),
 			childGap = 8,

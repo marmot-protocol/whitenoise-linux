@@ -49,7 +49,10 @@ forward_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("FwdModal"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("FwdModal"), 440))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("FwdModal"), 440)),
+				height = clay.SizingFit({max = modal_h(480)}),
+			},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(20),
 			childGap = 12,
@@ -76,7 +79,10 @@ forward_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("FwdClose"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? tap_min() : 26),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : {},
@@ -87,10 +93,42 @@ forward_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 
+		if ui.fwd_kind == .Message {
+			if source := forward_source(ui); source >= 0 {
+				preview := msg_preview(ui.messages[source])
+				if preview == "" {preview = tr("Attachment")}
+				if clay.UI(clay.ID("FwdPreview"))(
+				{
+					layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
+					backgroundColor = ROW_BG,
+					cornerRadius = rr(6),
+					clip = {horizontal = true},
+				},
+				) {
+					clay.Text(
+						text_ellipsis(
+							preview,
+							modal_w(clay.ID("FwdModal"), 440) - 60,
+							FONT_BODY,
+							13,
+						),
+						{
+							fontId = FONT_BODY,
+							fontSize = 13,
+							textColor = TEXT_DIM,
+							wrapMode = .None,
+						},
+					)
+				}
+			}
+		}
 		if clay.UI(clay.ID("FwdFilter"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 36),
+				},
 				padding = {left = 12, right = 12},
 				childAlignment = {y = .Center},
 			},
@@ -113,7 +151,10 @@ forward_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("FwdList"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 320})},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFit({max = max(44, min(320, modal_h(480) - 152))}),
+				},
 				layoutDirection = .TopToBottom,
 				childGap = 2,
 			},
@@ -139,7 +180,19 @@ forward_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					avatar("FwdAvatar", u32(i), chat.avatar_key, chat.title, 30, chat_pic(chat))
-					clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+					if clay.UI(clay.ID("FwdTitle", u32(i)))(
+					{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+					) {
+						clay.Text(
+							chat.title,
+							{
+								fontId = FONT_TITLE,
+								fontSize = 13,
+								textColor = TEXT,
+								wrapMode = .None,
+							},
+						)
+					}
 				}
 			}
 			if shown == 0 {

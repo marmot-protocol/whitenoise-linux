@@ -295,8 +295,29 @@ set_lines :: proc(ed: ^edit.State, multiline: bool) {
 // applies it and clears it.
 text_field_live: bool
 
+@(private)
+compose_keyboard: bool
+
+@(private)
+touch_field: clay.ElementId
+
+@(private)
+menu_press: clay.ElementId
+
+@(private)
+menu_press_mark :: proc(id: clay.ElementId) {
+	if mouse_pressed() && clay.PointerOver(id) {menu_press = id}
+}
+
+// A menu drag or a release over another row is not an action.
+@(private)
+menu_keep :: proc(container: clay.ElementId) -> bool {
+	if menu_press.id != 0 {return !clay.PointerOver(menu_press)}
+	return clay.PointerOver(container)
+}
+
 edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
-	text_field_live = true
+	text_field_live = !tap_size() || buf != &ui.compose || compose_keyboard
 	ed_begin(ui, buf)
 	defer ed_end(ui, buf)
 	ed := &ui.ed
@@ -579,7 +600,11 @@ field_mouse :: proc(
 	hit := hit_plain(string(buf[:]), mx - origin, font_size)
 	over := clay.PointerOver(clay.ID(id_str))
 
-	if over && mouse_pressed() {
+	// A finger focuses on lift, so a swipe that starts on a field scrolls
+	// the page instead of focusing it and raising the keyboard.
+	touch := rl.TouchActive()
+	if over && (touch ? mouse_released() : mouse_pressed()) {
+		if touch {touch_field = clay.ID(id_str)}
 		ed_begin(ui, buf)
 		text_drag_sentence = {}
 		switch {
@@ -595,8 +620,10 @@ field_mouse :: proc(
 			ui.ed.selection = {hit, hit}
 		}
 		ed_end(ui, buf)
-		text_drag = buf
-		text_drag_box = clay.ID(id_str)
+		if !touch {
+			text_drag = buf
+			text_drag_box = clay.ID(id_str)
+		}
 		return true
 	}
 	if text_drag == buf && rl.IsMouseButtonDown(.LEFT) && ui.ed_target == buf {
@@ -676,9 +703,10 @@ compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Co
 		return
 	}
 	over := clay.PointerOver(clay.ID("ComposeBox")) && !clay.PointerOver(clay.ID("ComposeTools"))
-	left := over && rl.IsMouseButtonPressed(.LEFT)
+	touch := rl.TouchActive()
+	left := over && (touch ? mouse_released() : mouse_pressed())
 	middle := over && rl.IsMouseButtonPressed(.MIDDLE)
-	dragging := text_drag == buf && rl.IsMouseButtonDown(.LEFT) && !left
+	dragging := !touch && text_drag == buf && rl.IsMouseButtonDown(.LEFT) && !left
 	if !left && !middle && !dragging {
 		return
 	}
@@ -702,6 +730,8 @@ compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Co
 
 	switch {
 	case left:
+		compose_keyboard = true
+		if rl.HasTouch() {touch_field = clay.ID("ComposeClip")}
 		ui.focus = focus
 		ed_begin(ui, buf)
 		text_drag_sentence = {}
@@ -718,8 +748,10 @@ compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Co
 			ui.ed.selection = {hit, hit}
 		}
 		ed_end(ui, buf)
-		text_drag = buf
-		text_drag_box = clay.ID("ComposeClip") // not ComposeTools: no drag-to-send
+		if !touch {
+			text_drag = buf
+			text_drag_box = clay.ID("ComposeClip") // not ComposeTools: no drag-to-send
+		}
 	case dragging:
 		if ui.ed_target == buf {
 			drag_text_selection(&ui.ed, text, hit)
@@ -807,6 +839,7 @@ nes_views: map[string]^Nes_View
 g_prefs: ^Prefs
 
 mouse_released :: proc() -> bool {
+	if drag_moved {return false}
 	// A release ending a scrollbar drag must not click what's under
 	// the pointer; the drag clears one frame later in the main loop.
 	// Nor may a text selection dragged out of its field: releasing a
@@ -873,7 +906,7 @@ long_press_tick :: proc() {
 		lp = {}
 		return
 	}
-	if !rl.HasTouch() {
+	if !rl.TouchActive() {
 		return
 	}
 	m := rl.GetMousePosition()

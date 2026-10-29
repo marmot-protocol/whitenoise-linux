@@ -143,6 +143,9 @@ msgstr "%d / %d 件のリレーが稼働中です。"
 msgid "%d of %d shared with you"
 msgstr "%d / %d 件をあなたと共有"
 
+msgid "%d people will be added to the group."
+msgstr "%d人がグループに追加されます。"
+
 #, c-format
 msgid "%d published, %d on this device, seen on %d relays."
 msgstr "公開済み %d 件、この端末に %d 件、%d 件のリレーで確認済みです。"
@@ -158,6 +161,12 @@ msgstr "%d件の返信"
 #, c-format
 msgid "%d reply"
 msgstr "%d件の返信"
+
+msgid "%d result"
+msgstr "%d件の検索結果"
+
+msgid "%d results"
+msgstr "%d件の検索結果"
 
 #, c-format
 msgid "%d rule"
@@ -183,9 +192,21 @@ msgstr "%d秒"
 msgid "%d seconds ago"
 msgstr "%d秒前"
 
+msgid "%d terminal"
+msgstr "%d個のターミナル"
+
+msgid "%d terminals"
+msgstr "%d個のターミナル"
+
+msgid "%d voters"
+msgstr "投票者%d人"
+
 #, c-format
 msgid "%d votes"
 msgstr "%d票"
+
+msgid "%d waiting"
+msgstr "%d件が待機中です"
 
 #, c-format
 msgid "%d waiting to connect"
@@ -206,6 +227,9 @@ msgstr "%d/%d リレー"
 #, c-format
 msgid "%s added %s"
 msgstr "%sさんが%sさんを追加しました"
+
+msgid "%s audit log"
+msgstr "%s の監査ログ"
 
 #, c-format
 msgid "%s changed the disappearing message timer"
@@ -283,6 +307,9 @@ msgstr "%s がグループに追加されます。"
 msgid "%s · Click to download."
 msgstr "%s · クリックしてダウンロードしてください。"
 
+msgid "%s: %s"
+msgstr "%s: %s"
+
 msgid "(no display name)"
 msgstr "(表示名なし)"
 
@@ -305,6 +332,9 @@ msgstr "+%d 件"
 msgid "1 vote"
 msgstr "1票"
 
+msgid "1 voter"
+msgstr "投票者1人"
+
 msgid "25 European languages, including English and Italian."
 msgstr "英語とイタリア語を含む25のヨーロッパ言語に対応しています。"
 
@@ -313,6 +343,9 @@ msgstr "3Dモデル"
 
 msgid "A checked box means you placed the chat by hand. Clear it to let folder rules decide."
 msgstr "チェックは、チャットを手動で配置したことを示します。チェックを外すと、フォルダのルールに従います。"
+
+msgid "A client for private group chat. Messages are sealed with MLS on this device, handed to Nostr relays as opaque blobs, and opened again only inside the group."
+msgstr "プライベートなグループチャットのためのクライアントです。メッセージはこの端末で MLS により封印され、中身の見えないデータとして Nostr リレーに渡され、グループの中でだけ再び開かれます。"
 
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "プライベートなグループチャットのためのデスクトップクライアントです。メッセージはこのマシン上で MLS により暗号化され、中身の読めないデータとして Nostr リレーに渡され、グループ内でのみ再び復号されます。"
@@ -325,6 +358,9 @@ msgstr "キーパッケージがあると、ほかの人があなたを暗号化
 
 msgid "A line about you"
 msgstr "ひとこと自己紹介"
+
+msgid "A message at this size."
+msgstr "このサイズのメッセージです。"
 
 msgid "A terminal is waiting for you."
 msgstr "ターミナルがあなたの操作を待っています。"
@@ -388,6 +424,9 @@ msgstr "操作に失敗しました: %s"
 msgid "Add"
 msgstr "追加"
 
+msgid "Add a question and at least two options."
+msgstr "質問と2つ以上の選択肢を追加してください。"
+
 msgid "Add a question for your poll."
 msgstr "投票の質問を入力してください。"
 
@@ -397,8 +436,14 @@ msgstr "アカウントを追加"
 msgid "Add an option..."
 msgstr "選択肢を追加..."
 
+msgid "Add another account"
+msgstr "別のアカウントを追加"
+
 msgid "Add at least two options."
 msgstr "選択肢を2つ以上追加してください。"
+
+msgid "Add contact"
+msgstr "連絡先を追加"
 
 msgid "Add member"
 msgstr "メンバーを追加"
@@ -421,8 +466,14 @@ msgstr "ルールを追加"
 msgid "Add someone by npub, or make a group of your own."
 msgstr "npub で相手を追加するか、自分だけのグループを作成してください。"
 
+msgid "Add someone from their profile or paste their npub above. You can also import a contacts CSV or JSON export."
+msgstr "プロフィールから連絡先を追加するか、上に相手のnpubを貼り付けてください。CSVまたはJSON形式の連絡先ファイルもインポートできます。"
+
 msgid "Add to group"
 msgstr "グループに追加"
+
+msgid "Add your Nostr identity"
+msgstr "Nostr の ID を追加"
 
 msgid "Added to your stickers"
 msgstr "ステッカーに追加済み"
@@ -480,6 +531,9 @@ msgstr "別のグループ変更が優先されました。グループ設定を
 
 msgid "Any attachment"
 msgstr "添付ファイルあり"
+
+msgid "Any day"
+msgstr "日付指定なし"
 
 msgid "Any sender"
 msgstr "すべての送信者"
@@ -617,6 +671,9 @@ msgstr "セットの一覧に戻る"
 msgid "Back up local data"
 msgstr "ローカルデータをバックアップ"
 
+msgid "Back up your key"
+msgstr "鍵をバックアップ"
+
 msgid "Background"
 msgstr "背景"
 
@@ -653,6 +710,9 @@ msgstr "ブロック"
 
 msgid "Block this contact?"
 msgstr "この連絡先をブロックしますか？"
+
+msgid "Blocked"
+msgstr "ブロック中"
 
 msgid "Blocked message"
 msgstr "ブロックしたメッセージ"
@@ -728,6 +788,9 @@ msgstr "接続をキャンセル"
 
 msgid "Cancel edit / reply, close panels"
 msgstr "編集や返信をキャンセル、パネルを閉じる"
+
+msgid "Cancel reply"
+msgstr "返信をキャンセル"
 
 msgid "Card border"
 msgstr "カードの枠線"
@@ -805,6 +868,9 @@ msgstr "チャットのオプション"
 msgid "Chat restored."
 msgstr "チャットを復元しました。"
 
+msgid "Chat settings"
+msgstr "チャット設定"
+
 msgid "Chat with AI agents, end-to-end encrypted like any other chat. Each agent runs on a computer or server you control, using its own account."
 msgstr "AIエージェントとのチャットも、他のチャットと同様にエンドツーエンドで暗号化されます。各エージェントは、あなたが管理するコンピューターやサーバー上で、専用のアカウントを使って動作します。"
 
@@ -839,8 +905,14 @@ msgstr "今すぐ確認"
 msgid "Check your key package"
 msgstr "キーパッケージを確認"
 
+msgid "Check your system notifications for the test alert."
+msgstr "システム通知でテスト通知を確認してください。"
+
 msgid "Checking for updates."
 msgstr "アップデートを確認しています。"
+
+msgid "Checking relays..."
+msgstr "リレーを確認しています..."
 
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "リレーで鍵を確認しています。数秒かかります。"
@@ -866,6 +938,9 @@ msgstr "チップの文字"
 msgid "Choose a contact or paste a Nostr address."
 msgstr "連絡先を選ぶか、Nostrアドレスを貼り付けてください。"
 
+msgid "Choose a contact or paste public keys separated by commas."
+msgstr "連絡先を選ぶか、公開鍵をカンマで区切って貼り付けてください。"
+
 msgid "Choose a contacts CSV or JSON export to import."
 msgstr "インポートする連絡先のCSVまたはJSONエクスポートを選んでください。"
 
@@ -877,6 +952,9 @@ msgstr "このプロジェクトの移動先を選んでください。"
 
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr "既知の送信者を選択するか、64文字の16進数の公開鍵を入力してください。"
+
+msgid "Choose a known sender or enter a public key."
+msgstr "既知の送信者を選ぶか、公開鍵を入力してください。"
 
 msgid "Choose a location before sending."
 msgstr "送信する前に位置を選んでください。"
@@ -934,6 +1012,9 @@ msgstr "Git パッチを開く場所を選択"
 
 msgid "Choose where people reach you"
 msgstr "受信先を選択"
+
+msgid "Choose where to save the backup."
+msgstr "バックアップの保存先を選んでください。"
 
 msgid "Choose where you publish"
 msgstr "公開先を選択"
@@ -1100,6 +1181,9 @@ msgstr "コネクターガイド"
 msgid "Contact"
 msgstr "連絡先"
 
+msgid "Contact added."
+msgstr "連絡先を追加しました。"
+
 msgid "Contact list collapsed"
 msgstr "連絡先リストは折りたたまれています"
 
@@ -1183,6 +1267,9 @@ msgstr "角の丸みの倍率"
 #, c-format
 msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr "レコード%dを追加できませんでした。%s リレー設定を確認して再度インポートしてください。"
+
+msgid "Couldn't add that relay. Double-check the address and try again."
+msgstr "そのリレーを追加できませんでした。アドレスを確認して、もう一度お試しください。"
 
 msgid "Couldn't add the pack. No supported stickers are available."
 msgstr "パックを追加できませんでした。対応するステッカーがありません。"
@@ -1294,6 +1381,9 @@ msgstr "チャットをエクスポートできませんでした。もう一度
 msgid "Couldn't export the key. %s"
 msgstr "鍵をエクスポートできませんでした。%s"
 
+msgid "Couldn't find your account on the relays. Check your relay settings and try again."
+msgstr "リレーでアカウントを見つけられませんでした。リレー設定を確認して、もう一度お試しください。"
+
 msgid "Couldn't finish dictation. Please try again."
 msgstr "音声入力を完了できませんでした。もう一度お試しください。"
 
@@ -1306,6 +1396,12 @@ msgstr "転送できませんでした。もう一度お試しください。"
 
 msgid "Couldn't get your location. Check your desktop location permissions or pick a point on the map."
 msgstr "現在地を取得できませんでした。デスクトップの位置情報の権限を確認するか、地図上で位置を選んでください。"
+
+msgid "Couldn't get your location. Check your device's location permissions and try again."
+msgstr "位置情報を取得できませんでした。端末の位置情報の権限を確認して、もう一度お試しください。"
+
+msgid "Couldn't get your location. Check your device's location permissions or pick a point on the map."
+msgstr "位置情報を取得できませんでした。端末の位置情報の権限を確認するか、地図上の地点を選んでください。"
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "音声を聞き取れませんでした。はっきり話して、もう一度お試しください。"
@@ -1336,6 +1432,9 @@ msgstr "連絡先をインポートできませんでした。CSVヘッダーを
 
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "ステッカーを読み込めませんでした。4 MiB未満の画像を選んでください。"
+
+msgid "Couldn't invite the member. Enter a public key or verified address and try again."
+msgstr "メンバーを招待できませんでした。公開鍵または認証済みアドレスを入力して、もう一度お試しください。"
 
 msgid "Couldn't invite the member. Enter an npub or nprofile and try again."
 msgstr "メンバーを招待できませんでした。npub または nprofile を入力して、もう一度お試しください。"
@@ -1520,6 +1619,9 @@ msgstr "Namecoinで%sを解決できませんでした。確認して、もう�
 msgid "Couldn't reveal your private key. %s"
 msgstr "秘密鍵を表示できませんでした。%s"
 
+msgid "Couldn't reveal your secret key. Please try again."
+msgstr "秘密鍵を表示できませんでした。もう一度お試しください。"
+
 #, c-format
 msgid "Couldn't save %s. Please try again."
 msgstr "%sを保存できませんでした。もう一度お試しください。"
@@ -1585,6 +1687,9 @@ msgstr "テーマを共有できませんでした。もう一度お試しくだ
 msgid "Couldn't share the theme. Please try again. %s"
 msgstr "テーマを共有できませんでした。もう一度お試しください。%s"
 
+msgid "Couldn't show a notification. Check your system notification settings and try again."
+msgstr "通知を表示できませんでした。システムの通知設定を確認して、もう一度お試しください。"
+
 #, c-format
 msgid "Couldn't start %s. Its cartridge type isn't supported."
 msgstr "%sを起動できませんでした。このカートリッジの種類には対応していません。"
@@ -1635,6 +1740,12 @@ msgstr "画像を使用できませんでした。少し待ってから、もう
 
 msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
 msgstr "ステッカーを使用できませんでした。4096ピクセル以下の静止画PNG、WebP、JPEGを選んでください。"
+
+msgid "Couldn't use this Lightning address. Double-check it and try again."
+msgstr "このLightningアドレスを使用できませんでした。確認してからもう一度お試しください。"
+
+msgid "Couldn't use this Nostr address. Double-check it and try again."
+msgstr "このNostrアドレスを使用できませんでした。確認してからもう一度お試しください。"
 
 msgid "Couldn't verify the update. Please try again."
 msgstr "アップデートを検証できませんでした。もう一度お試しください。"
@@ -1723,6 +1834,9 @@ msgstr "奥行き"
 msgid "DETAILS"
 msgstr "詳細"
 
+msgid "DEVELOPER TOOLS"
+msgstr "開発者ツール"
+
 msgid "DISPLAY NAME"
 msgstr "表示名"
 
@@ -1756,6 +1870,9 @@ msgstr "招待を辞退しています"
 msgid "Decode own"
 msgstr "自分のものをデコード"
 
+msgid "Decrypting..."
+msgstr "復号しています..."
+
 msgid "Default"
 msgstr "デフォルト"
 
@@ -1777,8 +1894,14 @@ msgstr "自分のみ削除"
 msgid "Delete for you?"
 msgstr "自分のみ削除しますか？"
 
+msgid "Delete keys and chats"
+msgstr "鍵とチャットを削除"
+
 msgid "Delete this folder?"
 msgstr "このフォルダを削除しますか？"
+
+msgid "Delete this message for you?"
+msgstr "このメッセージをあなたの端末から削除しますか？"
 
 msgid "Delete this message?"
 msgstr "このメッセージを削除しますか？"
@@ -1880,6 +2003,9 @@ msgstr "消えるメッセージがオフになりました"
 
 msgid "Discard"
 msgstr "破棄"
+
+msgid "Discard profile changes?"
+msgstr "プロフィールの変更を破棄しますか？"
 
 msgid "Discard your theme changes?"
 msgstr "テーマの変更を破棄しますか？"
@@ -2022,8 +2148,14 @@ msgstr "エンドツーエンド暗号化"
 msgid "Enter a color as #RRGGBB."
 msgstr "色を #RRGGBB 形式で入力してください。"
 
+msgid "Enter a display name."
+msgstr "表示名を入力してください。"
+
 msgid "Enter a folder name."
 msgstr "フォルダー名を入力してください。"
+
+msgid "Enter a number of people."
+msgstr "人数を入力してください。"
 
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr "数値の IPv4 アドレス、または角括弧で囲んだ IPv6 アドレスと、1 から 65535 のポートを入力してください。"
@@ -2037,6 +2169,9 @@ msgstr "ステッカー名を1〜64文字で入力してください。"
 msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
 msgstr "ユーザー名とパスワードを、それぞれ UTF-8 で 1 から 255 バイトで入力してください。"
 
+msgid "Enter a username and password, each up to 255 characters."
+msgstr "ユーザー名とパスワードをそれぞれ255文字以内で入力してください。"
+
 msgid "Enter a valid pack link or address."
 msgstr "有効なパックのリンクまたはアドレスを入力してください。"
 
@@ -2049,6 +2184,9 @@ msgstr "2人以上を入力してください。人数にはあなたも含ま�
 #, c-format
 msgid "Enter dates like %s, with the start on or before the end."
 msgstr "%s のように日付を入力してください。開始日は終了日以前にしてください。"
+
+msgid "Enter moves to the next field, Escape cancels."
+msgstr "Enterで次の項目に移動し、Escapeでキャンセルします。"
 
 msgid "Enter publishes, Escape cancels."
 msgstr "Enter で公開、Escape でキャンセルします。"
@@ -2131,6 +2269,9 @@ msgstr "暗号化された鍵をエクスポート (ncryptsec)"
 msgid "Export key"
 msgstr "鍵をエクスポート"
 
+msgid "Export key first"
+msgstr "先に鍵をエクスポート"
+
 msgid "External browsers and other apps do not use this setting."
 msgstr "外部ブラウザーや他のアプリには、この設定は適用されません。"
 
@@ -2139,6 +2280,9 @@ msgstr "外部ブラウザー、他のアプリ、Windows でのアプリ更新�
 
 msgid "FILES"
 msgstr "ファイル"
+
+msgid "Failed"
+msgstr "失敗"
 
 msgid "Family"
 msgstr "家族"
@@ -2178,6 +2322,9 @@ msgstr "チャットを絞り込む"
 
 msgid "Filter unread chats"
 msgstr "未読のチャットで絞り込む"
+
+msgid "Filters"
+msgstr "絞り込み"
 
 msgid "Final render"
 msgstr "最終レンダリング"
@@ -2248,11 +2395,17 @@ msgstr "食べ物"
 msgid "Forget all"
 msgstr "すべて忘れる"
 
+msgid "Forgot password? Start over"
+msgstr "パスワードを忘れた場合は最初からやり直す"
+
 msgid "Forward"
 msgstr "転送"
 
 msgid "Forward to"
 msgstr "転送先"
+
+msgid "Forwarded to %s"
+msgstr "%sに転送しました"
 
 #, c-format
 msgid "Forwarded to %s."
@@ -2313,6 +2466,9 @@ msgstr "表示していないチャットにメッセージが届いたときに
 
 msgid "Get desktop notifications"
 msgstr "デスクトップ通知を受け取る"
+
+msgid "Get message notifications"
+msgstr "メッセージの通知を受け取る"
 
 msgid "Get started"
 msgstr "はじめに"
@@ -2403,6 +2559,9 @@ msgstr "絵文字セットを隠す"
 
 msgid "Hide hidden message"
 msgstr "隠されたメッセージを非表示"
+
+msgid "Hide passwords"
+msgstr "パスワードを隠す"
 
 msgid "Home"
 msgstr "ホーム"
@@ -2497,6 +2656,9 @@ msgstr "連絡先をインポート中：%d / %d"
 
 msgid "Importing emoji"
 msgstr "絵文字をインポートしています"
+
+msgid "Importing emoji..."
+msgstr "絵文字をインポートしています..."
 
 msgid "Incoming messages"
 msgstr "受信メッセージ"
@@ -2635,6 +2797,9 @@ msgstr "会話を削除せずに、チャット一覧を整理できます。"
 msgid "Keep your conversations in order."
 msgstr "会話を整理できます。"
 
+msgid "Keep your keys and chats"
+msgstr "鍵とチャットを保持"
+
 msgid "Keep your signer open. Approve the connection and requested signatures there."
 msgstr "署名者を開いたままにしてください。署名者で接続と要求された署名を承認してください。"
 
@@ -2645,6 +2810,9 @@ msgstr "%d 件のリレーがキーパッケージを受け付けました。"
 msgid "Key package published"
 msgstr "キーパッケージを公開しました"
 
+msgid "Key package published and found on %d relays."
+msgstr "キーパッケージを公開し、%d 個のリレーで確認しました。"
+
 msgid "Key package ref"
 msgstr "キーパッケージ参照"
 
@@ -2653,6 +2821,9 @@ msgstr "キーパッケージ"
 
 msgid "Key packages are published to your key package relays."
 msgstr "キーパッケージはキーパッケージ用リレーに公開されます。"
+
+msgid "Key packages let people invite you. Refresh checks the app's default relays for published copies."
+msgstr "キーパッケージがあると、ほかの人があなたを招待できます。更新すると、アプリの既定のリレーで公開済みのコピーを確認します。"
 
 msgid "Keyboard shortcuts"
 msgstr "キーボードショートカット"
@@ -2665,6 +2836,9 @@ msgstr "鍵と ID"
 
 msgid "Known senders"
 msgstr "既知の送信者"
+
+msgid "LIGHTNING"
+msgstr "LIGHTNING"
 
 msgid "LINES"
 msgstr "線"
@@ -2732,8 +2906,14 @@ msgstr "グループから退出しています"
 msgid "Light"
 msgstr "ライト"
 
+msgid "Lightning"
+msgstr "Lightning"
+
 msgid "Lime"
 msgstr "ライム"
+
+msgid "Link copied"
+msgstr "リンクをコピーしました"
 
 msgid "Link previews"
 msgstr "リンクのプレビュー"
@@ -2756,8 +2936,14 @@ msgstr "メッセージ本文を文字どおり検索"
 msgid "Loading emoji previews"
 msgstr "絵文字のプレビューを読み込んでいます"
 
+msgid "Loading emoji previews..."
+msgstr "絵文字のプレビューを読み込んでいます..."
+
 msgid "Loading emoji sets"
 msgstr "絵文字セットを読み込んでいます"
+
+msgid "Loading emoji sets..."
+msgstr "絵文字セットを読み込んでいます..."
 
 msgid "Loading full resolution…"
 msgstr "フル解像度で読み込み中…"
@@ -2840,6 +3026,9 @@ msgstr "マグネットリンクをコピーしました"
 msgid "Make White Noise work your way."
 msgstr "White Noise の動作を自分に合わせて設定します。"
 
+msgid "Make everything larger or smaller."
+msgstr "画面全体の表示を大きくしたり小さくしたりできます。"
+
 msgid "Make this member an admin?"
 msgstr "このメンバーを管理者にしますか？"
 
@@ -2851,6 +3040,9 @@ msgstr "管理"
 
 msgid "Manage connections and published relay lists."
 msgstr "接続と公開済みのリレーリストを管理します。"
+
+msgid "Manage contacts"
+msgstr "連絡先を管理"
 
 msgid "Manage local files and encrypted backups."
 msgstr "ローカルファイルと暗号化バックアップを管理します。"
@@ -2911,6 +3103,9 @@ msgstr "メッセージの表示行数"
 
 msgid "Message menu"
 msgstr "メッセージメニュー"
+
+msgid "Message notifications"
+msgstr "メッセージ通知"
 
 msgid "Message text copied"
 msgstr "メッセージのテキストをコピーしました"
@@ -3011,6 +3206,9 @@ msgstr "移動"
 msgid "Network & relays"
 msgstr "ネットワークとリレー"
 
+msgid "Never"
+msgstr "しない"
+
 msgid "Never share it. It is your identity."
 msgstr "絶対に共有しないでください。これはあなたの ID そのものです。"
 
@@ -3055,6 +3253,9 @@ msgstr "次のテーマ"
 
 msgid "Nickname"
 msgstr "ニックネーム"
+
+msgid "Nickname for %s"
+msgstr "%sのニックネーム"
 
 msgid "No GIFs found. Try another search."
 msgstr "GIFが見つかりませんでした。別のキーワードで検索してください。"
@@ -3118,6 +3319,9 @@ msgstr "ファイルはまだありません。"
 
 msgid "No folders match your search."
 msgstr "検索に一致するフォルダはありません。"
+
+msgid "No groups in common."
+msgstr "共通のグループはありません。"
 
 msgid "No groups yet"
 msgstr "グループはまだありません"
@@ -3193,6 +3397,9 @@ msgstr "ルールなし"
 msgid "No stickers here yet."
 msgstr "まだステッカーがありません。"
 
+msgid "No stickers here yet. Choose Manage to add stickers or sticker packs."
+msgstr "まだステッカーがありません。「管理」を選択して、ステッカーやステッカーパックを追加してください。"
+
 msgid "No trusted sites."
 msgstr "信頼済みのサイトはありません。"
 
@@ -3220,6 +3427,12 @@ msgstr "まだ読み込まれていません。「更新」をクリックして
 msgid "Not now"
 msgstr "今はしない"
 
+msgid "Not published yet"
+msgstr "未公開"
+
+msgid "Not sent to relays"
+msgstr "リレーに送信されていません"
+
 msgid "Not set"
 msgstr "未設定"
 
@@ -3244,11 +3457,17 @@ msgstr "通知が表示されません"
 msgid "Nov"
 msgstr "11月"
 
+msgid "Number"
+msgstr "人数"
+
 msgid "Numeric IP and port only: 127.0.0.1:9050 or [::1]:9050. No URLs or hostnames."
 msgstr "数値の IP アドレスとポートのみ使用できます（127.0.0.1:9050 または [::1]:9050）。URL やホスト名は使用できません。"
 
 msgid "OFFLINE"
 msgstr "オフライン"
+
+msgid "OK"
+msgstr "使用できます"
 
 msgid "ONLINE"
 msgstr "オンライン"
@@ -3265,11 +3484,17 @@ msgstr "オフにすると、本文を表示せず「新しいメッセージ」
 msgid "On"
 msgstr "オン"
 
+msgid "On %d relays"
+msgstr "%d 個のリレー上"
+
 msgid "On accent"
 msgstr "アクセント上の文字"
 
 msgid "On sale"
 msgstr "販売中"
+
+msgid "On this device"
+msgstr "この端末内"
 
 msgid "Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest."
 msgstr "エージェントからnpubを受け取ったら、「新しいチャット」から会話を始めてください。以降の手順はコネクターのドキュメントをご覧ください。"
@@ -3291,6 +3516,9 @@ msgstr "開く"
 
 msgid "Open a chat before inviting someone."
 msgstr "誰かを招待する前にチャットを開いてください。"
+
+msgid "Open chat"
+msgstr "チャットを開く"
 
 msgid "Open events in"
 msgstr "イベントを開くクライアント"
@@ -3322,6 +3550,9 @@ msgstr "クライアントで開く"
 msgid "Open it again with › in the left column or the button below."
 msgstr "左の列の › または下のボタンで再び開けます。"
 
+msgid "Open link"
+msgstr "リンクを開く"
+
 msgid "Open locations in"
 msgstr "位置情報を開くサービス"
 
@@ -3339,6 +3570,9 @@ msgstr "OpenAI Codex CLIのコーディングエージェント"
 
 msgid "Opening Whip…"
 msgstr "Whipを開いています…"
+
+msgid "Opening file picker…"
+msgstr "ファイル選択画面を開いています…"
 
 #, c-format
 msgid "Opening in %s"
@@ -3445,6 +3679,9 @@ msgstr "ペインはフローティング表示、またはチャットにドッ
 
 msgid "Password"
 msgstr "パスワード"
+
+msgid "Paste"
+msgstr "貼り付け"
 
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "パックのリンクを貼り付けると、追加する前にステッカーを確認できます。"
@@ -3574,6 +3811,9 @@ msgstr "添付ファイルを準備しています…"
 msgid "Preparing dictation..."
 msgstr "音声入力を準備しています..."
 
+msgid "Preparing download..."
+msgstr "ダウンロードを準備しています..."
+
 msgid "Preparing project photo…"
 msgstr "プロジェクトの写真を準備しています…"
 
@@ -3691,6 +3931,9 @@ msgstr "プロフィールをリレーに公開しています。数秒かかり
 msgid "Publishing your relay lists"
 msgstr "リレーリストを公開しています"
 
+msgid "Queued"
+msgstr "送信待ち"
+
 msgid "Quick reactions"
 msgstr "クイックリアクション"
 
@@ -3804,6 +4047,9 @@ msgstr "リレー"
 msgid "Relays carry your encrypted messages. The defaults are already configured."
 msgstr "リレーは暗号化されたメッセージを運びます。デフォルトのリレーはすでに設定されています。"
 
+msgid "Relays checked."
+msgstr "リレーを確認しました。"
+
 msgid "Reload previews"
 msgstr "プレビューを再読み込み"
 
@@ -3818,6 +4064,9 @@ msgstr "管理者権限を外しますか？"
 
 msgid "Remove contact"
 msgstr "連絡先を削除"
+
+msgid "Remove option"
+msgstr "選択肢を削除"
 
 msgid "Remove pack"
 msgstr "パックを削除"
@@ -3864,6 +4113,12 @@ msgstr "返信"
 msgid "Reply in thread"
 msgstr "スレッドで返信"
 
+msgid "Reply in thread…"
+msgstr "スレッドに返信…"
+
+msgid "Replying"
+msgstr "返信"
+
 #, c-format
 msgid "Replying to: %s"
 msgstr "返信先: %s"
@@ -3879,6 +4134,9 @@ msgstr "リレーリストを再公開"
 
 msgid "Requesting your location. Approve the desktop permission prompt if shown."
 msgstr "現在地を取得しています。デスクトップの許可ダイアログが表示された場合は、アクセスを許可してください。"
+
+msgid "Requesting your location. Approve the permission prompt if shown."
+msgstr "位置情報を取得しています。許可を求められた場合は承認してください。"
 
 msgid "Reset"
 msgstr "リセット"
@@ -3931,6 +4189,9 @@ msgstr "隠されたメッセージを表示"
 msgid "Reveal private key (nsec)"
 msgstr "秘密鍵を表示 (nsec)"
 
+msgid "Reveal secret key (nsec)"
+msgstr "秘密鍵を表示 (nsec)"
+
 msgid "Reveal your secret key"
 msgstr "秘密鍵を表示"
 
@@ -3968,11 +4229,17 @@ msgstr "ランタイム実行中"
 msgid "SEARCH"
 msgstr "検索"
 
+msgid "SEE ALSO"
+msgstr "関連項目"
+
 msgid "SEEDS"
 msgstr "基本色"
 
 msgid "SEND WITH EFFECT"
 msgstr "エフェクト付きで送信"
+
+msgid "SETTINGS"
+msgstr "設定"
 
 msgid "SHARED THEME"
 msgstr "共有されたテーマ"
@@ -4051,11 +4318,17 @@ msgstr "保存済み"
 msgid "Saved %s."
 msgstr "%sを保存しました。"
 
+msgid "Saved locally. Relay delivery pending."
+msgstr "この端末に保存しました。リレーへの配信を待っています。"
+
 msgid "Saved. Restart White Noise to apply this connection setting."
 msgstr "保存しました。この接続設定を適用するには White Noise を再起動してください。"
 
 msgid "Saving project photo…"
 msgstr "プロジェクトの写真を保存しています…"
+
+msgid "Saving vote…"
+msgstr "投票を保存しています…"
 
 msgid "Saving your proxy settings and encrypted credentials."
 msgstr "プロキシ設定と暗号化した認証情報を保存しています。"
@@ -4101,6 +4374,9 @@ msgstr "アーカイブしたチャットを検索..."
 
 msgid "Search contacts or paste a public key..."
 msgstr "連絡先を検索するか、公開鍵を貼り付け..."
+
+msgid "Search contacts or paste public keys..."
+msgstr "連絡先を検索するか、公開鍵を貼り付けます..."
 
 msgid "Search contacts..."
 msgstr "連絡先を検索..."
@@ -4165,8 +4441,14 @@ msgstr "関連項目"
 msgid "See and hear it with today's sound and preview settings."
 msgstr "現在のサウンドとプレビュー設定で確認できます。"
 
+msgid "See and hear it with your current sound and preview settings."
+msgstr "現在のサウンドとプレビューの設定で通知を確認できます。"
+
 msgid "See where your data is stored"
 msgstr "データの保存場所を確認"
+
+msgid "Select"
+msgstr "選択"
 
 msgid "Select a chat"
 msgstr "チャットを選択"
@@ -4191,6 +4473,9 @@ msgstr "セルフホスト型のパーソナルAIアシスタント"
 
 msgid "Send"
 msgstr "送信"
+
+msgid "Send GM?"
+msgstr "GMを送信しますか？"
 
 msgid "Send a message..."
 msgstr "メッセージを送信..."
@@ -4217,12 +4502,21 @@ msgstr "メッセージを送信"
 msgid "Send with an effect"
 msgstr "エフェクト付きで送信"
 
+msgid "Send your daily GM to this chat?"
+msgstr "今日のGMをこのチャットに送信しますか？"
+
 msgid "Sender name or hex public key"
 msgstr "送信者名または16進数の公開鍵"
+
+msgid "Sender name or public key"
+msgstr "送信者名または公開鍵"
 
 #, c-format
 msgid "Sender: %s"
 msgstr "送信者: %s"
+
+msgid "Sending a test notification..."
+msgstr "テスト通知を送信しています..."
 
 msgid "Sending..."
 msgstr "送信しています..."
@@ -4310,6 +4604,9 @@ msgstr "共有された位置情報"
 msgid "Shared media"
 msgstr "共有メディア"
 
+msgid "Sharing"
+msgstr "共有"
+
 msgid "Shell"
 msgstr "シェル"
 
@@ -4334,6 +4631,9 @@ msgstr "QR コードで表示"
 msgid "Show contact list"
 msgstr "連絡先リストを表示"
 
+msgid "Show dark or light themes."
+msgstr "ダークテーマまたはライトテーマを表示します。"
+
 msgid "Show fewer files"
 msgstr "表示するファイルを減らす"
 
@@ -4354,6 +4654,9 @@ msgstr "メッセージのプレビューを表示"
 
 msgid "Show or hide message previews"
 msgstr "メッセージのプレビューを表示または非表示"
+
+msgid "Show passwords"
+msgstr "パスワードを表示"
 
 msgid "Shown on the message menu. Tap one to remove it. Up to 16."
 msgstr "メッセージメニューに表示されます。タップすると削除できます。最大16件です。"
@@ -4449,6 +4752,9 @@ msgstr "右に分割"
 msgid "Square"
 msgstr "四角"
 
+msgid "Start"
+msgstr "開始"
+
 msgid "Start a chat with this public key"
 msgstr "この公開鍵でチャットを始める"
 
@@ -4476,6 +4782,9 @@ msgstr "オフラインで起動しました: %s"
 
 msgid "Starting a chat does not add someone to People. You can also import a contacts CSV or JSON export."
 msgstr "チャットを開始しても、相手は連絡先に追加されません。連絡先のCSVまたはJSONエクスポートをインポートすることもできます。"
+
+msgid "Starting microphone…"
+msgstr "マイクを起動しています…"
 
 msgid "Starting the runtime"
 msgstr "ランタイムを起動しています"
@@ -4536,6 +4845,9 @@ msgstr "この端末に保存されていますが、まだどのリレーにも
 msgid "Stripes"
 msgstr "ストライプ"
 
+msgid "Strong"
+msgstr "強力です"
+
 msgid "Strong enough"
 msgstr "十分な強度です"
 
@@ -4569,12 +4881,21 @@ msgstr "テーマ"
 msgid "TIMINGS"
 msgstr "処理時間"
 
+msgid "TROUBLESHOOTERS"
+msgstr "トラブルシューティング"
+
 #, c-format
 msgid "Take %d"
 msgstr "テイク %d"
 
 msgid "Takes effect on the next launch."
 msgstr "次回の起動時に反映されます。"
+
+msgid "Tap again to download this model."
+msgstr "このモデルをダウンロードするには、もう一度タップしてください。"
+
+msgid "Tap again to rotate"
+msgstr "もう一度タップすると更新します"
 
 msgid "Tap one, then confirm, to remove it."
 msgstr "削除する絵文字をタップして確認してください。"
@@ -4598,6 +4919,9 @@ msgstr "地形: %d/5"
 msgid "Test notification"
 msgstr "テスト通知"
 
+msgid "Test notification sent."
+msgstr "テスト通知を送信しました。"
+
 msgid "Text"
 msgstr "テキスト"
 
@@ -4619,6 +4943,9 @@ msgstr "本文: %s"
 
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr "質感のある線とスケッチ風のアバターです。形は動きません。"
+
+msgid "That isn't a bunker link. Double-check it and try again."
+msgstr "これは bunker リンクではありません。確認して、もう一度お試しください。"
 
 msgid "That isn't your current password. Double-check it and try again."
 msgstr "現在のパスワードと一致しません。確認して、もう一度お試しください。"
@@ -4673,6 +5000,9 @@ msgstr "イベントカードを開くウェブクライアントです。例：
 msgid "Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."
 msgstr "この相手のメッセージは表示するまで隠され、個別にメッセージを送ることもできなくなります。何も公開されず、ここで元に戻せます。"
 
+msgid "Their messages stay hidden until you show them. Nothing is published, and you can unblock them here."
+msgstr "メッセージは表示するまで非表示のままです。何も公開されません。ここでブロックを解除できます。"
+
 msgid "Theme"
 msgstr "テーマ"
 
@@ -4715,6 +5045,12 @@ msgstr "このグループの新しいメッセージにアクセスできなく
 
 msgid "They stay in the group as a regular member."
 msgstr "一般メンバーとしてグループに残ります。"
+
+msgid "This chat is archived. Restore it from Archive to send messages."
+msgstr "このチャットはアーカイブされています。メッセージを送信するには、アーカイブから復元してください。"
+
+msgid "This deletes every account key and all chats on this device. You can only sign in again if you have a backup of your secret key."
+msgstr "この端末にあるすべてのアカウントの鍵とチャットが削除されます。再びログインするには、秘密鍵のバックアップが必要です。"
 
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "表示される文字がないため、GMボタンはGMを送信します。"
@@ -4818,6 +5154,9 @@ msgstr "開発者モードを切り替え"
 
 msgid "Too easy to guess"
 msgstr "簡単に推測されてしまいます"
+
+msgid "Too weak"
+msgstr "弱すぎます"
 
 msgid "Tools"
 msgstr "ツール"
@@ -5077,6 +5416,9 @@ msgstr "手を振って挨拶"
 msgid "Waves"
 msgstr "波"
 
+msgid "Weak password"
+msgstr "弱いパスワード"
+
 msgid "Webxdc app"
 msgstr "Webxdc アプリ"
 
@@ -5142,6 +5484,9 @@ msgstr "巣穴の前にデッキチェアを置いたのは誰ですか？"
 msgid "Wireframe"
 msgstr "ワイヤーフレーム"
 
+msgid "With a keyboard connected"
+msgstr "キーボード接続時に使えます"
+
 msgid "Word"
 msgstr "単語"
 
@@ -5202,8 +5547,14 @@ msgstr "すべてのチャットを既読にしました。"
 msgid "You have the latest version."
 msgstr "最新バージョンです。"
 
+msgid "You have unsaved changes."
+msgstr "保存されていない変更があります。"
+
 msgid "You said GM here today"
 msgstr "今日はここでGMを送信済みです"
+
+msgid "You said GM here today."
+msgstr "今日はこのチャットですでにGMを送信しました。"
 
 msgid "You stay in the group, but another admin has to grant the rights back."
 msgstr "グループには残りますが、権限を戻すには別の管理者による付与が必要です。"
@@ -5213,6 +5564,9 @@ msgstr "グループには残りますが、権限を戻せる管理者はほか
 
 msgid "You stop receiving its messages. Rejoining needs a new invite."
 msgstr "このグループのメッセージを受信しなくなります。再参加するには新しい招待が必要です。"
+
+msgid "You were invited to this chat."
+msgstr "このチャットに招待されました。"
 
 msgid "You were invited to this group."
 msgstr "このグループに招待されました。"
@@ -5233,6 +5587,9 @@ msgstr "このアカウントには保留中の操作があります。署名者
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr "アカウントは削除されましたが、署名者の記録を暗号化された保管庫から削除できませんでした。"
 
+msgid "Your account keys and chats were deleted from this device. Pick a new password to start over."
+msgstr "この端末からアカウントの鍵とチャットが削除されました。最初からやり直すには、新しいパスワードを選んでください。"
+
 msgid "Your chats appear here once you have some."
 msgstr "チャットができるとここに表示されます。"
 
@@ -5241,6 +5598,9 @@ msgstr "現在のパスワード"
 
 msgid "Your desktop location service handles the permission request. Nothing is sent to the chat until you choose Send location."
 msgstr "デスクトップの位置情報サービスが許可のリクエストを処理します。「位置情報を送信」を選ぶまで、チャットには送信されません。"
+
+msgid "Your device asks for permission. Nothing is sent to the chat until you choose Send location."
+msgstr "端末が許可を求めます。「位置情報を送信」を選ぶまで、チャットには何も送信されません。"
 
 msgid "Your disk is filling up"
 msgstr "ディスクの空きが少なくなっています"
@@ -5256,6 +5616,9 @@ msgstr "あなたの ID は主権的です"
 
 msgid "Your identity, key packages, and device security."
 msgstr "あなたの ID、キーパッケージ、端末のセキュリティを管理します。"
+
+msgid "Your key stays on this device"
+msgstr "鍵はこの端末にとどまります"
 
 msgid "Your name"
 msgstr "あなたの名前"
@@ -5293,6 +5656,12 @@ msgstr "公開鍵を取得できません。別のアカウントを選んで、
 msgid "Your public key. Safe to share."
 msgstr "公開鍵。共有して問題ありません。"
 
+msgid "Your secret key stays in your remote signer. Reveal and export are unavailable on this device."
+msgstr "秘密鍵はリモート署名アプリにとどまります。この端末では表示とエクスポートはできません。"
+
+msgid "Your secret key stays on this device or in your connected signer. Never share it."
+msgstr "秘密鍵はこの端末か接続中の署名アプリにとどまります。決して共有しないでください。"
+
 msgid "Your signer is connected."
 msgstr "署名者に接続しています。"
 
@@ -5310,6 +5679,9 @@ msgstr "あなたのステッカー"
 
 msgid "Your themes"
 msgstr "あなたのテーマ"
+
+msgid "Your unpublished profile changes are lost."
+msgstr "未公開のプロフィールの変更は失われます。"
 
 msgid "Zoom in"
 msgstr "拡大"

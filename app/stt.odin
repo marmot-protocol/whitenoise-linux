@@ -227,7 +227,7 @@ stt_start :: proc(
 	if !ui.prefs.stt_enabled ||
 	   ui.stt.file != nil ||
 	   (purpose == .Transcribe &&
-			   (voice.stream != nil || ui.selected < 0 || ui.selected >= len(ui.chats))) {
+			   (voice_active() || ui.selected < 0 || ui.selected >= len(ui.chats))) {
 		return
 	}
 	audio: []u8

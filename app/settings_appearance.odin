@@ -2,6 +2,7 @@ package main
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
+import rl "sdlrl"
 
 // Stable focus keys map the workbench's indexed chips to their Clay hit targets.
 @(private)
@@ -141,6 +142,36 @@ settings_appearance :: proc(ui: ^Ui_State) {
 
 @(private)
 appearance_control_input :: proc(ui: ^Ui_State, pressed: string) -> bool {
+	// A held stepper repeats without waiting for a lift. A travelling finger
+	// cancels it, so the same buttons remain safe scroll starting points.
+	if rl.IsMouseButtonPressed(.LEFT) {
+		appearance_hold = {}
+		for id in ([2]string{"MessageLinesMinus", "MessageLinesPlus"}) {
+			if clay.PointerOver(clay.ID(id)) {
+				appearance_hold = {
+					id  = id,
+					at  = rl.GetTime() + 0.45,
+					pos = rl.GetMousePosition(),
+				}
+			}
+		}
+	}
+	if appearance_hold.id != "" && rl.IsMouseButtonDown(.LEFT) {
+		pos := rl.GetMousePosition()
+		if abs(pos.x - appearance_hold.pos.x) > LONG_PRESS_SLOP ||
+		   abs(pos.y - appearance_hold.pos.y) > LONG_PRESS_SLOP {
+			appearance_hold = {}
+		} else if rl.GetTime() >= appearance_hold.at {
+			appearance_activate(ui, clay.ID(appearance_hold.id))
+			appearance_hold.at = rl.GetTime() + 0.12
+			appearance_hold.repeated = true
+			return true
+		}
+	}
+	if rl.IsMouseButtonReleased(.LEFT) && appearance_hold.repeated {
+		appearance_hold = {}
+		return true
+	}
 	for entry in APPEARANCE_CONTROLS {
 		control := clay.ID(entry.id, entry.index)
 		if pressed != entry.key && !(mouse_released() && clay.PointerOver(control)) {
@@ -154,6 +185,14 @@ appearance_control_input :: proc(ui: ^Ui_State, pressed: string) -> bool {
 		return true
 	}
 	return false
+}
+
+@(private)
+appearance_hold: struct {
+	id:       string,
+	at:       f64,
+	pos:      rl.Vector2,
+	repeated: bool,
 }
 
 // Deep links and keyboard focus scroll their own column, never its neighbours.
@@ -255,44 +294,42 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 		}
 	}
 
-	if clay.UI(clay.ID("ThemeGroup"))(settings_box()) {
-		settings_group(tr("Theme"))
-		if clay.UI(clay.ID("ThemeToneFilters"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-		) {
-			theme_tone_button(ui, .Dark, "ThemeToneDark", tr("Dark"))
-			theme_tone_button(ui, .Light, "ThemeToneLight", tr("Light"))
-		}
-		if ui.theme != system_theme_index && has_accent_choices {
-			if clay.UI(clay.ID("RowAccent"))(settings_row(true)) {
-				row_labels(tr("Accent color"), "")
-				clay.Text(
-					theme_packs[preview_theme].accent_names[ui.accent],
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-				)
-				if clay.UI(clay.ID("AccentChoices"))({layout = {childGap = 10}}) {
-					for name, i in theme_packs[preview_theme].accent_names {
-						append(&theme_control_order, THEME_ACCENT_KEYS[i])
-						if clay.UI(clay.ID("AccentDot", u32(i)))(
-						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(18),
-									height = clay.SizingFixed(18),
+	if ui.theme != system_theme_index && has_accent_choices {
+		if clay.UI(clay.ID("ThemeGroup"))(settings_box()) {
+			settings_group(tr("Theme"))
+			if ui.theme != system_theme_index && has_accent_choices {
+				if clay.UI(clay.ID("RowAccent"))(settings_row(true)) {
+					row_labels(tr("Accent color"), "")
+					clay.Text(
+						theme_packs[preview_theme].accent_names[ui.accent],
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					)
+					if clay.UI(clay.ID("AccentChoices"))(
+					{layout = {childGap = single_pane() ? 4 : 10}},
+					) {
+						for name, i in theme_packs[preview_theme].accent_names {
+							append(&theme_control_order, THEME_ACCENT_KEYS[i])
+							if clay.UI(clay.ID("AccentDot", u32(i)))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFixed(settings_tap_size(18)),
+										height = clay.SizingFixed(settings_tap_size(18)),
+									},
 								},
+								backgroundColor = len(theme_packs) > 0 ? theme_packs[preview_theme].accent_base[i] : default_pack().accent_base[i],
+								cornerRadius = rr(2),
+								border = kb_focus == THEME_ACCENT_KEYS[i] || ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
 							},
-							backgroundColor = len(theme_packs) > 0 ? theme_packs[preview_theme].accent_base[i] : default_pack().accent_base[i],
-							cornerRadius = rr(2),
-							border = kb_focus == THEME_ACCENT_KEYS[i] || ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
-						},
-						) {
-							if hovered() {tooltip(name)}
+							) {
+								if hovered() {tooltip(name)}
+							}
 						}
 					}
 				}
 			}
-		}
 
+		}
 	}
 	if clay.UI(clay.ID("InterfaceGroup"))(settings_box()) {
 		settings_group(tr("Interface"))
@@ -309,23 +346,26 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("RowZoom"))(settings_row(true)) {
 			row_labels(
 				tr("Interface zoom"),
-				tr("Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."),
+				tap_size() ? tr("Make everything larger or smaller.") : tr("Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."),
 			)
-			if clay.UI(clay.ID("ZoomChoices"))(
-			{layout = {childGap = 8, childAlignment = {y = .Center}}},
-			) {
+			zoom_choices := settings_choices(clay.ID("ZoomChoices"))
+			zoom_choices.layout.layoutDirection = .LeftToRight
+			zoom_choices.layout.childGap = 4
+			zoom_choices.clip = {}
+			if clay.UI(clay.ID("ZoomChoices"))(zoom_choices) {
 				clay.Text(
 					fmt.tprintf("%d%%", ui.prefs.zoom_pct),
 					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 				)
 				settings_button("ZoomMinus", "-")
 				settings_button("ZoomPlus", "+")
-				settings_button("ZoomReset", tr("Reset"))
+				if !single_pane() {settings_button("ZoomReset", tr("Reset"))}
 			}
+			if single_pane() {settings_button("ZoomReset", tr("Reset"))}
 		}
 		if clay.UI(clay.ID("RowBodyFont"))(settings_row(true)) {
 			row_labels(tr("Message text size"), tr("Applies to message bodies and the composer."))
-			if clay.UI(clay.ID("BodyFontChoices"))({layout = {childGap = 6}}) {
+			if clay.UI(clay.ID("BodyFontChoices"))(settings_choices(clay.ID("BodyFontChoices"))) {
 				for label, i in BODY_FONT_LABELS {
 					settings_option(
 						"BodyFontChip",
@@ -335,28 +375,50 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 					)
 				}
 			}
+			if single_pane() {
+				clay.Text(
+					tr("A message at this size."),
+					{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
+				)
+			}
 		}
 		if clay.UI(clay.ID("RowEmojiSet"))(settings_row(true)) {
 			row_labels(
 				tr("Emoji style"),
 				tr("Applies to the picker, reactions and emoji in messages."),
 			)
-			if clay.UI(clay.ID("EmojiSetChoices"))({layout = {childGap = 6}}) {
+			if clay.UI(clay.ID("EmojiSetChoices"))(settings_choices(clay.ID("EmojiSetChoices"))) {
 				for name, set in EMOJI_SET_NAMES {
 					settings_option("EmojiSetChip", u32(set), name, ui.prefs.emoji_set == set)
 				}
 			}
+			if single_pane() {
+				if clay.UI(clay.ID("EmojiStyleSample"))({layout = {childGap = 12}}) {
+					for emoji, i in ([3]string{"😀", "❤️", "🥕"}) {
+						if tex := emoji_tex(emoji); tex != nil {
+							if clay.UI(clay.ID("EmojiStyleSampleImg", u32(i)))(
+							{
+								layout = {sizing = {clay.SizingFixed(24), clay.SizingFixed(24)}},
+								image = {imageData = tex},
+							},
+							) {}
+						}
+					}
+				}
+			}
 		}
-		if clay.UI(clay.ID("RowScroll"))(settings_row(true)) {
-			row_labels(tr("Scroll speed"), tr("How far the mouse wheel moves the view."))
-			if clay.UI(clay.ID("ScrollChoices"))({layout = {childGap = 6}}) {
-				for label, i in SCROLL_SPEED_LABELS {
-					settings_option(
-						"ScrollChip",
-						u32(i),
-						label,
-						ui.prefs.scroll_speed == SCROLL_SPEEDS[i],
-					)
+		if !tap_size() {
+			if clay.UI(clay.ID("RowScroll"))(settings_row(true)) {
+				row_labels(tr("Scroll speed"), tr("How far the mouse wheel moves the view."))
+				if clay.UI(clay.ID("ScrollChoices"))(settings_choices(clay.ID("ScrollChoices"))) {
+					for label, i in SCROLL_SPEED_LABELS {
+						settings_option(
+							"ScrollChip",
+							u32(i),
+							label,
+							ui.prefs.scroll_speed == SCROLL_SPEEDS[i],
+						)
+					}
 				}
 			}
 		}
@@ -408,8 +470,10 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 						{
 							layout = {
 								sizing = {
-									width = clay.SizingFit({min = i == 1 ? 44 : 28}),
-									height = clay.SizingFixed(28),
+									width = clay.SizingFit(
+										{min = settings_tap_size(i == 1 ? 44 : 28)},
+									),
+									height = clay.SizingFixed(settings_tap_size(28)),
 								},
 								padding = {
 									left = 6,
@@ -423,7 +487,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 						},
 						) {
 							label :=
-								i == 1 ? fmt.tprintf("%d", ui.prefs.message_lines) : i == 0 ? "-" : "+"
+								i == 1 ? (ui.prefs.message_lines == 0 ? tr("Never") : fmt.tprintf("%d", ui.prefs.message_lines)) : i == 0 ? "-" : "+"
 							clay.Text(
 								label,
 								{
@@ -435,17 +499,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 						}
 					}
 				}
-				if clay.UI(clay.ID("MessageLinesReset"))(
-				{
-					layout = {
-						padding = {left = 6, right = 6},
-						sizing = {height = clay.SizingFixed(32)},
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = hovered() ? HOVER : {},
-					cornerRadius = rr(4),
-				},
-				) {clay.Text(tr("Reset"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})}
+				settings_button("MessageLinesReset", tr("Reset"))
 			}
 		}
 	}
@@ -456,12 +510,15 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 		append(&theme_control_order, control.key)
 	}
 	if clay.UI(clay.ID("ThemeActionsGroup"))(settings_box()) {
+		settings_group(tr("Sharing"))
 		if clay.UI(clay.ID("RowThemeShare"))(settings_row(true)) {
 			row_labels(
 				tr("Share this theme"),
 				tr("Pick a chat to send it to. They choose whether to use it."),
 			)
-			if clay.UI(clay.ID("ThemeShareActions"))({layout = {childGap = 8}}) {
+			if clay.UI(clay.ID("ThemeShareActions"))(
+				settings_choices(clay.ID("ThemeShareActions")),
+			) {
 				append(&theme_control_order, "ThemeShareBtn", "ThemeEditBtn")
 				settings_button("ThemeShareBtn", tr("Share to chat"))
 				settings_button("ThemeEditBtn", tr("Edit"))

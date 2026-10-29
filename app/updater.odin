@@ -393,15 +393,7 @@ update_settings_row :: proc() {
 				)
 			}
 		}
-		if clay.UI(clay.ID("AboutUpdateRow"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 12,
-				childAlignment = {y = .Center},
-			},
-		},
-		) {
+		if clay.UI(clay.ID("AboutUpdateRow"))(settings_row(true)) {
 			clay.Text(update_status(phase), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
 			if clay.UI(clay.ID("AboutUpdateGap"))(
 			{layout = {sizing = {width = clay.SizingGrow()}}},

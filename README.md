@@ -4,7 +4,7 @@
 
 <h1 align="center">White Noise Linux</h1>
 
-<p align="center"><b>A native desktop client for end-to-end encrypted group chat over Nostr.</b></p>
+<p align="center"><b>A native client for end-to-end encrypted group chat over Nostr.</b></p>
 
 <p align="center">
   <a href="https://github.com/marmot-protocol/whitenoise-linux/actions/workflows/ci.yml"><img src="https://github.com/marmot-protocol/whitenoise-linux/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
@@ -104,10 +104,34 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Chat transitions follow the conversation, not its position in the list. New messages can reorder the list without sliding the open chat.
 - Reduce motion hides animated synth, dust, scan, and wave backdrops, including the vault gate's synth backdrop. Static decorations remain visible.
 
+**Mobile Linux**
+
+Narrow windows show one view at a time, with full-width chat and contact
+lists. Use the bottom navigation to switch pages and Back to return from
+a conversation. Back keeps your draft and staged attachments. Settings,
+forms, dialogs and media controls reflow or scroll to fit the window.
+
+Tap or long-press a message for its actions, and long-press a chat for
+its row menu. A conversation's header holds Back, search and a menu with
+files, mentions, settings and members. The Chats menu holds Lock now and
+the command palette. The status bar appears only while you are offline or
+connecting. Rotating a phone keeps the text size; landscape gains room and
+the navigation drops its labels. Drag overflowing toolbars and choice rows
+sideways and page content vertically. Reduce motion keeps direct finger
+scrolling but disables the fling. Tap the composer to activate platform
+text input; opening a conversation does not raise the on-screen keyboard.
+On short screens, navigation gives the active view more room; Back restores
+it. Short conversations also hide the status readout, but retain progress
+and error banners.
+
+Linux ARM64 packages use the same interface (see [Install](#install)).
+The compositor supplies the on-screen keyboard through SDL's platform
+text-input support.
+
 **Privacy & data**
 
 - One password-encrypted vault holds every secret (see [Security model](#security-model)).
-- Lock now in the status bar or command palette closes the runtime, clears the vault key and session state, and returns to the password gate without closing the window. Unlock with your vault password to reconnect.
+- Lock now in the status bar (the Chats menu on phones) or command palette closes the runtime, clears the vault key and session state, and returns to the password gate without closing the window. Unlock with your vault password to reconnect.
 - Encrypted backup and restore for settings, drafts, custom emoji, and themes. Account keys and message history are not included.
 - Opt-in OTLP metrics and audit logging, both off until you turn them on in Settings.
 

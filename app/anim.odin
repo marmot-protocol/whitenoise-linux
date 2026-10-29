@@ -353,7 +353,7 @@ modal_w :: proc(id: clay.ElementId, w: f32) -> f32 {
 
 // Same for a panel with a fixed height. The status bar sits under it.
 modal_h :: proc(h: f32) -> f32 {
-	return min(h, f32(rl.GetScreenHeight()) / UI_ZOOM - 60)
+	return min(h, max(1, f32(rl.GetScreenHeight()) / UI_ZOOM - (single_pane() ? 24 : 60)))
 }
 
 // Vertical offset for a panel that rises the last few px into place.
@@ -515,32 +515,59 @@ DRAG_MIN :: f32(3) // px of travel before a press stops being a click
 DRAG_VEL_RATE :: f32(30) // smoothing on the throw speed, in 1/s
 
 @(private = "file")
-drag_at: f32
+drag_at: clay.Vector2
 @(private = "file")
-drag_vel: f32
+drag_vel: clay.Vector2
+@(private = "file")
+drag_origin: clay.Vector2
 @(private = "file")
 drag_on: bool
 @(private = "file")
 drag_id: clay.ElementId // the container this drag grabbed
 
+@(private)
+fling_vel: clay.Vector2
+@(private)
+fling_id: clay.ElementId
+
 // A press that turned into a drag opens no link on release.
 drag_moved: bool
 
 update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
+	if mouse_pressed() || rl.GetMouseWheelMoveV() != {} {fling_vel = {}}
+	if fling_vel != {} {
+		data := clay.GetScrollContainerData(fling_id)
+		if !data.found || !motion_on() {
+			fling_vel = {}
+		} else {
+			overflow := clay.Vector2 {
+				max(data.contentDimensions.width - data.scrollContainerDimensions.width, 0),
+				max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+			}
+			before := data.scrollPosition^
+			step := fling_vel * (anim_drain(8) / 8)
+			data.scrollPosition.x = clamp(before.x + step.x, -overflow.x, 0)
+			data.scrollPosition.y = clamp(before.y + step.y, -overflow.y, 0)
+			fling_vel *= 1 - anim_drain(8)
+			if abs(fling_vel.x) < 5 || data.scrollPosition.x == before.x {fling_vel.x = 0}
+			if abs(fling_vel.y) < 5 || data.scrollPosition.y == before.y {fling_vel.y = 0}
+			anim_moving += 1
+		}
+	}
 	// Touch only. A mouse has a wheel, and grabbing the view with the
 	// left button fights click, text selection, and the link guard.
-	if !rl.HasTouch() {
+	if !rl.TouchActive() {
 		return
 	}
-	y := rl.GetMousePosition().y / UI_ZOOM
+	point := transmute(clay.Vector2)rl.GetMousePosition() / UI_ZOOM
 
 	if rl.IsMouseButtonReleased(.LEFT) {
-		// Hand the throw to the wheel residual, which already knows how
-		// to spend it and where the ends of the content are.
-		if drag_on && abs(drag_vel) > DRAG_MIN {
-			scroll_residual.y += drag_vel / (CLAY_SCROLL_PIXELS * anim_drain(SCROLL_DRAIN))
+		// Keep the throw bound to the grabbed view after the finger lifts.
+		if drag_on && drag_moved && motion_on() {
+			fling_id = drag_id
+			fling_vel = drag_vel / anim_dt
 		}
-		drag_on, drag_vel = false, 0
+		drag_on, drag_vel = false, {}
 		return
 	}
 	if !rl.IsMouseButtonDown(.LEFT) {
@@ -548,34 +575,52 @@ update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
 		return
 	}
 	if !drag_on {
-		if blocked || !motion_on() || !rl.IsMouseButtonPressed(.LEFT) {
+		// A press is a tap until it travels. A swipe over content with
+		// nothing to scroll must still not click, or flip a toggle, where
+		// it lifts.
+		if rl.IsMouseButtonPressed(.LEFT) {
+			drag_origin = point
+		} else if !blocked &&
+		   max(abs(point.x - drag_origin.x), abs(point.y - drag_origin.y)) > LONG_PRESS_SLOP {
+			drag_moved = true
+		}
+		if blocked || !rl.IsMouseButtonPressed(.LEFT) {
 			return
 		}
+		if ui.board_drag.kind != .None {return}
+		if single_pane() &&
+		   clay.PointerOver(clay.ID("FolderBoard")) &&
+		   point.x < clay.GetElementData(clay.ID("FolderBoard")).boundingBox.x + 44 {return}
 		// The timeline is blocked while a body selection is running
 		// (`blocked`); every other container is fair game.
 		for target in drag_targets {
 			if clay.PointerOver(target) {
 				drag_id = target
-				drag_on, drag_at, drag_vel, drag_moved = true, y, 0, false
+				drag_on, drag_at, drag_vel, drag_moved = true, point, {}, false
+				drag_origin = point
 				return
 			}
 		}
 		return
 	}
 
+	step := point - drag_at
+	if !drag_moved &&
+	   max(abs(point.x - drag_origin.x), abs(point.y - drag_origin.y)) <= DRAG_MIN {return}
+	drag_moved = true
 	cursor_raise(.Grabbing)
-	step := y - drag_at
-	drag_at = y
+	drag_at = point
 	drag_vel += (step - drag_vel) * anim_drain(DRAG_VEL_RATE)
-	if abs(step) > DRAG_MIN {
-		drag_moved = true
-	}
 	data := clay.GetScrollContainerData(drag_id)
 	if !data.found {
 		return
 	}
-	overflow := max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0)
-	data.scrollPosition.y = clamp(data.scrollPosition.y + step, -overflow, 0)
+	overflow := clay.Vector2 {
+		max(data.contentDimensions.width - data.scrollContainerDimensions.width, 0),
+		max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+	}
+	if data.config.horizontal {data.scrollPosition.x = clamp(data.scrollPosition.x + step.x, -overflow.x, 0)} else {drag_vel.x = 0}
+	if data.config.vertical {data.scrollPosition.y = clamp(data.scrollPosition.y + step.y, -overflow.y, 0)} else {drag_vel.y = 0}
 	ui.scroll_pending = false // the user is driving; stop chasing the bottom
 	anim_moving += 1
 }

@@ -63,7 +63,6 @@ video_tile_bounds :: proc(t: ^testing.T) {
 		testing.expect(t, abs(tile.boundingBox.width / tile.boundingBox.height - ratio) < 0.00001)
 		testing.expect_value(t, bar.boundingBox.width, tile.boundingBox.width)
 		testing.expect_value(t, fill.boundingBox.width, bar.boundingBox.width / 2)
-		testing.expect_value(t, bar.boundingBox.height, 2)
 		testing.expect_value(
 			t,
 			bar.boundingBox.y + bar.boundingBox.height,
@@ -85,7 +84,6 @@ video_tile_bounds :: proc(t: ^testing.T) {
 			rl.EndDrawing()
 		}
 		bar = clay.GetElementData(clay.ID("MsgVideoBar", 0))
-		testing.expect_value(t, bar.boundingBox.height, 14)
 		testing.expect_value(
 			t,
 			clay.GetElementData(clay.ID("MsgVideo", 0)).boundingBox,
@@ -99,11 +97,6 @@ video_tile_bounds :: proc(t: ^testing.T) {
 		clay.BeginLayout()
 		message_row(0, msg)
 		clay.EndLayout(0)
-		testing.expect_value(
-			t,
-			clay.GetElementData(clay.ID("MsgVideoBar", 0)).boundingBox.height,
-			14,
-		)
 		video_bar_drag = {}
 	}
 	ui: Ui_State

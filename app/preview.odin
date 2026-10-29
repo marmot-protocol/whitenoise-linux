@@ -695,13 +695,15 @@ preview_close :: proc() {
 
 // Modal layout, mounted with the other overlays.
 preview_modal :: proc(ui: ^Ui_State) {
+	narrow := single_pane()
 	full :=
 		preview.kind == .Pdf ? preview.pdf_fullscreen : (preview.kind == .Video && rl.IsFullscreen())
 	image_view := preview.kind == .Image || preview.kind == .Slides
 	image_w := fit_w(f32(rl.GetScreenWidth()) / UI_ZOOM * 0.94, 26)
 	// A tall body (a long take list, a big hex dump) must not push the
 	// modal past the window: cap it and scroll inside instead.
-	max_h := f32(rl.GetScreenHeight()) / UI_ZOOM * PV_MAX_HEIGHT
+	max_h :=
+		narrow ? modal_h(f32(rl.GetScreenHeight()) / UI_ZOOM) : f32(rl.GetScreenHeight()) / UI_ZOOM * PV_MAX_HEIGHT
 	if full {
 		max_h = f32(rl.GetScreenHeight()) / UI_ZOOM
 	}
@@ -710,12 +712,13 @@ preview_modal :: proc(ui: ^Ui_State) {
 		layout = {
 			layoutDirection = .TopToBottom,
 			sizing = {
-				width = full ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : (image_view ? clay.SizingFixed(image_w + 28) : clay.SizingFit({min = min(f32(360), fit_w(640))})),
-				height = full || image_view ? clay.SizingFixed(max_h) : clay.SizingFit({max = max_h}),
+				width = full ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : (narrow ? clay.SizingFixed(fit_w(640)) : (image_view ? clay.SizingFixed(image_w + 28) : clay.SizingFit({min = min(f32(360), fit_w(640))}))),
+				height = full || image_view || narrow ? clay.SizingFixed(max_h) : clay.SizingFit({max = max_h}),
 			},
 			padding = clay.PaddingAll(full ? 0 : 14),
 			childGap = full ? 0 : 10,
 		},
+		clip = {vertical = narrow, childOffset = clay.GetScrollOffset()},
 		floating = {
 			attachTo = .Root,
 			zIndex = 12,
@@ -731,70 +734,107 @@ preview_modal :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("PvHead"))(
 		{
 			layout = {
-				sizing = {width = full ? clay.SizingFit({}) : clay.SizingGrow()},
+				sizing = {width = full && !narrow ? clay.SizingFit({}) : clay.SizingGrow()},
 				padding = clay.PaddingAll(full ? 8 : 0),
 				childGap = 10,
 				childAlignment = {y = .Center},
 			},
-			floating = full ? clay.FloatingElementConfig{attachTo = .Parent, zIndex = 15, offset = {-12, 12}, attachment = {element = .RightTop, parent = .RightTop}} : {},
+			floating = full ? clay.FloatingElementConfig{attachTo = .Parent, zIndex = 15, offset = {narrow ? 0 : -12, narrow ? 0 : 12}, attachment = {element = .RightTop, parent = .RightTop}} : {},
 			backgroundColor = full ? MEDIA_CHIP_BG : {},
 		},
 		) {
-			clay.Text(
-				arc_short_name(slides ? preview.slides[preview.slide].name : preview.name),
-				{fontId = FONT_TITLE, fontSize = 13, textColor = full ? MEDIA_CHIP_FG : TEXT},
-			)
-			if clay.UI(clay.ID("PvHeadPad"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if preview.kind == .Message && ui.prefs.tts_enabled {
-				micro_button("PvRead", tr("Read aloud"))
+			if !narrow {
+				clay.Text(
+					arc_short_name(slides ? preview.slides[preview.slide].name : preview.name),
+					{fontId = FONT_TITLE, fontSize = 13, textColor = full ? MEDIA_CHIP_FG : TEXT},
+				)
 			}
-			if preview.kind == .Code {
-				micro_button("PvCopyCode", tr("Copy"))
-			}
-			stored := !slides || preview.slides[preview.slide].msg_id != ""
-			if stored &&
-			   (preview.kind == .Image || (slides && preview.slides[preview.slide].tex != nil)) {
-				if clay.UI(clay.ID("PvCopy"))(
-				{
-					layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
-					backgroundColor = hovered() ? HOVER : ROW_BG,
-					cornerRadius = rr(8),
+			if clay.UI(clay.ID("PvHeadActions"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 10,
+					childAlignment = {y = .Center},
 				},
-				) {
-					clay.Text(
-						tr("Copy image"),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
-					)
+				clip = {horizontal = narrow, childOffset = clay.GetScrollOffset()},
+			},
+			) {
+				if clay.UI(clay.ID("PvHeadPad"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {}
+				if preview.kind == .Message && ui.prefs.tts_enabled {
+					micro_button("PvRead", tr("Read aloud"))
 				}
-			}
-			if preview.kind == .Video || preview.kind == .Pdf {
-				if clay.UI(clay.ID("PvFull"))(
-				{
-					layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
-					backgroundColor = hovered() ? HOVER : ROW_BG,
-					cornerRadius = rr(8),
-				},
-				) {
-					clay.Text(
-						full ? tr("Exit fullscreen") : tr("Fullscreen"),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
-					)
+				if preview.kind == .Code {
+					micro_button("PvCopyCode", tr("Copy"))
 				}
-			}
-			if stored {
-				if clay.UI(clay.ID("PvSave"))(
-				{
-					layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
-					backgroundColor = hovered() ? HOVER : ROW_BG,
-					cornerRadius = rr(8),
-				},
-				) {
-					clay.Text(tr("Save"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+				stored := !slides || preview.slides[preview.slide].msg_id != ""
+				if stored &&
+				   (preview.kind == .Image ||
+						   (slides && preview.slides[preview.slide].tex != nil)) {
+					if clay.UI(clay.ID("PvCopy"))(
+					{
+						layout = {
+							sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
+							padding = {left = 10, right = 10, top = 5, bottom = 5},
+							childAlignment = {y = .Center},
+						},
+						backgroundColor = hovered() ? HOVER : ROW_BG,
+						cornerRadius = rr(8),
+					},
+					) {
+						clay.Text(
+							tr("Copy image"),
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
+						)
+					}
+				}
+				if preview.kind == .Video || preview.kind == .Pdf {
+					if clay.UI(clay.ID("PvFull"))(
+					{
+						layout = {
+							sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
+							padding = {left = 10, right = 10, top = 5, bottom = 5},
+							childAlignment = {y = .Center},
+						},
+						backgroundColor = hovered() ? HOVER : ROW_BG,
+						cornerRadius = rr(8),
+					},
+					) {
+						clay.Text(
+							full ? tr("Exit fullscreen") : tr("Fullscreen"),
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
+						)
+					}
+				}
+				if stored {
+					if clay.UI(clay.ID("PvSave"))(
+					{
+						layout = {
+							sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
+							padding = {left = 10, right = 10, top = 5, bottom = 5},
+							childAlignment = {y = .Center},
+						},
+						backgroundColor = hovered() ? HOVER : ROW_BG,
+						cornerRadius = rr(8),
+					},
+					) {
+						clay.Text(
+							tr("Save"),
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
+						)
+					}
 				}
 			}
 			if clay.UI(clay.ID("PvClose"))(
 			{
-				layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
+				layout = {
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? tap_min() : 32),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
+					},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : ROW_BG,
 				cornerRadius = rr(8),
 			},
@@ -805,7 +845,14 @@ preview_modal :: proc(ui: ^Ui_State) {
 
 		if image_view {
 			if clay.UI(clay.ID("PvZoomTools"))(
-			{layout = {childGap = 8, childAlignment = {y = .Center}}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 8,
+					childAlignment = {y = .Center},
+				},
+				clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+			},
 			) {
 				micro_button("PvZoomOut", "\u2212")
 				clay.Text(
@@ -834,19 +881,25 @@ preview_modal :: proc(ui: ^Ui_State) {
 			layout = {
 				layoutDirection = .TopToBottom,
 				sizing = {
-					width = image_view ? clay.SizingFixed(image_w) : (full ? clay.SizingGrow() : clay.SizingFit({})),
-					height = full || image_view ? clay.SizingGrow() : clay.SizingFit({max = max_h - PV_CHROME}),
+					width = narrow || full ? clay.SizingGrow() : (image_view ? clay.SizingFixed(image_w) : clay.SizingFit({})),
+					height = full || image_view || narrow ? clay.SizingGrow({min = 44}) : clay.SizingFit({max = max(1, max_h - PV_CHROME)}),
 				},
 				childAlignment = {x = full ? .Center : .Left, y = full ? .Center : .Top},
 				childGap = 10,
 			},
-			clip = {
-				horizontal = image_view || preview.kind == .Message,
-				vertical = true,
-				childOffset = clay.GetScrollOffset(),
-			},
+			clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
+			if narrow && !full {
+				if clay.UI(clay.ID("PvFileName"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+				) {
+					clay.Text(
+						arc_short_name(slides ? preview.slides[preview.slide].name : preview.name),
+						{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
+					)
+				}
+			}
 			switch preview.kind {
 			case .Image, .Slides:
 				tex := &preview.tex
@@ -979,8 +1032,10 @@ preview_modal :: proc(ui: ^Ui_State) {
 				{
 					layout = {
 						sizing = {
-							width = clay.SizingFixed(fit_w(480) + 10 + INSP_WIDTH),
-							height = clay.SizingFixed(min(f32(480), max_h - PV_CHROME)),
+							width = clay.SizingFixed(
+								narrow ? fit_w(480, 26) : fit_w(480) + 10 + INSP_WIDTH,
+							),
+							height = clay.SizingFixed(max(1, min(f32(480), max_h - PV_CHROME))),
 						},
 						layoutDirection = .TopToBottom,
 						childGap = 10,
@@ -1002,16 +1057,25 @@ preview_modal :: proc(ui: ^Ui_State) {
 				}
 
 			case .Mesh, .Gcode:
+				if tap_size() {
+					if clay.UI(clay.ID("PvModelTools"))({layout = {childGap = 8}}) {
+						micro_button("PvModelZoomOut", "−")
+						micro_button("PvModelZoomIn", "+")
+						micro_button("PvModelFit", tr("Fit"))
+					}
+				}
 				// A mesh gets the inspector sidebar beside it; g-code has
 				// no channels to inspect and keeps the bare tile. Both
 				// shrink to whatever the capped modal leaves for the body.
-				model_h := min(f32(480), max_h - PV_CHROME)
-				if clay.UI(clay.ID("PvModelRow"))({layout = {childGap = 10}}) {
+				model_h := max(1, min(f32(480), max_h - PV_CHROME))
+				if clay.UI(clay.ID("PvModelRow"))(
+				{layout = {layoutDirection = narrow ? .TopToBottom : .LeftToRight, childGap = 10}},
+				) {
 					if clay.UI(clay.ID("PvModel"))(
 					{
 						layout = {
 							sizing = {
-								width = clay.SizingFixed(fit_w(480)),
+								width = clay.SizingFixed(narrow ? fit_w(480, 26) : fit_w(480)),
 								height = clay.SizingFixed(model_h),
 							},
 						},
@@ -1050,7 +1114,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 						layout = {
 							sizing = {
 								width = clay.SizingFixed(fit_w(480)),
-								height = clay.SizingFixed(14),
+								height = clay.SizingFixed(tap_size() ? tap_min() : 14),
 							},
 							padding = {left = 2, right = 2},
 							childAlignment = {y = .Center},
@@ -1063,7 +1127,9 @@ preview_modal :: proc(ui: ^Ui_State) {
 						{
 							layout = {
 								sizing = {
-									width = clay.SizingFixed(max(10, preview.gc.frac * 476)),
+									width = clay.SizingFixed(
+										max(10, preview.gc.frac * (fit_w(480) - 4)),
+									),
 									height = clay.SizingFixed(10),
 								},
 							},
@@ -1112,7 +1178,18 @@ preview_modal :: proc(ui: ^Ui_State) {
 						},
 						) {
 							if clay.UI(clay.ID("PvPdfPrev"))(
-							{layout = {padding = clay.PaddingAll(4)}},
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+										height = clay.SizingFit(
+											{min = tap_size() ? tap_min() : 0},
+										),
+									},
+									padding = clay.PaddingAll(4),
+									childAlignment = {x = .Center, y = .Center},
+								},
+							},
 							) {
 								if hovered() {
 									pdf_flip_hover = view
@@ -1136,7 +1213,18 @@ preview_modal :: proc(ui: ^Ui_State) {
 								},
 							)
 							if clay.UI(clay.ID("PvPdfNext"))(
-							{layout = {padding = clay.PaddingAll(4)}},
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+										height = clay.SizingFit(
+											{min = tap_size() ? tap_min() : 0},
+										),
+									},
+									padding = clay.PaddingAll(4),
+									childAlignment = {x = .Center, y = .Center},
+								},
+							},
 							) {
 								if hovered() {
 									pdf_flip_hover = view
@@ -1191,7 +1279,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 				{
 					layout = {
 						layoutDirection = .TopToBottom,
-						sizing = {width = clay.SizingFixed(fit_w(480))},
+						sizing = {width = clay.SizingFixed(fit_w(480, narrow ? 26 : 12))},
 						padding = clay.PaddingAll(10),
 						childGap = 6,
 					},
@@ -1200,7 +1288,11 @@ preview_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					shown := min(len(preview.txt.blocks), TXT_MODAL_BLOCKS)
-					md_blocks(preview.txt.blocks[:shown], 0x7f000000, wrap_w = fit_w(480) - 20)
+					md_blocks(
+						preview.txt.blocks[:shown],
+						0x7f000000,
+						wrap_w = fit_w(480, narrow ? 26 : 12) - 20,
+					)
 					if len(preview.txt.blocks) > shown {
 						clay.Text(
 							fmt.tprintf(tr("and %d more blocks"), len(preview.txt.blocks) - shown),
@@ -1215,7 +1307,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 				{
 					layout = {
 						layoutDirection = .TopToBottom,
-						sizing = {width = clay.SizingFixed(fit_w(600))},
+						sizing = {width = clay.SizingFixed(fit_w(600, narrow ? 26 : 12))},
 						padding = clay.PaddingAll(10),
 						childGap = 1,
 					},
@@ -1227,7 +1319,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 						view,
 						0,
 						CODE_MODAL_LINES,
-						fit_w(600) - 20,
+						fit_w(600, narrow ? 26 : 12) - 20,
 						clay.ID("PvScroll"),
 						10,
 						1,
@@ -1292,7 +1384,10 @@ preview_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 		scrollbar(clay.ID("PvScroll"), 13) // the modal floats at 12
+		scrollbar(clay.ID("PvHeadActions"), 16)
+		if image_view {scrollbar(clay.ID("PvZoomTools"), 13)}
 	}
+	if narrow {scrollbar(clay.ID("PvModal"), 13)}
 }
 
 // Prev / "n / N" / next pill, riding the bottom of the slide.
@@ -1312,14 +1407,34 @@ slide_nav :: proc() {
 		cornerRadius = rr(12),
 	},
 	) {
-		if clay.UI(clay.ID("PvSlidePrev"))({layout = {padding = clay.PaddingAll(4)}}) {
+		if clay.UI(clay.ID("PvSlidePrev"))(
+		{
+			layout = {
+				sizing = {
+					width = clay.SizingFixed(tap_size() ? tap_min() : 16),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 24),
+				},
+				childAlignment = {x = .Center, y = .Center},
+			},
+		},
+		) {
 			clay.Text("<", {fontId = FONT_TITLE, fontSize = 13, textColor = {255, 255, 255, 230}})
 		}
 		clay.Text(
 			fmt.tprintf("%d / %d", preview.slide + 1, len(preview.slides)),
 			{fontId = FONT_BODY, fontSize = 11, textColor = {255, 255, 255, 230}},
 		)
-		if clay.UI(clay.ID("PvSlideNext"))({layout = {padding = clay.PaddingAll(4)}}) {
+		if clay.UI(clay.ID("PvSlideNext"))(
+		{
+			layout = {
+				sizing = {
+					width = clay.SizingFixed(tap_size() ? tap_min() : 16),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 24),
+				},
+				childAlignment = {x = .Center, y = .Center},
+			},
+		},
+		) {
 			clay.Text(">", {fontId = FONT_TITLE, fontSize = 13, textColor = {255, 255, 255, 230}})
 		}
 	}
@@ -1352,6 +1467,16 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		// The original bytes: the view's source has its tabs expanded.
 		copy_text(ui, string(preview.bytes), tr("Copied"))
 		return
+	}
+	if preview.kind == .Mesh || preview.kind == .Gcode {
+		orbit := preview.kind == .Mesh ? &preview.mesh.orbit : &preview.gc.orbit
+		if clicked(
+			"PvModelZoomOut",
+		) {orbit.zoom = max(STL_ZOOM_MIN, orbit.zoom / STL_ZOOM_STEP); orbit.dirty = true; return}
+		if clicked(
+			"PvModelZoomIn",
+		) {orbit.zoom = min(STL_ZOOM_MAX, orbit.zoom * STL_ZOOM_STEP); orbit.dirty = true; return}
+		if clicked("PvModelFit") {orbit.zoom = 1; orbit.dirty = true; return}
 	}
 	if preview.kind == .Image || preview.kind == .Slides {
 		point := rl.GetMousePosition()

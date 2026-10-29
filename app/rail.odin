@@ -17,6 +17,11 @@ chat_filter_wheel :: proc(ui: ^Ui_State, wheel: ^rl.Vector2) {
 @(private)
 rail_content :: proc(ui: ^Ui_State) {
 	logged_in := len(ui.accounts) > 0
+	// A phone pins the inbox header and scrolls only the chat list. Short
+	// windows (landscape, open keyboard) scroll the whole column instead,
+	// so the list never shrinks below one row.
+	pinned := ui.page == .Chats && f32(rl.GetScreenHeight()) / UI_ZOOM >= 480
+	page_scroll := ui.page == .Profile || ((single_pane() || ui.page == .Chats) && !pinned)
 
 	if clay.UI(clay.ID("RailContent"))(
 	{
@@ -29,8 +34,8 @@ rail_content :: proc(ui: ^Ui_State) {
 		backgroundColor = PANEL,
 		// Account rows must scroll rather than raise the shell's minimum height.
 		clip = {
-			vertical = ui.page == .Profile,
-			childOffset = ui.page == .Profile ? clay.GetScrollOffset() : clay.Vector2{},
+			vertical = page_scroll,
+			childOffset = page_scroll ? clay.GetScrollOffset() : clay.Vector2{},
 		},
 	},
 	) {
@@ -66,13 +71,28 @@ rail_content :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("RailHead"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(32)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(tap_size() ? 50 : 32),
+					},
 					childGap = 8,
 					childAlignment = {y = .Center},
 					padding = {top = 4, bottom = 2},
 				},
 			},
 			) {
+				// A phone has no navigation column, so the account switcher
+				// rides at the head of the inbox.
+				if single_pane() && ui.page == .Chats {
+					avatar(
+						"RailAvatar",
+						0,
+						ui.account_ref,
+						profile_label(nil, ui.account_ref),
+						32,
+						url_pic(ui.my_pic_url),
+					)
+				}
 				head := tr("Chats")
 				count := fmt.tprintf("%d", len(ui.chats))
 				if ui.page == .Contacts {
@@ -96,7 +116,14 @@ rail_content :: proc(ui: ^Ui_State) {
 				if ui.page == .Chats {
 					if clay.UI(clay.ID("ChatsMenuBtn"))(
 					{
-						layout = {padding = {left = 6, right = 6, top = 4, bottom = 4}},
+						layout = {
+							sizing = {
+								width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+								height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+							},
+							padding = {left = 6, right = 6, top = 4, bottom = 4},
+							childAlignment = {x = .Center, y = .Center},
+						},
 						backgroundColor = hovered() ? HOVER : {},
 						cornerRadius = rr(6),
 					},
@@ -113,6 +140,10 @@ rail_content :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("GSearchBtn"))(
 					{
 						layout = {
+							sizing = {
+								width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+								height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+							},
 							padding = {left = 8, right = 8, top = 5, bottom = 5},
 							childAlignment = {x = .Center, y = .Center},
 						},
@@ -128,6 +159,10 @@ rail_content :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("NewChatBtn"))(
 					{
 						layout = {
+							sizing = {
+								width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+								height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+							},
 							padding = {left = 8, right = 8, top = 3, bottom = 3},
 							childAlignment = {x = .Center, y = .Center},
 						},
@@ -143,7 +178,10 @@ rail_content :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("FilterBox"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 34),
+					},
 					padding = {left = 12, right = 12},
 					childGap = 8,
 					childAlignment = {y = .Center},
@@ -163,63 +201,76 @@ rail_content :: proc(ui: ^Ui_State) {
 					13,
 					TEXT_LO,
 				)
+				if len(ui.sidebar_filter) > 0 {
+					if clay.UI(clay.ID("FilterClear"))(
+					{
+						layout = {
+							sizing = {
+								clay.SizingFixed(tap_size() ? tap_min() : 24),
+								clay.SizingFixed(tap_size() ? tap_min() : 24),
+							},
+							childAlignment = {x = .Center, y = .Center},
+						},
+						backgroundColor = hovered() ? HOVER : {},
+						cornerRadius = rr(6),
+					},
+					) {
+						clay.Text(
+							ICON_CLOSE,
+							{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
+						)
+					}
+				}
 			}
 			if ui.page == .Chats {
-				if clay.UI(clay.ID("ChatFilters"))(
+				if clay.UI(clay.ID("ChatFilterRow"))(
 				{
-					layout = {sizing = {width = clay.SizingGrow()}, childGap = 4},
-					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						childGap = 4,
+						childAlignment = {y = .Center},
+					},
 				},
 				) {
-					labels := #sparse[Chat_Filter]string {
-						.Chats  = tr("Chats"),
-						.Unread = tr("Unread"),
-						.Groups = tr("Groups"),
-						.Whip   = "Whip",
-					}
-					ids := #sparse[Chat_Filter]string {
-						.Chats  = "AllPill",
-						.Unread = "UnreadPill",
-						.Groups = "GroupsPill",
-						.Whip   = "WhipPill",
-					}
-					for t in Chat_Filter {
-						if t == .Whip && !rl.WhipAvailable() {continue}
-						active := t == ui.chat_filter && ui.chat_folder == ""
-						if clay.UI(clay.ID(ids[t]))(
-						{
-							layout = {padding = {left = 8, right = 8, top = 5, bottom = 5}},
-							backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-							cornerRadius = rr(6),
-						},
-						) {
-							clay.Text(
-								labels[t],
-								{
-									fontId = FONT_BODY,
-									fontSize = 12,
-									textColor = active ? TEXT : TEXT_DIM,
-								},
-							)
+					if clay.UI(clay.ID("ChatFilters"))(
+					{
+						layout = {sizing = {width = clay.SizingGrow()}, childGap = 4},
+						clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+					},
+					) {
+						labels := #sparse[Chat_Filter]string {
+							.Chats  = tr("Chats"),
+							.Unread = tr("Unread"),
+							.Groups = tr("Groups"),
+							.Whip   = "Whip",
 						}
-					}
-					if ui.prefs.recent_chats {
-						for name, i in ui.prefs.folders {
-							active := name == ui.chat_folder
-							if clay.UI(clay.ID("FolderPill", u32(i)))(
+						ids := #sparse[Chat_Filter]string {
+							.Chats  = "AllPill",
+							.Unread = "UnreadPill",
+							.Groups = "GroupsPill",
+							.Whip   = "WhipPill",
+						}
+						for t in Chat_Filter {
+							if t == .Whip && !rl.WhipAvailable() {continue}
+							active := t == ui.chat_filter && ui.chat_folder == ""
+							if clay.UI(clay.ID(ids[t]))(
 							{
 								layout = {
+									sizing = {
+										width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+										height = clay.SizingFit(
+											{min = tap_size() ? tap_min() : 0},
+										),
+									},
 									padding = {left = 8, right = 8, top = 5, bottom = 5},
-									childGap = 4,
-									childAlignment = {y = .Center},
+									childAlignment = {x = .Center, y = .Center},
 								},
 								backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
 								cornerRadius = rr(6),
 							},
 							) {
-								folder_icon(ui, name, 12)
 								clay.Text(
-									name,
+									labels[t],
 									{
 										fontId = FONT_BODY,
 										fontSize = 12,
@@ -228,24 +279,65 @@ rail_content :: proc(ui: ^Ui_State) {
 								)
 							}
 						}
+						if ui.prefs.recent_chats {
+							for name, i in ui.prefs.folders {
+								active := name == ui.chat_folder
+								if clay.UI(clay.ID("FolderPill", u32(i)))(
+								{
+									layout = {
+										sizing = {
+											width = clay.SizingFit(
+												{min = tap_size() ? tap_min() : 0},
+											),
+											height = clay.SizingFit(
+												{min = tap_size() ? tap_min() : 0},
+											),
+										},
+										padding = {left = 8, right = 8, top = 5, bottom = 5},
+										childGap = 4,
+										childAlignment = {y = .Center},
+									},
+									backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
+									cornerRadius = rr(6),
+								},
+								) {
+									folder_icon(ui, name, 12)
+									clay.Text(
+										name,
+										{
+											fontId = FONT_BODY,
+											fontSize = 12,
+											textColor = active ? TEXT : TEXT_DIM,
+										},
+									)
+								}
+							}
+						}
 					}
-				}
-				if ui.page == .Chats &&
-				   clay.UI(clay.ID("ChatViewBtn"))(
-				   {
-					   layout = {padding = {left = 6, right = 6, top = 5, bottom = 5}},
-					   backgroundColor = hovered() ? HOVER : {},
-					   cornerRadius = rr(6),
-				   },
-				   ) {
-					clay.Text(
-						ui.prefs.recent_chats ? tr("Recent") : tr("Grouped"),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-					)
-					if hovered() {
-						tooltip(
-							ui.prefs.recent_chats ? tr("Group chats by folder") : tr("Sort chats by recent activity"),
+					scrollbar(clay.ID("ChatFilters"))
+					if clay.UI(clay.ID("ChatViewBtn"))(
+					{
+						layout = {
+							sizing = {
+								clay.SizingFixed(tap_size() ? tap_min() : 32),
+								clay.SizingFixed(tap_size() ? tap_min() : 32),
+							},
+							padding = {left = 6, right = 6, top = 5, bottom = 5},
+							childAlignment = {y = .Center},
+						},
+						backgroundColor = hovered() ? HOVER : ROW_BG,
+						cornerRadius = rr(6),
+					},
+					) {
+						clay.Text(
+							ui.prefs.recent_chats ? "\uf017" : ICON_FOLDER,
+							{fontId = FONT_ICON, fontSize = 16, textColor = ACCENT},
 						)
+						if hovered() {
+							tooltip(
+								ui.prefs.recent_chats ? tr("Group chats by folder") : tr("Sort chats by recent activity"),
+							)
+						}
 					}
 				}
 			}
@@ -264,27 +356,22 @@ rail_content :: proc(ui: ^Ui_State) {
 					micro_button("ContactsClearSearch", tr("Clear search"))
 				}
 			}
-			if clay.UI(clay.ID("ContactsExportRow"))(
-			{
-				layout = {
-					layoutDirection = .TopToBottom,
-					childGap = 8,
-					padding = {left = 4, bottom = 2},
-				},
-			},
-			) {
-				micro_button("ContactsImportBtn", tr("Import contacts"))
-				if len(ui.contacts) > 0 {
-					if clay.UI(clay.ID("ContactsExportButtons"))({layout = {childGap = 8}}) {
-						micro_button("ContactsCsvBtn", tr("Export CSV"))
-						micro_button("ContactsJsonBtn", tr("Export JSON"))
-					}
-				}
+			if empty == .No_Contacts {
+				clay.Text(
+					tr(
+						"Add someone from their profile or paste their npub above. You can also import a contacts CSV or JSON export.",
+					),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				)
+				login_big_button("ContactsImportBtn", tr("Import contacts"), true, .Enabled)
+			}
+			if contact_query_hex(ui) != "" {
+				login_big_button("ContactsAddNpub", tr("Add contact"), true, .Enabled)
 			}
 			if clay.UI(clay.ID("ContactList"))(
 			{
 				layout = {
-					sizing = {clay.SizingGrow(), clay.SizingGrow()},
+					sizing = {clay.SizingGrow(), clay.SizingGrow({min = single_pane() ? 50 : 0})},
 					layoutDirection = .TopToBottom,
 					childGap = 6,
 				},
@@ -384,19 +471,26 @@ rail_content :: proc(ui: ^Ui_State) {
 							},
 							) {}
 						}
+						photo := contact_picture(contact)
 						avatar(
 							"ContactAvatar",
 							u32(order.idx),
-							contact.id_hex,
+							photo == nil ? contact.npub : contact.id_hex,
 							contact.name,
 							30,
-							url_pic(contact.pic_url),
+							photo,
 						)
 						if clay.UI(clay.ID("ContactNameClip", u32(order.idx)))(
-						{clip = {horizontal = true}},
+						{
+							layout = {sizing = {width = clay.SizingGrow()}},
+							clip = {horizontal = true},
+						},
 						) {
+							name_w :=
+								clay.GetElementData(clay.ID("ContactNameClip", u32(order.idx))).boundingBox.width
+							if name_w <= 0 {name_w = max(1, rail_width(ui) - 80)}
 							clay.Text(
-								contact_label(ui, contact),
+								text_ellipsis(contact_label(ui, contact), name_w, FONT_TITLE, 14),
 								{
 									fontId = FONT_TITLE,
 									fontSize = 14,
@@ -405,7 +499,7 @@ rail_content :: proc(ui: ^Ui_State) {
 								},
 							)
 						}
-						if selected && len(contact.npub) > 0 {
+						if selected && len(contact.npub) > 0 && !single_pane() {
 							if clay.UI(clay.ID("ContactRowGap", u32(order.idx)))(
 							{layout = {sizing = {width = clay.SizingGrow()}}},
 							) {}
@@ -423,6 +517,20 @@ rail_content :: proc(ui: ^Ui_State) {
 				}
 			}
 			scrollbar(clay.ID("ContactList"))
+			if len(ui.contacts) > 0 {
+				micro_button("ContactsManage", tr("Manage contacts"))
+				if ui.contact_tools_open {
+					if clay.UI(clay.ID("ContactsTools"))(
+					{layout = {layoutDirection = .TopToBottom, childGap = 8}},
+					) {
+						micro_button("ContactsImportBtn", tr("Import contacts"))
+						if clay.UI(clay.ID("ContactsExportButtons"))({layout = {childGap = 8}}) {
+							micro_button("ContactsCsvBtn", tr("Export CSV"))
+							micro_button("ContactsJsonBtn", tr("Export JSON"))
+						}
+					}
+				}
+			}
 		}
 
 		if ui.page == .Chats && logged_in && !rail_narrow(ui) {
@@ -430,18 +538,21 @@ rail_content :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("ChatList"))(
 			{
 				layout = {
-					sizing = {clay.SizingGrow(), clay.SizingGrow()},
+					sizing = {
+						clay.SizingGrow(),
+						pinned ? clay.SizingGrow({min = chat_row_height()}) : clay.SizingFit(),
+					},
 					layoutDirection = .TopToBottom,
 					childGap = 2,
 				},
-				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+				clip = {vertical = pinned, childOffset = clay.GetScrollOffset()},
 			},
 			) {
 				chat_rail(ui, inbox, chat_total)
 			}
-			scrollbar(clay.ID("ChatList"))
+			if pinned {scrollbar(clay.ID("ChatList"))}
 		}
 
 	}
-	if ui.page == .Profile {scrollbar(clay.ID("RailContent"))}
+	if page_scroll {scrollbar(clay.ID("RailContent"))}
 }

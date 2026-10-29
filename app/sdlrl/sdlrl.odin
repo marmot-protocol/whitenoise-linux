@@ -135,6 +135,12 @@ State :: struct {
 	frame_dt:       f32,
 	density:        f32, // output pixels per window point
 	touch:          bool, // a touch screen is attached
+	touch_active:   bool, // last pointer event came from a finger
+	touch_position: Vector2,
+	// A finger leaves no pointer behind. The frame after a touch release
+	// parks it off-window, so hover states and tooltips do not stick.
+	touch_lifting:  bool,
+	touch_lifted:   bool,
 	text_input:     bool, // text-input-v3 enabled (raises a phone's keyboard)
 	// text engine
 	pixel_scale:    f32, // glyph rasterization multiplier (dpi * zoom)
@@ -183,10 +189,11 @@ when #config(WN_RELOAD, false) {
 
 @(private)
 Font_File :: struct {
-	path: string,
-	data: []u8,
-	info: stbtt.fontinfo,
-	ok:   bool,
+	path:      string,
+	data:      []u8,
+	info:      stbtt.fontinfo,
+	ok:        bool,
+	cjk_scale: f32,
 }
 
 @(private)
@@ -272,6 +279,10 @@ InitWindow :: proc(width, height: i32, title: cstring, image_helper: string = IM
 		sdl.free(devices)
 	}
 	state.touch = n > 0
+	// Test hook: a headless display has no touch device, so harness runs
+	// that drive the touch layout with devctl's finger commands say so.
+	if os.get_env("WN_TEST_TOUCH", context.temp_allocator) != "" {state.touch = true}
+	state.touch_active, state.touch_lifted = state.touch, state.touch
 	_ = sdl.SetRenderVSync(state.renderer, 1)
 	_ = sdl.SetRenderDrawBlendMode(state.renderer, {.BLEND})
 	init_saturation()
@@ -474,6 +485,8 @@ saved_paths: [dynamic]string
 @(private)
 saved_callbacks: c.int
 @(private)
+save_cancelled: bool
+@(private)
 save_name: cstring // suggested filename; kept alive across the async dialog
 
 @(private)
@@ -484,12 +497,16 @@ save_cb :: proc "c" (userdata: rawptr, filelist: [^]cstring, filter: c.int) {
 	defer sync.unlock(&saved_mutex)
 	saved_callbacks += 1
 	if filelist == nil || filelist[0] == nil {
+		save_cancelled = true
 		return // failed or cancelled
 	}
 	append(&saved_paths, strings.clone(string(filelist[0])))
 }
 
 SaveFileDialog :: proc(default_name: string) {
+	sync.lock(&saved_mutex)
+	save_cancelled = false
+	sync.unlock(&saved_mutex)
 	delete(save_name)
 	save_name = strings.clone_to_cstring(default_name)
 	when ODIN_OS == .OpenBSD {
@@ -499,6 +516,12 @@ SaveFileDialog :: proc(default_name: string) {
 	} else {
 		sdl.ShowSaveFileDialog(save_cb, nil, state.window, nil, 0, save_name)
 	}
+}
+
+SaveDialogCancelled :: proc() -> bool {
+	sync.lock(&saved_mutex)
+	defer sync.unlock(&saved_mutex)
+	return save_cancelled
 }
 
 SavedFiles :: proc() -> [dynamic]string {
@@ -737,6 +760,9 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 	state.wheel = {}
 	clear(&state.chars)
 	clear_dropped_files()
+	if state.touch_lifting {
+		state.touch_lifting, state.touch_lifted = false, true
+	}
 
 	// The density is not fixed for the window's life: snapping to a
 	// monitor with another scale changes it, and everything sized in
@@ -797,6 +823,7 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 				swallow_quit = true
 			}
 		case .WINDOW_RESIZED:
+			if state.touch_active {state.touch_lifted = true}
 			// Tiled Wayland: a later state-only configure (a focus swap
 			// when a neighbor maps) carries no size, and SDL then falls
 			// back to its cached floating size, which is whatever the
@@ -829,6 +856,13 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 				}
 			}
 		case .MOUSE_BUTTON_DOWN, .MOUSE_BUTTON_UP:
+			state.touch_active = event.button.which == sdl.TOUCH_MOUSEID
+			if event.button.which == sdl.TOUCH_MOUSEID {
+				state.touch = true
+				state.touch_position = {event.button.x, event.button.y}
+				state.touch_lifting = event.type == .MOUSE_BUTTON_UP
+			}
+			if event.type == .MOUSE_BUTTON_DOWN {state.touch_lifted = false}
 			button: MouseButton
 			switch event.button.button {
 			case 1:
@@ -850,7 +884,17 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 				state.m_released[button] = true
 				state.m_down[button] = false
 			}
+		case .MOUSE_MOTION:
+			if event.motion.which == sdl.TOUCH_MOUSEID {
+				state.touch_active = true
+				state.touch_position = {event.motion.x, event.motion.y}
+			} else if event.motion.xrel != 0 || event.motion.yrel != 0 {
+				state.touch_active = false
+				state.touch_lifting, state.touch_lifted = false, false
+			}
 		case .MOUSE_WHEEL:
+			state.touch_active = false
+			state.touch_lifted = false
 			state.wheel.x += event.wheel.x
 			state.wheel.y += event.wheel.y
 		case .TEXT_INPUT:
@@ -950,12 +994,12 @@ SetTextInput :: proc(on: bool) {
 	if on == state.text_input {
 		return
 	}
-	state.text_input = on
 	if on {
-		_ = sdl.StartTextInput(state.window)
+		state.text_input = sdl.StartTextInput(state.window)
 		return
 	}
 	_ = sdl.StopTextInput(state.window)
+	state.text_input = false
 	set_preedit("") // a half-composed string has nowhere to land now
 }
 
@@ -972,6 +1016,10 @@ SetTextInputArea :: proc(x, y, w, h: i32) {
 // the gestures that have no mouse equivalent.
 HasTouch :: proc() -> bool {
 	return state.touch
+}
+
+TouchActive :: proc() -> bool {
+	return state.touch_active
 }
 
 GetScreenWidth :: proc() -> i32 {
@@ -1055,13 +1103,56 @@ PushKey :: proc(key: KeyboardKey, down: bool) {
 }
 
 PushMouseButton :: proc(button: MouseButton, down: bool) {
+	UseMouse()
 	state.m_pressed[button] = down
 	state.m_released[button] = !down
 	state.m_down[button] = down
 }
 
 PushWheel :: proc(delta: Vector2) {
+	UseMouse()
 	state.wheel = delta
+}
+
+UseMouse :: proc() {
+	state.touch_active = false
+	state.touch_lifting, state.touch_lifted = false, false
+}
+
+Finger_Phase :: enum {
+	Down,
+	Move,
+	Up,
+}
+
+// Test hook: a finger at window point (x, y). It queues the events SDL
+// synthesizes from a touch, so the frame
+// takes the same path a real tap, hold or drag takes, including the
+// pointer parking after the lift.
+InjectFinger :: proc(phase: Finger_Phase, x, y: f32) {
+	event: sdl.Event
+	if phase == .Move {
+		event.motion = {
+			type     = .MOUSE_MOTION,
+			windowID = sdl.GetWindowID(state.window),
+			which    = sdl.TOUCH_MOUSEID,
+			x        = x,
+			y        = y,
+		}
+		_ = sdl.PushEvent(&event)
+		return
+	}
+	event.button = {
+		type     = phase == .Down ? .MOUSE_BUTTON_DOWN : .MOUSE_BUTTON_UP,
+		windowID = sdl.GetWindowID(state.window),
+		which    = sdl.TOUCH_MOUSEID,
+		button   = 1,
+		down     = phase == .Down,
+		clicks   = 1,
+		x        = x,
+		y        = y,
+	}
+	_ = sdl.PushEvent(&event)
 }
 
 IsMouseButtonPressed :: proc(button: MouseButton) -> bool {
@@ -1077,6 +1168,10 @@ IsMouseButtonDown :: proc(button: MouseButton) -> bool {
 }
 
 GetMousePosition :: proc() -> Vector2 {
+	if state.touch_lifted {
+		return {-10000, -10000}
+	}
+	if state.touch_active {return state.touch_position}
 	x, y: f32
 	_ = sdl.GetMouseState(&x, &y)
 	return {x, y}
@@ -1517,6 +1612,12 @@ LoadFontStack :: proc(
 			}
 			offset := stbtt.GetFontOffsetForIndex(raw_data(data), 0)
 			file.ok = bool(stbtt.InitFont(&file.info, raw_data(data), offset))
+			if file.ok && stbtt.FindGlyphIndex(&file.info, '田') != 0 {
+				x0, y0, x1, y1: c.int
+				stbtt.GetCodepointBox(&file.info, '田', &x0, &y0, &x1, &y1)
+				ink := f32(y1 - y0) * stbtt.ScaleForPixelHeight(&file.info, 1)
+				if ink > 0 {file.cjk_scale = 0.8 / ink}
+			}
 			append(&state.fonts, file)
 			found = len(state.fonts) - 1
 		}
@@ -1607,6 +1708,7 @@ get_glyph :: proc(font_id: u16, px: u16, r: rune) -> (Glyph, int) {
 
 		info := &state.fonts[file].info
 		scale := stbtt.ScaleForPixelHeight(info, f32(px))
+		if state.fonts[file].cjk_scale > 0 {scale *= state.fonts[file].cjk_scale}
 		advance, lsb: c.int
 		stbtt.GetCodepointHMetrics(info, r, &advance, &lsb)
 
@@ -1745,6 +1847,9 @@ DrawTextLine :: proc(
 				// Text sits on the baseline; an icon is centered in the
 				// line box instead, so a square button holds it dead center.
 				top := y + (ascent + f32(glyph.yoff)) / ps
+				if state.fonts[file].cjk_scale > 0 {
+					top = y + (logical_size - f32(glyph.h) / ps) / 2
+				}
 				if glyph.icon {
 					top = y + (logical_size - f32(glyph.h) / ps) / 2
 				}

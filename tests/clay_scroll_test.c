@@ -33,6 +33,18 @@ static void layout(void) {
     Clay_EndLayout(0);
 }
 
+static void layout_after_reflow(void) {
+    Clay_BeginLayout();
+    CLAY(CLAY_ID("Detail"), {.layout = {.sizing = {CLAY_SIZING_FIXED(240), CLAY_SIZING_FIXED(120)},
+                                        .layoutDirection = CLAY_TOP_TO_BOTTOM},
+                             .clip = {.vertical = true, .childOffset = Clay_GetScrollOffset()}}) {
+        CLAY(CLAY_ID("DetailContent"),
+             {.layout = {.sizing = {CLAY_SIZING_FIXED(240), CLAY_SIZING_FIXED(400)}}}) {
+        }
+    }
+    Clay_EndLayout(0);
+}
+
 int main(void) {
     uint32_t size = Clay_MinMemorySize();
     void *memory = malloc(size);
@@ -67,6 +79,14 @@ int main(void) {
     assert(label.found);
     assert(label.scrollPosition->x == -20);
     assert(list.scrollPosition->y == -30);
+
+    // A responsive rebuild can replace a container before the next event pump.
+    // Reused layout slots must not assign its extents to the departed list.
+    layout_after_reflow();
+    Clay_ScrollContainerData detail = Clay_GetScrollContainerData(CLAY_ID("Detail"));
+    assert(detail.found);
+    assert(detail.contentDimensions.height == 400);
+    assert(detail.scrollContainerDimensions.height == 120);
 
     free(memory);
 }

@@ -345,8 +345,12 @@ if [ "${1:-}" != sources ]; then
   # clay-scroll-target.patch keeps a clipped label from swallowing the wheel.
   # clay-float-layer.patch keeps a z-less float (the text caret) above the
   # floating panel it sits in.
+  # clay-nested-clip.patch keeps rows scrolled out of an outer clip (under
+  # the phone navigation bar) from taking its clicks.
+  # clay-cjk-wrap.patch lets lines break between CJK characters, which
+  # have no spaces to break at.
   CLAY_LIB="$CLAY/bindings/odin/clay-odin/linux/clay.a"
-  CLAY_PATCHES=("$HERE/patches/clay-hashmap.patch" "$HERE/patches/clay-scroll-target.patch" "$HERE/patches/clay-float-layer.patch")
+  CLAY_PATCHES=("$HERE/patches/clay-hashmap.patch" "$HERE/patches/clay-scroll-target.patch" "$HERE/patches/clay-scroll-reflow.patch" "$HERE/patches/clay-float-layer.patch" "$HERE/patches/clay-nested-clip.patch" "$HERE/patches/clay-cjk-wrap.patch")
   CLAY_KEY="$(native_key 'clay C PIC O2 CLAY_IMPLEMENTATION' "$CLAY/clay.h" "${CLAY_PATCHES[@]}")"
   if ! build_cache_fresh "$CLAY_KEY" "$HERE/build/clay/stamp" "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.h"; then
     rm -f "$HERE/build/clay/stamp" "$HERE/build/clay/clay.a"
@@ -864,7 +868,7 @@ if [ "${1:-}" = test ]; then
   WN_ODIN_TEST_BUILD_KEY="$(build_cache_key "$APP_OBJECT_KEY $APP_KEY" "$HERE/tests/odin.sh" "$HERE/tests/app" "$HERE/scripts/build-cache.sh")"
   export WN_ODIN_TEST_BUILD_KEY
   env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app
-  for check in rail_default_window rail_expand_narrow status_bar_viewports login_input_required profile_edit_summary sticker_input_validation issues_empty_state folder_picker_dispatch archive_chat_dispatch restore_chat_dispatch folder_count_dispatch new_chat_reset_dispatch test_emoji_save_io_dispatch backup_password_dispatch invite_input_dispatch recent_folder_filters nerd_font_fallback chat_timestamp_hover export_password_dispatch relay_input_dispatch; do
+  for check in rail_default_window rail_expand_narrow status_bar_viewports mobile_shell_viewports mobile_touch_scrolling mobile_onboard_viewport mobile_settings_viewport mobile_chat_layout_boundaries login_input_required profile_edit_summary sticker_input_validation issues_empty_state folder_picker_dispatch archive_chat_dispatch restore_chat_dispatch folder_count_dispatch new_chat_reset_dispatch test_emoji_save_io_dispatch backup_password_dispatch invite_input_dispatch recent_folder_filters nerd_font_fallback chat_timestamp_hover export_password_dispatch relay_input_dispatch; do
     SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES="$check"
   done
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES=settings_viewport

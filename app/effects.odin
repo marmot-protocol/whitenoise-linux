@@ -408,17 +408,23 @@ fx_send_armed :: proc(ui: ^Ui_State) {
 // ── Composer picker ─────────────────────────────────────────────────
 
 // Small popover over the composer: pick an effect for the next send.
+@(private)
+ICON_FX :: "\U000f0674" // creation: sparkle, not the saved-item star
+
 effect_picker :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("FxPanel"))(
 	{
-		// Right-anchored: the star sits near the window's right edge, so
-		// a left-anchored panel would run off-screen.
+		// The parent is FxBtn on desktop and ComposeBox on phone (overflow tools).
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(300)},
+			sizing = {
+				width = clay.SizingFixed(fit_w(300)),
+				height = clay.SizingFit({max = modal_h(300)}),
+			},
 			padding = clay.PaddingAll(12),
 			childGap = 8,
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		floating = {
 			attachTo = .Parent,
 			zIndex = 12,
@@ -430,14 +436,34 @@ effect_picker :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		eyebrow(tr("SEND WITH EFFECT"))
-		if clay.UI(clay.ID("FxRow"))({layout = {childGap = 6}}) {
+		if clay.UI(clay.ID("FxHead"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 6,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
+			eyebrow(tr("SEND WITH EFFECT"))
+			if clay.UI(clay.ID("FxHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if tap_size() {micro_button("FxClose", tr("Close"))}
+		}
+		if clay.UI(clay.ID("FxRow"))(
+		{
+			layout = {sizing = {width = clay.SizingGrow()}, childGap = 6},
+			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
 			for e, i in EFFECTS {
 				armed := ui.fx_armed == e.id
 				if clay.UI(clay.ID("FxOpt", u32(i)))(
 				{
 					layout = {
-						sizing = {width = clay.SizingFixed(38), height = clay.SizingFixed(38)},
+						sizing = {
+							width = clay.SizingFixed(tap_size() ? tap_min() : 38),
+							height = clay.SizingFixed(tap_size() ? tap_min() : 38),
+						},
 						childAlignment = {x = .Center, y = .Center},
 					},
 					backgroundColor = armed ? SELECTED : (hovered() ? HOVER : ROW_BG),
@@ -462,14 +488,16 @@ effect_picker :: proc(ui: ^Ui_State) {
 		if ui.fx_armed != 0 {
 			micro_button("FxClear", tr("Clear effect"))
 		}
+		scrollbar(clay.ID("FxRow"), 13)
 	}
+	scrollbar(clay.ID("FxPanel"), 13)
 }
 
 handle_effects :: proc(ui: ^Ui_State) -> bool {
 	if !ui.fx_open {
 		return false
 	}
-	if rl.IsKeyPressed(.ESCAPE) {
+	if rl.IsKeyPressed(.ESCAPE) || clicked("FxClose") {
 		ui.fx_open = false
 		return true
 	}
