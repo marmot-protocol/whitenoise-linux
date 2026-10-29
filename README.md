@@ -82,6 +82,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Connect with a `bunker://` link or scan/copy a `nostrconnect://` pairing link. Approve requests in your signer; pending operations show their status and approval links.
 - People lists people you follow. Starting a chat does not add someone to People. Private local-only nicknames, an archive, and npub QR codes are also available.
 - Your profile is public. The optional Verified address field holds a Nostr identifier (NIP-05), not your email address.
+- Empty display name, about, and Lightning inputs show a muted "Not set" hint. Empty profile summary values also say "Not set".
 - Profiles without a loaded name show a deterministic adjective and animal, such as "Magnetic Panda", derived from their public key. Published names replace it when loaded; local nicknames take precedence. The npub remains visible on profile cards.
 - Import and export contacts as CSV or JSON from the contacts rail. Imports skip existing contacts and duplicate npubs, restore private nicknames and blocked state, and report added, skipped, and failed records. Published profile names still come from Nostr.
 

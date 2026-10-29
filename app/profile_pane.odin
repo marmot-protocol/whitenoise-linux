@@ -174,7 +174,7 @@ profile_kv :: proc(
 		},
 		) {
 			clay.Text(
-				len(value) > 0 ? value : "—",
+				len(value) > 0 ? value : tr("Not set"),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, wrapMode = .None},
 			)
 		}
@@ -468,7 +468,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					tr("DISPLAY NAME"),
 					"NameBox",
 					&ui.name_input,
-					tr("Your name"),
+					tr("Not set"),
 					ui.focus == .Name,
 				)
 				if strings.trim_space(string(ui.name_input[:])) == "" {
@@ -478,7 +478,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					)
 				}
 				eyebrow(tr("ABOUT"))
-				issue_editor(ui, &ui.about_input, .About, tr("A line about you"), 100)
+				issue_editor(ui, &ui.about_input, .About, tr("Not set"), 100)
 				form_row(
 					ui,
 					2,
@@ -506,7 +506,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					tr("LIGHTNING"),
 					"Lud16Box",
 					&ui.lud16_input,
-					"you@wallet.com",
+					tr("Not set"),
 					ui.focus == .Lud16,
 				)
 				if !profile_addr_valid(string(ui.lud16_input[:])) {
