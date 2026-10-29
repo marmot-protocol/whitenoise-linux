@@ -51,6 +51,23 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Custom `:shortcode:` emoji use NIP-30. The image goes out as an encrypted attachment, and the message carries an `["emoji", shortcode, url]` tag pointing at that attachment's Blossom URL. Reactions work the same way: a `:shortcode:` reaction carries its own `imeta` and emoji tag. Forwards keep the tags. MDK's `marmot_send_tagged_media` and `marmot_react_with_media` send them, and MDK keeps the media key for reaction images the way it does for chat media.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
 - The Forward picker shows the message's first line, or its first attachment's filename, above the destination filter. Forwarded attachments download and prepare in the background. A status strip names the destination and stays visible through preparation and sending, even if you switch chats. Failed forwards can be retried from the destination chat. A confirmation names the destination after every part succeeds; a partial or cancelled forward does not report full success.
+- Native Linux builds translate messages and audio transcriptions on your device with
+  [TranslateGemma 4B Q4_K_M](https://huggingface.co/mradermacher/translategemma-4b-it-GGUF).
+  Enable it in Settings > General > Language > Message translation, choose
+  the target language, then use Translate in a message's context menu.
+  For audio, finish a transcription and use Translate below its expanded text.
+  Show original and Show translation switch the displayed text without
+  changing the stored message or original transcription. Automatic translation
+  processes received messages and expanded, completed audio transcriptions as
+  you read them. It does not start transcription. The first translation downloads about 2.5 GB
+  of model files; later translations work offline. Enabling accepts the
+  [Gemma terms](https://ai.google.dev/gemma/terms) and
+  [prohibited use policy](https://ai.google.dev/gemma/prohibited_use_policy).
+  Source detection runs locally with fastText. If it cannot identify the
+  language, choose the source in settings. Results stay in session memory
+  and are discarded when you change chats, accounts, or language settings.
+  Messages beyond the model's input or output token limits fail rather
+  than return a truncated translation.
 - Per-chat unread tracking, surfaced as rail badges.
 - Deleting a chat folder requires confirmation, from both Settings and its context menu. Only the folder is removed; its chats stay in your chat list.
 - Folder rules file chats automatically: name includes a word, has a member (npub), has fewer or more than N people (you included), or has unread messages. Each folder matches all of its rules or any one of them. A chat goes to the first folder, in folder order, whose rules match. A chat you move by hand stays in that folder; choosing "Follow folder rules" in the move dialog hands it back to the rules. Member rules read each group's member list on every chat-list refresh, and only while such a rule exists.
@@ -921,7 +938,7 @@ Before signing in, choose SOCKS5 proxy on the sign-in screen to configure
 the same setting.
 
 The proxy carries relay and remote-signer connections, media transfers,
-link previews, embedded web pages, speech model downloads, and enabled
+link previews, embedded web pages, speech and translation model downloads, and enabled
 telemetry exports. Failed proxied requests do not fall back to direct
 connections. Relay names are resolved through the proxy. Marmot's HTTP host
 checks still use local DNS so downloads and telemetry retain their validated

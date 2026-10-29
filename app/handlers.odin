@@ -802,6 +802,22 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
+	if mouse_released() {
+		for msg, i in ui.messages {
+			if translation_action(ui, msg, u32(i)) {return}
+			for slot, attachment in msg.attachments {
+				if slot.kind != .Audio {continue}
+				if translation_action(
+					ui,
+					msg,
+					u32(i) * 1024 + u32(attachment),
+					.Transcript,
+					attachment,
+				) {return}
+			}
+		}
+	}
+
 	if ui.search_open {
 		if clicked("SearchClear") || clicked("TimelineClearSearch") {
 			ed_set(ui, &ui.search_input, "")
@@ -1397,6 +1413,11 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if ui.prefs.tts_enabled && clay.PointerOver(clay.ID("CtxRead")) {
 		tts_read(ui, msg.body)
+		return
+	}
+	if clay.PointerOver(clay.ID("CtxTranslate")) {
+		ui.translation.paused = false
+		translation_request(ui, msg)
 		return
 	}
 	if !read_only && msg.mine && clay.PointerOver(clay.ID("CtxEdit")) {

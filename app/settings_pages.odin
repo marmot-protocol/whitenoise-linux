@@ -383,7 +383,21 @@ settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
 	#partial switch section {
 	case .General:
 		switch anchor {
-		case "RowLang", "LangChange", "RowTimeFmt", "TimeFmt", "RowDateFmt", "DateFmt":
+		case "RowLang",
+		     "LangChange",
+		     "RowTimeFmt",
+		     "TimeFmt",
+		     "RowDateFmt",
+		     "DateFmt",
+		     "TranslationGroup",
+		     "RowTranslation",
+		     "TgTranslation",
+		     "RowTranslationAuto",
+		     "TgTranslationAuto",
+		     "RowTranslationSource",
+		     "TranslationSource",
+		     "RowTranslationTarget",
+		     "TranslationTarget":
 			return 1
 		case "RowQuick",
 		     "RowQuickReset",
@@ -986,6 +1000,7 @@ settings_general :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
+		settings_translation(ui)
 
 	case 2:
 		if clay.UI(clay.ID("ReactionsGroup"))(settings_box()) {
@@ -2541,6 +2556,8 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 		set_audit(ui, client, !ui.audit_enabled)
 	case "TgDevMode":
 		flip(ui, &ui.prefs.dev_mode)
+	case:
+		settings_translation_action(ui, id)
 	}
 }
 
@@ -2569,6 +2586,7 @@ settings_switch_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	if ui.focus in FIELDS {
 		return false
 	}
+	if settings_translation_keys(ui) {return true}
 	switch control_keys(settings_check_ids[:settings_check_count]) {
 	case .None:
 		return false
@@ -2725,6 +2743,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if mouse_released() {
 			for pair, i in LOCALES {
 				if clay.PointerOver(clay.ID("LangOpt", u32(i))) {
+					if ui.prefs.translation_target == "" {translation_clear(ui)}
 					delete(ui.prefs.locale)
 					ui.prefs.locale = strings.clone(pair[0])
 					set_locale(ui.prefs.locale)
@@ -2782,6 +2801,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				ui.emoji_sets_open = false
 				ui.emoji_sets_selected = -1
 			}
+			ui.translation.language_menu = 0
 			ui.settings_tab = i
 			ui.settings_anchor = ""
 			ui.settings_scroll_pending = true
@@ -2842,6 +2862,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 
 	case .General:
+		if handle_settings_translation(ui) {return}
 		if ui.settings_tab == 2 {
 			if clicked("EmojiSetsBrowse") && ui.emoji_sets_job == nil {
 				ui.emoji_sets_open = !ui.emoji_sets_open

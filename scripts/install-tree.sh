@@ -31,7 +31,9 @@ cp "$HERE/build/app" "$PREFIX/bin/whitenoise"
 # could not start.
 SPEECH=
 if [ "$(uname -s)" = Linux ]; then SPEECH=1; fi
-if [ -n "$SPEECH" ]; then cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$LIB/"; fi
+if [ -n "$SPEECH" ]; then
+  cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$HERE/build/wn-translate" "$LIB/"
+fi
 if [ "$(uname -s)" = Linux ]; then cp "$HERE/build/wn-location" "$LIB/"; fi
 mkdir -p "$RES/licenses"
 cp "$HERE/build/wn-font" "$HERE/build/wn-image" "$HERE/build/wn-archive" "$HERE/build/wn-pdf" \
@@ -48,6 +50,9 @@ if [ -n "$SPEECH" ]; then
   cp "$HERE/vendor/sherpa-onnx/LICENSE" "$RES/licenses/sherpa-onnx.txt"
   cp "$HERE/vendor/sherpa-onnx/LICENSE-onnxruntime" "$RES/licenses/onnxruntime.txt"
   cp "$HERE/vendor/sherpa-onnx/ThirdPartyNotices-onnxruntime.txt" "$RES/licenses/onnxruntime-third-party.txt"
+  cp "$HERE/vendor/llama.cpp/LICENSE" "$RES/licenses/llama-cpp.txt"
+  cp "$HERE/vendor/fasttext/LICENSE" "$RES/licenses/fasttext.txt"
+  cp "$HERE/assets/translation-model-NOTICE.txt" "$RES/licenses/"
 fi
 # Bragi and the TeX Gyre DejaVu Math font it typesets with are compiled
 # and #loaded into wn-math; ship their licenses (the font: GUST Font

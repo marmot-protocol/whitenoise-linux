@@ -44,7 +44,7 @@ timeline_measure :: proc(ui: ^Ui_State) {
 	anchor_delta: f32
 	anchored := ui.scroll_pending || ui.jump_id != ""
 	for &msg, i in ui.messages {
-		if msg.thread_of != cur {
+		if msg.thread_of != cur && msg.id != cur {
 			continue
 		}
 		row := clay.GetElementData(clay.ID(msg.system ? "SysRow" : "MsgRow", u32(i)))

@@ -1,7 +1,10 @@
-// Shared by the TTS and STT helpers; the including file supplies its manifest.
+// Shared by the speech and translation helpers; each supplies its manifest.
 #include <openssl/evp.h>
 #include <glib/gstdio.h>
 #include "network_proxy.h"
+#ifndef WN_MODEL_URL
+#define WN_MODEL_URL(model) g_strdup_printf("%s/%s", MODEL_URL, (model)->name)
+#endif
 static int valid_file(const char *path, const ModelFile *model) {
     GStatBuf st;
     if (g_stat(path, &st) || st.st_size < 0 || (size_t)st.st_size != model->size) {
@@ -41,7 +44,7 @@ typedef struct {
 } Download;
 
 static size_t download_write(char *data, size_t size, size_t count, void *user) {
-    Download *download = user;
+    Download *download = (Download *)user;
     if (size && count > download->remaining / size) {
         return 0;
     }
@@ -79,8 +82,8 @@ static int ensure_model(const char *dir, const ModelFile *model) {
     CURL *curl = file ? curl_easy_init() : NULL;
     int ok = 0;
     if (curl) {
-        char *url = g_strdup_printf("%s/%s", MODEL_URL, model->name);
-        Download download = {.file = file, .remaining = model->size, .model = model};
+        char *url = WN_MODEL_URL(model);
+        Download download = {file, model->size, model, 0};
         curl_easy_setopt(curl, CURLOPT_URL, url);
         const char *ca_file = getenv("SSL_CERT_FILE");
         if (ca_file && *ca_file)

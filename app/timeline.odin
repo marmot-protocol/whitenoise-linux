@@ -265,12 +265,13 @@ fmt_clock :: proc(s: f64) -> string {
 // tile is the controls (play/pause, scrub bar, size + position).
 audio_tile :: proc(
 	id: u32,
-	msg_id: string,
+	msg: Msg_Ui,
 	att: int,
 	name: string,
 	size_label: string,
 	view: ^Video_View,
 ) {
+	msg_id := msg.id
 	if clay.UI(clay.ID("MsgAudio", id))(
 	{
 		layout = {
@@ -441,7 +442,15 @@ audio_tile :: proc(
 			}
 		}
 		if view.transcript_open && view.transcript != "" {
-			clay.Text(view.transcript, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+			result := translation_lookup(g_ui, msg, .Transcript, att)
+			text :=
+				result != nil && result.phase == .Ready && result.show ? result.text : view.transcript
+			clay.Text(text, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+			if result != nil {
+				translation_controls(g_ui, id, msg, .Transcript, att)
+			} else if translation_eligible(g_ui, msg, .Transcript, att) {
+				micro_button(fmt.tprintf("TranscriptTranslationStart%d", id), tr("Translate"))
+			}
 		}
 	}
 }
@@ -1206,7 +1215,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					// Audio tiles: mpv plays through its own ao, no frames;
 					// the tile is the controls.
 					if slot.kind == .Audio {
-						audio_tile(id, msg.id, att, slot.name, att_size_label(msg, att), view)
+						audio_tile(id, msg, att, slot.name, att_size_label(msg, att), view)
 						break
 					}
 					// Video tiles: the mpv-fed texture, with a play glyph while
@@ -1859,15 +1868,20 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			// Bodies draw a card in place of every GitHub link they hold.
 			gh_cards_on = true
 			geo_owner = msg.id
-			giphy := !msg.deleted && giphy_message(index, msg.body)
+			rendition := g_ui != nil ? translation_lookup(g_ui, msg) : nil
+			translated := rendition != nil && rendition.phase == .Ready && rendition.show
+			if translated {
+				body_text(index * 4096, rendition.text, 14, TEXT, true)
+			}
+			giphy := !translated && !msg.deleted && giphy_message(index, msg.body)
 			// GIPHY already owns the download, including its loading fallback.
 			if giphy_message_url(msg.body) != "" {
 				gh_cards_on = false
 			}
 			// A body that is one bare npub/nprofile becomes that person's
 			// card. Either way the text itself is not drawn.
-			replaced := giphy
-			if !giphy && !msg.deleted && len(msg.secrets) == 0 {
+			replaced := giphy || translated
+			if !replaced && !msg.deleted && len(msg.secrets) == 0 {
 				if hex := bare_mention_hex(msg.body); len(hex) > 0 {
 					profile_card(index * 4096, hex, att_w(360), .Message)
 					replaced = true
@@ -1914,6 +1928,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 
 			gh_cards_on = false
 			geo_owner = ""
+			if g_ui != nil {translation_controls(g_ui, index, msg)}
 
 			if len(msg.secrets) > 0 && !msg.deleted {
 				for layer in 0 ..= len(msg.secrets) {

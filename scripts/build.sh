@@ -185,7 +185,7 @@ if [ "$(uname -s)" = OpenBSD ]; then
   ulimit -d "$(ulimit -Hd)"
 fi
 # `fetch` downloads everything a later plain build would: the sources and
-# assets (`sources`), the speech runtime, and the Rust crates. A packager
+# assets (`sources`), speech and translation runtimes, and Rust crates. A packager
 # can then compile with the network off, as the Arch packages do:
 #
 #   scripts/build.sh fetch                          network
@@ -206,6 +206,10 @@ if [ -n "${WN_TARGET:-}" ] && [ "${1:-}" != sources ]; then
   exec bash "$HERE/scripts/cross-build.sh" "$WN_TARGET"
 fi
 bash "$HERE/scripts/version.sh" >/dev/null
+# Runtime sources are ordinary pinned build inputs, not the opt-in model.
+if [ "$(uname -s)" = Linux ]; then
+  bash "$HERE/scripts/build-translation.sh" sources
+fi
 # One pinned revision out of DEPS_PIN, by name.
 pin() { sed -n "s/^$1-commit = //p" "$HERE/DEPS_PIN"; }
 # One pinned download, by name; prints its path under vendor/downloads.
@@ -534,6 +538,7 @@ if [ "${1:-}" != sources ]; then
         build_cache_store "$SPEECH_KEY" "$HERE/build/$speech.stamp" "$HERE/build/wn-$speech"
       fi
     done
+    bash "$HERE/scripts/build-translation.sh"
   fi
 
   # wn-webview: the process that runs a webxdc app offscreen and hands

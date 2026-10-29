@@ -84,6 +84,7 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	mem.zero_slice(transmute([]u8)ui.stt.draft)
 	stt_stop(ui)
 	tts_stop(ui)
+	translation_clear(ui)
 	web_disconnect()
 	xdc_stop()
 	xdc_session_clear()

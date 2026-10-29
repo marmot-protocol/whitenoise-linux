@@ -566,6 +566,12 @@ msgstr "Apps"
 msgid "Apr"
 msgstr "Apr."
 
+msgid "Arabic (Egypt)"
+msgstr "Arabisch (Ägypten)"
+
+msgid "Arabic (Saudi Arabia)"
+msgstr "Arabisch (Saudi-Arabien)"
+
 msgid "Archive"
 msgstr "Archivieren"
 
@@ -697,6 +703,9 @@ msgstr "Sicherungen enthalten deine Einstellungen, Entwürfe, eigenen Emojis und
 msgid "Base color"
 msgstr "Grundfarbe"
 
+msgid "Bengali"
+msgstr "Bengalisch"
+
 msgid "Bevel light"
 msgstr "Fase hell"
 
@@ -748,6 +757,9 @@ msgstr "Blasenradius"
 msgid "Built with"
 msgstr "Entwickelt mit"
 
+msgid "Bulgarian"
+msgstr "Bulgarisch"
+
 msgid "By rule"
 msgstr "Per Regel"
 
@@ -796,11 +808,17 @@ msgstr "Bearbeiten / Antworten abbrechen, Bereiche schließen"
 msgid "Cancel reply"
 msgstr "Antwort abbrechen"
 
+msgid "Cancel translation"
+msgstr "Übersetzung abbrechen"
+
 msgid "Card border"
 msgstr "Kartenrahmen"
 
 msgid "Card well"
 msgstr "Kartenmulde"
+
+msgid "Catalan"
+msgstr "Katalanisch"
 
 msgid "Center the conversation"
 msgstr "Unterhaltung zentrieren"
@@ -930,6 +948,12 @@ msgstr "Dein Passwort wird geprüft und deine Schlüssel werden entschlüsselt."
 msgid "Checking..."
 msgstr "Wird geprüft..."
 
+msgid "Chinese (Simplified)"
+msgstr "Chinesisch (vereinfacht)"
+
+msgid "Chinese (Traditional)"
+msgstr "Chinesisch (traditionell)"
+
 msgid "Chinese, English, Japanese, Korean and Cantonese."
 msgstr "Chinesisch, Englisch, Japanisch, Koreanisch und Kantonesisch."
 
@@ -974,6 +998,12 @@ msgstr "Wähle einen Projektordner."
 
 msgid "Choose a sign-in method."
 msgstr "Wähle eine Anmeldemethode."
+
+msgid "Choose a translation source language"
+msgstr "Wähle die Ausgangssprache für Übersetzungen"
+
+msgid "Choose a translation target language"
+msgstr "Wähle die Zielsprache für Übersetzungen"
 
 msgid "Choose an emoji style"
 msgstr "Emoji-Stil wählen"
@@ -1384,6 +1414,9 @@ msgstr "Die Sprachdateien konnten nicht heruntergeladen werden. Bitte versuche e
 msgid "Couldn't download the speech model. Check your connection and available disk space, then try again."
 msgstr "Das Sprachmodell konnte nicht heruntergeladen werden. Prüfe deine Verbindung und den verfügbaren Speicherplatz und versuche es erneut."
 
+msgid "Couldn't download the translation model. Check your connection and available disk space, then try again."
+msgstr "Das Übersetzungsmodell konnte nicht heruntergeladen werden. Prüfe deine Verbindung und den verfügbaren Speicherplatz und versuche es erneut."
+
 msgid "Couldn't export contacts. Please try again."
 msgstr "Die Kontakte konnten nicht exportiert werden. Bitte versuche es erneut."
 
@@ -1421,6 +1454,9 @@ msgstr "Dein Standort konnte nicht ermittelt werden. Prüfe die Standortberechti
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "Es konnte keine Sprache erkannt werden. Sprich deutlich und versuche es erneut."
+
+msgid "Couldn't identify a supported language. Choose the source language in translation settings and try again."
+msgstr "Es konnte keine unterstützte Sprache erkannt werden. Wähle die Ausgangssprache in den Übersetzungseinstellungen und versuche es erneut."
 
 msgid "Couldn't import contacts. Choose a JSON array of contact records."
 msgstr "Kontakte konnten nicht importiert werden. Wähle ein JSON-Array mit Kontaktdatensätzen."
@@ -1728,6 +1764,9 @@ msgstr "Der Updater konnte nicht gestartet werden. Bitte versuche es erneut."
 msgid "Couldn't start transcription. Please try again."
 msgstr "Die Transkription konnte nicht gestartet werden. Bitte versuche es erneut."
 
+msgid "Couldn't start translation. Reinstall White Noise and try again."
+msgstr "Die Übersetzung konnte nicht gestartet werden. Installiere White Noise neu und versuche es erneut."
+
 msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
 msgstr "Dieses Audio konnte nicht transkribiert werden. Wähle eine Aufnahme unter 10 Minuten."
 
@@ -1736,6 +1775,12 @@ msgstr "Dieses Audio konnte nicht transkribiert werden. Wähle eine Audiodatei u
 
 msgid "Couldn't transcribe your speech. Please try again."
 msgstr "Deine Sprache konnte nicht transkribiert werden. Bitte versuche es erneut."
+
+msgid "Couldn't translate this message. Choose a shorter text message."
+msgstr "Diese Nachricht konnte nicht übersetzt werden. Wähle eine kürzere Textnachricht."
+
+msgid "Couldn't translate this message. Please try again."
+msgstr "Diese Nachricht konnte nicht übersetzt werden. Bitte versuche es erneut."
 
 #, c-format
 msgid "Couldn't unarchive. %s"
@@ -1826,6 +1871,9 @@ msgstr "Dein Chat wird erstellt"
 msgid "Creating your vault…"
 msgstr "Dein Tresor wird erstellt…"
 
+msgid "Croatian"
+msgstr "Kroatisch"
+
 msgid "Crop"
 msgstr "Zuschneiden"
 
@@ -1850,6 +1898,9 @@ msgstr "Benutzerdefinierte Emojis"
 msgid "Cyan"
 msgstr "Cyan"
 
+msgid "Czech"
+msgstr "Tschechisch"
+
 msgid "DEPTH"
 msgstr "TIEFE"
 
@@ -1864,6 +1915,9 @@ msgstr "ANZEIGENAME"
 
 msgid "Danger"
 msgstr "Gefahr"
+
+msgid "Danish"
+msgstr "Dänisch"
 
 msgid "Dark"
 msgstr "Dunkel"
@@ -1960,6 +2014,9 @@ msgstr "Design"
 
 msgid "Desktop notifications"
 msgstr "Desktop-Benachrichtigungen"
+
+msgid "Detect automatically"
+msgstr "Automatisch erkennen"
 
 msgid "Developer"
 msgstr "Entwickler"
@@ -2059,8 +2116,19 @@ msgstr "Heruntergeladen"
 msgid "Downloading an update."
 msgstr "Ein Update wird heruntergeladen."
 
+#, c-format
+msgid "Downloading language detector: %d%%"
+msgstr "Spracherkennung wird heruntergeladen: %d%%"
+
 msgid "Downloading speech model..."
 msgstr "Sprachmodell wird heruntergeladen..."
+
+msgid "Downloading translation model..."
+msgstr "Übersetzungsmodell wird heruntergeladen..."
+
+#, c-format
+msgid "Downloading translation model: %d%%"
+msgstr "Übersetzungsmodell wird heruntergeladen: %d%%"
 
 #, c-format
 msgid "Downloading: %d%%"
@@ -2089,6 +2157,9 @@ msgstr "Hier ablegen"
 
 msgid "Dust"
 msgstr "Staub"
+
+msgid "Dutch"
+msgstr "Niederländisch"
 
 msgid "EDIT PROFILE"
 msgstr "PROFIL BEARBEITEN"
@@ -2158,6 +2229,9 @@ msgstr "Emoji"
 msgid "Emoji style"
 msgstr "Emoji-Stil"
 
+msgid "Enable local translation"
+msgstr "Lokale Übersetzung aktivieren"
+
 msgid "Enabled for this group."
 msgstr "Für diese Gruppe aktiviert."
 
@@ -2169,6 +2243,9 @@ msgstr "Endtag (einschließlich)"
 
 msgid "End-to-end encrypted"
 msgstr "Ende-zu-Ende-verschlüsselt"
+
+msgid "English"
+msgstr "Englisch"
 
 msgid "Enter a color as #RRGGBB."
 msgstr "Gib eine Farbe im Format #RRGGBB ein."
@@ -2264,6 +2341,9 @@ msgstr "Avatar beim Aufdecken ausradieren"
 msgid "Error copied"
 msgstr "Fehler kopiert"
 
+msgid "Estonian"
+msgstr "Estnisch"
+
 msgid "Event fetch relays"
 msgstr "Relays zum Abrufen von Ereignissen"
 
@@ -2357,6 +2437,9 @@ msgstr "Dateien"
 msgid "Files shared in this chat will appear here."
 msgstr "Dateien, die in diesem Chat geteilt werden, erscheinen hier."
 
+msgid "Filipino"
+msgstr "Filipino"
+
 msgid "Filter chats"
 msgstr "Chats filtern"
 
@@ -2377,6 +2460,9 @@ msgstr "Diktat beenden"
 
 msgid "Finishing the cancelled connection."
 msgstr "Die abgebrochene Verbindung wird geschlossen."
+
+msgid "Finnish"
+msgstr "Finnisch"
 
 msgid "First member"
 msgstr "Erstes Mitglied"
@@ -2455,6 +2541,12 @@ msgstr "An %s weitergeleitet."
 msgid "Forwarding to %s…"
 msgstr "Wird an %s weitergeleitet…"
 
+msgid "French (Canada)"
+msgstr "Französisch (Kanada)"
+
+msgid "French (France)"
+msgstr "Französisch (Frankreich)"
+
 msgid "Friday"
 msgstr "Freitag"
 
@@ -2492,6 +2584,12 @@ msgstr "GEMEINSAME GRUPPEN"
 msgid "Games"
 msgstr "Spiele"
 
+msgid "Gemma prohibited use policy"
+msgstr "Gemma-Richtlinie zur unzulässigen Nutzung"
+
+msgid "Gemma terms"
+msgstr "Gemma-Nutzungsbedingungen"
+
 msgid "General"
 msgstr "Allgemein"
 
@@ -2500,6 +2598,9 @@ msgstr "Neuen Schlüssel erzeugen"
 
 msgid "Generating your key"
 msgstr "Dein Schlüssel wird erzeugt"
+
+msgid "German"
+msgstr "Deutsch"
 
 msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr "Erhalte eine Benachrichtigung, wenn eine Nachricht in einem Chat ankommt, den du gerade nicht ansiehst."
@@ -2537,6 +2638,9 @@ msgstr "Zu deinem Profil"
 msgid "Gray"
 msgstr "Grau"
 
+msgid "Greek"
+msgstr "Griechisch"
+
 msgid "Green"
 msgstr "Grün"
 
@@ -2567,6 +2671,9 @@ msgstr "Gruppen"
 msgid "Groups you join will appear here."
 msgstr "Gruppen, denen du beitrittst, erscheinen hier."
 
+msgid "Gujarati"
+msgstr "Gujarati"
+
 msgid "Hand-drawn filter"
 msgstr "Handgezeichneter Filter"
 
@@ -2584,6 +2691,9 @@ msgstr "Hat ungelesene Nachrichten"
 
 msgid "Have messages read aloud"
 msgstr "Nachrichten vorlesen lassen"
+
+msgid "Hebrew"
+msgstr "Hebräisch"
 
 msgid "Help"
 msgstr "Hilfe"
@@ -2603,6 +2713,9 @@ msgstr "Versteckte Nachricht ausblenden"
 msgid "Hide passwords"
 msgstr "Passwörter verbergen"
 
+msgid "Hindi"
+msgstr "Hindi"
+
 msgid "Home"
 msgstr "Zuhause"
 
@@ -2614,6 +2727,9 @@ msgstr "Hover ms"
 
 msgid "How far the mouse wheel moves the view."
 msgstr "Wie weit das Mausrad die Ansicht bewegt."
+
+msgid "Hungarian"
+msgstr "Ungarisch"
 
 msgid "I did. Very important marmot business."
 msgstr "Ich. Sehr wichtige Murmeltierangelegenheiten."
@@ -2635,6 +2751,9 @@ msgstr "EINLADUNG"
 
 msgid "ISSUE"
 msgstr "ISSUE"
+
+msgid "Icelandic"
+msgstr "Isländisch"
 
 msgid "Ideas"
 msgstr "Ideen"
@@ -2703,6 +2822,9 @@ msgstr "Emoji werden importiert..."
 msgid "Incoming messages"
 msgstr "Eingehende Nachrichten"
 
+msgid "Indonesian"
+msgstr "Indonesisch"
+
 msgid "Info hash"
 msgstr "Info-Hash"
 
@@ -2744,6 +2866,13 @@ msgstr "Oberfläche"
 
 msgid "Interface language"
 msgstr "Oberflächensprache"
+
+#, c-format
+msgid "Interface language (%s)"
+msgstr "Oberflächensprache (%s)"
+
+msgid "Interface language (English)"
+msgstr "Oberflächensprache (Englisch)"
 
 msgid "Interface sounds"
 msgstr "Oberflächentöne"
@@ -2787,6 +2916,9 @@ msgstr "Sie verschwindet für alle im Chat. Das kann nicht rückgängig gemacht 
 msgid "It stays for everyone else. You won't see it on this device again."
 msgstr "Für alle anderen bleibt sie erhalten. Auf diesem Gerät siehst du sie nicht mehr."
 
+msgid "Italian"
+msgstr "Italienisch"
+
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr "Seine Datei wird von diesem Gerät entfernt. In einen Chat geteilte Themes bleiben dort erhalten."
 
@@ -2798,6 +2930,9 @@ msgstr "Seine Schlüssel bleiben im Tresor auf diesem Gerät. Du kannst dich üb
 
 msgid "Jan"
 msgstr "Jan."
+
+msgid "Japanese"
+msgstr "Japanisch"
 
 msgid "Jitsi Meet call"
 msgstr "Jitsi-Meet-Anruf"
@@ -2827,6 +2962,9 @@ msgstr "ART %d"
 
 msgid "KP inspector"
 msgstr "KP-Inspektor"
+
+msgid "Kannada"
+msgstr "Kannada"
 
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr "Hält die geöffnete Unterhaltung auf einer angenehmen Lesebreite, statt die volle Breite auszufüllen."
@@ -2877,6 +3015,9 @@ msgstr "Schlüssel & Identität"
 msgid "Known senders"
 msgstr "Bekannte Absender"
 
+msgid "Korean"
+msgstr "Koreanisch"
+
 msgid "LIGHTNING"
 msgstr "LIGHTNING"
 
@@ -2912,6 +3053,9 @@ msgstr "Letztes Backup"
 
 msgid "Later"
 msgstr "Später"
+
+msgid "Latvian"
+msgstr "Lettisch"
 
 msgid "Launch at login"
 msgstr "Beim Anmelden starten"
@@ -2972,6 +3116,9 @@ msgstr "Aufnahme läuft... Beende sie, wenn du fertig bist (maximal 30 Sekunden)
 
 msgid "Literal message text"
 msgstr "Wörtlicher Nachrichtentext"
+
+msgid "Lithuanian"
+msgstr "Litauisch"
 
 msgid "Loading emoji previews"
 msgstr "Emoji-Vorschauen werden geladen"
@@ -3075,6 +3222,9 @@ msgstr "Vergrößere oder verkleinere die gesamte Oberfläche."
 msgid "Make this member an admin?"
 msgstr "Dieses Mitglied zum Admin machen?"
 
+msgid "Malayalam"
+msgstr "Malayalam"
+
 msgid "Male voice. Supports all reading languages."
 msgstr "Männliche Stimme. Unterstützt alle Vorlesesprachen."
 
@@ -3092,6 +3242,9 @@ msgstr "Verwalte lokale Dateien und verschlüsselte Backups."
 
 msgid "Mar"
 msgstr "März"
+
+msgid "Marathi"
+msgstr "Marathi"
 
 msgid "Mark read"
 msgstr "Als gelesen markieren"
@@ -3156,6 +3309,12 @@ msgstr "Nachrichtentext kopiert"
 msgid "Message text size"
 msgstr "Textgröße von Nachrichten"
 
+msgid "Message translation"
+msgstr "Nachrichtenübersetzung"
+
+msgid "Message translation is available in native Linux builds."
+msgstr "Die Nachrichtenübersetzung ist in nativen Linux-Versionen verfügbar."
+
 msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
 msgstr "Die Änderung betrifft auch bereits im Chat vorhandene Nachrichten, nicht nur neue. Alle in der Gruppe sehen die Änderung."
 
@@ -3164,6 +3323,9 @@ msgstr "Bereits im Chat vorhandene und neue Nachrichten werden nach dieser Zeit 
 
 msgid "Messages aren't arriving"
 msgstr "Nachrichten kommen nicht an"
+
+msgid "Messages stay on your device. Downloads about 2.5 GB on first translation. Enabling accepts the Gemma terms and prohibited use policy."
+msgstr "Nachrichten bleiben auf deinem Gerät. Bei der ersten Übersetzung werden etwa 2,5 GB heruntergeladen. Mit der Aktivierung akzeptierst du die Gemma-Nutzungsbedingungen und die Richtlinie zur unzulässigen Nutzung."
 
 msgid "Messaging"
 msgstr "Nachrichten"
@@ -3454,6 +3616,9 @@ msgstr "Noir-Filmeffekt"
 
 msgid "None"
 msgstr "Keiner"
+
+msgid "Norwegian"
+msgstr "Norwegisch"
 
 msgid "Not downloaded"
 msgstr "Nicht heruntergeladen"
@@ -3779,6 +3944,9 @@ msgstr "Hier erscheinen die Personen, denen du folgst. Um jetzt einen Chat zu st
 msgid "Perfect. Wake me up when it's spring."
 msgstr "Perfekt. Weck mich, wenn es Frühling ist."
 
+msgid "Persian"
+msgstr "Persisch"
+
 msgid "Pets"
 msgstr "Haustiere"
 
@@ -3851,6 +4019,15 @@ msgstr "Spielen"
 msgid "Play interface sounds"
 msgstr "Oberflächenklänge abspielen"
 
+msgid "Polish"
+msgstr "Polnisch"
+
+msgid "Portuguese (Brazil)"
+msgstr "Portugiesisch (Brasilien)"
+
+msgid "Portuguese (Portugal)"
+msgstr "Portugiesisch (Portugal)"
+
 msgid "Pre-order"
 msgstr "Vorbestellung"
 
@@ -3887,6 +4064,9 @@ msgstr "Zugeschnittenes Bild wird vorbereitet…"
 
 msgid "Preparing transcription..."
 msgstr "Transkription wird vorbereitet..."
+
+msgid "Preparing translation model..."
+msgstr "Übersetzungsmodell wird vorbereitet..."
 
 msgid "Press Ctrl P for the command palette."
 msgstr "Drücke Ctrl P für die Befehlspalette."
@@ -3995,6 +4175,9 @@ msgstr "Dein Profil wird auf den Relays veröffentlicht. Das dauert ein paar Sek
 
 msgid "Publishing your relay lists"
 msgstr "Deine Relay-Listen werden veröffentlicht"
+
+msgid "Punjabi"
+msgstr "Panjabi"
 
 msgid "Queued"
 msgstr "In Warteschlange"
@@ -4268,6 +4451,9 @@ msgstr "Rechtsklick"
 msgid "Rocket"
 msgstr "Rakete"
 
+msgid "Romanian"
+msgstr "Rumänisch"
+
 msgid "Root folder"
 msgstr "Stammordner"
 
@@ -4289,6 +4475,9 @@ msgstr "Laufzeitumgebung fehlgeschlagen: %s"
 
 msgid "Runtime running"
 msgstr "Laufzeitumgebung läuft"
+
+msgid "Russian"
+msgstr "Russisch"
 
 msgid "SEARCH"
 msgstr "SUCHE"
@@ -4591,6 +4780,9 @@ msgstr "Wird gesendet..."
 msgid "Sep"
 msgstr "Sept."
 
+msgid "Serbian"
+msgstr "Serbisch"
+
 msgid "Set"
 msgstr "Festgelegt"
 
@@ -4722,8 +4914,14 @@ msgstr "Nachrichtenvorschau anzeigen"
 msgid "Show or hide message previews"
 msgstr "Nachrichtenvorschau ein- oder ausblenden"
 
+msgid "Show original"
+msgstr "Original anzeigen"
+
 msgid "Show passwords"
 msgstr "Passwörter anzeigen"
+
+msgid "Show translation"
+msgstr "Übersetzung anzeigen"
 
 msgid "Shown on the message menu. Tap one to remove it. Up to 16."
 msgstr "Werden im Nachrichtenmenü angezeigt. Tippe eines an, um es zu entfernen. Bis zu 16."
@@ -4777,6 +4975,12 @@ msgstr "Größe: %s"
 msgid "Slanted"
 msgstr "Schräg"
 
+msgid "Slovak"
+msgstr "Slowakisch"
+
+msgid "Slovenian"
+msgstr "Slowenisch"
+
 msgid "Small"
 msgstr "Klein"
 
@@ -4797,6 +5001,12 @@ msgstr "Töne werden nicht abgespielt"
 
 msgid "Source"
 msgstr "Quelle"
+
+msgid "Source language"
+msgstr "Ausgangssprache"
+
+msgid "Spanish"
+msgstr "Spanisch"
 
 msgid "Sparkle manages update checks and downloads."
 msgstr "Sparkle übernimmt die Suche nach Updates und deren Download."
@@ -4927,6 +5137,15 @@ msgstr "Sonntag"
 msgid "Support"
 msgstr "Support"
 
+msgid "Swahili (Kenya)"
+msgstr "Suaheli (Kenia)"
+
+msgid "Swahili (Tanzania)"
+msgstr "Suaheli (Tansania)"
+
+msgid "Swedish"
+msgstr "Schwedisch"
+
 msgid "Switching your account"
 msgstr "Dein Konto wird gewechselt"
 
@@ -4958,6 +5177,9 @@ msgstr "Take %d"
 msgid "Takes effect on the next launch."
 msgstr "Wird beim nächsten Start wirksam."
 
+msgid "Tamil"
+msgstr "Tamil"
+
 msgid "Tap again to download this model."
 msgstr "Tippe erneut, um dieses Modell herunterzuladen."
 
@@ -4972,6 +5194,9 @@ msgstr "Aufgaben"
 
 msgid "Teal"
 msgstr "Blaugrün"
+
+msgid "Telugu"
+msgstr "Telugu"
 
 msgid "Terminal"
 msgstr "Terminal"
@@ -5010,6 +5235,9 @@ msgstr "Text: %s"
 
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr "Texturierte Striche und skizzierte Avatare. Formen bleiben unverändert."
+
+msgid "Thai"
+msgstr "Thai"
 
 msgid "That isn't a bunker link. Double-check it and try again."
 msgstr "Das ist kein Bunker-Link. Prüfe ihn und versuche es erneut."
@@ -5267,6 +5495,27 @@ msgstr "Transkriptionsmodell"
 msgid "Transition ms"
 msgstr "Übergang ms"
 
+msgid "Translate"
+msgstr "Übersetzen"
+
+msgid "Translate into"
+msgstr "Übersetzen in"
+
+msgid "Translate messages on your device"
+msgstr "Übersetze Nachrichten auf deinem Gerät"
+
+msgid "Translate received messages automatically"
+msgstr "Empfangene Nachrichten automatisch übersetzen"
+
+msgid "Translates received messages as you read them. The first translation downloads the local model."
+msgstr "Übersetzt empfangene Nachrichten, während du sie liest. Bei der ersten Übersetzung wird das lokale Modell heruntergeladen."
+
+msgid "Translating on your device..."
+msgstr "Wird auf deinem Gerät übersetzt..."
+
+msgid "Translations can be inaccurate. The original message is always available."
+msgstr "Übersetzungen können ungenau sein. Die ursprüngliche Nachricht ist jederzeit verfügbar."
+
 msgid "Travel"
 msgstr "Reisen"
 
@@ -5287,6 +5536,9 @@ msgstr "Erneut versuchen"
 
 msgid "Tuesday"
 msgstr "Dienstag"
+
+msgid "Turkish"
+msgstr "Türkisch"
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr "Schalte animierte Übergänge, Flugbewegungen und Effekte aus. Zustände ändern sich weiterhin, nichts bewegt sich."
@@ -5314,6 +5566,9 @@ msgstr "LAUFZEIT"
 
 msgid "UV checker"
 msgstr "UV-Prüfmuster"
+
+msgid "Ukrainian"
+msgstr "Ukrainisch"
 
 msgid "Unavailable conversation"
 msgstr "Unterhaltung nicht verfügbar"
@@ -5374,6 +5629,9 @@ msgstr "Hochgeladene Emojis"
 
 msgid "Uploading picture"
 msgstr "Bild wird hochgeladen"
+
+msgid "Urdu"
+msgstr "Urdu"
 
 msgid "Use"
 msgstr "Verwenden"
@@ -5447,6 +5705,9 @@ msgstr "Vertexnormalen"
 msgid "Videos"
 msgstr "Videos"
 
+msgid "Vietnamese"
+msgstr "Vietnamesisch"
+
 msgid "View"
 msgstr "Anzeigen"
 
@@ -5488,6 +5749,9 @@ msgstr "DRAHTGITTER"
 
 msgid "Waiting for signer approval"
 msgstr "Warten auf Genehmigung des Signers"
+
+msgid "Waiting to translate..."
+msgstr "Warten auf die Übersetzung..."
 
 msgid "Warning"
 msgstr "Warnung"
@@ -5773,6 +6037,9 @@ msgstr "Verkleinern"
 
 msgid "Zoom the interface"
 msgstr "Oberfläche zoomen"
+
+msgid "Zulu"
+msgstr "Zulu"
 
 #, c-format
 msgid "aka %s"

@@ -224,6 +224,33 @@ settings_viewport :: proc(t: ^testing.T) {
 			"A remote account keeps device vault controls but never offers its private key",
 		)
 		ui.account_ref = "viewport-local"
+		when TRANSLATION_AVAILABLE {
+			ui.prefs.translation_enabled = true
+			settings_open(&ui, nil, .General, anchor = "RowTranslationTarget")
+			settings_translation_action(&ui, "TranslationTarget")
+			for _ in 0 ..< 3 {settings_test_frame(&ui)}
+			dropdown_page := clay.GetElementData(clay.ID("SettingsPage")).boundingBox
+			list := clay.GetElementData(clay.ID("TranslationLanguageList"))
+			testing.expectf(
+				t,
+				list.found &&
+				list.boundingBox.y >= dropdown_page.y &&
+				list.boundingBox.y + list.boundingBox.height <=
+					dropdown_page.y + dropdown_page.height + 1,
+				"The open translation language list must fit its viewport: page=%v list=%v",
+				dropdown_page,
+				list.boundingBox,
+			)
+			settings_translation_close(&ui, 2)
+			for _ in 0 ..< 3 {settings_test_frame(&ui)}
+			field := clay.GetElementData(clay.ID("TranslationTarget")).boundingBox
+			testing.expect(
+				t,
+				field.y >= dropdown_page.y &&
+				field.y + field.height <= dropdown_page.y + dropdown_page.height,
+				"Closing the language list must keep the selected language visible",
+			)
+		}
 	}
 	// A font preview must change real measurements, not just token names,
 	// and cancellation must restore both Clay and paragraph-wrap geometry.

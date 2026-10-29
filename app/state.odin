@@ -839,6 +839,7 @@ Ui_State :: struct {
 	prefs:                                                 Prefs, // settings-page knobs (settings.odin)
 	tts:                                                   Tts_State,
 	stt:                                                   Stt_State,
+	translation:                                           Translation_State,
 	lang_open:                                             bool, // interface-language modal
 	shortcuts_open:                                        bool, // keyboard-shortcuts modal
 	theme_tone:                                            Theme_Tone, // gallery browsing filter, never a committed theme

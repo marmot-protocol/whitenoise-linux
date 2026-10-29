@@ -342,6 +342,11 @@ context_menu :: proc(ui: ^Ui_State) {
 			if msg.mine && !read_only {ctx_item("CtxEdit", ICON_PENCIL, tr("Edit message"))}
 			if len(msg.body) > 0 {
 				ctx_item("CtxCopy", ICON_COPY, tr("Copy text"))
+				when ODIN_OS == .Linux {
+					if translation_eligible(ui, msg) {
+						ctx_item("CtxTranslate", ICON_COMMENTS, tr("Translate"))
+					}
+				}
 				if ui.prefs.tts_enabled {
 					ctx_item("CtxRead", ICON_COMMENTS, tr("Read aloud"))
 				}

@@ -49,10 +49,10 @@ sandbox_prepare :: proc(home: string) -> string {
 
 	helpers := make([dynamic]cstring, context.temp_allocator)
 	sandbox_helpers = make(map[string]string)
-	for name in ([]string{"wn-image", "wn-archive", "wn-pdf", "wn-mesh", "wn-fbx", "wn-math", "wn-nes", "wn-font", "wn-stt", "wn-tts"}) {
+	for name in ([]string{"wn-image", "wn-archive", "wn-pdf", "wn-mesh", "wn-fbx", "wn-math", "wn-nes", "wn-font", "wn-stt", "wn-tts", "wn-translate"}) {
 		path := helper_path(name)
 		if path == "" || !os.is_file(path) {
-			if name == "wn-stt" || name == "wn-tts" {continue}
+			if name == "wn-stt" || name == "wn-tts" || name == "wn-translate" {continue}
 			fmt.eprintfln("OpenBSD sandbox: missing required helper %s", name)
 			os.exit(1)
 		}

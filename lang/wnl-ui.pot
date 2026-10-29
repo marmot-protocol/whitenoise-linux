@@ -511,6 +511,12 @@ msgstr ""
 msgid "Apr"
 msgstr ""
 
+msgid "Arabic (Egypt)"
+msgstr ""
+
+msgid "Arabic (Saudi Arabia)"
+msgstr ""
+
 msgid "Archive"
 msgstr ""
 
@@ -639,6 +645,9 @@ msgstr ""
 msgid "Base color"
 msgstr ""
 
+msgid "Bengali"
+msgstr ""
+
 msgid "Bevel light"
 msgstr ""
 
@@ -687,6 +696,9 @@ msgstr ""
 msgid "Built with"
 msgstr ""
 
+msgid "Bulgarian"
+msgstr ""
+
 msgid "By rule"
 msgstr ""
 
@@ -732,10 +744,16 @@ msgstr ""
 msgid "Cancel edit / reply, close panels"
 msgstr ""
 
+msgid "Cancel translation"
+msgstr ""
+
 msgid "Card border"
 msgstr ""
 
 msgid "Card well"
+msgstr ""
+
+msgid "Catalan"
 msgstr ""
 
 msgid "Center the conversation"
@@ -857,6 +875,12 @@ msgstr ""
 msgid "Checking..."
 msgstr ""
 
+msgid "Chinese (Simplified)"
+msgstr ""
+
+msgid "Chinese (Traditional)"
+msgstr ""
+
 msgid "Chinese, English, Japanese, Korean and Cantonese."
 msgstr ""
 
@@ -894,6 +918,12 @@ msgid "Choose a project folder."
 msgstr ""
 
 msgid "Choose a sign-in method."
+msgstr ""
+
+msgid "Choose a translation source language"
+msgstr ""
+
+msgid "Choose a translation target language"
 msgstr ""
 
 msgid "Choose an emoji style"
@@ -1296,6 +1326,9 @@ msgstr ""
 msgid "Couldn't download the speech model. Check your connection and available disk space, then try again."
 msgstr ""
 
+msgid "Couldn't download the translation model. Check your connection and available disk space, then try again."
+msgstr ""
+
 msgid "Couldn't export contacts. Please try again."
 msgstr ""
 
@@ -1323,6 +1356,9 @@ msgid "Couldn't get your location. Check your desktop location permissions or pi
 msgstr ""
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
+msgstr ""
+
+msgid "Couldn't identify a supported language. Choose the source language in translation settings and try again."
 msgstr ""
 
 msgid "Couldn't import contacts. Choose a JSON array of contact records."
@@ -1622,6 +1658,9 @@ msgstr ""
 msgid "Couldn't start transcription. Please try again."
 msgstr ""
 
+msgid "Couldn't start translation. Reinstall White Noise and try again."
+msgstr ""
+
 msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
 msgstr ""
 
@@ -1629,6 +1668,12 @@ msgid "Couldn't transcribe this audio. Choose an audio file under 100 MB."
 msgstr ""
 
 msgid "Couldn't transcribe your speech. Please try again."
+msgstr ""
+
+msgid "Couldn't translate this message. Choose a shorter text message."
+msgstr ""
+
+msgid "Couldn't translate this message. Please try again."
 msgstr ""
 
 #, c-format
@@ -1714,6 +1759,9 @@ msgstr ""
 msgid "Creating your vault…"
 msgstr ""
 
+msgid "Croatian"
+msgstr ""
+
 msgid "Crop"
 msgstr ""
 
@@ -1738,6 +1786,9 @@ msgstr ""
 msgid "Cyan"
 msgstr ""
 
+msgid "Czech"
+msgstr ""
+
 msgid "DEPTH"
 msgstr ""
 
@@ -1748,6 +1799,9 @@ msgid "DISPLAY NAME"
 msgstr ""
 
 msgid "Danger"
+msgstr ""
+
+msgid "Danish"
 msgstr ""
 
 msgid "Dark"
@@ -1835,6 +1889,9 @@ msgid "Design"
 msgstr ""
 
 msgid "Desktop notifications"
+msgstr ""
+
+msgid "Detect automatically"
 msgstr ""
 
 msgid "Developer"
@@ -1932,7 +1989,18 @@ msgstr ""
 msgid "Downloading an update."
 msgstr ""
 
+#, c-format
+msgid "Downloading language detector: %d%%"
+msgstr ""
+
 msgid "Downloading speech model..."
+msgstr ""
+
+msgid "Downloading translation model..."
+msgstr ""
+
+#, c-format
+msgid "Downloading translation model: %d%%"
 msgstr ""
 
 #, c-format
@@ -1961,6 +2029,9 @@ msgid "Drop here"
 msgstr ""
 
 msgid "Dust"
+msgstr ""
+
+msgid "Dutch"
 msgstr ""
 
 msgid "EDIT PROFILE"
@@ -2031,6 +2102,9 @@ msgstr ""
 msgid "Emoji style"
 msgstr ""
 
+msgid "Enable local translation"
+msgstr ""
+
 msgid "Enabled for this group."
 msgstr ""
 
@@ -2041,6 +2115,9 @@ msgid "End day (inclusive)"
 msgstr ""
 
 msgid "End-to-end encrypted"
+msgstr ""
+
+msgid "English"
 msgstr ""
 
 msgid "Enter a color as #RRGGBB."
@@ -2123,6 +2200,9 @@ msgid "Erase avatar reveal"
 msgstr ""
 
 msgid "Error copied"
+msgstr ""
+
+msgid "Estonian"
 msgstr ""
 
 msgid "Event fetch relays"
@@ -2212,6 +2292,9 @@ msgstr ""
 msgid "Files shared in this chat will appear here."
 msgstr ""
 
+msgid "Filipino"
+msgstr ""
+
 msgid "Filter chats"
 msgstr ""
 
@@ -2228,6 +2311,9 @@ msgid "Finish dictation"
 msgstr ""
 
 msgid "Finishing the cancelled connection."
+msgstr ""
+
+msgid "Finnish"
 msgstr ""
 
 msgid "First member"
@@ -2301,6 +2387,12 @@ msgstr ""
 msgid "Forwarding to %s…"
 msgstr ""
 
+msgid "French (Canada)"
+msgstr ""
+
+msgid "French (France)"
+msgstr ""
+
 msgid "Friday"
 msgstr ""
 
@@ -2338,6 +2430,12 @@ msgstr ""
 msgid "Games"
 msgstr ""
 
+msgid "Gemma prohibited use policy"
+msgstr ""
+
+msgid "Gemma terms"
+msgstr ""
+
 msgid "General"
 msgstr ""
 
@@ -2345,6 +2443,9 @@ msgid "Generate a new key"
 msgstr ""
 
 msgid "Generating your key"
+msgstr ""
+
+msgid "German"
 msgstr ""
 
 msgid "Get an alert when a message arrives in a chat you're not viewing."
@@ -2380,6 +2481,9 @@ msgstr ""
 msgid "Gray"
 msgstr ""
 
+msgid "Greek"
+msgstr ""
+
 msgid "Green"
 msgstr ""
 
@@ -2410,6 +2514,9 @@ msgstr ""
 msgid "Groups you join will appear here."
 msgstr ""
 
+msgid "Gujarati"
+msgstr ""
+
 msgid "Hand-drawn filter"
 msgstr ""
 
@@ -2428,6 +2535,9 @@ msgstr ""
 msgid "Have messages read aloud"
 msgstr ""
 
+msgid "Hebrew"
+msgstr ""
+
 msgid "Help"
 msgstr ""
 
@@ -2443,6 +2553,9 @@ msgstr ""
 msgid "Hide hidden message"
 msgstr ""
 
+msgid "Hindi"
+msgstr ""
+
 msgid "Home"
 msgstr ""
 
@@ -2453,6 +2566,9 @@ msgid "Hover ms"
 msgstr ""
 
 msgid "How far the mouse wheel moves the view."
+msgstr ""
+
+msgid "Hungarian"
 msgstr ""
 
 msgid "I did. Very important marmot business."
@@ -2474,6 +2590,9 @@ msgid "INVITE"
 msgstr ""
 
 msgid "ISSUE"
+msgstr ""
+
+msgid "Icelandic"
 msgstr ""
 
 msgid "Ideas"
@@ -2540,6 +2659,9 @@ msgstr ""
 msgid "Incoming messages"
 msgstr ""
 
+msgid "Indonesian"
+msgstr ""
+
 msgid "Info hash"
 msgstr ""
 
@@ -2580,6 +2702,13 @@ msgid "Interface"
 msgstr ""
 
 msgid "Interface language"
+msgstr ""
+
+#, c-format
+msgid "Interface language (%s)"
+msgstr ""
+
+msgid "Interface language (English)"
 msgstr ""
 
 msgid "Interface sounds"
@@ -2624,6 +2753,9 @@ msgstr ""
 msgid "It stays for everyone else. You won't see it on this device again."
 msgstr ""
 
+msgid "Italian"
+msgstr ""
+
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr ""
 
@@ -2634,6 +2766,9 @@ msgid "Its keys stay in the vault on this device. You can sign in again from the
 msgstr ""
 
 msgid "Jan"
+msgstr ""
+
+msgid "Japanese"
 msgstr ""
 
 msgid "Jitsi Meet call"
@@ -2663,6 +2798,9 @@ msgid "KIND %d"
 msgstr ""
 
 msgid "KP inspector"
+msgstr ""
+
+msgid "Kannada"
 msgstr ""
 
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
@@ -2705,6 +2843,9 @@ msgstr ""
 msgid "Known senders"
 msgstr ""
 
+msgid "Korean"
+msgstr ""
+
 msgid "LINES"
 msgstr ""
 
@@ -2736,6 +2877,9 @@ msgid "Last backup"
 msgstr ""
 
 msgid "Later"
+msgstr ""
+
+msgid "Latvian"
 msgstr ""
 
 msgid "Launch at login"
@@ -2790,6 +2934,9 @@ msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr ""
 
 msgid "Literal message text"
+msgstr ""
+
+msgid "Lithuanian"
 msgstr ""
 
 msgid "Loading emoji previews"
@@ -2885,6 +3032,9 @@ msgstr ""
 msgid "Make this member an admin?"
 msgstr ""
 
+msgid "Malayalam"
+msgstr ""
+
 msgid "Male voice. Supports all reading languages."
 msgstr ""
 
@@ -2898,6 +3048,9 @@ msgid "Manage local files and encrypted backups."
 msgstr ""
 
 msgid "Mar"
+msgstr ""
+
+msgid "Marathi"
 msgstr ""
 
 msgid "Mark read"
@@ -2960,6 +3113,12 @@ msgstr ""
 msgid "Message text size"
 msgstr ""
 
+msgid "Message translation"
+msgstr ""
+
+msgid "Message translation is available in native Linux builds."
+msgstr ""
+
 msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
 msgstr ""
 
@@ -2967,6 +3126,9 @@ msgid "Messages already in the chat, and new ones, are deleted for everyone afte
 msgstr ""
 
 msgid "Messages aren't arriving"
+msgstr ""
+
+msgid "Messages stay on your device. Downloads about 2.5 GB on first translation. Enabling accepts the Gemma terms and prohibited use policy."
 msgstr ""
 
 msgid "Messaging"
@@ -3245,6 +3407,9 @@ msgid "Noir film treatment"
 msgstr ""
 
 msgid "None"
+msgstr ""
+
+msgid "Norwegian"
 msgstr ""
 
 msgid "Not downloaded"
@@ -3547,6 +3712,9 @@ msgstr ""
 msgid "Perfect. Wake me up when it's spring."
 msgstr ""
 
+msgid "Persian"
+msgstr ""
+
 msgid "Pets"
 msgstr ""
 
@@ -3619,6 +3787,15 @@ msgstr ""
 msgid "Play interface sounds"
 msgstr ""
 
+msgid "Polish"
+msgstr ""
+
+msgid "Portuguese (Brazil)"
+msgstr ""
+
+msgid "Portuguese (Portugal)"
+msgstr ""
+
 msgid "Pre-order"
 msgstr ""
 
@@ -3651,6 +3828,9 @@ msgid "Preparing the cropped picture…"
 msgstr ""
 
 msgid "Preparing transcription..."
+msgstr ""
+
+msgid "Preparing translation model..."
 msgstr ""
 
 msgid "Press Ctrl P for the command palette."
@@ -3759,6 +3939,9 @@ msgid "Publishing your profile to the relays. This takes a few seconds."
 msgstr ""
 
 msgid "Publishing your relay lists"
+msgstr ""
+
+msgid "Punjabi"
 msgstr ""
 
 msgid "Quick reactions"
@@ -4012,6 +4195,9 @@ msgstr ""
 msgid "Rocket"
 msgstr ""
 
+msgid "Romanian"
+msgstr ""
+
 msgid "Root folder"
 msgstr ""
 
@@ -4032,6 +4218,9 @@ msgid "Runtime failed: %s"
 msgstr ""
 
 msgid "Runtime running"
+msgstr ""
+
+msgid "Russian"
 msgstr ""
 
 msgid "SEARCH"
@@ -4302,6 +4491,9 @@ msgstr ""
 msgid "Sep"
 msgstr ""
 
+msgid "Serbian"
+msgstr ""
+
 msgid "Set"
 msgstr ""
 
@@ -4427,6 +4619,12 @@ msgstr ""
 msgid "Show or hide message previews"
 msgstr ""
 
+msgid "Show original"
+msgstr ""
+
+msgid "Show translation"
+msgstr ""
+
 msgid "Shown on the message menu. Tap one to remove it. Up to 16."
 msgstr ""
 
@@ -4479,6 +4677,12 @@ msgstr ""
 msgid "Slanted"
 msgstr ""
 
+msgid "Slovak"
+msgstr ""
+
+msgid "Slovenian"
+msgstr ""
+
 msgid "Small"
 msgstr ""
 
@@ -4498,6 +4702,12 @@ msgid "Sounds don't play"
 msgstr ""
 
 msgid "Source"
+msgstr ""
+
+msgid "Source language"
+msgstr ""
+
+msgid "Spanish"
 msgstr ""
 
 msgid "Sparkle manages update checks and downloads."
@@ -4620,6 +4830,15 @@ msgstr ""
 msgid "Support"
 msgstr ""
 
+msgid "Swahili (Kenya)"
+msgstr ""
+
+msgid "Swahili (Tanzania)"
+msgstr ""
+
+msgid "Swedish"
+msgstr ""
+
 msgid "Switching your account"
 msgstr ""
 
@@ -4648,6 +4867,9 @@ msgstr ""
 msgid "Takes effect on the next launch."
 msgstr ""
 
+msgid "Tamil"
+msgstr ""
+
 msgid "Tap one, then confirm, to remove it."
 msgstr ""
 
@@ -4655,6 +4877,9 @@ msgid "Tasks"
 msgstr ""
 
 msgid "Teal"
+msgstr ""
+
+msgid "Telugu"
 msgstr ""
 
 msgid "Terminal"
@@ -4690,6 +4915,9 @@ msgid "Text: %s"
 msgstr ""
 
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
+msgstr ""
+
+msgid "Thai"
 msgstr ""
 
 msgid "That isn't your current password. Double-check it and try again."
@@ -4933,6 +5161,27 @@ msgstr ""
 msgid "Transition ms"
 msgstr ""
 
+msgid "Translate"
+msgstr ""
+
+msgid "Translate into"
+msgstr ""
+
+msgid "Translate messages on your device"
+msgstr ""
+
+msgid "Translate received messages automatically"
+msgstr ""
+
+msgid "Translates received messages as you read them. The first translation downloads the local model."
+msgstr ""
+
+msgid "Translating on your device..."
+msgstr ""
+
+msgid "Translations can be inaccurate. The original message is always available."
+msgstr ""
+
 msgid "Travel"
 msgstr ""
 
@@ -4952,6 +5201,9 @@ msgid "Try again"
 msgstr ""
 
 msgid "Tuesday"
+msgstr ""
+
+msgid "Turkish"
 msgstr ""
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
@@ -4979,6 +5231,9 @@ msgid "UPTIME"
 msgstr ""
 
 msgid "UV checker"
+msgstr ""
+
+msgid "Ukrainian"
 msgstr ""
 
 msgid "Unavailable conversation"
@@ -5039,6 +5294,9 @@ msgid "Uploaded emoji"
 msgstr ""
 
 msgid "Uploading picture"
+msgstr ""
+
+msgid "Urdu"
 msgstr ""
 
 msgid "Use"
@@ -5113,6 +5371,9 @@ msgstr ""
 msgid "Videos"
 msgstr ""
 
+msgid "Vietnamese"
+msgstr ""
+
 msgid "View"
 msgstr ""
 
@@ -5153,6 +5414,9 @@ msgid "WIREFRAME"
 msgstr ""
 
 msgid "Waiting for signer approval"
+msgstr ""
+
+msgid "Waiting to translate..."
 msgstr ""
 
 msgid "Warning"
@@ -5405,6 +5669,9 @@ msgid "Zoom out"
 msgstr ""
 
 msgid "Zoom the interface"
+msgstr ""
+
+msgid "Zulu"
 msgstr ""
 
 #, c-format
