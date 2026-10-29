@@ -210,6 +210,10 @@ Chats, Unread or Groups filters, even when pinned. Archived conversations open
 without being restored; their list loads through the account worker with
 visible progress.
 
+Product and geocache event metadata owns its strings after parsing. Keep each
+type's owned fields in its fixed-size `nev_*_strings` array, shared by clone
+and free; address refreshes release the old metadata before replacement.
+
 ### Themes
 
 A theme is a `themes/*.toml` pack, `#load`ed at build time and parsed into a
