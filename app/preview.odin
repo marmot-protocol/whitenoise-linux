@@ -1191,7 +1191,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 								},
 							},
 							) {
-								if hovered() {
+								if view.page > 0 && hovered() {
 									pdf_flip_hover = view
 									pdf_flip_dir = -1
 								}
@@ -1200,7 +1200,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 									{
 										fontId = FONT_TITLE,
 										fontSize = 13,
-										textColor = {255, 255, 255, 230},
+										textColor = {255, 255, 255, view.page > 0 ? 230 : 80},
 									},
 								)
 							}
@@ -1226,7 +1226,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 								},
 							},
 							) {
-								if hovered() {
+								if view.page < view.pages - 1 && hovered() {
 									pdf_flip_hover = view
 									pdf_flip_dir = 1
 								}
@@ -1235,7 +1235,12 @@ preview_modal :: proc(ui: ^Ui_State) {
 									{
 										fontId = FONT_TITLE,
 										fontSize = 13,
-										textColor = {255, 255, 255, 230},
+										textColor = {
+											255,
+											255,
+											255,
+											view.page < view.pages - 1 ? 230 : 80,
+										},
 									},
 								)
 							}
@@ -1418,7 +1423,14 @@ slide_nav :: proc() {
 			},
 		},
 		) {
-			clay.Text("<", {fontId = FONT_TITLE, fontSize = 13, textColor = {255, 255, 255, 230}})
+			clay.Text(
+				"<",
+				{
+					fontId = FONT_TITLE,
+					fontSize = 13,
+					textColor = {255, 255, 255, preview.slide > 0 ? 230 : 80},
+				},
+			)
 		}
 		clay.Text(
 			fmt.tprintf("%d / %d", preview.slide + 1, len(preview.slides)),
@@ -1435,7 +1447,19 @@ slide_nav :: proc() {
 			},
 		},
 		) {
-			clay.Text(">", {fontId = FONT_TITLE, fontSize = 13, textColor = {255, 255, 255, 230}})
+			clay.Text(
+				">",
+				{
+					fontId = FONT_TITLE,
+					fontSize = 13,
+					textColor = {
+						255,
+						255,
+						255,
+						preview.slide < len(preview.slides) - 1 ? 230 : 80,
+					},
+				},
+			)
 		}
 	}
 }
@@ -1558,11 +1582,12 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if preview.kind == .Slides {
 		previous := preview.slide
-		if rl.IsKeyPressed(.LEFT) || clicked("PvSlidePrev") {
-			preview.slide = max(preview.slide - 1, 0)
+		if preview.slide > 0 && (rl.IsKeyPressed(.LEFT) || clicked("PvSlidePrev")) {
+			preview.slide -= 1
 		}
-		if rl.IsKeyPressed(.RIGHT) || clicked("PvSlideNext") {
-			preview.slide = min(preview.slide + 1, len(preview.slides) - 1)
+		if preview.slide < len(preview.slides) - 1 &&
+		   (rl.IsKeyPressed(.RIGHT) || clicked("PvSlideNext")) {
+			preview.slide += 1
 		}
 		if previous != preview.slide {
 			preview.image_zoom = 0

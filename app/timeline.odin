@@ -1395,7 +1395,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 									},
 								},
 								) {
-									if hovered() {
+									if view.page > 0 && hovered() {
 										pdf_flip_hover = view
 										pdf_flip_dir = -1
 									}
@@ -1404,7 +1404,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 										{
 											fontId = FONT_TITLE,
 											fontSize = 13,
-											textColor = {255, 255, 255, 230},
+											textColor = {255, 255, 255, view.page > 0 ? 230 : 80},
 										},
 									)
 								}
@@ -1432,7 +1432,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 									},
 								},
 								) {
-									if hovered() {
+									if view.page < view.pages - 1 && hovered() {
 										pdf_flip_hover = view
 										pdf_flip_dir = 1
 									}
@@ -1441,7 +1441,12 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 										{
 											fontId = FONT_TITLE,
 											fontSize = 13,
-											textColor = {255, 255, 255, 230},
+											textColor = {
+												255,
+												255,
+												255,
+												view.page < view.pages - 1 ? 230 : 80,
+											},
 										},
 									)
 								}
