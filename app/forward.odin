@@ -95,33 +95,28 @@ forward_modal :: proc(ui: ^Ui_State) {
 
 		if ui.fwd_kind == .Message {
 			if source := forward_source(ui); source >= 0 {
-				preview := msg_preview(ui.messages[source])
-				if preview == "" {preview = tr("Attachment")}
-				if clay.UI(clay.ID("FwdPreview"))(
+				msg := ui.messages[source]
+				line := msg_preview(msg)
+				if line == "" && len(msg.attachments) > 0 {
+					line = msg.attachments[0].name
+					if line == "" {line = tr("Attachment")}
+				}
+				if clay.UI(clay.ID("FwdSubject"))(
 				{
 					layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
 					backgroundColor = ROW_BG,
-					cornerRadius = rr(6),
+					cornerRadius = rr(8),
 					clip = {horizontal = true},
 				},
 				) {
 					clay.Text(
-						text_ellipsis(
-							preview,
-							modal_w(clay.ID("FwdModal"), 440) - 60,
-							FONT_BODY,
-							13,
-						),
-						{
-							fontId = FONT_BODY,
-							fontSize = 13,
-							textColor = TEXT_DIM,
-							wrapMode = .None,
-						},
+						text_ellipsis(line, modal_w(clay.ID("FwdModal"), 440) - 60, FONT_BODY, 13),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT, wrapMode = .None},
 					)
 				}
 			}
 		}
+
 		if clay.UI(clay.ID("FwdFilter"))(
 		{
 			layout = {
