@@ -1071,6 +1071,10 @@ app_main :: proc() {
 			}
 			whip_tab_wheel(&ui, &wheel)
 			chat_filter_wheel(&ui, &wheel)
+			if ui.link_open && clay.PointerOver(clay.ID("LinkAddress")) {
+				wheel.x += wheel.y
+				wheel.y = 0
+			}
 			if preview_shown &&
 			   (preview.kind == .Image || preview.kind == .Slides) &&
 			   clay.PointerOver(clay.ID("PvScroll")) {

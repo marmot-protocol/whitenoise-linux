@@ -4117,6 +4117,9 @@ msgstr ""
 msgid "Scroll speed"
 msgstr ""
 
+msgid "Scroll to read the full address."
+msgstr ""
+
 msgid "Search"
 msgstr ""
 
