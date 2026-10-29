@@ -9,11 +9,13 @@ package main
 
 import "core:encoding/json"
 import "core:fmt"
+import "core:hash"
 import "core:mem"
 import "core:net"
 import "core:os"
 import "core:strings"
 import "core:thread"
+import "core:unicode"
 import "core:unicode/utf8"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -27,9 +29,93 @@ HEALTH_REFRESH_SECS :: 5.0
 @(private = "file")
 health_last: f64 = -1
 
+@(private = "file")
+socks5_previous: [2]u64
+@(private = "file")
+socks5_saved_auth: u64
+@(private = "file")
+socks5_edited: [2]bool
+@(private = "file")
+socks5_attempted: bool
+@(private = "file")
+relay_error_focus: Focus
+@(private = "file")
+relay_error_hash: u64
+@(private = "file")
+net_refresh_frames: int
+
+@(private = "file")
+socks5_hashes :: proc(ui: ^Ui_State) -> [2]u64 {
+	// Credentials reject NUL, so a separator preserves the field boundary.
+	separator := [1]u8{0}
+	user := hash.fnv64a(separator[:], hash.fnv64a(ui.socks5_username[:]))
+	return {hash.fnv64a(ui.socks5_input[:]), hash.fnv64a(ui.socks5_password[:], user)}
+}
+
+@(private = "file")
+socks5_changed :: proc(ui: ^Ui_State) -> bool {
+	if ui.socks5_enabled != (ui.prefs.socks5_proxy != "") {return true}
+	if !ui.socks5_enabled {return false}
+	return(
+		string(ui.socks5_input[:]) != ui.prefs.socks5_proxy ||
+		ui.socks5_auth != ui.prefs.socks5_auth ||
+		(ui.socks5_auth && socks5_hashes(ui)[1] != socks5_saved_auth) \
+	)
+}
+
+@(private)
+settings_account_busy :: proc(ui: ^Ui_State) -> bool {
+	for job in account_jobs {
+		if job.account == ui.account_ref {return true}
+	}
+	return false
+}
+
+@(private = "file")
+relay_add_valid :: proc(value: []u8, focus: Focus) -> bool {
+	url := strings.trim_space(string(value))
+	host := url
+	if len(url) >= 6 && strings.equal_fold(url[:6], "wss://") {
+		host = url[6:]
+	} else if len(url) >= 5 && strings.equal_fold(url[:5], "ws://") {
+		host = url[5:]
+	} else {
+		host = ""
+	}
+	end := len(host)
+	for ch, i in host {
+		if ch == '/' || ch == '?' || ch == '#' {end = i; break}
+	}
+	host = host[:end]
+	valid :=
+		host != "" &&
+		!strings.contains_any(url, " \t\r\n") &&
+		!strings.contains(host, "@") &&
+		host[0] != ':'
+	if !valid {
+		relay_error_focus = focus
+		relay_error_hash = hash.fnv64a(value)
+	}
+	return valid
+}
+
+@(private = "file")
+relay_input_error :: proc(focus: Focus, value: []u8) {
+	if relay_error_focus != focus || relay_error_hash != hash.fnv64a(value) {return}
+	clay.Text(
+		tr("Couldn't add that relay. Double-check the address and try again."),
+		{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+	)
+}
+
 // ── Render ──────────────────────────────────────────────────────────
 
 settings_network :: proc(ui: ^Ui_State) {
+	account_busy := settings_account_busy(ui)
+	if !account_busy {
+		if relay_list_contains(ui.profile.nip65[:], ui.relay_input[:]) {clear(&ui.relay_input)}
+		if relay_list_contains(ui.profile.inbox[:], ui.inbox_input[:]) {clear(&ui.inbox_input)}
+	}
 	narrow := settings_body_width(ui) < 400
 	if ui.settings_tab == 0 {
 		settings_socks5(ui)
@@ -63,7 +149,19 @@ settings_network :: proc(ui: ^Ui_State) {
 						{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
 					)
 				}
-				settings_button("NetRefresh", tr("Refresh"))
+				settings_button(
+					"NetRefresh",
+					tr("Refresh"),
+					{},
+					net_refresh_frames > 0 ? .Disabled : .Enabled,
+				)
+			}
+			if net_refresh_frames > 0 {
+				clay.Text(
+					tr("Checking relays..."),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+				)
+				busy_bar("NetRefreshProgress")
 			}
 			if detail := health_detail(ui); detail != "" {
 				clay.Text(detail, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
@@ -99,11 +197,12 @@ settings_network :: proc(ui: ^Ui_State) {
 					ui,
 					"RelayBox",
 					&ui.relay_input,
-					"wss://relay.example.com",
+					tr("Enter a relay URL (wss://…)"),
 					ui.focus == .Relay,
 				)
 				settings_button("AddRelayBtn", tr("Add"))
 			}
+			relay_input_error(.Relay, ui.relay_input[:])
 		}
 
 		if clay.UI(clay.ID("NetworkInboxGroup"))(settings_box()) {
@@ -135,11 +234,12 @@ settings_network :: proc(ui: ^Ui_State) {
 					ui,
 					"InboxBox",
 					&ui.inbox_input,
-					"wss://relay.example.com",
+					tr("Enter a relay URL (wss://…)"),
 					ui.focus == .Inbox,
 				)
 				settings_button("AddInboxBtn", tr("Add"))
 			}
+			relay_input_error(.Inbox, ui.inbox_input[:])
 		}
 
 		if clay.UI(clay.ID("NetworkSyncGroup"))(
@@ -158,7 +258,12 @@ settings_network :: proc(ui: ^Ui_State) {
 						"Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you.",
 					),
 				)
-				settings_button("RepublishBtn", tr("Republish"))
+				settings_button(
+					"RepublishBtn",
+					tr("Republish"),
+					{},
+					account_busy ? .Disabled : .Enabled,
+				)
 			}
 		}
 	} else {
@@ -187,11 +292,12 @@ settings_network :: proc(ui: ^Ui_State) {
 					ui,
 					"FetchBox",
 					&ui.fetch_input,
-					"wss://relay.example.com",
+					tr("Enter a relay URL (wss://…)"),
 					ui.focus == .Fetch,
 				)
 				settings_button("AddFetchBtn", tr("Add"))
 			}
+			relay_input_error(.Fetch, ui.fetch_input[:])
 		}
 
 		if clay.UI(clay.ID("NetworkClientGroup"))(settings_box()) {
@@ -221,7 +327,9 @@ settings_network :: proc(ui: ^Ui_State) {
 				tr("The ngit web client a patch card opens. That site receives the patch link."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
-			if clay.UI(clay.ID("GitClientChoices"))({layout = {childGap = 6}}) {
+			if clay.UI(clay.ID("GitClientChoices"))(
+				settings_choices(clay.ID("GitClientChoices")),
+			) {
 				for name, git in GIT_CLIENT_NAMES {
 					settings_option("GitClientChip", u32(git), name, ui.prefs.git_client == git)
 				}
@@ -305,8 +413,20 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 			for value in ([2]string{credentials.username, credentials.password}) {mem.zero_slice(transmute([]u8)value)}
 		}
 		ui.socks5_initialized = true
+		socks5_previous = socks5_hashes(ui)
+		socks5_saved_auth = socks5_previous[1]
+		socks5_edited = {}
+		socks5_attempted = false
 	}
-	if clay.UI(clay.ID("NetworkProxyGroup"))(settings_box()) {
+	values := socks5_hashes(ui)
+	for value, i in values {
+		if value != socks5_previous[i] {socks5_edited[i] = true}
+	}
+	socks5_previous = values
+	dirty := socks5_changed(ui)
+	box := settings_box()
+	if ui.socks5_login_open {box.layout.sizing.width = clay.SizingGrow()}
+	if clay.UI(clay.ID("NetworkProxyGroup"))(box) {
 		settings_group(tr("SOCKS5 proxy"))
 		settings_check(
 			"TgSocks5",
@@ -335,9 +455,12 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 				tr("Your proxy credentials are stored in your encrypted vault."),
 			)
 			if ui.socks5_auth {
-				if clay.UI(clay.ID("Socks5Credentials"))(
-				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}},
-				) {
+				credentials := settings_choices(clay.ID("Socks5Credentials"))
+				if single_pane() {
+					credentials.layout.layoutDirection = .TopToBottom
+					credentials.clip = {}
+				}
+				if clay.UI(clay.ID("Socks5Credentials"))(credentials) {
 					gate_field(
 						ui,
 						"Socks5UserBox",
@@ -357,11 +480,18 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 			}
 		}
 		valid := socks5_form_valid(ui)
-		settings_button("SaveSocks5", tr("Save"), valid && ui.socks5_job == nil ? TEXT : TEXT_DIM)
-		clay.Text(
-			tr("Press Enter to save; Escape returns to Network & relays."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+		settings_button(
+			"SaveSocks5",
+			tr("Save"),
+			valid && dirty && ui.socks5_job == nil ? ACCENT : TEXT_DIM,
+			valid && dirty && ui.socks5_job == nil ? .Enabled : .Disabled,
 		)
+		if !tap_size() && !ui.socks5_login_open {
+			clay.Text(
+				tr("Press Enter to save; Escape returns to Network & relays."),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+		}
 		status := ""
 		if ui.socks5_job != nil {
 			status = tr("Saving your proxy settings and encrypted credentials.")
@@ -370,15 +500,29 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 			status = tr("Couldn't save proxy credentials. Please try again.")
 		} else if ui.socks5_load_error {
 			status = tr("Couldn't load proxy credentials. Enter them again and save.")
-		} else if ui.socks5_enabled && !socks5_proxy_valid(string(ui.socks5_input[:])) {
+		} else if ui.socks5_enabled &&
+		   !socks5_proxy_valid(string(ui.socks5_input[:])) &&
+		   (socks5_edited[0] || socks5_attempted) {
 			status = tr(
 				"Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535.",
 			)
-		} else if !valid {
-			status = tr("Enter a username and password, each between 1 and 255 UTF-8 bytes.")
-		} else if ui.socks5_saved &&
-		   (ui.socks5_enabled ? string(ui.socks5_input[:]) : "") == ui.prefs.socks5_proxy {
-			status = tr("Saved. Restart White Noise to apply this connection setting.")
+		} else if !valid && (socks5_edited[1] || socks5_attempted) {
+			status = tr("Enter a username and password, each up to 255 characters.")
+		} else if dirty {
+			status = tr("You have unsaved changes.")
+		}
+		if ui.socks5_saved && !dirty {
+			if clay.UI(clay.ID("Socks5Saved"))(
+			{
+				layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
+				backgroundColor = SELECTED,
+			},
+			) {
+				clay.Text(
+					tr("Saved. Restart White Noise to apply this connection setting."),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+				)
+			}
 		}
 		if status != "" {
 			clay.Text(status, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
@@ -403,7 +547,8 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 
 @(private)
 save_socks5 :: proc(ui: ^Ui_State) {
-	if ui.socks5_job != nil || !socks5_form_valid(ui) {return}
+	socks5_attempted = true
+	if ui.socks5_job != nil || !socks5_form_valid(ui) || !socks5_changed(ui) {return}
 	job := new(Socks5_Work)
 	job.address = strings.clone(ui.socks5_enabled ? string(ui.socks5_input[:]) : "")
 	job.auth = ui.socks5_enabled && ui.socks5_auth
@@ -529,6 +674,9 @@ socks5_drain :: proc(ui: ^Ui_State) {
 		ui.prefs.socks5_proxy, job.address = job.address, ""
 		ui.prefs.socks5_auth = job.auth
 		ui.socks5_saved = true
+		socks5_saved_auth = socks5_hashes(ui)[1]
+		socks5_attempted = false
+		socks5_edited = {}
 		ui.socks5_load_error = false
 		ui.settings_dirty = true
 	}
@@ -571,7 +719,7 @@ settings_input :: proc(
 		layout = {
 			sizing = {
 				width = width > 0 ? clay.SizingFixed(width) : clay.SizingGrow(),
-				height = clay.SizingFixed(30),
+				height = clay.SizingFixed(settings_tap_size(30)),
 			},
 			padding = {left = 8, right = 8},
 			childAlignment = {y = .Center},
@@ -587,6 +735,7 @@ settings_input :: proc(
 
 relay_row :: proc(row_id: string, remove_id: string, index: u32, relay: string) {
 	row := settings_row()
+	row.layout.layoutDirection = .LeftToRight
 	row.layout.childGap = 8
 	row.border = {
 		color = FIELD_BORDER,
@@ -596,10 +745,13 @@ relay_row :: proc(row_id: string, remove_id: string, index: u32, relay: string) 
 		if clay.UI(clay.ID_LOCAL("RelayAddress"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(30)},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFixed(settings_tap_size(30)),
+				},
 				childAlignment = {y = .Center},
 			},
-			clip = {horizontal = true},
+			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
 			clay.Text(
@@ -610,10 +762,14 @@ relay_row :: proc(row_id: string, remove_id: string, index: u32, relay: string) 
 				tooltip(relay)
 			}
 		}
+		scrollbar(clay.ID_LOCAL("RelayAddress"))
 		if clay.UI(clay.ID(remove_id, index))(
 		{
 			layout = {
-				sizing = {width = clay.SizingFixed(30), height = clay.SizingFixed(30)},
+				sizing = {
+					width = clay.SizingFixed(settings_tap_size(30)),
+					height = clay.SizingFixed(settings_tap_size(30)),
+				},
 				childAlignment = {x = .Center, y = .Center},
 			},
 			backgroundColor = hovered() ? HOVER : {},
@@ -681,6 +837,15 @@ health_refresh :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // Frame-loop poll; the Network page's Refresh button forces one. Runs
 // everywhere because the rail's relay counter reads the same numbers.
 health_tick :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if net_refresh_frames > 0 {
+		net_refresh_frames -= 1
+		if net_refresh_frames == 0 {
+			health_refresh(ui, client)
+			reload_profile(ui, client)
+			set_status(ui, tr("Relays checked."), .Info)
+		}
+		return
+	}
 	if client == nil {
 		return
 	}
@@ -710,6 +875,84 @@ relay_list_contains :: proc(relays: []string, input: []u8) -> bool {
 	return false
 }
 
+// Fetch endpoints bypass the SDK's relay-list validation. Keep local ws://
+// relays, ports and paths, but reject malformed authorities before saving.
+@(private)
+fetch_relay_valid :: proc(url: string) -> bool {
+	rest: string
+	if len(url) >= 6 &&
+	   strings.equal_fold(
+		   url[:6],
+		   "wss://",
+	   ) {rest = url[6:]} else if len(url) >= 5 && strings.equal_fold(url[:5], "ws://") {rest = url[5:]} else {return false}
+	for ch, i in url {
+		if unicode.is_space(ch) ||
+		   unicode.is_control(ch) ||
+		   strings.contains_rune("\\<>\"{}|^`", ch) {return false}
+		if ch == '%' {
+			if i + 2 >= len(url) {return false}
+			for digit in url[i + 1:i + 3] {
+				if !(digit >= '0' && digit <= '9') &&
+				   !(digit >= 'a' && digit <= 'f') &&
+				   !(digit >= 'A' && digit <= 'F') {return false}
+			}
+		}
+	}
+	end := len(rest)
+	for ch, i in rest {
+		if ch == '/' || ch == '?' || ch == '#' {end = i; break}
+	}
+	authority := rest[:end]
+	if at := strings.index_byte(authority, '@'); at >= 0 {
+		if strings.count(authority, "@") != 1 {return false}
+		authority = authority[at + 1:]
+	}
+	if len(authority) == 0 {return false}
+	host, port: string
+	if authority[0] == '[' {
+		close := strings.index_byte(authority, ']')
+		if close < 2 {return false}
+		host = authority[1:close]
+		_, ok := net.parse_ip6_address(host)
+		if !ok {return false}
+		if close + 1 < len(authority) {
+			if authority[close + 1] != ':' {return false}
+			port = authority[close + 2:]
+			if len(port) == 0 {return false}
+		}
+	} else {
+		host = authority
+		if colon := strings.index_byte(authority, ':'); colon >= 0 {
+			host, port = authority[:colon], authority[colon + 1:]
+			if len(port) == 0 {return false}
+		}
+		if len(host) == 0 {return false}
+		for i := 0; i < len(host); i += 1 {
+			ch := host[i]
+			if ch == '%' {
+				ch = 0
+				for digit in host[i + 1:i + 3] {
+					value := digit >= '0' && digit <= '9' ? digit - '0' : (digit | 32) - 'a' + 10
+					ch = ch * 16 + u8(value)
+				}
+				i += 2
+			}
+			if ch <= ' ' ||
+			   ch == 127 ||
+			   strings.index_byte(":[]/\\?#@<>\"{}|^`", ch) >= 0 {return false}
+		}
+	}
+	if len(port) > 0 {
+		n := 0
+		for ch in port {
+			if ch < '0' || ch > '9' {return false}
+			n = n * 10 + int(ch - '0')
+			if n > 65535 {return false}
+		}
+	}
+	return true
+}
+
 reload_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// load_profile only writes fields the cache has, so a field removed
 	// upstream must be emptied here or the old value would stay.
@@ -727,20 +970,30 @@ reload_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // ── Clicks ──────────────────────────────────────────────────────────
 
 handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if clicked("AddRelayBtn") &&
+	   strings.trim_space(string(ui.relay_input[:])) != "" &&
+	   !relay_add_valid(ui.relay_input[:], .Relay) {return}
 	if clicked("SaveSocks5") {
 		save_socks5(ui)
 		return
 	}
 	if clicked("NetRefresh") {
-		health_refresh(ui, client)
-		reload_profile(ui, client)
+		if net_refresh_frames == 0 {net_refresh_frames = 3}
 		return
 	}
 	if clicked("RepublishBtn") {
+		if settings_account_busy(ui) {return}
 		republish_relay_lists(ui, client)
 		return
 	}
-	if clicked("AddInboxBtn") && len(ui.inbox_input) > 0 {
+	if clicked("AddInboxBtn") {
+		if strings.trim_space(string(ui.inbox_input[:])) == "" {
+			ui.focus = .Inbox
+			ui.banner_seen = ""
+			set_status(ui, tr("Enter a relay URL before adding it."), .Error)
+			return
+		}
+		if !relay_add_valid(ui.inbox_input[:], .Inbox) {return}
 		if relay_list_contains(ui.profile.inbox[:], ui.inbox_input[:]) {
 			ui.focus = .Inbox
 			ui.banner_seen = ""
@@ -756,7 +1009,6 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			strings.clone_to_cstring(string(ui.inbox_input[:]), context.temp_allocator),
 		)
 		set_inbox_relays(ui, client, relays[:])
-		clear(&ui.inbox_input)
 		return
 	}
 	for relay, i in ui.profile.inbox {
@@ -767,8 +1019,31 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	// Fetch relays and the client template are local prefs, so no
 	// confirm and no relay round trip: edit, save, done.
-	if clicked("AddFetchBtn") && len(ui.fetch_input) > 0 {
-		append(&ui.prefs.fetch_relays, strings.clone(string(ui.fetch_input[:])))
+	if clicked("AddFetchBtn") {
+		relay := strings.trim_space(string(ui.fetch_input[:]))
+		if relay == "" {
+			ui.focus = .Fetch
+			ui.banner_seen = ""
+			set_status(ui, tr("Enter a relay URL before adding it."), .Error)
+			return
+		}
+		if !fetch_relay_valid(relay) {
+			relay_error_focus = .Fetch
+			relay_error_hash = hash.fnv64a(ui.fetch_input[:])
+			ui.focus = .Fetch
+			ui.banner_seen = ""
+			set_status(
+				ui,
+				tr(
+					"Couldn't add the relay. Enter a ws:// or wss:// URL with a host, such as wss://relay.example.com.",
+				),
+				.Error,
+			)
+			return
+		}
+		// The websocket shim selects TLS using the lowercase scheme.
+		scheme := relay[2] == ':' ? "ws://" : "wss://"
+		append(&ui.prefs.fetch_relays, strings.concatenate({scheme, relay[len(scheme):]}))
 		clear(&ui.fetch_input)
 		save_settings(ui)
 		return

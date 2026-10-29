@@ -80,6 +80,13 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 			}
 			preview := row_to_ui(client, &row, "self")
 			want := tc.want
+			// A group row names the peer who sent its last message.
+			if sender == "peer" && want != "" {
+				want = strings.concatenate(
+					{sender_label("peer"), ": ", want},
+					context.temp_allocator,
+				)
+			}
 			if sender == "self" && want != "" {
 				// The sent prefix participates in the UTF-8 byte cap.
 				if strings.has_suffix(want, "…") {
@@ -223,7 +230,11 @@ chat_audio_preview :: proc(t: ^testing.T) {
 			row = {group_id_hex = "group", last_message = &last},
 		}
 		ui := row_to_ui(nil, &row, "self")
-		testing.expect_value(t, ui.preview, tc.want)
+		want := tc.want
+		if tc.sender == "peer" && want != "" {
+			want = strings.concatenate({sender_label("peer"), ": ", want}, context.temp_allocator)
+		}
+		testing.expect_value(t, ui.preview, want)
 		chat_free(ui)
 	}
 }

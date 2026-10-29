@@ -20,7 +20,7 @@ chat_timestamp :: proc(index: u32, chat: Chat_Row_Ui) {
 			chat.at,
 			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO, wrapMode = .None},
 		)
-		if hovered() && chat.activity_at > 0 && len(chat.at) > 0 {
+		if hovered() && !tap_size() && chat.activity_at > 0 && len(chat.at) > 0 {
 			context.allocator = context.temp_allocator
 			tooltip(format_full(chat.activity_at), .Above)
 		}
@@ -29,6 +29,9 @@ chat_timestamp :: proc(index: u32, chat: Chat_Row_Ui) {
 
 @(private)
 chat_row_height :: proc() -> f32 {
+	// Touch rows keep a 68-unit target without reserving the hover chip,
+	// which floats over the row instead (chat_row).
+	if tap_size() {return 68}
 	return 16 + max(36, max(chip_h(), 14) + 20)
 }
 
@@ -132,7 +135,8 @@ chat_rail_matches :: proc(ui: ^Ui_State) -> (matched: []int, total: int) {
 		if ui.chat_filter == .Unread &&
 		   chat.unread == 0 &&
 		   !ui.prefs.unread_ids[chat.group_id] {continue}
-		if ui.chat_filter == .Groups && chat.conversation_kind != .GROUP {continue}
+		if ui.chat_filter == .Groups &&
+		   (chat.conversation_kind != .GROUP || chat.group_id == ui.prefs.notes_group) {continue}
 		order[count] = i
 		count += 1
 	}
@@ -145,7 +149,21 @@ chat_rail_matches :: proc(ui: ^Ui_State) -> (matched: []int, total: int) {
 chat_rail :: proc(ui: ^Ui_State, ordered: []Inbox_Row, total: int) {
 	clear(&ui.rail_rows)
 	offset_y: f32
-	if !ui.prefs.recent_chats && len(ui.prefs.folders) == 0 && total > 0 {
+	pending := onboard_pending(ui)
+	if single_pane() && pending && ui.chat_filter == .Chats {
+		get_started_pane(ui, .Inline)
+		// Like the hint below, use the last measured height for row windowing
+		// and keyboard reveal positions without adding another scroll owner.
+		if data := clay.GetElementData(clay.ID("GetStarted")); data.found {
+			offset_y = data.boundingBox.height + 2
+		}
+	}
+	if !pending &&
+	   !ui.prefs.recent_chats &&
+	   ui.chat_filter == .Chats &&
+	   len(ui.prefs.folders) == 0 &&
+	   total > 0 &&
+	   f32(rl.GetScreenHeight()) / UI_ZOOM >= 600 {
 		chat_rail_hint(
 			"ChatGroupHint",
 			tr("Grouped sorts your chats into folders, and you have none yet."),
@@ -169,22 +187,20 @@ chat_rail :: proc(ui: ^Ui_State, ordered: []Inbox_Row, total: int) {
 	}
 
 	sections, grouped := inbox_sections(ui, ordered)
-	y: f32
-	view := clay.GetScrollContainerData(clay.ID("ChatList"))
-	top := view.found ? max(0, -view.scrollPosition.y) : 0
-	bottom :=
-		top +
-		(view.found ? view.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM)
+	header_h: f32 = tap_size() ? 46 : 36
+	y := offset_y
+	top, view_height := inbox_view()
+	bottom := top + view_height
 	for section, i in sections {
 		// Empty folders stay out of the rail; Settings > Folders lists them.
 		if section.count == 0 {continue}
 		name := i < len(ui.prefs.folders) ? ui.prefs.folders[i] : ""
 		collapsed := ui.prefs.collapsed_folders[name]
 		rows := grouped[section.start:section.start + section.count]
-		height: f32 = 36
+		height := header_h
 		if !collapsed {
 			for &row, pos in rows {
-				row.top = y + 36 + f32(pos) * (chat_row_height() + 2)
+				row.top = y + header_h + f32(pos) * (chat_row_height() + 2)
 				append(&ui.rail_rows, row)
 			}
 			height += f32(len(rows)) * (chat_row_height() + 2)
@@ -198,8 +214,8 @@ chat_rail :: proc(ui: ^Ui_State, ordered: []Inbox_Row, total: int) {
 			y += height
 			continue
 		}
-		folder_header(ui, u32(i), name, section.unread, collapsed)
-		y += 36 // header and the list's 2px gap
+		folder_header(ui, u32(i), name, section.unread, collapsed, section.count)
+		y += header_h // header and the list's 2px gap
 		if collapsed {continue}
 		inbox_rows_window(ui, rows, y, u32(i))
 		y += f32(len(rows)) * (chat_row_height() + 2)
@@ -251,7 +267,7 @@ chat_rail_empty_note :: proc(ui: ^Ui_State, rows, total: int) {
 }
 
 // A short note in the chat list with one way out of the state it names.
-@(private = "file")
+@(private)
 chat_rail_hint :: proc(id_str, sub, button_id, button: string, title := "") {
 	if clay.UI(clay.ID(id_str))(
 	{
@@ -272,11 +288,21 @@ chat_rail_hint :: proc(id_str, sub, button_id, button: string, title := "") {
 }
 
 @(private)
-folder_header :: proc(ui: ^Ui_State, index: u32, name: string, unread: int, collapsed: bool) {
+folder_header :: proc(
+	ui: ^Ui_State,
+	index: u32,
+	name: string,
+	unread: int,
+	collapsed: bool,
+	count: int,
+) {
 	if clay.UI(clay.ID("FolderHeader", index))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 34),
+			},
 			padding = {left = 4, right = 4},
 			childGap = 8,
 			childAlignment = {y = .Center},
@@ -286,11 +312,11 @@ folder_header :: proc(ui: ^Ui_State, index: u32, name: string, unread: int, coll
 	},
 	) {
 		if clay.UI(clay.ID("FolderChevron", index))(
-		{layout = {sizing = {width = clay.SizingFixed(10)}, childAlignment = {x = .Center}}},
+		{layout = {sizing = {width = clay.SizingFixed(20)}, childAlignment = {x = .Center}}},
 		) {
 			clay.Text(
-				collapsed ? "›" : "⌄",
-				{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT_DIM},
+				collapsed ? ICON_RIGHT : ICON_DOWN,
+				{fontId = FONT_ICON, fontSize = 16, textColor = TEXT_DIM},
 			)
 		}
 		folder_icon(ui, name, 16)
@@ -305,6 +331,12 @@ folder_header :: proc(ui: ^Ui_State, index: u32, name: string, unread: int, coll
 					textColor = unread > 0 ? TEXT : TEXT_DIM,
 					wrapMode = .None,
 				},
+			)
+		}
+		if collapsed {
+			clay.Text(
+				fmt.tprintf("%d", count),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 			)
 		}
 		if unread > 0 {
@@ -325,6 +357,10 @@ folder_header :: proc(ui: ^Ui_State, index: u32, name: string, unread: int, coll
 			if clay.UI(clay.ID("FolderMenuBtn", index))(
 			{
 				layout = {
+					sizing = {
+						width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+					},
 					padding = {left = 6, right = 6, top = 4, bottom = 4},
 					childAlignment = {x = .Center, y = .Center},
 				},
@@ -340,9 +376,16 @@ folder_header :: proc(ui: ^Ui_State, index: u32, name: string, unread: int, coll
 }
 
 chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
+	chat := chat
 	if chip == .Unarchive {
 		archived_row(index, chat)
 		return
+	}
+	if g_ui != nil &&
+	   len(g_ui.sidebar_filter) > 0 &&
+	   int(index) < len(g_ui.filter_previews) &&
+	   g_ui.filter_previews[index] != "" {
+		chat.preview = g_ui.filter_previews[index]
 	}
 	if clay.UI(clay.ID("ChatRow", index))(
 	{
@@ -411,7 +454,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							layout = {
 								sizing = {
 									width = clay.SizingGrow(),
-									height = clay.SizingFit({min = chip_h()}),
+									height = clay.SizingFit({min = tap_size() ? 20 : chip_h()}),
 								},
 								childGap = 8,
 								childAlignment = {y = .Center},
@@ -421,7 +464,14 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							// One clipped line: a long unbroken name would otherwise
 							// push the time and badge out of the row.
 							if clay.UI(clay.ID("ChatRowTitleClip", index))(
-							{clip = {horizontal = true}},
+							{
+								layout = {
+									sizing = {
+										width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
+									},
+								},
+								clip = {horizontal = true},
+							},
 							) {
 								clay.Text(
 									chat.title,
@@ -459,7 +509,13 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 								)
 							}
 							if clay.UI(clay.ID("ChatRowGap", index))(
-							{layout = {sizing = {width = clay.SizingGrow()}}},
+							{
+								layout = {
+									sizing = {
+										width = single_pane() ? clay.SizingFixed(0) : clay.SizingGrow(),
+									},
+								},
+							},
 							) {}
 							if chat.unread == 0 &&
 							   g_prefs != nil &&
@@ -475,8 +531,27 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							}
 							chat_timestamp(index, chat)
 							// Archive and the other row actions live in this menu,
-							// which right-click and long-press also open.
-							if hovered() {
+							// which right-click and long-press also open. A finger
+							// uses long-press; a pointer on a narrow window gets the
+							// chip floating at the row's edge.
+							if tap_size() {
+								if hovered() && !rl.TouchActive() {
+									if clay.UI(clay.ID("ChatMenuFloat", index))(
+									{
+										floating = {
+											attachTo = .ElementWithId,
+											parentId = clay.ID("ChatRowSlide", index).id,
+											attachment = {
+												element = .RightCenter,
+												parent = .RightCenter,
+											},
+											offset = {-6, 0},
+											zIndex = 2,
+										},
+									},
+									) {action_chip("ChatMenu", index, "···")}
+								}
+							} else if hovered() {
 								action_chip("ChatMenu", index, "···")
 							}
 						}
@@ -552,6 +627,7 @@ row_preview :: proc(index: u32, preview: string) {
 	shown := preview
 	clip, laid_out := element_box(clay.ID("ChatRowPrevClip", index))
 	if laid_out &&
+	   clip.width >= 40 &&
 	   (end < len(preview) || rune_fit(preview, 0, end, clip.width, 12, tile_px = tile_px) < end) {
 		// Room for the ellipsis and the 2px gap a chip leaves before it.
 		room := clip.width - rl.MeasureTextLine(FONT_BODY, 12, "…", 0).x - 2
@@ -646,7 +722,14 @@ account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 			url_pic(ui.account_pics[index]),
 		)
 		if clay.UI(clay.ID("AccountRowCol", index))(
-		{layout = {layoutDirection = .TopToBottom, childGap = 2}},
+		{
+			layout = {
+				sizing = {width = single_pane() ? clay.SizingGrow() : clay.SizingFit()},
+				layoutDirection = .TopToBottom,
+				childGap = 2,
+			},
+			clip = {horizontal = true},
+		},
 		) {
 			clay.Text(ui.accounts[index], {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
 			clay.Text(
@@ -657,15 +740,14 @@ account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 			   ui.account_signing[index].external {nip46_status_ui(ui, ui.account_ids[index], index)}
 		}
 		if clay.UI(clay.ID("AccountRowGap", index))(
-		{layout = {sizing = {width = clay.SizingGrow()}}},
+		{layout = {sizing = {width = single_pane() ? clay.SizingFixed(0) : clay.SizingGrow()}}},
 		) {}
-		if active {
+		if active && !single_pane() {
 			clay.Text(
 				tr("ACTIVE"),
 				{fontId = FONT_MONO, fontSize = 10, textColor = ACCENT, letterSpacing = 2},
 			)
 		}
-		account_remove_button("AccountRemove", index)
 		clay.Text("›", {fontId = FONT_BODY, fontSize = 16, textColor = TEXT_LO})
 	}
 }
@@ -677,7 +759,10 @@ account_remove_button :: proc(id_str: string, index: u32) {
 	if clay.UI(clay.ID(id_str, index))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(28)},
+			sizing = {
+				width = clay.SizingFixed(tap_size() ? tap_min() : 28),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 28),
+			},
 			childAlignment = {x = .Center, y = .Center},
 		},
 		backgroundColor = hovered() ? HOVER : {},
@@ -728,7 +813,13 @@ peer_modal :: proc(ui: ^Ui_State) {
 	width := modal_w(clay.ID("PeerModal"), 400)
 	if clay.UI(clay.ID("PeerModal"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(width)}},
+		layout = {
+			sizing = {
+				width = clay.SizingFixed(width),
+				height = clay.SizingFit({max = modal_h(720)}),
+			},
+		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		floating = {
 			attachTo = .Root,
 			zIndex = 13,
@@ -739,6 +830,7 @@ peer_modal :: proc(ui: ^Ui_State) {
 	) {
 		profile_card(PEER_CARD_ID, ui.peer_hex, width, .Peer_Popup)
 	}
+	scrollbar(clay.ID("PeerModal"), 14)
 }
 
 // Account-switcher modal, opened from the rail avatar.
@@ -746,11 +838,15 @@ accounts_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("AccountsModal"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("AccountsModal"), 440))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("AccountsModal"), 440)),
+				height = clay.SizingFit({max = modal_h(720)}),
+			},
 			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(20),
+			padding = clay.PaddingAll(single_pane() ? 12 : 20),
 			childGap = 12,
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
@@ -769,17 +865,25 @@ accounts_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("AcctHeadGap"))(
 			{layout = {sizing = {width = clay.SizingGrow()}}},
 			) {}
-			if clay.UI(clay.ID("AcctClose"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
-					childAlignment = {x = .Center, y = .Center},
+			if !single_pane() {
+				if clay.UI(clay.ID("AcctClose"))(
+				{
+					layout = {
+						sizing = {
+							width = clay.SizingFixed(tap_size() ? tap_min() : 26),
+							height = clay.SizingFixed(tap_size() ? tap_min() : 26),
+						},
+						childAlignment = {x = .Center, y = .Center},
+					},
+					backgroundColor = hovered() ? HOVER : {},
+					cornerRadius = rr(7),
 				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(7),
-			},
-			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				) {
+					clay.Text(
+						ICON_CLOSE,
+						{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
+					)
+				}
 			}
 		}
 		clay.Text(
@@ -787,7 +891,17 @@ accounts_modal :: proc(ui: ^Ui_State) {
 			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 		)
 
+		// Stable alphabetical display order, independent of runtime store order.
+		order := make([]int, len(ui.accounts), context.temp_allocator)
 		for _, i in ui.accounts {
+			at := i
+			for at > 0 && strings.compare(ui.accounts[order[at - 1]], ui.accounts[i]) > 0 {
+				order[at] = order[at - 1]
+				at -= 1
+			}
+			order[at] = i
+		}
+		for i in order {
 			account_row(ui, u32(i), ui.account_ids[i] == ui.account_ref)
 		}
 
@@ -796,7 +910,11 @@ accounts_modal :: proc(ui: ^Ui_State) {
 		) {
 			if clay.UI(clay.ID("AcctCloseBtn"))(
 			{
-				layout = {padding = {left = 18, right = 18, top = 10, bottom = 10}},
+				layout = {
+					sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
+					padding = {left = 18, right = 18, top = 10, bottom = 10},
+					childAlignment = {y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(9),
 				border = {color = FIELD_BORDER, width = bw()},
@@ -809,7 +927,11 @@ accounts_modal :: proc(ui: ^Ui_State) {
 			) {}
 			if clay.UI(clay.ID("AddAccountBtn"))(
 			{
-				layout = {padding = {left = 18, right = 18, top = 10, bottom = 10}},
+				layout = {
+					sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
+					padding = {left = 18, right = 18, top = 10, bottom = 10},
+					childAlignment = {y = .Center},
+				},
 				backgroundColor = hovered() ? ACCENT_DIM : ACCENT,
 				cornerRadius = rr(9),
 			},
@@ -821,6 +943,7 @@ accounts_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
+	scrollbar(clay.ID("AccountsModal"), 14)
 }
 
 // Shared by conversations and terminal work waiting for attention.
@@ -849,7 +972,7 @@ nav_button :: proc(page: Page, active: bool) {
 	// A fixed target keeps the vertical rail stable across icon fonts
 	// and remains usable on touch screens.
 	down := press_down(clay.ID("Nav", u32(page)))
-	side := f32(42)
+	side := f32(tap_size() ? tap_min() : 42)
 	if clay.UI(clay.ID("Nav", u32(page)))(
 	{
 		layout = {

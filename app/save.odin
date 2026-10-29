@@ -65,18 +65,21 @@ start_att_save :: proc(pick: Att_Pick) {
 	rl.SaveFileDialog(pick.name)
 }
 
-// Corner download chip, shown while its attachment tile is hovered
+// Corner download chip, always visible on touch layouts and otherwise hovered
 // (call inside the tile's element block). Clicking it routes into
 // the same save flow as the file chips; the tile handlers check
 // att_hover so the click doesn't also trigger the tile's own action.
 att_dl_button :: proc(id_str: string, id: u32, msg_id: string, att: int, name: string) {
-	if !hovered() {
+	if !tap_size() && !hovered() {
 		return
 	}
 	if clay.UI(clay.ID(id_str, id))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
+			sizing = {
+				width = clay.SizingFixed(tap_size() ? tap_min() : 26),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 26),
+			},
 			childAlignment = {x = .Center, y = .Center},
 		},
 		floating = {

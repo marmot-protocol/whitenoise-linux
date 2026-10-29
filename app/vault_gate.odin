@@ -164,6 +164,12 @@ gate_err_strength: bool
 @(private = "file")
 gate_reset_armed: bool
 @(private = "file")
+gate_reset_done: bool
+@(private = "file")
+gate_pw_view: Secret_Field_View
+@(private = "file")
+gate_pw2_view: Secret_Field_View
+@(private = "file")
 gate_check: Password_Check
 
 // The unlock or create in flight. Argon2id takes ~15 ms at -o:speed on
@@ -268,12 +274,21 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 	gate_confirm = false
 	gate_err_strength = false
 	gate_reset_armed = false
+	gate_reset_done = false
+	gate_pw_view = .Masked
+	gate_pw2_view = .Masked
 	gate_job = {}
 	devctl_reset_input()
+	defer devctl_reset_input()
 	defer editor_forget(ui)
 	defer gate_close()
 	defer gate_join()
 	shot := os.get_env("WN_SHOT", context.temp_allocator) != ""
+	previous_height: i32 = -1
+	previous_confirm := gate_confirm
+	previous_error := gate_err
+	previous_reset := gate_reset_armed
+	previous_reset_done := gate_reset_done
 	for frame := 0; !rl.WindowShouldClose(); frame += 1 {
 		when ODIN_OS == .Darwin {macos_update_tick()}
 		if dev_reload_poll() {return false}
@@ -287,11 +302,39 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		pointer.x /= UI_ZOOM
 		pointer.y /= UI_ZOOM
 		clay.SetPointerState(pointer, rl.IsMouseButtonDown(.LEFT))
+		scroll_residual += transmute(clay.Vector2)rl.GetMouseWheelMoveV()
+		step := scroll_residual * anim_drain(SCROLL_DRAIN)
+		scroll_residual -= step
+		clay.UpdateScrollContainers(false, step, rl.GetFrameTime())
 		clay.SetLayoutDimensions(
 			{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
 		)
 
+		clear(&drag_targets)
 		render_commands := gate_layout(ui)
+		if previous_height != rl.GetScreenHeight() ||
+		   previous_confirm != gate_confirm ||
+		   previous_error != gate_err ||
+		   previous_reset != gate_reset_armed ||
+		   previous_reset_done != gate_reset_done {
+			target := gate_confirm ? "GatePw2Box" : "GatePwBox"
+			if gate_err != "" || previous_height != rl.GetScreenHeight() {
+				target = "GateSubmit"
+			}
+			if gate_reset_armed {
+				target = "GateResetConfirm"
+			}
+			if gate_reset_done != previous_reset_done {
+				target = "GateResetNotice"
+			}
+			onboard_reveal_field("GateCard", target)
+			previous_height = rl.GetScreenHeight()
+			previous_confirm = gate_confirm
+			previous_error = gate_err
+			previous_reset = gate_reset_armed
+			previous_reset_done = gate_reset_done
+			render_commands = gate_layout(ui)
+		}
 		rl.BeginDrawing()
 		rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM})
 		clay_raylib_render(&render_commands)
@@ -310,10 +353,19 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 			ui.lock_requested = false
 			return true
 		}
+		update_drag_scroll(ui, false)
 		gate_input(ui)
 		// Same contract as the main loop: the password box is the only
 		// field here, and gate_input's edit_text sets the flag.
 		rl.SetTextInput(text_field_live)
+		if text_field_live {
+			rl.SetTextInputArea(
+				i32(caret_box.x * UI_ZOOM),
+				i32(caret_box.y * UI_ZOOM),
+				i32(max(caret_box.width, 1) * UI_ZOOM),
+				i32(caret_box.height * UI_ZOOM),
+			)
+		}
 		text_field_live = false
 	}
 	return false
@@ -328,28 +380,27 @@ gate_input :: proc(ui: ^Ui_State) {
 	creating := !vault_exists()
 
 	focus := gate_confirm
-	// Only while delete is armed: a keystroke has to drop that arm, and
-	// the copy exists so the comparison can see what changed.
-	snap := gate_reset_armed
-	pw, pw2: string
-	if snap && len(gate_pw) > 0 {
-		pw = strings.clone(string(gate_pw[:]))
+	buf := gate_confirm && creating ? &gate_pw2 : &gate_pw
+	// Track editor revisions instead of copying a secret just to detect edits.
+	previous_len := len(buf)
+	previous_edit := ui.ed.last_edit_time
+	previous_undo := ui.ed_target == buf ? len(ui.ed.undo) : 0
+	previous_redo := ui.ed_target == buf ? len(ui.ed.redo) : 0
+	edit_text(ui, buf)
+	edited :=
+		len(buf) != previous_len ||
+		ui.ed.last_edit_time != previous_edit ||
+		len(ui.ed.undo) != previous_undo ||
+		len(ui.ed.redo) != previous_redo
+	if edited {
+		gate_err = ""
 	}
-	if snap && len(gate_pw2) > 0 {
-		pw2 = strings.clone(string(gate_pw2[:]))
+	if clicked("GatePwShow") {
+		gate_pw_view = gate_pw_view == .Masked ? .Plain : .Masked
 	}
-	defer if snap {
-		// clone("") is a literal, so only the non-empty copies are freed.
-		if len(pw) > 0 {
-			mem.zero_slice(transmute([]u8)pw)
-			delete(pw)
-		}
-		if len(pw2) > 0 {
-			mem.zero_slice(transmute([]u8)pw2)
-			delete(pw2)
-		}
+	if clicked("GatePw2Show") {
+		gate_pw2_view = gate_pw2_view == .Masked ? .Plain : .Masked
 	}
-	edit_text(ui, gate_confirm && creating ? &gate_pw2 : &gate_pw)
 	if creating &&
 	   gate_err_strength &&
 	   password_bits(string(gate_pw[:]), &gate_check) >= PASSWORD_MIN_BITS {
@@ -373,7 +424,7 @@ gate_input :: proc(ui: ^Ui_State) {
 		clicked("GateGo") ||
 		rl.IsKeyPressed(.ENTER) ||
 		gate_confirm != focus
-	if snap && (string(gate_pw[:]) != pw || string(gate_pw2[:]) != pw2) {
+	if edited || clicked("GatePwShow") || clicked("GatePw2Show") || clicked("GateResetCancel") {
 		other = true
 	}
 
@@ -391,8 +442,15 @@ gate_input :: proc(ui: ^Ui_State) {
 		gate_reset_armed = false
 		vault_stores_quiesce()
 		vault_delete()
+		mem.zero_slice(gate_pw[:])
+		mem.zero_slice(gate_pw2[:])
 		clear(&gate_pw)
 		clear(&gate_pw2)
+		gate_confirm = false
+		gate_pw_view = .Masked
+		gate_pw2_view = .Masked
+		gate_reset_done = true
+		gate_check = {}
 		gate_err = ""
 		gate_err_strength = false
 		return
@@ -468,21 +526,37 @@ gate_field :: proc(
 		if focused {
 			glow(clay.ID(id_str), ACCENT, 0.35 + clamp((pop - 1) * 3, 0, 0.65), 18)
 		}
-		if view == .Plain {
-			field_text(ui, id_str, buf, placeholder, focused, 15)
-		} else if len(buf) == 0 {
-			// Caret before the hint, where typing will start.
-			if focused {
-				caret(16)
-			}
-			clay.Text(placeholder, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
-		} else {
-			clay.Text(
-				strings.repeat("*", min(len(buf), 48), context.temp_allocator),
-				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT},
-			)
-			if focused {
-				caret(16)
+		// Clip text inside the frame, never the frame's fractional-pixel border.
+		if clay.UI(clay.ID(fmt.tprintf("%sTextClip", id_str)))(
+		{
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingFixed(30)},
+				childAlignment = {y = .Center},
+			},
+			clip = {horizontal = true},
+		},
+		) {
+			if view == .Plain {
+				field_text(ui, id_str, buf, placeholder, focused, 15)
+			} else if len(buf) == 0 {
+				// Caret before the hint, where typing will start.
+				if focused {
+					caret(16)
+				}
+				clay.Text(placeholder, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
+			} else {
+				count := min(len(buf), 48)
+				if box := clay.GetElementData(clay.ID(id_str)); box.found {
+					star_w := max(rl.MeasureTextLine(FONT_BODY, 15, "*", 0).x, 1)
+					count = min(count, max(1, int((box.boundingBox.width - 40) / star_w)))
+				}
+				clay.Text(
+					strings.repeat("*", count, context.temp_allocator),
+					{fontId = FONT_BODY, fontSize = 15, textColor = TEXT},
+				)
+				if focused {
+					caret(16)
+				}
 			}
 		}
 	}
@@ -496,6 +570,7 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 	// form this is until the job ends.
 	busy := gate_job.worker != nil
 	creating := busy ? gate_job.creating : !vault_exists()
+	compact := single_pane() || modal_h(1200) < 500
 
 	if clay.UI(clay.ID("Root"))(
 	{
@@ -518,13 +593,16 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 			if clay.UI(clay.ID("GateCard"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(fit_w(660))},
+					sizing = {
+						width = clay.SizingFixed(fit_w(660)),
+						height = clay.SizingFit({max = modal_h(1200)}),
+					},
 					layoutDirection = .TopToBottom,
 					padding = {
-						left = single_pane() ? 20 : 50,
-						right = single_pane() ? 20 : 50,
-						top = single_pane() ? 20 : creating ? 24 : 50,
-						bottom = single_pane() ? 20 : creating ? 24 : 50,
+						left = compact ? 20 : 50,
+						right = compact ? 20 : 50,
+						top = compact ? 16 : creating ? 24 : 50,
+						bottom = compact ? 16 : creating ? 24 : 50,
 					},
 					childGap = creating ? 8 : 14,
 					childAlignment = {x = .Center},
@@ -532,78 +610,204 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				backgroundColor = CARD,
 				cornerRadius = rr(16),
 				border = {color = CARD_BORDER, width = bw()},
+				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 			},
 			) {
 				glow(clay.ID("GateCard"), ACCENT, 0.55, 26)
+				scrollbar(clay.ID("GateCard"))
 				logo_mark()
 				clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT})
 				clay.Text(
 					creating ? tr("Pick a password. It encrypts everything in the app, and there is no way to recover it.") : tr("Enter your password to unlock this device's keys."),
-					{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
+					{
+						fontId = FONT_BODY,
+						fontSize = 15,
+						textColor = TEXT_DIM,
+						textAlignment = .Center,
+					},
 				)
+				if creating && gate_reset_done {
+					if clay.UI(clay.ID("GateResetNotice"))(
+					{layout = {sizing = {width = clay.SizingGrow()}}},
+					) {
+						clay.Text(
+							tr(
+								"Your account keys and chats were deleted from this device. Pick a new password to start over.",
+							),
+							{
+								fontId = FONT_BODY,
+								fontSize = 14,
+								textColor = TEXT,
+								textAlignment = .Center,
+							},
+						)
+					}
+				}
 				if clay.UI(clay.ID("GateGapA"))(
 				{layout = {sizing = {height = clay.SizingFixed(10)}}},
 				) {}
 
-				eyebrow(tr("PASSWORD"))
+				if clay.UI(clay.ID("GatePwLabel"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(44)},
+						childAlignment = {y = .Center},
+						childGap = 8,
+					},
+				},
+				) {
+					eyebrow(tr("PASSWORD"))
+					if clay.UI(clay.ID("GatePwLabelSpace"))(
+					{layout = {sizing = {width = clay.SizingGrow()}}},
+					) {}
+					if !busy {
+						micro_button(
+							"GatePwShow",
+							gate_pw_view == .Masked ? tr("Show") : tr("Hide"),
+							TEXT_DIM,
+						)
+					}
+				}
 				gate_field(
 					ui,
 					"GatePwBox",
 					&gate_pw,
 					!busy && (!gate_confirm || !creating),
 					tr("Your password"),
+					gate_pw_view,
 				)
 				if creating {
-					password_hint(password_bits(string(gate_pw[:]), &gate_check))
-					eyebrow(tr("CONFIRM PASSWORD"))
+					password_bits(string(gate_pw[:]), &gate_check)
+					password_hint(&gate_check)
+					if clay.UI(clay.ID("GatePw2Label"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(44)},
+							childAlignment = {y = .Center},
+							childGap = 8,
+						},
+					},
+					) {
+						eyebrow(tr("CONFIRM PASSWORD"))
+						if clay.UI(clay.ID("GatePw2LabelSpace"))(
+						{layout = {sizing = {width = clay.SizingGrow()}}},
+						) {}
+						if !busy {
+							micro_button(
+								"GatePw2Show",
+								gate_pw2_view == .Masked ? tr("Show") : tr("Hide"),
+								TEXT_DIM,
+							)
+						}
+					}
 					gate_field(
 						ui,
 						"GatePw2Box",
 						&gate_pw2,
 						!busy && gate_confirm,
 						tr("Type your password again"),
+						gate_pw2_view,
 					)
 				}
 
-				if clay.UI(clay.ID("GateGapB"))(
-				{layout = {sizing = {height = clay.SizingFixed(6)}}},
-				) {}
-				ready :=
-					!creating ||
-					(password_bits(string(gate_pw[:]), &gate_check) >= PASSWORD_MIN_BITS &&
-							string(gate_pw[:]) == string(gate_pw2[:]))
-				if busy {
-					login_big_button(
-						"GateGo",
-						creating ? tr("Creating your vault…") : tr("Unlocking…"),
-						true,
-						.Disabled,
-					)
-					busy_bar("GateBusy")
-					clay.Text(
-						creating ? tr("Deriving an encryption key from your password.") : tr("Checking your password and decrypting your keys."),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
-					)
-				} else {
-					login_big_button(
-						"GateGo",
-						creating ? tr("Continue") : tr("Unlock"),
-						true,
-						ready ? .Enabled : .Disabled,
-					)
+				// Reveal the error and action together on short keyboard-height windows.
+				if clay.UI(clay.ID("GateSubmit"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						childGap = 8,
+					},
+				},
+				) {
+					if clay.UI(clay.ID("GateError"))(
+					{
+						layout = {
+							sizing = {
+								width = clay.SizingGrow(),
+								height = clay.SizingFit({min = 68}),
+							},
+						},
+					},
+					) {
+						if gate_err != "" {
+							clay.Text(
+								gate_err,
+								{fontId = FONT_BODY, fontSize = 14, textColor = DANGER},
+							)
+						}
+					}
+					ready :=
+						!creating ||
+						(password_bits(string(gate_pw[:]), &gate_check) >= PASSWORD_MIN_BITS &&
+								string(gate_pw[:]) == string(gate_pw2[:]))
+					if busy {
+						login_big_button(
+							"GateGo",
+							creating ? tr("Creating your vault…") : tr("Unlocking…"),
+							true,
+							.Busy,
+						)
+						busy_bar("GateBusy")
+						clay.Text(
+							creating ? tr("Deriving an encryption key from your password.") : tr("Checking your password and decrypting your keys."),
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+						)
+					} else {
+						login_big_button(
+							"GateGo",
+							creating ? tr("Continue") : tr("Unlock"),
+							true,
+							ready ? .Enabled : .Disabled,
+						)
+					}
 				}
 				if !creating && !busy {
-					micro_button(
-						"GateReset",
-						gate_reset_armed ? tr("Confirm: delete this vault") : tr("Delete this vault"),
-						DANGER,
-					)
-				}
-				if len(gate_err) > 0 {
-					clay.Text(gate_err, {fontId = FONT_BODY, fontSize = 14, textColor = DANGER})
+					if clay.UI(clay.ID("GateResetGap"))(
+					{layout = {sizing = {height = clay.SizingFixed(24)}}},
+					) {}
+					if gate_reset_armed {
+						if clay.UI(clay.ID("GateResetConfirm"))(
+						{
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								layoutDirection = .TopToBottom,
+								childGap = 12,
+							},
+						},
+						) {
+							clay.Text(
+								tr(
+									"This deletes every account key and all chats on this device. You can only sign in again if you have a backup of your secret key.",
+								),
+								{fontId = FONT_BODY, fontSize = 14, textColor = DANGER},
+							)
+							micro_button("GateResetCancel", tr("Keep your keys and chats"), TEXT)
+							micro_button("GateReset", tr("Delete keys and chats"), DANGER)
+						}
+					} else {
+						micro_button("GateReset", tr("Forgot password? Start over"), TEXT_DIM)
+					}
 				}
 			}
 		}
 	}
 	return clay.EndLayout(rl.GetFrameTime())
+}
+
+// Reveal only on a field or viewport change, never while the user scrolls
+// to an action. Password buffers remain masked and out of the clipboard.
+@(private)
+onboard_reveal_field :: proc(container, field: string) {
+	data := clay.GetScrollContainerData(clay.ID(container))
+	row := clay.GetElementData(clay.ID(field))
+	viewport := clay.GetElementData(clay.ID(container))
+	if !data.found || !row.found || !viewport.found {return}
+	b, r := viewport.boundingBox, row.boundingBox
+	delta := min(r.y - b.y - 8, 0) + max(r.y + r.height - b.y - b.height + 8, 0)
+	data.scrollPosition.y = clamp(
+		data.scrollPosition.y - delta,
+		-max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+		0,
+	)
 }

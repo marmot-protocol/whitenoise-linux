@@ -77,7 +77,7 @@ SETTINGS_TASKS := []Settings_Task {
 	},
 	{
 		.Notifications,
-		N_("Get desktop notifications"),
+		N_("Get message notifications"),
 		"RowNotify",
 		"alerts incoming messages",
 		true,
@@ -186,7 +186,7 @@ SETTINGS_SEE_ALSO := [Settings_Section][]Settings_Task {
 	},
 	.General       = []Settings_Task {
 		{.Appearance, N_("Zoom the interface"), "RowZoom", "", false},
-		{.Notifications, N_("Get desktop notifications"), "RowNotify", "", false},
+		{.Notifications, N_("Get message notifications"), "RowNotify", "", false},
 		{.Folders, N_("Organize your folders"), "SettingsFolderActions", "", false},
 	},
 	.Folders       = []Settings_Task {
@@ -306,29 +306,50 @@ settings_task_matches :: proc(ui: ^Ui_State, task: Settings_Task, query: string)
 		}
 	}
 	if !settings_available(ui, task.section) {return false}
+	if tap_size() && settings_desktop_only(task.anchor) {return false}
 	if query == "" {return true}
-	text := strings.to_lower(
-		fmt.tprintf(
-			"%s %s %s %s %s",
-			tr(task.label),
-			task.label,
-			tr(SETTINGS_SECTIONS[task.section].label),
-			SETTINGS_SECTIONS[task.section].label,
-			task.keywords,
-		),
-		context.temp_allocator,
+	text := fmt.tprintf(
+		"%s %s %s %s %s",
+		tr(task.label),
+		task.label,
+		tr(SETTINGS_SECTIONS[task.section].label),
+		SETTINGS_SECTIONS[task.section].label,
+		task.keywords,
 	)
+	if task.anchor == "RowTheme" {
+		names := strings.builder_make(context.temp_allocator)
+		strings.write_string(&names, text)
+		for pack in theme_packs {
+			strings.write_byte(&names, ' ')
+			strings.write_string(&names, pack.custom ? pack.name : tr(pack.name))
+		}
+		text = strings.to_string(names)
+	}
+	text = strings.to_lower(text, context.temp_allocator)
 	for word in strings.fields(query) {
 		if !strings.contains(text, word) {return false}
 	}
 	return true
 }
 
-// Folders, About and the developer pages hold a single task, so they open
-// straight onto their sheet instead of a menu with one entry.
+// Rows that only mean something with a mouse, keyboard or tray: touch
+// screens hide them and every link to them.
+@(private)
+settings_desktop_only :: proc(anchor: string) -> bool {
+	switch anchor {
+	case "RowShortcuts", "RowTray", "RowMinTray", "RowScroll":
+		return true
+	}
+	return false
+}
+
+// Folders, About and the developer pages hold a single task, and
+// Notifications a single page, so they open straight onto their sheet
+// instead of a menu that offers no choice.
 @(private)
 settings_has_menu :: proc(section: Settings_Section) -> bool {
-	if section == .Home || section == .Appearance {return false}
+	if section == .Home || section == .Appearance || section == .Speech {return false}
+	if len(settings_tabs(section)) <= 1 {return false}
 	count := 0
 	for task in SETTINGS_TASKS {
 		if task.section == section {count += 1}
@@ -359,12 +380,16 @@ settings_on_menu :: proc(ui: ^Ui_State) -> bool {
 settings_nav_box :: proc(ui: ^Ui_State) {
 	section := ui.settings_section
 	if clay.UI(clay.ID("SettingsBoxMain"))(settings_pane_box()) {
-		settings_pane_head(Settings_Art.Home, tr("Settings"))
+		// A phone already says Settings in its nav bar; the strip only costs height.
+		if !single_pane() {settings_pane_head(Settings_Art.Home, tr("SETTINGS"))}
 		if clay.UI(clay.ID("SettingsBoxMainBody"))(settings_pane_body()) {
 			if clay.UI(clay.ID("SettingsSearchBox"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(30)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(settings_tap_size(30)),
+					},
 					padding = {left = 8, right = 8},
 					childGap = 7,
 					childAlignment = {y = .Center},
@@ -387,9 +412,29 @@ settings_nav_box :: proc(ui: ^Ui_State) {
 					12,
 					TEXT_DIM,
 				)
+				// Clearing sits inside the box so typing never moves the page.
+				if len(ui.settings_search) > 0 {
+					if clay.UI(clay.ID("SettingsSearchClear"))(
+					{
+						layout = {
+							sizing = {
+								clay.SizingFixed(settings_tap_size(22)),
+								clay.SizingFixed(settings_tap_size(22)),
+							},
+							childAlignment = {x = .Center, y = .Center},
+						},
+						backgroundColor = hovered() ? HOVER : {},
+						cornerRadius = rr(3),
+					},
+					) {
+						if hovered() {tooltip(tr("Clear search"))}
+						clay.Text(
+							ICON_CLOSE,
+							{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
+						)
+					}
+				}
 			}
-			if len(ui.settings_search) >
-			   0 {micro_button("SettingsSearchClear", tr("Clear search"))}
 			if section != .Home && !settings_on_menu(ui) && settings_has_menu(section) {
 				settings_pane_link(
 					clay.ID("SettingsMenu"),
@@ -408,11 +453,11 @@ settings_nav_box :: proc(ui: ^Ui_State) {
 @(private)
 settings_related_boxes :: proc(ui: ^Ui_State) {
 	section := ui.settings_section
-	settings_link_box(ui, "SettingsSeeAlso", tr("See also"), SETTINGS_SEE_ALSO[section], .Art)
+	settings_link_box(ui, "SettingsSeeAlso", tr("SEE ALSO"), SETTINGS_SEE_ALSO[section], .Art)
 	settings_link_box(
 		ui,
 		"SettingsTrouble",
-		tr("Troubleshooters"),
+		tr("TROUBLESHOOTERS"),
 		SETTINGS_TROUBLESHOOTERS[section],
 		.Help,
 	)
@@ -422,7 +467,7 @@ settings_related_boxes :: proc(ui: ^Ui_State) {
 	if !ui.prefs.dev_mode {return}
 	if section != .Home && section != .Advanced && section != .Debug && section != .KP {return}
 	if clay.UI(clay.ID("SettingsDevBox"))(settings_pane_box()) {
-		settings_pane_head(Settings_Art.Advanced, tr("Developer tools"))
+		settings_pane_head(Settings_Art.Advanced, tr("DEVELOPER TOOLS"))
 		if clay.UI(clay.ID("SettingsDevBody"))(settings_pane_body()) {
 			for dev in ([2]Settings_Section{.Debug, .KP}) {
 				if dev == section {continue}
@@ -505,8 +550,12 @@ settings_pane_head :: proc(art: Maybe(Settings_Art), title: string) {
 		border = {color = DIVIDER, width = {bottom = 1}},
 	},
 	) {
-		if which, ok := art.?; ok {settings_illustration("SettingsPaneArt", which, 22)}
-		clay.Text(title, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+		// Keyed by art: Home and Developer tools heads can share a frame.
+		if which, ok := art.?; ok {
+			settings_illustration(fmt.tprintf("SettingsPaneArt%d", int(which)), which, 22)
+		}
+		// Box captions follow the eyebrow rung of the casing ladder.
+		clay.Text(title, {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT, letterSpacing = 1})
 	}
 }
 
@@ -525,7 +574,10 @@ settings_pane_link :: proc(
 	if clay.UI(id)(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow()},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFit({min = settings_tap_size(24)}),
+			},
 			padding = {top = 2, bottom = 2},
 			childGap = 8,
 			childAlignment = {y = .Center},
@@ -572,17 +624,29 @@ settings_pick_heading :: proc(text: string) {
 settings_banner :: proc(ui: ^Ui_State) {
 	section := ui.settings_section
 	gallery := section == .Appearance && !settings_on_menu(ui) && ui.settings_tab == 0
+	phone := single_pane()
 	if clay.UI(clay.ID("SettingsHead"))(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow()},
-			padding = {left = 24, right = 24, top = 8, bottom = 8},
-			childGap = 12,
+			padding = {
+				left = phone ? 0 : 24,
+				right = 24,
+				top = phone ? 3 : 8,
+				bottom = phone ? 3 : 8,
+			},
+			childGap = phone ? 6 : 12,
 			childAlignment = {y = .Center},
 		},
 		backgroundColor = ACCENT,
 	},
 	) {
+		// Phones go back from the banner itself instead of a separate bar
+		// above it; the shell's PhoneBack handler runs it.
+		if phone {if clay.UI(clay.ID("PhoneBack"))({layout = {sizing = {clay.SizingFixed(44), clay.SizingFixed(44)}, childAlignment = {x = .Center, y = .Center}}}) {
+				clay.Text("\uf053", {fontId = FONT_ICON, fontSize = 18, textColor = ON_ACCENT})
+				if hovered() {cursor_raise(.Pointer); tooltip(tr("Back"))}
+			}}
 		settings_illustration("SettingsHeadArt", SECTION_ART[section], 34)
 		if clay.UI(clay.ID("SettingsHeadCol"))(
 		{
@@ -636,6 +700,10 @@ settings_category_menu :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("SettingsTask", u32(i)))(
 			{
 				layout = {
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFit({min = settings_tap_size(26)}),
+					},
 					padding = {top = 4, bottom = 4},
 					childGap = 10,
 					childAlignment = {y = .Center},
@@ -690,6 +758,7 @@ settings_category_menu :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("SettingsPageIcon", u32(at)))(
 					{
 						layout = {
+							sizing = {width = clay.SizingGrow()},
 							padding = {top = 4, bottom = 4},
 							childGap = 12,
 							childAlignment = {y = .Center},
@@ -815,6 +884,7 @@ settings_home :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("SettingsNav", u32(section)))(
 					{
 						layout = {
+							sizing = {width = clay.SizingGrow()},
 							padding = {top = 6, bottom = 6},
 							childGap = 14,
 							childAlignment = {y = .Center},
@@ -860,6 +930,10 @@ settings_open :: proc(
 	if anchor != "" || !settings_has_menu(section) {level = .Sheet}
 	target_tab :=
 		section == .Appearance ? 0 : (anchor == "" ? tab : settings_target_tab(section, anchor))
+	if section != .General || target_tab != 2 {
+		ui.emoji_sets_open = false
+		ui.emoji_sets_selected = -1
+	}
 	if section == .Appearance && level == .Sheet && target_tab == 0 && len(theme_packs) > 0 {
 		ui.theme_tone = theme_packs[active_theme(ui)].tone
 	}
@@ -875,6 +949,8 @@ settings_open :: proc(
 	ui.settings_tab = target_tab
 	ui.settings_anchor = anchor
 	ui.settings_scroll_pending = true
+	settings_flash_id = anchor
+	settings_flash_until = anchor != "" ? rl.GetTime() + 1.5 : 0
 	ui.focus = .Compose
 	if section == .Home {clear(&ui.settings_search)}
 	if client != nil {
@@ -923,7 +999,20 @@ restore_workspace :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // the chat list. Sections without a menu go straight to All categories.
 @(private)
 settings_back :: proc(ui: ^Ui_State) {
+	if ui.settings_section == .General && ui.settings_tab == 2 && ui.emoji_sets_open {
+		if ui.emoji_sets_selected >= 0 {
+			ui.emoji_sets_selected = -1
+		} else {
+			ui.emoji_sets_open = false
+		}
+		ui.focus = .Compose
+		return
+	}
 	switch {
+	case ui.settings_section == .Agents && ui.agent_connector > 0:
+		ui.agent_connector = 0
+		kb_focus = ""
+		ui.settings_scroll_pending = true
 	case ui.settings_section == .Home:
 		ui.page = .Chats
 	case settings_on_menu(ui) || !settings_has_menu(ui.settings_section):
@@ -1063,10 +1152,47 @@ settings_resolve_scroll :: proc(ui: ^Ui_State) -> bool {
 	target: f32
 	if ui.settings_anchor != "" {
 		anchor := clay.GetElementData(clay.ID(ui.settings_anchor))
-		if anchor.found {target = data.scrollPosition.y - (anchor.boundingBox.y - page.boundingBox.y - 12)}
+		if anchor.found {
+			inset := min(f32(40), max(0, page.boundingBox.height - anchor.boundingBox.height))
+			target = data.scrollPosition.y - (anchor.boundingBox.y - page.boundingBox.y - inset)
+		}
 	}
 	overflow := max(0, data.contentDimensions.height - data.scrollContainerDimensions.height)
 	data.scrollPosition.y = clamp(target, -overflow, 0)
 	ui.settings_scroll_pending = false
 	return true
+}
+
+@(private)
+settings_flash_id: string
+@(private)
+settings_flash_until: f64
+
+// An outline identifies the setting a search result or task link opened.
+@(private)
+settings_link_flash :: proc() {
+	if settings_flash_id == "" || rl.GetTime() >= settings_flash_until {return}
+	anchor := clay.GetElementData(clay.ID(settings_flash_id))
+	if !anchor.found {return}
+	anim_moving += 1
+	if clay.UI(clay.ID("SettingsLinkFlash"))(
+	{
+		layout = {
+			sizing = {
+				clay.SizingFixed(anchor.boundingBox.width),
+				clay.SizingFixed(anchor.boundingBox.height),
+			},
+		},
+		floating = {
+			attachTo = .ElementWithId,
+			parentId = clay.ID(settings_flash_id).id,
+			clipTo = .AttachedParent,
+			pointerCaptureMode = .Passthrough,
+			zIndex = 4,
+		},
+		backgroundColor = fade(ACCENT, 0.12),
+		border = {color = ACCENT, width = bw()},
+		cornerRadius = rr(4),
+	},
+	) {}
 }

@@ -17,6 +17,7 @@
 //   ╰───────────────────────────────────────────╯
 package main
 
+import "core:fmt"
 import "core:math"
 import "core:strings"
 
@@ -147,7 +148,10 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 				if clay.UI(clay.ID("PeerClose"))(
 				{
 					layout = {
-						sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(28)},
+						sizing = {
+							width = clay.SizingFixed(settings_tap_size(28)),
+							height = clay.SizingFixed(settings_tap_size(28)),
+						},
 						childAlignment = {x = .Center, y = .Center},
 					},
 					floating = {
@@ -184,20 +188,21 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 			avatar("ProfileCardAvatar", id, hex, name, FACE, photo)
 		}
 
-		if clay.UI(clay.ID("ProfileCardActions", id))(
-		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFixed(FACE / 2 + (use == .Peer_Popup ? 14 : 8)),
+		if use == .Message {
+			if clay.UI(clay.ID("ProfileCardActions", id))(
+			{
+				layout = {
+					sizing = {
+						width = clay.SizingGrow(),
+						height = single_pane() ? clay.SizingFit() : clay.SizingFit({min = FACE / 2 + 8}),
+					},
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+					padding = {right = INSET - 4, top = single_pane() ? FACE / 2 + 8 : 10},
+					childGap = 8,
+					childAlignment = {x = .Right, y = .Top},
 				},
-				padding = {right = INSET - 4, top = 10},
-				childGap = 8,
-				childAlignment = {x = .Right, y = .Top},
 			},
-		},
-		) {
-			if use == .Message {
+			) {
 				// Lit with the card: the whole card is this button.
 				card_pill(
 					clay.ID("ProfileCardOpen", id),
@@ -206,6 +211,10 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 					over ? .Lit : .Quiet,
 				)
 			}
+		} else {
+			if clay.UI(clay.ID("ProfileCardFaceGap", id))(
+			{layout = {sizing = {height = clay.SizingFixed(FACE / 2 + 8)}}},
+			) {}
 		}
 
 		if clay.UI(clay.ID("ProfileCardInfo", id))(
@@ -243,6 +252,12 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 					}
 				}
 			}
+			if name != info.name && info.name != "" {
+				clay.Text(
+					text_ellipsis(fmt.tprintf(tr("aka %s"), info.name), inner_w, FONT_BODY, 12),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, wrapMode = .None},
+				)
+			}
 			if len(info.nip05) > 0 {
 				clay.Text(
 					text_ellipsis(strings.trim_prefix(info.nip05, "_@"), inner_w, FONT_BODY, 12),
@@ -257,7 +272,7 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 					crop_circle("ProfileCardCircle", id, hex, 18)
 				}
 				copy := use == .Peer_Popup
-				key_id := copy ? clay.ID("PeerCopyNpub") : clay.ID("ProfileCardKeyText", id)
+				key_id := copy ? clay.ID("PeerCopyNpubKey") : clay.ID("ProfileCardKeyText", id)
 				if clay.UI(key_id)(
 				{
 					layout = {
@@ -316,6 +331,21 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 						.Secondary,
 					)
 				}
+				if clay.UI(clay.ID("PeerOtherActions"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = inner_w < 320 ? .TopToBottom : .LeftToRight,
+						padding = {top = 4},
+						childGap = 8,
+					},
+				},
+				) {
+					if g_ui != nil && !me && !contact_saved(g_ui, hex) {
+						card_pill(clay.ID("PeerAddContact"), "", tr("Add contact"), .Quiet)
+					}
+					card_pill(clay.ID("PeerCopyNpub"), "", tr("Copy npub"), .Quiet)
+				}
 			}
 		}
 	}
@@ -342,7 +372,7 @@ card_pill :: proc(id: clay.ElementId, icon, label: string, look: Pill_Look) {
 		layout = {
 			sizing = {
 				width = action ? clay.SizingGrow() : clay.SizingFit(),
-				height = action ? clay.SizingFixed(40) : clay.SizingFit(),
+				height = clay.SizingFit({min = settings_tap_size(action ? 40 : 28)}),
 			},
 			padding = {left = 12, right = 12, top = 6 + down, bottom = 6 - down},
 			childGap = action ? 8 : 6,
@@ -354,7 +384,9 @@ card_pill :: proc(id: clay.ElementId, icon, label: string, look: Pill_Look) {
 	},
 	) {
 		ink := lit ? ON_ACCENT : TEXT
-		clay.Text(icon, {fontId = FONT_ICON, fontSize = action ? 12 : 11, textColor = ink})
+		if icon != "" {
+			clay.Text(icon, {fontId = FONT_ICON, fontSize = action ? 12 : 11, textColor = ink})
+		}
 		clay.Text(
 			label,
 			{fontId = FONT_TITLE, fontSize = action ? 13 : 12, textColor = ink, wrapMode = .None},

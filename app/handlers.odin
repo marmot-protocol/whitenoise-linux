@@ -12,6 +12,19 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
+@(private)
+auth_cancel :: proc(ui: ^Ui_State) {
+	ui.login_error = ""
+	login_input_error = false
+	if auth_job == nil {return}
+	auth_job.cancelled = true
+	if auth_job.session == nil {return}
+	marmot.nip46_cancel(auth_job.session)
+	nip46_state_free(&auth_job.signer_state)
+	auth_job.signer_state.state = strings.clone("cancelled")
+	auth_job.signer_state.detail = strings.clone(tr("Finishing the cancelled connection."))
+}
+
 handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for item, i in nip46_accounts {if mouse_released() && clay.PointerOver(clay.ID("SignerApproval", u32(i))) {nip46_auth_url(ui, item.state.auth_url); return}}
 	if len(ui.accounts) > 0 && !ui.add_account_open {
@@ -24,7 +37,7 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if ui.socks5_login_open {
-		if clicked("LoginProxyBack") {
+		if clicked("LoginProxyBack") || rl.IsKeyPressed(.ESCAPE) {
 			ui.socks5_login_open = false
 			ui.focus = .Compose
 			return
@@ -43,22 +56,35 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if client == nil {return}
 	if auth_job != nil {
 		if clicked("LoginCancel") || rl.IsKeyPressed(.ESCAPE) {
-			if auth_job.session != nil {
-				auth_job.cancelled = true
-				marmot.nip46_cancel(auth_job.session)
-				nip46_state_free(&auth_job.signer_state)
-				auth_job.signer_state.state = strings.clone("cancelled")
-				auth_job.signer_state.detail = strings.clone(
-					tr("Finishing the cancelled connection."),
-				)
-			}
+			auth_cancel(ui)
 		}
 		if clicked("LoginPairCopy") {copy_text(ui, ui.login_uri, tr("Pairing link copied"))}
 		if clicked("LoginApproval") {nip46_auth_url(ui, auth_job.signer_state.auth_url)}
 		return // a sign-in is in flight; the pane shows its progress
 	}
 
-	edit_text(ui, &ui.login_input)
+	if ui.login_method != .Menu {
+		field_mouse(ui, &ui.login_input, "LoginInput", 16)
+		before_len := len(ui.login_input)
+		before_edit := ui.ed.last_edit_time
+		before_undo, before_redo := len(ui.ed.undo), len(ui.ed.redo)
+		edit_text(ui, &ui.login_input)
+		if clicked("LoginPaste") {
+			ed_begin(ui, &ui.login_input)
+			ui.ed.selection = {0, len(ui.login_input)}
+			edit.input_text(&ui.ed, strings.trim_space(string(rl.GetClipboardText())))
+			ed_end(ui, &ui.login_input)
+		}
+		if len(ui.login_input) != before_len ||
+		   ui.ed.last_edit_time != before_edit ||
+		   len(ui.ed.undo) != before_undo ||
+		   len(ui.ed.redo) != before_redo ||
+		   clicked("LoginPaste") {
+			ui.login_error = ""
+			login_input_error = false
+		}
+		if clicked("LoginShow") {login_show = !login_show}
+	}
 
 	// The raw runtime error, not the friendlier nip46_detail line, so a bug
 	// report carries the exact failure.
@@ -67,7 +93,7 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if ui.add_account_open && rl.IsKeyPressed(.ESCAPE) {
+	if ui.add_account_open && ui.login_method == .Menu && rl.IsKeyPressed(.ESCAPE) {
 		ui.add_account_open = false
 		clear(&ui.login_input)
 		return
@@ -93,20 +119,31 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		append(&ui.login_input, ..transmute([]u8)string(DEFAULT_RELAYS[0]))
 		return
 	}
-	if clicked("LoginBack") {
+	if clicked("LoginBack") || (ui.login_method != .Menu && rl.IsKeyPressed(.ESCAPE)) {
 		ui.login_method = .Menu
 		ui.login_error = ""
+		login_show = false
+		login_input_error = false
 		login_pair_clear(ui)
 		clear(&ui.login_input)
 		return
 	}
 
 	submitted := ui.login_method != .Menu && (rl.IsKeyPressed(.ENTER) || clicked("LoginGo"))
+	if submitted {login_input_error = true}
 	if submitted &&
 	   ui.login_method == .Bunker &&
 	   strings.trim_space(string(ui.login_input[:])) == "" {
 		delete(ui.login_error)
 		ui.login_error = strings.clone(tr("Enter your bunker link to continue."))
+		return
+	}
+	if submitted &&
+	   ui.login_method == .Bunker &&
+	   !strings.has_prefix(strings.trim_space(string(ui.login_input[:])), "bunker://") {
+		ui.login_error = strings.clone(
+			tr("That isn't a bunker link. Double-check it and try again."),
+		)
 		return
 	}
 
@@ -130,9 +167,11 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if submitted && len(ui.login_input) > 0 {
+		login_input_error = false
 		if ui.login_method ==
 		   .Import {start_auth(ui, client, string(ui.login_input[:]), .Import)} else {start_remote_auth(ui, client, ui.login_method, string(ui.login_input[:]))}
 	} else if ui.login_method == .Menu && clicked("LoginCreate") {
+		login_input_error = false
 		start_auth(ui, client, "", .Create)
 	}
 }
@@ -220,7 +259,7 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 		return &ui.gm_input
 	}
 	if ui.focus == .ExportPw {
-		return &ui.export_pw
+		return export_buffer(ui)
 	}
 	if ui.focus == .BackupPw {
 		return &ui.backup_pw
@@ -235,6 +274,10 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 }
 
 handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if clicked("ChatBack") {
+		phone_back_action(ui)
+		return
+	}
 	if ui.location_open {
 		handle_geo_picker(ui, client)
 		return
@@ -278,7 +321,11 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	// The get-started checklist stands in for the timeline until the
 	// account has a chat.
-	if !ui.whip_open && ui.selected < 0 && len(ui.chats) == 0 && handle_onboard(ui, client) {
+	if ui.page == .Chats &&
+	   !ui.whip_open &&
+	   ui.selected < 0 &&
+	   onboard_pending(ui) &&
+	   handle_onboard(ui, client) {
 		return
 	}
 
@@ -408,7 +455,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	// Open mentions inbox captures everything while open.
-	if !ui.whip_open && ui.selected >= 0 && ui.mi_open {
+	if !ui.whip_open && ui.selected >= 0 && ui.mi_open && !clicked("ChatHeadMore") {
 		handle_mi(ui, client)
 		return
 	}
@@ -424,18 +471,31 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				continue
 			}
 			if clay.PointerOver(clay.ID("MsgRow", u32(i))) {
-				m := rl.GetMousePosition()
-				ui.ctx_open = true
-				ui.ctx_msg = i
-				// ponytail: rough clamp from an estimated panel size;
-				// measure the laid-out panel if it ever overflows.
-				ui.ctx_x, ui.ctx_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 240, 330)
+				open_msg_menu(ui, i)
 				return
 			}
 		}
 	}
+	// The phone header's overflow menu holds the actions that do not fit
+	// beside the title. Its rows reuse the header chips' ids, so the
+	// handlers below run them unchanged; any other release closes it.
+	if clicked("ChatHeadMore") {
+		ui.mi_open = false
+		ui.chat_head_menu = !ui.chat_head_menu
+		return
+	}
+	if ui.chat_head_menu {
+		if rl.IsKeyPressed(.ESCAPE) {
+			ui.chat_head_menu = false
+			return
+		}
+		if mouse_released() {
+			ui.chat_head_menu = false
+			if !clay.PointerOver(clay.ID("ChatHeadMenu")) {return}
+		}
+	}
 
-	if clicked("ChatListClearSearch") {
+	if clicked("ChatListClearSearch") || clicked("FilterClear") {
 		clear(&ui.sidebar_filter)
 		refresh_filter_hits(client, ui)
 		ui.focus = .Filter
@@ -482,6 +542,8 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if clicked("JumpLatest") {
 		ui.gs_jump_pending = false
+		ui.reading_pending = {}
+		ui.scroll_settle = 0
 		delete(ui.jump_id)
 		ui.jump_id = ""
 		scroll_residual = {}
@@ -551,13 +613,15 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// handle_web_input can forward them.
 	// A DM with someone you blocked has no composer to type into.
 	blocked_dm := blocked_peer(ui)
+	read_only := ui.chats[ui.selected].archived
 	if ui.focus != .Filter &&
-	   !(ui.show_members && selected_chat_is_dm(ui)) &&
+	   (!read_only || ui.focus == .Search || ui.show_members) &&
+	   !(ui.show_members && (selected_chat_is_dm(ui) || ui.focus == .Compose)) &&
 	   !web_modal.open &&
 	   (ui.stt.file == nil || ui.stt.message != "") &&
 	   blocked_dm == "" {
 		buf := active_buf(ui)
-		edit_text(ui, buf, buf == &ui.compose)
+		edit_text(ui, buf, buf == &ui.compose || buf == &ui.desc_input)
 	}
 	// Thread route: back chevron pops one level; Escape does too while
 	// the composer holds no draft or edit.
@@ -572,7 +636,9 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 	compose_mouse(ui)
-	if ui.search_open && field_mouse(ui, &ui.search_input, "SearchBox") {
+	if ui.search_open &&
+	   !clicked("SearchClear") &&
+	   field_mouse(ui, &ui.search_input, "SearchBox") {
 		ui.focus = .Search
 		return
 	}
@@ -590,8 +656,8 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	// Voice recording swallows the composer keys while active.
-	if voice.stream != nil {
-		if clicked("VoiceSend") || rl.IsKeyPressed(.ENTER) {
+	if voice_active() {
+		if clicked("VoiceSend") || (!rl.HasTouch() && rl.IsKeyPressed(.ENTER)) {
 			voice_send(ui, client)
 		} else if clicked("VoiceCancel") || rl.IsKeyPressed(.ESCAPE) {
 			voice_cancel()
@@ -601,6 +667,17 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("MicBtn") {
 		voice_start(ui)
 		return
+	}
+	if clicked("ComposeMoreBtn") {
+		ui.compose_more = !ui.compose_more
+		return
+	}
+	if ui.compose_more {
+		if rl.IsKeyPressed(.ESCAPE) {ui.compose_more = false; return}
+		if mouse_released() {
+			ui.compose_more = false
+			if !clay.PointerOver(clay.ID("ComposeMoreMenu")) {return}
+		}
 	}
 
 	// The effect picker captures everything while open.
@@ -619,7 +696,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		rl.OpenFileDialog(true)
 		return
 	}
-	if clicked("PollBtn") {
+	if clicked("PollBtn") && ui.editing == "" {
 		poll_reset(ui)
 		ui.poll_open = true
 		return
@@ -629,7 +706,17 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("GmBtn") {
-		gm_send(ui, client)
+		if gm_sent_today(ui) {
+			toast(ui, tr("You said GM here today."))
+		} else if ui.editing == "" && ui.compose_issue == "" {
+			text := strings.trim_space(ui.prefs.gm_text)
+			confirm_ask(
+				ui,
+				.Say_GM,
+				ui.chats[ui.selected].group_id,
+				text == "" ? GM_DEFAULT : text,
+			)
+		}
 		return
 	}
 	for _, i in ui.staged {
@@ -716,11 +803,21 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if ui.search_open {
-		if rl.IsKeyPressed(.ENTER) {
+		if clicked("SearchClear") || clicked("TimelineClearSearch") {
+			ed_set(ui, &ui.search_input, "")
+			touch_field = {}
+			ui.focus = .Search
+			load_timeline(client, ui)
+			return
+		}
+		if strings.trim_space(string(ui.search_input[:])) == "" &&
+		   timeline_job != nil &&
+		   timeline_job.search != "" {
+			load_timeline(client, ui)
+		} else if rl.IsKeyPressed(.ENTER) {
 			load_timeline(client, ui, string(ui.search_input[:]))
 		}
-		// Esc and the empty-result button both return to the full timeline.
-		if rl.IsKeyPressed(.ESCAPE) || clicked("TimelineClearSearch") {
+		if rl.IsKeyPressed(.ESCAPE) {
 			ui.search_open = false
 			ui.focus = .Compose
 			clear(&ui.search_input)
@@ -757,15 +854,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if len(msg.id) == 0 {
 				continue
 			}
-			// Any avatar opens its profile: peers get the popup, your
-			// own routes to the profile page.
-			if clay.PointerOver(clay.ID("MsgAvatar", u32(i))) {
-				if msg.mine {
-					ui.page = .Profile
-					load_profile(client, ui)
-				} else {
-					open_peer(ui, client, msg.sender_id, msg.sender, msg.pic_url)
-				}
+			// The face and sender name share one profile action, including you.
+			if clay.PointerOver(clay.ID("MsgAvatar", u32(i))) ||
+			   clay.PointerOver(clay.ID("MsgSender", u32(i))) {
+				open_peer(ui, client, msg.sender_id, msg.sender, msg.pic_url)
 				return
 			}
 			if msg.edited && clay.PointerOver(clay.ID("MsgEdited", u32(i))) {
@@ -779,32 +871,35 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 			// Wave button on a member_added row: greet the new member
 			// with a wave emoji plus the composer's mention format.
-			if len(msg.sys_added_hex) > 0 && clay.PointerOver(clay.ID("SysWave", u32(i))) {
+			if !read_only &&
+			   len(msg.sys_added_hex) > 0 &&
+			   clay.PointerOver(clay.ID("SysWave", u32(i))) {
 				if npub := hex_npub(msg.sys_added_hex); len(npub) > 0 {
 					queue_send(ui, client, fmt.tprintf("👋 @%s", npub))
 				}
 				return
 			}
-			if clay.PointerOver(clay.ID("MsgReply", u32(i))) {
+			if !read_only && clay.PointerOver(clay.ID("MsgReply", u32(i))) {
 				start_reply(ui, msg)
 				return
 			}
-			if msg.mine && clay.PointerOver(clay.ID("MsgEdit", u32(i))) {
+			if !read_only && msg.mine && clay.PointerOver(clay.ID("MsgEdit", u32(i))) {
 				start_edit(ui, msg)
 				return
 			}
-			if msg.mine && clay.PointerOver(clay.ID("MsgDel", u32(i))) {
+			if !read_only && msg.mine && clay.PointerOver(clay.ID("MsgDel", u32(i))) {
 				confirm_ask(ui, .Delete_All, msg.id, msg_preview(msg))
 				return
 			}
 			for chip, j in msg.reactions {
-				if clay.PointerOver(clay.ID("MsgReactionChip", u32(i) * 1024 + u32(j))) {
+				if !read_only &&
+				   clay.PointerOver(clay.ID("MsgReactionChip", u32(i) * 1024 + u32(j))) {
 					message_op(ui, client, chip.mine ? .Unreact : .React, msg.id, chip.emoji)
 					return
 				}
 			}
 			for _, j in msg.poll_opts {
-				if clay.PointerOver(clay.ID("PollOptRow", u32(i) * 64 + u32(j))) {
+				if !read_only && clay.PointerOver(clay.ID("PollOptRow", u32(i) * 64 + u32(j))) {
 					poll_vote(ui, client, &ui.messages[i], j)
 					return
 				}
@@ -861,8 +956,11 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	// Shift+Enter inserts a newline instead of sending.
-	if ui.focus == .Compose && blocked_dm == "" && rl.IsKeyPressed(.ENTER) && shift_down() {
+	// A phone keyboard's Enter is a line break; sending has its own button.
+	if ui.focus == .Compose &&
+	   blocked_dm == "" &&
+	   rl.IsKeyPressed(.ENTER) &&
+	   (rl.HasTouch() || shift_down()) {
 		ed_begin(ui, &ui.compose)
 		emoticon_swap(&ui.ed)
 		edit.input_text(&ui.ed, "\n")
@@ -871,7 +969,9 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	send :=
 		blocked_dm == "" &&
-		((rl.IsKeyPressed(.ENTER) && !shift_down()) || clicked("SendBtn") || test_send_now)
+		((rl.IsKeyPressed(.ENTER) && !rl.HasTouch() && !shift_down()) ||
+				clicked("SendBtn") ||
+				test_send_now)
 	test_send_now = false
 	// Staged attachments send on their own only outside an edit (an
 	// edit needs text and never sends them). A composer of only
@@ -885,6 +985,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if send &&
+	   !read_only &&
 	   stage_files_ready(ui) &&
 	   (has_text || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
 		// Sending finishes a trailing emoticon: "ok :D" goes out as "ok 😃".
@@ -1096,6 +1197,7 @@ uri_unescape :: proc(uri: string) -> string {
 
 // Open the picker anchored near the pointer, clamped on-window.
 open_picker :: proc(ui: ^Ui_State, target: string) {
+	picker_commit_recents(ui)
 	if target != "" || ui.picker_mode != .Message {ui.sticker_tab = false; ui.gif_tab = false}
 	if ui.sticker_tab {sticker_library_open(ui)}
 	m := rl.GetMousePosition()
@@ -1105,56 +1207,45 @@ open_picker :: proc(ui: ^Ui_State, target: string) {
 	// remember where in the composer the pick should land.
 	_, _, head := field_sel(ui, &ui.compose)
 	ui.picker_return = head
-	ui.focus = .Picker
+	ui.focus = tap_size() ? .Compose : .Picker
 	clear(&ui.picker_filter)
 	h: f32 = ui.picker_mode == .Group_Image ? 568 : 448 // emoji_picker's panel height + 8
 	ui.picker_x, ui.picker_y = panel_pos(m.x / UI_ZOOM - 200, m.y / UI_ZOOM - h - 4, 408, h)
 	if ui.gif_tab {gif_open(ui)}
 }
 
-// Insert into the composer or react to the target, then close.
+// Insert into the composer, or close after a reaction or settings pick.
 pick_emoji :: proc(ui: ^Ui_State, client: ^marmot.Client, emoji: string) {
 	// A group image takes at most two; a rejected pick is not a use.
 	if ui.picker_mode == .Group_Image && len(ui.gemoji) >= EMOJI_MIX_MAX {
 		set_status(ui, strings.clone(tr("Choose at most two emoji.")), .Error)
 		return
 	}
-	// Reuse an existing owned string when a recent cell is picked.
-	owned := emoji
-	found := false
-	for recent, i in ui.prefs.recent_emoji {
-		if recent == emoji {
-			owned = recent
-			found = true
-			ordered_remove(&ui.prefs.recent_emoji, i)
-			break
-		}
+	// Defer reordering until dismissal so a second tap lands on the same cell.
+	for used, i in ui.picker_used {
+		if used == emoji {delete(used); ordered_remove(&ui.picker_used, i); break}
 	}
-	if !found {owned = strings.clone(emoji)}
-	inject_at(&ui.prefs.recent_emoji, 0, owned)
-	if len(ui.prefs.recent_emoji) > 8 {
-		delete(ui.prefs.recent_emoji[8])
-		resize(&ui.prefs.recent_emoji, 8)
-	}
-	ui.settings_dirty = true
+	append(&ui.picker_used, strings.clone(emoji))
+	if len(ui.picker_used) > 8 {delete(ui.picker_used[0]); ordered_remove(&ui.picker_used, 0)}
 
 	if ui.picker_mode == .Group_Image {
 		gemoji_add(ui, emoji)
 		return
 	}
 	mode := ui.picker_mode
-	close_picker(ui)
 	// Settings "one-tap reactions" add: the pick lands in prefs, not
 	// the composer.
 	if mode == .Quick_Reaction {
 		if len(ui.prefs.quick_reactions) < QUICK_MAX {
 			append(&ui.prefs.quick_reactions, strings.clone(emoji))
 		}
+		close_picker(ui)
 		save_settings(ui)
 		return
 	}
 	if len(ui.picker_target) > 0 {
 		message_op(ui, client, .React, ui.picker_target, emoji)
+		close_picker(ui)
 		return
 	}
 	// Insert at the composer caret saved when the picker opened.
@@ -1163,10 +1254,26 @@ pick_emoji :: proc(ui: ^Ui_State, client: ^marmot.Client, emoji: string) {
 	ui.ed.selection = {at, at}
 	edit.input_text(&ui.ed, emoji)
 	ed_end(ui, &ui.compose)
+	ui.picker_return = at + len(emoji)
+	if !tap_size() {close_picker(ui)}
+}
+
+@(private)
+picker_commit_recents :: proc(ui: ^Ui_State) {
+	for used in ui.picker_used {
+		for recent, i in ui.prefs.recent_emoji {
+			if recent == used {delete(recent); ordered_remove(&ui.prefs.recent_emoji, i); break}
+		}
+		inject_at(&ui.prefs.recent_emoji, 0, used)
+		if len(ui.prefs.recent_emoji) > 8 {delete(pop(&ui.prefs.recent_emoji))}
+		ui.settings_dirty = true
+	}
+	clear(&ui.picker_used)
 }
 
 // Close the picker and return focus to where the picks were going.
 close_picker :: proc(ui: ^Ui_State) {
+	picker_commit_recents(ui)
 	ui.picker_open = false
 	ui.focus = .Compose
 	if ui.picker_mode == .Group_Image {
@@ -1177,6 +1284,10 @@ close_picker :: proc(ui: ^Ui_State) {
 }
 
 handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if clicked("PickerClose") || rl.IsKeyPressed(.ESCAPE) {
+		close_picker(ui)
+		return
+	}
 	if ui.picker_target == "" && ui.picker_mode == .Message {
 		if clicked_indexed(
 			"PickerStickers",
@@ -1196,11 +1307,7 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.picker_mode == .Group_Image && handle_emoji_mix(ui, client) {
 		return
 	}
-	if rl.IsKeyPressed(.ESCAPE) {
-		close_picker(ui)
-		return
-	}
-	edit_text(ui, &ui.picker_filter)
+	if ui.focus == .Picker {edit_text(ui, &ui.picker_filter)}
 	if field_mouse(ui, &ui.picker_filter, "PickerSearch") {
 		ui.focus = .Picker
 		return
@@ -1248,16 +1355,18 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !mouse_released() {
 		return
 	}
+	if menu_keep(clay.ID("CtxMenu")) {return}
 	msg := ui.messages[ui.ctx_msg]
 	ui.ctx_open = false
+	read_only := ui.selected >= 0 && ui.chats[ui.selected].archived
 
 	for emoji, i in ui.prefs.quick_reactions {
-		if clay.PointerOver(clay.ID("CtxQuick", u32(i))) {
+		if !read_only && clay.PointerOver(clay.ID("CtxQuick", u32(i))) {
 			message_op(ui, client, .React, msg.id, emoji)
 			return
 		}
 	}
-	if clay.PointerOver(clay.ID("CtxReply")) {
+	if !read_only && clay.PointerOver(clay.ID("CtxReply")) {
 		start_reply(ui, msg)
 		return
 	}
@@ -1278,19 +1387,27 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		copy_text(ui, msg.body, tr("Message copied"))
 		return
 	}
+	if clicked("CtxCopyLink") {
+		copy_text(ui, message_url(msg), tr("Link copied"))
+		return
+	}
+	if clicked("CtxOpenLink") {
+		open_link(ui, message_url(msg))
+		return
+	}
 	if ui.prefs.tts_enabled && clay.PointerOver(clay.ID("CtxRead")) {
 		tts_read(ui, msg.body)
 		return
 	}
-	if msg.mine && clay.PointerOver(clay.ID("CtxEdit")) {
+	if !read_only && msg.mine && clay.PointerOver(clay.ID("CtxEdit")) {
 		start_edit(ui, msg)
 		return
 	}
-	if msg.mine && clay.PointerOver(clay.ID("CtxDelAll")) {
+	if !read_only && msg.mine && clay.PointerOver(clay.ID("CtxDelAll")) {
 		confirm_ask(ui, .Delete_All, msg.id, msg_preview(msg))
 		return
 	}
-	if clay.PointerOver(clay.ID("CtxDelMe")) {
+	if !read_only && clay.PointerOver(clay.ID("CtxDelMe")) {
 		confirm_ask(ui, .Delete_Me, msg.id, msg_preview(msg))
 		return
 	}
@@ -1300,7 +1417,8 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.raw_open = true
 		return
 	}
-	if clay.PointerOver(clay.ID("CtxReact")) || clay.PointerOver(clay.ID("CtxQuickPlus")) {
+	if !read_only &&
+	   (clay.PointerOver(clay.ID("CtxReact")) || clay.PointerOver(clay.ID("CtxQuickPlus"))) {
 		open_picker(ui, msg.id)
 		return
 	}
@@ -1355,6 +1473,16 @@ stash_draft :: proc(ui: ^Ui_State) {
 	ui.drafts[strings.clone(gid)] = strings.clone(string(ui.compose[:]))
 }
 
+@(private = "file")
+open_msg_menu :: proc(ui: ^Ui_State, index: int) {
+	m := rl.GetMousePosition()
+	ui.ctx_open = true
+	ui.ctx_msg = index
+	// ponytail: rough clamp from an estimated panel size;
+	// measure the laid-out panel if it ever overflows.
+	ui.ctx_x, ui.ctx_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 240, 330)
+}
+
 // Forget the selected chat's persisted draft (it was sent or cleared),
 // so it can't resurrect on the next switch back or restart.
 drop_draft :: proc(ui: ^Ui_State) {
@@ -1372,7 +1500,7 @@ drop_draft :: proc(ui: ^Ui_State) {
 // marking the newest message read.
 select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int) {
 	switching := ui.whip_open || ui.selected != requested_index
-	if switching {reading_remember(ui)}
+	if switching {reading_remember(ui); voice_cancel()}
 	whip_workspace_navigation(ui)
 	if ui.location_open {geo_picker_close(ui)}
 	if ui.photo.kind == .Group {photo_cancel(ui)}
@@ -1406,8 +1534,10 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 	ui.search_open = false
 	ui.show_members = false
 	ui.group_files_open = false
-	// Stale members would feed the @-mention popover; reload lazily.
+	ui.compose_more = false
+	// The header count and @-mention list share the asynchronous roster.
 	members_clear(ui)
+	if client != nil && !chat_is_dm(ui.chats[index]) {load_members(client, ui)}
 	ui.focus = .Compose
 	// Restore this chat's saved draft (empty if none). A switch also
 	// abandons any in-progress edit; it targeted the old chat.
@@ -1452,7 +1582,7 @@ open_group_info :: proc(ui: ^Ui_State, client: ^marmot.Client, tab: Info_Tab) {
 	}
 	ui.show_members = true
 	ui.info_tab = dm ? .Settings : tab
-	ui.focus = dm ? .Compose : tab == .Members ? .Invite : .Rename
+	ui.focus = dm || rl.HasTouch() ? .Compose : tab == .Members ? .Invite : .Rename
 	ui.desc_editing = false
 	ui.gpic_menu_open = false
 	ui.member_menu = -1
@@ -1508,6 +1638,10 @@ set_archived :: proc(ui: ^Ui_State, client: ^marmot.Client, group_id: string, ar
 				ui.staged = ui.staged_drafts[key]
 				ui.staged_drafts[key] = {}
 			}
+			return
+		}
+		if ui.page == .Archived {
+			set_status(ui, tr("Chat restored."), .Info)
 			return
 		}
 		if !select_by_id(ui, client, restored_id) {
@@ -1612,13 +1746,78 @@ open_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.nc_page = .Contacts
 	ui.focus = .NC_Search
 	ui.nc_contact_sel = 0
-	ui.nc_member_choice = 0
-	ed_set(ui, &ui.nc_member, "")
-	ed_set(ui, &ui.nc_name, "")
 	clear(&ui.nc_search)
+	if ui.nc_member_choice > 0 && ui.nc_member_choice <= len(ui.nc_contacts) {
+		npub := hex_npub(ui.nc_contacts[ui.nc_member_choice - 1].id_hex)
+		ed_set(ui, &ui.nc_member, npub)
+		delete(npub)
+	}
+	ui.nc_member_choice = 0
 	nc_contacts_free(&ui.nc_contacts)
 	job := account_job_new(ui, client, .Read_Contacts)
 	account_job_start(job)
+}
+
+// The picker includes people from existing conversations as well as follows.
+@(private)
+nc_add_chat_peers :: proc(ui: ^Ui_State, client: ^marmot.Client, known: map[string][]string) {
+	peers := make(map[string]bool, context.temp_allocator)
+	for contact in ui.nc_contacts {peers[contact.id_hex] = true}
+	for chat in ui.chats {
+		members := known[chat.group_id]
+		for peer in members {
+			if peer == ui.account_ref || peer == "" || peers[peer] {continue}
+			peers[peer] = true
+			info := profile_info(client, peer)
+			append(
+				&ui.nc_contacts,
+				Contact_Ui {
+					id_hex = strings.clone(peer),
+					name = strings.clone(dm_title(client, peer)),
+					npub = hex_npub(peer),
+					pic_url = strings.clone(info.pic_url),
+				},
+			)
+		}
+		peer := chat.peer_hex
+		if peer == "" || peer == ui.account_ref || peers[peer] {continue}
+		peers[peer] = true
+		info := profile_info(client, peer)
+		append(
+			&ui.nc_contacts,
+			Contact_Ui {
+				id_hex = strings.clone(peer),
+				name = strings.clone(dm_title(client, peer)),
+				npub = hex_npub(peer),
+				pic_url = strings.clone(info.pic_url),
+			},
+		)
+	}
+}
+
+@(private)
+existing_dm :: proc(ui: ^Ui_State, peer: string) -> int {
+	for chat, i in ui.chats {
+		if chat_is_dm(chat) && strings.equal_fold(chat.peer_hex, peer) {return i}
+	}
+	return -1
+}
+
+@(private)
+open_existing_dm :: proc(ui: ^Ui_State, client: ^marmot.Client, peer: string) -> bool {
+	if index := existing_dm(ui, peer); index >= 0 {
+		close_new_chat(ui)
+		select_chat(ui, client, index)
+		ui.page = .Chats
+		return true
+	}
+	for chat, i in ui.archived {
+		if !chat_is_dm(chat) || !strings.equal_fold(chat.peer_hex, peer) {continue}
+		close_new_chat(ui)
+		select_archived_chat(ui, client, i)
+		return true
+	}
+	return false
 }
 
 @(private = "file")
@@ -1642,6 +1841,8 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if nc_pending_label(ui) != "" {return}
 	edit_text(ui, active_buf(ui))
+	address_input := ui.nc_page == .Contacts ? string(ui.nc_search[:]) : string(ui.nc_member[:])
+	if address := nc_address_hex(ui, address_input); address != "" {profile_info(client, address)}
 	if ui.nc_member_choice > 0 &&
 	   (ui.nc_member_choice > len(ui.nc_contacts) ||
 			   string(ui.nc_member[:]) !=
@@ -1658,9 +1859,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("NCGroup") {
 		ui.nc_page = .Group
 		ui.focus = .NC_Name
-		ui.nc_member_choice = 0
 		ui.nc_contact_sel = 0
-		ed_set(ui, &ui.nc_member, "")
 		return
 	}
 	if ui.nc_page == .Contacts {
@@ -1670,11 +1869,13 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if field_mouse(ui, &ui.nc_search, "NCSearch", 14) {ui.focus = .NC_Search}
 		// A pasted key with no matching contact starts a chat with that person.
+		// MDK types an unnamed pair as a DM and a named one as a group, so a
+		// one-to-one chat starts without a name; each side shows its peer.
 		if address := nc_address_hex(ui, string(ui.nc_search[:]));
 		   address != "" &&
 		   len(nc_contact_matches(ui, string(ui.nc_search[:]))) == 0 &&
 		   (clicked("NCStartAddress") || rl.IsKeyPressed(.ENTER)) {
-			new_chat_create_and_open(ui, client, profile_label(client, address), address)
+			new_chat_create_and_open(ui, client, "", address)
 			return
 		}
 		if rl.IsKeyPressed(.UP) || rl.IsKeyPressed(.DOWN) || rl.IsKeyPressed(.ENTER) {
@@ -1684,7 +1885,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			ui.nc_contact_sel = clamp(ui.nc_contact_sel + step, 0, len(rows) - 1)
 			if rl.IsKeyPressed(.ENTER) {
 				contact := ui.nc_contacts[rows[ui.nc_contact_sel].idx]
-				new_chat_create_and_open(ui, client, contact_label(ui, contact), contact.id_hex)
+				new_chat_create_and_open(ui, client, "", contact.id_hex)
 				return
 			}
 			if data := clay.GetScrollContainerData(clay.ID("NCContacts")); data.found {
@@ -1698,7 +1899,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if mouse_released() {
 			for contact, i in ui.nc_contacts {
 				if !clay.PointerOver(clay.ID("NCContact", u32(i))) {continue}
-				new_chat_create_and_open(ui, client, contact_label(ui, contact), contact.id_hex)
+				new_chat_create_and_open(ui, client, "", contact.id_hex)
 				return
 			}
 		}
@@ -1851,6 +2052,9 @@ close_new_chat :: proc(ui: ^Ui_State) {
 // by the direct-input path and the Namecoin resolve callback.
 new_chat_create_and_open :: proc(ui: ^Ui_State, client: ^marmot.Client, name, member: string) {
 	if strings.trim_space(member) == "" {return}
+	if name == "" {
+		if open_existing_dm(ui, client, member) {return}
+	}
 	job := account_job_new(ui, client, .Create_Chat); if job == nil {return}
 	job.title = strings.clone(name); job.target = strings.clone(member); job.open_chat = true
 	job.form = true
@@ -1996,8 +2200,8 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if dm && handle_dm_details(ui, client) {return}
 	// Member-row nickname editor: Enter saves (empty clears), Escape
 	// drops it without saving. load_members refreshes the row name.
-	if !dm && ui.member_nick >= 0 && ui.member_nick < len(ui.members) && ui.focus == .Nick {
-		if rl.IsKeyPressed(.ENTER) {
+	if !dm && ui.member_nick >= 0 && ui.member_nick < len(ui.members) {
+		if clicked("MemberNickSave") || (ui.focus == .Nick && rl.IsKeyPressed(.ENTER)) {
 			id := ui.members[ui.member_nick].id_hex
 			nick := strings.trim_space(string(ui.nick_input[:]))
 			if len(nick) == 0 {
@@ -2006,11 +2210,12 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				ui.nicknames[strings.clone(id)] = strings.clone(nick)
 			}
 			save_settings(ui)
+			ui.member_nick = -1
 			ui.focus = .Compose
 			load_members(client, ui)
 			return
 		}
-		if rl.IsKeyPressed(.ESCAPE) {
+		if clicked("MemberNickCancel") || rl.IsKeyPressed(.ESCAPE) {
 			ui.member_nick = -1
 			ui.focus = .Compose
 			return
@@ -2050,12 +2255,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				return
 			}
 			if clay.PointerOver(clay.ID("MemberRow", u32(i))) {
-				if member.is_self {
-					ui.page = .Profile
-					load_profile(client, ui)
-				} else {
-					open_peer(ui, client, member.id_hex, member.name, member.pic_url)
-				}
+				open_peer(ui, client, member.id_hex, member.name, member.pic_url)
 				return
 			}
 		}
@@ -2133,7 +2333,9 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if (clicked("InviteBtn") || (rl.IsKeyPressed(.ENTER) && ui.focus == .Invite)) && admin {
+	if ((clicked("InviteBtn") && len(strings.trim_space(string(ui.invite_input[:]))) > 0) ||
+		   (rl.IsKeyPressed(.ENTER) && ui.focus == .Invite)) &&
+	   admin {
 		if ui.nip05_ticket != 0 {return}
 		input := string(ui.invite_input[:])
 		if strings.trim_space(input) == "" {
@@ -2142,7 +2344,9 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			set_status(
 				ui,
 				strings.clone(
-					tr("Couldn't invite the member. Enter an npub or nprofile and try again."),
+					tr(
+						"Couldn't invite the member. Enter a public key or verified address and try again.",
+					),
 				),
 				.Error,
 			)
@@ -2261,7 +2465,6 @@ start_rename :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	delete(chat.title)
 	chat.title = strings.clone(name)
 	spawn_op(ui, client, .Rename, name, "")
-	clear(&ui.rename_input)
 }
 
 Msg_Op :: enum {
@@ -2335,6 +2538,8 @@ Edit_Rec :: struct {
 // Per-chat message-body hits for the rail filter: one limit-1 search
 // query per chat on a worker; the frame loop only reads cached flags.
 refresh_filter_hits :: proc(client: ^marmot.Client, ui: ^Ui_State) {
+	for text in ui.filter_previews {delete(text)}
+	clear(&ui.filter_previews)
 	resize(&ui.filter_hits, len(ui.chats))
 	for &hit in ui.filter_hits {hit = false}
 	search_request(ui, client, .Sidebar)

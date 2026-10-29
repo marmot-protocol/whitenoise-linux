@@ -124,7 +124,7 @@ xdc_tile :: proc(view: ^Xdc_View, id: u32, msg_id: string, att: int, file_name: 
 	if clay.UI(clay.ID("MsgXdc", id))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(320)},
+			sizing = {width = clay.SizingFixed(min(320, att_w()))},
 			padding = clay.PaddingAll(10),
 			childGap = 10,
 			childAlignment = {y = .Center},
@@ -165,7 +165,11 @@ xdc_tile :: proc(view: ^Xdc_View, id: u32, msg_id: string, att: int, file_name: 
 		if WEBXDC_SUPPORTED &&
 		   clay.UI(clay.ID("MsgXdcOpen", id))(
 		   {
-			   layout = {padding = {left = 12, right = 12, top = 6, bottom = 6}},
+			   layout = {
+				   sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
+				   padding = {left = 12, right = 12, top = 6, bottom = 6},
+				   childAlignment = {y = .Center},
+			   },
 			   backgroundColor = hovered() ? ACCENT : ROW_BG,
 			   cornerRadius = rr(6),
 		   },

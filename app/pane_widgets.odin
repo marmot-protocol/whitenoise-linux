@@ -37,7 +37,14 @@ micro_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
 	down := press_down(clay.ID(id_str))
 	if clay.UI(clay.ID(id_str))(
 	{
-		layout = {padding = {left = 10, right = 10, top = 5 + down, bottom = 5 - down}},
+		layout = {
+			sizing = {
+				width = clay.SizingFit({tap_size() ? tap_min() : 0, 0}),
+				height = clay.SizingFit({tap_size() ? tap_min() : 0, 0}),
+			},
+			padding = {left = 10, right = 10, top = 5 + down, bottom = 5 - down},
+			childAlignment = {x = .Center, y = .Center},
+		},
 		backgroundColor = hovered() ? HOVER : {},
 		cornerRadius = rr(7),
 		border = {color = tinted ? color : FIELD_BORDER, width = bw()},
@@ -45,7 +52,11 @@ micro_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
 	) {
 		clay.Text(
 			label,
-			{fontId = FONT_BODY, fontSize = 11, textColor = tinted ? color : TEXT_DIM},
+			{
+				fontId = FONT_BODY,
+				fontSize = tap_size() ? 12 : 11,
+				textColor = tinted ? color : TEXT_DIM,
+			},
 		)
 	}
 }
@@ -145,7 +156,11 @@ identity_codes :: proc(
 theme_chip_indexed :: proc(id_str: string, index: u32, label: string, active: bool) {
 	if clay.UI(clay.ID(id_str, index))(
 	{
-		layout = {padding = {left = 14, right = 14, top = 8, bottom = 8}},
+		layout = {
+			sizing = {height = clay.SizingFit({tap_size() ? tap_min() : 0, 0})},
+			padding = {left = 14, right = 14, top = 8, bottom = 8},
+			childAlignment = {x = .Center, y = .Center},
+		},
 		backgroundColor = active ? ACCENT : ROW_BG,
 		cornerRadius = rr(8),
 		border = active ? {} : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
@@ -165,8 +180,12 @@ header_chip :: proc(id_str: string, glyph: string, active: bool, label: string) 
 	if clay.UI(clay.ID(id_str))(
 	{
 		layout = {
+			sizing = {
+				width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+			},
 			padding = {left = 10, right = 10, top = pad, bottom = pad},
-			childAlignment = {y = .Center},
+			childAlignment = {x = .Center, y = .Center},
 		},
 		backgroundColor = active ? ACCENT : hovered() ? HOVER : ROW_BG,
 		cornerRadius = rr(8),
@@ -176,7 +195,7 @@ header_chip :: proc(id_str: string, glyph: string, active: bool, label: string) 
 			glyph,
 			{fontId = FONT_ICON, fontSize = 14, textColor = active ? ON_ACCENT : TEXT},
 		)
-		header_label(label, active)
+		header_label(label, active && !single_pane())
 	}
 }
 

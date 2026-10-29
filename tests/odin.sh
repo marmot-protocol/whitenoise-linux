@@ -11,6 +11,7 @@ app | app/sdlrl) ;;
   ;;
 esac
 shift
+export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-dummy}"
 bash "$HERE/scripts/observability.sh"
 source "$HERE/scripts/whip-flags.sh"
 
@@ -50,6 +51,10 @@ for module in nevent profiles vault_gate vault_pw tick grouphero video geo; do
   sed '/^package main$/d' "$fixture/app/${module}_internal_test.odin" >>"$fixture/app/$module.odin"
   rm "$fixture/app/${module}_internal_test.odin"
 done
+# Mobile onboarding exercises the gate's file-private layout too. Reuse its
+# production imports while retaining the test's sync/testing imports.
+sed '/^package main$/d; /import "base:runtime"/d; /import "core:os"/d; /import clay /d; /import rl /d' "$fixture/app/mobile_onboard_test.odin" >>"$fixture/app/vault_gate.odin"
+rm "$fixture/app/mobile_onboard_test.odin"
 for entry in vendor marmot themes lang build; do
   ln -s "$HERE/$entry" "$fixture/$entry"
 done

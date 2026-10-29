@@ -41,7 +41,6 @@ Search_Job :: struct {
 	chats:          ^marmot.Presented_Chat_List,
 	members:        map[string][]string, // current rosters for legacy conversation classification
 	read_chats:     bool,
-	matched:        [dynamic]string,
 	err:            string,
 	ready:          bool,
 }
@@ -63,8 +62,6 @@ search_free :: proc(job: ^Search_Job) {
 	delete(job.hits)
 	if job.chats != nil {marmot.presented_chat_list_free(job.chats)}
 	chat_members_free(&job.members)
-	for group in job.matched {delete(group)}
-	delete(job.matched)
 	delete(job.account); delete(job.input); delete(job.err)
 	delete(job.group); delete(job.sender); delete(job.cursor_id); delete(job.next_id)
 	delete(job.cursor_group); delete(job.next_group)
@@ -181,7 +178,20 @@ search_worker :: proc(t: ^thread.Thread) {
 				job.err = marmot.last_error()
 				return
 			}
-			if page.messages_len > 0 {append(&job.matched, strings.clone(group))}
+			if page.messages_len > 0 {
+				text := string(page.messages[0].plaintext)
+				at := max(
+					0,
+					strings.index(
+						strings.to_lower(text, context.temp_allocator),
+						strings.to_lower(job.input, context.temp_allocator),
+					),
+				)
+				append(
+					&job.hits,
+					Gs_Hit{group = strings.clone(group), snippet = gs_snippet(text, at)},
+				)
+			}
 			marmot.timeline_page_free(page)
 			continue
 		}
@@ -238,6 +248,20 @@ search_global_page :: proc(job: ^Search_Job, account: cstring) {
 			return
 		}
 		chat_identity_members_fetch(job.client, account, job.chats, &job.members)
+		// Sender choices cover every local chat, not just the open roster.
+		for i in 0 ..< job.chats.rows_len {
+			if sync.atomic_load(&job.cancel) {return}
+			row := &job.chats.rows[i].row
+			group := string(row.group_id_hex)
+			if group in job.members {continue}
+			list: ^marmot.Group_Member_Record_List
+			if marmot.group_members(job.client, account, row.group_id_hex, &list) != .OK ||
+			   list == nil {continue}
+			ids := make([]string, list.len)
+			for member, j in list.items[:list.len] {ids[j] = strings.clone(string(member.member_id_hex))}
+			marmot.app_group_member_record_list_free(list)
+			job.members[strings.clone(group)] = ids
+		}
 	}
 	if job.input == "" &&
 	   job.group == "" &&
@@ -292,6 +316,15 @@ search_global_page :: proc(job: ^Search_Job, account: cstring) {
 			   job.hidden[id] {continue}
 			group := string(record.group_id_hex)
 			body := string(record.plaintext)
+			if body == "" {
+				for &outcome in record.media[:record.media_len] {
+					if outcome.tag != .ACCEPTED {continue}
+					ref := &outcome.body.accepted.reference
+					body = string(ref.file_name)
+					if body == "" {body = tr("Attachment")}
+					break
+				}
+			}
 			pos := strings.index(body, job.input)
 			append(
 				&job.hits,
@@ -379,6 +412,12 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 								fresh := make([dynamic]Chat_Row_Ui, 0, int(job.chats.rows_len))
 								for i in 0 ..< job.chats.rows_len {append(&fresh, row_to_ui(client, &job.chats.rows[i], ui.account_ref, members = job.members))}
 								chats_replace(&ui.gs_chats, fresh)
+								for _, ids in job.members {
+									for id in ids {
+										profile_label(client, id)
+										gs_add_sender(ui, id)
+									}
+								}
 							}
 							for chat in ui.gs_chats {titles[chat.group_id] = chat.title}
 							ui.gs_loading, ui.gs_more = false, job.more
@@ -399,6 +438,7 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 								if stored_title, found := titles[hit.group];
 								   found {title = stored_title}
 								hit.title = strings.clone(title)
+								if kind == .Global {gs_add_sender(ui, hit.sender)}
 								label :=
 									hit.sender == "you" ? "you" : profile_label(client, hit.sender)
 								name := strings.clone(label)
@@ -430,8 +470,14 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 					} else {
 						resize(&ui.filter_hits, len(ui.chats))
 						for &hit in ui.filter_hits {hit = false}
-						for group in job.matched {
-							if i, ok := indices[group]; ok {ui.filter_hits[i] = true}
+						for text in ui.filter_previews {delete(text)}
+						resize(&ui.filter_previews, len(ui.chats))
+						for &text in ui.filter_previews {text = ""}
+						for hit in job.hits {
+							if i, ok := indices[hit.group]; ok {
+								ui.filter_hits[i] = true
+								ui.filter_previews[i] = strings.clone(hit.snippet)
+							}
 						}
 					}
 				}

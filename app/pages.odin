@@ -31,7 +31,12 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if (ui.page == .Profile ||
+	if ((ui.page == .Profile &&
+			   ui.profile.editing &&
+			   (ui.focus == .Name ||
+					   ui.focus == .About ||
+					   ui.focus == .Nip05 ||
+					   ui.focus == .Lud16)) ||
 		   (ui.page == .Settings &&
 				   (ui.theme_edit ||
 						   ui.focus == .Relay ||
@@ -53,7 +58,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			edit_text(ui, &ui.emoji_sets_query)
 			if before != avatar_hash(string(ui.emoji_sets_query[:])) {ui.emoji_sets_page = 0}
 		} else {
-			edit_text(ui, active_buf(ui))
+			edit_text(ui, active_buf(ui), ui.page == .Profile && ui.focus == .About)
 		}
 	}
 
@@ -73,16 +78,19 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	// Contact QR modal captures everything while open.
 	if ui.qr_open {
-		if rl.IsKeyPressed(.ESCAPE) ||
+		if clicked("QrClose") ||
+		   rl.IsKeyPressed(.ESCAPE) ||
 		   (mouse_released() && !clay.PointerOver(clay.ID("QrModal"))) {
 			ui.qr_open = false
 		}
 		return
 	}
 
-	// Contact nickname editor: Enter saves (empty clears), Escape drops
-	// focus without saving.
+	// Save before a touch leaves the editor, including Back and navigation.
 	if ui.page == .Contacts && !ui.new_chat_open {
+		if ui.focus == .Nick &&
+		   mouse_released() &&
+		   !clay.PointerOver(clay.ID("NickBox")) {save_nickname(ui)}
 		if field_mouse(ui, &ui.nick_input, "NickBox") {
 			ui.focus = .Nick
 		}
@@ -140,7 +148,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if !mouse_released() {
 			return
 		}
-		if clicked("PeerCopyNpub") && len(ui.peer_npub) > 0 {
+		if (clicked("PeerCopyNpub") || clicked("PeerCopyNpubKey")) && len(ui.peer_npub) > 0 {
 			copy_text(ui, ui.peer_npub, tr("npub copied"))
 			return
 		}
@@ -148,8 +156,13 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			view_peer_profile(ui, client)
 			return
 		}
+		if clicked("PeerAddContact") {add_contact(ui, client, ui.peer_hex); return}
 		if clicked("PeerMessage") && ui.peer_hex != ui.account_ref {
-			start_dm(ui, client, Contact_Ui{id_hex = ui.peer_hex})
+			start_dm(
+				ui,
+				client,
+				Contact_Ui{id_hex = ui.peer_hex, name = ui.peer_name, npub = ui.peer_npub},
+			)
 			return
 		}
 		if clicked("PeerClose") || !clay.PointerOver(clay.ID("PeerModal")) {
@@ -168,10 +181,6 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		for id, i in ui.account_ids {
-			if clay.PointerOver(clay.ID("AccountRemove", u32(i))) {
-				confirm_ask(ui, .Remove_Account, id, account_label(ui, id))
-				return
-			}
 			if clay.PointerOver(clay.ID("AccountRow", u32(i))) {
 				ui.accounts_open = false
 				if id != ui.account_ref {
@@ -208,6 +217,12 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	// The rail avatar opens the switcher.
+	if clicked("FilterClear") {
+		clear(&ui.sidebar_filter)
+		refresh_filter_hits(client, ui)
+		ui.focus = .Filter
+		return
+	}
 	if clicked("RailAvatar") {
 		ui.accounts_open = true
 		return
@@ -248,12 +263,35 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for page in Page {
 		if clay.PointerOver(clay.ID("Nav", u32(page))) {
 			if ui.page == page {
-				if page == .Chats && !single_pane() && rail_narrow(ui) {
+				if single_pane() {
+					if page == .Chats {
+						if !phone_detail(ui) {
+							for name in tab_scroll_ids(.Chats) {
+								if name == "" {continue}
+								if data := clay.GetScrollContainerData(clay.ID(name));
+								   data.found {data.scrollPosition^ = {}}
+							}
+							scroll_residual = {}
+							fling_vel = {}
+						} else {
+							if ui.new_chat_open {close_new_chat(ui)}
+							phone_back_action(ui)
+						}
+					} else if page == .Contacts {
+						reset_profile_view(ui)
+						ui.selected_contact = -1
+					} else if page == .Settings {
+						settings_open(ui, client, .Home)
+					}
+				} else if page == .Chats && rail_narrow(ui) {
 					toggle_rail(ui)
 				}
 				return
 			}
 			settings_theme_preview_reset(ui)
+			clear(&ui.sidebar_filter)
+			clear(&ui.filter_hits)
+			ui.focus = .Compose
 			ui.page = page
 			switch page {
 			case .Chats:
@@ -269,6 +307,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 					tab = ui.settings_tab,
 					level = ui.settings_level,
 				)
+				ui.settings_scroll_pending = false // the tab restores its saved scroll
 			case .Profile:
 				load_profile(client, ui)
 			}
@@ -295,6 +334,10 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				load_archived(client, ui)
 				return
 			}
+			if clay.PointerOver(clay.ID("ArchivedRow", u32(i))) {
+				select_archived_chat(ui, client, i)
+				return
+			}
 		}
 	}
 
@@ -303,6 +346,11 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if ui.page == .Contacts {
+		if clicked("ContactsManage") {ui.contact_tools_open = !ui.contact_tools_open; return}
+		if clicked("ContactsAddNpub") {
+			if hex := contact_query_hex(ui); hex != "" {add_contact(ui, client, hex)}
+			return
+		}
 		if clicked("ContactsImportBtn") || clicked("NoContactsImport") {
 			if ui.contact_import != nil || ui.picking_contacts {return}
 			ui.picking_contacts = true
@@ -348,7 +396,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				copy_text(ui, contact.npub, tr("npub copied"))
 				return
 			}
-			if clicked("QrBtn") && len(contact.npub) > 0 {
+			if clicked("ContactScanCard") && len(contact.npub) > 0 {
 				show_contact_qr(ui, contact)
 				return
 			}
@@ -410,6 +458,27 @@ view_peer_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			pic_url = strings.clone(ui.peer_pic),
 			npub    = strings.clone(ui.peer_npub),
 		}
+		account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+		for chat in ui.chats {
+			members: ^marmot.Group_Member_Record_List
+			group := strings.clone_to_cstring(chat.group_id, context.temp_allocator)
+			if marmot.group_members(client, account, group, &members) != .OK {continue}
+			if members == nil {continue}
+			for member in members.items[:members.len] {
+				if member.member_id_hex != nil && string(member.member_id_hex) == ui.peer_hex {
+					append(
+						&ui.profile_contact.groups,
+						Common_Group {
+							strings.clone(chat.group_id),
+							strings.clone(chat.title),
+							len(members.items[:members.len]),
+						},
+					)
+					break
+				}
+			}
+			marmot.app_group_member_record_list_free(members)
+		}
 	}
 	probe_key_package(ui, client, ui.peer_hex)
 	load_contact_relays(ui, client, ui.peer_hex)
@@ -417,10 +486,20 @@ view_peer_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.focus = .Compose
 }
 
-@(private = "file")
+@(private)
 reset_profile_view :: proc(ui: ^Ui_State) {
+	for group in ui.profile_contact.groups {delete(group.id); delete(group.title)}
+	delete(ui.profile_contact.groups)
 	for field in ([]^string{&ui.profile_contact.id_hex, &ui.profile_contact.name, &ui.profile_contact.pic_url, &ui.profile_contact.npub}) {delete(field^)}
 	ui.profile_contact = {}
+}
+
+@(private)
+add_contact :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
+	if hex == "" || hex == ui.account_ref || contact_saved(ui, hex) {return}
+	job := account_job_new(ui, client, .Follow); if job == nil {return}
+	job.target = strings.clone(hex)
+	account_job_start(job)
 }
 
 // Unfollow a contact without changing shared group memberships.
@@ -436,9 +515,10 @@ save_nickname :: proc(ui: ^Ui_State) {
 	if !found {return}
 	id := contact.id_hex
 	nick := strings.trim_space(string(ui.nick_input[:]))
-	if len(nick) == 0 {
-		delete_key(&ui.nicknames, id)
-	} else {
+	if nick == ui.nicknames[id] {ui.focus = .Compose; return}
+	old_key, old_value := delete_key(&ui.nicknames, id)
+	delete(old_key); delete(old_value)
+	if len(nick) > 0 {
 		ui.nicknames[strings.clone(id)] = strings.clone(nick)
 	}
 	wrap_flush = true
@@ -460,13 +540,80 @@ start_dm :: proc(ui: ^Ui_State, client: ^marmot.Client, contact: Contact_Ui) {
 	account_job_start(job)
 }
 
-// Publish the whole edit form as kind-0 and leave edit mode.
+@(private)
+profile_dirty :: proc(ui: ^Ui_State) -> bool {
+	return(
+		string(ui.name_input[:]) != ui.profile.name ||
+		string(ui.about_input[:]) != ui.profile.about ||
+		string(ui.nip05_input[:]) != ui.profile.nip05 ||
+		string(ui.lud16_input[:]) != ui.profile.lud16 \
+	)
+}
+
+// Both optional identifiers are addresses, not URLs. Reject spaces,
+// missing labels and punctuation that cannot be a DNS host name.
+@(private)
+profile_addr_valid :: proc(value: string) -> bool {
+	if value == "" {return true}
+	at := strings.index_byte(value, '@')
+	if at <= 0 || at >= len(value) - 1 {return false}
+	for c in value[:at] {
+		if !(c >= 'a' && c <= 'z') &&
+		   !(c >= 'A' && c <= 'Z') &&
+		   !(c >= '0' && c <= '9') &&
+		   c != '_' &&
+		   c != '-' &&
+		   c != '.' &&
+		   c != '+' {return false}
+	}
+	domain := value[at + 1:]
+	if strings.index_byte(domain, '.') <= 0 {return false}
+	label := 0
+	for c, i in domain {
+		if c == '.' {
+			if label == 0 || domain[i - 1] == '-' {return false}
+			label = 0
+			continue
+		}
+		if !(c >= 'a' && c <= 'z') &&
+		   !(c >= 'A' && c <= 'Z') &&
+		   !(c >= '0' && c <= '9') &&
+		   c != '-' {return false}
+		if c == '-' && label == 0 {return false}
+		label += 1
+		if label > 63 {return false}
+	}
+	return label > 0 && domain[len(domain) - 1] != '-'
+}
+
+@(private)
+profile_ready :: proc(ui: ^Ui_State) -> bool {
+	return(
+		profile_dirty(ui) &&
+		strings.trim_space(string(ui.name_input[:])) != "" &&
+		profile_addr_valid(string(ui.nip05_input[:])) &&
+		profile_addr_valid(string(ui.lud16_input[:])) \
+	)
+}
+
+@(private)
+profile_cancel :: proc(ui: ^Ui_State) {
+	if profile_dirty(ui) {confirm_ask(ui, .Discard_Profile, ""); return}
+	ui.profile.editing = false
+	ui.focus = .Compose
+}
+
+// Only the explicit button publishes public kind-0 data.
 publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if !ui.profile.editing {return}
 	if len(strings.trim_space(string(ui.name_input[:]))) == 0 {
 		ui.focus = .Name
 		scroll_into_view(clay.ID("ProfilePage"), clay.ID("NameBox"))
 		ui.banner_seen = ""
 		set_status(ui, tr("A display name is required."), .Error)
+		return
+	}
+	if !profile_ready(ui) {
 		return
 	}
 	job := account_job_new(ui, client, .Profile); if job == nil {return}
@@ -493,9 +640,7 @@ profile_fields :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if field_mouse(ui, &ui.name_input, "NameBox", 14) {
 		ui.focus = .Name
 	}
-	if field_mouse(ui, &ui.about_input, "AboutBox", 14) {
-		ui.focus = .About
-	}
+	if ui.profile.editing {compose_mouse(ui, &ui.about_input, .About)}
 	if field_mouse(ui, &ui.nip05_input, "Nip05Box", 14) {
 		ui.focus = .Nip05
 	}
@@ -510,15 +655,22 @@ profile_fields :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	fields := [?]Focus{.Name, .About, .Nip05, .Lud16}
-	boxes := [?]string{"NameBox", "AboutBox", "Nip05Box", "Lud16Box"}
+	boxes := [?]string{"NameBox", "ComposeBox", "Nip05Box", "Lud16Box"}
 	if at, moved := tab_focus(fields[:], &ui.focus); moved {
 		scroll_into_view(clay.ID("ProfilePage"), clay.ID(boxes[at]))
 	}
 	if rl.IsKeyPressed(.ESCAPE) {
-		ui.profile.editing = false
+		profile_cancel(ui)
 	}
 	if rl.IsKeyPressed(.ENTER) {
-		publish_profile(ui, client)
+		for field, i in fields {
+			if ui.focus != field {continue}
+			if i + 1 < len(fields) {
+				ui.focus = fields[i + 1]
+				scroll_into_view(clay.ID("ProfilePage"), clay.ID(boxes[i + 1]))
+			} else {ui.focus = .Compose}
+			break
+		}
 	}
 }
 
@@ -555,27 +707,20 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if clicked("EditProfileBtn") {
 		if ui.profile.editing {
-			ui.profile.editing = false
+			profile_cancel(ui)
 		} else {
 			edit_profile_start(ui)
 		}
 		return
 	}
+	if clicked("ProfileAccounts") {ui.accounts_open = true; return}
+	if clicked("ProfileScanCard") && ui.profile.npub != "" {
+		show_contact_qr(ui, Contact_Ui{npub = ui.profile.npub})
+		return
+	}
 	if clicked("ProfileCopyNpub") && len(ui.profile.npub) > 0 {
 		copy_text(ui, ui.profile.npub, tr("npub copied"))
 		return
-	}
-
-	// A viewer row is a shortcut into the form, focused on its field.
-	if !ui.profile.editing {
-		kv_focus := [4]Focus{.Name, .Nip05, .Lud16, .Name}
-		for focus, i in kv_focus {
-			if clay.PointerOver(clay.ID("ProfileKv", u32(i))) {
-				edit_profile_start(ui)
-				ui.focus = focus
-				return
-			}
-		}
 	}
 
 	if clicked("RevealNsec") && account_local(ui) {
@@ -596,7 +741,13 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		publish_profile(ui, client)
 	}
 
-	if clicked("AddRelayBtn") && len(ui.relay_input) > 0 {
+	if clicked("AddRelayBtn") {
+		if strings.trim_space(string(ui.relay_input[:])) == "" {
+			ui.focus = .Relay
+			ui.banner_seen = ""
+			set_status(ui, tr("Enter a relay URL before adding it."), .Error)
+			return
+		}
 		if relay_list_contains(ui.profile.nip65[:], ui.relay_input[:]) {
 			ui.focus = .Relay
 			ui.banner_seen = ""
@@ -612,7 +763,7 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			strings.clone_to_cstring(string(ui.relay_input[:]), context.temp_allocator),
 		)
 		set_relays(ui, client, relays[:])
-		clear(&ui.relay_input)
+		if ui.page != .Settings {clear(&ui.relay_input)}
 		return
 	}
 	for relay, i in ui.profile.nip65 {
@@ -624,6 +775,9 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if clicked("SignOutBtn") {
 		confirm_ask(ui, .Sign_Out, ui.account_ref, account_label(ui, ui.account_ref))
+	}
+	if clicked("ProfileRemoveAccount") {
+		confirm_ask(ui, .Remove_Account, ui.account_ref, account_label(ui, ui.account_ref))
 	}
 }
 
@@ -750,6 +904,9 @@ do_create_identity :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // `active` is the account to land on (the one just added); empty falls
 // back to the first row, which is what boot and sign-out want.
 after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
+	// Discard the empty-pool snapshot taken while account setup was running.
+	ui.health_ok = false
+	health_refresh(ui, client)
 	if ui.location_open {geo_picker_close(ui)}
 	keys_forget(ui); close_export(ui); session_string_forget(&ui.profile.nsec)
 	kp_rows_free(&ui.kp_list); ui.kp_fetched = false
@@ -1448,10 +1605,16 @@ row_to_ui :: proc(
 	case .Unavailable_Conversation:
 		title = tr("Unavailable conversation")
 	}
+	// MDK presents a DM under its peer's name; your nickname for them wins.
+	if kind == .DIRECT && g_ui != nil {
+		if nick := g_ui.nicknames[avatar_key]; len(nick) > 0 {title = nick}
+	}
 	avatar_url, image_hash: string
 	switch presentation.avatar.tag {
 	case .Remote_Image:
-		avatar_url = string(presentation.avatar.body.remote.url)
+		if kind == .DIRECT || presentation.avatar_source == .Group {
+			avatar_url = string(presentation.avatar.body.remote.url)
+		}
 	case .Encrypted_Group_Image:
 		image_hash = string(presentation.avatar.body.encrypted.image.image_hash_hex)
 	case .Placeholder:
@@ -1479,6 +1642,18 @@ row_to_ui :: proc(
 			blocked_senders,
 			previews[string(row.group_id_hex)],
 		)
+	}
+	if kind == .GROUP &&
+	   !mine &&
+	   !blocked &&
+	   preview != "" &&
+	   row.last_message != nil &&
+	   row.last_message.sender != nil &&
+	   row.last_message.kind != 1210 {
+		// A group row names who sent its last message.
+		if sender := sender_label(string(row.last_message.sender)); sender != "" {
+			preview = fmt.tprintf(tr("%s: %s"), sender, preview)
+		}
 	}
 
 	tick := marmot.Delivery_State.NOT_APPLICABLE

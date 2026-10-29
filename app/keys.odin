@@ -95,32 +95,54 @@ fetch_key_packages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if job != nil {ui.kp_fetched = true; account_job_start(job)}
 }
 
-// One-line summary above the list: what exists and where it lives.
+// A package can be stored both locally and on relays.
+@(private)
+kp_location :: proc(row: Kp_Row) -> string {
+	if row.relay {
+		if n := len(row.relay_urls); n > 0 {
+			if row.local {
+				return fmt.tprintf(
+					tr(
+						n == 1 ? N_("On this device and on %d relay.") : N_("On this device and on %d relays."),
+					),
+					n,
+				)
+			}
+			return fmt.tprintf(tr(n == 1 ? N_("On %d relay.") : N_("On %d relays.")), n)
+		}
+		return tr(row.local ? N_("On this device and on relays.") : N_("On relays."))
+	}
+	if row.local {
+		return tr("Stored on this device, not published to any relay yet.")
+	}
+	return tr("Location unknown.")
+}
+
+// Count packages once, then describe their overlapping storage locations.
 kp_status_line :: proc(ui: ^Ui_State) -> string {
 	if !ui.kp_fetched {
 		return tr("Not loaded yet. Click Refresh.")
 	}
-	local, published, relays: int
+	if len(ui.kp_list) == 0 {
+		return tr("No key package yet. Publish one so people can invite you.")
+	}
+	if len(ui.kp_list) == 1 {
+		return fmt.tprintf(tr("1 key package. %s"), kp_location(ui.kp_list[0]))
+	}
+	local, published: int
 	for row in ui.kp_list {
 		if row.local {
 			local += 1
 		}
 		if row.relay {
 			published += 1
-			relays = max(relays, len(row.relay_urls))
 		}
 	}
-	if local == 0 && published == 0 {
-		return tr("No key package yet. Publish one so people can invite you.")
-	}
-	if published == 0 {
-		return tr("Stored on this device, not published to any relay yet.")
-	}
 	return fmt.tprintf(
-		tr("%d published, %d on this device, seen on %d relays."),
-		published,
+		tr("%d key packages. On this device: %d. On relays: %d."),
+		len(ui.kp_list),
 		local,
-		relays,
+		published,
 	)
 }
 
@@ -147,6 +169,7 @@ keys_forget :: proc(ui: ^Ui_State) {
 		ui.keys_nsec = ""
 	}
 	ui.keys_nsec_show = false
+	keys_reveal_frames = 0
 	keys_disarm(ui)
 }
 
@@ -155,11 +178,7 @@ reveal_nsec :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	nsec: cstring
 	if marmot.reveal_nsec(client, account, &nsec) != .OK || nsec == nil {
-		set_status(
-			ui,
-			fmt.aprintf(tr("Couldn't reveal your private key. %s"), marmot.last_error()),
-			.Error,
-		)
+		set_status(ui, tr("Couldn't reveal your secret key. Please try again."), .Error)
 		return
 	}
 	ui.keys_nsec = strings.clone(string(nsec))
@@ -168,6 +187,10 @@ reveal_nsec :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 }
 
 close_export :: proc(ui: ^Ui_State) {
+	mem.zero_slice(export_confirm[:]); clear(&export_confirm)
+	export_confirm_focus = false
+	delete(export_account); export_account = ""
+	export_check = {}
 	ui.export_open = false
 	ui.export_pw_required = false
 	mem.zero_slice(ui.export_pw[:])
@@ -180,13 +203,16 @@ close_export :: proc(ui: ^Ui_State) {
 // marmot seals the key under the entered passphrase (NIP-49); the raw
 // nsec never enters this process.
 do_export :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if !account_local(ui) {close_export(ui); return}
+	if !export_valid(ui) {return}
 	ui.export_pw_required = len(ui.export_pw) == 0
 	if ui.export_pw_required {
 		ui.focus = .ExportPw
 		return
 	}
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+	account := strings.clone_to_cstring(
+		export_account != "" ? export_account : ui.account_ref,
+		context.temp_allocator,
+	)
 	pw := strings.clone_to_cstring(string(ui.export_pw[:]), context.temp_allocator)
 	sealed: cstring
 	if marmot.export_encrypted_secret_key(client, account, pw, &sealed) != .OK || sealed == nil {
@@ -199,8 +225,65 @@ do_export :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 // ── Page ────────────────────────────────────────────────────────────
 
+@(private)
+export_confirm: [dynamic]u8
+@(private = "file")
+export_confirm_focus: bool
+@(private = "file")
+export_account: string
+@(private = "file")
+export_check: Password_Check
+@(private = "file")
+keys_reveal_frames: int
+
+@(private)
+open_key_export :: proc(ui: ^Ui_State, account: string) {
+	close_export(ui)
+	keys_disarm(ui)
+	export_account = strings.clone(account)
+	ui.export_open = true
+	ui.focus = .ExportPw
+}
+
+@(private)
+export_buffer :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
+	return export_confirm_focus ? &export_confirm : &ui.export_pw
+}
+
+@(private = "file")
+export_valid :: proc(ui: ^Ui_State) -> bool {
+	return(
+		password_bits(string(ui.export_pw[:]), &export_check) >= PASSWORD_MIN_BITS &&
+		string(ui.export_pw[:]) == string(export_confirm[:]) \
+	)
+}
+
+@(private)
+export_fields :: proc(ui: ^Ui_State) {
+	if field_mouse(
+		ui,
+		&ui.export_pw,
+		"ExportPwBox",
+		14,
+	) {export_confirm_focus = false; ui.focus = .ExportPw}
+	if clicked("ExportConfirmBox") {export_confirm_focus = true; ui.focus = .ExportPw}
+	if rl.IsKeyPressed(.TAB) {export_confirm_focus = !export_confirm_focus}
+}
+
+@(private)
+keys_fields :: proc(ui: ^Ui_State) {
+	if keys_reveal_frames > 0 {
+		keys_reveal_frames -= 1
+		if keys_reveal_frames == 0 {reveal_nsec(ui, g_client)}
+	}
+	if long_pressed && clay.PointerOver(clay.ID("NpubInset")) && ui.profile.npub != "" {
+		copy_text(ui, ui.profile.npub, tr("npub copied"))
+	}
+}
+
 settings_keys :: proc(ui: ^Ui_State) {
 	body_width := settings_body_width(ui) - 24
+	account_busy := settings_account_busy(ui)
 	if ui.settings_tab == 0 {
 		if clay.UI(clay.ID("KeysIdentityGroup"))(settings_box()) {
 			settings_group(tr("Keys & identity"))
@@ -241,12 +324,15 @@ settings_keys :: proc(ui: ^Ui_State) {
 				tr("Safe to share. This is how people find you."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
-			if clay.UI(clay.ID("RowSovereign"))(settings_row()) {
+			identity_note := settings_row()
+			identity_note.layout.layoutDirection = .LeftToRight
+			identity_note.layout.childAlignment.y = .Top
+			if clay.UI(clay.ID("RowSovereign"))(identity_note) {
 				clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
 				row_labels(
-					tr("Your identity is sovereign"),
+					tr("Your key stays on this device"),
 					tr(
-						"White Noise never sees your private key. It lives only on this device and any signer you connect.",
+						"Your secret key stays on this device or in your connected signer. Never share it.",
 					),
 				)
 			}
@@ -269,11 +355,23 @@ settings_keys :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
-				settings_button("KpPublish", tr("Publish"), ACCENT)
-				settings_button("KpRefresh", tr("Refresh"))
+				settings_button(
+					"KpPublish",
+					tr("Publish"),
+					ACCENT,
+					account_busy ? .Disabled : .Enabled,
+				)
+				settings_button(
+					"KpRefresh",
+					tr("Refresh"),
+					{},
+					account_busy ? .Disabled : .Enabled,
+				)
 			}
 			clay.Text(
-				tr("Key packages are published to your key package relays."),
+				tr(
+					"Key packages let people invite you. Refresh checks the app's default relays for published copies.",
+				),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
 			for row, i in ui.kp_list {
@@ -288,17 +386,19 @@ settings_keys :: proc(ui: ^Ui_State) {
 					},
 					) {
 						clay.Text(
-							fmt.tprintf("0x%s...", row.id[:min(len(row.id), 16)]),
+							row.relay && row.id != "" ? short_hex(row.id) : tr("Not published yet"),
 							{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
 						)
 						clay.Text(
 							row.at,
 							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 						)
+						clay.Text(
+							kp_location(row),
+							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+						)
 					}
-					tag :=
-						row.relay ? (len(row.relay_urls) > 0 ? fmt.tprintf(tr("RELAY · %d"), len(row.relay_urls)) : tr("RELAY")) : tr("LOCAL")
-					clay.Text(tag, {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_DIM})
+
 				}
 			}
 		}
@@ -308,8 +408,8 @@ settings_keys :: proc(ui: ^Ui_State) {
 				tr("Invalidates the current package and uploads a fresh one to your relays."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
-			label := ui.keys_confirm == "RotateBtn" ? tr("Confirm") : tr("Rotate")
-			settings_button("RotateBtn", label, DANGER)
+			label := ui.keys_confirm == "RotateBtn" ? tr("Tap again to rotate") : tr("Rotate")
+			settings_button("RotateBtn", label, DANGER, account_busy ? .Disabled : .Enabled)
 		}
 		return
 	}
@@ -346,7 +446,7 @@ settings_keys :: proc(ui: ^Ui_State) {
 	if !account_local(ui) {
 		clay.Text(
 			tr(
-				"Your private key stays in your remote signer. Reveal and export are unavailable on this device.",
+				"Your secret key stays in your remote signer. Reveal and export are unavailable on this device.",
 			),
 			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 		)
@@ -366,7 +466,7 @@ settings_keys :: proc(ui: ^Ui_State) {
 			},
 			) {
 				clay.Text(
-					tr("Reveal private key (nsec)"),
+					tr("Reveal secret key (nsec)"),
 					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
 				)
 				clay.Text(
@@ -386,6 +486,12 @@ settings_keys :: proc(ui: ^Ui_State) {
 					settings_button("NsecShow", ui.keys_nsec_show ? tr("Hide") : tr("Show"))
 					settings_button("NsecCopy", tr("Copy"))
 				}
+			} else if keys_reveal_frames > 0 {
+				clay.Text(
+					tr("Decrypting..."),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+				)
+				busy_bar("KeysRevealProgress")
 			} else {
 				label := ui.keys_confirm == "RevealNsecBtn" ? tr("Confirm reveal") : tr("Reveal")
 				settings_button("RevealNsecBtn", label, DANGER)
@@ -495,14 +601,17 @@ handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("KpRefresh") {
+		if settings_account_busy(ui) {return}
 		fetch_key_packages(ui, client)
 		return
 	}
 	if clicked("KpPublish") {
+		if settings_account_busy(ui) {return}
 		publish_key_package(ui, client, .Republish)
 		return
 	}
 	if clicked("RotateBtn") {
+		if settings_account_busy(ui) {return}
 		if armed(ui, "RotateBtn") {
 			publish_key_package(ui, client, .Fresh)
 		}
@@ -510,7 +619,7 @@ handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if clicked("RevealNsecBtn") && account_local(ui) {
 		if armed(ui, "RevealNsecBtn") {
-			reveal_nsec(ui, client)
+			keys_reveal_frames = 3
 		}
 		return
 	}
@@ -523,11 +632,7 @@ handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("ExportBtn") && account_local(ui) {
-		keys_disarm(ui)
-		ui.export_open = true
-		ui.export_pw_required = false
-		clear(&ui.export_pw)
-		ui.focus = .ExportPw
+		open_key_export(ui, ui.account_ref)
 		return
 	}
 	ui.keys_confirm = "" // a click anywhere else disarms
@@ -541,7 +646,10 @@ export_modal :: proc(ui: ^Ui_State) {
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("ExportModal"), 440))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("ExportModal"), 440)),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			padding = clay.PaddingAll(18),
 			childGap = 10,
 		},
@@ -552,6 +660,7 @@ export_modal :: proc(ui: ^Ui_State) {
 			attachment = {element = .CenterCenter, parent = .CenterCenter},
 		},
 		backgroundColor = CARD,
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
@@ -560,7 +669,7 @@ export_modal :: proc(ui: ^Ui_State) {
 		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
 		) {
 			clay.Text(
-				tr("Export encrypted key"),
+				tr("Back up your key"),
 				{fontId = FONT_TITLE, fontSize = 17, textColor = TEXT},
 			)
 			if clay.UI(clay.ID("ExportHeadGap"))(
@@ -568,7 +677,13 @@ export_modal :: proc(ui: ^Ui_State) {
 			) {}
 			if clay.UI(clay.ID("ExportClose"))(
 			{
-				layout = {padding = clay.PaddingAll(6)},
+				layout = {
+					sizing = {
+						clay.SizingFixed(settings_tap_size(24)),
+						clay.SizingFixed(settings_tap_size(24)),
+					},
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(6),
 			},
@@ -589,17 +704,24 @@ export_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("ExportPwBox"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(settings_tap_size(38)),
+					},
 					padding = {left = 12, right = 12},
 					childAlignment = {y = .Center},
 				},
 				backgroundColor = ROW_BG,
+				clip = {horizontal = true},
 				cornerRadius = rr(9),
-				border = {color = ui.focus == .ExportPw ? ACCENT : FIELD_BORDER, width = bw()},
+				border = {
+					color = ui.focus == .ExportPw && !export_confirm_focus ? ACCENT : FIELD_BORDER,
+					width = bw(),
+				},
 			},
 			) {
 				if len(ui.export_pw) == 0 {
-					if ui.focus == .ExportPw {
+					if ui.focus == .ExportPw && !export_confirm_focus {
 						caret(15)
 					}
 					clay.Text(
@@ -611,10 +733,25 @@ export_modal :: proc(ui: ^Ui_State) {
 						strings.repeat("*", min(len(ui.export_pw), 48), context.temp_allocator),
 						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
 					)
-					if ui.focus == .ExportPw {
+					if ui.focus == .ExportPw && !export_confirm_focus {
 						caret(15)
 					}
 				}
+			}
+			secure_password_hint(password_bits(string(ui.export_pw[:]), &export_check))
+			eyebrow(tr("CONFIRM PASSWORD"))
+			gate_field(
+				ui,
+				"ExportConfirmBox",
+				&export_confirm,
+				ui.focus == .ExportPw && export_confirm_focus,
+				tr("Type your password again"),
+			)
+			if len(export_confirm) > 0 && string(export_confirm[:]) != string(ui.export_pw[:]) {
+				clay.Text(
+					tr("The passwords don't match. Type them again."),
+					{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+				)
 			}
 			if ui.export_pw_required {
 				if clay.UI(clay.ID("ExportPwError"))(
@@ -626,12 +763,14 @@ export_modal :: proc(ui: ^Ui_State) {
 					)
 				}
 			}
-			if clay.UI(clay.ID("ExportBtns"))(
-			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}},
-			) {
+			if clay.UI(clay.ID("ExportBtns"))(settings_choices(clay.ID("ExportBtns"))) {
 				if clay.UI(clay.ID("ExportCancel"))(
 				{
-					layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+					layout = {
+						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
+						padding = {left = 22, right = 22, top = 9, bottom = 9},
+						childAlignment = {x = .Center, y = .Center},
+					},
 					backgroundColor = hovered() ? HOVER : {},
 					cornerRadius = rr(9),
 					border = {color = FIELD_BORDER, width = bw()},
@@ -644,14 +783,22 @@ export_modal :: proc(ui: ^Ui_State) {
 				) {}
 				if clay.UI(clay.ID("ExportGo"))(
 				{
-					layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
-					backgroundColor = DANGER,
+					layout = {
+						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
+						padding = {left = 22, right = 22, top = 9, bottom = 9},
+						childAlignment = {x = .Center, y = .Center},
+					},
+					backgroundColor = export_valid(ui) ? ACCENT : ROW_BG,
 					cornerRadius = rr(9),
 				},
 				) {
 					clay.Text(
 						tr("Export key"),
-						{fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT},
+						{
+							fontId = FONT_TITLE,
+							fontSize = 13,
+							textColor = export_valid(ui) ? ON_ACCENT : TEXT_DIM,
+						},
 					)
 				}
 			}
@@ -680,8 +827,15 @@ export_modal :: proc(ui: ^Ui_State) {
 				// One unbroken token: clay wraps on words only, so chunk
 				// it into fixed slices or the plate blows past the modal.
 				key := ui.export_result
+				columns := max(
+					1,
+					int(
+						(modal_w(clay.ID("ExportModal"), 440) - 56) /
+						max(1, rl.MeasureTextLine(FONT_MONO, 11, "M", 0).x),
+					),
+				)
 				for len(key) > 0 {
-					n := min(len(key), 52)
+					n := min(len(key), columns)
 					clay.Text(key[:n], {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
 					key = key[n:]
 				}
@@ -704,7 +858,11 @@ export_modal :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("ExportDoneRow"))({layout = {padding = {top = 8}}}) {
 				if clay.UI(clay.ID("ExportDone"))(
 				{
-					layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+					layout = {
+						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
+						padding = {left = 22, right = 22, top = 9, bottom = 9},
+						childAlignment = {x = .Center, y = .Center},
+					},
 					backgroundColor = hovered() ? HOVER : {},
 					cornerRadius = rr(9),
 					border = {color = FIELD_BORDER, width = bw()},
@@ -715,4 +873,5 @@ export_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
+	scrollbar(clay.ID("ExportModal"), 12)
 }

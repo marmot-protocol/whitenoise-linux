@@ -1125,6 +1125,12 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 					}
 					save_hidden(ui)
 				}
+				if !p.dismissed &&
+				   d.err == "" &&
+				   p.forward_title != "" &&
+				   p.account_ref == ui.account_ref {
+					toast(ui, fmt.tprintf(tr("Forwarded to %s"), p.forward_title))
+				}
 				free_pending(&p)
 				ordered_remove(&ui.pending, i)
 				reload ||= len(d.err) == 0
@@ -1632,6 +1638,7 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	reload := false
 	for d in done {
+		poll_complete(d.ticket)
 		if d.op == .Lookup_Member {nip05_complete(ui, d); continue}
 		reload = true
 		if d.op == .History {
@@ -1989,6 +1996,7 @@ Auth_Job :: struct {
 	client:                    ^marmot.Client,
 	nsec:                      string,
 	method:                    Login_Method,
+	prior_accounts:            [dynamic]string,
 	session:                   ^marmot.Nip46_Session,
 	remote_login:              bool,
 	cancelled, cancel_cleanup: bool,
@@ -2021,6 +2029,8 @@ auth_job_free :: proc(job: ^Auth_Job) {
 	if job.session != nil {marmot.nip46_free(job.session)}
 	nip46_state_free(&job.signer_state)
 	mem.zero_slice(transmute([]u8)job.nsec)
+	for id in job.prior_accounts {delete(id)}
+	delete(job.prior_accounts)
 	delete(job.nsec); delete(job.hex); delete(job.pic_url); delete(job.err)
 	job.client = nil
 	free(job)
@@ -2145,6 +2155,9 @@ start_auth :: proc(
 	auth_job.client = client
 	auth_job.nsec = strings.clone(nsec)
 	auth_job.method = method == .Menu ? (nsec == "" ? .Create : .Import) : method
+	if auth_job.method == .Import {
+		for id in ui.account_ids {append(&auth_job.prior_accounts, strings.clone(id))}
+	}
 	auth_job.session = session
 	auth_job.seed = auth_job.method == .Create ? .Starter_Face : .None
 	auth_thread = thread.create(auth_worker)
@@ -2167,6 +2180,22 @@ drain_auth :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	auth_done = false
 
 	job := auth_job
+	if job.cancelled && job.session == nil {
+		auth_job = nil
+		defer auth_job_free(job)
+		known := false
+		for id in job.prior_accounts {if id == job.hex {known = true; break}}
+		if job.hex != "" && !known {
+			// Never activate an identity after Back. Preserve an imported
+			// identity's existing data, but remove a freshly minted key.
+			account_job_start(
+				account_job_new(ui, client, job.method == .Create ? .Remove : .Sign_Out, job.hex),
+			)
+		}
+		ui.login_error = ""
+		login_pair_clear(ui)
+		return
+	}
 	if job.cancelled && job.err == "" {
 		job.cancel_cleanup = true
 		auth_thread = thread.create(auth_worker); auth_thread.data = job; thread.start(auth_thread)
@@ -2195,6 +2224,11 @@ drain_auth :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	auth_job = nil
 	defer auth_job_free(job)
 
+	if job.cancelled {
+		ui.login_error = ""
+		login_pair_clear(ui)
+		return
+	}
 	if len(job.err) > 0 {
 		ui.login_error = strings.clone(job.err)
 		login_pair_clear(ui)
@@ -2208,4 +2242,7 @@ drain_auth :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	login_pair_clear(ui)
 	finish_auth(ui, client, job.hex, job.pic_url, job.seed)
+	if job.method == .Create {
+		open_key_export(ui, job.hex)
+	}
 }

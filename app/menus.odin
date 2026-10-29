@@ -7,11 +7,23 @@ import "core:strings"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
-ctx_item :: proc(id_str: string, glyph: string, label: string) {
+@(private)
+message_url :: proc(msg: Msg_Ui) -> string {
+	for i in 0 ..< len(msg.body) {
+		if _, url, ok := url_at(msg.body, i); ok {return url}
+	}
+	return ""
+}
+
+ctx_item :: proc(id_str: string, glyph: string, label: string, color: clay.Color = {}) {
+	menu_press_mark(clay.ID(id_str))
 	if clay.UI(clay.ID(id_str))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(32)},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFit({min = tap_size() ? tap_min() : 32}),
+			},
 			padding = {left = 10, right = 16},
 			childGap = 9,
 			childAlignment = {y = .Center},
@@ -25,10 +37,17 @@ ctx_item :: proc(id_str: string, glyph: string, label: string) {
 		) {
 			clay.Text(
 				glyph,
-				{fontId = FONT_ICON, fontSize = 13, textColor = hovered() ? TEXT : TEXT_DIM},
+				{
+					fontId = FONT_ICON,
+					fontSize = 13,
+					textColor = color.a > 0 ? color : (hovered() ? TEXT : TEXT_DIM),
+				},
 			)
 		}
-		clay.Text(label, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+		clay.Text(
+			label,
+			{fontId = FONT_BODY, fontSize = 12, textColor = color.a > 0 ? color : TEXT},
+		)
 	}
 }
 
@@ -48,24 +67,42 @@ member_menu_index :: proc(ui: ^Ui_State) -> int {
 }
 
 member_menu :: proc(ui: ^Ui_State) {
+	defer scrollbar(clay.ID("MemberMenu"), 11)
 	member := ui.members[member_menu_index(ui)]
+	x, y := ui.member_menu_x, ui.member_menu_y
+	width, height := f32(190), f32(140)
+	if box, ok := element_box(clay.ID("MemberMenu")); ok {
+		width, height = box.width, box.height
+	}
+	if anchor, ok := element_box(clay.ID("MemberMenuBtn", u32(member_menu_index(ui)))); ok {
+		x, y = anchor.x + anchor.width - width, anchor.y + anchor.height + 4
+		if y + height > f32(rl.GetScreenHeight()) / UI_ZOOM - 12 {
+			y = anchor.y - height - 4
+		}
+	}
+	x, y = panel_pos(x, y, width, height)
 
 	if clay.UI(clay.ID("MemberMenu"))(
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFit({min = 190})},
+			sizing = {
+				width = clay.SizingFit({min = 190, max = fit_w(320)}),
+				height = clay.SizingFit({max = modal_h(360)}),
+			},
 			padding = clay.PaddingAll(4),
 			childGap = 1,
 		},
 		floating = {
 			attachTo = .Root,
-			offset = {ui.member_menu_x, ui.member_menu_y + rise(clay.ID("MemberMenu"))},
+			offset = {x, y + rise(clay.ID("MemberMenu"))},
+			attachment = {element = .LeftTop, parent = .LeftTop},
 			zIndex = 10,
 		},
 		backgroundColor = CARD,
 		cornerRadius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 	},
 	) {
 		if member.is_self {
@@ -103,6 +140,7 @@ handle_member_menu :: proc(ui: ^Ui_State) -> bool {
 	if !mouse_released() {
 		return false
 	}
+	if menu_keep(clay.ID("MemberMenu")) {return true}
 	index := ui.member_menu
 	member := ui.members[index]
 	ui.member_menu = -1
@@ -133,6 +171,41 @@ handle_member_menu :: proc(ui: ^Ui_State) -> bool {
 
 // Right-click context menu for a message: quick-reaction strip,
 // divider, then the gated action rows.
+@(private)
+sheet_bottom :: proc() -> f32 {
+	if nav := clay.GetElementData(clay.ID("PhoneNavigation")); nav.found {
+		return max(f32(rl.GetScreenHeight()) / UI_ZOOM - nav.boundingBox.y, 0)
+	}
+	return 0
+}
+
+@(private)
+sheet_max_h :: proc() -> f32 {
+	return max(44, f32(rl.GetScreenHeight()) / UI_ZOOM - sheet_bottom() - 64)
+}
+
+@(private)
+sheet_title :: proc(title: string, detail: string = "") {
+	if clay.UI(clay.ID_LOCAL("SheetTitle"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			padding = {left = 12, right = 12, top = 12, bottom = 10},
+			childGap = 5,
+		},
+	},
+	) {
+		width := f32(rl.GetScreenWidth()) / UI_ZOOM - 32
+		clay.Text(
+			text_ellipsis(title, width, FONT_TITLE, 14),
+			{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
+		)
+		if detail !=
+		   "" {clay.Text(text_ellipsis(detail, width, FONT_BODY, 12), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})}
+	}
+}
+
 context_menu :: proc(ui: ^Ui_State) {
 	msg := ui.messages[ui.ctx_msg]
 
@@ -140,21 +213,33 @@ context_menu :: proc(ui: ^Ui_State) {
 	// against the box clay actually laid out, so a tall menu (own message,
 	// attachments, dev mode) never runs past the window bottom.
 	y := ui.ctx_y
+	x := ui.ctx_x
 	if box, laid_out := element_box(clay.ID("CtxMenu")); laid_out {
-		y = min(y, f32(rl.GetScreenHeight()) / UI_ZOOM - box.height - 8)
+		x, y = panel_pos(x, y, box.width, box.height)
 	}
 
 	if clay.UI(clay.ID("CtxMenu"))(
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFit({min = 200})},
+			sizing = {
+				width = single_pane() ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : clay.SizingFit({min = 200, max = fit_w(560)}),
+				height = clay.SizingFit({max = single_pane() ? sheet_max_h() : modal_h(700)}),
+			},
 			padding = clay.PaddingAll(4),
 			childGap = 1,
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		floating = {
 			attachTo = .Root,
-			offset = {ui.ctx_x, y + rise(clay.ID("CtxMenu"))},
+			offset = {
+				single_pane() ? 0 : x,
+				(single_pane() ? -sheet_bottom() : y) + rise(clay.ID("CtxMenu")),
+			},
+			attachment = {
+				element = single_pane() ? .LeftBottom : .LeftTop,
+				parent = single_pane() ? .LeftBottom : .LeftTop,
+			},
 			zIndex = 10,
 		},
 		backgroundColor = CARD,
@@ -162,79 +247,110 @@ context_menu :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
+		if single_pane() {
+			sheet_title(msg.sender, msg_preview(msg))
+			clay.Text(msg.at_full, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		}
 		if !msg.deleted {
-			if clay.UI(clay.ID("CtxStrip"))(
-			{layout = {padding = {left = 6, right = 6, top = 2, bottom = 2}, childGap = 1}},
-			) {
-				for emoji, i in ui.prefs.quick_reactions {
-					if clay.UI(clay.ID("CtxQuick", u32(i)))(
+			if ui.selected < 0 || !ui.chats[ui.selected].archived {
+				if clay.UI(clay.ID("CtxStrip"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						padding = {left = 6, right = 6, top = 2, bottom = 2},
+						childGap = 1,
+					},
+					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+				},
+				) {
+					for emoji, i in ui.prefs.quick_reactions {
+						menu_press_mark(clay.ID("CtxQuick", u32(i)))
+						if clay.UI(clay.ID("CtxQuick", u32(i)))(
+						{
+							layout = {
+								sizing = {
+									width = clay.SizingFixed(tap_size() ? tap_min() : 28),
+									height = clay.SizingFixed(tap_size() ? tap_min() : 28),
+								},
+								childAlignment = {x = .Center, y = .Center},
+							},
+							backgroundColor = hovered() ? HOVER : {},
+							cornerRadius = rr(8),
+						},
+						) {
+							if tex := emoji_tex(emoji); tex != nil {
+								if clay.UI(clay.ID("CtxQuickImg", u32(i)))(
+								{
+									layout = {sizing = {width = clay.SizingFixed(18)}},
+									aspectRatio = {1},
+									image = {imageData = tex},
+								},
+								) {}
+							} else {
+								clay.Text(
+									emoji,
+									{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
+								)
+							}
+						}
+					}
+					menu_press_mark(clay.ID("CtxQuickPlus"))
+					if clay.UI(clay.ID("CtxQuickPlus"))(
 					{
 						layout = {
-							sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(28)},
+							sizing = {
+								width = clay.SizingFixed(tap_size() ? tap_min() : 28),
+								height = clay.SizingFixed(tap_size() ? tap_min() : 28),
+							},
 							childAlignment = {x = .Center, y = .Center},
 						},
 						backgroundColor = hovered() ? HOVER : {},
 						cornerRadius = rr(8),
 					},
 					) {
-						if tex := emoji_tex(emoji); tex != nil {
-							if clay.UI(clay.ID("CtxQuickImg", u32(i)))(
-							{
-								layout = {sizing = {width = clay.SizingFixed(18)}},
-								aspectRatio = {1},
-								image = {imageData = tex},
-							},
-							) {}
-						} else {
-							clay.Text(emoji, {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
-						}
+						clay.Text("+", {fontId = FONT_BODY, fontSize = 15, textColor = TEXT})
 					}
 				}
-				if clay.UI(clay.ID("CtxQuickPlus"))(
+
+				// Divider band under the strip.
+				scrollbar(clay.ID("CtxStrip"), 11)
+				if clay.UI(clay.ID("CtxDivBand"))(
 				{
 					layout = {
-						sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(28)},
-						childAlignment = {x = .Center, y = .Center},
+						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(7)},
+						padding = {left = 6, right = 6, top = 3},
 					},
-					backgroundColor = hovered() ? HOVER : {},
-					cornerRadius = rr(8),
 				},
 				) {
-					clay.Text("+", {fontId = FONT_BODY, fontSize = 15, textColor = TEXT})
+					if clay.UI(clay.ID("CtxDivLine"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)},
+						},
+						backgroundColor = BORDER_2,
+					},
+					) {}
 				}
-			}
 
-			// Divider band under the strip.
-			if clay.UI(clay.ID("CtxDivBand"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(7)},
-					padding = {left = 6, right = 6, top = 3},
-				},
-			},
-			) {
-				if clay.UI(clay.ID("CtxDivLine"))(
-				{
-					layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)}},
-					backgroundColor = BORDER_2,
-				},
-				) {}
 			}
-
-			// Same rows and gating as wiring/extra.rs builds (no text
-			// selection here). A tombstone offers no action rows.
-			ctx_item("CtxReact", ICON_SMILE, tr("Add reaction"))
-			if len(msg.thread_of) == 0 || ui.compose_issue != "" {
+			read_only := ui.selected >= 0 && ui.chats[ui.selected].archived
+			if !read_only && !single_pane() {ctx_item("CtxReact", ICON_SMILE, tr("Add reaction"))}
+			if !read_only && (len(msg.thread_of) == 0 || ui.compose_issue != "") {
 				ctx_item("CtxReply", ICON_REPLY, tr("Reply"))
 			}
 			ctx_item("CtxThread", ICON_COMMENTS, tr("Reply in thread"))
-			ctx_item("CtxForward", ICON_FORWARD, tr("Forward"))
+			if msg.mine && !read_only {ctx_item("CtxEdit", ICON_PENCIL, tr("Edit message"))}
 			if len(msg.body) > 0 {
 				ctx_item("CtxCopy", ICON_COPY, tr("Copy text"))
 				if ui.prefs.tts_enabled {
 					ctx_item("CtxRead", ICON_COMMENTS, tr("Read aloud"))
 				}
 			}
+			if message_url(msg) != "" {
+				ctx_item("CtxCopyLink", ICON_COPY, tr("Copy link"))
+				ctx_item("CtxOpenLink", ICON_GLOBE, tr("Open link"))
+			}
+			ctx_item("CtxForward", ICON_FORWARD, tr("Forward"))
 			for slot, i in msg.attachments {
 				if slot.state == .Rejected {
 					continue
@@ -245,16 +361,25 @@ context_menu :: proc(ui: ^Ui_State) {
 					fmt.tprintf(tr("Save %s"), slot.name),
 				)
 			}
-			ctx_item("CtxDelMe", ICON_TRASH, tr("Delete for me"))
-			if msg.mine {
-				ctx_item("CtxEdit", ICON_PENCIL, tr("Edit message"))
-				ctx_item("CtxDelAll", ICON_BAN, tr("Delete for everyone"))
+			if !read_only {
+				if clay.UI(clay.ID("CtxDangerRule"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)},
+						padding = {top = 4, bottom = 4},
+					},
+					backgroundColor = BORDER_2,
+				},
+				) {}
+				ctx_item("CtxDelMe", ICON_TRASH, tr("Delete for me"), DANGER)
+				if msg.mine {ctx_item("CtxDelAll", ICON_BAN, tr("Delete for everyone"), DANGER)}
 			}
 		}
 		if ui.prefs.dev_mode {
 			ctx_item("CtxRaw", ICON_CODE, tr("View raw event"))
 		}
 	}
+	scrollbar(clay.ID("CtxMenu"), 11)
 }
 
 // Edit-history modal: original first, each edit after, current
@@ -274,7 +399,10 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("HistModal"), HISTORY_WIDTH))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("HistModal"), HISTORY_WIDTH)),
+				height = clay.SizingFit({max = modal_h(640)}),
+			},
 			padding = clay.PaddingAll(16),
 			childGap = 10,
 		},
@@ -298,7 +426,14 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 			) {}
 			if clay.UI(clay.ID("HistClose"))(
 			{
-				layout = {padding = clay.PaddingAll(6)},
+				layout = {
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? tap_min() : 24),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 24),
+					},
+					padding = clay.PaddingAll(6),
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(6),
 			},
@@ -319,9 +454,7 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 			layout = {
 				sizing = {
 					width = clay.SizingGrow(),
-					height = clay.SizingFit(
-						{max = max(f32(100), f32(rl.GetScreenHeight()) / UI_ZOOM - 200)},
-					),
+					height = clay.SizingFit({max = max(f32(1), modal_h(640) - 120)}),
 				},
 				layoutDirection = .TopToBottom,
 				childGap = 10,
@@ -511,7 +644,10 @@ encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 	if clay.UI(clay.ID("EncModal"))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("EncModal"), 440))},
+			sizing = {
+				width = clay.SizingFixed(modal_w(clay.ID("EncModal"), 440)),
+				height = clay.SizingFit({max = modal_h(640)}),
+			},
 			layoutDirection = .TopToBottom,
 			padding = clay.PaddingAll(20),
 			childGap = 12,
@@ -525,6 +661,7 @@ encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 			offset = {0, rise(clay.ID("EncModal"))},
 			attachment = {element = .CenterCenter, parent = .CenterCenter},
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 	},
 	) {
 		if clay.UI(clay.ID("EncHead"))(
@@ -545,7 +682,10 @@ encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 			if clay.UI(clay.ID("EncClose"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? tap_min() : 26),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : {},
@@ -594,6 +734,7 @@ encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 			micro_button("EncCopyId", tr("Copy group id"))
 		}
 	}
+	scrollbar(clay.ID("EncModal"), 14)
 }
 
 // Cap the result list; offscreen rows retain geometry but no tile elements.
@@ -606,22 +747,26 @@ PICKER_CELL_W :: f32(30 + 2) // cell plus the row's childGap
 // unanimated width: sizing off modal_w would reshuffle the grid every
 // frame of the open.
 picker_cols :: proc() -> int {
-	inner := fit_w(400) - 24 - 13 // panel padding, then the scrollbar
-	return clamp(int(inner / PICKER_CELL_W), 4, 11)
+	inner := single_pane() ? fit_w(400, 8) - 24 : fit_w(400) - 24 - 13
+	return clamp(int((inner + 2) / (tap_size() ? 46 : PICKER_CELL_W)), 1, 11)
 }
 
 // Indices into emoji_catalog matching the picker search, capped.
 picker_matches :: proc(ui: ^Ui_State) -> [dynamic]int {
 	matches := make([dynamic]int, context.temp_allocator)
 	filter := strings.to_lower(string(ui.picker_filter[:]), context.temp_allocator)
-	for entry, i in emoji_catalog {
-		if len(entry.pixels) == 0 {continue}
-		if len(filter) > 0 && !strings.contains(entry.name, filter) {
-			continue
-		}
-		append(&matches, i)
-		if len(matches) >= PICKER_MAX_CELLS {
-			break
+	shortcode := fmt.tprintf(":%s:", strings.trim(filter, ":"))
+	// Names and exact shortcodes precede substring matches (fire before firefighter).
+	for exact in ([2]bool{true, false}) {
+		for entry, i in emoji_catalog {
+			if len(entry.pixels) == 0 {continue}
+			if len(filter) > 0 && !strings.contains(entry.name, filter) {continue}
+			name, _, _ := strings.partition(entry.name, " :")
+			is_exact :=
+				len(filter) > 0 && (name == filter || strings.contains(entry.name, shortcode))
+			if is_exact != exact {continue}
+			append(&matches, i)
+			if len(matches) >= PICKER_MAX_CELLS {return matches}
 		}
 	}
 	return matches
@@ -647,13 +792,16 @@ picker_lift :: proc(id: clay.ElementId) -> f32 {
 	return anim_to(anim_key(id.id, 4), near * near, 26) // squared: a peak, not a dome
 }
 
-picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D) {
+picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D, width: f32 = 0) {
 	id := clay.ID(id_str, index)
 	tile := PICK_TILE + PICK_LIFT * picker_lift(id)
 	if clay.UI(id)(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(30), height = clay.SizingFixed(30)},
+			sizing = {
+				width = clay.SizingFixed(width > 0 ? width : tap_size() ? tap_min() : 30),
+				height = clay.SizingFixed(tap_size() ? tap_min() : 30),
+			},
 			childAlignment = {x = .Center, y = .Center},
 		},
 		backgroundColor = hovered() ? HOVER : {},
@@ -673,11 +821,14 @@ picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D) {
 // Emoji picker: recents, search, and an emoji grid.
 emoji_picker :: proc(ui: ^Ui_State) {
 	gif := ui.gif_tab && ui.picker_target == "" && ui.picker_mode == .Message
-	width := modal_w(clay.ID("PickerPanel"), gif ? 560 : 400)
-	height := modal_h(gif ? 540 : ui.picker_mode == .Group_Image ? 560 : 440)
+	width := single_pane() ? fit_w(400, 8) : modal_w(clay.ID("PickerPanel"), gif ? 560 : 400)
+	height := modal_h(
+		single_pane() ? (ui.picker_mode == .Group_Image ? 560 : 480) : gif ? 540 : ui.picker_mode == .Group_Image ? 560 : 440,
+	)
 	x, y := ui.picker_x, ui.picker_y
-	if gif {
+	if gif || single_pane() && ui.picker_mode == .Message {
 		if composer := clay.GetElementData(clay.ID("ComposeBox")); composer.found {
+			if single_pane() {height = min(height, max(120, composer.boundingBox.y - 16))}
 			x, y =
 				composer.boundingBox.x +
 				composer.boundingBox.width -
@@ -686,8 +837,8 @@ emoji_picker :: proc(ui: ^Ui_State) {
 				height -
 				8
 		}
-		x, y = panel_pos(x, y, width, height)
 	}
+	x, y = panel_pos(x, y, width, height)
 	if clay.UI(clay.ID("PickerPanel"))(
 	{
 		layout = {
@@ -702,6 +853,24 @@ emoji_picker :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
+		if ui.picker_mode != .Group_Image {
+			if clay.UI(clay.ID("PickerHead"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 8,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				if ui.picker_target !=
+				   "" {clay.Text(tr("Add reaction"), {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})}
+				if clay.UI(clay.ID("PickerHeadGap"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {}
+				if tap_size() {micro_button("PickerClose", tr("Close"))}
+			}
+		}
 		if ui.picker_mode == .Group_Image {
 			emoji_mix_header(ui)
 		}
@@ -724,21 +893,30 @@ emoji_picker :: proc(ui: ^Ui_State) {
 				sticker_control("PickerGifs", 0, tr("GIFs"), ui.gif_tab ? .Selected : .Normal)
 			}
 			if ui.gif_tab {gif_picker(ui); return}
-			if ui.sticker_tab {sticker_control("StickerManage", 0, tr("Manage")); sticker_picker(ui); return}
+			if ui.sticker_tab {sticker_picker(ui); return}
 		}
 		eyebrow(tr("RECENT"))
-		if clay.UI(clay.ID("PkRecentRow"))({layout = {childGap = 2}}) {
+		if clay.UI(clay.ID("PkRecentRow"))(
+		{
+			layout = {sizing = {width = clay.SizingGrow()}, childGap = 2},
+			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
 			for recent, i in ui.prefs.recent_emoji {
 				if tex := emoji_tex(recent); tex != nil {
 					picker_cell("PkRecent", u32(i), tex)
 				}
 			}
 		}
+		scrollbar(clay.ID("PkRecentRow"), 13)
 
 		if clay.UI(clay.ID("PickerSearch"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 34),
+				},
 				padding = {left = 10, right = 10},
 				childGap = 4,
 				childAlignment = {y = .Center},
@@ -762,7 +940,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("PickerGrid"))(
 		{
 			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				sizing = {clay.SizingGrow(), clay.SizingGrow({min = tap_size() ? tap_min() : 0})},
 				layoutDirection = .TopToBottom,
 				childGap = 2,
 			},
@@ -774,11 +952,17 @@ emoji_picker :: proc(ui: ^Ui_State) {
 			// ponytail: one unwrapped row; wrap it if the set grows.
 			custom := picker_custom(string(ui.picker_filter[:]))
 			if len(custom) > 0 {
-				if clay.UI(clay.ID("PkCustomRow"))({layout = {childGap = 2}}) {
+				if clay.UI(clay.ID("PkCustomRow"))(
+				{
+					layout = {sizing = {width = clay.SizingGrow()}, childGap = 2},
+					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+				},
+				) {
 					for code, k in custom {
 						picker_cell("PkCustom", u32(k), custom_tex_by_code(code))
 					}
 				}
+				scrollbar(clay.ID("PkCustomRow"), 13)
 			}
 			matches := picker_matches(ui)
 			cols := picker_cols()
@@ -787,7 +971,8 @@ emoji_picker :: proc(ui: ^Ui_State) {
 			view_height :=
 				view.found && view.scrollContainerDimensions.height > 0 ? view.scrollContainerDimensions.height : height
 			bottom := top + view_height
-			y := len(custom) > 0 ? PICKER_CELL_W : 0
+			step := tap_size() ? f32(46) : PICKER_CELL_W
+			y := len(custom) > 0 ? step : 0
 			if len(matches) == 0 && len(custom) == 0 {
 				clay.Text(
 					tr("No emoji match your search."),
@@ -795,16 +980,18 @@ emoji_picker :: proc(ui: ^Ui_State) {
 				)
 			}
 			for row_start := 0; row_start < len(matches); row_start += cols {
-				visible := y + PICKER_CELL_W >= top - PICKER_CELL_W && y <= bottom + PICKER_CELL_W
-				y += PICKER_CELL_W
+				visible := y + step >= top - step && y <= bottom + step
+				y += step
 				if clay.UI(clay.ID("PkRow", u32(row_start)))(
-				{layout = {childGap = 2, sizing = {height = clay.SizingFixed(30)}}},
+				{layout = {childGap = 2, sizing = {height = clay.SizingFixed(step - 2)}}},
 				) {
 					// Empty rows retain scroll geometry without uploading offscreen tiles.
 					if !visible {continue}
 					for k in row_start ..< min(row_start + cols, len(matches)) {
 						entry := emoji_catalog[matches[k]]
-						picker_cell("PkCell", u32(matches[k]), emoji_tex(entry.emoji))
+						cell_w :=
+							single_pane() ? (width - 24 - f32(cols - 1) * 2) / f32(cols) : f32(0)
+						picker_cell("PkCell", u32(matches[k]), emoji_tex(entry.emoji), cell_w)
 					}
 				}
 			}
@@ -820,7 +1007,14 @@ action_chip :: proc(id_str: string, index: u32, label: string) {
 	down := press_down(clay.ID(id_str, index))
 	if clay.UI(clay.ID(id_str, index))(
 	{
-		layout = {padding = {left = 8, right = 8, top = 2 + down, bottom = 2 - down}},
+		layout = {
+			sizing = {
+				width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+			},
+			padding = {left = 8, right = 8, top = 2 + down, bottom = 2 - down},
+			childAlignment = {x = .Center, y = .Center},
+		},
 		backgroundColor = hovered() ? ACCENT : ROW_BG,
 		cornerRadius = rr(6),
 	},
@@ -836,5 +1030,8 @@ action_chip :: proc(id_str: string, index: u32, label: string) {
 // this much up front, or every row would grow a few px as the pointer
 // crossed it.
 chip_h :: proc() -> f32 {
-	return rl.MeasureTextLine(FONT_BODY, CHIP_FS, "A", 0).y + CHIP_PAD
+	return max(
+		tap_size() ? tap_min() : 0,
+		rl.MeasureTextLine(FONT_BODY, CHIP_FS, "A", 0).y + CHIP_PAD,
+	)
 }

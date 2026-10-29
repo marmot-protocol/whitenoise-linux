@@ -286,31 +286,53 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 		key = ui.chats[index].group_id
 	}
 
+	width := fit_w(single_pane() ? 280 : 230)
+	height := modal_h(terminal ? 98 : (tap_size() ? 412 : 320))
+	if data := clay.GetElementData(clay.ID("RowMenu")); data.found {
+		width = min(fit_w(560), max(width, data.boundingBox.width))
+		height = min(modal_h(560), max(height, data.boundingBox.height))
+	}
+	x, y := panel_pos(ui.row_menu_x, ui.row_menu_y, width, height)
 	if clay.UI(clay.ID("RowMenu"))(
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFit({min = 210})},
+			sizing = {
+				width = single_pane() ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : clay.SizingFit({min = 210, max = fit_w(560)}),
+				height = clay.SizingFit({max = single_pane() ? sheet_max_h() : modal_h(560)}),
+			},
 			padding = clay.PaddingAll(4),
 			childGap = 1,
 		},
 		floating = {
 			attachTo = .Root,
-			offset = {ui.row_menu_x, ui.row_menu_y + rise(clay.ID("RowMenu"))},
+			offset = {
+				single_pane() ? 0 : x,
+				(single_pane() ? -sheet_bottom() : y) + rise(clay.ID("RowMenu")),
+			},
+			attachment = {
+				element = single_pane() ? .LeftBottom : .LeftTop,
+				parent = single_pane() ? .LeftBottom : .LeftTop,
+			},
 			zIndex = 10,
 		},
 		backgroundColor = CARD,
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if !terminal {ctx_item("RowInfo", ICON_SETTINGS, tr("Group settings"))}
+		if single_pane() {sheet_title(terminal ? key : ui.chats[row_menu_index(ui)].title)}
+		if !terminal {ctx_item("RowInfo", ICON_SETTINGS, chat_is_dm(ui.chats[row_menu_index(ui)]) ? tr("Chat settings") : tr("Group settings"))}
 		if terminal {ctx_item("RowProjectEdit", ICON_SETTINGS, tr("Edit project"))}
 		ctx_item("RowPin", ICON_PIN, ui.prefs.pinned[key] ? tr("Unpin") : tr("Pin to top"))
 		if !terminal {
 			ctx_item("RowMute", ICON_BELL_OFF, ui.prefs.muted_ids[key] ? tr("Unmute") : tr("Mute"))
-			ctx_item("RowRead", ICON_ENVELOPE_OPEN, tr("Mark read"))
-			ctx_item("RowUnread", ICON_ENVELOPE, tr("Mark unread"))
+			if ui.chats[row_menu_index(ui)].unread > 0 || ui.prefs.unread_ids[key] {
+				ctx_item("RowRead", ICON_ENVELOPE_OPEN, tr("Mark read"))
+			} else {
+				ctx_item("RowUnread", ICON_ENVELOPE, tr("Mark unread"))
+			}
 		}
 		ctx_item("RowFolder", ICON_FOLDER, tr("Move to folder"))
 		if !terminal {
@@ -319,25 +341,33 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 			ctx_item("RowExportMd", ICON_DOWNLOAD, tr("Export as Markdown"))
 		}
 	}
+	scrollbar(clay.ID("RowMenu"), 11)
 }
 
 // Folder menus float at the root so the rail's scroll clip cannot cut them off.
 folder_menu :: proc(ui: ^Ui_State) {
-	width: f32 = 210
-	height: f32 = ui.folder_menu_name == "" ? 40 : 73
+	width: f32 = single_pane() ? fit_w(280) : 210
+	items: f32 = ui.folder_menu_name == "" ? 3 : 2
+	height := items * (tap_size() ? 45 : 33) + 7
 	if data := clay.GetElementData(clay.ID("FolderMenu")); data.found {
 		width = max(width, data.boundingBox.width)
+		height = max(height, data.boundingBox.height)
 	}
+	width, height = min(width, fit_w(560)), min(height, modal_h(560))
 	x, y := panel_pos(ui.folder_menu_x - width, ui.folder_menu_y, width, height)
 	if clay.UI(clay.ID("FolderMenu"))(
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFit({min = 210})},
+			sizing = {
+				width = single_pane() ? clay.SizingFixed(fit_w(280)) : clay.SizingFit({min = min(210, fit_w(560)), max = fit_w(560)}),
+				height = clay.SizingFit({max = modal_h(560)}),
+			},
 			padding = clay.PaddingAll(4),
 			childGap = 1,
 		},
 		floating = {attachTo = .Root, offset = {x, y}, zIndex = 10},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		backgroundColor = CARD,
 		cornerRadius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
@@ -345,11 +375,14 @@ folder_menu :: proc(ui: ^Ui_State) {
 	) {
 		if ui.folder_menu_name == "" {
 			ctx_item("FolderCreate", ICON_FOLDER, tr("New folder"))
+			ctx_item("ChatsMenuCommands", ICON_CODE, tr("Command palette"))
+			ctx_item("ChatsMenuLock", ICON_LOCK, tr("Lock now"))
 		} else {
 			ctx_item("FolderMenuEdit", ICON_PENCIL, tr("Edit folder"))
 			ctx_item("FolderMenuDelete", ICON_TRASH, tr("Delete"))
 		}
 	}
+	scrollbar(clay.ID("FolderMenu"), 11)
 }
 
 @(private = "file")
@@ -378,6 +411,10 @@ handle_folder_navigation :: proc(ui: ^Ui_State) -> bool {
 			if ui.folder_menu_name == "" {
 				if clay.PointerOver(clay.ID("FolderCreate")) {
 					open_folder_modal(ui)
+				} else if clay.PointerOver(clay.ID("ChatsMenuCommands")) {
+					pal_open_modal(ui)
+				} else if clay.PointerOver(clay.ID("ChatsMenuLock")) {
+					lock_now(ui)
 				}
 			} else {
 				for name, i in ui.prefs.folders {
@@ -506,7 +543,7 @@ folder_action :: proc(id, label: string, primary: bool = false) {
 	if clay.UI(clay.ID(id))(
 	{
 		layout = {
-			sizing = {height = clay.SizingFixed(36)},
+			sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 36)},
 			padding = {left = 14, right = 14},
 			childAlignment = {x = .Center, y = .Center},
 		},
@@ -533,33 +570,38 @@ folder_editor_focus :: proc(ui: ^Ui_State, focus: Focus) {
 	case .FolderRule:
 		id = fmt.tprintf("FolderRuleBox%d", ui.folder_rule_focus)
 	}
-	scroll_into_view(clay.ID("FolderEditorBody"), clay.ID(id))
+	scroll_into_view(clay.ID(single_pane() ? "FolderModal" : "FolderEditorBody"), clay.ID(id))
 }
 
 @(private = "file")
 folder_editor :: proc(ui: ^Ui_State, width: f32) {
 	rgb, custom, valid := folder_color_draft(ui)
 	preview := custom && valid ? folder_rgb(rgb) : ACCENT
-	columns := clamp(int((width - 40 + 8) / 50), 4, 8)
+	columns :=
+		tap_size() ? clamp(int((width - 46 + 8) / 52), 1, 8) : clamp(int((width - 40 + 8) / 50), 4, 8)
+	color_columns := tap_size() ? min(6, columns) : 6
 	if clay.UI(clay.ID("FolderEditorBody"))(
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
 			sizing = {
 				width = clay.SizingGrow(),
-				height = clay.SizingFixed(max(60, modal_h(620) - 144)),
+				height = single_pane() ? clay.SizingFit() : clay.SizingFixed(max(60, modal_h(620) - 144)),
 			},
 			childGap = 12,
 			padding = {right = 6, bottom = 4},
 		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		clip = {vertical = !single_pane(), childOffset = clay.GetScrollOffset()},
 	},
 	) {
 		clay.Text(tr("Folder name"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
 		if clay.UI(clay.ID("FolderBox"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(40)},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 40),
+				},
 				padding = {left = 12, right = 12},
 				childGap = 10,
 				childAlignment = {y = .Center},
@@ -585,7 +627,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 		if clay.UI(clay.ID("FolderColorDefault"))(
 		{
 			layout = {
-				sizing = {height = clay.SizingFixed(32)},
+				sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 32)},
 				padding = {left = 10, right = 10},
 				childGap = 8,
 				childAlignment = {y = .Center},
@@ -599,17 +641,21 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 			clay.Text(tr("Default"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			if hovered() {cursor_raise(.Pointer)}
 		}
-		for row in 0 ..< 2 {
+		for row in 0 ..< (len(FOLDER_COLORS) + color_columns - 1) / color_columns {
 			if clay.UI(clay.ID("FolderColorRow", u32(row)))(
 			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
 			) {
-				for column in 0 ..< 6 {
-					i := row * 6 + column
+				for column in 0 ..< color_columns {
+					i := row * color_columns + column
+					if i >= len(FOLDER_COLORS) {break}
 					selected := custom && valid && rgb == FOLDER_COLORS[i]
 					if clay.UI(clay.ID("FolderColor", u32(i)))(
 					{
 						layout = {
-							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+							sizing = {
+								width = clay.SizingFixed(tap_size() ? tap_min() : 34),
+								height = clay.SizingFixed(tap_size() ? tap_min() : 34),
+							},
 							childAlignment = {x = .Center, y = .Center},
 						},
 						backgroundColor = selected ? SELECTED : (hovered() ? HOVER : ROW_BG),
@@ -641,7 +687,10 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 		if clay.UI(clay.ID("FolderColorBox"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFixed(tap_size() ? tap_min() : 36),
+				},
 				padding = {left = 12, right = 12},
 				childAlignment = {y = .Center},
 			},
@@ -660,10 +709,6 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 				TEXT_LO,
 			)
 		}
-		clay.Text(
-			tr("Enter a color as #RRGGBB."),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
-		)
 		eyebrow(tr("ICON"))
 		if clay.UI(clay.ID("FolderIconGrid"))(
 		{
@@ -692,7 +737,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 							layout = {
 								sizing = {
 									width = clay.SizingGrow(),
-									height = clay.SizingFixed(42),
+									height = clay.SizingFixed(tap_size() ? tap_min() : 42),
 								},
 								childAlignment = {x = .Center, y = .Center},
 							},
@@ -712,7 +757,7 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 			}
 		}
 	}
-	scrollbar(clay.ID("FolderEditorBody"), 14)
+	if !single_pane() {scrollbar(clay.ID("FolderEditorBody"), 14)}
 }
 
 // A destination picker and a separate, compact folder editor share one shell.
@@ -723,7 +768,10 @@ folder_modal :: proc(ui: ^Ui_State) {
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(width)},
+			sizing = {
+				width = clay.SizingFixed(width),
+				height = clay.SizingFit({max = modal_h(720)}),
+			},
 			padding = clay.PaddingAll(20),
 			childGap = 16,
 		},
@@ -734,6 +782,7 @@ folder_modal :: proc(ui: ^Ui_State) {
 			attachment = {element = .CenterCenter, parent = .CenterCenter},
 		},
 		backgroundColor = CARD,
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
 	},
@@ -754,7 +803,14 @@ folder_modal :: proc(ui: ^Ui_State) {
 			}
 			if clay.UI(clay.ID("FolderClose"))(
 			{
-				layout = {padding = clay.PaddingAll(7)},
+				layout = {
+					sizing = {
+						width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
+					},
+					padding = clay.PaddingAll(7),
+					childAlignment = {x = .Center, y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				cornerRadius = rr(7),
 			},
@@ -772,7 +828,10 @@ folder_modal :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("FolderSearchBox"))(
 				{
 					layout = {
-						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(40)},
+						sizing = {
+							width = clay.SizingGrow(),
+							height = clay.SizingFixed(tap_size() ? tap_min() : 40),
+						},
 						padding = {left = 12, right = 12},
 						childGap = 10,
 						childAlignment = {y = .Center},
@@ -881,6 +940,7 @@ folder_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
+	scrollbar(clay.ID("FolderModal"), 14)
 }
 
 // Open the row menu at the pointer, clamped like the message one
@@ -925,6 +985,7 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !mouse_released() {
 		return
 	}
+	if menu_keep(clay.ID("RowMenu")) {return}
 	if terminal {
 		ui.row_menu = -1
 		if clay.PointerOver(clay.ID("RowProjectEdit")) {

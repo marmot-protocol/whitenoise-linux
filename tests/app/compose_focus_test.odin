@@ -75,6 +75,11 @@ compose_up_edits_latest_own :: proc(t: ^testing.T) {
 ctx_reply_edit_focus :: proc(t: ^testing.T) {
 	sync.lock(&clay_test_mutex)
 	defer sync.unlock(&clay_test_mutex)
+	rl.InitWindow(800, 600, "Message action focus")
+	defer rl.CloseWindow()
+	old_zoom := UI_ZOOM
+	UI_ZOOM = 1
+	defer {UI_ZOOM = old_zoom}
 	previous := clay.GetCurrentContext()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 600})
@@ -104,6 +109,13 @@ ctx_reply_edit_focus :: proc(t: ^testing.T) {
 		clay.EndLayout(0)
 		box := clay.GetElementData(clay.ID(item)).boundingBox
 		clay.SetPointerState({box.x + 4, box.y + 4}, false)
+		// A menu row acts only when the press also landed on it.
+		menu_press = {}
+		forced_press = true
+		clay.BeginLayout()
+		context_menu(&ui)
+		clay.EndLayout(0)
+		forced_press = false
 		forced_release = true
 		handle_ctx_menu(&ui, &client)
 		forced_release = false

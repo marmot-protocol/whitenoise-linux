@@ -4,7 +4,7 @@
 
 <h1 align="center">White Noise Linux</h1>
 
-<p align="center"><b>A native desktop client for end-to-end encrypted group chat over Nostr.</b></p>
+<p align="center"><b>A native client for end-to-end encrypted group chat over Nostr.</b></p>
 
 <p align="center">
   <a href="https://github.com/marmot-protocol/whitenoise-linux/actions/workflows/ci.yml"><img src="https://github.com/marmot-protocol/whitenoise-linux/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
@@ -34,7 +34,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Click Send or press Enter to send; Shift+Enter inserts a new line. Editing a message changes Send to Save. Hover over the attach, emoji, and microphone buttons for their labels.
 - Poll creation keeps your draft open and explains a missing question or fewer than two nonblank options. Multiple choice is an on/off switch; Create is the primary action and Cancel is secondary.
 - Linked Nostr highlights (kind 9802, NIP-84) put the selected passage in large type, with quieter context, avatar bylines, and compact source tiles. Cards start with the highlighter's byline, without a kind label. Source tiles identify the domain, event, or structured source. Source links and the full-width Open in client button use the external-link guard. Read more expands the quotation, context, and commentary together. Media-only highlights retain their source tiles.
-- Markdown bodies preserve single newlines. HTTP(S) links keep their labels and destinations. Hover shows the URL; opening a link uses the external-link guard. Chat-list previews show reading text without Markdown markup.
+- Markdown bodies preserve single newlines. HTTP(S) links keep their labels and destinations. Hover shows the URL; opening a link uses the external-link guard. Long addresses in the guard scroll horizontally without breaking path words. Scroll over the address to read it in full. Chat-list previews show reading text without Markdown markup.
 - Pasted `https://njump.me/<reference>` and `http://njump.me/<reference>` links render like `nostr:` references: profile chips for `npub`/`nprofile`, event cards for `note`/`nevent`/`naddr`. Event cards use your configured Nostr web client.
 - Linked Nostr pull requests (kind 1618) and Git issues (kind 1621, NIP-34) show their own icon and label, a bold subject when present, separate author and timestamp lines, and a Markdown description. Long subjects wrap to three lines with an ellipsis. A full-width Open in client button uses your configured Nostr web client.
 - Linked Git patches (kind 1617, NIP-34) show the mail subject, author, repository, revision or series marker, and file/addition/deletion counts. The diff preserves code as literal monospace text, with tinted additions and deletions. Read more expands the description and diff; inline diffs stop at 1,000 wrapped rows, with the complete patch available through Open in client. Cover letters show their subject and description without invented change counts.
@@ -42,7 +42,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Day dividers say Today for the current local day and update at midnight. The chat list shows the time for today, Yesterday, then the date. Changing the Date format, Time format or language updates every visible date at once, including the open chat.
 - Search all chats takes start and end days in your local calendar, written the way the app shows dates (`Jun 12`, `12 Jun 2026` or `2026-06-12`); without a year, the current one is used. Results are dated the way the chat's day dividers are.
 - Settings > Appearance sets the message line limit. Messages and event cards collapse after 6 lines by default; 0 shows them in full without Read more.
-- Settings > AI agents offers setup prompts for Hermes, OpenClaw, OpenCode, Codex, and Claude Code. Review and copy a prompt containing your active account's public npub, then paste it into an agent you run and trust. Copy prompt is the main action, with a secondary Copy public key button and links to connector documentation. White Noise does not install anything or share your private key.
+- Settings > AI agents offers setup prompts for Hermes, OpenClaw, OpenCode, Codex, and Claude Code. Review and copy a prompt containing your active account's full public npub, then paste it into an agent you run and trust. Escape from a setup card returns to the connector list. Copy prompt is the main action, with a secondary Copy public key button and links to connector documentation. White Noise does not install anything or share your private key.
 - Ctrl+K searches literal text in locally stored history, including archived chats. Filter by chat, sender, local date range, or attachment type, and use More results to page through matches. Opening a result returns to Chats and loads older history when needed. Closing search preserves its query and results; switching accounts clears them. Unsynced messages are not searched.
 - Export the loaded chat window as HTML or Markdown from the members panel. HTML prepares embedded images in the background and shows image progress before opening the save dialog. Unavailable images appear as notes in the transcript. Leaving the chat or changing accounts discards an unfinished export.
 - Emoji search accepts names and shortcodes, such as `100` for hundred points and `thumbsup` for thumbs up. Shortcodes work with or without surrounding colons.
@@ -50,7 +50,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Settings > General > Messaging > Custom emoji browses recent [NIP-51 kind-30030 emoji sets](https://github.com/nostr-protocol/nips/blob/master/51.md) from your event-fetch relays. Sets from your contacts come first, with A-Z ordering within each group and a saved Contacts only filter. Sets with no valid emoji stay hidden. Each row shows artwork and an author mention chip. Search by title, author, or shortcode, then open a set to preview it. Import the whole set or use the + button beside one emoji. Previews appear as each download finishes. Imported emoji keep their set title and verified author after a restart. Imports preserve existing shortcodes and report skipped entries and failed downloads. Browsing previews and importing contact HTTPS image hosts; PNG, JPEG, GIF, and WebP are supported when the image decoder accepts them.
 - Custom `:shortcode:` emoji use NIP-30. The image goes out as an encrypted attachment, and the message carries an `["emoji", shortcode, url]` tag pointing at that attachment's Blossom URL. Reactions work the same way: a `:shortcode:` reaction carries its own `imeta` and emoji tag. Forwards keep the tags. MDK's `marmot_send_tagged_media` and `marmot_react_with_media` send them, and MDK keeps the media key for reaction images the way it does for chat media.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
-- Forwarded attachments download and prepare in the background. A status strip names the destination and stays visible through preparation and sending, even if you switch chats. Failed forwards can be retried from the destination chat. A confirmation names the destination after every part succeeds; a partial or cancelled forward does not report full success.
+- The Forward picker shows the message's first line, or its first attachment's filename, above the destination filter. Forwarded attachments download and prepare in the background. A status strip names the destination and stays visible through preparation and sending, even if you switch chats. Failed forwards can be retried from the destination chat. A confirmation names the destination after every part succeeds; a partial or cancelled forward does not report full success.
 - Per-chat unread tracking, surfaced as rail badges.
 - Deleting a chat folder requires confirmation, from both Settings and its context menu. Only the folder is removed; its chats stay in your chat list.
 - Folder rules file chats automatically: name includes a word, has a member (npub), has fewer or more than N people (you included), or has unread messages. Each folder matches all of its rules or any one of them. A chat goes to the first folder, in folder order, whose rules match. A chat you move by hand stays in that folder; choosing "Follow folder rules" in the move dialog hands it back to the rules. Member rules read each group's member list on every chat-list refresh, and only while such a rule exists.
@@ -83,6 +83,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - People lists people you follow. Starting a chat does not add someone to People. Private local-only nicknames, an archive, and npub QR codes are also available.
 - Profile popups have a Message button. It opens your existing DM, including an archived DM without restoring it, or creates a new DM if none is reusable.
 - Your profile is public. The optional Verified address field holds a Nostr identifier (NIP-05), not your email address.
+- Empty display name, about, and Lightning inputs show a muted "Not set" hint. Empty profile summary values also say "Not set".
 - Profiles without a loaded name show a deterministic adjective and animal, such as "Magnetic Panda", derived from their public key. Published names replace it when loaded; local nicknames take precedence. The npub remains visible on profile cards.
 - Import and export contacts as CSV or JSON from the contacts rail. Imports skip existing contacts and duplicate npubs, restore private nicknames and blocked state, and report added, skipped, and failed records. Published profile names still come from Nostr.
 
@@ -93,7 +94,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Film Noir adds visible, moving film grain to the whole view, including photos and video. Reduce motion freezes the grain; the filter adds no contrast or vignette.
 - Settings > Appearance > Center the conversation centers the message timeline and composer in a column at most 720px wide. Settings search accepts both "center" and "centre". Narrower windows use the available width; turning it off restores full width.
 - Settings > Appearance puts controls, the theme gallery, and a live conversation preview side by side on wide windows. Medium windows put controls beside stacked themes and preview; all three panels scroll independently. Narrow windows stack them on one page. The preview uses the normal chat renderer with a fictional marmot conversation, not your messages or draft.
-- The theme gallery has separate Dark and Light views and collection headings. Hover over a tile to preview it. Leaving the tile or pressing Escape restores your theme; clicking saves the choice.
+- The theme gallery has separate Dark and Light views and collection headings. Settings search finds the picker by any loaded theme's displayed name, including custom packs, without changing your theme. Hover over a tile to preview it. Leaving the tile or pressing Escape restores your theme; clicking saves the choice.
 - The Sidecar collection contains all 21 themes from [dmnyc's Sidecar](https://github.com/dmnyc/sidecar). Selecting one shows its source credit on the page and the selected tile. Collection headings have no links.
 - Royale and Royale Dark use XP Royale's blue chrome with pearl or charcoal surfaces and bevelled controls.
 - Chalkboard and Crayon use bundled Kalam lettering at 125%, textured surfaces, fixed rough strokes, and sketched avatars. The Hand-drawn filter toggle in Appearance turns the material effect off without changing the palette or lettering size. This filter preference is shared by both themes.
@@ -105,10 +106,34 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Chat transitions follow the conversation, not its position in the list. New messages can reorder the list without sliding the open chat.
 - Reduce motion hides animated synth, dust, scan, and wave backdrops, including the vault gate's synth backdrop. Static decorations remain visible.
 
+**Mobile Linux**
+
+Narrow windows show one view at a time, with full-width chat and contact
+lists. Use the bottom navigation to switch pages and Back to return from
+a conversation. Back keeps your draft and staged attachments. Settings,
+forms, dialogs and media controls reflow or scroll to fit the window.
+
+Tap or long-press a message for its actions, and long-press a chat for
+its row menu. A conversation's header holds Back, search and a menu with
+files, mentions, settings and members. The Chats menu holds Lock now and
+the command palette. The status bar appears only while you are offline or
+connecting. Rotating a phone keeps the text size; landscape gains room and
+the navigation drops its labels. Drag overflowing toolbars and choice rows
+sideways and page content vertically. Reduce motion keeps direct finger
+scrolling but disables the fling. Tap the composer to activate platform
+text input; opening a conversation does not raise the on-screen keyboard.
+On short screens, navigation gives the active view more room; Back restores
+it. Short conversations also hide the status readout, but retain progress
+and error banners.
+
+Linux ARM64 packages use the same interface (see [Install](#install)).
+The compositor supplies the on-screen keyboard through SDL's platform
+text-input support.
+
 **Privacy & data**
 
 - One password-encrypted vault holds every secret (see [Security model](#security-model)).
-- Lock now in the status bar or command palette closes the runtime, clears the vault key and session state, and returns to the password gate without closing the window. Unlock with your vault password to reconnect.
+- Lock now in the status bar (the Chats menu on phones) or command palette closes the runtime, clears the vault key and session state, and returns to the password gate without closing the window. Unlock with your vault password to reconnect.
 - Encrypted backup and restore for settings, drafts, custom emoji, and themes. Account keys and message history are not included.
 - Opt-in OTLP metrics and audit logging, both off until you turn them on in Settings.
 
@@ -491,6 +516,8 @@ in its main timeline, including after working in Whip. Reading positions are
 kept per account and conversation for the current unlocked session. A chat left
 at the newest message still follows the newest messages. Search results, reply
 jumps and Jump to latest take precedence over the saved reading position.
+Click a reply quote to jump to its original message. If the original isn't
+loaded in the current view, a brief notice explains why the view didn't move.
 
 Every project starts with a crop-circle avatar derived from its folder.
 Click the avatar to choose and crop a picture, or restore its crop circle.
@@ -851,6 +878,9 @@ its sealed data and returns to account setup.
 
 The get-started card checks for an existing key package before offering to
 publish one. A key package lets other people invite you to encrypted chats.
+Settings > Keys & identity > Key packages counts each package once and lists
+where it is stored. A package can be on this device and on several relays;
+the relay count describes copies of that package, not additional packages.
 Export encrypted key opens its password dialog on the first click.
 
 If relay discovery fails during key import or remote-signer login, missing lists
@@ -866,6 +896,14 @@ The app restores your last page, settings section and tab, the rail's Unread
 filter, and window size after a restart. Reopening Settings returns to the
 section you left. These preferences are independent of General's
 "Restore last chat" toggle, which controls only the selected conversation.
+
+Relay add fields under Network & relays start empty and ask you to enter a
+relay URL. Choosing Add with an empty or whitespace-only field focuses it
+and shows a correction without changing your relay lists.
+
+Event fetch relays require a `ws://` or `wss://` URL with a host. Local
+addresses, IPv6, ports, paths, and query strings are supported. Malformed
+input stays in the field with a correction message and is not saved.
 
 Set a SOCKS5 proxy under Settings > Network & relays > Relays. Enable the
 proxy, enter a numeric address such as `127.0.0.1:9050` or `[::1]:9050`,

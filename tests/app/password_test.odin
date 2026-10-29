@@ -4,6 +4,31 @@ import "core:strings"
 import "core:testing"
 
 @(test)
+password_feedback :: proc(t: ^testing.T) {
+	check: Password_Check
+	password_bits("", &check)
+	testing.expect(t, !check.common)
+	for password in ([]string{"password", "P@ssw0rd"}) {
+		testing.expect(t, password_bits(password, &check) < PASSWORD_MIN_BITS)
+		testing.expect(t, check.common)
+	}
+	password_bits("zjxvkpqm", &check)
+	testing.expect(t, !check.common)
+	password_bits("password", &check)
+	testing.expect(t, check.common)
+	password_bits("password", &check)
+	testing.expect(t, check.common)
+	testing.expect(
+		t,
+		password_bits("marmot on burrowed time thimble lantern", &check) >= PASSWORD_MIN_BITS,
+	)
+	testing.expect(t, !check.common)
+	password_bits("password", &check)
+	password_bits("", &check)
+	testing.expect(t, !check.common)
+}
+
+@(test)
 password_guess_resistance :: proc(t: ^testing.T) {
 	check: Password_Check
 	for password in ([]string{"", "x", "password", "Password123!", "qwertyuiop123!", "12345678901234567890", "abcdefghijklmnopqrstuvwxyz0123456789", "qwertyuiopasdfghjklzxcvbnm", "mnbvcxzlkjhgfdsapoiuytrewq", "films+pic+galeries", "F1lm5+P1c+G4ler1e5", "password____________________", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "abcabcabcabcabcabcabcabc", "password123password123password123password123", "ああああああああああああああああ"}) {

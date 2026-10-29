@@ -6,6 +6,7 @@
 //   nes_tick (frame loop) --pad--> wn-nes --frame + samples--> tex, audio
 package main
 
+import "core:c"
 import "core:fmt"
 import "core:strings"
 
@@ -319,6 +320,39 @@ nes_pad :: proc() -> u8 {
 			pad |= 1 << u8(bit)
 		}
 	}
+	if tap_size() {
+		for bit in 0 ..< 8 {
+			if rl.IsMouseButtonDown(.LEFT) &&
+			   clay.PointerOver(clay.ID("NesTouch", u32(bit))) {pad |= 1 << u8(bit)}
+		}
+		devices_count: c.int
+		devices := sdl.GetTouchDevices(&devices_count)
+		defer sdl.free(devices)
+		for device in devices[:int(devices_count)] {
+			if sdl.GetTouchDeviceType(device) != .DIRECT {continue}
+			count: c.int
+			fingers := sdl.GetTouchFingers(device, &count)
+			defer sdl.free(fingers)
+			for finger in fingers[:int(count)] {
+				x, y :=
+					finger.x *
+					f32(rl.GetScreenWidth()) /
+					UI_ZOOM,
+					finger.y *
+					f32(rl.GetScreenHeight()) /
+					UI_ZOOM
+				for bit in 0 ..< 8 {
+					box := clay.GetElementData(clay.ID("NesTouch", u32(bit)))
+					if !box.found {continue}
+					b := box.boundingBox
+					if x >= b.x &&
+					   y >= b.y &&
+					   x < b.x + b.width &&
+					   y < b.y + b.height {pad |= 1 << u8(bit)}
+				}
+			}
+		}
+	}
 	if pad & 0x30 == 0x30 {
 		pad &~= 0x30
 	}
@@ -336,20 +370,47 @@ handle_nes_input :: proc(ui: ^Ui_State) {
 	}
 }
 
-// Largest whole-pixel scale that fits the window, in layout units, so
-// every NES pixel covers the same number of device pixels.
+// Whole device pixels when they fit; small viewports downscale the image.
 @(private = "file")
 nes_fit :: proc() -> (w, h: f32) {
-	max_w := f32(rl.GetScreenWidth()) - NES_MARGIN * UI_ZOOM
-	max_h := f32(rl.GetScreenHeight()) - (NES_MARGIN + NES_CHROME) * UI_ZOOM
-	scale := max(f32(1), f32(int(min(max_w / NES_W, max_h / NES_H))))
-	return NES_W * scale / UI_ZOOM, NES_H * scale / UI_ZOOM
+	return nes_fit_bounds(
+		f32(rl.GetScreenWidth()) / UI_ZOOM,
+		f32(rl.GetScreenHeight()) / UI_ZOOM,
+		UI_ZOOM,
+		tap_size() ? .Touch : .Keyboard,
+	)
+}
+
+@(private)
+Nes_Fit_Mode :: enum {
+	Keyboard,
+	Touch,
+}
+
+@(private)
+nes_fit_bounds :: proc(width, height, zoom: f32, mode: Nes_Fit_Mode) -> (w, h: f32) {
+	max_w := max(1, width - NES_MARGIN)
+	max_h := max(1, height - NES_MARGIN - (mode == .Touch ? 190 : NES_CHROME))
+	fit := min(max_w * zoom / NES_W, max_h * zoom / NES_H)
+	scale := fit >= 1 ? f32(int(fit)) : fit
+	return NES_W * scale / zoom, NES_H * scale / zoom
 }
 
 nes_modal_draw :: proc(ui: ^Ui_State) {
+	w, h := nes_fit()
 	if clay.UI(clay.ID("NesModal"))(
 	{
-		layout = {layoutDirection = .TopToBottom, childGap = 8, padding = clay.PaddingAll(12)},
+		layout = {
+			sizing = {
+				width = clay.SizingFixed(tap_size() ? fit_w(max(320, w + 24)) : w + 24),
+				height = clay.SizingFit({max = modal_h(f32(rl.GetScreenHeight()) / UI_ZOOM)}),
+			},
+			layoutDirection = .TopToBottom,
+			childGap = 8,
+			padding = clay.PaddingAll(12),
+			childAlignment = {x = .Center},
+		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		floating = {
 			attachTo = .Root,
 			zIndex = 10,
@@ -368,11 +429,22 @@ nes_modal_draw :: proc(ui: ^Ui_State) {
 			},
 		},
 		) {
-			clay.Text(nes_player.title, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+			if clay.UI(clay.ID("NesTitle"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+			) {
+				clay.Text(
+					nes_player.title,
+					{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None},
+				)
+			}
 			if clay.UI(clay.ID("NesPad"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("NesClose"))(
 			{
-				layout = {padding = {left = 10, right = 10, top = 4, bottom = 4}},
+				layout = {
+					sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 26)},
+					padding = {left = 10, right = 10},
+					childAlignment = {y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : ROW_BG,
 				cornerRadius = rr(6),
 			},
@@ -380,18 +452,48 @@ nes_modal_draw :: proc(ui: ^Ui_State) {
 				clay.Text(tr("Close"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 			}
 		}
-		w, h := nes_fit()
 		if clay.UI(clay.ID("NesScreen"))(
 		{
 			layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}},
 			image = {imageData = &nes_player.tex},
 		},
 		) {}
-		clay.Text(
-			tr("Arrow keys move. X is A, Z is B, Enter is Start, Shift is Select."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-		)
+		if tap_size() {
+			labels := [8]string{"A", "B", tr("Select"), tr("Start"), "↑", "↓", "←", "→"}
+			for row in 0 ..< 2 {
+				if clay.UI(clay.ID("NesTouchRow", u32(row)))(
+				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
+				) {
+					for bit in row * 4 ..< row * 4 + 4 {
+						if clay.UI(clay.ID("NesTouch", u32(bit)))(
+						{
+							layout = {
+								sizing = {
+									width = clay.SizingGrow(),
+									height = clay.SizingFixed(44),
+								},
+								childAlignment = {x = .Center, y = .Center},
+							},
+							backgroundColor = hovered() ? HOVER : ROW_BG,
+							cornerRadius = rr(6),
+						},
+						) {
+							clay.Text(
+								labels[bit],
+								{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+							)
+						}
+					}
+				}
+			}
+		} else {
+			clay.Text(
+				tr("Arrow keys move. X is A, Z is B, Enter is Start, Shift is Select."),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+		}
 	}
+	scrollbar(clay.ID("NesModal"), 11)
 }
 
 // A zip holding nothing but one .nes ROM plays like the ROM itself:
@@ -424,7 +526,7 @@ nes_tile :: proc(view: ^Nes_View, id: u32, msg_id: string, att: int, file_name, 
 	if clay.UI(clay.ID("MsgNes", id))(
 	{
 		layout = {
-			sizing = {width = clay.SizingFixed(320)},
+			sizing = {width = clay.SizingFixed(min(320, att_w()))},
 			padding = clay.PaddingAll(10),
 			childGap = 10,
 			childAlignment = {y = .Center},

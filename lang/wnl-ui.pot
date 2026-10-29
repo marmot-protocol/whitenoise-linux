@@ -88,6 +88,10 @@ msgid "%d hours ago"
 msgstr ""
 
 #, c-format
+msgid "%d key packages. On this device: %d. On relays: %d."
+msgstr ""
+
+#, c-format
 msgid "%d member"
 msgstr ""
 
@@ -141,10 +145,6 @@ msgstr ""
 
 #, c-format
 msgid "%d of %d shared with you"
-msgstr ""
-
-#, c-format
-msgid "%d published, %d on this device, seen on %d relays."
 msgstr ""
 
 #, c-format
@@ -300,6 +300,10 @@ msgstr ""
 
 #, c-format
 msgid "+%d more"
+msgstr ""
+
+#, c-format
+msgid "1 key package. %s"
 msgstr ""
 
 msgid "1 vote"
@@ -1189,6 +1193,9 @@ msgstr ""
 msgid "Couldn't add the pack. No supported stickers are available."
 msgstr ""
 
+msgid "Couldn't add the relay. Enter a ws:// or wss:// URL with a host, such as wss://relay.example.com."
+msgstr ""
+
 #, c-format
 msgid "Couldn't archive. %s"
 msgstr ""
@@ -2045,10 +2052,19 @@ msgstr ""
 msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
 msgstr ""
 
+msgid "Enter a password"
+msgstr ""
+
 msgid "Enter a password to encrypt your backup."
 msgstr ""
 
 msgid "Enter a project name."
+msgstr ""
+
+msgid "Enter a relay URL (wss://…)"
+msgstr ""
+
+msgid "Enter a relay URL before adding it."
 msgstr ""
 
 msgid "Enter a sticker name of 1 to 64 characters."
@@ -2827,6 +2843,9 @@ msgstr ""
 msgid "Location maps"
 msgstr ""
 
+msgid "Location unknown."
+msgstr ""
+
 msgid "Lock now"
 msgstr ""
 
@@ -3288,10 +3307,32 @@ msgstr ""
 msgid "On"
 msgstr ""
 
+#, c-format
+msgid "On %d relay."
+msgstr ""
+
+#, c-format
+msgid "On %d relays."
+msgstr ""
+
 msgid "On accent"
 msgstr ""
 
+msgid "On relays."
+msgstr ""
+
 msgid "On sale"
+msgstr ""
+
+#, c-format
+msgid "On this device and on %d relay."
+msgstr ""
+
+#, c-format
+msgid "On this device and on %d relays."
+msgstr ""
+
+msgid "On this device and on relays."
 msgstr ""
 
 msgid "Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest."
@@ -3735,10 +3776,6 @@ msgstr ""
 msgid "RELAY"
 msgstr ""
 
-#, c-format
-msgid "RELAY · %d"
-msgstr ""
-
 msgid "RELAYS"
 msgstr ""
 
@@ -4111,6 +4148,9 @@ msgid "Science"
 msgstr ""
 
 msgid "Scroll speed"
+msgstr ""
+
+msgid "Scroll to read the full address."
 msgstr ""
 
 msgid "Search"
@@ -4689,6 +4729,9 @@ msgstr ""
 msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr ""
 
+msgid "The original message isn't loaded in this view."
+msgstr ""
+
 msgid "The passwords don't match. Type them again."
 msgstr ""
 
@@ -4755,6 +4798,9 @@ msgid "This changes White Noise project metadata, not running shells."
 msgstr ""
 
 msgid "This has no visible text, so the GM button sends GM."
+msgstr ""
+
+msgid "This is a common password"
 msgstr ""
 
 #, c-format

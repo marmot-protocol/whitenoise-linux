@@ -43,9 +43,12 @@ thread_back :: proc(ui: ^Ui_State) {
 		return
 	}
 	if ui.location_open {geo_picker_close(ui)}
+	delete(ui.jump_id)
+	ui.jump_id = strings.clone(ui.thread_stack[len(ui.thread_stack) - 1])
+	gs_flash_jump(ui, ui.jump_id)
 	delete(ui.thread_stack[len(ui.thread_stack) - 1])
 	pop(&ui.thread_stack)
-	ui.scroll_pending = true
+	ui.scroll_pending = false
 	thread_kick()
 }
 
@@ -87,15 +90,11 @@ thread_bar :: proc(ui: ^Ui_State) {
 	},
 	) {
 		cast_shade(clay.ID("ThreadBar"), .Down, 14, 0.35)
-		if clay.UI(clay.ID("ThreadBack"))(
-		{
-			layout = {padding = {left = 10, right = 10, top = 4, bottom = 4}},
-			backgroundColor = hovered() ? HOVER : {},
-			cornerRadius = rr(6),
-		},
-		) {
-			clay.Text("‹", {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
-		}
+		if !single_pane(
+			
+		) {if clay.UI(clay.ID("ThreadBack"))({layout = {sizing = {width = clay.SizingFit({min = tap_size() ? tap_min() : 0}), height = clay.SizingFit({min = tap_size() ? tap_min() : 0})}, padding = {left = 10, right = 10, top = 4, bottom = 4}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
+				clay.Text("‹", {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
+			}}
 		clay.Text(ICON_COMMENTS, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
 		if len(ui.thread_stack) > 1 {
 			clay.Text(
@@ -110,10 +109,19 @@ thread_bar :: proc(ui: ^Ui_State) {
 			if msg.id != cur {
 				continue
 			}
-			clay.Text(
-				fmt.tprintf("%s: %s", msg.sender, msg_preview(msg)),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
-			)
+			if clay.UI(clay.ID("ThreadSummary"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+			) {
+				clay.Text(
+					text_ellipsis(
+						fmt.tprintf("%s: %s", msg.sender, msg_preview(msg)),
+						max(1, page_w(ui) - 160),
+						FONT_BODY,
+						12,
+					),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO, wrapMode = .None},
+				)
+			}
 			break
 		}
 	}
@@ -129,7 +137,13 @@ thread_root_plate :: proc(ui: ^Ui_State) {
 		}
 		message_row(u32(i), msg)
 		if clay.UI(clay.ID("ThreadRootRule"))(
-		{layout = {padding = {left = 16, right = 16, top = 4, bottom = 2}}},
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childAlignment = {x = .Center},
+				padding = {left = 16, right = 16, top = 4, bottom = 2},
+			},
+		},
 		) {
 			clay.Text(
 				tr("• THREAD •"),

@@ -239,6 +239,11 @@ nip46_auth_url :: proc(ui: ^Ui_State, url: string) {
 
 @(private)
 nip46_detail :: proc(detail: string) -> string {
+	if strings.contains(detail, "directory lookup did not complete") {
+		return tr(
+			"Couldn't find your account on the relays. Check your relay settings and try again.",
+		)
+	}
 	switch detail {
 	case "remote signer not connected", "remote signer unavailable":
 		return tr("Your signer is unavailable.")

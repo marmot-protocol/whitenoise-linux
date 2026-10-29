@@ -26,6 +26,31 @@ test_rail_fits :: proc(t: ^testing.T) {
 	testing.expect(t, rail_fits(1200, RAIL_W_DEFAULT), "restore the list in a wide window")
 }
 
+@(test)
+test_initial_relay_state :: proc(t: ^testing.T) {
+	ui := Ui_State{}
+	testing.expect_value(t, net_state(&ui), Net_State.Connecting)
+	ui.health_ok = true
+	testing.expect_value(t, net_state(&ui), Net_State.Offline)
+	ui.health.total_relays = 2
+	ui.health.disconnected = 2
+	testing.expect_value(t, net_state(&ui), Net_State.Offline)
+	ui.health.disconnected = 1
+	ui.health.initialized = 1
+	testing.expect_value(t, net_state(&ui), Net_State.Connecting)
+	ui.health.initialized = 0
+	ui.health.connecting = 1
+	testing.expect_value(t, net_state(&ui), Net_State.Connecting)
+	ui.health.connecting = 0
+	ui.health.pending = 1
+	testing.expect_value(t, net_state(&ui), Net_State.Connecting)
+	ui.health.pending = 0
+	ui.health.connected = 1
+	testing.expect_value(t, net_state(&ui), Net_State.Online)
+	ui.health = {}
+	testing.expect_value(t, net_state(&ui), Net_State.Offline)
+}
+
 // Exercise the shell consumer, not just its fit calculation: after unlocking
 // and opening a chat the default window must contain both the list and chat.
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=rail_default_window
@@ -263,6 +288,15 @@ status_bar_viewports :: proc(t: ^testing.T) {
 							if data.found {data.scrollPosition.y = min(0, data.scrollContainerDimensions.height - data.contentDimensions.height)}
 							for _ in 0 ..< 3 {build_layout(&ui, 0)}
 						}
+						// Related links can put the page bottom beyond the board's
+						// virtualized rows. Scroll back until the final row mounts.
+						for _ in 0 ..< 64 {
+							if clay.GetElementData(target).found {break}
+							data := clay.GetScrollContainerData(viewport)
+							if !data.found {break}
+							data.scrollPosition.y = min(0, data.scrollPosition.y + 44)
+							for _ in 0 ..< 3 {build_layout(&ui, 0)}
+						}
 					}
 					owner := viewport
 					if page == .Settings &&
@@ -419,6 +453,8 @@ test_phone_detail :: proc(t: ^testing.T) {
 	testing.expect(t, phone_detail(&ui), "the new-chat pane is a detail")
 	phone_back_action(&ui)
 	testing.expect(t, ui.selected == 0, "the chat under the new-chat pane survives")
+	phone_back_action(&ui)
+	testing.expect(t, ui.selected == 0 && thread_cur(&ui) == "", "back leaves the thread first")
 	phone_back_action(&ui)
 	testing.expect(t, !phone_detail(&ui), "back from the chat shows the list")
 

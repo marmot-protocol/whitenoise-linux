@@ -128,6 +128,7 @@ drive the app into a given state for screenshots and harness runs.
 | `WN_SHOT` / `WN_SHOT_FRAME` | Capture `wn-odin-shot.png` after N frames, then exit. |
 | `WN_TEST_*` | Drive a specific pane/action on boot; see `main.odin`. |
 | `WN_DEBUG_INPUT` | Log input events. |
+| `WN_TEST_TOUCH` | Treat the display as a touch screen (headless phone runs). devctl's `ftap`, `fhold` and `fdrag` then drive real touch events. |
 | `WN_TEST_LINK` | Raise the external-link guard on a URL at frame 12. |
 | `WN_TEST_UPDATE_FEED` | Windows: point the Velopack updater at a local feed directory instead of GitHub releases (`updater.odin`). |
 | `WN_WS_DEBUG` | Log the websocket handshake behind nevent cards (`ws_shim.c`). |
@@ -178,6 +179,8 @@ packaged `wn-archive` and `wn-pdf` helpers, not in the UI process.
   fallback stack). It exists because the app was written against raylib
   first, and raylib has no IME text input and no dynamic glyph baking.
   `renderer.odin` is clay's official renderer, retargeted onto it.
+  `app/sdlrl/targets.odin` owns off-screen compositing targets, nested view
+  restoration, and the modal blur chain.
 - **Panes are flat procs.** `chatpane.odin`, `panes.odin`, `settings_pages.odin`
   and friends each build their part of the clay tree directly from `Ui_State`.
   Follow that: no widget objects, no retained view tree.
@@ -191,10 +194,18 @@ visible after reflow through the deferred settings scroll.
 `tests/app/shell_test.odin` exercises these boundaries through `build_layout`,
 including the status bar, at default, short, and zoomed window sizes.
 
+Login and account creation refresh relay health before showing the account,
+discarding snapshots from before its relays were installed. Initialized,
+pending, and connecting relays show CONNECTING; an empty or disconnected
+pool after setup shows OFFLINE.
+
 Video tiles render at up to 480 pixels wide. The preview requests its displayed
 physical width, including UI zoom and display density, capped at the source
 width. Resizing repaints paused frames too. Closing a shared fullscreen player
 returns its texture to the inline cap without restarting playback.
+
+Slideshow and PDF previous/next arrows dim at the first and last item.
+Disabled arrows do not navigate; PDF attachment tiles use the same boundaries.
 
 Chats keeps DMs and groups in one inbox, with Unread and Groups filters.
 Archived conversations live on the separate Archive page, not a Chats tab.
@@ -206,6 +217,10 @@ and membership controls. Archived rows appear only in Archived, never in the
 Chats, Unread or Groups filters, even when pinned. Archived conversations open
 without being restored; their list loads through the account worker with
 visible progress.
+
+Product and geocache event metadata owns its strings after parsing. Keep each
+type's owned fields in its fixed-size `nev_*_strings` array, shared by clone
+and free; address refreshes release the old metadata before replacement.
 
 ### Themes
 
@@ -233,6 +248,11 @@ cache and the offline queue seal with the vault's blob subkey.
 
 A wrong password fails the Poly1305 tag. There is no recovery: "Use another
 key" deletes the vault and everything sealed under it.
+
+The create-vault and change-password hints distinguish empty input, known
+common passwords, other weak passwords, and passwords that meet the existing
+40-bit estimate threshold. Common-password feedback uses the estimator's
+whole-password corpus match; it does not change password acceptance.
 
 ## Packaging
 

@@ -1,12 +1,79 @@
 package main
 
 import marmot "../marmot"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
+import "core:fmt"
 import "core:strings"
 import "core:sync"
 import "core:testing"
 import "core:thread"
 import rl "sdlrl"
+
+@(test)
+forward_picker_subject :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "forward_picker_subject" {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(1024, 700, "Forward picker")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts()
+	load_themes()
+	apply_theme(0, 0)
+	set_locale("en")
+	previous := clay.GetCurrentContext()
+	memory: []u8
+	init_layout(&memory, 32768, {1024, 700})
+	defer {clay.SetCurrentContext(previous); delete(memory)}
+	ui := Ui_State {
+		selected   = 0,
+		fwd_msg    = "wanted",
+		fwd_source = "source",
+	}
+	append(&ui.chats, Chat_Row_Ui{group_id = "source"}, Chat_Row_Ui{title = "Destination"})
+	append(&ui.messages, Msg_Ui{id = "neighbor", body = "Wrong message"}, Msg_Ui{id = "wanted"})
+	defer {delete(ui.chats); delete(ui.messages[1].attachments); delete(ui.messages)}
+	old_ui, old_prefs := g_ui, g_prefs
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {g_ui, g_prefs = old_ui, old_prefs}
+	append(&ui.messages[1].attachments, Att_Slot{})
+	for sample, i in ([]struct {
+			body, name, expected: string,
+			state:                Att_State,
+		}{{"First line\nSecond line", "", "First line", .Ready}, {"", "photo.png", "photo.png", .Ready}, {"", "report.pdf", "report.pdf", .Loading}, {"日本語のメッセージ", "", "日本語のメッセージ", .Ready}}) {
+		ui.messages[1].body = sample.body
+		ui.messages[1].attachments[0] = {
+			name  = sample.name,
+			state = sample.state,
+		}
+		for kind in ([]Fwd_Kind{.Message, .Theme, .Add_Member}) {
+			ui.fwd_kind = kind
+			clay.BeginLayout()
+			forward_modal(&ui)
+			commands := clay.EndLayout(0)
+			subject := clay.GetElementData(clay.ID("FwdSubject"))
+			testing.expect_value(t, subject.found, kind == .Message)
+			if kind != .Message {continue}
+			found := false
+			for command in commands.internalArray[:commands.length] {
+				if command.commandType != .Text {continue}
+				text := command.renderData.text.stringContents
+				shown := string(text.chars[:text.length])
+				testing.expect(t, shown != "Wrong message" && shown != "Second line")
+				if shown != sample.expected {continue}
+				found = true
+				box, card := command.boundingBox, subject.boundingBox
+				testing.expect(t, box.x >= card.x && box.x + box.width <= card.x + card.width)
+				testing.expect(t, box.y >= card.y && box.y + box.height <= card.y + card.height)
+			}
+			testing.expect(t, found, sample.expected)
+			rl.BeginDrawing()
+			draw_frame(&commands)
+			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-forward-picker-%d.png", i))
+			rl.EndDrawing()
+		}
+	}
+}
 
 @(test)
 add_peer_destinations :: proc(t: ^testing.T) {

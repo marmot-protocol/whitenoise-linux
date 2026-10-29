@@ -670,7 +670,7 @@ geo_view_key :: proc(key: string) -> string {
 @(private)
 geo_map :: proc(id: u32, key: string, pin: Geo_Point, zoom: int, w, h: f32) {
 	if g_ui == nil || !g_ui.prefs.map_consent {
-		if !geo_declined || key == GEO_PICK_KEY {geo_consent(id, w)}
+		if !geo_declined {geo_consent(id, w)}
 		return
 	}
 	view_key := geo_view_key(key)
@@ -828,7 +828,11 @@ geo_consent :: proc(id: u32, w: f32) {
 				primary := button.action == .Accept
 				if clay.UI(clay.ID("GeoConsentButton", id * 2 + u32(i)))(
 				{
-					layout = {padding = {left = 14, right = 14, top = 7, bottom = 7}},
+					layout = {
+						sizing = {height = clay.SizingFit({min = 44})},
+						padding = {left = 14, right = 14, top = 7, bottom = 7},
+						childAlignment = {y = .Center},
+					},
 					backgroundColor = primary ? ACCENT : hovered() ? HOVER : PLATE,
 					cornerRadius = rr(7),
 					border = {color = primary ? ACCENT : CARD_BORDER, width = bw()},
@@ -934,7 +938,10 @@ geo_controls :: proc(id: u32, view: Geo_View) {
 			if clay.UI(clay.ID("GeoButton", id * 4 + u32(i)))(
 			{
 				layout = {
-					sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(28)},
+					sizing = {
+						width = clay.SizingFixed(tap_size() ? tap_min() : 28),
+						height = clay.SizingFixed(tap_size() ? tap_min() : 28),
+					},
 					childAlignment = {x = .Center, y = .Center},
 				},
 				backgroundColor = hovered() ? HOVER : fade(PLATE, 0.92),
@@ -1201,7 +1208,7 @@ geo_picker :: proc(ui: ^Ui_State) {
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {clay.SizingFixed(w), clay.SizingFit({max = max(120, h - 40)})},
+			sizing = {clay.SizingFixed(w), clay.SizingFit({max = modal_h(h - 40)})},
 			padding = clay.PaddingAll(16),
 			childGap = 10,
 		},
@@ -1217,11 +1224,26 @@ geo_picker :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(tr("Send location"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
-		clay.Text(
-			tr("Drag the map to place the pin, or use your current location."),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-		)
+		if clay.UI(clay.ID("LocationHeader"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
+			clay.Text(tr("Send location"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
+			if clay.UI(clay.ID("LocationHeaderGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
+		}
+		if ui.prefs.map_consent {
+			clay.Text(
+				tr("Drag the map to place the pin, or use your current location."),
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			)
+		}
 		geo_map(
 			GEO_PICK_ID,
 			GEO_PICK_KEY,
@@ -1236,7 +1258,7 @@ geo_picker :: proc(ui: ^Ui_State) {
 		)
 		if ui.location_busy {
 			clay.Text(
-				tr("Requesting your location. Approve the desktop permission prompt if shown."),
+				tr("Requesting your location. Approve the permission prompt if shown."),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 			)
 			clay.Text(
@@ -1245,16 +1267,19 @@ geo_picker :: proc(ui: ^Ui_State) {
 			)
 			busy_bar("LocationBusy")
 		} else if ui.location_error {
-			clay.Text(
-				tr(
-					"Couldn't get your location. Check your desktop location permissions or pick a point on the map.",
-				),
-				{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+			error_text := tr(
+				"Couldn't get your location. Check your device's location permissions and try again.",
 			)
+			if ui.prefs.map_consent {
+				error_text = tr(
+					"Couldn't get your location. Check your device's location permissions or pick a point on the map.",
+				)
+			}
+			clay.Text(error_text, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
 		} else {
 			clay.Text(
 				tr(
-					"Your desktop location service handles the permission request. Nothing is sent to the chat until you choose Send location.",
+					"Your device asks for permission. Nothing is sent to the chat until you choose Send location.",
 				),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 			)
@@ -1270,6 +1295,7 @@ geo_picker :: proc(ui: ^Ui_State) {
 			if ui.location_selected {login_button("LocationSend", tr("Send location"), primary = true)}
 		}
 	}
+	scrollbar(clay.ID("LocationModal"), 12)
 }
 
 @(private)
@@ -1380,7 +1406,6 @@ handle_geo :: proc(ui: ^Ui_State) {
 			save_settings(ui)
 		} else {
 			geo_declined = true
-			if ui.location_open {geo_picker_close(ui)}
 		}
 		// The panel, the map and neither differ in height.
 		for &msg in ui.messages {msg.row_height = 0}

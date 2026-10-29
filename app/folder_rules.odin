@@ -339,7 +339,10 @@ folder_rules_parse :: proc(ui: ^Ui_State) -> (set: Folder_Rules, bad: int, why: 
 			}
 			rule.value = strings.clone(hex)
 		case .Fewer_Than, .More_Than:
-			if text == "" {continue}
+			if text == "" {
+				folder_rules_free(set)
+				return {}, i, tr("Enter a number of people.")
+			}
 			count, ok := strconv.parse_int(text, 10)
 			if !ok || count < 0 {
 				folder_rules_free(set)
@@ -369,7 +372,7 @@ folder_rules_editor :: proc(ui: ^Ui_State) {
 		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
 	)
 	if len(ui.folder_rules) > 1 {
-		if clay.UI(clay.ID("FolderMatch"))({layout = {childGap = 8}}) {
+		if clay.UI(clay.ID("FolderMatch"))(settings_choices(clay.ID("FolderMatch"))) {
 			folder_match_chip("FolderMatchAll", tr("Match all rules"), ui.folder_match == .All)
 			folder_match_chip("FolderMatchAny", tr("Match any rule"), ui.folder_match == .Any)
 		}
@@ -387,7 +390,7 @@ folder_match_chip :: proc(id, label: string, selected: bool) {
 	if clay.UI(clay.ID(id))(
 	{
 		layout = {
-			sizing = {height = clay.SizingFixed(32)},
+			sizing = {height = clay.SizingFixed(settings_tap_size(32))},
 			padding = {left = 12, right = 12},
 			childAlignment = {y = .Center},
 		},
@@ -407,125 +410,148 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 	if clay.UI(clay.ID("FolderRule", u32(index)))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFit()},
+			layoutDirection = .TopToBottom,
 			childGap = 8,
-			childAlignment = {y = .Center},
+			padding = clay.PaddingAll(8),
 		},
+		border = {color = FIELD_BORDER, width = bw()},
+		cornerRadius = rr(9),
 	},
 	) {
-		if clay.UI(clay.ID("FolderRuleKind", u32(index)))(
+		if clay.UI(clay.ID("FolderRuleHead", u32(index)))(
 		{
 			layout = {
-				sizing = {height = clay.SizingFixed(36)},
-				padding = {left = 10, right = 10},
+				sizing = {width = clay.SizingGrow()},
 				childGap = 8,
 				childAlignment = {y = .Center},
 			},
-			backgroundColor = menu_open ? SELECTED : (hovered() ? HOVER : ROW_BG),
-			border = {color = menu_open ? ACCENT : FIELD_BORDER, width = bw()},
-			cornerRadius = rr(9),
 		},
 		) {
-			clay.Text(
-				FOLDER_RULE_ICONS[draft.kind],
-				{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
-			)
-			clay.Text(
-				tr(FOLDER_RULE_LABELS[draft.kind]),
-				{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
-			)
-			clay.Text("\u2304", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
-			if hovered() && !menu_open {
-				tooltip(tr("Change rule type"))
-				cursor_raise(.Pointer)
-			}
-			if menu_open {
-				folder_rule_menu(index)
-			}
-		}
-		if folder_rule_typed(draft.kind) {
-			focused := ui.focus == .FolderRule && ui.folder_rule_focus == index
-			id := folder_rule_box_id(index)
-			counts := folder_rule_counts(draft.kind)
-			if clay.UI(clay.ID(id))(
+			if clay.UI(clay.ID("FolderRuleKind", u32(index)))(
 			{
 				layout = {
 					sizing = {
-						width = counts ? clay.SizingFixed(72) : clay.SizingGrow(),
-						height = clay.SizingFixed(36),
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(settings_tap_size(36)),
 					},
-					padding = {left = 12, right = 12},
+					padding = {left = 10, right = 10},
+					childGap = 8,
 					childAlignment = {y = .Center},
 				},
-				backgroundColor = ROW_BG,
+				backgroundColor = menu_open ? SELECTED : (hovered() ? HOVER : ROW_BG),
+				border = {color = menu_open ? ACCENT : FIELD_BORDER, width = bw()},
 				cornerRadius = rr(9),
-				border = {color = focused ? ACCENT : FIELD_BORDER, width = bw()},
 			},
 			) {
-				placeholder :=
-					draft.kind == .Has_Member ? "npub1..." : (counts ? (draft.kind == .Fewer_Than ? "2" : "0") : tr("Word"))
-				field_text(ui, id, &draft.input, placeholder, focused, 13, TEXT_LO)
+				clay.Text(
+					FOLDER_RULE_ICONS[draft.kind],
+					{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
+				)
+				clay.Text(
+					tr(FOLDER_RULE_LABELS[draft.kind]),
+					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
+				)
+				clay.Text("\u2304", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+				if hovered() && !menu_open {
+					tooltip(tr("Change rule type"))
+					cursor_raise(.Pointer)
+				}
+				if menu_open {
+					folder_rule_menu(index)
+				}
 			}
-			if counts {
-				clay.Text(tr("people"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
-			}
-		}
-		// Word and npub boxes fill the row; the rest push remove to the end.
-		if !folder_rule_typed(draft.kind) || folder_rule_counts(draft.kind) {
-			if clay.UI(clay.ID("FolderRuleGap", u32(index)))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-		}
-		if clay.UI(clay.ID("FolderRuleRemove", u32(index)))(
-		{
-			layout = {
-				sizing = {clay.SizingFixed(30), clay.SizingFixed(30)},
-				childAlignment = {x = .Center, y = .Center},
+			if clay.UI(clay.ID("FolderRuleRemove", u32(index)))(
+			{
+				layout = {
+					sizing = {
+						clay.SizingFixed(settings_tap_size(30)),
+						clay.SizingFixed(settings_tap_size(30)),
+					},
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(7),
 			},
-			backgroundColor = hovered() ? HOVER : {},
-			cornerRadius = rr(7),
-		},
-		) {
-			clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
-			if hovered() {
-				tooltip(tr("Remove rule"))
-				cursor_raise(.Pointer)
+			) {
+				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				if hovered() {tooltip(tr("Remove rule")); cursor_raise(.Pointer)}
+			}
+		}
+		if folder_rule_typed(draft.kind) {
+			if clay.UI(clay.ID("FolderRuleValue", u32(index)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					childGap = 8,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				focused := ui.focus == .FolderRule && ui.folder_rule_focus == index
+				id := folder_rule_box_id(index)
+				counts := folder_rule_counts(draft.kind)
+				if clay.UI(clay.ID(id))(
+				{
+					layout = {
+						sizing = {
+							width = clay.SizingGrow(),
+							height = clay.SizingFixed(settings_tap_size(36)),
+						},
+						padding = {left = 12, right = 12},
+						childAlignment = {y = .Center},
+					},
+					backgroundColor = ROW_BG,
+					cornerRadius = rr(9),
+					border = {color = focused ? ACCENT : FIELD_BORDER, width = bw()},
+				},
+				) {
+					placeholder :=
+						draft.kind == .Has_Member ? "npub1..." : (counts ? tr("Number") : tr("Word"))
+					field_text(ui, id, &draft.input, placeholder, focused, 13, TEXT_LO)
+				}
+				if counts {
+					clay.Text(
+						tr("people"),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					)
+				}
 			}
 		}
 	}
 }
 
-// Floats under the type chip, outside the editor's scroll clip, or above
-// it when the window has no room below.
+// Floats outside the editor's scroll clip and stays within the viewport.
 @(private = "file")
 folder_rule_menu :: proc(index: int) {
 	chip := clay.GetElementData(clay.ID("FolderRuleKind", u32(index)))
 	menu := clay.GetElementData(clay.ID("FolderRuleMenu"))
 	height: f32 = menu.found ? menu.boundingBox.height : 250
-	bottom := chip.boundingBox.y + chip.boundingBox.height + 4 + height
-	below := !chip.found || bottom <= f32(rl.GetScreenHeight()) / UI_ZOOM
-	under := clay.FloatingAttachPoints {
-		element = .LeftTop,
-		parent  = .LeftBottom,
-	}
-	over := clay.FloatingAttachPoints {
-		element = .LeftBottom,
-		parent  = .LeftTop,
-	}
+	width := fit_w(280)
+	x, y := panel_pos(
+		chip.boundingBox.x,
+		chip.boundingBox.y + chip.boundingBox.height + 4,
+		width,
+		min(height, modal_h(1200)),
+	)
 	if clay.UI(clay.ID("FolderRuleMenu"))(
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFit({min = 200})},
+			sizing = {
+				width = clay.SizingFixed(width),
+				height = clay.SizingFit({max = modal_h(1200)}),
+			},
 			padding = clay.PaddingAll(4),
 			childGap = 1,
 		},
 		floating = {
-			attachTo = .Parent,
-			offset = {0, below ? 4 : -4},
-			attachment = below ? under : over,
+			attachTo = .Root,
+			offset = {x, y},
+			attachment = {element = .LeftTop, parent = .LeftTop},
 			zIndex = 14,
 		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		backgroundColor = CARD,
 		cornerRadius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
@@ -539,6 +565,7 @@ folder_rule_menu :: proc(index: int) {
 			)
 		}
 	}
+	scrollbar(clay.ID("FolderRuleMenu"), 15)
 }
 
 @(private = "file")

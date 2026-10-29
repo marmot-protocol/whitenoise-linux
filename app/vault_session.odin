@@ -2,6 +2,7 @@ package main
 
 import "core:mem"
 import "core:os"
+import "core:strings"
 import "core:text/edit"
 import "core:thread"
 
@@ -15,9 +16,19 @@ import rl "sdlrl"
 lock_now :: proc(ui: ^Ui_State) {
 	ui.lock_requested = true
 	ui.pal_open = false
+	// Unlocking returns to where you locked: the open chat, or the inbox.
+	delete(relock_chat)
+	relock_chat = ""
+	if ui.selected >= 0 && ui.selected < len(ui.chats) {
+		relock_chat = strings.clone(ui.chats[ui.selected].group_id)
+	}
 	// This environment belongs to startup automation, not reauthentication.
 	os.unset_env("WN_VAULT_PW")
 }
+
+// The chat open when the vault was locked, reopened after unlock.
+@(private)
+relock_chat: string
 
 @(private)
 lock_wait_frame :: proc() {
@@ -86,6 +97,7 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	photo_crop_stop()
 	contact_import_stop(ui)
 	retention_stop()
+	voice_cancel()
 	for worker in send_threads {thread.join(worker); thread.destroy(worker)}
 	delete(send_threads); send_threads = {}
 	timeline_stop()
@@ -180,12 +192,15 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	delete(ui.account_signing); ui.account_signing = {}
 	editor_forget(ui)
 	keys_forget(ui)
+	close_export(ui)
+	backup_close(ui)
 	vault_pw_close(ui)
 	for &box in ui.vault_pw {session_buffer_forget(&box)}
 	for &box in ui.poll_inputs {session_buffer_forget(&box)}
 	delete(ui.poll_inputs); ui.poll_inputs = {}
 	for &box in ui.theme_fields {session_buffer_forget(&box)}
 	delete(ui.theme_fields); ui.theme_fields = {}
+	session_strings_forget(&ui.filter_previews)
 	// These fields are owning editors; borrowed labels and preferences are
 	// deliberately not traversed or destroyed.
 	session_buffer_forget(&ui.socks5_input)
@@ -224,6 +239,11 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	delete(ui.gs_hits); ui.gs_hits = {}
 	for chat in ui.gs_chats {chat_free(chat)}
 	delete(ui.gs_chats); ui.gs_chats = {}
+	for id in ui.gs_senders {delete(id)}
+	delete(ui.gs_senders); ui.gs_senders = {}
+	session_string_forget(&ui.gs_flash_id)
+	ui.gs_flash_until = 0
+	ui.gs_filters_open = false
 	for buffer in ([]^[dynamic]u8{&ui.gs_sender_input, &ui.gs_since, &ui.gs_until}) {session_buffer_forget(buffer)}
 	for text in ([]^string{&ui.gs_group, &ui.gs_sender, &ui.gs_cursor_id, &ui.gs_cursor_group, &ui.gs_error, &ui.gs_account}) {session_string_forget(text)}
 	ui.gs_more, ui.gs_loading, ui.gs_append, ui.gs_resume, ui.gs_jump_pending =

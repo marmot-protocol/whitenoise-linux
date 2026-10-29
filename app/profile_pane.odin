@@ -2,6 +2,7 @@ package main
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
+import "core:strings"
 
 // The Profile page's rail, in place of the chat list: the accounts on
 // this device (tap to switch), and the two settings sections that own
@@ -37,6 +38,7 @@ profile_rail :: proc(ui: ^Ui_State) {
 					layoutDirection = .TopToBottom,
 					childGap = 2,
 				},
+				clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
 			},
 			) {
 				clay.Text(
@@ -50,6 +52,7 @@ profile_rail :: proc(ui: ^Ui_State) {
 				if i < len(ui.account_signing) &&
 				   ui.account_signing[i].external {nip46_status_ui(ui, ui.account_ids[i], u32(i))}
 			}
+			scrollbar(clay.ID("PrAcctCol", u32(i)))
 			if active {
 				clay.Text(
 					tr("ACTIVE"),
@@ -85,7 +88,10 @@ profile_rail_link :: proc(id_str: string, icon: string, label: string) {
 	if clay.UI(clay.ID(id_str))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow()},
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFit({min = settings_tap_size(34)}),
+			},
 			padding = {left = 12, right = 12, top = 9, bottom = 9},
 			childGap = 10,
 			childAlignment = {y = .Center},
@@ -113,6 +119,7 @@ form_row :: proc(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow()},
+			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 			childGap = 12,
 			childAlignment = {y = .Center},
 		},
@@ -131,8 +138,7 @@ form_row :: proc(
 }
 
 // One label-left / value-right hairline row in the PROFILE card.
-// The whole row is a shortcut into the edit form, so it lights on
-// hover like any other actionable row.
+// Read-only; the explicit Edit profile button opens the form.
 profile_kv :: proc(
 	index: u32,
 	label: string,
@@ -146,24 +152,33 @@ profile_kv :: proc(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow()},
+			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 			padding = {left = 16, right = 16, top = 12, bottom = 12},
 			childAlignment = {y = .Center},
 			childGap = 10,
 		},
-		backgroundColor = hovered() ? HOVER : {},
 	},
 	) {
 		clay.Text(label, {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
 		if clay.UI(clay.ID("ProfileKvGap", index))(
 		{layout = {sizing = {width = clay.SizingGrow()}}},
 		) {}
-		clay.Text(
-			len(value) > 0 ? value : "—",
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-		)
-		if hovered() {
-			clay.Text(ICON_PENCIL, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
+		if clay.UI(clay.ID("ProfileKvValue", index))(
+		{
+			layout = {
+				sizing = {
+					width = single_pane() ? clay.SizingGrow() : clay.SizingFit({max = g_ui == nil ? 400 : max(1, page_w(g_ui) - 240)}),
+				},
+			},
+			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
+			clay.Text(
+				len(value) > 0 ? value : tr("Not set"),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, wrapMode = .None},
+			)
 		}
+		scrollbar(clay.ID("ProfileKvValue", index))
 	}
 	if !last {
 		if clay.UI(clay.ID("ProfileKvRule", index))(
@@ -191,7 +206,12 @@ profile_pane :: proc(ui: ^Ui_State) {
 		layout = {
 			sizing = {clay.SizingGrow(), clay.SizingGrow()},
 			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(20),
+			padding = {
+				left = single_pane() ? 12 : 20,
+				right = single_pane() ? 12 : 20,
+				top = single_pane() ? 12 : 20,
+				bottom = 36,
+			},
 			childGap = 12,
 		},
 		backgroundColor = background.customData == nil ? BG : clay.Color{},
@@ -204,13 +224,20 @@ profile_pane :: proc(ui: ^Ui_State) {
 		{
 			layout = {
 				sizing = {width = clay.SizingGrow()},
+				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 				childGap = 10,
 				childAlignment = {y = .Center},
 			},
 		},
 		) {
 			if clay.UI(clay.ID("ProfileHeadCol"))(
-			{layout = {layoutDirection = .TopToBottom, childGap = 3}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 3,
+				},
+			},
 			) {
 				clay.Text(
 					tr("Your profile"),
@@ -227,6 +254,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("EditProfileBtn"))(
 			{
 				layout = {
+					sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
 					padding = {left = 14, right = 14, top = 8, bottom = 8},
 					childGap = 8,
 					childAlignment = {y = .Center},
@@ -269,36 +297,38 @@ profile_pane :: proc(ui: ^Ui_State) {
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
-			if clay.UI(clay.ID("ProfileBanner"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(88)},
-					padding = {right = 24},
-					childGap = 10,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ACCENT,
-				cornerRadius = {topLeft = 14, topRight = 14},
-			},
-			) {
-				// Quiet dot ornament so the band reads designed, not
-				// unfinished, on every pack's accent.
-				if clay.UI(clay.ID("BannerFill"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {}
-				for size, i in ([3]f32{18, 30, 46}) {
-					if clay.UI(clay.ID("BannerDot", u32(i)))(
-					{
-						layout = {
-							sizing = {
-								width = clay.SizingFixed(size),
-								height = clay.SizingFixed(size),
-							},
-						},
-						backgroundColor = {255, 255, 255, 28},
-						cornerRadius = rr(size / 2),
+			if !ui.profile.editing {
+				if clay.UI(clay.ID("ProfileBanner"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(88)},
+						padding = {right = 24},
+						childGap = 10,
+						childAlignment = {y = .Center},
 					},
+					backgroundColor = ACCENT,
+					cornerRadius = {topLeft = 14, topRight = 14},
+				},
+				) {
+					// Quiet dot ornament so the band reads designed, not
+					// unfinished, on every pack's accent.
+					if clay.UI(clay.ID("BannerFill"))(
+					{layout = {sizing = {width = clay.SizingGrow()}}},
 					) {}
+					for size, i in ([3]f32{18, 30, 46}) {
+						if clay.UI(clay.ID("BannerDot", u32(i)))(
+						{
+							layout = {
+								sizing = {
+									width = clay.SizingFixed(size),
+									height = clay.SizingFixed(size),
+								},
+							},
+							backgroundColor = {255, 255, 255, 28},
+							cornerRadius = rr(size / 2),
+						},
+						) {}
+					}
 				}
 			}
 
@@ -311,7 +341,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					attachTo = .Parent,
 					clipTo = .AttachedParent,
 					zIndex = 5,
-					offset = {24, 40},
+					offset = {24, ui.profile.editing ? 16 : 40},
 					attachment = {element = .LeftTop, parent = .LeftTop},
 				},
 			},
@@ -357,35 +387,56 @@ profile_pane :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("ProfileHeroRow"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow()},
-					padding = {left = 136, right = 24, top = 14, bottom = 18},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFit({min = ui.profile.editing ? 128 : 0}),
+					},
+					padding = {
+						left = single_pane() ? 16 : 136,
+						right = single_pane() ? 16 : 24,
+						top = ui.profile.editing ? (single_pane() ? 124 : 28) : (single_pane() ? 60 : 14),
+						bottom = 18,
+					},
 					childGap = 14,
 					childAlignment = {y = .Center},
 				},
 			},
 			) {
 				if clay.UI(clay.ID("ProfileHeroCol"))(
-				{layout = {layoutDirection = .TopToBottom, childGap = 3}},
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						childGap = 3,
+					},
+				},
 				) {
-					// While editing, the hero previews the drafts live.
+					// Only the name previews here so About cannot shift the fields.
 					shown_name := ui.profile.editing ? string(ui.name_input[:]) : ui.profile.name
-					shown_about :=
-						ui.profile.editing ? string(ui.about_input[:]) : ui.profile.about
+					name_font := title_font != 0 ? title_font : FONT_TITLE
+					name_w := clay.GetElementData(clay.ID("ProfileHeroCol")).boundingBox.width
+					if name_w <= 0 {name_w = max(1, page_w(ui) - (single_pane() ? 80 : 220))}
 					clay.Text(
-						len(shown_name) > 0 ? shown_name : tr("(no display name)"),
-						{
-							fontId = title_font != 0 ? title_font : FONT_TITLE,
-							fontSize = 24,
-							textColor = TEXT,
-						},
+						text_ellipsis(
+							len(shown_name) > 0 ? shown_name : tr("(no display name)"),
+							name_w,
+							name_font,
+							24,
+						),
+						{fontId = name_font, fontSize = 24, textColor = TEXT, wrapMode = .None},
 					)
 					clay.Text(
-						len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : npub_tail(ui.profile.npub),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+						text_ellipsis(
+							len(ui.profile.username) > 0 && ui.profile.username != ui.profile.name ? fmt.tprintf("@%s", ui.profile.username) : npub_tail(ui.profile.npub),
+							name_w,
+							FONT_BODY,
+							12,
+						),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO, wrapMode = .None},
 					)
-					if len(shown_about) > 0 {
+					if !ui.profile.editing && len(ui.profile.about) > 0 {
 						clay.Text(
-							shown_about,
+							ui.profile.about,
 							{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 						)
 					}
@@ -417,18 +468,17 @@ profile_pane :: proc(ui: ^Ui_State) {
 					tr("DISPLAY NAME"),
 					"NameBox",
 					&ui.name_input,
-					tr("Your name"),
+					tr("Not set"),
 					ui.focus == .Name,
 				)
-				form_row(
-					ui,
-					1,
-					tr("ABOUT"),
-					"AboutBox",
-					&ui.about_input,
-					tr("A line about you"),
-					ui.focus == .About,
-				)
+				if strings.trim_space(string(ui.name_input[:])) == "" {
+					clay.Text(
+						tr("Enter a display name."),
+						{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+					)
+				}
+				eyebrow(tr("ABOUT"))
+				issue_editor(ui, &ui.about_input, .About, tr("Not set"), 100)
 				form_row(
 					ui,
 					2,
@@ -438,6 +488,12 @@ profile_pane :: proc(ui: ^Ui_State) {
 					tr("Leave empty unless you have one"),
 					ui.focus == .Nip05,
 				)
+				if !profile_addr_valid(string(ui.nip05_input[:])) {
+					clay.Text(
+						tr("Couldn't use this Nostr address. Double-check it and try again."),
+						{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+					)
+				}
 				clay.Text(
 					tr(
 						"Optional Nostr identifier (NIP-05), not your email address. This is public.",
@@ -447,16 +503,23 @@ profile_pane :: proc(ui: ^Ui_State) {
 				form_row(
 					ui,
 					3,
-					"LIGHTNING",
+					tr("LIGHTNING"),
 					"Lud16Box",
 					&ui.lud16_input,
-					"you@wallet.com",
+					tr("Not set"),
 					ui.focus == .Lud16,
 				)
+				if !profile_addr_valid(string(ui.lud16_input[:])) {
+					clay.Text(
+						tr("Couldn't use this Lightning address. Double-check it and try again."),
+						{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+					)
+				}
 				if clay.UI(clay.ID("ProfileFormActions"))(
 				{
 					layout = {
 						sizing = {width = clay.SizingGrow()},
+						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 						childGap = 10,
 						padding = {top = 6},
 						childAlignment = {y = .Center},
@@ -471,20 +534,31 @@ profile_pane :: proc(ui: ^Ui_State) {
 					if clay.UI(clay.ID("FormActionGap"))(
 					{layout = {sizing = {width = clay.SizingGrow()}}},
 					) {}
-					clay.Text(
-						tr("Enter publishes, Escape cancels."),
-						{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO},
-					)
+					if !single_pane() && !tap_size() {
+						clay.Text(
+							tr("Enter moves to the next field, Escape cancels."),
+							{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO},
+						)
+					}
+					ready := profile_ready(ui)
 					if clay.UI(clay.ID("PublishProfileBtn"))(
 					{
-						layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
-						backgroundColor = ACCENT,
+						layout = {
+							sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
+							padding = {left = 16, right = 16, top = 9, bottom = 9},
+							childAlignment = {x = .Center, y = .Center},
+						},
+						backgroundColor = ready ? ACCENT : FIELD_BORDER,
 						cornerRadius = rr(9),
 					},
 					) {
 						clay.Text(
 							tr("Publish changes"),
-							{fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT},
+							{
+								fontId = FONT_TITLE,
+								fontSize = 13,
+								textColor = ready ? ON_ACCENT : TEXT_LO,
+							},
 						)
 					}
 				}
@@ -507,6 +581,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
+					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
 					padding = {left = 16, right = 12, top = 10, bottom = 10},
 					childGap = 12,
 					childAlignment = {y = .Center},
@@ -558,26 +633,33 @@ profile_pane :: proc(ui: ^Ui_State) {
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				profile_kv(
-					0,
-					tr("Username"),
-					len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : "",
-					font = FONT_BODY,
-				)
+				if ui.profile.username != "" && ui.profile.username != ui.profile.name {
+					profile_kv(
+						0,
+						tr("Username"),
+						fmt.tprintf("@%s", ui.profile.username),
+						font = FONT_BODY,
+					)
+				}
 				profile_kv(1, tr("Verified address"), ui.profile.nip05, font = FONT_BODY)
-				profile_kv(2, "Lightning", ui.profile.lud16, font = FONT_BODY)
-				profile_kv(
-					3,
-					tr("Picture"),
-					ui.profile.pic_set ? tr("Set") : tr("Not set"),
-					true,
-					font = FONT_BODY,
-				)
+				profile_kv(2, tr("Lightning"), ui.profile.lud16, true, font = FONT_BODY)
 			}
 		}
 
+		if single_pane() {micro_button("ProfileAccounts", tr("Accounts"))}
 		if clay.UI(clay.ID("SignOutPad"))({layout = {padding = {top = 6}}}) {
 			login_button("SignOutBtn", tr("Sign out"))
+		}
+		if single_pane() {micro_button("ProfileRemoveAccount", tr("Remove account"), DANGER)}
+		if open_now(clay.ID("QrModal"), ui.qr_open) && ui.qr_tex != nil {
+			qr_modal(
+				ui,
+				Contact_Ui {
+					name = ui.profile.name,
+					npub = ui.profile.npub,
+					id_hex = ui.account_ref,
+				},
+			)
 		}
 	}
 	scrollbar(clay.ID("ProfilePage"))
