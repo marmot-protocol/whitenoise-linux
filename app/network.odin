@@ -15,6 +15,7 @@ import "core:net"
 import "core:os"
 import "core:strings"
 import "core:thread"
+import "core:unicode"
 import "core:unicode/utf8"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -871,6 +872,84 @@ relay_list_contains :: proc(relays: []string, input: []u8) -> bool {
 	return false
 }
 
+// Fetch endpoints bypass the SDK's relay-list validation. Keep local ws://
+// relays, ports and paths, but reject malformed authorities before saving.
+@(private)
+fetch_relay_valid :: proc(url: string) -> bool {
+	rest: string
+	if len(url) >= 6 &&
+	   strings.equal_fold(
+		   url[:6],
+		   "wss://",
+	   ) {rest = url[6:]} else if len(url) >= 5 && strings.equal_fold(url[:5], "ws://") {rest = url[5:]} else {return false}
+	for ch, i in url {
+		if unicode.is_space(ch) ||
+		   unicode.is_control(ch) ||
+		   strings.contains_rune("\\<>\"{}|^`", ch) {return false}
+		if ch == '%' {
+			if i + 2 >= len(url) {return false}
+			for digit in url[i + 1:i + 3] {
+				if !(digit >= '0' && digit <= '9') &&
+				   !(digit >= 'a' && digit <= 'f') &&
+				   !(digit >= 'A' && digit <= 'F') {return false}
+			}
+		}
+	}
+	end := len(rest)
+	for ch, i in rest {
+		if ch == '/' || ch == '?' || ch == '#' {end = i; break}
+	}
+	authority := rest[:end]
+	if at := strings.index_byte(authority, '@'); at >= 0 {
+		if strings.count(authority, "@") != 1 {return false}
+		authority = authority[at + 1:]
+	}
+	if len(authority) == 0 {return false}
+	host, port: string
+	if authority[0] == '[' {
+		close := strings.index_byte(authority, ']')
+		if close < 2 {return false}
+		host = authority[1:close]
+		_, ok := net.parse_ip6_address(host)
+		if !ok {return false}
+		if close + 1 < len(authority) {
+			if authority[close + 1] != ':' {return false}
+			port = authority[close + 2:]
+			if len(port) == 0 {return false}
+		}
+	} else {
+		host = authority
+		if colon := strings.index_byte(authority, ':'); colon >= 0 {
+			host, port = authority[:colon], authority[colon + 1:]
+			if len(port) == 0 {return false}
+		}
+		if len(host) == 0 {return false}
+		for i := 0; i < len(host); i += 1 {
+			ch := host[i]
+			if ch == '%' {
+				ch = 0
+				for digit in host[i + 1:i + 3] {
+					value := digit >= '0' && digit <= '9' ? digit - '0' : (digit | 32) - 'a' + 10
+					ch = ch * 16 + u8(value)
+				}
+				i += 2
+			}
+			if ch <= ' ' ||
+			   ch == 127 ||
+			   strings.index_byte(":[]/\\?#@<>\"{}|^`", ch) >= 0 {return false}
+		}
+	}
+	if len(port) > 0 {
+		n := 0
+		for ch in port {
+			if ch < '0' || ch > '9' {return false}
+			n = n * 10 + int(ch - '0')
+			if n > 65535 {return false}
+		}
+	}
+	return true
+}
+
 reload_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// load_profile only writes fields the cache has, so a field removed
 	// upstream must be emptied here or the old value would stay.
@@ -936,14 +1015,30 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Fetch relays and the client template are local prefs, so no
 	// confirm and no relay round trip: edit, save, done.
 	if clicked("AddFetchBtn") {
-		if strings.trim_space(string(ui.fetch_input[:])) == "" {
+		relay := strings.trim_space(string(ui.fetch_input[:]))
+		if relay == "" {
 			ui.focus = .Fetch
 			ui.banner_seen = ""
 			set_status(ui, tr("Enter a relay URL before adding it."), .Error)
 			return
 		}
-		if !relay_add_valid(ui.fetch_input[:], .Fetch) {return}
-		append(&ui.prefs.fetch_relays, strings.clone(string(ui.fetch_input[:])))
+		if !fetch_relay_valid(relay) {
+			relay_error_focus = .Fetch
+			relay_error_hash = hash.fnv64a(ui.fetch_input[:])
+			ui.focus = .Fetch
+			ui.banner_seen = ""
+			set_status(
+				ui,
+				tr(
+					"Couldn't add the relay. Enter a ws:// or wss:// URL with a host, such as wss://relay.example.com.",
+				),
+				.Error,
+			)
+			return
+		}
+		// The websocket shim selects TLS using the lowercase scheme.
+		scheme := relay[2] == ':' ? "ws://" : "wss://"
+		append(&ui.prefs.fetch_relays, strings.concatenate({scheme, relay[len(scheme):]}))
 		clear(&ui.fetch_input)
 		save_settings(ui)
 		return

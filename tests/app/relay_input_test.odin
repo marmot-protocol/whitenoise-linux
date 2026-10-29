@@ -3,7 +3,9 @@ package main
 import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
+import "core:os"
 import "core:strings"
+import "core:sync"
 import "core:testing"
 import "core:text/edit"
 import rl "sdlrl"
@@ -167,5 +169,56 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 			}
 			testing.expect(t, visible, "empty relay feedback is rendered on the next frame")
 		}
+	}
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	home, err := os.make_directory_temp("", "wn-fetch-relay", context.temp_allocator)
+	if !testing.expect(t, err == nil) {return}
+	defer os.remove_all(home)
+	previous_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
+	os.set_env("XDG_CONFIG_HOME", home)
+	defer {
+		settings_stop(&ui)
+		if previous_config ==
+		   "" {os.unset_env("XDG_CONFIG_HOME")} else {os.set_env("XDG_CONFIG_HOME", previous_config)}
+	}
+	ui.settings_tab = 1
+	ui.settings_anchor = "AddFetchRow"
+	ui.settings_scroll_pending = true
+	initial := len(ui.prefs.fetch_relays)
+	for input in ([]string{"not-a-url", "https://relay.example", "wss://", "ws:///path", "wss://relay.example:bad", "wss://relay.example:65536", "wss://[not-ipv6]", "wss://relay.example/a b", "wss://<relay>", "wss://relay\".example", "wss://%", "wss://%zz", "wss://%20", "wss://user@@relay.example"}) {
+		ed_set(&ui, &ui.fetch_input, input)
+		ui.focus = .Compose
+		for _ in 0 ..< 3 {frame(&ui)}
+		if !click(t, &ui, nil, "AddFetchBtn") {return}
+		commands := frame(&ui)
+		testing.expect_value(t, len(ui.prefs.fetch_relays), initial)
+		testing.expect_value(t, string(ui.fetch_input[:]), input)
+		testing.expect_value(t, ui.focus, Focus.Fetch)
+		testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
+		visible := false
+		for command in commands.internalArray[:commands.length] {
+			if command.commandType != .Text {continue}
+			text := command.renderData.text.stringContents
+			visible ||= string(text.chars[:text.length]) == ui.client_status
+		}
+		testing.expect(t, visible, "invalid URL feedback is rendered on the next frame")
+		testing.expect(t, !os.exists(settings_path()), "rejected input is not saved")
+	}
+	for input, i in ([]string{"wss://relay.example", "ws://localhost:8080/relay?token=abc", "ws://127.0.0.1:9000", "wss://[::1]:443/path?x=1", "  wss://relay.example/path  ", "wss://user:pass@relay.example/a%20b?token=%40", "wss://r%65lay.example", "WSS://Relay.Example/Path?Token=A", "Ws://localhost:8080"}) {
+		ed_set(&ui, &ui.fetch_input, input)
+		frame(&ui)
+		if !click(t, &ui, nil, "AddFetchBtn") {return}
+		testing.expect_value(t, len(ui.prefs.fetch_relays), initial + i + 1)
+		expected := strings.trim_space(input)
+		switch input {
+		case "WSS://Relay.Example/Path?Token=A":
+			expected = "wss://Relay.Example/Path?Token=A"
+		case "Ws://localhost:8080":
+			expected = "ws://localhost:8080"
+		}
+		testing.expect_value(t, ui.prefs.fetch_relays[initial + i], expected)
+		testing.expect_value(t, len(ui.fetch_input), 0)
+		testing.expect(t, os.exists(settings_path()))
 	}
 }

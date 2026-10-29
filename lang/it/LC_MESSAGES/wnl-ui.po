@@ -1274,6 +1274,9 @@ msgstr "Impossibile aggiungere questo relay. Controlla l'indirizzo e riprova."
 msgid "Couldn't add the pack. No supported stickers are available."
 msgstr "Impossibile aggiungere il pacchetto. Non ci sono adesivi supportati disponibili."
 
+msgid "Couldn't add the relay. Enter a ws:// or wss:// URL with a host, such as wss://relay.example.com."
+msgstr "Impossibile aggiungere il relay. Inserisci un URL ws:// o wss:// con un host, come wss://relay.example.com."
+
 #, c-format
 msgid "Couldn't archive. %s"
 msgstr "Impossibile archiviare la chat. %s"
