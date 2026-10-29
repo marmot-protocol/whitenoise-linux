@@ -29,26 +29,26 @@ test_rail_fits :: proc(t: ^testing.T) {
 @(test)
 test_initial_relay_state :: proc(t: ^testing.T) {
 	ui := Ui_State{}
-	testing.expect_value(t, net_state(&ui), .Connecting)
+	testing.expect_value(t, net_state(&ui), Net_State.Connecting)
 	ui.health_ok = true
-	testing.expect_value(t, net_state(&ui), .Offline)
+	testing.expect_value(t, net_state(&ui), Net_State.Offline)
 	ui.health.total_relays = 2
 	ui.health.disconnected = 2
-	testing.expect_value(t, net_state(&ui), .Offline)
+	testing.expect_value(t, net_state(&ui), Net_State.Offline)
 	ui.health.disconnected = 1
 	ui.health.initialized = 1
-	testing.expect_value(t, net_state(&ui), .Connecting)
+	testing.expect_value(t, net_state(&ui), Net_State.Connecting)
 	ui.health.initialized = 0
 	ui.health.connecting = 1
-	testing.expect_value(t, net_state(&ui), .Connecting)
+	testing.expect_value(t, net_state(&ui), Net_State.Connecting)
 	ui.health.connecting = 0
 	ui.health.pending = 1
-	testing.expect_value(t, net_state(&ui), .Connecting)
+	testing.expect_value(t, net_state(&ui), Net_State.Connecting)
 	ui.health.pending = 0
 	ui.health.connected = 1
-	testing.expect_value(t, net_state(&ui), .Online)
+	testing.expect_value(t, net_state(&ui), Net_State.Online)
 	ui.health = {}
-	testing.expect_value(t, net_state(&ui), .Offline)
+	testing.expect_value(t, net_state(&ui), Net_State.Offline)
 }
 
 // Exercise the shell consumer, not just its fit calculation: after unlocking

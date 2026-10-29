@@ -5,6 +5,7 @@ import "core:sync"
 import "core:testing"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import rl "sdlrl"
 
 @(test)
 reading_restore_scope :: proc(t: ^testing.T) {
@@ -57,9 +58,11 @@ reply_parent_feedback :: proc(t: ^testing.T) {
 	}
 	append(&ui.messages, Msg_Ui{id = "loaded-parent"})
 	defer {
-		delete(ui.messages); delete(ui.jump_id); delete(ui.toast)
+		delete(ui.messages); delete(ui.jump_id); delete(ui.toast); delete(ui.gs_flash_id)
 		forced_release = false; reply_jump_hover = ""
+		rl.PushMouseButton(.LEFT, false)
 	}
+	rl.PushMouseButton(.LEFT, true)
 	clay.BeginLayout()
 	clay.EndLayout(0)
 	for id in ([]string{"missing-parent", "loaded-parent"}) {

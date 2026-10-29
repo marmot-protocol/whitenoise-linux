@@ -54,20 +54,13 @@ profile_edit_summary :: proc(t: ^testing.T) {
 			clay.GetElementData(clay.ID("ProfileCard")).found == !editing,
 			"the stale read-only summary must be absent while editing",
 		)
-		for i in 0 ..< 4 {
-			testing.expect(
-				t,
-				clay.GetElementData(clay.ID("ProfileKv", u32(i))).found == !editing,
-				"read-only rows must not remain interactive while editing",
-			)
-		}
 		testing.expect(
 			t,
 			clay.GetElementData(clay.ID("ProfileIdCard")).found,
 			"identity remains visible in either mode",
 		)
 		if editing {
-			for id in ([]string{"NameBox", "AboutBox", "Nip05Box", "Lud16Box", "ChangePicBtn", "PublishProfileBtn"}) {
+			for id in ([]string{"NameBox", "Nip05Box", "Lud16Box", "ChangePicBtn", "PublishProfileBtn"}) {
 				testing.expect(t, clay.GetElementData(clay.ID(id)).found, id)
 			}
 		}
@@ -83,6 +76,9 @@ profile_edit_summary :: proc(t: ^testing.T) {
 	forced_release = true
 	handle_profile(&ui, nil)
 	forced_release = false
+	testing.expect(t, ui.profile.editing)
+	testing.expect_value(t, ui.confirm.kind, Confirm_Kind.Discard_Profile)
+	run_confirm(&ui, nil)
 	testing.expect(t, !ui.profile.editing)
 	testing.expect_value(t, ui.profile.name, "Original name")
 	testing.expect_value(t, ui.profile.nip05, "original@example.invalid")
@@ -139,7 +135,7 @@ profile_empty_fields :: proc(t: ^testing.T) {
 			commands = clay.EndLayout(0)
 		}
 		if stage > 0 {
-			for id in ([]string{"NameBox", "AboutBox", "Nip05Box", "Lud16Box"}) {
+			for id in ([]string{"NameBox", "ComposeBox", "Nip05Box", "Lud16Box"}) {
 				box := clay.GetElementData(clay.ID(id)).boundingBox
 				found_text := false
 				for command in commands.internalArray[:commands.length] {

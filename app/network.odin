@@ -75,10 +75,13 @@ settings_account_busy :: proc(ui: ^Ui_State) -> bool {
 relay_add_valid :: proc(value: []u8, focus: Focus) -> bool {
 	url := strings.trim_space(string(value))
 	host := url
-	if strings.has_prefix(
-		url,
-		"wss://",
-	) {host = url[6:]} else if strings.has_prefix(url, "ws://") {host = url[5:]} else {host = ""}
+	if len(url) >= 6 && strings.equal_fold(url[:6], "wss://") {
+		host = url[6:]
+	} else if len(url) >= 5 && strings.equal_fold(url[:5], "ws://") {
+		host = url[5:]
+	} else {
+		host = ""
+	}
 	end := len(host)
 	for ch, i in host {
 		if ch == '/' || ch == '?' || ch == '#' {end = i; break}
@@ -967,7 +970,9 @@ reload_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // ── Clicks ──────────────────────────────────────────────────────────
 
 handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if clicked("AddRelayBtn") && !relay_add_valid(ui.relay_input[:], .Relay) {return}
+	if clicked("AddRelayBtn") &&
+	   strings.trim_space(string(ui.relay_input[:])) != "" &&
+	   !relay_add_valid(ui.relay_input[:], .Relay) {return}
 	if clicked("SaveSocks5") {
 		save_socks5(ui)
 		return

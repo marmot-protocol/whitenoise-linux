@@ -16,13 +16,13 @@ agent_connector_back :: proc(t: ^testing.T) {
 		}
 		kb_focus = "AgentCopyPrompt"
 		settings_back(&ui)
-		testing.expect_value(t, ui.page, .Settings)
-		testing.expect_value(t, ui.settings_section, .Agents)
+		testing.expect_value(t, ui.page, Page.Settings)
+		testing.expect_value(t, ui.settings_section, Settings_Section.Agents)
 		testing.expect_value(t, ui.agent_connector, 0)
 		testing.expect_value(t, kb_focus, "")
 		testing.expect(t, ui.settings_scroll_pending)
 		settings_back(&ui)
-		testing.expect_value(t, ui.settings_section, .Home)
+		testing.expect_value(t, ui.settings_section, Settings_Section.Home)
 	}
 }
 

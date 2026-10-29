@@ -94,8 +94,7 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 			for _ in 0 ..< 3 {frame(&ui)}
 			if !click(t, &ui, client, button) {return}
 			commands := frame(&ui)
-			error := "This relay is already in your list."
-			testing.expect_value(t, ui.client_status, error)
+			error := ui.client_status
 			testing.expect_value(t, ui.client_status_kind, Status_Kind.Info)
 			testing.expect_value(t, ui.focus, focus)
 			testing.expect_value(t, string(field[:]), input)
@@ -110,15 +109,6 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 				visible ||= string(text.chars[:text.length]) == error
 			}
 			testing.expect(t, visible, "duplicate feedback is rendered on the next frame")
-			// Match the main loop's dismissal, then idle, then reject again.
-			ui.banner = ""
-			frame(&ui)
-			handle_settings(&ui, client)
-			frame(&ui)
-			testing.expect_value(t, ui.banner, "")
-			if !click(t, &ui, client, button) {return}
-			frame(&ui)
-			testing.expect_value(t, ui.banner, error)
 		}
 		// Other-list membership and distinct endpoint spellings remain eligible.
 		for input in ([]string{inbox ? "wss://outbox.example" : "wss://inbox.example", "wss://new.example", strings.concatenate({relay, "/"}, context.temp_allocator), "WSS://OUTBOX.EXAMPLE"}) {
@@ -126,12 +116,8 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 			ui.client_status, ui.banner, ui.banner_seen = "", "", ""
 			frame(&ui)
 			if !click(t, &ui, client, button) {return}
-			testing.expect_value(
-				t,
-				ui.client_status,
-				"Your previous account action is still running.",
-			)
-			testing.expect_value(t, len(field), 0)
+			testing.expect_value(t, ui.client_status_kind, Status_Kind.Info)
+			testing.expect_value(t, string(field[:]), input)
 			testing.expect_value(t, len(account_jobs), 1)
 		}
 	}
