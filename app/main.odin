@@ -345,6 +345,9 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			if open_now(clay.ID("FolderModal"), ui.folder_open) {
 				folder_modal(ui)
 			}
+			if open_now(clay.ID("WhipProjectModal"), ui.whip_edit_open) {
+				whip_project_modal(ui)
+			}
 			if open_now(clay.ID("AccountsModal"), ui.accounts_open) {
 				accounts_modal(ui)
 			}
@@ -841,6 +844,7 @@ app_main :: proc() {
 			// still owns input, including global shortcuts and media handlers.
 			photo_captured := photo_input_capture(&ui)
 			location_captured := ui.location_open
+			whip_project_captured := ui.whip_edit_open
 			photo_interactive := photo_image(&ui.photo).data != nil
 			defer messages_collect()
 			defer chats_collect()
@@ -916,6 +920,7 @@ app_main :: proc() {
 			}
 			export_drain(&ui, client)
 			contacts_import_drain(&ui, client)
+			whip_project_poll(&ui)
 			search_drain(&ui, client)
 			media_drain(&ui)
 			agent_tick(&ui, tl_at_bottom ? .Follow : .Hold)
@@ -941,6 +946,7 @@ app_main :: proc() {
 			photo_crop_drain(&ui, client, false)
 			if !photo_captured &&
 			   !location_captured &&
+			   !whip_project_captured &&
 			   (rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL)) {
 				if rl.IsKeyPressed(.EQUAL) {
 					ui.prefs.zoom_pct += 10
@@ -958,7 +964,7 @@ app_main :: proc() {
 					save_settings(&ui)
 				}
 			}
-			if !photo_captured {inbox_shortcuts(&ui, client)}
+			if !photo_captured && !whip_project_captured {inbox_shortcuts(&ui, client)}
 
 			// Synthetic click injection for headless tests: "x,y[,x,y...]",
 			// one click per pair, released every 25 frames from frame 20.
@@ -1040,6 +1046,7 @@ app_main :: proc() {
 			wheel := rl.GetMouseWheelMoveV()
 			location_scroll := location_captured || ui.location_open
 			if photo_captured ||
+			   (whip_project_captured && !clay.PointerOver(clay.ID("WhipProjectBody"))) ||
 			   (location_scroll &&
 					   (!ui.location_open || !clay.PointerOver(clay.ID("LocationModal")))) {
 				wheel = {}
@@ -1047,14 +1054,16 @@ app_main :: proc() {
 			}
 			// Ctrl + wheel zooms the interface; the wheel is consumed so
 			// it doesn't also scroll.
-			if !location_scroll && ctrl_down() && wheel.y != 0 {
+			if !location_scroll && !whip_project_captured && ctrl_down() && wheel.y != 0 {
 				ui.prefs.zoom_pct += wheel.y > 0 ? 10 : -10
 				apply_zoom(&ui)
 				save_settings(&ui)
 				wheel = {}
 			}
-			whip_tab_wheel(&ui, &wheel)
-			chat_filter_wheel(&ui, &wheel)
+			if !whip_project_captured {
+				whip_tab_wheel(&ui, &wheel)
+				chat_filter_wheel(&ui, &wheel)
+			}
 			if preview_shown &&
 			   (preview.kind == .Image || preview.kind == .Slides) &&
 			   clay.PointerOver(clay.ID("PvScroll")) {
@@ -1313,36 +1322,38 @@ app_main :: proc() {
 			emoji_sets_drain(&ui)
 			gif_drain(&ui)
 			whip_avatar_drain(&ui)
-			switch status, project := rl.WhipCreatePoll(); status {
-			case .Ready:
-				ui.whip_creating = false
-				whip_open_project(&ui, project)
-				ui.chat_filter = .Chats
-				ui.chat_folder = ""
-				clear(&ui.sidebar_filter)
-				set_status(&ui, tr("Project created."), .Info)
-			case .Failed:
-				ui.whip_creating = false
-				set_status(&ui, tr("Couldn't create the project. Please try again."), .Error)
-			case .Idle, .Creating:
-			}
-
-			switch status, tab := rl.WhipTabPoll(); status {
-			case .Ready:
-				if ui.whip_tab_op == .New {
-					ui.whip_tabs[ui.whip_tab_project] = tab
-				} else if ui.whip_tabs[ui.whip_tab_project] == tab {
-					delete_key(&ui.whip_tabs, ui.whip_tab_project)
+			if !whip_project_captured && !ui.whip_edit_open {
+				switch status, project := rl.WhipCreatePoll(); status {
+				case .Ready:
+					ui.whip_creating = false
+					whip_open_project(&ui, project)
+					ui.chat_filter = .Chats
+					ui.chat_folder = ""
+					clear(&ui.sidebar_filter)
+					set_status(&ui, tr("Project created."), .Info)
+				case .Failed:
+					ui.whip_creating = false
+					set_status(&ui, tr("Couldn't create the project. Please try again."), .Error)
+				case .Idle, .Creating:
 				}
-				ui.whip_tab_op = .None
-			case .Failed:
-				set_status(
-					&ui,
-					ui.whip_tab_op == .New ? tr("Couldn't create the tab. Please try again.") : tr("Couldn't close the tab. Please try again."),
-					.Error,
-				)
-				ui.whip_tab_op = .None
-			case .Idle, .Creating:
+
+				switch status, tab := rl.WhipTabPoll(); status {
+				case .Ready:
+					if ui.whip_tab_op == .New {
+						ui.whip_tabs[ui.whip_tab_project] = tab
+					} else if ui.whip_tabs[ui.whip_tab_project] == tab {
+						delete_key(&ui.whip_tabs, ui.whip_tab_project)
+					}
+					ui.whip_tab_op = .None
+				case .Failed:
+					set_status(
+						&ui,
+						ui.whip_tab_op == .New ? tr("Couldn't create the tab. Please try again.") : tr("Couldn't close the tab. Please try again."),
+						.Error,
+					)
+					ui.whip_tab_op = .None
+				case .Idle, .Creating:
+				}
 			}
 
 			// Files picked in the async SDL dialog land here; they become
@@ -1409,8 +1420,16 @@ app_main :: proc() {
 
 			long_press_tick() // before any handler reads long_pressed
 			location_captured = location_captured || ui.location_open
-			whip_captured := !photo_captured && !location_captured && whip_attach_input(&ui)
-			if !photo_captured && !location_captured && !whip_captured {
+			whip_captured :=
+				!photo_captured &&
+				!location_captured &&
+				!whip_project_captured &&
+				whip_attach_input(&ui)
+			if !photo_captured &&
+			   !location_captured &&
+			   !whip_captured &&
+			   !whip_project_captured &&
+			   !ui.whip_edit_open {
 				if clicked("LockNow") {
 					lock_now(&ui)
 					lock_wait_frame()
@@ -1459,6 +1478,8 @@ app_main :: proc() {
 				if !ui.location_open {scroll_residual = {}}
 			} else if nes_player.open {
 				handle_nes_input(&ui) // the game owns the keyboard
+			} else if whip_project_captured || ui.whip_edit_open {
+				if ui.whip_edit_open {whip_project_input(&ui)}
 			} else if ui.folder_open {
 				handle_folder_modal(&ui, client)
 			} else if ui.pal_open {
@@ -1506,9 +1527,11 @@ app_main :: proc() {
 			// message bodies: a drag that selected something swallows the
 			// release, so dragging across a link doesn't open it.
 			photo_captured = photo_captured || photo_input_capture(&ui)
+			whip_project_captured = whip_project_captured || ui.whip_edit_open
 			if !photo_captured &&
 			   !location_captured &&
 			   !ui.location_open &&
+			   !whip_project_captured &&
 			   !whip_captured &&
 			   !whip_attach_pointer(&ui) &&
 			   !ui.pal_open &&
@@ -1563,19 +1586,25 @@ app_main :: proc() {
 			// hardware (phosh/squeekboard) whether that reads as helpful or
 			// as in the way; if it is in the way, the fix is a focus state
 			// that starts empty on a tap_size() window and fills on a tap.
-			if photo_captured || location_captured || ui.location_open {
+			if photo_captured ||
+			   location_captured ||
+			   ui.location_open ||
+			   (whip_project_captured && !ui.whip_edit_open) {
 				text_field_live = false
 				for rl.GetCharPressed() != 0 {}
 			}
-			whip_controls(&ui, client)
-			whip_view := whip_visibility(&ui)
+			if !whip_project_captured || ui.whip_edit_open {whip_controls(&ui, client)}
+			whip_view := whip_project_captured ? rl.Whip_Visibility.Hidden : whip_visibility(&ui)
+			whip_surfaces := whip_attach_surfaces(&ui)
+			if whip_project_captured {for &surface in whip_surfaces {surface.visible = false}}
 			rl.WhipFrame(
 				whip_view,
 				ui.whip_project,
 				ui.whip_tabs[ui.whip_project],
-				whip_attach_surfaces(&ui),
-				whip_attach_focused(&ui),
+				whip_surfaces,
+				whip_project_captured ? 0 : whip_attach_focused(&ui),
 			)
+			whip_project_sync(&ui)
 			whip_sync_tabs(&ui)
 			whip_activity_sync(&ui)
 			whip_focus_restore(&ui)
@@ -1591,7 +1620,7 @@ app_main :: proc() {
 				text_field_live ||
 				whip_view == .Visible ||
 				whip_view == .Unfocused ||
-				whip_attach_focused(&ui) != 0,
+				(!whip_project_captured && whip_attach_focused(&ui) != 0),
 			)
 			if text_field_live {
 				rl.SetTextInputArea(
@@ -1605,6 +1634,7 @@ app_main :: proc() {
 			if !photo_captured &&
 			   !location_captured &&
 			   !ui.location_open &&
+			   !whip_project_captured &&
 			   !whip_captured &&
 			   !whip_attach_pointer(&ui) {
 				handle_orbit()
@@ -1843,6 +1873,7 @@ app_main :: proc() {
 		// Shutdown order matters: closing the runtime makes the blocking
 		// subscription read return CLOSED (worker exits), then the sub is
 		// freed before the client that created it.
+		whip_project_stop(&ui)
 		whip_avatar_stop(&ui)
 		session_stop(&ui, client, &live)
 		preview_close()

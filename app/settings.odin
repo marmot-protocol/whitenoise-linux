@@ -78,6 +78,7 @@ Prefs :: struct {
 	folder_rules:          map[string]Folder_Rules, // folder name → automatic filing rules
 	whip_avatars:          map[string]string, // canonical project folder → owned image basename
 	whip_activity:         map[string]u64, // canonical project folder → latest observed Unix seconds
+	whip_projects:         [dynamic]Whip_Project_Meta, // owned local project name/root overrides
 	whip_workspaces:       [dynamic]Whip_Workspace,
 	whip_selected_tabs:    [dynamic]Whip_Saved_Tab,
 	whip_placements:       [dynamic]Whip_Saved_Placement,

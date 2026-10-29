@@ -167,11 +167,13 @@ editor_forget :: proc(ui: ^Ui_State) {
 
 @(private)
 lock_scrub_ui :: proc(ui: ^Ui_State) {
+	whip_project_stop(ui)
 	whip_attach_clear(ui)
 	if ui.photo.pending || ui.whip_picking_project {rl.DiscardFileDialogResult()}
 	ui.whip_picking_project, ui.whip_creating, ui.whip_open = false, false, false
 	ui.whip_project, ui.whip_tab_project = 0, 0
 	ui.whip_tab_op = .None
+	ui.whip_tab_drag = {}
 	delete(ui.whip_tabs); ui.whip_tabs = nil
 	photo_cancel(ui)
 	login_pair_clear(ui)

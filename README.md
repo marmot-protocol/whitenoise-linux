@@ -417,6 +417,20 @@ hidden until you hover their top edge. Their names and controls overlay
 the terminal without resizing it. Floating titlebars stay visible.
 Keyboard tab changes and window resizing keep the active tab in view. The
 ordinary mouse wheel browses the tab strip horizontally without changing tabs.
+Drag a tab to reorder it. The accent marker shows where it will land; holding
+it at either edge scrolls the strip. Drop outside the strip or press Escape
+to cancel. Reordering keeps the selected terminal open, and numbered and
+previous/next shortcuts follow the displayed order. White Noise saves this
+order per account and project for the same running Whip server; standalone
+Whip's order is unchanged.
+
+Right-click a terminal and choose Edit project, or click its name in the
+header, to change its name and root folder. Enter an absolute path or one
+starting with `~/`. White Noise saves these overrides locally; running
+shells and standalone Whip are unchanged. An explicit root stays fixed when
+the first tab changes directories. Correcting it preserves pins, folder
+assignments, avatars and saved tab order. Folder validation runs in the
+background and keeps your draft open if the path needs correcting.
 
 Appearance zoom scales terminal text along with the rest of the interface.
 Fonts are rerasterized at the host's pixel scale rather than stretching an old

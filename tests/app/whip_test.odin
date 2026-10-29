@@ -3,6 +3,7 @@ package main
 import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
+import "core:encoding/json"
 import "core:fmt"
 import "core:os"
 import "core:strings"
@@ -112,9 +113,12 @@ whip_embed :: proc(t: ^testing.T) {
 	defer {g_ui, g_prefs = nil, nil}
 	defer rl.WhipClose()
 	defer whip_avatar_stop(&ui)
+	defer whip_project_stop(&ui)
 	frame :: proc(ui: ^Ui_State, expected := "") -> bool {
 		free_all(context.temp_allocator)
 		rl.WindowShouldClose()
+		whip_project_poll(ui)
+		if ui.whip_edit_open {whip_project_input(ui)}
 		inbox_shortcuts(ui, nil)
 		if !ui.whip_open &&
 		   ui.selected >= 0 &&
@@ -142,6 +146,7 @@ whip_embed :: proc(t: ^testing.T) {
 		whip_controls(ui, nil)
 		visibility := whip_visibility(ui)
 		rl.WhipFrame(visibility, ui.whip_project, ui.whip_tabs[ui.whip_project])
+		whip_project_sync(ui)
 		whip_activity_sync(ui)
 		whip_sync_tabs(ui)
 		whip_focus_restore(ui)
@@ -762,6 +767,132 @@ whip_embed :: proc(t: ^testing.T) {
 	key(._2, '2', sdl.KMOD_CTRL | sdl.KMOD_ALT)
 	for _ in 0 ..< 8 {frame(&ui)}
 	testing.expect_value(t, ui.whip_tabs[first_project], second_tab)
+	{
+		// Three native tabs distinguish displayed next/previous order from
+		// the server's cyclic order, which a two-tab swap cannot do.
+		key(.T, 't', sdl.KMOD_CTRL)
+		for _ in 0 ..< 20 {frame(&ui)}
+		third_tab := ui.whip_tabs[first_project]
+		testing.expect_value(t, len(rl.WhipTabs()), 3)
+		testing.expect(t, third_tab != first_tab && third_tab != second_tab)
+		key(._2, '2', sdl.KMOD_CTRL | sdl.KMOD_ALT)
+		for _ in 0 ..< 8 {frame(&ui)}
+		whip_workspace_sync(&ui)
+		testing.expect(
+			t,
+			ui.whip_workspace_loaded,
+			"drag order has an initialized preferences owner",
+		)
+		defer {
+			forced_press, forced_release, test_pointer_on = false, false, false
+			ui.whip_tab_drag = {}
+		}
+		first := clay.GetElementData(clay.ID("WhipTab", first_tab)).boundingBox
+		second := clay.GetElementData(clay.ID("WhipTab", second_tab)).boundingBox
+		testing.expect(t, first.width > 0 && second.width > 0)
+		point := [2]f32{second.x + 12, second.y + second.height / 2}
+		test_pointer_on, forced_press = true, true
+		test_pointer = point * UI_ZOOM
+		clay.SetPointerState(point, true)
+		testing.expect(t, whip_tab_input(&ui), "press arms the real tab gesture")
+		strip := clay.GetElementData(clay.ID("WhipTabs")).boundingBox
+		point = {max(first.x, strip.x) + 2, first.y + first.height / 2}
+		test_pointer = point * UI_ZOOM
+		clay.SetPointerState(point, true)
+		testing.expect(t, whip_tab_input(&ui), "moving across the first tab activates dragging")
+		testing.expect(t, ui.whip_tab_drag.active)
+		for _ in 0 ..< 30 {whip_tab_input(&ui); frame(&ui)}
+		testing.expect_value(t, ui.whip_tab_drag.slot, 0)
+		frame(&ui)
+		rl.TakeScreenshot("/tmp/wn-whip-tab-drag.png")
+		forced_press, forced_release = false, true
+		clay.SetPointerState(point, false)
+		testing.expect(t, whip_tab_input(&ui), "release commits the host-local order")
+		forced_release, test_pointer_on = false, false
+		testing.expect(t, !ui.whip_tab_drag.active)
+		testing.expect_value(t, ui.whip_tabs[first_project], second_tab)
+		for _ in 0 ..< 8 {frame(&ui)}
+		order := [3]u32{second_tab, first_tab, third_tab}
+		for id, i in order {testing.expect_value(t, rl.WhipTabs()[i].id, id)}
+		persisted := false
+		for saved in ui.prefs.whip_selected_tabs {
+			if saved.account != ui.account_ref ||
+			   saved.folder != whip_workspace_folder(first_project) {continue}
+			persisted = true
+			for id, i in order {
+				rank, found := saved.order[id]
+				testing.expect(t, found, "drop persists every stable tab identity")
+				testing.expect_value(t, rank, i)
+			}
+		}
+		testing.expect(t, persisted, "the native project owns a saved host order")
+		second = clay.GetElementData(clay.ID("WhipTab", second_tab)).boundingBox
+		point = {second.x + 12, second.y + second.height / 2}
+		test_pointer_on, forced_press = true, true
+		test_pointer = point * UI_ZOOM
+		clay.SetPointerState(point, true)
+		whip_tab_input(&ui)
+		frame(&ui)
+		key(.ESCAPE, sdl.K_ESCAPE, {})
+		frame(&ui)
+		whip_tab_input(&ui)
+		testing.expect(t, ui.whip_tab_drag.cancelled)
+		close := clay.GetElementData(clay.ID("WhipTabClose", first_tab)).boundingBox
+		clay.SetPointerState({close.x + close.width / 2, close.y + close.height / 2}, false)
+		forced_press, forced_release = false, true
+		testing.expect(
+			t,
+			whip_inbox_input(&ui),
+			"Escape consumes release over another tab's close button",
+		)
+		forced_release, test_pointer_on = false, false
+		testing.expect_value(t, ui.whip_tab_op, Whip_Tab_Op.None)
+		for id, i in order {testing.expect_value(t, rl.WhipTabs()[i].id, id)}
+		key(._1, '1', sdl.KMOD_CTRL | sdl.KMOD_ALT)
+		for _ in 0 ..< 8 {frame(&ui)}
+		testing.expect_value(t, ui.whip_tabs[first_project], second_tab)
+		key(.RIGHT, sdl.K_RIGHT, sdl.KMOD_CTRL | sdl.KMOD_SHIFT)
+		for _ in 0 ..< 8 {frame(&ui)}
+		testing.expect_value(t, ui.whip_tabs[first_project], first_tab)
+		key(.LEFT, sdl.K_LEFT, sdl.KMOD_CTRL | sdl.KMOD_SHIFT)
+		for _ in 0 ..< 8 {frame(&ui)}
+		testing.expect_value(t, ui.whip_tabs[first_project], second_tab)
+		key(.LEFT, sdl.K_LEFT, sdl.KMOD_CTRL | sdl.KMOD_SHIFT)
+		for _ in 0 ..< 8 {frame(&ui)}
+		testing.expect_value(t, ui.whip_tabs[first_project], third_tab)
+		key(._2, '2', sdl.KMOD_CTRL | sdl.KMOD_ALT)
+		for _ in 0 ..< 8 {frame(&ui)}
+		testing.expect_value(t, ui.whip_tabs[first_project], first_tab)
+		for id, i in order {testing.expect_value(t, rl.WhipTabs()[i].id, id)}
+		// Leave the original two tabs and selection for the remaining scenario.
+		testing.expect(t, whip_tab_move(rl.WhipTabs(), second_tab, 2))
+		whip_tab_save(&ui)
+		for _ in 0 ..< 3 {frame(&ui)}
+		key(._3, '3', sdl.KMOD_CTRL | sdl.KMOD_ALT)
+		for _ in 0 ..< 8 {frame(&ui)}
+		testing.expect_value(t, ui.whip_tabs[first_project], third_tab)
+		whip_workspace_remember(&ui)
+		key(.W, 'w', sdl.KMOD_CTRL)
+		for _ in 0 ..< 15 {frame(&ui)}
+		whip_workspace_sync(&ui)
+		for saved in ui.prefs.whip_selected_tabs {
+			if saved.account != ui.account_ref ||
+			   saved.folder != whip_workspace_folder(first_project) {continue}
+			testing.expect_value(t, saved.order[first_tab], 0)
+			testing.expect_value(t, saved.order[second_tab], 1)
+			testing.expect(
+				t,
+				saved.tab != third_tab,
+				"closing the saved selection retains sibling order",
+			)
+		}
+		testing.expect_value(t, len(rl.WhipTabs()), 2)
+		testing.expect_value(t, rl.WhipTabs()[0].id, first_tab)
+		testing.expect_value(t, rl.WhipTabs()[1].id, second_tab)
+		key(._2, '2', sdl.KMOD_CTRL | sdl.KMOD_ALT)
+		for _ in 0 ..< 8 {frame(&ui)}
+		testing.expect_value(t, ui.whip_tabs[first_project], second_tab)
+	}
 	key(.T, 't', sdl.KMOD_CTRL | sdl.KMOD_ALT | sdl.KMOD_SHIFT)
 	for _ in 0 ..< 4 {frame(&ui)}
 	key(.U, 'u', sdl.KMOD_CTRL)
@@ -1219,4 +1350,132 @@ whip_embed :: proc(t: ^testing.T) {
 	commands := build_layout(&ui, 0)
 	rl.BeginMode2D({zoom = UI_ZOOM}); clay_raylib_render(&commands); rl.EndMode2D()
 	rl.TakeScreenshot("/tmp/wn-whip-titles.png"); rl.EndDrawing()
+	{
+		project_info :: proc(id: u32) -> rl.Whip_Project {
+			for item in rl.WhipProjects() {if item.id == id {return item}}
+			return {}
+		}
+		target := ui.whip_project
+		original := project_info(target)
+		original_source := strings.clone(original.source_dir)
+		defer delete(original_source)
+		root := fmt.aprintf("%s/project-root", home)
+		other := fmt.aprintf("%s/shell-working-directory", home)
+		defer {delete(root); delete(other)}
+		os.make_directory_all(root)
+		os.make_directory_all(other)
+		old_key := strings.clone(inbox_terminal_key(original.dir))
+		defer delete(old_key)
+		ui.prefs.pinned[strings.clone(old_key)] = true
+		open_terminal_menu(&ui, target)
+		for _ in 0 ..< 3 {frame(&ui)}
+		edit_box := clay.GetElementData(clay.ID("RowProjectEdit")).boundingBox
+		testing.expect(t, edit_box.width > 0 && edit_box.height > 0)
+		clay.SetPointerState(
+			{edit_box.x + edit_box.width / 2, edit_box.y + edit_box.height / 2},
+			false,
+		)
+		forced_release = true
+		handle_row_menu(&ui, nil)
+		forced_release = false
+		for _ in 0 ..< 3 {frame(&ui)}
+		testing.expect(t, clay.GetElementData(clay.ID("WhipProjectModal")).found)
+		key(.TAB, sdl.K_TAB, {})
+		frame(&ui)
+		testing.expect_value(t, ui.focus, Focus.WhipProjectPath)
+		key(.TAB, sdl.K_TAB, sdl.KMOD_SHIFT)
+		frame(&ui)
+		testing.expect_value(t, ui.focus, Focus.WhipProjectName)
+		control := sdl.Event {
+			type = .KEY_DOWN,
+		}
+		control.key.windowID = sdl.GetWindowID(sdl.GetKeyboardFocus())
+		control.key.scancode, control.key.key, control.key.mod, control.key.down =
+			.LCTRL, sdl.K_LCTRL, sdl.KMOD_CTRL, true
+		assert(sdl.PushEvent(&control))
+		key(.A, 'a', sdl.KMOD_CTRL)
+		frame(&ui)
+		control.type, control.key.down, control.key.mod = .KEY_UP, false, {}
+		assert(sdl.PushEvent(&control))
+		text("White Noise Linux")
+		frame(&ui)
+		testing.expect_value(t, string(ui.whip_edit_name[:]), "White Noise Linux")
+		ed_set(&ui, &ui.whip_edit_path, fmt.tprintf("%s/missing-folder", home))
+		save_box := clay.GetElementData(clay.ID("WhipProjectSave")).boundingBox
+		clay.SetPointerState(
+			{save_box.x + save_box.width / 2, save_box.y + save_box.height / 2},
+			false,
+		)
+		forced_release = true
+		whip_project_input(&ui)
+		forced_release = false
+		for _ in 0 ..< 60 {frame(&ui); if ui.whip_edit_job == nil {break}}
+		testing.expect(
+			t,
+			ui.whip_edit_open && ui.whip_edit_error != "",
+			"an invalid root keeps the editable draft and reports recovery",
+		)
+		testing.expect_value(t, project_info(target).source_dir, original_source)
+		ed_set(&ui, &ui.whip_edit_path, root)
+		whip_project_save(&ui)
+		testing.expect(t, ui.whip_edit_job != nil, "folder validation runs off the UI thread")
+		rl.BeginDrawing()
+		commands = build_layout(&ui, 0)
+		rl.BeginMode2D({zoom = UI_ZOOM}); clay_raylib_render(&commands); rl.EndMode2D()
+		rl.TakeScreenshot("/tmp/wn-whip-project-saving.png"); rl.EndDrawing()
+		for _ in 0 ..< 60 {frame(&ui); if ui.whip_edit_job == nil {break}}
+		testing.expect(t, !ui.whip_edit_open && ui.whip_edit_error == "")
+		testing.expect_value(t, project_info(target).name, "White Noise Linux")
+		testing.expect_value(t, project_info(target).dir, root)
+		testing.expect(
+			t,
+			project_info(target).source_dir == original_source,
+			"editing the root does not change any shell's cwd",
+		)
+		testing.expect(
+			t,
+			ui.prefs.pinned[inbox_terminal_key(root)],
+			"correcting the root keeps the project pinned",
+		)
+		cli(
+			{
+				"pane",
+				"send",
+				fmt.tprintf("%d/1/1", target),
+				fmt.tprintf("cd '%s'", other),
+				"--enter",
+			},
+		)
+		for _ in 0 ..< 120 {frame(&ui); if project_info(target).source_dir == other {break}}
+		testing.expect_value(t, project_info(target).source_dir, other)
+		testing.expect(
+			t,
+			project_info(target).dir == root,
+			"a first-tab cwd change cannot overwrite the explicit project root",
+		)
+		testing.expect_value(t, project_info(target).name, "White Noise Linux")
+		encoded, encode_err := json.marshal(ui.prefs.whip_projects)
+		if testing.expect_value(t, encode_err, nil) {
+			defer delete(encoded)
+			whip_project_prefs_free(&ui.prefs)
+			testing.expect_value(t, json.unmarshal(encoded, &ui.prefs.whip_projects), nil)
+			for _ in 0 ..< 3 {frame(&ui)}
+			testing.expect_value(t, project_info(target).dir, root)
+			testing.expect_value(t, project_info(target).name, "White Noise Linux")
+		}
+		whip_project_edit_open(&ui, target)
+		for _ in 0 ..< 3 {frame(&ui)}
+		testing.expect_value(t, string(ui.whip_edit_name[:]), "White Noise Linux")
+		testing.expect_value(t, string(ui.whip_edit_path[:]), root)
+		rl.BeginDrawing()
+		commands = build_layout(&ui, 0)
+		rl.BeginMode2D({zoom = UI_ZOOM}); clay_raylib_render(&commands); rl.EndMode2D()
+		rl.TakeScreenshot("/tmp/wn-whip-project-editor.png"); rl.EndDrawing()
+		ed_set(&ui, &ui.whip_edit_name, "Discarded project edit")
+		whip_project_save(&ui)
+		whip_project_edit_close(&ui)
+		for _ in 0 ..< 60 {frame(&ui); if ui.whip_edit_job == nil {break}}
+		testing.expect_value(t, project_info(target).name, "White Noise Linux")
+		testing.expect_value(t, project_info(target).dir, root)
+	}
 }

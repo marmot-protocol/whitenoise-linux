@@ -629,6 +629,7 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 		ui.shortcuts_open ||
 		ui.export_open ||
 		ui.folder_open ||
+		ui.whip_edit_open ||
 		ui.theme_edit ||
 		ui.backup_mode != .None ||
 		ui.vault_pw_open ||

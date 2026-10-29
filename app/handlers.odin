@@ -142,6 +142,9 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // the subscriptions phase.
 // The input buffer that currently receives typed characters.
 active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
+	if ui.whip_edit_open {
+		return ui.focus == .WhipProjectPath ? &ui.whip_edit_path : &ui.whip_edit_name
+	}
 	if ui.folder_open {
 		if ui.folder_mode != .Move && ui.focus == .FolderColor {return &ui.folder_color_input}
 		if ui.folder_mode != .Move &&

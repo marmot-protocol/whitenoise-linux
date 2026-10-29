@@ -113,7 +113,7 @@ whip_visibility :: proc(ui: ^Ui_State) -> rl.Whip_Visibility {
 	   ui.add_account_open ||
 	   ui.new_chat_open ||
 	   modal_open(ui) {return .Hidden}
-	if ui.whip_open {return ui.focus == .Filter || ui.focus == .Whip ? .Unfocused : .Visible}
+	if ui.whip_open {return ui.focus == .Filter || ui.focus == .Whip || ui.whip_tab_drag.tab != 0 ? .Unfocused : .Visible}
 	if ui.selected < 0 && ui.focus != .Filter {
 		for project in rl.WhipProjects() {if project.navigating {return .Navigation}}
 	}
@@ -139,7 +139,7 @@ whip_focus_restore :: proc(ui: ^Ui_State) {
 @(private)
 whip_controls :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	control := rl.WhipControlPoll()
-	if control.focused {
+	if control.focused && !ui.whip_edit_open {
 		if i := whip_attach_index(ui, control.pane); i >= 0 {
 			if whip_attach_visible(
 				ui,
@@ -159,6 +159,7 @@ whip_controls :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		whip_pane_work = false
 	case .None:
 	}
+	if ui.whip_edit_open {return}
 	if control.selection {
 		whip_open_project(ui, control.project)
 		if control.tab != 0 {ui.whip_tabs[control.project] = control.tab}
@@ -181,7 +182,8 @@ whip_inbox_input :: proc(ui: ^Ui_State) -> bool {
 	   ui.add_account_open ||
 	   ui.row_menu >= 0 ||
 	   ui.folder_menu_open ||
-	   modal_open(ui) {return false}
+	   modal_open(ui) {ui.whip_tab_drag = {}; return false}
+	if whip_tab_input(ui) {return true}
 	if !mouse_released() {return false}
 	if clicked("WhipRetry") || clicked("WhipRailRetry") {rl.WhipClose(); return true}
 	for project in rl.WhipProjects() {
@@ -195,6 +197,7 @@ whip_inbox_input :: proc(ui: ^Ui_State) -> bool {
 		}
 	}
 	if !ui.whip_open {return false}
+	if clicked("WhipWorkspaceIdentity") {whip_project_edit_open(ui, ui.whip_project); return true}
 	if ui.whip_tab_op == .None {
 		if clicked("WhipNewTab") && rl.WhipTabChange(.New, ui.whip_project) {
 			whip_workspace_navigation(ui)
@@ -228,6 +231,7 @@ whip_inbox_input :: proc(ui: ^Ui_State) -> bool {
 whip_sync_tabs :: proc(ui: ^Ui_State) {
 	state := rl.WhipState()
 	if state != .Ready && state != .Missing {return}
+	whip_tab_order(ui)
 	tabs := rl.WhipTabs()
 	if len(tabs) == 0 {return}
 	chosen := ui.whip_tabs[ui.whip_project]
@@ -287,6 +291,7 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 				)
 			}
 			if hovered() {
+				cursor_raise(.Pointer)
 				tooltip(fmt.tprintf("%s\n%s", project_name, project_dir))
 			}
 		}
@@ -302,6 +307,11 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 		) {
 			for tab, i in rl.WhipTabs() {
 				active := tab.id == ui.whip_tabs[ui.whip_project]
+				drag := ui.whip_tab_drag
+				moving := drag.active && drag.tab == tab.id
+				before := drag.active && drag.slot == i
+				after :=
+					drag.active && drag.slot == len(rl.WhipTabs()) && i == len(rl.WhipTabs()) - 1
 				if clay.UI(clay.ID("WhipTab", tab.id))(
 				{
 					layout = {
@@ -313,12 +323,19 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 						childGap = 5,
 						childAlignment = {y = .Center},
 					},
-					backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
+					backgroundColor = active || moving ? SELECTED : (hovered() ? HOVER : {}),
 					cornerRadius = rr(6),
-					border = {color = active ? ACCENT : clay.Color{}, width = {bottom = 2}},
+					border = {
+						color = active || before || after ? ACCENT : clay.Color{},
+						width = {
+							bottom = 2,
+							left = before ? u16(2) : 0,
+							right = after ? u16(2) : 0,
+						},
+					},
 				},
 				) {
-					if hovered() {cursor_raise(.Pointer)}
+					if drag.active {cursor_raise(.Grabbing)} else if hovered() {cursor_raise(.Pointer)}
 					if clay.UI(clay.ID("WhipTabLabel", tab.id))({clip = {horizontal = true}}) {
 						clay.Text(
 							fmt.tprintf("%d  %s", i + 1, tab.name),

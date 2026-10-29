@@ -44,7 +44,10 @@ Whip_Visibility :: enum {
 // Borrowed names/directories remain valid until the next WhipFrame.
 Whip_Project :: struct {
 	id:          u32,
+	session:     [4]u64,
 	name, dir:   string,
+	source_dir:  string, // raw Whip cwd, before host project-root overrides
+	source_name: string,
 	tabs:        int,
 	waiting:     int,
 	activity_at: u64, // observed live activity, Unix seconds; unknown history stays zero

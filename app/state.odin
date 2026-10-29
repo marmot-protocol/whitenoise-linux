@@ -271,6 +271,8 @@ Focus :: enum {
 	Issue_Labels,
 	Compose,
 	Whip, // an attached terminal owns keyboard input
+	WhipProjectName,
+	WhipProjectPath,
 	Search,
 	Invite,
 	Rename,
@@ -587,7 +589,14 @@ Ui_State :: struct {
 	whip_open:                                             bool, // selected inbox row is a local terminal project
 	whip_picking_project:                                  bool, // captures the native folder-dialog completion
 	whip_creating:                                         bool,
+	whip_edit_open:                                        bool,
+	whip_edit_project:                                     u32,
+	whip_edit_session:                                     [4]u64,
+	whip_edit_name, whip_edit_path:                        [dynamic]u8,
+	whip_edit_error:                                       string, // owned validation error
+	whip_edit_job:                                         ^Whip_Project_Job,
 	whip_tabs:                                             map[u32]u32, // project ID -> selected tab ID
+	whip_tab_drag:                                         Whip_Tab_Drag,
 	whip_scroll_project, whip_scroll_tab:                  u32,
 	whip_scroll_width:                                     f32,
 	whip_scroll_pending:                                   bool,

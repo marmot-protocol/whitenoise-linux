@@ -842,6 +842,9 @@ msgstr "キーパッケージを確認"
 msgid "Checking for updates."
 msgstr "アップデートを確認しています。"
 
+msgid "Checking project folder..."
+msgstr "プロジェクトフォルダーを確認しています..."
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "リレーで鍵を確認しています。数秒かかります。"
 
@@ -1210,6 +1213,9 @@ msgstr "パスワードを変更できませんでした。もう一度お試し
 msgid "Couldn't check for updates. Please try again."
 msgstr "アップデートを確認できませんでした。もう一度お試しください。"
 
+msgid "Couldn't check the project folder. Please try again."
+msgstr "プロジェクトフォルダーを確認できませんでした。もう一度お試しください。"
+
 msgid "Couldn't choose a folder. Close your open file picker and try again."
 msgstr "フォルダーを選択できませんでした。開いているファイル選択画面を閉じて、もう一度お試しください。"
 
@@ -1293,6 +1299,9 @@ msgstr "チャットをエクスポートできませんでした。もう一度
 #, c-format
 msgid "Couldn't export the key. %s"
 msgstr "鍵をエクスポートできませんでした。%s"
+
+msgid "Couldn't find your home folder. Enter an absolute project folder path."
+msgstr "ホームフォルダーが見つかりませんでした。プロジェクトフォルダーの絶対パスを入力してください。"
 
 msgid "Couldn't finish dictation. Please try again."
 msgstr "音声入力を完了できませんでした。もう一度お試しください。"
@@ -1416,6 +1425,9 @@ msgstr "チャットを既読にできませんでした。%s"
 msgid "Couldn't mark the chat read. Please try again."
 msgstr "チャットを既読にできませんでした。もう一度お試しください。"
 
+msgid "Couldn't normalize the project folder. Check the path and try again."
+msgstr "プロジェクトフォルダーのパスを正規化できませんでした。パスを確認して、もう一度お試しください。"
+
 #, c-format
 msgid "Couldn't open %s. Please try again."
 msgstr "%sを開けませんでした。もう一度お試しください。"
@@ -1428,6 +1440,9 @@ msgstr "バックアップを開けませんでした。パスワードを確認
 
 msgid "Couldn't open the microphone. Please try again."
 msgstr "マイクを開けませんでした。もう一度お試しください。"
+
+msgid "Couldn't open the project folder. Check that it exists and you have permission to access it."
+msgstr "プロジェクトフォルダーを開けませんでした。フォルダーが存在し、アクセス権限があることを確認してください。"
 
 msgid "Couldn't open the restored chat. Please try again."
 msgstr "復元したチャットを開けませんでした。もう一度お試しください。"
@@ -1976,6 +1991,9 @@ msgstr "メッセージを編集"
 msgid "Edit profile"
 msgstr "プロフィールを編集"
 
+msgid "Edit project"
+msgstr "プロジェクトを編集"
+
 msgid "Edit theme"
 msgstr "テーマを編集"
 
@@ -2031,6 +2049,9 @@ msgstr "数値の IPv4 アドレス、または角括弧で囲んだ IPv6 アド
 msgid "Enter a password to encrypt your backup."
 msgstr "バックアップを暗号化するパスワードを入力してください。"
 
+msgid "Enter a project name."
+msgstr "プロジェクト名を入力してください。"
+
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "ステッカー名を1〜64文字で入力してください。"
 
@@ -2039,6 +2060,9 @@ msgstr "ユーザー名とパスワードを、それぞれ UTF-8 で 1 から 2
 
 msgid "Enter a valid pack link or address."
 msgstr "有効なパックのリンクまたはアドレスを入力してください。"
+
+msgid "Enter an absolute project folder path, or a path starting with ~/."
+msgstr "プロジェクトフォルダーの絶対パス、または ~/ で始まるパスを入力してください。"
 
 msgid "Enter an issue title and description."
 msgstr "報告のタイトルと説明を入力してください。"
@@ -3634,6 +3658,9 @@ msgstr "進捗率は未確定です。"
 msgid "Project created."
 msgstr "プロジェクトを作成しました。"
 
+msgid "Project name"
+msgstr "プロジェクト名"
+
 msgid "Projects"
 msgstr "プロジェクト"
 
@@ -3948,6 +3975,9 @@ msgstr "右クリック"
 
 msgid "Rocket"
 msgstr "ロケット"
+
+msgid "Root folder"
+msgstr "ルートフォルダー"
 
 msgid "Rotate"
 msgstr "更新"
@@ -4629,6 +4659,9 @@ msgstr "現在のパスワードと一致しません。確認して、もう一
 msgid "That key isn't an nsec. Double-check it and try again."
 msgstr "このキーはnsecではありません。確認して、もう一度お試しください。"
 
+msgid "That path is not a folder. Choose an existing project folder."
+msgstr "このパスはフォルダーではありません。既存のプロジェクトフォルダーを選択してください。"
+
 msgid "The AppImage folder is not writable. Move it to a writable folder to enable updates."
 msgstr "AppImageのフォルダーに書き込めません。アップデートを有効にするには、AppImageを書き込み可能なフォルダーに移動してください。"
 
@@ -4719,6 +4752,9 @@ msgstr "このグループの新しいメッセージにアクセスできなく
 msgid "They stay in the group as a regular member."
 msgstr "一般メンバーとしてグループに残ります。"
 
+msgid "This changes White Noise project metadata, not running shells."
+msgstr "White Noise のプロジェクト情報のみを変更します。実行中のシェルは変更されません。"
+
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "表示される文字がないため、GMボタンはGMを送信します。"
 
@@ -4772,6 +4808,9 @@ msgstr "このパスワードは推測されやすいものです。関連のな
 
 msgid "This project is no longer available."
 msgstr "このプロジェクトは利用できなくなりました。"
+
+msgid "This project is no longer available. Close this editor and reopen it from the current project."
+msgstr "このプロジェクトは利用できなくなりました。この編集画面を閉じて、現在のプロジェクトから開き直してください。"
 
 msgid "This relay is already in your list."
 msgstr "このリレーはすでにリストに追加されています。"
@@ -5345,6 +5384,9 @@ msgstr "ほか%s"
 
 msgid "carries the blob"
 msgstr "暗号化データを運ぶ"
+
+msgid "e.g. ~/Work/project"
+msgstr "例: ~/Work/project"
 
 msgid "edited"
 msgstr "編集済み"

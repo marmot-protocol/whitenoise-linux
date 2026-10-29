@@ -20,6 +20,7 @@ Whip_Saved_Tab :: struct {
 	account, folder: string,
 	session:         [4]u64,
 	pane, tab:       u32,
+	order:           map[u32]int,
 }
 
 @(private)
@@ -32,8 +33,9 @@ Whip_Saved_Placement :: struct {
 
 @(private)
 whip_workspace_prefs_free :: proc(prefs: ^Prefs) {
+	whip_project_prefs_free(prefs)
 	for item in prefs.whip_workspaces {delete(item.account); delete(item.folder)}
-	for item in prefs.whip_selected_tabs {delete(item.account); delete(item.folder)}
+	for item in prefs.whip_selected_tabs {delete(item.account); delete(item.folder); delete(item.order)}
 	for item in prefs.whip_placements {delete(item.account); delete(item.group_id); delete(item.folder)}
 	delete(prefs.whip_workspaces); prefs.whip_workspaces = nil
 	delete(prefs.whip_selected_tabs); prefs.whip_selected_tabs = nil
@@ -249,11 +251,13 @@ whip_workspace_remember :: proc(ui: ^Ui_State) {
 @(private)
 whip_workspace_prepare :: proc(ui: ^Ui_State) {
 	if ui.whip_workspace_account == ui.account_ref {return}
+	whip_project_edit_close(ui)
 	had_account := ui.whip_workspace_account != ""
 	pending := ui.whip_workspace_pending && !had_account
 	whip_attach_clear(ui)
 	if had_account {
 		delete(ui.whip_tabs); ui.whip_tabs = nil
+		ui.whip_tab_drag = {}
 		ui.whip_open, ui.whip_project = false, 0
 	}
 	if ui.account_ref == "" {return}
@@ -301,12 +305,35 @@ whip_workspace_sync :: proc(ui: ^Ui_State) {
 		if saved.account != ui.account_ref {continue}
 		info, live, resolved := whip_workspace_live(saved.pane, saved.session, saved.folder)
 		if !resolved {unresolved = true; continue}
-		if !live || info.tab != saved.tab {
-			delete(saved.account); delete(saved.folder)
+		// Keep project order when its selected shell closes but siblings survive.
+		if !live && len(saved.order) > 0 {
+			has_identity := false
+			for pane in rl.WhipPanes() {
+				if whip_workspace_folder(pane.project) != saved.folder {continue}
+				has_identity ||= pane.session != ([4]u64{})
+				if pane.session != saved.session {continue}
+				ui.prefs.whip_selected_tabs[i].pane = pane.id
+				ui.prefs.whip_selected_tabs[i].tab = pane.tab
+				info, live = pane, true
+				ui.settings_dirty = true
+				break
+			}
+			if !live && !has_identity {
+				// Hidden projects have no projected panes. Validate their order
+				// when opened rather than losing it with the closed anchor.
+				present := false
+				for project in rl.WhipProjects() {
+					if project.dir == saved.folder && project.tabs > 0 {present = true; break}
+				}
+				if present {continue}
+			}
+		}
+		if !live || info.tab != ui.prefs.whip_selected_tabs[i].tab {
+			delete(saved.account); delete(saved.folder); delete(saved.order)
 			ordered_remove(&ui.prefs.whip_selected_tabs, i)
 			ui.settings_dirty = true
 		} else if !ui.whip_workspace_loaded && ui.whip_tabs[info.project] == 0 {
-			ui.whip_tabs[info.project] = saved.tab
+			ui.whip_tabs[info.project] = ui.prefs.whip_selected_tabs[i].tab
 		}
 	}
 	for i := len(ui.prefs.whip_placements) - 1; i >= 0; i -= 1 {

@@ -305,6 +305,7 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 	},
 	) {
 		if !terminal {ctx_item("RowInfo", ICON_SETTINGS, tr("Group settings"))}
+		if terminal {ctx_item("RowProjectEdit", ICON_SETTINGS, tr("Edit project"))}
 		ctx_item("RowPin", ICON_PIN, ui.prefs.pinned[key] ? tr("Unpin") : tr("Pin to top"))
 		if !terminal {
 			ctx_item("RowMute", ICON_BELL_OFF, ui.prefs.muted_ids[key] ? tr("Unmute") : tr("Mute"))
@@ -899,7 +900,7 @@ open_terminal_menu :: proc(ui: ^Ui_State, id: u32) {
 	if row_terminal_key(ui) == "" {return}
 	m := rl.GetMousePosition()
 	ui.row_menu = 0
-	ui.row_menu_x, ui.row_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 230, 82)
+	ui.row_menu_x, ui.row_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 230, 119)
 }
 
 // Clicks in the open row menu; anything unhandled closes it.
@@ -926,7 +927,9 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if terminal {
 		ui.row_menu = -1
-		if clay.PointerOver(clay.ID("RowPin")) {
+		if clay.PointerOver(clay.ID("RowProjectEdit")) {
+			whip_project_edit_open(ui, ui.row_terminal)
+		} else if clay.PointerOver(clay.ID("RowPin")) {
 			toggle_flag(&ui.prefs.pinned, key)
 			save_settings(ui)
 		} else if clay.PointerOver(clay.ID("RowFolder")) {

@@ -841,6 +841,9 @@ msgstr ""
 msgid "Checking for updates."
 msgstr ""
 
+msgid "Checking project folder..."
+msgstr ""
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr ""
 
@@ -1209,6 +1212,9 @@ msgstr ""
 msgid "Couldn't check for updates. Please try again."
 msgstr ""
 
+msgid "Couldn't check the project folder. Please try again."
+msgstr ""
+
 msgid "Couldn't choose a folder. Close your open file picker and try again."
 msgstr ""
 
@@ -1291,6 +1297,9 @@ msgstr ""
 
 #, c-format
 msgid "Couldn't export the key. %s"
+msgstr ""
+
+msgid "Couldn't find your home folder. Enter an absolute project folder path."
 msgstr ""
 
 msgid "Couldn't finish dictation. Please try again."
@@ -1415,6 +1424,9 @@ msgstr ""
 msgid "Couldn't mark the chat read. Please try again."
 msgstr ""
 
+msgid "Couldn't normalize the project folder. Check the path and try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't open %s. Please try again."
 msgstr ""
@@ -1426,6 +1438,9 @@ msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr ""
 
 msgid "Couldn't open the microphone. Please try again."
+msgstr ""
+
+msgid "Couldn't open the project folder. Check that it exists and you have permission to access it."
 msgstr ""
 
 msgid "Couldn't open the restored chat. Please try again."
@@ -1975,6 +1990,9 @@ msgstr ""
 msgid "Edit profile"
 msgstr ""
 
+msgid "Edit project"
+msgstr ""
+
 msgid "Edit theme"
 msgstr ""
 
@@ -2030,6 +2048,9 @@ msgstr ""
 msgid "Enter a password to encrypt your backup."
 msgstr ""
 
+msgid "Enter a project name."
+msgstr ""
+
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr ""
 
@@ -2037,6 +2058,9 @@ msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
 msgstr ""
 
 msgid "Enter a valid pack link or address."
+msgstr ""
+
+msgid "Enter an absolute project folder path, or a path starting with ~/."
 msgstr ""
 
 msgid "Enter an issue title and description."
@@ -3633,6 +3657,9 @@ msgstr ""
 msgid "Project created."
 msgstr ""
 
+msgid "Project name"
+msgstr ""
+
 msgid "Projects"
 msgstr ""
 
@@ -3946,6 +3973,9 @@ msgid "Right click"
 msgstr ""
 
 msgid "Rocket"
+msgstr ""
+
+msgid "Root folder"
 msgstr ""
 
 msgid "Rotate"
@@ -4628,6 +4658,9 @@ msgstr ""
 msgid "That key isn't an nsec. Double-check it and try again."
 msgstr ""
 
+msgid "That path is not a folder. Choose an existing project folder."
+msgstr ""
+
 msgid "The AppImage folder is not writable. Move it to a writable folder to enable updates."
 msgstr ""
 
@@ -4718,6 +4751,9 @@ msgstr ""
 msgid "They stay in the group as a regular member."
 msgstr ""
 
+msgid "This changes White Noise project metadata, not running shells."
+msgstr ""
+
 msgid "This has no visible text, so the GM button sends GM."
 msgstr ""
 
@@ -4770,6 +4806,9 @@ msgid "This password is too easy to guess. Use unrelated words or a password-man
 msgstr ""
 
 msgid "This project is no longer available."
+msgstr ""
+
+msgid "This project is no longer available. Close this editor and reopen it from the current project."
 msgstr ""
 
 msgid "This relay is already in your list."
@@ -5343,6 +5382,9 @@ msgid "and %s more"
 msgstr ""
 
 msgid "carries the blob"
+msgstr ""
+
+msgid "e.g. ~/Work/project"
 msgstr ""
 
 msgid "edited"

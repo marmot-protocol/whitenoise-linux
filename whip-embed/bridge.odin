@@ -317,6 +317,16 @@ when #config(WN_WHIP, false) {
 		return control
 	}
 
+	@(private)
+	whip_tab_display_index :: proc(project, id: u32) -> int {
+		if project == whip_project {
+			for tab, i in whip_tabs {
+				if tab.id == id {return i}
+			}
+		}
+		return -1
+	}
+
 	// Whip owns chord decoding and pane-local actions. Navigation changes
 	// the host's stable selection, never a mounted Pane context's binding.
 	@(private)
@@ -358,6 +368,14 @@ when #config(WN_WHIP, false) {
 			return true
 		}
 		if action == .Select_Tab {
+			target := target
+			// Digit chords resolve an index in the input replica, which may
+			// be ahead of the catalog. Only the displayed project is reordered.
+			if wi, ti, ok := whip_model.find_tab(&app.session, target); ok {
+				if u32(app.session.workspaces[wi].id) == whip_project && ti < len(whip_tabs) {
+					target = whip_model.Id(whip_tabs[ti].id)
+				}
+			}
 			if wi, _, ok := whip_model.find_tab(&whip_catalog.view.session, target); ok {
 				whip_control.project, whip_control.tab =
 					u32(whip_catalog.view.session.workspaces[wi].id), u32(target)
@@ -406,9 +424,15 @@ when #config(WN_WHIP, false) {
 			whip_control.work = .New_Project
 			whip.send_id(app, .New_Workspace, owner)
 		case .Next_Tab, .Prev_Tab:
-			step := action == .Next_Tab ? 1 : len(ws.tabs) - 1
-			whip_control.project, whip_control.tab =
-				u32(ws.id), u32(ws.tabs[(ti + step) % len(ws.tabs)].id)
+			next: u32
+			if i := whip_tab_display_index(u32(ws.id), u32(tab.id)); i >= 0 {
+				step := action == .Next_Tab ? 1 : len(whip_tabs) - 1
+				next = whip_tabs[(i + step) % len(whip_tabs)].id
+			} else {
+				step := action == .Next_Tab ? 1 : len(ws.tabs) - 1
+				next = u32(ws.tabs[(ti + step) % len(ws.tabs)].id)
+			}
+			whip_control.project, whip_control.tab = u32(ws.id), next
 			whip_control.selection = true
 		case .Next_Workspace, .Prev_Workspace:
 			whip_control.project_step += action == .Next_Workspace ? 1 : -1
@@ -416,8 +440,15 @@ when #config(WN_WHIP, false) {
 			if owner in whip_surfaces {
 				// Closing a dock must not navigate the host away from its chat.
 			} else if action == .Close_Tab && len(ws.tabs) > 1 {
-				next := ti == len(ws.tabs) - 1 ? ti - 1 : ti + 1
-				whip_control.project, whip_control.tab = u32(ws.id), u32(ws.tabs[next].id)
+				whip_control.project = u32(ws.id)
+				if i := whip_tab_display_index(u32(ws.id), u32(tab.id));
+				   i >= 0 && len(whip_tabs) > 1 {
+					next := i == len(whip_tabs) - 1 ? i - 1 : i + 1
+					whip_control.tab = whip_tabs[next].id
+				} else {
+					next := ti == len(ws.tabs) - 1 ? ti - 1 : ti + 1
+					whip_control.tab = u32(ws.tabs[next].id)
+				}
 				whip_control.selection = true
 			} else if len(whip_catalog.view.session.workspaces) > 1 {
 				next := wi == len(whip_catalog.view.session.workspaces) - 1 ? wi - 1 : wi + 1
@@ -614,12 +645,16 @@ when #config(WN_WHIP, false) {
 						tab_count += 1
 					}
 				}
+				project_name := whip_model.workspace_label(&entry)
 				append(
 					&whip_projects,
 					Whip_Project {
 						id = u32(entry.id),
-						name = whip_model.workspace_label(&entry),
+						session = whip_session_identity,
+						name = project_name,
 						dir = entry.dir,
+						source_dir = entry.dir,
+						source_name = project_name,
 						tabs = len(entry.tabs),
 						waiting = project_waiting,
 						activity_at = whip_activity[u32(entry.id)],
@@ -642,7 +677,10 @@ when #config(WN_WHIP, false) {
 					whip_created_tab,
 				); found {
 					whip_activity_touch(u32(whip_catalog.view.session.workspaces[wi].id))
-					whip_host_action(whip_ui.view, .Select_Tab, whip_created_tab)
+					// View hints carry stable IDs, not numbered chord targets.
+					whip_control.project, whip_control.tab =
+						u32(whip_catalog.view.session.workspaces[wi].id), u32(whip_created_tab)
+					whip_control.selection = true
 					whip_created_tab = 0
 					if whip_new_pending == 0 {whip_control.work = .Complete}
 				}

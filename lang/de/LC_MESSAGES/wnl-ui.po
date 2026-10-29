@@ -842,6 +842,9 @@ msgstr "Prüfe dein Schlüsselpaket"
 msgid "Checking for updates."
 msgstr "Suche nach Updates."
 
+msgid "Checking project folder..."
+msgstr "Projektordner wird überprüft..."
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "Dein Schlüssel wird bei den Relays geprüft. Das dauert ein paar Sekunden."
 
@@ -1210,6 +1213,9 @@ msgstr "Das Passwort konnte nicht geändert werden. Bitte versuche es erneut."
 msgid "Couldn't check for updates. Please try again."
 msgstr "Nach Updates konnte nicht gesucht werden. Bitte versuche es erneut."
 
+msgid "Couldn't check the project folder. Please try again."
+msgstr "Der Projektordner konnte nicht überprüft werden. Bitte versuche es erneut."
+
 msgid "Couldn't choose a folder. Close your open file picker and try again."
 msgstr "Es konnte kein Ordner ausgewählt werden. Schließe deine geöffnete Dateiauswahl und versuche es erneut."
 
@@ -1293,6 +1299,9 @@ msgstr "Der Chat konnte nicht exportiert werden. Bitte versuche es erneut."
 #, c-format
 msgid "Couldn't export the key. %s"
 msgstr "Der Schlüssel konnte nicht exportiert werden. %s"
+
+msgid "Couldn't find your home folder. Enter an absolute project folder path."
+msgstr "Dein Home-Ordner konnte nicht gefunden werden. Gib einen absoluten Pfad für den Projektordner ein."
 
 msgid "Couldn't finish dictation. Please try again."
 msgstr "Das Diktat konnte nicht abgeschlossen werden. Bitte versuche es erneut."
@@ -1416,6 +1425,9 @@ msgstr "Der Chat konnte nicht als gelesen markiert werden. %s"
 msgid "Couldn't mark the chat read. Please try again."
 msgstr "Der Chat konnte nicht als gelesen markiert werden. Bitte versuche es erneut."
 
+msgid "Couldn't normalize the project folder. Check the path and try again."
+msgstr "Der Pfad des Projektordners konnte nicht normalisiert werden. Prüfe den Pfad und versuche es erneut."
+
 #, c-format
 msgid "Couldn't open %s. Please try again."
 msgstr "%s konnte nicht geöffnet werden. Bitte versuche es erneut."
@@ -1428,6 +1440,9 @@ msgstr "Das Backup konnte nicht geöffnet werden. Überprüfe das Passwort und v
 
 msgid "Couldn't open the microphone. Please try again."
 msgstr "Das Mikrofon konnte nicht geöffnet werden. Bitte versuche es erneut."
+
+msgid "Couldn't open the project folder. Check that it exists and you have permission to access it."
+msgstr "Der Projektordner konnte nicht geöffnet werden. Prüfe, ob er existiert und du darauf zugreifen darfst."
 
 msgid "Couldn't open the restored chat. Please try again."
 msgstr "Der wiederhergestellte Chat konnte nicht geöffnet werden. Bitte versuche es erneut."
@@ -1976,6 +1991,9 @@ msgstr "Nachricht bearbeiten"
 msgid "Edit profile"
 msgstr "Profil bearbeiten"
 
+msgid "Edit project"
+msgstr "Projekt bearbeiten"
+
 msgid "Edit theme"
 msgstr "Theme bearbeiten"
 
@@ -2031,6 +2049,9 @@ msgstr "Gib eine numerische IPv4-Adresse oder eine IPv6-Adresse in eckigen Klamm
 msgid "Enter a password to encrypt your backup."
 msgstr "Gib ein Passwort ein, um dein Backup zu verschlüsseln."
 
+msgid "Enter a project name."
+msgstr "Gib einen Projektnamen ein."
+
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "Gib einen Stickernamen mit 1 bis 64 Zeichen ein."
 
@@ -2039,6 +2060,9 @@ msgstr "Gib einen Benutzernamen und ein Passwort mit jeweils 1 bis 255 UTF-8-Byt
 
 msgid "Enter a valid pack link or address."
 msgstr "Gib einen gültigen Paketlink oder eine gültige Paketadresse ein."
+
+msgid "Enter an absolute project folder path, or a path starting with ~/."
+msgstr "Gib einen absoluten Pfad für den Projektordner oder einen Pfad ein, der mit ~/ beginnt."
 
 msgid "Enter an issue title and description."
 msgstr "Gib einen Titel und eine Beschreibung für die Meldung ein."
@@ -3634,6 +3658,9 @@ msgstr "Der Fortschritt ist unbestimmt."
 msgid "Project created."
 msgstr "Projekt erstellt."
 
+msgid "Project name"
+msgstr "Projektname"
+
 msgid "Projects"
 msgstr "Projekte"
 
@@ -3948,6 +3975,9 @@ msgstr "Rechtsklick"
 
 msgid "Rocket"
 msgstr "Rakete"
+
+msgid "Root folder"
+msgstr "Stammordner"
 
 msgid "Rotate"
 msgstr "Erneuern"
@@ -4629,6 +4659,9 @@ msgstr "Das ist nicht dein aktuelles Passwort. Überprüfe es und versuche es er
 msgid "That key isn't an nsec. Double-check it and try again."
 msgstr "Dieser Schlüssel ist kein nsec. Überprüfe ihn und versuche es erneut."
 
+msgid "That path is not a folder. Choose an existing project folder."
+msgstr "Dieser Pfad ist kein Ordner. Wähle einen vorhandenen Projektordner."
+
 msgid "The AppImage folder is not writable. Move it to a writable folder to enable updates."
 msgstr "Der AppImage-Ordner ist nicht beschreibbar. Verschiebe das AppImage in einen beschreibbaren Ordner, um Updates zu aktivieren."
 
@@ -4719,6 +4752,9 @@ msgstr "Die Person verliert den Zugriff auf neue Nachrichten in dieser Gruppe."
 msgid "They stay in the group as a regular member."
 msgstr "Die Person bleibt als normales Mitglied in der Gruppe."
 
+msgid "This changes White Noise project metadata, not running shells."
+msgstr "Dies ändert die Projektmetadaten in White Noise, nicht die laufenden Shells."
+
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "Das enthält keinen sichtbaren Text, daher sendet die GM-Taste GM."
 
@@ -4772,6 +4808,9 @@ msgstr "Dieses Passwort ist zu leicht zu erraten. Verwende unzusammenhängende W
 
 msgid "This project is no longer available."
 msgstr "Dieses Projekt ist nicht mehr verfügbar."
+
+msgid "This project is no longer available. Close this editor and reopen it from the current project."
+msgstr "Dieses Projekt ist nicht mehr verfügbar. Schließe diesen Editor und öffne ihn beim aktuellen Projekt erneut."
 
 msgid "This relay is already in your list."
 msgstr "Dieses Relay ist bereits in deiner Liste."
@@ -5345,6 +5384,9 @@ msgstr "und %s mehr"
 
 msgid "carries the blob"
 msgstr "transportiert den Blob"
+
+msgid "e.g. ~/Work/project"
+msgstr "z. B. ~/Work/project"
 
 msgid "edited"
 msgstr "bearbeitet"

@@ -842,6 +842,9 @@ msgstr "Verifica il tuo pacchetto chiavi"
 msgid "Checking for updates."
 msgstr "Controllo degli aggiornamenti in corso."
 
+msgid "Checking project folder..."
+msgstr "Verifica della cartella del progetto..."
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "Verifica della tua chiave con i relay. Richiede qualche secondo."
 
@@ -1210,6 +1213,9 @@ msgstr "Impossibile cambiare la password. Riprova."
 msgid "Couldn't check for updates. Please try again."
 msgstr "Impossibile controllare gli aggiornamenti. Riprova."
 
+msgid "Couldn't check the project folder. Please try again."
+msgstr "Impossibile verificare la cartella del progetto. Riprova."
+
 msgid "Couldn't choose a folder. Close your open file picker and try again."
 msgstr "Impossibile scegliere una cartella. Chiudi la finestra di selezione dei file aperta e riprova."
 
@@ -1293,6 +1299,9 @@ msgstr "Impossibile esportare la chat. Riprova."
 #, c-format
 msgid "Couldn't export the key. %s"
 msgstr "Impossibile esportare la chiave. %s"
+
+msgid "Couldn't find your home folder. Enter an absolute project folder path."
+msgstr "Impossibile trovare la tua cartella home. Inserisci un percorso assoluto per la cartella del progetto."
 
 msgid "Couldn't finish dictation. Please try again."
 msgstr "Impossibile completare la dettatura. Riprova."
@@ -1416,6 +1425,9 @@ msgstr "Impossibile contrassegnare la chat come letta. %s"
 msgid "Couldn't mark the chat read. Please try again."
 msgstr "Impossibile contrassegnare la chat come letta. Riprova."
 
+msgid "Couldn't normalize the project folder. Check the path and try again."
+msgstr "Impossibile normalizzare il percorso della cartella del progetto. Controlla il percorso e riprova."
+
 #, c-format
 msgid "Couldn't open %s. Please try again."
 msgstr "Impossibile aprire %s. Riprova."
@@ -1428,6 +1440,9 @@ msgstr "Impossibile aprire il backup. Ricontrolla la password e riprova."
 
 msgid "Couldn't open the microphone. Please try again."
 msgstr "Impossibile aprire il microfono. Riprova."
+
+msgid "Couldn't open the project folder. Check that it exists and you have permission to access it."
+msgstr "Impossibile aprire la cartella del progetto. Controlla che esista e che tu abbia il permesso di accedervi."
 
 msgid "Couldn't open the restored chat. Please try again."
 msgstr "Impossibile aprire la chat ripristinata. Riprova."
@@ -1976,6 +1991,9 @@ msgstr "Modifica messaggio"
 msgid "Edit profile"
 msgstr "Modifica profilo"
 
+msgid "Edit project"
+msgstr "Modifica progetto"
+
 msgid "Edit theme"
 msgstr "Modifica tema"
 
@@ -2031,6 +2049,9 @@ msgstr "Inserisci un indirizzo IPv4 numerico o IPv6 tra parentesi quadre con una
 msgid "Enter a password to encrypt your backup."
 msgstr "Inserisci una password per cifrare il tuo backup."
 
+msgid "Enter a project name."
+msgstr "Inserisci un nome per il progetto."
+
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "Inserisci un nome per l'adesivo da 1 a 64 caratteri."
 
@@ -2039,6 +2060,9 @@ msgstr "Inserisci nome utente e password, ciascuno da 1 a 255 byte UTF-8."
 
 msgid "Enter a valid pack link or address."
 msgstr "Inserisci un link o un indirizzo valido per il pacchetto."
+
+msgid "Enter an absolute project folder path, or a path starting with ~/."
+msgstr "Inserisci un percorso assoluto per la cartella del progetto oppure un percorso che inizi con ~/."
 
 msgid "Enter an issue title and description."
 msgstr "Inserisci un titolo e una descrizione."
@@ -3634,6 +3658,9 @@ msgstr "L'avanzamento è indeterminato."
 msgid "Project created."
 msgstr "Progetto creato."
 
+msgid "Project name"
+msgstr "Nome del progetto"
+
 msgid "Projects"
 msgstr "Progetti"
 
@@ -3948,6 +3975,9 @@ msgstr "Clic destro"
 
 msgid "Rocket"
 msgstr "Razzo"
+
+msgid "Root folder"
+msgstr "Cartella principale"
 
 msgid "Rotate"
 msgstr "Sostituisci"
@@ -4629,6 +4659,9 @@ msgstr "Non è la tua password attuale. Ricontrollala e riprova."
 msgid "That key isn't an nsec. Double-check it and try again."
 msgstr "Questa chiave non è un nsec. Ricontrollala e riprova."
 
+msgid "That path is not a folder. Choose an existing project folder."
+msgstr "Questo percorso non è una cartella. Scegli una cartella di progetto esistente."
+
 msgid "The AppImage folder is not writable. Move it to a writable folder to enable updates."
 msgstr "La cartella dell’AppImage non è scrivibile. Sposta l’AppImage in una cartella scrivibile per attivare gli aggiornamenti."
 
@@ -4719,6 +4752,9 @@ msgstr "Perde l'accesso ai nuovi messaggi di questo gruppo."
 msgid "They stay in the group as a regular member."
 msgstr "Resta nel gruppo come membro normale."
 
+msgid "This changes White Noise project metadata, not running shells."
+msgstr "Questa modifica riguarda i metadati del progetto in White Noise, non le shell in esecuzione."
+
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "Non contiene testo visibile, quindi il pulsante GM invia GM."
 
@@ -4772,6 +4808,9 @@ msgstr "Questa password è troppo facile da indovinare. Usa parole non correlate
 
 msgid "This project is no longer available."
 msgstr "Questo progetto non è più disponibile."
+
+msgid "This project is no longer available. Close this editor and reopen it from the current project."
+msgstr "Questo progetto non è più disponibile. Chiudi questo editor e riaprilo dal progetto attuale."
 
 msgid "This relay is already in your list."
 msgstr "Questo relay è già nel tuo elenco."
@@ -5345,6 +5384,9 @@ msgstr "e altri %s"
 
 msgid "carries the blob"
 msgstr "trasporta il blob"
+
+msgid "e.g. ~/Work/project"
+msgstr "ad es. ~/Work/project"
 
 msgid "edited"
 msgstr "modificato"
