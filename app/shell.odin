@@ -577,7 +577,7 @@ net_state :: proc(ui: ^Ui_State) -> Net_State {
 	if ui.health.connected > 0 {
 		return .Online
 	}
-	if ui.health.connecting > 0 || ui.health.pending > 0 {
+	if ui.health.initialized > 0 || ui.health.connecting > 0 || ui.health.pending > 0 {
 		return .Connecting
 	}
 	return .Offline

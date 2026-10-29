@@ -902,6 +902,9 @@ do_create_identity :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // `active` is the account to land on (the one just added); empty falls
 // back to the first row, which is what boot and sign-out want.
 after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
+	// Discard the empty-pool snapshot taken while account setup was running.
+	ui.health_ok = false
+	health_refresh(ui, client)
 	if ui.location_open {geo_picker_close(ui)}
 	keys_forget(ui); close_export(ui); session_string_forget(&ui.profile.nsec)
 	kp_rows_free(&ui.kp_list); ui.kp_fetched = false
