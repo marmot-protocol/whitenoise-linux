@@ -3347,6 +3347,9 @@ msgstr "%s で開いています"
 msgid "Opening in your browser"
 msgstr "ブラウザで開いています"
 
+msgid "Opening your chat"
+msgstr "チャットを開いています"
+
 #, c-format
 msgid "Opens %s in your browser, outside White Noise."
 msgstr "White Noise の外で、ブラウザで %s を開きます。"

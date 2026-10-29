@@ -274,6 +274,11 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 					)
 				}
 			}
+			if use == .Peer_Popup && g_ui != nil && hex != g_ui.account_ref {
+				if clay.UI(clay.ID("PeerMessageRow"))({layout = {padding = {top = 10}}}) {
+					card_pill(clay.ID("PeerMessage"), ICON_CHATS, tr("Message"), .Lit)
+				}
+			}
 		}
 	}
 }

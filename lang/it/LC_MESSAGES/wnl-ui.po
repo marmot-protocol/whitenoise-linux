@@ -3347,6 +3347,9 @@ msgstr "Apertura in %s"
 msgid "Opening in your browser"
 msgstr "Apertura nel browser"
 
+msgid "Opening your chat"
+msgstr "Apertura della tua chat"
+
 #, c-format
 msgid "Opens %s in your browser, outside White Noise."
 msgstr "Apre %s nel tuo browser, fuori da White Noise."

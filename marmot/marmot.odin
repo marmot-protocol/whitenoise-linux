@@ -296,6 +296,15 @@ Chat_Conversation_Kind :: enum i32 {
 	GROUP,
 }
 
+Existing_Direct_Conversation :: struct {
+	group_id_hex:                                                      cstring,
+	reusable:                                                          bool,
+	lifecycle_state:                                                   Group_Lifecycle_State,
+	self_membership:                                                   Self_Membership,
+	pending_confirmation, leave_request_pending, disbanding, archived: bool,
+	activity_sort_at:                                                  u64,
+}
+
 // Opaque here: reached only through Chat_List_Row, freed by its deep-free.
 Disband_Request :: struct {}
 
@@ -1418,6 +1427,9 @@ foreign lib {
 	agent_stream_free :: proc(sub: ^Agent_Stream_Subscription) ---
 	agent_stream_update_free :: proc(update: ^Agent_Stream_Update) ---
 
+	existing_direct_conversation :: proc(client: ^Client, account_ref, peer_account_id: cstring, out: ^^Existing_Direct_Conversation) -> Status ---
+	@(link_name = "marmot_existing_direct_conversation_free")
+	existing_direct_free :: proc(ptr: ^Existing_Direct_Conversation) ---
 	create_group :: proc(client: ^Client, account_ref: cstring, name: cstring, member_refs: [^]cstring, member_refs_len: uint, description: cstring, out: ^cstring) -> Status ---
 	send_text :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
 	// App-defined event: any non-reserved kind with caller-built tags

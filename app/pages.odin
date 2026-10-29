@@ -148,6 +148,10 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			view_peer_profile(ui, client)
 			return
 		}
+		if clicked("PeerMessage") && ui.peer_hex != ui.account_ref {
+			start_dm(ui, client, Contact_Ui{id_hex = ui.peer_hex})
+			return
+		}
 		if clicked("PeerClose") || !clay.PointerOver(clay.ID("PeerModal")) {
 			ui.peer_open = false
 		}
@@ -442,12 +446,18 @@ save_nickname :: proc(ui: ^Ui_State) {
 	ui.focus = .Compose
 }
 
-// Create (and open) a direct chat with a contact.
+// Reuse a direct chat with this person, or create an unnamed pair.
 start_dm :: proc(ui: ^Ui_State, client: ^marmot.Client, contact: Contact_Ui) {
-	job := account_job_new(ui, client, .Create_Chat); if job == nil {return}
-	job.title = strings.clone(
-		contact.name,
-	); job.target = strings.clone(contact.id_hex); job.open_chat = true; account_job_start(job)
+	job := account_job_new(ui, client, .Open_DM); if job == nil {return}
+	job.target = strings.clone(contact.id_hex)
+	job.chat_list = {
+		client           = client,
+		account          = strings.clone_to_cstring(ui.account_ref),
+		include_archived = true,
+	}
+	chat_list_snapshot(&job.chat_list, ui)
+	ui.peer_open = false
+	account_job_start(job)
 }
 
 // Publish the whole edit form as kind-0 and leave edit mode.

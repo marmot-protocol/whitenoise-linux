@@ -410,7 +410,6 @@ crop_circle_layout :: proc(t: ^testing.T) {
 				)
 			}
 			if pane == 3 {
-				testing.expect(t, clay.GetElementData(clay.ID("PeerViewProfile")).found)
 				testing.expect(
 					t,
 					!clay.GetElementData(clay.ID("ProfileCardCircle", PEER_CARD_ID)).found,

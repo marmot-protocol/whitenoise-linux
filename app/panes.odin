@@ -723,7 +723,7 @@ open_peer :: proc(
 }
 
 // Peer-profile popup: the same card a bare mention draws, carrying
-// copy-npub and a jump to the full profile for any public key.
+// copy-npub, the full profile, and a direct message action.
 peer_modal :: proc(ui: ^Ui_State) {
 	width := modal_w(clay.ID("PeerModal"), 400)
 	if clay.UI(clay.ID("PeerModal"))(

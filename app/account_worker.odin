@@ -23,6 +23,7 @@ Account_Operation :: enum {
 	Read_Contacts,
 	Read_Archived,
 	Create_Chat,
+	Open_DM,
 	Accept,
 	Decline,
 	Leave,
@@ -217,6 +218,23 @@ account_worker :: proc(t: ^thread.Thread) {
 		}
 		job.contacts = snapshot.contacts
 		status = .OK
+	case .Open_DM:
+		existing: ^marmot.Existing_Direct_Conversation
+		status = marmot.existing_direct_conversation(job.client, account, target, &existing)
+		if existing != nil {
+			if existing.reusable {job.result = strings.clone(string(existing.group_id_hex))}
+			marmot.existing_direct_free(existing)
+		}
+		if status == .OK && job.result == "" {
+			out: cstring
+			// An unnamed pair is a DM; a named pair is a group.
+			status = marmot.create_group(job.client, account, "", &target, 1, nil, &out)
+			if out != nil {job.result = strings.clone(string(out)); marmot.string_free(out)}
+		}
+		if status == .OK {
+			chat_list_read(&job.chat_list)
+			if job.chat_list.err != "" {job.error = strings.clone(job.chat_list.err)}
+		}
 	case .Create_Chat:
 		members: []cstring
 		if job.target != "" {members = []cstring{target}}
@@ -370,6 +388,29 @@ account_job_drain :: proc(ui: ^Ui_State) {
 					}
 					chats_replace(&ui.archived, fresh)
 					clear(&ui.rail_rows)
+				case .Open_DM:
+					ui.page, ui.focus = .Chats, .Compose
+					gs_keep_open_chat(ui, job.result)
+					if !select_by_id(ui, job.client, job.result) && job.chat_list.rows != nil {
+						rows := job.chat_list.rows
+						for i in 0 ..< rows.rows_len {
+							row := &rows.rows[i]
+							if string(row.row.group_id_hex) != job.result {continue}
+							chat := row_to_ui(
+								job.client,
+								row,
+								job.account,
+								job.chat_list.previews,
+								job.chat_list.reading_previews,
+								job.chat_list.members,
+							)
+							chat.search_only = row.row.archived
+							if chat.search_only {append(&ui.archived, chat_clone(chat))}
+							append(&ui.chats, chat)
+							select_by_id(ui, job.client, job.result)
+							break
+						}
+					}
 				case .Create_Chat:
 					if job.notes {delete(ui.prefs.notes_group); ui.prefs.notes_group = strings.clone(job.result); ui.prefs.pinned[strings.clone(job.result)] = true; save_settings(ui)}
 					load_chat_list(job.client, job.account, ui)
@@ -425,6 +466,8 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 		return tr("Loading your archived chats")
 	case .Create_Chat:
 		return tr("Creating your chat")
+	case .Open_DM:
+		return tr("Opening your chat")
 	case .Accept:
 		return tr("Accepting your invitation")
 	case .Decline:
