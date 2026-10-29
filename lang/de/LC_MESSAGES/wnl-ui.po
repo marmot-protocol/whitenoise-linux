@@ -4984,6 +4984,9 @@ msgstr "Das neue Passwort verschlüsselt die Schlüssel dieses Geräts neu. Eine
 msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr "Der ngit-Webclient, in dem eine Patch-Karte geöffnet wird. Diese Seite erhält den Patch-Link."
 
+msgid "The original message isn't loaded in this view."
+msgstr "Die ursprüngliche Nachricht ist in dieser Ansicht nicht geladen."
+
 msgid "The passwords don't match. Type them again."
 msgstr "Die Passwörter stimmen nicht überein. Gib sie erneut ein."
 

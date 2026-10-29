@@ -193,18 +193,23 @@ handle_img_retry :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // every build.
 reply_jump_hover: string
 
-// Click a reply preview: center the parent row via the jump path. A
-// parent outside the loaded window simply doesn't match and the jump
-// is dropped (main's centering loop).
+// Click a reply preview: center a parent in this view, or explain why
+// the quote cannot jump without changing another pending scroll.
 handle_reply_jump :: proc(ui: ^Ui_State) {
 	if reply_jump_hover == "" || !mouse_released() {
 		return
 	}
-	delete(ui.jump_id)
-	ui.jump_id = strings.clone(reply_jump_hover)
-	gs_flash_jump(ui, ui.jump_id)
-	ui.reading_pending = {}
-	reply_jump_hover = ""
+	defer reply_jump_hover = ""
+	for msg, i in ui.messages {
+		if msg.id != reply_jump_hover {continue}
+		if !clay.GetElementData(clay.ID("MsgRow", u32(i))).found {break}
+		delete(ui.jump_id)
+		ui.jump_id = strings.clone(reply_jump_hover)
+		gs_flash_jump(ui, ui.jump_id)
+		ui.reading_pending = {}
+		return
+	}
+	toast(ui, tr("The original message isn't loaded in this view."))
 }
 
 // Failed-media banner under the pointer, rebound every build.
