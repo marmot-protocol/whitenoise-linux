@@ -179,6 +179,8 @@ packaged `wn-archive` and `wn-pdf` helpers, not in the UI process.
   fallback stack). It exists because the app was written against raylib
   first, and raylib has no IME text input and no dynamic glyph baking.
   `renderer.odin` is clay's official renderer, retargeted onto it.
+  `app/sdlrl/targets.odin` owns off-screen compositing targets, nested view
+  restoration, and the modal blur chain.
 - **Panes are flat procs.** `chatpane.odin`, `panes.odin`, `settings_pages.odin`
   and friends each build their part of the clay tree directly from `Ui_State`.
   Follow that: no widget objects, no retained view tree.
