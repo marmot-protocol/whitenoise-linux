@@ -62,6 +62,24 @@ profile_message_layout :: proc(t: ^testing.T) {
 					button.x >= modal.x && button.x + button.width <= modal.x + modal.width,
 				)
 				testing.expect(t, button.y + button.height <= modal.y + modal.height)
+				profile := clay.GetElementData(clay.ID("PeerViewProfile")).boundingBox
+				testing.expect(
+					t,
+					button.x + button.width <= profile.x || button.y + button.height <= profile.y,
+				)
+				for name in ([]string{"PeerCopyNpub", "PeerViewProfile"}) {
+					box := clay.GetElementData(clay.ID(name)).boundingBox
+					testing.expect(
+						t,
+						box.x >= modal.x && box.x + box.width <= modal.x + modal.width,
+					)
+					testing.expect(
+						t,
+						box.y >= modal.y && box.y + box.height <= modal.y + modal.height,
+					)
+					clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+					testing.expect(t, clay.PointerOver(clay.ID(name)))
+				}
 				clay.SetPointerState(
 					{button.x + button.width / 2, button.y + button.height / 2},
 					false,

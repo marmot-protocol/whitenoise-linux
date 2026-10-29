@@ -8,11 +8,12 @@
 //   │ banner photo, or a band in their color    │
 //   │  ╭──────╮                        ○  ○  ◯  │
 //   ├──│  ◉◉  │─────────────────────────────────┤
-//   │  ╰──────╯               [ View profile ]  │
+//   │  ╰──────╯                                │
 //   │  Name  YOU                                │
 //   │  name@example.com                         │
 //   │  npub1abcdef...uvwxyz                     │
 //   │  About, at most three lines.              │
+//   │  [ Message          ] [ View profile   ]  │
 //   ╰───────────────────────────────────────────╯
 package main
 
@@ -83,7 +84,8 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 	name := mention_label(hex)
 	npub := hex_npub(hex)
 	defer delete(npub)
-	inner_w := width - 2 * INSET
+	inset: u16 = use == .Peer_Popup ? 20 : INSET
+	inner_w := width - 2 * f32(inset)
 	radius := rr(use == .Peer_Popup ? 16 : 12).topLeft
 	photo := url_pic(info.pic_url)
 	over := use == .Message && clay.PointerOver(clay.ID("ProfileCard", id))
@@ -174,7 +176,7 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 				attachTo = .Parent,
 				clipTo = .AttachedParent,
 				pointerCaptureMode = .Passthrough,
-				offset = {INSET, BANNER_H - FACE / 2},
+				offset = {f32(inset), BANNER_H - FACE / 2},
 				attachment = {element = .LeftTop, parent = .LeftTop},
 			},
 		},
@@ -185,15 +187,17 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 		if clay.UI(clay.ID("ProfileCardActions", id))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(FACE / 2 + 8)},
+				sizing = {
+					width = clay.SizingGrow(),
+					height = clay.SizingFixed(FACE / 2 + (use == .Peer_Popup ? 14 : 8)),
+				},
 				padding = {right = INSET - 4, top = 10},
 				childGap = 8,
 				childAlignment = {x = .Right, y = .Top},
 			},
 		},
 		) {
-			switch use {
-			case .Message:
+			if use == .Message {
 				// Lit with the card: the whole card is this button.
 				card_pill(
 					clay.ID("ProfileCardOpen", id),
@@ -201,9 +205,6 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 					tr("View profile"),
 					over ? .Lit : .Quiet,
 				)
-			case .Peer_Popup:
-				card_pill(clay.ID("PeerCopyNpub"), ICON_COPY, tr("Copy npub"), .Quiet)
-				card_pill(clay.ID("PeerViewProfile"), ICON_PROFILE, tr("View profile"), .Quiet)
 			}
 		}
 
@@ -212,19 +213,20 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 			layout = {
 				sizing = {width = clay.SizingGrow()},
 				layoutDirection = .TopToBottom,
-				padding = {left = INSET, right = INSET, top = 6, bottom = INSET},
-				childGap = 3,
+				padding = {left = inset, right = inset, top = 6, bottom = inset},
+				childGap = use == .Peer_Popup ? 5 : 3,
 			},
 		},
 		) {
 			me := g_ui != nil && hex == g_ui.account_ref
 			name_font := title_font != 0 ? title_font : FONT_TITLE
+			name_size := use == .Peer_Popup ? u16(20) : 18
 			if clay.UI(clay.ID("ProfileCardName", id))(
 			{layout = {childGap = 8, childAlignment = {y = .Center}}},
 			) {
 				clay.Text(
-					text_ellipsis(name, me ? inner_w - 48 : inner_w, name_font, 18),
-					{fontId = name_font, fontSize = 18, textColor = TEXT, wrapMode = .None},
+					text_ellipsis(name, me ? inner_w - 48 : inner_w, name_font, name_size),
+					{fontId = name_font, fontSize = name_size, textColor = TEXT, wrapMode = .None},
 				)
 				if me {
 					if clay.UI(clay.ID("ProfileCardYou", id))(
@@ -254,10 +256,29 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 				if photo != nil {
 					crop_circle("ProfileCardCircle", id, hex, 18)
 				}
-				clay.Text(
-					npub_tail(npub),
-					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, wrapMode = .None},
-				)
+				copy := use == .Peer_Popup
+				key_id := copy ? clay.ID("PeerCopyNpub") : clay.ID("ProfileCardKeyText", id)
+				if clay.UI(key_id)(
+				{
+					layout = {
+						padding = {top = copy ? 4 : 0, bottom = copy ? 4 : 0},
+						childGap = 8,
+						childAlignment = {y = .Center},
+					},
+					backgroundColor = copy && clay.PointerOver(key_id) ? HOVER : {},
+					cornerRadius = rr(4),
+				},
+				) {
+					ink := copy && hovered() ? TEXT : TEXT_LO
+					clay.Text(
+						npub_tail(npub),
+						{fontId = FONT_MONO, fontSize = 11, textColor = ink, wrapMode = .None},
+					)
+					if copy {
+						clay.Text(ICON_COPY, {fontId = FONT_ICON, fontSize = 11, textColor = ink})
+						if hovered() {cursor_raise(.Pointer); tooltip(tr("Copy npub"))}
+					}
+				}
 			}
 			if about := strings.trim_space(info.about); len(about) > 0 {
 				// body_text emits one element per line; they stack.
@@ -274,9 +295,26 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 					)
 				}
 			}
-			if use == .Peer_Popup && g_ui != nil && hex != g_ui.account_ref {
-				if clay.UI(clay.ID("PeerMessageRow"))({layout = {padding = {top = 10}}}) {
-					card_pill(clay.ID("PeerMessage"), ICON_CHATS, tr("Message"), .Lit)
+			if use == .Peer_Popup {
+				if clay.UI(clay.ID("PeerMessageRow"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = inner_w < 320 ? .TopToBottom : .LeftToRight,
+						padding = {top = 16},
+						childGap = 8,
+					},
+				},
+				) {
+					if g_ui != nil && !me {
+						card_pill(clay.ID("PeerMessage"), ICON_CHATS, tr("Message"), .Primary)
+					}
+					card_pill(
+						clay.ID("PeerViewProfile"),
+						ICON_PROFILE,
+						tr("View profile"),
+						.Secondary,
+					)
 				}
 			}
 		}
@@ -287,28 +325,40 @@ profile_card :: proc(id: u32, hex: string, width: f32, use: Profile_Card_Use) {
 Pill_Look :: enum {
 	Quiet,
 	Lit,
+	Primary,
+	Secondary,
 }
 
-// Rounded outline button; lit (accent filled) when asked or hovered.
+// Compact card pill, or a full-width primary/secondary popup action.
 @(private = "file")
 card_pill :: proc(id: clay.ElementId, icon, label: string, look: Pill_Look) {
-	lit := look == .Lit || clay.PointerOver(id)
-	if lit {cursor_raise(.Pointer)}
+	over := clay.PointerOver(id)
+	action := look == .Primary || look == .Secondary
+	lit := look == .Lit || look == .Primary || (look == .Quiet && over)
+	if over {cursor_raise(.Pointer)}
+	down := press_down(id)
 	if clay.UI(id)(
 	{
 		layout = {
-			padding = {left = 12, right = 12, top = 6, bottom = 6},
-			childGap = 6,
-			childAlignment = {y = .Center},
+			sizing = {
+				width = action ? clay.SizingGrow() : clay.SizingFit(),
+				height = action ? clay.SizingFixed(40) : clay.SizingFit(),
+			},
+			padding = {left = 12, right = 12, top = 6 + down, bottom = 6 - down},
+			childGap = action ? 8 : 6,
+			childAlignment = {x = .Center, y = .Center},
 		},
-		backgroundColor = lit ? ACCENT : {},
-		cornerRadius = rr(14),
+		backgroundColor = lit ? ACCENT : over ? HOVER : {},
+		cornerRadius = rr(action ? 9 : 14),
 		border = {color = lit ? ACCENT : FIELD_BORDER, width = bw()},
 	},
 	) {
 		ink := lit ? ON_ACCENT : TEXT
-		clay.Text(icon, {fontId = FONT_ICON, fontSize = 11, textColor = ink})
-		clay.Text(label, {fontId = FONT_TITLE, fontSize = 12, textColor = ink, wrapMode = .None})
+		clay.Text(icon, {fontId = FONT_ICON, fontSize = action ? 12 : 11, textColor = ink})
+		clay.Text(
+			label,
+			{fontId = FONT_TITLE, fontSize = action ? 13 : 12, textColor = ink, wrapMode = .None},
+		)
 	}
 }
 
