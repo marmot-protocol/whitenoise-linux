@@ -550,6 +550,7 @@ Picker_Mode :: enum {
 
 Ui_State :: struct {
 	lock_requested:                                    bool,
+	vault_setup:                                       Vault_Setup,
 	gif_tab, gif_saved, gif_loaded:                    bool,
 	gif_hits, gif_library:                             [dynamic]Gif_Item,
 	gif_job:                                           ^Gif_Job,

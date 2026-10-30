@@ -362,10 +362,16 @@ msgstr ""
 msgid "3D models"
 msgstr ""
 
+msgid "A backup-file password opens only that backup file. Your identity key or remote signer cannot unlock this vault."
+msgstr ""
+
 msgid "A checked box means you placed the chat by hand. Clear it to let folder rules decide."
 msgstr ""
 
 msgid "A client for private group chat. Messages are sealed with MLS on this device, handed to Nostr relays as opaque blobs, and opened again only inside the group."
+msgstr ""
+
+msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr ""
 
 msgid "A display name is required."
@@ -374,7 +380,13 @@ msgstr ""
 msgid "A key package lets people invite you to encrypted chats."
 msgstr ""
 
+msgid "A line about you"
+msgstr ""
+
 msgid "A message at this size."
+msgstr ""
+
+msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
 msgstr ""
 
 msgid "A terminal is waiting for you."
@@ -408,6 +420,9 @@ msgstr ""
 msgid "About White Noise"
 msgstr ""
 
+msgid "About this password"
+msgstr ""
+
 #, c-format
 msgid "Accent %s color"
 msgstr ""
@@ -426,6 +441,15 @@ msgid "Accepting your invitation"
 msgstr ""
 
 msgid "Account"
+msgstr ""
+
+msgid "Account access"
+msgstr ""
+
+msgid "Account keys stored here, remote signer sessions and the local encryption key."
+msgstr ""
+
+msgid "Account secrets and the local encryption key."
 msgstr ""
 
 msgid "Accounts"
@@ -573,6 +597,9 @@ msgstr ""
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr ""
 
+msgid "Approve the request in your signer to continue."
+msgstr ""
+
 msgid "Apps"
 msgstr ""
 
@@ -613,6 +640,9 @@ msgid "Attach a file"
 msgstr ""
 
 msgid "Attachment"
+msgstr ""
+
+msgid "Attachments, avatars, transcripts and map tiles."
 msgstr ""
 
 msgid "Audio"
@@ -686,6 +716,9 @@ msgid "Back to chats"
 msgstr ""
 
 msgid "Back to connectors"
+msgstr ""
+
+msgid "Back to issues"
 msgstr ""
 
 msgid "Back to sets"
@@ -801,6 +834,9 @@ msgid "CURRENT PASSWORD"
 msgstr ""
 
 msgid "Cached attachments"
+msgstr ""
+
+msgid "Cached media"
 msgstr ""
 
 msgid "Calendar"
@@ -961,6 +997,9 @@ msgstr ""
 msgid "Checking your password and decrypting the vault."
 msgstr ""
 
+msgid "Checking your password and decrypting your local vault."
+msgstr ""
+
 msgid "Checking..."
 msgstr ""
 
@@ -982,6 +1021,9 @@ msgstr ""
 msgid "Chip text"
 msgstr ""
 
+msgid "Choose a contact or paste a Nostr address."
+msgstr ""
+
 msgid "Choose a contacts CSV or JSON export to import."
 msgstr ""
 
@@ -989,6 +1031,9 @@ msgid "Choose a destination for this chat."
 msgstr ""
 
 msgid "Choose a destination for this project."
+msgstr ""
+
+msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr ""
 
 msgid "Choose a known sender or enter a public key."
@@ -1010,6 +1055,9 @@ msgid "Choose a translation source language"
 msgstr ""
 
 msgid "Choose a translation target language"
+msgstr ""
+
+msgid "Choose a vault password"
 msgstr ""
 
 msgid "Choose an emoji style"
@@ -1069,6 +1117,9 @@ msgstr ""
 msgid "Choose where you publish"
 msgstr ""
 
+msgid "Choose your account"
+msgstr ""
+
 msgid "Circle"
 msgstr ""
 
@@ -1115,6 +1166,9 @@ msgid "Close tab"
 msgstr ""
 
 msgid "Close to tray"
+msgstr ""
+
+msgid "Closed"
 msgstr ""
 
 msgid "Closing connections and clearing this session."
@@ -1165,6 +1219,9 @@ msgstr ""
 msgid "Configure a SOCKS5 proxy"
 msgstr ""
 
+msgid "Confirm"
+msgstr ""
+
 msgid "Confirm clear"
 msgstr ""
 
@@ -1178,6 +1235,12 @@ msgid "Confirm import"
 msgstr ""
 
 msgid "Confirm reveal"
+msgstr ""
+
+msgid "Confirm your password"
+msgstr ""
+
+msgid "Confirm: delete this vault"
 msgstr ""
 
 msgid "Connect an AI agent"
@@ -1208,6 +1271,9 @@ msgid "Connecting to relays"
 msgstr ""
 
 msgid "Connecting to your signer"
+msgstr ""
+
+msgid "Connecting to your signer through its relays."
 msgstr ""
 
 msgid "Connecting your remote signer. Approve the connection there before using this account."
@@ -1316,6 +1382,9 @@ msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr ""
 
 msgid "Couldn't add that relay. Double-check the address and try again."
+msgstr ""
+
+msgid "Couldn't add the pack. No supported stickers are available."
 msgstr ""
 
 msgid "Couldn't add the pack. Please try again."
@@ -1456,6 +1525,9 @@ msgstr ""
 msgid "Couldn't forward. Please try again."
 msgstr ""
 
+msgid "Couldn't get your location. Check your desktop location permissions or pick a point on the map."
+msgstr ""
+
 msgid "Couldn't get your location. Check your device's location permissions and try again."
 msgstr ""
 
@@ -1498,6 +1570,9 @@ msgstr ""
 msgid "Couldn't invite the member. Enter a public key or verified address and try again."
 msgstr ""
 
+msgid "Couldn't invite the member. Enter an npub or nprofile and try again."
+msgstr ""
+
 msgid "Couldn't invite them. They have no key package White Noise can use. Ask them to open White Noise, then try again."
 msgstr ""
 
@@ -1521,6 +1596,9 @@ msgid "Couldn't load group members. Please try again."
 msgstr ""
 
 msgid "Couldn't load image. Click to retry."
+msgstr ""
+
+msgid "Couldn't load issues. Please try again."
 msgstr ""
 
 msgid "Couldn't load messages. Please try again."
@@ -1617,6 +1695,9 @@ msgstr ""
 msgid "Couldn't publish your name. %s"
 msgstr ""
 
+msgid "Couldn't reach the Namecoin resolvers. Please try again."
+msgstr ""
+
 msgid "Couldn't reach your signer. Please try again."
 msgstr ""
 
@@ -1683,6 +1764,14 @@ msgstr ""
 msgid "Couldn't render the QR code. Please try again."
 msgstr ""
 
+#, c-format
+msgid "Couldn't resolve %s on Namecoin. Double-check it and try again."
+msgstr ""
+
+#, c-format
+msgid "Couldn't reveal your private key. %s"
+msgstr ""
+
 msgid "Couldn't reveal your secret key. Please try again."
 msgstr ""
 
@@ -1715,6 +1804,9 @@ msgid "Couldn't save your emoji. Please try again."
 msgstr ""
 
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
+msgstr ""
+
+msgid "Couldn't save your signer session. Please try again."
 msgstr ""
 
 msgid "Couldn't save your stickers. Please try again."
@@ -1801,6 +1893,9 @@ msgstr ""
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr ""
 
+msgid "Couldn't update issues. Please try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't upload the picture. %s"
 msgstr ""
@@ -1850,6 +1945,9 @@ msgstr ""
 msgid "Create group"
 msgstr ""
 
+msgid "Create issue"
+msgstr ""
+
 msgid "Create or use an account"
 msgstr ""
 
@@ -1857,6 +1955,9 @@ msgid "Create pairing link"
 msgstr ""
 
 msgid "Create poll"
+msgstr ""
+
+msgid "Create vault"
 msgstr ""
 
 msgid "Created"
@@ -1875,6 +1976,9 @@ msgid "Creating tab…"
 msgstr ""
 
 msgid "Creating your chat"
+msgstr ""
+
+msgid "Creating your vault…"
 msgstr ""
 
 msgid "Croatian"
@@ -1976,6 +2080,12 @@ msgstr ""
 msgid "Delete for me"
 msgstr ""
 
+msgid "Delete for you?"
+msgstr ""
+
+msgid "Delete this device's vault?"
+msgstr ""
+
 msgid "Delete this folder?"
 msgstr ""
 
@@ -1991,6 +2101,9 @@ msgstr ""
 msgid "Delete this vault"
 msgstr ""
 
+msgid "Delete vault"
+msgstr ""
+
 msgid "Deleted. Recording continues in a fresh file."
 msgstr ""
 
@@ -2004,6 +2117,12 @@ msgid "Deriving an encryption key from your password."
 msgstr ""
 
 msgid "Describe the group"
+msgstr ""
+
+msgid "Describe the issue (Markdown)"
+msgstr ""
+
+msgid "Description"
 msgstr ""
 
 msgid "Design"
@@ -2025,6 +2144,9 @@ msgid "Developer mode off"
 msgstr ""
 
 msgid "Developer mode on"
+msgstr ""
+
+msgid "Developer tools"
 msgstr ""
 
 msgid "Device vault"
@@ -2061,6 +2183,9 @@ msgstr ""
 msgid "Difficulty: %d/5"
 msgstr ""
 
+msgid "Disabled for this group."
+msgstr ""
+
 msgid "Disappearing messages"
 msgstr ""
 
@@ -2081,6 +2206,9 @@ msgid "Discard your theme changes?"
 msgstr ""
 
 msgid "Discover"
+msgstr ""
+
+msgid "Discussion"
 msgstr ""
 
 msgid "Divider"
@@ -2220,6 +2348,9 @@ msgstr ""
 msgid "Enable local translation"
 msgstr ""
 
+msgid "Enabled for this group."
+msgstr ""
+
 msgid "Encrypt with NIP-44"
 msgstr ""
 
@@ -2268,6 +2399,9 @@ msgstr ""
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr ""
 
+msgid "Enter a username and password, each between 1 and 255 UTF-8 bytes."
+msgstr ""
+
 msgid "Enter a username and password, each up to 255 characters."
 msgstr ""
 
@@ -2275,6 +2409,9 @@ msgid "Enter a valid pack link or address."
 msgstr ""
 
 msgid "Enter an absolute project folder path, or a path starting with ~/."
+msgstr ""
+
+msgid "Enter an issue title and description."
 msgstr ""
 
 msgid "Enter at least 2 people. Counts include you."
@@ -2285,6 +2422,9 @@ msgid "Enter dates like %s, with the start on or before the end."
 msgstr ""
 
 msgid "Enter moves to the next field, Escape cancels."
+msgstr ""
+
+msgid "Enter publishes, Escape cancels."
 msgstr ""
 
 msgid "Enter the backup password."
@@ -2314,6 +2454,9 @@ msgstr ""
 msgid "Enter your password to unlock the vault on this device."
 msgstr ""
 
+msgid "Enter your password to unlock your local vault on this device."
+msgstr ""
+
 msgid "Erase avatar reveal"
 msgstr ""
 
@@ -2327,6 +2470,9 @@ msgid "Event fetch relays"
 msgstr ""
 
 msgid "Event id"
+msgstr ""
+
+msgid "Every account in this vault. This computer only."
 msgstr ""
 
 msgid "Everyone in the group sees the new name."
@@ -2357,6 +2503,9 @@ msgid "Export as Markdown"
 msgstr ""
 
 msgid "Export chat"
+msgstr ""
+
+msgid "Export encrypted key"
 msgstr ""
 
 msgid "Export encrypted key (ncryptsec)"
@@ -2440,6 +2589,12 @@ msgstr ""
 msgid "Finnish"
 msgstr ""
 
+msgid "First member"
+msgstr ""
+
+msgid "First, protect your saved keys."
+msgstr ""
+
 msgid "Fit"
 msgstr ""
 
@@ -2492,6 +2647,9 @@ msgid "Food"
 msgstr ""
 
 msgid "Forget all"
+msgstr ""
+
+msgid "Forgot password?"
 msgstr ""
 
 msgid "Forgot your password?"
@@ -2579,6 +2737,9 @@ msgstr ""
 msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr ""
 
+msgid "Get desktop notifications"
+msgstr ""
+
 msgid "Get message notifications"
 msgstr ""
 
@@ -2631,6 +2792,9 @@ msgid "Group name"
 msgstr ""
 
 msgid "Group settings"
+msgstr ""
+
+msgid "Grouped"
 msgstr ""
 
 msgid "Grouped sorts your chats into folders, and you have none yet."
@@ -2732,6 +2896,9 @@ msgstr ""
 msgid "Identity"
 msgstr ""
 
+msgid "If you forgot this password, you can try again or close White Noise without deleting anything. Starting over deletes the vault and its protected local data, including chats and pending sends. Review the deletion before deciding."
+msgstr ""
+
 msgid "Image didn't load. Click to retry."
 msgstr ""
 
@@ -2773,6 +2940,9 @@ msgstr ""
 msgid "Import set"
 msgstr ""
 
+msgid "Import your key, create one, or connect a signer."
+msgstr ""
+
 msgid "Import..."
 msgstr ""
 
@@ -2782,6 +2952,9 @@ msgstr ""
 
 #, c-format
 msgid "Importing contacts: %d of %d"
+msgstr ""
+
+msgid "Importing emoji"
 msgstr ""
 
 msgid "Importing emoji..."
@@ -2870,6 +3043,18 @@ msgstr ""
 msgid "Is Whip"
 msgstr ""
 
+msgid "Issue title"
+msgstr ""
+
+msgid "Issue tracking"
+msgstr ""
+
+msgid "Issue tracking is unavailable."
+msgstr ""
+
+msgid "Issues"
+msgstr ""
+
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr ""
 
@@ -2932,6 +3117,9 @@ msgstr ""
 msgid "Keep this vault"
 msgstr ""
 
+msgid "Keep vault"
+msgstr ""
+
 msgid "Keep your chat list focused without deleting conversations."
 msgstr ""
 
@@ -2939,6 +3127,10 @@ msgid "Keep your conversations in order."
 msgstr ""
 
 msgid "Keep your signer open. Approve the connection and requested signatures there."
+msgstr ""
+
+#, c-format
+msgid "Key package accepted by %d relays."
 msgstr ""
 
 msgid "Key package published"
@@ -2952,6 +3144,9 @@ msgid "Key package ref"
 msgstr ""
 
 msgid "Key packages"
+msgstr ""
+
+msgid "Key packages are published to your key package relays."
 msgstr ""
 
 msgid "Key packages let people invite you. Refresh checks the app's default relays for published copies."
@@ -2981,7 +3176,16 @@ msgstr ""
 msgid "LOADED MESSAGES"
 msgstr ""
 
+msgid "LOCAL"
+msgstr ""
+
 msgid "LOCATION"
+msgstr ""
+
+msgid "Labels"
+msgstr ""
+
+msgid "Labels, separated by commas"
 msgstr ""
 
 msgid "Language"
@@ -3059,10 +3263,19 @@ msgstr ""
 msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr ""
 
+msgid "Literal message text"
+msgstr ""
+
 msgid "Lithuanian"
 msgstr ""
 
+msgid "Loading emoji previews"
+msgstr ""
+
 msgid "Loading emoji previews..."
+msgstr ""
+
+msgid "Loading emoji sets"
 msgstr ""
 
 msgid "Loading emoji sets..."
@@ -3078,6 +3291,9 @@ msgid "Loading messages for export..."
 msgstr ""
 
 msgid "Loading messages…"
+msgstr ""
+
+msgid "Loading more matches from local history…"
 msgstr ""
 
 msgid "Loading your accounts"
@@ -3123,6 +3339,9 @@ msgid "Locking…"
 msgstr ""
 
 msgid "Look up"
+msgstr ""
+
+msgid "Looking up the Namecoin name."
 msgstr ""
 
 msgid "Looking up the pack…"
@@ -3263,6 +3482,9 @@ msgstr ""
 msgid "Messages stay on your device. Downloads about 2.5 GB on first translation. Enabling accepts the Gemma terms and prohibited use policy."
 msgstr ""
 
+msgid "Messages waiting to be sent."
+msgstr ""
+
 msgid "Messaging"
 msgstr ""
 
@@ -3291,6 +3513,9 @@ msgid "More than"
 msgstr ""
 
 msgid "Move to folder"
+msgstr ""
+
+msgid "Multi-device is coming very soon™."
 msgstr ""
 
 msgid "Multi-device isn't built yet. Each device that signs in with this key keeps its own separate chats. Groups and messages from your other devices won't appear here, and new invites reach only one of your devices."
@@ -3335,6 +3560,12 @@ msgstr ""
 msgid "Name the shortcode. Type it in messages as :name:."
 msgstr ""
 
+msgid "Namecoin lookup took too long; try again."
+msgstr ""
+
+msgid "Namecoin name resolved. Invite sent."
+msgstr ""
+
 msgid "Nature"
 msgstr ""
 
@@ -3357,6 +3588,9 @@ msgid "New folder"
 msgstr ""
 
 msgid "New group"
+msgstr ""
+
+msgid "New issue"
 msgstr ""
 
 msgid "New message"
@@ -3465,6 +3699,12 @@ msgstr ""
 msgid "No inbox relays."
 msgstr ""
 
+msgid "No issues found."
+msgstr ""
+
+msgid "No issues yet"
+msgstr ""
+
 msgid "No key package on this device or its relays."
 msgstr ""
 
@@ -3525,6 +3765,9 @@ msgid "No results. Try another search."
 msgstr ""
 
 msgid "No rules"
+msgstr ""
+
+msgid "No stickers here yet."
 msgstr ""
 
 msgid "No stickers here yet. Choose Manage to add stickers or sticker packs."
@@ -3654,6 +3897,9 @@ msgstr ""
 msgid "One-tap reactions"
 msgstr ""
 
+msgid "Only group admins can change this setting."
+msgstr ""
+
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr ""
 
@@ -3661,6 +3907,9 @@ msgid "Only you see this name."
 msgstr ""
 
 msgid "Open"
+msgstr ""
+
+msgid "Open a chat before inviting someone."
 msgstr ""
 
 msgid "Open chat"
@@ -3700,6 +3949,9 @@ msgid "Open link"
 msgstr ""
 
 msgid "Open locations in"
+msgstr ""
+
+msgid "Open the first issue to share a problem with your group."
 msgstr ""
 
 msgid "Open this link?"
@@ -3760,6 +4012,9 @@ msgid "Original message unavailable"
 msgstr ""
 
 msgid "Other"
+msgstr ""
+
+msgid "Other devices, public profiles and group membership are unchanged."
 msgstr ""
 
 msgid "Other files"
@@ -3838,6 +4093,9 @@ msgstr ""
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr ""
 
+msgid "Paste someone's public key to start a chat."
+msgstr ""
+
 #, c-format
 msgid "Paste this into %s. Review the installation plan before approving changes."
 msgstr ""
@@ -3851,6 +4109,9 @@ msgstr ""
 msgid "Peers can't find you"
 msgstr ""
 
+msgid "Pending sends"
+msgstr ""
+
 msgid "People"
 msgstr ""
 
@@ -3858,6 +4119,9 @@ msgid "People can't invite you"
 msgstr ""
 
 msgid "People you follow show up here."
+msgstr ""
+
+msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
 msgstr ""
 
 msgid "People you follow show up here. To start a chat now, search for someone by name or paste their public key above."
@@ -3884,6 +4148,9 @@ msgstr ""
 msgid "Pick a new password first."
 msgstr ""
 
+msgid "Pick a new password to start a new vault. This does not recover your previous chats or pending sends."
+msgstr ""
+
 msgid "Pick a password first."
 msgstr ""
 
@@ -3897,6 +4164,9 @@ msgid "Pick a task..."
 msgstr ""
 
 msgid "Pick the whole app's look."
+msgstr ""
+
+msgid "Picture"
 msgstr ""
 
 msgid "Pieces"
@@ -4045,6 +4315,9 @@ msgid "Promote"
 msgstr ""
 
 msgid "Prompt copied. Paste it into your agent."
+msgstr ""
+
+msgid "Protect this computer"
 msgstr ""
 
 msgid "Protect this device"
@@ -4285,6 +4558,9 @@ msgstr ""
 msgid "Rendering toolpaths"
 msgstr ""
 
+msgid "Reopen"
+msgstr ""
+
 msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
 msgstr ""
 
@@ -4300,6 +4576,10 @@ msgstr ""
 msgid "Replying"
 msgstr ""
 
+#, c-format
+msgid "Replying to: %s"
+msgstr ""
+
 msgid "Republish"
 msgstr ""
 
@@ -4307,6 +4587,9 @@ msgid "Republish relay lists"
 msgstr ""
 
 msgid "Republish your relay lists"
+msgstr ""
+
+msgid "Requesting your location. Approve the desktop permission prompt if shown."
 msgstr ""
 
 msgid "Requesting your location. Approve the permission prompt if shown."
@@ -4319,6 +4602,12 @@ msgid "Reset zoom"
 msgstr ""
 
 msgid "Resize terminal"
+msgstr ""
+
+msgid "Resolve"
+msgstr ""
+
+msgid "Resolved"
 msgstr ""
 
 msgid "Restart now"
@@ -4354,6 +4643,9 @@ msgstr ""
 msgid "Reveal hidden message"
 msgstr ""
 
+msgid "Reveal private key (nsec)"
+msgstr ""
+
 msgid "Reveal secret key (nsec)"
 msgstr ""
 
@@ -4361,6 +4653,9 @@ msgid "Reveal your secret key"
 msgstr ""
 
 msgid "Review and approve"
+msgstr ""
+
+msgid "Review local data deletion"
 msgstr ""
 
 msgid "Review signer approval link"
@@ -4436,6 +4731,9 @@ msgstr ""
 msgid "SOCKS5 proxy"
 msgstr ""
 
+msgid "START OVER"
+msgstr ""
+
 msgid "STATE SNAPSHOT"
 msgstr ""
 
@@ -4491,11 +4789,17 @@ msgstr ""
 msgid "Save sticker"
 msgstr ""
 
+msgid "Save this password in your password manager. White Noise cannot reset it to unlock this device's vault."
+msgstr ""
+
 msgid "Saved"
 msgstr ""
 
 #, c-format
 msgid "Saved %s."
+msgstr ""
+
+msgid "Saved collections"
 msgstr ""
 
 msgid "Saved locally. Relay delivery pending."
@@ -4561,6 +4865,9 @@ msgstr ""
 msgid "Search by name or paste public keys..."
 msgstr ""
 
+msgid "Search contacts or paste a public key..."
+msgstr ""
+
 msgid "Search contacts..."
 msgstr ""
 
@@ -4577,6 +4884,9 @@ msgid "Search for someone or paste their public key to start a chat."
 msgstr ""
 
 msgid "Search images"
+msgstr ""
+
+msgid "Search issues"
 msgstr ""
 
 msgid "Search messages"
@@ -4621,6 +4931,12 @@ msgstr ""
 msgid "Security actions"
 msgstr ""
 
+msgid "See also"
+msgstr ""
+
+msgid "See and hear it with today's sound and preview settings."
+msgstr ""
+
 msgid "See and hear it with your current sound and preview settings."
 msgstr ""
 
@@ -4640,6 +4956,12 @@ msgid "Select a model to download it for dictation and audio messages."
 msgstr ""
 
 msgid "Select a project"
+msgstr ""
+
+msgid "Select an issue"
+msgstr ""
+
+msgid "Select an issue to read its discussion."
 msgstr ""
 
 msgid "Self-hosted personal AI assistant"
@@ -4679,6 +5001,9 @@ msgstr ""
 msgid "Send your daily GM to this chat?"
 msgstr ""
 
+msgid "Sender name or hex public key"
+msgstr ""
+
 msgid "Sender name or public key"
 msgstr ""
 
@@ -4698,6 +5023,9 @@ msgstr ""
 msgid "Serbian"
 msgstr ""
 
+msgid "Set"
+msgstr ""
+
 #, c-format
 msgid "Set up %s"
 msgstr ""
@@ -4707,6 +5035,9 @@ msgid "Set: %s"
 msgstr ""
 
 msgid "Settings"
+msgstr ""
+
+msgid "Settings backups do not include these stores and cannot restore them."
 msgstr ""
 
 msgid "Settings: about"
@@ -4746,6 +5077,9 @@ msgid "Shadow popover"
 msgstr ""
 
 msgid "Shadow soft"
+msgstr ""
+
+msgid "Share a problem with your group."
 msgstr ""
 
 msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
@@ -4796,6 +5130,9 @@ msgstr ""
 msgid "Show all chats"
 msgstr ""
 
+msgid "Show as QR"
+msgstr ""
+
 msgid "Show contact list"
 msgstr ""
 
@@ -4840,6 +5177,9 @@ msgstr ""
 
 #, c-format
 msgid "Sign events of these kinds: %s"
+msgstr ""
+
+msgid "Sign in to your Nostr identity"
 msgstr ""
 
 msgid "Sign out"
@@ -4946,6 +5286,12 @@ msgid "Square"
 msgstr ""
 
 msgid "Start"
+msgstr ""
+
+msgid "Start a chat"
+msgstr ""
+
+msgid "Start a chat with this public key"
 msgstr ""
 
 msgid "Start a group and invite people."
@@ -5148,6 +5494,10 @@ msgstr ""
 msgid "Text uses the typeface this theme ships with."
 msgstr ""
 
+#, c-format
+msgid "Text: %s"
+msgstr ""
+
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr ""
 
@@ -5191,6 +5541,9 @@ msgstr ""
 msgid "The new password re-encrypts the vault on this device. White Noise still can't reset it. If you forget it, the only way forward is to delete this vault and start over."
 msgstr ""
 
+msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
+msgstr ""
+
 msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr ""
 
@@ -5214,6 +5567,9 @@ msgstr ""
 
 #, c-format
 msgid "The web client an event card opens. For example %s. %s is replaced with the event id."
+msgstr ""
+
+msgid "Their messages stay hidden until you show them, and you can't message them directly. Nothing is published, and you can undo it here."
 msgstr ""
 
 msgid "Their messages stay hidden until you show them. Nothing is published, and you can unblock them here."
@@ -5263,6 +5619,9 @@ msgid "They lose access to new messages in this group."
 msgstr ""
 
 msgid "They stay in the group as a regular member."
+msgstr ""
+
+msgid "This can't be undone."
 msgstr ""
 
 msgid "This changes White Noise project metadata, not running shells."
@@ -5331,6 +5690,12 @@ msgstr ""
 msgid "This password is easy to guess. Someone with this device could guess it and open the vault."
 msgstr ""
 
+msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
+msgstr ""
+
+msgid "This password protects sensitive local data. It is not a service login or a password to share with contacts. Save it in your password manager."
+msgstr ""
+
 msgid "This project is no longer available."
 msgstr ""
 
@@ -5368,10 +5733,19 @@ msgstr ""
 msgid "Timings"
 msgstr ""
 
+msgid "Title"
+msgstr ""
+
 msgid "Title font"
 msgstr ""
 
 msgid "Title wash"
+msgstr ""
+
+msgid "To start a chat with someone new, paste their public key."
+msgstr ""
+
+msgid "To use the same identity after starting over, you need its secret key saved elsewhere or access to its remote signer. The signer's private key stays with that signer. Without either, you cannot sign in to that identity. Signing in again does not restore this device's chats. A settings backup does not contain account keys or message history."
 msgstr ""
 
 msgid "Today"
@@ -5443,6 +5817,9 @@ msgstr ""
 msgid "Trophy"
 msgstr ""
 
+msgid "Troubleshooters"
+msgstr ""
+
 msgid "Trusted link sites"
 msgstr ""
 
@@ -5468,6 +5845,9 @@ msgid "Turn on developer mode"
 msgstr ""
 
 msgid "Type a command"
+msgstr ""
+
+msgid "Type it again to protect your local vault."
 msgstr ""
 
 msgid "Type to search all chats."
@@ -5503,6 +5883,9 @@ msgstr ""
 msgid "Unlock"
 msgstr ""
 
+msgid "Unlock your vault"
+msgstr ""
+
 msgid "Unlocking…"
 msgstr ""
 
@@ -5518,6 +5901,9 @@ msgstr ""
 msgid "Unread"
 msgstr ""
 
+msgid "Unresolved"
+msgstr ""
+
 msgid "Unsupported attachment format."
 msgstr ""
 
@@ -5531,6 +5917,9 @@ msgid "Updates"
 msgstr ""
 
 msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot safely use the app's explicit proxy. Disable the proxy and restart to update, or install an authenticated release manually."
+msgstr ""
+
+msgid "Updating issue tracking..."
 msgstr ""
 
 msgid "Updating your contacts"
@@ -5662,6 +6051,9 @@ msgstr ""
 msgid "Voting has ended."
 msgstr ""
 
+msgid "WILL BE DELETED"
+msgstr ""
+
 msgid "WIREFRAME"
 msgstr ""
 
@@ -5738,10 +6130,16 @@ msgstr ""
 msgid "White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened."
 msgstr ""
 
+msgid "White Noise cannot reset this password to unlock your existing vault."
+msgstr ""
+
 msgid "White Noise doesn't open at login"
 msgstr ""
 
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
+msgstr ""
+
+msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr ""
 
 msgid "White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too."
@@ -5767,6 +6165,9 @@ msgid "Work"
 msgstr ""
 
 msgid "World"
+msgstr ""
+
+msgid "Write a comment"
 msgstr ""
 
 msgid "YOU"
@@ -5866,6 +6267,9 @@ msgstr ""
 msgid "Your current password"
 msgstr ""
 
+msgid "Your desktop location service handles the permission request. Nothing is sent to the chat until you choose Send location."
+msgstr ""
+
 msgid "Your device asks for permission. Nothing is sent to the chat until you choose Send location."
 msgstr ""
 
@@ -5878,10 +6282,16 @@ msgstr ""
 msgid "Your identity and the secrets on this device."
 msgstr ""
 
+msgid "Your identity is sovereign"
+msgstr ""
+
 msgid "Your identity, key packages, and device security."
 msgstr ""
 
 msgid "Your key stays on this device"
+msgstr ""
+
+msgid "Your name"
 msgstr ""
 
 msgid "Your new password"
@@ -5902,6 +6312,9 @@ msgstr ""
 msgid "Your previous account action is still waiting. Check your signer for approval."
 msgstr ""
 
+msgid "Your private key stays in your remote signer. Reveal and export are unavailable on this device."
+msgstr ""
+
 msgid "Your profile"
 msgstr ""
 
@@ -5917,6 +6330,9 @@ msgstr ""
 msgid "Your public key. Safe to share."
 msgstr ""
 
+msgid "Your saved stickers and GIFs."
+msgstr ""
+
 msgid "Your secret key stays in your remote signer, so this device can't reveal or export it. Back it up and recover it through your signer. A White Noise backup file doesn't include it."
 msgstr ""
 
@@ -5927,6 +6343,9 @@ msgid "Your secret key stays on this device or in your connected signer. Never s
 msgstr ""
 
 msgid "Your signer is connected, but its old record could not be removed from the encrypted vault."
+msgstr ""
+
+msgid "Your signer is connected."
 msgstr ""
 
 msgid "Your signer is disconnected."
@@ -6076,6 +6495,9 @@ msgid "relay"
 msgstr ""
 
 msgid "sealed here"
+msgstr ""
+
+msgid "you"
 msgstr ""
 
 msgid "© OpenStreetMap contributors"

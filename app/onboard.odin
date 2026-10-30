@@ -1,6 +1,4 @@
-// The first-run checklist, shown on the Chats page while the account
-// has no chats besides Notes to self: the three things needed before a message
-// can travel, each with the one action that makes it true.
+// First-run progression and chat readiness actions.
 package main
 
 import "core:fmt"
@@ -9,6 +7,105 @@ import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
+
+@(private)
+Onboard_Stage :: enum {
+	Protect,
+	Account,
+	Chat,
+}
+
+@(private)
+onboard_steps :: proc(active: Onboard_Stage) {
+	labels := [Onboard_Stage]string {
+		.Protect = N_("Protect this computer"),
+		.Account = N_("Choose your account"),
+		.Chat    = N_("Start a chat"),
+	}
+	numbers := [Onboard_Stage]string {
+		.Protect = "1",
+		.Account = "2",
+		.Chat    = "3",
+	}
+	if nendo.box(nendo.id("OnboardSteps"))({width = nendo.grow(), direction = .Column}) {
+		for stage in Onboard_Stage {
+			current := stage == active
+			complete := stage < active
+			mark := nendo.id("OnboardStageMark", u32(stage))
+			selected := anim_to(anim_key(mark.id, 1), current ? 1 : 0, HOVER_RATE)
+			finished := anim_to(anim_key(mark.id, 2), complete ? 1 : 0, HOVER_RATE)
+			arrived := stagger(nendo.id("OnboardSteps").id, int(stage))
+			ink := mix_color(TEXT_LO, ACCENT, finished)
+			ink = mix_color(ink, ON_ACCENT, selected)
+			if nendo.box(nendo.id("OnboardStage", u32(stage)))(
+			{width = nendo.grow(), gap = 12, align = {y = .Center}},
+			) {
+				if nendo.box(mark)(
+				{
+					width = nendo.fixed(28),
+					height = nendo.fixed(28),
+					align = {x = .Center, y = .Center},
+				},
+				) {
+					// Only the badge settles; the row and its label never move.
+					side := 26 + 2 * arrived
+					if nendo.box(nendo.id("OnboardStageBadge", u32(stage)))(
+					{
+						width = nendo.fixed(side),
+						height = nendo.fixed(side),
+						align = {x = .Center, y = .Center},
+						color = fade(
+							mix_color(fade(ACCENT, 0.12 * finished), ACCENT, selected),
+							0.8 + 0.2 * arrived,
+						),
+						radius = rr(14),
+						border = {
+							color = mix_color(FIELD_BORDER, ACCENT, max(selected, finished)),
+							width = bw(),
+						},
+					},
+					) {
+						if complete {glow(nendo.id("OnboardStageBadge", u32(stage)), ACCENT, (1 - finished) * 0.2, 6)}
+						nendo.text(
+							complete ? ICON_CHECK : numbers[stage],
+							{
+								font = complete ? FONT_ICON : FONT_BODY,
+								size = complete ? 12 : 14,
+								color = ink,
+							},
+						)
+					}
+				}
+				nendo.text(
+					tr(labels[stage]),
+					{
+						font = FONT_TITLE,
+						size = 16,
+						color = fade(
+							current ? TEXT : complete ? TEXT_DIM : TEXT_LO,
+							0.8 + 0.2 * arrived,
+						),
+					},
+				)
+			}
+			if stage != .Chat {
+				if nendo.box(nendo.id("OnboardStageLink", u32(stage)))({padding = {left = 13}}) {
+					if nendo.box(nendo.id("OnboardStageLine", u32(stage)))(
+					{width = nendo.fixed(2), height = nendo.fixed(10), color = DIVIDER},
+					) {
+						if nendo.box(nendo.id("OnboardStageFill", u32(stage)))(
+						{
+							width = nendo.fixed(2),
+							height = nendo.fixed(10 * finished),
+							color = ACCENT,
+						},
+						) {}
+					}
+				}
+			}
+		}
+	}
+}
 
 // Notes is created automatically, and search destinations are not joined chats.
 @(private)
@@ -132,11 +229,7 @@ get_started_pane :: proc(ui: ^Ui_State, mode: Onboard_Layout = .Scroll) {
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
-			nendo.text(tr("Get started"), {font = FONT_TITLE, size = 22, color = TEXT})
-			nendo.text(
-				tr("Three things and you can send your first message."),
-				{font = FONT_BODY, size = 12, color = TEXT_DIM},
-			)
+			onboard_steps(.Chat)
 
 			for step in Step {
 				view := step_view(ui, step)
@@ -149,7 +242,7 @@ get_started_pane :: proc(ui: ^Ui_State, mode: Onboard_Layout = .Scroll) {
 					align = {y = .Center},
 				},
 				) {
-					// Filled accent tick when done, hollow ordinal until then.
+					// Readiness status, separate from the numbered setup stages.
 					if nendo.box(nendo.id("StepMark", u32(step)))(
 					{
 						width = nendo.fixed(24),
@@ -166,10 +259,7 @@ get_started_pane :: proc(ui: ^Ui_State, mode: Onboard_Layout = .Scroll) {
 								{font = FONT_ICON, size = 10, color = ON_ACCENT},
 							)
 						} else {
-							nendo.text(
-								fmt.tprintf("%d", int(step) + 1),
-								{font = FONT_BODY, size = 12, color = TEXT_DIM},
-							)
+							nendo.text("·", {font = FONT_BODY, size = 12, color = TEXT_DIM})
 						}
 					}
 					if nendo.box(nendo.id("StepCol", u32(step)))(

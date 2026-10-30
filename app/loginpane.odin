@@ -39,18 +39,31 @@ login_big_button :: proc(
 	primary: bool,
 	state: Button_State = .Enabled,
 ) {
-	if nendo.box(nendo.id(id_str))(
+	id := nendo.id(id_str)
+	enabled := state == .Enabled
+	hot := enabled && nendo.pointer_over(id)
+	over := anim_to(anim_key(id.id, 3), hot ? 1 : 0, HOVER_RATE)
+	down := enabled ? press_down(id) : 0
+	fill := primary && state != .Disabled ? ACCENT : ROW_BG
+	fill = mix_color(fill, primary ? TEXT : HOVER, over * (primary ? 0.05 : 1))
+	if down > 0 {fill = mix_color(fill, primary ? BG : TEXT, 0.07)}
+	if nendo.box(id)(
 	{
 		width = nendo.grow(max = 560),
 		height = nendo.fixed(52),
+		padding = {top = 2 + down, bottom = 2 - down},
 		align = {x = .Center, y = .Center},
-		color = primary && state != .Disabled ? ACCENT : ROW_BG,
+		color = fill,
 		radius = rr(10),
-		border = primary && state != .Disabled ? {} : nendo.Border{color = primary ? ACCENT : FIELD_BORDER, width = bw()},
+		border = {
+			color = primary && state != .Disabled ? fade(ON_ACCENT, 0.1 + 0.1 * over) : primary ? ACCENT : mix_color(FIELD_BORDER, ACCENT, over * 0.35),
+			width = bw(),
+		},
 	},
 	) {
-		if primary && state == .Enabled {
-			hover_glow(nendo.id(id_str), ACCENT, hovered())
+		if enabled && hot {cursor_raise(.Pointer)}
+		if primary && enabled {
+			hover_glow(id, ACCENT, hot)
 		}
 		nendo.text(
 			label,
@@ -158,13 +171,14 @@ login_pane :: proc(ui: ^Ui_State) {
 	}
 	pairing := auth_job != nil && auth_job.method == .Pair && ui.login_uri != ""
 	menu := auth_job == nil && ui.login_method == .Menu
+	first_account := len(ui.accounts) == 0 && !ui.add_account_open
 	if nendo.box(nendo.id("LoginCard"))(
 	{
-		width = nendo.grow(max = fit_w(660)),
+		width = nendo.grow(max = fit_w(first_account && !pairing ? 480 : 660)),
 		height = nendo.fit(max = modal_h(1200)),
 		direction = .Column,
 		padding = nendo.pad(
-			single_pane() || f32(rl.GetScreenHeight()) / UI_ZOOM < 500 ? 16 : pairing || menu ? 24 : 50,
+			single_pane() || f32(rl.GetScreenHeight()) / UI_ZOOM < 500 ? 16 : first_account || pairing || menu ? 24 : 50,
 		),
 		gap = 14,
 		align = {x = .Center},
@@ -175,7 +189,9 @@ login_pane :: proc(ui: ^Ui_State) {
 	},
 	) {
 		scrollbar(nendo.id("LoginCard"))
-		if !ui.socks5_login_open {
+		if first_account {
+			onboard_steps(.Account)
+		} else if !ui.socks5_login_open {
 			if !pairing {logo_mark()}
 			nendo.text("White Noise", {font = FONT_TITLE, size = 28, color = TEXT})
 		}
@@ -348,18 +364,26 @@ login_pane :: proc(ui: ^Ui_State) {
 			if !remote {nendo.text(minting ? tr("Publishing your profile to the relays. This takes a few seconds.") : tr("Checking your key with the relays. This takes a few seconds."), {font = FONT_BODY, size = 12, color = TEXT_LO})}
 		} else if ui.login_method == .Menu {
 			nendo.text(
-				ui.add_account_open ? tr("Add another account") : tr("Create or use an account"),
+				ui.add_account_open ? tr("Add another account") : first_account ? tr("Import your key, create one, or connect a signer.") : tr("Add your Nostr identity"),
 				{font = FONT_BODY, size = 15, color = TEXT_DIM},
 			)
 			if nendo.box(nendo.id("LoginGapA"))({height = nendo.fixed(10)}) {}
 			if nendo.box(nendo.id("LoginLocalMethods"))(
-			{width = nendo.grow(), direction = single_pane() ? .Column : .Row, gap = 14},
+			{
+				width = nendo.grow(),
+				direction = first_account || single_pane() ? .Column : .Row,
+				gap = 14,
+			},
 			) {
 				login_big_button("LoginImportBtn", tr("Import a secret key (nsec)"), false)
 				login_big_button("LoginCreate", tr("Generate a new key"), true)
 			}
 			if nendo.box(nendo.id("LoginRemoteMethods"))(
-			{width = nendo.grow(), direction = single_pane() ? .Column : .Row, gap = 14},
+			{
+				width = nendo.grow(),
+				direction = first_account || single_pane() ? .Column : .Row,
+				gap = 14,
+			},
 			) {
 				login_big_button("LoginBunkerBtn", tr("Connect with a bunker link"), false)
 				login_big_button("LoginPairBtn", tr("Pair with a remote signer"), false)

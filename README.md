@@ -64,7 +64,9 @@ chmod +x WhiteNoise-*-x86_64.AppImage
 ./WhiteNoise-*-x86_64.AppImage
 ```
 
-On Arch, `yay -S whitenoise-linux-bin` installs the prebuilt package. First launch asks for a vault password, then lets you create a Nostr identity or bring one.
+On Arch, `yay -S whitenoise-linux-bin` installs the prebuilt package.
+
+First-run setup has three stages: Protect this computer, Choose your account, and Start a chat. The first stage introduces the local vault, then asks you to choose and confirm a password on separate screens. Back keeps your entries; About this password explains what the vault protects and its recovery limits. Then create a Nostr identity, import an nsec, or connect a remote signer. The last stage shows relay and key-package readiness before your first chat. Later launches unlock the same vault.
 
 The [install guide](docs/install.md) covers Flatpak updates through Orchard, the self-updaters, the macOS first-launch prompt and OpenBSD.
 
@@ -78,7 +80,11 @@ The [install guide](docs/install.md) covers Flatpak updates through Orchard, the
 </picture>
 
 > [!CAUTION]
-> There is no password recovery. Forget the vault password and everything sealed under it is gone. Export your account key separately; backups leave it out.
+> White Noise cannot reset your password to unlock the existing vault. Save it in your password manager. Export your account key separately; settings backups contain neither account keys nor message history.
+
+The vault password protects sensitive local data on this device. It is not a service login or a password to share with contacts. A backup-file password opens only that file. A separately saved identity key or access to your remote signer lets you use the identity again, but cannot unlock this vault or restore deleted chats and pending sends.
+
+If you forget the password, Forgot password? offers another try or Review local data deletion. Reading help or choosing Try again does not arm deletion. The review lists account access and the local encryption key, pending sends, cached media, and saved stickers and GIFs for every account in the vault. Settings backups cannot restore these stores. Keep vault cancels; only Delete vault starts over, and Enter does not confirm deletion. Both actions stay visible while you scroll on a small screen. Starting over does not erase messages on other devices, delete public profiles, or leave groups.
 
 The [security model](docs/security.md) has the password policy, image limits and each helper's budget.
 

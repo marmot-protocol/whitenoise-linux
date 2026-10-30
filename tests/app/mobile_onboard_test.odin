@@ -14,7 +14,11 @@ Mobile_Onboard_Surface :: enum {
 	Login_Form,
 	Login_Bunker,
 	Login_Pair,
-	Gate,
+	Gate_Intro,
+	Gate_Password,
+	Gate_Confirm,
+	Gate_About,
+	Gate_Unlock,
 	Password,
 	Confirm,
 	Palette,
@@ -27,7 +31,12 @@ mobile_onboard_frame :: proc(ui: ^Ui_State, surface: Mobile_Onboard_Surface) {
 	clear(&drag_targets)
 	anim_tick(1.0 / 60)
 	nendo.update_scroll(.Off, {}, 1.0 / 60)
-	if surface == .Gate {gate_layout(ui); return}
+	#partial switch surface {
+	case .Gate_Intro, .Gate_Password, .Gate_Confirm, .Gate_About, .Gate_Unlock:
+		gate_layout(ui)
+		return
+	case:
+	}
 	nendo.begin()
 	if nendo.box(nendo.id("MobileOnboardRoot"))(
 	{width = nendo.grow(), height = nendo.grow(), align = {x = .Center, y = .Center}},
@@ -45,7 +54,7 @@ mobile_onboard_frame :: proc(ui: ^Ui_State, surface: Mobile_Onboard_Surface) {
 			link_modal(ui)
 		case .Checklist:
 			get_started_pane(ui)
-		case .Gate:
+		case .Gate_Intro, .Gate_Password, .Gate_Confirm, .Gate_About, .Gate_Unlock:
 		}
 	}
 	nendo.end(0)
@@ -95,11 +104,25 @@ mobile_onboard_viewport :: proc(t: ^testing.T) {
 	pal_refresh(&ui)
 	defer delete(ui.pal_hits)
 
-	for size in ([][2]i32{{320, 640}, {360, 640}, {390, 740}, {430, 740}, {640, 320}, {740, 280}, {320, 220}, {1280, 800}}) {
-		rl.SetWindowSize(size[0], size[1])
-		viewport := nendo.Dimensions{f32(size[0]), f32(size[1])}
-		nendo.set_dimensions(viewport)
-		for surface in Mobile_Onboard_Surface {
+	for surface in Mobile_Onboard_Surface {
+		if surface == .Gate_Unlock {
+			if !testing.expect_value(t, vault_create("x"), Vault_Err.None) {return}
+			vault_relock()
+		}
+		for size in ([][2]i32{{320, 640}, {360, 640}, {390, 740}, {430, 740}, {640, 320}, {740, 280}, {320, 220}, {1280, 800}}) {
+			rl.SetWindowSize(size[0], size[1])
+			viewport := nendo.Dimensions{f32(size[0]), f32(size[1])}
+			nendo.set_dimensions(viewport)
+			gate_reset = surface == .Gate_About ? .Help : .Closed
+			#partial switch surface {
+			case .Gate_Intro, .Gate_About:
+				ui.vault_setup = .Welcome
+			case .Gate_Password:
+				ui.vault_setup = .Password
+			case .Gate_Confirm, .Gate_Unlock:
+				ui.vault_setup = .Confirm
+			case:
+			}
 			ui.login_method = surface == .Login_Menu ? .Menu : .Import
 			if surface == .Login_Bunker {ui.login_method = .Bunker}
 			if surface == .Login_Pair {ui.login_method = .Pair}
@@ -109,7 +132,11 @@ mobile_onboard_viewport :: proc(t: ^testing.T) {
 			case .Login_Menu:
 			case .Login_Form, .Login_Bunker, .Login_Pair:
 				action = nendo.id("LoginGo")
-			case .Gate:
+			case .Gate_Intro:
+				container, action = nendo.id("GateCard"), nendo.id("GateIntroGo")
+			case .Gate_About:
+				container, action = nendo.id("GateCard"), nendo.id("GateHelpClose")
+			case .Gate_Password, .Gate_Confirm, .Gate_Unlock:
 				container, action = nendo.id("GateCard"), nendo.id("GateGo")
 			case .Password:
 				container, action = nendo.id("VaultPwBody"), nendo.id("VaultPwNew2Box")
@@ -141,6 +168,13 @@ mobile_onboard_viewport :: proc(t: ^testing.T) {
 				viewport,
 			)
 			if scroll := nendo.scroll(container); scroll.found {
+				testing.expectf(
+					t,
+					scroll.content.width <= scroll.viewport.width + 0.1,
+					"%v content must not overflow horizontally at %v",
+					surface,
+					viewport,
+				)
 				target := nendo.element(action).rect
 				delta := min(target.y - b.y, 0) + max(target.y + target.height - b.y - b.height, 0)
 				scroll.position.y = clamp(
@@ -167,6 +201,20 @@ mobile_onboard_viewport :: proc(t: ^testing.T) {
 			if tap_size(
 				
 			) {testing.expectf(t, r.height >= 43.9, "%v must retain a finger-sized final control", surface)}
+			#partial switch surface {
+			case .Gate_Intro, .Gate_About:
+				testing.expect(t, !nendo.element(nendo.id("GatePwBox")).found)
+				testing.expect(t, !nendo.element(nendo.id("GatePw2Box")).found)
+			case .Gate_Password, .Gate_Unlock:
+				testing.expect(t, nendo.element(nendo.id("GatePwBox")).found)
+				testing.expect(t, !nendo.element(nendo.id("GatePw2Box")).found)
+				if surface ==
+				   .Gate_Unlock {testing.expect(t, nendo.element(nendo.id("GateForgot")).found)}
+			case .Gate_Confirm:
+				testing.expect(t, !nendo.element(nendo.id("GatePwBox")).found)
+				testing.expect(t, nendo.element(nendo.id("GatePw2Box")).found)
+			case:
+			}
 			if surface == .Password {
 				for id in ([]string{"VaultPwClose", "VaultPwCancel", "VaultPwGo"}) {
 					control := nendo.element(nendo.id(id))
@@ -182,14 +230,46 @@ mobile_onboard_viewport :: proc(t: ^testing.T) {
 		}
 	}
 
-	// Existing vaults keep the weaker-password unlock path and the
-	// forgot-password help; phone layout must not turn this into the
-	// create-only form.
-	testing.expect_value(t, vault_create("x"), Vault_Err.None)
-	vault_relock()
-	rl.SetWindowSize(320, 220)
-	nendo.set_dimensions({320, 220})
-	mobile_onboard_frame(&ui, .Gate)
-	testing.expect(t, nendo.element(nendo.id("GateForgot")).found)
-	testing.expect(t, !nendo.element(nendo.id("GatePw2Box")).found)
+	gate_reset = .Review
+	defer {gate_reset = .Closed; set_locale("en")}
+	for locale in ([]string{"en", "de", "it", "ja"}) {
+		set_locale(locale)
+		for size in ([][2]i32{{320, 220}, {390, 740}, {1024, 700}}) {
+			for zoom in ([]f32{1, 1.5}) {
+				UI_ZOOM = zoom
+				rl.SetWindowSize(size[0], size[1])
+				viewport := nendo.Dimensions{f32(size[0]) / zoom, f32(size[1]) / zoom}
+				nendo.set_dimensions(viewport)
+				for _ in 0 ..< 3 {mobile_onboard_frame(&ui, .Gate_Unlock)}
+				for id in ([]string{"GateResetReview", "GateResetCancel", "GateResetDelete"}) {
+					item := nendo.element(nendo.id(id))
+					b := item.rect
+					testing.expectf(
+						t,
+						item.found &&
+						b.x >= -0.1 &&
+						b.y >= -0.1 &&
+						b.x + b.width <= viewport.width + 0.1 &&
+						b.y + b.height <= viewport.height + 0.1,
+						"%s must stay visible at %v, zoom %v: %v",
+						id,
+						size,
+						zoom,
+						b,
+					)
+				}
+				onboard_reveal_field("GateResetBody", "GateResetWarning")
+				mobile_onboard_frame(&ui, .Gate_Unlock)
+				body := nendo.element(nendo.id("GateResetBody")).rect
+				warning := nendo.element(nendo.id("GateResetWarning")).rect
+				testing.expectf(
+					t,
+					warning.y < body.y + body.height && warning.y + warning.height > body.y,
+					"the irreversible-loss warning must be reachable at %v, zoom %v",
+					size,
+					zoom,
+				)
+			}
+		}
+	}
 }

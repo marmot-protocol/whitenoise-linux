@@ -155,12 +155,18 @@ vault_secret_store :: proc() -> marmot.Secret_Store {
 gate_pw: [dynamic]u8
 gate_pw2: [dynamic]u8
 
-@(private = "file")
-gate_confirm: bool // the confirm box has focus
+@(private)
+Vault_Setup :: enum {
+	Welcome,
+	Password,
+	Confirm,
+}
 @(private = "file")
 gate_err: string
 @(private = "file")
 gate_weak_warned: bool // a weak password was submitted; "Use this password anyway" shows
+@(private = "file")
+gate_weak_accepted: bool
 // The forgot-password steps. Help explains that no reset exists and has
 // no delete control; only Review renders one, so reading help or backing
 // out never arms the deletion.
@@ -263,6 +269,9 @@ gate_close :: proc() {
 	gate_pw2 = nil
 	gate_check = {}
 	gate_job = {}
+	gate_reset = .Closed
+	gate_weak_warned, gate_weak_accepted = false, false
+	gate_reset_done = false
 }
 
 // Unlock an existing vault, or create one on first run. Runs its own
@@ -280,13 +289,16 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 	}
 
 	gate_err = ""
-	gate_confirm = false
+	ui.vault_setup = .Welcome
 	gate_weak_warned = false
+	gate_weak_accepted = false
 	gate_reset = .Closed
 	gate_reset_done = false
 	gate_pw_view = .Masked
 	gate_pw2_view = .Masked
 	gate_job = {}
+	stagger_arm(nendo.id("OnboardSteps").id)
+	stagger_arm(nendo.id("GateContentArrival").id)
 	devctl_reset_input()
 	defer devctl_reset_input()
 	defer editor_forget(ui)
@@ -294,7 +306,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 	defer gate_join()
 	shot := os.get_env("WN_SHOT", context.temp_allocator) != ""
 	previous_height: i32 = -1
-	previous_confirm := gate_confirm
+	previous_setup := ui.vault_setup
 	previous_error := gate_err
 	previous_reset := gate_reset
 	previous_reset_done := gate_reset_done
@@ -320,9 +332,12 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		)
 
 		clear(&drag_targets)
+		if previous_setup != ui.vault_setup || previous_reset != gate_reset {
+			stagger_arm(nendo.id("GateContentArrival").id)
+		}
 		render_commands := gate_layout(ui)
 		if previous_height != rl.GetScreenHeight() ||
-		   previous_confirm != gate_confirm ||
+		   previous_setup != ui.vault_setup ||
 		   previous_error != gate_err ||
 		   previous_reset != gate_reset ||
 		   previous_reset_done != gate_reset_done {
@@ -330,23 +345,25 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 			// read before the form; later resizes (an on-screen keyboard)
 			// keep the error and action in view.
 			resized := previous_height != -1 && previous_height != rl.GetScreenHeight()
-			target := gate_confirm ? "GatePw2Box" : "GatePwBox"
+			target := ui.vault_setup == .Confirm && !vault_exists() ? "GatePw2Box" : "GatePwBox"
 			if gate_err != "" || resized {
 				target = "GateSubmit"
 			}
+			if previous_height < 0 {target = "GateScope"}
+			if !vault_exists() && ui.vault_setup == .Welcome {target = "GateIntroGo"}
 			switch gate_reset {
 			case .Closed:
 			case .Help:
-				target = "GateForgotHelp"
+				target = "GateHelpIntro"
 			case .Review:
-				target = "GateResetConfirm"
+				target = "GateResetWarning"
 			}
 			if gate_reset_done != previous_reset_done {
 				target = "GateResetNotice"
 			}
-			onboard_reveal_field("GateCard", target)
+			onboard_reveal_field(gate_reset == .Review ? "GateResetBody" : "GateCard", target)
 			previous_height = rl.GetScreenHeight()
-			previous_confirm = gate_confirm
+			previous_setup = ui.vault_setup
 			previous_error = gate_err
 			previous_reset = gate_reset
 			previous_reset_done = gate_reset_done
@@ -399,13 +416,52 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 // One frame of typing and clicks; submitting starts the unlock worker.
 @(private = "file")
 gate_input :: proc(ui: ^Ui_State) {
-	if gate_job.worker != nil {
+	if gate_job.worker != nil {return}
+	creating := !vault_exists()
+	if gate_reset == .Review && (clicked("GateResetCancel") || rl.IsKeyPressed(.ESCAPE)) {
+		gate_reset = .Closed
 		return
 	}
-	creating := !vault_exists()
+	if gate_reset == .Closed && !creating && clicked("GateForgot") {
+		gate_reset = .Help
+		gate_pw_view = .Masked
+		editor_forget(ui)
+		return
+	}
+	if gate_reset == .Help {
+		for rl.GetCharPressed() != 0 {}
+		if !creating && clicked("GateHelpReview") {
+			gate_reset = .Review
+		} else if clicked("GateHelpClose") || rl.IsKeyPressed(.ESCAPE) {
+			gate_reset = .Closed
+		}
+		return
+	}
+	if gate_reset == .Closed && creating && clicked("GateAbout") {
+		gate_reset = .Help
+		gate_pw_view, gate_pw2_view = .Masked, .Masked
+		editor_forget(ui)
+		return
+	}
+	if gate_reset == .Closed && creating && clicked("GateBack") {
+		ui.vault_setup = ui.vault_setup == .Confirm ? .Password : .Welcome
+		gate_pw_view, gate_pw2_view = .Masked, .Masked
+		gate_err = ""
+		gate_weak_warned, gate_weak_accepted = false, false
+		editor_forget(ui)
+		return
+	}
+	if gate_reset == .Closed && creating && ui.vault_setup == .Welcome {
+		for rl.GetCharPressed() != 0 {}
+		if clicked("GateIntroGo") || rl.IsKeyPressed(.ENTER) {
+			ui.vault_setup = .Password
+			editor_forget(ui)
+		}
+		return
+	}
 
-	focus := gate_confirm
-	buf := gate_confirm && creating ? &gate_pw2 : &gate_pw
+	confirming := creating && ui.vault_setup == .Confirm
+	buf := confirming ? &gate_pw2 : &gate_pw
 	// Track editor revisions instead of copying a secret just to detect edits.
 	previous_len := len(buf)
 	previous_edit := ui.ed.last_edit_time
@@ -420,53 +476,16 @@ gate_input :: proc(ui: ^Ui_State) {
 	if edited {
 		gate_err = ""
 		gate_weak_warned = false
+		if !confirming {gate_weak_accepted = false}
 	}
-	if clicked("GatePwShow") {
-		gate_pw_view = gate_pw_view == .Masked ? .Plain : .Masked
-	}
-	if clicked("GatePw2Show") {
-		gate_pw2_view = gate_pw2_view == .Masked ? .Plain : .Masked
-	}
-	if clicked("GatePwBox") {
-		gate_confirm = false
-	}
-	if clicked("GatePw2Box") {
-		gate_confirm = true
-	}
-	if creating {
-		tab_focus([]bool{false, true}, &gate_confirm)
-	}
-	// Typing, switching fields, or submitting an unlock is not the
-	// delete. Any of those closes the forgot-password steps.
-	other :=
-		clicked("GatePwBox") ||
-		clicked("GatePw2Box") ||
-		clicked("GateGo") ||
-		rl.IsKeyPressed(.ENTER) ||
-		gate_confirm != focus
-	if edited ||
-	   clicked("GatePwShow") ||
-	   clicked("GatePw2Show") ||
-	   clicked("GateResetCancel") ||
-	   clicked("GateRetry") {
-		other = true
-	}
-
-	// No reset exists: forgetting the password means deleting the vault.
-	// Help explains that first, and the delete acts only from Review.
-	if clicked("GateForgot") {
-		gate_reset = .Help
-		return
-	}
-	if clicked("GateResetReview") {
-		gate_reset = .Review
-		return
-	}
-	if clicked("GateReset") {
-		if other || gate_reset != .Review {
+	// Editing disarms deletion. The review otherwise owns input: Enter
+	// and clicks on the covered form never submit or delete.
+	if gate_reset == .Review {
+		if edited {
 			gate_reset = .Closed
 			return
 		}
+		if !clicked("GateResetDelete") || rl.IsKeyPressed(.ENTER) {return}
 		gate_reset = .Closed
 		vault_stores_quiesce()
 		vault_delete()
@@ -474,51 +493,59 @@ gate_input :: proc(ui: ^Ui_State) {
 		mem.zero_slice(gate_pw2[:])
 		clear(&gate_pw)
 		clear(&gate_pw2)
-		gate_confirm = false
-		gate_pw_view = .Masked
-		gate_pw2_view = .Masked
+		ui.vault_setup = .Welcome
+		gate_pw_view, gate_pw2_view = .Masked, .Masked
 		gate_reset_done = true
 		gate_check = {}
 		gate_err = ""
-		gate_weak_warned = false
+		gate_weak_warned, gate_weak_accepted = false, false
+		editor_forget(ui)
 		return
 	}
-	if other {
-		gate_reset = .Closed
+	if clicked("GatePwShow") {
+		gate_pw_view = gate_pw_view == .Masked ? .Plain : .Masked
 	}
-
-	// A weak password is the user's call: the first submit warns, and only
-	// the explicit "Use this password anyway" click creates the vault.
+	if clicked("GatePw2Show") {
+		gate_pw2_view = gate_pw2_view == .Masked ? .Plain : .Masked
+	}
+	other :=
+		edited ||
+		clicked("GateGo") ||
+		rl.IsKeyPressed(.ENTER) ||
+		clicked("GatePwBox") ||
+		clicked("GatePw2Box") ||
+		clicked("GatePwShow") ||
+		clicked("GatePw2Show")
 	accept_weak := gate_weak_warned && !other && clicked("GateWeakOk")
-	go := clicked("GateGo") || accept_weak
-	if !go && !rl.IsKeyPressed(.ENTER) {
-		return
-	}
+	if !clicked("GateGo") && !accept_weak && !rl.IsKeyPressed(.ENTER) {return}
 	gate_weak_warned = false
 	password := string(gate_pw[:])
 	if len(password) == 0 {
 		gate_err = creating ? tr("Pick a password first.") : tr("Type your password first.")
 		return
 	}
-
-	// Enter walks from the password to the confirm box; the second Enter
-	// submits.
-	if creating && !gate_confirm && !go {
-		gate_confirm = true
-		return
-	}
-
-	if creating && password != string(gate_pw2[:]) {
+	if creating && confirming && password != string(gate_pw2[:]) {
 		gate_err = tr("The passwords don't match. Type them again.")
+		mem.zero_slice(gate_pw2[:])
 		clear(&gate_pw2)
-		gate_confirm = true
 		return
 	}
-	if creating && !accept_weak && password_bits(password, &gate_check) < PASSWORD_MIN_BITS {
+	if creating &&
+	   !accept_weak &&
+	   !gate_weak_accepted &&
+	   password_bits(password, &gate_check) < PASSWORD_MIN_BITS {
 		gate_err = tr(
 			"This password is easy to guess. Someone with this device could guess it and open the vault.",
 		)
 		gate_weak_warned = true
+		return
+	}
+	if creating && !confirming {
+		gate_weak_accepted = accept_weak
+		ui.vault_setup = .Confirm
+		gate_err = ""
+		gate_pw_view = .Masked
+		editor_forget(ui)
 		return
 	}
 	gate_start(creating)
@@ -596,6 +623,7 @@ gate_layout :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 	busy := gate_job.worker != nil
 	creating := busy ? gate_job.creating : !vault_exists()
 	compact := single_pane() || modal_h(1200) < 500
+	arrived := stagger(nendo.id("GateContentArrival").id, 0)
 
 	if nendo.box(nendo.id("Root"))(
 	{width = nendo.grow(), height = nendo.grow(), direction = .Column, color = BG},
@@ -613,132 +641,161 @@ gate_layout :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 		) {
 			if nendo.box(nendo.id("GateCard"))(
 			{
-				width = nendo.fixed(fit_w(660)),
+				width = nendo.fixed(fit_w(420)),
 				height = nendo.fit(max = modal_h(1200)),
 				direction = .Column,
 				padding = {
-					left = compact ? 20 : 50,
-					right = compact ? 20 : 50,
-					top = compact ? 16 : creating ? 24 : 50,
-					bottom = compact ? 16 : creating ? 24 : 50,
+					left = compact ? 20 : 28,
+					right = compact ? 20 : 28,
+					top = compact ? 16 : 28,
+					bottom = compact ? 16 : 28,
 				},
-				gap = creating ? 8 : 14,
-				align = {x = .Center},
+				gap = 16,
+				align = {x = .Left},
 				color = CARD,
 				radius = rr(16),
-				border = {color = CARD_BORDER, width = bw()},
+				border = {
+					color = mix_color(CARD_BORDER, ACCENT, (1 - arrived) * 0.1),
+					width = bw(),
+				},
 				clip = {y = true, scroll = true},
 			},
 			) {
-				glow(nendo.id("GateCard"), ACCENT, 0.55, 26)
 				scrollbar(nendo.id("GateCard"))
-				logo_mark()
-				nendo.text("White Noise", {font = FONT_TITLE, size = 28, color = TEXT})
-				if creating {
-					// First run names both setup steps before asking for a
-					// secret, so the password reads as protection for this
-					// device rather than account registration.
-					if nendo.box(nendo.id("GateSteps"))(
-					{width = nendo.grow(), direction = single_pane() ? .Column : .Row, gap = 10},
-					) {
-						gate_step("GateStepNow", tr("NOW"), tr("Protect this device"), .Current)
-						gate_step(
-							"GateStepNext",
-							tr("NEXT"),
-							tr("Create or use an account"),
-							.Next,
-						)
-					}
-				}
-				nendo.text(
-					creating ? tr("This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it.") : tr("Enter your password to unlock the vault on this device."),
-					{font = FONT_BODY, size = 15, color = TEXT_DIM, align = .Center},
-				)
-				// The vault password is easy to confuse with the other secrets
-				// a person may hold, so creation names them apart.
-				if creating {
+				if creating {onboard_steps(.Protect)}
+				if nendo.box(nendo.id("GateScope"))({width = nendo.grow()}) {
 					nendo.text(
-						tr(
-							"Store it in a password manager. It is separate from your nsec, remote signer, and backup file passwords.",
-						),
-						{font = FONT_BODY, size = 12, color = TEXT_LO, align = .Center},
+						gate_reset == .Help ? tr("About this password") : !creating ? tr("Unlock your vault") : ui.vault_setup == .Welcome ? tr("First, protect your saved keys.") : ui.vault_setup == .Password ? tr("Choose a vault password") : tr("Confirm your password"),
+						{
+							font = FONT_TITLE,
+							size = creating && ui.vault_setup == .Welcome ? 18 : 22,
+							color = fade(TEXT, 0.85 + 0.15 * arrived),
+						},
 					)
 				}
-				if creating && gate_reset_done {
+				if creating && gate_reset_done && ui.vault_setup == .Welcome {
 					if nendo.box(nendo.id("GateResetNotice"))({width = nendo.grow()}) {
 						nendo.text(
 							tr(
-								"The vault on this device was deleted. Pick a new password to start over.",
+								"Pick a new password to start a new vault. This does not recover your previous chats or pending sends.",
 							),
-							{font = FONT_BODY, size = 14, color = TEXT, align = .Center},
+							{font = FONT_BODY, size = 14, color = TEXT_DIM},
 						)
 					}
 				}
-				if nendo.box(nendo.id("GateGapA"))({height = nendo.fixed(10)}) {}
-
-				if nendo.box(nendo.id("GatePwLabel"))(
-				{width = nendo.grow(), height = nendo.fixed(44), align = {y = .Center}, gap = 8},
-				) {
-					eyebrow(tr("PASSWORD"))
-					if nendo.box(nendo.id("GatePwLabelSpace"))({width = nendo.grow()}) {}
-					if !busy {
+				if gate_reset == .Help {
+					if nendo.box(nendo.id("GateHelpBody"))(
+					{width = nendo.grow(), direction = .Column, gap = 14},
+					) {
+						if nendo.box(nendo.id("GateHelpIntro"))({width = nendo.grow()}) {
+							nendo.text(
+								creating ? tr("This password protects sensitive local data. It is not a service login or a password to share with contacts. Save it in your password manager.") : tr("If you forgot this password, you can try again or close White Noise without deleting anything. Starting over deletes the vault and its protected local data, including chats and pending sends. Review the deletion before deciding."),
+								{font = FONT_BODY, size = 14, color = TEXT},
+							)
+						}
+						nendo.text(
+							tr(
+								"White Noise cannot reset this password to unlock your existing vault.",
+							),
+							{font = FONT_BODY, size = 14, color = TEXT_DIM},
+						)
+						nendo.text(
+							tr(
+								"A backup-file password opens only that backup file. Your identity key or remote signer cannot unlock this vault.",
+							),
+							{font = FONT_BODY, size = 14, color = TEXT_DIM},
+						)
+						if !creating {
+							nendo.text(
+								tr(
+									"To use the same identity after starting over, you need its secret key saved elsewhere or access to its remote signer. The signer's private key stays with that signer. Without either, you cannot sign in to that identity. Signing in again does not restore this device's chats. A settings backup does not contain account keys or message history.",
+								),
+								{font = FONT_BODY, size = 14, color = TEXT_DIM},
+							)
+						}
 						micro_button(
-							"GatePwShow",
-							gate_pw_view == .Masked ? tr("Show") : tr("Hide"),
-							TEXT_DIM,
+							"GateHelpClose",
+							creating ? tr("Back") : tr("Try again"),
+							TEXT,
 						)
+						if !creating {micro_button("GateHelpReview", tr("Review local data deletion"), TEXT_DIM)}
 					}
-				}
-				gate_field(
-					ui,
-					"GatePwBox",
-					&gate_pw,
-					!busy && (!gate_confirm || !creating),
-					tr("Your password"),
-					gate_pw_view,
-				)
-				if creating {
-					password_bits(string(gate_pw[:]), &gate_check)
-					password_hint(&gate_check)
-					if nendo.box(nendo.id("GatePw2Label"))(
+				} else if creating && ui.vault_setup == .Welcome {
+					login_big_button("GateIntroGo", tr("Continue"), true)
+					micro_button("GateAbout", tr("About this password"), TEXT_DIM)
+				} else {
+					confirming := creating && ui.vault_setup == .Confirm
+					nendo.text(
+						!creating ? tr("Enter your password to unlock your local vault on this device.") : confirming ? tr("Type it again to protect your local vault.") : tr("Save this password in your password manager. White Noise cannot reset it to unlock this device's vault."),
+						{font = FONT_BODY, size = 14, color = fade(TEXT_DIM, 0.9 + 0.1 * arrived)},
+					)
+					if nendo.box(nendo.id("GatePwLabel"))(
 					{
 						width = nendo.grow(),
-						height = nendo.fixed(44),
+						height = nendo.fixed(28),
 						align = {y = .Center},
 						gap = 8,
 					},
 					) {
-						eyebrow(tr("CONFIRM PASSWORD"))
-						if nendo.box(nendo.id("GatePw2LabelSpace"))({width = nendo.grow()}) {}
+						eyebrow(confirming ? tr("CONFIRM PASSWORD") : tr("PASSWORD"))
+						if confirming {
+							matches :=
+								len(gate_pw2) > 0 && string(gate_pw[:]) == string(gate_pw2[:])
+							confirmed := anim_to(
+								nendo.id("GatePasswordMatch").id,
+								matches ? 1 : 0,
+								HOVER_RATE,
+							)
+							if nendo.box(nendo.id("GatePasswordMatch"))(
+							{
+								width = nendo.fixed(16),
+								height = nendo.fixed(16),
+								align = {x = .Center, y = .Center},
+							},
+							) {
+								// A changed entry loses its tick immediately, even during the fade.
+								if matches {
+									glow(
+										nendo.id("GatePasswordMatch"),
+										ACCENT,
+										confirmed * (1 - confirmed) * 0.5,
+										6,
+									)
+									nendo.text(
+										ICON_CHECK,
+										{
+											font = FONT_ICON,
+											size = 12,
+											color = fade(ACCENT, confirmed),
+										},
+									)
+								}
+							}
+						}
+						if nendo.box(nendo.id("GatePwLabelSpace"))({width = nendo.grow()}) {}
 						if !busy {
+							view := confirming ? gate_pw2_view : gate_pw_view
 							micro_button(
-								"GatePw2Show",
-								gate_pw2_view == .Masked ? tr("Show") : tr("Hide"),
+								confirming ? "GatePw2Show" : "GatePwShow",
+								view == .Masked ? tr("Show") : tr("Hide"),
 								TEXT_DIM,
 							)
 						}
 					}
 					gate_field(
 						ui,
-						"GatePw2Box",
-						&gate_pw2,
-						!busy && gate_confirm,
-						tr("Type your password again"),
-						gate_pw2_view,
+						confirming ? "GatePw2Box" : "GatePwBox",
+						confirming ? &gate_pw2 : &gate_pw,
+						!busy && gate_reset != .Review,
+						confirming ? tr("Type your password again") : tr("Your password"),
+						confirming ? gate_pw2_view : gate_pw_view,
 					)
-				}
-
-				// Reveal the error and action together on short keyboard-height windows.
-				if nendo.box(nendo.id("GateSubmit"))(
-				{width = nendo.grow(), direction = .Column, gap = 8},
-				) {
-					if nendo.box(nendo.id("GateError"))(
-					{
-						width = nendo.grow(),
-						height = nendo.fit(min = 68),
-						direction = .Column,
-						gap = 8,
-					},
+					if creating && !confirming {
+						password_bits(string(gate_pw[:]), &gate_check)
+						password_hint(&gate_check)
+					}
+					if nendo.box(nendo.id("GateSubmit"))(
+					{width = nendo.grow(), direction = .Column, gap = 12},
 					) {
 						if gate_err != "" {
 							nendo.text(gate_err, {font = FONT_BODY, size = 14, color = DANGER})
@@ -746,81 +803,258 @@ gate_layout :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 						if gate_weak_warned {
 							micro_button("GateWeakOk", tr("Use this password anyway"), DANGER)
 						}
+						ready := !creating || (confirming ? len(gate_pw2) > 0 : len(gate_pw) > 0)
+						login_big_button(
+							"GateGo",
+							busy ? (creating ? tr("Creating your vault…") : tr("Unlocking…")) : !creating ? tr("Unlock") : confirming ? tr("Create vault") : tr("Continue"),
+							true,
+							busy ? .Busy : ready ? .Enabled : .Disabled,
+						)
+						if busy {
+							busy_bar("GateBusy")
+							nendo.text(
+								creating ? tr("Deriving an encryption key from your password.") : tr("Checking your password and decrypting your local vault."),
+								{font = FONT_BODY, size = 12, color = TEXT_LO},
+							)
+						}
 					}
-					ready :=
-						!creating ||
-						(len(gate_pw) > 0 && string(gate_pw[:]) == string(gate_pw2[:]))
-					if busy {
-						login_big_button(
-							"GateGo",
-							creating ? tr("Protecting this device…") : tr("Unlocking…"),
-							true,
-							.Busy,
-						)
-						busy_bar("GateBusy")
-						nendo.text(
-							creating ? tr("Deriving an encryption key from your password.") : tr("Checking your password and decrypting the vault."),
-							{font = FONT_BODY, size = 12, color = TEXT_LO},
-						)
-					} else {
-						login_big_button(
-							"GateGo",
-							creating ? tr("Continue to account setup") : tr("Unlock"),
-							true,
-							ready ? .Enabled : .Disabled,
-						)
+					if !busy {
+						if creating {
+							if nendo.box(nendo.id("GateNavigation"))(
+							{width = nendo.grow(), gap = 12},
+							) {
+								micro_button("GateBack", tr("Back"), TEXT_DIM)
+								if nendo.box(nendo.id("GateNavigationSpace"))(
+								{width = nendo.grow()},
+								) {}
+								if !confirming {micro_button("GateAbout", tr("About this password"), TEXT_DIM)}
+							}
+						} else {
+							micro_button("GateForgot", tr("Forgot password?"), TEXT_DIM)
+						}
 					}
 				}
-				// Stopping here leaves nothing behind: no vault and no identity
-				// exist until Continue succeeds.
-				if creating && !busy {
-					if nendo.box(nendo.id("GateQuitRow"))(
-					{width = nendo.grow(), direction = .Column, gap = 8, align = {x = .Center}},
+			}
+		}
+		if open_now(nendo.id("ModalVeil"), gate_reset == .Review) {
+			modal_backdrop()
+		}
+		if gate_reset == .Review {
+			narrow := fit_w(640) < 500
+			if nendo.box(nendo.id("GateResetReview"))(
+			{
+				width = nendo.fixed(fit_w(640)),
+				height = nendo.fit(max = modal_h(1200)),
+				direction = .Column,
+				color = CARD,
+				radius = rr(18),
+				border = {color = ELEVATED_BORDER, width = bw()},
+				floating = {
+					attach_to = .Root,
+					z = 16,
+					attach = {element = .Center_Center, parent = .Center_Center},
+				},
+			},
+			) {
+				if nendo.box(nendo.id("GateResetBody"))(
+				{
+					width = nendo.grow(),
+					height = nendo.fit(max = max(1, modal_h(1200) - 72)),
+					direction = .Column,
+					padding = nendo.pad(narrow ? 16 : 28),
+					gap = 20,
+					clip = {y = true, scroll = true},
+				},
+				) {
+					scrollbar(nendo.id("GateResetBody"), 17)
+					if nendo.box(nendo.id("GateResetHeading"))(
+					{width = nendo.grow(), gap = 16, align = {y = .Center}},
+					) {
+						if nendo.box(nendo.id("GateResetEmblem"))(
+						{
+							width = nendo.fixed(48),
+							height = nendo.fixed(48),
+							align = {x = .Center, y = .Center},
+							color = fade(DANGER, 0.10),
+							border = {color = fade(DANGER, 0.3), width = bw()},
+							radius = rr(14),
+						},
+						) {nendo.text(ICON_TRASH, {font = FONT_ICON, size = 24, color = DANGER})}
+						if nendo.box(nendo.id("GateResetHeadingText"))(
+						{width = nendo.grow(), direction = .Column, gap = 6},
+						) {
+							nendo.text(
+								tr("START OVER"),
+								{font = FONT_TITLE, size = 10, color = DANGER, spacing = 2},
+							)
+							nendo.text(
+								tr("Delete this device's vault?"),
+								{font = FONT_TITLE, size = narrow ? 20 : 24, color = TEXT},
+							)
+						}
+					}
+					if nendo.box(nendo.id("GateResetScope"))(
+					{width = nendo.grow(), gap = 10, align = {y = .Center}},
+					) {
+						nendo.text(ICON_PEOPLE, {font = FONT_ICON, size = 14, color = TEXT_DIM})
+						nendo.text(
+							tr("Every account in this vault. This computer only."),
+							{font = FONT_BODY, size = 13, color = TEXT_DIM},
+						)
+					}
+					cards := [4]struct {
+						icon, title, detail: string,
+					} {
+						{
+							ICON_KEY,
+							N_("Account access"),
+							N_(
+								"Account keys stored here, remote signer sessions and the local encryption key.",
+							),
+						},
+						{ICON_ENVELOPE, N_("Pending sends"), N_("Messages waiting to be sent.")},
+						{
+							ICON_FOLDER,
+							N_("Cached media"),
+							N_("Attachments, avatars, transcripts and map tiles."),
+						},
+						{ICON_SMILE, N_("Saved collections"), N_("Your saved stickers and GIFs.")},
+					}
+					if nendo.box(nendo.id("GateResetInventory"))(
+					{width = nendo.grow(), direction = .Column, gap = 10},
 					) {
 						nendo.text(
-							tr("Nothing is saved until you continue."),
-							{font = FONT_BODY, size = 12, color = TEXT_LO, align = .Center},
+							tr("WILL BE DELETED"),
+							{font = FONT_TITLE, size = 10, color = TEXT_LO, spacing = 1},
 						)
-						micro_button("GateQuit", tr("Close White Noise"), TEXT_DIM)
-					}
-				}
-				if !creating && !busy {
-					if nendo.box(nendo.id("GateResetGap"))({height = nendo.fixed(24)}) {}
-					switch gate_reset {
-					case .Closed:
-						micro_button("GateForgot", tr("Forgot your password?"), TEXT_DIM)
-					case .Help:
-						if nendo.box(nendo.id("GateForgotHelp"))(
-						{width = nendo.grow(), direction = .Column, gap = 12},
-						) {
-							nendo.text(
-								tr(
-									"White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened.",
-								),
-								{font = FONT_BODY, size = 14, color = TEXT},
-							)
-							nendo.text(
-								tr(
-									"Your nsec or remote signer can let you use your account again, but it can't open this vault, and your chats on this device may not return. A backup file has its own password and holds only settings, drafts, custom emoji, and themes.",
-								),
-								{font = FONT_BODY, size = 13, color = TEXT_DIM},
-							)
-							micro_button("GateRetry", tr("Try again"), TEXT)
-							micro_button("GateResetReview", tr("Review starting over"), TEXT_DIM)
-							micro_button("GateQuit", tr("Close White Noise"), TEXT_DIM)
+						columns := narrow ? 1 : 2
+						for row in 0 ..< len(cards) / columns {
+							if nendo.box(nendo.id("GateResetCardRow", u32(row)))(
+							{width = nendo.grow(), gap = 10},
+							) {
+								for column in 0 ..< columns {
+									i := row * columns + column
+									card := cards[i]
+									if nendo.box(nendo.id("GateResetCard", u32(i)))(
+									{
+										width = nendo.grow(),
+										height = nendo.fit(min = narrow ? 76 : 96),
+										padding = nendo.pad(14),
+										gap = 12,
+										color = ROW_BG,
+										border = {color = FIELD_BORDER, width = bw()},
+										radius = rr(10),
+									},
+									) {
+										nendo.text(
+											card.icon,
+											{font = FONT_ICON, size = 20, color = DANGER},
+										)
+										if nendo.box(nendo.id("GateResetCardText", u32(i)))(
+										{width = nendo.grow(), direction = .Column, gap = 6},
+										) {
+											nendo.text(
+												tr(card.title),
+												{font = FONT_TITLE, size = 14, color = TEXT},
+											)
+											nendo.text(
+												tr(card.detail),
+												{font = FONT_BODY, size = 12, color = TEXT_DIM},
+											)
+										}
+									}
+								}
+							}
 						}
-					case .Review:
-						if nendo.box(nendo.id("GateResetConfirm"))(
-						{width = nendo.grow(), direction = .Column, gap = 12},
+					}
+					if nendo.box(nendo.id("GateResetWarning"))(
+					{
+						width = nendo.grow(),
+						padding = nendo.pad(14),
+						gap = 12,
+						color = fade(DANGER, 0.07),
+						border = {color = fade(DANGER, 0.5), width = {left = 3}},
+						radius = rr(8),
+					},
+					) {
+						nendo.text(ICON_BAN, {font = FONT_ICON, size = 18, color = DANGER})
+						if nendo.box(nendo.id("GateResetWarningText"))(
+						{width = nendo.grow(), direction = .Column, gap = 5},
 						) {
 							nendo.text(
-								tr(
-									"Starting over deletes the vault on this device and everything sealed with it: account keys stored here, remote signer sessions, unsent messages, saved stickers and GIFs, and cached media. This can't be undone. Signing in again later can give you your account back, but not what was deleted, and your chats may not return.",
-								),
-								{font = FONT_BODY, size = 14, color = DANGER},
+								tr("This can't be undone."),
+								{font = FONT_TITLE, size = 14, color = DANGER},
 							)
-							micro_button("GateResetCancel", tr("Keep this vault"), TEXT)
-							micro_button("GateReset", tr("Delete this vault"), DANGER)
+							nendo.text(
+								tr(
+									"Settings backups do not include these stores and cannot restore them.",
+								),
+								{font = FONT_BODY, size = 12, color = TEXT_DIM},
+							)
+						}
+					}
+					if nendo.box(nendo.id("GateResetUnchanged"))(
+					{width = nendo.grow(), gap = 10},
+					) {
+						nendo.text(ICON_GLOBE, {font = FONT_ICON, size = 14, color = ACCENT})
+						nendo.text(
+							tr(
+								"Other devices, public profiles and group membership are unchanged.",
+							),
+							{font = FONT_BODY, size = 12, color = TEXT_DIM},
+						)
+					}
+					nendo.text(
+						tr(
+							"A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections.",
+						),
+						{font = FONT_BODY, size = 12, color = TEXT_LO},
+					)
+				}
+				// The safe exit stays visible even when the inventory needs scrolling.
+				if nendo.box(nendo.id("GateResetActions"))(
+				{
+					width = nendo.grow(),
+					padding = nendo.pad(12),
+					gap = 8,
+					border = {color = FIELD_BORDER, width = {top = 1}},
+				},
+				) {
+					for action, i in ([2]struct {
+							id, label, icon: string,
+						}{{"GateResetCancel", tr("Keep vault"), ICON_REPLY}, {"GateResetDelete", tr("Delete vault"), ICON_TRASH}}) {
+						if nendo.box(nendo.id(action.id))(
+						{
+							width = nendo.grow(),
+							height = nendo.fit(min = 44),
+							padding = {left = 12, right = 12, top = 12, bottom = 12},
+							gap = 8,
+							align = {x = .Center, y = .Center},
+							color = i == 0 ? (hovered() ? ACCENT_DIM : ACCENT) : (hovered() ? fade(DANGER, 0.16) : fade(DANGER, 0.05)),
+							border = {color = i == 0 ? ACCENT : fade(DANGER, 0.6), width = bw()},
+							radius = rr(9),
+						},
+						) {
+							if hovered() {cursor_raise(.Pointer)}
+							if !narrow {
+								nendo.text(
+									action.icon,
+									{
+										font = FONT_ICON,
+										size = 13,
+										color = i == 0 ? ON_ACCENT : DANGER,
+									},
+								)
+							}
+							nendo.text(
+								action.label,
+								{
+									font = FONT_TITLE,
+									size = 13,
+									color = i == 0 ? ON_ACCENT : DANGER,
+									align = .Center,
+								},
+							)
 						}
 					}
 				}
@@ -828,32 +1062,6 @@ gate_layout :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 		}
 	}
 	return nendo.end(rl.GetFrameTime())
-}
-
-@(private = "file")
-Gate_Step :: enum {
-	Current,
-	Next,
-}
-
-// One stop on the first-run setup map: the current step outlined in the
-// accent color, the next one dimmed.
-@(private = "file")
-gate_step :: proc(id_str: string, caption: string, title: string, step: Gate_Step) {
-	current := step == .Current
-	if nendo.box(nendo.id(id_str))(
-	{
-		width = nendo.grow(),
-		direction = .Column,
-		padding = {12, 12, 10, 10},
-		gap = 4,
-		radius = rr(10),
-		border = {color = current ? ACCENT : CARD_BORDER, width = bw()},
-	},
-	) {
-		eyebrow(caption)
-		nendo.text(title, {font = FONT_BODY, size = 15, color = current ? TEXT : TEXT_DIM})
-	}
 }
 
 // Reveal only on a field or viewport change, never while the user scrolls
