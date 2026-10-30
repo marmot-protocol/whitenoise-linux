@@ -8,6 +8,7 @@
 package main
 
 import "core:fmt"
+import "core:math"
 import "core:os"
 import "core:strings"
 import "core:sys/linux"
@@ -908,8 +909,9 @@ Tip_Side :: enum {
 tooltip :: proc(text: string, side: Tip_Side = .Below, shift_x: f32 = 0) {
 	if rl.TouchActive() {return}
 	parent := nendo.element(nendo.Id{id = nendo.open_id()}).rect
+	// Round up so subtracting padding cannot leave less than the measured text width.
 	width := min(
-		rl.MeasureTextLine(FONT_BODY, 11, text, 0).x + 16,
+		math.ceil(rl.MeasureTextLine(FONT_BODY, 11, text, 0).x + 16),
 		f32(rl.GetScreenWidth()) / UI_ZOOM - 8,
 	)
 	height: f32 = 22
