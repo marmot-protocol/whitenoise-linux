@@ -4,6 +4,140 @@ import "base:runtime"
 import nev_mem "core:mem"
 import "core:testing"
 
+// Run explicitly: tests/odin.sh app -define:ODIN_TEST_NAMES=trailing_image_grid
+@(test)
+trailing_image_grid :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "trailing_image_grid" {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(760, 900, "Trailing image links")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	load_themes(); apply_theme(0, 0); init_fonts()
+	memory: []u8
+	init_layout(&memory, 32768, {760, 900})
+	defer delete(memory)
+	ui: Ui_State
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {g_ui, g_prefs = nil, nil; wrap_clear()}
+	gh_cards_on = true
+	defer {gh_cards_on = false; img_link_cells = nil; img_link_hover = ""; preview_close()}
+	previous := nev_images
+	nev_images = make(map[string]^rl.Texture2D)
+	defer {delete(nev_images); nev_images = previous}
+	urls := [?]string {
+		"https://blossom.primal.net/26e575479ef7b355c154d372257906921c4a1756ae7793b6d6b6b658c75a9ff4.png",
+		"https://blossom.primal.net/400f726c1dbe0000ebc90903efbe830e8355b3098e369ca5ae3d093d5541b8dd.png",
+		"https://blossom.primal.net/46b29ab4bb114ca94fe9435e38b0d4e122e7b4ac4a357d0eef8e21c8da4e8c56.png",
+		"https://blossom.primal.net/8d9a493b84254b697e203a3b5d2dad2f65c590f6ab86fcf709f6cab0592b882b.png",
+	}
+	textures: [len(urls)]rl.Texture2D
+	for url, i in urls {
+		pixels := make([]u8, 120 * 240 * 4)
+		for p := 0; p < len(pixels); p += 4 {
+			pixels[p], pixels[p + 1], pixels[p + 2], pixels[p + 3] = u8(60 + i * 40), 100, 160, 255
+		}
+		textures[i] = rl.LoadTextureFromImage({raw_data(pixels), 120, 240})
+		delete(pixels)
+		nev_images[url] = &textures[i]
+	}
+	defer {for tex in textures {rl.UnloadTexture(tex)}}
+	blocks := [?]Md_Block_Ui {
+		{kind = .Para, text = "New Marmot client just dropped:"},
+		{kind = .Para, text = "Released Third Ear - The voice recorder for the space age"},
+		{
+			kind = .Para,
+			text = "Web: https://jooray.github.io/third-ear/\nZapstore: https://zapstore.dev/apps/app.thirdear",
+		},
+		{kind = .Para, text = urls[0], blank_lines_before = 1},
+		{kind = .Para, text = urls[1], blank_lines_before = 1},
+		{kind = .Para, text = urls[2], blank_lines_before = 1},
+		{kind = .Para, text = urls[3], blank_lines_before = 1},
+	}
+	layout :: proc(blocks: []Md_Block_Ui, width: f32) -> clay.ClayArray(clay.RenderCommand) {
+		clay.BeginLayout()
+		if clay.UI(clay.ID("ImageGridSmoke"))(
+		{
+			layout = {
+				layoutDirection = .TopToBottom,
+				sizing = {width = clay.SizingFixed(width)},
+				childGap = 3,
+			},
+		},
+		) {md_blocks(blocks, 0, wrap_w = width)}
+		return clay.EndLayout(0)
+	}
+	for width in ([]f32{700, 180}) {
+		for frame in 0 ..< 3 {
+			commands := layout(blocks[:], width)
+			if frame < 2 {continue}
+			boxes: [4]clay.BoundingBox
+			count := 0
+			for cmd in commands.internalArray[:commands.length] {
+				if cmd.commandType != .Custom {continue}
+				view := (^Image_Crop)(cmd.renderData.custom.customData)
+				if view.kind != .Image_Crop {continue}
+				if count < len(boxes) {boxes[count] = cmd.boundingBox}
+				count += 1
+				testing.expect(
+					t,
+					cmd.boundingBox.x + cmd.boundingBox.width <= width + 0.1,
+					"images fit the column",
+				)
+			}
+			testing.expect_value(t, count, 4)
+			if count == 4 {
+				testing.expect_value(t, boxes[0].y, boxes[1].y)
+				testing.expect(t, boxes[1].x > boxes[0].x, "images share a mosaic row")
+				testing.expect_value(t, boxes[2].y, boxes[3].y)
+				testing.expect(t, boxes[2].y > boxes[0].y, "four portraits use two rows")
+				testing.expect_value(t, boxes[0].width, boxes[2].width)
+			}
+			rl.BeginDrawing(); clay_raylib_render(&commands)
+			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-trailing-images-%d.png", int(width)))
+			rl.EndDrawing()
+			if count == 4 {
+				box := boxes[2]
+				clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+				layout(blocks[:], width)
+				testing.expect_value(t, img_link_hover, urls[2])
+				rl.PushMouseButton(.LEFT, false)
+				handle_img_click(&ui, nil)
+				testing.expect(t, preview_shown && preview.kind == .Slides)
+				testing.expect_value(t, len(preview.slides), 4)
+				testing.expect_value(t, preview.slide, 2)
+				rl.PushKey(.RIGHT, true)
+				handle_preview(&ui, nil)
+				testing.expect_value(t, preview.slide, 3)
+				rl.PushKey(.RIGHT, false)
+				preview_close()
+				rl.WindowShouldClose()
+			}
+		}
+	}
+	// A missing preview retains a guarded URL instead of an attachment retry action.
+	nev_images[urls[1]] = nil
+	layout(blocks[:], 700)
+	fallback := clay.GetElementData(clay.ID("LinkImgFallback", 3 * 16 + 1))
+	if testing.expect(t, fallback.found) {
+		box := fallback.boundingBox
+		clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+		link_hover = ""
+		layout(blocks[:], 700)
+		testing.expect_value(t, link_hover, urls[1])
+	}
+	ui.prefs.disable_link_previews = true
+	commands := layout(blocks[:], 700)
+	shown := strings.builder_make(context.temp_allocator)
+	for cmd in commands.internalArray[:commands.length] {
+		if cmd.commandType == .Text {
+			text := cmd.renderData.text.stringContents
+			strings.write_string(&shown, string(text.chars[:text.length]))
+		}
+		testing.expect(t, cmd.commandType != .Custom, "disabled previews leave links as text")
+	}
+	for url in urls {testing.expect(t, strings.contains(strings.to_string(shown), url))}
+}
+
 @(test)
 preview_metadata_ownership :: proc(t: ^testing.T) {
 	track: nev_mem.Tracking_Allocator

@@ -305,6 +305,7 @@ image_link :: proc(id: u32, url: string, size: u16, width: f32) {
 		nev_card_image(id, url, inner_w)
 		if clay.PointerOver(clay.ID("NevImage", id)) {
 			img_link_hover = url
+			img_link_cells = nil
 			cursor_raise(.Pointer)
 		}
 		if clay.UI(clay.ID("ImageLinkUrl", id))(
@@ -908,9 +909,52 @@ md_table :: proc(
 		}
 	}
 }
-// the preview modal. id_base namespaces the clay ids per call site.
-// wrap_w pre-wraps paragraphs to a width (event cards); 0 leaves
-// wrapping to clay or, when selectable, the timeline measure.
+// Borrow only an image-only suffix; prose, labels and literal code stay in the body.
+@(private)
+md_image_tail :: proc(blocks: []Md_Block_Ui) -> (first: int, cells: []Att_Slot) {
+	first = len(blocks)
+	out := make([dynamic]Att_Slot, context.temp_allocator)
+	for i := len(blocks) - 1; i >= 0; i -= 1 {
+		block := blocks[i]
+		if block.kind != .Para && block.kind != .Image ||
+		   block.quote_depth > 0 ||
+		   block.indent > 0 {break}
+		valid := true
+		for link in block.links {
+			if block.text[link.start:link.end] != link.url {valid = false; break}
+		}
+		if !valid {break}
+		keep := len(out)
+		text := strings.trim_right_space(block.text)
+		for len(text) > 0 {
+			start :=
+				max(
+					strings.last_index_byte(text, ' '),
+					strings.last_index_byte(text, '\n'),
+					strings.last_index_byte(text, '\r'),
+					strings.last_index_byte(text, '\t'),
+				) +
+				1
+			url := text[start:]
+			if !nev_image_url(url) || text_literal(block.fonts, start) {valid = false; break}
+			append(&out, Att_Slot{kind = .Image, key = url})
+			text = strings.trim_right_space(text[:start])
+		}
+		if !valid || len(out) == keep {
+			resize(&out, keep)
+			break
+		}
+		first = i
+	}
+	if len(out) < 2 {return len(blocks), nil}
+	for i := 0;
+	    i < len(out) / 2;
+	    i += 1 {out[i], out[len(out) - 1 - i] = out[len(out) - 1 - i], out[i]}
+	return first, out[:]
+}
+
+// id_base namespaces the clay ids per call site. wrap_w pre-wraps event cards;
+// zero leaves wrapping to clay or, when selectable, the timeline measure.
 md_blocks :: proc(
 	blocks: []Md_Block_Ui,
 	id_base: u32,
@@ -924,6 +968,9 @@ md_blocks :: proc(
 ) -> bool {
 	remaining := max_lines
 	defer {if lines_used != nil {lines_used^ = max_lines - remaining}}
+	tail := len(blocks)
+	cells: []Att_Slot
+	if link_cards_enabled() && quote_level == 0 {tail, cells = md_image_tail(blocks)}
 	for j := 0; j < len(blocks); j += 1 {
 		if remaining <= 0 {return true}
 		block := blocks[j]
@@ -943,6 +990,11 @@ md_blocks :: proc(
 		}
 		used := 1
 		available := wrap_w > 0 ? wrap_w : body_wrap_w()
+		if j == tail {
+			image_album(block_id, {}, 0, cells, .Links, available)
+			remaining -= 1
+			break
+		}
 		indent := min(f32(max(int(block.indent) - int(indent_base), 0)), available / 2)
 		depth := max(block.quote_depth, block.kind == .Quote ? u16(1) : 0)
 		if depth > quote_level && available - indent > 24 {

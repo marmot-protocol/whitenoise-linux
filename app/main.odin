@@ -1155,6 +1155,7 @@ app_main :: proc() {
 			nes_hover = {}
 			img_hover = {}
 			img_link_hover = ""
+			img_link_cells = nil
 			model_hover = {}
 			code_hover = {}
 			pdf_flip_hover = nil

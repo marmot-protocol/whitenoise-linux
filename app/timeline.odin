@@ -668,8 +668,27 @@ count_roll :: proc(slot: u32, count: string, was: string, t: f32) {
 // therefore varies with the aspect mix, like the telegram album
 // layouter. Failed cells ride along as 4:3 retry plates. `cells` is a
 // run of image slots starting at source index `first`.
-@(private = "file")
-image_album :: proc(index: u32, msg: Msg_Ui, first: int, cells: []Att_Slot) {
+@(private)
+Album_Source :: enum {
+	Attachments,
+	Links,
+}
+
+@(private)
+image_album :: proc(
+	index: u32,
+	msg: Msg_Ui,
+	first: int,
+	cells: []Att_Slot,
+	source := Album_Source.Attachments,
+	width: f32 = 0,
+) {
+	if source == .Links {
+		for &cell in cells {
+			if tex := nev_img(cell.key);
+			   tex != nil && tex.width > 0 && tex.height > 0 {cell.view = tex}
+		}
+	}
 	aspect :: proc(cell: Att_Slot) -> f32 {
 		if tex, ok := cell.view.(^rl.Texture2D); ok && tex.height > 0 {
 			return clamp(f32(tex.width) / f32(tex.height), 0.5, 3)
@@ -682,6 +701,12 @@ image_album :: proc(index: u32, msg: Msg_Ui, first: int, cells: []Att_Slot) {
 	}
 	n := len(cells)
 	album_w := att_w(n == 1 ? 480 : 400)
+	if width > 0 {album_w = min(album_w, width)}
+	// Four portrait screenshots read as two pairs, not three tiny cells and an orphan.
+	paired := n == 4
+	if paired {
+		for cell in cells {if aspect(cell) >= 1 {paired = false; break}}
+	}
 	rows := make([dynamic]Mosaic_Row, context.temp_allocator)
 	i := 0
 	if n >= 3 && aspect(cells[0]) >= 1.15 {
@@ -691,11 +716,11 @@ image_album :: proc(index: u32, msg: Msg_Ui, first: int, cells: []Att_Slot) {
 	for i < n {
 		start := i
 		sum: f32
-		for i < n && i - start < 3 {
+		for i < n && i - start < (paired ? 2 : 3) {
 			sum += aspect(cells[i])
 			i += 1
 			// Tight enough: stop before the row gets short.
-			if (album_w - ALBUM_GAP * f32(i - start - 1)) / sum <= 120 {
+			if !paired && (album_w - ALBUM_GAP * f32(i - start - 1)) / sum <= 120 {
 				break
 			}
 		}
@@ -709,33 +734,49 @@ image_album :: proc(index: u32, msg: Msg_Ui, first: int, cells: []Att_Slot) {
 		row.h = min((album_w - ALBUM_GAP * f32(row.count - 1)) / sum, 320)
 	}
 
-	if clay.UI(clay.ID("MsgAlbum", index * 1024 + u32(first)))(
+	id_base := source == .Links ? index : index * 1024
+	if clay.UI(clay.ID(source == .Links ? "LinkAlbum" : "MsgAlbum", id_base + u32(first)))(
 	{layout = {layoutDirection = .TopToBottom, childGap = ALBUM_GAP}},
 	) {
 		for row in rows {
-			if clay.UI(clay.ID("MsgImgRow", index * 1024 + u32(first + row.start)))(
-			{layout = {childGap = ALBUM_GAP}},
+			if clay.UI(
+				clay.ID(
+					source == .Links ? "LinkImgRow" : "MsgImgRow",
+					id_base + u32(first + row.start),
+				),
+			)(
+				{layout = {childGap = ALBUM_GAP}},
 			) {
 				for cell, k in cells[row.start:row.start + row.count] {
 					att := first + row.start + k
-					cell_id := index * 1024 + u32(att)
+					cell_id := id_base + u32(att)
 					cw := row.h * aspect(cell)
 					tex, ready := cell.view.(^rl.Texture2D)
 					if !ready {
-						if clay.UI(clay.ID("MsgImgFail", cell_id))(
-						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(cw),
-									height = clay.SizingFixed(row.h),
+						if clay.UI(
+							clay.ID(source == .Links ? "LinkImgFallback" : "MsgImgFail", cell_id),
+						)(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFixed(cw),
+										height = clay.SizingFixed(row.h),
+									},
+									padding = clay.PaddingAll(10),
+									childAlignment = {x = .Center, y = .Center},
 								},
-								padding = clay.PaddingAll(10),
-								childAlignment = {x = .Center, y = .Center},
+								backgroundColor = hovered() ? HOVER : PLATE,
+								cornerRadius = rr(8),
 							},
-							backgroundColor = hovered() ? HOVER : PLATE,
-							cornerRadius = rr(8),
-						},
 						) {
+							if source == .Links {
+								if hovered() {link_hover = cell.key; cursor_raise(.Pointer)}
+								clay.Text(
+									text_ellipsis(cell.key, max(1, cw - 20), FONT_BODY, 11),
+									{fontId = FONT_BODY, fontSize = 11, textColor = ACCENT},
+								)
+								continue
+							}
 							if hovered() {
 								img_retry_hover = cell.key
 							}
@@ -751,7 +792,7 @@ image_album :: proc(index: u32, msg: Msg_Ui, first: int, cells: []Att_Slot) {
 						kind = .Image_Crop,
 						tex  = tex,
 					}
-					if clay.UI(clay.ID("MsgImage", cell_id))(
+					if clay.UI(clay.ID(source == .Links ? "LinkImage" : "MsgImage", cell_id))(
 					{
 						layout = {
 							sizing = {
@@ -763,6 +804,13 @@ image_album :: proc(index: u32, msg: Msg_Ui, first: int, cells: []Att_Slot) {
 						cornerRadius = rr(8),
 					},
 					) {
+						if source == .Links {
+							if hovered() {
+								img_link_hover, img_link_cells = cell.key, cells
+								cursor_raise(.Pointer)
+							}
+							continue
+						}
 						// Click opens the lightbox slideshow on this image
 						// (handle_img_click; dl chip wins via att_hover).
 						if hovered() {

@@ -93,6 +93,8 @@ img_hover: Img_Ref
 // build. Its slide has no msg_id: the bytes were never kept, so the
 // lightbox offers no Copy or Save for it.
 img_link_hover: string
+@(private)
+img_link_cells: []Att_Slot // borrowed from the hovered mosaic for this frame
 
 preview: Preview
 preview_shown: bool
@@ -387,8 +389,14 @@ handle_img_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if tex == nil {return}
 		preview_close()
 		preview.kind = .Slides
-		name := img_link_hover[strings.last_index_byte(img_link_hover, '/') + 1:]
-		append(&preview.slides, Slide{"", strings.clone(name), 0, tex, ""})
+		cells := img_link_cells
+		if len(cells) == 0 {cells = []Att_Slot{{key = img_link_hover, view = tex}}}
+		for cell in cells {
+			image := cell.view.(^rl.Texture2D) or_continue
+			if cell.key == img_link_hover {preview.slide = len(preview.slides)}
+			name := cell.key[strings.last_index_byte(cell.key, '/') + 1:]
+			append(&preview.slides, Slide{"", strings.clone(name), 0, image, ""})
+		}
 		preview_shown = true
 		return
 	}
