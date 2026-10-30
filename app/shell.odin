@@ -909,12 +909,16 @@ Tip_Side :: enum {
 tooltip :: proc(text: string, side: Tip_Side = .Below, shift_x: f32 = 0) {
 	if rl.TouchActive() {return}
 	parent := nendo.element(nendo.Id{id = nendo.open_id()}).rect
+	text_width: f32
+	height: f32 = 8
+	rest := text
+	for line in strings.split_lines_iterator(&rest) {
+		size := rl.MeasureTextLine(FONT_BODY, 11, line, 0)
+		text_width = max(text_width, size.x)
+		height += size.y
+	}
 	// Round up so subtracting padding cannot leave less than the measured text width.
-	width := min(
-		math.ceil(rl.MeasureTextLine(FONT_BODY, 11, text, 0).x + 16),
-		f32(rl.GetScreenWidth()) / UI_ZOOM - 8,
-	)
-	height: f32 = 22
+	width := min(math.ceil(text_width + 16), f32(rl.GetScreenWidth()) / UI_ZOOM - 8)
 	offset := nendo.Vector2{parent.x + (parent.width - width) / 2, parent.y + parent.height + 6}
 	switch side {
 	case .Below:
@@ -929,6 +933,7 @@ tooltip :: proc(text: string, side: Tip_Side = .Below, shift_x: f32 = 0) {
 	if nendo.box(nendo.id_local("Tip"))(
 	{
 		width = nendo.fixed(width),
+		direction = .Column,
 		padding = {left = 8, right = 8, top = 4, bottom = 4},
 		floating = {attach_to = .Root, z = 18, offset = offset, pointer = .Passthrough},
 		color = TOOLTIP,
@@ -936,10 +941,13 @@ tooltip :: proc(text: string, side: Tip_Side = .Below, shift_x: f32 = 0) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		nendo.text(
-			text_ellipsis(text, width - 16, FONT_BODY, 11),
-			{font = FONT_BODY, size = 11, color = TEXT},
-		)
+		rest = text
+		for line in strings.split_lines_iterator(&rest) {
+			nendo.text(
+				text_ellipsis(line, width - 16, FONT_BODY, 11),
+				{font = FONT_BODY, size = 11, color = TEXT, wrap = .None},
+			)
+		}
 	}
 }
 
