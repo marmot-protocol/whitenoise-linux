@@ -2476,6 +2476,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if settings_theme_action(ui, theme_pressed) {return}
 	if ui.settings_section == .Appearance && appearance_control_input(ui, theme_pressed) {return}
 	if ui.settings_section == .Agents && handle_agents(ui) {return}
+	if ui.settings_section == .About && handle_about(ui, client) {return}
 
 	if !mouse_released() {
 		return
@@ -2703,7 +2704,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 
 	case .About:
-	// static
+	// Support handles keyboard and mouse input before the release gate.
 
 	case .Debug:
 		handle_debug(ui, client)

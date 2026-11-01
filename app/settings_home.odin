@@ -191,6 +191,13 @@ SETTINGS_TASKS := []Settings_Task {
 	{.Advanced, N_("Choose the renderer"), "RowRenderer", "vulkan opengl cpu gpu graphics", true},
 	{.About, N_("About White Noise"), "", "version license credits", true},
 	{
+		.About,
+		N_("Reach out to support"),
+		"AboutSupportGroup",
+		"help contact feedback bug question",
+		true,
+	},
+	{
 		.Debug,
 		N_("Inspect the current session"),
 		"DbgTabs",

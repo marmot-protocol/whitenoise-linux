@@ -637,6 +637,9 @@ msgstr "Le frecce muovono. X è A, Z è B, Invio è Start, Maiusc è Select."
 msgid "Art deco"
 msgstr "Art déco"
 
+msgid "Ask a question, report a problem, or share a suggestion in a private chat with White Noise support."
+msgstr "Fai una domanda, segnala un problema o condividi un suggerimento in una chat privata con l'assistenza di White Noise."
+
 msgid "Ask a question..."
 msgstr "Fai una domanda..."
 
@@ -4437,6 +4440,9 @@ msgstr "Ritrasmette i tuoi elenchi di relay in uscita e in entrata. Usalo se gli
 
 msgid "Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one."
 msgstr "Crittografa di nuovo i segreti di questo dispositivo con una nuova password. La cache multimediale viene svuotata, perché era sigillata con quella vecchia."
+
+msgid "Reach out to support"
+msgstr "Contatta l'assistenza"
 
 msgid "Read aloud"
 msgstr "Leggi ad alta voce"

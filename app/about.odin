@@ -10,8 +10,13 @@ import "core:math"
 
 import "core:fmt"
 
+import marmot "../marmot"
 import "nendo"
 import rl "sdlrl"
+
+// Shared with the Android and iOS support entry points.
+@(private = "file")
+SUPPORT_NPUB :: "npub1zymqqmvktw8lkr5dp6zzw5xk3fkdqcynj4l3f080k3amy28ses6setzznv"
 
 // Wall clock at window creation, for the uptime readout.
 app_started: f64
@@ -29,6 +34,22 @@ TRACE_SECS :: 1.1 // per hop
 
 settings_about :: proc(ui: ^Ui_State) {
 	about_wordmark()
+
+	if nendo.box(nendo.id("AboutSupportGroup"))(settings_box()) {
+		settings_group(tr("Support"))
+		nendo.text(
+			tr(
+				"Ask a question, report a problem, or share a suggestion in a private chat with White Noise support.",
+			),
+			{font = FONT_BODY, size = 13, color = TEXT},
+		)
+		settings_button(
+			"SupportChat",
+			tr("Reach out to support"),
+			ACCENT,
+			ui.account_ref != "" ? .Enabled : .Disabled,
+		)
+	}
 
 	if nendo.box(nendo.id("AboutDescriptionGroup"))(settings_box()) {
 		settings_group(tr("What it is"))
@@ -71,6 +92,26 @@ settings_about :: proc(ui: ^Ui_State) {
 		nendo.text(tr("Data folder"), {font = FONT_BODY, size = 10, color = TEXT_DIM})
 		nendo.text(data_home, {font = FONT_MONO, size = 10, color = TEXT_LO})
 	}
+}
+
+@(private)
+handle_about :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
+	if ui.account_ref == "" {return false}
+	pressed := false
+	if ui.focus != .SettingsSearch {
+		switch control_keys([]string{"SupportChat"}) {
+		case .Moved:
+			scroll_into_view(nendo.id("SettingsPage"), nendo.id(kb_focus))
+			return true
+		case .Pressed:
+			pressed = true
+		case .None:
+		}
+	}
+	if !pressed && !(mouse_released() && clicked("SupportChat")) {return false}
+	ui.focus = .Compose
+	start_dm(ui, client, Contact_Ui{id_hex = deeplink_hex(SUPPORT_NPUB)})
+	return true
 }
 
 // Three accent bars breathing out of phase, then the name, drawn as

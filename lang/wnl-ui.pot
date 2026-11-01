@@ -630,6 +630,9 @@ msgstr ""
 msgid "Art deco"
 msgstr ""
 
+msgid "Ask a question, report a problem, or share a suggestion in a private chat with White Noise support."
+msgstr ""
+
 msgid "Ask a question..."
 msgstr ""
 
@@ -4423,6 +4426,9 @@ msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't 
 msgstr ""
 
 msgid "Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one."
+msgstr ""
+
+msgid "Reach out to support"
 msgstr ""
 
 msgid "Read aloud"
