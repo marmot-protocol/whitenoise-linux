@@ -819,9 +819,6 @@ msgstr "Bulgaro"
 msgid "By rule"
 msgstr "Da regola"
 
-msgid "CHATS"
-msgstr "CHAT"
-
 msgid "COLOR"
 msgstr "COLORE"
 
@@ -3186,9 +3183,6 @@ msgstr "LIGHTNING"
 msgid "LINES"
 msgstr "LINEE"
 
-msgid "LOADED MESSAGES"
-msgstr "MESSAGGI CARICATI"
-
 msgid "LOCAL"
 msgstr "LOCALE"
 
@@ -4411,9 +4405,6 @@ msgstr "EVENTI GREZZI"
 msgid "RECENT"
 msgstr "RECENTI"
 
-msgid "RELAY"
-msgstr "RELAY"
-
 msgid "RELAYS"
 msgstr "RELAY"
 
@@ -5445,12 +5436,6 @@ msgstr "Sistema"
 msgid "TEXT"
 msgstr "TESTO"
 
-msgid "THEM"
-msgstr "LORO"
-
-msgid "THEME"
-msgstr "TEMA"
-
 msgid "TIMINGS"
 msgstr "TEMPI"
 
@@ -5577,9 +5562,6 @@ msgstr "Il messaggio originale non è caricato in questa vista."
 
 msgid "The passwords don't match. Type them again."
 msgstr "Le password non corrispondono. Digitale di nuovo."
-
-msgid "The relay in the middle stores and forwards. It never holds a key."
-msgstr "Il relay nel mezzo conserva e inoltra. Non possiede mai una chiave."
 
 msgid "The signer request was cancelled."
 msgstr "La richiesta al firmatario è stata annullata."
@@ -5729,9 +5711,6 @@ msgstr "Questo progetto non è più disponibile. Chiudi questo editor e riaprilo
 
 msgid "This relay is already in your list."
 msgstr "Questo relay è già nel tuo elenco."
-
-msgid "This session"
-msgstr "Questa sessione"
 
 msgid "This sticker is not in the current pack."
 msgstr "Questo adesivo non è nel pacchetto attuale."
@@ -5889,9 +5868,6 @@ msgstr "Digita di nuovo la tua password"
 
 msgid "Type your password first."
 msgstr "Digita prima la tua password."
-
-msgid "UPTIME"
-msgstr "TEMPO ATTIVO"
 
 msgid "UV checker"
 msgstr "Scacchiera UV"
@@ -6118,9 +6094,6 @@ msgstr "mercoledì"
 msgid "What is shared"
 msgstr "Dati condivisi"
 
-msgid "What it is"
-msgstr "Cos'è"
-
 msgid "What should people call you?"
 msgstr "Come vuoi che gli altri ti chiamino?"
 
@@ -6132,9 +6105,6 @@ msgstr "Tutto ciò che invii in questa chat viene crittografato con MLS sul tuo 
 
 msgid "Where"
 msgstr "Dove"
-
-msgid "Where a message goes"
-msgstr "Il percorso di un messaggio"
 
 msgid "Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap."
 msgstr "Dove si apre una posizione condivisa dalla sua scheda. Quel sito riceve la posizione. Le immagini della mappa nella scheda vengono sempre caricate da OpenStreetMap."
@@ -6151,9 +6121,6 @@ msgstr "Dove pubblichi."
 #, c-format
 msgid "White Noise %s is ready to install."
 msgstr "White Noise %s è pronto per l'installazione."
-
-msgid "White Noise and this session."
-msgstr "White Noise e questa sessione."
 
 msgid "White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened."
 msgstr "White Noise non può reimpostare questa password e nessun altro ne ha una copia. Senza di essa, la cassaforte su questo dispositivo non può essere aperta."
@@ -6432,9 +6399,6 @@ msgstr "e altre %d righe"
 msgid "and %s more"
 msgstr "e altri %s"
 
-msgid "carries the blob"
-msgstr "trasporta il blob"
-
 msgid "e.g. ~/Work/project"
 msgstr "ad es. ~/Work/project"
 
@@ -6510,23 +6474,14 @@ msgstr "npub copiato"
 msgid "npub or hex pubkey"
 msgstr "npub o chiave pubblica esadecimale"
 
-msgid "opened there"
-msgstr "aperto lì"
-
 msgid "or pick a page"
 msgstr "oppure scegli una pagina"
 
 msgid "people"
 msgstr "persone"
 
-msgid "plaintext"
-msgstr "testo in chiaro"
-
 msgid "relay"
 msgstr "relay"
-
-msgid "sealed here"
-msgstr "sigillato qui"
 
 msgid "you"
 msgstr "tu"

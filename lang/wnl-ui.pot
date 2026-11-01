@@ -812,9 +812,6 @@ msgstr ""
 msgid "By rule"
 msgstr ""
 
-msgid "CHATS"
-msgstr ""
-
 msgid "COLOR"
 msgstr ""
 
@@ -3176,9 +3173,6 @@ msgstr ""
 msgid "LINES"
 msgstr ""
 
-msgid "LOADED MESSAGES"
-msgstr ""
-
 msgid "LOCAL"
 msgstr ""
 
@@ -4398,9 +4392,6 @@ msgstr ""
 msgid "RECENT"
 msgstr ""
 
-msgid "RELAY"
-msgstr ""
-
 msgid "RELAYS"
 msgstr ""
 
@@ -5426,12 +5417,6 @@ msgstr ""
 msgid "TEXT"
 msgstr ""
 
-msgid "THEM"
-msgstr ""
-
-msgid "THEME"
-msgstr ""
-
 msgid "TIMINGS"
 msgstr ""
 
@@ -5557,9 +5542,6 @@ msgid "The original message isn't loaded in this view."
 msgstr ""
 
 msgid "The passwords don't match. Type them again."
-msgstr ""
-
-msgid "The relay in the middle stores and forwards. It never holds a key."
 msgstr ""
 
 msgid "The signer request was cancelled."
@@ -5709,9 +5691,6 @@ msgid "This project is no longer available. Close this editor and reopen it from
 msgstr ""
 
 msgid "This relay is already in your list."
-msgstr ""
-
-msgid "This session"
 msgstr ""
 
 msgid "This sticker is not in the current pack."
@@ -5866,9 +5845,6 @@ msgid "Type your password again"
 msgstr ""
 
 msgid "Type your password first."
-msgstr ""
-
-msgid "UPTIME"
 msgstr ""
 
 msgid "UV checker"
@@ -6096,9 +6072,6 @@ msgstr ""
 msgid "What is shared"
 msgstr ""
 
-msgid "What it is"
-msgstr ""
-
 msgid "What should people call you?"
 msgstr ""
 
@@ -6109,9 +6082,6 @@ msgid "Whatever you send in this chat is encrypted on your device with MLS befor
 msgstr ""
 
 msgid "Where"
-msgstr ""
-
-msgid "Where a message goes"
 msgstr ""
 
 msgid "Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap."
@@ -6128,9 +6098,6 @@ msgstr ""
 
 #, c-format
 msgid "White Noise %s is ready to install."
-msgstr ""
-
-msgid "White Noise and this session."
 msgstr ""
 
 msgid "White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened."
@@ -6407,9 +6374,6 @@ msgstr ""
 msgid "and %s more"
 msgstr ""
 
-msgid "carries the blob"
-msgstr ""
-
 msgid "e.g. ~/Work/project"
 msgstr ""
 
@@ -6485,22 +6449,13 @@ msgstr ""
 msgid "npub or hex pubkey"
 msgstr ""
 
-msgid "opened there"
-msgstr ""
-
 msgid "or pick a page"
 msgstr ""
 
 msgid "people"
 msgstr ""
 
-msgid "plaintext"
-msgstr ""
-
 msgid "relay"
-msgstr ""
-
-msgid "sealed here"
 msgstr ""
 
 msgid "you"

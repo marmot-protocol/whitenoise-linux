@@ -819,9 +819,6 @@ msgstr "ブルガリア語"
 msgid "By rule"
 msgstr "ルールで配置"
 
-msgid "CHATS"
-msgstr "チャット"
-
 msgid "COLOR"
 msgstr "色"
 
@@ -3186,9 +3183,6 @@ msgstr "LIGHTNING"
 msgid "LINES"
 msgstr "線"
 
-msgid "LOADED MESSAGES"
-msgstr "読み込み済みメッセージ"
-
 msgid "LOCAL"
 msgstr "ローカル"
 
@@ -4411,9 +4405,6 @@ msgstr "生イベント"
 msgid "RECENT"
 msgstr "最近"
 
-msgid "RELAY"
-msgstr "リレー"
-
 msgid "RELAYS"
 msgstr "リレー"
 
@@ -5445,12 +5436,6 @@ msgstr "システム"
 msgid "TEXT"
 msgstr "テキスト"
 
-msgid "THEM"
-msgstr "相手"
-
-msgid "THEME"
-msgstr "テーマ"
-
 msgid "TIMINGS"
 msgstr "処理時間"
 
@@ -5577,9 +5562,6 @@ msgstr "元のメッセージはこの画面に読み込まれていません。
 
 msgid "The passwords don't match. Type them again."
 msgstr "パスワードが一致しません。もう一度入力してください。"
-
-msgid "The relay in the middle stores and forwards. It never holds a key."
-msgstr "中間のリレーはデータを保存して転送するだけです。鍵を持つことはありません。"
 
 msgid "The signer request was cancelled."
 msgstr "署名者への要求をキャンセルしました。"
@@ -5729,9 +5711,6 @@ msgstr "このプロジェクトは利用できなくなりました。この編
 
 msgid "This relay is already in your list."
 msgstr "このリレーはすでにリストに追加されています。"
-
-msgid "This session"
-msgstr "現在のセッション"
 
 msgid "This sticker is not in the current pack."
 msgstr "このステッカーは現在のパックに含まれていません。"
@@ -5889,9 +5868,6 @@ msgstr "パスワードをもう一度入力してください"
 
 msgid "Type your password first."
 msgstr "先にパスワードを入力してください。"
-
-msgid "UPTIME"
-msgstr "稼働時間"
 
 msgid "UV checker"
 msgstr "UVチェッカー"
@@ -6118,9 +6094,6 @@ msgstr "水曜日"
 msgid "What is shared"
 msgstr "共有されるデータ"
 
-msgid "What it is"
-msgstr "概要"
-
 msgid "What should people call you?"
 msgstr "どのように呼ばれたいですか？"
 
@@ -6132,9 +6105,6 @@ msgstr "このチャットで送る内容は、送信前にあなたの端末上
 
 msgid "Where"
 msgstr "保存場所"
-
-msgid "Where a message goes"
-msgstr "メッセージの経路"
 
 msgid "Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap."
 msgstr "共有された位置情報をカードから開くときに使うサイトです。そのサイトに位置情報が送られます。カード上の地図画像は常に OpenStreetMap から読み込まれます。"
@@ -6151,9 +6121,6 @@ msgstr "あなたが発信する場所です。"
 #, c-format
 msgid "White Noise %s is ready to install."
 msgstr "White Noise %s をインストールする準備ができました。"
-
-msgid "White Noise and this session."
-msgstr "White Noise と現在のセッションについて確認できます。"
 
 msgid "White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened."
 msgstr "White Noise はこのパスワードをリセットできず、ほかの誰も控えを持っていません。パスワードがないと、この端末の保管庫は開けません。"
@@ -6432,9 +6399,6 @@ msgstr "ほか%d行"
 msgid "and %s more"
 msgstr "ほか%s"
 
-msgid "carries the blob"
-msgstr "暗号化データを運ぶ"
-
 msgid "e.g. ~/Work/project"
 msgstr "例: ~/Work/project"
 
@@ -6510,23 +6474,14 @@ msgstr "npubをコピーしました"
 msgid "npub or hex pubkey"
 msgstr "npubまたは16進数の公開鍵"
 
-msgid "opened there"
-msgstr "相手側で復号"
-
 msgid "or pick a page"
 msgstr "またはページを選んでください"
 
 msgid "people"
 msgstr "人"
 
-msgid "plaintext"
-msgstr "平文"
-
 msgid "relay"
 msgstr "リレー"
-
-msgid "sealed here"
-msgstr "ここで暗号化"
 
 msgid "you"
 msgstr "あなた"
