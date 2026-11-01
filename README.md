@@ -45,7 +45,9 @@ It is one Odin binary with its own layout engine, nendo, drawing through SDL3.
 
 Narrow windows switch to a one-view phone layout for mobile Linux. The [feature tour](docs/features.md) covers the rest, from folder rules to Jitsi call cards.
 
-Settings > About > Reach out to support opens a private chat with the same White Noise support account as the Android and iOS apps. An existing direct chat is reused, including archived chats. Settings search also finds the support button.
+Reach out to support is on the Settings home page, above the categories. It opens a private chat with the same White Noise support account as the Android and iOS apps. An existing direct chat is reused, including archived chats. Settings search also finds the support button.
+
+Settings > About shows the app version, license, update controls when available, software credits, and data folder.
 
 ## Install
 

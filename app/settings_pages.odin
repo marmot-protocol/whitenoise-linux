@@ -531,7 +531,7 @@ settings_description :: proc(section: Settings_Section) -> string {
 	case .Advanced:
 		return N_("Privacy, diagnostics, and developer tools.")
 	case .About:
-		return N_("White Noise and this session.")
+		return N_("Learn about White Noise.")
 	case .Debug:
 		return N_("Inspect application state and events.")
 	case .KP:
@@ -2476,7 +2476,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if settings_theme_action(ui, theme_pressed) {return}
 	if ui.settings_section == .Appearance && appearance_control_input(ui, theme_pressed) {return}
 	if ui.settings_section == .Agents && handle_agents(ui) {return}
-	if ui.settings_section == .About && handle_about(ui, client) {return}
+	if ui.settings_section == .Home && handle_support(ui, client) {return}
 
 	if !mouse_released() {
 		return
@@ -2704,7 +2704,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 
 	case .About:
-	// Support handles keyboard and mouse input before the release gate.
+	// Static application information.
 
 	case .Debug:
 		handle_debug(ui, client)

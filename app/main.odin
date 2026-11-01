@@ -39,6 +39,10 @@ import marmot "../marmot"
 @(private)
 layout_overflow: bool
 
+// Nonzero after window setup; zoom changes can then refresh live resources.
+@(private)
+app_started: f64
+
 @(private)
 init_layout :: proc(memory: ^[]u8, count: i32, dimensions: nendo.Dimensions) {
 	nendo.set_context(nil)

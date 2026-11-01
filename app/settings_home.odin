@@ -7,6 +7,10 @@ import marmot "../marmot"
 import "nendo"
 import rl "sdlrl"
 
+// Shared with the Android and iOS support entry points.
+@(private = "file")
+SUPPORT_NPUB :: "npub1zymqqmvktw8lkr5dp6zzw5xk3fkdqcynj4l3f080k3amy28ses6setzznv"
+
 // A task names one control. Search finds it, and every link to it opens the
 // property sheet and scrolls the control into view; links never toggle a
 // preference themselves.
@@ -191,9 +195,9 @@ SETTINGS_TASKS := []Settings_Task {
 	{.Advanced, N_("Choose the renderer"), "RowRenderer", "vulkan opengl cpu gpu graphics", true},
 	{.About, N_("About White Noise"), "", "version license credits", true},
 	{
-		.About,
+		.Home,
 		N_("Reach out to support"),
-		"AboutSupportGroup",
+		"SettingsSupport",
 		"help contact feedback bug question",
 		true,
 	},
@@ -811,6 +815,37 @@ settings_home :: proc(ui: ^Ui_State) {
 		return
 	}
 
+	if nendo.box(nendo.id("SettingsSupport"))(
+	{
+		width = nendo.grow(),
+		direction = settings_main_w(ui) < 600 ? .Column : .Row,
+		padding = nendo.pad(16),
+		gap = 16,
+		align = {y = .Center},
+		color = PANEL,
+		border = {color = FIELD_BORDER, width = bw()},
+		radius = rr(10),
+	},
+	) {
+		if nendo.box(nendo.id("SettingsSupportText"))(
+		{width = nendo.grow(), direction = .Column, gap = 6},
+		) {
+			nendo.text(tr("Support"), {font = FONT_TITLE, size = 15, color = TEXT})
+			nendo.text(
+				tr(
+					"Ask a question, report a problem, or share a suggestion in a private chat with White Noise support.",
+				),
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
+			)
+		}
+		settings_button(
+			"SupportChat",
+			tr("Reach out to support"),
+			ACCENT,
+			ui.account_ref != "" ? .Enabled : .Disabled,
+		)
+	}
+
 	// Icon and name only; the summary moves to a tooltip.
 	settings_pick_heading(tr("Pick a category"))
 	categories := [10]Settings_Section {
@@ -861,6 +896,26 @@ settings_home :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
+}
+
+@(private)
+handle_support :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
+	if ui.account_ref == "" || len(ui.settings_search) != 0 {return false}
+	pressed := false
+	if ui.focus != .SettingsSearch {
+		switch control_keys([]string{"SupportChat"}) {
+		case .Moved:
+			scroll_into_view(nendo.id("SettingsPage"), nendo.id(kb_focus))
+			return true
+		case .Pressed:
+			pressed = true
+		case .None:
+		}
+	}
+	if !pressed && !(mouse_released() && clicked("SupportChat")) {return false}
+	ui.focus = .Compose
+	start_dm(ui, client, Contact_Ui{id_hex = deeplink_hex(SUPPORT_NPUB)})
+	return true
 }
 
 // Task links, single-task sections and the Appearance workbench open directly;
