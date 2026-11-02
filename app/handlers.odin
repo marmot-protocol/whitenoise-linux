@@ -810,7 +810,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				if translation_action(
 					ui,
 					msg,
-					u32(i) * 1024 + u32(attachment),
+					msg_slot_id(u32(i), attachment),
 					.Transcript,
 					attachment,
 				) {return}
@@ -909,7 +909,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 			for chip, j in msg.reactions {
 				if !read_only &&
-				   clay.PointerOver(clay.ID("MsgReactionChip", u32(i) * 1024 + u32(j))) {
+				   clay.PointerOver(clay.ID("MsgReactionChip", msg_slot_id(u32(i), j))) {
 					message_op(ui, client, chip.mine ? .Unreact : .React, msg.id, chip.emoji)
 					return
 				}

@@ -23,6 +23,25 @@ pending_can_delete :: proc(p: Pending_Send, now: time.Tick) -> bool {
 	)
 }
 
+// Per-attachment and per-reaction clay ids share one band per message row,
+// so the same label can repeat on every row without colliding:
+//
+//   row 0: 0 ..< 1024   row 1: 1024 ..< 2048   row n: n * 1024 + slot
+//
+// Pending rows use the same layout for their image previews.
+// ponytail: slot 1024 of row n aliases slot 0 of row n + 1, so the excess
+// attachment or reaction chip stops taking hovers and clicks. Widen the
+// stride, or scope these ids under the row's element, if a message can
+// carry that many.
+@(private)
+MSG_SLOT_STRIDE :: 1024
+
+// Clay id seed for slot `slot` (attachment or reaction) of message row `index`.
+@(private)
+msg_slot_id :: proc(index: u32, slot: int) -> u32 {
+	return index * MSG_SLOT_STRIDE + u32(slot)
+}
+
 pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 	if p.dismissed {
 		return
@@ -115,7 +134,7 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 					continue
 				}
 				ratio := a.tex.height > 0 ? f32(a.tex.width) / f32(a.tex.height) : 1
-				if clay.UI(clay.ID("PendingImage", index * 1024 + u32(j)))(
+				if clay.UI(clay.ID("PendingImage", msg_slot_id(index, j)))(
 				{
 					layout = {
 						sizing = {
@@ -734,7 +753,7 @@ image_album :: proc(
 		row.h = min((album_w - ALBUM_GAP * f32(row.count - 1)) / sum, 320)
 	}
 
-	id_base := source == .Links ? index : index * 1024
+	id_base := source == .Links ? index : msg_slot_id(index, 0)
 	if clay.UI(clay.ID(source == .Links ? "LinkAlbum" : "MsgAlbum", id_base + u32(first)))(
 	{layout = {layoutDirection = .TopToBottom, childGap = ALBUM_GAP}},
 	) {
@@ -1199,7 +1218,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			// their place between accepted siblings.
 			for att := 0; att < len(msg.attachments); att += 1 {
 				slot := msg.attachments[att]
-				id := index * 1024 + u32(att)
+				id := msg_slot_id(index, att)
 				// The sticker draws above; an emoji asset draws wherever its
 				// shortcode appears.
 				if slot.kind == .Sticker || slot.kind == .Emoji {
@@ -2097,7 +2116,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				},
 				) {
 					for chip, j in msg.reactions {
-						slot := index * 1024 + u32(j)
+						slot := msg_slot_id(index, j)
 						// A chip whose count changed swells and settles, and
 						// the number itself rolls over.
 						pop, was, roll := bump(clay.ID("MsgReactionChip", slot).id, chip.count)

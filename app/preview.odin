@@ -429,7 +429,7 @@ lightbox_fly :: proc(ui: ^Ui_State) {
 		return
 	}
 	// The cell id the album builds (timeline.odin): row index, attachment.
-	from, ok := element_box(clay.ID("MsgImage", u32(index) * 1024 + u32(slide.att)))
+	from, ok := element_box(clay.ID("MsgImage", msg_slot_id(u32(index), slide.att)))
 	if !ok {
 		return
 	}
