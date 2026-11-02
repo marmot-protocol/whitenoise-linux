@@ -143,7 +143,7 @@ issues_layout :: proc(t: ^testing.T) {
 		issue_admin      = true,
 	}
 	ui.prefs.reduce_motion = true
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "group", title = "Project discussion"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; issue_page = nil}

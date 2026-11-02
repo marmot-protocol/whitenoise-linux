@@ -42,10 +42,9 @@ AGENT_LOGOS := [5]struct {
 @(private)
 agent_public_key :: proc(ui: ^Ui_State) -> string {
 	if ui.account_ref == "" {return ""}
-	for id, i in ui.account_ids {
-		if id == ui.account_ref && i < len(ui.account_npubs) {
-			key := ui.account_npubs[i]
-			if agent_key_valid(key) {return key}
+	for account in ui.accounts {
+		if account.id_hex == ui.account_ref {
+			if agent_key_valid(account.npub) {return account.npub}
 			return ""
 		}
 	}

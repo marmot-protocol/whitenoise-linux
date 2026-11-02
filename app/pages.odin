@@ -180,7 +180,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if !mouse_released() {
 			return
 		}
-		for id, i in ui.account_ids {
+		for account, i in ui.accounts {
+			id := account.id_hex
 			if clay.PointerOver(clay.ID("AccountRow", u32(i))) {
 				ui.accounts_open = false
 				if id != ui.account_ref {
@@ -680,7 +681,8 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// The Profile rail (panes.odin): switch account, add one, or jump to
 	// the settings sections that own the rest of an identity.
 	if ui.page == .Profile {
-		for id, i in ui.account_ids {
+		for account, i in ui.accounts {
+			id := account.id_hex
 			if clay.PointerOver(clay.ID("PrAcctRemove", u32(i))) {
 				confirm_ask(ui, .Remove_Account, id, account_label(ui, id))
 				return
@@ -914,10 +916,6 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 	timing_start := time.tick_now()
 	defer local_timing_end(.account_load, timing_start)
 	clear(&ui.accounts)
-	clear(&ui.account_ids)
-	clear(&ui.account_npubs)
-	clear(&ui.account_pics)
-	clear(&ui.account_signing)
 	clear(&ui.login_input)
 	ui.login_method = .Menu
 	ui.login_error = ""
@@ -933,25 +931,21 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 				delete(first)
 				first = strings.clone(hex)
 			}
-			append(&ui.account_ids, strings.clone(hex))
-			append(
-				&ui.account_signing,
-				Account_Signing {
-					accounts.items[i].local_signing,
-					accounts.items[i].external_signing,
-				},
-			)
-			append(&ui.accounts, strings.clone(profile_label(client, hex)))
-			append(&ui.account_pics, strings.clone(profile_info(client, hex).pic_url))
+			row := Account_Row_Ui {
+				id_hex   = strings.clone(hex),
+				name     = strings.clone(profile_label(client, hex)),
+				pic_url  = strings.clone(profile_info(client, hex).pic_url),
+				local    = accounts.items[i].local_signing,
+				external = accounts.items[i].external_signing,
+			}
 			npub: cstring
-			row_npub := ""
 			if marmot.npub(client, strings.clone_to_cstring(hex, context.temp_allocator), &npub) ==
 				   .OK &&
 			   npub != nil {
-				row_npub = strings.clone(string(npub))
+				row.npub = strings.clone(string(npub))
 				marmot.string_free(npub)
 			}
-			append(&ui.account_npubs, row_npub)
+			append(&ui.accounts, row)
 		}
 		marmot.account_summary_list_free(accounts)
 		if len(first) > 0 {

@@ -83,9 +83,9 @@ PAL_ROWS_MAX :: 9
 
 // Display name of a stored account, falling back to its deterministic alias.
 account_label :: proc(ui: ^Ui_State, hex_id: string) -> string {
-	for id, i in ui.account_ids {
-		if id == hex_id {
-			return ui.accounts[i]
+	for account in ui.accounts {
+		if account.id_hex == hex_id {
+			return account.name
 		}
 	}
 	return profile_label(nil, hex_id)

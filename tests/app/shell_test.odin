@@ -85,7 +85,7 @@ rail_default_window :: proc(t: ^testing.T) {
 		wrap_clear()
 	}
 	ui.prefs.reduce_motion = true
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Compact chat"})
 	rl.InitWindow(i32(ui.prefs.window_w), i32(ui.prefs.window_h), "Default chat list")
 	defer rl.CloseWindow()
@@ -197,15 +197,10 @@ status_bar_viewports :: proc(t: ^testing.T) {
 		prefs       = default_prefs(),
 	}
 	ui.prefs.reduce_motion = true
-	append(&ui.accounts, "Viewport")
-	append(&ui.account_ids, "viewport")
-	append(&ui.account_pics, "")
-	append(&ui.account_npubs, "")
+	append(&ui.accounts, Account_Row_Ui{id_hex = "viewport", name = "Viewport"})
 	for i in 0 ..< 12 {append(&ui.chats, Chat_Row_Ui{group_id = fmt.tprintf("group-%d", i), title = fmt.tprintf("Group %d", i)})}
 	defer {
-		delete(
-			ui.accounts,
-		); delete(ui.account_ids); delete(ui.account_pics); delete(ui.account_npubs); delete(ui.chats)
+		delete(ui.accounts); delete(ui.chats)
 		for value in ui.prefs.quick_reactions {delete(value)}
 		delete(ui.prefs.quick_reactions)
 		for value in ui.prefs.fetch_relays {delete(value)}
@@ -503,7 +498,7 @@ test_settings_escape :: proc(t: ^testing.T) {
 		delete(ui.accounts)
 		delete(ui.settings_search)
 	}
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	client: marmot.Client
 	press_escape :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		rl.PushKey(.ESCAPE, true)

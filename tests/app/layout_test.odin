@@ -32,7 +32,7 @@ pending_delete_clicks :: proc(t: ^testing.T) {
 		selected = -1,
 		row_menu = -1,
 	}
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	defer delete(ui.accounts)
 	defer delete(ui.pending)
 	client: marmot.Client

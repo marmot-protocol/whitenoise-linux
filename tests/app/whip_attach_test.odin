@@ -76,7 +76,7 @@ whip_float_dock :: proc(t: ^testing.T) {
 		account_ref      = "attach-account",
 	}
 	edit.init(&ui.ed, context.allocator, context.allocator)
-	append(&ui.accounts, "Local")
+	append(&ui.accounts, Account_Row_Ui{name = "Local"})
 	append(
 		&ui.chats,
 		Chat_Row_Ui{group_id = "chat-a", title = "Release planning"},

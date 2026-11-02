@@ -342,8 +342,8 @@ confirm_modal :: proc(ui: ^Ui_State) {
 // backdrop cancel.
 @(private = "file")
 confirm_exportable :: proc(ui: ^Ui_State) -> bool {
-	for id, i in ui.account_ids {
-		if id == ui.confirm.arg && i < len(ui.account_signing) {return ui.account_signing[i].local}
+	for account in ui.accounts {
+		if account.id_hex == ui.confirm.arg {return account.local}
 	}
 	return false
 }

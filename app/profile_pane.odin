@@ -16,8 +16,8 @@ profile_rail :: proc(ui: ^Ui_State) {
 		)
 	}
 
-	for name, i in ui.accounts {
-		active := ui.account_ids[i] == ui.account_ref
+	for account, i in ui.accounts {
+		active := account.id_hex == ui.account_ref
 		if clay.UI(clay.ID("PrAcct", u32(i)))(
 		{
 			layout = {
@@ -30,7 +30,7 @@ profile_rail :: proc(ui: ^Ui_State) {
 			cornerRadius = rr(10),
 		},
 		) {
-			avatar("PrAcctAv", u32(i), ui.account_ids[i], name, 30, url_pic(ui.account_pics[i]))
+			avatar("PrAcctAv", u32(i), account.id_hex, account.name, 30, url_pic(account.pic_url))
 			if clay.UI(clay.ID("PrAcctCol", u32(i)))(
 			{
 				layout = {
@@ -42,15 +42,14 @@ profile_rail :: proc(ui: ^Ui_State) {
 			},
 			) {
 				clay.Text(
-					name,
+					account.name,
 					{fontId = FONT_TITLE, fontSize = 13, textColor = active ? TEXT : TEXT_DIM},
 				)
 				clay.Text(
-					npub_tail(ui.account_npubs[i]),
+					npub_tail(account.npub),
 					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
 				)
-				if i < len(ui.account_signing) &&
-				   ui.account_signing[i].external {nip46_status_ui(ui, ui.account_ids[i], u32(i))}
+				if account.external {nip46_status_ui(ui, account.id_hex, u32(i))}
 			}
 			scrollbar(clay.ID("PrAcctCol", u32(i)))
 			if active {

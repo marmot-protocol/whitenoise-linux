@@ -34,7 +34,7 @@ compose_up_edits_latest_own :: proc(t: ^testing.T) {
 		delete(ui.compose)
 		delete(ui.thread_stack)
 	}
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "g"})
 	append(
 		&ui.messages,
@@ -151,7 +151,7 @@ escape_keeps_draft :: proc(t: ^testing.T) {
 		delete(ui.compose)
 		delete(ui.sidebar_filter)
 	}
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "g"})
 	append(&ui.compose, "draft")
 	client: marmot.Client

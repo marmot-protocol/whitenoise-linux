@@ -33,14 +33,14 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 	ui.prefs.stt_enabled, ui.prefs.tts_enabled = true, true
 	ui.profile.username = strings.repeat("long-account-name", 8, context.temp_allocator)
 	ui.profile.nip05 = strings.repeat("long-address@example.com", 8, context.temp_allocator)
-	append(&ui.account_ids, "mobile-settings-local")
-	append(&ui.account_signing, Account_Signing{local = true})
 	npub := hex_npub(strings.repeat("01", 32, context.temp_allocator))
 	defer delete(npub)
-	append(&ui.account_npubs, npub)
-	defer delete(ui.account_npubs)
+	append(
+		&ui.accounts,
+		Account_Row_Ui{id_hex = "mobile-settings-local", npub = npub, local = true},
+	)
+	defer delete(ui.accounts)
 	ui.account_ref = "mobile-settings-local"
-	defer {delete(ui.account_ids); delete(ui.account_signing)}
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil}
 

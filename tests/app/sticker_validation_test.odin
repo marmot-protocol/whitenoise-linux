@@ -32,7 +32,7 @@ sticker_input_validation :: proc(t: ^testing.T) {
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
 	ui.prefs.reduce_motion = true
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Stickers"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil}

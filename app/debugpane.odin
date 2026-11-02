@@ -113,6 +113,8 @@ debug_state_json :: proc(ui: ^Ui_State) -> string {
 			},
 		)
 	}
+	accounts := make([]string, len(ui.accounts), context.temp_allocator)
+	for account, i in ui.accounts {accounts[i] = account.id_hex}
 
 	selected_id, selected_title: string
 	if ui.selected >= 0 && ui.selected < len(ui.chats) {
@@ -133,7 +135,7 @@ debug_state_json :: proc(ui: ^Ui_State) -> string {
 			dev_mode, show_members, offline:                bool,
 		} {
 			account = ui.account_ref,
-			accounts = ui.account_ids[:],
+			accounts = accounts,
 			page = fmt.tprintf("%v", ui.page),
 			settings_section = fmt.tprintf("%v", ui.settings_section),
 			focus = fmt.tprintf("%v", ui.focus),

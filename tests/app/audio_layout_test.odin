@@ -30,7 +30,7 @@ audio_layout :: proc(t: ^testing.T) {
 		selected_contact = -1,
 	}
 	ui.prefs.stt_enabled = true
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Audio"})
 	views := [2]Video_View {
 		{paused = true, time = 27, dur = 27},

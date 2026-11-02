@@ -61,7 +61,7 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs.reduce_motion = true
 	// No signed-in account: the real opener cannot start a contact worker.
-	append(&ui.accounts, "Offline fixture")
+	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "fixture", title = "Fixture chat"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; forced_release = false}

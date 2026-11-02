@@ -30,7 +30,7 @@ composer_performance :: proc(t: ^testing.T) {
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	defer edit.destroy(&ui.ed)
 	ui.prefs.rail_w = RAIL_W_MIN
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Composer"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {delete(ui.accounts); delete(ui.chats); delete(ui.compose); delete(ui.rail_rows)

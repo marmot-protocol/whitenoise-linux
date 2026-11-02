@@ -27,10 +27,13 @@ settings_viewport :: proc(t: ^testing.T) {
 		page          = .Settings,
 		audit_scanned = true,
 	}
-	append(&ui.account_ids, "viewport-local", "viewport-remote")
-	append(&ui.account_signing, Account_Signing{local = true}, Account_Signing{external = true})
+	append(
+		&ui.accounts,
+		Account_Row_Ui{id_hex = "viewport-local", local = true},
+		Account_Row_Ui{id_hex = "viewport-remote", external = true},
+	)
 	ui.account_ref = "viewport-local"
-	defer {delete(ui.account_ids); delete(ui.account_signing)}
+	defer delete(ui.accounts)
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
 	append(&ui.compose, "PRIVATE_DRAFT")

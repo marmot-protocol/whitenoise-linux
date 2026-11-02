@@ -700,6 +700,7 @@ send_spinner :: proc(index: u32, state: Send_State) {
 // One switcher row: avatar, name over npub tail, ACTIVE badge on the
 // row you're looking at, chevron hinting the tap.
 account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
+	account := ui.accounts[index]
 	if clay.UI(clay.ID("AccountRow", index))(
 	{
 		layout = {
@@ -713,14 +714,7 @@ account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 		border = active ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
 	},
 	) {
-		avatar(
-			"AccountAvatar",
-			index,
-			ui.account_ids[index],
-			ui.accounts[index],
-			40,
-			url_pic(ui.account_pics[index]),
-		)
+		avatar("AccountAvatar", index, account.id_hex, account.name, 40, url_pic(account.pic_url))
 		if clay.UI(clay.ID("AccountRowCol", index))(
 		{
 			layout = {
@@ -731,13 +725,12 @@ account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 			clip = {horizontal = true},
 		},
 		) {
-			clay.Text(ui.accounts[index], {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+			clay.Text(account.name, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
 			clay.Text(
-				npub_tail(ui.account_npubs[index]),
+				npub_tail(account.npub),
 				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
 			)
-			if int(index) < len(ui.account_signing) &&
-			   ui.account_signing[index].external {nip46_status_ui(ui, ui.account_ids[index], index)}
+			if account.external {nip46_status_ui(ui, account.id_hex, index)}
 		}
 		if clay.UI(clay.ID("AccountRowGap", index))(
 		{layout = {sizing = {width = single_pane() ? clay.SizingFixed(0) : clay.SizingGrow()}}},
@@ -895,14 +888,15 @@ accounts_modal :: proc(ui: ^Ui_State) {
 		order := make([]int, len(ui.accounts), context.temp_allocator)
 		for _, i in ui.accounts {
 			at := i
-			for at > 0 && strings.compare(ui.accounts[order[at - 1]], ui.accounts[i]) > 0 {
+			for at > 0 &&
+			    strings.compare(ui.accounts[order[at - 1]].name, ui.accounts[i].name) > 0 {
 				order[at] = order[at - 1]
 				at -= 1
 			}
 			order[at] = i
 		}
 		for i in order {
-			account_row(ui, u32(i), ui.account_ids[i] == ui.account_ref)
+			account_row(ui, u32(i), ui.accounts[i].id_hex == ui.account_ref)
 		}
 
 		if clay.UI(clay.ID("AcctFoot"))(

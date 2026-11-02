@@ -85,7 +85,7 @@ photo_test_bytes :: proc() -> []u8 {
 
 photo_test_ui :: proc() -> Ui_State {
 	ui := Ui_State{account_ref = "account-a", selected = 0}
-	append(&ui.account_ids, "account-a")
+	append(&ui.accounts, Account_Row_Ui{id_hex = "account-a"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "group-a"})
 	append(&ui.members, Member_Ui{is_self = true, is_admin = true})
 	return ui
@@ -93,7 +93,7 @@ photo_test_ui :: proc() -> Ui_State {
 
 photo_test_free :: proc(ui: ^Ui_State) {
 	photo_cancel(ui)
-	delete(ui.account_ids); delete(ui.chats); delete(ui.members)
+	delete(ui.accounts); delete(ui.chats); delete(ui.members)
 	delete(ui.client_status)
 }
 
@@ -128,9 +128,9 @@ photo_preview_targets :: proc(t: ^testing.T) {
 	ui.selected = -1
 	testing.expect(t, !photo_target_valid(&ui))
 	ui.selected = 0
-	clear(&ui.account_ids)
+	clear(&ui.accounts)
 	testing.expect(t, !photo_target_valid(&ui), "Removed accounts cannot confirm")
-	append(&ui.account_ids, "account-a")
+	append(&ui.accounts, Account_Row_Ui{id_hex = "account-a"})
 	job := Account_Job{account = "account-a", group = "group-a", kind = .Leave}
 	old_jobs := account_jobs
 	account_jobs = {}

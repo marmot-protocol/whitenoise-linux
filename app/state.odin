@@ -505,6 +505,16 @@ Contact_Ui :: struct {
 	groups:  [dynamic]Common_Group, // chats shared with this contact
 }
 
+// One account-switcher row, in the runtime's account-list order.
+Account_Row_Ui :: struct {
+	id_hex:   string,
+	name:     string, // kind-0 name, else truncated hex
+	npub:     string, // the switcher sublabel; "" if the hex didn't encode
+	pic_url:  string, // kind-0 picture, "" = none
+	local:    bool, // signs with a key held by this client
+	external: bool, // signs through a NIP-46 remote signer
+}
+
 Profile_Ui :: struct {
 	npub:     string,
 	name:     string, // display name
@@ -565,11 +575,7 @@ Ui_State :: struct {
 	chat_preview_w:                                        f32, // isolated Appearance chat viewport; zero for real chats
 	messages_group, messages_account:                      string,
 	account_ref:                                           string, // active account's full hex; "" when logged out
-	account_ids:                                           [dynamic]string, // full hex per switcher row
-	accounts:                                              [dynamic]string, // kind-0 name (else truncated hex) per row
-	account_npubs:                                         [dynamic]string, // npub per row, for the switcher sublabels
-	account_pics:                                          [dynamic]string, // kind-0 picture URL per row, "" = none
-	account_signing:                                       [dynamic]Account_Signing,
+	accounts:                                              [dynamic]Account_Row_Ui, // switcher rows; non-empty means signed in
 	accounts_open:                                         bool, // the Accounts switcher modal
 	peer_open:                                             bool, // peer-profile popup (any avatar click)
 	peer_hex:                                              string,

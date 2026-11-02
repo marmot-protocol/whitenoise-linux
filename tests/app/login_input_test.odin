@@ -87,7 +87,7 @@ login_input_required :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.login_error, "Enter your nsec to continue.")
 	testing.expect(t, auth_job == nil)
 	// Accounts uses the same form while another identity is already selected.
-	append(&ui.accounts, "Offline fixture")
+	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	defer delete(ui.accounts)
 	ui.add_account_open = true
 	for language in ([]string{"en", "it", "de", "ja"}) {
@@ -113,7 +113,7 @@ login_input_required :: proc(t: ^testing.T) {
 	// Both sign-in surfaces submit through the real Bunker button and Enter.
 	for adding in ([]bool{false, true}) {
 		ui.add_account_open = adding
-		if !adding {clear(&ui.accounts)} else {append(&ui.accounts, "Offline fixture")}
+		if !adding {clear(&ui.accounts)} else {append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})}
 		ui.login_method = .Menu
 		for _ in 0 ..< 3 {frame(&ui)}
 		click(t, &ui, &client, "LoginBunkerBtn")

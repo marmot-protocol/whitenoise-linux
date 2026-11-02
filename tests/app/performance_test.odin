@@ -268,7 +268,7 @@ performance_layout :: proc(t: ^testing.T) {
 	}
 	g_ui, g_prefs = &ui, &ui.prefs
 	ui.prefs.rail_w = RAIL_W_MIN
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Timeline"})
 	for i in 0 ..< 1000 {
 		append(

@@ -190,7 +190,6 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	delete(ui.whip_tabs); ui.whip_tabs = nil
 	photo_cancel(ui)
 	login_pair_clear(ui)
-	delete(ui.account_signing); ui.account_signing = {}
 	editor_forget(ui)
 	keys_forget(ui)
 	close_export(ui)
@@ -257,7 +256,11 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 		delete(version.at); delete(version.text); blocks_free(version.blocks)
 	}
 	delete(ui.hist_versions); ui.hist_versions = {}
-	for items in ([]^[dynamic]string{&ui.accounts, &ui.account_ids, &ui.account_npubs, &ui.account_pics, &ui.sticker_recent}) {session_strings_forget(items)}
+	for &account in ui.accounts {
+		for text in ([]^string{&account.id_hex, &account.name, &account.npub, &account.pic_url}) {session_string_forget(text)}
+	}
+	delete(ui.accounts); ui.accounts = {}
+	session_strings_forget(&ui.sticker_recent)
 	for item in ui.stickers {mem.zero_slice(transmute([]u8)item.label); sticker_item_free(item)}
 	delete(ui.stickers); ui.stickers = {}
 	for item in ui.sticker_preview {mem.zero_slice(transmute([]u8)item.label); sticker_item_free(item)}

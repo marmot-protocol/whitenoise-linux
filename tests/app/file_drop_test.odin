@@ -35,7 +35,7 @@ chat_drop_boundaries :: proc(t: ^testing.T) {
 		selected = 0,
 		row_menu = -1,
 	}
-	append(&ui.accounts, "account")
+	append(&ui.accounts, Account_Row_Ui{name = "account"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "chat"})
 	defer {delete(ui.accounts); delete(ui.chats); delete(ui.blocked)}
 	for scale in ([]f32{1, 1.875}) {

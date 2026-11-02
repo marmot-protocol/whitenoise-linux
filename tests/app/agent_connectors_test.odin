@@ -69,8 +69,11 @@ agent_active_public_key :: proc(t: ^testing.T) {
 	first := "npub1d6qfwzfzzexwg39v98msg2nv3v7ey8jpwr4dv5fy9hd3pucusmpqasx9s6"
 	selected := "npub1jj6jywheaywfw4yjwyg74hzlw73mh3jw6m6gue567z8d6mu9wpzsu0xmaa"
 	ui: Ui_State
-	append(&ui.account_ids, "first-account", "selected-account")
-	append(&ui.account_npubs, first, selected)
+	append(
+		&ui.accounts,
+		Account_Row_Ui{id_hex = "first-account", npub = first},
+		Account_Row_Ui{id_hex = "selected-account", npub = selected},
+	)
 	ui.profile.npub = first
 	ui.account_ref = "selected-account"
 	testing.expect_value(t, agent_public_key(&ui), selected)
@@ -81,10 +84,10 @@ agent_active_public_key :: proc(t: ^testing.T) {
 	ui.account_ref = ""
 	testing.expect_value(t, agent_public_key(&ui), "")
 	ui.account_ref = "selected-account"
-	resize(&ui.account_npubs, 1)
+	ui.accounts[1].npub = ""
 	testing.expect_value(t, agent_public_key(&ui), "")
-	append(&ui.account_npubs, "invalid-cached-key")
+	ui.accounts[1].npub = "invalid-cached-key"
 	testing.expect_value(t, agent_public_key(&ui), "")
-	clear(&ui.account_ids)
+	clear(&ui.accounts)
 	testing.expect_value(t, agent_public_key(&ui), "")
 }

@@ -33,7 +33,7 @@ whip_filter_unavailable :: proc(t: ^testing.T) {
 		member_menu      = -1,
 		prefs            = default_prefs(),
 	}
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "offline-chat", title = "Ordinary conversation"})
 	defer {delete(ui.accounts); delete(ui.chats); delete(ui.rail_rows)}
 	ui.prefs.reduce_motion = true
@@ -103,10 +103,7 @@ whip_embed :: proc(t: ^testing.T) {
 	}
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	append(&ui.chats, Chat_Row_Ui{group_id = "offline-chat", title = "Ordinary conversation"})
-	append(&ui.accounts, "Smoke")
-	append(&ui.account_ids, "smoke")
-	append(&ui.account_pics, "")
-	append(&ui.account_npubs, "")
+	append(&ui.accounts, Account_Row_Ui{id_hex = "smoke", name = "Smoke"})
 	ui.account_ref = "smoke"
 	ui.prefs.reduce_motion = true
 	g_ui, g_prefs = &ui, &ui.prefs

@@ -27,7 +27,7 @@ composer_layout :: proc(t: ^testing.T) {
 	}
 	ui.prefs.stt_enabled = true
 	ui.prefs.rail_w = RAIL_W_MIN
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Composer"})
 	for i in 0 ..< 20 {
 		append(

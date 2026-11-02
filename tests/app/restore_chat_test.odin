@@ -144,7 +144,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	}
 	ui.prefs = default_prefs(); ui.prefs.reduce_motion = true
 	ui.account_ref = account
-	append(&ui.accounts, "Offline fixture")
+	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; forced_release = false; text_field_live = false}
 	defer {timeline_stop(); for job in account_jobs {thread.join(job.worker)}

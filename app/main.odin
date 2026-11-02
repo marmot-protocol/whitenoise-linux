@@ -923,7 +923,7 @@ app_main :: proc() {
 						break
 					}
 				}
-				if !ui.peer_open {open_peer(&ui, client, ui.account_ref, ui.accounts[0], ui.my_pic_url)}
+				if !ui.peer_open {open_peer(&ui, client, ui.account_ref, ui.accounts[0].name, ui.my_pic_url)}
 			}
 			if !ui.timeline_loading && test_thread_pending && ui.selected >= 0 {
 				test_thread_pending = false

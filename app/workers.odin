@@ -2156,7 +2156,7 @@ start_auth :: proc(
 	auth_job.nsec = strings.clone(nsec)
 	auth_job.method = method == .Menu ? (nsec == "" ? .Create : .Import) : method
 	if auth_job.method == .Import {
-		for id in ui.account_ids {append(&auth_job.prior_accounts, strings.clone(id))}
+		for account in ui.accounts {append(&auth_job.prior_accounts, strings.clone(account.id_hex))}
 	}
 	auth_job.session = session
 	auth_job.seed = auth_job.method == .Create ? .Starter_Face : .None

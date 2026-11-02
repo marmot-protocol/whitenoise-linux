@@ -112,7 +112,7 @@ hidden_message_layout :: proc(t: ^testing.T) {
 	}
 	ui.prefs.reduce_motion = true
 	g_ui, g_prefs = &ui, &ui.prefs
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{})
 	nested := fmt.tprintf(
 		"# Secret\n\n**Bold** and *italic*.\n\n🗝️%s",

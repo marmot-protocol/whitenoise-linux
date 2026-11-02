@@ -48,7 +48,7 @@ folder_count_dispatch :: proc(t: ^testing.T) {
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
-	append(&ui.accounts, "Offline fixture")
+	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; forced_release = false; text_field_live = false}
 

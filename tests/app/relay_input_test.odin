@@ -45,9 +45,10 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
-	append(&ui.accounts, "Offline fixture")
-	append(&ui.account_ids, ui.account_ref)
-	append(&ui.account_signing, Account_Signing{local = true})
+	append(
+		&ui.accounts,
+		Account_Row_Ui{id_hex = ui.account_ref, name = "Offline fixture", local = true},
+	)
 	append(&ui.profile.nip65, "wss://outbox.example")
 	append(&ui.profile.inbox, "wss://inbox.example")
 	g_ui, g_prefs = &ui, &ui.prefs

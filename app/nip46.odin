@@ -19,10 +19,6 @@ Login_Method :: enum {
 	Pair,
 }
 @(private)
-Account_Signing :: struct {
-	local, external: bool,
-}
-@(private)
 Nip46_State :: struct {
 	state, detail, auth_url: string,
 }
@@ -53,7 +49,7 @@ nip46_find :: proc(account: string) -> ^Nip46_Account {
 }
 @(private)
 account_local :: proc(ui: ^Ui_State) -> bool {
-	for id, i in ui.account_ids {if id == ui.account_ref && i < len(ui.account_signing) {return ui.account_signing[i].local && !ui.account_signing[i].external}}
+	for account in ui.accounts {if account.id_hex == ui.account_ref {return account.local && !account.external}}
 	return false
 }
 @(private)

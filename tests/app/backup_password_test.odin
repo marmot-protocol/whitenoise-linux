@@ -33,7 +33,7 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 		audit_scanned = true,
 		cache_scanned = true,
 	}
-	append(&ui.accounts, "Offline fixture")
+	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
 	edit.init(&ui.ed, context.allocator, context.allocator)

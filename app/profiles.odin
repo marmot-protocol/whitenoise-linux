@@ -466,14 +466,14 @@ update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
 		// my_pic_url can borrow the old memo; replace it before freeing that memo.
 		ui.my_pic_url = info.pic_url
 	}
-	for id, i in ui.account_ids {
-		if id != hex {
+	for &account in ui.accounts {
+		if account.id_hex != hex {
 			continue
 		}
-		delete(ui.accounts[i])
-		delete(ui.account_pics[i])
-		ui.accounts[i] = strings.clone(name)
-		ui.account_pics[i] = strings.clone(info.pic_url)
+		delete(account.name)
+		delete(account.pic_url)
+		account.name = strings.clone(name)
+		account.pic_url = strings.clone(info.pic_url)
 	}
 	profile_info_free(old)
 	return true

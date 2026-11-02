@@ -33,7 +33,7 @@ large_group_layout :: proc(t: ^testing.T) {
 		selected_contact = -1,
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Large group"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil}

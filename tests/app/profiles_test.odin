@@ -53,20 +53,17 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 		id_hex = hex,
 		name   = strings.clone("Before"),
 	}
-	append(&ui.account_ids, hex)
-	append(&ui.accounts, strings.clone("Before"))
-	append(&ui.account_pics, "")
+	append(&ui.accounts, Account_Row_Ui{id_hex = hex, name = strings.clone("Before")})
 	ui.nicknames[hex] = "Local nickname"
 	ui.peer_name = strings.clone("Before")
 	defer {
 		for member in ui.members {delete(member.name); delete(member.pic_url)}
 		for contact in ui.contacts {delete(contact.name); delete(contact.pic_url)}
-		for account in ui.accounts {delete(account)}
-		for pic in ui.account_pics {delete(pic)}
+		for account in ui.accounts {delete(account.name); delete(account.pic_url)}
 		delete(ui.profile_contact.name); delete(ui.profile_contact.pic_url)
 		delete(ui.peer_name); delete(ui.peer_pic)
-		delete(ui.members); delete(ui.contacts); delete(ui.account_ids)
-		delete(ui.accounts); delete(ui.account_pics); delete(ui.nicknames)
+		delete(ui.members); delete(ui.contacts)
+		delete(ui.accounts); delete(ui.nicknames)
 	}
 
 	info := Profile_Info {
@@ -88,8 +85,8 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.peer_name, "Local nickname")
 	testing.expect_value(t, ui.peer_pic, info.pic_url)
 	testing.expect_value(t, ui.my_pic_url, info.pic_url)
-	testing.expect_value(t, ui.accounts[0], "After")
-	testing.expect_value(t, ui.account_pics[0], info.pic_url)
+	testing.expect_value(t, ui.accounts[0].name, "After")
+	testing.expect_value(t, ui.accounts[0].pic_url, info.pic_url)
 
 	// Equal results leave the owned strings in place; clearing a profile is an update.
 	before := raw_data(ui.members[0].pic_url)

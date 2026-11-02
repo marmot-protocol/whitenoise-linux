@@ -35,7 +35,7 @@ recent_folder_filters :: proc(t: ^testing.T) {
 		prefs       = default_prefs(),
 	}
 	ui.prefs.reduce_motion, ui.prefs.recent_chats = true, true
-	append(&ui.accounts, "Offline fixture")
+	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	append(&ui.prefs.folders, "Work", "Empty")
 	append(
 		&ui.chats,

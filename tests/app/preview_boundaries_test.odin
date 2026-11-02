@@ -23,7 +23,7 @@ preview_boundaries :: proc(t: ^testing.T) {
 		selected = 0,
 	}
 	ui.prefs.reduce_motion = true
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "preview", title = "Preview"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; preview_close()}

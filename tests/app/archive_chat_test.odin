@@ -42,7 +42,7 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
-	append(&ui.accounts, "Offline fixture")
+	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	append(&ui.chats,
 		Chat_Row_Ui{group_id = "selected-chat", title = "Open conversation"},
 		Chat_Row_Ui{group_id = "menu-chat", title = "Archive example"},

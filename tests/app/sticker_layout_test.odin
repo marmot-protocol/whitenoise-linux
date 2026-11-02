@@ -29,7 +29,7 @@ sticker_layout :: proc(t: ^testing.T) {
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
 	ui.prefs.reduce_motion = true
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Stickers"})
 	append(&ui.compose, "Your draft stays here")
 	g_ui, g_prefs = &ui, &ui.prefs

@@ -29,13 +29,14 @@ keys_package_layout :: proc(t: ^testing.T) {
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
 	ui.account_ref = "offline"
-	append(&ui.accounts, "Offline fixture")
-	append(&ui.account_ids, "offline")
-	append(&ui.account_signing, Account_Signing{local = true})
+	append(
+		&ui.accounts,
+		Account_Row_Ui{id_hex = "offline", name = "Offline fixture", local = true},
+	)
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {
 		g_ui, g_prefs = nil, nil
-		delete(ui.kp_list); delete(ui.accounts); delete(ui.account_ids); delete(ui.account_signing)
+		delete(ui.kp_list); delete(ui.accounts)
 		set_locale("en")
 	}
 	append(

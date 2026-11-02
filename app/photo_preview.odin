@@ -57,7 +57,7 @@ photo_target_valid :: proc(ui: ^Ui_State) -> bool {
 	   p.account != ui.account_ref ||
 	   account_departing(p.account) {return false}
 	found := false
-	for account in ui.account_ids {if account == p.account {found = true; break}}
+	for account in ui.accounts {if account.id_hex == p.account {found = true; break}}
 	if !found {return false}
 	if p.kind == .Group {
 		if ui.selected < 0 ||

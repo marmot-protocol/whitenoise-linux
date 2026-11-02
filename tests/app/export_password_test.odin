@@ -34,11 +34,12 @@ export_password_dispatch :: proc(t: ^testing.T) {
 	}
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	defer edit.destroy(&ui.ed)
-	append(&ui.accounts, "Offline fixture")
+	append(
+		&ui.accounts,
+		Account_Row_Ui{id_hex = "offline", name = "Offline fixture", local = true},
+	)
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
-	append(&ui.account_ids, "offline")
-	append(&ui.account_signing, Account_Signing{local = true})
 	g_ui, g_prefs = &ui, &ui.prefs
 	scanned := custom_emoji_scanned
 	custom_emoji_scanned = true
@@ -48,9 +49,7 @@ export_password_dispatch :: proc(t: ^testing.T) {
 		forced_release = false
 		rl.PushKey(.ENTER, false); rl.PushKey(.ESCAPE, false)
 		close_export(&ui)
-		delete(
-			ui.export_pw,
-		); delete(ui.account_ids); delete(ui.account_signing); delete(ui.accounts)
+		delete(ui.export_pw); delete(ui.accounts)
 	}
 	settings_open(&ui, nil, .Keys, 0, level = .Sheet)
 	frame :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
@@ -169,7 +168,7 @@ export_password_dispatch :: proc(t: ^testing.T) {
 		close_export(&ui)
 	}
 	// Nonlocal account restrictions still win before password validation.
-	ui.account_signing[0].local = false
+	ui.accounts[0].local = false
 	ui.export_open = true
 	rl.PushKey(.ENTER, true)
 	handle_settings(&ui, nil)

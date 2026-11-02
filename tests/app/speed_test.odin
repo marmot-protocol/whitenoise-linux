@@ -33,7 +33,7 @@ contacts_layout :: proc(t: ^testing.T) {
 		selected_contact = -1,
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil}
 	for i in 0 ..< 1000 {
@@ -319,7 +319,7 @@ performance_sidebar :: proc(t: ^testing.T) {
 	}
 	g_ui, g_prefs = &ui, &ui.prefs
 	ui.prefs.rail_w = RAIL_W_MIN
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	for i in 0 ..< 100 {
 		append(
 			&ui.messages,

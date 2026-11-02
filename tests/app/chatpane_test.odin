@@ -38,7 +38,7 @@ group_settings_permissions :: proc(t: ^testing.T) {
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
 	ui.prefs.reduce_motion = true
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Shared group"})
 	append(&ui.members, Member_Ui{is_self = true})
 	g_ui, g_prefs = &ui, &ui.prefs
@@ -157,7 +157,7 @@ chat_title_overflow :: proc(t: ^testing.T) {
 	}
 	g_ui = &ui
 	g_prefs = &ui.prefs
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	defer delete(ui.accounts)
 	ui.prefs.rail_w = RAIL_W_MIN
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "01e88b174112addb56b562777c32c5f"})
@@ -296,7 +296,7 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
 	ui.prefs.reduce_motion = true
-	append(&ui.accounts, "Test")
+	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	long_word :=
 		"Pneumonoultramicroscopicsilicovolcanoconiosis" +
 		"Pneumonoultramicroscopicsilicovolcanoconiosis"
