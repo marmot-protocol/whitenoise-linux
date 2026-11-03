@@ -1029,6 +1029,9 @@ msgstr "Scegli la forma dei cerchi nel grano"
 msgid "Choose the default avatar shape"
 msgstr "Scegli la forma predefinita degli avatar"
 
+msgid "Choose the renderer"
+msgstr "Scegli il renderer"
+
 msgid "Choose what gets your attention."
 msgstr "Scegli cosa merita la tua attenzione."
 
@@ -2602,6 +2605,9 @@ msgstr "Vai alle impostazioni"
 msgid "Go to your profile"
 msgstr "Vai al tuo profilo"
 
+msgid "Graphics"
+msgstr "Grafica"
+
 msgid "Gray"
 msgstr "Grigio"
 
@@ -2785,6 +2791,10 @@ msgstr "Importazione delle emoji"
 
 msgid "Importing emoji..."
 msgstr "Importazione delle emoji..."
+
+#, c-format
+msgid "In use: %s."
+msgstr "In uso: %s."
 
 msgid "Incoming messages"
 msgstr "Messaggi in arrivo"
@@ -4276,6 +4286,9 @@ msgstr "Rimozione del tuo account da questo dispositivo"
 msgid "Rename"
 msgstr "Rinomina"
 
+msgid "Renderer"
+msgstr "Renderer"
+
 msgid "Rendering toolpaths"
 msgstr "Visualizzazione dei percorsi di stampa"
 
@@ -5437,6 +5450,9 @@ msgstr "Risoluzione dei problemi"
 
 msgid "Trusted link sites"
 msgstr "Siti affidabili per i link"
+
+msgid "Try OpenGL or CPU if the window draws incorrectly. CPU draws without the graphics card and uses more processor time. Restart White Noise to apply a change."
+msgstr "Prova OpenGL o CPU se la finestra non viene disegnata correttamente. CPU disegna senza scheda grafica e usa più tempo del processore. Riavvia White Noise per applicare una modifica."
 
 msgid "Try a different search."
 msgstr "Prova un'altra ricerca."

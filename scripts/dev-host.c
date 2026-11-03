@@ -32,10 +32,17 @@ static void stop(int sig) {
     stopping = 1;
 }
 
-static SDL_Renderer *create_view_renderer(SDL_Window *target) {
+// Same choices as the app (sdlrl/saturation.odin create_view_renderer).
+static SDL_Renderer *create_view_renderer(SDL_Window *target, const char *driver) {
     const char *hint = SDL_GetHint(SDL_HINT_RENDER_DRIVER);
     if (hint && strcmp(hint, "gpu")) {
         return SDL_CreateRenderer(target, NULL);
+    }
+    if (!hint && driver && strcmp(driver, "gpu")) {
+        SDL_Renderer *picked = SDL_CreateRenderer(target, driver);
+        if (picked) {
+            return picked;
+        }
     }
     // Same as the app (sdlrl/saturation.odin): prefer the integrated GPU.
     SDL_SetHint(SDL_HINT_RENDER_GPU_LOW_POWER, "1");
@@ -50,7 +57,8 @@ static SDL_Renderer *create_view_renderer(SDL_Window *target) {
     return result ? result : SDL_CreateRenderer(target, NULL);
 }
 
-SDL_Window *wn_dev_window(int width, int height, const char *title, SDL_Renderer **out) {
+SDL_Window *wn_dev_window(int width, int height, const char *title, const char *driver,
+                          SDL_Renderer **out) {
     if (!window) {
         if (!SDL_Init(SDL_INIT_VIDEO)) {
             return NULL;
@@ -58,7 +66,7 @@ SDL_Window *wn_dev_window(int width, int height, const char *title, SDL_Renderer
         window = SDL_CreateWindow(title, width, height,
                                   SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
         if (window) {
-            renderer = create_view_renderer(window);
+            renderer = create_view_renderer(window, driver);
         }
         if (window) {
             fprintf(stderr, "dev: window=%u\n", SDL_GetWindowID(window));

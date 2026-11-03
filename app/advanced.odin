@@ -18,6 +18,7 @@ import "core:time"
 _ :: sysinfo
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import rl "sdlrl"
 
 import marmot "../marmot"
 
@@ -258,6 +259,33 @@ settings_advanced :: proc(ui: ^Ui_State) {
 		}
 
 	case 2:
+		if clay.UI(clay.ID("AdvancedGraphicsGroup"))(settings_box()) {
+			settings_group(tr("Graphics"))
+			if clay.UI(clay.ID("RowRenderer"))(settings_row(true)) {
+				row_labels(
+					tr("Renderer"),
+					tr(
+						"Try OpenGL or CPU if the window draws incorrectly. CPU draws without the graphics card and uses more processor time. Restart White Noise to apply a change.",
+					),
+				)
+				if clay.UI(clay.ID("RendererChoices"))(
+					settings_choices(clay.ID("RendererChoices")),
+				) {
+					for label, driver in RENDERER_LABELS {
+						settings_option(
+							"RendererChip",
+							u32(driver),
+							label,
+							ui.prefs.renderer == driver,
+						)
+					}
+				}
+			}
+			clay.Text(
+				fmt.tprintf(tr("In use: %s."), rl.RendererInUse()),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+		}
 		if clay.UI(clay.ID("AdvancedDeveloperGroup"))(settings_box()) {
 			settings_group(tr("Developer"))
 			if clay.UI(clay.ID("RowDevMode"))(settings_row()) {
@@ -281,12 +309,28 @@ audit_delete_id :: proc(path: string) -> string {
 	return fmt.tprintf("AuditDelete:%s", path)
 }
 
+// SDL's GPU renderer runs on Metal on macOS and Vulkan elsewhere. Product
+// names, so not translated.
+@(private = "file")
+RENDERER_LABELS := [rl.Render_Driver]string {
+	.Gpu      = ODIN_OS == .Darwin ? "Metal" : "Vulkan",
+	.OpenGL   = "OpenGL",
+	.Software = "CPU",
+}
+
 // ── Interactions ────────────────────────────────────────────────────
 
 handle_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for _, browser in MAP_BROWSER_NAMES {
 		if clay.PointerOver(clay.ID("MapBrowserChip", u32(browser))) {
 			ui.prefs.map_browser = browser
+			save_settings(ui)
+			return
+		}
+	}
+	for _, driver in RENDERER_LABELS {
+		if clay.PointerOver(clay.ID("RendererChip", u32(driver))) {
+			ui.prefs.renderer = driver
 			save_settings(ui)
 			return
 		}

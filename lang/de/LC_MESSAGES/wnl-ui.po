@@ -1029,6 +1029,9 @@ msgstr "Kornkreis-Form wählen"
 msgid "Choose the default avatar shape"
 msgstr "Standardform für Avatare wählen"
 
+msgid "Choose the renderer"
+msgstr "Renderer wählen"
+
 msgid "Choose what gets your attention."
 msgstr "Wähle, worauf du aufmerksam gemacht wirst."
 
@@ -2602,6 +2605,9 @@ msgstr "Zu den Einstellungen"
 msgid "Go to your profile"
 msgstr "Zu deinem Profil"
 
+msgid "Graphics"
+msgstr "Grafik"
+
 msgid "Gray"
 msgstr "Grau"
 
@@ -2785,6 +2791,10 @@ msgstr "Emojis werden importiert"
 
 msgid "Importing emoji..."
 msgstr "Emoji werden importiert..."
+
+#, c-format
+msgid "In use: %s."
+msgstr "Aktiv: %s."
 
 msgid "Incoming messages"
 msgstr "Eingehende Nachrichten"
@@ -4276,6 +4286,9 @@ msgstr "Dein Konto wird von diesem Gerät entfernt"
 msgid "Rename"
 msgstr "Umbenennen"
 
+msgid "Renderer"
+msgstr "Renderer"
+
 msgid "Rendering toolpaths"
 msgstr "Druckpfade werden dargestellt"
 
@@ -5437,6 +5450,9 @@ msgstr "Problembehandlung"
 
 msgid "Trusted link sites"
 msgstr "Vertrauenswürdige Websites"
+
+msgid "Try OpenGL or CPU if the window draws incorrectly. CPU draws without the graphics card and uses more processor time. Restart White Noise to apply a change."
+msgstr "Probiere OpenGL oder CPU, wenn das Fenster fehlerhaft dargestellt wird. CPU zeichnet ohne Grafikkarte und braucht mehr Rechenzeit. Starte White Noise neu, um eine Änderung anzuwenden."
 
 msgid "Try a different search."
 msgstr "Versuche eine andere Suche."

@@ -25,12 +25,36 @@ Saturation_State :: struct {
 @(private)
 saturation: Saturation_State
 
+// How the window is drawn, picked in Settings → Advanced and applied when
+// the window opens. Gpu is SDL's GPU renderer (Vulkan; Metal on macOS)
+// and the only one with the saturation shader; the others are fallbacks
+// for graphics drivers that draw the window incorrectly.
+Render_Driver :: enum {
+	Gpu,
+	OpenGL,
+	Software,
+}
+
 @(private)
-create_view_renderer :: proc(window: ^sdl.Window) -> ^sdl.Renderer {
+RENDER_DRIVER_NAMES := [Render_Driver]cstring {
+	.Gpu      = "gpu",
+	.OpenGL   = "opengl",
+	.Software = "software",
+}
+
+@(private)
+create_view_renderer :: proc(window: ^sdl.Window, driver: Render_Driver) -> ^sdl.Renderer {
 	// Explicit renderer selection remains available for headless runs and diagnosis.
 	hint := sdl.GetHint("SDL_RENDER_DRIVER")
 	if hint != nil && string(hint) != "gpu" {
 		return sdl.CreateRenderer(window, nil)
+	}
+	// A pick that will not start falls through to the GPU renderer, then
+	// to SDL's own choice, so it can never leave the app without a window.
+	if hint == nil && driver != .Gpu {
+		if renderer := sdl.CreateRenderer(window, RENDER_DRIVER_NAMES[driver]); renderer != nil {
+			return renderer
+		}
 	}
 	// SDL's GPU renderer otherwise picks the high-performance device: on a
 	// laptop with a discrete GPU that keeps it awake for a chat window and
@@ -48,6 +72,30 @@ create_view_renderer :: proc(window: ^sdl.Window) -> ^sdl.Renderer {
 		return renderer
 	}
 	return sdl.CreateRenderer(window, nil)
+}
+
+// The renderer actually drawing the window, for Settings to show next to
+// the pick: a fallback, or a pick not yet applied, is visible there.
+RendererInUse :: proc() -> string {
+	name := string(sdl.GetRendererName(state.renderer))
+	switch name {
+	case "gpu":
+		device := sdl.GetGPURendererDevice(state.renderer)
+		switch string(sdl.GetGPUDeviceDriver(device)) {
+		case "vulkan":
+			return "Vulkan"
+		case "metal":
+			return "Metal"
+		case "direct3d12":
+			return "Direct3D 12"
+		}
+		return "GPU"
+	case "opengl":
+		return "OpenGL"
+	case "software":
+		return "CPU"
+	}
+	return name
 }
 
 @(private)

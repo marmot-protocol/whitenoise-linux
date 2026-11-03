@@ -950,6 +950,9 @@ msgstr ""
 msgid "Choose the default avatar shape"
 msgstr ""
 
+msgid "Choose the renderer"
+msgstr ""
+
 msgid "Choose what gets your attention."
 msgstr ""
 
@@ -2445,6 +2448,9 @@ msgstr ""
 msgid "Go to your profile"
 msgstr ""
 
+msgid "Graphics"
+msgstr ""
+
 msgid "Gray"
 msgstr ""
 
@@ -2621,6 +2627,10 @@ msgid "Importing contacts: %d of %d"
 msgstr ""
 
 msgid "Importing emoji"
+msgstr ""
+
+#, c-format
+msgid "In use: %s."
 msgstr ""
 
 msgid "Incoming messages"
@@ -4032,6 +4042,9 @@ msgstr ""
 msgid "Rename"
 msgstr ""
 
+msgid "Renderer"
+msgstr ""
+
 msgid "Rendering toolpaths"
 msgstr ""
 
@@ -5102,6 +5115,9 @@ msgid "Troubleshooters"
 msgstr ""
 
 msgid "Trusted link sites"
+msgstr ""
+
+msgid "Try OpenGL or CPU if the window draws incorrectly. CPU draws without the graphics card and uses more processor time. Restart White Noise to apply a change."
 msgstr ""
 
 msgid "Try a different search."

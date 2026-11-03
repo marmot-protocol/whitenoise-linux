@@ -188,6 +188,7 @@ SETTINGS_TASKS := []Settings_Task {
 	{.Advanced, N_("Share usage and diagnostics"), "RowTelemetry", "privacy telemetry", true},
 	{.Advanced, N_("Record audit logs"), "RowAudit", "privacy security files", true},
 	{.Advanced, N_("Turn on developer mode"), "RowDevMode", "debug tools", true},
+	{.Advanced, N_("Choose the renderer"), "RowRenderer", "vulkan opengl cpu gpu graphics", true},
 	{.About, N_("About White Noise"), "", "version license credits", true},
 	{
 		.Debug,

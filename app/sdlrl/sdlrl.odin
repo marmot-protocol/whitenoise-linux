@@ -176,8 +176,9 @@ when #config(WN_RELOAD, false) {
 		Open_Folder,
 	}
 	foreign _ {
+		// driver is an SDL renderer name; the host keeps its first renderer across reloads.
 		@(private)
-		wn_dev_window :: proc "c" (width, height: c.int, title: cstring, renderer: ^^sdl.Renderer) -> ^sdl.Window ---
+		wn_dev_window :: proc "c" (width, height: c.int, title: cstring, driver: cstring, renderer: ^^sdl.Renderer) -> ^sdl.Window ---
 		@(private)
 		wn_dev_dialog :: proc "c" (kind: Dev_Dialog_Kind, callback: sdl.DialogFileCallback, name: cstring) ---
 		@(private)
@@ -248,11 +249,22 @@ SCANCODES := [KeyboardKey]sdl.Scancode {
 
 // ── Window / frame loop ─────────────────────────────────────────────
 
-InitWindow :: proc(width, height: i32, title: cstring, image_helper: string = IMAGE_HELPER_DEV) {
+InitWindow :: proc(
+	width, height: i32,
+	title: cstring,
+	image_helper: string = IMAGE_HELPER_DEV,
+	driver := Render_Driver.Gpu,
+) {
 	state.image_helper = strings.clone_to_cstring(image_helper)
 	callback_allocator = context.allocator
 	when #config(WN_RELOAD, false) {
-		state.window = wn_dev_window(c.int(width), c.int(height), title, &state.renderer)
+		state.window = wn_dev_window(
+			c.int(width),
+			c.int(height),
+			title,
+			RENDER_DRIVER_NAMES[driver],
+			&state.renderer,
+		)
 	} else {
 		if !sdl.Init({.VIDEO}) {
 			fmt.eprintfln("sdl: init failed: %s", sdl.GetError())
@@ -264,7 +276,7 @@ InitWindow :: proc(width, height: i32, title: cstring, image_helper: string = IM
 			c.int(height),
 			{.RESIZABLE, .HIGH_PIXEL_DENSITY},
 		)
-		if state.window != nil {state.renderer = create_view_renderer(state.window)}
+		if state.window != nil {state.renderer = create_view_renderer(state.window, driver)}
 	}
 	if state.window == nil || state.renderer == nil {
 		fmt.eprintfln("sdl: window failed: %s", sdl.GetError())

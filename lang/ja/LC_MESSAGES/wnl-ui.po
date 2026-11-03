@@ -1029,6 +1029,9 @@ msgstr "ミステリーサークルの形状を選択"
 msgid "Choose the default avatar shape"
 msgstr "アバターの既定の形を選択"
 
+msgid "Choose the renderer"
+msgstr "レンダラーを選択"
+
 msgid "Choose what gets your attention."
 msgstr "通知を受け取る内容を選択します。"
 
@@ -2602,6 +2605,9 @@ msgstr "設定へ移動"
 msgid "Go to your profile"
 msgstr "自分のプロフィールへ移動"
 
+msgid "Graphics"
+msgstr "グラフィックス"
+
 msgid "Gray"
 msgstr "グレー"
 
@@ -2785,6 +2791,10 @@ msgstr "絵文字をインポートしています"
 
 msgid "Importing emoji..."
 msgstr "絵文字をインポートしています..."
+
+#, c-format
+msgid "In use: %s."
+msgstr "使用中: %s"
 
 msgid "Incoming messages"
 msgstr "受信メッセージ"
@@ -4276,6 +4286,9 @@ msgstr "この端末からアカウントを削除しています"
 msgid "Rename"
 msgstr "名前を変更"
 
+msgid "Renderer"
+msgstr "レンダラー"
+
 msgid "Rendering toolpaths"
 msgstr "印刷経路を描画しています"
 
@@ -5437,6 +5450,9 @@ msgstr "トラブルシューティング"
 
 msgid "Trusted link sites"
 msgstr "信頼済みのリンク先"
+
+msgid "Try OpenGL or CPU if the window draws incorrectly. CPU draws without the graphics card and uses more processor time. Restart White Noise to apply a change."
+msgstr "ウィンドウが正しく描画されない場合は、OpenGL または CPU をお試しください。CPU はグラフィックカードを使わずに描画するため、プロセッサーの負荷が増えます。変更を適用するには White Noise を再起動してください。"
 
 msgid "Try a different search."
 msgstr "別の検索語を試してください。"

@@ -442,7 +442,11 @@ settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
 		switch anchor {
 		case "RowAudit", "TgAudit", "AuditRefresh", "AdvancedAuditGroup":
 			return 1
-		case "RowDevMode", "TgDevMode", "AdvancedDeveloperGroup":
+		case "RowDevMode",
+		     "TgDevMode",
+		     "AdvancedDeveloperGroup",
+		     "RowRenderer",
+		     "AdvancedGraphicsGroup":
 			return 2
 		}
 	case:

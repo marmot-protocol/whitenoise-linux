@@ -547,7 +547,7 @@ app_main :: proc() {
 		}
 	}
 	window_start := time.tick_now()
-	rl.InitWindow(win_w, win_h, WIN_TITLE, helper_path("wn-image"))
+	rl.InitWindow(win_w, win_h, WIN_TITLE, helper_path("wn-image"), ui.prefs.renderer)
 	local_timing_end(.window_init, window_start)
 	// SDL opens its display and renderer before the filesystem is locked;
 	// attachment workers, the vault and Marmot only run after confinement.
