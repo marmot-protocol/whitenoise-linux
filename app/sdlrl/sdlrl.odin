@@ -746,6 +746,13 @@ IsWindowFocused :: proc() -> bool {
 	return .INPUT_FOCUS in sdl.GetWindowFlags(state.window)
 }
 
+// Whether the compositor shows the window. A hidden (tray), minimized
+// or occluded (Wayland's suspended state) window gets no frame
+// callbacks, so a vsync present to it blocks until it shows again.
+IsWindowVisible :: proc() -> bool {
+	return sdl.GetWindowFlags(state.window) & {.HIDDEN, .MINIMIZED, .OCCLUDED} == {}
+}
+
 // Pumps events and refreshes per-frame input state.
 WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 	if changed != nil {changed^ = false}

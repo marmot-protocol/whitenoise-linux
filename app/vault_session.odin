@@ -30,9 +30,13 @@ lock_now :: proc(ui: ^Ui_State) {
 @(private)
 relock_chat: string
 
+// Hidden windows skip the frame; see splash_frame.
 @(private)
 lock_wait_frame :: proc() {
 	anim_tick(rl.GetFrameTime())
+	if !rl.IsWindowVisible() {
+		return
+	}
 	clay.SetLayoutDimensions(
 		{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
 	)
@@ -143,6 +147,8 @@ session_stop :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 			// Consume close events, but do not destroy the window until every
 			// client borrower has joined. The gate observes close afterwards.
 			rl.WindowShouldClose()
+			// Without a present to pace it, a hidden window polls at 4 Hz.
+			if !rl.IsWindowVisible() {rl.Wait(IDLE_REFRESH_MS)}
 			lock_wait_frame()
 		}
 	}

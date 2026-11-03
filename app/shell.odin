@@ -1042,8 +1042,12 @@ BOOT_PHASES := []string {
 // every frame while one runs on a worker, so the window shows what it
 // is waiting on and keeps moving. Phases are announced before the work
 // they name. The last phase's frame is held for the warp that opens
-// onto the chats.
+// onto the chats. A window the compositor isn't showing skips the frame:
+// its vsync present would block until the window shows again.
 splash_frame :: proc(step: int) {
+	if !rl.IsWindowVisible() {
+		return
+	}
 	clay.SetLayoutDimensions(
 		{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
 	)

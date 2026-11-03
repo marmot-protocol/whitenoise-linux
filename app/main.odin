@@ -1271,54 +1271,60 @@ app_main :: proc() {
 				f32(time.duration_milliseconds(time.tick_since(build_start))),
 			)
 
-			draw_start := time.tick_now()
-			rl.BeginDrawing()
-			shake_x, shake_y := shake_offset()
-			rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM, offset = {shake_x, shake_y}})
-			draw_frame(&render_commands)
-			rl.EndMode2D()
-			local_timing_end(.frame_draw, draw_start)
-			devctl_draw()
-			// Before EndDrawing: the backbuffer is undefined after present,
-			// and reading it back then crashes inside Mesa on a frame whose
-			// window was just resized.
-			if shot && burst_hi == 0 && frame + 1 == shot_frame {
-				rl.TakeScreenshot("wn-odin-shot.png")
-				rl.EndDrawing()
-				break
-			}
-			// WN_SHOT_BURST="A-B": one shot per frame across the range, then
-			// exit. One run yields a whole animation timeline.
-			if burst_hi > 0 && frame + 1 >= burst_lo {
-				if frame + 1 <= burst_hi {
-					rl.TakeScreenshot(fmt.ctprintf("wn-odin-burst-%04d.png", frame + 1))
-				}
-				if frame + 1 >= burst_hi {
+			// A window the compositor isn't showing would block the present
+			// below until it shows again, stalling every drain on this thread.
+			// Skip the frame; the idle wait paces the loop instead.
+			visible := rl.IsWindowVisible()
+			if visible {
+				draw_start := time.tick_now()
+				rl.BeginDrawing()
+				shake_x, shake_y := shake_offset()
+				rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM, offset = {shake_x, shake_y}})
+				draw_frame(&render_commands)
+				rl.EndMode2D()
+				local_timing_end(.frame_draw, draw_start)
+				devctl_draw()
+				// Before EndDrawing: the backbuffer is undefined after present,
+				// and reading it back then crashes inside Mesa on a frame whose
+				// window was just resized.
+				if shot && burst_hi == 0 && frame + 1 == shot_frame {
+					rl.TakeScreenshot("wn-odin-shot.png")
 					rl.EndDrawing()
 					break
 				}
+				// WN_SHOT_BURST="A-B": one shot per frame across the range, then
+				// exit. One run yields a whole animation timeline.
+				if burst_hi > 0 && frame + 1 >= burst_lo {
+					if frame + 1 <= burst_hi {
+						rl.TakeScreenshot(fmt.ctprintf("wn-odin-burst-%04d.png", frame + 1))
+					}
+					if frame + 1 >= burst_hi {
+						rl.EndDrawing()
+						break
+					}
+				}
+				present_start := time.tick_now()
+				rl.EndDrawing()
+				local_timing_end(.frame_present, present_start)
+				local_timing_end(.linux_frame_until_present, frame_start)
+				if startup_ready != {} {
+					local_timing_end(.linux_startup_after_vault, startup_ready)
+					startup_ready = {}
+				}
+				if ready_started != {} && rl.IsWindowFocused() {
+					timing_record(client, .Splash_Ready, ready_started)
+					ready_started = {}
+				}
+				if foreground_started != {} && focused {
+					timing_record(client, .Foreground_Local_Ready, foreground_started)
+					foreground_started = {}
+				}
+				timings_presented(&ui, client)
+				video_dbg_draw = max(
+					video_dbg_draw,
+					f32(time.duration_milliseconds(time.tick_since(draw_start))),
+				)
 			}
-			present_start := time.tick_now()
-			rl.EndDrawing()
-			local_timing_end(.frame_present, present_start)
-			local_timing_end(.linux_frame_until_present, frame_start)
-			if startup_ready != {} {
-				local_timing_end(.linux_startup_after_vault, startup_ready)
-				startup_ready = {}
-			}
-			if ready_started != {} && rl.IsWindowFocused() {
-				timing_record(client, .Splash_Ready, ready_started)
-				ready_started = {}
-			}
-			if foreground_started != {} && focused {
-				timing_record(client, .Foreground_Local_Ready, foreground_started)
-				foreground_started = {}
-			}
-			timings_presented(&ui, client)
-			video_dbg_draw = max(
-				video_dbg_draw,
-				f32(time.duration_milliseconds(time.tick_since(draw_start))),
-			)
 
 			post_start := time.tick_now()
 			remember_workspace(&ui)
@@ -1769,7 +1775,8 @@ app_main :: proc() {
 
 			// Present handler changes on the next frame before sleeping. Input
 			// and worker events wake immediately; timers poll at most 4 Hz.
-			if !shot && !frame_input && frame_idle() {
+			// A hidden window has nothing to present, so it always sleeps.
+			if !shot && !frame_input && (frame_idle() || !visible) {
 				wait_start := time.tick_now()
 				defer local_timing_end(.linux_frame_idle_wait, wait_start)
 				rl.Wait(

@@ -1459,6 +1459,8 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	// A close request stays latched for the main loop to act on.
 	for !thread.is_done(worker) {
 		_ = rl.WindowShouldClose()
+		// Without a present to pace it, a hidden window polls at 4 Hz.
+		if !rl.IsWindowVisible() {rl.Wait(IDLE_REFRESH_MS)}
 		splash_frame(0)
 	}
 	thread.join(worker)

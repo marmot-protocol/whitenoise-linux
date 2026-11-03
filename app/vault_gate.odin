@@ -335,20 +335,26 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 			previous_reset_done = gate_reset_done
 			render_commands = gate_layout(ui)
 		}
-		rl.BeginDrawing()
-		rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM})
-		clay_raylib_render(&render_commands)
-		rl.EndMode2D()
-		devctl_draw()
-		// WN_SHOT with no password to type: capture the gate itself and
-		// quit, the same contract the main loop honors. Captured before
-		// EndDrawing; the backbuffer is undefined after present.
-		if shot && frame == 30 {
-			rl.TakeScreenshot("wn-odin-shot.png")
+		// A hidden window would block the present until it shows again;
+		// skip the frame and poll the unlock job at 4 Hz instead.
+		if rl.IsWindowVisible() {
+			rl.BeginDrawing()
+			rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM})
+			clay_raylib_render(&render_commands)
+			rl.EndMode2D()
+			devctl_draw()
+			// WN_SHOT with no password to type: capture the gate itself and
+			// quit, the same contract the main loop honors. Captured before
+			// EndDrawing; the backbuffer is undefined after present.
+			if shot && frame == 30 {
+				rl.TakeScreenshot("wn-odin-shot.png")
+				rl.EndDrawing()
+				return false
+			}
 			rl.EndDrawing()
-			return false
+		} else {
+			rl.Wait(IDLE_REFRESH_MS)
 		}
-		rl.EndDrawing()
 		if gate_job.worker != nil && gate_poll() {
 			ui.lock_requested = false
 			return true
