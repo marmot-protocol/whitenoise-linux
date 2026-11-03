@@ -37,6 +37,8 @@ static SDL_Renderer *create_view_renderer(SDL_Window *target) {
     if (hint && strcmp(hint, "gpu")) {
         return SDL_CreateRenderer(target, NULL);
     }
+    // Same as the app (sdlrl/saturation.odin): prefer the integrated GPU.
+    SDL_SetHint(SDL_HINT_RENDER_GPU_LOW_POWER, "1");
     SDL_PropertiesID props = SDL_CreateProperties();
     SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "gpu");
     SDL_SetPointerProperty(props, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, target);

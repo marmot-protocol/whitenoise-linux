@@ -32,6 +32,11 @@ create_view_renderer :: proc(window: ^sdl.Window) -> ^sdl.Renderer {
 	if hint != nil && string(hint) != "gpu" {
 		return sdl.CreateRenderer(window, nil)
 	}
+	// SDL's GPU renderer otherwise picks the high-performance device: on a
+	// laptop with a discrete GPU that keeps it awake for a chat window and
+	// copies every frame back to the integrated GPU driving the panel. The
+	// environment variable still overrides this.
+	sdl.SetHint(sdl.HINT_RENDER_GPU_LOW_POWER, "1")
 	props := sdl.CreateProperties()
 	defer sdl.DestroyProperties(props)
 	sdl.SetStringProperty(props, "SDL.renderer.create.name", "gpu")
