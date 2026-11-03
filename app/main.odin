@@ -1783,6 +1783,8 @@ app_main :: proc() {
 				rl.Wait(
 					u32(clamp((frame_deadline - rl.GetTime()) * 1000, 1, f64(IDLE_REFRESH_MS))),
 				)
+			} else if !shot && visible {
+				battery_frame_cap(frame_start)
 			}
 
 			frame += 1
