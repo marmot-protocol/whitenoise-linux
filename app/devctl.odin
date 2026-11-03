@@ -34,9 +34,6 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
-@(private = "file")
-DEV_POLL_FRAMES :: 6
-
 // A click is press, hold, release: the UI focuses on press and acts on
 // release, and clay needs a frame in between to see the pointer down.
 @(private = "file")
@@ -104,9 +101,12 @@ devctl_poll :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, pointer: 
 	if os.get_env("WN_DEV_CMD", context.temp_allocator) == "" {
 		return
 	}
-	anim_moving += 1 // frame-indexed automation keeps its normal cadence
-	if frame %% DEV_POLL_FRAMES == 0 {
-		devctl_read(ui, client, frame)
+	// Every frame polls; frames keep coming only while scripted input or
+	// a shot is pending, so a dev session idles like a normal one and
+	// still sees a new command within IDLE_REFRESH_MS.
+	devctl_read(ui, client, frame)
+	if len(dev_queue) > 0 || dev_shot_path != "" {
+		anim_moving += 1
 	}
 	devctl_apply_input(frame, pointer)
 }
