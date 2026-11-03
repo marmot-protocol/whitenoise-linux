@@ -19,13 +19,13 @@ frame_wake :: proc() {
 	_ = sdl.PushEvent(&event)
 }
 
-// Videos are not listed: mpv wakes the loop for each event and frame.
+// Videos and the web modal are not listed: mpv and the web watcher wake
+// the loop for each new frame.
 @(private)
 frame_idle :: proc() -> bool {
 	if anim_moving > 0 ||
 	   scroll_jumped ||
 	   voice_active() ||
-	   web_modal.open ||
 	   nes_player.open ||
 	   rl.IsMouseButtonDown(.LEFT) ||
 	   rl.IsMouseButtonDown(.RIGHT) {

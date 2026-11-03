@@ -32,7 +32,7 @@
 #include "helper_ipc.h"
 #include "proxy_credentials.h"
 
-#define WN_TICK_MS 16 // ~60Hz draw
+#define WN_TICK_MS 16 // ~60Hz at most; a frame is published only after the page drew
 
 struct WnWeb {
     GtkWidget *win;
@@ -43,6 +43,7 @@ struct WnWeb {
     struct WnShm *shm;
     int w, h;         // current page size
     int cap_w, cap_h; // what the shared buffer can hold
+    int dirty;        // the page drew since the last publish
 };
 
 // Our own origin, plus the in-page schemes a running app uses. Any
@@ -66,6 +67,16 @@ static gboolean on_decide(WebKitWebView *view, WebKitPolicyDecision *decision,
 
     webkit_policy_decision_ignore(decision);
     return TRUE;
+}
+
+// The offscreen window is redirected, so GTK reports every draw into it
+// as damage. A page that is not changing then costs no repaint, no
+// swizzle and no texture upload in the app.
+static gboolean on_damage(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
+    (void)widget;
+    (void)event;
+    ((struct WnWeb *)data)->dirty = 1;
+    return FALSE;
 }
 
 // Draw the page and publish it. cairo's ARGB32 is premultiplied BGRA
@@ -264,8 +275,13 @@ static gboolean on_tick(gpointer data) {
     // A resized widget has not been allocated yet; drawing it now trips
     // a GTK assertion and paints nothing. Publish on the next tick.
     if (wn_resize(web)) {
+        web->dirty = 1;
         return G_SOURCE_CONTINUE;
     }
+    if (!web->dirty) {
+        return G_SOURCE_CONTINUE;
+    }
+    web->dirty = 0;
     wn_publish(web);
     return G_SOURCE_CONTINUE;
 }
@@ -371,6 +387,7 @@ int main(int argc, char **argv) {
     web->h = h;
     web->cap_w = w;
     web->cap_h = h;
+    web->dirty = 1;
     web->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
     web->cr = cairo_create(web->surface);
     web->win = gtk_offscreen_window_new();
@@ -413,6 +430,7 @@ int main(int argc, char **argv) {
                                         WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, NULL, NULL));
     }
     g_signal_connect(web->view, "decide-policy", G_CALLBACK(on_decide), web);
+    g_signal_connect(web->win, "damage-event", G_CALLBACK(on_damage), web);
 
     gtk_container_add(GTK_CONTAINER(web->win), web->view);
     gtk_widget_set_size_request(web->view, w, h);

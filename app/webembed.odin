@@ -10,13 +10,17 @@
 // over the calling thread's GL context, and in-process it turned this
 // app's own renderer black the moment a page loaded.
 //
-// ponytail: one app at a time, fixed page size, and the child redraws
-// on its own 60Hz timer whether the page changed or not.
+// ponytail: one app at a time, fixed page size, and new frames are
+// noticed by polling a counter in shared memory every WEB_WATCH_MS. A
+// pipe from the child would let the watcher block instead.
 package main
 
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:sync"
+import "core:thread"
+import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -117,6 +121,8 @@ Web_Modal :: struct {
 	grab:   [2]f64,
 	last:   [2]f64,
 	drag:   bool,
+	watch:  ^thread.Thread, // web_watch, joined by web_disconnect
+	stop:   bool, // tells web_watch to return
 }
 
 web_modal: Web_Modal
@@ -186,7 +192,29 @@ web_open :: proc(url, title: string) -> bool {
 		title  = strings.clone(title),
 		open   = true,
 	}
+	web_modal.watch = thread.create_and_start(web_watch)
 	return true
+}
+
+// The child publishes a frame only when the page drew (webview.c), so
+// the frame loop can idle while the modal is open. Shared memory has no
+// wakeup of its own: this checks the frame counter and wakes the loop
+// when it moves, which costs a sleeping thread instead of a full frame
+// at display rate.
+@(private = "file")
+WEB_WATCH_MS :: 8
+
+@(private = "file")
+web_watch :: proc() {
+	seen := sync.atomic_load(&web_modal.shm.seq)
+	for !sync.atomic_load(&web_modal.stop) {
+		time.sleep(WEB_WATCH_MS * time.Millisecond)
+		seq := sync.atomic_load(&web_modal.shm.seq)
+		if seq != seen {
+			seen = seq
+			frame_wake()
+		}
+	}
 }
 
 web_close :: proc() {
@@ -204,6 +232,10 @@ web_close :: proc() {
 web_disconnect :: proc() {
 	if !web_modal.open || web_modal.child.pid == 0 {return}
 	web_modal.shm.quit = 1
+	sync.atomic_store(&web_modal.stop, true)
+	thread.join(web_modal.watch)
+	thread.destroy(web_modal.watch)
+	web_modal.watch = nil
 	os.close(web_modal.pipe)
 	_, _ = os.process_wait(web_modal.child)
 
