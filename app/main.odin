@@ -1171,6 +1171,7 @@ app_main :: proc() {
 			advance_videos() // pull decoded frames into the video textures
 			voice_poll() // drain the mic stream while recording
 			snd_release_idle()
+			screensaver_update()
 			local_timing_end(.frame_update, frame_start)
 			build_start := time.tick_now()
 			if !tl_restore {

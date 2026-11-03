@@ -270,6 +270,9 @@ InitWindow :: proc(width, height: i32, title: cstring, image_helper: string = IM
 		fmt.eprintfln("sdl: window failed: %s", sdl.GetError())
 		os.exit(1)
 	}
+	// SDL inhibits the screensaver by default, as games want, which keeps
+	// a laptop from dimming, locking or suspending while the app is open.
+	sdl.EnableScreenSaver()
 	state.density = max(sdl.GetWindowPixelDensity(state.window), 1)
 	state.fullscreen = .FULLSCREEN in sdl.GetWindowFlags(state.window)
 	// Asked once: SDL synthesizes mouse events from touch, so this is

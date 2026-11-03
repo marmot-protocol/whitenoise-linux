@@ -31,3 +31,30 @@ frame_idle :: proc() -> bool {
 	}
 	return true
 }
+
+// InitWindow lets the screensaver run. Hold it off only while something
+// is being watched.
+@(private = "file")
+screen_held: bool
+
+@(private)
+screensaver_update :: proc() {
+	hold := nes_player.open || (preview_shown && clip_playing(preview.vid))
+	for _, view in video_views {
+		hold ||= clip_playing(view)
+	}
+	if hold == screen_held {
+		return
+	}
+	screen_held = hold
+	if hold {
+		sdl.DisableScreenSaver()
+	} else {
+		sdl.EnableScreenSaver()
+	}
+}
+
+@(private = "file")
+clip_playing :: proc(view: ^Video_View) -> bool {
+	return view != nil && !view.failed && !view.paused && !view.looping && !view.audio
+}
