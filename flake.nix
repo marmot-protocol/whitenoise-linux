@@ -41,7 +41,8 @@
       '';
       commonRunScript = pkgs.writeShellScript "development-shell" ''
         if [ "$#" -eq 0 ]; then
-          exec ${pkgs.bashInteractive}/bin/bash --noprofile --norc -i
+          # Like mkShell's `nix develop`: keep the user's interactive bash setup.
+          exec ${pkgs.bashInteractive}/bin/bash --noprofile -i
         fi
         exec "$@"
       '';
