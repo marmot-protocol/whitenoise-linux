@@ -86,9 +86,11 @@ foreign libmpv {
 	mpv_get_property :: proc(ctx: ^mpv_handle, name: cstring, format: c.int, data: rawptr) -> c.int ---
 	mpv_observe_property :: proc(ctx: ^mpv_handle, reply_userdata: u64, name: cstring, format: c.int) -> c.int ---
 	mpv_wait_event :: proc(ctx: ^mpv_handle, timeout: f64) -> ^mpv_event ---
+	mpv_set_wakeup_callback :: proc(ctx: ^mpv_handle, cb: proc "c" (data: rawptr), data: rawptr) ---
 	mpv_stream_cb_add_ro :: proc(ctx: ^mpv_handle, protocol: cstring, user_data: rawptr, open_fn: mpv_stream_cb_open_fn) -> c.int ---
 	mpv_render_context_create :: proc(res: ^^mpv_render_context, ctx: ^mpv_handle, params: [^]mpv_render_param) -> c.int ---
 	mpv_render_context_update :: proc(ctx: ^mpv_render_context) -> u64 ---
+	mpv_render_context_set_update_callback :: proc(ctx: ^mpv_render_context, cb: proc "c" (data: rawptr), data: rawptr) ---
 	mpv_render_context_render :: proc(ctx: ^mpv_render_context, params: [^]mpv_render_param) -> c.int ---
 	mpv_render_context_free :: proc(ctx: ^mpv_render_context) ---
 }

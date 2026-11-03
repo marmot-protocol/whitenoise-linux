@@ -9,6 +9,7 @@
 //   click on tile:   cycle pause (audio goes through mpv's own ao)
 package main
 
+import "base:runtime"
 import "core:c"
 import "core:crypto/sha2"
 import "core:fmt"
@@ -46,6 +47,8 @@ Video_View :: struct {
 	dur:                              f64, // duration, seconds (0 until known)
 	dw, dh:                           i64, // mpv's display size, 0 until it reports (post-rotation)
 	at_eof:                           bool, // parked at the end by keep-open, so play restarts
+	shown:                            bool, // a loop drawn last frame; see visible_loops_only
+	parked:                           bool, // a loop paused because it was not drawn
 }
 
 // Observed properties, identified by reply id so the event handler
@@ -196,6 +199,7 @@ video_view_make :: proc(
 		mpv_stream_cb_add_ro(view.mpv, "wnl", view, stream_open) == 0
 
 	if ok {
+		mpv_set_wakeup_callback(view.mpv, mpv_wake, nil)
 		mpv_observe_property(view.mpv, PROP_PAUSE, "pause", MPV_FORMAT_FLAG)
 		mpv_observe_property(view.mpv, PROP_TIME, "time-pos", MPV_FORMAT_DOUBLE)
 		mpv_observe_property(view.mpv, PROP_DUR, "duration", MPV_FORMAT_DOUBLE)
@@ -211,6 +215,9 @@ video_view_make :: proc(
 		ok = mpv_render_context_create(&view.rctx, view.mpv, &params[0]) == 0
 	}
 	if ok {
+		mpv_render_context_set_update_callback(view.rctx, mpv_wake, nil)
+	}
+	if ok {
 		cmd := [3]cstring{"loadfile", "wnl://chat", nil}
 		ok = mpv_command_async(view.mpv, 0, &cmd[0]) == 0
 	}
@@ -219,6 +226,53 @@ video_view_make :: proc(
 		fmt.eprintfln("video: mpv setup failed")
 	}
 	return view
+}
+
+// Events and new frames wake the idle frame loop, so a playing video
+// costs one frame per decoded frame instead of every display refresh.
+// Both callbacks run on mpv threads and may only signal.
+@(private = "file")
+mpv_wake :: proc "c" (_: rawptr) {
+	context = runtime.default_context()
+	frame_wake()
+}
+
+// The cache keeps every loop a session has shown, and each would
+// otherwise decode forever off screen or behind a hidden window. A loop
+// not drawn last frame is paused; drawing it again resumes it. Loops
+// the user paused stay paused.
+@(private = "file")
+visible_loops_only :: proc() {
+	for _, view in video_views {
+		if view == nil || view.failed || !view.looping {
+			continue
+		}
+		shown := view.shown
+		view.shown = false
+		if shown != view.parked || (!shown && view.paused) {
+			continue
+		}
+		view.parked = !shown
+		cmd := [4]cstring{"set", "pause", view.parked ? "yes" : "no", nil}
+		mpv_command_async(view.mpv, 0, &cmd[0])
+	}
+}
+
+// Marks the loops this frame drew. Clay culls elements outside the
+// window, and a hidden window draws nothing.
+video_mark_drawn :: proc(commands: ^clay.ClayArray(clay.RenderCommand)) {
+	for _, view in video_views {
+		if view == nil || !view.looping {
+			continue
+		}
+		for i in 0 ..< commands.length {
+			command := clay.RenderCommandArray_Get(commands, i)
+			if command.commandType == .Image && command.renderData.image.imageData == &view.tex {
+				view.shown = true
+				break
+			}
+		}
+	}
 }
 
 // Fit the render target to the requested width without upscaling the source.
@@ -277,6 +331,7 @@ video_view_free :: proc(view: ^Video_View) {
 // above the inline texture cap.
 advance_videos :: proc() {
 	start := time.tick_now()
+	visible_loops_only()
 	for _, view in video_views {
 		advance_one(view)
 	}

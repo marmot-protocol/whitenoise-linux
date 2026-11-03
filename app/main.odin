@@ -1279,6 +1279,7 @@ app_main :: proc() {
 				shake_x, shake_y := shake_offset()
 				rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM, offset = {shake_x, shake_y}})
 				draw_frame(&render_commands)
+				video_mark_drawn(&render_commands)
 				rl.EndMode2D()
 				local_timing_end(.frame_draw, draw_start)
 				devctl_draw()

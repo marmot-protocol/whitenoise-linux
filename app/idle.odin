@@ -17,6 +17,7 @@ frame_wake :: proc() {
 	_ = sdl.PushEvent(&event)
 }
 
+// Videos are not listed: mpv wakes the loop for each event and frame.
 @(private)
 frame_idle :: proc() -> bool {
 	if anim_moving > 0 ||
@@ -26,24 +27,6 @@ frame_idle :: proc() -> bool {
 	   nes_player.open ||
 	   rl.IsMouseButtonDown(.LEFT) ||
 	   rl.IsMouseButtonDown(.RIGHT) {
-		return false
-	}
-	for _, view in video_views {
-		if view != nil && !view.failed && (!view.paused || (!view.audio && !view.sized)) {
-			return false
-		}
-	}
-	if g_ui != nil &&
-	   g_ui.picker_open &&
-	   g_ui.gif_tab &&
-	   g_ui.gif_view != nil &&
-	   !g_ui.gif_view.failed {
-		return false
-	}
-	if preview_shown &&
-	   preview.vid != nil &&
-	   !preview.vid.failed &&
-	   (!preview.vid.paused || (!preview.vid.audio && !preview.vid.sized)) {
 		return false
 	}
 	return true
