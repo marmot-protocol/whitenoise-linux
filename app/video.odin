@@ -116,6 +116,29 @@ Video_Mode :: enum {
 	Audio, // clip behavior, but no video track to render
 }
 
+// An embed needs none of mpv's player furniture. Each built-in script is
+// a Lua VM on its own thread (7 per instance), and the decoder otherwise
+// starts one frame thread per core, each holding frames: four 1080p
+// clips measured 530 MB with automatic threads, 246 MB with four, at
+// the same decode CPU. Older mpv builds reject the load-* names for
+// scripts they do not ship, which is harmless.
+@(private = "file")
+MPV_EMBED_OPTIONS := [?][2]cstring {
+	{"config", "no"},
+	{"load-scripts", "no"},
+	{"osc", "no"},
+	{"ytdl", "no"},
+	{"load-stats-overlay", "no"},
+	{"load-console", "no"},
+	{"load-select", "no"},
+	{"load-positioning", "no"},
+	{"load-commands", "no"},
+	{"load-context-menu", "no"},
+	{"load-auto-profiles", "no"},
+	{"input-default-bindings", "no"},
+	{"vd-lavc-threads", "4"},
+}
+
 video_view_make :: proc(
 	data: []u8,
 	mode: Video_Mode = .Clip,
@@ -144,6 +167,9 @@ video_view_make :: proc(
 		return view
 	}
 	mpv_set_option_string(view.mpv, "vo", "libmpv")
+	for option in MPV_EMBED_OPTIONS {
+		mpv_set_option_string(view.mpv, option[0], option[1])
+	}
 	// Render ahead by nothing: with the default 50ms offset,
 	// mpv_render_context_render() blocks on the UI thread until the
 	// frame's target display time, costing up to a frame period per
