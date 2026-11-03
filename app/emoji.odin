@@ -151,19 +151,39 @@ emoji_set_load :: proc(set: Emoji_Set) {
 	}
 
 	path := fmt.tprintf("%s/emoji/%s.bin", res_dir(), EMOJI_SET_DIRS[set])
+	flags := emoji_pack_flags(path, len(emoji_catalog))
 	pack, err := virtual.map_file_from_path(path, {.Read})
-	if err != nil || !emoji_pack_valid(pack, len(emoji_catalog)) {
+	if err != nil || len(flags) != len(emoji_catalog) || !emoji_pack_valid(pack, flags) {
 		fmt.eprintfln("emoji: missing or invalid pixel pack: %s (%v)", path, err)
 		if pack != nil {virtual.unmap_file(pack)}
 		return
 	}
 	emoji_pack = pack
 	for &entry, i in emoji_catalog {
+		if flags[i] == 0 {continue}
 		offset := 8 + i * EMOJI_RECORD_BYTES
-		if pack[offset] == 0 {continue}
 		entry.pixels = pack[offset + 1:offset + EMOJI_RECORD_BYTES]
 		emoji_pixels[entry.emoji] = entry.pixels
 	}
+}
+
+// Each record's presence byte, read through the file. Reading one byte
+// per 64 KiB record through the mapping instead faults in the whole
+// pack (122 MB for Noto) through readahead and fault-around, though a
+// session draws a few dozen tiles. nil when the file can't be read.
+@(private = "file")
+emoji_pack_flags :: proc(path: string, count: int) -> []u8 {
+	file, err := os.open(path)
+	if err != nil {return nil}
+	defer os.close(file)
+	flags := make([]u8, count, context.temp_allocator)
+	for i in 0 ..< count {
+		offset := i64(8 + i * EMOJI_RECORD_BYTES)
+		if n, read_err := os.read_at(file, flags[i:i + 1], offset); n != 1 || read_err != nil {
+			return nil
+		}
+	}
+	return flags
 }
 
 @(private)
@@ -173,13 +193,15 @@ emoji_pack_unmap :: proc() {
 }
 
 // Fixed-size RGBA records need no runtime image parser or helper process.
+// flags holds one presence byte per catalog entry.
 @(private)
-emoji_pack_valid :: proc(data: []u8, count: int) -> bool {
+emoji_pack_valid :: proc(data: []u8, flags: []u8) -> bool {
 	if len(data) < 8 || string(data[:4]) != "WNE1" {return false}
 	stored := u32(data[4]) | u32(data[5]) << 8 | u32(data[6]) << 16 | u32(data[7]) << 24
+	count := len(flags)
 	if u64(stored) != u64(count) || len(data) != 8 + count * EMOJI_RECORD_BYTES {return false}
-	for i in 0 ..< count {
-		if data[8 + i * EMOJI_RECORD_BYTES] > 1 {return false}
+	for flag in flags {
+		if flag > 1 {return false}
 	}
 	return true
 }
