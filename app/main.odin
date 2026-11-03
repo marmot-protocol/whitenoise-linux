@@ -561,6 +561,7 @@ app_main :: proc() {
 	app_started = rl.GetTime()
 	defer stop_pic_worker()
 	defer stop_gimg_worker()
+	defer snd_close()
 	rl.SetTargetFPS(60)
 	refresh_ui_scale()
 	init_fonts()
@@ -1169,6 +1170,7 @@ app_main :: proc() {
 			clear(&anim_bars)
 			advance_videos() // pull decoded frames into the video textures
 			voice_poll() // drain the mic stream while recording
+			snd_release_idle()
 			local_timing_end(.frame_update, frame_start)
 			build_start := time.tick_now()
 			if !tl_restore {

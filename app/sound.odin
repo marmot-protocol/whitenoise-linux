@@ -46,6 +46,11 @@ snd_stream: ^sdl.AudioStream
 snd_failed: bool // one failed open is enough; don't retry every click
 
 SND_GAP :: 0.25 // shortest time between two of the same tone
+SND_HOLD :: 3.0 // seconds the device stays open after a tone, for bursts
+
+// When snd_release_idle closes the device.
+@(private = "file")
+snd_close_at: f64
 
 // When each sound last played: a page of arrivals landing at once must
 // not fire one tone per row.
@@ -105,4 +110,26 @@ play_sound :: proc(kind: Sound) {
 		buffer[i] = sample * env * SND_VOL
 	}
 	sdl.PutAudioStreamData(snd_stream, &buffer, i32(count * size_of(f32)))
+	snd_close_at = now + f64(tone.secs) + SND_HOLD
+}
+
+// An open stream keeps the sound card awake: SDL feeds it silence every
+// period (47 wakeups a second under PipeWire), and the server never
+// suspends the sink. Called every frame; the idle loop still runs at
+// least every IDLE_REFRESH_MS.
+@(private)
+snd_release_idle :: proc() {
+	if snd_stream != nil && rl.GetTime() >= snd_close_at {
+		snd_close()
+	}
+}
+
+@(private)
+snd_close :: proc() {
+	if snd_stream == nil {
+		return
+	}
+	sdl.DestroyAudioStream(snd_stream) // also closes its device
+	sdl.QuitSubSystem({.AUDIO})
+	snd_stream = nil
 }
