@@ -74,6 +74,11 @@ folder_picker_dispatch :: proc(t: ^testing.T) {
 		ui.row_menu, ui.row_menu_x, ui.row_menu_y = 0, 100, 80
 		for _ in 0 ..< 3 {frame(&ui)}
 		if !click(t, clay.ID("RowFolder")) {return}
+		// A menu row acts only when the press also landed on it.
+		menu_press = {}
+		forced_press = true
+		build_layout(&ui, 0)
+		forced_press = false
 		forced_release = true
 		handle_row_menu(&ui, nil)
 		forced_release = false

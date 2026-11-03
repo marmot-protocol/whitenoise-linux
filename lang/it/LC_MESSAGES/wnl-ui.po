@@ -672,9 +672,6 @@ msgstr "Torna alle chat"
 msgid "Back to connectors"
 msgstr "Torna ai connettori"
 
-msgid "Back to issues"
-msgstr "Torna alle segnalazioni"
-
 msgid "Back to sets"
 msgstr "Torna ai set"
 
@@ -1101,9 +1098,6 @@ msgstr "Chiudi scheda"
 msgid "Close to tray"
 msgstr "Chiudi nell'area di notifica"
 
-msgid "Closed"
-msgstr "Chiusa"
-
 msgid "Closing connections and clearing this session."
 msgstr "Chiusura delle connessioni e cancellazione di questa sessione."
 
@@ -1513,9 +1507,6 @@ msgstr "Impossibile caricare i membri del gruppo. Riprova."
 msgid "Couldn't load image. Click to retry."
 msgstr "Impossibile caricare l'immagine. Clicca per riprovare."
 
-msgid "Couldn't load issues. Please try again."
-msgstr "Impossibile caricare le segnalazioni. Riprova."
-
 msgid "Couldn't load messages. Please try again."
 msgstr "Impossibile caricare i messaggi. Riprova."
 
@@ -1789,9 +1780,6 @@ msgstr "Impossibile rimuovere la chat dall'archivio. %s"
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr "Impossibile sbloccare la cassaforte. Ricontrolla la password e riprova."
 
-msgid "Couldn't update issues. Please try again."
-msgstr "Impossibile aggiornare le segnalazioni. Riprova."
-
 #, c-format
 msgid "Couldn't upload the picture. %s"
 msgstr "Impossibile caricare l'immagine. %s"
@@ -1840,9 +1828,6 @@ msgstr "Crea da emoji"
 
 msgid "Create group"
 msgstr "Crea gruppo"
-
-msgid "Create issue"
-msgstr "Crea segnalazione"
 
 msgid "Create pairing link"
 msgstr "Crea link di abbinamento"
@@ -2003,12 +1988,6 @@ msgstr "Derivazione di una chiave di crittografia dalla tua password."
 msgid "Describe the group"
 msgstr "Descrivi il gruppo"
 
-msgid "Describe the issue (Markdown)"
-msgstr "Descrivi il problema (Markdown)"
-
-msgid "Description"
-msgstr "Descrizione"
-
 msgid "Design"
 msgstr "Design"
 
@@ -2067,9 +2046,6 @@ msgstr "La dettatura non funziona"
 msgid "Difficulty: %d/5"
 msgstr "Difficoltà: %d/5"
 
-msgid "Disabled for this group."
-msgstr "Disattivato per questo gruppo."
-
 msgid "Disappearing messages"
 msgstr "Messaggi effimeri"
 
@@ -2091,9 +2067,6 @@ msgstr "Scartare le modifiche al tema?"
 
 msgid "Discover"
 msgstr "Scopri"
-
-msgid "Discussion"
-msgstr "Discussione"
 
 msgid "Divider"
 msgstr "Divisore"
@@ -2232,9 +2205,6 @@ msgstr "Stile delle emoji"
 msgid "Enable local translation"
 msgstr "Abilita la traduzione locale"
 
-msgid "Enabled for this group."
-msgstr "Attivato per questo gruppo."
-
 msgid "Encrypted key copied"
 msgstr "Chiave crittografata copiata"
 
@@ -2291,9 +2261,6 @@ msgstr "Inserisci un link o un indirizzo valido per il pacchetto."
 
 msgid "Enter an absolute project folder path, or a path starting with ~/."
 msgstr "Inserisci un percorso assoluto per la cartella del progetto oppure un percorso che inizi con ~/."
-
-msgid "Enter an issue title and description."
-msgstr "Inserisci un titolo e una descrizione."
 
 msgid "Enter at least 2 people. Counts include you."
 msgstr "Inserisci almeno 2 persone. Il conteggio include te."
@@ -2898,18 +2865,6 @@ msgstr "Invita"
 msgid "Is Whip"
 msgstr "È un progetto Whip"
 
-msgid "Issue title"
-msgstr "Titolo della segnalazione"
-
-msgid "Issue tracking"
-msgstr "Tracciamento delle segnalazioni"
-
-msgid "Issue tracking is unavailable."
-msgstr "Il tracciamento delle segnalazioni non è disponibile."
-
-msgid "Issues"
-msgstr "Segnalazioni"
-
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr "Scompare per tutti nella chat. Non si può annullare."
 
@@ -3032,12 +2987,6 @@ msgstr "LOCALE"
 
 msgid "LOCATION"
 msgstr "POSIZIONE"
-
-msgid "Labels"
-msgstr "Etichette"
-
-msgid "Labels, separated by commas"
-msgstr "Etichette, separate da virgole"
 
 msgid "Language"
 msgstr "Lingua"
@@ -3426,9 +3375,6 @@ msgstr "Nuova cartella"
 msgid "New group"
 msgstr "Nuovo gruppo"
 
-msgid "New issue"
-msgstr "Nuova segnalazione"
-
 msgid "New message"
 msgstr "Nuovo messaggio"
 
@@ -3533,12 +3479,6 @@ msgstr "Ancora nessun gruppo"
 
 msgid "No inbox relays."
 msgstr "Nessun relay in entrata."
-
-msgid "No issues found."
-msgstr "Nessuna segnalazione trovata."
-
-msgid "No issues yet"
-msgstr "Ancora nessuna segnalazione"
 
 msgid "No key package on this device or its relays."
 msgstr "Nessun pacchetto chiavi su questo dispositivo o sui suoi relay."
@@ -3726,9 +3666,6 @@ msgstr "Quando l'agente ti fornisce il suo npub, usa Nuova chat per avviare una 
 msgid "One-tap reactions"
 msgstr "Reazioni con un tocco"
 
-msgid "Only group admins can change this setting."
-msgstr "Solo gli admin del gruppo possono modificare questa impostazione."
-
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr "Viene rimossa solo la cartella. Le sue chat restano nell'elenco delle chat."
 
@@ -3779,9 +3716,6 @@ msgstr "Apri link"
 
 msgid "Open locations in"
 msgstr "Apri le posizioni in"
-
-msgid "Open the first issue to share a problem with your group."
-msgstr "Apri la prima segnalazione per condividere un problema con il tuo gruppo."
 
 msgid "Open this link?"
 msgstr "Aprire questo link?"
@@ -4345,9 +4279,6 @@ msgstr "Rinomina"
 msgid "Rendering toolpaths"
 msgstr "Visualizzazione dei percorsi di stampa"
 
-msgid "Reopen"
-msgstr "Riapri"
-
 msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
 msgstr "Sostituisce impostazioni, bozze, emoji personalizzate e temi su questo dispositivo."
 
@@ -4390,12 +4321,6 @@ msgstr "Ripristina lo zoom"
 
 msgid "Resize terminal"
 msgstr "Ridimensiona terminale"
-
-msgid "Resolve"
-msgstr "Segna come risolta"
-
-msgid "Resolved"
-msgstr "Risolta"
 
 msgid "Restart now"
 msgstr "Riavvia ora"
@@ -4649,9 +4574,6 @@ msgstr "Cerca cartelle..."
 msgid "Search images"
 msgstr "Cerca immagini"
 
-msgid "Search issues"
-msgstr "Cerca segnalazioni"
-
 msgid "Search messages"
 msgstr "Cerca messaggi"
 
@@ -4717,12 +4639,6 @@ msgstr "Seleziona un modello da scaricare per la dettatura e i messaggi audio."
 
 msgid "Select a project"
 msgstr "Seleziona un progetto"
-
-msgid "Select an issue"
-msgstr "Seleziona una segnalazione"
-
-msgid "Select an issue to read its discussion."
-msgstr "Seleziona una segnalazione per leggere la discussione."
 
 msgid "Self-hosted personal AI assistant"
 msgstr "Assistente IA personale ospitato sul tuo computer o server"
@@ -4835,9 +4751,6 @@ msgstr "Ombra popover"
 
 msgid "Shadow soft"
 msgstr "Ombra morbida"
-
-msgid "Share a problem with your group."
-msgstr "Condividi un problema con il tuo gruppo."
 
 msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
 msgstr "Condividi tempi di esecuzione aggregati e diagnostica dei relay. Non viene inviato nulla quando questa opzione è disattivata."
@@ -5447,9 +5360,6 @@ msgstr "Sottoscrizione della cronologia chiusa."
 msgid "Timings"
 msgstr "Tempi"
 
-msgid "Title"
-msgstr "Titolo"
-
 msgid "Title font"
 msgstr "Carattere del titolo"
 
@@ -5597,9 +5507,6 @@ msgstr "Rimuovi dai fissati"
 msgid "Unread"
 msgstr "Non lette"
 
-msgid "Unresolved"
-msgstr "Aperta"
-
 msgid "Unsupported attachment format."
 msgstr "Formato dell'allegato non supportato."
 
@@ -5614,9 +5521,6 @@ msgstr "Aggiornamenti"
 
 msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot safely use the app's explicit proxy. Disable the proxy and restart to update, or install an authenticated release manually."
 msgstr "Gli aggiornamenti sono disattivati mentre è configurato un proxy SOCKS5. Sparkle non può usare il proxy dell’app in modo sicuro. Disattiva il proxy e riavvia per aggiornare, oppure installa manualmente una versione autenticata."
-
-msgid "Updating issue tracking..."
-msgstr "Aggiornamento del tracciamento delle segnalazioni..."
 
 msgid "Updating your contacts"
 msgstr "Aggiornamento dei tuoi contatti"
@@ -5841,9 +5745,6 @@ msgstr "Lavoro"
 
 msgid "World"
 msgstr "Mondo"
-
-msgid "Write a comment"
-msgstr "Scrivi un commento"
 
 msgid "YOU"
 msgstr "TU"

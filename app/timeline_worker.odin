@@ -21,9 +21,7 @@ Timeline_Work :: struct {
 	client:                 ^marmot.Client,
 	account, group, search: cstring, // immutable, owned until the worker joins
 	cancel:                 bool,
-	issues:                 bool, // full retained projection while browsing issue discussions
 	request:                Timeline_Direction,
-	history:                [dynamic]^marmot.Timeline_Page, // older pages, issue discussions only
 	page:                   ^marmot.Timeline_Page, // mailbox owns the latest complete snapshot
 	err:                    string,
 	paged:                  bool,
@@ -41,17 +39,13 @@ timeline_retired: [dynamic]^Timeline_Work
 timeline_page: ^marmot.Timeline_Page // UI-owned; local actions can re-project it
 
 @(private)
-timeline_history: [dynamic]^marmot.Timeline_Page
-
-@(private)
 timeline_scope :: proc(ui: ^Ui_State, search: string) -> bool {
 	return(
 		timeline_job != nil &&
 		ui.selected >= 0 &&
 		string(timeline_job.account) == ui.account_ref &&
 		string(timeline_job.group) == ui.chats[ui.selected].group_id &&
-		string(timeline_job.search) == search &&
-		timeline_job.issues == ui.issues_open \
+		string(timeline_job.search) == search \
 	)
 }
 
@@ -69,10 +63,9 @@ timeline_worker :: proc(t: ^thread.Thread) {
 		status = marmot.timeline_snapshot(sub, &page)
 	}
 	local_timing_end(.timeline_open, open_start)
-	history: [dynamic]^marmot.Timeline_Page
 	direction := Timeline_Direction.None
 	for {
-		if status == .OK && page != nil && (string(job.search) != "" || job.issues) {
+		if status == .OK && page != nil && string(job.search) != "" {
 			marmot.timeline_page_free(page)
 			page = nil
 			query := marmot.Timeline_Message_Query {
@@ -83,38 +76,9 @@ timeline_worker :: proc(t: ^thread.Thread) {
 			}
 			status = marmot.timeline_messages(job.client, job.account, &query, &page)
 		}
-		// ponytail: issue browsing scans retained history because the C timeline
-		// query has no root filter. Use a root-filtered query when MDK exposes it.
-		if job.issues && status == .OK && page != nil {
-			previous := page
-			for previous.has_more_before && previous.messages_len > 0 {
-				sync.lock(&job.mutex)
-				cancelled := job.cancel
-				sync.unlock(&job.mutex)
-				if cancelled {break}
-				first := &previous.messages[0]
-				query := marmot.Timeline_Message_Query {
-					group_id_hex      = job.group,
-					has_before        = true,
-					before            = first.timeline_at,
-					before_message_id = first.message_id_hex,
-					has_limit         = true,
-					limit             = TL_PAGE,
-				}
-				older: ^marmot.Timeline_Page
-				status = marmot.timeline_messages(job.client, job.account, &query, &older)
-				if status != .OK {break}
-				append(&history, older)
-				previous = older
-			}
-		}
-
 		sync.lock(&job.mutex)
 		if status == .OK && page != nil {
 			if job.page != nil {marmot.timeline_page_free(job.page)}
-			for older in job.history {marmot.timeline_page_free(older)}
-			delete(job.history)
-			job.history, history = history, {}
 			job.page = page
 			page = nil
 			job.at = time.tick_now()
@@ -164,8 +128,6 @@ timeline_worker :: proc(t: ^thread.Thread) {
 		free_all(context.temp_allocator)
 	}
 	if page != nil {marmot.timeline_page_free(page)}
-	for older in history {marmot.timeline_page_free(older)}
-	delete(history)
 }
 
 @(private)
@@ -178,8 +140,6 @@ timeline_retire :: proc() {
 	timeline_job = nil
 	if timeline_page != nil {marmot.timeline_page_free(timeline_page)}
 	timeline_page = nil
-	for older in timeline_history {marmot.timeline_page_free(older)}
-	delete(timeline_history); timeline_history = {}
 }
 
 @(private)
@@ -197,7 +157,6 @@ timeline_start :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string) {
 	ui.tl_has_more, ui.tl_has_after = false, false
 	job := new(Timeline_Work)
 	job.client = client
-	job.issues = ui.issues_open
 	job.account = strings.clone_to_cstring(ui.account_ref)
 	job.group = strings.clone_to_cstring(ui.chats[ui.selected].group_id)
 	job.search = strings.clone_to_cstring(search)
@@ -229,8 +188,6 @@ timeline_free :: proc(job: ^Timeline_Work) {
 	thread.join(job.worker)
 	thread.destroy(job.worker)
 	if job.page != nil {marmot.timeline_page_free(job.page)}
-	for older in job.history {marmot.timeline_page_free(older)}
-	delete(job.history)
 	delete(job.account); delete(job.group); delete(job.search); delete(job.err)
 	delete(job.read_request); delete(job.read_latest); delete(job.read_error)
 	if job.read_row != nil {marmot.chat_list_row_free(job.read_row)}
@@ -282,8 +239,6 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	sync.lock(&job.mutex)
 	page, err, paged, at := job.page, job.err, job.paged, job.at
-	history := job.history
-	job.history = {}
 	job.page, job.err, job.paged = nil, "", false
 	read_row, read_error := job.read_row, job.read_error
 	job.read_row, job.read_error = nil, ""
@@ -326,9 +281,6 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// An explicit latest click must survive a page already in flight.
 	latest := ui.scroll_pending && ui.jump_id == ""
 	if timeline_page != nil {marmot.timeline_page_free(timeline_page)}
-	for older in timeline_history {marmot.timeline_page_free(older)}
-	delete(timeline_history)
-	timeline_history = history
 	timeline_page = page
 	timeline_apply(client, ui, page)
 	ui.timeline_loading = false

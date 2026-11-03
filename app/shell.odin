@@ -527,7 +527,6 @@ phone_back_action :: proc(ui: ^Ui_State) {
 	case .Chats:
 		if ui.show_members {close_group_info(ui); return}
 		if ui.group_files_open {ui.group_files_open = false; return}
-		if ui.issues_open {ui.issues_open = false; return}
 		if ui.search_open {
 			ui.search_open = false
 			clear(&ui.search_input)

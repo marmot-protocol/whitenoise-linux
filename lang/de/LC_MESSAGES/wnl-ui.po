@@ -672,9 +672,6 @@ msgstr "Zurück zu den Chats"
 msgid "Back to connectors"
 msgstr "Zurück zu den Konnektoren"
 
-msgid "Back to issues"
-msgstr "Zurück zu den Meldungen"
-
 msgid "Back to sets"
 msgstr "Zurück zu den Sets"
 
@@ -1101,9 +1098,6 @@ msgstr "Tab schließen"
 msgid "Close to tray"
 msgstr "In den Tray schließen"
 
-msgid "Closed"
-msgstr "Geschlossen"
-
 msgid "Closing connections and clearing this session."
 msgstr "Verbindungen werden geschlossen und diese Sitzung wird gelöscht."
 
@@ -1513,9 +1507,6 @@ msgstr "Die Gruppenmitglieder konnten nicht geladen werden. Bitte versuche es er
 msgid "Couldn't load image. Click to retry."
 msgstr "Das Bild konnte nicht geladen werden. Klicke, um es erneut zu versuchen."
 
-msgid "Couldn't load issues. Please try again."
-msgstr "Meldungen konnten nicht geladen werden. Bitte versuche es erneut."
-
 msgid "Couldn't load messages. Please try again."
 msgstr "Die Nachrichten konnten nicht geladen werden. Bitte versuche es erneut."
 
@@ -1789,9 +1780,6 @@ msgstr "Der Chat konnte nicht aus dem Archiv geholt werden. %s"
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr "Der Tresor konnte nicht entsperrt werden. Überprüfe das Passwort und versuche es erneut."
 
-msgid "Couldn't update issues. Please try again."
-msgstr "Meldungen konnten nicht aktualisiert werden. Bitte versuche es erneut."
-
 #, c-format
 msgid "Couldn't upload the picture. %s"
 msgstr "Das Bild konnte nicht hochgeladen werden. %s"
@@ -1840,9 +1828,6 @@ msgstr "Aus Emoji erstellen"
 
 msgid "Create group"
 msgstr "Gruppe erstellen"
-
-msgid "Create issue"
-msgstr "Meldung erstellen"
 
 msgid "Create pairing link"
 msgstr "Kopplungslink erstellen"
@@ -2003,12 +1988,6 @@ msgstr "Aus deinem Passwort wird ein Verschlüsselungsschlüssel abgeleitet."
 msgid "Describe the group"
 msgstr "Beschreibe die Gruppe"
 
-msgid "Describe the issue (Markdown)"
-msgstr "Beschreibe die Meldung (Markdown)"
-
-msgid "Description"
-msgstr "Beschreibung"
-
 msgid "Design"
 msgstr "Design"
 
@@ -2067,9 +2046,6 @@ msgstr "Diktieren funktioniert nicht"
 msgid "Difficulty: %d/5"
 msgstr "Schwierigkeit: %d/5"
 
-msgid "Disabled for this group."
-msgstr "Für diese Gruppe deaktiviert."
-
 msgid "Disappearing messages"
 msgstr "Selbstlöschende Nachrichten"
 
@@ -2091,9 +2067,6 @@ msgstr "Änderungen am Theme verwerfen?"
 
 msgid "Discover"
 msgstr "Entdecken"
-
-msgid "Discussion"
-msgstr "Diskussion"
 
 msgid "Divider"
 msgstr "Trennlinie"
@@ -2232,9 +2205,6 @@ msgstr "Emoji-Stil"
 msgid "Enable local translation"
 msgstr "Lokale Übersetzung aktivieren"
 
-msgid "Enabled for this group."
-msgstr "Für diese Gruppe aktiviert."
-
 msgid "Encrypted key copied"
 msgstr "Verschlüsselter Schlüssel kopiert"
 
@@ -2291,9 +2261,6 @@ msgstr "Gib einen gültigen Paketlink oder eine gültige Paketadresse ein."
 
 msgid "Enter an absolute project folder path, or a path starting with ~/."
 msgstr "Gib einen absoluten Pfad für den Projektordner oder einen Pfad ein, der mit ~/ beginnt."
-
-msgid "Enter an issue title and description."
-msgstr "Gib einen Titel und eine Beschreibung für die Meldung ein."
 
 msgid "Enter at least 2 people. Counts include you."
 msgstr "Gib mindestens 2 Personen ein. Du wirst mitgezählt."
@@ -2898,18 +2865,6 @@ msgstr "Einladen"
 msgid "Is Whip"
 msgstr "Ist Whip"
 
-msgid "Issue title"
-msgstr "Titel der Meldung"
-
-msgid "Issue tracking"
-msgstr "Meldungsverfolgung"
-
-msgid "Issue tracking is unavailable."
-msgstr "Die Meldungsverfolgung ist nicht verfügbar."
-
-msgid "Issues"
-msgstr "Meldungen"
-
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr "Sie verschwindet für alle im Chat. Das kann nicht rückgängig gemacht werden."
 
@@ -3032,12 +2987,6 @@ msgstr "LOKAL"
 
 msgid "LOCATION"
 msgstr "STANDORT"
-
-msgid "Labels"
-msgstr "Labels"
-
-msgid "Labels, separated by commas"
-msgstr "Labels, durch Kommas getrennt"
 
 msgid "Language"
 msgstr "Sprache"
@@ -3426,9 +3375,6 @@ msgstr "Neuer Ordner"
 msgid "New group"
 msgstr "Neue Gruppe"
 
-msgid "New issue"
-msgstr "Neue Meldung"
-
 msgid "New message"
 msgstr "Neue Nachricht"
 
@@ -3533,12 +3479,6 @@ msgstr "Noch keine Gruppen"
 
 msgid "No inbox relays."
 msgstr "Keine Empfangs-Relays."
-
-msgid "No issues found."
-msgstr "Keine Meldungen gefunden."
-
-msgid "No issues yet"
-msgstr "Noch keine Issues"
 
 msgid "No key package on this device or its relays."
 msgstr "Kein Schlüsselpaket auf diesem Gerät oder seinen Relays."
@@ -3726,9 +3666,6 @@ msgstr "Sobald der Agent dir seine npub nennt, starte über „Neuer Chat“ ein
 msgid "One-tap reactions"
 msgstr "Ein-Tipp-Reaktionen"
 
-msgid "Only group admins can change this setting."
-msgstr "Nur Gruppenadmins können diese Einstellung ändern."
-
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr "Nur der Ordner wird entfernt. Seine Chats bleiben in deiner Chatliste."
 
@@ -3779,9 +3716,6 @@ msgstr "Link öffnen"
 
 msgid "Open locations in"
 msgstr "Standorte öffnen in"
-
-msgid "Open the first issue to share a problem with your group."
-msgstr "Eröffne das erste Issue, um ein Problem mit deiner Gruppe zu teilen."
 
 msgid "Open this link?"
 msgstr "Diesen Link öffnen?"
@@ -4345,9 +4279,6 @@ msgstr "Umbenennen"
 msgid "Rendering toolpaths"
 msgstr "Druckpfade werden dargestellt"
 
-msgid "Reopen"
-msgstr "Wieder öffnen"
-
 msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
 msgstr "Ersetzt die Einstellungen, Entwürfe, benutzerdefinierten Emojis und Themes auf diesem Gerät."
 
@@ -4390,12 +4321,6 @@ msgstr "Zoom zurücksetzen"
 
 msgid "Resize terminal"
 msgstr "Terminalgröße ändern"
-
-msgid "Resolve"
-msgstr "Als gelöst markieren"
-
-msgid "Resolved"
-msgstr "Gelöst"
 
 msgid "Restart now"
 msgstr "Jetzt neu starten"
@@ -4649,9 +4574,6 @@ msgstr "Ordner suchen..."
 msgid "Search images"
 msgstr "Bilder suchen"
 
-msgid "Search issues"
-msgstr "Meldungen suchen"
-
 msgid "Search messages"
 msgstr "Nachrichten durchsuchen"
 
@@ -4717,12 +4639,6 @@ msgstr "Wähle ein Modell, um es für Diktate und Audionachrichten herunterzulad
 
 msgid "Select a project"
 msgstr "Projekt auswählen"
-
-msgid "Select an issue"
-msgstr "Wähle eine Meldung"
-
-msgid "Select an issue to read its discussion."
-msgstr "Wähle eine Meldung aus, um die Diskussion zu lesen."
 
 msgid "Self-hosted personal AI assistant"
 msgstr "Selbst gehosteter persönlicher KI-Assistent"
@@ -4835,9 +4751,6 @@ msgstr "Schatten Popover"
 
 msgid "Shadow soft"
 msgstr "Schatten weich"
-
-msgid "Share a problem with your group."
-msgstr "Teile ein Problem mit deiner Gruppe."
 
 msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
 msgstr "Teile zusammengefasste Laufzeiten und Relay-Diagnosedaten. Solange diese Option deaktiviert ist, wird nichts gesendet."
@@ -5447,9 +5360,6 @@ msgstr "Das Timeline-Abonnement wurde beendet."
 msgid "Timings"
 msgstr "Laufzeiten"
 
-msgid "Title"
-msgstr "Titel"
-
 msgid "Title font"
 msgstr "Titelschriftart"
 
@@ -5597,9 +5507,6 @@ msgstr "Nicht mehr anheften"
 msgid "Unread"
 msgstr "Ungelesen"
 
-msgid "Unresolved"
-msgstr "Offen"
-
 msgid "Unsupported attachment format."
 msgstr "Nicht unterstütztes Anhangformat."
 
@@ -5614,9 +5521,6 @@ msgstr "Updates"
 
 msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot safely use the app's explicit proxy. Disable the proxy and restart to update, or install an authenticated release manually."
 msgstr "Updates sind deaktiviert, solange ein SOCKS5-Proxy eingerichtet ist. Sparkle kann den Proxy der App nicht sicher verwenden. Deaktiviere den Proxy und starte die App zum Aktualisieren neu, oder installiere eine authentifizierte Version manuell."
-
-msgid "Updating issue tracking..."
-msgstr "Meldungsverfolgung wird aktualisiert..."
 
 msgid "Updating your contacts"
 msgstr "Deine Kontakte werden aktualisiert"
@@ -5841,9 +5745,6 @@ msgstr "Arbeit"
 
 msgid "World"
 msgstr "Welt"
-
-msgid "Write a comment"
-msgstr "Schreibe einen Kommentar"
 
 msgid "YOU"
 msgstr "DU"

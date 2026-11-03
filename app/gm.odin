@@ -28,7 +28,7 @@ gm_sent_today :: proc(ui: ^Ui_State) -> bool {
 // armed effect, like a sticker.
 @(private)
 gm_send :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if ui.selected < 0 || ui.editing != "" || ui.compose_issue != "" || gm_sent_today(ui) {return}
+	if ui.selected < 0 || ui.editing != "" || gm_sent_today(ui) {return}
 
 	// Only today's entries gate anything, so older days are dropped:
 	// the map holds at most one row per chat greeted today.

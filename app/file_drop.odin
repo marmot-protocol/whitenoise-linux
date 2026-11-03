@@ -18,7 +18,6 @@ chat_drop_target :: proc(ui: ^Ui_State, position: rl.Vector2) -> bool {
 	   ui.new_chat_open ||
 	   ui.show_members ||
 	   ui.group_files_open ||
-	   (ui.issues_open && ui.compose_issue == "") ||
 	   ui.editing != "" ||
 	   ui.picker_open ||
 	   ui.poll_open ||

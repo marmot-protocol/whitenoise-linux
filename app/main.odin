@@ -913,8 +913,6 @@ app_main :: proc() {
 			timeline_drain(&ui, client)
 			members_drain(&ui, client)
 			group_files_tick(&ui, client)
-			issues_drain(&ui, client)
-			issues_sync_route(&ui, client)
 			if !ui.timeline_loading && test_peer_pending {
 				test_peer_pending = false
 				for msg in ui.messages {
@@ -1495,7 +1493,6 @@ app_main :: proc() {
 			   !ui.shortcode_active {
 				if ui.show_members ||
 				   ui.group_files_open ||
-				   ui.issues_open ||
 				   ui.search_open ||
 				   len(ui.thread_stack) > 0 ||
 				   (len(ui.compose) == 0 && ui.editing == "" && ui.replying == "") {
@@ -1977,9 +1974,7 @@ app_main :: proc() {
 			delete(done.history)
 			if done.op == .Edit ||
 			   done.op == .Lookup_Member ||
-			   done.op == .History ||
-			   done.op == .Issue ||
-			   done.op == .Issue_Setting {edit_result_free(done)} else {delete(done.err)}
+			   done.op == .History {edit_result_free(done)} else {delete(done.err)}
 		}
 		delete(ops_done); ops_done = {}
 		for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
@@ -1990,7 +1985,6 @@ app_main :: proc() {
 			delete(ui.staged); delete(key)
 		}
 		delete(ui.staged_drafts)
-		delete(ui.compose_issue)
 		for row in ui.chats {chat_free(row)}
 		for row in ui.archived {chat_free(row)}
 		delete(ui.chats); delete(ui.archived); delete(retired_chats); retired_chats = {}

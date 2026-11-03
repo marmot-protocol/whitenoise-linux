@@ -83,7 +83,6 @@ reading_remember :: proc(ui: ^Ui_State) {
 	   ui.timeline_loading ||
 	   ui.timeline_paging ||
 	   ui.search_open ||
-	   ui.issues_open ||
 	   thread_cur(ui) != "" ||
 	   ui.jump_id != "" ||
 	   ui.messages_account != ui.account_ref ||

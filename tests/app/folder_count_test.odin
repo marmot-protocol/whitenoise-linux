@@ -125,7 +125,8 @@ folder_count_dispatch :: proc(t: ^testing.T) {
 	) {return}
 	testing.expect_value(t, ui.folder_rules[0].kind, Folder_Rule_Kind.Fewer_Than)
 	commands := frame(&ui)
-	testing.expect_value(t, count_text(commands), "2")
+	// The empty count box names what to type instead of suggesting a count.
+	testing.expect_value(t, count_text(commands), "Number")
 	capture(&ui, "example")
 
 	for value in ([]string{"0", "1", "-1", "1.5", "nope"}) {

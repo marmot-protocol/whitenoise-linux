@@ -672,9 +672,6 @@ msgstr "チャットに戻る"
 msgid "Back to connectors"
 msgstr "コネクターに戻る"
 
-msgid "Back to issues"
-msgstr "報告の一覧に戻る"
-
 msgid "Back to sets"
 msgstr "セットの一覧に戻る"
 
@@ -1101,9 +1098,6 @@ msgstr "タブを閉じる"
 msgid "Close to tray"
 msgstr "閉じたらトレイに格納"
 
-msgid "Closed"
-msgstr "終了"
-
 msgid "Closing connections and clearing this session."
 msgstr "接続を閉じて、このセッションを消去しています。"
 
@@ -1513,9 +1507,6 @@ msgstr "グループのメンバーを読み込めませんでした。もう一
 msgid "Couldn't load image. Click to retry."
 msgstr "画像を読み込めませんでした。クリックして再試行してください。"
 
-msgid "Couldn't load issues. Please try again."
-msgstr "報告を読み込めませんでした。もう一度お試しください。"
-
 msgid "Couldn't load messages. Please try again."
 msgstr "メッセージを読み込めませんでした。もう一度お試しください。"
 
@@ -1789,9 +1780,6 @@ msgstr "チャットのアーカイブを解除できませんでした。%s"
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr "保管庫のロックを解除できませんでした。パスワードを確認して、もう一度お試しください。"
 
-msgid "Couldn't update issues. Please try again."
-msgstr "報告を更新できませんでした。もう一度お試しください。"
-
 #, c-format
 msgid "Couldn't upload the picture. %s"
 msgstr "画像をアップロードできませんでした。%s"
@@ -1840,9 +1828,6 @@ msgstr "絵文字から作成"
 
 msgid "Create group"
 msgstr "グループを作成"
-
-msgid "Create issue"
-msgstr "報告を作成"
 
 msgid "Create pairing link"
 msgstr "ペアリングリンクを作成"
@@ -2003,12 +1988,6 @@ msgstr "パスワードから暗号鍵を導出しています。"
 msgid "Describe the group"
 msgstr "グループの説明を入力"
 
-msgid "Describe the issue (Markdown)"
-msgstr "問題の説明（Markdown）"
-
-msgid "Description"
-msgstr "説明"
-
 msgid "Design"
 msgstr "デザイン"
 
@@ -2067,9 +2046,6 @@ msgstr "音声入力が動作しません"
 msgid "Difficulty: %d/5"
 msgstr "難易度: %d/5"
 
-msgid "Disabled for this group."
-msgstr "このグループでは無効です。"
-
 msgid "Disappearing messages"
 msgstr "消えるメッセージ"
 
@@ -2091,9 +2067,6 @@ msgstr "テーマの変更を破棄しますか？"
 
 msgid "Discover"
 msgstr "見つける"
-
-msgid "Discussion"
-msgstr "議論"
 
 msgid "Divider"
 msgstr "区切り線"
@@ -2232,9 +2205,6 @@ msgstr "絵文字のスタイル"
 msgid "Enable local translation"
 msgstr "端末上での翻訳を有効にする"
 
-msgid "Enabled for this group."
-msgstr "このグループでは有効です。"
-
 msgid "Encrypted key copied"
 msgstr "暗号化された鍵をコピーしました"
 
@@ -2291,9 +2261,6 @@ msgstr "有効なパックのリンクまたはアドレスを入力してくだ
 
 msgid "Enter an absolute project folder path, or a path starting with ~/."
 msgstr "プロジェクトフォルダーの絶対パス、または ~/ で始まるパスを入力してください。"
-
-msgid "Enter an issue title and description."
-msgstr "報告のタイトルと説明を入力してください。"
 
 msgid "Enter at least 2 people. Counts include you."
 msgstr "2人以上を入力してください。人数にはあなたも含まれます。"
@@ -2898,18 +2865,6 @@ msgstr "招待"
 msgid "Is Whip"
 msgstr "Whipプロジェクトである"
 
-msgid "Issue title"
-msgstr "報告のタイトル"
-
-msgid "Issue tracking"
-msgstr "問題の追跡"
-
-msgid "Issue tracking is unavailable."
-msgstr "問題の追跡を利用できません。"
-
-msgid "Issues"
-msgstr "問題の報告"
-
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr "チャットの全員の画面から消えます。この操作は取り消せません。"
 
@@ -3032,12 +2987,6 @@ msgstr "ローカル"
 
 msgid "LOCATION"
 msgstr "位置情報"
-
-msgid "Labels"
-msgstr "ラベル"
-
-msgid "Labels, separated by commas"
-msgstr "ラベル（カンマ区切り）"
 
 msgid "Language"
 msgstr "言語"
@@ -3426,9 +3375,6 @@ msgstr "新しいフォルダ"
 msgid "New group"
 msgstr "新しいグループ"
 
-msgid "New issue"
-msgstr "新しい報告"
-
 msgid "New message"
 msgstr "新しいメッセージ"
 
@@ -3533,12 +3479,6 @@ msgstr "グループはまだありません"
 
 msgid "No inbox relays."
 msgstr "受信リレーはありません。"
-
-msgid "No issues found."
-msgstr "報告が見つかりませんでした。"
-
-msgid "No issues yet"
-msgstr "まだ課題はありません"
 
 msgid "No key package on this device or its relays."
 msgstr "この端末にもそのリレーにもキーパッケージがありません。"
@@ -3726,9 +3666,6 @@ msgstr "エージェントからnpubを受け取ったら、「新しいチャ�
 msgid "One-tap reactions"
 msgstr "ワンタップリアクション"
 
-msgid "Only group admins can change this setting."
-msgstr "この設定を変更できるのはグループ管理者だけです。"
-
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr "フォルダだけが削除されます。中のチャットはチャット一覧に残ります。"
 
@@ -3779,9 +3716,6 @@ msgstr "リンクを開く"
 
 msgid "Open locations in"
 msgstr "位置情報を開くサービス"
-
-msgid "Open the first issue to share a problem with your group."
-msgstr "最初の課題を作成して、グループに問題を共有しましょう。"
 
 msgid "Open this link?"
 msgstr "このリンクを開きますか？"
@@ -4345,9 +4279,6 @@ msgstr "名前を変更"
 msgid "Rendering toolpaths"
 msgstr "印刷経路を描画しています"
 
-msgid "Reopen"
-msgstr "再開"
-
 msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
 msgstr "この端末の設定、下書き、カスタム絵文字、テーマを置き換えます。"
 
@@ -4390,12 +4321,6 @@ msgstr "ズームをリセット"
 
 msgid "Resize terminal"
 msgstr "ターミナルのサイズを変更"
-
-msgid "Resolve"
-msgstr "解決済みにする"
-
-msgid "Resolved"
-msgstr "解決済み"
 
 msgid "Restart now"
 msgstr "今すぐ再起動"
@@ -4649,9 +4574,6 @@ msgstr "フォルダを検索..."
 msgid "Search images"
 msgstr "画像を検索"
 
-msgid "Search issues"
-msgstr "報告を検索"
-
 msgid "Search messages"
 msgstr "メッセージを検索"
 
@@ -4717,12 +4639,6 @@ msgstr "音声入力や音声メッセージに使用するモデルを選択し
 
 msgid "Select a project"
 msgstr "プロジェクトを選択"
-
-msgid "Select an issue"
-msgstr "報告を選択"
-
-msgid "Select an issue to read its discussion."
-msgstr "報告を選択すると、その議論を読めます。"
 
 msgid "Self-hosted personal AI assistant"
 msgstr "セルフホスト型のパーソナルAIアシスタント"
@@ -4835,9 +4751,6 @@ msgstr "影（ポップオーバー）"
 
 msgid "Shadow soft"
 msgstr "影（柔らか）"
-
-msgid "Share a problem with your group."
-msgstr "グループに問題を報告できます。"
 
 msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
 msgstr "集計した処理時間とリレーの診断情報を共有します。オフの間は何も送信されません。"
@@ -5447,9 +5360,6 @@ msgstr "タイムラインの購読が終了しました。"
 msgid "Timings"
 msgstr "処理時間"
 
-msgid "Title"
-msgstr "タイトル"
-
 msgid "Title font"
 msgstr "タイトルのフォント"
 
@@ -5597,9 +5507,6 @@ msgstr "ピン留めを解除"
 msgid "Unread"
 msgstr "未読"
 
-msgid "Unresolved"
-msgstr "未解決"
-
 msgid "Unsupported attachment format."
 msgstr "この添付ファイルの形式には対応していません。"
 
@@ -5614,9 +5521,6 @@ msgstr "アップデート"
 
 msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot safely use the app's explicit proxy. Disable the proxy and restart to update, or install an authenticated release manually."
 msgstr "SOCKS5プロキシが設定されている間はアップデートが無効になります。Sparkleはアプリのプロキシを安全に使用できません。プロキシを無効にして再起動するか、認証済みのリリースを手動でインストールしてください。"
-
-msgid "Updating issue tracking..."
-msgstr "問題の追跡を更新しています..."
 
 msgid "Updating your contacts"
 msgstr "連絡先を更新しています"
@@ -5841,9 +5745,6 @@ msgstr "仕事"
 
 msgid "World"
 msgstr "世界"
-
-msgid "Write a comment"
-msgstr "コメントを入力"
 
 msgid "YOU"
 msgstr "あなた"

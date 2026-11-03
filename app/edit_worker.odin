@@ -31,7 +31,7 @@ edit_complete :: proc(ui: ^Ui_State, done: Op_Done) {
 	   ui.editing == done.target &&
 	   string(ui.compose[:]) == done.content {
 		ui.editing = ""
-		ed_set(ui, &ui.compose, ui.drafts[compose_draft_key(ui)])
+		ed_set(ui, &ui.compose, ui.drafts[done.group])
 	}
 	for i := len(failed_edits) - 1; i >= 0; i -= 1 {
 		old := failed_edits[i]

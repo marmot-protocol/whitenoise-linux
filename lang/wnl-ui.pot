@@ -617,9 +617,6 @@ msgstr ""
 msgid "Back to connectors"
 msgstr ""
 
-msgid "Back to issues"
-msgstr ""
-
 msgid "Back to sets"
 msgstr ""
 
@@ -1019,9 +1016,6 @@ msgstr ""
 msgid "Close to tray"
 msgstr ""
 
-msgid "Closed"
-msgstr ""
-
 msgid "Closing connections and clearing this session."
 msgstr ""
 
@@ -1413,9 +1407,6 @@ msgstr ""
 msgid "Couldn't load image. Click to retry."
 msgstr ""
 
-msgid "Couldn't load issues. Please try again."
-msgstr ""
-
 msgid "Couldn't load messages. Please try again."
 msgstr ""
 
@@ -1683,9 +1674,6 @@ msgstr ""
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr ""
 
-msgid "Couldn't update issues. Please try again."
-msgstr ""
-
 #, c-format
 msgid "Couldn't upload the picture. %s"
 msgstr ""
@@ -1727,9 +1715,6 @@ msgid "Create from emoji"
 msgstr ""
 
 msgid "Create group"
-msgstr ""
-
-msgid "Create issue"
 msgstr ""
 
 msgid "Create pairing link"
@@ -1879,12 +1864,6 @@ msgstr ""
 msgid "Describe the group"
 msgstr ""
 
-msgid "Describe the issue (Markdown)"
-msgstr ""
-
-msgid "Description"
-msgstr ""
-
 msgid "Design"
 msgstr ""
 
@@ -1943,9 +1922,6 @@ msgstr ""
 msgid "Difficulty: %d/5"
 msgstr ""
 
-msgid "Disabled for this group."
-msgstr ""
-
 msgid "Disappearing messages"
 msgstr ""
 
@@ -1963,9 +1939,6 @@ msgid "Discard your theme changes?"
 msgstr ""
 
 msgid "Discover"
-msgstr ""
-
-msgid "Discussion"
 msgstr ""
 
 msgid "Divider"
@@ -2105,9 +2078,6 @@ msgstr ""
 msgid "Enable local translation"
 msgstr ""
 
-msgid "Enabled for this group."
-msgstr ""
-
 msgid "Encrypted key copied"
 msgstr ""
 
@@ -2154,9 +2124,6 @@ msgid "Enter a valid pack link or address."
 msgstr ""
 
 msgid "Enter an absolute project folder path, or a path starting with ~/."
-msgstr ""
-
-msgid "Enter an issue title and description."
 msgstr ""
 
 msgid "Enter at least 2 people. Counts include you."
@@ -2735,18 +2702,6 @@ msgstr ""
 msgid "Is Whip"
 msgstr ""
 
-msgid "Issue title"
-msgstr ""
-
-msgid "Issue tracking"
-msgstr ""
-
-msgid "Issue tracking is unavailable."
-msgstr ""
-
-msgid "Issues"
-msgstr ""
-
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr ""
 
@@ -2856,12 +2811,6 @@ msgid "LOCAL"
 msgstr ""
 
 msgid "LOCATION"
-msgstr ""
-
-msgid "Labels"
-msgstr ""
-
-msgid "Labels, separated by commas"
 msgstr ""
 
 msgid "Language"
@@ -3227,9 +3176,6 @@ msgstr ""
 msgid "New group"
 msgstr ""
 
-msgid "New issue"
-msgstr ""
-
 msgid "New message"
 msgstr ""
 
@@ -3327,12 +3273,6 @@ msgid "No groups yet"
 msgstr ""
 
 msgid "No inbox relays."
-msgstr ""
-
-msgid "No issues found."
-msgstr ""
-
-msgid "No issues yet"
 msgstr ""
 
 msgid "No key package on this device or its relays."
@@ -3506,9 +3446,6 @@ msgstr ""
 msgid "One-tap reactions"
 msgstr ""
 
-msgid "Only group admins can change this setting."
-msgstr ""
-
 msgid "Only the folder is removed. Its chats stay in your chat list."
 msgstr ""
 
@@ -3552,9 +3489,6 @@ msgid "Open it again with › in the left column or the button below."
 msgstr ""
 
 msgid "Open locations in"
-msgstr ""
-
-msgid "Open the first issue to share a problem with your group."
 msgstr ""
 
 msgid "Open this link?"
@@ -4101,9 +4035,6 @@ msgstr ""
 msgid "Rendering toolpaths"
 msgstr ""
 
-msgid "Reopen"
-msgstr ""
-
 msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
 msgstr ""
 
@@ -4136,12 +4067,6 @@ msgid "Reset zoom"
 msgstr ""
 
 msgid "Resize terminal"
-msgstr ""
-
-msgid "Resolve"
-msgstr ""
-
-msgid "Resolved"
 msgstr ""
 
 msgid "Restart now"
@@ -4378,9 +4303,6 @@ msgstr ""
 msgid "Search images"
 msgstr ""
 
-msgid "Search issues"
-msgstr ""
-
 msgid "Search messages"
 msgstr ""
 
@@ -4439,12 +4361,6 @@ msgid "Select a model to download it for dictation and audio messages."
 msgstr ""
 
 msgid "Select a project"
-msgstr ""
-
-msgid "Select an issue"
-msgstr ""
-
-msgid "Select an issue to read its discussion."
 msgstr ""
 
 msgid "Self-hosted personal AI assistant"
@@ -4545,9 +4461,6 @@ msgid "Shadow popover"
 msgstr ""
 
 msgid "Shadow soft"
-msgstr ""
-
-msgid "Share a problem with your group."
 msgstr ""
 
 msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
@@ -5116,9 +5029,6 @@ msgstr ""
 msgid "Timings"
 msgstr ""
 
-msgid "Title"
-msgstr ""
-
 msgid "Title font"
 msgstr ""
 
@@ -5263,9 +5173,6 @@ msgstr ""
 msgid "Unread"
 msgstr ""
 
-msgid "Unresolved"
-msgstr ""
-
 msgid "Unsupported attachment format."
 msgstr ""
 
@@ -5279,9 +5186,6 @@ msgid "Updates"
 msgstr ""
 
 msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot safely use the app's explicit proxy. Disable the proxy and restart to update, or install an authenticated release manually."
-msgstr ""
-
-msgid "Updating issue tracking..."
 msgstr ""
 
 msgid "Updating your contacts"
@@ -5500,9 +5404,6 @@ msgid "Work"
 msgstr ""
 
 msgid "World"
-msgstr ""
-
-msgid "Write a comment"
 msgstr ""
 
 msgid "YOU"

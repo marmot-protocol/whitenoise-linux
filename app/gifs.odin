@@ -540,8 +540,7 @@ gif_send :: proc(ui: ^Ui_State, client: ^marmot.Client, item: Gif_Item) {
 	   ui.gif_job != nil ||
 	   ui.selected < 0 ||
 	   ui.selected >= len(ui.chats) ||
-	   ui.editing != "" ||
-	   ui.compose_issue != "" {return}
+	   ui.editing != "" {return}
 	job := new(Gif_Job)
 	job.op, job.item = .Send, gif_item_clone(item)
 	if ui.gif_view != nil && !ui.gif_view.failed && gif_same(item, ui.gif_selected) {

@@ -335,7 +335,7 @@ sticker_picker :: proc(ui: ^Ui_State) {
 
 @(private)
 sticker_send :: proc(ui: ^Ui_State, item: Sticker_Item) {
-	if ui.selected < 0 || ui.editing != "" || ui.compose_issue != "" {return}
+	if ui.selected < 0 || ui.editing != "" {return}
 	job := sticker_job_add(.Send)
 	job.item = sticker_item_clone(item)
 	job.account = strings.clone(ui.account_ref)

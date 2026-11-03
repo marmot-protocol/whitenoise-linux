@@ -123,8 +123,17 @@ export_password_dispatch :: proc(t: ^testing.T) {
 		)
 		testing.expect_value(t, string(ui.export_pw[:]), "  exact passphrase  ")
 		testing.expect_value(t, ui.export_result, "")
+		// Export also needs the password typed again; Tab moves to that box.
+		rl.PushKey(.TAB, true)
+		handle_settings(&ui, nil)
+		rl.PushKey(.TAB, false)
+		for ch in "  exact passphrase  " {rl.PushChar(ch)}
+		edit_text(&ui, export_buffer(&ui))
+		handle_settings(&ui, nil)
+		testing.expect_value(t, string(export_confirm[:]), "  exact passphrase  ")
+		testing.expect_value(t, string(ui.export_pw[:]), "  exact passphrase  ")
 		// The real C boundary rejects a nil client safely. Reaching that error
-		// distinguishes a nonempty submission from the local empty-input guard.
+		// distinguishes a valid submission from the local password guards.
 		rl.PushKey(.ENTER, true)
 		handle_settings(&ui, nil)
 		rl.PushKey(.ENTER, false)

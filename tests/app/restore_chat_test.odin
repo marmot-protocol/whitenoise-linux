@@ -147,7 +147,9 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; forced_release = false; text_field_live = false}
-	defer {timeline_stop(); for job in account_jobs {thread.join(job.worker)}
+	// Selecting a chat starts timeline and roster workers; join them before
+	// the client is freed, as app shutdown does.
+	defer {timeline_stop(); members_stop(); for job in account_jobs {thread.join(job.worker)}
 		account_job_drain(&ui)}
 	frame :: proc(ui: ^Ui_State) -> string {
 		clay.SetPointerState({-100, -100}, false)
@@ -182,7 +184,6 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		// success must explicitly rearm the banner, even after intervening frames.
 		ui.banner = ""
 		ui.chat_filter = .Unread
-		ed_set(&ui, &ui.sidebar_filter, "Restored")
 		load_chat_list(client, account, &ui)
 		load_archived(client, &ui)
 		for job in account_jobs {thread.join(job.worker)}
@@ -199,6 +200,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 			testing.expect(t, ui.chats[ui.selected].search_only)
 		}
 		ui.page = .Archived
+		ed_set(&ui, &ui.sidebar_filter, "Restored")
 		append(
 			&ui.staged,
 			Staged_File {
@@ -246,20 +248,21 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		forced_release = true
 		handle_pages(&ui, client)
 		forced_release = false
-		testing.expect_value(t, ui.page, Page.Chats)
-		testing.expect_value(t, ui.chat_filter, Chat_Filter.Chats)
-		testing.expect_value(t, len(ui.sidebar_filter), 0)
-		if testing.expect(
-			t,
-			ui.selected >= 0 && ui.selected < len(ui.chats),
-			"Restore selects a conversation",
-		) {
-			testing.expect_value(t, ui.chats[ui.selected].group_id, target)
-			testing.expect(t, !ui.chats[ui.selected].search_only)
+		// Restore confirms in place: Archive keeps its page, filter and search,
+		// and no conversation opens.
+		testing.expect_value(t, ui.page, Page.Archived)
+		testing.expect_value(t, ui.chat_filter, Chat_Filter.Unread)
+		testing.expect_value(t, string(ui.sidebar_filter[:]), "Restored")
+		testing.expect_value(t, ui.selected, -1)
+		restored := -1
+		for chat, i in ui.chats {if chat.group_id == target {restored = i}}
+		if testing.expect(t, restored >= 0, "Restore returns the chat to Chats") {
+			testing.expect(t, !ui.chats[restored].search_only)
 		}
 		testing.expect_value(t, ui.client_status, "Chat restored.")
 		testing.expect_value(t, ui.client_status_kind, Status_Kind.Info)
-		files := other_selected ? ui.staged_drafts[other] : ui.staged
+		// Files staged in the open conversation stay parked with that chat.
+		files := ui.staged_drafts[other_selected ? other : target]
 		if testing.expect_value(t, len(files), 1) {
 			testing.expect_value(t, raw_data(files), staged)
 			testing.expect_value(t, files[0].name, "draft.txt")
@@ -267,8 +270,8 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 			testing.expect_value(t, raw_data(files[0].data), payload)
 			testing.expect_value(t, string(files[0].data), "x")
 		}
-		testing.expect_value(t, len(ui.staged), other_selected ? 0 : 1)
-		testing.expect_value(t, len(ui.staged_drafts[target]), 0)
+		testing.expect_value(t, len(ui.staged), 0)
+		if other_selected {testing.expect_value(t, len(ui.staged_drafts[target]), 0)}
 		text := frame(&ui)
 		testing.expect(t, strings.contains(text, "Chat restored."), "Success is visibly confirmed")
 		timeline_stop()
@@ -276,10 +279,14 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		account_job_drain(&ui)
 		testing.expect_value(t, len(ui.archived), 0)
 		testing.expect_value(t, ui.drafts[other], "Keep this draft")
+		testing.expect_value(t, ui.selected, -1)
 		chats_collect()
-		if ui.selected >= 0 &&
-		   ui.selected <
-			   len(ui.chats) {testing.expect_value(t, ui.chats[ui.selected].group_id, target)}
+		if !other_selected {
+			// Opening the restored chat brings back the files staged in it.
+			if !testing.expect(t, select_by_id(&ui, client, target)) {return}
+			testing.expect_value(t, raw_data(ui.staged), staged)
+			testing.expect_value(t, len(ui.staged_drafts[target]), 0)
+		}
 	}
 	// Exercise a real C API read failure without a mock or production hook.
 	// The failed refresh must retain the old rows, selection, and actual error.

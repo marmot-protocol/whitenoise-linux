@@ -898,7 +898,7 @@ msg_actions :: proc(index: u32, msg: Msg_Ui) {
 	if g_ui != nil && g_ui.selected >= 0 && g_ui.chats[g_ui.selected].archived {return}
 	// A reply can't carry a thread tag, so thread rows
 	// offer Thread (nesting) instead of Reply.
-	if len(msg.thread_of) == 0 || g_ui.compose_issue != "" {
+	if len(msg.thread_of) == 0 {
 		action_chip("MsgReply", index, tr("Reply"))
 	}
 	action_chip("MsgThread", index, tr("Thread"))

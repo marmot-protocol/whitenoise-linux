@@ -307,7 +307,7 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	clear(&live.dirty_groups)
 	sync.unlock(&live.mutex)
 
-	if dirty {issues_refresh(); live.refresh_dirty = true}
+	if dirty {live.refresh_dirty = true}
 	if had_events {
 		search_revision += 1
 		sync_at = rl.GetTime() // the status bar shows SYNCING for a beat
@@ -541,7 +541,6 @@ Pending_Send :: struct {
 	sender:            string, // own display label, mirrors confirmed rows
 	body:              string, // composed text; file name for a non-image upload
 	reply_to:          string, // message id, "" = plain send
-	issue:             Issue_Reply,
 	thread:            string, // thread root id, "" = main timeline
 	atts:              [dynamic]Pending_Att, // upload payloads, owned until drained
 	failed:            bool,
@@ -581,7 +580,6 @@ Send_Job :: struct {
 	text:    cstring,
 	reply:   cstring, // nil = plain send
 	thread:  cstring, // nil = main timeline; else the kind-1111 root
-	issue:   Issue_Reply, // borrowed from Pending_Send until completion
 	caption: cstring, // nil, or the body to ride along with atts (aliases text)
 	atts:    []Job_Att, // non-empty = upload_media instead of a text send
 }
@@ -623,15 +621,7 @@ send_thread :: proc(
 	rows := make([dynamic]marmot.Message_Tag)
 	defer delete(rows)
 	append(&rows, ..job.tags)
-	if job.issue.root == "" {
-		append(&rows, marmot.Message_Tag{values = raw_data(e_vals[:]), values_len = 2})
-	} else {
-		for tag in issue_reply_tags(job.issue) {
-			values := make([]cstring, len(tag), context.temp_allocator)
-			for value, i in tag {values[i] = strings.clone_to_cstring(value, context.temp_allocator)}
-			append(&rows, marmot.Message_Tag{raw_data(values), uint(len(values))})
-		}
-	}
+	append(&rows, marmot.Message_Tag{values = raw_data(e_vals[:]), values_len = 2})
 
 	built := make([dynamic]^marmot.Message_Tag)
 	defer {
@@ -750,8 +740,7 @@ send_worker :: proc(t: ^thread.Thread) {
 	job := (^Send_Job)(t.data)
 	status := marmot.Status.OK
 	ids: [dynamic]string
-	if job.issue.root != "" {status = issue_send_allowed(job.client, job.account, job.group)}
-	if status == .OK && len(job.atts) > 0 {
+	if len(job.atts) > 0 {
 		// One upload_media round trip: encrypt, push to Blossom, and
 		// (main timeline) publish the kind-9 message in the same call.
 		// A thread upload keeps send=false and publishes the references
@@ -791,7 +780,7 @@ send_worker :: proc(t: ^thread.Thread) {
 			marmot.media_upload_result_free(result)
 		}
 		delete(requests)
-	} else if status == .OK {
+	} else {
 		summary: ^marmot.Send_Summary
 		if job.thread != nil {
 			status = send_thread(job, nil, &ids)
@@ -873,7 +862,6 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
 	job.group = strings.clone_to_cstring(p.group_id)
 	job.text = strings.clone_to_cstring(p.body)
 	job.reply = len(p.reply_to) > 0 ? strings.clone_to_cstring(p.reply_to) : nil
-	job.issue = p.issue
 	job.thread = len(p.thread) > 0 ? strings.clone_to_cstring(p.thread) : nil
 	job.tags = send_message_tags(p)
 	if len(p.atts) > 0 {
@@ -926,11 +914,8 @@ queue_send :: proc(ui: ^Ui_State, client: ^marmot.Client, body: string) {
 			sender        = strings.clone(len(info.name) > 0 ? info.name : "you"),
 			body          = strings.clone(body),
 			// A reply can't carry a thread tag, so the open thread wins.
-			reply_to      = strings.clone(
-				len(thread_cur(ui)) > 0 && ui.compose_issue == "" ? "" : ui.replying,
-			),
+			reply_to      = strings.clone(len(thread_cur(ui)) > 0 ? "" : ui.replying),
 			thread        = strings.clone(thread_cur(ui)),
-			issue         = issue_reply(ui),
 		},
 	)
 	attach_body_emoji(&ui.pending[len(ui.pending) - 1], body)
@@ -969,7 +954,6 @@ free_pending :: proc(p: ^Pending_Send) {
 	delete(p.body)
 	delete(p.reply_to)
 	delete(p.thread)
-	issue_reply_free(p.issue)
 	for &a in p.atts {
 		delete(a.name)
 		delete(a.dim)
@@ -1024,7 +1008,6 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				sender        = strings.clone(sender),
 				body          = strings.clone(f.name),
 				thread        = strings.clone(thread_cur(ui)),
-				issue         = issue_reply(ui),
 			}
 			append(&p.atts, att)
 			append(&ui.pending, p)
@@ -1038,7 +1021,6 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		album.sender = strings.clone(sender)
 		album.body = strings.clone("")
 		album.thread = strings.clone(thread_cur(ui))
-		album.issue = issue_reply(ui)
 		append(&ui.pending, album)
 		spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
 	}
@@ -1177,12 +1159,10 @@ Op_Job :: struct {
 	emoji:       cstring, // nil for delete
 	emoji_file:  cstring, // .React with a :code: this device has an image for
 	emoji_png:   []u8, // that image's bytes, owned
-	kind:        u64, // .Custom/.Issue only
-	tags:        [][]cstring, // owned custom-event or poll-context tags
-	content:     cstring, // custom event, poll question, or edit
+	tags:        [][]cstring, // owned poll-context tags
+	content:     cstring, // poll question or edit
 	poll_values: []cstring, // option labels on creation; selected ids on voting
 	poll_type:   marmot.Poll_Type,
-	poll_issue:  bool, // issue permission check and completion routing
 	secs:        u64, // .Retention only
 }
 
@@ -1263,7 +1243,7 @@ op_worker :: proc(t: ^thread.Thread) {
 	summary: ^marmot.Send_Summary
 	done := Op_Done {
 		ticket = job.ticket,
-		op     = job.poll_issue ? .Issue : job.op,
+		op     = job.op,
 	}
 	status: marmot.Status
 	switch job.op {
@@ -1350,24 +1330,20 @@ op_worker :: proc(t: ^thread.Thread) {
 				values_len = uint(len(row)),
 			}
 		}
-		status = .OK
-		if job.poll_issue {status = issue_send_allowed(job.client, job.account, job.group)}
-		if status == .OK {
-			status = marmot.create_poll(
-				job.client,
-				job.account,
-				job.group,
-				job.content,
-				raw_data(job.poll_values),
-				uint(len(job.poll_values)),
-				u32(job.poll_type),
-				0,
-				0,
-				raw_data(rows),
-				uint(len(rows)),
-				&summary,
-			)
-		}
+		status = marmot.create_poll(
+			job.client,
+			job.account,
+			job.group,
+			job.content,
+			raw_data(job.poll_values),
+			uint(len(job.poll_values)),
+			u32(job.poll_type),
+			0,
+			0,
+			raw_data(rows),
+			uint(len(rows)),
+			&summary,
+		)
 	case .Poll_Vote:
 		status = marmot.cast_poll_vote(
 			job.client,
@@ -1378,45 +1354,6 @@ op_worker :: proc(t: ^thread.Thread) {
 			uint(len(job.poll_values)),
 			&summary,
 		)
-	case .Custom, .Issue:
-		rows := make([]marmot.Message_Tag, len(job.tags))
-		for row, i in job.tags {
-			rows[i] = {
-				values     = raw_data(row),
-				values_len = uint(len(row)),
-			}
-		}
-		status = .OK
-		if job.op == .Issue {status = issue_send_allowed(job.client, job.account, job.group)}
-		if status ==
-		   .OK {status = marmot.send_custom_event(job.client, job.account, job.group, job.kind, raw_data(rows), uint(len(rows)), job.content, &summary)}
-		delete(rows)
-	case .Issue_Setting:
-		component: ^marmot.Group_App_Component
-		status = marmot.group_app_component(
-			job.client,
-			job.account,
-			job.group,
-			ISSUE_COMPONENT,
-			&component,
-		)
-		if status == .OK &&
-		   component != nil &&
-		   issue_setting(component.data[:component.data_len]) ==
-			   .Unavailable {status = .INVALID_APP_COMPONENT}
-		if component != nil {marmot.group_app_component_free(component)}
-		if status == .OK {
-			data := [2]u8{1, u8(job.secs)}
-			status = marmot.update_app_component(
-				job.client,
-				job.account,
-				job.group,
-				ISSUE_COMPONENT,
-				raw_data(data[:]),
-				2,
-				&summary,
-			)
-		}
 	case .Retention:
 		status = marmot.update_message_retention(
 			job.client,
@@ -1479,11 +1416,7 @@ op_worker :: proc(t: ^thread.Thread) {
 			fmt.eprintfln("%v: couldn't write result: %v", job.op, write_err)
 		}
 	}
-	if job.op == .History ||
-	   job.op == .Edit ||
-	   done.op == .Issue ||
-	   job.op == .Issue_Setting ||
-	   job.op == .Lookup_Member {
+	if job.op == .History || job.op == .Edit || job.op == .Lookup_Member {
 		done.account = strings.clone(string(job.account))
 		done.group = strings.clone(string(job.group))
 		done.target = strings.clone(string(job.target))
@@ -1517,42 +1450,6 @@ op_worker :: proc(t: ^thread.Thread) {
 	free(job)
 }
 
-// Fire-and-forget custom event onto the op worker; drain_ops reloads
-// the timeline on the ack.
-spawn_custom :: proc(
-	ui: ^Ui_State,
-	client: ^marmot.Client,
-	kind: u64,
-	tags: [][]string,
-	content: string,
-	op: Msg_Op = .Custom,
-) -> int {
-	op_ticket += 1
-	job := new(Op_Job)
-	job.ticket = op_ticket
-	job.client = client
-	job.op = op
-	job.kind = kind
-	job.account = strings.clone_to_cstring(ui.account_ref)
-	job.group = strings.clone_to_cstring(ui.chats[ui.selected].group_id)
-	job.target = strings.clone_to_cstring("")
-	job.content = strings.clone_to_cstring(content)
-	job.tags = make([][]cstring, len(tags))
-	for row, i in tags {
-		job.tags[i] = make([]cstring, len(row))
-		for v, j in row {
-			job.tags[i][j] = strings.clone_to_cstring(v)
-		}
-	}
-
-	t := thread.create(op_worker)
-	t.data = job
-	append(&send_threads, t)
-	ticket := job.ticket
-	thread.start(t)
-	return ticket
-}
-
 // Own every string before starting the worker: modal drafts and timeline
 // projections can be replaced while native validation/publishing is in flight.
 spawn_poll :: proc(
@@ -1574,7 +1471,6 @@ spawn_poll :: proc(
 	job.target = strings.clone_to_cstring(target)
 	job.content = strings.clone_to_cstring(question)
 	job.poll_type = poll_type
-	job.poll_issue = ui.compose_issue != ""
 	job.poll_values = make([]cstring, len(values))
 	for value, i in values {job.poll_values[i] = strings.clone_to_cstring(value)}
 	job.tags = make([][]cstring, len(tags))
@@ -1658,7 +1554,6 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			delete(d.history); edit_result_free(d)
 			continue
 		}
-		if d.op == .Issue || d.op == .Issue_Setting {issues_complete(ui, d); continue}
 		if d.op == .Edit {
 			edit_complete(ui, d)
 			continue

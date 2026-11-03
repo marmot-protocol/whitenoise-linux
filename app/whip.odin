@@ -42,8 +42,7 @@ whip_open_project :: proc(ui: ^Ui_State, id: u32, intent: Whip_Open_Intent = .Us
 		thread_clear(ui)
 		ui.selected = -1
 		ui.editing = ""
-		ui.show_members, ui.group_files_open, ui.search_open, ui.issues_open =
-			false, false, false, false
+		ui.show_members, ui.group_files_open, ui.search_open = false, false, false
 		ui.row_menu = -1
 	}
 	ui.page, ui.whip_open, ui.whip_project = .Chats, true, id

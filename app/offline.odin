@@ -63,7 +63,6 @@ Offline_Item :: struct {
 	body:     string,
 	reply_to: string,
 	thread:   string,
-	issue:    Issue_Reply,
 	attempts: int,
 	atts:     [dynamic]Offline_Att,
 }
@@ -96,7 +95,6 @@ save_offline :: proc(ui: ^Ui_State) {
 			body     = p.body,
 			reply_to = p.reply_to,
 			thread   = p.thread,
-			issue    = p.issue,
 			attempts = p.attempts,
 		}
 		item.atts = make([dynamic]Offline_Att, context.temp_allocator)
@@ -158,7 +156,6 @@ load_offline :: proc(ui: ^Ui_State) {
 			body     = item.body,
 			reply_to = item.reply_to,
 			thread   = item.thread,
-			issue    = item.issue,
 			attempts = item.attempts,
 			queued   = true,
 		}

@@ -83,6 +83,11 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 		ui.row_menu, ui.row_menu_x, ui.row_menu_y = 1, 100, 80
 		for _ in 0 ..< 3 {frame(&ui)}
 		if !point(t, "RowArchive") {return}
+		// A menu row acts only when the press also landed on it.
+		menu_press = {}
+		forced_press = true
+		build_layout(&ui, 0)
+		forced_press = false
 		forced_release = true
 		handle_chat(&ui, client)
 		forced_release = false

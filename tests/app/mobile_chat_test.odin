@@ -28,7 +28,6 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		member_menu      = -1,
 		member_nick      = -1,
 		prefs            = default_prefs(),
-		issue_setting    = .Enabled,
 	}
 	ui.prefs.reduce_motion = true
 	append(&ui.accounts, Account_Row_Ui{name = "Mobile"})

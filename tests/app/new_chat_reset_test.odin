@@ -85,6 +85,14 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		forced_release = false
 		clay.SetPointerState({0, 0}, false)
 	}
+	// The header has one Back chip: on the group page it returns to the
+	// contact picker (NCBack), and there it dismisses the form (NCCancel).
+	back_out :: proc(t: ^testing.T, ui: ^Ui_State, client: ^marmot.Client) {
+		click(t, ui, client, clay.ID("NCBack"))
+		testing.expect(t, ui.new_chat_open && ui.nc_page == .Contacts)
+		layout(ui)
+		click(t, ui, client, clay.ID("NCCancel"))
+	}
 	for cancel in ([]bool{false, true}) {
 		layout(&ui)
 		click(t, &ui, client, clay.ID("NewChatBtn"))
@@ -97,7 +105,7 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		testing.expect_value(t, string(ui.nc_name[:]), "Abandoned group")
 		layout(&ui)
 		if cancel {
-			click(t, &ui, client, clay.ID("NCCancel"))
+			back_out(t, &ui, client)
 		} else {
 			click(t, &ui, client, clay.ID("Nav", u32(Page.Settings)))
 			testing.expect_value(t, ui.page, Page.Settings)
@@ -118,7 +126,7 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		click(t, &ui, client, clay.ID("NCGroup"))
 		testing.expect(t, len(ui.nc_name) == 0, "group field starts empty")
 		layout(&ui)
-		click(t, &ui, client, clay.ID("NCCancel"))
+		back_out(t, &ui, client)
 	}
 	// The intentional DM-to-group prefill is applied after the fresh reset.
 	peer := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"

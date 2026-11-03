@@ -56,13 +56,6 @@ geo_picker_transitions :: proc(t: ^testing.T) {
 		"a conversation change must invalidate the destination",
 	)
 	ui.chats[0].group_id = "group-a"
-	ui.compose_issue = "issue-a"
-	testing.expect(
-		t,
-		!geo_picker_valid(&ui),
-		"an issue route change must invalidate the destination",
-	)
-	ui.compose_issue = ""
 	append(&ui.thread_stack, "thread-a")
 	testing.expect(t, !geo_picker_valid(&ui), "a thread change must invalidate the destination")
 	delete(ui.thread_stack)

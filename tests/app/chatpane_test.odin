@@ -33,8 +33,6 @@ group_settings_permissions :: proc(t: ^testing.T) {
 		selected_contact = -1,
 		group_desc       = "Shared description",
 		group_retention  = 7776000,
-		issue_setting    = .Enabled,
-		issue_admin      = true,
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
 	ui.prefs.reduce_motion = true
@@ -58,13 +56,13 @@ group_settings_permissions :: proc(t: ^testing.T) {
 	ui.chats[0].title = "Updated group"
 	open_group_info(&ui, nil, .Settings)
 	testing.expect_value(t, string(ui.rename_input[:]), "Updated group")
-	// Include demotion with stale editor/menu state and a still-enabled issue setting.
+	// Include demotion with stale editor/menu state.
 	for admin, i in ([]bool{false, true, false}) {
 		ui.members[0].is_admin = admin
 		ui.desc_editing, ui.gpic_menu_open = i == 2, i == 2
 		for _ in 0 ..< 3 {build_layout(&ui, 0)}
 		commands := build_layout(&ui, 0)
-		for id in ([]string{"RenameBox", "RenameBtn", "HeroPicBtn", "DescEditBtn", "RetentionRow", "RetChip2", "InfoIssuesCard"}) {
+		for id in ([]string{"RenameBox", "RenameBtn", "HeroPicBtn", "DescEditBtn", "RetentionRow", "RetChip2"}) {
 			testing.expect(t, clay.GetElementData(clay.ID(id)).found == admin, id)
 		}
 		for id in ([]string{"DescBox", "DescSave", "GpicMenu"}) {
@@ -184,7 +182,6 @@ chat_title_overflow :: proc(t: ^testing.T) {
 		set_locale(locale)
 		for search in ([]bool{false, true}) {
 			ui.search_open = search
-			ui.issue_setting = .Enabled
 			for width in ([]f32{526.4, 340, 400, 700}) {
 				rl.SetWindowSize(i32(width * UI_ZOOM), 1382)
 				clay.SetLayoutDimensions({width, 700})
@@ -206,7 +203,7 @@ chat_title_overflow :: proc(t: ^testing.T) {
 					}
 				}
 				testing.expect(t, clipped, "title must be clipped inside the header")
-				for id in ([]string{"IssuesBtn", "FilesBtn", "SearchBtn", "BellBtn", "MembersBtn"}) {
+				for id in ([]string{"FilesBtn", "SearchBtn", "BellBtn", "MembersBtn"}) {
 					clay.SetPointerState({-100, -100}, false)
 					anim_snap_all()
 					anim_tick(0.02)

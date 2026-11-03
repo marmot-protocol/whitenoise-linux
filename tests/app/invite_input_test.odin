@@ -59,7 +59,7 @@ invite_input_dispatch :: proc(t: ^testing.T) {
 		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
 		return testing.expect(t, clay.PointerOver(clay.ID(id)), id)
 	}
-	error := "Couldn't invite the member. Enter an npub or nprofile and try again."
+	error := "Couldn't invite the member. Enter a public key or verified address and try again."
 	for input in ([]string{"", " \t\n", "\u3000"}) {
 		for keyboard in ([]bool{false, true}) {
 			ed_set(&ui, &ui.invite_input, input)
@@ -76,12 +76,26 @@ invite_input_dispatch :: proc(t: ^testing.T) {
 			forced_release = false
 			rl.PushKey(.ENTER, false)
 			commands := frame(&ui)
-			testing.expect_value(t, ui.client_status, error)
-			testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
-			testing.expect_value(t, ui.focus, Focus.Invite)
 			testing.expect_value(t, ui.nip05_ticket, 0)
 			testing.expect_value(t, string(ui.invite_input[:]), input)
 			testing.expect(t, ui.show_members)
+			// Blank input keeps the Invite button in its idle style.
+			idle := false
+			for command in commands.internalArray[:commands.length] {
+				if command.id != clay.ID("InviteBtn").id || command.commandType != .Rectangle {continue}
+				idle = command.renderData.rectangle.backgroundColor == ROW_BG
+			}
+			testing.expect(t, idle, "blank invite button is idle")
+			if !keyboard {
+				// A click on the idle button does nothing.
+				testing.expect_value(t, ui.client_status, "")
+				testing.expect_value(t, ui.banner, "")
+				testing.expect_value(t, ui.focus, Focus.Rename)
+				continue
+			}
+			testing.expect_value(t, ui.client_status, error)
+			testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
+			testing.expect_value(t, ui.focus, Focus.Invite)
 			visible := false
 			for command in commands.internalArray[:commands.length] {
 				if command.commandType != .Text {continue}

@@ -1141,7 +1141,6 @@ geo_picker_open :: proc(ui: ^Ui_State) {
 	ui.location_account = strings.clone(ui.account_ref)
 	ui.location_group = strings.clone(ui.chats[ui.selected].group_id)
 	ui.location_thread = strings.clone(thread_cur(ui))
-	ui.location_issue = strings.clone(ui.compose_issue)
 	view, seen := geo_views[GEO_PICK_KEY]
 	if !seen {view.key = strings.clone(GEO_PICK_KEY)}
 	view.center, view.home = geo_project({}), geo_project({})
@@ -1154,7 +1153,7 @@ geo_picker_close :: proc(ui: ^Ui_State) {
 	location_cancel(ui)
 	ui.location_open, ui.location_busy = false, false
 	ui.location_request += 1
-	for value in ([4]^string{&ui.location_account, &ui.location_group, &ui.location_thread, &ui.location_issue}) {
+	for value in ([3]^string{&ui.location_account, &ui.location_group, &ui.location_thread}) {
 		delete(value^)
 		value^ = ""
 	}
@@ -1171,7 +1170,6 @@ geo_picker_valid :: proc(ui: ^Ui_State) -> bool {
 		ui.account_ref == ui.location_account &&
 		ui.chats[ui.selected].group_id == ui.location_group &&
 		thread_cur(ui) == ui.location_thread &&
-		ui.compose_issue == ui.location_issue &&
 		ui.editing == "" &&
 		blocked_peer(ui) == "" \
 	)

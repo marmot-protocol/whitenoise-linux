@@ -129,7 +129,7 @@ group_hero :: proc(ui: ^Ui_State) {
 		}
 
 		if admin && ui.desc_editing {
-			issue_editor(ui, &ui.desc_input, .Desc, tr("Describe the group"), 100)
+			multiline_field(ui, &ui.desc_input, .Desc, tr("Describe the group"), 100)
 			if clay.UI(clay.ID("DescActions"))({layout = {childGap = 8}}) {
 				folder_action("DescSave", tr("Save"), true)
 				micro_button("DescCancel", tr("Cancel"))

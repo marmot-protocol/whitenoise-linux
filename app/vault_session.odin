@@ -109,7 +109,6 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	members_stop()
 	group_files_stop()
 	export_stop(ui)
-	issues_stop(ui)
 	search_stop()
 	if live.refresh != nil {chat_list_free(live.refresh); free(live.refresh); live.refresh = nil}
 	agent_shutdown()
@@ -212,7 +211,7 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	session_buffer_forget(&ui.socks5_input)
 	session_buffer_forget(&ui.socks5_username)
 	session_buffer_forget(&ui.socks5_password)
-	for buffer in ([]^[dynamic]u8{&ui.sticker_input, &ui.sticker_name, &ui.name_input, &ui.about_input, &ui.nip05_input, &ui.lud16_input, &ui.relay_input, &ui.compose, &ui.invite_input, &ui.rename_input, &ui.issue_subject, &ui.issue_body, &ui.issue_labels, &ui.issue_search, &ui.desc_input, &ui.ov_input, &ui.fwd_filter, &ui.poll_question, &ui.gs_input, &ui.picker_filter, &ui.sidebar_filter, &ui.nick_input, &ui.folder_input, &ui.folder_search, &ui.folder_color_input, &ui.search_input, &ui.settings_search, &ui.backup_pw, &ui.emoji_name, &ui.kp_input, &ui.inbox_input, &ui.fetch_input, &ui.client_input, &ui.export_pw, &ui.nc_member, &ui.nc_name, &ui.pal_input, &ui.login_input}) {
+	for buffer in ([]^[dynamic]u8{&ui.sticker_input, &ui.sticker_name, &ui.name_input, &ui.about_input, &ui.nip05_input, &ui.lud16_input, &ui.relay_input, &ui.compose, &ui.invite_input, &ui.rename_input, &ui.desc_input, &ui.ov_input, &ui.fwd_filter, &ui.poll_question, &ui.gs_input, &ui.picker_filter, &ui.sidebar_filter, &ui.nick_input, &ui.folder_input, &ui.folder_search, &ui.folder_color_input, &ui.search_input, &ui.settings_search, &ui.backup_pw, &ui.emoji_name, &ui.kp_input, &ui.inbox_input, &ui.fetch_input, &ui.client_input, &ui.export_pw, &ui.nc_member, &ui.nc_name, &ui.pal_input, &ui.login_input}) {
 		session_buffer_forget(buffer)
 	}
 	for key, text in ui.drafts {mem.zero_slice(transmute([]u8)text); delete(key); delete(text)}

@@ -32,20 +32,6 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Timeline_Page) {
 	timing_start := time.tick_now()
 	defer local_timing_end(.timeline_apply, timing_start)
-	page := page
-	combined: marmot.Timeline_Page
-	if page == timeline_page && len(timeline_history) > 0 {
-		records := make([dynamic]marmot.Timeline_Message_Record, context.temp_allocator)
-		for i := len(timeline_history) - 1;
-		    i >= 0;
-		    i -= 1 {older := timeline_history[i]; append(&records, ..older.messages[:older.messages_len])}
-		append(&records, ..page.messages[:page.messages_len])
-		combined = {
-			messages     = raw_data(records[:]),
-			messages_len = uint(len(records)),
-		}
-		page = &combined
-	}
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	ui.tl_has_more = page.has_more_before
 	ui.tl_has_after = page.has_more_after
@@ -141,19 +127,11 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	clear(&ui.messages)
 	xdc_collect_begin()
 	defer xdc_collect_end()
-	issue_comments := make(map[string]bool, context.temp_allocator)
-	for row in ui.issues {for comment in row.comments {issue_comments[comment.id] = true}}
 	for i in 0 ..< page.messages_len {
 		record := &page.messages[i]
-		if ui.issues_open &&
-		   record.kind != 1009 &&
-		   !issue_comments[string(record.message_id_hex)] {continue}
 		// Edit and delete records act on other rows; they never render
 		// as their own message.
-		if record.kind == 1009 ||
-		   record.kind == 5 ||
-		   (issue_chat_hidden(record.kind, record.tags[:record.tags_len]) &&
-				   !issue_comments[string(record.message_id_hex)]) {
+		if record.kind == 1009 || record.kind == 5 {
 			continue
 		}
 		if record.kind == AGENT_ACTIVITY || record.kind == AGENT_OPERATION {
@@ -468,13 +446,13 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 		tags := record.tags[:record.tags_len]
 		// The thread's e tag sets membership; only an explicit q tag quotes its parent.
+		quoted := false
+		for tag in tags {quoted ||= tag.values_len >= 2 && string(tag.values[0]) == "q"}
 		thread_parent :=
-			!issue_comments[id_str] &&
 			msg.thread_of != "" &&
 			string(record.reply_to_message_id_hex) == msg.thread_of &&
-			issue_tag(tags, "q") == ""
-		if !thread_parent &&
-		   (!issue_comments[id_str] || issue_tag(tags, "e") != issue_tag(tags, "E")) {
+			!quoted
+		if !thread_parent {
 			if record.reply_to_message_id_hex != nil {
 				msg.reply_id = strings.clone(string(record.reply_to_message_id_hex))
 			}

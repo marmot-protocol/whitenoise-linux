@@ -534,11 +534,7 @@ poll_create :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	// A poll created inside a thread carries the root e tag and lives
 	// in that thread's view.
-	reply := issue_reply(ui)
-	defer issue_reply_free(reply)
-	if ui.compose_issue != "" {
-		append(&tags, ..issue_reply_tags(reply))
-	} else if cur := thread_cur(ui); len(cur) > 0 {
+	if cur := thread_cur(ui); len(cur) > 0 {
 		ref := make([]string, 2, context.temp_allocator)
 		ref[0] = "e"
 		ref[1] = cur

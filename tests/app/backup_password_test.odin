@@ -148,21 +148,35 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 					)
 				}
 			}
-			// A nonempty but wrong import password still reaches decryption.
+			// A nonempty but wrong import password still reaches decryption,
+			// and its error renders inside the modal, not behind its backdrop.
 			if mode == .Import {
 				append(&ui.backup_pw, 'x')
 				rl.PushKey(.ENTER, true)
 				handle_backup(&ui)
 				rl.PushKey(.ENTER, false)
 				rl.WindowShouldClose()
-				testing.expect_value(
-					t,
-					ui.client_status,
-					tr(
-						"Couldn't open the backup. Double-check the password and try again.",
-					),
-				)
 				testing.expect_value(t, ui.backup_mode, Backup_Mode.Import)
+				testing.expect_value(t, len(ui.backup_pw), 0)
+				testing.expect_value(t, ui.client_status, "")
+				wrong := tr(
+					"Couldn't open the backup. Double-check the password and try again.",
+				)
+				commands := frame(&ui)
+				m := clay.GetElementData(clay.ID("BackupModal")).boundingBox
+				inside := false
+				for command in commands.internalArray[:commands.length] {
+					if command.commandType != .Text {continue}
+					data := command.renderData.text.stringContents
+					if !strings.contains(string(data.chars[:data.length]), wrong) {continue}
+					e := command.boundingBox
+					inside =
+						e.x >= m.x &&
+						e.y >= m.y &&
+						e.x + e.width <= m.x + m.width &&
+						e.y + e.height <= m.y + m.height
+				}
+				testing.expect(t, inside, "wrong password feedback renders inside the modal")
 			}
 			for _ in 0 ..< 3 {frame(&ui)}
 			if !click(t, clay.ID("BackupCancel")) {return}

@@ -335,7 +335,7 @@ context_menu :: proc(ui: ^Ui_State) {
 			}
 			read_only := ui.selected >= 0 && ui.chats[ui.selected].archived
 			if !read_only && !single_pane() {ctx_item("CtxReact", ICON_SMILE, tr("Add reaction"))}
-			if !read_only && (len(msg.thread_of) == 0 || ui.compose_issue != "") {
+			if !read_only && len(msg.thread_of) == 0 {
 				ctx_item("CtxReply", ICON_REPLY, tr("Reply"))
 			}
 			ctx_item("CtxThread", ICON_COMMENTS, tr("Reply in thread"))

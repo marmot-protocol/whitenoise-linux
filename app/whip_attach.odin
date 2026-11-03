@@ -128,7 +128,6 @@ whip_attach_chat :: proc(ui: ^Ui_State) -> string {
 	   ui.selected >= len(ui.chats) ||
 	   ui.show_members ||
 	   ui.group_files_open ||
-	   ui.issues_open ||
 	   ui.new_chat_open {return ""}
 	return ui.chats[ui.selected].group_id
 }

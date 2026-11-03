@@ -47,9 +47,11 @@ nip46_find :: proc(account: string) -> ^Nip46_Account {
 	for item in nip46_accounts {if item.account == account {return item}}
 	return nil
 }
+// account defaults to the active one.
 @(private)
-account_local :: proc(ui: ^Ui_State) -> bool {
-	for account in ui.accounts {if account.id_hex == ui.account_ref {return account.local && !account.external}}
+account_local :: proc(ui: ^Ui_State, account := "") -> bool {
+	ref := account != "" ? account : ui.account_ref
+	for row in ui.accounts {if row.id_hex == ref {return row.local && !row.external}}
 	return false
 }
 @(private)

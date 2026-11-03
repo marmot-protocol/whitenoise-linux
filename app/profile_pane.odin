@@ -477,7 +477,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					)
 				}
 				eyebrow(tr("ABOUT"))
-				issue_editor(ui, &ui.about_input, .About, tr("Not set"), 100)
+				multiline_field(ui, &ui.about_input, .About, tr("Not set"), 100)
 				form_row(
 					ui,
 					2,

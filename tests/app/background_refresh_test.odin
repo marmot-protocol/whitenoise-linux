@@ -342,16 +342,4 @@ thread_reply_previews :: proc(t: ^testing.T) {
 			}
 		}
 	}
-	// Issue comments already distinguish their root (E) from their reply target (e).
-	append(&ui.issues, Issue_Row{})
-	append(&ui.issues[0].comments, Issue_Comment{id = "message"})
-	defer {delete(ui.issues[0].comments); delete(ui.issues)}
-	record.kind = KIND_THREAD
-	record.tags_len = 2
-	quote_tag[0] = "E"
-	for root in ([]cstring{"issue", "root"}) {
-		quote_tag[1] = root
-		timeline_apply(nil, &ui, &page)
-		testing.expect_value(t, ui.messages[0].reply_id, root == "issue" ? "root" : "")
-	}
 }

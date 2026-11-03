@@ -203,12 +203,16 @@ close_export :: proc(ui: ^Ui_State) {
 // marmot seals the key under the entered passphrase (NIP-49); the raw
 // nsec never enters this process.
 do_export :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if !export_valid(ui) {return}
+	// Remote-signer keys never leave the signer, whatever was typed.
+	if !account_local(ui, export_account) {close_export(ui); return}
+	// An empty password gets its own explanation before the strength and
+	// confirmation checks the Export button already shows.
 	ui.export_pw_required = len(ui.export_pw) == 0
 	if ui.export_pw_required {
 		ui.focus = .ExportPw
 		return
 	}
+	if !export_valid(ui) {return}
 	account := strings.clone_to_cstring(
 		export_account != "" ? export_account : ui.account_ref,
 		context.temp_allocator,

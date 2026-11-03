@@ -51,7 +51,6 @@ chat_head_menu :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if ui.issue_setting == .Enabled {ctx_item("IssuesBtn", ICON_COMMENTS, tr("Issues"))}
 		ctx_item("FilesBtn", ICON_FOLDER, tr("Files"))
 		unread := mi_unread_count(ui)
 		ctx_item(
@@ -230,8 +229,6 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 			} else if clay.UI(clay.ID("ChatHeadActions"))(
 			{layout = {childGap = 6, childAlignment = {y = .Center}}},
 			) {
-				if ui.issue_setting ==
-				   .Enabled {header_chip("IssuesBtn", ICON_COMMENTS, ui.issues_open, tr("Issues"))}
 				header_chip("FilesBtn", ICON_FOLDER, ui.group_files_open, tr("Files"))
 				header_chip("SearchBtn", ICON_SEARCH, ui.search_open, tr("Search"))
 				bell_chip(ui)
@@ -306,7 +303,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 			mention_inbox(ui)
 		}
 		// Thread route: breadcrumb bar under the header while open.
-		if len(ui.thread_stack) > 0 && !ui.issues_open {
+		if len(ui.thread_stack) > 0 {
 			thread_bar(ui)
 		}
 
@@ -359,8 +356,6 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 				group_files_panel(ui)
 			} else if ui.show_members {
 				members_panel(ui)
-			} else if ui.issues_open && ui.issue_setting == .Enabled {
-				issues_panel(ui)
 			} else if clay.UI(clay.ID("ChatColumn"))(
 			{
 				layout = {
@@ -684,10 +679,7 @@ compose_view: struct {
 compose_scroll :: proc(ui: ^Ui_State) {
 	buf := &ui.compose
 	focus := Focus.Compose
-	if ui.issues_open && ui.issue_new && !ui.show_members {
-		buf = &ui.issue_body
-		focus = .Issue_Body
-	} else if ui.page == .Profile && ui.profile.editing {
+	if ui.page == .Profile && ui.profile.editing {
 		buf = &ui.about_input
 		focus = .About
 	} else if ui.show_members && ui.desc_editing {
@@ -997,12 +989,6 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 				}
 			}
 			scrollbar(clay.ID("RetentionRow"))
-		}
-	}
-
-	if admin && !dm {
-		if clay.UI(clay.ID("InfoIssuesCard"))(info_card()) {
-			issues_settings(ui)
 		}
 	}
 
@@ -2156,7 +2142,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 
 // Uses the chat composer's wrapping, selection, IME, and caret hit testing.
 @(private)
-issue_editor :: proc(
+multiline_field :: proc(
 	ui: ^Ui_State,
 	buf: ^[dynamic]u8,
 	focus: Focus,
@@ -2233,15 +2219,13 @@ compose_more_menu :: proc(ui: ^Ui_State) {
 		if ui.editing == "" {
 			ctx_item("PollBtn", ICON_POLL, tr("Create a poll"))
 			ctx_item("LocationBtn", ICON_LOCATION, tr("Send location"))
-			if ui.compose_issue == "" {
-				sent := gm_sent_today(ui)
-				ctx_item(
-					"GmBtn",
-					"",
-					sent ? tr("You said GM here today") : tr("Say GM (once a day)"),
-					sent ? ACCENT_DIM : clay.Color{},
-				)
-			}
+			sent := gm_sent_today(ui)
+			ctx_item(
+				"GmBtn",
+				"",
+				sent ? tr("You said GM here today") : tr("Say GM (once a day)"),
+				sent ? ACCENT_DIM : clay.Color{},
+			)
 		}
 		ctx_item("FxBtn", ICON_FX, tr("Send with an effect"))
 		if ui.prefs.stt_enabled {ctx_item("DictateBtn", ICON_MIC, tr("Dictate"))}
@@ -2508,7 +2492,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 								caret()
 							}
 							clay.Text(
-								ui.compose_issue != "" ? tr("Write a comment") : (len(ui.thread_stack) > 0 ? tr("Reply in thread…") : tr("Send a message...")),
+								len(ui.thread_stack) > 0 ? tr("Reply in thread…") : tr("Send a message..."),
 								{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_LO},
 							)
 						}
@@ -2662,7 +2646,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 							}
 						}
 						// Once a day per chat; lit and inert after it went out.
-						if ui.editing == "" && ui.compose_issue == "" {
+						if ui.editing == "" {
 							sent := gm_sent_today(ui)
 							if clay.UI(clay.ID("GmBtn"))(
 							{

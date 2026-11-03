@@ -193,7 +193,6 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 		}
 		return ui.folder_mode == .Move ? &ui.folder_search : &ui.folder_input
 	}
-	if ui.issues_open && ui.focus == .Issue_Search {return &ui.issue_search}
 	if ui.theme_edit && len(ui.theme_fields) > 0 {
 		return &ui.theme_fields[clamp(ui.theme_edit_idx, 0, len(ui.theme_fields) - 1)]
 	}
@@ -529,7 +528,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if clicked("FilesBtn") {
 		ui.group_files_open = !ui.group_files_open
-		ui.show_members, ui.issues_open = false, false
+		ui.show_members = false
 		ui.group_files_type, ui.group_files_sender, ui.group_files_menu = .All, "", .None
 		if ui.search_open {
 			ui.search_open = false
@@ -537,7 +536,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			load_timeline(client, ui)
 		}
 		ui.focus = .Compose
-		issues_sync_route(ui, client)
 		return
 	}
 	if clicked("JumpLatest") {
@@ -579,15 +577,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	if clicked("IssuesBtn") && ui.issue_setting == .Enabled {
-		ui.group_files_open = false
-		ui.issues_open = !ui.issues_open
-		ui.show_members, ui.search_open = false, false
-		ui.focus = .Issue_Search
-		issues_sync_route(ui, client)
-		return
-	}
-	if clicked("SearchBtn") {ui.issues_open = false; issues_sync_route(ui, client)}
 	// The Settings chip toggles group settings; the header's avatar and
 	// title only open it.
 	settings_shown := ui.show_members && ui.info_tab == .Settings
@@ -598,11 +587,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if (clicked("GroupSettingsBtn") || clicked("ChatHeadInfo")) && !settings_shown {
 		open_group_info(ui, client, .Settings)
 		return
-	}
-	if ui.issues_open && !ui.show_members {
-		if !selected_chat_is_dm(ui) &&
-		   clicked("MembersBtn") {open_group_info(ui, client, .Members); return}
-		if handle_issues(ui, client) {return}
 	}
 	if ui.group_files_open && !clicked("MembersBtn") && !clicked("SearchBtn") {
 		handle_group_files(ui)
@@ -708,7 +692,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("GmBtn") {
 		if gm_sent_today(ui) {
 			toast(ui, tr("You said GM here today."))
-		} else if ui.editing == "" && ui.compose_issue == "" {
+		} else if ui.editing == "" {
 			text := strings.trim_space(ui.prefs.gm_text)
 			confirm_ask(
 				ui,
@@ -938,7 +922,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	// The @-mention and :shortcode: popovers consume Escape/Enter/arrows
 	// while open.
-	if ui.issues_open && ui.focus != .Compose {return}
 	if handle_mention(ui, client) {
 		return
 	}
@@ -956,9 +939,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	// Up in an empty composer edits your latest message in this view.
-	// The issue discussion filters rows differently, so it is skipped.
 	if ui.focus == .Compose &&
-	   !ui.issues_open &&
 	   blocked_dm == "" &&
 	   len(ui.compose) == 0 &&
 	   len(ui.editing) == 0 &&
@@ -1476,7 +1457,7 @@ start_edit :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 @(private = "file")
 cancel_edit :: proc(ui: ^Ui_State) {
 	ui.editing = ""
-	ed_set(ui, &ui.compose, ui.drafts[compose_draft_key(ui)])
+	ed_set(ui, &ui.compose, ui.drafts[ui.chats[ui.selected].group_id])
 }
 
 // Stash the composer as the selected chat's draft (whitespace-only
@@ -1486,12 +1467,23 @@ stash_draft :: proc(ui: ^Ui_State) {
 	if ui.selected < 0 || len(ui.editing) > 0 {
 		return
 	}
-	gid := compose_draft_key(ui)
+	gid := ui.chats[ui.selected].group_id
 	if len(strings.trim_space(string(ui.compose[:]))) == 0 {
 		delete_key(&ui.drafts, gid)
 		return
 	}
 	ui.drafts[strings.clone(gid)] = strings.clone(string(ui.compose[:]))
+}
+
+// Park the composer's staged files under the selected chat, the
+// attachment counterpart of stash_draft.
+@(private)
+stash_staged :: proc(ui: ^Ui_State) {
+	if ui.selected < 0 || len(ui.staged) == 0 {return}
+	key := ui.chats[ui.selected].group_id
+	if !(key in ui.staged_drafts) {key = strings.clone(key)}
+	ui.staged_drafts[key] = ui.staged
+	ui.staged = {}
 }
 
 @(private = "file")
@@ -1510,7 +1502,7 @@ drop_draft :: proc(ui: ^Ui_State) {
 	if ui.selected < 0 {
 		return
 	}
-	gid := compose_draft_key(ui)
+	gid := ui.chats[ui.selected].group_id
 	if gid in ui.drafts {
 		delete_key(&ui.drafts, gid)
 		save_settings(ui)
@@ -1531,8 +1523,6 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 	stash_draft(ui)
 	stash_staged(ui)
 	ui.whip_open = false
-	ui.issues_open = false
-	delete(ui.compose_issue); ui.compose_issue = ""
 	thread_clear(ui) // thread roots belong to the chat being left
 	// Drop any pending Namecoin invites for the chat being left, so a
 	// slow resolve does not land its invite here after the user moved
@@ -1550,8 +1540,9 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 		if i < index {index -= 1}
 	}
 	ui.selected = index
-	ui.staged = ui.staged_drafts[compose_draft_key(ui)]
-	if compose_draft_key(ui) in ui.staged_drafts {ui.staged_drafts[compose_draft_key(ui)] = {}}
+	key := ui.chats[index].group_id
+	ui.staged = ui.staged_drafts[key]
+	if key in ui.staged_drafts {ui.staged_drafts[key] = {}}
 	ui.search_open = false
 	ui.show_members = false
 	ui.group_files_open = false
@@ -1591,10 +1582,6 @@ open_group_info :: proc(ui: ^Ui_State, client: ^marmot.Client, tab: Info_Tab) {
 	if ui.selected < 0 || ui.selected >= len(ui.chats) {return}
 	dm := selected_chat_is_dm(ui)
 	ui.group_files_open = false
-	if ui.issues_open {
-		ui.issues_open = false
-		issues_sync_route(ui, client)
-	}
 	if !ui.show_members {
 		load_members(client, ui)
 	}
@@ -1655,7 +1642,7 @@ set_archived :: proc(ui: ^Ui_State, client: ^marmot.Client, group_id: string, ar
 			ui.selected = selected >= 0 && selected < len(ui.chats) ? selected : -1
 			// Return only files moved by this action, not an older saved draft.
 			if stashed_files && ui.selected >= 0 {
-				key := compose_draft_key(ui)
+				key := ui.chats[ui.selected].group_id
 				ui.staged = ui.staged_drafts[key]
 				ui.staged_drafts[key] = {}
 			}
@@ -1768,6 +1755,7 @@ open_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.focus = .NC_Search
 	ui.nc_contact_sel = 0
 	clear(&ui.nc_search)
+	ed_set(ui, &ui.nc_name, "")
 	if ui.nc_member_choice > 0 && ui.nc_member_choice <= len(ui.nc_contacts) {
 		npub := hex_npub(ui.nc_contacts[ui.nc_member_choice - 1].id_hex)
 		ed_set(ui, &ui.nc_member, npub)
@@ -2306,23 +2294,6 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if clicked("IssueToggle") &&
-	   admin &&
-	   ui.issue_admin &&
-	   ui.issue_setting != .Unavailable &&
-	   ui.issue_ticket == 0 {
-		ui.issue_action = .Setting
-		ui.issue_ticket = spawn_op(
-			ui,
-			client,
-			.Issue_Setting,
-			"",
-			"",
-			ui.issue_setting == .Enabled ? 0 : 1,
-		)
-		return
-	}
-	if admin && clicked("IssueRetry") {issues_refresh(); return}
 	for secs, i in RETENTION_SECS {
 		if !self_is_admin(ui) ||
 		   !clicked(fmt.tprintf("RetChip%d", i)) ||
@@ -2494,9 +2465,6 @@ Msg_Op :: enum {
 	Delete,
 	Edit,
 	History,
-	Issue,
-	Issue_Setting,
-	Custom, // app-defined kind + tags
 	Poll_Create,
 	Poll_Vote,
 	Retry_Convergence,
