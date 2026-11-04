@@ -255,8 +255,12 @@ secret store at client construction (`marmot_client_new_with_secret_store`):
 account signing keys land under `account:<label>` in the same file. The media
 cache and the offline queue seal with the vault's blob subkey.
 
-A wrong password fails the Poly1305 tag. There is no recovery: "Use another
-key" deletes the vault and everything sealed under it.
+A wrong password fails the Poly1305 tag. There is no recovery. "Forgot your
+password?" opens help that names the vault password apart from the nsec,
+remote signer and backup file password, and offers no delete control. Only
+its review step shows "Delete this vault", which removes the vault and
+everything sealed under it. Typing, unlocking or a failed unlock closes both
+steps.
 
 The create-vault and change-password hints distinguish empty input, known
 common passwords, other weak passwords, and passwords that meet the existing

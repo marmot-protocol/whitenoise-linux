@@ -32,7 +32,7 @@ vault_gate_empty_password_copy :: proc(t: ^gate_testing.T) {
 		gate_close()
 		gate_confirm = false
 		gate_err = ""
-		gate_reset_armed = false
+		gate_reset = .Closed
 	}
 	previous := clay.GetCurrentContext()
 	memory: []u8
@@ -182,7 +182,7 @@ vault_gate_reset_disarms :: proc(t: ^gate_testing.T) {
 		gate_close()
 		gate_confirm = false
 		gate_err = ""
-		gate_reset_armed = false
+		gate_reset = .Closed
 	}
 	previous := clay.GetCurrentContext()
 	memory: []u8
@@ -196,10 +196,10 @@ vault_gate_reset_disarms :: proc(t: ^gate_testing.T) {
 	rl.PushKey(.ENTER, false)
 	for rl.GetCharPressed() != 0 {}
 
-	gate_reset_armed = true
+	gate_reset = .Review
 	rl.PushChar('x')
 	gate_input(&ui)
-	gate_testing.expect(t, !gate_reset_armed, "a keystroke disarms vault deletion")
+	gate_testing.expect(t, gate_reset == .Closed, "a keystroke disarms vault deletion")
 	gate_testing.expect(t, !vault_exists(), "disarming must not delete the vault")
 	gate_testing.expect_value(t, len(gate_pw), 1)
 
@@ -210,14 +210,14 @@ vault_gate_reset_disarms :: proc(t: ^gate_testing.T) {
 	defer rl.PushKey(.ENTER, false)
 	gate_input(&ui)
 	gate_testing.expect(t, gate_job.worker != nil)
-	gate_reset_armed = true
+	gate_reset = .Review
 	for gate_job.worker != nil {
 		if gate_poll() {
 			gate_testing.expect(t, false, "wrong password must not open the vault")
 			return
 		}
 	}
-	gate_testing.expect(t, !gate_reset_armed, "a failed unlock disarms vault deletion")
+	gate_testing.expect(t, gate_reset == .Closed, "a failed unlock disarms vault deletion")
 	gate_testing.expect(t, vault_exists())
 }
 
@@ -245,7 +245,8 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 		gate_close()
 		gate_confirm = false
 		gate_err = ""
-		gate_reset_armed = false
+		gate_reset = .Closed
+		gate_reset_done = false
 		rl.PushKey(.ENTER, false)
 		forced_press, forced_release = false, false
 	}
@@ -269,9 +270,9 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 	rl.PushKey(.ENTER, false)
 	clay.SetPointerState({-100, -100}, false)
 
-	click_go :: proc(ui: ^Ui_State) {
+	click :: proc(ui: ^Ui_State, id: string) {
 		gate_layout(ui)
-		box := clay.GetElementData(clay.ID("GateGo")).boundingBox
+		box := clay.GetElementData(clay.ID(id)).boundingBox
 		point := clay.Vector2{box.x + box.width / 2, box.y + box.height / 2}
 		clay.SetPointerState(point, true)
 		rl.PushMouseButton(.LEFT, true)
@@ -286,7 +287,7 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 	strong := "marmot on burrowed time thimble lantern"
 	append(&gate_pw, "Password123!")
 	append(&gate_pw2, "Password123!")
-	click_go(&ui)
+	click(&ui, "GateGo")
 	gate_testing.expect(
 		t,
 		gate_job.worker == nil && !vault_exists(),
@@ -301,7 +302,7 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 		"correcting strength clears the stale rejection without submitting",
 	)
 	gate_confirm = false
-	click_go(&ui)
+	click(&ui, "GateGo")
 	gate_testing.expect(t, gate_job.worker == nil && !vault_exists())
 	gate_testing.expect(t, gate_confirm)
 	mismatch_error := gate_err
@@ -329,7 +330,7 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 	gate_input(&ui)
 	gate_testing.expect_value(t, string(gate_pw2[:]), strong)
 	gate_confirm = false
-	click_go(&ui)
+	click(&ui, "GateGo")
 	gate_testing.expect(
 		t,
 		gate_job.worker != nil,
@@ -345,8 +346,32 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 	clear(&gate_pw)
 	append(&gate_pw, "x")
 	clear(&gate_pw2)
-	click_go(&ui)
+	click(&ui, "GateGo")
 	gate_testing.expect(t, gate_job.worker != nil && !gate_job.creating)
 	for gate_job.worker != nil && !gate_poll() {}
 	gate_testing.expect(t, vault_verify("x"))
+
+	// Forgot-password help never deletes: only its review shows the
+	// delete control, and backing out of either keeps the vault.
+	vault_relock()
+	clear(&gate_pw)
+	click(&ui, "GateForgot")
+	gate_layout(&ui)
+	gate_testing.expect(t, gate_reset == .Help)
+	gate_testing.expect(
+		t,
+		!clay.GetElementData(clay.ID("GateReset")).found,
+		"help must not offer the delete control",
+	)
+	click(&ui, "GateRetry")
+	gate_testing.expect(t, gate_reset == .Closed && vault_exists())
+	click(&ui, "GateForgot")
+	click(&ui, "GateResetReview")
+	gate_testing.expect(t, gate_reset == .Review && vault_exists())
+	click(&ui, "GateResetCancel")
+	gate_testing.expect(t, gate_reset == .Closed && vault_exists())
+	click(&ui, "GateForgot")
+	click(&ui, "GateResetReview")
+	click(&ui, "GateReset")
+	gate_testing.expect(t, !vault_exists() && gate_reset_done)
 }

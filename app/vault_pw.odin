@@ -237,7 +237,7 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			scrollbar(clay.ID("VaultPwBody"), 13)
 			clay.Text(
 				tr(
-					"The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec.",
+					"The new password re-encrypts the vault on this device. White Noise still can't reset it. If you forget it, the only way forward is to delete this vault and start over.",
 				),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 			)

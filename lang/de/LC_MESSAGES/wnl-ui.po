@@ -936,8 +936,8 @@ msgstr "Relays werden geprüft..."
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "Dein Schlüssel wird bei den Relays geprüft. Das dauert ein paar Sekunden."
 
-msgid "Checking your password and decrypting your keys."
-msgstr "Dein Passwort wird geprüft und deine Schlüssel werden entschlüsselt."
+msgid "Checking your password and decrypting the vault."
+msgstr "Dein Passwort wird geprüft und der Tresor wird entschlüsselt."
 
 msgid "Checking..."
 msgstr "Wird geprüft..."
@@ -1954,9 +1954,6 @@ msgstr "Für mich löschen"
 msgid "Delete for you?"
 msgstr "Für dich löschen?"
 
-msgid "Delete keys and chats"
-msgstr "Schlüssel und Chats löschen"
-
 msgid "Delete this folder?"
 msgstr "Diesen Ordner löschen?"
 
@@ -2298,8 +2295,8 @@ msgstr "Gib deinen Bunker-Link ein, um fortzufahren."
 msgid "Enter your nsec to continue."
 msgstr "Gib deinen nsec ein, um fortzufahren."
 
-msgid "Enter your password to unlock this device's keys."
-msgstr "Gib dein Passwort ein, um die Schlüssel dieses Geräts zu entsperren."
+msgid "Enter your password to unlock the vault on this device."
+msgstr "Gib dein Passwort ein, um den Tresor auf diesem Gerät zu entsperren."
 
 msgid "Erase avatar reveal"
 msgstr "Avatar beim Aufdecken ausradieren"
@@ -2487,8 +2484,8 @@ msgstr "Essen"
 msgid "Forget all"
 msgstr "Alle vergessen"
 
-msgid "Forgot password? Start over"
-msgstr "Passwort vergessen? Neu anfangen"
+msgid "Forgot your password?"
+msgstr "Passwort vergessen?"
 
 msgid "Forward"
 msgstr "Weiterleiten"
@@ -2930,14 +2927,14 @@ msgstr "Kannada"
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr "Hält die geöffnete Unterhaltung auf einer angenehmen Lesebreite, statt die volle Breite auszufüllen."
 
+msgid "Keep this vault"
+msgstr "Diesen Tresor behalten"
+
 msgid "Keep your chat list focused without deleting conversations."
 msgstr "Halte deine Chatliste übersichtlich, ohne Unterhaltungen zu löschen."
 
 msgid "Keep your conversations in order."
 msgstr "Halte deine Unterhaltungen in Ordnung."
-
-msgid "Keep your keys and chats"
-msgstr "Deine Schlüssel und Chats behalten"
 
 msgid "Keep your signer open. Approve the connection and requested signatures there."
 msgstr "Lass deinen Signer geöffnet. Genehmige dort die Verbindung und die angeforderten Signaturen."
@@ -4379,6 +4376,9 @@ msgstr "Prüfen und genehmigen"
 msgid "Review signer approval link"
 msgstr "Genehmigungslink des Signers prüfen"
 
+msgid "Review starting over"
+msgstr "Neuanfang prüfen"
+
 msgid "Right click"
 msgstr "Rechtsklick"
 
@@ -4985,6 +4985,9 @@ msgstr "Wenn du einen Chat beginnst, wird die Person nicht zu deinen Kontakten h
 msgid "Starting microphone…"
 msgstr "Mikrofon wird gestartet…"
 
+msgid "Starting over deletes the vault on this device and everything sealed with it: account keys stored here, remote signer sessions, unsent messages, saved stickers and GIFs, and cached media. This can't be undone. Signing in again later can give you your account back, but not what was deleted, and your chats may not return."
+msgstr "Ein Neuanfang löscht den Tresor auf diesem Gerät und alles, was damit versiegelt ist: hier gespeicherte Kontoschlüssel, Remote-Signer-Sitzungen, nicht gesendete Nachrichten, gespeicherte Sticker und GIFs sowie zwischengespeicherte Medien. Das lässt sich nicht rückgängig machen. Wenn du dich später erneut anmeldest, kannst du dein Konto zurückbekommen, aber nicht das Gelöschte, und deine Chats kommen möglicherweise nicht zurück."
+
 msgid "Starting the runtime"
 msgstr "Laufzeitumgebung wird gestartet"
 
@@ -5034,6 +5037,9 @@ msgstr "Vorlesen stoppen"
 
 msgid "Storage"
 msgstr "Speicher"
+
+msgid "Store it in a password manager. It is separate from your nsec, remote signer, and backup file passwords."
+msgstr "Bewahre es in einem Passwortmanager auf. Es ist unabhängig von deinem nsec, deinem Remote-Signer und den Passwörtern von Sicherungsdateien."
 
 msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."
 msgstr "Bewahre ihn an einem sicheren Ort auf und schließe dieses Fenster. Wer ihn importiert, braucht zum Entschlüsseln das Passwort, das du gerade eingegeben hast."
@@ -5195,8 +5201,8 @@ msgstr "Der Gruppenname wurde entfernt"
 msgid "The group was renamed to %s"
 msgstr "Die Gruppe wurde in %s umbenannt"
 
-msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
-msgstr "Das neue Passwort verschlüsselt die Schlüssel dieses Geräts neu. Eine Wiederherstellung gibt es weiterhin nicht: Wenn du es vergisst, musst du mit deinem nsec neu beginnen."
+msgid "The new password re-encrypts the vault on this device. White Noise still can't reset it. If you forget it, the only way forward is to delete this vault and start over."
+msgstr "Das neue Passwort verschlüsselt den Tresor auf diesem Gerät neu. White Noise kann es weiterhin nicht zurücksetzen. Wenn du es vergisst, bleibt dir nur, diesen Tresor zu löschen und neu anzufangen."
 
 msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr "Der ngit-Webclient, in dem eine Patch-Karte geöffnet wird. Diese Seite erhält den Patch-Link."
@@ -5215,6 +5221,9 @@ msgstr "Die Signer-Anfrage wurde abgebrochen."
 
 msgid "The updated list is published to your relays."
 msgstr "Die aktualisierte Liste wird auf deinen Relays veröffentlicht."
+
+msgid "The vault on this device was deleted. Pick a new password to start over."
+msgstr "Der Tresor auf diesem Gerät wurde gelöscht. Wähle ein neues Passwort, um neu anzufangen."
 
 #, c-format
 msgid "The web client an event card opens. For example %s. %s is replaced with the event id."
@@ -5275,9 +5284,6 @@ msgstr "Dies ändert die Projektmetadaten in White Noise, nicht die laufenden Sh
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "Dieser Chat ist archiviert. Stelle ihn im Archiv wieder her, um Nachrichten zu senden."
 
-msgid "This deletes every account key and all chats on this device. You can only sign in again if you have a backup of your secret key."
-msgstr "Dadurch werden alle Kontoschlüssel und Chats auf diesem Gerät gelöscht. Du kannst dich nur erneut anmelden, wenn du eine Sicherung deines geheimen Schlüssels hast."
-
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "Das enthält keinen sichtbaren Text, daher sendet die GM-Taste GM."
 
@@ -5329,11 +5335,11 @@ msgstr "Diese Zahl erhöht sich, wenn sich die Verschlüsselungsschlüssel der G
 msgid "This pairing link is too long for a QR code. Use Copy pairing link."
 msgstr "Dieser Kopplungslink ist für einen QR-Code zu lang. Verwende Kopplungslink kopieren."
 
+msgid "This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it."
+msgstr "Dieses Passwort verschlüsselt den Tresor auf diesem Gerät. Es erstellt kein Konto, und White Noise kann es nicht zurücksetzen."
+
 msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
 msgstr "Dieses Passwort ist zu leicht zu erraten. Verwende unzusammenhängende Wörter oder ein von einem Passwortmanager erzeugtes Passwort."
-
-msgid "This password protects everything White Noise stores on this computer. It doesn't create an account, and there is no way to recover it."
-msgstr "Dieses Passwort schützt alles, was White Noise auf diesem Computer speichert. Es erstellt kein Konto, und es gibt keine Möglichkeit, es wiederherzustellen."
 
 msgid "This project is no longer available."
 msgstr "Dieses Projekt ist nicht mehr verfügbar."
@@ -5730,6 +5736,9 @@ msgstr "White Noise %s ist bereit zur Installation."
 msgid "White Noise and this session."
 msgstr "Erfahre mehr über White Noise und diese Sitzung."
 
+msgid "White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened."
+msgstr "White Noise kann dieses Passwort nicht zurücksetzen, und niemand sonst hat eine Kopie. Ohne es lässt sich der Tresor auf diesem Gerät nicht öffnen."
+
 msgid "White Noise doesn't open at login"
 msgstr "White Noise startet nicht bei der Anmeldung"
 
@@ -5849,9 +5858,6 @@ msgstr "Für dein Konto steht eine Aktion aus. Schließe sie ab, bevor du deinen
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr "Dein Konto ist entfernt, aber sein Signer-Eintrag konnte nicht aus dem verschlüsselten Tresor entfernt werden."
 
-msgid "Your account keys and chats were deleted from this device. Pick a new password to start over."
-msgstr "Deine Kontoschlüssel und Chats wurden von diesem Gerät gelöscht. Wähle ein neues Passwort, um neu anzufangen."
-
 msgid "Your chats appear here once you have some."
 msgstr "Deine Chats erscheinen hier, sobald du welche hast."
 
@@ -5887,6 +5893,9 @@ msgstr "Dein Name"
 
 msgid "Your new password"
 msgstr "Dein neues Passwort"
+
+msgid "Your nsec or remote signer can let you use your account again, but it can't open this vault, and your chats on this device may not return. A backup file has its own password and holds only settings, drafts, custom emoji, and themes."
+msgstr "Mit deinem nsec oder Remote-Signer kannst du dein Konto wieder verwenden, aber damit lässt sich dieser Tresor nicht öffnen, und deine Chats auf diesem Gerät kommen möglicherweise nicht zurück. Eine Sicherungsdatei hat ein eigenes Passwort und enthält nur Einstellungen, Entwürfe, eigene Emojis und Themes."
 
 msgid "Your own notepad"
 msgstr "Dein eigener Notizblock"

@@ -161,8 +161,17 @@ gate_confirm: bool // the confirm box has focus
 gate_err: string
 @(private = "file")
 gate_err_strength: bool
+// The forgot-password steps. Help explains that no reset exists and has
+// no delete control; only Review renders one, so reading help or backing
+// out never arms the deletion.
 @(private = "file")
-gate_reset_armed: bool
+Gate_Reset :: enum {
+	Closed,
+	Help,
+	Review,
+}
+@(private = "file")
+gate_reset: Gate_Reset
 @(private = "file")
 gate_reset_done: bool
 @(private = "file")
@@ -240,7 +249,7 @@ gate_poll :: proc() -> bool {
 		mem.zero_slice(gate_pw[:])
 		clear(&gate_pw)
 	}
-	gate_reset_armed = false
+	gate_reset = .Closed
 	return false
 }
 
@@ -273,7 +282,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 	gate_err = ""
 	gate_confirm = false
 	gate_err_strength = false
-	gate_reset_armed = false
+	gate_reset = .Closed
 	gate_reset_done = false
 	gate_pw_view = .Masked
 	gate_pw2_view = .Masked
@@ -287,7 +296,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 	previous_height: i32 = -1
 	previous_confirm := gate_confirm
 	previous_error := gate_err
-	previous_reset := gate_reset_armed
+	previous_reset := gate_reset
 	previous_reset_done := gate_reset_done
 	for frame := 0; !rl.WindowShouldClose(); frame += 1 {
 		when ODIN_OS == .Darwin {macos_update_tick()}
@@ -315,7 +324,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		if previous_height != rl.GetScreenHeight() ||
 		   previous_confirm != gate_confirm ||
 		   previous_error != gate_err ||
-		   previous_reset != gate_reset_armed ||
+		   previous_reset != gate_reset ||
 		   previous_reset_done != gate_reset_done {
 			// The first frame opens at the top, so the setup map and copy are
 			// read before the form; later resizes (an on-screen keyboard)
@@ -325,7 +334,11 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 			if gate_err != "" || resized {
 				target = "GateSubmit"
 			}
-			if gate_reset_armed {
+			switch gate_reset {
+			case .Closed:
+			case .Help:
+				target = "GateForgotHelp"
+			case .Review:
 				target = "GateResetConfirm"
 			}
 			if gate_reset_done != previous_reset_done {
@@ -335,7 +348,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 			previous_height = rl.GetScreenHeight()
 			previous_confirm = gate_confirm
 			previous_error = gate_err
-			previous_reset = gate_reset_armed
+			previous_reset = gate_reset
 			previous_reset_done = gate_reset_done
 			render_commands = gate_layout(ui)
 		}
@@ -429,29 +442,37 @@ gate_input :: proc(ui: ^Ui_State) {
 		tab_focus([]bool{false, true}, &gate_confirm)
 	}
 	// Typing, switching fields, or submitting an unlock is not the
-	// delete. Any of those drops the armed state.
+	// delete. Any of those closes the forgot-password steps.
 	other :=
 		clicked("GatePwBox") ||
 		clicked("GatePw2Box") ||
 		clicked("GateGo") ||
 		rl.IsKeyPressed(.ENTER) ||
 		gate_confirm != focus
-	if edited || clicked("GatePwShow") || clicked("GatePw2Show") || clicked("GateResetCancel") {
+	if edited ||
+	   clicked("GatePwShow") ||
+	   clicked("GatePw2Show") ||
+	   clicked("GateResetCancel") ||
+	   clicked("GateRetry") {
 		other = true
 	}
 
-	// No recovery path: forgetting the password means starting over from
-	// an nsec, so the reset arms first and acts on the second click.
+	// No reset exists: forgetting the password means deleting the vault.
+	// Help explains that first, and the delete acts only from Review.
+	if clicked("GateForgot") {
+		gate_reset = .Help
+		return
+	}
+	if clicked("GateResetReview") {
+		gate_reset = .Review
+		return
+	}
 	if clicked("GateReset") {
-		if other {
-			gate_reset_armed = false
+		if other || gate_reset != .Review {
+			gate_reset = .Closed
 			return
 		}
-		if !gate_reset_armed {
-			gate_reset_armed = true
-			return
-		}
-		gate_reset_armed = false
+		gate_reset = .Closed
 		vault_stores_quiesce()
 		vault_delete()
 		mem.zero_slice(gate_pw[:])
@@ -468,7 +489,7 @@ gate_input :: proc(ui: ^Ui_State) {
 		return
 	}
 	if other {
-		gate_reset_armed = false
+		gate_reset = .Closed
 	}
 
 	if !clicked("GateGo") && !rl.IsKeyPressed(.ENTER) {
@@ -652,7 +673,7 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 					}
 				}
 				clay.Text(
-					creating ? tr("This password protects everything White Noise stores on this computer. It doesn't create an account, and there is no way to recover it.") : tr("Enter your password to unlock this device's keys."),
+					creating ? tr("This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it.") : tr("Enter your password to unlock the vault on this device."),
 					{
 						fontId = FONT_BODY,
 						fontSize = 15,
@@ -660,13 +681,28 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 						textAlignment = .Center,
 					},
 				)
+				// The vault password is easy to confuse with the other secrets
+				// a person may hold, so creation names them apart.
+				if creating {
+					clay.Text(
+						tr(
+							"Store it in a password manager. It is separate from your nsec, remote signer, and backup file passwords.",
+						),
+						{
+							fontId = FONT_BODY,
+							fontSize = 12,
+							textColor = TEXT_LO,
+							textAlignment = .Center,
+						},
+					)
+				}
 				if creating && gate_reset_done {
 					if clay.UI(clay.ID("GateResetNotice"))(
 					{layout = {sizing = {width = clay.SizingGrow()}}},
 					) {
 						clay.Text(
 							tr(
-								"Your account keys and chats were deleted from this device. Pick a new password to start over.",
+								"The vault on this device was deleted. Pick a new password to start over.",
 							),
 							{
 								fontId = FONT_BODY,
@@ -784,7 +820,7 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 						)
 						busy_bar("GateBusy")
 						clay.Text(
-							creating ? tr("Deriving an encryption key from your password.") : tr("Checking your password and decrypting your keys."),
+							creating ? tr("Deriving an encryption key from your password.") : tr("Checking your password and decrypting the vault."),
 							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
 						)
 					} else {
@@ -825,7 +861,36 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 					if clay.UI(clay.ID("GateResetGap"))(
 					{layout = {sizing = {height = clay.SizingFixed(24)}}},
 					) {}
-					if gate_reset_armed {
+					switch gate_reset {
+					case .Closed:
+						micro_button("GateForgot", tr("Forgot your password?"), TEXT_DIM)
+					case .Help:
+						if clay.UI(clay.ID("GateForgotHelp"))(
+						{
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								layoutDirection = .TopToBottom,
+								childGap = 12,
+							},
+						},
+						) {
+							clay.Text(
+								tr(
+									"White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened.",
+								),
+								{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
+							)
+							clay.Text(
+								tr(
+									"Your nsec or remote signer can let you use your account again, but it can't open this vault, and your chats on this device may not return. A backup file has its own password and holds only settings, drafts, custom emoji, and themes.",
+								),
+								{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+							)
+							micro_button("GateRetry", tr("Try again"), TEXT)
+							micro_button("GateResetReview", tr("Review starting over"), TEXT_DIM)
+							micro_button("GateQuit", tr("Close White Noise"), TEXT_DIM)
+						}
+					case .Review:
 						if clay.UI(clay.ID("GateResetConfirm"))(
 						{
 							layout = {
@@ -837,15 +902,13 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 						) {
 							clay.Text(
 								tr(
-									"This deletes every account key and all chats on this device. You can only sign in again if you have a backup of your secret key.",
+									"Starting over deletes the vault on this device and everything sealed with it: account keys stored here, remote signer sessions, unsent messages, saved stickers and GIFs, and cached media. This can't be undone. Signing in again later can give you your account back, but not what was deleted, and your chats may not return.",
 								),
 								{fontId = FONT_BODY, fontSize = 14, textColor = DANGER},
 							)
-							micro_button("GateResetCancel", tr("Keep your keys and chats"), TEXT)
-							micro_button("GateReset", tr("Delete keys and chats"), DANGER)
+							micro_button("GateResetCancel", tr("Keep this vault"), TEXT)
+							micro_button("GateReset", tr("Delete this vault"), DANGER)
 						}
-					} else {
-						micro_button("GateReset", tr("Forgot password? Start over"), TEXT_DIM)
 					}
 				}
 			}

@@ -190,13 +190,14 @@ mobile_onboard_viewport :: proc(t: ^testing.T) {
 		}
 	}
 
-	// Existing vaults keep the weaker-password unlock path and the reset
-	// action; phone layout must not turn this into the create-only form.
+	// Existing vaults keep the weaker-password unlock path and the
+	// forgot-password help; phone layout must not turn this into the
+	// create-only form.
 	testing.expect_value(t, vault_create("x"), Vault_Err.None)
 	vault_relock()
 	rl.SetWindowSize(320, 220)
 	clay.SetLayoutDimensions({320, 220})
 	mobile_onboard_frame(&ui, .Gate)
-	testing.expect(t, clay.GetElementData(clay.ID("GateReset")).found)
+	testing.expect(t, clay.GetElementData(clay.ID("GateForgot")).found)
 	testing.expect(t, !clay.GetElementData(clay.ID("GatePw2Box")).found)
 }

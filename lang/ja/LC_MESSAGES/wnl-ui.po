@@ -936,8 +936,8 @@ msgstr "リレーを確認しています..."
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "リレーで鍵を確認しています。数秒かかります。"
 
-msgid "Checking your password and decrypting your keys."
-msgstr "パスワードを確認して、鍵を復号しています。"
+msgid "Checking your password and decrypting the vault."
+msgstr "パスワードを確認し、保管庫を復号しています。"
 
 msgid "Checking..."
 msgstr "確認中..."
@@ -1954,9 +1954,6 @@ msgstr "自分のみ削除"
 msgid "Delete for you?"
 msgstr "自分のみ削除しますか？"
 
-msgid "Delete keys and chats"
-msgstr "鍵とチャットを削除"
-
 msgid "Delete this folder?"
 msgstr "このフォルダを削除しますか？"
 
@@ -2298,8 +2295,8 @@ msgstr "続行するには、バンカーリンクを入力してください。
 msgid "Enter your nsec to continue."
 msgstr "続行するにはnsecを入力してください。"
 
-msgid "Enter your password to unlock this device's keys."
-msgstr "この端末の鍵のロックを解除するには、パスワードを入力してください。"
+msgid "Enter your password to unlock the vault on this device."
+msgstr "この端末の保管庫を解除するには、パスワードを入力してください。"
 
 msgid "Erase avatar reveal"
 msgstr "消してアバターの下を表示"
@@ -2487,8 +2484,8 @@ msgstr "食べ物"
 msgid "Forget all"
 msgstr "すべて忘れる"
 
-msgid "Forgot password? Start over"
-msgstr "パスワードを忘れた場合は最初からやり直す"
+msgid "Forgot your password?"
+msgstr "パスワードを忘れましたか？"
 
 msgid "Forward"
 msgstr "転送"
@@ -2930,14 +2927,14 @@ msgstr "カンナダ語"
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr "開いている会話を全幅にせず、読みやすい幅に保ちます。"
 
+msgid "Keep this vault"
+msgstr "この保管庫を残す"
+
 msgid "Keep your chat list focused without deleting conversations."
 msgstr "会話を削除せずに、チャット一覧を整理できます。"
 
 msgid "Keep your conversations in order."
 msgstr "会話を整理できます。"
-
-msgid "Keep your keys and chats"
-msgstr "鍵とチャットを保持"
 
 msgid "Keep your signer open. Approve the connection and requested signatures there."
 msgstr "署名者を開いたままにしてください。署名者で接続と要求された署名を承認してください。"
@@ -4379,6 +4376,9 @@ msgstr "確認と承認"
 msgid "Review signer approval link"
 msgstr "署名者の承認リンクを確認"
 
+msgid "Review starting over"
+msgstr "やり直す前に確認する"
+
 msgid "Right click"
 msgstr "右クリック"
 
@@ -4985,6 +4985,9 @@ msgstr "チャットを開始しても、相手は連絡先に追加されませ
 msgid "Starting microphone…"
 msgstr "マイクを起動しています…"
 
+msgid "Starting over deletes the vault on this device and everything sealed with it: account keys stored here, remote signer sessions, unsent messages, saved stickers and GIFs, and cached media. This can't be undone. Signing in again later can give you your account back, but not what was deleted, and your chats may not return."
+msgstr "やり直すと、この端末の保管庫と、それで保護されているものがすべて削除されます。ここに保存されたアカウントの鍵、リモート署名者のセッション、未送信のメッセージ、保存したステッカーと GIF、キャッシュされたメディアです。この操作は元に戻せません。後で再度サインインするとアカウントは使えるようになる場合がありますが、削除されたものは戻らず、チャットも戻らない可能性があります。"
+
 msgid "Starting the runtime"
 msgstr "ランタイムを起動しています"
 
@@ -5034,6 +5037,9 @@ msgstr "読み上げを停止"
 
 msgid "Storage"
 msgstr "ストレージ"
+
+msgid "Store it in a password manager. It is separate from your nsec, remote signer, and backup file passwords."
+msgstr "パスワードマネージャーに保管してください。これは nsec、リモート署名者、バックアップファイルのパスワードとは別のものです。"
 
 msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."
 msgstr "安全な場所に保管して、このダイアログを閉じてください。インポートする人は、復号のために今入力したパスワードが必要になります。"
@@ -5195,8 +5201,8 @@ msgstr "グループ名が削除されました"
 msgid "The group was renamed to %s"
 msgstr "グループ名が%sに変更されました"
 
-msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
-msgstr "新しいパスワードでこの端末の鍵を再暗号化します。復元する方法はありません。忘れた場合は nsec からやり直すことになります。"
+msgid "The new password re-encrypts the vault on this device. White Noise still can't reset it. If you forget it, the only way forward is to delete this vault and start over."
+msgstr "新しいパスワードで、この端末の保管庫を暗号化し直します。White Noise はこのパスワードをリセットできません。忘れた場合は、この保管庫を削除して最初からやり直すしかありません。"
 
 msgid "The ngit web client a patch card opens. That site receives the patch link."
 msgstr "パッチカードを開く ngit ウェブクライアントです。そのサイトにパッチのリンクが送信されます。"
@@ -5215,6 +5221,9 @@ msgstr "署名者への要求をキャンセルしました。"
 
 msgid "The updated list is published to your relays."
 msgstr "更新したリストがあなたのリレーに公開されます。"
+
+msgid "The vault on this device was deleted. Pick a new password to start over."
+msgstr "この端末の保管庫を削除しました。新しいパスワードを決めて、最初からやり直してください。"
 
 #, c-format
 msgid "The web client an event card opens. For example %s. %s is replaced with the event id."
@@ -5275,9 +5284,6 @@ msgstr "White Noise のプロジェクト情報のみを変更します。実行
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "このチャットはアーカイブされています。メッセージを送信するには、アーカイブから復元してください。"
 
-msgid "This deletes every account key and all chats on this device. You can only sign in again if you have a backup of your secret key."
-msgstr "この端末にあるすべてのアカウントの鍵とチャットが削除されます。再びログインするには、秘密鍵のバックアップが必要です。"
-
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "表示される文字がないため、GMボタンはGMを送信します。"
 
@@ -5329,11 +5335,11 @@ msgstr "グループの暗号鍵が変わると、この番号が増えます。
 msgid "This pairing link is too long for a QR code. Use Copy pairing link."
 msgstr "このペアリングリンクは QR コードには長すぎます。「ペアリングリンクをコピー」を使ってください。"
 
+msgid "This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it."
+msgstr "このパスワードは、この端末の保管庫を暗号化します。アカウントは作成されず、White Noise はこのパスワードをリセットできません。"
+
 msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
 msgstr "このパスワードは推測されやすいものです。関連のない単語を組み合わせるか、パスワードマネージャーで生成したパスワードを使用してください。"
-
-msgid "This password protects everything White Noise stores on this computer. It doesn't create an account, and there is no way to recover it."
-msgstr "このパスワードは、White Noise がこのコンピューターに保存するすべてを保護します。アカウントは作成されず、復元する方法もありません。"
 
 msgid "This project is no longer available."
 msgstr "このプロジェクトは利用できなくなりました。"
@@ -5730,6 +5736,9 @@ msgstr "White Noise %s をインストールする準備ができました。"
 msgid "White Noise and this session."
 msgstr "White Noise と現在のセッションについて確認できます。"
 
+msgid "White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened."
+msgstr "White Noise はこのパスワードをリセットできず、ほかの誰も控えを持っていません。パスワードがないと、この端末の保管庫は開けません。"
+
 msgid "White Noise doesn't open at login"
 msgstr "ログイン時に White Noise が起動しません"
 
@@ -5849,9 +5858,6 @@ msgstr "このアカウントには保留中の操作があります。署名者
 msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
 msgstr "アカウントは削除されましたが、署名者の記録を暗号化された保管庫から削除できませんでした。"
 
-msgid "Your account keys and chats were deleted from this device. Pick a new password to start over."
-msgstr "この端末からアカウントの鍵とチャットが削除されました。最初からやり直すには、新しいパスワードを選んでください。"
-
 msgid "Your chats appear here once you have some."
 msgstr "チャットができるとここに表示されます。"
 
@@ -5887,6 +5893,9 @@ msgstr "あなたの名前"
 
 msgid "Your new password"
 msgstr "新しいパスワード"
+
+msgid "Your nsec or remote signer can let you use your account again, but it can't open this vault, and your chats on this device may not return. A backup file has its own password and holds only settings, drafts, custom emoji, and themes."
+msgstr "nsec やリモート署名者があればアカウントを再び使える場合がありますが、この保管庫は開けず、この端末のチャットも戻らない可能性があります。バックアップファイルには別のパスワードがあり、設定、下書き、カスタム絵文字、テーマだけが含まれます。"
 
 msgid "Your own notepad"
 msgstr "自分用メモ帳"

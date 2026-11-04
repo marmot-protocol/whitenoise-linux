@@ -866,7 +866,7 @@ msgstr ""
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr ""
 
-msgid "Checking your password and decrypting your keys."
+msgid "Checking your password and decrypting the vault."
 msgstr ""
 
 msgid "Checking..."
@@ -2162,7 +2162,7 @@ msgstr ""
 msgid "Enter your nsec to continue."
 msgstr ""
 
-msgid "Enter your password to unlock this device's keys."
+msgid "Enter your password to unlock the vault on this device."
 msgstr ""
 
 msgid "Erase avatar reveal"
@@ -2340,6 +2340,9 @@ msgid "Food"
 msgstr ""
 
 msgid "Forget all"
+msgstr ""
+
+msgid "Forgot your password?"
 msgstr ""
 
 msgid "Forward"
@@ -2768,6 +2771,9 @@ msgid "Kannada"
 msgstr ""
 
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
+msgstr ""
+
+msgid "Keep this vault"
 msgstr ""
 
 msgid "Keep your chat list focused without deleting conversations."
@@ -4126,6 +4132,9 @@ msgstr ""
 msgid "Review signer approval link"
 msgstr ""
 
+msgid "Review starting over"
+msgstr ""
+
 msgid "Right click"
 msgstr ""
 
@@ -4684,6 +4693,9 @@ msgstr ""
 msgid "Starting a chat does not add someone to People. You can also import a contacts CSV or JSON export."
 msgstr ""
 
+msgid "Starting over deletes the vault on this device and everything sealed with it: account keys stored here, remote signer sessions, unsent messages, saved stickers and GIFs, and cached media. This can't be undone. Signing in again later can give you your account back, but not what was deleted, and your chats may not return."
+msgstr ""
+
 msgid "Starting the runtime"
 msgstr ""
 
@@ -4732,6 +4744,9 @@ msgid "Stop reading"
 msgstr ""
 
 msgid "Storage"
+msgstr ""
+
+msgid "Store it in a password manager. It is separate from your nsec, remote signer, and backup file passwords."
 msgstr ""
 
 msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."
@@ -4876,7 +4891,7 @@ msgstr ""
 msgid "The group was renamed to %s"
 msgstr ""
 
-msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
+msgid "The new password re-encrypts the vault on this device. White Noise still can't reset it. If you forget it, the only way forward is to delete this vault and start over."
 msgstr ""
 
 msgid "The ngit web client a patch card opens. That site receives the patch link."
@@ -4895,6 +4910,9 @@ msgid "The signer request was cancelled."
 msgstr ""
 
 msgid "The updated list is published to your relays."
+msgstr ""
+
+msgid "The vault on this device was deleted. Pick a new password to start over."
 msgstr ""
 
 #, c-format
@@ -5001,10 +5019,10 @@ msgstr ""
 msgid "This pairing link is too long for a QR code. Use Copy pairing link."
 msgstr ""
 
-msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
+msgid "This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it."
 msgstr ""
 
-msgid "This password protects everything White Noise stores on this computer. It doesn't create an account, and there is no way to recover it."
+msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
 msgstr ""
 
 msgid "This project is no longer available."
@@ -5396,6 +5414,9 @@ msgstr ""
 msgid "White Noise and this session."
 msgstr ""
 
+msgid "White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened."
+msgstr ""
+
 msgid "White Noise doesn't open at login"
 msgstr ""
 
@@ -5531,6 +5552,9 @@ msgid "Your name"
 msgstr ""
 
 msgid "Your new password"
+msgstr ""
+
+msgid "Your nsec or remote signer can let you use your account again, but it can't open this vault, and your chats on this device may not return. A backup file has its own password and holds only settings, drafts, custom emoji, and themes."
 msgstr ""
 
 msgid "Your own notepad"
