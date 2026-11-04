@@ -317,8 +317,12 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		   previous_error != gate_err ||
 		   previous_reset != gate_reset_armed ||
 		   previous_reset_done != gate_reset_done {
+			// The first frame opens at the top, so the setup map and copy are
+			// read before the form; later resizes (an on-screen keyboard)
+			// keep the error and action in view.
+			resized := previous_height != -1 && previous_height != rl.GetScreenHeight()
 			target := gate_confirm ? "GatePw2Box" : "GatePwBox"
-			if gate_err != "" || previous_height != rl.GetScreenHeight() {
+			if gate_err != "" || resized {
 				target = "GateSubmit"
 			}
 			if gate_reset_armed {
@@ -360,6 +364,8 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 			return true
 		}
 		update_drag_scroll(ui, false)
+		// The first-run close action is the window close, made visible.
+		if clicked("GateQuit") {return false}
 		gate_input(ui)
 		// Same contract as the main loop: the password box is the only
 		// field here, and gate_input's edit_text sets the flag.
@@ -623,8 +629,30 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				scrollbar(clay.ID("GateCard"))
 				logo_mark()
 				clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT})
+				if creating {
+					// First run names both setup steps before asking for a
+					// secret, so the password reads as protection for this
+					// device rather than account registration.
+					if clay.UI(clay.ID("GateSteps"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
+							childGap = 10,
+						},
+					},
+					) {
+						gate_step("GateStepNow", tr("NOW"), tr("Protect this device"), .Current)
+						gate_step(
+							"GateStepNext",
+							tr("NEXT"),
+							tr("Create or use an account"),
+							.Next,
+						)
+					}
+				}
 				clay.Text(
-					creating ? tr("Pick a password. It encrypts everything in the app, and there is no way to recover it.") : tr("Enter your password to unlock this device's keys."),
+					creating ? tr("This password protects everything White Noise stores on this computer. It doesn't create an account, and there is no way to recover it.") : tr("Enter your password to unlock this device's keys."),
 					{
 						fontId = FONT_BODY,
 						fontSize = 15,
@@ -750,7 +778,7 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 					if busy {
 						login_big_button(
 							"GateGo",
-							creating ? tr("Creating your vault…") : tr("Unlocking…"),
+							creating ? tr("Protecting this device…") : tr("Unlocking…"),
 							true,
 							.Busy,
 						)
@@ -762,10 +790,35 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 					} else {
 						login_big_button(
 							"GateGo",
-							creating ? tr("Continue") : tr("Unlock"),
+							creating ? tr("Continue to account setup") : tr("Unlock"),
 							true,
 							ready ? .Enabled : .Disabled,
 						)
+					}
+				}
+				// Stopping here leaves nothing behind: no vault and no identity
+				// exist until Continue succeeds.
+				if creating && !busy {
+					if clay.UI(clay.ID("GateQuitRow"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 8,
+							childAlignment = {x = .Center},
+						},
+					},
+					) {
+						clay.Text(
+							tr("Nothing is saved until you continue."),
+							{
+								fontId = FONT_BODY,
+								fontSize = 12,
+								textColor = TEXT_LO,
+								textAlignment = .Center,
+							},
+						)
+						micro_button("GateQuit", tr("Close White Noise"), TEXT_DIM)
 					}
 				}
 				if !creating && !busy {
@@ -799,6 +852,37 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 		}
 	}
 	return clay.EndLayout(rl.GetFrameTime())
+}
+
+@(private = "file")
+Gate_Step :: enum {
+	Current,
+	Next,
+}
+
+// One stop on the first-run setup map: the current step outlined in the
+// accent color, the next one dimmed.
+@(private = "file")
+gate_step :: proc(id_str: string, caption: string, title: string, step: Gate_Step) {
+	current := step == .Current
+	if clay.UI(clay.ID(id_str))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			padding = {12, 12, 10, 10},
+			childGap = 4,
+		},
+		cornerRadius = rr(10),
+		border = {color = current ? ACCENT : CARD_BORDER, width = bw()},
+	},
+	) {
+		eyebrow(caption)
+		clay.Text(
+			title,
+			{fontId = FONT_BODY, fontSize = 15, textColor = current ? TEXT : TEXT_DIM},
+		)
+	}
 }
 
 // Reveal only on a field or viewport change, never while the user scrolls

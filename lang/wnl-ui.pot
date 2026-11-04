@@ -1010,6 +1010,9 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
+msgid "Close White Noise"
+msgstr ""
+
 msgid "Close pane"
 msgstr ""
 
@@ -1144,6 +1147,9 @@ msgid "Contacts only"
 msgstr ""
 
 msgid "Continue"
+msgstr ""
+
+msgid "Continue to account setup"
 msgstr ""
 
 msgid "Control background"
@@ -1713,6 +1719,9 @@ msgstr ""
 msgid "Create group"
 msgstr ""
 
+msgid "Create or use an account"
+msgstr ""
+
 msgid "Create pairing link"
 msgstr ""
 
@@ -1735,9 +1744,6 @@ msgid "Creating tab…"
 msgstr ""
 
 msgid "Creating your chat"
-msgstr ""
-
-msgid "Creating your vault…"
 msgstr ""
 
 msgid "Croatian"
@@ -3134,10 +3140,16 @@ msgstr ""
 msgid "NEW PASSWORD"
 msgstr ""
 
+msgid "NEXT"
+msgstr ""
+
 msgid "NOSTR EVENT"
 msgstr ""
 
 msgid "NOTE"
+msgstr ""
+
+msgid "NOW"
 msgstr ""
 
 msgid "Name"
@@ -3371,6 +3383,9 @@ msgid "Notes to self"
 msgstr ""
 
 msgid "Nothing is read aloud"
+msgstr ""
+
+msgid "Nothing is saved until you continue."
 msgstr ""
 
 msgid "Nothing loads until you accept. You can change this in Settings > Advanced."
@@ -3664,9 +3679,6 @@ msgstr ""
 msgid "Pick a password to encrypt the key with. You will need it to import the key anywhere else."
 msgstr ""
 
-msgid "Pick a password. It encrypts everything in the app, and there is no way to recover it."
-msgstr ""
-
 msgid "Pick a task..."
 msgstr ""
 
@@ -3813,6 +3825,12 @@ msgid "Promote"
 msgstr ""
 
 msgid "Prompt copied. Paste it into your agent."
+msgstr ""
+
+msgid "Protect this device"
+msgstr ""
+
+msgid "Protecting this device…"
 msgstr ""
 
 msgid "Public key"
@@ -4984,6 +5002,9 @@ msgid "This pairing link is too long for a QR code. Use Copy pairing link."
 msgstr ""
 
 msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
+msgstr ""
+
+msgid "This password protects everything White Noise stores on this computer. It doesn't create an account, and there is no way to recover it."
 msgstr ""
 
 msgid "This project is no longer available."

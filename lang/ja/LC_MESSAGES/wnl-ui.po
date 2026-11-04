@@ -476,9 +476,6 @@ msgstr "プロフィールから連絡先を追加するか、上に相手のnpu
 msgid "Add to group"
 msgstr "グループに追加"
 
-msgid "Add your Nostr identity"
-msgstr "Nostr の ID を追加"
-
 msgid "Added to your stickers"
 msgstr "ステッカーに追加済み"
 
@@ -1092,6 +1089,9 @@ msgstr "クリックで編集、ドラッグで並べ替えます。"
 msgid "Close"
 msgstr "閉じる"
 
+msgid "Close White Noise"
+msgstr "White Noise を閉じる"
+
 msgid "Close pane"
 msgstr "ペインを閉じる"
 
@@ -1230,6 +1230,9 @@ msgstr "連絡先のみ"
 
 msgid "Continue"
 msgstr "続行"
+
+msgid "Continue to account setup"
+msgstr "アカウントの設定に進む"
 
 msgid "Control background"
 msgstr "コントロールの背景"
@@ -1825,6 +1828,9 @@ msgstr "絵文字から作成"
 msgid "Create group"
 msgstr "グループを作成"
 
+msgid "Create or use an account"
+msgstr "アカウントを作成または使用"
+
 msgid "Create pairing link"
 msgstr "ペアリングリンクを作成"
 
@@ -1848,9 +1854,6 @@ msgstr "タブを作成しています…"
 
 msgid "Creating your chat"
 msgstr "チャットを作成しています"
-
-msgid "Creating your vault…"
-msgstr "保管庫を作成しています…"
 
 msgid "Croatian"
 msgstr "クロアチア語"
@@ -3330,11 +3333,17 @@ msgstr "NESゲーム"
 msgid "NEW PASSWORD"
 msgstr "新しいパスワード"
 
+msgid "NEXT"
+msgstr "次"
+
 msgid "NOSTR EVENT"
 msgstr "NOSTRイベント"
 
 msgid "NOTE"
 msgstr "ノート"
+
+msgid "NOW"
+msgstr "現在"
 
 msgid "Name"
 msgstr "名前"
@@ -3586,6 +3595,9 @@ msgstr "自分用メモ"
 
 msgid "Nothing is read aloud"
 msgstr "読み上げられません"
+
+msgid "Nothing is saved until you continue."
+msgstr "続行するまで何も保存されません。"
 
 msgid "Nothing loads until you accept. You can change this in Settings > Advanced."
 msgstr "同意するまで何も読み込まれません。設定 > 詳細 で変更できます。"
@@ -3896,9 +3908,6 @@ msgstr "バックアップの暗号化に使うパスワードを決めてくだ
 msgid "Pick a password to encrypt the key with. You will need it to import the key anywhere else."
 msgstr "鍵の暗号化に使うパスワードを決めてください。ほかの場所で鍵をインポートするときに必要になります。"
 
-msgid "Pick a password. It encrypts everything in the app, and there is no way to recover it."
-msgstr "パスワードを決めてください。アプリ内のすべてを暗号化するパスワードで、復元する方法はありません。"
-
 msgid "Pick a task..."
 msgstr "作業を選んでください..."
 
@@ -4049,6 +4058,12 @@ msgstr "管理者にする"
 
 msgid "Prompt copied. Paste it into your agent."
 msgstr "プロンプトをコピーしました。エージェントに貼り付けてください。"
+
+msgid "Protect this device"
+msgstr "このデバイスを保護"
+
+msgid "Protecting this device…"
+msgstr "このデバイスを保護しています…"
 
 msgid "Public key"
 msgstr "公開鍵"
@@ -5316,6 +5331,9 @@ msgstr "このペアリングリンクは QR コードには長すぎます。�
 
 msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
 msgstr "このパスワードは推測されやすいものです。関連のない単語を組み合わせるか、パスワードマネージャーで生成したパスワードを使用してください。"
+
+msgid "This password protects everything White Noise stores on this computer. It doesn't create an account, and there is no way to recover it."
+msgstr "このパスワードは、White Noise がこのコンピューターに保存するすべてを保護します。アカウントは作成されず、復元する方法もありません。"
 
 msgid "This project is no longer available."
 msgstr "このプロジェクトは利用できなくなりました。"

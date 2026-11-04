@@ -263,6 +263,12 @@ common passwords, other weak passwords, and passwords that meet the existing
 40-bit estimate threshold. Common-password feedback uses the estimator's
 whole-password corpus match; it does not change password acceptance.
 
+First run shows a two-step map in the gate, "Protect this device" then
+"Create or use an account", and says the password does not create an
+account. The login menu repeats that second label. The gate opens scrolled
+to the top so the map is read first, and "Close White Noise" exits before
+any vault or identity exists. Unlock keeps its own copy without the map.
+
 ## Packaging
 
 Releases are an AppImage and a Flatpak bundle, built by

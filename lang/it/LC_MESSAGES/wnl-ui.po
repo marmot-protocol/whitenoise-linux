@@ -476,9 +476,6 @@ msgstr "Aggiungi qualcuno dal suo profilo o incolla il suo npub qui sopra. Puoi 
 msgid "Add to group"
 msgstr "Aggiungi a un gruppo"
 
-msgid "Add your Nostr identity"
-msgstr "Aggiungi la tua identità Nostr"
-
 msgid "Added to your stickers"
 msgstr "Aggiunto ai tuoi adesivi"
 
@@ -1092,6 +1089,9 @@ msgstr "Fai clic per modificare, trascina per riordinare."
 msgid "Close"
 msgstr "Chiudi"
 
+msgid "Close White Noise"
+msgstr "Chiudi White Noise"
+
 msgid "Close pane"
 msgstr "Chiudi riquadro"
 
@@ -1230,6 +1230,9 @@ msgstr "Solo contatti"
 
 msgid "Continue"
 msgstr "Continua"
+
+msgid "Continue to account setup"
+msgstr "Continua con la configurazione dell'account"
 
 msgid "Control background"
 msgstr "Sfondo controlli"
@@ -1825,6 +1828,9 @@ msgstr "Crea da emoji"
 msgid "Create group"
 msgstr "Crea gruppo"
 
+msgid "Create or use an account"
+msgstr "Crea o usa un account"
+
 msgid "Create pairing link"
 msgstr "Crea link di abbinamento"
 
@@ -1848,9 +1854,6 @@ msgstr "Creazione della scheda…"
 
 msgid "Creating your chat"
 msgstr "Creazione della tua chat"
-
-msgid "Creating your vault…"
-msgstr "Creazione della cassaforte…"
 
 msgid "Croatian"
 msgstr "Croato"
@@ -3330,11 +3333,17 @@ msgstr "Gioco NES"
 msgid "NEW PASSWORD"
 msgstr "NUOVA PASSWORD"
 
+msgid "NEXT"
+msgstr "DOPO"
+
 msgid "NOSTR EVENT"
 msgstr "EVENTO NOSTR"
 
 msgid "NOTE"
 msgstr "NOTA"
+
+msgid "NOW"
+msgstr "ORA"
 
 msgid "Name"
 msgstr "Nome"
@@ -3586,6 +3595,9 @@ msgstr "Note per te"
 
 msgid "Nothing is read aloud"
 msgstr "Non viene letto niente ad alta voce"
+
+msgid "Nothing is saved until you continue."
+msgstr "Non viene salvato nulla finché non continui."
 
 msgid "Nothing loads until you accept. You can change this in Settings > Advanced."
 msgstr "Non viene caricato nulla finché non accetti. Puoi cambiarlo in Impostazioni > Avanzate."
@@ -3896,9 +3908,6 @@ msgstr "Scegli una password con cui crittografare il backup. Senza di essa il fi
 msgid "Pick a password to encrypt the key with. You will need it to import the key anywhere else."
 msgstr "Scegli una password con cui crittografare la chiave. Ti servirà per importare la chiave altrove."
 
-msgid "Pick a password. It encrypts everything in the app, and there is no way to recover it."
-msgstr "Scegli una password. Crittografa tutto nell'app e non c'è modo di recuperarla."
-
 msgid "Pick a task..."
 msgstr "Scegli un'attività..."
 
@@ -4049,6 +4058,12 @@ msgstr "Promuovi"
 
 msgid "Prompt copied. Paste it into your agent."
 msgstr "Prompt copiato. Incollalo nel tuo agente."
+
+msgid "Protect this device"
+msgstr "Proteggi questo dispositivo"
+
+msgid "Protecting this device…"
+msgstr "Protezione del dispositivo…"
 
 msgid "Public key"
 msgstr "Chiave pubblica"
@@ -5316,6 +5331,9 @@ msgstr "Questo link di abbinamento è troppo lungo per un codice QR. Usa Copia l
 
 msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
 msgstr "Questa password è troppo facile da indovinare. Usa parole non correlate o una password generata da un gestore di password."
+
+msgid "This password protects everything White Noise stores on this computer. It doesn't create an account, and there is no way to recover it."
+msgstr "Questa password protegge tutto ciò che White Noise salva su questo computer. Non crea un account e non c'è modo di recuperarla."
 
 msgid "This project is no longer available."
 msgstr "Questo progetto non è più disponibile."

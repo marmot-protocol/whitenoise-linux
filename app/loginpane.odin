@@ -318,7 +318,7 @@ login_pane :: proc(ui: ^Ui_State) {
 			if !remote {clay.Text(minting ? tr("Publishing your profile to the relays. This takes a few seconds.") : tr("Checking your key with the relays. This takes a few seconds."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})}
 		} else if ui.login_method == .Menu {
 			clay.Text(
-				ui.add_account_open ? tr("Add another account") : tr("Add your Nostr identity"),
+				ui.add_account_open ? tr("Add another account") : tr("Create or use an account"),
 				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
 			)
 			if clay.UI(clay.ID("LoginGapA"))(
