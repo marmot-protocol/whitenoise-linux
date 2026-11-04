@@ -29,13 +29,13 @@ import "core:reflect"
 import "core:strconv"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
 
 // A click is press, hold, release: the UI focuses on press and acts on
-// release, and clay needs a frame in between to see the pointer down.
+// release, and nendo needs a frame in between to see the pointer down.
 @(private = "file")
 CLICK_HOLD_FRAMES :: 2
 
@@ -95,9 +95,9 @@ dev_pointer_on: bool
 dev_real_at: [2]f32
 
 // devctl_poll drains the command file and applies any input due this frame.
-// pointer is the frame's clay pointer position, which a queued move or click
+// pointer is the frame's nendo pointer position, which a queued move or click
 // overrides in place.
-devctl_poll :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, pointer: ^clay.Vector2) {
+devctl_poll :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, pointer: ^nendo.Vector2) {
 	if os.get_env("WN_DEV_CMD", context.temp_allocator) == "" {
 		return
 	}
@@ -144,9 +144,9 @@ dev_enqueue :: proc(frame: int, act: Dev_Input, frames: int) {
 }
 
 @(private = "file")
-devctl_apply_input :: proc(frame: int, pointer: ^clay.Vector2) {
+devctl_apply_input :: proc(frame: int, pointer: ^nendo.Vector2) {
 	if dev_pointer_on {
-		pointer^ = transmute(clay.Vector2)dev_pointer
+		pointer^ = transmute(nendo.Vector2)dev_pointer
 		test_pointer = dev_pointer
 		test_pointer_on = true
 	}
@@ -176,7 +176,7 @@ devctl_apply_input :: proc(frame: int, pointer: ^clay.Vector2) {
 				rl.UseMouse()
 				dev_pointer, dev_pointer_on = act.pos, true
 				dev_real_at = {real.x, real.y}
-				pointer^ = transmute(clay.Vector2)act.pos
+				pointer^ = transmute(nendo.Vector2)act.pos
 			} else {
 				done = false
 			}
@@ -188,16 +188,16 @@ devctl_apply_input :: proc(frame: int, pointer: ^clay.Vector2) {
 			case frame == act.at:
 				dev_pointer, dev_pointer_on = act.pos, true
 				dev_real_at = {real.x, real.y}
-				pointer^ = transmute(clay.Vector2)act.pos
+				pointer^ = transmute(nendo.Vector2)act.pos
 				forced_press = true
 				rl.PushMouseButton(.LEFT, true)
 				done = false
 			case frame < act.at + CLICK_HOLD_FRAMES:
-				pointer^ = transmute(clay.Vector2)act.pos
+				pointer^ = transmute(nendo.Vector2)act.pos
 				rl.PushMouseButton(.LEFT, true)
 				done = false
 			case:
-				pointer^ = transmute(clay.Vector2)act.pos
+				pointer^ = transmute(nendo.Vector2)act.pos
 				forced_release = true
 				rl.PushMouseButton(.LEFT, false)
 			}
@@ -208,7 +208,7 @@ devctl_apply_input :: proc(frame: int, pointer: ^clay.Vector2) {
 				t := min(f32(step) / DRAG_FRAMES, 1)
 				dev_pointer, dev_pointer_on = act.pos + (act.end - act.pos) * t, true
 				dev_real_at = {real.x, real.y}
-				pointer^ = transmute(clay.Vector2)dev_pointer
+				pointer^ = transmute(nendo.Vector2)dev_pointer
 				test_pointer = dev_pointer
 			}
 			switch {
@@ -514,7 +514,7 @@ devctl_run :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, line: stri
 		dev_enqueue(frame, Dev_Input{kind = .Text, text = strings.clone(arg)}, 1)
 
 	case "scroll":
-		// clay scrolls the container under the pointer, so a scroll is
+		// nendo scrolls the container under the pointer, so a scroll is
 		// only meaningful somewhere: "scroll DY" uses wherever the
 		// pointer already is, "scroll DY X Y" moves there first.
 		dy_text, _, at := strings.partition(arg, " ")
@@ -695,13 +695,13 @@ dev_xy :: proc(arg: string) -> (pos: [2]f32, ok: bool) {
 dev_element :: proc(arg: string) -> (pos: [2]f32, ok: bool) {
 	name, _, index_text := strings.partition(arg, " ")
 	index, _ := strconv.parse_int(strings.trim_space(index_text))
-	id := index_text == "" ? clay.ID(name) : clay.ID(name, u32(index))
-	data := clay.GetElementData(id)
+	id := index_text == "" ? nendo.id(name) : nendo.id(name, u32(index))
+	data := nendo.element(id)
 	if !data.found {
 		fmt.printfln("devctl: no element %q", arg)
 		return {}, false
 	}
-	box := data.boundingBox
+	box := data.rect
 	return {(box.x + box.width / 2) * UI_ZOOM, (box.y + box.height / 2) * UI_ZOOM}, true
 }
 

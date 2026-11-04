@@ -1,24 +1,23 @@
 package main
 
 import "core:fmt"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Centered placeholder with a title and a sub line.
 centered_note :: proc(id_str: string, title: string, sub: string) {
-	if clay.UI(clay.ID(id_str))(
+	if nendo.box(nendo.id(id_str))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			childAlignment = {x = .Center, y = .Center},
-			childGap = 8,
-		},
+		width = nendo.grow(),
+		height = nendo.grow(),
+		direction = .Column,
+		align = {x = .Center, y = .Center},
+		gap = 8,
 	},
 	) {
-		clay.Text(title, {fontId = FONT_TITLE, fontSize = 24, textColor = TEXT_DIM})
+		nendo.text(title, {font = FONT_TITLE, size = 24, color = TEXT_DIM})
 		if len(sub) > 0 {
-			clay.Text(sub, {fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM})
+			nendo.text(sub, {font = FONT_BODY, size = 14, color = TEXT_DIM})
 		}
 	}
 }
@@ -27,36 +26,28 @@ centered_note :: proc(id_str: string, title: string, sub: string) {
 eyebrow :: proc(text: string) {
 	// A stencilled theme brackets its captions: [ACTIONS], not ACTIONS.
 	label := BRACKET_LABELS ? fmt.tprintf("[%s]", text) : text
-	clay.Text(label, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 2})
+	nendo.text(label, {font = FONT_BODY, size = 12, color = TEXT_DIM, spacing = 2})
 }
 
 // Small bordered chip: 11px label, hairline border, hover fill.
 // Pass a color to tint border and label (DANGER).
-micro_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
+micro_button :: proc(id_str: string, label: string, color: nendo.Color = {}) {
 	tinted := color.a != 0
-	down := press_down(clay.ID(id_str))
-	if clay.UI(clay.ID(id_str))(
+	down := press_down(nendo.id(id_str))
+	if nendo.box(nendo.id(id_str))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFit({tap_size() ? tap_min() : 0, 0}),
-				height = clay.SizingFit({tap_size() ? tap_min() : 0, 0}),
-			},
-			padding = {left = 10, right = 10, top = 5 + down, bottom = 5 - down},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : {},
-		cornerRadius = rr(7),
+		width = nendo.fit(tap_size() ? tap_min() : 0, 0),
+		height = nendo.fit(tap_size() ? tap_min() : 0, 0),
+		padding = {left = 10, right = 10, top = 5 + down, bottom = 5 - down},
+		align = {x = .Center, y = .Center},
+		color = hovered() ? HOVER : {},
+		radius = rr(7),
 		border = {color = tinted ? color : FIELD_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(
+		nendo.text(
 			label,
-			{
-				fontId = FONT_BODY,
-				fontSize = tap_size() ? 12 : 11,
-				textColor = tinted ? color : TEXT_DIM,
-			},
+			{font = FONT_BODY, size = tap_size() ? 12 : 11, color = tinted ? color : TEXT_DIM},
 		)
 	}
 }
@@ -83,69 +74,52 @@ identity_codes :: proc(
 	font: u16 = FONT_TITLE,
 ) {
 	FONT_TITLE := font
-	if clay.UI(clay.ID(fmt.tprintf("%sQrPlate", prefix)))(
+	if nendo.box(nendo.id(fmt.tprintf("%sQrPlate", prefix)))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = {top = 8, bottom = 16},
-			childAlignment = {x = .Center},
-		},
+		width = nendo.grow(),
+		direction = .Column,
+		padding = {top = 8, bottom = 16},
+		align = {x = .Center},
 	},
 	) {
-		if clay.UI(clay.ID(fmt.tprintf("%sFingerprint", prefix)))(
-		{layout = {layoutDirection = width < 424 ? .TopToBottom : .LeftToRight, childGap = 16}},
+		if nendo.box(nendo.id(fmt.tprintf("%sFingerprint", prefix)))(
+		{direction = width < 424 ? .Column : .Row, gap = 16},
 		) {
-			if clay.UI(clay.ID(fmt.tprintf("%sPatternCard", prefix)))(
+			if nendo.box(nendo.id(fmt.tprintf("%sPatternCard", prefix)))(
 			{
-				layout = {
-					layoutDirection = .TopToBottom,
-					padding = clay.PaddingAll(16),
-					childGap = 12,
-					childAlignment = {x = .Center},
-				},
-				backgroundColor = CARD,
-				cornerRadius = rr(10),
+				direction = .Column,
+				padding = nendo.pad(16),
+				gap = 12,
+				align = {x = .Center},
+				color = CARD,
+				radius = rr(10),
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
 				crop_circle(fmt.tprintf("%sCircle", prefix), 0, key, 160, .Square)
-				clay.Text(
+				nendo.text(
 					tr("Visual fingerprint"),
-					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_TITLE, size = 12, color = TEXT_DIM},
 				)
 			}
 			if qr != nil {
-				if clay.UI(clay.ID(fmt.tprintf("%sScanCard", prefix)))(
+				if nendo.box(nendo.id(fmt.tprintf("%sScanCard", prefix)))(
 				{
-					layout = {
-						sizing = {width = clay.SizingFixed(192)},
-						layoutDirection = .TopToBottom,
-						padding = clay.PaddingAll(16),
-						childGap = 12,
-						childAlignment = {x = .Center},
-					},
-					backgroundColor = CARD,
-					cornerRadius = rr(10),
+					width = nendo.fixed(192),
+					direction = .Column,
+					padding = nendo.pad(16),
+					gap = 12,
+					align = {x = .Center},
+					color = CARD,
+					radius = rr(10),
 					border = {color = FIELD_BORDER, width = bw()},
 				},
 				) {
-					if clay.UI(clay.ID(fmt.tprintf("%sQr", prefix)))(
-					{
-						layout = {
-							sizing = {
-								width = clay.SizingFixed(160),
-								height = clay.SizingFixed(160),
-							},
-						},
-						image = {imageData = qr},
-					},
+					if nendo.box(nendo.id(fmt.tprintf("%sQr", prefix)))(
+					{width = nendo.fixed(160), height = nendo.fixed(160), image = qr},
 					) {}
-					clay.Text(
-						tr("Public key"),
-						{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM},
-					)
-					clay.Text(caption, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+					nendo.text(tr("Public key"), {font = FONT_TITLE, size = 12, color = TEXT_DIM})
+					nendo.text(caption, {font = FONT_BODY, size = 12, color = TEXT_DIM})
 				}
 			}
 		}
@@ -154,22 +128,17 @@ identity_codes :: proc(
 
 
 theme_chip_indexed :: proc(id_str: string, index: u32, label: string, active: bool) {
-	if clay.UI(clay.ID(id_str, index))(
+	if nendo.box(nendo.id(id_str, index))(
 	{
-		layout = {
-			sizing = {height = clay.SizingFit({tap_size() ? tap_min() : 0, 0})},
-			padding = {left = 14, right = 14, top = 8, bottom = 8},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = active ? ACCENT : ROW_BG,
-		cornerRadius = rr(8),
-		border = active ? {} : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
+		height = nendo.fit(tap_size() ? tap_min() : 0, 0),
+		padding = {left = 14, right = 14, top = 8, bottom = 8},
+		align = {x = .Center, y = .Center},
+		color = active ? ACCENT : ROW_BG,
+		radius = rr(8),
+		border = active ? {} : nendo.Border{color = FIELD_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(
-			label,
-			{fontId = FONT_BODY, fontSize = 14, textColor = active ? ON_ACCENT : TEXT},
-		)
+		nendo.text(label, {font = FONT_BODY, size = 14, color = active ? ON_ACCENT : TEXT})
 	}
 }
 
@@ -177,24 +146,17 @@ theme_chip_indexed :: proc(id_str: string, index: u32, label: string, active: bo
 // action names itself in a tooltip on hover instead.
 header_chip :: proc(id_str: string, glyph: string, active: bool, label: string) {
 	pad := tap_size() ? u16(13) : u16(8)
-	if clay.UI(clay.ID(id_str))(
+	if nendo.box(nendo.id(id_str))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-			},
-			padding = {left = 10, right = 10, top = pad, bottom = pad},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = active ? ACCENT : hovered() ? HOVER : ROW_BG,
-		cornerRadius = rr(8),
+		width = nendo.fit(min = tap_size() ? tap_min() : 0),
+		height = nendo.fit(min = tap_size() ? tap_min() : 0),
+		padding = {left = 10, right = 10, top = pad, bottom = pad},
+		align = {x = .Center, y = .Center},
+		color = active ? ACCENT : hovered() ? HOVER : ROW_BG,
+		radius = rr(8),
 	},
 	) {
-		clay.Text(
-			glyph,
-			{fontId = FONT_ICON, fontSize = 14, textColor = active ? ON_ACCENT : TEXT},
-		)
+		nendo.text(glyph, {font = FONT_ICON, size = 14, color = active ? ON_ACCENT : TEXT})
 		header_label(label, active && !single_pane())
 	}
 }
@@ -205,7 +167,7 @@ HEADER_LABEL_SECS :: f32(0.1)
 @(private)
 header_label :: proc(label: string, active: bool) {
 	if !active && hovered() {tooltip(label)}
-	id := clay.ID_LOCAL("HeaderLabel")
+	id := nendo.id_local("HeaderLabel")
 	target: f32 = active ? 1 : 0
 	entry, seen := anim_vals[id.id]
 	if !seen || entry.frame != anim_frame {
@@ -219,19 +181,16 @@ header_label :: proc(label: string, active: bool) {
 	if entry.v == 0 {return}
 	progress := ease_in_out(entry.v)
 	width := rl.MeasureTextLine(FONT_BODY, 13, label, 0).x + 6
-	if clay.UI(id)(
-	{
-		layout = {sizing = {width = clay.SizingFixed(width * progress)}, padding = {left = 6}},
-		clip = {horizontal = true},
-	},
+	if nendo.box(id)(
+	{width = nendo.fixed(width * progress), padding = {left = 6}, clip = {x = true}},
 	) {
-		clay.Text(
+		nendo.text(
 			label,
 			{
-				fontId = FONT_BODY,
-				fontSize = 13,
-				textColor = fade(active ? ON_ACCENT : TEXT, progress),
-				wrapMode = .None,
+				font = FONT_BODY,
+				size = 13,
+				color = fade(active ? ON_ACCENT : TEXT, progress),
+				wrap = .None,
 			},
 		)
 	}

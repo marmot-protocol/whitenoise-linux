@@ -13,7 +13,7 @@ import "core:sync"
 import "core:testing"
 import "core:text/edit"
 import "core:thread"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -21,8 +21,8 @@ GIF_WEBP_FIXTURE :: "UklGRsoAAABXRUJQVlA4WAoAAAACAAAAAQAAAQAAQU5JTQYAAAD/////AAB
 
 @(test)
 gif_ios_message :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	old_lines, old_deleted, old_moving := sel_lines, del_seen, anim_moving
 	sel_lines, del_seen = {}, {}
 	defer {
@@ -45,33 +45,33 @@ gif_ios_message :: proc(t: ^testing.T) {
 	video_views = {}
 	video_views[url] = &view
 	defer {delete(video_views); video_views = old_views}
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 2000})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
-	clay.BeginLayout()
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.begin()
 	message_row(0, msg)
-	commands := clay.EndLayout(0)
+	commands := nendo.end(0)
 	drawn := false
-	for command in commands.internalArray[:commands.length] {
-		if command.commandType == .Image && command.renderData.image.imageData == &view.tex {
+	for command in commands {
+		if command.kind == .Image && command.image.image == &view.tex {
 			drawn = true
 		}
 	}
 	testing.expect(t, drawn, "iOS GIPHY shares must render the looping GIF")
 	for size in ([][2]i32{{0, 240}, {320, 0}, {-1, 240}, {320, -1}}) {
 		view.w, view.h = size[0], size[1]
-		clay.BeginLayout()
+		nendo.begin()
 		message_row(0, msg)
-		commands = clay.EndLayout(0)
+		commands = nendo.end(0)
 		text := strings.builder_make(context.temp_allocator)
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType == .Image {
-				testing.expect(t, command.renderData.image.imageData != &view.tex)
+		for command in commands {
+			if command.kind == .Image {
+				testing.expect(t, command.image.image != &view.tex)
 			}
-			if command.commandType == .Text {
-				part := command.renderData.text.stringContents
-				strings.write_string(&text, string(part.chars[:part.length]))
+			if command.kind == .Text {
+				part := command.text.text
+				strings.write_string(&text, part)
 			}
 		}
 		testing.expect(
@@ -88,14 +88,14 @@ gif_ios_message :: proc(t: ^testing.T) {
 		testing.expect_value(t, giphy_message_url(body), "")
 	}
 	msg.deleted = true
-	clay.BeginLayout()
+	nendo.begin()
 	message_row(0, msg)
-	commands = clay.EndLayout(0)
-	for command in commands.internalArray[:commands.length] {
-		if command.commandType == .Image {
+	commands = nendo.end(0)
+	for command in commands {
+		if command.kind == .Image {
 			testing.expect(
 				t,
-				command.renderData.image.imageData != &view.tex,
+				command.image.image != &view.tex,
 				"deleted shares must not render GIFs",
 			)
 		}
@@ -218,8 +218,8 @@ gif_data :: proc(t: ^testing.T) {
 @(test)
 gif_send_failure :: proc(t: ^testing.T) {
 	context.allocator = runtime.default_context().allocator
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	sync.lock(&test_home_lock); defer sync.unlock(&test_home_lock)
 	ui := Ui_State {
 		picker_open = true,
@@ -302,26 +302,23 @@ gif_keyboard :: proc(t: ^testing.T) {
 		)
 		register_local_pic(fmt.tprintf("image:fixture%d", i), image)
 	}
-	press :: proc(t: ^testing.T, ui: ^Ui_State, id: clay.ElementId) {
-		data := clay.GetElementData(id); testing.expect(t, data.found)
-		clay.SetPointerState(
-			{
-				data.boundingBox.x + data.boundingBox.width / 2,
-				data.boundingBox.y + data.boundingBox.height / 2,
-			},
-			false,
+	press :: proc(t: ^testing.T, ui: ^Ui_State, id: nendo.Id) {
+		data := nendo.element(id); testing.expect(t, data.found)
+		nendo.set_pointer(
+			{data.rect.x + data.rect.width / 2, data.rect.y + data.rect.height / 2},
+			.Up,
 		)
 		forced_release = true; handle_picker(ui, nil); forced_release = false
 	}
 	for width in ([]i32{900, 420, 320}) {
-		rl.SetWindowSize(width, 760); clay.SetLayoutDimensions({f32(width), 760})
+		rl.SetWindowSize(width, 760); nendo.set_dimensions({f32(width), 760})
 		for locale in ([]string{"en", "it", "de", "ja"}) {
 			set_locale(locale)
 			for _ in 0 ..< 8 {anim_frame += 1; build_layout(&ui, 0)}
 			commands := build_layout(&ui, 0)
-			panel := clay.GetElementData(clay.ID("PickerPanel")).boundingBox
+			panel := nendo.element(nendo.id("PickerPanel")).rect
 			for i in 0 ..< 8 {
-				box := clay.GetElementData(clay.ID("GifTile", u32(i))).boundingBox
+				box := nendo.element(nendo.id("GifTile", u32(i))).rect
 				testing.expect(
 					t,
 					box.width > 0 &&
@@ -330,7 +327,7 @@ gif_keyboard :: proc(t: ^testing.T) {
 				)
 			}
 			rl.BeginDrawing()
-			draw_frame(&commands)
+			draw_frame(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-gifs-%d-%s.png", width, locale))
 			rl.EndDrawing()
 		}
@@ -365,13 +362,12 @@ gif_keyboard :: proc(t: ^testing.T) {
 	_, first_loading, _ := gif_thumb(ui.gif_hits[0], 0)
 	_, last_loading, _ := gif_thumb(ui.gif_hits[GIF_PAGE_SIZE - 1], GIF_PAGE_SIZE - 1)
 	testing.expect(t, first_loading && !last_loading, "offscreen thumbnails are not requested")
-	clay.SetPointerState({0, 0}, false)
+	nendo.set_pointer({0, 0}, .Up)
 	handle_gif_picker(&ui, nil)
 	testing.expect(t, ui.gif_job == nil, "do not fetch more metadata at the top")
-	scroll := clay.GetScrollContainerData(clay.ID("GifGrid"))
-	scroll.scrollPosition.y =
-		scroll.scrollContainerDimensions.height - scroll.contentDimensions.height
-	position := scroll.scrollPosition.y
+	scroll := nendo.scroll(nendo.id("GifGrid"))
+	scroll.position.y = scroll.viewport.height - scroll.content.height
+	position := scroll.position.y
 	handle_gif_picker(&ui, nil)
 	testing.expect(t, ui.gif_job != nil, "reaching the end requests the next page")
 	if ui.gif_job != nil {
@@ -381,10 +377,10 @@ gif_keyboard :: proc(t: ^testing.T) {
 		thread.join(ui.gif_job.worker); gif_drain(&ui)
 		testing.expect_value(t, len(ui.gif_hits), GIF_PAGE_SIZE + 1)
 		testing.expect_value(t, ui.gif_hits[0].title, "Result 0")
-		testing.expect_value(t, scroll.scrollPosition.y, position)
+		testing.expect_value(t, scroll.position.y, position)
 		testing.expect(t, !ui.gif_more, "stop when the provider has no next page")
 	}
-	scroll.scrollPosition^ = {}
+	scroll.position^ = {}
 	// A broken full GIF disappears while other results remain usable.
 	ui.gif_hits[0].url = strings.clone("https://gifsnap.com/broken")
 	broken := gif_start(&ui, .Preview)
@@ -398,13 +394,12 @@ gif_keyboard :: proc(t: ^testing.T) {
 	for &item in ui.gif_hits {item.failed = true}
 	for _ in 0 ..< 8 {anim_frame += 1; build_layout(&ui, 0)}
 	testing.expect_value(t, len(gif_matches(&ui)), 0)
-	empty_box := clay.GetElementData(clay.ID("GifEmpty")).boundingBox
-	grid_box := clay.GetElementData(clay.ID("GifGrid")).boundingBox
+	empty_box := nendo.element(nendo.id("GifEmpty")).rect
+	grid_box := nendo.element(nendo.id("GifGrid")).rect
 	testing.expect(t, empty_box.width >= grid_box.width - 1, "the error uses the full grid width")
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("GifEmpty")).found &&
-		clay.GetElementData(clay.ID("GifRetry")).found,
+		nendo.element(nendo.id("GifEmpty")).found && nendo.element(nendo.id("GifRetry")).found,
 	)
 	gif_retry(&ui)
 	testing.expect_value(t, len(gif_matches(&ui)), GIF_PAGE_SIZE + 1)
@@ -418,7 +413,7 @@ gif_keyboard :: proc(t: ^testing.T) {
 	ui.gif_selected = gif_item_clone(ui.gif_library[0])
 	ui.replying = "reply-target"
 	for _ in 0 ..< 8 {anim_frame += 1; build_layout(&ui, 0)}
-	press(t, &ui, clay.ID("GifTile", 0))
+	press(t, &ui, nendo.id("GifTile", 0))
 	testing.expect_value(t, len(ui.staged), 1)
 	testing.expect_value(t, ui.staged[0].name, "draft.gif")
 	testing.expect_value(t, len(ui.pending), 1)
@@ -504,7 +499,7 @@ gif_keyboard :: proc(t: ^testing.T) {
 	open_picker(&ui, ""); testing.expect(t, !ui.gif_tab)
 	if os.get_env("WN_TEST_GIF_LIVE", context.temp_allocator) != "" {
 		start_pic_worker(); defer stop_pic_worker()
-		rl.SetWindowSize(900, 760); clay.SetLayoutDimensions({900, 760})
+		rl.SetWindowSize(900, 760); nendo.set_dimensions({900, 760})
 		rl.SetTargetFPS(30)
 		ui.picker_mode = .Message; ui.gif_tab = true; ui.gif_saved = false
 		ed_set(&ui, &ui.picker_filter, "cat")
@@ -522,12 +517,12 @@ gif_keyboard :: proc(t: ^testing.T) {
 					drain_pics(); advance_videos(); anim_frame += 1
 					commands := build_layout(&ui, 0)
 					rl.BeginDrawing()
-					draw_frame(&commands)
+					draw_frame(commands)
 					rl.EndDrawing()
 				}
 				commands := build_layout(&ui, 0)
 				rl.BeginDrawing()
-				draw_frame(&commands)
+				draw_frame(commands)
 				rl.TakeScreenshot("/tmp/wn-gif-live-preview.png")
 				rl.EndDrawing()
 			}

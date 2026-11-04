@@ -1,7 +1,7 @@
 package main
 
 import "core:math"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 import sdl "vendor:sdl3"
 
@@ -40,7 +40,7 @@ sticker_texture_free :: proc(tex: rl.Texture2D) {
 // Tessellation approximates perspective with SDL's affine textured triangles.
 // The artwork and foil share UVs, so transparent cutouts stay transparent.
 @(private)
-sticker_vertex :: proc(u, v: f32, box: clay.BoundingBox, tilt: rl.Vector2) -> rl.Vertex {
+sticker_vertex :: proc(u, v: f32, box: nendo.Rect, tilt: rl.Vector2) -> rl.Vertex {
 	x, y := (u - 0.5) * box.width, (v - 0.5) * box.height
 	sx, cx := math.sin(tilt.y * 0.32), math.cos(tilt.y * 0.32)
 	sy, cy := math.sin(-tilt.x * 0.32), math.cos(-tilt.x * 0.32)
@@ -59,10 +59,10 @@ sticker_vertex :: proc(u, v: f32, box: clay.BoundingBox, tilt: rl.Vector2) -> rl
 }
 
 @(private)
-sticker_draw :: proc(tex: ^rl.Texture2D, box: clay.BoundingBox, id: u32, tint: rl.Color) {
+sticker_draw :: proc(tex: ^rl.Texture2D, box: nendo.Rect, id: u32, tint: rl.Color) {
 	if tex == nil || box.width <= 0 || box.height <= 0 {return}
-	active := motion_on() && clay.PointerOver({id = id})
-	pointer := clay.GetPointerState().position
+	active := motion_on() && nendo.pointer_over({id = id})
+	pointer := nendo.pointer().position
 	target: rl.Vector2
 	if active {
 		target = {

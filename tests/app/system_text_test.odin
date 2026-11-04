@@ -4,7 +4,7 @@ import marmot "../marmot"
 import "base:runtime"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -87,16 +87,15 @@ system_mentions_layout :: proc(t: ^testing.T) {
 	ui.nicknames[actor], ui.nicknames[subject] = "Alice", "Bob"
 	g_ui = &ui
 	defer {g_ui = nil; delete(ui.nicknames)}
-	clay.BeginLayout()
-	if clay.UI(clay.ID("SystemTest"))(
+	nendo.begin()
+	if nendo.box(nendo.id("SystemTest"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(800), height = clay.SizingFixed(320)},
-			layoutDirection = .TopToBottom,
-			padding = {top = 20},
-			childGap = 12,
-		},
-		backgroundColor = BG,
+		width = nendo.fixed(800),
+		height = nendo.fixed(320),
+		direction = .Column,
+		padding = {top = 20},
+		gap = 12,
+		color = BG,
 	},
 	) {
 		for kind, i in ([]cstring{"admin_added", "admin_removed", "member_removed", "group_renamed", "member_added"}) {
@@ -116,17 +115,17 @@ system_mentions_layout :: proc(t: ^testing.T) {
 			system_row(u32(i), msg)
 		}
 	}
-	commands := clay.EndLayout(0)
+	commands := nendo.end(0)
 	for i in 0 ..< 5 {
-		chip := clay.GetElementData(clay.ID("SegMention", (0xD00000 + u32(i) * 8) * 128))
+		chip := nendo.element(nendo.id("SegMention", (0xD00000 + u32(i) * 8) * 128))
 		testing.expect(
 			t,
-			chip.found && chip.boundingBox.width > 0,
+			chip.found && chip.rect.width > 0,
 			"System participant must render as a mention chip",
 		)
 	}
 	rl.BeginDrawing()
-	clay_raylib_render(&commands)
+	render_nendo(commands)
 	rl.TakeScreenshot("/tmp/wn-system-mentions.png")
 	rl.EndDrawing()
 }

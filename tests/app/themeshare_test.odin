@@ -7,7 +7,7 @@ import "core:strings"
 import "core:sync"
 
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // The slug is a filename and a map key, so anything that could escape
@@ -171,8 +171,8 @@ test_derive_both_polarities :: proc(t: ^testing.T) {
 // catches a mistyped hex in a hand-written pack.
 @(test)
 test_builtin_packs_legible :: proc(t: ^testing.T) {
-	BAD :: clay.Color{255, 0, 255, 255} // what an unparseable hex becomes
-	lum :: proc(c: clay.Color) -> f32 {
+	BAD :: nendo.Color{255, 0, 255, 255} // what an unparseable hex becomes
+	lum :: proc(c: nendo.Color) -> f32 {
 		return (c.r * 0.299 + c.g * 0.587 + c.b * 0.114) / 255
 	}
 	// Built-ins are complete definitions. Do not include machine-local packs
@@ -193,12 +193,12 @@ test_builtin_packs_legible :: proc(t: ^testing.T) {
 }
 
 @(private)
-theme_test_contrast :: proc(a, b: clay.Color) -> f64 {
+theme_test_contrast :: proc(a, b: nendo.Color) -> f64 {
 	linear :: proc(c: f32) -> f64 {
 		c := f64(c) / 255
 		return c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4)
 	}
-	lum :: proc(c: clay.Color) -> f64 {
+	lum :: proc(c: nendo.Color) -> f64 {
 		return 0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b)
 	}
 	hi, lo := max(lum(a), lum(b)), min(lum(a), lum(b))
@@ -209,7 +209,7 @@ theme_test_contrast :: proc(a, b: clay.Color) -> f64 {
 test_ink_on_reads_on_any_fill :: proc(t: ^testing.T) {
 
 
-	fills: [258]clay.Color = {
+	fills: [258]nendo.Color = {
 		0 = {255, 193, 7, 255},
 		1 = {0, 0, 128, 255},
 	}
@@ -256,8 +256,8 @@ test_ink_on_reads_on_any_fill :: proc(t: ^testing.T) {
 // theme_packs[ui.theme] took the whole app down.
 @(test)
 test_active_pack_clamps :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
 	// The runner frees its test arena on return; the registry outlives it.
@@ -279,8 +279,8 @@ test_active_pack_clamps :: proc(t: ^testing.T) {
 test_adopt_theme_replaces_by_slug :: proc(t: ^testing.T) {
 	// theme_packs and data_home are package globals that
 	// system_theme_layout also reloads; take its locks in its order.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
 	context.allocator = runtime.default_context().allocator
@@ -315,8 +315,8 @@ test_adopt_theme_replaces_by_slug :: proc(t: ^testing.T) {
 // first, and only the confirm throws the edit away.
 @(test)
 test_theme_edit_escape_asks :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
 	context.allocator = runtime.default_context().allocator

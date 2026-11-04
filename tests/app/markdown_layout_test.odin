@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=markdown_layout
@@ -97,32 +97,30 @@ markdown_layout :: proc(t: ^testing.T) {
 	for width in ([]f32{700, 280}) {
 		for frame in 0 ..< 3 {
 			clear(&sel_lines)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("MarkdownTest"))(
+			nendo.begin()
+			if nendo.box(nendo.id("MarkdownTest"))(
 			{
-				layout = {
-					layoutDirection = .TopToBottom,
-					sizing = {width = clay.SizingFixed(width + 40)},
-					padding = clay.PaddingAll(20),
-					childGap = 3,
-				},
-				backgroundColor = CARD,
+				direction = .Column,
+				width = nendo.fixed(width + 40),
+				padding = nendo.pad(20),
+				gap = 3,
+				color = CARD,
 			},
 			) {
 				md_blocks(blocks[:], 0, true, width)
 			}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			if frame < 2 {continue}
 			strike, formula, code := false, false, false
-			for cmd in commands.internalArray[:commands.length] {
-				if cmd.commandType != .Text {continue}
-				flags := u8(uintptr(cmd.userData))
+			for cmd in commands {
+				if cmd.kind != .Text {continue}
+				flags := u8(uintptr(cmd.user_data))
 				strike = strike || flags & TEXT_STRIKE != 0
 				formula = formula || flags & TEXT_MATH != 0
 				code = code || flags & TEXT_CODE != 0
 				testing.expect(
 					t,
-					cmd.boundingBox.x + cmd.boundingBox.width <= width + 20.1,
+					cmd.rect.x + cmd.rect.width <= width + 20.1,
 					"text stays inside its column",
 				)
 			}
@@ -130,8 +128,8 @@ markdown_layout :: proc(t: ^testing.T) {
 			for block, i in blocks {
 				id := u32(i) * 16
 				if block.quote_depth == 1 && block.quote_starts > 0 {
-					group := clay.GetElementData(clay.ID("MsgQuoteGroup", id * 128)).boundingBox
-					bar := clay.GetElementData(clay.ID("MsgQuoteBar", id)).boundingBox
+					group := nendo.element(nendo.id("MsgQuoteGroup", id * 128)).rect
+					bar := nendo.element(nendo.id("MsgQuoteBar", id)).rect
 					testing.expect_value(t, bar.height, group.height)
 					testing.expect(
 						t,
@@ -140,57 +138,46 @@ markdown_layout :: proc(t: ^testing.T) {
 					)
 				}
 				if block.kind == .Code {
-					box := clay.GetElementData(clay.ID("MsgCode", id)).boundingBox
+					box := nendo.element(nendo.id("MsgCode", id)).rect
 					numbers := 0
-					for cmd in commands.internalArray[:commands.length] {
-						if cmd.commandType == .Text &&
-						   cmd.renderData.text.fontSize == 11 &&
-						   cmd.boundingBox.y >= box.y &&
-						   cmd.boundingBox.y < box.y + box.height {numbers += 1}
+					for cmd in commands {
+						if cmd.kind == .Text &&
+						   cmd.text.size == 11 &&
+						   cmd.rect.y >= box.y &&
+						   cmd.rect.y < box.y + box.height {numbers += 1}
 					}
 					testing.expect_value(t, numbers, strings.count(block.text, "\n") + 1)
 				}
 				if block.kind == .List_Item {
-					box := clay.GetElementData(clay.ID("MsgListMarker", id)).boundingBox
+					box := nendo.element(nendo.id("MsgListMarker", id)).rect
 					testing.expect_value(t, box.x, 32 + f32(block.indent))
 				}
 				if block.kind ==
-				   .Rule {testing.expect_value(t, clay.GetElementData(clay.ID("MsgRule", id)).boundingBox.width, width)}
+				   .Rule {testing.expect_value(t, nendo.element(nendo.id("MsgRule", id)).rect.width, width)}
 				if block.kind == .Table {
-					table := clay.GetElementData(clay.ID("MsgTable", id)).boundingBox
+					table := nendo.element(nendo.id("MsgTable", id)).rect
 					testing.expect(
 						t,
 						abs(table.width - width) < 0.1,
 						"table fills the available width",
 					)
-					for cmd in commands.internalArray[:commands.length] {
-						if cmd.commandType != .Text {continue}
-						data := cmd.renderData.text
-						text := string(data.stringContents.chars[:data.stringContents.length])
+					for cmd in commands {
+						if cmd.kind != .Text {continue}
+						data := cmd.text
+						text := data.text
 						if text == "1,250" {
-							cell :=
-								clay.GetElementData(clay.ID("MsgTableCell", id + 64 + 2)).boundingBox
+							cell := nendo.element(nendo.id("MsgTableCell", id + 64 + 2)).rect
 							testing.expect(
 								t,
-								abs(
-									cmd.boundingBox.x +
-									cmd.boundingBox.width -
-									(cell.x + cell.width - 7),
-								) <
-								0.1,
+								abs(cmd.rect.x + cmd.rect.width - (cell.x + cell.width - 7)) < 0.1,
 								"numeric cells align right",
 							)
 						}
 						if text == "Active" {
-							cell :=
-								clay.GetElementData(clay.ID("MsgTableCell", id + 64 + 1)).boundingBox
+							cell := nendo.element(nendo.id("MsgTableCell", id + 64 + 1)).rect
 							testing.expect(
 								t,
-								abs(
-									cmd.boundingBox.x +
-									cmd.boundingBox.width / 2 -
-									(cell.x + cell.width / 2),
-								) <
+								abs(cmd.rect.x + cmd.rect.width / 2 - (cell.x + cell.width / 2)) <
 								0.1,
 								"centered cells retain their alignment",
 							)
@@ -199,7 +186,7 @@ markdown_layout :: proc(t: ^testing.T) {
 				}
 			}
 			rl.BeginDrawing()
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-markdown-%d.png", int(width)))
 			rl.EndDrawing()
 		}
@@ -208,34 +195,33 @@ markdown_layout :: proc(t: ^testing.T) {
 		heading := [1]Md_Block_Ui{{kind = .Heading, text = "Heading", level = level}}
 		for frame in 0 ..< 3 {
 			anim_tick(1.0 / 60)
-			box := clay.GetElementData(clay.ID("MdHeading", 77)).boundingBox
-			clay.SetPointerState(
-				frame == 1 ? clay.Vector2{box.x + 1, box.y + 1} : clay.Vector2{-100, -100},
-				false,
+			box := nendo.element(nendo.id("MdHeading", 77)).rect
+			nendo.set_pointer(
+				frame == 1 ? nendo.Vector2{box.x + 1, box.y + 1} : nendo.Vector2{-100, -100},
+				.Up,
 			)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("HeadingTest"))(
-			{layout = {padding = {left = 60}, sizing = {width = clay.SizingFixed(560)}}},
+			nendo.begin()
+			if nendo.box(nendo.id("HeadingTest"))(
+			{padding = {left = 60}, width = nendo.fixed(560)},
 			) {md_blocks(heading[:], 77, true, 500)}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			testing.expect_value(
 				t,
-				clay.GetElementData(clay.ID("MdHeadingText", 77)).boundingBox.x,
+				nendo.element(nendo.id("MdHeadingText", 77)).rect.x,
 				f32(60) +
 				(frame == 1 ? rl.MeasureTextLine(FONT_MONO, u16(max(24 - level * 2, 15)), strings.repeat("#", level, context.temp_allocator), 0).x + 6 : 0),
 			)
 			testing.expect_value(
 				t,
-				clay.GetElementData(clay.ID("MdHeadingMarks", 77)).found,
+				nendo.element(nendo.id("MdHeadingMarks", 77)).found,
 				frame == 1,
 			)
 			if frame == 1 {
 				found := false
-				for cmd in commands.internalArray[:commands.length] {
-					if cmd.commandType != .Text {continue}
-					text := cmd.renderData.text.stringContents
-					if string(text.chars[:text.length]) ==
-					   strings.repeat("#", level, context.temp_allocator) {found = true}
+				for cmd in commands {
+					if cmd.kind != .Text {continue}
+					text := cmd.text.text
+					if text == strings.repeat("#", level, context.temp_allocator) {found = true}
 				}
 				testing.expect(t, found)
 			}
@@ -246,18 +232,16 @@ markdown_layout :: proc(t: ^testing.T) {
 	previous: f32
 	for frame in 0 ..< 41 {
 		anim_tick(1.0 / 60)
-		clay.SetPointerState(
-			frame > 0 && frame <= 20 ? clay.Vector2{61, 1} : clay.Vector2{-100, -100},
-			false,
+		nendo.set_pointer(
+			frame > 0 && frame <= 20 ? nendo.Vector2{61, 1} : nendo.Vector2{-100, -100},
+			.Up,
 		)
-		clay.BeginLayout()
-		if clay.UI(clay.ID("HeadingTest"))(
-		{layout = {padding = {left = 60}, sizing = {width = clay.SizingFixed(560)}}},
-		) {
+		nendo.begin()
+		if nendo.box(nendo.id("HeadingTest"))({padding = {left = 60}, width = nendo.fixed(560)}) {
 			md_blocks(heading[:], 77, true, 500)
 		}
-		commands := clay.EndLayout(0)
-		x := clay.GetElementData(clay.ID("MdHeadingText", 77)).boundingBox.x
+		commands := nendo.end(0)
+		x := nendo.element(nendo.id("MdHeadingText", 77)).rect.x
 		if frame ==
 		   1 {testing.expect(t, x > 60 && x < 60 + rl.MeasureTextLine(FONT_MONO, 20, "##", 0).x + 6, "heading moves through an intermediate position")}
 		if frame > 0 && frame <= 20 {testing.expect(t, x >= previous)}
@@ -266,7 +250,7 @@ markdown_layout :: proc(t: ^testing.T) {
 		previous = x
 		if frame == 2 {
 			rl.BeginDrawing()
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.TakeScreenshot("/tmp/wn-heading-slide.png")
 			rl.EndDrawing()
 		}
@@ -282,37 +266,30 @@ markdown_layout :: proc(t: ^testing.T) {
 		{kind = .Quote, text = "Inner", quote_depth = 2, quote_starts = 1},
 		{kind = .Table, cells = [][]string{{"Header", "Header"}, {"Cell", "Cell"}}},
 	}
-	targets := []clay.ElementId {
-		clay.ID("MsgListItem", 0),
-		clay.ID("MsgListItem", 16),
-		clay.ID("MsgQuoteGroup", 32 * 128),
-		clay.ID("MsgQuoteGroup", 48 * 128 + 1),
-		clay.ID("MsgTableCell", 64 + 64),
+	targets := []nendo.Id {
+		nendo.id("MsgListItem", 0),
+		nendo.id("MsgListItem", 16),
+		nendo.id("MsgQuoteGroup", 32 * 128),
+		nendo.id("MsgQuoteGroup", 48 * 128 + 1),
+		nendo.id("MsgTableCell", 64 + 64),
 	}
 	for target in targets {
 		for frame in 0 ..< 3 {
-			box := clay.GetElementData(target).boundingBox
-			clay.SetPointerState(
-				frame == 1 ? clay.Vector2{box.x + 2, box.y + 2} : clay.Vector2{-100, -100},
-				false,
+			box := nendo.element(target).rect
+			nendo.set_pointer(
+				frame == 1 ? nendo.Vector2{box.x + 2, box.y + 2} : nendo.Vector2{-100, -100},
+				.Up,
 			)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("HoverTest"))(
-			{
-				layout = {
-					layoutDirection = .TopToBottom,
-					sizing = {width = clay.SizingFixed(500)},
-					childGap = 3,
-				},
-				backgroundColor = CARD,
-			},
+			nendo.begin()
+			if nendo.box(nendo.id("HoverTest"))(
+			{direction = .Column, width = nendo.fixed(500), gap = 3, color = CARD},
 			) {md_blocks(hover_blocks, 0, true, 500)}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			filled := false
-			for cmd in commands.internalArray[:commands.length] {
-				if cmd.id == target.id && cmd.commandType == .Rectangle {
+			for cmd in commands {
+				if cmd.id == target.id && cmd.kind == .Rectangle {
 					filled = true
-					color := cmd.renderData.rectangle.backgroundColor
+					color := cmd.rectangle.color
 					testing.expect_value(t, color.a, f32(255))
 					testing.expect(
 						t,
@@ -324,7 +301,7 @@ markdown_layout :: proc(t: ^testing.T) {
 			testing.expect_value(t, filled, frame == 1)
 			if frame == 1 && target == targets[3] {
 				rl.BeginDrawing()
-				clay_raylib_render(&commands)
+				render_nendo(commands)
 				rl.TakeScreenshot("/tmp/wn-markdown-hover.png")
 				rl.EndDrawing()
 			}

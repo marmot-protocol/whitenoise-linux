@@ -2,13 +2,13 @@ package main
 
 import "core:fmt"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Shift+wheel scrolls the chat filter row sideways once folders overflow it.
 @(private)
 chat_filter_wheel :: proc(ui: ^Ui_State, wheel: ^rl.Vector2) {
-	if ui.page != .Chats || !shift_down() || !clay.PointerOver(clay.ID("ChatFilters")) {return}
+	if ui.page != .Chats || !shift_down() || !nendo.pointer_over(nendo.id("ChatFilters")) {return}
 	wheel.x += wheel.y
 	wheel.y = 0
 }
@@ -23,20 +23,16 @@ rail_content :: proc(ui: ^Ui_State) {
 	pinned := ui.page == .Chats && f32(rl.GetScreenHeight()) / UI_ZOOM >= 480
 	page_scroll := ui.page == .Profile || ((single_pane() || ui.page == .Chats) && !pinned)
 
-	if clay.UI(clay.ID("RailContent"))(
+	if nendo.box(nendo.id("RailContent"))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = {left = 10, right = 10, top = 12, bottom = 12},
-			childGap = 8,
-		},
-		backgroundColor = PANEL,
+		width = nendo.grow(),
+		height = nendo.grow(),
+		direction = .Column,
+		padding = {left = 10, right = 10, top = 12, bottom = 12},
+		gap = 8,
+		color = PANEL,
 		// Account rows must scroll rather than raise the shell's minimum height.
-		clip = {
-			vertical = page_scroll,
-			childOffset = page_scroll ? clay.GetScrollOffset() : clay.Vector2{},
-		},
+		clip = {y = page_scroll, scroll = page_scroll},
 	},
 	) {
 		// The header counts what the chat list below shows.
@@ -68,17 +64,13 @@ rail_content :: proc(ui: ^Ui_State) {
 			profile_rail(ui)
 		} else {
 			// Section header: CHATS/CONTACTS count + new-chat button.
-			if clay.UI(clay.ID("RailHead"))(
+			if nendo.box(nendo.id("RailHead"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? 50 : 32),
-					},
-					childGap = 8,
-					childAlignment = {y = .Center},
-					padding = {top = 4, bottom = 2},
-				},
+				width = nendo.grow(),
+				height = nendo.fixed(tap_size() ? 50 : 32),
+				gap = 8,
+				align = {y = .Center},
+				padding = {top = 4, bottom = 2},
 			},
 			) {
 				// A phone has no navigation column, so the account switcher
@@ -108,90 +100,66 @@ rail_content :: proc(ui: ^Ui_State) {
 						count = fmt.tprintf(tr("%d of %d"), len(inbox), chat_total)
 					}
 				}
-				clay.Text(head, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
-				clay.Text(count, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})
-				if clay.UI(clay.ID("RailHeadGap"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {}
+				nendo.text(head, {font = FONT_TITLE, size = 16, color = TEXT})
+				nendo.text(count, {font = FONT_BODY, size = 12, color = TEXT_LO})
+				if nendo.box(nendo.id("RailHeadGap"))({width = nendo.grow()}) {}
 				if ui.page == .Chats {
-					if clay.UI(clay.ID("ChatsMenuBtn"))(
+					if nendo.box(nendo.id("ChatsMenuBtn"))(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-								height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-							},
-							padding = {left = 6, right = 6, top = 4, bottom = 4},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(6),
+						width = nendo.fit(min = tap_size() ? tap_min() : 0),
+						height = nendo.fit(min = tap_size() ? tap_min() : 0),
+						padding = {left = 6, right = 6, top = 4, bottom = 4},
+						align = {x = .Center, y = .Center},
+						color = hovered() ? HOVER : {},
+						radius = rr(6),
 					},
 					) {
-						clay.Text(
-							"···",
-							{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT_DIM},
-						)
+						nendo.text("···", {font = FONT_TITLE, size = 15, color = TEXT_DIM})
 						if hovered() {tooltip(tr("Chat options"))}
 					}
 				}
 				if ui.page != .Contacts {
 					// Global-search chip, also on Ctrl+K.
-					if clay.UI(clay.ID("GSearchBtn"))(
+					if nendo.box(nendo.id("GSearchBtn"))(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-								height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-							},
-							padding = {left = 8, right = 8, top = 5, bottom = 5},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(7),
+						width = nendo.fit(min = tap_size() ? tap_min() : 0),
+						height = nendo.fit(min = tap_size() ? tap_min() : 0),
+						padding = {left = 8, right = 8, top = 5, bottom = 5},
+						align = {x = .Center, y = .Center},
+						color = hovered() ? HOVER : {},
+						radius = rr(7),
 					},
 					) {
-						clay.Text(
-							ICON_SEARCH,
-							{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
-						)
+						nendo.text(ICON_SEARCH, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 					}
-					if clay.UI(clay.ID("NewChatBtn"))(
+					if nendo.box(nendo.id("NewChatBtn"))(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-								height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-							},
-							padding = {left = 8, right = 8, top = 3, bottom = 3},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(7),
+						width = nendo.fit(min = tap_size() ? tap_min() : 0),
+						height = nendo.fit(min = tap_size() ? tap_min() : 0),
+						padding = {left = 8, right = 8, top = 3, bottom = 3},
+						align = {x = .Center, y = .Center},
+						color = hovered() ? HOVER : {},
+						radius = rr(7),
 					},
 					) {
-						clay.Text("+", {fontId = FONT_TITLE, fontSize = 18, textColor = ACCENT})
+						nendo.text("+", {font = FONT_TITLE, size = 18, color = ACCENT})
 					}
 				}
 			}
 			// Chat filter.
-			if clay.UI(clay.ID("FilterBox"))(
+			if nendo.box(nendo.id("FilterBox"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 34),
-					},
-					padding = {left = 12, right = 12},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(6),
+				width = nendo.grow(),
+				height = nendo.fixed(tap_size() ? tap_min() : 34),
+				padding = {left = 12, right = 12},
+				gap = 8,
+				align = {y = .Center},
+				color = ROW_BG,
+				radius = rr(6),
 				border = {color = ui.focus == .Filter ? ACCENT : FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(ICON_SEARCH, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO})
+				nendo.text(ICON_SEARCH, {font = FONT_ICON, size = 12, color = TEXT_LO})
 				field_text(
 					ui,
 					"FilterBox",
@@ -202,41 +170,25 @@ rail_content :: proc(ui: ^Ui_State) {
 					TEXT_LO,
 				)
 				if len(ui.sidebar_filter) > 0 {
-					if clay.UI(clay.ID("FilterClear"))(
+					if nendo.box(nendo.id("FilterClear"))(
 					{
-						layout = {
-							sizing = {
-								clay.SizingFixed(tap_size() ? tap_min() : 24),
-								clay.SizingFixed(tap_size() ? tap_min() : 24),
-							},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(6),
+						width = nendo.fixed(tap_size() ? tap_min() : 24),
+						height = nendo.fixed(tap_size() ? tap_min() : 24),
+						align = {x = .Center, y = .Center},
+						color = hovered() ? HOVER : {},
+						radius = rr(6),
 					},
 					) {
-						clay.Text(
-							ICON_CLOSE,
-							{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
-						)
+						nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 					}
 				}
 			}
 			if ui.page == .Chats {
-				if clay.UI(clay.ID("ChatFilterRow"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						childGap = 4,
-						childAlignment = {y = .Center},
-					},
-				},
+				if nendo.box(nendo.id("ChatFilterRow"))(
+				{width = nendo.grow(), gap = 4, align = {y = .Center}},
 				) {
-					if clay.UI(clay.ID("ChatFilters"))(
-					{
-						layout = {sizing = {width = clay.SizingGrow()}, childGap = 4},
-						clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
-					},
+					if nendo.box(nendo.id("ChatFilters"))(
+					{width = nendo.grow(), gap = 4, clip = {x = true, scroll = true}},
 					) {
 						labels := #sparse[Chat_Filter]string {
 							.Chats  = tr("Chats"),
@@ -253,28 +205,22 @@ rail_content :: proc(ui: ^Ui_State) {
 						for t in Chat_Filter {
 							if t == .Whip && !rl.WhipAvailable() {continue}
 							active := t == ui.chat_filter && ui.chat_folder == ""
-							if clay.UI(clay.ID(ids[t]))(
+							if nendo.box(nendo.id(ids[t]))(
 							{
-								layout = {
-									sizing = {
-										width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-										height = clay.SizingFit(
-											{min = tap_size() ? tap_min() : 0},
-										),
-									},
-									padding = {left = 8, right = 8, top = 5, bottom = 5},
-									childAlignment = {x = .Center, y = .Center},
-								},
-								backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-								cornerRadius = rr(6),
+								width = nendo.fit(min = tap_size() ? tap_min() : 0),
+								height = nendo.fit(min = tap_size() ? tap_min() : 0),
+								padding = {left = 8, right = 8, top = 5, bottom = 5},
+								align = {x = .Center, y = .Center},
+								color = active ? SELECTED : (hovered() ? HOVER : {}),
+								radius = rr(6),
 							},
 							) {
-								clay.Text(
+								nendo.text(
 									labels[t],
 									{
-										fontId = FONT_BODY,
-										fontSize = 12,
-										textColor = active ? TEXT : TEXT_DIM,
+										font = FONT_BODY,
+										size = 12,
+										color = active ? TEXT : TEXT_DIM,
 									},
 								)
 							}
@@ -282,56 +228,44 @@ rail_content :: proc(ui: ^Ui_State) {
 						if ui.prefs.recent_chats {
 							for name, i in ui.prefs.folders {
 								active := name == ui.chat_folder
-								if clay.UI(clay.ID("FolderPill", u32(i)))(
+								if nendo.box(nendo.id("FolderPill", u32(i)))(
 								{
-									layout = {
-										sizing = {
-											width = clay.SizingFit(
-												{min = tap_size() ? tap_min() : 0},
-											),
-											height = clay.SizingFit(
-												{min = tap_size() ? tap_min() : 0},
-											),
-										},
-										padding = {left = 8, right = 8, top = 5, bottom = 5},
-										childGap = 4,
-										childAlignment = {y = .Center},
-									},
-									backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-									cornerRadius = rr(6),
+									width = nendo.fit(min = tap_size() ? tap_min() : 0),
+									height = nendo.fit(min = tap_size() ? tap_min() : 0),
+									padding = {left = 8, right = 8, top = 5, bottom = 5},
+									gap = 4,
+									align = {y = .Center},
+									color = active ? SELECTED : (hovered() ? HOVER : {}),
+									radius = rr(6),
 								},
 								) {
 									folder_icon(ui, name, 12)
-									clay.Text(
+									nendo.text(
 										name,
 										{
-											fontId = FONT_BODY,
-											fontSize = 12,
-											textColor = active ? TEXT : TEXT_DIM,
+											font = FONT_BODY,
+											size = 12,
+											color = active ? TEXT : TEXT_DIM,
 										},
 									)
 								}
 							}
 						}
 					}
-					scrollbar(clay.ID("ChatFilters"))
-					if clay.UI(clay.ID("ChatViewBtn"))(
+					scrollbar(nendo.id("ChatFilters"))
+					if nendo.box(nendo.id("ChatViewBtn"))(
 					{
-						layout = {
-							sizing = {
-								clay.SizingFixed(tap_size() ? tap_min() : 32),
-								clay.SizingFixed(tap_size() ? tap_min() : 32),
-							},
-							padding = {left = 6, right = 6, top = 5, bottom = 5},
-							childAlignment = {y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : ROW_BG,
-						cornerRadius = rr(6),
+						width = nendo.fixed(tap_size() ? tap_min() : 32),
+						height = nendo.fixed(tap_size() ? tap_min() : 32),
+						padding = {left = 6, right = 6, top = 5, bottom = 5},
+						align = {y = .Center},
+						color = hovered() ? HOVER : ROW_BG,
+						radius = rr(6),
 					},
 					) {
-						clay.Text(
+						nendo.text(
 							ui.prefs.recent_chats ? "\uf017" : ICON_FOLDER,
-							{fontId = FONT_ICON, fontSize = 16, textColor = ACCENT},
+							{font = FONT_ICON, size = 16, color = ACCENT},
 						)
 						if hovered() {
 							tooltip(
@@ -346,41 +280,40 @@ rail_content :: proc(ui: ^Ui_State) {
 		if ui.page == .Contacts && logged_in && !rail_narrow(ui) {
 			empty := contacts_empty(len(ui.contacts), len(contact_rows), len(ui.sidebar_filter))
 			if empty != .None {
-				clay.Text(
+				nendo.text(
 					empty == .No_Matches ? tr("No matching contacts") : tr("No contacts yet"),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 13, color = TEXT_DIM},
 				)
 			}
 			if empty == .No_Matches {
-				if clay.UI(clay.ID("ContactsClearRow"))({layout = {padding = {left = 4}}}) {
+				if nendo.box(nendo.id("ContactsClearRow"))({padding = {left = 4}}) {
 					micro_button("ContactsClearSearch", tr("Clear search"))
 				}
 			}
 			if empty == .No_Contacts {
-				clay.Text(
+				nendo.text(
 					tr(
 						"Add someone from their profile or paste their npub above. You can also import a contacts CSV or JSON export.",
 					),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 13, color = TEXT_DIM},
 				)
 				login_big_button("ContactsImportBtn", tr("Import contacts"), true, .Enabled)
 			}
 			if contact_query_hex(ui) != "" {
 				login_big_button("ContactsAddNpub", tr("Add contact"), true, .Enabled)
 			}
-			if clay.UI(clay.ID("ContactList"))(
+			if nendo.box(nendo.id("ContactList"))(
 			{
-				layout = {
-					sizing = {clay.SizingGrow(), clay.SizingGrow({min = single_pane() ? 50 : 0})},
-					layoutDirection = .TopToBottom,
-					childGap = 6,
-				},
-				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+				width = nendo.grow(),
+				height = nendo.grow(min = single_pane() ? 50 : 0),
+				direction = .Column,
+				gap = 6,
+				clip = {y = true, scroll = true},
 			},
 			) {
 				// Alphabetical with letter section headers and a name
 				// filter. Rows keep their
-				// ui.contacts index in the clay ID so clicks stay stable.
+				// ui.contacts index in the nendo ID so clicks stay stable.
 				last_letter: u8 = 0
 				Contact_Item :: struct {
 					idx:    int,
@@ -406,68 +339,54 @@ rail_content :: proc(ui: ^Ui_State) {
 					y, last_letter = end, letter
 				}
 				// Keep full scroll geometry, but build only the viewport and two spare rows.
-				data := clay.GetScrollContainerData(clay.ID("ContactList"))
-				height :=
-					data.found ? data.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-				offset :=
-					data.found ? clamp(-data.scrollPosition.y, 0, max(0, y - GAP - height)) : 0
-				if data.found {data.scrollPosition.y = -offset}
+				data := nendo.scroll(nendo.id("ContactList"))
+				height := data.found ? data.viewport.height : f32(rl.GetScreenHeight()) / UI_ZOOM
+				offset := data.found ? clamp(-data.position.y, 0, max(0, y - GAP - height)) : 0
+				if data.found {data.position.y = -offset}
 				first, last := 0, len(rows)
 				for first < last && rows[first].end < offset - 2 * (ROW_H + GAP) {first += 1}
 				for last > first &&
 				    rows[last - 1].y > offset + height + 2 * (ROW_H + GAP) {last -= 1}
 				if first > 0 {
-					if clay.UI(clay.ID("ContactsBefore"))(
-					{layout = {sizing = {height = clay.SizingFixed(rows[first].y - GAP)}}},
+					if nendo.box(nendo.id("ContactsBefore"))(
+					{height = nendo.fixed(rows[first].y - GAP)},
 					) {}
 				}
 				for order in rows[first:last] {
 					contact := ui.contacts[order.idx]
 					if order.letter != 0 {
-						if clay.UI(clay.ID("ContactLetter", u32(order.idx)))(
+						if nendo.box(nendo.id("ContactLetter", u32(order.idx)))(
 						{
-							layout = {
-								sizing = {height = clay.SizingFixed(HEADER_H)},
-								padding = {left = 10, top = 6, bottom = 2},
-							},
+							height = nendo.fixed(HEADER_H),
+							padding = {left = 10, top = 6, bottom = 2},
 						},
 						) {
-							clay.Text(
+							nendo.text(
 								fmt.tprintf("%c", order.letter),
-								{
-									fontId = FONT_MONO,
-									fontSize = 11,
-									textColor = TEXT_LO,
-									letterSpacing = 2,
-								},
+								{font = FONT_MONO, size = 11, color = TEXT_LO, spacing = 2},
 							)
 						}
 					}
 
 					selected := ui.selected_contact == order.idx
-					if clay.UI(clay.ID("ContactRow", u32(order.idx)))(
+					if nendo.box(nendo.id("ContactRow", u32(order.idx)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(ROW_H)},
-							padding = clay.PaddingAll(10),
-							childGap = 10,
-							childAlignment = {y = .Center},
-						},
-						backgroundColor = selected ? SELECTED : (hovered() ? HOVER : {}),
-						cornerRadius = rr(12),
+						width = nendo.grow(),
+						height = nendo.fixed(ROW_H),
+						padding = nendo.pad(10),
+						gap = 10,
+						align = {y = .Center},
+						color = selected ? SELECTED : (hovered() ? HOVER : {}),
+						radius = rr(12),
 					},
 					) {
 						if selected {
-							if clay.UI(clay.ID("ContactRowBar", u32(order.idx)))(
+							if nendo.box(nendo.id("ContactRowBar", u32(order.idx)))(
 							{
-								layout = {
-									sizing = {
-										width = clay.SizingFixed(3),
-										height = clay.SizingFixed(18),
-									},
-								},
-								backgroundColor = ACCENT,
-								cornerRadius = rr(2),
+								width = nendo.fixed(3),
+								height = nendo.fixed(18),
+								color = ACCENT,
+								radius = rr(2),
 							},
 							) {}
 						}
@@ -480,51 +399,41 @@ rail_content :: proc(ui: ^Ui_State) {
 							30,
 							photo,
 						)
-						if clay.UI(clay.ID("ContactNameClip", u32(order.idx)))(
-						{
-							layout = {sizing = {width = clay.SizingGrow()}},
-							clip = {horizontal = true},
-						},
+						if nendo.box(nendo.id("ContactNameClip", u32(order.idx)))(
+						{width = nendo.grow(), clip = {x = true}},
 						) {
 							name_w :=
-								clay.GetElementData(clay.ID("ContactNameClip", u32(order.idx))).boundingBox.width
+								nendo.element(nendo.id("ContactNameClip", u32(order.idx))).rect.width
 							if name_w <= 0 {name_w = max(1, rail_width(ui) - 80)}
-							clay.Text(
+							nendo.text(
 								text_ellipsis(contact_label(ui, contact), name_w, FONT_TITLE, 14),
-								{
-									fontId = FONT_TITLE,
-									fontSize = 14,
-									textColor = TEXT,
-									wrapMode = .None,
-								},
+								{font = FONT_TITLE, size = 14, color = TEXT, wrap = .None},
 							)
 						}
 						if selected && len(contact.npub) > 0 && !single_pane() {
-							if clay.UI(clay.ID("ContactRowGap", u32(order.idx)))(
-							{layout = {sizing = {width = clay.SizingGrow()}}},
+							if nendo.box(nendo.id("ContactRowGap", u32(order.idx)))(
+							{width = nendo.grow()},
 							) {}
-							clay.Text(
+							nendo.text(
 								npub_tail(contact.npub),
-								{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
+								{font = FONT_MONO, size = 10, color = TEXT_LO},
 							)
 						}
 					}
 				}
 				if last < len(rows) {
-					if clay.UI(clay.ID("ContactsAfter"))(
-					{layout = {sizing = {height = clay.SizingFixed(y - rows[last].y - GAP)}}},
+					if nendo.box(nendo.id("ContactsAfter"))(
+					{height = nendo.fixed(y - rows[last].y - GAP)},
 					) {}
 				}
 			}
-			scrollbar(clay.ID("ContactList"))
+			scrollbar(nendo.id("ContactList"))
 			if len(ui.contacts) > 0 {
 				micro_button("ContactsManage", tr("Manage contacts"))
 				if ui.contact_tools_open {
-					if clay.UI(clay.ID("ContactsTools"))(
-					{layout = {layoutDirection = .TopToBottom, childGap = 8}},
-					) {
+					if nendo.box(nendo.id("ContactsTools"))({direction = .Column, gap = 8}) {
 						micro_button("ContactsImportBtn", tr("Import contacts"))
-						if clay.UI(clay.ID("ContactsExportButtons"))({layout = {childGap = 8}}) {
+						if nendo.box(nendo.id("ContactsExportButtons"))({gap = 8}) {
 							micro_button("ContactsCsvBtn", tr("Export CSV"))
 							micro_button("ContactsJsonBtn", tr("Export JSON"))
 						}
@@ -535,24 +444,20 @@ rail_content :: proc(ui: ^Ui_State) {
 
 		if ui.page == .Chats && logged_in && !rail_narrow(ui) {
 			whip_inbox_progress(ui)
-			if clay.UI(clay.ID("ChatList"))(
+			if nendo.box(nendo.id("ChatList"))(
 			{
-				layout = {
-					sizing = {
-						clay.SizingGrow(),
-						pinned ? clay.SizingGrow({min = chat_row_height()}) : clay.SizingFit(),
-					},
-					layoutDirection = .TopToBottom,
-					childGap = 2,
-				},
-				clip = {vertical = pinned, childOffset = clay.GetScrollOffset()},
+				width = nendo.grow(),
+				height = pinned ? nendo.grow(min = chat_row_height()) : nendo.fit(),
+				direction = .Column,
+				gap = 2,
+				clip = {y = pinned, scroll = true},
 			},
 			) {
 				chat_rail(ui, inbox, chat_total)
 			}
-			if pinned {scrollbar(clay.ID("ChatList"))}
+			if pinned {scrollbar(nendo.id("ChatList"))}
 		}
 
 	}
-	if page_scroll {scrollbar(clay.ID("RailContent"))}
+	if page_scroll {scrollbar(nendo.id("RailContent"))}
 }

@@ -7,13 +7,13 @@ import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
 markdown_timestamps :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	dir, err := os.make_directory_temp("/tmp", "wn-timestamps-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
@@ -129,7 +129,7 @@ markdown_timestamps :: proc(t: ^testing.T) {
 	marmot.markdown_document_free(doc)
 	defer blocks_free(smoke_blocks)
 
-	// Render the actual Clay/SDL surface, including selection and narrow wrapping.
+	// Render the actual nendo/SDL surface, including selection and narrow wrapping.
 	rl.InitWindow(760, 1100, "Markdown timestamps")
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
@@ -142,24 +142,24 @@ markdown_timestamps :: proc(t: ^testing.T) {
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; wrap_clear(); delete(sel_lines); sel_lines = nil}
 	for width in ([]f32{700, 220}) {
-		clay.SetPointerState({-100, -100}, false)
+		nendo.set_pointer({-100, -100}, .Up)
 		for frame in 0 ..< 3 {
 			commands := timestamp_smoke_frame(smoke_blocks[:], width)
 			if frame < 2 {continue}
 			for line in sel_lines {testing.expect(t, !strings.contains(line.block_text, "<t:"), "selection contains the formatted label")}
-			rl.BeginDrawing(); clay_raylib_render(&commands)
+			rl.BeginDrawing(); render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-markdown-timestamps-%d.png", int(width)))
 			rl.EndDrawing()
-			clocks := make([dynamic]clay.Vector2, context.temp_allocator)
-			wrapped := make([dynamic]clay.Vector2, context.temp_allocator)
-			plain: clay.Vector2
-			for cmd in commands.internalArray[:commands.length] {
-				if cmd.commandType != .Text {continue}
-				text := cmd.renderData.text.stringContents
-				shown := string(text.chars[:text.length])
-				point := clay.Vector2 {
-					cmd.boundingBox.x + cmd.boundingBox.width / 2,
-					cmd.boundingBox.y + cmd.boundingBox.height / 2,
+			clocks := make([dynamic]nendo.Vector2, context.temp_allocator)
+			wrapped := make([dynamic]nendo.Vector2, context.temp_allocator)
+			plain: nendo.Vector2
+			for cmd in commands {
+				if cmd.kind != .Text {continue}
+				text := cmd.text.text
+				shown := text
+				point := nendo.Vector2 {
+					cmd.rect.x + cmd.rect.width / 2,
+					cmd.rect.y + cmd.rect.height / 2,
 				}
 				if shown == "\uf017" {append(&clocks, point)}
 				if width == 220 && strings.contains(shown, "2026") {append(&wrapped, point)}
@@ -183,9 +183,9 @@ markdown_timestamps :: proc(t: ^testing.T) {
 			}
 			if !testing.expect_value(t, len(clocks), len(styles)) {return}
 			for point, i in clocks {
-				clay.SetPointerState({-100, -100}, false)
+				nendo.set_pointer({-100, -100}, .Up)
 				commands = timestamp_smoke_frame(smoke_blocks[:], width)
-				clay.SetPointerState(point, false)
+				nendo.set_pointer(point, .Up)
 				link_hover = ""
 				commands = timestamp_smoke_frame(smoke_blocks[:], width)
 				seconds := i == 12 ? i64(-1) : i64(1791280800)
@@ -199,9 +199,9 @@ markdown_timestamps :: proc(t: ^testing.T) {
 				if i == 9 {testing.expect_value(t, link_hover, "https://example.com/time")}
 			}
 			for point in wrapped {
-				clay.SetPointerState({-100, -100}, false)
+				nendo.set_pointer({-100, -100}, .Up)
 				commands = timestamp_smoke_frame(smoke_blocks[:], width)
-				clay.SetPointerState(point, false)
+				nendo.set_pointer(point, .Up)
 				commands = timestamp_smoke_frame(smoke_blocks[:], width)
 				testing.expect(
 					t,
@@ -209,12 +209,12 @@ markdown_timestamps :: proc(t: ^testing.T) {
 					"wrapped date fragments retain their tooltip",
 				)
 			}
-			rl.BeginDrawing(); clay_raylib_render(&commands)
+			rl.BeginDrawing(); render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-markdown-timestamps-hover-%d.png", int(width)))
 			rl.EndDrawing()
-			clay.SetPointerState({-100, -100}, false)
+			nendo.set_pointer({-100, -100}, .Up)
 			commands = timestamp_smoke_frame(smoke_blocks[:], width)
-			clay.SetPointerState(plain, false)
+			nendo.set_pointer(plain, .Up)
 			commands = timestamp_smoke_frame(smoke_blocks[:], width)
 			testing.expect_value(t, timestamp_smoke_tip(commands), "")
 		}
@@ -222,35 +222,30 @@ markdown_timestamps :: proc(t: ^testing.T) {
 }
 
 @(private)
-timestamp_smoke_frame :: proc(
-	blocks: []Md_Block_Ui,
-	width: f32,
-) -> clay.ClayArray(clay.RenderCommand) {
+timestamp_smoke_frame :: proc(blocks: []Md_Block_Ui, width: f32) -> []nendo.Render_Command {
 	clear(&sel_lines)
-	clay.BeginLayout()
-	if clay.UI(clay.ID("TimestampSmoke"))(
+	nendo.begin()
+	if nendo.box(nendo.id("TimestampSmoke"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(width + 40)},
-			padding = clay.PaddingAll(20),
-			childGap = 5,
-		},
-		backgroundColor = CARD,
+		direction = .Column,
+		width = nendo.fixed(width + 40),
+		padding = nendo.pad(20),
+		gap = 5,
+		color = CARD,
 	},
 	) {
 		md_blocks(blocks, 0, true, width)
 	}
-	return clay.EndLayout(0)
+	return nendo.end(0)
 }
 
 @(private)
-timestamp_smoke_tip :: proc(commands: clay.ClayArray(clay.RenderCommand)) -> string {
+timestamp_smoke_tip :: proc(commands: []nendo.Render_Command) -> string {
 	builder := strings.builder_make(context.temp_allocator)
-	for cmd in commands.internalArray[:commands.length] {
-		if cmd.commandType != .Text || cmd.zIndex != 18 {continue}
-		text := cmd.renderData.text.stringContents
-		shown := string(text.chars[:text.length])
+	for cmd in commands {
+		if cmd.kind != .Text || cmd.z != 18 {continue}
+		text := cmd.text.text
+		shown := text
 		if strings.builder_len(builder) > 0 {strings.write_byte(&builder, '\n')}
 		strings.write_string(&builder, shown)
 	}

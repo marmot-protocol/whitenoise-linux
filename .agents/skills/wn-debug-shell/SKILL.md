@@ -52,7 +52,7 @@ field for a feature you have not read the code for yet.
 ### What will bite you
 
 **Clicking is destructive.** Coordinates are raw window pixels, and the
-screenshot is in *physical* pixels while clay works in logical ones (they
+screenshot is in *physical* pixels while nendo works in logical ones (they
 differ by the display's scale factor, 1.25 here). A click computed off a
 screenshot can land a row or two away, and rail rows sit next to archive and
 delete controls. Screenshot, click, screenshot, and check `state` before
@@ -67,7 +67,7 @@ calling `apply_theme`, so the app keeps the old palette; the real path is
 `theme_switch` (reveal.odin). Use `set` to observe, not to drive a feature
 that has a proper entry point.
 
-**Scroll needs a position.** clay scrolls the container under the pointer, so
+**Scroll needs a position.** nendo scrolls the container under the pointer, so
 `scroll DY` only works if the pointer is already somewhere useful; `scroll DY
 X Y` moves first. Scrolling down at the bottom is correctly a no-op, which
 looks like a broken command.

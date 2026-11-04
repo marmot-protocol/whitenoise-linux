@@ -7,7 +7,7 @@ import "core:strings"
 import "core:testing"
 import "core:text/edit"
 import "core:thread"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Neutral deployment keeps this generated fixture off public infrastructure.
@@ -122,10 +122,10 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	init_fonts(); load_themes(); apply_theme(0, 0)
 	locale := g_prefs != nil ? g_prefs.locale : "en"
 	set_locale("en"); defer set_locale(locale)
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		selected      = -1,
 		row_menu      = -1,
@@ -152,15 +152,15 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	defer {timeline_stop(); members_stop(); for job in account_jobs {thread.join(job.worker)}
 		account_job_drain(&ui)}
 	frame :: proc(ui: ^Ui_State) -> string {
-		clay.SetPointerState({-100, -100}, false)
+		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
 		banner_tick(ui)
 		commands := build_layout(ui, 0)
 		text := make([dynamic]u8, context.temp_allocator)
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Text {continue}
-			data := command.renderData.text.stringContents
-			append(&text, ..data.chars[:data.length]); append(&text, ' ')
+		for command in commands {
+			if command.kind != .Text {continue}
+			data := command.text.text
+			append(&text, data); append(&text, ' ')
 		}
 		return string(text[:])
 	}
@@ -213,12 +213,12 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		staged := raw_data(ui.staged)
 		payload := raw_data(ui.staged[0].data)
 		for _ in 0 ..< 3 {frame(&ui)}
-		id := clay.ID("ChatUnarch", 0)
-		data := clay.GetElementData(id)
+		id := nendo.id("ChatUnarch", 0)
+		data := nendo.element(id)
 		if !testing.expect(t, data.found, "Restore is rendered") {return}
-		b := data.boundingBox
-		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
-		if !testing.expect(t, clay.PointerOver(id), "Restore is reachable") {return}
+		b := data.rect
+		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
+		if !testing.expect(t, nendo.pointer_over(id), "Restore is reachable") {return}
 		if other_selected {
 			selected := ui.selected
 			ui.account_ref = "missing-offline-account"
@@ -238,7 +238,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 			account_job_drain(&ui)
 			ui.account_ref = account
 			for _ in 0 ..< 3 {frame(&ui)}
-			clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
+			nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
 		}
 		if !other_selected {
 			testing.expect_value(t, ui.client_status, "Chat restored.")

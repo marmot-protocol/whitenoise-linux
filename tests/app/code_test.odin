@@ -11,7 +11,7 @@ import "core:sync"
 import "core:testing"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Concatenating the runs must reproduce the line exactly, or the view
@@ -27,8 +27,8 @@ joined :: proc(view: ^Code_View, line: int) -> string {
 
 @(test)
 jsonl_preview_scroll :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	when #config(ODIN_TEST_NAMES, "") == "jsonl_preview_scroll" {
 		context.allocator = runtime.default_context().allocator
 		rl.InitWindow(800, 600, "JSONL preview")
@@ -36,22 +36,18 @@ jsonl_preview_scroll :: proc(t: ^testing.T) {
 	}
 	defer {when #config(ODIN_TEST_NAMES, "") == "jsonl_preview_scroll" {rl.CloseWindow()}}
 	rl.SetPixelScale(1)
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 600})
 	measured: int
-	clay.SetMeasureTextFunction(
-		proc(
-			text: clay.StringSlice,
-			config: ^clay.TextElementConfig,
-			user: rawptr,
-		) -> clay.Dimensions {
+	nendo.set_measure_text(
+		proc(text: string, config: ^nendo.Text_Style, user: rawptr) -> nendo.Dimensions {
 			(^int)(user)^ += 1
 			return measure_text(text, config, nil)
 		},
 		&measured,
 	)
-	defer {clay.SetCurrentContext(previous); delete(memory); wrap_clear()}
+	defer {nendo.set_context(previous); delete(memory); wrap_clear()}
 	source := strings.builder_make()
 	defer strings.builder_destroy(&source)
 	payload := strings.repeat("abcdefghij", 100, context.temp_allocator)
@@ -65,21 +61,20 @@ jsonl_preview_scroll :: proc(t: ^testing.T) {
 		measured = 0
 		width := frame >= 4 ? f32(320) : f32(600)
 		started := time.tick_now()
-		clay.BeginLayout()
-		if clay.UI(clay.ID("CodeTestScroll"))(
+		nendo.begin()
+		if nendo.box(nendo.id("CodeTestScroll"))(
 		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(300)},
-				padding = clay.PaddingAll(10),
-				childGap = 1,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			direction = .Column,
+			width = nendo.fixed(width),
+			height = nendo.fixed(300),
+			padding = nendo.pad(10),
+			gap = 1,
+			clip = {y = true, scroll = true},
 		},
 		) {
-			code_lines(view, 0, CODE_MODAL_LINES, width - 20, clay.ID("CodeTestScroll"), 10, 1)
+			code_lines(view, 0, CODE_MODAL_LINES, width - 20, nendo.id("CodeTestScroll"), 10, 1)
 		}
-		commands := clay.EndLayout(0)
+		commands := nendo.end(0)
 		fmt.printf(
 			"jsonl frame=%d measured=%d layout_ms=%.3f\n",
 			frame,
@@ -89,14 +84,14 @@ jsonl_preview_scroll :: proc(t: ^testing.T) {
 		testing.expect(t, measured < 100)
 		testing.expect(t, !layout_overflow)
 		testing.expect(t, !wrap_flush)
-		data := clay.GetScrollContainerData(clay.ID("CodeTestScroll"))
-		testing.expect(t, data.contentDimensions.height > data.scrollContainerDimensions.height)
+		data := nendo.scroll(nendo.id("CodeTestScroll"))
+		testing.expect(t, data.content.height > data.viewport.height)
 		if frame == 2 || frame == 3 {
 			found := false
-			for command in commands.internalArray[:commands.length] {
-				if command.commandType != .Text {continue}
-				text := command.renderData.text.stringContents
-				if string(text.chars[:text.length]) == "1000 " {found = true}
+			for command in commands {
+				if command.kind != .Text {continue}
+				text := command.text.text
+				if text == "1000 " {found = true}
 			}
 			testing.expect(t, found)
 		}
@@ -108,12 +103,11 @@ jsonl_preview_scroll :: proc(t: ^testing.T) {
 				line.wrapped[len(line.wrapped) - 1].end,
 				len(line.runs[0].text),
 			)
-			box := clay.GetElementData(clay.ID("CodeLine", u32(i))).boundingBox
+			box := nendo.element(nendo.id("CodeLine", u32(i))).rect
 			testing.expect_value(t, box.height, f32(len(line.wrapped)) * 11)
 		}
-		if frame ==
-		   1 {data.scrollPosition.y = -data.contentDimensions.height + data.scrollContainerDimensions.height}
-		if frame == 3 {data.scrollPosition.y = 0}
+		if frame == 1 {data.position.y = -data.content.height + data.viewport.height}
+		if frame == 3 {data.position.y = 0}
 	}
 }
 
@@ -199,8 +193,8 @@ code_extension_gate :: proc(t: ^testing.T) {
 
 @(test)
 text_attachment_layout :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	when #config(ODIN_TEST_NAMES, "") == "text_attachment_layout" {
 		rl.InitWindow(800, 800, "Text attachments")
 		load_themes()
@@ -261,37 +255,34 @@ text_attachment_layout :: proc(t: ^testing.T) {
 		Att_Slot{name = strings.clone("audit.jsonl"), kind = .Code, state = .Ready, view = code},
 		Att_Slot{name = strings.clone("notes.md"), kind = .Text, state = .Ready, view = markdown},
 	)
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 800})
 	defer {
-		clay.SetCurrentContext(previous)
+		nendo.set_context(previous)
 		delete(memory)
 		wrap_clear()
 	}
 	rl.SetPixelScale(1)
-	clay.BeginLayout()
+	nendo.begin()
 	message_row(0, msg)
-	commands := clay.EndLayout(0)
-	for id, i in ([]clay.ElementId{clay.ID("MsgCode", 0), clay.ID("MsgTxt", 1)}) {
-		box := clay.GetElementData(id).boundingBox
+	commands := nendo.end(0)
+	for id, i in ([]nendo.Id{nendo.id("MsgCode", 0), nendo.id("MsgTxt", 1)}) {
+		box := nendo.element(id).rect
 		testing.expect_value(t, box.width, i == 0 ? f32(480) : f32(320))
 		testing.expect(t, box.height <= 320)
-		testing.expect(t, clay.GetScrollContainerData(id).found)
+		testing.expect(t, nendo.scroll(id).found)
 	}
-	plate := clay.GetElementData(clay.ID("MsgCode", 0)).boundingBox
-	testing.expect(t, clay.GetElementData(clay.ID("CodeLine", 3072)).boundingBox.height > 11)
-	for command in commands.internalArray[:commands.length] {
-		if command.commandType == .Text && command.boundingBox.y >= plate.y {
-			testing.expect(
-				t,
-				command.boundingBox.x + command.boundingBox.width <= plate.x + plate.width,
-			)
+	plate := nendo.element(nendo.id("MsgCode", 0)).rect
+	testing.expect(t, nendo.element(nendo.id("CodeLine", 3072)).rect.height > 11)
+	for command in commands {
+		if command.kind == .Text && command.rect.y >= plate.y {
+			testing.expect(t, command.rect.x + command.rect.width <= plate.x + plate.width)
 		}
 	}
 	when #config(ODIN_TEST_NAMES, "") == "text_attachment_layout" {
 		rl.BeginDrawing()
-		draw_frame(&commands)
+		draw_frame(commands)
 		rl.TakeScreenshot("/tmp/text-attachments.png")
 		rl.EndDrawing()
 	}

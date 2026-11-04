@@ -1,7 +1,7 @@
 // Entry point: boots the marmot-c runtime, opens the window, and runs
-// the clay layout/render loop.
+// the nendo layout/render loop.
 //
-// renderer.odin started as clay's official Odin raylib renderer and now
+// renderer.odin started as a raylib renderer and now
 // draws through sdlrl, the SDL3 shim that kept raylib's call shapes.
 //
 // Usage: app [home-dir]   (default: $XDG_DATA_HOME/whitenoise)
@@ -30,7 +30,7 @@ import "core:time"
 _ :: libc
 _ :: posix
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -40,17 +40,13 @@ import marmot "../marmot"
 layout_overflow: bool
 
 @(private)
-init_layout :: proc(memory: ^[]u8, count: i32, dimensions: clay.Dimensions) {
-	clay.SetCurrentContext(nil)
+init_layout :: proc(memory: ^[]u8, count: i32, dimensions: nendo.Dimensions) {
+	nendo.set_context(nil)
 	delete(memory^)
-	clay.SetMaxElementCount(count)
-	memory^ = make([]u8, int(clay.MinMemorySize()))
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory^)), raw_data(memory^)),
-		dimensions,
-		{handler = error_handler},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
+	nendo.set_max_element_count(count)
+	memory^ = make([]u8, int(nendo.min_memory_size()))
+	nendo.init(memory^, dimensions, {handler = error_handler})
+	nendo.set_measure_text(measure_text, nil)
 	layout_overflow = false
 }
 
@@ -142,12 +138,12 @@ QUICK_REACT := [6]string{"👍", "❤️", "😂", "😮", "😢", "🙏"}
 @(private)
 timeline_draw_offset: f32
 
-build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.RenderCommand) {
+build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	tab_scroll_save(ui)
 	whip_attach_prune(ui)
 	timeline_draw_offset = 0
-	if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
-		timeline_draw_offset = data.scrollPosition.y
+	if data := nendo.scroll(nendo.id("Timeline")); data.found {
+		timeline_draw_offset = data.position.y
 	}
 	settings_check_count = 0 // settings_check lists this frame's switches
 	if rl.IsKeyPressed(.ESCAPE) {touch_field = {}; compose_keyboard = false}
@@ -156,62 +152,51 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 		whip_workspace_navigation(ui)
 		kb_focus = ""
 	}
-	clay.BeginLayout()
+	nendo.begin()
 
 	page_advance(ui)
 
 	logged_in := len(ui.accounts) > 0
 	page_backdrop := wash_payload()
 
-	if clay.UI(clay.ID("Root"))(
+	if nendo.box(nendo.id("Root"))(
 	{
-		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom},
-		// clay emits an element's Custom command before its own fill, so
+		width     = nendo.grow(),
+		height    = nendo.grow(),
+		direction = .Column,
+		// nendo emits an element's Custom command before its own fill, so
 		// a washed pack leaves the fill out and lets the gradient be the
 		// page: it covers the window opaquely either way.
-		backgroundColor = page_backdrop != nil ? clay.Color{} : BG,
-		custom = {customData = page_backdrop},
+		color     = page_backdrop != nil ? nendo.Color{} : BG,
+		custom    = page_backdrop,
 	},
 	) {
 		// Logged out: the sign-in card alone on the canvas (no sidebar,
 		// no status bar).
 		if !logged_in {
-			if clay.UI(clay.ID("LoginCanvas"))(
-			{
-				layout = {
-					sizing = {clay.SizingGrow(), clay.SizingGrow()},
-					childAlignment = {x = .Center, y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("LoginCanvas"))(
+			{width = nendo.grow(), height = nendo.grow(), align = {x = .Center, y = .Center}},
 			) {
 				login_pane(ui)
 			}
 		} else {
-			if clay.UI(clay.ID("CardsRow"))(
-			{
-				layout = {
-					sizing = {clay.SizingGrow(), clay.SizingGrow()},
-					layoutDirection = .LeftToRight,
-				},
-			},
+			if nendo.box(nendo.id("CardsRow"))(
+			{width = nendo.grow(), height = nendo.grow(), direction = .Row},
 			) {
 				// Navigation and the list share one width preference. Narrow
 				// windows show either this sidebar or the detail pane.
 				hide_rail := single_pane() && phone_detail(ui)
 				if !hide_rail {
-					if clay.UI(clay.ID("Rail"))(
+					if nendo.box(nendo.id("Rail"))(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingFixed(rail_width(ui)),
-								height = clay.SizingGrow(),
-							},
-							layoutDirection = .LeftToRight,
-						},
+						width = nendo.fixed(rail_width(ui)),
+						height = nendo.grow(),
+						direction = .Row,
+
 						// Only while it is moving: a list that no longer fits slides
 						// out of view instead of spilling into the conversation.
-						clip = {horizontal = rail_open(ui) > 0 && rail_open(ui) < 1},
-						backgroundColor = CARD,
+						clip = {x = rail_open(ui) > 0 && rail_open(ui) < 1},
+						color = CARD,
 					},
 					) {
 						shell_navigation(ui)
@@ -230,20 +215,16 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 				// until Back returns to its list.
 				hide_main := single_pane() && !phone_detail(ui)
 				if !hide_main {
-					if clay.UI(clay.ID("MainCard"))(
+					if nendo.box(nendo.id("MainCard"))(
 					{
 						// Chat and tab pushes translate rendered panes without
 						// changing layout. Other views retain the vertical rise.
-						layout = {
-							sizing = {
-								width = hide_main ? clay.SizingFixed(0) : clay.SizingGrow(),
-								height = clay.SizingGrow(),
-							},
-							layoutDirection = .TopToBottom,
-							padding = {top = page_push ? 0 : u16((1 - page_t) * PAGE_SLIDE)},
-						},
-						clip = {horizontal = hide_main},
-						backgroundColor = hide_main ? {} : decor_canvas_fill(),
+						width = hide_main ? nendo.fixed(0) : nendo.grow(),
+						height = nendo.grow(),
+						direction = .Column,
+						padding = {top = page_push ? 0 : u16((1 - page_t) * PAGE_SLIDE)},
+						clip = {x = hide_main},
+						color = hide_main ? {} : decor_canvas_fill(),
 						border = {color = DIVIDER, width = {left = u16(BORDER_W)}},
 					},
 					) {
@@ -259,14 +240,13 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 							phone_back(ui)
 						}
 						if !logged_in || ui.add_account_open {
-							if clay.UI(clay.ID("Main"))(
+							if nendo.box(nendo.id("Main"))(
 							{
-								layout = {
-									sizing = {clay.SizingGrow(), clay.SizingGrow()},
-									layoutDirection = .TopToBottom,
-									childAlignment = {x = .Center, y = .Center},
-									childGap = 12,
-								},
+								width = nendo.grow(),
+								height = nendo.grow(),
+								direction = .Column,
+								align = {x = .Center, y = .Center},
+								gap = 12,
 							},
 							) {
 								login_pane(ui)
@@ -312,17 +292,17 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			whip_attach_overlays(ui)
 
 			// One backdrop for every centered modal, whichever pane drew it.
-			if open_now(clay.ID("ModalVeil"), modal_open(ui)) {
+			if open_now(nendo.id("ModalVeil"), modal_open(ui)) {
 				modal_backdrop()
 			}
 
-			if open_now(clay.ID("PalModal"), ui.pal_open) {
+			if open_now(nendo.id("PalModal"), ui.pal_open) {
 				palette_modal(ui)
 			}
-			if open_now(clay.ID("ConfirmModal"), ui.confirm.kind != .None) {
+			if open_now(nendo.id("ConfirmModal"), ui.confirm.kind != .None) {
 				confirm_modal(ui)
 			}
-			if open_now(clay.ID("ExportModal"), ui.export_open) {
+			if open_now(nendo.id("ExportModal"), ui.export_open) {
 				export_modal(ui)
 			}
 			// No exit animation: Cancel immediately releases its texture.
@@ -338,38 +318,38 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			}
 
 			// Root level, not the chat pane: settings opens it too.
-			if open_now(clay.ID("PickerPanel"), ui.picker_open) {
+			if open_now(nendo.id("PickerPanel"), ui.picker_open) {
 				emoji_picker(ui)
 			}
-			if open_now(clay.ID("StickerPanel"), ui.sticker_open) {sticker_panel(ui)}
+			if open_now(nendo.id("StickerPanel"), ui.sticker_open) {sticker_panel(ui)}
 
-			if open_now(clay.ID("RowMenu"), ui.row_menu >= 0) &&
+			if open_now(nendo.id("RowMenu"), ui.row_menu >= 0) &&
 			   (ui.row_terminal != 0 || row_menu_index(ui) < len(ui.chats)) {
 				chat_row_menu(ui)
 			}
-			if open_now(clay.ID("MemberMenu"), ui.member_menu >= 0) &&
+			if open_now(nendo.id("MemberMenu"), ui.member_menu >= 0) &&
 			   member_menu_index(ui) < len(ui.members) {
 				member_menu(ui)
 			}
 			if ui.folder_menu_open {
 				folder_menu(ui)
 			}
-			if open_now(clay.ID("FolderModal"), ui.folder_open) {
+			if open_now(nendo.id("FolderModal"), ui.folder_open) {
 				folder_modal(ui)
 			}
-			if open_now(clay.ID("WhipProjectModal"), ui.whip_edit_open) {
+			if open_now(nendo.id("WhipProjectModal"), ui.whip_edit_open) {
 				whip_project_modal(ui)
 			}
-			if open_now(clay.ID("AccountsModal"), ui.accounts_open) {
+			if open_now(nendo.id("AccountsModal"), ui.accounts_open) {
 				accounts_modal(ui)
 			}
-			if open_now(clay.ID("PeerModal"), ui.peer_open) {
+			if open_now(nendo.id("PeerModal"), ui.peer_open) {
 				peer_modal(ui)
 			}
 			if ui.page != .Settings {
-				if open_now(clay.ID("ShortModal"), ui.shortcuts_open) {shortcuts_modal(ui)}
+				if open_now(nendo.id("ShortModal"), ui.shortcuts_open) {shortcuts_modal(ui)}
 			}
-			if open_now(clay.ID("GsModal"), ui.gs_open) {
+			if open_now(nendo.id("GsModal"), ui.gs_open) {
 				gsearch_modal(ui)
 			}
 			// The reaction fan and the flights cross everything, so they are
@@ -377,11 +357,11 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			fan_layer(ui)
 			fly_layer()
 		}
-		if open_now(clay.ID("LinkModal"), ui.link_open) {link_modal(ui)}
+		if open_now(nendo.id("LinkModal"), ui.link_open) {link_modal(ui)}
 		toast_layer(ui)
 	}
 
-	commands := clay.EndLayout(frame_time)
+	commands := nendo.end(frame_time)
 	tab_scroll_restore(ui)
 	timeline_measure(ui)
 	compose_scroll(ui)
@@ -529,9 +509,9 @@ app_main :: proc() {
 	ui.stamp_day = local_day(now_unix()) // rows loaded below are stamped today
 	apply_theme(ui.theme, ui.accent)
 
-	// Headroom over clay's defaults (8192 elements): per-letter effect
+	// Headroom over nendo's defaults (8192 elements): per-letter effect
 	// runs, burst particles and the pre-wrapped body lines all spend
-	// elements, and clay treats an exceeded capacity as an error
+	// elements, and nendo treats an exceeded capacity as an error
 	// callback, not a stop.
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
@@ -985,7 +965,7 @@ app_main :: proc() {
 			// one click per pair, released every 25 frames from frame 20.
 			forced_release = false
 			forced_press = false
-			pointer := transmute(clay.Vector2)rl.GetMousePosition()
+			pointer := transmute(nendo.Vector2)rl.GetMousePosition()
 			if test_click := os.get_env("WN_TEST_CLICK", context.temp_allocator);
 			   test_click != "" && frame >= 15 {
 				parts := strings.split(test_click, ",", context.temp_allocator)
@@ -1008,13 +988,13 @@ app_main :: proc() {
 			}
 			// After the forced_press reset and the WN_TEST_CLICK block, so a
 			// devctl click owns the same hooks, and before the pointer is
-			// scaled and handed to clay.
+			// scaled and handed to nendo.
 			devctl_poll(&ui, client, int(frame), &pointer)
 			if ui.lock_requested {lock_now(&ui); lock_wait_frame(); break}
 			handle_file_drop(&ui) // publish preparation chips before this frame's layout
 			pointer.x /= UI_ZOOM
 			pointer.y /= UI_ZOOM
-			clay.SetPointerState(pointer, rl.IsMouseButtonDown(.LEFT))
+			nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
 
 			// End a thumb drag one frame AFTER release so mouse_released()
 			// can still see it and swallow the ending click.
@@ -1052,7 +1032,7 @@ app_main :: proc() {
 						rl.IsMouseButtonDown(.LEFT),
 						rl.IsMouseButtonPressed(.LEFT),
 						rl.IsMouseButtonReleased(.LEFT),
-						clay.PointerOver(clay.ID("Nav", 1)),
+						nendo.pointer_over(nendo.id("Nav", 1)),
 					)
 				}
 			}
@@ -1061,9 +1041,9 @@ app_main :: proc() {
 			wheel := rl.GetMouseWheelMoveV()
 			location_scroll := location_captured || ui.location_open
 			if photo_captured ||
-			   (whip_project_captured && !clay.PointerOver(clay.ID("WhipProjectBody"))) ||
+			   (whip_project_captured && !nendo.pointer_over(nendo.id("WhipProjectBody"))) ||
 			   (location_scroll &&
-					   (!ui.location_open || !clay.PointerOver(clay.ID("LocationModal")))) {
+					   (!ui.location_open || !nendo.pointer_over(nendo.id("LocationModal")))) {
 				wheel = {}
 				scroll_residual = {}
 			}
@@ -1079,18 +1059,15 @@ app_main :: proc() {
 				whip_tab_wheel(&ui, &wheel)
 				chat_filter_wheel(&ui, &wheel)
 			}
-			if ui.link_open && clay.PointerOver(clay.ID("LinkAddress")) {
+			if ui.link_open && nendo.pointer_over(nendo.id("LinkAddress")) {
 				wheel.x += wheel.y
 				wheel.y = 0
 			}
 			if preview_shown &&
 			   (preview.kind == .Image || preview.kind == .Slides) &&
-			   clay.PointerOver(clay.ID("PvScroll")) {
-				data := clay.GetScrollContainerData(clay.ID("PvScroll"))
-				if data.found &&
-				   (shift_down() ||
-						   data.contentDimensions.height <=
-							   data.scrollContainerDimensions.height) {
+			   nendo.pointer_over(nendo.id("PvScroll")) {
+				data := nendo.scroll(nendo.id("PvScroll"))
+				if data.found && (shift_down() || data.content.height <= data.viewport.height) {
 					wheel.x += wheel.y
 					wheel.y = 0
 				}
@@ -1104,18 +1081,18 @@ app_main :: proc() {
 			}
 			if wheel.y != 0 &&
 			   ui.reading_pending.message != "" &&
-			   clay.PointerOver(clay.ID("Timeline")) {
+			   nendo.pointer_over(nendo.id("Timeline")) {
 				ui.reading_pending = {}
 				ui.gs_jump_pending, ui.scroll_pending = false, false
 				delete(ui.jump_id); ui.jump_id = ""
 			}
 			// Wheel notches land in a residual that drains a fraction per
 			// frame, so a scroll glides to a stop instead of stepping.
-			scroll_residual += transmute(clay.Vector2)wheel
+			scroll_residual += transmute(nendo.Vector2)wheel
 			// Conversation and tab navigation follow wheel input immediately.
 			drain :=
-				clay.PointerOver(clay.ID("ChatList")) || clay.PointerOver(clay.ID("WhipTabs")) ? f32(1) : anim_drain(SCROLL_DRAIN)
-			step := clay.Vector2{scroll_residual.x * drain, scroll_residual.y * drain}
+				nendo.pointer_over(nendo.id("ChatList")) || nendo.pointer_over(nendo.id("WhipTabs")) ? f32(1) : anim_drain(SCROLL_DRAIN)
+			step := nendo.Vector2{scroll_residual.x * drain, scroll_residual.y * drain}
 			scroll_residual -= step
 			if abs(scroll_residual.x) < 0.01 {
 				scroll_residual.x = 0
@@ -1127,8 +1104,8 @@ app_main :: proc() {
 				anim_moving += 1
 			}
 			scroll_jumped = false
-			clay.UpdateScrollContainers(false, step, rl.GetFrameTime())
-			clay.SetLayoutDimensions(
+			nendo.update_scroll(.Off, step, rl.GetFrameTime())
+			nendo.set_dimensions(
 				{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
 			)
 
@@ -1174,8 +1151,8 @@ app_main :: proc() {
 			local_timing_end(.frame_update, frame_start)
 			build_start := time.tick_now()
 			if !tl_restore {
-				if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
-					tl_offset = data.scrollPosition.y
+				if data := nendo.scroll(nendo.id("Timeline")); data.found {
+					tl_offset = data.position.y
 				}
 			}
 			settings_theme_preview_guard(&ui)
@@ -1184,8 +1161,8 @@ app_main :: proc() {
 				render_commands = build_layout(&ui, 0)
 			}
 			if tl_restore && !layout_overflow {
-				if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
-					data.scrollPosition.y = tl_offset
+				if data := nendo.scroll(nendo.id("Timeline")); data.found {
+					data.position.y = tl_offset
 					render_commands = build_layout(&ui, rl.GetFrameTime())
 				}
 				tl_restore = false
@@ -1200,47 +1177,34 @@ app_main :: proc() {
 			// size is the relayout tell; a new message only grows the
 			// content, so the arrival glide below keeps its motion. The
 			// second build is safe: per-frame anim steps are idempotent.
-			if data := clay.GetScrollContainerData(clay.ID("Timeline"));
-			   data.found && !layout_overflow {
-				overflow := max(
-					data.contentDimensions.height - data.scrollContainerDimensions.height,
-					0,
-				)
-				container := [2]f32 {
-					data.scrollContainerDimensions.width,
-					data.scrollContainerDimensions.height,
-				}
+			if data := nendo.scroll(nendo.id("Timeline")); data.found && !layout_overflow {
+				overflow := max(data.content.height - data.viewport.height, 0)
+				container := [2]f32{data.viewport.width, data.viewport.height}
 				if container != tl_container_was && tl_at_bottom {
-					data.scrollPosition.y = -overflow
+					data.position.y = -overflow
 					scroll_jumped = true
 					render_commands = build_layout(&ui, rl.GetFrameTime())
-					data = clay.GetScrollContainerData(clay.ID("Timeline"))
-					overflow = max(
-						data.contentDimensions.height - data.scrollContainerDimensions.height,
-						0,
-					)
-					data.scrollPosition.y = -overflow
+					data = nendo.scroll(nendo.id("Timeline"))
+					overflow = max(data.content.height - data.viewport.height, 0)
+					data.position.y = -overflow
 					// The rebuild can itself move the container a hair (chrome
 					// that measures against the previous layout). Store the
 					// post-rebuild size, or the next frame sees "changed"
 					// again and the pin oscillates between the two layouts.
-					container = {
-						data.scrollContainerDimensions.width,
-						data.scrollContainerDimensions.height,
-					}
+					container = {data.viewport.width, data.viewport.height}
 				}
 				tl_container_was = container
-				tl_at_bottom = data.scrollPosition.y <= -overflow + 1
+				tl_at_bottom = data.position.y <= -overflow + 1
 			}
 
 			local_timing_end(.frame_layout, build_start)
 
-			// A failed layout contains only Clay's error screen. Grow its arena
+			// A failed layout contains only nendo's error screen. Grow its arena
 			// and retry next frame, before rendering or handling message clicks.
 			if layout_overflow {
 				init_layout(
 					&memory,
-					clay.GetMaxElementCount() * 2,
+					nendo.max_element_count() * 2,
 					{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
 				)
 				tl_restore = true
@@ -1262,8 +1226,8 @@ app_main :: proc() {
 			// Settle its anchor before drawing, without rebuilding steady frames.
 			for _ in 0 ..< 2 {
 				timeline_scroll_apply(&ui)
-				data := clay.GetScrollContainerData(clay.ID("Timeline"))
-				if !data.found || abs(data.scrollPosition.y - timeline_draw_offset) <= 0.01 {break}
+				data := nendo.scroll(nendo.id("Timeline"))
+				if !data.found || abs(data.position.y - timeline_draw_offset) <= 0.01 {break}
 				render_commands = build_layout(&ui, 0)
 			}
 			video_dbg_build = max(
@@ -1280,8 +1244,8 @@ app_main :: proc() {
 				rl.BeginDrawing()
 				shake_x, shake_y := shake_offset()
 				rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM, offset = {shake_x, shake_y}})
-				draw_frame(&render_commands)
-				video_mark_drawn(&render_commands)
+				draw_frame(render_commands)
+				video_mark_drawn(render_commands)
 				rl.EndMode2D()
 				local_timing_end(.frame_draw, draw_start)
 				devctl_draw()
@@ -1449,14 +1413,14 @@ app_main :: proc() {
 
 			native_drag :=
 				whip_attach_pointer(&ui) ||
-				(web_modal.open && clay.PointerOver(clay.ID("WebPage"))) ||
+				(web_modal.open && nendo.pointer_over(nendo.id("WebPage"))) ||
 				(preview_shown &&
 						(preview.kind == .Image || preview.kind == .Slides) &&
-						clay.PointerOver(clay.ID("PvScroll"))) ||
-				(ui.photo.crop.active && clay.PointerOver(clay.ID("PhotoImage")))
+						nendo.pointer_over(nendo.id("PvScroll"))) ||
+				(ui.photo.crop.active && nendo.pointer_over(nendo.id("PhotoImage")))
 			for pane in rl.WhipPanes() {
-				if clay.PointerOver(
-					clay.ID("WhipPaneContent", pane.id),
+				if nendo.pointer_over(
+					nendo.id("WhipPaneContent", pane.id),
 				) {native_drag = true; break}
 			}
 			update_drag_scroll(
@@ -1664,7 +1628,7 @@ app_main :: proc() {
 			   touch_field.id != 0 &&
 			   touch_field.id == blur_field.id &&
 			   ui.focus == blur_focus &&
-			   !clay.PointerOver(touch_field) {
+			   !nendo.pointer_over(touch_field) {
 				touch_field = {}
 				compose_keyboard = false
 				ui.focus = .Compose

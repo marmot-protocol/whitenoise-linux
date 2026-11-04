@@ -138,7 +138,7 @@ chalk_surface :: proc(x, y, w, h, radius: f32, color: Color) {
 		&indices[0],
 		c.int((n - 1) * 3),
 	)
-	// Filled pills and buttons do not all emit Clay borders. Their paint edge
+	// Filled pills and buttons do not all emit nendo borders. Their paint edge
 	// still belongs to the same chalk medium as bordered cards and fields.
 	if color.a >= 160 && w >= 12 && h >= 12 {
 		ink := Color {

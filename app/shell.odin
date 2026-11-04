@@ -18,7 +18,7 @@ _ :: linux
 _ :: windows
 _ :: posix
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // ── Gutters ─────────────────────────────────────────────────────────
@@ -48,29 +48,25 @@ gutter_drag: string
 // each id writes.
 gutter :: proc(id_str: string) {
 	active := gutter_drag == id_str
-	if clay.UI(clay.ID(id_str))(
-	{
-		layout = {
-			sizing = {width = clay.SizingFixed(GUTTER_W), height = clay.SizingGrow()},
-			childAlignment = {x = .Center, y = .Center},
-		},
-	},
+	if nendo.box(nendo.id(id_str))(
+	{width = nendo.fixed(GUTTER_W), height = nendo.grow(), align = {x = .Center, y = .Center}},
 	) {
-		if clay.UI(clay.ID_LOCAL("GutterLine"))(
+		if nendo.box(nendo.id_local("GutterLine"))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(2), height = clay.SizingFixed(40)}},
-			backgroundColor = active || hovered() ? ACCENT : FIELD_BORDER,
-			cornerRadius = rr(1),
+			width = nendo.fixed(2),
+			height = nendo.fixed(40),
+			color = active || hovered() ? ACCENT : FIELD_BORDER,
+			radius = rr(1),
 		},
 		) {}
 	}
 }
 
-// Run the two gutter drags. Called after layout, so clay's boxes are
+// Run the two gutter drags. Called after layout, so nendo's boxes are
 // this frame's.
 handle_gutters :: proc(ui: ^Ui_State) {
 	if rl.IsMouseButtonPressed(.LEFT) {
-		if clay.PointerOver(clay.ID("RailGutter")) {
+		if nendo.pointer_over(nendo.id("RailGutter")) {
 			gutter_drag = "RailGutter"
 		}
 	}
@@ -112,7 +108,7 @@ rail_width :: proc(ui: ^Ui_State) -> f32 {
 	}
 	// Resize immediately; preserving the pref restores the list when it fits.
 	if !ui.rail_peek && !rail_fits(f32(rl.GetScreenWidth()) / UI_ZOOM, ui.prefs.rail_w) {
-		anim_set(clay.ID("RailWidth").id, RAIL_W_COLLAPSED)
+		anim_set(nendo.id("RailWidth").id, RAIL_W_COLLAPSED)
 		return RAIL_W_COLLAPSED
 	}
 	target := ui.prefs.rail_collapsed ? f32(RAIL_W_COLLAPSED) : rail_full_w(ui)
@@ -120,10 +116,10 @@ rail_width :: proc(ui: ^Ui_State) -> f32 {
 	// collapse toggle animates. Pin the entry too, or release replays
 	// the drag from its starting width.
 	if gutter_drag != "" {
-		anim_set(clay.ID("RailWidth").id, target)
+		anim_set(nendo.id("RailWidth").id, target)
 		return target
 	}
-	return anim_to(clay.ID("RailWidth").id, target, 20)
+	return anim_to(nendo.id("RailWidth").id, target, 20)
 }
 
 // Width of the open rail. Opened by hand in a window too narrow for the
@@ -181,17 +177,16 @@ rail_narrow :: proc(ui: ^Ui_State) -> bool {
 @(private)
 shell_navigation :: proc(ui: ^Ui_State) {
 	if single_pane() {return}
-	if clay.UI(clay.ID("RailTop"))(
+	if nendo.box(nendo.id("RailTop"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(RAIL_W_COLLAPSED), height = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = {top = 14, bottom = 12},
-			childGap = 8,
-			childAlignment = {x = .Center},
-		},
-		backgroundColor = BG,
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		width = nendo.fixed(RAIL_W_COLLAPSED),
+		height = nendo.grow(),
+		direction = .Column,
+		padding = {top = 14, bottom = 12},
+		gap = 8,
+		align = {x = .Center},
+		color = BG,
+		clip = {y = true, scroll = true},
 	},
 	) {
 		avatar(
@@ -202,24 +197,20 @@ shell_navigation :: proc(ui: ^Ui_State) {
 			36,
 			url_pic(ui.my_pic_url),
 		)
-		if clay.UI(clay.ID("RailDivider"))(
-		{
-			layout = {sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(1)}},
-			backgroundColor = DIVIDER,
-		},
+		if nendo.box(nendo.id("RailDivider"))(
+		{width = nendo.fixed(28), height = nendo.fixed(1), color = DIVIDER},
 		) {}
 		for page in ([3]Page{.Chats, .Contacts, .Archived}) {
 			nav_button(page, ui.page == page)
 		}
 		if !single_pane() && ui.page != .Archived && ui.page != .Settings {
-			if clay.UI(clay.ID("RailCollapse"))(
+			if nendo.box(nendo.id("RailCollapse"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingFixed(42), height = clay.SizingFixed(32)},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(10),
+				width = nendo.fixed(42),
+				height = nendo.fixed(32),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(10),
 			},
 			) {
 				collapsed := rail_narrow(ui)
@@ -229,18 +220,18 @@ shell_navigation :: proc(ui: ^Ui_State) {
 						.Right,
 					)
 				}
-				clay.Text(
+				nendo.text(
 					collapsed ? "›" : "‹",
-					{fontId = FONT_TITLE, fontSize = 18, textColor = TEXT_DIM},
+					{font = FONT_TITLE, size = 18, color = TEXT_DIM},
 				)
 			}
 		}
-		if clay.UI(clay.ID("RailTopGap"))({layout = {sizing = {height = clay.SizingGrow()}}}) {}
+		if nendo.box(nendo.id("RailTopGap"))({height = nendo.grow()}) {}
 		nav_button(.Profile, ui.page == .Profile)
 		nav_button(.Settings, ui.page == .Settings)
 		nav_indicator(ui)
 	}
-	scrollbar(clay.ID("RailTop"))
+	scrollbar(nendo.id("RailTop"))
 }
 
 @(private)
@@ -257,48 +248,39 @@ phone_navigation :: proc(ui: ^Ui_State) {
 		if rl.MeasureTextLine(FONT_BODY, label_fs, tr(NAV_TIPS[page]), 0).x >
 		   label_w {short = true}
 	}
-	if clay.UI(clay.ID("PhoneNavigation"))(
+	if nendo.box(nendo.id("PhoneNavigation"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFixed(max(short ? 48 : 56, tap_min() + 8)),
-			},
-			padding = {left = 4, right = 4, top = short ? 2 : 4, bottom = short ? 2 : 4},
-			childGap = 2,
-		},
-		backgroundColor = RAIL_BG,
+		width = nendo.grow(),
+		height = nendo.fixed(max(short ? 48 : 56, tap_min() + 8)),
+		padding = {left = 4, right = 4, top = short ? 2 : 4, bottom = short ? 2 : 4},
+		gap = 2,
+		color = RAIL_BG,
 		border = {color = DIVIDER, width = {top = u16(BORDER_W)}},
 	},
 	) {
 		for page in ([5]Page{.Chats, .Contacts, .Archived, .Profile, .Settings}) {
 			active := ui.page == page
-			if clay.UI(clay.ID("Nav", u32(page)))(
+			if nendo.box(nendo.id("Nav", u32(page)))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 4,
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = active ? SELECTED : hovered() ? HOVER : {},
-				cornerRadius = rr(8),
+				width = nendo.grow(),
+				height = nendo.grow(),
+				direction = .Column,
+				gap = 4,
+				align = {x = .Center, y = .Center},
+				color = active ? SELECTED : hovered() ? HOVER : {},
+				radius = rr(8),
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					PAGE_ICONS[page],
-					{fontId = FONT_ICON, fontSize = 17, textColor = active ? ACCENT : TEXT_DIM},
+					{font = FONT_ICON, size = 17, color = active ? ACCENT : TEXT_DIM},
 				)
 				if short {
 					if hovered() {tooltip(tr(NAV_TIPS[page]), .Above)}
 				} else {
-					clay.Text(
+					nendo.text(
 						tr(NAV_TIPS[page]),
-						{
-							fontId = FONT_BODY,
-							fontSize = label_fs,
-							textColor = active ? TEXT : TEXT_DIM,
-						},
+						{font = FONT_BODY, size = label_fs, color = active ? TEXT : TEXT_DIM},
 					)
 				}
 			}
@@ -315,7 +297,7 @@ phone_navigation :: proc(ui: ^Ui_State) {
 // window dragged narrow behaves identically and the phone layout is
 // testable without a phone.
 
-// Fewest clay units the layout ever runs at. A phone at 360 points
+// Fewest nendo units the layout ever runs at. A phone at 360 points
 // would otherwise get 240 units at the desktop zoom, less than the
 // rail alone, so below this zoom is traded for units. Both a Librem 5
 // (360 points over 65mm) and a Fairphone 5 (612 over 73mm) land near
@@ -342,7 +324,7 @@ zoom_for_width :: proc(win_w: i32) -> f32 {
 // breathing room left on each side.
 fit_w :: proc(w: f32, margin: f32 = 12) -> f32 {
 	// Floored: a window narrower than the margins would otherwise hand
-	// clay a negative fixed size.
+	// nendo a negative fixed size.
 	return min(w, max(f32(rl.GetScreenWidth()) / UI_ZOOM - margin * 2, 120))
 }
 
@@ -386,7 +368,7 @@ tap_min :: proc() -> f32 {
 }
 
 @(private)
-tab_scrolls: map[u64]clay.Vector2
+tab_scrolls: map[u64]nendo.Vector2
 @(private)
 tab_previous: Page
 @(private)
@@ -415,9 +397,9 @@ tab_scroll_ids :: proc(page: Page) -> [3]string {
 tab_scroll_save :: proc(ui: ^Ui_State) {
 	for name in tab_scroll_ids(tab_previous) {
 		if name == "" {continue}
-		id := clay.ID(name)
-		if data := clay.GetScrollContainerData(id); data.found {
-			tab_scrolls[u64(tab_previous) << 32 | u64(id.id)] = data.scrollPosition^
+		id := nendo.id(name)
+		if data := nendo.scroll(id); data.found {
+			tab_scrolls[u64(tab_previous) << 32 | u64(id.id)] = data.position^
 		}
 	}
 	if tab_previous != ui.page || (tab_was_detail && !phone_detail(ui)) {
@@ -432,9 +414,9 @@ tab_scroll_restore :: proc(ui: ^Ui_State) {
 	if !tab_restore {return}
 	for name in tab_scroll_ids(ui.page) {
 		if name == "" {continue}
-		id := clay.ID(name)
-		if data := clay.GetScrollContainerData(id); data.found {
-			data.scrollPosition^ = tab_scrolls[u64(ui.page) << 32 | u64(id.id)]
+		id := nendo.id(name)
+		if data := nendo.scroll(id); data.found {
+			data.position^ = tab_scrolls[u64(ui.page) << 32 | u64(id.id)]
 		}
 	}
 	tab_restore = false
@@ -470,29 +452,21 @@ phone_detail :: proc(ui: ^Ui_State) -> bool {
 // Back chip above the page card, the only way out of the detail when
 // there is no rail on screen to click.
 phone_back :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("PhoneHeader"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			childAlignment = {y = .Center},
-			padding = {right = 12},
-		},
-	},
+	if nendo.box(nendo.id("PhoneHeader"))(
+	{width = nendo.grow(), align = {y = .Center}, padding = {right = 12}},
 	) {
-		if clay.UI(clay.ID("PhoneBack"))(
+		if nendo.box(nendo.id("PhoneBack"))(
 		{
-			layout = {
-				sizing = {height = clay.SizingFixed(tap_min())},
-				padding = {left = 12, right = 14, top = 8, bottom = 8},
-				childGap = 6,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = hovered() ? HOVER : {},
-			cornerRadius = rr(9),
+			height = nendo.fixed(tap_min()),
+			padding = {left = 12, right = 14, top = 8, bottom = 8},
+			gap = 6,
+			align = {y = .Center},
+			color = hovered() ? HOVER : {},
+			radius = rr(9),
 		},
 		) {
-			clay.Text("‹", {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT_DIM})
-			clay.Text(tr("Back"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+			nendo.text("‹", {font = FONT_TITLE, size = 16, color = TEXT_DIM})
+			nendo.text(tr("Back"), {font = FONT_TITLE, size = 13, color = TEXT_DIM})
 		}
 	}
 }
@@ -582,7 +556,7 @@ net_state :: proc(ui: ^Ui_State) -> Net_State {
 	return .Offline
 }
 
-net_color :: proc(state: Net_State) -> clay.Color {
+net_color :: proc(state: Net_State) -> nendo.Color {
 	switch state {
 	case .Online:
 		return ACCENT
@@ -595,79 +569,64 @@ net_color :: proc(state: Net_State) -> clay.Color {
 }
 
 // Small caps chip with a leading dot, the status bar's unit.
-status_pill :: proc(id_str: string, label: string, color: clay.Color, dot := true) {
-	if clay.UI(clay.ID(id_str))({layout = {childGap = 6, childAlignment = {y = .Center}}}) {
+status_pill :: proc(id_str: string, label: string, color: nendo.Color, dot := true) {
+	if nendo.box(nendo.id(id_str))({gap = 6, align = {y = .Center}}) {
 		if dot {
-			if clay.UI(clay.ID_LOCAL("PillDot"))(
-			{
-				layout = {sizing = {width = clay.SizingFixed(7), height = clay.SizingFixed(7)}},
-				backgroundColor = color,
-				cornerRadius = rr(4),
-			},
+			if nendo.box(nendo.id_local("PillDot"))(
+			{width = nendo.fixed(7), height = nendo.fixed(7), color = color, radius = rr(4)},
 			) {}
 		}
-		clay.Text(label, {fontId = FONT_MONO, fontSize = 10, textColor = color, letterSpacing = 2})
+		nendo.text(label, {font = FONT_MONO, size = 10, color = color, spacing = 2})
 	}
 }
 
 status_bar :: proc(ui: ^Ui_State) {
 	account_pending_ui(ui)
 	if ui.stt.file != nil && ui.stt.message == "" && ui.stt.purpose != .Download {
-		if clay.UI(clay.ID("SttBar"))(
+		if nendo.box(nendo.id("SttBar"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				padding = clay.PaddingAll(6),
-				childGap = 12,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = STATUS_BAR,
+			width = nendo.grow(),
+			padding = nendo.pad(6),
+			gap = 12,
+			align = {y = .Center},
+			color = STATUS_BAR,
 		},
 		) {
 			micro_button("SttCancel", tr("Cancel"))
 			if ui.stt.status == 'R' {
 				micro_button("SttFinish", tr("Finish dictation"))
 			}
-			clay.Text(stt_status(ui), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			nendo.text(stt_status(ui), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 		}
 	}
 	if ui.tts.file != nil {
-		if clay.UI(clay.ID("TtsBar"))(
+		if nendo.box(nendo.id("TtsBar"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				padding = clay.PaddingAll(6),
-				childGap = 12,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = STATUS_BAR,
+			width = nendo.grow(),
+			padding = nendo.pad(6),
+			gap = 12,
+			align = {y = .Center},
+			color = STATUS_BAR,
 		},
 		) {
 			micro_button("TtsStopGlobal", tr("Stop reading"))
-			clay.Text(tts_status(ui), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			nendo.text(tts_status(ui), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 		}
 	}
 	update_bar()
 	if ui.translation.file != nil {
-		if clay.UI(clay.ID("TranslationBar"))(
+		if nendo.box(nendo.id("TranslationBar"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				padding = clay.PaddingAll(6),
-				childGap = 4,
-			},
-			backgroundColor = STATUS_BAR,
+			width = nendo.grow(),
+			direction = .Column,
+			padding = nendo.pad(6),
+			gap = 4,
+			color = STATUS_BAR,
 		},
 		) {
-			if clay.UI(clay.ID("TranslationBarActions"))(
-			{layout = {childGap = 12, childAlignment = {y = .Center}}},
-			) {
+			if nendo.box(nendo.id("TranslationBarActions"))({gap = 12, align = {y = .Center}}) {
 				micro_button("TranslationStopGlobal", tr("Cancel translation"))
-				clay.Text(
-					translation_status(ui),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-				)
+				nendo.text(translation_status(ui), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 			}
 			translation_progress(ui, "TranslationGlobalProgress")
 		}
@@ -683,18 +642,14 @@ status_bar :: proc(ui: ^Ui_State) {
 	   !ui.show_members {return}
 	state := net_state(ui)
 	// Reserve the same strip online and offline, so the composer stays put.
-	if clay.UI(clay.ID("StatusBar"))(
+	if nendo.box(nendo.id("StatusBar"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFixed(single_pane() ? 24 : tap_size() ? tap_min() : 28),
-			},
-			padding = {left = 10, right = 10},
-			childGap = single_pane() ? 6 : 12,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = STATUS_BAR,
+		width = nendo.grow(),
+		height = nendo.fixed(single_pane() ? 24 : tap_size() ? tap_min() : 28),
+		padding = {left = 10, right = 10},
+		gap = single_pane() ? 6 : 12,
+		align = {y = .Center},
+		color = STATUS_BAR,
 	},
 	) {
 		status_pill(
@@ -702,7 +657,7 @@ status_bar :: proc(ui: ^Ui_State) {
 			state == .Online ? tr("ONLINE") : state == .Connecting ? tr("CONNECTING") : tr("OFFLINE"),
 			net_color(state),
 		)
-		if clay.UI(clay.ID("StatusGapL"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+		if nendo.box(nendo.id("StatusGapL"))({width = nendo.grow()}) {}
 
 		syncing := rl.GetTime() - sync_at < SYNCING_SECS
 		if !single_pane() {
@@ -714,7 +669,7 @@ status_bar :: proc(ui: ^Ui_State) {
 				false,
 			)
 		}
-		if clay.UI(clay.ID("StatusGapR"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+		if nendo.box(nendo.id("StatusGapR"))({width = nendo.grow()}) {}
 		if !single_pane() {micro_button("LockNow", tr("Lock now"))}
 
 		// Shortcut hints are the first thing to go when the bar cannot
@@ -724,14 +679,8 @@ status_bar :: proc(ui: ^Ui_State) {
 			if f32(rl.GetScreenWidth()) / UI_ZOOM < HINTS_W {
 				break
 			}
-			clay.Text(
-				hint[0],
-				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_DIM, letterSpacing = 1},
-			)
-			clay.Text(
-				hint[1],
-				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2},
-			)
+			nendo.text(hint[0], {font = FONT_MONO, size = 10, color = TEXT_DIM, spacing = 1})
+			nendo.text(hint[1], {font = FONT_MONO, size = 10, color = TEXT_LO, spacing = 2})
 		}
 	}
 }
@@ -773,58 +722,44 @@ banner_tick :: proc(ui: ^Ui_State) {
 
 banner_bar :: proc(ui: ^Ui_State) {
 	color := ui.banner_kind == .Error ? DANGER : ACCENT
-	if clay.UI(clay.ID("Banner"))(
+	if nendo.box(nendo.id("Banner"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			padding = {left = 14, right = 10, top = 8, bottom = 8},
-			childGap = 10,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = {color.r, color.g, color.b, 38},
+		width = nendo.grow(),
+		padding = {left = 14, right = 10, top = 8, bottom = 8},
+		gap = 10,
+		align = {y = .Center},
+		color = {color.r, color.g, color.b, 38},
 	},
 	) {
-		if clay.UI(clay.ID("BannerBar"))(
-		{
-			layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingFixed(16)}},
-			backgroundColor = color,
-			cornerRadius = rr(2),
-		},
+		if nendo.box(nendo.id("BannerBar"))(
+		{width = nendo.fixed(3), height = nendo.fixed(16), color = color, radius = rr(2)},
 		) {}
-		clay.Text(ui.banner, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
-		if clay.UI(clay.ID("BannerGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-		if clay.UI(clay.ID("BannerCopy"))(
+		nendo.text(ui.banner, {font = FONT_BODY, size = 12, color = TEXT})
+		if nendo.box(nendo.id("BannerGap"))({width = nendo.grow()}) {}
+		if nendo.box(nendo.id("BannerCopy"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingFixed(tap_size() ? tap_min() : 24),
-					height = clay.SizingFixed(tap_size() ? tap_min() : 24),
-				},
-				childAlignment = {x = .Center, y = .Center},
-			},
-			backgroundColor = hovered() ? HOVER : {},
-			cornerRadius = rr(6),
+			width = nendo.fixed(tap_size() ? tap_min() : 24),
+			height = nendo.fixed(tap_size() ? tap_min() : 24),
+			align = {x = .Center, y = .Center},
+			color = hovered() ? HOVER : {},
+			radius = rr(6),
 		},
 		) {
-			clay.Text(ICON_COPY, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM})
+			nendo.text(ICON_COPY, {font = FONT_ICON, size = 11, color = TEXT_DIM})
 			if hovered() {
 				tooltip(tr("Copy"))
 			}
 		}
-		if clay.UI(clay.ID("BannerClose"))(
+		if nendo.box(nendo.id("BannerClose"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingFixed(tap_size() ? tap_min() : 24),
-					height = clay.SizingFixed(tap_size() ? tap_min() : 24),
-				},
-				childAlignment = {x = .Center, y = .Center},
-			},
-			backgroundColor = hovered() ? HOVER : {},
-			cornerRadius = rr(6),
+			width = nendo.fixed(tap_size() ? tap_min() : 24),
+			height = nendo.fixed(tap_size() ? tap_min() : 24),
+			align = {x = .Center, y = .Center},
+			color = hovered() ? HOVER : {},
+			radius = rr(6),
 		},
 		) {
-			clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM})
+			nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 11, color = TEXT_DIM})
 		}
 	}
 }
@@ -874,15 +809,16 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 modal_backdrop :: proc() {
 	w := f32(rl.GetScreenWidth()) / UI_ZOOM
 	h := f32(rl.GetScreenHeight()) / UI_ZOOM
-	if clay.UI(clay.ID("ModalVeil"))(
+	if nendo.box(nendo.id("ModalVeil"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}},
+		width = nendo.fixed(w),
+		height = nendo.fixed(h),
 		floating = {
-			attachTo = .Root,
-			zIndex = 9,
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 9,
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = OVERLAY,
+		color = OVERLAY,
 	},
 	) {}
 }
@@ -917,28 +853,26 @@ toast_layer :: proc(ui: ^Ui_State) {
 	   !ui.show_members &&
 	   !ui.group_files_open &&
 	   !ui.add_account_open {
-		if composer := clay.GetElementData(clay.ID("Composer")); composer.found {
-			bottom = max(bottom, f32(rl.GetScreenHeight()) / UI_ZOOM - composer.boundingBox.y + 8)
+		if composer := nendo.element(nendo.id("Composer")); composer.found {
+			bottom = max(bottom, f32(rl.GetScreenHeight()) / UI_ZOOM - composer.rect.y + 8)
 		}
 	}
-	if clay.UI(clay.ID("Toast"))(
+	if nendo.box(nendo.id("Toast"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFit({max = fit_w(420)})},
-			padding = {left = 16, right = 16, top = 9, bottom = 9},
-		},
+		width = nendo.fit(max = fit_w(420)),
+		padding = {left = 16, right = 16, top = 9, bottom = 9},
 		floating = {
-			attachTo = .Root,
-			zIndex = 20,
+			attach_to = .Root,
+			z = 20,
 			offset = {0, -bottom},
-			attachment = {element = .CenterBottom, parent = .CenterBottom},
+			attach = {element = .Center_Bottom, parent = .Center_Bottom},
 		},
-		backgroundColor = CARD,
-		cornerRadius = rr(10),
+		color = CARD,
+		radius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(ui.toast, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+		nendo.text(ui.toast, {font = FONT_BODY, size = 12, color = TEXT})
 	}
 }
 
@@ -956,13 +890,13 @@ Tip_Side :: enum {
 
 tooltip :: proc(text: string, side: Tip_Side = .Below, shift_x: f32 = 0) {
 	if rl.TouchActive() {return}
-	parent := clay.GetElementData(clay.ElementId{id = clay.GetOpenElementId()}).boundingBox
+	parent := nendo.element(nendo.Id{id = nendo.open_id()}).rect
 	width := min(
 		rl.MeasureTextLine(FONT_BODY, 11, text, 0).x + 16,
 		f32(rl.GetScreenWidth()) / UI_ZOOM - 8,
 	)
 	height: f32 = 22
-	offset := clay.Vector2{parent.x + (parent.width - width) / 2, parent.y + parent.height + 6}
+	offset := nendo.Vector2{parent.x + (parent.width - width) / 2, parent.y + parent.height + 6}
 	switch side {
 	case .Below:
 	case .Above:
@@ -973,26 +907,19 @@ tooltip :: proc(text: string, side: Tip_Side = .Below, shift_x: f32 = 0) {
 	offset.x += shift_x
 	offset.x = clamp(offset.x, 4, max(4, f32(rl.GetScreenWidth()) / UI_ZOOM - width - 4))
 	offset.y = clamp(offset.y, 4, max(4, f32(rl.GetScreenHeight()) / UI_ZOOM - height - 4))
-	if clay.UI(clay.ID_LOCAL("Tip"))(
+	if nendo.box(nendo.id_local("Tip"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(width)},
-			padding = {left = 8, right = 8, top = 4, bottom = 4},
-		},
-		floating = {
-			attachTo = .Root,
-			zIndex = 18,
-			offset = offset,
-			pointerCaptureMode = .Passthrough,
-		},
-		backgroundColor = CARD,
-		cornerRadius = rr(6),
+		width = nendo.fixed(width),
+		padding = {left = 8, right = 8, top = 4, bottom = 4},
+		floating = {attach_to = .Root, z = 18, offset = offset, pointer = .Passthrough},
+		color = CARD,
+		radius = rr(6),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(
+		nendo.text(
 			text_ellipsis(text, width - 16, FONT_BODY, 11),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT},
+			{font = FONT_BODY, size = 11, color = TEXT},
 		)
 	}
 }
@@ -1022,12 +949,8 @@ logo_mark :: proc() {
 		rl.SetTextureFilter(logo_tex^, .BILINEAR)
 	}
 
-	if clay.UI(clay.ID_LOCAL("Logo"))(
-	{
-		layout = {sizing = {clay.SizingFixed(39), clay.SizingFixed(30)}},
-		image = {imageData = logo_tex},
-		overlayColor = ACCENT,
-	},
+	if nendo.box(nendo.id_local("Logo"))(
+	{width = nendo.fixed(39), height = nendo.fixed(30), image = logo_tex, overlay = ACCENT},
 	) {}
 }
 
@@ -1047,52 +970,39 @@ splash_frame :: proc(step: int) {
 	if !rl.IsWindowVisible() {
 		return
 	}
-	clay.SetLayoutDimensions(
-		{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
-	)
-	clay.BeginLayout()
-	if clay.UI(clay.ID("SplashRoot"))(
-	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = BG,
-	},
+	nendo.set_dimensions({f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM})
+	nendo.begin()
+	if nendo.box(nendo.id("SplashRoot"))(
+	{width = nendo.grow(), height = nendo.grow(), align = {x = .Center, y = .Center}, color = BG},
 	) {
-		if clay.UI(clay.ID("SplashCard"))(
+		if nendo.box(nendo.id("SplashCard"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingFixed(fit_w(360))},
-				layoutDirection = .TopToBottom,
-				padding = clay.PaddingAll(single_pane() ? 20 : 36),
-				childGap = 10,
-				childAlignment = {x = .Center},
-			},
-			backgroundColor = CARD,
-			cornerRadius = rr(16),
+			width = nendo.fixed(fit_w(360)),
+			direction = .Column,
+			padding = nendo.pad(single_pane() ? 20 : 36),
+			gap = 10,
+			align = {x = .Center},
+			color = CARD,
+			radius = rr(16),
 			border = {color = CARD_BORDER, width = bw()},
 		},
 		) {
 			logo_mark()
-			clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 22, textColor = TEXT})
-			if clay.UI(clay.ID("SplashGap"))(
-			{layout = {sizing = {height = clay.SizingFixed(6)}}},
-			) {}
-			clay.Text(
+			nendo.text("White Noise", {font = FONT_TITLE, size = 22, color = TEXT})
+			if nendo.box(nendo.id("SplashGap"))({height = nendo.fixed(6)}) {}
+			nendo.text(
 				tr(BOOT_PHASES[clamp(step, 0, len(BOOT_PHASES) - 1)]),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
 			)
 			// One pip per phase; filled up to the running one.
-			if clay.UI(clay.ID("SplashPips"))({layout = {childGap = 6, padding = {top = 6}}}) {
+			if nendo.box(nendo.id("SplashPips"))({gap = 6, padding = {top = 6}}) {
 				for _, i in BOOT_PHASES {
-					if clay.UI(clay.ID("SplashPip", u32(i)))(
+					if nendo.box(nendo.id("SplashPip", u32(i)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingFixed(46), height = clay.SizingFixed(3)},
-						},
-						backgroundColor = i <= step ? ACCENT : ROW_BG,
-						cornerRadius = rr(2),
+						width = nendo.fixed(46),
+						height = nendo.fixed(3),
+						color = i <= step ? ACCENT : ROW_BG,
+						radius = rr(2),
 					},
 					) {}
 				}
@@ -1100,11 +1010,11 @@ splash_frame :: proc(step: int) {
 			busy_bar("SplashBusy")
 		}
 	}
-	commands := clay.EndLayout(0)
+	commands := nendo.end(0)
 
 	rl.BeginDrawing()
 	rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM})
-	clay_raylib_render(&commands)
+	render_nendo(commands)
 	rl.EndMode2D()
 	if step == len(BOOT_PHASES) - 1 {
 		w := f32(rl.GetScreenWidth()) / UI_ZOOM

@@ -5,7 +5,7 @@ import "core:text/edit"
 import "core:unicode"
 import "core:unicode/utf8"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 key_hit :: proc(k: rl.KeyboardKey) -> bool {
@@ -60,7 +60,7 @@ tab_focus :: proc(order: []$T, at: ^T) -> (index: int, moved: bool) {
 	return 0, false
 }
 
-// Keyboard focus on a button or switch, as its clay id string. Ids are
+// Keyboard focus on a button or switch, as its nendo id string. Ids are
 // string literals, so this never dangles. "" means no control has it;
 // a mouse press clears it (build_layout), the way the pointer takes
 // over from the keyboard.
@@ -104,25 +104,25 @@ control_keys :: proc(order: []string) -> Control_Key {
 // The ring a keyboard-focused control wears. 2px so it reads apart from
 // a hairline border; the caller picks a color that contrasts with the
 // fill (ACCENT on a plain control, TEXT on an accent one).
-kb_ring :: proc(color: clay.Color) -> clay.BorderElementConfig {
+kb_ring :: proc(color: nendo.Color) -> nendo.Border {
 	return {color = color, width = {2, 2, 2, 2, 0}}
 }
 
 // Scrolls `container` the least distance that shows all of `field`, so a
 // box focused from the keyboard is never below the fold. Reads last
 // frame's layout.
-scroll_into_view :: proc(container, field: clay.ElementId) {
-	scroll := clay.GetScrollContainerData(container)
+scroll_into_view :: proc(container, field: nendo.Id) {
+	scroll := nendo.scroll(container)
 	if !scroll.found {
 		return
 	}
-	view := clay.GetElementData(container).boundingBox
-	box := clay.GetElementData(field).boundingBox
+	view := nendo.element(container).rect
+	box := nendo.element(field).rect
 	if box.y < view.y {
-		scroll.scrollPosition.y += view.y - box.y
+		scroll.position.y += view.y - box.y
 	}
 	if box.y + box.height > view.y + view.height {
-		scroll.scrollPosition.y -= box.y + box.height - view.y - view.height
+		scroll.position.y -= box.y + box.height - view.y - view.height
 	}
 }
 
@@ -299,21 +299,21 @@ text_field_live: bool
 compose_keyboard: bool
 
 @(private)
-touch_field: clay.ElementId
+touch_field: nendo.Id
 
 @(private)
-menu_press: clay.ElementId
+menu_press: nendo.Id
 
 @(private)
-menu_press_mark :: proc(id: clay.ElementId) {
-	if mouse_pressed() && clay.PointerOver(id) {menu_press = id}
+menu_press_mark :: proc(id: nendo.Id) {
+	if mouse_pressed() && nendo.pointer_over(id) {menu_press = id}
 }
 
 // A menu drag or a release over another row is not an action.
 @(private)
-menu_keep :: proc(container: clay.ElementId) -> bool {
-	if menu_press.id != 0 {return !clay.PointerOver(menu_press)}
-	return clay.PointerOver(container)
+menu_keep :: proc(container: nendo.Id) -> bool {
+	if menu_press.id != 0 {return !nendo.pointer_over(menu_press)}
+	return nendo.pointer_over(container)
 }
 
 edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
@@ -477,7 +477,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 // The frame loop clears both one frame after the release, so that
 // release's handlers still see the drag (mouse_released).
 text_drag: rawptr
-text_drag_box: clay.ElementId
+text_drag_box: nendo.Id
 
 @(private = "file")
 text_drag_sentence: [2]int
@@ -583,28 +583,28 @@ select_word_at :: proc(ed: ^edit.State, at: int) {
 // triple selects the sentence), drag extends the selection, middle-click pastes
 // the primary selection. Returns true when a press landed in the box
 // so the caller can set keyboard focus. Call every frame the field is
-// visible; runs after layout, so clay bounds are current.
+// visible; runs after layout, so nendo bounds are current.
 field_mouse :: proc(
 	ui: ^Ui_State,
 	buf: ^[dynamic]u8,
 	id_str: string,
 	font_size: u16 = 13,
 ) -> bool {
-	box := clay.GetElementData(clay.ID(id_str))
+	box := nendo.element(nendo.id(id_str))
 	if !box.found {
 		return false
 	}
-	text_box := clay.GetElementData(clay.ID(id_str, 1))
-	origin := text_box.found ? text_box.boundingBox.x : box.boundingBox.x
+	text_box := nendo.element(nendo.id(id_str, 1))
+	origin := text_box.found ? text_box.rect.x : box.rect.x
 	mx := rl.GetMousePosition().x / UI_ZOOM
 	hit := hit_plain(string(buf[:]), mx - origin, font_size)
-	over := clay.PointerOver(clay.ID(id_str))
+	over := nendo.pointer_over(nendo.id(id_str))
 
 	// A finger focuses on lift, so a swipe that starts on a field scrolls
 	// the page instead of focusing it and raising the keyboard.
 	touch := rl.TouchActive()
 	if over && (touch ? mouse_released() : mouse_pressed()) {
-		if touch {touch_field = clay.ID(id_str)}
+		if touch {touch_field = nendo.id(id_str)}
 		ed_begin(ui, buf)
 		text_drag_sentence = {}
 		switch {
@@ -622,7 +622,7 @@ field_mouse :: proc(
 		ed_end(ui, buf)
 		if !touch {
 			text_drag = buf
-			text_drag_box = clay.ID(id_str)
+			text_drag_box = nendo.id(id_str)
 		}
 		return true
 	}
@@ -695,14 +695,15 @@ compose_width :: proc(line: string) -> f32 {
 compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Compose) {
 	buf := buf
 	if buf == nil {buf = &ui.compose}
-	clip_id := clay.ID("ComposeClip").id
+	clip_id := nendo.id("ComposeClip").id
 	if scroll_drag.container == clip_id ||
-	   clay.PointerOver(clay.ID("ScrollThumb", clip_id)) {return}
-	box := clay.GetElementData(clay.ID("ComposeBox"))
+	   nendo.pointer_over(nendo.id("ScrollThumb", clip_id)) {return}
+	box := nendo.element(nendo.id("ComposeBox"))
 	if !box.found {
 		return
 	}
-	over := clay.PointerOver(clay.ID("ComposeBox")) && !clay.PointerOver(clay.ID("ComposeTools"))
+	over :=
+		nendo.pointer_over(nendo.id("ComposeBox")) && !nendo.pointer_over(nendo.id("ComposeTools"))
 	touch := rl.TouchActive()
 	left := over && (touch ? mouse_released() : mouse_pressed())
 	middle := over && rl.IsMouseButtonPressed(.MIDDLE)
@@ -720,9 +721,9 @@ compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Co
 	// the hit; past the last row the caret lands in the last line.
 	hit := len(text)
 	for r, i in compose_lines(text) {
-		row := clay.GetElementData(clay.ID("ComposeLine", u32(i)))
-		if !row.found || my < row.boundingBox.y + row.boundingBox.height || r[1] == len(text) {
-			origin := row.found ? row.boundingBox.x : box.boundingBox.x
+		row := nendo.element(nendo.id("ComposeLine", u32(i)))
+		if !row.found || my < row.rect.y + row.rect.height || r[1] == len(text) {
+			origin := row.found ? row.rect.x : box.rect.x
 			hit = r[0] + hit_compose_line(text[r[0]:r[1]], mx - origin)
 			break
 		}
@@ -731,7 +732,7 @@ compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Co
 	switch {
 	case left:
 		compose_keyboard = true
-		if rl.HasTouch() {touch_field = clay.ID("ComposeClip")}
+		if rl.HasTouch() {touch_field = nendo.id("ComposeClip")}
 		ui.focus = focus
 		ed_begin(ui, buf)
 		text_drag_sentence = {}
@@ -750,7 +751,7 @@ compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Co
 		ed_end(ui, buf)
 		if !touch {
 			text_drag = buf
-			text_drag_box = clay.ID("ComposeClip") // not ComposeTools: no drag-to-send
+			text_drag_box = nendo.id("ComposeClip") // not ComposeTools: no drag-to-send
 		}
 	case dragging:
 		if ui.ed_target == buf {
@@ -775,7 +776,7 @@ forced_release := false
 forced_press := false
 
 // The injected position, in raw pixels, for the paths that read the
-// mouse directly instead of through clay (the webxdc modal).
+// mouse directly instead of through nendo (the webxdc modal).
 test_pointer: [2]f32
 test_pointer_on := false
 
@@ -844,7 +845,7 @@ mouse_released :: proc() -> bool {
 	// the pointer; the drag clears one frame later in the main loop.
 	// Nor may a text selection dragged out of its field: releasing a
 	// drag over the emoji grid would otherwise pick an emoji.
-	if text_drag != nil && !clay.PointerOver(text_drag_box) {
+	if text_drag != nil && !nendo.pointer_over(text_drag_box) {
 		return false
 	}
 	return (rl.IsMouseButtonReleased(.LEFT) && scroll_drag.container == 0) || forced_release
@@ -924,12 +925,12 @@ long_press_tick :: proc() {
 }
 
 clicked :: proc(id_str: string) -> bool {
-	return mouse_released() && clay.PointerOver(clay.ID(id_str))
+	return mouse_released() && nendo.pointer_over(nendo.id(id_str))
 }
 
 // The same for a row of chips sharing one id with an index.
 clicked_indexed :: proc(id_str: string, index: u32) -> bool {
-	return mouse_released() && clay.PointerOver(clay.ID(id_str, index))
+	return mouse_released() && nendo.pointer_over(nendo.id(id_str, index))
 }
 
 // Keyboard editing + click actions for the login pane. Runs after the

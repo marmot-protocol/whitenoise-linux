@@ -4,7 +4,7 @@ package main
 
 import "base:runtime"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -16,10 +16,10 @@ keys_package_layout :: proc(t: ^testing.T) {
 	UI_ZOOM, UI_SCALE = 1, 1
 	init_fonts()
 	load_themes(); apply_theme(0, 0)
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		page          = .Settings,
 		selected      = -1,
@@ -54,18 +54,18 @@ keys_package_layout :: proc(t: ^testing.T) {
 		set_locale(locale)
 		for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
 		commands := build_layout(&ui, 0)
-		row := clay.GetElementData(clay.ID("KpRow", 0))
-		testing.expect(t, row.found && row.boundingBox.height > 0, "package has a visible row")
+		row := nendo.element(nendo.id("KpRow", 0))
+		testing.expect(t, row.found && row.rect.height > 0, "package has a visible row")
 		testing.expect(
 			t,
-			!clay.GetElementData(clay.ID("KpRow", 1)).found,
+			!nendo.element(nendo.id("KpRow", 1)).found,
 			"overlapping locations do not add a package row",
 		)
-		box := row.boundingBox
+		box := row.rect
 		text_count := 0
-		for command in commands.internalArray[:commands.length] {
-			b := command.boundingBox
-			if command.commandType != .Text ||
+		for command in commands {
+			b := command.rect
+			if command.kind != .Text ||
 			   b.x < box.x ||
 			   b.y < box.y ||
 			   b.y >= box.y + box.height {continue}

@@ -2,80 +2,59 @@ package main
 
 import "core:fmt"
 import "core:strings"
-import clay "layout"
+import "nendo"
 
 // The Profile page's rail, in place of the chat list: the accounts on
 // this device (tap to switch), and the two settings sections that own
 // the rest of an identity. A chat filter over "Search messages..."
 // makes no sense while you're looking at your own profile.
 profile_rail :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("PrHead"))({layout = {padding = {left = 4, top = 6, bottom = 4}}}) {
-		clay.Text(
+	if nendo.box(nendo.id("PrHead"))({padding = {left = 4, top = 6, bottom = 4}}) {
+		nendo.text(
 			fmt.tprintf(tr("ACCOUNTS   %d"), len(ui.accounts)),
-			{fontId = FONT_MONO, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 2},
+			{font = FONT_MONO, size = 12, color = TEXT_DIM, spacing = 2},
 		)
 	}
 
 	for account, i in ui.accounts {
 		active := account.id_hex == ui.account_ref
-		if clay.UI(clay.ID("PrAcct", u32(i)))(
+		if nendo.box(nendo.id("PrAcct", u32(i)))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				padding = clay.PaddingAll(10),
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-			cornerRadius = rr(10),
+			width = nendo.grow(),
+			padding = nendo.pad(10),
+			gap = 10,
+			align = {y = .Center},
+			color = active ? SELECTED : (hovered() ? HOVER : {}),
+			radius = rr(10),
 		},
 		) {
 			avatar("PrAcctAv", u32(i), account.id_hex, account.name, 30, url_pic(account.pic_url))
-			if clay.UI(clay.ID("PrAcctCol", u32(i)))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 2,
-				},
-				clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
-			},
+			if nendo.box(nendo.id("PrAcctCol", u32(i)))(
+			{width = nendo.grow(), direction = .Column, gap = 2, clip = {x = true, scroll = true}},
 			) {
-				clay.Text(
+				nendo.text(
 					account.name,
-					{fontId = FONT_TITLE, fontSize = 13, textColor = active ? TEXT : TEXT_DIM},
+					{font = FONT_TITLE, size = 13, color = active ? TEXT : TEXT_DIM},
 				)
-				clay.Text(
-					npub_tail(account.npub),
-					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
-				)
+				nendo.text(npub_tail(account.npub), {font = FONT_MONO, size = 10, color = TEXT_LO})
 				if account.external {nip46_status_ui(ui, account.id_hex, u32(i))}
 			}
-			scrollbar(clay.ID("PrAcctCol", u32(i)))
+			scrollbar(nendo.id("PrAcctCol", u32(i)))
 			if active {
-				clay.Text(
-					tr("ACTIVE"),
-					{fontId = FONT_MONO, fontSize = 9, textColor = ACCENT, letterSpacing = 2},
-				)
+				nendo.text(tr("ACTIVE"), {font = FONT_MONO, size = 9, color = ACCENT, spacing = 2})
 			}
 			account_remove_button("PrAcctRemove", u32(i))
 		}
 	}
-	if clay.UI(clay.ID("PrAddRow"))({layout = {padding = {left = 4, top = 4, bottom = 8}}}) {
+	if nendo.box(nendo.id("PrAddRow"))({padding = {left = 4, top = 4, bottom = 8}}) {
 		micro_button("PrAddAccount", tr("Add account"))
 	}
 
-	if clay.UI(clay.ID("PrRule"))(
-	{
-		layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)}},
-		backgroundColor = DIVIDER,
-	},
+	if nendo.box(nendo.id("PrRule"))(
+	{width = nendo.grow(), height = nendo.fixed(1), color = DIVIDER},
 	) {}
-	if clay.UI(clay.ID("PrLinksHead"))({layout = {padding = {left = 4, top = 8, bottom = 4}}}) {
-		clay.Text(
-			tr("IDENTITY"),
-			{fontId = FONT_MONO, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 2},
-		)
+	if nendo.box(nendo.id("PrLinksHead"))({padding = {left = 4, top = 8, bottom = 4}}) {
+		nendo.text(tr("IDENTITY"), {font = FONT_MONO, size = 12, color = TEXT_DIM, spacing = 2})
 	}
 	profile_rail_link("PrKeys", ICON_KEY, tr("Keys & identity"))
 	profile_rail_link("PrNetwork", ICON_GLOBE, tr("Network & relays"))
@@ -84,23 +63,19 @@ profile_rail :: proc(ui: ^Ui_State) {
 // One jump row, the settings-sidebar grammar.
 @(private = "file")
 profile_rail_link :: proc(id_str: string, icon: string, label: string) {
-	if clay.UI(clay.ID(id_str))(
+	if nendo.box(nendo.id(id_str))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFit({min = settings_tap_size(34)}),
-			},
-			padding = {left = 12, right = 12, top = 9, bottom = 9},
-			childGap = 10,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : {},
-		cornerRadius = rr(9),
+		width = nendo.grow(),
+		height = nendo.fit(min = settings_tap_size(34)),
+		padding = {left = 12, right = 12, top = 9, bottom = 9},
+		gap = 10,
+		align = {y = .Center},
+		color = hovered() ? HOVER : {},
+		radius = rr(9),
 	},
 	) {
-		clay.Text(icon, {fontId = FONT_ICON, fontSize = 13, textColor = TEXT_DIM})
-		clay.Text(label, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+		nendo.text(icon, {font = FONT_ICON, size = 13, color = TEXT_DIM})
+		nendo.text(label, {font = FONT_TITLE, size = 13, color = TEXT_DIM})
 	}
 }
 
@@ -114,23 +89,16 @@ form_row :: proc(
 	placeholder: string,
 	active: bool,
 ) {
-	if clay.UI(clay.ID("ProfileFormRow", index))(
+	if nendo.box(nendo.id("ProfileFormRow", index))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-			childGap = 12,
-			childAlignment = {y = .Center},
-		},
+		width = nendo.grow(),
+		direction = single_pane() ? .Column : .Row,
+		gap = 12,
+		align = {y = .Center},
 	},
 	) {
-		if clay.UI(clay.ID("ProfileFormLabel", index))(
-		{layout = {sizing = {width = clay.SizingFixed(120)}}},
-		) {
-			clay.Text(
-				label,
-				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2},
-			)
+		if nendo.box(nendo.id("ProfileFormLabel", index))({width = nendo.fixed(120)}) {
+			nendo.text(label, {font = FONT_MONO, size = 10, color = TEXT_LO, spacing = 2})
 		}
 		input_box(ui, box_id, buf, placeholder, active, 0)
 	}
@@ -147,44 +115,33 @@ profile_kv :: proc(
 ) {
 	FONT_BODY := font
 	FONT_TITLE := font == 0 ? u16(1) : font
-	if clay.UI(clay.ID("ProfileKv", index))(
+	if nendo.box(nendo.id("ProfileKv", index))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-			padding = {left = 16, right = 16, top = 12, bottom = 12},
-			childAlignment = {y = .Center},
-			childGap = 10,
-		},
+		width = nendo.grow(),
+		direction = single_pane() ? .Column : .Row,
+		padding = {left = 16, right = 16, top = 12, bottom = 12},
+		align = {y = .Center},
+		gap = 10,
 	},
 	) {
-		clay.Text(label, {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
-		if clay.UI(clay.ID("ProfileKvGap", index))(
-		{layout = {sizing = {width = clay.SizingGrow()}}},
-		) {}
-		if clay.UI(clay.ID("ProfileKvValue", index))(
+		nendo.text(label, {font = FONT_TITLE, size = 12, color = TEXT})
+		if nendo.box(nendo.id("ProfileKvGap", index))({width = nendo.grow()}) {}
+		if nendo.box(nendo.id("ProfileKvValue", index))(
 		{
-			layout = {
-				sizing = {
-					width = single_pane() ? clay.SizingGrow() : clay.SizingFit({max = g_ui == nil ? 400 : max(1, page_w(g_ui) - 240)}),
-				},
-			},
-			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+			width = single_pane() ? nendo.grow() : nendo.fit(max = g_ui == nil ? 400 : max(1, page_w(g_ui) - 240)),
+			clip = {x = true, scroll = true},
 		},
 		) {
-			clay.Text(
+			nendo.text(
 				len(value) > 0 ? value : tr("Not set"),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, wrapMode = .None},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM, wrap = .None},
 			)
 		}
-		scrollbar(clay.ID("ProfileKvValue", index))
+		scrollbar(nendo.id("ProfileKvValue", index))
 	}
 	if !last {
-		if clay.UI(clay.ID("ProfileKvRule", index))(
-		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)}},
-			backgroundColor = DIVIDER,
-		},
+		if nendo.box(nendo.id("ProfileKvRule", index))(
+		{width = nendo.grow(), height = nendo.fixed(1), color = DIVIDER},
 		) {}
 	}
 }
@@ -200,82 +157,59 @@ profile_pane :: proc(ui: ^Ui_State) {
 	old := profile_palette(profile_colors(style))
 	defer profile_palette(old)
 	background := profile_background(style)
-	if clay.UI(clay.ID("ProfilePage"))(
+	if nendo.box(nendo.id("ProfilePage"))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = {
-				left = single_pane() ? 12 : 20,
-				right = single_pane() ? 12 : 20,
-				top = single_pane() ? 12 : 20,
-				bottom = 36,
-			},
-			childGap = 12,
+		width = nendo.grow(),
+		height = nendo.grow(),
+		direction = .Column,
+		padding = {
+			left = single_pane() ? 12 : 20,
+			right = single_pane() ? 12 : 20,
+			top = single_pane() ? 12 : 20,
+			bottom = 36,
 		},
-		backgroundColor = background.customData == nil ? BG : clay.Color{},
+		gap = 12,
+		color = background == nil ? BG : nendo.Color{},
 		custom = background,
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		clip = {y = true, scroll = true},
 	},
 	) {
 		// ── Header: title + visibility eyebrow, Edit toggle right ──
-		if clay.UI(clay.ID("ProfileHead"))(
+		if nendo.box(nendo.id("ProfileHead"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
+			width = nendo.grow(),
+			direction = single_pane() ? .Column : .Row,
+			gap = 10,
+			align = {y = .Center},
 		},
 		) {
-			if clay.UI(clay.ID("ProfileHeadCol"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 3,
-				},
-			},
+			if nendo.box(nendo.id("ProfileHeadCol"))(
+			{width = nendo.grow(), direction = .Column, gap = 3},
 			) {
-				clay.Text(
-					tr("Your profile"),
-					{fontId = FONT_TITLE, fontSize = 22, textColor = TEXT},
-				)
-				clay.Text(
+				nendo.text(tr("Your profile"), {font = FONT_TITLE, size = 22, color = TEXT})
+				nendo.text(
 					ui.profile.editing ? tr("EDITING · BROADCAST TO RELAYS ON PUBLISH") : tr("PUBLIC PROFILE"),
-					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2},
+					{font = FONT_MONO, size = 10, color = TEXT_LO, spacing = 2},
 				)
 			}
-			if clay.UI(clay.ID("ProfileHeadGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-			if clay.UI(clay.ID("EditProfileBtn"))(
+			if nendo.box(nendo.id("ProfileHeadGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("EditProfileBtn"))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
-					padding = {left = 14, right = 14, top = 8, bottom = 8},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ui.profile.editing ? (hovered() ? HOVER : ROW_BG) : ACCENT,
-				cornerRadius = rr(9),
-				border = ui.profile.editing ? clay.BorderElementConfig{color = FIELD_BORDER, width = bw()} : {},
+				height = nendo.fit(min = settings_tap_size(32)),
+				padding = {left = 14, right = 14, top = 8, bottom = 8},
+				gap = 8,
+				align = {y = .Center},
+				color = ui.profile.editing ? (hovered() ? HOVER : ROW_BG) : ACCENT,
+				radius = rr(9),
+				border = ui.profile.editing ? nendo.Border{color = FIELD_BORDER, width = bw()} : {},
 			},
 			) {
 				if !ui.profile.editing {
-					clay.Text(
-						ICON_PENCIL,
-						{fontId = FONT_ICON, fontSize = 12, textColor = ON_ACCENT},
-					)
+					nendo.text(ICON_PENCIL, {font = FONT_ICON, size = 12, color = ON_ACCENT})
 				}
-				clay.Text(
+				nendo.text(
 					ui.profile.editing ? tr("Cancel") : tr("Edit profile"),
-					{
-						fontId = FONT_TITLE,
-						fontSize = 13,
-						textColor = ui.profile.editing ? TEXT : ON_ACCENT,
-					},
+					{font = FONT_TITLE, size = 13, color = ui.profile.editing ? TEXT : ON_ACCENT},
 				)
 			}
 		}
@@ -288,43 +222,37 @@ profile_pane :: proc(ui: ^Ui_State) {
 		//   └──│ ◉◉ │────────────────────────────────────────┘
 		//      │ 96 │✎   Name            (draft-live in edit)
 		//      ╰────╯    @handle · about
-		if clay.UI(clay.ID("ProfileHero"))(
+		if nendo.box(nendo.id("ProfileHero"))(
 		{
-			layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(14),
+			width = nendo.grow(),
+			direction = .Column,
+			color = ROW_BG,
+			radius = rr(14),
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
 			if !ui.profile.editing {
-				if clay.UI(clay.ID("ProfileBanner"))(
+				if nendo.box(nendo.id("ProfileBanner"))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(88)},
-						padding = {right = 24},
-						childGap = 10,
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = ACCENT,
-					cornerRadius = {topLeft = 14, topRight = 14},
+					width = nendo.grow(),
+					height = nendo.fixed(88),
+					padding = {right = 24},
+					gap = 10,
+					align = {y = .Center},
+					color = ACCENT,
+					radius = {top_left = 14, top_right = 14},
 				},
 				) {
 					// Quiet dot ornament so the band reads designed, not
 					// unfinished, on every pack's accent.
-					if clay.UI(clay.ID("BannerFill"))(
-					{layout = {sizing = {width = clay.SizingGrow()}}},
-					) {}
+					if nendo.box(nendo.id("BannerFill"))({width = nendo.grow()}) {}
 					for size, i in ([3]f32{18, 30, 46}) {
-						if clay.UI(clay.ID("BannerDot", u32(i)))(
+						if nendo.box(nendo.id("BannerDot", u32(i)))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(size),
-									height = clay.SizingFixed(size),
-								},
-							},
-							backgroundColor = {255, 255, 255, 28},
-							cornerRadius = rr(size / 2),
+							width = nendo.fixed(size),
+							height = nendo.fixed(size),
+							color = {255, 255, 255, 28},
+							radius = rr(size / 2),
 						},
 						) {}
 					}
@@ -333,15 +261,16 @@ profile_pane :: proc(ui: ^Ui_State) {
 
 			// The avatar overlaps the banner/body seam. In edit mode
 			// the whole circle picks a new picture, badged with ✎.
-			if clay.UI(clay.ID("ProfileAvatarPick"))(
+			if nendo.box(nendo.id("ProfileAvatarPick"))(
 			{
-				layout = {sizing = {width = clay.SizingFixed(96), height = clay.SizingFixed(96)}},
+				width = nendo.fixed(96),
+				height = nendo.fixed(96),
 				floating = {
-					attachTo = .Parent,
-					clipTo = .AttachedParent,
-					zIndex = 5,
+					attach_to = .Parent,
+					clip_to = .Parent,
+					z = 5,
 					offset = {24, ui.profile.editing ? 16 : 40},
-					attachment = {element = .LeftTop, parent = .LeftTop},
+					attach = {element = .Left_Top, parent = .Left_Top},
 				},
 			},
 			) {
@@ -357,86 +286,72 @@ profile_pane :: proc(ui: ^Ui_State) {
 					url_pic(ui.my_pic_url),
 				)
 				if ui.profile.editing {
-					if clay.UI(clay.ID("ProfileAvatarBadge"))(
+					if nendo.box(nendo.id("ProfileAvatarBadge"))(
 					{
-						layout = {
-							sizing = {width = clay.SizingFixed(30), height = clay.SizingFixed(30)},
-							childAlignment = {x = .Center, y = .Center},
-						},
+						width = nendo.fixed(30),
+						height = nendo.fixed(30),
+						align = {x = .Center, y = .Center},
 						floating = {
-							attachTo = .Parent,
-							clipTo = .AttachedParent,
-							zIndex = 6,
+							attach_to = .Parent,
+							clip_to = .Parent,
+							z = 6,
 							offset = {2, 2},
-							attachment = {element = .RightBottom, parent = .RightBottom},
+							attach = {element = .Right_Bottom, parent = .Right_Bottom},
 						},
-						backgroundColor = ACCENT,
-						cornerRadius = rr(15),
+						color = ACCENT,
+						radius = rr(15),
 						border = {color = ROW_BG, width = {2, 2, 2, 2, 0}},
 					},
 					) {
-						clay.Text(
-							ICON_PENCIL,
-							{fontId = FONT_ICON, fontSize = 12, textColor = ON_ACCENT},
-						)
+						nendo.text(ICON_PENCIL, {font = FONT_ICON, size = 12, color = ON_ACCENT})
 					}
 				}
 			}
 
-			if clay.UI(clay.ID("ProfileHeroRow"))(
+			if nendo.box(nendo.id("ProfileHeroRow"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFit({min = ui.profile.editing ? 128 : 0}),
-					},
-					padding = {
-						left = single_pane() ? 16 : 136,
-						right = single_pane() ? 16 : 24,
-						top = ui.profile.editing ? (single_pane() ? 124 : 28) : (single_pane() ? 60 : 14),
-						bottom = 18,
-					},
-					childGap = 14,
-					childAlignment = {y = .Center},
+				width = nendo.grow(),
+				height = nendo.fit(min = ui.profile.editing ? 128 : 0),
+				padding = {
+					left = single_pane() ? 16 : 136,
+					right = single_pane() ? 16 : 24,
+					top = ui.profile.editing ? (single_pane() ? 124 : 28) : (single_pane() ? 60 : 14),
+					bottom = 18,
 				},
+				gap = 14,
+				align = {y = .Center},
 			},
 			) {
-				if clay.UI(clay.ID("ProfileHeroCol"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						layoutDirection = .TopToBottom,
-						childGap = 3,
-					},
-				},
+				if nendo.box(nendo.id("ProfileHeroCol"))(
+				{width = nendo.grow(), direction = .Column, gap = 3},
 				) {
 					// Only the name previews here so About cannot shift the fields.
 					shown_name := ui.profile.editing ? string(ui.name_input[:]) : ui.profile.name
 					name_font := title_font != 0 ? title_font : FONT_TITLE
-					name_w := clay.GetElementData(clay.ID("ProfileHeroCol")).boundingBox.width
+					name_w := nendo.element(nendo.id("ProfileHeroCol")).rect.width
 					if name_w <= 0 {name_w = max(1, page_w(ui) - (single_pane() ? 80 : 220))}
-					clay.Text(
+					nendo.text(
 						text_ellipsis(
 							len(shown_name) > 0 ? shown_name : tr("(no display name)"),
 							name_w,
 							name_font,
 							24,
 						),
-						{fontId = name_font, fontSize = 24, textColor = TEXT, wrapMode = .None},
+						{font = name_font, size = 24, color = TEXT, wrap = .None},
 					)
-					clay.Text(
+					nendo.text(
 						text_ellipsis(
 							len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : npub_tail(ui.profile.npub),
 							name_w,
 							FONT_BODY,
 							12,
 						),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO, wrapMode = .None},
+						{font = FONT_BODY, size = 12, color = TEXT_LO, wrap = .None},
 					)
 					if !ui.profile.editing && len(ui.profile.about) > 0 {
-						clay.Text(
+						nendo.text(
 							ui.profile.about,
-							{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 13, color = TEXT_DIM},
 						)
 					}
 				}
@@ -445,19 +360,17 @@ profile_pane :: proc(ui: ^Ui_State) {
 
 		// ── Edit form: every kind-0 field the app lets you set ─────
 		if ui.profile.editing {
-			if clay.UI(clay.ID("FormEyebrow"))({layout = {padding = {top = 6}}}) {
+			if nendo.box(nendo.id("FormEyebrow"))({padding = {top = 6}}) {
 				eyebrow(tr("EDIT PROFILE"))
 			}
-			if clay.UI(clay.ID("ProfileForm"))(
+			if nendo.box(nendo.id("ProfileForm"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					padding = {left = 16, right = 16, top = 14, bottom = 14},
-					childGap = 10,
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(12),
+				width = nendo.grow(),
+				direction = .Column,
+				padding = {left = 16, right = 16, top = 14, bottom = 14},
+				gap = 10,
+				color = ROW_BG,
+				radius = rr(12),
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
@@ -471,9 +384,9 @@ profile_pane :: proc(ui: ^Ui_State) {
 					ui.focus == .Name,
 				)
 				if strings.trim_space(string(ui.name_input[:])) == "" {
-					clay.Text(
+					nendo.text(
 						tr("Enter a display name."),
-						{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+						{font = FONT_BODY, size = 12, color = DANGER},
 					)
 				}
 				eyebrow(tr("ABOUT"))
@@ -488,16 +401,16 @@ profile_pane :: proc(ui: ^Ui_State) {
 					ui.focus == .Nip05,
 				)
 				if !profile_addr_valid(string(ui.nip05_input[:])) {
-					clay.Text(
+					nendo.text(
 						tr("Couldn't use this Nostr address. Double-check it and try again."),
-						{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+						{font = FONT_BODY, size = 12, color = DANGER},
 					)
 				}
-				clay.Text(
+				nendo.text(
 					tr(
 						"Optional Nostr identifier (NIP-05), not your email address. This is public.",
 					),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 11, color = TEXT_DIM},
 				)
 				form_row(
 					ui,
@@ -509,20 +422,18 @@ profile_pane :: proc(ui: ^Ui_State) {
 					ui.focus == .Lud16,
 				)
 				if !profile_addr_valid(string(ui.lud16_input[:])) {
-					clay.Text(
+					nendo.text(
 						tr("Couldn't use this Lightning address. Double-check it and try again."),
-						{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+						{font = FONT_BODY, size = 12, color = DANGER},
 					)
 				}
-				if clay.UI(clay.ID("ProfileFormActions"))(
+				if nendo.box(nendo.id("ProfileFormActions"))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-						childGap = 10,
-						padding = {top = 6},
-						childAlignment = {y = .Center},
-					},
+					width = nendo.grow(),
+					direction = single_pane() ? .Column : .Row,
+					gap = 10,
+					padding = {top = 6},
+					align = {y = .Center},
 				},
 				) {
 					if ppic_busy {
@@ -530,34 +441,26 @@ profile_pane :: proc(ui: ^Ui_State) {
 					} else {
 						micro_button("ChangePicBtn", tr("Change picture"))
 					}
-					if clay.UI(clay.ID("FormActionGap"))(
-					{layout = {sizing = {width = clay.SizingGrow()}}},
-					) {}
+					if nendo.box(nendo.id("FormActionGap"))({width = nendo.grow()}) {}
 					if !single_pane() && !tap_size() {
-						clay.Text(
+						nendo.text(
 							tr("Enter moves to the next field, Escape cancels."),
-							{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO},
+							{font = FONT_BODY, size = 10, color = TEXT_LO},
 						)
 					}
 					ready := profile_ready(ui)
-					if clay.UI(clay.ID("PublishProfileBtn"))(
+					if nendo.box(nendo.id("PublishProfileBtn"))(
 					{
-						layout = {
-							sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
-							padding = {left = 16, right = 16, top = 9, bottom = 9},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = ready ? ACCENT : FIELD_BORDER,
-						cornerRadius = rr(9),
+						height = nendo.fit(min = settings_tap_size(32)),
+						padding = {left = 16, right = 16, top = 9, bottom = 9},
+						align = {x = .Center, y = .Center},
+						color = ready ? ACCENT : FIELD_BORDER,
+						radius = rr(9),
 					},
 					) {
-						clay.Text(
+						nendo.text(
 							tr("Publish changes"),
-							{
-								fontId = FONT_TITLE,
-								fontSize = 13,
-								textColor = ready ? ON_ACCENT : TEXT_LO,
-							},
+							{font = FONT_TITLE, size = 13, color = ready ? ON_ACCENT : TEXT_LO},
 						)
 					}
 				}
@@ -565,48 +468,43 @@ profile_pane :: proc(ui: ^Ui_State) {
 		}
 
 		// ── Identity: copyable npub + inline QR ────────────────────
-		if clay.UI(clay.ID("IdEyebrow"))({layout = {padding = {top = 6}}}) {
+		if nendo.box(nendo.id("IdEyebrow"))({padding = {top = 6}}) {
 			eyebrow(tr("IDENTITY"))
 		}
-		if clay.UI(clay.ID("ProfileIdCard"))(
+		if nendo.box(nendo.id("ProfileIdCard"))(
 		{
-			layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(10),
+			width = nendo.grow(),
+			direction = .Column,
+			color = ROW_BG,
+			radius = rr(10),
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
-			if clay.UI(clay.ID("ProfileNpubRow"))(
+			if nendo.box(nendo.id("ProfileNpubRow"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-					padding = {left = 16, right = 12, top = 10, bottom = 10},
-					childGap = 12,
-					childAlignment = {y = .Center},
-				},
+				width = nendo.grow(),
+				direction = single_pane() ? .Column : .Row,
+				padding = {left = 16, right = 12, top = 10, bottom = 10},
+				gap = 12,
+				align = {y = .Center},
 			},
 			) {
-				if clay.UI(clay.ID("ProfileNpubCol"))(
-				{layout = {layoutDirection = .TopToBottom, childGap = 2}},
-				) {
-					clay.Text("npub", {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
-					clay.Text(
+				if nendo.box(nendo.id("ProfileNpubCol"))({direction = .Column, gap = 2}) {
+					nendo.text("npub", {font = FONT_TITLE, size = 12, color = TEXT})
+					nendo.text(
 						tr("Your public key. Safe to share."),
-						{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO},
+						{font = FONT_BODY, size = 10, color = TEXT_LO},
 					)
 				}
-				if clay.UI(clay.ID("ProfileNpubGap"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {}
-				clay.Text(
+				if nendo.box(nendo.id("ProfileNpubGap"))({width = nendo.grow()}) {}
+				nendo.text(
 					npub_tail(ui.profile.npub),
-					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM},
+					{font = FONT_MONO, size = 11, color = TEXT_DIM},
 				)
 				micro_button("ProfileCopyNpub", tr("Copy"))
 			}
 			if ui.profile.qr != nil {
-				identity_w := clay.GetElementData(clay.ID("ProfileIdCard")).boundingBox.width
+				identity_w := nendo.element(nendo.id("ProfileIdCard")).rect.width
 				if identity_w <= 0 {identity_w = page_w(ui) - 40}
 				identity_codes(
 					"Profile",
@@ -621,14 +519,15 @@ profile_pane :: proc(ui: ^Ui_State) {
 
 		// ── Profile fields, viewer rows ────────────────────────────
 		if !ui.profile.editing {
-			if clay.UI(clay.ID("ProfileEyebrow"))({layout = {padding = {top = 6}}}) {
+			if nendo.box(nendo.id("ProfileEyebrow"))({padding = {top = 6}}) {
 				eyebrow(tr("PROFILE"))
 			}
-			if clay.UI(clay.ID("ProfileCard"))(
+			if nendo.box(nendo.id("ProfileCard"))(
 			{
-				layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(10),
+				width = nendo.grow(),
+				direction = .Column,
+				color = ROW_BG,
+				radius = rr(10),
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
@@ -644,11 +543,11 @@ profile_pane :: proc(ui: ^Ui_State) {
 		}
 
 		if single_pane() {micro_button("ProfileAccounts", tr("Accounts"))}
-		if clay.UI(clay.ID("SignOutPad"))({layout = {padding = {top = 6}}}) {
+		if nendo.box(nendo.id("SignOutPad"))({padding = {top = 6}}) {
 			login_button("SignOutBtn", tr("Sign out"))
 		}
 		if single_pane() {micro_button("ProfileRemoveAccount", tr("Remove account"), DANGER)}
-		if open_now(clay.ID("QrModal"), ui.qr_open) && ui.qr_tex != nil {
+		if open_now(nendo.id("QrModal"), ui.qr_open) && ui.qr_tex != nil {
 			qr_modal(
 				ui,
 				Contact_Ui {
@@ -659,5 +558,5 @@ profile_pane :: proc(ui: ^Ui_State) {
 			)
 		}
 	}
-	scrollbar(clay.ID("ProfilePage"))
+	scrollbar(nendo.id("ProfilePage"))
 }

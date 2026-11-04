@@ -8,7 +8,7 @@ import "core:thread"
 import "core:time"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -123,23 +123,15 @@ group_files_layout :: proc(t: ^testing.T) {
 	}
 	load_themes()
 	apply_theme(0, 0)
-	clay.SetMaxElementCount(32768)
-	memory := make([]u8, int(clay.MinMemorySize()))
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{1000, 800},
-		{
-			handler = proc(err: clay.ErrorData) {
-				testing.expect(
-					(^testing.T)(err.userData),
-					false,
-					string(err.errorText.chars[:err.errorText.length]),
-				)
-			},
-			userData = t,
+	nendo.set_max_element_count(32768)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	nendo.init(memory, {1000, 800}, {
+		handler = proc(err: nendo.Error) {
+			testing.expect((^testing.T)(err.user_data), false, err.text)
 		},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
+		user_data = t,
+	})
+	nendo.set_measure_text(measure_text, nil)
 	defer delete(memory)
 	ui := Ui_State {
 		show_members     = false,
@@ -211,53 +203,45 @@ group_files_layout :: proc(t: ^testing.T) {
 	defer delete(ui.nicknames)
 	for width in ([]f32{1000, 400}) {
 		rl.SetWindowSize(i32(width), 800)
-		clay.SetLayoutDimensions({width, 800})
-		if data := clay.GetScrollContainerData(clay.ID("GroupFilesList"));
-		   data.found {data.scrollPosition.y = 0}
+		nendo.set_dimensions({width, 800})
+		if data := nendo.scroll(nendo.id("GroupFilesList")); data.found {data.position.y = 0}
 		for _ in 0 ..< 3 {build_layout(&ui, 0)}
-		data := clay.GetScrollContainerData(clay.ID("GroupFilesList"))
+		data := nendo.scroll(nendo.id("GroupFilesList"))
 		testing.expect(t, data.found)
-		card := clay.GetElementData(clay.ID("GroupFile", 0)).boundingBox
+		card := nendo.element(nendo.id("GroupFile", 0)).rect
 		columns := max(
 			1,
-			int(
-				(data.scrollContainerDimensions.width + GROUP_FILE_GAP) /
-				(card.width + GROUP_FILE_GAP),
-			),
+			int((data.viewport.width + GROUP_FILE_GAP) / (card.width + GROUP_FILE_GAP)),
 		)
 		testing.expect_value(
 			t,
-			data.contentDimensions.height,
+			data.content.height,
 			f32(((600 + columns - 1) / columns) * (GROUP_FILE_CARD_H + GROUP_FILE_GAP)),
 		)
 		for fraction in ([]f32{0, 0.5, 1}) {
-			data.scrollPosition.y =
-				-fraction * (data.contentDimensions.height - data.scrollContainerDimensions.height)
+			data.position.y = -fraction * (data.content.height - data.viewport.height)
 			commands := build_layout(&ui, 0)
 			mounted := 0
-			for _, i in job.files {if clay.GetElementData(clay.ID("GroupFile", u32(i))).found {mounted += 1}}
+			for _, i in job.files {if nendo.element(nendo.id("GroupFile", u32(i))).found {mounted += 1}}
 			testing.expect(t, mounted > 0 && mounted < 50)
 			testing.expect(t, !layout_overflow)
-			box := clay.GetElementData(clay.ID("GroupFilesPanel")).boundingBox
+			box := nendo.element(nendo.id("GroupFilesPanel")).rect
 			testing.expect(t, box.x + box.width <= width + 0.01)
 			if fraction == 0 {
-				rl.BeginDrawing(); clay_raylib_render(&commands)
+				rl.BeginDrawing(); render_nendo(commands)
 				rl.TakeScreenshot(
 					width == 1000 ? "/tmp/wn-group-files-wide.png" : "/tmp/wn-group-files-narrow.png",
 				)
 				rl.EndDrawing()
 			}
 		}
-		testing.expect(t, clay.GetElementData(clay.ID("GroupFile", 599)).found)
-		list_y := clay.GetElementData(clay.ID("GroupFilesList")).boundingBox.y
+		testing.expect(t, nendo.element(nendo.id("GroupFile", 599)).found)
+		list_y := nendo.element(nendo.id("GroupFilesList")).rect.y
 		ui.group_files_menu = .Sender
 		build_layout(&ui, 0)
-		testing.expect(
-			t,
-			abs(clay.GetElementData(clay.ID("GroupFilesList")).boundingBox.y - list_y) <= 1,
-		)
-		testing.expect(t, clay.GetElementData(clay.ID("GroupFilesOption", 1)).found)
-		menu := clay.GetElementData(clay.ID("GroupFilesOptions")).boundingBox
+		testing.expect(t, abs(nendo.element(nendo.id("GroupFilesList")).rect.y - list_y) <= 1)
+		testing.expect(t, nendo.element(nendo.id("GroupFilesOption", 1)).found)
+		menu := nendo.element(nendo.id("GroupFilesOptions")).rect
 		testing.expect(t, menu.x >= 0 && menu.x + menu.width <= width)
 		ui.group_files_menu = .None
 	}
@@ -272,22 +256,22 @@ group_files_layout :: proc(t: ^testing.T) {
 	press(&ui, .ENTER)
 	testing.expect_value(t, ui.group_files_type, Group_File_Type.Images)
 	build_layout(&ui, 0)
-	testing.expect(t, clay.GetElementData(clay.ID("GroupFile", 0)).found)
-	testing.expect(t, !clay.GetElementData(clay.ID("GroupFile", 1)).found)
+	testing.expect(t, nendo.element(nendo.id("GroupFile", 0)).found)
+	testing.expect(t, !nendo.element(nendo.id("GroupFile", 1)).found)
 	press(&ui, .TAB)
 	press(&ui, .TAB)
 	press(&ui, .DOWN)
 	press(&ui, .ENTER)
 	testing.expect_value(t, ui.group_files_sender, "alice")
 	build_layout(&ui, 0)
-	card := clay.GetElementData(clay.ID("GroupFilePreview", 0)).boundingBox
-	clay.SetPointerState({card.x + card.width / 2, card.y + card.height / 2}, false)
+	card := nendo.element(nendo.id("GroupFilePreview", 0)).rect
+	nendo.set_pointer({card.x + card.width / 2, card.y + card.height / 2}, .Up)
 	rl.PushMouseButton(.LEFT, false)
 	handle_group_files(&ui)
 	testing.expect(t, preview_shown && preview.kind == .Slides)
 	testing.expect_value(t, len(preview.slides), 1)
 	preview_close()
-	clay.SetPointerState({-100, -100}, false)
+	nendo.set_pointer({-100, -100}, .Up)
 	press(&ui, .ESCAPE)
 	testing.expect(t, !ui.group_files_open)
 }

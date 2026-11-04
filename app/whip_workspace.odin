@@ -1,7 +1,7 @@
 package main
 
 import "core:strings"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Preferences own every string. Numeric IDs are usable only together with the
@@ -28,7 +28,7 @@ Whip_Saved_Placement :: struct {
 	account, group_id, folder: string,
 	session:                   [4]u64,
 	pane:                      u32,
-	bounds:                    clay.BoundingBox,
+	bounds:                    nendo.Rect,
 }
 
 @(private)

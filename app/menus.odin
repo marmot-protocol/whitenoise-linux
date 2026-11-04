@@ -4,7 +4,7 @@ import "core:fmt"
 import "core:math"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -15,39 +15,32 @@ message_url :: proc(msg: Msg_Ui) -> string {
 	return ""
 }
 
-ctx_item :: proc(id_str: string, glyph: string, label: string, color: clay.Color = {}) {
-	menu_press_mark(clay.ID(id_str))
-	if clay.UI(clay.ID(id_str))(
+ctx_item :: proc(id_str: string, glyph: string, label: string, color: nendo.Color = {}) {
+	menu_press_mark(nendo.id(id_str))
+	if nendo.box(nendo.id(id_str))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFit({min = tap_size() ? tap_min() : 32}),
-			},
-			padding = {left = 10, right = 16},
-			childGap = 9,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : {},
-		cornerRadius = rr(6),
+		width = nendo.grow(),
+		height = nendo.fit(min = tap_size() ? tap_min() : 32),
+		padding = {left = 10, right = 16},
+		gap = 9,
+		align = {y = .Center},
+		color = hovered() ? HOVER : {},
+		radius = rr(6),
 	},
 	) {
-		if clay.UI(clay.ID_LOCAL("CtxGlyph"))(
-		{layout = {sizing = {width = clay.SizingFixed(16)}, childAlignment = {x = .Center}}},
+		if nendo.box(nendo.id_local("CtxGlyph"))(
+		{width = nendo.fixed(16), align = {x = .Center}},
 		) {
-			clay.Text(
+			nendo.text(
 				glyph,
 				{
-					fontId = FONT_ICON,
-					fontSize = 13,
-					textColor = color.a > 0 ? color : (hovered() ? TEXT : TEXT_DIM),
+					font = FONT_ICON,
+					size = 13,
+					color = color.a > 0 ? color : (hovered() ? TEXT : TEXT_DIM),
 				},
 			)
 		}
-		clay.Text(
-			label,
-			{fontId = FONT_BODY, fontSize = 12, textColor = color.a > 0 ? color : TEXT},
-		)
+		nendo.text(label, {font = FONT_BODY, size = 12, color = color.a > 0 ? color : TEXT})
 	}
 }
 
@@ -67,14 +60,14 @@ member_menu_index :: proc(ui: ^Ui_State) -> int {
 }
 
 member_menu :: proc(ui: ^Ui_State) {
-	defer scrollbar(clay.ID("MemberMenu"), 11)
+	defer scrollbar(nendo.id("MemberMenu"), 11)
 	member := ui.members[member_menu_index(ui)]
 	x, y := ui.member_menu_x, ui.member_menu_y
 	width, height := f32(190), f32(140)
-	if box, ok := element_box(clay.ID("MemberMenu")); ok {
+	if box, ok := element_box(nendo.id("MemberMenu")); ok {
 		width, height = box.width, box.height
 	}
-	if anchor, ok := element_box(clay.ID("MemberMenuBtn", u32(member_menu_index(ui)))); ok {
+	if anchor, ok := element_box(nendo.id("MemberMenuBtn", u32(member_menu_index(ui)))); ok {
 		x, y = anchor.x + anchor.width - width, anchor.y + anchor.height + 4
 		if y + height > f32(rl.GetScreenHeight()) / UI_ZOOM - 12 {
 			y = anchor.y - height - 4
@@ -82,27 +75,23 @@ member_menu :: proc(ui: ^Ui_State) {
 	}
 	x, y = panel_pos(x, y, width, height)
 
-	if clay.UI(clay.ID("MemberMenu"))(
+	if nendo.box(nendo.id("MemberMenu"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingFit({min = 190, max = fit_w(320)}),
-				height = clay.SizingFit({max = modal_h(360)}),
-			},
-			padding = clay.PaddingAll(4),
-			childGap = 1,
-		},
+		direction = .Column,
+		width = nendo.fit(min = 190, max = fit_w(320)),
+		height = nendo.fit(max = modal_h(360)),
+		padding = nendo.pad(4),
+		gap = 1,
 		floating = {
-			attachTo = .Root,
-			offset = {x, y + rise(clay.ID("MemberMenu"))},
-			attachment = {element = .LeftTop, parent = .LeftTop},
-			zIndex = 10,
+			attach_to = .Root,
+			offset = {x, y + rise(nendo.id("MemberMenu"))},
+			attach = {element = .Left_Top, parent = .Left_Top},
+			z = 10,
 		},
-		backgroundColor = CARD,
-		cornerRadius = rr(10),
+		color = CARD,
+		radius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		clip = {y = true, scroll = true},
 	},
 	) {
 		if member.is_self {
@@ -140,28 +129,28 @@ handle_member_menu :: proc(ui: ^Ui_State) -> bool {
 	if !mouse_released() {
 		return false
 	}
-	if menu_keep(clay.ID("MemberMenu")) {return true}
+	if menu_keep(nendo.id("MemberMenu")) {return true}
 	index := ui.member_menu
 	member := ui.members[index]
 	ui.member_menu = -1
 
 	if member.is_self {
-		if member.is_admin && clay.PointerOver(clay.ID("MemberStepDown")) {
+		if member.is_admin && nendo.pointer_over(nendo.id("MemberStepDown")) {
 			confirm_ask(ui, .Step_Down, member.id_hex, member.name)
 		}
 		return true
 	}
 	if self_is_admin(ui) {
-		if clay.PointerOver(clay.ID(member.is_admin ? "MemberDemote" : "MemberPromote")) {
+		if nendo.pointer_over(nendo.id(member.is_admin ? "MemberDemote" : "MemberPromote")) {
 			confirm_ask(ui, member.is_admin ? .Demote : .Promote, member.id_hex, member.name)
 			return true
 		}
-		if clay.PointerOver(clay.ID("MemberRemove")) {
+		if nendo.pointer_over(nendo.id("MemberRemove")) {
 			confirm_ask(ui, .Remove_Member, member.id_hex, member.name)
 			return true
 		}
 	}
-	if clay.PointerOver(clay.ID("MemberNick")) {
+	if nendo.pointer_over(nendo.id("MemberNick")) {
 		ui.member_nick = index
 		ed_set(ui, &ui.nick_input, ui.nicknames[member.id_hex])
 		ui.focus = .Nick
@@ -173,8 +162,8 @@ handle_member_menu :: proc(ui: ^Ui_State) -> bool {
 // divider, then the gated action rows.
 @(private)
 sheet_bottom :: proc() -> f32 {
-	if nav := clay.GetElementData(clay.ID("PhoneNavigation")); nav.found {
-		return max(f32(rl.GetScreenHeight()) / UI_ZOOM - nav.boundingBox.y, 0)
+	if nav := nendo.element(nendo.id("PhoneNavigation")); nav.found {
+		return max(f32(rl.GetScreenHeight()) / UI_ZOOM - nav.rect.y, 0)
 	}
 	return 0
 }
@@ -186,23 +175,21 @@ sheet_max_h :: proc() -> f32 {
 
 @(private)
 sheet_title :: proc(title: string, detail: string = "") {
-	if clay.UI(clay.ID_LOCAL("SheetTitle"))(
+	if nendo.box(nendo.id_local("SheetTitle"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = {left = 12, right = 12, top = 12, bottom = 10},
-			childGap = 5,
-		},
+		width = nendo.grow(),
+		direction = .Column,
+		padding = {left = 12, right = 12, top = 12, bottom = 10},
+		gap = 5,
 	},
 	) {
 		width := f32(rl.GetScreenWidth()) / UI_ZOOM - 32
-		clay.Text(
+		nendo.text(
 			text_ellipsis(title, width, FONT_TITLE, 14),
-			{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
+			{font = FONT_TITLE, size = 14, color = TEXT},
 		)
 		if detail !=
-		   "" {clay.Text(text_ellipsis(detail, width, FONT_BODY, 12), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})}
+		   "" {nendo.text(text_ellipsis(detail, width, FONT_BODY, 12), {font = FONT_BODY, size = 12, color = TEXT_DIM})}
 	}
 }
 
@@ -210,125 +197,98 @@ context_menu :: proc(ui: ^Ui_State) {
 	msg := ui.messages[ui.ctx_msg]
 
 	// The open-time clamp in handlers.odin guesses the height; re-clamp
-	// against the box clay actually laid out, so a tall menu (own message,
+	// against the box nendo actually laid out, so a tall menu (own message,
 	// attachments, dev mode) never runs past the window bottom.
 	y := ui.ctx_y
 	x := ui.ctx_x
-	if box, laid_out := element_box(clay.ID("CtxMenu")); laid_out {
+	if box, laid_out := element_box(nendo.id("CtxMenu")); laid_out {
 		x, y = panel_pos(x, y, box.width, box.height)
 	}
 
-	if clay.UI(clay.ID("CtxMenu"))(
+	if nendo.box(nendo.id("CtxMenu"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = single_pane() ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : clay.SizingFit({min = 200, max = fit_w(560)}),
-				height = clay.SizingFit({max = single_pane() ? sheet_max_h() : modal_h(700)}),
-			},
-			padding = clay.PaddingAll(4),
-			childGap = 1,
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		direction = .Column,
+		width = single_pane() ? nendo.fixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : nendo.fit(min = 200, max = fit_w(560)),
+		height = nendo.fit(max = single_pane() ? sheet_max_h() : modal_h(700)),
+		padding = nendo.pad(4),
+		gap = 1,
+		clip = {y = true, scroll = true},
 		floating = {
-			attachTo = .Root,
+			attach_to = .Root,
 			offset = {
 				single_pane() ? 0 : x,
-				(single_pane() ? -sheet_bottom() : y) + rise(clay.ID("CtxMenu")),
+				(single_pane() ? -sheet_bottom() : y) + rise(nendo.id("CtxMenu")),
 			},
-			attachment = {
-				element = single_pane() ? .LeftBottom : .LeftTop,
-				parent = single_pane() ? .LeftBottom : .LeftTop,
+			attach = {
+				element = single_pane() ? .Left_Bottom : .Left_Top,
+				parent = single_pane() ? .Left_Bottom : .Left_Top,
 			},
-			zIndex = 10,
+			z = 10,
 		},
-		backgroundColor = CARD,
-		cornerRadius = rr(10),
+		color = CARD,
+		radius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
 		if single_pane() {
 			sheet_title(msg.sender, msg_preview(msg))
-			clay.Text(msg.at_full, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			nendo.text(msg.at_full, {font = FONT_BODY, size = 11, color = TEXT_DIM})
 		}
 		if !msg.deleted {
 			if ui.selected < 0 || !ui.chats[ui.selected].archived {
-				if clay.UI(clay.ID("CtxStrip"))(
+				if nendo.box(nendo.id("CtxStrip"))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						padding = {left = 6, right = 6, top = 2, bottom = 2},
-						childGap = 1,
-					},
-					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+					width = nendo.grow(),
+					padding = {left = 6, right = 6, top = 2, bottom = 2},
+					gap = 1,
+					clip = {x = true, scroll = true},
 				},
 				) {
 					for emoji, i in ui.prefs.quick_reactions {
-						menu_press_mark(clay.ID("CtxQuick", u32(i)))
-						if clay.UI(clay.ID("CtxQuick", u32(i)))(
+						menu_press_mark(nendo.id("CtxQuick", u32(i)))
+						if nendo.box(nendo.id("CtxQuick", u32(i)))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(tap_size() ? tap_min() : 28),
-									height = clay.SizingFixed(tap_size() ? tap_min() : 28),
-								},
-								childAlignment = {x = .Center, y = .Center},
-							},
-							backgroundColor = hovered() ? HOVER : {},
-							cornerRadius = rr(8),
+							width = nendo.fixed(tap_size() ? tap_min() : 28),
+							height = nendo.fixed(tap_size() ? tap_min() : 28),
+							align = {x = .Center, y = .Center},
+							color = hovered() ? HOVER : {},
+							radius = rr(8),
 						},
 						) {
 							if tex := emoji_tex(emoji); tex != nil {
-								if clay.UI(clay.ID("CtxQuickImg", u32(i)))(
-								{
-									layout = {sizing = {width = clay.SizingFixed(18)}},
-									aspectRatio = {1},
-									image = {imageData = tex},
-								},
+								if nendo.box(nendo.id("CtxQuickImg", u32(i)))(
+								{width = nendo.fixed(18), aspect = 1, image = tex},
 								) {}
 							} else {
-								clay.Text(
-									emoji,
-									{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
-								)
+								nendo.text(emoji, {font = FONT_BODY, size = 14, color = TEXT})
 							}
 						}
 					}
-					menu_press_mark(clay.ID("CtxQuickPlus"))
-					if clay.UI(clay.ID("CtxQuickPlus"))(
+					menu_press_mark(nendo.id("CtxQuickPlus"))
+					if nendo.box(nendo.id("CtxQuickPlus"))(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingFixed(tap_size() ? tap_min() : 28),
-								height = clay.SizingFixed(tap_size() ? tap_min() : 28),
-							},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(8),
+						width = nendo.fixed(tap_size() ? tap_min() : 28),
+						height = nendo.fixed(tap_size() ? tap_min() : 28),
+						align = {x = .Center, y = .Center},
+						color = hovered() ? HOVER : {},
+						radius = rr(8),
 					},
 					) {
-						clay.Text("+", {fontId = FONT_BODY, fontSize = 15, textColor = TEXT})
+						nendo.text("+", {font = FONT_BODY, size = 15, color = TEXT})
 					}
 				}
 
 				// Divider band under the strip.
-				scrollbar(clay.ID("CtxStrip"), 11)
-				if clay.UI(clay.ID("CtxDivBand"))(
+				scrollbar(nendo.id("CtxStrip"), 11)
+				if nendo.box(nendo.id("CtxDivBand"))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(7)},
-						padding = {left = 6, right = 6, top = 3},
-					},
+					width = nendo.grow(),
+					height = nendo.fixed(7),
+					padding = {left = 6, right = 6, top = 3},
 				},
 				) {
-					if clay.UI(clay.ID("CtxDivLine"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)},
-						},
-						backgroundColor = BORDER_2,
-					},
+					if nendo.box(nendo.id("CtxDivLine"))(
+					{width = nendo.grow(), height = nendo.fixed(1), color = BORDER_2},
 					) {}
 				}
 
@@ -367,13 +327,12 @@ context_menu :: proc(ui: ^Ui_State) {
 				)
 			}
 			if !read_only {
-				if clay.UI(clay.ID("CtxDangerRule"))(
+				if nendo.box(nendo.id("CtxDangerRule"))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)},
-						padding = {top = 4, bottom = 4},
-					},
-					backgroundColor = BORDER_2,
+					width = nendo.grow(),
+					height = nendo.fixed(1),
+					padding = {top = 4, bottom = 4},
+					color = BORDER_2,
 				},
 				) {}
 				ctx_item("CtxDelMe", ICON_TRASH, tr("Delete for me"), DANGER)
@@ -384,7 +343,7 @@ context_menu :: proc(ui: ^Ui_State) {
 			ctx_item("CtxRaw", ICON_CODE, tr("View raw event"))
 		}
 	}
-	scrollbar(clay.ID("CtxMenu"), 11)
+	scrollbar(nendo.id("CtxMenu"), 11)
 }
 
 // Edit-history modal: original first, each edit after, current
@@ -400,114 +359,82 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 	gh_cards_on = false
 	defer {gh_cards_on = cards}
 
-	if clay.UI(clay.ID("HistModal"))(
+	if nendo.box(nendo.id("HistModal"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("HistModal"), HISTORY_WIDTH)),
-				height = clay.SizingFit({max = modal_h(640)}),
-			},
-			padding = clay.PaddingAll(16),
-			childGap = 10,
-		},
+		direction = .Column,
+		width = nendo.fixed(modal_w(nendo.id("HistModal"), HISTORY_WIDTH)),
+		height = nendo.fit(max = modal_h(640)),
+		padding = nendo.pad(16),
+		gap = 10,
 		floating = {
-			attachTo = .Root,
-			zIndex = 11,
-			offset = {0, rise(clay.ID("HistModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 11,
+			offset = {0, rise(nendo.id("HistModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
+		color = CARD,
+		radius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("HistHead"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
-		) {
-			clay.Text(tr("Edit history"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
-			if clay.UI(clay.ID("HistHeadGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-			if clay.UI(clay.ID("HistClose"))(
+		if nendo.box(nendo.id("HistHead"))({width = nendo.grow(), align = {y = .Center}}) {
+			nendo.text(tr("Edit history"), {font = FONT_TITLE, size = 18, color = TEXT})
+			if nendo.box(nendo.id("HistHeadGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("HistClose"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(tap_size() ? tap_min() : 24),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 24),
-					},
-					padding = clay.PaddingAll(6),
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(6),
+				width = nendo.fixed(tap_size() ? tap_min() : 24),
+				height = nendo.fixed(tap_size() ? tap_min() : 24),
+				padding = nendo.pad(6),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(6),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 			}
 		}
 		if ui.hist_ticket !=
-		   0 {clay.Text(tr("Loading..."), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})}
+		   0 {nendo.text(tr("Loading..."), {font = FONT_BODY, size = 13, color = TEXT_DIM})}
 		edit_count := max(0, len(history) - (ui.hist_original ? 1 : 0))
-		clay.Text(
+		nendo.text(
 			fmt.tprintf(tr(edit_count == 1 ? N_("%d edit") : N_("%d edits")), edit_count),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 11, color = TEXT_DIM},
 		)
 
-		if clay.UI(clay.ID("HistScroll"))(
+		if nendo.box(nendo.id("HistScroll"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFit({max = max(f32(1), modal_h(640) - 120)}),
-				},
-				layoutDirection = .TopToBottom,
-				childGap = 10,
-				padding = {right = HISTORY_GUTTER},
-			},
-			clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.fit(max = max(f32(1), modal_h(640) - 120)),
+			direction = .Column,
+			gap = 10,
+			padding = {right = HISTORY_GUTTER},
+			clip = {x = true, y = true, scroll = true},
 		},
 		) {
 			for version, i in history {
 				current := i == len(history) - 1
-				if clay.UI(clay.ID("HistRow", u32(i)))(
+				if nendo.box(nendo.id("HistRow", u32(i)))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						layoutDirection = .TopToBottom,
-						padding = clay.PaddingAll(10),
-						childGap = 4,
-					},
-					backgroundColor = ROW_BG,
-					cornerRadius = rr(10),
-					border = current ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
+					width = nendo.grow(),
+					direction = .Column,
+					padding = nendo.pad(10),
+					gap = 4,
+					color = ROW_BG,
+					radius = rr(10),
+					border = current ? nendo.Border{color = ACCENT, width = bw()} : {},
 				},
 				) {
-					if clay.UI(clay.ID("HistRowHead", u32(i)))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							childAlignment = {y = .Center},
-						},
-					},
+					if nendo.box(nendo.id("HistRowHead", u32(i)))(
+					{width = nendo.grow(), align = {y = .Center}},
 					) {
 						label :=
 							i == 0 && ui.hist_original ? tr("Original") : (current ? tr("Current") : fmt.tprintf(tr("Edit %d"), i + (ui.hist_original ? 0 : 1)))
-						clay.Text(
+						nendo.text(
 							label,
-							{
-								fontId = FONT_TITLE,
-								fontSize = 12,
-								textColor = current ? ACCENT : TEXT,
-							},
+							{font = FONT_TITLE, size = 12, color = current ? ACCENT : TEXT},
 						)
-						if clay.UI(clay.ID("HistRowGap", u32(i)))(
-						{layout = {sizing = {width = clay.SizingGrow()}}},
-						) {}
-						clay.Text(
-							version.at,
-							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
-						)
+						if nendo.box(nendo.id("HistRowGap", u32(i)))({width = nendo.grow()}) {}
+						nendo.text(version.at, {font = FONT_BODY, size = 11, color = TEXT_LO})
 					}
 					if len(version.blocks) > 0 {
 						md_blocks(
@@ -527,7 +454,7 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("HistScroll"), 12)
+		scrollbar(nendo.id("HistScroll"), 12)
 	}
 }
 
@@ -535,7 +462,7 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 // padding.
 @(private)
 edit_diff_wrap :: proc() -> f32 {
-	return max(f32(1), modal_w(clay.ID("HistModal"), HISTORY_WIDTH) - 52 - f32(HISTORY_GUTTER))
+	return max(f32(1), modal_w(nendo.id("HistModal"), HISTORY_WIDTH) - 52 - f32(HISTORY_GUTTER))
 }
 
 RAW_MODAL_W :: f32(560)
@@ -560,10 +487,7 @@ raw_line :: proc(line: string, cols: int) {
 	rest := line
 	for len(rest) > 0 {
 		cut := rune_prefix(rest, cols)
-		clay.Text(
-			rest[:cut],
-			{fontId = FONT_MONO, fontSize = RAW_FS, textColor = TEXT, wrapMode = .None},
-		)
+		nendo.text(rest[:cut], {font = FONT_MONO, size = RAW_FS, color = TEXT, wrap = .None})
 		rest = rest[cut:]
 	}
 }
@@ -571,58 +495,47 @@ raw_line :: proc(line: string, cols: int) {
 // View-raw-event modal (dev mode): the record's JSON in mono, a
 // scrollable plate, Copy. Esc/backdrop closes (handle_input).
 raw_event_modal :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("RawModal"))(
+	if nendo.box(nendo.id("RawModal"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("RawModal"), RAW_MODAL_W)),
-				height = clay.SizingFixed(modal_h(480)),
-			},
-			padding = clay.PaddingAll(16),
-			childGap = 10,
-		},
+		direction = .Column,
+		width = nendo.fixed(modal_w(nendo.id("RawModal"), RAW_MODAL_W)),
+		height = nendo.fixed(modal_h(480)),
+		padding = nendo.pad(16),
+		gap = 10,
 		floating = {
-			attachTo = .Root,
-			zIndex = 11,
-			offset = {0, rise(clay.ID("RawModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 11,
+			offset = {0, rise(nendo.id("RawModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
+		color = CARD,
+		radius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("RawHead"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
-		) {
-			clay.Text(tr("Raw event"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
-			if clay.UI(clay.ID("RawHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("RawClose"))(
-			{
-				layout = {padding = clay.PaddingAll(6)},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(6),
-			},
+		if nendo.box(nendo.id("RawHead"))({width = nendo.grow(), align = {y = .Center}}) {
+			nendo.text(tr("Raw event"), {font = FONT_TITLE, size = 18, color = TEXT})
+			if nendo.box(nendo.id("RawHeadGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("RawClose"))(
+			{padding = nendo.pad(6), color = hovered() ? HOVER : {}, radius = rr(6)},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 			}
 		}
 
-		if clay.UI(clay.ID("RawScroll"))(
+		if nendo.box(nendo.id("RawScroll"))(
 		{
-			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				padding = clay.PaddingAll(10),
-			},
-			backgroundColor = PLATE,
-			cornerRadius = rr(8),
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.grow(),
+			direction = .Column,
+			padding = nendo.pad(10),
+			color = PLATE,
+			radius = rr(8),
+			clip = {y = true, scroll = true},
 		},
 		) {
 			// A blossom URL or the escaped media_json is one unbroken
-			// token, and clay wraps on words only, so every line is
+			// token, and nendo wraps on words only, so every line is
 			// hard-chunked to the plate width and drawn on its own.
 			cw := rl.MeasureTextLine(FONT_MONO, RAW_FS, "0", 0).x
 			cols := max(8, int((fit_w(RAW_MODAL_W) - RAW_PLATE_PAD) / max(cw, 1)))
@@ -631,11 +544,9 @@ raw_event_modal :: proc(ui: ^Ui_State) {
 				raw_line(line, cols)
 			}
 		}
-		scrollbar(clay.ID("RawScroll"), 12) // the modal floats at 11
+		scrollbar(nendo.id("RawScroll"), 12) // the modal floats at 11
 
-		if clay.UI(clay.ID("RawActions"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-		) {
+		if nendo.box(nendo.id("RawActions"))({width = nendo.grow(), gap = 8}) {
 			micro_button("RawCopy", tr("Copy"))
 		}
 	}
@@ -646,100 +557,80 @@ raw_event_modal :: proc(ui: ^Ui_State) {
 // plus the chat's MLS group id with a Copy button and the current MLS
 // epoch.
 encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
-	if clay.UI(clay.ID("EncModal"))(
+	if nendo.box(nendo.id("EncModal"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("EncModal"), 440)),
-				height = clay.SizingFit({max = modal_h(640)}),
-			},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(20),
-			childGap = 12,
-		},
-		backgroundColor = CARD,
-		cornerRadius = rr(16),
+		width = nendo.fixed(modal_w(nendo.id("EncModal"), 440)),
+		height = nendo.fit(max = modal_h(640)),
+		direction = .Column,
+		padding = nendo.pad(20),
+		gap = 12,
+		color = CARD,
+		radius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
-			attachTo = .Root,
-			zIndex = 13,
-			offset = {0, rise(clay.ID("EncModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 13,
+			offset = {0, rise(nendo.id("EncModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		clip = {y = true, scroll = true},
 	},
 	) {
-		if clay.UI(clay.ID("EncHead"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-		},
+		if nendo.box(nendo.id("EncHead"))(
+		{width = nendo.grow(), gap = 10, align = {y = .Center}},
 		) {
-			clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 16, textColor = ACCENT})
-			clay.Text(
-				tr("End-to-end encrypted"),
-				{fontId = FONT_TITLE, fontSize = 20, textColor = TEXT},
-			)
-			if clay.UI(clay.ID("EncHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("EncClose"))(
+			nendo.text(ICON_LOCK, {font = FONT_ICON, size = 16, color = ACCENT})
+			nendo.text(tr("End-to-end encrypted"), {font = FONT_TITLE, size = 20, color = TEXT})
+			if nendo.box(nendo.id("EncHeadGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("EncClose"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(tap_size() ? tap_min() : 26),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(7),
+				width = nendo.fixed(tap_size() ? tap_min() : 26),
+				height = nendo.fixed(tap_size() ? tap_min() : 26),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(7),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 			}
 		}
-		clay.Text(
+		nendo.text(
 			tr(
 				"Whatever you send in this chat is encrypted on your device with MLS before it goes out. The relays that pass it along can't read it, and neither can anyone else.",
 			),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 12, color = TEXT_DIM},
 		)
 
 		eyebrow(tr("GROUP ID"))
-		if clay.UI(clay.ID("EncFingerprint"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {x = .Center}}},
-		) {
+		if nendo.box(nendo.id("EncFingerprint"))({width = nendo.grow(), align = {x = .Center}}) {
 			crop_circle("EncCircle", 0, chat.group_id, 128)
 		}
-		if clay.UI(clay.ID("EncIdChip"))(
+		if nendo.box(nendo.id("EncIdChip"))(
 		{
-			layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(8),
+			width = nendo.grow(),
+			padding = nendo.pad(10),
+			color = ROW_BG,
+			radius = rr(8),
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
-			clay.Text(chat.group_id, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
+			nendo.text(chat.group_id, {font = FONT_MONO, size = 11, color = TEXT})
 		}
 
 		if len(ui.enc_epoch) > 0 {
 			eyebrow(tr("ENCRYPTION REVISION"))
-			clay.Text(ui.enc_epoch, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
-			clay.Text(
+			nendo.text(ui.enc_epoch, {font = FONT_MONO, size = 11, color = TEXT})
+			nendo.text(
 				tr("This number increases when the group's encryption keys change."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 		}
 
-		if clay.UI(clay.ID("EncActions"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-		) {
+		if nendo.box(nendo.id("EncActions"))({width = nendo.grow(), gap = 8}) {
 			micro_button("EncCopyId", tr("Copy group id"))
 		}
 	}
-	scrollbar(clay.ID("EncModal"), 14)
+	scrollbar(nendo.id("EncModal"), 14)
 }
 
 // Cap the result list; offscreen rows retain geometry but no tile elements.
@@ -785,7 +676,7 @@ PICK_TILE :: f32(22)
 PICK_LIFT :: f32(11) // px the tile gains directly under the pointer
 
 @(private = "file")
-picker_lift :: proc(id: clay.ElementId) -> f32 {
+picker_lift :: proc(id: nendo.Id) -> f32 {
 	box, laid_out := element_box(id)
 	if !laid_out || !motion_on() {
 		return 0
@@ -798,27 +689,19 @@ picker_lift :: proc(id: clay.ElementId) -> f32 {
 }
 
 picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D, width: f32 = 0) {
-	id := clay.ID(id_str, index)
+	id := nendo.id(id_str, index)
 	tile := PICK_TILE + PICK_LIFT * picker_lift(id)
-	if clay.UI(id)(
+	if nendo.box(id)(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(width > 0 ? width : tap_size() ? tap_min() : 30),
-				height = clay.SizingFixed(tap_size() ? tap_min() : 30),
-			},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : {},
-		cornerRadius = rr(8),
+		width = nendo.fixed(width > 0 ? width : tap_size() ? tap_min() : 30),
+		height = nendo.fixed(tap_size() ? tap_min() : 30),
+		align = {x = .Center, y = .Center},
+		color = hovered() ? HOVER : {},
+		radius = rr(8),
 	},
 	) {
-		if clay.UI(clay.ID_LOCAL("PkCellImg"))(
-		{
-			layout = {sizing = {width = clay.SizingFixed(tile)}},
-			aspectRatio = {1},
-			image = {imageData = tex},
-		},
+		if nendo.box(nendo.id_local("PkCellImg"))(
+		{width = nendo.fixed(tile), aspect = 1, image = tex},
 		) {}
 	}
 }
@@ -826,53 +709,38 @@ picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D, width: f32 =
 // Emoji picker: recents, search, and an emoji grid.
 emoji_picker :: proc(ui: ^Ui_State) {
 	gif := ui.gif_tab && ui.picker_target == "" && ui.picker_mode == .Message
-	width := single_pane() ? fit_w(400, 8) : modal_w(clay.ID("PickerPanel"), gif ? 560 : 400)
+	width := single_pane() ? fit_w(400, 8) : modal_w(nendo.id("PickerPanel"), gif ? 560 : 400)
 	height := modal_h(
 		single_pane() ? (ui.picker_mode == .Group_Image ? 560 : 480) : gif ? 540 : ui.picker_mode == .Group_Image ? 560 : 440,
 	)
 	x, y := ui.picker_x, ui.picker_y
 	if gif || single_pane() && ui.picker_mode == .Message {
-		if composer := clay.GetElementData(clay.ID("ComposeBox")); composer.found {
-			if single_pane() {height = min(height, max(120, composer.boundingBox.y - 16))}
-			x, y =
-				composer.boundingBox.x +
-				composer.boundingBox.width -
-				width,
-				composer.boundingBox.y -
-				height -
-				8
+		if composer := nendo.element(nendo.id("ComposeBox")); composer.found {
+			if single_pane() {height = min(height, max(120, composer.rect.y - 16))}
+			x, y = composer.rect.x + composer.rect.width - width, composer.rect.y - height - 8
 		}
 	}
 	x, y = panel_pos(x, y, width, height)
-	if clay.UI(clay.ID("PickerPanel"))(
+	if nendo.box(nendo.id("PickerPanel"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(height)},
-			padding = clay.PaddingAll(12),
-			childGap = 8,
-		},
-		floating = {attachTo = .Root, offset = {x, y + rise(clay.ID("PickerPanel"))}, zIndex = 12},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
+		direction = .Column,
+		width = nendo.fixed(width),
+		height = nendo.fixed(height),
+		padding = nendo.pad(12),
+		gap = 8,
+		floating = {attach_to = .Root, offset = {x, y + rise(nendo.id("PickerPanel"))}, z = 12},
+		color = CARD,
+		radius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
 		if ui.picker_mode != .Group_Image {
-			if clay.UI(clay.ID("PickerHead"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("PickerHead"))(
+			{width = nendo.grow(), gap = 8, align = {y = .Center}},
 			) {
 				if ui.picker_target !=
-				   "" {clay.Text(tr("Add reaction"), {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})}
-				if clay.UI(clay.ID("PickerHeadGap"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {}
+				   "" {nendo.text(tr("Add reaction"), {font = FONT_TITLE, size = 16, color = TEXT})}
+				if nendo.box(nendo.id("PickerHeadGap"))({width = nendo.grow()}) {}
 				if tap_size() {micro_button("PickerClose", tr("Close"))}
 			}
 		}
@@ -880,9 +748,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 			emoji_mix_header(ui)
 		}
 		if ui.picker_target == "" && ui.picker_mode == .Message {
-			if clay.UI(clay.ID("PickerTabs"))(
-			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
-			) {
+			if nendo.box(nendo.id("PickerTabs"))({width = nendo.grow(), gap = 6}) {
 				sticker_control(
 					"PickerEmoji",
 					0,
@@ -901,11 +767,8 @@ emoji_picker :: proc(ui: ^Ui_State) {
 			if ui.sticker_tab {sticker_picker(ui); return}
 		}
 		eyebrow(tr("RECENT"))
-		if clay.UI(clay.ID("PkRecentRow"))(
-		{
-			layout = {sizing = {width = clay.SizingGrow()}, childGap = 2},
-			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
-		},
+		if nendo.box(nendo.id("PkRecentRow"))(
+		{width = nendo.grow(), gap = 2, clip = {x = true, scroll = true}},
 		) {
 			for recent, i in ui.prefs.recent_emoji {
 				if tex := emoji_tex(recent); tex != nil {
@@ -913,21 +776,17 @@ emoji_picker :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("PkRecentRow"), 13)
+		scrollbar(nendo.id("PkRecentRow"), 13)
 
-		if clay.UI(clay.ID("PickerSearch"))(
+		if nendo.box(nendo.id("PickerSearch"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFixed(tap_size() ? tap_min() : 34),
-				},
-				padding = {left = 10, right = 10},
-				childGap = 4,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(8),
+			width = nendo.grow(),
+			height = nendo.fixed(tap_size() ? tap_min() : 34),
+			padding = {left = 10, right = 10},
+			gap = 4,
+			align = {y = .Center},
+			color = ROW_BG,
+			radius = rr(8),
 			border = {color = ui.focus == .Picker ? ACCENT : FIELD_BORDER, width = bw()},
 		},
 		) {
@@ -942,14 +801,13 @@ emoji_picker :: proc(ui: ^Ui_State) {
 			)
 		}
 
-		if clay.UI(clay.ID("PickerGrid"))(
+		if nendo.box(nendo.id("PickerGrid"))(
 		{
-			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow({min = tap_size() ? tap_min() : 0})},
-				layoutDirection = .TopToBottom,
-				childGap = 2,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.grow(min = tap_size() ? tap_min() : 0),
+			direction = .Column,
+			gap = 2,
+			clip = {y = true, scroll = true},
 		},
 		) {
 			// Custom :shortcode: emoji lead the grid; the search box
@@ -957,38 +815,34 @@ emoji_picker :: proc(ui: ^Ui_State) {
 			// ponytail: one unwrapped row; wrap it if the set grows.
 			custom := picker_custom(string(ui.picker_filter[:]))
 			if len(custom) > 0 {
-				if clay.UI(clay.ID("PkCustomRow"))(
-				{
-					layout = {sizing = {width = clay.SizingGrow()}, childGap = 2},
-					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
-				},
+				if nendo.box(nendo.id("PkCustomRow"))(
+				{width = nendo.grow(), gap = 2, clip = {x = true, scroll = true}},
 				) {
 					for code, k in custom {
 						picker_cell("PkCustom", u32(k), custom_tex_by_code(code))
 					}
 				}
-				scrollbar(clay.ID("PkCustomRow"), 13)
+				scrollbar(nendo.id("PkCustomRow"), 13)
 			}
 			matches := picker_matches(ui)
 			cols := picker_cols()
-			view := clay.GetScrollContainerData(clay.ID("PickerGrid"))
-			top := view.found ? max(0, -view.scrollPosition.y) : 0
-			view_height :=
-				view.found && view.scrollContainerDimensions.height > 0 ? view.scrollContainerDimensions.height : height
+			view := nendo.scroll(nendo.id("PickerGrid"))
+			top := view.found ? max(0, -view.position.y) : 0
+			view_height := view.found && view.viewport.height > 0 ? view.viewport.height : height
 			bottom := top + view_height
 			step := tap_size() ? f32(46) : PICKER_CELL_W
 			y := len(custom) > 0 ? step : 0
 			if len(matches) == 0 && len(custom) == 0 {
-				clay.Text(
+				nendo.text(
 					tr("No emoji match your search."),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 13, color = TEXT_DIM},
 				)
 			}
 			for row_start := 0; row_start < len(matches); row_start += cols {
 				visible := y + step >= top - step && y <= bottom + step
 				y += step
-				if clay.UI(clay.ID("PkRow", u32(row_start)))(
-				{layout = {childGap = 2, sizing = {height = clay.SizingFixed(step - 2)}}},
+				if nendo.box(nendo.id("PkRow", u32(row_start)))(
+				{gap = 2, height = nendo.fixed(step - 2)},
 				) {
 					// Empty rows retain scroll geometry without uploading offscreen tiles.
 					if !visible {continue}
@@ -1001,7 +855,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("PickerGrid"), 13) // the panel floats at 12
+		scrollbar(nendo.id("PickerGrid"), 13) // the panel floats at 12
 	}
 }
 
@@ -1009,25 +863,18 @@ CHIP_FS :: u16(11)
 CHIP_PAD :: f32(4) // 2px above and below the label
 
 action_chip :: proc(id_str: string, index: u32, label: string) {
-	down := press_down(clay.ID(id_str, index))
-	if clay.UI(clay.ID(id_str, index))(
+	down := press_down(nendo.id(id_str, index))
+	if nendo.box(nendo.id(id_str, index))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-			},
-			padding = {left = 8, right = 8, top = 2 + down, bottom = 2 - down},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = hovered() ? ACCENT : ROW_BG,
-		cornerRadius = rr(6),
+		width = nendo.fit(min = tap_size() ? tap_min() : 0),
+		height = nendo.fit(min = tap_size() ? tap_min() : 0),
+		padding = {left = 8, right = 8, top = 2 + down, bottom = 2 - down},
+		align = {x = .Center, y = .Center},
+		color = hovered() ? ACCENT : ROW_BG,
+		radius = rr(6),
 	},
 	) {
-		clay.Text(
-			label,
-			{fontId = FONT_BODY, fontSize = CHIP_FS, textColor = hovered() ? BG : TEXT_DIM},
-		)
+		nendo.text(label, {font = FONT_BODY, size = CHIP_FS, color = hovered() ? BG : TEXT_DIM})
 	}
 }
 

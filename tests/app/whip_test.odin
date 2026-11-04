@@ -9,7 +9,7 @@ import "core:strings"
 import "core:testing"
 import "core:text/edit"
 import "core:time"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 import sdl "vendor:sdl3"
 
@@ -40,14 +40,10 @@ whip_filter_unavailable :: proc(t: ^testing.T) {
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil}
 	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+	testing.expect(t, !nendo.element(nendo.id("WhipPill")).found, "unavailable Whip has no filter")
 	testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("WhipPill")).found,
-		"unavailable Whip has no filter",
-	)
-	testing.expect(
-		t,
-		clay.GetElementData(clay.ID("ChatRow", 0)).found,
+		nendo.element(nendo.id("ChatRow", 0)).found,
 		"ordinary chats remain available without Whip",
 	)
 }
@@ -121,23 +117,23 @@ whip_embed :: proc(t: ^testing.T) {
 		   ui.selected >= 0 &&
 		   ui.focus == .Compose {edit_text(ui, &ui.compose, true)}
 		anim_tick(1.0 / 60)
-		clay.UpdateScrollContainers(false, {}, 1.0 / 60)
+		nendo.update_scroll(.Off, {}, 1.0 / 60)
 		commands := build_layout(ui, 0)
 		for _ in 0 ..< 2 {
 			timeline_scroll_apply(ui)
-			data := clay.GetScrollContainerData(clay.ID("Timeline"))
-			if !data.found || abs(data.scrollPosition.y - timeline_draw_offset) <= 0.01 {break}
+			data := nendo.scroll(nendo.id("Timeline"))
+			if !data.found || abs(data.position.y - timeline_draw_offset) <= 0.01 {break}
 			commands = build_layout(ui, 0)
 		}
 		found := false
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Text {continue}
-			text := command.renderData.text.stringContents
-			if string(text.chars[:text.length]) == expected {found = true}
+		for command in commands {
+			if command.kind != .Text {continue}
+			text := command.text.text
+			if text == expected {found = true}
 		}
 		rl.BeginDrawing()
 		rl.BeginMode2D({zoom = UI_ZOOM})
-		clay_raylib_render(&commands)
+		render_nendo(commands)
 		rl.EndMode2D()
 		rl.EndDrawing()
 		whip_controls(ui, nil)
@@ -216,29 +212,28 @@ whip_embed :: proc(t: ^testing.T) {
 		}
 	}
 	for _ in 0 ..< 3 {frame(&ui)}
-	list := clay.GetElementData(clay.ID("ChatList"))
-	for id in ([]clay.ElementId{clay.ID("ChatRow", 0), clay.ID("WhipProject", project)}) {
-		row := clay.GetElementData(id)
+	list := nendo.element(nendo.id("ChatList"))
+	for id in ([]nendo.Id{nendo.id("ChatRow", 0), nendo.id("WhipProject", project)}) {
+		row := nendo.element(id)
 		testing.expect(
 			t,
 			list.found &&
 			row.found &&
-			row.boundingBox.width > 0 &&
-			row.boundingBox.x >= list.boundingBox.x &&
-			row.boundingBox.y >= list.boundingBox.y &&
-			row.boundingBox.y + row.boundingBox.height <=
-				list.boundingBox.y + list.boundingBox.height,
+			row.rect.width > 0 &&
+			row.rect.x >= list.rect.x &&
+			row.rect.y >= list.rect.y &&
+			row.rect.y + row.rect.height <= list.rect.y + list.rect.height,
 			"ordinary chats and real terminals share the inbox list",
 		)
 	}
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipProjectIcon", project)).found,
+		nendo.element(nendo.id("WhipProjectIcon", project)).found,
 		"terminal rows have an explicit terminal marker",
 	)
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipProjectAvatar", project)).found,
+		nendo.element(nendo.id("WhipProjectAvatar", project)).found,
 		"terminal rows retain their native project avatar",
 	)
 	testing.expect(t, len(ui.chats) == 1, "native terminals are not fake engine chats")
@@ -248,15 +243,15 @@ whip_embed :: proc(t: ^testing.T) {
 	testing.expect_value(t, terminal_rows, len(rl.WhipProjects()))
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipPill")).found,
+		nendo.element(nendo.id("WhipPill")).found,
 		"installed Whip has an inbox filter",
 	)
 	ui.chat_filter = .Whip
 	for _ in 0 ..< 3 {frame(&ui)}
-	testing.expect(t, clay.GetElementData(clay.ID("WhipProject", project)).found)
+	testing.expect(t, nendo.element(nendo.id("WhipProject", project)).found)
 	testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("ChatRow", 0)).found,
+		!nendo.element(nendo.id("ChatRow", 0)).found,
 		"Is Whip excludes ordinary chats",
 	)
 	testing.expect_value(t, len(ui.rail_rows), len(rl.WhipProjects()))
@@ -267,7 +262,7 @@ whip_embed :: proc(t: ^testing.T) {
 		for _ in 0 ..< 3 {frame(&ui)}
 		testing.expect(
 			t,
-			clay.GetElementData(clay.ID("WhipProject", project)).found,
+			nendo.element(nendo.id("WhipProject", project)).found,
 			"project name and folder are searchable",
 		)
 	}
@@ -275,7 +270,7 @@ whip_embed :: proc(t: ^testing.T) {
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("WhipProject", project)).found,
+		!nendo.element(nendo.id("WhipProject", project)).found,
 		"unmatched terminals are filtered out",
 	)
 	ed_set(&ui, &ui.sidebar_filter, "")
@@ -284,7 +279,7 @@ whip_embed :: proc(t: ^testing.T) {
 		for _ in 0 ..< 3 {frame(&ui)}
 		testing.expect(
 			t,
-			!clay.GetElementData(clay.ID("WhipProject", project)).found,
+			!nendo.element(nendo.id("WhipProject", project)).found,
 			"groups and unread without attention exclude the terminal",
 		)
 		for row in ui.rail_rows {testing.expect(t, row.kind != .Terminal, "keyboard cycling follows the visible inbox scope")}
@@ -315,43 +310,43 @@ whip_embed :: proc(t: ^testing.T) {
 			ui.prefs.recent_chats = recent
 		}
 		for _ in 0 ..< 3 {frame(&ui)}
-		shared := clay.GetElementData(clay.ID("FolderHeader", 0))
-		terminal := clay.GetElementData(clay.ID("WhipProject", project))
-		chat := clay.GetElementData(clay.ID("ChatRow", 0))
+		shared := nendo.element(nendo.id("FolderHeader", 0))
+		terminal := nendo.element(nendo.id("WhipProject", project))
+		chat := nendo.element(nendo.id("ChatRow", 0))
 		testing.expect(
 			t,
 			shared.found &&
 			terminal.found &&
 			chat.found &&
-			terminal.boundingBox.y >= shared.boundingBox.y + shared.boundingBox.height &&
-			chat.boundingBox.y >= terminal.boundingBox.y + terminal.boundingBox.height &&
-			!clay.GetElementData(clay.ID("FolderHeader", 1)).found,
+			terminal.rect.y >= shared.rect.y + shared.rect.height &&
+			chat.rect.y >= terminal.rect.y + terminal.rect.height &&
+			!nendo.element(nendo.id("FolderHeader", 1)).found,
 			"manual placement mixes pinned terminals with chats and overrides Is Whip",
 		)
 		delete_key(&ui.prefs.folder_of, terminal_key)
 		for _ in 0 ..< 3 {frame(&ui)}
-		automatic := clay.GetElementData(clay.ID("FolderHeader", 1))
-		terminal = clay.GetElementData(clay.ID("WhipProject", project))
-		chat = clay.GetElementData(clay.ID("ChatRow", 0))
+		automatic := nendo.element(nendo.id("FolderHeader", 1))
+		terminal = nendo.element(nendo.id("WhipProject", project))
+		chat = nendo.element(nendo.id("ChatRow", 0))
 		testing.expect(
 			t,
 			automatic.found &&
 			terminal.found &&
 			chat.found &&
-			automatic.boundingBox.y >= chat.boundingBox.y + chat.boundingBox.height &&
-			terminal.boundingBox.y >= automatic.boundingBox.y + automatic.boundingBox.height,
+			automatic.rect.y >= chat.rect.y + chat.rect.height &&
+			terminal.rect.y >= automatic.rect.y + automatic.rect.height,
 			"Is Whip files real terminal rows, never ordinary chats",
 		)
 		ui.prefs.folder_of[terminal_key] = ""
 		for _ in 0 ..< 3 {frame(&ui)}
-		unfiled := clay.GetElementData(clay.ID("FolderHeader", 2))
-		terminal = clay.GetElementData(clay.ID("WhipProject", project))
+		unfiled := nendo.element(nendo.id("FolderHeader", 2))
+		terminal = nendo.element(nendo.id("WhipProject", project))
 		testing.expect(
 			t,
 			unfiled.found &&
 			terminal.found &&
-			terminal.boundingBox.y >= unfiled.boundingBox.y + unfiled.boundingBox.height &&
-			!clay.GetElementData(clay.ID("FolderHeader", 1)).found,
+			terminal.rect.y >= unfiled.rect.y + unfiled.rect.height &&
+			!nendo.element(nendo.id("FolderHeader", 1)).found,
 			"explicit Unfiled placement overrides Is Whip",
 		)
 		testing.expect_value(t, len(ui.chats), 1)
@@ -364,8 +359,8 @@ whip_embed :: proc(t: ^testing.T) {
 	for _ in 0 ..< 3 {frame(&ui)}
 	ed_set(&ui, &ui.compose, "Unsent ordinary chat draft")
 	{
-		box := clay.GetElementData(clay.ID("WhipProject", project)).boundingBox
-		clay.SetPointerState({box.x + box.width * 0.6, box.y + box.height / 2}, false)
+		box := nendo.element(nendo.id("WhipProject", project)).rect
+		nendo.set_pointer({box.x + box.width * 0.6, box.y + box.height / 2}, .Up)
 		client: marmot.Client
 		rl.PushMouseButton(.RIGHT, true)
 		handle_pages(&ui, &client)
@@ -379,13 +374,13 @@ whip_embed :: proc(t: ^testing.T) {
 		for _ in 0 ..< 3 {frame(&ui)}
 		testing.expect(
 			t,
-			clay.GetElementData(clay.ID("RowPin")).found &&
-			clay.GetElementData(clay.ID("RowFolder")).found &&
-			!clay.GetElementData(clay.ID("RowInfo")).found,
+			nendo.element(nendo.id("RowPin")).found &&
+			nendo.element(nendo.id("RowFolder")).found &&
+			!nendo.element(nendo.id("RowInfo")).found,
 			"terminal menus expose pin and filing without chat-only operations",
 		)
-		box = clay.GetElementData(clay.ID("RowPin")).boundingBox
-		clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+		box = nendo.element(nendo.id("RowPin")).rect
+		nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
 		forced_release = true
 		handle_chat(&ui, &client)
 		forced_release = false
@@ -399,16 +394,16 @@ whip_embed :: proc(t: ^testing.T) {
 	}
 	for _ in 0 ..< 3 {frame(&ui)}
 	click_project :: proc(t: ^testing.T, ui: ^Ui_State, project: u32) -> bool {
-		id := clay.ID("WhipProject", project)
-		data := clay.GetElementData(id)
+		id := nendo.id("WhipProject", project)
+		data := nendo.element(id)
 		if !testing.expect(
 			t,
-			data.found && data.boundingBox.width > 0,
+			data.found && data.rect.width > 0,
 			"terminal click target is visible",
 		) {return false}
-		box := data.boundingBox
-		clay.SetPointerState({box.x + box.width * 0.6, box.y + box.height / 2}, false)
-		if !testing.expect(t, clay.PointerOver(id), "terminal row is reachable") {return false}
+		box := data.rect
+		nendo.set_pointer({box.x + box.width * 0.6, box.y + box.height / 2}, .Up)
+		if !testing.expect(t, nendo.pointer_over(id), "terminal row is reachable") {return false}
 		forced_release = true
 		handle_pages(ui, nil)
 		forced_release = false
@@ -458,7 +453,7 @@ whip_embed :: proc(t: ^testing.T) {
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("NCTerminal")).found,
+		nendo.element(nendo.id("NCTerminal")).found,
 		"installed terminals are offered from New chat",
 	)
 	close_new_chat(&ui)
@@ -564,8 +559,8 @@ whip_embed :: proc(t: ^testing.T) {
 	focused :: proc() -> u32 {for pane in rl.WhipPanes() {if pane.focused {return pane.id}}
 		return 0}
 	testing.expect_value(t, focused(), second_pane)
-	left := clay.GetElementData(clay.ID("WhipPaneContent", first_pane)).boundingBox
-	right := clay.GetElementData(clay.ID("WhipPaneContent", second_pane)).boundingBox
+	left := nendo.element(nendo.id("WhipPaneContent", first_pane)).rect
+	right := nendo.element(nendo.id("WhipPaneContent", second_pane)).rect
 	testing.expect(
 		t,
 		left.width > 0 && right.width > 0 && right.x >= left.x + left.width,
@@ -608,25 +603,24 @@ whip_embed :: proc(t: ^testing.T) {
 	for _ in 0 ..< 3 {frame(&ui)}
 	key(.Z, 'z', sdl.KMOD_CTRL | sdl.KMOD_ALT)
 	for _ in 0 ..< 5 {frame(&ui)}
-	testing.expect(t, !clay.GetElementData(clay.ID("WhipPaneContent", first_pane)).found)
+	testing.expect(t, !nendo.element(nendo.id("WhipPaneContent", first_pane)).found)
 	cli({"pane", "send", pane, "printf '\\a'", "--enter"})
 	for _ in 0 ..< 8 {frame(&ui)}
 	testing.expect_value(t, rl.WhipTabs()[0].waiting, 1)
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipPaneContent", second_pane)).boundingBox.width >
-		right.width,
+		nendo.element(nendo.id("WhipPaneContent", second_pane)).rect.width > right.width,
 	)
 	ui.whip_open, ui.chat_filter = false, .Unread
 	for _ in 0 ..< 5 {frame(&ui)}
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipProject", first_project)).found,
+		nendo.element(nendo.id("WhipProject", first_project)).found,
 		"Unread includes a real terminal waiting for attention",
 	)
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipProjectBadge", first_project)).found,
+		nendo.element(nendo.id("WhipProjectBadge", first_project)).found,
 		"waiting terminals keep their unread badge in the inbox",
 	)
 	testing.expect_value(t, len(ui.rail_rows), 1)
@@ -638,7 +632,7 @@ whip_embed :: proc(t: ^testing.T) {
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("WhipProject", first_project)).found,
+		!nendo.element(nendo.id("WhipProject", first_project)).found,
 		"attention cannot leak terminals into Groups",
 	)
 	ui.chat_filter = .Unread
@@ -648,15 +642,15 @@ whip_embed :: proc(t: ^testing.T) {
 	for _ in 0 ..< 3 {frame(&ui)}
 	key(.Z, 'z', sdl.KMOD_CTRL | sdl.KMOD_ALT)
 	for _ in 0 ..< 5 {frame(&ui)}
-	testing.expect(t, clay.GetElementData(clay.ID("WhipPaneContent", first_pane)).found)
+	testing.expect(t, nendo.element(nendo.id("WhipPaneContent", first_pane)).found)
 	testing.expect_value(t, rl.WhipTabs()[0].waiting, 0)
 	click :: proc(ui: ^Ui_State, pane: u32, action: string) {
-		root := clay.GetElementData(clay.ID("WhipPane", pane)).boundingBox
-		clay.SetPointerState({root.x + 32, root.y + 2}, false)
+		root := nendo.element(nendo.id("WhipPane", pane)).rect
+		nendo.set_pointer({root.x + 32, root.y + 2}, .Up)
 		for _ in 0 ..< 3 {frame(ui)}
-		box := clay.GetElementData(clay.ID(action, pane)).boundingBox
+		box := nendo.element(nendo.id(action, pane)).rect
 		assert(box.width > 0)
-		clay.SetPointerState({box.x + 2, box.y + box.height / 2}, false)
+		nendo.set_pointer({box.x + 2, box.y + box.height / 2}, .Up)
 		forced_release = true
 		whip_pane_input(ui)
 		forced_release = false
@@ -675,7 +669,7 @@ whip_embed :: proc(t: ^testing.T) {
 	for _ in 0 ..< 8 {frame(&ui)}
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipPaneContent", second_pane)).found,
+		nendo.element(nendo.id("WhipPaneContent", second_pane)).found,
 		"the native terminal remains rendered while Filter owns text input",
 	)
 	testing.expect(
@@ -709,7 +703,7 @@ whip_embed :: proc(t: ^testing.T) {
 	for _ in 0 ..< 8 {frame(&ui)}
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipPaneContent", first_pane)).boundingBox.width < left.width,
+		nendo.element(nendo.id("WhipPaneContent", first_pane)).rect.width < left.width,
 	)
 	key(.F, 'f', sdl.KMOD_CTRL | sdl.KMOD_SHIFT)
 	for _ in 0 ..< 4 {frame(&ui)}
@@ -727,7 +721,7 @@ whip_embed :: proc(t: ^testing.T) {
 	testing.expect_value(t, len(rl.WhipPanes()), 3)
 	rl.BeginDrawing()
 	split_commands := build_layout(&ui, 0)
-	rl.BeginMode2D({zoom = UI_ZOOM}); clay_raylib_render(&split_commands); rl.EndMode2D()
+	rl.BeginMode2D({zoom = UI_ZOOM}); render_nendo(split_commands); rl.EndMode2D()
 	rl.TakeScreenshot("/tmp/wn-whip-panes.png"); rl.EndDrawing()
 	click(&ui, focused(), "WhipPaneClose")
 	for _ in 0 ..< 15 {frame(&ui)}
@@ -784,18 +778,18 @@ whip_embed :: proc(t: ^testing.T) {
 			forced_press, forced_release, test_pointer_on = false, false, false
 			ui.whip_tab_drag = {}
 		}
-		first := clay.GetElementData(clay.ID("WhipTab", first_tab)).boundingBox
-		second := clay.GetElementData(clay.ID("WhipTab", second_tab)).boundingBox
+		first := nendo.element(nendo.id("WhipTab", first_tab)).rect
+		second := nendo.element(nendo.id("WhipTab", second_tab)).rect
 		testing.expect(t, first.width > 0 && second.width > 0)
 		point := [2]f32{second.x + 12, second.y + second.height / 2}
 		test_pointer_on, forced_press = true, true
 		test_pointer = point * UI_ZOOM
-		clay.SetPointerState(point, true)
+		nendo.set_pointer(point, .Down)
 		testing.expect(t, whip_tab_input(&ui), "press arms the real tab gesture")
-		strip := clay.GetElementData(clay.ID("WhipTabs")).boundingBox
+		strip := nendo.element(nendo.id("WhipTabs")).rect
 		point = {max(first.x, strip.x) + 2, first.y + first.height / 2}
 		test_pointer = point * UI_ZOOM
-		clay.SetPointerState(point, true)
+		nendo.set_pointer(point, .Down)
 		testing.expect(t, whip_tab_input(&ui), "moving across the first tab activates dragging")
 		testing.expect(t, ui.whip_tab_drag.active)
 		for _ in 0 ..< 30 {whip_tab_input(&ui); frame(&ui)}
@@ -803,7 +797,7 @@ whip_embed :: proc(t: ^testing.T) {
 		frame(&ui)
 		rl.TakeScreenshot("/tmp/wn-whip-tab-drag.png")
 		forced_press, forced_release = false, true
-		clay.SetPointerState(point, false)
+		nendo.set_pointer(point, .Up)
 		testing.expect(t, whip_tab_input(&ui), "release commits the host-local order")
 		forced_release, test_pointer_on = false, false
 		testing.expect(t, !ui.whip_tab_drag.active)
@@ -823,19 +817,19 @@ whip_embed :: proc(t: ^testing.T) {
 			}
 		}
 		testing.expect(t, persisted, "the native project owns a saved host order")
-		second = clay.GetElementData(clay.ID("WhipTab", second_tab)).boundingBox
+		second = nendo.element(nendo.id("WhipTab", second_tab)).rect
 		point = {second.x + 12, second.y + second.height / 2}
 		test_pointer_on, forced_press = true, true
 		test_pointer = point * UI_ZOOM
-		clay.SetPointerState(point, true)
+		nendo.set_pointer(point, .Down)
 		whip_tab_input(&ui)
 		frame(&ui)
 		key(.ESCAPE, sdl.K_ESCAPE, {})
 		frame(&ui)
 		whip_tab_input(&ui)
 		testing.expect(t, ui.whip_tab_drag.cancelled)
-		close := clay.GetElementData(clay.ID("WhipTabClose", first_tab)).boundingBox
-		clay.SetPointerState({close.x + close.width / 2, close.y + close.height / 2}, false)
+		close := nendo.element(nendo.id("WhipTabClose", first_tab)).rect
+		nendo.set_pointer({close.x + close.width / 2, close.y + close.height / 2}, .Up)
 		forced_press, forced_release = false, true
 		testing.expect(
 			t,
@@ -1184,8 +1178,8 @@ whip_embed :: proc(t: ^testing.T) {
 			}
 			ui.scroll_pending = true
 			for _ in 0 ..< 4 {frame(&ui)}
-			data := clay.GetScrollContainerData(clay.ID("Timeline"))
-			data.scrollPosition.y = -320
+			data := nendo.scroll(nendo.id("Timeline"))
+			data.position.y = -320
 			for _ in 0 ..< 3 {frame(&ui)}
 			whip_open_project(&ui, extra[0])
 			place := ui.reading_places[fmt.tprintf("%s:%s", ui.account_ref, ui.messages_group)]
@@ -1197,13 +1191,13 @@ whip_embed :: proc(t: ^testing.T) {
 			for _ in 0 ..< 4 {frame(&ui)}
 			select_chat(&ui, nil, 1)
 			for _ in 0 ..< 4 {frame(&ui)}
-			view := clay.GetElementData(clay.ID("Timeline"))
+			view := nendo.element(nendo.id("Timeline"))
 			for msg, i in ui.messages {
 				if msg.id != place.message {continue}
-				row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
+				row := nendo.element(nendo.id("MsgRow", u32(i)))
 				testing.expect(
 					t,
-					row.found && abs(row.boundingBox.y - view.boundingBox.y - place.offset) < 1,
+					row.found && abs(row.rect.y - view.rect.y - place.offset) < 1,
 					"returning from a terminal preserves the visible message and offset",
 				)
 			}
@@ -1211,37 +1205,24 @@ whip_embed :: proc(t: ^testing.T) {
 			for _ in 0 ..< 3 {frame(&ui)}
 			gs_jump(&ui, nil, ui.chats[1].group_id, ui.messages[35].id)
 			for _ in 0 ..< 3 {frame(&ui)}
-			jumped := clay.GetElementData(clay.ID("MsgRow", 35)).boundingBox
-			view = clay.GetElementData(clay.ID("Timeline"))
+			jumped := nendo.element(nendo.id("MsgRow", 35)).rect
+			view = nendo.element(nendo.id("Timeline"))
 			testing.expect(
 				t,
-				abs(
-					jumped.y +
-					jumped.height / 2 -
-					view.boundingBox.y -
-					view.boundingBox.height / 2,
-				) <
-				1,
+				abs(jumped.y + jumped.height / 2 - view.rect.y - view.rect.height / 2) < 1,
 				"an explicit search result overrides the saved reading place",
 			)
-			data = clay.GetScrollContainerData(clay.ID("Timeline"))
-			data.scrollPosition.y = -max(
-				data.contentDimensions.height - data.scrollContainerDimensions.height,
-				0,
-			)
+			data = nendo.scroll(nendo.id("Timeline"))
+			data.position.y = -max(data.content.height - data.viewport.height, 0)
 			for _ in 0 ..< 2 {frame(&ui)}
 			whip_open_project(&ui, extra[0])
 			for _ in 0 ..< 3 {frame(&ui)}
 			select_chat(&ui, nil, 1)
 			for _ in 0 ..< 3 {frame(&ui)}
-			data = clay.GetScrollContainerData(clay.ID("Timeline"))
+			data = nendo.scroll(nendo.id("Timeline"))
 			testing.expect(
 				t,
-				abs(
-					data.scrollPosition.y +
-					max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
-				) <
-				1,
+				abs(data.position.y + max(data.content.height - data.viewport.height, 0)) < 1,
 				"bottom-following conversations still open at newest",
 			)
 			whip_open_project(&ui, extra[0])
@@ -1265,27 +1246,22 @@ whip_embed :: proc(t: ^testing.T) {
 			for _ in 0 ..< 4 {frame(&ui)}
 			key(.UP, sdl.K_UP, sdl.KMOD_CTRL | sdl.KMOD_SHIFT)
 			for _ in 0 ..< 2 {frame(&ui)}
-			row := clay.GetElementData(clay.ID("ChatRow", u32(ui.selected)))
-			view := clay.GetElementData(clay.ID("ChatList"))
+			row := nendo.element(nendo.id("ChatRow", u32(ui.selected)))
+			view := nendo.element(nendo.id("ChatList"))
 			testing.expect(
 				t,
 				row.found &&
-				row.boundingBox.y >= view.boundingBox.y &&
-				row.boundingBox.y + row.boundingBox.height <=
-					view.boundingBox.y + view.boundingBox.height + 1,
+				row.rect.y >= view.rect.y &&
+				row.rect.y + row.rect.height <= view.rect.y + view.rect.height + 1,
 				"keyboard selection is fully visible",
 			)
 			rl.BeginDrawing(); rl.BeginMode2D({zoom = UI_ZOOM})
-			commands := build_layout(&ui, 0); clay_raylib_render(&commands)
+			commands := build_layout(&ui, 0); render_nendo(commands)
 			rl.EndMode2D(); rl.TakeScreenshot("/tmp/wn-inbox-navigation.png"); rl.EndDrawing()
-			list_scroll := clay.GetScrollContainerData(clay.ID("ChatList"))
-			list_scroll.scrollPosition.y = 0
+			list_scroll := nendo.scroll(nendo.id("ChatList"))
+			list_scroll.position.y = 0
 			for _ in 0 ..< 3 {frame(&ui)}
-			testing.expect_value(
-				t,
-				clay.GetScrollContainerData(clay.ID("ChatList")).scrollPosition.y,
-				f32(0),
-			)
+			testing.expect_value(t, nendo.scroll(nendo.id("ChatList")).position.y, f32(0))
 			whip_open_project(&ui, extra[0])
 		}
 		for id in ([2]u32{extra[1], extra[0]}) {
@@ -1345,7 +1321,7 @@ whip_embed :: proc(t: ^testing.T) {
 	for _ in 0 ..< 8 {frame(&ui)}
 	rl.BeginDrawing()
 	commands := build_layout(&ui, 0)
-	rl.BeginMode2D({zoom = UI_ZOOM}); clay_raylib_render(&commands); rl.EndMode2D()
+	rl.BeginMode2D({zoom = UI_ZOOM}); render_nendo(commands); rl.EndMode2D()
 	rl.TakeScreenshot("/tmp/wn-whip-titles.png"); rl.EndDrawing()
 	{
 		project_info :: proc(id: u32) -> rl.Whip_Project {
@@ -1366,17 +1342,14 @@ whip_embed :: proc(t: ^testing.T) {
 		ui.prefs.pinned[strings.clone(old_key)] = true
 		open_terminal_menu(&ui, target)
 		for _ in 0 ..< 3 {frame(&ui)}
-		edit_box := clay.GetElementData(clay.ID("RowProjectEdit")).boundingBox
+		edit_box := nendo.element(nendo.id("RowProjectEdit")).rect
 		testing.expect(t, edit_box.width > 0 && edit_box.height > 0)
-		clay.SetPointerState(
-			{edit_box.x + edit_box.width / 2, edit_box.y + edit_box.height / 2},
-			false,
-		)
+		nendo.set_pointer({edit_box.x + edit_box.width / 2, edit_box.y + edit_box.height / 2}, .Up)
 		forced_release = true
 		handle_row_menu(&ui, nil)
 		forced_release = false
 		for _ in 0 ..< 3 {frame(&ui)}
-		testing.expect(t, clay.GetElementData(clay.ID("WhipProjectModal")).found)
+		testing.expect(t, nendo.element(nendo.id("WhipProjectModal")).found)
 		key(.TAB, sdl.K_TAB, {})
 		frame(&ui)
 		testing.expect_value(t, ui.focus, Focus.WhipProjectPath)
@@ -1398,11 +1371,8 @@ whip_embed :: proc(t: ^testing.T) {
 		frame(&ui)
 		testing.expect_value(t, string(ui.whip_edit_name[:]), "White Noise Linux")
 		ed_set(&ui, &ui.whip_edit_path, fmt.tprintf("%s/missing-folder", home))
-		save_box := clay.GetElementData(clay.ID("WhipProjectSave")).boundingBox
-		clay.SetPointerState(
-			{save_box.x + save_box.width / 2, save_box.y + save_box.height / 2},
-			false,
-		)
+		save_box := nendo.element(nendo.id("WhipProjectSave")).rect
+		nendo.set_pointer({save_box.x + save_box.width / 2, save_box.y + save_box.height / 2}, .Up)
 		forced_release = true
 		whip_project_input(&ui)
 		forced_release = false
@@ -1418,7 +1388,7 @@ whip_embed :: proc(t: ^testing.T) {
 		testing.expect(t, ui.whip_edit_job != nil, "folder validation runs off the UI thread")
 		rl.BeginDrawing()
 		commands = build_layout(&ui, 0)
-		rl.BeginMode2D({zoom = UI_ZOOM}); clay_raylib_render(&commands); rl.EndMode2D()
+		rl.BeginMode2D({zoom = UI_ZOOM}); render_nendo(commands); rl.EndMode2D()
 		rl.TakeScreenshot("/tmp/wn-whip-project-saving.png"); rl.EndDrawing()
 		for _ in 0 ..< 60 {frame(&ui); if ui.whip_edit_job == nil {break}}
 		testing.expect(t, !ui.whip_edit_open && ui.whip_edit_error == "")
@@ -1466,7 +1436,7 @@ whip_embed :: proc(t: ^testing.T) {
 		testing.expect_value(t, string(ui.whip_edit_path[:]), root)
 		rl.BeginDrawing()
 		commands = build_layout(&ui, 0)
-		rl.BeginMode2D({zoom = UI_ZOOM}); clay_raylib_render(&commands); rl.EndMode2D()
+		rl.BeginMode2D({zoom = UI_ZOOM}); render_nendo(commands); rl.EndMode2D()
 		rl.TakeScreenshot("/tmp/wn-whip-project-editor.png"); rl.EndDrawing()
 		ed_set(&ui, &ui.whip_edit_name, "Discarded project edit")
 		whip_project_save(&ui)

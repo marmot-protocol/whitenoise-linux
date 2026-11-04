@@ -11,8 +11,8 @@ import "core:thread"
 @(test)
 staged_file_draft_ownership :: proc(t: ^testing.T) {
 	context.allocator = runtime.default_context().allocator
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	dir, err := os.make_directory_temp("/tmp", "wn-staged-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
@@ -57,8 +57,8 @@ staged_file_draft_ownership :: proc(t: ^testing.T) {
 @(test)
 staged_file_read_outcomes :: proc(t: ^testing.T) {
 	context.allocator = runtime.default_context().allocator
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	dir, err := os.make_directory_temp("/tmp", "wn-staged-errors-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)

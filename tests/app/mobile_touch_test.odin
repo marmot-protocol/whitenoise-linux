@@ -4,15 +4,15 @@ import "base:runtime"
 import "core:sync"
 import "core:testing"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
 mobile_touch_scrolling :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "mobile_touch_scrolling" {return}
 	context.allocator = runtime.default_context().allocator
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	rl.InitWindow(360, 640, "Touch scrolling")
 	defer rl.CloseWindow()
 	UI_ZOOM = 1
@@ -22,55 +22,46 @@ mobile_touch_scrolling :: proc(t: ^testing.T) {
 	previous_prefs := g_prefs
 	g_prefs = &ui.prefs
 	defer {g_prefs = previous_prefs}
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {360, 640})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	for horizontal in ([]bool{false, true}) {
 		clear(&drag_targets)
 		for _ in 0 ..< 3 {
-			clay.BeginLayout()
-			if clay.UI(clay.ID("TouchScroll"))(
+			nendo.begin()
+			if nendo.box(nendo.id("TouchScroll"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingFixed(300), height = clay.SizingFixed(300)},
-				},
-				clip = {
-					horizontal = horizontal,
-					vertical = !horizontal,
-					childOffset = clay.GetScrollOffset(),
-				},
+				width = nendo.fixed(300),
+				height = nendo.fixed(300),
+				clip = {x = horizontal, y = !horizontal, scroll = true},
 			},
 			) {
-				if clay.UI(clay.ID("TouchContent"))(
+				if nendo.box(nendo.id("TouchContent"))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingFixed(horizontal ? 900 : 300),
-							height = clay.SizingFixed(horizontal ? 300 : 900),
-						},
-					},
+					width = nendo.fixed(horizontal ? 900 : 300),
+					height = nendo.fixed(horizontal ? 300 : 900),
 				},
 				) {}
 			}
-			scrollbar(clay.ID("TouchScroll"))
-			clay.EndLayout(0)
+			scrollbar(nendo.id("TouchScroll"))
+			nendo.end(0)
 		}
 		rl.InjectFinger(.Down, 200, 200)
 		rl.WindowShouldClose()
-		clay.SetPointerState({200, 200}, true)
+		nendo.set_pointer({200, 200}, .Down)
 		update_drag_scroll(&ui, false)
 		// Many small moves must become a scroll once total travel passes slop.
 		for step in 1 ..= 10 {
 			x, y :=
 				horizontal ? f32(200 - step * 2) : 200, horizontal ? f32(200) : f32(200 - step * 2)
 			rl.InjectFinger(.Move, x, y)
-			clay.SetPointerState({x, y}, true)
+			nendo.set_pointer({x, y}, .Down)
 			rl.WindowShouldClose()
 			update_drag_scroll(&ui, false)
 		}
-		data := clay.GetScrollContainerData(clay.ID("TouchScroll"))
-		position := horizontal ? data.scrollPosition.x : data.scrollPosition.y
+		data := nendo.scroll(nendo.id("TouchScroll"))
+		position := horizontal ? data.position.x : data.position.y
 		testing.expect(
 			t,
 			position <= -19,
@@ -86,7 +77,7 @@ mobile_touch_scrolling :: proc(t: ^testing.T) {
 		)
 		testing.expect(
 			t,
-			scroll_residual == clay.Vector2{},
+			scroll_residual == nendo.Vector2{},
 			"Reduce motion disables the fling, not direct scrolling",
 		)
 		rl.WindowShouldClose()

@@ -3,7 +3,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private = "file")
@@ -64,11 +64,8 @@ agent_logo :: proc(index: int, size: f32) {
 		}
 	}
 	tex = shaped_avatar(tex, "square")
-	if clay.UI(clay.ID_LOCAL("BrandTile"))(
-	{
-		layout = {sizing = {clay.SizingFixed(size), clay.SizingFixed(size)}},
-		image = {imageData = tex},
-	},
+	if nendo.box(nendo.id_local("BrandTile"))(
+	{width = nendo.fixed(size), height = nendo.fixed(size), image = tex},
 	) {}
 }
 
@@ -77,9 +74,9 @@ settings_agents :: proc(ui: ^Ui_State) {
 	npub := agent_public_key(ui)
 	if npub == "" {
 		ui.agent_connector = 0
-		clay.Text(
+		nendo.text(
 			tr("Your public key is unavailable. Choose another account and try again."),
-			{fontId = FONT_BODY, fontSize = 13, textColor = DANGER},
+			{font = FONT_BODY, size = 13, color = DANGER},
 		)
 	}
 	if ui.agent_connector > 0 && ui.agent_connector <= len(AGENT_CONNECTORS) {
@@ -87,81 +84,73 @@ settings_agents :: proc(ui: ^Ui_State) {
 		return
 	}
 
-	clay.Text(
+	nendo.text(
 		tr("Connect an agent you run and trust."),
-		{fontId = FONT_TITLE, fontSize = 24, textColor = TEXT},
+		{font = FONT_TITLE, size = 24, color = TEXT},
 	)
-	clay.Text(
+	nendo.text(
 		tr(
 			"Chat with AI agents, end-to-end encrypted like any other chat. Each agent runs on a computer or server you control, using its own account.",
 		),
-		{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+		{font = FONT_BODY, size = 14, color = TEXT_DIM},
 	)
-	if clay.UI(clay.ID("AgentConnectors"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			childGap = 10,
-		},
-	},
+	if nendo.box(nendo.id("AgentConnectors"))(
+	{width = nendo.grow(), direction = .Column, gap = 10},
 	) {
 		for connector, i in AGENT_CONNECTORS {
 			id := AGENT_CONTROLS[i]
-			if clay.UI(clay.ID(id))(
+			if nendo.box(nendo.id(id))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					padding = clay.PaddingAll(16),
-					childGap = 16,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = npub != "" && hovered() ? HOVER : PANEL,
-				border = kb_focus == id ? kb_ring(ACCENT) : clay.BorderElementConfig{color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
-				cornerRadius = rr(10),
+				width = nendo.grow(),
+				padding = nendo.pad(16),
+				gap = 16,
+				align = {y = .Center},
+				color = npub != "" && hovered() ? HOVER : PANEL,
+				border = kb_focus == id ? kb_ring(ACCENT) : nendo.Border{color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+				radius = rr(10),
 			},
 			) {
 				agent_logo(i, 48)
 				row_labels(connector.name, tr(connector.subtitle))
-				clay.Text(
+				nendo.text(
 					ICON_RIGHT,
-					{fontId = FONT_ICON, fontSize = 14, textColor = npub == "" ? TEXT_LO : ACCENT},
+					{font = FONT_ICON, size = 14, color = npub == "" ? TEXT_LO : ACCENT},
 				)
 			}
 		}
 	}
-	clay.Text(
+	nendo.text(
 		tr(
 			"These are installation prompts. Choose your agent, review its prompt, and paste it into that agent to connect it to White Noise. The prompt includes your public npub, never your private key, and asks the agent to explain the connector before requesting your approval to install it. Use only an agent you run and trust.",
 		),
-		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+		{font = FONT_BODY, size = 12, color = TEXT_DIM},
 	)
-	if clay.UI(clay.ID("AgentManual"))(settings_box()) {
+	if nendo.box(nendo.id("AgentManual"))(settings_box()) {
 		settings_group(tr("MANUAL SETUP"))
 		if npub != "" {
-			if clay.UI(clay.ID("AgentKeyRow"))(settings_row()) {
+			if nendo.box(nendo.id("AgentKeyRow"))(settings_row()) {
 				row_labels(tr("Your public key"), npub_tail(npub))
 				settings_button("AgentCopyKey", tr("Copy public key"))
 			}
 		}
-		if clay.UI(clay.ID("AgentDocsRow"))(settings_row()) {
+		if nendo.box(nendo.id("AgentDocsRow"))(settings_row()) {
 			row_labels(
 				tr("Agent connector documentation"),
 				tr("Install scripts, health checks, and troubleshooting."),
 			)
 			settings_button("AgentDocs", external_link_action())
 		}
-		clay.Text(
+		nendo.text(
 			tr(
 				"Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest.",
 			),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 13, color = TEXT_DIM},
 		)
-		clay.Text(
+		nendo.text(
 			tr(
 				"Use a separate group for each project and start with its location and context. Session controls vary by connector; check its guide before using resume or branch commands.",
 			),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 13, color = TEXT_DIM},
 		)
 	}
 }
@@ -174,211 +163,163 @@ agent_setup_view :: proc(ui: ^Ui_State, npub: string) {
 	stacked := width < 420
 	hero_inner := max(1, width - (stacked ? 24 : 48))
 	settings_button("AgentBack", tr("Back to connectors"))
-	if clay.UI(clay.ID("AgentHero"))(
+	if nendo.box(nendo.id("AgentHero"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(width)},
-			layoutDirection = .TopToBottom,
-			padding = stacked ? clay.PaddingAll(12) : clay.PaddingAll(24),
-			childGap = 20,
-		},
-		backgroundColor = PANEL,
+		width = nendo.fixed(width),
+		direction = .Column,
+		padding = stacked ? nendo.pad(12) : nendo.pad(24),
+		gap = 20,
+		color = PANEL,
 		border = {color = fade(ACCENT, 0.5), width = {1, 1, 1, 1, 0}},
-		cornerRadius = rr(12),
+		radius = rr(12),
 	},
 	) {
-		if clay.UI(clay.ID("AgentHeroIdentity"))(
+		if nendo.box(nendo.id("AgentHeroIdentity"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingFixed(hero_inner)},
-				layoutDirection = stacked ? .TopToBottom : .LeftToRight,
-				childGap = 20,
-				childAlignment = {y = .Center},
-			},
+			width = nendo.fixed(hero_inner),
+			direction = stacked ? .Column : .Row,
+			gap = 20,
+			align = {y = .Center},
 		},
 		) {
 			agent_logo(index, stacked ? 56 : 72)
-			if clay.UI(clay.ID("AgentHeroName"))(
+			if nendo.box(nendo.id("AgentHeroName"))(
 			{
-				layout = {
-					// Reserve the connector, bridge and both gaps before wrapping the name.
-					sizing = {
-						width = clay.SizingFixed(stacked ? hero_inner : hero_inner - 72 - 79 - 40),
-					},
-					layoutDirection = .TopToBottom,
-					childGap = 7,
-				},
+
+				// Reserve the connector, bridge and both gaps before wrapping the name.
+				width     = nendo.fixed(stacked ? hero_inner : hero_inner - 72 - 79 - 40),
+				direction = .Column,
+				gap       = 7,
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					fmt.tprintf(tr("Set up %s"), connector.name),
-					{fontId = FONT_TITLE, fontSize = 26, textColor = TEXT},
+					{font = FONT_TITLE, size = 26, color = TEXT},
 				)
-				clay.Text(
-					tr(connector.subtitle),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-				)
+				nendo.text(tr(connector.subtitle), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 			}
-			if clay.UI(clay.ID("AgentHeroBridge"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingFixed(79)},
-					childGap = 20,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("AgentHeroBridge"))(
+			{width = nendo.fixed(79), gap = 20, align = {y = .Center}},
 			) {
-				clay.Text(ICON_RIGHT, {fontId = FONT_ICON, fontSize = 20, textColor = ACCENT})
+				nendo.text(ICON_RIGHT, {font = FONT_ICON, size = 20, color = ACCENT})
 				logo_mark()
 			}
 		}
-		clay.Text(
+		nendo.text(
 			fmt.tprintf(
 				tr("Paste this into %s. Review the installation plan before approving changes."),
 				connector.name,
 			),
-			{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 14, color = TEXT_DIM},
 		)
-		if clay.UI(clay.ID("AgentHeroActions"))(
+		if nendo.box(nendo.id("AgentHeroActions"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = width < 420 ? .TopToBottom : .LeftToRight,
-				childGap = 16,
-				childAlignment = {y = .Center},
-			},
+			width = nendo.grow(),
+			direction = width < 420 ? .Column : .Row,
+			gap = 16,
+			align = {y = .Center},
 		},
 		) {
-			if clay.UI(clay.ID("AgentCopyPrompt"))(
+			if nendo.box(nendo.id("AgentCopyPrompt"))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFixed(settings_tap_size(40))},
-					padding = {left = 20, right = 20},
-					childGap = 10,
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? ACCENT_DIM : ACCENT,
+				height = nendo.fixed(settings_tap_size(40)),
+				padding = {left = 20, right = 20},
+				gap = 10,
+				align = {x = .Center, y = .Center},
+				color = hovered() ? ACCENT_DIM : ACCENT,
 				border = kb_focus == "AgentCopyPrompt" ? kb_ring(TEXT) : {},
-				cornerRadius = rr(8),
+				radius = rr(8),
 			},
 			) {
-				clay.Text(ICON_COPY, {fontId = FONT_ICON, fontSize = 14, textColor = ON_ACCENT})
-				clay.Text(
-					tr("Copy prompt"),
-					{fontId = FONT_TITLE, fontSize = 14, textColor = ON_ACCENT},
-				)
+				nendo.text(ICON_COPY, {font = FONT_ICON, size = 14, color = ON_ACCENT})
+				nendo.text(tr("Copy prompt"), {font = FONT_TITLE, size = 14, color = ON_ACCENT})
 			}
-			if clay.UI(clay.ID("AgentCopyKey"))(
+			if nendo.box(nendo.id("AgentCopyKey"))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFixed(settings_tap_size(40))},
-					padding = {left = 16, right = 16},
-					childGap = 9,
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				border = kb_focus == "AgentCopyKey" ? kb_ring(ACCENT) : clay.BorderElementConfig{color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
-				cornerRadius = rr(8),
+				height = nendo.fixed(settings_tap_size(40)),
+				padding = {left = 16, right = 16},
+				gap = 9,
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				border = kb_focus == "AgentCopyKey" ? kb_ring(ACCENT) : nendo.Border{color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+				radius = rr(8),
 			},
 			) {
 				if hovered() {tooltip(npub)}
-				clay.Text(ICON_COPY, {fontId = FONT_ICON, fontSize = 13, textColor = TEXT_DIM})
-				clay.Text(
-					tr("Copy public key"),
-					{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
-				)
+				nendo.text(ICON_COPY, {font = FONT_ICON, size = 13, color = TEXT_DIM})
+				nendo.text(tr("Copy public key"), {font = FONT_BODY, size = 14, color = TEXT_DIM})
 			}
 		}
-		clay.Text(
+		nendo.text(
 			tr("Use only an agent you run and trust. Your private key is never included."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 11, color = TEXT_DIM},
 		)
 	}
-	if clay.UI(clay.ID("AgentGuideLinks"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = width < 420 ? .TopToBottom : .LeftToRight,
-			childGap = 10,
-		},
-	},
+	if nendo.box(nendo.id("AgentGuideLinks"))(
+	{width = nendo.grow(), direction = width < 420 ? .Column : .Row, gap = 10},
 	) {
 		for guide, i in connector.guides {
 			id := AGENT_REVIEW_CONTROLS[3 + i]
-			if clay.UI(clay.ID(id))(
+			if nendo.box(nendo.id(id))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
-					padding = {left = 12, right = 12, top = 8, bottom = 8},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : ROW_BG,
+				height = nendo.fit(min = settings_tap_size(32)),
+				padding = {left = 12, right = 12, top = 8, bottom = 8},
+				gap = 8,
+				align = {y = .Center},
+				color = hovered() ? HOVER : ROW_BG,
 				border = kb_focus == id ? kb_ring(ACCENT) : {},
-				cornerRadius = rr(6),
+				radius = rr(6),
 			},
 			) {
 				if hovered() {tooltip(guide)}
-				clay.Text(ICON_GLOBE, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
-				clay.Text(
+				nendo.text(ICON_GLOBE, {font = FONT_ICON, size = 12, color = ACCENT})
+				nendo.text(
 					guide == AGENT_CONNECTOR_DOCS ? tr("Connector guide") : fmt.tprintf(tr("%s guide"), connector.name),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
+					{font = FONT_BODY, size = 12, color = TEXT},
 				)
-				clay.Text(ICON_RIGHT, {fontId = FONT_ICON, fontSize = 10, textColor = TEXT_DIM})
+				nendo.text(ICON_RIGHT, {font = FONT_ICON, size = 10, color = TEXT_DIM})
 			}
 		}
 	}
 	for section, i in agent_prompt_sections(index, npub) {
-		if clay.UI(clay.ID("AgentInstruction", u32(i)))(
+		if nendo.box(nendo.id("AgentInstruction", u32(i)))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				padding = clay.PaddingAll(20),
-				childGap = 14,
-			},
-			backgroundColor = PANEL,
+			width = nendo.grow(),
+			direction = .Column,
+			padding = nendo.pad(20),
+			gap = 14,
+			color = PANEL,
 			border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
-			cornerRadius = rr(10),
+			radius = rr(10),
 		},
 		) {
-			if clay.UI(clay.ID_LOCAL("Heading"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					childGap = 10,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id_local("Heading"))(
+			{width = nendo.grow(), gap = 10, align = {y = .Center}},
 			) {
-				if clay.UI(clay.ID_LOCAL("Step"))(
+				if nendo.box(nendo.id_local("Step"))(
 				{
-					layout = {
-						sizing = {clay.SizingFixed(25), clay.SizingFixed(25)},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = fade(ACCENT, 0.12),
-					cornerRadius = rr(8),
+					width = nendo.fixed(25),
+					height = nendo.fixed(25),
+					align = {x = .Center, y = .Center},
+					color = fade(ACCENT, 0.12),
+					radius = rr(8),
 				},
 				) {
-					clay.Text(
+					nendo.text(
 						fmt.tprintf("%02d", i + 1),
-						{fontId = FONT_MONO, fontSize = 11, textColor = ACCENT},
+						{font = FONT_MONO, size = 11, color = ACCENT},
 					)
 				}
-				clay.Text(
-					tr(section.label),
-					{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT},
-				)
+				nendo.text(tr(section.label), {font = FONT_TITLE, size = 16, color = TEXT})
 			}
 			agent_prompt_text(section.text, width - 40)
 		}
 	}
-	clay.Text(
+	nendo.text(
 		tr(
 			"Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest.",
 		),
-		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+		{font = FONT_BODY, size = 12, color = TEXT_DIM},
 	)
 }
 
@@ -387,20 +328,12 @@ agent_setup_view :: proc(ui: ^Ui_State, npub: string) {
 agent_prompt_text :: proc(prompt: string, width: f32) {
 	font := [1]u8{FONT_BODY | TEXT_CODE}
 	fonts := strings.repeat(string(font[:]), len(prompt), context.temp_allocator)
-	if clay.UI(clay.ID_LOCAL("Text"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			childGap = 4,
-		},
-	},
-	) {
+	if nendo.box(nendo.id_local("Text"))({width = nendo.grow(), direction = .Column, gap = 4}) {
 		for at := 0; at < len(prompt); {
 			cut := wrap_break(prompt, at, len(prompt), width, 13, fonts = fonts)
-			clay.Text(
+			nendo.text(
 				prompt[at:cut],
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM, wrapMode = .None},
+				{font = FONT_BODY, size = 13, color = TEXT_DIM, wrap = .None},
 			)
 			at = cut
 			for at < len(prompt) && prompt[at] == ' ' {at += 1}
@@ -421,7 +354,7 @@ handle_agents :: proc(ui: ^Ui_State) -> bool {
 	if ui.focus != .SettingsSearch {
 		switch control_keys(controls) {
 		case .Moved:
-			scroll_into_view(clay.ID("SettingsPage"), clay.ID(kb_focus))
+			scroll_into_view(nendo.id("SettingsPage"), nendo.id(kb_focus))
 			return true
 		case .Pressed:
 			action = kb_focus

@@ -22,7 +22,7 @@ import "core:os"
 import "core:strings"
 import "core:thread"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -305,17 +305,17 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		anim_tick(rl.GetFrameTime()) // the gate runs its own loop, so it steps its own motion
 		apply_zoom(ui) // and its own resize response; a no-op unless the width moved
 
-		pointer := transmute(clay.Vector2)rl.GetMousePosition()
+		pointer := transmute(nendo.Vector2)rl.GetMousePosition()
 		forced_press, forced_release = false, false
 		devctl_poll(ui, nil, frame, &pointer)
 		pointer.x /= UI_ZOOM
 		pointer.y /= UI_ZOOM
-		clay.SetPointerState(pointer, rl.IsMouseButtonDown(.LEFT))
-		scroll_residual += transmute(clay.Vector2)rl.GetMouseWheelMoveV()
+		nendo.set_pointer(pointer, (rl.IsMouseButtonDown(.LEFT)) ? .Down : .Up)
+		scroll_residual += transmute(nendo.Vector2)rl.GetMouseWheelMoveV()
 		step := scroll_residual * anim_drain(SCROLL_DRAIN)
 		scroll_residual -= step
-		clay.UpdateScrollContainers(false, step, rl.GetFrameTime())
-		clay.SetLayoutDimensions(
+		nendo.update_scroll(.Off, step, rl.GetFrameTime())
+		nendo.set_dimensions(
 			{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
 		)
 
@@ -357,7 +357,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		if rl.IsWindowVisible() {
 			rl.BeginDrawing()
 			rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM})
-			clay_raylib_render(&render_commands)
+			render_nendo(render_commands)
 			rl.EndMode2D()
 			devctl_draw()
 			// WN_SHOT with no password to type: capture the gate itself and
@@ -541,33 +541,26 @@ gate_field :: proc(
 	placeholder: string,
 	view: Secret_Field_View = .Masked,
 ) {
-	if clay.UI(clay.ID(id_str))(
+	if nendo.box(nendo.id(id_str))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(46)},
-			padding = {left = 14, right = 14},
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(10),
+		width = nendo.grow(max = 560),
+		height = nendo.fixed(46),
+		padding = {left = 14, right = 14},
+		align = {y = .Center},
+		color = ROW_BG,
+		radius = rr(10),
 		border = {color = focused ? ACCENT : FIELD_BORDER, width = bw()},
 	},
 	) {
 		// Every character typed kicks the spring, so the field answers
 		// each keystroke with light instead of only growing asterisks.
-		pop, _, _ := bump(clay.ID(id_str).id, fmt.tprintf("%d", len(buf)))
+		pop, _, _ := bump(nendo.id(id_str).id, fmt.tprintf("%d", len(buf)))
 		if focused {
-			glow(clay.ID(id_str), ACCENT, 0.35 + clamp((pop - 1) * 3, 0, 0.65), 18)
+			glow(nendo.id(id_str), ACCENT, 0.35 + clamp((pop - 1) * 3, 0, 0.65), 18)
 		}
 		// Clip text inside the frame, never the frame's fractional-pixel border.
-		if clay.UI(clay.ID(fmt.tprintf("%sTextClip", id_str)))(
-		{
-			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingFixed(30)},
-				childAlignment = {y = .Center},
-			},
-			clip = {horizontal = true},
-		},
+		if nendo.box(nendo.id(fmt.tprintf("%sTextClip", id_str)))(
+		{width = nendo.grow(), height = nendo.fixed(30), align = {y = .Center}, clip = {x = true}},
 		) {
 			if view == .Plain {
 				field_text(ui, id_str, buf, placeholder, focused, 15)
@@ -576,16 +569,16 @@ gate_field :: proc(
 				if focused {
 					caret(16)
 				}
-				clay.Text(placeholder, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
+				nendo.text(placeholder, {font = FONT_BODY, size = 15, color = TEXT_DIM})
 			} else {
 				count := min(len(buf), 48)
-				if box := clay.GetElementData(clay.ID(id_str)); box.found {
+				if box := nendo.element(nendo.id(id_str)); box.found {
 					star_w := max(rl.MeasureTextLine(FONT_BODY, 15, "*", 0).x, 1)
-					count = min(count, max(1, int((box.boundingBox.width - 40) / star_w)))
+					count = min(count, max(1, int((box.rect.width - 40) / star_w)))
 				}
-				clay.Text(
+				nendo.text(
 					strings.repeat("*", count, context.temp_allocator),
-					{fontId = FONT_BODY, fontSize = 15, textColor = TEXT},
+					{font = FONT_BODY, size = 15, color = TEXT},
 				)
 				if focused {
 					caret(16)
@@ -597,71 +590,57 @@ gate_field :: proc(
 
 // The sign-in card's shape, one step earlier: password before identity.
 @(private = "file")
-gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
-	clay.BeginLayout()
+gate_layout :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
+	nendo.begin()
 	// A create in flight writes vault.db, so the file can't say which
 	// form this is until the job ends.
 	busy := gate_job.worker != nil
 	creating := busy ? gate_job.creating : !vault_exists()
 	compact := single_pane() || modal_h(1200) < 500
 
-	if clay.UI(clay.ID("Root"))(
-	{
-		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom},
-		backgroundColor = BG,
-	},
+	if nendo.box(nendo.id("Root"))(
+	{width = nendo.grow(), height = nendo.grow(), direction = .Column, color = BG},
 	) {
 		// The unlock screen is the first thing anyone sees, so it gets
 		// the synthwave rail fan behind it whatever the saved theme is.
 		// It draws from the accent color, so it suits every palette.
-		if clay.UI(clay.ID("GateCanvas"))(
+		if nendo.box(nendo.id("GateCanvas"))(
 		{
-			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow()},
-				childAlignment = {x = .Center, y = .Center},
-			},
-			custom = {customData = motion_on() ? &synth_decor : nil},
+			width = nendo.grow(),
+			height = nendo.grow(),
+			align = {x = .Center, y = .Center},
+			custom = motion_on() ? &synth_decor : nil,
 		},
 		) {
-			if clay.UI(clay.ID("GateCard"))(
+			if nendo.box(nendo.id("GateCard"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(fit_w(660)),
-						height = clay.SizingFit({max = modal_h(1200)}),
-					},
-					layoutDirection = .TopToBottom,
-					padding = {
-						left = compact ? 20 : 50,
-						right = compact ? 20 : 50,
-						top = compact ? 16 : creating ? 24 : 50,
-						bottom = compact ? 16 : creating ? 24 : 50,
-					},
-					childGap = creating ? 8 : 14,
-					childAlignment = {x = .Center},
+				width = nendo.fixed(fit_w(660)),
+				height = nendo.fit(max = modal_h(1200)),
+				direction = .Column,
+				padding = {
+					left = compact ? 20 : 50,
+					right = compact ? 20 : 50,
+					top = compact ? 16 : creating ? 24 : 50,
+					bottom = compact ? 16 : creating ? 24 : 50,
 				},
-				backgroundColor = CARD,
-				cornerRadius = rr(16),
+				gap = creating ? 8 : 14,
+				align = {x = .Center},
+				color = CARD,
+				radius = rr(16),
 				border = {color = CARD_BORDER, width = bw()},
-				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+				clip = {y = true, scroll = true},
 			},
 			) {
-				glow(clay.ID("GateCard"), ACCENT, 0.55, 26)
-				scrollbar(clay.ID("GateCard"))
+				glow(nendo.id("GateCard"), ACCENT, 0.55, 26)
+				scrollbar(nendo.id("GateCard"))
 				logo_mark()
-				clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT})
+				nendo.text("White Noise", {font = FONT_TITLE, size = 28, color = TEXT})
 				if creating {
 					// First run names both setup steps before asking for a
 					// secret, so the password reads as protection for this
 					// device rather than account registration.
-					if clay.UI(clay.ID("GateSteps"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-							childGap = 10,
-						},
-					},
+					if nendo.box(nendo.id("GateSteps"))(
+					{width = nendo.grow(), direction = single_pane() ? .Column : .Row, gap = 10},
 					) {
 						gate_step("GateStepNow", tr("NOW"), tr("Protect this device"), .Current)
 						gate_step(
@@ -672,64 +651,37 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 						)
 					}
 				}
-				clay.Text(
+				nendo.text(
 					creating ? tr("This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it.") : tr("Enter your password to unlock the vault on this device."),
-					{
-						fontId = FONT_BODY,
-						fontSize = 15,
-						textColor = TEXT_DIM,
-						textAlignment = .Center,
-					},
+					{font = FONT_BODY, size = 15, color = TEXT_DIM, align = .Center},
 				)
 				// The vault password is easy to confuse with the other secrets
 				// a person may hold, so creation names them apart.
 				if creating {
-					clay.Text(
+					nendo.text(
 						tr(
 							"Store it in a password manager. It is separate from your nsec, remote signer, and backup file passwords.",
 						),
-						{
-							fontId = FONT_BODY,
-							fontSize = 12,
-							textColor = TEXT_LO,
-							textAlignment = .Center,
-						},
+						{font = FONT_BODY, size = 12, color = TEXT_LO, align = .Center},
 					)
 				}
 				if creating && gate_reset_done {
-					if clay.UI(clay.ID("GateResetNotice"))(
-					{layout = {sizing = {width = clay.SizingGrow()}}},
-					) {
-						clay.Text(
+					if nendo.box(nendo.id("GateResetNotice"))({width = nendo.grow()}) {
+						nendo.text(
 							tr(
 								"The vault on this device was deleted. Pick a new password to start over.",
 							),
-							{
-								fontId = FONT_BODY,
-								fontSize = 14,
-								textColor = TEXT,
-								textAlignment = .Center,
-							},
+							{font = FONT_BODY, size = 14, color = TEXT, align = .Center},
 						)
 					}
 				}
-				if clay.UI(clay.ID("GateGapA"))(
-				{layout = {sizing = {height = clay.SizingFixed(10)}}},
-				) {}
+				if nendo.box(nendo.id("GateGapA"))({height = nendo.fixed(10)}) {}
 
-				if clay.UI(clay.ID("GatePwLabel"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(44)},
-						childAlignment = {y = .Center},
-						childGap = 8,
-					},
-				},
+				if nendo.box(nendo.id("GatePwLabel"))(
+				{width = nendo.grow(), height = nendo.fixed(44), align = {y = .Center}, gap = 8},
 				) {
 					eyebrow(tr("PASSWORD"))
-					if clay.UI(clay.ID("GatePwLabelSpace"))(
-					{layout = {sizing = {width = clay.SizingGrow()}}},
-					) {}
+					if nendo.box(nendo.id("GatePwLabelSpace"))({width = nendo.grow()}) {}
 					if !busy {
 						micro_button(
 							"GatePwShow",
@@ -749,19 +701,16 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				if creating {
 					password_bits(string(gate_pw[:]), &gate_check)
 					password_hint(&gate_check)
-					if clay.UI(clay.ID("GatePw2Label"))(
+					if nendo.box(nendo.id("GatePw2Label"))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(44)},
-							childAlignment = {y = .Center},
-							childGap = 8,
-						},
+						width = nendo.grow(),
+						height = nendo.fixed(44),
+						align = {y = .Center},
+						gap = 8,
 					},
 					) {
 						eyebrow(tr("CONFIRM PASSWORD"))
-						if clay.UI(clay.ID("GatePw2LabelSpace"))(
-						{layout = {sizing = {width = clay.SizingGrow()}}},
-						) {}
+						if nendo.box(nendo.id("GatePw2LabelSpace"))({width = nendo.grow()}) {}
 						if !busy {
 							micro_button(
 								"GatePw2Show",
@@ -781,30 +730,14 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				}
 
 				// Reveal the error and action together on short keyboard-height windows.
-				if clay.UI(clay.ID("GateSubmit"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						layoutDirection = .TopToBottom,
-						childGap = 8,
-					},
-				},
+				if nendo.box(nendo.id("GateSubmit"))(
+				{width = nendo.grow(), direction = .Column, gap = 8},
 				) {
-					if clay.UI(clay.ID("GateError"))(
-					{
-						layout = {
-							sizing = {
-								width = clay.SizingGrow(),
-								height = clay.SizingFit({min = 68}),
-							},
-						},
-					},
+					if nendo.box(nendo.id("GateError"))(
+					{width = nendo.grow(), height = nendo.fit(min = 68)},
 					) {
 						if gate_err != "" {
-							clay.Text(
-								gate_err,
-								{fontId = FONT_BODY, fontSize = 14, textColor = DANGER},
-							)
+							nendo.text(gate_err, {font = FONT_BODY, size = 14, color = DANGER})
 						}
 					}
 					ready :=
@@ -819,9 +752,9 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 							.Busy,
 						)
 						busy_bar("GateBusy")
-						clay.Text(
+						nendo.text(
 							creating ? tr("Deriving an encryption key from your password.") : tr("Checking your password and decrypting the vault."),
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+							{font = FONT_BODY, size = 12, color = TEXT_LO},
 						)
 					} else {
 						login_big_button(
@@ -835,76 +768,50 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				// Stopping here leaves nothing behind: no vault and no identity
 				// exist until Continue succeeds.
 				if creating && !busy {
-					if clay.UI(clay.ID("GateQuitRow"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							childGap = 8,
-							childAlignment = {x = .Center},
-						},
-					},
+					if nendo.box(nendo.id("GateQuitRow"))(
+					{width = nendo.grow(), direction = .Column, gap = 8, align = {x = .Center}},
 					) {
-						clay.Text(
+						nendo.text(
 							tr("Nothing is saved until you continue."),
-							{
-								fontId = FONT_BODY,
-								fontSize = 12,
-								textColor = TEXT_LO,
-								textAlignment = .Center,
-							},
+							{font = FONT_BODY, size = 12, color = TEXT_LO, align = .Center},
 						)
 						micro_button("GateQuit", tr("Close White Noise"), TEXT_DIM)
 					}
 				}
 				if !creating && !busy {
-					if clay.UI(clay.ID("GateResetGap"))(
-					{layout = {sizing = {height = clay.SizingFixed(24)}}},
-					) {}
+					if nendo.box(nendo.id("GateResetGap"))({height = nendo.fixed(24)}) {}
 					switch gate_reset {
 					case .Closed:
 						micro_button("GateForgot", tr("Forgot your password?"), TEXT_DIM)
 					case .Help:
-						if clay.UI(clay.ID("GateForgotHelp"))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow()},
-								layoutDirection = .TopToBottom,
-								childGap = 12,
-							},
-						},
+						if nendo.box(nendo.id("GateForgotHelp"))(
+						{width = nendo.grow(), direction = .Column, gap = 12},
 						) {
-							clay.Text(
+							nendo.text(
 								tr(
 									"White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened.",
 								),
-								{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
+								{font = FONT_BODY, size = 14, color = TEXT},
 							)
-							clay.Text(
+							nendo.text(
 								tr(
 									"Your nsec or remote signer can let you use your account again, but it can't open this vault, and your chats on this device may not return. A backup file has its own password and holds only settings, drafts, custom emoji, and themes.",
 								),
-								{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+								{font = FONT_BODY, size = 13, color = TEXT_DIM},
 							)
 							micro_button("GateRetry", tr("Try again"), TEXT)
 							micro_button("GateResetReview", tr("Review starting over"), TEXT_DIM)
 							micro_button("GateQuit", tr("Close White Noise"), TEXT_DIM)
 						}
 					case .Review:
-						if clay.UI(clay.ID("GateResetConfirm"))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow()},
-								layoutDirection = .TopToBottom,
-								childGap = 12,
-							},
-						},
+						if nendo.box(nendo.id("GateResetConfirm"))(
+						{width = nendo.grow(), direction = .Column, gap = 12},
 						) {
-							clay.Text(
+							nendo.text(
 								tr(
 									"Starting over deletes the vault on this device and everything sealed with it: account keys stored here, remote signer sessions, unsent messages, saved stickers and GIFs, and cached media. This can't be undone. Signing in again later can give you your account back, but not what was deleted, and your chats may not return.",
 								),
-								{fontId = FONT_BODY, fontSize = 14, textColor = DANGER},
+								{font = FONT_BODY, size = 14, color = DANGER},
 							)
 							micro_button("GateResetCancel", tr("Keep this vault"), TEXT)
 							micro_button("GateReset", tr("Delete this vault"), DANGER)
@@ -914,7 +821,7 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 			}
 		}
 	}
-	return clay.EndLayout(rl.GetFrameTime())
+	return nendo.end(rl.GetFrameTime())
 }
 
 @(private = "file")
@@ -928,23 +835,18 @@ Gate_Step :: enum {
 @(private = "file")
 gate_step :: proc(id_str: string, caption: string, title: string, step: Gate_Step) {
 	current := step == .Current
-	if clay.UI(clay.ID(id_str))(
+	if nendo.box(nendo.id(id_str))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = {12, 12, 10, 10},
-			childGap = 4,
-		},
-		cornerRadius = rr(10),
+		width = nendo.grow(),
+		direction = .Column,
+		padding = {12, 12, 10, 10},
+		gap = 4,
+		radius = rr(10),
 		border = {color = current ? ACCENT : CARD_BORDER, width = bw()},
 	},
 	) {
 		eyebrow(caption)
-		clay.Text(
-			title,
-			{fontId = FONT_BODY, fontSize = 15, textColor = current ? TEXT : TEXT_DIM},
-		)
+		nendo.text(title, {font = FONT_BODY, size = 15, color = current ? TEXT : TEXT_DIM})
 	}
 }
 
@@ -952,15 +854,15 @@ gate_step :: proc(id_str: string, caption: string, title: string, step: Gate_Ste
 // to an action. Password buffers remain masked and out of the clipboard.
 @(private)
 onboard_reveal_field :: proc(container, field: string) {
-	data := clay.GetScrollContainerData(clay.ID(container))
-	row := clay.GetElementData(clay.ID(field))
-	viewport := clay.GetElementData(clay.ID(container))
+	data := nendo.scroll(nendo.id(container))
+	row := nendo.element(nendo.id(field))
+	viewport := nendo.element(nendo.id(container))
 	if !data.found || !row.found || !viewport.found {return}
-	b, r := viewport.boundingBox, row.boundingBox
+	b, r := viewport.rect, row.rect
 	delta := min(r.y - b.y - 8, 0) + max(r.y + r.height - b.y - b.height + 8, 0)
-	data.scrollPosition.y = clamp(
-		data.scrollPosition.y - delta,
-		-max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+	data.position.y = clamp(
+		data.position.y - delta,
+		-max(data.content.height - data.viewport.height, 0),
 		0,
 	)
 }

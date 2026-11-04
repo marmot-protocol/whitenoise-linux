@@ -38,7 +38,7 @@ import "core:thread"
 import "core:time"
 import "core:unicode/utf8"
 
-import clay "layout"
+import "nendo"
 
 import marmot "../marmot"
 import rl "sdlrl"
@@ -534,7 +534,7 @@ nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_
 mono_lines :: proc(
 	text: string,
 	width: f32,
-	color: clay.Color,
+	color: nendo.Color,
 	limit: int = max(int),
 ) -> (
 	used: int,
@@ -558,7 +558,7 @@ mono_lines :: proc(
 				line_width += cell
 				cut += w
 			}
-			clay.Text(rest[:cut], {fontId = FONT_MONO, fontSize = 11, textColor = color})
+			nendo.text(rest[:cut], {font = FONT_MONO, size = 11, color = color})
 			used += 1
 			rest = rest[cut:]
 		}
@@ -673,48 +673,39 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 	padding := u16(git_card || highlight ? 20 : 12)
 	inner_w := width - f32(padding * 2)
 
-	if clay.UI(clay.ID("NevCard", id))(
+	if nendo.box(nendo.id("NevCard", id))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(width)},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(padding),
-			childGap = git_card || highlight ? 18 : 6,
-		},
-		backgroundColor = PLATE,
-		cornerRadius = rr(git_card || highlight ? 16 : 10),
+		width = nendo.fixed(width),
+		direction = .Column,
+		padding = nendo.pad(padding),
+		gap = git_card || highlight ? 18 : 6,
+		color = PLATE,
+		radius = rr(git_card || highlight ? 16 : 10),
 		border = {color = highlight ? fade(ACCENT, 0.18) : CARD_BORDER, width = bw()},
 	},
 	) {
 		if !highlight {
-			// Keep Clay's deferred close inside the guard.
-			if clay.UI(clay.ID("NevCardHead", id))(
-			{
-				layout = {
-					sizing = {width = clay.SizingFixed(inner_w)},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-			},
+			// Keep nendo's deferred close inside the guard.
+			if nendo.box(nendo.id("NevCardHead", id))(
+			{width = nendo.fixed(inner_w), gap = 8, align = {y = .Center}},
 			) {
 				if git_card {
-					if clay.UI(clay.ID("NevGitIcon", id))(
+					if nendo.box(nendo.id("NevGitIcon", id))(
 					{
-						layout = {
-							sizing = {clay.SizingFixed(32), clay.SizingFixed(32)},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = fade(ACCENT, 0.1),
-						cornerRadius = rr(8),
+						width = nendo.fixed(32),
+						height = nendo.fixed(32),
+						align = {x = .Center, y = .Center},
+						color = fade(ACCENT, 0.1),
+						radius = rr(8),
 					},
 					) {
-						clay.Text(
+						nendo.text(
 							card.kind == NEV_PATCH_KIND ? "\uf1d3" : (card.kind == NEV_ISSUE_KIND ? "\uf41b" : "\uf407"),
-							{fontId = FONT_ICON, fontSize = 17, textColor = ACCENT},
+							{font = FONT_ICON, size = 17, color = ACCENT},
 						)
 					}
 				} else {
-					clay.Text(ICON_GLOBE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
+					nendo.text(ICON_GLOBE, {font = FONT_ICON, size = 11, color = TEXT_LO})
 				}
 				switch {
 				case len(card.raw) == 0:
@@ -724,25 +715,25 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 				case card.kind == NEV_GEOCACHE_KIND:
 					eyebrow(tr("GEOCACHE"))
 				case git_card:
-					clay.Text(
+					nendo.text(
 						card.kind == NEV_PATCH_KIND ? tr("PATCH") : (card.kind == NEV_ISSUE_KIND ? tr("ISSUE") : tr("PULL REQUEST")),
-						{fontId = FONT_BODY, fontSize = 10, textColor = ACCENT, letterSpacing = 1},
+						{font = FONT_BODY, size = 10, color = ACCENT, spacing = 1},
 					)
 				case textual:
 					eyebrow(tr("NOTE"))
 				case:
-					clay.Text(
+					nendo.text(
 						fmt.tprintf(tr("KIND %d"), card.kind),
-						{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+						{font = FONT_BODY, size = 11, color = TEXT_LO},
 					)
 				}
 				if len(card.pubkey) > 0 &&
 				   !git_card &&
 				   card.kind != NEV_PRODUCT_KIND &&
 				   card.kind != NEV_GEOCACHE_KIND {
-					clay.Text(
+					nendo.text(
 						fmt.tprintf("%s · %s", mention_label(card.pubkey), card.stamp),
-						{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
+						{font = FONT_MONO, size = 11, color = TEXT_LO},
 					)
 				}
 			}
@@ -750,17 +741,17 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 
 		switch {
 		case !card.done:
-			clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			nendo.text(tr("Loading…"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 		case len(card.raw) == 0:
-			clay.Text(
+			nendo.text(
 				tr("Couldn't load this event. Check your relay settings and try again."),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
 			)
-			if clay.UI(clay.ID("NevRetry", id))(
-			{layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}},
+			if nendo.box(nendo.id("NevRetry", id))(
+			{padding = {top = 4, bottom = 4}, color = hovered() ? HOVER : {}},
 			) {
 				if hovered() {nev_retry_hover = evid}
-				clay.Text(tr("Retry"), {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
+				nendo.text(tr("Retry"), {font = FONT_BODY, size = 12, color = ACCENT})
 			}
 		case card.kind == NEV_PRODUCT_KIND:
 			if len(card.pubkey) >
@@ -772,14 +763,8 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			nev_highlight_card(id, evid, card, inner_w)
 		case textual || card.kind == NEV_PATCH_KIND:
 			if git_card {
-				if clay.UI(clay.ID("NevGitTitle", id))(
-				{
-					layout = {
-						sizing = {width = clay.SizingFixed(inner_w)},
-						layoutDirection = .TopToBottom,
-						childGap = 6,
-					},
-				},
+				if nendo.box(nendo.id("NevGitTitle", id))(
+				{width = nendo.fixed(inner_w), direction = .Column, gap = 6},
 				) {
 					if len(card.subject) > 0 {
 						lines := wrapped_lines(
@@ -794,26 +779,16 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 							if i == 2 &&
 							   len(lines) >
 								   3 {text = text_ellipsis(card.subject[line.start:], inner_w, FONT_TITLE, 20)}
-							clay.Text(
+							nendo.text(
 								text,
-								{
-									fontId = FONT_TITLE,
-									fontSize = 20,
-									textColor = TEXT,
-									wrapMode = .None,
-								},
+								{font = FONT_TITLE, size = 20, color = TEXT, wrap = .None},
 							)
 						}
 					}
 					if len(card.pubkey) > 0 {
-						clay.Text(
+						nendo.text(
 							text_ellipsis(mention_label(card.pubkey), inner_w, FONT_BODY, 12),
-							{
-								fontId = FONT_BODY,
-								fontSize = 12,
-								textColor = TEXT_DIM,
-								wrapMode = .None,
-							},
+							{font = FONT_BODY, size = 12, color = TEXT_DIM, wrap = .None},
 						)
 					}
 					if len(card.stamp) > 0 {
@@ -822,14 +797,12 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 				}
 			}
 			if git_card {
-				if clay.UI(clay.ID("NevGitBody", id))(
+				if nendo.box(nendo.id("NevGitBody", id))(
 				{
-					layout = {
-						layoutDirection = .TopToBottom,
-						sizing = {width = clay.SizingGrow()},
-						padding = {top = 16},
-						childGap = 8,
-					},
+					direction = .Column,
+					width = nendo.grow(),
+					padding = {top = 16},
+					gap = 8,
 					border = {color = DIVIDER, width = {top = 1}},
 				},
 				) {
@@ -849,23 +822,19 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 		// Hovering binds link_hover, so a click goes through the same
 		// external-link guard as a text link.
 		if url := nev_open_url(card.kind, token); len(url) > 0 {
-			if clay.UI(clay.ID("NevOpen", id))(
+			if nendo.box(nendo.id("NevOpen", id))(
 			{
-				layout = {
-					sizing = {
-						width = git_card || highlight ? clay.SizingGrow() : clay.SizingFit(),
-					},
-					padding = {
-						left = 10,
-						right = 10,
-						top = git_card || highlight ? 10 : 5,
-						bottom = git_card || highlight ? 10 : 5,
-					},
-					childGap = 6,
-					childAlignment = {x = .Center, y = .Center},
+				width = git_card || highlight ? nendo.grow() : nendo.fit(),
+				padding = {
+					left = 10,
+					right = 10,
+					top = git_card || highlight ? 10 : 5,
+					bottom = git_card || highlight ? 10 : 5,
 				},
-				backgroundColor = hovered() ? HOVER : (git_card ? fade(ACCENT, 0.08) : (highlight ? fade(ACCENT, 0.06) : clay.Color{})),
-				cornerRadius = rr(7),
+				gap = 6,
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : (git_card ? fade(ACCENT, 0.08) : (highlight ? fade(ACCENT, 0.06) : nendo.Color{})),
+				radius = rr(7),
 				border = {
 					color = git_card ? fade(ACCENT, 0.25) : (highlight ? fade(ACCENT, 0.18) : FIELD_BORDER),
 					width = bw(),
@@ -875,16 +844,16 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 				if hovered() {
 					link_hover = url
 				}
-				clay.Text(
+				nendo.text(
 					tr("Open in client"),
 					{
-						fontId = FONT_BODY,
-						fontSize = git_card || highlight ? 12 : 11,
-						textColor = git_card || highlight ? ACCENT : TEXT_DIM,
+						font = FONT_BODY,
+						size = git_card || highlight ? 12 : 11,
+						color = git_card || highlight ? ACCENT : TEXT_DIM,
 					},
 				)
 				if git_card || highlight {
-					clay.Text("\uf08e", {fontId = FONT_ICON, fontSize = 11, textColor = ACCENT})
+					nendo.text("\uf08e", {font = FONT_ICON, size = 11, color = ACCENT})
 				}
 			}
 		}
@@ -1041,14 +1010,8 @@ nev_highlight_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 	state := card.excerpt
 	state.changed = {}
 	base := 0x24000000 + id * 64
-	if clay.UI(clay.ID("NevHighlightByline", id))(
-	{
-		layout = {
-			sizing = {width = clay.SizingFixed(width)},
-			childGap = 10,
-			childAlignment = {y = .Center},
-		},
-	},
+	if nendo.box(nendo.id("NevHighlightByline", id))(
+	{width = nendo.fixed(width), gap = 10, align = {y = .Center}},
 	) {
 		name := mention_label(card.pubkey)
 		avatar(
@@ -1059,48 +1022,40 @@ nev_highlight_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 			32,
 			url_pic(profile_info(g_client, card.pubkey).pic_url),
 		)
-		if clay.UI(clay.ID("NevHighlightBylineText", id))(
-		{
-			layout = {
-				sizing = {width = clay.SizingFixed(max(width - 42, 1))},
-				layoutDirection = .TopToBottom,
-				childGap = 4,
-			},
-		},
+		if nendo.box(nendo.id("NevHighlightBylineText", id))(
+		{width = nendo.fixed(max(width - 42, 1)), direction = .Column, gap = 4},
 		) {
-			clay.Text(
+			nendo.text(
 				text_ellipsis(name, max(width - 42, 1), FONT_TITLE, 13),
-				{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
+				{font = FONT_TITLE, size = 13, color = TEXT, wrap = .None},
 			)
 			if len(card.stamp) > 0 {
-				clay.Text(
+				nendo.text(
 					text_ellipsis(card.stamp, max(width - 42, 1), FONT_BODY, 10),
-					{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO, wrapMode = .None},
+					{font = FONT_BODY, size = 10, color = TEXT_LO, wrap = .None},
 				)
 			}
 		}
 	}
 	more := state.expanded
 	if len(h.comment) > 0 {
-		if clay.UI(clay.ID("NevHighlightComment", id))(
-		{layout = {sizing = {width = clay.SizingFixed(width)}, layoutDirection = .TopToBottom}},
+		if nendo.box(nendo.id("NevHighlightComment", id))(
+		{width = nendo.fixed(width), direction = .Column},
 		) {more = excerpt_body(base + 10, h.comment, nil, state, width, TEXT, .Embed)}
 	}
-	if clay.UI(clay.ID("NevHighlightQuote", id))(
+	if nendo.box(nendo.id("NevHighlightQuote", id))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(width)},
-			layoutDirection = .TopToBottom,
-			padding = {left = 18, right = 16, top = 18, bottom = 16},
-			childGap = 12,
-		},
-		backgroundColor = fade(ACCENT, 0.045),
-		cornerRadius = rr(10),
+		width = nendo.fixed(width),
+		direction = .Column,
+		padding = {left = 18, right = 16, top = 18, bottom = 16},
+		gap = 12,
+		color = fade(ACCENT, 0.045),
+		radius = rr(10),
 		border = {color = fade(ACCENT, 0.65), width = {left = max(BORDER_W, 2)}},
 	},
 	) {
 		quote_w := max(width - 34, 1)
-		clay.Text("\uf10d", {fontId = FONT_ICON, fontSize = 26, textColor = fade(ACCENT, 0.55)})
+		nendo.text("\uf10d", {font = FONT_ICON, size = 26, color = fade(ACCENT, 0.55)})
 		if len(card.content) == 0 {
 			body_text(base + 2, tr("Media highlight"), 18, TEXT_DIM, wrap_w = quote_w)
 		}
@@ -1123,15 +1078,9 @@ nev_highlight_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 				   limit {text = passage[lines[len(lines) - limit].start:]; more = true}
 			}
 			panel :=
-				selected ? clay.ID("ExcerptBody", base + 5) : clay.ID("NevHighlightContext", id * 4 + u32(index))
-			if clay.UI(panel)(
-			{
-				layout = {
-					sizing = {width = clay.SizingFixed(quote_w)},
-					layoutDirection = .TopToBottom,
-					childGap = selected ? 5 : 2,
-				},
-			},
+				selected ? nendo.id("ExcerptBody", base + 5) : nendo.id("NevHighlightContext", id * 4 + u32(index))
+			if nendo.box(panel)(
+			{width = nendo.fixed(quote_w), direction = .Column, gap = selected ? 5 : 2},
 			) {
 				literal := [1]Inline_Link{{start = 0, end = len(text)}}
 				more =
@@ -1150,14 +1099,12 @@ nev_highlight_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 			}
 		}
 		for author, index in h.authors {
-			if clay.UI(clay.ID("NevHighlightAuthor", id * 64 + u32(index)))(
+			if nendo.box(nendo.id("NevHighlightAuthor", id * 64 + u32(index)))(
 			{
-				layout = {
-					sizing = {width = clay.SizingFixed(quote_w)},
-					padding = {top = 12},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
+				width = nendo.fixed(quote_w),
+				padding = {top = 12},
+				gap = 8,
+				align = {y = .Center},
 				border = {color = fade(ACCENT, 0.12), width = {top = BORDER_W}},
 			},
 			) {
@@ -1171,33 +1118,31 @@ nev_highlight_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 					url_pic(profile_info(g_client, author.pubkey).pic_url),
 				)
 				label := author.role == "editor" ? tr("Editor: %s") : tr("Author: %s")
-				clay.Text(
+				nendo.text(
 					text_ellipsis(fmt.tprintf(label, name), max(quote_w - 28, 1), FONT_BODY, 11),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None},
+					{font = FONT_BODY, size = 11, color = TEXT_DIM, wrap = .None},
 				)
 			}
 		}
 	}
 	if more && message_line_limit() < max(int) {
-		if clay.UI(clay.ID("NevMore", id))(
+		if nendo.box(nendo.id("NevMore", id))(
 		{
-			layout = {
-				padding = {left = 10, right = 10, top = 6, bottom = 6},
-				childGap = 6,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = hovered() ? HOVER : fade(ACCENT, 0.06),
-			cornerRadius = rr(6),
+			padding = {left = 10, right = 10, top = 6, bottom = 6},
+			gap = 6,
+			align = {y = .Center},
+			color = hovered() ? HOVER : fade(ACCENT, 0.06),
+			radius = rr(6),
 		},
 		) {
 			if hovered() {nev_more_hover, nev_more_id = key, base + 5}
-			clay.Text(
+			nendo.text(
 				card.excerpt.expanded ? tr("Show less") : tr("Read more"),
-				{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
+				{font = FONT_BODY, size = 12, color = ACCENT},
 			)
-			clay.Text(
+			nendo.text(
 				card.excerpt.expanded ? "\uf106" : "\uf107",
-				{fontId = FONT_ICON, fontSize = 12, textColor = ACCENT},
+				{font = FONT_ICON, size = 12, color = ACCENT},
 			)
 		}
 	}
@@ -1225,53 +1170,44 @@ nev_highlight_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 			if cut := strings.index_any(path, "?#"); cut >= 0 {path = path[:cut]}
 			if len(path) > 0 {detail = path}
 		} else if len(url) > 0 {detail = url_host(url)}
-		if clay.UI(clay.ID("NevHighlightSource", id * 64 + u32(index)))(
+		if nendo.box(nendo.id("NevHighlightSource", id * 64 + u32(index)))(
 		{
-			layout = {
-				sizing = {width = clay.SizingFixed(width)},
-				padding = clay.PaddingAll(12),
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = hovered() && len(url) > 0 ? HOVER : CARD,
-			cornerRadius = rr(9),
+			width = nendo.fixed(width),
+			padding = nendo.pad(12),
+			gap = 10,
+			align = {y = .Center},
+			color = hovered() && len(url) > 0 ? HOVER : CARD,
+			radius = rr(9),
 			border = {color = CARD_BORDER, width = bw()},
 		},
 		) {
 			if hovered() && len(url) > 0 {link_hover = url}
-			if clay.UI(clay.ID("NevHighlightSourceIcon", id * 64 + u32(index)))(
+			if nendo.box(nendo.id("NevHighlightSourceIcon", id * 64 + u32(index)))(
 			{
-				layout = {
-					sizing = {clay.SizingFixed(28), clay.SizingFixed(28)},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = fade(ACCENT, 0.09),
-				cornerRadius = rr(7),
+				width = nendo.fixed(28),
+				height = nendo.fixed(28),
+				align = {x = .Center, y = .Center},
+				color = fade(ACCENT, 0.09),
+				radius = rr(7),
 			},
-			) {clay.Text(ref.kind == .Event || ref.kind == .Address ? "\uf02d" : "\uf0c1", {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})}
-			if clay.UI(clay.ID("NevHighlightSourceText", id * 64 + u32(index)))(
-			{
-				layout = {
-					sizing = {width = clay.SizingFixed(max(width - 84, 1))},
-					layoutDirection = .TopToBottom,
-					childGap = 4,
-				},
-			},
+			) {nendo.text(ref.kind == .Event || ref.kind == .Address ? "\uf02d" : "\uf0c1", {font = FONT_ICON, size = 12, color = ACCENT})}
+			if nendo.box(nendo.id("NevHighlightSourceText", id * 64 + u32(index)))(
+			{width = nendo.fixed(max(width - 84, 1)), direction = .Column, gap = 4},
 			) {
-				clay.Text(
+				nendo.text(
 					text_ellipsis(title, max(width - 84, 1), FONT_TITLE, 12),
-					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT, wrapMode = .None},
+					{font = FONT_TITLE, size = 12, color = TEXT, wrap = .None},
 				)
-				clay.Text(
+				nendo.text(
 					text_ellipsis(detail, max(width - 84, 1), FONT_BODY, 10),
-					{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO, wrapMode = .None},
+					{font = FONT_BODY, size = 10, color = TEXT_LO, wrap = .None},
 				)
 			}
-			if clay.UI(clay.ID("NevHighlightSourceArrow", id * 64 + u32(index)))(
-			{layout = {sizing = {width = clay.SizingFixed(12)}, childAlignment = {x = .Center}}},
+			if nendo.box(nendo.id("NevHighlightSourceArrow", id * 64 + u32(index)))(
+			{width = nendo.fixed(12), align = {x = .Center}},
 			) {
 				if len(url) >
-				   0 {clay.Text("\uf08e", {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM})}
+				   0 {nendo.text("\uf08e", {font = FONT_ICON, size = 11, color = TEXT_DIM})}
 			}
 		}
 	}
@@ -1404,16 +1340,12 @@ nev_card_image :: proc(id: u32, url: string, width: f32) {
 	if len(url) == 0 {return}
 	if tex := nev_img(url); tex != nil && tex.width > 0 && tex.height > 0 {
 		scale := min(width / f32(tex.width), 200 / f32(tex.height))
-		if clay.UI(clay.ID("NevImage", id))(
+		if nendo.box(nendo.id("NevImage", id))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingFixed(f32(tex.width) * scale),
-					height = clay.SizingFixed(f32(tex.height) * scale),
-				},
-			},
-			image = {imageData = tex},
-			cornerRadius = rr(6),
+			width = nendo.fixed(f32(tex.width) * scale),
+			height = nendo.fixed(f32(tex.height) * scale),
+			image = tex,
+			radius = rr(6),
 		},
 		) {}
 	}
@@ -1452,13 +1384,13 @@ nev_card_excerpt :: proc(id: u32, key: string, card: Nev_Card, width: f32, summa
 	more := excerpt_body(base + 5, description, blocks, card.excerpt, width, TEXT_DIM, .Embed)
 	if message_line_limit() < max(int) &&
 	   (more || len(summary) > 0 && summary != card.content || len(card.geocache.mission) > 0) {
-		if clay.UI(clay.ID("NevMore", id))(
-		{layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}},
+		if nendo.box(nendo.id("NevMore", id))(
+		{padding = {top = 4, bottom = 4}, color = hovered() ? HOVER : {}},
 		) {
 			if hovered() {nev_more_hover, nev_more_id = key, base + 5}
-			clay.Text(
+			nendo.text(
 				card.excerpt.expanded ? tr("Show less") : tr("Read more"),
-				{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
+				{font = FONT_BODY, size = 12, color = ACCENT},
 			)
 		}
 	}
@@ -1574,11 +1506,11 @@ nev_geocache_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 	if len(c.mission) >
 	   0 {body_text(base + 4, c.mission, BODY_FS, TEXT_DIM, wrap_w = width, max_lines = 3)}
 	if len(c.hint) > 0 {
-		if clay.UI(clay.ID("NevHint", id))(
-		{layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}},
+		if nendo.box(nendo.id("NevHint", id))(
+		{padding = {top = 4, bottom = 4}, color = hovered() ? HOVER : {}},
 		) {
 			if hovered() {nev_hint_hover = key}
-			clay.Text(tr("Show hint"), {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
+			nendo.text(tr("Show hint"), {font = FONT_BODY, size = 12, color = ACCENT})
 		}
 	}
 	if len(c.geohash) == 0 {return}
@@ -1586,10 +1518,10 @@ nev_geocache_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 	zoom := min(15, len(c.geohash) * 2 + 2)
 	geo_map(id, c.geohash, {c.lat, c.lon}, zoom, width, min(width, 256))
 	open_url, open_label := geo_open(c.geohash, {c.lat, c.lon}, zoom)
-	if clay.UI(clay.ID("NevMapOpen", id))(
-	{layout = {sizing = {width = clay.SizingFixed(width)}, padding = {top = 4, bottom = 4}}},
+	if nendo.box(nendo.id("NevMapOpen", id))(
+	{width = nendo.fixed(width), padding = {top = 4, bottom = 4}},
 	) {
 		if hovered() {link_hover = open_url}
-		clay.Text(open_label, {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
+		nendo.text(open_label, {font = FONT_BODY, size = 12, color = ACCENT})
 	}
 }

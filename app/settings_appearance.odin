@@ -1,10 +1,10 @@
 package main
 
 import "core:fmt"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
-// Stable focus keys map the workbench's indexed chips to their Clay hit targets.
+// Stable focus keys map the workbench's indexed chips to their nendo hit targets.
 @(private)
 APPEARANCE_CONTROLS := []struct {
 	key, id: string,
@@ -66,74 +66,60 @@ settings_appearance :: proc(ui: ^Ui_State) {
 	layout := appearance_layout(ui)
 	split := layout.columns > 1
 	clear(&theme_control_order)
-	if clay.UI(clay.ID("AppearanceWorkbench"))(
+	if nendo.box(nendo.id("AppearanceWorkbench"))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), split ? clay.SizingGrow() : clay.SizingFit()},
-			layoutDirection = split ? .LeftToRight : .TopToBottom,
-			childGap = 16,
-		},
+		width = nendo.grow(),
+		height = split ? nendo.grow() : nendo.fit(),
+		direction = split ? .Row : .Column,
+		gap = 16,
 	},
 	) {
-		if clay.UI(clay.ID("AppearanceControls"))(
+		if nendo.box(nendo.id("AppearanceControls"))(
 		{
-			layout = {
-				sizing = {
-					clay.SizingFixed(layout.controls),
-					split ? clay.SizingGrow() : clay.SizingFit(),
-				},
-				layoutDirection = .TopToBottom,
-				childGap = 18,
-				padding = {top = 8, bottom = 8},
-			},
-			clip = {vertical = split, childOffset = clay.GetScrollOffset()},
+			width = nendo.fixed(layout.controls),
+			height = split ? nendo.grow() : nendo.fit(),
+			direction = .Column,
+			gap = 18,
+			padding = {top = 8, bottom = 8},
+			clip = {y = split, scroll = true},
 		},
 		) {
 			settings_appearance_controls(ui)
 		}
-		if split {scrollbar(clay.ID("AppearanceControls"))}
+		if split {scrollbar(nendo.id("AppearanceControls"))}
 		// On narrow screens the preview stays near the controls it illustrates.
-		if clay.UI(clay.ID("AppearanceSamples"))(
+		if nendo.box(nendo.id("AppearanceSamples"))(
 		{
-			layout = {
-				sizing = {clay.SizingGrow(), split ? clay.SizingGrow() : clay.SizingFit()},
-				layoutDirection = layout.columns == 3 ? .LeftToRight : .TopToBottom,
-				childGap = 16,
-			},
+			width = nendo.grow(),
+			height = split ? nendo.grow() : nendo.fit(),
+			direction = layout.columns == 3 ? .Row : .Column,
+			gap = 16,
 		},
 		) {
 			for panel in 0 ..< 2 {
 				preview := split ? panel == 1 : panel == 0
 				if preview {
-					if clay.UI(clay.ID("AppearancePreview"))(
+					if nendo.box(nendo.id("AppearancePreview"))(
 					{
-						layout = {
-							sizing = {
-								clay.SizingFixed(layout.preview),
-								split ? clay.SizingGrow() : clay.SizingFit(),
-							},
-						},
-						clip = {vertical = split, childOffset = clay.GetScrollOffset()},
+						width = nendo.fixed(layout.preview),
+						height = split ? nendo.grow() : nendo.fit(),
+						clip = {y = split, scroll = true},
 					},
 					) {
 						settings_conversation_preview(ui)
 					}
-					if split {scrollbar(clay.ID("AppearancePreview"))}
+					if split {scrollbar(nendo.id("AppearancePreview"))}
 				} else {
-					if clay.UI(clay.ID("AppearanceThemes"))(
+					if nendo.box(nendo.id("AppearanceThemes"))(
 					{
-						layout = {
-							sizing = {
-								clay.SizingFixed(layout.themes),
-								split ? clay.SizingGrow() : clay.SizingFit(),
-							},
-						},
-						clip = {vertical = split, childOffset = clay.GetScrollOffset()},
+						width = nendo.fixed(layout.themes),
+						height = split ? nendo.grow() : nendo.fit(),
+						clip = {y = split, scroll = true},
 					},
 					) {
 						settings_theme_gallery(ui, layout.themes)
 					}
-					if split {scrollbar(clay.ID("AppearanceThemes"))}
+					if split {scrollbar(nendo.id("AppearanceThemes"))}
 				}
 			}
 		}
@@ -147,7 +133,7 @@ appearance_control_input :: proc(ui: ^Ui_State, pressed: string) -> bool {
 	if rl.IsMouseButtonPressed(.LEFT) {
 		appearance_hold = {}
 		for id in ([2]string{"MessageLinesMinus", "MessageLinesPlus"}) {
-			if clay.PointerOver(clay.ID(id)) {
+			if nendo.pointer_over(nendo.id(id)) {
 				appearance_hold = {
 					id  = id,
 					at  = rl.GetTime() + 0.45,
@@ -162,7 +148,7 @@ appearance_control_input :: proc(ui: ^Ui_State, pressed: string) -> bool {
 		   abs(pos.y - appearance_hold.pos.y) > LONG_PRESS_SLOP {
 			appearance_hold = {}
 		} else if rl.GetTime() >= appearance_hold.at {
-			appearance_activate(ui, clay.ID(appearance_hold.id))
+			appearance_activate(ui, nendo.id(appearance_hold.id))
 			appearance_hold.at = rl.GetTime() + 0.12
 			appearance_hold.repeated = true
 			return true
@@ -173,8 +159,8 @@ appearance_control_input :: proc(ui: ^Ui_State, pressed: string) -> bool {
 		return true
 	}
 	for entry in APPEARANCE_CONTROLS {
-		control := clay.ID(entry.id, entry.index)
-		if pressed != entry.key && !(mouse_released() && clay.PointerOver(control)) {
+		control := nendo.id(entry.id, entry.index)
+		if pressed != entry.key && !(mouse_released() && nendo.pointer_over(control)) {
 			continue
 		}
 		if entry.id == "TgMotion" || entry.id == "TgCentered" || entry.id == "TgHandDrawn" {
@@ -197,28 +183,28 @@ appearance_hold: struct {
 
 // Deep links and keyboard focus scroll their own column, never its neighbours.
 @(private)
-appearance_scroll :: proc(ui: ^Ui_State, field: clay.ElementId) -> clay.ElementId {
-	if appearance_layout(ui).columns == 1 {return clay.ID("SettingsPage")}
-	if field == clay.ID("Composer") {return clay.ID("AppearancePreview")}
-	box := clay.GetElementData(field).boundingBox
+appearance_scroll :: proc(ui: ^Ui_State, field: nendo.Id) -> nendo.Id {
+	if appearance_layout(ui).columns == 1 {return nendo.id("SettingsPage")}
+	if field == nendo.id("Composer") {return nendo.id("AppearancePreview")}
+	box := nendo.element(field).rect
 	for id in ([2]string{"AppearanceThemes", "AppearancePreview"}) {
-		panel := clay.GetElementData(clay.ID(id)).boundingBox
+		panel := nendo.element(nendo.id(id)).rect
 		if box.x >= panel.x && box.x < panel.x + panel.width {
-			return clay.ID(id)
+			return nendo.id(id)
 		}
 	}
-	return clay.ID("AppearanceControls")
+	return nendo.id("AppearanceControls")
 }
 
 @(private)
-appearance_activate :: proc(ui: ^Ui_State, control: clay.ElementId) {
-	if control == clay.ID("MessageLinesMinus") ||
-	   control == clay.ID("MessageLinesPlus") ||
-	   control == clay.ID("MessageLinesReset") {
+appearance_activate :: proc(ui: ^Ui_State, control: nendo.Id) {
+	if control == nendo.id("MessageLinesMinus") ||
+	   control == nendo.id("MessageLinesPlus") ||
+	   control == nendo.id("MessageLinesReset") {
 		lines := ui.prefs.message_lines
-		if control == clay.ID("MessageLinesMinus") {lines = max(lines - 1, 0)}
-		if control == clay.ID("MessageLinesPlus") && lines < max(int) {lines += 1}
-		if control == clay.ID("MessageLinesReset") {lines = DEFAULT_MESSAGE_LINES}
+		if control == nendo.id("MessageLinesMinus") {lines = max(lines - 1, 0)}
+		if control == nendo.id("MessageLinesPlus") && lines < max(int) {lines += 1}
+		if control == nendo.id("MessageLinesReset") {lines = DEFAULT_MESSAGE_LINES}
 		ui.prefs.message_lines = lines
 		for &msg in ui.messages {msg.excerpt = {}; msg.row_height = 0}
 		for &pending in ui.pending {pending.excerpt = {}}
@@ -227,21 +213,21 @@ appearance_activate :: proc(ui: ^Ui_State, control: clay.ElementId) {
 		return
 	}
 	for _, shape in AVATAR_SHAPE_NAMES {
-		if control == clay.ID("AvatarShapeChip", u32(shape)) {
+		if control == nendo.id("AvatarShapeChip", u32(shape)) {
 			ui.prefs.avatar_shape = shape
 			save_settings(ui)
 			return
 		}
 	}
 	for _, shape in CROP_SHAPE_NAMES {
-		if control == clay.ID("CropShapeChip", u32(shape)) {
+		if control == nendo.id("CropShapeChip", u32(shape)) {
 			ui.prefs.crop_avatar_shape = shape
 			save_settings(ui)
 			return
 		}
 	}
 	for _, i in BODY_FONT_DELTAS {
-		if control == clay.ID("BodyFontChip", u32(i)) {
+		if control == nendo.id("BodyFontChip", u32(i)) {
 			ui.prefs.body_font = BODY_FONT_DELTAS[i]
 			apply_zoom(ui)
 			save_settings(ui)
@@ -249,25 +235,25 @@ appearance_activate :: proc(ui: ^Ui_State, control: clay.ElementId) {
 		}
 	}
 	for _, i in SCROLL_SPEEDS {
-		if control == clay.ID("ScrollChip", u32(i)) {
+		if control == nendo.id("ScrollChip", u32(i)) {
 			ui.prefs.scroll_speed = SCROLL_SPEEDS[i]
 			save_settings(ui)
 			return
 		}
 	}
 	for _, set in EMOJI_SET_NAMES {
-		if control == clay.ID("EmojiSetChip", u32(set)) {
+		if control == nendo.id("EmojiSetChip", u32(set)) {
 			ui.prefs.emoji_set = set
 			emoji_set_load(set)
 			save_settings(ui)
 			return
 		}
 	}
-	if control == clay.ID("ZoomMinus") {
+	if control == nendo.id("ZoomMinus") {
 		ui.prefs.zoom_pct -= 10
-	} else if control == clay.ID("ZoomPlus") {
+	} else if control == nendo.id("ZoomPlus") {
 		ui.prefs.zoom_pct += 10
-	} else if control == clay.ID("ZoomReset") {
+	} else if control == nendo.id("ZoomReset") {
 		ui.prefs.zoom_pct = 100
 	} else {
 		return
@@ -295,31 +281,25 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 	}
 
 	if ui.theme != system_theme_index && has_accent_choices {
-		if clay.UI(clay.ID("ThemeGroup"))(settings_box()) {
+		if nendo.box(nendo.id("ThemeGroup"))(settings_box()) {
 			settings_group(tr("Theme"))
 			if ui.theme != system_theme_index && has_accent_choices {
-				if clay.UI(clay.ID("RowAccent"))(settings_row(true)) {
+				if nendo.box(nendo.id("RowAccent"))(settings_row(true)) {
 					row_labels(tr("Accent color"), "")
-					clay.Text(
+					nendo.text(
 						theme_packs[preview_theme].accent_names[ui.accent],
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						{font = FONT_BODY, size = 12, color = TEXT_DIM},
 					)
-					if clay.UI(clay.ID("AccentChoices"))(
-					{layout = {childGap = single_pane() ? 4 : 10}},
-					) {
+					if nendo.box(nendo.id("AccentChoices"))({gap = single_pane() ? 4 : 10}) {
 						for name, i in theme_packs[preview_theme].accent_names {
 							append(&theme_control_order, THEME_ACCENT_KEYS[i])
-							if clay.UI(clay.ID("AccentDot", u32(i)))(
+							if nendo.box(nendo.id("AccentDot", u32(i)))(
 							{
-								layout = {
-									sizing = {
-										width = clay.SizingFixed(settings_tap_size(18)),
-										height = clay.SizingFixed(settings_tap_size(18)),
-									},
-								},
-								backgroundColor = len(theme_packs) > 0 ? theme_packs[preview_theme].accent_base[i] : default_pack().accent_base[i],
-								cornerRadius = rr(2),
-								border = kb_focus == THEME_ACCENT_KEYS[i] || ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
+								width = nendo.fixed(settings_tap_size(18)),
+								height = nendo.fixed(settings_tap_size(18)),
+								color = len(theme_packs) > 0 ? theme_packs[preview_theme].accent_base[i] : default_pack().accent_base[i],
+								radius = rr(2),
+								border = kb_focus == THEME_ACCENT_KEYS[i] || ui.accent == i ? nendo.Border{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
 							},
 							) {
 								if hovered() {tooltip(name)}
@@ -331,10 +311,10 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 
 		}
 	}
-	if clay.UI(clay.ID("InterfaceGroup"))(settings_box()) {
+	if nendo.box(nendo.id("InterfaceGroup"))(settings_box()) {
 		settings_group(tr("Interface"))
 		if len(theme_packs) > 0 && theme_packs[preview_theme].chalk_drawn {
-			if clay.UI(clay.ID("RowHandDrawn"))(settings_row()) {
+			if nendo.box(nendo.id("RowHandDrawn"))(settings_row()) {
 				settings_check(
 					"TgHandDrawn",
 					!ui.prefs.hand_drawn_disabled,
@@ -343,19 +323,19 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				)
 			}
 		}
-		if clay.UI(clay.ID("RowZoom"))(settings_row(true)) {
+		if nendo.box(nendo.id("RowZoom"))(settings_row(true)) {
 			row_labels(
 				tr("Interface zoom"),
 				tap_size() ? tr("Make everything larger or smaller.") : tr("Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."),
 			)
-			zoom_choices := settings_choices(clay.ID("ZoomChoices"))
-			zoom_choices.layout.layoutDirection = .LeftToRight
-			zoom_choices.layout.childGap = 4
+			zoom_choices := settings_choices(nendo.id("ZoomChoices"))
+			zoom_choices.direction = .Row
+			zoom_choices.gap = 4
 			zoom_choices.clip = {}
-			if clay.UI(clay.ID("ZoomChoices"))(zoom_choices) {
-				clay.Text(
+			if nendo.box(nendo.id("ZoomChoices"))(zoom_choices) {
+				nendo.text(
 					fmt.tprintf("%d%%", ui.prefs.zoom_pct),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
 				settings_button("ZoomMinus", "-")
 				settings_button("ZoomPlus", "+")
@@ -363,9 +343,11 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 			}
 			if single_pane() {settings_button("ZoomReset", tr("Reset"))}
 		}
-		if clay.UI(clay.ID("RowBodyFont"))(settings_row(true)) {
+		if nendo.box(nendo.id("RowBodyFont"))(settings_row(true)) {
 			row_labels(tr("Message text size"), tr("Applies to message bodies and the composer."))
-			if clay.UI(clay.ID("BodyFontChoices"))(settings_choices(clay.ID("BodyFontChoices"))) {
+			if nendo.box(nendo.id("BodyFontChoices"))(
+				settings_choices(nendo.id("BodyFontChoices")),
+			) {
 				for label, i in BODY_FONT_LABELS {
 					settings_option(
 						"BodyFontChip",
@@ -376,31 +358,30 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				}
 			}
 			if single_pane() {
-				clay.Text(
+				nendo.text(
 					tr("A message at this size."),
-					{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
+					{font = FONT_BODY, size = BODY_FS, color = TEXT},
 				)
 			}
 		}
-		if clay.UI(clay.ID("RowEmojiSet"))(settings_row(true)) {
+		if nendo.box(nendo.id("RowEmojiSet"))(settings_row(true)) {
 			row_labels(
 				tr("Emoji style"),
 				tr("Applies to the picker, reactions and emoji in messages."),
 			)
-			if clay.UI(clay.ID("EmojiSetChoices"))(settings_choices(clay.ID("EmojiSetChoices"))) {
+			if nendo.box(nendo.id("EmojiSetChoices"))(
+				settings_choices(nendo.id("EmojiSetChoices")),
+			) {
 				for name, set in EMOJI_SET_NAMES {
 					settings_option("EmojiSetChip", u32(set), name, ui.prefs.emoji_set == set)
 				}
 			}
 			if single_pane() {
-				if clay.UI(clay.ID("EmojiStyleSample"))({layout = {childGap = 12}}) {
+				if nendo.box(nendo.id("EmojiStyleSample"))({gap = 12}) {
 					for emoji, i in ([3]string{"😀", "❤️", "🥕"}) {
 						if tex := emoji_tex(emoji); tex != nil {
-							if clay.UI(clay.ID("EmojiStyleSampleImg", u32(i)))(
-							{
-								layout = {sizing = {clay.SizingFixed(24), clay.SizingFixed(24)}},
-								image = {imageData = tex},
-							},
+							if nendo.box(nendo.id("EmojiStyleSampleImg", u32(i)))(
+							{width = nendo.fixed(24), height = nendo.fixed(24), image = tex},
 							) {}
 						}
 					}
@@ -408,9 +389,11 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 			}
 		}
 		if !tap_size() {
-			if clay.UI(clay.ID("RowScroll"))(settings_row(true)) {
+			if nendo.box(nendo.id("RowScroll"))(settings_row(true)) {
 				row_labels(tr("Scroll speed"), tr("How far the mouse wheel moves the view."))
-				if clay.UI(clay.ID("ScrollChoices"))(settings_choices(clay.ID("ScrollChoices"))) {
+				if nendo.box(nendo.id("ScrollChoices"))(
+					settings_choices(nendo.id("ScrollChoices")),
+				) {
 					for label, i in SCROLL_SPEED_LABELS {
 						settings_option(
 							"ScrollChip",
@@ -424,9 +407,9 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 		}
 	}
 
-	if clay.UI(clay.ID("LayoutGroup"))(settings_box()) {
+	if nendo.box(nendo.id("LayoutGroup"))(settings_box()) {
 		settings_group(tr("Layout"))
-		if clay.UI(clay.ID("RowMotion"))(settings_row()) {
+		if nendo.box(nendo.id("RowMotion"))(settings_row()) {
 			settings_check(
 				"TgMotion",
 				ui.prefs.reduce_motion,
@@ -436,7 +419,7 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				),
 			)
 		}
-		if clay.UI(clay.ID("RowCentered"))(settings_row()) {
+		if nendo.box(nendo.id("RowCentered"))(settings_row()) {
 			settings_check(
 				"TgCentered",
 				ui.prefs.centered_chat,
@@ -446,54 +429,47 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 				),
 			)
 		}
-		if clay.UI(clay.ID("RowMessageLines"))(settings_row(true)) {
+		if nendo.box(nendo.id("RowMessageLines"))(settings_row(true)) {
 			row_labels(
 				tr("Message line limit"),
 				tr(
 					"Collapse messages and event cards after this many lines. Set to 0 to never collapse.",
 				),
 			)
-			if clay.UI(clay.ID("MessageLinesChoices"))(
-			{layout = {childGap = 12, childAlignment = {y = .Center}}},
-			) {
-				if clay.UI(clay.ID("MessageLinesStepper"))(
+			if nendo.box(nendo.id("MessageLinesChoices"))({gap = 12, align = {y = .Center}}) {
+				if nendo.box(nendo.id("MessageLinesStepper"))(
 				{
-					layout = {padding = clay.PaddingAll(2), childAlignment = {y = .Center}},
-					backgroundColor = CARD,
+					padding = nendo.pad(2),
+					align = {y = .Center},
+					color = CARD,
 					border = {color = FIELD_BORDER, width = bw()},
-					cornerRadius = rr(7),
+					radius = rr(7),
 				},
 				) {
 					for id, i in ([3]string{"MessageLinesMinus", "MessageLinesValue", "MessageLinesPlus"}) {
 						action := i == 2 || i == 0 && ui.prefs.message_lines > 0
-						if clay.UI(clay.ID(id))(
+						if nendo.box(nendo.id(id))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingFit(
-										{min = settings_tap_size(i == 1 ? 44 : 28)},
-									),
-									height = clay.SizingFixed(settings_tap_size(28)),
-								},
-								padding = {
-									left = 6,
-									right = 6,
-									top = action ? press_down(clay.ID(id)) : 0,
-								},
-								childAlignment = {x = .Center, y = .Center},
+							width = nendo.fit(min = settings_tap_size(i == 1 ? 44 : 28)),
+							height = nendo.fixed(settings_tap_size(28)),
+							padding = {
+								left = 6,
+								right = 6,
+								top = action ? press_down(nendo.id(id)) : 0,
 							},
-							backgroundColor = action && hovered() ? HOVER : {},
-							cornerRadius = rr(4),
+							align = {x = .Center, y = .Center},
+							color = action && hovered() ? HOVER : {},
+							radius = rr(4),
 						},
 						) {
 							label :=
 								i == 1 ? (ui.prefs.message_lines == 0 ? tr("Never") : fmt.tprintf("%d", ui.prefs.message_lines)) : i == 0 ? "-" : "+"
-							clay.Text(
+							nendo.text(
 								label,
 								{
-									fontId = FONT_BODY,
-									fontSize = i == 1 ? 13 : 16,
-									textColor = i == 1 ? TEXT : action ? TEXT_DIM : TEXT_LO,
+									font = FONT_BODY,
+									size = i == 1 ? 13 : 16,
+									color = i == 1 ? TEXT : action ? TEXT_DIM : TEXT_LO,
 								},
 							)
 						}
@@ -509,15 +485,15 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 		   (len(theme_packs) == 0 || !theme_packs[preview_theme].chalk_drawn) {continue}
 		append(&theme_control_order, control.key)
 	}
-	if clay.UI(clay.ID("ThemeActionsGroup"))(settings_box()) {
+	if nendo.box(nendo.id("ThemeActionsGroup"))(settings_box()) {
 		settings_group(tr("Sharing"))
-		if clay.UI(clay.ID("RowThemeShare"))(settings_row(true)) {
+		if nendo.box(nendo.id("RowThemeShare"))(settings_row(true)) {
 			row_labels(
 				tr("Share this theme"),
 				tr("Pick a chat to send it to. They choose whether to use it."),
 			)
-			if clay.UI(clay.ID("ThemeShareActions"))(
-				settings_choices(clay.ID("ThemeShareActions")),
+			if nendo.box(nendo.id("ThemeShareActions"))(
+				settings_choices(nendo.id("ThemeShareActions")),
 			) {
 				append(&theme_control_order, "ThemeShareBtn", "ThemeEditBtn")
 				settings_button("ThemeShareBtn", tr("Share to chat"))

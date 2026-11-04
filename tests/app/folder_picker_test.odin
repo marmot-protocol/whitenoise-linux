@@ -7,10 +7,10 @@ import "core:strings"
 import "core:testing"
 import "core:text/edit"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
-// SDL and Clay own process globals, so the canonical suite runs this alone.
+// SDL and nendo own process globals, so the canonical suite runs this alone.
 @(test)
 folder_picker_dispatch :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "folder_picker_dispatch" {return}
@@ -24,10 +24,10 @@ folder_picker_dispatch :: proc(t: ^testing.T) {
 	locale := g_prefs != nil ? g_prefs.locale : "en"
 	set_locale("en")
 	defer set_locale(locale)
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		page          = .Chats,
 		selected      = 0,
@@ -43,24 +43,24 @@ folder_picker_dispatch :: proc(t: ^testing.T) {
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; forced_release = false; text_field_live = false}
 
-	frame :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
-		clay.SetPointerState({-100, -100}, false)
+	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
+		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
 		return build_layout(ui, 0)
 	}
-	click :: proc(t: ^testing.T, id: clay.ElementId) -> bool {
-		data := clay.GetElementData(id)
+	click :: proc(t: ^testing.T, id: nendo.Id) -> bool {
+		data := nendo.element(id)
 		if !testing.expect(t, data.found, "dispatch target exists") {return false}
-		b := data.boundingBox
-		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
-		return testing.expect(t, clay.PointerOver(id), "dispatch target is reachable")
+		b := data.rect
+		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
+		return testing.expect(t, nendo.pointer_over(id), "dispatch target is reachable")
 	}
-	text_of :: proc(commands: clay.ClayArray(clay.RenderCommand)) -> string {
+	text_of :: proc(commands: []nendo.Render_Command) -> string {
 		text := make([dynamic]u8, context.temp_allocator)
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Text {continue}
-			data := command.renderData.text.stringContents
-			append(&text, ..data.chars[:data.length])
+		for command in commands {
+			if command.kind != .Text {continue}
+			data := command.text.text
+			append(&text, data)
 			append(&text, ' ')
 		}
 		return string(text[:])
@@ -73,7 +73,7 @@ folder_picker_dispatch :: proc(t: ^testing.T) {
 		ui.folder_open = false
 		ui.row_menu, ui.row_menu_x, ui.row_menu_y = 0, 100, 80
 		for _ in 0 ..< 3 {frame(&ui)}
-		if !click(t, clay.ID("RowFolder")) {return}
+		if !click(t, nendo.id("RowFolder")) {return}
 		// A menu row acts only when the press also landed on it.
 		menu_press = {}
 		forced_press = true
@@ -86,17 +86,17 @@ folder_picker_dispatch :: proc(t: ^testing.T) {
 		testing.expect_value(t, ui.folder_mode, Folder_Mode.Move)
 		testing.expect_value(t, ui.folder_gid, "offline-chat")
 		testing.expect_value(t, ui.focus == .Folder, count > 5)
-		commands: clay.ClayArray(clay.RenderCommand)
+		commands: []nendo.Render_Command
 		for _ in 0 ..< 3 {commands = frame(&ui)}
 		text := text_of(commands)
-		testing.expect_value(t, clay.GetElementData(clay.ID("FolderSearchBox")).found, count > 5)
+		testing.expect_value(t, nendo.element(nendo.id("FolderSearchBox")).found, count > 5)
 		testing.expect_value(t, strings.contains(text, "You have no folders yet."), count == 0)
 		testing.expect(t, strings.contains(text, "Unfiled"))
-		testing.expect(t, clay.GetElementData(clay.ID("FolderNew")).found)
+		testing.expect(t, nendo.element(nendo.id("FolderNew")).found)
 		if count == 0 {
 			if path := os.get_env("WN_FOLDER_CAPTURE", context.temp_allocator); path != "" {
 				rl.BeginDrawing()
-				draw_frame(&commands)
+				draw_frame(commands)
 				rl.TakeScreenshot(strings.clone_to_cstring(path, context.temp_allocator))
 				rl.EndDrawing()
 			}
@@ -114,27 +114,27 @@ folder_picker_dispatch :: proc(t: ^testing.T) {
 		// A zero-match search still retains its field and Unfiled destination.
 		if count > 5 {
 			commands = frame(&ui)
-			testing.expect(t, clay.GetElementData(clay.ID("FolderSearchBox")).found)
+			testing.expect(t, nendo.element(nendo.id("FolderSearchBox")).found)
 			testing.expect(t, strings.contains(text_of(commands), "No folders match your search."))
-			testing.expect(t, clay.GetElementData(clay.ID("FolderDestination", u32(count))).found)
+			testing.expect(t, nendo.element(nendo.id("FolderDestination", u32(count))).found)
 		} else {
 			// Stale text must not hide destinations when the list is too short.
 			ed_set(&ui, &ui.folder_search, "stale search")
 			commands = frame(&ui)
 			for i in 0 ..< count {
-				testing.expect(t, clay.GetElementData(clay.ID("FolderDestination", u32(i))).found)
+				testing.expect(t, nendo.element(nendo.id("FolderDestination", u32(i))).found)
 			}
 		}
-		if !click(t, clay.ID("FolderNew")) {return}
+		if !click(t, nendo.id("FolderNew")) {return}
 		forced_release = true
 		handle_folder_modal(&ui, nil)
 		forced_release = false
 		testing.expect_value(t, ui.folder_mode, Folder_Mode.Create)
 		testing.expect_value(t, ui.focus, Focus.Folder)
 		for _ in 0 ..< 3 {frame(&ui)}
-		testing.expect(t, clay.GetElementData(clay.ID("FolderBox")).found)
+		testing.expect(t, nendo.element(nendo.id("FolderBox")).found)
 		// Cancel must return to the same picker with the appropriate focus.
-		if !click(t, clay.ID("FolderCancel")) {return}
+		if !click(t, nendo.id("FolderCancel")) {return}
 		forced_release = true
 		handle_folder_modal(&ui, nil)
 		forced_release = false

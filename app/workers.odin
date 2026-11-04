@@ -1596,7 +1596,7 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 }
 
 // Which hover action a chat row offers (rail rows archive, archive-page
-// rows unarchive); also selects the chip's clay ID for click handling.
+// rows unarchive); also selects the chip's nendo ID for click handling.
 
 // ── Contact key-package probe ───────────────────────────────────────
 //

@@ -3,13 +3,13 @@ package main
 import "core:sync"
 import "core:testing"
 import "core:time"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
 video_tile_bounds :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	render := #config(ODIN_TEST_NAMES, "") == "video_tile_bounds"
 	if render {
 		rl.InitWindow(800, 800, "Video regression")
@@ -17,10 +17,10 @@ video_tile_bounds :: proc(t: ^testing.T) {
 		init_fonts()
 	}
 	defer if render {rl.CloseWindow()}
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 1200})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	old_bars := video_bars
 	video_bars = {}
 	defer {delete(video_bars); video_bars = old_bars}
@@ -44,59 +44,48 @@ video_tile_bounds :: proc(t: ^testing.T) {
 	defer delete(msg.attachments)
 	for dimensions in ([][2]i32{{1080, 2400}, {1920, 1080}, {1080, 1080}, {0, 0}}) {
 		view.w, view.h = dimensions[0], dimensions[1]
-		clay.SetPointerState({-1, -1}, false)
-		clay.BeginLayout()
+		nendo.set_pointer({-1, -1}, .Up)
+		nendo.begin()
 		message_row(0, msg)
-		commands := clay.EndLayout(0)
+		commands := nendo.end(0)
 		if render && view.w == 1080 && view.h == 2400 {
 			rl.BeginDrawing()
-			draw_frame(&commands)
+			draw_frame(commands)
 			rl.TakeScreenshot("/tmp/wn-video-inline.png")
 			rl.EndDrawing()
 		}
-		tile := clay.GetElementData(clay.ID("MsgVideo", 0))
-		bar := clay.GetElementData(clay.ID("MsgVideoBar", 0))
-		fill := clay.GetElementData(clay.ID("VideoFill", clay.ID("MsgVideoBar", 0).id))
+		tile := nendo.element(nendo.id("MsgVideo", 0))
+		bar := nendo.element(nendo.id("MsgVideoBar", 0))
+		fill := nendo.element(nendo.id("VideoFill", nendo.id("MsgVideoBar", 0).id))
 		testing.expect(t, tile.found && bar.found && fill.found)
-		testing.expect(t, tile.boundingBox.width <= 320 && tile.boundingBox.height <= 320)
+		testing.expect(t, tile.rect.width <= 320 && tile.rect.height <= 320)
 		ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 16.0 / 9.0
-		testing.expect(t, abs(tile.boundingBox.width / tile.boundingBox.height - ratio) < 0.00001)
-		testing.expect_value(t, bar.boundingBox.width, tile.boundingBox.width)
-		testing.expect_value(t, fill.boundingBox.width, bar.boundingBox.width / 2)
-		testing.expect_value(
-			t,
-			bar.boundingBox.y + bar.boundingBox.height,
-			tile.boundingBox.y + tile.boundingBox.height,
-		)
-		testing.expect(t, clay.GetElementData(clay.ID("MsgVideoFull", 0)).found)
+		testing.expect(t, abs(tile.rect.width / tile.rect.height - ratio) < 0.00001)
+		testing.expect_value(t, bar.rect.width, tile.rect.width)
+		testing.expect_value(t, fill.rect.width, bar.rect.width / 2)
+		testing.expect_value(t, bar.rect.y + bar.rect.height, tile.rect.y + tile.rect.height)
+		testing.expect(t, nendo.element(nendo.id("MsgVideoFull", 0)).found)
 
-		clay.SetPointerState(
-			{tile.boundingBox.x + tile.boundingBox.width / 2, tile.boundingBox.y + 50},
-			false,
-		)
-		clay.BeginLayout()
+		nendo.set_pointer({tile.rect.x + tile.rect.width / 2, tile.rect.y + 50}, .Up)
+		nendo.begin()
 		message_row(0, msg)
-		commands = clay.EndLayout(0)
+		commands = nendo.end(0)
 		if render && view.w == 1080 && view.h == 2400 {
 			rl.BeginDrawing()
-			draw_frame(&commands)
+			draw_frame(commands)
 			rl.TakeScreenshot("/tmp/wn-video-hover.png")
 			rl.EndDrawing()
 		}
-		bar = clay.GetElementData(clay.ID("MsgVideoBar", 0))
-		testing.expect_value(
-			t,
-			clay.GetElementData(clay.ID("MsgVideo", 0)).boundingBox,
-			tile.boundingBox,
-		)
-		clay.SetPointerState({bar.boundingBox.x + 10, bar.boundingBox.y + 1}, false)
+		bar = nendo.element(nendo.id("MsgVideoBar", 0))
+		testing.expect_value(t, nendo.element(nendo.id("MsgVideo", 0)).rect, tile.rect)
+		nendo.set_pointer({bar.rect.x + 10, bar.rect.y + 1}, .Up)
 		testing.expect(t, video_bar_active())
-		video_bar_drag = {clay.ID("MsgVideoBar", 0), &view}
-		clay.SetPointerState({-1, -1}, false)
+		video_bar_drag = {nendo.id("MsgVideoBar", 0), &view}
+		nendo.set_pointer({-1, -1}, .Up)
 		testing.expect(t, video_bar_active(), "seeking retains the gesture outside the player")
-		clay.BeginLayout()
+		nendo.begin()
 		message_row(0, msg)
-		clay.EndLayout(0)
+		nendo.end(0)
 		video_bar_drag = {}
 	}
 	ui: Ui_State
@@ -104,12 +93,12 @@ video_tile_bounds :: proc(t: ^testing.T) {
 	append(&ui.prefs.quick_reactions, "👍")
 	defer {delete(ui.messages); delete(ui.prefs.quick_reactions)}
 	// A seek cancels even a hold already armed before the bar claimed it.
-	tile := clay.GetElementData(clay.ID("MsgVideo", 0)).boundingBox
-	clay.SetPointerState({tile.x + tile.width / 2, tile.y + 50}, true)
+	tile := nendo.element(nendo.id("MsgVideo", 0)).rect
+	nendo.set_pointer({tile.x + tile.width / 2, tile.y + 50}, .Down)
 	rl.PushMouseButton(.LEFT, true)
 	handle_react_fan(&ui, nil)
 	rl.WindowShouldClose()
-	video_bar_drag = {clay.ID("MsgVideoBar", 0), &view}
+	video_bar_drag = {nendo.id("MsgVideoBar", 0), &view}
 	time.sleep(500 * time.Millisecond)
 	handle_react_fan(&ui, nil)
 	testing.expect(t, !fan_open(), "seeking must not open the reaction wheel")
@@ -134,14 +123,14 @@ video_tile_bounds :: proc(t: ^testing.T) {
 	if render {
 		view.w, view.h = 1080, 2400
 		view.dw, view.dh = 1080, 2400
-		clay.SetLayoutDimensions({f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())})
-		clay.BeginLayout()
+		nendo.set_dimensions({f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())})
+		nendo.begin()
 		preview_modal(&ui)
-		commands := clay.EndLayout(0)
-		box := clay.GetElementData(clay.ID("PvVideo")).boundingBox
+		commands := nendo.end(0)
+		box := nendo.element(nendo.id("PvVideo")).rect
 		testing.expect(t, box.y >= 0 && box.y + box.height <= f32(rl.GetScreenHeight()))
 		rl.BeginDrawing()
-		draw_frame(&commands)
+		draw_frame(commands)
 		rl.TakeScreenshot("/tmp/wn-video-fullscreen.png")
 		rl.EndDrawing()
 	}

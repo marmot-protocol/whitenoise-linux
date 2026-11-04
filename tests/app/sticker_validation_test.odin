@@ -5,7 +5,7 @@ import "core:strings"
 import "core:testing"
 import "core:thread"
 import "core:time"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=sticker_input_validation
@@ -47,14 +47,11 @@ sticker_input_validation :: proc(t: ^testing.T) {
 		for _ in 0 ..< 8 {anim_frame += 1; build_layout(ui, 0)}
 	}
 	press :: proc(t: ^testing.T, ui: ^Ui_State, id: string) {
-		data := clay.GetElementData(clay.ID(id, 0))
+		data := nendo.element(nendo.id(id, 0))
 		testing.expect(t, data.found)
-		clay.SetPointerState(
-			{
-				data.boundingBox.x + data.boundingBox.width / 2,
-				data.boundingBox.y + data.boundingBox.height / 2,
-			},
-			false,
+		nendo.set_pointer(
+			{data.rect.x + data.rect.width / 2, data.rect.y + data.rect.height / 2},
+			.Up,
 		)
 		forced_release = true
 		handle_sticker_panel(ui)
@@ -76,7 +73,7 @@ sticker_input_validation :: proc(t: ^testing.T) {
 			draw(&ui)
 			testing.expect(
 				t,
-				!clay.GetElementData(clay.ID("StickerRetry", 0)).found,
+				!nendo.element(nendo.id("StickerRetry", 0)).found,
 				"Invalid input has not failed a network lookup and must not offer Retry",
 			)
 		}
@@ -108,7 +105,7 @@ sticker_input_validation :: proc(t: ^testing.T) {
 		testing.expect(t, ui.sticker_loading && ui.sticker_error == "")
 		testing.expect_value(t, len(sticker_jobs), 1)
 		draw(&ui)
-		testing.expect(t, !clay.GetElementData(clay.ID("StickerRetry", 0)).found)
+		testing.expect(t, !nendo.element(nendo.id("StickerRetry", 0)).found)
 		for attempt in 0 ..< 2 {
 			job := sticker_jobs[0]
 			testing.expect_value(t, job.op, Sticker_Operation.Pack)
@@ -125,7 +122,7 @@ sticker_input_validation :: proc(t: ^testing.T) {
 				"Couldn't load the pack. Check your relay settings and try again.",
 			)
 			draw(&ui)
-			testing.expect(t, clay.GetElementData(clay.ID("StickerRetry", 0)).found)
+			testing.expect(t, nendo.element(nendo.id("StickerRetry", 0)).found)
 			if attempt == 0 {
 				press(t, &ui, "StickerRetry")
 				testing.expect(t, ui.sticker_loading && ui.sticker_error == "")
@@ -145,5 +142,5 @@ sticker_input_validation :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.sticker_error, "Enter a valid pack link or address.")
 	testing.expect_value(t, len(sticker_jobs), 0)
 	draw(&ui)
-	testing.expect(t, !clay.GetElementData(clay.ID("StickerRetry", 0)).found)
+	testing.expect(t, !nendo.element(nendo.id("StickerRetry", 0)).found)
 }

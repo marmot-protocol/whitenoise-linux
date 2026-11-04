@@ -19,8 +19,8 @@ conversation_kind_precedence :: proc(t: ^testing.T) {
 
 @(test)
 conversation_row_identity :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = context.temp_allocator
 	row := marmot.Presented_Chat_Row {
 		row = {group_id_hex = "conversation"},

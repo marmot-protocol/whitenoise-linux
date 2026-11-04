@@ -6,7 +6,7 @@ import "core:mem"
 import "core:os"
 import "core:strings"
 import "core:unicode/utf8"
-import clay "layout"
+import "nendo"
 
 @(private)
 TRANSLATION_TEXT_CAP :: 65536
@@ -331,15 +331,15 @@ translation_tick :: proc(ui: ^Ui_State) {
 	if s.paused {return}
 	// Queue only measured rows in the viewport, not a conversation's entire history.
 	if ui.prefs.translation_auto && ui.page == .Chats && !ui.show_members {
-		view := clay.GetScrollContainerData(clay.ID("Timeline"))
+		view := nendo.scroll(nendo.id("Timeline"))
 		if view.found {
 			for msg in ui.messages {
-				y := msg.row_top + view.scrollPosition.y
+				y := msg.row_top + view.position.y
 				if msg.mine ||
 				   (msg.thread_of != thread_cur(ui) && msg.id != thread_cur(ui)) ||
 				   msg.row_height <= 0 ||
 				   y + msg.row_height < 0 ||
-				   y > view.scrollContainerDimensions.height {continue}
+				   y > view.viewport.height {continue}
 				if s.results[Translation_Key{id = msg.id}] == nil {translation_request(ui, msg)}
 				for _, attachment in msg.attachments {
 					view := msg_audio(msg, attachment)
@@ -382,28 +382,19 @@ translation_controls :: proc(
 	result := translation_lookup(ui, msg, source, attachment)
 	if result == nil {return}
 	prefix := source == .Body ? "Translation" : "TranscriptTranslation"
-	if clay.UI(
-		clay.ID(source == .Body ? "TranslationControls" : "TranscriptTranslationControls", index),
+	if nendo.box(
+		nendo.id(source == .Body ? "TranslationControls" : "TranscriptTranslationControls", index),
 	)(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 4,
-			},
-		},
+		{width = nendo.grow(), direction = .Column, gap = 4},
 	) {
 		switch result.phase {
 		case .Queued:
-			clay.Text(
+			nendo.text(
 				tr("Waiting to translate..."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 		case .Running:
-			clay.Text(
-				translation_status(ui),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-			)
+			nendo.text(translation_status(ui), {font = FONT_BODY, size = 11, color = TEXT_DIM})
 			translation_progress(ui, fmt.tprintf("%sProgress%d", prefix, index))
 		case .Ready:
 			micro_button(
@@ -411,7 +402,7 @@ translation_controls :: proc(
 				tr(result.show ? N_("Show original") : N_("Show translation")),
 			)
 		case .Failed:
-			clay.Text(tr(result.error), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			nendo.text(tr(result.error), {font = FONT_BODY, size = 11, color = TEXT_DIM})
 			micro_button(fmt.tprintf("%sRetry%d", prefix, index), tr("Try again"))
 		case .Cancelled:
 			micro_button(fmt.tprintf("%sRetry%d", prefix, index), tr("Translate"))

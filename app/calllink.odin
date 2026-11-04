@@ -27,7 +27,7 @@ import "core:sync"
 import "core:sys/windows"
 import "core:thread"
 
-import clay "layout"
+import "nendo"
 
 _ :: windows
 
@@ -52,8 +52,8 @@ Call_Brand :: struct {
 	name:    string, // also the macOS bundle name, "<name>.app"
 	scheme:  string, // the desktop client's URL scheme
 	glyph:   string,
-	color:   clay.Color,
-	pressed: clay.Color,
+	color:   nendo.Color,
+	pressed: nendo.Color,
 }
 
 @(private = "file")
@@ -63,7 +63,7 @@ CALL_BRANDS := [Call_App]Call_Brand {
 }
 
 @(private = "file")
-CALL_INK :: clay.Color{255, 255, 255, 255}
+CALL_INK :: nendo.Color{255, 255, 255, 255}
 
 @(private)
 call_link :: proc(url: string) -> (link: Call_Link, ok: bool) {
@@ -361,16 +361,14 @@ call_card :: proc(id: u32, url: string, link: Call_Link) {
 		caption = fmt.tprintf(tr("Opens %s in your browser, outside White Noise."), link.host)
 	}
 
-	if clay.UI(clay.ID("CallCard", id))(
+	if nendo.box(nendo.id("CallCard", id))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(att_w(360))},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(14),
-			childGap = 12,
-		},
-		backgroundColor = PLATE,
-		cornerRadius = rr(14),
+		width = nendo.fixed(att_w(360)),
+		direction = .Column,
+		padding = nendo.pad(14),
+		gap = 12,
+		color = PLATE,
+		radius = rr(14),
 		border = {color = hovered() ? fade(brand.color, 0.7) : CARD_BORDER, width = bw()},
 	},
 	) {
@@ -380,67 +378,42 @@ call_card :: proc(id: u32, url: string, link: Call_Link) {
 			cursor_raise(.Pointer)
 		}
 
-		if clay.UI(clay.ID("CallCardHead", id))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 12,
-				childAlignment = {y = .Center},
-			},
-		},
+		if nendo.box(nendo.id("CallCardHead", id))(
+		{width = nendo.grow(), gap = 12, align = {y = .Center}},
 		) {
-			if clay.UI(clay.ID("CallCardTile", id))(
+			if nendo.box(nendo.id("CallCardTile", id))(
 			{
-				layout = {
-					sizing = {clay.SizingFixed(44), clay.SizingFixed(44)},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = brand.color,
-				cornerRadius = rr(12),
+				width = nendo.fixed(44),
+				height = nendo.fixed(44),
+				align = {x = .Center, y = .Center},
+				color = brand.color,
+				radius = rr(12),
 			},
 			) {
-				clay.Text(brand.glyph, {fontId = FONT_ICON, fontSize = 21, textColor = CALL_INK})
+				nendo.text(brand.glyph, {font = FONT_ICON, size = 21, color = CALL_INK})
 			}
-			if clay.UI(clay.ID("CallCardName", id))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 4,
-				},
-				clip = {horizontal = true},
-			},
+			if nendo.box(nendo.id("CallCardName", id))(
+			{width = nendo.grow(), direction = .Column, gap = 4, clip = {x = true}},
 			) {
-				clay.Text(
-					title,
-					{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT, wrapMode = .None},
-				)
-				clay.Text(
-					meta,
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None},
-				)
+				nendo.text(title, {font = FONT_TITLE, size = 15, color = TEXT, wrap = .None})
+				nendo.text(meta, {font = FONT_BODY, size = 11, color = TEXT_DIM, wrap = .None})
 			}
 		}
 
-		if clay.UI(clay.ID("CallCardJoin", id))(
+		if nendo.box(nendo.id("CallCardJoin", id))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				padding = {left = 12, right = 12, top = 10, bottom = 10},
-				childGap = 8,
-				childAlignment = {x = .Center, y = .Center},
-			},
-			backgroundColor = card_hover ? brand.pressed : brand.color,
-			cornerRadius = rr(10),
+			width = nendo.grow(),
+			padding = {left = 12, right = 12, top = 10, bottom = 10},
+			gap = 8,
+			align = {x = .Center, y = .Center},
+			color = card_hover ? brand.pressed : brand.color,
+			radius = rr(10),
 		},
 		) {
-			clay.Text(icon, {fontId = FONT_ICON, fontSize = 13, textColor = CALL_INK})
-			clay.Text(
-				action,
-				{fontId = FONT_TITLE, fontSize = 13, textColor = CALL_INK, wrapMode = .None},
-			)
+			nendo.text(icon, {font = FONT_ICON, size = 13, color = CALL_INK})
+			nendo.text(action, {font = FONT_TITLE, size = 13, color = CALL_INK, wrap = .None})
 		}
 
-		clay.Text(caption, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		nendo.text(caption, {font = FONT_BODY, size = 11, color = TEXT_DIM})
 	}
 }

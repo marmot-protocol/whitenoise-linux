@@ -4,7 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=composer_layout
@@ -62,7 +62,7 @@ composer_layout :: proc(t: ^testing.T) {
 		refresh_ui_scale()
 		for width in ([]i32{1200, 720, 420}) {
 			rl.SetWindowSize(i32(f32(width) * zoom), i32(800 * zoom))
-			clay.SetLayoutDimensions({f32(width), 800})
+			nendo.set_dimensions({f32(width), 800})
 			for suffix in ([]string{"tail", "tall", "👩🏽‍💻🔥", "\n\nnext", "", "word word"}) {
 				text := fmt.tprintf(
 					"%s%s",
@@ -86,7 +86,7 @@ composer_layout :: proc(t: ^testing.T) {
 				ed_set(&ui, &ui.compose, text)
 				for _ in 0 ..< 8 {
 					build_layout(&ui, 0)
-					box := clay.GetElementData(clay.ID("ComposeBox")).boundingBox
+					box := nendo.element(nendo.id("ComposeBox")).rect
 					testing.expect(
 						t,
 						box.x + box.width <= f32(width) + 0.01,
@@ -94,36 +94,29 @@ composer_layout :: proc(t: ^testing.T) {
 					)
 				}
 				commands := build_layout(&ui, 0)
-				staged := clay.GetScrollContainerData(clay.ID("StagedRow"))
-				testing.expect(
-					t,
-					staged.found &&
-					staged.contentDimensions.height > staged.scrollContainerDimensions.height,
-				)
-				testing.expect(t, staged.scrollContainerDimensions.height <= 144)
-				thumb := clay.GetElementData(clay.ID("StagedThumb", 0)).boundingBox
+				staged := nendo.scroll(nendo.id("StagedRow"))
+				testing.expect(t, staged.found && staged.content.height > staged.viewport.height)
+				testing.expect(t, staged.viewport.height <= 144)
+				thumb := nendo.element(nendo.id("StagedThumb", 0)).rect
 				testing.expect(t, thumb.width <= 80 && thumb.height <= 40)
 				for id in ([]string{"ChatPane", "ChatHeader", "Composer", "ComposeBox", "StagedRow"}) {
-					box := clay.GetElementData(clay.ID(id)).boundingBox
+					box := nendo.element(nendo.id(id)).rect
 					testing.expect(t, box.x + box.width <= f32(width) + 0.01, id)
 				}
 				for _, i in ui.staged {
-					box := clay.GetElementData(clay.ID("StagedX", u32(i))).boundingBox
+					box := nendo.element(nendo.id("StagedX", u32(i))).rect
 					testing.expect(
 						t,
 						box.x + box.width <= f32(width) + 0.01,
 						"attachment removal stays inside the window",
 					)
 				}
-				clip := clay.GetElementData(clay.ID("ComposeClip")).boundingBox
-				box := clay.GetElementData(clay.ID("ComposeBox")).boundingBox
+				clip := nendo.element(nendo.id("ComposeClip")).rect
+				box := nendo.element(nendo.id("ComposeBox")).rect
 				testing.expect(t, box.height <= 240 && box.y + box.height <= 800)
-				testing.expect(
-					t,
-					clay.GetElementData(clay.ID("Timeline")).boundingBox.height > 100,
-				)
+				testing.expect(t, nendo.element(nendo.id("Timeline")).rect.height > 100)
 				for _, i in compose_lines(text) {
-					row := clay.GetElementData(clay.ID("ComposeLine", u32(i))).boundingBox
+					row := nendo.element(nendo.id("ComposeLine", u32(i))).rect
 					testing.expect(
 						t,
 						row.x >= clip.x && row.x + row.width <= clip.x + clip.width + 1,
@@ -132,13 +125,13 @@ composer_layout :: proc(t: ^testing.T) {
 					testing.expect(
 						t,
 						row.height <= 21,
-						"Clay must not wrap a manually wrapped line again",
+						"nendo must not wrap a manually wrapped line again",
 					)
 				}
 				for id in ([]string{"AttachBtn", "EmojiBtn", "FxBtn", "PollBtn", "LocationBtn", "DictateBtn", "MicBtn", "SendBtn"}) {
-					element := clay.GetElementData(clay.ID(id))
+					element := nendo.element(nendo.id(id))
 					testing.expect(t, element.found, id)
-					button := element.boundingBox
+					button := element.rect
 					testing.expect(
 						t,
 						button.y >= clip.y + clip.height,
@@ -150,26 +143,21 @@ composer_layout :: proc(t: ^testing.T) {
 						"controls fit the pane",
 					)
 				}
-				if clay.GetScrollContainerData(clay.ID("ComposeClip")).contentDimensions.height >
-				   clip.height {
-					data := clay.GetScrollContainerData(clay.ID("ComposeClip"))
-					testing.expect(
-						t,
-						data.scrollPosition.y < 0,
-						"pasting follows the caret to the end",
-					)
+				if nendo.scroll(nendo.id("ComposeClip")).content.height > clip.height {
+					data := nendo.scroll(nendo.id("ComposeClip"))
+					testing.expect(t, data.position.y < 0, "pasting follows the caret to the end")
 					ed_begin(&ui, &ui.compose)
 					ui.ed.selection = {0, 0}
 					ed_end(&ui, &ui.compose)
 					for _ in 0 ..< 3 {build_layout(&ui, 0)}
-					testing.expect_value(t, data.scrollPosition.y, f32(0))
-					data.scrollPosition.y = -40
+					testing.expect_value(t, data.position.y, f32(0))
+					data.position.y = -40
 					build_layout(&ui, 0)
-					testing.expect_value(t, data.scrollPosition.y, f32(-40))
+					testing.expect_value(t, data.position.y, f32(-40))
 					ui.ed.selection = {len(text), len(text)}
 					for _ in 0 ..< 3 {build_layout(&ui, 0)}
 					last_line :=
-						clay.GetElementData(clay.ID("ComposeLine", u32(len(compose_lines(text)) - 1))).boundingBox
+						nendo.element(nendo.id("ComposeLine", u32(len(compose_lines(text)) - 1))).rect
 					testing.expect(
 						t,
 						last_line.y >= clip.y &&
@@ -180,18 +168,16 @@ composer_layout :: proc(t: ^testing.T) {
 				if len(text) > 10 {
 					commands = build_layout(&ui, 0)
 					rl.BeginDrawing()
-					draw_frame(&commands)
+					draw_frame(commands)
 					rl.TakeScreenshot(
 						fmt.ctprintf("/tmp/wn-composer-%d-%d.png", width, int(zoom * 100)),
 					)
 					rl.EndDrawing()
 				}
-				staged.scrollPosition.y =
-					staged.scrollContainerDimensions.height - staged.contentDimensions.height
+				staged.position.y = staged.viewport.height - staged.content.height
 				build_layout(&ui, 0)
-				view := clay.GetElementData(clay.ID("StagedRow")).boundingBox
-				last :=
-					clay.GetElementData(clay.ID("StagedX", u32(len(ui.staged) - 1))).boundingBox
+				view := nendo.element(nendo.id("StagedRow")).rect
+				last := nendo.element(nendo.id("StagedX", u32(len(ui.staged) - 1))).rect
 				testing.expect(
 					t,
 					last.y >= view.y && last.y + last.height <= view.y + view.height + 0.01,
@@ -206,24 +192,24 @@ composer_layout :: proc(t: ^testing.T) {
 	ed_set(&ui, &ui.compose, fmt.tprintf("hi @%s ok", npub))
 	build_layout(&ui, 0)
 	_, width := compose_atom(string(ui.compose[:]), 3)
-	chip := clay.GetElementData(clay.ID("SegMention", 0xE00 * 128 + 1))
+	chip := nendo.element(nendo.id("SegMention", 0xE00 * 128 + 1))
 	testing.expect(
 		t,
-		chip.found && abs(chip.boundingBox.width - width) < 0.01,
+		chip.found && abs(chip.rect.width - width) < 0.01,
 		"composer mentions render as chips",
 	)
 	ui.editing = "message"
 	build_layout(&ui, 0)
 	testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("LocationBtn")).found,
+		!nendo.element(nendo.id("LocationBtn")).found,
 		"editing cannot attach a location",
 	)
 	ui.editing = ""
 	build_layout(&ui, 0)
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("LocationBtn")).found,
+		nendo.element(nendo.id("LocationBtn")).found,
 		"new messages offer location again",
 	)
 }

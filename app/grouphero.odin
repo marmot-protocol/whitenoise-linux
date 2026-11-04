@@ -26,7 +26,7 @@ import "core:sync"
 import "core:thread"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -61,15 +61,13 @@ group_hero :: proc(ui: ^Ui_State) {
 	chat := ui.chats[ui.selected]
 	dm := chat_is_dm(chat)
 	admin := !dm && self_is_admin(ui)
-	if clay.UI(clay.ID("GroupHero"))(
+	if nendo.box(nendo.id("GroupHero"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			childGap = 8,
-			childAlignment = {x = .Center},
-			padding = {top = 4, bottom = 4},
-		},
+		width = nendo.grow(),
+		direction = .Column,
+		gap = 8,
+		align = {x = .Center},
+		padding = {top = 4, bottom = 4},
 	},
 	) {
 		peephole_avatar(
@@ -79,22 +77,16 @@ group_hero :: proc(ui: ^Ui_State) {
 			chat.title,
 			72,
 			chat_pic(chat),
-			admin && clay.PointerOver(clay.ID("HeroAvatar", 0)) ? .Open : .Closed,
+			admin && nendo.pointer_over(nendo.id("HeroAvatar", 0)) ? .Open : .Closed,
 		)
-		clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
+		nendo.text(chat.title, {font = FONT_TITLE, size = 20, color = TEXT})
 		if dm {
 			peer := chat_peer(ui)
 			if peer != "" {
 				npub := hex_npub(peer)
 				defer delete(npub)
-				clay.Text(
-					tr("Public key"),
-					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM},
-				)
-				clay.Text(
-					npub_tail(npub),
-					{fontId = FONT_MONO, fontSize = 12, textColor = TEXT_DIM},
-				)
+				nendo.text(tr("Public key"), {font = FONT_TITLE, size = 12, color = TEXT_DIM})
+				nendo.text(npub_tail(npub), {font = FONT_MONO, size = 12, color = TEXT_DIM})
 				micro_button("DmCopyKey", tr("Copy public key"))
 				micro_button("DmAbout", tr("About"))
 				micro_button("DmStartGroup", tr("Start group"))
@@ -102,25 +94,19 @@ group_hero :: proc(ui: ^Ui_State) {
 			}
 			return
 		}
-		clay.Text(
+		nendo.text(
 			fmt.tprintf(
 				tr(len(ui.members) == 1 ? N_("%d member") : N_("%d members")),
 				len(ui.members),
 			),
-			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, letterSpacing = 1},
+			{font = FONT_MONO, size = 11, color = TEXT_LO, spacing = 1},
 		)
 		if admin {
 			micro_button("HeroPicBtn", tr("Change photo"))
 		}
 		if admin && ui.gpic_menu_open {
-			if clay.UI(clay.ID("GpicMenu"))(
-			{
-				layout = {
-					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-					childGap = 8,
-					childAlignment = {x = .Center},
-				},
-			},
+			if nendo.box(nendo.id("GpicMenu"))(
+			{direction = single_pane() ? .Column : .Row, gap = 8, align = {x = .Center}},
 			) {
 				micro_button("GpicFile", tr("From file"))
 				micro_button("GpicEmoji", tr("From emoji"))
@@ -130,27 +116,16 @@ group_hero :: proc(ui: ^Ui_State) {
 
 		if admin && ui.desc_editing {
 			multiline_field(ui, &ui.desc_input, .Desc, tr("Describe the group"), 100)
-			if clay.UI(clay.ID("DescActions"))({layout = {childGap = 8}}) {
+			if nendo.box(nendo.id("DescActions"))({gap = 8}) {
 				folder_action("DescSave", tr("Save"), true)
 				micro_button("DescCancel", tr("Cancel"))
 			}
 		} else {
 			// Other clients may have published a description of only spaces.
 			if desc := strings.trim_space(ui.group_desc); len(desc) > 0 {
-				clay.Text(
-					desc,
-					{
-						fontId = FONT_BODY,
-						fontSize = 12,
-						textColor = TEXT_DIM,
-						textAlignment = .Center,
-					},
-				)
+				nendo.text(desc, {font = FONT_BODY, size = 12, color = TEXT_DIM, align = .Center})
 			} else {
-				clay.Text(
-					tr("No description."),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
-				)
+				nendo.text(tr("No description."), {font = FONT_BODY, size = 12, color = TEXT_LO})
 			}
 			if admin {
 				micro_button("DescEditBtn", tr("Edit"))
@@ -164,7 +139,8 @@ handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	if selected_chat_is_dm(ui) || !self_is_admin(ui) {
 		return false
 	}
-	if clicked("HeroPicBtn") || (mouse_released() && clay.PointerOver(clay.ID("HeroAvatar", 0))) {
+	if clicked("HeroPicBtn") ||
+	   (mouse_released() && nendo.pointer_over(nendo.id("HeroAvatar", 0))) {
 		ui.gpic_menu_open = !ui.gpic_menu_open
 		return true
 	}
@@ -184,7 +160,7 @@ handle_hero :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 			open_emoji_mix(ui, .Selected_Group)
 			return true
 		}
-		if mouse_released() && !clay.PointerOver(clay.ID("GpicMenu")) {
+		if mouse_released() && !nendo.pointer_over(nendo.id("GpicMenu")) {
 			ui.gpic_menu_open = false
 		}
 	}

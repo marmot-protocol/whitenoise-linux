@@ -7,10 +7,10 @@ import "core:testing"
 import "core:text/edit"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
-// SDL and Clay own process globals; run this separately like the other UI tests.
+// SDL and nendo own process globals; run this separately like the other UI tests.
 @(test)
 archive_chat_dispatch :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "archive_chat_dispatch" {return}
@@ -49,10 +49,10 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 	locale := g_prefs != nil ? g_prefs.locale : "en"
 	set_locale("en")
 	defer set_locale(locale)
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		page          = .Chats,
 		selected      = 0,
@@ -73,25 +73,25 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 	defer {g_ui, g_prefs = nil, nil; forced_release = false; text_field_live = false}
 
 	frame :: proc(ui: ^Ui_State) -> string {
-		clay.SetPointerState({-100, -100}, false)
+		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
 		commands := build_layout(ui, 0)
 		text := make([dynamic]u8, context.temp_allocator)
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Text {continue}
-			data := command.renderData.text.stringContents
-			append(&text, ..data.chars[:data.length])
+		for command in commands {
+			if command.kind != .Text {continue}
+			data := command.text.text
+			append(&text, data)
 			append(&text, ' ')
 		}
 		return string(text[:])
 	}
 	point :: proc(t: ^testing.T, name: string) -> bool {
-		id := clay.ID(name)
-		data := clay.GetElementData(id)
+		id := nendo.id(name)
+		data := nendo.element(id)
 		if !testing.expect(t, data.found, "dispatch target exists") {return false}
-		b := data.boundingBox
-		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
-		return testing.expect(t, clay.PointerOver(id), "dispatch target is reachable")
+		b := data.rect
+		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
+		return testing.expect(t, nendo.pointer_over(id), "dispatch target is reachable")
 	}
 
 	// A menu can target a different chat from the selected conversation.
@@ -145,7 +145,7 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 			handle_confirm(&ui, client)
 			rl.PushKey(.ENTER, false)
 		} else {
-			if cancel == "backdrop" {clay.SetPointerState({1, 1}, false)} else {
+			if cancel == "backdrop" {nendo.set_pointer({1, 1}, .Up)} else {
 				if !point(
 					t,
 					cancel == "confirm-click" || cancel == "switch-click" ? "ConfirmGo" : cancel,

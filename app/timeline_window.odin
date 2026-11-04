@@ -2,7 +2,7 @@ package main
 
 import "core:fmt"
 import "core:strings"
-import clay "layout"
+import "nendo"
 
 @(private)
 Reading_Place :: struct {
@@ -20,12 +20,12 @@ timeline_skip :: proc(ui: ^Ui_State, msg: Msg_Ui) -> bool {
 	   msg.row_measure != ui.timeline_metric {
 		return false
 	}
-	data := clay.GetScrollContainerData(clay.ID("Timeline"))
+	data := nendo.scroll(nendo.id("Timeline"))
 	if !data.found {
 		return false
 	}
-	y := msg.row_top + data.scrollPosition.y
-	h := data.scrollContainerDimensions.height
+	y := msg.row_top + data.position.y
+	h := data.viewport.height
 	return y + msg.row_height < -h || y > 2 * h
 }
 
@@ -34,8 +34,8 @@ timeline_measure :: proc(ui: ^Ui_State) {
 	if layout_overflow || ui.page != .Chats || ui.selected < 0 || ui.show_members {
 		return
 	}
-	view := clay.GetElementData(clay.ID("Timeline"))
-	data := clay.GetScrollContainerData(clay.ID("Timeline"))
+	view := nendo.element(nendo.id("Timeline"))
+	data := nendo.scroll(nendo.id("Timeline"))
 	if !view.found || !data.found {
 		return
 	}
@@ -47,11 +47,11 @@ timeline_measure :: proc(ui: ^Ui_State) {
 		if msg.thread_of != cur && msg.id != cur {
 			continue
 		}
-		row := clay.GetElementData(clay.ID(msg.system ? "SysRow" : "MsgRow", u32(i)))
+		row := nendo.element(nendo.id(msg.system ? "SysRow" : "MsgRow", u32(i)))
 		if row.found {
 			// The scrollbar can change the requested offset during layout. Measure
 			// against the offset these boxes used, so anchoring cannot undo a drag.
-			top := row.boundingBox.y - view.boundingBox.y - timeline_draw_offset
+			top := row.rect.y - view.rect.y - timeline_draw_offset
 			if !anchored &&
 			   msg.row_height > 0 &&
 			   msg.row_measure == ui.timeline_metric &&
@@ -59,15 +59,15 @@ timeline_measure :: proc(ui: ^Ui_State) {
 				anchor_delta = top - msg.row_top
 				anchored = true
 			}
-			msg.row_height = row.boundingBox.height
+			msg.row_height = row.rect.height
 			msg.row_top = top
 			msg.row_measure = ui.timeline_metric
 		}
 	}
 	if abs(anchor_delta) > 1 {
-		data.scrollPosition.y = clamp(
-			data.scrollPosition.y - anchor_delta,
-			-max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+		data.position.y = clamp(
+			data.position.y - anchor_delta,
+			-max(data.content.height - data.viewport.height, 0),
 			0,
 		)
 		scroll_jumped = true
@@ -87,26 +87,24 @@ reading_remember :: proc(ui: ^Ui_State) {
 	   ui.jump_id != "" ||
 	   ui.messages_account != ui.account_ref ||
 	   ui.messages_group != ui.chats[ui.selected].group_id ||
-	   clay.GetCurrentContext() == nil {return}
-	data := clay.GetScrollContainerData(clay.ID("Timeline"))
-	view := clay.GetElementData(clay.ID("Timeline"))
+	   nendo.current_context() == nil {return}
+	data := nendo.scroll(nendo.id("Timeline"))
+	view := nendo.element(nendo.id("Timeline"))
 	if !data.found || !view.found {return}
 	key := fmt.tprintf("%s:%s", ui.account_ref, ui.messages_group)
 	place, exists := ui.reading_places[key]
 	if ui.scroll_pending ||
-	   data.scrollPosition.y <=
-		   -max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0) + 1 {
+	   data.position.y <= -max(data.content.height - data.viewport.height, 0) + 1 {
 		if exists {delete(place.message); ui.reading_places[key] = {}}
 		return
 	}
 	for msg, i in ui.messages {
 		if msg.thread_of != "" || msg.system {continue}
-		row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
-		if !row.found ||
-		   row.boundingBox.y + row.boundingBox.height <= view.boundingBox.y {continue}
-		if row.boundingBox.y >= view.boundingBox.y + view.boundingBox.height {break}
+		row := nendo.element(nendo.id("MsgRow", u32(i)))
+		if !row.found || row.rect.y + row.rect.height <= view.rect.y {continue}
+		if row.rect.y >= view.rect.y + view.rect.height {break}
 		if exists {delete(place.message)} else {key = strings.clone(key)}
-		ui.reading_places[key] = {strings.clone(msg.id), row.boundingBox.y - view.boundingBox.y}
+		ui.reading_places[key] = {strings.clone(msg.id), row.rect.y - view.rect.y}
 		return
 	}
 }
@@ -140,23 +138,21 @@ timeline_scroll_apply :: proc(ui: ^Ui_State) {
 		aligned := true
 		for msg, i in ui.messages {
 			if msg.id != ui.jump_id {continue}
-			row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
-			view := clay.GetElementData(clay.ID("Timeline"))
-			data := clay.GetScrollContainerData(clay.ID("Timeline"))
+			row := nendo.element(nendo.id("MsgRow", u32(i)))
+			view := nendo.element(nendo.id("Timeline"))
+			data := nendo.scroll(nendo.id("Timeline"))
 			if row.found && view.found && data.found {
-				delta :=
-					(row.boundingBox.y + row.boundingBox.height / 2) -
-					(view.boundingBox.y + view.boundingBox.height / 2)
+				delta := (row.rect.y + row.rect.height / 2) - (view.rect.y + view.rect.height / 2)
 				if ui.reading_pending.message != "" {
-					delta = row.boundingBox.y - view.boundingBox.y - ui.reading_pending.offset
+					delta = row.rect.y - view.rect.y - ui.reading_pending.offset
 				}
 				target := clamp(
-					data.scrollPosition.y - delta,
-					-max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+					data.position.y - delta,
+					-max(data.content.height - data.viewport.height, 0),
 					0,
 				)
-				aligned = abs(target - data.scrollPosition.y) < 1
-				data.scrollPosition.y = target
+				aligned = abs(target - data.position.y) < 1
+				data.position.y = target
 				scroll_jumped = true
 				ui.scroll_pending = false
 			}
@@ -167,15 +163,12 @@ timeline_scroll_apply :: proc(ui: ^Ui_State) {
 		ui.reading_pending = {}
 	}
 	if ui.scroll_pending && !ui.timeline_loading && !ui.timeline_paging {
-		if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
-			target := -max(
-				data.contentDimensions.height - data.scrollContainerDimensions.height,
-				0,
-			)
+		if data := nendo.scroll(nendo.id("Timeline")); data.found {
+			target := -max(data.content.height - data.viewport.height, 0)
 			// A jump realizes previously virtual rows. Give their actual heights
 			// a few layouts to settle, but never pin a live chat indefinitely.
-			settled := abs(target - data.scrollPosition.y) < 1
-			data.scrollPosition.y = target
+			settled := abs(target - data.position.y) < 1
+			data.position.y = target
 			scroll_jumped = true
 			ui.scroll_settle += 1
 			if (settled && ui.scroll_settle >= 2) || ui.scroll_settle >= 6 {

@@ -9,8 +9,8 @@ import rl "sdlrl"
 // the line budget, another sender, or a system line breaks it.
 @(test)
 msg_run_grouping :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	defer wrap_clear()
 	a :: "aa"
 	b :: "bb"

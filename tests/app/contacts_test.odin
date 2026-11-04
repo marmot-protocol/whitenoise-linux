@@ -38,8 +38,8 @@ view_unsaved_profile :: proc(t: ^testing.T) {
 
 @(test)
 contacts_named_first :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	defer profile_session_clear()
 	ui: Ui_State
@@ -96,8 +96,8 @@ new_group_member_selection :: proc(t: ^testing.T) {
 @(test)
 new_chat_contact_filter :: proc(t: ^testing.T) {
 	// Ordering inserts each row's alias into the process-global profile cache.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	defer profile_session_clear()
 	ui: Ui_State

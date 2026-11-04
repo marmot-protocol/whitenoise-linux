@@ -6,7 +6,7 @@ package main
 import "core:strings"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 XDC_ICON_PX :: 48
@@ -121,63 +121,49 @@ handle_xdc_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 }
 
 xdc_tile :: proc(view: ^Xdc_View, id: u32, msg_id: string, att: int, file_name: string) {
-	if clay.UI(clay.ID("MsgXdc", id))(
+	if nendo.box(nendo.id("MsgXdc", id))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(min(320, att_w()))},
-			padding = clay.PaddingAll(10),
-			childGap = 10,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = PLATE,
-		cornerRadius = rr(8),
+		width = nendo.fixed(min(320, att_w())),
+		padding = nendo.pad(10),
+		gap = 10,
+		align = {y = .Center},
+		color = PLATE,
+		radius = rr(8),
 	},
 	) {
 		att_dl_button("DlXdc", id, msg_id, att, file_name)
 		if view.has_icon {
-			if clay.UI(clay.ID("MsgXdcIcon", id))(
+			if nendo.box(nendo.id("MsgXdcIcon", id))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(XDC_ICON_PX),
-						height = clay.SizingFixed(XDC_ICON_PX),
-					},
-				},
-				image = {imageData = &view.icon},
-				cornerRadius = rr(10),
+				width = nendo.fixed(XDC_ICON_PX),
+				height = nendo.fixed(XDC_ICON_PX),
+				image = &view.icon,
+				radius = rr(10),
 			},
 			) {}
 		}
-		if clay.UI(clay.ID("MsgXdcText", id))(
-		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {width = clay.SizingGrow()},
-				childGap = 2,
-			},
-		},
+		if nendo.box(nendo.id("MsgXdcText", id))(
+		{direction = .Column, width = nendo.grow(), gap = 2},
 		) {
-			clay.Text(view.name, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+			nendo.text(view.name, {font = FONT_TITLE, size = 13, color = TEXT})
 			label :=
 				WEBXDC_SUPPORTED ? tr("Webxdc app") : tr("Webxdc apps are only supported on Linux.")
-			clay.Text(label, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			nendo.text(label, {font = FONT_BODY, size = 11, color = TEXT_DIM})
 		}
 		if WEBXDC_SUPPORTED &&
-		   clay.UI(clay.ID("MsgXdcOpen", id))(
+		   nendo.box(nendo.id("MsgXdcOpen", id))(
 		   {
-			   layout = {
-				   sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
-				   padding = {left = 12, right = 12, top = 6, bottom = 6},
-				   childAlignment = {y = .Center},
-			   },
-			   backgroundColor = hovered() ? ACCENT : ROW_BG,
-			   cornerRadius = rr(6),
+			   height = nendo.fit(min = tap_size() ? tap_min() : 0),
+			   padding = {left = 12, right = 12, top = 6, bottom = 6},
+			   align = {y = .Center},
+			   color = hovered() ? ACCENT : ROW_BG,
+			   radius = rr(6),
 		   },
 		   ) {
 			if hovered() {
 				xdc_hover = {view, msg_id}
 			}
-			clay.Text(tr("Open"), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
+			nendo.text(tr("Open"), {font = FONT_TITLE, size = 12, color = TEXT})
 		}
 	}
 }

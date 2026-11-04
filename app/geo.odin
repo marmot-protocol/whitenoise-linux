@@ -37,7 +37,7 @@ import "core:thread"
 import "core:time"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private = "file")
@@ -200,7 +200,7 @@ geo_drag: string
 @(private)
 geo_action: Geo_Action
 @(private = "file")
-geo_hover_box: clay.BoundingBox
+geo_hover_box: nendo.Rect
 @(private = "file")
 geo_grab: [2]f32
 @(private = "file")
@@ -705,39 +705,36 @@ geo_map :: proc(id: u32, key: string, pin: Geo_Point, zoom: int, w, h: f32) {
 	n := 1 << uint(view.zoom)
 
 	// Only a map on screen requests tiles.
-	box := clay.GetElementData(clay.ID("GeoMap", id))
+	box := nendo.element(nendo.id("GeoMap", id))
 	visible :=
 		box.found &&
-		box.boundingBox.y + box.boundingBox.height > 0 &&
-		box.boundingBox.y < f32(rl.GetScreenHeight()) / UI_ZOOM
+		box.rect.y + box.rect.height > 0 &&
+		box.rect.y < f32(rl.GetScreenHeight()) / UI_ZOOM
 
 	wanted, loaded, failed := 0, 0, 0
 	// Overlays attach to this frame, not to GeoMap: a floating element
 	// clips to its parent's clip, and GeoMap's own clip would let it
 	// paint over the header once the card scrolls under it.
-	if clay.UI(clay.ID("GeoFrame", id))(
-	{layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}}},
-	) {
-		if clay.UI(clay.ID("GeoMap", id))(
+	if nendo.box(nendo.id("GeoFrame", id))({width = nendo.fixed(w), height = nendo.fixed(h)}) {
+		if nendo.box(nendo.id("GeoMap", id))(
 		{
-			layout = {
-				sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)},
-				layoutDirection = .TopToBottom,
-			},
+			width = nendo.fixed(w),
+			height = nendo.fixed(h),
+			direction = .Column,
 			clip = {
-				horizontal = true,
-				vertical = true,
-				childOffset = {f32(f64(tx0 * GEO_TILE) - left), f32(f64(ty0 * GEO_TILE) - top)},
+				x = true,
+				y = true,
+				offset = {f32(f64(tx0 * GEO_TILE) - left), f32(f64(ty0 * GEO_TILE) - top)},
 			},
-			backgroundColor = fade(TEXT_DIM, 0.12),
+			color = fade(TEXT_DIM, 0.12),
 		},
 		) {
-			if clay.Hovered() {
-				geo_hover, geo_hover_box = view.key, box.boundingBox
+			if nendo.hovered() {
+				geo_hover, geo_hover_box = view.key, box.rect
 				cursor_raise(.Grabbing)
 			}
 			for r in 0 ..< rows {
-				if clay.UI(clay.ID("GeoRow", id * 8 + u32(r)))({}) {
+				if nendo.box(nendo.id("GeoRow", id * 8 + u32(r)))({}) {
 					for c in 0 ..< cols {
 						ty := ty0 + r
 						tile: Geo_Tile
@@ -749,15 +746,11 @@ geo_map :: proc(id: u32, key: string, pin: Geo_Point, zoom: int, w, h: f32) {
 							if tile.state == .Ready {loaded += 1}
 							if tile.state == .Failed {failed += 1}
 						}
-						if clay.UI(clay.ID("GeoTile", id * 32 + u32(r * cols + c)))(
+						if nendo.box(nendo.id("GeoTile", id * 32 + u32(r * cols + c)))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(GEO_TILE),
-									height = clay.SizingFixed(GEO_TILE),
-								},
-							},
-							image = {imageData = tile.tex},
+							width = nendo.fixed(GEO_TILE),
+							height = nendo.fixed(GEO_TILE),
+							image = tile.tex,
 						},
 						) {}
 					}
@@ -767,23 +760,23 @@ geo_map :: proc(id: u32, key: string, pin: Geo_Point, zoom: int, w, h: f32) {
 		geo_pin(id, view, key == GEO_PICK_KEY ? geo_unproject(view.center) : pin, w, h)
 		geo_controls(id, view)
 		geo_map_status(id, wanted, loaded, failed)
-		if clay.UI(clay.ID("GeoCredit", id))(
+		if nendo.box(nendo.id("GeoCredit", id))(
 		{
-			layout = {padding = {left = 6, right = 6, top = 2, bottom = 2}},
+			padding = {left = 6, right = 6, top = 2, bottom = 2},
 			floating = {
-				attachTo = .Parent,
-				clipTo = .AttachedParent,
-				zIndex = id == GEO_PICK_ID ? 12 : 0,
-				pointerCaptureMode = id == GEO_PICK_ID ? .Passthrough : .Capture,
-				attachment = {element = .RightBottom, parent = .RightBottom},
+				attach_to = .Parent,
+				clip_to = .Parent,
+				z = id == GEO_PICK_ID ? 12 : 0,
+				pointer = id == GEO_PICK_ID ? .Passthrough : .Capture,
+				attach = {element = .Right_Bottom, parent = .Right_Bottom},
 			},
-			backgroundColor = fade(PLATE, 0.85),
+			color = fade(PLATE, 0.85),
 		},
 		) {
 			if hovered() {link_hover = "https://www.openstreetmap.org/copyright"}
-			clay.Text(
+			nendo.text(
 				tr("© OpenStreetMap contributors"),
-				{fontId = FONT_BODY, fontSize = 10, textColor = TEXT},
+				{font = FONT_BODY, size = 10, color = TEXT},
 			)
 		}
 	}
@@ -793,59 +786,49 @@ geo_map :: proc(id: u32, key: string, pin: Geo_Point, zoom: int, w, h: f32) {
 // until Accept; Not now hides maps for the session.
 @(private = "file")
 geo_consent :: proc(id: u32, w: f32) {
-	if clay.UI(clay.ID("GeoConsent", id))(
+	if nendo.box(nendo.id("GeoConsent", id))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(w)},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(14),
-			childGap = 10,
-		},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(8),
+		width = nendo.fixed(w),
+		direction = .Column,
+		padding = nendo.pad(14),
+		gap = 10,
+		color = ROW_BG,
+		radius = rr(8),
 	},
 	) {
-		clay.Text(
+		nendo.text(
 			tr("Show maps from OpenStreetMap?"),
-			{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT},
+			{font = FONT_TITLE, size = 15, color = TEXT},
 		)
-		clay.Text(tr(GEO_DISCLOSURE), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
-		clay.Text(
+		nendo.text(tr(GEO_DISCLOSURE), {font = FONT_BODY, size = 12, color = TEXT_DIM})
+		nendo.text(
 			tr("Nothing loads until you accept. You can change this in Settings > Advanced."),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 12, color = TEXT_DIM},
 		)
-		if clay.UI(clay.ID("GeoConsentRow", id))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, padding = {top = 4}}},
+		if nendo.box(nendo.id("GeoConsentRow", id))(
+		{width = nendo.grow(), gap = 8, padding = {top = 4}},
 		) {
-			if clay.UI(clay.ID("GeoConsentGap", id))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
+			if nendo.box(nendo.id("GeoConsentGap", id))({width = nendo.grow()}) {}
 			buttons := [?]struct {
 				action: Geo_Action,
 				label:  string,
 			}{{.Decline, tr("Not now")}, {.Accept, tr("Accept")}}
 			for button, i in buttons {
 				primary := button.action == .Accept
-				if clay.UI(clay.ID("GeoConsentButton", id * 2 + u32(i)))(
+				if nendo.box(nendo.id("GeoConsentButton", id * 2 + u32(i)))(
 				{
-					layout = {
-						sizing = {height = clay.SizingFit({min = 44})},
-						padding = {left = 14, right = 14, top = 7, bottom = 7},
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = primary ? ACCENT : hovered() ? HOVER : PLATE,
-					cornerRadius = rr(7),
+					height = nendo.fit(min = 44),
+					padding = {left = 14, right = 14, top = 7, bottom = 7},
+					align = {y = .Center},
+					color = primary ? ACCENT : hovered() ? HOVER : PLATE,
+					radius = rr(7),
 					border = {color = primary ? ACCENT : CARD_BORDER, width = bw()},
 				},
 				) {
 					if hovered() {geo_action = button.action}
-					clay.Text(
+					nendo.text(
 						button.label,
-						{
-							fontId = FONT_BODY,
-							fontSize = 13,
-							textColor = primary ? ON_ACCENT : TEXT,
-						},
+						{font = FONT_BODY, size = 13, color = primary ? ON_ACCENT : TEXT},
 					)
 				}
 			}
@@ -867,39 +850,38 @@ geo_pin :: proc(id: u32, view: Geo_View, pin: Geo_Point, w, h: f32) {
 	x := f64(w) / 2 + at.x * world
 	y := f64(h) / 2 + at.y * world
 	if x < HALO / 2 || x > f64(w) - HALO / 2 || y < HALO / 2 || y > f64(h) - HALO / 2 {return}
-	if clay.UI(clay.ID("GeoPin", id))(
+	if nendo.box(nendo.id("GeoPin", id))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(HALO), height = clay.SizingFixed(HALO)},
-			childAlignment = {x = .Center, y = .Center},
-		},
+		width = nendo.fixed(HALO),
+		height = nendo.fixed(HALO),
+		align = {x = .Center, y = .Center},
 		floating = {
-			attachTo = .Parent,
-			clipTo = .AttachedParent,
-			pointerCaptureMode = .Passthrough,
-			zIndex = id == GEO_PICK_ID ? 12 : 0,
+			attach_to = .Parent,
+			clip_to = .Parent,
+			pointer = .Passthrough,
+			z = id == GEO_PICK_ID ? 12 : 0,
 			offset = {f32(x), f32(y)},
-			attachment = {element = .CenterCenter, parent = .LeftTop},
+			attach = {element = .Center_Center, parent = .Left_Top},
 		},
-		backgroundColor = fade(ACCENT, 0.3),
-		cornerRadius = clay.CornerRadiusAll(HALO / 2),
+		color = fade(ACCENT, 0.3),
+		radius = nendo.radius(HALO / 2),
 	},
 	) {
-		if clay.UI(clay.ID("GeoPinShadow", id))(
+		if nendo.box(nendo.id("GeoPinShadow", id))(
 		{
-			layout = {
-				sizing = {width = clay.SizingFixed(22), height = clay.SizingFixed(22)},
-				childAlignment = {x = .Center, y = .Center},
-			},
-			backgroundColor = {0, 0, 0, 110},
-			cornerRadius = clay.CornerRadiusAll(11),
+			width = nendo.fixed(22),
+			height = nendo.fixed(22),
+			align = {x = .Center, y = .Center},
+			color = {0, 0, 0, 110},
+			radius = nendo.radius(11),
 		},
 		) {
-			if clay.UI(clay.ID("GeoPinDot", id))(
+			if nendo.box(nendo.id("GeoPinDot", id))(
 			{
-				layout = {sizing = {width = clay.SizingFixed(18), height = clay.SizingFixed(18)}},
-				backgroundColor = ACCENT,
-				cornerRadius = clay.CornerRadiusAll(9),
+				width = nendo.fixed(18),
+				height = nendo.fixed(18),
+				color = ACCENT,
+				radius = nendo.radius(9),
 				border = {color = {255, 255, 255, 255}, width = {3, 3, 3, 3, 0}},
 			},
 			) {}
@@ -910,16 +892,17 @@ geo_pin :: proc(id: u32, view: Geo_View, pin: Geo_Point, w, h: f32) {
 // Zoom in, zoom out, and Recenter once the view has left the pin.
 @(private = "file")
 geo_controls :: proc(id: u32, view: Geo_View) {
-	if clay.UI(clay.ID("GeoControls", id))(
+	if nendo.box(nendo.id("GeoControls", id))(
 	{
-		layout = {layoutDirection = .TopToBottom, childGap = 4},
+		direction = .Column,
+		gap = 4,
 		floating = {
-			attachTo = .Parent,
-			clipTo = .AttachedParent,
-			zIndex = id == GEO_PICK_ID ? 12 : 0,
-			pointerCaptureMode = id == GEO_PICK_ID ? .Passthrough : .Capture,
+			attach_to = .Parent,
+			clip_to = .Parent,
+			z = id == GEO_PICK_ID ? 12 : 0,
+			pointer = id == GEO_PICK_ID ? .Passthrough : .Capture,
 			offset = {-8, 8},
-			attachment = {element = .RightTop, parent = .RightTop},
+			attach = {element = .Right_Top, parent = .Right_Top},
 		},
 	},
 	) {
@@ -935,17 +918,13 @@ geo_controls :: proc(id: u32, view: Geo_View) {
 		moved := view.center != view.home || view.zoom != view.home_z
 		for button, i in buttons {
 			if button.action == .Recenter && !moved {continue}
-			if clay.UI(clay.ID("GeoButton", id * 4 + u32(i)))(
+			if nendo.box(nendo.id("GeoButton", id * 4 + u32(i)))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(tap_size() ? tap_min() : 28),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 28),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : fade(PLATE, 0.92),
-				cornerRadius = rr(6),
+				width = nendo.fixed(tap_size() ? tap_min() : 28),
+				height = nendo.fixed(tap_size() ? tap_min() : 28),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : fade(PLATE, 0.92),
+				radius = rr(6),
 				border = {color = CARD_BORDER, width = bw()},
 			},
 			) {
@@ -953,7 +932,7 @@ geo_controls :: proc(id: u32, view: Geo_View) {
 					geo_action, geo_action_key = button.action, view.key
 					tooltip(button.tip, .Right)
 				}
-				clay.Text(button.glyph, {fontId = button.font, fontSize = 16, textColor = TEXT})
+				nendo.text(button.glyph, {font = button.font, size = 16, color = TEXT})
 			}
 		}
 	}
@@ -964,52 +943,42 @@ geo_controls :: proc(id: u32, view: Geo_View) {
 geo_map_status :: proc(id: u32, wanted, loaded, failed: int) {
 	if loaded == wanted {return}
 	TRACK :: 72
-	if clay.UI(clay.ID("GeoStatus", id))(
+	if nendo.box(nendo.id("GeoStatus", id))(
 	{
-		layout = {
-			padding = {left = 8, right = 8, top = 5, bottom = 5},
-			childGap = 8,
-			childAlignment = {y = .Center},
-		},
+		padding = {left = 8, right = 8, top = 5, bottom = 5},
+		gap = 8,
+		align = {y = .Center},
 		floating = {
-			attachTo = .Parent,
-			clipTo = .AttachedParent,
-			zIndex = id == GEO_PICK_ID ? 12 : 0,
-			pointerCaptureMode = id == GEO_PICK_ID ? .Passthrough : .Capture,
+			attach_to = .Parent,
+			clip_to = .Parent,
+			z = id == GEO_PICK_ID ? 12 : 0,
+			pointer = id == GEO_PICK_ID ? .Passthrough : .Capture,
 			offset = {8, -8},
-			attachment = {element = .LeftBottom, parent = .LeftBottom},
+			attach = {element = .Left_Bottom, parent = .Left_Bottom},
 		},
-		backgroundColor = failed > 0 && hovered() ? HOVER : fade(PLATE, 0.92),
-		cornerRadius = rr(6),
+		color = failed > 0 && hovered() ? HOVER : fade(PLATE, 0.92),
+		radius = rr(6),
 	},
 	) {
 		if failed > 0 && loaded + failed == wanted {
 			if hovered() {geo_action = .Retry}
-			clay.Text(
+			nendo.text(
 				tr("Couldn't load the map. Please try again."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT},
+				{font = FONT_BODY, size = 11, color = TEXT},
 			)
-			clay.Text(tr("Retry"), {fontId = FONT_TITLE, fontSize = 11, textColor = ACCENT})
+			nendo.text(tr("Retry"), {font = FONT_TITLE, size = 11, color = ACCENT})
 			return
 		}
-		clay.Text(tr("Loading map"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT})
-		if clay.UI(clay.ID("GeoTrack", id))(
-		{
-			layout = {sizing = {clay.SizingFixed(TRACK), clay.SizingFixed(4)}},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(2),
-		},
+		nendo.text(tr("Loading map"), {font = FONT_BODY, size = 11, color = TEXT})
+		if nendo.box(nendo.id("GeoTrack", id))(
+		{width = nendo.fixed(TRACK), height = nendo.fixed(4), color = ROW_BG, radius = rr(2)},
 		) {
-			if clay.UI(clay.ID("GeoFill", id))(
+			if nendo.box(nendo.id("GeoFill", id))(
 			{
-				layout = {
-					sizing = {
-						clay.SizingFixed(TRACK * f32(loaded + failed) / f32(max(wanted, 1))),
-						clay.SizingFixed(4),
-					},
-				},
-				backgroundColor = ACCENT,
-				cornerRadius = rr(2),
+				width = nendo.fixed(TRACK * f32(loaded + failed) / f32(max(wanted, 1))),
+				height = nendo.fixed(4),
+				color = ACCENT,
+				radius = rr(2),
 			},
 			) {}
 		}
@@ -1071,53 +1040,40 @@ geo_card :: proc(id: u32, url: string, link: Geo_Link) {
 	pin := link.pin
 	zoom := link.zoom > 0 ? link.zoom : GEO_ZOOM_SHARE
 	w := att_w(400)
-	if clay.UI(clay.ID("GeoCard", id))(
+	if nendo.box(nendo.id("GeoCard", id))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(w)},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(6),
-			childGap = 10,
-		},
-		backgroundColor = PLATE,
-		cornerRadius = rr(12),
+		width = nendo.fixed(w),
+		direction = .Column,
+		padding = nendo.pad(6),
+		gap = 10,
+		color = PLATE,
+		radius = rr(12),
 		border = {color = CARD_BORDER, width = bw()},
 	},
 	) {
 		geo_map(id, url, pin, zoom, w - 12, GEO_MAP_H)
-		if clay.UI(clay.ID("GeoInfo", id))(
-		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				childGap = 4,
-				padding = {left = 8, right = 8, bottom = 6},
-			},
-		},
+		if nendo.box(nendo.id("GeoInfo", id))(
+		{direction = .Column, gap = 4, padding = {left = 8, right = 8, bottom = 6}},
 		) {
-			clay.Text(
-				tr("LOCATION"),
-				{fontId = FONT_BODY, fontSize = 9, textColor = TEXT_DIM, letterSpacing = 1},
-			)
+			nendo.text(tr("LOCATION"), {font = FONT_BODY, size = 9, color = TEXT_DIM, spacing = 1})
 			place := geo_place(pin)
-			clay.Text(
+			nendo.text(
 				len(place) > 0 ? place : tr("Shared location"),
-				{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT},
+				{font = FONT_TITLE, size = 15, color = TEXT},
 			)
-			clay.Text(geo_format(pin), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			nendo.text(geo_format(pin), {font = FONT_BODY, size = 11, color = TEXT_DIM})
 			open_url, open_label := geo_open(url, pin, zoom)
-			if clay.UI(clay.ID("GeoActions", id))(
-			{layout = {childGap = 14, padding = {top = 4}}},
-			) {
-				if clay.UI(clay.ID("GeoCopy", id))({}) {
+			if nendo.box(nendo.id("GeoActions", id))({gap = 14, padding = {top = 4}}) {
+				if nendo.box(nendo.id("GeoCopy", id))({}) {
 					if hovered() {geo_action, geo_action_pin = .Copy, pin}
-					clay.Text(
+					nendo.text(
 						tr("Copy coordinates"),
-						{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
+						{font = FONT_BODY, size = 12, color = ACCENT},
 					)
 				}
-				if clay.UI(clay.ID("GeoOpen", id))({}) {
+				if nendo.box(nendo.id("GeoOpen", id))({}) {
 					if hovered() {link_hover = open_url}
-					clay.Text(open_label, {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
+					nendo.text(open_label, {font = FONT_BODY, size = 12, color = ACCENT})
 				}
 			}
 		}
@@ -1200,46 +1156,37 @@ geo_picker :: proc(ui: ^Ui_State) {
 	if !ui.location_open {return}
 	if !geo_picker_valid(ui) {geo_picker_close(ui); return}
 	drain_location(ui)
-	w := modal_w(clay.ID("LocationModal"), 640)
+	w := modal_w(nendo.id("LocationModal"), 640)
 	h := f32(rl.GetScreenHeight()) / UI_ZOOM
-	if clay.UI(clay.ID("LocationModal"))(
+	if nendo.box(nendo.id("LocationModal"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {clay.SizingFixed(w), clay.SizingFit({max = modal_h(h - 40)})},
-			padding = clay.PaddingAll(16),
-			childGap = 10,
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		direction = .Column,
+		width = nendo.fixed(w),
+		height = nendo.fit(max = modal_h(h - 40)),
+		padding = nendo.pad(16),
+		gap = 10,
+		clip = {y = true, scroll = true},
 		floating = {
-			attachTo = .Root,
-			zIndex = 11,
-			offset = {0, rise(clay.ID("LocationModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 11,
+			offset = {0, rise(nendo.id("LocationModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
+		color = CARD,
+		radius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("LocationHeader"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 8,
-				childAlignment = {y = .Center},
-			},
-		},
+		if nendo.box(nendo.id("LocationHeader"))(
+		{width = nendo.grow(), gap = 8, align = {y = .Center}},
 		) {
-			clay.Text(tr("Send location"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
-			if clay.UI(clay.ID("LocationHeaderGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
+			nendo.text(tr("Send location"), {font = FONT_TITLE, size = 18, color = TEXT})
+			if nendo.box(nendo.id("LocationHeaderGap"))({width = nendo.grow()}) {}
 		}
 		if ui.prefs.map_consent {
-			clay.Text(
+			nendo.text(
 				tr("Drag the map to place the pin, or use your current location."),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
 			)
 		}
 		geo_map(
@@ -1250,18 +1197,18 @@ geo_picker :: proc(ui: ^Ui_State) {
 			w - 32,
 			clamp(h - 300, 120, 340),
 		)
-		clay.Text(
+		nendo.text(
 			ui.location_selected ? geo_format(ui.location_pin) : tr("Choose a location before sending."),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+			{font = FONT_BODY, size = 13, color = TEXT},
 		)
 		if ui.location_busy {
-			clay.Text(
+			nendo.text(
 				tr("Requesting your location. Approve the permission prompt if shown."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
-			clay.Text(
+			nendo.text(
 				tr("Progress is indeterminate."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 			busy_bar("LocationBusy")
 		} else if ui.location_error {
@@ -1273,27 +1220,23 @@ geo_picker :: proc(ui: ^Ui_State) {
 					"Couldn't get your location. Check your device's location permissions or pick a point on the map.",
 				)
 			}
-			clay.Text(error_text, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+			nendo.text(error_text, {font = FONT_BODY, size = 12, color = DANGER})
 		} else {
-			clay.Text(
+			nendo.text(
 				tr(
 					"Your device asks for permission. Nothing is sent to the chat until you choose Send location.",
 				),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 		}
 		if !ui.location_busy {micro_button("LocationCurrent", tr("Use current location"))}
-		if clay.UI(clay.ID("LocationActions"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-		) {
+		if nendo.box(nendo.id("LocationActions"))({width = nendo.grow(), gap = 8}) {
 			login_button("LocationCancel", tr("Cancel"))
-			if clay.UI(clay.ID("LocationGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
+			if nendo.box(nendo.id("LocationGap"))({width = nendo.grow()}) {}
 			if ui.location_selected {login_button("LocationSend", tr("Send location"), primary = true)}
 		}
 	}
-	scrollbar(clay.ID("LocationModal"), 12)
+	scrollbar(nendo.id("LocationModal"), 12)
 }
 
 @(private)
@@ -1328,7 +1271,7 @@ handle_geo_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 @(private)
 handle_geo :: proc(ui: ^Ui_State) {
 	if modal_open(ui) && !ui.location_open {return}
-	if ui.location_open && !clay.PointerOver(clay.ID("LocationModal")) {return}
+	if ui.location_open && !nendo.pointer_over(nendo.id("LocationModal")) {return}
 	before := geo_views[GEO_PICK_KEY].center
 	before_zoom := geo_views[GEO_PICK_KEY].zoom
 	// Logical pixels; devctl's pointer when it holds one.

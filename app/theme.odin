@@ -10,7 +10,7 @@ import "core:slice"
 import "core:strconv"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 
 import marmot "../marmot"
 import rl "sdlrl"
@@ -78,27 +78,27 @@ Theme_Pack :: struct {
 	source:                                                 string, // the toml it was parsed from, for sharing and editing
 	name:                                                   string,
 	mode:                                                   string, // lowercase key `base` refers to
-	bg, panel, panel_2, rail, elevated, card_border:        clay.Color,
-	status_bar, banner, canvas_top:                         clay.Color,
-	text_hi, text_mid, text_lo, text_vlo:                   clay.Color,
-	field, field_hover, field_border, hover, plate:         clay.Color,
-	plate_inset, code_plate, card_well, divider:            clay.Color,
-	on_accent:                                              [5]clay.Color,
+	bg, panel, panel_2, rail, elevated, card_border:        nendo.Color,
+	status_bar, banner, canvas_top:                         nendo.Color,
+	text_hi, text_mid, text_lo, text_vlo:                   nendo.Color,
+	field, field_hover, field_border, hover, plate:         nendo.Color,
+	plate_inset, code_plate, card_well, divider:            nendo.Color,
+	on_accent:                                              [5]nendo.Color,
 	on_accent_explicit:                                     bool, // scalar override inherited by every accent slot
-	elevated_border, border_2:                              clay.Color,
-	danger, danger_soft, danger_border:                     clay.Color,
-	warning, warning_soft, warning_border:                  clay.Color,
+	elevated_border, border_2:                              nendo.Color,
+	danger, danger_soft, danger_border:                     nendo.Color,
+	warning, warning_soft, warning_border:                  nendo.Color,
 	// Depth: the overlay behind a modal, the four shadow tints, and the
 	// two bevel edges a raised surface is lit and shaded with.
-	overlay, overlay_strong, vignette:                      clay.Color,
-	shadow_soft, shadow_card, shadow_popover, shadow_float: clay.Color,
-	bevel_hi, bevel_lo, top_glint, avatar_ring:             clay.Color,
+	overlay, overlay_strong, vignette:                      nendo.Color,
+	shadow_soft, shadow_card, shadow_popover, shadow_float: nendo.Color,
+	bevel_hi, bevel_lo, top_glint, avatar_ring:             nendo.Color,
 	// Media chrome: the chips and controls that float over a picture,
 	// which cannot take their colors from the page behind them.
-	media_backdrop, media_chip_bg, media_chip_fg:           clay.Color,
-	media_chip_outline, media_control_bg:                   clay.Color,
-	accent_base, accent_hi, accent_dim:                     [5]clay.Color,
-	accent_surface, accent_glow:                            [5]clay.Color,
+	media_backdrop, media_chip_bg, media_chip_fg:           nendo.Color,
+	media_chip_outline, media_control_bg:                   nendo.Color,
+	accent_base, accent_hi, accent_dim:                     [5]nendo.Color,
+	accent_surface, accent_glow:                            [5]nendo.Color,
 	accent_names:                                           [5]string,
 	// [style] structural metrics, the capability flags this renderer
 	// honours, and the motion durations.
@@ -120,7 +120,7 @@ Theme_Pack :: struct {
 	tone:                                                   Theme_Tone,
 	wallpaper:                                              ^rl.Texture2D, // borrowed from the preloaded decor array
 	preview_font:                                           u16,
-	bg_2:                                                   clay.Color, // second stop of the page wash, a == 0 = flat
+	bg_2:                                                   nendo.Color, // second stop of the page wash, a == 0 = flat
 }
 
 @(private)
@@ -362,7 +362,7 @@ CHALK_DRAWN := false // board-grain surfaces and chalk marks throughout the UI
 AVATAR_ERASE := false // erase a photo cover instead of swivelling it
 SCANLINES := false // CRT scanlines and roll behind the conversation
 BACKDROP := "" // the named scene behind the conversation (decor.odin)
-BG_2 := clay.Color{} // second stop of the page wash, a == 0 means flat
+BG_2 := nendo.Color{} // second stop of the page wash, a == 0 means flat
 HARD_SHADOW := false // an offset solid shadow instead of a soft one
 FOCUS_GLOW := false // a soft ring around the focused field
 BEVEL := false // raised surfaces get a lit top and a shaded bottom
@@ -382,7 +382,7 @@ TRANSITION_DUR: f32 = 140
 
 // The border a focused field takes. A glowing theme widens it into a
 // ring in the accent's own glow tint; a flat one keeps the hairline.
-focus_border :: proc(active: bool) -> clay.BorderElementConfig {
+focus_border :: proc(active: bool) -> nendo.Border {
 	if !active {
 		return {}
 	}
@@ -393,25 +393,25 @@ focus_border :: proc(active: bool) -> clay.BorderElementConfig {
 	return {color = ACCENT_GLOW, width = {w, w, w, w, 0}}
 }
 
-// A raised surface on a bevelled theme is lit from the top: clay gives
+// A raised surface on a bevelled theme is lit from the top: nendo gives
 // one color per element, so the lit edge is the whole border and the
 // shading is left to the surface under it.
-bevel_border :: proc() -> clay.BorderElementConfig {
+bevel_border :: proc() -> nendo.Border {
 	if !BEVEL {
 		return {}
 	}
 	return {color = BEVEL_HI, width = {1, 1, 1, 0, 0}}
 }
 
-rr :: proc(radius: f32) -> clay.CornerRadius {
-	return clay.CornerRadiusAll(radius * R_SCALE)
+rr :: proc(radius: f32) -> nendo.Radius {
+	return nendo.radius(radius * R_SCALE)
 }
 
-bw :: proc() -> clay.BorderWidth {
+bw :: proc() -> nendo.Border_Width {
 	return {BORDER_W, BORDER_W, BORDER_W, BORDER_W, 0}
 }
 
-parse_hex_color :: proc(value: string) -> clay.Color {
+parse_hex_color :: proc(value: string) -> nendo.Color {
 	hex := strings.trim_prefix(strings.trim(value, "\" "), "#")
 	channel :: proc(s: string) -> f32 {
 		v, _ := strconv.parse_int(s, 16)
@@ -420,7 +420,7 @@ parse_hex_color :: proc(value: string) -> clay.Color {
 	if len(hex) < 6 {
 		return {255, 0, 255, 255}
 	}
-	color := clay.Color{channel(hex[0:2]), channel(hex[2:4]), channel(hex[4:6]), 255}
+	color := nendo.Color{channel(hex[0:2]), channel(hex[2:4]), channel(hex[4:6]), 255}
 	if len(hex) >= 8 {
 		color.a = channel(hex[6:8])
 	}
@@ -448,7 +448,7 @@ default_pack :: proc() -> Theme_Pack {
 // ── Color math, for deriving what a pack leaves unsaid ───────────────
 
 @(private = "file")
-mix :: proc(a, b: clay.Color, t: f32) -> clay.Color {
+mix :: proc(a, b: nendo.Color, t: f32) -> nendo.Color {
 	return {
 		a.r + (b.r - a.r) * t,
 		a.g + (b.g - a.g) * t,
@@ -458,26 +458,26 @@ mix :: proc(a, b: clay.Color, t: f32) -> clay.Color {
 }
 
 @(private = "file")
-alpha :: proc(c: clay.Color, a: f32) -> clay.Color {
+alpha :: proc(c: nendo.Color, a: f32) -> nendo.Color {
 	return {c.r, c.g, c.b, a}
 }
 
 // Rec. 601 luma, enough to decide whether ink on this color should be
 // black or white.
 @(private = "file")
-luma :: proc(c: clay.Color) -> f32 {
+luma :: proc(c: nendo.Color) -> f32 {
 	return (c.r * 0.299 + c.g * 0.587 + c.b * 0.114) / 255
 }
 
-BLACK :: clay.Color{0, 0, 0, 255}
-WHITE :: clay.Color{255, 255, 255, 255}
+BLACK :: nendo.Color{0, 0, 0, 255}
+WHITE :: nendo.Color{255, 255, 255, 255}
 
 // Black or white, whichever has the higher WCAG contrast on fill. The
 // two tie at relative luminance 0.179, where (L + 0.05)^2 = 0.05 * 1.05,
 // so the winner always reaches at least 4.58:1 (amber gets black, navy
 // gets white).
 @(private)
-ink_on :: proc(fill: clay.Color) -> clay.Color {
+ink_on :: proc(fill: nendo.Color) -> nendo.Color {
 	linear :: proc(c: f32) -> f32 {
 		c := c / 255
 		return c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4)
@@ -491,7 +491,7 @@ ink_on :: proc(fill: clay.Color) -> clay.Color {
 // Toward the page's own extreme: on a dark theme "up" is lighter, on a
 // light one it is darker, so one derivation rule serves both.
 @(private = "file")
-lift :: proc(c: clay.Color, ink: clay.Color, t: f32) -> clay.Color {
+lift :: proc(c: nendo.Color, ink: nendo.Color, t: f32) -> nendo.Color {
 	return mix(c, ink, t)
 }
 
@@ -708,7 +708,7 @@ parse_theme :: proc(name: string, mode: string, source: string, base: Theme_Pack
 	// Which keys the source actually set; everything else is derived.
 	present := make(map[string]bool, allocator = context.temp_allocator)
 
-	table: ^[5]clay.Color
+	table: ^[5]nendo.Color
 	table_index := 0
 
 	lines := strings.split_lines(source, context.temp_allocator)
@@ -747,13 +747,13 @@ parse_theme :: proc(name: string, mode: string, source: string, base: Theme_Pack
 			entry := theme_token_pointer(&pack, token)
 			switch descriptor.kind {
 			case .Colors:
-				table = cast(^[5]clay.Color)entry
+				table = cast(^[5]nendo.Color)entry
 				table_index = 0
 			case .Color:
-				(cast(^clay.Color)entry)^ = parse_hex_color(value)
+				(cast(^nendo.Color)entry)^ = parse_hex_color(value)
 			case .Ink:
 				ink := parse_hex_color(value)
-				for &slot in (cast(^[5]clay.Color)entry)^ {slot = ink}
+				for &slot in (cast(^[5]nendo.Color)entry)^ {slot = ink}
 				pack.on_accent_explicit = true
 			case .Number:
 				v, ok := strconv.parse_f32(value)
@@ -924,7 +924,7 @@ share_theme :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 // The strip a shared theme shows: the real derived pack, so the offer
 // previews what taking it would do. Parsed once when the row loads,
 // never in layout.
-theme_swatches :: proc(name: string, toml: string) -> [THEME_SWATCHES]clay.Color {
+theme_swatches :: proc(name: string, toml: string) -> [THEME_SWATCHES]nendo.Color {
 	pack := parse_theme(name, "preview", toml, default_pack())
 	return {
 		pack.bg,

@@ -18,7 +18,7 @@ import "core:thread"
 import "core:unicode"
 import "core:unicode/utf8"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -102,9 +102,9 @@ relay_add_valid :: proc(value: []u8, focus: Focus) -> bool {
 @(private = "file")
 relay_input_error :: proc(focus: Focus, value: []u8) {
 	if relay_error_focus != focus || relay_error_hash != hash.fnv64a(value) {return}
-	clay.Text(
+	nendo.text(
 		tr("Couldn't add that relay. Double-check the address and try again."),
-		{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+		{font = FONT_BODY, size = 12, color = DANGER},
 	)
 }
 
@@ -119,35 +119,20 @@ settings_network :: proc(ui: ^Ui_State) {
 	narrow := settings_body_width(ui) < 400
 	if ui.settings_tab == 0 {
 		settings_socks5(ui)
-		if clay.UI(clay.ID("NetworkStatusGroup"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 3,
-			},
-		},
+		if nendo.box(nendo.id("NetworkStatusGroup"))(
+		{width = nendo.grow(), direction = .Column, gap = 3},
 		) {
 			status := settings_row()
-			status.layout.layoutDirection = narrow ? .TopToBottom : .LeftToRight
-			if clay.UI(clay.ID("RowNetStatus"))(status) {
-				if clay.UI(clay.ID("NetworkConnectionSummary"))(
-				{layout = {childGap = 8, childAlignment = {y = .Center}}},
+			status.direction = narrow ? .Column : .Row
+			if nendo.box(nendo.id("RowNetStatus"))(status) {
+				if nendo.box(nendo.id("NetworkConnectionSummary"))(
+				{gap = 8, align = {y = .Center}},
 				) {
 					dot := ui.health_ok && ui.health.connected > 0 ? ACCENT : TEXT_DIM
-					if clay.UI(clay.ID("NetDot"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingFixed(7), height = clay.SizingFixed(7)},
-						},
-						backgroundColor = dot,
-						cornerRadius = rr(4),
-					},
+					if nendo.box(nendo.id("NetDot"))(
+					{width = nendo.fixed(7), height = nendo.fixed(7), color = dot, radius = rr(4)},
 					) {}
-					clay.Text(
-						health_line(ui),
-						{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
-					)
+					nendo.text(health_line(ui), {font = FONT_TITLE, size = 13, color = TEXT})
 				}
 				settings_button(
 					"NetRefresh",
@@ -157,40 +142,32 @@ settings_network :: proc(ui: ^Ui_State) {
 				)
 			}
 			if net_refresh_frames > 0 {
-				clay.Text(
-					tr("Checking relays..."),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
-				)
+				nendo.text(tr("Checking relays..."), {font = FONT_BODY, size = 13, color = TEXT})
 				busy_bar("NetRefreshProgress")
 			}
 			if detail := health_detail(ui); detail != "" {
-				clay.Text(detail, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				nendo.text(detail, {font = FONT_BODY, size = 11, color = TEXT_DIM})
 			}
 		}
 
-		if clay.UI(clay.ID("NetworkOutboxGroup"))(settings_box()) {
+		if nendo.box(nendo.id("NetworkOutboxGroup"))(settings_box()) {
 			settings_group(tr("Published outbox relays"))
-			clay.Text(
-				tr("Where you publish."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-			)
+			nendo.text(tr("Where you publish."), {font = FONT_BODY, size = 11, color = TEXT_DIM})
 			if len(ui.profile.nip65) == 0 {
-				clay.Text(
+				nendo.text(
 					tr("No relay list published."),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 13, color = TEXT_DIM},
 				)
 			}
 			for relay, i in ui.profile.nip65 {
 				relay_row("RelayRow", "RelayRemove", u32(i), relay)
 			}
-			if clay.UI(clay.ID("AddRelayRow"))(
+			if nendo.box(nendo.id("AddRelayRow"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = narrow ? .TopToBottom : .LeftToRight,
-					childGap = 6,
-					childAlignment = {y = .Center},
-				},
+				width = nendo.grow(),
+				direction = narrow ? .Column : .Row,
+				gap = 6,
+				align = {y = .Center},
 			},
 			) {
 				settings_input(
@@ -205,29 +182,24 @@ settings_network :: proc(ui: ^Ui_State) {
 			relay_input_error(.Relay, ui.relay_input[:])
 		}
 
-		if clay.UI(clay.ID("NetworkInboxGroup"))(settings_box()) {
+		if nendo.box(nendo.id("NetworkInboxGroup"))(settings_box()) {
 			settings_group(tr("Published inbox relays"))
-			clay.Text(
+			nendo.text(
 				tr("Where peers reach you."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 			if len(ui.profile.inbox) == 0 {
-				clay.Text(
-					tr("No inbox relays."),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-				)
+				nendo.text(tr("No inbox relays."), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 			}
 			for relay, i in ui.profile.inbox {
 				relay_row("InboxRow", "InboxRemove", u32(i), relay)
 			}
-			if clay.UI(clay.ID("AddInboxRow"))(
+			if nendo.box(nendo.id("AddInboxRow"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = narrow ? .TopToBottom : .LeftToRight,
-					childGap = 6,
-					childAlignment = {y = .Center},
-				},
+				width = nendo.grow(),
+				direction = narrow ? .Column : .Row,
+				gap = 6,
+				align = {y = .Center},
 			},
 			) {
 				settings_input(
@@ -242,16 +214,17 @@ settings_network :: proc(ui: ^Ui_State) {
 			relay_input_error(.Inbox, ui.inbox_input[:])
 		}
 
-		if clay.UI(clay.ID("NetworkSyncGroup"))(
+		if nendo.box(nendo.id("NetworkSyncGroup"))(
 		{
-			layout = {sizing = {width = clay.SizingGrow()}, padding = {top = 8}},
+			width = nendo.grow(),
+			padding = {top = 8},
 			border = {color = FIELD_BORDER, width = {top = 1}},
 		},
 		) {
 			recovery := settings_row()
-			recovery.layout.layoutDirection = .TopToBottom
-			recovery.layout.childGap = 8
-			if clay.UI(clay.ID("RowRepublish"))(recovery) {
+			recovery.direction = .Column
+			recovery.gap = 8
+			if nendo.box(nendo.id("RowRepublish"))(recovery) {
 				row_labels(
 					tr("Republish relay lists"),
 					tr(
@@ -267,25 +240,23 @@ settings_network :: proc(ui: ^Ui_State) {
 			}
 		}
 	} else {
-		if clay.UI(clay.ID("NetworkFetchGroup"))(settings_box()) {
+		if nendo.box(nendo.id("NetworkFetchGroup"))(settings_box()) {
 			settings_group(tr("Event fetch relays"))
-			clay.Text(
+			nendo.text(
 				tr(
 					"Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these.",
 				),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 			for relay, i in ui.prefs.fetch_relays {
 				relay_row("FetchRow", "FetchRemove", u32(i), relay)
 			}
-			if clay.UI(clay.ID("AddFetchRow"))(
+			if nendo.box(nendo.id("AddFetchRow"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = narrow ? .TopToBottom : .LeftToRight,
-					childGap = 6,
-					childAlignment = {y = .Center},
-				},
+				width = nendo.grow(),
+				direction = narrow ? .Column : .Row,
+				gap = 6,
+				align = {y = .Center},
 			},
 			) {
 				settings_input(
@@ -300,9 +271,9 @@ settings_network :: proc(ui: ^Ui_State) {
 			relay_input_error(.Fetch, ui.fetch_input[:])
 		}
 
-		if clay.UI(clay.ID("NetworkClientGroup"))(settings_box()) {
+		if nendo.box(nendo.id("NetworkClientGroup"))(settings_box()) {
 			settings_group(tr("Open events in"))
-			clay.Text(
+			nendo.text(
 				fmt.tprintf(
 					tr(
 						"The web client an event card opens. For example %s. %s is replaced with the event id.",
@@ -310,7 +281,7 @@ settings_network :: proc(ui: ^Ui_State) {
 					DEFAULT_EVENT_CLIENT,
 					"{id}",
 				),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 			settings_input(
 				ui,
@@ -321,14 +292,14 @@ settings_network :: proc(ui: ^Ui_State) {
 			)
 		}
 
-		if clay.UI(clay.ID("NetworkGitClientGroup"))(settings_box()) {
+		if nendo.box(nendo.id("NetworkGitClientGroup"))(settings_box()) {
 			settings_group(tr("Open git patches in"))
-			clay.Text(
+			nendo.text(
 				tr("The ngit web client a patch card opens. That site receives the patch link."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
-			if clay.UI(clay.ID("GitClientChoices"))(
-				settings_choices(clay.ID("GitClientChoices")),
+			if nendo.box(nendo.id("GitClientChoices"))(
+				settings_choices(nendo.id("GitClientChoices")),
 			) {
 				for name, git in GIT_CLIENT_NAMES {
 					settings_option("GitClientChip", u32(git), name, ui.prefs.git_client == git)
@@ -425,8 +396,8 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 	socks5_previous = values
 	dirty := socks5_changed(ui)
 	box := settings_box()
-	if ui.socks5_login_open {box.layout.sizing.width = clay.SizingGrow()}
-	if clay.UI(clay.ID("NetworkProxyGroup"))(box) {
+	if ui.socks5_login_open {box.width = nendo.grow()}
+	if nendo.box(nendo.id("NetworkProxyGroup"))(box) {
 		settings_group(tr("SOCKS5 proxy"))
 		settings_check(
 			"TgSocks5",
@@ -442,11 +413,11 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 				"127.0.0.1:9050",
 				ui.focus == .Socks5,
 			)
-			clay.Text(
+			nendo.text(
 				tr(
 					"Numeric IP and port only: 127.0.0.1:9050 or [::1]:9050. No URLs or hostnames.",
 				),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 			settings_check(
 				"TgSocks5Auth",
@@ -455,12 +426,12 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 				tr("Your proxy credentials are stored in your encrypted vault."),
 			)
 			if ui.socks5_auth {
-				credentials := settings_choices(clay.ID("Socks5Credentials"))
+				credentials := settings_choices(nendo.id("Socks5Credentials"))
 				if single_pane() {
-					credentials.layout.layoutDirection = .TopToBottom
+					credentials.direction = .Column
 					credentials.clip = {}
 				}
-				if clay.UI(clay.ID("Socks5Credentials"))(credentials) {
+				if nendo.box(nendo.id("Socks5Credentials"))(credentials) {
 					gate_field(
 						ui,
 						"Socks5UserBox",
@@ -487,9 +458,9 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 			valid && dirty && ui.socks5_job == nil ? .Enabled : .Disabled,
 		)
 		if !tap_size() && !ui.socks5_login_open {
-			clay.Text(
+			nendo.text(
 				tr("Press Enter to save; Escape returns to Network & relays."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 		}
 		status := ""
@@ -512,26 +483,23 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 			status = tr("You have unsaved changes.")
 		}
 		if ui.socks5_saved && !dirty {
-			if clay.UI(clay.ID("Socks5Saved"))(
-			{
-				layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
-				backgroundColor = SELECTED,
-			},
+			if nendo.box(nendo.id("Socks5Saved"))(
+			{width = nendo.grow(), padding = nendo.pad(10), color = SELECTED},
 			) {
-				clay.Text(
+				nendo.text(
 					tr("Saved. Restart White Noise to apply this connection setting."),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+					{font = FONT_BODY, size = 13, color = TEXT},
 				)
 			}
 		}
 		if status != "" {
-			clay.Text(status, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			nendo.text(status, {font = FONT_BODY, size = 11, color = TEXT_DIM})
 		}
-		clay.Text(
+		nendo.text(
 			tr(
 				"Relay names are resolved by your proxy. Media host checks still use your local DNS.",
 			),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 11, color = TEXT_DIM},
 		)
 		external_note: string
 		when ODIN_OS == .Windows {
@@ -541,7 +509,7 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 		} else {
 			external_note = tr("External browsers and other apps do not use this setting.")
 		}
-		clay.Text(external_note, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		nendo.text(external_note, {font = FONT_BODY, size = 11, color = TEXT_DIM})
 	}
 }
 
@@ -714,18 +682,14 @@ settings_input :: proc(
 	active: bool,
 	width: f32 = 0,
 ) {
-	if clay.UI(clay.ID(id))(
+	if nendo.box(nendo.id(id))(
 	{
-		layout = {
-			sizing = {
-				width = width > 0 ? clay.SizingFixed(width) : clay.SizingGrow(),
-				height = clay.SizingFixed(settings_tap_size(30)),
-			},
-			padding = {left = 8, right = 8},
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(6),
+		width = width > 0 ? nendo.fixed(width) : nendo.grow(),
+		height = nendo.fixed(settings_tap_size(30)),
+		padding = {left = 8, right = 8},
+		align = {y = .Center},
+		color = ROW_BG,
+		radius = rr(6),
 		border = active ? focus_border(true) : {color = FIELD_BORDER, width = bw()},
 	},
 	) {
@@ -735,54 +699,43 @@ settings_input :: proc(
 
 relay_row :: proc(row_id: string, remove_id: string, index: u32, relay: string) {
 	row := settings_row()
-	row.layout.layoutDirection = .LeftToRight
-	row.layout.childGap = 8
+	row.direction = .Row
+	row.gap = 8
 	row.border = {
 		color = FIELD_BORDER,
 		width = {bottom = 1},
 	}
-	if clay.UI(clay.ID(row_id, index))(row) {
-		if clay.UI(clay.ID_LOCAL("RelayAddress"))(
+	if nendo.box(nendo.id(row_id, index))(row) {
+		if nendo.box(nendo.id_local("RelayAddress"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFixed(settings_tap_size(30)),
-				},
-				childAlignment = {y = .Center},
-			},
-			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.fixed(settings_tap_size(30)),
+			align = {y = .Center},
+			clip = {x = true, scroll = true},
 		},
 		) {
-			clay.Text(
-				relay,
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT, wrapMode = .None},
-			)
+			nendo.text(relay, {font = FONT_BODY, size = 13, color = TEXT, wrap = .None})
 			if hovered() {
 				tooltip(relay)
 			}
 		}
-		scrollbar(clay.ID_LOCAL("RelayAddress"))
-		if clay.UI(clay.ID(remove_id, index))(
+		scrollbar(nendo.id_local("RelayAddress"))
+		if nendo.box(nendo.id(remove_id, index))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingFixed(settings_tap_size(30)),
-					height = clay.SizingFixed(settings_tap_size(30)),
-				},
-				childAlignment = {x = .Center, y = .Center},
-			},
-			backgroundColor = hovered() ? HOVER : {},
-			cornerRadius = rr(6),
+			width = nendo.fixed(settings_tap_size(30)),
+			height = nendo.fixed(settings_tap_size(30)),
+			align = {x = .Center, y = .Center},
+			color = hovered() ? HOVER : {},
+			radius = rr(6),
 		},
 		) {
 			if hovered() {
 				tooltip(tr("Remove"))
 				cursor_raise(.Pointer)
 			}
-			clay.Text(
+			nendo.text(
 				ICON_TRASH,
-				{fontId = FONT_ICON, fontSize = 13, textColor = hovered() ? DANGER : TEXT_DIM},
+				{font = FONT_ICON, size = 13, color = hovered() ? DANGER : TEXT_DIM},
 			)
 		}
 	}
@@ -1012,7 +965,7 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	for relay, i in ui.profile.inbox {
-		if clay.PointerOver(clay.ID("InboxRemove", u32(i))) {
+		if nendo.pointer_over(nendo.id("InboxRemove", u32(i))) {
 			confirm_ask(ui, .Remove_Inbox, relay, relay, i)
 			return
 		}

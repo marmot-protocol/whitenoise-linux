@@ -1,11 +1,11 @@
 // Theme decor layers. Page washes and wallpapers mount on the root;
-// geometric scenes mount on the Timeline's Custom payload. Clay draws
+// geometric scenes mount on the Timeline's Custom payload. nendo draws
 // each payload before its children, keeping content above the scene.
 package main
 
 import "core:math"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 Decor_View :: struct {
@@ -104,16 +104,16 @@ wash_payload :: proc() -> rawptr {
 }
 
 @(private)
-decor_canvas_fill :: proc() -> clay.Color {
+decor_canvas_fill :: proc() -> nendo.Color {
 	// Page content sits on the wallpaper; dialogs and sheets keep their own surfaces.
-	return THEME_WALLPAPER != nil ? clay.Color{} : CARD
+	return THEME_WALLPAPER != nil ? nendo.Color{} : CARD
 }
 
 // A vertical wash from BG to BG_2, in bands. Cheap, and the only
-// gradient the renderer needs: clay fills are flat.
+// gradient the renderer needs: nendo fills are flat.
 WASH_BANDS :: 32
 
-wash_draw :: proc(bounds: clay.BoundingBox) {
+wash_draw :: proc(bounds: nendo.Rect) {
 	if THEME_WALLPAPER != nil {
 		// One wall, anchored to the window even inside a scrolled timeline.
 		// Cover with one scale factor; crop excess rather than stretch the artwork.
@@ -145,7 +145,7 @@ wash_draw :: proc(bounds: clay.BoundingBox) {
 	h := bounds.height / WASH_BANDS + 1
 	for i in 0 ..< WASH_BANDS {
 		t := f32(i) / f32(WASH_BANDS - 1)
-		tint := clay.Color {
+		tint := nendo.Color {
 			BG.r + (BG_2.r - BG.r) * t,
 			BG.g + (BG_2.g - BG.g) * t,
 			BG.b + (BG_2.b - BG.b) * t,
@@ -156,7 +156,7 @@ wash_draw :: proc(bounds: clay.BoundingBox) {
 			bounds.y + f32(i) * bounds.height / WASH_BANDS,
 			bounds.width,
 			h,
-			clay_color(tint),
+			nendo_color(tint),
 		)
 	}
 }
@@ -239,14 +239,14 @@ rail_quad :: proc(verts: ^[dynamic]rl.Vertex, x0, y0, x1, y1, w: f32, color: rl.
 	append(verts, a, b, c, b, d, c)
 }
 
-synth_draw :: proc(bounds: clay.BoundingBox) {
+synth_draw :: proc(bounds: nendo.Rect) {
 	px, py := parallax()
 	horizon_y := bounds.y + bounds.height * SYNTH_HORIZON + py * PARALLAX * 0.4
 	center_x := bounds.x + bounds.width / 2 - px * PARALLAX
 	tint := rl.FColor{ACCENT.r / 255, ACCENT.g / 255, ACCENT.b / 255, 0.16}
 
 	// Sky glow band above the horizon.
-	glow := clay_color({ACCENT.r, ACCENT.g, ACCENT.b, 18})
+	glow := nendo_color({ACCENT.r, ACCENT.g, ACCENT.b, 18})
 	rl.DrawRectangleRec(bounds.x, horizon_y - 60, bounds.width, 60, glow)
 	// Horizon line.
 	rl.DrawRectangleRec(
@@ -254,7 +254,7 @@ synth_draw :: proc(bounds: clay.BoundingBox) {
 		horizon_y,
 		bounds.width,
 		1,
-		clay_color({ACCENT.r, ACCENT.g, ACCENT.b, 70}),
+		nendo_color({ACCENT.r, ACCENT.g, ACCENT.b, 70}),
 	)
 
 	verts := make([dynamic]rl.Vertex, context.temp_allocator)
@@ -294,7 +294,7 @@ synth_draw :: proc(bounds: clay.BoundingBox) {
 			y,
 			bounds.width,
 			1,
-			clay_color({ACCENT.r, ACCENT.g, ACCENT.b, alpha}),
+			nendo_color({ACCENT.r, ACCENT.g, ACCENT.b, alpha}),
 		)
 	}
 }
@@ -320,7 +320,7 @@ DUST_DRIFT :: 9 // px per second sideways
 // Slow specks crossing the page, like chalk dust or paper fibre in a
 // light beam. Positions are a hash of the index, so there is no state
 // and no PRNG: each mote has its own lane, size and speed.
-dust_draw :: proc(bounds: clay.BoundingBox) {
+dust_draw :: proc(bounds: nendo.Rect) {
 	px, py := parallax()
 	now := rl.GetTime()
 	for i in 0 ..< DUST_MOTES {
@@ -341,7 +341,7 @@ dust_draw :: proc(bounds: clay.BoundingBox) {
 			size,
 			size,
 			size / 2,
-			clay_color({TEXT.r, TEXT.g, TEXT.b, alpha}),
+			nendo_color({TEXT.r, TEXT.g, TEXT.b, alpha}),
 		)
 	}
 }
@@ -351,9 +351,9 @@ dust_draw :: proc(bounds: clay.BoundingBox) {
 SCAN_GAP :: f32(3) // px between lines
 SCAN_ROLL :: f32(70) // px per second for the bright band
 
-scan_draw :: proc(bounds: clay.BoundingBox) {
+scan_draw :: proc(bounds: nendo.Rect) {
 	for y := bounds.y; y < bounds.y + bounds.height; y += SCAN_GAP {
-		rl.DrawRectangleRec(bounds.x, y, bounds.width, 1, clay_color({0, 0, 0, 26}))
+		rl.DrawRectangleRec(bounds.x, y, bounds.width, 1, nendo_color({0, 0, 0, 26}))
 	}
 	// One soft band rolling down the tube, the phosphor sweep.
 	band_h := f32(90)
@@ -367,7 +367,7 @@ scan_draw :: proc(bounds: clay.BoundingBox) {
 			top + t * band_h,
 			bounds.width,
 			band_h / 6 + 1,
-			clay_color({ACCENT.r, ACCENT.g, ACCENT.b, 5 * (1 - t)}),
+			nendo_color({ACCENT.r, ACCENT.g, ACCENT.b, 5 * (1 - t)}),
 		)
 	}
 }
@@ -382,7 +382,7 @@ scan_draw :: proc(bounds: clay.BoundingBox) {
 DECO_RAYS :: 19
 DECO_ARCS :: 4
 
-deco_draw :: proc(bounds: clay.BoundingBox) {
+deco_draw :: proc(bounds: nendo.Rect) {
 	px, py := parallax()
 	cx := bounds.x + bounds.width / 2 + px * PARALLAX * 0.4
 	cy := bounds.y + bounds.height * 1.02 + py * PARALLAX * 0.2
@@ -409,7 +409,7 @@ deco_draw :: proc(bounds: clay.BoundingBox) {
 	// Concentric arcs over the fan, the deco "rising sun" banding.
 	for i in 1 ..= DECO_ARCS {
 		r := bounds.height * (0.22 * f32(i))
-		ring := clay_color({ACCENT.r, ACCENT.g, ACCENT.b, 10})
+		ring := nendo_color({ACCENT.r, ACCENT.g, ACCENT.b, 10})
 		for step in 0 ..< 48 {
 			a := f32(3.14159) * (1 + f32(step) / 48)
 			rl.DrawRectangleRec(
@@ -432,7 +432,7 @@ deco_draw :: proc(bounds: clay.BoundingBox) {
 BLIND_GAP :: f32(46)
 BLIND_SHEAR :: f32(0.42)
 
-blinds_draw :: proc(bounds: clay.BoundingBox) {
+blinds_draw :: proc(bounds: nendo.Rect) {
 	_, py := parallax()
 	verts := make([dynamic]rl.Vertex, context.temp_allocator)
 	pale := rl.FColor{TEXT.r / 255, TEXT.g / 255, TEXT.b / 255, 0.035}
@@ -471,7 +471,7 @@ blinds_draw :: proc(bounds: clay.BoundingBox) {
 
 STRIPE_W :: f32(28)
 
-stripes_draw :: proc(bounds: clay.BoundingBox) {
+stripes_draw :: proc(bounds: nendo.Rect) {
 	verts := make([dynamic]rl.Vertex, context.temp_allocator)
 	tint := rl.FColor{WARNING.r / 255, WARNING.g / 255, WARNING.b / 255, 0.045}
 
@@ -504,13 +504,13 @@ stripes_draw :: proc(bounds: clay.BoundingBox) {
 
 WAVE_LINES :: 7
 
-waves_draw :: proc(bounds: clay.BoundingBox) {
+waves_draw :: proc(bounds: nendo.Rect) {
 	now := rl.GetTime()
 	for i in 0 ..< WAVE_LINES {
 		t := f32(i) / f32(WAVE_LINES)
 		base := bounds.y + bounds.height * (0.35 + t * 0.6)
 		amp := 7 + 5 * t
-		tint := clay_color({ACCENT.r, ACCENT.g, ACCENT.b, 14 - t * 8})
+		tint := nendo_color({ACCENT.r, ACCENT.g, ACCENT.b, 14 - t * 8})
 		// Sampled coarsely: the eye reads the curve, not the segments.
 		for x := bounds.x; x < bounds.x + bounds.width; x += 6 {
 			phase := f64(x) * 0.008 + now * (0.25 + f64(t) * 0.2)
@@ -526,7 +526,7 @@ waves_draw :: proc(bounds: clay.BoundingBox) {
 
 AIR_CHEVRON :: f32(18)
 
-airmail_draw :: proc(bounds: clay.BoundingBox) {
+airmail_draw :: proc(bounds: nendo.Rect) {
 	verts := make([dynamic]rl.Vertex, context.temp_allocator)
 	// Slot 0 and 1 are the pack's blue and red; the band alternates.
 	blue := rl.FColor{ACCENT.r / 255, ACCENT.g / 255, ACCENT.b / 255, 0.5}

@@ -3,7 +3,7 @@ package main
 import marmot "../marmot"
 import "core:fmt"
 import "core:strings"
-import clay "layout"
+import "nendo"
 
 @(private)
 select_archived_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
@@ -22,16 +22,15 @@ select_archived_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) 
 
 @(private)
 archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
-	if clay.UI(clay.ID("ArchivedRow", index))(
+	if nendo.box(nendo.id("ArchivedRow", index))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(ARCHIVED_ROW_H)},
-			padding = {left = 12, right = 12, top = 12, bottom = 12},
-			childGap = 12,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(10),
+		width = nendo.grow(),
+		height = nendo.fixed(ARCHIVED_ROW_H),
+		padding = {left = 12, right = 12, top = 12, bottom = 12},
+		gap = 12,
+		align = {y = .Center},
+		color = ROW_BG,
+		radius = rr(10),
 		border = {color = DIVIDER, width = bw()},
 	},
 	) {
@@ -42,179 +41,129 @@ archived_row :: proc(index: u32, chat: Chat_Row_Ui) {
 			chat.title,
 			40,
 			chat_pic(chat),
-			clay.PointerOver(clay.ID("ChatAvatar", index)) ? .Open : .Closed,
+			nendo.pointer_over(nendo.id("ChatAvatar", index)) ? .Open : .Closed,
 		)
-		if clay.UI(clay.ID("ArchiveRowLines", index))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 4,
-			},
-		},
+		if nendo.box(nendo.id("ArchiveRowLines", index))(
+		{width = nendo.grow(), direction = .Column, gap = 4},
 		) {
-			if clay.UI(clay.ID("ChatRowTitleClip", index))(
-			{
-				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(18)}},
-				clip = {horizontal = true},
-			},
+			if nendo.box(nendo.id("ChatRowTitleClip", index))(
+			{width = nendo.grow(), height = nendo.fixed(18), clip = {x = true}},
 			) {
-				clay.Text(
-					chat.title,
-					{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT, wrapMode = .None},
-				)
+				nendo.text(chat.title, {font = FONT_TITLE, size = 15, color = TEXT, wrap = .None})
 			}
-			if clay.UI(clay.ID("ChatRowPrevClip", index))(
+			if nendo.box(nendo.id("ChatRowPrevClip", index))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(16)},
-					childAlignment = {y = .Center},
-				},
-				clip = {horizontal = true},
+				width = nendo.grow(),
+				height = nendo.fixed(16),
+				align = {y = .Center},
+				clip = {x = true},
 			},
 			) {
 				row_preview(index, chat.preview)
 			}
-			if clay.UI(clay.ID("ArchiveRowMeta", index))(
+			if nendo.box(nendo.id("ArchiveRowMeta", index))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(14)},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-				clip = {horizontal = true},
+				width = nendo.grow(),
+				height = nendo.fixed(14),
+				gap = 8,
+				align = {y = .Center},
+				clip = {x = true},
 			},
 			) {
 				chat_timestamp(index, chat)
 				if chat.muted {
-					clay.Text(
-						ICON_BELL_OFF,
-						{fontId = FONT_ICON, fontSize = 10, textColor = TEXT_LO},
-					)
+					nendo.text(ICON_BELL_OFF, {font = FONT_ICON, size = 10, color = TEXT_LO})
 				}
 				if chat.unread > 0 {
-					clay.Text(
+					nendo.text(
 						fmt.tprintf("%d", chat.unread),
-						{fontId = FONT_BODY, fontSize = 11, textColor = ACCENT},
+						{font = FONT_BODY, size = 11, color = ACCENT},
 					)
 				}
 			}
 		}
-		if clay.UI(clay.ID("ChatUnarch", index))(
+		if nendo.box(nendo.id("ChatUnarch", index))(
 		{
-			layout = {
-				sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 40)},
-				padding = {left = 12, right = 12},
-				childAlignment = {x = .Center, y = .Center},
-			},
-			backgroundColor = hovered() ? HOVER : SELECTED,
-			cornerRadius = rr(7),
+			height = nendo.fixed(tap_size() ? tap_min() : 40),
+			padding = {left = 12, right = 12},
+			align = {x = .Center, y = .Center},
+			color = hovered() ? HOVER : SELECTED,
+			radius = rr(7),
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
-			clay.Text(
-				tr("Restore"),
-				{fontId = FONT_TITLE, fontSize = 13, textColor = ACCENT, wrapMode = .None},
-			)
+			nendo.text(tr("Restore"), {font = FONT_TITLE, size = 13, color = ACCENT, wrap = .None})
 		}
 	}
 }
 
 archived_pane :: proc(ui: ^Ui_State) {
 	compact := page_w(ui) < 600
-	if clay.UI(clay.ID("ArchivedPage"))(
+	if nendo.box(nendo.id("ArchivedPage"))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(compact ? 12 : 24),
-			childGap = 16,
-		},
-		clip = {vertical = single_pane(), childOffset = clay.GetScrollOffset()},
+		width = nendo.grow(),
+		height = nendo.grow(),
+		direction = .Column,
+		padding = nendo.pad(compact ? 12 : 24),
+		gap = 16,
+		clip = {y = single_pane(), scroll = true},
 	},
 	) {
-		if clay.UI(clay.ID("ArchiveHeader"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = compact ? .TopToBottom : .LeftToRight,
-				childGap = 12,
-			},
-		},
+		if nendo.box(nendo.id("ArchiveHeader"))(
+		{width = nendo.grow(), direction = compact ? .Column : .Row, gap = 12},
 		) {
-			if clay.UI(clay.ID("ArchiveHeading"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 10,
-				},
-			},
+			if nendo.box(nendo.id("ArchiveHeading"))(
+			{width = nendo.grow(), direction = .Column, gap = 10},
 			) {
-				if clay.UI(clay.ID("ArchiveTitle"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						childGap = 10,
-						childAlignment = {y = .Center},
-					},
-				},
+				if nendo.box(nendo.id("ArchiveTitle"))(
+				{width = nendo.grow(), gap = 10, align = {y = .Center}},
 				) {
-					clay.Text(
-						ICON_ARCHIVE,
-						{fontId = FONT_ICON, fontSize = 22, textColor = ACCENT},
-					)
-					clay.Text(
+					nendo.text(ICON_ARCHIVE, {font = FONT_ICON, size = 22, color = ACCENT})
+					nendo.text(
 						tr("Archived chats"),
-						{fontId = FONT_TITLE, fontSize = compact ? 22 : 26, textColor = TEXT},
+						{font = FONT_TITLE, size = compact ? 22 : 26, color = TEXT},
 					)
-					clay.Text(
+					nendo.text(
 						fmt.tprintf("%d", len(ui.archived)),
-						{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+						{font = FONT_BODY, size = 14, color = TEXT_DIM},
 					)
 				}
-				clay.Text(
+				nendo.text(
 					tr("Keep your chat list focused without deleting conversations."),
-					{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 14, color = TEXT_DIM},
 				)
 			}
 			// Phones already show Back and the Chats destination.
 			if !single_pane(
 				
-			) {if clay.UI(clay.ID("ArchiveBack"))({layout = {sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 36)}, padding = {left = 12, right = 12}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(7), border = {color = FIELD_BORDER, width = bw()}}) {
-					clay.Text(
+			) {if nendo.box(nendo.id("ArchiveBack"))({height = nendo.fixed(tap_size() ? tap_min() : 36), padding = {left = 12, right = 12}, align = {x = .Center, y = .Center}, color = hovered() ? HOVER : ROW_BG, radius = rr(7), border = {color = FIELD_BORDER, width = bw()}}) {
+					nendo.text(
 						tr("Back to chats"),
-						{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM},
+						{font = FONT_TITLE, size = 13, color = TEXT_DIM},
 					)
 				}}
 		}
-		if clay.UI(clay.ID("ArchiveSearch"))(
+		if nendo.box(nendo.id("ArchiveSearch"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
+			width = nendo.grow(),
+			direction = single_pane() ? .Column : .Row,
+			gap = 10,
+			align = {y = .Center},
 		},
 		) {
-			if clay.UI(clay.ID("FilterBox"))(
+			if nendo.box(nendo.id("FilterBox"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 40),
-					},
-					padding = {left = 12, right = 12},
-					childGap = 10,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(8),
+				width = nendo.grow(),
+				height = nendo.fixed(tap_size() ? tap_min() : 40),
+				padding = {left = 12, right = 12},
+				gap = 10,
+				align = {y = .Center},
+				color = ROW_BG,
+				radius = rr(8),
 				border = {color = ui.focus == .Filter ? ACCENT_DIM : FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(ICON_SEARCH, {fontId = FONT_ICON, fontSize = 13, textColor = TEXT_LO})
+				nendo.text(ICON_SEARCH, {font = FONT_ICON, size = 13, color = TEXT_LO})
 				field_text(
 					ui,
 					"FilterBox",
@@ -238,21 +187,20 @@ archived_pane :: proc(ui: ^Ui_State) {
 			order[count] = i
 			count += 1
 		}
-		if clay.UI(clay.ID("ArchivedList"))(
+		if nendo.box(nendo.id("ArchivedList"))(
 		{
-			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow({min = single_pane() ? 84 : 0})},
-				layoutDirection = .TopToBottom,
-				childGap = 8,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.grow(min = single_pane() ? 84 : 0),
+			direction = .Column,
+			gap = 8,
+			clip = {y = true, scroll = true},
 		},
 		) {
 			chat_rows_window(
 				ui,
 				ui.archived[:],
 				order[:count],
-				clay.ID("ArchivedList"),
+				nendo.id("ArchivedList"),
 				.Unarchive,
 				8,
 			)
@@ -266,43 +214,29 @@ archived_pane :: proc(ui: ^Ui_State) {
 				)
 			}
 			if count == 0 && len(filter) == 0 {
-				if clay.UI(clay.ID("ArchiveEmpty"))(
+				if nendo.box(nendo.id("ArchiveEmpty"))(
 				{
-					layout = {
-						sizing = {clay.SizingGrow(), clay.SizingGrow()},
-						layoutDirection = .TopToBottom,
-						padding = clay.PaddingAll(24),
-						childGap = 12,
-						childAlignment = {x = .Center, y = .Center},
-					},
+					width = nendo.grow(),
+					height = nendo.grow(),
+					direction = .Column,
+					padding = nendo.pad(24),
+					gap = 12,
+					align = {x = .Center, y = .Center},
 				},
 				) {
-					clay.Text(
-						ICON_ARCHIVE,
-						{fontId = FONT_ICON, fontSize = 32, textColor = TEXT_LO},
-					)
-					clay.Text(
+					nendo.text(ICON_ARCHIVE, {font = FONT_ICON, size = 32, color = TEXT_LO})
+					nendo.text(
 						tr("No archived chats"),
-						{
-							fontId = FONT_TITLE,
-							fontSize = 18,
-							textColor = TEXT,
-							textAlignment = .Center,
-						},
+						{font = FONT_TITLE, size = 18, color = TEXT, align = .Center},
 					)
-					clay.Text(
+					nendo.text(
 						tr("Chats you archive will appear here."),
-						{
-							fontId = FONT_BODY,
-							fontSize = 14,
-							textColor = TEXT_DIM,
-							textAlignment = .Center,
-						},
+						{font = FONT_BODY, size = 14, color = TEXT_DIM, align = .Center},
 					)
 				}
 			}
 		}
-		scrollbar(clay.ID("ArchivedList"))
+		scrollbar(nendo.id("ArchivedList"))
 	}
-	if single_pane() {scrollbar(clay.ID("ArchivedPage"))}
+	if single_pane() {scrollbar(nendo.id("ArchivedPage"))}
 }

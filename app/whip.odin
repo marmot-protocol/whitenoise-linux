@@ -5,7 +5,7 @@ import "core:os"
 import "core:strings"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -184,11 +184,11 @@ whip_inbox_input :: proc(ui: ^Ui_State) -> bool {
 	if !mouse_released() {return false}
 	if clicked("WhipRetry") || clicked("WhipRailRetry") {rl.WhipClose(); return true}
 	for project in rl.WhipProjects() {
-		if clay.PointerOver(clay.ID("WhipProjectAvatar", project.id)) {
+		if nendo.pointer_over(nendo.id("WhipProjectAvatar", project.id)) {
 			if photo_pick_begin(ui, .Whip, project.dir) {rl.OpenFileDialog(false)}
 			return true
 		}
-		if clay.PointerOver(clay.ID("WhipProject", project.id)) {
+		if nendo.pointer_over(nendo.id("WhipProject", project.id)) {
 			whip_open_project(ui, project.id)
 			return true
 		}
@@ -203,7 +203,7 @@ whip_inbox_input :: proc(ui: ^Ui_State) -> bool {
 			return true
 		}
 		for tab in rl.WhipTabs() {
-			if clay.PointerOver(clay.ID("WhipTabClose", tab.id)) {
+			if nendo.pointer_over(nendo.id("WhipTabClose", tab.id)) {
 				whip_workspace_navigation(ui)
 				if rl.WhipTabChange(
 					.Close,
@@ -214,7 +214,7 @@ whip_inbox_input :: proc(ui: ^Ui_State) -> bool {
 		}
 	}
 	for tab in rl.WhipTabs() {
-		if clay.PointerOver(clay.ID("WhipTab", tab.id)) {
+		if nendo.pointer_over(nendo.id("WhipTab", tab.id)) {
 			whip_workspace_navigation(ui)
 			ui.whip_tabs[ui.whip_project] = tab.id
 			ui.focus = .Compose
@@ -254,39 +254,34 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 		project_name, project_dir = project.name, project.dir
 		break
 	}
-	if clay.UI(clay.ID("WhipTabBar"))(
+	if nendo.box(nendo.id("WhipTabBar"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(tap_size() ? 48 : 32)},
-			childAlignment = {y = .Center},
-			padding = {left = 8, right = 8},
-			childGap = 6,
-		},
-		backgroundColor = RAIL_BG,
+		width = nendo.grow(),
+		height = nendo.fixed(tap_size() ? 48 : 32),
+		align = {y = .Center},
+		padding = {left = 8, right = 8},
+		gap = 6,
+		color = RAIL_BG,
 		border = {color = DIVIDER, width = {bottom = 1}},
 	},
 	) {
-		if clay.UI(clay.ID("WhipWorkspaceIdentity"))(
+		if nendo.box(nendo.id("WhipWorkspaceIdentity"))(
 		{
-			layout = {
-				sizing = {
-					width = single_pane() ? clay.SizingFixed(22) : clay.SizingGrow({max = 144}),
-				},
-				childGap = 6,
-				childAlignment = {y = .Center},
-			},
-			clip = {horizontal = true},
+			width = single_pane() ? nendo.fixed(22) : nendo.grow(max = 144),
+			gap = 6,
+			align = {y = .Center},
+			clip = {x = true},
 		},
 		) {
-			if clay.UI(clay.ID("WhipWorkspaceIcon"))(
-			{layout = {childAlignment = {y = .Center}}},
-			) {clay.Text("\ue795", {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_DIM})}
-			if clay.UI(clay.ID("WhipWorkspaceLabels"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+			if nendo.box(nendo.id("WhipWorkspaceIcon"))(
+			{align = {y = .Center}},
+			) {nendo.text("\ue795", {font = FONT_ICON, size = 14, color = TEXT_DIM})}
+			if nendo.box(nendo.id("WhipWorkspaceLabels"))(
+			{width = nendo.grow(), clip = {x = true}},
 			) {
-				clay.Text(
+				nendo.text(
 					project_name,
-					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
+					{font = FONT_TITLE, size = 13, color = TEXT, wrap = .None},
 				)
 			}
 			if hovered() {
@@ -294,15 +289,8 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 				tooltip(fmt.tprintf("%s\n%s", project_name, project_dir))
 			}
 		}
-		if clay.UI(clay.ID("WhipTabs"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 2,
-				childAlignment = {y = .Center},
-			},
-			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
-		},
+		if nendo.box(nendo.id("WhipTabs"))(
+		{width = nendo.grow(), gap = 2, align = {y = .Center}, clip = {x = true, scroll = true}},
 		) {
 			for tab, i in rl.WhipTabs() {
 				active := tab.id == ui.whip_tabs[ui.whip_project]
@@ -311,21 +299,17 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 				before := drag.active && drag.slot == i
 				after :=
 					drag.active && drag.slot == len(rl.WhipTabs()) && i == len(rl.WhipTabs()) - 1
-				if clay.UI(clay.ID("WhipTab", tab.id))(
+				if nendo.box(nendo.id("WhipTab", tab.id))(
 				{
-					layout = {
-						sizing = {
-							width = single_pane() ? clay.SizingFixed(180) : clay.SizingFit({max = 180}),
-							height = clay.SizingFixed(tap_size() ? tap_min() : 26),
-						},
-						padding = {left = 8, right = 4},
-						childGap = 5,
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = active || moving ? SELECTED : (hovered() ? HOVER : {}),
-					cornerRadius = rr(6),
+					width = single_pane() ? nendo.fixed(180) : nendo.fit(max = 180),
+					height = nendo.fixed(tap_size() ? tap_min() : 26),
+					padding = {left = 8, right = 4},
+					gap = 5,
+					align = {y = .Center},
+					color = active || moving ? SELECTED : (hovered() ? HOVER : {}),
+					radius = rr(6),
 					border = {
-						color = active || before || after ? ACCENT : clay.Color{},
+						color = active || before || after ? ACCENT : nendo.Color{},
 						width = {
 							bottom = 2,
 							left = before ? u16(2) : 0,
@@ -335,63 +319,55 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 				},
 				) {
 					if drag.active {cursor_raise(.Grabbing)} else if hovered() {cursor_raise(.Pointer)}
-					if clay.UI(clay.ID("WhipTabLabel", tab.id))(
-					{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+					if nendo.box(nendo.id("WhipTabLabel", tab.id))(
+					{width = nendo.grow(), clip = {x = true}},
 					) {
-						clay.Text(
+						nendo.text(
 							fmt.tprintf("%d  %s", i + 1, tab.name),
 							{
-								fontId = FONT_TITLE,
-								fontSize = 12,
-								textColor = active ? TEXT : TEXT_DIM,
-								wrapMode = .None,
+								font = FONT_TITLE,
+								size = 12,
+								color = active ? TEXT : TEXT_DIM,
+								wrap = .None,
 							},
 						)
 					}
 					if ui.whip_tab_op == .None {
-						if clay.UI(clay.ID("WhipTabClose", tab.id))(
+						if nendo.box(nendo.id("WhipTabClose", tab.id))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(tap_size() ? tap_min() : 16),
-									height = clay.SizingFixed(tap_size() ? tap_min() : 18),
-								},
-								childAlignment = {x = .Center, y = .Center},
-							},
-							backgroundColor = hovered() ? HOVER : {},
-							cornerRadius = rr(4),
+							width = nendo.fixed(tap_size() ? tap_min() : 16),
+							height = nendo.fixed(tap_size() ? tap_min() : 18),
+							align = {x = .Center, y = .Center},
+							color = hovered() ? HOVER : {},
+							radius = rr(4),
 						},
 						) {
-							clay.Text(
+							nendo.text(
 								"×",
 								{
-									fontId = FONT_BODY,
-									fontSize = 13,
-									textColor = hovered() ? DANGER : TEXT_LO,
+									font = FONT_BODY,
+									size = 13,
+									color = hovered() ? DANGER : TEXT_LO,
 								},
 							)
 							if hovered() {tooltip(tr("Close tab"))}
 						}
 					}
-					unread_badge(clay.ID("WhipTabBadge", tab.id), u64(tab.waiting))
+					unread_badge(nendo.id("WhipTabBadge", tab.id), u64(tab.waiting))
 				}
 			}
 		}
 		if ui.whip_tab_op == .None {
-			if clay.UI(clay.ID("WhipNewTab"))(
+			if nendo.box(nendo.id("WhipNewTab"))(
 			{
-				layout = {
-					sizing = {
-						clay.SizingFixed(tap_size() ? tap_min() : 28),
-						clay.SizingFixed(tap_size() ? tap_min() : 26),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : ROW_BG,
-				cornerRadius = rr(8),
+				width = nendo.fixed(tap_size() ? tap_min() : 28),
+				height = nendo.fixed(tap_size() ? tap_min() : 26),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : ROW_BG,
+				radius = rr(8),
 			},
 			) {
-				clay.Text("+", {fontId = FONT_BODY, fontSize = 16, textColor = TEXT})
+				nendo.text("+", {font = FONT_BODY, size = 16, color = TEXT})
 				if hovered() {
 					cursor_raise(.Pointer)
 					tooltip(tr("New tab"))
@@ -399,80 +375,76 @@ whip_tabbar :: proc(ui: ^Ui_State) {
 			}
 		}
 		if ui.whip_tab_op != .None || whip_pane_work {
-			if clay.UI(clay.ID("WhipWorkspaceBusy"))(
+			if nendo.box(nendo.id("WhipWorkspaceBusy"))(
 			{
-				layout = {
-					sizing = {
-						clay.SizingFixed(min(240, max(page_w(ui) - 16, 0))),
-						clay.SizingFit(),
-					},
-					layoutDirection = .TopToBottom,
-					padding = clay.PaddingAll(10),
-					childGap = 6,
-				},
+				width = nendo.fixed(min(240, max(page_w(ui) - 16, 0))),
+				height = nendo.fit(),
+				direction = .Column,
+				padding = nendo.pad(10),
+				gap = 6,
 				floating = {
-					attachTo = .Parent,
-					zIndex = 9,
-					pointerCaptureMode = .Passthrough,
+					attach_to = .Parent,
+					z = 9,
+					pointer = .Passthrough,
 					offset = {-8, 4},
-					attachment = {element = .RightTop, parent = .RightBottom},
+					attach = {element = .Right_Top, parent = .Right_Bottom},
 				},
-				backgroundColor = PANEL,
-				cornerRadius = rr(6),
+				color = PANEL,
+				radius = rr(6),
 				border = {color = DIVIDER, width = bw()},
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					ui.whip_tab_op == .None ? tr("Opening Whip…") : (ui.whip_tab_op == .New ? tr("Creating tab…") : tr("Closing tab…")),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
-				clay.Text(
+				nendo.text(
 					tr("Progress is indeterminate."),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+					{font = FONT_BODY, size = 11, color = TEXT_LO},
 				)
 				busy_bar("WhipTabBusy")
 			}
 		}
 	}
-	scrollbar(clay.ID("WhipTabs"))
+	scrollbar(nendo.id("WhipTabs"))
 }
 
 @(private)
 whip_inbox_progress :: proc(ui: ^Ui_State) {
 	if !rl.WhipAvailable() {return}
 	if status := rl.WhipState(); status == .Idle || status == .Starting {
-		clay.Text(tr("Opening Whip…"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
-		clay.Text(
+		nendo.text(tr("Opening Whip…"), {font = FONT_BODY, size = 12, color = TEXT_DIM})
+		nendo.text(
 			tr("Progress is indeterminate."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
 		)
 		busy_bar("WhipInboxBusy")
 	} else if status == .Failed {
-		clay.Text(
+		nendo.text(
 			tr("Couldn't open Whip. Please try again."),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 12, color = TEXT_DIM},
 		)
 		micro_button("WhipRailRetry", tr("Try again"))
 	}
 	if ui.whip_picking_project || ui.whip_creating {
-		clay.Text(
+		nendo.text(
 			ui.whip_picking_project ? tr("Choose a project folder.") : tr("Creating project…"),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 13, color = TEXT_DIM},
 		)
-		clay.Text(
+		nendo.text(
 			tr("Progress is indeterminate."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
 		)
 		busy_bar("WhipCreateBusy")
 	}
 	if ui.whip_avatar_job != nil {
-		clay.Text(
+		nendo.text(
 			ui.whip_avatar_job.loading ? tr("Preparing project photo…") : tr("Saving project photo…"),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 13, color = TEXT_DIM},
 		)
-		clay.Text(
+		nendo.text(
 			tr("Progress is indeterminate."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
 		)
 		busy_bar("WhipAvatarBusy")
 	}
@@ -482,55 +454,53 @@ whip_inbox_progress :: proc(ui: ^Ui_State) {
 whip_project_row :: proc(ui: ^Ui_State, project: rl.Whip_Project) {
 	home := os.get_env("HOME", context.temp_allocator)
 	active := ui.whip_open && project.id == ui.whip_project
-	if clay.UI(clay.ID("WhipProject", project.id))(
+	if nendo.box(nendo.id("WhipProject", project.id))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(chat_row_height())},
-			childGap = 8,
-			childAlignment = {y = .Center},
-			padding = {right = 8},
-		},
-		backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-		cornerRadius = rr(6),
-		border = project.navigating ? kb_ring(ACCENT) : clay.BorderElementConfig{},
+		width = nendo.grow(),
+		height = nendo.fixed(chat_row_height()),
+		gap = 8,
+		align = {y = .Center},
+		padding = {right = 8},
+		color = active ? SELECTED : (hovered() ? HOVER : {}),
+		radius = rr(6),
+		border = project.navigating ? kb_ring(ACCENT) : nendo.Border{},
 	},
 	) {
 		if hovered() {cursor_raise(.Pointer)}
-		if clay.UI(clay.ID("WhipProjectBar", project.id))(
+		if nendo.box(nendo.id("WhipProjectBar", project.id))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingGrow()}},
-			backgroundColor = active ? ACCENT : {},
-			cornerRadius = rr(2),
+			width = nendo.fixed(3),
+			height = nendo.grow(),
+			color = active ? ACCENT : {},
+			radius = rr(2),
 		},
 		) {}
 		whip_project_avatar(ui, project.id, project.dir, project.name, 36)
-		if clay.PointerOver(clay.ID("WhipProjectAvatar", project.id)) {
+		if nendo.pointer_over(nendo.id("WhipProjectAvatar", project.id)) {
 			tooltip(tr("Change project avatar"))
 		}
-		if clay.UI(clay.ID("WhipProjectLabels", project.id))(
+		if nendo.box(nendo.id("WhipProjectLabels", project.id))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 4,
-				padding = {left = 2},
-			},
-			clip = {horizontal = true},
+			width = nendo.grow(),
+			direction = .Column,
+			gap = 4,
+			padding = {left = 2},
+			clip = {x = true},
 		},
 		) {
-			if clay.UI(clay.ID("WhipProjectTitle", project.id))(
-			{layout = {childGap = 6, childAlignment = {y = .Center}}},
+			if nendo.box(nendo.id("WhipProjectTitle", project.id))(
+			{gap = 6, align = {y = .Center}},
 			) {
-				clay.Text(
+				nendo.text(
 					project.name,
-					{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None},
+					{font = FONT_TITLE, size = 14, color = TEXT, wrap = .None},
 				)
-				if clay.UI(clay.ID("WhipProjectIcon", project.id))({}) {
-					clay.Text("\ue795", {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM})
+				if nendo.box(nendo.id("WhipProjectIcon", project.id))({}) {
+					nendo.text("\ue795", {font = FONT_ICON, size = 11, color = TEXT_DIM})
 					if hovered() {tooltip(tr("Terminal"))}
 				}
 				if ui.prefs.pinned[inbox_terminal_key(project.dir)] {
-					clay.Text(ICON_PIN, {fontId = FONT_ICON, fontSize = 10, textColor = TEXT_LO})
+					nendo.text(ICON_PIN, {font = FONT_ICON, size = 10, color = TEXT_LO})
 				}
 			}
 			dir := project.dir
@@ -539,25 +509,22 @@ whip_project_row :: proc(ui: ^Ui_State, project: rl.Whip_Project) {
 			   (len(dir) == len(home) || dir[len(home)] == '/') {
 				dir = fmt.tprintf("~%s", dir[len(home):])
 			}
-			clay.Text(
-				dir,
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None},
-			)
+			nendo.text(dir, {font = FONT_BODY, size = 11, color = TEXT_DIM, wrap = .None})
 		}
-		if clay.UI(clay.ID("WhipProjectCount", project.id))(
-		{layout = {layoutDirection = .TopToBottom, childGap = 4, padding = {right = 4}}},
+		if nendo.box(nendo.id("WhipProjectCount", project.id))(
+		{direction = .Column, gap = 4, padding = {right = 4}},
 		) {
-			clay.Text(
+			nendo.text(
 				fmt.tprintf(
 					tr(project.tabs == 1 ? N_("%d terminal") : N_("%d terminals")),
 					project.tabs,
 				),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+				{font = FONT_BODY, size = 11, color = TEXT_LO},
 			)
 			if project.waiting > 0 {
-				clay.Text(
+				nendo.text(
 					fmt.tprintf(tr("%d waiting"), project.waiting),
-					{fontId = FONT_BODY, fontSize = 11, textColor = WARNING},
+					{font = FONT_BODY, size = 11, color = WARNING},
 				)
 			}
 		}
@@ -573,40 +540,36 @@ whip_pane :: proc(ui: ^Ui_State) {
 		return
 	}
 	if ui.whip_project != 0 && status != .Missing {whip_tabbar(ui)}
-	if clay.UI(clay.ID("WhipPage"))(
+	if nendo.box(nendo.id("WhipPage"))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			childAlignment = {x = .Center, y = .Center},
-			childGap = 12,
-			padding = clay.PaddingAll(3),
-		},
-		backgroundColor = BG,
-		clip = {horizontal = true, vertical = true},
+		width = nendo.grow(),
+		height = nendo.grow(),
+		direction = .Column,
+		align = {x = .Center, y = .Center},
+		gap = 12,
+		padding = nendo.pad(3),
+		color = BG,
+		clip = {x = true, y = true},
 	},
 	) {
 		if status == .Ready {
 			whip_pane_tree(ui)
 		} else if status == .Missing {
-			clay.Text(
+			nendo.text(
 				tr("This project is no longer available."),
-				{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 14, color = TEXT_DIM},
 			)
 		} else if status == .Failed {
-			clay.Text(
+			nendo.text(
 				tr("Couldn't open Whip. Please try again."),
-				{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 14, color = TEXT_DIM},
 			)
 			micro_button("WhipRetry", tr("Try again"))
 		} else {
-			clay.Text(
-				tr("Opening Whip…"),
-				{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
-			)
-			clay.Text(
+			nendo.text(tr("Opening Whip…"), {font = FONT_BODY, size = 14, color = TEXT_DIM})
+			nendo.text(
 				tr("Progress is indeterminate."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+				{font = FONT_BODY, size = 12, color = TEXT_LO},
 			)
 			busy_bar("WhipBusy")
 		}

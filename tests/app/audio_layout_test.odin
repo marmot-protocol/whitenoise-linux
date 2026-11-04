@@ -3,7 +3,7 @@ package main
 import "base:runtime"
 import "core:fmt"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -16,14 +16,10 @@ audio_layout :: proc(t: ^testing.T) {
 	load_themes()
 	apply_theme(0, 0)
 	init_fonts()
-	memory := make([]u8, int(clay.MinMemorySize()))
+	memory := make([]u8, int(nendo.min_memory_size()))
 	defer delete(memory)
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{720, 900},
-		{},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
+	nendo.init(memory, {720, 900}, {})
+	nendo.set_measure_text(measure_text, nil)
 	ui := Ui_State {
 		row_menu         = -1,
 		member_menu      = -1,
@@ -53,27 +49,23 @@ audio_layout :: proc(t: ^testing.T) {
 	g_ui, g_prefs = &ui, &ui.prefs
 	for width in ([]f32{340, 420, 720}) {
 		rl.SetWindowSize(i32(width), 900)
-		clay.SetLayoutDimensions({width, 900})
+		nendo.set_dimensions({width, 900})
 		_ = build_layout(&ui, 0)
 		commands := build_layout(&ui, 0)
 		for i in 0 ..< 2 {
 			id := u32(i * 1024)
-			tile := clay.GetElementData(clay.ID("MsgAudio", id)).boundingBox
+			tile := nendo.element(nendo.id("MsgAudio", id)).rect
 			for key in ([]string{"MsgAudioName", "MsgAudioBar", "MsgAudioMeta"}) {
-				box := clay.GetElementData(clay.ID(key, id))
+				box := nendo.element(nendo.id(key, id))
 				testing.expect(t, box.found)
-				testing.expect(
-					t,
-					box.boundingBox.x + box.boundingBox.width <= tile.x + tile.width,
-					key,
-				)
+				testing.expect(t, box.rect.x + box.rect.width <= tile.x + tile.width, key)
 			}
 			testing.expect(t, tile.x + tile.width <= width)
 		}
-		before := [3]clay.BoundingBox {
-			clay.GetElementData(clay.ID("Timeline")).boundingBox,
-			clay.GetElementData(clay.ID("MsgAudio", 0)).boundingBox,
-			clay.GetElementData(clay.ID("MsgAudio", 1024)).boundingBox,
+		before := [3]nendo.Rect {
+			nendo.element(nendo.id("Timeline")).rect,
+			nendo.element(nendo.id("MsgAudio", 0)).rect,
+			nendo.element(nendo.id("MsgAudio", 1024)).rect,
 		}
 		file := wn_ipc_create(4)
 		testing.expect(t, file != nil)
@@ -86,17 +78,17 @@ audio_layout :: proc(t: ^testing.T) {
 			percent = 42,
 		}
 		_ = build_layout(&ui, 0)
-		after := [3]clay.BoundingBox {
-			clay.GetElementData(clay.ID("Timeline")).boundingBox,
-			clay.GetElementData(clay.ID("MsgAudio", 0)).boundingBox,
-			clay.GetElementData(clay.ID("MsgAudio", 1024)).boundingBox,
+		after := [3]nendo.Rect {
+			nendo.element(nendo.id("Timeline")).rect,
+			nendo.element(nendo.id("MsgAudio", 0)).rect,
+			nendo.element(nendo.id("MsgAudio", 1024)).rect,
 		}
 		testing.expect_value(t, after, before)
-		testing.expect(t, !clay.GetElementData(clay.ID("SttBar")).found)
+		testing.expect(t, !nendo.element(nendo.id("SttBar")).found)
 		ui.stt = {}
 		commands = build_layout(&ui, 0)
 		rl.BeginDrawing()
-		draw_frame(&commands)
+		draw_frame(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/audio-%d.png", int(width)))
 		rl.EndDrawing()
 	}

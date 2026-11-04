@@ -3,7 +3,7 @@
 // line-number gutter.
 //
 //   code_view_make → per-line runs, tokenized once at open
-//   code_lines     → the clay rows, shared by the tile and the modal
+//   code_lines     → the nendo rows, shared by the tile and the modal
 //
 // ponytail: one keyword set for every language, plus per-family
 // comment and string rules. A real per-language grammar is the
@@ -14,7 +14,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Colors come from the active theme's own tokens, so a light or retro
@@ -29,7 +29,7 @@ Code_Kind :: enum u8 {
 
 CODE_MAX_LINES :: 4000 // parse cap; a generated file can be enormous
 CODE_TILE_LINES :: 14 // rows on a timeline tile
-// ponytail: cap highlighted source at 1000 lines for clay's element
+// ponytail: cap highlighted source at 1000 lines for nendo's element
 // budget; virtualize colored runs if whole files need to scroll.
 CODE_MODAL_LINES :: 1000 // rows in the preview modal (it scrolls)
 @(private = "file")
@@ -430,14 +430,14 @@ md_code_text :: proc(text, kinds: string, size: u16, fonts: string = "") {
 		for end < len(text) &&
 		    (len(kinds) == 0 || kinds[end] == kinds[at]) &&
 		    (len(fonts) == 0 || fonts[end] == fonts[at]) {end += 1}
-		clay.Text(
+		nendo.text(
 			text[at:end],
 			{
-				fontId = FONT_MONO,
-				fontSize = size,
-				textColor = code_color(kind),
-				wrapMode = .None,
-				userData = rawptr(
+				font = FONT_MONO,
+				size = size,
+				color = code_color(kind),
+				wrap = .None,
+				user_data = rawptr(
 					uintptr(len(fonts) > 0 ? fonts[at] & (TEXT_ADDED | TEXT_REMOVED) : 0),
 				),
 			},
@@ -449,7 +449,7 @@ md_code_text :: proc(text, kinds: string, size: u16, fonts: string = "") {
 // ── Render ──────────────────────────────────────────────────────────
 
 @(private = "file")
-code_color :: proc(kind: Code_Kind) -> clay.Color {
+code_color :: proc(kind: Code_Kind) -> nendo.Color {
 	switch kind {
 	case .Comment:
 		return TEXT_LO
@@ -468,23 +468,23 @@ code_color :: proc(kind: Code_Kind) -> clay.Color {
 // Numbered monospace lines. Runs word-wrap inside their own box, so a
 // long comment or literal folds under its own start instead of running
 // past the tile; the gutter never wraps.
-// ponytail: a line whose runs overflow *together* still clips (clay
+// ponytail: a line whose runs overflow *together* still clips (nendo
 // rows don't wrap children); a run/line reflow model is the upgrade.
 code_lines :: proc(
 	view: ^Code_View,
 	id_seed: u32,
 	limit: int,
 	width: f32,
-	scroll_id: clay.ElementId,
+	scroll_id: nendo.Id,
 	offset, gap: f32,
 ) {
 	shown := min(len(view.lines), limit)
 	line_h := f32(CODE_FONT_SIZE)
-	scroll := clay.GetScrollContainerData(scroll_id)
+	scroll := nendo.scroll(scroll_id)
 	top, bottom := f32(0), max(f32(600), f32(rl.GetScreenHeight()) / UI_ZOOM)
-	if scroll.found && scroll.scrollContainerDimensions.height > 0 {
-		top = -scroll.scrollPosition.y
-		bottom = top + scroll.scrollContainerDimensions.height
+	if scroll.found && scroll.viewport.height > 0 {
+		top = -scroll.position.y
+		bottom = top + scroll.viewport.height
 	}
 	y := offset
 	for &line, i in view.lines[:shown] {
@@ -524,45 +524,26 @@ code_lines :: proc(
 				last = clamp(int((bottom - y) / line_h) + 1, first, last)
 			}
 		}
-		if clay.UI(clay.ID("CodeLine", id_seed + u32(i)))(
-		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = plain ? clay.SizingFixed(height) : clay.SizingFit({}),
-				},
-			},
-		},
+		if nendo.box(nendo.id("CodeLine", id_seed + u32(i)))(
+		{width = nendo.grow(), height = plain ? nendo.fixed(height) : nendo.fit()},
 		) {
 			if plain && first == last {y += height + gap; continue}
-			clay.Text(
+			nendo.text(
 				first == 0 ? fmt.tprintf("%4d ", i + 1) : "     ",
-				{
-					fontId = FONT_MONO,
-					fontSize = CODE_FONT_SIZE,
-					textColor = TEXT_LO,
-					wrapMode = .None,
-				},
+				{font = FONT_MONO, size = CODE_FONT_SIZE, color = TEXT_LO, wrap = .None},
 			)
 			// Plain records need hard wrapping too: compact JSON has no spaces.
 			if plain {
 				text := line.runs[0].text
-				if clay.UI()({layout = {layoutDirection = .TopToBottom}}) {
+				if nendo.box()({direction = .Column}) {
 					// Keep the full scroll extent without laying out offscreen text.
 					if first > 0 {
-						if clay.UI()(
-						{layout = {sizing = {height = clay.SizingFixed(f32(first) * line_h)}}},
-						) {}
+						if nendo.box()({height = nendo.fixed(f32(first) * line_h)}) {}
 					}
 					for part in line.wrapped[first:last] {
-						clay.Text(
+						nendo.text(
 							text[part.start:part.end],
-							{
-								fontId = FONT_MONO,
-								fontSize = CODE_FONT_SIZE,
-								textColor = TEXT,
-								wrapMode = .None,
-							},
+							{font = FONT_MONO, size = CODE_FONT_SIZE, color = TEXT, wrap = .None},
 						)
 					}
 				}
@@ -570,21 +551,17 @@ code_lines :: proc(
 				continue
 			}
 			for run in line.runs {
-				clay.Text(
+				nendo.text(
 					run.text,
-					{
-						fontId = FONT_MONO,
-						fontSize = CODE_FONT_SIZE,
-						textColor = code_color(run.kind),
-					},
+					{font = FONT_MONO, size = CODE_FONT_SIZE, color = code_color(run.kind)},
 				)
 			}
 		}
 	}
 	if len(view.lines) > shown {
-		clay.Text(
+		nendo.text(
 			fmt.tprintf(tr("and %d more lines"), len(view.lines) - shown),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 11, color = TEXT_DIM},
 		)
 	}
 }

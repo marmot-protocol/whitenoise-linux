@@ -5,7 +5,7 @@ import "core:fmt"
 import "core:math"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -51,13 +51,13 @@ centered_chat_layout :: proc(t: ^testing.T) {
 		refresh_ui_scale()
 		for width in ([]i32{1600, 1033, 720, 420}) {
 			rl.SetWindowSize(i32(f32(width) * zoom), i32(800 * zoom))
-			clay.SetLayoutDimensions({f32(width), 800})
+			nendo.set_dimensions({f32(width), 800})
 			for mode in 0 ..< 3 {
 				ui.prefs.centered_chat = mode != 1
 				for _ in 0 ..< 3 {
 					build_layout(&ui, 0)
-					body := clay.GetElementData(clay.ID("ChatBody")).boundingBox
-					column := clay.GetElementData(clay.ID("ChatColumn")).boundingBox
+					body := nendo.element(nendo.id("ChatBody")).rect
+					column := nendo.element(nendo.id("ChatColumn")).rect
 					expected := ui.prefs.centered_chat ? min(body.width, 720) : body.width
 					testing.expect(
 						t,
@@ -70,7 +70,7 @@ centered_chat_layout :: proc(t: ^testing.T) {
 						"conversation stays centered",
 					)
 					for id in ([]string{"Timeline", "Composer", "ComposeBox"}) {
-						box := clay.GetElementData(clay.ID(id)).boundingBox
+						box := nendo.element(nendo.id(id)).rect
 						testing.expect(
 							t,
 							box.x >= column.x &&
@@ -82,7 +82,7 @@ centered_chat_layout :: proc(t: ^testing.T) {
 			}
 			commands := build_layout(&ui, 0)
 			rl.BeginDrawing()
-			draw_frame(&commands)
+			draw_frame(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-centered-%d-%d.png", width, int(zoom * 100)))
 			rl.EndDrawing()
 		}

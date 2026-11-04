@@ -3,32 +3,28 @@ package main
 import "core:sync"
 import "core:testing"
 import "core:time"
-import clay "layout"
+import "nendo"
 
 @(test)
 pending_layout_balanced :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
-	previous := clay.GetCurrentContext()
-	memory := make([]u8, int(clay.MinMemorySize()))
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	memory := make([]u8, int(nendo.min_memory_size()))
 	defer {
-		clay.SetCurrentContext(previous)
+		nendo.set_context(previous)
 		delete(memory)
 	}
 	errors: int
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{800, 600},
-		{
-			handler = proc(error: clay.ErrorData) {(^int)(error.userData)^ += 1},
-			userData = &errors,
-		},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
+	nendo.init(memory, {800, 600}, {
+		handler = proc(error: nendo.Error) {(^int)(error.user_data)^ += 1},
+		user_data = &errors,
+	})
+	nendo.set_measure_text(measure_text, nil)
 	ui: Ui_State
-	clay.BeginLayout()
-	if clay.UI(clay.ID("TestRoot"))({}) {
-		if clay.UI(clay.ID("TestTimeline"))({}) {
+	nendo.begin()
+	if nendo.box(nendo.id("TestRoot"))({}) {
+		if nendo.box(nendo.id("TestTimeline"))({}) {
 			pending_row(0, &ui, Pending_Send{body = "Sending", sending_since = time.tick_now()})
 		}
 	}
@@ -36,6 +32,6 @@ pending_layout_balanced :: proc(t: ^testing.T) {
 	if errors > 0 {
 		return // A corrupt tree can loop indefinitely in EndLayout.
 	}
-	clay.EndLayout(0)
+	nendo.end(0)
 	testing.expect_value(t, errors, 0)
 }

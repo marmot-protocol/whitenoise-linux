@@ -23,7 +23,7 @@ import "core:sync"
 import "core:thread"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private = "file")
@@ -270,29 +270,24 @@ update_bar :: proc() {
 	if !busy && (phase != .Ready || updater.dismissed) {
 		return
 	}
-	if clay.UI(clay.ID("UpdateBar"))(
+	if nendo.box(nendo.id("UpdateBar"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			padding = clay.PaddingAll(6),
-			childGap = 12,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = STATUS_BAR,
+		width = nendo.grow(),
+		padding = nendo.pad(6),
+		gap = 12,
+		align = {y = .Center},
+		color = STATUS_BAR,
 	},
 	) {
 		if busy {
-			clay.Text(
-				update_status(phase),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-			)
+			nendo.text(update_status(phase), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 			update_feedback("UpdateBarProgress", phase)
 		} else {
 			micro_button("UpdateRestart", tr("Restart now"), ACCENT)
 			micro_button("UpdateLater", tr("Later"))
-			clay.Text(
+			nendo.text(
 				fmt.tprintf(tr("White Noise %s is ready to install."), update_version()),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 		}
 	}
@@ -327,36 +322,25 @@ update_feedback :: proc(id: string, phase: Update_Phase) {
 	}
 	if progress < 0 {
 		busy_bar(id)
-		clay.Text(
+		nendo.text(
 			tr("Progress is indeterminate."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
 		)
 		return
 	}
-	if clay.UI(clay.ID(id))(
-	{
-		layout = {sizing = {clay.SizingFixed(180), clay.SizingFixed(4)}},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(2),
-	},
+	if nendo.box(nendo.id(id))(
+	{width = nendo.fixed(180), height = nendo.fixed(4), color = ROW_BG, radius = rr(2)},
 	) {
-		if clay.UI(clay.ID(id, 1))(
+		if nendo.box(nendo.id(id, 1))(
 		{
-			layout = {
-				sizing = {
-					clay.SizingPercent(f32(clamp(progress, 0, 100)) / 100),
-					clay.SizingFixed(4),
-				},
-			},
-			backgroundColor = ACCENT,
-			cornerRadius = rr(2),
+			width = nendo.percent(f32(clamp(progress, 0, 100)) / 100),
+			height = nendo.fixed(4),
+			color = ACCENT,
+			radius = rr(2),
 		},
 		) {}
 	}
-	clay.Text(
-		fmt.tprintf("%d%%", progress),
-		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
-	)
+	nendo.text(fmt.tprintf("%d%%", progress), {font = FONT_BODY, size = 11, color = TEXT_LO})
 }
 
 // Settings → About row: current state plus a manual check.
@@ -365,11 +349,11 @@ update_settings_row :: proc() {
 	if phase == .Off {
 		return
 	}
-	if clay.UI(clay.ID("AboutUpdateGroup"))(settings_box()) {
+	if nendo.box(nendo.id("AboutUpdateGroup"))(settings_box()) {
 		settings_group(tr("Updates"))
 		when ODIN_OS == .Darwin {
 			if status := macos_update_status(); status != "" {
-				clay.Text(tr(status), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
+				nendo.text(tr(status), {font = FONT_BODY, size = 13, color = TEXT})
 			}
 			if macos_update_available() {
 				settings_check(
@@ -393,11 +377,9 @@ update_settings_row :: proc() {
 				)
 			}
 		}
-		if clay.UI(clay.ID("AboutUpdateRow"))(settings_row(true)) {
-			clay.Text(update_status(phase), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
-			if clay.UI(clay.ID("AboutUpdateGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
+		if nendo.box(nendo.id("AboutUpdateRow"))(settings_row(true)) {
+			nendo.text(update_status(phase), {font = FONT_BODY, size = 13, color = TEXT})
+			if nendo.box(nendo.id("AboutUpdateGap"))({width = nendo.grow()}) {}
 			if phase == .Ready {
 				settings_button("UpdateRestart", tr("Restart now"), ACCENT)
 			} else if phase == .Idle || phase == .Failed {

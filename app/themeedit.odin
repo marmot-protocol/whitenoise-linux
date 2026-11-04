@@ -15,7 +15,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -137,7 +137,7 @@ THEME_BACKDROPS := []struct {
 }
 
 @(private = "file")
-hex_color :: proc(c: clay.Color) -> string {
+hex_color :: proc(c: nendo.Color) -> string {
 	if c.a != 255 {
 		return fmt.tprintf("#%02x%02x%02x%02x", int(c.r), int(c.g), int(c.b), int(c.a))
 	}
@@ -150,11 +150,11 @@ theme_field_hint :: proc(pack: ^Theme_Pack, field: Theme_Field) -> string {
 	entry := theme_token_pointer(pack, field.token)
 	switch THEME_TOKENS[field.token].kind {
 	case .Color:
-		color := (cast(^clay.Color)entry)^
+		color := (cast(^nendo.Color)entry)^
 		if field.token == .Bg_2 && color.a == 0 {return N_("Flat")}
 		return hex_color(color)
 	case .Colors, .Ink:
-		return hex_color((cast(^[5]clay.Color)entry)^[field.slot])
+		return hex_color((cast(^[5]nendo.Color)entry)^[field.slot])
 	case .Number:
 		return fmt.tprintf(field.token == .R_Scale ? "%.2f" : "%.0f", (cast(^f32)entry)^)
 	case .Text:
@@ -336,7 +336,7 @@ THEME_BACKDROPS_PER_ROW :: 5
 
 @(private)
 theme_edit_width :: proc() -> f32 {
-	return max(1, modal_w(clay.ID("ThemeEdit"), THEME_EDIT_W + 36) - 36)
+	return max(1, modal_w(nendo.id("ThemeEdit"), THEME_EDIT_W + 36) - 36)
 }
 
 theme_edit_modal :: proc(ui: ^Ui_State) {
@@ -344,63 +344,49 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 	// to show what derivation is doing right now, not at open.
 	live := &theme_packs[clamp(ui.theme_slot, 0, len(theme_packs) - 1)]
 
-	if clay.UI(clay.ID("ThemeEdit"))(
+	if nendo.box(nendo.id("ThemeEdit"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("ThemeEdit"), THEME_EDIT_W + 36)),
-				height = clay.SizingFit({max = modal_h(1200)}),
-			},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(18),
-			childGap = 8,
-		},
-		backgroundColor = CARD,
-		cornerRadius = rr(14),
+		width = nendo.fixed(modal_w(nendo.id("ThemeEdit"), THEME_EDIT_W + 36)),
+		height = nendo.fit(max = modal_h(1200)),
+		direction = .Column,
+		padding = nendo.pad(18),
+		gap = 8,
+		color = CARD,
+		radius = rr(14),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
-			attachTo = .Root,
-			zIndex = 16,
-			offset = {0, rise(clay.ID("ThemeEdit"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 16,
+			offset = {0, rise(nendo.id("ThemeEdit"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
 	},
 	) {
-		if clay.UI(clay.ID("ThemeEditHead"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingFixed(theme_edit_width())},
-				layoutDirection = .TopToBottom,
-				childGap = 2,
-			},
-		},
+		if nendo.box(nendo.id("ThemeEditHead"))(
+		{width = nendo.fixed(theme_edit_width()), direction = .Column, gap = 2},
 		) {
-			clay.Text(tr("Edit theme"), {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
-			clay.Text(
+			nendo.text(tr("Edit theme"), {font = FONT_TITLE, size = 16, color = TEXT})
+			nendo.text(
 				tr("An empty box derives its value. The window previews as you type."),
-				{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO},
+				{font = FONT_BODY, size = 10, color = TEXT_LO},
 			)
 		}
 
-		if clay.UI(clay.ID("ThemeEditScroll"))(
+		if nendo.box(nendo.id("ThemeEditScroll"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingFixed(theme_edit_width()),
-					height = clay.SizingFixed(
-						max(44, modal_h(THEME_EDIT_H + 170) - (single_pane() ? 220 : 170)),
-					),
-				},
-				layoutDirection = .TopToBottom,
-				childGap = 3,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.fixed(theme_edit_width()),
+			height = nendo.fixed(
+				max(44, modal_h(THEME_EDIT_H + 170) - (single_pane() ? 220 : 170)),
+			),
+			direction = .Column,
+			gap = 3,
+			clip = {y = true, scroll = true},
 		},
 		) {
 			for field, i in THEME_FIELDS {
 				if len(field.group) > 0 {
-					if clay.UI(clay.ID("ThemeEditGroup", u32(i)))(
-					{layout = {padding = {top = 8, bottom = 2}}},
+					if nendo.box(nendo.id("ThemeEditGroup", u32(i)))(
+					{padding = {top = 8, bottom = 2}},
 					) {
 						eyebrow(tr(field.group))
 					}
@@ -408,59 +394,36 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 				theme_field_row(ui, live, field, i)
 			}
 
-			if clay.UI(clay.ID("ThemeFlagsEyebrow"))(
-			{layout = {padding = {top = 10, bottom = 2}}},
-			) {
+			if nendo.box(nendo.id("ThemeFlagsEyebrow"))({padding = {top = 10, bottom = 2}}) {
 				eyebrow(tr("STYLE"))
 			}
-			if clay.UI(clay.ID("ThemeFlags"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingFixed(theme_edit_width())},
-					layoutDirection = .TopToBottom,
-					childGap = 3,
-				},
-			},
+			if nendo.box(nendo.id("ThemeFlags"))(
+			{width = nendo.fixed(theme_edit_width()), direction = .Column, gap = 3},
 			) {
 				for flag, i in THEME_FLAGS {
-					if clay.UI(clay.ID("ThemeFlagRow", u32(i)))(
+					if nendo.box(nendo.id("ThemeFlagRow", u32(i)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingFixed(theme_edit_width())},
-							layoutDirection = .LeftToRight,
-							childGap = 10,
-							childAlignment = {y = .Center},
-						},
+						width = nendo.fixed(theme_edit_width()),
+						direction = .Row,
+						gap = 10,
+						align = {y = .Center},
 					},
 					) {
-						clay.Text(
-							tr(flag.label),
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-						)
-						if clay.UI(clay.ID("ThemeFlagGap", u32(i)))(
-						{layout = {sizing = {width = clay.SizingGrow()}}},
-						) {}
+						nendo.text(tr(flag.label), {font = FONT_BODY, size = 12, color = TEXT_DIM})
+						if nendo.box(nendo.id("ThemeFlagGap", u32(i)))({width = nendo.grow()}) {}
 						on := i < len(ui.theme_flags) && ui.theme_flags[i]
 						theme_chip_indexed("ThemeFlag", u32(i), on ? tr("On") : tr("Off"), on)
 					}
 				}
 			}
 
-			if clay.UI(clay.ID("ThemeBackdropEyebrow"))(
-			{layout = {padding = {top = 10, bottom = 2}}},
-			) {
+			if nendo.box(nendo.id("ThemeBackdropEyebrow"))({padding = {top = 10, bottom = 2}}) {
 				eyebrow(tr("BACKDROP"))
 			}
 			columns := single_pane() ? 2 : THEME_BACKDROPS_PER_ROW
 			for row in 0 ..< (len(THEME_BACKDROPS) + columns - 1) / columns {
-				if clay.UI(clay.ID("ThemeBackdrops", u32(row)))(
-				{
-					layout = {
-						sizing = {width = clay.SizingFixed(theme_edit_width())},
-						childGap = 4,
-						padding = {bottom = 4},
-					},
-				},
+				if nendo.box(nendo.id("ThemeBackdrops", u32(row)))(
+				{width = nendo.fixed(theme_edit_width()), gap = 4, padding = {bottom = 4}},
 				) {
 					for i in row * columns ..< min((row + 1) * columns, len(THEME_BACKDROPS)) {
 						backdrop := THEME_BACKDROPS[i]
@@ -474,35 +437,30 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("ThemeEditScroll"), 17) // the editor floats at 16
+		scrollbar(nendo.id("ThemeEditScroll"), 17) // the editor floats at 16
 
-		if clay.UI(clay.ID("ThemeEditActions"))(
+		if nendo.box(nendo.id("ThemeEditActions"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingFixed(theme_edit_width())},
-				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-				childGap = 10,
-				padding = {top = 6},
-			},
+			width = nendo.fixed(theme_edit_width()),
+			direction = single_pane() ? .Column : .Row,
+			gap = 10,
+			padding = {top = 6},
 		},
 		) {
 			micro_button("ThemeEditCancel", tr("Cancel"))
 			if !single_pane() {
-				if clay.UI(clay.ID("ThemeEditGap"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {}
+				if nendo.box(nendo.id("ThemeEditGap"))({width = nendo.grow()}) {}
 				micro_button("ThemeEditSave", tr("Save and use"), ACCENT)
 			} else {
-				if clay.UI(clay.ID("ThemeEditSave"))(
+				if nendo.box(nendo.id("ThemeEditSave"))(
 				{
-					layout = {
-						sizing = {clay.SizingGrow(), clay.SizingFixed(settings_tap_size(44))},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = ACCENT,
-					cornerRadius = rr(7),
+					width = nendo.grow(),
+					height = nendo.fixed(settings_tap_size(44)),
+					align = {x = .Center, y = .Center},
+					color = ACCENT,
+					radius = rr(7),
 				},
-				) {clay.Text(tr("Save and use"), {fontId = FONT_BODY, fontSize = 12, textColor = ON_ACCENT})}
+				) {nendo.text(tr("Save and use"), {font = FONT_BODY, size = 12, color = ON_ACCENT})}
 			}
 		}
 	}
@@ -510,15 +468,13 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 
 @(private = "file")
 theme_field_row :: proc(ui: ^Ui_State, live: ^Theme_Pack, field: Theme_Field, i: int) {
-	if clay.UI(clay.ID("ThemeSeedRow", u32(i)))(
+	if nendo.box(nendo.id("ThemeSeedRow", u32(i)))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(theme_edit_width())},
-			layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-			childGap = single_pane() ? 4 : 8,
-			padding = {bottom = single_pane() ? 12 : 0},
-			childAlignment = {y = .Center},
-		},
+		width = nendo.fixed(theme_edit_width()),
+		direction = single_pane() ? .Column : .Row,
+		gap = single_pane() ? 4 : 8,
+		padding = {bottom = single_pane() ? 12 : 0},
+		align = {y = .Center},
 	},
 	) {
 		// Accent labels number the token's five table slots from one.
@@ -526,35 +482,26 @@ theme_field_row :: proc(ui: ^Ui_State, live: ^Theme_Pack, field: Theme_Field, i:
 		if strings.contains(field.label, "%s") {
 			label = fmt.tprintf(label, fmt.tprintf("%d", field.slot + 1))
 		}
-		clay.Text(label, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		nendo.text(label, {font = FONT_BODY, size = 12, color = TEXT_DIM})
 		if !single_pane() {
-			if clay.UI(clay.ID("ThemeSeedGap", u32(i)))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
+			if nendo.box(nendo.id("ThemeSeedGap", u32(i)))({width = nendo.grow()}) {}
 		}
 
 		// Keep the swatch beside the field, not between its label and input.
-		if clay.UI(clay.ID("ThemeSeedValue", u32(i)))(
-		{
-			layout = {
-				sizing = {width = single_pane() ? clay.SizingGrow() : clay.SizingFit()},
-				childGap = 8,
-				childAlignment = {y = .Center},
-			},
-		},
+		if nendo.box(nendo.id("ThemeSeedValue", u32(i)))(
+		{width = single_pane() ? nendo.grow() : nendo.fit(), gap = 8, align = {y = .Center}},
 		) {
 			// The swatch shows the effective color: what was typed, or the
 			// derived value the placeholder names.
 			if field.kind == .Color {
 				typed := strings.trim_space(string(ui.theme_fields[i][:]))
 				shown := len(typed) > 0 ? typed : theme_field_hint(live, field)
-				if clay.UI(clay.ID("ThemeSeedSwatch", u32(i)))(
+				if nendo.box(nendo.id("ThemeSeedSwatch", u32(i)))(
 				{
-					layout = {
-						sizing = {width = clay.SizingFixed(18), height = clay.SizingFixed(18)},
-					},
-					backgroundColor = strings.has_prefix(shown, "#") ? parse_hex_color(shown) : clay.Color{},
-					cornerRadius = rr(4),
+					width = nendo.fixed(18),
+					height = nendo.fixed(18),
+					color = strings.has_prefix(shown, "#") ? parse_hex_color(shown) : nendo.Color{},
+					radius = rr(4),
 					border = {color = DIVIDER, width = bw()},
 				},
 				) {}

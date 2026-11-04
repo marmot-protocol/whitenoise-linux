@@ -1,6 +1,6 @@
 package main
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Every illustration settings draws: one per category, plus one per
@@ -100,10 +100,7 @@ settings_illustration :: proc(id: string, which: Settings_Art, size: f32) {
 	// the default circular avatar crop. SDL tracks both textures for reload
 	// teardown, and the reload heap owns their retained pixels and map entries.
 	tex = shaped_avatar(tex, "square")
-	if clay.UI(clay.ID(id))(
-	{
-		layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}},
-		image = {imageData = tex},
-	},
+	if nendo.box(nendo.id(id))(
+	{width = nendo.fixed(size), height = nendo.fixed(size), image = tex},
 	) {}
 }

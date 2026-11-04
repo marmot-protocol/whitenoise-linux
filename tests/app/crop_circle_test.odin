@@ -9,7 +9,7 @@ import "core:slice"
 import "core:strings"
 import "core:testing"
 import "core:time"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -114,30 +114,24 @@ crop_circle_layout :: proc(t: ^testing.T) {
 			key:         string,
 			photo, want: ^rl.Texture2D,
 		}{{key, nil, tex}, {key[:32], nil, group_tex}, {key, square_tex, square_tex}}) {
-		clay.BeginLayout()
+		nendo.begin()
 		avatar("FallbackAvatar", 0, tc.key, "Initials", 42, tc.photo)
-		commands := clay.EndLayout(0)
-		box := clay.GetElementData(clay.ID("FallbackAvatar", 0)).boundingBox
+		commands := nendo.end(0)
+		box := nendo.element(nendo.id("FallbackAvatar", 0)).rect
 		testing.expect_value(t, box.width, f32(42))
 		drawn := false
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType == .Image &&
-			   command.id == clay.ID("AvatarImage", clay.ID("FallbackAvatar", 0).id).id {
+		for command in commands {
+			if command.kind == .Image &&
+			   command.id == nendo.id("AvatarImage", nendo.id("FallbackAvatar", 0).id).id {
 				drawn = true
-				testing.expect_value(t, command.renderData.image.imageData, rawptr(tc.want))
+				testing.expect_value(t, command.image.image, rawptr(tc.want))
 				testing.expect(
 					t,
-					abs(command.boundingBox.width - (tc.photo == nil ? f32(37.8) : 42)) < 0.001,
+					abs(command.rect.width - (tc.photo == nil ? f32(37.8) : 42)) < 0.001,
 				)
 				testing.expect(
 					t,
-					abs(
-						command.boundingBox.x +
-						command.boundingBox.width / 2 -
-						box.x -
-						box.width / 2,
-					) <
-					0.001,
+					abs(command.rect.x + command.rect.width / 2 - box.x - box.width / 2) < 0.001,
 				)
 			}
 		}
@@ -161,45 +155,44 @@ crop_circle_layout :: proc(t: ^testing.T) {
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; wrap_clear()}
 	mention_width: f32
-	clay.SetPointerState({-1, -1}, false)
+	nendo.set_pointer({-1, -1}, .Up)
 	// Nested preview clips must keep the avatar inside the sidebar's vertical clip.
 	for photo_url, frame in ([]string{"", square_url}) {
 		if photo_url != "" {
 			testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone(photo_url)}))
 		}
-		clay.BeginLayout()
-		if clay.UI(clay.ID("MentionSidebar"))(
+		nendo.begin()
+		if nendo.box(nendo.id("MentionSidebar"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingFixed(300), height = clay.SizingFixed(24)},
-				padding = {top = 20},
-			},
-			clip = {vertical = true},
-			backgroundColor = CARD,
+			width = nendo.fixed(300),
+			height = nendo.fixed(24),
+			padding = {top = 20},
+			clip = {y = true},
+			color = CARD,
 		},
 		) {
-			if clay.UI(clay.ID("ChatRowPrevClip", 0))(
-			{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+			if nendo.box(nendo.id("ChatRowPrevClip", 0))(
+			{width = nendo.grow(), clip = {x = true}},
 			) {
 				body_line(71, fmt.tprintf("Told ya @%s", ui.profile.npub), 12, TEXT_DIM)
 			}
 		}
-		commands := clay.EndLayout(0)
+		commands := nendo.end(0)
 		depth := 0
 		drawn := false
 		avatar_id :=
-			clay.ID("AvatarImage", clay.ID("PeepPhoto", clay.ID("MentionAvatar", 71 * 128 + 1).id).id).id
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType == .ScissorStart {depth += 1}
-			if command.commandType == .ScissorEnd {depth -= 1}
-			if command.commandType == .Image && command.id == avatar_id {
+			nendo.id("AvatarImage", nendo.id("PeepPhoto", nendo.id("MentionAvatar", 71 * 128 + 1).id).id).id
+		for command in commands {
+			if command.kind == .Scissor_Start {depth += 1}
+			if command.kind == .Scissor_End {depth -= 1}
+			if command.kind == .Image && command.id == avatar_id {
 				drawn = true
 				testing.expect(t, depth == 2, "mention avatars must retain both sidebar clips")
 			}
 		}
 		testing.expect(t, drawn, "the preview must render its mention avatar")
 		rl.BeginDrawing()
-		clay_raylib_render(&commands)
+		render_nendo(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-sidebar-mention-%d.png", frame))
 		rl.EndDrawing()
 	}
@@ -209,33 +202,33 @@ crop_circle_layout :: proc(t: ^testing.T) {
 			testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone(photo_url)}))
 		}
 		anim_tick(1.0 / 60)
-		clay.BeginLayout()
+		nendo.begin()
 		render_segs(70, []Inline_Seg{{hex = key}}, BODY_FS, TEXT, 18, chips = true)
 		peer_modal(&ui)
-		commands := clay.EndLayout(0)
+		commands := nendo.end(0)
 		testing.expect_value(
 			t,
-			clay.GetElementData(clay.ID("ProfileCardCircle", PEER_CARD_ID)).found,
+			nendo.element(nendo.id("ProfileCardCircle", PEER_CARD_ID)).found,
 			photo_url != "",
 		)
-		mention := clay.ID("MentionAvatar", 70 * 128).id
-		testing.expect(t, !clay.GetElementData(clay.ID("PeepReveal", mention)).found)
-		for id in ([]clay.ElementId{clay.ID("PeepPhoto", mention), clay.ID("ProfileCardAvatar", PEER_CARD_ID)}) {
+		mention := nendo.id("MentionAvatar", 70 * 128).id
+		testing.expect(t, !nendo.element(nendo.id("PeepReveal", mention)).found)
+		for id in ([]nendo.Id{nendo.id("PeepPhoto", mention), nendo.id("ProfileCardAvatar", PEER_CARD_ID)}) {
 			drawn := false
-			for command in commands.internalArray[:commands.length] {
-				if command.commandType != .Image ||
-				   command.id != clay.ID("AvatarImage", id.id).id {continue}
+			for command in commands {
+				if command.kind != .Image ||
+				   command.id != nendo.id("AvatarImage", id.id).id {continue}
 				drawn = true
 				testing.expect_value(
 					t,
-					command.renderData.image.imageData,
+					command.image.image,
 					rawptr(photo_url == "" ? tex : square_tex),
 				)
 			}
 			testing.expect(t, drawn, "the primary avatar must keep its photo or fallback")
 		}
 		_, measured := body_atom(fmt.tprintf("@%s", ui.profile.npub), 0, BODY_FS, .Cards)
-		chip := clay.GetElementData(clay.ID("SegMention", 70 * 128)).boundingBox
+		chip := nendo.element(nendo.id("SegMention", 70 * 128)).rect
 		testing.expect(
 			t,
 			abs(chip.width - measured) < 0.01,
@@ -259,60 +252,60 @@ crop_circle_layout :: proc(t: ^testing.T) {
 		pic_url   = square_url,
 	}
 	for over in ([]bool{false, true, false}) {
-		chip_before := clay.GetElementData(clay.ID("SegMention", 70 * 128)).boundingBox
-		clay.SetPointerState(
-			over ? clay.Vector2{chip_before.x + chip_before.width - 4, chip_before.y + 4} : clay.Vector2{-1, -1},
-			false,
+		chip_before := nendo.element(nendo.id("SegMention", 70 * 128)).rect
+		nendo.set_pointer(
+			over ? nendo.Vector2{chip_before.x + chip_before.width - 4, chip_before.y + 4} : nendo.Vector2{-1, -1},
+			.Up,
 		)
 		anim_tick(1.0 / 60)
-		clay.BeginLayout()
+		nendo.begin()
 		render_segs(70, []Inline_Seg{{hex = key}}, BODY_FS, TEXT, 18, chips = true)
-		_ = clay.EndLayout(0)
-		mention := clay.ID("MentionAvatar", 70 * 128)
-		reveal := clay.GetElementData(clay.ID("PeepReveal", mention.id))
+		_ = nendo.end(0)
+		mention := nendo.id("MentionAvatar", 70 * 128)
+		reveal := nendo.element(nendo.id("PeepReveal", mention.id))
 		testing.expect_value(t, reveal.found, over)
-		chip := clay.GetElementData(clay.ID("SegMention", 70 * 128)).boundingBox
+		chip := nendo.element(nendo.id("SegMention", 70 * 128)).rect
 		testing.expect(t, abs(chip.width - mention_width) < 0.01, "hover must not reflow mentions")
 		if over {
 			testing.expect_value(t, mention_hover, key)
-			photo := clay.GetElementData(mention).boundingBox
-			mark := clay.GetElementData(clay.ID("PeepCircle", mention.id)).boundingBox
+			photo := nendo.element(mention).rect
+			mark := nendo.element(nendo.id("PeepCircle", mention.id)).rect
 			testing.expect(t, mark == photo, "hover identity must replace the entire avatar")
-			testing.expect_value(t, reveal.boundingBox, photo)
+			testing.expect_value(t, reveal.rect, photo)
 		}
 	}
 	// The sender avatar beside a message opens the same peephole.
 	for over in ([]bool{false, true, false}) {
-		box := clay.GetElementData(clay.ID("MsgAvatar", 0)).boundingBox
-		clay.SetPointerState(
-			over ? clay.Vector2{box.x + box.width / 2, box.y + box.height / 2} : clay.Vector2{-1, -1},
-			false,
+		box := nendo.element(nendo.id("MsgAvatar", 0)).rect
+		nendo.set_pointer(
+			over ? nendo.Vector2{box.x + box.width / 2, box.y + box.height / 2} : nendo.Vector2{-1, -1},
+			.Up,
 		)
 		anim_tick(1.0 / 60)
-		clay.BeginLayout()
+		nendo.begin()
 		message_row(0, msg)
-		_ = clay.EndLayout(0)
-		avatar := clay.ID("MsgAvatar", 0)
-		reveal := clay.GetElementData(clay.ID("PeepReveal", avatar.id))
+		_ = nendo.end(0)
+		avatar := nendo.id("MsgAvatar", 0)
+		reveal := nendo.element(nendo.id("PeepReveal", avatar.id))
 		testing.expect_value(t, reveal.found, over)
 		if over {
-			testing.expect_value(t, reveal.boundingBox, clay.GetElementData(avatar).boundingBox)
+			testing.expect_value(t, reveal.rect, nendo.element(avatar).rect)
 		}
 	}
 	// A group photo opens onto the group's crop circle the same way.
 	gpic_local[key[:32]] = square_url
 	for over in ([]bool{false, true, false}) {
-		box := clay.GetElementData(clay.ID("ChatHeadAvatar", 0)).boundingBox
-		clay.SetPointerState(
-			over ? clay.Vector2{box.x + box.width / 2, box.y + box.height / 2} : clay.Vector2{-1, -1},
-			false,
+		box := nendo.element(nendo.id("ChatHeadAvatar", 0)).rect
+		nendo.set_pointer(
+			over ? nendo.Vector2{box.x + box.width / 2, box.y + box.height / 2} : nendo.Vector2{-1, -1},
+			.Up,
 		)
 		anim_tick(1.0 / 60)
-		clay.BeginLayout()
+		nendo.begin()
 		chat_pane(&ui, ui.chats[ui.selected], ui.messages[:])
-		_ = clay.EndLayout(0)
-		avatar := clay.ID("ChatHeadAvatar", 0)
-		reveal := clay.GetElementData(clay.ID("PeepReveal", avatar.id))
+		_ = nendo.end(0)
+		avatar := nendo.id("ChatHeadAvatar", 0)
+		reveal := nendo.element(nendo.id("PeepReveal", avatar.id))
 		testing.expect_value(t, reveal.found, over)
 	}
 	delete_key(&gpic_local, key[:32])
@@ -328,16 +321,16 @@ crop_circle_layout :: proc(t: ^testing.T) {
 		}
 		testing.expect(t, want != nil)
 		for pane in 0 ..< 2 {
-			clay.BeginLayout()
+			nendo.begin()
 			if pane ==
 			   0 {encryption_modal(&ui, ui.chats[0])} else {chat_pane(&ui, ui.chats[ui.selected], ui.messages[:])}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			drawn := false
-			for command in commands.internalArray[:commands.length] {
-				if command.commandType != .Image ||
-				   command.id != clay.ID(pane == 0 ? "EncCircle" : "MlsCircle", 0).id {continue}
+			for command in commands {
+				if command.kind != .Image ||
+				   command.id != nendo.id(pane == 0 ? "EncCircle" : "MlsCircle", 0).id {continue}
 				drawn = true
-				testing.expect_value(t, command.renderData.image.imageData, rawptr(want))
+				testing.expect_value(t, command.image.image, rawptr(want))
 			}
 			testing.expect(
 				t,
@@ -355,17 +348,16 @@ crop_circle_layout :: proc(t: ^testing.T) {
 			view_peer_profile(&ui, nil)
 		}
 		rl.SetWindowSize(i32(width + 100), 1000)
-		clay.SetLayoutDimensions({width + 100, 1000})
+		nendo.set_dimensions({width + 100, 1000})
 		for frame in 0 ..< 3 {
-			clay.UpdateScrollContainers(false, {}, 0)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("CircleRoot"))(
+			nendo.update_scroll(.Off, {}, 0)
+			nendo.begin()
+			if nendo.box(nendo.id("CircleRoot"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(900)},
-					layoutDirection = .TopToBottom,
-				},
-				backgroundColor = CARD,
+				width = nendo.fixed(width),
+				height = nendo.fixed(900),
+				direction = .Column,
+				color = CARD,
 			},
 			) {
 				switch pane {
@@ -389,16 +381,15 @@ crop_circle_layout :: proc(t: ^testing.T) {
 					contacts_pane(&ui)
 				}
 			}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			if pane > 0 && pane < 3 {
 				ids := []string{"ContactCircle", "ProfileCircle", "PeerCircle"}
-				testing.expect(t, clay.GetElementData(clay.ID(ids[pane - 1], 0)).found)
+				testing.expect(t, nendo.element(nendo.id(ids[pane - 1], 0)).found)
 				if pane < 3 {
-					box := clay.GetElementData(clay.ID(ids[pane - 1], 0)).boundingBox
+					box := nendo.element(nendo.id(ids[pane - 1], 0)).rect
 					testing.expect_value(t, box.width, f32(160))
 					testing.expect_value(t, box.height, f32(160))
-					qr :=
-						clay.GetElementData(clay.ID(pane == 2 ? "ProfileQr" : "ContactQr")).boundingBox
+					qr := nendo.element(nendo.id(pane == 2 ? "ProfileQr" : "ContactQr")).rect
 					testing.expect(t, box.x + box.width < qr.x)
 					testing.expect_value(t, box.y + box.height / 2, qr.y + qr.height / 2)
 				}
@@ -406,36 +397,30 @@ crop_circle_layout :: proc(t: ^testing.T) {
 			if pane == 4 || pane == 5 {
 				testing.expect(
 					t,
-					clay.GetElementData(clay.ID(pane == 4 ? "EncCircle" : "MlsCircle", 0)).found,
+					nendo.element(nendo.id(pane == 4 ? "EncCircle" : "MlsCircle", 0)).found,
 				)
 			}
 			if pane == 3 {
 				testing.expect(
 					t,
-					!clay.GetElementData(clay.ID("ProfileCardCircle", PEER_CARD_ID)).found,
+					!nendo.element(nendo.id("ProfileCardCircle", PEER_CARD_ID)).found,
 				)
 			}
 			if (pane == 6 || pane == 7) && frame == 2 {
 				prefix := pane == 6 ? "Profile" : "Contact"
-				pattern :=
-					clay.GetElementData(clay.ID(fmt.tprintf("%sPatternCard", prefix))).boundingBox
-				qr := clay.GetElementData(clay.ID(fmt.tprintf("%sScanCard", prefix))).boundingBox
+				pattern := nendo.element(nendo.id(fmt.tprintf("%sPatternCard", prefix))).rect
+				qr := nendo.element(nendo.id(fmt.tprintf("%sScanCard", prefix))).rect
 				testing.expect(t, pattern.y + pattern.height < qr.y)
 				testing.expect(t, qr.x >= 0 && qr.x + qr.width <= width)
-				data := clay.GetScrollContainerData(clay.ID(fmt.tprintf("%sPage", prefix)))
-				testing.expect(
-					t,
-					data.found &&
-					data.contentDimensions.height > data.scrollContainerDimensions.height,
-					prefix,
-				)
+				data := nendo.scroll(nendo.id(fmt.tprintf("%sPage", prefix)))
+				testing.expect(t, data.found && data.content.height > data.viewport.height, prefix)
 			}
 			if pane == 8 {
-				testing.expect(t, !clay.GetElementData(clay.ID("RemoveContactBtn")).found)
-				for id in ([]string{"ContactQr", "StartChatBtn", "CopyNpubBtn"}) {testing.expect(t, clay.GetElementData(clay.ID(id)).found, id)}
+				testing.expect(t, !nendo.element(nendo.id("RemoveContactBtn")).found)
+				for id in ([]string{"ContactQr", "StartChatBtn", "CopyNpubBtn"}) {testing.expect(t, nendo.element(nendo.id(id)).found, id)}
 			}
 			rl.BeginDrawing()
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-crop-circle-%d.png", pane))
 			rl.EndDrawing()
 		}

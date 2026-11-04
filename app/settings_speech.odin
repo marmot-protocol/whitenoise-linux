@@ -3,7 +3,7 @@ package main
 import "core:fmt"
 import rl "sdlrl"
 
-import clay "layout"
+import "nendo"
 
 @(private)
 settings_speech :: proc(ui: ^Ui_State) {
@@ -16,9 +16,9 @@ settings_speech :: proc(ui: ^Ui_State) {
 	speech_was_stt, speech_was_tts = stt_busy, tts_busy
 	switch ui.settings_tab {
 	case 0:
-		if clay.UI(clay.ID("DictationGroup"))(settings_box()) {
+		if nendo.box(nendo.id("DictationGroup"))(settings_box()) {
 			settings_group(tr("On this device"))
-			if clay.UI(clay.ID("RowStt"))(settings_row()) {
+			if nendo.box(nendo.id("RowStt"))(settings_row()) {
 				settings_check(
 					"TgStt",
 					ui.prefs.stt_enabled,
@@ -28,28 +28,26 @@ settings_speech :: proc(ui: ^Ui_State) {
 			}
 		}
 		if ui.prefs.stt_enabled {
-			if clay.UI(clay.ID("TranscriptionGroup"))(settings_box()) {
+			if nendo.box(nendo.id("TranscriptionGroup"))(settings_box()) {
 				settings_group(tr("Transcription model"))
-				clay.Text(
+				nendo.text(
 					tr("Select a model to download it for dictation and audio messages."),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 11, color = TEXT_DIM},
 				)
 				for model, i in STT_MODELS {
 					selected := ui.prefs.stt_model != "" && stt_model(ui.prefs.stt_model) == i
-					if clay.UI(clay.ID("SttModel", u32(i)))(
+					if nendo.box(nendo.id("SttModel", u32(i)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							padding = clay.PaddingAll(10),
-							childGap = 6,
-						},
-						backgroundColor = selected ? SELECTED : (hovered() ? HOVER : CARD),
+						width = nendo.grow(),
+						direction = .Column,
+						padding = nendo.pad(10),
+						gap = 6,
+						color = selected ? SELECTED : (hovered() ? HOVER : CARD),
 						border = {
 							color = selected ? ACCENT : FIELD_BORDER,
 							width = {1, 1, 1, 1, 0},
 						},
-						cornerRadius = rr(8),
+						radius = rr(8),
 					},
 					) {
 						_ = hovered()
@@ -63,14 +61,8 @@ settings_speech :: proc(ui: ^Ui_State) {
 							label =
 								ui.stt.status == 'D' ? fmt.tprintf(tr("Downloading: %d%%"), int(fraction * 100)) : tr("Preparing download...")
 						}
-						if clay.UI(clay.ID_LOCAL("SttModelHeading"))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow()},
-								childGap = 8,
-								childAlignment = {y = .Center},
-							},
-						},
+						if nendo.box(nendo.id_local("SttModelHeading"))(
+						{width = nendo.grow(), gap = 8, align = {y = .Center}},
 						) {
 							settings_radio_mark(selected)
 							row_labels(
@@ -78,34 +70,26 @@ settings_speech :: proc(ui: ^Ui_State) {
 								fmt.tprintf("%s · %s", human_size(model.bytes), label),
 							)
 						}
-						clay.Text(
+						nendo.text(
 							ui.keys_confirm == model.name ? tr("Tap again to download this model.") : tr(model.languages),
-							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 11, color = TEXT_DIM},
 						)
 						if active {
-							if clay.UI(clay.ID_LOCAL("SttDownloadTrack"))(
+							if nendo.box(nendo.id_local("SttDownloadTrack"))(
 							{
-								layout = {
-									sizing = {
-										width = clay.SizingGrow(),
-										height = clay.SizingFixed(4),
-									},
-								},
-								backgroundColor = FIELD_BORDER,
-								cornerRadius = rr(2),
+								width = nendo.grow(),
+								height = nendo.fixed(4),
+								color = FIELD_BORDER,
+								radius = rr(2),
 							},
 							) {
 								if fraction > 0 {
-									if clay.UI(clay.ID_LOCAL("SttDownloadFill"))(
+									if nendo.box(nendo.id_local("SttDownloadFill"))(
 									{
-										layout = {
-											sizing = {
-												width = clay.SizingPercent(fraction),
-												height = clay.SizingGrow(),
-											},
-										},
-										backgroundColor = ACCENT,
-										cornerRadius = rr(2),
+										width = nendo.percent(fraction),
+										height = nendo.grow(),
+										color = ACCENT,
+										radius = rr(2),
 									},
 									) {}
 								}
@@ -117,9 +101,9 @@ settings_speech :: proc(ui: ^Ui_State) {
 			}
 		}
 	case 1:
-		if clay.UI(clay.ID("ReadAloudGroup"))(settings_box()) {
+		if nendo.box(nendo.id("ReadAloudGroup"))(settings_box()) {
 			settings_group(tr("On this device"))
-			if clay.UI(clay.ID("RowTts"))(settings_row()) {
+			if nendo.box(nendo.id("RowTts"))(settings_row()) {
 				settings_check(
 					"TgTts",
 					ui.prefs.tts_enabled,
@@ -131,59 +115,42 @@ settings_speech :: proc(ui: ^Ui_State) {
 			}
 		}
 		if ui.prefs.tts_enabled {
-			if clay.UI(clay.ID("TtsModel"))(settings_box()) {
+			if nendo.box(nendo.id("TtsModel"))(settings_box()) {
 				row_labels(
 					tr("Speech model"),
 					tr("Shared by all ten voices and 31 languages. Downloads once."),
 				)
 				settings_tts_download(ui, 0)
 			}
-			if clay.UI(clay.ID("TtsVoices"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 6,
-				},
-			},
+			if nendo.box(nendo.id("TtsVoices"))(
+			{width = nendo.grow(), direction = .Column, gap = 6},
 			) {
 				for voice, i in TTS_VOICES {
 					selected := clamp(ui.prefs.tts_voice, 0, len(TTS_VOICES) - 1) == i
-					if clay.UI(clay.ID("TtsVoice", u32(i)))(
+					if nendo.box(nendo.id("TtsVoice", u32(i)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .LeftToRight,
-							padding = {left = 10, right = 8, top = 6, bottom = 6},
-							childGap = 10,
-							childAlignment = {y = .Center},
-						},
-						backgroundColor = selected ? SELECTED : (hovered() ? HOVER : CARD),
+						width = nendo.grow(),
+						direction = .Row,
+						padding = {left = 10, right = 8, top = 6, bottom = 6},
+						gap = 10,
+						align = {y = .Center},
+						color = selected ? SELECTED : (hovered() ? HOVER : CARD),
 						border = {
 							color = selected ? ACCENT : FIELD_BORDER,
 							width = {1, 1, 1, 1, 0},
 						},
-						cornerRadius = rr(8),
+						radius = rr(8),
 					},
 					) {
 						_ = hovered()
 						settings_radio_mark(selected)
-						if clay.UI(clay.ID_LOCAL("VoiceTitle"))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow()},
-								layoutDirection = .TopToBottom,
-								childGap = 3,
-							},
-						},
+						if nendo.box(nendo.id_local("VoiceTitle"))(
+						{width = nendo.grow(), direction = .Column, gap = 3},
 						) {
-							clay.Text(
-								voice,
-								{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
-							)
-							clay.Text(
+							nendo.text(voice, {font = FONT_TITLE, size = 13, color = TEXT})
+							nendo.text(
 								tr(TTS_DESCRIPTIONS[i]),
-								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+								{font = FONT_BODY, size = 11, color = TEXT_DIM},
 							)
 						}
 						settings_button(fmt.tprintf("TtsPreview%d", i), tr("Preview"))

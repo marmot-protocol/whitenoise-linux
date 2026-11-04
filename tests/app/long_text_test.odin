@@ -10,8 +10,8 @@ import rl "sdlrl"
 
 @(test)
 long_text_wrap :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	rl.SetPixelScale(1)
 	// Preserve word boundaries and UTF-8 while keeping plain references in bounds.
 	word_width := rl.MeasureTextLine(FONT_BODY, 14, "hello w", 0).x

@@ -26,7 +26,7 @@ import "core:time"
 
 import marmot "../marmot"
 import cc "../vendor/crop-circles"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // One account's cached kind-0 essentials; empty strings when unknown.
@@ -846,10 +846,7 @@ crop_circle :: proc(
 	shape := shape
 	if shape == Crop_Shape(-1) {shape = g_ui != nil ? g_ui.prefs.crop_avatar_shape : .Slanted}
 	tex := url_pic(fmt.tprintf("%s:%s", CROP_SHAPE_PREFIX[shape], key))
-	if clay.UI(clay.ID(id, index))(
-	{
-		layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}},
-		image = {imageData = tex},
-	},
+	if nendo.box(nendo.id(id, index))(
+	{width = nendo.fixed(size), height = nendo.fixed(size), image = tex},
 	) {}
 }

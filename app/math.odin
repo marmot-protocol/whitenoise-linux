@@ -6,7 +6,7 @@ import "core:c"
 import "core:c/libc"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 foreign import math_decoder {WN_BUILD_DIR + "/libwndecoder.a"}
@@ -42,7 +42,7 @@ Math_Key :: struct {
 @(private = "file")
 Math_Entry :: struct {
 	tex:   ^rl.Texture2D, // nil: Bragi rejected it
-	color: clay.Color, // TEXT when rendered; a theme switch re-renders
+	color: nendo.Color, // TEXT when rendered; a theme switch re-renders
 	bytes: int,
 	used:  u32, // anim_frame at the last lookup
 }
@@ -104,7 +104,7 @@ math_texture :: proc(text: string) -> ^rl.Texture2D {
 	math_bytes += entry.bytes
 
 	// Evict least recently drawn. Entries drawn this frame stay even over
-	// budget: clay image commands already built this frame point at them
+	// budget: nendo image commands already built this frame point at them
 	// and render after layout.
 	for math_bytes > MATH_CACHE_BYTES || len(math_cache) > MATH_CACHE_ENTRIES {
 		oldest: Math_Key

@@ -18,7 +18,7 @@ import "core:slice"
 import "core:strconv"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -365,14 +365,14 @@ folder_rules_parse :: proc(ui: ^Ui_State) -> (set: Folder_Rules, bad: int, why: 
 @(private)
 folder_rules_editor :: proc(ui: ^Ui_State) {
 	eyebrow(tr("RULES"))
-	clay.Text(
+	nendo.text(
 		tr(
 			"Chats and Whip projects that match file here automatically. People counts include you. Anything you move by hand stays where you put it.",
 		),
-		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+		{font = FONT_BODY, size = 12, color = TEXT_LO},
 	)
 	if len(ui.folder_rules) > 1 {
-		if clay.UI(clay.ID("FolderMatch"))(settings_choices(clay.ID("FolderMatch"))) {
+		if nendo.box(nendo.id("FolderMatch"))(settings_choices(nendo.id("FolderMatch"))) {
 			folder_match_chip("FolderMatchAll", tr("Match all rules"), ui.folder_match == .All)
 			folder_match_chip("FolderMatchAny", tr("Match any rule"), ui.folder_match == .Any)
 		}
@@ -387,19 +387,17 @@ folder_rules_editor :: proc(ui: ^Ui_State) {
 
 @(private = "file")
 folder_match_chip :: proc(id, label: string, selected: bool) {
-	if clay.UI(clay.ID(id))(
+	if nendo.box(nendo.id(id))(
 	{
-		layout = {
-			sizing = {height = clay.SizingFixed(settings_tap_size(32))},
-			padding = {left = 12, right = 12},
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = selected ? SELECTED : (hovered() ? HOVER : ROW_BG),
+		height = nendo.fixed(settings_tap_size(32)),
+		padding = {left = 12, right = 12},
+		align = {y = .Center},
+		color = selected ? SELECTED : (hovered() ? HOVER : ROW_BG),
 		border = {color = selected ? ACCENT : FIELD_BORDER, width = bw()},
-		cornerRadius = rr(8),
+		radius = rr(8),
 	},
 	) {
-		clay.Text(label, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+		nendo.text(label, {font = FONT_TITLE, size = 13, color = TEXT})
 		if hovered() {cursor_raise(.Pointer)}
 	}
 }
@@ -407,52 +405,41 @@ folder_match_chip :: proc(id, label: string, selected: bool) {
 @(private = "file")
 folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 	menu_open := ui.folder_rule_menu == index
-	if clay.UI(clay.ID("FolderRule", u32(index)))(
+	if nendo.box(nendo.id("FolderRule", u32(index)))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFit()},
-			layoutDirection = .TopToBottom,
-			childGap = 8,
-			padding = clay.PaddingAll(8),
-		},
+		width = nendo.grow(),
+		height = nendo.fit(),
+		direction = .Column,
+		gap = 8,
+		padding = nendo.pad(8),
 		border = {color = FIELD_BORDER, width = bw()},
-		cornerRadius = rr(9),
+		radius = rr(9),
 	},
 	) {
-		if clay.UI(clay.ID("FolderRuleHead", u32(index)))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 8,
-				childAlignment = {y = .Center},
-			},
-		},
+		if nendo.box(nendo.id("FolderRuleHead", u32(index)))(
+		{width = nendo.grow(), gap = 8, align = {y = .Center}},
 		) {
-			if clay.UI(clay.ID("FolderRuleKind", u32(index)))(
+			if nendo.box(nendo.id("FolderRuleKind", u32(index)))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(settings_tap_size(36)),
-					},
-					padding = {left = 10, right = 10},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = menu_open ? SELECTED : (hovered() ? HOVER : ROW_BG),
+				width = nendo.grow(),
+				height = nendo.fixed(settings_tap_size(36)),
+				padding = {left = 10, right = 10},
+				gap = 8,
+				align = {y = .Center},
+				color = menu_open ? SELECTED : (hovered() ? HOVER : ROW_BG),
 				border = {color = menu_open ? ACCENT : FIELD_BORDER, width = bw()},
-				cornerRadius = rr(9),
+				radius = rr(9),
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					FOLDER_RULE_ICONS[draft.kind],
-					{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_ICON, size = 12, color = TEXT_DIM},
 				)
-				clay.Text(
+				nendo.text(
 					tr(FOLDER_RULE_LABELS[draft.kind]),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
+					{font = FONT_TITLE, size = 13, color = TEXT, wrap = .None},
 				)
-				clay.Text("\u2304", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+				nendo.text("\u2304", {font = FONT_TITLE, size = 13, color = TEXT_DIM})
 				if hovered() && !menu_open {
 					tooltip(tr("Change rule type"))
 					cursor_raise(.Pointer)
@@ -461,48 +448,34 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 					folder_rule_menu(index)
 				}
 			}
-			if clay.UI(clay.ID("FolderRuleRemove", u32(index)))(
+			if nendo.box(nendo.id("FolderRuleRemove", u32(index)))(
 			{
-				layout = {
-					sizing = {
-						clay.SizingFixed(settings_tap_size(30)),
-						clay.SizingFixed(settings_tap_size(30)),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(7),
+				width = nendo.fixed(settings_tap_size(30)),
+				height = nendo.fixed(settings_tap_size(30)),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(7),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 				if hovered() {tooltip(tr("Remove rule")); cursor_raise(.Pointer)}
 			}
 		}
 		if folder_rule_typed(draft.kind) {
-			if clay.UI(clay.ID("FolderRuleValue", u32(index)))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("FolderRuleValue", u32(index)))(
+			{width = nendo.grow(), gap = 8, align = {y = .Center}},
 			) {
 				focused := ui.focus == .FolderRule && ui.folder_rule_focus == index
 				id := folder_rule_box_id(index)
 				counts := folder_rule_counts(draft.kind)
-				if clay.UI(clay.ID(id))(
+				if nendo.box(nendo.id(id))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingGrow(),
-							height = clay.SizingFixed(settings_tap_size(36)),
-						},
-						padding = {left = 12, right = 12},
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = ROW_BG,
-					cornerRadius = rr(9),
+					width = nendo.grow(),
+					height = nendo.fixed(settings_tap_size(36)),
+					padding = {left = 12, right = 12},
+					align = {y = .Center},
+					color = ROW_BG,
+					radius = rr(9),
 					border = {color = focused ? ACCENT : FIELD_BORDER, width = bw()},
 				},
 				) {
@@ -511,10 +484,7 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 					field_text(ui, id, &draft.input, placeholder, focused, 13, TEXT_LO)
 				}
 				if counts {
-					clay.Text(
-						tr("people"),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-					)
+					nendo.text(tr("people"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 				}
 			}
 		}
@@ -524,36 +494,32 @@ folder_rule_row :: proc(ui: ^Ui_State, draft: ^Folder_Rule_Draft, index: int) {
 // Floats outside the editor's scroll clip and stays within the viewport.
 @(private = "file")
 folder_rule_menu :: proc(index: int) {
-	chip := clay.GetElementData(clay.ID("FolderRuleKind", u32(index)))
-	menu := clay.GetElementData(clay.ID("FolderRuleMenu"))
-	height: f32 = menu.found ? menu.boundingBox.height : 250
+	chip := nendo.element(nendo.id("FolderRuleKind", u32(index)))
+	menu := nendo.element(nendo.id("FolderRuleMenu"))
+	height: f32 = menu.found ? menu.rect.height : 250
 	width := fit_w(280)
 	x, y := panel_pos(
-		chip.boundingBox.x,
-		chip.boundingBox.y + chip.boundingBox.height + 4,
+		chip.rect.x,
+		chip.rect.y + chip.rect.height + 4,
 		width,
 		min(height, modal_h(1200)),
 	)
-	if clay.UI(clay.ID("FolderRuleMenu"))(
+	if nendo.box(nendo.id("FolderRuleMenu"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingFixed(width),
-				height = clay.SizingFit({max = modal_h(1200)}),
-			},
-			padding = clay.PaddingAll(4),
-			childGap = 1,
-		},
+		direction = .Column,
+		width = nendo.fixed(width),
+		height = nendo.fit(max = modal_h(1200)),
+		padding = nendo.pad(4),
+		gap = 1,
 		floating = {
-			attachTo = .Root,
+			attach_to = .Root,
 			offset = {x, y},
-			attachment = {element = .LeftTop, parent = .LeftTop},
-			zIndex = 14,
+			attach = {element = .Left_Top, parent = .Left_Top},
+			z = 14,
 		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		backgroundColor = CARD,
-		cornerRadius = rr(10),
+		clip = {y = true, scroll = true},
+		color = CARD,
+		radius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
@@ -565,7 +531,7 @@ folder_rule_menu :: proc(index: int) {
 			)
 		}
 	}
-	scrollbar(clay.ID("FolderRuleMenu"), 15)
+	scrollbar(nendo.id("FolderRuleMenu"), 15)
 }
 
 @(private = "file")
@@ -590,7 +556,8 @@ handle_folder_rule_menu :: proc(ui: ^Ui_State) -> bool {
 	if index >= len(ui.folder_rules) {return true}
 	draft := &ui.folder_rules[index]
 	for kind in Folder_Rule_Kind {
-		if !clay.PointerOver(clay.ID(folder_rule_pick_id(kind))) || kind == draft.kind {continue}
+		if !nendo.pointer_over(nendo.id(folder_rule_pick_id(kind))) ||
+		   kind == draft.kind {continue}
 		draft.kind = kind
 		clear(&draft.input)
 		if folder_rule_typed(kind) {focus_rule(ui, index)}
@@ -611,11 +578,11 @@ handle_folder_rules :: proc(ui: ^Ui_State) -> bool {
 	}
 	if !mouse_released() {return false}
 	for i in 0 ..< len(ui.folder_rules) {
-		if clay.PointerOver(clay.ID("FolderRuleKind", u32(i))) {
+		if nendo.pointer_over(nendo.id("FolderRuleKind", u32(i))) {
 			ui.folder_rule_menu = i
 			return true
 		}
-		if clay.PointerOver(clay.ID("FolderRuleRemove", u32(i))) {
+		if nendo.pointer_over(nendo.id("FolderRuleRemove", u32(i))) {
 			delete(ui.folder_rules[i].input)
 			ordered_remove(&ui.folder_rules, i)
 			// Rows shifted under the shared edit state; start it fresh.
@@ -624,15 +591,15 @@ handle_folder_rules :: proc(ui: ^Ui_State) -> bool {
 			return true
 		}
 	}
-	if clay.PointerOver(clay.ID("FolderMatchAll")) {
+	if nendo.pointer_over(nendo.id("FolderMatchAll")) {
 		ui.folder_match = .All
 		return true
 	}
-	if clay.PointerOver(clay.ID("FolderMatchAny")) {
+	if nendo.pointer_over(nendo.id("FolderMatchAny")) {
 		ui.folder_match = .Any
 		return true
 	}
-	if clay.PointerOver(clay.ID("FolderRuleAdd")) && len(ui.folder_rules) < FOLDER_RULES_CAP {
+	if nendo.pointer_over(nendo.id("FolderRuleAdd")) && len(ui.folder_rules) < FOLDER_RULES_CAP {
 		append(&ui.folder_rules, Folder_Rule_Draft{kind = .Name_Has})
 		focus_rule(ui, len(ui.folder_rules) - 1)
 		return true

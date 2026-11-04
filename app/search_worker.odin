@@ -8,7 +8,7 @@ import "core:sync"
 import "core:thread"
 import "core:time"
 import "core:unicode/utf8"
-import clay "layout"
+import "nendo"
 
 @(private)
 Search_Kind :: enum {
@@ -542,7 +542,7 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 							}
 						}
 						if kind ==
-						   .Global {stagger_arm(clay.ID("GsList").id)} else if ui.mi_open {save_settings(ui)}
+						   .Global {stagger_arm(nendo.id("GsList").id)} else if ui.mi_open {save_settings(ui)}
 					} else {
 						resize(&ui.filter_hits, len(ui.chats))
 						for &hit in ui.filter_hits {hit = false}

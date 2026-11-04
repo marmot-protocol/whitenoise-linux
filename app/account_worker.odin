@@ -6,7 +6,7 @@ import "core:thread"
 import rl "sdlrl"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 
 @(private)
 Account_Operation :: enum {
@@ -515,24 +515,22 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 @(private)
 account_pending_ui :: proc(ui: ^Ui_State) {
 	for job, i in account_jobs {
-		if clay.UI(clay.ID("AccountPending", u32(i)))(
+		if nendo.box(nendo.id("AccountPending", u32(i)))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				padding = clay.PaddingAll(8),
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = STATUS_BAR,
+			width = nendo.grow(),
+			padding = nendo.pad(8),
+			gap = 10,
+			align = {y = .Center},
+			color = STATUS_BAR,
 		},
 		) {
-			clay.Text(
+			nendo.text(
 				fmt.tprintf(
 					"%s · %s",
 					account_label(ui, job.account),
 					account_pending_label(job.kind),
 				),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 			busy_bar(fmt.tprintf("AccountPendingBusy%d", i))
 		}
@@ -541,28 +539,26 @@ account_pending_ui :: proc(ui: ^Ui_State) {
 		if item.state.state == "approval" ||
 		   item.state.state == "connecting" ||
 		   item.attach != nil {
-			if clay.UI(clay.ID("SignerPending", u32(i)))(
+			if nendo.box(nendo.id("SignerPending", u32(i)))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					padding = clay.PaddingAll(8),
-					childGap = 10,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = STATUS_BAR,
+				width = nendo.grow(),
+				padding = nendo.pad(8),
+				gap = 10,
+				align = {y = .Center},
+				color = STATUS_BAR,
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					fmt.tprintf(
 						"%s · %s",
 						account_label(ui, item.account),
 						nip46_label(item.state.state == "" ? "connecting" : item.state.state),
 					),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
 				busy_bar(fmt.tprintf("SignerPendingBusy%d", i))
 				if item.state.auth_url !=
-				   "" {if clay.UI(clay.ID("SignerApproval", u32(i)))({layout = {padding = clay.PaddingAll(5)}, backgroundColor = ROW_BG}) {clay.Text(tr("Review signer approval link"), {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})}}
+				   "" {if nendo.box(nendo.id("SignerApproval", u32(i)))({padding = nendo.pad(5), color = ROW_BG}) {nendo.text(tr("Review signer approval link"), {font = FONT_BODY, size = 12, color = ACCENT})}}
 			}
 		}
 	}

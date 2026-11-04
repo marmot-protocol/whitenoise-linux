@@ -5,7 +5,7 @@ import "core:fmt"
 import "core:math"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private = "file")
@@ -35,12 +35,12 @@ avatar_hash :: proc(key: string) -> u32 {
 }
 
 // Hue from the hash, fixed saturation/value tuned for dark and light.
-avatar_color :: proc(key: string) -> clay.Color {
+avatar_color :: proc(key: string) -> nendo.Color {
 	hue := f32(avatar_hash(key) % 360)
 	return hsv(hue, 0.45, 0.62)
 }
 
-hsv :: proc(h, s, v: f32) -> clay.Color {
+hsv :: proc(h, s, v: f32) -> nendo.Color {
 	c := v * s
 	x := c * (1 - abs(math.mod(h / 60, 2) - 1))
 	m := v - c
@@ -87,7 +87,7 @@ avatar :: proc(
 	name: string,
 	size: f32,
 	tex: ^rl.Texture2D = nil,
-	ring: clay.Color = {},
+	ring: nendo.Color = {},
 	hinge_angle: f32 = 0,
 	erase_progress: f32 = -1,
 ) {
@@ -111,30 +111,24 @@ avatar :: proc(
 		}
 		tex = shaped_avatar(tex, mask)
 	}
-	halo := ring.a > 0 ? clay.BorderElementConfig{color = ring, width = {2, 2, 2, 2, 0}} : {}
+	halo := ring.a > 0 ? nendo.Border{color = ring, width = {2, 2, 2, 2, 0}} : {}
 	if tex != nil {
 		image_size := crop ? size * AVATAR_CROP_SCALE : size
-		if clay.UI(clay.ID(id_str, index))(
+		if nendo.box(nendo.id(id_str, index))(
 		{
-			layout = {
-				sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)},
-				childAlignment = {x = .Center, y = .Center},
-			},
-			cornerRadius = clay.CornerRadiusAll(radius),
+			width = nendo.fixed(size),
+			height = nendo.fixed(size),
+			align = {x = .Center, y = .Center},
+			radius = nendo.radius(radius),
 			border = halo,
 		},
 		) {
-			image := clay.ImageElementConfig {
-				imageData = tex,
-			}
-			custom: clay.CustomElementConfig
+			image: rawptr = tex
+			custom: rawptr
 			if erase_progress >= 0 {
 				view := new(Avatar_Erase, context.temp_allocator)
 				view^ = {.Avatar_Erase, tex, erase_progress}
-				image = {}
-				custom = {
-					customData = view,
-				}
+				image, custom = nil, view
 			} else if hinge_angle != 0 {
 				view := new(Avatar_Hinge, context.temp_allocator)
 				view^ = {
@@ -142,19 +136,12 @@ avatar :: proc(
 					tex   = tex,
 					angle = hinge_angle,
 				}
-				image = {}
-				custom = {
-					customData = view,
-				}
+				image, custom = nil, view
 			}
-			if clay.UI(clay.ID("AvatarImage", clay.ID(id_str, index).id))(
+			if nendo.box(nendo.id("AvatarImage", nendo.id(id_str, index).id))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(image_size),
-						height = clay.SizingFixed(image_size),
-					},
-				},
+				width = nendo.fixed(image_size),
+				height = nendo.fixed(image_size),
 				image = image,
 				custom = custom,
 			},
@@ -162,20 +149,19 @@ avatar :: proc(
 		}
 		return
 	}
-	if clay.UI(clay.ID(id_str, index))(
+	if nendo.box(nendo.id(id_str, index))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = avatar_color(key),
-		cornerRadius = clay.CornerRadiusAll(radius),
+		width = nendo.fixed(size),
+		height = nendo.fixed(size),
+		align = {x = .Center, y = .Center},
+		color = avatar_color(key),
+		radius = nendo.radius(radius),
 		border = halo,
 	},
 	) {
-		clay.Text(
+		nendo.text(
 			avatar_initials(name),
-			{fontId = FONT_BODY, fontSize = u16(size * 0.4), textColor = {255, 255, 255, 235}},
+			{font = FONT_BODY, size = u16(size * 0.4), color = {255, 255, 255, 235}},
 		)
 	}
 }
@@ -199,31 +185,23 @@ peephole_avatar :: proc(
 	size: f32,
 	photo: ^rl.Texture2D,
 	state: Peephole,
-	ring: clay.Color = {},
+	ring: nendo.Color = {},
 ) {
-	outer := clay.ID(id_str, index)
-	reveal_id := clay.ID("PeepReveal", outer.id)
+	outer := nendo.id(id_str, index)
+	reveal_id := nendo.id("PeepReveal", outer.id)
 	reveal := anim_to(reveal_id.id, photo != nil && state == .Open ? 1 : 0)
 	if photo == nil {reveal = 0}
-	if clay.UI(outer)(
-	{layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}}},
-	) {
+	if nendo.box(outer)({width = nendo.fixed(size), height = nendo.fixed(size)}) {
 		if reveal > 0 {
-			if clay.UI(reveal_id)(
-			{
-				layout = {
-					sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)},
-				},
-			},
-			) {
+			if nendo.box(reveal_id)({width = nendo.fixed(size), height = nendo.fixed(size)}) {
 				avatar("PeepCircle", outer.id, key, name, size, ring = ring)
 			}
 		}
 		if reveal < 1 {
-			if clay.UI(clay.ID("PeepCover", outer.id))(
+			if nendo.box(nendo.id("PeepCover", outer.id))(
 			{
 				// The remaining photo sits over the fingerprint while it is revealed.
-				floating = reveal > 0 ? clay.FloatingElementConfig{attachTo = .Parent, clipTo = .AttachedParent, pointerCaptureMode = .Passthrough, attachment = {element = .LeftTop, parent = .LeftTop}} : {},
+				floating = reveal > 0 ? nendo.Floating{attach_to = .Parent, clip_to = .Parent, pointer = .Passthrough, attach = {element = .Left_Top, parent = .Left_Top}} : {},
 			},
 			) {
 				if AVATAR_ERASE {

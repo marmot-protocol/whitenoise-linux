@@ -6,7 +6,7 @@ package main
 
 import "core:mem"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 Vault_Pw_Field :: enum {
@@ -107,17 +107,13 @@ vault_pw_error_field: Vault_Pw_Field
 
 @(private)
 secure_password_hint :: proc(bits: f64) {
-	clay.Text(
+	nendo.text(
 		bits >= PASSWORD_MIN_BITS ? tr("Strong enough") : tr("Weak password"),
-		{
-			fontId = FONT_BODY,
-			fontSize = 12,
-			textColor = bits >= PASSWORD_MIN_BITS ? ACCENT : TEXT_DIM,
-		},
+		{font = FONT_BODY, size = 12, color = bits >= PASSWORD_MIN_BITS ? ACCENT : TEXT_DIM},
 	)
-	clay.Text(
+	nendo.text(
 		tr("Use unrelated words or a password-manager password."),
-		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+		{font = FONT_BODY, size = 12, color = TEXT_DIM},
 	)
 }
 
@@ -170,76 +166,55 @@ handle_vault_pw :: proc(ui: ^Ui_State) {
 
 vault_pw_modal :: proc(ui: ^Ui_State) {
 	bits := password_bits(string(ui.vault_pw[.New][:]), &ui.vault_pw_check)
-	if clay.UI(clay.ID("VaultPwModal"))(
+	if nendo.box(nendo.id("VaultPwModal"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("VaultPwModal"), 460)),
-				height = clay.SizingFit({max = modal_h(1200)}),
-			},
-			padding = clay.PaddingAll(18),
-			childGap = 10,
-		},
+		direction = .Column,
+		width = nendo.fixed(modal_w(nendo.id("VaultPwModal"), 460)),
+		height = nendo.fit(max = modal_h(1200)),
+		padding = nendo.pad(18),
+		gap = 10,
 		floating = {
-			attachTo = .Root,
-			zIndex = 12,
-			offset = {0, rise(clay.ID("VaultPwModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 12,
+			offset = {0, rise(nendo.id("VaultPwModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
+		color = CARD,
+		radius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("VaultPwHead"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
-		) {
-			clay.Text(
-				tr("Change vault password"),
-				{fontId = FONT_TITLE, fontSize = 17, textColor = TEXT},
-			)
-			if clay.UI(clay.ID("VaultPwHeadGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-			if clay.UI(clay.ID("VaultPwClose"))(
+		if nendo.box(nendo.id("VaultPwHead"))({width = nendo.grow(), align = {y = .Center}}) {
+			nendo.text(tr("Change vault password"), {font = FONT_TITLE, size = 17, color = TEXT})
+			if nendo.box(nendo.id("VaultPwHeadGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("VaultPwClose"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(tap_size() ? tap_min() : 24),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 24),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(6),
+				width = nendo.fixed(tap_size() ? tap_min() : 24),
+				height = nendo.fixed(tap_size() ? tap_min() : 24),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(6),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 			}
 		}
 
-		if clay.UI(clay.ID("VaultPwBody"))(
+		if nendo.box(nendo.id("VaultPwBody"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFit(
-						{max = max(1, modal_h(1200) - (tap_size() ? 150 : 116))},
-					),
-				},
-				layoutDirection = .TopToBottom,
-				childGap = 10,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.fit(max = max(1, modal_h(1200) - (tap_size() ? 150 : 116))),
+			direction = .Column,
+			gap = 10,
+			clip = {y = true, scroll = true},
 		},
 		) {
-			scrollbar(clay.ID("VaultPwBody"), 13)
-			clay.Text(
+			scrollbar(nendo.id("VaultPwBody"), 13)
+			nendo.text(
 				tr(
 					"The new password re-encrypts the vault on this device. White Noise still can't reset it. If you forget it, the only way forward is to delete this vault and start over.",
 				),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 
 			eyebrow(tr("CURRENT PASSWORD"))
@@ -256,7 +231,7 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 				vault_pw_show ? .Plain : .Masked,
 			)
 			if ui.vault_pw_err != "" && vault_pw_error_field == .Current {
-				clay.Text(ui.vault_pw_err, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+				nendo.text(ui.vault_pw_err, {font = FONT_BODY, size = 12, color = DANGER})
 			}
 			eyebrow(tr("NEW PASSWORD"))
 			gate_field(
@@ -268,7 +243,7 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 				vault_pw_show ? .Plain : .Masked,
 			)
 			if ui.vault_pw_err != "" && vault_pw_error_field == .New {
-				clay.Text(ui.vault_pw_err, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+				nendo.text(ui.vault_pw_err, {font = FONT_BODY, size = 12, color = DANGER})
 			}
 			password_hint(&ui.vault_pw_check)
 			eyebrow(tr("CONFIRM NEW PASSWORD"))
@@ -282,53 +257,43 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 			)
 
 			if len(ui.vault_pw_err) > 0 && vault_pw_error_field == .Confirm {
-				clay.Text(ui.vault_pw_err, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+				nendo.text(ui.vault_pw_err, {font = FONT_BODY, size = 12, color = DANGER})
 			}
 		}
 
-		if clay.UI(clay.ID("VaultPwBtns"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}},
+		if nendo.box(nendo.id("VaultPwBtns"))(
+		{width = nendo.grow(), gap = 10, padding = {top = 8}},
 		) {
-			if clay.UI(clay.ID("VaultPwCancel"))(
+			if nendo.box(nendo.id("VaultPwCancel"))(
 			{
-				layout = {
-					sizing = {
-						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-					},
-					padding = {left = 16, right = 16, top = 9, bottom = 9},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(9),
+				width = single_pane() ? nendo.grow() : nendo.fit(),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = {left = 16, right = 16, top = 9, bottom = 9},
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(9),
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+				nendo.text(tr("Cancel"), {font = FONT_TITLE, size = 13, color = TEXT})
 			}
-			if !single_pane(
-				
-			) {if clay.UI(clay.ID("VaultPwBtnsGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}}
-			if clay.UI(clay.ID("VaultPwGo"))(
+			if !single_pane() {if nendo.box(nendo.id("VaultPwBtnsGap"))({width = nendo.grow()}) {}}
+			if nendo.box(nendo.id("VaultPwGo"))(
 			{
-				layout = {
-					sizing = {
-						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-					},
-					padding = {left = 16, right = 16, top = 9, bottom = 9},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = bits >= PASSWORD_MIN_BITS ? ACCENT : ROW_BG,
-				cornerRadius = rr(9),
+				width = single_pane() ? nendo.grow() : nendo.fit(),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = {left = 16, right = 16, top = 9, bottom = 9},
+				align = {x = .Center, y = .Center},
+				color = bits >= PASSWORD_MIN_BITS ? ACCENT : ROW_BG,
+				radius = rr(9),
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					tr("Change password"),
 					{
-						fontId = FONT_TITLE,
-						fontSize = 13,
-						textColor = bits >= PASSWORD_MIN_BITS ? ON_ACCENT : TEXT_LO,
+						font = FONT_TITLE,
+						size = 13,
+						color = bits >= PASSWORD_MIN_BITS ? ON_ACCENT : TEXT_LO,
 					},
 				)
 			}

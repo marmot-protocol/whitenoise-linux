@@ -4,7 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:sync"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -33,8 +33,8 @@ hn_links :: proc(t: ^testing.T) {
 	for body in ([]string{"null", "[]", "invalid", `{"title":123}`, `{"title":"Hidden","deleted":true}`, `{"title":"Hidden","dead":true}`}) {
 		testing.expect_value(t, hn_parse(transmute([]u8)body).title, "")
 	}
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	defer wrap_clear()
 	text := "Before " + url + " after\n" + url
 	for width in ([]f32{0, 120, 1200}) {
@@ -77,21 +77,17 @@ hn_layout :: proc(t: ^testing.T) {
 		apply_theme(theme, 0)
 		for width in ([]f32{240, 360}) {
 			for frame in 0 ..< 3 {
-				clay.SetPointerState({24, 24}, false)
+				nendo.set_pointer({24, 24}, .Up)
 				link_hover = ""
-				clay.BeginLayout()
-				if clay.UI(clay.ID("Timeline"))(
+				nendo.begin()
+				if nendo.box(nendo.id("Timeline"))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingFixed(width + 78),
-							height = clay.SizingGrow(),
-						},
-						layoutDirection = .TopToBottom,
-						padding = clay.PaddingAll(20),
-						childGap = 16,
-					},
-					backgroundColor = CARD,
+					width = nendo.fixed(width + 78),
+					height = nendo.grow(),
+					direction = .Column,
+					padding = nendo.pad(20),
+					gap = 16,
+					color = CARD,
 				},
 				) {
 					body_line(1, url, 14, TEXT, {5, 15})
@@ -99,16 +95,16 @@ hn_layout :: proc(t: ^testing.T) {
 					hn_cards["42"] = {}
 					hn_card(3, "42", "https://news.ycombinator.com/item?id=42")
 				}
-				commands := clay.EndLayout(0)
+				commands := nendo.end(0)
 				if frame < 2 {continue}
 				testing.expect_value(t, link_hover, url)
 				for id in ([]u32{128, 2, 3}) {
-					data := clay.GetElementData(clay.ID("HnCard", id))
+					data := nendo.element(nendo.id("HnCard", id))
 					testing.expect(t, data.found)
-					testing.expect(t, data.boundingBox.width <= width)
+					testing.expect(t, data.rect.width <= width)
 				}
 				rl.BeginDrawing()
-				clay_raylib_render(&commands)
+				render_nendo(commands)
 				rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-hn-%d-%d.png", theme, int(width)))
 				rl.EndDrawing()
 			}

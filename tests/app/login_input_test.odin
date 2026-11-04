@@ -5,10 +5,10 @@ import "core:testing"
 import "core:text/edit"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
-// SDL and Clay have process globals; run this in its own test invocation.
+// SDL and nendo have process globals; run this in its own test invocation.
 @(test)
 login_input_required :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "login_input_required" {return}
@@ -22,10 +22,10 @@ login_input_required :: proc(t: ^testing.T) {
 	locale := g_prefs != nil ? g_prefs.locale : "en"
 	set_locale("en")
 	defer set_locale(locale)
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		selected    = -1,
 		row_menu    = -1,
@@ -44,17 +44,17 @@ login_input_required :: proc(t: ^testing.T) {
 	}
 	// Rejected input must never dereference the opaque runtime handle.
 	client: marmot.Client
-	frame :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
-		clay.SetPointerState({-100, -100}, false)
+	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
+		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
 		return build_layout(ui, 0)
 	}
 	click :: proc(t: ^testing.T, ui: ^Ui_State, client: ^marmot.Client, name: string) {
-		data := clay.GetElementData(clay.ID(name))
+		data := nendo.element(nendo.id(name))
 		if !testing.expect(t, data.found, "button exists") {return}
-		b := data.boundingBox
-		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
-		if !testing.expect(t, clay.PointerOver(clay.ID(name)), "button is reachable") {return}
+		b := data.rect
+		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
+		if !testing.expect(t, nendo.pointer_over(nendo.id(name)), "button is reachable") {return}
 		forced_release = true
 		handle_login(ui, client)
 		forced_release = false
@@ -68,10 +68,10 @@ login_input_required :: proc(t: ^testing.T) {
 	testing.expect(t, auth_job == nil)
 	commands := frame(&ui)
 	visible := false
-	for command in commands.internalArray[:commands.length] {
-		if command.commandType != .Text {continue}
-		text := command.renderData.text.stringContents
-		if string(text.chars[:text.length]) == "Enter your nsec to continue." {visible = true}
+	for command in commands {
+		if command.kind != .Text {continue}
+		text := command.text.text
+		if text == "Enter your nsec to continue." {visible = true}
 	}
 	testing.expect(t, visible, "required-key feedback is rendered on the next frame")
 	// Keyboard submission takes the same path, including repeated attempts.
@@ -135,11 +135,10 @@ login_input_required :: proc(t: ^testing.T) {
 					testing.expect_value(t, string(ui.login_input[:]), input)
 					commands := frame(&ui)
 					visible := false
-					for command in commands.internalArray[:commands.length] {
-						if command.commandType != .Text {continue}
-						text := command.renderData.text.stringContents
-						if string(text.chars[:text.length]) ==
-						   tr("Enter your bunker link to continue.") {visible = true}
+					for command in commands {
+						if command.kind != .Text {continue}
+						text := command.text.text
+						if text == tr("Enter your bunker link to continue.") {visible = true}
 					}
 					testing.expect(
 						t,

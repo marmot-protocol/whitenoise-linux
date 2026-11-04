@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=history_layout
@@ -71,45 +71,42 @@ history_layout :: proc(t: ^testing.T) {
 	for width in ([]i32{600, 320}) {
 		history_highlight(ui.hist_versions[:])
 		rl.SetWindowSize(width, 600)
-		clay.SetLayoutDimensions({f32(width), 600})
+		nendo.set_dimensions({f32(width), 600})
 		for frame in 0 ..< 3 {
 			anim_tick(1.0 / 60)
-			open_now(clay.ID("HistModal"), true)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("HistoryTest"))(
-			{
-				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()}},
-				backgroundColor = BG,
-			},
+			open_now(nendo.id("HistModal"), true)
+			nendo.begin()
+			if nendo.box(nendo.id("HistoryTest"))(
+			{width = nendo.grow(), height = nendo.grow(), color = BG},
 			) {edit_history_modal(&ui)}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			if frame < 2 {continue}
-			modal := clay.GetElementData(clay.ID("HistModal")).boundingBox
-			scroll := clay.GetElementData(clay.ID("HistScroll")).boundingBox
+			modal := nendo.element(nendo.id("HistModal")).rect
+			scroll := nendo.element(nendo.id("HistScroll")).rect
 			testing.expect(t, modal.x >= 0 && modal.x + modal.width <= f32(width))
 			for i in 0 ..< len(ui.hist_versions) {
-				row := clay.GetElementData(clay.ID("HistRow", u32(i))).boundingBox
+				row := nendo.element(nendo.id("HistRow", u32(i))).rect
 				testing.expect(
 					t,
 					row.x + row.width <= scroll.x + scroll.width - f32(HISTORY_GUTTER) + 0.1,
 				)
 			}
 			mentions := 0
-			for cmd in commands.internalArray[:commands.length] {
-				if cmd.commandType != .Text {continue}
-				data := cmd.renderData.text.stringContents
-				shown := string(data.chars[:data.length])
+			for cmd in commands {
+				if cmd.kind != .Text {continue}
+				data := cmd.text.text
+				shown := data
 				if shown == "@Danny" {mentions += 1}
 				testing.expect(t, !strings.contains(shown, "npub1"))
 				testing.expect(
 					t,
-					cmd.boundingBox.x + cmd.boundingBox.width <= modal.x + modal.width - 16 + 0.1,
+					cmd.rect.x + cmd.rect.width <= modal.x + modal.width - 16 + 0.1,
 					shown,
 				)
 			}
 			testing.expect_value(t, mentions, 2)
 			rl.BeginDrawing()
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-history-%d.png", width))
 			rl.EndDrawing()
 		}
@@ -123,17 +120,14 @@ history_layout :: proc(t: ^testing.T) {
 	history_highlight(ui.hist_versions[:])
 	for width in ([]i32{600, 320}) {
 		rl.SetWindowSize(width, 600)
-		clay.SetLayoutDimensions({f32(width), 600})
+		nendo.set_dimensions({f32(width), 600})
 		for frame in 0 ..< 3 {
 			anim_tick(1.0 / 60)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("HistoryTest"))(
-			{
-				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()}},
-				backgroundColor = BG,
-			},
+			nendo.begin()
+			if nendo.box(nendo.id("HistoryTest"))(
+			{width = nendo.grow(), height = nendo.grow(), color = BG},
 			) {edit_history_modal(&ui)}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			if frame < 2 {continue}
 			for version, i in ui.hist_versions {
 				testing.expect(t, len(version.blocks) > 0)
@@ -141,35 +135,35 @@ history_layout :: proc(t: ^testing.T) {
 					id := 0xD0000 + u32(i) * 0x10000 + u32(j) * 16
 					#partial switch block.kind {
 					case .Heading:
-						testing.expect(t, clay.GetElementData(clay.ID("MdHeading", id)).found)
+						testing.expect(t, nendo.element(nendo.id("MdHeading", id)).found)
 					case .List_Item:
-						testing.expect(t, clay.GetElementData(clay.ID("MsgListItem", id)).found)
+						testing.expect(t, nendo.element(nendo.id("MsgListItem", id)).found)
 					case .Table:
-						testing.expect(t, clay.GetElementData(clay.ID("MsgTable", id)).found)
+						testing.expect(t, nendo.element(nendo.id("MsgTable", id)).found)
 					case .Code:
-						testing.expect(t, clay.GetElementData(clay.ID("MsgCode", id)).found)
+						testing.expect(t, nendo.element(nendo.id("MsgCode", id)).found)
 					}
 				}
 			}
 			bold, literal, removed := false, false, false
-			modal := clay.GetElementData(clay.ID("HistModal")).boundingBox
-			for cmd in commands.internalArray[:commands.length] {
-				if cmd.commandType != .Text {continue}
-				data := cmd.renderData.text
-				shown := string(data.stringContents.chars[:data.stringContents.length])
-				if shown == "bold" {bold = data.fontId == FONT_TITLE}
-				literal = literal || u8(uintptr(cmd.userData)) & TEXT_MATH != 0
+			modal := nendo.element(nendo.id("HistModal")).rect
+			for cmd in commands {
+				if cmd.kind != .Text {continue}
+				data := cmd.text
+				shown := data.text
+				if shown == "bold" {bold = data.font == FONT_TITLE}
+				literal = literal || u8(uintptr(cmd.user_data)) & TEXT_MATH != 0
 				removed =
-					removed || (shown == "bold" && u8(uintptr(cmd.userData)) & TEXT_REMOVED != 0)
+					removed || (shown == "bold" && u8(uintptr(cmd.user_data)) & TEXT_REMOVED != 0)
 				testing.expect(t, !strings.contains(shown, "**"))
 				testing.expect(
 					t,
-					cmd.boundingBox.x + cmd.boundingBox.width <= modal.x + modal.width - 16 + 0.1,
+					cmd.rect.x + cmd.rect.width <= modal.x + modal.width - 16 + 0.1,
 					shown,
 				)
 			}
 			testing.expect(t, bold && literal && removed)
-			testing.expect(t, !clay.GetElementData(clay.ID("HistChanges")).found)
+			testing.expect(t, !nendo.element(nendo.id("HistChanges")).found)
 			for block in ui.hist_versions[1].blocks {
 				if strings.has_prefix(
 					block.text,
@@ -177,7 +171,7 @@ history_layout :: proc(t: ^testing.T) {
 				) {testing.expect(t, block.fonts[0] & TEXT_ADDED != 0)}
 			}
 			rl.BeginDrawing()
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-history-markdown-%d.png", width))
 			rl.EndDrawing()
 		}

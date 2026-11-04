@@ -2,16 +2,16 @@ package main
 
 import "core:sync"
 import "core:testing"
-import clay "layout"
+import "nendo"
 
 @(test)
 member_menu_permissions :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
-	previous := clay.GetCurrentContext()
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 600})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		member_menu = 1,
 	}
@@ -21,42 +21,42 @@ member_menu_permissions :: proc(t: ^testing.T) {
 		ui.members[0].is_admin = role
 		for target_admin in ([]bool{false, true}) {
 			ui.members[1].is_admin = target_admin
-			clay.BeginLayout()
+			nendo.begin()
 			member_menu(&ui)
-			clay.EndLayout(0)
+			nendo.end(0)
 			testing.expect_value(
 				t,
-				clay.GetElementData(clay.ID("MemberPromote")).found,
+				nendo.element(nendo.id("MemberPromote")).found,
 				role && !target_admin,
 			)
 			testing.expect_value(
 				t,
-				clay.GetElementData(clay.ID("MemberDemote")).found,
+				nendo.element(nendo.id("MemberDemote")).found,
 				role && target_admin,
 			)
-			testing.expect_value(t, clay.GetElementData(clay.ID("MemberRemove")).found, role)
-			testing.expect(t, clay.GetElementData(clay.ID("MemberNick")).found)
+			testing.expect_value(t, nendo.element(nendo.id("MemberRemove")).found, role)
+			testing.expect(t, nendo.element(nendo.id("MemberNick")).found)
 		}
 	}
 	previous_release := forced_release
 	forced_release = true
 	defer forced_release = previous_release
-	defer clay.SetPointerState({-1, -1}, false)
+	defer nendo.set_pointer({-1, -1}, .Up)
 	ui.members[1].is_admin = false
 	for action in ([]string{"MemberPromote", "MemberRemove"}) {
 		ui.member_menu = 1
 		ui.members[0].is_admin = true
-		clay.BeginLayout()
+		nendo.begin()
 		member_menu(&ui)
-		clay.EndLayout(0)
-		box := clay.GetElementData(clay.ID(action)).boundingBox
-		clay.SetPointerState({box.x + 1, box.y + 1}, false)
+		nendo.end(0)
+		box := nendo.element(nendo.id(action)).rect
+		nendo.set_pointer({box.x + 1, box.y + 1}, .Up)
 		// A menu row acts only when the press also landed on it.
 		menu_press = {}
 		forced_press = true
-		clay.BeginLayout()
+		nendo.begin()
 		member_menu(&ui)
-		clay.EndLayout(0)
+		nendo.end(0)
 		forced_press = false
 		ui.members[0].is_admin = false
 		testing.expect(t, handle_member_menu(&ui))

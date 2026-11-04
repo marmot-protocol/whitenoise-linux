@@ -7,7 +7,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -94,7 +94,7 @@ account_label :: proc(ui: ^Ui_State, hex_id: string) -> string {
 pal_open_modal :: proc(ui: ^Ui_State) {
 	ui.mi_open = false
 	ui.pal_open = true
-	stagger_arm(clay.ID("PalModal").id)
+	stagger_arm(nendo.id("PalModal").id)
 	ui.focus = .Pal
 	ui.pal_sel = 0
 	clear(&ui.pal_input)
@@ -142,49 +142,39 @@ pal_refresh :: proc(ui: ^Ui_State) {
 palette_modal :: proc(ui: ^Ui_State) {
 	max_h := modal_h(620)
 	if !single_pane() {max_h = min(max_h, max(1, f32(rl.GetScreenHeight()) / UI_ZOOM - 120))}
-	if clay.UI(clay.ID("PalModal"))(
+	if nendo.box(nendo.id("PalModal"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("PalModal"), 520)),
-				height = clay.SizingFit({max = max_h}),
-			},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(14),
-			childGap = 8,
-		},
-		backgroundColor = CARD,
-		cornerRadius = rr(14),
+		width = nendo.fixed(modal_w(nendo.id("PalModal"), 520)),
+		height = nendo.fit(max = max_h),
+		direction = .Column,
+		padding = nendo.pad(14),
+		gap = 8,
+		color = CARD,
+		radius = rr(14),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
-			attachTo = .Root,
-			zIndex = 15,
-			offset = {0, (single_pane() ? 12 : 90) + rise(clay.ID("PalModal"), 12)},
-			attachment = {element = .CenterTop, parent = .CenterTop},
+			attach_to = .Root,
+			z = 15,
+			offset = {0, (single_pane() ? 12 : 90) + rise(nendo.id("PalModal"), 12)},
+			attach = {element = .Center_Top, parent = .Center_Top},
 		},
 	},
 	) {
-		if clay.UI(clay.ID("PalHeader"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-		) {
-			if clay.UI(clay.ID("PalInput"))(
+		if nendo.box(nendo.id("PalHeader"))({width = nendo.grow(), gap = 8}) {
+			if nendo.box(nendo.id("PalInput"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 38),
-					},
-					padding = {left = 12, right = 12},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(9),
+				width = nendo.grow(),
+				height = nendo.fixed(tap_size() ? tap_min() : 38),
+				padding = {left = 12, right = 12},
+				gap = 8,
+				align = {y = .Center},
+				color = ROW_BG,
+				radius = rr(9),
 				border = {color = ACCENT, width = bw()},
-				clip = {horizontal = true},
+				clip = {x = true},
 			},
 			) {
-				clay.Text("›", {fontId = FONT_TITLE, fontSize = 16, textColor = ACCENT})
+				nendo.text("›", {font = FONT_TITLE, size = 16, color = ACCENT})
 				field_text(
 					ui,
 					"PalInput",
@@ -196,43 +186,38 @@ palette_modal :: proc(ui: ^Ui_State) {
 				)
 			}
 			if tap_size() {
-				if clay.UI(clay.ID("PalClose"))(
+				if nendo.box(nendo.id("PalClose"))(
 				{
-					layout = {
-						sizing = {width = clay.SizingFixed(44), height = clay.SizingFixed(44)},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = hovered() ? HOVER : ROW_BG,
-					cornerRadius = rr(9),
+					width = nendo.fixed(44),
+					height = nendo.fixed(44),
+					align = {x = .Center, y = .Center},
+					color = hovered() ? HOVER : ROW_BG,
+					radius = rr(9),
 				},
 				) {
-					clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT})
+					nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 14, color = TEXT})
 				}
 			}
 		}
-		if clay.UI(clay.ID("PalResults"))(
+		if nendo.box(nendo.id("PalResults"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFit({max = max(1, max_h - (tap_size() ? 110 : 100))}),
-				},
-				layoutDirection = .TopToBottom,
-				childGap = 8,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.fit(max = max(1, max_h - (tap_size() ? 110 : 100))),
+			direction = .Column,
+			gap = 8,
+			clip = {y = true, scroll = true},
 		},
 		) {
-			scrollbar(clay.ID("PalResults"), 16)
+			scrollbar(nendo.id("PalResults"), 16)
 
 			if len(ui.pal_hits) == 0 {
-				clay.Text(
+				nendo.text(
 					tr("No command matches."),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 13, color = TEXT_DIM},
 				)
 			}
 			// Only the window around the selection renders: the list is
-			// short and clay has no virtualization.
+			// short and nendo has no virtualization.
 			first := clamp(
 				ui.pal_sel - PAL_ROWS_MAX + 1,
 				0,
@@ -244,44 +229,35 @@ palette_modal :: proc(ui: ^Ui_State) {
 				cmd := Cmd(ui.pal_hits[i])
 				selected := i == ui.pal_sel
 				// Rows cascade in from the top of the visible window.
-				arrived := stagger(clay.ID("PalModal").id, i - first)
-				if clay.UI(clay.ID("PalRow", u32(i)))(
+				arrived := stagger(nendo.id("PalModal").id, i - first)
+				if nendo.box(nendo.id("PalRow", u32(i)))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingGrow(),
-							height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-						},
-						padding = {left = 12, right = 12, top = 8, bottom = 8},
-						childGap = 10,
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = fade(
-						selected ? SELECTED : (hovered() ? HOVER : {}),
-						arrived,
-					),
-					cornerRadius = rr(8),
+					width = nendo.grow(),
+					height = nendo.fit(min = tap_size() ? tap_min() : 0),
+					padding = {left = 12, right = 12, top = 8, bottom = 8},
+					gap = 10,
+					align = {y = .Center},
+					color = fade(selected ? SELECTED : (hovered() ? HOVER : {}), arrived),
+					radius = rr(8),
 				},
 				) {
-					clay.Text(
+					nendo.text(
 						tr(COMMANDS[cmd].label),
 						{
-							fontId = FONT_BODY,
-							fontSize = 13,
-							textColor = fade(selected ? ACCENT : TEXT, arrived),
+							font = FONT_BODY,
+							size = 13,
+							color = fade(selected ? ACCENT : TEXT, arrived),
 						},
 					)
 					if !single_pane() {
-						if clay.UI(clay.ID("PalRowGap", u32(i)))(
-						{layout = {sizing = {width = clay.SizingGrow()}}},
-						) {}
-						clay.Text(
+						if nendo.box(nendo.id("PalRowGap", u32(i)))({width = nendo.grow()}) {}
+						nendo.text(
 							tr(COMMANDS[cmd].hint),
 							{
-								fontId = FONT_MONO,
-								fontSize = 10,
-								textColor = fade(TEXT_LO, arrived),
-								letterSpacing = 1,
+								font = FONT_MONO,
+								size = 10,
+								color = fade(TEXT_LO, arrived),
+								spacing = 1,
 							},
 						)
 					}
@@ -289,26 +265,20 @@ palette_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		if clay.UI(clay.ID("PalFoot"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 12,
-				padding = {left = 4, top = 2},
-			},
-		},
+		if nendo.box(nendo.id("PalFoot"))(
+		{width = nendo.grow(), gap = 12, padding = {left = 4, top = 2}},
 		) {
 			if !tap_size() {
-				clay.Text(
+				nendo.text(
 					tr("↑↓ move   ⏎ run   esc close"),
-					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 1},
+					{font = FONT_MONO, size = 10, color = TEXT_LO, spacing = 1},
 				)
 			}
-			if clay.UI(clay.ID("PalFootGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if nendo.box(nendo.id("PalFootGap"))({width = nendo.grow()}) {}
 			if !tap_size() {
-				clay.Text(
+				nendo.text(
 					fmt.tprintf("%d", len(ui.pal_hits)),
-					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
+					{font = FONT_MONO, size = 10, color = TEXT_LO},
 				)
 			}
 		}
@@ -348,14 +318,14 @@ handle_palette :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	for i in 0 ..< len(ui.pal_hits) {
-		if clay.PointerOver(clay.ID("PalRow", u32(i))) {
+		if nendo.pointer_over(nendo.id("PalRow", u32(i))) {
 			cmd := Cmd(ui.pal_hits[i])
 			pal_close(ui)
 			run_command(ui, client, cmd)
 			return
 		}
 	}
-	if !clay.PointerOver(clay.ID("PalModal")) {
+	if !nendo.pointer_over(nendo.id("PalModal")) {
 		pal_close(ui)
 	}
 }

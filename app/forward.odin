@@ -15,7 +15,7 @@ import "core:sync"
 import "core:thread"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -46,50 +46,40 @@ fwd_visible :: proc(ui: ^Ui_State, index: int) -> bool {
 }
 
 forward_modal :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("FwdModal"))(
+	if nendo.box(nendo.id("FwdModal"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("FwdModal"), 440)),
-				height = clay.SizingFit({max = modal_h(480)}),
-			},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(20),
-			childGap = 12,
-		},
-		backgroundColor = CARD,
-		cornerRadius = rr(16),
+		width = nendo.fixed(modal_w(nendo.id("FwdModal"), 440)),
+		height = nendo.fit(max = modal_h(480)),
+		direction = .Column,
+		padding = nendo.pad(20),
+		gap = 12,
+		color = CARD,
+		radius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
-			attachTo = .Root,
-			zIndex = 13,
-			offset = {0, rise(clay.ID("FwdModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 13,
+			offset = {0, rise(nendo.id("FwdModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
 	},
 	) {
-		if clay.UI(clay.ID("FwdHead"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
-		) {
-			clay.Text(
+		if nendo.box(nendo.id("FwdHead"))({width = nendo.grow(), align = {y = .Center}}) {
+			nendo.text(
 				ui.fwd_kind == .Add_Member ? tr("Add to group") : ui.fwd_kind == .Theme ? tr("Share theme with") : tr("Forward to"),
-				{fontId = FONT_TITLE, fontSize = 20, textColor = TEXT},
+				{font = FONT_TITLE, size = 20, color = TEXT},
 			)
-			if clay.UI(clay.ID("FwdHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("FwdClose"))(
+			if nendo.box(nendo.id("FwdHeadGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("FwdClose"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(tap_size() ? tap_min() : 26),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(7),
+				width = nendo.fixed(tap_size() ? tap_min() : 26),
+				height = nendo.fixed(tap_size() ? tap_min() : 26),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(7),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 			}
 		}
 
@@ -101,34 +91,36 @@ forward_modal :: proc(ui: ^Ui_State) {
 					line = msg.attachments[0].name
 					if line == "" {line = tr("Attachment")}
 				}
-				if clay.UI(clay.ID("FwdSubject"))(
+				if nendo.box(nendo.id("FwdSubject"))(
 				{
-					layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
-					backgroundColor = ROW_BG,
-					cornerRadius = rr(8),
-					clip = {horizontal = true},
+					width = nendo.grow(),
+					padding = nendo.pad(10),
+					color = ROW_BG,
+					radius = rr(8),
+					clip = {x = true},
 				},
 				) {
-					clay.Text(
-						text_ellipsis(line, modal_w(clay.ID("FwdModal"), 440) - 60, FONT_BODY, 13),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT, wrapMode = .None},
+					nendo.text(
+						text_ellipsis(
+							line,
+							modal_w(nendo.id("FwdModal"), 440) - 60,
+							FONT_BODY,
+							13,
+						),
+						{font = FONT_BODY, size = 13, color = TEXT, wrap = .None},
 					)
 				}
 			}
 		}
 
-		if clay.UI(clay.ID("FwdFilter"))(
+		if nendo.box(nendo.id("FwdFilter"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFixed(tap_size() ? tap_min() : 36),
-				},
-				padding = {left = 12, right = 12},
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(8),
+			width = nendo.grow(),
+			height = nendo.fixed(tap_size() ? tap_min() : 36),
+			padding = {left = 12, right = 12},
+			align = {y = .Center},
+			color = ROW_BG,
+			radius = rr(8),
 			border = {color = ui.focus == .Fwd ? ACCENT : FIELD_BORDER, width = bw()},
 		},
 		) {
@@ -143,17 +135,13 @@ forward_modal :: proc(ui: ^Ui_State) {
 			)
 		}
 
-		if clay.UI(clay.ID("FwdList"))(
+		if nendo.box(nendo.id("FwdList"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFit({max = max(44, min(320, modal_h(480) - 152))}),
-				},
-				layoutDirection = .TopToBottom,
-				childGap = 2,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.fit(max = max(44, min(320, modal_h(480) - 152))),
+			direction = .Column,
+			gap = 2,
+			clip = {y = true, scroll = true},
 		},
 		) {
 			shown := 0
@@ -162,52 +150,44 @@ forward_modal :: proc(ui: ^Ui_State) {
 					continue
 				}
 				shown += 1
-				if clay.UI(clay.ID("FwdRow", u32(i)))(
+				if nendo.box(nendo.id("FwdRow", u32(i)))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(44)},
-						padding = {left = 10, right = 10},
-						childGap = 10,
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = hovered() ? HOVER : {},
-					cornerRadius = rr(8),
+					width = nendo.grow(),
+					height = nendo.fixed(44),
+					padding = {left = 10, right = 10},
+					gap = 10,
+					align = {y = .Center},
+					color = hovered() ? HOVER : {},
+					radius = rr(8),
 				},
 				) {
 					avatar("FwdAvatar", u32(i), chat.avatar_key, chat.title, 30, chat_pic(chat))
-					if clay.UI(clay.ID("FwdTitle", u32(i)))(
-					{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+					if nendo.box(nendo.id("FwdTitle", u32(i)))(
+					{width = nendo.grow(), clip = {x = true}},
 					) {
-						clay.Text(
+						nendo.text(
 							chat.title,
-							{
-								fontId = FONT_TITLE,
-								fontSize = 13,
-								textColor = TEXT,
-								wrapMode = .None,
-							},
+							{font = FONT_TITLE, size = 13, color = TEXT, wrap = .None},
 						)
 					}
 				}
 			}
 			if shown == 0 {
-				if clay.UI(clay.ID("FwdEmpty"))(
+				if nendo.box(nendo.id("FwdEmpty"))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						padding = {left = 10, right = 10, top = 16, bottom = 16},
-						childAlignment = {x = .Center},
-					},
+					width = nendo.grow(),
+					padding = {left = 10, right = 10, top = 16, bottom = 16},
+					align = {x = .Center},
 				},
 				) {
-					clay.Text(
+					nendo.text(
 						len(ui.fwd_filter) > 0 ? tr("No chats match your filter.") : ui.fwd_kind == .Add_Member ? tr("You have no groups to add this person to.") : ui.fwd_kind == .Message ? tr("You have no other chats to forward this to.") : tr("You have no chats to share this with."),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+						{font = FONT_BODY, size = 13, color = TEXT_DIM},
 					)
 				}
 			}
 		}
-		scrollbar(clay.ID("FwdList"), 14) // the modal floats at 13
+		scrollbar(nendo.id("FwdList"), 14) // the modal floats at 13
 	}
 }
 
@@ -480,39 +460,27 @@ forward_progress :: proc(ui: ^Ui_State) {
 	}
 	if chosen < 0 {return}
 	p := ui.pending[chosen]
-	if clay.UI(clay.ID("ForwardProgress"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			padding = clay.PaddingAll(8),
-			childGap = 8,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = CARD,
-	},
+	if nendo.box(nendo.id("ForwardProgress"))(
+	{width = nendo.grow(), padding = nendo.pad(8), gap = 8, align = {y = .Center}, color = CARD},
 	) {
 		label :=
 			p.failed ? tr("Couldn't forward to %s. Open the chat to retry.") : p.forward != nil ? tr("Preparing attachments for %s…") : tr("Forwarding to %s…")
-		clay.Text(
+		nendo.text(
 			fmt.tprintf(label, p.forward_title),
-			{fontId = FONT_BODY, fontSize = 12, textColor = p.failed ? DANGER : TEXT_DIM},
+			{font = FONT_BODY, size = 12, color = p.failed ? DANGER : TEXT_DIM},
 		)
 		if !p.failed {
 			anim_moving += 1
-			if clay.UI(clay.ID("ForwardTrack"))(
-			{
-				layout = {sizing = {width = clay.SizingFixed(100), height = clay.SizingFixed(3)}},
-				backgroundColor = FIELD_BORDER,
-			},
+			if nendo.box(nendo.id("ForwardTrack"))(
+			{width = nendo.fixed(100), height = nendo.fixed(3), color = FIELD_BORDER},
 			) {
-				if clay.UI(clay.ID("ForwardBar"))(
+				if nendo.box(nendo.id("ForwardBar"))(
 				{
-					layout = {
-						sizing = {width = clay.SizingFixed(24), height = clay.SizingFixed(3)},
-					},
-					backgroundColor = ACCENT,
+					width = nendo.fixed(24),
+					height = nendo.fixed(3),
+					color = ACCENT,
 					floating = {
-						attachTo = .Parent,
+						attach_to = .Parent,
 						offset = {f32(38 * (1 + f32(math.sin(rl.GetTime() * 4)))), 0},
 					},
 				},
@@ -553,7 +521,7 @@ handle_forward :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	for _, i in ui.chats {
-		if fwd_visible(ui, i) && clay.PointerOver(clay.ID("FwdRow", u32(i))) {
+		if fwd_visible(ui, i) && nendo.pointer_over(nendo.id("FwdRow", u32(i))) {
 			ui.fwd_open = false
 			ui.focus = .Compose
 			if ui.fwd_kind == .Theme {
@@ -573,7 +541,7 @@ handle_forward :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
-	if clicked("FwdClose") || !clay.PointerOver(clay.ID("FwdModal")) {
+	if clicked("FwdClose") || !nendo.pointer_over(nendo.id("FwdModal")) {
 		ui.fwd_open = false
 		ui.focus = .Compose
 	}

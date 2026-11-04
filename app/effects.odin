@@ -13,7 +13,7 @@ import "core:math"
 
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -286,7 +286,7 @@ burst_arrive :: proc(msg_id: string, effect: int, mine: bool) {
 }
 
 // Particles float up and out from the message row, fading as they go.
-// They are floating elements offset per particle: clay has no free
+// They are floating elements offset per particle: nendo has no free
 // positioning, and a floating child takes an arbitrary offset.
 burst_layer :: proc(index: u32, msg_id: string) {
 	if len(msg_id) == 0 {
@@ -330,63 +330,59 @@ burst_particles :: proc(index: u32, slot: int) {
 		y := -progress * speed * e.rise + 40 * progress * progress
 		size := 14 + 10 * (1 - progress)
 		alpha := clamp(255 * (1 - progress * progress), 0, 255)
-		id := clay.ID("BurstDot", (index * EMITTERS_MAX + u32(slot)) * 64 + u32(i))
+		id := nendo.id("BurstDot", (index * EMITTERS_MAX + u32(slot)) * 64 + u32(i))
 		if e.mode == .Shard {
 			// Pieces of the row: fanned across its width, falling under
 			// their own gravity and thinning as they go.
 			drift := (spread - 0.5) * e.spread
 			fall := progress * progress * 90 * speed
 			side := 5 + 7 * (1 - progress)
-			if clay.UI(id)(
+			if nendo.box(id)(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(side),
-						height = clay.SizingFixed(side * 0.7),
-					},
-				},
+				width = nendo.fixed(side),
+				height = nendo.fixed(side * 0.7),
 				floating = {
-					attachTo = .Parent,
-					zIndex = 9,
+					attach_to = .Parent,
+					z = 9,
 					offset = {drift, fall - 10},
-					attachment = {element = .CenterCenter, parent = .CenterCenter},
+					attach = {element = .Center_Center, parent = .Center_Center},
 				},
-				backgroundColor = {TEXT_LO.r, TEXT_LO.g, TEXT_LO.b, alpha},
-				cornerRadius = rr(2),
+				color = {TEXT_LO.r, TEXT_LO.g, TEXT_LO.b, alpha},
+				radius = rr(2),
 			},
 			) {}
 			continue
 		}
 		if e.mode == .Pill {
 			// The whoosh: a stretched accent pill, thinning as it rises.
-			if clay.UI(id)(
+			if nendo.box(id)(
 			{
-				layout = {
-					sizing = {width = clay.SizingFixed(3), height = clay.SizingFixed(size * 1.6)},
-				},
+				width = nendo.fixed(3),
+				height = nendo.fixed(size * 1.6),
 				floating = {
-					attachTo = .Parent,
-					zIndex = 9,
+					attach_to = .Parent,
+					z = 9,
 					offset = {x, y},
-					attachment = {element = .CenterCenter, parent = .CenterCenter},
+					attach = {element = .Center_Center, parent = .Center_Center},
 				},
-				backgroundColor = {ACCENT.r, ACCENT.g, ACCENT.b, alpha * 0.7},
-				cornerRadius = rr(2),
+				color = {ACCENT.r, ACCENT.g, ACCENT.b, alpha * 0.7},
+				radius = rr(2),
 			},
 			) {}
 			continue
 		}
-		if clay.UI(id)(
+		if nendo.box(id)(
 		{
-			layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}},
+			width = nendo.fixed(size),
+			height = nendo.fixed(size),
 			floating = {
-				attachTo = .Parent,
-				zIndex = 9,
+				attach_to = .Parent,
+				z = 9,
 				offset = {x, y},
-				attachment = {element = .CenterCenter, parent = .CenterCenter},
+				attach = {element = .Center_Center, parent = .Center_Center},
 			},
-			image = {imageData = e.tex},
-			overlayColor = {255, 255, 255, alpha}, // the renderer's image tint
+			image = e.tex,
+			overlay = {255, 255, 255, alpha}, // the renderer's image tint
 		},
 		) {}
 	}
@@ -412,75 +408,52 @@ fx_send_armed :: proc(ui: ^Ui_State) {
 ICON_FX :: "\U000f0674" // creation: sparkle, not the saved-item star
 
 effect_picker :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("FxPanel"))(
+	if nendo.box(nendo.id("FxPanel"))(
 	{
 		// The parent is FxBtn on desktop and ComposeBox on phone (overflow tools).
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingFixed(fit_w(300)),
-				height = clay.SizingFit({max = modal_h(300)}),
-			},
-			padding = clay.PaddingAll(12),
-			childGap = 8,
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		direction = .Column,
+		width = nendo.fixed(fit_w(300)),
+		height = nendo.fit(max = modal_h(300)),
+		padding = nendo.pad(12),
+		gap = 8,
+		clip = {y = true, scroll = true},
 		floating = {
-			attachTo = .Parent,
-			zIndex = 12,
-			offset = {0, -10 + rise(clay.ID("FxPanel"))},
-			attachment = {element = .RightBottom, parent = .RightTop},
+			attach_to = .Parent,
+			z = 12,
+			offset = {0, -10 + rise(nendo.id("FxPanel"))},
+			attach = {element = .Right_Bottom, parent = .Right_Top},
 		},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
+		color = CARD,
+		radius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("FxHead"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 6,
-				childAlignment = {y = .Center},
-			},
-		},
-		) {
+		if nendo.box(nendo.id("FxHead"))({width = nendo.grow(), gap = 6, align = {y = .Center}}) {
 			eyebrow(tr("SEND WITH EFFECT"))
-			if clay.UI(clay.ID("FxHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if nendo.box(nendo.id("FxHeadGap"))({width = nendo.grow()}) {}
 			if tap_size() {micro_button("FxClose", tr("Close"))}
 		}
-		if clay.UI(clay.ID("FxRow"))(
-		{
-			layout = {sizing = {width = clay.SizingGrow()}, childGap = 6},
-			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
-		},
+		if nendo.box(nendo.id("FxRow"))(
+		{width = nendo.grow(), gap = 6, clip = {x = true, scroll = true}},
 		) {
 			for e, i in EFFECTS {
 				armed := ui.fx_armed == e.id
-				if clay.UI(clay.ID("FxOpt", u32(i)))(
+				if nendo.box(nendo.id("FxOpt", u32(i)))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingFixed(tap_size() ? tap_min() : 38),
-							height = clay.SizingFixed(tap_size() ? tap_min() : 38),
-						},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = armed ? SELECTED : (hovered() ? HOVER : ROW_BG),
-					cornerRadius = rr(10),
-					border = armed ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
+					width = nendo.fixed(tap_size() ? tap_min() : 38),
+					height = nendo.fixed(tap_size() ? tap_min() : 38),
+					align = {x = .Center, y = .Center},
+					color = armed ? SELECTED : (hovered() ? HOVER : ROW_BG),
+					radius = rr(10),
+					border = armed ? nendo.Border{color = ACCENT, width = bw()} : {},
 				},
 				) {
 					if tex := emoji_tex(e.emoji); tex != nil {
-						if clay.UI(clay.ID("FxOptImg", u32(i)))(
-						{
-							layout = {sizing = {width = clay.SizingFixed(20)}},
-							aspectRatio = {1},
-							image = {imageData = tex},
-						},
+						if nendo.box(nendo.id("FxOptImg", u32(i)))(
+						{width = nendo.fixed(20), aspect = 1, image = tex},
 						) {}
 					} else {
-						clay.Text(e.emoji, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT})
+						nendo.text(e.emoji, {font = FONT_BODY, size = 15, color = TEXT})
 					}
 				}
 			}
@@ -488,9 +461,9 @@ effect_picker :: proc(ui: ^Ui_State) {
 		if ui.fx_armed != 0 {
 			micro_button("FxClear", tr("Clear effect"))
 		}
-		scrollbar(clay.ID("FxRow"), 13)
+		scrollbar(nendo.id("FxRow"), 13)
 	}
-	scrollbar(clay.ID("FxPanel"), 13)
+	scrollbar(nendo.id("FxPanel"), 13)
 }
 
 handle_effects :: proc(ui: ^Ui_State) -> bool {
@@ -505,7 +478,7 @@ handle_effects :: proc(ui: ^Ui_State) -> bool {
 		return true
 	}
 	for e, i in EFFECTS {
-		if clay.PointerOver(clay.ID("FxOpt", u32(i))) {
+		if nendo.pointer_over(nendo.id("FxOpt", u32(i))) {
 			ui.fx_armed = ui.fx_armed == e.id ? 0 : e.id
 			ui.fx_open = false
 			return true
@@ -516,7 +489,7 @@ handle_effects :: proc(ui: ^Ui_State) -> bool {
 		ui.fx_open = false
 		return true
 	}
-	if !clay.PointerOver(clay.ID("FxPanel")) {
+	if !nendo.pointer_over(nendo.id("FxPanel")) {
 		ui.fx_open = false
 	}
 	return true

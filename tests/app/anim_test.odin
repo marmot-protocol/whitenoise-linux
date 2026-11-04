@@ -48,8 +48,8 @@ anim_maps_on_heap :: proc "contextless" () {
 @(test)
 test_anim_set_no_replay :: proc(t: ^testing.T) {
 	// Layout tests step the same global anim state under this lock.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	anim_tick(1.0 / 60)
 	_ = anim_to(0x77770001, 100) // first sighting seeds at the target
 	anim_tick(1.0 / 60)

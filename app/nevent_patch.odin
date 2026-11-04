@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:strconv"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 
 @(private)
 Nev_Patch_Line :: struct {
@@ -133,20 +133,20 @@ nev_patch_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 	if len(p.series) >
 	   0 {body_text(base + 4, p.series, 11, TEXT_LO, wrap_w = width, max_lines = 1)}
 	if p.files > 0 {
-		if clay.UI(clay.ID("NevPatchStats", id))(
-		{layout = {childGap = 12, layoutDirection = width < 180 ? .TopToBottom : .LeftToRight}},
+		if nendo.box(nendo.id("NevPatchStats", id))(
+		{gap = 12, direction = width < 180 ? .Column : .Row},
 		) {
-			clay.Text(
+			nendo.text(
 				fmt.tprintf(tr(p.files == 1 ? N_("%d file") : N_("%d files")), p.files),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
-			clay.Text(
+			nendo.text(
 				fmt.tprintf("+%d", p.added),
-				{fontId = FONT_MONO, fontSize = 12, textColor = ACCENT_DIM},
+				{font = FONT_MONO, size = 12, color = ACCENT_DIM},
 			)
-			clay.Text(
+			nendo.text(
 				fmt.tprintf("-%d", p.removed),
-				{fontId = FONT_MONO, fontSize = 12, textColor = DANGER},
+				{font = FONT_MONO, size = 12, color = DANGER},
 			)
 		}
 	}
@@ -154,21 +154,19 @@ nev_patch_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 	description_lines := 0
 	if len(p.description) >
 	   0 {description_lines = body_text(base + 2, p.description, 13, TEXT_DIM, wrap_w = width, max_lines = limit)}
-	// ponytail: cap wrapped rows at the source viewer's ceiling to bound Clay
+	// ponytail: cap wrapped rows at the source viewer's ceiling to bound nendo
 	// elements. Open in client has the complete patch; virtualize for larger diffs.
 	rows_left := min(limit, CODE_MODAL_LINES)
 	shown := 0
 	if len(p.lines) > 0 {
-		if clay.UI(clay.ID("NevPatchDiff", id))(
+		if nendo.box(nendo.id("NevPatchDiff", id))(
 		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {width = clay.SizingFixed(width)},
-				padding = clay.PaddingAll(10),
-				childGap = 3,
-			},
-			backgroundColor = CODE_PLATE,
-			cornerRadius = rr(7),
+			direction = .Column,
+			width = nendo.fixed(width),
+			padding = nendo.pad(10),
+			gap = 3,
+			color = CODE_PLATE,
+			radius = rr(7),
 		},
 		) {
 			for line, index in p.lines {
@@ -176,14 +174,12 @@ nev_patch_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 				color :=
 					line.mark == '+' ? ACCENT_DIM : (line.mark == '-' ? DANGER : (line.mark == '@' || line.mark == 'd' ? ACCENT : TEXT_LO))
 				complete := false
-				if clay.UI(clay.ID("NevPatchLine", id * (CODE_MODAL_LINES + 1) + u32(index)))(
+				if nendo.box(nendo.id("NevPatchLine", id * (CODE_MODAL_LINES + 1) + u32(index)))(
 				{
-					layout = {
-						layoutDirection = .TopToBottom,
-						sizing = {width = clay.SizingGrow()},
-						padding = {left = 4, right = 4, top = 2, bottom = 2},
-					},
-					backgroundColor = line.mark == '+' ? fade(ACCENT_DIM, 0.08) : (line.mark == '-' ? fade(DANGER, 0.08) : clay.Color{}),
+					direction = .Column,
+					width = nendo.grow(),
+					padding = {left = 4, right = 4, top = 2, bottom = 2},
+					color = line.mark == '+' ? fade(ACCENT_DIM, 0.08) : (line.mark == '-' ? fade(DANGER, 0.08) : nendo.Color{}),
 				},
 				) {
 					used: int
@@ -205,13 +201,13 @@ nev_patch_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 	   (shown < len(p.lines) ||
 			   description_lines >= message_line_limit() ||
 			   card.excerpt.expanded) {
-		if clay.UI(clay.ID("NevMore", id))(
-		{layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}},
+		if nendo.box(nendo.id("NevMore", id))(
+		{padding = {top = 4, bottom = 4}, color = hovered() ? HOVER : {}},
 		) {
 			if hovered() {nev_more_hover, nev_more_id = key, base + 2}
-			clay.Text(
+			nendo.text(
 				card.excerpt.expanded ? tr("Show less") : tr("Read more"),
-				{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
+				{font = FONT_BODY, size = 12, color = ACCENT},
 			)
 		}
 	}

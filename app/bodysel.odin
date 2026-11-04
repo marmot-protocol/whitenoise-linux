@@ -11,14 +11,14 @@ package main
 
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // One selectable line laid out this frame. Rebuilt every build; the
 // text slices point into the message's own strings, which outlive the
 // frame.
 Sel_Line :: struct {
-	id:         u32, // the clay id body_line used
+	id:         u32, // the nendo id body_line used
 	block:      u32, // body_text's id base: the selection's scope
 	start:      int, // byte offset of this line inside block_text
 	text:       string,
@@ -81,11 +81,11 @@ sel_clear :: proc(ui: ^Ui_State) {
 // line, or ok = false when the pointer isn't over it.
 @(private = "file")
 sel_offset_in :: proc(line: Sel_Line, mx, my: f32) -> (offset: int, over: bool) {
-	box := clay.GetElementData(clay.ID("BodyLine", line.id))
+	box := nendo.element(nendo.id("BodyLine", line.id))
 	if !box.found {
 		return 0, false
 	}
-	b := box.boundingBox
+	b := box.rect
 	if my < b.y || my > b.y + b.height {
 		return 0, false
 	}
@@ -128,11 +128,11 @@ sel_hit :: proc(
 		if !block_only {
 			continue
 		}
-		box := clay.GetElementData(clay.ID("BodyLine", candidate.id))
+		box := nendo.element(nendo.id("BodyLine", candidate.id))
 		if !box.found {
 			continue
 		}
-		b := box.boundingBox
+		b := box.rect
 		gap := my < b.y ? b.y - my : my - (b.y + b.height)
 		if gap < best_gap {
 			best_gap = gap

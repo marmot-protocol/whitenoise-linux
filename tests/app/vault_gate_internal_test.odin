@@ -17,8 +17,8 @@ gate_submit :: proc(ui: ^Ui_State) -> bool {
 @(test)
 vault_gate_empty_password_copy :: proc(t: ^gate_testing.T) {
 	context.allocator = gate_runtime.default_context().allocator
-	gate_sync.lock(&clay_test_mutex)
-	defer gate_sync.unlock(&clay_test_mutex)
+	gate_sync.lock(&nendo_test_mutex)
+	defer gate_sync.unlock(&nendo_test_mutex)
 	gate_sync.lock(&test_home_lock)
 	defer gate_sync.unlock(&test_home_lock)
 	home, err := os.make_directory_temp("", "wn-gate-empty", context.temp_allocator)
@@ -34,13 +34,13 @@ vault_gate_empty_password_copy :: proc(t: ^gate_testing.T) {
 		gate_err = ""
 		gate_reset = .Closed
 	}
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui: Ui_State
-	clay.BeginLayout()
-	clay.EndLayout(0)
+	nendo.begin()
+	nendo.end(0)
 	rl.PushKey(.ENTER, true)
 	defer rl.PushKey(.ENTER, false)
 
@@ -65,8 +65,8 @@ vault_gate_empty_password_copy :: proc(t: ^gate_testing.T) {
 vault_gate_password_policy :: proc(t: ^gate_testing.T) {
 	// The unlock worker allocates the blob key on the default heap.
 	context.allocator = gate_runtime.default_context().allocator
-	gate_sync.lock(&clay_test_mutex)
-	defer gate_sync.unlock(&clay_test_mutex)
+	gate_sync.lock(&nendo_test_mutex)
+	defer gate_sync.unlock(&nendo_test_mutex)
 	gate_sync.lock(&test_home_lock)
 	defer gate_sync.unlock(&test_home_lock)
 	home, err := os.make_directory_temp("", "wn-gate-policy", context.temp_allocator)
@@ -75,13 +75,13 @@ vault_gate_password_policy :: proc(t: ^gate_testing.T) {
 	old_home := data_home
 	data_home = home
 	defer {vault_delete(); data_home = old_home; gate_close(); gate_confirm = false; gate_err = ""}
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui: Ui_State
-	clay.BeginLayout()
-	clay.EndLayout(0)
+	nendo.begin()
+	nendo.end(0)
 	rl.PushKey(.ENTER, true)
 	defer rl.PushKey(.ENTER, false)
 
@@ -121,8 +121,8 @@ vault_gate_password_policy :: proc(t: ^gate_testing.T) {
 vault_gate_manual_relock :: proc(t: ^gate_testing.T) {
 	// Without a reload heap, gate threads own vault data in the default allocator.
 	context.allocator = gate_runtime.default_context().allocator
-	gate_sync.lock(&clay_test_mutex)
-	defer gate_sync.unlock(&clay_test_mutex)
+	gate_sync.lock(&nendo_test_mutex)
+	defer gate_sync.unlock(&nendo_test_mutex)
 	gate_sync.lock(&test_home_lock)
 	defer gate_sync.unlock(&test_home_lock)
 	home, err := os.make_directory_temp("", "wn-relock", context.temp_allocator)
@@ -131,11 +131,11 @@ vault_gate_manual_relock :: proc(t: ^gate_testing.T) {
 	old_home := data_home
 	data_home = home
 	defer {vault_delete(); data_home = old_home; gate_close(); gate_confirm = false; gate_err = ""}
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
-	clay.BeginLayout(); clay.EndLayout(0)
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.begin(); nendo.end(0)
 	old_password := os.get_env("WN_VAULT_PW", context.temp_allocator)
 	os.set_env("WN_VAULT_PW", "right")
 	defer {
@@ -167,8 +167,8 @@ vault_gate_manual_relock :: proc(t: ^gate_testing.T) {
 @(test)
 vault_gate_reset_disarms :: proc(t: ^gate_testing.T) {
 	context.allocator = gate_runtime.default_context().allocator
-	gate_sync.lock(&clay_test_mutex)
-	defer gate_sync.unlock(&clay_test_mutex)
+	gate_sync.lock(&nendo_test_mutex)
+	defer gate_sync.unlock(&nendo_test_mutex)
 	gate_sync.lock(&test_home_lock)
 	defer gate_sync.unlock(&test_home_lock)
 	home, err := os.make_directory_temp("", "wn-gate-disarm", context.temp_allocator)
@@ -184,15 +184,15 @@ vault_gate_reset_disarms :: proc(t: ^gate_testing.T) {
 		gate_err = ""
 		gate_reset = .Closed
 	}
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui: Ui_State
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	defer edit.destroy(&ui.ed)
-	clay.BeginLayout()
-	clay.EndLayout(0)
+	nendo.begin()
+	nendo.end(0)
 	rl.PushKey(.ENTER, false)
 	for rl.GetCharPressed() != 0 {}
 
@@ -224,8 +224,8 @@ vault_gate_reset_disarms :: proc(t: ^gate_testing.T) {
 @(test)
 vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 	context.allocator = gate_runtime.default_context().allocator
-	gate_sync.lock(&clay_test_mutex)
-	defer gate_sync.unlock(&clay_test_mutex)
+	gate_sync.lock(&nendo_test_mutex)
+	defer gate_sync.unlock(&nendo_test_mutex)
 	rl.InitWindow(1024, 700, "Vault confirmation")
 	defer rl.CloseWindow()
 	old_zoom := UI_ZOOM
@@ -250,39 +250,35 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 		rl.PushKey(.ENTER, false)
 		forced_press, forced_release = false, false
 	}
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	clay.SetMeasureTextFunction(
-		proc(
-			text: clay.StringSlice,
-			config: ^clay.TextElementConfig,
-			user: rawptr,
-		) -> clay.Dimensions {
-			return {f32(text.length) * f32(config.fontSize) / 2, f32(config.fontSize)}
+	nendo.set_measure_text(
+		proc(text: string, config: ^nendo.Text_Style, user: rawptr) -> nendo.Dimensions {
+			return {f32(len(text)) * f32(config.size) / 2, f32(config.size)}
 		},
 		nil,
 	)
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui: Ui_State
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	defer edit.destroy(&ui.ed)
 	rl.PushKey(.ENTER, false)
-	clay.SetPointerState({-100, -100}, false)
+	nendo.set_pointer({-100, -100}, .Up)
 
 	click :: proc(ui: ^Ui_State, id: string) {
 		gate_layout(ui)
-		box := clay.GetElementData(clay.ID(id)).boundingBox
-		point := clay.Vector2{box.x + box.width / 2, box.y + box.height / 2}
-		clay.SetPointerState(point, true)
+		box := nendo.element(nendo.id(id)).rect
+		point := nendo.Vector2{box.x + box.width / 2, box.y + box.height / 2}
+		nendo.set_pointer(point, .Down)
 		rl.PushMouseButton(.LEFT, true)
 		gate_layout(ui)
 		gate_input(ui)
-		clay.SetPointerState(point, false)
+		nendo.set_pointer(point, .Up)
 		rl.PushMouseButton(.LEFT, false)
 		gate_layout(ui)
 		gate_input(ui)
-		clay.SetPointerState({-100, -100}, false)
+		nendo.set_pointer({-100, -100}, .Up)
 	}
 	strong := "marmot on burrowed time thimble lantern"
 	append(&gate_pw, "Password123!")
@@ -360,7 +356,7 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 	gate_testing.expect(t, gate_reset == .Help)
 	gate_testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("GateReset")).found,
+		!nendo.element(nendo.id("GateReset")).found,
 		"help must not offer the delete control",
 	)
 	click(&ui, "GateRetry")

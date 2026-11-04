@@ -7,10 +7,10 @@ import "core:strings"
 import "core:sync"
 import "core:testing"
 import "core:text/edit"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
-// SDL and Clay own process globals, so run this in its own process.
+// SDL and nendo own process globals, so run this in its own process.
 @(test)
 relay_input_dispatch :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "relay_input_dispatch" {return}
@@ -24,10 +24,10 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 	locale := g_prefs != nil ? g_prefs.locale : "en"
 	set_locale("en")
 	defer set_locale(locale)
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 900})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		page                    = .Settings,
 		settings_section        = .Network,
@@ -64,18 +64,18 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 	append(&account_jobs, &busy)
 	defer {delete(account_jobs); account_jobs = previous_jobs}
 	client := (^marmot.Client)(&busy)
-	frame :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
-		clay.SetPointerState({-100, -100}, false)
+	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
+		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
 		banner_tick(ui)
 		return build_layout(ui, 0)
 	}
 	click :: proc(t: ^testing.T, ui: ^Ui_State, client: ^marmot.Client, id: string) -> bool {
-		data := clay.GetElementData(clay.ID(id))
+		data := nendo.element(nendo.id(id))
 		if !testing.expect(t, data.found, id) {return false}
-		b := data.boundingBox
-		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
-		if !testing.expect(t, clay.PointerOver(clay.ID(id)), id) {return false}
+		b := data.rect
+		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
+		if !testing.expect(t, nendo.pointer_over(nendo.id(id)), id) {return false}
 		forced_release = true
 		handle_settings(ui, client)
 		forced_release = false
@@ -104,10 +104,10 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 			testing.expect_value(t, ui.profile.nip65[0], "wss://outbox.example")
 			testing.expect_value(t, ui.profile.inbox[0], "wss://inbox.example")
 			visible := false
-			for command in commands.internalArray[:commands.length] {
-				if command.commandType != .Text {continue}
-				text := command.renderData.text.stringContents
-				visible ||= string(text.chars[:text.length]) == error
+			for command in commands {
+				if command.kind != .Text {continue}
+				text := command.text.text
+				visible ||= text == error
 			}
 			testing.expect(t, visible, "duplicate feedback is rendered on the next frame")
 		}
@@ -149,10 +149,10 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 			testing.expect_value(t, len(ui.profile.inbox), 1)
 			testing.expect_value(t, len(ui.prefs.fetch_relays), fetch_count)
 			visible := false
-			for command in commands.internalArray[:commands.length] {
-				if command.commandType != .Text {continue}
-				text := command.renderData.text.stringContents
-				visible ||= string(text.chars[:text.length]) == error
+			for command in commands {
+				if command.kind != .Text {continue}
+				text := command.text.text
+				visible ||= text == error
 			}
 			testing.expect(t, visible, "empty relay feedback is rendered on the next frame")
 		}
@@ -184,10 +184,10 @@ relay_input_dispatch :: proc(t: ^testing.T) {
 		testing.expect_value(t, ui.focus, Focus.Fetch)
 		testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
 		visible := false
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Text {continue}
-			text := command.renderData.text.stringContents
-			visible ||= string(text.chars[:text.length]) == ui.client_status
+		for command in commands {
+			if command.kind != .Text {continue}
+			text := command.text.text
+			visible ||= text == ui.client_status
 		}
 		testing.expect(t, visible, "invalid URL feedback is rendered on the next frame")
 		testing.expect(t, !os.exists(settings_path()), "rejected input is not saved")

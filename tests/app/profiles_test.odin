@@ -7,8 +7,8 @@ import "core:testing"
 
 @(test)
 profiles_loading_alias :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	defer profile_session_clear()
 	hex := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -35,8 +35,8 @@ profiles_loading_alias :: proc(t: ^testing.T) {
 profiles_update_live_views :: proc(t: ^testing.T) {
 	// The profile cache is process-global and outlives this test, so it must
 	// not grow in the temp or per-test allocator.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	defer profile_session_clear()
 	hex := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"

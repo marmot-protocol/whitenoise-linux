@@ -4,10 +4,10 @@ import "base:runtime"
 import "core:strings"
 import "core:testing"
 import "core:text/edit"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
-// SDL and Clay use process globals; the canonical suite runs this separately.
+// SDL and nendo use process globals; the canonical suite runs this separately.
 @(test)
 backup_password_dispatch :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "backup_password_dispatch" {return}
@@ -21,10 +21,10 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 	locale := g_prefs != nil ? g_prefs.locale : "en"
 	set_locale("en")
 	defer set_locale(locale)
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		page          = .Settings,
 		selected      = -1,
@@ -41,24 +41,24 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 	defer {g_ui, g_prefs = nil, nil; forced_release = false; backup_close(&ui)
 		delete(ui.backup_pw)}
 	settings_open(&ui, nil, .Storage, 0, level = .Sheet)
-	frame :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
-		clay.SetPointerState({-100, -100}, false)
+	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
+		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
 		return build_layout(ui, 0)
 	}
-	click :: proc(t: ^testing.T, id: clay.ElementId) -> bool {
-		data := clay.GetElementData(id)
+	click :: proc(t: ^testing.T, id: nendo.Id) -> bool {
+		data := nendo.element(id)
 		if !testing.expect(t, data.found, "button exists") {return false}
-		b := data.boundingBox
-		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
-		return testing.expect(t, clay.PointerOver(id), "button reachable")
+		b := data.rect
+		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
+		return testing.expect(t, nendo.pointer_over(id), "button reachable")
 	}
 	for mode in ([]Backup_Mode{.Create, .Import}) {
 		for keyboard in ([]bool{false, true}) {
 			ui.client_status, ui.banner, ui.banner_seen = "", "", ""
 			if mode == .Create {
 				for _ in 0 ..< 3 {frame(&ui)}
-				if !click(t, clay.ID("BackupBtn")) {return}
+				if !click(t, nendo.id("BackupBtn")) {return}
 				forced_release = true
 				handle_storage(&ui)
 				forced_release = false
@@ -73,7 +73,7 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 					for _ in 0 ..< 3 {frame(&ui)}
 					testing.expect(
 						t,
-						!clay.GetElementData(clay.ID("BackupPwError")).found,
+						!nendo.element(nendo.id("BackupPwError")).found,
 						"opening starts without stale validation",
 					)
 				}
@@ -84,7 +84,7 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 					frame(&ui)
 					testing.expect(
 						t,
-						!clay.GetElementData(clay.ID("BackupPwError")).found,
+						!nendo.element(nendo.id("BackupPwError")).found,
 						"typing clears required feedback",
 					)
 					rl.PushKey(.BACKSPACE, true)
@@ -99,7 +99,7 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 					rl.PushKey(.ENTER, false)
 					rl.WindowShouldClose()
 				} else {
-					if !click(t, clay.ID("BackupGo")) {return}
+					if !click(t, nendo.id("BackupGo")) {return}
 					forced_release = true
 					handle_backup(&ui)
 					forced_release = false
@@ -113,24 +113,21 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 				testing.expect_value(t, string(ui.backup_blob), mode == .Import ? "fixture" : "")
 				commands := frame(&ui)
 				visible := false
-				for command in commands.internalArray[:commands.length] {
-					if command.commandType != .Text {continue}
-					data := command.renderData.text.stringContents
-					if strings.contains(
-						string(data.chars[:data.length]),
-						expected,
-					) {visible = true}
+				for command in commands {
+					if command.kind != .Text {continue}
+					data := command.text.text
+					if strings.contains(data, expected) {visible = true}
 				}
 				testing.expect(t, visible, "feedback renders on next frame")
-				error_data := clay.GetElementData(clay.ID("BackupPwError"))
-				modal_data := clay.GetElementData(clay.ID("BackupModal"))
+				error_data := nendo.element(nendo.id("BackupPwError"))
+				modal_data := nendo.element(nendo.id("BackupModal"))
 				testing.expect(
 					t,
 					error_data.found,
 					"feedback belongs to the modal, above its backdrop",
 				)
 				if error_data.found && modal_data.found {
-					e, m := error_data.boundingBox, modal_data.boundingBox
+					e, m := error_data.rect, modal_data.rect
 					testing.expect(
 						t,
 						e.x >= m.x &&
@@ -153,13 +150,13 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 				testing.expect_value(t, ui.client_status, "")
 				wrong := tr("Couldn't open the backup. Double-check the password and try again.")
 				commands := frame(&ui)
-				m := clay.GetElementData(clay.ID("BackupModal")).boundingBox
+				m := nendo.element(nendo.id("BackupModal")).rect
 				inside := false
-				for command in commands.internalArray[:commands.length] {
-					if command.commandType != .Text {continue}
-					data := command.renderData.text.stringContents
-					if !strings.contains(string(data.chars[:data.length]), wrong) {continue}
-					e := command.boundingBox
+				for command in commands {
+					if command.kind != .Text {continue}
+					data := command.text.text
+					if !strings.contains(data, wrong) {continue}
+					e := command.rect
 					inside =
 						e.x >= m.x &&
 						e.y >= m.y &&
@@ -169,7 +166,7 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 				testing.expect(t, inside, "wrong password feedback renders inside the modal")
 			}
 			for _ in 0 ..< 3 {frame(&ui)}
-			if !click(t, clay.ID("BackupCancel")) {return}
+			if !click(t, nendo.id("BackupCancel")) {return}
 			forced_release = true
 			handle_backup(&ui)
 			forced_release = false

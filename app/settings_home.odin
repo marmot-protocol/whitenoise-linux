@@ -4,7 +4,7 @@ import "core:fmt"
 import "core:strings"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // A task names one control. Search finds it, and every link to it opens the
@@ -411,30 +411,26 @@ settings_on_menu :: proc(ui: ^Ui_State) -> bool {
 @(private)
 settings_nav_box :: proc(ui: ^Ui_State) {
 	section := ui.settings_section
-	if clay.UI(clay.ID("SettingsBoxMain"))(settings_pane_box()) {
+	if nendo.box(nendo.id("SettingsBoxMain"))(settings_pane_box()) {
 		// A phone already says Settings in its nav bar; the strip only costs height.
 		if !single_pane() {settings_pane_head(Settings_Art.Home, tr("SETTINGS"))}
-		if clay.UI(clay.ID("SettingsBoxMainBody"))(settings_pane_body()) {
-			if clay.UI(clay.ID("SettingsSearchBox"))(
+		if nendo.box(nendo.id("SettingsBoxMainBody"))(settings_pane_body()) {
+			if nendo.box(nendo.id("SettingsSearchBox"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(settings_tap_size(30)),
-					},
-					padding = {left = 8, right = 8},
-					childGap = 7,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(3),
+				width = nendo.grow(),
+				height = nendo.fixed(settings_tap_size(30)),
+				padding = {left = 8, right = 8},
+				gap = 7,
+				align = {y = .Center},
+				color = ROW_BG,
+				radius = rr(3),
 				border = {
 					color = ui.focus == .SettingsSearch ? ACCENT : FIELD_BORDER,
 					width = bw(),
 				},
 			},
 			) {
-				clay.Text(ICON_SEARCH, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_SEARCH, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 				field_text(
 					ui,
 					"SettingsSearchBox",
@@ -446,37 +442,30 @@ settings_nav_box :: proc(ui: ^Ui_State) {
 				)
 				// Clearing sits inside the box so typing never moves the page.
 				if len(ui.settings_search) > 0 {
-					if clay.UI(clay.ID("SettingsSearchClear"))(
+					if nendo.box(nendo.id("SettingsSearchClear"))(
 					{
-						layout = {
-							sizing = {
-								clay.SizingFixed(settings_tap_size(22)),
-								clay.SizingFixed(settings_tap_size(22)),
-							},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(3),
+						width = nendo.fixed(settings_tap_size(22)),
+						height = nendo.fixed(settings_tap_size(22)),
+						align = {x = .Center, y = .Center},
+						color = hovered() ? HOVER : {},
+						radius = rr(3),
 					},
 					) {
 						if hovered() {tooltip(tr("Clear search"))}
-						clay.Text(
-							ICON_CLOSE,
-							{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
-						)
+						nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 					}
 				}
 			}
 			if section != .Home && !settings_on_menu(ui) && settings_has_menu(section) {
 				settings_pane_link(
-					clay.ID("SettingsMenu"),
+					nendo.id("SettingsMenu"),
 					.Art,
 					SECTION_ART[section],
 					tr(SETTINGS_SECTIONS[section].label),
 				)
 			}
 			if section != .Home {
-				settings_pane_link(clay.ID("SettingsHome"), .Art, .Home, tr("All categories"))
+				settings_pane_link(nendo.id("SettingsHome"), .Art, .Home, tr("All categories"))
 			}
 		}
 	}
@@ -498,13 +487,13 @@ settings_related_boxes :: proc(ui: ^Ui_State) {
 	// developer mode, and only beside home and the developer settings.
 	if !ui.prefs.dev_mode {return}
 	if section != .Home && section != .Advanced && section != .Debug && section != .KP {return}
-	if clay.UI(clay.ID("SettingsDevBox"))(settings_pane_box()) {
+	if nendo.box(nendo.id("SettingsDevBox"))(settings_pane_box()) {
 		settings_pane_head(Settings_Art.Advanced, tr("DEVELOPER TOOLS"))
-		if clay.UI(clay.ID("SettingsDevBody"))(settings_pane_body()) {
+		if nendo.box(nendo.id("SettingsDevBody"))(settings_pane_body()) {
 			for dev in ([2]Settings_Section{.Debug, .KP}) {
 				if dev == section {continue}
 				settings_pane_link(
-					clay.ID("SettingsNav", u32(dev)),
+					nendo.id("SettingsNav", u32(dev)),
 					.Art,
 					SECTION_ART[dev],
 					tr(SETTINGS_SECTIONS[dev].label),
@@ -528,13 +517,13 @@ settings_link_box :: proc(
 		if settings_task_matches(ui, link, "") {shown += 1}
 	}
 	if shown == 0 {return}
-	if clay.UI(clay.ID(fmt.tprintf("%sBox", id)))(settings_pane_box()) {
+	if nendo.box(nendo.id(fmt.tprintf("%sBox", id)))(settings_pane_box()) {
 		settings_pane_head(nil, title)
-		if clay.UI(clay.ID_LOCAL("Body"))(settings_pane_body()) {
+		if nendo.box(nendo.id_local("Body"))(settings_pane_body()) {
 			for link, i in links {
 				if !settings_task_matches(ui, link, "") {continue}
 				settings_pane_link(
-					clay.ID(id, u32(i)),
+					nendo.id(id, u32(i)),
 					mark,
 					SECTION_ART[link.section],
 					tr(link.label),
@@ -546,39 +535,37 @@ settings_link_box :: proc(
 
 // One task-pane box: a light title strip over a tinted body.
 @(private)
-settings_pane_box :: proc() -> clay.ElementDeclaration {
+settings_pane_box :: proc() -> nendo.Box {
 	return {
-		layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom},
-		backgroundColor = CARD,
-		cornerRadius = {topLeft = 5 * R_SCALE, topRight = 5 * R_SCALE},
+		width = nendo.grow(),
+		direction = .Column,
+		color = CARD,
+		radius = {top_left = 5 * R_SCALE, top_right = 5 * R_SCALE},
 		border = {color = CARD_BORDER, width = bw()},
 	}
 }
 
 @(private)
-settings_pane_body :: proc() -> clay.ElementDeclaration {
+settings_pane_body :: proc() -> nendo.Box {
 	return {
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = {left = 10, right = 10, top = 10, bottom = 10},
-			childGap = 6,
-		},
+		width = nendo.grow(),
+		direction = .Column,
+		padding = {left = 10, right = 10, top = 10, bottom = 10},
+		gap = 6,
 	}
 }
 
 @(private)
 settings_pane_head :: proc(art: Maybe(Settings_Art), title: string) {
-	if clay.UI(clay.ID_LOCAL("Head"))(
+	if nendo.box(nendo.id_local("Head"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(30)},
-			padding = {left = 10, right = 10},
-			childGap = 8,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = ROW_BG,
-		cornerRadius = {topLeft = 5 * R_SCALE, topRight = 5 * R_SCALE},
+		width = nendo.grow(),
+		height = nendo.fixed(30),
+		padding = {left = 10, right = 10},
+		gap = 8,
+		align = {y = .Center},
+		color = ROW_BG,
+		radius = {top_left = 5 * R_SCALE, top_right = 5 * R_SCALE},
 		border = {color = DIVIDER, width = {bottom = 1}},
 	},
 	) {
@@ -587,56 +574,46 @@ settings_pane_head :: proc(art: Maybe(Settings_Art), title: string) {
 			settings_illustration(fmt.tprintf("SettingsPaneArt%d", int(which)), which, 22)
 		}
 		// Box captions follow the eyebrow rung of the casing ladder.
-		clay.Text(title, {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT, letterSpacing = 1})
+		nendo.text(title, {font = FONT_TITLE, size = 12, color = TEXT, spacing = 1})
 	}
 }
 
 @(private)
-settings_pane_link :: proc(
-	id: clay.ElementId,
-	mark: Settings_Mark,
-	art: Settings_Art,
-	label: string,
-) {
+settings_pane_link :: proc(id: nendo.Id, mark: Settings_Mark, art: Settings_Art, label: string) {
 	gallery :=
 		g_ui != nil &&
 		g_ui.settings_section == .Appearance &&
 		!settings_on_menu(g_ui) &&
 		g_ui.settings_tab == 0
-	if clay.UI(id)(
+	if nendo.box(id)(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFit({min = settings_tap_size(24)}),
-			},
-			padding = {top = 2, bottom = 2},
-			childGap = 8,
-			childAlignment = {y = .Center},
-		},
+		width = nendo.grow(),
+		height = nendo.fit(min = settings_tap_size(24)),
+		padding = {top = 2, bottom = 2},
+		gap = 8,
+		align = {y = .Center},
 	},
 	) {
 		switch mark {
 		case .Art:
 			settings_illustration(fmt.tprintf("SettingsLinkArt%d", id.id), art, 20)
 		case .Help:
-			if clay.UI(clay.ID_LOCAL("Help"))(
+			if nendo.box(nendo.id_local("Help"))(
 			{
-				layout = {
-					sizing = {clay.SizingFixed(20), clay.SizingFixed(20)},
-					childAlignment = {x = .Center, y = .Center},
-				},
+				width = nendo.fixed(20),
+				height = nendo.fixed(20),
+				align = {x = .Center, y = .Center},
 			},
 			) {
-				clay.Text(ICON_QUESTION, {fontId = FONT_ICON, fontSize = 15, textColor = ACCENT})
+				nendo.text(ICON_QUESTION, {font = FONT_ICON, size = 15, color = ACCENT})
 			}
 		}
-		clay.Text(
+		nendo.text(
 			label,
 			{
-				fontId = gallery ? FONT_GALLERY_TITLE : FONT_BODY,
-				fontSize = 12,
-				textColor = hovered() ? ACCENT : TEXT_DIM,
+				font = gallery ? FONT_GALLERY_TITLE : FONT_BODY,
+				size = 12,
+				color = hovered() ? ACCENT : TEXT_DIM,
 			},
 		)
 	}
@@ -645,8 +622,8 @@ settings_pane_link :: proc(
 // Faded headline over each block of choices, like "Pick a category".
 @(private)
 settings_pick_heading :: proc(text: string) {
-	if clay.UI(clay.ID_LOCAL(text))({layout = {padding = {top = 6, bottom = 14}}}) {
-		clay.Text(text, {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT_LO})
+	if nendo.box(nendo.id_local(text))({padding = {top = 6, bottom = 14}}) {
+		nendo.text(text, {font = FONT_TITLE, size = 28, color = TEXT_LO})
 	}
 }
 
@@ -657,53 +634,32 @@ settings_banner :: proc(ui: ^Ui_State) {
 	section := ui.settings_section
 	gallery := section == .Appearance && !settings_on_menu(ui) && ui.settings_tab == 0
 	phone := single_pane()
-	if clay.UI(clay.ID("SettingsHead"))(
+	if nendo.box(nendo.id("SettingsHead"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			padding = {
-				left = phone ? 0 : 24,
-				right = 24,
-				top = phone ? 3 : 8,
-				bottom = phone ? 3 : 8,
-			},
-			childGap = phone ? 6 : 12,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = ACCENT,
+		width = nendo.grow(),
+		padding = {left = phone ? 0 : 24, right = 24, top = phone ? 3 : 8, bottom = phone ? 3 : 8},
+		gap = phone ? 6 : 12,
+		align = {y = .Center},
+		color = ACCENT,
 	},
 	) {
 		// Phones go back from the banner itself instead of a separate bar
 		// above it; the shell's PhoneBack handler runs it.
-		if phone {if clay.UI(clay.ID("PhoneBack"))({layout = {sizing = {clay.SizingFixed(44), clay.SizingFixed(44)}, childAlignment = {x = .Center, y = .Center}}}) {
-				clay.Text("\uf053", {fontId = FONT_ICON, fontSize = 18, textColor = ON_ACCENT})
+		if phone {if nendo.box(nendo.id("PhoneBack"))({width = nendo.fixed(44), height = nendo.fixed(44), align = {x = .Center, y = .Center}}) {
+				nendo.text("\uf053", {font = FONT_ICON, size = 18, color = ON_ACCENT})
 				if hovered() {cursor_raise(.Pointer); tooltip(tr("Back"))}
 			}}
 		settings_illustration("SettingsHeadArt", SECTION_ART[section], 34)
-		if clay.UI(clay.ID("SettingsHeadCol"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 2,
-			},
-		},
+		if nendo.box(nendo.id("SettingsHeadCol"))(
+		{width = nendo.grow(), direction = .Column, gap = 2},
 		) {
-			clay.Text(
+			nendo.text(
 				tr(SETTINGS_SECTIONS[section].label),
-				{
-					fontId = gallery ? FONT_GALLERY_BOLD : FONT_TITLE,
-					fontSize = 16,
-					textColor = ON_ACCENT,
-				},
+				{font = gallery ? FONT_GALLERY_BOLD : FONT_TITLE, size = 16, color = ON_ACCENT},
 			)
-			clay.Text(
+			nendo.text(
 				tr(settings_description(section)),
-				{
-					fontId = gallery ? FONT_GALLERY_TITLE : FONT_BODY,
-					fontSize = 11,
-					textColor = ON_ACCENT,
-				},
+				{font = gallery ? FONT_GALLERY_TITLE : FONT_BODY, size = 11, color = ON_ACCENT},
 			)
 		}
 	}
@@ -715,51 +671,36 @@ settings_banner :: proc(ui: ^Ui_State) {
 settings_category_menu :: proc(ui: ^Ui_State) {
 	section := ui.settings_section
 	settings_pick_heading(tr("Pick a task..."))
-	if clay.UI(clay.ID("SettingsTaskList"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = {left = 8, bottom = 24},
-			childGap = 6,
-		},
-	},
+	if nendo.box(nendo.id("SettingsTaskList"))(
+	{width = nendo.grow(), direction = .Column, padding = {left = 8, bottom = 24}, gap = 6},
 	) {
 		for task, i in SETTINGS_TASKS {
 			if task.section != section ||
 			   !task.featured ||
 			   !settings_task_matches(ui, task, "") {continue}
-			if clay.UI(clay.ID("SettingsTask", u32(i)))(
+			if nendo.box(nendo.id("SettingsTask", u32(i)))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFit({min = settings_tap_size(26)}),
-					},
-					padding = {top = 4, bottom = 4},
-					childGap = 10,
-					childAlignment = {y = .Center},
-				},
+				width = nendo.grow(),
+				height = nendo.fit(min = settings_tap_size(26)),
+				padding = {top = 4, bottom = 4},
+				gap = 10,
+				align = {y = .Center},
 			},
 			) {
-				if clay.UI(clay.ID_LOCAL("Arrow"))(
+				if nendo.box(nendo.id_local("Arrow"))(
 				{
-					layout = {
-						sizing = {clay.SizingFixed(18), clay.SizingFixed(18)},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = ACCENT,
-					cornerRadius = rr(3),
+					width = nendo.fixed(18),
+					height = nendo.fixed(18),
+					align = {x = .Center, y = .Center},
+					color = ACCENT,
+					radius = rr(3),
 				},
 				) {
-					clay.Text(
-						ICON_RIGHT,
-						{fontId = FONT_ICON, fontSize = 11, textColor = ON_ACCENT},
-					)
+					nendo.text(ICON_RIGHT, {font = FONT_ICON, size = 11, color = ON_ACCENT})
 				}
-				clay.Text(
+				nendo.text(
 					tr(task.label),
-					{fontId = FONT_TITLE, fontSize = 14, textColor = hovered() ? ACCENT : TEXT},
+					{font = FONT_TITLE, size = 14, color = hovered() ? ACCENT : TEXT},
 				)
 			}
 		}
@@ -771,30 +712,22 @@ settings_category_menu :: proc(ui: ^Ui_State) {
 	if len(pages) == 0 {pages = single[:]}
 	columns := settings_body_width(ui) >= 480 ? 2 : 1
 	rows := (len(pages) + columns - 1) / columns
-	if clay.UI(clay.ID("SettingsPageIcons"))(
-	{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 8}, childGap = 24}},
+	if nendo.box(nendo.id("SettingsPageIcons"))(
+	{width = nendo.grow(), padding = {left = 8}, gap = 24},
 	) {
 		for col in 0 ..< columns {
-			if clay.UI(clay.ID("SettingsPageCol", u32(col)))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 10,
-				},
-			},
+			if nendo.box(nendo.id("SettingsPageCol", u32(col)))(
+			{width = nendo.grow(), direction = .Column, gap = 10},
 			) {
 				for row in 0 ..< rows {
 					at := row * columns + col
 					if at >= len(pages) {break}
-					if clay.UI(clay.ID("SettingsPageIcon", u32(at)))(
+					if nendo.box(nendo.id("SettingsPageIcon", u32(at)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							padding = {top = 4, bottom = 4},
-							childGap = 12,
-							childAlignment = {y = .Center},
-						},
+						width = nendo.grow(),
+						padding = {top = 4, bottom = 4},
+						gap = 12,
+						align = {y = .Center},
 					},
 					) {
 						settings_illustration(
@@ -802,13 +735,9 @@ settings_category_menu :: proc(ui: ^Ui_State) {
 							pages[at].art,
 							40,
 						)
-						clay.Text(
+						nendo.text(
 							tr(pages[at].label),
-							{
-								fontId = FONT_TITLE,
-								fontSize = 14,
-								textColor = hovered() ? ACCENT : TEXT,
-							},
+							{font = FONT_TITLE, size = 14, color = hovered() ? ACCENT : TEXT},
 						)
 					}
 				}
@@ -829,15 +758,13 @@ settings_home :: proc(ui: ^Ui_State) {
 		for task, i in SETTINGS_TASKS {
 			if !settings_task_matches(ui, task, query) {continue}
 			count += 1
-			if clay.UI(clay.ID("SettingsTask", u32(i)))(
+			if nendo.box(nendo.id("SettingsTask", u32(i)))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					padding = {top = 12, bottom = 12, left = 10, right = 10},
-					childGap = 12,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
+				width = nendo.grow(),
+				padding = {top = 12, bottom = 12, left = 10, right = 10},
+				gap = 12,
+				align = {y = .Center},
+				color = hovered() ? HOVER : {},
 				border = {color = DIVIDER, width = {bottom = 1}},
 			},
 			) {
@@ -846,35 +773,23 @@ settings_home :: proc(ui: ^Ui_State) {
 					SECTION_ART[task.section],
 					36,
 				)
-				if clay.UI(clay.ID("SettingsResultText", u32(i)))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						layoutDirection = .TopToBottom,
-						childGap = 4,
-					},
-				},
+				if nendo.box(nendo.id("SettingsResultText", u32(i)))(
+				{width = nendo.grow(), direction = .Column, gap = 4},
 				) {
-					clay.Text(
-						tr(task.label),
-						{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
-					)
-					clay.Text(
+					nendo.text(tr(task.label), {font = FONT_TITLE, size = 14, color = TEXT})
+					nendo.text(
 						tr(SETTINGS_SECTIONS[task.section].label),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						{font = FONT_BODY, size = 12, color = TEXT_DIM},
 					)
 				}
-				clay.Text("›", {fontId = FONT_TITLE, fontSize = 18, textColor = ACCENT})
+				nendo.text("›", {font = FONT_TITLE, size = 18, color = ACCENT})
 			}
 		}
 		if count == 0 {
-			clay.Text(
-				tr("No matching settings."),
-				{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT},
-			)
-			clay.Text(
+			nendo.text(tr("No matching settings."), {font = FONT_TITLE, size = 16, color = TEXT})
+			nendo.text(
 				tr("Try a different search."),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
 			)
 		}
 		return
@@ -896,31 +811,23 @@ settings_home :: proc(ui: ^Ui_State) {
 	}
 	columns := settings_main_w(ui) >= 600 ? 2 : 1
 	rows := (len(categories) + columns - 1) / columns
-	if clay.UI(clay.ID("SettingsCategories"))(
-	{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 8}, childGap = 24}},
+	if nendo.box(nendo.id("SettingsCategories"))(
+	{width = nendo.grow(), padding = {left = 8}, gap = 24},
 	) {
 		for col in 0 ..< columns {
-			if clay.UI(clay.ID("SettingsCategoryCol", u32(col)))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 10,
-				},
-			},
+			if nendo.box(nendo.id("SettingsCategoryCol", u32(col)))(
+			{width = nendo.grow(), direction = .Column, gap = 10},
 			) {
 				for row in 0 ..< rows {
 					at := row * columns + col
 					if at >= len(categories) {break}
 					section := categories[at]
-					if clay.UI(clay.ID("SettingsNav", u32(section)))(
+					if nendo.box(nendo.id("SettingsNav", u32(section)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							padding = {top = 6, bottom = 6},
-							childGap = 14,
-							childAlignment = {y = .Center},
-						},
+						width = nendo.grow(),
+						padding = {top = 6, bottom = 6},
+						gap = 14,
+						align = {y = .Center},
 					},
 					) {
 						if hovered() {tooltip(tr(SETTINGS_SUMMARIES[section]))}
@@ -929,13 +836,9 @@ settings_home :: proc(ui: ^Ui_State) {
 							SECTION_ART[section],
 							48,
 						)
-						clay.Text(
+						nendo.text(
 							tr(SETTINGS_SECTIONS[section].label),
-							{
-								fontId = FONT_TITLE,
-								fontSize = 15,
-								textColor = hovered() ? ACCENT : TEXT,
-							},
+							{font = FONT_TITLE, size = 15, color = hovered() ? ACCENT : TEXT},
 						)
 					}
 				}
@@ -1121,7 +1024,7 @@ settings_handle_navigation :: proc(ui: ^Ui_State, client: ^marmot.Client) -> boo
 		}
 	}
 	if !mouse_released() {return false}
-	if clicked("SettingsHome") || clay.PointerOver(clay.ID("Nav", u32(Page.Settings))) {
+	if clicked("SettingsHome") || nendo.pointer_over(nendo.id("Nav", u32(Page.Settings))) {
 		settings_open(ui, client, .Home)
 		return true
 	}
@@ -1136,33 +1039,33 @@ settings_handle_navigation :: proc(ui: ^Ui_State, client: ^marmot.Client) -> boo
 		return true
 	}
 	for task, i in SETTINGS_TASKS {
-		if clay.PointerOver(clay.ID("SettingsTask", u32(i))) {
+		if nendo.pointer_over(nendo.id("SettingsTask", u32(i))) {
 			settings_open(ui, client, task.section, anchor = task.anchor)
 			return true
 		}
 	}
 	for link, i in SETTINGS_SEE_ALSO[section] {
-		if clay.PointerOver(clay.ID("SettingsSeeAlso", u32(i))) {
+		if nendo.pointer_over(nendo.id("SettingsSeeAlso", u32(i))) {
 			settings_open(ui, client, link.section, anchor = link.anchor)
 			return true
 		}
 	}
 	for link, i in SETTINGS_TROUBLESHOOTERS[section] {
-		if clay.PointerOver(clay.ID("SettingsTrouble", u32(i))) {
+		if nendo.pointer_over(nendo.id("SettingsTrouble", u32(i))) {
 			settings_open(ui, client, link.section, anchor = link.anchor)
 			return true
 		}
 	}
 	if settings_on_menu(ui) {
 		for i in 0 ..< max(1, len(settings_tabs(section))) {
-			if clay.PointerOver(clay.ID("SettingsPageIcon", u32(i))) {
+			if nendo.pointer_over(nendo.id("SettingsPageIcon", u32(i))) {
 				settings_open(ui, client, section, tab = i, level = .Sheet)
 				return true
 			}
 		}
 	}
 	for target in Settings_Section {
-		if clay.PointerOver(clay.ID("SettingsNav", u32(target))) {
+		if nendo.pointer_over(nendo.id("SettingsNav", u32(target))) {
 			settings_open(ui, client, target)
 			return true
 		}
@@ -1175,33 +1078,33 @@ settings_handle_navigation :: proc(ui: ^Ui_State, client: ^marmot.Client) -> boo
 @(private)
 settings_resolve_scroll :: proc(ui: ^Ui_State) -> bool {
 	if ui.page != .Settings || !ui.settings_scroll_pending {return false}
-	container := clay.ID("SettingsPage")
+	container := nendo.id("SettingsPage")
 	if ui.settings_section == .Appearance && appearance_layout(ui).columns > 1 {
-		container = appearance_scroll(ui, clay.ID(ui.settings_anchor))
+		container = appearance_scroll(ui, nendo.id(ui.settings_anchor))
 		for id in ([4]string{"SettingsPage", "AppearanceControls", "AppearanceThemes", "AppearancePreview"}) {
-			if clay.ID(id).id == container.id {continue}
-			if scroll := clay.GetScrollContainerData(clay.ID(id)); scroll.found {
-				scroll.scrollPosition^ = {}
+			if nendo.id(id).id == container.id {continue}
+			if scroll := nendo.scroll(nendo.id(id)); scroll.found {
+				scroll.position^ = {}
 			}
 		}
 	}
-	data := clay.GetScrollContainerData(container)
-	page := clay.GetElementData(container)
+	data := nendo.scroll(container)
+	page := nendo.element(container)
 	if !data.found || !page.found {return false}
 	target: f32
 	if ui.settings_anchor != "" {
-		anchor := clay.GetElementData(clay.ID(ui.settings_anchor))
+		anchor := nendo.element(nendo.id(ui.settings_anchor))
 		if anchor.found {
-			inset := min(f32(40), max(0, page.boundingBox.height - anchor.boundingBox.height))
-			target = data.scrollPosition.y - (anchor.boundingBox.y - page.boundingBox.y - inset)
+			inset := min(f32(40), max(0, page.rect.height - anchor.rect.height))
+			target = data.position.y - (anchor.rect.y - page.rect.y - inset)
 		}
 	}
-	overflow := max(0, data.contentDimensions.height - data.scrollContainerDimensions.height)
-	data.scrollPosition.y = clamp(target, -overflow, 0)
+	overflow := max(0, data.content.height - data.viewport.height)
+	data.position.y = clamp(target, -overflow, 0)
 	if ui.settings_anchor == "TranslationLanguageList" && ui.translation.language_menu != 0 {
 		scroll_into_view(
-			clay.ID("TranslationLanguageList"),
-			clay.ID(fmt.tprintf("TranslationLanguage%d", ui.translation.language_choice)),
+			nendo.id("TranslationLanguageList"),
+			nendo.id(fmt.tprintf("TranslationLanguage%d", ui.translation.language_choice)),
 		)
 	}
 	ui.settings_scroll_pending = false
@@ -1217,27 +1120,23 @@ settings_flash_until: f64
 @(private)
 settings_link_flash :: proc() {
 	if settings_flash_id == "" || rl.GetTime() >= settings_flash_until {return}
-	anchor := clay.GetElementData(clay.ID(settings_flash_id))
+	anchor := nendo.element(nendo.id(settings_flash_id))
 	if !anchor.found {return}
 	anim_moving += 1
-	if clay.UI(clay.ID("SettingsLinkFlash"))(
+	if nendo.box(nendo.id("SettingsLinkFlash"))(
 	{
-		layout = {
-			sizing = {
-				clay.SizingFixed(anchor.boundingBox.width),
-				clay.SizingFixed(anchor.boundingBox.height),
-			},
-		},
+		width = nendo.fixed(anchor.rect.width),
+		height = nendo.fixed(anchor.rect.height),
 		floating = {
-			attachTo = .ElementWithId,
-			parentId = clay.ID(settings_flash_id).id,
-			clipTo = .AttachedParent,
-			pointerCaptureMode = .Passthrough,
-			zIndex = 4,
+			attach_to = .Element,
+			parent = nendo.id(settings_flash_id).id,
+			clip_to = .Parent,
+			pointer = .Passthrough,
+			z = 4,
 		},
-		backgroundColor = fade(ACCENT, 0.12),
+		color = fade(ACCENT, 0.12),
 		border = {color = ACCENT, width = bw()},
-		cornerRadius = rr(4),
+		radius = rr(4),
 	},
 	) {}
 }

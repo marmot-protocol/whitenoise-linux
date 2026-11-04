@@ -5,7 +5,7 @@ import "base:runtime"
 import "core:os"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -60,34 +60,34 @@ recent_folder_filters :: proc(t: ^testing.T) {
 	ui.prefs.folder_rules["Work"] = rules
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; forced_release = false}
-	frame :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
-		clay.SetPointerState({-100, -100}, false)
+	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
+		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
 		return build_layout(ui, 0)
 	}
-	click :: proc(t: ^testing.T, ui: ^Ui_State, id: clay.ElementId) {
-		data := clay.GetElementData(id)
+	click :: proc(t: ^testing.T, ui: ^Ui_State, id: nendo.Id) {
+		data := nendo.element(id)
 		if !testing.expect(t, data.found) {return}
-		b := data.boundingBox
-		filters := clay.GetElementData(clay.ID("ChatFilters")).boundingBox
-		scroll := clay.GetScrollContainerData(clay.ID("ChatFilters"))
+		b := data.rect
+		filters := nendo.element(nendo.id("ChatFilters")).rect
+		scroll := nendo.scroll(nendo.id("ChatFilters"))
 		if scroll.found {
-			if b.x < filters.x {scroll.scrollPosition.x += filters.x - b.x}
+			if b.x < filters.x {scroll.position.x += filters.x - b.x}
 			if b.x + b.width > filters.x + filters.width {
-				scroll.scrollPosition.x -= b.x + b.width - filters.x - filters.width
+				scroll.position.x -= b.x + b.width - filters.x - filters.width
 			}
 			frame(ui)
-			b = clay.GetElementData(id).boundingBox
+			b = nendo.element(id).rect
 		}
-		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
-		if !testing.expect(t, clay.PointerOver(id)) {return}
+		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
+		if !testing.expect(t, nendo.pointer_over(id)) {return}
 		forced_release = true
 		client: marmot.Client // This local filter action never calls the engine.
 		handle_pages(ui, &client)
 		forced_release = false
 	}
 	for _ in 0 ..< 3 {frame(&ui)}
-	click(t, &ui, clay.ID("FolderPill", 0))
+	click(t, &ui, nendo.id("FolderPill", 0))
 	commands := frame(&ui)
 	testing.expect_value(t, ui.chat_folder, "Work")
 	testing.expect_value(t, ui.chat_filter, Chat_Filter.Chats)
@@ -95,10 +95,10 @@ recent_folder_filters :: proc(t: ^testing.T) {
 		testing.expect_value(t, ui.rail_rows[0].key, "new")
 		testing.expect_value(t, ui.rail_rows[1].key, "old")
 	}
-	testing.expect(t, !clay.GetElementData(clay.ID("FolderHeader", 0)).found)
+	testing.expect(t, !nendo.element(nendo.id("FolderHeader", 0)).found)
 	if path := os.get_env("WN_FOLDER_CAPTURE", context.temp_allocator); path != "" {
 		rl.BeginDrawing()
-		draw_frame(&commands)
+		draw_frame(commands)
 		rl.TakeScreenshot(strings.clone_to_cstring(path, context.temp_allocator))
 		rl.EndDrawing()
 	}
@@ -108,28 +108,28 @@ recent_folder_filters :: proc(t: ^testing.T) {
 		testing.expect_value(t, ui.rail_rows[0].key, "old")
 	}
 	clear(&ui.sidebar_filter)
-	click(t, &ui, clay.ID("FolderPill", 1))
+	click(t, &ui, nendo.id("FolderPill", 1))
 	commands = frame(&ui)
 	testing.expect_value(t, len(ui.rail_rows), 0)
 	found_empty := false
-	for command in commands.internalArray[:commands.length] {
-		if command.commandType != .Text {continue}
-		text := command.renderData.text.stringContents
-		if string(text.chars[:text.length]) == "No matching chats" {found_empty = true}
+	for command in commands {
+		if command.kind != .Text {continue}
+		text := command.text.text
+		if text == "No matching chats" {found_empty = true}
 	}
 	testing.expect(t, found_empty, "an empty folder does not claim the entire inbox is empty")
-	click(t, &ui, clay.ID("AllPill"))
+	click(t, &ui, nendo.id("AllPill"))
 	frame(&ui)
 	testing.expect_value(t, ui.chat_folder, "")
 	testing.expect_value(t, len(ui.rail_rows), 3)
-	click(t, &ui, clay.ID("FolderPill", 0))
+	click(t, &ui, nendo.id("FolderPill", 0))
 	frame(&ui)
-	filters := clay.GetScrollContainerData(clay.ID("ChatFilters"))
+	filters := nendo.scroll(nendo.id("ChatFilters"))
 	if testing.expect(t, filters.found) {
-		filters.scrollPosition.x = 0
+		filters.position.x = 0
 		frame(&ui)
-		row := clay.GetElementData(clay.ID("ChatFilters")).boundingBox
-		clay.SetPointerState({row.x + row.width / 2, row.y + row.height / 2}, false)
+		row := nendo.element(nendo.id("ChatFilters")).rect
+		nendo.set_pointer({row.x + row.width / 2, row.y + row.height / 2}, .Up)
 		plain := rl.Vector2{0, -3}
 		chat_filter_wheel(&ui, &plain)
 		testing.expect_value(t, plain, rl.Vector2{0, -3})
@@ -138,19 +138,19 @@ recent_folder_filters :: proc(t: ^testing.T) {
 		chat_filter_wheel(&ui, &sideways)
 		rl.PushKey(.LEFT_SHIFT, false)
 		testing.expect_value(t, sideways, rl.Vector2{-3, 0})
-		clay.UpdateScrollContainers(false, transmute(clay.Vector2)sideways, 1.0 / 60)
+		nendo.update_scroll(.Off, transmute(nendo.Vector2)sideways, 1.0 / 60)
 		frame(&ui)
-		testing.expect(t, filters.scrollPosition.x < 0, "Shift+wheel scrolls the filter row")
+		testing.expect(t, filters.position.x < 0, "Shift+wheel scrolls the filter row")
 	}
-	data := clay.GetElementData(clay.ID("ChatViewBtn"))
-	b := data.boundingBox
-	clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
+	data := nendo.element(nendo.id("ChatViewBtn"))
+	b := data.rect
+	nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
 	forced_release = true
 	handle_folder_navigation(&ui)
 	forced_release = false
 	frame(&ui)
 	testing.expect_value(t, ui.chat_folder, "")
 	testing.expect(t, !ui.prefs.recent_chats)
-	testing.expect(t, !clay.GetElementData(clay.ID("FolderPill", 0)).found)
-	testing.expect(t, clay.GetElementData(clay.ID("FolderHeader", 0)).found)
+	testing.expect(t, !nendo.element(nendo.id("FolderPill", 0)).found)
+	testing.expect(t, nendo.element(nendo.id("FolderHeader", 0)).found)
 }

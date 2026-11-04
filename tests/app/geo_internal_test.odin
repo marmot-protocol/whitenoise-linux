@@ -5,8 +5,8 @@ import "core:testing"
 
 @(test)
 geo_picker_transitions :: proc(t: ^testing.T) {
-	geo_test_sync.lock(&clay_test_mutex)
-	defer geo_test_sync.unlock(&clay_test_mutex)
+	geo_test_sync.lock(&nendo_test_mutex)
+	defer geo_test_sync.unlock(&nendo_test_mutex)
 	old_views := geo_views
 	geo_views = nil
 	defer {

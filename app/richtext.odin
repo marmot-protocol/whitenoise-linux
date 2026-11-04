@@ -7,7 +7,7 @@ import "core:time"
 import "core:unicode"
 import "core:unicode/utf8"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -288,33 +288,31 @@ image_link :: proc(id: u32, url: string, size: u16, width: f32) {
 	if tex := nev_img(url); tex != nil && tex.width > 0 && tex.height > 0 {
 		inner_w = min(inner_w, 200 * f32(tex.width) / f32(tex.height))
 	}
-	if clay.UI(clay.ID("ImageLink", id))(
+	if nendo.box(nendo.id("ImageLink", id))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			childGap = 8,
-			padding = clay.PaddingAll(10),
-			sizing = {width = clay.SizingFixed(inner_w + 20)},
-		},
-		backgroundColor = PLATE,
-		cornerRadius = rr(10),
+		direction = .Column,
+		gap = 8,
+		padding = nendo.pad(10),
+		width = nendo.fixed(inner_w + 20),
+		color = PLATE,
+		radius = rr(10),
 		border = {color = CARD_BORDER, width = bw()},
 	},
 	) {
 		// The picture opens the lightbox; the URL goes through the link guard.
 		nev_card_image(id, url, inner_w)
-		if clay.PointerOver(clay.ID("NevImage", id)) {
+		if nendo.pointer_over(nendo.id("NevImage", id)) {
 			img_link_hover = url
 			img_link_cells = nil
 			cursor_raise(.Pointer)
 		}
-		if clay.UI(clay.ID("ImageLinkUrl", id))(
+		if nendo.box(nendo.id("ImageLinkUrl", id))(
 		{border = {color = ACCENT, width = {bottom = 1}}},
 		) {
 			// Plain, single line: body_text would turn an npub inside the host into a mention chip.
-			clay.Text(
+			nendo.text(
 				text_ellipsis(url, inner_w, FONT_BODY, size),
-				{fontId = FONT_BODY, fontSize = size, textColor = ACCENT, wrapMode = .None},
+				{font = FONT_BODY, size = size, color = ACCENT, wrap = .None},
 			)
 			if hovered() {link_hover = url}
 		}
@@ -340,19 +338,19 @@ search_text_match :: proc(text, query: string, at: int) -> (start, end: int) {
 // Pre-wrapped message spans can split around a match without changing
 // their line breaks. The accent fill also works in monochrome themes.
 @(private)
-search_text :: proc(text, fonts: string, size: u16, color: clay.Color) -> bool {
+search_text :: proc(text, fonts: string, size: u16, color: nendo.Color) -> bool {
 	if g_ui == nil || !g_ui.search_open || timeline_job == nil {return false}
 	query := string(timeline_job.search)
 	if query == "" {return false}
 	start, end := search_text_match(text, query, 0)
 	if start < 0 {return false}
-	if clay.UI()({layout = {childAlignment = {y = .Center}}}) {
+	if nendo.box()({align = {y = .Center}}) {
 		at := 0
 		for start >= 0 {
 			if start > at {
 				styled_text(text[at:start], text_fonts(fonts, at, start), size, color)
 			}
-			if clay.UI()({backgroundColor = ACCENT}) {
+			if nendo.box()({color = ACCENT}) {
 				styled_text(text[start:end], text_fonts(fonts, start, end), size, ink_on(ACCENT))
 			}
 			at = end
@@ -373,7 +371,7 @@ render_segs :: proc(
 	id: u32,
 	segs: []Inline_Seg,
 	font_size: u16,
-	color: clay.Color,
+	color: nendo.Color,
 	tile_px: f32,
 	chips := false,
 ) {
@@ -387,12 +385,8 @@ render_segs :: proc(
 			if _, geo := geo_ref(segs[k + 1].url); geo {continue}
 		}
 		if seg.tex != nil {
-			if clay.UI(clay.ID("SegEmoji", id * 128 + u32(k)))(
-			{
-				layout = {sizing = {width = clay.SizingFixed(tile_px)}},
-				aspectRatio = {1},
-				image = {imageData = seg.tex},
-			},
+			if nendo.box(nendo.id("SegEmoji", id * 128 + u32(k)))(
+			{width = nendo.fixed(tile_px), aspect = 1, image = seg.tex},
 			) {}
 		} else if card && nev_image_url(seg.url) {
 			image_link(id * 128 + u32(k), seg.url, font_size, max(1, att_w() - 24))
@@ -420,9 +414,9 @@ render_segs :: proc(
 				seg.hints,
 			)
 		} else if chips && seg.bad_ref {
-			clay.Text(
+			nendo.text(
 				tr("Invalid Nostr reference"),
-				{fontId = FONT_BODY, fontSize = font_size, textColor = DANGER, wrapMode = .None},
+				{font = FONT_BODY, size = font_size, color = DANGER, wrap = .None},
 			)
 		} else if chips && len(seg.url) > 0 {
 			// Links only in bodies: composer lines keep the raw text so
@@ -430,11 +424,11 @@ render_segs :: proc(
 			// A bare room link on an unknown host may be Jitsi; once the
 			// host answers, the next frame draws it as a call card.
 			if card {jitsi_probe(seg.url)}
-			if clay.UI(clay.ID("SegLink", id * 128 + u32(k)))(
+			if nendo.box(nendo.id("SegLink", id * 128 + u32(k)))(
 			{
-				layout = {padding = {left = 2, right = 2}},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(4),
+				padding = {left = 2, right = 2},
+				color = hovered() ? HOVER : {},
+				radius = rr(4),
 				border = {color = ACCENT, width = {bottom = 1}},
 			},
 			) {
@@ -447,7 +441,7 @@ render_segs :: proc(
 				}
 			}
 		} else if seg.stamp != nil {
-			if clay.UI(clay.ID("SegTimestamp", id * 128 + u32(k)))({}) {
+			if nendo.box(nendo.id("SegTimestamp", id * 128 + u32(k)))({}) {
 				if hovered() {timestamp_tooltip(seg.stamp)}
 				styled_text(seg.text, seg.fonts, font_size, color)
 			}
@@ -458,16 +452,14 @@ render_segs :: proc(
 			// stands apart from both the fill and the page. Click opens
 			// the profile in bodies; in the composer it places the caret.
 			me := g_ui != nil && seg.hex == g_ui.account_ref
-			if clay.UI(clay.ID("SegMention", id * 128 + u32(k)))(
+			if nendo.box(nendo.id("SegMention", id * 128 + u32(k)))(
 			{
-				layout = {
-					padding = {left = MENTION_PAD_X, right = MENTION_PAD_X, top = 1, bottom = 1},
-					childGap = 2,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ACCENT,
-				cornerRadius = rr(7),
-				border = me ? clay.BorderElementConfig{color = TEXT, width = bw()} : {},
+				padding = {left = MENTION_PAD_X, right = MENTION_PAD_X, top = 1, bottom = 1},
+				gap = 2,
+				align = {y = .Center},
+				color = ACCENT,
+				radius = rr(7),
+				border = me ? nendo.Border{color = TEXT, width = bw()} : {},
 			},
 			) {
 				over := chips && hovered()
@@ -483,13 +475,13 @@ render_segs :: proc(
 					url_pic(profile_info(g_client, seg.hex).pic_url),
 					over ? .Open : .Closed,
 				)
-				clay.Text(
+				nendo.text(
 					fmt.tprintf("@%s", mention_label(seg.hex)),
 					{
-						fontId = FONT_TITLE,
-						fontSize = font_size,
-						textColor = ink_on(ACCENT),
-						userData = rawptr(
+						font = FONT_TITLE,
+						size = font_size,
+						color = ink_on(ACCENT),
+						user_data = rawptr(
 							uintptr(
 								len(seg.fonts) > 0 ? seg.fonts[0] & (TEXT_ADDED | TEXT_REMOVED) : 0,
 							),
@@ -509,17 +501,13 @@ render_segs :: proc(
 			tint := color
 			tint.a *= alpha_mul
 			cell := rl.MeasureTextLine(FONT_BODY, size, seg.text, 0).x
-			if clay.UI(clay.ID("SegFx", id * 128 + u32(k)))(
+			if nendo.box(nendo.id("SegFx", id * 128 + u32(k)))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(cell + 2 * FX_AMP),
-						height = clay.SizingFixed(f32(size) + 2 + 2 * FX_AMP),
-					},
-					padding = {
-						left = u16(FX_AMP + clamp(dx, -FX_AMP, FX_AMP)),
-						top = u16(FX_AMP + clamp(dy, -FX_AMP, FX_AMP)),
-					},
+				width = nendo.fixed(cell + 2 * FX_AMP),
+				height = nendo.fixed(f32(size) + 2 + 2 * FX_AMP),
+				padding = {
+					left = u16(FX_AMP + clamp(dx, -FX_AMP, FX_AMP)),
+					top = u16(FX_AMP + clamp(dy, -FX_AMP, FX_AMP)),
 				},
 			},
 			) {
@@ -532,13 +520,13 @@ render_segs :: proc(
 			if len(seg.fonts) > 0 {
 				styled_text(seg.text, seg.fonts, font_size, color)
 			} else {
-				clay.Text(
+				nendo.text(
 					seg.text,
 					{
-						fontId = FONT_BODY,
-						fontSize = font_size,
-						textColor = color,
-						wrapMode = chips ? .Words : .None,
+						font = FONT_BODY,
+						size = font_size,
+						color = color,
+						wrap = chips ? .Words : .None,
 					},
 				)
 			}
@@ -548,13 +536,12 @@ render_segs :: proc(
 
 // Wrap to the resolved text viewport, including the current pane and zoom.
 compose_wrap_w :: proc() -> f32 {
-	box := clay.GetElementData(clay.ID("ComposeClip"))
+	box := nendo.element(nendo.id("ComposeClip"))
 	width := g_ui != nil ? page_w(g_ui) - 64 - CARET_W : 480
 	if g_ui != nil && g_ui.prefs.centered_chat {
 		width = min(width, CHAT_WIDTH_MAX - 64 - CARET_W)
 	}
-	if box.found &&
-	   box.boundingBox.width > CARET_W {width = min(width, box.boundingBox.width - CARET_W)}
+	if box.found && box.rect.width > CARET_W {width = min(width, box.rect.width - CARET_W)}
 	return max(width, 1)
 }
 
@@ -621,8 +608,8 @@ compose_lines :: proc(text: string) -> [][2]int {
 // selection [lo, hi) (middle span highlighted), the caret at the
 // selection head, the IME preedit riding at the caret.
 compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int) {
-	if clay.UI(clay.ID("ComposeLine", i))(
-	{layout = {sizing = {height = clay.SizingFit({min = 20})}, childAlignment = {y = .Center}}},
+	if nendo.box(nendo.id("ComposeLine", i))(
+	{height = nendo.fit(min = 20), align = {y = .Center}},
 	) {
 		a := clamp(lo, ls, le)
 		b := clamp(hi, ls, le)
@@ -635,13 +622,13 @@ compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int) {
 		}
 		if at_caret(head, a, ls, le) {
 			if preedit := rl.Preedit(); len(preedit) > 0 {
-				clay.Text(preedit, {fontId = FONT_BODY, fontSize = BODY_FS, textColor = ACCENT})
+				nendo.text(preedit, {font = FONT_BODY, size = BODY_FS, color = ACCENT})
 			}
 			caret()
 		}
 		if b > a {
-			if clay.UI(clay.ID("ComposeSel", i))(
-			{backgroundColor = ACCENT, layout = {childGap = 1, childAlignment = {y = .Center}}},
+			if nendo.box(nendo.id("ComposeSel", i))(
+			{color = ACCENT, gap = 1, align = {y = .Center}},
 			) {
 				render_segs(0xE00 + i * 8 + 2, inline_segs(text[a:b])[:], BODY_FS, ON_ACCENT, 18)
 			}
@@ -660,12 +647,12 @@ compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int) {
 // bodysel.odin), drawn as a highlighted middle span like the composer.
 // `boxed` wraps the line in an element hit-testing can measure; the
 // caller sets it for pre-wrapped (selectable) bodies only, because an
-// element around a plain Text would take clay's own wrapping away.
+// element around a plain Text would take nendo's own wrapping away.
 body_line :: proc(
 	id: u32,
 	text: string,
 	font_size: u16,
-	color: clay.Color,
+	color: nendo.Color,
 	sel := [2]int{-1, -1},
 	boxed := false,
 	tile_px: f32 = 0,
@@ -675,9 +662,7 @@ body_line :: proc(
 ) {
 	tile_px := tile_px > 0 ? tile_px : body_tile_size(text, font_size)
 	if text == "" {
-		if clay.UI(clay.ID("BodyLine", id))(
-		{layout = {sizing = {height = clay.SizingFixed(f32(font_size))}}},
-		) {}
+		if nendo.box(nendo.id("BodyLine", id))({height = nendo.fixed(f32(font_size))}) {}
 		return
 	}
 	sel := sel
@@ -694,9 +679,7 @@ body_line :: proc(
 		}
 	}
 	if sel[0] >= 0 {
-		if clay.UI(clay.ID("BodyLine", id))(
-		{layout = {childGap = 2, childAlignment = {y = .Center}}},
-		) {
+		if nendo.box(nendo.id("BodyLine", id))({gap = 2, align = {y = .Center}}) {
 			if sel[0] > 0 {
 				render_segs(
 					id * 4,
@@ -707,8 +690,8 @@ body_line :: proc(
 					true,
 				)
 			}
-			if clay.UI(clay.ID("BodySel", id))(
-			{layout = {childGap = 2, childAlignment = {y = .Center}}, backgroundColor = ACCENT},
+			if nendo.box(nendo.id("BodySel", id))(
+			{gap = 2, align = {y = .Center}, color = ACCENT},
 			) {
 				// chips inside the highlight too: a link that turned
 				// into a card must not fall back to its URL the moment
@@ -755,22 +738,20 @@ body_line :: proc(
 	   !segs[0].bad_ref &&
 	   len(segs[0].evid) == 0 &&
 	   len(segs[0].text) == len(text) {
-		// No emoji or mention at all: plain Text keeps clay's wrapping.
+		// No emoji or mention at all: plain Text keeps nendo's wrapping.
 		if !boxed {
-			clay.Text(text, {fontId = FONT_BODY, fontSize = font_size, textColor = color})
+			nendo.text(text, {font = FONT_BODY, size = font_size, color = color})
 			return
 		}
-		if clay.UI(clay.ID("BodyLine", id))({layout = {childAlignment = {y = .Center}}}) {
+		if nendo.box(nendo.id("BodyLine", id))({align = {y = .Center}}) {
 			if !search_text(text, fonts, font_size, color) {
-				clay.Text(text, {fontId = FONT_BODY, fontSize = font_size, textColor = color})
+				nendo.text(text, {font = FONT_BODY, size = font_size, color = color})
 			}
 		}
 		return
 	}
 
-	if clay.UI(clay.ID("BodyLine", id))(
-	{layout = {childGap = 2, childAlignment = {y = .Center}}},
-	) {
+	if nendo.box(nendo.id("BodyLine", id))({gap = 2, align = {y = .Center}}) {
 		render_segs(id, segs[:], font_size, color, tile_px, true)
 	}
 }
@@ -787,8 +768,8 @@ MD_TABLE_PAD :: 7
 md_code_hover: string
 
 @(private)
-md_hover :: proc(depth: u16, rest: clay.Color = {}) -> clay.Color {
-	if !clay.Hovered() {return rest}
+md_hover :: proc(depth: u16, rest: nendo.Color = {}) -> nendo.Color {
+	if !nendo.hovered() {return rest}
 	// Composite once so translucent theme colors cannot stack into a bright wash.
 	base := mix_color(CARD, HOVER, HOVER.a / 255)
 	shade := mix_color(base, TEXT, 0.06 * f32(depth) / (f32(depth) + 2))
@@ -835,34 +816,30 @@ md_table :: proc(
 		w *= width / total
 	}
 
-	if clay.UI(clay.ID("MsgTable", id))(
+	if nendo.box(nendo.id("MsgTable", id))(
 	{
-		layout = {layoutDirection = .TopToBottom},
-		backgroundColor = md_hover(depth),
+		direction = .Column,
+		color = md_hover(depth),
 		border = {color = FIELD_BORDER, width = bw()},
-		cornerRadius = rr(4),
+		radius = rr(4),
 	},
 	) {
 		for row, r in cells {
-			if clay.UI(clay.ID("MsgTableRow", id + u32(r) * 64))(
-			{layout = {}, backgroundColor = md_hover(depth + 1, r == 0 ? PLATE : {})},
+			if nendo.box(nendo.id("MsgTableRow", id + u32(r) * 64))(
+			{color = md_hover(depth + 1, r == 0 ? PLATE : {})},
 			) {
 				for c in 0 ..< cols {
 					text := c < len(row) ? row[c] : ""
 					pad := u16(min(f32(MD_TABLE_PAD), widths[c] / 4))
 					align := c < len(alignments) ? alignments[c] : marmot.Markdown_Alignment.None
 					inner_w := max(f32(1), widths[c] - f32(pad) * 2)
-					if clay.UI(clay.ID("MsgTableCell", id + u32(r) * 64 + u32(c)))(
+					if nendo.box(nendo.id("MsgTableCell", id + u32(r) * 64 + u32(c)))(
 					{
-						layout = {
-							layoutDirection = .TopToBottom,
-							sizing = {
-								width = clay.SizingFixed(widths[c]),
-								height = clay.SizingGrow(),
-							},
-							padding = clay.PaddingAll(pad),
-						},
-						backgroundColor = md_hover(depth + 2),
+						direction = .Column,
+						width = nendo.fixed(widths[c]),
+						height = nendo.grow(),
+						padding = nendo.pad(pad),
+						color = md_hover(depth + 2),
 						border = {
 							color = FIELD_BORDER,
 							width = {0, c < cols - 1 ? 1 : 0, 0, r < len(cells) - 1 ? 1 : 0, 0},
@@ -880,13 +857,11 @@ md_table :: proc(
 							)
 						}
 						for line in wrapped_lines(text, inner_w, 13, fonts = fonts) {
-							if clay.UI()(
+							if nendo.box()(
 							{
-								layout = {
-									sizing = {width = clay.SizingFixed(inner_w)},
-									childAlignment = {
-										x = align == .Right ? .Right : (align == .Center ? .Center : .Left),
-									},
+								width = nendo.fixed(inner_w),
+								align = {
+									x = align == .Right ? .Right : (align == .Center ? .Center : .Left),
 								},
 							},
 							) {
@@ -951,8 +926,8 @@ md_image_tail :: proc(blocks: []Md_Block_Ui) -> (first: int, cells: []Att_Slot) 
 	return first, out[:]
 }
 
-// id_base namespaces the clay ids per call site. wrap_w pre-wraps event cards;
-// zero leaves wrapping to clay or, when selectable, the timeline measure.
+// id_base namespaces the nendo ids per call site. wrap_w pre-wraps event cards;
+// zero leaves wrapping to nendo or, when selectable, the timeline measure.
 md_blocks :: proc(
 	blocks: []Md_Block_Ui,
 	id_base: u32,
@@ -982,9 +957,7 @@ md_blocks :: proc(
 		if gap_lines > 0 {
 			// Paragraph spacing is half a line and does not consume the text excerpt.
 			gap := f32(gap_lines) * f32(BODY_FS) / 2
-			if clay.UI(clay.ID("MdGap", block_id))(
-			{layout = {sizing = {height = clay.SizingFixed(gap)}}},
-			) {}
+			if nendo.box(nendo.id("MdGap", block_id))({height = nendo.fixed(gap)}) {}
 		}
 		used := 1
 		available := wrap_w > 0 ? wrap_w : body_wrap_w()
@@ -1005,39 +978,26 @@ md_blocks :: proc(
 				end += 1
 			}
 			cropped := false
-			if clay.UI(clay.ID("MsgQuoteGroup", block_id * 128 + u32(quote_level)))(
+			if nendo.box(nendo.id("MsgQuoteGroup", block_id * 128 + u32(quote_level)))(
 			{
-				layout = {
-					sizing = {width = clay.SizingFixed(available)},
-					padding = {left = u16(indent)},
-					childGap = 8,
-				},
-				backgroundColor = md_hover(quote_level + block.indent / 24),
-				cornerRadius = rr(3),
+				width = nendo.fixed(available),
+				padding = {left = u16(indent)},
+				gap = 8,
+				color = md_hover(quote_level + block.indent / 24),
+				radius = rr(3),
 			},
 			) {
-				if clay.UI(
-					quote_level == 0 ? clay.ID("MsgQuoteBar", block_id) : clay.ID("MsgQuoteInner", block_id * 128 + u32(quote_level)),
+				if nendo.box(
+					quote_level == 0 ? nendo.id("MsgQuoteBar", block_id) : nendo.id("MsgQuoteInner", block_id * 128 + u32(quote_level)),
 				)(
 				{
-					layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingGrow()}},
-					backgroundColor = mix_color(
-						ACCENT,
-						TEXT_DIM,
-						min(f32(quote_level) * 0.3, 0.8),
-					),
-					cornerRadius = rr(2),
+					width = nendo.fixed(3),
+					height = nendo.grow(),
+					color = mix_color(ACCENT, TEXT_DIM, min(f32(quote_level) * 0.3, 0.8)),
+					radius = rr(2),
 				},
 				) {}
-				if clay.UI()(
-				{
-					layout = {
-						layoutDirection = .TopToBottom,
-						sizing = {width = clay.SizingGrow()},
-						childGap = 3,
-					},
-				},
-				) {
+				if nendo.box()({direction = .Column, width = nendo.grow(), gap = 3}) {
 					cropped = md_blocks(
 						blocks[j:end],
 						block_id,
@@ -1058,14 +1018,8 @@ md_blocks :: proc(
 		width := max(f32(1), available - indent)
 		if len(block.timestamps) >
 		   0 {block = timestamp_block(block, time.time_to_unix(time.now()))}
-		if clay.UI(clay.ID("MdBlock", block_id))(
-		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {width = clay.SizingFixed(available)},
-				padding = {left = u16(indent)},
-			},
-		},
+		if nendo.box(nendo.id("MdBlock", block_id))(
+		{direction = .Column, width = nendo.fixed(available), padding = {left = u16(indent)}},
 		) {
 			switch block.kind {
 			case .Para, .Quote:
@@ -1089,34 +1043,26 @@ md_blocks :: proc(
 				font := [1]u8{FONT_TITLE}
 				if len(fonts) ==
 				   0 {fonts = strings.repeat(string(font[:]), len(block.text), context.temp_allocator)}
-				if clay.UI(clay.ID("MdHeading", block_id))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {
-					show_marks := clay.PointerOver(clay.ID("MdHeading", block_id))
+				if nendo.box(nendo.id("MdHeading", block_id))({width = nendo.grow()}) {
+					show_marks := nendo.pointer_over(nendo.id("MdHeading", block_id))
 					reveal := anim_to(
-						clay.ID("MdHeadingMarks", block_id).id,
+						nendo.id("MdHeadingMarks", block_id).id,
 						show_marks ? 1 : 0,
 						HOVER_RATE,
 					)
 					full_gutter := rl.MeasureTextLine(FONT_MONO, size, marks, 0).x + 6
 					gutter := full_gutter * reveal
 					if reveal > 0 {
-						if clay.UI(clay.ID("MdHeadingMarks", block_id))(
+						if nendo.box(nendo.id("MdHeadingMarks", block_id))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(gutter),
-									height = clay.SizingFixed(f32(size)),
-								},
-								childAlignment = {y = .Center},
-							},
-							clip = {horizontal = true, childOffset = {gutter - full_gutter, 0}},
+							width = nendo.fixed(gutter),
+							height = nendo.fixed(f32(size)),
+							align = {y = .Center},
+							clip = {x = true, offset = {gutter - full_gutter, 0}},
 						},
-						) {clay.Text(marks, {fontId = FONT_MONO, fontSize = size, textColor = fade(TEXT_LO, reveal), wrapMode = .None})}
+						) {nendo.text(marks, {font = FONT_MONO, size = size, color = fade(TEXT_LO, reveal), wrap = .None})}
 					}
-					if clay.UI(clay.ID("MdHeadingText", block_id))(
-					{layout = {layoutDirection = .TopToBottom}},
-					) {
+					if nendo.box(nendo.id("MdHeadingText", block_id))({direction = .Column}) {
 						used = body_text(
 							block_id + 1,
 							block.text,
@@ -1134,25 +1080,23 @@ md_blocks :: proc(
 				// Typeset when Bragi accepts it, centered like display
 				// math; otherwise fall through to the source on the plate.
 				if tex := math_texture(block.text); tex != nil {
-					if clay.UI(clay.ID("MsgMath", block_id))(
+					if nendo.box(nendo.id("MsgMath", block_id))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							padding = clay.PaddingAll(10),
-							childAlignment = {x = .Center},
-						},
-						backgroundColor = CODE_PLATE,
-						cornerRadius = rr(6),
+						width = nendo.grow(),
+						padding = nendo.pad(10),
+						align = {x = .Center},
+						color = CODE_PLATE,
+						radius = rr(6),
 						border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
 					},
 					) {
 						// Wider than the bubble: scale down rather than clip.
 						w := min(f32(tex.width) / UI_SCALE, max(f32(1), width - 20))
-						if clay.UI()(
+						if nendo.box()(
 						{
-							layout = {sizing = {width = clay.SizingFixed(w)}},
-							aspectRatio = {f32(tex.width) / f32(tex.height)},
-							image = {imageData = tex},
+							width = nendo.fixed(w),
+							aspect = f32(tex.width) / f32(tex.height),
+							image = tex,
 						},
 						) {}
 					}
@@ -1168,26 +1112,22 @@ md_blocks :: proc(
 				//   +-----------------------------+
 				// The 7px rim plus the 3px line inset keeps text 10px from the
 				// edge, and a one-line plate stays as tall as the 19px button.
-				if clay.UI(clay.ID("MsgCode", block_id))(
+				if nendo.box(nendo.id("MsgCode", block_id))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						padding = {left = 10, right = 7, top = 7, bottom = 7},
-						childGap = 6,
-					},
-					backgroundColor = CODE_PLATE,
-					cornerRadius = rr(6),
+					width = nendo.grow(),
+					padding = {left = 10, right = 7, top = 7, bottom = 7},
+					gap = 6,
+					color = CODE_PLATE,
+					radius = rr(6),
 					border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
 				},
 				) {
-					if clay.UI(clay.ID("MsgCodeLines", block_id))(
+					if nendo.box(nendo.id("MsgCodeLines", block_id))(
 					{
-						layout = {
-							layoutDirection = .TopToBottom,
-							sizing = {width = clay.SizingGrow()},
-							padding = {top = 3, bottom = 3},
-							childGap = 3,
-						},
+						direction = .Column,
+						width = nendo.grow(),
+						padding = {top = 3, bottom = 3},
+						gap = 3,
 					},
 					) {
 						font := [1]u8{FONT_MONO | (block.kind == .Math ? TEXT_MATH : TEXT_CODE)}
@@ -1208,20 +1148,18 @@ md_blocks :: proc(
 								if block.text[scanned] == '\n' {number += 1}
 								scanned += 1
 							}
-							if clay.UI()({layout = {sizing = {height = clay.SizingFixed(13)}}}) {
+							if nendo.box()({height = nendo.fixed(13)}) {
 								if block.kind == .Code {
-									if clay.UI()(
+									if nendo.box()(
 									{
-										layout = {
-											sizing = {width = clay.SizingFixed(gutter)},
-											padding = {right = 10},
-											childAlignment = {x = .Right},
-										},
+										width = nendo.fixed(gutter),
+										padding = {right = 10},
+										align = {x = .Right},
 									},
 									) {
 										if line.start == 0 ||
 										   block.text[line.start - 1] ==
-											   '\n' {clay.Text(fmt.tprintf("%d", number), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})}
+											   '\n' {nendo.text(fmt.tprintf("%d", number), {font = FONT_MONO, size = 11, color = TEXT_LO})}
 									}
 								}
 								md_code_text(
@@ -1233,14 +1171,13 @@ md_blocks :: proc(
 							}
 						}
 					}
-					if clay.UI(clay.ID("MsgCodeCopy", block_id))(
+					if nendo.box(nendo.id("MsgCodeCopy", block_id))(
 					{
-						layout = {
-							sizing = {width = clay.SizingFixed(19), height = clay.SizingFixed(19)},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(4),
+						width = nendo.fixed(19),
+						height = nendo.fixed(19),
+						align = {x = .Center, y = .Center},
+						color = hovered() ? HOVER : {},
+						radius = rr(4),
 					},
 					) {
 						copy_color := TEXT_LO
@@ -1249,10 +1186,7 @@ md_blocks :: proc(
 							copy_color = TEXT
 							tooltip(tr("Copy"))
 						}
-						clay.Text(
-							ICON_COPY,
-							{fontId = FONT_ICON, fontSize = 11, textColor = copy_color},
-						)
+						nendo.text(ICON_COPY, {font = FONT_ICON, size = 11, color = copy_color})
 					}
 				}
 			case .List_Item:
@@ -1260,53 +1194,44 @@ md_blocks :: proc(
 				task := marker == "[ ] " || marker == "[x] "
 				marker_w := max(f32(12), rl.MeasureTextLine(FONT_BODY, BODY_FS, marker, 0).x)
 				if task {marker_w = 18}
-				if clay.UI(clay.ID("MsgListItem", block_id))(
+				if nendo.box(nendo.id("MsgListItem", block_id))(
 				{
-					layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 12}},
-					backgroundColor = md_hover(quote_level + block.indent / 24),
-					cornerRadius = rr(3),
+					width = nendo.grow(),
+					padding = {left = 12},
+					color = md_hover(quote_level + block.indent / 24),
+					radius = rr(3),
 				},
 				) {
-					if clay.UI(clay.ID("MsgListMarker", block_id))(
+					if nendo.box(nendo.id("MsgListMarker", block_id))(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingFixed(marker_w),
-								height = clay.SizingFixed(f32(BODY_FS)),
-							},
-							childAlignment = {y = .Center},
-						},
+						width = nendo.fixed(marker_w),
+						height = nendo.fixed(f32(BODY_FS)),
+						align = {y = .Center},
 					},
 					) {
 						if task {
-							if clay.UI(clay.ID("MdTask", block_id))(
+							if nendo.box(nendo.id("MdTask", block_id))(
 							{
-								layout = {
-									sizing = {
-										width = clay.SizingFixed(12),
-										height = clay.SizingFixed(12),
-									},
-									childAlignment = {x = .Center, y = .Center},
-								},
+								width = nendo.fixed(12),
+								height = nendo.fixed(12),
+								align = {x = .Center, y = .Center},
 								border = {
 									color = marker == "[x] " ? ACCENT : TEXT_DIM,
 									width = {1, 1, 1, 1, 0},
 								},
-								backgroundColor = marker == "[x] " ? SELECTED : {},
-								cornerRadius = rr(2),
+								color = marker == "[x] " ? SELECTED : {},
+								radius = rr(2),
 							},
 							) {
 								if marker ==
-								   "[x] " {clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})}
+								   "[x] " {nendo.text(ICON_CHECK, {font = FONT_ICON, size = 12, color = ACCENT})}
 							}
-						} else {clay.Text(
+						} else {nendo.text(
 								marker,
-								{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
+								{font = FONT_BODY, size = BODY_FS, color = TEXT},
 							)}
 					}
-					if clay.UI(clay.ID("MsgListBody", block_id))(
-					{layout = {layoutDirection = .TopToBottom}},
-					) {
+					if nendo.box(nendo.id("MsgListBody", block_id))({direction = .Column}) {
 						used = body_text(
 							block_id + 2,
 							block.text[block.marker_len:],
@@ -1324,13 +1249,8 @@ md_blocks :: proc(
 			case .Image:
 				image_link(block_id, block.text, 11, min(width > 0 ? width : att_w(), att_w()))
 			case .Rule:
-				if clay.UI(clay.ID("MsgRule", block_id))(
-				{
-					layout = {
-						sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(1)},
-					},
-					backgroundColor = TEXT_DIM,
-				},
+				if nendo.box(nendo.id("MsgRule", block_id))(
+				{width = nendo.fixed(width), height = nendo.fixed(1), color = TEXT_DIM},
 				) {}
 			case .Table:
 				used = len(block.cells)
@@ -1356,16 +1276,16 @@ md_blocks :: proc(
 // with bodysel.odin, which needs each line's byte range inside `text`;
 // the walk therefore slices `text` itself instead of split_lines, whose
 // copies carry no offsets. Selectable bodies are also wrapped here
-// rather than by clay: a selection highlight splits a line into three
-// spans, and clay only wraps a whole Text element. Break points come
+// rather than by nendo: a selection highlight splits a line into three
+// spans, and nendo only wraps a whole Text element. Break points come
 // from measured widths.
 // `wrap_w` forces wrapping at that width for non-selectable bodies
-// whose container clay can't wrap into (reply previews, edit history).
+// whose container nendo can't wrap into (reply previews, edit history).
 body_text :: proc(
 	id: u32,
 	text: string,
 	font_size: u16,
-	color: clay.Color,
+	color: nendo.Color,
 	selectable := false,
 	wrap_w: f32 = 0,
 	max_lines: int = max(int),
@@ -1491,7 +1411,7 @@ message_line_limit :: proc() -> int {
 
 @(private)
 excerpt_toggle :: proc(state: ^Excerpt, id: u32) {
-	state.from_height = clay.GetElementData(clay.ID("ExcerptClip", id)).boundingBox.height
+	state.from_height = nendo.element(nendo.id("ExcerptClip", id)).rect.height
 	if !state.expanded &&
 	   (state.changed == {} || time.tick_since(state.changed) >= EXCERPT_DURATION) {
 		state.closed_height = state.from_height
@@ -1507,7 +1427,7 @@ excerpt_body :: proc(
 	blocks: []Md_Block_Ui,
 	state: Excerpt,
 	width: f32,
-	color: clay.Color,
+	color: nendo.Color,
 	source: Excerpt_Source = .Message,
 	emoji := Emoji_Scale.Inline,
 ) -> bool {
@@ -1517,29 +1437,20 @@ excerpt_body :: proc(
 		state.changed == {} || !motion_on() ? f32(1) : clamp(f32(time.tick_since(state.changed)) / f32(EXCERPT_DURATION), 0, 1)
 	moving := threshold < max(int) && progress < 1
 	limit := state.expanded || moving ? max(int) : threshold
-	height := clay.SizingFit()
+	height := nendo.fit()
 	if moving {
-		full := clay.GetElementData(clay.ID("ExcerptBody", id)).boundingBox.height
+		full := nendo.element(nendo.id("ExcerptBody", id)).rect.height
 		target := state.expanded ? full : state.closed_height
 		eased := progress * progress * (3 - 2 * progress)
-		height = clay.SizingFixed(state.from_height + (target - state.from_height) * eased)
+		height = nendo.fixed(state.from_height + (target - state.from_height) * eased)
 		anim_moving += 1
 	}
 	more := state.expanded || moving
-	if clay.UI(clay.ID("ExcerptClip", id))(
-	{
-		layout = {sizing = {width = clay.SizingFixed(width), height = height}},
-		clip = {vertical = moving},
-	},
+	if nendo.box(nendo.id("ExcerptClip", id))(
+	{width = nendo.fixed(width), height = height, clip = {y = moving}},
 	) {
-		if clay.UI(clay.ID("ExcerptBody", id))(
-		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {width = clay.SizingFixed(width)},
-				childGap = 3,
-			},
-		},
+		if nendo.box(nendo.id("ExcerptBody", id))(
+		{direction = .Column, width = nendo.fixed(width), gap = 3},
 		) {
 			if len(blocks) > 0 {
 				lines: int
@@ -1577,7 +1488,7 @@ excerpt_body :: proc(
 
 // Plain fallback for pending messages and records without parsed blocks.
 @(private)
-message_excerpt :: proc(id: u32, text: string, color: clay.Color, state: Excerpt = {}) -> bool {
+message_excerpt :: proc(id: u32, text: string, color: nendo.Color, state: Excerpt = {}) -> bool {
 	threshold := message_line_limit()
 	if threshold == max(int) ||
 	   len(wrapped_lines(text, body_wrap_w(), BODY_FS)) <= threshold {return false}
@@ -1592,23 +1503,19 @@ message_excerpt :: proc(id: u32, text: string, color: clay.Color, state: Excerpt
 @(private)
 message_more :: proc(id: u32, state: Excerpt = {}) {
 	if message_line_limit() == max(int) {return}
-	if clay.UI(clay.ID("MessageMore", id))(
+	if nendo.box(nendo.id("MessageMore", id))(
 	{
-		layout = {
-			padding = {top = 4, bottom = 4},
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-			},
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : {},
-		cornerRadius = rr(4),
+		padding = {top = 4, bottom = 4},
+		width = nendo.grow(),
+		height = nendo.fit(min = tap_size() ? tap_min() : 0),
+		align = {y = .Center},
+		color = hovered() ? HOVER : {},
+		radius = rr(4),
 	},
 	) {
-		clay.Text(
+		nendo.text(
 			state.expanded ? tr("Show less") : tr("Read more"),
-			{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
+			{font = FONT_BODY, size = 12, color = ACCENT},
 		)
 	}
 }
@@ -1620,7 +1527,7 @@ message_more :: proc(id: u32, state: Excerpt = {}) {
 // behind and inflated by its own over-long lines, so after a shrink
 // the rewrap otherwise crawls toward the new width a word per frame.
 body_wrap_w :: proc() -> f32 {
-	tl := clay.GetElementData(clay.ID("Timeline"))
+	tl := nendo.element(nendo.id("Timeline"))
 	if !tl.found {
 		return 480
 	}
@@ -1634,7 +1541,7 @@ body_wrap_w :: proc() -> f32 {
 	if g_ui.prefs.centered_chat {
 		avail = min(avail, CHAT_WIDTH_MAX)
 	}
-	return max(min(tl.boundingBox.width, avail) - chrome, 120)
+	return max(min(tl.rect.width, avail) - chrome, 120)
 }
 
 // Widest an attachment tile draws: its design width, or the message

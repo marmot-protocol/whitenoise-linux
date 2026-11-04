@@ -4,10 +4,10 @@ import "base:runtime"
 import "core:strings"
 import "core:testing"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
-// Kept isolated like settings_viewport: fonts and Clay own process-global state.
+// Kept isolated like settings_viewport: fonts and nendo own process-global state.
 @(test)
 mobile_settings_viewport :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "mobile_settings_viewport" {return}
@@ -19,10 +19,10 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 	load_themes()
 	apply_theme(0, 0)
 	set_locale("de")
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {320, 480})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		page          = .Settings,
 		audit_scanned = true,
@@ -46,8 +46,8 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 
 	for size in ([][2]i32{{320, 480}, {360, 320}, {390, 240}, {430, 360}, {740, 240}, {1100, 760}}) {
 		rl.SetWindowSize(size[0], size[1])
-		viewport := clay.Dimensions{f32(size[0]), f32(size[1])}
-		clay.SetLayoutDimensions(viewport)
+		viewport := nendo.Dimensions{f32(size[0]), f32(size[1])}
+		nendo.set_dimensions(viewport)
 		for target in ([]struct {
 				section: Settings_Section,
 				tab:     int,
@@ -56,9 +56,9 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 			ui.settings_section, ui.settings_tab, ui.settings_level =
 				target.section, target.tab, .Sheet
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
-			mobile_settings_inside(t, clay.ID("SettingsRoot"), viewport)
-			mobile_settings_inside(t, clay.ID("SettingsSheet"), viewport, .Width)
-			id := target.id == "SttModel" ? clay.ID(target.id, 0) : clay.ID(target.id)
+			mobile_settings_inside(t, nendo.id("SettingsRoot"), viewport)
+			mobile_settings_inside(t, nendo.id("SettingsSheet"), viewport, .Width)
+			id := target.id == "SttModel" ? nendo.id(target.id, 0) : nendo.id(target.id)
 			mobile_settings_inside(t, id, viewport, .Width)
 			if single_pane() &&
 			   target.section != .About &&
@@ -67,7 +67,7 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 			   target.id != "MapBrowserChoices" {
 				testing.expectf(
 					t,
-					clay.GetElementData(id).boundingBox.height >= 44,
+					nendo.element(id).rect.height >= 44,
 					"%s must have a touch-height target",
 					target.id,
 				)
@@ -80,27 +80,27 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 		ui.settings_section, ui.settings_level = .Agents, .Sheet
 		ui.agent_connector = 1
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
-		mobile_settings_inside(t, clay.ID("AgentCopyPrompt"), viewport, .Width)
-		mobile_settings_inside(t, clay.ID("AgentCopyKey"), viewport, .Width)
+		mobile_settings_inside(t, nendo.id("AgentCopyPrompt"), viewport, .Width)
+		mobile_settings_inside(t, nendo.id("AgentCopyKey"), viewport, .Width)
 		ui.agent_connector = 0
 
 		ui.settings_section, ui.settings_level = .Storage, .Sheet
 		ui.lang_open = true
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
-		mobile_settings_inside(t, clay.ID("LangModal"), viewport)
+		mobile_settings_inside(t, nendo.id("LangModal"), viewport)
 		ui.lang_open = false
 		ui.shortcuts_open = true
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
-		mobile_settings_inside(t, clay.ID("ShortModal"), viewport)
+		mobile_settings_inside(t, nendo.id("ShortModal"), viewport)
 		last_shortcut := len(SHORTCUTS) - (rl.HasTouch() ? 2 : 1)
-		mobile_settings_reveal(t, &ui, "ShortList", clay.ID("ShortRow", u32(last_shortcut)))
+		mobile_settings_reveal(t, &ui, "ShortList", nendo.id("ShortRow", u32(last_shortcut)))
 		ui.shortcuts_open = false
 		for creating in ([]bool{true, false}) {
 			ui.backup_mode = creating ? .Create : .Import
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
-			mobile_settings_inside(t, clay.ID("BackupModal"), viewport)
-			mobile_settings_inside(t, clay.ID("BackupGo"), viewport, .Width)
-			mobile_settings_reveal(t, &ui, "BackupModal", clay.ID("BackupGo"))
+			mobile_settings_inside(t, nendo.id("BackupModal"), viewport)
+			mobile_settings_inside(t, nendo.id("BackupGo"), viewport, .Width)
+			mobile_settings_reveal(t, &ui, "BackupModal", nendo.id("BackupGo"))
 		}
 		ui.backup_mode = .None
 		ui.export_open = true
@@ -108,31 +108,31 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 			ui.export_result =
 				sealed ? strings.repeat("ncryptsec1234567890", 12, context.temp_allocator) : ""
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
-			mobile_settings_inside(t, clay.ID("ExportModal"), viewport)
+			mobile_settings_inside(t, nendo.id("ExportModal"), viewport)
 			mobile_settings_reveal(
 				t,
 				&ui,
 				"ExportModal",
-				clay.ID(sealed ? "ExportDone" : "ExportGo"),
+				nendo.id(sealed ? "ExportDone" : "ExportGo"),
 			)
 		}
 		ui.export_open, ui.export_result = false, ""
 
 		theme_edit_open(&ui)
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
-		mobile_settings_inside(t, clay.ID("ThemeEdit"), viewport)
-		mobile_settings_inside(t, clay.ID("ThemeSeedBox0"), viewport, .Width)
-		mobile_settings_inside(t, clay.ID("ThemeEditSave"), viewport, .Width)
+		mobile_settings_inside(t, nendo.id("ThemeEdit"), viewport)
+		mobile_settings_inside(t, nendo.id("ThemeSeedBox0"), viewport, .Width)
+		mobile_settings_inside(t, nendo.id("ThemeEditSave"), viewport, .Width)
 		theme_edit_close(&ui, .Discard)
 
 		ui.profile.editing = true
 		for _ in 0 ..< 3 {mobile_settings_profile_frame(&ui)}
-		mobile_settings_inside(t, clay.ID("ProfilePage"), viewport)
-		mobile_settings_inside(t, clay.ID("NameBox"), viewport, .Width)
-		mobile_settings_inside(t, clay.ID("PublishProfileBtn"), viewport, .Width)
+		mobile_settings_inside(t, nendo.id("ProfilePage"), viewport)
+		mobile_settings_inside(t, nendo.id("NameBox"), viewport, .Width)
+		mobile_settings_inside(t, nendo.id("PublishProfileBtn"), viewport, .Width)
 		if single_pane() {
-			label := clay.GetElementData(clay.ID("ProfileFormLabel", 0)).boundingBox
-			field := clay.GetElementData(clay.ID("NameBox")).boundingBox
+			label := nendo.element(nendo.id("ProfileFormLabel", 0)).rect
+			field := nendo.element(nendo.id("NameBox")).rect
 			testing.expect(
 				t,
 				field.y >= label.y + label.height,
@@ -141,14 +141,13 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 		}
 		ui.profile.editing = false
 		for _ in 0 ..< 3 {mobile_settings_profile_frame(&ui)}
-		mobile_settings_inside(t, clay.ID("ProfileKvValue", 0), viewport, .Width)
-		mobile_settings_inside(t, clay.ID("SignOutBtn"), viewport, .Width)
+		mobile_settings_inside(t, nendo.id("ProfileKvValue", 0), viewport, .Width)
+		mobile_settings_inside(t, nendo.id("SignOutBtn"), viewport, .Width)
 		if single_pane() {
-			value := clay.GetScrollContainerData(clay.ID("ProfileKvValue", 0))
+			value := nendo.scroll(nendo.id("ProfileKvValue", 0))
 			testing.expect(
 				t,
-				value.found &&
-				value.contentDimensions.width > value.scrollContainerDimensions.width,
+				value.found && value.content.width > value.viewport.width,
 				"Long public profile values must remain reachable through horizontal scrolling",
 			)
 		}
@@ -164,12 +163,12 @@ Mobile_Bounds :: enum {
 @(private)
 mobile_settings_inside :: proc(
 	t: ^testing.T,
-	id: clay.ElementId,
-	viewport: clay.Dimensions,
+	id: nendo.Id,
+	viewport: nendo.Dimensions,
 	extent: Mobile_Bounds = .Viewport,
 ) {
-	element := clay.GetElementData(id)
-	box := element.boundingBox
+	element := nendo.element(id)
+	box := element.rect
 	testing.expectf(
 		t,
 		element.found &&
@@ -194,41 +193,36 @@ mobile_settings_inside :: proc(
 }
 
 @(private)
-mobile_settings_reveal :: proc(
-	t: ^testing.T,
-	ui: ^Ui_State,
-	panel_id: string,
-	id: clay.ElementId,
-) {
-	panel := clay.GetElementData(clay.ID(panel_id)).boundingBox
-	data := clay.GetScrollContainerData(clay.ID(panel_id))
+mobile_settings_reveal :: proc(t: ^testing.T, ui: ^Ui_State, panel_id: string, id: nendo.Id) {
+	panel := nendo.element(nendo.id(panel_id)).rect
+	data := nendo.scroll(nendo.id(panel_id))
 	if !testing.expectf(
 		t,
 		data.found,
 		"%s must register a scroll viewport for %s",
 		panel_id,
-		string(id.stringId.chars[:id.stringId.length]),
+		id.label,
 	) {return}
-	data.scrollPosition^ = {}
+	data.position^ = {}
 	settings_test_frame(ui)
-	clay.SetPointerState({panel.x + panel.width / 2, panel.y + panel.height / 2}, false)
+	nendo.set_pointer({panel.x + panel.width / 2, panel.y + panel.height / 2}, .Up)
 	for _ in 0 ..< 128 {
-		box := clay.GetElementData(id).boundingBox
+		box := nendo.element(id).rect
 		if box.y >= panel.y - 0.1 &&
 		   box.y < panel.y + panel.height &&
 		   (box.height > panel.height ||
 				   box.y + box.height <= panel.y + panel.height + 0.1) {break}
 		wanted :=
 			box.height > panel.height ? panel.y : clamp(box.y, panel.y, panel.y + panel.height - box.height)
-		settings_test_frame(ui, {0, (wanted - box.y) / CLAY_SCROLL_PIXELS})
+		settings_test_frame(ui, {0, (wanted - box.y) / NENDO_SCROLL_PIXELS})
 	}
-	box := clay.GetElementData(id).boundingBox
+	box := nendo.element(id).rect
 	testing.expectf(
 		t,
 		box.y >= panel.y - 0.1 && box.y < panel.y + panel.height,
 		"Scrolling %s must reveal %s, control=%v panel=%v window=%dx%d",
 		panel_id,
-		string(id.stringId.chars[:id.stringId.length]),
+		id.label,
 		box,
 		panel,
 		rl.GetScreenWidth(),
@@ -239,8 +233,8 @@ mobile_settings_reveal :: proc(
 @(private)
 mobile_settings_profile_frame :: proc(ui: ^Ui_State) {
 	anim_tick(1.0 / 60)
-	clay.UpdateScrollContainers(false, {}, 1.0 / 60)
-	clay.BeginLayout()
+	nendo.update_scroll(.Off, {}, 1.0 / 60)
+	nendo.begin()
 	profile_pane(ui)
-	clay.EndLayout(0)
+	nendo.end(0)
 }

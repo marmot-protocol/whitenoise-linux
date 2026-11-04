@@ -4,10 +4,10 @@ import "base:runtime"
 import "core:strings"
 import "core:testing"
 import "core:text/edit"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
-// SDL and Clay own process globals. The canonical suite runs this alone.
+// SDL and nendo own process globals. The canonical suite runs this alone.
 @(test)
 invite_input_dispatch :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "invite_input_dispatch" {return}
@@ -21,10 +21,10 @@ invite_input_dispatch :: proc(t: ^testing.T) {
 	locale := g_prefs != nil ? g_prefs.locale : "en"
 	set_locale("en")
 	defer set_locale(locale)
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		show_members     = true,
 		info_tab         = .Members,
@@ -46,18 +46,18 @@ invite_input_dispatch :: proc(t: ^testing.T) {
 		forced_release, text_field_live = false, false
 		rl.PushKey(.ENTER, false)
 	}
-	frame :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
-		clay.SetPointerState({-100, -100}, false)
+	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
+		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
 		banner_tick(ui)
 		return build_layout(ui, 0)
 	}
 	click :: proc(t: ^testing.T, id: string) -> bool {
-		data := clay.GetElementData(clay.ID(id))
+		data := nendo.element(nendo.id(id))
 		if !testing.expect(t, data.found, id) {return false}
-		b := data.boundingBox
-		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
-		return testing.expect(t, clay.PointerOver(clay.ID(id)), id)
+		b := data.rect
+		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
+		return testing.expect(t, nendo.pointer_over(nendo.id(id)), id)
 	}
 	error := "Couldn't invite the member. Enter a public key or verified address and try again."
 	for input in ([]string{"", " \t\n", "\u3000"}) {
@@ -81,10 +81,9 @@ invite_input_dispatch :: proc(t: ^testing.T) {
 			testing.expect(t, ui.show_members)
 			// Blank input keeps the Invite button in its idle style.
 			idle := false
-			for command in commands.internalArray[:commands.length] {
-				if command.id != clay.ID("InviteBtn").id ||
-				   command.commandType != .Rectangle {continue}
-				idle = command.renderData.rectangle.backgroundColor == ROW_BG
+			for command in commands {
+				if command.id != nendo.id("InviteBtn").id || command.kind != .Rectangle {continue}
+				idle = command.rectangle.color == ROW_BG
 			}
 			testing.expect(t, idle, "blank invite button is idle")
 			if !keyboard {
@@ -98,10 +97,10 @@ invite_input_dispatch :: proc(t: ^testing.T) {
 			testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
 			testing.expect_value(t, ui.focus, Focus.Invite)
 			visible := false
-			for command in commands.internalArray[:commands.length] {
-				if command.commandType != .Text {continue}
-				text := command.renderData.text.stringContents
-				visible ||= strings.contains(string(text.chars[:text.length]), error)
+			for command in commands {
+				if command.kind != .Text {continue}
+				text := command.text.text
+				visible ||= strings.contains(text, error)
 			}
 			testing.expect(t, visible, "required-input feedback is rendered")
 			if ui.banner == "" {continue}

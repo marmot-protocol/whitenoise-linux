@@ -9,7 +9,7 @@ import "core:sync"
 import "core:thread"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -314,7 +314,7 @@ media_enqueue :: proc(
 		key       = strings.clone(key),
 		reference = media_ref_clone(ref),
 		kind      = kind,
-		color     = clay_color(TEXT),
+		color     = nendo_color(TEXT),
 	}
 	media_inflight[Media_Key{job.key, kind}] = true
 	append(&media_jobs, job)
@@ -588,11 +588,9 @@ media_job_free :: proc(job: ^Media_Job) {
 @(private)
 media_drain :: proc(ui: ^Ui_State) {
 	at_bottom := false
-	if ui.selected >= 0 && ui.selected < len(ui.chats) && clay.GetCurrentContext() != nil {
-		if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
-			at_bottom =
-				data.scrollPosition.y <=
-				-max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0) + 1
+	if ui.selected >= 0 && ui.selected < len(ui.chats) && nendo.current_context() != nil {
+		if data := nendo.scroll(nendo.id("Timeline")); data.found {
+			at_bottom = data.position.y <= -max(data.content.height - data.viewport.height, 0) + 1
 		}
 	}
 	active := 0

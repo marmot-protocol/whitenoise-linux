@@ -101,7 +101,7 @@ hidden_message_perf :: proc(t: ^testing.T) {
 			for frame in 0 ..< 9 {
 				start := time.tick_now()
 				commands := build_layout(&ui, 0)
-				rl.BeginDrawing(); draw_frame(&commands)
+				rl.BeginDrawing(); draw_frame(commands)
 				ms := time.duration_milliseconds(time.tick_since(start))
 				rl.EndDrawing()
 				if frame >= 2 {samples[frame - 2] = ms}

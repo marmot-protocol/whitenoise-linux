@@ -13,7 +13,7 @@ import "core:os"
 import "core:strings"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // One attachment pick: enough to re-find the media reference later
@@ -73,23 +73,19 @@ att_dl_button :: proc(id_str: string, id: u32, msg_id: string, att: int, name: s
 	if !tap_size() && !hovered() {
 		return
 	}
-	if clay.UI(clay.ID(id_str, id))(
+	if nendo.box(nendo.id(id_str, id))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(tap_size() ? tap_min() : 26),
-				height = clay.SizingFixed(tap_size() ? tap_min() : 26),
-			},
-			childAlignment = {x = .Center, y = .Center},
-		},
+		width = nendo.fixed(tap_size() ? tap_min() : 26),
+		height = nendo.fixed(tap_size() ? tap_min() : 26),
+		align = {x = .Center, y = .Center},
 		floating = {
-			attachTo = .Parent,
-			zIndex = 6,
+			attach_to = .Parent,
+			z = 6,
 			offset = {-6, 6},
-			attachment = {element = .RightTop, parent = .RightTop},
+			attach = {element = .Right_Top, parent = .Right_Top},
 		},
-		backgroundColor = {0, 0, 0, hovered() ? 210 : 150},
-		cornerRadius = rr(13),
+		color = {0, 0, 0, hovered() ? 210 : 150},
+		radius = rr(13),
 	},
 	) {
 		if hovered() {
@@ -99,10 +95,7 @@ att_dl_button :: proc(id_str: string, id: u32, msg_id: string, att: int, name: s
 				name   = name,
 			}
 		}
-		clay.Text(
-			ICON_DOWNLOAD,
-			{fontId = FONT_ICON, fontSize = 12, textColor = {255, 255, 255, 230}},
-		)
+		nendo.text(ICON_DOWNLOAD, {font = FONT_ICON, size = 12, color = {255, 255, 255, 230}})
 	}
 }
 

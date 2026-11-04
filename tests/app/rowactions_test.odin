@@ -301,8 +301,8 @@ folder_rules_parse_rows :: proc(t: ^testing.T) {
 
 @(test)
 folder_delete_confirmation :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
 	home, err := os.make_directory_temp("", "wn-folder-confirm", context.temp_allocator)

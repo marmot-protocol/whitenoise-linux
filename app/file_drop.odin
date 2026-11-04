@@ -1,6 +1,6 @@
 package main
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Drop coordinates come from SDL, not the mouse: desktop drags need not
@@ -28,10 +28,10 @@ chat_drop_target :: proc(ui: ^Ui_State, position: rl.Vector2) -> bool {
 	   blocked_peer(ui) != "" {
 		return false
 	}
-	body := clay.GetElementData(clay.ID("ChatBody"))
-	composer := clay.GetElementData(clay.ID("Composer"))
+	body := nendo.element(nendo.id("ChatBody"))
+	composer := nendo.element(nendo.id("Composer"))
 	if !body.found || !composer.found {return false}
-	box := body.boundingBox
+	box := body.rect
 	x, y := position.x / UI_ZOOM, position.y / UI_ZOOM
 	return x >= box.x && x < box.x + box.width && y >= box.y && y < box.y + box.height
 }
@@ -52,25 +52,21 @@ handle_file_drop :: proc(ui: ^Ui_State) {
 @(private)
 chat_drop_overlay :: proc(ui: ^Ui_State) {
 	if !rl.FileDropActive() || !chat_drop_target(ui, rl.FileDropPosition()) {return}
-	box := clay.GetElementData(clay.ID("ChatBody")).boundingBox
-	if clay.UI(clay.ID("ChatDropTarget"))(
+	box := nendo.element(nendo.id("ChatBody")).rect
+	if nendo.box(nendo.id("ChatDropTarget"))(
 	{
-		layout = {
-			sizing = {clay.SizingFixed(box.width), clay.SizingFixed(box.height)},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		floating = {attachTo = .ElementWithId, parentId = clay.ID("ChatBody").id, zIndex = 8},
-		backgroundColor = OVERLAY,
+		width = nendo.fixed(box.width),
+		height = nendo.fixed(box.height),
+		align = {x = .Center, y = .Center},
+		floating = {attach_to = .Element, parent = nendo.id("ChatBody").id, z = 8},
+		color = OVERLAY,
 		border = {color = ACCENT, width = {left = 2, right = 2, top = 2, bottom = 2}},
 	},
 	) {
-		if clay.UI(clay.ID("ChatDropLabel"))(
-		{layout = {padding = clay.PaddingAll(16)}, backgroundColor = CARD, cornerRadius = rr(8)},
+		if nendo.box(nendo.id("ChatDropLabel"))(
+		{padding = nendo.pad(16), color = CARD, radius = rr(8)},
 		) {
-			clay.Text(
-				tr("Drop files to attach"),
-				{fontId = FONT_BODY, fontSize = 18, textColor = TEXT},
-			)
+			nendo.text(tr("Drop files to attach"), {font = FONT_BODY, size = 18, color = TEXT})
 		}
 	}
 }

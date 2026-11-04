@@ -5,7 +5,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -80,56 +80,41 @@ poll_project :: proc(client: ^marmot.Client, msg: ^Msg_Ui, poll: ^marmot.Poll_Pr
 // Clicks are routed by handle_chat to poll_vote.
 poll_block :: proc(index: u32, msg: Msg_Ui) {
 	width := att_w(360)
-	if clay.UI(clay.ID("MsgPoll", index))(
-	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			childGap = 8,
-			sizing = {width = clay.SizingFixed(width)},
-		},
-	},
+	if nendo.box(nendo.id("MsgPoll", index))(
+	{direction = .Column, gap = 8, width = nendo.fixed(width)},
 	) {
 		for opt, j in msg.poll_opts {
 			slot := index * 64 + u32(j)
 			count := fmt.tprintf("%d", opt.count)
 			count_w := max(f32(20), rl.MeasureTextLine(FONT_BODY, 13, count, 0).x)
-			if clay.UI(clay.ID("PollOptRow", slot))(
+			if nendo.box(nendo.id("PollOptRow", slot))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 8,
-					padding = clay.PaddingAll(12),
-				},
-				backgroundColor = opt.mine ? SELECTED : (hovered() && msg.poll_open ? HOVER : ROW_BG),
-				cornerRadius = rr(8),
+				width = nendo.grow(),
+				direction = .Column,
+				gap = 8,
+				padding = nendo.pad(12),
+				color = opt.mine ? SELECTED : (hovered() && msg.poll_open ? HOVER : ROW_BG),
+				radius = rr(8),
 				border = {color = opt.mine ? ACCENT : ELEVATED_BORDER, width = bw()},
 			},
 			) {
-				if clay.UI(clay.ID("PollOptTop", slot))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						childGap = 10,
-						childAlignment = {y = .Center},
-					},
-				},
+				if nendo.box(nendo.id("PollOptTop", slot))(
+				{width = nendo.grow(), gap = 10, align = {y = .Center}},
 				) {
-					if clay.UI(clay.ID("PollOptChoice", slot))(
+					if nendo.box(nendo.id("PollOptChoice", slot))(
 					{
-						layout = {
-							sizing = {clay.SizingFixed(18), clay.SizingFixed(18)},
-							childAlignment = {x = .Center, y = .Center},
-						},
+						width = nendo.fixed(18),
+						height = nendo.fixed(18),
+						align = {x = .Center, y = .Center},
 						border = {color = opt.mine ? ACCENT : TEXT_DIM, width = bw()},
-						backgroundColor = opt.mine ? ACCENT : {},
-						cornerRadius = rr(msg.poll_multi ? 3 : 9),
+						color = opt.mine ? ACCENT : {},
+						radius = rr(msg.poll_multi ? 3 : 9),
 					},
 					) {
 						if opt.mine {
-							clay.Text(
+							nendo.text(
 								ICON_CHECK,
-								{fontId = FONT_ICON, fontSize = 11, textColor = ON_ACCENT},
+								{font = FONT_ICON, size = 11, color = ON_ACCENT},
 							)
 						}
 					}
@@ -137,14 +122,8 @@ poll_block :: proc(index: u32, msg: Msg_Ui) {
 					// grow column pushes the count to the right edge.
 					// Id window: [1024, 3072) inside the row's 4096 block
 					// (body is below, reply preview at +3072), 32 per option.
-					if clay.UI(clay.ID("PollOptLabel", slot))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							childGap = 2,
-						},
-					},
+					if nendo.box(nendo.id("PollOptLabel", slot))(
+					{width = nendo.grow(), direction = .Column, gap = 2},
 					) {
 						if len(opt.blocks) > 0 {
 							md_blocks(
@@ -153,65 +132,46 @@ poll_block :: proc(index: u32, msg: Msg_Ui) {
 								wrap_w = max(f32(1), width - 24 - 18 - 20 - count_w),
 							)
 						} else {
-							clay.Text(
-								opt.label,
-								{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
-							)
+							nendo.text(opt.label, {font = FONT_BODY, size = BODY_FS, color = TEXT})
 						}
 					}
-					clay.Text(
+					nendo.text(
 						count,
-						{
-							fontId = FONT_BODY,
-							fontSize = 13,
-							textColor = TEXT_DIM,
-							wrapMode = .None,
-						},
+						{font = FONT_BODY, size = 13, color = TEXT_DIM, wrap = .None},
 					)
 				}
 				frac := msg.poll_total > 0 ? f32(opt.count) / f32(msg.poll_total) : 0
-				if clay.UI(clay.ID("PollOptBarBg", slot))(
-				{
-					layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}},
-					backgroundColor = PLATE,
-					cornerRadius = rr(2),
-				},
+				if nendo.box(nendo.id("PollOptBarBg", slot))(
+				{width = nendo.grow(), height = nendo.fixed(4), color = PLATE, radius = rr(2)},
 				) {
 					if frac > 0 {
-						if clay.UI(clay.ID("PollOptBar", slot))(
+						if nendo.box(nendo.id("PollOptBar", slot))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingPercent(frac),
-									height = clay.SizingGrow(),
-								},
-							},
-							backgroundColor = ACCENT,
-							cornerRadius = rr(2),
+							width = nendo.percent(frac),
+							height = nendo.grow(),
+							color = ACCENT,
+							radius = rr(2),
 						},
 						) {}
 					}
 				}
 			}
 		}
-		if clay.UI(clay.ID("MsgPollFoot", index))({layout = {childGap = 8, padding = {top = 4}}}) {
+		if nendo.box(nendo.id("MsgPollFoot", index))({gap = 8, padding = {top = 4}}) {
 			total :=
 				msg.poll_total == 1 ? tr("1 vote") : fmt.tprintf(tr("%d votes"), msg.poll_total)
 			if msg.poll_multi {
 				total =
 					msg.poll_total == 1 ? tr("1 voter") : fmt.tprintf(tr("%d voters"), msg.poll_total)
 			}
-			clay.Text(total, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			nendo.text(total, {font = FONT_BODY, size = 12, color = TEXT_DIM})
 			if poll_voting(msg.id) {
-				clay.Text(
-					tr("Saving vote…"),
-					{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
-				)
+				nendo.text(tr("Saving vote…"), {font = FONT_BODY, size = 12, color = ACCENT})
 			}
 			if !msg.poll_open {
-				clay.Text(
+				nendo.text(
 					tr("Voting has ended."),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
 			}
 		}
@@ -284,40 +244,30 @@ poll_input_error :: proc(ui: ^Ui_State) -> Poll_Error {
 // The create-poll modal: question, fixed option rows (blanks are
 // skipped), choice-mode toggle.
 poll_modal :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("PollModal"))(
+	if nendo.box(nendo.id("PollModal"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("PollModal"), 460)),
-				height = clay.SizingFit({max = modal_h(680)}),
-			},
-			padding = clay.PaddingAll(16),
-			childGap = 10,
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		direction = .Column,
+		width = nendo.fixed(modal_w(nendo.id("PollModal"), 460)),
+		height = nendo.fit(max = modal_h(680)),
+		padding = nendo.pad(16),
+		gap = 10,
+		clip = {y = true, scroll = true},
 		floating = {
-			attachTo = .Root,
-			zIndex = 11,
-			offset = {0, rise(clay.ID("PollModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 11,
+			offset = {0, rise(nendo.id("PollModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
+		color = CARD,
+		radius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(tr("Create poll"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
+		nendo.text(tr("Create poll"), {font = FONT_TITLE, size = 18, color = TEXT})
 		poll_question_box(ui)
 		for i in 0 ..< len(ui.poll_inputs) {
-			if clay.UI(clay.ID("PollInputRow", u32(i)))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("PollInputRow", u32(i)))(
+			{width = nendo.grow(), gap = 8, align = {y = .Center}},
 			) {
 				input_box(
 					ui,
@@ -328,22 +278,18 @@ poll_modal :: proc(ui: ^Ui_State) {
 					width = 0,
 				)
 				if len(ui.poll_inputs) > POLL_OPTS_MIN {
-					if clay.UI(clay.ID("PollRemoveOpt", u32(i)))(
+					if nendo.box(nendo.id("PollRemoveOpt", u32(i)))(
 					{
-						layout = {
-							sizing = {clay.SizingFixed(44), clay.SizingFixed(44)},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : ROW_BG,
-						cornerRadius = rr(8),
+						width = nendo.fixed(44),
+						height = nendo.fixed(44),
+						align = {x = .Center, y = .Center},
+						color = hovered() ? HOVER : ROW_BG,
+						radius = rr(8),
 					},
 					) {
-						clay.Text(
-							ICON_CLOSE,
-							{fontId = FONT_ICON, fontSize = 14, textColor = TEXT_DIM},
-						)
+						nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 14, color = TEXT_DIM})
 					}
-					if clay.PointerOver(clay.ID("PollRemoveOpt", u32(i))) {
+					if nendo.pointer_over(nendo.id("PollRemoveOpt", u32(i))) {
 						tooltip(tr("Remove option"))
 					}
 				}
@@ -353,85 +299,67 @@ poll_modal :: proc(ui: ^Ui_State) {
 			micro_button("PollAddOpt", tr("Add option"))
 		}
 		if ui.poll_error != .None {
-			clay.Text(
+			nendo.text(
 				ui.poll_error == .Question ? tr("Add a question for your poll.") : tr("Add at least two options."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+				{font = FONT_BODY, size = 12, color = DANGER},
 			)
 		}
-		if clay.UI(clay.ID("PollBtnRow"))(
+		if nendo.box(nendo.id("PollBtnRow"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-				childGap = 8,
-				childAlignment = {y = .Center},
-			},
+			width = nendo.grow(),
+			direction = single_pane() ? .Column : .Row,
+			gap = 8,
+			align = {y = .Center},
 		},
 		) {
-			if clay.UI(clay.ID("PollChoiceRow"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(44)},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("PollChoiceRow"))(
+			{width = nendo.grow(), height = nendo.fixed(44), gap = 8, align = {y = .Center}},
 			) {
 				toggle("PollMulti", ui.poll_multi_in)
-				clay.Text(
-					tr("Multiple choice"),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
-				)
+				nendo.text(tr("Multiple choice"), {font = FONT_BODY, size = 12, color = TEXT})
 			}
-			if clay.UI(clay.ID("PollBtnGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("PollActions"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("PollBtnGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("PollActions"))(
+			{width = nendo.grow(), gap = 8, align = {y = .Center}},
 			) {
 				login_button("PollCancel", tr("Cancel"))
 				login_big_button("PollCreate", tr("Create"), true)
 			}
 		}
 	}
-	scrollbar(clay.ID("PollModal"), 12)
+	scrollbar(nendo.id("PollModal"), 12)
 }
 
 // Keep the modal's question separate from the composer's IDs and wrap
 // cache, but use the same grapheme rendering, selection, and IME spans.
 @(private = "file")
 poll_q_lines :: proc(ui: ^Ui_State) -> []Wrap_Line {
-	box := clay.GetElementData(clay.ID("PollQBox"))
-	width := box.found ? box.boundingBox.width - 20 : modal_w(clay.ID("PollModal"), 460) - 52
+	box := nendo.element(nendo.id("PollQBox"))
+	width := box.found ? box.rect.width - 20 : modal_w(nendo.id("PollModal"), 460) - 52
 	return wrapped_lines(string(ui.poll_question[:]), max(width - CARET_W, 1), BODY_FS, .Compose)
 }
 
 @(private = "file")
 poll_question_box :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("PollQBox"))(
+	if nendo.box(nendo.id("PollQBox"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFit({min = 80})},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(10),
-		},
-		backgroundColor = ROW_BG,
-		border = ui.focus == .PollQ ? focus_border(true) : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
-		cornerRadius = rr(8),
+		width = nendo.grow(),
+		height = nendo.fit(min = 80),
+		direction = .Column,
+		padding = nendo.pad(10),
+		color = ROW_BG,
+		border = ui.focus == .PollQ ? focus_border(true) : nendo.Border{color = FIELD_BORDER, width = bw()},
+		radius = rr(8),
 	},
 	) {
 		if len(ui.poll_question) == 0 && len(rl.Preedit()) == 0 {
-			if clay.UI(clay.ID("PollQPlaceholder"))({layout = {childAlignment = {y = .Center}}}) {
+			if nendo.box(nendo.id("PollQPlaceholder"))({align = {y = .Center}}) {
 				if ui.focus == .PollQ {
 					caret()
 				}
-				clay.Text(
+				nendo.text(
 					tr("Ask a question..."),
-					{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = BODY_FS, color = TEXT_DIM},
 				)
 			}
 		} else {
@@ -453,7 +381,7 @@ poll_question_box :: proc(ui: ^Ui_State) {
 
 @(private = "file")
 poll_q_mouse :: proc(ui: ^Ui_State) -> bool {
-	over := clay.PointerOver(clay.ID("PollQBox"))
+	over := nendo.pointer_over(nendo.id("PollQBox"))
 	pressed := over && (rl.HasTouch() ? mouse_released() : mouse_pressed())
 	dragging := !rl.HasTouch() && text_drag == &ui.poll_question && rl.IsMouseButtonDown(.LEFT)
 	if !pressed && !dragging {
@@ -465,17 +393,15 @@ poll_q_mouse :: proc(ui: ^Ui_State) -> bool {
 	text := string(ui.poll_question[:])
 	hit := len(text)
 	for line, i in poll_q_lines(ui) {
-		row := clay.GetElementData(clay.ID("ComposeLine", 0x10000 + u32(i)))
-		if row.found && point.y < row.boundingBox.y + row.boundingBox.height {
-			hit =
-				line.start +
-				hit_compose_line(text[line.start:line.end], point.x - row.boundingBox.x)
+		row := nendo.element(nendo.id("ComposeLine", 0x10000 + u32(i)))
+		if row.found && point.y < row.rect.y + row.rect.height {
+			hit = line.start + hit_compose_line(text[line.start:line.end], point.x - row.rect.x)
 			break
 		}
 	}
 	ui.focus = .PollQ
 	if rl.HasTouch() {
-		touch_field = clay.ID("PollQBox")
+		touch_field = nendo.id("PollQBox")
 	}
 	ed_begin(ui, &ui.poll_question)
 	if pressed && !shift_down() {
@@ -486,7 +412,7 @@ poll_q_mouse :: proc(ui: ^Ui_State) -> bool {
 	ed_end(ui, &ui.poll_question)
 	if !rl.HasTouch() {
 		text_drag = &ui.poll_question
-		text_drag_box = clay.ID("PollQBox")
+		text_drag_box = nendo.id("PollQBox")
 	}
 	caret_wake()
 	return true
@@ -607,7 +533,7 @@ handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if len(ui.poll_inputs) > POLL_OPTS_MIN {
 		for i in 0 ..< len(ui.poll_inputs) {
-			if !clay.PointerOver(clay.ID("PollRemoveOpt", u32(i))) {
+			if !nendo.pointer_over(nendo.id("PollRemoveOpt", u32(i))) {
 				continue
 			}
 			// Removing a row moves the remaining buffers. Drop their old
@@ -624,25 +550,25 @@ handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
-	if clay.PointerOver(clay.ID("PollAddOpt")) && len(ui.poll_inputs) < POLL_OPTS_CAP {
+	if nendo.pointer_over(nendo.id("PollAddOpt")) && len(ui.poll_inputs) < POLL_OPTS_CAP {
 		append(&ui.poll_inputs, [dynamic]u8{})
 		ui.focus = .PollOpt
 		ui.poll_focus = len(ui.poll_inputs) - 1
 		return
 	}
-	if clay.PointerOver(clay.ID("PollChoiceRow")) {
+	if nendo.pointer_over(nendo.id("PollChoiceRow")) {
 		ui.poll_multi_in = !ui.poll_multi_in
 		return
 	}
-	if clay.PointerOver(clay.ID("PollCreate")) {
+	if nendo.pointer_over(nendo.id("PollCreate")) {
 		poll_create(ui, client)
 		return
 	}
-	if clay.PointerOver(clay.ID("PollCancel")) {
+	if nendo.pointer_over(nendo.id("PollCancel")) {
 		poll_close(ui)
 		return
 	}
-	if !clay.PointerOver(clay.ID("PollModal")) {
+	if !nendo.pointer_over(nendo.id("PollModal")) {
 		if len(ui.poll_question) > 0 {
 			return
 		}

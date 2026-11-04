@@ -2,7 +2,7 @@ package main
 
 import "core:fmt"
 import "core:strings"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -96,7 +96,7 @@ timestamp_tooltip :: proc(stamp: ^Md_Timestamp) {
 			rl.MeasureTextLine(FONT_BODY, 11, token, 0).x,
 		) +
 		16
-	box := clay.GetElementData({id = clay.GetOpenElementId()}).boundingBox
+	box := nendo.element({id = nendo.open_id()}).rect
 	left := box.x + box.width / 2 - width / 2
 	x, _ := panel_pos(left, box.y, width, 0)
 	tooltip(fmt.tprintf("%s\n%s", date, token), .Below, x - left)

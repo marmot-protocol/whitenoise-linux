@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:mem"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -204,16 +204,14 @@ mention_wrap_layout :: proc(t: ^testing.T) {
 	testing.expect_value(t, n, 3)
 	for width in ([]f32{120, 480}) {
 		clear(&sel_lines)
-		clay.BeginLayout()
-		if clay.UI(clay.ID("MentionTest"))(
-		{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(width)}}},
-		) {
+		nendo.begin()
+		if nendo.box(nendo.id("MentionTest"))({direction = .Column, width = nendo.fixed(width)}) {
 			body_text(42, TEST_MENTIONS, BODY_FS, TEXT, true, width)
 		}
-		commands := clay.EndLayout(0)
+		commands := nendo.end(0)
 		if width == 480 {testing.expect_value(t, len(sel_lines), 1)}
 		for line in sel_lines {
-			box := clay.GetElementData(clay.ID("BodyLine", line.id)).boundingBox
+			box := nendo.element(nendo.id("BodyLine", line.id)).rect
 			testing.expect(
 				t,
 				box.width <= width + 0.1,
@@ -222,8 +220,7 @@ mention_wrap_layout :: proc(t: ^testing.T) {
 			at := 0
 			for seg, k in inline_segs(line.text) {
 				if len(seg.hex) > 0 {
-					chip :=
-						clay.GetElementData(clay.ID("SegMention", line.id * 128 + u32(k))).boundingBox
+					chip := nendo.element(nendo.id("SegMention", line.id * 128 + u32(k))).rect
 					testing.expect_value(
 						t,
 						hit_plain(
@@ -250,7 +247,7 @@ mention_wrap_layout :: proc(t: ^testing.T) {
 		}
 		if width == 480 {
 			rl.BeginDrawing()
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.TakeScreenshot("/tmp/wn-mention-wrap.png")
 			rl.EndDrawing()
 		}

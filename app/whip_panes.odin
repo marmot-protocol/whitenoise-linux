@@ -1,7 +1,7 @@
 package main
 
 import "core:fmt"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -20,12 +20,12 @@ WHIP_HEADER_H :: f32(28)
 WHIP_REVEAL_H :: f32(6)
 
 @(private)
-whip_header_open :: proc(root, header: clay.ElementId) -> bool {
+whip_header_open :: proc(root, header: nendo.Id) -> bool {
 	if tap_size() {return true}
-	if clay.PointerOver(header) {return true}
-	if !clay.PointerOver(root) {return false}
-	box := clay.GetElementData(root).boundingBox
-	y := clay.GetPointerState().position.y
+	if nendo.pointer_over(header) {return true}
+	if !nendo.pointer_over(root) {return false}
+	box := nendo.element(root).rect
+	y := nendo.pointer().position.y
 	return y >= box.y && y < box.y + WHIP_REVEAL_H
 }
 
@@ -42,12 +42,10 @@ whip_pane_tree :: proc(ui: ^Ui_State) {
 	visible := make([]bool, len(nodes), context.temp_allocator)
 	whip_node_visibility(nodes, root, panes, detached, visible)
 	if !visible[root] {
-		if clay.UI(clay.ID("WhipDetachedNotice"))(
-		{layout = {layoutDirection = .TopToBottom, childGap = 4}},
-		) {
-			clay.Text(
+		if nendo.box(nendo.id("WhipDetachedNotice"))({direction = .Column, gap = 4}) {
+			nendo.text(
 				tr("Panes are floating or docked to chats."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 			for pane in panes {if detached[pane.id] {whip_attach_button("WhipDetachedReturn", pane.id, tr("Return to project"))}}
 		}
@@ -57,14 +55,8 @@ whip_pane_tree :: proc(ui: ^Ui_State) {
 		for pane, i in panes {if pane.id == zoom && !detached[pane.id] {whip_pane_slot(pane, i, zoom); return}}
 	}
 	if single_pane() {
-		if clay.UI(clay.ID("WhipMobilePanes"))(
-		{
-			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 4,
-			},
-		},
+		if nendo.box(nendo.id("WhipMobilePanes"))(
+		{width = nendo.grow(), height = nendo.grow(), direction = .Column, gap = 4},
 		) {
 			selected := -1
 			for pane, i in panes {
@@ -72,39 +64,40 @@ whip_pane_tree :: proc(ui: ^Ui_State) {
 				if selected < 0 || pane.focused {selected = i}
 			}
 			if len(panes) > 1 {
-				if clay.UI(clay.ID("WhipPhoneTabs"))(
+				if nendo.box(nendo.id("WhipPhoneTabs"))(
 				{
-					layout = {sizing = {clay.SizingGrow(), clay.SizingFixed(44)}, childGap = 4},
-					clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+					width = nendo.grow(),
+					height = nendo.fixed(44),
+					gap = 4,
+					clip = {x = true, scroll = true},
 				},
 				) {
 					for pane, i in panes {
 						if detached[pane.id] {continue}
-						if clay.UI(clay.ID("WhipPhonePane", pane.id))(
+						if nendo.box(nendo.id("WhipPhonePane", pane.id))(
 						{
-							layout = {
-								sizing = {clay.SizingFixed(140), clay.SizingFixed(44)},
-								padding = {left = 10, right = 10},
-								childAlignment = {y = .Center},
-							},
-							backgroundColor = i == selected ? SELECTED : ROW_BG,
-							cornerRadius = rr(6),
-							clip = {horizontal = true},
+							width = nendo.fixed(140),
+							height = nendo.fixed(44),
+							padding = {left = 10, right = 10},
+							align = {y = .Center},
+							color = i == selected ? SELECTED : ROW_BG,
+							radius = rr(6),
+							clip = {x = true},
 						},
 						) {
-							clay.Text(
+							nendo.text(
 								fmt.tprintf("%d  %s", i + 1, pane.name),
 								{
-									fontId = FONT_BODY,
-									fontSize = 12,
-									textColor = i == selected ? TEXT : TEXT_DIM,
-									wrapMode = .None,
+									font = FONT_BODY,
+									size = 12,
+									color = i == selected ? TEXT : TEXT_DIM,
+									wrap = .None,
 								},
 							)
 						}
 					}
 				}
-				scrollbar(clay.ID("WhipPhoneTabs"))
+				scrollbar(nendo.id("WhipPhoneTabs"))
 			}
 			if selected >= 0 {whip_pane_slot(panes[selected], selected)}
 		}
@@ -147,135 +140,110 @@ whip_node :: proc(nodes: []rl.Whip_Node, index: int, panes: []rl.Whip_Pane, visi
 	if !first_visible {whip_node(nodes, node.second, panes, visible); return}
 	if !second_visible {whip_node(nodes, node.first, panes, visible); return}
 	horizontal := node.axis == .Right
-	if clay.UI(clay.ID("WhipSplit", u32(index)))(
-	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
-			layoutDirection = horizontal ? .LeftToRight : .TopToBottom,
-		},
-	},
+	if nendo.box(nendo.id("WhipSplit", u32(index)))(
+	{width = nendo.grow(), height = nendo.grow(), direction = horizontal ? .Row : .Column},
 	) {
-		box := clay.GetElementData(clay.ID("WhipSplit", u32(index))).boundingBox
+		box := nendo.element(nendo.id("WhipSplit", u32(index))).rect
 		ratio := index == whip_divider ? whip_drag_ratio : node.ratio
 		first := horizontal ? box.width : box.height
 		first = max(first - WHIP_GUTTER, 0) * clamp(ratio, 0.05, 0.95)
-		if clay.UI(clay.ID("WhipSplitFirst", u32(index)))(
+		if nendo.box(nendo.id("WhipSplitFirst", u32(index)))(
 		{
-			layout = {
-				sizing = {
-					width = horizontal ? clay.SizingFixed(first) : clay.SizingGrow(),
-					height = horizontal ? clay.SizingGrow() : clay.SizingFixed(first),
-				},
-			},
+			width = horizontal ? nendo.fixed(first) : nendo.grow(),
+			height = horizontal ? nendo.grow() : nendo.fixed(first),
 		},
 		) {whip_node(nodes, node.first, panes, visible)}
-		if clay.UI(clay.ID("WhipDivider", u32(index)))(
+		if nendo.box(nendo.id("WhipDivider", u32(index)))(
 		{
-			layout = {
-				sizing = {
-					width = horizontal ? clay.SizingFixed(WHIP_GUTTER) : clay.SizingGrow(),
-					height = horizontal ? clay.SizingGrow() : clay.SizingFixed(WHIP_GUTTER),
-				},
-				childAlignment = {x = .Center, y = .Center},
-			},
+			width = horizontal ? nendo.fixed(WHIP_GUTTER) : nendo.grow(),
+			height = horizontal ? nendo.grow() : nendo.fixed(WHIP_GUTTER),
+			align = {x = .Center, y = .Center},
 		},
 		) {
 			active := index == whip_divider || hovered()
 			if active {cursor_raise(horizontal ? .ResizeEW : .ResizeNS)}
-			if clay.UI(clay.ID("WhipDividerGrip", u32(index)))(
+			if nendo.box(nendo.id("WhipDividerGrip", u32(index)))(
 			{
-				layout = {
-					sizing = {
-						clay.SizingFixed(horizontal ? 2 : 28),
-						clay.SizingFixed(horizontal ? 28 : 2),
-					},
-				},
-				backgroundColor = active ? ACCENT : FIELD_BORDER,
-				cornerRadius = rr(2),
+				width = nendo.fixed(horizontal ? 2 : 28),
+				height = nendo.fixed(horizontal ? 28 : 2),
+				color = active ? ACCENT : FIELD_BORDER,
+				radius = rr(2),
 			},
 			) {}
 		}
-		if clay.UI(clay.ID("WhipSplitSecond", u32(index)))(
-		{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}}},
+		if nendo.box(nendo.id("WhipSplitSecond", u32(index)))(
+		{width = nendo.grow(), height = nendo.grow()},
 		) {whip_node(nodes, node.second, panes, visible)}
 	}
 }
 
 @(private)
 whip_pane_slot :: proc(pane: rl.Whip_Pane, index: int, zoom: u32 = 0) {
-	root := clay.ID("WhipPane", pane.id)
-	show_header := !single_pane() && whip_header_open(root, clay.ID("WhipPaneHead", pane.id))
+	root := nendo.id("WhipPane", pane.id)
+	show_header := !single_pane() && whip_header_open(root, nendo.id("WhipPaneHead", pane.id))
 	payload := new(Whip_Payload, context.temp_allocator)
 	payload^ = {
 		.Whip,
 		pane.id,
 		single_pane() ? 0 : (show_header ? (tap_size() ? tap_min() : WHIP_HEADER_H) : WHIP_REVEAL_H),
 	}
-	if clay.UI(root)(
+	if nendo.box(root)(
 	{
-		layout = {
-			sizing = {clay.SizingPercent(1), clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(1),
-		},
-		backgroundColor = PANEL,
-		border = {color = pane.focused ? ACCENT_DIM : FIELD_BORDER, width = clay.BorderOutside(1)},
-		cornerRadius = rr(8),
-		clip = {horizontal = true, vertical = true},
+		width = nendo.percent(1),
+		height = nendo.grow(),
+		direction = .Column,
+		padding = nendo.pad(1),
+		color = PANEL,
+		border = {color = pane.focused ? ACCENT_DIM : FIELD_BORDER, width = nendo.outline(1)},
+		radius = rr(8),
+		clip = {x = true, y = true},
 	},
 	) {
 		if show_header {
-			if clay.UI(clay.ID("WhipPaneHead", pane.id))(
+			if nendo.box(nendo.id("WhipPaneHead", pane.id))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(
-							max(clay.GetElementData(root).boundingBox.width - 2, 0),
-						),
-						height = clay.SizingFixed(tap_size() ? tap_min() : WHIP_HEADER_H),
-					},
-					childGap = 4,
-					padding = {left = 6, right = 3},
-					childAlignment = {y = .Center},
-				},
+				width = nendo.fixed(max(nendo.element(root).rect.width - 2, 0)),
+				height = nendo.fixed(tap_size() ? tap_min() : WHIP_HEADER_H),
+				gap = 4,
+				padding = {left = 6, right = 3},
+				align = {y = .Center},
 				floating = {
-					attachTo = .Parent,
-					clipTo = .AttachedParent,
-					zIndex = 7,
+					attach_to = .Parent,
+					clip_to = .Parent,
+					z = 7,
 					offset = {1, 1},
-					attachment = {element = .LeftTop, parent = .LeftTop},
+					attach = {element = .Left_Top, parent = .Left_Top},
 				},
-				backgroundColor = pane.focused ? SELECTED : PANEL,
+				color = pane.focused ? SELECTED : PANEL,
 				border = {color = pane.focused ? ACCENT_GLOW : DIVIDER, width = {bottom = 1}},
 			},
 			) {
 				if hovered() {cursor_raise(.Pointer)}
-				if clay.UI(clay.ID("WhipPaneNumber", pane.id))(
+				if nendo.box(nendo.id("WhipPaneNumber", pane.id))(
 				{
-					layout = {
-						sizing = {clay.SizingFixed(16), clay.SizingFixed(16)},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = pane.focused ? ACCENT : PLATE,
-					cornerRadius = rr(4),
+					width = nendo.fixed(16),
+					height = nendo.fixed(16),
+					align = {x = .Center, y = .Center},
+					color = pane.focused ? ACCENT : PLATE,
+					radius = rr(4),
 				},
-				) {clay.Text(fmt.tprintf("%d", index + 1), {fontId = FONT_MONO, fontSize = 10, textColor = pane.focused ? ON_ACCENT : TEXT_DIM})}
-				if clay.UI(clay.ID("WhipPaneTitle", pane.id))(
-				{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+				) {nendo.text(fmt.tprintf("%d", index + 1), {font = FONT_MONO, size = 10, color = pane.focused ? ON_ACCENT : TEXT_DIM})}
+				if nendo.box(nendo.id("WhipPaneTitle", pane.id))(
+				{width = nendo.grow(), clip = {x = true}},
 				) {
-					clay.Text(
+					nendo.text(
 						pane.name,
 						{
-							fontId = FONT_TITLE,
-							fontSize = 11,
-							textColor = pane.focused ? TEXT : TEXT_DIM,
-							wrapMode = .None,
+							font = FONT_TITLE,
+							size = 11,
+							color = pane.focused ? TEXT : TEXT_DIM,
+							wrap = .None,
 						},
 					)
 					if hovered() {tooltip(pane.name)}
 				}
 				if pane.waiting {
-					clay.Text("●", {fontId = FONT_BODY, fontSize = 10, textColor = WARNING})
+					nendo.text("●", {font = FONT_BODY, size = 10, color = WARNING})
 				}
 				whip_attach_button("WhipPaneFloat", pane.id, tr("Float"))
 				whip_pane_button("WhipSplitRight", pane.id, .Split_Right, tr("Split right"))
@@ -290,11 +258,12 @@ whip_pane_slot :: proc(pane: rl.Whip_Pane, index: int, zoom: u32 = 0) {
 				whip_pane_button("WhipPaneClose", pane.id, .Close, tr("Close pane"))
 			}
 		}
-		if clay.UI(clay.ID("WhipPaneContent", pane.id))(
+		if nendo.box(nendo.id("WhipPaneContent", pane.id))(
 		{
-			layout = {sizing = {clay.SizingPercent(1), clay.SizingGrow()}},
-			clip = {horizontal = true, vertical = true},
-			custom = {customData = payload},
+			width = nendo.percent(1),
+			height = nendo.grow(),
+			clip = {x = true, y = true},
+			custom = payload,
 		},
 		) {whip_pane_progress(pane)}
 	}
@@ -303,34 +272,33 @@ whip_pane_slot :: proc(pane: rl.Whip_Pane, index: int, zoom: u32 = 0) {
 @(private)
 whip_pane_progress :: proc(pane: rl.Whip_Pane) {
 	if !pane.loading && !pane.restoring {return}
-	if clay.UI(clay.ID("WhipPaneProgress", pane.id))(
+	if nendo.box(nendo.id("WhipPaneProgress", pane.id))(
 	{
-		layout = {
-			sizing = {clay.SizingFit(), clay.SizingFit()},
-			layoutDirection = .TopToBottom,
-			childGap = 6,
-			padding = clay.PaddingAll(10),
-		},
+		width = nendo.fit(),
+		height = nendo.fit(),
+		direction = .Column,
+		gap = 6,
+		padding = nendo.pad(10),
 		floating = {
-			attachTo = .Parent,
-			clipTo = .AttachedParent,
-			zIndex = 8,
-			pointerCaptureMode = .Passthrough,
+			attach_to = .Parent,
+			clip_to = .Parent,
+			z = 8,
+			pointer = .Passthrough,
 			offset = {-8, WHIP_HEADER_H + 8},
-			attachment = {element = .RightTop, parent = .RightTop},
+			attach = {element = .Right_Top, parent = .Right_Top},
 		},
-		backgroundColor = PANEL,
-		cornerRadius = rr(6),
+		color = PANEL,
+		radius = rr(6),
 		border = {color = DIVIDER, width = bw()},
 	},
 	) {
-		clay.Text(
+		nendo.text(
 			tr(pane.restoring ? N_("Restoring terminal history…") : N_("Opening Whip…")),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 12, color = TEXT_DIM},
 		)
-		clay.Text(
+		nendo.text(
 			tr("Progress is indeterminate."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
 		)
 		busy_bar(fmt.tprintf("WhipPaneLoad%d", pane.id))
 	}
@@ -345,52 +313,38 @@ whip_pane_button :: proc(
 	zoom: u32 = 0,
 ) {
 	selected := action == .Zoom && zoom == pane
-	if clay.UI(clay.ID(label, pane))(
+	if nendo.box(nendo.id(label, pane))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(tap_size() ? tap_min() : 20),
-				height = clay.SizingFixed(tap_size() ? tap_min() : 20),
-			},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = hovered() ? (action == .Close ? DANGER_SOFT : HOVER) : (selected ? ACCENT_GLOW : {}),
-		cornerRadius = rr(4),
+		width = nendo.fixed(tap_size() ? tap_min() : 20),
+		height = nendo.fixed(tap_size() ? tap_min() : 20),
+		align = {x = .Center, y = .Center},
+		color = hovered() ? (action == .Close ? DANGER_SOFT : HOVER) : (selected ? ACCENT_GLOW : {}),
+		radius = rr(4),
 	},
 	) {
 		color := hovered() ? (action == .Close ? DANGER : TEXT) : (selected ? ACCENT : TEXT_DIM)
 		if action == .Close {
-			clay.Text("×", {fontId = FONT_BODY, fontSize = 14, textColor = color})
-		} else if clay.UI()(
+			nendo.text("×", {font = FONT_BODY, size = 14, color = color})
+		} else if nendo.box()(
 		{
-			layout = {
-				sizing = {clay.SizingFixed(12), clay.SizingFixed(10)},
-				layoutDirection = action == .Split_Down ? .TopToBottom : .LeftToRight,
-				padding = clay.PaddingAll(2),
-				childGap = 2,
-			},
-			border = {color = color, width = clay.BorderOutside(1)},
-			cornerRadius = rr(2),
+			width = nendo.fixed(12),
+			height = nendo.fixed(10),
+			direction = action == .Split_Down ? .Column : .Row,
+			padding = nendo.pad(2),
+			gap = 2,
+			border = {color = color, width = nendo.outline(1)},
+			radius = rr(2),
 		},
 		) {
 			if action == .Split_Right || action == .Split_Down {
-				if clay.UI()(
-				{
-					layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}},
-					backgroundColor = color,
-				},
-				) {}
-				if clay.UI()(
-				{
-					layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}},
-					backgroundColor = color,
-				},
-				) {}
+				if nendo.box()({width = nendo.grow(), height = nendo.grow(), color = color}) {}
+				if nendo.box()({width = nendo.grow(), height = nendo.grow(), color = color}) {}
 			} else if selected {
-				if clay.UI()(
+				if nendo.box()(
 				{
-					layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}},
-					border = {color = color, width = clay.BorderOutside(1)},
+					width = nendo.grow(),
+					height = nendo.grow(),
+					border = {color = color, width = nendo.outline(1)},
 				},
 				) {}
 			}
@@ -409,7 +363,7 @@ whip_pane_input :: proc(ui: ^Ui_State) {
 	if whip_drag_tab != ui.whip_tabs[ui.whip_project] {whip_divider = -1}
 	if rl.IsMouseButtonPressed(.LEFT) {
 		for node, i in nodes {
-			if node.kind == .Split && clay.PointerOver(clay.ID("WhipDivider", u32(i))) {
+			if node.kind == .Split && nendo.pointer_over(nendo.id("WhipDivider", u32(i))) {
 				whip_divider, whip_drag_ratio = i, node.ratio
 				whip_drag_tab = ui.whip_tabs[ui.whip_project]
 				break
@@ -417,7 +371,7 @@ whip_pane_input :: proc(ui: ^Ui_State) {
 		}
 	}
 	if whip_divider >= 0 && whip_divider < len(nodes) {
-		box := clay.GetElementData(clay.ID("WhipSplit", u32(whip_divider))).boundingBox
+		box := nendo.element(nendo.id("WhipSplit", u32(whip_divider))).rect
 		point := rl.GetMousePosition()
 		point.x /= UI_ZOOM; point.y /= UI_ZOOM
 		node := nodes[whip_divider]
@@ -433,15 +387,15 @@ whip_pane_input :: proc(ui: ^Ui_State) {
 	}
 	if !mouse_released() {return}
 	for pane in rl.WhipPanes() {
-		if clay.PointerOver(
-			clay.ID("WhipPhonePane", pane.id),
+		if nendo.pointer_over(
+			nendo.id("WhipPhonePane", pane.id),
 		) {rl.WhipPaneAct(.Focus, pane.id); return}
-		if clay.PointerOver(
-			clay.ID("WhipDetachedReturn", pane.id),
+		if nendo.pointer_over(
+			nendo.id("WhipDetachedReturn", pane.id),
 		) {whip_attach_rejoin(ui, pane.id); return}
 		if whip_attach_index(ui, pane.id) >= 0 {continue}
-		if clay.PointerOver(
-			clay.ID("WhipPaneFloat", pane.id),
+		if nendo.pointer_over(
+			nendo.id("WhipPaneFloat", pane.id),
 		) {whip_attach_float(ui, pane.id); return}
 		actions := [?]struct {
 			id:     string,
@@ -453,12 +407,12 @@ whip_pane_input :: proc(ui: ^Ui_State) {
 			{"WhipPaneClose", .Close},
 		}
 		for action in actions {
-			if clay.PointerOver(
-				clay.ID(action.id, pane.id),
+			if nendo.pointer_over(
+				nendo.id(action.id, pane.id),
 			) {rl.WhipPaneAct(action.action, pane.id); return}
 		}
-		if clay.PointerOver(
-			clay.ID("WhipPaneHead", pane.id),
+		if nendo.pointer_over(
+			nendo.id("WhipPaneHead", pane.id),
 		) {rl.WhipPaneAct(.Focus, pane.id); return}
 	}
 }

@@ -18,7 +18,7 @@ import "core:strings"
 import stbi "vendor:stb/image"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Android's geometry, kept identical so both platforms produce the
@@ -317,48 +317,28 @@ nc_pic_tex :: proc(ui: ^Ui_State) -> ^rl.Texture2D {
 // removable chips, then Use/Cancel. The emoji grid below feeds it.
 emoji_mix_header :: proc(ui: ^Ui_State) {
 	eyebrow(tr("EMOJI GROUP IMAGE"))
-	if clay.UI(clay.ID("GemojiRow"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			childGap = 12,
-			childAlignment = {y = .Center},
-		},
-	},
-	) {
+	if nendo.box(nendo.id("GemojiRow"))({width = nendo.grow(), gap = 12, align = {y = .Center}}) {
 		preview := len(ui.gemoji) > 0 ? local_pic(EMOJI_MIX_PREVIEW) : nil
 		avatar("GemojiPreview", 0, "", "", 56, preview)
-		if clay.UI(clay.ID("GemojiSide"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 6,
-			},
-		},
+		if nendo.box(nendo.id("GemojiSide"))(
+		{width = nendo.grow(), direction = .Column, gap = 6},
 		) {
-			if clay.UI(clay.ID("GemojiChips"))(
-			{
-				layout = {
-					sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 26)},
-					childGap = 6,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("GemojiChips"))(
+			{height = nendo.fixed(tap_size() ? tap_min() : 26), gap = 6, align = {y = .Center}},
 			) {
 				if len(ui.gemoji) ==
-				   0 {clay.Text(tr("No emoji selected"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})}
+				   0 {nendo.text(tr("No emoji selected"), {font = FONT_BODY, size = 12, color = TEXT_LO})}
 				for e, i in ui.gemoji {
 					gemoji_chip(u32(i), e)
 				}
 			}
-			clay.Text(
+			nendo.text(
 				tr("Choose one or two emoji. Every member sees the same image."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 		}
 	}
-	if clay.UI(clay.ID("GemojiActions"))({layout = {childGap = 8}}) {
+	if nendo.box(nendo.id("GemojiActions"))({gap = 8}) {
 		micro_button("GemojiUse", tr("Use emoji image"), len(ui.gemoji) > 0 ? ACCENT : TEXT_LO)
 		micro_button("GemojiCancel", tr("Cancel"))
 	}
@@ -367,29 +347,21 @@ emoji_mix_header :: proc(ui: ^Ui_State) {
 // A picked emoji with its remove mark; clicking anywhere on it removes it.
 @(private = "file")
 gemoji_chip :: proc(index: u32, emoji: string) {
-	if clay.UI(clay.ID("GemojiChip", index))(
+	if nendo.box(nendo.id("GemojiChip", index))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-			},
-			padding = {left = 6, right = 8, top = 2, bottom = 2},
-			childGap = 4,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : ROW_BG,
-		cornerRadius = rr(6),
+		width = nendo.fit(min = tap_size() ? tap_min() : 0),
+		height = nendo.fit(min = tap_size() ? tap_min() : 0),
+		padding = {left = 6, right = 8, top = 2, bottom = 2},
+		gap = 4,
+		align = {y = .Center},
+		color = hovered() ? HOVER : ROW_BG,
+		radius = rr(6),
 	},
 	) {
-		if clay.UI(clay.ID_LOCAL("GemojiChipImg"))(
-		{
-			layout = {sizing = {width = clay.SizingFixed(20)}},
-			aspectRatio = {1},
-			image = {imageData = emoji_tex(emoji)},
-		},
+		if nendo.box(nendo.id_local("GemojiChipImg"))(
+		{width = nendo.fixed(20), aspect = 1, image = emoji_tex(emoji)},
 		) {}
-		clay.Text("×", {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+		nendo.text("×", {font = FONT_BODY, size = 13, color = TEXT_DIM})
 	}
 }
 

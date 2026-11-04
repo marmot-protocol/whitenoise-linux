@@ -8,7 +8,7 @@ import "core:strings"
 import "core:sync"
 import "core:thread"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private = "file")
@@ -124,29 +124,25 @@ Profile_Background :: struct {
 	kind: Model_Kind,
 	tex:  ^rl.Texture2D,
 	tile: bool,
-	base: clay.Color,
+	base: nendo.Color,
 }
 
 @(private)
-profile_background :: proc(style: Profile_Style) -> clay.CustomElementConfig {
-	if style.background == "" {return {}}
+profile_background :: proc(style: Profile_Style) -> rawptr {
+	if style.background == "" {return nil}
 	tex := nev_img(style.background)
-	if tex == nil {return {}}
+	if tex == nil {return nil}
 	view := new(Profile_Background, context.temp_allocator)
 	view^ = {.Profile_Background, tex, style.tile, BG}
-	return {customData = view}
+	return view
 }
 
 @(private)
-profile_background_draw :: proc(
-	view: ^Profile_Background,
-	bounds: clay.BoundingBox,
-	tint: rl.Color,
-) {
+profile_background_draw :: proc(view: ^Profile_Background, bounds: nendo.Rect, tint: rl.Color) {
 	tint := tint
 	tex := view.tex
 	if tex.width <= 0 || tex.height <= 0 {return}
-	base := clay_color(view.base)
+	base := nendo_color(view.base)
 	base.a = u8(u32(base.a) * u32(tint.a) / 255)
 	rl.DrawRectangleRec(bounds.x, bounds.y, bounds.width, bounds.height, base)
 	// Leave the theme's background color behind text, even with a bright photo.

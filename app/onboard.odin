@@ -5,7 +5,7 @@ package main
 
 import "core:fmt"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -104,128 +104,104 @@ step_view :: proc(ui: ^Ui_State, step: Step) -> Step_View {
 
 // Inline shares the rail's scroll container so Notes and Whip remain reachable.
 get_started_pane :: proc(ui: ^Ui_State, mode: Onboard_Layout = .Scroll) {
-	if clay.UI(clay.ID("GetStarted"))(
+	if nendo.box(nendo.id("GetStarted"))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), mode == .Inline ? clay.SizingFit() : clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			childAlignment = {
-				x = .Center,
-				y = mode == .Inline || single_pane() || f32(rl.GetScreenHeight()) / UI_ZOOM < 600 ? .Top : .Center,
-			},
-			childGap = 14,
-			padding = {top = 12, bottom = 12},
+		width = nendo.grow(),
+		height = mode == .Inline ? nendo.fit() : nendo.grow(),
+		direction = .Column,
+		align = {
+			x = .Center,
+			y = mode == .Inline || single_pane() || f32(rl.GetScreenHeight()) / UI_ZOOM < 600 ? .Top : .Center,
 		},
-		clip = mode == .Scroll ? clay.ClipElementConfig{vertical = true, childOffset = clay.GetScrollOffset()} : clay.ClipElementConfig{},
+		gap = 14,
+		padding = {top = 12, bottom = 12},
+		clip = mode == .Scroll ? nendo.Clip{y = true, scroll = true} : nendo.Clip{},
 	},
 	) {
 		if mode == .Scroll {
-			scrollbar(clay.ID("GetStarted"))
+			scrollbar(nendo.id("GetStarted"))
 		}
-		if clay.UI(clay.ID("GetStartedCard"))(
+		if nendo.box(nendo.id("GetStartedCard"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow({max = fit_w(480)})},
-				layoutDirection = .TopToBottom,
-				padding = clay.PaddingAll(single_pane() ? 16 : 24),
-				childGap = 10,
-			},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(14),
+			width = nendo.grow(max = fit_w(480)),
+			direction = .Column,
+			padding = nendo.pad(single_pane() ? 16 : 24),
+			gap = 10,
+			color = ROW_BG,
+			radius = rr(14),
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
-			clay.Text(tr("Get started"), {fontId = FONT_TITLE, fontSize = 22, textColor = TEXT})
-			clay.Text(
+			nendo.text(tr("Get started"), {font = FONT_TITLE, size = 22, color = TEXT})
+			nendo.text(
 				tr("Three things and you can send your first message."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 
 			for step in Step {
 				view := step_view(ui, step)
-				if clay.UI(clay.ID("StepRow", u32(step)))(
+				if nendo.box(nendo.id("StepRow", u32(step)))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						padding = {top = 10, bottom = 10},
-						childGap = 12,
-						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-						childAlignment = {y = .Center},
-					},
+					width = nendo.grow(),
+					padding = {top = 10, bottom = 10},
+					gap = 12,
+					direction = single_pane() ? .Column : .Row,
+					align = {y = .Center},
 				},
 				) {
 					// Filled accent tick when done, hollow ordinal until then.
-					if clay.UI(clay.ID("StepMark", u32(step)))(
+					if nendo.box(nendo.id("StepMark", u32(step)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingFixed(24), height = clay.SizingFixed(24)},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = view.done ? ACCENT : {},
-						cornerRadius = rr(12),
-						border = view.done ? {} : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
+						width = nendo.fixed(24),
+						height = nendo.fixed(24),
+						align = {x = .Center, y = .Center},
+						color = view.done ? ACCENT : {},
+						radius = rr(12),
+						border = view.done ? {} : nendo.Border{color = FIELD_BORDER, width = bw()},
 					},
 					) {
 						if view.done {
-							clay.Text(
+							nendo.text(
 								ICON_CHECK,
-								{fontId = FONT_ICON, fontSize = 10, textColor = ON_ACCENT},
+								{font = FONT_ICON, size = 10, color = ON_ACCENT},
 							)
 						} else {
-							clay.Text(
+							nendo.text(
 								fmt.tprintf("%d", int(step) + 1),
-								{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+								{font = FONT_BODY, size = 12, color = TEXT_DIM},
 							)
 						}
 					}
-					if clay.UI(clay.ID("StepCol", u32(step)))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							childGap = 3,
-						},
-					},
+					if nendo.box(nendo.id("StepCol", u32(step)))(
+					{width = nendo.grow(), direction = .Column, gap = 3},
 					) {
-						clay.Text(
+						nendo.text(
 							tr(view.title),
-							{
-								fontId = FONT_TITLE,
-								fontSize = 14,
-								textColor = view.done ? TEXT_DIM : TEXT,
-							},
+							{font = FONT_TITLE, size = 14, color = view.done ? TEXT_DIM : TEXT},
 						)
-						clay.Text(
-							tr(view.sub),
-							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
-						)
+						nendo.text(tr(view.sub), {font = FONT_BODY, size = 11, color = TEXT_LO})
 					}
 					if len(view.action) > 0 {
 						micro_button(step_action_id(step), tr(view.action))
 					}
 				}
 				if step != .First_Chat {
-					if clay.UI(clay.ID("StepRule", u32(step)))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)},
-						},
-						backgroundColor = DIVIDER,
-					},
+					if nendo.box(nendo.id("StepRule", u32(step)))(
+					{width = nendo.grow(), height = nendo.fixed(1), color = DIVIDER},
 					) {}
 				}
 			}
 		}
 		if mode == .Scroll && !tap_size() {
-			clay.Text(
+			nendo.text(
 				tr("Press Ctrl P for the command palette."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+				{font = FONT_BODY, size = 11, color = TEXT_LO},
 			)
 		}
 	}
 }
 
-// Plain-string id per row: indexed clay ids don't survive the query
+// Plain-string id per row: indexed nendo ids don't survive the query
 // round trip (PORT.md Quirks).
 step_action_id :: proc(step: Step) -> string {
 	switch step {

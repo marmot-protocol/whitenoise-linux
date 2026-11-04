@@ -2,34 +2,28 @@ package main
 
 import "core:sync"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
 chat_drop_boundaries :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
-	previous := clay.GetCurrentContext()
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
 	zoom := UI_ZOOM
 	memory: []u8
 	init_layout(&memory, 32768, {800, 600})
-	defer {clay.SetCurrentContext(previous); delete(memory); UI_ZOOM = zoom}
-	clay.BeginLayout()
-	if clay.UI(clay.ID("DropFixture"))(
-	{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}}},
-	) {
-		if clay.UI(clay.ID("RailFixture"))(
-		{layout = {sizing = {clay.SizingFixed(200), clay.SizingGrow()}}},
-		) {}
-		if clay.UI(clay.ID("ChatBody"))(
-		{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}}},
-		) {
-			if clay.UI(clay.ID("Composer"))(
-			{layout = {sizing = {clay.SizingGrow(), clay.SizingFixed(100)}}},
+	defer {nendo.set_context(previous); delete(memory); UI_ZOOM = zoom}
+	nendo.begin()
+	if nendo.box(nendo.id("DropFixture"))({width = nendo.grow(), height = nendo.grow()}) {
+		if nendo.box(nendo.id("RailFixture"))({width = nendo.fixed(200), height = nendo.grow()}) {}
+		if nendo.box(nendo.id("ChatBody"))({width = nendo.grow(), height = nendo.grow()}) {
+			if nendo.box(nendo.id("Composer"))(
+			{width = nendo.grow(), height = nendo.fixed(100)},
 			) {}
 		}
 	}
-	clay.EndLayout(0)
+	nendo.end(0)
 	ui := Ui_State {
 		page     = .Chats,
 		selected = 0,

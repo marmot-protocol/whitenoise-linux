@@ -5,8 +5,8 @@ import "core:testing"
 
 @(test)
 video_texture_resolution :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	view := Video_View {
 		dw = 1920,
 		dh = 1080,

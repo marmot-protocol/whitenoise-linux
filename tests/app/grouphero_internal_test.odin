@@ -5,20 +5,16 @@ import "base:runtime"
 import "core:testing"
 
 photo_test_layout :: proc(ui: ^Ui_State) {
-	clay.BeginLayout()
-	if clay.UI(clay.ID("PhotoTestRoot"))(
+	nendo.begin()
+	if nendo.box(nendo.id("PhotoTestRoot"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(f32(rl.GetScreenWidth())),
-				height = clay.SizingFixed(f32(rl.GetScreenHeight())),
-			},
-		},
+		width = nendo.fixed(f32(rl.GetScreenWidth())),
+		height = nendo.fixed(f32(rl.GetScreenHeight())),
 	},
 	) {
 		photo_preview_modal(ui)
 	}
-	clay.EndLayout(1.0 / 60)
+	nendo.end(1.0 / 60)
 }
 
 // Run alone: SDL_VIDEODRIVER=dummy tests/odin.sh app
@@ -27,8 +23,8 @@ photo_test_layout :: proc(ui: ^Ui_State) {
 photo_preview_flow :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "photo_preview_flow" {return}
 	context.allocator = runtime.default_context().allocator
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	rl.InitWindow(320, 300, "Photo preview regression")
 	defer rl.CloseWindow()
 	defer profile_session_clear()
@@ -69,45 +65,40 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		)
 		photo_test_layout(&ui)
 		for id in ([]string{"PhotoPreview", "PhotoImage", "PhotoUse", "PhotoCancel"}) {
-			box := clay.GetElementData(clay.ID(id))
+			box := nendo.element(nendo.id(id))
 			testing.expect(t, box.found)
-			testing.expect(
-				t,
-				box.boundingBox.y >= 0 && box.boundingBox.y + box.boundingBox.height <= 300,
-			)
+			testing.expect(t, box.rect.y >= 0 && box.rect.y + box.rect.height <= 300)
 		}
 		// Exercise Crop and Use original through real modal hit testing. Neither may
 		// dispatch uploads or replace the source/committed avatar.
 		original_data := ui.photo.draft.data
-		box := clay.GetElementData(clay.ID("PhotoCrop")).boundingBox
-		clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+		box := nendo.element(nendo.id("PhotoCrop")).rect
+		nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
 		forced_release = true
 		handle_photo_preview(&ui, nil)
 		forced_release = false
 		testing.expect(t, ui.photo.crop.active)
 		photo_test_layout(&ui)
-		testing.expect(t, clay.GetElementData(clay.ID("PhotoCropBox")).found)
+		testing.expect(t, nendo.element(nendo.id("PhotoCropBox")).found)
 		for i in 1 ..= 4 {
-			handle := clay.GetElementData(clay.ID("PhotoCropHandle", u32(i)))
+			handle := nendo.element(nendo.id("PhotoCropHandle", u32(i)))
 			size := tap_size() ? f32(44) : f32(24)
 			testing.expect(
 				t,
-				handle.found &&
-				handle.boundingBox.width == size &&
-				handle.boundingBox.height == size,
+				handle.found && handle.rect.width == size && handle.rect.height == size,
 			)
-			crop := clay.GetElementData(clay.ID("PhotoCropBox")).boundingBox
+			crop := nendo.element(nendo.id("PhotoCropBox")).rect
 			corner_x := crop.x + (i == 2 || i == 4 ? crop.width : 0)
 			corner_y := crop.y + (i >= 3 ? crop.height : 0)
 			testing.expect(
 				t,
-				abs(handle.boundingBox.x + size / 2 - corner_x) < 0.1 &&
-				abs(handle.boundingBox.y + size / 2 - corner_y) < 0.1,
+				abs(handle.rect.x + size / 2 - corner_x) < 0.1 &&
+				abs(handle.rect.y + size / 2 - corner_y) < 0.1,
 				"Crop hit targets must stay centered on their visible corners",
 			)
-			// Real button state and Clay hit testing select the resize mode,
+			// Real button state and nendo hit testing select the resize mode,
 			// rather than starting an interior move or dispatching an upload.
-			clay.SetPointerState({corner_x, corner_y}, true)
+			nendo.set_pointer({corner_x, corner_y}, .Down)
 			rl.PushMouseButton(.LEFT, true)
 			handle_photo_preview(&ui, nil)
 			testing.expect(t, ui.photo.crop_drag)
@@ -118,29 +109,29 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		}
 		// A taller viewport leaves interior space between the finger-sized handles.
 		rl.SetWindowSize(320, 640)
-		clay.SetLayoutDimensions({320, 640})
+		nendo.set_dimensions({320, 640})
 		photo_test_layout(&ui)
-		crop_box := clay.GetElementData(clay.ID("PhotoCropBox")).boundingBox
-		clay.SetPointerState(
+		crop_box := nendo.element(nendo.id("PhotoCropBox")).rect
+		nendo.set_pointer(
 			{crop_box.x + crop_box.width / 2, crop_box.y + crop_box.height / 2},
-			true,
+			.Down,
 		)
 		rl.PushMouseButton(.LEFT, true)
 		handle_photo_preview(&ui, nil)
 		testing.expect(t, ui.photo.crop_drag && ui.photo.crop_corner == 0)
 		// Releasing outside during an active drag ends it without Cancel.
-		clay.SetPointerState({0, 0}, false)
+		nendo.set_pointer({0, 0}, .Up)
 		rl.PushMouseButton(.LEFT, false)
 		handle_photo_preview(&ui, nil)
 		testing.expect(t, !ui.photo.crop_drag && ui.photo.crop.active)
 		rl.WindowShouldClose() // clear injected per-frame flags
 		rl.SetWindowSize(320, 300)
-		clay.SetLayoutDimensions({320, 300})
+		nendo.set_dimensions({320, 300})
 		photo_test_layout(&ui)
-		testing.expect(t, !clay.GetElementData(clay.ID("PhotoSmaller")).found)
-		testing.expect(t, !clay.GetElementData(clay.ID("PhotoLarger")).found)
-		box = clay.GetElementData(clay.ID("PhotoOriginal")).boundingBox
-		clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+		testing.expect(t, !nendo.element(nendo.id("PhotoSmaller")).found)
+		testing.expect(t, !nendo.element(nendo.id("PhotoLarger")).found)
+		box = nendo.element(nendo.id("PhotoOriginal")).rect
+		nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
 		forced_release = true
 		handle_photo_preview(&ui, nil)
 		forced_release = false
@@ -168,13 +159,13 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		},
 	}
 	photo_test_layout(&tiny)
-	image_box := clay.GetElementData(clay.ID("PhotoImage")).boundingBox
-	selected_box := clay.GetElementData(clay.ID("PhotoCropBox")).boundingBox
+	image_box := nendo.element(nendo.id("PhotoImage")).rect
+	selected_box := nendo.element(nendo.id("PhotoCropBox")).rect
 	shaded_area := f32(0)
 	for i in 0 ..< 4 {
-		shade := clay.GetElementData(clay.ID("PhotoCropShade", u32(i)))
+		shade := nendo.element(nendo.id("PhotoCropShade", u32(i)))
 		testing.expect(t, shade.found)
-		b := shade.boundingBox
+		b := shade.rect
 		testing.expect(t, b.x >= image_box.x && b.y >= image_box.y)
 		testing.expect(
 			t,
@@ -196,8 +187,8 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		image_box.width * image_box.height - selected_box.width * selected_box.height,
 	)
 	for i in 1 ..= 4 {
-		handle := clay.GetElementData(clay.ID("PhotoCropHandle", u32(i))).boundingBox
-		clay.SetPointerState({handle.x + handle.width / 2, handle.y + handle.height / 2}, true)
+		handle := nendo.element(nendo.id("PhotoCropHandle", u32(i))).rect
+		nendo.set_pointer({handle.x + handle.width / 2, handle.y + handle.height / 2}, .Down)
 		rl.PushMouseButton(.LEFT, true)
 		photo_crop_input(&tiny.photo)
 		testing.expect(t, tiny.photo.crop_drag)
@@ -260,7 +251,7 @@ photo_preview_flow :: proc(t: ^testing.T) {
 	if !testing.expect(t, crop_job != nil) {return}
 	thread.join(crop_job.worker)
 	photo_test_layout(&ui)
-	testing.expect(t, clay.GetElementData(clay.ID("PhotoCropBusy")).found)
+	testing.expect(t, nendo.element(nendo.id("PhotoCropBusy")).found)
 	photo_crop_drain(&ui, client, false)
 	testing.expect_value(t, len(gimg_queue), 0)
 	rl.PushKey(.ESCAPE, true)
@@ -318,7 +309,7 @@ photo_preview_flow :: proc(t: ^testing.T) {
 	testing.expect(t, photo_pick_begin(&ui, .Group))
 	photo_pick_complete(&ui, []string{path})
 	photo_test_layout(&ui)
-	clay.SetPointerState({0, 0}, false)
+	nendo.set_pointer({0, 0}, .Up)
 	forced_release = true
 	handle_photo_preview(&ui, client)
 	forced_release = false
@@ -332,8 +323,8 @@ photo_preview_flow :: proc(t: ^testing.T) {
 		if action == "escape" {
 			rl.PushKey(.ESCAPE, true)
 		} else {
-			box := clay.GetElementData(clay.ID("PhotoCancel")).boundingBox
-			clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+			box := nendo.element(nendo.id("PhotoCancel")).rect
+			nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
 			forced_release = true
 		}
 		handle_photo_preview(&ui, client)

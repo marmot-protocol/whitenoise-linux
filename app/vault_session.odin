@@ -7,7 +7,7 @@ import "core:text/edit"
 import "core:thread"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Only the frame loop accepts actions. Once requested, it renders the lock
@@ -37,32 +37,29 @@ lock_wait_frame :: proc() {
 	if !rl.IsWindowVisible() {
 		return
 	}
-	clay.SetLayoutDimensions(
-		{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
-	)
-	clay.BeginLayout()
-	if clay.UI(clay.ID("LockScreen"))(
+	nendo.set_dimensions({f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM})
+	nendo.begin()
+	if nendo.box(nendo.id("LockScreen"))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			childAlignment = {x = .Center, y = .Center},
-			childGap = 16,
-		},
-		backgroundColor = BG,
+		width = nendo.grow(),
+		height = nendo.grow(),
+		direction = .Column,
+		align = {x = .Center, y = .Center},
+		gap = 16,
+		color = BG,
 	},
 	) {
-		clay.Text(tr("Locking…"), {fontId = FONT_TITLE, fontSize = 28, textColor = TEXT})
-		clay.Text(
+		nendo.text(tr("Locking…"), {font = FONT_TITLE, size = 28, color = TEXT})
+		nendo.text(
 			tr("Closing connections and clearing this session."),
-			{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 15, color = TEXT_DIM},
 		)
 		busy_bar("LockBusy")
 	}
-	commands := clay.EndLayout(rl.GetFrameTime())
+	commands := nendo.end(rl.GetFrameTime())
 	rl.BeginDrawing()
 	rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM})
-	clay_raylib_render(&commands)
+	render_nendo(commands)
 	rl.EndMode2D()
 	rl.EndDrawing()
 }

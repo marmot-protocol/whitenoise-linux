@@ -7,7 +7,7 @@ import "core:strings"
 import "core:sync"
 import "core:testing"
 import "core:thread"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -21,10 +21,10 @@ forward_picker_subject :: proc(t: ^testing.T) {
 	load_themes()
 	apply_theme(0, 0)
 	set_locale("en")
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		selected   = 0,
 		fwd_msg    = "wanted",
@@ -48,27 +48,27 @@ forward_picker_subject :: proc(t: ^testing.T) {
 		}
 		for kind in ([]Fwd_Kind{.Message, .Theme, .Add_Member}) {
 			ui.fwd_kind = kind
-			clay.BeginLayout()
+			nendo.begin()
 			forward_modal(&ui)
-			commands := clay.EndLayout(0)
-			subject := clay.GetElementData(clay.ID("FwdSubject"))
+			commands := nendo.end(0)
+			subject := nendo.element(nendo.id("FwdSubject"))
 			testing.expect_value(t, subject.found, kind == .Message)
 			if kind != .Message {continue}
 			found := false
-			for command in commands.internalArray[:commands.length] {
-				if command.commandType != .Text {continue}
-				text := command.renderData.text.stringContents
-				shown := string(text.chars[:text.length])
+			for command in commands {
+				if command.kind != .Text {continue}
+				text := command.text.text
+				shown := text
 				testing.expect(t, shown != "Wrong message" && shown != "Second line")
 				if shown != sample.expected {continue}
 				found = true
-				box, card := command.boundingBox, subject.boundingBox
+				box, card := command.rect, subject.rect
 				testing.expect(t, box.x >= card.x && box.x + box.width <= card.x + card.width)
 				testing.expect(t, box.y >= card.y && box.y + box.height <= card.y + card.height)
 			}
 			testing.expect(t, found, sample.expected)
 			rl.BeginDrawing()
-			draw_frame(&commands)
+			draw_frame(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-forward-picker-%d.png", i))
 			rl.EndDrawing()
 		}
@@ -167,8 +167,8 @@ forward_snapshot_survives_source_changes :: proc(t: ^testing.T) {
 @(test)
 forward_failure_retry_and_dismissal :: proc(t: ^testing.T) {
 	context.allocator = runtime.default_context().allocator
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
 	old_threads := send_threads

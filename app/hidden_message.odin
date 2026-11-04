@@ -4,7 +4,7 @@ import marmot "../marmot"
 import "core:math"
 import "core:strings"
 import "core:unicode/utf16"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -61,10 +61,10 @@ secret_layers :: proc(client: ^marmot.Client, text: string) -> [dynamic]Secret_U
 hidden_border: Model_Kind = .Hidden_Border
 
 @(private)
-hidden_border_draw :: proc(b: clay.BoundingBox) {
+hidden_border_draw :: proc(b: nendo.Rect) {
 	STEPS :: 8
 	WIDTH :: f32(2)
-	radius := min(max(WIDTH, rr(8).topLeft), min(b.width, b.height) / 2)
+	radius := min(max(WIDTH, rr(8).top_left), min(b.width, b.height) / 2)
 	centers := [4]rl.Vector2 {
 		{b.x + radius, b.y + radius},
 		{b.x + b.width - radius, b.y + radius},

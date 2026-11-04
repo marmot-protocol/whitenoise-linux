@@ -6,8 +6,8 @@ import pw_testing "core:testing"
 
 @(test)
 vault_change_password_policy :: proc(t: ^pw_testing.T) {
-	pw_sync.lock(&clay_test_mutex)
-	defer pw_sync.unlock(&clay_test_mutex)
+	pw_sync.lock(&nendo_test_mutex)
+	defer pw_sync.unlock(&nendo_test_mutex)
 	pw_sync.lock(&test_home_lock)
 	defer pw_sync.unlock(&test_home_lock)
 	home, err := os.make_directory_temp("", "wn-password-policy", context.temp_allocator)

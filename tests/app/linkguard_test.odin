@@ -5,7 +5,7 @@ package main
 import "base:runtime"
 import "core:testing"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -46,42 +46,38 @@ link_address_scroll :: proc(t: ^testing.T) {
 	defer rl.CloseWindow()
 	UI_ZOOM = 1
 	init_fonts()
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui: Ui_State
 	defer delete(ui.link_url)
 	url := "https://example.com/a/long/address/whose/path/should/remain/readable?value=%E6%97%A5#fragment"
 	open_link(&ui, url)
 	for width in ([]f32{1024, 480}) {
-		clay.SetLayoutDimensions({width, 700})
+		nendo.set_dimensions({width, 700})
 		for _ in 0 ..< 3 {
-			clay.BeginLayout()
+			nendo.begin()
 			link_modal(&ui)
-			commands := clay.EndLayout(1.0 / 60)
+			commands := nendo.end(1.0 / 60)
 			found := false
-			for cmd in commands.internalArray[:commands.length] {
-				if cmd.commandType != .Text {continue}
-				text := cmd.renderData.text.stringContents
-				found ||= string(text.chars[:text.length]) == url
+			for cmd in commands {
+				if cmd.kind != .Text {continue}
+				text := cmd.text.text
+				found ||= text == url
 			}
 			testing.expect(t, found, "the address remains one complete rendered line")
 		}
-		data := clay.GetScrollContainerData(clay.ID("LinkAddress"))
+		data := nendo.scroll(nendo.id("LinkAddress"))
 		if !testing.expect(t, data.found) {continue}
-		testing.expect(t, data.contentDimensions.width > data.scrollContainerDimensions.width)
-		box := clay.GetElementData(clay.ID("LinkAddress")).boundingBox
-		clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
-		clay.UpdateScrollContainers(false, {-20, 0}, 1.0 / 60)
-		testing.expect(
-			t,
-			data.scrollPosition.x < 0,
-			"the hidden address tail can be scrolled into view",
-		)
+		testing.expect(t, data.content.width > data.viewport.width)
+		box := nendo.element(nendo.id("LinkAddress")).rect
+		nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
+		nendo.update_scroll(.Off, {-20, 0}, 1.0 / 60)
+		testing.expect(t, data.position.x < 0, "the hidden address tail can be scrolled into view")
 		testing.expect_value(t, ui.link_url, url)
 		testing.expect_value(t, url_host(ui.link_url), "example.com")
 		open_link(&ui, url)
-		testing.expect_value(t, data.scrollPosition.x, 0)
+		testing.expect_value(t, data.position.x, 0)
 	}
 }

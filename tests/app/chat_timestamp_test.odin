@@ -4,7 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:os"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Full shell layout and pointer hit testing, without a live account or network.
@@ -38,43 +38,43 @@ chat_timestamp_hover :: proc(t: ^testing.T) {
 	append(&ui.chats, row)
 	append(&ui.archived, row)
 	g_ui, g_prefs = &ui, &ui.prefs
-	defer {g_ui, g_prefs = nil, nil; clay.SetPointerState({-100, -100}, false)}
+	defer {g_ui, g_prefs = nil, nil; nendo.set_pointer({-100, -100}, .Up)}
 
-	layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
-		commands: clay.ClayArray(clay.RenderCommand)
+	layout :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
+		commands: []nendo.Render_Command
 		for _ in 0 ..< 3 {commands = build_layout(ui, 0)}
 		return commands
 	}
 	text_box :: proc(
-		commands: clay.ClayArray(clay.RenderCommand),
+		commands: []nendo.Render_Command,
 		wanted: string,
 	) -> (
-		box: clay.BoundingBox,
+		box: nendo.Rect,
 		found: bool,
 	) {
-		for cmd in commands.internalArray[:commands.length] {
-			if cmd.commandType != .Text {continue}
-			s := cmd.renderData.text.stringContents
-			if string(s.chars[:s.length]) == wanted {return cmd.boundingBox, true}
+		for cmd in commands {
+			if cmd.kind != .Text {continue}
+			s := cmd.text.text
+			if s == wanted {return cmd.rect, true}
 		}
 		return
 	}
 	// The Chats list and the Archive page each render chat_timestamp.
 	for page in ([2]Page{.Chats, .Archived}) {
 		ui.page = page
-		clay.SetPointerState({-100, -100}, false)
+		nendo.set_pointer({-100, -100}, .Up)
 		commands := layout(&ui)
 		stamp, found := text_box(commands, row.at)
 		if !testing.expect(t, found, "visible row timestamp") {continue}
-		before := clay.GetElementData(clay.ID("ChatRow", 0)).boundingBox
+		before := nendo.element(nendo.id("ChatRow", 0)).rect
 		expected := format_full(row.activity_at)
 		defer delete(expected)
 		_, present := text_box(commands, expected)
 		testing.expect(t, !present, "no tooltip before hover")
-		clay.SetPointerState({stamp.x + stamp.width / 2, stamp.y + stamp.height / 2}, false)
+		nendo.set_pointer({stamp.x + stamp.width / 2, stamp.y + stamp.height / 2}, .Up)
 		commands = layout(&ui)
 		if dir := os.get_env("WN_CHAT_TIMESTAMP_CAPTURE_DIR", context.temp_allocator); dir != "" {
-			rl.BeginDrawing(); draw_frame(&commands)
+			rl.BeginDrawing(); draw_frame(commands)
 			rl.TakeScreenshot(fmt.ctprintf("%s/hover-%v.png", dir, page))
 			rl.EndDrawing()
 		}
@@ -89,12 +89,12 @@ chat_timestamp_hover :: proc(t: ^testing.T) {
 		}
 		testing.expect(
 			t,
-			clay.GetElementData(clay.ID("ChatRow", 0)).boundingBox == before,
+			nendo.element(nendo.id("ChatRow", 0)).rect == before,
 			"hover does not resize the row",
 		)
 		testing.expect(t, ui.selected == -1, "hover does not select")
 		testing.expect(t, ui.row_menu == -1, "hover does not open the menu")
-		clay.SetPointerState({-100, -100}, false)
+		nendo.set_pointer({-100, -100}, .Up)
 		commands = layout(&ui)
 		_, shown = text_box(commands, expected)
 		testing.expect(t, !shown, "tooltip disappears on leave")
@@ -105,7 +105,7 @@ chat_timestamp_hover :: proc(t: ^testing.T) {
 		}
 		commands = layout(&ui)
 		stamp, _ = text_box(commands, row.at)
-		clay.SetPointerState({stamp.x + stamp.width / 2, stamp.y + stamp.height / 2}, false)
+		nendo.set_pointer({stamp.x + stamp.width / 2, stamp.y + stamp.height / 2}, .Up)
 		commands = layout(&ui)
 		unknown := format_full(0)
 		_, shown = text_box(commands, unknown)

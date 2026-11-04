@@ -5,10 +5,10 @@ import "core:strings"
 import "core:testing"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
-// SDL and Clay are process-global; run this test alone with ODIN_TEST_NAMES.
+// SDL and nendo are process-global; run this test alone with ODIN_TEST_NAMES.
 @(test)
 mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "mobile_chat_layout_boundaries" {return}
@@ -58,7 +58,7 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		for input in ui.poll_inputs {delete(input)}
 		delete(ui.poll_inputs)
 	}
-	inside :: proc(inner, outer: clay.BoundingBox) -> bool {
+	inside :: proc(inner, outer: nendo.Rect) -> bool {
 		return(
 			inner.x >= outer.x - 0.1 &&
 			inner.y >= outer.y - 0.1 &&
@@ -71,24 +71,24 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		UI_ZOOM = 1
 		refresh_ui_scale()
 		width, height := f32(size[0]), f32(size[1])
-		clay.SetLayoutDimensions({width, height})
+		nendo.set_dimensions({width, height})
 		for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
-		pane := clay.GetElementData(clay.ID("ChatPane")).boundingBox
+		pane := nendo.element(nendo.id("ChatPane")).rect
 		for id in ([]string{"ChatHeader", "Composer", "ComposeBox", "SendBtn"}) {
-			data := clay.GetElementData(clay.ID(id))
-			testing.expect(t, data.found && inside(data.boundingBox, pane), id)
+			data := nendo.element(nendo.id(id))
+			testing.expect(t, data.found && inside(data.rect, pane), id)
 		}
-		send := clay.GetElementData(clay.ID("SendBtn")).boundingBox
+		send := nendo.element(nendo.id("SendBtn")).rect
 		testing.expect(
 			t,
 			send.width >= 44 && send.height >= 44,
 			"send stays touch-sized and pinned",
 		)
 		// One header row: back, title, search and the overflow menu.
-		header := clay.GetElementData(clay.ID("ChatHeader")).boundingBox
+		header := nendo.element(nendo.id("ChatHeader")).rect
 		for id in ([]string{"ChatBack", "SearchBtn", "ChatHeadMore"}) {
-			data := clay.GetElementData(clay.ID(id))
-			box := data.boundingBox
+			data := nendo.element(nendo.id(id))
+			box := data.rect
 			testing.expect(
 				t,
 				data.found && box.width >= 44 && box.height >= 44 && inside(box, header),
@@ -100,50 +100,50 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		poll_reset(&ui)
 		for len(ui.poll_inputs) < POLL_OPTS_CAP {append(&ui.poll_inputs, [dynamic]u8{})}
 		for _ in 0 ..< 3 {
-			clay.BeginLayout()
+			nendo.begin()
 			poll_modal(&ui)
-			clay.EndLayout(0)
+			nendo.end(0)
 		}
-		modal := clay.GetElementData(clay.ID("PollModal")).boundingBox
+		modal := nendo.element(nendo.id("PollModal")).rect
 		testing.expect(
 			t,
 			modal.width <= width - 23 && modal.height <= height - 23,
 			"poll form fits narrow and keyboard-short viewports",
 		)
-		question := clay.GetElementData(clay.ID("PollQBox")).boundingBox
+		question := nendo.element(nendo.id("PollQBox")).rect
 		testing.expect(
 			t,
 			question.x >= modal.x && question.x + question.width <= modal.x + modal.width + 0.1,
 			"default input width cannot widen a narrow poll",
 		)
-		scroll := clay.GetScrollContainerData(clay.ID("PollModal"))
+		scroll := nendo.scroll(nendo.id("PollModal"))
 		testing.expect(t, scroll.found, "poll form has a scroll container")
 		if height < 400 {
 			testing.expect(
 				t,
-				scroll.contentDimensions.height > scroll.scrollContainerDimensions.height,
+				scroll.content.height > scroll.viewport.height,
 				"a full poll remains scrollable to its actions on short screens",
 			)
 		}
 		testing.expect(
 			t,
-			clay.GetElementData(clay.ID("PollCancel")).found &&
-			clay.GetElementData(clay.ID("PollCreate")).found,
+			nendo.element(nendo.id("PollCancel")).found &&
+			nendo.element(nendo.id("PollCreate")).found,
 		)
 
 		for _ in 0 ..< 3 {
-			clay.BeginLayout()
+			nendo.begin()
 			gsearch_modal(&ui)
-			clay.EndLayout(0)
+			nendo.end(0)
 		}
-		search := clay.GetElementData(clay.ID("GsModal")).boundingBox
+		search := nendo.element(nendo.id("GsModal")).rect
 		testing.expect(
 			t,
 			inside(search, {0, 0, width, height}),
 			"global search remains within the viewport",
 		)
-		sender := clay.GetElementData(clay.ID("GsSenderInput")).boundingBox
-		known := clay.GetElementData(clay.ID("GsKnownSenderBox")).boundingBox
+		sender := nendo.element(nendo.id("GsSenderInput")).rect
+		known := nendo.element(nendo.id("GsKnownSenderBox")).rect
 		testing.expect(
 			t,
 			known.y >= sender.y + sender.height - 0.1,
@@ -155,22 +155,22 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 	// The overflow menu opens on a tap, stays on screen, and closes on a
 	// tap elsewhere.
 	rl.SetWindowSize(360, 640)
-	clay.SetLayoutDimensions({360, 640})
+	nendo.set_dimensions({360, 640})
 	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
 	forced_release = true
 	defer forced_release = false
 	client: marmot.Client
-	more := clay.GetElementData(clay.ID("ChatHeadMore")).boundingBox
-	clay.SetPointerState({more.x + 2, more.y + 2}, false)
+	more := nendo.element(nendo.id("ChatHeadMore")).rect
+	nendo.set_pointer({more.x + 2, more.y + 2}, .Up)
 	handle_chat(&ui, &client)
 	testing.expect(t, ui.chat_head_menu, "overflow tap opens the menu")
 	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
-	menu := clay.GetElementData(clay.ID("ChatHeadMenu"))
-	testing.expect(t, menu.found && inside(menu.boundingBox, {0, 0, 360, 640}), "menu on screen")
+	menu := nendo.element(nendo.id("ChatHeadMenu"))
+	testing.expect(t, menu.found && inside(menu.rect, {0, 0, 360, 640}), "menu on screen")
 	for id in ([]string{"FilesBtn", "BellBtn", "MembersBtn"}) {
-		testing.expect(t, clay.GetElementData(clay.ID(id)).found, id)
+		testing.expect(t, nendo.element(nendo.id(id)).found, id)
 	}
-	clay.SetPointerState({20, 600}, false)
+	nendo.set_pointer({20, 600}, .Up)
 	handle_chat(&ui, &client)
 	testing.expect(t, !ui.chat_head_menu, "a tap elsewhere closes the menu")
 }

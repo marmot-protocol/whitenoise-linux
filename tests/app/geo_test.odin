@@ -78,8 +78,8 @@ geo_links :: proc(t: ^testing.T) {
 // before a location link keeps a row of its own.
 @(test)
 geo_card_lines :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	defer wrap_clear()
 	url :: "https://maps.google.com/maps?q=52.520008,13.404954"
 	shared := wrapped_lines("Location: " + url, 0, 14, .Cards)
@@ -95,8 +95,8 @@ geo_card_lines :: proc(t: ^testing.T) {
 // opens at the card's zoom. Each link, pasted back, is a card again.
 @(test)
 geo_open_sites :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	previous_ui := g_ui
 	ui: Ui_State
 	g_ui = &ui

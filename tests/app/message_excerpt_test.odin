@@ -5,7 +5,7 @@ import "core:fmt"
 import "core:strings"
 import "core:testing"
 import "core:time"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=message_excerpt_layout
@@ -31,17 +31,15 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 		sel_lines = nil}
 	for text, i in ([]string{"1\n2\n3\n4\n5\n6", "1\n2\n3\n4\n5\n6\n7", strings.repeat("Wrapped text 👩🏽‍💻 with emoji. ", 100, context.temp_allocator)}) {
 		clear(&sel_lines)
-		clay.BeginLayout()
-		if clay.UI(clay.ID("ExcerptTest"))(
-		{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(480)}}},
-		) {
+		nendo.begin()
+		if nendo.box(nendo.id("ExcerptTest"))({direction = .Column, width = nendo.fixed(480)}) {
 			testing.expect_value(t, message_excerpt(17, text, TEXT), i > 0)
 		}
-		clay.EndLayout(0)
+		nendo.end(0)
 		if i > 0 {
 			testing.expect_value(t, len(sel_lines), DEFAULT_MESSAGE_LINES)
 			testing.expect(t, sel_lines[5].start + len(sel_lines[5].text) < len(text))
-			testing.expect(t, clay.GetElementData(clay.ID("MessageMore", 17)).found)
+			testing.expect(t, nendo.element(nendo.id("MessageMore", 17)).found)
 		}
 	}
 	// The collapsed row must render parsed blocks, not the source markdown.
@@ -76,29 +74,23 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 		append(&msg.blocks, ..rows[:count])
 		for frame in 0 ..< 3 {
 			clear(&sel_lines)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("MarkdownExcerptTest"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingFixed(600), height = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-				},
-				backgroundColor = CARD,
-			},
+			nendo.begin()
+			if nendo.box(nendo.id("MarkdownExcerptTest"))(
+			{width = nendo.fixed(600), height = nendo.grow(), direction = .Column, color = CARD},
 			) {message_row(2, msg)}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			if frame < 2 {continue}
 			testing.expect_value(t, len(sel_lines), DEFAULT_MESSAGE_LINES)
 			testing.expect_value(
 				t,
-				clay.GetElementData(clay.ID("MessageMore", 2 * 4096)).found,
+				nendo.element(nendo.id("MessageMore", 2 * 4096)).found,
 				count > DEFAULT_MESSAGE_LINES,
 			)
-			testing.expect(t, clay.GetElementData(clay.ID("MsgQuoteBar", 2 * 4096 + 3 * 16)).found)
-			for cmd in commands.internalArray[:commands.length] {
-				if cmd.commandType != .Text {continue}
-				data := cmd.renderData.text
-				part := string(data.stringContents.chars[:data.stringContents.length])
+			testing.expect(t, nendo.element(nendo.id("MsgQuoteBar", 2 * 4096 + 3 * 16)).found)
+			for cmd in commands {
+				if cmd.kind != .Text {continue}
+				data := cmd.text
+				part := data.text
 				testing.expect(
 					t,
 					!strings.contains(part, "######") &&
@@ -108,10 +100,10 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 				)
 				if part == "H6" ||
 				   part == "Setext heading" ||
-				   part == "bold" {testing.expect_value(t, data.fontId, u16(FONT_TITLE))}
+				   part == "bold" {testing.expect_value(t, data.font, u16(FONT_TITLE))}
 			}
 			rl.BeginDrawing()
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.TakeScreenshot("/tmp/wn-markdown-excerpt.png")
 			rl.EndDrawing()
 		}
@@ -132,14 +124,9 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 					}
 					clear(&sel_lines)
 					anim_tick(0.025)
-					clay.BeginLayout()
-					if clay.UI(clay.ID("ExpandTest"))(
-					{
-						layout = {
-							layoutDirection = .TopToBottom,
-							sizing = {width = clay.SizingFixed(width)},
-						},
-					},
+					nendo.begin()
+					if nendo.box(nendo.id("ExpandTest"))(
+					{direction = .Column, width = nendo.fixed(width)},
 					) {
 						blocks := markdown ? rows[:] : nil
 						testing.expect(
@@ -155,12 +142,11 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 						)
 						message_more(99, state)
 					}
-					commands := clay.EndLayout(0)
-					clay.UpdateScrollContainers(false, {}, 0.025)
-					height := clay.GetElementData(clay.ID("ExcerptClip", 99)).boundingBox.height
+					commands := nendo.end(0)
+					nendo.update_scroll(.Off, {}, 0.025)
+					height := nendo.element(nendo.id("ExcerptClip", 99)).rect.height
 					if frame == 0 {closed = height}
-					if frame ==
-					   1 {full = clay.GetElementData(clay.ID("ExcerptBody", 99)).boundingBox.height}
+					if frame == 1 {full = nendo.element(nendo.id("ExcerptBody", 99)).rect.height}
 					if frame == 2 || frame == 3 {
 						testing.expect(t, height >= previous && height > closed)
 						testing.expect(
@@ -187,7 +173,7 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 					   width == 700 &&
 					   (frame == 2 || frame == 4 || frame == 8) {
 						rl.BeginDrawing()
-						clay_raylib_render(&commands)
+						render_nendo(commands)
 						rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-excerpt-%d.png", frame))
 						rl.EndDrawing()
 					}
@@ -207,9 +193,9 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 					changed  = time.tick_now(),
 				}; ui.prefs.reduce_motion = false}
 			clear(&sel_lines)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("ThresholdTest"))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(700)}}},
+			nendo.begin()
+			if nendo.box(nendo.id("ThresholdTest"))(
+			{direction = .Column, width = nendo.fixed(700)},
 			) {
 				if markdown {
 					if excerpt_body(99, "", rows[:], state, 700, TEXT) {message_more(99, state)}
@@ -217,10 +203,10 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 					body_text(99, "1\n2\n3\n4\n5\n6\n7", BODY_FS, TEXT, true)
 				}
 			}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			cropped := threshold > 0 && threshold < 7
 			testing.expect_value(t, len(sel_lines), cropped ? threshold : 7)
-			testing.expect_value(t, clay.GetElementData(clay.ID("MessageMore", 99)).found, cropped)
+			testing.expect_value(t, nendo.element(nendo.id("MessageMore", 99)).found, cropped)
 			if threshold == 0 {
 				testing.expect_value(
 					t,
@@ -228,7 +214,7 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 					markdown ? "hidden tail" : "7",
 				)
 				rl.BeginDrawing()
-				clay_raylib_render(&commands)
+				render_nendo(commands)
 				rl.TakeScreenshot(
 					markdown ? "/tmp/wn-unlimited-markdown.png" : "/tmp/wn-unlimited-plain.png",
 				)
@@ -248,26 +234,24 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 	defer blocks_free(list)
 	for limit in ([]int{DEFAULT_MESSAGE_LINES, max(int)}) {
 		clear(&sel_lines)
-		clay.BeginLayout()
-		if clay.UI(clay.ID("ListExcerptTest"))(
+		nendo.begin()
+		if nendo.box(nendo.id("ListExcerptTest"))(
 		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {width = clay.SizingFixed(680)},
-				padding = clay.PaddingAll(20),
-				childGap = 3,
-			},
-			backgroundColor = BG,
+			direction = .Column,
+			width = nendo.fixed(680),
+			padding = nendo.pad(20),
+			gap = 3,
+			color = BG,
 		},
 		) {
 			cropped := md_blocks(list[:], 0, true, 640, limit)
 			testing.expect_value(t, cropped, limit == DEFAULT_MESSAGE_LINES)
 			if cropped {message_more(0)}
 		}
-		commands := clay.EndLayout(0)
+		commands := nendo.end(0)
 		testing.expect(
 			t,
-			!clay.GetElementData(clay.ID("MdGap", 32)).found,
+			!nendo.element(nendo.id("MdGap", 32)).found,
 			"the first list item follows its introduction without an extra spacer",
 		)
 		testing.expect(
@@ -276,7 +260,7 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 			"blank lines leave room for six text lines",
 		)
 		rl.BeginDrawing()
-		clay_raylib_render(&commands)
+		render_nendo(commands)
 		rl.TakeScreenshot(
 			limit == DEFAULT_MESSAGE_LINES ? "/tmp/wn-list-excerpt.png" : "/tmp/wn-list-full.png",
 		)
@@ -293,53 +277,46 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 	testing.expect_value(t, len(preview.message_blocks), 101)
 	for width in ([]i32{900, 360}) {
 		rl.SetWindowSize(width, 700)
-		clay.SetLayoutDimensions({f32(width), 700})
+		nendo.set_dimensions({f32(width), 700})
 		for frame in 0 ..< 3 {
-			clay.BeginLayout()
-			if clay.UI(clay.ID("TestRoot"))(
-			{
-				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()}},
-				backgroundColor = BG,
-			},
+			nendo.begin()
+			if nendo.box(nendo.id("TestRoot"))(
+			{width = nendo.grow(), height = nendo.grow(), color = BG},
 			) {
 				preview_modal(&ui)
 			}
-			commands := clay.EndLayout(0)
-			box := clay.GetElementData(clay.ID("PvModal")).boundingBox
-			testing.expect(t, clay.GetElementData(clay.ID("PvRead")).found)
+			commands := nendo.end(0)
+			box := nendo.element(nendo.id("PvModal")).rect
+			testing.expect(t, nendo.element(nendo.id("PvRead")).found)
 			testing.expect(t, box.x >= 0 && box.x + box.width <= f32(width))
 			testing.expect(t, box.height <= 700 * PV_MAX_HEIGHT)
-			data := clay.GetScrollContainerData(clay.ID("PvScroll"))
-			testing.expect(
-				t,
-				data.found &&
-				data.contentDimensions.height > data.scrollContainerDimensions.height,
-			)
+			data := nendo.scroll(nendo.id("PvScroll"))
+			testing.expect(t, data.found && data.content.height > data.viewport.height)
 			testing.expect_value(t, sel_lines[len(sel_lines) - 1].text, "THE END")
 			rl.BeginDrawing()
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.EndDrawing()
 			if frame == 0 {continue}
-			scroll_box := clay.GetElementData(clay.ID("PvScroll")).boundingBox
-			thumb := clay.GetElementData(clay.ID("ScrollThumb", clay.ID("PvScroll").id))
+			scroll_box := nendo.element(nendo.id("PvScroll")).rect
+			thumb := nendo.element(nendo.id("ScrollThumb", nendo.id("PvScroll").id))
 			testing.expect(t, thumb.found)
 			for line in sel_lines {
-				line_box := clay.GetElementData(clay.ID("BodyLine", line.id)).boundingBox
+				line_box := nendo.element(nendo.id("BodyLine", line.id)).rect
 				testing.expect(
 					t,
-					line_box.x + line_box.width <= thumb.boundingBox.x - 3,
+					line_box.x + line_box.width <= thumb.rect.x - 3,
 					"text leaves a scrollbar gutter",
 				)
 			}
-			clay.SetPointerState(
+			nendo.set_pointer(
 				{scroll_box.x + scroll_box.width / 2, scroll_box.y + scroll_box.height / 2},
-				false,
+				.Up,
 			)
-			before := data.scrollPosition.y
-			clay.UpdateScrollContainers(false, {0, frame == 1 ? -3 : 3}, 1.0 / 60)
+			before := data.position.y
+			nendo.update_scroll(.Off, {0, frame == 1 ? -3 : 3}, 1.0 / 60)
 			testing.expect(
 				t,
-				frame == 1 ? data.scrollPosition.y < before : data.scrollPosition.y > before,
+				frame == 1 ? data.position.y < before : data.position.y > before,
 				"wheel over message scrolls the popup in both directions",
 			)
 		}

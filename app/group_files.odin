@@ -7,7 +7,7 @@ import "core:thread"
 import "core:time"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -263,7 +263,7 @@ group_files_had_senders: bool
 
 @(private)
 group_files_panel :: proc(ui: ^Ui_State) {
-	defer scrollbar(clay.ID("GroupFilesPanel"))
+	defer scrollbar(nendo.id("GroupFilesPanel"))
 	option_height := tap_size() ? tap_min() : GROUP_FILE_OPTION_H
 	job := group_files_job
 	ready := job != nil && job.worker == nil && !sync.atomic_load(&job.cancel)
@@ -281,223 +281,167 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
-	if clay.UI(clay.ID("GroupFilesPanel"))(
+	if nendo.box(nendo.id("GroupFilesPanel"))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(single_pane() ? 12 : 18),
-			childGap = single_pane() ? 8 : 16,
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		backgroundColor = BG,
+		width = nendo.grow(),
+		height = nendo.grow(),
+		direction = .Column,
+		padding = nendo.pad(single_pane() ? 12 : 18),
+		gap = single_pane() ? 8 : 16,
+		clip = {y = true, scroll = true},
+		color = BG,
 	},
 	) {
-		if clay.UI(clay.ID("GroupFilesHead"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-		},
+		if nendo.box(nendo.id("GroupFilesHead"))(
+		{width = nendo.grow(), gap = 10, align = {y = .Center}},
 		) {
-			clay.Text(tr("Files"), {fontId = FONT_TITLE, fontSize = 22, textColor = TEXT})
+			nendo.text(tr("Files"), {font = FONT_TITLE, size = 22, color = TEXT})
 			if ready {
-				if clay.UI(clay.ID("GroupFilesCount"))(
+				if nendo.box(nendo.id("GroupFilesCount"))(
 				{
-					layout = {padding = {left = 8, right = 8, top = 3, bottom = 3}},
-					backgroundColor = ROW_BG,
-					cornerRadius = rr(10),
+					padding = {left = 8, right = 8, top = 3, bottom = 3},
+					color = ROW_BG,
+					radius = rr(10),
 				},
 				) {
-					clay.Text(
+					nendo.text(
 						fmt.tprintf("%d", len(matches)),
-						{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM},
+						{font = FONT_MONO, size = 11, color = TEXT_DIM},
 					)
 				}
 			}
-			if clay.UI(clay.ID("GroupFilesGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-			if clay.UI(clay.ID("GroupFilesRefresh"))(
+			if nendo.box(nendo.id("GroupFilesGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("GroupFilesRefresh"))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
-					padding = clay.PaddingAll(8),
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ready && hovered() ? HOVER : {},
-				cornerRadius = rr(6),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = nendo.pad(8),
+				align = {y = .Center},
+				color = ready && hovered() ? HOVER : {},
+				radius = rr(6),
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					tr("Refresh"),
-					{fontId = FONT_BODY, fontSize = 12, textColor = ready ? TEXT_DIM : TEXT_LO},
+					{font = FONT_BODY, size = 12, color = ready ? TEXT_DIM : TEXT_LO},
 				)
 			}
-			if clay.UI(clay.ID("GroupFilesBack"))(
+			if nendo.box(nendo.id("GroupFilesBack"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-					},
-					padding = clay.PaddingAll(8),
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(6),
+				width = nendo.fit(min = tap_size() ? tap_min() : 0),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = nendo.pad(8),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(6),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 14, color = TEXT_DIM})
 				if hovered() {tooltip(tr("Back to chat"))}
 			}
 		}
-		if clay.UI(clay.ID("GroupFilesFilters"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-		) {
+		if nendo.box(nendo.id("GroupFilesFilters"))({width = nendo.grow(), gap = 8}) {
 			for menu in ([]Group_File_Menu{.Type, .Sender}) {
 				if menu == .Sender && !group_files_had_senders {continue}
 				active := menu == .Type ? ui.group_files_type != .All : ui.group_files_sender != ""
-				if clay.UI(clay.ID("GroupFilesFilter", u32(menu)))(
+				if nendo.box(nendo.id("GroupFilesFilter", u32(menu)))(
 				{
-					layout = {
-						sizing = {
-							width = single_pane() ? clay.SizingFixed(max(44, (page_w(ui) - 48) / 2)) : clay.SizingFit({max = max(100, (page_w(ui) - 48) / 2)}),
-							height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-						},
-						padding = {left = 12, right = 12, top = 8, bottom = 8},
-						childGap = 8,
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = active ? SELECTED : hovered() ? HOVER : ROW_BG,
-					cornerRadius = rr(8),
+					width = single_pane() ? nendo.fixed(max(44, (page_w(ui) - 48) / 2)) : nendo.fit(max = max(100, (page_w(ui) - 48) / 2)),
+					height = nendo.fit(min = tap_size() ? tap_min() : 0),
+					padding = {left = 12, right = 12, top = 8, bottom = 8},
+					gap = 8,
+					align = {y = .Center},
+					color = active ? SELECTED : hovered() ? HOVER : ROW_BG,
+					radius = rr(8),
 					border = {color = active ? ACCENT : CARD_BORDER, width = bw()},
 				},
 				) {
-					clay.Text(
+					nendo.text(
 						menu == .Type ? ICON_FOLDER : ICON_PROFILE,
-						{
-							fontId = FONT_ICON,
-							fontSize = 11,
-							textColor = active ? ACCENT : TEXT_DIM,
-						},
+						{font = FONT_ICON, size = 11, color = active ? ACCENT : TEXT_DIM},
 					)
-					if clay.UI(clay.ID("GroupFilterLabel", u32(menu)))(
-					{
-						layout = {
-							sizing = {
-								width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-							},
-						},
-						clip = {horizontal = true},
-					},
+					if nendo.box(nendo.id("GroupFilterLabel", u32(menu)))(
+					{width = single_pane() ? nendo.grow() : nendo.fit(), clip = {x = true}},
 					) {
-						clay.Text(
+						nendo.text(
 							menu == .Type ? tr(GROUP_FILE_TYPES[ui.group_files_type]) : group_sender_label(ui, ui.group_files_sender),
-							{
-								fontId = FONT_BODY,
-								fontSize = 12,
-								textColor = TEXT,
-								wrapMode = .None,
-							},
+							{font = FONT_BODY, size = 12, color = TEXT, wrap = .None},
 						)
 					}
-					clay.Text("⌄", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+					nendo.text("⌄", {font = FONT_BODY, size = 12, color = TEXT_DIM})
 				}
 			}
 		}
 		if !ready {
-			clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			nendo.text(tr("Loading…"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 			busy_bar("GroupFilesBusy")
 			return
 		}
 		if job.err != "" {
-			clay.Text(
+			nendo.text(
 				tr("Couldn't load files. Please try again."),
-				{fontId = FONT_BODY, fontSize = 13, textColor = DANGER},
+				{font = FONT_BODY, size = 13, color = DANGER},
 			)
 			return
 		}
 		if ui.group_files_menu != .None {
 			menu := ui.group_files_menu
 			count := menu == .Type ? len(GROUP_FILE_TYPES) : len(job.senders) + 1
-			if clay.UI(clay.ID("GroupFilesOptions"))(
+			if nendo.box(nendo.id("GroupFilesOptions"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(min(260, (page_w(ui) - 48) / 2)),
-						height = clay.SizingFixed(
-							min(modal_h(308), f32(min(count, 7)) * option_height),
-						),
-					},
-					layoutDirection = .TopToBottom,
-				},
-				backgroundColor = CARD,
+				width = nendo.fixed(min(260, (page_w(ui) - 48) / 2)),
+				height = nendo.fixed(min(modal_h(308), f32(min(count, 7)) * option_height)),
+				direction = .Column,
+				color = CARD,
 				border = {color = CARD_BORDER, width = bw()},
-				cornerRadius = rr(8),
-				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+				radius = rr(8),
+				clip = {y = true, scroll = true},
 				floating = {
-					attachTo = .ElementWithId,
-					parentId = clay.ID("GroupFilesFilter", u32(menu)).id,
-					zIndex = 9,
+					attach_to = .Element,
+					parent = nendo.id("GroupFilesFilter", u32(menu)).id,
+					z = 9,
 					offset = {0, 6},
-					attachment = {element = .LeftTop, parent = .LeftBottom},
+					attach = {element = .Left_Top, parent = .Left_Bottom},
 				},
 			},
 			) {
-				data := clay.GetScrollContainerData(clay.ID("GroupFilesOptions"))
+				data := nendo.scroll(nendo.id("GroupFilesOptions"))
 				first :=
-					data.found ? clamp(int(-data.scrollPosition.y / f32(option_height)), 0, count) : 0
+					data.found ? clamp(int(-data.position.y / f32(option_height)), 0, count) : 0
 				last := min(first + 9, count)
-				if clay.UI(clay.ID("GroupOptionsBefore"))(
-				{layout = {sizing = {height = clay.SizingFixed(f32(first) * option_height)}}},
+				if nendo.box(nendo.id("GroupOptionsBefore"))(
+				{height = nendo.fixed(f32(first) * option_height)},
 				) {}
 				for i in first ..< last {
 					label :=
 						menu == .Type ? tr(GROUP_FILE_TYPES[Group_File_Type(i)]) : group_sender_label(ui, i == 0 ? "" : job.senders[i - 1])
 					selected :=
 						menu == .Type ? int(ui.group_files_type) == i : ui.group_files_sender == (i == 0 ? "" : job.senders[i - 1])
-					if clay.UI(clay.ID("GroupFilesOption", u32(i)))(
+					if nendo.box(nendo.id("GroupFilesOption", u32(i)))(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingGrow(),
-								height = clay.SizingFixed(f32(option_height)),
-							},
-							padding = {left = 12, right = 12},
-							childGap = 8,
-							childAlignment = {y = .Center},
-						},
-						backgroundColor = hovered() || ui.group_files_option == i ? HOVER : {},
-						clip = {horizontal = true},
+						width = nendo.grow(),
+						height = nendo.fixed(f32(option_height)),
+						padding = {left = 12, right = 12},
+						gap = 8,
+						align = {y = .Center},
+						color = hovered() || ui.group_files_option == i ? HOVER : {},
+						clip = {x = true},
 					},
 					) {
-						clay.Text(
+						nendo.text(
 							selected ? ICON_CHECK : " ",
-							{fontId = FONT_ICON, fontSize = 10, textColor = ACCENT},
+							{font = FONT_ICON, size = 10, color = ACCENT},
 						)
-						clay.Text(
+						nendo.text(
 							label,
-							{
-								fontId = FONT_BODY,
-								fontSize = 13,
-								textColor = TEXT,
-								wrapMode = .None,
-							},
+							{font = FONT_BODY, size = 13, color = TEXT, wrap = .None},
 						)
 					}
 				}
-				if clay.UI(clay.ID("GroupOptionsAfter"))(
-				{
-					layout = {
-						sizing = {height = clay.SizingFixed(f32(count - last) * option_height)},
-					},
-				},
+				if nendo.box(nendo.id("GroupOptionsAfter"))(
+				{height = nendo.fixed(f32(count - last) * option_height)},
 				) {}
 			}
-			scrollbar(clay.ID("GroupFilesOptions"), 10)
+			scrollbar(nendo.id("GroupFilesOptions"), 10)
 		}
 		if visible == 0 {
 			centered_note(
@@ -508,23 +452,20 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			return
 		}
 		if len(matches) == 0 {
-			if clay.UI(clay.ID("GroupFilesNoMatch"))(
-			{layout = {childGap = 10, childAlignment = {y = .Center}}},
-			) {
-				clay.Text(
+			if nendo.box(nendo.id("GroupFilesNoMatch"))({gap = 10, align = {y = .Center}}) {
+				nendo.text(
 					tr("No files match these filters."),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 13, color = TEXT_DIM},
 				)
 				micro_button("GroupFilesReset", tr("Clear filters"))
 			}
 		}
-		if clay.UI(clay.ID("GroupFilesList"))(
+		if nendo.box(nendo.id("GroupFilesList"))(
 		{
-			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow({min = 44})},
-				layoutDirection = .TopToBottom,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.grow(min = 44),
+			direction = .Column,
+			clip = {y = true, scroll = true},
 		},
 		) {
 			width := max(120, page_w(ui) - 36)
@@ -532,34 +473,26 @@ group_files_panel :: proc(ui: ^Ui_State) {
 			cell := (width - f32((columns - 1) * GROUP_FILE_GAP)) / f32(columns)
 			rows := (len(matches) + columns - 1) / columns
 			stride := (tap_size() ? 216 : GROUP_FILE_CARD_H) + GROUP_FILE_GAP
-			data := clay.GetScrollContainerData(clay.ID("GroupFilesList"))
-			first := data.found ? clamp(int(-data.scrollPosition.y / f32(stride)) - 1, 0, rows) : 0
+			data := nendo.scroll(nendo.id("GroupFilesList"))
+			first := data.found ? clamp(int(-data.position.y / f32(stride)) - 1, 0, rows) : 0
 			last := min(rows, first + int(f32(rl.GetScreenHeight()) / UI_ZOOM / f32(stride)) + 3)
-			if clay.UI(clay.ID("GroupFilesBefore"))(
-			{layout = {sizing = {height = clay.SizingFixed(f32(first * stride))}}},
+			if nendo.box(nendo.id("GroupFilesBefore"))(
+			{height = nendo.fixed(f32(first * stride))},
 			) {}
 			for row in first ..< last {
-				if clay.UI(clay.ID("GroupFileRow", u32(row)))(
-				{
-					layout = {
-						sizing = {
-							width = clay.SizingGrow(),
-							height = clay.SizingFixed(f32(stride)),
-						},
-						childGap = GROUP_FILE_GAP,
-					},
-				},
+				if nendo.box(nendo.id("GroupFileRow", u32(row)))(
+				{width = nendo.grow(), height = nendo.fixed(f32(stride)), gap = GROUP_FILE_GAP},
 				) {
 					for i in matches[row * columns:min((row + 1) * columns, len(matches))] {
 						group_file_card(ui, job, i, cell)
 					}
 				}
 			}
-			if clay.UI(clay.ID("GroupFilesAfter"))(
-			{layout = {sizing = {height = clay.SizingFixed(f32((rows - last) * stride))}}},
+			if nendo.box(nendo.id("GroupFilesAfter"))(
+			{height = nendo.fixed(f32((rows - last) * stride))},
 			) {}
 		}
-		scrollbar(clay.ID("GroupFilesList"))
+		scrollbar(nendo.id("GroupFilesList"))
 	}
 }
 
@@ -577,133 +510,88 @@ group_file_card :: proc(ui: ^Ui_State, job: ^Group_Files_Job, index: int, width:
 		if !cached &&
 		   job.client != nil {media_enqueue(job.client, job.account, job.group, ref, .Image, key)}
 	}
-	if clay.UI(clay.ID("GroupFile", u32(index)))(
+	if nendo.box(nendo.id("GroupFile", u32(index)))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(width),
-				height = clay.SizingFixed(tap_size() ? 216 : GROUP_FILE_CARD_H),
-			},
-			layoutDirection = .TopToBottom,
-		},
-		backgroundColor = hovered() ? HOVER : CARD,
+		width = nendo.fixed(width),
+		height = nendo.fixed(tap_size() ? 216 : GROUP_FILE_CARD_H),
+		direction = .Column,
+		color = hovered() ? HOVER : CARD,
 		border = {color = hovered() ? ACCENT : CARD_BORDER, width = bw()},
-		cornerRadius = rr(10),
+		radius = rr(10),
 	},
 	) {
 		if hovered() {tooltip(name)}
-		if clay.UI(clay.ID("GroupFilePreview", u32(index)))(
+		if nendo.box(nendo.id("GroupFilePreview", u32(index)))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(120)},
-				layoutDirection = .TopToBottom,
-				childGap = 8,
-				childAlignment = {x = .Center, y = .Center},
-			},
-			backgroundColor = ROW_BG,
-			cornerRadius = {topLeft = 10 * R_SCALE, topRight = 10 * R_SCALE},
+			width = nendo.grow(),
+			height = nendo.fixed(120),
+			direction = .Column,
+			gap = 8,
+			align = {x = .Center, y = .Center},
+			color = ROW_BG,
+			radius = {top_left = 10 * R_SCALE, top_right = 10 * R_SCALE},
 		},
 		) {
 			if tex != nil {
 				scale := min((width - 2) / f32(tex.width), f32(118) / f32(tex.height))
-				if clay.UI(clay.ID("GroupFileImage", u32(index)))(
+				if nendo.box(nendo.id("GroupFileImage", u32(index)))(
 				{
-					layout = {
-						sizing = {
-							clay.SizingFixed(f32(tex.width) * scale),
-							clay.SizingFixed(f32(tex.height) * scale),
-						},
-					},
-					image = {imageData = tex},
+					width = nendo.fixed(f32(tex.width) * scale),
+					height = nendo.fixed(f32(tex.height) * scale),
+					image = tex,
 				},
 				) {}
 			} else {
-				clay.Text(
+				nendo.text(
 					GROUP_FILE_ICONS[file.kind],
-					{fontId = FONT_ICON, fontSize = 26, textColor = ACCENT},
+					{font = FONT_ICON, size = 26, color = ACCENT},
 				)
-				clay.Text(
+				nendo.text(
 					tr(GROUP_FILE_TYPES[file.kind]),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 11, color = TEXT_DIM},
 				)
 			}
 		}
-		if clay.UI(clay.ID("GroupFileInfo", u32(index)))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				padding = clay.PaddingAll(10),
-				childGap = 8,
-			},
-		},
+		if nendo.box(nendo.id("GroupFileInfo", u32(index)))(
+		{width = nendo.grow(), direction = .Column, padding = nendo.pad(10), gap = 8},
 		) {
-			if clay.UI(clay.ID("GroupFileName", u32(index)))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {
-				clay.Text(
+			if nendo.box(nendo.id("GroupFileName", u32(index)))({width = nendo.grow()}) {
+				nendo.text(
 					text_ellipsis(name, width - 20, FONT_TITLE, 12),
-					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT, wrapMode = .None},
+					{font = FONT_TITLE, size = 12, color = TEXT, wrap = .None},
 				)
 			}
-			if clay.UI(clay.ID("GroupFileMeta", u32(index)))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					childGap = 6,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("GroupFileMeta", u32(index)))(
+			{width = nendo.grow(), gap = 6, align = {y = .Center}},
 			) {
-				if clay.UI(clay.ID("GroupFileByline", u32(index)))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						layoutDirection = .TopToBottom,
-						childGap = 2,
-					},
-				},
+				if nendo.box(nendo.id("GroupFileByline", u32(index)))(
+				{width = nendo.grow(), direction = .Column, gap = 2},
 				) {
-					clay.Text(
+					nendo.text(
 						text_ellipsis(
 							group_sender_label(ui, string(file.record.sender)),
 							max(1, width - (tap_size() ? 70 : 50)),
 							FONT_BODY,
 							11,
 						),
-						{
-							fontId = FONT_BODY,
-							fontSize = 11,
-							textColor = TEXT_DIM,
-							wrapMode = .None,
-						},
+						{font = FONT_BODY, size = 11, color = TEXT_DIM, wrap = .None},
 					)
 					date: string
 					{context.allocator = context.temp_allocator
 						date = format_day(file.record.timeline_at)}
-					clay.Text(
-						date,
-						{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO, wrapMode = .None},
-					)
+					nendo.text(date, {font = FONT_BODY, size = 10, color = TEXT_LO, wrap = .None})
 				}
-				if clay.UI(clay.ID("GroupFileSave", u32(index)))(
+				if nendo.box(nendo.id("GroupFileSave", u32(index)))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-							height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-						},
-						padding = clay.PaddingAll(6),
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = hovered() ? SELECTED : {},
-					cornerRadius = rr(6),
+					width = nendo.fit(min = tap_size() ? tap_min() : 0),
+					height = nendo.fit(min = tap_size() ? tap_min() : 0),
+					padding = nendo.pad(6),
+					align = {x = .Center, y = .Center},
+					color = hovered() ? SELECTED : {},
+					radius = rr(6),
 				},
 				) {
-					clay.Text(
-						ICON_DOWNLOAD,
-						{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
-					)
+					nendo.text(ICON_DOWNLOAD, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 					if hovered() {tooltip(tr("Save attachment"))}
 				}
 			}
@@ -729,16 +617,15 @@ handle_group_files :: proc(ui: ^Ui_State) {
 	if rl.IsKeyPressed(.TAB) {
 		ui.group_files_menu = ui.group_files_menu == .Type ? .Sender : .Type
 		ui.group_files_option = 0
-		if data := clay.GetScrollContainerData(clay.ID("GroupFilesOptions"));
-		   data.found {data.scrollPosition.y = 0}
+		if data := nendo.scroll(nendo.id("GroupFilesOptions")); data.found {data.position.y = 0}
 		return
 	}
 	for menu in ([]Group_File_Menu{.Type, .Sender}) {
-		if mouse_released() && clay.PointerOver(clay.ID("GroupFilesFilter", u32(menu))) {
+		if mouse_released() && nendo.pointer_over(nendo.id("GroupFilesFilter", u32(menu))) {
 			ui.group_files_menu = ui.group_files_menu == menu ? .None : menu
 			ui.group_files_option = 0
-			if data := clay.GetScrollContainerData(clay.ID("GroupFilesOptions"));
-			   data.found {data.scrollPosition.y = 0}
+			if data := nendo.scroll(nendo.id("GroupFilesOptions"));
+			   data.found {data.position.y = 0}
 			return
 		}
 	}
@@ -747,20 +634,17 @@ handle_group_files :: proc(ui: ^Ui_State) {
 		step := rl.IsKeyPressed(.DOWN) ? 1 : rl.IsKeyPressed(.UP) ? -1 : 0
 		ui.group_files_option = clamp(ui.group_files_option + step, 0, count - 1)
 		if step != 0 {
-			if data := clay.GetScrollContainerData(clay.ID("GroupFilesOptions")); data.found {
-				data.scrollPosition.y = -f32(
-					max(0, ui.group_files_option - 4) * GROUP_FILE_OPTION_H,
-				)
+			if data := nendo.scroll(nendo.id("GroupFilesOptions")); data.found {
+				data.position.y = -f32(max(0, ui.group_files_option - 4) * GROUP_FILE_OPTION_H)
 			}
 		}
 		for i in 0 ..< count {
-			if !(mouse_released() && clay.PointerOver(clay.ID("GroupFilesOption", u32(i)))) &&
+			if !(mouse_released() && nendo.pointer_over(nendo.id("GroupFilesOption", u32(i)))) &&
 			   !(rl.IsKeyPressed(.ENTER) && ui.group_files_option == i) {continue}
 			if ui.group_files_menu ==
 			   .Type {ui.group_files_type = Group_File_Type(i)} else {ui.group_files_sender = i == 0 ? "" : job.senders[i - 1]}
 			ui.group_files_menu = .None
-			if data := clay.GetScrollContainerData(clay.ID("GroupFilesList"));
-			   data.found {data.scrollPosition.y = 0}
+			if data := nendo.scroll(nendo.id("GroupFilesList")); data.found {data.position.y = 0}
 			return
 		}
 		if mouse_released() {ui.group_files_menu = .None}
@@ -769,11 +653,11 @@ handle_group_files :: proc(ui: ^Ui_State) {
 	if !mouse_released() {return}
 	for file, i in job.files {
 		if !group_file_matches(ui, file) ||
-		   !clay.PointerOver(clay.ID("GroupFile", u32(i))) {continue}
+		   !nendo.pointer_over(nendo.id("GroupFile", u32(i))) {continue}
 		ref := media_reference(file.record, file.index)
 		name := string(ref.file_name)
 		if name == "" {name = tr("Attachment")}
-		if file.kind == .Images && !clay.PointerOver(clay.ID("GroupFileSave", u32(i))) {
+		if file.kind == .Images && !nendo.pointer_over(nendo.id("GroupFileSave", u32(i))) {
 			key := string(ref.plaintext_sha256)
 			tex, cached := media_textures[key]
 			if tex == nil {

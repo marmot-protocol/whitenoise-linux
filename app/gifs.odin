@@ -12,7 +12,7 @@ import "core:slice"
 import "core:strings"
 import "core:thread"
 import "core:time"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -185,20 +185,20 @@ giphy_message :: proc(index: u32, body: string) -> bool {
 	view := (^Video_View)(cached)
 	if view == nil || view.failed || view.w <= 0 || view.h <= 0 {return false}
 	ratio := f32(view.w) / f32(view.h)
-	if clay.UI(clay.ID("MsgGiphy", index))(
+	if nendo.box(nendo.id("MsgGiphy", index))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(min(att_w(), 320 * ratio))}},
-		aspectRatio = {ratio},
-		image = {imageData = &view.tex},
-		cornerRadius = rr(8),
+		width = nendo.fixed(min(att_w(), 320 * ratio)),
+		aspect = ratio,
+		image = &view.tex,
+		radius = rr(8),
 	},
 	) {
 		if hovered() {video_hover = view}
 	}
-	if clay.UI(clay.ID("MsgGiphySource", index))({}) {
-		clay.Text(
+	if nendo.box(nendo.id("MsgGiphySource", index))({}) {
+		nendo.text(
 			strings.trim_space(strings.trim_space(body)[len(url):]),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
 		)
 		if hovered() {link_hover = url}
 	}
@@ -404,9 +404,9 @@ gif_drain :: proc(ui: ^Ui_State) {
 			append(&ui.gif_hits, ..job.items[:])
 			ui.gif_page, ui.gif_more = job.page, job.more && len(job.items) > 0
 			clear(&job.items)
-			if job.page == 1 && clay.GetCurrentContext() != nil {
-				if scroll := clay.GetScrollContainerData(clay.ID("GifGrid"));
-				   scroll.found {scroll.scrollPosition^ = {}}
+			if job.page == 1 && nendo.current_context() != nil {
+				if scroll := nendo.scroll(nendo.id("GifGrid"));
+				   scroll.found {scroll.position^ = {}}
 			}
 		case .Library:
 			ui.gif_library, job.items = job.items, nil
@@ -624,9 +624,9 @@ drain_gif_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 @(private)
 gif_visible :: proc(index: int) -> bool {
-	grid := clay.GetElementData(clay.ID("GifGrid"))
-	tile := clay.GetElementData(clay.ID("GifTile", u32(index)))
-	a, b := grid.boundingBox, tile.boundingBox
+	grid := nendo.element(nendo.id("GifGrid"))
+	tile := nendo.element(nendo.id("GifTile", u32(index)))
+	a, b := grid.rect, tile.rect
 	return(
 		grid.found &&
 		tile.found &&
@@ -640,7 +640,7 @@ gif_visible :: proc(index: int) -> bool {
 @(private)
 gif_picker :: proc(ui: ^Ui_State) {
 	if !ui.prefs.gif_consent {gif_consent_panel(); return}
-	width := (single_pane() ? fit_w(400, 8) : modal_w(clay.ID("PickerPanel"), 560)) - 24
+	width := (single_pane() ? fit_w(400, 8) : modal_w(nendo.id("PickerPanel"), 560)) - 24
 	columns := width >= 440 ? 3 : 2
 	cell := (width - f32(columns - 1) * 6) / f32(columns)
 	input_box(
@@ -652,39 +652,29 @@ gif_picker :: proc(ui: ^Ui_State) {
 		0,
 	)
 	busy := ui.gif_job != nil || ui.gif_due > 0 && !ui.gif_saved
-	if clay.UI(clay.ID("GifSources"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			childGap = 16,
-			childAlignment = {y = .Center},
-		},
-	},
-	) {
+	if nendo.box(nendo.id("GifSources"))({width = nendo.grow(), gap = 16, align = {y = .Center}}) {
 		for saved, i in ([]bool{false, true}) {
 			selected := ui.gif_saved == saved
-			if clay.UI(clay.ID("GifSource", u32(i)))(
+			if nendo.box(nendo.id("GifSource", u32(i)))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
-					padding = {top = 4, bottom = 7},
-					childAlignment = {y = .Center},
-				},
-				border = {color = selected ? ACCENT : clay.Color{}, width = {bottom = 2}},
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = {top = 4, bottom = 7},
+				align = {y = .Center},
+				border = {color = selected ? ACCENT : nendo.Color{}, width = {bottom = 2}},
 			},
 			) {
 				if hovered() {cursor_raise(.Pointer)}
-				clay.Text(
+				nendo.text(
 					saved ? tr("Saved") : tr("Discover"),
-					{fontId = FONT_BODY, fontSize = 13, textColor = selected ? TEXT : TEXT_DIM},
+					{font = FONT_BODY, size = 13, color = selected ? TEXT : TEXT_DIM},
 				)
 			}
 		}
-		if clay.UI(clay.ID("GifSourceGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+		if nendo.box(nendo.id("GifSourceGap"))({width = nendo.grow()}) {}
 		if busy {
-			clay.Text(
+			nendo.text(
 				ui.gif_job == nil || ui.gif_job.op == .Search ? tr("Searching…") : tr("Loading…"),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 		}
 	}
@@ -699,41 +689,32 @@ gif_picker :: proc(ui: ^Ui_State) {
 	for item in items {if item.failed {failed += 1}}
 	all_failed := len(items) > 0 && failed == len(items) && (ui.gif_saved || !ui.gif_more)
 	if ui.gif_error != "" && len(matches) > 0 {
-		clay.Text(tr(ui.gif_error), {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+		nendo.text(tr(ui.gif_error), {font = FONT_BODY, size = 12, color = DANGER})
 	}
 	saved_urls := make(map[string]bool, context.temp_allocator)
 	for item in ui.gif_library {if item.url != "" {saved_urls[item.url] = true}}
-	if clay.UI(clay.ID("GifGrid"))(
+	if nendo.box(nendo.id("GifGrid"))(
 	{
-		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow({min = 44})}, childGap = 6},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		width = nendo.grow(),
+		height = nendo.grow(min = 44),
+		gap = 6,
+		clip = {y = true, scroll = true},
 	},
 	) {
 		if len(matches) == 0 && !busy {
-			if clay.UI(clay.ID("GifEmpty"))(
-			{
-				layout = {
-					sizing = {clay.SizingGrow(), clay.SizingGrow()},
-					childAlignment = {x = .Center, y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("GifEmpty"))(
+			{width = nendo.grow(), height = nendo.grow(), align = {x = .Center, y = .Center}},
 			) {
-				clay.Text(
+				nendo.text(
 					ui.gif_error != "" ? tr(ui.gif_error) : all_failed ? tr("Couldn't load GIFs. Please try again.") : ui.gif_saved ? tr("Save GIFs with the star to find them here.") : tr("No GIFs found. Try another search."),
-					{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 14, color = TEXT_DIM},
 				)
 			}
 		}
 		for column in 0 ..< columns {
 			if len(matches) == 0 {break}
-			if clay.UI(clay.ID("GifColumn", u32(column)))(
-			{
-				layout = {
-					sizing = {width = clay.SizingFixed(cell)},
-					layoutDirection = .TopToBottom,
-					childGap = 6,
-				},
-			},
+			if nendo.box(nendo.id("GifColumn", u32(column)))(
+			{width = nendo.fixed(cell), direction = .Column, gap = 6},
 			) {
 				for at := column; at < len(matches); at += columns {
 					i := matches[at]; item := items[i]
@@ -746,69 +727,59 @@ gif_picker :: proc(ui: ^Ui_State) {
 					ratio :=
 						item.width > 0 && item.height > 0 ? f32(item.width) / f32(item.height) : f32(1)
 					height := clamp(cell / ratio, 72, 210)
-					if clay.UI(clay.ID("GifTile", u32(i)))(
+					if nendo.box(nendo.id("GifTile", u32(i)))(
 					{
-						layout = {
-							sizing = {clay.SizingFixed(cell), clay.SizingFixed(height)},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = ROW_BG,
-						cornerRadius = rr(7),
+						width = nendo.fixed(cell),
+						height = nendo.fixed(height),
+						align = {x = .Center, y = .Center},
+						color = ROW_BG,
+						radius = rr(7),
 						border = {
-							color = ui.gif_focus == at || hovered() ? ACCENT : clay.Color{},
+							color = ui.gif_focus == at || hovered() ? ACCENT : nendo.Color{},
 							width = bw(),
 						},
 					},
 					) {
 						if hovered() {cursor_raise(.Pointer); tooltip(item.title)}
 						if tex != nil && tex.width > 0 {
-							if clay.UI(clay.ID_LOCAL("GifThumb"))(
+							if nendo.box(nendo.id_local("GifThumb"))(
 							{
-								layout = {
-									sizing = {width = clay.SizingFixed(min(cell, height * ratio))},
-								},
-								aspectRatio = {ratio},
-								image = {imageData = tex},
-								cornerRadius = rr(7),
+								width = nendo.fixed(min(cell, height * ratio)),
+								aspect = ratio,
+								image = tex,
+								radius = rr(7),
 							},
 							) {}
 						} else if loading[i] {
 							progress_dots(fmt.tprintf("GifTileLoading%d", i)); anim_moving += 1
-						} else {clay.Text(
-								"GIF",
-								{fontId = FONT_BODY, fontSize = 18, textColor = TEXT_LO},
-							)}
+						} else {nendo.text("GIF", {font = FONT_BODY, size = 18, color = TEXT_LO})}
 						saved := item.sha != "" || saved_urls[item.url]
-						if clay.UI(clay.ID("GifSave", u32(i)))(
+						if nendo.box(nendo.id("GifSave", u32(i)))(
 						{
-							layout = {
-								sizing = {
-									clay.SizingFixed(tap_size() ? tap_min() : 28),
-									clay.SizingFixed(tap_size() ? tap_min() : 28),
-								},
-								childAlignment = {x = .Center, y = .Center},
-							},
+							width = nendo.fixed(tap_size() ? tap_min() : 28),
+							height = nendo.fixed(tap_size() ? tap_min() : 28),
+							align = {x = .Center, y = .Center},
 							floating = {
-								attachTo = .Parent,
-								clipTo = .AttachedParent,
-								zIndex = 13,
+								attach_to = .Parent,
+								clip_to = .Parent,
+								z = 13,
 								offset = {-5, 5},
-								attachment = {element = .RightTop, parent = .RightTop},
+								attach = {element = .Right_Top, parent = .Right_Top},
 							},
-							backgroundColor = MEDIA_CHIP_BG,
-							cornerRadius = rr(14),
+							color = MEDIA_CHIP_BG,
+							radius = rr(14),
 						},
 						) {
 							if hovered() {
 								cursor_raise(.Pointer)
 								tooltip(saved ? tr("Remove saved GIF") : tr("Save GIF"))
 							}
-							clay.Text(
+							nendo.text(
 								ICON_STAR,
 								{
-									fontId = FONT_ICON,
-									fontSize = 12,
-									textColor = saved ? ACCENT : MEDIA_CHIP_FG,
+									font = FONT_ICON,
+									size = 12,
+									color = saved ? ACCENT : MEDIA_CHIP_FG,
 								},
 							)
 						}
@@ -817,21 +788,13 @@ gif_picker :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
-	scrollbar(clay.ID("GifGrid"), 14)
-	if clay.UI(clay.ID("GifFooter"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			childGap = 12,
-			childAlignment = {y = .Center},
-		},
-	},
-	) {
-		clay.Text(
+	scrollbar(nendo.id("GifGrid"), 14)
+	if nendo.box(nendo.id("GifFooter"))({width = nendo.grow(), gap = 12, align = {y = .Center}}) {
+		nendo.text(
 			ui.gif_saved ? tr("Available offline") : "GifSnap",
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
 		)
-		if clay.UI(clay.ID("GifFooterGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+		if nendo.box(nendo.id("GifFooterGap"))({width = nendo.grow()}) {}
 		if busy {progress_dots("GifLoading"); anim_moving += 1}
 		if (ui.gif_error != "" || all_failed) &&
 		   ui.gif_job == nil {micro_button("GifRetry", tr("Retry"))}
@@ -841,52 +804,43 @@ gif_picker :: proc(ui: ^Ui_State) {
 // First-use disclosure shown in place of the GIF tab until accepted.
 @(private)
 gif_consent_panel :: proc() {
-	if clay.UI(clay.ID("GifConsent"))(
+	if nendo.box(nendo.id("GifConsent"))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow({min = 44})},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(8),
-			childGap = 12,
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		width = nendo.grow(),
+		height = nendo.grow(min = 44),
+		direction = .Column,
+		padding = nendo.pad(8),
+		gap = 12,
+		clip = {y = true, scroll = true},
 	},
 	) {
-		clay.Text(
-			tr("Search GIFs with GifSnap"),
-			{fontId = FONT_TITLE, fontSize = 18, textColor = TEXT},
-		)
-		clay.Text(
+		nendo.text(tr("Search GIFs with GifSnap"), {font = FONT_TITLE, size = 18, color = TEXT})
+		nendo.text(
 			tr(
 				"GIF search is provided by GifSnap. What you type in the GIF search box and your IP address are sent to GifSnap to find GIFs, and GIF previews load from its servers.",
 			),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 13, color = TEXT_DIM},
 		)
-		clay.Text(
+		nendo.text(
 			tr(
 				"White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control.",
 			),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 13, color = TEXT_DIM},
 		)
-		if clay.UI(clay.ID("GifConsentGrow"))(
-		{layout = {sizing = {height = clay.SizingGrow()}}},
-		) {}
-		if clay.UI(clay.ID("GifConsentRow"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-		) {
-			if clay.UI(clay.ID("GifConsentGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
+		if nendo.box(nendo.id("GifConsentGrow"))({height = nendo.grow()}) {}
+		if nendo.box(nendo.id("GifConsentRow"))({width = nendo.grow(), gap = 8}) {
+			if nendo.box(nendo.id("GifConsentGap"))({width = nendo.grow()}) {}
 			login_button("GifConsentNo", tr("Not now"))
 			login_button("GifConsentYes", tr("Accept"), primary = true)
 		}
 	}
-	scrollbar(clay.ID("GifConsent"), 14)
+	scrollbar(nendo.id("GifConsent"), 14)
 }
 
 @(private)
 handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if rl.IsKeyPressed(.ESCAPE) || mouse_released() && !clay.PointerOver(clay.ID("PickerPanel")) {
+	if rl.IsKeyPressed(.ESCAPE) ||
+	   mouse_released() && !nendo.pointer_over(nendo.id("PickerPanel")) {
 		close_picker(ui); return
 	}
 	if !ui.prefs.gif_consent {
@@ -902,8 +856,7 @@ handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for saved, i in ([]bool{false, true}) {
 		if !clicked_indexed("GifSource", u32(i)) {continue}
 		ui.gif_saved = saved; ui.gif_focus = -1; ui.gif_hover = -1; ui.gif_error = ""
-		if scroll := clay.GetScrollContainerData(clay.ID("GifGrid"));
-		   scroll.found {scroll.scrollPosition^ = {}}
+		if scroll := nendo.scroll(nendo.id("GifGrid")); scroll.found {scroll.position^ = {}}
 		if ui.gif_view != nil {video_view_free(ui.gif_view); ui.gif_view = nil}
 		ed_set(ui, &ui.picker_filter, "")
 		ui.gif_due = saved ? 0 : rl.GetTime() + GIF_SEARCH_DELAY
@@ -920,7 +873,7 @@ handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.gif_job != nil {return}
 	matches := gif_matches(ui)
 	old_focus := ui.gif_focus
-	columns := modal_w(clay.ID("PickerPanel"), 560) - 24 >= 440 ? 3 : 2
+	columns := modal_w(nendo.id("PickerPanel"), 560) - 24 >= 440 ? 3 : 2
 	if rl.IsKeyPressed(.DOWN) {ui.gif_focus = ui.gif_focus < 0 ? 0 : ui.gif_focus + columns}
 	if ui.gif_focus >= 0 {
 		if rl.IsKeyPressed(.UP) {ui.gif_focus -= columns}
@@ -929,14 +882,14 @@ handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.gif_focus = clamp(ui.gif_focus, -1, len(matches) - 1)
 	}
 	if ui.gif_focus >= 0 && ui.gif_focus != old_focus {
-		grid := clay.GetElementData(clay.ID("GifGrid")).boundingBox
-		tile := clay.GetElementData(clay.ID("GifTile", u32(matches[ui.gif_focus]))).boundingBox
-		scroll := clay.GetScrollContainerData(clay.ID("GifGrid"))
+		grid := nendo.element(nendo.id("GifGrid")).rect
+		tile := nendo.element(nendo.id("GifTile", u32(matches[ui.gif_focus]))).rect
+		scroll := nendo.scroll(nendo.id("GifGrid"))
 		if scroll.found {
-			if tile.y < grid.y {scroll.scrollPosition.y += grid.y - tile.y}
+			if tile.y < grid.y {scroll.position.y += grid.y - tile.y}
 			if tile.y + tile.height >
 			   grid.y +
-				   grid.height {scroll.scrollPosition.y -= tile.y + tile.height - grid.y - grid.height}
+				   grid.height {scroll.position.y -= tile.y + tile.height - grid.y - grid.height}
 		}
 	}
 	if rl.IsKeyPressed(.ENTER) && ui.gif_focus < 0 && !ui.gif_saved {gif_search(ui); return}
@@ -947,7 +900,7 @@ handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if clicked_indexed("GifTile", u32(i)) ||
 		   rl.IsKeyPressed(.ENTER) && ui.gif_focus == at {gif_send(ui, client, items[i]); return}
 		if gif_visible(i) &&
-		   (clay.PointerOver(clay.ID("GifTile", u32(i))) || ui.gif_focus == at) {hover = i}
+		   (nendo.pointer_over(nendo.id("GifTile", u32(i))) || ui.gif_focus == at) {hover = i}
 	}
 	if hover != ui.gif_hover {ui.gif_hover = hover; ui.gif_hover_at = rl.GetTime()}
 	// ponytail: animate one hovered GIF; a shared decoder can replace per-view mpv if simultaneous playback is needed.
@@ -958,10 +911,9 @@ handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		gif_choose(ui, items[hover], .Preview)
 	}
 	if !ui.gif_saved && ui.gif_more && ui.gif_due == 0 && ui.gif_job == nil && ui.gif_error == "" {
-		scroll := clay.GetScrollContainerData(clay.ID("GifGrid"))
+		scroll := nendo.scroll(nendo.id("GifGrid"))
 		if scroll.found &&
-		   scroll.contentDimensions.height + scroll.scrollPosition.y <=
-			   scroll.scrollContainerDimensions.height + 160 {
+		   scroll.content.height + scroll.position.y <= scroll.viewport.height + 160 {
 			gif_search(ui, ui.gif_page + 1)
 		}
 	}

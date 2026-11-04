@@ -7,7 +7,7 @@ import marmot "../marmot"
 import "core:strings"
 import "core:testing"
 import "core:text/edit"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Run separately: SDL_VIDEODRIVER=dummy tests/odin.sh app
@@ -71,34 +71,34 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 
 		for _ in 0 ..< 3 {build_layout(ui, 0)}
 	}
-	click :: proc(t: ^testing.T, ui: ^Ui_State, client: ^marmot.Client, id: clay.ElementId) {
+	click :: proc(t: ^testing.T, ui: ^Ui_State, client: ^marmot.Client, id: nendo.Id) {
 
-		data := clay.GetElementData(id)
+		data := nendo.element(id)
 		if !testing.expect(t, data.found, "navigation control must exist") {return}
-		box := data.boundingBox
-		clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+		box := data.rect
+		nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
 		forced_release = true
 		handle_pages(ui, client)
 		if ui.page == .Chats {handle_chat(ui, client)}
 		// Same frame-end dismissal used by main after page dispatch.
 		if ui.new_chat_open && ui.page != .Chats {close_new_chat(ui)}
 		forced_release = false
-		clay.SetPointerState({0, 0}, false)
+		nendo.set_pointer({0, 0}, .Up)
 	}
 	// The header has one Back chip: on the group page it returns to the
 	// contact picker (NCBack), and there it dismisses the form (NCCancel).
 	back_out :: proc(t: ^testing.T, ui: ^Ui_State, client: ^marmot.Client) {
-		click(t, ui, client, clay.ID("NCBack"))
+		click(t, ui, client, nendo.id("NCBack"))
 		testing.expect(t, ui.new_chat_open && ui.nc_page == .Contacts)
 		layout(ui)
-		click(t, ui, client, clay.ID("NCCancel"))
+		click(t, ui, client, nendo.id("NCCancel"))
 	}
 	for cancel in ([]bool{false, true}) {
 		layout(&ui)
-		click(t, &ui, client, clay.ID("NewChatBtn"))
+		click(t, &ui, client, nendo.id("NewChatBtn"))
 		testing.expect(t, ui.new_chat_open)
 		layout(&ui)
-		click(t, &ui, client, clay.ID("NCGroup"))
+		click(t, &ui, client, nendo.id("NCGroup"))
 		testing.expect(t, ui.nc_page == .Group)
 		ed_insert(&ui, &ui.nc_name, "Abandoned group")
 
@@ -107,19 +107,19 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		if cancel {
 			back_out(t, &ui, client)
 		} else {
-			click(t, &ui, client, clay.ID("Nav", u32(Page.Settings)))
+			click(t, &ui, client, nendo.id("Nav", u32(Page.Settings)))
 			testing.expect_value(t, ui.page, Page.Settings)
 		}
 		testing.expect(t, !ui.new_chat_open)
 		if !cancel {
 			layout(&ui)
-			click(t, &ui, client, clay.ID("Nav", u32(Page.Chats)))
+			click(t, &ui, client, nendo.id("Nav", u32(Page.Chats)))
 		}
 		layout(&ui)
-		click(t, &ui, client, clay.ID("NewChatBtn"))
+		click(t, &ui, client, nendo.id("NewChatBtn"))
 		testing.expect(t, len(ui.nc_name) == 0, "a fresh form must not retain the abandoned name")
 		layout(&ui)
-		click(t, &ui, client, clay.ID("NCGroup"))
+		click(t, &ui, client, nendo.id("NCGroup"))
 		testing.expect(t, len(ui.nc_name) == 0, "group field starts empty")
 		layout(&ui)
 		back_out(t, &ui, client)
@@ -132,7 +132,7 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	ui.info_tab = .Members
 	ed_set(&ui, &ui.nc_name, "Old group")
 	layout(&ui)
-	click(t, &ui, client, clay.ID("DmStartGroup"))
+	click(t, &ui, client, nendo.id("DmStartGroup"))
 	testing.expect(t, ui.new_chat_open && ui.nc_page == .Group)
 	testing.expect_value(t, string(ui.nc_member[:]), peer)
 	testing.expect(t, len(ui.nc_name) == 0)

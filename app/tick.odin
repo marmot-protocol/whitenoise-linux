@@ -12,7 +12,7 @@ import "core:math"
 
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -26,7 +26,7 @@ Check_View :: struct {
 	kind:   Model_Kind, // .Check; must stay the first field
 	start:  f64,
 	double: bool,
-	color:  clay.Color,
+	color:  nendo.Color,
 }
 
 // When each chat's delivery state last changed, so the stroke is drawn
@@ -57,11 +57,8 @@ delivery_tick :: proc(group_id: string, index: u32, state: marmot.Delivery_State
 	if rl.GetTime() - seen.at < CHECK_SECS + CHECK_LAG {
 		anim_moving += 1
 	}
-	if clay.UI(clay.ID("Tick", index))(
-	{
-		layout = {sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(CHECK_H)}},
-		custom = {customData = view},
-	},
+	if nendo.box(nendo.id("Tick", index))(
+	{width = nendo.fixed(width), height = nendo.fixed(CHECK_H), custom = view},
 	) {}
 }
 
@@ -115,7 +112,7 @@ check_path :: proc(verts: ^[dynamic]rl.Vertex, x, y, progress: f32, color: rl.FC
 	stroke(verts, x1, y1, x1 + (x2 - x1) * second, y1 + (y2 - y1) * second, 1.8, color)
 }
 
-check_draw :: proc(view: ^Check_View, bounds: clay.BoundingBox) {
+check_draw :: proc(view: ^Check_View, bounds: nendo.Rect) {
 	color := rl.FColor {
 		view.color.r / 255,
 		view.color.g / 255,

@@ -13,7 +13,7 @@ import "core:sync"
 import "core:thread"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 import sdl "vendor:sdl3"
 
@@ -429,14 +429,14 @@ lightbox_fly :: proc(ui: ^Ui_State) {
 		return
 	}
 	// The cell id the album builds (timeline.odin): row index, attachment.
-	from, ok := element_box(clay.ID("MsgImage", msg_slot_id(u32(index), slide.att)))
+	from, ok := element_box(nendo.id("MsgImage", msg_slot_id(u32(index), slide.att)))
 	if !ok {
 		return
 	}
 	w := f32(rl.GetScreenWidth()) / UI_ZOOM
 	h := f32(rl.GetScreenHeight()) / UI_ZOOM
 	side := min(w, h) * LIGHTBOX_SHARE
-	to := clay.BoundingBox{(w - side) / 2, (h - side) / 2, side, side}
+	to := nendo.Rect{(w - side) / 2, (h - side) / 2, side, side}
 	fly(from, to, slide.tex, "", {}, shape = .Card)
 }
 
@@ -715,61 +715,51 @@ preview_modal :: proc(ui: ^Ui_State) {
 	if full {
 		max_h = f32(rl.GetScreenHeight()) / UI_ZOOM
 	}
-	if clay.UI(clay.ID("PvModal"))(
+	if nendo.box(nendo.id("PvModal"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = full ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : (narrow ? clay.SizingFixed(fit_w(640)) : (image_view ? clay.SizingFixed(image_w + 28) : clay.SizingFit({min = min(f32(360), fit_w(640))}))),
-				height = full || image_view || narrow ? clay.SizingFixed(max_h) : clay.SizingFit({max = max_h}),
-			},
-			padding = clay.PaddingAll(full ? 0 : 14),
-			childGap = full ? 0 : 10,
-		},
-		clip = {vertical = narrow, childOffset = clay.GetScrollOffset()},
+		direction = .Column,
+		width = full ? nendo.fixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : (narrow ? nendo.fixed(fit_w(640)) : (image_view ? nendo.fixed(image_w + 28) : nendo.fit(min = min(f32(360), fit_w(640))))),
+		height = full || image_view || narrow ? nendo.fixed(max_h) : nendo.fit(max = max_h),
+		padding = nendo.pad(full ? 0 : 14),
+		gap = full ? 0 : 10,
+		clip = {y = narrow, scroll = true},
 		floating = {
-			attachTo = .Root,
-			zIndex = 12,
-			offset = {0, full ? 0 : rise(clay.ID("PvModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 12,
+			offset = {0, full ? 0 : rise(nendo.id("PvModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = full ? MEDIA_BACKDROP : CARD,
-		cornerRadius = rr(full ? 0 : 12),
-		border = {color = ELEVATED_BORDER, width = full ? clay.BorderWidth{} : bw()},
+		color = full ? MEDIA_BACKDROP : CARD,
+		radius = rr(full ? 0 : 12),
+		border = {color = ELEVATED_BORDER, width = full ? nendo.Border_Width{} : bw()},
 	},
 	) {
 		slides := preview.kind == .Slides
-		if clay.UI(clay.ID("PvHead"))(
+		if nendo.box(nendo.id("PvHead"))(
 		{
-			layout = {
-				sizing = {width = full && !narrow ? clay.SizingFit({}) : clay.SizingGrow()},
-				padding = clay.PaddingAll(full ? 8 : 0),
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-			floating = full ? clay.FloatingElementConfig{attachTo = .Parent, zIndex = 15, offset = {narrow ? 0 : -12, narrow ? 0 : 12}, attachment = {element = .RightTop, parent = .RightTop}} : {},
-			backgroundColor = full ? MEDIA_CHIP_BG : {},
+			width = full && !narrow ? nendo.fit() : nendo.grow(),
+			padding = nendo.pad(full ? 8 : 0),
+			gap = 10,
+			align = {y = .Center},
+			floating = full ? nendo.Floating{attach_to = .Parent, z = 15, offset = {narrow ? 0 : -12, narrow ? 0 : 12}, attach = {element = .Right_Top, parent = .Right_Top}} : {},
+			color = full ? MEDIA_CHIP_BG : {},
 		},
 		) {
 			if !narrow {
-				clay.Text(
+				nendo.text(
 					arc_short_name(slides ? preview.slides[preview.slide].name : preview.name),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = full ? MEDIA_CHIP_FG : TEXT},
+					{font = FONT_TITLE, size = 13, color = full ? MEDIA_CHIP_FG : TEXT},
 				)
 			}
-			if clay.UI(clay.ID("PvHeadActions"))(
+			if nendo.box(nendo.id("PvHeadActions"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					childGap = 10,
-					childAlignment = {y = .Center},
-				},
-				clip = {horizontal = narrow, childOffset = clay.GetScrollOffset()},
+				width = nendo.grow(),
+				gap = 10,
+				align = {y = .Center},
+				clip = {x = narrow, scroll = true},
 			},
 			) {
-				if clay.UI(clay.ID("PvHeadPad"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {}
+				if nendo.box(nendo.id("PvHeadPad"))({width = nendo.grow()}) {}
 				if preview.kind == .Message && ui.prefs.tts_enabled {
 					micro_button("PvRead", tr("Read aloud"))
 				}
@@ -780,92 +770,74 @@ preview_modal :: proc(ui: ^Ui_State) {
 				if stored &&
 				   (preview.kind == .Image ||
 						   (slides && preview.slides[preview.slide].tex != nil)) {
-					if clay.UI(clay.ID("PvCopy"))(
+					if nendo.box(nendo.id("PvCopy"))(
 					{
-						layout = {
-							sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
-							padding = {left = 10, right = 10, top = 5, bottom = 5},
-							childAlignment = {y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : ROW_BG,
-						cornerRadius = rr(8),
+						height = nendo.fit(min = tap_size() ? tap_min() : 0),
+						padding = {left = 10, right = 10, top = 5, bottom = 5},
+						align = {y = .Center},
+						color = hovered() ? HOVER : ROW_BG,
+						radius = rr(8),
 					},
 					) {
-						clay.Text(
-							tr("Copy image"),
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
-						)
+						nendo.text(tr("Copy image"), {font = FONT_BODY, size = 12, color = TEXT})
 					}
 				}
 				if preview.kind == .Video || preview.kind == .Pdf {
-					if clay.UI(clay.ID("PvFull"))(
+					if nendo.box(nendo.id("PvFull"))(
 					{
-						layout = {
-							sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
-							padding = {left = 10, right = 10, top = 5, bottom = 5},
-							childAlignment = {y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : ROW_BG,
-						cornerRadius = rr(8),
+						height = nendo.fit(min = tap_size() ? tap_min() : 0),
+						padding = {left = 10, right = 10, top = 5, bottom = 5},
+						align = {y = .Center},
+						color = hovered() ? HOVER : ROW_BG,
+						radius = rr(8),
 					},
 					) {
-						clay.Text(
+						nendo.text(
 							full ? tr("Exit fullscreen") : tr("Fullscreen"),
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
+							{font = FONT_BODY, size = 12, color = TEXT},
 						)
 					}
 				}
 				if stored {
-					if clay.UI(clay.ID("PvSave"))(
+					if nendo.box(nendo.id("PvSave"))(
 					{
-						layout = {
-							sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
-							padding = {left = 10, right = 10, top = 5, bottom = 5},
-							childAlignment = {y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : ROW_BG,
-						cornerRadius = rr(8),
+						height = nendo.fit(min = tap_size() ? tap_min() : 0),
+						padding = {left = 10, right = 10, top = 5, bottom = 5},
+						align = {y = .Center},
+						color = hovered() ? HOVER : ROW_BG,
+						radius = rr(8),
 					},
 					) {
-						clay.Text(
-							tr("Save"),
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
-						)
+						nendo.text(tr("Save"), {font = FONT_BODY, size = 12, color = TEXT})
 					}
 				}
 			}
-			if clay.UI(clay.ID("PvClose"))(
+			if nendo.box(nendo.id("PvClose"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(tap_size() ? tap_min() : 32),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : ROW_BG,
-				cornerRadius = rr(8),
+				width = nendo.fixed(tap_size() ? tap_min() : 32),
+				height = nendo.fixed(tap_size() ? tap_min() : 26),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : ROW_BG,
+				radius = rr(8),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT})
 			}
 		}
 
 		if image_view {
-			if clay.UI(clay.ID("PvZoomTools"))(
+			if nendo.box(nendo.id("PvZoomTools"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-				clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+				width = nendo.grow(),
+				gap = 8,
+				align = {y = .Center},
+				clip = {x = true, scroll = true},
 			},
 			) {
 				micro_button("PvZoomOut", "\u2212")
-				clay.Text(
+				nendo.text(
 					fmt.tprintf("%.0f%%", preview.image_scale * UI_ZOOM * 100),
-					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM},
+					{font = FONT_MONO, size = 11, color = TEXT_DIM},
 				)
 				micro_button("PvZoomIn", "+")
 				micro_button("PvFit", tr("Fit"))
@@ -873,38 +845,32 @@ preview_modal :: proc(ui: ^Ui_State) {
 				slide_nav()
 				if slides {
 					if _, loading := slide_texture(preview.slides[preview.slide]); loading {
-						clay.Text(
+						nendo.text(
 							tr("Loading full resolution\u2026"),
-							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 11, color = TEXT_DIM},
 						)
 						busy_bar("PvOriginalBar")
 					}
 				}
 			}
 		}
-		if clay.UI(clay.ID("PvScroll"))(
+		if nendo.box(nendo.id("PvScroll"))(
 		{
 			// Height capped below the modal's own cap, or the fit sizing
 			// matches the content and the scrollbar never engages.
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {
-					width = narrow || full ? clay.SizingGrow() : (image_view ? clay.SizingFixed(image_w) : clay.SizingFit({})),
-					height = full || image_view || narrow ? clay.SizingGrow({min = 44}) : clay.SizingFit({max = max(1, max_h - PV_CHROME)}),
-				},
-				childAlignment = {x = full ? .Center : .Left, y = full ? .Center : .Top},
-				childGap = 10,
-			},
-			clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()},
+			direction = .Column,
+			width = narrow || full ? nendo.grow() : (image_view ? nendo.fixed(image_w) : nendo.fit()),
+			height = full || image_view || narrow ? nendo.grow(min = 44) : nendo.fit(max = max(1, max_h - PV_CHROME)),
+			align = {x = full ? .Center : .Left, y = full ? .Center : .Top},
+			gap = 10,
+			clip = {x = true, y = true, scroll = true},
 		},
 		) {
 			if narrow && !full {
-				if clay.UI(clay.ID("PvFileName"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
-				) {
-					clay.Text(
+				if nendo.box(nendo.id("PvFileName"))({width = nendo.grow(), clip = {x = true}}) {
+					nendo.text(
 						arc_short_name(slides ? preview.slides[preview.slide].name : preview.name),
-						{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
+						{font = FONT_TITLE, size = 13, color = TEXT, wrap = .None},
 					)
 				}
 			}
@@ -933,36 +899,22 @@ preview_modal :: proc(ui: ^Ui_State) {
 					preview.image_scale = preview.image_zoom < 0 ? fit : preview.image_zoom
 					w, ih :=
 						f32(tex.width) * preview.image_scale, f32(tex.height) * preview.image_scale
-					if clay.UI(clay.ID("PvImageCanvas"))(
+					if nendo.box(nendo.id("PvImageCanvas"))(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingFixed(max(image_w, w)),
-								height = clay.SizingFixed(max(h, ih)),
-							},
-							childAlignment = {x = .Center, y = .Center},
-						},
+						width = nendo.fixed(max(image_w, w)),
+						height = nendo.fixed(max(h, ih)),
+						align = {x = .Center, y = .Center},
 					},
 					) {
-						if clay.UI(clay.ID("PvImage"))(
-						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(w),
-									height = clay.SizingFixed(ih),
-								},
-							},
-							image = {imageData = tex},
-						},
+						if nendo.box(nendo.id("PvImage"))(
+						{width = nendo.fixed(w), height = nendo.fixed(ih), image = tex},
 						) {}
 					}
 				} else {
-					if clay.UI(clay.ID("PvRetry"))(
-					{layout = {padding = clay.PaddingAll(20)}, backgroundColor = PLATE},
-					) {
-						clay.Text(
+					if nendo.box(nendo.id("PvRetry"))({padding = nendo.pad(20), color = PLATE}) {
+						nendo.text(
 							tr("Image didn't load. Click to retry."),
-							{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 13, color = TEXT_DIM},
 						)
 					}
 				}
@@ -971,22 +923,18 @@ preview_modal :: proc(ui: ^Ui_State) {
 				view := preview.vid
 				// mpv couldn't decode the bytes; retry rebuilds the view.
 				if view.failed {
-					if clay.UI(clay.ID("PvVidRetry"))(
+					if nendo.box(nendo.id("PvVidRetry"))(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingFixed(fit_w(480)),
-								height = clay.SizingFixed(220),
-							},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : PLATE,
-						cornerRadius = rr(8),
+						width = nendo.fixed(fit_w(480)),
+						height = nendo.fixed(220),
+						align = {x = .Center, y = .Center},
+						color = hovered() ? HOVER : PLATE,
+						radius = rr(8),
 					},
 					) {
-						clay.Text(
+						nendo.text(
 							tr("Couldn't play video. Click to retry."),
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 12, color = TEXT_DIM},
 						)
 					}
 					break
@@ -999,36 +947,32 @@ preview_modal :: proc(ui: ^Ui_State) {
 					view.max_width = width
 					view.sized = false // repaint even when playback is paused
 				}
-				if clay.UI(clay.ID("PvVideo"))(
+				if nendo.box(nendo.id("PvVideo"))(
 				{
-					layout = {
-						sizing = {width = clay.SizingFixed(vw)},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					aspectRatio = {ratio},
-					image = {imageData = &view.tex},
-					cornerRadius = rr(8),
+					width = nendo.fixed(vw),
+					align = {x = .Center, y = .Center},
+					aspect = ratio,
+					image = &view.tex,
+					radius = rr(8),
 				},
 				) {
 					if hovered() {
 						video_hover = view
 					}
 					if view.paused {
-						clay.Text(
+						nendo.text(
 							"\uf04b",
-							{fontId = FONT_ICON, fontSize = 22, textColor = {255, 255, 255, 230}},
+							{font = FONT_ICON, size = 22, color = {255, 255, 255, 230}},
 						)
 					}
-					video_scrub_bar(clay.ID("PvVideoBar"), view, vw, 14)
+					video_scrub_bar(nendo.id("PvVideoBar"), view, vw, 14)
 				}
 				if !view.looping && !full {
 					// "m:ss / m:ss" position readout under the bar.
-					if clay.UI(clay.ID("PvVideoMeta"))(
-					{layout = {sizing = {width = clay.SizingFixed(vw)}}},
-					) {
-						clay.Text(
+					if nendo.box(nendo.id("PvVideoMeta"))({width = nendo.fixed(vw)}) {
+						nendo.text(
 							fmt.tprintf("%s / %s", fmt_clock(view.time), fmt_clock(view.dur)),
-							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 11, color = TEXT_DIM},
 						)
 					}
 				}
@@ -1036,37 +980,31 @@ preview_modal :: proc(ui: ^Ui_State) {
 			case .Model_Loading:
 				// The model tile plus the inspector beside it, so the
 				// modal keeps its size when the decode lands.
-				if clay.UI(clay.ID("PvModelLoading"))(
+				if nendo.box(nendo.id("PvModelLoading"))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingFixed(
-								narrow ? fit_w(480, 26) : fit_w(480) + 10 + INSP_WIDTH,
-							),
-							height = clay.SizingFixed(max(1, min(f32(480), max_h - PV_CHROME))),
-						},
-						layoutDirection = .TopToBottom,
-						childGap = 10,
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = PLATE,
-					cornerRadius = rr(8),
+					width = nendo.fixed(narrow ? fit_w(480, 26) : fit_w(480) + 10 + INSP_WIDTH),
+					height = nendo.fixed(max(1, min(f32(480), max_h - PV_CHROME))),
+					direction = .Column,
+					gap = 10,
+					align = {x = .Center, y = .Center},
+					color = PLATE,
+					radius = rr(8),
 				},
 				) {
-					clay.Text(
+					nendo.text(
 						tr("Reading the model\u2026"),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+						{font = FONT_BODY, size = 13, color = TEXT},
 					)
-					clay.Text(
+					nendo.text(
 						tr("Progress is indeterminate."),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+						{font = FONT_BODY, size = 12, color = TEXT_LO},
 					)
 					busy_bar("PvModelBusy")
 				}
 
 			case .Mesh, .Gcode:
 				if tap_size() {
-					if clay.UI(clay.ID("PvModelTools"))({layout = {childGap = 8}}) {
+					if nendo.box(nendo.id("PvModelTools"))({gap = 8}) {
 						micro_button("PvModelZoomOut", "−")
 						micro_button("PvModelZoomIn", "+")
 						micro_button("PvModelFit", tr("Fit"))
@@ -1076,30 +1014,21 @@ preview_modal :: proc(ui: ^Ui_State) {
 				// no channels to inspect and keeps the bare tile. Both
 				// shrink to whatever the capped modal leaves for the body.
 				model_h := max(1, min(f32(480), max_h - PV_CHROME))
-				if clay.UI(clay.ID("PvModelRow"))(
-				{layout = {layoutDirection = narrow ? .TopToBottom : .LeftToRight, childGap = 10}},
+				if nendo.box(nendo.id("PvModelRow"))(
+				{direction = narrow ? .Column : .Row, gap = 10},
 				) {
-					if clay.UI(clay.ID("PvModel"))(
+					if nendo.box(nendo.id("PvModel"))(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingFixed(narrow ? fit_w(480, 26) : fit_w(480)),
-								height = clay.SizingFixed(model_h),
-							},
-						},
-						backgroundColor = PLATE,
-						cornerRadius = rr(8),
+						width = nendo.fixed(narrow ? fit_w(480, 26) : fit_w(480)),
+						height = nendo.fixed(model_h),
+						color = PLATE,
+						radius = rr(8),
 					},
 					) {
 						payload: rawptr =
 							preview.kind == .Mesh ? rawptr(preview.mesh) : rawptr(preview.gc)
-						if clay.UI(clay.ID("PvModelView"))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()},
-							},
-							custom = {customData = payload},
-						},
+						if nendo.box(nendo.id("PvModelView"))(
+						{width = nendo.grow(), height = nendo.grow(), custom = payload},
 						) {
 							if hovered() {
 								orbit_hover =
@@ -1115,34 +1044,24 @@ preview_modal :: proc(ui: ^Ui_State) {
 					}
 				}
 				if preview.kind == .Gcode {
-					bar_id := clay.ID("PvGcodeBar")
+					bar_id := nendo.id("PvGcodeBar")
 					append(&gcode_bars, Gcode_Bar{bar_id, preview.gc})
-					if clay.UI(bar_id)(
+					if nendo.box(bar_id)(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingFixed(fit_w(480)),
-								height = clay.SizingFixed(tap_size() ? tap_min() : 14),
-							},
-							padding = {left = 2, right = 2},
-							childAlignment = {y = .Center},
-						},
-						backgroundColor = ROW_BG,
-						cornerRadius = rr(7),
+						width = nendo.fixed(fit_w(480)),
+						height = nendo.fixed(tap_size() ? tap_min() : 14),
+						padding = {left = 2, right = 2},
+						align = {y = .Center},
+						color = ROW_BG,
+						radius = rr(7),
 					},
 					) {
-						if clay.UI(clay.ID("PvGcodeFill"))(
+						if nendo.box(nendo.id("PvGcodeFill"))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(
-										max(10, preview.gc.frac * (fit_w(480) - 4)),
-									),
-									height = clay.SizingFixed(10),
-								},
-							},
-							backgroundColor = ACCENT,
-							cornerRadius = rr(5),
+							width = nendo.fixed(max(10, preview.gc.frac * (fit_w(480) - 4))),
+							height = nendo.fixed(10),
+							color = ACCENT,
+							radius = rr(5),
 						},
 						) {}
 					}
@@ -1158,92 +1077,70 @@ preview_modal :: proc(ui: ^Ui_State) {
 					pdf_render_page(view)
 				}
 				ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 0.77
-				if clay.UI(clay.ID("PvPdf"))(
+				if nendo.box(nendo.id("PvPdf"))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingFixed(
-								full ? min(f32(rl.GetScreenWidth()) / UI_ZOOM, max_h * ratio) : fit_w(480),
-							),
-						},
-						childAlignment = {x = .Center, y = .Bottom},
-					},
-					aspectRatio = {ratio},
-					image = {imageData = &view.tex},
-					cornerRadius = rr(8),
+					width = nendo.fixed(
+						full ? min(f32(rl.GetScreenWidth()) / UI_ZOOM, max_h * ratio) : fit_w(480),
+					),
+					align = {x = .Center, y = .Bottom},
+					aspect = ratio,
+					image = &view.tex,
+					radius = rr(8),
 				},
 				) {
 					if view.pages > 1 {
-						if clay.UI(clay.ID("PvPdfNav"))(
+						if nendo.box(nendo.id("PvPdfNav"))(
 						{
-							layout = {
-								padding = {left = 8, right = 8, top = 4, bottom = 4},
-								childGap = 10,
-								childAlignment = {y = .Center},
-							},
-							backgroundColor = {0, 0, 0, 140},
-							cornerRadius = rr(12),
+							padding = {left = 8, right = 8, top = 4, bottom = 4},
+							gap = 10,
+							align = {y = .Center},
+							color = {0, 0, 0, 140},
+							radius = rr(12),
 						},
 						) {
-							if clay.UI(clay.ID("PvPdfPrev"))(
+							if nendo.box(nendo.id("PvPdfPrev"))(
 							{
-								layout = {
-									sizing = {
-										width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-										height = clay.SizingFit(
-											{min = tap_size() ? tap_min() : 0},
-										),
-									},
-									padding = clay.PaddingAll(4),
-									childAlignment = {x = .Center, y = .Center},
-								},
+								width = nendo.fit(min = tap_size() ? tap_min() : 0),
+								height = nendo.fit(min = tap_size() ? tap_min() : 0),
+								padding = nendo.pad(4),
+								align = {x = .Center, y = .Center},
 							},
 							) {
 								if view.page > 0 && hovered() {
 									pdf_flip_hover = view
 									pdf_flip_dir = -1
 								}
-								clay.Text(
+								nendo.text(
 									"<",
 									{
-										fontId = FONT_TITLE,
-										fontSize = 13,
-										textColor = {255, 255, 255, view.page > 0 ? 230 : 80},
+										font = FONT_TITLE,
+										size = 13,
+										color = {255, 255, 255, view.page > 0 ? 230 : 80},
 									},
 								)
 							}
-							clay.Text(
+							nendo.text(
 								fmt.tprintf("%d / %d", view.page + 1, view.pages),
-								{
-									fontId = FONT_BODY,
-									fontSize = 11,
-									textColor = {255, 255, 255, 230},
-								},
+								{font = FONT_BODY, size = 11, color = {255, 255, 255, 230}},
 							)
-							if clay.UI(clay.ID("PvPdfNext"))(
+							if nendo.box(nendo.id("PvPdfNext"))(
 							{
-								layout = {
-									sizing = {
-										width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-										height = clay.SizingFit(
-											{min = tap_size() ? tap_min() : 0},
-										),
-									},
-									padding = clay.PaddingAll(4),
-									childAlignment = {x = .Center, y = .Center},
-								},
+								width = nendo.fit(min = tap_size() ? tap_min() : 0),
+								height = nendo.fit(min = tap_size() ? tap_min() : 0),
+								padding = nendo.pad(4),
+								align = {x = .Center, y = .Center},
 							},
 							) {
 								if view.page < view.pages - 1 && hovered() {
 									pdf_flip_hover = view
 									pdf_flip_dir = 1
 								}
-								clay.Text(
+								nendo.text(
 									">",
 									{
-										fontId = FONT_TITLE,
-										fontSize = 13,
-										textColor = {
+										font = FONT_TITLE,
+										size = 13,
+										color = {
 											255,
 											255,
 											255,
@@ -1258,14 +1155,12 @@ preview_modal :: proc(ui: ^Ui_State) {
 
 			case .Message:
 				clear(&sel_lines)
-				if clay.UI(clay.ID("PvMessage"))(
+				if nendo.box(nendo.id("PvMessage"))(
 				{
-					layout = {
-						layoutDirection = .TopToBottom,
-						sizing = {width = clay.SizingFixed(fit_w(640, 32))},
-						padding = {right = PV_TEXT_GUTTER},
-						childGap = 3,
-					},
+					direction = .Column,
+					width = nendo.fixed(fit_w(640, 32)),
+					padding = {right = PV_TEXT_GUTTER},
+					gap = 3,
 				},
 				) {
 					if len(preview.message_blocks) > 0 {
@@ -1288,16 +1183,14 @@ preview_modal :: proc(ui: ^Ui_State) {
 				}
 
 			case .Text:
-				if clay.UI(clay.ID("PvText"))(
+				if nendo.box(nendo.id("PvText"))(
 				{
-					layout = {
-						layoutDirection = .TopToBottom,
-						sizing = {width = clay.SizingFixed(fit_w(480, narrow ? 26 : 12))},
-						padding = clay.PaddingAll(10),
-						childGap = 6,
-					},
-					backgroundColor = PLATE,
-					cornerRadius = rr(8),
+					direction = .Column,
+					width = nendo.fixed(fit_w(480, narrow ? 26 : 12)),
+					padding = nendo.pad(10),
+					gap = 6,
+					color = PLATE,
+					radius = rr(8),
 				},
 				) {
 					shown := min(len(preview.txt.blocks), TXT_MODAL_BLOCKS)
@@ -1307,25 +1200,23 @@ preview_modal :: proc(ui: ^Ui_State) {
 						wrap_w = fit_w(480, narrow ? 26 : 12) - 20,
 					)
 					if len(preview.txt.blocks) > shown {
-						clay.Text(
+						nendo.text(
 							fmt.tprintf(tr("and %d more blocks"), len(preview.txt.blocks) - shown),
-							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 11, color = TEXT_DIM},
 						)
 					}
 				}
 
 			case .Code:
 				view := preview.code
-				if clay.UI(clay.ID("PvCode"))(
+				if nendo.box(nendo.id("PvCode"))(
 				{
-					layout = {
-						layoutDirection = .TopToBottom,
-						sizing = {width = clay.SizingFixed(fit_w(600, narrow ? 26 : 12))},
-						padding = clay.PaddingAll(10),
-						childGap = 1,
-					},
-					backgroundColor = PLATE,
-					cornerRadius = rr(8),
+					direction = .Column,
+					width = nendo.fixed(fit_w(600, narrow ? 26 : 12)),
+					padding = nendo.pad(10),
+					gap = 1,
+					color = PLATE,
+					radius = rr(8),
 				},
 				) {
 					code_lines(
@@ -1333,23 +1224,21 @@ preview_modal :: proc(ui: ^Ui_State) {
 						0,
 						CODE_MODAL_LINES,
 						fit_w(600, narrow ? 26 : 12) - 20,
-						clay.ID("PvScroll"),
+						nendo.id("PvScroll"),
 						10,
 						1,
 					)
 				}
 
 			case .Hex:
-				if clay.UI(clay.ID("PvHexBody"))(
+				if nendo.box(nendo.id("PvHexBody"))(
 				{
-					layout = {
-						layoutDirection = .TopToBottom,
-						sizing = {width = clay.SizingFixed(fit_w(600))},
-						padding = clay.PaddingAll(10),
-						childGap = 1,
-					},
-					backgroundColor = PLATE,
-					cornerRadius = rr(8),
+					direction = .Column,
+					width = nendo.fixed(fit_w(600)),
+					padding = nendo.pad(10),
+					gap = 1,
+					color = PLATE,
+					radius = rr(8),
 				},
 				) {
 					hex_rows(preview.bytes)
@@ -1358,49 +1247,35 @@ preview_modal :: proc(ui: ^Ui_State) {
 			case .Font:
 				view := preview.font
 				ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 4
-				if clay.UI(clay.ID("PvFont"))(
-				{
-					layout = {sizing = {width = clay.SizingFixed(fit_w(480))}},
-					aspectRatio = {ratio},
-					image = {imageData = &view.tex},
-				},
+				if nendo.box(nendo.id("PvFont"))(
+				{width = nendo.fixed(fit_w(480)), aspect = ratio, image = &view.tex},
 				) {}
 
 			case .Unsupported, .None:
-				if clay.UI(clay.ID("PvNone"))(
-				{
-					layout = {
-						layoutDirection = .TopToBottom,
-						padding = clay.PaddingAll(20),
-						childGap = 10,
-						childAlignment = {x = .Center},
-					},
-				},
+				if nendo.box(nendo.id("PvNone"))(
+				{direction = .Column, padding = nendo.pad(20), gap = 10, align = {x = .Center}},
 				) {
-					clay.Text(
+					nendo.text(
 						tr("No preview for this file type. Save it, or read the bytes."),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						{font = FONT_BODY, size = 12, color = TEXT_DIM},
 					)
-					if clay.UI(clay.ID("PvHex"))(
+					if nendo.box(nendo.id("PvHex"))(
 					{
-						layout = {padding = {left = 10, right = 10, top = 6, bottom = 6}},
-						backgroundColor = hovered() ? HOVER : ROW_BG,
-						cornerRadius = rr(8),
+						padding = {left = 10, right = 10, top = 6, bottom = 6},
+						color = hovered() ? HOVER : ROW_BG,
+						radius = rr(8),
 					},
 					) {
-						clay.Text(
-							tr("View as hex"),
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
-						)
+						nendo.text(tr("View as hex"), {font = FONT_BODY, size = 12, color = TEXT})
 					}
 				}
 			}
 		}
-		scrollbar(clay.ID("PvScroll"), 13) // the modal floats at 12
-		scrollbar(clay.ID("PvHeadActions"), 16)
-		if image_view {scrollbar(clay.ID("PvZoomTools"), 13)}
+		scrollbar(nendo.id("PvScroll"), 13) // the modal floats at 12
+		scrollbar(nendo.id("PvHeadActions"), 16)
+		if image_view {scrollbar(nendo.id("PvZoomTools"), 13)}
 	}
-	if narrow {scrollbar(clay.ID("PvModal"), 13)}
+	if narrow {scrollbar(nendo.id("PvModal"), 13)}
 }
 
 // Prev / "n / N" / next pill, riding the bottom of the slide.
@@ -1409,63 +1284,48 @@ slide_nav :: proc() {
 	if len(preview.slides) <= 1 {
 		return
 	}
-	if clay.UI(clay.ID("PvSlideNav"))(
+	if nendo.box(nendo.id("PvSlideNav"))(
 	{
-		layout = {
-			padding = {left = 8, right = 8, top = 4, bottom = 4},
-			childGap = 10,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = {0, 0, 0, 140},
-		cornerRadius = rr(12),
+		padding = {left = 8, right = 8, top = 4, bottom = 4},
+		gap = 10,
+		align = {y = .Center},
+		color = {0, 0, 0, 140},
+		radius = rr(12),
 	},
 	) {
-		if clay.UI(clay.ID("PvSlidePrev"))(
+		if nendo.box(nendo.id("PvSlidePrev"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingFixed(tap_size() ? tap_min() : 16),
-					height = clay.SizingFixed(tap_size() ? tap_min() : 24),
-				},
-				childAlignment = {x = .Center, y = .Center},
-			},
+			width = nendo.fixed(tap_size() ? tap_min() : 16),
+			height = nendo.fixed(tap_size() ? tap_min() : 24),
+			align = {x = .Center, y = .Center},
 		},
 		) {
-			clay.Text(
+			nendo.text(
 				"<",
 				{
-					fontId = FONT_TITLE,
-					fontSize = 13,
-					textColor = {255, 255, 255, preview.slide > 0 ? 230 : 80},
+					font = FONT_TITLE,
+					size = 13,
+					color = {255, 255, 255, preview.slide > 0 ? 230 : 80},
 				},
 			)
 		}
-		clay.Text(
+		nendo.text(
 			fmt.tprintf("%d / %d", preview.slide + 1, len(preview.slides)),
-			{fontId = FONT_BODY, fontSize = 11, textColor = {255, 255, 255, 230}},
+			{font = FONT_BODY, size = 11, color = {255, 255, 255, 230}},
 		)
-		if clay.UI(clay.ID("PvSlideNext"))(
+		if nendo.box(nendo.id("PvSlideNext"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingFixed(tap_size() ? tap_min() : 16),
-					height = clay.SizingFixed(tap_size() ? tap_min() : 24),
-				},
-				childAlignment = {x = .Center, y = .Center},
-			},
+			width = nendo.fixed(tap_size() ? tap_min() : 16),
+			height = nendo.fixed(tap_size() ? tap_min() : 24),
+			align = {x = .Center, y = .Center},
 		},
 		) {
-			clay.Text(
+			nendo.text(
 				">",
 				{
-					fontId = FONT_TITLE,
-					fontSize = 13,
-					textColor = {
-						255,
-						255,
-						255,
-						preview.slide < len(preview.slides) - 1 ? 230 : 80,
-					},
+					font = FONT_TITLE,
+					size = 13,
+					color = {255, 255, 255, preview.slide < len(preview.slides) - 1 ? 230 : 80},
 				},
 			)
 		}
@@ -1486,8 +1346,8 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if preview.kind == .Slides {slide_original_request(ui, client)}
 	if preview.kind == .Pdf && clicked("PvFull") {
 		preview.pdf_fullscreen = !preview.pdf_fullscreen
-		if data := clay.GetScrollContainerData(clay.ID("PvScroll")); data.found {
-			data.scrollPosition^ = {}
+		if data := nendo.scroll(nendo.id("PvScroll")); data.found {
+			data.position^ = {}
 		}
 		return
 	}
@@ -1513,33 +1373,27 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if preview.kind == .Image || preview.kind == .Slides {
 		point := rl.GetMousePosition()
 		if rl.IsMouseButtonPressed(.LEFT) &&
-		   clay.PointerOver(clay.ID("PvScroll")) &&
-		   !clay.PointerOver(clay.ID("ScrollThumb", clay.ID("PvScroll").id)) {
+		   nendo.pointer_over(nendo.id("PvScroll")) &&
+		   !nendo.pointer_over(nendo.id("ScrollThumb", nendo.id("PvScroll").id)) {
 			preview.image_drag = true
 			preview.image_pointer = point
 			scroll_residual = {}
 		}
 		if !rl.IsMouseButtonDown(.LEFT) {preview.image_drag = false}
 		if preview.image_drag {
-			if data := clay.GetScrollContainerData(clay.ID("PvScroll")); data.found {
+			if data := nendo.scroll(nendo.id("PvScroll")); data.found {
 				delta := rl.Vector2 {
 					(point.x - preview.image_pointer.x) / UI_ZOOM,
 					(point.y - preview.image_pointer.y) / UI_ZOOM,
 				}
-				data.scrollPosition.x = clamp(
-					data.scrollPosition.x + delta.x,
-					min(
-						f32(0),
-						data.scrollContainerDimensions.width - data.contentDimensions.width,
-					),
+				data.position.x = clamp(
+					data.position.x + delta.x,
+					min(f32(0), data.viewport.width - data.content.width),
 					0,
 				)
-				data.scrollPosition.y = clamp(
-					data.scrollPosition.y + delta.y,
-					min(
-						f32(0),
-						data.scrollContainerDimensions.height - data.contentDimensions.height,
-					),
+				data.position.y = clamp(
+					data.position.y + delta.y,
+					min(f32(0), data.viewport.height - data.content.height),
 					0,
 				)
 			}
@@ -1559,8 +1413,7 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			changed = false
 		}
 		if changed {
-			if data := clay.GetScrollContainerData(clay.ID("PvScroll"));
-			   data.found {data.scrollPosition^ = {}}
+			if data := nendo.scroll(nendo.id("PvScroll")); data.found {data.position^ = {}}
 		}
 	}
 	if preview.kind == .Video {
@@ -1600,8 +1453,7 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if previous != preview.slide {
 			preview.image_zoom = 0
 			preview.image_tex_w = 0
-			if data := clay.GetScrollContainerData(clay.ID("PvScroll"));
-			   data.found {data.scrollPosition^ = {}}
+			if data := nendo.scroll(nendo.id("PvScroll")); data.found {data.position^ = {}}
 		}
 		if clicked("PvRetry") {
 			retry_failed_images(ui, client)
@@ -1611,18 +1463,18 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !mouse_released() {
 		return
 	}
-	if clay.PointerOver(clay.ID("PvClose")) {
+	if nendo.pointer_over(nendo.id("PvClose")) {
 		preview_close()
 		return
 	}
 	if preview.kind == .Slides && preview.slides[preview.slide].msg_id == "" {
 		return
 	}
-	if clay.PointerOver(clay.ID("PvCopy")) {
+	if nendo.pointer_over(nendo.id("PvCopy")) {
 		copy_preview_image(ui, client)
 		return
 	}
-	if clay.PointerOver(clay.ID("PvSave")) {
+	if nendo.pointer_over(nendo.id("PvSave")) {
 		if preview.kind == .Slides {
 			if ui.selected >= 0 && ui.selected < len(ui.chats) {
 				s := &preview.slides[preview.slide]
@@ -1659,25 +1511,25 @@ hex_rows :: proc(bytes: []u8) {
 			strings.write_byte(&ascii, b >= 0x20 && b < 0x7f ? b : '.')
 		}
 
-		if clay.UI(clay.ID("PvHexRow", u32(row)))({layout = {childGap = 8}}) {
-			clay.Text(
+		if nendo.box(nendo.id("PvHexRow", u32(row)))({gap = 8}) {
+			nendo.text(
 				fmt.tprintf("%08x", at),
-				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, wrapMode = .None},
+				{font = FONT_MONO, size = 11, color = TEXT_LO, wrap = .None},
 			)
-			clay.Text(
+			nendo.text(
 				fmt.tprintf("%-49s", strings.to_string(hex)),
-				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT, wrapMode = .None},
+				{font = FONT_MONO, size = 11, color = TEXT, wrap = .None},
 			)
-			clay.Text(
+			nendo.text(
 				strings.to_string(ascii),
-				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None},
+				{font = FONT_MONO, size = 11, color = TEXT_DIM, wrap = .None},
 			)
 		}
 	}
 	if len(bytes) > rows * HEX_COLS {
-		clay.Text(
+		nendo.text(
 			fmt.tprintf(tr("and %s more"), arc_size_label(i64(len(bytes) - rows * HEX_COLS))),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 11, color = TEXT_DIM},
 		)
 	}
 }

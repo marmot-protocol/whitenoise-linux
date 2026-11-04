@@ -17,7 +17,7 @@ import "core:sync"
 import "core:thread"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import sdl "vendor:sdl3"
 
 import marmot "../marmot"
@@ -230,36 +230,27 @@ VOICE_METER_W :: 120
 voice_bar :: proc() {
 	starting := voice.starting != nil
 	phone := single_pane()
-	if clay.UI(clay.ID("VoiceBar"))(
+	if nendo.box(nendo.id("VoiceBar"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFit({min = 44})},
-			padding = {left = phone ? 12 : 16, right = phone ? 12 : 16, top = 8, bottom = 8},
-			childGap = phone ? 6 : 10,
-			layoutDirection = starting ? .TopToBottom : .LeftToRight,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(22),
+		width = nendo.grow(),
+		height = nendo.fit(min = 44),
+		padding = {left = phone ? 12 : 16, right = phone ? 12 : 16, top = 8, bottom = 8},
+		gap = phone ? 6 : 10,
+		direction = starting ? .Column : .Row,
+		align = {y = .Center},
+		color = ROW_BG,
+		radius = rr(22),
 		border = {color = DANGER, width = bw()},
 	},
 	) {
 		if starting {
-			if clay.UI(clay.ID("VoiceStartingRow"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("VoiceStartingRow"))(
+			{width = nendo.grow(), gap = 8, align = {y = .Center}},
 			) {
-				if clay.UI(clay.ID("VoiceStartingLabel"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {
-					clay.Text(
+				if nendo.box(nendo.id("VoiceStartingLabel"))({width = nendo.grow()}) {
+					nendo.text(
 						tr("Starting microphone…"),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+						{font = FONT_BODY, size = 13, color = TEXT},
 					)
 				}
 				action_chip("VoiceCancel", 0, tr("Cancel"))
@@ -267,49 +258,37 @@ voice_bar :: proc() {
 			busy_bar("VoiceStartBusy")
 			return
 		}
-		if clay.UI(clay.ID("VoiceDot"))(
-		{
-			layout = {sizing = {width = clay.SizingFixed(10), height = clay.SizingFixed(10)}},
-			backgroundColor = DANGER,
-			cornerRadius = rr(5),
-		},
+		if nendo.box(nendo.id("VoiceDot"))(
+		{width = nendo.fixed(10), height = nendo.fixed(10), color = DANGER, radius = rr(5)},
 		) {}
 		if !phone {
-			clay.Text(tr("Recording"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+			nendo.text(tr("Recording"), {font = FONT_TITLE, size = 13, color = TEXT})
 		}
-		clay.Text(
+		nendo.text(
 			fmt_clock(f64(len(voice.samples)) / VOICE_RATE),
-			{fontId = FONT_MONO, fontSize = 12, textColor = TEXT_DIM},
+			{font = FONT_MONO, size = 12, color = TEXT_DIM},
 		)
-		if clay.UI(clay.ID("VoiceMeter"))(
+		if nendo.box(nendo.id("VoiceMeter"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow({max = VOICE_METER_W}),
-					height = clay.SizingFixed(8),
-				},
-				padding = {left = 1, right = 1},
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = PLATE,
-			cornerRadius = rr(4),
+			width = nendo.grow(max = VOICE_METER_W),
+			height = nendo.fixed(8),
+			padding = {left = 1, right = 1},
+			align = {y = .Center},
+			color = PLATE,
+			radius = rr(4),
 		},
 		) {
-			if clay.UI(clay.ID("VoiceMeterFill"))(
+			if nendo.box(nendo.id("VoiceMeterFill"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingPercent(max(0.02, voice.level)),
-						height = clay.SizingFixed(6),
-					},
-				},
-				backgroundColor = ACCENT,
-				cornerRadius = rr(3),
+				width = nendo.percent(max(0.02, voice.level)),
+				height = nendo.fixed(6),
+				color = ACCENT,
+				radius = rr(3),
 			},
 			) {}
 		}
 		if !phone {
-			if clay.UI(clay.ID("VoiceGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if nendo.box(nendo.id("VoiceGap"))({width = nendo.grow()}) {}
 		}
 		action_chip("VoiceCancel", 0, tr("Cancel"))
 		action_chip("VoiceSend", 0, tr("Send"))

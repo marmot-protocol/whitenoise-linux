@@ -9,7 +9,7 @@ import "core:c/libc"
 import "core:slice"
 import "core:strings"
 import "core:thread"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 import stbi "vendor:stb/image"
 
@@ -76,28 +76,28 @@ photo_crop_drag_to :: proc(p: ^Photo_Preview, dx, dy: f32) {
 @(private)
 photo_crop_input :: proc(p: ^Photo_Preview) {
 	if !p.crop.active {return}
-	box := clay.GetElementData(clay.ID("PhotoImage"))
-	if !box.found || box.boundingBox.width <= 0 {return}
-	scale := box.boundingBox.width / f32(p.draft.image.width)
+	box := nendo.element(nendo.id("PhotoImage"))
+	if !box.found || box.rect.width <= 0 {return}
+	scale := box.rect.width / f32(p.draft.image.width)
 	mouse := rl.GetMousePosition()
 	mouse.x /= UI_ZOOM; mouse.y /= UI_ZOOM
 	if rl.IsMouseButtonPressed(.LEFT) {
 		corner := 0
 		nearest := f32(1e30)
-		pointer := clay.GetPointerState().position
+		pointer := nendo.pointer().position
 		// Handles win over moving the interior. At very small crop sizes,
 		// choose the nearest corner rather than letting overlapping hits
 		// make the bottom/right handles unreachable.
 		for i in 1 ..= 4 {
-			id := clay.ID("PhotoCropHandle", u32(i))
-			if !clay.PointerOver(id) {continue}
-			handle := clay.GetElementData(id).boundingBox
+			id := nendo.id("PhotoCropHandle", u32(i))
+			if !nendo.pointer_over(id) {continue}
+			handle := nendo.element(id).rect
 			dx := pointer.x - (handle.x + handle.width / 2)
 			dy := pointer.y - (handle.y + handle.height / 2)
 			distance := dx * dx + dy * dy
 			if distance < nearest {corner, nearest = i, distance}
 		}
-		if corner != 0 || clay.PointerOver(clay.ID("PhotoCropBox")) {
+		if corner != 0 || nendo.pointer_over(nendo.id("PhotoCropBox")) {
 			p.crop_drag = true
 			p.crop_corner = corner
 			p.crop_pointer = mouse
@@ -112,7 +112,7 @@ photo_crop_input :: proc(p: ^Photo_Preview) {
 		)
 	}
 	if !rl.IsMouseButtonDown(.LEFT) {p.crop_drag = false}
-	if !p.crop_drag && clay.PointerOver(clay.ID("PhotoImage")) {
+	if !p.crop_drag && nendo.pointer_over(nendo.id("PhotoImage")) {
 		wheel := rl.GetMouseWheelMoveV().y
 		if wheel != 0 {photo_crop_resize(p, wheel > 0 ? f32(0.9) : f32(1.1))}
 	}

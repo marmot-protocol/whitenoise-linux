@@ -8,7 +8,7 @@ import "core:mem"
 import "core:slice"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 GCODE_COLOR :: rl.FColor{0.93, 0.58, 0.25, 1} // filament orange
@@ -102,7 +102,7 @@ gcode_raster_seg :: proc(view: ^Gcode_View, p: [6]f32, scale, radius: f32) {
 
 // Cache by camera, raster size and print prefix, not tile placement.
 // A long pass publishes partial geometry each frame within the mesh budget.
-gcode_draw :: proc(view: ^Gcode_View, bounds: clay.BoundingBox) {
+gcode_draw :: proc(view: ^Gcode_View, bounds: nendo.Rect) {
 	nseg := len(view.segs) / 6
 	// Opaque depth samples at twice output resolution avoid transparent
 	// edge fragments punching holes through previously drawn filaments.
@@ -166,7 +166,7 @@ gcode_draw :: proc(view: ^Gcode_View, bounds: clay.BoundingBox) {
 			bounds.y + bounds.height - 30,
 			bounds.width,
 			30,
-			clay_color(PLATE),
+			nendo_color(PLATE),
 		)
 		rl.DrawTextLine(
 			FONT_BODY,
@@ -175,30 +175,30 @@ gcode_draw :: proc(view: ^Gcode_View, bounds: clay.BoundingBox) {
 			bounds.x + 8,
 			bounds.y + bounds.height - 26,
 			0,
-			clay_color(TEXT),
+			nendo_color(TEXT),
 		)
 		rl.DrawRectangleRec(
 			bounds.x + 8,
 			bounds.y + bounds.height - 8,
 			max(0, bounds.width - 16),
 			3,
-			clay_color(ROW_BG),
+			nendo_color(ROW_BG),
 		)
 		rl.DrawRectangleRec(
 			bounds.x + 8,
 			bounds.y + bounds.height - 8,
 			max(0, bounds.width - 16) * f32(view.next) / f32(count),
 			3,
-			clay_color(ACCENT),
+			nendo_color(ACCENT),
 		)
 	}
 }
 
-// Slider drag: the bar element's bounds come from clay, so the frac
+// Slider drag: the bar element's bounds come from nendo, so the frac
 // is just the pointer's position across it. Bars are re-registered
 // every build (id + view), pressed state spans frames.
 Gcode_Bar :: struct {
-	id:   clay.ElementId,
+	id:   nendo.Id,
 	view: ^Gcode_View,
 }
 
@@ -208,7 +208,7 @@ gcode_bar_drag: Gcode_Bar
 handle_gcode_bar :: proc() {
 	if rl.IsMouseButtonPressed(.LEFT) {
 		for bar in gcode_bars {
-			if clay.PointerOver(bar.id) {
+			if nendo.pointer_over(bar.id) {
 				gcode_bar_drag = bar
 				break
 			}
@@ -222,7 +222,7 @@ handle_gcode_bar :: proc() {
 		return
 	}
 
-	bb := clay.GetElementData(gcode_bar_drag.id).boundingBox
+	bb := nendo.element(gcode_bar_drag.id).rect
 	if bb.width > 0 {
 		gcode_bar_drag.view.frac = clamp(
 			(rl.GetMousePosition().x / UI_ZOOM - bb.x) / bb.width,

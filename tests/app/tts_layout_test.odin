@@ -3,7 +3,7 @@ package main
 import "base:runtime"
 import "core:fmt"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -20,15 +20,11 @@ tts_layout :: proc(t: ^testing.T) {
 	load_themes()
 	apply_theme(0, 0)
 	init_fonts()
-	previous := clay.GetCurrentContext()
-	memory := make([]u8, int(clay.MinMemorySize()))
-	defer {clay.SetCurrentContext(previous); delete(memory)}
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{720, 1100},
-		{},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
+	previous := nendo.current_context()
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.init(memory, {720, 1100}, {})
+	nendo.set_measure_text(measure_text, nil)
 	ui: Ui_State
 	ui.prefs.tts_enabled = true
 	ui.prefs.stt_enabled = true
@@ -48,53 +44,43 @@ tts_layout :: proc(t: ^testing.T) {
 	defer {g_ui, g_prefs = nil, nil}
 	for width in ([]f32{420, 720}) {
 		rl.SetWindowSize(i32(width), 1100)
-		clay.SetLayoutDimensions({width, 1100})
+		nendo.set_dimensions({width, 1100})
 		for tab in 0 ..< 2 {
 			ui.settings_tab = tab
-			clay.UpdateScrollContainers(false, {}, 0)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("VoiceTest"))(
-			{
-				layout = {
-					sizing = {clay.SizingGrow(), clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-				},
-				backgroundColor = BG,
-			},
+			nendo.update_scroll(.Off, {}, 0)
+			nendo.begin()
+			if nendo.box(nendo.id("VoiceTest"))(
+			{width = nendo.grow(), height = nendo.grow(), direction = .Column, color = BG},
 			) {
 				settings_pane(&ui)
 			}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			if tab == 0 {
 				for _, i in STT_MODELS {
-					box := clay.GetElementData(clay.ID("SttModel", u32(i)))
+					box := nendo.element(nendo.id("SttModel", u32(i)))
 					testing.expect(
 						t,
-						box.found &&
-						box.boundingBox.x >= 0 &&
-						box.boundingBox.x + box.boundingBox.width <= width,
+						box.found && box.rect.x >= 0 && box.rect.x + box.rect.width <= width,
 					)
 				}
 			} else {
 				for _, i in TTS_VOICES {
-					box := clay.GetElementData(clay.ID("TtsVoice", u32(i)))
+					box := nendo.element(nendo.id("TtsVoice", u32(i)))
 					testing.expect(
 						t,
-						box.found &&
-						box.boundingBox.x >= 0 &&
-						box.boundingBox.x + box.boundingBox.width <= width,
+						box.found && box.rect.x >= 0 && box.rect.x + box.rect.width <= width,
 					)
-					preview := clay.GetElementData(clay.ID(fmt.tprintf("TtsPreview%d", i)))
+					preview := nendo.element(nendo.id(fmt.tprintf("TtsPreview%d", i)))
 					testing.expect(
 						t,
 						preview.found &&
-						preview.boundingBox.x >= 0 &&
-						preview.boundingBox.x + preview.boundingBox.width <= width,
+						preview.rect.x >= 0 &&
+						preview.rect.x + preview.rect.width <= width,
 					)
 				}
 			}
 			rl.BeginDrawing()
-			draw_frame(&commands)
+			draw_frame(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/tts-rows-%d-%d.png", int(width), tab))
 			rl.EndDrawing()
 		}

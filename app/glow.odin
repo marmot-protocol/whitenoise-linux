@@ -5,11 +5,11 @@
 //
 // It rides the Custom render command like the decor scenes do, mounted
 // as a floating child that expands past its parent, so the halo spills
-// outside the element it belongs to. clay emits Custom before the
+// outside the element it belongs to. nendo emits Custom before the
 // element's children, which puts the light behind the content.
 package main
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 GLOW_SPREAD :: f32(14)
@@ -17,7 +17,7 @@ GLOW_ALPHA :: f32(120) // at strength 1; light, this is added not blended
 
 Glow_View :: struct {
 	kind:     Model_Kind, // .Glow; must stay the first field
-	color:    clay.Color,
+	color:    nendo.Color,
 	spread:   f32,
 	strength: f32, // 0..1, fades the whole halo
 }
@@ -30,11 +30,11 @@ GLOW_SALT :: u32(0x676c6f77)
 // anim_to on a hover or focus flag, so the light comes up and goes down
 // with it rather than switching.
 //
-// A floating element takes no size from its parent (clay's `expand`
+// A floating element takes no size from its parent (nendo's `expand`
 // grows the attachment box, not the element), so the halo is sized from
 // the parent's previous box. An element in its first frame has none,
 // which costs that one frame of light.
-glow :: proc(parent: clay.ElementId, color: clay.Color, strength: f32, spread: f32 = GLOW_SPREAD) {
+glow :: proc(parent: nendo.Id, color: nendo.Color, strength: f32, spread: f32 = GLOW_SPREAD) {
 	box, ok := element_box(parent)
 	if !ok || strength <= 0.01 || !motion_on() {
 		return
@@ -48,33 +48,29 @@ glow :: proc(parent: clay.ElementId, color: clay.Color, strength: f32, spread: f
 	}
 	id := parent
 	id.id ~= GLOW_SALT
-	if clay.UI(id)(
+	if nendo.box(id)(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(box.width + spread * 2),
-				height = clay.SizingFixed(box.height + spread * 2),
-			},
-		},
+		width = nendo.fixed(box.width + spread * 2),
+		height = nendo.fixed(box.height + spread * 2),
 		floating = {
-			attachTo = .Parent,
-			zIndex = -1,
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Parent,
+			z = -1,
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		custom = {customData = view},
+		custom = view,
 	},
 	) {}
 }
 
 // The halo for a control that lights up on hover: nothing at rest,
 // full light under the pointer, eased both ways.
-hover_glow :: proc(parent: clay.ElementId, color: clay.Color, on: bool) {
+hover_glow :: proc(parent: nendo.Id, color: nendo.Color, on: bool) {
 	glow(parent, color, anim_to(parent.id ~ GLOW_SALT, on ? 1 : 0, HOVER_RATE))
 }
 
 // The floating box already carries the spread on every side, so the
 // halo is drawn around the element inside it.
-glow_draw :: proc(view: ^Glow_View, bounds: clay.BoundingBox) {
+glow_draw :: proc(view: ^Glow_View, bounds: nendo.Rect) {
 	alpha := GLOW_ALPHA * view.strength
 	color := rl.Color {
 		u8(view.color.r),

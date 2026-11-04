@@ -3,7 +3,7 @@ package main
 import "base:runtime"
 import "core:fmt"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=sticker_hologram
@@ -29,8 +29,8 @@ sticker_hologram :: proc(t: ^testing.T) {
 		delete(sticker_masks); sticker_masks = {}
 	}
 	testing.expect_value(t, len(sticker_masks), 1)
-	id := clay.ID("HoloArt")
-	box := clay.BoundingBox{70, 70, 260, 260}
+	id := nendo.id("HoloArt")
+	box := nendo.Rect{70, 70, 260, 260}
 	flat := sticker_vertex(0, 0, box, {})
 	left := sticker_vertex(0, 0, box, {-0.8, -0.7})
 	right := sticker_vertex(0, 0, box, {0.8, 0.7})
@@ -39,35 +39,31 @@ sticker_hologram :: proc(t: ^testing.T) {
 	testing.expect(t, left.position != right.position && left.position != flat.position)
 	testing.expect_value(t, left.tex_coord, flat.tex_coord)
 	shots: [5]rl.Image
-	points := [5]clay.Vector2{{0, 0}, {90, 100}, {310, 300}, {0, 0}, {310, 300}}
+	points := [5]nendo.Vector2{{0, 0}, {90, 100}, {310, 300}, {0, 0}, {310, 300}}
 	defer {for shot in shots {rl.UnloadImage(shot)}}
 	for name, i in ([5]string{"idle", "left", "right", "leave", "reduced"}) {
 		ui.prefs.reduce_motion = i == 4
 		point := points[i]
 		for frame in 0 ..< 40 {
 			anim_tick(1.0 / 60)
-			clay.SetPointerState(point, false)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("HoloRoot"))(
-			{
-				layout = {
-					sizing = {clay.SizingFixed(400), clay.SizingFixed(400)},
-					padding = clay.PaddingAll(70),
-				},
-			},
+			nendo.set_pointer(point, .Up)
+			nendo.begin()
+			if nendo.box(nendo.id("HoloRoot"))(
+			{width = nendo.fixed(400), height = nendo.fixed(400), padding = nendo.pad(70)},
 			) {
-				if clay.UI(id)(
+				if nendo.box(id)(
 				{
-					layout = {sizing = {clay.SizingFixed(260), clay.SizingFixed(260)}},
-					image = {imageData = &tex},
-					userData = rawptr(STICKER_IMAGE),
+					width = nendo.fixed(260),
+					height = nendo.fixed(260),
+					image = &tex,
+					user_data = rawptr(STICKER_IMAGE),
 				},
 				) {}
 			}
-			commands := clay.EndLayout(1.0 / 60)
+			commands := nendo.end(1.0 / 60)
 			rl.BeginDrawing()
 			rl.DrawRectangleRec(0, 0, 400, 400, {28, 30, 38, 255})
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			if frame == 39 {rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-holo-%s.png", name))}
 			rl.EndDrawing()
 		}

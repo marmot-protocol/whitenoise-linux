@@ -2,7 +2,7 @@ package main
 
 import "core:slice"
 import "core:strings"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -100,8 +100,8 @@ whip_tab_input :: proc(ui: ^Ui_State) -> bool {
 	if drag.tab == 0 {
 		if !mouse_pressed() {return false}
 		for tab in rl.WhipTabs() {
-			if !clay.PointerOver(clay.ID("WhipTab", tab.id)) ||
-			   clay.PointerOver(clay.ID("WhipTabClose", tab.id)) {continue}
+			if !nendo.pointer_over(nendo.id("WhipTab", tab.id)) ||
+			   nendo.pointer_over(nendo.id("WhipTabClose", tab.id)) {continue}
 			whip_workspace_navigation(ui)
 			drag^ = {
 				project = ui.whip_project,
@@ -124,7 +124,7 @@ whip_tab_input :: proc(ui: ^Ui_State) -> bool {
 	}
 	if mouse_released() || !rl.IsMouseButtonDown(.LEFT) && !forced_press {
 		active := drag.active
-		if active && clay.PointerOver(clay.ID("WhipTabs")) {
+		if active && nendo.pointer_over(nendo.id("WhipTabs")) {
 			if whip_tab_move(rl.WhipTabs(), drag.tab, drag.slot) {whip_tab_save(ui)}
 			ui.whip_scroll_pending = true
 		}
@@ -135,23 +135,23 @@ whip_tab_input :: proc(ui: ^Ui_State) -> bool {
 	if delta.x * delta.x + delta.y * delta.y > DRAG_MIN * DRAG_MIN {drag.active = true}
 	if !drag.active {return true}
 	cursor_raise(.Grabbing)
-	view := clay.GetElementData(clay.ID("WhipTabs"))
-	scroll := clay.GetScrollContainerData(clay.ID("WhipTabs"))
+	view := nendo.element(nendo.id("WhipTabs"))
+	scroll := nendo.scroll(nendo.id("WhipTabs"))
 	if view.found &&
 	   scroll.found &&
-	   mouse.y >= view.boundingBox.y &&
-	   mouse.y < view.boundingBox.y + view.boundingBox.height {
-		b := view.boundingBox
+	   mouse.y >= view.rect.y &&
+	   mouse.y < view.rect.y + view.rect.height {
+		b := view.rect
 		step: f32
 		if mouse.x < b.x + 24 {step = 8}
 		if mouse.x > b.x + b.width - 24 {step = -8}
-		span := max(scroll.contentDimensions.width - scroll.scrollContainerDimensions.width, 0)
-		scroll.scrollPosition.x = clamp(scroll.scrollPosition.x + step, -span, 0)
+		span := max(scroll.content.width - scroll.viewport.width, 0)
+		scroll.position.x = clamp(scroll.position.x + step, -span, 0)
 	}
 	drag.slot = 0
 	for tab, i in rl.WhipTabs() {
-		box := clay.GetElementData(clay.ID("WhipTab", tab.id))
-		if box.found && mouse.x > box.boundingBox.x + box.boundingBox.width / 2 {drag.slot = i + 1}
+		box := nendo.element(nendo.id("WhipTab", tab.id))
+		if box.found && mouse.x > box.rect.x + box.rect.width / 2 {drag.slot = i + 1}
 	}
 	return true
 }
@@ -165,31 +165,31 @@ whip_tab_reveal :: proc(ui: ^Ui_State) {
 	}
 	if ui.whip_tab_drag.active {return}
 	tab := ui.whip_tabs[ui.whip_project]
-	container := clay.ID("WhipTabs")
-	view := clay.GetElementData(container)
-	scroll := clay.GetScrollContainerData(container)
+	container := nendo.id("WhipTabs")
+	view := nendo.element(container)
+	scroll := nendo.scroll(container)
 	if !view.found || !scroll.found {return}
 	if ui.whip_scroll_project != ui.whip_project ||
 	   ui.whip_scroll_tab != tab ||
-	   ui.whip_scroll_width != view.boundingBox.width {
+	   ui.whip_scroll_width != view.rect.width {
 		ui.whip_scroll_pending = true
 	}
 	ui.whip_scroll_project, ui.whip_scroll_tab = ui.whip_project, tab
-	ui.whip_scroll_width = view.boundingBox.width
+	ui.whip_scroll_width = view.rect.width
 	if !ui.whip_scroll_pending {return}
-	active := clay.GetElementData(clay.ID("WhipTab", tab))
+	active := nendo.element(nendo.id("WhipTab", tab))
 	if !active.found {return}
 
-	viewport, bounds := view.boundingBox, active.boundingBox
-	offset := scroll.scrollPosition.x
+	viewport, bounds := view.rect, active.rect
+	offset := scroll.position.x
 	if bounds.x < viewport.x {offset += viewport.x - bounds.x}
 	if bounds.x + bounds.width > viewport.x + viewport.width {
 		offset -= bounds.x + bounds.width - viewport.x - viewport.width
 	}
-	overflow := max(scroll.contentDimensions.width - scroll.scrollContainerDimensions.width, 0)
+	overflow := max(scroll.content.width - scroll.viewport.width, 0)
 	offset = clamp(offset, -overflow, 0)
-	if scroll.scrollPosition.x != offset {
-		scroll.scrollPosition.x = offset
+	if scroll.position.x != offset {
+		scroll.position.x = offset
 		anim_moving += 1
 	}
 	ui.whip_scroll_pending = false
@@ -197,7 +197,7 @@ whip_tab_reveal :: proc(ui: ^Ui_State) {
 
 @(private)
 whip_tab_wheel :: proc(ui: ^Ui_State, wheel: ^rl.Vector2) {
-	if !ui.whip_open || ui.page != .Chats || !clay.PointerOver(clay.ID("WhipTabs")) {return}
+	if !ui.whip_open || ui.page != .Chats || !nendo.pointer_over(nendo.id("WhipTabs")) {return}
 	wheel.x += wheel.y
 	wheel.y = 0
 }

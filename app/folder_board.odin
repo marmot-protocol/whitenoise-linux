@@ -7,13 +7,13 @@
 //
 // The board has fixed-height rows, so layout is plain arithmetic:
 // drawing windows it and the pointer maps to a row
-// without asking clay about elements that are not mounted.
+// without asking nendo about elements that are not mounted.
 package main
 
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -94,7 +94,7 @@ board_at :: proc(board: Board, y: f32) -> (section, row: int) {
 	return 0, -2
 }
 
-// The pointer in clay's logical pixels, devctl's when it holds one.
+// The pointer in nendo's logical pixels, devctl's when it holds one.
 @(private = "file")
 board_mouse :: proc() -> [2]f32 {
 	m := rl.GetMousePosition()
@@ -108,18 +108,18 @@ board_mouse :: proc() -> [2]f32 {
 // the settings page scroll, so a finger on a row scrolls the page; wider,
 // the board is its own scroll container below the page's actions.
 @(private = "file")
-board_scroller :: proc() -> clay.ElementId {
-	return single_pane() ? clay.ID("SettingsPage") : clay.ID("FolderBoard")
+board_scroller :: proc() -> nendo.Id {
+	return single_pane() ? nendo.id("SettingsPage") : nendo.id("FolderBoard")
 }
 
 // Pointer to board content y; ok is false outside the visible board.
 @(private = "file")
 board_pointer :: proc() -> (y: f32, ok: bool) {
-	box := clay.GetElementData(clay.ID("FolderBoard"))
-	view := clay.GetElementData(board_scroller())
+	box := nendo.element(nendo.id("FolderBoard"))
+	view := nendo.element(board_scroller())
 	if !box.found || !view.found {return 0, false}
 	p := board_mouse()
-	b, v := box.boundingBox, view.boundingBox
+	b, v := box.rect, view.rect
 	inside :=
 		p.x >= b.x &&
 		p.x < b.x + b.width &&
@@ -128,9 +128,9 @@ board_pointer :: proc() -> (y: f32, ok: bool) {
 	y = p.y - b.y
 	// The page scroll already moved the board's box; its own scroll did not.
 	if !single_pane() {
-		scroll := clay.GetScrollContainerData(clay.ID("FolderBoard"))
+		scroll := nendo.scroll(nendo.id("FolderBoard"))
 		if !scroll.found {return 0, false}
-		y -= scroll.scrollPosition.y
+		y -= scroll.position.y
 	}
 	return y, inside
 }
@@ -176,22 +176,18 @@ board_drag_clear :: proc(ui: ^Ui_State) {
 @(private = "file")
 board_autoscroll :: proc() {
 	id := board_scroller()
-	box := clay.GetElementData(id)
-	scroll := clay.GetScrollContainerData(id)
+	box := nendo.element(id)
+	scroll := nendo.scroll(id)
 	if !box.found || !scroll.found {return}
 	y := board_mouse().y
-	b := box.boundingBox
+	b := box.rect
 	depth: f32
 	if y < b.y + BOARD_EDGE {depth = b.y + BOARD_EDGE - y}
 	if y > b.y + b.height - BOARD_EDGE {depth = b.y + b.height - BOARD_EDGE - y}
 	if depth == 0 {return}
 	speed := clamp(abs(depth) * 15, 120, 1500) // px per second
-	span := max(0, scroll.contentDimensions.height - scroll.scrollContainerDimensions.height)
-	scroll.scrollPosition.y = clamp(
-		scroll.scrollPosition.y + (depth > 0 ? speed : -speed) * anim_dt,
-		-span,
-		0,
-	)
+	span := max(0, scroll.content.height - scroll.viewport.height)
+	scroll.position.y = clamp(scroll.position.y + (depth > 0 ? speed : -speed) * anim_dt, -span, 0)
 	anim_moving += 1 // keep frames coming while the finger rests at the edge
 }
 
@@ -265,7 +261,7 @@ handle_folder_board :: proc(ui: ^Ui_State) -> bool {
 		section, row := board_at(board, y)
 		p := board_mouse()
 		if single_pane() &&
-		   p.x >= clay.GetElementData(clay.ID("FolderBoard")).boundingBox.x + 44 {return false}
+		   p.x >= nendo.element(nendo.id("FolderBoard")).rect.x + 44 {return false}
 		if row == -1 && section < len(ui.prefs.folders) {
 			drag^ = {
 				kind   = .Folder,
@@ -293,22 +289,22 @@ handle_folder_board :: proc(ui: ^Ui_State) -> bool {
 	}
 	for row in inbox_all(ui) {
 		id := board_row_id(row)
-		if clay.PointerOver(clay.ID("BoardKeep", id)) {
+		if nendo.pointer_over(nendo.id("BoardKeep", id)) {
 			folder_unplace(ui, row.key)
 			save_settings(ui)
 			return true
 		}
-		if clay.PointerOver(clay.ID("BoardChat", id)) {
+		if nendo.pointer_over(nendo.id("BoardChat", id)) {
 			open_folder_modal(ui, row.key)
 			return true
 		}
 	}
 	for name, i in ui.prefs.folders {
-		if clay.PointerOver(clay.ID("BoardDelete", u32(i))) {
+		if nendo.pointer_over(nendo.id("BoardDelete", u32(i))) {
 			confirm_ask(ui, .Delete_Folder, name, name)
 			return true
 		}
-		if clay.PointerOver(clay.ID("BoardHead", u32(i))) {
+		if nendo.pointer_over(nendo.id("BoardHead", u32(i))) {
 			open_folder_modal(ui, rename = i)
 			return true
 		}
@@ -319,9 +315,7 @@ handle_folder_board :: proc(ui: ^Ui_State) -> bool {
 @(private = "file")
 board_spacer :: proc(id: u32, height: f32) {
 	if height <= 0 {return}
-	if clay.UI(clay.ID("BoardSpace", id))(
-	{layout = {sizing = {height = clay.SizingFixed(height)}}},
-	) {}
+	if nendo.box(nendo.id("BoardSpace", id))({height = nendo.fixed(height)}) {}
 }
 
 // Every inbox row under its folder header, windowed to the viewport.
@@ -333,56 +327,55 @@ folder_board :: proc(ui: ^Ui_State) {
 
 	// Fill the page below the actions; never taller than the content.
 	height := max(120, f32(rl.GetScreenHeight()) / UI_ZOOM - 240)
-	page := clay.GetElementData(clay.ID("SettingsPage"))
-	actions := clay.GetElementData(clay.ID("SettingsFolderActions"))
+	page := nendo.element(nendo.id("SettingsPage"))
+	actions := nendo.element(nendo.id("SettingsFolderActions"))
 	if page.found && actions.found {
-		page_scroll := clay.GetScrollContainerData(clay.ID("SettingsPage"))
-		offset := page_scroll.found ? page_scroll.scrollPosition.y : 0
-		used := actions.boundingBox.y + actions.boundingBox.height - page.boundingBox.y - offset
-		height = max(120, page.boundingBox.height - used - 30)
+		page_scroll := nendo.scroll(nendo.id("SettingsPage"))
+		offset := page_scroll.found ? page_scroll.position.y : 0
+		used := actions.rect.y + actions.rect.height - page.rect.y - offset
+		height = max(120, page.rect.height - used - 30)
 	}
 	height = min(height, board.height)
 	phone := single_pane()
 	if phone {height = board.height}
-	box := clay.GetElementData(clay.ID("FolderBoard"))
+	box := nendo.element(nendo.id("FolderBoard"))
 	if board_create_at >= 0 && !ui.folder_open {
 		if board_create_at < len(ui.prefs.folders) && box.found {
 			// The new folder is appended before Unfiled. Reveal its header
 			// arithmetically, even when windowing has not mounted it yet.
 			id := board_scroller()
-			view := clay.GetElementData(id)
-			scroll := clay.GetScrollContainerData(id)
+			view := nendo.element(id)
+			scroll := nendo.scroll(id)
 			if view.found && scroll.found {
-				y := box.boundingBox.y + board.tops[board_create_at]
-				if !phone {y += scroll.scrollPosition.y}
+				y := box.rect.y + board.tops[board_create_at]
+				if !phone {y += scroll.position.y}
 				h := settings_tap_size(BOARD_HEAD_H) + BOARD_EMPTY_H
-				if y < view.boundingBox.y {
-					scroll.scrollPosition.y += view.boundingBox.y - y
-				} else if y + h > view.boundingBox.y + view.boundingBox.height {
-					scroll.scrollPosition.y -= y + h - view.boundingBox.y - view.boundingBox.height
+				if y < view.rect.y {
+					scroll.position.y += view.rect.y - y
+				} else if y + h > view.rect.y + view.rect.height {
+					scroll.position.y -= y + h - view.rect.y - view.rect.height
 				}
-				scroll.scrollPosition.y = min(0, scroll.scrollPosition.y)
+				scroll.position.y = min(0, scroll.position.y)
 				scroll_jumped = true
 			}
 		}
 		board_create_at = -1
 	}
 
-	if clay.UI(clay.ID("FolderBoard"))(
+	if nendo.box(nendo.id("FolderBoard"))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingFixed(height)},
-			layoutDirection = .TopToBottom,
-		},
-		clip = {vertical = !phone, childOffset = phone ? clay.Vector2{} : clay.GetScrollOffset()},
+		width = nendo.grow(),
+		height = nendo.fixed(height),
+		direction = .Column,
+		clip = {y = !phone, scroll = !phone},
 	},
 	) {
-		view := clay.GetScrollContainerData(clay.ID("FolderBoard"))
-		top := view.found ? -view.scrollPosition.y - 72 : 0
+		view := nendo.scroll(nendo.id("FolderBoard"))
+		top := view.found ? -view.position.y - 72 : 0
 		bottom := top + height + 144
 		if phone && page.found && box.found {
-			top = page.boundingBox.y - box.boundingBox.y - 72
-			bottom = top + page.boundingBox.height + 144
+			top = page.rect.y - box.rect.y - 72
+			bottom = top + page.rect.height + 144
 		}
 		for section, i in board.sections {
 			id := u32(i) * 4
@@ -415,7 +408,7 @@ folder_board :: proc(ui: ^Ui_State) {
 			board_spacer(id + 3, BOARD_GAP)
 		}
 	}
-	if !phone {scrollbar(clay.ID("FolderBoard"))}
+	if !phone {scrollbar(nendo.id("FolderBoard"))}
 	if dragging {
 		board_ghost(ui, board.grouped)
 	}
@@ -426,7 +419,7 @@ board_header :: proc(ui: ^Ui_State, index, count: int, target, insert: bool) {
 	folder := index < len(ui.prefs.folders)
 	name := folder ? ui.prefs.folders[index] : ""
 	held := ui.board_drag.active && ui.board_drag.kind == .Folder && ui.board_drag.folder == index
-	border := clay.BorderElementConfig {
+	border := nendo.Border {
 		color = FIELD_BORDER,
 		width = {bottom = 1},
 	}
@@ -438,38 +431,30 @@ board_header :: proc(ui: ^Ui_State, index, count: int, target, insert: bool) {
 			color = ACCENT,
 			width = {top = 3, bottom = 1},
 		}}
-	if clay.UI(clay.ID("BoardHead", u32(index)))(
+	if nendo.box(nendo.id("BoardHead", u32(index)))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFixed(settings_tap_size(BOARD_HEAD_H)),
-			},
-			padding = {left = 6, right = 18},
-			childGap = 10,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = target ? SELECTED : (folder && hovered() && !ui.board_drag.active ? HOVER : {}),
+		width = nendo.grow(),
+		height = nendo.fixed(settings_tap_size(BOARD_HEAD_H)),
+		padding = {left = 6, right = 18},
+		gap = 10,
+		align = {y = .Center},
+		color = target ? SELECTED : (folder && hovered() && !ui.board_drag.active ? HOVER : {}),
 		border = border,
-		cornerRadius = target ? rr(6) : {},
+		radius = target ? rr(6) : {},
 	},
 	) {
 		// Unfiled can't move; it keeps the grip's width so the icons align.
-		clay.Text(
+		nendo.text(
 			ICON_GRIP,
-			{
-				fontId = FONT_ICON,
-				fontSize = 12,
-				textColor = held ? ACCENT : (folder ? TEXT_LO : {}),
-			},
+			{font = FONT_ICON, size = 12, color = held ? ACCENT : (folder ? TEXT_LO : {})},
 		)
 		folder_icon(ui, name, 16)
-		if clay.UI(clay.ID("BoardHeadName", u32(index)))(
-		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+		if nendo.box(nendo.id("BoardHeadName", u32(index)))(
+		{width = nendo.grow(), clip = {x = true}},
 		) {
-			clay.Text(
+			nendo.text(
 				folder ? name : tr("Unfiled"),
-				{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
+				{font = FONT_TITLE, size = 13, color = TEXT, wrap = .None},
 			)
 		}
 		if folder {
@@ -481,33 +466,26 @@ board_header :: proc(ui: ^Ui_State, index, count: int, target, insert: bool) {
 					len(rules.rules),
 				)
 			}
-			clay.Text(summary, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+			nendo.text(summary, {font = FONT_BODY, size = 11, color = TEXT_LO})
 		}
-		clay.Text(
-			fmt.tprintf("%d", count),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-		)
+		nendo.text(fmt.tprintf("%d", count), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 		if folder {
-			if clay.UI(clay.ID("BoardDelete", u32(index)))(
+			if nendo.box(nendo.id("BoardDelete", u32(index)))(
 			{
-				layout = {
-					sizing = {
-						clay.SizingFixed(settings_tap_size(26)),
-						clay.SizingFixed(settings_tap_size(26)),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(6),
+				width = nendo.fixed(settings_tap_size(26)),
+				height = nendo.fixed(settings_tap_size(26)),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(6),
 			},
 			) {
-				clay.Text(ICON_TRASH, {fontId = FONT_ICON, fontSize = 14, textColor = DANGER})
+				nendo.text(ICON_TRASH, {font = FONT_ICON, size = 14, color = DANGER})
 				if hovered() {
 					tooltip(tr("Delete"))
 					cursor_raise(.Pointer)
 				}
 			}
-			on_delete := clay.PointerOver(clay.ID("BoardDelete", u32(index)))
+			on_delete := nendo.pointer_over(nendo.id("BoardDelete", u32(index)))
 			if hovered() && !ui.board_drag.active && !on_delete {
 				tooltip(tr("Click to edit, drag to reorder."))
 				cursor_raise(.Pointer)
@@ -518,18 +496,17 @@ board_header :: proc(ui: ^Ui_State, index, count: int, target, insert: bool) {
 
 @(private = "file")
 board_empty :: proc(index: int, target: bool) {
-	if clay.UI(clay.ID("BoardEmpty", u32(index)))(
+	if nendo.box(nendo.id("BoardEmpty", u32(index)))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(BOARD_EMPTY_H)},
-			padding = {left = 34},
-			childAlignment = {y = .Center},
-		},
+		width = nendo.grow(),
+		height = nendo.fixed(BOARD_EMPTY_H),
+		padding = {left = 34},
+		align = {y = .Center},
 	},
 	) {
-		clay.Text(
+		nendo.text(
 			target ? tr("Drop here") : tr("No chats or terminals yet"),
-			{fontId = FONT_BODY, fontSize = 12, textColor = target ? ACCENT : TEXT_LO},
+			{font = FONT_BODY, size = 12, color = target ? ACCENT : TEXT_LO},
 		)
 	}
 }
@@ -540,48 +517,34 @@ board_row :: proc(ui: ^Ui_State, row: Inbox_Row, section: int) {
 	title := board_row_title(ui, row)
 	held := ui.board_drag.active && ui.board_drag.kind == .Row && ui.board_drag.key == row.key
 	placed := folder_placed(ui, row.key)
-	if clay.UI(clay.ID("BoardChat", id))(
+	if nendo.box(nendo.id("BoardChat", id))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFixed(settings_tap_size(BOARD_ROW_H)),
-			},
-			padding = {left = 22, right = 18},
-			childGap = 10,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = held ? SELECTED : (hovered() && !ui.board_drag.active ? HOVER : {}),
-		cornerRadius = rr(6),
+		width = nendo.grow(),
+		height = nendo.fixed(settings_tap_size(BOARD_ROW_H)),
+		padding = {left = 22, right = 18},
+		gap = 10,
+		align = {y = .Center},
+		color = held ? SELECTED : (hovered() && !ui.board_drag.active ? HOVER : {}),
+		radius = rr(6),
 	},
 	) {
-		clay.Text(
-			ICON_GRIP,
-			{fontId = FONT_ICON, fontSize = 12, textColor = held ? ACCENT : TEXT_LO},
-		)
+		nendo.text(ICON_GRIP, {font = FONT_ICON, size = 12, color = held ? ACCENT : TEXT_LO})
 		if row.kind == .Terminal {
-			clay.Text("\ue795", {fontId = FONT_ICON, fontSize = 20, textColor = TEXT_DIM})
+			nendo.text("\ue795", {font = FONT_ICON, size = 20, color = TEXT_DIM})
 		} else {
 			chat := ui.chats[row.index]
 			avatar("BoardAvatar", id, chat.avatar_key, title, 24, chat_pic(chat))
 		}
-		if clay.UI(clay.ID("BoardChatName", id))(
-		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
-		) {
-			clay.Text(
+		if nendo.box(nendo.id("BoardChatName", id))({width = nendo.grow(), clip = {x = true}}) {
+			nendo.text(
 				title,
-				{
-					fontId = FONT_BODY,
-					fontSize = 13,
-					textColor = held ? TEXT_DIM : TEXT,
-					wrapMode = .None,
-				},
+				{font = FONT_BODY, size = 13, color = held ? TEXT_DIM : TEXT, wrap = .None},
 			)
 		}
 		if placed {
 			board_keep(ui, id)
 		} else if section < len(ui.prefs.folders) {
-			clay.Text(tr("By rule"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+			nendo.text(tr("By rule"), {font = FONT_BODY, size = 11, color = TEXT_LO})
 		}
 		if hovered() && !ui.board_drag.active {cursor_raise(.Pointer)}
 	}
@@ -590,37 +553,32 @@ board_row :: proc(ui: ^Ui_State, row: Inbox_Row, section: int) {
 // The manual-placement checkbox; clearing it hands the row to the rules.
 @(private = "file")
 board_keep :: proc(ui: ^Ui_State, id: u32) {
-	if clay.UI(clay.ID("BoardKeep", id))(
+	if nendo.box(nendo.id("BoardKeep", id))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFit({min = settings_tap_size(28)}),
-				height = clay.SizingFit({min = settings_tap_size(24)}),
-			},
-			padding = {left = 6, right = 6, top = 4, bottom = 4},
-			childGap = 6,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : {},
-		cornerRadius = rr(4),
+		width = nendo.fit(min = settings_tap_size(28)),
+		height = nendo.fit(min = settings_tap_size(24)),
+		padding = {left = 6, right = 6, top = 4, bottom = 4},
+		gap = 6,
+		align = {y = .Center},
+		color = hovered() ? HOVER : {},
+		radius = rr(4),
 	},
 	) {
-		if clay.UI(clay.ID("BoardKeepBox", id))(
+		if nendo.box(nendo.id("BoardKeepBox", id))(
 		{
-			layout = {
-				sizing = {clay.SizingFixed(16), clay.SizingFixed(16)},
-				childAlignment = {x = .Center, y = .Center},
-			},
-			backgroundColor = CARD,
+			width = nendo.fixed(16),
+			height = nendo.fixed(16),
+			align = {x = .Center, y = .Center},
+			color = CARD,
 			border = {color = ACCENT, width = {1, 1, 1, 1, 0}},
-			cornerRadius = rr(2),
+			radius = rr(2),
 		},
 		) {
-			clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
+			nendo.text(ICON_CHECK, {font = FONT_ICON, size = 12, color = ACCENT})
 		}
 		if !single_pane(
 			
-		) {clay.Text(tr("Placed by hand"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})}
+		) {nendo.text(tr("Placed by hand"), {font = FONT_BODY, size = 11, color = TEXT_DIM})}
 		if hovered() && !ui.board_drag.active {
 			tooltip(tr("Clear to let folder rules decide."))
 			cursor_raise(.Pointer)
@@ -647,31 +605,29 @@ board_ghost :: proc(ui: ^Ui_State, rows: []Inbox_Row) {
 		label = ui.prefs.folders[drag.folder]
 	}
 	p := board_mouse()
-	if clay.UI(clay.ID("BoardGhost"))(
+	if nendo.box(nendo.id("BoardGhost"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFit({max = 280})},
-			padding = {left = 12, right = 12, top = 8, bottom = 8},
-			childGap = 8,
-			childAlignment = {y = .Center},
-		},
+		width = nendo.fit(max = 280),
+		padding = {left = 12, right = 12, top = 8, bottom = 8},
+		gap = 8,
+		align = {y = .Center},
 		floating = {
-			attachTo = .Root,
+			attach_to = .Root,
 			offset = {p.x + 14, p.y + 10},
-			zIndex = 20,
-			pointerCaptureMode = .Passthrough,
+			z = 20,
+			pointer = .Passthrough,
 		},
-		backgroundColor = CARD,
+		color = CARD,
 		border = {color = ACCENT, width = bw()},
-		cornerRadius = rr(8),
+		radius = rr(8),
 	},
 	) {
 		if drag.kind == .Folder {
 			folder_icon(ui, label, 14)
 		} else {
-			clay.Text(icon, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
+			nendo.text(icon, {font = FONT_ICON, size = 13, color = ACCENT})
 		}
-		clay.Text(label, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None})
+		nendo.text(label, {font = FONT_TITLE, size = 13, color = TEXT, wrap = .None})
 	}
 	cursor_raise(.Grabbing)
 }

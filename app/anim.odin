@@ -1,6 +1,6 @@
-// Motion primitives. clay is immediate mode: nothing survives a frame,
+// Motion primitives. nendo is immediate mode: nothing survives a frame,
 // so every animation needs one retained float somewhere. That somewhere
-// is here, a map keyed by clay element id (or any hash), plus the two
+// is here, a map keyed by nendo element id (or any hash), plus the two
 // curves the whole app animates on:
 //
 //   anim_to  exponential approach, frame-rate independent. Hovers,
@@ -16,7 +16,7 @@ package main
 import "core:math"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 ANIM_RATE :: f32(16) // default approach rate, ~1/e per 60ms
@@ -153,7 +153,7 @@ anim_kick :: proc(key: u32, velocity: f32) {
 	anim_vals[key] = entry
 }
 
-anim_color :: proc(key: u32, target: clay.Color, rate: f32 = ANIM_RATE) -> clay.Color {
+anim_color :: proc(key: u32, target: nendo.Color, rate: f32 = ANIM_RATE) -> nendo.Color {
 	entry, seen := anim_cols[key]
 	goal := [4]f32{target.r, target.g, target.b, target.a}
 	if !seen || !motion_on() {
@@ -182,7 +182,7 @@ anim_drain :: proc(rate: f32) -> f32 {
 	return 1 - math.exp(-rate * anim_dt)
 }
 
-mix_color :: proc(a, b: clay.Color, t: f32) -> clay.Color {
+mix_color :: proc(a, b: nendo.Color, t: f32) -> nendo.Color {
 	k := clamp(t, 0, 1)
 	return {
 		a.r + (b.r - a.r) * k,
@@ -192,7 +192,7 @@ mix_color :: proc(a, b: clay.Color, t: f32) -> clay.Color {
 	}
 }
 
-fade :: proc(color: clay.Color, alpha: f32) -> clay.Color {
+fade :: proc(color: nendo.Color, alpha: f32) -> nendo.Color {
 	return {color.r, color.g, color.b, color.a * clamp(alpha, 0, 1)}
 }
 
@@ -223,10 +223,10 @@ ease_back :: proc(t: f32) -> f32 {
 	return k * k * ((OVERSHOOT + 1) * k + OVERSHOOT) + 1
 }
 
-// The box clay gave an element last frame, if it was laid out at all.
-element_box :: proc(id: clay.ElementId) -> (clay.BoundingBox, bool) {
-	data := clay.GetElementData(id)
-	return data.boundingBox, data.found
+// The box nendo gave an element last frame, if it was laid out at all.
+element_box :: proc(id: nendo.Id) -> (nendo.Rect, bool) {
+	data := nendo.element(id)
+	return data.rect, data.found
 }
 
 // ── View transitions ────────────────────────────────────────────────
@@ -239,10 +239,10 @@ PAGE_SETTLE :: 0.4 // grace after a switch: arrivals inside it are "already ther
 // What counts as a different view: the page, the selected chat, the
 // new-chat pane. Anything that swaps the whole main card.
 page_view_key :: proc(ui: ^Ui_State) -> u32 {
-	key := u32(ui.page) * 131 + clay.ID(ui.account_ref).id
+	key := u32(ui.page) * 131 + nendo.id(ui.account_ref).id
 	if ui.selected >= 0 {
 		// Activity reorders rows without changing the open conversation.
-		key = clay.ID(ui.chats[ui.selected].group_id, key).id
+		key = nendo.id(ui.chats[ui.selected].group_id, key).id
 	}
 	if ui.show_members {
 		key ~= 0x2ab17e10 // the group-info page swaps the whole chat area
@@ -313,12 +313,12 @@ opens: map[u32]Open
 // which is why the few modals that free their own payload hold it until
 // the next open (confirm.odin) and the two index-addressed menus keep
 // the index they were opened on (rowactions.odin, menus.odin).
-open_now :: proc(id: clay.ElementId, open: bool) -> bool {
+open_now :: proc(id: nendo.Id, open: bool) -> bool {
 	return open_step(id, open) > OPEN_GONE
 }
 
 @(private = "file")
-open_step :: proc(id: clay.ElementId, open: bool) -> f32 {
+open_step :: proc(id: nendo.Id, open: bool) -> f32 {
 	entry := opens[id.id]
 	if entry.frame == anim_frame {
 		return entry.v // already stepped this frame
@@ -340,14 +340,14 @@ open_step :: proc(id: clay.ElementId, open: bool) -> f32 {
 
 // How far open a panel is, for the elements inside it. The mount
 // condition stepped it already this frame.
-open_t :: proc(id: clay.ElementId) -> f32 {
+open_t :: proc(id: nendo.Id) -> f32 {
 	return opens[id.id].v
 }
 
 // Width of a fixed-width panel, scaled by how far it has opened and
 // capped by the window: a modal wider than the screen it floats over
 // loses its right edge, and modals are centered, so both edges.
-modal_w :: proc(id: clay.ElementId, w: f32) -> f32 {
+modal_w :: proc(id: nendo.Id, w: f32) -> f32 {
 	return fit_w(w) * (OPEN_SCALE + (1 - OPEN_SCALE) * open_t(id))
 }
 
@@ -357,7 +357,7 @@ modal_h :: proc(h: f32) -> f32 {
 }
 
 // Vertical offset for a panel that rises the last few px into place.
-rise :: proc(id: clay.ElementId, dist: f32 = RISE_PX) -> f32 {
+rise :: proc(id: nendo.Id, dist: f32 = RISE_PX) -> f32 {
 	return (1 - open_t(id)) * dist
 }
 
@@ -480,23 +480,23 @@ bump_pad :: proc(v: f32, scale: f32 = 5) -> u16 {
 
 // A held pointer over a control. Buttons shift their label down by a
 // pixel while it is true, which is the whole of "it depressed".
-press_down :: proc(id: clay.ElementId) -> u16 {
-	return rl.IsMouseButtonDown(.LEFT) && clay.PointerOver(id) ? 1 : 0
+press_down :: proc(id: nendo.Id) -> u16 {
+	return rl.IsMouseButtonDown(.LEFT) && nendo.pointer_over(id) ? 1 : 0
 }
 
 // ── Scrolling ───────────────────────────────────────────────────────
 
 SCROLL_DRAIN :: f32(18) // how fast a wheel notch is spent
-CLAY_SCROLL_PIXELS :: f32(10) // clay's own delta-to-pixels factor
+NENDO_SCROLL_PIXELS :: f32(10) // nendo's own delta-to-pixels factor
 
 // Undrained wheel input, spent a fraction per frame.
-scroll_residual: clay.Vector2
+scroll_residual: nendo.Vector2
 
 // Containers with something to scroll this frame, registered by
 // scrollbar() during the build. A finger drag has to know which
-// container it is over and clay has no query for that, so the list the
+// container it is over and nendo has no query for that, so the list the
 // scrollbars already walk stands in for one.
-drag_targets: [dynamic]clay.ElementId
+drag_targets: [dynamic]nendo.Id
 
 // Set by anything that teleports the scroll position (a reply jump, a
 // search hit, a snap to the newest message) so the frame after it is
@@ -515,20 +515,20 @@ DRAG_MIN :: f32(3) // px of travel before a press stops being a click
 DRAG_VEL_RATE :: f32(30) // smoothing on the throw speed, in 1/s
 
 @(private = "file")
-drag_at: clay.Vector2
+drag_at: nendo.Vector2
 @(private = "file")
-drag_vel: clay.Vector2
+drag_vel: nendo.Vector2
 @(private = "file")
-drag_origin: clay.Vector2
+drag_origin: nendo.Vector2
 @(private = "file")
 drag_on: bool
 @(private = "file")
-drag_id: clay.ElementId // the container this drag grabbed
+drag_id: nendo.Id // the container this drag grabbed
 
 @(private)
-fling_vel: clay.Vector2
+fling_vel: nendo.Vector2
 @(private)
-fling_id: clay.ElementId
+fling_id: nendo.Id
 
 // A press that turned into a drag opens no link on release.
 drag_moved: bool
@@ -536,21 +536,21 @@ drag_moved: bool
 update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
 	if mouse_pressed() || rl.GetMouseWheelMoveV() != {} {fling_vel = {}}
 	if fling_vel != {} {
-		data := clay.GetScrollContainerData(fling_id)
+		data := nendo.scroll(fling_id)
 		if !data.found || !motion_on() {
 			fling_vel = {}
 		} else {
-			overflow := clay.Vector2 {
-				max(data.contentDimensions.width - data.scrollContainerDimensions.width, 0),
-				max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+			overflow := nendo.Vector2 {
+				max(data.content.width - data.viewport.width, 0),
+				max(data.content.height - data.viewport.height, 0),
 			}
-			before := data.scrollPosition^
+			before := data.position^
 			step := fling_vel * (anim_drain(8) / 8)
-			data.scrollPosition.x = clamp(before.x + step.x, -overflow.x, 0)
-			data.scrollPosition.y = clamp(before.y + step.y, -overflow.y, 0)
+			data.position.x = clamp(before.x + step.x, -overflow.x, 0)
+			data.position.y = clamp(before.y + step.y, -overflow.y, 0)
 			fling_vel *= 1 - anim_drain(8)
-			if abs(fling_vel.x) < 5 || data.scrollPosition.x == before.x {fling_vel.x = 0}
-			if abs(fling_vel.y) < 5 || data.scrollPosition.y == before.y {fling_vel.y = 0}
+			if abs(fling_vel.x) < 5 || data.position.x == before.x {fling_vel.x = 0}
+			if abs(fling_vel.y) < 5 || data.position.y == before.y {fling_vel.y = 0}
 			anim_moving += 1
 		}
 	}
@@ -559,7 +559,7 @@ update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
 	if !rl.TouchActive() {
 		return
 	}
-	point := transmute(clay.Vector2)rl.GetMousePosition() / UI_ZOOM
+	point := transmute(nendo.Vector2)rl.GetMousePosition() / UI_ZOOM
 
 	if rl.IsMouseButtonReleased(.LEFT) {
 		// Keep the throw bound to the grabbed view after the finger lifts.
@@ -589,12 +589,12 @@ update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
 		}
 		if ui.board_drag.kind != .None {return}
 		if single_pane() &&
-		   clay.PointerOver(clay.ID("FolderBoard")) &&
-		   point.x < clay.GetElementData(clay.ID("FolderBoard")).boundingBox.x + 44 {return}
+		   nendo.pointer_over(nendo.id("FolderBoard")) &&
+		   point.x < nendo.element(nendo.id("FolderBoard")).rect.x + 44 {return}
 		// The timeline is blocked while a body selection is running
 		// (`blocked`); every other container is fair game.
 		for target in drag_targets {
-			if clay.PointerOver(target) {
+			if nendo.pointer_over(target) {
 				drag_id = target
 				drag_on, drag_at, drag_vel, drag_moved = true, point, {}, false
 				drag_origin = point
@@ -611,16 +611,16 @@ update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
 	cursor_raise(.Grabbing)
 	drag_at = point
 	drag_vel += (step - drag_vel) * anim_drain(DRAG_VEL_RATE)
-	data := clay.GetScrollContainerData(drag_id)
+	data := nendo.scroll(drag_id)
 	if !data.found {
 		return
 	}
-	overflow := clay.Vector2 {
-		max(data.contentDimensions.width - data.scrollContainerDimensions.width, 0),
-		max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+	overflow := nendo.Vector2 {
+		max(data.content.width - data.viewport.width, 0),
+		max(data.content.height - data.viewport.height, 0),
 	}
-	if data.config.horizontal {data.scrollPosition.x = clamp(data.scrollPosition.x + step.x, -overflow.x, 0)} else {drag_vel.x = 0}
-	if data.config.vertical {data.scrollPosition.y = clamp(data.scrollPosition.y + step.y, -overflow.y, 0)} else {drag_vel.y = 0}
+	if data.clip.x {data.position.x = clamp(data.position.x + step.x, -overflow.x, 0)} else {drag_vel.x = 0}
+	if data.clip.y {data.position.y = clamp(data.position.y + step.y, -overflow.y, 0)} else {drag_vel.y = 0}
 	ui.scroll_pending = false // the user is driving; stop chasing the bottom
 	anim_moving += 1
 }

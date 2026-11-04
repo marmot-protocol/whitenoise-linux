@@ -19,7 +19,7 @@ import "core:net"
 import "core:strings"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 TOR_MAX_DEPTH :: 32 // bencode nesting cap, file tree included
@@ -531,155 +531,121 @@ tor_tile :: proc(view: ^Tor_View, id: u32, msg_id: string, att: int, file_name: 
 	PAD :: 10
 	BADGE :: 36
 	inner := w - 2 * PAD
-	if clay.UI(clay.ID("MsgTor", id))(
+	if nendo.box(nendo.id("MsgTor", id))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(w)},
-			padding = clay.PaddingAll(PAD),
-			childGap = 8,
-		},
-		backgroundColor = PLATE,
-		cornerRadius = rr(10),
+		direction = .Column,
+		width = nendo.fixed(w),
+		padding = nendo.pad(PAD),
+		gap = 8,
+		color = PLATE,
+		radius = rr(10),
 	},
 	) {
 		att_dl_button("DlTor", id, msg_id, att, file_name)
 
-		if clay.UI(clay.ID_LOCAL("MsgTorHead"))(
+		if nendo.box(nendo.id_local("MsgTorHead"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				padding = clay.PaddingAll(6),
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = hovered() ? HOVER : {},
-			cornerRadius = rr(8),
+			width = nendo.grow(),
+			padding = nendo.pad(6),
+			gap = 10,
+			align = {y = .Center},
+			color = hovered() ? HOVER : {},
+			radius = rr(8),
 		},
 		) {
 			if hovered() {
 				tor_open_hover = view
 			}
-			if clay.UI(clay.ID_LOCAL("MsgTorBadge"))(
+			if nendo.box(nendo.id_local("MsgTorBadge"))(
 			{
-				layout = {
-					sizing = {clay.SizingFixed(BADGE), clay.SizingFixed(BADGE)},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(8),
+				width = nendo.fixed(BADGE),
+				height = nendo.fixed(BADGE),
+				align = {x = .Center, y = .Center},
+				color = ROW_BG,
+				radius = rr(8),
 			},
 			) {
-				clay.Text(ICON_MAGNET, {fontId = FONT_ICON, fontSize = 16, textColor = ACCENT})
+				nendo.text(ICON_MAGNET, {font = FONT_ICON, size = 16, color = ACCENT})
 			}
-			if clay.UI(clay.ID_LOCAL("MsgTorTitle"))(
-			{
-				layout = {
-					layoutDirection = .TopToBottom,
-					sizing = {width = clay.SizingGrow()},
-					childGap = 3,
-				},
-			},
+			if nendo.box(nendo.id_local("MsgTorTitle"))(
+			{direction = .Column, width = nendo.grow(), gap = 3},
 			) {
 				// Header width less its padding, badge, chevron and gaps.
-				clay.Text(
+				nendo.text(
 					tor_fit(view.name, inner - 12 - BADGE - 12 - 20, FONT_TITLE, 13),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
+					{font = FONT_TITLE, size = 13, color = TEXT, wrap = .None},
 				)
 				size := arc_size_label(view.total)
 				meta :=
 					view.count == 1 ? fmt.tprintf("%s · %s", tr("Torrent"), size) : fmt.tprintf("%s · %s · %s", tr("Torrent"), fmt.tprintf(tr("%d files"), view.count), size)
-				clay.Text(
-					meta,
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None},
-				)
+				nendo.text(meta, {font = FONT_BODY, size = 11, color = TEXT_DIM, wrap = .None})
 			}
-			clay.Text(
+			nendo.text(
 				view.open ? ICON_CHEVRON_UP : ICON_CHEVRON_DOWN,
-				{fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_ICON, size = 11, color = TEXT_DIM},
 			)
 		}
 
 		if view.open {
 			tor_eyebrow(tr("FILES"))
-			if clay.UI(clay.ID_LOCAL("MsgTorList"))(
+			if nendo.box(nendo.id_local("MsgTorList"))(
 			{
-				layout = {
-					layoutDirection = .TopToBottom,
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFit({max = TOR_LIST_MAX_H}),
-					},
-					padding = clay.PaddingAll(4),
-				},
-				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(8),
+				direction = .Column,
+				width = nendo.grow(),
+				height = nendo.fit(max = TOR_LIST_MAX_H),
+				padding = nendo.pad(4),
+				clip = {y = true, scroll = true},
+				color = ROW_BG,
+				radius = rr(8),
 			},
 			) {
 				for file, k in view.files {
 					size := arc_size_label(file.size)
 					// List width less its padding, the row's, the gap, the size.
 					name_w := inner - 8 - 16 - 12 - rl.MeasureTextLine(FONT_BODY, 11, size, 0).x
-					if clay.UI(clay.ID_LOCAL("MsgTorRow", u32(k)))(
+					if nendo.box(nendo.id_local("MsgTorRow", u32(k)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							padding = {left = 8, right = 8, top = 5, bottom = 5},
-							childGap = 12,
-							childAlignment = {y = .Center},
-						},
+						width = nendo.grow(),
+						padding = {left = 8, right = 8, top = 5, bottom = 5},
+						gap = 12,
+						align = {y = .Center},
 					},
 					) {
-						clay.Text(
+						nendo.text(
 							tor_fit(file.path, name_w, FONT_BODY, 12),
-							{
-								fontId = FONT_BODY,
-								fontSize = 12,
-								textColor = TEXT,
-								wrapMode = .None,
-							},
+							{font = FONT_BODY, size = 12, color = TEXT, wrap = .None},
 						)
-						if clay.UI(clay.ID_LOCAL("MsgTorPad"))(
-						{layout = {sizing = {width = clay.SizingGrow()}}},
-						) {}
-						clay.Text(
+						if nendo.box(nendo.id_local("MsgTorPad"))({width = nendo.grow()}) {}
+						nendo.text(
 							size,
-							{
-								fontId = FONT_BODY,
-								fontSize = 11,
-								textColor = TEXT_DIM,
-								wrapMode = .None,
-							},
+							{font = FONT_BODY, size = 11, color = TEXT_DIM, wrap = .None},
 						)
 					}
 				}
 				if view.count > len(view.files) {
-					if clay.UI(clay.ID_LOCAL("MsgTorUnlisted"))(
-					{layout = {padding = {left = 8, right = 8, top = 5, bottom = 5}}},
+					if nendo.box(nendo.id_local("MsgTorUnlisted"))(
+					{padding = {left = 8, right = 8, top = 5, bottom = 5}},
 					) {
-						clay.Text(
+						nendo.text(
 							fmt.tprintf(tr("and %d more files"), view.count - len(view.files)),
-							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 11, color = TEXT_DIM},
 						)
 					}
 				}
 			}
 
 			tor_eyebrow(tr("DETAILS"))
-			if clay.UI(clay.ID_LOCAL("MsgTorDetails"))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingGrow()}}},
+			if nendo.box(nendo.id_local("MsgTorDetails"))(
+			{direction = .Column, width = nendo.grow()},
 			) {
 				value_w := inner - TOR_KEY_W - 16 - 8
-				if clay.UI(clay.ID_LOCAL("MsgTorHash"))(
+				if nendo.box(nendo.id_local("MsgTorHash"))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						padding = {left = 8, right = 8, top = 4, bottom = 4},
-						childGap = 8,
-					},
-					backgroundColor = hovered() ? HOVER : {},
-					cornerRadius = rr(6),
+					width = nendo.grow(),
+					padding = {left = 8, right = 8, top = 4, bottom = 4},
+					gap = 8,
+					color = hovered() ? HOVER : {},
+					radius = rr(6),
 				},
 				) {
 					if hovered() {
@@ -687,9 +653,9 @@ tor_tile :: proc(view: ^Tor_View, id: u32, msg_id: string, att: int, file_name: 
 						tooltip(tr("Copy info hash"))
 					}
 					tor_key(tr("Info hash"))
-					clay.Text(
+					nendo.text(
 						tor_fit(view.infohash, value_w, FONT_MONO, 11),
-						{fontId = FONT_MONO, fontSize = 11, textColor = TEXT, wrapMode = .None},
+						{font = FONT_MONO, size = 11, color = TEXT, wrap = .None},
 					)
 				}
 				if view.piece_len > 0 {
@@ -733,34 +699,24 @@ tor_tile :: proc(view: ^Tor_View, id: u32, msg_id: string, att: int, file_name: 
 			}
 		}
 
-		if clay.UI(clay.ID_LOCAL("MsgTorMagnet"))(
+		if nendo.box(nendo.id_local("MsgTorMagnet"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				padding = {top = 8, bottom = 8},
-				childGap = 8,
-				childAlignment = {x = .Center, y = .Center},
-			},
-			backgroundColor = hovered() ? ACCENT : ROW_BG,
-			cornerRadius = rr(8),
+			width = nendo.grow(),
+			padding = {top = 8, bottom = 8},
+			gap = 8,
+			align = {x = .Center, y = .Center},
+			color = hovered() ? ACCENT : ROW_BG,
+			radius = rr(8),
 		},
 		) {
 			on := hovered()
 			if on {
 				tor_magnet_hover = view
 			}
-			clay.Text(
-				ICON_MAGNET,
-				{fontId = FONT_ICON, fontSize = 12, textColor = on ? ON_ACCENT : ACCENT},
-			)
-			clay.Text(
+			nendo.text(ICON_MAGNET, {font = FONT_ICON, size = 12, color = on ? ON_ACCENT : ACCENT})
+			nendo.text(
 				tr("Copy magnet link"),
-				{
-					fontId = FONT_TITLE,
-					fontSize = 12,
-					textColor = on ? ON_ACCENT : TEXT,
-					wrapMode = .None,
-				},
+				{font = FONT_TITLE, size = 12, color = on ? ON_ACCENT : TEXT, wrap = .None},
 			)
 		}
 	}
@@ -768,21 +724,15 @@ tor_tile :: proc(view: ^Tor_View, id: u32, msg_id: string, att: int, file_name: 
 
 @(private = "file")
 tor_eyebrow :: proc(label: string) {
-	if clay.UI()({layout = {padding = {left = 6, top = 4}}}) {
-		clay.Text(
-			label,
-			{fontId = FONT_TITLE, fontSize = 10, textColor = TEXT_LO, letterSpacing = 1},
-		)
+	if nendo.box()({padding = {left = 6, top = 4}}) {
+		nendo.text(label, {font = FONT_TITLE, size = 10, color = TEXT_LO, spacing = 1})
 	}
 }
 
 @(private = "file")
 tor_key :: proc(label: string) {
-	if clay.UI()({layout = {sizing = {width = clay.SizingFixed(TOR_KEY_W)}}}) {
-		clay.Text(
-			label,
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None},
-		)
+	if nendo.box()({width = nendo.fixed(TOR_KEY_W)}) {
+		nendo.text(label, {font = FONT_BODY, size = 11, color = TEXT_DIM, wrap = .None})
 	}
 }
 
@@ -790,31 +740,17 @@ tor_key :: proc(label: string) {
 // that fit width.
 @(private = "file")
 tor_detail :: proc(key, value: string, width: f32) {
-	if clay.UI()(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			padding = {left = 8, right = 8, top = 4, bottom = 4},
-			childGap = 8,
-		},
-	},
+	if nendo.box()(
+	{width = nendo.grow(), padding = {left = 8, right = 8, top = 4, bottom = 4}, gap = 8},
 	) {
 		tor_key(key)
-		if clay.UI()(
-		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {width = clay.SizingGrow()},
-				childGap = 2,
-			},
-		},
-		) {
+		if nendo.box()({direction = .Column, width = nendo.grow(), gap = 2}) {
 			// wrapped_lines hard-breaks tokens with no space, like URLs,
-			// which clay's word wrap would let run past the tile.
+			// which nendo's word wrap would let run past the tile.
 			for line in wrapped_lines(value, width, 11) {
-				clay.Text(
+				nendo.text(
 					value[line.start:line.end],
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT, wrapMode = .None},
+					{font = FONT_BODY, size = 11, color = TEXT, wrap = .None},
 				)
 			}
 		}

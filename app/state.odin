@@ -4,65 +4,65 @@ import "core:strings"
 import "core:text/edit"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
 
 // Palette globals, filled from the active Theme_Pack (themes/*.toml
 // packs, embedded and parsed in theme.odin).
-BG := clay.Color{6, 7, 8, 255}
-CARD := clay.Color{15, 19, 24, 255}
-CARD_BORDER := clay.Color{20, 24, 29, 255}
-STATUS_BAR := clay.Color{11, 13, 15, 255}
-RAIL_BG := clay.Color{15, 19, 24, 255} // in-card strips; blends with CARD
-ROW_BG := clay.Color{10, 13, 17, 255} // fields, chips
-FIELD_BORDER := clay.Color{31, 36, 42, 255}
-HOVER := clay.Color{13, 17, 20, 255}
-SELECTED := clay.Color{18, 40, 32, 255}
-PLATE := clay.Color{20, 26, 33, 255}
-DIVIDER := clay.Color{26, 31, 37, 255}
-ELEVATED_BORDER := clay.Color{36, 42, 49, 255}
-BORDER_2 := clay.Color{20, 24, 29, 255}
-ON_ACCENT := clay.Color{10, 20, 16, 255}
-ACCENT := clay.Color{114, 240, 176, 255}
-ACCENT_DIM := clay.Color{61, 214, 138, 255}
-TEXT := clay.Color{228, 231, 236, 255}
-TEXT_DIM := clay.Color{156, 163, 175, 255}
-TEXT_LO := clay.Color{107, 114, 128, 255}
-DANGER := clay.Color{255, 90, 90, 255}
-DANGER_SOFT := clay.Color{255, 90, 90, 38}
-DANGER_BORDER := clay.Color{255, 90, 90, 110}
-WARNING := clay.Color{235, 180, 70, 255}
-WARNING_SOFT := clay.Color{235, 180, 70, 38}
-WARNING_BORDER := clay.Color{235, 180, 70, 110}
-TEXT_VLO := clay.Color{75, 82, 96, 255}
-PANEL := clay.Color{15, 19, 24, 255}
-FIELD_HOVER := clay.Color{18, 23, 28, 255}
-CODE_PLATE := clay.Color{255, 255, 255, 16}
-CARD_WELL := clay.Color{20, 26, 33, 255}
-TOP_GLINT := clay.Color{255, 255, 255, 10}
-AVATAR_RING := clay.Color{255, 255, 255, 32}
-ACCENT_GLOW := clay.Color{114, 240, 176, 51}
-ACCENT_HI := clay.Color{150, 245, 195, 255}
+BG := nendo.Color{6, 7, 8, 255}
+CARD := nendo.Color{15, 19, 24, 255}
+CARD_BORDER := nendo.Color{20, 24, 29, 255}
+STATUS_BAR := nendo.Color{11, 13, 15, 255}
+RAIL_BG := nendo.Color{15, 19, 24, 255} // in-card strips; blends with CARD
+ROW_BG := nendo.Color{10, 13, 17, 255} // fields, chips
+FIELD_BORDER := nendo.Color{31, 36, 42, 255}
+HOVER := nendo.Color{13, 17, 20, 255}
+SELECTED := nendo.Color{18, 40, 32, 255}
+PLATE := nendo.Color{20, 26, 33, 255}
+DIVIDER := nendo.Color{26, 31, 37, 255}
+ELEVATED_BORDER := nendo.Color{36, 42, 49, 255}
+BORDER_2 := nendo.Color{20, 24, 29, 255}
+ON_ACCENT := nendo.Color{10, 20, 16, 255}
+ACCENT := nendo.Color{114, 240, 176, 255}
+ACCENT_DIM := nendo.Color{61, 214, 138, 255}
+TEXT := nendo.Color{228, 231, 236, 255}
+TEXT_DIM := nendo.Color{156, 163, 175, 255}
+TEXT_LO := nendo.Color{107, 114, 128, 255}
+DANGER := nendo.Color{255, 90, 90, 255}
+DANGER_SOFT := nendo.Color{255, 90, 90, 38}
+DANGER_BORDER := nendo.Color{255, 90, 90, 110}
+WARNING := nendo.Color{235, 180, 70, 255}
+WARNING_SOFT := nendo.Color{235, 180, 70, 38}
+WARNING_BORDER := nendo.Color{235, 180, 70, 110}
+TEXT_VLO := nendo.Color{75, 82, 96, 255}
+PANEL := nendo.Color{15, 19, 24, 255}
+FIELD_HOVER := nendo.Color{18, 23, 28, 255}
+CODE_PLATE := nendo.Color{255, 255, 255, 16}
+CARD_WELL := nendo.Color{20, 26, 33, 255}
+TOP_GLINT := nendo.Color{255, 255, 255, 10}
+AVATAR_RING := nendo.Color{255, 255, 255, 32}
+ACCENT_GLOW := nendo.Color{114, 240, 176, 51}
+ACCENT_HI := nendo.Color{150, 245, 195, 255}
 
 // Depth: the scrim behind a modal, the tint a raised surface drops,
 // and the two edges a bevelled one is lit and shaded with.
-OVERLAY := clay.Color{0, 0, 0, 115}
-OVERLAY_STRONG := clay.Color{0, 0, 0, 230}
-VIGNETTE := clay.Color{0, 0, 0, 128}
-SHADOW_CARD := clay.Color{0, 0, 0, 208}
-SHADOW_POPOVER := clay.Color{0, 0, 0, 102}
-BEVEL_HI := clay.Color{255, 255, 255, 40}
-BEVEL_LO := clay.Color{0, 0, 0, 90}
+OVERLAY := nendo.Color{0, 0, 0, 115}
+OVERLAY_STRONG := nendo.Color{0, 0, 0, 230}
+VIGNETTE := nendo.Color{0, 0, 0, 128}
+SHADOW_CARD := nendo.Color{0, 0, 0, 208}
+SHADOW_POPOVER := nendo.Color{0, 0, 0, 102}
+BEVEL_HI := nendo.Color{255, 255, 255, 40}
+BEVEL_LO := nendo.Color{0, 0, 0, 90}
 
 // Chrome that floats over a picture, so it cannot take its colors
 // from the page behind it.
-MEDIA_BACKDROP := clay.Color{3, 4, 4, 255}
-MEDIA_CHIP_BG := clay.Color{0, 0, 0, 184}
-MEDIA_CHIP_FG := clay.Color{255, 255, 255, 255}
-MEDIA_CHIP_OUTLINE := clay.Color{255, 255, 255, 102}
-MEDIA_CONTROL_BG := clay.Color{255, 255, 255, 34}
+MEDIA_BACKDROP := nendo.Color{3, 4, 4, 255}
+MEDIA_CHIP_BG := nendo.Color{0, 0, 0, 184}
+MEDIA_CHIP_FG := nendo.Color{255, 255, 255, 255}
+MEDIA_CHIP_OUTLINE := nendo.Color{255, 255, 255, 102}
+MEDIA_CONTROL_BG := nendo.Color{255, 255, 255, 34}
 
 @(private)
 THEME_WALLPAPER: ^rl.Texture2D
@@ -435,7 +435,7 @@ Msg_Ui :: struct {
 	sys_added_hex:       string, // member_added row: subject hex, "" = not an add
 	theme_name:          string, // a shared theme's name, "" = not a theme offer
 	theme_toml:          string, // its pack source, applied only on the tap
-	theme_swatch:        [THEME_SWATCHES]clay.Color, // parsed once at load, drawn every frame
+	theme_swatch:        [THEME_SWATCHES]nendo.Color, // parsed once at load, drawn every frame
 	deleted:             bool, // tombstone: placeholder row, no body/actions
 	edited:              bool, // MDK applied an accepted edit; body holds the latest
 	effect:              int, // ["effect", key] burst id from the event tags, 0 = none
@@ -624,13 +624,13 @@ Ui_State :: struct {
 	whip_return_focus:                                 u32,
 	whip_attach_drag, whip_attach_resize:              u32,
 	whip_attach_origin:                                rl.Vector2,
-	whip_attach_bounds:                                clay.BoundingBox,
+	whip_attach_bounds:                                nendo.Rect,
 	whip_chat_width:                                   f32,
 	whip_dock_width, whip_dock_height:                 f32,
 	whip_dock_drag, whip_dock_wide, whip_dock_release: bool,
 	whip_dock_pane:                                    u32,
 	whip_dock_offset:                                  f32,
-	whip_dock_bounds:                                  clay.BoundingBox,
+	whip_dock_bounds:                                  nendo.Rect,
 	chats:                                             [dynamic]Chat_Row_Ui,
 	chat_members:                                      map[string][]string, // group id → member pubkey hex, for folder rules
 	chat_members_read:                                 bool, // the last chat-list read asked for chat_members

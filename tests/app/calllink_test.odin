@@ -4,7 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:sync"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private = "file")
@@ -66,8 +66,8 @@ jitsi_call_links :: proc(t: ^testing.T) {
 	_, ok = call_link("https://meet.example.org/a/b")
 	testing.expect(t, !ok, "nested path on a Jitsi host")
 
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	defer wrap_clear()
 	text := "Join " + SIGNAL_URL + " or " + SELF_HOSTED + ". Then\n" + JITSI_URL
 	for width in ([]f32{0, 120, 1200}) {
@@ -137,27 +137,23 @@ call_layout :: proc(t: ^testing.T) {
 		for width in ([]f32{240, 360}) {
 			for frame in 0 ..< 3 {
 				// Installed on the left, missing on the right.
-				clay.SetPointerState({-1, -1}, false)
+				nendo.set_pointer({-1, -1}, .Up)
 				link_hover = ""
-				clay.BeginLayout()
-				if clay.UI(clay.ID("Page"))(
-				{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}}, backgroundColor = BG},
+				nendo.begin()
+				if nendo.box(nendo.id("Page"))(
+				{width = nendo.grow(), height = nendo.grow(), color = BG},
 				) {
 					for column in 0 ..< 2 {
 						call_clients =
 							column == 0 ? {.Signal = .Installed, .Jitsi = .Installed} : {.Signal = .Missing, .Jitsi = .Missing}
-						if clay.UI(clay.ID("Timeline", u32(column)))(
+						if nendo.box(nendo.id("Timeline", u32(column)))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(width + 78),
-									height = clay.SizingGrow(),
-								},
-								layoutDirection = .TopToBottom,
-								padding = clay.PaddingAll(20),
-								childGap = 16,
-							},
-							backgroundColor = CARD,
+							width = nendo.fixed(width + 78),
+							height = nendo.grow(),
+							direction = .Column,
+							padding = nendo.pad(20),
+							gap = 16,
+							color = CARD,
 						},
 						) {
 							base := u32(column * 10)
@@ -167,15 +163,15 @@ call_layout :: proc(t: ^testing.T) {
 						}
 					}
 				}
-				commands := clay.EndLayout(0)
+				commands := nendo.end(0)
 				if frame < 2 {continue}
 				for id in ([]u32{1, 2, 3, 11, 12, 13}) {
-					data := clay.GetElementData(clay.ID("CallCard", id * 128))
+					data := nendo.element(nendo.id("CallCard", id * 128))
 					testing.expect(t, data.found)
-					testing.expect(t, data.boundingBox.width <= width)
+					testing.expect(t, data.rect.width <= width)
 				}
 				rl.BeginDrawing()
-				clay_raylib_render(&commands)
+				render_nendo(commands)
 				rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-call-%d-%d.png", theme, int(width)))
 				rl.EndDrawing()
 			}

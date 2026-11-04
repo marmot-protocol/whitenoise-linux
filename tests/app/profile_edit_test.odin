@@ -3,7 +3,7 @@ package main
 import "base:runtime"
 import "core:testing"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Run in its own process, like the other SDL layout regressions.
@@ -38,30 +38,30 @@ profile_edit_summary :: proc(t: ^testing.T) {
 	}
 	check := proc(t: ^testing.T, ui: ^Ui_State, editing: bool) {
 		for _ in 0 ..< 3 {
-			clay.SetPointerState({-100, -100}, false)
-			clay.BeginLayout()
+			nendo.set_pointer({-100, -100}, .Up)
+			nendo.begin()
 			profile_pane(ui)
-			clay.EndLayout(0)
+			nendo.end(0)
 		}
-		testing.expect(t, clay.GetElementData(clay.ID("ProfileForm")).found == editing)
+		testing.expect(t, nendo.element(nendo.id("ProfileForm")).found == editing)
 		testing.expect(
 			t,
-			clay.GetElementData(clay.ID("ProfileEyebrow")).found == !editing,
+			nendo.element(nendo.id("ProfileEyebrow")).found == !editing,
 			"the PROFILE heading is only present in view mode",
 		)
 		testing.expect(
 			t,
-			clay.GetElementData(clay.ID("ProfileCard")).found == !editing,
+			nendo.element(nendo.id("ProfileCard")).found == !editing,
 			"the stale read-only summary must be absent while editing",
 		)
 		testing.expect(
 			t,
-			clay.GetElementData(clay.ID("ProfileIdCard")).found,
+			nendo.element(nendo.id("ProfileIdCard")).found,
 			"identity remains visible in either mode",
 		)
 		if editing {
 			for id in ([]string{"NameBox", "Nip05Box", "Lud16Box", "ChangePicBtn", "PublishProfileBtn"}) {
-				testing.expect(t, clay.GetElementData(clay.ID(id)).found, id)
+				testing.expect(t, nendo.element(nendo.id(id)).found, id)
 			}
 		}
 	}
@@ -71,8 +71,8 @@ profile_edit_summary :: proc(t: ^testing.T) {
 	ed_set(&ui, &ui.nip05_input, "draft@example.invalid")
 	check(t, &ui, true)
 	// Cancel through the actual header action, preserving committed values.
-	box := clay.GetElementData(clay.ID("EditProfileBtn")).boundingBox
-	clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+	box := nendo.element(nendo.id("EditProfileBtn")).rect
+	nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
 	forced_release = true
 	handle_profile(&ui, nil)
 	forced_release = false
@@ -90,14 +90,14 @@ profile_edit_summary :: proc(t: ^testing.T) {
 	ui.profile.nip05 = "saved@example.invalid"
 	ui.profile.editing = false
 	check(t, &ui, false)
-	clay.BeginLayout()
+	nendo.begin()
 	profile_pane(&ui)
-	commands := clay.EndLayout(0)
+	commands := nendo.end(0)
 	found_saved := false
-	for command in commands.internalArray[:commands.length] {
-		if command.commandType != .Text {continue}
-		text := command.renderData.text.stringContents
-		if string(text.chars[:text.length]) == "saved@example.invalid" {found_saved = true}
+	for command in commands {
+		if command.kind != .Text {continue}
+		text := command.text.text
+		if text == "saved@example.invalid" {found_saved = true}
 	}
 	testing.expect(t, found_saved, "the restored summary renders the reloaded value")
 }
@@ -127,20 +127,20 @@ profile_empty_fields :: proc(t: ^testing.T) {
 	for stage in 0 ..< 3 {
 		if stage == 1 {edit_profile_start(&ui)}
 		if stage == 2 {ed_set(&ui, &ui.name_input, "Draft name")}
-		commands: clay.ClayArray(clay.RenderCommand)
+		commands: []nendo.Render_Command
 		for _ in 0 ..< 3 {
-			clay.SetPointerState({-100, -100}, false)
-			clay.BeginLayout()
+			nendo.set_pointer({-100, -100}, .Up)
+			nendo.begin()
 			profile_pane(&ui)
-			commands = clay.EndLayout(0)
+			commands = nendo.end(0)
 		}
 		if stage > 0 {
 			for id in ([]string{"NameBox", "ComposeBox", "Nip05Box", "Lud16Box"}) {
-				box := clay.GetElementData(clay.ID(id)).boundingBox
+				box := nendo.element(nendo.id(id)).rect
 				found_text := false
-				for command in commands.internalArray[:commands.length] {
-					if command.commandType != .Text {continue}
-					bounds := command.boundingBox
+				for command in commands {
+					if command.kind != .Text {continue}
+					bounds := command.rect
 					if bounds.x < box.x ||
 					   bounds.y < box.y ||
 					   bounds.x + bounds.width > box.x + box.width ||
@@ -149,7 +149,7 @@ profile_empty_fields :: proc(t: ^testing.T) {
 					typed := stage == 2 && id == "NameBox"
 					testing.expect(
 						t,
-						command.renderData.text.textColor == (typed ? TEXT : TEXT_DIM),
+						command.text.color == (typed ? TEXT : TEXT_DIM),
 						"empty hints and typed profile values must remain visually distinct",
 					)
 				}

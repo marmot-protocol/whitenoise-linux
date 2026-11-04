@@ -9,8 +9,8 @@ import marmot "../marmot"
 
 @(test)
 transcript_owns_loaded_window :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	old_page := timeline_page
 	defer {timeline_page = old_page}
 	body := strings.clone("First <body> & text")
@@ -73,8 +73,8 @@ transcript_owns_loaded_window :: proc(t: ^testing.T) {
 
 @(test)
 transcript_discards_changed_account :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	ui := Ui_State {
 		account_ref = "old",
 		selected    = 0,

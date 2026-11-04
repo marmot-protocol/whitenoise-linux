@@ -23,7 +23,7 @@ import "core:strings"
 import "core:sync"
 import "core:thread"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 GH_PREFIX :: "https://github.com/"
@@ -213,7 +213,7 @@ gh_fetch :: proc(ref: Gh_Ref) -> Gh_Card {
 }
 
 @(private = "file")
-gh_badge :: proc(state: string) -> clay.Color {
+gh_badge :: proc(state: string) -> nendo.Color {
 	switch state {
 	case "closed":
 		return DANGER
@@ -249,26 +249,21 @@ gh_chip_w :: proc(ref: Gh_Ref, size: u16) -> f32 {
 gh_chip :: proc(id: u32, ref: Gh_Ref, size: u16) {
 	card := gh_fetch(ref)
 	badge := gh_badge(card.state)
-	if clay.UI(clay.ID("GhChip", id))(
+	if nendo.box(nendo.id("GhChip", id))(
 	{
-		layout = {
-			padding = {left = MENTION_PAD_X, right = MENTION_PAD_X, top = 1, bottom = 1},
-			childGap = GH_CHIP_GAP,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = fade(badge, hovered() ? 0.24 : 0.12),
-		cornerRadius = rr(7),
+		padding = {left = MENTION_PAD_X, right = MENTION_PAD_X, top = 1, bottom = 1},
+		gap = GH_CHIP_GAP,
+		align = {y = .Center},
+		color = fade(badge, hovered() ? 0.24 : 0.12),
+		radius = rr(7),
 	},
 	) {
 		if hovered() {
 			link_hover = ref.url
 			tooltip(len(card.title) > 0 ? card.title : ref.url)
 		}
-		clay.Text(gh_icon(ref), {fontId = FONT_ICON, fontSize = size, textColor = badge})
-		clay.Text(
-			gh_label(ref),
-			{fontId = FONT_TITLE, fontSize = size, textColor = ACCENT, wrapMode = .None},
-		)
+		nendo.text(gh_icon(ref), {font = FONT_ICON, size = size, color = badge})
+		nendo.text(gh_label(ref), {font = FONT_TITLE, size = size, color = ACCENT, wrap = .None})
 	}
 }
 
@@ -277,78 +272,56 @@ gh_card :: proc(id: u32, ref: Gh_Ref) {
 	card := gh_fetch(ref)
 	badge := gh_badge(card.state)
 
-	if clay.UI(clay.ID("GhCard", id))(
+	if nendo.box(nendo.id("GhCard", id))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(att_w(360))},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(14),
-			childGap = 12,
-		},
-		backgroundColor = PLATE,
-		cornerRadius = rr(12),
+		width = nendo.fixed(att_w(360)),
+		direction = .Column,
+		padding = nendo.pad(14),
+		gap = 12,
+		color = PLATE,
+		radius = rr(12),
 		border = {color = hovered() ? fade(badge, 0.5) : CARD_BORDER, width = bw()},
 	},
 	) {
 		if hovered() {link_hover = ref.url}
-		if clay.UI(clay.ID("GhCardHead", id))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-		},
+		if nendo.box(nendo.id("GhCardHead", id))(
+		{width = nendo.grow(), gap = 10, align = {y = .Center}},
 		) {
-			if clay.UI(clay.ID("GhCardIcon", id))(
+			if nendo.box(nendo.id("GhCardIcon", id))(
 			{
-				layout = {
-					sizing = {clay.SizingFixed(28), clay.SizingFixed(28)},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = fade(badge, 0.1),
-				cornerRadius = rr(8),
+				width = nendo.fixed(28),
+				height = nendo.fixed(28),
+				align = {x = .Center, y = .Center},
+				color = fade(badge, 0.1),
+				radius = rr(8),
 			},
 			) {
-				clay.Text(gh_icon(ref), {fontId = FONT_ICON, fontSize = 15, textColor = badge})
+				nendo.text(gh_icon(ref), {font = FONT_ICON, size = 15, color = badge})
 			}
-			if clay.UI(clay.ID("GhCardRepo", id))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 3,
-				},
-				clip = {horizontal = true},
-			},
+			if nendo.box(nendo.id("GhCardRepo", id))(
+			{width = nendo.grow(), direction = .Column, gap = 3, clip = {x = true}},
 			) {
 				kind := ref.pull ? tr("PULL REQUEST") : tr("ISSUE")
-				clay.Text(
+				nendo.text(
 					fmt.tprintf("%s  #%s", kind, ref.num),
-					{
-						fontId = FONT_BODY,
-						fontSize = 9,
-						textColor = TEXT_DIM,
-						letterSpacing = 1,
-						wrapMode = .None,
-					},
+					{font = FONT_BODY, size = 9, color = TEXT_DIM, spacing = 1, wrap = .None},
 				)
-				clay.Text(
+				nendo.text(
 					fmt.tprintf("%s/%s", ref.owner, ref.repo),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None},
+					{font = FONT_BODY, size = 11, color = TEXT_DIM, wrap = .None},
 				)
 			}
 			if len(card.state) > 0 {
-				if clay.UI(clay.ID("GhCardState", id))(
+				if nendo.box(nendo.id("GhCardState", id))(
 				{
-					layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
-					backgroundColor = fade(badge, 0.12),
-					cornerRadius = rr(9),
+					padding = {left = 8, right = 8, top = 4, bottom = 4},
+					color = fade(badge, 0.12),
+					radius = rr(9),
 				},
 				) {
-					clay.Text(
+					nendo.text(
 						card.state,
-						{fontId = FONT_TITLE, fontSize = 10, textColor = badge, wrapMode = .None},
+						{font = FONT_TITLE, size = 10, color = badge, wrap = .None},
 					)
 				}
 			}
@@ -356,45 +329,26 @@ gh_card :: proc(id: u32, ref: Gh_Ref) {
 		// The reference remains useful while metadata is unavailable.
 		title :=
 			len(card.title) > 0 ? card.title : fmt.tprintf("%s/%s #%s", ref.owner, ref.repo, ref.num)
-		clay.Text(title, {fontId = FONT_TITLE, fontSize = 15, textColor = TEXT})
-		if clay.UI(clay.ID("GhCardFoot", id))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-		},
+		nendo.text(title, {font = FONT_TITLE, size = 15, color = TEXT})
+		if nendo.box(nendo.id("GhCardFoot", id))(
+		{width = nendo.grow(), gap = 10, align = {y = .Center}},
 		) {
-			if clay.UI(clay.ID("GhCardAuthor", id))(
-			{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
-			) {
+			if nendo.box(nendo.id("GhCardAuthor", id))({width = nendo.grow(), clip = {x = true}}) {
 				if len(card.author) > 0 {
-					clay.Text(
+					nendo.text(
 						fmt.tprintf("@%s", card.author),
-						{
-							fontId = FONT_BODY,
-							fontSize = 11,
-							textColor = TEXT_DIM,
-							wrapMode = .None,
-						},
+						{font = FONT_BODY, size = 11, color = TEXT_DIM, wrap = .None},
 					)
 				}
 			}
-			if clay.UI(clay.ID("GhCardOpen", id))(
-			{
-				layout = {
-					padding = {top = 3, bottom = 3},
-					childGap = 6,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("GhCardOpen", id))(
+			{padding = {top = 3, bottom = 3}, gap = 6, align = {y = .Center}},
 			) {
-				clay.Text(
+				nendo.text(
 					external_link_action(),
-					{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_DIM, wrapMode = .None},
+					{font = FONT_BODY, size = 10, color = TEXT_DIM, wrap = .None},
 				)
-				clay.Text("\uf08e", {fontId = FONT_ICON, fontSize = 10, textColor = TEXT_DIM})
+				nendo.text("\uf08e", {font = FONT_ICON, size = 10, color = TEXT_DIM})
 			}
 		}
 	}

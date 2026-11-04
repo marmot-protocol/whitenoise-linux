@@ -13,7 +13,7 @@ import "core:fmt"
 import "core:mem"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -280,7 +280,7 @@ keys_fields :: proc(ui: ^Ui_State) {
 		keys_reveal_frames -= 1
 		if keys_reveal_frames == 0 {reveal_nsec(ui, g_client)}
 	}
-	if long_pressed && clay.PointerOver(clay.ID("NpubInset")) && ui.profile.npub != "" {
+	if long_pressed && nendo.pointer_over(nendo.id("NpubInset")) && ui.profile.npub != "" {
 		copy_text(ui, ui.profile.npub, tr("npub copied"))
 	}
 }
@@ -289,33 +289,31 @@ settings_keys :: proc(ui: ^Ui_State) {
 	body_width := settings_body_width(ui) - 24
 	account_busy := settings_account_busy(ui)
 	if ui.settings_tab == 0 {
-		if clay.UI(clay.ID("KeysIdentityGroup"))(settings_box()) {
+		if nendo.box(nendo.id("KeysIdentityGroup"))(settings_box()) {
 			settings_group(tr("Keys & identity"))
-			if clay.UI(clay.ID("KeysProfile"))(settings_row()) {
+			if nendo.box(nendo.id("KeysProfile"))(settings_row()) {
 				name :=
 					len(ui.profile.name) > 0 ? ui.profile.name : profile_label(nil, ui.account_ref)
 				avatar("KeysAvatar", 0, ui.account_ref, name, 44, url_pic(ui.my_pic_url))
-				if clay.UI(clay.ID("KeysProfileName"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+				if nendo.box(nendo.id("KeysProfileName"))(
+				{width = nendo.grow(), clip = {x = true}},
 				) {
-					clay.Text(name, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
+					nendo.text(name, {font = FONT_TITLE, size = 16, color = TEXT})
 				}
 			}
 			public_row := settings_row()
-			public_row.layout.layoutDirection = body_width < 220 ? .TopToBottom : .LeftToRight
-			if clay.UI(clay.ID("NpubRow"))(public_row) {
-				clay.Text(
-					tr("Public key (npub)"),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
-				)
+			public_row.direction = body_width < 220 ? .Column : .Row
+			if nendo.box(nendo.id("NpubRow"))(public_row) {
+				nendo.text(tr("Public key (npub)"), {font = FONT_TITLE, size = 13, color = TEXT})
 				settings_button("SettingsCopyNpub", tr("Copy"))
 			}
-			if clay.UI(clay.ID("NpubInset"))(
+			if nendo.box(nendo.id("NpubInset"))(
 			{
-				layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
-				backgroundColor = CARD,
+				width = nendo.grow(),
+				padding = nendo.pad(10),
+				color = CARD,
 				border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
-				cornerRadius = rr(2),
+				radius = rr(2),
 			},
 			) {
 				keys_key_lines(
@@ -324,15 +322,15 @@ settings_keys :: proc(ui: ^Ui_State) {
 					body_width - 20,
 				)
 			}
-			clay.Text(
+			nendo.text(
 				tr("Safe to share. This is how people find you."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 			identity_note := settings_row()
-			identity_note.layout.layoutDirection = .LeftToRight
-			identity_note.layout.childAlignment.y = .Top
-			if clay.UI(clay.ID("RowSovereign"))(identity_note) {
-				clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
+			identity_note.direction = .Row
+			identity_note.align.y = .Top
+			if nendo.box(nendo.id("RowSovereign"))(identity_note) {
+				nendo.text(ICON_LOCK, {font = FONT_ICON, size = 13, color = ACCENT})
 				row_labels(
 					tr("Your key stays on this device"),
 					tr(
@@ -345,19 +343,14 @@ settings_keys :: proc(ui: ^Ui_State) {
 	}
 
 	action_row := settings_row()
-	action_row.layout.layoutDirection = .TopToBottom
-	action_row.layout.childGap = 6
+	action_row.direction = .Column
+	action_row.gap = 6
 	if ui.settings_tab == 1 {
-		if clay.UI(clay.ID("KpStatus"))(settings_box()) {
+		if nendo.box(nendo.id("KpStatus"))(settings_box()) {
 			settings_group(tr("Key packages"))
-			clay.Text(kp_status_line(ui), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
-			if clay.UI(clay.ID("KpStatusActions"))(
-			{
-				layout = {
-					layoutDirection = body_width < 260 ? .TopToBottom : .LeftToRight,
-					childGap = 6,
-				},
-			},
+			nendo.text(kp_status_line(ui), {font = FONT_BODY, size = 12, color = TEXT})
+			if nendo.box(nendo.id("KpStatusActions"))(
+			{direction = body_width < 260 ? .Column : .Row, gap = 6},
 			) {
 				settings_button(
 					"KpPublish",
@@ -372,45 +365,36 @@ settings_keys :: proc(ui: ^Ui_State) {
 					account_busy ? .Disabled : .Enabled,
 				)
 			}
-			clay.Text(
+			nendo.text(
 				tr(
 					"Key packages let people invite you. Refresh checks the app's default relays for published copies.",
 				),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 			for row, i in ui.kp_list {
-				if clay.UI(clay.ID("KpRow", u32(i)))(settings_row()) {
-					if clay.UI(clay.ID("KpRowCol", u32(i)))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							childGap = 3,
-						},
-					},
+				if nendo.box(nendo.id("KpRow", u32(i)))(settings_row()) {
+					if nendo.box(nendo.id("KpRowCol", u32(i)))(
+					{width = nendo.grow(), direction = .Column, gap = 3},
 					) {
-						clay.Text(
+						nendo.text(
 							row.relay && row.id != "" ? short_hex(row.id) : tr("Not published yet"),
-							{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
+							{font = FONT_MONO, size = 11, color = TEXT_LO},
 						)
-						clay.Text(
-							row.at,
-							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-						)
-						clay.Text(
+						nendo.text(row.at, {font = FONT_BODY, size = 11, color = TEXT_DIM})
+						nendo.text(
 							kp_location(row),
-							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 11, color = TEXT_DIM},
 						)
 					}
 
 				}
 			}
 		}
-		if clay.UI(clay.ID("RowRotate"))(settings_box()) {
+		if nendo.box(nendo.id("RowRotate"))(settings_box()) {
 			settings_group(tr("Rotate key package now"))
-			clay.Text(
+			nendo.text(
 				tr("Invalidates the current package and uploads a fresh one to your relays."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 			label := ui.keys_confirm == "RotateBtn" ? tr("Tap again to rotate") : tr("Rotate")
 			settings_button("RotateBtn", label, DANGER, account_busy ? .Disabled : .Enabled)
@@ -418,9 +402,9 @@ settings_keys :: proc(ui: ^Ui_State) {
 		return
 	}
 
-	if clay.UI(clay.ID("KeysVaultGroup"))(settings_box()) {
+	if nendo.box(nendo.id("KeysVaultGroup"))(settings_box()) {
 		settings_group(tr("Device vault"))
-		if clay.UI(clay.ID("RowVaultPw"))(action_row) {
+		if nendo.box(nendo.id("RowVaultPw"))(action_row) {
 			row_labels(
 				tr("Change vault password"),
 				tr(
@@ -430,7 +414,7 @@ settings_keys :: proc(ui: ^Ui_State) {
 			settings_button("VaultPwBtn", tr("Change..."))
 		}
 		if account_local(ui) {
-			if clay.UI(clay.ID("RowExport"))(action_row) {
+			if nendo.box(nendo.id("RowExport"))(action_row) {
 				row_labels(
 					tr("Export encrypted key (ncryptsec)"),
 					tr(
@@ -448,53 +432,39 @@ settings_keys :: proc(ui: ^Ui_State) {
 		width = {left = 2, right = 1, top = 1, bottom = 1},
 	}
 	if !account_local(ui) {
-		clay.Text(
+		nendo.text(
 			tr(
 				"Your secret key stays in your remote signer. Reveal and export are unavailable on this device.",
 			),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 12, color = TEXT_DIM},
 		)
 		return
 	}
-	if clay.UI(clay.ID("KeysDangerGroup"))(security) {
+	if nendo.box(nendo.id("KeysDangerGroup"))(security) {
 		settings_group(tr("Security actions"))
 		// Reveal: arm, confirm, then a masked plate with copy and unmask.
-		if clay.UI(clay.ID("RowReveal"))(action_row) {
-			if clay.UI(clay.ID("RevealCol"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 3,
-				},
-			},
+		if nendo.box(nendo.id("RowReveal"))(action_row) {
+			if nendo.box(nendo.id("RevealCol"))(
+			{width = nendo.grow(), direction = .Column, gap = 3},
 			) {
-				clay.Text(
+				nendo.text(
 					tr("Reveal secret key (nsec)"),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
+					{font = FONT_TITLE, size = 13, color = TEXT},
 				)
-				clay.Text(
+				nendo.text(
 					tr("Never share it. It is your identity."),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 11, color = TEXT_DIM},
 				)
 			}
 			if len(ui.keys_nsec) > 0 {
-				if clay.UI(clay.ID("NsecActions"))(
-				{
-					layout = {
-						layoutDirection = body_width < 180 ? .TopToBottom : .LeftToRight,
-						childGap = 6,
-					},
-				},
+				if nendo.box(nendo.id("NsecActions"))(
+				{direction = body_width < 180 ? .Column : .Row, gap = 6},
 				) {
 					settings_button("NsecShow", ui.keys_nsec_show ? tr("Hide") : tr("Show"))
 					settings_button("NsecCopy", tr("Copy"))
 				}
 			} else if keys_reveal_frames > 0 {
-				clay.Text(
-					tr("Decrypting..."),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
-				)
+				nendo.text(tr("Decrypting..."), {font = FONT_BODY, size = 13, color = TEXT})
 				busy_bar("KeysRevealProgress")
 			} else {
 				label := ui.keys_confirm == "RevealNsecBtn" ? tr("Confirm reveal") : tr("Reveal")
@@ -505,10 +475,7 @@ settings_keys :: proc(ui: ^Ui_State) {
 			if ui.keys_nsec_show {
 				keys_key_lines("NsecValue", ui.keys_nsec, body_width)
 			} else {
-				clay.Text(
-					"****************",
-					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
-				)
+				nendo.text("****************", {font = FONT_MONO, size = 11, color = TEXT})
 			}
 		}
 	}
@@ -520,19 +487,13 @@ settings_keys :: proc(ui: ^Ui_State) {
 keys_key_lines :: proc(id: string, key: string, width: f32) {
 	char_width := max(1, rl.MeasureTextLine(FONT_MONO, 11, "0", 0).x)
 	columns := max(1, int(width / char_width))
-	if clay.UI(clay.ID(id))(
-	{
-		layout = {
-			sizing = {width = clay.SizingFixed(max(1, width))},
-			layoutDirection = .TopToBottom,
-			childGap = 2,
-		},
-	},
+	if nendo.box(nendo.id(id))(
+	{width = nendo.fixed(max(1, width)), direction = .Column, gap = 2},
 	) {
 		for start := 0; start < len(key); start += columns {
-			clay.Text(
+			nendo.text(
 				key[start:min(start + columns, len(key))],
-				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
+				{font = FONT_MONO, size = 11, color = TEXT},
 			)
 		}
 	}
@@ -646,78 +607,59 @@ handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // ── Export modal ────────────────────────────────────────────────────
 
 export_modal :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("ExportModal"))(
+	if nendo.box(nendo.id("ExportModal"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("ExportModal"), 440)),
-				height = clay.SizingFit({max = modal_h(1200)}),
-			},
-			padding = clay.PaddingAll(18),
-			childGap = 10,
-		},
+		direction = .Column,
+		width = nendo.fixed(modal_w(nendo.id("ExportModal"), 440)),
+		height = nendo.fit(max = modal_h(1200)),
+		padding = nendo.pad(18),
+		gap = 10,
 		floating = {
-			attachTo = .Root,
-			zIndex = 11,
-			offset = {0, rise(clay.ID("ExportModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 11,
+			offset = {0, rise(nendo.id("ExportModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = CARD,
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		cornerRadius = rr(12),
+		color = CARD,
+		clip = {y = true, scroll = true},
+		radius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("ExportHead"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
-		) {
-			clay.Text(
-				tr("Back up your key"),
-				{fontId = FONT_TITLE, fontSize = 17, textColor = TEXT},
-			)
-			if clay.UI(clay.ID("ExportHeadGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-			if clay.UI(clay.ID("ExportClose"))(
+		if nendo.box(nendo.id("ExportHead"))({width = nendo.grow(), align = {y = .Center}}) {
+			nendo.text(tr("Back up your key"), {font = FONT_TITLE, size = 17, color = TEXT})
+			if nendo.box(nendo.id("ExportHeadGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("ExportClose"))(
 			{
-				layout = {
-					sizing = {
-						clay.SizingFixed(settings_tap_size(24)),
-						clay.SizingFixed(settings_tap_size(24)),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(6),
+				width = nendo.fixed(settings_tap_size(24)),
+				height = nendo.fixed(settings_tap_size(24)),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(6),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 			}
 		}
 
 		if len(ui.export_result) == 0 {
 			// Step 1: password.
-			clay.Text(
+			nendo.text(
 				tr(
 					"Pick a password to encrypt the key with. You will need it to import the key anywhere else.",
 				),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 			eyebrow(tr("PASSWORD"))
-			if clay.UI(clay.ID("ExportPwBox"))(
+			if nendo.box(nendo.id("ExportPwBox"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(settings_tap_size(38)),
-					},
-					padding = {left = 12, right = 12},
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ROW_BG,
-				clip = {horizontal = true},
-				cornerRadius = rr(9),
+				width = nendo.grow(),
+				height = nendo.fixed(settings_tap_size(38)),
+				padding = {left = 12, right = 12},
+				align = {y = .Center},
+				color = ROW_BG,
+				clip = {x = true},
+				radius = rr(9),
 				border = {
 					color = ui.focus == .ExportPw && !export_confirm_focus ? ACCENT : FIELD_BORDER,
 					width = bw(),
@@ -728,14 +670,11 @@ export_modal :: proc(ui: ^Ui_State) {
 					if ui.focus == .ExportPw && !export_confirm_focus {
 						caret(15)
 					}
-					clay.Text(
-						tr("Your password"),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO},
-					)
+					nendo.text(tr("Your password"), {font = FONT_BODY, size = 13, color = TEXT_LO})
 				} else {
-					clay.Text(
+					nendo.text(
 						strings.repeat("*", min(len(ui.export_pw), 48), context.temp_allocator),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+						{font = FONT_BODY, size = 13, color = TEXT},
 					)
 					if ui.focus == .ExportPw && !export_confirm_focus {
 						caret(15)
@@ -752,130 +691,114 @@ export_modal :: proc(ui: ^Ui_State) {
 				tr("Type your password again"),
 			)
 			if len(export_confirm) > 0 && string(export_confirm[:]) != string(ui.export_pw[:]) {
-				clay.Text(
+				nendo.text(
 					tr("The passwords don't match. Type them again."),
-					{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+					{font = FONT_BODY, size = 12, color = DANGER},
 				)
 			}
 			if ui.export_pw_required {
-				if clay.UI(clay.ID("ExportPwError"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {
-					clay.Text(
+				if nendo.box(nendo.id("ExportPwError"))({width = nendo.grow()}) {
+					nendo.text(
 						tr("Pick a password first."),
-						{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+						{font = FONT_BODY, size = 12, color = DANGER},
 					)
 				}
 			}
-			if clay.UI(clay.ID("ExportBtns"))(settings_choices(clay.ID("ExportBtns"))) {
-				if clay.UI(clay.ID("ExportCancel"))(
+			if nendo.box(nendo.id("ExportBtns"))(settings_choices(nendo.id("ExportBtns"))) {
+				if nendo.box(nendo.id("ExportCancel"))(
 				{
-					layout = {
-						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
-						padding = {left = 22, right = 22, top = 9, bottom = 9},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = hovered() ? HOVER : {},
-					cornerRadius = rr(9),
+					height = nendo.fit(min = settings_tap_size(32)),
+					padding = {left = 22, right = 22, top = 9, bottom = 9},
+					align = {x = .Center, y = .Center},
+					color = hovered() ? HOVER : {},
+					radius = rr(9),
 					border = {color = FIELD_BORDER, width = bw()},
 				},
 				) {
-					clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+					nendo.text(tr("Cancel"), {font = FONT_TITLE, size = 13, color = TEXT})
 				}
-				if clay.UI(clay.ID("ExportBtnsGap"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {}
-				if clay.UI(clay.ID("ExportGo"))(
+				if nendo.box(nendo.id("ExportBtnsGap"))({width = nendo.grow()}) {}
+				if nendo.box(nendo.id("ExportGo"))(
 				{
-					layout = {
-						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
-						padding = {left = 22, right = 22, top = 9, bottom = 9},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = export_valid(ui) ? ACCENT : ROW_BG,
-					cornerRadius = rr(9),
+					height = nendo.fit(min = settings_tap_size(32)),
+					padding = {left = 22, right = 22, top = 9, bottom = 9},
+					align = {x = .Center, y = .Center},
+					color = export_valid(ui) ? ACCENT : ROW_BG,
+					radius = rr(9),
 				},
 				) {
-					clay.Text(
+					nendo.text(
 						tr("Export key"),
 						{
-							fontId = FONT_TITLE,
-							fontSize = 13,
-							textColor = export_valid(ui) ? ON_ACCENT : TEXT_DIM,
+							font = FONT_TITLE,
+							size = 13,
+							color = export_valid(ui) ? ON_ACCENT : TEXT_DIM,
 						},
 					)
 				}
 			}
 		} else {
 			// Step 2: the sealed key.
-			clay.Text(
+			nendo.text(
 				tr(
 					"This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity.",
 				),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 			eyebrow(tr("ENCRYPTED KEY (NCRYPTSEC)"))
-			if clay.UI(clay.ID("ExportKeyPlate"))(
+			if nendo.box(nendo.id("ExportKeyPlate"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					padding = clay.PaddingAll(10),
-					layoutDirection = .TopToBottom,
-					childGap = 2,
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(9),
+				width = nendo.grow(),
+				padding = nendo.pad(10),
+				direction = .Column,
+				gap = 2,
+				color = ROW_BG,
+				radius = rr(9),
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				// One unbroken token: clay wraps on words only, so chunk
+				// One unbroken token: nendo wraps on words only, so chunk
 				// it into fixed slices or the plate blows past the modal.
 				key := ui.export_result
 				columns := max(
 					1,
 					int(
-						(modal_w(clay.ID("ExportModal"), 440) - 56) /
+						(modal_w(nendo.id("ExportModal"), 440) - 56) /
 						max(1, rl.MeasureTextLine(FONT_MONO, 11, "M", 0).x),
 					),
 				)
 				for len(key) > 0 {
 					n := min(len(key), columns)
-					clay.Text(key[:n], {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
+					nendo.text(key[:n], {font = FONT_MONO, size = 11, color = TEXT})
 					key = key[n:]
 				}
 			}
-			if clay.UI(clay.ID("ExportCopyRow"))(
-			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-			) {
-				if clay.UI(clay.ID("ExportCopyGap"))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {}
+			if nendo.box(nendo.id("ExportCopyRow"))({width = nendo.grow(), gap = 8}) {
+				if nendo.box(nendo.id("ExportCopyGap"))({width = nendo.grow()}) {}
 				micro_button("ExportSave", tr("Save file"))
 				micro_button("ExportCopy", tr("Copy"))
 			}
-			clay.Text(
+			nendo.text(
 				tr(
 					"Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it.",
 				),
-				{fontId = FONT_BODY, fontSize = 11, textColor = DANGER},
+				{font = FONT_BODY, size = 11, color = DANGER},
 			)
-			if clay.UI(clay.ID("ExportDoneRow"))({layout = {padding = {top = 8}}}) {
-				if clay.UI(clay.ID("ExportDone"))(
+			if nendo.box(nendo.id("ExportDoneRow"))({padding = {top = 8}}) {
+				if nendo.box(nendo.id("ExportDone"))(
 				{
-					layout = {
-						sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
-						padding = {left = 22, right = 22, top = 9, bottom = 9},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = hovered() ? HOVER : {},
-					cornerRadius = rr(9),
+					height = nendo.fit(min = settings_tap_size(32)),
+					padding = {left = 22, right = 22, top = 9, bottom = 9},
+					align = {x = .Center, y = .Center},
+					color = hovered() ? HOVER : {},
+					radius = rr(9),
 					border = {color = FIELD_BORDER, width = bw()},
 				},
 				) {
-					clay.Text(tr("Done"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+					nendo.text(tr("Done"), {font = FONT_TITLE, size = 13, color = TEXT})
 				}
 			}
 		}
 	}
-	scrollbar(clay.ID("ExportModal"), 12)
+	scrollbar(nendo.id("ExportModal"), 12)
 }

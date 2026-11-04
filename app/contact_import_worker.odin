@@ -8,7 +8,7 @@ import "core:sync"
 import "core:thread"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 
 @(private)
 Contact_Import_Added :: struct {
@@ -238,53 +238,36 @@ contacts_import_progress :: proc(ui: ^Ui_State) {
 	job.presented = true
 	total := sync.atomic_load(&job.total)
 	processed := sync.atomic_load(&job.processed)
-	if clay.UI(clay.ID("ContactsImportProgress"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = {12, 12, 8, 8},
-			childGap = 6,
-		},
-		backgroundColor = PANEL,
-	},
+	if nendo.box(nendo.id("ContactsImportProgress"))(
+	{width = nendo.grow(), direction = .Column, padding = {12, 12, 8, 8}, gap = 6, color = PANEL},
 	) {
 		label :=
 			total < 0 ? tr("Reading your contacts file and checking existing contacts...") : fmt.tprintf(tr("Importing contacts: %d of %d"), processed, total)
-		clay.Text(label, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
+		nendo.text(label, {font = FONT_BODY, size = 13, color = TEXT})
 		if total < 0 {
-			clay.Text(
+			nendo.text(
 				tr("Progress is indeterminate."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+				{font = FONT_BODY, size = 12, color = TEXT_LO},
 			)
 			busy_bar("ContactsImportBusy")
 		} else {
-			clay.Text(
+			nendo.text(
 				fmt.tprintf(
 					tr("%d added, %d skipped, %d failed"),
 					sync.atomic_load(&job.added),
 					sync.atomic_load(&job.skipped),
 					sync.atomic_load(&job.failed),
 				),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+				{font = FONT_BODY, size = 12, color = TEXT_LO},
 			)
-			if clay.UI(clay.ID("ContactsImportTrack"))(
-			{
-				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}},
-				backgroundColor = ROW_BG,
-			},
+			if nendo.box(nendo.id("ContactsImportTrack"))(
+			{width = nendo.grow(), height = nendo.fixed(4), color = ROW_BG},
 			) {
-				if clay.UI(clay.ID("ContactsImportFill"))(
+				if nendo.box(nendo.id("ContactsImportFill"))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingPercent(
-								total > 0 ? f32(processed) / f32(total) : 1,
-							),
-							height = clay.SizingFixed(4),
-						},
-					},
-					backgroundColor = ACCENT,
+					width = nendo.percent(total > 0 ? f32(processed) / f32(total) : 1),
+					height = nendo.fixed(4),
+					color = ACCENT,
 				},
 				) {}
 			}

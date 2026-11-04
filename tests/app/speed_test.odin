@@ -11,7 +11,7 @@ import "core:testing"
 import "core:text/edit"
 import "core:thread"
 import "core:time"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:WN_PERF=true -define:ODIN_TEST_NAMES=contacts_layout
@@ -46,8 +46,8 @@ contacts_layout :: proc(t: ^testing.T) {
 		)
 	}
 	for _ in 0 ..< 5 {build_layout(&ui, 0)}
-	testing.expect(t, !clay.GetElementData(clay.ID("GSearchBtn")).found)
-	testing.expect(t, !clay.GetElementData(clay.ID("NewChatBtn")).found)
+	testing.expect(t, !nendo.element(nendo.id("GSearchBtn")).found)
+	testing.expect(t, !nendo.element(nendo.id("NewChatBtn")).found)
 	samples: [31]f64
 	for &ms in samples {
 		start := time.tick_now()
@@ -56,14 +56,14 @@ contacts_layout :: proc(t: ^testing.T) {
 		free_all(context.temp_allocator)
 	}
 	slice.sort(samples[:])
-	data := clay.GetScrollContainerData(clay.ID("ContactList"))
+	data := nendo.scroll(nendo.id("ContactList"))
 	testing.expect(t, data.found)
-	full_height := data.contentDimensions.height
+	full_height := data.content.height
 	for fraction in ([]f32{0, 0.5, 1}) {
-		data.scrollPosition.y = -fraction * (full_height - data.scrollContainerDimensions.height)
+		data.position.y = -fraction * (full_height - data.viewport.height)
 		commands := build_layout(&ui, 0)
 		mounted := 0
-		for _, i in ui.contacts {if clay.GetElementData(clay.ID("ContactRow", u32(i))).found {mounted += 1}}
+		for _, i in ui.contacts {if nendo.element(nendo.id("ContactRow", u32(i))).found {mounted += 1}}
 		fmt.printf(
 			"contacts=1000 scroll=%.1f mounted=%d median_ms=%.3f p95_ms=%.3f\n",
 			fraction,
@@ -74,30 +74,26 @@ contacts_layout :: proc(t: ^testing.T) {
 		testing.expect(t, mounted > 0 && mounted < 30)
 		testing.expect(
 			t,
-			abs(
-				clay.GetScrollContainerData(clay.ID("ContactList")).contentDimensions.height -
-				full_height,
-			) <
-			1,
+			abs(nendo.scroll(nendo.id("ContactList")).content.height - full_height) < 1,
 		)
 		rl.BeginDrawing()
-		clay_raylib_render(&commands)
+		render_nendo(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-contacts-scroll-%d.png", int(fraction * 2)))
 		rl.EndDrawing()
 	}
-	testing.expect(t, clay.GetElementData(clay.ID("ContactRow", 999)).found)
+	testing.expect(t, nendo.element(nendo.id("ContactRow", 999)).found)
 	clear(&ui.sidebar_filter)
 	// The real page handler must focus and edit the displayed search field.
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	defer edit.destroy(&ui.ed)
 	client: marmot.Client // this local filtering path never calls Marmot
-	box := clay.GetElementData(clay.ID("FilterBox")).boundingBox
-	clay.SetPointerState({box.x + 8, box.y + 8}, true)
+	box := nendo.element(nendo.id("FilterBox")).rect
+	nendo.set_pointer({box.x + 8, box.y + 8}, .Down)
 	forced_press = true
 	handle_pages(&ui, &client)
 	forced_press = false
 	text_drag = nil
-	clay.SetPointerState({box.x + 8, box.y + 8}, false)
+	nendo.set_pointer({box.x + 8, box.y + 8}, .Up)
 	testing.expect_value(t, ui.focus, Focus.Filter)
 	for c in "0999" {rl.PushChar(c)}
 	handle_pages(&ui, &client)
@@ -105,15 +101,15 @@ contacts_layout :: proc(t: ^testing.T) {
 	for _ in 0 ..< 3 {build_layout(&ui, 0)}
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("ContactRow", 999)).found,
+		nendo.element(nendo.id("ContactRow", 999)).found,
 		"filtering at the bottom must keep the match visible",
 	)
-	row := clay.GetElementData(clay.ID("ContactRow", 999)).boundingBox
-	list := clay.GetElementData(clay.ID("ContactList")).boundingBox
+	row := nendo.element(nendo.id("ContactRow", 999)).rect
+	list := nendo.element(nendo.id("ContactList")).rect
 	testing.expect(t, row.y >= list.y && row.y + row.height <= list.y + list.height)
 	append(&ui.sidebar_filter, "no match")
 	build_layout(&ui, 0)
-	for _, i in ui.contacts {testing.expect(t, !clay.GetElementData(clay.ID("ContactRow", u32(i))).found)}
+	for _, i in ui.contacts {testing.expect(t, !nendo.element(nendo.id("ContactRow", u32(i))).found)}
 	rl.PushKey(.ESCAPE, true)
 	handle_pages(&ui, &client)
 	rl.PushKey(.ESCAPE, false)
@@ -126,8 +122,8 @@ contacts_layout :: proc(t: ^testing.T) {
 @(test)
 chat_refresh_ownership :: proc(t: ^testing.T) {
 	// retired_chats is process-global; other tests replace chat rows too.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	track: mem.Tracking_Allocator
 	mem.tracking_allocator_init(&track, context.allocator)
 	defer mem.tracking_allocator_destroy(&track)
@@ -300,7 +296,7 @@ edit_completion_scope :: proc(t: ^testing.T) {
 	testing.expect_value(t, string(ui.compose[:]), "draft")
 }
 
-// SDL and Clay globals need a dedicated run, as with performance_layout.
+// SDL and nendo globals need a dedicated run, as with performance_layout.
 @(test)
 performance_sidebar :: proc(t: ^testing.T) {
 	when !#config(WN_PERF, false) {return}
@@ -345,17 +341,17 @@ performance_sidebar :: proc(t: ^testing.T) {
 	}
 	for _ in 0 ..< 5 {
 		anim_tick(1.0 / 60)
-		clay.UpdateScrollContainers(false, {}, 1.0 / 60)
+		nendo.update_scroll(.Off, {}, 1.0 / 60)
 		build_layout(&ui, 1.0 / 60)
 	}
-	data := clay.GetScrollContainerData(clay.ID("ChatList"))
+	data := nendo.scroll(nendo.id("ChatList"))
 	testing.expect(t, data.found)
-	testing.expect(t, clay.GetScrollContainerData(clay.ID("Timeline")).found)
+	testing.expect(t, nendo.scroll(nendo.id("Timeline")).found)
 	testing.expect_value(t, len(ui.rail_rows), 1000)
 	samples: [31]f64
 	for &ms in samples {
 		anim_tick(1.0 / 60)
-		clay.UpdateScrollContainers(false, {}, 1.0 / 60)
+		nendo.update_scroll(.Off, {}, 1.0 / 60)
 		start := time.tick_now()
 		build_layout(&ui, 1.0 / 60)
 		ms = time.duration_milliseconds(time.tick_since(start))
@@ -364,46 +360,43 @@ performance_sidebar :: proc(t: ^testing.T) {
 	slice.sort(samples[:])
 	fmt.printf("sidebar chats=1000 median_ms=%.3f p95_ms=%.3f\n", samples[15], samples[29])
 	for fraction in ([]f32{0, 0.5, 1}) {
-		data = clay.GetScrollContainerData(clay.ID("ChatList"))
-		data.scrollPosition.y =
-			-fraction * (data.contentDimensions.height - data.scrollContainerDimensions.height)
-		clay.UpdateScrollContainers(false, {}, 0)
+		data = nendo.scroll(nendo.id("ChatList"))
+		data.position.y = -fraction * (data.content.height - data.viewport.height)
+		nendo.update_scroll(.Off, {}, 0)
 		build_layout(&ui, 0)
 		mounted := 0
-		for _, i in ui.chats {if clay.GetElementData(clay.ID("ChatRow", u32(i))).found {mounted += 1}}
+		for _, i in ui.chats {if nendo.element(nendo.id("ChatRow", u32(i))).found {mounted += 1}}
 		testing.expect(t, mounted > 0 && mounted < 30)
 	}
-	testing.expect(t, clay.GetElementData(clay.ID("ChatRow", 999)).found)
-	clay.UpdateScrollContainers(false, {}, 0)
+	testing.expect(t, nendo.element(nendo.id("ChatRow", 999)).found)
+	nendo.update_scroll(.Off, {}, 0)
 	commands := build_layout(&ui, 0)
 	rl.BeginDrawing()
-	draw_frame(&commands)
+	draw_frame(commands)
 	rl.TakeScreenshot("/tmp/wn-sidebar-regression.png")
 	rl.EndDrawing()
 	ui.page = .Archived
 	ui.archived = ui.chats
 	for _ in 0 ..< 3 {
-		clay.UpdateScrollContainers(false, {}, 0)
+		nendo.update_scroll(.Off, {}, 0)
 		build_layout(&ui, 0)
 	}
-	archive := clay.GetScrollContainerData(clay.ID("ArchivedList"))
+	archive := nendo.scroll(nendo.id("ArchivedList"))
 	testing.expect(t, archive.found)
 	for fraction in ([]f32{0, 0.5, 1}) {
-		archive.scrollPosition.y =
-			-fraction *
-			(archive.contentDimensions.height - archive.scrollContainerDimensions.height)
-		clay.UpdateScrollContainers(false, {}, 0)
+		archive.position.y = -fraction * (archive.content.height - archive.viewport.height)
+		nendo.update_scroll(.Off, {}, 0)
 		build_layout(&ui, 0)
 		mounted := 0
 		for _, i in ui.archived {
-			row := clay.GetElementData(clay.ID("ChatRow", u32(i)))
+			row := nendo.element(nendo.id("ChatRow", u32(i)))
 			if !row.found {continue}
 			mounted += 1
-			testing.expect(t, clay.GetElementData(clay.ID("ChatUnarch", u32(i))).found)
+			testing.expect(t, nendo.element(nendo.id("ChatUnarch", u32(i))).found)
 		}
 		testing.expect(t, mounted > 0 && mounted < 30)
 	}
-	testing.expect(t, clay.GetElementData(clay.ID("ChatRow", 999)).found)
+	testing.expect(t, nendo.element(nendo.id("ChatRow", 999)).found)
 	for msg in ui.messages {message_free(msg)}
 	delete(ui.messages)
 	wrap_clear()

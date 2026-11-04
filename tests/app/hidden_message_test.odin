@@ -7,7 +7,7 @@ import "core:os"
 import "core:strings"
 import "core:testing"
 import "core:unicode/utf16"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -150,46 +150,39 @@ hidden_message_layout :: proc(t: ^testing.T) {
 	}
 	for width in ([]i32{600, 320}) {
 		rl.SetWindowSize(width, 240)
-		clay.SetLayoutDimensions({f32(width), 240})
+		nendo.set_dimensions({f32(width), 240})
 		for state in 0 ..< 5 {
 			for frame in 0 ..< 3 {
 				clear(&sel_lines)
-				clay.BeginLayout()
-				if clay.UI(clay.ID("HiddenTest"))(
+				nendo.begin()
+				if nendo.box(nendo.id("HiddenTest"))(
 				{
-					layout = {
-						layoutDirection = .TopToBottom,
-						sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()},
-						padding = clay.PaddingAll(16),
-					},
-					backgroundColor = BG,
+					direction = .Column,
+					width = nendo.grow(),
+					height = nendo.grow(),
+					padding = nendo.pad(16),
+					color = BG,
 				},
 				) {
 					for msg, i in ui.messages {message_row(u32(i), msg)}
 				}
-				commands := clay.EndLayout(0)
+				commands := nendo.end(0)
 				if frame < 2 {continue}
 				found_inner := false
 				for line in sel_lines {if strings.contains(line.text, "Nested") {found_inner = true}}
 				testing.expect_value(t, found_inner, state == 2)
 				testing.expect(t, !preview_shown)
-				neighbor := clay.GetElementData(clay.ID("BodyLine", (4096 + 1) * 8)).boundingBox
-				testing.expect(
-					t,
-					neighbor.y >= clay.GetElementData(clay.ID("MsgRow", 1)).boundingBox.y,
-				)
-				data := clay.GetElementData(clay.ID("MsgReveal", 0))
-				testing.expect(
-					t,
-					data.found && data.boundingBox.width == 44 && data.boundingBox.height == 44,
-				)
+				neighbor := nendo.element(nendo.id("BodyLine", (4096 + 1) * 8)).rect
+				testing.expect(t, neighbor.y >= nendo.element(nendo.id("MsgRow", 1)).rect.y)
+				data := nendo.element(nendo.id("MsgReveal", 0))
+				testing.expect(t, data.found && data.rect.width == 44 && data.rect.height == 44)
 				testing.expect_value(
 					t,
-					clay.GetElementData(clay.ID("MsgReveal", 1)).found,
+					nendo.element(nendo.id("MsgReveal", 1)).found,
 					state > 0 && state < 4,
 				)
 				rl.BeginDrawing()
-				clay_raylib_render(&commands)
+				render_nendo(commands)
 				rl.TakeScreenshot(
 					strings.clone_to_cstring(
 						fmt.tprintf("/tmp/wn-hidden-%d-%d.png", width, state),
@@ -198,10 +191,9 @@ hidden_message_layout :: proc(t: ^testing.T) {
 				)
 				rl.EndDrawing()
 				if state < 4 {
-					if state == 1 ||
-					   state == 2 {data = clay.GetElementData(clay.ID("MsgReveal", 1))}
-					testing.expect_value(t, data.boundingBox.height, f32(44))
-					clay.SetPointerState({data.boundingBox.x + 12, data.boundingBox.y + 12}, false)
+					if state == 1 || state == 2 {data = nendo.element(nendo.id("MsgReveal", 1))}
+					testing.expect_value(t, data.rect.height, f32(44))
+					nendo.set_pointer({data.rect.x + 12, data.rect.y + 12}, .Up)
 					forced_release = true
 					handle_chat(&ui, client)
 					forced_release = false

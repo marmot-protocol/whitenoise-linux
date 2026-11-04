@@ -2,7 +2,7 @@ package main
 
 import "core:fmt"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private = "file")
@@ -45,17 +45,10 @@ settings_avatar_choices :: proc(ui: ^Ui_State) {
 	}
 
 	width := settings_body_width(ui) - 24
-	if clay.UI(clay.ID("AvatarGroup"))(settings_box()) {
+	if nendo.box(nendo.id("AvatarGroup"))(settings_box()) {
 		settings_group(tr("Avatars"))
-		if clay.UI(clay.ID("RowAvatarShape"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 8,
-				padding = {top = 4, bottom = 8},
-			},
-		},
+		if nendo.box(nendo.id("RowAvatarShape"))(
+		{width = nendo.grow(), direction = .Column, gap = 8, padding = {top = 4, bottom = 8}},
 		) {
 			row_labels(
 				tr("Default avatar shape"),
@@ -70,15 +63,8 @@ settings_avatar_choices :: proc(ui: ^Ui_State) {
 				width,
 			)
 		}
-		if clay.UI(clay.ID("RowCropShape"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 8,
-				padding = {top = 4, bottom = 4},
-			},
-		},
+		if nendo.box(nendo.id("RowCropShape"))(
+		{width = nendo.grow(), direction = .Column, gap = 8, padding = {top = 4, bottom = 4}},
 		) {
 			row_labels(tr("Crop circle shape"), tr("Used for generated user and group avatars."))
 			settings_avatar_preview_grid(
@@ -109,78 +95,58 @@ settings_avatar_preview_grid :: proc(
 	columns := max(1, int((available + 8) / (tile_width + 8)))
 	initials := avatar_initials(name)
 	for first := 0; first < len(choices); first += columns {
-		if clay.UI(clay.ID_LOCAL("AvatarPreviewRow", u32(first)))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+		if nendo.box(nendo.id_local("AvatarPreviewRow", u32(first)))(
+		{width = nendo.grow(), gap = 8},
 		) {
 			for i in first ..< min(first + columns, len(choices)) {
 				choice := choices[i]
 				active := selected == i
-				if clay.UI(clay.ID(id, u32(i)))(
+				if nendo.box(nendo.id(id, u32(i)))(
 				{
-					layout = {
-						sizing = {width = clay.SizingFixed(tile_width)},
-						layoutDirection = .TopToBottom,
-						padding = clay.PaddingAll(10),
-						childGap = 8,
-						childAlignment = {x = .Center},
-					},
-					backgroundColor = active ? SELECTED : hovered() ? HOVER : {},
-					border = kb_focus == fmt.tprintf("%s%d", id, i) ? kb_ring(ACCENT) : clay.BorderElementConfig{color = active ? ACCENT : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
-					cornerRadius = rr(8),
+					width = nendo.fixed(tile_width),
+					direction = .Column,
+					padding = nendo.pad(10),
+					gap = 8,
+					align = {x = .Center},
+					color = active ? SELECTED : hovered() ? HOVER : {},
+					border = kb_focus == fmt.tprintf("%s%d", id, i) ? kb_ring(ACCENT) : nendo.Border{color = active ? ACCENT : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+					radius = rr(8),
 				},
 				) {
 					// These textures already carry the candidate mask. The regular avatar
 					// renderer would reapply the current preference or published override.
-					if clay.UI(clay.ID_LOCAL("AvatarPreviewImage"))(
+					if nendo.box(nendo.id_local("AvatarPreviewImage"))(
 					{
-						layout = {
-							sizing = {width = clay.SizingFixed(72), height = clay.SizingFixed(72)},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						image = {imageData = choice.texture},
-						backgroundColor = choice.texture == nil ? avatar_color(key) : {},
-						cornerRadius = clay.CornerRadiusAll(choice.radius),
+						width = nendo.fixed(72),
+						height = nendo.fixed(72),
+						align = {x = .Center, y = .Center},
+						image = choice.texture,
+						color = choice.texture == nil ? avatar_color(key) : {},
+						radius = nendo.radius(choice.radius),
 					},
 					) {
 						if choice.texture == nil {
-							clay.Text(
+							nendo.text(
 								initials,
-								{
-									fontId = FONT_BODY,
-									fontSize = 28,
-									textColor = {255, 255, 255, 235},
-								},
+								{font = FONT_BODY, size = 28, color = {255, 255, 255, 235}},
 							)
 						}
 					}
-					if clay.UI(clay.ID_LOCAL("AvatarPreviewLabel"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							childGap = 4,
-							childAlignment = {x = .Center, y = .Center},
-						},
-					},
+					if nendo.box(nendo.id_local("AvatarPreviewLabel"))(
+					{width = nendo.grow(), gap = 4, align = {x = .Center, y = .Center}},
 					) {
-						if clay.UI(clay.ID_LOCAL("AvatarPreviewCheck"))(
-						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(12),
-									height = clay.SizingFixed(12),
-								},
-							},
-						},
+						if nendo.box(nendo.id_local("AvatarPreviewCheck"))(
+						{width = nendo.fixed(12), height = nendo.fixed(12)},
 						) {
-							if active {clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})}
+							if active {nendo.text(ICON_CHECK, {font = FONT_ICON, size = 12, color = ACCENT})}
 						}
-						clay.Text(
+						nendo.text(
 							choice.label,
 							{
-								fontId = FONT_BODY,
-								fontSize = 12,
-								textColor = active ? ACCENT : TEXT,
-								textAlignment = .Center,
+								font = FONT_BODY,
+								size = 12,
+								color = active ? ACCENT : TEXT,
+								align = .Center,
 							},
 						)
 					}

@@ -7,7 +7,7 @@ import "core:strings"
 import "core:thread"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -276,14 +276,14 @@ nip46_detail :: proc(detail: string) -> string {
 nip46_status_ui :: proc(ui: ^Ui_State, account: string, index: u32) {
 	item := nip46_find(account)
 	if item ==
-	   nil {clay.Text(tr("Signer unavailable. Reconnect from Add account."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM}); return}
+	   nil {nendo.text(tr("Signer unavailable. Reconnect from Add account."), {font = FONT_BODY, size = 11, color = TEXT_DIM}); return}
 	state := item.state.state == "ready" && item.attach != nil ? "connecting" : item.state.state
-	clay.Text(
+	nendo.text(
 		nip46_label(state),
-		{fontId = FONT_BODY, fontSize = 11, textColor = state == "ready" ? ACCENT : TEXT_DIM},
+		{font = FONT_BODY, size = 11, color = state == "ready" ? ACCENT : TEXT_DIM},
 	)
 	if item.state.detail !=
-	   "" {clay.Text(nip46_detail(item.state.detail), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})}
+	   "" {nendo.text(nip46_detail(item.state.detail), {font = FONT_BODY, size = 11, color = TEXT_DIM})}
 }
 @(private)
 login_pair_clear :: proc(ui: ^Ui_State) {

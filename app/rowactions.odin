@@ -12,7 +12,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -158,11 +158,11 @@ FOLDER_COLOR_NAMES := [12]string {
 }
 
 @(private = "file")
-folder_rgb :: proc(rgb: u32) -> clay.Color {
+folder_rgb :: proc(rgb: u32) -> nendo.Color {
 	return {f32((rgb >> 16) & 0xff), f32((rgb >> 8) & 0xff), f32(rgb & 0xff), 255}
 }
 
-folder_color :: proc(ui: ^Ui_State, name: string) -> clay.Color {
+folder_color :: proc(ui: ^Ui_State, name: string) -> nendo.Color {
 	if name != "" {
 		if rgb, ok := ui.prefs.folder_colors[name]; ok {return folder_rgb(rgb)}
 	}
@@ -198,18 +198,19 @@ folder_icon :: proc(ui: ^Ui_State, name: string, size: u16) {
 }
 
 @(private = "file")
-folder_icon_draw :: proc(index: int, size: u16, color: clay.Color) {
+folder_icon_draw :: proc(index: int, size: u16, color: nendo.Color) {
 	index := clamp(index, 0, len(FOLDER_ICONS) - 1)
 	if index != FOLDER_MARMOT_ICON {
-		clay.Text(FOLDER_ICONS[index], {fontId = FONT_ICON, fontSize = size, textColor = color})
+		nendo.text(FOLDER_ICONS[index], {font = FONT_ICON, size = size, color = color})
 		return
 	}
-	if clay.UI(clay.ID_LOCAL("FolderMarmot"))(
+	if nendo.box(nendo.id_local("FolderMarmot"))(
 	{
-		layout = {sizing = {clay.SizingFixed(f32(size) + 4), clay.SizingFixed(f32(size) + 4)}},
-		image = {imageData = builtin_tex_by_code("marmot")},
-		backgroundColor = fade(color, 0.2),
-		cornerRadius = rr(4),
+		width = nendo.fixed(f32(size) + 4),
+		height = nendo.fixed(f32(size) + 4),
+		image = builtin_tex_by_code("marmot"),
+		color = fade(color, 0.2),
+		radius = rr(4),
 		border = {color = color, width = bw()},
 	},
 	) {}
@@ -288,37 +289,33 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 
 	width := fit_w(single_pane() ? 280 : 230)
 	height := modal_h(terminal ? 98 : (tap_size() ? 412 : 320))
-	if data := clay.GetElementData(clay.ID("RowMenu")); data.found {
-		width = min(fit_w(560), max(width, data.boundingBox.width))
-		height = min(modal_h(560), max(height, data.boundingBox.height))
+	if data := nendo.element(nendo.id("RowMenu")); data.found {
+		width = min(fit_w(560), max(width, data.rect.width))
+		height = min(modal_h(560), max(height, data.rect.height))
 	}
 	x, y := panel_pos(ui.row_menu_x, ui.row_menu_y, width, height)
-	if clay.UI(clay.ID("RowMenu"))(
+	if nendo.box(nendo.id("RowMenu"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = single_pane() ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : clay.SizingFit({min = 210, max = fit_w(560)}),
-				height = clay.SizingFit({max = single_pane() ? sheet_max_h() : modal_h(560)}),
-			},
-			padding = clay.PaddingAll(4),
-			childGap = 1,
-		},
+		direction = .Column,
+		width = single_pane() ? nendo.fixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : nendo.fit(min = 210, max = fit_w(560)),
+		height = nendo.fit(max = single_pane() ? sheet_max_h() : modal_h(560)),
+		padding = nendo.pad(4),
+		gap = 1,
 		floating = {
-			attachTo = .Root,
+			attach_to = .Root,
 			offset = {
 				single_pane() ? 0 : x,
-				(single_pane() ? -sheet_bottom() : y) + rise(clay.ID("RowMenu")),
+				(single_pane() ? -sheet_bottom() : y) + rise(nendo.id("RowMenu")),
 			},
-			attachment = {
-				element = single_pane() ? .LeftBottom : .LeftTop,
-				parent = single_pane() ? .LeftBottom : .LeftTop,
+			attach = {
+				element = single_pane() ? .Left_Bottom : .Left_Top,
+				parent = single_pane() ? .Left_Bottom : .Left_Top,
 			},
-			zIndex = 10,
+			z = 10,
 		},
-		backgroundColor = CARD,
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		cornerRadius = rr(10),
+		color = CARD,
+		clip = {y = true, scroll = true},
+		radius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
@@ -341,7 +338,7 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 			ctx_item("RowExportMd", ICON_DOWNLOAD, tr("Export as Markdown"))
 		}
 	}
-	scrollbar(clay.ID("RowMenu"), 11)
+	scrollbar(nendo.id("RowMenu"), 11)
 }
 
 // Folder menus float at the root so the rail's scroll clip cannot cut them off.
@@ -349,27 +346,23 @@ folder_menu :: proc(ui: ^Ui_State) {
 	width: f32 = single_pane() ? fit_w(280) : 210
 	items: f32 = ui.folder_menu_name == "" ? 3 : 2
 	height := items * (tap_size() ? 45 : 33) + 7
-	if data := clay.GetElementData(clay.ID("FolderMenu")); data.found {
-		width = max(width, data.boundingBox.width)
-		height = max(height, data.boundingBox.height)
+	if data := nendo.element(nendo.id("FolderMenu")); data.found {
+		width = max(width, data.rect.width)
+		height = max(height, data.rect.height)
 	}
 	width, height = min(width, fit_w(560)), min(height, modal_h(560))
 	x, y := panel_pos(ui.folder_menu_x - width, ui.folder_menu_y, width, height)
-	if clay.UI(clay.ID("FolderMenu"))(
+	if nendo.box(nendo.id("FolderMenu"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = single_pane() ? clay.SizingFixed(fit_w(280)) : clay.SizingFit({min = min(210, fit_w(560)), max = fit_w(560)}),
-				height = clay.SizingFit({max = modal_h(560)}),
-			},
-			padding = clay.PaddingAll(4),
-			childGap = 1,
-		},
-		floating = {attachTo = .Root, offset = {x, y}, zIndex = 10},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		backgroundColor = CARD,
-		cornerRadius = rr(10),
+		direction = .Column,
+		width = single_pane() ? nendo.fixed(fit_w(280)) : nendo.fit(min = min(210, fit_w(560)), max = fit_w(560)),
+		height = nendo.fit(max = modal_h(560)),
+		padding = nendo.pad(4),
+		gap = 1,
+		floating = {attach_to = .Root, offset = {x, y}, z = 10},
+		clip = {y = true, scroll = true},
+		color = CARD,
+		radius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
@@ -382,16 +375,16 @@ folder_menu :: proc(ui: ^Ui_State) {
 			ctx_item("FolderMenuDelete", ICON_TRASH, tr("Delete"))
 		}
 	}
-	scrollbar(clay.ID("FolderMenu"), 11)
+	scrollbar(nendo.id("FolderMenu"), 11)
 }
 
 @(private = "file")
 open_folder_menu :: proc(ui: ^Ui_State, name: string = "", index: int = -1) {
 	delete(ui.folder_menu_name)
 	ui.folder_menu_name = strings.clone(name)
-	anchor := index < 0 ? clay.ID("ChatsMenuBtn") : clay.ID("FolderMenuBtn", u32(index))
-	if data := clay.GetElementData(anchor); data.found {
-		box := data.boundingBox
+	anchor := index < 0 ? nendo.id("ChatsMenuBtn") : nendo.id("FolderMenuBtn", u32(index))
+	if data := nendo.element(anchor); data.found {
+		box := data.rect
 		ui.folder_menu_x = box.x + box.width
 		ui.folder_menu_y = box.y + box.height + 4
 	}
@@ -402,26 +395,26 @@ open_folder_menu :: proc(ui: ^Ui_State, name: string = "", index: int = -1) {
 handle_folder_navigation :: proc(ui: ^Ui_State) -> bool {
 	if ui.folder_menu_open {
 		if rl.IsKeyPressed(.ESCAPE) ||
-		   (rl.IsMouseButtonPressed(.RIGHT) && !clay.PointerOver(clay.ID("FolderMenu"))) {
+		   (rl.IsMouseButtonPressed(.RIGHT) && !nendo.pointer_over(nendo.id("FolderMenu"))) {
 			ui.folder_menu_open = false
 			return true
 		}
 		if mouse_released() {
 			ui.folder_menu_open = false
 			if ui.folder_menu_name == "" {
-				if clay.PointerOver(clay.ID("FolderCreate")) {
+				if nendo.pointer_over(nendo.id("FolderCreate")) {
 					open_folder_modal(ui)
-				} else if clay.PointerOver(clay.ID("ChatsMenuCommands")) {
+				} else if nendo.pointer_over(nendo.id("ChatsMenuCommands")) {
 					pal_open_modal(ui)
-				} else if clay.PointerOver(clay.ID("ChatsMenuLock")) {
+				} else if nendo.pointer_over(nendo.id("ChatsMenuLock")) {
 					lock_now(ui)
 				}
 			} else {
 				for name, i in ui.prefs.folders {
 					if name != ui.folder_menu_name {continue}
-					if clay.PointerOver(clay.ID("FolderMenuEdit")) {
+					if nendo.pointer_over(nendo.id("FolderMenuEdit")) {
 						open_folder_modal(ui, rename = i)
-					} else if clay.PointerOver(clay.ID("FolderMenuDelete")) {
+					} else if nendo.pointer_over(nendo.id("FolderMenuDelete")) {
 						confirm_ask(ui, .Delete_Folder, name, name)
 					}
 					break
@@ -442,8 +435,8 @@ handle_folder_navigation :: proc(ui: ^Ui_State) -> bool {
 	if clicked("ChatViewBtn") {
 		ui.prefs.recent_chats = !ui.prefs.recent_chats
 		ui.chat_folder = ""
-		if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
-			data.scrollPosition.y = 0
+		if data := nendo.scroll(nendo.id("ChatList")); data.found {
+			data.position.y = 0
 		}
 		scroll_residual = {}
 		save_settings(ui)
@@ -453,11 +446,11 @@ handle_folder_navigation :: proc(ui: ^Ui_State) -> bool {
 		for i in 0 ..= len(ui.prefs.folders) {
 			name := i < len(ui.prefs.folders) ? ui.prefs.folders[i] : ""
 			// A nested menu button must win over its section header.
-			if i < len(ui.prefs.folders) && clay.PointerOver(clay.ID("FolderMenuBtn", u32(i))) {
+			if i < len(ui.prefs.folders) && nendo.pointer_over(nendo.id("FolderMenuBtn", u32(i))) {
 				open_folder_menu(ui, name, i)
 				return true
 			}
-			if clay.PointerOver(clay.ID("FolderHeader", u32(i))) {
+			if nendo.pointer_over(nendo.id("FolderHeader", u32(i))) {
 				toggle_flag(&ui.prefs.collapsed_folders, name)
 				save_settings(ui)
 				return true
@@ -495,11 +488,11 @@ open_folder_modal :: proc(ui: ^Ui_State, gid: string = "", rename: int = -1) {
 			ed_set(ui, &ui.folder_color_input, fmt.tprintf("#%06X", rgb))
 		}
 	}
-	if data := clay.GetScrollContainerData(clay.ID("FolderList")); data.found {
-		data.scrollPosition.y = 0
+	if data := nendo.scroll(nendo.id("FolderList")); data.found {
+		data.position.y = 0
 	}
-	if data := clay.GetScrollContainerData(clay.ID("FolderEditorBody")); data.found {
-		data.scrollPosition.y = 0
+	if data := nendo.scroll(nendo.id("FolderEditorBody")); data.found {
+		data.position.y = 0
 	}
 	ui.folder_menu_open = false
 	ui.folder_open = true
@@ -508,31 +501,30 @@ open_folder_modal :: proc(ui: ^Ui_State, gid: string = "", rename: int = -1) {
 
 @(private = "file")
 folder_destination :: proc(ui: ^Ui_State, name: string, index: int, active: bool) {
-	if clay.UI(clay.ID("FolderDestination", u32(index)))(
+	if nendo.box(nendo.id("FolderDestination", u32(index)))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(44)},
-			padding = {left = 12, right = 12},
-			childGap = 12,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-		cornerRadius = rr(9),
+		width = nendo.grow(),
+		height = nendo.fixed(44),
+		padding = {left = 12, right = 12},
+		gap = 12,
+		align = {y = .Center},
+		color = active ? SELECTED : (hovered() ? HOVER : {}),
+		radius = rr(9),
 	},
 	) {
 		folder_icon(ui, name, 16)
-		if clay.UI(clay.ID("FolderDestinationName", u32(index)))(
-		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+		if nendo.box(nendo.id("FolderDestinationName", u32(index)))(
+		{width = nendo.grow(), clip = {x = true}},
 		) {
 			// With rules in play, leaving every folder hands the chat to them.
 			none := len(ui.prefs.folder_rules) > 0 ? tr("Follow folder rules") : tr("Unfiled")
-			clay.Text(
+			nendo.text(
 				name == "" ? none : name,
-				{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None},
+				{font = FONT_TITLE, size = 14, color = TEXT, wrap = .None},
 			)
 		}
 		if active {
-			clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
+			nendo.text(ICON_CHECK, {font = FONT_ICON, size = 13, color = ACCENT})
 		}
 		if hovered() {cursor_raise(.Pointer)}
 	}
@@ -540,22 +532,17 @@ folder_destination :: proc(ui: ^Ui_State, name: string, index: int, active: bool
 
 @(private)
 folder_action :: proc(id, label: string, primary: bool = false) {
-	if clay.UI(clay.ID(id))(
+	if nendo.box(nendo.id(id))(
 	{
-		layout = {
-			sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 36)},
-			padding = {left = 14, right = 14},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = primary ? (hovered() ? ACCENT_DIM : ACCENT) : (hovered() ? HOVER : ROW_BG),
-		cornerRadius = rr(9),
-		border = primary ? {} : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
+		height = nendo.fixed(tap_size() ? tap_min() : 36),
+		padding = {left = 14, right = 14},
+		align = {x = .Center, y = .Center},
+		color = primary ? (hovered() ? ACCENT_DIM : ACCENT) : (hovered() ? HOVER : ROW_BG),
+		radius = rr(9),
+		border = primary ? {} : nendo.Border{color = FIELD_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(
-			label,
-			{fontId = FONT_TITLE, fontSize = 13, textColor = primary ? ON_ACCENT : TEXT_DIM},
-		)
+		nendo.text(label, {font = FONT_TITLE, size = 13, color = primary ? ON_ACCENT : TEXT_DIM})
 		if hovered() {cursor_raise(.Pointer)}
 	}
 }
@@ -570,7 +557,7 @@ folder_editor_focus :: proc(ui: ^Ui_State, focus: Focus) {
 	case .FolderRule:
 		id = fmt.tprintf("FolderRuleBox%d", ui.folder_rule_focus)
 	}
-	scroll_into_view(clay.ID(single_pane() ? "FolderModal" : "FolderEditorBody"), clay.ID(id))
+	scroll_into_view(nendo.id(single_pane() ? "FolderModal" : "FolderEditorBody"), nendo.id(id))
 }
 
 @(private = "file")
@@ -580,34 +567,26 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 	columns :=
 		tap_size() ? clamp(int((width - 46 + 8) / 52), 1, 8) : clamp(int((width - 40 + 8) / 50), 4, 8)
 	color_columns := tap_size() ? min(6, columns) : 6
-	if clay.UI(clay.ID("FolderEditorBody"))(
+	if nendo.box(nendo.id("FolderEditorBody"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingGrow(),
-				height = single_pane() ? clay.SizingFit() : clay.SizingFixed(max(60, modal_h(620) - 144)),
-			},
-			childGap = 12,
-			padding = {right = 6, bottom = 4},
-		},
-		clip = {vertical = !single_pane(), childOffset = clay.GetScrollOffset()},
+		direction = .Column,
+		width = nendo.grow(),
+		height = single_pane() ? nendo.fit() : nendo.fixed(max(60, modal_h(620) - 144)),
+		gap = 12,
+		padding = {right = 6, bottom = 4},
+		clip = {y = !single_pane(), scroll = true},
 	},
 	) {
-		clay.Text(tr("Folder name"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
-		if clay.UI(clay.ID("FolderBox"))(
+		nendo.text(tr("Folder name"), {font = FONT_TITLE, size = 13, color = TEXT_DIM})
+		if nendo.box(nendo.id("FolderBox"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFixed(tap_size() ? tap_min() : 40),
-				},
-				padding = {left = 12, right = 12},
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(9),
+			width = nendo.grow(),
+			height = nendo.fixed(tap_size() ? tap_min() : 40),
+			padding = {left = 12, right = 12},
+			gap = 10,
+			align = {y = .Center},
+			color = ROW_BG,
+			radius = rr(9),
 			border = {color = ui.focus == .Folder ? ACCENT : FIELD_BORDER, width = bw()},
 		},
 		) {
@@ -624,55 +603,43 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 		}
 		folder_rules_editor(ui)
 		eyebrow(tr("COLOR"))
-		if clay.UI(clay.ID("FolderColorDefault"))(
+		if nendo.box(nendo.id("FolderColorDefault"))(
 		{
-			layout = {
-				sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 32)},
-				padding = {left = 10, right = 10},
-				childGap = 8,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = !custom ? SELECTED : (hovered() ? HOVER : ROW_BG),
+			height = nendo.fixed(tap_size() ? tap_min() : 32),
+			padding = {left = 10, right = 10},
+			gap = 8,
+			align = {y = .Center},
+			color = !custom ? SELECTED : (hovered() ? HOVER : ROW_BG),
 			border = {color = !custom ? ACCENT : FIELD_BORDER, width = bw()},
-			cornerRadius = rr(8),
+			radius = rr(8),
 		},
 		) {
-			clay.Text(ICON_FOLDER, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
-			clay.Text(tr("Default"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+			nendo.text(ICON_FOLDER, {font = FONT_ICON, size = 13, color = ACCENT})
+			nendo.text(tr("Default"), {font = FONT_TITLE, size = 13, color = TEXT})
 			if hovered() {cursor_raise(.Pointer)}
 		}
 		for row in 0 ..< (len(FOLDER_COLORS) + color_columns - 1) / color_columns {
-			if clay.UI(clay.ID("FolderColorRow", u32(row)))(
-			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-			) {
+			if nendo.box(nendo.id("FolderColorRow", u32(row)))({width = nendo.grow(), gap = 8}) {
 				for column in 0 ..< color_columns {
 					i := row * color_columns + column
 					if i >= len(FOLDER_COLORS) {break}
 					selected := custom && valid && rgb == FOLDER_COLORS[i]
-					if clay.UI(clay.ID("FolderColor", u32(i)))(
+					if nendo.box(nendo.id("FolderColor", u32(i)))(
 					{
-						layout = {
-							sizing = {
-								width = clay.SizingFixed(tap_size() ? tap_min() : 34),
-								height = clay.SizingFixed(tap_size() ? tap_min() : 34),
-							},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = selected ? SELECTED : (hovered() ? HOVER : ROW_BG),
+						width = nendo.fixed(tap_size() ? tap_min() : 34),
+						height = nendo.fixed(tap_size() ? tap_min() : 34),
+						align = {x = .Center, y = .Center},
+						color = selected ? SELECTED : (hovered() ? HOVER : ROW_BG),
 						border = {color = selected ? ACCENT : FIELD_BORDER, width = bw()},
-						cornerRadius = rr(8),
+						radius = rr(8),
 					},
 					) {
-						if clay.UI(clay.ID("FolderColorSwatch", u32(i)))(
+						if nendo.box(nendo.id("FolderColorSwatch", u32(i)))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(20),
-									height = clay.SizingFixed(20),
-								},
-							},
-							backgroundColor = folder_rgb(FOLDER_COLORS[i]),
-							cornerRadius = rr(10),
+							width = nendo.fixed(20),
+							height = nendo.fixed(20),
+							color = folder_rgb(FOLDER_COLORS[i]),
+							radius = rr(10),
 						},
 						) {}
 						if hovered() {
@@ -683,19 +650,15 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 				}
 			}
 		}
-		clay.Text(tr("Custom color"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
-		if clay.UI(clay.ID("FolderColorBox"))(
+		nendo.text(tr("Custom color"), {font = FONT_TITLE, size = 13, color = TEXT_DIM})
+		if nendo.box(nendo.id("FolderColorBox"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFixed(tap_size() ? tap_min() : 36),
-				},
-				padding = {left = 12, right = 12},
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(9),
+			width = nendo.grow(),
+			height = nendo.fixed(tap_size() ? tap_min() : 36),
+			padding = {left = 12, right = 12},
+			align = {y = .Center},
+			color = ROW_BG,
+			radius = rr(9),
 			border = {color = ui.focus == .FolderColor ? ACCENT : FIELD_BORDER, width = bw()},
 		},
 		) {
@@ -710,40 +673,30 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 			)
 		}
 		eyebrow(tr("ICON"))
-		if clay.UI(clay.ID("FolderIconGrid"))(
-		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {width = clay.SizingGrow()},
-				childGap = 8,
-			},
-		},
+		if nendo.box(nendo.id("FolderIconGrid"))(
+		{direction = .Column, width = nendo.grow(), gap = 8},
 		) {
 			for row in 0 ..< (len(FOLDER_ICONS) + columns - 1) / columns {
-				if clay.UI(clay.ID("FolderIconRow", u32(row)))(
-				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+				if nendo.box(nendo.id("FolderIconRow", u32(row)))(
+				{width = nendo.grow(), gap = 8},
 				) {
 					for column in 0 ..< columns {
 						i := row * columns + column
 						if i >= len(FOLDER_ICONS) {
-							if clay.UI(clay.ID("FolderIconGap", u32(i)))(
-							{layout = {sizing = {width = clay.SizingGrow()}}},
+							if nendo.box(nendo.id("FolderIconGap", u32(i)))(
+							{width = nendo.grow()},
 							) {}
 							continue
 						}
 						selected := ui.folder_icon == i
-						if clay.UI(clay.ID("FolderIcon", u32(i)))(
+						if nendo.box(nendo.id("FolderIcon", u32(i)))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingGrow(),
-									height = clay.SizingFixed(tap_size() ? tap_min() : 42),
-								},
-								childAlignment = {x = .Center, y = .Center},
-							},
-							backgroundColor = selected ? SELECTED : (hovered() ? HOVER : ROW_BG),
+							width = nendo.grow(),
+							height = nendo.fixed(tap_size() ? tap_min() : 42),
+							align = {x = .Center, y = .Center},
+							color = selected ? SELECTED : (hovered() ? HOVER : ROW_BG),
 							border = {color = selected ? ACCENT : FIELD_BORDER, width = bw()},
-							cornerRadius = rr(9),
+							radius = rr(9),
 						},
 						) {
 							folder_icon_draw(i, 20, preview)
@@ -757,94 +710,73 @@ folder_editor :: proc(ui: ^Ui_State, width: f32) {
 			}
 		}
 	}
-	if !single_pane() {scrollbar(clay.ID("FolderEditorBody"), 14)}
+	if !single_pane() {scrollbar(nendo.id("FolderEditorBody"), 14)}
 }
 
 // A destination picker and a separate, compact folder editor share one shell.
 folder_modal :: proc(ui: ^Ui_State) {
 	moving := ui.folder_mode == .Move
-	width := modal_w(clay.ID("FolderModal"), moving ? 440 : 480)
-	if clay.UI(clay.ID("FolderModal"))(
+	width := modal_w(nendo.id("FolderModal"), moving ? 440 : 480)
+	if nendo.box(nendo.id("FolderModal"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingFixed(width),
-				height = clay.SizingFit({max = modal_h(720)}),
-			},
-			padding = clay.PaddingAll(20),
-			childGap = 16,
-		},
+		direction = .Column,
+		width = nendo.fixed(width),
+		height = nendo.fit(max = modal_h(720)),
+		padding = nendo.pad(20),
+		gap = 16,
 		floating = {
-			attachTo = .Root,
-			zIndex = 13,
-			offset = {0, rise(clay.ID("FolderModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 13,
+			offset = {0, rise(nendo.id("FolderModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = CARD,
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		cornerRadius = rr(16),
+		color = CARD,
+		clip = {y = true, scroll = true},
+		radius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("FolderHead"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 12,
-				childAlignment = {y = .Center},
-			},
-		},
+		if nendo.box(nendo.id("FolderHead"))(
+		{width = nendo.grow(), gap = 12, align = {y = .Center}},
 		) {
-			if clay.UI(clay.ID("FolderTitle"))({layout = {sizing = {width = clay.SizingGrow()}}}) {
+			if nendo.box(nendo.id("FolderTitle"))({width = nendo.grow()}) {
 				title :=
 					moving ? tr("Move to folder") : (ui.folder_mode == .Edit ? tr("Edit folder") : tr("New folder"))
-				clay.Text(title, {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
+				nendo.text(title, {font = FONT_TITLE, size = 20, color = TEXT})
 			}
-			if clay.UI(clay.ID("FolderClose"))(
+			if nendo.box(nendo.id("FolderClose"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-					},
-					padding = clay.PaddingAll(7),
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(7),
+				width = nendo.fit(min = tap_size() ? tap_min() : 0),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = nendo.pad(7),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(7),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 				if hovered() {cursor_raise(.Pointer)}
 			}
 		}
 		if moving {
-			clay.Text(
+			nendo.text(
 				len(ui.prefs.folders) == 0 ? tr("You have no folders yet. Create one with New folder.") : (strings.has_prefix(ui.folder_gid, "whip:") ? tr("Choose a destination for this project.") : tr("Choose a destination for this chat.")),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
 			)
 			if folder_searchable(ui) {
-				if clay.UI(clay.ID("FolderSearchBox"))(
+				if nendo.box(nendo.id("FolderSearchBox"))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingGrow(),
-							height = clay.SizingFixed(tap_size() ? tap_min() : 40),
-						},
-						padding = {left = 12, right = 12},
-						childGap = 10,
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = ROW_BG,
-					cornerRadius = rr(9),
+					width = nendo.grow(),
+					height = nendo.fixed(tap_size() ? tap_min() : 40),
+					padding = {left = 12, right = 12},
+					gap = 10,
+					align = {y = .Center},
+					color = ROW_BG,
+					radius = rr(9),
 					border = {color = ui.focus == .Folder ? ACCENT : FIELD_BORDER, width = bw()},
 				},
 				) {
-					clay.Text(
-						ICON_SEARCH,
-						{fontId = FONT_ICON, fontSize = 13, textColor = TEXT_LO},
-					)
+					nendo.text(ICON_SEARCH, {font = FONT_ICON, size = 13, color = TEXT_LO})
 					field_text(
 						ui,
 						"FolderSearchBox",
@@ -872,27 +804,23 @@ folder_modal :: proc(ui: ^Ui_State) {
 				destinations[matches] = i
 				matches += 1
 			}
-			if clay.UI(clay.ID("FolderList"))(
+			if nendo.box(nendo.id("FolderList"))(
 			{
-				layout = {
-					layoutDirection = .TopToBottom,
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFit({max = max(44, min(264, modal_h(580) - 290))}),
-					},
-					childGap = 4,
-				},
-				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+				direction = .Column,
+				width = nendo.grow(),
+				height = nendo.fit(max = max(44, min(264, modal_h(580) - 290))),
+				gap = 4,
+				clip = {y = true, scroll = true},
 			},
 			) {
-				view := clay.GetScrollContainerData(clay.ID("FolderList"))
-				height := view.found ? view.scrollContainerDimensions.height : 264
-				offset := view.found ? -view.scrollPosition.y : 0
+				view := nendo.scroll(nendo.id("FolderList"))
+				height := view.found ? view.viewport.height : 264
+				offset := view.found ? -view.position.y : 0
 				first := clamp(int(offset / 48) - 2, 0, matches)
 				last := clamp(int((offset + height) / 48) + 3, first, matches)
 				if first > 0 {
-					if clay.UI(clay.ID("FolderDestinationsBefore"))(
-					{layout = {sizing = {height = clay.SizingFixed(f32(first) * 48 - 4)}}},
+					if nendo.box(nendo.id("FolderDestinationsBefore"))(
+					{height = nendo.fixed(f32(first) * 48 - 4)},
 					) {}
 				}
 				for i in destinations[first:last] {
@@ -900,36 +828,28 @@ folder_modal :: proc(ui: ^Ui_State) {
 					folder_destination(ui, name, i, ui.folder_gid != "" && name == current)
 				}
 				if last < matches {
-					if clay.UI(clay.ID("FolderDestinationsAfter"))(
-					{
-						layout = {
-							sizing = {height = clay.SizingFixed(f32(matches - last) * 48 - 4)},
-						},
-					},
+					if nendo.box(nendo.id("FolderDestinationsAfter"))(
+					{height = nendo.fixed(f32(matches - last) * 48 - 4)},
 					) {}
 				}
 				if matches == 0 && query != "" {
-					clay.Text(
+					nendo.text(
 						tr("No folders match your search."),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO},
+						{font = FONT_BODY, size = 13, color = TEXT_LO},
 					)
 				}
 			}
-			scrollbar(clay.ID("FolderList"), 14)
+			scrollbar(nendo.id("FolderList"), 14)
 			// Keep Unfiled reachable even while searching or scrolling a long list.
 			folder_destination(ui, "", len(ui.prefs.folders), ui.folder_gid != "" && !has_current)
 		} else {
 			folder_editor(ui, width)
 		}
-		if clay.UI(clay.ID("FolderActions"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}},
-		) {
+		if nendo.box(nendo.id("FolderActions"))({width = nendo.grow(), gap = 10}) {
 			if moving {
 				folder_action("FolderNew", tr("New folder"))
 			}
-			if clay.UI(clay.ID("FolderActionsGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
+			if nendo.box(nendo.id("FolderActionsGap"))({width = nendo.grow()}) {}
 			folder_action("FolderCancel", tr("Cancel"))
 			if !moving {
 				folder_action(
@@ -940,7 +860,7 @@ folder_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
-	scrollbar(clay.ID("FolderModal"), 14)
+	scrollbar(nendo.id("FolderModal"), 14)
 }
 
 // Open the row menu at the pointer, clamped like the message one
@@ -978,22 +898,22 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
-	if rl.IsMouseButtonPressed(.RIGHT) && !clay.PointerOver(clay.ID("RowMenu")) {
+	if rl.IsMouseButtonPressed(.RIGHT) && !nendo.pointer_over(nendo.id("RowMenu")) {
 		ui.row_menu = -1
 		return
 	}
 	if !mouse_released() {
 		return
 	}
-	if menu_keep(clay.ID("RowMenu")) {return}
+	if menu_keep(nendo.id("RowMenu")) {return}
 	if terminal {
 		ui.row_menu = -1
-		if clay.PointerOver(clay.ID("RowProjectEdit")) {
+		if nendo.pointer_over(nendo.id("RowProjectEdit")) {
 			whip_project_edit_open(ui, ui.row_terminal)
-		} else if clay.PointerOver(clay.ID("RowPin")) {
+		} else if nendo.pointer_over(nendo.id("RowPin")) {
 			toggle_flag(&ui.prefs.pinned, key)
 			save_settings(ui)
-		} else if clay.PointerOver(clay.ID("RowFolder")) {
+		} else if nendo.pointer_over(nendo.id("RowFolder")) {
 			open_folder_modal(ui, key)
 		}
 		return
@@ -1002,44 +922,44 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	gid := ui.chats[index].group_id
 	ui.row_menu = -1
 
-	if clay.PointerOver(clay.ID("RowInfo")) {
+	if nendo.pointer_over(nendo.id("RowInfo")) {
 		select_chat(ui, client, index)
 		open_group_info(ui, client, .Settings)
 		return
 	}
-	if clay.PointerOver(clay.ID("RowFolder")) {
+	if nendo.pointer_over(nendo.id("RowFolder")) {
 		open_folder_modal(ui, gid)
 		return
 	}
-	if clay.PointerOver(clay.ID("RowArchive")) {
+	if nendo.pointer_over(nendo.id("RowArchive")) {
 		confirm_ask(ui, .Archive_Chat, gid, ui.chats[index].title)
 		return
 	}
-	if clay.PointerOver(clay.ID("RowPin")) {
+	if nendo.pointer_over(nendo.id("RowPin")) {
 		toggle_flag(&ui.prefs.pinned, gid)
 		save_settings(ui)
 		return
 	}
-	if clay.PointerOver(clay.ID("RowMute")) {
+	if nendo.pointer_over(nendo.id("RowMute")) {
 		toggle_flag(&ui.prefs.muted_ids, gid)
 		save_settings(ui)
 		refresh_after_action(ui, client) // row_to_ui folds the flag back in
 		return
 	}
-	if clay.PointerOver(clay.ID("RowRead")) {
+	if nendo.pointer_over(nendo.id("RowRead")) {
 		mark_chat_read(ui, client, index)
 		return
 	}
-	if clay.PointerOver(clay.ID("RowUnread")) {
+	if nendo.pointer_over(nendo.id("RowUnread")) {
 		ui.prefs.unread_ids[strings.clone(gid)] = true
 		save_settings(ui)
 		return
 	}
-	if clay.PointerOver(clay.ID("RowExportHtml")) {
+	if nendo.pointer_over(nendo.id("RowExportHtml")) {
 		export_chat(ui, client, .Html, index)
 		return
 	}
-	if clay.PointerOver(clay.ID("RowExportMd")) {
+	if nendo.pointer_over(nendo.id("RowExportMd")) {
 		export_chat(ui, client, .Markdown, index)
 		return
 	}
@@ -1087,7 +1007,8 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if handle_folder_rule_menu(ui) {
 		return
 	}
-	if clicked("FolderClose") || (mouse_released() && !clay.PointerOver(clay.ID("FolderModal"))) {
+	if clicked("FolderClose") ||
+	   (mouse_released() && !nendo.pointer_over(nendo.id("FolderModal"))) {
 		close_folder_modal(ui)
 		return
 	}
@@ -1116,12 +1037,12 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if mouse_released() {
 			for name, i in ui.prefs.folders {
-				if clay.PointerOver(clay.ID("FolderDestination", u32(i))) {
+				if nendo.pointer_over(nendo.id("FolderDestination", u32(i))) {
 					assign_folder(ui, name)
 					return
 				}
 			}
-			if clay.PointerOver(clay.ID("FolderDestination", u32(len(ui.prefs.folders)))) {
+			if nendo.pointer_over(nendo.id("FolderDestination", u32(len(ui.prefs.folders)))) {
 				assign_folder(ui, "")
 			}
 		}
@@ -1158,13 +1079,13 @@ handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if mouse_released() {
 		for color, i in FOLDER_COLORS {
-			if clay.PointerOver(clay.ID("FolderColor", u32(i))) {
+			if nendo.pointer_over(nendo.id("FolderColor", u32(i))) {
 				ed_set(ui, &ui.folder_color_input, fmt.tprintf("#%06X", color))
 				return
 			}
 		}
 		for _, i in FOLDER_ICONS {
-			if clay.PointerOver(clay.ID("FolderIcon", u32(i))) {
+			if nendo.pointer_over(nendo.id("FolderIcon", u32(i))) {
 				ui.folder_icon = i
 				return
 			}

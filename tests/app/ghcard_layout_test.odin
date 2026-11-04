@@ -4,15 +4,15 @@ import "base:runtime"
 import "core:fmt"
 import "core:sync"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // A GitHub link alone on its line gets a card row of its own; one
 // inside a sentence stays on the sentence's line as a chip.
 @(test)
 gh_card_lines :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	defer wrap_clear()
 	url :: "https://github.com/marmot-protocol/mdk/pull/1903"
 	sentence :: "Before " + url + " after"
@@ -103,33 +103,29 @@ gh_card_layout :: proc(t: ^testing.T) {
 		apply_theme(theme, 0)
 		for width in ([]f32{240, 360}) {
 			for frame in 0 ..< 3 {
-				clay.SetPointerState({24, 24}, false)
+				nendo.set_pointer({24, 24}, .Up)
 				link_hover = ""
-				clay.BeginLayout()
-				if clay.UI(clay.ID("Timeline"))(
+				nendo.begin()
+				if nendo.box(nendo.id("Timeline"))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingFixed(width + 78),
-							height = clay.SizingGrow(),
-						},
-						layoutDirection = .TopToBottom,
-						padding = clay.PaddingAll(20),
-						childGap = 16,
-					},
-					backgroundColor = CARD,
+					width = nendo.fixed(width + 78),
+					height = nendo.grow(),
+					direction = .Column,
+					padding = nendo.pad(20),
+					gap = 16,
+					color = CARD,
 				},
 				) {
 					for ref, i in refs {gh_card(u32(i), ref)}
 				}
-				commands := clay.EndLayout(0)
+				commands := nendo.end(0)
 				if frame < 2 {continue}
 				testing.expect_value(t, link_hover, refs[0].url)
 				for _, i in refs {
-					box := clay.GetElementData(clay.ID("GhCard", u32(i))).boundingBox
+					box := nendo.element(nendo.id("GhCard", u32(i))).rect
 					testing.expect(t, box.width <= width)
 					for key in ([]string{"GhCardRepo", "GhCardFoot", "GhCardOpen"}) {
-						child := clay.GetElementData(clay.ID(key, u32(i))).boundingBox
+						child := nendo.element(nendo.id(key, u32(i))).rect
 						testing.expect(
 							t,
 							child.x >= box.x && child.x + child.width <= box.x + box.width,
@@ -139,7 +135,7 @@ gh_card_layout :: proc(t: ^testing.T) {
 				}
 				rl.BeginDrawing()
 				rl.BeginMode2D({zoom = UI_ZOOM})
-				clay_raylib_render(&commands)
+				render_nendo(commands)
 				rl.EndMode2D()
 				rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-pr-cards-%d-%d.png", theme, int(width)))
 				rl.EndDrawing()
@@ -153,31 +149,31 @@ gh_card_layout :: proc(t: ^testing.T) {
 		sep := place == .Alone ? "\n" : " "
 		text := fmt.tprintf("Before the pull request%s%s%safter the pull request", sep, refs[0].url, sep)
 		for frame in 0 ..< 3 {
-			clay.BeginLayout()
-			if clay.UI(clay.ID("Timeline"))({layout = {sizing = {width = clay.SizingFixed(width + 78), height = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(20), childGap = 8}, backgroundColor = CARD}) {
+			nendo.begin()
+			if nendo.box(nendo.id("Timeline"))({width = nendo.fixed(width + 78), height = nendo.grow(), direction = .Column, padding = nendo.pad(20), gap = 8, color = CARD}) {
 				body_text(32, text, 14, TEXT, true, width)
 			}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			if frame < 2 {continue}
 			lines := wrapped_lines(text, width, 14, .Cards)
-			prev: clay.BoundingBox
+			prev: nendo.Rect
 			chips, cards := 0, 0
 			for line, i in lines {
 				line_id := 32 * 8 + line.index
-				box := clay.GetElementData(clay.ID("BodyLine", line_id)).boundingBox
+				box := nendo.element(nendo.id("BodyLine", line_id)).rect
 				testing.expect(t, box.x == 20 && box.width <= width)
 				if i > 0 {testing.expect(t, box.y >= prev.y + prev.height)}
 				prev = box
 				for k in u32(0) ..< 4 {
-					if clay.GetElementData(clay.ID("GhChip", line_id * 128 + k)).found {chips += 1}
-					if clay.GetElementData(clay.ID("GhCard", line_id * 128 + k)).found {cards += 1}
+					if nendo.element(nendo.id("GhChip", line_id * 128 + k)).found {chips += 1}
+					if nendo.element(nendo.id("GhCard", line_id * 128 + k)).found {cards += 1}
 				}
 			}
 			testing.expect_value(t, chips, place == .Inline ? 1 : 0)
 			testing.expect_value(t, cards, place == .Alone ? 1 : 0)
 			rl.BeginDrawing()
 			rl.BeginMode2D({zoom = UI_ZOOM})
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.EndMode2D()
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-pr-body-%v-%d.png", place, int(width)))
 			rl.EndDrawing()

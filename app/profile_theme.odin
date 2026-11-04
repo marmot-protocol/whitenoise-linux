@@ -6,13 +6,13 @@ import "core:strings"
 import "core:unicode"
 import "core:unicode/utf8"
 
-import clay "layout"
+import "nendo"
 
 @(private)
 Profile_Style :: struct {
 	refs:       [2]string,
 	done:       [2]bool,
-	colors:     [3]clay.Color, // background, text, primary; alpha zero means no theme
+	colors:     [3]nendo.Color, // background, text, primary; alpha zero means no theme
 	shape:      string,
 	background: string,
 	tile:       bool,
@@ -148,9 +148,9 @@ profile_shape_parse :: proc(content: string) -> string {
 	return strings.clone(text)
 }
 
-// Clay copies colors during layout. Restore these before laying out another pane.
+// nendo copies colors during layout. Restore these before laying out another pane.
 @(private)
-PROFILE_COLOR_SLOTS := [?]^clay.Color {
+PROFILE_COLOR_SLOTS := [?]^nendo.Color {
 	&BG,
 	&TEXT,
 	&TEXT_DIM,
@@ -168,16 +168,16 @@ PROFILE_COLOR_SLOTS := [?]^clay.Color {
 
 @(private)
 profile_palette :: proc(
-	colors: [len(PROFILE_COLOR_SLOTS)]clay.Color,
+	colors: [len(PROFILE_COLOR_SLOTS)]nendo.Color,
 ) -> (
-	old: [len(PROFILE_COLOR_SLOTS)]clay.Color,
+	old: [len(PROFILE_COLOR_SLOTS)]nendo.Color,
 ) {
 	for slot, i in PROFILE_COLOR_SLOTS {old[i] = slot^; slot^ = colors[i]}
 	return
 }
 
 @(private)
-profile_colors :: proc(style: Profile_Style) -> (colors: [len(PROFILE_COLOR_SLOTS)]clay.Color) {
+profile_colors :: proc(style: Profile_Style) -> (colors: [len(PROFILE_COLOR_SLOTS)]nendo.Color) {
 	if style.colors[0].a == 0 {
 		for slot, i in PROFILE_COLOR_SLOTS {colors[i] = slot^}
 		return

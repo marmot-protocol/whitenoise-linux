@@ -1,6 +1,6 @@
 package main
 
-import clay "layout"
+import "nendo"
 
 @(private)
 TEXT_FONT_MASK :: u8(7)
@@ -32,23 +32,23 @@ text_fonts :: proc(fonts: string, start, end: int) -> string {
 
 // Style changes stay inside one inline segment, without adding spacing.
 @(private)
-styled_text :: proc(text, fonts: string, size: u16, color: clay.Color) {
+styled_text :: proc(text, fonts: string, size: u16, color: nendo.Color) {
 	if len(fonts) == 0 {
-		clay.Text(text, {fontId = FONT_BODY, fontSize = size, textColor = color})
+		nendo.text(text, {font = FONT_BODY, size = size, color = color})
 		return
 	}
-	if clay.UI()({layout = {childAlignment = {y = .Center}}}) {
+	if nendo.box()({align = {y = .Center}}) {
 		for at := 0; at < len(text); {
 			end := at + 1
 			for end < len(text) && fonts[end] == fonts[at] {end += 1}
-			clay.Text(
+			nendo.text(
 				text[at:end],
 				{
-					fontId = text_font(fonts, at),
-					fontSize = size,
-					textColor = color,
-					wrapMode = .None,
-					userData = rawptr(uintptr(fonts[at] & ~TEXT_FONT_MASK)),
+					font = text_font(fonts, at),
+					size = size,
+					color = color,
+					wrap = .None,
+					user_data = rawptr(uintptr(fonts[at] & ~TEXT_FONT_MASK)),
 				},
 			)
 			at = end

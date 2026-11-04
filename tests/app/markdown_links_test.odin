@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // The layout mode also renders screenshots and hovers wrapped link fragments.
@@ -116,43 +116,31 @@ markdown_links :: proc(t: ^testing.T) {
 	for width in ([]f32{700, 170}) {
 		for frame in 0 ..< 3 {
 			clear(&sel_lines)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("LinksSmoke"))(
-			{
-				layout = {
-					layoutDirection = .TopToBottom,
-					sizing = {width = clay.SizingFixed(width + 40)},
-					padding = clay.PaddingAll(20),
-				},
-			},
+			nendo.begin()
+			if nendo.box(nendo.id("LinksSmoke"))(
+			{direction = .Column, width = nendo.fixed(width + 40), padding = nendo.pad(20)},
 			) {md_blocks(blocks[:], 0, true, width)}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			if frame < 2 {continue}
-			for cmd in commands.internalArray[:commands.length] {
-				if cmd.commandType != .Text {continue}
-				text := cmd.renderData.text.stringContents
-				shown := string(text.chars[:text.length])
-				if strings.contains(blocks[0].text, shown) &&
-				   cmd.renderData.text.textColor == ACCENT {
-					clay.SetPointerState(
-						{
-							cmd.boundingBox.x + cmd.boundingBox.width / 2,
-							cmd.boundingBox.y + cmd.boundingBox.height / 2,
-						},
-						false,
+			for cmd in commands {
+				if cmd.kind != .Text {continue}
+				text := cmd.text.text
+				shown := text
+				if strings.contains(blocks[0].text, shown) && cmd.text.color == ACCENT {
+					nendo.set_pointer(
+						{cmd.rect.x + cmd.rect.width / 2, cmd.rect.y + cmd.rect.height / 2},
+						.Up,
 					)
 					link_hover = ""
-					clay.BeginLayout()
-					if clay.UI(clay.ID("LinksSmoke"))(
+					nendo.begin()
+					if nendo.box(nendo.id("LinksSmoke"))(
 					{
-						layout = {
-							layoutDirection = .TopToBottom,
-							sizing = {width = clay.SizingFixed(width + 40)},
-							padding = clay.PaddingAll(20),
-						},
+						direction = .Column,
+						width = nendo.fixed(width + 40),
+						padding = nendo.pad(20),
 					},
 					) {md_blocks(blocks[:], 0, true, width)}
-					commands = clay.EndLayout(0)
+					commands = nendo.end(0)
 					testing.expect_value(t, link_hover, link.url)
 					open_link(&ui, link_hover)
 					testing.expect(t, ui.link_open)
@@ -160,7 +148,7 @@ markdown_links :: proc(t: ^testing.T) {
 					break
 				}
 			}
-			rl.BeginDrawing(); clay_raylib_render(&commands)
+			rl.BeginDrawing(); render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-markdown-links-%d.png", int(width)))
 			rl.EndDrawing()
 		}

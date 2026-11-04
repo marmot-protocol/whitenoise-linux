@@ -7,7 +7,7 @@ import "core:strings"
 import "core:testing"
 import "core:text/edit"
 import "core:time"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 import sdl "vendor:sdl3"
 
@@ -46,24 +46,16 @@ whip_float_dock :: proc(t: ^testing.T) {
 	UI_ZOOM = 1
 	refresh_ui_scale()
 	init_fonts()
-	clay.SetCurrentContext(nil)
-	clay.SetMaxElementCount(32768)
-	memory := make([]u8, int(clay.MinMemorySize()))
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{1280, 800},
-		{
-			handler = proc(err: clay.ErrorData) {
-				testing.expect(
-					(^testing.T)(err.userData),
-					false,
-					string(err.errorText.chars[:err.errorText.length]),
-				)
-			},
-			userData = t,
+	nendo.set_context(nil)
+	nendo.set_max_element_count(32768)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	nendo.init(memory, {1280, 800}, {
+		handler = proc(err: nendo.Error) {
+			testing.expect((^testing.T)(err.user_data), false, err.text)
 		},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
+		user_data = t,
+	})
+	nendo.set_measure_text(measure_text, nil)
 	defer delete(memory)
 	ui := Ui_State {
 		page             = .Chats,
@@ -91,7 +83,7 @@ whip_float_dock :: proc(t: ^testing.T) {
 		commands := build_layout(ui, 0)
 		rl.BeginDrawing()
 		rl.BeginMode2D({zoom = UI_ZOOM})
-		clay_raylib_render(&commands)
+		render_nendo(commands)
 		rl.EndMode2D()
 		if shot != nil {rl.TakeScreenshot(shot)}
 		rl.EndDrawing()
@@ -112,36 +104,32 @@ whip_float_dock :: proc(t: ^testing.T) {
 		)
 		time.sleep(16 * time.Millisecond)
 	}
-	has_title :: proc(ui: ^Ui_State, id: clay.ElementId, name: string) -> bool {
+	has_title :: proc(ui: ^Ui_State, id: nendo.Id, name: string) -> bool {
 		commands := build_layout(ui, 0)
-		box := clay.GetElementData(id).boundingBox
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Text {continue}
-			bounds := command.boundingBox
+		box := nendo.element(id).rect
+		for command in commands {
+			if command.kind != .Text {continue}
+			bounds := command.rect
 			if bounds.x < box.x ||
 			   bounds.y < box.y ||
 			   bounds.x + bounds.width > box.x + box.width ||
 			   bounds.y + bounds.height > box.y + box.height {continue}
-			text := command.renderData.text.stringContents
-			if string(text.chars[:text.length]) == name {return true}
+			text := command.text.text
+			if text == name {return true}
 		}
 		return false
 	}
-	click :: proc(t: ^testing.T, ui: ^Ui_State, id: clay.ElementId, root: clay.ElementId = {}) {
-		data := clay.GetElementData(id)
+	click :: proc(t: ^testing.T, ui: ^Ui_State, id: nendo.Id, root: nendo.Id = {}) {
+		data := nendo.element(id)
 		if !data.found && root.id != 0 {
-			box := clay.GetElementData(root).boundingBox
-			clay.SetPointerState({box.x + 32, box.y + 2}, false)
+			box := nendo.element(root).rect
+			nendo.set_pointer({box.x + 32, box.y + 2}, .Up)
 			for _ in 0 ..< 3 {frame(ui)}
-			data = clay.GetElementData(id)
+			data = nendo.element(id)
 		}
-		if !testing.expect(
-			t,
-			data.found && data.boundingBox.width > 0,
-			"pane action is visible",
-		) {return}
-		box := data.boundingBox
-		point := clay.Vector2{box.x + box.width / 2, box.y + box.height / 2}
+		if !testing.expect(t, data.found && data.rect.width > 0, "pane action is visible") {return}
+		box := data.rect
+		point := nendo.Vector2{box.x + box.width / 2, box.y + box.height / 2}
 		event := sdl.Event {
 			type = .MOUSE_BUTTON_DOWN,
 		}
@@ -150,15 +138,15 @@ whip_float_dock :: proc(t: ^testing.T) {
 		event.button.x, event.button.y = point.x * UI_ZOOM, point.y * UI_ZOOM
 		assert(sdl.PushEvent(&event))
 		rl.WindowShouldClose()
-		clay.SetPointerState(point, true)
+		nendo.set_pointer(point, .Down)
 		whip_attach_input(ui)
 		event.type, event.button.down = .MOUSE_BUTTON_UP, false
 		assert(sdl.PushEvent(&event))
 		rl.WindowShouldClose()
-		clay.SetPointerState(point, false)
+		nendo.set_pointer(point, .Up)
 		if !whip_attach_input(ui) && !whip_inbox_input(ui) {whip_pane_input(ui)}
 	}
-	warp :: proc(point: clay.Vector2) {
+	warp :: proc(point: nendo.Vector2) {
 		target := rl.Vector2{f32(int(point.x * UI_ZOOM)), f32(int(point.y * UI_ZOOM))}
 		x, y: i32
 		assert(sdl.GetWindowPosition(sdl.GetKeyboardFocus(), &x, &y))
@@ -183,9 +171,9 @@ whip_float_dock :: proc(t: ^testing.T) {
 			),
 		)
 	}
-	drag :: proc(ui: ^Ui_State, id: clay.ElementId, delta: clay.Vector2) {
-		box := clay.GetElementData(id).boundingBox
-		start := clay.Vector2{box.x + box.width / 2, box.y + box.height / 2}
+	drag :: proc(ui: ^Ui_State, id: nendo.Id, delta: nendo.Vector2) {
+		box := nendo.element(id).rect
+		start := nendo.Vector2{box.x + box.width / 2, box.y + box.height / 2}
 		warp(start)
 		event := sdl.Event {
 			type = .MOUSE_BUTTON_DOWN,
@@ -195,12 +183,12 @@ whip_float_dock :: proc(t: ^testing.T) {
 		event.button.x, event.button.y = start.x * UI_ZOOM, start.y * UI_ZOOM
 		assert(sdl.PushEvent(&event))
 		rl.WindowShouldClose()
-		clay.SetPointerState(start, true)
+		nendo.set_pointer(start, .Down)
 		whip_attach_input(ui)
 		frame(ui)
 		warp(start + delta)
 		rl.WindowShouldClose()
-		clay.SetPointerState(start + delta, true)
+		nendo.set_pointer(start + delta, .Down)
 		whip_attach_input(ui)
 		frame(ui)
 		event.type, event.button.down = .MOUSE_BUTTON_UP, false
@@ -208,7 +196,7 @@ whip_float_dock :: proc(t: ^testing.T) {
 		event.button.y = (start.y + delta.y) * UI_ZOOM
 		assert(sdl.PushEvent(&event))
 		rl.WindowShouldClose()
-		clay.SetPointerState(start + delta, false)
+		nendo.set_pointer(start + delta, .Up)
 		whip_attach_input(ui)
 	}
 	command :: proc(value: string) -> cstring {
@@ -252,17 +240,15 @@ whip_float_dock :: proc(t: ^testing.T) {
 	for _ in 0 ..< 120 {frame(&ui); if len(rl.WhipProjects()) > 0 {break}}
 	if !testing.expect(t, len(rl.WhipProjects()) > 0, "real Whip server starts") {return}
 	whip_open_project(&ui, rl.WhipProjects()[0].id)
-	opening: clay.BoundingBox
+	opening: nendo.Rect
 	feedback := false
 	for _ in 0 ..< 8 {
 		frame(&ui, "/tmp/wn-whip-opening.png")
 		if len(rl.WhipPanes()) == 0 {continue}
 		id := rl.WhipPanes()[0].id
-		progress := clay.GetElementData(clay.ID("WhipPaneProgress", id))
-		if !progress.found ||
-		   progress.boundingBox.width <= 0 ||
-		   progress.boundingBox.height <= 0 {continue}
-		opening = clay.GetElementData(clay.ID("WhipPaneContent", id)).boundingBox
+		progress := nendo.element(nendo.id("WhipPaneProgress", id))
+		if !progress.found || progress.rect.width <= 0 || progress.rect.height <= 0 {continue}
+		opening = nendo.element(nendo.id("WhipPaneContent", id)).rect
 		feedback = true
 		break
 	}
@@ -273,72 +259,68 @@ whip_float_dock :: proc(t: ^testing.T) {
 	name := strings.clone(rl.WhipPanes()[0].name)
 	defer delete(name)
 	ui.focus = .Filter
-	click(t, &ui, clay.ID("WhipTab", ui.whip_tabs[ui.whip_project]))
+	click(t, &ui, nendo.id("WhipTab", ui.whip_tabs[ui.whip_project]))
 	testing.expect(
 		t,
 		ui.focus == .Compose,
 		"selecting a terminal tab releases sidebar search focus",
 	)
-	clay.SetPointerState({-1, -1}, false)
+	nendo.set_pointer({-1, -1}, .Up)
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("WhipPaneHead", pane)).found,
+		!nendo.element(nendo.id("WhipPaneHead", pane)).found,
 		"the entire split titlebar is absent away from the top edge",
 	)
-	content := clay.GetElementData(clay.ID("WhipPaneContent", pane)).boundingBox
+	content := nendo.element(nendo.id("WhipPaneContent", pane)).rect
 	if feedback {testing.expect_value(t, content, opening)}
-	root := clay.GetElementData(clay.ID("WhipPane", pane)).boundingBox
+	root := nendo.element(nendo.id("WhipPane", pane)).rect
 	testing.expect(t, content.y == root.y + 1, "hidden chrome reserves no terminal rows")
-	clay.SetPointerState({root.x + 32, root.y + 2}, false)
+	nendo.set_pointer({root.x + 32, root.y + 2}, .Up)
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		has_title(&ui, clay.ID("WhipPaneTitle", pane), name),
+		has_title(&ui, nendo.id("WhipPaneTitle", pane), name),
 		"the top bar reveals its pane name on hover",
 	)
-	head := clay.GetElementData(clay.ID("WhipPaneHead", pane)).boundingBox
-	clay.SetPointerState({head.x + 32, head.y + head.height - 2}, false)
+	head := nendo.element(nendo.id("WhipPaneHead", pane)).rect
+	nendo.set_pointer({head.x + 32, head.y + head.height - 2}, .Up)
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipPaneHead", pane)).found,
+		nendo.element(nendo.id("WhipPaneHead", pane)).found,
 		"revealed chrome stays open while its controls are hovered",
 	)
-	testing.expect_value(
-		t,
-		clay.GetElementData(clay.ID("WhipPaneContent", pane)).boundingBox,
-		content,
-	)
+	testing.expect_value(t, nendo.element(nendo.id("WhipPaneContent", pane)).rect, content)
 	frame(&ui, "/tmp/wn-whip-title-hover.png")
-	clay.SetPointerState({content.x + 32, content.y + 32}, false)
+	nendo.set_pointer({content.x + 32, content.y + 32}, .Up)
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("WhipPaneHead", pane)).found,
+		!nendo.element(nendo.id("WhipPaneHead", pane)).found,
 		"hovering terminal content hides the whole titlebar",
 	)
 	frame(&ui, "/tmp/wn-whip-title-hidden.png")
-	click(t, &ui, clay.ID("WhipPaneFloat", pane), clay.ID("WhipPane", pane))
+	click(t, &ui, nendo.id("WhipPaneFloat", pane), nendo.id("WhipPane", pane))
 	for _ in 0 ..< 5 {frame(&ui)}
 	if !testing.expect_value(t, len(ui.whip_attachments), 1) {return}
-	clay.SetPointerState({-1, -1}, false)
+	nendo.set_pointer({-1, -1}, .Up)
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		has_title(&ui, clay.ID("WhipAttachTitle", pane), name),
+		has_title(&ui, nendo.id("WhipAttachTitle", pane), name),
 		"floating panes retain their names without hover",
 	)
 	testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("WhipPaneContent", pane)).found,
+		!nendo.element(nendo.id("WhipPaneContent", pane)).found,
 		"floating pane is removed from its original slot",
 	)
 	original_tab := ui.whip_tabs[ui.whip_project]
-	page_before := clay.GetElementData(clay.ID("WhipPage")).boundingBox
-	click(t, &ui, clay.ID("WhipNewTab"))
+	page_before := nendo.element(nendo.id("WhipPage")).rect
+	click(t, &ui, nendo.id("WhipNewTab"))
 	frame(&ui, "/tmp/wn-whip-tab-opening.png")
-	testing.expect_value(t, clay.GetElementData(clay.ID("WhipPage")).boundingBox, page_before)
+	testing.expect_value(t, nendo.element(nendo.id("WhipPage")).rect, page_before)
 	for _ in 0 ..< 120 {
 		frame(&ui)
 		status, tab := rl.WhipTabPoll()
@@ -355,11 +337,11 @@ whip_float_dock :: proc(t: ^testing.T) {
 	for _ in 0 ..< 5 {frame(&ui)}
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipFloat", pane)).found,
+		nendo.element(nendo.id("WhipFloat", pane)).found,
 		"floating terminal follows the first chat",
 	)
 	before := ui.whip_attachments[0].bounds
-	drag(&ui, clay.ID("WhipAttachHead", pane), {-40, 30})
+	drag(&ui, nendo.id("WhipAttachHead", pane), {-40, 30})
 	for _ in 0 ..< 3 {frame(&ui)}
 	after := ui.whip_attachments[0].bounds
 	testing.expect(
@@ -367,7 +349,7 @@ whip_float_dock :: proc(t: ^testing.T) {
 		after.x < before.x && after.y > before.y,
 		"floating terminal header moves the window",
 	)
-	drag(&ui, clay.ID("WhipAttachResize", pane), {-40, -30})
+	drag(&ui, nendo.id("WhipAttachResize", pane), {-40, -30})
 	for _ in 0 ..< 3 {frame(&ui)}
 	resized := ui.whip_attachments[0].bounds
 	testing.expect(
@@ -379,10 +361,10 @@ whip_float_dock :: proc(t: ^testing.T) {
 	for _ in 0 ..< 5 {frame(&ui)}
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipFloat", pane)).found,
+		nendo.element(nendo.id("WhipFloat", pane)).found,
 		"floating terminal follows another chat",
 	)
-	click(t, &ui, clay.ID("WhipAttachHead", pane))
+	click(t, &ui, nendo.id("WhipAttachHead", pane))
 	for _ in 0 ..< 3 {frame(&ui)}
 	input := command(fmt.tprintf("printf live > '%s/floating-input'", home))
 	defer delete(input)
@@ -399,8 +381,8 @@ whip_float_dock :: proc(t: ^testing.T) {
 		"floating pane runs real shell input over another chat",
 	)
 	frame(&ui, "/tmp/wn-whip-floating.png")
-	compose := clay.GetElementData(clay.ID("ComposeBox")).boundingBox
-	point := clay.Vector2{compose.x + 12, compose.y + compose.height / 2}
+	compose := nendo.element(nendo.id("ComposeBox")).rect
+	point := nendo.Vector2{compose.x + 12, compose.y + compose.height / 2}
 	warp(point)
 	event := sdl.Event {
 		type = .MOUSE_BUTTON_DOWN,
@@ -417,7 +399,7 @@ whip_float_dock :: proc(t: ^testing.T) {
 		rl.GetCharPressed() != 0 && rl.IsKeyPressed(.ENTER),
 		"clicking the composer releases native keys within the same SDL batch",
 	)
-	clay.SetPointerState(point, true)
+	nendo.set_pointer(point, .Down)
 	whip_attach_input(&ui)
 	rl.PushMouseButton(.LEFT, false)
 	for rl.GetCharPressed() != 0 {}
@@ -427,43 +409,39 @@ whip_float_dock :: proc(t: ^testing.T) {
 		!os.is_file(fmt.tprintf("%s/click-leak", home)),
 		"click-and-type cannot execute chat text in the floating shell",
 	)
-	click(t, &ui, clay.ID("WhipAttachDock", pane))
+	click(t, &ui, nendo.id("WhipAttachDock", pane))
 	for _ in 0 ..< 5 {frame(&ui)}
 	testing.expect_value(t, ui.whip_attachments[0].group_id, "chat-b")
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipDockLayout")).found,
+		nendo.element(nendo.id("WhipDockLayout")).found,
 		"pane docks beside its chat",
 	)
-	clay.SetPointerState({-1, -1}, false)
+	nendo.set_pointer({-1, -1}, .Up)
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("WhipAttachHead", pane)).found,
+		!nendo.element(nendo.id("WhipAttachHead", pane)).found,
 		"docked titlebars disappear without top-edge hover",
 	)
-	content = clay.GetElementData(clay.ID("WhipAttachContent", pane)).boundingBox
-	root = clay.GetElementData(clay.ID("WhipDockPane", pane)).boundingBox
+	content = nendo.element(nendo.id("WhipAttachContent", pane)).rect
+	root = nendo.element(nendo.id("WhipDockPane", pane)).rect
 	testing.expect(t, content.y == root.y + 1, "docked terminals use the space vacated by chrome")
-	clay.SetPointerState({root.x + 8, root.y + 2}, false)
+	nendo.set_pointer({root.x + 8, root.y + 2}, .Up)
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		has_title(&ui, clay.ID("WhipAttachTitle", pane), name),
+		has_title(&ui, nendo.id("WhipAttachTitle", pane), name),
 		"docked panes reveal their names on top-bar hover",
 	)
-	testing.expect_value(
-		t,
-		clay.GetElementData(clay.ID("WhipAttachContent", pane)).boundingBox,
-		content,
-	)
-	clay.SetPointerState({-1, -1}, false)
+	testing.expect_value(t, nendo.element(nendo.id("WhipAttachContent", pane)).rect, content)
+	nendo.set_pointer({-1, -1}, .Up)
 	for _ in 0 ..< 3 {frame(&ui)}
 	frame(&ui, "/tmp/wn-whip-docked.png")
-	wide_before := clay.GetElementData(clay.ID("WhipDockPane", pane)).boundingBox
-	drag(&ui, clay.ID("WhipDockDivider"), {-80, 0})
+	wide_before := nendo.element(nendo.id("WhipDockPane", pane)).rect
+	drag(&ui, nendo.id("WhipDockDivider"), {-80, 0})
 	for _ in 0 ..< 3 {frame(&ui)}
-	wide_after := clay.GetElementData(clay.ID("WhipDockPane", pane)).boundingBox
+	wide_after := nendo.element(nendo.id("WhipDockPane", pane)).rect
 	testing.expect(
 		t,
 		wide_after.width > wide_before.width + 60,
@@ -471,11 +449,11 @@ whip_float_dock :: proc(t: ^testing.T) {
 	)
 	chosen_width := ui.whip_dock_width
 	rl.SetWindowSize(720, 520)
-	clay.SetLayoutDimensions({720, 520})
+	nendo.set_dimensions({720, 520})
 	for _ in 0 ..< 5 {frame(&ui)}
-	dock := clay.GetElementData(clay.ID("WhipDockPane", pane)).boundingBox
-	chat := clay.GetElementData(clay.ID("WhipDockChat")).boundingBox
-	composer := clay.GetElementData(clay.ID("ComposeBox")).boundingBox
+	dock := nendo.element(nendo.id("WhipDockPane", pane)).rect
+	chat := nendo.element(nendo.id("WhipDockChat")).rect
+	composer := nendo.element(nendo.id("ComposeBox")).rect
 	testing.expect(
 		t,
 		dock.y >= chat.y + chat.height && dock.height > 28,
@@ -487,20 +465,20 @@ whip_float_dock :: proc(t: ^testing.T) {
 		"docking keeps the chat composer inside its allotted space",
 	)
 	frame(&ui, "/tmp/wn-whip-docked-narrow.png")
-	drag(&ui, clay.ID("WhipDockDivider"), {0, -28})
+	drag(&ui, nendo.id("WhipDockDivider"), {0, -28})
 	for _ in 0 ..< 3 {frame(&ui)}
-	narrow_after := clay.GetElementData(clay.ID("WhipDockPane", pane)).boundingBox
+	narrow_after := nendo.element(nendo.id("WhipDockPane", pane)).rect
 	testing.expect(t, narrow_after.height > dock.height + 20, "stacked docking resizes vertically")
 	testing.expect_value(t, ui.whip_dock_width, chosen_width)
 	rl.SetWindowSize(1280, 800)
-	clay.SetLayoutDimensions({1280, 800})
+	nendo.set_dimensions({1280, 800})
 	for _ in 0 ..< 5 {frame(&ui)}
 	testing.expect_value(
 		t,
-		clay.GetElementData(clay.ID("WhipDockPane", pane)).boundingBox.width,
+		nendo.element(nendo.id("WhipDockPane", pane)).rect.width,
 		wide_after.width,
 	)
-	click(t, &ui, clay.ID("WhipAttachHead", pane), clay.ID("WhipDockPane", pane))
+	click(t, &ui, nendo.id("WhipAttachHead", pane), nendo.id("WhipDockPane", pane))
 	for _ in 0 ..< 3 {frame(&ui)}
 	continuity := command("WN_CONTINUITY=kept")
 	defer delete(continuity)
@@ -523,7 +501,7 @@ whip_float_dock :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.whip_attachments[0].group_id, "chat-b")
 	testing.expect_value(t, ui.whip_dock_width, chosen_width)
 	for _ in 0 ..< 5 {frame(&ui)}
-	click(t, &ui, clay.ID("WhipAttachHead", pane), clay.ID("WhipDockPane", pane))
+	click(t, &ui, nendo.id("WhipAttachHead", pane), nendo.id("WhipDockPane", pane))
 	for _ in 0 ..< 3 {frame(&ui)}
 	restored_input := command(fmt.tprintf("printf \"$WN_CONTINUITY\" > '%s/restored-shell'", home))
 	defer delete(restored_input)
@@ -540,7 +518,7 @@ whip_float_dock :: proc(t: ^testing.T) {
 	for _ in 0 ..< 5 {frame(&ui)}
 	testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("WhipAttachContent", pane)).found,
+		!nendo.element(nendo.id("WhipAttachContent", pane)).found,
 		"docked terminal is hidden on unrelated chats",
 	)
 	testing.expect_value(t, whip_attach_focused(&ui), u32(0))
@@ -557,27 +535,27 @@ whip_float_dock :: proc(t: ^testing.T) {
 	for _ in 0 ..< 5 {frame(&ui)}
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipAttachContent", pane)).found,
+		nendo.element(nendo.id("WhipAttachContent", pane)).found,
 		"returning to the same chat restores its dock",
 	)
 	ui.account_ref = "another-account"
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		!clay.GetElementData(clay.ID("WhipAttachContent", pane)).found,
+		!nendo.element(nendo.id("WhipAttachContent", pane)).found,
 		"docks never cross accounts",
 	)
 	ui.account_ref = "attach-account"
 	for _ in 0 ..< 3 {frame(&ui)}
-	click(t, &ui, clay.ID("WhipAttachFloat", pane), clay.ID("WhipDockPane", pane))
+	click(t, &ui, nendo.id("WhipAttachFloat", pane), nendo.id("WhipDockPane", pane))
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect_value(t, ui.whip_attachments[0].group_id, "")
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("WhipFloat", pane)).found,
+		nendo.element(nendo.id("WhipFloat", pane)).found,
 		"docked pane can float again",
 	)
-	click(t, &ui, clay.ID("WhipAttachReturn", pane))
+	click(t, &ui, nendo.id("WhipAttachReturn", pane))
 	for _ in 0 ..< 5 {frame(&ui)}
 	testing.expect_value(t, len(ui.whip_attachments), 0)
 	if !testing.expect(
@@ -588,7 +566,7 @@ whip_float_dock :: proc(t: ^testing.T) {
 	info, alive := rl.WhipPaneInfo(pane)
 	testing.expect(
 		t,
-		alive && info.id == pane && clay.GetElementData(clay.ID("WhipPaneContent", pane)).found,
+		alive && info.id == pane && nendo.element(nendo.id("WhipPaneContent", pane)).found,
 		"returning restores the same live shell, not a replacement",
 	)
 	resume_input := command(fmt.tprintf("printf resumed > '%s/resumed-input'", home))
@@ -617,7 +595,7 @@ whip_float_dock :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.prefs.whip_activity[activity_folder], activity_before_restore)
 	for _ in 0 ..< 5 {frame(&ui)}
 	for _ in 0 ..< 7 {
-		click(t, &ui, clay.ID("WhipNewTab"))
+		click(t, &ui, nendo.id("WhipNewTab"))
 		created := false
 		for _ in 0 ..< 120 {
 			frame(&ui)
@@ -640,18 +618,18 @@ whip_float_dock :: proc(t: ^testing.T) {
 	for _ in 0 ..< 4 {frame(&ui)}
 	testing.expect_value(t, ui.whip_tabs[ui.whip_project], last_tab)
 	frame(&ui, "/tmp/wn-whip-crowded-tabs.png")
-	tabs_wide := clay.GetElementData(clay.ID("WhipTabs")).boundingBox
-	last_close := clay.GetElementData(clay.ID("WhipTabClose", last_tab)).boundingBox
+	tabs_wide := nendo.element(nendo.id("WhipTabs")).rect
+	last_close := nendo.element(nendo.id("WhipTabClose", last_tab)).rect
 	testing.expect(
 		t,
 		last_close.x + last_close.width <= tabs_wide.x + tabs_wide.width,
 		"keyboard selection reveals the active tab in a crowded workspace",
 	)
-	view := clay.GetScrollContainerData(clay.ID("WhipTabs"))
-	before_wheel := view.scrollPosition.x
-	point = clay.Vector2{tabs_wide.x + tabs_wide.width / 2, tabs_wide.y + tabs_wide.height / 2}
+	view := nendo.scroll(nendo.id("WhipTabs"))
+	before_wheel := view.position.x
+	point = nendo.Vector2{tabs_wide.x + tabs_wide.width / 2, tabs_wide.y + tabs_wide.height / 2}
 	warp(point)
-	clay.SetPointerState(point, false)
+	nendo.set_pointer(point, .Up)
 	wheel_event := sdl.Event {
 		type = .MOUSE_WHEEL,
 	}
@@ -662,11 +640,11 @@ whip_float_dock :: proc(t: ^testing.T) {
 	rl.WindowShouldClose()
 	wheel := rl.GetMouseWheelMoveV()
 	whip_tab_wheel(&ui, &wheel)
-	clay.UpdateScrollContainers(false, transmute(clay.Vector2)wheel, 1.0 / 60)
+	nendo.update_scroll(.Off, transmute(nendo.Vector2)wheel, 1.0 / 60)
 	for _ in 0 ..< 3 {frame(&ui)}
 	testing.expect(
 		t,
-		view.scrollPosition.x > before_wheel,
+		view.position.x > before_wheel,
 		"the ordinary mouse wheel browses overflow tabs",
 	)
 	key(._1, '1', sdl.KMOD_CTRL | sdl.KMOD_ALT)
@@ -676,11 +654,11 @@ whip_float_dock :: proc(t: ^testing.T) {
 	rl.SetWindowSize(720, 520)
 	UI_ZOOM = 2
 	refresh_ui_scale()
-	clay.SetLayoutDimensions({360, 260})
+	nendo.set_dimensions({360, 260})
 	for _ in 0 ..< 5 {frame(&ui)}
 	frame(&ui, "/tmp/wn-whip-workspace-small.png")
-	tabs_box := clay.GetElementData(clay.ID("WhipTabs")).boundingBox
-	close_box := clay.GetElementData(clay.ID("WhipTabClose", last_tab)).boundingBox
+	tabs_box := nendo.element(nendo.id("WhipTabs")).rect
+	close_box := nendo.element(nendo.id("WhipTabClose", last_tab)).rect
 	testing.expect(
 		t,
 		close_box.x >= tabs_box.x && close_box.x + close_box.width <= tabs_box.x + tabs_box.width,
@@ -689,14 +667,14 @@ whip_float_dock :: proc(t: ^testing.T) {
 	UI_ZOOM = 1
 	refresh_ui_scale()
 	rl.SetWindowSize(1280, 800)
-	clay.SetLayoutDimensions({1280, 800})
+	nendo.set_dimensions({1280, 800})
 	for _ in 0 ..< 5 {frame(&ui)}
 	key(._1, '1', sdl.KMOD_CTRL | sdl.KMOD_ALT)
 	for _ in 0 ..< 4 {frame(&ui)}
-	click(t, &ui, clay.ID("WhipPaneFloat", pane), clay.ID("WhipPane", pane))
+	click(t, &ui, nendo.id("WhipPaneFloat", pane), nendo.id("WhipPane", pane))
 	select_chat(&ui, nil, 0)
 	for _ in 0 ..< 5 {frame(&ui)}
-	click(t, &ui, clay.ID("WhipAttachHead", pane))
+	click(t, &ui, nendo.id("WhipAttachHead", pane))
 	for _ in 0 ..< 3 {frame(&ui)}
 	exit_input := command("exit")
 	defer delete(exit_input)

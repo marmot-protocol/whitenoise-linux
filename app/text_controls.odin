@@ -1,6 +1,6 @@
 package main
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Blinking text caret, rendered after the text of the focused input.
@@ -21,11 +21,11 @@ caret_wake :: proc() {
 
 // Last frame's caret box, in layout units. The IME and a phone
 // keyboard are placed against it.
-caret_box: clay.BoundingBox
+caret_box: nendo.Rect
 
 caret :: proc(h: f32 = 16) {
-	if d := clay.GetElementData(clay.ID_LOCAL("Caret")); d.found {
-		caret_box = d.boundingBox // one frame behind, which no one can see
+	if d := nendo.element(nendo.id_local("Caret")); d.found {
+		caret_box = d.rect // one frame behind, which no one can see
 		caret_box.width = CARET_W
 	}
 	alpha := f32(1)
@@ -39,73 +39,68 @@ caret :: proc(h: f32 = 16) {
 		}
 		frame_deadline = min(frame_deadline, next)
 	}
-	if clay.UI(clay.ID_LOCAL("Caret"))(
-	{layout = {sizing = {width = clay.SizingFixed(0), height = clay.SizingFixed(h)}}},
-	) {
+	if nendo.box(nendo.id_local("Caret"))({width = nendo.fixed(0), height = nendo.fixed(h)}) {
 		// Paint the caret without adding space between text spans.
-		if clay.UI(clay.ID_LOCAL("CaretInk"))(
-		{
-			layout = {sizing = {width = clay.SizingFixed(CARET_W), height = clay.SizingFixed(h)}},
-			backgroundColor = fade(TEXT, alpha),
-		},
+		if nendo.box(nendo.id_local("CaretInk"))(
+		{width = nendo.fixed(CARET_W), height = nendo.fixed(h), color = fade(TEXT, alpha)},
 		) {}
 	}
 }
 
 // Active scrollbar-thumb drag: container id (0 = none) and the
-// pointer-to-thumb-top offset captured at grab, in clay coords.
+// pointer-to-thumb-top offset captured at grab, in nendo coords.
 Scroll_Drag :: struct {
 	container: u32,
 	grab:      f32,
 }
 scroll_drag: Scroll_Drag
 
-// Scrollbar for a clay scroll container, floated on its right edge
+// Scrollbar for a nendo scroll container, floated on its right edge
 // from the previous frame's scroll data. Wheel scrolls; the thumb is
 // also hand-draggable (grab it, scroll follows the pointer).
 // `z` must beat the container's own stacking context: the default sits
 // above base content, a scroll region inside a floating modal passes
 // something above the modal's zIndex or the thumb paints beneath it.
-scrollbar :: proc(container: clay.ElementId, z: i16 = 5) {
-	data := clay.GetScrollContainerData(container)
+scrollbar :: proc(container: nendo.Id, z: i16 = 5) {
+	data := nendo.scroll(container)
 	if data.found &&
-	   (data.contentDimensions.width > data.scrollContainerDimensions.width ||
-			   data.contentDimensions.height > data.scrollContainerDimensions.height) {
+	   (data.content.width > data.viewport.width || data.content.height > data.viewport.height) {
 		append(&drag_targets, container)
 	}
-	if !data.found || data.contentDimensions.height <= data.scrollContainerDimensions.height {
+	if !data.found || data.content.height <= data.viewport.height {
 		return
 	}
-	track := data.scrollContainerDimensions.height
-	thumb := max(24, track * data.scrollContainerDimensions.height / data.contentDimensions.height)
-	span := data.contentDimensions.height - data.scrollContainerDimensions.height
+	track := data.viewport.height
+	thumb := max(24, track * data.viewport.height / data.content.height)
+	span := data.content.height - data.viewport.height
 	travel := track - thumb
-	y := travel > 0 ? -data.scrollPosition.y / span * travel : 0
+	y := travel > 0 ? -data.position.y / span * travel : 0
 
-	thumb_id := clay.ID("ScrollThumb", container.id)
+	thumb_id := nendo.id("ScrollThumb", container.id)
 	mouse_y := rl.GetMousePosition().y / UI_ZOOM
-	if !rl.TouchActive() && rl.IsMouseButtonPressed(.LEFT) && clay.PointerOver(thumb_id) {
+	if !rl.TouchActive() && rl.IsMouseButtonPressed(.LEFT) && nendo.pointer_over(thumb_id) {
 		scroll_drag = {container.id, mouse_y - y}
 	}
 	dragging := scroll_drag.container == container.id
 	if dragging && travel > 0 {
 		y = clamp(mouse_y - scroll_drag.grab, 0, travel)
-		data.scrollPosition.y = -y / travel * span
+		data.position.y = -y / travel * span
 	}
 
-	if clay.UI(thumb_id)(
+	if nendo.box(thumb_id)(
 	{
-		layout = {sizing = {width = clay.SizingFixed(5), height = clay.SizingFixed(thumb)}},
+		width = nendo.fixed(5),
+		height = nendo.fixed(thumb),
 		floating = {
-			attachTo = .ElementWithId,
-			parentId = container.id,
+			attach_to = .Element,
+			parent = container.id,
 			offset = {-3, y},
-			zIndex = z,
-			pointerCaptureMode = rl.TouchActive() ? .Passthrough : .Capture,
-			attachment = {element = .RightTop, parent = .RightTop},
+			z = z,
+			pointer = rl.TouchActive() ? .Passthrough : .Capture,
+			attach = {element = .Right_Top, parent = .Right_Top},
 		},
-		backgroundColor = dragging || clay.PointerOver(thumb_id) ? ACCENT : FIELD_BORDER,
-		cornerRadius = rr(3),
+		color = dragging || nendo.pointer_over(thumb_id) ? ACCENT : FIELD_BORDER,
+		radius = rr(3),
 	},
 	) {}
 }

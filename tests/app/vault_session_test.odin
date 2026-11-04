@@ -8,8 +8,8 @@ import "core:testing"
 
 @(test)
 vault_lock_scrubs_state :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	ui: Ui_State
 	ui.lock_requested = true
 	ui.profile = {
@@ -99,8 +99,8 @@ vault_lock_settings_isolation :: proc(t: ^testing.T) {
 
 @(test)
 vault_lock_discards_auth :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	// The worker can finish just before lock, leaving its nsec-owning job
 	// waiting for frame-boundary adoption. Relock must discard that job.
 	if !testing.expect(t, auth_job == nil) {return}

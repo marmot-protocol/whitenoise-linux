@@ -48,7 +48,7 @@ composer_performance :: proc(t: ^testing.T) {
 				if typing == 1 {ed_insert(&ui, &ui.compose, "x")}
 				commands := build_layout(&ui, 0)
 				layout[i] = time.duration_milliseconds(time.tick_since(start))
-				rl.BeginDrawing(); draw_frame(&commands); rl.EndDrawing()
+				rl.BeginDrawing(); draw_frame(commands); rl.EndDrawing()
 				ms = time.duration_milliseconds(time.tick_since(start))
 				testing.expect(t, !layout_overflow)
 				free_all(context.temp_allocator)

@@ -2,26 +2,22 @@ package main
 
 import "core:sync"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
 field_overflow :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 
 	// The shim's fallback glyph metrics need no window or font files.
 	rl.SetPixelScale(1)
-	memory := make([]u8, int(clay.MinMemorySize()))
+	memory := make([]u8, int(nendo.min_memory_size()))
 	defer delete(memory)
-	previous := clay.GetCurrentContext()
-	defer clay.SetCurrentContext(previous)
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{600, 200},
-		{},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
+	previous := nendo.current_context()
+	defer nendo.set_context(previous)
+	nendo.init(memory, {600, 200}, {})
+	nendo.set_measure_text(measure_text, nil)
 
 	ui: Ui_State
 	append(&ui.nc_member, "npub1x6v727034rm4q6tewkc2pw2wurp72vqvhpu95mnk2n2hw7xdyesj7520l")
@@ -33,15 +29,15 @@ field_overflow :: proc(t: ^testing.T) {
 		caret_wake() // solid, not mid-blink
 		// The viewport's resolved width is available on the next frame.
 		for frame in 0 ..< 2 {
-			clay.BeginLayout()
+			nendo.begin()
 			input_box(&ui, "TestField", &ui.nc_member, "Contact", true, 220)
 			compose_line(0, string(ui.nc_member[:]), 0, len(ui.nc_member), head, head, head)
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			if frame == 0 {
 				continue
 			}
-			view := clay.GetElementData(clay.ID("TestField", 3)).boundingBox
-			row := clay.GetElementData(clay.ID("TestField", 1)).boundingBox
+			view := nendo.element(nendo.id("TestField", 3)).rect
+			row := nendo.element(nendo.id("TestField", 1)).rect
 
 			// The focused row is its text plus the inline caret ink, which
 			// stays inside the field's scroll clip.
@@ -50,7 +46,7 @@ field_overflow :: proc(t: ^testing.T) {
 				row.width,
 				rl.MeasureTextLine(FONT_BODY, 14, string(ui.nc_member[:]), 0).x + CARET_W,
 			)
-			line := clay.GetElementData(clay.ID("ComposeLine", 0)).boundingBox
+			line := nendo.element(nendo.id("ComposeLine", 0)).rect
 			testing.expect_value(
 				t,
 				line.width,
@@ -61,14 +57,14 @@ field_overflow :: proc(t: ^testing.T) {
 			testing.expect_value(t, hit_plain(string(ui.nc_member[:]), x - row.x, 14), head)
 			clipped := false
 			painted := false
-			for command in commands.internalArray[:commands.length] {
-				if command.commandType == .ScissorStart && command.boundingBox == view {
+			for command in commands {
+				if command.kind == .Scissor_Start && command.rect == view {
 					clipped = true
 				}
-				if command.commandType == .Rectangle &&
-				   command.boundingBox.width == CARET_W &&
-				   command.boundingBox.height == 15 {
-					testing.expect_value(t, command.boundingBox.x, x)
+				if command.kind == .Rectangle &&
+				   command.rect.width == CARET_W &&
+				   command.rect.height == 15 {
+					testing.expect_value(t, command.rect.x, x)
 					painted = true
 				}
 			}
@@ -82,20 +78,16 @@ field_overflow :: proc(t: ^testing.T) {
 // must paint its caret in the panel's layer, not under the panel.
 @(test)
 field_caret_in_float :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 
 	rl.SetPixelScale(1)
-	memory := make([]u8, int(clay.MinMemorySize()))
+	memory := make([]u8, int(nendo.min_memory_size()))
 	defer delete(memory)
-	previous := clay.GetCurrentContext()
-	defer clay.SetCurrentContext(previous)
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{600, 200},
-		{},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
+	previous := nendo.current_context()
+	defer nendo.set_context(previous)
+	nendo.init(memory, {600, 200}, {})
+	nendo.set_measure_text(measure_text, nil)
 
 	ui: Ui_State
 	append(&ui.picker_filter, "face")
@@ -104,29 +96,30 @@ field_caret_in_float :: proc(t: ^testing.T) {
 	ui.ed.selection = {4, 4}
 	caret_wake() // solid, not mid-blink
 
-	clay.BeginLayout()
-	if clay.UI(clay.ID("TestPanel"))(
+	nendo.begin()
+	if nendo.box(nendo.id("TestPanel"))(
 	{
-		layout = {sizing = {clay.SizingFixed(300), clay.SizingFixed(100)}},
-		backgroundColor = {1, 1, 1, 255},
-		floating = {attachTo = .Root, zIndex = 12},
+		width = nendo.fixed(300),
+		height = nendo.fixed(100),
+		color = {1, 1, 1, 255},
+		floating = {attach_to = .Root, z = 12},
 	},
 	) {
 		field_text(&ui, "TestSearch", &ui.picker_filter, "search...", true)
 	}
-	commands := clay.EndLayout(0)
+	commands := nendo.end(0)
 
 	panel_at, caret_at := -1, -1
-	for command, i in commands.internalArray[:commands.length] {
-		if command.commandType != .Rectangle {
+	for command, i in commands {
+		if command.kind != .Rectangle {
 			continue
 		}
-		if command.boundingBox.width == 300 {
+		if command.rect.width == 300 {
 			panel_at = i
 		}
-		if command.boundingBox.width == CARET_W {
+		if command.rect.width == CARET_W {
 			caret_at = i
-			testing.expect_value(t, command.zIndex, 12)
+			testing.expect_value(t, command.z, 12)
 		}
 	}
 	testing.expect(t, panel_at >= 0 && caret_at > panel_at, "the caret must draw over its panel")

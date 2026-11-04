@@ -4,7 +4,7 @@ import "core:strings"
 import "core:sync"
 import "core:testing"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -47,12 +47,12 @@ reading_restore_scope :: proc(t: ^testing.T) {
 
 @(test)
 reply_parent_feedback :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
-	previous := clay.GetCurrentContext()
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 600})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		jump_id = strings.clone("other-jump"),
 	}
@@ -63,8 +63,8 @@ reply_parent_feedback :: proc(t: ^testing.T) {
 		rl.PushMouseButton(.LEFT, false)
 	}
 	rl.PushMouseButton(.LEFT, true)
-	clay.BeginLayout()
-	clay.EndLayout(0)
+	nendo.begin()
+	nendo.end(0)
 	for id in ([]string{"missing-parent", "loaded-parent"}) {
 		reply_jump_hover = id
 		forced_release = false
@@ -77,9 +77,9 @@ reply_parent_feedback :: proc(t: ^testing.T) {
 		testing.expect_value(t, reply_jump_hover, "")
 		delete(ui.toast); ui.toast = ""
 	}
-	clay.BeginLayout()
-	if clay.UI(clay.ID("MsgRow", 0))({layout = {sizing = {height = clay.SizingFixed(40)}}}) {}
-	clay.EndLayout(0)
+	nendo.begin()
+	if nendo.box(nendo.id("MsgRow", 0))({height = nendo.fixed(40)}) {}
+	nendo.end(0)
 	ui.reading_pending = {
 		message = "saved-place",
 		offset  = -12,

@@ -10,7 +10,7 @@ import "core:c"
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 import sdl "vendor:sdl3"
 
@@ -323,7 +323,7 @@ nes_pad :: proc() -> u8 {
 	if tap_size() {
 		for bit in 0 ..< 8 {
 			if rl.IsMouseButtonDown(.LEFT) &&
-			   clay.PointerOver(clay.ID("NesTouch", u32(bit))) {pad |= 1 << u8(bit)}
+			   nendo.pointer_over(nendo.id("NesTouch", u32(bit))) {pad |= 1 << u8(bit)}
 		}
 		devices_count: c.int
 		devices := sdl.GetTouchDevices(&devices_count)
@@ -342,9 +342,9 @@ nes_pad :: proc() -> u8 {
 					f32(rl.GetScreenHeight()) /
 					UI_ZOOM
 				for bit in 0 ..< 8 {
-					box := clay.GetElementData(clay.ID("NesTouch", u32(bit)))
+					box := nendo.element(nendo.id("NesTouch", u32(bit)))
 					if !box.found {continue}
-					b := box.boundingBox
+					b := box.rect
 					if x >= b.x &&
 					   y >= b.y &&
 					   x < b.x + b.width &&
@@ -398,102 +398,74 @@ nes_fit_bounds :: proc(width, height, zoom: f32, mode: Nes_Fit_Mode) -> (w, h: f
 
 nes_modal_draw :: proc(ui: ^Ui_State) {
 	w, h := nes_fit()
-	if clay.UI(clay.ID("NesModal"))(
+	if nendo.box(nendo.id("NesModal"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(tap_size() ? fit_w(max(320, w + 24)) : w + 24),
-				height = clay.SizingFit({max = modal_h(f32(rl.GetScreenHeight()) / UI_ZOOM)}),
-			},
-			layoutDirection = .TopToBottom,
-			childGap = 8,
-			padding = clay.PaddingAll(12),
-			childAlignment = {x = .Center},
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		width = nendo.fixed(tap_size() ? fit_w(max(320, w + 24)) : w + 24),
+		height = nendo.fit(max = modal_h(f32(rl.GetScreenHeight()) / UI_ZOOM)),
+		direction = .Column,
+		gap = 8,
+		padding = nendo.pad(12),
+		align = {x = .Center},
+		clip = {y = true, scroll = true},
 		floating = {
-			attachTo = .Root,
-			zIndex = 10,
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 10,
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
+		color = CARD,
+		radius = rr(12),
 	},
 	) {
-		if clay.UI(clay.ID("NesBar"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-		},
-		) {
-			if clay.UI(clay.ID("NesTitle"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
-			) {
-				clay.Text(
+		if nendo.box(nendo.id("NesBar"))({width = nendo.grow(), gap = 10, align = {y = .Center}}) {
+			if nendo.box(nendo.id("NesTitle"))({width = nendo.grow(), clip = {x = true}}) {
+				nendo.text(
 					nes_player.title,
-					{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None},
+					{font = FONT_TITLE, size = 14, color = TEXT, wrap = .None},
 				)
 			}
-			if clay.UI(clay.ID("NesPad"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("NesClose"))(
+			if nendo.box(nendo.id("NesPad"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("NesClose"))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 26)},
-					padding = {left = 10, right = 10},
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : ROW_BG,
-				cornerRadius = rr(6),
+				height = nendo.fixed(tap_size() ? tap_min() : 26),
+				padding = {left = 10, right = 10},
+				align = {y = .Center},
+				color = hovered() ? HOVER : ROW_BG,
+				radius = rr(6),
 			},
 			) {
-				clay.Text(tr("Close"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+				nendo.text(tr("Close"), {font = FONT_BODY, size = 12, color = TEXT})
 			}
 		}
-		if clay.UI(clay.ID("NesScreen"))(
-		{
-			layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}},
-			image = {imageData = &nes_player.tex},
-		},
+		if nendo.box(nendo.id("NesScreen"))(
+		{width = nendo.fixed(w), height = nendo.fixed(h), image = &nes_player.tex},
 		) {}
 		if tap_size() {
 			labels := [8]string{"A", "B", tr("Select"), tr("Start"), "↑", "↓", "←", "→"}
 			for row in 0 ..< 2 {
-				if clay.UI(clay.ID("NesTouchRow", u32(row)))(
-				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
-				) {
+				if nendo.box(nendo.id("NesTouchRow", u32(row)))({width = nendo.grow(), gap = 6}) {
 					for bit in row * 4 ..< row * 4 + 4 {
-						if clay.UI(clay.ID("NesTouch", u32(bit)))(
+						if nendo.box(nendo.id("NesTouch", u32(bit)))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingGrow(),
-									height = clay.SizingFixed(44),
-								},
-								childAlignment = {x = .Center, y = .Center},
-							},
-							backgroundColor = hovered() ? HOVER : ROW_BG,
-							cornerRadius = rr(6),
+							width = nendo.grow(),
+							height = nendo.fixed(44),
+							align = {x = .Center, y = .Center},
+							color = hovered() ? HOVER : ROW_BG,
+							radius = rr(6),
 						},
 						) {
-							clay.Text(
-								labels[bit],
-								{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
-							)
+							nendo.text(labels[bit], {font = FONT_BODY, size = 13, color = TEXT})
 						}
 					}
 				}
 			}
 		} else {
-			clay.Text(
+			nendo.text(
 				tr("Arrow keys move. X is A, Z is B, Enter is Start, Shift is Select."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 		}
 	}
-	scrollbar(clay.ID("NesModal"), 11)
+	scrollbar(nendo.id("NesModal"), 11)
 }
 
 // A zip holding nothing but one .nes ROM plays like the ROM itself:
@@ -523,44 +495,36 @@ nes_from_arc :: proc(arc: ^Arc_View) -> ^Nes_View {
 // the attachment the download corner saves; title is the ROM's name,
 // which differs when the ROM came zipped.
 nes_tile :: proc(view: ^Nes_View, id: u32, msg_id: string, att: int, file_name, title: string) {
-	if clay.UI(clay.ID("MsgNes", id))(
+	if nendo.box(nendo.id("MsgNes", id))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(min(320, att_w()))},
-			padding = clay.PaddingAll(10),
-			childGap = 10,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = PLATE,
-		cornerRadius = rr(8),
+		width = nendo.fixed(min(320, att_w())),
+		padding = nendo.pad(10),
+		gap = 10,
+		align = {y = .Center},
+		color = PLATE,
+		radius = rr(8),
 	},
 	) {
 		att_dl_button("DlNes", id, msg_id, att, file_name)
-		clay.Text(ICON_GAMEPAD, {fontId = FONT_ICON, fontSize = 28, textColor = TEXT_DIM})
-		if clay.UI(clay.ID("MsgNesText", id))(
-		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {width = clay.SizingGrow()},
-				childGap = 2,
-			},
-		},
+		nendo.text(ICON_GAMEPAD, {font = FONT_ICON, size = 28, color = TEXT_DIM})
+		if nendo.box(nendo.id("MsgNesText", id))(
+		{direction = .Column, width = nendo.grow(), gap = 2},
 		) {
-			clay.Text(title, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
-			clay.Text(tr("NES game"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			nendo.text(title, {font = FONT_TITLE, size = 13, color = TEXT})
+			nendo.text(tr("NES game"), {font = FONT_BODY, size = 11, color = TEXT_DIM})
 		}
-		if clay.UI(clay.ID("MsgNesPlay", id))(
+		if nendo.box(nendo.id("MsgNesPlay", id))(
 		{
-			layout = {padding = {left = 12, right = 12, top = 6, bottom = 6}},
-			backgroundColor = hovered() ? ACCENT : ROW_BG,
-			cornerRadius = rr(6),
+			padding = {left = 12, right = 12, top = 6, bottom = 6},
+			color = hovered() ? ACCENT : ROW_BG,
+			radius = rr(6),
 		},
 		) {
 			if hovered() {
 				nes_hover = {view, title}
 			}
 			// Not "Play": its catalogs mean media playback.
-			clay.Text(tr("Play game"), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
+			nendo.text(tr("Play game"), {font = FONT_TITLE, size = 12, color = TEXT})
 		}
 	}
 }

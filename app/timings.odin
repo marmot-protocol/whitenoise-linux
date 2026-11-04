@@ -5,7 +5,7 @@ import marmot "../marmot"
 import "core:fmt"
 import "core:strings"
 import "core:time"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -200,7 +200,7 @@ timings_presented :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if client == nil || ui.page != .Chats || ui.selected < 0 || !rl.IsWindowFocused() {
 		return
 	}
-	view := clay.GetElementData(clay.ID("Timeline"))
+	view := nendo.element(nendo.id("Timeline"))
 	if !view.found {
 		return
 	}
@@ -209,8 +209,8 @@ timings_presented :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if msg.visible_since == {} || msg.thread_of != cur {
 			continue
 		}
-		row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
-		if row.found && timing_intersects(row.boundingBox, view.boundingBox) {
+		row := nendo.element(nendo.id("MsgRow", u32(i)))
+		if row.found && timing_intersects(row.rect, view.rect) {
 			timing_record(client, .Inbound_Message_Visible, msg.visible_since)
 			msg.visible_since = {}
 		}
@@ -221,8 +221,8 @@ timings_presented :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		   p.thread != cur {
 			continue
 		}
-		row := clay.GetElementData(clay.ID("PendingRow", u32(i)))
-		if row.found && timing_intersects(row.boundingBox, view.boundingBox) {
+		row := nendo.element(nendo.id("PendingRow", u32(i)))
+		if row.found && timing_intersects(row.rect, view.rect) {
 			timing_record(client, .Outbound_Message_Visible, p.visible_since)
 			p.visible_since = {}
 		}
@@ -230,7 +230,7 @@ timings_presented :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 }
 
 @(private)
-timing_intersects :: proc(row, view: clay.BoundingBox) -> bool {
+timing_intersects :: proc(row, view: nendo.Rect) -> bool {
 	return(
 		row.width > 0 &&
 		row.height > 0 &&

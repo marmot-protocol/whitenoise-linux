@@ -3,7 +3,7 @@ package main
 import "base:runtime"
 import "core:fmt"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -18,14 +18,10 @@ stt_layout :: proc(t: ^testing.T) {
 	load_themes()
 	apply_theme(0, 0)
 	init_fonts()
-	memory := make([]u8, int(clay.MinMemorySize()))
+	memory := make([]u8, int(nendo.min_memory_size()))
 	defer delete(memory)
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{720, 700},
-		{},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
+	nendo.init(memory, {720, 700}, {})
+	nendo.set_measure_text(measure_text, nil)
 	ui := Ui_State {
 		row_menu         = -1,
 		member_menu      = -1,
@@ -40,18 +36,18 @@ stt_layout :: proc(t: ^testing.T) {
 	if file == nil {return}
 	defer wn_ipc_close(file)
 	for width in ([]f32{420, 720}) {
-		clay.SetLayoutDimensions({width, 700})
+		nendo.set_dimensions({width, 700})
 		ui.stt.file = nil
 		_ = build_layout(&ui, 0)
-		testing.expect(t, clay.GetElementData(clay.ID("DictateBtn")).found)
+		testing.expect(t, nendo.element(nendo.id("DictateBtn")).found)
 		ui.stt.file, ui.stt.status = file, 'R'
 		commands := build_layout(&ui, 0)
 		for id in ([]string{"SttCancel", "SttFinish"}) {
-			box := clay.GetElementData(clay.ID(id))
-			testing.expect(t, box.found && box.boundingBox.x + box.boundingBox.width <= width)
+			box := nendo.element(nendo.id(id))
+			testing.expect(t, box.found && box.rect.x + box.rect.width <= width)
 		}
 		rl.BeginDrawing()
-		draw_frame(&commands)
+		draw_frame(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/stt-%d.png", int(width)))
 		rl.EndDrawing()
 	}

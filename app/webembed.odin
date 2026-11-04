@@ -22,7 +22,7 @@ import "core:sync"
 import "core:thread"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // The page is rendered at the size it is shown at, in device pixels,
@@ -300,7 +300,7 @@ handle_web_input :: proc(ui: ^Ui_State) {
 		return
 	}
 
-	box := clay.GetElementData(clay.ID("WebPage")).boundingBox
+	box := nendo.element(nendo.id("WebPage")).rect
 	if box.width <= 0 {
 		return
 	}
@@ -386,64 +386,47 @@ web_fit :: proc() -> (w, h: f32) {
 // The modal: title bar, close, and the page.
 web_modal_draw :: proc(ui: ^Ui_State) {
 	w, h := web_fit()
-	if clay.UI(clay.ID("WebModal"))(
+	if nendo.box(nendo.id("WebModal"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(w + 24)},
-			layoutDirection = .TopToBottom,
-			childGap = 8,
-			padding = clay.PaddingAll(12),
-		},
+		width = nendo.fixed(w + 24),
+		direction = .Column,
+		gap = 8,
+		padding = nendo.pad(12),
 		floating = {
-			attachTo = .Root,
-			zIndex = 10,
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 10,
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
+		color = CARD,
+		radius = rr(12),
 	},
 	) {
-		if clay.UI(clay.ID("WebBar"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingFixed(w)},
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-		},
+		if nendo.box(nendo.id("WebBar"))(
+		{width = nendo.fixed(w), gap = 10, align = {y = .Center}},
 		) {
-			if clay.UI(clay.ID("WebTitle"))(
-			{
-				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(24)}},
-				clip = {horizontal = true},
-			},
+			if nendo.box(nendo.id("WebTitle"))(
+			{width = nendo.grow(), height = nendo.fixed(24), clip = {x = true}},
 			) {
-				clay.Text(
+				nendo.text(
 					web_modal.title,
-					{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None},
+					{font = FONT_TITLE, size = 14, color = TEXT, wrap = .None},
 				)
 				if hovered() {tooltip(web_modal.title)}
 			}
-			if clay.UI(clay.ID("WebClose"))(
+			if nendo.box(nendo.id("WebClose"))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 26)},
-					padding = {left = 10, right = 10},
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : ROW_BG,
-				cornerRadius = rr(6),
+				height = nendo.fixed(tap_size() ? tap_min() : 26),
+				padding = {left = 10, right = 10},
+				align = {y = .Center},
+				color = hovered() ? HOVER : ROW_BG,
+				radius = rr(6),
 			},
 			) {
-				clay.Text(tr("Close"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+				nendo.text(tr("Close"), {font = FONT_BODY, size = 12, color = TEXT})
 			}
 		}
-		if clay.UI(clay.ID("WebPage"))(
-		{
-			layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}},
-			image = {imageData = &web_modal.tex},
-			cornerRadius = rr(8),
-		},
+		if nendo.box(nendo.id("WebPage"))(
+		{width = nendo.fixed(w), height = nendo.fixed(h), image = &web_modal.tex, radius = rr(8)},
 		) {}
 	}
 }

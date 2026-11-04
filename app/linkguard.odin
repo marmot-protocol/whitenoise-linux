@@ -11,7 +11,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Link under the pointer this frame (its URL), rebound every build.
@@ -79,9 +79,9 @@ open_link :: proc(ui: ^Ui_State, url: string) {
 	ui.link_trust = false
 	ui.link_open = true
 	kb_focus = "" // Tab starts over at Cancel
-	if clay.GetCurrentContext() != nil {
-		if data := clay.GetScrollContainerData(clay.ID("LinkAddress")); data.found {
-			data.scrollPosition^ = {}
+	if nendo.current_context() != nil {
+		if data := nendo.scroll(nendo.id("LinkAddress")); data.found {
+			data.position^ = {}
 		}
 	}
 }
@@ -130,60 +130,48 @@ link_modal :: proc(ui: ^Ui_State) {
 		explanation = tr("Copy this link and open it in your browser.")
 		action = tr("Copy link")
 	}
-	if clay.UI(clay.ID("LinkModal"))(
+	if nendo.box(nendo.id("LinkModal"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("LinkModal"), 440)),
-				height = clay.SizingFit({max = modal_h(1200)}),
-			},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(20),
-			childGap = 12,
-		},
-		backgroundColor = CARD,
-		cornerRadius = rr(16),
+		width = nendo.fixed(modal_w(nendo.id("LinkModal"), 440)),
+		height = nendo.fit(max = modal_h(1200)),
+		direction = .Column,
+		padding = nendo.pad(20),
+		gap = 12,
+		color = CARD,
+		radius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		clip = {y = true, scroll = true},
 		floating = {
-			attachTo = .Root,
-			zIndex = 16,
-			offset = {0, rise(clay.ID("LinkModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 16,
+			offset = {0, rise(nendo.id("LinkModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
 	},
 	) {
-		scrollbar(clay.ID("LinkModal"), 17)
-		if clay.UI(clay.ID("LinkHead"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-		},
+		scrollbar(nendo.id("LinkModal"), 17)
+		if nendo.box(nendo.id("LinkHead"))(
+		{width = nendo.grow(), gap = 10, align = {y = .Center}},
 		) {
-			clay.Text(ICON_GLOBE, {fontId = FONT_ICON, fontSize = 15, textColor = ACCENT})
-			clay.Text(title, {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
+			nendo.text(ICON_GLOBE, {font = FONT_ICON, size = 15, color = ACCENT})
+			nendo.text(title, {font = FONT_TITLE, size = 18, color = TEXT})
 		}
-		clay.Text(explanation, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		nendo.text(explanation, {font = FONT_BODY, size = 12, color = TEXT_DIM})
 
 		eyebrow(tr("SITE"))
-		if clay.UI(clay.ID("LinkCard"))(
+		if nendo.box(nendo.id("LinkCard"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				padding = clay.PaddingAll(12),
-				childGap = 5,
-			},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(10),
+			width = nendo.grow(),
+			direction = .Column,
+			padding = nendo.pad(12),
+			gap = 5,
+			color = ROW_BG,
+			radius = rr(10),
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
 			// Keep even an npub host visible in full above the scrollable address.
-			inner := modal_w(clay.ID("LinkModal"), 440) - 64
+			inner := modal_w(nendo.id("LinkModal"), 440) - 64
 			for rest := host; len(rest) > 0; {
 				lo, hi := 1, len(rest)
 				for lo < hi {
@@ -192,93 +180,74 @@ link_modal :: proc(ui: ^Ui_State) {
 					   inner {lo = mid} else {hi = mid - 1}
 				}
 				for lo < len(rest) && (rest[lo] & 0xc0) == 0x80 {lo += 1}
-				clay.Text(rest[:lo], {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+				nendo.text(rest[:lo], {font = FONT_TITLE, size = 14, color = TEXT})
 				rest = rest[lo:]
 			}
-			if clay.UI(clay.ID("LinkAddress"))(
-			{
-				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(18)}},
-				clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
-			},
+			if nendo.box(nendo.id("LinkAddress"))(
+			{width = nendo.grow(), height = nendo.fixed(18), clip = {x = true, scroll = true}},
 			) {
-				clay.Text(
+				nendo.text(
 					ui.link_url,
-					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, wrapMode = .None},
+					{font = FONT_MONO, size = 11, color = TEXT_LO, wrap = .None},
 				)
 			}
 			if rl.MeasureTextLine(FONT_MONO, 11, ui.link_url, 0).x > inner {
-				clay.Text(
+				nendo.text(
 					tr("Scroll to read the full address."),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 11, color = TEXT_DIM},
 				)
 			}
 		}
 
 		when ODIN_OS != .OpenBSD {
-			if clay.UI(clay.ID("LinkTrustRow"))(
+			if nendo.box(nendo.id("LinkTrustRow"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-					},
-					padding = clay.PaddingAll(4), // room for kb_ring
-					// The whole row is the touch target for the trust switch.
-					// Space and Enter retain the existing explicit control order.
-					childGap = 10,
-					childAlignment = {y = .Center},
-				},
+				width = nendo.grow(),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = nendo.pad(4), // room for kb_ring
+				// The whole row is the touch target for the trust switch.
+				// Space and Enter retain the existing explicit control order.
+				gap = 10,
+				align = {y = .Center},
 				border = kb_focus == "LinkTrust" ? kb_ring(ACCENT) : {},
-				cornerRadius = rr(6),
+				radius = rr(6),
 			},
 			) {
 				toggle("LinkTrust", ui.link_trust)
-				clay.Text(
+				nendo.text(
 					tr("Always open links to this site"),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
 			}
 		}
 
-		if clay.UI(clay.ID("LinkActions"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}},
-		) {
-			if clay.UI(clay.ID("LinkCancel"))(
+		if nendo.box(nendo.id("LinkActions"))({width = nendo.grow(), gap = 10}) {
+			if nendo.box(nendo.id("LinkCancel"))(
 			{
-				layout = {
-					sizing = {
-						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-					},
-					padding = {left = 16, right = 16, top = 9, bottom = 9},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(9),
+				width = single_pane() ? nendo.grow() : nendo.fit(),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = {left = 16, right = 16, top = 9, bottom = 9},
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(9),
 				border = kb_focus == "LinkCancel" ? kb_ring(ACCENT) : {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+				nendo.text(tr("Cancel"), {font = FONT_TITLE, size = 13, color = TEXT})
 			}
-			if !single_pane(
-				
-			) {if clay.UI(clay.ID("LinkGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}}
-			if clay.UI(clay.ID("LinkGo"))(
+			if !single_pane() {if nendo.box(nendo.id("LinkGap"))({width = nendo.grow()}) {}}
+			if nendo.box(nendo.id("LinkGo"))(
 			{
-				layout = {
-					sizing = {
-						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-					},
-					padding = {left = 16, right = 16, top = 9, bottom = 9},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? ACCENT_DIM : ACCENT,
-				cornerRadius = rr(9),
+				width = single_pane() ? nendo.grow() : nendo.fit(),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = {left = 16, right = 16, top = 9, bottom = 9},
+				align = {x = .Center, y = .Center},
+				color = hovered() ? ACCENT_DIM : ACCENT,
+				radius = rr(9),
 				border = kb_focus == "LinkGo" ? kb_ring(TEXT) : {},
 			},
 			) {
-				clay.Text(action, {fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT})
+				nendo.text(action, {font = FONT_TITLE, size = 13, color = ON_ACCENT})
 			}
 		}
 	}
@@ -312,7 +281,7 @@ handle_link_modal :: proc(ui: ^Ui_State) {
 		if rl.IsKeyPressed(.ENTER) {
 			hit = "LinkGo"
 		} else if mouse_released() {
-			hit = clay.PointerOver(clay.ID("LinkModal")) ? "" : "LinkCancel"
+			hit = nendo.pointer_over(nendo.id("LinkModal")) ? "" : "LinkCancel"
 			when ODIN_OS != .OpenBSD {if clicked("LinkTrustRow") {hit = "LinkTrust"}}
 			for id in link_controls {
 				if clicked(id) {

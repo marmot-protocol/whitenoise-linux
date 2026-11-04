@@ -7,13 +7,13 @@ import "core:testing"
 import "core:thread"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
 media_outcome_slots :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	msg := Msg_Ui {
 		sender = strings.clone("Alice"),
 	}
@@ -53,11 +53,11 @@ media_outcome_slots :: proc(t: ^testing.T) {
 		width  = 40,
 		height = 30,
 	}
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 2000})
 	defer {
-		clay.SetCurrentContext(previous)
+		nendo.set_context(previous)
 		delete(memory)
 	}
 
@@ -101,36 +101,28 @@ media_outcome_slots :: proc(t: ^testing.T) {
 		ordered_remove(&media_jobs, job_count)
 		delete_key(&media_textures, "reply-test-image")
 	}
-	clay.BeginLayout()
+	nendo.begin()
 	message_row(1, msg)
-	clay.EndLayout(0)
-	loading := clay.GetElementData(clay.ID("MsgReplyImage", 1))
+	nendo.end(0)
+	loading := nendo.element(nendo.id("MsgReplyImage", 1))
 	testing.expect(t, loading.found)
 	media_textures["reply-test-image"] = &tex
 	for dimensions in ([][2]i32{{30, 100}, {100, 30}}) {
 		tex.width, tex.height = dimensions[0], dimensions[1]
-		clay.BeginLayout()
+		nendo.begin()
 		message_row(1, msg)
-		commands := clay.EndLayout(0)
-		image_box := clay.GetElementData(clay.ID("MsgReplyImage", 1)).boundingBox
+		commands := nendo.end(0)
+		image_box := nendo.element(nendo.id("MsgReplyImage", 1)).rect
 		testing.expect(t, image_box.width <= 96 && image_box.height <= 64)
-		testing.expect_value(
-			t,
-			image_box.x,
-			clay.GetElementData(clay.ID("MsgReplyCol", 1)).boundingBox.x,
-		)
+		testing.expect_value(t, image_box.x, nendo.element(nendo.id("MsgReplyCol", 1)).rect.x)
 		drawn := false
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Image ||
-			   command.renderData.image.imageData != &tex {continue}
-			if command.id != clay.ID("MsgReplyImage", 1).id {continue}
+		for command in commands {
+			if command.kind != .Image || command.image.image != &tex {continue}
+			if command.id != nendo.id("MsgReplyImage", 1).id {continue}
 			drawn = true
 			testing.expect(
 				t,
-				abs(
-					command.boundingBox.width / command.boundingBox.height -
-					f32(tex.width) / f32(tex.height),
-				) <
+				abs(command.rect.width / command.rect.height - f32(tex.width) / f32(tex.height)) <
 				0.00001,
 			)
 		}
@@ -150,8 +142,8 @@ media_outcome_slots :: proc(t: ^testing.T) {
 //   7 img-d (never finishes)  8 sticker  9 emoji asset
 @(test)
 media_slots_mixed :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	old_jobs, old_inflight := media_jobs, media_inflight
 	old_textures, old_videos, old_txts := media_textures, video_views, txt_views
 	old_sizes, old_seen, old_bars := blob_sizes, msg_seen, video_bars
@@ -247,7 +239,7 @@ media_slots_mixed :: proc(t: ^testing.T) {
 		}
 	}
 
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 3000})
 	old_ui := g_ui
@@ -255,20 +247,20 @@ media_slots_mixed :: proc(t: ^testing.T) {
 	defer {
 		g_ui = old_ui
 		att_hover, img_hover, img_retry_hover = {}, {}, ""
-		clay.SetPointerState({-1, -1}, false)
-		clay.SetCurrentContext(previous)
+		nendo.set_pointer({-1, -1}, .Up)
+		nendo.set_context(previous)
 		delete(memory)
 	}
 	layout :: proc(msg: Msg_Ui) {
-		clay.BeginLayout()
+		nendo.begin()
 		message_row(0, msg)
-		clay.EndLayout(0)
+		nendo.end(0)
 	}
-	box :: proc(name: string, att: u32) -> clay.ElementData {
-		return clay.GetElementData(clay.ID(name, att))
+	box :: proc(name: string, att: u32) -> nendo.Element_Data {
+		return nendo.element(nendo.id(name, att))
 	}
 	center :: proc(name: string, att: u32) -> [2]f32 {
-		b := box(name, att).boundingBox
+		b := box(name, att).rect
 		return {b.x + b.width / 2, b.y + b.height / 2}
 	}
 
@@ -278,10 +270,7 @@ media_slots_mixed :: proc(t: ^testing.T) {
 	testing.expect(t, box("MsgAlbum", 4).found && box("MediaLoading", 6).found)
 	quote := box("MsgReplyPrev", 0)
 	testing.expect(t, quote.found)
-	testing.expect(
-		t,
-		quote.boundingBox.y + quote.boundingBox.height <= box("MsgFile", 0).boundingBox.y,
-	)
+	testing.expect(t, quote.rect.y + quote.rect.height <= box("MsgFile", 0).rect.y)
 
 	// The text at slot 6 finishes before the image at slot 2.
 	finish("txt", &text)
@@ -300,9 +289,9 @@ media_slots_mixed :: proc(t: ^testing.T) {
 	// another. Every slot keeps its source position.
 	layout(msg^)
 	testing.expect(t, !box("MsgAlbum", 2).found)
-	testing.expect_value(t, box("MsgImgFail", 2).boundingBox.y, box("MsgImage", 1).boundingBox.y)
+	testing.expect_value(t, box("MsgImgFail", 2).rect.y, box("MsgImage", 1).rect.y)
 	quote = box("MsgReplyPrev", 0)
-	last_bottom := quote.boundingBox.y + quote.boundingBox.height
+	last_bottom := quote.rect.y + quote.rect.height
 	Element :: struct {
 		name: string,
 		att:  u32,
@@ -310,8 +299,8 @@ media_slots_mixed :: proc(t: ^testing.T) {
 	for element in ([]Element{{"MsgFile", 0}, {"MsgImage", 1}, {"MediaRejected", 3}, {"MsgImage", 4}, {"MsgAudio", 5}, {"MsgTxt", 6}, {"MediaLoading", 7}}) {
 		data := box(element.name, element.att)
 		testing.expect(t, data.found, element.name)
-		testing.expect(t, data.boundingBox.y >= last_bottom, element.name)
-		last_bottom = data.boundingBox.y + data.boundingBox.height
+		testing.expect(t, data.rect.y >= last_bottom, element.name)
+		last_bottom = data.rect.y + data.rect.height
 	}
 	// The sticker draws once above the slots; the emoji asset not at all.
 	testing.expect(t, box("MessageSticker", 0).found)
@@ -321,13 +310,13 @@ media_slots_mixed :: proc(t: ^testing.T) {
 
 	// Save, lightbox and retry actions name the source slot.
 	att_hover.index = -1
-	clay.SetPointerState(center("MsgFile", 0), false)
+	nendo.set_pointer(center("MsgFile", 0), .Up)
 	layout(msg^)
 	testing.expect_value(t, att_hover.index, 0)
-	clay.SetPointerState(center("MsgImage", 4), false)
+	nendo.set_pointer(center("MsgImage", 4), .Up)
 	layout(msg^)
 	testing.expect_value(t, img_hover.att, 4)
-	clay.SetPointerState(center("MsgImgFail", 2), false)
+	nendo.set_pointer(center("MsgImgFail", 2), .Up)
 	layout(msg^)
 	testing.expect_value(t, img_retry_hover, "img-b")
 

@@ -4,7 +4,7 @@ import "core:math"
 import "core:mem"
 import "core:sync"
 
-import clay "layout"
+import "nendo"
 
 @(private)
 PASSWORD_MIN_BITS :: 40
@@ -244,35 +244,27 @@ password_hint :: proc(check: ^Password_Check) {
 	} else if check.common {
 		label = tr("This is a common password")
 	}
-	clay.Text(label, {fontId = FONT_BODY, fontSize = 12, textColor = passing ? ACCENT : TEXT_DIM})
-	if clay.UI(clay.ID("PasswordStrengthTrack"))(
-	{
-		layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(5)}},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(3),
-	},
+	nendo.text(label, {font = FONT_BODY, size = 12, color = passing ? ACCENT : TEXT_DIM})
+	if nendo.box(nendo.id("PasswordStrengthTrack"))(
+	{width = nendo.grow(), height = nendo.fixed(5), color = ROW_BG, radius = rr(3)},
 	) {
-		if clay.UI(clay.ID("PasswordStrengthFill"))(
+		if nendo.box(nendo.id("PasswordStrengthFill"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingPercent(f32(clamp(bits / PASSWORD_MIN_BITS, 0, 1))),
-					height = clay.SizingFixed(5),
-				},
-			},
-			backgroundColor = passing ? ACCENT : TEXT_DIM,
-			cornerRadius = rr(3),
+			width = nendo.percent(f32(clamp(bits / PASSWORD_MIN_BITS, 0, 1))),
+			height = nendo.fixed(5),
+			color = passing ? ACCENT : TEXT_DIM,
+			radius = rr(3),
 		},
 		) {}
 	}
 	// Keep the fields still when the guidance disappears after passing.
-	if clay.UI(clay.ID("PasswordStrengthHint"))(
-	{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({min = 32})}}},
+	if nendo.box(nendo.id("PasswordStrengthHint"))(
+	{width = nendo.grow(), height = nendo.fit(min = 32)},
 	) {
 		if !passing {
-			clay.Text(
+			nendo.text(
 				tr("Use unrelated words or a password-manager password."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 		}
 	}

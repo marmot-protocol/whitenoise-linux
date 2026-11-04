@@ -53,34 +53,28 @@ trailing_image_grid :: proc(t: ^testing.T) {
 		{kind = .Para, text = urls[2], blank_lines_before = 1},
 		{kind = .Para, text = urls[3], blank_lines_before = 1},
 	}
-	layout :: proc(blocks: []Md_Block_Ui, width: f32) -> clay.ClayArray(clay.RenderCommand) {
-		clay.BeginLayout()
-		if clay.UI(clay.ID("ImageGridSmoke"))(
-		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {width = clay.SizingFixed(width)},
-				childGap = 3,
-			},
-		},
+	layout :: proc(blocks: []Md_Block_Ui, width: f32) -> []nendo.Render_Command {
+		nendo.begin()
+		if nendo.box(nendo.id("ImageGridSmoke"))(
+		{direction = .Column, width = nendo.fixed(width), gap = 3},
 		) {md_blocks(blocks, 0, wrap_w = width)}
-		return clay.EndLayout(0)
+		return nendo.end(0)
 	}
 	for width in ([]f32{700, 180}) {
 		for frame in 0 ..< 3 {
 			commands := layout(blocks[:], width)
 			if frame < 2 {continue}
-			boxes: [4]clay.BoundingBox
+			boxes: [4]nendo.Rect
 			count := 0
-			for cmd in commands.internalArray[:commands.length] {
-				if cmd.commandType != .Custom {continue}
-				view := (^Image_Crop)(cmd.renderData.custom.customData)
+			for cmd in commands {
+				if cmd.kind != .Custom {continue}
+				view := (^Image_Crop)(cmd.custom.custom)
 				if view.kind != .Image_Crop {continue}
-				if count < len(boxes) {boxes[count] = cmd.boundingBox}
+				if count < len(boxes) {boxes[count] = cmd.rect}
 				count += 1
 				testing.expect(
 					t,
-					cmd.boundingBox.x + cmd.boundingBox.width <= width + 0.1,
+					cmd.rect.x + cmd.rect.width <= width + 0.1,
 					"images fit the column",
 				)
 			}
@@ -92,12 +86,12 @@ trailing_image_grid :: proc(t: ^testing.T) {
 				testing.expect(t, boxes[2].y > boxes[0].y, "four portraits use two rows")
 				testing.expect_value(t, boxes[0].width, boxes[2].width)
 			}
-			rl.BeginDrawing(); clay_raylib_render(&commands)
+			rl.BeginDrawing(); render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-trailing-images-%d.png", int(width)))
 			rl.EndDrawing()
 			if count == 4 {
 				box := boxes[2]
-				clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+				nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
 				layout(blocks[:], width)
 				testing.expect_value(t, img_link_hover, urls[2])
 				rl.PushMouseButton(.LEFT, false)
@@ -117,10 +111,10 @@ trailing_image_grid :: proc(t: ^testing.T) {
 	// A missing preview retains a guarded URL instead of an attachment retry action.
 	nev_images[urls[1]] = nil
 	layout(blocks[:], 700)
-	fallback := clay.GetElementData(clay.ID("LinkImgFallback", 3 * 16 + 1))
+	fallback := nendo.element(nendo.id("LinkImgFallback", 3 * 16 + 1))
 	if testing.expect(t, fallback.found) {
-		box := fallback.boundingBox
-		clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+		box := fallback.rect
+		nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
 		link_hover = ""
 		layout(blocks[:], 700)
 		testing.expect_value(t, link_hover, urls[1])
@@ -128,12 +122,12 @@ trailing_image_grid :: proc(t: ^testing.T) {
 	ui.prefs.disable_link_previews = true
 	commands := layout(blocks[:], 700)
 	shown := strings.builder_make(context.temp_allocator)
-	for cmd in commands.internalArray[:commands.length] {
-		if cmd.commandType == .Text {
-			text := cmd.renderData.text.stringContents
-			strings.write_string(&shown, string(text.chars[:text.length]))
+	for cmd in commands {
+		if cmd.kind == .Text {
+			text := cmd.text.text
+			strings.write_string(&shown, text)
 		}
-		testing.expect(t, cmd.commandType != .Custom, "disabled previews leave links as text")
+		testing.expect(t, cmd.kind != .Custom, "disabled previews leave links as text")
 	}
 	for url in urls {testing.expect(t, strings.contains(strings.to_string(shown), url))}
 }
@@ -460,56 +454,48 @@ highlight_card_layout :: proc(t: ^testing.T) {
 					   expanded {excerpt_toggle(&card.excerpt, expanded && index >= 3 ? nev_more_id : excerpt_id); nev_cards[key] = card}
 					for frame in 0 ..< 3 {
 						clear(&sel_lines)
-						clay.SetPointerState({-100, -100}, false)
+						nendo.set_pointer({-100, -100}, .Up)
 						if index >= 3 && frame > 0 {
-							button := clay.GetElementData(clay.ID("NevMore", card_id)).boundingBox
-							clay.SetPointerState(
+							button := nendo.element(nendo.id("NevMore", card_id)).rect
+							nendo.set_pointer(
 								{button.x + button.width / 2, button.y + button.height / 2},
-								false,
+								.Up,
 							)
 						}
 						nev_more_hover = ""
-						clay.BeginLayout()
-						if clay.UI(clay.ID("Timeline"))(
+						nendo.begin()
+						if nendo.box(nendo.id("Timeline"))(
 						{
-							layout = {
-								layoutDirection = .TopToBottom,
-								sizing = {
-									width = clay.SizingFixed(width + 78),
-									height = clay.SizingGrow(),
-								},
-								padding = clay.PaddingAll(16),
-							},
-							backgroundColor = BG,
+							direction = .Column,
+							width = nendo.fixed(width + 78),
+							height = nendo.grow(),
+							padding = nendo.pad(16),
+							color = BG,
 						},
 						) {
-							if clay.UI(clay.ID("HighlightBubble"))(
+							if nendo.box(nendo.id("HighlightBubble"))(
 							{
-								layout = {
-									layoutDirection = .TopToBottom,
-									sizing = {width = clay.SizingFixed(width + 32)},
-									padding = clay.PaddingAll(16),
-								},
-								backgroundColor = CARD,
-								cornerRadius = rr(14),
+								direction = .Column,
+								width = nendo.fixed(width + 32),
+								padding = nendo.pad(16),
+								color = CARD,
+								radius = rr(14),
 							},
 							) {body_text(100, token, BODY_FS, TEXT, wrap_w = width)}
 						}
-						commands := clay.EndLayout(0)
+						commands := nendo.end(0)
 						if frame < 2 {continue}
-						card_box := clay.GetElementData(clay.ID("NevCard", card_id)).boundingBox
-						quote := clay.GetElementData(clay.ID("NevHighlightQuote", card_id))
-						comment := clay.GetElementData(clay.ID("NevHighlightComment", card_id))
-						selection := clay.GetElementData(clay.ID("ExcerptBody", excerpt_id))
-						attribution := clay.GetElementData(
-							clay.ID("NevHighlightAuthor", card_id * 64),
-						)
+						card_box := nendo.element(nendo.id("NevCard", card_id)).rect
+						quote := nendo.element(nendo.id("NevHighlightQuote", card_id))
+						comment := nendo.element(nendo.id("NevHighlightComment", card_id))
+						selection := nendo.element(nendo.id("ExcerptBody", excerpt_id))
+						attribution := nendo.element(nendo.id("NevHighlightAuthor", card_id * 64))
 						testing.expect(t, card_box.width > 0 && card_box.width <= width + 0.1)
 						testing.expect(t, quote.found)
 						testing.expect(
 							t,
 							attribution.found &&
-							clay.GetElementData(clay.ID("NevHighlightSource", card_id * 64)).found,
+							nendo.element(nendo.id("NevHighlightSource", card_id * 64)).found,
 						)
 						if index >= 3 {
 							testing.expect(
@@ -519,7 +505,7 @@ highlight_card_layout :: proc(t: ^testing.T) {
 							)
 							testing.expect_value(t, nev_more_id, excerpt_id)
 						}
-						for box in ([]clay.BoundingBox{quote.boundingBox, comment.boundingBox}) {
+						for box in ([]nendo.Rect{quote.rect, comment.rect}) {
 							if box.width == 0 {continue}
 							testing.expect(
 								t,
@@ -531,17 +517,17 @@ highlight_card_layout :: proc(t: ^testing.T) {
 							)
 						}
 						if len(fixture.comment) >
-						   0 {testing.expect(t, comment.boundingBox.y + comment.boundingBox.height <= quote.boundingBox.y + 0.1, "Commentary must sit above the quotation.")}
+						   0 {testing.expect(t, comment.rect.y + comment.rect.height <= quote.rect.y + 0.1, "Commentary must sit above the quotation.")}
 						shown := strings.builder_make(context.temp_allocator)
 						quote_text := strings.builder_make(context.temp_allocator)
 						selection_text := strings.builder_make(context.temp_allocator)
 						comment_text := strings.builder_make(context.temp_allocator)
 						bold, mismatch_muted: bool
-						for command in commands.internalArray[:commands.length] {
-							if command.commandType != .Text {continue}
-							data := command.renderData.text
-							part := string(data.stringContents.chars[:data.stringContents.length])
-							box := command.boundingBox
+						for command in commands {
+							if command.kind != .Text {continue}
+							data := command.text
+							part := data.text
+							box := command.rect
 							strings.write_string(&shown, part)
 							testing.expect(
 								t,
@@ -549,48 +535,44 @@ highlight_card_layout :: proc(t: ^testing.T) {
 								box.x + box.width <= card_box.x + card_box.width + 0.1,
 								part,
 							)
-							if box.y >= quote.boundingBox.y &&
-							   box.y < quote.boundingBox.y + quote.boundingBox.height {
-								if box.y < attribution.boundingBox.y &&
-								   data.fontId !=
-									   FONT_ICON {strings.write_string(&quote_text, part)}
+							if box.y >= quote.rect.y && box.y < quote.rect.y + quote.rect.height {
+								if box.y < attribution.rect.y &&
+								   data.font != FONT_ICON {strings.write_string(&quote_text, part)}
 								if strings.contains(part, "BOLDMARK") ||
 								   strings.contains(
 									   part,
 									   "LEADINGMARK",
-								   ) {bold = data.fontId == FONT_TITLE}
+								   ) {bold = data.font == FONT_TITLE}
 								testing.expect(
 									t,
-									box.x >= quote.boundingBox.x - 0.1 &&
-									box.x + box.width <=
-										quote.boundingBox.x + quote.boundingBox.width + 0.1 &&
-									box.y + box.height <=
-										quote.boundingBox.y + quote.boundingBox.height + 0.1,
+									box.x >= quote.rect.x - 0.1 &&
+									box.x + box.width <= quote.rect.x + quote.rect.width + 0.1 &&
+									box.y + box.height <= quote.rect.y + quote.rect.height + 0.1,
 									"Quote text must not escape its panel.",
 								)
 							}
 							if selection.found &&
-							   box.y >= selection.boundingBox.y &&
+							   box.y >= selection.rect.y &&
 							   box.y <
-								   selection.boundingBox.y +
-									   selection.boundingBox.height {strings.write_string(&selection_text, part)}
-							if box.y >= comment.boundingBox.y &&
-							   box.y < comment.boundingBox.y + comment.boundingBox.height {
+								   selection.rect.y +
+									   selection.rect.height {strings.write_string(&selection_text, part)}
+							if box.y >= comment.rect.y &&
+							   box.y < comment.rect.y + comment.rect.height {
 								strings.write_string(&comment_text, part)
 								testing.expect(
 									t,
-									box.x >= comment.boundingBox.x - 0.1 &&
+									box.x >= comment.rect.x - 0.1 &&
 									box.x + box.width <=
-										comment.boundingBox.x + comment.boundingBox.width + 0.1 &&
+										comment.rect.x + comment.rect.width + 0.1 &&
 									box.y + box.height <=
-										comment.boundingBox.y + comment.boundingBox.height + 0.1,
+										comment.rect.y + comment.rect.height + 0.1,
 									"Comment text must not escape its panel.",
 								)
 							}
 							if strings.contains(
 								part,
 								"CONTEXTMISMATCH",
-							) {mismatch_muted = data.textColor == TEXT_DIM || data.textColor == TEXT_LO}
+							) {mismatch_muted = data.color == TEXT_DIM || data.color == TEXT_LO}
 						}
 						visible := strings.to_string(shown)
 						quoted := strings.to_string(quote_text)
@@ -629,10 +611,7 @@ highlight_card_layout :: proc(t: ^testing.T) {
 								"Unrelated context must be separate muted text, not a replacement quotation.",
 							)
 						case 3:
-							testing.expect(
-								t,
-								clay.GetElementData(clay.ID("NevMore", card_id)).found,
-							)
+							testing.expect(t, nendo.element(nendo.id("NevMore", card_id)).found)
 							if expanded {
 								testing.expect(
 									t,
@@ -661,21 +640,18 @@ highlight_card_layout :: proc(t: ^testing.T) {
 								"The selected passage must remain visible even after long leading context.",
 							)
 							testing.expect(t, bold)
-							testing.expect(
-								t,
-								clay.GetElementData(clay.ID("NevMore", card_id)).found,
-							)
+							testing.expect(t, nendo.element(nendo.id("NevMore", card_id)).found)
 							if expanded {testing.expect(t, nev_highlight_test_compact(quoted) == nev_highlight_test_compact(fixture.surrounding), "Expansion must restore the full surrounding passage.")}
 						case 5:
 							testing.expect(
 								t,
-								clay.GetElementData(clay.ID("NevMore", card_id)).found,
+								nendo.element(nendo.id("NevMore", card_id)).found,
 								"A highlight without commentary must remain collapsible after expansion.",
 							)
 							if expanded {testing.expect(t, nev_highlight_test_compact(selected) == nev_highlight_test_compact(fixture.content), "A standalone highlight must preserve its complete quotation.")}
 						}
 						rl.BeginDrawing()
-						clay_raylib_render(&commands)
+						render_nendo(commands)
 						rl.TakeScreenshot(
 							fmt.ctprintf(
 								"/tmp/wn-highlight-%d-%d-%d-%d.png",
@@ -770,63 +746,57 @@ git_card_layout :: proc(t: ^testing.T) {
 			apply_theme(theme, 0)
 			for width in ([]f32{240, 360, 520}) {
 				for frame in 0 ..< 3 {
-					clay.BeginLayout()
-					if clay.UI(clay.ID("Timeline"))(
+					nendo.begin()
+					if nendo.box(nendo.id("Timeline"))(
 					{
-						layout = {
-							layoutDirection = .TopToBottom,
-							sizing = {
-								width = clay.SizingFixed(width + 78),
-								height = clay.SizingGrow(),
-							},
-							padding = clay.PaddingAll(16),
-						},
-						backgroundColor = BG,
+						direction = .Column,
+						width = nendo.fixed(width + 78),
+						height = nendo.grow(),
+						padding = nendo.pad(16),
+						color = BG,
 					},
 					) {
-						if clay.UI(clay.ID("GitEventBubble"))(
+						if nendo.box(nendo.id("GitEventBubble"))(
 						{
-							layout = {
-								layoutDirection = .TopToBottom,
-								sizing = {width = clay.SizingFixed(width + 32)},
-								padding = clay.PaddingAll(16),
-								childGap = 10,
-							},
-							backgroundColor = CARD,
-							cornerRadius = rr(14),
+							direction = .Column,
+							width = nendo.fixed(width + 32),
+							padding = nendo.pad(16),
+							gap = 10,
+							color = CARD,
+							radius = rr(14),
 						},
 						) {
-							clay.Text(
+							nendo.text(
 								fixture.kind == 1621 ? "Shared issue" : "Shared pull request",
-								{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
+								{font = FONT_BODY, size = BODY_FS, color = TEXT},
 							)
 							body_text(100, token, BODY_FS, TEXT, wrap_w = width)
 						}
 					}
-					commands := clay.EndLayout(0)
+					commands := nendo.end(0)
 					if frame < 2 {continue}
 					shown := strings.builder_make(context.temp_allocator)
 					bold := false
 					title_bold := index % 3 != 0 || index >= 6
-					box := clay.GetElementData(clay.ID("GitEventBubble")).boundingBox
-					card_box := clay.GetElementData(clay.ID("NevCard", card_id)).boundingBox
+					box := nendo.element(nendo.id("GitEventBubble")).rect
+					card_box := nendo.element(nendo.id("NevCard", card_id)).rect
 					testing.expect(t, card_box.width <= width)
 					if width ==
 					   520 {testing.expect(t, card_box.width >= 480, "A wide chat must give the Git event enough reading room.")}
-					for command in commands.internalArray[:commands.length] {
-						if command.commandType != .Text {continue}
-						text := command.renderData.text.stringContents
-						part := string(text.chars[:text.length])
+					for command in commands {
+						if command.kind != .Text {continue}
+						text := command.text.text
+						part := text
 						strings.write_string(&shown, part)
-						if part == "messages" {bold = command.renderData.text.fontId == FONT_TITLE}
+						if part == "messages" {bold = command.text.font == FONT_TITLE}
 						if strings.contains(
 							part,
 							"Fix relay",
-						) {title_bold = command.renderData.text.fontId == FONT_TITLE}
+						) {title_bold = command.text.font == FONT_TITLE}
 						testing.expect(
 							t,
-							command.boundingBox.x >= box.x &&
-							command.boundingBox.x + command.boundingBox.width <= box.x + box.width,
+							command.rect.x >= box.x &&
+							command.rect.x + command.rect.width <= box.x + box.width,
 							part,
 						)
 					}
@@ -852,7 +822,7 @@ git_card_layout :: proc(t: ^testing.T) {
 					   index ==
 						   3 {testing.expect(t, strings.contains(visible, "Fix relay reconnects"))}
 					rl.BeginDrawing()
-					clay_raylib_render(&commands)
+					render_nendo(commands)
 					rl.TakeScreenshot(
 						fmt.ctprintf(
 							"/tmp/wn-git-card-%d-%d-%d-%d.png",
@@ -880,8 +850,8 @@ git_card_layout :: proc(t: ^testing.T) {
 @(test)
 patch_open_client :: proc(t: ^testing.T) {
 	note :: "note13ze9zdt8ulg08ggc4g9ycmpen5ltscc4hvfy8seceu578zlvkyzsq77jau"
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	previous := g_ui
 	defer {g_ui = previous}
 	ui: Ui_State
@@ -938,27 +908,25 @@ patch_card_layout :: proc(t: ^testing.T) {
 				card.excerpt.expanded = expanded
 				nev_cards[token] = card
 				for frame in 0 ..< 3 {
-					clay.BeginLayout()
-					if clay.UI(clay.ID("Timeline"))(
+					nendo.begin()
+					if nendo.box(nendo.id("Timeline"))(
 					{
-						layout = {
-							layoutDirection = .TopToBottom,
-							sizing = {width = clay.SizingFixed(width + 78)},
-							padding = clay.PaddingAll(16),
-						},
-						backgroundColor = BG,
+						direction = .Column,
+						width = nendo.fixed(width + 78),
+						padding = nendo.pad(16),
+						color = BG,
 					},
 					) {nev_card(42, token, token, nil)}
-					commands := clay.EndLayout(0)
+					commands := nendo.end(0)
 					if frame < 2 {continue}
-					box := clay.GetElementData(clay.ID("NevCard", 42)).boundingBox
+					box := nendo.element(nendo.id("NevCard", 42)).rect
 					testing.expect(t, box.width <= width)
 					if width == 520 {testing.expect_value(t, box.width, f32(520))}
 					added, removed := false, false
-					for command in commands.internalArray[:commands.length] {
-						if command.commandType != .Text {continue}
-						text := command.renderData.text.stringContents
-						part := string(text.chars[:text.length])
+					for command in commands {
+						if command.kind != .Text {continue}
+						text := command.text.text
+						part := text
 						testing.expect(
 							t,
 							!strings.contains(part, `"kind":`) &&
@@ -967,23 +935,19 @@ patch_card_layout :: proc(t: ^testing.T) {
 						)
 						testing.expect(
 							t,
-							command.boundingBox.x >= box.x &&
-							command.boundingBox.x + command.boundingBox.width <=
-								box.x + box.width + 0.1,
+							command.rect.x >= box.x &&
+							command.rect.x + command.rect.width <= box.x + box.width + 0.1,
 							part,
 						)
 						if strings.contains(
 							part,
 							"+if len",
-						) {added = command.renderData.text.textColor == ACCENT_DIM}
-						if strings.contains(
-							part,
-							"-draw",
-						) {removed = command.renderData.text.textColor == DANGER}
+						) {added = command.text.color == ACCENT_DIM}
+						if strings.contains(part, "-draw") {removed = command.text.color == DANGER}
 					}
 					if expanded {testing.expect(t, added && removed, "Expanded patches must distinguish additions and deletions.")}
 					rl.BeginDrawing()
-					clay_raylib_render(&commands)
+					render_nendo(commands)
 					rl.TakeScreenshot(
 						fmt.ctprintf("/tmp/wn-patch-%d-%d-%t.png", theme, int(width), expanded),
 					)
@@ -1006,17 +970,17 @@ patch_card_layout :: proc(t: ^testing.T) {
 	defer nev_highlight_test_free(bounded)
 	bounded.excerpt.expanded = true
 	nev_cards[token] = bounded
-	clay.BeginLayout()
-	if clay.UI(clay.ID("Timeline"))(
-	{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(318)}}},
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))(
+	{direction = .Column, width = nendo.fixed(318)},
 	) {nev_card(42, token, token, nil)}
-	commands := clay.EndLayout(0)
+	commands := nendo.end(0)
 	text_rows := 0
-	for command in commands.internalArray[:commands.length] {if command.commandType == .Text {text_rows += 1}}
+	for command in commands {if command.kind == .Text {text_rows += 1}}
 	testing.expect(
 		t,
 		text_rows <= CODE_MODAL_LINES + 20,
-		"Long source lines must not exhaust Clay's element budget.",
+		"Long source lines must not exhaust nendo's element budget.",
 	)
 }
 
@@ -1051,35 +1015,30 @@ product_card_layout :: proc(t: ^testing.T) {
 	// Register even a missing image to prevent a network request in the test.
 	nev_images[card.product.image] = &texture
 	for width in ([]f32{200, 360}) {
-		clay.BeginLayout()
-		if clay.UI(clay.ID("ProductTest"))(
+		nendo.begin()
+		if nendo.box(nendo.id("ProductTest"))(
 		{
-			layout = {
-				layoutDirection = .TopToBottom,
-				sizing = {width = clay.SizingFixed(width + 24)},
-				padding = clay.PaddingAll(12),
-				childGap = 6,
-			},
-			backgroundColor = PLATE,
+			direction = .Column,
+			width = nendo.fixed(width + 24),
+			padding = nendo.pad(12),
+			gap = 6,
+			color = PLATE,
 		},
 		) {
 			nev_product_card(100, TEST_PRODUCT, card, width)
 		}
-		commands := clay.EndLayout(0)
-		box := clay.GetElementData(clay.ID("ProductTest")).boundingBox
+		commands := nendo.end(0)
+		box := nendo.element(nendo.id("ProductTest")).rect
 		testing.expect(t, box.width <= width + 24.1)
 		testing.expect(t, box.height < 520) // Image, metadata, and a six-line excerpt.
-		testing.expect(t, clay.GetElementData(clay.ID("NevMore", 100)).found)
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType == .Text {
-				testing.expect(
-					t,
-					command.boundingBox.x + command.boundingBox.width <= width + 24.1,
-				)
+		testing.expect(t, nendo.element(nendo.id("NevMore", 100)).found)
+		for command in commands {
+			if command.kind == .Text {
+				testing.expect(t, command.rect.x + command.rect.width <= width + 24.1)
 			}
 		}
 		rl.BeginDrawing()
-		clay_raylib_render(&commands)
+		render_nendo(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-product-%.0f.png", width))
 		rl.EndDrawing()
 	}
@@ -1149,26 +1108,24 @@ geocache_card_layout :: proc(t: ^testing.T) {
 	nev_images["https://tile.openstreetmap.org/15/29106/12901.png"] = &textures[1]
 	for width in ([]f32{200, 360}) {
 		for _ in 0 ..< 2 {
-			clay.BeginLayout()
-			if clay.UI(clay.ID("GeocacheTest"))(
+			nendo.begin()
+			if nendo.box(nendo.id("GeocacheTest"))(
 			{
-				layout = {
-					layoutDirection = .TopToBottom,
-					sizing = {width = clay.SizingFixed(width + 24)},
-					padding = clay.PaddingAll(12),
-					childGap = 6,
-				},
-				backgroundColor = PLATE,
+				direction = .Column,
+				width = nendo.fixed(width + 24),
+				padding = nendo.pad(12),
+				gap = 6,
+				color = PLATE,
 			},
 			) {
 				nev_geocache_card(101, TEST_GEOCACHE, card, width)
 			}
-			commands := clay.EndLayout(0)
-			box := clay.GetElementData(clay.ID("GeocacheTest")).boundingBox
+			commands := nendo.end(0)
+			box := nendo.element(nendo.id("GeocacheTest")).rect
 			testing.expect(t, box.width <= width + 24.1 && box.height < 800)
-			testing.expect(t, clay.GetElementData(clay.ID("NevHint", 101)).found)
-			map_box := clay.GetElementData(clay.ID("NevMap", 101)).boundingBox
-			pin := clay.GetElementData(clay.ID("NevMapPin", 101)).boundingBox
+			testing.expect(t, nendo.element(nendo.id("NevHint", 101)).found)
+			map_box := nendo.element(nendo.id("NevMap", 101)).rect
+			pin := nendo.element(nendo.id("NevMapPin", 101)).rect
 			testing.expect(
 				t,
 				pin.x >= map_box.x &&
@@ -1176,12 +1133,12 @@ geocache_card_layout :: proc(t: ^testing.T) {
 				pin.x + pin.width <= map_box.x + map_box.width &&
 				pin.y + pin.height <= map_box.y + map_box.height,
 			)
-			for command in commands.internalArray[:commands.length] {
-				if command.commandType ==
-				   .Text {testing.expect(t, command.boundingBox.x + command.boundingBox.width <= width + 24.1)}
+			for command in commands {
+				if command.kind ==
+				   .Text {testing.expect(t, command.rect.x + command.rect.width <= width + 24.1)}
 			}
 			rl.BeginDrawing()
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-geocache-%.0f.png", width))
 			rl.EndDrawing()
 		}

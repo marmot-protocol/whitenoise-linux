@@ -3,7 +3,7 @@ package main
 import "core:fmt"
 import "core:os"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 import stbtt "vendor:stb/truetype"
 
@@ -95,26 +95,26 @@ contact_name_text :: proc(t: ^testing.T) {
 		UI_ZOOM = 1.875
 		rl.SetWindowSize(i32(width * UI_ZOOM), 1388)
 		refresh_ui_scale()
-		anim_set(clay.ID("RailWidth").id, RAIL_W_MIN)
+		anim_set(nendo.id("RailWidth").id, RAIL_W_MIN)
 		page_t = 1
-		clay.SetLayoutDimensions({width, 740})
+		nendo.set_dimensions({width, 740})
 		for _ in 0 ..< 3 {build_layout(&ui, 0)}
 		commands := build_layout(&ui, 0)
 		for id in ([]string{"ContactPage", "ContactHero", "ContactHeroCol", "NickBox", "StartChatBtn", "CopyNpubBtn", "RelaysCard"}) {
-			element := clay.GetElementData(clay.ID(id))
+			element := nendo.element(nendo.id(id))
 			testing.expect(t, element.found, id)
 			testing.expect(
 				t,
-				element.boundingBox.x + element.boundingBox.width <= width + 0.01,
+				element.rect.x + element.rect.width <= width + 0.01,
 				fmt.tprintf("%s at %.0f", id, width),
 			)
 		}
-		hero := clay.GetElementData(clay.ID("ContactHero")).boundingBox
-		nick := clay.GetElementData(clay.ID("NickBox")).boundingBox
+		hero := nendo.element(nendo.id("ContactHero")).rect
+		nick := nendo.element(nendo.id("NickBox")).rect
 		testing.expect(t, nick.y >= hero.y + hero.height, "nickname has its own row")
 		rl.BeginDrawing()
 		rl.BeginMode2D({zoom = UI_ZOOM})
-		draw_frame(&commands)
+		draw_frame(commands)
 		rl.EndMode2D()
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-contact-layout-%d.png", int(width)))
 		rl.EndDrawing()

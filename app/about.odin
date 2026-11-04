@@ -10,7 +10,7 @@ import "core:math"
 
 import "core:fmt"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Wall clock at window creation, for the uptime readout.
@@ -30,53 +30,46 @@ TRACE_SECS :: 1.1 // per hop
 settings_about :: proc(ui: ^Ui_State) {
 	about_wordmark()
 
-	if clay.UI(clay.ID("AboutDescriptionGroup"))(settings_box()) {
+	if nendo.box(nendo.id("AboutDescriptionGroup"))(settings_box()) {
 		settings_group(tr("What it is"))
-		clay.Text(
+		nendo.text(
 			tr(
 				"A client for private group chat. Messages are sealed with MLS on this device, handed to Nostr relays as opaque blobs, and opened again only inside the group.",
 			),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+			{font = FONT_BODY, size = 13, color = TEXT},
 		)
 	}
 
-	if clay.UI(clay.ID("AboutTraceGroup"))(settings_box()) {
+	if nendo.box(nendo.id("AboutTraceGroup"))(settings_box()) {
 		settings_group(tr("Where a message goes"))
 		about_trace(ui)
-		clay.Text(
+		nendo.text(
 			tr("The relay in the middle stores and forwards. It never holds a key."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
 		)
 	}
 
-	if clay.UI(clay.ID("AboutSessionGroup"))(settings_box()) {
+	if nendo.box(nendo.id("AboutSessionGroup"))(settings_box()) {
 		settings_group(tr("This session"))
 		about_readout(ui)
 	}
 
-	if clay.UI(clay.ID("AboutCreditsGroup"))(settings_box()) {
+	if nendo.box(nendo.id("AboutCreditsGroup"))(settings_box()) {
 		settings_group(tr("Built with"))
 		about_credits(ui)
 	}
 
 	update_settings_row()
 
-	if clay.UI(clay.ID("AboutFoot"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			childGap = 4,
-			padding = {top = 8},
-		},
-	},
+	if nendo.box(nendo.id("AboutFoot"))(
+	{width = nendo.grow(), direction = .Column, gap = 4, padding = {top = 8}},
 	) {
-		clay.Text(
+		nendo.text(
 			fmt.tprintf("White Noise %s", APP_VERSION),
-			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM},
+			{font = FONT_MONO, size = 11, color = TEXT_DIM},
 		)
-		clay.Text(tr("Data folder"), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_DIM})
-		clay.Text(data_home, {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO})
+		nendo.text(tr("Data folder"), {font = FONT_BODY, size = 10, color = TEXT_DIM})
+		nendo.text(data_home, {font = FONT_MONO, size = 10, color = TEXT_LO})
 	}
 }
 
@@ -85,42 +78,35 @@ settings_about :: proc(ui: ^Ui_State) {
 @(private = "file")
 about_wordmark :: proc() {
 	t := rl.GetTime()
-	if clay.UI(clay.ID("AboutMark"))(
+	if nendo.box(nendo.id("AboutMark"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			padding = {top = 8, bottom = 12},
-			childGap = 16,
-			childAlignment = {y = .Center},
-		},
+		width = nendo.grow(),
+		padding = {top = 8, bottom = 12},
+		gap = 16,
+		align = {y = .Center},
 		border = {color = DIVIDER, width = {bottom = BORDER_W}},
 	},
 	) {
-		if clay.UI(clay.ID("AboutBars"))(
-		{layout = {childGap = 5, childAlignment = {y = .Center}}},
-		) {
+		if nendo.box(nendo.id("AboutBars"))({gap = 5, align = {y = .Center}}) {
 			for i in 0 ..< 3 {
 				// 26..46px, each bar a third of a cycle behind the last.
 				phase := t * 1.6 + f64(i) * 2.1
 				h := f32(36 + 10 * f32(math.sin(phase)))
-				if clay.UI(clay.ID("AboutBar", u32(i)))(
+				if nendo.box(nendo.id("AboutBar", u32(i)))(
 				{
-					layout = {
-						sizing = {width = clay.SizingFixed(5), height = clay.SizingFixed(h)},
-					},
-					backgroundColor = i == 1 ? ACCENT : ACCENT_DIM,
-					cornerRadius = rr(3),
+					width = nendo.fixed(5),
+					height = nendo.fixed(h),
+					color = i == 1 ? ACCENT : ACCENT_DIM,
+					radius = rr(3),
 				},
 				) {}
 			}
 		}
-		if clay.UI(clay.ID("AboutMarkCol"))(
-		{layout = {layoutDirection = .TopToBottom, childGap = 4}},
-		) {
-			clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 21, textColor = TEXT})
-			clay.Text(
+		if nendo.box(nendo.id("AboutMarkCol"))({direction = .Column, gap = 4}) {
+			nendo.text("White Noise", {font = FONT_TITLE, size = 21, color = TEXT})
+			nendo.text(
 				tr("Private group chat over Nostr"),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 		}
 	}
@@ -131,54 +117,46 @@ about_wordmark :: proc() {
 @(private = "file")
 about_trace :: proc(ui: ^Ui_State) {
 	at := int(rl.GetTime() / TRACE_SECS) % len(HOPS)
-	if clay.UI(clay.ID("AboutTrace"))(
+	if nendo.box(nendo.id("AboutTrace"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = settings_body_width(ui) - 24 < 520 ? .TopToBottom : .LeftToRight,
-			childGap = 8,
-			childAlignment = {y = .Center},
-		},
+		width = nendo.grow(),
+		direction = settings_body_width(ui) - 24 < 520 ? .Column : .Row,
+		gap = 8,
+		align = {y = .Center},
 	},
 	) {
 		for hop, i in HOPS {
 			here := i == at
-			if clay.UI(clay.ID("AboutHop", u32(i)))(
+			if nendo.box(nendo.id("AboutHop", u32(i)))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					padding = clay.PaddingAll(8),
-					childGap = 6,
-				},
-				backgroundColor = here ? PLATE : {},
+				width = nendo.grow(),
+				direction = .Column,
+				padding = nendo.pad(8),
+				gap = 6,
+				color = here ? PLATE : {},
 				border = {color = here ? ACCENT : DIVIDER, width = {bottom = BORDER_W}},
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					tr(hop[0]),
-					{
-						fontId = FONT_MONO,
-						fontSize = 11,
-						textColor = here ? ACCENT : TEXT_DIM,
-						letterSpacing = 0,
-					},
+					{font = FONT_MONO, size = 11, color = here ? ACCENT : TEXT_DIM, spacing = 0},
 				)
-				clay.Text(tr(hop[1]), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+				nendo.text(tr(hop[1]), {font = FONT_BODY, size = 11, color = TEXT_LO})
 				// The packet: a filled square while the trace is here, a
 				// hairline track otherwise.
-				if clay.UI(clay.ID("AboutHopTrack", u32(i)))(
+				if nendo.box(nendo.id("AboutHopTrack", u32(i)))(
 				{
-					layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(3)}},
-					backgroundColor = here ? ACCENT : DIVIDER,
-					cornerRadius = rr(2),
+					width = nendo.grow(),
+					height = nendo.fixed(3),
+					color = here ? ACCENT : DIVIDER,
+					radius = rr(2),
 				},
 				) {}
 			}
 			if i < len(HOPS) - 1 {
-				clay.Text(
+				nendo.text(
 					settings_body_width(ui) - 24 < 520 ? "↓" : "→",
-					{fontId = FONT_BODY, fontSize = 14, textColor = i < at ? ACCENT : TEXT_LO},
+					{font = FONT_BODY, size = 14, color = i < at ? ACCENT : TEXT_LO},
 				)
 			}
 		}
@@ -207,43 +185,23 @@ about_readout :: proc(ui: ^Ui_State) {
 		{uptime_label(), tr("UPTIME")},
 	}
 	columns := single_pane() ? 1 : settings_body_width(ui) - 24 < 520 ? 2 : 3
-	if clay.UI(clay.ID("AboutGrid"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			childGap = 8,
-		},
-	},
-	) {
+	if nendo.box(nendo.id("AboutGrid"))({width = nendo.grow(), direction = .Column, gap = 8}) {
 		for row in 0 ..< (len(tiles) + columns - 1) / columns {
-			if clay.UI(clay.ID("AboutGridRow", u32(row)))(
-			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-			) {
+			if nendo.box(nendo.id("AboutGridRow", u32(row)))({width = nendo.grow(), gap = 8}) {
 				for i in row * columns ..< min(row * columns + columns, len(tiles)) {
-					if clay.UI(clay.ID("AboutTile", u32(i)))(
+					if nendo.box(nendo.id("AboutTile", u32(i)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							padding = {top = 8, bottom = 8},
-							childGap = 4,
-						},
+						width = nendo.grow(),
+						direction = .Column,
+						padding = {top = 8, bottom = 8},
+						gap = 4,
 						border = {color = DIVIDER, width = {bottom = BORDER_W}},
 					},
 					) {
-						clay.Text(
-							tiles[i][0],
-							{fontId = FONT_TITLE, fontSize = 20, textColor = TEXT},
-						)
-						clay.Text(
+						nendo.text(tiles[i][0], {font = FONT_TITLE, size = 20, color = TEXT})
+						nendo.text(
 							tiles[i][1],
-							{
-								fontId = FONT_MONO,
-								fontSize = 10,
-								textColor = TEXT_LO,
-								letterSpacing = 2,
-							},
+							{font = FONT_MONO, size = 10, color = TEXT_LO, spacing = 2},
 						)
 					}
 				}
@@ -254,7 +212,7 @@ about_readout :: proc(ui: ^Ui_State) {
 
 CREDITS := []string {
 	"Odin",
-	"clay",
+	"nendo",
 	"SDL3",
 	"marmot",
 	"MLS",
@@ -269,32 +227,14 @@ CREDITS := []string {
 @(private = "file")
 about_credits :: proc(ui: ^Ui_State) {
 	columns := single_pane() ? 1 : settings_body_width(ui) - 24 < 520 ? 3 : 5
-	if clay.UI(clay.ID("AboutCredits"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			childGap = 6,
-		},
-	},
-	) {
+	if nendo.box(nendo.id("AboutCredits"))({width = nendo.grow(), direction = .Column, gap = 6}) {
 		for first := 0; first < len(CREDITS); first += columns {
-			if clay.UI(clay.ID("AboutCreditRow", u32(first)))(
-			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
-			) {
+			if nendo.box(nendo.id("AboutCreditRow", u32(first)))({width = nendo.grow(), gap = 6}) {
 				for i in first ..< min(first + columns, len(CREDITS)) {
-					if clay.UI(clay.ID("AboutCredit", u32(i)))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							padding = {top = 4, bottom = 4},
-						},
-					},
+					if nendo.box(nendo.id("AboutCredit", u32(i)))(
+					{width = nendo.grow(), padding = {top = 4, bottom = 4}},
 					) {
-						clay.Text(
-							CREDITS[i],
-							{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM},
-						)
+						nendo.text(CREDITS[i], {font = FONT_MONO, size = 11, color = TEXT_DIM})
 					}
 				}
 			}

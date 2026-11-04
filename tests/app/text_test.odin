@@ -5,13 +5,13 @@ package main
 import marmot "../marmot"
 import "core:sync"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
 md_blank_lines :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	blocks := parse_md_text("first\n\nsecond\n\n\nthird")
 	defer blocks_free(blocks)
 	testing.expect_value(t, len(blocks), 3)
@@ -33,18 +33,14 @@ md_blank_lines :: proc(t: ^testing.T) {
 	for block, i in converted {testing.expect_value(t, block.blank_lines_before, u8(i))}
 
 	rl.SetPixelScale(1)
-	memory := make([]u8, int(clay.MinMemorySize()))
+	memory := make([]u8, int(nendo.min_memory_size()))
 	defer delete(memory)
-	previous := clay.GetCurrentContext()
-	defer clay.SetCurrentContext(previous)
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{240, 400},
-		{},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
-	clay.BeginLayout()
-	if clay.UI(clay.ID("ParagraphTest"))({layout = {layoutDirection = .TopToBottom}}) {
+	previous := nendo.current_context()
+	defer nendo.set_context(previous)
+	nendo.init(memory, {240, 400}, {})
+	nendo.set_measure_text(measure_text, nil)
+	nendo.begin()
+	if nendo.box(nendo.id("ParagraphTest"))({direction = .Column}) {
 		testing.expect(
 			t,
 			!md_blocks(blocks[:], 0, max_lines = 3),
@@ -52,18 +48,14 @@ md_blank_lines :: proc(t: ^testing.T) {
 		)
 		body_text(100, "first\n\nsecond", BODY_FS, TEXT)
 	}
-	clay.EndLayout(0)
-	testing.expect(t, !clay.GetElementData(clay.ID("MdGap", 0)).found)
+	nendo.end(0)
+	testing.expect(t, !nendo.element(nendo.id("MdGap", 0)).found)
 	for i in 1 ..< 3 {
-		gap := clay.GetElementData(clay.ID("MdGap", u32(i) * 16))
+		gap := nendo.element(nendo.id("MdGap", u32(i) * 16))
 		testing.expect(t, gap.found)
-		testing.expect_value(t, gap.boundingBox.height, f32(i) * f32(BODY_FS) / 2)
+		testing.expect_value(t, gap.rect.height, f32(i) * f32(BODY_FS) / 2)
 	}
-	testing.expect_value(
-		t,
-		clay.GetElementData(clay.ID("BodyLine", 802)).boundingBox.height,
-		f32(BODY_FS),
-	)
+	testing.expect_value(t, nendo.element(nendo.id("BodyLine", 802)).rect.height, f32(BODY_FS))
 	joined := parse_md_text("first\nsecond")
 	defer blocks_free(joined)
 	testing.expect_value(t, len(joined), 1)
@@ -99,31 +91,27 @@ md_text_parse :: proc(t: ^testing.T) {
 
 @(test)
 md_list_layout :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 
 	rl.SetPixelScale(1)
-	memory := make([]u8, int(clay.MinMemorySize()))
+	memory := make([]u8, int(nendo.min_memory_size()))
 	defer delete(memory)
-	previous := clay.GetCurrentContext()
-	defer clay.SetCurrentContext(previous)
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{240, 400},
-		{},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
+	previous := nendo.current_context()
+	defer nendo.set_context(previous)
+	nendo.init(memory, {240, 400}, {})
+	nendo.set_measure_text(measure_text, nil)
 	blocks := parse_md_text(
 		"- Answer questions and explain things and help you write or plan\n\n- Next item\n\n\n- Separate item",
 	)
 	defer blocks_free(blocks)
-	clay.BeginLayout()
-	if clay.UI(clay.ID("ListTest"))(
-	{layout = {layoutDirection = .TopToBottom, childGap = 3}},
+	nendo.begin()
+	if nendo.box(nendo.id("ListTest"))(
+	{direction = .Column, gap = 3},
 	) {md_blocks(blocks[:], 0, wrap_w = 200)}
-	commands := clay.EndLayout(0)
-	marker := clay.GetElementData(clay.ID("MsgListMarker", 0)).boundingBox
-	body := clay.GetElementData(clay.ID("MsgListBody", 0)).boundingBox
+	commands := nendo.end(0)
+	marker := nendo.element(nendo.id("MsgListMarker", 0)).rect
+	body := nendo.element(nendo.id("MsgListBody", 0)).rect
 	testing.expect_value(t, marker.x, f32(12))
 	testing.expect_value(
 		t,
@@ -131,23 +119,19 @@ md_list_layout :: proc(t: ^testing.T) {
 		max(f32(12), rl.MeasureTextLine(FONT_BODY, BODY_FS, "• ", 0).x),
 	)
 	testing.expect_value(t, body.x, marker.x + marker.width)
-	first := clay.GetElementData(clay.ID("MsgListItem", 0)).boundingBox
-	next := clay.GetElementData(clay.ID("MsgListItem", 16)).boundingBox
+	first := nendo.element(nendo.id("MsgListItem", 0)).rect
+	next := nendo.element(nendo.id("MsgListItem", 16)).rect
 	testing.expect_value(t, next.y, first.y + first.height + 3)
-	testing.expect(t, !clay.GetElementData(clay.ID("MdGap", 16)).found)
-	testing.expect_value(
-		t,
-		clay.GetElementData(clay.ID("MdGap", 32)).boundingBox.height,
-		f32(BODY_FS) / 2,
-	)
+	testing.expect(t, !nendo.element(nendo.id("MdGap", 16)).found)
+	testing.expect_value(t, nendo.element(nendo.id("MdGap", 32)).rect.height, f32(BODY_FS) / 2)
 	lines := 0
-	for command in commands.internalArray[:commands.length] {
-		if command.commandType != .Text || command.boundingBox.x < body.x {
+	for command in commands {
+		if command.kind != .Text || command.rect.x < body.x {
 			continue
 		}
 		lines += 1
-		testing.expect_value(t, command.boundingBox.x, body.x)
-		testing.expect(t, command.boundingBox.x + command.boundingBox.width <= 200)
+		testing.expect_value(t, command.rect.x, body.x)
+		testing.expect(t, command.rect.x + command.rect.width <= 200)
 	}
 	testing.expect(t, lines > 1, "long list items must wrap with a hanging indent")
 }

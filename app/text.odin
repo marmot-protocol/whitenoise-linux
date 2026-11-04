@@ -172,7 +172,7 @@ SPECIMEN_SIZES := []f32{30, 20, 14}
 
 // nil when stb can't parse the font.
 ttf_view_make :: proc(data: []u8) -> ^Ttf_View {
-	image := rl.FontSpecimen(data, SPECIMEN_LINES, SPECIMEN_SIZES, clay_color(TEXT), 640)
+	image := rl.FontSpecimen(data, SPECIMEN_LINES, SPECIMEN_SIZES, nendo_color(TEXT), 640)
 	if image.data == nil {
 		return nil
 	}

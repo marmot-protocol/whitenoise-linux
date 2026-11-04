@@ -1,6 +1,6 @@
 package main
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -72,24 +72,20 @@ settings_conversation_preview :: proc(ui: ^Ui_State) {
 	g_ui = &preview
 	defer {g_ui = previous}
 	preview_h := clamp(f32(rl.GetScreenHeight()) / UI_ZOOM * 0.7, f32(440), f32(620))
-	if clay.UI(clay.ID("SettingsConversationPreview"))(
+	if nendo.box(nendo.id("SettingsConversationPreview"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFit({min = preview_h})},
-			layoutDirection = .TopToBottom,
-		},
-		backgroundColor = BG,
+		width = nendo.grow(),
+		height = nendo.fit(min = preview_h),
+		direction = .Column,
+		color = BG,
 		border = {color = FIELD_BORDER, width = bw()},
-		cornerRadius = rr(8),
+		radius = rr(8),
 	},
 	) {
-		if clay.UI(clay.ID("SettingsPreviewTitle"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12)}},
+		if nendo.box(nendo.id("SettingsPreviewTitle"))(
+		{width = nendo.grow(), padding = nendo.pad(12)},
 		) {
-			clay.Text(
-				tr("Conversation preview"),
-				{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
-			)
+			nendo.text(tr("Conversation preview"), {font = FONT_TITLE, size = 14, color = TEXT})
 		}
 		chat_pane(&preview, chat, messages[:])
 	}

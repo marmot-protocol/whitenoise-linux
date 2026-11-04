@@ -15,7 +15,7 @@ import stbi "vendor:stb/image"
 
 // preview_show decodes models on a worker; wait for it and reap the
 // thread, as the frame loop's poll and drain_sends would. send_threads
-// is swapped out under test_home_lock (taken after clay_test_mutex,
+// is swapped out under test_home_lock (taken after nendo_test_mutex,
 // as elsewhere) so other tests' workers are left alone.
 @(private = "file")
 preview_show_wait :: proc(name: string, bytes: []u8, archive: ^Arc_View = nil) {
@@ -38,8 +38,8 @@ preview_show_wait :: proc(name: string, bytes: []u8, archive: ^Arc_View = nil) {
 
 @(test)
 fbx_archive_textures :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	// Handwritten triangle FBX, Windows relative texture path, 2x2 RGBA TGA.
 	data := #load("fbx_textures.zip", []u8)
 	owned := make([]u8, len(data))

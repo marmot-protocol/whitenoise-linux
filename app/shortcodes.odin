@@ -10,7 +10,7 @@ import "core:fmt"
 import "core:strings"
 import "core:text/edit"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 SHORTCODE_CANDS_MAX :: 8
@@ -176,7 +176,7 @@ handle_shortcode :: proc(ui: ^Ui_State) -> bool {
 	}
 	if mouse_released() {
 		for _, i in ui.shortcode_cands {
-			if clay.PointerOver(clay.ID("ShortcodeCand", u32(i))) {
+			if nendo.pointer_over(nendo.id("ShortcodeCand", u32(i))) {
 				shortcode_commit(ui, i)
 				return true
 			}
@@ -187,50 +187,42 @@ handle_shortcode :: proc(ui: ^Ui_State) -> bool {
 
 // The popover, floated above the composer like mention_popover.
 shortcode_popover :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("ShortcodePop"))(
+	if nendo.box(nendo.id("ShortcodePop"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(280)},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(6),
-			childGap = 2,
-		},
-		backgroundColor = CARD,
-		cornerRadius = rr(10),
+		width = nendo.fixed(280),
+		direction = .Column,
+		padding = nendo.pad(6),
+		gap = 2,
+		color = CARD,
+		radius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
 		floating = {
-			attachTo = .Parent,
-			zIndex = 12,
-			offset = {0, -8 - rise(clay.ID("ShortcodePop"))},
-			attachment = {element = .LeftBottom, parent = .LeftTop},
+			attach_to = .Parent,
+			z = 12,
+			offset = {0, -8 - rise(nendo.id("ShortcodePop"))},
+			attach = {element = .Left_Bottom, parent = .Left_Top},
 		},
 	},
 	) {
 		for cand, i in ui.shortcode_cands {
 			sel := i == ui.shortcode_sel
 			tex := len(cand.emoji) > 0 ? emoji_tex(cand.emoji) : custom_tex_by_code(cand.code)
-			if clay.UI(clay.ID("ShortcodeCand", u32(i)))(
+			if nendo.box(nendo.id("ShortcodeCand", u32(i)))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					padding = clay.PaddingAll(6),
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = sel ? SELECTED : (hovered() ? HOVER : {}),
-				cornerRadius = rr(8),
+				width = nendo.grow(),
+				padding = nendo.pad(6),
+				gap = 8,
+				align = {y = .Center},
+				color = sel ? SELECTED : (hovered() ? HOVER : {}),
+				radius = rr(8),
 			},
 			) {
-				if clay.UI(clay.ID("ShortcodeCandImg", u32(i)))(
-				{
-					layout = {sizing = {width = clay.SizingFixed(22)}},
-					aspectRatio = {1},
-					image = {imageData = tex},
-				},
+				if nendo.box(nendo.id("ShortcodeCandImg", u32(i)))(
+				{width = nendo.fixed(22), aspect = 1, image = tex},
 				) {}
-				clay.Text(
+				nendo.text(
 					fmt.tprintf(":%s:", cand.code),
-					{fontId = FONT_BODY, fontSize = 13, textColor = sel ? ACCENT : TEXT},
+					{font = FONT_BODY, size = 13, color = sel ? ACCENT : TEXT},
 				)
 			}
 		}

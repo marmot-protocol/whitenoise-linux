@@ -4,7 +4,7 @@ import marmot "../marmot"
 import "core:fmt"
 import "core:slice"
 import "core:strings"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -135,16 +135,14 @@ inbox_sections :: proc(
 @(private)
 inbox_view :: proc() -> (top, height: f32) {
 	short := f32(rl.GetScreenHeight()) / UI_ZOOM < 480
-	id := clay.ID(short ? "RailContent" : "ChatList")
-	data := clay.GetScrollContainerData(id)
-	height =
-		data.found ? data.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-	top = data.found ? -data.scrollPosition.y : 0
+	id := nendo.id(short ? "RailContent" : "ChatList")
+	data := nendo.scroll(id)
+	height = data.found ? data.viewport.height : f32(rl.GetScreenHeight()) / UI_ZOOM
+	top = data.found ? -data.position.y : 0
 	if short && data.found {
-		list := clay.GetElementData(clay.ID("ChatList"))
-		rail := clay.GetElementData(id)
-		if list.found &&
-		   rail.found {top -= list.boundingBox.y - rail.boundingBox.y - data.scrollPosition.y}
+		list := nendo.element(nendo.id("ChatList"))
+		rail := nendo.element(id)
+		if list.found && rail.found {top -= list.rect.y - rail.rect.y - data.position.y}
 	}
 	return
 }
@@ -157,8 +155,8 @@ inbox_rows_window :: proc(ui: ^Ui_State, rows: []Inbox_Row, offset_y: f32, secti
 	first := clamp(int(offset / stride) - 2, 0, len(rows))
 	last := clamp(int((offset + height) / stride) + 3, first, len(rows))
 	if first > 0 {
-		if clay.UI(clay.ID("InboxRowsBefore", section))(
-		{layout = {sizing = {height = clay.SizingFixed(f32(first) * stride - 2)}}},
+		if nendo.box(nendo.id("InboxRowsBefore", section))(
+		{height = nendo.fixed(f32(first) * stride - 2)},
 		) {}
 	}
 	projects := rl.WhipProjects()
@@ -172,8 +170,8 @@ inbox_rows_window :: proc(ui: ^Ui_State, rows: []Inbox_Row, offset_y: f32, secti
 		)
 	}
 	if last < len(rows) {
-		if clay.UI(clay.ID("InboxRowsAfter", section))(
-		{layout = {sizing = {height = clay.SizingFixed(f32(len(rows) - last) * stride - 2)}}},
+		if nendo.box(nendo.id("InboxRowsAfter", section))(
+		{height = nendo.fixed(f32(len(rows) - last) * stride - 2)},
 		) {}
 	}
 }
@@ -189,12 +187,12 @@ inbox_cycle :: proc(ui: ^Ui_State, client: ^marmot.Client, step: int) {
 		if selected {at = pos + step; break}
 	}
 	row := ui.rail_rows[(at + len(ui.rail_rows)) %% len(ui.rail_rows)]
-	if view := clay.GetScrollContainerData(clay.ID("ChatList")); view.found {
-		top := -view.scrollPosition.y
-		height := view.scrollContainerDimensions.height
+	if view := nendo.scroll(nendo.id("ChatList")); view.found {
+		top := -view.position.y
+		height := view.viewport.height
 		if row.top < top {top = row.top}
 		if row.top + chat_row_height() > top + height {top = row.top + chat_row_height() - height}
-		view.scrollPosition.y = -clamp(top, 0, max(view.contentDimensions.height - height, 0))
+		view.position.y = -clamp(top, 0, max(view.content.height - height, 0))
 		scroll_residual = {}
 	}
 	if row.kind == .Terminal {whip_open_project(ui, row.project); return}

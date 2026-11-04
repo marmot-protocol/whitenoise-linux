@@ -2,8 +2,8 @@
 
 Guidance for AI coding agents working in this repository.
 
-White Noise Linux is an Odin desktop client, laid out by a native port of
-[clay](https://github.com/nicbarker/clay) in `app/layout/`, for
+White Noise Linux is an Odin desktop client, laid out by nendo, White Noise's
+layout engine (`app/nendo/`), for
 [Marmot](https://github.com/marmot-protocol/mdk): MLS group
 messaging over Nostr relays. It talks to the Marmot runtime through
 `marmot-c`, the same C API the Android, iOS, and macOS apps use.
@@ -153,7 +153,7 @@ packaged `wn-archive` and `wn-pdf` helpers, not in the UI process.
 ## Architecture
 
 ```
- SDL3  ←──  app/sdlrl/  ←──  app/renderer.odin  ←──  clay layout (app/*.odin)
+ SDL3  ←──  app/sdlrl/  ←──  app/renderer.odin  ←──  nendo layout (app/*.odin)
                                                           │
                                                     app/state.odin  (Ui_State)
                                                           │
@@ -175,22 +175,23 @@ packaged `wn-archive` and `wn-pdf` helpers, not in the UI process.
   subscription worker feeds updates into a queue that the UI thread drains at
   a frame boundary, and each send runs on its own short-lived thread. Anything
   that can block belongs on a worker.
-- **`app/layout/`** is the layout engine: package `clay`, a line-for-line
-  Odin port of clay at `e6cc369` with White Noise's fixes folded in (hash map
-  slot reuse, scroll targeting and reflow, floating layers, nested clip hit
-  tests, CJK line breaks). It keeps the C binding's API, so call sites read
-  `clay.UI(...)`, `clay.Text(...)`. The debug view and external scroll
-  handling are not ported; transitions are. Change layout behavior there, not
-  in callers. `tests/app/layout_engine_test.odin` covers the fixes.
+- **`app/nendo/`** is nendo, White Noise's layout engine. An element is
+  `if nendo.box(nendo.id("Row", i))({width = nendo.grow(), direction = .Column,
+  gap = 8, color = BG}) {...}`; the declaration is curried so `nendo.hovered()`
+  inside it sees the element being declared. `clip = {y = true, scroll = true}`
+  applies the container's scroll position; `nendo.text(s, {font, size, color})`
+  adds text; `nendo.end` returns `[]nendo.Render_Command`. Transitions exist
+  but are unused so far. Change layout behavior there, not in callers.
+  `tests/app/nendo_test.odin` covers its hash map reuse and scroll targeting.
 - **`app/sdlrl/`** is an SDL3 shim with a raylib-shaped API (window, input,
   clipboard, screenshots, IME, and a stb_truetype text engine with a CJK
   fallback stack). It exists because the app was written against raylib
   first, and raylib has no IME text input and no dynamic glyph baking.
-  `renderer.odin` is clay's official renderer, retargeted onto it.
+  `renderer.odin` draws nendo's render commands through it.
   `app/sdlrl/targets.odin` owns off-screen compositing targets, nested view
   restoration, and the modal blur chain.
 - **Panes are flat procs.** `chatpane.odin`, `panes.odin`, `settings_pages.odin`
-  and friends each build their part of the clay tree directly from `Ui_State`.
+  and friends each build their part of the layout tree directly from `Ui_State`.
   Follow that: no widget objects, no retained view tree.
 
 Shell widths are logical pixels after `UI_ZOOM`. The default 1024x700 window

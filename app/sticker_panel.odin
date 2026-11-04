@@ -4,7 +4,7 @@ import "core:fmt"
 import "core:slice"
 import "core:strings"
 import "core:unicode/utf8"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -25,24 +25,22 @@ Sticker_Control :: enum {
 
 @(private)
 sticker_control :: proc(id: string, index: u32, label: string, style := Sticker_Control.Normal) {
-	if clay.UI(clay.ID(id, index))(
+	if nendo.box(nendo.id(id, index))(
 	{
-		layout = {
-			sizing = {height = clay.SizingFixed(tap_size() ? tap_min() : 34)},
-			padding = {left = 10, right = 10},
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = style == .Primary ? ACCENT : style == .Selected ? SELECTED : hovered() ? HOVER : ROW_BG,
-		cornerRadius = rr(7),
+		height = nendo.fixed(tap_size() ? tap_min() : 34),
+		padding = {left = 10, right = 10},
+		align = {y = .Center},
+		color = style == .Primary ? ACCENT : style == .Selected ? SELECTED : hovered() ? HOVER : ROW_BG,
+		radius = rr(7),
 	},
 	) {
 		if hovered() {cursor_raise(.Pointer)}
-		clay.Text(
+		nendo.text(
 			label,
 			{
-				fontId = FONT_BODY,
-				fontSize = 13,
-				textColor = style == .Primary ? ON_ACCENT : style == .Danger ? DANGER : TEXT,
+				font = FONT_BODY,
+				size = 13,
+				color = style == .Primary ? ON_ACCENT : style == .Danger ? DANGER : TEXT,
 			},
 		)
 	}
@@ -54,21 +52,15 @@ sticker_copy :: proc(
 	text: string,
 	width: f32,
 	size: u16 = 14,
-	color: clay.Color = TEXT_DIM,
+	color: nendo.Color = TEXT_DIM,
 ) {
-	if clay.UI(clay.ID("StickerCopy", id))(
-	{
-		layout = {
-			sizing = {width = clay.SizingFixed(width)},
-			layoutDirection = .TopToBottom,
-			childGap = 2,
-		},
-	},
+	if nendo.box(nendo.id("StickerCopy", id))(
+	{width = nendo.fixed(width), direction = .Column, gap = 2},
 	) {
 		for line in wrapped_lines(text, width, size, .Text) {
-			clay.Text(
+			nendo.text(
 				text[line.start:line.end],
-				{fontId = FONT_BODY, fontSize = size, textColor = color, wrapMode = .None},
+				{font = FONT_BODY, size = size, color = color, wrap = .None},
 			)
 		}
 	}
@@ -95,31 +87,27 @@ message_sticker :: proc(ui: ^Ui_State, index: u32, msg: Msg_Ui) {
 			   item.ref.sha == msg.sticker.sha {tex = sticker_texture(item); break}
 		}
 	}
-	if clay.UI(clay.ID("MessageSticker", index))(
-	{layout = {layoutDirection = .TopToBottom, childGap = 4}},
-	) {
+	if nendo.box(nendo.id("MessageSticker", index))({direction = .Column, gap = 4}) {
 		if hovered() {cursor_raise(.Pointer)}
 		if tex != nil {
 			ratio := f32(tex.width) / f32(max(1, tex.height))
-			if clay.UI(clay.ID_LOCAL("MessageStickerArt"))(
+			if nendo.box(nendo.id_local("MessageStickerArt"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingFixed(min(att_w(), min(220, 220 * ratio)))},
-				},
-				aspectRatio = {ratio},
-				image = {imageData = tex},
-				userData = rawptr(STICKER_IMAGE),
+				width = nendo.fixed(min(att_w(), min(220, 220 * ratio))),
+				aspect = ratio,
+				image = tex,
+				user_data = rawptr(STICKER_IMAGE),
 			},
 			) {}
 		} else {
-			clay.Text(
+			nendo.text(
 				tr("Sticker unavailable. Click to view options."),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
 			)
 		}
-		clay.Text(
+		nendo.text(
 			msg.sticker.pack == "" ? tr("Save sticker") : tr("View sticker pack"),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
 		)
 	}
 }
@@ -214,34 +202,31 @@ sticker_tile :: proc(
 	state: Sticker_Tile_State,
 	size: f32 = 80,
 ) {
-	if clay.UI(clay.ID(id, u32(index)))(
+	if nendo.box(nendo.id(id, u32(index)))(
 	{
-		layout = {
-			sizing = {clay.SizingFixed(size), clay.SizingFixed(size)},
-			layoutDirection = .TopToBottom,
-			childAlignment = {x = .Center, y = .Center},
-			childGap = 3,
-		},
-		backgroundColor = state == .Focused ? SELECTED : (hovered() ? HOVER : {}),
-		cornerRadius = rr(6),
+		width = nendo.fixed(size),
+		height = nendo.fixed(size),
+		direction = .Column,
+		align = {x = .Center, y = .Center},
+		gap = 3,
+		color = state == .Focused ? SELECTED : (hovered() ? HOVER : {}),
+		radius = rr(6),
 	},
 	) {
 		tex := sticker_texture(item)
 		if tex != nil {
 			ratio := f32(tex.width) / f32(max(tex.height, 1))
-			if clay.UI(clay.ID_LOCAL("StickerArt"))(
+			if nendo.box(nendo.id_local("StickerArt"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingFixed(min(size - 16, (size - 16) * ratio))},
-				},
-				aspectRatio = {ratio},
-				image = {imageData = tex},
-				userData = rawptr(STICKER_IMAGE),
+				width = nendo.fixed(min(size - 16, (size - 16) * ratio)),
+				aspect = ratio,
+				image = tex,
+				user_data = rawptr(STICKER_IMAGE),
 			},
 			) {}
-		} else {clay.Text(
+		} else {nendo.text(
 				sticker_requested[item.ref.sha] && item.ref.sha in sticker_textures ? "?" : "…",
-				{fontSize = 18, textColor = TEXT_LO},
+				{size = 18, color = TEXT_LO},
 			)}
 		if hovered() {tooltip(item.label); cursor_raise(.Pointer)}
 	}
@@ -249,16 +234,12 @@ sticker_tile :: proc(
 
 @(private)
 sticker_picker :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("StickerPacks"))(
+	if nendo.box(nendo.id("StickerPacks"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFixed(tap_size() ? tap_min() : 34),
-			},
-			childGap = 6,
-		},
-		clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
+		width = nendo.grow(),
+		height = nendo.fixed(tap_size() ? tap_min() : 34),
+		gap = 6,
+		clip = {x = true, scroll = true},
 	},
 	) {
 		sticker_control("StickerAll", 0, tr("All"), ui.sticker_filter == "" ? .Selected : .Normal)
@@ -277,18 +258,14 @@ sticker_picker :: proc(ui: ^Ui_State) {
 		)
 		for pack, i in ui.sticker_packs {sticker_control("StickerPack", u32(i), pack.title, ui.sticker_filter == pack.coordinate ? .Selected : .Normal)}
 	}
-	scrollbar(clay.ID("StickerPacks"), 13)
-	if clay.UI(clay.ID("PickerSearch"))(
+	scrollbar(nendo.id("StickerPacks"), 13)
+	if nendo.box(nendo.id("PickerSearch"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFixed(tap_size() ? tap_min() : 34),
-			},
-			padding = clay.PaddingAll(8),
-		},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(6),
+		width = nendo.grow(),
+		height = nendo.fixed(tap_size() ? tap_min() : 34),
+		padding = nendo.pad(8),
+		color = ROW_BG,
+		radius = rr(6),
 	},
 	) {
 		field_text(
@@ -301,33 +278,32 @@ sticker_picker :: proc(ui: ^Ui_State) {
 			TEXT_LO,
 		)
 	}
-	if clay.UI(clay.ID("StickerGrid"))(
+	if nendo.box(nendo.id("StickerGrid"))(
 	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow({min = 44})},
-			layoutDirection = .TopToBottom,
-			childGap = 4,
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		width = nendo.grow(),
+		height = nendo.grow(min = 44),
+		direction = .Column,
+		gap = 4,
+		clip = {y = true, scroll = true},
 	},
 	) {
 		matches := sticker_matches(ui)
 		if len(matches) == 0 {
-			clay.Text(
+			nendo.text(
 				tr(
 					len(ui.picker_filter) > 0 ? N_("No matching stickers.") : N_("No stickers here yet. Choose Manage to add stickers or sticker packs."),
 				),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
 			)
 		}
-		columns := max(1, int((modal_w(clay.ID("PickerPanel"), 400) - 24) / 84))
+		columns := max(1, int((modal_w(nendo.id("PickerPanel"), 400) - 24) / 84))
 		for start := 0; start < len(matches); start += columns {
-			if clay.UI(clay.ID("StickerRow", u32(start)))({layout = {childGap = 4}}) {
+			if nendo.box(nendo.id("StickerRow", u32(start)))({gap = 4}) {
 				for at in start ..< min(start + columns, len(matches)) {sticker_tile("StickerPick", matches[at], ui.stickers[matches[at]], at == ui.sticker_focus ? .Focused : .Normal)}
 			}
 		}
 	}
-	scrollbar(clay.ID("StickerGrid"), 13)
+	scrollbar(nendo.id("StickerGrid"), 13)
 	if sticker_coordinate(
 		ui.sticker_filter,
 	) {sticker_control("StickerViewPack", 0, tr("View sticker pack"))}
@@ -382,7 +358,7 @@ handle_sticker_picker :: proc(ui: ^Ui_State) {
 	matches := sticker_matches(ui)
 	if rl.IsKeyPressed(.LEFT) {ui.sticker_focus -= 1}
 	if rl.IsKeyPressed(.RIGHT) {ui.sticker_focus += 1}
-	columns := max(1, int((modal_w(clay.ID("PickerPanel"), 400) - 24) / 84))
+	columns := max(1, int((modal_w(nendo.id("PickerPanel"), 400) - 24) / 84))
 	if rl.IsKeyPressed(.UP) {ui.sticker_focus -= columns}
 	if rl.IsKeyPressed(.DOWN) {ui.sticker_focus += columns}
 	if rl.IsKeyPressed(.TAB) &&
@@ -391,59 +367,45 @@ handle_sticker_picker :: proc(ui: ^Ui_State) {
 	ui.sticker_focus = clamp(ui.sticker_focus, 0, max(0, len(matches) - 1))
 	for index, at in matches {
 		if rl.IsMouseButtonPressed(.RIGHT) &&
-		   clay.PointerOver(
-			   clay.ID("StickerPick", u32(index)),
+		   nendo.pointer_over(
+			   nendo.id("StickerPick", u32(index)),
 		   ) {sticker_show(ui, ui.stickers[index].ref); return}
 		if clicked_indexed("StickerPick", u32(index)) ||
 		   at == ui.sticker_focus &&
 			   rl.IsKeyPressed(.ENTER) {sticker_send(ui, ui.stickers[index]); return}
 	}
 	if rl.IsKeyPressed(.ESCAPE) ||
-	   mouse_released() && !clay.PointerOver(clay.ID("PickerPanel")) {close_picker(ui)}
+	   mouse_released() && !nendo.pointer_over(nendo.id("PickerPanel")) {close_picker(ui)}
 }
 
 @(private)
 sticker_panel :: proc(ui: ^Ui_State) {
-	width := modal_w(clay.ID("StickerPanel"), 640)
-	if clay.UI(clay.ID("StickerPanel"))(
+	width := modal_w(nendo.id("StickerPanel"), 640)
+	if nendo.box(nendo.id("StickerPanel"))(
 	{
-		layout = {
-			sizing = {
-				clay.SizingFixed(width),
-				clay.SizingFixed(
-					modal_h(
-						ui.sticker_page == .AddPack ? 300 : ui.sticker_page == .Detail ? 520 : 640,
-					),
-				),
-			},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(16),
-			childGap = 16,
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
+		width = nendo.fixed(width),
+		height = nendo.fixed(
+			modal_h(ui.sticker_page == .AddPack ? 300 : ui.sticker_page == .Detail ? 520 : 640),
+		),
+		direction = .Column,
+		padding = nendo.pad(16),
+		gap = 16,
+		clip = {y = true, scroll = true},
+		color = CARD,
+		radius = rr(12),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
-			attachTo = .Root,
-			zIndex = 15,
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 15,
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
 	},
 	) {
-		if clay.UI(clay.ID("StickerHeader"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-		},
+		if nendo.box(nendo.id("StickerHeader"))(
+		{width = nendo.grow(), gap = 10, align = {y = .Center}},
 		) {
 			if ui.sticker_page != .Library {sticker_control("StickerBack", 0, tr("Back"))}
-			if clay.UI(clay.ID("StickerTitle"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {
+			if nendo.box(nendo.id("StickerTitle"))({width = nendo.grow()}) {
 				title := tr("Stickers")
 				if ui.sticker_page == .AddPack {title = tr("Add pack")}
 				if ui.sticker_page ==
@@ -451,24 +413,23 @@ sticker_panel :: proc(ui: ^Ui_State) {
 				if ui.sticker_page == .Detail {title = tr("Sticker")}
 				if ui.sticker_page == .Pack {
 					sticker_copy(6, title, width - 184, 18, TEXT)
-				} else {clay.Text(title, {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})}
+				} else {nendo.text(title, {font = FONT_TITLE, size = 20, color = TEXT})}
 			}
 			sticker_control("StickerClose", 0, tr("Close"))
 		}
 		if ui.sticker_page == .Library {
-			if clay.UI(clay.ID("StickerLibraryActions"))({layout = {childGap = 8}}) {
+			if nendo.box(nendo.id("StickerLibraryActions"))({gap = 8}) {
 				sticker_control("StickerImport", 0, tr("Import image"))
 				sticker_control("StickerAddPack", 0, tr("Add pack"), .Primary)
 			}
 		}
-		if clay.UI(clay.ID("StickerContent", u32(ui.sticker_page)))(
+		if nendo.box(nendo.id("StickerContent", u32(ui.sticker_page)))(
 		{
-			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow({min = 44})},
-				layoutDirection = .TopToBottom,
-				childGap = 12,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.grow(min = 44),
+			direction = .Column,
+			gap = 12,
+			clip = {y = true, scroll = true},
 		},
 		) {
 			switch ui.sticker_page {
@@ -483,60 +444,49 @@ sticker_panel :: proc(ui: ^Ui_State) {
 						if covers[i] == nil {covers[i] = sticker_texture(item)}
 					}
 				}
-				if !ui.sticker_loaded {clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM})}
+				if !ui.sticker_loaded {nendo.text(tr("Loading…"), {font = FONT_BODY, size = 14, color = TEXT_DIM})}
 				if len(ui.sticker_packs) > 0 {eyebrow(tr("YOUR PACKS"))}
 				for pack, i in ui.sticker_packs {
-					if clay.UI(clay.ID("StickerLibraryPack", u32(i)))(
+					if nendo.box(nendo.id("StickerLibraryPack", u32(i)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							padding = clay.PaddingAll(12),
-							childGap = 12,
-							childAlignment = {y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : ROW_BG,
-						cornerRadius = rr(8),
+						width = nendo.grow(),
+						padding = nendo.pad(12),
+						gap = 12,
+						align = {y = .Center},
+						color = hovered() ? HOVER : ROW_BG,
+						radius = rr(8),
 					},
 					) {
 						if hovered() {cursor_raise(.Pointer)}
 						cover := covers[i]
-						if clay.UI(clay.ID_LOCAL("PackCover"))(
+						if nendo.box(nendo.id_local("PackCover"))(
 						{
-							layout = {
-								sizing = {clay.SizingFixed(52), clay.SizingFixed(52)},
-								childAlignment = {x = .Center, y = .Center},
-							},
+							width = nendo.fixed(52),
+							height = nendo.fixed(52),
+							align = {x = .Center, y = .Center},
 						},
 						) {
 							if cover != nil {
 								ratio := f32(cover.width) / f32(max(cover.height, 1))
-								if clay.UI(clay.ID_LOCAL("PackCoverArt"))(
+								if nendo.box(nendo.id_local("PackCoverArt"))(
 								{
-									layout = {
-										sizing = {width = clay.SizingFixed(min(48, 48 * ratio))},
-									},
-									aspectRatio = {ratio},
-									image = {imageData = cover},
+									width = nendo.fixed(min(48, 48 * ratio)),
+									aspect = ratio,
+									image = cover,
 								},
 								) {}
 							}
 						}
-						if clay.UI(clay.ID_LOCAL("PackLabel"))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow()},
-								layoutDirection = .TopToBottom,
-								childGap = 6,
-							},
-						},
+						if nendo.box(nendo.id_local("PackLabel"))(
+						{width = nendo.grow(), direction = .Column, gap = 6},
 						) {
 							sticker_copy(0x100 + u32(i), pack.title, width - 156, 15, TEXT)
-							clay.Text(
+							nendo.text(
 								fmt.tprintf(tr("Stickers: %d"), counts[i]),
-								{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+								{font = FONT_BODY, size = 12, color = TEXT_DIM},
 							)
 						}
-						clay.Text("›", {fontId = FONT_BODY, fontSize = 22, textColor = TEXT_DIM})
+						nendo.text("›", {font = FONT_BODY, size = 22, color = TEXT_DIM})
 					}
 				}
 				eyebrow(tr("YOUR STICKERS"))
@@ -546,9 +496,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 				   0 {sticker_copy(0, tr("Import an image to make your first sticker."), width - 40)}
 				columns := max(1, int((width - 32) / 112))
 				for start := 0; start < len(personal); start += columns {
-					if clay.UI(clay.ID("StickerLibraryRow", u32(start)))(
-					{layout = {childGap = 8}},
-					) {
+					if nendo.box(nendo.id("StickerLibraryRow", u32(start)))({gap = 8}) {
 						for at in start ..< min(start + columns, len(personal)) {sticker_tile("StickerLibraryItem", personal[at], ui.stickers[personal[at]], .Normal, 104)}
 					}
 				}
@@ -559,14 +507,13 @@ sticker_panel :: proc(ui: ^Ui_State) {
 					width - 40,
 					15,
 				)
-				if clay.UI(clay.ID("StickerInput"))(
+				if nendo.box(nendo.id("StickerInput"))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(42)},
-						padding = clay.PaddingAll(10),
-					},
-					backgroundColor = ROW_BG,
-					cornerRadius = rr(7),
+					width = nendo.grow(),
+					height = nendo.fixed(42),
+					padding = nendo.pad(10),
+					color = ROW_BG,
+					radius = rr(7),
 				},
 				) {
 					field_text(
@@ -586,17 +533,15 @@ sticker_panel :: proc(ui: ^Ui_State) {
 					if !ui.sticker_loading &&
 					   !found {sticker_copy(2, tr("This sticker is not in the current pack."), width - 40, 13)}
 				}
-				if ui.sticker_loading {clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM})}
+				if ui.sticker_loading {nendo.text(tr("Loading…"), {font = FONT_BODY, size = 14, color = TEXT_DIM})}
 				if len(ui.sticker_preview) > 0 {
-					clay.Text(
+					nendo.text(
 						fmt.tprintf(tr("Stickers: %d"), len(ui.sticker_preview)),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+						{font = FONT_BODY, size = 13, color = TEXT_DIM},
 					)
 					columns := max(1, int((width - 32) / 112))
 					for start := 0; start < len(ui.sticker_preview); start += columns {
-						if clay.UI(clay.ID("StickerPreviewRow", u32(start)))(
-						{layout = {childGap = 8}},
-						) {
+						if nendo.box(nendo.id("StickerPreviewRow", u32(start)))({gap = 8}) {
 							for index in start ..< min(start + columns, len(ui.sticker_preview)) {sticker_tile("StickerPreviewTile", index, ui.sticker_preview[index], ui.sticker_preview[index].ref.sha == ui.sticker_selected.sha ? .Focused : .Normal, 104)}
 						}
 					}
@@ -606,50 +551,40 @@ sticker_panel :: proc(ui: ^Ui_State) {
 				tex := sticker_textures[ui.sticker_selected.sha]
 				if tex ==
 				   nil {view, _ := media_cached(.Sticker, ui.sticker_selected.sha); tex = (^rl.Texture2D)(view)}
-				if clay.UI(clay.ID("StickerPreviewStage"))(
+				if nendo.box(nendo.id("StickerPreviewStage"))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingGrow(),
-							height = clay.SizingFixed(min(280, width - 32)),
-						},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = ROW_BG,
-					cornerRadius = rr(10),
+					width = nendo.grow(),
+					height = nendo.fixed(min(280, width - 32)),
+					align = {x = .Center, y = .Center},
+					color = ROW_BG,
+					radius = rr(10),
 				},
 				) {
 					if tex != nil {
 						ratio := f32(tex.width) / f32(max(tex.height, 1))
 						size := min(240, width - 64)
-						if clay.UI(clay.ID("StickerPersonalPreview"))(
+						if nendo.box(nendo.id("StickerPersonalPreview"))(
 						{
-							layout = {
-								sizing = {width = clay.SizingFixed(min(size, size * ratio))},
-							},
-							aspectRatio = {ratio},
-							image = {imageData = tex},
-							userData = rawptr(STICKER_IMAGE),
+							width = nendo.fixed(min(size, size * ratio)),
+							aspect = ratio,
+							image = tex,
+							user_data = rawptr(STICKER_IMAGE),
 						},
 						) {}
-					} else {clay.Text(
+					} else {nendo.text(
 							tr("Loading…"),
-							{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 14, color = TEXT_DIM},
 						)}
 				}
 				if ui.sticker_selected.pack == "" {
-					clay.Text(
-						tr("Sticker name"),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-					)
-					if clay.UI(clay.ID("StickerName"))(
+					nendo.text(tr("Sticker name"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
+					if nendo.box(nendo.id("StickerName"))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(42)},
-							padding = clay.PaddingAll(10),
-						},
-						backgroundColor = ROW_BG,
-						cornerRadius = rr(7),
+						width = nendo.grow(),
+						height = nendo.fixed(42),
+						padding = nendo.pad(10),
+						color = ROW_BG,
+						radius = rr(7),
 					},
 					) {
 						field_text(
@@ -669,28 +604,20 @@ sticker_panel :: proc(ui: ^Ui_State) {
 				if ui.sticker_page != .AddPack {sticker_control("StickerRetry", 0, tr("Retry"))}
 			}
 		}
-		scrollbar(clay.ID("StickerContent", u32(ui.sticker_page)), 16)
-		if clay.UI(clay.ID("StickerFooter"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 8,
-				childAlignment = {y = .Center},
-			},
-		},
+		scrollbar(nendo.id("StickerContent", u32(ui.sticker_page)), 16)
+		if nendo.box(nendo.id("StickerFooter"))(
+		{width = nendo.grow(), gap = 8, align = {y = .Center}},
 		) {
 			if ui.sticker_page ==
 			   .AddPack {sticker_control("StickerLookup", 0, tr("Preview pack"), .Primary)}
 			if ui.sticker_page == .Pack ||
 			   ui.sticker_page == .Detail && ui.sticker_selected.pack != "" {
 				if sticker_pack_index(ui, ui.sticker_pack.coordinate) >= 0 {
-					clay.Text(
+					nendo.text(
 						tr("Added to your stickers"),
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+						{font = FONT_BODY, size = 13, color = TEXT_DIM},
 					)
-					if clay.UI(clay.ID("StickerFooterGap"))(
-					{layout = {sizing = {width = clay.SizingGrow()}}},
-					) {}
+					if nendo.box(nendo.id("StickerFooterGap"))({width = nendo.grow()}) {}
 					sticker_control("StickerRemovePack", 0, tr("Remove pack"), .Danger)
 				} else if len(ui.sticker_preview) >
 				   0 {sticker_control("StickerInstall", 0, tr(ui.sticker_installing ? N_("Adding…") : N_("Add pack")), .Primary)}
@@ -705,7 +632,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
-	scrollbar(clay.ID("StickerPanel"), 16)
+	scrollbar(nendo.id("StickerPanel"), 16)
 }
 
 @(private)
@@ -743,7 +670,7 @@ handle_sticker_panel :: proc(ui: ^Ui_State) {
 	}
 	if rl.IsKeyPressed(.ESCAPE) ||
 	   clicked_indexed("StickerClose", 0) ||
-	   mouse_released() && !clay.PointerOver(clay.ID("StickerPanel")) {
+	   mouse_released() && !nendo.pointer_over(nendo.id("StickerPanel")) {
 		ui.sticker_open =
 			false; ui.sticker_installing = false; ui.picking_sticker = false; ui.focus = .Compose; return
 	}

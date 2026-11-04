@@ -9,8 +9,8 @@ import "core:testing"
 @(test)
 stamps_follow_formats :: proc(t: ^testing.T) {
 	// g_prefs is process-global; other tests point it at their own state.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	ui: Ui_State
 	g_prefs = &ui.prefs
 	defer {g_prefs = nil}
@@ -46,8 +46,8 @@ stamps_follow_formats :: proc(t: ^testing.T) {
 @(test)
 stamps_refresh_rows :: proc(t: ^testing.T) {
 	// g_prefs is process-global; other tests point it at their own state.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	ui: Ui_State
 	g_prefs = &ui.prefs
 	defer {g_prefs = nil}

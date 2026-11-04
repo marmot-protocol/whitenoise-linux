@@ -1,15 +1,15 @@
 package main
 
-// Clay and the UI caches are global. Run this check alone:
+// nendo and the UI caches are global. Run this check alone:
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=chat_title_overflow
 import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
-// Run alone because Clay and SDL state are global.
+// Run alone because nendo and SDL state are global.
 @(test)
 group_settings_permissions :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "group_settings_permissions" {return}
@@ -63,22 +63,22 @@ group_settings_permissions :: proc(t: ^testing.T) {
 		for _ in 0 ..< 3 {build_layout(&ui, 0)}
 		commands := build_layout(&ui, 0)
 		for id in ([]string{"RenameBox", "RenameBtn", "HeroPicBtn", "DescEditBtn", "RetentionRow", "RetChip2"}) {
-			testing.expect(t, clay.GetElementData(clay.ID(id)).found == admin, id)
+			testing.expect(t, nendo.element(nendo.id(id)).found == admin, id)
 		}
 		for id in ([]string{"DescBox", "DescSave", "GpicMenu"}) {
-			testing.expect(t, !clay.GetElementData(clay.ID(id)).found, id)
+			testing.expect(t, !nendo.element(nendo.id(id)).found, id)
 		}
-		testing.expect(t, clay.GetElementData(clay.ID("InfoTimerCard")).found)
+		testing.expect(t, nendo.element(nendo.id("InfoTimerCard")).found)
 		description_visible := false
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Text {continue}
-			text := command.renderData.text.stringContents
-			part := string(text.chars[:text.length])
+		for command in commands {
+			if command.kind != .Text {continue}
+			text := command.text.text
+			part := text
 			description_visible ||= part == ui.group_desc
 		}
 		testing.expect(t, description_visible)
 		rl.BeginDrawing()
-		draw_frame(&commands)
+		draw_frame(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-group-settings-%d.png", i))
 		rl.EndDrawing()
 	}
@@ -108,20 +108,20 @@ thread_reply_count_layout :: proc(t: ^testing.T) {
 	for root in ([]string{"", "parent", "child", "parent", ""}) {
 		clear(&ui.thread_stack)
 		if root != "" {append(&ui.thread_stack, root)}
-		clay.BeginLayout()
-		if clay.UI(clay.ID("ThreadCountTest"))(
-		{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(600)}}},
+		nendo.begin()
+		if nendo.box(nendo.id("ThreadCountTest"))(
+		{direction = .Column, width = nendo.fixed(600)},
 		) {
 			if root != "" {thread_root_plate(&ui)}
 			for msg, i in ui.messages {
 				if msg.id != root {message_row(u32(i), msg)}
 			}
 		}
-		clay.EndLayout(0)
+		nendo.end(0)
 		for msg, i in ui.messages {
 			testing.expect_value(
 				t,
-				clay.GetElementData(clay.ID("MsgThreadChip", u32(i))).found,
+				nendo.element(nendo.id("MsgThreadChip", u32(i))).found,
 				msg.id != root,
 			)
 			testing.expect_value(t, msg.thread_replies, i + 1)
@@ -137,16 +137,12 @@ chat_title_overflow :: proc(t: ^testing.T) {
 	UI_ZOOM = 1.875
 	UI_SCALE = UI_ZOOM
 	init_fonts()
-	memory := make([]u8, int(clay.MinMemorySize()))
+	memory := make([]u8, int(nendo.min_memory_size()))
 	defer delete(memory)
-	previous := clay.GetCurrentContext()
-	defer clay.SetCurrentContext(previous)
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{400, 700},
-		{},
-	)
-	clay.SetMeasureTextFunction(measure_text, nil)
+	previous := nendo.current_context()
+	defer nendo.set_context(previous)
+	nendo.init(memory, {400, 700}, {})
+	nendo.set_measure_text(measure_text, nil)
 
 	ui := Ui_State {
 		row_menu         = -1,
@@ -184,41 +180,37 @@ chat_title_overflow :: proc(t: ^testing.T) {
 			ui.search_open = search
 			for width in ([]f32{526.4, 340, 400, 700}) {
 				rl.SetWindowSize(i32(width * UI_ZOOM), 1382)
-				clay.SetLayoutDimensions({width, 700})
+				nendo.set_dimensions({width, 700})
 				commands := build_layout(&ui, 0)
 				for id in ([]string{"ChatPane", "ChatHeader", "SearchBtn", "FilesBtn", "BellBtn", "MembersBtn", "Composer"}) {
-					element := clay.GetElementData(clay.ID(id))
+					element := nendo.element(nendo.id(id))
 					testing.expect(t, element.found, id)
-					testing.expect(
-						t,
-						element.boundingBox.x + element.boundingBox.width <= width + 0.01,
-						id,
-					)
+					testing.expect(t, element.rect.x + element.rect.width <= width + 0.01, id)
 				}
-				view := clay.GetElementData(clay.ID("ChatHeadTitleClip")).boundingBox
+				view := nendo.element(nendo.id("ChatHeadTitleClip")).rect
 				clipped := false
-				for command in commands.internalArray[:commands.length] {
-					if command.commandType == .ScissorStart && command.boundingBox == view {
+				for command in commands {
+					if command.kind == .Scissor_Start && command.rect == view {
 						clipped = true
 					}
 				}
 				testing.expect(t, clipped, "title must be clipped inside the header")
 				for id in ([]string{"FilesBtn", "SearchBtn", "BellBtn", "MembersBtn"}) {
-					clay.SetPointerState({-100, -100}, false)
+					nendo.set_pointer({-100, -100}, .Up)
 					anim_snap_all()
 					anim_tick(0.02)
 					build_layout(&ui, 0)
-					button := clay.GetElementData(clay.ID(id)).boundingBox
-					pointer := clay.Vector2 {
+					button := nendo.element(nendo.id(id)).rect
+					pointer := nendo.Vector2 {
 						button.x + button.width / 2,
 						button.y + button.height / 2,
 					}
 					first_width: f32
 					for frame in 0 ..< 5 {
-						clay.SetPointerState(pointer, false)
+						nendo.set_pointer(pointer, .Up)
 						anim_tick(0.02)
 						build_layout(&ui, 0)
-						expanded := clay.GetElementData(clay.ID(id)).boundingBox
+						expanded := nendo.element(nendo.id(id)).rect
 						if frame == 0 {first_width = expanded.width}
 						testing.expect(t, expanded.width > button.width, id)
 						testing.expect(
@@ -227,10 +219,10 @@ chat_title_overflow :: proc(t: ^testing.T) {
 							id,
 						)
 						testing.expect(t, expanded.x + expanded.width <= width + 0.01, id)
-						right := clay.GetElementData(clay.ID("MembersBtn")).boundingBox
+						right := nendo.element(nendo.id("MembersBtn")).rect
 						testing.expect(t, right.x + right.width <= width + 0.01, id)
 					}
-					full := clay.GetElementData(clay.ID(id)).boundingBox.width
+					full := nendo.element(nendo.id(id)).rect.width
 					testing.expect(
 						t,
 						full > first_width,
@@ -240,28 +232,20 @@ chat_title_overflow :: proc(t: ^testing.T) {
 					build_layout(&ui, 0)
 					testing.expect(
 						t,
-						clay.GetElementData(clay.ID(id)).boundingBox.width == full,
+						nendo.element(nendo.id(id)).rect.width == full,
 						"animation must finish in 100 ms",
 					)
-					clay.SetPointerState({-100, -100}, false)
+					nendo.set_pointer({-100, -100}, .Up)
 					for _ in 0 ..< 5 {anim_tick(0.02); build_layout(&ui, 0)}
-					testing.expect_value(
-						t,
-						clay.GetElementData(clay.ID(id)).boundingBox.width,
-						button.width,
-					)
+					testing.expect_value(t, nendo.element(nendo.id(id)).rect.width, button.width)
 					ui.prefs.reduce_motion = true
-					clay.SetPointerState(pointer, false)
+					nendo.set_pointer(pointer, .Up)
 					anim_tick(0.02)
 					build_layout(&ui, 0)
-					testing.expect_value(
-						t,
-						clay.GetElementData(clay.ID(id)).boundingBox.width,
-						full,
-					)
+					testing.expect_value(t, nendo.element(nendo.id(id)).rect.width, full)
 					ui.prefs.reduce_motion = false
 				}
-				clay.SetPointerState({-100, -100}, false)
+				nendo.set_pointer({-100, -100}, .Up)
 			}
 		}
 	}
@@ -321,22 +305,22 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 	}
 
 	// Text drawn inside each row's preview clip, joined.
-	shown :: proc(commands: clay.ClayArray(clay.RenderCommand), index: u32) -> (string, bool) {
-		clip := clay.GetElementData(clay.ID("ChatRowPrevClip", index)).boundingBox
+	shown :: proc(commands: []nendo.Render_Command, index: u32) -> (string, bool) {
+		clip := nendo.element(nendo.id("ChatRowPrevClip", index)).rect
 		parts: [dynamic]string
 		parts.allocator = context.temp_allocator
 		inside := true
-		for command in commands.internalArray[:commands.length] {
-			box := command.boundingBox
-			if command.commandType != .Text ||
+		for command in commands {
+			box := command.rect
+			if command.kind != .Text ||
 			   box.y < clip.y ||
 			   box.y >= clip.y + clip.height ||
 			   box.x < clip.x ||
 			   box.x >= clip.x + clip.width {
 				continue
 			}
-			text := command.renderData.text.stringContents
-			append(&parts, string(text.chars[:text.length]))
+			text := command.text.text
+			append(&parts, text)
 			inside &&= box.x + box.width <= clip.x + clip.width + 0.5
 		}
 		return strings.concatenate(parts[:], context.temp_allocator), inside
@@ -358,7 +342,7 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 		text, _ := shown(commands, 3)
 		testing.expect_value(t, text, "See you there")
 		rl.BeginDrawing()
-		draw_frame(&commands)
+		draw_frame(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-chat-previews-%d.png", rail_w))
 		rl.EndDrawing()
 	}

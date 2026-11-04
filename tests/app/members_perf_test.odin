@@ -10,7 +10,7 @@ import "core:sync"
 import "core:testing"
 import "core:thread"
 import "core:time"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -o:speed -define:WN_PERF=true -define:ODIN_TEST_NAMES=large_group_layout
@@ -58,14 +58,14 @@ large_group_layout :: proc(t: ^testing.T) {
 		free_all(context.temp_allocator)
 	}
 	slice.sort(samples[:])
-	data := clay.GetScrollContainerData(clay.ID("MembersScroll"))
+	data := nendo.scroll(nendo.id("MembersScroll"))
 	testing.expect(t, data.found && !layout_overflow)
-	full_height := data.contentDimensions.height
+	full_height := data.content.height
 	for fraction in ([]f32{0, 0.5, 1}) {
-		data.scrollPosition.y = -fraction * (full_height - data.scrollContainerDimensions.height)
+		data.position.y = -fraction * (full_height - data.viewport.height)
 		commands := build_layout(&ui, 0)
 		mounted := 0
-		for _, i in ui.members {if clay.GetElementData(clay.ID("MemberName", u32(i))).found {mounted += 1}}
+		for _, i in ui.members {if nendo.element(nendo.id("MemberName", u32(i))).found {mounted += 1}}
 		fmt.printf(
 			"members=1000 scroll=%.1f mounted=%d median_ms=%.3f p95_ms=%.3f\n",
 			fraction,
@@ -76,40 +76,30 @@ large_group_layout :: proc(t: ^testing.T) {
 		testing.expect(t, mounted > 0 && mounted < 30)
 		testing.expect(
 			t,
-			abs(
-				clay.GetScrollContainerData(clay.ID("MembersScroll")).contentDimensions.height -
-				full_height,
-			) <
-			1,
+			abs(nendo.scroll(nendo.id("MembersScroll")).content.height - full_height) < 1,
 		)
 		rl.BeginDrawing()
-		clay_raylib_render(&commands)
+		render_nendo(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-members-%d.png", int(fraction * 2)))
 		rl.EndDrawing()
 	}
-	testing.expect(t, clay.GetElementData(clay.ID("MemberRow", 999)).found)
+	testing.expect(t, nendo.element(nendo.id("MemberRow", 999)).found)
 	ui.member_nick = 500
 	build_layout(&ui, 0)
-	testing.expect(t, clay.GetElementData(clay.ID("MemberNickBox", 500)).found)
+	testing.expect(t, nendo.element(nendo.id("MemberNickBox", 500)).found)
 	testing.expect(
 		t,
-		abs(
-			clay.GetScrollContainerData(clay.ID("MembersScroll")).contentDimensions.height -
-			full_height -
-			34,
-		) <
-		1,
+		abs(nendo.scroll(nendo.id("MembersScroll")).content.height - full_height - 34) < 1,
 	)
 	ui.member_nick = -1
 	for width in ([]i32{600, 1200}) {
 		rl.SetWindowSize(width, 800)
-		clay.SetLayoutDimensions({f32(width), 800})
+		nendo.set_dimensions({f32(width), 800})
 		for _ in 0 ..< 3 {build_layout(&ui, 0)}
-		data = clay.GetScrollContainerData(clay.ID("MembersScroll"))
-		data.scrollPosition.y = -(data.contentDimensions.height -
-			data.scrollContainerDimensions.height)
+		data = nendo.scroll(nendo.id("MembersScroll"))
+		data.position.y = -(data.content.height - data.viewport.height)
 		build_layout(&ui, 0)
-		testing.expect(t, clay.GetElementData(clay.ID("MemberName", 999)).found)
+		testing.expect(t, nendo.element(nendo.id("MemberName", 999)).found)
 		testing.expect(t, !layout_overflow)
 	}
 	ui.focus = .Compose
@@ -140,7 +130,7 @@ large_group_layout :: proc(t: ^testing.T) {
 	mention_update(&ui, nil)
 	ui.show_members = false
 	rl.SetWindowSize(1200, 800)
-	clay.SetLayoutDimensions({1200, 800})
+	nendo.set_dimensions({1200, 800})
 	for i in 0 ..< 1000 {
 		append(
 			&ui.messages,
@@ -162,51 +152,39 @@ large_group_layout :: proc(t: ^testing.T) {
 	}
 	slice.sort(samples[:])
 	fmt.printf("system_rows=1000 median_ms=%.3f p95_ms=%.3f\n", samples[15], samples[29])
-	data = clay.GetScrollContainerData(clay.ID("Timeline"))
-	full_height = data.contentDimensions.height
+	data = nendo.scroll(nendo.id("Timeline"))
+	full_height = data.content.height
 	for fraction in ([]f32{0, 0.5, 1}) {
-		data.scrollPosition.y = -fraction * (full_height - data.scrollContainerDimensions.height)
+		data.position.y = -fraction * (full_height - data.viewport.height)
 		build_layout(&ui, 0)
 		mounted := 0
-		for _, i in ui.messages {if clay.GetElementData(clay.ID("SysPill", u32(i))).found {mounted += 1}}
+		for _, i in ui.messages {if nendo.element(nendo.id("SysPill", u32(i))).found {mounted += 1}}
 		testing.expect(t, mounted > 0 && mounted < 100)
-		testing.expect(
-			t,
-			abs(
-				clay.GetScrollContainerData(clay.ID("Timeline")).contentDimensions.height -
-				full_height,
-			) <
-			1,
-		)
+		testing.expect(t, abs(nendo.scroll(nendo.id("Timeline")).content.height - full_height) < 1)
 	}
-	testing.expect(t, clay.GetElementData(clay.ID("SysPill", 999)).found)
+	testing.expect(t, nendo.element(nendo.id("SysPill", 999)).found)
 	// Hold the scrollbar while moving it through several positions. Layout
 	// must not mistake a pointer-driven offset for a change in row heights.
 	rl.PushMouseButton(.LEFT, true)
-	clay.SetPointerState({-100, -100}, true)
+	nendo.set_pointer({-100, -100}, .Down)
 	defer {rl.PushMouseButton(.LEFT, false); scroll_drag = {}}
 	for fraction in ([]f32{0.25, 0.5, 0.75, 0.25}) {
 		for _ in 0 ..< 3 {
-			data = clay.GetScrollContainerData(clay.ID("Timeline"))
-			span := data.contentDimensions.height - data.scrollContainerDimensions.height
-			thumb := max(
-				24,
-				data.scrollContainerDimensions.height *
-				data.scrollContainerDimensions.height /
-				data.contentDimensions.height,
-			)
-			travel := data.scrollContainerDimensions.height - thumb
+			data = nendo.scroll(nendo.id("Timeline"))
+			span := data.content.height - data.viewport.height
+			thumb := max(24, data.viewport.height * data.viewport.height / data.content.height)
+			travel := data.viewport.height - thumb
 			scroll_drag = {
-				clay.ID("Timeline").id,
+				nendo.id("Timeline").id,
 				rl.GetMousePosition().y / UI_ZOOM - fraction * travel,
 			}
 			build_layout(&ui, 0)
-			if abs(data.scrollPosition.y - timeline_draw_offset) > 0.01 {build_layout(&ui, 0)}
+			if abs(data.position.y - timeline_draw_offset) > 0.01 {build_layout(&ui, 0)}
 			testing.expect(t, rl.IsMouseButtonDown(.LEFT))
-			testing.expect(t, abs(data.scrollPosition.y - timeline_draw_offset) < 1)
+			testing.expect(t, abs(data.position.y - timeline_draw_offset) < 1)
 			testing.expect(
 				t,
-				abs(data.scrollPosition.y + fraction * span) < 1,
+				abs(data.position.y + fraction * span) < 1,
 				"the view must follow the scrollbar before release",
 			)
 		}
@@ -216,8 +194,8 @@ large_group_layout :: proc(t: ^testing.T) {
 @(test)
 members_snapshot_owned :: proc(t: ^testing.T) {
 	// The profile cache is process-global; seed it under the shared lock.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	id := "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
 	profile_info(nil, id)

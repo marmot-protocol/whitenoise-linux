@@ -17,7 +17,7 @@ import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Wireframe overlay swatches, in the order the panel shows them; the
@@ -350,20 +350,19 @@ INSP_WIDTH :: 196
 // the list longer than the modal allows, so the column scrolls on its
 // own: the model beside it stays put while the panel moves.
 inspector_panel :: proc(view: ^Stl_View, height: f32) {
-	if clay.UI(clay.ID("MiPanel"))(
+	if nendo.box(nendo.id("MiPanel"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(INSP_WIDTH), height = clay.SizingFixed(height)},
-			padding = clay.PaddingAll(10),
-			childGap = 8,
-		},
-		backgroundColor = PLATE,
-		cornerRadius = rr(8),
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		direction = .Column,
+		width = nendo.fixed(INSP_WIDTH),
+		height = nendo.fixed(height),
+		padding = nendo.pad(10),
+		gap = 8,
+		color = PLATE,
+		radius = rr(8),
+		clip = {y = true, scroll = true},
 	},
 	) {
-		clay.Text(tr("Model inspector"), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
+		nendo.text(tr("Model inspector"), {font = FONT_TITLE, size = 12, color = TEXT})
 
 		// The overlay shares the wireframe mode's triangle ceiling.
 		if mode_ready(view, .Wireframe) {
@@ -381,51 +380,44 @@ inspector_panel :: proc(view: ^Stl_View, height: f32) {
 			insp_animation(view)
 		}
 	}
-	scrollbar(clay.ID("MiPanel"))
+	scrollbar(nendo.id("MiPanel"))
 }
 
 // The overlay color swatches; the first one turns the overlay off.
 @(private = "file")
 insp_wire_row :: proc(view: ^Stl_View) {
-	if clay.UI(clay.ID("MiWireRow"))(
-	{
-		layout = {childGap = 4, sizing = {width = clay.SizingGrow()}},
-		clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
-	},
+	if nendo.box(nendo.id("MiWireRow"))(
+	{gap = 4, width = nendo.grow(), clip = {x = true, scroll = true}},
 	) {
 		for color, i in WIRE_COLORS {
 			on := view.insp.wire == i || (i == 0 && view.insp.wire <= 0)
-			if clay.UI(clay.ID("MiWire", u32(i)))(
+			if nendo.box(nendo.id("MiWire", u32(i)))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(tap_size() ? tap_min() : 20),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 20),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = i == 0 ? ROW_BG : {color.r * 255, color.g * 255, color.b * 255, 255},
-				cornerRadius = rr(4),
+				width = nendo.fixed(tap_size() ? tap_min() : 20),
+				height = nendo.fixed(tap_size() ? tap_min() : 20),
+				align = {x = .Center, y = .Center},
+				color = i == 0 ? ROW_BG : {color.r * 255, color.g * 255, color.b * 255, 255},
+				radius = rr(4),
 				border = {color = on ? ACCENT : ELEVATED_BORDER, width = bw()},
 			},
 			) {
 				if i == 0 {
-					clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 9, textColor = TEXT_DIM})
+					nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 9, color = TEXT_DIM})
 				}
 			}
 		}
 	}
-	scrollbar(clay.ID("MiWireRow"), 13)
+	scrollbar(nendo.id("MiWireRow"), 13)
 }
 
 // ALL-CAPS eyebrow with the count of pickable rows, as in the rest of
 // the settings panes.
 @(private = "file")
 insp_caption :: proc(id: string, label: string, count: int) {
-	if clay.UI(clay.ID(id))({layout = {padding = {top = 4}}}) {
-		clay.Text(
+	if nendo.box(nendo.id(id))({padding = {top = 4}}) {
+		nendo.text(
 			fmt.tprintf("%s (%d)", label, count),
-			{fontId = FONT_BODY, fontSize = 9, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 9, color = TEXT_DIM},
 		)
 	}
 }
@@ -451,65 +443,57 @@ insp_section :: proc(view: ^Stl_View, section: Insp_Section) {
 			continue
 		}
 		selected := view.insp.mode == row.mode
-		if clay.UI(clay.ID(section.id, u32(i)))(
+		if nendo.box(nendo.id(section.id, u32(i)))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-				},
-				padding = {left = 6, right = 6, top = 5, bottom = 5},
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = selected ? ACCENT : (hovered() ? HOVER : ROW_BG),
-			cornerRadius = rr(6),
+			width = nendo.grow(),
+			height = nendo.fit(min = tap_size() ? tap_min() : 0),
+			padding = {left = 6, right = 6, top = 5, bottom = 5},
+			align = {y = .Center},
+			color = selected ? ACCENT : (hovered() ? HOVER : ROW_BG),
+			radius = rr(6),
 		},
 		) {
 			color := selected ? PLATE : TEXT
-			clay.Text(tr(row.label), {fontId = FONT_BODY, fontSize = 11, textColor = color})
+			nendo.text(tr(row.label), {font = FONT_BODY, size = 11, color = color})
 		}
 	}
 }
 
 @(private = "file")
 insp_toggle_row :: proc(view: ^Stl_View) {
-	if clay.UI(clay.ID("MiSingle"))(
+	if nendo.box(nendo.id("MiSingle"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-			},
-			padding = {left = 6, right = 6, top = 5, bottom = 5},
-			childGap = 8,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : ROW_BG,
-		cornerRadius = rr(6),
+		width = nendo.grow(),
+		height = nendo.fit(min = tap_size() ? tap_min() : 0),
+		padding = {left = 6, right = 6, top = 5, bottom = 5},
+		gap = 8,
+		align = {y = .Center},
+		color = hovered() ? HOVER : ROW_BG,
+		radius = rr(6),
 	},
 	) {
 		on := view.insp.single_sided
-		if clay.UI(clay.ID("MiSingleSw"))(
+		if nendo.box(nendo.id("MiSingleSw"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(16)},
-				padding = clay.PaddingAll(2),
-				childAlignment = {x = on ? .Right : .Left, y = .Center},
-			},
-			backgroundColor = on ? ACCENT : ROW_BG,
-			cornerRadius = rr(8),
+			width = nendo.fixed(28),
+			height = nendo.fixed(16),
+			padding = nendo.pad(2),
+			align = {x = on ? .Right : .Left, y = .Center},
+			color = on ? ACCENT : ROW_BG,
+			radius = rr(8),
 			border = {color = ELEVATED_BORDER, width = bw()},
 		},
 		) {
-			if clay.UI(clay.ID("MiSingleKnob"))(
+			if nendo.box(nendo.id("MiSingleKnob"))(
 			{
-				layout = {sizing = {width = clay.SizingFixed(12), height = clay.SizingFixed(12)}},
-				backgroundColor = on ? PLATE : TEXT_DIM,
-				cornerRadius = rr(6),
+				width = nendo.fixed(12),
+				height = nendo.fixed(12),
+				color = on ? PLATE : TEXT_DIM,
+				radius = rr(6),
 			},
 			) {}
 		}
-		clay.Text(tr("Single sided"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT})
+		nendo.text(tr("Single sided"), {font = FONT_BODY, size = 11, color = TEXT})
 	}
 }
 
@@ -522,25 +506,18 @@ insp_animation :: proc(view: ^Stl_View) {
 
 	for take, i in insp.takes {
 		selected := insp.anim == i
-		if clay.UI(clay.ID("MiTake", u32(i)))(
+		if nendo.box(nendo.id("MiTake", u32(i)))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-				},
-				padding = {left = 6, right = 6, top = 5, bottom = 5},
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = selected ? ACCENT : (hovered() ? HOVER : ROW_BG),
-			cornerRadius = rr(6),
+			width = nendo.grow(),
+			height = nendo.fit(min = tap_size() ? tap_min() : 0),
+			padding = {left = 6, right = 6, top = 5, bottom = 5},
+			align = {y = .Center},
+			color = selected ? ACCENT : (hovered() ? HOVER : ROW_BG),
+			radius = rr(6),
 		},
 		) {
 			label := len(take) > 0 ? take : fmt.tprintf(tr("Take %d"), i + 1)
-			clay.Text(
-				label,
-				{fontId = FONT_BODY, fontSize = 11, textColor = selected ? PLATE : TEXT},
-			)
+			nendo.text(label, {font = FONT_BODY, size = 11, color = selected ? PLATE : TEXT})
 		}
 	}
 
@@ -548,63 +525,48 @@ insp_animation :: proc(view: ^Stl_View) {
 		return
 	}
 
-	if clay.UI(clay.ID("MiTransport"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			padding = {top = 4},
-			childGap = 8,
-			childAlignment = {y = .Center},
-		},
-	},
+	if nendo.box(nendo.id("MiTransport"))(
+	{width = nendo.grow(), padding = {top = 4}, gap = 8, align = {y = .Center}},
 	) {
-		if clay.UI(clay.ID("MiPlay"))(
+		if nendo.box(nendo.id("MiPlay"))(
 		{
-			layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
-			backgroundColor = hovered() ? HOVER : ROW_BG,
-			cornerRadius = rr(6),
+			padding = {left = 8, right = 8, top = 4, bottom = 4},
+			color = hovered() ? HOVER : ROW_BG,
+			radius = rr(6),
 		},
 		) {
-			clay.Text(
+			nendo.text(
 				insp.playing ? tr("Pause") : tr("Play"),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT},
+				{font = FONT_BODY, size = 11, color = TEXT},
 			)
 		}
 		span := insp.t1 - insp.t0
-		clay.Text(
+		nendo.text(
 			fmt.tprintf("%.2fs / %.2fs", insp.time - insp.t0, span),
-			{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 10, color = TEXT_DIM},
 		)
 	}
 
-	bar_id := clay.ID("MiBar")
+	bar_id := nendo.id("MiBar")
 	append(&anim_bars, Anim_Bar{bar_id, view})
 	width: f32 = INSP_WIDTH - 20
 	frac := f32((insp.time - insp.t0) / max(insp.t1 - insp.t0, 0.001))
-	if clay.UI(bar_id)(
+	if nendo.box(bar_id)(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(width),
-				height = clay.SizingFixed(tap_size() ? tap_min() : 12),
-			},
-			padding = {left = 2, right = 2},
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(6),
+		width = nendo.fixed(width),
+		height = nendo.fixed(tap_size() ? tap_min() : 12),
+		padding = {left = 2, right = 2},
+		align = {y = .Center},
+		color = ROW_BG,
+		radius = rr(6),
 	},
 	) {
-		if clay.UI(clay.ID("MiBarFill"))(
+		if nendo.box(nendo.id("MiBarFill"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingFixed(max(8, frac * (width - 4))),
-					height = clay.SizingFixed(8),
-				},
-			},
-			backgroundColor = ACCENT,
-			cornerRadius = rr(4),
+			width = nendo.fixed(max(8, frac * (width - 4))),
+			height = nendo.fixed(8),
+			color = ACCENT,
+			radius = rr(4),
 		},
 		) {}
 	}
@@ -613,7 +575,7 @@ insp_animation :: proc(view: ^Stl_View) {
 // Scrub-bar drag registry, same shape as the g-code slider: bars
 // re-register every build, the pressed state spans frames.
 Anim_Bar :: struct {
-	id:   clay.ElementId,
+	id:   nendo.Id,
 	view: ^Stl_View,
 }
 
@@ -629,7 +591,7 @@ handle_inspector :: proc(view: ^Stl_View) {
 
 	for section in INSP_SECTIONS {
 		for row, i in section.rows {
-			if !clicked_id(clay.ID(section.id, u32(i))) {
+			if !clicked_id(nendo.id(section.id, u32(i))) {
 				continue
 			}
 			if mode_ready(view, row.mode) {
@@ -641,7 +603,7 @@ handle_inspector :: proc(view: ^Stl_View) {
 	}
 
 	for i in 0 ..< len(WIRE_COLORS) {
-		if clicked_id(clay.ID("MiWire", u32(i))) {
+		if clicked_id(nendo.id("MiWire", u32(i))) {
 			insp.wire = i
 			view.built = {}
 			return
@@ -655,7 +617,7 @@ handle_inspector :: proc(view: ^Stl_View) {
 	}
 
 	for i in 0 ..< len(insp.takes) {
-		if !clicked_id(clay.ID("MiTake", u32(i))) {
+		if !clicked_id(nendo.id("MiTake", u32(i))) {
 			continue
 		}
 		// Tapping the open take stops it; the panel keeps the pose.
@@ -678,7 +640,7 @@ handle_inspector :: proc(view: ^Stl_View) {
 handle_anim_bar :: proc() {
 	if rl.IsMouseButtonPressed(.LEFT) {
 		for bar in anim_bars {
-			if clay.PointerOver(bar.id) {
+			if nendo.pointer_over(bar.id) {
 				anim_bar_drag = bar
 				break
 			}
@@ -693,7 +655,7 @@ handle_anim_bar :: proc() {
 	}
 
 	view := anim_bar_drag.view
-	bb := clay.GetElementData(anim_bar_drag.id).boundingBox
+	bb := nendo.element(anim_bar_drag.id).rect
 	if bb.width <= 0 {
 		return
 	}
@@ -707,8 +669,8 @@ handle_anim_bar :: proc() {
 // clicked() takes a string; the generated section/index ids need the
 // same test against an already-built id.
 @(private = "file")
-clicked_id :: proc(id: clay.ElementId) -> bool {
-	return mouse_released() && clay.PointerOver(id)
+clicked_id :: proc(id: nendo.Id) -> bool {
+	return mouse_released() && nendo.pointer_over(id)
 }
 
 // View-space normals and tangent frame, computed once per textured triangle.

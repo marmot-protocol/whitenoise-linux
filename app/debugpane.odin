@@ -3,7 +3,7 @@
 // with refresh + copy, and the KP inspector, which reads
 // key packages for the active account or for any pubkey typed in.
 //
-// The dump is one mono clay.Text on the scrolling settings page, so it
+// The dump is one mono nendo.text on the scrolling settings page, so it
 // stays capped: raw events show the newest DEBUG_RAW_MAX records.
 //
 // marmot-c exports no MLS key-package decoder, so the inspector
@@ -15,7 +15,7 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 
 import marmot "../marmot"
 
@@ -39,36 +39,37 @@ json_opts :: proc() -> json.Marshal_Options {
 // ── Debug page ──────────────────────────────────────────────────────
 
 settings_debug :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("DebugSnapshotGroup"))(settings_box()) {
+	if nendo.box(nendo.id("DebugSnapshotGroup"))(settings_box()) {
 		settings_group(tr(DEBUG_EYEBROWS[clamp(ui.debug_tab, 0, len(DEBUG_EYEBROWS) - 1)]))
-		if clay.UI(clay.ID("DbgTabs"))({layout = {layoutDirection = .TopToBottom, childGap = 4}}) {
+		if nendo.box(nendo.id("DbgTabs"))({direction = .Column, gap = 4}) {
 			for row in 0 ..< 2 {
-				if clay.UI(clay.ID("DbgTabRow", u32(row)))({layout = {childGap = 4}}) {
+				if nendo.box(nendo.id("DbgTabRow", u32(row)))({gap = 4}) {
 					for i in row * 2 ..< min(row * 2 + 2, len(DEBUG_TABS)) {
 						settings_option("DbgTab", u32(i), tr(DEBUG_TABS[i]), ui.debug_tab == i)
 					}
 				}
 			}
 		}
-		if clay.UI(clay.ID("DbgActions"))({layout = {childGap = 6}}) {
+		if nendo.box(nendo.id("DbgActions"))({gap = 6}) {
 			settings_button("DbgRefresh", tr("Refresh"))
 			settings_button("DbgCopy", tr("Copy JSON"))
 		}
-		if clay.UI(clay.ID("DbgPlate"))(
+		if nendo.box(nendo.id("DbgPlate"))(
 		{
-			layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(8)},
-			clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
-			backgroundColor = PLATE,
+			width = nendo.grow(),
+			padding = nendo.pad(8),
+			clip = {x = true, scroll = true},
+			color = PLATE,
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
 			display := ui.debug_tab == 3 ? ui.debug_text : ui.debug_json
-			clay.Text(
+			nendo.text(
 				len(display) > 0 ? display : tr("(nothing loaded yet, click Refresh)"),
-				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
+				{font = FONT_MONO, size = 11, color = TEXT},
 			)
 		}
-		scrollbar(clay.ID("DbgPlate"))
+		scrollbar(nendo.id("DbgPlate"))
 	}
 }
 
@@ -253,9 +254,9 @@ kp_json :: proc(rows: []Kp_Row) -> string {
 // ── KP inspector page ───────────────────────────────────────────────
 
 settings_kp :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("KpOwnGroup"))(settings_box()) {
+	if nendo.box(nendo.id("KpOwnGroup"))(settings_box()) {
 		settings_group(tr("YOUR KEY PACKAGES"))
-		if clay.UI(clay.ID("KpMineRow"))({layout = {childGap = 6}}) {
+		if nendo.box(nendo.id("KpMineRow"))({gap = 6}) {
 			settings_button("KpMineRefresh", tr("Decode own"))
 		}
 		kp_cards(
@@ -266,31 +267,29 @@ settings_kp :: proc(ui: ^Ui_State) {
 		)
 	}
 
-	if clay.UI(clay.ID("KpInspectGroup"))(settings_box()) {
+	if nendo.box(nendo.id("KpInspectGroup"))(settings_box()) {
 		settings_group(tr("INSPECT SOMEONE ELSE'S"))
-		if clay.UI(clay.ID("KpInspectRow"))(
+		if nendo.box(nendo.id("KpInspectRow"))(
 		{
-			layout = {
-				layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-				sizing = {width = clay.SizingGrow()},
-				childGap = 6,
-				childAlignment = {y = .Center},
-			},
+			direction = single_pane() ? .Column : .Row,
+			width = nendo.grow(),
+			gap = 6,
+			align = {y = .Center},
 		},
 		) {
 			settings_input(ui, "KpBox", &ui.kp_input, tr("npub or hex pubkey"), ui.focus == .KP)
 			settings_button("KpInspect", tr("Inspect"))
 		}
 		if len(ui.kp_peer_owner) > 0 {
-			clay.Text(ui.kp_peer_owner, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM})
+			nendo.text(ui.kp_peer_owner, {font = FONT_MONO, size = 11, color = TEXT_DIM})
 			kp_cards(ui, "KpPeer", ui.kp_peer[:], tr("No key package published for that pubkey."))
 		}
 
-		clay.Text(
+		nendo.text(
 			tr(
 				"marmot exposes publish metadata only. Ciphersuite, capabilities, and credential decoding are not available in this build.",
 			),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
 		)
 	}
 }
@@ -298,7 +297,7 @@ settings_kp :: proc(ui: ^Ui_State) {
 // One labeled row per decoded field, then the raw JSON plate.
 kp_cards :: proc(ui: ^Ui_State, prefix: string, rows: []Kp_Row, empty: string) {
 	if len(rows) == 0 {
-		clay.Text(empty, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		nendo.text(empty, {font = FONT_BODY, size = 11, color = TEXT_DIM})
 		return
 	}
 	for row, i in rows {
@@ -332,29 +331,25 @@ kp_cards :: proc(ui: ^Ui_State, prefix: string, rows: []Kp_Row, empty: string) {
 			len(row.relay_urls) > 0 ? strings.join(row.relay_urls, ", ", context.temp_allocator) : tr("(none)"),
 		)
 	}
-	if clay.UI(clay.ID(fmt.tprintf("%sRawPlate", prefix)))(
+	if nendo.box(nendo.id(fmt.tprintf("%sRawPlate", prefix)))(
 	{
-		layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(8)},
-		clip = {horizontal = true, childOffset = clay.GetScrollOffset()},
-		backgroundColor = PLATE,
+		width = nendo.grow(),
+		padding = nendo.pad(8),
+		clip = {x = true, scroll = true},
+		color = PLATE,
 		border = {color = FIELD_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(
-			kp_json_cached(ui, prefix, rows),
-			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
-		)
+		nendo.text(kp_json_cached(ui, prefix, rows), {font = FONT_MONO, size = 11, color = TEXT})
 	}
-	scrollbar(clay.ID(fmt.tprintf("%sRawPlate", prefix)))
+	scrollbar(nendo.id(fmt.tprintf("%sRawPlate", prefix)))
 }
 
 kp_kv :: proc(prefix: string, index: u32, label: string, value: string) {
-	if clay.UI(clay.ID(fmt.tprintf("%sKv", prefix), index))(settings_row(true)) {
-		clay.Text(label, {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM})
-		if clay.UI(clay.ID(fmt.tprintf("%sKvVal", prefix), index))(
-		{layout = {sizing = {width = clay.SizingGrow()}}},
-		) {
-			clay.Text(value, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
+	if nendo.box(nendo.id(fmt.tprintf("%sKv", prefix), index))(settings_row(true)) {
+		nendo.text(label, {font = FONT_TITLE, size = 12, color = TEXT_DIM})
+		if nendo.box(nendo.id(fmt.tprintf("%sKvVal", prefix), index))({width = nendo.grow()}) {
+			nendo.text(value, {font = FONT_MONO, size = 11, color = TEXT})
 		}
 	}
 }
@@ -398,10 +393,10 @@ inspect_peer_key_packages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 handle_debug :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for _, i in DEBUG_TABS {
-		if clay.PointerOver(clay.ID("DbgTab", u32(i))) {
+		if nendo.pointer_over(nendo.id("DbgTab", u32(i))) {
 			if ui.debug_tab != i {
-				if scroll := clay.GetScrollContainerData(clay.ID("DbgPlate"));
-				   scroll.found {scroll.scrollPosition^ = {}}
+				if scroll := nendo.scroll(nendo.id("DbgPlate"));
+				   scroll.found {scroll.position^ = {}}
 				fling_vel = {}
 			}
 			ui.debug_tab = i

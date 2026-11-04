@@ -17,7 +17,7 @@ package main
 import "core:math"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -131,7 +131,7 @@ handle_react_fan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		fan.msg_id = ""
 		for msg, i in ui.messages {
-			if clay.PointerOver(clay.ID("MsgRow", u32(i))) && !msg.deleted {
+			if nendo.pointer_over(nendo.id("MsgRow", u32(i))) && !msg.deleted {
 				fan.msg_id = strings.clone(msg.id)
 				break
 			}
@@ -179,34 +179,29 @@ fan_layer :: proc(ui: ^Ui_State) {
 		size :=
 			FAN_CELL *
 			t *
-			anim_to(anim_key(clay.ID("FanCell", u32(i)).id, 5), picked ? FAN_PICK : 1, 26)
-		if clay.UI(clay.ID("FanCell", u32(i)))(
+			anim_to(anim_key(nendo.id("FanCell", u32(i)).id, 5), picked ? FAN_PICK : 1, 26)
+		if nendo.box(nendo.id("FanCell", u32(i)))(
 		{
-			layout = {
-				sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)},
-				childAlignment = {x = .Center, y = .Center},
-			},
+			width = nendo.fixed(size),
+			height = nendo.fixed(size),
+			align = {x = .Center, y = .Center},
 			floating = {
-				attachTo = .Root,
-				zIndex = 29,
+				attach_to = .Root,
+				z = 29,
 				offset = {x - size / 2, y - size / 2},
-				attachment = {element = .LeftTop, parent = .LeftTop},
+				attach = {element = .Left_Top, parent = .Left_Top},
 			},
-			backgroundColor = picked ? ACCENT : CARD,
-			cornerRadius = rr(size / 2),
+			color = picked ? ACCENT : CARD,
+			radius = rr(size / 2),
 			border = {color = picked ? ACCENT : ELEVATED_BORDER, width = bw()},
 		},
 		) {
 			if tex := emoji_tex(emoji); tex != nil {
-				if clay.UI(clay.ID("FanTile", u32(i)))(
-				{
-					layout = {sizing = {width = clay.SizingFixed(FAN_TILE * t)}},
-					aspectRatio = {1},
-					image = {imageData = tex},
-				},
+				if nendo.box(nendo.id("FanTile", u32(i)))(
+				{width = nendo.fixed(FAN_TILE * t), aspect = 1, image = tex},
 				) {}
 			} else {
-				clay.Text(emoji, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT})
+				nendo.text(emoji, {font = FONT_BODY, size = 15, color = TEXT})
 			}
 		}
 	}

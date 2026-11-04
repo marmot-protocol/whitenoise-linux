@@ -8,7 +8,7 @@ import "core:sync"
 import "core:testing"
 import "core:thread"
 import "core:time"
-import clay "layout"
+import "nendo"
 
 @(test)
 live_refresh_does_not_wait :: proc(t: ^testing.T) {
@@ -122,21 +122,21 @@ mentions_background_handoff :: proc(t: ^testing.T) {
 
 @(test)
 incoming_preserves_scroll :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 600})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
-	clay.BeginLayout()
-	if clay.UI(clay.ID("Timeline"))(
-	{layout = {sizing = {clay.SizingFixed(800), clay.SizingFixed(600)}}, clip = {vertical = true}},
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.begin()
+	if nendo.box(nendo.id("Timeline"))(
+	{width = nendo.fixed(800), height = nendo.fixed(600), clip = {y = true}},
 	) {
-		if clay.UI(clay.ID("Tall"))({layout = {sizing = {height = clay.SizingFixed(3000)}}}) {}
+		if nendo.box(nendo.id("Tall"))({height = nendo.fixed(3000)}) {}
 	}
-	clay.EndLayout(0)
-	data := clay.GetScrollContainerData(clay.ID("Timeline"))
+	nendo.end(0)
+	data := nendo.scroll(nendo.id("Timeline"))
 	testing.expect(t, data.found)
 	ui := Ui_State {
 		account_ref = "account",
@@ -161,7 +161,7 @@ incoming_preserves_scroll :: proc(t: ^testing.T) {
 		messages_len = 1,
 	}
 	for offset, i in ([]f32{-800, -2400, -800}) {
-		data.scrollPosition.y = offset
+		data.position.y = offset
 		ui.scroll_pending = false
 		ui.timeline_loading = i == 2
 		record.message_id_hex = strings.clone_to_cstring(
@@ -170,7 +170,7 @@ incoming_preserves_scroll :: proc(t: ^testing.T) {
 		)
 		timeline_apply(nil, &ui, &page)
 		testing.expect_value(t, ui.scroll_pending, i != 0)
-		testing.expect_value(t, data.scrollPosition.y, offset)
+		testing.expect_value(t, data.position.y, offset)
 	}
 }
 
@@ -182,8 +182,8 @@ timeline_renders_by_wall_clock :: proc(t: ^testing.T) {
 	// timeline_apply writes package-global state (the agent scope,
 	// retired_messages), as incoming_preserves_scroll does; unlocked, the
 	// two race (ThreadSanitizer: agent_scope) and one can crash.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	ui := Ui_State {
 		account_ref = "account",
@@ -244,8 +244,8 @@ chat_preview_uses_snapshot :: proc(t: ^testing.T) {
 // marmot ("string argument was not valid UTF-8").
 @(test)
 reload_rebinds_picker_target :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	ui := Ui_State {
 		account_ref = "account",

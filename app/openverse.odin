@@ -17,7 +17,7 @@ import "core:strings"
 import "core:sync"
 import "core:thread"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -182,71 +182,52 @@ ov_grid :: proc(width: f32) -> (columns: int, cell: f32) {
 }
 
 openverse_modal :: proc(ui: ^Ui_State) {
-	width := modal_w(clay.ID("OvModal"), OV_CELL * OV_COLS + 8 * (OV_COLS - 1) + 40)
+	width := modal_w(nendo.id("OvModal"), OV_CELL * OV_COLS + 8 * (OV_COLS - 1) + 40)
 	columns, cell := ov_grid(width)
-	if clay.UI(clay.ID("OvModal"))(
+	if nendo.box(nendo.id("OvModal"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(modal_h(500))},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(20),
-			childGap = 12,
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		backgroundColor = CARD,
-		cornerRadius = rr(16),
+		width = nendo.fixed(width),
+		height = nendo.fixed(modal_h(500)),
+		direction = .Column,
+		padding = nendo.pad(20),
+		gap = 12,
+		clip = {y = true, scroll = true},
+		color = CARD,
+		radius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
-			attachTo = .Root,
-			zIndex = 13,
-			offset = {0, rise(clay.ID("OvModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 13,
+			offset = {0, rise(nendo.id("OvModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
 	},
 	) {
-		if clay.UI(clay.ID("OvHead"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
-		) {
-			clay.Text(tr("Search images"), {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
-			if clay.UI(clay.ID("OvHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("OvClose"))(
+		if nendo.box(nendo.id("OvHead"))({width = nendo.grow(), align = {y = .Center}}) {
+			nendo.text(tr("Search images"), {font = FONT_TITLE, size = 20, color = TEXT})
+			if nendo.box(nendo.id("OvHeadGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("OvClose"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(tap_size() ? tap_min() : 26),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(7),
+				width = nendo.fixed(tap_size() ? tap_min() : 26),
+				height = nendo.fixed(tap_size() ? tap_min() : 26),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(7),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 			}
 		}
 
-		if clay.UI(clay.ID("OvRow"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 8,
-				childAlignment = {y = .Center},
-			},
-		},
-		) {
-			if clay.UI(clay.ID("OvField"))(
+		if nendo.box(nendo.id("OvRow"))({width = nendo.grow(), gap = 8, align = {y = .Center}}) {
+			if nendo.box(nendo.id("OvField"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 36),
-					},
-					padding = {left = 12, right = 12},
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(8),
+				width = nendo.grow(),
+				height = nendo.fixed(tap_size() ? tap_min() : 36),
+				padding = {left = 12, right = 12},
+				align = {y = .Center},
+				color = ROW_BG,
+				radius = rr(8),
 				border = {color = ui.focus == .Ov ? ACCENT : FIELD_BORDER, width = bw()},
 			},
 			) {
@@ -264,51 +245,46 @@ openverse_modal :: proc(ui: ^Ui_State) {
 		}
 
 		if len(ov_err) > 0 {
-			clay.Text(ov_err, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			nendo.text(ov_err, {font = FONT_BODY, size = 12, color = TEXT_DIM})
 		}
 
-		if clay.UI(clay.ID("OvList"))(
+		if nendo.box(nendo.id("OvList"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingGrow({min = 44})},
-				layoutDirection = .TopToBottom,
-				childGap = 8,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.grow(min = 44),
+			direction = .Column,
+			gap = 8,
+			clip = {y = true, scroll = true},
 		},
 		) {
 			for row_start := 0; row_start < len(ov_hits); row_start += columns {
-				if clay.UI(clay.ID("OvGridRow", u32(row_start)))({layout = {childGap = 8}}) {
+				if nendo.box(nendo.id("OvGridRow", u32(row_start)))({gap = 8}) {
 					for i in row_start ..< min(row_start + columns, len(ov_hits)) {
 						tex := url_pic(ov_hits[i].thumb)
-						if clay.UI(clay.ID("OvCell", u32(i)))(
+						if nendo.box(nendo.id("OvCell", u32(i)))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(cell),
-									height = clay.SizingFixed(cell),
-								},
-							},
-							backgroundColor = tex == nil ? ROW_BG : {},
-							cornerRadius = rr(8),
-							image = tex != nil ? clay.ImageElementConfig{imageData = tex} : {},
-							border = hovered() ? clay.BorderElementConfig{color = ACCENT, width = {2, 2, 2, 2, 0}} : {},
+							width = nendo.fixed(cell),
+							height = nendo.fixed(cell),
+							color = tex == nil ? ROW_BG : {},
+							radius = rr(8),
+							image = tex,
+							border = hovered() ? nendo.Border{color = ACCENT, width = {2, 2, 2, 2, 0}} : {},
 						},
 						) {}
 					}
 				}
 			}
 		}
-		scrollbar(clay.ID("OvList"), 14) // the modal floats at 13
+		scrollbar(nendo.id("OvList"), 14) // the modal floats at 13
 	}
-	scrollbar(clay.ID("OvModal"), 14)
+	scrollbar(nendo.id("OvModal"), 14)
 }
 
 // Modal input: Escape/backdrop closes, Enter/Search queries, a cell
 // click publishes the pick as the group photo.
 handle_openverse :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if rl.IsKeyPressed(.ESCAPE) ||
-	   (mouse_released() && (clicked("OvClose") || !clay.PointerOver(clay.ID("OvModal")))) {
+	   (mouse_released() && (clicked("OvClose") || !nendo.pointer_over(nendo.id("OvModal")))) {
 		ov_close(ui)
 		return
 	}
@@ -323,7 +299,7 @@ handle_openverse :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if mouse_released() {
 		for hit, i in ov_hits {
-			if clay.PointerOver(clay.ID("OvCell", u32(i))) {
+			if nendo.pointer_over(nendo.id("OvCell", u32(i))) {
 				ov_apply(ui, client, hit.full)
 				return
 			}

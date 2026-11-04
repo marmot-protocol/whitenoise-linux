@@ -17,7 +17,7 @@ import "core:time"
 
 _ :: sysinfo
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -35,9 +35,9 @@ Audit_File :: struct {
 settings_advanced :: proc(ui: ^Ui_State) {
 	switch ui.settings_tab {
 	case 0:
-		if clay.UI(clay.ID("AdvancedPrivacyGroup"))(settings_box()) {
+		if nendo.box(nendo.id("AdvancedPrivacyGroup"))(settings_box()) {
 			settings_group(tr("Security & privacy"))
-			if clay.UI(clay.ID("RowLinkPreviews"))(settings_row()) {
+			if nendo.box(nendo.id("RowLinkPreviews"))(settings_row()) {
 				settings_check(
 					"TgLinkPreviews",
 					!ui.prefs.disable_link_previews,
@@ -47,7 +47,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					),
 				)
 			}
-			if clay.UI(clay.ID("RowMaps"))(settings_row()) {
+			if nendo.box(nendo.id("RowMaps"))(settings_row()) {
 				settings_check(
 					"TgMaps",
 					ui.prefs.map_consent,
@@ -56,15 +56,8 @@ settings_advanced :: proc(ui: ^Ui_State) {
 				)
 			}
 			// Always stacked: four product names don't fit beside the text.
-			if clay.UI(clay.ID("RowMapBrowser"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					padding = {top = 4, bottom = 4},
-					childGap = 8,
-				},
-			},
+			if nendo.box(nendo.id("RowMapBrowser"))(
+			{width = nendo.grow(), direction = .Column, padding = {top = 4, bottom = 4}, gap = 8},
 			) {
 				row_labels(
 					tr("Open locations in"),
@@ -72,14 +65,8 @@ settings_advanced :: proc(ui: ^Ui_State) {
 						"Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap.",
 					),
 				)
-				if clay.UI(clay.ID("MapBrowserChoices"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-						childGap = 6,
-					},
-				},
+				if nendo.box(nendo.id("MapBrowserChoices"))(
+				{width = nendo.grow(), direction = single_pane() ? .Column : .Row, gap = 6},
 				) {
 					for name, browser in MAP_BROWSER_NAMES {
 						settings_option(
@@ -91,7 +78,7 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					}
 				}
 			}
-			if clay.UI(clay.ID("RowTelemetry"))(settings_row()) {
+			if nendo.box(nendo.id("RowTelemetry"))(settings_row()) {
 				settings_check(
 					"TgTelemetry",
 					ui.telemetry_enabled,
@@ -101,53 +88,41 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					),
 				)
 			}
-			if clay.UI(clay.ID("TelemetryDisclosure"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					padding = {left = 25, top = 4},
-					childGap = 8,
-				},
-			},
+			if nendo.box(nendo.id("TelemetryDisclosure"))(
+			{width = nendo.grow(), direction = .Column, padding = {left = 25, top = 4}, gap = 8},
 			) {
-				clay.Text(
-					tr("What is shared"),
-					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
-				)
-				clay.Text(
+				nendo.text(tr("What is shared"), {font = FONT_TITLE, size = 12, color = TEXT})
+				nendo.text(
 					tr(
 						"Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate.",
 					),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
-				clay.Text(
+				nendo.text(
 					tr("Collector and retention"),
-					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
+					{font = FONT_TITLE, size = 12, color = TEXT},
 				)
-				clay.Text(
+				nendo.text(
 					tr(
 						"Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured.",
 					),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
 			}
 		}
 
 		when ODIN_OS != .OpenBSD {
-			if clay.UI(clay.ID("AdvancedTrustedGroup"))(settings_box()) {
+			if nendo.box(nendo.id("AdvancedTrustedGroup"))(settings_box()) {
 				settings_group(tr("Trusted link sites"))
-				clay.Text(
+				nendo.text(
 					tr("Links to these exact sites open without confirmation."),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
 				if len(ui.prefs.trusted_sites) == 0 {
-					if clay.UI(clay.ID("RowNoTrusted"))(
-					{layout = {padding = {top = 4, bottom = 4}}},
-					) {
-						clay.Text(
+					if nendo.box(nendo.id("RowNoTrusted"))({padding = {top = 4, bottom = 4}}) {
+						nendo.text(
 							tr("No trusted sites."),
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 12, color = TEXT_DIM},
 						)
 					}
 				}
@@ -155,8 +130,8 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					relay_row("TrustRow", "TrustRemove", u32(i), site)
 				}
 				if len(ui.prefs.trusted_sites) > 0 {
-					if clay.UI(clay.ID("TrustActions"))(
-						settings_choices(clay.ID("TrustActions")),
+					if nendo.box(nendo.id("TrustActions"))(
+						settings_choices(nendo.id("TrustActions")),
 					) {
 						label :=
 							ui.keys_confirm == "TrustForgetAll" ? tr("Confirm forget all") : tr("Forget all")
@@ -167,9 +142,9 @@ settings_advanced :: proc(ui: ^Ui_State) {
 		}
 
 	case 1:
-		if clay.UI(clay.ID("AdvancedAuditGroup"))(settings_box()) {
+		if nendo.box(nendo.id("AdvancedAuditGroup"))(settings_box()) {
 			settings_group(tr("Audit logs"))
-			if clay.UI(clay.ID("RowAudit"))(settings_row()) {
+			if nendo.box(nendo.id("RowAudit"))(settings_row()) {
 				settings_check(
 					"TgAudit",
 					ui.audit_enabled,
@@ -177,68 +152,46 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					tr("Record group audit log files on this device. Identifiers are hashed."),
 				)
 			}
-			if clay.UI(clay.ID("AuditRefreshRow"))(
+			if nendo.box(nendo.id("AuditRefreshRow"))(
 			{
-				layout = {
-					layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-					padding = {top = 8},
-					childGap = 12,
-					childAlignment = {y = .Center},
-				},
+				direction = single_pane() ? .Column : .Row,
+				padding = {top = 8},
+				gap = 12,
+				align = {y = .Center},
 			},
 			) {
-				clay.Text(
-					tr("Audit log files"),
-					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
-				)
+				nendo.text(tr("Audit log files"), {font = FONT_TITLE, size = 12, color = TEXT})
 				settings_button("AuditRefresh", tr("Refresh"))
 			}
 			if len(ui.audit_files) == 0 {
-				if clay.UI(clay.ID("RowNoAudit"))({layout = {padding = {top = 4, bottom = 4}}}) {
-					clay.Text(
+				if nendo.box(nendo.id("RowNoAudit"))({padding = {top = 4, bottom = 4}}) {
+					nendo.text(
 						tr("No audit log files."),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						{font = FONT_BODY, size = 12, color = TEXT_DIM},
 					)
 				}
 			}
 			for file, i in ui.audit_files {
-				if clay.UI(clay.ID("AuditRow", u32(i)))(settings_row(true)) {
-					if clay.UI(clay.ID("AuditRowCol", u32(i)))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							childGap = 4,
-						},
-					},
+				if nendo.box(nendo.id("AuditRow", u32(i)))(settings_row(true)) {
+					if nendo.box(nendo.id("AuditRowCol", u32(i)))(
+					{width = nendo.grow(), direction = .Column, gap = 4},
 					) {
-						if clay.UI(clay.ID("AuditFileName", u32(i)))(
-						{
-							layout = {sizing = {width = clay.SizingGrow()}},
-							clip = {horizontal = true},
-						},
+						if nendo.box(nendo.id("AuditFileName", u32(i)))(
+						{width = nendo.grow(), clip = {x = true}},
 						) {
-							clay.Text(
+							nendo.text(
 								text_ellipsis(
 									file.name,
 									settings_body_width(ui) - 48,
 									FONT_TITLE,
 									12,
 								),
-								{
-									fontId = FONT_TITLE,
-									fontSize = 12,
-									textColor = TEXT,
-									wrapMode = .None,
-								},
+								{font = FONT_TITLE, size = 12, color = TEXT, wrap = .None},
 							)
 						}
-						clay.Text(
-							file.label,
-							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-						)
+						nendo.text(file.label, {font = FONT_BODY, size = 12, color = TEXT_DIM})
 					}
-					if clay.UI(clay.ID("AuditDeleteAction", u32(i)))({layout = {}}) {
+					if nendo.box(nendo.id("AuditDeleteAction", u32(i)))({}) {
 						id := audit_delete_id(file.path)
 						settings_button(
 							id,
@@ -249,27 +202,27 @@ settings_advanced :: proc(ui: ^Ui_State) {
 				}
 			}
 			if len(ui.audit_files) > 0 {
-				clay.Text(
+				nendo.text(
 					tr(
 						"Deleting the file being recorded rotates it. Recording continues in a fresh file.",
 					),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
 			}
 		}
 
 	case 2:
-		if clay.UI(clay.ID("AdvancedGraphicsGroup"))(settings_box()) {
+		if nendo.box(nendo.id("AdvancedGraphicsGroup"))(settings_box()) {
 			settings_group(tr("Graphics"))
-			if clay.UI(clay.ID("RowRenderer"))(settings_row(true)) {
+			if nendo.box(nendo.id("RowRenderer"))(settings_row(true)) {
 				row_labels(
 					tr("Renderer"),
 					tr(
 						"Try OpenGL or CPU if the window draws incorrectly. CPU draws without the graphics card and uses more processor time. Restart White Noise to apply a change.",
 					),
 				)
-				if clay.UI(clay.ID("RendererChoices"))(
-					settings_choices(clay.ID("RendererChoices")),
+				if nendo.box(nendo.id("RendererChoices"))(
+					settings_choices(nendo.id("RendererChoices")),
 				) {
 					for label, driver in RENDERER_LABELS {
 						settings_option(
@@ -281,14 +234,14 @@ settings_advanced :: proc(ui: ^Ui_State) {
 					}
 				}
 			}
-			clay.Text(
+			nendo.text(
 				fmt.tprintf(tr("In use: %s."), rl.RendererInUse()),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 		}
-		if clay.UI(clay.ID("AdvancedDeveloperGroup"))(settings_box()) {
+		if nendo.box(nendo.id("AdvancedDeveloperGroup"))(settings_box()) {
 			settings_group(tr("Developer"))
-			if clay.UI(clay.ID("RowDevMode"))(settings_row()) {
+			if nendo.box(nendo.id("RowDevMode"))(settings_row()) {
 				settings_check(
 					"TgDevMode",
 					ui.prefs.dev_mode,
@@ -322,14 +275,14 @@ RENDERER_LABELS := [rl.Render_Driver]string {
 
 handle_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for _, browser in MAP_BROWSER_NAMES {
-		if clay.PointerOver(clay.ID("MapBrowserChip", u32(browser))) {
+		if nendo.pointer_over(nendo.id("MapBrowserChip", u32(browser))) {
 			ui.prefs.map_browser = browser
 			save_settings(ui)
 			return
 		}
 	}
 	for _, driver in RENDERER_LABELS {
-		if clay.PointerOver(clay.ID("RendererChip", u32(driver))) {
+		if nendo.pointer_over(nendo.id("RendererChip", u32(driver))) {
 			ui.prefs.renderer = driver
 			save_settings(ui)
 			return
@@ -349,7 +302,7 @@ handle_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 	for site, i in ui.prefs.trusted_sites {
-		if clay.PointerOver(clay.ID("TrustRemove", u32(i))) {
+		if nendo.pointer_over(nendo.id("TrustRemove", u32(i))) {
 			delete(site)
 			ordered_remove(&ui.prefs.trusted_sites, i)
 			save_settings(ui)

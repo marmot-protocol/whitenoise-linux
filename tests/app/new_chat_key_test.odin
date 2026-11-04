@@ -4,38 +4,34 @@ import "core:strings"
 import "core:sync"
 import "core:testing"
 
-import clay "layout"
+import "nendo"
 
 @(test)
 new_chat_invalid_npub_feedback :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = context.temp_allocator
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	clay.SetMeasureTextFunction(
-		proc(
-			text: clay.StringSlice,
-			config: ^clay.TextElementConfig,
-			user: rawptr,
-		) -> clay.Dimensions {
-			return {f32(text.length) * f32(config.fontSize) / 2, f32(config.fontSize)}
+	nendo.set_measure_text(
+		proc(text: string, config: ^nendo.Text_Style, user: rawptr) -> nendo.Dimensions {
+			return {f32(len(text)) * f32(config.size) / 2, f32(config.size)}
 		},
 		nil,
 	)
-	defer {clay.SetCurrentContext(previous); delete(memory)}
-	clay.SetPointerState({-1, -1}, false)
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.set_pointer({-1, -1}, .Up)
 
 	render :: proc(ui: ^Ui_State) -> string {
-		clay.BeginLayout()
+		nendo.begin()
 		new_chat_pane(ui)
-		commands := clay.EndLayout(0)
+		commands := nendo.end(0)
 		text: [dynamic]u8
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Text {continue}
-			data := command.renderData.text.stringContents
-			append(&text, ..data.chars[:data.length])
+		for command in commands {
+			if command.kind != .Text {continue}
+			data := command.text.text
+			append(&text, data)
 			append(&text, ' ')
 		}
 		return string(text[:])

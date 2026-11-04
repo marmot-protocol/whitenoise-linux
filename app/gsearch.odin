@@ -7,7 +7,7 @@ import "core:strings"
 import "core:unicode"
 import "core:unicode/utf8"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -513,60 +513,42 @@ gs_chat_label :: proc(ui: ^Ui_State) -> string {
 }
 
 gs_filter_button :: proc(id, label: string, active: bool) {
-	if clay.UI(clay.ID(id))(
+	if nendo.box(nendo.id(id))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFixed(tap_size() ? tap_min() : 30),
-			},
-			padding = {left = 10, right = 10},
-			childGap = 6,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = active ? SELECTED : hovered() ? HOVER : ROW_BG,
-		cornerRadius = rr(6),
+		width = nendo.grow(),
+		height = nendo.fixed(tap_size() ? tap_min() : 30),
+		padding = {left = 10, right = 10},
+		gap = 6,
+		align = {y = .Center},
+		color = active ? SELECTED : hovered() ? HOVER : ROW_BG,
+		radius = rr(6),
 		border = {color = active ? ACCENT : FIELD_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID_LOCAL("GsFilterLabel"))(
-		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
-		) {
-			clay.Text(
-				label,
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT, wrapMode = .None},
-			)
+		if nendo.box(nendo.id_local("GsFilterLabel"))({width = nendo.grow(), clip = {x = true}}) {
+			nendo.text(label, {font = FONT_BODY, size = 12, color = TEXT, wrap = .None})
 		}
-		clay.Text("⌄", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		nendo.text("⌄", {font = FONT_BODY, size = 12, color = TEXT_DIM})
 		if hovered() {cursor_raise(.Pointer)}
 	}
 }
 
 gs_chip :: proc(index: u32, label: string, width: f32) {
-	if clay.UI(clay.ID("GsChip", index))(
+	if nendo.box(nendo.id("GsChip", index))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(width),
-				height = clay.SizingFixed(tap_size() ? tap_min() : 26),
-			},
-			padding = {left = 8, right = 8},
-			childGap = 6,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = SELECTED,
-		cornerRadius = rr(13),
+		width = nendo.fixed(width),
+		height = nendo.fixed(tap_size() ? tap_min() : 26),
+		padding = {left = 8, right = 8},
+		gap = 6,
+		align = {y = .Center},
+		color = SELECTED,
+		radius = rr(13),
 	},
 	) {
-		if clay.UI(clay.ID_LOCAL("GsChipLabel"))(
-		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
-		) {
-			clay.Text(
-				label,
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT, wrapMode = .None},
-			)
+		if nendo.box(nendo.id_local("GsChipLabel"))({width = nendo.grow(), clip = {x = true}}) {
+			nendo.text(label, {font = FONT_BODY, size = 11, color = TEXT, wrap = .None})
 		}
-		clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 9, textColor = ACCENT})
+		nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 9, color = ACCENT})
 		if hovered() {tooltip(label); cursor_raise(.Pointer)}
 	}
 }
@@ -593,90 +575,75 @@ gs_filter_options :: proc(ui: ^Ui_State) {
 	row_height := tap_size() ? tap_min() : 32
 	count :=
 		ui.gs_picker == 1 ? len(gs_chat_choices(ui)) + 1 : ui.gs_picker == 2 ? len(ui.gs_senders) + 2 : 6
-	if clay.UI(clay.ID("GsOptions"))(
+	if nendo.box(nendo.id("GsOptions"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(min(420, modal_w(clay.ID("GsModal"), 560) - 40)),
-				height = clay.SizingFixed(min(modal_h(264), f32(min(count, 6)) * row_height)),
-			},
-			layoutDirection = .TopToBottom,
-		},
-		backgroundColor = CARD,
+		width = nendo.fixed(min(420, modal_w(nendo.id("GsModal"), 560) - 40)),
+		height = nendo.fixed(min(modal_h(264), f32(min(count, 6)) * row_height)),
+		direction = .Column,
+		color = CARD,
 		border = {color = CARD_BORDER, width = bw()},
-		cornerRadius = rr(8),
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		radius = rr(8),
+		clip = {y = true, scroll = true},
 		floating = {
-			attachTo = .ElementWithId,
-			parentId = clay.ID(ui.gs_picker == 1 ? "GsChat" : ui.gs_picker == 2 ? "GsSender" : "GsAttachment").id,
-			zIndex = 15,
+			attach_to = .Element,
+			parent = nendo.id(ui.gs_picker == 1 ? "GsChat" : ui.gs_picker == 2 ? "GsSender" : "GsAttachment").id,
+			z = 15,
 			offset = {0, 4},
-			attachment = {
-				element = ui.gs_picker == 3 ? .RightTop : .LeftTop,
-				parent = ui.gs_picker == 3 ? .RightBottom : .LeftBottom,
+			attach = {
+				element = ui.gs_picker == 3 ? .Right_Top : .Left_Top,
+				parent = ui.gs_picker == 3 ? .Right_Bottom : .Left_Bottom,
 			},
 		},
 	},
 	) {
-		data := clay.GetScrollContainerData(clay.ID("GsOptions"))
-		first := data.found ? clamp(int(-data.scrollPosition.y / f32(row_height)), 0, count) : 0
+		data := nendo.scroll(nendo.id("GsOptions"))
+		first := data.found ? clamp(int(-data.position.y / f32(row_height)), 0, count) : 0
 		last := min(first + 8, count)
-		if clay.UI(clay.ID("GsOptionsBefore"))(
-		{layout = {sizing = {height = clay.SizingFixed(f32(first) * row_height)}}},
+		if nendo.box(nendo.id("GsOptionsBefore"))(
+		{height = nendo.fixed(f32(first) * row_height)},
 		) {}
 		for i in first ..< last {
 			label, key := gs_option(ui, i)
 			selected :=
 				ui.gs_picker == 1 ? ui.gs_group == key : ui.gs_picker == 2 ? ui.gs_sender == key : int(ui.gs_attachment) == i
-			if clay.UI(clay.ID("GsOption", u32(i)))(
+			if nendo.box(nendo.id("GsOption", u32(i)))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(f32(row_height)),
-					},
-					padding = {left = 10, right = 10},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				clip = {horizontal = true},
+				width = nendo.grow(),
+				height = nendo.fixed(f32(row_height)),
+				padding = {left = 10, right = 10},
+				gap = 8,
+				align = {y = .Center},
+				color = hovered() ? HOVER : {},
+				clip = {x = true},
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					selected ? ICON_CHECK : " ",
-					{fontId = FONT_ICON, fontSize = 10, textColor = ACCENT},
+					{font = FONT_ICON, size = 10, color = ACCENT},
 				)
-				clay.Text(
-					label,
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT, wrapMode = .None},
-				)
+				nendo.text(label, {font = FONT_BODY, size = 12, color = TEXT, wrap = .None})
 				if hovered() {cursor_raise(.Pointer)}
 			}
 		}
-		if clay.UI(clay.ID("GsOptionsAfter"))(
-		{layout = {sizing = {height = clay.SizingFixed(f32(count - last) * row_height)}}},
+		if nendo.box(nendo.id("GsOptionsAfter"))(
+		{height = nendo.fixed(f32(count - last) * row_height)},
 		) {}
 	}
-	scrollbar(clay.ID("GsOptions"), 16)
+	scrollbar(nendo.id("GsOptions"), 16)
 }
 
 @(private)
 gs_field :: proc(ui: ^Ui_State, id: string, buf: ^[dynamic]u8, hint: string, focus: Focus) {
-	if clay.UI(clay.ID(id))(
+	if nendo.box(nendo.id(id))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFixed(tap_size() ? tap_min() : 36),
-			},
-			padding = {left = 12, right = 12},
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(8),
+		width = nendo.grow(),
+		height = nendo.fixed(tap_size() ? tap_min() : 36),
+		padding = {left = 12, right = 12},
+		align = {y = .Center},
+		color = ROW_BG,
+		radius = rr(8),
 		border = {color = ui.focus == focus ? ACCENT : FIELD_BORDER, width = bw()},
-		clip = {horizontal = true},
+		clip = {x = true},
 	},
 	) {
 		field_text(ui, id, buf, hint, ui.focus == focus, 13, TEXT_LO)
@@ -692,37 +659,27 @@ gs_snippet_text :: proc(index: u32, text, query: string, arrived: f32) {
 			   strings.equal_fold(text[at:at + len(query)], query) {match = at; break}
 		}
 	}
-	width := max(44, modal_w(clay.ID("GsModal"), 560) - 72)
+	width := max(44, modal_w(nendo.id("GsModal"), 560) - 72)
 	for line, i in wrapped_lines(text, width, 12) {
-		if clay.UI(clay.ID("GsSnippetLine", index * 128 + u32(i)))(
-		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+		if nendo.box(nendo.id("GsSnippetLine", index * 128 + u32(i)))(
+		{width = nendo.grow(), clip = {x = true}},
 		) {
 			start, end := line.start, line.end
 			if match < 0 || match >= end || match + len(query) <= start {
-				clay.Text(
+				nendo.text(
 					text[start:end],
-					{
-						fontId = FONT_BODY,
-						fontSize = 12,
-						textColor = fade(TEXT_DIM, arrived),
-						wrapMode = .None,
-					},
+					{font = FONT_BODY, size = 12, color = fade(TEXT_DIM, arrived), wrap = .None},
 				)
 			} else {
 				a, b := max(start, match), min(end, match + len(query))
 				if a >
-				   start {clay.Text(text[start:a], {fontId = FONT_BODY, fontSize = 12, textColor = fade(TEXT_DIM, arrived), wrapMode = .None})}
-				clay.Text(
+				   start {nendo.text(text[start:a], {font = FONT_BODY, size = 12, color = fade(TEXT_DIM, arrived), wrap = .None})}
+				nendo.text(
 					text[a:b],
-					{
-						fontId = FONT_TITLE,
-						fontSize = 12,
-						textColor = fade(ACCENT, arrived),
-						wrapMode = .None,
-					},
+					{font = FONT_TITLE, size = 12, color = fade(ACCENT, arrived), wrap = .None},
 				)
 				if b <
-				   end {clay.Text(text[b:end], {fontId = FONT_BODY, fontSize = 12, textColor = fade(TEXT_DIM, arrived), wrapMode = .None})}
+				   end {nendo.text(text[b:end], {font = FONT_BODY, size = 12, color = fade(TEXT_DIM, arrived), wrap = .None})}
 			}
 		}
 	}
@@ -731,87 +688,69 @@ gs_snippet_text :: proc(index: u32, text, query: string, arrived: f32) {
 gsearch_modal :: proc(ui: ^Ui_State) {
 	_, sender_valid := gs_sender_key(ui)
 	_, _, dates_valid := gs_dates(ui)
-	if clay.UI(clay.ID("GsModal"))(
+	if nendo.box(nendo.id("GsModal"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("GsModal"), 560)),
-				height = clay.SizingFixed(modal_h(660)),
-			},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(20),
-			childGap = 8,
-		},
-		backgroundColor = CARD,
-		cornerRadius = rr(16),
+		width = nendo.fixed(modal_w(nendo.id("GsModal"), 560)),
+		height = nendo.fixed(modal_h(660)),
+		direction = .Column,
+		padding = nendo.pad(20),
+		gap = 8,
+		color = CARD,
+		radius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
-			attachTo = .Root,
-			zIndex = 13,
-			offset = {0, rise(clay.ID("GsModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 13,
+			offset = {0, rise(nendo.id("GsModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
 	},
 	) {
-		if clay.UI(clay.ID("GsHead"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
-		) {
-			clay.Text(
-				tr("Search all chats"),
-				{fontId = FONT_TITLE, fontSize = 20, textColor = TEXT},
-			)
-			if clay.UI(clay.ID("GsHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("GsClose"))(
+		if nendo.box(nendo.id("GsHead"))({width = nendo.grow(), align = {y = .Center}}) {
+			nendo.text(tr("Search all chats"), {font = FONT_TITLE, size = 20, color = TEXT})
+			if nendo.box(nendo.id("GsHeadGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("GsClose"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(tap_size() ? tap_min() : 26),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 26),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(7),
+				width = nendo.fixed(tap_size() ? tap_min() : 26),
+				height = nendo.fixed(tap_size() ? tap_min() : 26),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(7),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 			}
 		}
 
-		clay.Text(
+		nendo.text(
 			tr(
 				"Searches only history stored on this device. Older or unsynced messages may be missing.",
 			),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
 		)
-		if clay.UI(clay.ID("GsBody"))(
+		if nendo.box(nendo.id("GsBody"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 8,
-				padding = {right = 6},
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.grow(),
+			direction = .Column,
+			gap = 8,
+			padding = {right = 6},
+			clip = {y = true, scroll = true},
 		},
 		) {
-			if clay.UI(clay.ID("GsInput"))(
+			if nendo.box(nendo.id("GsInput"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 36),
-					},
-					padding = {left = 12, right = 12},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(8),
+				width = nendo.grow(),
+				height = nendo.fixed(tap_size() ? tap_min() : 36),
+				padding = {left = 12, right = 12},
+				gap = 8,
+				align = {y = .Center},
+				color = ROW_BG,
+				radius = rr(8),
 				border = {color = ui.focus == .GSearch ? ACCENT : FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(ICON_SEARCH, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO})
+				nendo.text(ICON_SEARCH, {font = FONT_ICON, size = 12, color = TEXT_LO})
 				field_text(
 					ui,
 					"GsInput",
@@ -831,9 +770,7 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				)
 			}
 			if !single_pane() || ui.gs_filters_open {
-				if clay.UI(clay.ID("GsFilters"))(
-				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
-				) {
+				if nendo.box(nendo.id("GsFilters"))({width = nendo.grow(), gap = 8}) {
 					gs_filter_button("GsChat", gs_chat_label(ui), ui.gs_group != "")
 					gs_filter_button(
 						"GsAttachment",
@@ -841,14 +778,8 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 						ui.gs_attachment != 0,
 					)
 				}
-				if clay.UI(clay.ID("GsSenderRow"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-						childGap = 8,
-					},
-				},
+				if nendo.box(nendo.id("GsSenderRow"))(
+				{width = nendo.grow(), direction = single_pane() ? .Column : .Row, gap = 8},
 				) {
 					gs_field(
 						ui,
@@ -857,57 +788,37 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 						tr("Sender name or public key"),
 						.GSearch_Sender,
 					)
-					if clay.UI(clay.ID("GsKnownSenderBox"))(
-					{layout = {sizing = {width = clay.SizingFixed(120)}}},
-					) {
+					if nendo.box(nendo.id("GsKnownSenderBox"))({width = nendo.fixed(120)}) {
 						gs_filter_button("GsSender", tr("Known senders"), ui.gs_picker == 2)
 					}
 				}
 				if !sender_valid && ui.gs_error != "" {
-					clay.Text(ui.gs_error, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+					nendo.text(ui.gs_error, {font = FONT_BODY, size = 12, color = DANGER})
 				}
-				if clay.UI(clay.ID("GsDates"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						layoutDirection = single_pane() ? .TopToBottom : .LeftToRight,
-						childGap = 8,
-					},
-				},
+				if nendo.box(nendo.id("GsDates"))(
+				{width = nendo.grow(), direction = single_pane() ? .Column : .Row, gap = 8},
 				) {
-					if clay.UI(clay.ID("GsStartCol"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							childGap = 3,
-						},
-					},
+					if nendo.box(nendo.id("GsStartCol"))(
+					{width = nendo.grow(), direction = .Column, gap = 3},
 					) {
-						clay.Text(
+						nendo.text(
 							tr("Start day"),
-							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 11, color = TEXT_DIM},
 						)
 						gs_field(ui, "GsSince", &ui.gs_since, tr("Any day"), .GSearch_Since)
 					}
-					if clay.UI(clay.ID("GsEndCol"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							childGap = 3,
-						},
-					},
+					if nendo.box(nendo.id("GsEndCol"))(
+					{width = nendo.grow(), direction = .Column, gap = 3},
 					) {
-						clay.Text(
+						nendo.text(
 							tr("End day (inclusive)"),
-							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+							{font = FONT_BODY, size = 11, color = TEXT_DIM},
 						)
 						gs_field(ui, "GsUntil", &ui.gs_until, tr("Any day"), .GSearch_Until)
 					}
 				}
 				if !dates_valid && sender_valid && ui.gs_error != "" {
-					clay.Text(ui.gs_error, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+					nendo.text(ui.gs_error, {font = FONT_BODY, size = 12, color = DANGER})
 				}
 			}
 			if single_pane() && !ui.gs_filters_open {
@@ -920,13 +831,11 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				if len(ui.gs_until) >
 				   0 {labels[4] = fmt.tprintf(tr("Through: %s"), string(ui.gs_until[:]))}
 				if ui.gs_attachment != 0 {labels[5] = tr(GS_ATTACHMENT_LABELS[ui.gs_attachment])}
-				avail := modal_w(clay.ID("GsModal"), 560) - 46
+				avail := modal_w(nendo.id("GsModal"), 560) - 46
 				at := 1
 				for at < len(labels) {
 					if labels[at] == "" {at += 1; continue}
-					if clay.UI(clay.ID("GsChips", u32(at)))(
-					{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
-					) {
+					if nendo.box(nendo.id("GsChips", u32(at)))({width = nendo.grow(), gap = 6}) {
 						used: f32
 						for at < len(labels) {
 							if labels[at] == "" {at += 1; continue}
@@ -943,136 +852,97 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				}
 			}
 			if ui.gs_loading {
-				clay.Text(
+				nendo.text(
 					tr("Searching local history…"),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 13, color = TEXT_DIM},
 				)
 				busy_bar("GsBusy")
 			} else if ui.gs_error != "" && sender_valid && dates_valid {
-				clay.Text(ui.gs_error, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+				nendo.text(ui.gs_error, {font = FONT_BODY, size = 12, color = DANGER})
 				settings_button("GsRetry", tr("Search again"))
 			}
 
 			empty := len(ui.gs_input) == 0 && !gs_has_filters(ui)
 			if empty && len(ui.prefs.recent_searches) > 0 {
-				if clay.UI(clay.ID("GsRecentHead"))({layout = {padding = {left = 4, top = 2}}}) {
-					clay.Text(
+				if nendo.box(nendo.id("GsRecentHead"))({padding = {left = 4, top = 2}}) {
+					nendo.text(
 						tr("RECENT"),
-						{
-							fontId = FONT_MONO,
-							fontSize = 11,
-							textColor = TEXT_LO,
-							letterSpacing = 2,
-						},
+						{font = FONT_MONO, size = 11, color = TEXT_LO, spacing = 2},
 					)
 				}
 				for q, i in ui.prefs.recent_searches {
-					if clay.UI(clay.ID("GsRecent", u32(i)))(
+					if nendo.box(nendo.id("GsRecent", u32(i)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							padding = {left = 10, right = 10, top = 8, bottom = 8},
-							childGap = 10,
-							childAlignment = {y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(8),
+						width = nendo.grow(),
+						padding = {left = 10, right = 10, top = 8, bottom = 8},
+						gap = 10,
+						align = {y = .Center},
+						color = hovered() ? HOVER : {},
+						radius = rr(8),
 					},
 					) {
-						clay.Text(
-							ICON_SEARCH,
-							{fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO},
-						)
-						clay.Text(q, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
+						nendo.text(ICON_SEARCH, {font = FONT_ICON, size = 11, color = TEXT_LO})
+						nendo.text(q, {font = FONT_BODY, size = 13, color = TEXT})
 					}
 				}
 			} else if empty {
-				clay.Text(
+				nendo.text(
 					tr("Type to search all chats."),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 13, color = TEXT_DIM},
 				)
 			} else if !ui.gs_loading && ui.gs_error == "" && len(ui.gs_hits) == 0 {
-				clay.Text(
-					tr("No matches."),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-				)
+				nendo.text(tr("No matches."), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 			}
 
-			if clay.UI(clay.ID("GsList"))(
+			if nendo.box(nendo.id("GsList"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFit({min = 44, max = 300}),
-					},
-					layoutDirection = .TopToBottom,
-					childGap = 2,
-				},
-				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+				width = nendo.grow(),
+				height = nendo.fit(min = 44, max = 300),
+				direction = .Column,
+				gap = 2,
+				clip = {y = true, scroll = true},
 			},
 			) {
 				for hit, i in ui.gs_hits {
 					// Each hit lands a beat after the one above it.
-					arrived := stagger(clay.ID("GsList").id, i)
-					if clay.UI(clay.ID("GsHit", u32(i)))(
+					arrived := stagger(nendo.id("GsList").id, i)
+					if nendo.box(nendo.id("GsHit", u32(i)))(
 					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							padding = clay.PaddingAll(10),
-							childGap = 3,
-						},
-						backgroundColor = fade(hovered() ? HOVER : {}, arrived),
-						cornerRadius = rr(8),
+						width = nendo.grow(),
+						direction = .Column,
+						padding = nendo.pad(10),
+						gap = 3,
+						color = fade(hovered() ? HOVER : {}, arrived),
+						radius = rr(8),
 					},
 					) {
-						if clay.UI(clay.ID("GsHitTop", u32(i)))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow()},
-								childGap = 8,
-								childAlignment = {y = .Center},
-							},
-						},
+						if nendo.box(nendo.id("GsHitTop", u32(i)))(
+						{width = nendo.grow(), gap = 8, align = {y = .Center}},
 						) {
-							clay.Text(
+							nendo.text(
 								hit.title,
-								{
-									fontId = FONT_TITLE,
-									fontSize = 13,
-									textColor = fade(TEXT, arrived),
-								},
+								{font = FONT_TITLE, size = 13, color = fade(TEXT, arrived)},
 							)
-							clay.Text(
+							nendo.text(
 								hit.sender,
-								{
-									fontId = FONT_BODY,
-									fontSize = 12,
-									textColor = fade(TEXT_DIM, arrived),
-								},
+								{font = FONT_BODY, size = 12, color = fade(TEXT_DIM, arrived)},
 							)
-							if clay.UI(clay.ID("GsHitGap", u32(i)))(
-							{layout = {sizing = {width = clay.SizingGrow()}}},
-							) {}
-							clay.Text(
+							if nendo.box(nendo.id("GsHitGap", u32(i)))({width = nendo.grow()}) {}
+							nendo.text(
 								hit.at,
-								{
-									fontId = FONT_MONO,
-									fontSize = 10,
-									textColor = fade(TEXT_LO, arrived),
-								},
+								{font = FONT_MONO, size = 10, color = fade(TEXT_LO, arrived)},
 							)
 						}
 						gs_snippet_text(u32(i), hit.snippet, string(ui.gs_input[:]), arrived)
 					}
 				}
 			}
-			scrollbar(clay.ID("GsList"), 14) // the modal floats at 13
+			scrollbar(nendo.id("GsList"), 14) // the modal floats at 13
 			if ui.gs_more &&
 			   !ui.gs_loading &&
 			   ui.gs_error == "" {settings_button("GsMore", tr("More results"))}
 		}
-		scrollbar(clay.ID("GsBody"), 14)
+		scrollbar(nendo.id("GsBody"), 14)
 		gs_filter_options(ui)
 	}
 }
@@ -1093,7 +963,7 @@ handle_gsearch :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			count :=
 				ui.gs_picker == 1 ? len(gs_chat_choices(ui)) + 1 : ui.gs_picker == 2 ? len(ui.gs_senders) + 2 : 6
 			for i in 0 ..< count {
-				if !clay.PointerOver(clay.ID("GsOption", u32(i))) {continue}
+				if !nendo.pointer_over(nendo.id("GsOption", u32(i))) {continue}
 				label, key := gs_option(ui, i)
 				switch ui.gs_picker {
 				case 1:
@@ -1140,7 +1010,7 @@ handle_gsearch :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	fields := [?]Focus{.GSearch, .GSearch_Sender, .GSearch_Since, .GSearch_Until}
 	boxes := [?]string{"GsInput", "GsSenderInput", "GsSince", "GsUntil"}
 	if at, moved := tab_focus(fields[:], &ui.focus); moved {
-		scroll_into_view(clay.ID("GsBody"), clay.ID(boxes[at]))
+		scroll_into_view(nendo.id("GsBody"), nendo.id(boxes[at]))
 	}
 	buf: ^[dynamic]u8
 	#partial switch ui.focus {
@@ -1179,7 +1049,7 @@ handle_gsearch :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	for i in 0 ..< 6 {
-		if clay.PointerOver(clay.ID("GsChip", u32(i))) {
+		if nendo.pointer_over(nendo.id("GsChip", u32(i))) {
 			gs_remove_filter(ui, u32(i))
 			gs_refresh(ui, client)
 			return
@@ -1195,7 +1065,7 @@ handle_gsearch :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("GsRetry") {gs_refresh(ui, client); return}
 	if len(ui.gs_input) == 0 && !gs_has_filters(ui) {
 		for q, i in ui.prefs.recent_searches {
-			if clay.PointerOver(clay.ID("GsRecent", u32(i))) {
+			if nendo.pointer_over(nendo.id("GsRecent", u32(i))) {
 				ed_set(ui, &ui.gs_input, q)
 				ui.focus = .GSearch
 				gs_refresh(ui, client)
@@ -1204,13 +1074,13 @@ handle_gsearch :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 	for hit, i in ui.gs_hits {
-		if clay.PointerOver(clay.ID("GsHit", u32(i))) {
+		if nendo.pointer_over(nendo.id("GsHit", u32(i))) {
 			gs_remember(ui)
 			gs_jump(ui, client, hit.group, hit.msg_id)
 			return
 		}
 	}
-	if clicked("GsClose") || !clay.PointerOver(clay.ID("GsModal")) {
+	if clicked("GsClose") || !nendo.pointer_over(nendo.id("GsModal")) {
 		gs_close(ui)
 	}
 }

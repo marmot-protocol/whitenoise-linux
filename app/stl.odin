@@ -1,5 +1,5 @@
 // Mesh chat attachments are decoded by isolated helpers, then drawn
-// through a clay Custom command. The stack has no 3D API, so every
+// through a nendo Custom command. The stack has no 3D API, so every
 // model rasterizes on the CPU with a real z-buffer into a streaming
 // texture; a still model costs one texture draw per frame.
 //
@@ -27,7 +27,7 @@ import "core:strings"
 import "core:thread"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Parent independently enforces the helper's triangle budget.
@@ -50,7 +50,7 @@ MESH_REFINE_BUDGET :: 6 * time.Millisecond
 
 // First field of every Custom-command payload: the renderer peeks it
 // to dispatch (mesh models and the G-code extrusion view share the
-// one Custom command type clay offers).
+// one Custom command type nendo offers).
 Model_Kind :: enum u8 {
 	Mesh,
 	Gcode,
@@ -646,9 +646,9 @@ refine_frame: u32
 @(private = "file")
 refine_deadline: time.Tick
 
-// Clay renderer hook for the Custom command, clipped to the tile so
+// nendo renderer hook for the Custom command, clipped to the tile so
 // zoom can't bleed over neighboring rows.
-stl_draw :: proc(view: ^Stl_View, bounds: clay.BoundingBox) {
+stl_draw :: proc(view: ^Stl_View, bounds: nendo.Rect) {
 	w := i32(bounds.width * UI_SCALE / UI_ZOOM)
 	h := i32(bounds.height * UI_SCALE / UI_ZOOM)
 	// Drags stay sharp unless the last full-size pass was too slow to
@@ -790,7 +790,7 @@ default_orbit :: proc() -> Orbit {
 	return {yaw = 0.6, pitch = -0.4, zoom = 1, dirty = true}
 }
 
-// Hover is recorded during the layout build (clay.Hovered inside the
+// Hover is recorded during the layout build (nendo.hovered inside the
 // tile) and consumed by the input pass; drag state spans frames. All
 // 3D tile kinds share these.
 orbit_hover: ^Orbit
@@ -810,7 +810,7 @@ model_hover: Model_Ref
 orbit_moved: bool // the press became an orbit drag, so it is not a click
 
 // Orbit drag + wheel zoom; runs after layout like the other handlers.
-// The frame loop feeds clay a zeroed wheel while a tile is hovered so
+// The frame loop feeds nendo a zeroed wheel while a tile is hovered so
 // zooming doesn't also scroll the timeline.
 handle_orbit :: proc() {
 	mouse := rl.GetMousePosition()

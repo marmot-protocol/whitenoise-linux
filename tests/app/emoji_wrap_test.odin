@@ -5,7 +5,7 @@ import "core:fmt"
 import "core:strings"
 import "core:testing"
 import "core:unicode/utf8"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=emoji_wrap_layout
@@ -33,27 +33,22 @@ emoji_wrap_layout :: proc(t: ^testing.T) {
 	for scale in ([]f32{1, 1.875}) {
 		UI_SCALE = scale
 		rl.SetPixelScale(scale)
-		clay.ResetMeasureTextCache()
+		nendo.reset_measure_cache()
 		for width in ([]f32{120, 240, 480, 960}) {
 			for text, i in texts {
 				for selected in 0 ..< 2 {
 					ui.sel_on, ui.sel_block, ui.sel_a, ui.sel_b = selected == 1, 42, 0, len(text)
 					clear(&sel_lines)
-					clay.BeginLayout()
-					if clay.UI(clay.ID("EmojiBody"))(
-					{
-						layout = {
-							layoutDirection = .TopToBottom,
-							sizing = {width = clay.SizingFixed(width)},
-						},
-					},
+					nendo.begin()
+					if nendo.box(nendo.id("EmojiBody"))(
+					{direction = .Column, width = nendo.fixed(width)},
 					) {
 						body_text(42, text, BODY_FS, TEXT, true, width)
 					}
-					clay.EndLayout(0)
+					nendo.end(0)
 					if i < 3 {testing.expect(t, len(sel_lines) > 1)}
 					for line in sel_lines {
-						box := clay.GetElementData(clay.ID("BodyLine", line.id)).boundingBox
+						box := nendo.element(nendo.id("BodyLine", line.id)).rect
 						testing.expect(
 							t,
 							box.width <= width + 0.1,
@@ -74,12 +69,12 @@ emoji_wrap_layout :: proc(t: ^testing.T) {
 							if g.byte_index == 0 || emoji || previous_emoji {segment += 1}
 							previous_emoji = emoji
 							if !emoji {continue}
-							tile := clay.GetElementData(
-								clay.ID("SegEmoji", line.id * 128 + u32(segment)),
+							tile := nendo.element(
+								nendo.id("SegEmoji", line.id * 128 + u32(segment)),
 							)
 							testing.expect(t, tile.found)
 							for side in 0 ..< 2 {
-								b := tile.boundingBox
+								b := tile.rect
 								offset :=
 									line.start +
 									hit_plain(
@@ -121,25 +116,24 @@ emoji_wrap_layout :: proc(t: ^testing.T) {
 	}
 	UI_SCALE = 1
 	rl.SetPixelScale(1)
-	clay.ResetMeasureTextCache()
+	nendo.reset_measure_cache()
 	ui.sel_on = false
-	clay.BeginLayout()
-	if clay.UI(clay.ID("EmojiExcerpt"))(
+	nendo.begin()
+	if nendo.box(nendo.id("EmojiExcerpt"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(480), height = clay.SizingGrow()},
-			padding = {top = 20},
-		},
-		backgroundColor = CARD,
+		direction = .Column,
+		width = nendo.fixed(480),
+		height = nendo.grow(),
+		padding = {top = 20},
+		color = CARD,
 	},
 	) {
 		testing.expect(t, message_excerpt(42, texts[1], TEXT))
 	}
-	commands := clay.EndLayout(0)
-	testing.expect(t, clay.GetElementData(clay.ID("MessageMore", 42)).found)
+	commands := nendo.end(0)
+	testing.expect(t, nendo.element(nendo.id("MessageMore", 42)).found)
 	rl.BeginDrawing()
-	clay_raylib_render(&commands)
+	render_nendo(commands)
 	rl.TakeScreenshot("/tmp/wn-emoji-wrap.png")
 	rl.EndDrawing()
 }

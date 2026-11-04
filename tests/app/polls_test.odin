@@ -10,8 +10,8 @@ import marmot "../marmot"
 // the visible timeline page. Raw response records must not alter MDK's result.
 @(test)
 poll_native_projection :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	ui := Ui_State {
 		account_ref = "account",

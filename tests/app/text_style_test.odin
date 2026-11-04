@@ -5,7 +5,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -97,35 +97,34 @@ rich_text_layout :: proc(t: ^testing.T) {
 	for width in ([]f32{140, 460}) {
 		for frame in 0 ..< 3 {
 			clear(&sel_lines)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("StyledTest"))(
+			nendo.begin()
+			if nendo.box(nendo.id("StyledTest"))(
 			{
-				layout = {
-					layoutDirection = .TopToBottom,
-					sizing = {width = clay.SizingFixed(width), height = clay.SizingGrow()},
-					childGap = 8,
-				},
-				backgroundColor = CARD,
+				direction = .Column,
+				width = nendo.fixed(width),
+				height = nendo.grow(),
+				gap = 8,
+				color = CARD,
 			},
 			) {
 				md_blocks(blocks[:], 16, true, width)
 			}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			if frame < 2 {continue}
 			images := 0
 			seen: [6]bool
-			for cmd in commands.internalArray[:commands.length] {
-				if cmd.commandType == .Text {
-					data := cmd.renderData.text
-					seen[data.fontId] = true
-					part := string(data.stringContents.chars[:data.stringContents.length])
+			for cmd in commands {
+				if cmd.kind == .Text {
+					data := cmd.text
+					seen[data.font] = true
+					part := data.text
 					start := strings.index(blocks[0].text, part)
 					for line in sel_lines {
 						if start < line.start || start >= line.start + len(line.text) {continue}
-						box := clay.GetElementData(clay.ID("BodyLine", line.id)).boundingBox
+						box := nendo.element(nendo.id("BodyLine", line.id)).rect
 						x :=
-							cmd.boundingBox.x +
-							0.25 * rl.MeasureTextLine(data.fontId, data.fontSize, part[:1], 0).x -
+							cmd.rect.x +
+							0.25 * rl.MeasureTextLine(data.font, data.size, part[:1], 0).x -
 							box.x
 						testing.expect_value(
 							t,
@@ -135,20 +134,20 @@ rich_text_layout :: proc(t: ^testing.T) {
 						)
 					}
 				}
-				if cmd.commandType == .Image {
+				if cmd.kind == .Image {
 					images += 1
-					testing.expect(t, cmd.boundingBox.width > 0 && cmd.boundingBox.height > 0)
+					testing.expect(t, cmd.rect.width > 0 && cmd.rect.height > 0)
 				}
 			}
 			testing.expect_value(t, images, 1)
 			for font in ([]int{FONT_BODY, FONT_TITLE, FONT_MONO, FONT_ITALIC, FONT_BOLD_ITALIC}) {testing.expect(t, seen[font])}
 			for line in sel_lines {
-				box := clay.GetElementData(clay.ID("BodyLine", line.id)).boundingBox
+				box := nendo.element(nendo.id("BodyLine", line.id)).rect
 				testing.expect(t, box.width <= width + 0.1)
 				if len(line.text) > 0 {testing.expect(t, len(line.fonts) == len(line.text))}
 			}
 			rl.BeginDrawing()
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-emphasis-%d.png", int(width)))
 			rl.EndDrawing()
 		}
@@ -166,25 +165,25 @@ rich_text_layout :: proc(t: ^testing.T) {
 	draw :: proc(text: string) {
 		clear(&sel_lines)
 		link_hover = ""
-		clay.BeginLayout()
-		if clay.UI(clay.ID("LinkTest"))(
-		{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(240)}}},
+		nendo.begin()
+		if nendo.box(nendo.id("LinkTest"))(
+		{direction = .Column, width = nendo.fixed(240)},
 		) {body_text(99, text, 14, TEXT, true, 232)}
-		clay.EndLayout(0)
+		nendo.end(0)
 	}
 	draw(text)
-	boxes := make([dynamic]clay.BoundingBox, context.temp_allocator)
+	boxes := make([dynamic]nendo.Rect, context.temp_allocator)
 	for line in sel_lines {
 		for k in 0 ..< 3 {
-			box := clay.GetElementData(clay.ID("SegLink", line.id * 128 + u32(k)))
-			if box.found {append(&boxes, box.boundingBox)}
+			box := nendo.element(nendo.id("SegLink", line.id * 128 + u32(k)))
+			if box.found {append(&boxes, box.rect)}
 		}
 	}
 	testing.expect(t, len(boxes) > 2)
 	forced_release = true
 	defer {forced_release = false; link_hover = ""}
 	for box in boxes {
-		clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+		nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
 		draw(text)
 		testing.expect_value(t, link_hover, url)
 		handle_link_click(&ui)

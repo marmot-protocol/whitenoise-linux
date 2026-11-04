@@ -11,7 +11,7 @@ import "core:strings"
 import "core:testing"
 import "core:thread"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -19,8 +19,8 @@ profile_theme_and_shapes :: proc(t: ^testing.T) {
 	raw := `{"kind":16767,"tags":[["c","#123456","background"],["c","#f1f2f3","text"],["c","#abcdef","primary"],["f","Body","https://example.org/body.woff2"],["f","Title","https://example.org/title.otf","title"],["bg","url https://example.org/tile.png","mode tile","m image/png"]]}`
 	theme := profile_theme_parse(raw)
 	defer {delete(theme.background); for font in theme.fonts {delete(font)}}
-	testing.expect_value(t, theme.colors[0], clay.Color{18, 52, 86, 255})
-	testing.expect_value(t, theme.colors[1], clay.Color{241, 242, 243, 255})
+	testing.expect_value(t, theme.colors[0], nendo.Color{18, 52, 86, 255})
+	testing.expect_value(t, theme.colors[1], nendo.Color{241, 242, 243, 255})
 	testing.expect_value(t, theme.fonts[0], "https://example.org/body.woff2")
 	testing.expect_value(t, theme.fonts[1], "https://example.org/title.otf")
 	testing.expect(t, theme.tile && theme.background == "https://example.org/tile.png")
@@ -156,14 +156,14 @@ profile_theme_layout :: proc(t: ^testing.T) {
 	)
 	photo := local_pic(ui.my_pic_url)
 	ui.prefs.avatar_shape = .Square
-	clay.BeginLayout()
+	nendo.begin()
 	avatar("OutsideProfile", 0, key, "Visitor", 42, photo)
-	avatar_commands := clay.EndLayout(0)
-	for command in avatar_commands.internalArray[:avatar_commands.length] {
-		if command.commandType != .Image {continue}
+	avatar_commands := nendo.end(0)
+	for command in avatar_commands {
+		if command.kind != .Image {continue}
 		testing.expect(
 			t,
-			command.renderData.image.imageData == rawptr(shaped_avatar(photo, "⭐")),
+			command.image.image == rawptr(shaped_avatar(photo, "⭐")),
 			"published shapes override the local default outside profiles too",
 		)
 	}
@@ -177,28 +177,21 @@ profile_theme_layout :: proc(t: ^testing.T) {
 	before := BG
 	for pane in 0 ..< 3 {
 		for frame in 0 ..< 3 {
-			clay.UpdateScrollContainers(false, {}, 0)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("ProfileTestRoot"))(
-			{
-				layout = {sizing = {clay.SizingFixed(1100), clay.SizingFixed(950)}},
-				backgroundColor = CARD,
-			},
+			nendo.update_scroll(.Off, {}, 0)
+			nendo.begin()
+			if nendo.box(nendo.id("ProfileTestRoot"))(
+			{width = nendo.fixed(1100), height = nendo.fixed(950), color = CARD},
 			) {
-				if clay.UI(clay.ID("UnstyledSidebar"))(
+				if nendo.box(nendo.id("UnstyledSidebar"))(
 				{
-					layout = {
-						sizing = {clay.SizingFixed(220), clay.SizingGrow()},
-						padding = clay.PaddingAll(20),
-					},
-					backgroundColor = CARD,
+					width = nendo.fixed(220),
+					height = nendo.grow(),
+					padding = nendo.pad(20),
+					color = CARD,
 				},
 				) {
 					avatar("SidebarShape", 0, key, "Visitor", 30, photo)
-					clay.Text(
-						"App stays unchanged",
-						{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
-					)
+					nendo.text("App stays unchanged", {font = FONT_BODY, size = 14, color = TEXT})
 				}
 				switch pane {
 				case 0:
@@ -206,19 +199,18 @@ profile_theme_layout :: proc(t: ^testing.T) {
 				case 1:
 					profile_pane(&ui)
 				case 2:
-					if clay.UI(clay.ID("SettingsTest"))(
+					if nendo.box(nendo.id("SettingsTest"))(
 					{
-						layout = {
-							sizing = {clay.SizingGrow(), clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							padding = clay.PaddingAll(20),
-							childGap = 10,
-						},
+						width = nendo.grow(),
+						height = nendo.grow(),
+						direction = .Column,
+						padding = nendo.pad(20),
+						gap = 10,
 					},
 					) {settings_appearance(&ui)}
 				}
 			}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			testing.expect(
 				t,
 				BG == before,
@@ -226,17 +218,16 @@ profile_theme_layout :: proc(t: ^testing.T) {
 			)
 			if pane < 2 {
 				found_background, found_font := false, false
-				for cmd in commands.internalArray[:commands.length] {
-					if cmd.commandType == .Custom &&
-					   (^Model_Kind)(cmd.renderData.custom.customData)^ ==
+				for cmd in commands {
+					if cmd.kind == .Custom &&
+					   (^Model_Kind)(cmd.custom.custom)^ ==
 						   .Profile_Background {found_background = true}
-					if cmd.commandType == .Text &&
-					   cmd.renderData.text.fontId >= 32 {found_font = true}
+					if cmd.kind == .Text && cmd.text.font >= 32 {found_font = true}
 				}
 				testing.expect(t, found_background && found_font)
 			}
 			rl.BeginDrawing()
-			clay_raylib_render(&commands)
+			render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-profile-theme-%d.png", pane))
 			rl.EndDrawing()
 		}

@@ -3,7 +3,7 @@ package main
 import "base:runtime"
 import "core:fmt"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -40,16 +40,16 @@ preview_boundaries :: proc(t: ^testing.T) {
 		for page in 0 ..< 3 {
 			preview.slide, view.page = page, page
 			pdf_flip_hover = nil
-			clay.SetPointerState({0, 0}, false)
+			nendo.set_pointer({0, 0}, .Up)
 			for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
 			commands := build_layout(&ui, 0)
 			left, right: f32
-			for command in commands.internalArray[:commands.length] {
-				if command.commandType != .Text {continue}
-				text := command.renderData.text
-				glyph := string(text.stringContents.chars[:text.stringContents.length])
-				if glyph == "<" {left = text.textColor.a}
-				if glyph == ">" {right = text.textColor.a}
+			for command in commands {
+				if command.kind != .Text {continue}
+				text := command.text
+				glyph := text.text
+				if glyph == "<" {left = text.color.a}
+				if glyph == ">" {right = text.color.a}
 			}
 			testing.expect(t, left > 0 && right > 0, "both arrows remain visible")
 			switch page {
@@ -63,8 +63,8 @@ preview_boundaries :: proc(t: ^testing.T) {
 			for next in ([]bool{false, true}) {
 				id :=
 					kind == .Slides ? (next ? "PvSlideNext" : "PvSlidePrev") : (next ? "PvPdfNext" : "PvPdfPrev")
-				box := clay.GetElementData(clay.ID(id)).boundingBox
-				clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+				box := nendo.element(nendo.id(id)).rect
+				nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
 				pdf_flip_hover = nil
 				commands = build_layout(&ui, 0)
 				if kind == .Pdf {
@@ -78,10 +78,10 @@ preview_boundaries :: proc(t: ^testing.T) {
 					preview.slide = page
 				}
 			}
-			clay.SetPointerState({0, 0}, false)
+			nendo.set_pointer({0, 0}, .Up)
 			commands = build_layout(&ui, 0)
 			rl.BeginDrawing()
-			draw_frame(&commands)
+			draw_frame(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-preview-%v-%d.png", kind, page))
 			rl.EndDrawing()
 		}

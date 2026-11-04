@@ -7,7 +7,7 @@ import "core:strings"
 import "core:sync"
 import "core:thread"
 
-import clay "layout"
+import "nendo"
 
 @(private)
 Hn_Card :: struct {
@@ -102,35 +102,27 @@ hn_card :: proc(id: u32, key, url: string) {
 		hn_cards[owned] = {}
 		append(&send_threads, thread.create_and_start_with_poly_data(owned, hn_worker))
 	}
-	if clay.UI(clay.ID("HnCard", id))(
+	if nendo.box(nendo.id("HnCard", id))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(att_w(360))},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(14),
-			childGap = 12,
-		},
-		backgroundColor = PLATE,
-		cornerRadius = rr(12),
+		width = nendo.fixed(att_w(360)),
+		direction = .Column,
+		padding = nendo.pad(14),
+		gap = 12,
+		color = PLATE,
+		radius = rr(12),
 		border = {color = hovered() ? fade(ACCENT, 0.5) : CARD_BORDER, width = bw()},
 	},
 	) {
 		if hovered() {link_hover = url}
-		clay.Text(
-			"HACKER NEWS",
-			{fontId = FONT_BODY, fontSize = 9, textColor = TEXT_DIM, letterSpacing = 1},
-		)
+		nendo.text("HACKER NEWS", {font = FONT_BODY, size = 9, color = TEXT_DIM, spacing = 1})
 		title := card.title != "" ? card.title : fmt.tprintf("Hacker News #%s", key)
-		clay.Text(title, {fontId = FONT_TITLE, fontSize = 15, textColor = TEXT})
+		nendo.text(title, {font = FONT_TITLE, size = 15, color = TEXT})
 		if card.author != "" {
-			clay.Text(
+			nendo.text(
 				fmt.tprintf("@%s", card.author),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 		}
-		clay.Text(
-			external_link_action(),
-			{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_DIM},
-		)
+		nendo.text(external_link_action(), {font = FONT_BODY, size = 10, color = TEXT_DIM})
 	}
 }

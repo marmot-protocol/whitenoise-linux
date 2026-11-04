@@ -7,7 +7,7 @@ import "core:text/edit"
 import "core:thread"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -26,7 +26,7 @@ auth_cancel :: proc(ui: ^Ui_State) {
 }
 
 handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	for item, i in nip46_accounts {if mouse_released() && clay.PointerOver(clay.ID("SignerApproval", u32(i))) {nip46_auth_url(ui, item.state.auth_url); return}}
+	for item, i in nip46_accounts {if mouse_released() && nendo.pointer_over(nendo.id("SignerApproval", u32(i))) {nip46_auth_url(ui, item.state.auth_url); return}}
 	if len(ui.accounts) > 0 && !ui.add_account_open {
 		return
 	}
@@ -366,13 +366,13 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if ui.page == .Chats && (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) {
 		for project in rl.WhipProjects() {
-			if clay.PointerOver(clay.ID("WhipProject", project.id)) {
+			if nendo.pointer_over(nendo.id("WhipProject", project.id)) {
 				open_terminal_menu(ui, project.id)
 				return
 			}
 		}
 		for _, i in ui.chats {
-			if clay.PointerOver(clay.ID("ChatRow", u32(i))) {
+			if nendo.pointer_over(nendo.id("ChatRow", u32(i))) {
 				open_row_menu(ui, i)
 				return
 			}
@@ -387,11 +387,11 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			   clicked_indexed("MessageSticker", u32(i)) {sticker_show(ui, msg.sticker); return}
 		}
 		for _, i in ui.chats {
-			if clay.PointerOver(clay.ID("ChatMenu", u32(i))) {
+			if nendo.pointer_over(nendo.id("ChatMenu", u32(i))) {
 				open_row_menu(ui, i)
 				return
 			}
-			if clay.PointerOver(clay.ID("ChatRow", u32(i))) {
+			if nendo.pointer_over(nendo.id("ChatRow", u32(i))) {
 				select_chat(ui, client, i)
 				break
 			}
@@ -399,19 +399,19 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		// Tap a failed optimistic row to retry the send.
 		for &p, i in ui.pending {
 			if ui.whip_open {break}
-			if clay.PointerOver(clay.ID("MessageMore", 0xF00000 + u32(i) * 8)) {
+			if nendo.pointer_over(nendo.id("MessageMore", 0xF00000 + u32(i) * 8)) {
 				excerpt_toggle(&p.excerpt, 0xF00000 + u32(i) * 8)
 				return
 			}
 			if !pending_can_delete(p, time.tick_now()) {
 				continue
 			}
-			if clay.PointerOver(clay.ID("PendingDelete", u32(i))) ||
-			   clay.PointerOver(clay.ID("PendingDeleteEnd", u32(i))) {
+			if nendo.pointer_over(nendo.id("PendingDelete", u32(i))) ||
+			   nendo.pointer_over(nendo.id("PendingDeleteEnd", u32(i))) {
 				delete_pending(ui, i)
 				return
 			}
-			if p.failed && clay.PointerOver(clay.ID("PendingRow", u32(i))) {
+			if p.failed && nendo.pointer_over(nendo.id("PendingRow", u32(i))) {
 				p.failed = false
 				p.attempts = 0 // a manual retry restarts the auto-retry cap
 				spawn_send(ui, client, &p)
@@ -424,7 +424,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !ui.whip_open && ui.selected >= 0 && ui.hist_open {
 		if rl.IsKeyPressed(.ESCAPE) ||
 		   (mouse_released() &&
-				   (clicked("HistClose") || !clay.PointerOver(clay.ID("HistModal")))) {
+				   (clicked("HistClose") || !nendo.pointer_over(nendo.id("HistModal")))) {
 			ui.hist_open = false
 		}
 		return
@@ -432,7 +432,8 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Open raw-event modal captures everything while open.
 	if !ui.whip_open && ui.selected >= 0 && ui.raw_open {
 		if rl.IsKeyPressed(.ESCAPE) ||
-		   (mouse_released() && (clicked("RawClose") || !clay.PointerOver(clay.ID("RawModal")))) {
+		   (mouse_released() &&
+				   (clicked("RawClose") || !nendo.pointer_over(nendo.id("RawModal")))) {
 			ui.raw_open = false
 			return
 		}
@@ -444,7 +445,8 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Open encryption-info modal captures everything while open.
 	if !ui.whip_open && ui.selected >= 0 && ui.enc_open {
 		if rl.IsKeyPressed(.ESCAPE) ||
-		   (mouse_released() && (clicked("EncClose") || !clay.PointerOver(clay.ID("EncModal")))) {
+		   (mouse_released() &&
+				   (clicked("EncClose") || !nendo.pointer_over(nendo.id("EncModal")))) {
 			ui.enc_open = false
 			return
 		}
@@ -469,7 +471,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if msg.deleted && !ui.prefs.dev_mode {
 				continue
 			}
-			if clay.PointerOver(clay.ID("MsgRow", u32(i))) {
+			if nendo.pointer_over(nendo.id("MsgRow", u32(i))) {
 				open_msg_menu(ui, i)
 				return
 			}
@@ -490,7 +492,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if mouse_released() {
 			ui.chat_head_menu = false
-			if !clay.PointerOver(clay.ID("ChatHeadMenu")) {return}
+			if !nendo.pointer_over(nendo.id("ChatHeadMenu")) {return}
 		}
 	}
 
@@ -561,18 +563,15 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   len(ui.jump_id) == 0 &&
 	   !ui.scroll_pending &&
 	   len(thread_cur(ui)) == 0 {
-		if data := clay.GetScrollContainerData(clay.ID("Timeline"));
-		   data.found && data.scrollPosition.y > -TL_FETCH_MARGIN {
+		if data := nendo.scroll(nendo.id("Timeline"));
+		   data.found && data.position.y > -TL_FETCH_MARGIN {
 			timeline_paginate(ui, .Older)
 		}
 	}
 	if ui.tl_has_after && !ui.search_open && len(ui.jump_id) == 0 && !ui.scroll_pending {
-		if data := clay.GetScrollContainerData(clay.ID("Timeline"));
+		if data := nendo.scroll(nendo.id("Timeline"));
 		   data.found &&
-		   data.contentDimensions.height +
-				   data.scrollPosition.y -
-				   data.scrollContainerDimensions.height <
-			   TL_FETCH_MARGIN {
+		   data.content.height + data.position.y - data.viewport.height < TL_FETCH_MARGIN {
 			timeline_paginate(ui, .Newer)
 		}
 	}
@@ -660,7 +659,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if rl.IsKeyPressed(.ESCAPE) {ui.compose_more = false; return}
 		if mouse_released() {
 			ui.compose_more = false
-			if !clay.PointerOver(clay.ID("ComposeMoreMenu")) {return}
+			if !nendo.pointer_over(nendo.id("ComposeMoreMenu")) {return}
 		}
 	}
 
@@ -704,7 +703,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	for _, i in ui.staged {
-		if mouse_released() && clay.PointerOver(clay.ID("StagedX", u32(i))) {
+		if mouse_released() && nendo.pointer_over(nendo.id("StagedX", u32(i))) {
 			remove_staged(ui, i)
 			return
 		}
@@ -829,7 +828,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Per-message row actions.
 	if mouse_released() {
 		for msg, i in ui.messages {
-			if clay.PointerOver(clay.ID("BlockedToggle", u32(i))) {
+			if nendo.pointer_over(nendo.id("BlockedToggle", u32(i))) {
 				if ui.blocked_open[msg.id] {
 					key, _ := delete_key(&ui.blocked_open, msg.id)
 					delete(key)
@@ -839,14 +838,15 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				return
 			}
 			for &secret, j in msg.secrets {
-				if !msg.deleted && clay.PointerOver(clay.ID("MsgReveal", u32(i) * 4096 + u32(j))) {
+				if !msg.deleted &&
+				   nendo.pointer_over(nendo.id("MsgReveal", u32(i) * 4096 + u32(j))) {
 					secret.open = !secret.open
 					ui.messages[i].row_height = 0
 					return
 				}
 				if !secret.open {break}
 			}
-			if clay.PointerOver(clay.ID("MessageMore", u32(i) * 4096)) {
+			if nendo.pointer_over(nendo.id("MessageMore", u32(i) * 4096)) {
 				excerpt_toggle(&ui.messages[i].excerpt, u32(i) * 4096)
 				ui.messages[i].row_height = 0
 				return
@@ -855,12 +855,12 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				continue
 			}
 			// The face and sender name share one profile action, including you.
-			if clay.PointerOver(clay.ID("MsgAvatar", u32(i))) ||
-			   clay.PointerOver(clay.ID("MsgSender", u32(i))) {
+			if nendo.pointer_over(nendo.id("MsgAvatar", u32(i))) ||
+			   nendo.pointer_over(nendo.id("MsgSender", u32(i))) {
 				open_peer(ui, client, msg.sender_id, msg.sender, msg.pic_url)
 				return
 			}
-			if msg.edited && clay.PointerOver(clay.ID("MsgEdited", u32(i))) {
+			if msg.edited && nendo.pointer_over(nendo.id("MsgEdited", u32(i))) {
 				ui.hist_open = true
 				ui.hist_msg = i
 				for v in ui.hist_versions {delete(v.at); delete(v.text); blocks_free(v.blocks)}
@@ -873,39 +873,39 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			// with a wave emoji plus the composer's mention format.
 			if !read_only &&
 			   len(msg.sys_added_hex) > 0 &&
-			   clay.PointerOver(clay.ID("SysWave", u32(i))) {
+			   nendo.pointer_over(nendo.id("SysWave", u32(i))) {
 				if npub := hex_npub(msg.sys_added_hex); len(npub) > 0 {
 					queue_send(ui, client, fmt.tprintf("👋 @%s", npub))
 				}
 				return
 			}
-			if !read_only && clay.PointerOver(clay.ID("MsgReply", u32(i))) {
+			if !read_only && nendo.pointer_over(nendo.id("MsgReply", u32(i))) {
 				start_reply(ui, msg)
 				return
 			}
-			if !read_only && msg.mine && clay.PointerOver(clay.ID("MsgEdit", u32(i))) {
+			if !read_only && msg.mine && nendo.pointer_over(nendo.id("MsgEdit", u32(i))) {
 				start_edit(ui, msg)
 				return
 			}
-			if !read_only && msg.mine && clay.PointerOver(clay.ID("MsgDel", u32(i))) {
+			if !read_only && msg.mine && nendo.pointer_over(nendo.id("MsgDel", u32(i))) {
 				confirm_ask(ui, .Delete_All, msg.id, msg_preview(msg))
 				return
 			}
 			for chip, j in msg.reactions {
 				if !read_only &&
-				   clay.PointerOver(clay.ID("MsgReactionChip", msg_slot_id(u32(i), j))) {
+				   nendo.pointer_over(nendo.id("MsgReactionChip", msg_slot_id(u32(i), j))) {
 					message_op(ui, client, chip.mine ? .Unreact : .React, msg.id, chip.emoji)
 					return
 				}
 			}
 			for _, j in msg.poll_opts {
-				if !read_only && clay.PointerOver(clay.ID("PollOptRow", u32(i) * 64 + u32(j))) {
+				if !read_only && nendo.pointer_over(nendo.id("PollOptRow", u32(i) * 64 + u32(j))) {
 					poll_vote(ui, client, &ui.messages[i], j)
 					return
 				}
 			}
-			if clay.PointerOver(clay.ID("MsgThread", u32(i))) ||
-			   clay.PointerOver(clay.ID("MsgThreadChip", u32(i))) {
+			if nendo.pointer_over(nendo.id("MsgThread", u32(i))) ||
+			   nendo.pointer_over(nendo.id("MsgThreadChip", u32(i))) {
 				thread_push(ui, msg.id)
 				return
 			}
@@ -1312,28 +1312,28 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !mouse_released() {
 		return
 	}
-	if clay.PointerOver(clay.ID("PickerSearch")) {
+	if nendo.pointer_over(nendo.id("PickerSearch")) {
 		return
 	}
 	for recent, i in ui.prefs.recent_emoji {
-		if clay.PointerOver(clay.ID("PkRecent", u32(i))) {
+		if nendo.pointer_over(nendo.id("PkRecent", u32(i))) {
 			pick_emoji(ui, client, recent)
 			return
 		}
 	}
 	for code, i in picker_custom(string(ui.picker_filter[:])) {
-		if clay.PointerOver(clay.ID("PkCustom", u32(i))) {
+		if nendo.pointer_over(nendo.id("PkCustom", u32(i))) {
 			pick_emoji(ui, client, fmt.tprintf(":%s:", code))
 			return
 		}
 	}
 	for index in picker_matches(ui) {
-		if clay.PointerOver(clay.ID("PkCell", u32(index))) {
+		if nendo.pointer_over(nendo.id("PkCell", u32(index))) {
 			pick_emoji(ui, client, emoji_catalog[index].emoji)
 			return
 		}
 	}
-	if !clay.PointerOver(clay.ID("PickerPanel")) {
+	if !nendo.pointer_over(nendo.id("PickerPanel")) {
 		close_picker(ui)
 	}
 }
@@ -1345,29 +1345,29 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.ctx_open = false
 		return
 	}
-	if rl.IsMouseButtonPressed(.RIGHT) && !clay.PointerOver(clay.ID("CtxMenu")) {
+	if rl.IsMouseButtonPressed(.RIGHT) && !nendo.pointer_over(nendo.id("CtxMenu")) {
 		ui.ctx_open = false
 		return
 	}
 	if !mouse_released() {
 		return
 	}
-	if menu_keep(clay.ID("CtxMenu")) {return}
+	if menu_keep(nendo.id("CtxMenu")) {return}
 	msg := ui.messages[ui.ctx_msg]
 	ui.ctx_open = false
 	read_only := ui.selected >= 0 && ui.chats[ui.selected].archived
 
 	for emoji, i in ui.prefs.quick_reactions {
-		if !read_only && clay.PointerOver(clay.ID("CtxQuick", u32(i))) {
+		if !read_only && nendo.pointer_over(nendo.id("CtxQuick", u32(i))) {
 			message_op(ui, client, .React, msg.id, emoji)
 			return
 		}
 	}
-	if !read_only && clay.PointerOver(clay.ID("CtxReply")) {
+	if !read_only && nendo.pointer_over(nendo.id("CtxReply")) {
 		start_reply(ui, msg)
 		return
 	}
-	if clay.PointerOver(clay.ID("CtxThread")) {
+	if nendo.pointer_over(nendo.id("CtxThread")) {
 		thread_push(ui, msg.id)
 		return
 	}
@@ -1375,12 +1375,12 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if slot.state == .Rejected {
 			continue
 		}
-		if clay.PointerOver(clay.ID(fmt.tprintf("CtxSave%d", i))) {
+		if nendo.pointer_over(nendo.id(fmt.tprintf("CtxSave%d", i))) {
 			start_att_save({ui.chats[ui.selected].group_id, msg.id, i, slot.name})
 			return
 		}
 	}
-	if clay.PointerOver(clay.ID("CtxCopy")) {
+	if nendo.pointer_over(nendo.id("CtxCopy")) {
 		copy_text(ui, msg.body, tr("Message copied"))
 		return
 	}
@@ -1392,39 +1392,39 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		open_link(ui, message_url(msg))
 		return
 	}
-	if ui.prefs.tts_enabled && clay.PointerOver(clay.ID("CtxRead")) {
+	if ui.prefs.tts_enabled && nendo.pointer_over(nendo.id("CtxRead")) {
 		tts_read(ui, msg.body)
 		return
 	}
-	if clay.PointerOver(clay.ID("CtxTranslate")) {
+	if nendo.pointer_over(nendo.id("CtxTranslate")) {
 		ui.translation.paused = false
 		translation_request(ui, msg)
 		return
 	}
-	if !read_only && msg.mine && clay.PointerOver(clay.ID("CtxEdit")) {
+	if !read_only && msg.mine && nendo.pointer_over(nendo.id("CtxEdit")) {
 		start_edit(ui, msg)
 		return
 	}
-	if !read_only && msg.mine && clay.PointerOver(clay.ID("CtxDelAll")) {
+	if !read_only && msg.mine && nendo.pointer_over(nendo.id("CtxDelAll")) {
 		confirm_ask(ui, .Delete_All, msg.id, msg_preview(msg))
 		return
 	}
-	if !read_only && clay.PointerOver(clay.ID("CtxDelMe")) {
+	if !read_only && nendo.pointer_over(nendo.id("CtxDelMe")) {
 		confirm_ask(ui, .Delete_Me, msg.id, msg_preview(msg))
 		return
 	}
-	if ui.prefs.dev_mode && clay.PointerOver(clay.ID("CtxRaw")) {
+	if ui.prefs.dev_mode && nendo.pointer_over(nendo.id("CtxRaw")) {
 		delete(ui.raw_json)
 		ui.raw_json = raw_event_json(client, ui, msg.id)
 		ui.raw_open = true
 		return
 	}
 	if !read_only &&
-	   (clay.PointerOver(clay.ID("CtxReact")) || clay.PointerOver(clay.ID("CtxQuickPlus"))) {
+	   (nendo.pointer_over(nendo.id("CtxReact")) || nendo.pointer_over(nendo.id("CtxQuickPlus"))) {
 		open_picker(ui, msg.id)
 		return
 	}
-	if clay.PointerOver(clay.ID("CtxForward")) {
+	if nendo.pointer_over(nendo.id("CtxForward")) {
 		ui.fwd_open = true
 		ui.fwd_kind = .Message
 		delete(ui.fwd_msg)
@@ -1586,8 +1586,8 @@ open_group_info :: proc(ui: ^Ui_State, client: ^marmot.Client, tab: Info_Tab) {
 	ui.gpic_menu_open = false
 	ui.member_menu = -1
 	ui.member_nick = -1
-	if data := clay.GetScrollContainerData(clay.ID("MembersScroll")); data.found {
-		data.scrollPosition.y = 0
+	if data := nendo.scroll(nendo.id("MembersScroll")); data.found {
+		data.position.y = 0
 	}
 }
 
@@ -1888,17 +1888,17 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				new_chat_create_and_open(ui, client, "", contact.id_hex)
 				return
 			}
-			if data := clay.GetScrollContainerData(clay.ID("NCContacts")); data.found {
+			if data := nendo.scroll(nendo.id("NCContacts")); data.found {
 				y := f32(ui.nc_contact_sel) * NC_CONTACT_H
-				top := -data.scrollPosition.y
-				if y < top {data.scrollPosition.y = -y}
-				if bottom := y + NC_CONTACT_H - data.scrollContainerDimensions.height;
-				   bottom > top {data.scrollPosition.y = -bottom}
+				top := -data.position.y
+				if y < top {data.position.y = -y}
+				if bottom := y + NC_CONTACT_H - data.viewport.height;
+				   bottom > top {data.position.y = -bottom}
 			}
 		}
 		if mouse_released() {
 			for contact, i in ui.nc_contacts {
-				if !clay.PointerOver(clay.ID("NCContact", u32(i))) {continue}
+				if !nendo.pointer_over(nendo.id("NCContact", u32(i))) {continue}
 				new_chat_create_and_open(ui, client, "", contact.id_hex)
 				return
 			}
@@ -1921,21 +1921,21 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				nc_member_choose(ui, rows[ui.nc_contact_sel].idx)
 				return // Selection must not also create the group.
 			}
-			if data := clay.GetScrollContainerData(clay.ID("NCMemberOptions")); data.found {
+			if data := nendo.scroll(nendo.id("NCMemberOptions")); data.found {
 				y := f32(ui.nc_contact_sel) * NC_MEMBER_H
-				if y < -data.scrollPosition.y {data.scrollPosition.y = -y}
-				if bottom := y + NC_MEMBER_H - data.scrollContainerDimensions.height;
-				   bottom > -data.scrollPosition.y {data.scrollPosition.y = -bottom}
+				if y < -data.position.y {data.position.y = -y}
+				if bottom := y + NC_MEMBER_H - data.viewport.height;
+				   bottom > -data.position.y {data.position.y = -bottom}
 			}
 		}
 		if mouse_released() {
 			for row in rows {
-				if !clay.PointerOver(clay.ID("NCMemberOption", u32(row.idx))) {continue}
+				if !nendo.pointer_over(nendo.id("NCMemberOption", u32(row.idx))) {continue}
 				nc_member_choose(ui, row.idx)
 				return
 			}
-			if !clay.PointerOver(clay.ID("NCMember")) &&
-			   !clay.PointerOver(clay.ID("NCMemberOptions")) {ui.focus = .NC_Name}
+			if !nendo.pointer_over(nendo.id("NCMember")) &&
+			   !nendo.pointer_over(nendo.id("NCMemberOptions")) {ui.focus = .NC_Name}
 		}
 	}
 	if clicked("NCPicFile") {
@@ -2111,16 +2111,16 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if mouse_released() {
 		for member, i in ui.members {
 			if dm {break}
-			if clay.PointerOver(clay.ID("MemberMenuBtn", u32(i))) {
+			if nendo.pointer_over(nendo.id("MemberMenuBtn", u32(i))) {
 				open_member_menu(ui, i)
 				return
 			}
-			if clay.PointerOver(clay.ID("MemberRow", u32(i))) {
+			if nendo.pointer_over(nendo.id("MemberRow", u32(i))) {
 				open_peer(ui, client, member.id_hex, member.name, member.pic_url)
 				return
 			}
 		}
-		if clay.PointerOver(clay.ID("MembersClose")) {
+		if nendo.pointer_over(nendo.id("MembersClose")) {
 			close_group_info(ui)
 			return
 		}

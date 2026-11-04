@@ -10,7 +10,7 @@ import "core:strings"
 import "core:sync"
 import "core:testing"
 
-import clay "layout"
+import "nendo"
 
 // Bencoded byte string: "4:spam".
 @(private = "file")
@@ -164,8 +164,8 @@ torrent_rejects_hostile :: proc(t: ^testing.T) {
 // release name used to do.
 @(test)
 torrent_tile_layout :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	name := "GTO.2026.EP10.1080p.NF.WEB-DL.AAC2.0.H.264-MagicStar.mkv"
 	files := []Tor_File {
 		{strings.concatenate({"Season 1/", name}, context.temp_allocator), 1 << 30},
@@ -197,37 +197,36 @@ torrent_tile_layout :: proc(t: ^testing.T) {
 		},
 	)
 
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 2000})
 	defer {
-		clay.SetCurrentContext(previous)
+		nendo.set_context(previous)
 		delete(memory)
 	}
 	heights: [2]f32
 	for open, pass in ([]bool{false, true}) {
 		view.open = open
-		clay.BeginLayout()
+		nendo.begin()
 		message_row(0, msg)
-		commands := clay.EndLayout(0)
-		tile := clay.GetElementData(clay.ID("MsgTor", 0))
+		commands := nendo.end(0)
+		tile := nendo.element(nendo.id("MsgTor", 0))
 		testing.expect(t, tile.found)
-		heights[pass] = tile.boundingBox.height
-		right := tile.boundingBox.x + tile.boundingBox.width
+		heights[pass] = tile.rect.height
+		right := tile.rect.x + tile.rect.width
 		listed := false
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Text {continue}
-			box := command.boundingBox
-			if box.y < tile.boundingBox.y ||
-			   box.y > tile.boundingBox.y + tile.boundingBox.height {continue}
+		for command in commands {
+			if command.kind != .Text {continue}
+			box := command.rect
+			if box.y < tile.rect.y || box.y > tile.rect.y + tile.rect.height {continue}
 			testing.expectf(
 				t,
 				box.x + box.width <= right + 0.5,
 				"text overflows the tile (open=%v)",
 				open,
 			)
-			text := command.renderData.text.stringContents
-			listed ||= strings.has_suffix(string(text.chars[:text.length]), "sample.nfo")
+			text := command.text.text
+			listed ||= strings.has_suffix(text, "sample.nfo")
 		}
 		testing.expect_value(t, listed, open)
 	}

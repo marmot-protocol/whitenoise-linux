@@ -17,7 +17,7 @@ import "core:sync"
 import "core:thread"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 Transcript_Kind :: enum {
@@ -207,60 +207,40 @@ export_progress :: proc(ui: ^Ui_State) {
 	if job == nil {return}
 	job.presented = true
 	completed := sync.atomic_load(&job.completed)
-	if clay.UI(clay.ID("TranscriptProgress"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = {12, 12, 8, 8},
-			childGap = 6,
-		},
-		backgroundColor = PANEL,
-	},
+	if nendo.box(nendo.id("TranscriptProgress"))(
+	{width = nendo.grow(), direction = .Column, padding = {12, 12, 8, 8}, gap = 6, color = PANEL},
 	) {
 		label :=
 			job.kind == .Html ? tr("Preparing HTML export...") : tr("Preparing Markdown export...")
 		if job.reading {label = tr("Loading messages for export...")}
-		clay.Text(
+		nendo.text(
 			fmt.tprintf("%s %s", label, job.title),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+			{font = FONT_BODY, size = 13, color = TEXT},
 		)
 		if job.images > 0 {
-			clay.Text(
+			nendo.text(
 				fmt.tprintf(tr("Images processed: %d of %d"), completed, job.images),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+				{font = FONT_BODY, size = 12, color = TEXT_LO},
 			)
 		} else {
-			clay.Text(
+			nendo.text(
 				tr("Progress is indeterminate."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+				{font = FONT_BODY, size = 12, color = TEXT_LO},
 			)
 		}
-		if clay.UI(clay.ID("TranscriptProgressTrack"))(
-		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}},
-			backgroundColor = ROW_BG,
-		},
+		if nendo.box(nendo.id("TranscriptProgressTrack"))(
+		{width = nendo.grow(), height = nendo.fixed(4), color = ROW_BG},
 		) {
 			if job.images == 0 {
 				anim_moving += 1
 				phase := f32(0.375 * (1 + math.sin(rl.GetTime() * 3)))
-				if clay.UI(clay.ID("TranscriptProgressSpace"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingPercent(phase), height = clay.SizingFixed(4)},
-					},
-				},
+				if nendo.box(nendo.id("TranscriptProgressSpace"))(
+				{width = nendo.percent(phase), height = nendo.fixed(4)},
 				) {}
 			}
 			fraction := job.images > 0 ? f32(completed) / f32(job.images) : f32(0.25)
-			if clay.UI(clay.ID("TranscriptProgressFill"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingPercent(fraction), height = clay.SizingFixed(4)},
-				},
-				backgroundColor = ACCENT,
-			},
+			if nendo.box(nendo.id("TranscriptProgressFill"))(
+			{width = nendo.percent(fraction), height = nendo.fixed(4), color = ACCENT},
 			) {}
 		}
 	}

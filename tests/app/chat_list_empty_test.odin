@@ -7,8 +7,8 @@ import "core:testing"
 
 @(test)
 archived_inbox_boundary :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	defer profile_session_clear()
 	ui := Ui_State{}

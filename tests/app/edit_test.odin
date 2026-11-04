@@ -10,7 +10,7 @@ import "core:strings"
 import "core:sync"
 import "core:testing"
 import "core:text/edit"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -28,17 +28,13 @@ sentence_selection :: proc(t: ^testing.T) {
 
 @(test)
 wrapped_caret_motion :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
-	previous := clay.GetCurrentContext()
-	defer clay.SetCurrentContext(previous)
-	memory := make([]u8, int(clay.MinMemorySize()))
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	defer nendo.set_context(previous)
+	memory := make([]u8, int(nendo.min_memory_size()))
 	defer delete(memory)
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{600, 200},
-		{},
-	)
+	nendo.init(memory, {600, 200}, {})
 	rl.SetPixelScale(1)
 	defer wrap_clear()
 	ui: Ui_State
@@ -104,8 +100,8 @@ grapheme_boundaries :: proc(t: ^testing.T) {
 // its edges, never inside the token it draws over.
 @(test)
 composer_mention_steps :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	defer profile_session_clear()
 	rl.SetPixelScale(1)

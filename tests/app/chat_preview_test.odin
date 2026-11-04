@@ -33,8 +33,8 @@ chat_hidden_preview :: proc(t: ^testing.T) {
 
 @(test)
 chat_markdown_reading_preview :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	previous_ui := g_ui
 	defer {g_ui = previous_ui}
 	ui: Ui_State
@@ -171,8 +171,8 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 
 @(test)
 chat_blocked_and_system_preview :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	previous_ui := g_ui
 	defer {g_ui = previous_ui}
 	ui: Ui_State

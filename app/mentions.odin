@@ -15,7 +15,7 @@ import "core:text/edit"
 import "core:unicode"
 import "core:unicode/utf8"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -339,7 +339,7 @@ handle_mention :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	}
 	if mouse_released() {
 		for _, i in ui.mention_cands {
-			if clay.PointerOver(clay.ID("MentionCand", u32(i))) {
+			if nendo.pointer_over(nendo.id("MentionCand", u32(i))) {
 				mention_commit(ui, i)
 				return true
 			}
@@ -352,60 +352,55 @@ handle_mention :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 // so attachTo .Parent resolves without a forward id reference.
 mention_popover :: proc(ui: ^Ui_State) {
 	height := modal_h(300)
-	if box, ok := element_box(clay.ID("ComposeBox"));
+	if box, ok := element_box(nendo.id("ComposeBox"));
 	   ok {height = max(44, min(height, box.y - 12))}
 	width := max(44, min(280, page_w(ui) - 64))
-	if clay.UI(clay.ID("MentionPop"))(
+	if nendo.box(nendo.id("MentionPop"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(width), height = clay.SizingFit({max = height})},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(6),
-			childGap = 2,
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		backgroundColor = CARD,
-		cornerRadius = rr(10),
+		width = nendo.fixed(width),
+		height = nendo.fit(max = height),
+		direction = .Column,
+		padding = nendo.pad(6),
+		gap = 2,
+		clip = {y = true, scroll = true},
+		color = CARD,
+		radius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
 		floating = {
-			attachTo = .Parent,
-			zIndex = 12,
-			offset = {0, -8 - rise(clay.ID("MentionPop"))},
-			attachment = {element = .LeftBottom, parent = .LeftTop},
+			attach_to = .Parent,
+			z = 12,
+			offset = {0, -8 - rise(nendo.id("MentionPop"))},
+			attach = {element = .Left_Bottom, parent = .Left_Top},
 		},
 	},
 	) {
 		if len(ui.mention_cands) == 0 {
 			_, _, head := field_sel(ui, &ui.compose)
 			_, query, _ := detect_token(string(ui.compose[:]), head, '@')
-			if clay.UI(clay.ID("MentionNone"))({layout = {padding = clay.PaddingAll(6)}}) {
-				clay.Text(
+			if nendo.box(nendo.id("MentionNone"))({padding = nendo.pad(6)}) {
+				nendo.text(
 					text_ellipsis(
 						fmt.tprintf(tr("No one in this chat matches @%s."), query),
 						width - 24,
 						FONT_BODY,
 						13,
 					),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM, wrapMode = .None},
+					{font = FONT_BODY, size = 13, color = TEXT_DIM, wrap = .None},
 				)
 			}
 		}
 		for mi, i in ui.mention_cands {
 			member := ui.members[mi]
 			sel := i == ui.mention_sel
-			if clay.UI(clay.ID("MentionCand", u32(i)))(
+			if nendo.box(nendo.id("MentionCand", u32(i)))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-					},
-					padding = clay.PaddingAll(6),
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = sel ? SELECTED : (hovered() ? HOVER : {}),
-				cornerRadius = rr(8),
+				width = nendo.grow(),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = nendo.pad(6),
+				gap = 8,
+				align = {y = .Center},
+				color = sel ? SELECTED : (hovered() ? HOVER : {}),
+				radius = rr(8),
 			},
 			) {
 				avatar(
@@ -416,14 +411,14 @@ mention_popover :: proc(ui: ^Ui_State) {
 					22,
 					url_pic(member.pic_url),
 				)
-				clay.Text(
+				nendo.text(
 					text_ellipsis(member.name, width - 54, FONT_BODY, 13),
-					{fontId = FONT_BODY, fontSize = 13, textColor = sel ? ACCENT : TEXT},
+					{font = FONT_BODY, size = 13, color = sel ? ACCENT : TEXT},
 				)
 			}
 		}
 	}
-	scrollbar(clay.ID("MentionPop"), 13)
+	scrollbar(nendo.id("MentionPop"), 13)
 }
 
 // ── mentions inbox ──────────────────────────────────────────────────
@@ -519,38 +514,33 @@ mi_tick :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // The header bell with its unread badge, replacing the plain chip.
 bell_chip :: proc(ui: ^Ui_State) {
 	unread := mi_unread_count(ui)
-	if clay.UI(clay.ID("BellBtn"))(
+	if nendo.box(nendo.id("BellBtn"))(
 	{
-		layout = {
-			padding = {left = 10, right = 10, top = 8, bottom = 8},
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = ui.mi_open ? ACCENT : hovered() ? HOVER : ROW_BG,
-		cornerRadius = rr(8),
+		padding = {left = 10, right = 10, top = 8, bottom = 8},
+		align = {y = .Center},
+		color = ui.mi_open ? ACCENT : hovered() ? HOVER : ROW_BG,
+		radius = rr(8),
 	},
 	) {
-		clay.Text(
-			ICON_BELL,
-			{fontId = FONT_ICON, fontSize = 14, textColor = ui.mi_open ? ON_ACCENT : TEXT},
-		)
+		nendo.text(ICON_BELL, {font = FONT_ICON, size = 14, color = ui.mi_open ? ON_ACCENT : TEXT})
 		header_label(tr("Mentions"), ui.mi_open)
 		if unread > 0 {
-			if clay.UI(clay.ID("BellBadge"))(
+			if nendo.box(nendo.id("BellBadge"))(
 			{
-				layout = {padding = {left = 5, right = 5, top = 1, bottom = 1}},
+				padding = {left = 5, right = 5, top = 1, bottom = 1},
 				floating = {
-					attachTo = .Parent,
-					zIndex = 6,
+					attach_to = .Parent,
+					z = 6,
 					offset = {6, -6},
-					attachment = {element = .RightTop, parent = .RightTop},
+					attach = {element = .Right_Top, parent = .Right_Top},
 				},
-				backgroundColor = DANGER,
-				cornerRadius = rr(8),
+				color = DANGER,
+				radius = rr(8),
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					unread > 99 ? "99+" : fmt.tprintf("%d", unread),
-					{fontId = FONT_BODY, fontSize = 10, textColor = {255, 255, 255, 235}},
+					{font = FONT_BODY, size = 10, color = {255, 255, 255, 235}},
 				)
 			}
 		}
@@ -560,135 +550,95 @@ bell_chip :: proc(ui: ^Ui_State) {
 // Dropdown under the bell: one card per mention hit; a click jumps to
 // the chat and centers the message (the gsearch jump).
 mention_inbox :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("MiModal"))(
+	if nendo.box(nendo.id("MiModal"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(fit_w(420)),
-				height = clay.SizingFit({max = modal_h(500)}),
-			},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(12),
-			childGap = 6,
-		},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
+		width = nendo.fixed(fit_w(420)),
+		height = nendo.fit(max = modal_h(500)),
+		direction = .Column,
+		padding = nendo.pad(12),
+		gap = 6,
+		color = CARD,
+		radius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 		floating = {
 			// Phones keep the bell in the header's overflow menu, so the
 			// dropdown hangs from the header instead of over the timeline.
-			attachTo = .ElementWithId,
-			parentId = clay.ID(single_pane() ? "ChatHeader" : "BellBtn").id,
-			zIndex = 13,
-			offset = {0, (single_pane() ? 4 : 8) + rise(clay.ID("MiModal"))},
-			attachment = {
-				element = single_pane() ? .CenterTop : .RightTop,
-				parent = single_pane() ? .CenterBottom : .RightBottom,
+			attach_to = .Element,
+			parent = nendo.id(single_pane() ? "ChatHeader" : "BellBtn").id,
+			z = 13,
+			offset = {0, (single_pane() ? 4 : 8) + rise(nendo.id("MiModal"))},
+			attach = {
+				element = single_pane() ? .Center_Top : .Right_Top,
+				parent = single_pane() ? .Center_Bottom : .Right_Bottom,
 			},
 		},
 	},
 	) {
-		if clay.UI(clay.ID("MiHead"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
-		) {
-			clay.Text(
+		if nendo.box(nendo.id("MiHead"))({width = nendo.grow(), align = {y = .Center}}) {
+			nendo.text(
 				tr("MENTIONS"),
-				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM, letterSpacing = 2},
+				{font = FONT_MONO, size = 11, color = TEXT_DIM, spacing = 2},
 			)
-			if clay.UI(clay.ID("MiHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("MiClose"))(
+			if nendo.box(nendo.id("MiHeadGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("MiClose"))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFixed(tap_size() ? tap_min() : 24),
-						height = clay.SizingFixed(tap_size() ? tap_min() : 24),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(7),
+				width = nendo.fixed(tap_size() ? tap_min() : 24),
+				height = nendo.fixed(tap_size() ? tap_min() : 24),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(7),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 11, color = TEXT_DIM})
 			}
 		}
 
 		if len(ui.mi_hits) == 0 {
-			clay.Text(
-				tr("No mentions yet."),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-			)
+			nendo.text(tr("No mentions yet."), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 		}
 
-		if clay.UI(clay.ID("MiList"))(
+		if nendo.box(nendo.id("MiList"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 380})},
-				layoutDirection = .TopToBottom,
-				childGap = 2,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			width = nendo.grow(),
+			height = nendo.fit(max = 380),
+			direction = .Column,
+			gap = 2,
+			clip = {y = true, scroll = true},
 		},
 		) {
 			// Snippet wrap width: modal and row padding; an unread bar and
 			// its gap take 11 more.
 			snip_w := fit_w(420) - 24 - 16
 			for hit, i in ui.mi_hits {
-				if clay.UI(clay.ID("MiHit", u32(i)))(
+				if nendo.box(nendo.id("MiHit", u32(i)))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						childGap = 8,
-						padding = clay.PaddingAll(8),
-					},
-					backgroundColor = hovered() ? HOVER : {},
-					cornerRadius = rr(8),
+					width = nendo.grow(),
+					gap = 8,
+					padding = nendo.pad(8),
+					color = hovered() ? HOVER : {},
+					radius = rr(8),
 				},
 				) {
 					if hit.unread {
-						if clay.UI(clay.ID("MiHitDot", u32(i)))(
+						if nendo.box(nendo.id("MiHitDot", u32(i)))(
 						{
-							layout = {
-								sizing = {width = clay.SizingFixed(3), height = clay.SizingGrow()},
-							},
-							backgroundColor = ACCENT,
-							cornerRadius = rr(2),
+							width = nendo.fixed(3),
+							height = nendo.grow(),
+							color = ACCENT,
+							radius = rr(2),
 						},
 						) {}
 					}
-					if clay.UI(clay.ID("MiHitCol", u32(i)))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							childGap = 3,
-						},
-					},
+					if nendo.box(nendo.id("MiHitCol", u32(i)))(
+					{width = nendo.grow(), direction = .Column, gap = 3},
 					) {
-						if clay.UI(clay.ID("MiHitTop", u32(i)))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow()},
-								childGap = 8,
-								childAlignment = {y = .Center},
-							},
-						},
+						if nendo.box(nendo.id("MiHitTop", u32(i)))(
+						{width = nendo.grow(), gap = 8, align = {y = .Center}},
 						) {
-							clay.Text(
-								hit.title,
-								{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
-							)
-							clay.Text(
-								hit.sender,
-								{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-							)
-							if clay.UI(clay.ID("MiHitGap", u32(i)))(
-							{layout = {sizing = {width = clay.SizingGrow()}}},
-							) {}
-							clay.Text(
-								hit.at,
-								{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
-							)
+							nendo.text(hit.title, {font = FONT_TITLE, size = 13, color = TEXT})
+							nendo.text(hit.sender, {font = FONT_BODY, size = 12, color = TEXT_DIM})
+							if nendo.box(nendo.id("MiHitGap", u32(i)))({width = nendo.grow()}) {}
+							nendo.text(hit.at, {font = FONT_MONO, size = 10, color = TEXT_LO})
 						}
 						// Mentions draw as chips, the same as in message bodies.
 						body_text(
@@ -703,7 +653,7 @@ mention_inbox :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("MiList"), 14) // the modal floats at 13
+		scrollbar(nendo.id("MiList"), 14) // the modal floats at 13
 	}
 }
 
@@ -719,14 +669,14 @@ handle_mi :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// The inbox captures the click: a chip in a snippet belongs to the row.
 	mention_hover = ""
 	for hit, i in ui.mi_hits {
-		if clay.PointerOver(clay.ID("MiHit", u32(i))) {
+		if nendo.pointer_over(nendo.id("MiHit", u32(i))) {
 			ui.mi_open = false
 			gs_jump(ui, client, hit.group, hit.msg_id)
 			return
 		}
 	}
 	if clicked("MiClose") ||
-	   (!clay.PointerOver(clay.ID("MiModal")) && !clay.PointerOver(clay.ID("BellBtn"))) {
+	   (!nendo.pointer_over(nendo.id("MiModal")) && !nendo.pointer_over(nendo.id("BellBtn"))) {
 		ui.mi_open = false
 	}
 }

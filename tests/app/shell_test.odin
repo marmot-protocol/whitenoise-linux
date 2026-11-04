@@ -7,7 +7,7 @@ import "core:sync"
 import "core:testing"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -105,31 +105,31 @@ rail_default_window :: proc(t: ^testing.T) {
 			anim_tick(1.0 / 60)
 			build_layout(&ui, 0)
 		}
-		list := clay.GetElementData(clay.ID("ChatList"))
-		row := clay.GetElementData(clay.ID("ChatRow", 0))
-		rail := clay.GetElementData(clay.ID("Rail")).boundingBox
+		list := nendo.element(nendo.id("ChatList"))
+		row := nendo.element(nendo.id("ChatRow", 0))
+		rail := nendo.element(nendo.id("Rail")).rect
 		testing.expect(
 			t,
-			list.found && list.boundingBox.width > 0 && list.boundingBox.height > 0,
+			list.found && list.rect.width > 0 && list.rect.height > 0,
 			"chat list stays visible",
 		)
 		testing.expect(
 			t,
 			row.found &&
-			row.boundingBox.width > 0 &&
-			row.boundingBox.x >= rail.x &&
-			row.boundingBox.x + row.boundingBox.width <= rail.x + rail.width + 0.1,
+			row.rect.width > 0 &&
+			row.rect.x >= rail.x &&
+			row.rect.x + row.rect.width <= rail.x + rail.width + 0.1,
 			"chat row remains inside the expanded rail",
 		)
 		if selected >= 0 {
 			for id in ([]string{"ChatPane", "ChatBody", "Composer"}) {
-				pane := clay.GetElementData(clay.ID(id))
+				pane := nendo.element(nendo.id(id))
 				testing.expect(
 					t,
 					pane.found &&
-					pane.boundingBox.width > 0 &&
-					pane.boundingBox.x >= rail.x + rail.width &&
-					pane.boundingBox.x + pane.boundingBox.width <= window_w + 0.1,
+					pane.rect.width > 0 &&
+					pane.rect.x >= rail.x + rail.width &&
+					pane.rect.x + pane.rect.width <= window_w + 0.1,
 					id,
 				)
 			}
@@ -137,29 +137,29 @@ rail_default_window :: proc(t: ^testing.T) {
 	}
 	ui.new_chat_open, ui.nc_page = true, .Contacts
 	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
-	testing.expect_value(t, clay.GetElementData(clay.ID("NCTerminal")).found, rl.WhipAvailable())
+	testing.expect_value(t, nendo.element(nendo.id("NCTerminal")).found, rl.WhipAvailable())
 	close_new_chat(&ui)
 	toggle_rail(&ui)
 	anim_tick(1.0 / 60)
 	build_layout(&ui, 0)
 	testing.expect(t, ui.prefs.rail_collapsed, "explicit collapse remains respected")
-	testing.expect(t, !clay.GetElementData(clay.ID("ChatList")).found)
+	testing.expect(t, !nendo.element(nendo.id("ChatList")).found)
 	toggle_rail(&ui)
 	anim_tick(1.0 / 60)
 	build_layout(&ui, 0)
-	testing.expect(t, clay.GetElementData(clay.ID("ChatList")).found, "expand restores the list")
+	testing.expect(t, nendo.element(nendo.id("ChatList")).found, "expand restores the list")
 	rl.SetWindowSize(720, ui.prefs.window_h)
 	UI_ZOOM = zoom_for_width(720) * f32(ui.prefs.zoom_pct) / 100
 	refresh_ui_scale()
-	clay.SetLayoutDimensions({720 / UI_ZOOM, f32(ui.prefs.window_h) / UI_ZOOM})
+	nendo.set_dimensions({720 / UI_ZOOM, f32(ui.prefs.window_h) / UI_ZOOM})
 	for _ in 0 ..< 3 {
 		anim_tick(1.0 / 60)
 		build_layout(&ui, 0)
 	}
-	testing.expect(t, !clay.GetElementData(clay.ID("ChatList")).found)
+	testing.expect(t, !nendo.element(nendo.id("ChatList")).found)
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("ChatPane")).found,
+		nendo.element(nendo.id("ChatPane")).found,
 		"small windows show the open chat",
 	)
 	ui.selected = -1
@@ -169,10 +169,10 @@ rail_default_window :: proc(t: ^testing.T) {
 	}
 	testing.expect(
 		t,
-		clay.GetElementData(clay.ID("ChatList")).found,
+		nendo.element(nendo.id("ChatList")).found,
 		"back reveals the single-pane list",
 	)
-	testing.expect(t, !clay.GetElementData(clay.ID("ChatPane")).found)
+	testing.expect(t, !nendo.element(nendo.id("ChatPane")).found)
 }
 
 @(test)
@@ -216,7 +216,7 @@ status_bar_viewports :: proc(t: ^testing.T) {
 		for zoom in ([]f32{1.5, 3}) {
 			UI_ZOOM = zoom
 			refresh_ui_scale()
-			clay.SetLayoutDimensions({f32(size[0]) / zoom, f32(size[1]) / zoom})
+			nendo.set_dimensions({f32(size[0]) / zoom, f32(size[1]) / zoom})
 			for page in ([]Page{.Profile, .Settings}) {
 				ui.page = page
 				for section in ([]Settings_Section{.Folders, .Appearance}) {
@@ -224,13 +224,13 @@ status_bar_viewports :: proc(t: ^testing.T) {
 					settings_open(&ui, nil, section)
 					ui.page = page
 					if page == .Profile {
-						if data := clay.GetScrollContainerData(clay.ID("ProfilePage"));
-						   data.found {data.scrollPosition^ = {}}
+						if data := nendo.scroll(nendo.id("ProfilePage"));
+						   data.found {data.position^ = {}}
 					}
 					for _ in 0 ..< 4 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
-					viewport := clay.ID(page == .Profile ? "ProfilePage" : "SettingsPage")
-					box := clay.GetElementData(viewport).boundingBox
-					status := clay.GetElementData(clay.ID("StatusBar")).boundingBox
+					viewport := nendo.id(page == .Profile ? "ProfilePage" : "SettingsPage")
+					box := nendo.element(viewport).rect
+					status := nendo.element(nendo.id("StatusBar")).rect
 					testing.expectf(
 						t,
 						box.height > 0 &&
@@ -243,14 +243,14 @@ status_bar_viewports :: proc(t: ^testing.T) {
 						status,
 					)
 					if page == .Profile {
-						avatar := clay.GetElementData(clay.ID("ProfileAvatarPick")).boundingBox
+						avatar := nendo.element(nendo.id("ProfileAvatarPick")).rect
 						y := status.y + status.height - 2
 						if avatar.y <= y && avatar.y + avatar.height > y {
 							commands := build_layout(&ui, 0)
 							path := fmt.ctprintf("%s/profile-clip.png", dir)
 							rl.BeginDrawing()
 							rl.BeginMode2D({zoom = UI_ZOOM})
-							clay_raylib_render(&commands)
+							render_nendo(commands)
 							rl.EndMode2D()
 							rl.TakeScreenshot(path)
 							rl.EndDrawing()
@@ -262,7 +262,7 @@ status_bar_viewports :: proc(t: ^testing.T) {
 							) {
 								x := int((avatar.x + avatar.width / 2) * UI_ZOOM)
 								i := (int(y * UI_ZOOM) * int(image.width) + x) * 4
-								color := clay_color(STATUS_BAR)
+								color := nendo_color(STATUS_BAR)
 								testing.expect(
 									t,
 									image.data[i] == color.r &&
@@ -274,22 +274,22 @@ status_bar_viewports :: proc(t: ^testing.T) {
 							rl.UnloadImage(image)
 						}
 					}
-					target := clay.ID(page == .Profile ? "SignOutBtn" : "ZoomMinus")
+					target := nendo.id(page == .Profile ? "SignOutBtn" : "ZoomMinus")
 					if page == .Settings && section == .Folders {
 						// Board rows interleave chats (even) and terminals (odd): chat 11 is 22.
-						target = clay.ID("BoardChat", 11 * 2)
+						target = nendo.id("BoardChat", 11 * 2)
 						for id in ([]string{"SettingsPage", "FolderBoard"}) {
-							data := clay.GetScrollContainerData(clay.ID(id))
-							if data.found {data.scrollPosition.y = min(0, data.scrollContainerDimensions.height - data.contentDimensions.height)}
+							data := nendo.scroll(nendo.id(id))
+							if data.found {data.position.y = min(0, data.viewport.height - data.content.height)}
 							for _ in 0 ..< 3 {build_layout(&ui, 0)}
 						}
 						// Related links can put the page bottom beyond the board's
 						// virtualized rows. Scroll back until the final row mounts.
 						for _ in 0 ..< 64 {
-							if clay.GetElementData(target).found {break}
-							data := clay.GetScrollContainerData(viewport)
+							if nendo.element(target).found {break}
+							data := nendo.scroll(viewport)
 							if !data.found {break}
-							data.scrollPosition.y = min(0, data.scrollPosition.y + 44)
+							data.position.y = min(0, data.position.y + 44)
 							for _ in 0 ..< 3 {build_layout(&ui, 0)}
 						}
 					}
@@ -298,20 +298,20 @@ status_bar_viewports :: proc(t: ^testing.T) {
 					   section == .Appearance {owner = appearance_scroll(&ui, target)}
 					scroll_into_view(owner, target)
 					for _ in 0 ..< 3 {build_layout(&ui, 0)}
-					control := clay.GetElementData(target)
-					b := control.boundingBox
+					control := nendo.element(target)
+					b := control.rect
 					if page == .Settings && section == .Appearance {
 						ui.prefs.zoom_pct = 190
-						appearance_activate(&ui, clay.ID("ZoomPlus"))
-						clay.SetLayoutDimensions({f32(size[0]) / UI_ZOOM, f32(size[1]) / UI_ZOOM})
+						appearance_activate(&ui, nendo.id("ZoomPlus"))
+						nendo.set_dimensions({f32(size[0]) / UI_ZOOM, f32(size[1]) / UI_ZOOM})
 						for _ in 0 ..< 2 {
 							build_layout(&ui, 0)
 							if settings_resolve_scroll(&ui) {build_layout(&ui, 0)}
 						}
-						control = clay.GetElementData(target)
-						b = control.boundingBox
-						box = clay.GetElementData(viewport).boundingBox
-						status = clay.GetElementData(clay.ID("StatusBar")).boundingBox
+						control = nendo.element(target)
+						b = control.rect
+						box = nendo.element(viewport).rect
+						status = nendo.element(nendo.id("StatusBar")).rect
 					}
 					testing.expectf(
 						t,
@@ -323,10 +323,10 @@ status_bar_viewports :: proc(t: ^testing.T) {
 						box,
 						status,
 					)
-					clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
+					nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
 					testing.expect(
 						t,
-						clay.PointerOver(target) && !clay.PointerOver(clay.ID("StatusBar")),
+						nendo.pointer_over(target) && !nendo.pointer_over(nendo.id("StatusBar")),
 						"Scrolled controls must receive input instead of the status bar",
 					)
 				}
@@ -404,7 +404,7 @@ test_zoom_for_width :: proc(t: ^testing.T) {
 }
 
 // No window in a test run, so GetScreenWidth is 0: the cap must still
-// hand clay a usable width rather than a negative one.
+// hand nendo a usable width rather than a negative one.
 @(test)
 test_fit_w_floor :: proc(t: ^testing.T) {
 	testing.expect(t, fit_w(660) > 0, "a fixed width must never go negative")
@@ -483,13 +483,13 @@ test_phone_detail :: proc(t: ^testing.T) {
 // back one level per press, out to the chat list.
 @(test)
 test_settings_escape :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
-	previous := clay.GetCurrentContext()
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 600})
 	defer {
-		clay.SetCurrentContext(previous)
+		nendo.set_context(previous)
 		delete(memory)
 	}
 

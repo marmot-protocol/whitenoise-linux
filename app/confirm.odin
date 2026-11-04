@@ -12,7 +12,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -210,57 +210,45 @@ confirm_modal :: proc(ui: ^Ui_State) {
 		shown.kind = confirm_shown
 	}
 	title, body, action := confirm_copy(shown)
-	if clay.UI(clay.ID("ConfirmModal"))(
+	if nendo.box(nendo.id("ConfirmModal"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("ConfirmModal"), 400)),
-				height = clay.SizingFit({max = modal_h(1200)}),
-			},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(20),
-			childGap = 10,
-		},
-		backgroundColor = CARD,
-		cornerRadius = rr(16),
+		width = nendo.fixed(modal_w(nendo.id("ConfirmModal"), 400)),
+		height = nendo.fit(max = modal_h(1200)),
+		direction = .Column,
+		padding = nendo.pad(20),
+		gap = 10,
+		color = CARD,
+		radius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		clip = {y = true, scroll = true},
 		floating = {
-			attachTo = .Root,
-			zIndex = 16,
-			offset = {0, rise(clay.ID("ConfirmModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 16,
+			offset = {0, rise(nendo.id("ConfirmModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
 	},
 	) {
-		clay.Text(tr(title), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
-		scrollbar(clay.ID("ConfirmModal"), 17)
+		nendo.text(tr(title), {font = FONT_TITLE, size = 18, color = TEXT})
+		scrollbar(nendo.id("ConfirmModal"), 17)
 		if len(ui.confirm.name) > 0 &&
 		   (shown.kind == .Remove_Account || shown.kind == .Archive_Chat) {
-			if clay.UI(clay.ID("ConfirmAccount"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					childGap = 10,
-					childAlignment = {y = .Center},
-				},
-			},
+			if nendo.box(nendo.id("ConfirmAccount"))(
+			{width = nendo.grow(), gap = 10, align = {y = .Center}},
 			) {
 				if shown.kind == .Remove_Account {
 					avatar("ConfirmAvatar", 0, ui.confirm.arg, ui.confirm.name, 36)
 				}
-				clay.Text(ui.confirm.name, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
+				nendo.text(ui.confirm.name, {font = FONT_TITLE, size = 16, color = TEXT})
 			}
 		} else if len(ui.confirm.name) > 0 {
-			if clay.UI(clay.ID("ConfirmSubject"))(
+			if nendo.box(nendo.id("ConfirmSubject"))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					padding = clay.PaddingAll(10),
-				},
-				backgroundColor = ROW_BG,
-				cornerRadius = rr(8),
+				width = nendo.grow(),
+				direction = .Column,
+				padding = nendo.pad(10),
+				color = ROW_BG,
+				radius = rr(8),
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
@@ -270,67 +258,54 @@ confirm_modal :: proc(ui: ^Ui_State) {
 				   shown.kind != .Delete_All &&
 				   shown.kind != .Delete_Me &&
 				   shown.kind != .Say_GM {
-					mono_lines(ui.confirm.name, modal_w(clay.ID("ConfirmModal"), 400) - 60, TEXT)
+					mono_lines(ui.confirm.name, modal_w(nendo.id("ConfirmModal"), 400) - 60, TEXT)
 				} else {
-					clay.Text(
-						ui.confirm.name,
-						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
-					)
+					nendo.text(ui.confirm.name, {font = FONT_BODY, size = 13, color = TEXT})
 				}
 			}
 		}
-		clay.Text(tr(body), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		nendo.text(tr(body), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 		if shown.kind == .Remove_Account && confirm_exportable(ui) {
 			login_big_button("ConfirmExport", tr("Export key first"), true)
 		}
 
-		if clay.UI(clay.ID("ConfirmActions"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 6}}},
+		if nendo.box(nendo.id("ConfirmActions"))(
+		{width = nendo.grow(), gap = 10, padding = {top = 6}},
 		) {
-			if clay.UI(clay.ID("ConfirmCancel"))(
+			if nendo.box(nendo.id("ConfirmCancel"))(
 			{
-				layout = {
-					sizing = {
-						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-					},
-					padding = {left = 16, right = 16, top = 9, bottom = 9},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(9),
+				width = single_pane() ? nendo.grow() : nendo.fit(),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = {left = 16, right = 16, top = 9, bottom = 9},
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(9),
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+				nendo.text(tr("Cancel"), {font = FONT_TITLE, size = 13, color = TEXT})
 			}
-			if !single_pane(
-				
-			) {if clay.UI(clay.ID("ConfirmGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}}
-			if clay.UI(clay.ID("ConfirmGo"))(
+			if !single_pane() {if nendo.box(nendo.id("ConfirmGap"))({width = nendo.grow()}) {}}
+			if nendo.box(nendo.id("ConfirmGo"))(
 			{
-				layout = {
-					sizing = {
-						width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-					},
-					padding = {left = 16, right = 16, top = 9, bottom = 9},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = shown.kind == .Say_GM || shown.kind == .Archive_Chat ? ACCENT : (hovered() ? DANGER : ROW_BG),
-				cornerRadius = rr(9),
+				width = single_pane() ? nendo.grow() : nendo.fit(),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = {left = 16, right = 16, top = 9, bottom = 9},
+				align = {x = .Center, y = .Center},
+				color = shown.kind == .Say_GM || shown.kind == .Archive_Chat ? ACCENT : (hovered() ? DANGER : ROW_BG),
+				radius = rr(9),
 				border = {
 					color = shown.kind == .Say_GM || shown.kind == .Archive_Chat ? ACCENT : DANGER,
 					width = bw(),
 				},
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					tr(action),
 					{
-						fontId = FONT_TITLE,
-						fontSize = 13,
-						textColor = shown.kind == .Say_GM || shown.kind == .Archive_Chat ? ON_ACCENT : (hovered() ? BG : DANGER),
+						font = FONT_TITLE,
+						size = 13,
+						color = shown.kind == .Say_GM || shown.kind == .Archive_Chat ? ON_ACCENT : (hovered() ? BG : DANGER),
 					},
 				)
 			}
@@ -364,7 +339,7 @@ handle_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if mouse_released() &&
-	   (clicked("ConfirmCancel") || !clay.PointerOver(clay.ID("ConfirmModal"))) {
+	   (clicked("ConfirmCancel") || !nendo.pointer_over(nendo.id("ConfirmModal"))) {
 		confirm_close(ui)
 	}
 }

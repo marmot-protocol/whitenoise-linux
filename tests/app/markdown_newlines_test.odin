@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -71,44 +71,38 @@ The doc links and CI ones are mine; the rest are yours.`
 	for width in ([]f32{1460, 480}) {
 		for frame in 0 ..< 3 {
 			clear(&sel_lines)
-			clay.BeginLayout()
-			if clay.UI(clay.ID("NewlinesSmoke"))(
-			{
-				layout = {
-					layoutDirection = .TopToBottom,
-					sizing = {width = clay.SizingFixed(width + 40)},
-					padding = clay.PaddingAll(20),
-				},
-			},
+			nendo.begin()
+			if nendo.box(nendo.id("NewlinesSmoke"))(
+			{direction = .Column, width = nendo.fixed(width + 40), padding = nendo.pad(20)},
 			) {
 				md_blocks(blocks[:], 0, true, width)
 			}
-			commands := clay.EndLayout(0)
+			commands := nendo.end(0)
 			if frame < 2 {continue}
 			starts := 0
 			last_y := f32(-1)
-			for cmd in commands.internalArray[:commands.length] {
-				if cmd.commandType != .Text {continue}
-				text := cmd.renderData.text.stringContents
-				shown := string(text.chars[:text.length])
+			for cmd in commands {
+				if cmd.kind != .Text {continue}
+				text := cmd.text.text
+				shown := text
 				testing.expect(
 					t,
-					cmd.boundingBox.x + cmd.boundingBox.width <= width + 20.1,
+					cmd.rect.x + cmd.rect.width <= width + 20.1,
 					"text stays inside the message",
 				)
 				if strings.has_prefix(shown, "#") || strings.has_prefix(shown, "The doc links") {
-					testing.expect_value(t, cmd.boundingBox.x, f32(20))
+					testing.expect_value(t, cmd.rect.x, f32(20))
 					testing.expect(
 						t,
-						cmd.boundingBox.y > last_y,
+						cmd.rect.y > last_y,
 						"each source line starts below the preceding line",
 					)
-					last_y = cmd.boundingBox.y
+					last_y = cmd.rect.y
 					starts += 1
 				}
 			}
 			testing.expect_value(t, starts, 7)
-			rl.BeginDrawing(); clay_raylib_render(&commands)
+			rl.BeginDrawing(); render_nendo(commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-markdown-newlines-%d.png", int(width)))
 			rl.EndDrawing()
 		}

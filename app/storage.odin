@@ -13,7 +13,7 @@ import "core:os"
 import "core:strings"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -229,19 +229,19 @@ settings_storage :: proc(ui: ^Ui_State) {
 		cache_scan(ui)
 	}
 
-	if clay.UI(clay.ID("StorageCacheGroup"))(settings_box()) {
+	if nendo.box(nendo.id("StorageCacheGroup"))(settings_box()) {
 		settings_group(tr("Media cache"))
-		if clay.UI(clay.ID("RowCache"))(settings_row(true)) {
+		if nendo.box(nendo.id("RowCache"))(settings_row(true)) {
 			row_labels(
 				tr("Cached attachments"),
 				tr(
 					"Images and files kept on this device so they don't download twice, sealed with your vault key.",
 				),
 			)
-			if clay.UI(clay.ID("CacheActions"))(settings_choices(clay.ID("CacheActions"))) {
-				clay.Text(
+			if nendo.box(nendo.id("CacheActions"))(settings_choices(nendo.id("CacheActions"))) {
+				nendo.text(
 					human_size(ui.cache_bytes),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
 				settings_button(
 					"CacheClear",
@@ -253,22 +253,24 @@ settings_storage :: proc(ui: ^Ui_State) {
 		}
 	}
 
-	if clay.UI(clay.ID("StorageBackupsGroup"))(settings_box()) {
+	if nendo.box(nendo.id("StorageBackupsGroup"))(settings_box()) {
 		settings_group(tr("Local data & backups"))
-		if clay.UI(clay.ID("RowLocation"))(settings_row(true)) {
+		if nendo.box(nendo.id("RowLocation"))(settings_row(true)) {
 			row_labels(
 				tr("Location"),
 				text_ellipsis(data_home, settings_body_width(ui) - 48, FONT_BODY, 11),
 			)
 			if hovered() {tooltip(data_home)}
-			if clay.UI(clay.ID("LocationActions"))(settings_choices(clay.ID("LocationActions"))) {
+			if nendo.box(nendo.id("LocationActions"))(
+				settings_choices(nendo.id("LocationActions")),
+			) {
 				settings_button("LocCopy", tr("Copy"))
 				when ODIN_OS != .OpenBSD {
 					if !single_pane() {settings_button("LocOpen", tr("Open folder"))}
 				}
 			}
 		}
-		if clay.UI(clay.ID("RowBackup"))(settings_row()) {
+		if nendo.box(nendo.id("RowBackup"))(settings_row()) {
 			row_labels(
 				tr("Back up local data"),
 				tr(
@@ -277,7 +279,7 @@ settings_storage :: proc(ui: ^Ui_State) {
 			)
 			settings_button("BackupBtn", tr("Create backup..."))
 		}
-		if clay.UI(clay.ID("RowImport"))(settings_row()) {
+		if nendo.box(nendo.id("RowImport"))(settings_row()) {
 			row_labels(
 				tr("Import a backup"),
 				tr("Replaces the settings, drafts, custom emoji, and themes on this device."),
@@ -288,14 +290,14 @@ settings_storage :: proc(ui: ^Ui_State) {
 				DANGER,
 			)
 		}
-		if clay.UI(clay.ID("RowLastBackup"))(settings_row()) {
+		if nendo.box(nendo.id("RowLastBackup"))(settings_row()) {
 			row_labels(tr("Last backup"), last_backup_line(ui))
 		}
-		clay.Text(
+		nendo.text(
 			tr(
 				"Backups include your settings, drafts, custom emoji, and themes. Your account keys and message history are not included.",
 			),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 11, color = TEXT_DIM},
 		)
 	}
 }
@@ -402,83 +404,67 @@ backup_modal :: proc(ui: ^Ui_State) {
 		backup_shown = ui.backup_mode
 	}
 	creating := backup_shown == .Create || backup_shown == .Saving
-	if clay.UI(clay.ID("BackupModal"))(
+	if nendo.box(nendo.id("BackupModal"))(
 	{
-		layout = {
-			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("BackupModal"), 440)),
-				height = clay.SizingFit({max = modal_h(1200)}),
-			},
-			padding = clay.PaddingAll(18),
-			childGap = 10,
-		},
+		direction = .Column,
+		width = nendo.fixed(modal_w(nendo.id("BackupModal"), 440)),
+		height = nendo.fit(max = modal_h(1200)),
+		padding = nendo.pad(18),
+		gap = 10,
 		floating = {
-			attachTo = .Root,
-			zIndex = 12,
-			offset = {0, rise(clay.ID("BackupModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 12,
+			offset = {0, rise(nendo.id("BackupModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
-		backgroundColor = CARD,
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		cornerRadius = rr(12),
+		color = CARD,
+		clip = {y = true, scroll = true},
+		radius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("BackupHead"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
-		) {
-			clay.Text(
+		if nendo.box(nendo.id("BackupHead"))({width = nendo.grow(), align = {y = .Center}}) {
+			nendo.text(
 				creating ? tr("Create backup") : tr("Import backup"),
-				{fontId = FONT_TITLE, fontSize = 17, textColor = TEXT},
+				{font = FONT_TITLE, size = 17, color = TEXT},
 			)
-			if clay.UI(clay.ID("BackupHeadGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-			if clay.UI(clay.ID("BackupClose"))(
+			if nendo.box(nendo.id("BackupHeadGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("BackupClose"))(
 			{
-				layout = {
-					sizing = {
-						clay.SizingFixed(settings_tap_size(24)),
-						clay.SizingFixed(settings_tap_size(24)),
-					},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(6),
+				width = nendo.fixed(settings_tap_size(24)),
+				height = nendo.fixed(settings_tap_size(24)),
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(6),
 			},
 			) {
-				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 			}
 		}
 
 		blurb :=
 			creating ? tr("Pick a password to encrypt the backup with. Without it the file cannot be opened again.") : tr("Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced.")
 		if backup_shown == .Saving {
-			clay.Text(
+			nendo.text(
 				tr("Choose where to save the backup."),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+				{font = FONT_BODY, size = 13, color = TEXT},
 			)
 			busy_bar("BackupSaveProgress")
 			settings_button("BackupCancel", tr("Cancel"))
 			return
 		}
-		clay.Text(blurb, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		nendo.text(blurb, {font = FONT_BODY, size = 12, color = TEXT_DIM})
 
 		eyebrow(tr("PASSWORD"))
-		if clay.UI(clay.ID("BackupPwBox"))(
+		if nendo.box(nendo.id("BackupPwBox"))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingGrow(),
-					height = clay.SizingFixed(settings_tap_size(38)),
-				},
-				padding = {left = 12, right = 12},
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = ROW_BG,
-			clip = {horizontal = true},
-			cornerRadius = rr(9),
+			width = nendo.grow(),
+			height = nendo.fixed(settings_tap_size(38)),
+			padding = {left = 12, right = 12},
+			align = {y = .Center},
+			color = ROW_BG,
+			clip = {x = true},
+			radius = rr(9),
 			border = {color = ui.focus == .BackupPw ? ACCENT : FIELD_BORDER, width = bw()},
 		},
 		) {
@@ -486,14 +472,11 @@ backup_modal :: proc(ui: ^Ui_State) {
 				if ui.focus == .BackupPw {
 					caret(15)
 				}
-				clay.Text(
-					tr("Your password"),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO},
-				)
+				nendo.text(tr("Your password"), {font = FONT_BODY, size = 13, color = TEXT_LO})
 			} else {
-				clay.Text(
+				nendo.text(
 					strings.repeat("*", min(len(ui.backup_pw), 48), context.temp_allocator),
-					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+					{font = FONT_BODY, size = 13, color = TEXT},
 				)
 				if ui.focus == .BackupPw {
 					caret(15)
@@ -502,7 +485,7 @@ backup_modal :: proc(ui: ^Ui_State) {
 		}
 
 		if backup_error != "" {
-			clay.Text(backup_error, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
+			nendo.text(backup_error, {font = FONT_BODY, size = 12, color = DANGER})
 		}
 		if creating {
 			secure_password_hint(password_bits(string(ui.backup_pw[:]), &backup_check))
@@ -515,62 +498,54 @@ backup_modal :: proc(ui: ^Ui_State) {
 				tr("Type your password again"),
 			)
 			if len(backup_confirm) > 0 && string(backup_confirm[:]) != string(ui.backup_pw[:]) {
-				clay.Text(
+				nendo.text(
 					tr("The passwords don't match. Type them again."),
-					{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+					{font = FONT_BODY, size = 12, color = DANGER},
 				)
 			}
 		}
 		if ui.backup_pw_required {
-			if clay.UI(clay.ID("BackupPwError"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {
-				clay.Text(
+			if nendo.box(nendo.id("BackupPwError"))({width = nendo.grow()}) {
+				nendo.text(
 					creating ? tr("Enter a password to encrypt your backup.") : tr("Enter the backup password."),
-					{fontId = FONT_BODY, fontSize = 12, textColor = DANGER},
+					{font = FONT_BODY, size = 12, color = DANGER},
 				)
 			}
 		}
 
-		if clay.UI(clay.ID("BackupBtns"))(settings_choices(clay.ID("BackupBtns"))) {
-			if clay.UI(clay.ID("BackupCancel"))(
+		if nendo.box(nendo.id("BackupBtns"))(settings_choices(nendo.id("BackupBtns"))) {
+			if nendo.box(nendo.id("BackupCancel"))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
-					padding = {left = 22, right = 22, top = 9, bottom = 9},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(9),
+				height = nendo.fit(min = settings_tap_size(32)),
+				padding = {left = 22, right = 22, top = 9, bottom = 9},
+				align = {x = .Center, y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(9),
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+				nendo.text(tr("Cancel"), {font = FONT_TITLE, size = 13, color = TEXT})
 			}
-			if clay.UI(clay.ID("BackupBtnsGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-			if clay.UI(clay.ID("BackupGo"))(
+			if nendo.box(nendo.id("BackupBtnsGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("BackupGo"))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFit({min = settings_tap_size(32)})},
-					padding = {left = 22, right = 22, top = 9, bottom = 9},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = creating ? (backup_password_valid(ui) ? ACCENT : ROW_BG) : DANGER,
-				cornerRadius = rr(9),
+				height = nendo.fit(min = settings_tap_size(32)),
+				padding = {left = 22, right = 22, top = 9, bottom = 9},
+				align = {x = .Center, y = .Center},
+				color = creating ? (backup_password_valid(ui) ? ACCENT : ROW_BG) : DANGER,
+				radius = rr(9),
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					creating ? tr("Create backup") : tr("Import backup"),
 					{
-						fontId = FONT_TITLE,
-						fontSize = 13,
-						textColor = creating && !backup_password_valid(ui) ? TEXT_DIM : ON_ACCENT,
+						font = FONT_TITLE,
+						size = 13,
+						color = creating && !backup_password_valid(ui) ? TEXT_DIM : ON_ACCENT,
 					},
 				)
 			}
 		}
 	}
-	scrollbar(clay.ID("BackupModal"), 13)
+	scrollbar(nendo.id("BackupModal"), 13)
 }

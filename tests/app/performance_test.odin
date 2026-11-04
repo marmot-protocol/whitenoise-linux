@@ -12,7 +12,7 @@ import "core:thread"
 import "core:time"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -62,8 +62,8 @@ message_storage_released :: proc(t: ^testing.T) {
 
 @(test)
 wrapped_line_cache :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	wrap_clear()
 	defer wrap_clear()
 	text := "first\n\n日本語\nlast"
@@ -112,8 +112,8 @@ message_reuse_guards :: proc(t: ^testing.T) {
 @(test)
 media_reference_owned :: proc(t: ^testing.T) {
 	// media_jobs is process-global; media layout tests swap it too.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	old_jobs, old_inflight := media_jobs, media_inflight
 	media_jobs, media_inflight = {}, nil
 	defer {
@@ -287,10 +287,9 @@ performance_layout :: proc(t: ^testing.T) {
 		g_ui, g_prefs = nil, nil
 	}
 	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 1.0 / 60)}
-	data := clay.GetScrollContainerData(clay.ID("Timeline"))
+	data := nendo.scroll(nendo.id("Timeline"))
 	testing.expect(t, data.found)
-	data.scrollPosition.y = -(data.contentDimensions.height -
-		data.scrollContainerDimensions.height)
+	data.position.y = -(data.content.height - data.viewport.height)
 	full, windowed: [7]f64
 	full_height: f32
 	for pass in 0 ..< 2 {
@@ -303,25 +302,17 @@ performance_layout :: proc(t: ^testing.T) {
 			if pass == 0 {full[sample] = ms} else {windowed[sample] = ms}
 			testing.expect(t, !layout_overflow)
 		}
-		if pass ==
-		   0 {full_height = clay.GetScrollContainerData(clay.ID("Timeline")).contentDimensions.height}
+		if pass == 0 {full_height = nendo.scroll(nendo.id("Timeline")).content.height}
 	}
 	real := 0
-	for _, i in ui.messages {if clay.GetElementData(clay.ID("MsgHead", u32(i))).found {real += 1}}
+	for _, i in ui.messages {if nendo.element(nendo.id("MsgHead", u32(i))).found {real += 1}}
 	testing.expect(
 		t,
 		real > 0 && real < 100,
 		"Only the viewport and overscan should build message bodies",
 	)
-	testing.expect(
-		t,
-		abs(
-			clay.GetScrollContainerData(clay.ID("Timeline")).contentDimensions.height -
-			full_height,
-		) <
-		1,
-	)
-	testing.expect(t, clay.GetElementData(clay.ID("MsgHead", 999)).found)
+	testing.expect(t, abs(nendo.scroll(nendo.id("Timeline")).content.height - full_height) < 1)
+	testing.expect(t, nendo.element(nendo.id("MsgHead", 999)).found)
 	slice.sort(full[:]); slice.sort(windowed[:])
 	fmt.printf(
 		"layout rows=1000 mounted=%d median_ms full=%.3f windowed=%.3f\n",
@@ -331,26 +322,26 @@ performance_layout :: proc(t: ^testing.T) {
 	)
 	commands := build_layout(&ui, 0)
 	rl.BeginDrawing()
-	draw_frame(&commands)
+	draw_frame(commands)
 	rl.TakeScreenshot("/tmp/wn-performance-layout.png")
 	rl.EndDrawing()
 	// A direct jump and a width change must rebuild previously hidden content.
 	ui.jump_id = strings.clone("message-0")
 	build_layout(&ui, 0)
-	testing.expect(t, clay.GetElementData(clay.ID("MsgHead", 0)).found)
+	testing.expect(t, nendo.element(nendo.id("MsgHead", 0)).found)
 	delete(ui.jump_id); ui.jump_id = ""
 	ui.timeline_metric.x -= 100
 	testing.expect(t, !timeline_skip(&ui, ui.messages[0]))
 	// Scroll to the middle, then grow content above it without moving the reader.
-	data.scrollPosition.y = -full_height / 2
+	data.position.y = -full_height / 2
 	build_layout(&ui, 0)
 	anchor := -1
 	for msg, i in ui.messages {
-		if msg.row_top + data.scrollPosition.y >= 0 {anchor = i; break}
+		if msg.row_top + data.position.y >= 0 {anchor = i; break}
 	}
 	testing.expect(t, anchor > 0)
-	testing.expect(t, clay.GetElementData(clay.ID("MsgHead", u32(anchor))).found)
-	anchor_y := ui.messages[anchor].row_top + data.scrollPosition.y
+	testing.expect(t, nendo.element(nendo.id("MsgHead", u32(anchor))).found)
+	anchor_y := ui.messages[anchor].row_top + data.position.y
 	delete(ui.messages[0].body)
 	ui.messages[0].body = strings.clone(
 		"A newly decoded attachment.\nLine two.\nLine three.\nLine four.",
@@ -359,21 +350,21 @@ performance_layout :: proc(t: ^testing.T) {
 	build_layout(&ui, 0)
 	testing.expect(
 		t,
-		abs(data.scrollPosition.y - timeline_draw_offset) > 1,
+		abs(data.position.y - timeline_draw_offset) > 1,
 		"an anchor correction must invalidate the rendered scroll position",
 	)
 	build_layout(&ui, 0)
-	testing.expect(t, abs(data.scrollPosition.y - timeline_draw_offset) < 1)
+	testing.expect(t, abs(data.position.y - timeline_draw_offset) < 1)
 	testing.expect(
 		t,
-		abs(ui.messages[anchor].row_top + data.scrollPosition.y - anchor_y) < 1,
+		abs(ui.messages[anchor].row_top + data.position.y - anchor_y) < 1,
 		"Growing a row above the viewport must preserve the reading position",
 	)
 	// Holding text at the top must not remount the entire history or resize it.
-	data.scrollPosition.y = 0
+	data.position.y = 0
 	build_layout(&ui, 0)
-	height := data.contentDimensions.height
-	first := clay.GetElementData(clay.ID("MsgRow", 0)).boundingBox
+	height := data.content.height
+	first := nendo.element(nendo.id("MsgRow", 0)).rect
 	ui.sel_on, ui.sel_block = true, 0
 	sel_dragging = true
 	for end in ([]int{0, 7, 21}) {
@@ -381,11 +372,11 @@ performance_layout :: proc(t: ^testing.T) {
 		build_layout(&ui, 0)
 		testing.expect(
 			t,
-			!clay.GetElementData(clay.ID("MsgHead", 999)).found,
+			!nendo.element(nendo.id("MsgHead", 999)).found,
 			"holding text must keep offscreen history virtualized",
 		)
-		testing.expect(t, abs(data.contentDimensions.height - height) < 1)
-		testing.expect_value(t, clay.GetElementData(clay.ID("MsgRow", 0)).boundingBox, first)
+		testing.expect(t, abs(data.content.height - height) < 1)
+		testing.expect_value(t, nendo.element(nendo.id("MsgRow", 0)).rect, first)
 	}
 	sel_dragging = false
 	sel_clear(&ui)
@@ -394,16 +385,16 @@ performance_layout :: proc(t: ^testing.T) {
 	ui.timeline_paging = true
 	scroll_residual.y = 10
 	for _ in 0 ..< 30 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
-	button := clay.GetElementData(clay.ID("JumpLatest"))
+	button := nendo.element(nendo.id("JumpLatest"))
 	testing.expect(t, button.found)
-	clay.SetPointerState({button.boundingBox.x + 7, button.boundingBox.y + 7}, false)
+	nendo.set_pointer({button.rect.x + 7, button.rect.y + 7}, .Up)
 	forced_release = true
 	client: marmot.Client
 	handle_chat(&ui, &client)
 	forced_release = false
 	testing.expect(t, ui.scroll_pending)
 	testing.expect_value(t, ui.jump_id, "")
-	testing.expect_value(t, scroll_residual, clay.Vector2{})
+	testing.expect_value(t, scroll_residual, nendo.Vector2{})
 	delete(ui.jump_id); ui.jump_id = ""
 	// A page already in flight must not consume the explicit latest request.
 	page: marmot.Timeline_Page

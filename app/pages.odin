@@ -7,7 +7,7 @@ import "core:thread"
 import "core:time"
 import "core:unicode"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -79,7 +79,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.qr_open {
 		if clicked("QrClose") ||
 		   rl.IsKeyPressed(.ESCAPE) ||
-		   (mouse_released() && !clay.PointerOver(clay.ID("QrModal"))) {
+		   (mouse_released() && !nendo.pointer_over(nendo.id("QrModal"))) {
 			ui.qr_open = false
 		}
 		return
@@ -89,7 +89,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.page == .Contacts && !ui.new_chat_open {
 		if ui.focus == .Nick &&
 		   mouse_released() &&
-		   !clay.PointerOver(clay.ID("NickBox")) {save_nickname(ui)}
+		   !nendo.pointer_over(nendo.id("NickBox")) {save_nickname(ui)}
 		if field_mouse(ui, &ui.nick_input, "NickBox") {
 			ui.focus = .Nick
 		}
@@ -164,7 +164,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			)
 			return
 		}
-		if clicked("PeerClose") || !clay.PointerOver(clay.ID("PeerModal")) {
+		if clicked("PeerClose") || !nendo.pointer_over(nendo.id("PeerModal")) {
 			ui.peer_open = false
 		}
 		return
@@ -181,7 +181,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		for account, i in ui.accounts {
 			id := account.id_hex
-			if clay.PointerOver(clay.ID("AccountRow", u32(i))) {
+			if nendo.pointer_over(nendo.id("AccountRow", u32(i))) {
 				ui.accounts_open = false
 				if id != ui.account_ref {
 					switch_account(ui, client, id)
@@ -198,7 +198,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if clicked("AcctClose") ||
 		   clicked("AcctCloseBtn") ||
-		   !clay.PointerOver(clay.ID("AccountsModal")) {
+		   !nendo.pointer_over(nendo.id("AccountsModal")) {
 			ui.accounts_open = false
 		}
 		return
@@ -242,18 +242,18 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			ui.chat_folder = ""
 			ui.page = .Chats
 			clear(&ui.rail_rows)
-			if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
-				data.scrollPosition.y = 0
+			if data := nendo.scroll(nendo.id("ChatList")); data.found {
+				data.position.y = 0
 			}
 			return
 		}
 		if ui.prefs.recent_chats {
 			for name, i in ui.prefs.folders {
-				if !clay.PointerOver(clay.ID("FolderPill", u32(i))) {continue}
+				if !nendo.pointer_over(nendo.id("FolderPill", u32(i))) {continue}
 				ui.chat_filter, ui.chat_folder = .Chats, name
 				clear(&ui.rail_rows)
-				if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
-					data.scrollPosition.y = 0
+				if data := nendo.scroll(nendo.id("ChatList")); data.found {
+					data.position.y = 0
 				}
 				return
 			}
@@ -261,15 +261,15 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	for page in Page {
-		if clay.PointerOver(clay.ID("Nav", u32(page))) {
+		if nendo.pointer_over(nendo.id("Nav", u32(page))) {
 			if ui.page == page {
 				if single_pane() {
 					if page == .Chats {
 						if !phone_detail(ui) {
 							for name in tab_scroll_ids(.Chats) {
 								if name == "" {continue}
-								if data := clay.GetScrollContainerData(clay.ID(name));
-								   data.found {data.scrollPosition^ = {}}
+								if data := nendo.scroll(nendo.id(name));
+								   data.found {data.position^ = {}}
 							}
 							scroll_residual = {}
 							fling_vel = {}
@@ -329,12 +329,12 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		for _, i in ui.archived {
-			if clay.PointerOver(clay.ID("ChatUnarch", u32(i))) {
+			if nendo.pointer_over(nendo.id("ChatUnarch", u32(i))) {
 				set_archived(ui, client, ui.archived[i].group_id, false)
 				load_archived(client, ui)
 				return
 			}
-			if clay.PointerOver(clay.ID("ArchivedRow", u32(i))) {
+			if nendo.pointer_over(nendo.id("ArchivedRow", u32(i))) {
 				select_archived_chat(ui, client, i)
 				return
 			}
@@ -376,7 +376,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		for contact, i in ui.contacts {
-			if clay.PointerOver(clay.ID("ContactRow", u32(i))) {
+			if nendo.pointer_over(nendo.id("ContactRow", u32(i))) {
 				reset_profile_view(ui)
 				ui.selected_contact = i
 				probe_key_package(ui, client, contact.id_hex)
@@ -608,7 +608,7 @@ publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if !ui.profile.editing {return}
 	if len(strings.trim_space(string(ui.name_input[:]))) == 0 {
 		ui.focus = .Name
-		scroll_into_view(clay.ID("ProfilePage"), clay.ID("NameBox"))
+		scroll_into_view(nendo.id("ProfilePage"), nendo.id("NameBox"))
 		ui.banner_seen = ""
 		set_status(ui, tr("A display name is required."), .Error)
 		return
@@ -657,7 +657,7 @@ profile_fields :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	fields := [?]Focus{.Name, .About, .Nip05, .Lud16}
 	boxes := [?]string{"NameBox", "ComposeBox", "Nip05Box", "Lud16Box"}
 	if at, moved := tab_focus(fields[:], &ui.focus); moved {
-		scroll_into_view(clay.ID("ProfilePage"), clay.ID(boxes[at]))
+		scroll_into_view(nendo.id("ProfilePage"), nendo.id(boxes[at]))
 	}
 	if rl.IsKeyPressed(.ESCAPE) {
 		profile_cancel(ui)
@@ -667,7 +667,7 @@ profile_fields :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if ui.focus != field {continue}
 			if i + 1 < len(fields) {
 				ui.focus = fields[i + 1]
-				scroll_into_view(clay.ID("ProfilePage"), clay.ID(boxes[i + 1]))
+				scroll_into_view(nendo.id("ProfilePage"), nendo.id(boxes[i + 1]))
 			} else {ui.focus = .Compose}
 			break
 		}
@@ -682,11 +682,11 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.page == .Profile {
 		for account, i in ui.accounts {
 			id := account.id_hex
-			if clay.PointerOver(clay.ID("PrAcctRemove", u32(i))) {
+			if nendo.pointer_over(nendo.id("PrAcctRemove", u32(i))) {
 				confirm_ask(ui, .Remove_Account, id, account_label(ui, id))
 				return
 			}
-			if clay.PointerOver(clay.ID("PrAcct", u32(i))) {
+			if nendo.pointer_over(nendo.id("PrAcct", u32(i))) {
 				if id != ui.account_ref {
 					switch_account(ui, client, id)
 				}
@@ -768,7 +768,7 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	for relay, i in ui.profile.nip65 {
-		if clay.PointerOver(clay.ID("RelayRemove", u32(i))) {
+		if nendo.pointer_over(nendo.id("RelayRemove", u32(i))) {
 			confirm_ask(ui, .Remove_Relay, relay, relay, i)
 			return
 		}
@@ -987,18 +987,14 @@ finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id:
 }
 
 // Capacity errors request a larger arena; other layout errors are logged.
-error_handler :: proc(errorData: clay.ErrorData) {
-	if errorData.errorType == .ElementsCapacityExceeded ||
-	   errorData.errorType == .TextMeasurementCapacityExceeded ||
-	   errorData.errorType == .HashMapCapacityExceeded {
+error_handler :: proc(errorData: nendo.Error) {
+	if errorData.kind == .Elements_Capacity_Exceeded ||
+	   errorData.kind == .Text_Measurement_Capacity_Exceeded ||
+	   errorData.kind == .Hash_Map_Capacity_Exceeded {
 		layout_overflow = true
 		return
 	}
-	fmt.eprintfln(
-		"clay: %v: %s",
-		errorData.errorType,
-		string(errorData.errorText.chars[:errorData.errorText.length]),
-	)
+	fmt.eprintfln("nendo: %v: %s", errorData.kind, errorData.text)
 }
 
 // Keep font metadata beside visible text, so selection copies no markup.

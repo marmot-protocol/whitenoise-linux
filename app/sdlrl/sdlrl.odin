@@ -11,8 +11,7 @@
 //     (Noto Sans CJK covers Japanese), glyphs rasterized on demand at
 //     pixel_scale and cached as one SDL texture each
 //     (ponytail: per-glyph textures; pack an atlas if draw calls hurt)
-//   - geometry: rounded rects and border arcs ported from clay's
-//     official SDL3 renderer (clay_renderer_SDL3.c)
+//   - geometry: rounded rects and border arcs
 package sdlrl
 
 import "base:runtime"
@@ -1336,7 +1335,7 @@ SetTextureFilter :: proc(texture: Texture2D, filter: TextureFilter) {
 
 // Vertex-colored triangle soup for the STL viewer, in layout coords
 // (the render scale applies). Clips to the given rect intersected
-// with the active clay scissor, and restores that scissor after, so
+// with the active nendo scissor, and restores that scissor after, so
 // a zoomed model can't paint over neighboring timeline rows.
 Vertex :: sdl.Vertex
 FColor :: sdl.FColor
@@ -1358,7 +1357,7 @@ DrawTrianglesClipped :: proc(vertices: []Vertex, x, y, w, h: f32, texture: ^Text
 	sdl.SetRenderClipRect(state.renderer, had_prev ? &prev : nil)
 }
 
-// ── Drawing (called by the clay renderer) ───────────────────────────
+// ── Drawing (called by the nendo renderer) ───────────────────────────
 
 @(private)
 set_color :: proc(color: Color) {
@@ -1420,7 +1419,7 @@ EndScissorMode :: proc() {
 	sdl.SetRenderClipRect(state.renderer, prev.enabled ? &prev.rect : nil)
 }
 
-// Filled rounded rectangle, ported from clay_renderer_SDL3.c.
+// Filled rounded rectangle.
 DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
 	if ChalkDrawn {
 		chalk_surface(x, y, w, h, corner_radius, color)
@@ -1809,7 +1808,7 @@ grapheme_iterate :: proc(
 }
 
 // Width/height of one line at the given logical size, matching what
-// DrawTextLine paints. Height is the font size, clay's convention.
+// DrawTextLine paints. Height is the font size, nendo's convention.
 TextScale: f32 = 1
 
 MeasureTextLine :: proc(font_id: u16, size: u16, text: string, letter_spacing: f32) -> Vector2 {

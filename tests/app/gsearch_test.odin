@@ -9,7 +9,7 @@ import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(test)
@@ -268,8 +268,8 @@ gs_archived_destination_owns_navigation_metadata :: proc(t: ^testing.T) {
 gs_refresh_clears_missing_search_chat :: proc(t: ^testing.T) {
 	// Chat refresh writes the global profile cache and retired_chats. They
 	// outlive this test, so they must not grow in its per-test allocator.
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	defer profile_session_clear()
 	rows := [?]marmot.Presented_Chat_Row{{row = {group_id_hex = "visible"}}}
@@ -365,10 +365,10 @@ gs_viewport :: proc(t: ^testing.T) {
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
 	init_fonts(); load_themes(); apply_theme(0, 0); set_locale("ja")
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {740, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		gs_open       = true,
 		gs_group      = "group",
@@ -400,10 +400,10 @@ gs_viewport :: proc(t: ^testing.T) {
 	}
 	for size in ([][2]i32{{740, 700}, {390, 420}, {740, 500}}) {
 		rl.SetWindowSize(size[0], size[1])
-		clay.SetLayoutDimensions({f32(size[0]), f32(size[1])})
+		nendo.set_dimensions({f32(size[0]), f32(size[1])})
 		for _ in 0 ..< 3 {gs_test_frame(&ui)}
-		modal := clay.GetElementData(clay.ID("GsModal")).boundingBox
-		body := clay.GetElementData(clay.ID("GsBody")).boundingBox
+		modal := nendo.element(nendo.id("GsModal")).rect
+		body := nendo.element(nendo.id("GsBody")).rect
 		testing.expect(
 			t,
 			modal.x >= 0 &&
@@ -417,10 +417,10 @@ gs_viewport :: proc(t: ^testing.T) {
 			body.height >= 44 && body.y + body.height <= modal.y + modal.height,
 			"Short windows must retain a scrollable search body",
 		)
-		clay.SetPointerState({body.x + body.width / 2, body.y + body.height / 2}, false)
+		nendo.set_pointer({body.x + body.width / 2, body.y + body.height / 2}, .Up)
 		gs_test_frame(&ui, {0, -10000})
 		for _ in 0 ..< 2 {gs_test_frame(&ui)}
-		more := clay.GetElementData(clay.ID("GsMore")).boundingBox
+		more := nendo.element(nendo.id("GsMore")).rect
 		testing.expect(
 			t,
 			more.y >= body.y && more.y + more.height <= body.y + body.height + 1,
@@ -428,37 +428,29 @@ gs_viewport :: proc(t: ^testing.T) {
 		)
 		ui.gs_loading = true
 		for _ in 0 ..< 3 {gs_test_frame(&ui)}
-		body = clay.GetElementData(clay.ID("GsBody")).boundingBox
-		busy := clay.GetElementData(clay.ID("GsBusy"))
+		body = nendo.element(nendo.id("GsBody")).rect
+		busy := nendo.element(nendo.id("GsBusy"))
 		testing.expect(
 			t,
-			busy.found &&
-			busy.boundingBox.y >= modal.y &&
-			busy.boundingBox.y + busy.boundingBox.height <= body.y,
+			busy.found && busy.rect.y >= modal.y && busy.rect.y + busy.rect.height <= body.y,
 			"Pending feedback must stay visible above the scrolled controls",
 		)
 		ui.gs_loading = false
 		commands := gs_test_frame(&ui)
-		rl.BeginDrawing(); clay_raylib_render(&commands)
+		rl.BeginDrawing(); render_nendo(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-gsearch-%d-%d.png", size[0], size[1]))
 		rl.EndDrawing()
 	}
 }
 
 @(private)
-gs_test_frame :: proc(
-	ui: ^Ui_State,
-	wheel: clay.Vector2 = {},
-) -> clay.ClayArray(clay.RenderCommand) {
+gs_test_frame :: proc(ui: ^Ui_State, wheel: nendo.Vector2 = {}) -> []nendo.Render_Command {
 	anim_tick(1.0 / 60)
-	open_now(clay.ID("GsModal"), true)
-	clay.UpdateScrollContainers(false, wheel, 1.0 / 60)
-	clay.BeginLayout()
-	if clay.UI(clay.ID("GsTestRoot"))(
-	{
-		layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()}},
-		backgroundColor = BG,
-	},
+	open_now(nendo.id("GsModal"), true)
+	nendo.update_scroll(.Off, wheel, 1.0 / 60)
+	nendo.begin()
+	if nendo.box(nendo.id("GsTestRoot"))(
+	{width = nendo.grow(), height = nendo.grow(), color = BG},
 	) {gsearch_modal(ui)}
-	return clay.EndLayout(0)
+	return nendo.end(0)
 }

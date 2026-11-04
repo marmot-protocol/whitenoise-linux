@@ -6,7 +6,7 @@
 //   - sending, the composer's text flies to where the row will appear
 //   - reacting, the emoji flies from the pointer onto the message
 //
-// clay lays out the endpoints; a flight is a Root-attached floating
+// nendo lays out the endpoints; a flight is a Root-attached floating
 // element placed at the interpolated box, so it owes nothing to the
 // layout it crosses.
 package main
@@ -14,7 +14,7 @@ package main
 import "core:math"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 FLY_MAX :: 3 // overlapping flights are rare; the oldest slot recycles
@@ -32,9 +32,9 @@ Fly :: struct {
 	shape: Fly_Shape,
 	tex:   ^rl.Texture2D, // an avatar or emoji tile; nil draws a plate
 	text:  string, // label on the plate, "" for none
-	color: clay.Color,
-	from:  clay.BoundingBox,
-	to:    clay.BoundingBox,
+	color: nendo.Color,
+	from:  nendo.Rect,
+	to:    nendo.Rect,
 	start: f64,
 	secs:  f64,
 	arc:   f32, // px the path bows upward at its midpoint
@@ -45,10 +45,10 @@ flies: [FLY_MAX]Fly
 // Start a flight. Both boxes come from the previous frame's layout,
 // which is where the thing visibly was and where it is going to land.
 fly :: proc(
-	from, to: clay.BoundingBox,
+	from, to: nendo.Rect,
 	tex: ^rl.Texture2D,
 	text: string,
-	color: clay.Color,
+	color: nendo.Color,
 	arc: f32 = 0,
 	secs: f64 = FLY_SECS,
 	shape: Fly_Shape = .Round,
@@ -67,7 +67,7 @@ fly :: proc(
 }
 
 // A point, for a flight that starts under the pointer.
-fly_point :: proc(x, y, size: f32) -> clay.BoundingBox {
+fly_point :: proc(x, y, size: f32) -> nendo.Rect {
 	return {x - size / 2, y - size / 2, size, size}
 }
 
@@ -98,47 +98,44 @@ fly_layer :: proc() {
 		y := f.from.y + (f.to.y - f.from.y) * e + bow
 		alpha := clamp((1 - t) / (1 - FLY_FADE), 0, 1)
 
-		id := clay.ID("FlyCell", u32(i))
+		id := nendo.id("FlyCell", u32(i))
 		if f.tex != nil {
-			if clay.UI(id)(
+			if nendo.box(id)(
 			{
-				layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}},
+				width = nendo.fixed(w),
+				height = nendo.fixed(h),
 				floating = {
-					attachTo = .Root,
-					zIndex = 30,
+					attach_to = .Root,
+					z = 30,
 					offset = {x, y},
-					attachment = {element = .LeftTop, parent = .LeftTop},
+					attach = {element = .Left_Top, parent = .Left_Top},
 				},
-				image = {imageData = f.tex},
-				cornerRadius = rr(f.shape == .Round ? w / 2 : 8),
-				overlayColor = {255, 255, 255, alpha * 255},
+				image = f.tex,
+				radius = rr(f.shape == .Round ? w / 2 : 8),
+				overlay = {255, 255, 255, alpha * 255},
 			},
 			) {}
 			continue
 		}
-		if clay.UI(id)(
+		if nendo.box(id)(
 		{
-			layout = {
-				sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)},
-				padding = {left = 10, right = 10},
-				childAlignment = {x = .Center, y = .Center},
-			},
+			width = nendo.fixed(w),
+			height = nendo.fixed(h),
+			padding = {left = 10, right = 10},
+			align = {x = .Center, y = .Center},
 			floating = {
-				attachTo = .Root,
-				zIndex = 30,
+				attach_to = .Root,
+				z = 30,
 				offset = {x, y},
-				attachment = {element = .LeftTop, parent = .LeftTop},
+				attach = {element = .Left_Top, parent = .Left_Top},
 			},
-			backgroundColor = fade(f.color, alpha),
-			cornerRadius = rr(h / 2), // a pill for the send, a circle for an avatar
-			clip = {horizontal = true, vertical = true},
+			color = fade(f.color, alpha),
+			radius = rr(h / 2), // a pill for the send, a circle for an avatar
+			clip = {x = true, y = true},
 		},
 		) {
 			if len(f.text) > 0 {
-				clay.Text(
-					f.text,
-					{fontId = FONT_BODY, fontSize = 13, textColor = fade(ON_ACCENT, alpha)},
-				)
+				nendo.text(f.text, {font = FONT_BODY, size = 13, color = fade(ON_ACCENT, alpha)})
 			}
 		}
 	}
@@ -156,13 +153,13 @@ REACT_SIZE :: f32(24)
 // the top, so the plate lands under the last one instead of dropping
 // past it into empty space.
 send_arc :: proc(ui: ^Ui_State, text: string) {
-	from, from_ok := element_box(clay.ID("ComposeBox"))
-	view, view_ok := element_box(clay.ID("Timeline"))
+	from, from_ok := element_box(nendo.id("ComposeBox"))
+	view, view_ok := element_box(nendo.id("Timeline"))
 	if !from_ok || !view_ok {
 		return
 	}
 	w := min(from.width * 0.6, SEND_W_MAX)
-	to := clay.BoundingBox{view.x + 56, send_land_y(ui, view), w, 32}
+	to := nendo.Rect{view.x + 56, send_land_y(ui, view), w, 32}
 	// One line's worth: the plate is a gesture, not a preview.
 	label := text
 	if idx := strings.index_byte(label, '\n'); idx >= 0 {
@@ -174,7 +171,7 @@ send_arc :: proc(ui: ^Ui_State, text: string) {
 // Top of the row about to be appended: just under the last row the
 // previous frame laid out, never below the foot of the view.
 @(private = "file")
-send_land_y :: proc(ui: ^Ui_State, view: clay.BoundingBox) -> f32 {
+send_land_y :: proc(ui: ^Ui_State, view: nendo.Rect) -> f32 {
 	last := view.y + 8 // an empty chat starts at the top of the content
 	found := false
 
@@ -184,12 +181,12 @@ send_land_y :: proc(ui: ^Ui_State, view: clay.BoundingBox) -> f32 {
 		if p.group_id != ui.chats[ui.selected].group_id {
 			continue
 		}
-		if box, ok := element_box(clay.ID("PendingRow", u32(i))); ok {
+		if box, ok := element_box(nendo.id("PendingRow", u32(i))); ok {
 			last, found = box.y + box.height + 2, true
 		}
 	}
 	if !found && len(ui.messages) > 0 {
-		if box, ok := element_box(clay.ID("MsgRow", u32(len(ui.messages) - 1))); ok {
+		if box, ok := element_box(nendo.id("MsgRow", u32(len(ui.messages) - 1))); ok {
 			last = box.y + box.height + 2
 		}
 	}
@@ -208,13 +205,13 @@ react_fly :: proc(ui: ^Ui_State, message_id: string, emoji: string) {
 		if msg.id != message_id {
 			continue
 		}
-		row, ok := element_box(clay.ID("MsgRow", u32(i)))
+		row, ok := element_box(nendo.id("MsgRow", u32(i)))
 		if !ok {
 			return
 		}
 		pos := rl.GetMousePosition()
 		from := fly_point(pos.x / UI_ZOOM, pos.y / UI_ZOOM, REACT_SIZE)
-		to := clay.BoundingBox{row.x + 56, row.y + row.height - REACT_SIZE, REACT_SIZE, REACT_SIZE}
+		to := nendo.Rect{row.x + 56, row.y + row.height - REACT_SIZE, REACT_SIZE, REACT_SIZE}
 		fly(from, to, tex, "", {}, SEND_ARC * 0.4)
 		return
 	}

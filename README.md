@@ -10,12 +10,12 @@
   <a href="https://github.com/marmot-protocol/whitenoise-linux/actions/workflows/ci.yml"><img src="https://github.com/marmot-protocol/whitenoise-linux/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Linux-lightgrey.svg" alt="Platform: Linux">
-  <img src="https://img.shields.io/badge/built%20with-Odin%20%2B%20clay-blue.svg" alt="Built with Odin and clay">
+  <img src="https://img.shields.io/badge/built%20with-Odin%20%2B%20nendo-blue.svg" alt="Built with Odin and nendo">
 </p>
 
 ---
 
-White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-protocol/mdk): [MLS](https://messaginglayersecurity.rocks/) group messaging carried over [Nostr](https://nostr.com) relays. You get the forward secrecy and post-compromise security of MLS together with a portable, self-owned Nostr identity: no phone number, no central server, no account anyone can take away from you. It is one Odin binary drawing an immediate-mode [clay](https://github.com/nicbarker/clay) layout on SDL3, and every secret lives in a single password-encrypted vault.
+White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-protocol/mdk): [MLS](https://messaginglayersecurity.rocks/) group messaging carried over [Nostr](https://nostr.com) relays. You get the forward secrecy and post-compromise security of MLS together with a portable, self-owned Nostr identity: no phone number, no central server, no account anyone can take away from you. It is one Odin binary drawing an immediate-mode layout from nendo, White Noise's layout engine, on SDL3, and every secret lives in a single password-encrypted vault.
 
 > **Status: early.** It works and is usable day-to-day, but it is moving fast, so expect rough edges.
 
@@ -969,7 +969,7 @@ scripts/install-scheme.sh
 ## Architecture
 
 ```
- SDL3  ←──  app/sdlrl/  ←──  app/renderer.odin  ←──  clay layout (app/*.odin)
+ SDL3  ←──  app/sdlrl/  ←──  app/renderer.odin  ←──  nendo layout (app/*.odin)
                                                           │
                                                     app/state.odin  (Ui_State)
                                                           │
@@ -980,7 +980,7 @@ scripts/install-scheme.sh
                                             marmot-c  →  the Marmot runtime
 ```
 
-It reads flat by intent. The layout is immediate-mode: every frame rebuilds the clay tree by reading one `Ui_State` struct, so there is no retained view tree, no widget objects, and no observer graph to trace. Panes are plain procs.
+It reads flat by intent. The layout is immediate-mode: every frame rebuilds the nendo tree by reading one `Ui_State` struct, so there is no retained view tree, no widget objects, and no observer graph to trace. Panes are plain procs.
 
 | Path | What's there |
 | --- | --- |
@@ -990,6 +990,7 @@ It reads flat by intent. The layout is immediate-mode: every frame rebuilds the 
 | `app/loginpane.odin` | Sign-in and key-generation UI, with button and progress helpers |
 | `app/workers.odin` | Live subscriptions, sends, member loading, and other blocking Marmot calls kept off the UI thread |
 | `app/sdlrl/` | SDL3 shim with a raylib-shaped API: window, input, IME, clipboard, and a stb_truetype text engine |
+| `app/nendo/` | nendo, White Noise's layout engine |
 | `app/vault.odin` | The password-encrypted secret vault |
 | `marmot/` | The `marmot-c` bindings, the only place that touches C |
 | `app/password.odin` | The allocation-free password-strength heuristic and input cache |
@@ -1041,12 +1042,12 @@ allocator.
 
 Theme and font registries outlive individual tests. Fixtures that populate
 them use `runtime.default_context().allocator`. Tests that replace `g_ui` take
-`clay_test_mutex` before `test_home_lock` when both are needed. Use nonfatal
+`nendo_test_mutex` before `test_home_lock` when both are needed. Use nonfatal
 expectations while holding these locks: Odin's `fail_now` skips deferred
 unlocks and can stall the suite.
 
 Mention-chip fixtures also populate the global profile caches. Use the runtime
-allocator and defer `profile_session_clear()` while holding `clay_test_mutex`.
+allocator and defer `profile_session_clear()` while holding `nendo_test_mutex`.
 
 Composer wrapping allocates its cache on the process heap without changing
 the caller's allocator. Mention measurement can queue profile reads; those

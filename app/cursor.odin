@@ -1,4 +1,4 @@
-// The pointer's own feedback. clay has no cursor concept and nothing it
+// The pointer's own feedback. nendo has no cursor concept and nothing it
 // builds survives a frame, so the shape is raised by whatever sits under
 // the pointer during the build and set once at the end of the frame.
 //
@@ -7,7 +7,7 @@
 // a drag in progress beats both.
 package main
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 cursor_want: rl.Cursor_Shape
@@ -18,11 +18,11 @@ cursor_raise :: proc(shape: rl.Cursor_Shape) {
 	}
 }
 
-// clay.Hovered(), plus the pointer that goes with it. Every interactive
+// nendo.hovered(), plus the pointer that goes with it. Every interactive
 // element in the app already asks this to draw its hover fill, so
 // wrapping it is the whole of "the app looks clickable".
 hovered :: proc() -> bool {
-	if !clay.Hovered() {
+	if !nendo.hovered() {
 		return false
 	}
 	cursor_raise(.Pointer)

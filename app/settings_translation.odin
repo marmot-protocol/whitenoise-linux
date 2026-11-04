@@ -3,7 +3,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Shared with message controls. Download percentages describe the current
@@ -13,44 +13,31 @@ translation_progress :: proc(ui: ^Ui_State, id: string) {
 	if ui.translation.status == 'D' {
 		label :=
 			ui.translation.model == 0 ? tr("Downloading translation model: %d%%") : tr("Downloading language detector: %d%%")
-		clay.Text(
+		nendo.text(
 			fmt.tprintf(label, int(ui.translation.percent)),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 11, color = TEXT_DIM},
 		)
-		if clay.UI(clay.ID(id))(
-		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}},
-			backgroundColor = PLATE,
-			cornerRadius = rr(2),
-		},
+		if nendo.box(nendo.id(id))(
+		{width = nendo.grow(), height = nendo.fixed(4), color = PLATE, radius = rr(2)},
 		) {
 			if ui.translation.percent > 0 {
-				if clay.UI(clay.ID(id, 1))(
+				if nendo.box(nendo.id(id, 1))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingPercent(
-								clamp(f32(ui.translation.percent) / 100, 0, 1),
-							),
-							height = clay.SizingGrow(),
-						},
-					},
-					backgroundColor = ACCENT,
-					cornerRadius = rr(2),
+					width = nendo.percent(clamp(f32(ui.translation.percent) / 100, 0, 1)),
+					height = nendo.grow(),
+					color = ACCENT,
+					radius = rr(2),
 				},
 				) {}
 			}
 		}
 	} else {
-		clay.Text(
+		nendo.text(
 			tr("Progress is indeterminate."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 11, color = TEXT_DIM},
 		)
-		if clay.UI(clay.ID(id))(
-		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}},
-			clip = {horizontal = true},
-		},
+		if nendo.box(nendo.id(id))(
+		{width = nendo.grow(), height = nendo.fixed(4), clip = {x = true}},
 		) {
 			busy_bar(fmt.tprintf("%sBusy", id))
 		}
@@ -60,9 +47,9 @@ translation_progress :: proc(ui: ^Ui_State, id: string) {
 @(private)
 settings_translation :: proc(ui: ^Ui_State) {
 	when TRANSLATION_AVAILABLE {
-		if clay.UI(clay.ID("TranslationGroup"))(settings_box()) {
+		if nendo.box(nendo.id("TranslationGroup"))(settings_box()) {
 			settings_group(tr("Message translation"))
-			if clay.UI(clay.ID("RowTranslation"))(settings_row()) {
+			if nendo.box(nendo.id("RowTranslation"))(settings_row()) {
 				settings_check(
 					"TgTranslation",
 					ui.prefs.translation_enabled,
@@ -72,18 +59,18 @@ settings_translation :: proc(ui: ^Ui_State) {
 					),
 				)
 			}
-			if clay.UI(clay.ID("TranslationTermsRow"))(settings_row(true)) {
+			if nendo.box(nendo.id("TranslationTermsRow"))(settings_row(true)) {
 				row_labels(tr("Gemma terms"), "")
 				settings_translation_register("TranslationTerms")
 				settings_button("TranslationTerms", external_link_action())
 			}
-			if clay.UI(clay.ID("TranslationPolicyRow"))(settings_row(true)) {
+			if nendo.box(nendo.id("TranslationPolicyRow"))(settings_row(true)) {
 				row_labels(tr("Gemma prohibited use policy"), "")
 				settings_translation_register("TranslationPolicy")
 				settings_button("TranslationPolicy", external_link_action())
 			}
 			if !ui.prefs.translation_enabled {return}
-			if clay.UI(clay.ID("RowTranslationAuto"))(settings_row()) {
+			if nendo.box(nendo.id("RowTranslationAuto"))(settings_row()) {
 				settings_check(
 					"TgTranslationAuto",
 					ui.prefs.translation_auto,
@@ -109,32 +96,26 @@ settings_translation :: proc(ui: ^Ui_State) {
 				tr("Translate into"),
 				ui.prefs.translation_target,
 			)
-			clay.Text(
+			nendo.text(
 				tr("Translations can be inaccurate. The original message is always available."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
-			if clay.UI(clay.ID("TranslationModel"))(
-			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					childGap = 6,
-				},
-			},
+			if nendo.box(nendo.id("TranslationModel"))(
+			{width = nendo.grow(), direction = .Column, gap = 6},
 			) {
 				row_labels(TRANSLATION_MODEL_NAME, human_size(TRANSLATION_MODEL_BYTES))
 				status := translation_status(ui)
 				if status !=
-				   "" {clay.Text(status, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})}
+				   "" {nendo.text(status, {font = FONT_BODY, size = 11, color = TEXT_DIM})}
 				if ui.translation.file != nil {translation_progress(ui, "TranslationProgress")}
 			}
 		}
 	} else {
-		if clay.UI(clay.ID("TranslationGroup"))(settings_box()) {
+		if nendo.box(nendo.id("TranslationGroup"))(settings_box()) {
 			settings_group(tr("Message translation"))
-			clay.Text(
+			nendo.text(
 				tr("Message translation is available in native Linux builds."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 		}
 	}
@@ -169,73 +150,68 @@ settings_translation_label :: proc(ui: ^Ui_State, menu: int, code: string) -> st
 @(private)
 settings_translation_language :: proc(ui: ^Ui_State, menu: int, row, id, title, code: string) {
 	column := settings_row()
-	column.layout.layoutDirection = .TopToBottom
-	column.layout.childGap = 6
-	if clay.UI(clay.ID(row))(column) {
+	column.direction = .Column
+	column.gap = 6
+	if nendo.box(nendo.id(row))(column) {
 		row_labels(title, "")
 		settings_translation_register(id)
-		if clay.UI(clay.ID(id))(
+		if nendo.box(nendo.id(id))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				padding = clay.PaddingAll(8),
-				childGap = 8,
-			},
-			backgroundColor = hovered() ? HOVER : CARD,
-			border = kb_focus == id ? kb_ring(ACCENT) : clay.BorderElementConfig{color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
-			cornerRadius = rr(6),
+			width = nendo.grow(),
+			padding = nendo.pad(8),
+			gap = 8,
+			color = hovered() ? HOVER : CARD,
+			border = kb_focus == id ? kb_ring(ACCENT) : nendo.Border{color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+			radius = rr(6),
 		},
 		) {
-			if clay.UI(clay.ID_LOCAL("Label"))({layout = {sizing = {width = clay.SizingGrow()}}}) {
-				clay.Text(
+			if nendo.box(nendo.id_local("Label"))({width = nendo.grow()}) {
+				nendo.text(
 					settings_translation_label(ui, menu, code),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
+					{font = FONT_BODY, size = 12, color = TEXT},
 				)
 			}
-			clay.Text(
+			nendo.text(
 				ui.translation.language_menu == menu ? "▴" : "▾",
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
 			)
 		}
 		if ui.translation.language_menu != menu {return}
 		list_height := min(
 			f32(180),
-			max(f32(48), clay.GetElementData(clay.ID("SettingsPage")).boundingBox.height - 24),
+			max(f32(48), nendo.element(nendo.id("SettingsPage")).rect.height - 24),
 		)
-		if clay.UI(clay.ID("TranslationLanguageList"))(
+		if nendo.box(nendo.id("TranslationLanguageList"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(list_height)},
-				layoutDirection = .TopToBottom,
-			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-			backgroundColor = CARD,
+			width = nendo.grow(),
+			height = nendo.fixed(list_height),
+			direction = .Column,
+			clip = {y = true, scroll = true},
+			color = CARD,
 			border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
 		},
 		) {
 			for i in 0 ..= len(TRANSLATION_LANGUAGES) {
 				option_code := i == 0 ? "" : TRANSLATION_LANGUAGES[i - 1].code
 				option_id := fmt.tprintf("TranslationLanguage%d", i)
-				if clay.UI(clay.ID(option_id))(
+				if nendo.box(nendo.id(option_id))(
 				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						padding = clay.PaddingAll(8),
-						childGap = 8,
-					},
-					backgroundColor = code == option_code ? SELECTED : (hovered() ? HOVER : CARD),
-					border = ui.translation.language_choice == i ? kb_ring(ACCENT) : clay.BorderElementConfig{},
+					width = nendo.grow(),
+					padding = nendo.pad(8),
+					gap = 8,
+					color = code == option_code ? SELECTED : (hovered() ? HOVER : CARD),
+					border = ui.translation.language_choice == i ? kb_ring(ACCENT) : nendo.Border{},
 				},
 				) {
 					settings_radio_mark(code == option_code)
-					clay.Text(
+					nendo.text(
 						settings_translation_label(ui, menu, option_code),
-						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
+						{font = FONT_BODY, size = 12, color = TEXT},
 					)
 				}
 			}
 		}
-		scrollbar(clay.ID("TranslationLanguageList"))
+		scrollbar(nendo.id("TranslationLanguageList"))
 	}
 }
 
@@ -320,8 +296,8 @@ settings_translation_keys :: proc(ui: ^Ui_State) -> bool {
 	) {index = max(0, index - 1)} else if rl.IsKeyPressed(.DOWN) {index = min(len(TRANSLATION_LANGUAGES), index + 1)} else if rl.IsKeyPressed(.HOME) {index = 0} else if rl.IsKeyPressed(.END) {index = len(TRANSLATION_LANGUAGES)} else {return false}
 	ui.translation.language_choice = index
 	scroll_into_view(
-		clay.ID("TranslationLanguageList"),
-		clay.ID(fmt.tprintf("TranslationLanguage%d", index)),
+		nendo.id("TranslationLanguageList"),
+		nendo.id(fmt.tprintf("TranslationLanguage%d", index)),
 	)
 	return true
 }
@@ -339,7 +315,9 @@ handle_settings_translation :: proc(ui: ^Ui_State) -> bool {
 				fmt.tprintf("TranslationLanguage%d", i),
 			) {settings_translation_select(ui, i); return true}
 		}
-		if !clay.PointerOver(clay.ID("TranslationLanguageList")) {ui.translation.language_menu = 0}
+		if !nendo.pointer_over(
+			nendo.id("TranslationLanguageList"),
+		) {ui.translation.language_menu = 0}
 	}
 	return false
 }

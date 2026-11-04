@@ -47,8 +47,8 @@ chat_switch_settings_keep_latest_snapshot :: proc(t: ^testing.T) {
 
 @(test)
 chat_switch_read_anchor_and_latest_window :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	previous := timeline_job
 	defer timeline_job = previous
 	job: Timeline_Work
@@ -94,8 +94,8 @@ chat_switch_read_anchor_and_latest_window :: proc(t: ^testing.T) {
 
 @(test)
 chat_switch_failure_keeps_local_outcome :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	previous := timeline_job
 	defer timeline_job = previous
 	job: Timeline_Work

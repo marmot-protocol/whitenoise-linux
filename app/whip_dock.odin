@@ -1,6 +1,6 @@
 package main
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 @(private)
@@ -31,24 +31,21 @@ whip_dock_end :: proc(ui: ^Ui_State) {
 @(private)
 whip_dock_divider :: proc(ui: ^Ui_State) {
 	wide := ui.whip_dock_wide
-	active := ui.whip_dock_drag || clay.PointerOver(clay.ID("WhipDockDivider"))
-	if clay.UI(clay.ID("WhipDockDivider"))(
+	active := ui.whip_dock_drag || nendo.pointer_over(nendo.id("WhipDockDivider"))
+	if nendo.box(nendo.id("WhipDockDivider"))(
 	{
-		layout = {
-			sizing = {
-				wide ? clay.SizingFixed(WHIP_GUTTER) : clay.SizingGrow(),
-				wide ? clay.SizingGrow() : clay.SizingFixed(WHIP_GUTTER),
-			},
-			childAlignment = {x = .Center, y = .Center},
-		},
+		width = wide ? nendo.fixed(WHIP_GUTTER) : nendo.grow(),
+		height = wide ? nendo.grow() : nendo.fixed(WHIP_GUTTER),
+		align = {x = .Center, y = .Center},
 	},
 	) {
 		if active {cursor_raise(wide ? .ResizeEW : .ResizeNS)}
-		if clay.UI(clay.ID_LOCAL("GutterLine"))(
+		if nendo.box(nendo.id_local("GutterLine"))(
 		{
-			layout = {sizing = {clay.SizingFixed(wide ? 2 : 40), clay.SizingFixed(wide ? 40 : 2)}},
-			backgroundColor = active ? ACCENT : FIELD_BORDER,
-			cornerRadius = rr(1),
+			width = nendo.fixed(wide ? 2 : 40),
+			height = nendo.fixed(wide ? 40 : 2),
+			color = active ? ACCENT : FIELD_BORDER,
+			radius = rr(1),
 		},
 		) {}
 	}
@@ -57,8 +54,8 @@ whip_dock_divider :: proc(ui: ^Ui_State) {
 @(private)
 whip_dock_input :: proc(ui: ^Ui_State) -> bool {
 	owner := whip_dock_owner(ui)
-	data := clay.GetElementData(clay.ID("WhipDockLayout"))
-	box := data.boundingBox
+	data := nendo.element(nendo.id("WhipDockLayout"))
+	box := data.rect
 	wide := ui.whip_dock_wide
 	if ui.whip_dock_drag &&
 	   (owner == 0 ||
@@ -76,8 +73,8 @@ whip_dock_input :: proc(ui: ^Ui_State) -> bool {
 	   rl.IsMouseButtonPressed(.LEFT) &&
 	   ui.whip_attach_drag == 0 &&
 	   ui.whip_attach_resize == 0 &&
-	   clay.PointerOver(clay.ID("WhipDockDivider")) {
-		divider := clay.GetElementData(clay.ID("WhipDockDivider")).boundingBox
+	   nendo.pointer_over(nendo.id("WhipDockDivider")) {
+		divider := nendo.element(nendo.id("WhipDockDivider")).rect
 		ui.whip_dock_drag = true
 		ui.whip_dock_pane = owner
 		ui.whip_dock_wide = wide

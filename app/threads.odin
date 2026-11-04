@@ -18,7 +18,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 THREAD_KICK :: f32(26) // px the timeline slides in from on push/pop
@@ -64,7 +64,7 @@ thread_clear :: proc(ui: ^Ui_State) {
 @(private = "file")
 thread_kick :: proc() {
 	if motion_on() {
-		anim_vals[clay.ID("ThreadSlide").id] = {
+		anim_vals[nendo.id("ThreadSlide").id] = {
 			v     = THREAD_KICK,
 			frame = anim_frame,
 		}
@@ -78,48 +78,44 @@ thread_slide :: proc() -> f32 {
 // Breadcrumb bar under the chat header while a thread is open: back
 // chevron, depth, and the root's one-line summary.
 thread_bar :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("ThreadBar"))(
+	if nendo.box(nendo.id("ThreadBar"))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			padding = {left = 8, right = 14, top = 6, bottom = 6},
-			childGap = 8,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = RAIL_BG,
+		width = nendo.grow(),
+		padding = {left = 8, right = 14, top = 6, bottom = 6},
+		gap = 8,
+		align = {y = .Center},
+		color = RAIL_BG,
 	},
 	) {
-		cast_shade(clay.ID("ThreadBar"), .Down, 14, 0.35)
+		cast_shade(nendo.id("ThreadBar"), .Down, 14, 0.35)
 		if !single_pane(
 			
-		) {if clay.UI(clay.ID("ThreadBack"))({layout = {sizing = {width = clay.SizingFit({min = tap_size() ? tap_min() : 0}), height = clay.SizingFit({min = tap_size() ? tap_min() : 0})}, padding = {left = 10, right = 10, top = 4, bottom = 4}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
-				clay.Text("‹", {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
+		) {if nendo.box(nendo.id("ThreadBack"))({width = nendo.fit(min = tap_size() ? tap_min() : 0), height = nendo.fit(min = tap_size() ? tap_min() : 0), padding = {left = 10, right = 10, top = 4, bottom = 4}, align = {x = .Center, y = .Center}, color = hovered() ? HOVER : {}, radius = rr(6)}) {
+				nendo.text("‹", {font = FONT_TITLE, size = 16, color = TEXT})
 			}}
-		clay.Text(ICON_COMMENTS, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
+		nendo.text(ICON_COMMENTS, {font = FONT_ICON, size = 12, color = ACCENT})
 		if len(ui.thread_stack) > 1 {
-			clay.Text(
+			nendo.text(
 				fmt.tprintf("%s · %d", tr("Thread"), len(ui.thread_stack)),
-				{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
+				{font = FONT_TITLE, size = 14, color = TEXT},
 			)
 		} else {
-			clay.Text(tr("Thread"), {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+			nendo.text(tr("Thread"), {font = FONT_TITLE, size = 14, color = TEXT})
 		}
 		cur := thread_cur(ui)
 		for msg in ui.messages {
 			if msg.id != cur {
 				continue
 			}
-			if clay.UI(clay.ID("ThreadSummary"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
-			) {
-				clay.Text(
+			if nendo.box(nendo.id("ThreadSummary"))({width = nendo.grow(), clip = {x = true}}) {
+				nendo.text(
 					text_ellipsis(
 						fmt.tprintf("%s: %s", msg.sender, msg_preview(msg)),
 						max(1, page_w(ui) - 160),
 						FONT_BODY,
 						12,
 					),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO, wrapMode = .None},
+					{font = FONT_BODY, size = 12, color = TEXT_LO, wrap = .None},
 				)
 			}
 			break
@@ -136,18 +132,16 @@ thread_root_plate :: proc(ui: ^Ui_State) {
 			continue
 		}
 		message_row(u32(i), msg)
-		if clay.UI(clay.ID("ThreadRootRule"))(
+		if nendo.box(nendo.id("ThreadRootRule"))(
 		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childAlignment = {x = .Center},
-				padding = {left = 16, right = 16, top = 4, bottom = 2},
-			},
+			width = nendo.grow(),
+			align = {x = .Center},
+			padding = {left = 16, right = 16, top = 4, bottom = 2},
 		},
 		) {
-			clay.Text(
+			nendo.text(
 				tr("• THREAD •"),
-				{fontId = FONT_MONO, fontSize = 10, textColor = ACCENT_DIM, letterSpacing = 2},
+				{font = FONT_MONO, size = 10, color = ACCENT_DIM, spacing = 2},
 			)
 		}
 		return
@@ -175,7 +169,7 @@ SHADE_SALT :: u32(0x73686164)
 
 // A shadow along one edge of `parent`, declared inside it. Sized from
 // the parent's previous box like the glow, so the first frame is dark.
-cast_shade :: proc(parent: clay.ElementId, dir: Shade_Dir, span: f32, alpha: f32) {
+cast_shade :: proc(parent: nendo.Id, dir: Shade_Dir, span: f32, alpha: f32) {
 	box, ok := element_box(parent)
 	if !ok || alpha <= 0.01 || !motion_on() {
 		return
@@ -189,25 +183,21 @@ cast_shade :: proc(parent: clay.ElementId, dir: Shade_Dir, span: f32, alpha: f32
 	id := parent
 	id.id ~= SHADE_SALT
 	down := dir == .Down
-	if clay.UI(id)(
+	if nendo.box(id)(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(down ? box.width : span),
-				height = clay.SizingFixed(down ? span : box.height),
-			},
-		},
+		width = nendo.fixed(down ? box.width : span),
+		height = nendo.fixed(down ? span : box.height),
 		floating = {
-			attachTo = .Parent,
-			zIndex = 4,
-			attachment = down ? {element = .LeftTop, parent = .LeftBottom} : {element = .RightTop, parent = .LeftTop},
+			attach_to = .Parent,
+			z = 4,
+			attach = down ? {element = .Left_Top, parent = .Left_Bottom} : {element = .Right_Top, parent = .Left_Top},
 		},
-		custom = {customData = view},
+		custom = view,
 	},
 	) {}
 }
 
-shade_draw :: proc(view: ^Shade_View, bounds: clay.BoundingBox) {
+shade_draw :: proc(view: ^Shade_View, bounds: nendo.Rect) {
 	lucent := rl.FColor{0, 0, 0, 0}
 	dark := rl.FColor{0, 0, 0, view.alpha}
 	x0, x1 := bounds.x, bounds.x + bounds.width

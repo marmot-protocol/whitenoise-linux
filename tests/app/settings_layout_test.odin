@@ -4,7 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:math"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Runs in its own headless process through scripts/build.sh test.
@@ -19,10 +19,10 @@ settings_viewport :: proc(t: ^testing.T) {
 	load_themes()
 	apply_theme(0, 0)
 	set_locale("ja")
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {740, 500})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		page          = .Settings,
 		audit_scanned = true,
@@ -47,8 +47,8 @@ settings_viewport :: proc(t: ^testing.T) {
 		}{{740, 500, 1}, {390, 360, 1}, {1440, 1000, 1.5}, {1568, 1001, 1}, {1568, 733, 1}, {2102, 1342, 1.5}, {2872, 1342, 1.5}, {2560, 1080, 1}, {3440, 1440, 1}, {2560, 1080, 2}, {1440, 1000, 2}, {2560, 480, 1}}) {
 		rl.SetWindowSize(size.w, size.h)
 		UI_ZOOM = size.zoom
-		viewport := clay.Dimensions{f32(size.w) / UI_ZOOM, f32(size.h) / UI_ZOOM}
-		clay.SetLayoutDimensions(viewport)
+		viewport := nendo.Dimensions{f32(size.w) / UI_ZOOM, f32(size.h) / UI_ZOOM}
+		nendo.set_dimensions(viewport)
 		for target in ([]struct {
 				section: Settings_Section,
 				anchor:  string,
@@ -56,8 +56,8 @@ settings_viewport :: proc(t: ^testing.T) {
 			if target.section == .Appearance {ui.settings_tab = 2}
 			settings_open(&ui, nil, target.section, anchor = target.anchor)
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
-			root := clay.GetElementData(clay.ID("SettingsRoot"))
-			box := root.boundingBox
+			root := nendo.element(nendo.id("SettingsRoot"))
+			box := root.rect
 			testing.expect(
 				t,
 				root.found && box.width > 0 && box.x >= 0 && box.x + box.width <= viewport.width,
@@ -66,29 +66,29 @@ settings_viewport :: proc(t: ^testing.T) {
 			if target.anchor != "" {
 				testing.expect(
 					t,
-					clay.GetElementData(clay.ID(target.anchor)).found,
+					nendo.element(nendo.id(target.anchor)).found,
 					"A settings deep link must render its destination control",
 				)
 			} else if target.section == .Appearance {
 				testing.expect_value(t, ui.settings_tab, 0)
 				testing.expect(
 					t,
-					clay.GetElementData(clay.ID("SettingsSheet")).found &&
-					!clay.GetElementData(clay.ID("SettingsPageIcon", 0)).found &&
-					!clay.GetElementData(clay.ID("SettingsTabs")).found,
+					nendo.element(nendo.id("SettingsSheet")).found &&
+					!nendo.element(nendo.id("SettingsPageIcon", 0)).found &&
+					!nendo.element(nendo.id("SettingsTabs")).found,
 					"Opening Appearance must show its workbench directly, without a category menu or tabs",
 				)
 			} else if target.section != .Home {
 				testing.expect(
 					t,
-					clay.GetElementData(clay.ID("SettingsPageIcon", 0)).found &&
-					!clay.GetElementData(clay.ID("SettingsSheet")).found,
+					nendo.element(nendo.id("SettingsPageIcon", 0)).found &&
+					!nendo.element(nendo.id("SettingsSheet")).found,
 					"A category without a deep link must open on its menu, not its sheet",
 				)
 			}
 			if target.section == .General {
-				sheet := clay.GetElementData(clay.ID("SettingsSheet")).boundingBox
-				group := clay.GetElementData(clay.ID("LanguageGroup")).boundingBox
+				sheet := nendo.element(nendo.id("SettingsSheet")).rect
+				group := nendo.element(nendo.id("LanguageGroup")).rect
 				left := group.x - sheet.x
 				right := sheet.x + sheet.width - group.x - group.width
 				testing.expect(
@@ -105,19 +105,19 @@ settings_viewport :: proc(t: ^testing.T) {
 			if anchor == "RowScroll" && tap_size() {
 				testing.expect(
 					t,
-					!clay.GetElementData(clay.ID(anchor)).found,
+					!nendo.element(nendo.id(anchor)).found,
 					"Touch Appearance must omit mouse-wheel speed controls",
 				)
 				continue
 			}
-			scroll_id := clay.ID("SettingsPage")
+			scroll_id := nendo.id("SettingsPage")
 			if settings_test_appearance_wide() {
-				scroll_id = clay.ID(
+				scroll_id = nendo.id(
 					anchor == "RowTheme" ? "AppearanceThemes" : "AppearanceControls",
 				)
 			}
-			clip := clay.GetElementData(scroll_id).boundingBox
-			destination := clay.GetElementData(clay.ID(anchor)).boundingBox
+			clip := nendo.element(scroll_id).rect
+			destination := nendo.element(nendo.id(anchor)).rect
 			testing.expectf(
 				t,
 				destination.y >= clip.y - 0.1 && destination.y < clip.y + clip.height,
@@ -128,7 +128,7 @@ settings_viewport :: proc(t: ^testing.T) {
 				if other == "RowScroll" && tap_size() {continue}
 				testing.expectf(
 					t,
-					clay.GetElementData(clay.ID(other)).found,
+					nendo.element(nendo.id(other)).found,
 					"Opening %s must leave %s in the same Appearance workbench",
 					anchor,
 					other,
@@ -139,10 +139,10 @@ settings_viewport :: proc(t: ^testing.T) {
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
 		settings_test_appearance_panels(t)
 		commands := settings_test_frame(&ui)
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Text {continue}
-			text := command.renderData.text.stringContents
-			shown := string(text.chars[:text.length])
+		for command in commands {
+			if command.kind != .Text {continue}
+			text := command.text.text
+			shown := text
 			testing.expect(
 				t,
 				shown != "PRIVATE_DRAFT" && shown != "PRIVATE_MESSAGE",
@@ -152,17 +152,17 @@ settings_viewport :: proc(t: ^testing.T) {
 		testing.expect_value(t, string(ui.compose[:]), "PRIVATE_DRAFT")
 		testing.expect_value(t, ui.messages[0].body, "PRIVATE_MESSAGE")
 		rl.BeginDrawing()
-		rl.DrawRectangleRec(0, 0, f32(size.w), f32(size.h), clay_color(BG))
+		rl.DrawRectangleRec(0, 0, f32(size.w), f32(size.h), nendo_color(BG))
 		rl.BeginMode2D({zoom = UI_ZOOM})
-		clay_raylib_render(&commands)
+		render_nendo(commands)
 		rl.EndMode2D()
 		rl.TakeScreenshot(
 			fmt.ctprintf("/tmp/wn-appearance-%dx%d-%v.png", size.w, size.h, size.zoom),
 		)
 		rl.EndDrawing()
-		page := clay.GetElementData(clay.ID("SettingsPage"))
-		b := page.boundingBox
-		// Clay's f32 size distribution can accumulate subpixel boundary error.
+		page := nendo.element(nendo.id("SettingsPage"))
+		b := page.rect
+		// nendo's f32 size distribution can accumulate subpixel boundary error.
 		if !testing.expectf(
 			t,
 			page.found &&
@@ -179,41 +179,41 @@ settings_viewport :: proc(t: ^testing.T) {
 		// Wheel input must reach the clipped final row, not just a correctly sized box.
 		// The wheel arrives inside a frame, as in the app: a second scroll update
 		// without a layout between drops containers and their offsets.
-		b = clay.GetElementData(settings_test_gallery_scroll_id()).boundingBox
-		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
+		b = nendo.element(settings_test_gallery_scroll_id()).rect
+		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
 		last := -1
 		bottom: f32 = -1
 		for pack, i in theme_packs {
 			if pack.tone != ui.theme_tone || i == system_theme_index {continue}
-			tile := clay.GetElementData(clay.ID("ThemeOpt", u32(i)))
-			if tile.found && tile.boundingBox.y + tile.boundingBox.height > bottom {
-				last, bottom = i, tile.boundingBox.y + tile.boundingBox.height
+			tile := nendo.element(nendo.id("ThemeOpt", u32(i)))
+			if tile.found && tile.rect.y + tile.rect.height > bottom {
+				last, bottom = i, tile.rect.y + tile.rect.height
 			}
 		}
 		if !testing.expect(t, last >= 0) {return}
 		if settings_test_appearance_wide() {
-			settings_test_scroll_panel(t, &ui, "AppearanceThemes", clay.ID("ThemeOpt", u32(last)))
-			settings_test_scroll_panel(t, &ui, "AppearanceControls", clay.ID("RowCropShape"))
-			settings_test_scroll_panel(t, &ui, "AppearancePreview", clay.ID("Composer"))
-			clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
+			settings_test_scroll_panel(t, &ui, "AppearanceThemes", nendo.id("ThemeOpt", u32(last)))
+			settings_test_scroll_panel(t, &ui, "AppearanceControls", nendo.id("RowCropShape"))
+			settings_test_scroll_panel(t, &ui, "AppearancePreview", nendo.id("Composer"))
+			nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
 		}
 		for _ in 0 ..< 128 {
-			row := clay.GetElementData(clay.ID("ThemeOpt", u32(last))).boundingBox
+			row := nendo.element(nendo.id("ThemeOpt", u32(last))).rect
 			if row.y >= b.y && row.y + row.height <= b.y + b.height {break}
 			settings_test_frame(&ui, {0, -8})
 			for _ in 0 ..< 2 {settings_test_frame(&ui)}
 		}
-		target := clay.GetElementData(clay.ID("ThemeOpt", u32(last)))
-		row := target.boundingBox
+		target := nendo.element(nendo.id("ThemeOpt", u32(last)))
+		row := target.rect
 		testing.expect(
 			t,
 			target.found && row.y >= b.y && row.y + row.height <= b.y + b.height,
 			"Scrolling must reveal the complete final theme tile",
 		)
-		clay.SetPointerState({row.x + row.width / 2, row.y + row.height / 2}, false)
+		nendo.set_pointer({row.x + row.width / 2, row.y + row.height / 2}, .Up)
 		testing.expect(
 			t,
-			clay.PointerOver(clay.ID("ThemeOpt", u32(last))),
+			nendo.pointer_over(nendo.id("ThemeOpt", u32(last))),
 			"The final theme tile must remain clickable inside its scroll viewport",
 		)
 		ui.account_ref = "viewport-remote"
@@ -221,9 +221,9 @@ settings_viewport :: proc(t: ^testing.T) {
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
 		testing.expect(
 			t,
-			clay.GetElementData(clay.ID("RowVaultPw")).found &&
-			!clay.GetElementData(clay.ID("RowExport")).found &&
-			!clay.GetElementData(clay.ID("RowReveal")).found,
+			nendo.element(nendo.id("RowVaultPw")).found &&
+			!nendo.element(nendo.id("RowExport")).found &&
+			!nendo.element(nendo.id("RowReveal")).found,
 			"A remote account keeps device vault controls but never offers its private key",
 		)
 		ui.account_ref = "viewport-local"
@@ -232,21 +232,20 @@ settings_viewport :: proc(t: ^testing.T) {
 			settings_open(&ui, nil, .General, anchor = "RowTranslationTarget")
 			settings_translation_action(&ui, "TranslationTarget")
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
-			dropdown_page := clay.GetElementData(clay.ID("SettingsPage")).boundingBox
-			list := clay.GetElementData(clay.ID("TranslationLanguageList"))
+			dropdown_page := nendo.element(nendo.id("SettingsPage")).rect
+			list := nendo.element(nendo.id("TranslationLanguageList"))
 			testing.expectf(
 				t,
 				list.found &&
-				list.boundingBox.y >= dropdown_page.y &&
-				list.boundingBox.y + list.boundingBox.height <=
-					dropdown_page.y + dropdown_page.height + 1,
+				list.rect.y >= dropdown_page.y &&
+				list.rect.y + list.rect.height <= dropdown_page.y + dropdown_page.height + 1,
 				"The open translation language list must fit its viewport: page=%v list=%v",
 				dropdown_page,
-				list.boundingBox,
+				list.rect,
 			)
 			settings_translation_close(&ui, 2)
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
-			field := clay.GetElementData(clay.ID("TranslationTarget")).boundingBox
+			field := nendo.element(nendo.id("TranslationTarget")).rect
 			testing.expect(
 				t,
 				field.y >= dropdown_page.y &&
@@ -256,17 +255,17 @@ settings_viewport :: proc(t: ^testing.T) {
 		}
 	}
 	// A font preview must change real measurements, not just token names,
-	// and cancellation must restore both Clay and paragraph-wrap geometry.
+	// and cancellation must restore both nendo and paragraph-wrap geometry.
 	ui.theme, ui.accent = 0, 0
 	apply_theme(ui.theme, ui.accent)
 	SAMPLE :: "Morning trains depart at seven"
 	title_width :: proc() -> f32 {
-		clay.BeginLayout()
-		if clay.UI(clay.ID("ThemeFontGeometry"))({}) {
-			clay.Text(SAMPLE, {fontId = FONT_TITLE, fontSize = 24, wrapMode = .None})
+		nendo.begin()
+		if nendo.box(nendo.id("ThemeFontGeometry"))({}) {
+			nendo.text(SAMPLE, {font = FONT_TITLE, size = 24, wrap = .None})
 		}
-		clay.EndLayout(0)
-		return clay.GetElementData(clay.ID("ThemeFontGeometry")).boundingBox.width
+		nendo.end(0)
+		return nendo.element(nendo.id("ThemeFontGeometry")).rect.width
 	}
 	body_default := rl.MeasureTextLine(FONT_BODY, 18, SAMPLE, 0).x
 	body_manrope := rl.MeasureTextLine(theme_font_stack("Manrope", .Body), 18, SAMPLE, 0).x
@@ -292,7 +291,7 @@ settings_viewport :: proc(t: ^testing.T) {
 		testing.expect(
 			t,
 			math.abs(title_preview - rl.MeasureTextLine(FONT_TITLE, 24, SAMPLE, 0).x) < 0.001,
-			"Clay must measure the selected font rather than reuse the previous face",
+			"nendo must measure the selected font rather than reuse the previous face",
 		)
 		testing.expect(
 			t,
@@ -357,10 +356,10 @@ SETTINGS_TEST_APPEARANCE_ANCHORS := []string {
 
 @(private)
 settings_test_appearance_panels :: proc(t: ^testing.T) {
-	page := clay.GetElementData(clay.ID("SettingsPage")).boundingBox
+	page := nendo.element(nendo.id("SettingsPage")).rect
 	for id in ([]string{"AppearanceControls", "AppearanceThemes", "AppearancePreview"}) {
-		panel := clay.GetElementData(clay.ID(id))
-		box := panel.boundingBox
+		panel := nendo.element(nendo.id(id))
+		box := panel.rect
 		testing.expectf(
 			t,
 			panel.found &&
@@ -376,7 +375,7 @@ settings_test_appearance_panels :: proc(t: ^testing.T) {
 				t,
 				box.y >= page.y - 0.1 &&
 				box.y + box.height <= page.y + page.height + 0.1 &&
-				clay.GetScrollContainerData(clay.ID(id)).found,
+				nendo.scroll(nendo.id(id)).found,
 				"Wide %s %v must be a vertically bounded independent scroll viewport inside %v",
 				id,
 				box,
@@ -384,9 +383,9 @@ settings_test_appearance_panels :: proc(t: ^testing.T) {
 			)
 		}
 	}
-	controls := clay.GetElementData(clay.ID("AppearanceControls")).boundingBox
-	themes := clay.GetElementData(clay.ID("AppearanceThemes")).boundingBox
-	preview := clay.GetElementData(clay.ID("AppearancePreview")).boundingBox
+	controls := nendo.element(nendo.id("AppearanceControls")).rect
+	themes := nendo.element(nendo.id("AppearanceThemes")).rect
+	preview := nendo.element(nendo.id("AppearancePreview")).rect
 	if themes.x + themes.width <= preview.x + 0.1 {
 		testing.expect(
 			t,
@@ -419,12 +418,12 @@ settings_test_appearance_panels :: proc(t: ^testing.T) {
 
 @(private)
 settings_test_appearance_wide :: proc() -> bool {
-	return clay.GetScrollContainerData(clay.ID("AppearanceControls")).found
+	return nendo.scroll(nendo.id("AppearanceControls")).found
 }
 
 @(private)
-settings_test_gallery_scroll_id :: proc() -> clay.ElementId {
-	return clay.ID(settings_test_appearance_wide() ? "AppearanceThemes" : "SettingsPage")
+settings_test_gallery_scroll_id :: proc() -> nendo.Id {
+	return nendo.id(settings_test_appearance_wide() ? "AppearanceThemes" : "SettingsPage")
 }
 
 @(private)
@@ -432,35 +431,35 @@ settings_test_scroll_panel :: proc(
 	t: ^testing.T,
 	ui: ^Ui_State,
 	panel_id: string,
-	destination: clay.ElementId,
+	destination: nendo.Id,
 ) {
 	ids := [4]string{"AppearanceControls", "AppearanceThemes", "AppearancePreview", "SettingsPage"}
-	offsets: [4]clay.Vector2
-	boxes: [4]clay.BoundingBox
+	offsets: [4]nendo.Vector2
+	boxes: [4]nendo.Rect
 	tracked: [4]bool
 	for id, i in ids {
-		data := clay.GetScrollContainerData(clay.ID(id))
+		data := nendo.scroll(nendo.id(id))
 		tracked[i] = data.found
-		if data.found {offsets[i] = data.scrollPosition^}
-		boxes[i] = clay.GetElementData(clay.ID(id)).boundingBox
+		if data.found {offsets[i] = data.position^}
+		boxes[i] = nendo.element(nendo.id(id)).rect
 	}
-	panel := clay.GetElementData(clay.ID(panel_id)).boundingBox
-	data := clay.GetScrollContainerData(clay.ID(panel_id))
+	panel := nendo.element(nendo.id(panel_id)).rect
+	data := nendo.scroll(nendo.id(panel_id))
 	if !testing.expect(
 		t,
 		data.found,
 		"Every wide Appearance panel must scroll independently",
 	) {return}
-	clay.SetPointerState({panel.x + panel.width / 2, panel.y + panel.height / 2}, false)
+	nendo.set_pointer({panel.x + panel.width / 2, panel.y + panel.height / 2}, .Up)
 	for _ in 0 ..< 128 {
-		box := clay.GetElementData(destination).boundingBox
+		box := nendo.element(destination).rect
 		if box.y >= panel.y && box.y + box.height <= panel.y + panel.height {break}
 		wanted := clamp(box.y, panel.y, panel.y + panel.height - box.height)
-		settings_test_frame(ui, {0, (wanted - box.y) / CLAY_SCROLL_PIXELS})
+		settings_test_frame(ui, {0, (wanted - box.y) / NENDO_SCROLL_PIXELS})
 		for _ in 0 ..< 2 {settings_test_frame(ui)}
 	}
-	target := clay.GetElementData(destination)
-	box := target.boundingBox
+	target := nendo.element(destination)
+	box := target.rect
 	testing.expectf(
 		t,
 		target.found && box.y >= panel.y && box.y + box.height <= panel.y + panel.height,
@@ -474,10 +473,10 @@ settings_test_scroll_panel :: proc(
 	for id, i in ids {
 		if id == panel_id {continue}
 		if tracked[i] {
-			other := clay.GetScrollContainerData(clay.ID(id))
+			other := nendo.scroll(nendo.id(id))
 			testing.expectf(
 				t,
-				other.found && other.scrollPosition^ == offsets[i],
+				other.found && other.position^ == offsets[i],
 				"Scrolling %s must preserve %s's scroll offset",
 				panel_id,
 				id,
@@ -485,7 +484,7 @@ settings_test_scroll_panel :: proc(
 		}
 		testing.expectf(
 			t,
-			clay.GetElementData(clay.ID(id)).boundingBox == boxes[i],
+			nendo.element(nendo.id(id)).rect == boxes[i],
 			"Scrolling %s must not move %s",
 			panel_id,
 			id,
@@ -494,21 +493,18 @@ settings_test_scroll_panel :: proc(
 }
 
 @(private)
-settings_test_frame :: proc(
-	ui: ^Ui_State,
-	wheel: clay.Vector2 = {},
-) -> clay.ClayArray(clay.RenderCommand) {
+settings_test_frame :: proc(ui: ^Ui_State, wheel: nendo.Vector2 = {}) -> []nendo.Render_Command {
 	anim_tick(1.0 / 60)
-	clay.UpdateScrollContainers(false, wheel, 1.0 / 60)
-	clay.BeginLayout()
+	nendo.update_scroll(.Off, wheel, 1.0 / 60)
+	nendo.begin()
 	settings_pane(ui)
-	if open_now(clay.ID("ExportModal"), ui.export_open) {export_modal(ui)}
-	commands := clay.EndLayout(0)
+	if open_now(nendo.id("ExportModal"), ui.export_open) {export_modal(ui)}
+	commands := nendo.end(0)
 	if settings_resolve_scroll(ui) {
-		clay.BeginLayout()
+		nendo.begin()
 		settings_pane(ui)
-		if open_now(clay.ID("ExportModal"), ui.export_open) {export_modal(ui)}
-		commands = clay.EndLayout(0)
+		if open_now(nendo.id("ExportModal"), ui.export_open) {export_modal(ui)}
+		commands = nendo.end(0)
 	}
 	return commands
 }

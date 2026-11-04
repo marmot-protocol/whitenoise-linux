@@ -53,7 +53,7 @@ for module in nevent profiles vault_gate vault_pw tick grouphero video geo; do
 done
 # Mobile onboarding exercises the gate's file-private layout too. Reuse its
 # production imports while retaining the test's sync/testing imports.
-sed '/^package main$/d; /import "base:runtime"/d; /import "core:os"/d; /import clay /d; /import rl /d' "$fixture/app/mobile_onboard_test.odin" >>"$fixture/app/vault_gate.odin"
+sed '/^package main$/d; /import "base:runtime"/d; /import "core:os"/d; /import "nendo"/d; /import rl /d' "$fixture/app/mobile_onboard_test.odin" >>"$fixture/app/vault_gate.odin"
 rm "$fixture/app/mobile_onboard_test.odin"
 for entry in vendor marmot themes lang build; do
   ln -s "$HERE/$entry" "$fixture/$entry"

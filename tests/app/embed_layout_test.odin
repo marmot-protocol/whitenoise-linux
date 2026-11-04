@@ -4,7 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=web_header_layout
@@ -30,33 +30,30 @@ web_header_layout :: proc(t: ^testing.T) {
 		for zoom in ([]f32{1, 1.5, 2}) {
 			UI_ZOOM = zoom
 			refresh_ui_scale()
-			viewport := clay.Dimensions{f32(width) / zoom, 700 / zoom}
-			clay.SetLayoutDimensions(viewport)
+			viewport := nendo.Dimensions{f32(width) / zoom, 700 / zoom}
+			nendo.set_dimensions(viewport)
 			for _ in 0 ..< 3 {
-				clay.BeginLayout()
-				if clay.UI(clay.ID("WebTestRoot"))(
-				{
-					layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()}},
-					backgroundColor = BG,
-				},
+				nendo.begin()
+				if nendo.box(nendo.id("WebTestRoot"))(
+				{width = nendo.grow(), height = nendo.grow(), color = BG},
 				) {web_modal_draw(&ui)}
-				commands := clay.EndLayout(0)
-				close := clay.GetElementData(clay.ID("WebClose"))
-				title := clay.GetElementData(clay.ID("WebTitle")).boundingBox
-				testing.expect(t, close.found && close.boundingBox.width > 0)
+				commands := nendo.end(0)
+				close := nendo.element(nendo.id("WebClose"))
+				title := nendo.element(nendo.id("WebTitle")).rect
+				testing.expect(t, close.found && close.rect.width > 0)
 				testing.expect(
 					t,
-					title.x + title.width <= close.boundingBox.x + 0.1,
+					title.x + title.width <= close.rect.x + 0.1,
 					"a long title must not cover Close",
 				)
 				testing.expect(
 					t,
-					close.boundingBox.x + close.boundingBox.width <= viewport.width &&
-					close.boundingBox.y + close.boundingBox.height <= viewport.height,
+					close.rect.x + close.rect.width <= viewport.width &&
+					close.rect.y + close.rect.height <= viewport.height,
 					"Close stays reachable at narrow and zoomed sizes",
 				)
 				rl.BeginDrawing()
-				clay_raylib_render(&commands)
+				render_nendo(commands)
 				rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-web-header-%d-%.1f.png", width, zoom))
 				rl.EndDrawing()
 			}
@@ -106,24 +103,18 @@ embed_layout :: proc(t: ^testing.T) {
 		defer delete(msg.attachments)
 		for width in ([]f32{280, 800}) {
 			for frame in 0 ..< 3 {
-				clay.BeginLayout()
-				if clay.UI(clay.ID("Timeline"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingFixed(width)},
-						layoutDirection = .TopToBottom,
-					},
-					backgroundColor = CARD,
-				},
+				nendo.begin()
+				if nendo.box(nendo.id("Timeline"))(
+				{width = nendo.fixed(width), direction = .Column, color = CARD},
 				) {message_row(0, msg)}
-				commands := clay.EndLayout(0)
+				commands := nendo.end(0)
 				if frame < 2 {continue}
-				box := clay.GetElementData(clay.ID("MsgImage", 0)).boundingBox
+				box := nendo.element(nendo.id("MsgImage", 0)).rect
 				testing.expect(t, box.height >= min(body_wrap_w(), 480) / 3 && box.height <= 320)
 				testing.expect(t, box.x + box.width <= width)
-				testing.expect(t, !clay.GetScrollContainerData(clay.ID("MsgImage", 0)).found)
+				testing.expect(t, !nendo.scroll(nendo.id("MsgImage", 0)).found)
 				rl.BeginDrawing()
-				clay_raylib_render(&commands)
+				render_nendo(commands)
 				rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-image-%d-%.0f.png", n, width))
 				rl.EndDrawing()
 			}
@@ -133,50 +124,44 @@ embed_layout :: proc(t: ^testing.T) {
 		append(&preview.slides, Slide{name = strings.clone("screenshot.png"), tex = &tex})
 		for width in ([]i32{900, 360}) {
 			rl.SetWindowSize(width, 900)
-			clay.SetLayoutDimensions({f32(width), 900})
+			nendo.set_dimensions({f32(width), 900})
 			for zoom in ([]f32{0, -1, 1, 2}) {
 				preview.image_zoom = zoom
 				for frame in 0 ..< 3 {
-					clay.BeginLayout()
-					if clay.UI(clay.ID("Root"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow(), height = clay.SizingGrow()},
-						},
-						backgroundColor = BG,
-					},
+					nendo.begin()
+					if nendo.box(nendo.id("Root"))(
+					{width = nendo.grow(), height = nendo.grow(), color = BG},
 					) {preview_modal(&ui)}
-					commands := clay.EndLayout(0)
+					commands := nendo.end(0)
 					if frame < 2 {continue}
-					box := clay.GetElementData(clay.ID("PvModal")).boundingBox
-					data := clay.GetScrollContainerData(clay.ID("PvScroll"))
+					box := nendo.element(nendo.id("PvModal")).rect
+					data := nendo.scroll(nendo.id("PvScroll"))
 					testing.expect(
 						t,
 						box.x >= 0 &&
 						box.x + box.width <= f32(width) + 0.1 &&
 						box.height <= 900 * PV_MAX_HEIGHT,
 					)
-					testing.expect(t, clay.GetElementData(clay.ID("PvZoomIn")).found)
+					testing.expect(t, nendo.element(nendo.id("PvZoomIn")).found)
 					if zoom ==
-					   -1 {testing.expect(t, data.contentDimensions.width <= data.scrollContainerDimensions.width + 1)}
+					   -1 {testing.expect(t, data.content.width <= data.viewport.width + 1)}
 					if n == 0 &&
-					   zoom ==
-						   0 {testing.expect(t, data.contentDimensions.width > data.scrollContainerDimensions.width)}
+					   zoom == 0 {testing.expect(t, data.content.width > data.viewport.width)}
 					rl.BeginDrawing()
-					clay_raylib_render(&commands)
+					render_nendo(commands)
 					rl.TakeScreenshot(
 						fmt.ctprintf("/tmp/wn-image-modal-%d-%d-%.0f.png", n, width, zoom),
 					)
 					rl.EndDrawing()
 					if n == 0 && width == 900 && zoom == 2 {
-						data.scrollPosition^ = {}
+						data.position^ = {}
 						point := rl.GetMousePosition()
 						preview.image_pointer = {point.x + 64, point.y}
 						preview.image_drag = true
-						clay.SetPointerState({-1, -1}, true)
+						nendo.set_pointer({-1, -1}, .Down)
 						rl.PushMouseButton(.LEFT, true)
 						handle_preview(&ui, nil)
-						testing.expect_value(t, data.scrollPosition.x, f32(-64))
+						testing.expect_value(t, data.position.x, f32(-64))
 						rl.PushMouseButton(.LEFT, false)
 						handle_preview(&ui, nil)
 						testing.expect(t, !preview.image_drag)
@@ -186,7 +171,7 @@ embed_layout :: proc(t: ^testing.T) {
 		}
 		preview_close()
 		rl.SetWindowSize(900, 900)
-		clay.SetLayoutDimensions({900, 900})
+		nendo.set_dimensions({900, 900})
 	}
 	key := strings.repeat("a", 64, context.temp_allocator)
 	for threshold in ([]int{3, DEFAULT_MESSAGE_LINES, 0}) {
@@ -207,56 +192,39 @@ embed_layout :: proc(t: ^testing.T) {
 					}
 					defer blocks_free(card.blocks)
 					nev_cards[key] = card
-					clay.BeginLayout()
-					if clay.UI(clay.ID("NostrTest"))(
-					{
-						layout = {
-							layoutDirection = .TopToBottom,
-							sizing = {width = clay.SizingFixed(400)},
-						},
-					},
+					nendo.begin()
+					if nendo.box(nendo.id("NostrTest"))(
+					{direction = .Column, width = nendo.fixed(400)},
 					) {nev_card(99, key, "note", nil)}
-					commands := clay.EndLayout(0)
+					commands := nendo.end(0)
 					cropped := threshold > 0 && count > threshold
-					testing.expect_value(
-						t,
-						clay.GetElementData(clay.ID("NevMore", 99)).found,
-						cropped,
-					)
-					for command in commands.internalArray[:commands.length] {
-						if command.commandType != .Text || !cropped {continue}
-						text := command.renderData.text.stringContents
-						testing.expect(
-							t,
-							!strings.contains(string(text.chars[:text.length]), "final line"),
-						)
+					testing.expect_value(t, nendo.element(nendo.id("NevMore", 99)).found, cropped)
+					for command in commands {
+						if command.kind != .Text || !cropped {continue}
+						text := command.text.text
+						testing.expect(t, !strings.contains(text, "final line"))
 					}
 					for expanded in ([]bool{true, false}) {
 						card.excerpt.expanded = expanded
 						nev_cards[key] = card
-						clay.BeginLayout()
-						if clay.UI(clay.ID("NostrTest"))(
-						{
-							layout = {
-								layoutDirection = .TopToBottom,
-								sizing = {width = clay.SizingFixed(400)},
-							},
-						},
+						nendo.begin()
+						if nendo.box(nendo.id("NostrTest"))(
+						{direction = .Column, width = nendo.fixed(400)},
 						) {
 							nev_card(99, key, "note", nil)
 						}
-						commands = clay.EndLayout(0)
+						commands = nendo.end(0)
 						found_tail := false
-						for command in commands.internalArray[:commands.length] {
-							if command.commandType != .Text {continue}
-							text := command.renderData.text.stringContents
-							part := string(text.chars[:text.length])
+						for command in commands {
+							if command.kind != .Text {continue}
+							text := command.text.text
+							part := text
 							found_tail = found_tail || strings.contains(part, "final line")
 						}
 						testing.expect_value(t, found_tail, expanded || !cropped)
 						testing.expect_value(
 							t,
-							clay.GetElementData(clay.ID("NevMore", 99)).found,
+							nendo.element(nendo.id("NevMore", 99)).found,
 							threshold > 0 && (expanded || cropped),
 						)
 						testing.expect_value(t, preview.kind, Preview_Kind.None)

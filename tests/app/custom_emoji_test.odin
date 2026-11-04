@@ -6,13 +6,13 @@ import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
 
 // Run alone with SDL_VIDEODRIVER=dummy and
-// -define:ODIN_TEST_NAMES=test_emoji_save_dispatch (SDL/Clay process globals).
+// -define:ODIN_TEST_NAMES=test_emoji_save_dispatch (SDL/nendo process globals).
 @(test)
 test_emoji_save_dispatch :: proc(t: ^testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "test_emoji_save_dispatch" {return}
@@ -24,10 +24,10 @@ test_emoji_save_dispatch :: proc(t: ^testing.T) {
 	UI_ZOOM, UI_SCALE = 1, 1
 	init_fonts()
 	load_themes(); apply_theme(0, 0); set_locale("en")
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	defer {clay.SetCurrentContext(previous); delete(memory)}
+	defer {nendo.set_context(previous); delete(memory)}
 	scanned := custom_emoji_scanned
 	custom_emoji_scanned = true
 	defer {custom_emoji_scanned = scanned; forced_release = false; kb_focus = ""}
@@ -64,11 +64,11 @@ test_emoji_save_dispatch :: proc(t: ^testing.T) {
 					rl.PushKey(.ENTER, false)
 					rl.WindowShouldClose()
 				} else {
-					button := clay.GetElementData(clay.ID("EmojiSave"))
+					button := nendo.element(nendo.id("EmojiSave"))
 					if !testing.expect(t, button.found) {return}
-					box := button.boundingBox
-					clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
-					if !testing.expect(t, clay.PointerOver(clay.ID("EmojiSave"))) {return}
+					box := button.rect
+					nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
+					if !testing.expect(t, nendo.pointer_over(nendo.id("EmojiSave"))) {return}
 					forced_release = true
 					handle_settings(&ui, nil)
 					forced_release = false

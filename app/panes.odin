@@ -5,7 +5,7 @@ import "core:encoding/hex"
 import "core:fmt"
 import "core:math"
 import "core:strings"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 Row_Chip :: enum {
@@ -15,11 +15,8 @@ Row_Chip :: enum {
 
 @(private)
 chat_timestamp :: proc(index: u32, chat: Chat_Row_Ui) {
-	if clay.UI(clay.ID("ChatRowTime", index))({}) {
-		clay.Text(
-			chat.at,
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO, wrapMode = .None},
-		)
+	if nendo.box(nendo.id("ChatRowTime", index))({}) {
+		nendo.text(chat.at, {font = FONT_BODY, size = 11, color = TEXT_LO, wrap = .None})
 		if hovered() && !tap_size() && chat.activity_at > 0 && len(chat.at) > 0 {
 			context.allocator = context.temp_allocator
 			tooltip(format_full(chat.activity_at), .Above)
@@ -45,28 +42,27 @@ chat_rows_window :: proc(
 	ui: ^Ui_State,
 	rows: []Chat_Row_Ui,
 	order: []int,
-	container: clay.ElementId,
+	container: nendo.Id,
 	chip: Row_Chip,
 	gap: f32,
 	offset_y: f32 = 0,
 	section: u32 = 0,
 ) {
 	stride := (chip == .Unarchive ? ARCHIVED_ROW_H : chat_row_height()) + gap
-	data := clay.GetScrollContainerData(container)
-	height :=
-		data.found ? data.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
+	data := nendo.scroll(container)
+	height := data.found ? data.viewport.height : f32(rl.GetScreenHeight()) / UI_ZOOM
 	if chip == .Unarchive && data.found {
 		// A restore or a narrower search can shorten the list while scrolled.
 		// Clamp before windowing so the surviving rows mount in this frame.
 		content_height := max(0, f32(len(order)) * stride - gap)
-		data.scrollPosition.y = -clamp(-data.scrollPosition.y, 0, max(0, content_height - height))
+		data.position.y = -clamp(-data.position.y, 0, max(0, content_height - height))
 	}
-	offset := (data.found ? -data.scrollPosition.y : 0) - offset_y
+	offset := (data.found ? -data.position.y : 0) - offset_y
 	first := clamp(int(offset / stride) - 2, 0, len(order))
 	last := clamp(int((offset + height) / stride) + 3, first, len(order))
 	if first > 0 {
-		if clay.UI(clay.ID("ChatRowsBefore", section))(
-		{layout = {sizing = {height = clay.SizingFixed(f32(first) * stride - gap)}}},
+		if nendo.box(nendo.id("ChatRowsBefore", section))(
+		{height = nendo.fixed(f32(first) * stride - gap)},
 		) {}
 	}
 	for i in order[first:last] {
@@ -74,8 +70,8 @@ chat_rows_window :: proc(
 		chat_row(u32(i), rows[i], active, chip)
 	}
 	if last < len(order) {
-		if clay.UI(clay.ID("ChatRowsAfter", section))(
-		{layout = {sizing = {height = clay.SizingFixed(f32(len(order) - last) * stride - gap)}}},
+		if nendo.box(nendo.id("ChatRowsAfter", section))(
+		{height = nendo.fixed(f32(len(order) - last) * stride - gap)},
 		) {}
 	}
 }
@@ -154,8 +150,8 @@ chat_rail :: proc(ui: ^Ui_State, ordered: []Inbox_Row, total: int) {
 		get_started_pane(ui, .Inline)
 		// Like the hint below, use the last measured height for row windowing
 		// and keyboard reveal positions without adding another scroll owner.
-		if data := clay.GetElementData(clay.ID("GetStarted")); data.found {
-			offset_y = data.boundingBox.height + 2
+		if data := nendo.element(nendo.id("GetStarted")); data.found {
+			offset_y = data.rect.height + 2
 		}
 	}
 	if !pending &&
@@ -172,8 +168,8 @@ chat_rail :: proc(ui: ^Ui_State, ordered: []Inbox_Row, total: int) {
 		)
 		// The rows below window from where they start; last frame's
 		// height of the hint is close enough.
-		if data := clay.GetElementData(clay.ID("ChatGroupHint")); data.found {
-			offset_y = data.boundingBox.height + 2
+		if data := nendo.element(nendo.id("ChatGroupHint")); data.found {
+			offset_y = data.rect.height + 2
 		}
 	}
 	if ui.prefs.recent_chats || len(ui.prefs.folders) == 0 {
@@ -205,11 +201,11 @@ chat_rail :: proc(ui: ^Ui_State, ordered: []Inbox_Row, total: int) {
 			}
 			height += f32(len(rows)) * (chat_row_height() + 2)
 		}
-		// Offscreen headers need no text clips. Clay tracks every clip as
+		// Offscreen headers need no text clips. nendo tracks every clip as
 		// a scroll container, so mounting all folders exhausts its pool.
 		if y + height < top - 72 || y > bottom + 72 {
-			if clay.UI(clay.ID("FolderSectionGap", u32(i)))(
-			{layout = {sizing = {height = clay.SizingFixed(height - 2)}}},
+			if nendo.box(nendo.id("FolderSectionGap", u32(i)))(
+			{height = nendo.fixed(height - 2)},
 			) {}
 			y += height
 			continue
@@ -233,12 +229,9 @@ chat_rail_empty_note :: proc(ui: ^Ui_State, rows, total: int) {
 	) {
 	case .None:
 	case .No_Chats:
-		clay.Text(tr("No chats yet"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+		nendo.text(tr("No chats yet"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 	case .No_Whip:
-		clay.Text(
-			tr("No Whip projects"),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-		)
+		nendo.text(tr("No Whip projects"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 	case .No_Matches:
 		chat_rail_hint(
 			"ChatListNoMatch",
@@ -269,20 +262,18 @@ chat_rail_empty_note :: proc(ui: ^Ui_State, rows, total: int) {
 // A short note in the chat list with one way out of the state it names.
 @(private)
 chat_rail_hint :: proc(id_str, sub, button_id, button: string, title := "") {
-	if clay.UI(clay.ID(id_str))(
+	if nendo.box(nendo.id(id_str))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			layoutDirection = .TopToBottom,
-			padding = {left = 4, right = 4, top = 6, bottom = 8},
-			childGap = 6,
-		},
+		width = nendo.grow(),
+		direction = .Column,
+		padding = {left = 4, right = 4, top = 6, bottom = 8},
+		gap = 6,
 	},
 	) {
 		if len(title) > 0 {
-			clay.Text(title, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+			nendo.text(title, {font = FONT_TITLE, size = 14, color = TEXT})
 		}
-		clay.Text(sub, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		nendo.text(sub, {font = FONT_BODY, size = 12, color = TEXT_DIM})
 		micro_button(button_id, button)
 	}
 }
@@ -296,79 +287,63 @@ folder_header :: proc(
 	collapsed: bool,
 	count: int,
 ) {
-	if clay.UI(clay.ID("FolderHeader", index))(
+	if nendo.box(nendo.id("FolderHeader", index))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingGrow(),
-				height = clay.SizingFixed(tap_size() ? tap_min() : 34),
-			},
-			padding = {left = 4, right = 4},
-			childGap = 8,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : {},
-		cornerRadius = rr(6),
+		width = nendo.grow(),
+		height = nendo.fixed(tap_size() ? tap_min() : 34),
+		padding = {left = 4, right = 4},
+		gap = 8,
+		align = {y = .Center},
+		color = hovered() ? HOVER : {},
+		radius = rr(6),
 	},
 	) {
-		if clay.UI(clay.ID("FolderChevron", index))(
-		{layout = {sizing = {width = clay.SizingFixed(20)}, childAlignment = {x = .Center}}},
+		if nendo.box(nendo.id("FolderChevron", index))(
+		{width = nendo.fixed(20), align = {x = .Center}},
 		) {
-			clay.Text(
+			nendo.text(
 				collapsed ? ICON_RIGHT : ICON_DOWN,
-				{fontId = FONT_ICON, fontSize = 16, textColor = TEXT_DIM},
+				{font = FONT_ICON, size = 16, color = TEXT_DIM},
 			)
 		}
 		folder_icon(ui, name, 16)
-		if clay.UI(clay.ID("FolderHeaderName", index))(
-		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+		if nendo.box(nendo.id("FolderHeaderName", index))(
+		{width = nendo.grow(), clip = {x = true}},
 		) {
-			clay.Text(
+			nendo.text(
 				name == "" ? tr("Unfiled") : name,
-				{
-					fontId = FONT_TITLE,
-					fontSize = 13,
-					textColor = unread > 0 ? TEXT : TEXT_DIM,
-					wrapMode = .None,
-				},
+				{font = FONT_TITLE, size = 13, color = unread > 0 ? TEXT : TEXT_DIM, wrap = .None},
 			)
 		}
 		if collapsed {
-			clay.Text(
-				fmt.tprintf("%d", count),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-			)
+			nendo.text(fmt.tprintf("%d", count), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 		}
 		if unread > 0 {
-			if clay.UI(clay.ID("FolderUnread", index))(
+			if nendo.box(nendo.id("FolderUnread", index))(
 			{
-				layout = {padding = {left = 6, right = 6, top = 2, bottom = 2}},
-				backgroundColor = SELECTED,
-				cornerRadius = rr(7),
+				padding = {left = 6, right = 6, top = 2, bottom = 2},
+				color = SELECTED,
+				radius = rr(7),
 			},
 			) {
-				clay.Text(
+				nendo.text(
 					fmt.tprintf("%d", unread),
-					{fontId = FONT_BODY, fontSize = 11, textColor = ACCENT},
+					{font = FONT_BODY, size = 11, color = ACCENT},
 				)
 			}
 		}
 		if name != "" {
-			if clay.UI(clay.ID("FolderMenuBtn", index))(
+			if nendo.box(nendo.id("FolderMenuBtn", index))(
 			{
-				layout = {
-					sizing = {
-						width = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-						height = clay.SizingFit({min = tap_size() ? tap_min() : 0}),
-					},
-					padding = {left = 6, right = 6, top = 4, bottom = 4},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? SELECTED : {},
-				cornerRadius = rr(5),
+				width = nendo.fit(min = tap_size() ? tap_min() : 0),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = {left = 6, right = 6, top = 4, bottom = 4},
+				align = {x = .Center, y = .Center},
+				color = hovered() ? SELECTED : {},
+				radius = rr(5),
 			},
 			) {
-				clay.Text("···", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_LO})
+				nendo.text("···", {font = FONT_TITLE, size = 13, color = TEXT_LO})
 				if hovered() {tooltip(tr("Folder options"))}
 			}
 		}
@@ -387,47 +362,37 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 	   g_ui.filter_previews[index] != "" {
 		chat.preview = g_ui.filter_previews[index]
 	}
-	if clay.UI(clay.ID("ChatRow", index))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(chat_row_height())},
-		},
-	},
+	if nendo.box(nendo.id("ChatRow", index))(
+	{width = nendo.grow(), height = nendo.fixed(chat_row_height())},
 	) {
-		if clay.UI(clay.ID("ChatRowSlide", index))(
+		if nendo.box(nendo.id("ChatRowSlide", index))(
 		{
-			layout = {sizing = {width = clay.SizingGrow()}, childGap = 0},
-			backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-			cornerRadius = rr(6),
+			width = nendo.grow(),
+			gap = 0,
+			color = active ? SELECTED : (hovered() ? HOVER : {}),
+			radius = rr(6),
 		},
 		) {
-			if clay.UI(clay.ID("ChatRowBar", index))(
+			if nendo.box(nendo.id("ChatRowBar", index))(
 			{
-				layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingGrow()}},
-				backgroundColor = active ? ACCENT : {},
-				cornerRadius = rr(2),
+				width = nendo.fixed(3),
+				height = nendo.grow(),
+				color = active ? ACCENT : {},
+				radius = rr(2),
 			},
 			) {}
-			if clay.UI(clay.ID("ChatRowBody", index))(
+			if nendo.box(nendo.id("ChatRowBody", index))(
 			{
-				layout = {
-					sizing = {width = clay.SizingGrow()},
-					layoutDirection = .TopToBottom,
-					padding = {left = 8, right = 8, top = 8, bottom = 8},
-					childGap = 5,
-				},
+				width = nendo.grow(),
+				direction = .Column,
+				padding = {left = 8, right = 8, top = 8, bottom = 8},
+				gap = 5,
 			},
 			) {
 				// Avatar left; two stacked lines right: title and time,
 				// then preview and delivery tick.
-				if clay.UI(clay.ID("ChatRowMain", index))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						childGap = 10,
-						childAlignment = {y = .Center},
-					},
-				},
+				if nendo.box(nendo.id("ChatRowMain", index))(
+				{width = nendo.grow(), gap = 10, align = {y = .Center}},
 				) {
 					peephole_avatar(
 						"ChatAvatar",
@@ -436,98 +401,65 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 						chat.title,
 						36,
 						chat_pic(chat),
-						clay.PointerOver(clay.ID("ChatAvatar", index)) ? .Open : .Closed,
+						nendo.pointer_over(nendo.id("ChatAvatar", index)) ? .Open : .Closed,
 					)
-					if clay.UI(clay.ID("ChatRowLines", index))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow()},
-							layoutDirection = .TopToBottom,
-							childGap = 4,
-						},
-					},
+					if nendo.box(nendo.id("ChatRowLines", index))(
+					{width = nendo.grow(), direction = .Column, gap = 4},
 					) {
 						// Reserves the hover chip's height, so the row keeps its size
 						// as the pointer crosses it.
-						if clay.UI(clay.ID("ChatRowTop", index))(
+						if nendo.box(nendo.id("ChatRowTop", index))(
 						{
-							layout = {
-								sizing = {
-									width = clay.SizingGrow(),
-									height = clay.SizingFit({min = tap_size() ? 20 : chip_h()}),
-								},
-								childGap = 8,
-								childAlignment = {y = .Center},
-							},
+							width = nendo.grow(),
+							height = nendo.fit(min = tap_size() ? 20 : chip_h()),
+							gap = 8,
+							align = {y = .Center},
 						},
 						) {
 							// One clipped line: a long unbroken name would otherwise
 							// push the time and badge out of the row.
-							if clay.UI(clay.ID("ChatRowTitleClip", index))(
+							if nendo.box(nendo.id("ChatRowTitleClip", index))(
 							{
-								layout = {
-									sizing = {
-										width = single_pane() ? clay.SizingGrow() : clay.SizingFit(),
-									},
-								},
-								clip = {horizontal = true},
+								width = single_pane() ? nendo.grow() : nendo.fit(),
+								clip = {x = true},
 							},
 							) {
-								clay.Text(
+								nendo.text(
 									chat.title,
-									{
-										fontId = FONT_TITLE,
-										fontSize = 14,
-										textColor = TEXT,
-										wrapMode = .None,
-									},
+									{font = FONT_TITLE, size = 14, color = TEXT, wrap = .None},
 								)
 							}
 							// Row-action markers (rowactions.odin): pinned rows lead
 							// the rail, muted rows raise no notification.
 							if g_prefs != nil && g_prefs.pinned[chat.group_id] {
-								clay.Text(
+								nendo.text(
 									ICON_PIN,
-									{fontId = FONT_ICON, fontSize = 10, textColor = ACCENT_DIM},
+									{font = FONT_ICON, size = 10, color = ACCENT_DIM},
 								)
 							}
 							if chat.muted {
-								clay.Text(
+								nendo.text(
 									ICON_BELL_OFF,
-									{fontId = FONT_ICON, fontSize = 10, textColor = TEXT_LO},
+									{font = FONT_ICON, size = 10, color = TEXT_LO},
 								)
 							}
 							if chat.pending {
-								clay.Text(
+								nendo.text(
 									tr("INVITE"),
-									{
-										fontId = FONT_BODY,
-										fontSize = 10,
-										textColor = ACCENT,
-										letterSpacing = 1,
-									},
+									{font = FONT_BODY, size = 10, color = ACCENT, spacing = 1},
 								)
 							}
-							if clay.UI(clay.ID("ChatRowGap", index))(
-							{
-								layout = {
-									sizing = {
-										width = single_pane() ? clay.SizingFixed(0) : clay.SizingGrow(),
-									},
-								},
-							},
+							if nendo.box(nendo.id("ChatRowGap", index))(
+							{width = single_pane() ? nendo.fixed(0) : nendo.grow()},
 							) {}
 							if chat.unread == 0 &&
 							   g_prefs != nil &&
 							   g_prefs.unread_ids[chat.group_id] {
 								// Manual "Mark unread" reminder: a dot, no count.
-								clay.Text(
-									"•",
-									{fontId = FONT_TITLE, fontSize = 16, textColor = ACCENT},
-								)
+								nendo.text("•", {font = FONT_TITLE, size = 16, color = ACCENT})
 							}
 							if chat.unread > 0 {
-								unread_badge(clay.ID("ChatRowBadge", index), chat.unread)
+								unread_badge(nendo.id("ChatRowBadge", index), chat.unread)
 							}
 							chat_timestamp(index, chat)
 							// Archive and the other row actions live in this menu,
@@ -536,17 +468,17 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							// chip floating at the row's edge.
 							if tap_size() {
 								if hovered() && !rl.TouchActive() {
-									if clay.UI(clay.ID("ChatMenuFloat", index))(
+									if nendo.box(nendo.id("ChatMenuFloat", index))(
 									{
 										floating = {
-											attachTo = .ElementWithId,
-											parentId = clay.ID("ChatRowSlide", index).id,
-											attachment = {
-												element = .RightCenter,
-												parent = .RightCenter,
+											attach_to = .Element,
+											parent = nendo.id("ChatRowSlide", index).id,
+											attach = {
+												element = .Right_Center,
+												parent = .Right_Center,
 											},
 											offset = {-6, 0},
-											zIndex = 2,
+											z = 2,
 										},
 									},
 									) {action_chip("ChatMenu", index, "···")}
@@ -555,37 +487,27 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 								action_chip("ChatMenu", index, "···")
 							}
 						}
-						if clay.UI(clay.ID("ChatRowPrev", index))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow()},
-								childGap = 6,
-								childAlignment = {y = .Center},
-							},
-						},
+						if nendo.box(nendo.id("ChatRowPrev", index))(
+						{width = nendo.grow(), gap = 6, align = {y = .Center}},
 						) {
 							if len(chat.preview) > 0 {
 								// One clipped line. A preview with an emoji, mention
 								// or link renders as several inline elements, which
-								// clay would otherwise stack down the row; clipping
+								// nendo would otherwise stack down the row; clipping
 								// the axis gives them unbounded width instead, so the
 								// overflow is cut rather than wrapped.
-								if clay.UI(clay.ID("ChatRowPrevClip", index))(
+								if nendo.box(nendo.id("ChatRowPrevClip", index))(
 								{
-									layout = {
-										sizing = {
-											width = clay.SizingGrow(),
-											height = clay.SizingFixed(16),
-										},
-										childAlignment = {y = .Center},
-									},
-									clip = {horizontal = true},
+									width = nendo.grow(),
+									height = nendo.fixed(16),
+									align = {y = .Center},
+									clip = {x = true},
 								},
 								) {
 									row_preview(index, chat.preview)
 								}
-							} else if clay.UI(clay.ID("ChatRowPrevGap", index))(
-							{layout = {sizing = {width = clay.SizingGrow()}}},
+							} else if nendo.box(nendo.id("ChatRowPrevGap", index))(
+							{width = nendo.grow()},
 							) {
 								// Holds the tick right; a preview's clip grows there itself.
 							}
@@ -597,10 +519,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							} else if chat.tick == .DELIVERED || chat.tick == .PENDING {
 								delivery_tick(chat.group_id, index, chat.tick)
 							} else if chat.tick == .FAILED {
-								clay.Text(
-									"!",
-									{fontId = FONT_TITLE, fontSize = 11, textColor = DANGER},
-								)
+								nendo.text("!", {font = FONT_TITLE, size = 11, color = DANGER})
 							}
 						}
 					}
@@ -625,7 +544,7 @@ row_preview :: proc(index: u32, preview: string) {
 		end = len(preview)
 	}
 	shown := preview
-	clip, laid_out := element_box(clay.ID("ChatRowPrevClip", index))
+	clip, laid_out := element_box(nendo.id("ChatRowPrevClip", index))
 	if laid_out &&
 	   clip.width >= 40 &&
 	   (end < len(preview) || rune_fit(preview, 0, end, clip.width, 12, tile_px = tile_px) < end) {
@@ -673,23 +592,22 @@ chat_send_state :: proc(group_id: string) -> Send_State {
 // timeline's grayed "sending…" row.
 send_spinner :: proc(index: u32, state: Send_State) {
 	if state == .Failed {
-		clay.Text("!", {fontId = FONT_TITLE, fontSize = 11, textColor = DANGER})
+		nendo.text("!", {font = FONT_TITLE, size = 11, color = DANGER})
 		return
 	}
 	// Breathing rather than blinking: each dot rides the same wave a
 	// third of a turn behind the one before it, so the light travels
 	// along the row instead of stepping between three states.
 	color := state == .Queued ? TEXT_LO : ACCENT_DIM
-	if clay.UI(clay.ID("ChatRowSending", index))(
-	{layout = {childGap = 3, childAlignment = {y = .Center}}},
-	) {
+	if nendo.box(nendo.id("ChatRowSending", index))({gap = 3, align = {y = .Center}}) {
 		for i in 0 ..< 3 {
 			wave := f32(math.sin(rl.GetTime() * 4 - f64(i) * 0.7)) * 0.5 + 0.5
-			if clay.UI(clay.ID("ChatRowSendDot", index * 8 + u32(i)))(
+			if nendo.box(nendo.id("ChatRowSendDot", index * 8 + u32(i)))(
 			{
-				layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingFixed(3)}},
-				backgroundColor = mix_color(FIELD_BORDER, color, wave),
-				cornerRadius = rr(2),
+				width = nendo.fixed(3),
+				height = nendo.fixed(3),
+				color = mix_color(FIELD_BORDER, color, wave),
+				radius = rr(2),
 			},
 			) {}
 		}
@@ -701,47 +619,37 @@ send_spinner :: proc(index: u32, state: Send_State) {
 // row you're looking at, chevron hinting the tap.
 account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 	account := ui.accounts[index]
-	if clay.UI(clay.ID("AccountRow", index))(
+	if nendo.box(nendo.id("AccountRow", index))(
 	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			padding = {left = 12, right = 14, top = 10, bottom = 10},
-			childGap = 12,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : (active ? ROW_BG : {}),
-		cornerRadius = rr(10),
-		border = active ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
+		width = nendo.grow(),
+		padding = {left = 12, right = 14, top = 10, bottom = 10},
+		gap = 12,
+		align = {y = .Center},
+		color = hovered() ? HOVER : (active ? ROW_BG : {}),
+		radius = rr(10),
+		border = active ? nendo.Border{color = ACCENT, width = bw()} : {},
 	},
 	) {
 		avatar("AccountAvatar", index, account.id_hex, account.name, 40, url_pic(account.pic_url))
-		if clay.UI(clay.ID("AccountRowCol", index))(
+		if nendo.box(nendo.id("AccountRowCol", index))(
 		{
-			layout = {
-				sizing = {width = single_pane() ? clay.SizingGrow() : clay.SizingFit()},
-				layoutDirection = .TopToBottom,
-				childGap = 2,
-			},
-			clip = {horizontal = true},
+			width = single_pane() ? nendo.grow() : nendo.fit(),
+			direction = .Column,
+			gap = 2,
+			clip = {x = true},
 		},
 		) {
-			clay.Text(account.name, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
-			clay.Text(
-				npub_tail(account.npub),
-				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
-			)
+			nendo.text(account.name, {font = FONT_TITLE, size = 14, color = TEXT})
+			nendo.text(npub_tail(account.npub), {font = FONT_MONO, size = 11, color = TEXT_LO})
 			if account.external {nip46_status_ui(ui, account.id_hex, index)}
 		}
-		if clay.UI(clay.ID("AccountRowGap", index))(
-		{layout = {sizing = {width = single_pane() ? clay.SizingFixed(0) : clay.SizingGrow()}}},
+		if nendo.box(nendo.id("AccountRowGap", index))(
+		{width = single_pane() ? nendo.fixed(0) : nendo.grow()},
 		) {}
 		if active && !single_pane() {
-			clay.Text(
-				tr("ACTIVE"),
-				{fontId = FONT_MONO, fontSize = 10, textColor = ACCENT, letterSpacing = 2},
-			)
+			nendo.text(tr("ACTIVE"), {font = FONT_MONO, size = 10, color = ACCENT, spacing = 2})
 		}
-		clay.Text("›", {fontId = FONT_BODY, fontSize = 16, textColor = TEXT_LO})
+		nendo.text("›", {font = FONT_BODY, size = 16, color = TEXT_LO})
 	}
 }
 
@@ -749,26 +657,22 @@ account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 // from this device (handlers check it before the row's switch).
 @(private)
 account_remove_button :: proc(id_str: string, index: u32) {
-	if clay.UI(clay.ID(id_str, index))(
+	if nendo.box(nendo.id(id_str, index))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(tap_size() ? tap_min() : 28),
-				height = clay.SizingFixed(tap_size() ? tap_min() : 28),
-			},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : {},
-		cornerRadius = rr(6),
+		width = nendo.fixed(tap_size() ? tap_min() : 28),
+		height = nendo.fixed(tap_size() ? tap_min() : 28),
+		align = {x = .Center, y = .Center},
+		color = hovered() ? HOVER : {},
+		radius = rr(6),
 	},
 	) {
 		if hovered() {
 			tooltip(tr("Remove account"))
 			cursor_raise(.Pointer)
 		}
-		clay.Text(
+		nendo.text(
 			ICON_TRASH,
-			{fontId = FONT_ICON, fontSize = 13, textColor = hovered() ? DANGER : TEXT_DIM},
+			{font = FONT_ICON, size = 13, color = hovered() ? DANGER : TEXT_DIM},
 		)
 	}
 }
@@ -803,85 +707,66 @@ open_peer :: proc(
 // Peer-profile popup: the same card a bare mention draws, carrying
 // copy-npub, the full profile, and a direct message action.
 peer_modal :: proc(ui: ^Ui_State) {
-	width := modal_w(clay.ID("PeerModal"), 400)
-	if clay.UI(clay.ID("PeerModal"))(
+	width := modal_w(nendo.id("PeerModal"), 400)
+	if nendo.box(nendo.id("PeerModal"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(width),
-				height = clay.SizingFit({max = modal_h(720)}),
-			},
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		width = nendo.fixed(width),
+		height = nendo.fit(max = modal_h(720)),
+		clip = {y = true, scroll = true},
 		floating = {
-			attachTo = .Root,
-			zIndex = 13,
-			offset = {0, rise(clay.ID("PeerModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 13,
+			offset = {0, rise(nendo.id("PeerModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
 	},
 	) {
 		profile_card(PEER_CARD_ID, ui.peer_hex, width, .Peer_Popup)
 	}
-	scrollbar(clay.ID("PeerModal"), 14)
+	scrollbar(nendo.id("PeerModal"), 14)
 }
 
 // Account-switcher modal, opened from the rail avatar.
 accounts_modal :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("AccountsModal"))(
+	if nendo.box(nendo.id("AccountsModal"))(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("AccountsModal"), 440)),
-				height = clay.SizingFit({max = modal_h(720)}),
-			},
-			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(single_pane() ? 12 : 20),
-			childGap = 12,
-		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-		backgroundColor = CARD,
-		cornerRadius = rr(16),
+		width = nendo.fixed(modal_w(nendo.id("AccountsModal"), 440)),
+		height = nendo.fit(max = modal_h(720)),
+		direction = .Column,
+		padding = nendo.pad(single_pane() ? 12 : 20),
+		gap = 12,
+		clip = {y = true, scroll = true},
+		color = CARD,
+		radius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
 		floating = {
-			attachTo = .Root,
-			zIndex = 13,
-			offset = {0, rise(clay.ID("AccountsModal"))},
-			attachment = {element = .CenterCenter, parent = .CenterCenter},
+			attach_to = .Root,
+			z = 13,
+			offset = {0, rise(nendo.id("AccountsModal"))},
+			attach = {element = .Center_Center, parent = .Center_Center},
 		},
 	},
 	) {
-		if clay.UI(clay.ID("AcctHead"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
-		) {
-			clay.Text(tr("Accounts"), {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
-			if clay.UI(clay.ID("AcctHeadGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
+		if nendo.box(nendo.id("AcctHead"))({width = nendo.grow(), align = {y = .Center}}) {
+			nendo.text(tr("Accounts"), {font = FONT_TITLE, size = 20, color = TEXT})
+			if nendo.box(nendo.id("AcctHeadGap"))({width = nendo.grow()}) {}
 			if !single_pane() {
-				if clay.UI(clay.ID("AcctClose"))(
+				if nendo.box(nendo.id("AcctClose"))(
 				{
-					layout = {
-						sizing = {
-							width = clay.SizingFixed(tap_size() ? tap_min() : 26),
-							height = clay.SizingFixed(tap_size() ? tap_min() : 26),
-						},
-						childAlignment = {x = .Center, y = .Center},
-					},
-					backgroundColor = hovered() ? HOVER : {},
-					cornerRadius = rr(7),
+					width = nendo.fixed(tap_size() ? tap_min() : 26),
+					height = nendo.fixed(tap_size() ? tap_min() : 26),
+					align = {x = .Center, y = .Center},
+					color = hovered() ? HOVER : {},
+					radius = rr(7),
 				},
 				) {
-					clay.Text(
-						ICON_CLOSE,
-						{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
-					)
+					nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 				}
 			}
 		}
-		clay.Text(
+		nendo.text(
 			tr("All accounts stay connected. Switching only changes which one you're looking at."),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			{font = FONT_BODY, size = 12, color = TEXT_DIM},
 		)
 
 		// Stable alphabetical display order, independent of runtime store order.
@@ -899,105 +784,91 @@ accounts_modal :: proc(ui: ^Ui_State) {
 			account_row(ui, u32(i), ui.accounts[i].id_hex == ui.account_ref)
 		}
 
-		if clay.UI(clay.ID("AcctFoot"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 6}}},
-		) {
-			if clay.UI(clay.ID("AcctCloseBtn"))(
+		if nendo.box(nendo.id("AcctFoot"))({width = nendo.grow(), gap = 10, padding = {top = 6}}) {
+			if nendo.box(nendo.id("AcctCloseBtn"))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
-					padding = {left = 18, right = 18, top = 10, bottom = 10},
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(9),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = {left = 18, right = 18, top = 10, bottom = 10},
+				align = {y = .Center},
+				color = hovered() ? HOVER : {},
+				radius = rr(9),
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(tr("Close"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+				nendo.text(tr("Close"), {font = FONT_TITLE, size = 13, color = TEXT})
 			}
-			if clay.UI(clay.ID("AcctFootGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
-			if clay.UI(clay.ID("AddAccountBtn"))(
+			if nendo.box(nendo.id("AcctFootGap"))({width = nendo.grow()}) {}
+			if nendo.box(nendo.id("AddAccountBtn"))(
 			{
-				layout = {
-					sizing = {height = clay.SizingFit({min = tap_size() ? tap_min() : 0})},
-					padding = {left = 18, right = 18, top = 10, bottom = 10},
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = hovered() ? ACCENT_DIM : ACCENT,
-				cornerRadius = rr(9),
+				height = nendo.fit(min = tap_size() ? tap_min() : 0),
+				padding = {left = 18, right = 18, top = 10, bottom = 10},
+				align = {y = .Center},
+				color = hovered() ? ACCENT_DIM : ACCENT,
+				radius = rr(9),
 			},
 			) {
-				clay.Text(
-					tr("Add account"),
-					{fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT},
-				)
+				nendo.text(tr("Add account"), {font = FONT_TITLE, size = 13, color = ON_ACCENT})
 			}
 		}
 	}
-	scrollbar(clay.ID("AccountsModal"), 14)
+	scrollbar(nendo.id("AccountsModal"), 14)
 }
 
 // Shared by conversations and terminal work waiting for attention.
 @(private)
-unread_badge :: proc(id: clay.ElementId, unread: u64) {
+unread_badge :: proc(id: nendo.Id, unread: u64) {
 	if unread == 0 {return}
 	count := fmt.tprintf("%d", unread)
 	pop, _, _ := bump(id.id, count)
 	pad := bump_pad(pop)
 	rock := u16(clamp((pop - 1) * 8, 0, 3))
-	if clay.UI(id)(
+	if nendo.box(id)(
 	{
-		layout = {
-			padding = {left = 7 + pad + rock, right = 7 + pad - min(rock, 7), top = 2, bottom = 2},
-		},
-		backgroundColor = ACCENT,
-		cornerRadius = rr(9),
+		padding = {left = 7 + pad + rock, right = 7 + pad - min(rock, 7), top = 2, bottom = 2},
+		color = ACCENT,
+		radius = rr(9),
 	},
 	) {
 		glow(id, ACCENT, clamp((pop - 1) * 4, 0, 1), 12)
-		clay.Text(count, {fontId = FONT_BODY, fontSize = 12, textColor = BG})
+		nendo.text(count, {font = FONT_BODY, size = 12, color = BG})
 	}
 }
 
 nav_button :: proc(page: Page, active: bool) {
 	// A fixed target keeps the vertical rail stable across icon fonts
 	// and remains usable on touch screens.
-	down := press_down(clay.ID("Nav", u32(page)))
+	down := press_down(nendo.id("Nav", u32(page)))
 	side := f32(tap_size() ? tap_min() : 42)
-	if clay.UI(clay.ID("Nav", u32(page)))(
+	if nendo.box(nendo.id("Nav", u32(page)))(
 	{
-		layout = {
-			sizing = {width = clay.SizingFixed(side), height = clay.SizingFixed(side)},
-			padding = {top = down * 2},
-			childAlignment = {x = .Center, y = .Center},
-		},
-		backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-		cornerRadius = rr(12),
+		width = nendo.fixed(side),
+		height = nendo.fixed(side),
+		padding = {top = down * 2},
+		align = {x = .Center, y = .Center},
+		color = active ? SELECTED : (hovered() ? HOVER : {}),
+		radius = rr(12),
 	},
 	) {
 		if hovered() {
 			tooltip(tr(NAV_TIPS[page]), .Right)
 		}
-		clay.Text(
+		nendo.text(
 			PAGE_ICONS[page],
-			{fontId = FONT_ICON, fontSize = 17, textColor = active ? ACCENT : TEXT_DIM},
+			{font = FONT_ICON, size = 17, color = active ? ACCENT : TEXT_DIM},
 		)
 		if page == .Chats && rl.WhipAvailable() {
 			waiting: u64
 			for project in rl.WhipProjects() {waiting += u64(project.waiting)}
 			if waiting > 0 {
-				if clay.UI(clay.ID("TerminalInboxBadge"))(
+				if nendo.box(nendo.id("TerminalInboxBadge"))(
 				{
 					floating = {
-						attachTo = .Parent,
-						attachment = {element = .CenterCenter, parent = .RightTop},
-						zIndex = 2,
+						attach_to = .Parent,
+						attach = {element = .Center_Center, parent = .Right_Top},
+						z = 2,
 					},
 				},
-				) {unread_badge(clay.ID("TerminalInboxUnread"), waiting)}
+				) {unread_badge(nendo.id("TerminalInboxUnread"), waiting)}
 			}
 		}
 	}
@@ -1006,23 +877,24 @@ nav_button :: proc(page: Page, active: bool) {
 // A vertical selection marker follows the active destination. Read last
 // frame's box so moving between top and bottom controls eases naturally.
 nav_indicator :: proc(ui: ^Ui_State) {
-	box := clay.GetElementData(clay.ID("Nav", u32(ui.page)))
+	box := nendo.element(nendo.id("Nav", u32(ui.page)))
 	if !box.found {
 		return
 	}
-	x := anim_to(clay.ID("NavBarX").id, box.boundingBox.x - 7, 22)
-	y := anim_to(clay.ID("NavBarY").id, box.boundingBox.y + (box.boundingBox.height - 20) / 2, 22)
-	if clay.UI(clay.ID("NavBar"))(
+	x := anim_to(nendo.id("NavBarX").id, box.rect.x - 7, 22)
+	y := anim_to(nendo.id("NavBarY").id, box.rect.y + (box.rect.height - 20) / 2, 22)
+	if nendo.box(nendo.id("NavBar"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingFixed(20)}},
+		width = nendo.fixed(3),
+		height = nendo.fixed(20),
 		floating = {
-			attachTo = .Root,
-			zIndex = 6,
+			attach_to = .Root,
+			z = 6,
 			offset = {x, y},
-			attachment = {element = .LeftTop, parent = .LeftTop},
+			attach = {element = .Left_Top, parent = .Left_Top},
 		},
-		backgroundColor = ACCENT,
-		cornerRadius = rr(1),
+		color = ACCENT,
+		radius = rr(1),
 	},
 	) {}
 }

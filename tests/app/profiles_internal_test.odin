@@ -9,8 +9,8 @@ import profile_testing "core:testing"
 compose_profile_ownership :: proc(t: ^profile_testing.T) {
 	if #config(ODIN_TEST_NAMES, "") != "compose_profile_ownership" {return}
 	context.allocator = profile_runtime.default_context().allocator
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	rl.InitWindow(1200, 800, "Profile ownership regression")
 	defer rl.CloseWindow()
 	init_fonts()

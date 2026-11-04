@@ -9,7 +9,7 @@ import "core:time"
 import "core:unicode"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 
 // Subscription opening window and each cursor-based pagination step.
 TL_PAGE :: 100
@@ -437,12 +437,10 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	// Incoming messages follow the tail only while the reader is already there.
 	// Opening a chat and sending explicitly still reveal the newest message.
 	follow := true
-	if !ui.timeline_loading && clay.GetCurrentContext() != nil {
-		data := clay.GetScrollContainerData(clay.ID("Timeline"))
+	if !ui.timeline_loading && nendo.current_context() != nil {
+		data := nendo.scroll(nendo.id("Timeline"))
 		if data.found {
-			follow =
-				data.scrollPosition.y <=
-				-max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0) + 1
+			follow = data.position.y <= -max(data.content.height - data.viewport.height, 0) + 1
 		}
 	}
 	ui.scroll_pending ||=

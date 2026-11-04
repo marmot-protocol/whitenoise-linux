@@ -18,7 +18,7 @@ import "core:os"
 import "core:strings"
 import "core:time"
 
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Inline texture cap; previews request their displayed physical width.
@@ -30,7 +30,7 @@ Video_View :: struct {
 	pos:                              i64, // stream-cb read cursor
 	mpv:                              ^mpv_handle,
 	rctx:                             ^mpv_render_context,
-	tex:                              rl.Texture2D, // streaming; &tex is the clay imageData
+	tex:                              rl.Texture2D, // streaming; &tex is the nendo imageData
 	buf:                              []u8, // sw render target, w*h*4
 	w, h:                             i32, // texture size (placeholder until mpv reports)
 	max_width:                        i32, // preview's physical width; zero uses the inline cap
@@ -258,16 +258,15 @@ visible_loops_only :: proc() {
 	}
 }
 
-// Marks the loops this frame drew. Clay culls elements outside the
+// Marks the loops this frame drew. nendo culls elements outside the
 // window, and a hidden window draws nothing.
-video_mark_drawn :: proc(commands: ^clay.ClayArray(clay.RenderCommand)) {
+video_mark_drawn :: proc(commands: []nendo.Render_Command) {
 	for _, view in video_views {
 		if view == nil || !view.looping {
 			continue
 		}
-		for i in 0 ..< commands.length {
-			command := clay.RenderCommandArray_Get(commands, i)
-			if command.commandType == .Image && command.renderData.image.imageData == &view.tex {
+		for command in commands {
+			if command.kind == .Image && command.image.image == &view.tex {
 				view.shown = true
 				break
 			}
@@ -503,7 +502,7 @@ handle_video :: proc() {
 // Scrub bars, same registration shape as the g-code slider: rebuilt
 // every build, the drag spans frames and seeks as it moves.
 Video_Bar :: struct {
-	id:   clay.ElementId,
+	id:   nendo.Id,
 	view: ^Video_View,
 }
 
@@ -521,45 +520,37 @@ video_full_hover: struct {
 video_bar_active :: proc() -> bool {
 	if video_bar_drag.view != nil {return true}
 	for bar in video_bars {
-		if clay.PointerOver(bar.id) {return true}
+		if nendo.pointer_over(bar.id) {return true}
 	}
 	return false
 }
 
 @(private)
-video_scrub_bar :: proc(id: clay.ElementId, view: ^Video_View, width: f32, z_index: i16 = 7) {
+video_scrub_bar :: proc(id: nendo.Id, view: ^Video_View, width: f32, z_index: i16 = 7) {
 	if view.looping {return}
-	expanded := tap_size() || hovered() || clay.PointerOver(id) || video_bar_drag.view == view
+	expanded := tap_size() || hovered() || nendo.pointer_over(id) || video_bar_drag.view == view
 	append(&video_bars, Video_Bar{id, view})
 	frac := view.dur > 0 ? clamp(f32(view.time / view.dur), 0, 1) : 0
-	if clay.UI(id)(
+	if nendo.box(id)(
 	{
-		layout = {
-			sizing = {
-				width = clay.SizingFixed(width),
-				height = clay.SizingFixed(tap_size() ? tap_min() : (expanded ? 14 : 2)),
-			},
-			childAlignment = {y = .Center},
-		},
+		width = nendo.fixed(width),
+		height = nendo.fixed(tap_size() ? tap_min() : (expanded ? 14 : 2)),
+		align = {y = .Center},
 		floating = {
-			attachTo = .Parent,
-			clipTo = .AttachedParent,
-			zIndex = z_index,
-			attachment = {element = .LeftBottom, parent = .LeftBottom},
+			attach_to = .Parent,
+			clip_to = .Parent,
+			z = z_index,
+			attach = {element = .Left_Bottom, parent = .Left_Bottom},
 		},
-		backgroundColor = {0, 0, 0, 150},
+		color = {0, 0, 0, 150},
 	},
 	) {
 		if hovered() {video_hover = nil}
-		if clay.UI(clay.ID("VideoFill", id.id))(
+		if nendo.box(nendo.id("VideoFill", id.id))(
 		{
-			layout = {
-				sizing = {
-					width = clay.SizingFixed(frac * width),
-					height = clay.SizingFixed(expanded ? 10 : 2),
-				},
-			},
-			backgroundColor = ACCENT,
+			width = nendo.fixed(frac * width),
+			height = nendo.fixed(expanded ? 10 : 2),
+			color = ACCENT,
 		},
 		) {}
 	}
@@ -571,7 +562,7 @@ bar_sent: f64 = -1 // last position asked for, so a still pointer stays quiet
 handle_video_bar :: proc() {
 	if rl.IsMouseButtonPressed(.LEFT) {
 		for bar in video_bars {
-			if clay.PointerOver(bar.id) {
+			if nendo.pointer_over(bar.id) {
 				video_bar_drag = bar
 				break
 			}
@@ -590,7 +581,7 @@ handle_video_bar :: proc() {
 		return
 	}
 
-	bb := clay.GetElementData(video_bar_drag.id).boundingBox
+	bb := nendo.element(video_bar_drag.id).rect
 	view := video_bar_drag.view
 	if bb.width <= 0 || view.dur <= 0 {
 		return

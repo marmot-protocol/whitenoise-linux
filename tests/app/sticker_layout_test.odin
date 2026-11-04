@@ -4,7 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=sticker_layout
@@ -80,19 +80,18 @@ sticker_layout :: proc(t: ^testing.T) {
 	}
 	for width in ([]i32{900, 420, 320}) {
 		rl.SetWindowSize(width, 760)
-		clay.SetLayoutDimensions({f32(width), 760})
+		nendo.set_dimensions({f32(width), 760})
 		for preview in ([]bool{true, false}) {
 			ui.sticker_open = preview
 			ui.picker_open, ui.sticker_tab = !preview, true
 			ui.picker_x, ui.picker_y = 4, 4
 			for _ in 0 ..< 8 {anim_frame += 1; build_layout(&ui, 0)}
 			commands := build_layout(&ui, 0)
-			panel :=
-				clay.GetElementData(clay.ID(preview ? "StickerPanel" : "PickerPanel")).boundingBox
+			panel := nendo.element(nendo.id(preview ? "StickerPanel" : "PickerPanel")).rect
 			testing.expect(t, panel.x >= 0 && panel.x + panel.width <= f32(width) + 0.1)
 			for i in 0 ..< len(ui.sticker_preview) {
 				box :=
-					clay.GetElementData(clay.ID(preview ? "StickerPreviewTile" : "StickerPick", u32(i))).boundingBox
+					nendo.element(nendo.id(preview ? "StickerPreviewTile" : "StickerPick", u32(i))).rect
 				testing.expect(
 					t,
 					box.width == (preview ? 104 : 80) &&
@@ -102,7 +101,7 @@ sticker_layout :: proc(t: ^testing.T) {
 				)
 			}
 			rl.BeginDrawing()
-			draw_frame(&commands)
+			draw_frame(commands)
 			rl.TakeScreenshot(
 				fmt.ctprintf("/tmp/wn-stickers-%d-%s.png", width, preview ? "pack" : "picker"),
 			)
@@ -122,19 +121,16 @@ sticker_layout :: proc(t: ^testing.T) {
 	draw :: proc(ui: ^Ui_State, name: string, width: i32) {
 		for _ in 0 ..< 8 {anim_frame += 1; build_layout(ui, 0)}
 		commands := build_layout(ui, 0)
-		rl.BeginDrawing(); draw_frame(&commands)
+		rl.BeginDrawing(); draw_frame(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-stickers-%d-%s.png", width, name))
 		rl.EndDrawing()
 	}
-	press :: proc(t: ^testing.T, ui: ^Ui_State, id: clay.ElementId) {
-		data := clay.GetElementData(id)
+	press :: proc(t: ^testing.T, ui: ^Ui_State, id: nendo.Id) {
+		data := nendo.element(id)
 		testing.expect(t, data.found)
-		clay.SetPointerState(
-			{
-				data.boundingBox.x + data.boundingBox.width / 2,
-				data.boundingBox.y + data.boundingBox.height / 2,
-			},
-			false,
+		nendo.set_pointer(
+			{data.rect.x + data.rect.width / 2, data.rect.y + data.rect.height / 2},
+			.Up,
 		)
 		forced_release = true
 		handle_sticker_panel(ui)
@@ -142,47 +138,47 @@ sticker_layout :: proc(t: ^testing.T) {
 	}
 	for width in ([]i32{900, 420, 320}) {
 		rl.SetWindowSize(width, 760)
-		clay.SetLayoutDimensions({f32(width), 760})
+		nendo.set_dimensions({f32(width), 760})
 		sticker_show(&ui, {})
 		draw(&ui, "library", width)
-		press(t, &ui, clay.ID("StickerLibraryPack", 0))
+		press(t, &ui, nendo.id("StickerLibraryPack", 0))
 		testing.expect_value(t, ui.sticker_page, Sticker_Page.Pack)
 		draw(&ui, "installed", width)
-		press(t, &ui, clay.ID("StickerPreviewTile", 0))
+		press(t, &ui, nendo.id("StickerPreviewTile", 0))
 		testing.expect_value(t, ui.sticker_page, Sticker_Page.Detail)
 		draw(&ui, "detail", width)
-		stage := clay.GetElementData(clay.ID("StickerPersonalPreview")).boundingBox
+		stage := nendo.element(nendo.id("StickerPersonalPreview")).rect
 		testing.expect(t, stage.width >= 220)
-		press(t, &ui, clay.ID("StickerBack", 0))
+		press(t, &ui, nendo.id("StickerBack", 0))
 		testing.expect_value(t, ui.sticker_page, Sticker_Page.Pack)
 		draw(&ui, "back", width)
-		press(t, &ui, clay.ID("StickerBack", 0))
+		press(t, &ui, nendo.id("StickerBack", 0))
 		testing.expect_value(t, ui.sticker_page, Sticker_Page.Library)
 		draw(&ui, "library", width)
-		press(t, &ui, clay.ID("StickerLibraryItem", 14))
+		press(t, &ui, nendo.id("StickerLibraryItem", 14))
 		testing.expect_value(t, ui.sticker_page, Sticker_Page.Detail)
 		draw(&ui, "personal", width)
-		testing.expect(t, clay.GetElementData(clay.ID("StickerRemove", 0)).found)
-		press(t, &ui, clay.ID("StickerBack", 0))
+		testing.expect(t, nendo.element(nendo.id("StickerRemove", 0)).found)
+		press(t, &ui, nendo.id("StickerBack", 0))
 		draw(&ui, "library", width)
-		press(t, &ui, clay.ID("StickerAddPack", 0))
+		press(t, &ui, nendo.id("StickerAddPack", 0))
 		testing.expect_value(t, ui.sticker_page, Sticker_Page.AddPack)
 		draw(&ui, "add", width)
-		testing.expect(t, clay.GetElementData(clay.ID("StickerInput")).found)
+		testing.expect(t, nendo.element(nendo.id("StickerInput")).found)
 	}
 	for locale in ([]string{"it", "de", "ja"}) {
 		set_locale(locale)
 		sticker_show(&ui, {pack = coordinate})
 		draw(&ui, fmt.tprintf("%s-pack", locale), 320)
-		panel := clay.GetElementData(clay.ID("StickerPanel")).boundingBox
-		remove := clay.GetElementData(clay.ID("StickerRemovePack", 0)).boundingBox
+		panel := nendo.element(nendo.id("StickerPanel")).rect
+		remove := nendo.element(nendo.id("StickerRemovePack", 0)).rect
 		testing.expect(t, remove.x >= panel.x && remove.x + remove.width <= panel.x + panel.width)
 		sticker_show(&ui, {})
 		draw(&ui, fmt.tprintf("%s-library", locale), 320)
-		press(t, &ui, clay.ID("StickerAddPack", 0))
+		press(t, &ui, nendo.id("StickerAddPack", 0))
 		draw(&ui, fmt.tprintf("%s-add", locale), 320)
-		field := clay.GetElementData(clay.ID("StickerInput")).boundingBox
-		panel = clay.GetElementData(clay.ID("StickerPanel")).boundingBox
+		field := nendo.element(nendo.id("StickerInput")).rect
+		panel = nendo.element(nendo.id("StickerPanel")).rect
 		testing.expect(
 			t,
 			field.x + field.width <= panel.x + panel.width,

@@ -8,10 +8,10 @@ import "core:strings"
 import "core:sync"
 import "core:sys/posix"
 import "core:testing"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
-// Run alone: SDL and Clay own process-global state. Exercise both production
+// Run alone: SDL and nendo own process-global state. Exercise both production
 // dispatch paths with real filesystem failures, then retry and cancel.
 @(test)
 test_emoji_save_io_dispatch :: proc(t: ^testing.T) {
@@ -48,10 +48,10 @@ test_emoji_save_io_dispatch :: proc(t: ^testing.T) {
 	UI_ZOOM, UI_SCALE = 1, 1
 	init_fonts()
 	load_themes(); apply_theme(0, 0)
-	previous_layout := clay.GetCurrentContext()
+	previous_layout := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
-	defer {clay.SetCurrentContext(previous_layout); delete(memory)}
+	defer {nendo.set_context(previous_layout); delete(memory)}
 	ui := Ui_State {
 		page          = .Settings,
 		audit_scanned = true,
@@ -207,10 +207,10 @@ test_emoji_save_io_dispatch :: proc(t: ^testing.T) {
 
 @(private = "file")
 emoji_io_click :: proc(t: ^testing.T, ui: ^Ui_State, id: string) -> bool {
-	button := clay.GetElementData(clay.ID(id))
+	button := nendo.element(nendo.id(id))
 	if !testing.expect(t, button.found) {return false}
-	box := button.boundingBox
-	clay.SetPointerState({box.x + box.width / 2, box.y + box.height / 2}, false)
+	box := button.rect
+	nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
 	forced_release = true
 	handle_settings(ui, nil)
 	forced_release = false

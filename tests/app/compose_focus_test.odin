@@ -4,20 +4,20 @@ import "core:sync"
 import "core:testing"
 
 import marmot "../marmot"
-import clay "layout"
+import "nendo"
 import rl "sdlrl"
 
 // Up in an empty composer edits the newest own message the current view
 // shows: not someone else's, not a tombstone, not another thread's row.
 @(test)
 compose_up_edits_latest_own :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
-	previous := clay.GetCurrentContext()
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 600})
 	defer {
-		clay.SetCurrentContext(previous)
+		nendo.set_context(previous)
 		delete(memory)
 	}
 
@@ -73,18 +73,18 @@ compose_up_edits_latest_own :: proc(t: ^testing.T) {
 // Reply and Edit from the context menu hand the keyboard to the composer.
 @(test)
 ctx_reply_edit_focus :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
 	rl.InitWindow(800, 600, "Message action focus")
 	defer rl.CloseWindow()
 	old_zoom := UI_ZOOM
 	UI_ZOOM = 1
 	defer {UI_ZOOM = old_zoom}
-	previous := clay.GetCurrentContext()
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 600})
 	defer {
-		clay.SetCurrentContext(previous)
+		nendo.set_context(previous)
 		delete(memory)
 		forced_release = false
 	}
@@ -104,17 +104,17 @@ ctx_reply_edit_focus :: proc(t: ^testing.T) {
 	for item in ([]string{"CtxReply", "CtxEdit"}) {
 		ui.focus = .Search
 		ui.ctx_open = true
-		clay.BeginLayout()
+		nendo.begin()
 		context_menu(&ui)
-		clay.EndLayout(0)
-		box := clay.GetElementData(clay.ID(item)).boundingBox
-		clay.SetPointerState({box.x + 4, box.y + 4}, false)
+		nendo.end(0)
+		box := nendo.element(nendo.id(item)).rect
+		nendo.set_pointer({box.x + 4, box.y + 4}, .Up)
 		// A menu row acts only when the press also landed on it.
 		menu_press = {}
 		forced_press = true
-		clay.BeginLayout()
+		nendo.begin()
 		context_menu(&ui)
-		clay.EndLayout(0)
+		nendo.end(0)
 		forced_press = false
 		forced_release = true
 		handle_ctx_menu(&ui, &client)
@@ -130,13 +130,13 @@ ctx_reply_edit_focus :: proc(t: ^testing.T) {
 // unsent draft with it.
 @(test)
 escape_keeps_draft :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
-	previous := clay.GetCurrentContext()
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
 	memory: []u8
 	init_layout(&memory, 32768, {800, 600})
 	defer {
-		clay.SetCurrentContext(previous)
+		nendo.set_context(previous)
 		delete(memory)
 	}
 
