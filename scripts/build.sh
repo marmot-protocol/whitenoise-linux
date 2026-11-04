@@ -403,17 +403,15 @@ if [ "${1:-}" != sources ]; then
     build_cache_store "$UFBX_KEY" "$HERE/build/fbx/ufbx.stamp" "$HERE/build/fbx/ufbx.o"
   fi
 
-  # Nostr event fetch (nevent cards) and Namecoin `.bit` NIP-05 resolution:
-  # both use one-shot websocket clients over libcurl's raw socket, framed
-  # in app/ws_shim.c (Nostr REQ) and app/nc_shim.c (ElectrumX JSON-RPC).
+  # Nostr event fetch (nevent cards): a websocket REQ over libcurl's
+  # raw socket, framed in app/ws_shim.c.
   mkdir -p "$HERE/build/ws"
-  WS_KEY="$(native_key 'websocket O2 PIC curl' "$HERE/app/ws_shim.c" "$HERE/app/nc_shim.c")"
+  WS_KEY="$(native_key 'websocket O2 PIC curl' "$HERE/app/ws_shim.c")"
   if ! build_cache_fresh "$WS_KEY" "$HERE/build/ws/stamp" "$HERE/build/libwnws.a"; then
     rm -f "$HERE/build/ws/stamp"
     cc -c -O2 -fPIC $(pkg-config --cflags libcurl) "$HERE/app/ws_shim.c" -o "$HERE/build/ws/ws_shim.o"
-    cc -c -O2 -fPIC $(pkg-config --cflags libcurl) "$HERE/app/nc_shim.c" -o "$HERE/build/ws/nc_shim.o"
     rm -f "$HERE/build/libwnws.a"
-    ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o" "$HERE/build/ws/nc_shim.o"
+    ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o"
     build_cache_store "$WS_KEY" "$HERE/build/ws/stamp" "$HERE/build/libwnws.a"
   fi
 fi

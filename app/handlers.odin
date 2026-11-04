@@ -1524,15 +1524,6 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 	stash_staged(ui)
 	ui.whip_open = false
 	thread_clear(ui) // thread roots belong to the chat being left
-	// Drop any pending Namecoin invites for the chat being left, so a
-	// slow resolve does not land its invite here after the user moved
-	// on. New chats (`.New_Chat` intents) don't carry a group id and
-	// stay armed across selection changes.
-	if ui.selected >= 0 && ui.selected < len(ui.chats) {
-		if ui.selected != index {
-			nc_pending_cancel_group(ui.chats[ui.selected].group_id)
-		}
-	}
 	#reverse for chat, i in ui.chats {
 		if !chat.search_only || i == index {continue}
 		append(&retired_chats, chat)
@@ -1965,10 +1956,9 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if ui.nip05_ticket != 0 {return}
 		member := nc_member_ref(ui)
 
-		// `.bit` / `d/` / `id/` go through the Namecoin resolver;
-		// other `@` addresses stay on the existing NIP-05 lookup path,
-		// which only fills in the member field.
-		if len(member) > 0 && !nc_is_bit(member) && strings.contains(member, "@") {
+		// `@` addresses go through the NIP-05 lookup, which only fills
+		// in the member field.
+		if len(member) > 0 && strings.contains(member, "@") {
 			ui.nip05_ticket = spawn_op(ui, client, .Lookup_Member, member, "")
 			return
 		}
@@ -1985,50 +1975,6 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		if member == "" {return}
-
-		// Route .bit / d/ / id/ through the Namecoin resolver first.
-		if len(member) > 0 && nc_is_bit(member) {
-			done, pending, ok := nc_resolve_async(member)
-			if !ok {
-				// Not a Namecoin id after all; fall through to raw.
-				new_chat_create_and_open(ui, client, name, member)
-				return
-			}
-			if pending {
-				// The resolver has not landed yet; the returned `done`
-				// carries an empty pubkey and the zero-initialised status
-				// (`.Resolved`) which we MUST NOT act on. Queue the intent
-				// and let drain_nc_intents finish it when the worker lands.
-				nc_pending_push(member, .New_Chat, ui.account_ref, "", name)
-				set_status(ui, strings.clone(tr("Looking up the Namecoin name.")), .Info)
-				return
-			}
-			switch done.status {
-			case .Resolved:
-				new_chat_create_and_open(ui, client, name, done.result.pubkey_hex)
-			case .Not_Found:
-				set_status(
-					ui,
-					fmt.aprintf(
-						tr("Couldn't resolve %s on Namecoin. Double-check it and try again."),
-						member,
-					),
-					.Error,
-				)
-			case .Unavailable:
-				// Cache had nothing and worker returned inline unavailable;
-				// queue the intent for the next drain attempt to retry.
-				nc_pending_push(member, .New_Chat, ui.account_ref, "", name)
-				set_status(
-					ui,
-					strings.clone(tr("Couldn't reach the Namecoin resolvers. Please try again.")),
-					.Error,
-				)
-			}
-			nc_done_free(done)
-			return
-		}
-
 		new_chat_create_and_open(ui, client, name, member)
 	}
 }
@@ -2043,22 +1989,12 @@ close_new_chat :: proc(ui: ^Ui_State) {
 		}
 	}
 	ui.nip05_ticket = 0
-	for i := 0; i < len(nc_pending); {
-		pending := nc_pending[i]
-		if pending.intent == .New_Chat && pending.account == ui.account_ref {
-			nc_pending_free(pending)
-			ordered_remove(&nc_pending, i)
-			continue
-		}
-		i += 1
-	}
 	ui.new_chat_open = false
 	ui.focus = .Compose
 }
 
 // The common tail of new_chat: create the group, hand a staged image to
-// the group-image worker, clear the form, jump to the new chat. Shared
-// by the direct-input path and the Namecoin resolve callback.
+// the group-image worker, clear the form, jump to the new chat.
 new_chat_create_and_open :: proc(ui: ^Ui_State, client: ^marmot.Client, name, member: string) {
 	if strings.trim_space(member) == "" {return}
 	if name == "" {
@@ -2073,90 +2009,6 @@ new_chat_create_and_open :: proc(ui: ^Ui_State, client: ^marmot.Client, name, me
 		ui.nc_pic = {}
 	}
 	account_job_start(job)
-}
-
-// Frame-loop drain: pair Nc_Done events from the worker to Nc_Pending
-// intents queued by the invite/new-chat handlers. Not-found and
-// unavailable both banner and drop the intent; resolved dispatches to
-// the follow-up action ONLY when the account (and, for invites, the
-// selected chat) at push time still matches the current UI state.
-drain_nc_intents :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	// Expire stale intents first; a worker that never comes back must
-	// not pin a follow-up action to fire minutes after the user moved on.
-	if dropped := nc_pending_gc(); dropped > 0 {
-		set_status(ui, strings.clone(tr("Namecoin lookup took too long; try again.")), .Error)
-	}
-
-	dones := nc_drain(context.allocator)
-	if len(dones) == 0 {
-		return
-	}
-	defer delete(dones)
-
-	active_group :=
-		ui.selected >= 0 && ui.selected < len(ui.chats) ? ui.chats[ui.selected].group_id : ""
-
-	for d in dones {
-		for i := 0; i < len(nc_pending); {
-			p := nc_pending[i]
-			if !strings.equal_fold(
-				strings.trim_space(p.identifier),
-				strings.trim_space(d.identifier),
-			) {
-				i += 1
-				continue
-			}
-			// Snapshot mismatch — the user switched accounts / chats
-			// while the resolve was inflight. Drop the intent silently
-			// rather than firing it on the wrong target.
-			if p.account != ui.account_ref {
-				nc_pending_free(p)
-				ordered_remove(&nc_pending, i)
-				continue
-			}
-			if p.intent == .Invite && p.group_id != active_group {
-				nc_pending_free(p)
-				ordered_remove(&nc_pending, i)
-				continue
-			}
-			switch d.status {
-			case .Resolved:
-				switch p.intent {
-				case .Invite:
-					admin_op(ui, client, "invite", d.result.pubkey_hex)
-					set_status(
-						ui,
-						strings.clone(tr("Namecoin name resolved. Invite sent.")),
-						.Info,
-					)
-				case .New_Chat:
-					new_chat_create_and_open(ui, client, p.group_name, d.result.pubkey_hex)
-				case .None:
-				}
-			case .Not_Found:
-				set_status(
-					ui,
-					fmt.aprintf(
-						tr("Couldn't resolve %s on Namecoin. Double-check it and try again."),
-						p.identifier,
-					),
-					.Error,
-				)
-			case .Unavailable:
-				set_status(
-					ui,
-					strings.clone(tr("Couldn't reach the Namecoin resolvers. Please try again.")),
-					.Error,
-				)
-			}
-			nc_pending_free(p)
-			ordered_remove(&nc_pending, i)
-		}
-		// The done event is freed regardless of whether an intent was
-		// waiting; a resolve that lands after the user gave up is a fine
-		// cache warmup.
-		nc_done_free(d)
-	}
 }
 
 // Person actions only target an accepted, resolved direct-chat peer.
@@ -2344,80 +2196,16 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			)
 			return
 		}
-		if nc_is_bit(strings.trim_space(input)) {
-			invite_member(ui, client, input)
-		} else if strings.contains(input, "@") {
+		if strings.contains(input, "@") {
 			ui.nip05_ticket = spawn_op(ui, client, .Lookup_Member, input, "")
 			return
-		} else {
-			admin_op(ui, client, "invite", input)
 		}
+		admin_op(ui, client, "invite", input)
 		clear(&ui.invite_input)
 	}
 	if admin && rl.IsKeyPressed(.ENTER) && ui.focus == .Rename {
 		start_rename(ui, client)
 	}
-}
-
-// Route an invite through the Namecoin resolver first when the pasted
-// text is a `.bit` / `d/` / `id/` identifier; otherwise hand it straight
-// to marmot the same way the pre-Namecoin path did. Returns to the
-// caller before the resolve completes; drain_nc_intents in the frame
-// loop finishes the invite once the resolver lands.
-invite_member :: proc(ui: ^Ui_State, client: ^marmot.Client, member_ref: string) {
-	if selected_chat_is_dm(ui) || !self_is_admin(ui) {return}
-	trimmed := strings.trim_space(member_ref)
-	if !nc_is_bit(trimmed) {
-		admin_op(ui, client, "invite", trimmed)
-		return
-	}
-	// Snapshot the target account+group at the moment the user pressed
-	// Enter. If either changes while the resolve is inflight, the drain
-	// will drop the intent instead of inviting into the wrong chat.
-	group_id :=
-		ui.selected >= 0 && ui.selected < len(ui.chats) ? ui.chats[ui.selected].group_id : ""
-	if len(group_id) == 0 {
-		set_status(ui, strings.clone(tr("Open a chat before inviting someone.")), .Error)
-		return
-	}
-
-	done, pending, ok := nc_resolve_async(trimmed)
-	if !ok {
-		admin_op(ui, client, "invite", trimmed)
-		return
-	}
-	if pending {
-		// Resolver has not landed yet; the returned `done` carries an
-		// empty pubkey and the zero-initialised status. Do NOT act on
-		// it here — queue the invite and let drain_nc_intents finish it
-		// once the worker returns.
-		nc_pending_push(trimmed, .Invite, ui.account_ref, group_id)
-		set_status(ui, strings.clone(tr("Looking up the Namecoin name.")), .Info)
-		return
-	}
-	switch done.status {
-	case .Resolved:
-		admin_op(ui, client, "invite", done.result.pubkey_hex)
-	case .Not_Found:
-		set_status(
-			ui,
-			fmt.aprintf(
-				tr("Couldn't resolve %s on Namecoin. Double-check it and try again."),
-				trimmed,
-			),
-			.Error,
-		)
-	case .Unavailable:
-		// Cache had nothing and inline resolve unavailable; queue for
-		// retry the next time drain sees a fresh Nc_Done.
-		nc_pending_push(trimmed, .Invite, ui.account_ref, group_id)
-		set_status(
-			ui,
-			strings.clone(tr("Couldn't reach the Namecoin resolvers. Please try again.")),
-			.Error,
-		)
-	}
-	nc_done_free(done)
 }
 
 // Admin commits are relay round trips; they run on the op worker and

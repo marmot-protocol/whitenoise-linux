@@ -944,7 +944,6 @@ app_main :: proc() {
 			tts_tick(&ui)
 			translation_tick(&ui)
 			drain_ops(&ui, client)
-			drain_nc_intents(&ui, client) // Namecoin .bit resolutions land here
 			web_tick() // webxdc modal: run WebKit, take its pixels
 			nes_tick(&ui) // NES player: emulate the owed frames, queue their audio
 			xdc_drain(&ui, client) // webxdc sendUpdate() becomes a group message

@@ -212,12 +212,11 @@ if ! cross_fresh ufbx "$KEY" "$OUT/fbx/ufbx.o"; then
   "$CC" "${CFLAGS[@]}" -c "$HERE/vendor/ufbx/ufbx.c" -o "$OUT/fbx/ufbx.o"
   cross_store ufbx "$KEY" "$OUT/fbx/ufbx.o"
 fi
-KEY="$(cross_key "ws $CURL_KEY" "$HERE/app/ws_shim.c" "$HERE/app/nc_shim.c" "${APP_HEADERS[@]}")"
-if ! cross_fresh ws "$KEY" "$OUT/ws.o" "$OUT/nc.o" "$OUT/libwnws.a"; then
+KEY="$(cross_key "ws $CURL_KEY" "$HERE/app/ws_shim.c" "${APP_HEADERS[@]}")"
+if ! cross_fresh ws "$KEY" "$OUT/ws.o" "$OUT/libwnws.a"; then
   "$CC" "${CFLAGS[@]}" $(pkg-config --cflags libcurl) -c "$HERE/app/ws_shim.c" -o "$OUT/ws.o"
-  "$CC" "${CFLAGS[@]}" $(pkg-config --cflags libcurl) -c "$HERE/app/nc_shim.c" -o "$OUT/nc.o"
-  "$AR" rcs "$OUT/libwnws.a" "$OUT/ws.o" "$OUT/nc.o"
-  cross_store ws "$KEY" "$OUT/ws.o" "$OUT/nc.o" "$OUT/libwnws.a"
+  "$AR" rcs "$OUT/libwnws.a" "$OUT/ws.o"
+  cross_store ws "$KEY" "$OUT/ws.o" "$OUT/libwnws.a"
 fi
 for stage in ipc decoder_ipc timestamp mesh_limits; do
   case "$stage" in

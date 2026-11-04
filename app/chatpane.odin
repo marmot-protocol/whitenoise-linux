@@ -1539,11 +1539,6 @@ nc_pending_label :: proc(ui: ^Ui_State) -> string {
 		}
 	}
 	if ui.nip05_ticket != 0 {return tr("Looking up...")}
-	for pending in nc_pending {
-		if pending.account == ui.account_ref && pending.intent == .New_Chat {
-			return tr("Looking up the Namecoin name.")
-		}
-	}
 	return ""
 }
 
@@ -1628,7 +1623,7 @@ nc_member_ref :: proc(ui: ^Ui_State) -> string {
 		}
 		return strings.to_string(out)
 	}
-	if nc_is_bit(member) || strings.contains(member, "@") {return member}
+	if strings.contains(member, "@") {return member}
 	if ref := marmot_link_ref(member); ref != "" {member = ref}
 	return deeplink_hex(member)
 }
@@ -2108,10 +2103,10 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 			}
 			if ui.nc_page != .Contacts {
 				label :=
-					pending != "" ? pending : ui.nc_member_choice == 0 && (strings.contains(string(ui.nc_member[:]), "@") || nc_is_bit(string(ui.nc_member[:]))) ? tr("Look up") : tr("Create group")
+					pending != "" ? pending : ui.nc_member_choice == 0 && strings.contains(string(ui.nc_member[:]), "@") ? tr("Look up") : tr("Create group")
 				// A NIP-05 lookup only fills in the member, so it needs no name yet.
 				member := nc_member_ref(ui)
-				nip05 := !nc_is_bit(member) && strings.contains(member, "@")
+				nip05 := strings.contains(member, "@")
 				named := strings.trim_space(string(ui.nc_name[:])) != ""
 				ready := pending == "" && member != "" && (named || nip05)
 				login_big_button("NCCreate", label, true, ready ? .Enabled : .Disabled)
