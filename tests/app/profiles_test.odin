@@ -115,3 +115,13 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.my_pic_url, "")
 	testing.expect_value(t, profile_info(nil, hex).nip05, "")
 }
+
+// A kind-0 `name` that repeats the display name is not a username.
+@(test)
+profiles_handle_not_display_name :: proc(t: ^testing.T) {
+	testing.expect_value(t, profile_handle("Witty Hare", "Witty Hare", "Witty Hare"), "")
+	testing.expect_value(t, profile_handle("Witty Hare", "Witty Hare 🐇", "Witty Hare 🐇"), "")
+	testing.expect_value(t, profile_handle("alice", "", "alice"), "")
+	testing.expect_value(t, profile_handle("alice", "Alice", "Alice"), "alice")
+	testing.expect_value(t, profile_handle("", "Alice", "Alice"), "")
+}

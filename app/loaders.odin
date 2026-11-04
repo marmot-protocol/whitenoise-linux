@@ -6,6 +6,7 @@ import "core:slice"
 import "core:strings"
 import "core:thread"
 import "core:time"
+import "core:unicode"
 
 import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -844,6 +845,20 @@ load_follows :: proc(
 	return true
 }
 
+// The kind-0 `name` as a username, or "" when it only repeats the display
+// name. Clients, this one included, write "Witty Hare" to both fields for
+// NIP-24, and "@Witty Hare" is not a handle.
+@(private)
+profile_handle :: proc(name, display_name, shown: string) -> string {
+	if name == display_name || name == shown {
+		return ""
+	}
+	if strings.index_proc(name, unicode.is_space) >= 0 {
+		return ""
+	}
+	return name
+}
+
 load_profile :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	if ui.profile.loaded {
 		return
@@ -866,8 +881,9 @@ load_profile :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	// Full kind-0 metadata for the viewer rows (handle, nip05, lud16).
 	meta: ^marmot.User_Profile_Metadata
 	if marmot.user_profile(client, account, &meta) == .OK && meta != nil {
-		if meta.name != nil {
-			ui.profile.username = strings.clone(string(meta.name))
+		handle := profile_handle(string(meta.name), string(meta.display_name), ui.profile.name)
+		if handle != "" {
+			ui.profile.username = strings.clone(handle)
 		}
 		if meta.about != nil {
 			ui.profile.about = strings.clone(string(meta.about))

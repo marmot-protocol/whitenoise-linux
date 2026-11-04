@@ -426,7 +426,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					)
 					clay.Text(
 						text_ellipsis(
-							len(ui.profile.username) > 0 && ui.profile.username != ui.profile.name ? fmt.tprintf("@%s", ui.profile.username) : npub_tail(ui.profile.npub),
+							len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : npub_tail(ui.profile.npub),
 							name_w,
 							FONT_BODY,
 							12,
@@ -632,14 +632,12 @@ profile_pane :: proc(ui: ^Ui_State) {
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				if ui.profile.username != "" && ui.profile.username != ui.profile.name {
-					profile_kv(
-						0,
-						tr("Username"),
-						fmt.tprintf("@%s", ui.profile.username),
-						font = FONT_BODY,
-					)
-				}
+				profile_kv(
+					0,
+					tr("Username"),
+					len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : "",
+					font = FONT_BODY,
+				)
 				profile_kv(1, tr("Verified address"), ui.profile.nip05, font = FONT_BODY)
 				profile_kv(2, tr("Lightning"), ui.profile.lud16, true, font = FONT_BODY)
 			}
