@@ -377,7 +377,7 @@ just run
 ```
 
 The first build clones the pinned Marmot revision and builds its C bundle,
-fetches Clay, ufbx and Bragi, and extracts the SHA-256-pinned emoji bundle
+fetches ufbx and Bragi, and extracts the SHA-256-pinned emoji bundle
 with `zstd`. It also builds Odin's STB archives when the installation lacks
 them. Later builds reuse the staged dependencies.
 
@@ -584,7 +584,7 @@ The ARM64 build extracts an Ubuntu 24.04 target sysroot without running ARM
 compilers. Windows uses LLVM-MinGW 20260922 with UCRT and libc++, paired with
 Rust's `x86_64-pc-windows-gnullvm` target. Its separate vcpkg triplet avoids
 reusing GCC/MSVCRT libraries. Windows 10 or newer supplies UCRT. Odin emits
-target objects; the target C linker links the app with Marmot, Clay, STB,
+target objects; the target C linker links the app with Marmot, STB,
 the app shims and media libraries. Odin compiles Bragi's C API into the
 `wn-math` object; the C++ linker links it with the Cairo drawing replay shim
 (`libwnmath.a`) and Cairo. Source revisions are pinned in

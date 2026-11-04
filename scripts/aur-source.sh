@@ -27,7 +27,6 @@ REPO="https://github.com/marmot-protocol/whitenoise-linux"
 # build.sh's; a new git dependency there needs a line here.
 GIT_DEPS=(
   "mdk https://github.com/marmot-protocol/mdk.git"
-  "clay https://github.com/nicbarker/clay.git"
   "crop-circles https://relay.cyberguy.fyi/npub1ven4zk8xxw873876gx8y9g9l9fazkye9qnwnglcptgvfwxmygscqsxddfh/crop-circles.git"
   "ufbx https://github.com/ufbx/ufbx.git"
   "bragi https://relay.ngit.dev/npub1ven4zk8xxw873876gx8y9g9l9fazkye9qnwnglcptgvfwxmygscqsxddfh/Bragi.git"

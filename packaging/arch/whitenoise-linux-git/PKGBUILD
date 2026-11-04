@@ -23,7 +23,7 @@ pkgdesc="End-to-end encrypted group chat over Nostr (Marmot client)"
 arch=(x86_64)
 url="https://github.com/marmot-protocol/whitenoise-linux"
 # The app, then what it bundles: MDK, ufbx and the password list (MIT),
-# Bragi (GPL-3.0-only), Clay (Zlib), the LifeHash avatars (GPL-3.0-or-later, ported from
+# Bragi (GPL-3.0-only), the layout engine (Zlib, ported from Clay), the LifeHash avatars (GPL-3.0-or-later, ported from
 # BSD-2-Clause-Patent bc-lifehash), the speech runtime and
 # Noto Emoji (Apache-2.0), Twemoji (CC-BY-4.0), OpenMoji (CC-BY-SA-4.0), the
 # text fonts (OFL-1.1) and the math font (GUST, with DejaVu's terms).

@@ -332,44 +332,6 @@ if [ "$(uname -s)" = OpenBSD ] && [ "${1:-}" != sources ]; then
   fi
 fi
 
-CLAY="$HERE/vendor/clay"
-CLAY_PIN="$(pin clay)"
-if [ ! -d "$CLAY" ]; then
-  git clone --filter=blob:none https://github.com/nicbarker/clay.git "$CLAY"
-  git -C "$CLAY" checkout --detach "$CLAY_PIN"
-fi
-# The Odin binding links linux/clay.a on Linux only; OpenBSD uses the same
-# ELF archive (patches/clay-openbsd.patch). Applied once, in place.
-if git -C "$CLAY" apply --check "$HERE/patches/clay-openbsd.patch" 2>/dev/null; then
-  git -C "$CLAY" apply "$HERE/patches/clay-openbsd.patch"
-fi
-
-if [ "${1:-}" != sources ]; then
-  # Rebuild Clay: the upstream prebuilt archive has the slot-reuse bug too.
-  # clay-scroll-target.patch keeps a clipped label from swallowing the wheel.
-  # clay-float-layer.patch keeps a z-less float (the text caret) above the
-  # floating panel it sits in.
-  # clay-nested-clip.patch keeps rows scrolled out of an outer clip (under
-  # the phone navigation bar) from taking its clicks.
-  # clay-cjk-wrap.patch lets lines break between CJK characters, which
-  # have no spaces to break at.
-  CLAY_LIB="$CLAY/bindings/odin/clay-odin/linux/clay.a"
-  CLAY_PATCHES=("$HERE/patches/clay-hashmap.patch" "$HERE/patches/clay-scroll-target.patch" "$HERE/patches/clay-scroll-reflow.patch" "$HERE/patches/clay-float-layer.patch" "$HERE/patches/clay-nested-clip.patch" "$HERE/patches/clay-cjk-wrap.patch")
-  CLAY_KEY="$(native_key 'clay C PIC O2 CLAY_IMPLEMENTATION' "$CLAY/clay.h" "${CLAY_PATCHES[@]}")"
-  if ! build_cache_fresh "$CLAY_KEY" "$HERE/build/clay/stamp" "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.h"; then
-    rm -f "$HERE/build/clay/stamp" "$HERE/build/clay/clay.a"
-    mkdir -p "$HERE/build/clay"
-    cp "$CLAY/clay.h" "$HERE/build/clay/clay.h"
-    for patch in "${CLAY_PATCHES[@]}"; do
-      apply_in_build clay "$patch"
-    done
-    cc -x c -c -DCLAY_IMPLEMENTATION -fPIC -O2 "$HERE/build/clay/clay.h" -o "$HERE/build/clay/clay.o"
-    ar rcs "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.o"
-    build_cache_store "$CLAY_KEY" "$HERE/build/clay/stamp" "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.h"
-  fi
-  cp "$HERE/build/clay/clay.a" "$CLAY_LIB"
-fi
-
 # Local LifeHash avatars. The relay's Git server does not support shallow clones.
 CROP="$HERE/vendor/crop-circles"
 CROP_PIN="$(pin crop-circles)"
@@ -794,7 +756,7 @@ Linux) APP_LIBS+=("$HERE/build/libwnappimage.a") ;;
 Darwin) APP_LIBS+=("$HERE/build/libwnsparkle.a") ;;
 OpenBSD) APP_LIBS+=("$HERE/build/libwnsandbox.a" "$HERE/build/sdl/lib/libSDL3.a") ;;
 esac
-APP_INPUTS=("$HERE/app" "$HERE/marmot" "$HERE/lang" "$HERE/themes" "$CROP" "$CLAY/bindings/odin/clay-odin" "$HERE/vendor/common-passwords.txt" "$HERE/build/observability-tokens.toml")
+APP_INPUTS=("$HERE/app" "$HERE/marmot" "$HERE/lang" "$HERE/themes" "$CROP" "$HERE/vendor/common-passwords.txt" "$HERE/build/observability-tokens.toml")
 # whip-flags.sh enables the sibling checkout's sources; their content keys the cache.
 if [ "${#WHIP_ARGS[@]}" -gt 0 ]; then
   APP_INPUTS+=("$HERE/../whip/src")
@@ -848,10 +810,6 @@ if [ "${1:-}" = test ]; then
   "$HERE/build/math-helper-test" "$HERE/build/wn-math"
   cc -std=c11 -I"$HERE/vendor/mdk/crates/marmot-c/include" "$HERE/tests/event-layout-test.c" -o "$HERE/build/event-layout-test"
   "$HERE/build/event-layout-test"
-  cc -O2 -I"$HERE/build/clay" "$HERE/tests/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"
-  "$HERE/build/clay/hashmap-test"
-  cc -O2 -I"$HERE/build/clay" "$HERE/tests/clay_scroll_test.c" -lm -o "$HERE/build/clay/scroll-test"
-  "$HERE/build/clay/scroll-test"
   # Needs the Linux-only speech runtime (see the speech helpers above).
   if [ "$(uname -s)" = Linux ]; then
     cc -O2 -Wall -Wextra -DWN_LOCATION_TIMEOUT_MS=1000 "$HERE/app/location.c" \

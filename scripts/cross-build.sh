@@ -187,26 +187,7 @@ env -u CC -u CXX -u AR -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_SYSROOT_DIR \
 MARMOT_ARCHIVE="$OUT/cargo/$MARMOT_STAMP/$RUST_TARGET/release/libmarmot_c.a"
 if ! cmp -s "$MARMOT_ARCHIVE" "$OUT/libmarmot_c.a"; then cp "$MARMOT_ARCHIVE" "$OUT/libmarmot_c.a"; fi
 
-mkdir -p "$OUT/clay" "$OUT/fbx" "$OUT/math" "$OUT/stb"
-CLAY_PATCHES=()
-for patch in clay-hashmap clay-scroll-target clay-scroll-reflow clay-float-layer clay-nested-clip clay-cjk-wrap clay-mingw-enums; do
-  CLAY_PATCHES+=("$HERE/patches/$patch.patch")
-done
-KEY="$(cross_key 'clay -x c -DCLAY_IMPLEMENTATION' "$HERE/vendor/clay/clay.h" "${CLAY_PATCHES[@]}")"
-if ! cross_fresh clay "$KEY" "$OUT/clay/clay.h" "$OUT/clay/clay.o" "$OUT/clay/clay.a"; then
-  cp "$HERE/vendor/clay/clay.h" "$OUT/clay/clay.h"
-  # Cached output may live behind a symlink. Apply directly in its physical
-  # directory without discovering the source repository above it.
-  CLAY_DIR="$(cd "$OUT/clay" && pwd -P)"
-  # clay-mingw-enums.patch only affects _WIN32: the Odin binding assumes MSVC's
-  # 4-byte enums there, while Clang for MinGW would pack them to 1 byte.
-  for patch in clay-hashmap clay-scroll-target clay-scroll-reflow clay-float-layer clay-nested-clip clay-cjk-wrap clay-mingw-enums; do
-    GIT_CEILING_DIRECTORIES="${CLAY_DIR%/*}" git -C "$CLAY_DIR" apply "$HERE/patches/$patch.patch"
-  done
-  "$CC" "${CFLAGS[@]}" -x c -c -DCLAY_IMPLEMENTATION "$OUT/clay/clay.h" -o "$OUT/clay/clay.o"
-  "$AR" rcs "$OUT/clay/clay.a" "$OUT/clay/clay.o"
-  cross_store clay "$KEY" "$OUT/clay/clay.h" "$OUT/clay/clay.o" "$OUT/clay/clay.a"
-fi
+mkdir -p "$OUT/fbx" "$OUT/math" "$OUT/stb"
 KEY="$(cross_key ufbx "$HERE/vendor/ufbx/ufbx.c" "$HERE/vendor/ufbx/ufbx.h")"
 if ! cross_fresh ufbx "$KEY" "$OUT/fbx/ufbx.o"; then
   "$CC" "${CFLAGS[@]}" -c "$HERE/vendor/ufbx/ufbx.c" -o "$OUT/fbx/ufbx.o"
@@ -367,9 +348,6 @@ ODIN_INPUTS=("$(command -v odin)" "$ODIN_ROOT/base" "$ODIN_ROOT/core" "$ODIN_ROO
 ODIN_LIST="$(mktemp)"
 find -L "$ODIN_ROOT/vendor" \( -name .git -o -name .hg -o -name .svn -o -name .env -o -name '*.env' \) -prune -o -name '*.odin' -print0 >"$ODIN_LIST"
 while IFS= read -r -d '' entry; do ODIN_INPUTS+=("$entry"); done <"$ODIN_LIST"
-CLAY_BINDINGS=()
-find -L "$HERE/vendor/clay/bindings/odin/clay-odin" \( -name .git -o -name .hg -o -name .svn -o -name .env -o -name '*.env' \) -prune -o -name '*.odin' -print0 >"$ODIN_LIST"
-while IFS= read -r -d '' entry; do CLAY_BINDINGS+=("$entry"); done <"$ODIN_LIST"
 rm -f "$ODIN_LIST"
 ODIN_ID="$(build_cache_key "odin $ODIN_ROOT $ODIN_TARGET $TARGET -o:speed -build-mode:obj" "${ODIN_INPUTS[@]}")"
 OVERLAY="$OUT/odin-root"
@@ -462,7 +440,7 @@ fi
 # Archive existence is checked by Odin, but archive bytes do not affect an
 # object-only compile. In particular MDK edits must change only the final link.
 KEY="$(cross_key "app-object $ODIN_ID" "$HERE/app" "$HERE/marmot" \
-  "${CLAY_BINDINGS[@]}" "$HERE/vendor/crop-circles" "$HERE/lang" "$HERE/themes" \
+  "$HERE/vendor/crop-circles" "$HERE/lang" "$HERE/themes" \
   "$HERE/vendor/common-passwords.txt" "$HERE/build/observability-tokens.toml")"
 if ! cross_fresh app-object "$KEY" "$OUT/app.o"; then
   odin build "$HERE/app" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
@@ -479,7 +457,7 @@ elif [ "$SYSTEM" = Darwin ]; then
   APP_LINK_ARGS=("$OUT/libwnsparkle.a")
 fi
 APP_LINK_INPUTS=("$OUT/app.o" "$OUT/libwnws.a" "$OUT/libwnipc.a" "$OUT/libwndecoder.a" "$OUT/libwntimestamp.a"
-  "$OUT/clay/clay.a" "$OUT/stb/stb.a" "$OUT/libmarmot_c.a")
+  "$OUT/stb/stb.a" "$OUT/libmarmot_c.a")
 case "$SYSTEM" in
 Windows) APP_LINK_INPUTS+=("${WINDOWS_RUNTIME[@]}" "$OUT/velopack/libvelopack_libc.dll.a") ;;
 Linux) APP_LINK_INPUTS+=("$OUT/libwnappimage.a") ;;
@@ -490,7 +468,7 @@ KEY="$(cross_key "$LINK_ID app-link $APP_PKG_KEY ${APP_LINK_ARGS[*]}" "${APP_LIN
 if ! cross_fresh app-link "$KEY" "$OUT/whitenoise$EXE"; then
   "$CC" "${CFLAGS[@]}" "$OUT/app.o" "${APP_LINK_ARGS[@]}" \
     "$OUT/libwnws.a" "$OUT/libwnipc.a" "$OUT/libwndecoder.a" "$OUT/libwntimestamp.a" \
-    "$OUT/clay/clay.a" "$OUT/stb/stb.a" "$OUT/libmarmot_c.a" \
+    "$OUT/stb/stb.a" "$OUT/libmarmot_c.a" \
     $(pkg-config --libs sdl3 mpv libcurl openssl) \
     "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/whitenoise$EXE"
   cross_store app-link "$KEY" "$OUT/whitenoise$EXE"

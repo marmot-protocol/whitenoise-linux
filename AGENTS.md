@@ -26,7 +26,7 @@ output is already present, so only the first run is slow:
 - `vendor/mdk` cloned at `mdk-commit` from `DEPS_PIN`, and its C bundle built by
   upstream's own `crates/marmot-c/c-bindings.sh` (this is the Rust part of the
   build, and the long pole on a cold checkout).
-- `vendor/clay` and `vendor/ufbx` at their pinned commits; `ufbx.c`,
+- `vendor/ufbx` at its pinned commit; `ufbx.c`,
   `app/fbx_shim.c` and `app/fbx_helper.c` build the isolated `build/wn-fbx`
   parser and animation helper. `model-decoder/` builds `build/wn-mesh` for
   STL, OBJ, GLB and G-code. Neither parser library is linked into the UI.
