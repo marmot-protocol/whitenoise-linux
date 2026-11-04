@@ -6,7 +6,7 @@ import "core:thread"
 import rl "sdlrl"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 @(private)
 Account_Operation :: enum {

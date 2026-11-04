@@ -1,7 +1,6 @@
 package main
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:crypto/hash"
 import "core:encoding/base64"
@@ -14,6 +13,7 @@ import "core:sync"
 import "core:testing"
 import "core:text/edit"
 import "core:thread"
+import clay "layout"
 import rl "sdlrl"
 
 @(private)

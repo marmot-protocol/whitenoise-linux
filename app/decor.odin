@@ -5,7 +5,7 @@ package main
 
 import "core:math"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 Decor_View :: struct {

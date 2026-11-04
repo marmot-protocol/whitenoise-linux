@@ -1,6 +1,5 @@
 package main
 
-import "base:runtime"
 import "core:fmt"
 import "core:os"
 import "core:strings"
@@ -8,7 +7,7 @@ import "core:thread"
 import "core:time"
 import "core:unicode"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -987,16 +986,11 @@ finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id:
 	load_chat_list(client, account_id, ui)
 }
 
-// The pinned Odin binding omits C's HashMapCapacityExceeded.
-@(private)
-CLAY_HASH_MAP_CAPACITY :: u32(9)
-
 // Capacity errors request a larger arena; other layout errors are logged.
-error_handler :: proc "c" (errorData: clay.ErrorData) {
-	context = runtime.default_context()
+error_handler :: proc(errorData: clay.ErrorData) {
 	if errorData.errorType == .ElementsCapacityExceeded ||
 	   errorData.errorType == .TextMeasurementCapacityExceeded ||
-	   u32(errorData.errorType) == CLAY_HASH_MAP_CAPACITY {
+	   errorData.errorType == .HashMapCapacityExceeded {
 		layout_overflow = true
 		return
 	}

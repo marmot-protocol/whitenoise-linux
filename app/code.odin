@@ -14,7 +14,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Colors come from the active theme's own tokens, so a light or retro

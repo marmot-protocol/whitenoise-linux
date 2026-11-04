@@ -4,7 +4,7 @@ import "core:fmt"
 import "core:math"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 @(private)

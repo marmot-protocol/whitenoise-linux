@@ -4,7 +4,7 @@ import "core:fmt"
 import "core:strings"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // A task names one control. Search finds it, and every link to it opens the

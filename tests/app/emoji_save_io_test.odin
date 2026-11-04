@@ -1,7 +1,6 @@
 #+build linux
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
 import "core:os"
@@ -9,6 +8,7 @@ import "core:strings"
 import "core:sync"
 import "core:sys/posix"
 import "core:testing"
+import clay "layout"
 import rl "sdlrl"
 
 // Run alone: SDL and Clay own process-global state. Exercise both production
@@ -91,8 +91,7 @@ test_emoji_save_io_dispatch :: proc(t: ^testing.T) {
 			if !testing.expect_value(t, emoji_dir(), fixture_dir) {return}
 			if os.exists(fixture_dir) &&
 			   !testing.expect_value(t, os.remove_all(fixture_dir), nil) {return}
-			if os.exists(source) &&
-			   !testing.expect_value(t, os.remove(source), nil) {return}
+			if os.exists(source) && !testing.expect_value(t, os.remove(source), nil) {return}
 			if failure != 0 &&
 			   !testing.expect_value(
 					   t,
@@ -100,11 +99,7 @@ test_emoji_save_io_dispatch :: proc(t: ^testing.T) {
 					   nil,
 				   ) {return}
 			if failure == 1 &&
-			   !testing.expect_value(
-					   t,
-					   os.write_entire_file(fixture_dir, "blocked"),
-					   nil,
-				   ) {return}
+			   !testing.expect_value(t, os.write_entire_file(fixture_dir, "blocked"), nil) {return}
 			if failure >= 2 &&
 			   !testing.expect_value(t, os.make_directory(fixture_dir), nil) {return}
 			if failure == 2 &&
@@ -149,28 +144,13 @@ test_emoji_save_io_dispatch :: proc(t: ^testing.T) {
 				if !testing.expect_value(t, ui.emoji_staged, source) {return}
 				testing.expect_value(t, string(ui.emoji_name[:]), "party")
 				testing.expect_value(t, ui.focus, Focus.EmojiName)
-				if !testing.expect_value(
-					t,
-					len(custom_emoji_names),
-					failure == 3 ? 1 : 0,
-				) {return}
+				if !testing.expect_value(t, len(custom_emoji_names), failure == 3 ? 1 : 0) {return}
 				if failure == 3 {
-					bytes, read_err := os.read_entire_file(
-						destination,
-						context.temp_allocator,
-					)
+					bytes, read_err := os.read_entire_file(destination, context.temp_allocator)
 					testing.expect_value(t, read_err, nil)
-					testing.expect_value(
-						t,
-						string(bytes),
-						string(BUILTIN_EMOJI[0].png),
-					)
+					testing.expect_value(t, string(bytes), string(BUILTIN_EMOJI[0].png))
 					testing.expect_value(t, custom_emoji_names[0], "party.png")
-					testing.expect_value(
-						t,
-						custom_emoji_textures["party.png"],
-						old_texture,
-					)
+					testing.expect_value(t, custom_emoji_textures["party.png"], old_texture)
 					if !testing.expect_value(t, len(emoji_sources), 1) {return}
 					testing.expect_value(
 						t,
@@ -251,11 +231,7 @@ emoji_io_save_dispatch :: proc(t: ^testing.T, ui: ^Ui_State, keyboard, fail_writ
 		previous_signal: posix.sigaction_t
 		ignore: posix.sigaction_t
 		ignore.sa_handler = auto_cast posix.SIG_IGN
-		if !testing.expect_value(
-			t,
-			posix.sigemptyset(&ignore.sa_mask),
-			i32(0),
-		) {return false}
+		if !testing.expect_value(t, posix.sigemptyset(&ignore.sa_mask), i32(0)) {return false}
 		if !testing.expect_value(
 			t,
 			posix.sigaction(.SIGXFSZ, &ignore, &previous_signal),
@@ -273,11 +249,7 @@ emoji_io_save_dispatch :: proc(t: ^testing.T, ui: ^Ui_State, keyboard, fail_writ
 			posix.setrlimit(.FSIZE, &limited),
 			posix.result.OK,
 		) {return false}
-		defer testing.expect_value(
-			t,
-			posix.setrlimit(.FSIZE, &previous_limit),
-			posix.result.OK,
-		)
+		defer testing.expect_value(t, posix.setrlimit(.FSIZE, &previous_limit), posix.result.OK)
 		return emoji_io_save_dispatch(t, ui, keyboard, false)
 	}
 	if keyboard {

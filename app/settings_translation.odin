@@ -3,7 +3,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Shared with message controls. Download percentages describe the current

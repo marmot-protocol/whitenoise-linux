@@ -6,7 +6,7 @@ package main
 
 import "core:mem"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 Vault_Pw_Field :: enum {

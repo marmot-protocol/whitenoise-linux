@@ -5,7 +5,7 @@ import "core:strings"
 import "core:testing"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // SDL and Clay are process-global; run this test alone with ODIN_TEST_NAMES.

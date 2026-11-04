@@ -11,7 +11,7 @@ import "core:strings"
 import "core:testing"
 import "core:thread"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 @(test)

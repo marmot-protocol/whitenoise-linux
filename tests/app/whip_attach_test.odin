@@ -1,6 +1,5 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
 import "core:os"
@@ -8,6 +7,7 @@ import "core:strings"
 import "core:testing"
 import "core:text/edit"
 import "core:time"
+import clay "layout"
 import rl "sdlrl"
 import sdl "vendor:sdl3"
 
@@ -53,8 +53,7 @@ whip_float_dock :: proc(t: ^testing.T) {
 		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
 		{1280, 800},
 		{
-			handler = proc "c" (err: clay.ErrorData) {
-				context = runtime.default_context()
+			handler = proc(err: clay.ErrorData) {
 				testing.expect(
 					(^testing.T)(err.userData),
 					false,

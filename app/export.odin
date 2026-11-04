@@ -17,7 +17,7 @@ import "core:sync"
 import "core:thread"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 Transcript_Kind :: enum {

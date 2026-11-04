@@ -4,7 +4,7 @@ import "core:math"
 import "core:mem"
 import "core:sync"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 @(private)
 PASSWORD_MIN_BITS :: 40

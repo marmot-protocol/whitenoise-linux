@@ -1,10 +1,10 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:strings"
 import "core:testing"
 import "core:text/edit"
+import clay "layout"
 import rl "sdlrl"
 
 // SDL and Clay process globals require this isolated canonical invocation.

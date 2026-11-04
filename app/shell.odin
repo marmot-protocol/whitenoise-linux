@@ -18,7 +18,7 @@ _ :: linux
 _ :: windows
 _ :: posix
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // ── Gutters ─────────────────────────────────────────────────────────

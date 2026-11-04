@@ -27,7 +27,7 @@ import "core:sync"
 import "core:sys/windows"
 import "core:thread"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 _ :: windows
 

@@ -1,9 +1,9 @@
 package main
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:strings"
+import clay "layout"
 
 @(private)
 select_archived_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {

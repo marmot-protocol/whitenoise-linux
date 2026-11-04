@@ -5,7 +5,7 @@ import "core:testing"
 import "core:text/edit"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // SDL and Clay have process globals; run this in its own test invocation.
@@ -54,11 +54,7 @@ login_input_required :: proc(t: ^testing.T) {
 		if !testing.expect(t, data.found, "button exists") {return}
 		b := data.boundingBox
 		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
-		if !testing.expect(
-			t,
-			clay.PointerOver(clay.ID(name)),
-			"button is reachable",
-		) {return}
+		if !testing.expect(t, clay.PointerOver(clay.ID(name)), "button is reachable") {return}
 		forced_release = true
 		handle_login(ui, client)
 		forced_release = false
@@ -75,8 +71,7 @@ login_input_required :: proc(t: ^testing.T) {
 	for command in commands.internalArray[:commands.length] {
 		if command.commandType != .Text {continue}
 		text := command.renderData.text.stringContents
-		if string(text.chars[:text.length]) ==
-		   "Enter your nsec to continue." {visible = true}
+		if string(text.chars[:text.length]) == "Enter your nsec to continue." {visible = true}
 	}
 	testing.expect(t, visible, "required-key feedback is rendered on the next frame")
 	// Keyboard submission takes the same path, including repeated attempts.
@@ -131,7 +126,11 @@ login_input_required :: proc(t: ^testing.T) {
 						handle_login(&ui, &client)
 						rl.PushKey(.ENTER, false)
 					} else {click(t, &ui, &client, "LoginGo")}
-					if !testing.expect_value(t, ui.login_error, tr("Enter your bunker link to continue.")) {return}
+					if !testing.expect_value(
+						t,
+						ui.login_error,
+						tr("Enter your bunker link to continue."),
+					) {return}
 					testing.expect(t, auth_job == nil)
 					testing.expect_value(t, string(ui.login_input[:]), input)
 					commands := frame(&ui)
@@ -139,9 +138,14 @@ login_input_required :: proc(t: ^testing.T) {
 					for command in commands.internalArray[:commands.length] {
 						if command.commandType != .Text {continue}
 						text := command.renderData.text.stringContents
-						if string(text.chars[:text.length]) == tr("Enter your bunker link to continue.") {visible = true}
+						if string(text.chars[:text.length]) ==
+						   tr("Enter your bunker link to continue.") {visible = true}
 					}
-					testing.expect(t, visible, "required-link feedback is rendered on the next frame")
+					testing.expect(
+						t,
+						visible,
+						"required-link feedback is rendered on the next frame",
+					)
 				}
 			}
 		}

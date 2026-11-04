@@ -1,7 +1,6 @@
 package main
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:encoding/json"
 import "core:fmt"
@@ -10,6 +9,7 @@ import "core:strings"
 import "core:testing"
 import "core:text/edit"
 import "core:time"
+import clay "layout"
 import rl "sdlrl"
 import sdl "vendor:sdl3"
 

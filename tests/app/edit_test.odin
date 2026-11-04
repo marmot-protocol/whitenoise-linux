@@ -4,13 +4,13 @@
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:sync"
 import "core:testing"
 import "core:text/edit"
+import clay "layout"
 import rl "sdlrl"
 
 @(test)

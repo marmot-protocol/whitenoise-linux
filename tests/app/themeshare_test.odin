@@ -6,8 +6,8 @@ import "core:os"
 import "core:strings"
 import "core:sync"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:testing"
+import clay "layout"
 import rl "sdlrl"
 
 // The slug is a filename and a map key, so anything that could escape

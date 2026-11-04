@@ -1,6 +1,5 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:encoding/json"
 import "core:fmt"
@@ -8,6 +7,7 @@ import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:testing"
+import clay "layout"
 import rl "sdlrl"
 
 // Run separately with SDL_VIDEODRIVER=dummy and

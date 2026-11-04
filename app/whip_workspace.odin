@@ -1,7 +1,7 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:strings"
+import clay "layout"
 import rl "sdlrl"
 
 // Preferences own every string. Numeric IDs are usable only together with the

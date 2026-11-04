@@ -22,7 +22,7 @@ import "core:sync"
 import "core:thread"
 import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // The page is rendered at the size it is shown at, in device pixels,

@@ -4,7 +4,7 @@ import "core:strings"
 import "core:sync"
 import "core:testing"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 @(test)

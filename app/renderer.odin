@@ -5,7 +5,6 @@ package main
 
 import "core:time"
 
-import "base:runtime"
 import "core:fmt"
 import "core:math"
 import "core:os"
@@ -15,7 +14,7 @@ _ :: fmt
 _ :: os
 _ :: strings
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Glyph atlases rasterize at size*UI_SCALE physical pixels, so glyphs
@@ -322,12 +321,11 @@ clay_color :: proc(color: clay.Color) -> rl.Color {
 	return {u8(color.r), u8(color.g), u8(color.b), u8(color.a)}
 }
 
-measure_text :: proc "c" (
+measure_text :: proc(
 	text: clay.StringSlice,
 	config: ^clay.TextElementConfig,
 	userData: rawptr,
 ) -> clay.Dimensions {
-	context = runtime.default_context()
 	context.allocator = reload_allocator()
 	size := rl.MeasureTextLine(
 		config.fontId,

@@ -18,7 +18,7 @@ import "core:thread"
 import "core:unicode"
 import "core:unicode/utf8"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 import marmot "../marmot"

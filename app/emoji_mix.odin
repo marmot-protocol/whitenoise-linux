@@ -18,7 +18,7 @@ import "core:strings"
 import stbi "vendor:stb/image"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Android's geometry, kept identical so both platforms produce the

@@ -4,10 +4,10 @@ import "base:runtime"
 import "core:os"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:strings"
 import "core:testing"
 import "core:text/edit"
+import clay "layout"
 import rl "sdlrl"
 
 // Run separately: SDL_VIDEODRIVER=dummy tests/odin.sh app
@@ -117,11 +117,7 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		}
 		layout(&ui)
 		click(t, &ui, client, clay.ID("NewChatBtn"))
-		testing.expect(
-			t,
-			len(ui.nc_name) == 0,
-			"a fresh form must not retain the abandoned name",
-		)
+		testing.expect(t, len(ui.nc_name) == 0, "a fresh form must not retain the abandoned name")
 		layout(&ui)
 		click(t, &ui, client, clay.ID("NCGroup"))
 		testing.expect(t, len(ui.nc_name) == 0, "group field starts empty")

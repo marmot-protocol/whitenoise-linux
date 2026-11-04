@@ -17,7 +17,7 @@ import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Wireframe overlay swatches, in the order the panel shows them; the

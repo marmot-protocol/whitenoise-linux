@@ -17,7 +17,7 @@ import "core:sync"
 import "core:thread"
 import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import sdl "vendor:sdl3"
 
 import marmot "../marmot"

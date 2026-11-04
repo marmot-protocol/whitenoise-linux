@@ -1,8 +1,8 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:strings"
+import clay "layout"
 
 @(private)
 Reading_Place :: struct {

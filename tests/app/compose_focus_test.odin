@@ -4,7 +4,7 @@ import "core:sync"
 import "core:testing"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Up in an empty composer edits the newest own message the current view

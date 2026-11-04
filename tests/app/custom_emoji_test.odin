@@ -1,13 +1,13 @@
 package main
 
 import "base:runtime"
-import clay "../vendor/clay/bindings/odin/clay-odin"
-import rl "sdlrl"
 import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:testing"
+import clay "layout"
+import rl "sdlrl"
 
 import marmot "../marmot"
 
@@ -31,19 +31,21 @@ test_emoji_save_dispatch :: proc(t: ^testing.T) {
 	scanned := custom_emoji_scanned
 	custom_emoji_scanned = true
 	defer {custom_emoji_scanned = scanned; forced_release = false; kb_focus = ""}
-	ui := Ui_State{page = .Settings, audit_scanned = true}
+	ui := Ui_State {
+		page          = .Settings,
+		audit_scanned = true,
+	}
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
 	g_ui, g_prefs = &ui, &ui.prefs
-	defer {g_ui, g_prefs = nil, nil; settings_stop(&ui); delete(ui.emoji_staged); delete(ui.emoji_name)}
+	defer {g_ui, g_prefs = nil, nil; settings_stop(&ui); delete(ui.emoji_staged)
+		delete(ui.emoji_name)}
 	settings_open(&ui, nil, .General, 2, level = .Sheet)
 	ui.settings_anchor = "CustomEmojiGroup"
 	for keyboard in ([]bool{false, true}) {
-		for row in ([]struct{path, name: string}{
-			{"/staged/!!!.png", ""},
-			{"/staged/😀🎉.png", ""},
-			{"/staged/!!!.png", "!!!"},
-		}) {
+		for row in ([]struct {
+				path, name: string,
+			}{{"/staged/!!!.png", ""}, {"/staged/😀🎉.png", ""}, {"/staged/!!!.png", "!!!"}}) {
 			stage_emoji(&ui, row.path)
 			testing.expect_value(t, len(ui.emoji_name), 0)
 			append(&ui.emoji_name, ..transmute([]u8)row.name)
@@ -72,7 +74,13 @@ test_emoji_save_dispatch :: proc(t: ^testing.T) {
 					forced_release = false
 				}
 				banner_tick(&ui)
-				testing.expect_value(t, ui.banner, tr("Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name."))
+				testing.expect_value(
+					t,
+					ui.banner,
+					tr(
+						"Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name.",
+					),
+				)
 				testing.expect_value(t, ui.banner_kind, Status_Kind.Error)
 				testing.expect_value(t, ui.emoji_staged, row.path)
 				testing.expect_value(t, string(ui.emoji_name[:]), row.name)
@@ -86,10 +94,19 @@ test_emoji_save_dispatch :: proc(t: ^testing.T) {
 @(test)
 test_save_staged_emoji_empty_shortcode :: proc(t: ^testing.T) {
 	for name in ([]string{"!!!", " \t\n", "😀🎉", "", "é日本語"}) {
-		ui := Ui_State{emoji_staged = strings.clone("staged-image.png"), focus = .EmojiName}
+		ui := Ui_State {
+			emoji_staged = strings.clone("staged-image.png"),
+			focus        = .EmojiName,
+		}
 		append(&ui.emoji_name, ..transmute([]u8)name)
 		save_staged_emoji(&ui)
-		testing.expect_value(t, ui.client_status, tr("Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name."))
+		testing.expect_value(
+			t,
+			ui.client_status,
+			tr(
+				"Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name.",
+			),
+		)
 		testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
 		banner_tick(&ui)
 		testing.expect_value(t, ui.banner, ui.client_status)
@@ -113,9 +130,14 @@ test_save_staged_emoji_sanitization :: proc(t: ^testing.T) {
 	previous := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
 	if !testing.expect_value(t, os.set_env("XDG_CONFIG_HOME", home), nil) {return}
 	defer {
-		if previous == "" {os.unset_env("XDG_CONFIG_HOME")} else {os.set_env("XDG_CONFIG_HOME", previous)}
+		if previous ==
+		   "" {os.unset_env("XDG_CONFIG_HOME")} else {os.set_env("XDG_CONFIG_HOME", previous)}
 	}
-	if !testing.expect_value(t, os.make_directory(fmt.tprintf("%s/whitenoise", home)), nil) {return}
+	if !testing.expect_value(
+		t,
+		os.make_directory(fmt.tprintf("%s/whitenoise", home)),
+		nil,
+	) {return}
 	saved_names := custom_emoji_names
 	saved_sources := emoji_sources
 	saved_scanned := custom_emoji_scanned
@@ -131,16 +153,19 @@ test_save_staged_emoji_sanitization :: proc(t: ^testing.T) {
 	}
 	source := fmt.tprintf("%s/source.png", home)
 	if !testing.expect_value(t, os.write_entire_file(source, BUILTIN_EMOJI[0].png), nil) {return}
-	for row in ([]struct{name, code: string}{
-		{"Party-01_OK!😀", "party_01_ok"},
-		{"-", "_"},
-		{"_", "_"},
-		{"AZ09", "az09"},
-	}) {
-		ui := Ui_State{emoji_staged = strings.clone(source), focus = .EmojiName}
+	for row in ([]struct {
+			name, code: string,
+		}{{"Party-01_OK!😀", "party_01_ok"}, {"-", "_"}, {"_", "_"}, {"AZ09", "az09"}}) {
+		ui := Ui_State {
+			emoji_staged = strings.clone(source),
+			focus        = .EmojiName,
+		}
 		append(&ui.emoji_name, ..transmute([]u8)row.name)
 		save_staged_emoji(&ui)
-		data, read_err := os.read_entire_file(fmt.tprintf("%s/%s.png", emoji_dir(), row.code), context.temp_allocator)
+		data, read_err := os.read_entire_file(
+			fmt.tprintf("%s/%s.png", emoji_dir(), row.code),
+			context.temp_allocator,
+		)
 		testing.expect_value(t, read_err, nil)
 		testing.expect_value(t, string(data), string(BUILTIN_EMOJI[0].png))
 		testing.expect_value(t, ui.emoji_staged, "")

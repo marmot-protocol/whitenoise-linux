@@ -2,8 +2,9 @@
 
 Guidance for AI coding agents working in this repository.
 
-White Noise Linux is an Odin + [clay](https://github.com/nicbarker/clay)
-desktop client for [Marmot](https://github.com/marmot-protocol/mdk): MLS group
+White Noise Linux is an Odin desktop client, laid out by a native port of
+[clay](https://github.com/nicbarker/clay) in `app/layout/`, for
+[Marmot](https://github.com/marmot-protocol/mdk): MLS group
 messaging over Nostr relays. It talks to the Marmot runtime through
 `marmot-c`, the same C API the Android, iOS, and macOS apps use.
 
@@ -174,6 +175,13 @@ packaged `wn-archive` and `wn-pdf` helpers, not in the UI process.
   subscription worker feeds updates into a queue that the UI thread drains at
   a frame boundary, and each send runs on its own short-lived thread. Anything
   that can block belongs on a worker.
+- **`app/layout/`** is the layout engine: package `clay`, a line-for-line
+  Odin port of clay at `e6cc369` with White Noise's fixes folded in (hash map
+  slot reuse, scroll targeting and reflow, floating layers, nested clip hit
+  tests, CJK line breaks). It keeps the C binding's API, so call sites read
+  `clay.UI(...)`, `clay.Text(...)`. The debug view and external scroll
+  handling are not ported; transitions are. Change layout behavior there, not
+  in callers. `tests/app/layout_engine_test.odin` covers the fixes.
 - **`app/sdlrl/`** is an SDL3 shim with a raylib-shaped API (window, input,
   clipboard, screenshots, IME, and a stb_truetype text engine with a CJK
   fallback stack). It exists because the app was written against raylib

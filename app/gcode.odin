@@ -8,7 +8,7 @@ import "core:mem"
 import "core:slice"
 import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 GCODE_COLOR :: rl.FColor{0.93, 0.58, 0.25, 1} // filament orange

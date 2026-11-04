@@ -1,10 +1,10 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
 import "core:os"
 import "core:testing"
+import clay "layout"
 import rl "sdlrl"
 
 // Full shell layout and pointer hit testing, without a live account or network.

@@ -9,7 +9,7 @@ import "core:time"
 import "core:unicode"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 // Subscription opening window and each cursor-based pagination step.
 TL_PAGE :: 100

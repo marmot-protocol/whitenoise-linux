@@ -2,20 +2,20 @@
 // until Use so Use original and Cancel never touch the committed avatar.
 package main
 
+import marmot "../marmot"
 import "base:runtime"
 import "core:c"
 import "core:c/libc"
 import "core:slice"
 import "core:strings"
 import "core:thread"
-import marmot "../marmot"
-import stbi "vendor:stb/image"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
+import stbi "vendor:stb/image"
 
 @(private)
 Photo_Crop :: struct {
-	active: bool,
+	active:     bool,
 	x, y, side: i32,
 }
 
@@ -38,7 +38,11 @@ photo_crop_clamp :: proc(p: ^Photo_Preview) {
 @(private)
 photo_crop_resize :: proc(p: ^Photo_Preview, factor: f32) {
 	before := p.crop.side
-	p.crop.side = clamp(i32(f32(before) * factor), i32(1), min(p.draft.image.width, p.draft.image.height))
+	p.crop.side = clamp(
+		i32(f32(before) * factor),
+		i32(1),
+		min(p.draft.image.width, p.draft.image.height),
+	)
 	p.crop.x += (before - p.crop.side) / 2
 	p.crop.y += (before - p.crop.side) / 2
 	photo_crop_clamp(p)
@@ -84,7 +88,7 @@ photo_crop_input :: proc(p: ^Photo_Preview) {
 		// Handles win over moving the interior. At very small crop sizes,
 		// choose the nearest corner rather than letting overlapping hits
 		// make the bottom/right handles unreachable.
-		for i in 1..=4 {
+		for i in 1 ..= 4 {
 			id := clay.ID("PhotoCropHandle", u32(i))
 			if !clay.PointerOver(id) {continue}
 			handle := clay.GetElementData(id).boundingBox
@@ -101,7 +105,11 @@ photo_crop_input :: proc(p: ^Photo_Preview) {
 		}
 	}
 	if p.crop_drag && rl.IsMouseButtonDown(.LEFT) {
-		photo_crop_drag_to(p, (mouse.x - p.crop_pointer.x) / scale, (mouse.y - p.crop_pointer.y) / scale)
+		photo_crop_drag_to(
+			p,
+			(mouse.x - p.crop_pointer.x) / scale,
+			(mouse.y - p.crop_pointer.y) / scale,
+		)
 	}
 	if !rl.IsMouseButtonDown(.LEFT) {p.crop_drag = false}
 	if !p.crop_drag && clay.PointerOver(clay.ID("PhotoImage")) {
@@ -112,7 +120,7 @@ photo_crop_input :: proc(p: ^Photo_Preview) {
 
 @(private = "file")
 Photo_Png_Sink :: struct {
-	ctx: runtime.Context,
+	ctx:   runtime.Context,
 	bytes: ^[dynamic]u8,
 }
 
@@ -127,33 +135,50 @@ photo_png_sink :: proc "c" (ctx: rawptr, data: rawptr, size: c.int) {
 // accompany cropped pixels: workers must upload exactly what was selected.
 @(private)
 photo_crop_draft :: proc(source: rl.Image, crop: Photo_Crop) -> (draft: Pic_Draft, ok: bool) {
-	if source.data == nil || crop.side < 1 || crop.x < 0 || crop.y < 0 ||
-	   crop.x + crop.side > source.width || crop.y + crop.side > source.height {return}
+	if source.data == nil ||
+	   crop.side < 1 ||
+	   crop.x < 0 ||
+	   crop.y < 0 ||
+	   crop.x + crop.side > source.width ||
+	   crop.y + crop.side > source.height {return}
 	edge := int(crop.side)
 	pixels := ([^]u8)(libc.malloc(uint(edge * edge * 4)))
 	if pixels == nil {return}
 	input := slice.bytes_from_ptr(source.data, int(source.width) * int(source.height) * 4)
 	output := pixels[:edge * edge * 4]
-	for row in 0..<edge {
+	for row in 0 ..< edge {
 		start := ((int(crop.y) + row) * int(source.width) + int(crop.x)) * 4
 		copy(output[row * edge * 4:(row + 1) * edge * 4], input[start:start + edge * 4])
 	}
 	encoded: [dynamic]u8
 	sink := Photo_Png_Sink{context, &encoded}
-	written := stbi.write_png_to_func(photo_png_sink, &sink, crop.side, crop.side, 4, pixels, crop.side * 4)
+	written := stbi.write_png_to_func(
+		photo_png_sink,
+		&sink,
+		crop.side,
+		crop.side,
+		4,
+		pixels,
+		crop.side * 4,
+	)
 	if written == 0 || len(encoded) == 0 {
 		delete(encoded); libc.free(pixels)
 		return
 	}
-	return {data = encoded[:], media_type = "image/png", image = {data = pixels, width = crop.side, height = crop.side}}, true
+	return {
+			data = encoded[:],
+			media_type = "image/png",
+			image = {data = pixels, width = crop.side, height = crop.side},
+		},
+		true
 }
 
 @(private)
 Photo_Crop_Job :: struct {
-	worker: ^thread.Thread,
+	worker:         ^thread.Thread,
 	source, result: Pic_Draft,
-	crop: Photo_Crop,
-	ok: bool,
+	crop:           Photo_Crop,
+	ok:             bool,
 }
 
 @(private = "file")
@@ -206,11 +231,21 @@ photo_crop_drain :: proc(ui: ^Ui_State, client: ^marmot.Client, allow_use := tru
 					photo_use(ui, client)
 				} else {
 					photo_cancel(ui)
-					set_status(ui, strings.clone(tr("Couldn't use the picture. Wait a moment and try again.")), .Error)
+					set_status(
+						ui,
+						strings.clone(
+							tr("Couldn't use the picture. Wait a moment and try again."),
+						),
+						.Error,
+					)
 				}
 			} else {
 				ui.photo.draft = job.source; job.source = {}
-				set_status(ui, strings.clone(tr("Couldn't crop the picture. Please try again.")), .Error)
+				set_status(
+					ui,
+					strings.clone(tr("Couldn't crop the picture. Please try again.")),
+					.Error,
+				)
 			}
 		}
 		pic_draft_free(&job.source); pic_draft_free(&job.result); free(job)

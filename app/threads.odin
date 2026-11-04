@@ -18,7 +18,7 @@ package main
 import "core:fmt"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 THREAD_KICK :: f32(26) // px the timeline slides in from on push/pop

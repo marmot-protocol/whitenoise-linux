@@ -1,9 +1,9 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:sync"
 import "core:testing"
 import "core:time"
+import clay "layout"
 import rl "sdlrl"
 
 @(test)

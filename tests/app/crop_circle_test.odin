@@ -1,6 +1,5 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import cc "../vendor/crop-circles"
 import "base:runtime"
 import "core:crypto/hash"
@@ -10,6 +9,7 @@ import "core:slice"
 import "core:strings"
 import "core:testing"
 import "core:time"
+import clay "layout"
 import rl "sdlrl"
 
 @(test)

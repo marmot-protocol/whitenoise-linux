@@ -38,7 +38,7 @@ import "core:thread"
 import "core:time"
 import "core:unicode/utf8"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 import marmot "../marmot"
 import rl "sdlrl"

@@ -1,7 +1,6 @@
 package main
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
 import "core:strings"
@@ -9,6 +8,7 @@ import "core:sync"
 import "core:testing"
 import "core:thread"
 import "core:time"
+import clay "layout"
 
 @(test)
 live_refresh_does_not_wait :: proc(t: ^testing.T) {

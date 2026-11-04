@@ -1,8 +1,8 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:sync"
 import "core:testing"
+import clay "layout"
 
 @(test)
 member_menu_permissions :: proc(t: ^testing.T) {

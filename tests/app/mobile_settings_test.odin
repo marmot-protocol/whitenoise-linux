@@ -4,7 +4,7 @@ import "base:runtime"
 import "core:strings"
 import "core:testing"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Kept isolated like settings_viewport: fonts and Clay own process-global state.

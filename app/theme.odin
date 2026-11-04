@@ -10,7 +10,7 @@ import "core:slice"
 import "core:strconv"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 import marmot "../marmot"
 import rl "sdlrl"

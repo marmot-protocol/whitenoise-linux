@@ -1,12 +1,12 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:encoding/endian"
 import "core:fmt"
 import "core:mem"
 import "core:os"
 import "core:strings"
 import "core:unicode/utf8"
+import clay "layout"
 
 @(private)
 TRANSLATION_TEXT_CAP :: 65536

@@ -1,13 +1,13 @@
 package main
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:testing"
 import "core:text/edit"
+import clay "layout"
 import rl "sdlrl"
 
 // SDL and Clay own process globals, so run this in its own process.

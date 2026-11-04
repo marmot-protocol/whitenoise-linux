@@ -1,10 +1,10 @@
 package main
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:slice"
 import "core:strings"
+import clay "layout"
 import rl "sdlrl"
 
 @(private)

@@ -6,9 +6,9 @@ import "core:strings"
 import "core:testing"
 import "core:text/edit"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
-import rl "sdlrl"
 import marmot "../marmot"
+import clay "layout"
+import rl "sdlrl"
 
 // SDL and Clay own process globals; run this separately like the other UI tests.
 @(test)
@@ -19,11 +19,26 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
 	deployment: ^marmot.Deployment
-	if !testing.expect_value(t, marmot.deployment_white_noise(&deployment), marmot.Status.OK) {return}
+	if !testing.expect_value(
+		t,
+		marmot.deployment_white_noise(&deployment),
+		marmot.Status.OK,
+	) {return}
 	defer marmot.deployment_free(deployment)
 	client: ^marmot.Client
 	store := vault_secret_store()
-	if !testing.expect_value(t, marmot.client_new_with_secret_store(strings.clone_to_cstring(dir, context.temp_allocator), nil, 0, &store, deployment, &client), marmot.Status.OK) {return}
+	if !testing.expect_value(
+		t,
+		marmot.client_new_with_secret_store(
+			strings.clone_to_cstring(dir, context.temp_allocator),
+			nil,
+			0,
+			&store,
+			deployment,
+			&client,
+		),
+		marmot.Status.OK,
+	) {return}
 	defer marmot.client_free(client)
 	rl.InitWindow(1024, 700, "Archive chat")
 	defer rl.CloseWindow()
@@ -38,12 +53,19 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
 	defer {clay.SetCurrentContext(previous); delete(memory)}
-	ui := Ui_State {page = .Chats, selected = 0, row_menu = -1, member_menu = -1, audit_scanned = true}
+	ui := Ui_State {
+		page          = .Chats,
+		selected      = 0,
+		row_menu      = -1,
+		member_menu   = -1,
+		audit_scanned = true,
+	}
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
 	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
-	append(&ui.chats,
+	append(
+		&ui.chats,
 		Chat_Row_Ui{group_id = "selected-chat", title = "Open conversation"},
 		Chat_Row_Ui{group_id = "menu-chat", title = "Archive example"},
 	)
@@ -124,7 +146,10 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 			rl.PushKey(.ENTER, false)
 		} else {
 			if cancel == "backdrop" {clay.SetPointerState({1, 1}, false)} else {
-				if !point(t, cancel == "confirm-click" || cancel == "switch-click" ? "ConfirmGo" : cancel) {return}
+				if !point(
+					t,
+					cancel == "confirm-click" || cancel == "switch-click" ? "ConfirmGo" : cancel,
+				) {return}
 			}
 			forced_release = true
 			handle_confirm(&ui, client)

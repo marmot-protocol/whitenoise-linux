@@ -8,7 +8,7 @@ import "core:thread"
 import "core:time"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 @(test)
@@ -129,8 +129,7 @@ group_files_layout :: proc(t: ^testing.T) {
 		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
 		{1000, 800},
 		{
-			handler = proc "c" (err: clay.ErrorData) {
-				context = runtime.default_context()
+			handler = proc(err: clay.ErrorData) {
 				testing.expect(
 					(^testing.T)(err.userData),
 					false,

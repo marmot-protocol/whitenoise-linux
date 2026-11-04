@@ -22,7 +22,7 @@ import "core:os"
 import "core:strings"
 import "core:thread"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 import marmot "../marmot"

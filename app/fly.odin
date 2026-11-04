@@ -14,7 +14,7 @@ package main
 import "core:math"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 FLY_MAX :: 3 // overlapping flights are rare; the oldest slot recycles

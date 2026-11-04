@@ -1,9 +1,9 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:sync"
 import "core:testing"
 import "core:time"
+import clay "layout"
 
 @(test)
 pending_layout_balanced :: proc(t: ^testing.T) {
@@ -20,7 +20,7 @@ pending_layout_balanced :: proc(t: ^testing.T) {
 		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
 		{800, 600},
 		{
-			handler = proc "c" (error: clay.ErrorData) {(^int)(error.userData)^ += 1},
+			handler = proc(error: clay.ErrorData) {(^int)(error.userData)^ += 1},
 			userData = &errors,
 		},
 	)

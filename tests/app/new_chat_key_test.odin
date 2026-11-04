@@ -4,7 +4,7 @@ import "core:strings"
 import "core:sync"
 import "core:testing"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 @(test)
 new_chat_invalid_npub_feedback :: proc(t: ^testing.T) {
@@ -15,7 +15,7 @@ new_chat_invalid_npub_feedback :: proc(t: ^testing.T) {
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
 	clay.SetMeasureTextFunction(
-		proc "c" (
+		proc(
 			text: clay.StringSlice,
 			config: ^clay.TextElementConfig,
 			user: rawptr,

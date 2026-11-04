@@ -7,7 +7,7 @@ import "core:strings"
 import "core:testing"
 import "core:text/edit"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Run alone because SDL and Clay own process globals.
@@ -63,11 +63,7 @@ folder_count_dispatch :: proc(t: ^testing.T) {
 		if !testing.expect(t, data.found, "dispatch target exists") {return false}
 		b := data.boundingBox
 		clay.SetPointerState({b.x + b.width / 2, b.y + b.height / 2}, false)
-		if !testing.expect(
-			t,
-			clay.PointerOver(id),
-			"dispatch target reachable",
-		) {return false}
+		if !testing.expect(t, clay.PointerOver(id), "dispatch target reachable") {return false}
 		forced_release = true
 		defer forced_release = false
 		if ui.folder_open {handle_folder_modal(ui, nil)} else {handle_folder_board(ui)}
@@ -98,8 +94,7 @@ folder_count_dispatch :: proc(t: ^testing.T) {
 		return ""
 	}
 	capture :: proc(ui: ^Ui_State, suffix: string) {
-		if prefix := os.get_env("WN_FOLDER_COUNT_CAPTURE", context.temp_allocator);
-		   prefix != "" {
+		if prefix := os.get_env("WN_FOLDER_COUNT_CAPTURE", context.temp_allocator); prefix != "" {
 			commands := frame(ui)
 			rl.BeginDrawing()
 			draw_frame(&commands)
@@ -135,11 +130,7 @@ folder_count_dispatch :: proc(t: ^testing.T) {
 		handle_folder_modal(&ui, nil)
 		testing.expect_value(t, string(ui.folder_rules[0].input[:]), value)
 		if !click(t, &ui, clay.ID("FolderSave")) {return}
-		if !testing.expect(
-			t,
-			ui.folder_open,
-			"invalid count must keep editor open",
-		) {return}
+		if !testing.expect(t, ui.folder_open, "invalid count must keep editor open") {return}
 		testing.expect_value(t, len(ui.prefs.folders), 0)
 		testing.expect_value(t, ui.focus, Focus.FolderRule)
 		commands = frame(&ui)

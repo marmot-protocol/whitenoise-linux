@@ -1,13 +1,13 @@
 package main
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:os"
 import "core:strings"
 import "core:testing"
 import "core:text/edit"
 import "core:thread"
+import clay "layout"
 import rl "sdlrl"
 
 // Neutral deployment keeps this generated fixture off public infrastructure.

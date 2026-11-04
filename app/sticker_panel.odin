@@ -1,10 +1,10 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:slice"
 import "core:strings"
 import "core:unicode/utf8"
+import clay "layout"
 import rl "sdlrl"
 
 @(private)

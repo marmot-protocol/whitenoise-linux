@@ -10,7 +10,7 @@ import "core:c"
 import "core:fmt"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 import sdl "vendor:sdl3"
 

@@ -11,7 +11,7 @@ import "core:sync"
 import "core:testing"
 import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Concatenating the runs must reproduce the line exactly, or the view
@@ -41,7 +41,7 @@ jsonl_preview_scroll :: proc(t: ^testing.T) {
 	init_layout(&memory, 32768, {800, 600})
 	measured: int
 	clay.SetMeasureTextFunction(
-		proc "c" (
+		proc(
 			text: clay.StringSlice,
 			config: ^clay.TextElementConfig,
 			user: rawptr,

@@ -3,7 +3,7 @@ package main
 import "base:runtime"
 import "core:testing"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Run in its own process, like the other SDL layout regressions.

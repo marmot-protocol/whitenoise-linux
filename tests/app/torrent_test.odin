@@ -10,7 +10,7 @@ import "core:strings"
 import "core:sync"
 import "core:testing"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 // Bencoded byte string: "4:spam".
 @(private = "file")

@@ -11,7 +11,7 @@ package main
 
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // One selectable line laid out this frame. Rebuilt every build; the

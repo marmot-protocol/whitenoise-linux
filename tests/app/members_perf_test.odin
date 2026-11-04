@@ -1,7 +1,6 @@
 package main
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
 import "core:mem"
@@ -11,6 +10,7 @@ import "core:sync"
 import "core:testing"
 import "core:thread"
 import "core:time"
+import clay "layout"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -o:speed -define:WN_PERF=true -define:ODIN_TEST_NAMES=large_group_layout

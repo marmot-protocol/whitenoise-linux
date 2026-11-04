@@ -4,7 +4,7 @@ import "core:strings"
 import "core:text/edit"
 import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 import marmot "../marmot"

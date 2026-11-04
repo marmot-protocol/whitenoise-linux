@@ -6,7 +6,7 @@ import "core:testing"
 import "core:time"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 @(private)
 clay_test_mutex: sync.Mutex

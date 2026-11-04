@@ -10,7 +10,7 @@ import "core:fmt"
 import "core:strings"
 import "core:text/edit"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 SHORTCODE_CANDS_MAX :: 8

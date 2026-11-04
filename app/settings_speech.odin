@@ -3,7 +3,7 @@ package main
 import "core:fmt"
 import rl "sdlrl"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 @(private)
 settings_speech :: proc(ui: ^Ui_State) {

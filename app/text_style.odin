@@ -1,6 +1,6 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 @(private)
 TEXT_FONT_MASK :: u8(7)

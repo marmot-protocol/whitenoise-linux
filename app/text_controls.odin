@@ -1,6 +1,6 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Blinking text caret, rendered after the text of the focused input.

@@ -1,6 +1,6 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Drop coordinates come from SDL, not the mouse: desktop drags need not

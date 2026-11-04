@@ -1,7 +1,7 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:strings"
+import clay "layout"
 import rl "sdlrl"
 
 // Placement is independent of the native split tree: returning a pane only

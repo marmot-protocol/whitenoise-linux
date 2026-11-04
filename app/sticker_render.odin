@@ -1,7 +1,7 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:math"
+import clay "layout"
 import rl "sdlrl"
 import sdl "vendor:sdl3"
 

@@ -6,7 +6,7 @@ import "core:c"
 import "core:c/libc"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 foreign import math_decoder {WN_BUILD_DIR + "/libwndecoder.a"}

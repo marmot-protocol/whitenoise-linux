@@ -7,7 +7,7 @@
 // a drag in progress beats both.
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 cursor_want: rl.Cursor_Shape

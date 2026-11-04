@@ -6,7 +6,7 @@ import "core:strings"
 import "core:unicode"
 import "core:unicode/utf8"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 @(private)
 Profile_Style :: struct {

@@ -1,10 +1,10 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:strings"
 import "core:testing"
 import "core:text/edit"
+import clay "layout"
 import rl "sdlrl"
 
 // SDL and Clay own process globals. The canonical suite runs this alone.
@@ -82,7 +82,8 @@ invite_input_dispatch :: proc(t: ^testing.T) {
 			// Blank input keeps the Invite button in its idle style.
 			idle := false
 			for command in commands.internalArray[:commands.length] {
-				if command.id != clay.ID("InviteBtn").id || command.commandType != .Rectangle {continue}
+				if command.id != clay.ID("InviteBtn").id ||
+				   command.commandType != .Rectangle {continue}
 				idle = command.renderData.rectangle.backgroundColor == ROW_BG
 			}
 			testing.expect(t, idle, "blank invite button is idle")
@@ -100,10 +101,7 @@ invite_input_dispatch :: proc(t: ^testing.T) {
 			for command in commands.internalArray[:commands.length] {
 				if command.commandType != .Text {continue}
 				text := command.renderData.text.stringContents
-				visible ||= strings.contains(
-					string(text.chars[:text.length]),
-					error,
-				)
+				visible ||= strings.contains(string(text.chars[:text.length]), error)
 			}
 			testing.expect(t, visible, "required-input feedback is rendered")
 			if ui.banner == "" {continue}

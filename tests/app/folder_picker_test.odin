@@ -7,7 +7,7 @@ import "core:strings"
 import "core:testing"
 import "core:text/edit"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // SDL and Clay own process globals, so the canonical suite runs this alone.

@@ -1,7 +1,6 @@
 package main
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:slice"
 import "core:strings"
@@ -9,6 +8,7 @@ import "core:sync"
 import "core:thread"
 import "core:time"
 import "core:unicode/utf8"
+import clay "layout"
 
 @(private)
 Search_Kind :: enum {

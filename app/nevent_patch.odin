@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:strconv"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 @(private)
 Nev_Patch_Line :: struct {

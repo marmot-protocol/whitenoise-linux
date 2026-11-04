@@ -13,7 +13,7 @@ import "core:os"
 import "core:strings"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // One attachment pick: enough to re-find the media reference later

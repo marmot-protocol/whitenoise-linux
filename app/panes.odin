@@ -1,11 +1,11 @@
 package main
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:encoding/hex"
 import "core:fmt"
 import "core:math"
 import "core:strings"
+import clay "layout"
 import rl "sdlrl"
 
 Row_Chip :: enum {

@@ -2,11 +2,11 @@ package main
 
 // Clay and the UI caches are global. Run this check alone:
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=chat_title_overflow
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
+import clay "layout"
 import rl "sdlrl"
 
 // Run alone because Clay and SDL state are global.

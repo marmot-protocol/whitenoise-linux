@@ -19,7 +19,7 @@ import "core:net"
 import "core:strings"
 import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 TOR_MAX_DEPTH :: 32 // bencode nesting cap, file tree included

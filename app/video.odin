@@ -18,7 +18,7 @@ import "core:os"
 import "core:strings"
 import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Inline texture cap; previews request their displayed physical width.

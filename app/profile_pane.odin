@@ -1,8 +1,8 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:strings"
+import clay "layout"
 
 // The Profile page's rail, in place of the chat list: the accounts on
 // this device (tap to switch), and the two settings sections that own

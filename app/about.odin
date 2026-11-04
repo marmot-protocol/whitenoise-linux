@@ -10,7 +10,7 @@ import "core:math"
 
 import "core:fmt"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Wall clock at window creation, for the uptime readout.

@@ -254,7 +254,7 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 	memory: []u8
 	init_layout(&memory, 32768, {1024, 700})
 	clay.SetMeasureTextFunction(
-		proc "c" (
+		proc(
 			text: clay.StringSlice,
 			config: ^clay.TextElementConfig,
 			user: rawptr,

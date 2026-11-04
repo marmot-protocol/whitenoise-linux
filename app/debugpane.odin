@@ -15,7 +15,7 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 
 import marmot "../marmot"
 

@@ -25,8 +25,8 @@ import "core:thread"
 import "core:time"
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import cc "../vendor/crop-circles"
+import clay "layout"
 import rl "sdlrl"
 
 // One account's cached kind-0 essentials; empty strings when unknown.

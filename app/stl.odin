@@ -27,7 +27,7 @@ import "core:strings"
 import "core:thread"
 import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Parent independently enforces the helper's triangle budget.

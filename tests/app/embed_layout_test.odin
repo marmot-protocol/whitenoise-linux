@@ -1,10 +1,10 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
+import clay "layout"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=web_header_layout

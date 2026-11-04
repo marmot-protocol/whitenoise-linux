@@ -9,7 +9,7 @@
 // element's children, which puts the light behind the content.
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 GLOW_SPREAD :: f32(14)

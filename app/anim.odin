@@ -16,7 +16,7 @@ package main
 import "core:math"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 ANIM_RATE :: f32(16) // default approach rate, ~1/e per 60ms

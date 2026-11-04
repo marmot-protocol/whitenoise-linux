@@ -1,10 +1,10 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:strings"
 import "core:testing"
 import "core:text/edit"
+import clay "layout"
 import rl "sdlrl"
 
 // SDL and Clay use process globals; the canonical suite runs this separately.
@@ -109,16 +109,8 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 				testing.expect_value(t, ui.backup_mode, mode)
 				testing.expect_value(t, ui.focus, Focus.BackupPw)
 				testing.expect_value(t, len(ui.backup_pw), 0)
-				testing.expect(
-					t,
-					!backup_saving,
-					"no save dialog on invalid input",
-				)
-				testing.expect_value(
-					t,
-					string(ui.backup_blob),
-					mode == .Import ? "fixture" : "",
-				)
+				testing.expect(t, !backup_saving, "no save dialog on invalid input")
+				testing.expect_value(t, string(ui.backup_blob), mode == .Import ? "fixture" : "")
 				commands := frame(&ui)
 				visible := false
 				for command in commands.internalArray[:commands.length] {
@@ -159,9 +151,7 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 				testing.expect_value(t, ui.backup_mode, Backup_Mode.Import)
 				testing.expect_value(t, len(ui.backup_pw), 0)
 				testing.expect_value(t, ui.client_status, "")
-				wrong := tr(
-					"Couldn't open the backup. Double-check the password and try again.",
-				)
+				wrong := tr("Couldn't open the backup. Double-check the password and try again.")
 				commands := frame(&ui)
 				m := clay.GetElementData(clay.ID("BackupModal")).boundingBox
 				inside := false

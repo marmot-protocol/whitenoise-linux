@@ -1,10 +1,10 @@
 package main
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
 import "core:math"
 import "core:testing"
+import clay "layout"
 import rl "sdlrl"
 
 // Runs in its own headless process through scripts/build.sh test.

@@ -2,7 +2,7 @@ package main
 
 import "core:fmt"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 // Shift+wheel scrolls the chat filter row sideways once folders overflow it.

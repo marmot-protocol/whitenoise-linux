@@ -3,9 +3,9 @@
 package main
 
 import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:sync"
 import "core:testing"
+import clay "layout"
 import rl "sdlrl"
 
 @(test)

@@ -5,7 +5,7 @@ package main
 import "base:runtime"
 import "core:testing"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import clay "layout"
 import rl "sdlrl"
 
 @(test)
