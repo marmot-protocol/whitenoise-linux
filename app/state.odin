@@ -535,420 +535,420 @@ Picker_Mode :: enum {
 }
 
 Ui_State :: struct {
-	lock_requested:                                        bool,
-	gif_tab, gif_saved, gif_loaded:                        bool,
-	gif_hits, gif_library:                                 [dynamic]Gif_Item,
-	gif_job:                                               ^Gif_Job,
-	gif_view:                                              ^Video_View,
-	gif_selected:                                          Gif_Item,
-	gif_error:                                             string,
-	gif_focus:                                             int,
-	gif_page:                                              int,
-	gif_more:                                              bool,
-	gif_filter:                                            string,
-	gif_due:                                               f64,
-	gif_hover:                                             int,
-	gif_hover_at:                                          f64,
-	stickers:                                              [dynamic]Sticker_Item,
-	sticker_packs:                                         [dynamic]Sticker_Pack,
-	sticker_recent:                                        [dynamic]string,
-	sticker_preview:                                       [dynamic]Sticker_Item,
-	sticker_pack:                                          Sticker_Pack,
-	sticker_selected:                                      Sticker_Ref,
-	sticker_input:                                         [dynamic]u8,
-	sticker_name:                                          [dynamic]u8,
-	sticker_filter:                                        string,
-	sticker_error:                                         string,
-	sticker_open:                                          bool,
-	sticker_tab:                                           bool,
-	sticker_loaded:                                        bool,
-	sticker_loading:                                       bool,
-	sticker_installing:                                    bool,
-	picking_sticker:                                       bool,
-	sticker_focus:                                         int,
-	sticker_page:                                          Sticker_Page,
-	timeline_metric:                                       [4]f32,
-	chat_preview_w:                                        f32, // isolated Appearance chat viewport; zero for real chats
-	messages_group, messages_account:                      string,
-	account_ref:                                           string, // active account's full hex; "" when logged out
-	accounts:                                              [dynamic]Account_Row_Ui, // switcher rows; non-empty means signed in
-	accounts_open:                                         bool, // the Accounts switcher modal
-	peer_open:                                             bool, // peer-profile popup (any avatar click)
-	peer_hex:                                              string,
-	peer_name:                                             string,
-	peer_pic:                                              string, // kind-0 picture URL, "" = none
-	peer_npub:                                             string, // derived from peer_hex, "" if malformed
-	profile_contact:                                       Contact_Ui, // viewed profile outside the saved contacts list
-	add_account_open:                                      bool, // show the login pane to add another account
-	scroll_pending:                                        bool, // jump timeline scroll to newest after reload
-	scroll_settle:                                         int, // bounded passes while virtual rows acquire real heights
-	selected_contact:                                      int, // index into contacts, -1 = none
-	name_input:                                            [dynamic]u8, // profile display name draft
-	about_input:                                           [dynamic]u8, // profile about draft
-	nip05_input:                                           [dynamic]u8, // profile NIP-05 draft
-	lud16_input:                                           [dynamic]u8, // profile lightning-address draft
-	relay_input:                                           [dynamic]u8, // profile add-relay draft
-	page:                                                  Page,
-	whip_project:                                          u32, // stable Whip project ID, not its row index
-	whip_open:                                             bool, // selected inbox row is a local terminal project
-	whip_picking_project:                                  bool, // captures the native folder-dialog completion
-	whip_creating:                                         bool,
-	whip_edit_open:                                        bool,
-	whip_edit_project:                                     u32,
-	whip_edit_session:                                     [4]u64,
-	whip_edit_name, whip_edit_path:                        [dynamic]u8,
-	whip_edit_error:                                       string, // owned validation error
-	whip_edit_job:                                         ^Whip_Project_Job,
-	whip_tabs:                                             map[u32]u32, // project ID -> selected tab ID
-	whip_tab_drag:                                         Whip_Tab_Drag,
-	whip_scroll_project, whip_scroll_tab:                  u32,
-	whip_scroll_width:                                     f32,
-	whip_scroll_pending:                                   bool,
-	whip_workspace_account:                                string, // owned active-account restore guard
-	whip_workspace_loaded, whip_workspace_pending:         bool,
-	whip_workspace_page:                                   Page,
-	whip_workspace_selected:                               int,
-	whip_workspace_project:                                u32,
-	whip_workspace_open:                                   bool,
-	whip_workspace_filter:                                 Chat_Filter,
-	whip_workspace_focus:                                  Focus,
-	whip_workspace_compose_hash:                           u32,
-	whip_workspace_compose_len:                            int,
-	whip_tab_op:                                           Whip_Tab_Op,
-	whip_tab_project:                                      u32, // captured owner of an asynchronous tab action
-	whip_avatar_job:                                       ^Whip_Avatar_Job,
-	whip_attachments:                                      [dynamic]Whip_Attachment,
-	whip_focus:                                            u32,
-	whip_return_focus:                                     u32,
-	whip_attach_drag, whip_attach_resize:                  u32,
-	whip_attach_origin:                                    rl.Vector2,
-	whip_attach_bounds:                                    clay.BoundingBox,
-	whip_chat_width:                                       f32,
-	whip_dock_width, whip_dock_height:                     f32,
-	whip_dock_drag, whip_dock_wide, whip_dock_release:     bool,
-	whip_dock_pane:                                        u32,
-	whip_dock_offset:                                      f32,
-	whip_dock_bounds:                                      clay.BoundingBox,
-	chats:                                                 [dynamic]Chat_Row_Ui,
-	chat_members:                                          map[string][]string, // group id → member pubkey hex, for folder rules
-	chat_members_read:                                     bool, // the last chat-list read asked for chat_members
-	archived:                                              [dynamic]Chat_Row_Ui,
-	contacts:                                              [dynamic]Contact_Ui,
-	contact_import:                                        ^Contact_Import_Job,
-	contact_tools_open:                                    bool,
-	picking_contacts:                                      bool, // route the next picked file to contact import
-	profile:                                               Profile_Ui,
-	theme:                                                 int, // index into theme_packs
-	accent:                                                int,
-	selected:                                              int, // index into chats, -1 = none
-	rail_rows:                                             [dynamic]Inbox_Row, // rendered conversations and terminal projects for Ctrl+Tab
-	rail_peek:                                             bool, // chat list opened by hand in a window too narrow for it; see toggle_rail
-	messages:                                              [dynamic]Msg_Ui, // selected chat's timeline
-	reading_places:                                        map[string]Reading_Place, // account and group -> message anchor
-	reading_pending:                                       Reading_Place, // borrowed from reading_places until restored
-	stamp_day:                                             i64, // local day the cached stamps were formatted on; 0 = reformat next frame
-	transcript:                                            ^Transcript_Job,
-	pending:                                               [dynamic]Pending_Send, // optimistic sends awaiting ack
-	react_pending:                                         [dynamic]Pending_React, // optimistic reactions awaiting ack
-	compose:                                               [dynamic]u8,
+	lock_requested:                                    bool,
+	gif_tab, gif_saved, gif_loaded:                    bool,
+	gif_hits, gif_library:                             [dynamic]Gif_Item,
+	gif_job:                                           ^Gif_Job,
+	gif_view:                                          ^Video_View,
+	gif_selected:                                      Gif_Item,
+	gif_error:                                         string,
+	gif_focus:                                         int,
+	gif_page:                                          int,
+	gif_more:                                          bool,
+	gif_filter:                                        string,
+	gif_due:                                           f64,
+	gif_hover:                                         int,
+	gif_hover_at:                                      f64,
+	stickers:                                          [dynamic]Sticker_Item,
+	sticker_packs:                                     [dynamic]Sticker_Pack,
+	sticker_recent:                                    [dynamic]string,
+	sticker_preview:                                   [dynamic]Sticker_Item,
+	sticker_pack:                                      Sticker_Pack,
+	sticker_selected:                                  Sticker_Ref,
+	sticker_input:                                     [dynamic]u8,
+	sticker_name:                                      [dynamic]u8,
+	sticker_filter:                                    string,
+	sticker_error:                                     string,
+	sticker_open:                                      bool,
+	sticker_tab:                                       bool,
+	sticker_loaded:                                    bool,
+	sticker_loading:                                   bool,
+	sticker_installing:                                bool,
+	picking_sticker:                                   bool,
+	sticker_focus:                                     int,
+	sticker_page:                                      Sticker_Page,
+	timeline_metric:                                   [4]f32,
+	chat_preview_w:                                    f32, // isolated Appearance chat viewport; zero for real chats
+	messages_group, messages_account:                  string,
+	account_ref:                                       string, // active account's full hex; "" when logged out
+	accounts:                                          [dynamic]Account_Row_Ui, // switcher rows; non-empty means signed in
+	accounts_open:                                     bool, // the Accounts switcher modal
+	peer_open:                                         bool, // peer-profile popup (any avatar click)
+	peer_hex:                                          string,
+	peer_name:                                         string,
+	peer_pic:                                          string, // kind-0 picture URL, "" = none
+	peer_npub:                                         string, // derived from peer_hex, "" if malformed
+	profile_contact:                                   Contact_Ui, // viewed profile outside the saved contacts list
+	add_account_open:                                  bool, // show the login pane to add another account
+	scroll_pending:                                    bool, // jump timeline scroll to newest after reload
+	scroll_settle:                                     int, // bounded passes while virtual rows acquire real heights
+	selected_contact:                                  int, // index into contacts, -1 = none
+	name_input:                                        [dynamic]u8, // profile display name draft
+	about_input:                                       [dynamic]u8, // profile about draft
+	nip05_input:                                       [dynamic]u8, // profile NIP-05 draft
+	lud16_input:                                       [dynamic]u8, // profile lightning-address draft
+	relay_input:                                       [dynamic]u8, // profile add-relay draft
+	page:                                              Page,
+	whip_project:                                      u32, // stable Whip project ID, not its row index
+	whip_open:                                         bool, // selected inbox row is a local terminal project
+	whip_picking_project:                              bool, // captures the native folder-dialog completion
+	whip_creating:                                     bool,
+	whip_edit_open:                                    bool,
+	whip_edit_project:                                 u32,
+	whip_edit_session:                                 [4]u64,
+	whip_edit_name, whip_edit_path:                    [dynamic]u8,
+	whip_edit_error:                                   string, // owned validation error
+	whip_edit_job:                                     ^Whip_Project_Job,
+	whip_tabs:                                         map[u32]u32, // project ID -> selected tab ID
+	whip_tab_drag:                                     Whip_Tab_Drag,
+	whip_scroll_project, whip_scroll_tab:              u32,
+	whip_scroll_width:                                 f32,
+	whip_scroll_pending:                               bool,
+	whip_workspace_account:                            string, // owned active-account restore guard
+	whip_workspace_loaded, whip_workspace_pending:     bool,
+	whip_workspace_page:                               Page,
+	whip_workspace_selected:                           int,
+	whip_workspace_project:                            u32,
+	whip_workspace_open:                               bool,
+	whip_workspace_filter:                             Chat_Filter,
+	whip_workspace_focus:                              Focus,
+	whip_workspace_compose_hash:                       u32,
+	whip_workspace_compose_len:                        int,
+	whip_tab_op:                                       Whip_Tab_Op,
+	whip_tab_project:                                  u32, // captured owner of an asynchronous tab action
+	whip_avatar_job:                                   ^Whip_Avatar_Job,
+	whip_attachments:                                  [dynamic]Whip_Attachment,
+	whip_focus:                                        u32,
+	whip_return_focus:                                 u32,
+	whip_attach_drag, whip_attach_resize:              u32,
+	whip_attach_origin:                                rl.Vector2,
+	whip_attach_bounds:                                clay.BoundingBox,
+	whip_chat_width:                                   f32,
+	whip_dock_width, whip_dock_height:                 f32,
+	whip_dock_drag, whip_dock_wide, whip_dock_release: bool,
+	whip_dock_pane:                                    u32,
+	whip_dock_offset:                                  f32,
+	whip_dock_bounds:                                  clay.BoundingBox,
+	chats:                                             [dynamic]Chat_Row_Ui,
+	chat_members:                                      map[string][]string, // group id → member pubkey hex, for folder rules
+	chat_members_read:                                 bool, // the last chat-list read asked for chat_members
+	archived:                                          [dynamic]Chat_Row_Ui,
+	contacts:                                          [dynamic]Contact_Ui,
+	contact_import:                                    ^Contact_Import_Job,
+	contact_tools_open:                                bool,
+	picking_contacts:                                  bool, // route the next picked file to contact import
+	profile:                                           Profile_Ui,
+	theme:                                             int, // index into theme_packs
+	accent:                                            int,
+	selected:                                          int, // index into chats, -1 = none
+	rail_rows:                                         [dynamic]Inbox_Row, // rendered conversations and terminal projects for Ctrl+Tab
+	rail_peek:                                         bool, // chat list opened by hand in a window too narrow for it; see toggle_rail
+	messages:                                          [dynamic]Msg_Ui, // selected chat's timeline
+	reading_places:                                    map[string]Reading_Place, // account and group -> message anchor
+	reading_pending:                                   Reading_Place, // borrowed from reading_places until restored
+	stamp_day:                                         i64, // local day the cached stamps were formatted on; 0 = reformat next frame
+	transcript:                                        ^Transcript_Job,
+	pending:                                           [dynamic]Pending_Send, // optimistic sends awaiting ack
+	react_pending:                                     [dynamic]Pending_React, // optimistic reactions awaiting ack
+	compose:                                           [dynamic]u8,
 	// One shared caret/selection/undo state, targeting whichever input
 	// buffer was edited last (ed_target). ed_view temporarily wraps the
 	// target [dynamic]u8 as the strings.Builder core:text/edit works on.
-	ed:                                                    edit.State,
-	ed_view:                                               strings.Builder,
-	ed_target:                                             rawptr,
-	picker_return:                                         int, // composer caret to insert at when the picker closes
-	editing:                                               string, // message id being edited, "" = composing new
-	edit_ticket:                                           int, // outstanding edit; keep the composer until its ack
-	replying:                                              string, // message id being replied to
-	reply_hint:                                            string, // preview text for the reply banner
-	show_members:                                          bool, // group info page open
-	info_tab:                                              Info_Tab, // which half of it
-	group_files_open:                                      bool,
-	group_files_type:                                      Group_File_Type,
-	group_files_sender:                                    string, // borrowed from the completed file job
-	group_files_menu:                                      Group_File_Menu,
-	group_files_option:                                    int,
-	members:                                               [dynamic]Member_Ui,
-	members_scroll_y:                                      f32, // scroll offset used by the previous layout
-	member_nick:                                           int, // member-row nickname editor, -1 = closed
-	member_menu:                                           int, // member-row "⋯" action menu, -1 = closed
-	member_menu_x:                                         f32, // its anchor, layout coords
-	member_menu_y:                                         f32,
-	invite_input:                                          [dynamic]u8,
-	rename_input:                                          [dynamic]u8,
-	group_desc:                                            string, // selected group's description snapshot
-	staged_drafts:                                         map[string][dynamic]Staged_File,
-	group_retention:                                       u64, // disappearing-message timer in seconds, 0 = off
-	desc_input:                                            [dynamic]u8, // hero description editor
-	desc_editing:                                          bool,
-	gpic_menu_open:                                        bool, // hero "Change photo" chooser row
-	picking_ncpic:                                         bool, // route the next picked file to the new-chat group image
-	photo:                                                 Photo_Preview,
-	ov_open:                                               bool, // Openverse image-search modal
-	ov_input:                                              [dynamic]u8, // its query box
-	focus:                                                 Focus,
-	search_open:                                           bool,
-	ctx_open:                                              bool, // message context menu
-	ctx_msg:                                               int, // index into messages
-	ctx_x:                                                 f32, // panel anchor, layout coords
-	ctx_y:                                                 f32,
-	hist_versions:                                         [dynamic]Edit_Version,
-	hist_ticket:                                           int,
-	hist_original:                                         bool,
-	hist_open:                                             bool, // edit-history modal
-	hist_msg:                                              int, // index into messages
-	raw_open:                                              bool, // view-raw-event modal (dev mode)
-	raw_json:                                              string, // its pretty-printed record JSON
-	enc_open:                                              bool, // encryption-details modal
-	enc_epoch:                                             string, // its MLS epoch, "" when the lookup failed
-	fwd_open:                                              bool, // destination-chat picker
-	fwd_kind:                                              Fwd_Kind, // what the pick sends
-	fwd_msg:                                               string, // stable source message ID (.Message only)
-	fwd_source:                                            string, // source group when the picker opened
-	fwd_filter:                                            [dynamic]u8, // its chat filter box
-	poll_open:                                             bool, // create-poll modal
-	poll_question:                                         [dynamic]u8,
-	poll_inputs:                                           [dynamic][dynamic]u8, // option drafts, blanks skipped
-	poll_focus:                                            int, // which option input has the caret (focus == .PollOpt)
-	poll_multi_in:                                         bool, // modal's multiple-choice toggle
-	poll_error:                                            Poll_Error,
-	location_open:                                         bool,
-	location_selected:                                     bool,
-	location_busy:                                         bool,
-	location_error:                                        bool,
-	location_request:                                      u64,
-	location_pin:                                          Geo_Point,
-	location_account:                                      string,
-	location_group:                                        string,
-	location_thread:                                       string,
-	theme_edit:                                            bool, // theme-editor modal
-	theme_fields:                                          [dynamic][dynamic]u8, // one box per THEME_FIELDS entry; empty = derive
-	theme_flags:                                           [dynamic]bool, // one per THEME_FLAGS entry
-	theme_backdrop:                                        string, // picked scene name, "" = none
-	theme_edit_idx:                                        int, // which box has the caret (focus == .ThemeSeed)
-	theme_slot:                                            int, // the live working pack in theme_packs
-	theme_prev:                                            int, // theme to restore if the edit is cancelled
-	theme_last:                                            string, // last previewed toml, so a still frame reparses nothing
-	theme_base:                                            string, // toml as the editor opened, so Cancel knows if anything changed
-	thread_stack:                                          [dynamic]string, // open thread route, last = current root
-	gs_open:                                               bool, // global cross-chat search modal
-	gs_input:                                              [dynamic]u8, // its query box
-	gs_hits:                                               [dynamic]Gs_Hit, // its result cards
-	gs_chats:                                              [dynamic]Chat_Row_Ui, // all local chats, including archives
-	gs_senders:                                            [dynamic]string, // public keys seen across local chats
-	gs_filters_open:                                       bool,
-	gs_flash_id:                                           string,
-	gs_flash_until:                                        f64,
-	gs_account:                                            string, // request and catalog owner
-	gs_group, gs_sender:                                   string, // stable group id and validated sender hex
-	gs_sender_input, gs_since, gs_until:                   [dynamic]u8,
-	gs_attachment:                                         u32, // 0 any, 1 image, 2 video, 3 audio, 4 file, 5 attachment
-	gs_more, gs_loading, gs_append:                        bool,
-	gs_error:                                              string,
-	gs_cursor_at:                                          u64,
-	gs_cursor_id:                                          string,
-	gs_cursor_group:                                       string,
-	gs_picker:                                             u32, // 0 closed, 1 chats, 2 known senders, 3 attachments
-	gs_resume, gs_jump_pending:                            bool,
-	jump_id:                                               string, // message id to center after next layout
-	tl_has_more:                                           bool, // last timeline page had older messages beyond the limit
-	tl_has_after:                                          bool,
-	timeline_loading, timeline_paging:                     bool,
-	timeline_error:                                        string,
-	settings_dirty:                                        bool, // snapshot after presenting a chat switch
-	settings_job:                                          ^Settings_Work,
-	settings_pending:                                      []u8, // newest snapshot, behind the in-flight write
-	unread_mark_id:                                        string, // NEW MESSAGES divider anchor, snapshotted at select
+	ed:                                                edit.State,
+	ed_view:                                           strings.Builder,
+	ed_target:                                         rawptr,
+	picker_return:                                     int, // composer caret to insert at when the picker closes
+	editing:                                           string, // message id being edited, "" = composing new
+	edit_ticket:                                       int, // outstanding edit; keep the composer until its ack
+	replying:                                          string, // message id being replied to
+	reply_hint:                                        string, // preview text for the reply banner
+	show_members:                                      bool, // group info page open
+	info_tab:                                          Info_Tab, // which half of it
+	group_files_open:                                  bool,
+	group_files_type:                                  Group_File_Type,
+	group_files_sender:                                string, // borrowed from the completed file job
+	group_files_menu:                                  Group_File_Menu,
+	group_files_option:                                int,
+	members:                                           [dynamic]Member_Ui,
+	members_scroll_y:                                  f32, // scroll offset used by the previous layout
+	member_nick:                                       int, // member-row nickname editor, -1 = closed
+	member_menu:                                       int, // member-row "⋯" action menu, -1 = closed
+	member_menu_x:                                     f32, // its anchor, layout coords
+	member_menu_y:                                     f32,
+	invite_input:                                      [dynamic]u8,
+	rename_input:                                      [dynamic]u8,
+	group_desc:                                        string, // selected group's description snapshot
+	staged_drafts:                                     map[string][dynamic]Staged_File,
+	group_retention:                                   u64, // disappearing-message timer in seconds, 0 = off
+	desc_input:                                        [dynamic]u8, // hero description editor
+	desc_editing:                                      bool,
+	gpic_menu_open:                                    bool, // hero "Change photo" chooser row
+	picking_ncpic:                                     bool, // route the next picked file to the new-chat group image
+	photo:                                             Photo_Preview,
+	ov_open:                                           bool, // Openverse image-search modal
+	ov_input:                                          [dynamic]u8, // its query box
+	focus:                                             Focus,
+	search_open:                                       bool,
+	ctx_open:                                          bool, // message context menu
+	ctx_msg:                                           int, // index into messages
+	ctx_x:                                             f32, // panel anchor, layout coords
+	ctx_y:                                             f32,
+	hist_versions:                                     [dynamic]Edit_Version,
+	hist_ticket:                                       int,
+	hist_original:                                     bool,
+	hist_open:                                         bool, // edit-history modal
+	hist_msg:                                          int, // index into messages
+	raw_open:                                          bool, // view-raw-event modal (dev mode)
+	raw_json:                                          string, // its pretty-printed record JSON
+	enc_open:                                          bool, // encryption-details modal
+	enc_epoch:                                         string, // its MLS epoch, "" when the lookup failed
+	fwd_open:                                          bool, // destination-chat picker
+	fwd_kind:                                          Fwd_Kind, // what the pick sends
+	fwd_msg:                                           string, // stable source message ID (.Message only)
+	fwd_source:                                        string, // source group when the picker opened
+	fwd_filter:                                        [dynamic]u8, // its chat filter box
+	poll_open:                                         bool, // create-poll modal
+	poll_question:                                     [dynamic]u8,
+	poll_inputs:                                       [dynamic][dynamic]u8, // option drafts, blanks skipped
+	poll_focus:                                        int, // which option input has the caret (focus == .PollOpt)
+	poll_multi_in:                                     bool, // modal's multiple-choice toggle
+	poll_error:                                        Poll_Error,
+	location_open:                                     bool,
+	location_selected:                                 bool,
+	location_busy:                                     bool,
+	location_error:                                    bool,
+	location_request:                                  u64,
+	location_pin:                                      Geo_Point,
+	location_account:                                  string,
+	location_group:                                    string,
+	location_thread:                                   string,
+	theme_edit:                                        bool, // theme-editor modal
+	theme_fields:                                      [dynamic][dynamic]u8, // one box per THEME_FIELDS entry; empty = derive
+	theme_flags:                                       [dynamic]bool, // one per THEME_FLAGS entry
+	theme_backdrop:                                    string, // picked scene name, "" = none
+	theme_edit_idx:                                    int, // which box has the caret (focus == .ThemeSeed)
+	theme_slot:                                        int, // the live working pack in theme_packs
+	theme_prev:                                        int, // theme to restore if the edit is cancelled
+	theme_last:                                        string, // last previewed toml, so a still frame reparses nothing
+	theme_base:                                        string, // toml as the editor opened, so Cancel knows if anything changed
+	thread_stack:                                      [dynamic]string, // open thread route, last = current root
+	gs_open:                                           bool, // global cross-chat search modal
+	gs_input:                                          [dynamic]u8, // its query box
+	gs_hits:                                           [dynamic]Gs_Hit, // its result cards
+	gs_chats:                                          [dynamic]Chat_Row_Ui, // all local chats, including archives
+	gs_senders:                                        [dynamic]string, // public keys seen across local chats
+	gs_filters_open:                                   bool,
+	gs_flash_id:                                       string,
+	gs_flash_until:                                    f64,
+	gs_account:                                        string, // request and catalog owner
+	gs_group, gs_sender:                               string, // stable group id and validated sender hex
+	gs_sender_input, gs_since, gs_until:               [dynamic]u8,
+	gs_attachment:                                     u32, // 0 any, 1 image, 2 video, 3 audio, 4 file, 5 attachment
+	gs_more, gs_loading, gs_append:                    bool,
+	gs_error:                                          string,
+	gs_cursor_at:                                      u64,
+	gs_cursor_id:                                      string,
+	gs_cursor_group:                                   string,
+	gs_picker:                                         u32, // 0 closed, 1 chats, 2 known senders, 3 attachments
+	gs_resume, gs_jump_pending:                        bool,
+	jump_id:                                           string, // message id to center after next layout
+	tl_has_more:                                       bool, // last timeline page had older messages beyond the limit
+	tl_has_after:                                      bool,
+	timeline_loading, timeline_paging:                 bool,
+	timeline_error:                                    string,
+	settings_dirty:                                    bool, // snapshot after presenting a chat switch
+	settings_job:                                      ^Settings_Work,
+	settings_pending:                                  []u8, // newest snapshot, behind the in-flight write
+	unread_mark_id:                                    string, // NEW MESSAGES divider anchor, snapshotted at select
 	// time (mark-as-read clears the row's first_unread)
-	mention_active:                                        bool, // composer @-autocomplete popover
-	mention_at_b:                                          int, // byte offset of the active "@"
-	mention_sel:                                           int, // selected candidate row
-	mention_cands:                                         [dynamic]int, // candidate indices into members
-	mention_dismissed:                                     int, // "@" offset Escaped away, -1 = none
-	shortcode_active:                                      bool, // composer :shortcode: emoji popover
-	shortcode_at_b:                                        int, // byte offset of the active ":"
-	shortcode_sel:                                         int, // selected candidate row
-	shortcode_cands:                                       [dynamic]Shortcode_Cand,
-	shortcode_dismissed:                                   int, // ":" offset Escaped away, -1 = none
-	mi_open:                                               bool, // mentions inbox dropdown
-	chat_head_menu:                                        bool, // phone conversation header's overflow menu
-	mi_account:                                            string, // account owning the displayed mentions
-	mi_hits:                                               [dynamic]Mention_Hit, // its cards, newest first
-	picker_open:                                           bool, // emoji picker
-	picker_target:                                         string, // message id to react to; "" = insert in composer
-	picker_x:                                              f32, // panel anchor, layout coords
-	picker_y:                                              f32,
-	picker_filter:                                         [dynamic]u8,
-	picker_used:                                           [dynamic]string, // recents commit on close, never move under a finger
-	sidebar_filter:                                        [dynamic]u8, // rail chat filter
-	filter_hits:                                           [dynamic]bool, // per-chat body match for sidebar_filter
-	filter_previews:                                       [dynamic]string, // matching message snippet, aligned with filter_hits
-	staged:                                                [dynamic]Staged_File, // picked attachments, not yet sent
-	my_pic_url:                                            string, // own kind-0 picture, "" = none
-	nicknames:                                             map[string]string, // account hex → local nickname (settings.json)
-	drafts:                                                map[string]string, // group id → unsent composer text (settings.json)
-	blocked:                                               map[string]bool, // account hex → locally blocked (settings.json)
-	blocked_open:                                          map[string]bool, // first message id of a blocked run revealed in this chat visit
-	hidden:                                                map[string]bool, // message id → "Delete for me" hide (hidden.json)
-	nick_input:                                            [dynamic]u8, // contact-page nickname editor
-	qr_open:                                               bool, // contact QR modal
-	qr_tex:                                                ^rl.Texture2D,
-	qr_npub:                                               string,
-	chat_filter:                                           Chat_Filter, // mutually exclusive inbox scope
-	chat_folder:                                           string, // recent-mode scope, borrowed from prefs.folders
-	row_menu:                                              int, // right-clicked rail chat index, -1 = closed
-	row_terminal:                                          u32, // stable terminal target, zero for a chat menu
-	row_menu_x:                                            f32, // its panel anchor, layout coords
-	row_menu_y:                                            f32,
-	folder_open:                                           bool, // folder modal (rowactions.odin)
-	folder_gid:                                            string, // the chat it assigns, snapshotted at open
-	folder_input:                                          [dynamic]u8, // its create/rename name box
-	folder_rename:                                         int, // folder index being renamed, -1 = creating
-	folder_mode:                                           Folder_Mode,
-	folder_icon:                                           int,
-	folder_search:                                         [dynamic]u8,
-	folder_color_input:                                    [dynamic]u8,
-	folder_rules:                                          [dynamic]Folder_Rule_Draft, // the editor's rule rows, reserved to FOLDER_RULES_CAP
-	folder_rule_focus:                                     int, // which rule box has the caret (focus == .FolderRule)
-	folder_rule_menu:                                      int, // rule row whose type menu is open, -1 = none
-	folder_match:                                          Folder_Match, // the editor's all/any toggle
-	board_drag:                                            Board_Drag, // a chat or folder held on the Folders settings page
-	folder_menu_open:                                      bool,
-	folder_menu_name:                                      string, // "" opens the Chats menu
-	folder_menu_x, folder_menu_y:                          f32,
-	search_input:                                          [dynamic]u8,
-	settings_section:                                      Settings_Section,
-	settings_level:                                        Settings_Level, // category menu or its property sheet
-	settings_search:                                       [dynamic]u8,
-	settings_tab:                                          int,
-	settings_anchor:                                       string, // borrowed control ID for a task link
-	settings_scroll_pending:                               bool,
-	agent_connector:                                       int, // 0 = connector list; 1..5 = prompt review
-	prefs:                                                 Prefs, // settings-page knobs (settings.odin)
-	tts:                                                   Tts_State,
-	stt:                                                   Stt_State,
-	translation:                                           Translation_State,
-	lang_open:                                             bool, // interface-language modal
-	shortcuts_open:                                        bool, // keyboard-shortcuts modal
-	theme_tone:                                            Theme_Tone, // gallery browsing filter, never a committed theme
-	theme_preview_active:                                  bool,
-	theme_preview:                                         int,
-	theme_candidate:                                       int,
-	theme_candidate_since:                                 f64,
-	picking_emoji:                                         bool, // route the next picked file to custom emoji
-	picking_backup:                                        bool, // route the next picked file to the backup import
-	backup_mode:                                           Backup_Mode, // "" = closed; else the password modal
-	backup_pw:                                             [dynamic]u8, // its password box (masked)
-	backup_pw_required:                                    bool, // rejected an empty password in the modal
-	backup_blob:                                           []u8, // the picked .wnbk awaiting its password
-	vault_pw_open:                                         bool, // change-vault-password modal
-	vault_pw:                                              [Vault_Pw_Field][dynamic]u8, // its three boxes (masked)
-	vault_pw_focus:                                        Vault_Pw_Field, // which of them takes the typing
-	vault_pw_err:                                          string, // in-modal failure line, "" = none
-	vault_pw_check:                                        Password_Check,
-	cache_bytes:                                           i64, // media-cache size, from cache_scan
-	cache_scanned:                                         bool,
-	emoji_staged:                                          string, // picked emoji file awaiting its shortcode
-	emoji_name:                                            [dynamic]u8, // its shortcode box
-	emoji_sets:                                            [dynamic]Nostr_Emoji_Set,
-	emoji_sets_query:                                      [dynamic]u8,
-	emoji_sets_job:                                        ^Emoji_Set_Job,
-	emoji_sets_cover:                                      ^Emoji_Set_Job,
-	emoji_sets_contacts:                                   map[string]bool,
-	emoji_sets_order:                                      [dynamic]int,
-	emoji_sets_page:                                       int,
-	emoji_sets_selected:                                   int,
-	emoji_sets_open:                                       bool,
-	emoji_sets_error:                                      string,
-	emoji_sets_notice:                                     string,
-	picker_mode:                                           Picker_Mode,
-	gemoji:                                                [dynamic]string, // emoji picked for a group image, tap order
-	gemoji_pic:                                            Pic_Draft, // their current render
-	gemoji_dest:                                           Gemoji_Dest,
-	kp_input:                                              [dynamic]u8, // KP-inspector pubkey box
-	inbox_input:                                           [dynamic]u8, // settings inbox-relay box
-	fetch_input:                                           [dynamic]u8, // settings event-fetch-relay box
-	client_input:                                          [dynamic]u8, // settings event web-client box, mirrors prefs.event_client
-	socks5_input:                                          [dynamic]u8, // proxy form draft; owns its bytes
-	socks5_username:                                       [dynamic]u8,
-	socks5_password:                                       [dynamic]u8,
-	socks5_enabled:                                        bool,
-	socks5_auth:                                           bool,
-	socks5_initialized:                                    bool,
-	socks5_saved:                                          bool,
-	socks5_save_error:                                     bool,
-	socks5_load_error:                                     bool,
-	socks5_job:                                            ^Socks5_Work,
-	socks5_login_open:                                     bool,
-	gm_input:                                              [dynamic]u8, // settings GM-message box, mirrors prefs.gm_text
-	health:                                                marmot.Relay_Health, // relay-pool counters (network.odin)
-	health_ok:                                             bool, // a relay_health call has succeeded
-	export_open:                                           bool, // export-ncryptsec modal
-	export_pw:                                             [dynamic]u8, // its password box (masked)
-	export_pw_required:                                    bool, // rejected an empty password in the modal
-	export_result:                                         string, // "" = password step, else the ncryptsec
-	kp_list:                                               [dynamic]Kp_Row, // the account's MLS key packages
-	kp_fetched:                                            bool, // read from marmot at least once
-	kp_own_json:                                           string, // kp_list serialized, the inspector's raw plate
-	kp_peer:                                               [dynamic]Kp_Row, // KP-inspector result for another pubkey
-	kp_peer_owner:                                         string, // that pubkey in hex, "" = nothing inspected
-	kp_peer_json:                                          string, // kp_peer serialized
-	keys_nsec:                                             string, // revealed nsec; wiped when the page closes
-	keys_nsec_show:                                        bool, // its unmask toggle
-	keys_confirm:                                          string, // armed danger button id ("" = none)
-	audit_enabled:                                         bool, // marmot audit_log_settings.enabled
-	telemetry_enabled:                                     bool, // marmot diagnostics_settings.decision == .Granted
-	audit_files:                                           [dynamic]Audit_File, // audit-*.jsonl on disk
-	audit_scanned:                                         bool,
-	debug_tab:                                             int, // 0 = state, 1 = raw events, 2 = key packages
-	debug_text:                                            string, // timing names spaced for wrapping; Copy keeps the original JSON
-	debug_json:                                            string, // composed snapshot shown on the Debug page
-	new_chat_open:                                         bool,
-	nc_page:                                               Nc_Page,
-	nc_search:                                             [dynamic]u8,
-	nc_contacts:                                           [dynamic]Contact_Ui,
-	nc_contact_sel:                                        int,
-	nc_member:                                             [dynamic]u8, // typed address or selected contact label
-	nc_member_choice:                                      int, // nc_contacts index + 1; zero = typed address
-	nip05_ticket:                                          int,
-	nc_name:                                               [dynamic]u8,
-	nc_pic:                                                Pic_Draft, // group image staged for Create
-	client_status:                                         string, // written only through set_status
-	client_status_kind:                                    Status_Kind,
+	mention_active:                                    bool, // composer @-autocomplete popover
+	mention_at_b:                                      int, // byte offset of the active "@"
+	mention_sel:                                       int, // selected candidate row
+	mention_cands:                                     [dynamic]int, // candidate indices into members
+	mention_dismissed:                                 int, // "@" offset Escaped away, -1 = none
+	shortcode_active:                                  bool, // composer :shortcode: emoji popover
+	shortcode_at_b:                                    int, // byte offset of the active ":"
+	shortcode_sel:                                     int, // selected candidate row
+	shortcode_cands:                                   [dynamic]Shortcode_Cand,
+	shortcode_dismissed:                               int, // ":" offset Escaped away, -1 = none
+	mi_open:                                           bool, // mentions inbox dropdown
+	chat_head_menu:                                    bool, // phone conversation header's overflow menu
+	mi_account:                                        string, // account owning the displayed mentions
+	mi_hits:                                           [dynamic]Mention_Hit, // its cards, newest first
+	picker_open:                                       bool, // emoji picker
+	picker_target:                                     string, // message id to react to; "" = insert in composer
+	picker_x:                                          f32, // panel anchor, layout coords
+	picker_y:                                          f32,
+	picker_filter:                                     [dynamic]u8,
+	picker_used:                                       [dynamic]string, // recents commit on close, never move under a finger
+	sidebar_filter:                                    [dynamic]u8, // rail chat filter
+	filter_hits:                                       [dynamic]bool, // per-chat body match for sidebar_filter
+	filter_previews:                                   [dynamic]string, // matching message snippet, aligned with filter_hits
+	staged:                                            [dynamic]Staged_File, // picked attachments, not yet sent
+	my_pic_url:                                        string, // own kind-0 picture, "" = none
+	nicknames:                                         map[string]string, // account hex → local nickname (settings.json)
+	drafts:                                            map[string]string, // group id → unsent composer text (settings.json)
+	blocked:                                           map[string]bool, // account hex → locally blocked (settings.json)
+	blocked_open:                                      map[string]bool, // first message id of a blocked run revealed in this chat visit
+	hidden:                                            map[string]bool, // message id → "Delete for me" hide (hidden.json)
+	nick_input:                                        [dynamic]u8, // contact-page nickname editor
+	qr_open:                                           bool, // contact QR modal
+	qr_tex:                                            ^rl.Texture2D,
+	qr_npub:                                           string,
+	chat_filter:                                       Chat_Filter, // mutually exclusive inbox scope
+	chat_folder:                                       string, // recent-mode scope, borrowed from prefs.folders
+	row_menu:                                          int, // right-clicked rail chat index, -1 = closed
+	row_terminal:                                      u32, // stable terminal target, zero for a chat menu
+	row_menu_x:                                        f32, // its panel anchor, layout coords
+	row_menu_y:                                        f32,
+	folder_open:                                       bool, // folder modal (rowactions.odin)
+	folder_gid:                                        string, // the chat it assigns, snapshotted at open
+	folder_input:                                      [dynamic]u8, // its create/rename name box
+	folder_rename:                                     int, // folder index being renamed, -1 = creating
+	folder_mode:                                       Folder_Mode,
+	folder_icon:                                       int,
+	folder_search:                                     [dynamic]u8,
+	folder_color_input:                                [dynamic]u8,
+	folder_rules:                                      [dynamic]Folder_Rule_Draft, // the editor's rule rows, reserved to FOLDER_RULES_CAP
+	folder_rule_focus:                                 int, // which rule box has the caret (focus == .FolderRule)
+	folder_rule_menu:                                  int, // rule row whose type menu is open, -1 = none
+	folder_match:                                      Folder_Match, // the editor's all/any toggle
+	board_drag:                                        Board_Drag, // a chat or folder held on the Folders settings page
+	folder_menu_open:                                  bool,
+	folder_menu_name:                                  string, // "" opens the Chats menu
+	folder_menu_x, folder_menu_y:                      f32,
+	search_input:                                      [dynamic]u8,
+	settings_section:                                  Settings_Section,
+	settings_level:                                    Settings_Level, // category menu or its property sheet
+	settings_search:                                   [dynamic]u8,
+	settings_tab:                                      int,
+	settings_anchor:                                   string, // borrowed control ID for a task link
+	settings_scroll_pending:                           bool,
+	agent_connector:                                   int, // 0 = connector list; 1..5 = prompt review
+	prefs:                                             Prefs, // settings-page knobs (settings.odin)
+	tts:                                               Tts_State,
+	stt:                                               Stt_State,
+	translation:                                       Translation_State,
+	lang_open:                                         bool, // interface-language modal
+	shortcuts_open:                                    bool, // keyboard-shortcuts modal
+	theme_tone:                                        Theme_Tone, // gallery browsing filter, never a committed theme
+	theme_preview_active:                              bool,
+	theme_preview:                                     int,
+	theme_candidate:                                   int,
+	theme_candidate_since:                             f64,
+	picking_emoji:                                     bool, // route the next picked file to custom emoji
+	picking_backup:                                    bool, // route the next picked file to the backup import
+	backup_mode:                                       Backup_Mode, // "" = closed; else the password modal
+	backup_pw:                                         [dynamic]u8, // its password box (masked)
+	backup_pw_required:                                bool, // rejected an empty password in the modal
+	backup_blob:                                       []u8, // the picked .wnbk awaiting its password
+	vault_pw_open:                                     bool, // change-vault-password modal
+	vault_pw:                                          [Vault_Pw_Field][dynamic]u8, // its three boxes (masked)
+	vault_pw_focus:                                    Vault_Pw_Field, // which of them takes the typing
+	vault_pw_err:                                      string, // in-modal failure line, "" = none
+	vault_pw_check:                                    Password_Check,
+	cache_bytes:                                       i64, // media-cache size, from cache_scan
+	cache_scanned:                                     bool,
+	emoji_staged:                                      string, // picked emoji file awaiting its shortcode
+	emoji_name:                                        [dynamic]u8, // its shortcode box
+	emoji_sets:                                        [dynamic]Nostr_Emoji_Set,
+	emoji_sets_query:                                  [dynamic]u8,
+	emoji_sets_job:                                    ^Emoji_Set_Job,
+	emoji_sets_cover:                                  ^Emoji_Set_Job,
+	emoji_sets_contacts:                               map[string]bool,
+	emoji_sets_order:                                  [dynamic]int,
+	emoji_sets_page:                                   int,
+	emoji_sets_selected:                               int,
+	emoji_sets_open:                                   bool,
+	emoji_sets_error:                                  string,
+	emoji_sets_notice:                                 string,
+	picker_mode:                                       Picker_Mode,
+	gemoji:                                            [dynamic]string, // emoji picked for a group image, tap order
+	gemoji_pic:                                        Pic_Draft, // their current render
+	gemoji_dest:                                       Gemoji_Dest,
+	kp_input:                                          [dynamic]u8, // KP-inspector pubkey box
+	inbox_input:                                       [dynamic]u8, // settings inbox-relay box
+	fetch_input:                                       [dynamic]u8, // settings event-fetch-relay box
+	client_input:                                      [dynamic]u8, // settings event web-client box, mirrors prefs.event_client
+	socks5_input:                                      [dynamic]u8, // proxy form draft; owns its bytes
+	socks5_username:                                   [dynamic]u8,
+	socks5_password:                                   [dynamic]u8,
+	socks5_enabled:                                    bool,
+	socks5_auth:                                       bool,
+	socks5_initialized:                                bool,
+	socks5_saved:                                      bool,
+	socks5_save_error:                                 bool,
+	socks5_load_error:                                 bool,
+	socks5_job:                                        ^Socks5_Work,
+	socks5_login_open:                                 bool,
+	gm_input:                                          [dynamic]u8, // settings GM-message box, mirrors prefs.gm_text
+	health:                                            marmot.Relay_Health, // relay-pool counters (network.odin)
+	health_ok:                                         bool, // a relay_health call has succeeded
+	export_open:                                       bool, // export-ncryptsec modal
+	export_pw:                                         [dynamic]u8, // its password box (masked)
+	export_pw_required:                                bool, // rejected an empty password in the modal
+	export_result:                                     string, // "" = password step, else the ncryptsec
+	kp_list:                                           [dynamic]Kp_Row, // the account's MLS key packages
+	kp_fetched:                                        bool, // read from marmot at least once
+	kp_own_json:                                       string, // kp_list serialized, the inspector's raw plate
+	kp_peer:                                           [dynamic]Kp_Row, // KP-inspector result for another pubkey
+	kp_peer_owner:                                     string, // that pubkey in hex, "" = nothing inspected
+	kp_peer_json:                                      string, // kp_peer serialized
+	keys_nsec:                                         string, // revealed nsec; wiped when the page closes
+	keys_nsec_show:                                    bool, // its unmask toggle
+	keys_confirm:                                      string, // armed danger button id ("" = none)
+	audit_enabled:                                     bool, // marmot audit_log_settings.enabled
+	telemetry_enabled:                                 bool, // marmot diagnostics_settings.decision == .Granted
+	audit_files:                                       [dynamic]Audit_File, // audit-*.jsonl on disk
+	audit_scanned:                                     bool,
+	debug_tab:                                         int, // 0 = state, 1 = raw events, 2 = key packages
+	debug_text:                                        string, // timing names spaced for wrapping; Copy keeps the original JSON
+	debug_json:                                        string, // composed snapshot shown on the Debug page
+	new_chat_open:                                     bool,
+	nc_page:                                           Nc_Page,
+	nc_search:                                         [dynamic]u8,
+	nc_contacts:                                       [dynamic]Contact_Ui,
+	nc_contact_sel:                                    int,
+	nc_member:                                         [dynamic]u8, // typed address or selected contact label
+	nc_member_choice:                                  int, // nc_contacts index + 1; zero = typed address
+	nip05_ticket:                                      int,
+	nc_name:                                           [dynamic]u8,
+	nc_pic:                                            Pic_Draft, // group image staged for Create
+	client_status:                                     string, // written only through set_status
+	client_status_kind:                                Status_Kind,
 	// ── Shell chrome (shell.odin, palette.odin, confirm.odin,
 	// linkguard.odin) ────────────────────────────────────────────────
-	banner:                                                string, // status/error strip over the status bar; "" = none
-	banner_kind:                                           Status_Kind, // .Error tints it danger
-	banner_seen:                                           string, // client_status already routed to the banner
-	toast:                                                 string, // transient confirmation ("Copied")
-	toast_until:                                           f64, // rl.GetTime() deadline; 0 = no toast
-	pal_open:                                              bool, // command palette (Ctrl+P)
-	pal_input:                                             [dynamic]u8,
-	pal_sel:                                               int, // highlighted row in pal_hits
-	pal_hits:                                              [dynamic]int, // indices into COMMANDS
-	confirm:                                               Confirm, // pending destructive action; .kind None = closed
-	link_open:                                             bool, // external-link guard modal
-	link_url:                                              string, // the URL it asks about
-	link_trust:                                            bool, // its "always open this site" checkbox
+	banner:                                            string, // status/error strip over the status bar; "" = none
+	banner_kind:                                       Status_Kind, // .Error tints it danger
+	banner_seen:                                       string, // client_status already routed to the banner
+	toast:                                             string, // transient confirmation ("Copied")
+	toast_until:                                       f64, // rl.GetTime() deadline; 0 = no toast
+	pal_open:                                          bool, // command palette (Ctrl+P)
+	pal_input:                                         [dynamic]u8,
+	pal_sel:                                           int, // highlighted row in pal_hits
+	pal_hits:                                          [dynamic]int, // indices into COMMANDS
+	confirm:                                           Confirm, // pending destructive action; .kind None = closed
+	link_open:                                         bool, // external-link guard modal
+	link_url:                                          string, // the URL it asks about
+	link_trust:                                        bool, // its "always open this site" checkbox
 	// Message-body selection (bodysel.odin), scoped to one text block.
-	sel_on:                                                bool,
-	sel_block:                                             u32, // body_text id base of the block being selected
-	sel_a:                                                 int, // anchor byte offset inside that block
-	sel_b:                                                 int, // drag head
-	sel_unit:                                              Selection_Unit,
-	sel_wa:                                                int, // anchor word/sentence bounds for drag selection
-	sel_wb:                                                int,
-	sel_copy:                                              string, // the selected text, refreshed as the drag moves
+	sel_on:                                            bool,
+	sel_block:                                         u32, // body_text id base of the block being selected
+	sel_a:                                             int, // anchor byte offset inside that block
+	sel_b:                                             int, // drag head
+	sel_unit:                                          Selection_Unit,
+	sel_wa:                                            int, // anchor word/sentence bounds for drag selection
+	sel_wb:                                            int,
+	sel_copy:                                          string, // the selected text, refreshed as the drag moves
 	// Message effects (effects.odin): the composer's armed burst.
-	fx_open:                                               bool, // effect picker popover
-	compose_more:                                          bool, // phone composer tools menu
-	fx_armed:                                              int, // catalog id armed for the next send; 0 = none
-	login_input:                                           [dynamic]u8, // nsec being typed/pasted
-	login_method:                                          Login_Method,
-	login_uri:                                             string,
-	login_qr:                                              ^rl.Texture2D,
-	login_error:                                           string,
+	fx_open:                                           bool, // effect picker popover
+	compose_more:                                      bool, // phone composer tools menu
+	fx_armed:                                          int, // catalog id armed for the next send; 0 = none
+	login_input:                                       [dynamic]u8, // nsec being typed/pasted
+	login_method:                                      Login_Method,
+	login_uri:                                         string,
+	login_qr:                                          ^rl.Texture2D,
+	login_error:                                       string,
 }
 
 // Relays a new account starts with.
