@@ -1640,8 +1640,8 @@ row_to_ui :: proc(
 	   preview != "" &&
 	   row.last_message != nil &&
 	   row.last_message.sender != nil &&
-	   row.last_message.kind != 1210 {
-		// A group row names who sent its last message.
+	   record_class(row.last_message.kind, string(row.last_message.plaintext)) == .Message {
+		// A group row names who sent its last message, when that is a message.
 		if sender := sender_label(string(row.last_message.sender)); sender != "" {
 			preview = fmt.tprintf(tr("%s: %s"), sender, preview)
 		}

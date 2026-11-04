@@ -24,6 +24,7 @@ Gs_Hit :: struct {
 	snippet: string, // one flattened line around the match
 	at:      string, // day label + clock, as the chat dates it
 	when_at: u64, // sort key, and the source for reformatting `at`
+	system:  ^marmot.Group_System_Event, // worker hit awaiting its sentence; borrowed from Search_Job.pages
 }
 
 // Case fold + latin-1 diacritic strip: "É" matches "e". A tiny fold

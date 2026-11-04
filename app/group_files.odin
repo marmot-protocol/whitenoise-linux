@@ -121,8 +121,7 @@ group_files_collect :: proc(job: ^Group_Files_Job, page: ^marmot.Timeline_Page) 
 		record := &page.messages[i]
 		if record.deleted ||
 		   record.invalidation_status != nil ||
-		   record.kind == 5 ||
-		   record.kind == 1009 {continue}
+		   record_class(record.kind, string(record.plaintext)) == .Modifier {continue}
 		for &outcome, index in record.media[:record.media_len] {
 			if outcome.tag != .ACCEPTED {continue}
 			ref := &outcome.body.accepted.reference

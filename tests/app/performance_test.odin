@@ -46,11 +46,6 @@ message_storage_released :: proc(t: ^testing.T) {
 			},
 		)
 		append(
-			&msg.history,
-			Edit_Version{at = strings.clone("12:00"), text = strings.clone("old")},
-		)
-		append(&msg.history[0].blocks, Md_Block_Ui{text = strings.clone("old")})
-		append(
 			&msg.attachments,
 			Att_Slot {
 				name = strings.clone("picture.png"),

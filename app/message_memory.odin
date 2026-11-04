@@ -17,8 +17,9 @@ message_matches :: proc(
 	record: ^marmot.Timeline_Message_Record,
 	label, picture: string,
 ) -> bool {
-	if record.kind != 9 ||
+	if record.kind != KIND_CHAT_MESSAGE ||
 	   record.deleted ||
+	   record.edit != nil ||
 	   old.deleted ||
 	   old.edited ||
 	   old.system ||
@@ -134,13 +135,6 @@ message_free :: proc(msg: Msg_Ui) {
 		delete(reaction.who)
 	}
 	delete(msg.reactions)
-	for version in msg.history {
-		delete(version.at)
-		mem.zero_slice(transmute([]u8)version.text)
-		delete(version.text)
-		blocks_free(version.blocks)
-	}
-	delete(msg.history)
 	for opt in msg.poll_opts {
 		delete(opt.id)
 		delete(opt.label)

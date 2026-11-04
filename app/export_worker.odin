@@ -161,36 +161,21 @@ transcript_read :: proc(t: ^thread.Thread) {
 export_page_snapshot :: proc(ui: ^Ui_State, job: ^Transcript_Job) {
 	rows := make([dynamic]Msg_Ui, context.temp_allocator)
 	page := job.page
-	originals := make(map[string]^marmot.Timeline_Message_Record, context.temp_allocator)
-	edits := make(map[string]^marmot.Timeline_Message_Record, context.temp_allocator)
-	for &record in page.messages[:page.messages_len] {originals[string(record.message_id_hex)] = &record}
-	for &record in page.messages[:page.messages_len] {
-		if record.kind != 1009 {continue}
-		target := first_event_ref(&record)
-		original := originals[target]
-		if original == nil || string(original.sender) != string(record.sender) {continue}
-		if old := edits[target];
-		   old == nil || old.received_at < record.received_at {edits[target] = &record}
-	}
 	for &record in page.messages[:page.messages_len] {
 		id := string(record.message_id_hex)
-		if record.kind == 1009 ||
-		   record.kind == 5 ||
-		   record.kind == KIND_POLL_VOTE ||
-		   ui.hidden[id] ||
-		   ui.blocked[string(record.sender)] {continue}
-		content := &record
-		if edit := edits[id]; edit != nil {content = edit}
+		class := record_class(record.kind, string(record.plaintext))
+		if class == .Modifier || ui.hidden[id] || ui.blocked[string(record.sender)] {continue}
+		// MDK has already applied an accepted edit to plaintext.
 		msg := Msg_Ui {
 			id      = id,
 			sender  = dm_title(job.client, string(record.sender)),
-			body    = string(content.plaintext),
+			body    = string(record.plaintext),
 			at_full = format_full(record.timeline_at),
 			sort_at = record.timeline_at,
 			mine    = string(record.direction) == "sent",
 			deleted = record.deleted,
 		}
-		if record.kind == 1210 &&
+		if class == .System &&
 		   record.group_system !=
 			   nil {msg.system = true; msg.body = system_text(job.client, record.group_system)}
 		if record.poll != nil {msg.body = string(record.poll.question)}

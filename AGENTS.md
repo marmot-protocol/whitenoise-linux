@@ -222,6 +222,15 @@ Product and geocache event metadata owns its strings after parsing. Keep each
 type's owned fields in its fixed-size `nev_*_strings` array, shared by clone
 and free; address refreshes release the old metadata before replacement.
 
+The timeline, chat-list previews, search, mentions and exports classify
+timeline records with `record_class` (`app/message_content.odin`); previews
+and search read message words through `reading_text`. MDK applies accepted
+edits, deletions and poll votes before a page reaches the app, so `plaintext`
+is already the effective content and the app does not resolve edits. Marmot's
+search matches the stored source, so its results are only candidates: a hit
+must match the text the timeline shows. System sentences need UI-owned
+profile labels, so search phrases and matches them in `search_drain`.
+
 ### Themes
 
 A theme is a `themes/*.toml` pack, `#load`ed at build time and parsed into a

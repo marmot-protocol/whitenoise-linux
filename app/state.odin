@@ -437,9 +437,8 @@ Msg_Ui :: struct {
 	theme_toml:          string, // its pack source, applied only on the tap
 	theme_swatch:        [THEME_SWATCHES]clay.Color, // parsed once at load, drawn every frame
 	deleted:             bool, // tombstone: placeholder row, no body/actions
-	edited:              bool, // kind-1009 edits applied; body holds the latest
+	edited:              bool, // MDK applied an accepted edit; body holds the latest
 	effect:              int, // ["effect", key] burst id from the event tags, 0 = none
-	history:             [dynamic]Edit_Version,
 	poll_opts:           [dynamic]Poll_Opt_Ui, // MDK projection options; empty = not a poll
 	poll_multi:          bool,
 	poll_total:          u64, // authenticated participants, including votes outside this page
@@ -452,6 +451,9 @@ Msg_Ui :: struct {
 KIND_POLL :: 1068
 KIND_POLL_VOTE :: 1018
 KIND_THREAD :: 1111 // thread message: ["e", root], text in content
+KIND_DELETE :: 5
+KIND_EDIT :: 1009
+KIND_GROUP_SYSTEM :: 1210
 
 Poll_Opt_Ui :: struct {
 	id:     string, // MDK option id, preserved when casting a selection

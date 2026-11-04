@@ -2294,7 +2294,7 @@ message_op :: proc(
 	}
 }
 
-// First "e"-tag value of a record: the edit/delete target message id.
+// First "e"-tag value of a record: a deletion's target or a thread's root.
 first_event_ref :: proc(record: ^marmot.Timeline_Message_Record) -> string {
 	for t in 0 ..< record.tags_len {
 		tag := &record.tags[t]
@@ -2305,15 +2305,8 @@ first_event_ref :: proc(record: ^marmot.Timeline_Message_Record) -> string {
 	return ""
 }
 
-// One kind-1009 edit awaiting application, ordered by (at, id).
-Edit_Rec :: struct {
-	at:     u64,
-	id:     string,
-	record: ^marmot.Timeline_Message_Record,
-}
-
-// Per-chat message-body hits for the rail filter: one limit-1 search
-// query per chat on a worker; the frame loop only reads cached flags.
+// Per-chat message-body hits for the rail filter: a paged search per
+// chat on a worker; the frame loop only reads cached flags.
 refresh_filter_hits :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	for text in ui.filter_previews {delete(text)}
 	clear(&ui.filter_previews)

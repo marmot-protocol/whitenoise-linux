@@ -38,6 +38,7 @@ Search_Job :: struct {
 	revision:       u64,
 	cancel:         bool, // atomic; stop obsolete work between store reads
 	hits:           [dynamic]Gs_Hit,
+	pages:          [dynamic]^marmot.Timeline_Page, // retained while a system hit borrows its event
 	chats:          ^marmot.Presented_Chat_List,
 	members:        map[string][]string, // current rosters for legacy conversation classification
 	read_chats:     bool,
@@ -60,6 +61,8 @@ search_free :: proc(job: ^Search_Job) {
 	delete(job.hidden)
 	for hit in job.hits {gs_free_hit(hit)}
 	delete(job.hits)
+	for page in job.pages {marmot.timeline_page_free(page)}
+	delete(job.pages)
 	if job.chats != nil {marmot.presented_chat_list_free(job.chats)}
 	chat_members_free(&job.members)
 	delete(job.account); delete(job.input); delete(job.err)
@@ -169,30 +172,11 @@ search_worker :: proc(t: ^thread.Thread) {
 		query := marmot.Timeline_Message_Query {
 			group_id_hex = strings.clone_to_cstring(group, context.temp_allocator),
 			has_limit    = true,
-			limit        = job.kind == .Mentions ? MI_FETCH_LIMIT : 1,
+			limit        = job.kind == .Mentions ? MI_FETCH_LIMIT : SIDEBAR_PAGE,
 		}
 		if job.kind == .Sidebar {
 			query.search = strings.clone_to_cstring(job.input, context.temp_allocator)
-			page: ^marmot.Timeline_Page
-			if marmot.timeline_messages(job.client, account, &query, &page) != .OK {
-				job.err = marmot.last_error()
-				return
-			}
-			if page.messages_len > 0 {
-				text := string(page.messages[0].plaintext)
-				at := max(
-					0,
-					strings.index(
-						strings.to_lower(text, context.temp_allocator),
-						strings.to_lower(job.input, context.temp_allocator),
-					),
-				)
-				append(
-					&job.hits,
-					Gs_Hit{group = strings.clone(group), snippet = gs_snippet(text, at)},
-				)
-			}
-			marmot.timeline_page_free(page)
+			if !search_sidebar_chat(job, account, &query, group) {return}
 			continue
 		}
 		page: ^marmot.Timeline_Page
@@ -209,36 +193,153 @@ search_worker :: proc(t: ^thread.Thread) {
 	for len(job.hits) > MI_HITS_MAX {gs_free_hit(pop(&job.hits))}
 }
 
+// Sidebar matches read per chat, newest first.
+@(private = "file")
+SIDEBAR_PAGE :: 16
+
+// Marmot matches the stored source, so a chat's newest match can be
+// markup, a link target or a system event's JSON. Page through its
+// matches until one shows the text, or none remain. A system hit is only
+// a candidate until search_drain phrases it, so the scan goes on past it
+// to the next message. false: cancelled or failed.
+@(private = "file")
+search_sidebar_chat :: proc(
+	job: ^Search_Job,
+	account: cstring,
+	query: ^marmot.Timeline_Message_Query,
+	group: string,
+) -> bool {
+	for {
+		if sync.atomic_load(&job.cancel) {return false}
+		page: ^marmot.Timeline_Page
+		if marmot.timeline_messages(job.client, account, query, &page) != .OK {
+			job.err = marmot.last_error()
+			return false
+		}
+		found, pending := false, false
+		for i := int(page.messages_len) - 1; i >= 0 && !found; i -= 1 {
+			hit := search_hit(job, group, &page.messages[i]) or_continue
+			append(&job.hits, hit)
+			pending ||= hit.system != nil
+			found = hit.system == nil
+		}
+		more := page.has_more_before && page.messages_len > 0
+		if more {
+			oldest := &page.messages[0]
+			query.has_before = true
+			query.before = oldest.timeline_at
+			query.before_message_id = strings.clone_to_cstring(
+				string(oldest.message_id_hex),
+				context.temp_allocator,
+			)
+		}
+		if pending {append(&job.pages, page)} else {marmot.timeline_page_free(page)}
+		if found || !more {return true}
+	}
+}
+
+// One record as a search hit, matched against the text the timeline shows
+// rather than the stored source Marmot's LIKE matched: markup, link
+// targets and hidden payloads do not count. Theme packs, webxdc state,
+// agent records and modifiers are not conversation text; an agent
+// stream's live text is never retained in its record. A system sentence
+// needs UI-owned profile labels, so its hit borrows the event until
+// search_phrase runs on the UI thread.
+@(private)
+search_hit :: proc(
+	job: ^Search_Job,
+	group: string,
+	record: ^marmot.Timeline_Message_Record,
+) -> (
+	hit: Gs_Hit,
+	ok: bool,
+) {
+	id := string(record.message_id_hex)
+	if record.deleted || id == "" || job.hidden[id] {return}
+	switch record_class(record.kind, string(record.plaintext)) {
+	case .System:
+		if record.group_system == nil {return}
+		hit.system = record.group_system
+	case .Message:
+		text := reading_text(job.client, string(record.plaintext))
+		// An attachment without a caption reads as its file name.
+		for &outcome in record.media[:record.media_len] {
+			if text != "" || outcome.tag != .ACCEPTED {continue}
+			text = string(outcome.body.accepted.reference.file_name)
+			if text == "" {text = tr("Attachment")}
+		}
+		at := 0
+		if job.input != "" {
+			at, _ = search_text_match(text, job.input, 0)
+			if at < 0 {return}
+		}
+		hit.snippet = gs_snippet(text, utf8.rune_count(text[:at]))
+	case .Theme, .Webxdc, .Agent_Stream, .Agent_State, .Modifier:
+		return
+	}
+	hit.group = strings.clone(group)
+	hit.msg_id = strings.clone(id)
+	hit.sender = strings.clone(string(record.direction) == "sent" ? "you" : string(record.sender))
+	hit.when_at = record.timeline_at
+	return hit, true
+}
+
+// Phrase the system hits search_hit left pending, with the UI's profile
+// labels, and keep each only if its sentence matches.
+@(private)
+search_phrase :: proc(job: ^Search_Job, client: ^marmot.Client) {
+	kept := 0
+	for &hit in job.hits {
+		if hit.system != nil {
+			text := system_text(client, hit.system)
+			hit.system = nil
+			at := 0
+			if job.input != "" {at, _ = search_text_match(text, job.input, 0)}
+			if at < 0 {
+				gs_free_hit(hit)
+				continue
+			}
+			hit.snippet = gs_snippet(text, utf8.rune_count(text[:at]))
+		}
+		job.hits[kept] = hit
+		kept += 1
+	}
+	resize(&job.hits, kept)
+}
+
+// Mentions are messages only. The raw check skips parsing for the many
+// records without a mention token; the mention must then survive into the
+// text the timeline shows, so one inside a link target does not count.
 @(private)
 search_mentions_page :: proc(job: ^Search_Job, group: string, page: ^marmot.Timeline_Page) {
 	for i := int(page.messages_len) - 1; i >= 0; i -= 1 {
 		if sync.atomic_load(&job.cancel) {return}
 		record := &page.messages[i]
 		id := string(record.message_id_hex)
+		raw := string(record.plaintext)
 		if record.deleted ||
-		   record.kind == 1009 ||
-		   record.kind == 5 ||
 		   id == "" ||
-		   job.hidden[id] {continue}
-		if string(record.direction) == "sent" ||
-		   !text_mentions_me(string(record.plaintext), job.account) {continue}
+		   job.hidden[id] ||
+		   string(record.direction) == "sent" ||
+		   record_class(record.kind, raw) != .Message ||
+		   !text_mentions_me(raw, job.account) {continue}
+		text := reading_text(job.client, raw)
+		if !text_mentions_me(text, job.account) {continue}
 		append(
 			&job.hits,
 			Gs_Hit {
 				group = strings.clone(group),
 				msg_id = strings.clone(id),
-				sender = strings.clone(
-					string(record.direction) == "sent" ? "you" : string(record.sender),
-				),
-				snippet = gs_snippet(string(record.plaintext), 0),
+				sender = strings.clone(string(record.sender)),
+				snippet = gs_snippet(text, 0),
 				when_at = record.timeline_at,
 			},
 		)
 	}
 }
 
-// A store page is bounded before crossing the FFI. Advance over hidden rows too,
-// otherwise a page containing only locally hidden messages would loop forever.
+// A store page is bounded before crossing the FFI. Advance over unlisted rows
+// too, otherwise a page of only hidden or markup matches would loop forever.
 @(private)
 search_global_page :: proc(job: ^Search_Job, account: cstring) {
 	if sync.atomic_load(&job.cancel) {return}
@@ -306,40 +407,14 @@ search_global_page :: proc(job: ^Search_Job, account: cstring) {
 			delete(job.next_group)
 			job.next_group = strings.clone(string(page.messages[0].group_id_hex))
 		}
+		pending := false
 		for i := int(page.messages_len) - 1; i >= 0; i -= 1 {
 			record := &page.messages[i]
-			id := string(record.message_id_hex)
-			if record.deleted ||
-			   record.kind == 1009 ||
-			   record.kind == 5 ||
-			   id == "" ||
-			   job.hidden[id] {continue}
-			group := string(record.group_id_hex)
-			body := string(record.plaintext)
-			if body == "" {
-				for &outcome in record.media[:record.media_len] {
-					if outcome.tag != .ACCEPTED {continue}
-					ref := &outcome.body.accepted.reference
-					body = string(ref.file_name)
-					if body == "" {body = tr("Attachment")}
-					break
-				}
-			}
-			pos := strings.index(body, job.input)
-			append(
-				&job.hits,
-				Gs_Hit {
-					group = strings.clone(group),
-					msg_id = strings.clone(id),
-					sender = strings.clone(
-						string(record.direction) == "sent" ? "you" : string(record.sender),
-					),
-					snippet = gs_snippet(body, pos > 0 ? utf8.rune_count(body[:pos]) : 0),
-					when_at = record.timeline_at,
-				},
-			)
+			hit := search_hit(job, string(record.group_id_hex), record) or_continue
+			append(&job.hits, hit)
+			pending ||= hit.system != nil
 		}
-		marmot.timeline_page_free(page)
+		if pending {append(&job.pages, page)} else {marmot.timeline_page_free(page)}
 		if !job.more || len(job.hits) == GS_HITS_MAX {return}
 		query.has_before = true
 		query.before = job.next_at
@@ -402,6 +477,7 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 						.Error,
 					)
 				} else {
+					search_phrase(job, client)
 					indices := make(map[string]int, context.temp_allocator)
 					for chat, i in ui.chats {indices[chat.group_id] = i}
 					titles := make(map[string]string, context.temp_allocator)
@@ -473,8 +549,10 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 						for text in ui.filter_previews {delete(text)}
 						resize(&ui.filter_previews, len(ui.chats))
 						for &text in ui.filter_previews {text = ""}
+						// A chat's hits run newest first; the first one left after
+						// phrasing is its match.
 						for hit in job.hits {
-							if i, ok := indices[hit.group]; ok {
+							if i, ok := indices[hit.group]; ok && !ui.filter_hits[i] {
 								ui.filter_hits[i] = true
 								ui.filter_previews[i] = strings.clone(hit.snippet)
 							}

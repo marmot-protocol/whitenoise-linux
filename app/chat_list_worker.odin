@@ -48,7 +48,9 @@ chat_list_read :: proc(job: ^Chat_List_Work) {
 		row := &job.rows.rows[i].row
 		last := row.last_message
 		// System summaries resolve profile labels through UI-owned caches.
-		if last != nil && last.kind == 1210 && last.group_system != nil {continue}
+		if last != nil &&
+		   last.group_system != nil &&
+		   record_class(last.kind, string(last.plaintext)) == .System {continue}
 		// Parsing and blocked-sender fallback reads finish before UI adoption;
 		// even an empty preview is prepared, so adoption never retries the read.
 		preview, system_page := chat_row_preview(

@@ -39,51 +39,6 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 
 	// Message textures are owned by the media_textures session cache
 	// now (shared across reloads), so rows never free them.
-	// Resolve kind-1009 edits, mirroring chatmodel.rs aggregate_edits:
-	// only edits whose authenticated sender authored the target count,
-	// ordered by (received_at, id), newest wins as the displayed text.
-	author_of := make(map[string]string, context.temp_allocator)
-	for i in 0 ..< page.messages_len {
-		record := &page.messages[i]
-		if (record.kind == 9 || record.kind == 1111) && record.message_id_hex != nil {
-			author_of[string(record.message_id_hex)] =
-				record.sender != nil ? string(record.sender) : ""
-		}
-	}
-	edits := make(map[string][dynamic]Edit_Rec, context.temp_allocator)
-	defer {
-		for _, versions in edits {
-			delete(versions)
-		}
-	}
-	for i in 0 ..< page.messages_len {
-		record := &page.messages[i]
-		if record.kind != 1009 ||
-		   record.plaintext == nil ||
-		   len(strings.trim_space(string(record.plaintext))) == 0 {
-			continue
-		}
-		target := first_event_ref(record)
-		author, known := author_of[target]
-		if !known || record.sender == nil || author != string(record.sender) {
-			continue
-		}
-		versions := edits[target]
-		append(
-			&versions,
-			Edit_Rec {
-				at = record.received_at,
-				id = record.message_id_hex != nil ? string(record.message_id_hex) : "",
-				record = record,
-			},
-		)
-		edits[target] = versions
-	}
-	for _, &versions in edits {
-		slice.sort_by(versions[:], proc(a, b: Edit_Rec) -> bool {
-			return a.at == b.at ? a.id < b.id : a.at < b.at
-		})
-	}
 
 	// Row indices and block ids move with the reload, so a live update
 	// invalidates a selection: drop it unless a drag is in progress.
@@ -129,26 +84,20 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	defer xdc_collect_end()
 	for i in 0 ..< page.messages_len {
 		record := &page.messages[i]
-		// Edit and delete records act on other rows; they never render
-		// as their own message.
-		if record.kind == 1009 || record.kind == 5 {
-			continue
-		}
-		if record.kind == AGENT_ACTIVITY || record.kind == AGENT_OPERATION {
+		plaintext := string(record.plaintext)
+		class := record_class(record.kind, plaintext)
+		// Modifiers act on other rows and agent state feeds the stream
+		// projection; neither renders as its own message.
+		if class == .Modifier || class == .Agent_State {
 			continue
 		}
 		stream_body: string
-		if record.kind == AGENT_STREAM_START {
+		if class == .Agent_Stream {
 			visible: bool
 			stream_body, visible = agent_body(record)
 			if !visible {
 				continue
 			}
-		}
-
-		// MDK folds authenticated poll responses into the poll projection.
-		if record.kind == KIND_POLL_VOTE {
-			continue
 		}
 
 		id_str := record.message_id_hex != nil ? string(record.message_id_hex) : ""
@@ -172,18 +121,21 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			continue
 		}
 
-		// Webxdc state updates ride text messages; they feed the
-		// running app and never render as rows.
-		if session, payload, is_xdc := xdc_decode(
-			string(record.plaintext != nil ? record.plaintext : ""),
-		); is_xdc {
-			xdc_collect(session, payload)
+		// Webxdc state updates feed the running app and never render as rows.
+		if class == .Webxdc {
+			if session, payload, ok := xdc_decode(plaintext); ok {
+				xdc_collect(session, payload)
+			}
 			continue
 		}
 
 		// System rows use the same mention chips as message bodies.
 		// Member additions also keep the subject for the wave button.
-		if record.kind == 1210 && record.group_system != nil {
+		// Without MDK's parsed event a system row has no sentence to show.
+		if class == .System {
+			if record.group_system == nil {
+				continue
+			}
 			sys := record.group_system
 			kind := sys.system_type != nil ? string(sys.system_type) : ""
 			subject := sys.subject_account_id_hex != nil ? string(sys.subject_account_id_hex) : ""
@@ -208,8 +160,8 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		// A shared theme rides its own kind: the body is a toml pack,
 		// which renders as an offer card rather than as text. An
 		// unparseable one is dropped, not shown half-read.
-		if record.kind == THEME_EVENT_KIND {
-			toml := string(record.plaintext != nil ? record.plaintext : "")
+		if class == .Theme {
+			toml := plaintext
 			name := theme_offer_name(toml)
 			if len(name) == 0 {
 				continue
@@ -256,9 +208,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 
 		if old, found := previous_ids[id_str];
-		   found &&
-		   len(edits[id_str]) == 0 &&
-		   message_matches(previous[old], record, label, info.pic_url) {
+		   found && message_matches(previous[old], record, label, info.pic_url) {
 			msg := previous[old]
 			msg.thread_replies = 0
 			msg.delivery = delivery
@@ -288,18 +238,12 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			continue
 		}
 
-		// An edited message renders the newest edit's content under the
-		// original id and row position.
-		content := record
-		versions, has_edits := edits[id_str]
-		if has_edits && len(versions) > 0 {
-			content = versions[len(versions) - 1].record
-		}
-		body := content.plaintext != nil ? string(content.plaintext) : ""
+		// MDK has already applied an accepted edit to plaintext.
+		body := plaintext
 		if record.poll != nil {
 			body = string(record.poll.question)
 		}
-		if record.kind == AGENT_STREAM_START {
+		if class == .Agent_Stream {
 			body = stream_body
 		}
 
@@ -323,7 +267,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			sort_at   = record.timeline_at,
 			mine      = mine,
 			delivery  = delivery,
-			edited    = record.edit != nil || (has_edits && len(versions) > 0),
+			edited    = record.edit != nil,
 			effect    = record_effect(record),
 		}
 		// Native poll projections include votes outside the visible page.
@@ -342,25 +286,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		// A burst plays the first time its message is seen, not on every
 		// reload (effects.odin keeps the seen set).
 		burst_arrive(msg.id, msg.effect, mine)
-		if has_edits {
-			original := record.plaintext != nil ? string(record.plaintext) : ""
-			append(
-				&msg.history,
-				Edit_Version{at = format_when(record.timeline_at), text = strings.clone(original)},
-			)
-			for v in versions {
-				append(
-					&msg.history,
-					Edit_Version {
-						at = format_when(v.record.timeline_at),
-						text = strings.clone(
-							v.record.plaintext != nil ? string(v.record.plaintext) : "",
-						),
-					},
-				)
-			}
-		}
-		// Edit records and poll questions arrive without parsed content
+		// Edited bodies and poll questions arrive without parsed content
 		// tokens; run the text through marmot's markdown parser so they
 		// render like any other body.
 		cover, secret := hidden_message(body)
@@ -374,7 +300,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		if record.poll != nil ||
 		   secret != "" ||
 		   ((msg.edited || record.kind == KIND_POLL || record.kind == KIND_THREAD) &&
-				   content.content_tokens.blocks_len == 0 &&
+				   record.content_tokens.blocks_len == 0 &&
 				   len(body) > 0) {
 			doc: ^marmot.Markdown_Document
 			if marmot.parse_markdown(
@@ -395,15 +321,15 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			if secret != "" && len(msg.blocks) == 0 {
 				append(&msg.blocks, Md_Block_Ui{kind = .Para, text = strings.clone(cover)})
 			}
-		} else if record.kind != AGENT_STREAM_START {
+		} else if class != .Agent_Stream {
 			convert_blocks(
 				&msg.blocks,
-				content.content_tokens.blocks,
-				content.content_tokens.blocks_len,
+				record.content_tokens.blocks,
+				record.content_tokens.blocks_len,
 				false,
 				([^]u8)(
-					content.content_tokens.blank_lines_before,
-				)[:content.content_tokens.blank_lines_before_len],
+					record.content_tokens.blank_lines_before,
+				)[:record.content_tokens.blank_lines_before_len],
 			)
 		}
 		for j in 0 ..< record.reactions.by_emoji_len {
