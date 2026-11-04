@@ -312,7 +312,7 @@ gif_keyboard :: proc(t: ^testing.T) {
 	}
 	for width in ([]i32{900, 420, 320}) {
 		rl.SetWindowSize(width, 760); nendo.set_dimensions({f32(width), 760})
-		for locale in ([]string{"en", "it", "de", "ja"}) {
+		for locale in ([]string{"en", "it", "de", "ja", "ko"}) {
 			set_locale(locale)
 			for _ in 0 ..< 8 {anim_frame += 1; build_layout(&ui, 0)}
 			commands := build_layout(&ui, 0)

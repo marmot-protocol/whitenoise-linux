@@ -40,7 +40,7 @@ depends=(sdl3 libwebp libarchive mpv ffmpeg poppler-glib cairo fontconfig glib2 
 makedepends=(git cargo clang cmake unzip zstd webkit2gtk-4.1)
 optdepends=(
   'webkit2gtk-4.1: run webxdc apps attached to messages'
-  'noto-fonts-cjk: Japanese text'
+  'noto-fonts-cjk: Japanese and Korean text'
   'libpulse: notification sound (paplay)'
   'sound-theme-freedesktop: the notification sound file'
   'libcanberra: notification sound fallback (canberra-gtk-play)'

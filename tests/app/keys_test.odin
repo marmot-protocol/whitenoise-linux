@@ -50,7 +50,7 @@ keys_package_layout :: proc(t: ^testing.T) {
 		},
 	)
 	settings_open(&ui, nil, .Keys, 1, level = .Sheet)
-	for locale in ([]string{"en", "it", "de", "ja"}) {
+	for locale in ([]string{"en", "it", "de", "ja", "ko"}) {
 		set_locale(locale)
 		for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
 		commands := build_layout(&ui, 0)

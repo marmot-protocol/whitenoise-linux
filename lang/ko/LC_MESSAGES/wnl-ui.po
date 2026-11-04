@@ -1,0 +1,5958 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: wnl-ui\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: 2026-07-06 00:00+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#, c-format
+msgid "%d added, %d skipped, %d failed"
+msgstr "추가 %d개, 건너뜀 %d개, 실패 %d개"
+
+#, c-format
+msgid "%d blocked message"
+msgstr "차단한 메시지 %d개"
+
+#, c-format
+msgid "%d blocked messages"
+msgstr "차단한 메시지 %d개"
+
+#, c-format
+msgid "%d bytes"
+msgstr "%d바이트"
+
+#, c-format
+msgid "%d connecting"
+msgstr "%d개 연결 중"
+
+#, c-format
+msgid "%d day"
+msgstr "%d일"
+
+#, c-format
+msgid "%d day ago"
+msgstr "%d일 전"
+
+#, c-format
+msgid "%d days"
+msgstr "%d일"
+
+#, c-format
+msgid "%d days ago"
+msgstr "%d일 전"
+
+#, c-format
+msgid "%d edit"
+msgstr "수정 %d회"
+
+#, c-format
+msgid "%d edits"
+msgstr "수정 %d회"
+
+#, c-format
+msgid "%d emoji"
+msgstr "이모지 %d개"
+
+#, c-format
+msgid "%d emoji previews couldn't be loaded."
+msgstr "이모지 미리보기 %d개를 불러올 수 없습니다."
+
+#, c-format
+msgid "%d file"
+msgstr "파일 %d개"
+
+#, c-format
+msgid "%d files"
+msgstr "파일 %d개"
+
+#, c-format
+msgid "%d hour"
+msgstr "%d시간"
+
+#, c-format
+msgid "%d hour ago"
+msgstr "%d시간 전"
+
+#, c-format
+msgid "%d hours"
+msgstr "%d시간"
+
+#, c-format
+msgid "%d hours ago"
+msgstr "%d시간 전"
+
+#, c-format
+msgid "%d key packages. On this device: %d. On relays: %d."
+msgstr "키 패키지 %d개. 이 기기: %d개. 릴레이: %d개."
+
+#, c-format
+msgid "%d member"
+msgstr "멤버 %d명"
+
+#, c-format
+msgid "%d members"
+msgstr "멤버 %d명"
+
+#, c-format
+msgid "%d minute"
+msgstr "%d분"
+
+#, c-format
+msgid "%d minute ago"
+msgstr "%d분 전"
+
+#, c-format
+msgid "%d minutes"
+msgstr "%d분"
+
+#, c-format
+msgid "%d minutes ago"
+msgstr "%d분 전"
+
+#, c-format
+msgid "%d month ago"
+msgstr "%d개월 전"
+
+#, c-format
+msgid "%d months ago"
+msgstr "%d개월 전"
+
+#, c-format
+msgid "%d not connected"
+msgstr "%d개 연결 안 됨"
+
+#, c-format
+msgid "%d of %d"
+msgstr "%d / %d"
+
+#, c-format
+msgid "%d of %d connected"
+msgstr "%d / %d 연결됨"
+
+#, c-format
+msgid "%d of %d processed"
+msgstr "%d / %d 처리됨"
+
+#, c-format
+msgid "%d of %d relays are up."
+msgstr "릴레이 %d / %d개가 작동 중입니다."
+
+#, c-format
+msgid "%d of %d shared with you"
+msgstr "%d / %d 공유받음"
+
+#, c-format
+msgid "%d people will be added to the group."
+msgstr "%d명이 그룹에 추가됩니다."
+
+#, c-format
+msgid "%d published, so people can invite you."
+msgstr "%d개 게시됨. 다른 사람이 초대할 수 있습니다."
+
+#, c-format
+msgid "%d replies"
+msgstr "답글 %d개"
+
+#, c-format
+msgid "%d reply"
+msgstr "답글 %d개"
+
+#, c-format
+msgid "%d result"
+msgstr "결과 %d건"
+
+#, c-format
+msgid "%d results"
+msgstr "결과 %d건"
+
+#, c-format
+msgid "%d rule"
+msgstr "규칙 %d개"
+
+#, c-format
+msgid "%d rules"
+msgstr "규칙 %d개"
+
+#, c-format
+msgid "%d second"
+msgstr "%d초"
+
+#, c-format
+msgid "%d second ago"
+msgstr "%d초 전"
+
+#, c-format
+msgid "%d seconds"
+msgstr "%d초"
+
+#, c-format
+msgid "%d seconds ago"
+msgstr "%d초 전"
+
+#, c-format
+msgid "%d terminal"
+msgstr "터미널 %d개"
+
+#, c-format
+msgid "%d terminals"
+msgstr "터미널 %d개"
+
+#, c-format
+msgid "%d voters"
+msgstr "투표자 %d명"
+
+#, c-format
+msgid "%d votes"
+msgstr "%d표"
+
+#, c-format
+msgid "%d waiting"
+msgstr "%d개 대기 중"
+
+#, c-format
+msgid "%d waiting to connect"
+msgstr "%d개 연결 대기 중"
+
+#, c-format
+msgid "%d year ago"
+msgstr "%d년 전"
+
+#, c-format
+msgid "%d years ago"
+msgstr "%d년 전"
+
+#, c-format
+msgid "%d/%d RELAYS"
+msgstr "%d/%d 릴레이"
+
+#, c-format
+msgid "%s added %s"
+msgstr "%s 님이 %s 님을 추가했습니다"
+
+#, c-format
+msgid "%s audit log"
+msgstr "%s 감사 로그"
+
+#, c-format
+msgid "%s changed the disappearing message timer"
+msgstr "%s 님이 사라지는 메시지 타이머를 변경했습니다"
+
+#, c-format
+msgid "%s changed the group photo"
+msgstr "%s 님이 그룹 사진을 변경했습니다"
+
+#, c-format
+msgid "%s copy"
+msgstr "%s 사본"
+
+#, c-format
+msgid "%s disbanded the group"
+msgstr "%s 님이 그룹을 해산했습니다"
+
+#, c-format
+msgid "%s dismissed %s as admin"
+msgstr "%s 님이 %s 님의 관리자 권한을 해제했습니다"
+
+#, c-format
+msgid "%s guide"
+msgstr "%s 가이드"
+
+#, c-format
+msgid "%s is no longer an admin"
+msgstr "%s 님은 더 이상 관리자가 아닙니다"
+
+#, c-format
+msgid "%s left the group"
+msgstr "%s 님이 그룹에서 나갔습니다"
+
+#, c-format
+msgid "%s made %s an admin"
+msgstr "%s 님이 %s 님을 관리자로 지정했습니다"
+
+#, c-format
+msgid "%s removed %s"
+msgstr "%s 님이 %s 님을 제거했습니다"
+
+#, c-format
+msgid "%s removed the group name"
+msgstr "%s 님이 그룹 이름을 제거했습니다"
+
+#, c-format
+msgid "%s renamed the group to %s"
+msgstr "%s 님이 그룹 이름을 %s(으)로 변경했습니다"
+
+#, c-format
+msgid "%s set disappearing messages to %s"
+msgstr "%s 님이 사라지는 메시지를 %s(으)로 설정했습니다"
+
+#, c-format
+msgid "%s turned off disappearing messages"
+msgstr "%s 님이 사라지는 메시지를 껐습니다"
+
+#, c-format
+msgid "%s was added to the group"
+msgstr "%s 님이 그룹에 추가되었습니다"
+
+#, c-format
+msgid "%s was made an admin"
+msgstr "%s 님이 관리자가 되었습니다"
+
+#, c-format
+msgid "%s was removed from the group"
+msgstr "%s 님이 그룹에서 제거되었습니다"
+
+#, c-format
+msgid "%s will be added to the group."
+msgstr "%s 님이 그룹에 추가됩니다."
+
+#, c-format
+msgid "%s · Click to download."
+msgstr "%s · 클릭하여 다운로드하세요."
+
+#, c-format
+msgid "%s: %s"
+msgstr "%s: %s"
+
+msgid "(no display name)"
+msgstr "(표시 이름 없음)"
+
+msgid "(none)"
+msgstr "(없음)"
+
+msgid "(nothing loaded yet, click Refresh)"
+msgstr "(아직 불러온 항목이 없습니다. 새로고침을 클릭하세요)"
+
+msgid "(unknown)"
+msgstr "(알 수 없음)"
+
+msgid "(unpublished)"
+msgstr "(게시 안 됨)"
+
+#, c-format
+msgid "+%d more"
+msgstr "+%d개 더"
+
+#, c-format
+msgid "1 key package. %s"
+msgstr "키 패키지 1개. %s"
+
+msgid "1 vote"
+msgstr "1표"
+
+msgid "1 voter"
+msgstr "투표자 1명"
+
+msgid "25 European languages, including English and Italian."
+msgstr "영어와 이탈리아어를 포함한 25개 유럽 언어를 지원합니다."
+
+msgid "3D models"
+msgstr "3D 모델"
+
+msgid "A checked box means you placed the chat by hand. Clear it to let folder rules decide."
+msgstr "체크 표시는 채팅을 직접 배치했다는 뜻입니다. 체크를 해제하면 폴더 규칙에 따릅니다."
+
+msgid "A client for private group chat. Messages are sealed with MLS on this device, handed to Nostr relays as opaque blobs, and opened again only inside the group."
+msgstr "비공개 그룹 채팅을 위한 클라이언트입니다. 메시지는 이 기기에서 MLS로 봉인되어 내용을 알 수 없는 데이터로 Nostr 릴레이에 전달되고, 그룹 안에서만 다시 열립니다."
+
+msgid "A display name is required."
+msgstr "표시 이름을 입력해야 합니다."
+
+msgid "A key package lets people invite you to encrypted chats."
+msgstr "키 패키지가 있으면 다른 사람이 암호화된 채팅에 초대할 수 있습니다."
+
+msgid "A message at this size."
+msgstr "이 크기의 메시지입니다."
+
+msgid "A terminal is waiting for you."
+msgstr "터미널이 입력을 기다리고 있습니다."
+
+msgid "ABOUT"
+msgstr "소개"
+
+msgid "ACCENTS"
+msgstr "강조 색상"
+
+#, c-format
+msgid "ACCOUNTS   %d"
+msgstr "계정   %d"
+
+msgid "ACTIONS"
+msgstr "작업"
+
+msgid "ACTIVE"
+msgstr "사용 중"
+
+msgid "AI agents"
+msgstr "AI 에이전트"
+
+msgid "ANIMATION"
+msgstr "애니메이션"
+
+msgid "About"
+msgstr "정보"
+
+msgid "About White Noise"
+msgstr "White Noise 정보"
+
+#, c-format
+msgid "Accent %s color"
+msgstr "강조 %s 색상"
+
+#, c-format
+msgid "Accent %s name"
+msgstr "강조 %s 이름"
+
+msgid "Accent color"
+msgstr "강조 색상"
+
+msgid "Accept"
+msgstr "수락"
+
+msgid "Accepting your invitation"
+msgstr "초대를 수락하는 중"
+
+msgid "Account"
+msgstr "계정"
+
+msgid "Accounts"
+msgstr "계정"
+
+#, c-format
+msgid "Action failed: %s"
+msgstr "작업 실패: %s"
+
+msgid "Add"
+msgstr "추가"
+
+msgid "Add a question for your poll."
+msgstr "투표 질문을 입력하세요."
+
+msgid "Add account"
+msgstr "계정 추가"
+
+msgid "Add an option..."
+msgstr "선택지 추가..."
+
+msgid "Add another account"
+msgstr "다른 계정 추가"
+
+msgid "Add at least two options."
+msgstr "선택지를 두 개 이상 추가하세요."
+
+msgid "Add contact"
+msgstr "연락처 추가"
+
+msgid "Add member"
+msgstr "멤버 추가"
+
+msgid "Add option"
+msgstr "선택지 추가"
+
+msgid "Add pack"
+msgstr "팩 추가"
+
+msgid "Add reaction"
+msgstr "반응 남기기"
+
+msgid "Add relays for linked events"
+msgstr "연결된 이벤트용 릴레이 추가"
+
+msgid "Add rule"
+msgstr "규칙 추가"
+
+msgid "Add someone by npub, or make a group of your own."
+msgstr "npub으로 상대를 추가하거나 직접 그룹을 만드세요."
+
+msgid "Add someone from their profile or paste their npub above. You can also import a contacts CSV or JSON export."
+msgstr "프로필에서 연락처를 추가하거나 위에 npub을 붙여넣으세요. 연락처 CSV 또는 JSON 내보내기 파일도 가져올 수 있습니다."
+
+msgid "Add to group"
+msgstr "그룹에 추가"
+
+msgid "Added to your stickers"
+msgstr "스티커에 추가됨"
+
+msgid "Adding…"
+msgstr "추가 중…"
+
+msgid "Admin"
+msgstr "관리자"
+
+msgid "Admins can add and remove members and change group details."
+msgstr "관리자는 멤버를 추가하거나 제거하고 그룹 정보를 변경할 수 있습니다."
+
+msgid "Advanced"
+msgstr "고급"
+
+msgid "Agent connector documentation"
+msgstr "에이전트 커넥터 문서"
+
+msgid "Airmail"
+msgstr "항공 우편"
+
+msgid "All"
+msgstr "전체"
+
+msgid "All accounts stay connected. Switching only changes which one you're looking at."
+msgstr "모든 계정은 연결된 상태로 유지됩니다. 전환하면 표시되는 계정만 바뀝니다."
+
+msgid "All categories"
+msgstr "모든 카테고리"
+
+msgid "All chats"
+msgstr "모든 채팅"
+
+msgid "All senders"
+msgstr "모든 보낸 사람"
+
+msgid "All types"
+msgstr "모든 유형"
+
+msgid "Always open links to this site"
+msgstr "이 사이트 링크를 항상 열기"
+
+msgid "Amber"
+msgstr "앰버"
+
+msgid "An empty box derives its value. The window previews as you type."
+msgstr "비어 있는 칸은 값이 자동으로 정해집니다. 입력하면 창에서 미리 볼 수 있습니다."
+
+msgid "Animations are distracting"
+msgstr "애니메이션이 방해됩니다"
+
+msgid "Another group change took precedence. Review your group settings."
+msgstr "다른 그룹 변경이 우선 적용되었습니다. 그룹 설정을 확인하세요."
+
+msgid "Any attachment"
+msgstr "첨부 파일 있음"
+
+msgid "Any day"
+msgstr "모든 날짜"
+
+msgid "Any sender"
+msgstr "모든 보낸 사람"
+
+msgid "Any type"
+msgstr "모든 유형"
+
+msgid "Anything you write here stays between you and this device's key."
+msgstr "여기에 작성한 내용은 이 기기의 키로만 열 수 있습니다."
+
+msgid "Appearance"
+msgstr "모양"
+
+msgid "Applies to message bodies and the composer."
+msgstr "메시지 본문과 입력창에 적용됩니다."
+
+msgid "Applies to the picker, reactions and emoji in messages."
+msgstr "선택기, 반응, 메시지 속 이모지에 적용됩니다."
+
+msgid "Approve the request in your signer to continue."
+msgstr "계속하려면 서명자에서 요청을 승인하세요."
+
+msgid "Apps"
+msgstr "앱"
+
+msgid "Apr"
+msgstr "4월"
+
+msgid "Arabic (Egypt)"
+msgstr "아랍어(이집트)"
+
+msgid "Arabic (Saudi Arabia)"
+msgstr "아랍어(사우디아라비아)"
+
+msgid "Archive"
+msgstr "보관"
+
+msgid "Archive this chat?"
+msgstr "이 채팅을 보관하시겠습니까?"
+
+msgid "Archived chats"
+msgstr "보관된 채팅"
+
+msgid "Archives"
+msgstr "보관함"
+
+msgid "Arrow keys move. X is A, Z is B, Enter is Start, Shift is Select."
+msgstr "방향키로 이동합니다. X는 A, Z는 B, Enter는 Start, Shift는 Select입니다."
+
+msgid "Art deco"
+msgstr "아르데코"
+
+msgid "Ask a question..."
+msgstr "질문 입력..."
+
+msgid "Asking your relays for their key package."
+msgstr "릴레이에 상대의 키 패키지를 요청하는 중입니다."
+
+msgid "Attach a file"
+msgstr "파일 첨부"
+
+msgid "Attachment"
+msgstr "첨부 파일"
+
+msgid "Audio"
+msgstr "오디오"
+
+msgid "Audio message"
+msgstr "음성 메시지"
+
+msgid "Audit log file deleted."
+msgstr "감사 로그 파일을 삭제했습니다."
+
+msgid "Audit log files"
+msgstr "감사 로그 파일"
+
+msgid "Audit logs"
+msgstr "감사 로그"
+
+msgid "Aug"
+msgstr "8월"
+
+msgid "Author"
+msgstr "작성자"
+
+#, c-format
+msgid "Author: %s"
+msgstr "작성자: %s"
+
+msgid "Automatic AppImage updates are unavailable with SOCKS5 enabled. Update the AppImage manually."
+msgstr "SOCKS5가 켜져 있으면 AppImage 자동 업데이트를 사용할 수 없습니다. AppImage를 직접 업데이트하세요."
+
+msgid "Automatic updates are disabled in development builds."
+msgstr "개발 빌드에서는 자동 업데이트가 꺼져 있습니다."
+
+msgid "Automatic updates require the installed macOS app bundle."
+msgstr "자동 업데이트를 사용하려면 설치된 macOS 앱 번들이 필요합니다."
+
+msgid "Automatically check for updates"
+msgstr "업데이트 자동 확인"
+
+msgid "Automatically download updates"
+msgstr "업데이트 자동 다운로드"
+
+msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
+msgstr "이미지와 지원되는 웹사이트의 미리보기를 자동으로 불러옵니다. 해당 호스트는 IP 주소를 볼 수 있습니다. 끄면 링크 미리보기 자동 로드만 중지되며 첨부 파일 다운로드는 계속됩니다."
+
+msgid "Available offline"
+msgstr "오프라인에서 사용 가능"
+
+msgid "Avatar ring"
+msgstr "아바타 테두리"
+
+msgid "Avatars"
+msgstr "아바타"
+
+msgid "BACKDROP"
+msgstr "배경"
+
+msgid "BUNKER LINK"
+msgstr "bunker 링크"
+
+msgid "Back"
+msgstr "뒤로"
+
+msgid "Back to chat"
+msgstr "채팅으로 돌아가기"
+
+msgid "Back to chats"
+msgstr "채팅 목록으로 돌아가기"
+
+msgid "Back to connectors"
+msgstr "커넥터로 돌아가기"
+
+msgid "Back to sets"
+msgstr "세트 목록으로 돌아가기"
+
+msgid "Back up local data"
+msgstr "로컬 데이터 백업하기"
+
+msgid "Back up your key"
+msgstr "키 백업하기"
+
+msgid "Background"
+msgstr "배경"
+
+msgid "Background 2"
+msgstr "배경 2"
+
+msgid "Backup created."
+msgstr "백업을 만들었습니다."
+
+#, c-format
+msgid "Backup imported: %d files restored."
+msgstr "백업을 가져왔습니다. 파일 %d개를 복원했습니다."
+
+msgid "Backups include your settings, drafts, custom emoji, and themes. Your account keys and message history are not included."
+msgstr "백업에는 설정, 임시 저장 메시지, 사용자 지정 이모지, 테마가 포함됩니다. 계정 키와 메시지 기록은 포함되지 않습니다."
+
+msgid "Base color"
+msgstr "기본 색상"
+
+msgid "Bengali"
+msgstr "벵골어"
+
+msgid "Bevel light"
+msgstr "베벨 밝은 면"
+
+msgid "Bevel shade"
+msgstr "베벨 어두운 면"
+
+msgid "Bevelled surfaces"
+msgstr "베벨 처리된 표면"
+
+msgid "Blinds"
+msgstr "블라인드"
+
+msgid "Block"
+msgstr "차단"
+
+msgid "Block this contact?"
+msgstr "이 연락처를 차단하시겠습니까?"
+
+msgid "Blocked"
+msgstr "차단됨"
+
+msgid "Blocked message"
+msgstr "차단된 메시지"
+
+msgid "Blue"
+msgstr "파란색"
+
+msgid "Bones"
+msgstr "본"
+
+msgid "Bones influence"
+msgstr "본 영향"
+
+msgid "Border 2"
+msgstr "테두리 2"
+
+msgid "Border width"
+msgstr "테두리 두께"
+
+msgid "Bracket labels"
+msgstr "대괄호 레이블"
+
+msgid "Browse emoji sets"
+msgstr "이모지 세트 둘러보기"
+
+msgid "Bubble radius"
+msgstr "말풍선 모서리 반경"
+
+msgid "Built with"
+msgstr "사용 기술"
+
+msgid "Bulgarian"
+msgstr "불가리아어"
+
+msgid "By rule"
+msgstr "규칙별"
+
+msgid "CHATS"
+msgstr "채팅"
+
+msgid "COLOR"
+msgstr "색상"
+
+msgid "COMMANDS"
+msgstr "명령"
+
+msgid "CONFIRM NEW PASSWORD"
+msgstr "새 비밀번호 확인"
+
+msgid "CONFIRM PASSWORD"
+msgstr "비밀번호 확인"
+
+msgid "CONNECTING"
+msgstr "연결 중"
+
+msgid "CONTACTS"
+msgstr "연락처"
+
+msgid "CURRENT PASSWORD"
+msgstr "현재 비밀번호"
+
+msgid "Cached attachments"
+msgstr "캐시된 첨부 파일"
+
+msgid "Calendar"
+msgstr "캘린더"
+
+msgid "Camera"
+msgstr "카메라"
+
+msgid "Cancel"
+msgstr "취소"
+
+msgid "Cancel connection"
+msgstr "연결 취소"
+
+msgid "Cancel edit / reply, close panels"
+msgstr "수정/답장 취소, 패널 닫기"
+
+msgid "Cancel reply"
+msgstr "답장 취소"
+
+msgid "Cancel translation"
+msgstr "번역 취소"
+
+msgid "Card border"
+msgstr "카드 테두리"
+
+msgid "Card well"
+msgstr "카드 오목 영역"
+
+msgid "Catalan"
+msgstr "카탈루냐어"
+
+msgid "Center the conversation"
+msgstr "대화를 가운데에 배치"
+
+msgid "Chalk-drawn surfaces"
+msgstr "분필로 그린 표면"
+
+msgid "Change disappearing messages?"
+msgstr "사라지는 메시지 설정을 변경하시겠습니까?"
+
+msgid "Change password"
+msgstr "비밀번호 변경"
+
+msgid "Change photo"
+msgstr "사진 변경"
+
+msgid "Change picture"
+msgstr "이미지 변경"
+
+msgid "Change project avatar"
+msgstr "프로젝트 아바타 변경"
+
+msgid "Change rule type"
+msgstr "규칙 유형 변경"
+
+msgid "Change the date format"
+msgstr "날짜 형식 변경"
+
+msgid "Change the interface language"
+msgstr "인터페이스 언어 변경"
+
+msgid "Change the message text size"
+msgstr "메시지 글자 크기 변경"
+
+msgid "Change the scroll speed"
+msgstr "스크롤 속도 변경"
+
+msgid "Change the theme"
+msgstr "테마 변경"
+
+msgid "Change the time format"
+msgstr "시간 형식 변경"
+
+msgid "Change timer"
+msgstr "타이머 변경"
+
+msgid "Change vault password"
+msgstr "금고 비밀번호 변경"
+
+msgid "Change your GM"
+msgstr "GM 변경"
+
+msgid "Change your vault password"
+msgstr "금고 비밀번호 변경"
+
+msgid "Change..."
+msgstr "변경..."
+
+msgid "Chat details"
+msgstr "채팅 세부 정보"
+
+#, c-format
+msgid "Chat list failed: %s"
+msgstr "채팅 목록을 불러올 수 없습니다: %s"
+
+msgid "Chat options"
+msgstr "채팅 옵션"
+
+msgid "Chat restored."
+msgstr "채팅을 복원했습니다."
+
+msgid "Chat settings"
+msgstr "채팅 설정"
+
+msgid "Chat with AI agents, end-to-end encrypted like any other chat. Each agent runs on a computer or server you control, using its own account."
+msgstr "AI 에이전트와의 채팅도 다른 채팅과 마찬가지로 종단 간 암호화됩니다. 각 에이전트는 직접 관리하는 컴퓨터나 서버에서 자체 계정으로 실행됩니다."
+
+#, c-format
+msgid "Chat: %s"
+msgstr "채팅: %s"
+
+msgid "Chats"
+msgstr "채팅"
+
+msgid "Chats and Whip projects that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
+msgstr "조건에 맞는 채팅과 Whip 프로젝트는 자동으로 여기에 분류됩니다. 인원 수에는 본인도 포함됩니다. 직접 옮긴 항목은 옮긴 위치에 그대로 남습니다."
+
+msgid "Chats you archive will appear here."
+msgstr "보관한 채팅이 여기에 표시됩니다."
+
+msgid "Check each character against the original and try again."
+msgstr "각 문자를 원본과 대조하고 다시 시도하세요."
+
+msgid "Check every six hours and download signed updates. Restart when you choose."
+msgstr "6시간마다 확인하고 서명된 업데이트를 다운로드합니다. 재시작은 원할 때 하세요."
+
+msgid "Check for a key package"
+msgstr "키 패키지 찾기"
+
+msgid "Check for a newer version."
+msgstr "새 버전을 확인합니다."
+
+msgid "Check now"
+msgstr "지금 확인"
+
+msgid "Check your key package"
+msgstr "키 패키지 확인"
+
+msgid "Check your system notifications for the test alert."
+msgstr "시스템 알림에서 테스트 알림을 확인하세요."
+
+msgid "Checking for updates."
+msgstr "업데이트를 확인하고 있습니다."
+
+msgid "Checking project folder..."
+msgstr "프로젝트 폴더 확인 중..."
+
+msgid "Checking relays..."
+msgstr "릴레이 확인 중..."
+
+msgid "Checking your key with the relays. This takes a few seconds."
+msgstr "릴레이에서 키를 확인하고 있습니다. 몇 초 정도 걸립니다."
+
+msgid "Checking your password and decrypting the vault."
+msgstr "비밀번호를 확인하고 금고를 복호화하고 있습니다."
+
+msgid "Checking..."
+msgstr "확인 중..."
+
+msgid "Chinese (Simplified)"
+msgstr "중국어(간체)"
+
+msgid "Chinese (Traditional)"
+msgstr "중국어(번체)"
+
+msgid "Chinese, English, Japanese, Korean and Cantonese."
+msgstr "중국어, 영어, 일본어, 한국어, 광둥어를 지원합니다."
+
+msgid "Chip background"
+msgstr "칩 배경"
+
+msgid "Chip outline"
+msgstr "칩 윤곽선"
+
+msgid "Chip text"
+msgstr "칩 텍스트"
+
+msgid "Choose a contact or paste public keys separated by commas."
+msgstr "연락처를 선택하거나 쉼표로 구분된 공개 키를 붙여넣으세요."
+
+msgid "Choose a contacts CSV or JSON export to import."
+msgstr "가져올 연락처 CSV 또는 JSON 내보내기 파일을 선택하세요."
+
+msgid "Choose a destination for this chat."
+msgstr "이 채팅을 옮길 위치를 선택하세요."
+
+msgid "Choose a destination for this project."
+msgstr "이 프로젝트를 옮길 위치를 선택하세요."
+
+msgid "Choose a known sender or enter a public key."
+msgstr "알려진 발신자를 선택하거나 공개 키를 입력하세요."
+
+msgid "Choose a location before sending."
+msgstr "보내기 전에 위치를 선택하세요."
+
+msgid "Choose a project folder to open a terminal."
+msgstr "터미널을 열 프로젝트 폴더를 선택하세요."
+
+msgid "Choose a project folder."
+msgstr "프로젝트 폴더를 선택하세요."
+
+msgid "Choose a sign-in method."
+msgstr "로그인 방법을 선택하세요."
+
+msgid "Choose a translation source language"
+msgstr "번역 원본 언어 선택"
+
+msgid "Choose a translation target language"
+msgstr "번역 대상 언어 선택"
+
+msgid "Choose an emoji style"
+msgstr "이모지 스타일 선택"
+
+msgid "Choose at most two emoji."
+msgstr "이모지는 최대 2개까지 선택할 수 있습니다."
+
+msgid "Choose how your conversations look and feel."
+msgstr "대화의 모양과 사용감을 설정합니다."
+
+msgid "Choose image"
+msgstr "이미지 선택"
+
+msgid "Choose one or two emoji. Every member sees the same image."
+msgstr "이모지를 1개 또는 2개 선택하세요. 모든 멤버에게 같은 이미지가 표시됩니다."
+
+msgid "Choose one-tap reactions"
+msgstr "원탭 반응 선택"
+
+msgid "Choose someone to talk to."
+msgstr "대화할 상대를 선택하세요."
+
+msgid "Choose the crop circle shape"
+msgstr "크롭 서클 모양 선택"
+
+msgid "Choose the default avatar shape"
+msgstr "기본 아바타 모양 선택"
+
+msgid "Choose the renderer"
+msgstr "렌더러 선택"
+
+msgid "Choose what gets your attention."
+msgstr "알림을 받을 항목을 선택합니다."
+
+msgid "Choose what you'd like to change."
+msgstr "변경할 항목을 선택하세요."
+
+msgid "Choose when and how White Noise alerts you."
+msgstr "White Noise의 알림 시점과 방식을 설정합니다."
+
+msgid "Choose where events open"
+msgstr "이벤트를 열 위치 선택"
+
+msgid "Choose where git patches open"
+msgstr "Git 패치를 열 위치 선택"
+
+msgid "Choose where people reach you"
+msgstr "연락받을 위치 선택"
+
+msgid "Choose where to save the backup."
+msgstr "백업을 저장할 위치를 선택하세요."
+
+msgid "Choose where you publish"
+msgstr "게시할 위치 선택"
+
+msgid "Circle"
+msgstr "원"
+
+msgid "Claude Code CLI coding agent"
+msgstr "Claude Code CLI 코딩 에이전트"
+
+msgid "Clear cache"
+msgstr "캐시 지우기"
+
+msgid "Clear cached attachments"
+msgstr "캐시된 첨부 파일 지우기"
+
+msgid "Clear effect"
+msgstr "효과 해제"
+
+msgid "Clear filters"
+msgstr "필터 지우기"
+
+msgid "Clear search"
+msgstr "검색 지우기"
+
+msgid "Clear to let folder rules decide."
+msgstr "선택을 해제하면 폴더 규칙을 따릅니다."
+
+msgid "Click a sticker for a larger preview."
+msgstr "스티커를 클릭하면 크게 미리 볼 수 있습니다."
+
+msgid "Click to download."
+msgstr "클릭하여 다운로드하세요."
+
+msgid "Click to edit, drag to reorder."
+msgstr "클릭하여 편집하고, 드래그하여 순서를 바꿉니다."
+
+msgid "Close"
+msgstr "닫기"
+
+msgid "Close White Noise"
+msgstr "White Noise 닫기"
+
+msgid "Close pane"
+msgstr "창 닫기"
+
+msgid "Close tab"
+msgstr "탭 닫기"
+
+msgid "Close to tray"
+msgstr "닫을 때 트레이로 최소화"
+
+msgid "Closing connections and clearing this session."
+msgstr "연결을 닫고 이 세션을 지우고 있습니다."
+
+msgid "Closing tab…"
+msgstr "탭 닫는 중…"
+
+msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
+msgstr "창을 닫으면 숨겨집니다. 트레이 아이콘에 읽지 않은 메시지 수가 표시되며, 아이콘을 눌러 다시 열 수 있습니다."
+
+msgid "Cloud"
+msgstr "클라우드"
+
+msgid "Code"
+msgstr "코드"
+
+msgid "Code plate"
+msgstr "코드 플레이트"
+
+msgid "Coffee"
+msgstr "커피"
+
+msgid "Collapse messages and event cards after this many lines. Set to 0 to never collapse."
+msgstr "이 줄 수를 넘는 메시지와 이벤트 카드를 접습니다. 0으로 설정하면 접지 않습니다."
+
+msgid "Collapse the chat list"
+msgstr "채팅 목록 접기"
+
+msgid "Collapse transcription"
+msgstr "받아쓰기 내용 접기"
+
+msgid "Collecting logs for a bug report"
+msgstr "버그 신고용 로그 수집"
+
+msgid "Collector and retention"
+msgstr "수집 서버 및 보존 기간"
+
+msgid "Command palette"
+msgstr "명령 팔레트"
+
+msgid "Comment"
+msgstr "댓글"
+
+msgid "Config"
+msgstr "구성 파일"
+
+msgid "Configure a SOCKS5 proxy"
+msgstr "SOCKS5 프록시 설정"
+
+msgid "Confirm clear"
+msgstr "지우기 확인"
+
+msgid "Confirm delete"
+msgstr "삭제 확인"
+
+msgid "Confirm forget all"
+msgstr "모두 잊기 확인"
+
+msgid "Confirm import"
+msgstr "가져오기 확인"
+
+msgid "Confirm reveal"
+msgstr "표시 확인"
+
+msgid "Connect an AI agent"
+msgstr "AI 에이전트 연결"
+
+msgid "Connect an AI agent using your public key and a setup prompt."
+msgstr "공개 키와 설정 프롬프트로 AI 에이전트를 연결합니다."
+
+msgid "Connect an agent you run and trust."
+msgstr "직접 운영하고 신뢰하는 에이전트를 연결합니다."
+
+msgid "Connect to relays"
+msgstr "릴레이에 연결"
+
+msgid "Connect with a bunker link"
+msgstr "bunker 링크로 연결"
+
+msgid "Connect with the relays you choose."
+msgstr "선택한 릴레이로 연결합니다."
+
+msgid "Connect your remote signer"
+msgstr "원격 서명자 연결"
+
+msgid "Connected to relays"
+msgstr "릴레이에 연결됨"
+
+msgid "Connecting to relays"
+msgstr "릴레이에 연결 중"
+
+msgid "Connecting to your signer"
+msgstr "서명자에 연결 중"
+
+msgid "Connecting to your signer through its relays."
+msgstr "서명자의 릴레이를 통해 연결하고 있습니다."
+
+msgid "Connecting your remote signer. Approve the connection there before using this account."
+msgstr "원격 서명자에 연결하고 있습니다. 이 계정을 사용하기 전에 서명자에서 연결을 승인하세요."
+
+msgid "Connection cancelled."
+msgstr "연결을 취소했습니다."
+
+msgid "Connector guide"
+msgstr "커넥터 가이드"
+
+msgid "Contact"
+msgstr "연락처"
+
+msgid "Contact added."
+msgstr "연락처를 추가했습니다."
+
+msgid "Contact list collapsed"
+msgstr "연락처 목록 접힘"
+
+#, c-format
+msgid "Contacts imported: %d added, %d skipped, %d failed."
+msgstr "연락처 가져오기: %d명 추가, %d명 건너뜀, %d명 실패."
+
+msgid "Contacts only"
+msgstr "연락처만"
+
+msgid "Continue"
+msgstr "계속"
+
+msgid "Continue to account setup"
+msgstr "계정 설정으로 계속"
+
+msgid "Control background"
+msgstr "컨트롤 배경"
+
+msgid "Conversation preview"
+msgstr "대화 미리 보기"
+
+msgid "Conversations"
+msgstr "대화"
+
+msgid "Copied"
+msgstr "복사됨"
+
+#, c-format
+msgid "Copied %s."
+msgstr "%s을(를) 복사했습니다."
+
+msgid "Copy"
+msgstr "복사"
+
+msgid "Copy JSON"
+msgstr "JSON 복사"
+
+msgid "Copy coordinates"
+msgstr "좌표 복사"
+
+msgid "Copy error"
+msgstr "오류 복사"
+
+msgid "Copy group id"
+msgstr "그룹 ID 복사"
+
+msgid "Copy image"
+msgstr "이미지 복사"
+
+msgid "Copy info hash"
+msgstr "정보 해시 복사"
+
+msgid "Copy link"
+msgstr "링크 복사"
+
+msgid "Copy magnet link"
+msgstr "마그넷 링크 복사"
+
+msgid "Copy npub"
+msgstr "npub 복사"
+
+msgid "Copy pairing link"
+msgstr "페어링 링크 복사"
+
+msgid "Copy prompt"
+msgstr "프롬프트 복사"
+
+msgid "Copy public key"
+msgstr "공개 키 복사"
+
+msgid "Copy text"
+msgstr "텍스트 복사"
+
+msgid "Copy this link and open it in your browser."
+msgstr "이 링크를 복사하여 브라우저에서 여세요."
+
+msgid "Copy your public key"
+msgstr "내 공개 키 복사"
+
+msgid "Corner scale"
+msgstr "모서리 배율"
+
+#, c-format
+msgid "Couldn't add record %d. %s Check your relay settings and import again."
+msgstr "레코드 %d을(를) 추가할 수 없습니다. %s 릴레이 설정을 확인하고 다시 가져오세요."
+
+msgid "Couldn't add that relay. Double-check the address and try again."
+msgstr "해당 릴레이를 추가할 수 없습니다. 주소를 다시 확인하고 다시 시도하세요."
+
+msgid "Couldn't add the pack. No supported stickers are available."
+msgstr "팩을 추가할 수 없습니다. 지원되는 스티커가 없습니다."
+
+msgid "Couldn't add the relay. Enter a ws:// or wss:// URL with a host, such as wss://relay.example.com."
+msgstr "릴레이를 추가할 수 없습니다. wss://relay.example.com처럼 호스트가 포함된 ws:// 또는 wss:// URL을 입력하세요."
+
+#, c-format
+msgid "Couldn't archive. %s"
+msgstr "보관할 수 없습니다. %s"
+
+msgid "Couldn't cache your transcription. Please try again."
+msgstr "받아쓰기 결과를 캐시할 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't change audit logs. %s"
+msgstr "감사 로그를 변경할 수 없습니다. %s"
+
+msgid "Couldn't change diagnostics sharing. Please try again."
+msgstr "진단 정보 공유 설정을 변경할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't change disappearing messages. Please try again."
+msgstr "사라지는 메시지 설정을 변경할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't change the password. Please try again."
+msgstr "비밀번호를 변경할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't check for updates. Please try again."
+msgstr "업데이트를 확인할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't check the project folder. Please try again."
+msgstr "프로젝트 폴더를 확인할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't choose a folder. Close your open file picker and try again."
+msgstr "폴더를 선택할 수 없습니다. 열려 있는 파일 선택기를 닫고 다시 시도하세요."
+
+msgid "Couldn't choose a photo. Close your open file picker and try again."
+msgstr "사진을 선택할 수 없습니다. 열려 있는 파일 선택기를 닫고 다시 시도하세요."
+
+msgid "Couldn't close the tab. Please try again."
+msgstr "탭을 닫을 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't complete the signer request. Please try again."
+msgstr "서명자 요청을 완료할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't complete the signer request. Use a signer that supports this operation."
+msgstr "서명자 요청을 완료할 수 없습니다. 이 작업을 지원하는 서명자를 사용하세요."
+
+msgid "Couldn't complete your account action. Please try again."
+msgstr "계정 작업을 완료할 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't complete your account action. Please try again. (%s)"
+msgstr "계정 작업을 완료할 수 없습니다. 다시 시도하세요. (%s)"
+
+msgid "Couldn't configure the proxy. Please try again."
+msgstr "프록시를 구성할 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't copy %s. Please try again."
+msgstr "%s을(를) 복사할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't copy the image to the clipboard. Please try again."
+msgstr "이미지를 클립보드에 복사할 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't create an identity. %s"
+msgstr "신원을 만들 수 없습니다. %s"
+
+msgid "Couldn't create the backup. Please try again."
+msgstr "백업을 만들 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't create the group. Enter a name and try again."
+msgstr "그룹을 만들 수 없습니다. 이름을 입력하고 다시 시도하세요."
+
+msgid "Couldn't create the project. Please try again."
+msgstr "프로젝트를 만들 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't create the tab. Please try again."
+msgstr "탭을 만들 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't create the vault. Please try again."
+msgstr "금고를 만들 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't crop the picture. Please try again."
+msgstr "사진을 자를 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't decode the image. Choose a PNG or JPEG."
+msgstr "이미지를 디코딩할 수 없습니다. PNG 또는 JPEG를 선택하세요."
+
+msgid "Couldn't decode this audio. Try another audio file."
+msgstr "이 오디오를 디코딩할 수 없습니다. 다른 오디오 파일을 사용해 보세요."
+
+#, c-format
+msgid "Couldn't delete %s. Please try again."
+msgstr "%s을(를) 삭제할 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't delete the audit log file. %s"
+msgstr "감사 로그 파일을 삭제할 수 없습니다. %s"
+
+msgid "Couldn't download speech files. Please try again."
+msgstr "음성 파일을 다운로드할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't download the speech model. Check your connection and available disk space, then try again."
+msgstr "음성 모델을 다운로드할 수 없습니다. 연결 상태와 디스크 여유 공간을 확인하고 다시 시도하세요."
+
+msgid "Couldn't download the translation model. Check your connection and available disk space, then try again."
+msgstr "번역 모델을 다운로드할 수 없습니다. 연결 상태와 디스크 여유 공간을 확인하고 다시 시도하세요."
+
+msgid "Couldn't export contacts. Please try again."
+msgstr "연락처를 내보낼 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't export the chat. Please try again."
+msgstr "채팅을 내보낼 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't export the key. %s"
+msgstr "키를 내보낼 수 없습니다. %s"
+
+msgid "Couldn't find your account on the relays. Check your relay settings and try again."
+msgstr "릴레이에서 계정을 찾을 수 없습니다. 릴레이 설정을 확인하고 다시 시도하세요."
+
+msgid "Couldn't find your home folder. Enter an absolute project folder path."
+msgstr "홈 폴더를 찾을 수 없습니다. 프로젝트 폴더의 절대 경로를 입력하세요."
+
+msgid "Couldn't finish dictation. Please try again."
+msgstr "받아쓰기를 완료할 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't forward to %s. Open the chat to retry."
+msgstr "%s에게 전달할 수 없습니다. 채팅을 열어 다시 시도하세요."
+
+msgid "Couldn't forward. Please try again."
+msgstr "전달할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't get your location. Check your device's location permissions and try again."
+msgstr "위치를 가져올 수 없습니다. 기기의 위치 권한을 확인하고 다시 시도하세요."
+
+msgid "Couldn't get your location. Check your device's location permissions or pick a point on the map."
+msgstr "위치를 가져올 수 없습니다. 기기의 위치 권한을 확인하거나 지도에서 지점을 선택하세요."
+
+msgid "Couldn't hear any speech. Speak clearly and try again."
+msgstr "음성을 인식할 수 없습니다. 또렷하게 말하고 다시 시도하세요."
+
+msgid "Couldn't identify a supported language. Choose the source language in translation settings and try again."
+msgstr "지원되는 언어를 식별할 수 없습니다. 번역 설정에서 원본 언어를 선택하고 다시 시도하세요."
+
+msgid "Couldn't import contacts. Choose a JSON array of contact records."
+msgstr "연락처를 가져올 수 없습니다. 연락처 레코드의 JSON 배열을 선택하세요."
+
+msgid "Couldn't import contacts. Choose a contacts CSV or JSON export."
+msgstr "연락처를 가져올 수 없습니다. 연락처 CSV 또는 JSON 내보내기 파일을 선택하세요."
+
+msgid "Couldn't import contacts. Choose a valid contacts JSON export."
+msgstr "연락처를 가져올 수 없습니다. 올바른 연락처 JSON 내보내기 파일을 선택하세요."
+
+#, c-format
+msgid "Couldn't import contacts. Fix CSV record %d: use four fields and double quotes inside quoted fields."
+msgstr "연락처를 가져올 수 없습니다. CSV 레코드 %d을(를) 수정하세요. 필드 4개를 사용하고, 따옴표로 묶은 필드 안의 따옴표는 두 번 쓰세요."
+
+#, c-format
+msgid "Couldn't import contacts. Fix JSON record %d: name, npub and nickname must be strings, and blocked must be true or false."
+msgstr "연락처를 가져올 수 없습니다. JSON 레코드 %d을(를) 수정하세요. name, npub, nickname은 문자열이어야 하고 blocked는 true 또는 false여야 합니다."
+
+#, c-format
+msgid "Couldn't import contacts. Set blocked to true or false in CSV record %d."
+msgstr "연락처를 가져올 수 없습니다. CSV 레코드 %d의 blocked를 true 또는 false로 설정하세요."
+
+msgid "Couldn't import contacts. Use the CSV header name,npub,nickname,blocked."
+msgstr "연락처를 가져올 수 없습니다. CSV 헤더 name,npub,nickname,blocked를 사용하세요."
+
+msgid "Couldn't import the sticker. Choose an image under 4 MiB."
+msgstr "스티커를 가져올 수 없습니다. 4 MiB 미만의 이미지를 선택하세요."
+
+msgid "Couldn't invite the member. Enter a public key or verified address and try again."
+msgstr "멤버를 초대할 수 없습니다. 공개 키 또는 인증된 주소를 입력하고 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't keep %s running. Please try again."
+msgstr "%s을(를) 계속 실행할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't load GIFs. Please try again."
+msgstr "GIF를 불러올 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't load attachment. Click to retry."
+msgstr "첨부 파일을 불러올 수 없습니다. 클릭하여 다시 시도하세요."
+
+msgid "Couldn't load edit history. Please try again."
+msgstr "수정 기록을 불러올 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't load files. Please try again."
+msgstr "파일을 불러올 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't load group members. Please try again."
+msgstr "그룹 멤버를 불러올 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't load image. Click to retry."
+msgstr "이미지를 불러올 수 없습니다. 클릭하여 다시 시도하세요."
+
+msgid "Couldn't load messages. Please try again."
+msgstr "메시지를 불러올 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't load proxy credentials. Enter them again and save."
+msgstr "프록시 인증 정보를 불러올 수 없습니다. 다시 입력하고 저장하세요."
+
+msgid "Couldn't load the map. Please try again."
+msgstr "지도를 불러올 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't load the pack. Check your relay settings and try again."
+msgstr "팩을 불러올 수 없습니다. 릴레이 설정을 확인하고 다시 시도하세요."
+
+msgid "Couldn't load the sticker. Please try again."
+msgstr "스티커를 불러올 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't load the timeline. %s"
+msgstr "타임라인을 불러올 수 없습니다. %s"
+
+msgid "Couldn't load the updater. Please try again."
+msgstr "업데이터를 불러올 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't load this event. Check your relay settings and try again."
+msgstr "이 이벤트를 불러올 수 없습니다. 릴레이 설정을 확인하고 다시 시도하세요."
+
+msgid "Couldn't load timings. Please try again."
+msgstr "처리 시간을 불러올 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't load your GIFs. Please try again."
+msgstr "저장한 GIF를 불러올 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't load your contacts. Please try again."
+msgstr "연락처를 불러올 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't load your stickers. Please try again."
+msgstr "스티커를 불러올 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't log in. %s"
+msgstr "로그인할 수 없습니다. %s"
+
+msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
+msgstr "해당 NIP-05 주소를 조회할 수 없습니다. 다시 확인하고 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't mark the chat read. %s"
+msgstr "채팅을 읽음으로 표시할 수 없습니다. %s"
+
+msgid "Couldn't mark the chat read. Please try again."
+msgstr "채팅을 읽음으로 표시할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't normalize the project folder. Check the path and try again."
+msgstr "프로젝트 폴더 경로를 정규화할 수 없습니다. 경로를 확인하고 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't open %s. Please try again."
+msgstr "%s을(를) 열 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't open Whip. Please try again."
+msgstr "Whip을 열 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't open the backup. Double-check the password and try again."
+msgstr "백업을 열 수 없습니다. 비밀번호를 다시 확인하고 다시 시도하세요."
+
+msgid "Couldn't open the microphone. Please try again."
+msgstr "마이크를 열 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't open the project folder. Check that it exists and you have permission to access it."
+msgstr "프로젝트 폴더를 열 수 없습니다. 폴더가 존재하고 접근 권한이 있는지 확인하세요."
+
+msgid "Couldn't open the restored chat. Please try again."
+msgstr "복원된 채팅을 열 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't play speech. Check your audio output and try again."
+msgstr "음성을 재생할 수 없습니다. 오디오 출력을 확인하고 다시 시도하세요."
+
+msgid "Couldn't play video. Click to retry."
+msgstr "동영상을 재생할 수 없습니다. 클릭하여 다시 시도하세요."
+
+msgid "Couldn't preview the picture. Please try again."
+msgstr "사진을 미리 볼 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't publish the photo. %s"
+msgstr "사진을 게시할 수 없습니다. %s"
+
+#, c-format
+msgid "Couldn't publish the picture. %s"
+msgstr "사진을 게시할 수 없습니다. %s"
+
+msgid "Couldn't reach your signer. Please try again."
+msgstr "서명자에 연결할 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't read %s."
+msgstr "%s을(를) 읽을 수 없습니다."
+
+#, c-format
+msgid "Couldn't read %s. Please try again."
+msgstr "%s을(를) 읽을 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't read that pubkey. Double-check it and try again."
+msgstr "해당 공개 키를 읽을 수 없습니다. 다시 확인하고 다시 시도하세요."
+
+msgid "Couldn't read the backup file. Please try again."
+msgstr "백업 파일을 읽을 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't read the backup. Please try again."
+msgstr "백업을 읽을 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't read the image. Please try again."
+msgstr "이미지를 읽을 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't read the project photo. Please try again."
+msgstr "프로젝트 사진을 읽을 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't read the vault file. Please try again."
+msgstr "금고 파일을 읽을 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't read their key packages. %s"
+msgstr "상대방의 키 패키지를 읽을 수 없습니다. %s"
+
+msgid "Couldn't read this message aloud. Choose a shorter text message."
+msgstr "이 메시지를 소리 내어 읽을 수 없습니다. 더 짧은 텍스트 메시지를 선택하세요."
+
+msgid "Couldn't read this message aloud. Please try again."
+msgstr "이 메시지를 소리 내어 읽을 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't read your contacts file. Check the file permissions and try again."
+msgstr "연락처 파일을 읽을 수 없습니다. 파일 권한을 확인하고 다시 시도하세요."
+
+msgid "Couldn't read your existing contacts. Please try again."
+msgstr "기존 연락처를 읽을 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't remove the GIF. Please try again."
+msgstr "GIF를 제거할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't remove the saved file. Please try again."
+msgstr "저장된 파일을 제거할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't rename the group. Enter a name and try again."
+msgstr "그룹 이름을 변경할 수 없습니다. 이름을 입력하고 다시 시도하세요."
+
+msgid "Couldn't render that emoji. Choose another one."
+msgstr "해당 이모지를 표시할 수 없습니다. 다른 이모지를 선택하세요."
+
+msgid "Couldn't render the QR code. Please try again."
+msgstr "QR 코드를 표시할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't reveal your secret key. Please try again."
+msgstr "비밀 키를 표시할 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't save %s. Please try again."
+msgstr "%s을(를) 저장할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't save proxy credentials. Please try again."
+msgstr "프록시 인증 정보를 저장할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't save the GIF. Please try again."
+msgstr "GIF를 저장할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't save the edit. Please try again."
+msgstr "수정 내용을 저장할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't save the project photo. Please try again."
+msgstr "프로젝트 사진을 저장할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't save the sticker. Wait for its image to load and try again."
+msgstr "스티커를 저장할 수 없습니다. 이미지가 로드될 때까지 기다린 후 다시 시도하세요."
+
+msgid "Couldn't save the theme. Check the name and colors and try again."
+msgstr "테마를 저장할 수 없습니다. 이름과 색상을 확인하고 다시 시도하세요."
+
+msgid "Couldn't save your emoji. Include at least one ASCII letter, digit, underscore, or hyphen in the name."
+msgstr "이모지를 저장할 수 없습니다. 이름에 ASCII 영문자, 숫자, 밑줄 또는 하이픈을 하나 이상 포함하세요."
+
+msgid "Couldn't save your emoji. Please try again."
+msgstr "이모지를 저장할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't save your signer session in the encrypted vault. Please try again."
+msgstr "암호화된 금고에 서명자 세션을 저장할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't save your signer session. Please try again."
+msgstr "서명자 세션을 저장할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't save your stickers. Please try again."
+msgstr "스티커를 저장할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't search GIFs. Please try again."
+msgstr "GIF를 검색할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't search messages. Please try again."
+msgstr "메시지를 검색할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't search. Please try again."
+msgstr "검색할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't send the notification. Please try again."
+msgstr "알림을 보낼 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't send the sticker. Switch back to your account and try again."
+msgstr "스티커를 보낼 수 없습니다. 내 계정으로 다시 전환하고 다시 시도하세요."
+
+msgid "Couldn't serialize the key packages. Please try again."
+msgstr "키 패키지를 직렬화할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't serialize the snapshot. Please try again."
+msgstr "스냅샷을 직렬화할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't share the theme. Please try again."
+msgstr "테마를 공유할 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't share the theme. Please try again. %s"
+msgstr "테마를 공유할 수 없습니다. 다시 시도하세요. %s"
+
+msgid "Couldn't show a notification. Check your system notification settings and try again."
+msgstr "알림을 표시할 수 없습니다. 시스템 알림 설정을 확인하고 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't start %s. Its cartridge type isn't supported."
+msgstr "%s을(를) 시작할 수 없습니다. 이 카트리지 유형은 지원되지 않습니다."
+
+msgid "Couldn't start reading aloud. Please try again."
+msgstr "소리 내어 읽기를 시작할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't start the AppImage updater. Please try again."
+msgstr "AppImage 업데이터를 시작할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't start the updater. Please try again."
+msgstr "업데이터를 시작할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't start transcription. Please try again."
+msgstr "받아쓰기를 시작할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't start translation. Reinstall White Noise and try again."
+msgstr "번역을 시작할 수 없습니다. White Noise를 다시 설치하고 다시 시도하세요."
+
+msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
+msgstr "이 오디오를 받아쓸 수 없습니다. 10분 미만의 녹음을 선택하세요."
+
+msgid "Couldn't transcribe this audio. Choose an audio file under 100 MB."
+msgstr "이 오디오를 받아쓸 수 없습니다. 100 MB 미만의 오디오 파일을 선택하세요."
+
+msgid "Couldn't transcribe your speech. Please try again."
+msgstr "음성을 받아쓸 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't translate this message. Choose a shorter text message."
+msgstr "이 메시지를 번역할 수 없습니다. 더 짧은 텍스트 메시지를 선택하세요."
+
+msgid "Couldn't translate this message. Please try again."
+msgstr "이 메시지를 번역할 수 없습니다. 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't unarchive. %s"
+msgstr "보관을 해제할 수 없습니다. %s"
+
+msgid "Couldn't unlock the vault. Double-check the password and try again."
+msgstr "금고 잠금을 해제할 수 없습니다. 비밀번호를 다시 확인하고 다시 시도하세요."
+
+#, c-format
+msgid "Couldn't upload the picture. %s"
+msgstr "사진을 업로드할 수 없습니다. %s"
+
+msgid "Couldn't use that file. Choose a PNG or JPEG."
+msgstr "해당 파일을 사용할 수 없습니다. PNG 또는 JPEG를 선택하세요."
+
+msgid "Couldn't use that theme. It isn't a theme this version reads."
+msgstr "해당 테마를 사용할 수 없습니다. 이 버전에서 읽을 수 있는 테마가 아닙니다."
+
+msgid "Couldn't use the picture. Wait a moment and try again."
+msgstr "사진을 사용할 수 없습니다. 잠시 후 다시 시도하세요."
+
+msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
+msgstr "스티커를 사용할 수 없습니다. 4096픽셀 이하의 정적 PNG, WebP 또는 JPEG를 선택하세요."
+
+msgid "Couldn't use this Lightning address. Double-check it and try again."
+msgstr "이 Lightning 주소를 사용할 수 없습니다. 다시 확인하고 다시 시도하세요."
+
+msgid "Couldn't use this Nostr address. Double-check it and try again."
+msgstr "이 Nostr 주소를 사용할 수 없습니다. 다시 확인하고 다시 시도하세요."
+
+msgid "Couldn't verify the update. Please try again."
+msgstr "업데이트를 검증할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't verify your signer. Reconnect to the intended signer."
+msgstr "서명자를 검증할 수 없습니다. 원래 사용하려던 서명자에 다시 연결하세요."
+
+msgid "Create"
+msgstr "만들기"
+
+msgid "Create a poll"
+msgstr "투표 만들기"
+
+msgid "Create backup"
+msgstr "백업 만들기"
+
+msgid "Create backup..."
+msgstr "백업 만들기..."
+
+msgid "Create folder"
+msgstr "폴더 만들기"
+
+msgid "Create from emoji"
+msgstr "이모지로 만들기"
+
+msgid "Create group"
+msgstr "그룹 만들기"
+
+msgid "Create or use an account"
+msgstr "계정 만들기 또는 사용"
+
+msgid "Create pairing link"
+msgstr "페어링 링크 만들기"
+
+msgid "Create poll"
+msgstr "투표 만들기"
+
+msgid "Created"
+msgstr "생성일"
+
+msgid "Created by"
+msgstr "만든 사람"
+
+msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
+msgstr "비밀번호로 암호화된 NIP-49 키를 만듭니다. 안전하게 보관하거나 다른 클라이언트로 옮길 수 있습니다."
+
+msgid "Creating project…"
+msgstr "프로젝트 만드는 중…"
+
+msgid "Creating tab…"
+msgstr "탭 만드는 중…"
+
+msgid "Creating your chat"
+msgstr "채팅 만드는 중"
+
+msgid "Croatian"
+msgstr "크로아티아어"
+
+msgid "Crop"
+msgstr "자르기"
+
+msgid "Crop circle shape"
+msgstr "크롭 서클 모양"
+
+msgid "Ctrl + + to zoom in, Ctrl + - to zoom out, Ctrl + 0 to reset."
+msgstr "Ctrl + +로 확대, Ctrl + -로 축소, Ctrl + 0으로 초기화합니다."
+
+msgid "Current"
+msgstr "현재"
+
+msgid "Custom"
+msgstr "사용자 지정"
+
+msgid "Custom color"
+msgstr "사용자 지정 색상"
+
+msgid "Custom emoji"
+msgstr "사용자 지정 이모지"
+
+msgid "Cyan"
+msgstr "시안"
+
+msgid "Czech"
+msgstr "체코어"
+
+msgid "DEPTH"
+msgstr "깊이"
+
+msgid "DETAILS"
+msgstr "세부 정보"
+
+msgid "DEVELOPER TOOLS"
+msgstr "개발자 도구"
+
+msgid "DISPLAY NAME"
+msgstr "표시 이름"
+
+msgid "Danger"
+msgstr "위험"
+
+msgid "Danish"
+msgstr "덴마크어"
+
+msgid "Dark"
+msgstr "다크"
+
+msgid "Data folder"
+msgstr "데이터 폴더"
+
+msgid "Date format"
+msgstr "날짜 형식"
+
+msgid "Debug"
+msgstr "디버그"
+
+msgid "Dec"
+msgstr "12월"
+
+msgid "Decline"
+msgstr "거절"
+
+msgid "Decline this invitation?"
+msgstr "이 초대를 거절하시겠습니까?"
+
+msgid "Declining your invitation"
+msgstr "초대를 거절하는 중"
+
+msgid "Decode own"
+msgstr "내 메시지 디코딩"
+
+msgid "Decrypting..."
+msgstr "복호화 중..."
+
+msgid "Default"
+msgstr "기본값"
+
+msgid "Default avatar shape"
+msgstr "기본 아바타 모양"
+
+msgid "Default stack"
+msgstr "기본 글꼴"
+
+msgid "Delete"
+msgstr "삭제"
+
+msgid "Delete for everyone"
+msgstr "모두에게서 삭제"
+
+msgid "Delete for me"
+msgstr "나에게서 삭제"
+
+msgid "Delete this folder?"
+msgstr "이 폴더를 삭제하시겠습니까?"
+
+msgid "Delete this message for you?"
+msgstr "이 메시지를 나에게서 삭제하시겠습니까?"
+
+msgid "Delete this message?"
+msgstr "이 메시지를 삭제하시겠습니까?"
+
+msgid "Delete this theme?"
+msgstr "이 테마를 삭제하시겠습니까?"
+
+msgid "Delete this vault"
+msgstr "이 금고 삭제"
+
+msgid "Deleted. Recording continues in a fresh file."
+msgstr "삭제했습니다. 기록은 새 파일에서 계속됩니다."
+
+msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
+msgstr "기록 중인 파일을 삭제하면 파일이 교체됩니다. 기록은 새 파일에서 계속됩니다."
+
+msgid "Demote"
+msgstr "관리자 해제"
+
+msgid "Deriving an encryption key from your password."
+msgstr "비밀번호에서 암호화 키를 생성하는 중입니다."
+
+msgid "Describe the group"
+msgstr "그룹 설명 입력"
+
+msgid "Design"
+msgstr "디자인"
+
+msgid "Desktop notifications"
+msgstr "데스크톱 알림"
+
+msgid "Detect automatically"
+msgstr "자동 감지"
+
+msgid "Developer"
+msgstr "개발자"
+
+msgid "Developer mode"
+msgstr "개발자 모드"
+
+msgid "Developer mode off"
+msgstr "개발자 모드 꺼짐"
+
+msgid "Developer mode on"
+msgstr "개발자 모드 켜짐"
+
+msgid "Device vault"
+msgstr "기기 금고"
+
+msgid "Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."
+msgstr "진단 정보에는 공유를 끌 때까지 사용되는 임의의 설치 식별자, 앱 및 기기 정보, 릴레이 레이블이 포함됩니다. 수집 서비스는 IP 주소를 받습니다. 메시지 내용과 계정 또는 그룹 식별자는 제외됩니다. 공유를 끄면 이후 업로드는 중단되지만 이미 전송된 데이터는 회수할 수 없습니다. 감사 로그는 별도 설정입니다."
+
+msgid "Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured."
+msgstr "다른 수집 서비스를 설정하지 않은 경우 진단 정보는 otlp.ipf.dev 운영자에게 전송됩니다. 해당 보존 정책은 여기서 확인되지 않았습니다. 사용 이벤트 내보내기는 설정되어 있지 않습니다."
+
+msgid "Dictate"
+msgstr "받아쓰기"
+
+msgid "Dictate and listen on this device."
+msgstr "이 기기에서 받아쓰기와 듣기를 사용합니다."
+
+msgid "Dictate drafts and transcribe audio messages on your device."
+msgstr "기기에서 받아쓰기로 메시지를 작성하고 음성 메시지를 받아씁니다."
+
+msgid "Dictate messages and listen to them aloud."
+msgstr "메시지를 받아쓰고 소리 내어 들을 수 있습니다."
+
+msgid "Dictate your messages"
+msgstr "메시지 받아쓰기"
+
+msgid "Dictation"
+msgstr "받아쓰기"
+
+msgid "Dictation doesn't work"
+msgstr "받아쓰기가 작동하지 않음"
+
+#, c-format
+msgid "Difficulty: %d/5"
+msgstr "난이도: %d/5"
+
+msgid "Disappearing messages"
+msgstr "사라지는 메시지"
+
+#, c-format
+msgid "Disappearing messages were set to %s"
+msgstr "사라지는 메시지가 %s(으)로 설정되었습니다"
+
+msgid "Disappearing messages were turned off"
+msgstr "사라지는 메시지가 꺼졌습니다"
+
+msgid "Discard"
+msgstr "버리기"
+
+msgid "Discard profile changes?"
+msgstr "프로필 변경 사항을 버리시겠습니까?"
+
+msgid "Discard your theme changes?"
+msgstr "테마 변경 사항을 버리시겠습니까?"
+
+msgid "Discover"
+msgstr "둘러보기"
+
+msgid "Divider"
+msgstr "구분선"
+
+msgid "Dock to chat"
+msgstr "채팅에 고정"
+
+msgid "Documents"
+msgstr "문서"
+
+msgid "Done"
+msgstr "완료"
+
+msgid "Done."
+msgstr "완료되었습니다."
+
+msgid "Downloaded"
+msgstr "다운로드됨"
+
+msgid "Downloading an update."
+msgstr "업데이트를 다운로드하는 중입니다."
+
+#, c-format
+msgid "Downloading language detector: %d%%"
+msgstr "언어 감지 모델 다운로드 중: %d%%"
+
+msgid "Downloading speech model..."
+msgstr "음성 모델 다운로드 중..."
+
+msgid "Downloading translation model..."
+msgstr "번역 모델 다운로드 중..."
+
+#, c-format
+msgid "Downloading translation model: %d%%"
+msgstr "번역 모델 다운로드 중: %d%%"
+
+#, c-format
+msgid "Downloading: %d%%"
+msgstr "다운로드 중: %d%%"
+
+msgid "Downloads"
+msgstr "다운로드"
+
+msgid "Drag a chat onto a folder to keep it there, or drag a folder to reorder it."
+msgstr "채팅을 폴더로 끌어 놓으면 해당 폴더에 보관되고, 폴더를 끌면 순서를 바꿀 수 있습니다."
+
+msgid "Drag a folder to reorder it. Your chats appear here once you have some."
+msgstr "폴더를 끌어 순서를 바꿀 수 있습니다. 채팅이 생기면 여기에 표시됩니다."
+
+msgid "Drag inside to move. Drag a corner to resize."
+msgstr "안쪽을 끌어 이동합니다. 모서리를 끌어 크기를 조절합니다."
+
+msgid "Drag the map to place the pin, or use your current location."
+msgstr "지도를 끌어 핀을 놓거나 현재 위치를 사용하세요."
+
+msgid "Drop files to attach"
+msgstr "파일을 놓아 첨부"
+
+msgid "Drop here"
+msgstr "여기에 놓기"
+
+msgid "Dust"
+msgstr "먼지"
+
+msgid "Dutch"
+msgstr "네덜란드어"
+
+msgid "EDIT PROFILE"
+msgstr "프로필 편집"
+
+msgid "EDITING · BROADCAST TO RELAYS ON PUBLISH"
+msgstr "편집 중 · 게시 시 릴레이에 전송"
+
+msgid "EMOJI GROUP IMAGE"
+msgstr "이모지 그룹 이미지"
+
+msgid "ENCRYPTED KEY (NCRYPTSEC)"
+msgstr "암호화된 키 (NCRYPTSEC)"
+
+msgid "ENCRYPTION REVISION"
+msgstr "암호화 버전"
+
+msgid "Edit"
+msgstr "편집"
+
+#, c-format
+msgid "Edit %d"
+msgstr "수정 %d"
+
+msgid "Edit folder"
+msgstr "폴더 편집"
+
+msgid "Edit history"
+msgstr "수정 기록"
+
+msgid "Edit message"
+msgstr "메시지 수정"
+
+msgid "Edit profile"
+msgstr "프로필 편집"
+
+msgid "Edit project"
+msgstr "프로젝트 편집"
+
+msgid "Edit theme"
+msgstr "테마 편집"
+
+msgid "Edit your last message (empty composer)"
+msgstr "마지막 메시지 수정 (입력창이 비어 있을 때)"
+
+msgid "Editing message"
+msgstr "메시지 수정 중"
+
+#, c-format
+msgid "Editor: %s"
+msgstr "편집자: %s"
+
+msgid "Elevated"
+msgstr "돋움 면"
+
+msgid "Elevated border"
+msgstr "돋움 면 테두리"
+
+msgid "Email"
+msgstr "이메일"
+
+msgid "Emission"
+msgstr "발광"
+
+msgid "Emoji"
+msgstr "이모지"
+
+msgid "Emoji style"
+msgstr "이모지 스타일"
+
+msgid "Enable local translation"
+msgstr "로컬 번역 사용"
+
+msgid "Encrypted key copied"
+msgstr "암호화된 키를 복사했습니다"
+
+msgid "End day (inclusive)"
+msgstr "종료일 (해당일 포함)"
+
+msgid "End-to-end encrypted"
+msgstr "종단간 암호화됨"
+
+msgid "English"
+msgstr "영어"
+
+msgid "Enter a color as #RRGGBB."
+msgstr "색상을 #RRGGBB 형식으로 입력하세요."
+
+msgid "Enter a display name."
+msgstr "표시 이름을 입력하세요."
+
+msgid "Enter a folder name."
+msgstr "폴더 이름을 입력하세요."
+
+msgid "Enter a number of people."
+msgstr "인원 수를 입력하세요."
+
+msgid "Enter a numeric IPv4 or bracketed IPv6 address with a port from 1 to 65535."
+msgstr "숫자 IPv4 주소 또는 대괄호로 묶은 IPv6 주소와 1에서 65535 사이의 포트를 입력하세요."
+
+msgid "Enter a password"
+msgstr "비밀번호 입력"
+
+msgid "Enter a password to encrypt your backup."
+msgstr "백업을 암호화할 비밀번호를 입력하세요."
+
+msgid "Enter a project name."
+msgstr "프로젝트 이름을 입력하세요."
+
+msgid "Enter a relay URL (wss://…)"
+msgstr "릴레이 URL 입력 (wss://…)"
+
+msgid "Enter a relay URL before adding it."
+msgstr "추가할 릴레이 URL을 입력하세요."
+
+msgid "Enter a sticker name of 1 to 64 characters."
+msgstr "1~64자의 스티커 이름을 입력하세요."
+
+msgid "Enter a username and password, each up to 255 characters."
+msgstr "각각 255자 이내로 사용자 이름과 비밀번호를 입력하세요."
+
+msgid "Enter a valid pack link or address."
+msgstr "올바른 팩 링크 또는 주소를 입력하세요."
+
+msgid "Enter an absolute project folder path, or a path starting with ~/."
+msgstr "프로젝트 폴더의 절대 경로 또는 ~/로 시작하는 경로를 입력하세요."
+
+msgid "Enter at least 2 people. Counts include you."
+msgstr "2명 이상 입력하세요. 인원 수에는 본인이 포함됩니다."
+
+#, c-format
+msgid "Enter dates like %s, with the start on or before the end."
+msgstr "%s 형식으로 날짜를 입력하세요. 시작일은 종료일과 같거나 이전이어야 합니다."
+
+msgid "Enter moves to the next field, Escape cancels."
+msgstr "Enter는 다음 필드로 이동하고 Escape는 취소합니다."
+
+msgid "Enter the backup password."
+msgstr "백업 비밀번호를 입력하세요."
+
+msgid "Enter the member as an npub and try again."
+msgstr "멤버를 npub으로 입력하고 다시 시도하세요."
+
+msgid "Enter the number of people as a whole number and try again."
+msgstr "인원 수를 정수로 입력하고 다시 시도하세요."
+
+msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
+msgstr "이 백업을 만들 때 사용한 비밀번호를 입력하세요. 이 기기의 설정, 임시 저장 메시지, 사용자 지정 이모지, 테마가 대체됩니다."
+
+msgid "Enter to save. Shift+Enter for a new line."
+msgstr "Enter로 저장합니다. Shift+Enter로 줄을 바꿉니다."
+
+msgid "Enter to send. Shift+Enter for a new line."
+msgstr "Enter로 보냅니다. Shift+Enter로 줄을 바꿉니다."
+
+msgid "Enter your bunker link to continue."
+msgstr "계속하려면 bunker 링크를 입력하세요."
+
+msgid "Enter your nsec to continue."
+msgstr "계속하려면 nsec를 입력하세요."
+
+msgid "Enter your password to unlock the vault on this device."
+msgstr "이 기기의 금고를 잠금 해제하려면 비밀번호를 입력하세요."
+
+msgid "Erase avatar reveal"
+msgstr "지워서 아바타 드러내기"
+
+msgid "Error copied"
+msgstr "오류를 복사했습니다"
+
+msgid "Estonian"
+msgstr "에스토니아어"
+
+msgid "Event fetch relays"
+msgstr "이벤트 조회 릴레이"
+
+msgid "Event id"
+msgstr "이벤트 ID"
+
+msgid "Everyone in the group sees the new name."
+msgstr "그룹의 모든 사람에게 새 이름이 표시됩니다."
+
+msgid "Existing shortcodes are never replaced."
+msgstr "기존 단축 코드는 대체되지 않습니다."
+
+msgid "Exit fullscreen"
+msgstr "전체 화면 종료"
+
+msgid "Expand the chat list"
+msgstr "채팅 목록 펼치기"
+
+msgid "Export"
+msgstr "내보내기"
+
+msgid "Export CSV"
+msgstr "CSV 내보내기"
+
+msgid "Export JSON"
+msgstr "JSON 내보내기"
+
+msgid "Export as HTML"
+msgstr "HTML로 내보내기"
+
+msgid "Export as Markdown"
+msgstr "Markdown으로 내보내기"
+
+msgid "Export chat"
+msgstr "채팅 내보내기"
+
+msgid "Export encrypted key (ncryptsec)"
+msgstr "암호화된 키(ncryptsec) 내보내기"
+
+msgid "Export key"
+msgstr "키 내보내기"
+
+msgid "Export key first"
+msgstr "먼저 키 내보내기"
+
+msgid "External browsers and other apps do not use this setting."
+msgstr "외부 브라우저와 다른 앱에는 이 설정이 적용되지 않습니다."
+
+msgid "External browsers, other apps, and Windows app updates do not use this setting."
+msgstr "외부 브라우저, 다른 앱, Windows 앱 업데이트에는 이 설정이 적용되지 않습니다."
+
+msgid "FILES"
+msgstr "파일"
+
+msgid "Failed"
+msgstr "실패"
+
+msgid "Family"
+msgstr "가족"
+
+msgid "Fast motion"
+msgstr "빠른 모션"
+
+msgid "Favorites"
+msgstr "즐겨찾기"
+
+msgid "Feb"
+msgstr "2월"
+
+msgid "Female voice. Supports all reading languages."
+msgstr "여성 음성입니다. 모든 읽기 언어를 지원합니다."
+
+msgid "Fewer than"
+msgstr "인원 수 미만"
+
+msgid "Field"
+msgstr "입력란"
+
+msgid "Field border"
+msgstr "입력란 테두리"
+
+msgid "Field hover"
+msgstr "입력란 호버"
+
+msgid "Files"
+msgstr "파일"
+
+msgid "Files shared in this chat will appear here."
+msgstr "이 채팅에서 공유된 파일이 여기에 표시됩니다."
+
+msgid "Filipino"
+msgstr "필리핀어"
+
+msgid "Filter chats"
+msgstr "채팅 필터"
+
+msgid "Filter unread chats"
+msgstr "읽지 않은 채팅 필터"
+
+msgid "Filters"
+msgstr "필터"
+
+msgid "Final render"
+msgstr "최종 렌더링"
+
+msgid "Find a setting..."
+msgstr "설정 찾기..."
+
+msgid "Finish dictation"
+msgstr "받아쓰기 완료"
+
+msgid "Finishing the cancelled connection."
+msgstr "취소한 연결을 마무리하는 중입니다."
+
+msgid "Finnish"
+msgstr "핀란드어"
+
+msgid "Fit"
+msgstr "맞춤"
+
+msgid "Fitness"
+msgstr "피트니스"
+
+msgid "Flag"
+msgstr "깃발"
+
+msgid "Flat"
+msgstr "단색"
+
+msgid "Float"
+msgstr "띄우기"
+
+msgid "Focus glow"
+msgstr "포커스 광"
+
+msgid "Focus glow radius"
+msgstr "포커스 광 반경"
+
+msgid "Folder"
+msgstr "폴더"
+
+msgid "Folder name"
+msgstr "폴더 이름"
+
+msgid "Folder names must be unique. Choose a different name."
+msgstr "폴더 이름은 중복될 수 없습니다. 다른 이름을 선택하세요."
+
+msgid "Folder options"
+msgstr "폴더 옵션"
+
+msgid "Folders"
+msgstr "폴더"
+
+msgid "Follow folder rules"
+msgstr "폴더 규칙 따르기"
+
+msgid "Font"
+msgstr "글꼴"
+
+msgid "Font scale"
+msgstr "글꼴 크기 비율"
+
+msgid "Fonts"
+msgstr "글꼴"
+
+msgid "Food"
+msgstr "음식"
+
+msgid "Forget all"
+msgstr "모두 삭제"
+
+msgid "Forgot your password?"
+msgstr "비밀번호를 잊으셨습니까?"
+
+msgid "Forward"
+msgstr "전달"
+
+msgid "Forward to"
+msgstr "전달 대상"
+
+#, c-format
+msgid "Forwarded to %s"
+msgstr "%s에 전달됨"
+
+#, c-format
+msgid "Forwarded to %s."
+msgstr "%s에 전달했습니다."
+
+#, c-format
+msgid "Forwarding to %s…"
+msgstr "%s에 전달 중…"
+
+msgid "French (Canada)"
+msgstr "프랑스어(캐나다)"
+
+msgid "French (France)"
+msgstr "프랑스어(프랑스)"
+
+msgid "Friday"
+msgstr "금요일"
+
+msgid "From emoji"
+msgstr "이모지에서"
+
+msgid "From file"
+msgstr "파일에서"
+
+#, c-format
+msgid "From: %s"
+msgstr "보낸 사람: %s"
+
+msgid "Fullscreen"
+msgstr "전체 화면"
+
+msgid "GEOCACHE"
+msgstr "지오캐시"
+
+msgid "GIF search is provided by GifSnap. What you type in the GIF search box and your IP address are sent to GifSnap to find GIFs, and GIF previews load from its servers."
+msgstr "GIF 검색은 GifSnap에서 제공합니다. GIF 검색창에 입력한 내용과 IP 주소는 GIF를 찾기 위해 GifSnap으로 전송되며, GIF 미리보기는 GifSnap 서버에서 불러옵니다."
+
+msgid "GIFs"
+msgstr "GIF"
+
+msgid "GM button"
+msgstr "GM 버튼"
+
+msgid "GROUP ID"
+msgstr "그룹 ID"
+
+msgid "GROUPS IN COMMON"
+msgstr "공통 그룹"
+
+msgid "Games"
+msgstr "게임"
+
+msgid "Gemma prohibited use policy"
+msgstr "Gemma 금지된 사용 정책"
+
+msgid "Gemma terms"
+msgstr "Gemma 약관"
+
+msgid "General"
+msgstr "일반"
+
+msgid "Generate a new key"
+msgstr "새 키 생성"
+
+msgid "Generating your key"
+msgstr "키를 생성하는 중"
+
+msgid "German"
+msgstr "독일어"
+
+msgid "Get an alert when a message arrives in a chat you're not viewing."
+msgstr "보고 있지 않은 채팅에 메시지가 도착하면 알림을 받습니다."
+
+msgid "Get message notifications"
+msgstr "메시지 알림 받기"
+
+msgid "Get started"
+msgstr "시작하기"
+
+msgid "Gift"
+msgstr "선물"
+
+msgid "Give your group a name and a photo."
+msgstr "그룹 이름과 사진을 설정하세요."
+
+msgid "Go to archive"
+msgstr "보관함으로 이동"
+
+msgid "Go to chats"
+msgstr "채팅으로 이동"
+
+msgid "Go to people"
+msgstr "사람으로 이동"
+
+msgid "Go to settings"
+msgstr "설정으로 이동"
+
+msgid "Go to your profile"
+msgstr "내 프로필로 이동"
+
+msgid "Graphics"
+msgstr "그래픽"
+
+msgid "Gray"
+msgstr "회색"
+
+msgid "Greek"
+msgstr "그리스어"
+
+msgid "Green"
+msgstr "녹색"
+
+msgid "Group action unavailable."
+msgstr "그룹 작업을 사용할 수 없습니다."
+
+msgid "Group chats by folder"
+msgstr "폴더별로 채팅 묶기"
+
+msgid "Group id copied"
+msgstr "그룹 ID를 복사했습니다"
+
+msgid "Group name"
+msgstr "그룹 이름"
+
+msgid "Group settings"
+msgstr "그룹 설정"
+
+msgid "Grouped sorts your chats into folders, and you have none yet."
+msgstr "폴더별 보기는 채팅을 폴더로 분류하지만, 아직 폴더가 없습니다."
+
+msgid "Groups"
+msgstr "그룹"
+
+msgid "Groups you join will appear here."
+msgstr "참여한 그룹이 여기에 표시됩니다."
+
+msgid "Gujarati"
+msgstr "구자라트어"
+
+msgid "Hand-drawn filter"
+msgstr "손그림 필터"
+
+msgid "Hard shadows"
+msgstr "선명한 그림자"
+
+msgid "Has a draft"
+msgstr "임시 저장 있음"
+
+msgid "Has member"
+msgstr "멤버 포함"
+
+msgid "Has unread messages"
+msgstr "읽지 않은 메시지 있음"
+
+msgid "Have messages read aloud"
+msgstr "메시지 소리 내어 읽기"
+
+msgid "Hebrew"
+msgstr "히브리어"
+
+msgid "Help"
+msgstr "도움말"
+
+msgid "Hidden"
+msgstr "숨김"
+
+msgid "Hide"
+msgstr "숨기기"
+
+msgid "Hide emoji sets"
+msgstr "이모지 세트 숨기기"
+
+msgid "Hide hidden message"
+msgstr "숨긴 메시지 숨기기"
+
+msgid "Hide passwords"
+msgstr "비밀번호 숨기기"
+
+msgid "Hindi"
+msgstr "힌디어"
+
+msgid "Home"
+msgstr "홈"
+
+msgid "Hover"
+msgstr "호버"
+
+msgid "Hover ms"
+msgstr "호버 ms"
+
+msgid "How far the mouse wheel moves the view."
+msgstr "마우스 휠로 화면이 이동하는 거리입니다."
+
+msgid "Hungarian"
+msgstr "헝가리어"
+
+msgid "I did. Very important marmot business."
+msgstr "제가 했습니다. 아주 중요한 마멋 업무입니다."
+
+msgid "I packed snacks for the expedition. 🥕"
+msgstr "탐험용 간식을 챙겼습니다. 🥕"
+
+msgid "ICON"
+msgstr "아이콘"
+
+msgid "IDENTITY"
+msgstr "신원"
+
+msgid "INSPECT SOMEONE ELSE'S"
+msgstr "다른 사람의 키 패키지 조회"
+
+msgid "INVITE"
+msgstr "초대"
+
+msgid "ISSUE"
+msgstr "이슈"
+
+msgid "Icelandic"
+msgstr "아이슬란드어"
+
+msgid "Ideas"
+msgstr "아이디어"
+
+msgid "Identity"
+msgstr "신원"
+
+msgid "Image didn't load. Click to retry."
+msgstr "이미지를 불러오지 못했습니다. 클릭하여 다시 시도하세요."
+
+msgid "Images"
+msgstr "이미지"
+
+msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
+msgstr "두 번 다운로드하지 않도록 이 기기에 보관된 이미지와 파일이며, 금고 키로 암호화되어 있습니다."
+
+#, c-format
+msgid "Images processed: %d of %d"
+msgstr "처리된 이미지: %d / %d"
+
+#, c-format
+msgid "Import :%s:"
+msgstr ":%s: 가져오기"
+
+msgid "Import a backup"
+msgstr "백업 가져오기"
+
+msgid "Import a key"
+msgstr "키 가져오기"
+
+msgid "Import a secret key (nsec)"
+msgstr "비밀 키(nsec) 가져오기"
+
+msgid "Import an image to make your first sticker."
+msgstr "이미지를 가져와 첫 스티커를 만드세요."
+
+msgid "Import backup"
+msgstr "백업 가져오기"
+
+msgid "Import contacts"
+msgstr "연락처 가져오기"
+
+msgid "Import image"
+msgstr "이미지 가져오기"
+
+msgid "Import set"
+msgstr "세트 가져오기"
+
+msgid "Import..."
+msgstr "가져오기..."
+
+#, c-format
+msgid "Imported %d emoji; skipped %d existing shortcodes; failed %d."
+msgstr "이모지 %d개를 가져왔습니다. 기존 단축 코드 %d개를 건너뛰었고 %d개는 실패했습니다."
+
+#, c-format
+msgid "Importing contacts: %d of %d"
+msgstr "연락처 가져오는 중: %d / %d"
+
+msgid "Importing emoji..."
+msgstr "이모지를 가져오는 중..."
+
+#, c-format
+msgid "In use: %s."
+msgstr "사용 중: %s."
+
+msgid "Incoming messages"
+msgstr "수신 메시지"
+
+msgid "Indonesian"
+msgstr "인도네시아어"
+
+msgid "Info hash"
+msgstr "정보 해시"
+
+msgid "Info hash copied"
+msgstr "정보 해시를 복사했습니다"
+
+msgid "Insert a new line"
+msgstr "줄 바꿈 삽입"
+
+msgid "Inspect"
+msgstr "조회"
+
+msgid "Inspect MLS key packages."
+msgstr "MLS 키 패키지를 조회합니다."
+
+msgid "Inspect application state and events."
+msgstr "앱 상태와 이벤트를 조회합니다."
+
+msgid "Inspect key packages"
+msgstr "키 패키지 조회"
+
+msgid "Inspect published MLS key packages."
+msgstr "게시된 MLS 키 패키지를 조회합니다."
+
+msgid "Inspect the current session"
+msgstr "현재 세션 조회"
+
+msgid "Inspect the current session."
+msgstr "현재 세션을 조회합니다."
+
+msgid "Install and verify"
+msgstr "설치 및 확인"
+
+msgid "Install scripts, health checks, and troubleshooting."
+msgstr "설치 스크립트, 상태 점검, 문제 해결."
+
+msgid "Interface"
+msgstr "인터페이스"
+
+msgid "Interface language"
+msgstr "인터페이스 언어"
+
+#, c-format
+msgid "Interface language (%s)"
+msgstr "인터페이스 언어(%s)"
+
+msgid "Interface language (English)"
+msgstr "인터페이스 언어(English)"
+
+msgid "Interface sounds"
+msgstr "인터페이스 효과음"
+
+msgid "Interface zoom"
+msgstr "인터페이스 확대/축소"
+
+msgid "Invalid Nostr reference"
+msgstr "잘못된 Nostr 참조"
+
+msgid "Invalid attachment."
+msgstr "잘못된 첨부 파일입니다."
+
+msgid "Invalidates the current package and uploads a fresh one to your relays."
+msgstr "현재 패키지를 무효화하고 새 패키지를 릴레이에 업로드합니다."
+
+msgid "Invert selected text"
+msgstr "선택한 텍스트 반전"
+
+msgid "Invite"
+msgstr "초대"
+
+msgid "Is Whip"
+msgstr "Whip 프로젝트"
+
+msgid "It disappears for everyone in the chat. This can't be undone."
+msgstr "채팅의 모든 사람에게서 사라집니다. 이 작업은 되돌릴 수 없습니다."
+
+msgid "It stays for everyone else. You won't see it on this device again."
+msgstr "다른 사람에게는 남아 있습니다. 이 기기에서는 다시 표시되지 않습니다."
+
+msgid "Italian"
+msgstr "이탈리아어"
+
+msgid "Its file is removed from this device. Themes shared into a chat stay there."
+msgstr "이 기기에서 파일이 제거됩니다. 채팅에 공유한 테마는 그대로 남습니다."
+
+msgid "Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."
+msgstr "키와 채팅이 이 기기에서 삭제됩니다. 다른 사람에게는 계속 그룹 멤버로 표시됩니다. 이 작업은 되돌릴 수 없습니다."
+
+msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
+msgstr "키는 이 기기의 금고에 남아 있습니다. 계정 화면에서 다시 로그인할 수 있습니다."
+
+msgid "Jan"
+msgstr "1월"
+
+msgid "Japanese"
+msgstr "일본어"
+
+msgid "Jitsi Meet call"
+msgstr "Jitsi Meet 통화"
+
+#, c-format
+msgid "Join in %s"
+msgstr "%s에서 참여"
+
+msgid "Join in browser"
+msgstr "브라우저에서 참여"
+
+msgid "Jul"
+msgstr "7월"
+
+msgid "Jun"
+msgstr "6월"
+
+msgid "KEY PACKAGE"
+msgstr "키 패키지"
+
+msgid "KEY PACKAGES"
+msgstr "키 패키지"
+
+#, c-format
+msgid "KIND %d"
+msgstr "종류 %d"
+
+msgid "KP inspector"
+msgstr "KP 검사기"
+
+msgid "Kannada"
+msgstr "칸나다어"
+
+msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
+msgstr "열린 대화를 전체 너비로 채우지 않고 읽기 편한 너비로 유지합니다."
+
+msgid "Keep this vault"
+msgstr "이 금고 유지"
+
+msgid "Keep your chat list focused without deleting conversations."
+msgstr "대화를 삭제하지 않고 채팅 목록을 정리합니다."
+
+msgid "Keep your conversations in order."
+msgstr "대화를 정리합니다."
+
+msgid "Keep your signer open. Approve the connection and requested signatures there."
+msgstr "서명자를 열어 두세요. 서명자에서 연결과 요청된 서명을 승인하세요."
+
+msgid "Key package published"
+msgstr "키 패키지를 게시했습니다"
+
+#, c-format
+msgid "Key package published and found on %d relays."
+msgstr "키 패키지를 게시했으며 릴레이 %d개에서 확인했습니다."
+
+msgid "Key package ref"
+msgstr "키 패키지 참조"
+
+msgid "Key packages"
+msgstr "키 패키지"
+
+msgid "Key packages let people invite you. Refresh checks the app's default relays for published copies."
+msgstr "키 패키지가 있어야 다른 사람이 초대할 수 있습니다. 새로 고침하면 앱 기본 릴레이에서 게시된 사본을 확인합니다."
+
+msgid "Keyboard shortcuts"
+msgstr "키보드 단축키"
+
+msgid "Keys"
+msgstr "키"
+
+msgid "Keys & identity"
+msgstr "키 및 신원"
+
+msgid "Known senders"
+msgstr "알려진 발신자"
+
+msgid "Korean"
+msgstr "한국어"
+
+msgid "LIGHTNING"
+msgstr "LIGHTNING"
+
+msgid "LINES"
+msgstr "선"
+
+msgid "LOADED MESSAGES"
+msgstr "불러온 메시지"
+
+msgid "LOCATION"
+msgstr "위치"
+
+msgid "Language"
+msgstr "언어"
+
+msgid "Language, startup, and everyday preferences."
+msgstr "언어, 시작, 일상 환경설정."
+
+msgid "Large"
+msgstr "크게"
+
+msgid "Last backup"
+msgstr "마지막 백업"
+
+msgid "Later"
+msgstr "나중에"
+
+msgid "Latvian"
+msgstr "라트비아어"
+
+msgid "Launch at login"
+msgstr "로그인 시 실행"
+
+msgid "Layout"
+msgstr "레이아웃"
+
+msgid "Learn about White Noise."
+msgstr "White Noise에 대해 알아보세요."
+
+msgid "Leave"
+msgstr "나가기"
+
+msgid "Leave chat"
+msgstr "채팅 나가기"
+
+msgid "Leave empty unless you have one"
+msgstr "없으면 비워 두세요"
+
+msgid "Leave group"
+msgstr "그룹 나가기"
+
+msgid "Leave this chat?"
+msgstr "이 채팅에서 나가시겠습니까?"
+
+msgid "Leave this group?"
+msgstr "이 그룹에서 나가시겠습니까?"
+
+msgid "Leaving your group"
+msgstr "그룹에서 나가는 중"
+
+msgid "Light"
+msgstr "라이트"
+
+msgid "Lightning"
+msgstr "Lightning"
+
+msgid "Lime"
+msgstr "라임"
+
+msgid "Link copied"
+msgstr "링크를 복사했습니다"
+
+msgid "Link previews"
+msgstr "링크 미리보기"
+
+msgid "Linked events"
+msgstr "연결된 이벤트"
+
+msgid "Links"
+msgstr "링크"
+
+msgid "Links to these exact sites open without confirmation."
+msgstr "이 사이트로 연결되는 링크는 확인 없이 열립니다."
+
+msgid "Listening... Finish when you're done (30 seconds maximum)."
+msgstr "듣는 중... 다 말하면 완료하세요(최대 30초)."
+
+msgid "Lithuanian"
+msgstr "리투아니아어"
+
+msgid "Loading emoji previews..."
+msgstr "이모지 미리보기를 불러오는 중..."
+
+msgid "Loading emoji sets..."
+msgstr "이모지 세트를 불러오는 중..."
+
+msgid "Loading full resolution…"
+msgstr "원본 해상도로 불러오는 중…"
+
+msgid "Loading map"
+msgstr "지도를 불러오는 중"
+
+msgid "Loading messages for export..."
+msgstr "내보낼 메시지를 불러오는 중..."
+
+msgid "Loading messages…"
+msgstr "메시지를 불러오는 중…"
+
+msgid "Loading your accounts"
+msgstr "계정을 불러오는 중"
+
+msgid "Loading your archived chats"
+msgstr "보관된 채팅을 불러오는 중"
+
+msgid "Loading your contacts"
+msgstr "연락처를 불러오는 중"
+
+msgid "Loading your key packages"
+msgstr "키 패키지를 불러오는 중"
+
+msgid "Loading..."
+msgstr "불러오는 중..."
+
+msgid "Loading…"
+msgstr "불러오는 중…"
+
+msgid "Local data & backups"
+msgstr "로컬 데이터 및 백업"
+
+msgid "Local files, cached media, and encrypted backups."
+msgstr "로컬 파일, 캐시된 미디어, 암호화된 백업입니다."
+
+msgid "Location"
+msgstr "위치"
+
+msgid "Location maps"
+msgstr "위치 지도"
+
+msgid "Location unknown."
+msgstr "위치를 알 수 없습니다."
+
+msgid "Lock now"
+msgstr "지금 잠금"
+
+msgid "Locking…"
+msgstr "잠그는 중…"
+
+msgid "Look up"
+msgstr "조회"
+
+msgid "Looking up..."
+msgstr "조회 중..."
+
+msgid "MANUAL SETUP"
+msgstr "수동 설정"
+
+msgid "MATERIAL CHANNELS"
+msgstr "머티리얼 채널"
+
+msgid "MEDIA"
+msgstr "미디어"
+
+msgid "MENTIONS"
+msgstr "멘션"
+
+msgid "METRICS"
+msgstr "측정값"
+
+msgid "Magnet link copied"
+msgstr "마그넷 링크를 복사했습니다"
+
+msgid "Make White Noise work your way."
+msgstr "White Noise를 원하는 방식으로 설정하세요."
+
+msgid "Make everything larger or smaller."
+msgstr "화면 전체를 크게 또는 작게 표시합니다."
+
+msgid "Make this member an admin?"
+msgstr "이 멤버를 관리자로 지정하시겠습니까?"
+
+msgid "Malayalam"
+msgstr "말라얄람어"
+
+msgid "Male voice. Supports all reading languages."
+msgstr "남성 음성입니다. 모든 읽기 언어를 지원합니다."
+
+msgid "Manage"
+msgstr "관리"
+
+msgid "Manage connections and published relay lists."
+msgstr "연결 및 게시된 릴레이 목록을 관리합니다."
+
+msgid "Manage contacts"
+msgstr "연락처 관리"
+
+msgid "Manage local files and encrypted backups."
+msgstr "로컬 파일과 암호화된 백업을 관리합니다."
+
+msgid "Mar"
+msgstr "3월"
+
+msgid "Marathi"
+msgstr "마라티어"
+
+msgid "Mark read"
+msgstr "읽음으로 표시"
+
+msgid "Mark unread"
+msgstr "읽지 않음으로 표시"
+
+msgid "Marmot"
+msgstr "Marmot"
+
+msgid "Marmot meadow"
+msgstr "Marmot 초원"
+
+msgid "Match all rules"
+msgstr "모든 규칙과 일치"
+
+msgid "Match any rule"
+msgstr "하나 이상의 규칙과 일치"
+
+msgid "Maximize pane"
+msgstr "창 최대화"
+
+msgid "May"
+msgstr "5월"
+
+msgid "Media backdrop"
+msgstr "미디어 배경"
+
+msgid "Media cache"
+msgstr "미디어 캐시"
+
+msgid "Media cache cleared."
+msgstr "미디어 캐시를 지웠습니다."
+
+msgid "Media highlight"
+msgstr "미디어 강조 색"
+
+msgid "Members"
+msgstr "멤버"
+
+msgid "Mentions"
+msgstr "멘션"
+
+msgid "Message"
+msgstr "메시지"
+
+msgid "Message copied"
+msgstr "메시지를 복사했습니다"
+
+msgid "Message line limit"
+msgstr "메시지 줄 수 제한"
+
+msgid "Message menu"
+msgstr "메시지 메뉴"
+
+msgid "Message notifications"
+msgstr "메시지 알림"
+
+msgid "Message text copied"
+msgstr "메시지 텍스트를 복사했습니다"
+
+msgid "Message text size"
+msgstr "메시지 글자 크기"
+
+msgid "Message translation"
+msgstr "메시지 번역"
+
+msgid "Message translation is available in native Linux builds."
+msgstr "메시지 번역은 네이티브 Linux 빌드에서 사용할 수 있습니다."
+
+msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
+msgstr "새 메시지뿐 아니라 채팅에 이미 있는 메시지에도 적용됩니다. 그룹의 모든 사람에게 변경 사항이 표시됩니다."
+
+msgid "Messages already in the chat, and new ones, are deleted for everyone after this time."
+msgstr "채팅에 이미 있는 메시지와 새 메시지 모두 이 시간이 지나면 모든 사람에게서 삭제됩니다."
+
+msgid "Messages aren't arriving"
+msgstr "메시지가 도착하지 않음"
+
+msgid "Messages stay on your device. Downloads about 2.5 GB on first translation. Enabling accepts the Gemma terms and prohibited use policy."
+msgstr "메시지는 기기 밖으로 전송되지 않습니다. 처음 번역할 때 약 2.5 GB를 다운로드합니다. 사용하면 Gemma 이용 약관 및 금지된 사용 정책에 동의하게 됩니다."
+
+msgid "Messaging"
+msgstr "메시지"
+
+msgid "Metalness"
+msgstr "금속성"
+
+msgid "Micro"
+msgstr "마이크로"
+
+msgid "Model inspector"
+msgstr "모델 검사기"
+
+msgid "Monday"
+msgstr "월요일"
+
+msgid "Money"
+msgstr "돈"
+
+msgid "Monitor"
+msgstr "모니터"
+
+msgid "More results"
+msgstr "결과 더 보기"
+
+msgid "More than"
+msgstr "다음보다 많음"
+
+msgid "Move to folder"
+msgstr "폴더로 이동"
+
+msgid "Multi-device isn't built yet. Each device that signs in with this key keeps its own separate chats. Groups and messages from your other devices won't appear here, and new invites reach only one of your devices."
+msgstr "다중 기기는 아직 지원되지 않습니다. 이 키로 로그인한 각 기기는 별도의 채팅을 유지합니다. 다른 기기의 그룹과 메시지는 여기에 표시되지 않으며, 새 초대는 기기 중 한 대에만 도착합니다."
+
+msgid "Multilingual. Detects your language automatically."
+msgstr "다국어를 지원합니다. 언어를 자동으로 감지합니다."
+
+msgid "Multiple choice"
+msgstr "복수 선택"
+
+msgid "Music"
+msgstr "음악"
+
+msgid "Mute"
+msgstr "알림 끄기"
+
+msgid "NES game"
+msgstr "NES 게임"
+
+msgid "NEW PASSWORD"
+msgstr "새 비밀번호"
+
+msgid "NEXT"
+msgstr "다음"
+
+msgid "NOSTR EVENT"
+msgstr "NOSTR 이벤트"
+
+msgid "NOTE"
+msgstr "노트"
+
+msgid "NOW"
+msgstr "현재"
+
+msgid "Name"
+msgstr "이름"
+
+msgid "Name includes"
+msgstr "이름 포함"
+
+msgid "Name the shortcode. Type it in messages as :name:."
+msgstr "단축 코드 이름을 지정하세요. 메시지에서 :name: 형식으로 입력합니다."
+
+msgid "Nature"
+msgstr "자연"
+
+msgid "Navigate"
+msgstr "이동"
+
+msgid "Network & relays"
+msgstr "네트워크 및 릴레이"
+
+msgid "Never"
+msgstr "안 함"
+
+msgid "Never share it. It is your identity."
+msgstr "절대 공유하지 마세요. 내 신원 그 자체입니다."
+
+msgid "New chat"
+msgstr "새 채팅"
+
+msgid "New folder"
+msgstr "새 폴더"
+
+msgid "New group"
+msgstr "새 그룹"
+
+msgid "New message"
+msgstr "새 메시지"
+
+msgid "New name"
+msgstr "새 이름"
+
+msgid "New tab"
+msgstr "새 탭"
+
+msgid "New terminal"
+msgstr "새 터미널"
+
+msgid "News"
+msgstr "뉴스"
+
+msgid "Next"
+msgstr "다음"
+
+msgid "Next accent color"
+msgstr "다음 강조 색상"
+
+msgid "Next chat"
+msgstr "다음 채팅"
+
+msgid "Next theme"
+msgstr "다음 테마"
+
+msgid "Nickname"
+msgstr "별명"
+
+#, c-format
+msgid "Nickname for %s"
+msgstr "%s의 별명"
+
+msgid "No GIFs found. Try another search."
+msgstr "GIF를 찾을 수 없습니다. 다른 검색어로 시도하세요."
+
+msgid "No Whip projects"
+msgstr "Whip 프로젝트 없음"
+
+msgid "No archived chats"
+msgstr "보관된 채팅 없음"
+
+msgid "No audit log files."
+msgstr "감사 로그 파일이 없습니다."
+
+msgid "No backup made from this device yet."
+msgstr "이 기기에서 만든 백업이 아직 없습니다."
+
+msgid "No chat is open. Select one and refresh."
+msgstr "열린 채팅이 없습니다. 채팅을 선택하고 새로 고치세요."
+
+msgid "No chats match your filter."
+msgstr "필터와 일치하는 채팅이 없습니다."
+
+msgid "No chats or terminals yet"
+msgstr "아직 채팅이나 터미널이 없음"
+
+msgid "No chats to share with yet."
+msgstr "아직 공유할 채팅이 없습니다."
+
+msgid "No chats yet"
+msgstr "아직 채팅 없음"
+
+msgid "No command matches."
+msgstr "일치하는 명령이 없습니다."
+
+msgid "No contacts yet"
+msgstr "아직 연락처 없음"
+
+msgid "No description."
+msgstr "설명이 없습니다."
+
+msgid "No emoji match your search."
+msgstr "검색과 일치하는 이모지가 없습니다."
+
+msgid "No emoji selected"
+msgstr "선택된 이모지 없음"
+
+msgid "No emoji sets found. Check your fetch relays and try again."
+msgstr "이모지 세트를 찾을 수 없습니다. 가져오기 릴레이를 확인하고 다시 시도하세요."
+
+msgid "No emoji sets found. Refresh to try again, or check your event-fetch relays."
+msgstr "이모지 세트를 찾을 수 없습니다. 새로 고쳐 다시 시도하거나 이벤트 가져오기 릴레이를 확인하세요."
+
+msgid "No emoji sets match your search."
+msgstr "검색과 일치하는 이모지 세트가 없습니다."
+
+msgid "No files match these filters."
+msgstr "이 필터와 일치하는 파일이 없습니다."
+
+msgid "No files yet."
+msgstr "아직 파일이 없습니다."
+
+msgid "No folders match your search."
+msgstr "검색과 일치하는 폴더가 없습니다."
+
+msgid "No groups in common."
+msgstr "공통 그룹이 없습니다."
+
+msgid "No groups yet"
+msgstr "아직 그룹 없음"
+
+msgid "No inbox relays."
+msgstr "수신함 릴레이가 없습니다."
+
+msgid "No key package on this device or its relays."
+msgstr "이 기기와 해당 릴레이에 키 패키지가 없습니다."
+
+msgid "No key package on your relays, so a chat can't start yet."
+msgstr "릴레이에 키 패키지가 없어 아직 채팅을 시작할 수 없습니다."
+
+msgid "No key package published for that pubkey."
+msgstr "해당 공개 키로 게시된 키 패키지가 없습니다."
+
+msgid "No key package yet. Publish one so people can invite you."
+msgstr "아직 키 패키지가 없습니다. 다른 사람이 초대할 수 있도록 게시하세요."
+
+msgid "No matches."
+msgstr "일치하는 항목이 없습니다."
+
+msgid "No matching chats"
+msgstr "일치하는 채팅 없음"
+
+msgid "No matching contacts"
+msgstr "일치하는 연락처 없음"
+
+msgid "No matching messages"
+msgstr "일치하는 메시지 없음"
+
+msgid "No matching settings."
+msgstr "일치하는 설정이 없습니다."
+
+msgid "No matching stickers."
+msgstr "일치하는 스티커가 없습니다."
+
+msgid "No mentions yet."
+msgstr "아직 멘션이 없습니다."
+
+msgid "No messages yet"
+msgstr "아직 메시지 없음"
+
+#, c-format
+msgid "No one in this chat matches @%s."
+msgstr "이 채팅에 @%s와(과) 일치하는 사람이 없습니다."
+
+msgid "No preview available"
+msgstr "미리 보기 없음"
+
+msgid "No preview for this file type. Save it, or read the bytes."
+msgstr "이 파일 형식은 미리 볼 수 없습니다. 저장하거나 바이트를 확인하세요."
+
+#, c-format
+msgid "No record with id %s in this chat's window."
+msgstr "이 채팅의 로드 범위에 ID가 %s인 기록이 없습니다."
+
+msgid "No relay list published."
+msgstr "게시된 릴레이 목록이 없습니다."
+
+msgid "No results. Try another search."
+msgstr "결과가 없습니다. 다른 검색어로 시도하세요."
+
+msgid "No rules"
+msgstr "규칙 없음"
+
+msgid "No stickers here yet. Choose Manage to add stickers or sticker packs."
+msgstr "아직 스티커가 없습니다. 관리를 선택해 스티커나 스티커 팩을 추가하세요."
+
+msgid "No trusted sites."
+msgstr "신뢰하는 사이트가 없습니다."
+
+msgid "No unread chats"
+msgstr "읽지 않은 채팅 없음"
+
+msgid "Noir film treatment"
+msgstr "누아르 영화 효과"
+
+msgid "None"
+msgstr "없음"
+
+msgid "Norwegian"
+msgstr "노르웨이어"
+
+msgid "Not downloaded"
+msgstr "다운로드 안 됨"
+
+msgid "Not found"
+msgstr "찾을 수 없음"
+
+msgid "Not loaded yet. Click Decode own."
+msgstr "아직 불러오지 않았습니다. 내 항목 디코딩을 클릭하세요."
+
+msgid "Not loaded yet. Click Refresh."
+msgstr "아직 불러오지 않았습니다. 새로 고침을 클릭하세요."
+
+msgid "Not now"
+msgstr "나중에"
+
+msgid "Not published yet"
+msgstr "아직 게시 안 됨"
+
+msgid "Not sent to relays"
+msgstr "릴레이로 전송되지 않음"
+
+msgid "Not set"
+msgstr "설정 안 됨"
+
+msgid "Notes name"
+msgstr "메모 이름"
+
+msgid "Notes to self"
+msgstr "나에게 메모"
+
+msgid "Nothing is read aloud"
+msgstr "소리 내어 읽지 않음"
+
+msgid "Nothing is saved until you continue."
+msgstr "계속하기 전까지는 아무것도 저장되지 않습니다."
+
+msgid "Nothing loads until you accept. You can change this in Settings > Advanced."
+msgstr "수락하기 전까지는 아무것도 불러오지 않습니다. 설정 > 고급에서 변경할 수 있습니다."
+
+msgid "Notifications"
+msgstr "알림"
+
+msgid "Notifications don't appear"
+msgstr "알림이 표시되지 않음"
+
+msgid "Nov"
+msgstr "11월"
+
+msgid "Number"
+msgstr "숫자"
+
+msgid "Numeric IP and port only: 127.0.0.1:9050 or [::1]:9050. No URLs or hostnames."
+msgstr "숫자 IP와 포트만 사용할 수 있습니다: 127.0.0.1:9050 또는 [::1]:9050. URL이나 호스트 이름은 사용할 수 없습니다."
+
+msgid "OFFLINE"
+msgstr "오프라인"
+
+msgid "ONLINE"
+msgstr "온라인"
+
+msgid "Oct"
+msgstr "10월"
+
+msgid "Off"
+msgstr "끔"
+
+msgid "Off shows only \"New message\" without the text."
+msgstr "끄면 본문 없이 \"새 메시지\"만 표시합니다."
+
+msgid "On"
+msgstr "켬"
+
+#, c-format
+msgid "On %d relay."
+msgstr "릴레이 %d개에 있습니다."
+
+#, c-format
+msgid "On %d relays."
+msgstr "릴레이 %d개에 있습니다."
+
+msgid "On accent"
+msgstr "강조 색상 위 텍스트"
+
+msgid "On relays."
+msgstr "릴레이에 있습니다."
+
+msgid "On sale"
+msgstr "할인 중"
+
+msgid "On this device"
+msgstr "이 기기"
+
+#, c-format
+msgid "On this device and on %d relay."
+msgstr "이 기기와 릴레이 %d개에 있습니다."
+
+#, c-format
+msgid "On this device and on %d relays."
+msgstr "이 기기와 릴레이 %d개에 있습니다."
+
+msgid "On this device and on relays."
+msgstr "이 기기와 릴레이에 있습니다."
+
+msgid "Once the agent gives you its npub, use New chat to start a conversation with it. The connector documentation covers the rest."
+msgstr "에이전트가 npub을 알려 주면 새 채팅에서 대화를 시작하세요. 나머지 내용은 커넥터 문서를 참고하세요."
+
+msgid "One-tap reactions"
+msgstr "원탭 반응"
+
+msgid "Only the folder is removed. Its chats stay in your chat list."
+msgstr "폴더만 제거됩니다. 폴더 안의 채팅은 채팅 목록에 그대로 남습니다."
+
+msgid "Only you see this name."
+msgstr "이 이름은 나에게만 표시됩니다."
+
+msgid "Open"
+msgstr "열기"
+
+msgid "Open chat"
+msgstr "채팅 열기"
+
+msgid "Open events in"
+msgstr "이벤트 열기 앱"
+
+msgid "Open folder"
+msgstr "폴더 열기"
+
+msgid "Open git patches in"
+msgstr "Git 패치 열기 앱"
+
+msgid "Open in Apple Maps"
+msgstr "Apple 지도에서 열기"
+
+msgid "Open in Google Maps"
+msgstr "Google 지도에서 열기"
+
+msgid "Open in Kagi Maps"
+msgstr "Kagi Maps에서 열기"
+
+msgid "Open in OpenStreetMap"
+msgstr "OpenStreetMap에서 열기"
+
+msgid "Open in browser"
+msgstr "브라우저에서 열기"
+
+msgid "Open in client"
+msgstr "클라이언트에서 열기"
+
+msgid "Open it again with › in the left column or the button below."
+msgstr "왼쪽 열의 › 또는 아래 버튼으로 다시 열 수 있습니다."
+
+msgid "Open link"
+msgstr "링크 열기"
+
+msgid "Open locations in"
+msgstr "위치 열기 서비스"
+
+msgid "Open this link?"
+msgstr "이 링크를 여시겠습니까?"
+
+msgid "Open-source coding agent"
+msgstr "오픈 소스 코딩 에이전트"
+
+msgid "OpenAI Codex CLI coding agent"
+msgstr "OpenAI Codex CLI 코딩 에이전트"
+
+msgid "Opening Whip…"
+msgstr "Whip 여는 중…"
+
+msgid "Opening file picker…"
+msgstr "파일 선택기 여는 중…"
+
+#, c-format
+msgid "Opening in %s"
+msgstr "%s에서 여는 중"
+
+msgid "Opening in your browser"
+msgstr "브라우저에서 여는 중"
+
+msgid "Opening your chat"
+msgstr "채팅 여는 중"
+
+#, c-format
+msgid "Opens %s in your browser, outside White Noise."
+msgstr "White Noise 외부의 브라우저에서 %s을(를) 엽니다."
+
+#, c-format
+msgid "Opens %s, outside White Noise."
+msgstr "White Noise 외부에서 %s을(를) 엽니다."
+
+msgid "Opens signal.link in your browser. You need the Signal app to join."
+msgstr "브라우저에서 signal.link를 엽니다. 참여하려면 Signal 앱이 필요합니다."
+
+msgid "Optional Nostr identifier (NIP-05), not your email address. This is public."
+msgstr "선택 사항인 Nostr 식별자(NIP-05)이며 이메일 주소가 아닙니다. 이 정보는 공개됩니다."
+
+msgid "Orange"
+msgstr "주황"
+
+msgid "Organize your conversations."
+msgstr "대화를 정리합니다."
+
+msgid "Organize your folders"
+msgstr "폴더 정리"
+
+msgid "Original"
+msgstr "원본"
+
+msgid "Original message unavailable"
+msgstr "원본 메시지를 사용할 수 없습니다"
+
+msgid "Other"
+msgstr "기타"
+
+msgid "Other files"
+msgstr "기타 파일"
+
+msgid "Out of stock"
+msgstr "품절"
+
+msgid "Outline surfaces"
+msgstr "표면 윤곽선"
+
+msgid "Overlay"
+msgstr "오버레이"
+
+msgid "Overlay strong"
+msgstr "오버레이(강)"
+
+msgid "Owner"
+msgstr "소유자"
+
+msgid "PASSWORD"
+msgstr "비밀번호"
+
+msgid "PATCH"
+msgstr "패치"
+
+msgid "PRODUCT"
+msgstr "상품"
+
+msgid "PROFILE"
+msgstr "프로필"
+
+msgid "PUBLIC PROFILE"
+msgstr "공개 프로필"
+
+msgid "PULL REQUEST"
+msgstr "풀 리퀘스트"
+
+msgid "Pack link or address"
+msgstr "팩 링크 또는 주소"
+
+msgid "Pack your settings, drafts, custom emoji, and themes into one encrypted file."
+msgstr "설정, 임시 저장 메시지, 사용자 지정 이모지, 테마를 하나의 암호화된 파일로 묶습니다."
+
+#, c-format
+msgid "Page %d of %d"
+msgstr "%d / %d 페이지"
+
+msgid "Pair with a remote signer"
+msgstr "원격 서명자와 페어링"
+
+msgid "Pair with your remote signer"
+msgstr "원격 서명자와 페어링"
+
+msgid "Pairing link copied"
+msgstr "페어링 링크를 복사했습니다"
+
+msgid "Panel"
+msgstr "패널"
+
+msgid "Panel 2"
+msgstr "패널 2"
+
+msgid "Panes are floating or docked to chats."
+msgstr "창이 떠 있거나 채팅에 고정되어 있습니다."
+
+msgid "Password"
+msgstr "비밀번호"
+
+msgid "Paste"
+msgstr "붙여넣기"
+
+msgid "Paste a pack link to preview its stickers before adding it."
+msgstr "팩 링크를 붙여넣으면 추가하기 전에 스티커를 미리 볼 수 있습니다."
+
+msgid "Paste someone's public key to start a chat."
+msgstr "상대방의 공개 키를 붙여넣어 채팅을 시작하세요."
+
+#, c-format
+msgid "Paste this into %s. Review the installation plan before approving changes."
+msgstr "이 내용을 %s에 붙여넣으세요. 변경 사항을 승인하기 전에 설치 계획을 검토하세요."
+
+msgid "Path copied"
+msgstr "경로를 복사했습니다"
+
+msgid "Pause"
+msgstr "일시 정지"
+
+msgid "Peers can't find you"
+msgstr "다른 사람이 나를 찾을 수 없습니다"
+
+msgid "People"
+msgstr "사람"
+
+msgid "People can't invite you"
+msgstr "다른 사람이 나를 초대할 수 없습니다"
+
+msgid "People you follow show up here."
+msgstr "팔로우하는 사람이 여기에 표시됩니다."
+
+msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
+msgstr "팔로우하는 사람이 여기에 표시됩니다. 지금 채팅을 시작하려면 위 입력란에 상대방의 공개 키를 붙여넣으세요."
+
+msgid "Perfect. Wake me up when it's spring."
+msgstr "완벽합니다. 봄이 오면 깨워 주세요."
+
+msgid "Persian"
+msgstr "페르시아어"
+
+msgid "Pets"
+msgstr "반려동물"
+
+msgid "Photos"
+msgstr "사진"
+
+msgid "Pick a category"
+msgstr "카테고리 선택"
+
+msgid "Pick a chat to send it to. They choose whether to use it."
+msgstr "보낼 채팅을 선택하세요. 사용 여부는 상대방이 결정합니다."
+
+msgid "Pick a new password first."
+msgstr "먼저 새 비밀번호를 정하세요."
+
+msgid "Pick a password first."
+msgstr "먼저 비밀번호를 정하세요."
+
+msgid "Pick a password to encrypt the backup with. Without it the file cannot be opened again."
+msgstr "백업을 암호화할 비밀번호를 정하세요. 비밀번호가 없으면 파일을 다시 열 수 없습니다."
+
+msgid "Pick a password to encrypt the key with. You will need it to import the key anywhere else."
+msgstr "키를 암호화할 비밀번호를 정하세요. 다른 곳에서 키를 가져올 때 필요합니다."
+
+msgid "Pick a task..."
+msgstr "작업 선택..."
+
+msgid "Pick the whole app's look."
+msgstr "앱 전체의 모양을 선택합니다."
+
+msgid "Pieces"
+msgstr "조각"
+
+msgid "Pin to top"
+msgstr "맨 위에 고정"
+
+msgid "Pink"
+msgstr "분홍"
+
+msgid "Pinned"
+msgstr "고정됨"
+
+msgid "Pixel metrics"
+msgstr "픽셀 단위 치수"
+
+msgid "Placed by hand"
+msgstr "수동 배치"
+
+msgid "Plate"
+msgstr "플레이트"
+
+msgid "Play"
+msgstr "재생"
+
+msgid "Play a sound"
+msgstr "소리 재생"
+
+msgid "Play a sound for new messages"
+msgstr "새 메시지 알림음 재생"
+
+msgid "Play game"
+msgstr "게임하기"
+
+msgid "Play interface sounds"
+msgstr "인터페이스 소리 재생"
+
+msgid "Polish"
+msgstr "폴란드어"
+
+msgid "Portuguese (Brazil)"
+msgstr "포르투갈어(브라질)"
+
+msgid "Portuguese (Portugal)"
+msgstr "포르투갈어(포르투갈)"
+
+msgid "Pre-order"
+msgstr "예약 주문"
+
+msgid "Preparing HTML export..."
+msgstr "HTML 내보내기 준비 중..."
+
+msgid "Preparing Markdown export..."
+msgstr "Markdown 내보내기 준비 중..."
+
+#, c-format
+msgid "Preparing attachments for %s…"
+msgstr "%s에 보낼 첨부 파일 준비 중…"
+
+msgid "Preparing attachments…"
+msgstr "첨부 파일 준비 중…"
+
+msgid "Preparing attachment…"
+msgstr "첨부 파일 준비 중…"
+
+msgid "Preparing dictation..."
+msgstr "받아쓰기 준비 중..."
+
+msgid "Preparing download..."
+msgstr "다운로드 준비 중..."
+
+msgid "Preparing project photo…"
+msgstr "프로젝트 사진 준비 중…"
+
+msgid "Preparing speech..."
+msgstr "음성 준비 중..."
+
+msgid "Preparing the cropped picture…"
+msgstr "자른 사진 준비 중…"
+
+msgid "Preparing transcription..."
+msgstr "받아쓰기 준비 중..."
+
+msgid "Preparing translation model..."
+msgstr "번역 모델 준비 중..."
+
+msgid "Press Ctrl P for the command palette."
+msgstr "Ctrl P를 누르면 명령 팔레트가 열립니다."
+
+msgid "Press Enter to save; Escape returns to Network & relays."
+msgstr "Enter를 누르면 저장되고, Escape를 누르면 네트워크 및 릴레이로 돌아갑니다."
+
+msgid "Press Enter to search."
+msgstr "Enter를 눌러 검색하세요."
+
+msgid "Preview"
+msgstr "미리 보기"
+
+msgid "Preview pack"
+msgstr "팩 미리 보기"
+
+msgid "Previous"
+msgstr "이전"
+
+msgid "Previous / next in the media viewer"
+msgstr "미디어 뷰어에서 이전 / 다음"
+
+msgid "Previous chat"
+msgstr "이전 채팅"
+
+msgid "Privacy"
+msgstr "개인 정보 보호"
+
+msgid "Privacy, diagnostics, and developer tools."
+msgstr "개인 정보 보호, 진단, 개발자 도구."
+
+msgid "Private"
+msgstr "비공개"
+
+msgid "Private group chat over Nostr"
+msgstr "Nostr 기반 비공개 그룹 채팅"
+
+msgid "Profile"
+msgstr "프로필"
+
+msgid "Progress is indeterminate."
+msgstr "진행률을 알 수 없습니다."
+
+msgid "Project created."
+msgstr "프로젝트를 만들었습니다."
+
+msgid "Project name"
+msgstr "프로젝트 이름"
+
+msgid "Projects"
+msgstr "프로젝트"
+
+msgid "Promote"
+msgstr "관리자로 지정"
+
+msgid "Prompt copied. Paste it into your agent."
+msgstr "프롬프트를 복사했습니다. 에이전트에 붙여넣으세요."
+
+msgid "Protect this device"
+msgstr "이 기기 보호"
+
+msgid "Protecting this device…"
+msgstr "이 기기를 보호하는 중…"
+
+msgid "Public key"
+msgstr "공개 키"
+
+msgid "Public key (npub)"
+msgstr "공개 키(npub)"
+
+msgid "Public key copied"
+msgstr "공개 키를 복사했습니다"
+
+msgid "Public key or verified address"
+msgstr "공개 키 또는 인증된 주소"
+
+msgid "Public key, safe to share."
+msgstr "공개 키이며 공유해도 안전합니다."
+
+msgid "Publish"
+msgstr "게시"
+
+msgid "Publish a key package"
+msgstr "키 패키지 게시"
+
+msgid "Publish changes"
+msgstr "변경 사항 게시"
+
+msgid "Publish your key package"
+msgstr "키 패키지 게시"
+
+msgid "Published"
+msgstr "게시됨"
+
+msgid "Published inbox relays"
+msgstr "게시된 수신 릴레이"
+
+msgid "Published outbox relays"
+msgstr "게시된 발신 릴레이"
+
+msgid "Publishing your group profile"
+msgstr "그룹 프로필 게시 중"
+
+msgid "Publishing your key package"
+msgstr "키 패키지 게시 중"
+
+msgid "Publishing your profile"
+msgstr "프로필 게시 중"
+
+msgid "Publishing your profile to the relays. This takes a few seconds."
+msgstr "프로필을 릴레이에 게시하는 중입니다. 몇 초 정도 걸립니다."
+
+msgid "Publishing your relay lists"
+msgstr "릴레이 목록 게시 중"
+
+msgid "Punjabi"
+msgstr "펀자브어"
+
+msgid "Queued"
+msgstr "대기 중"
+
+msgid "Quick reactions"
+msgstr "빠른 반응"
+
+msgid "Quit"
+msgstr "종료"
+
+msgid "RAW EVENTS"
+msgstr "원시 이벤트"
+
+msgid "RECENT"
+msgstr "최근"
+
+msgid "RELAY"
+msgstr "릴레이"
+
+msgid "RELAYS"
+msgstr "릴레이"
+
+msgid "RELAYS IN COMMON"
+msgstr "공통 릴레이"
+
+msgid "RENDER"
+msgstr "렌더링"
+
+msgid "RULES"
+msgstr "규칙"
+
+msgid "Rail"
+msgstr "레일"
+
+msgid "Raw event"
+msgstr "원시 이벤트"
+
+msgid "Raw events"
+msgstr "원시 이벤트"
+
+msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
+msgstr "발신 및 수신 릴레이 목록을 다시 전송합니다. 다른 사람이 나를 찾을 수 없을 때 사용하세요."
+
+msgid "Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one."
+msgstr "이 기기의 비밀 정보를 새 비밀번호로 다시 암호화합니다. 미디어 캐시는 이전 비밀번호로 봉인되었으므로 삭제됩니다."
+
+msgid "Read aloud"
+msgstr "소리 내어 읽기"
+
+msgid "Read messages on your device in 31 languages. Downloads about 145 MB on first use."
+msgstr "31개 언어의 메시지를 기기에서 읽어 줍니다. 처음 사용할 때 약 145 MB를 다운로드합니다."
+
+msgid "Read more"
+msgstr "더 보기"
+
+msgid "Reading aloud..."
+msgstr "소리 내어 읽는 중..."
+
+msgid "Reading the model…"
+msgstr "모델 읽는 중…"
+
+msgid "Reading your contacts file and checking existing contacts..."
+msgstr "연락처 파일을 읽고 기존 연락처를 확인하는 중..."
+
+msgid "Recent"
+msgstr "최근"
+
+msgid "Recent sets from your event-fetch relays. Previews contact image hosts."
+msgstr "이벤트 가져오기 릴레이의 최근 세트입니다. 미리 보기는 이미지 호스트에 연결합니다."
+
+msgid "Recenter"
+msgstr "중앙으로 이동"
+
+#, c-format
+msgid "Record %d has an invalid npub. Correct it and import again."
+msgstr "레코드 %d의 npub이 잘못되었습니다. 수정한 후 다시 가져오세요."
+
+msgid "Record audit logs"
+msgstr "감사 로그 기록"
+
+msgid "Record group audit log files on this device. Identifiers are hashed."
+msgstr "그룹 감사 로그 파일을 이 기기에 기록합니다. 식별자는 해시 처리됩니다."
+
+msgid "Recording"
+msgstr "녹음 중"
+
+msgid "Red"
+msgstr "빨강"
+
+msgid "Reduce motion"
+msgstr "동작 줄이기"
+
+msgid "Refresh"
+msgstr "새로고침"
+
+msgid "Regular"
+msgstr "보통"
+
+msgid "Relay lists republished."
+msgstr "릴레이 목록을 다시 게시했습니다."
+
+msgid "Relay names are resolved by your proxy. Media host checks still use your local DNS."
+msgstr "릴레이 이름은 프록시가 확인합니다. 미디어 호스트 확인에는 계속 로컬 DNS를 사용합니다."
+
+msgid "Relay status unavailable"
+msgstr "릴레이 상태를 사용할 수 없습니다"
+
+msgid "Relays"
+msgstr "릴레이"
+
+msgid "Relays carry your encrypted messages. The defaults are already configured."
+msgstr "릴레이는 암호화된 메시지를 전달합니다. 기본 릴레이가 이미 설정되어 있습니다."
+
+msgid "Relays checked."
+msgstr "릴레이를 확인했습니다."
+
+msgid "Reload previews"
+msgstr "미리 보기 다시 불러오기"
+
+msgid "Remove"
+msgstr "제거"
+
+msgid "Remove account"
+msgstr "계정 제거"
+
+msgid "Remove admin rights?"
+msgstr "관리자 권한을 해제하시겠습니까?"
+
+msgid "Remove contact"
+msgstr "연락처 제거"
+
+msgid "Remove option"
+msgstr "선택지 제거"
+
+msgid "Remove pack"
+msgstr "팩 제거"
+
+msgid "Remove rule"
+msgstr "규칙 제거"
+
+msgid "Remove saved GIF"
+msgstr "저장된 GIF 제거"
+
+msgid "Remove sticker"
+msgstr "스티커 제거"
+
+msgid "Remove this account?"
+msgstr "이 계정을 제거하시겠습니까?"
+
+msgid "Remove this contact?"
+msgstr "이 연락처를 제거하시겠습니까?"
+
+msgid "Remove this member?"
+msgstr "이 멤버를 제거하시겠습니까?"
+
+msgid "Remove this relay?"
+msgstr "이 릴레이를 제거하시겠습니까?"
+
+msgid "Removing your account from this device"
+msgstr "이 기기에서 계정을 제거하는 중"
+
+msgid "Rename"
+msgstr "이름 변경"
+
+msgid "Renderer"
+msgstr "렌더러"
+
+msgid "Rendering toolpaths"
+msgstr "툴패스 렌더링 중"
+
+msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
+msgstr "이 기기의 설정, 임시 저장 메시지, 사용자 지정 이모지, 테마를 대체합니다."
+
+msgid "Reply"
+msgstr "답장"
+
+msgid "Reply in thread"
+msgstr "스레드에서 답장"
+
+msgid "Reply in thread…"
+msgstr "스레드에서 답장…"
+
+msgid "Replying"
+msgstr "답장 중"
+
+msgid "Republish"
+msgstr "다시 게시"
+
+msgid "Republish relay lists"
+msgstr "릴레이 목록 다시 게시"
+
+msgid "Republish your relay lists"
+msgstr "릴레이 목록 다시 게시"
+
+msgid "Requesting your location. Approve the permission prompt if shown."
+msgstr "위치를 요청하는 중입니다. 권한 요청이 표시되면 승인하세요."
+
+msgid "Reset"
+msgstr "재설정"
+
+msgid "Reset zoom"
+msgstr "확대/축소 재설정"
+
+msgid "Resize terminal"
+msgstr "터미널 크기 조정"
+
+msgid "Restart now"
+msgstr "지금 다시 시작"
+
+msgid "Restore"
+msgstr "복원"
+
+msgid "Restore last selected chat on launch"
+msgstr "시작 시 마지막으로 선택한 채팅 복원"
+
+msgid "Restore panes"
+msgstr "창 복원"
+
+msgid "Restore the default reactions"
+msgstr "기본 반응 복원"
+
+msgid "Restore the last chat on launch"
+msgstr "시작 시 마지막 채팅 복원"
+
+msgid "Restoring terminal history…"
+msgstr "터미널 기록 복원 중…"
+
+msgid "Retry"
+msgstr "다시 시도"
+
+msgid "Return to project"
+msgstr "프로젝트로 돌아가기"
+
+msgid "Reveal"
+msgstr "표시"
+
+msgid "Reveal hidden message"
+msgstr "숨겨진 메시지 표시"
+
+msgid "Reveal secret key (nsec)"
+msgstr "비밀 키(nsec) 표시"
+
+msgid "Reveal your secret key"
+msgstr "비밀 키 표시"
+
+msgid "Review and approve"
+msgstr "검토 및 승인"
+
+msgid "Review signer approval link"
+msgstr "서명자 승인 링크 검토"
+
+msgid "Review starting over"
+msgstr "처음부터 다시 시작 검토"
+
+msgid "Right click"
+msgstr "오른쪽 클릭"
+
+msgid "Rocket"
+msgstr "로켓"
+
+msgid "Romanian"
+msgstr "루마니아어"
+
+msgid "Root folder"
+msgstr "루트 폴더"
+
+msgid "Rotate"
+msgstr "교체"
+
+msgid "Rotate key package now"
+msgstr "지금 키 패키지 교체"
+
+msgid "Roughness"
+msgstr "거칠기"
+
+msgid "Rounded"
+msgstr "둥근 모서리"
+
+#, c-format
+msgid "Runtime failed: %s"
+msgstr "런타임 실패: %s"
+
+msgid "Runtime running"
+msgstr "런타임 실행 중"
+
+msgid "Russian"
+msgstr "러시아어"
+
+msgid "SEARCH"
+msgstr "검색"
+
+msgid "SEE ALSO"
+msgstr "관련 항목"
+
+msgid "SEEDS"
+msgstr "기본 색상"
+
+msgid "SEND WITH EFFECT"
+msgstr "효과와 함께 보내기"
+
+msgid "SETTINGS"
+msgstr "설정"
+
+msgid "SHARED THEME"
+msgstr "공유된 테마"
+
+msgid "SIGNER RELAY"
+msgstr "서명자 릴레이"
+
+msgid "SITE"
+msgstr "사이트"
+
+msgid "SKIN"
+msgstr "스킨"
+
+msgid "SOCKS5 proxy"
+msgstr "SOCKS5 프록시"
+
+msgid "STATE SNAPSHOT"
+msgstr "상태 스냅샷"
+
+msgid "STYLE"
+msgstr "스타일"
+
+msgid "SURFACES"
+msgstr "표면"
+
+msgid "SYNCED"
+msgstr "동기화됨"
+
+msgid "SYNCING"
+msgstr "동기화 중"
+
+msgid "Safe to share. This is how people find you."
+msgstr "공유해도 안전합니다. 다른 사람이 이것으로 나를 찾습니다."
+
+msgid "Saturation"
+msgstr "채도"
+
+msgid "Saturday"
+msgstr "토요일"
+
+msgid "Save"
+msgstr "저장"
+
+#, c-format
+msgid "Save %s"
+msgstr "%s 저장"
+
+msgid "Save GIF"
+msgstr "GIF 저장"
+
+msgid "Save GIFs with the star to find them here."
+msgstr "별표로 GIF를 저장하면 여기에 표시됩니다."
+
+msgid "Save a copy of this conversation to a file."
+msgstr "이 대화의 사본을 파일로 저장합니다."
+
+msgid "Save and use"
+msgstr "저장 후 사용"
+
+msgid "Save attachment"
+msgstr "첨부 파일 저장"
+
+msgid "Save changes, then restart White Noise to apply them."
+msgstr "변경 사항을 저장한 후 White Noise를 다시 시작하여 적용하세요."
+
+msgid "Save file"
+msgstr "파일 저장"
+
+msgid "Save sticker"
+msgstr "스티커 저장"
+
+msgid "Saved"
+msgstr "저장됨"
+
+#, c-format
+msgid "Saved %s."
+msgstr "%s을(를) 저장했습니다."
+
+msgid "Saved locally. Relay delivery pending."
+msgstr "이 기기에 저장했습니다. 릴레이 전송 대기 중입니다."
+
+msgid "Saved. Restart White Noise to apply this connection setting."
+msgstr "저장했습니다. 이 연결 설정을 적용하려면 White Noise를 다시 시작하세요."
+
+msgid "Saving project photo…"
+msgstr "프로젝트 사진 저장 중…"
+
+msgid "Saving vote…"
+msgstr "투표 저장 중…"
+
+msgid "Saving your proxy settings and encrypted credentials."
+msgstr "프록시 설정과 암호화된 자격 증명을 저장하는 중입니다."
+
+msgid "Say GM (once a day)"
+msgstr "GM 보내기 (하루 한 번)"
+
+msgid "Scan this pairing code in your signer, or copy the nostrconnect link."
+msgstr "서명자에서 이 페어링 코드를 스캔하거나 nostrconnect 링크를 복사하세요."
+
+msgid "Scan to add this person as a contact."
+msgstr "스캔하여 이 사람을 연락처에 추가합니다."
+
+msgid "Scan to add you as a contact."
+msgstr "스캔하여 나를 연락처에 추가합니다."
+
+msgid "Scanlines"
+msgstr "주사선"
+
+msgid "Science"
+msgstr "과학"
+
+msgid "Scroll speed"
+msgstr "스크롤 속도"
+
+msgid "Scroll to read the full address."
+msgstr "스크롤하여 전체 주소를 확인하세요."
+
+msgid "Search"
+msgstr "검색"
+
+msgid "Search GIFs"
+msgstr "GIF 검색"
+
+msgid "Search GIFs with GifSnap"
+msgstr "GifSnap으로 GIF 검색"
+
+msgid "Search again"
+msgstr "다시 검색"
+
+msgid "Search all chats"
+msgstr "모든 채팅 검색"
+
+msgid "Search archived chats..."
+msgstr "보관된 채팅 검색..."
+
+msgid "Search contacts or paste a public key..."
+msgstr "연락처 검색 또는 공개 키 붙여넣기..."
+
+msgid "Search contacts or paste public keys..."
+msgstr "연락처 검색 또는 공개 키 붙여넣기..."
+
+msgid "Search contacts..."
+msgstr "연락처 검색..."
+
+msgid "Search emoji..."
+msgstr "이모지 검색..."
+
+msgid "Search everywhere"
+msgstr "전체 검색"
+
+msgid "Search folders..."
+msgstr "폴더 검색..."
+
+msgid "Search images"
+msgstr "이미지 검색"
+
+msgid "Search messages"
+msgstr "메시지 검색"
+
+msgid "Search messages..."
+msgstr "메시지 검색..."
+
+msgid "Search openly licensed images"
+msgstr "오픈 라이선스 이미지 검색"
+
+msgid "Search results"
+msgstr "검색 결과"
+
+msgid "Search set title, author, or shortcode"
+msgstr "세트 제목, 작성자, 단축 코드로 검색"
+
+msgid "Search stickers"
+msgstr "스티커 검색"
+
+msgid "Searches only history stored on this device. Older or unsynced messages may be missing."
+msgstr "이 기기에 저장된 기록만 검색합니다. 오래되었거나 동기화되지 않은 메시지는 누락될 수 있습니다."
+
+msgid "Searching local history…"
+msgstr "로컬 기록 검색 중…"
+
+msgid "Searching…"
+msgstr "검색 중…"
+
+msgid "Secret key copied"
+msgstr "비밀 키를 복사했습니다"
+
+msgid "Security"
+msgstr "보안"
+
+msgid "Security & privacy"
+msgstr "보안 및 개인정보"
+
+msgid "Security actions"
+msgstr "보안 작업"
+
+msgid "See and hear it with your current sound and preview settings."
+msgstr "현재 소리 및 미리 보기 설정으로 알림을 확인합니다."
+
+msgid "See where your data is stored"
+msgstr "데이터 저장 위치 보기"
+
+msgid "Select"
+msgstr "선택"
+
+msgid "Select a chat"
+msgstr "채팅 선택"
+
+msgid "Select a contact from the list."
+msgstr "목록에서 연락처를 선택하세요."
+
+msgid "Select a model to download it for dictation and audio messages."
+msgstr "받아쓰기 및 음성 메시지에 사용할 모델을 선택하여 다운로드하세요."
+
+msgid "Select a project"
+msgstr "프로젝트 선택"
+
+msgid "Self-hosted personal AI assistant"
+msgstr "자체 호스팅 개인 AI 어시스턴트"
+
+msgid "Send"
+msgstr "보내기"
+
+msgid "Send GM?"
+msgstr "GM을 보내시겠습니까?"
+
+msgid "Send a message..."
+msgstr "메시지 보내기..."
+
+msgid "Send a test notification"
+msgstr "테스트 알림 보내기"
+
+#, c-format
+msgid "Send failed: %s"
+msgstr "전송 실패: %s"
+
+msgid "Send location"
+msgstr "위치 보내기"
+
+msgid "Send test"
+msgstr "테스트 보내기"
+
+msgid "Send the first message to start the conversation."
+msgstr "첫 메시지를 보내 대화를 시작하세요."
+
+msgid "Send the message"
+msgstr "메시지 보내기"
+
+msgid "Send with an effect"
+msgstr "효과와 함께 보내기"
+
+msgid "Send your daily GM to this chat?"
+msgstr "이 채팅에 오늘의 GM을 보내시겠습니까?"
+
+msgid "Sender name or public key"
+msgstr "보낸 사람 이름 또는 공개 키"
+
+#, c-format
+msgid "Sender: %s"
+msgstr "보낸 사람: %s"
+
+msgid "Sending a test notification..."
+msgstr "테스트 알림을 보내는 중..."
+
+msgid "Sending..."
+msgstr "보내는 중..."
+
+msgid "Sep"
+msgstr "9월"
+
+msgid "Serbian"
+msgstr "세르비아어"
+
+#, c-format
+msgid "Set up %s"
+msgstr "%s 설정하기"
+
+#, c-format
+msgid "Set: %s"
+msgstr "세트: %s"
+
+msgid "Settings"
+msgstr "설정"
+
+msgid "Settings: about"
+msgstr "설정: 정보"
+
+msgid "Settings: advanced"
+msgstr "설정: 고급"
+
+msgid "Settings: appearance"
+msgstr "설정: 모양"
+
+msgid "Settings: general"
+msgstr "설정: 일반"
+
+msgid "Settings: keys and identity"
+msgstr "설정: 키 및 신원"
+
+msgid "Settings: network and relays"
+msgstr "설정: 네트워크 및 릴레이"
+
+msgid "Settings: notifications"
+msgstr "설정: 알림"
+
+msgid "Settings: storage"
+msgstr "설정: 저장 공간"
+
+msgid "Setup prompts for connecting an AI agent to White Noise."
+msgstr "AI 에이전트를 White Noise에 연결하기 위한 설정 프롬프트입니다."
+
+msgid "Shadow card"
+msgstr "그림자 (카드)"
+
+msgid "Shadow offset"
+msgstr "그림자 오프셋"
+
+msgid "Shadow popover"
+msgstr "그림자 (팝오버)"
+
+msgid "Shadow soft"
+msgstr "그림자 (부드럽게)"
+
+msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
+msgstr "집계된 성능 시간과 릴레이 진단 정보를 공유합니다. 꺼져 있는 동안에는 아무것도 전송되지 않습니다."
+
+msgid "Share theme with"
+msgstr "테마 공유 대상"
+
+msgid "Share this theme"
+msgstr "이 테마 공유"
+
+msgid "Share to chat"
+msgstr "채팅에 공유"
+
+msgid "Share usage and diagnostics"
+msgstr "사용 현황 및 진단 정보 공유"
+
+msgid "Shared by all ten voices and 31 languages. Downloads once."
+msgstr "10개 음성과 31개 언어 모두에서 공유됩니다. 한 번만 다운로드합니다."
+
+msgid "Shared location"
+msgstr "공유된 위치"
+
+msgid "Shared media"
+msgstr "공유된 미디어"
+
+msgid "Sharing"
+msgstr "공유"
+
+msgid "Shell"
+msgstr "셸"
+
+msgid "Shopping"
+msgstr "쇼핑"
+
+msgid "Short tones when a message leaves, arrives, or fails to send."
+msgstr "메시지를 보내거나 받거나 전송에 실패할 때 짧은 소리를 냅니다."
+
+msgid "Show"
+msgstr "표시"
+
+msgid "Show a map for each shared location. Map images load from tile.openstreetmap.org, which sees your IP address and the area you view. Place names load from nominatim.openstreetmap.org, which receives the location rounded to about 100 m. Map images are cached on this device, encrypted, up to 1 GB."
+msgstr "공유된 위치마다 지도를 표시합니다. 지도 이미지는 tile.openstreetmap.org에서 불러오며, 이 서버는 IP 주소와 보고 있는 지역을 알 수 있습니다. 장소 이름은 nominatim.openstreetmap.org에서 불러오며, 약 100 m 단위로 반올림된 위치가 전송됩니다. 지도 이미지는 암호화되어 이 기기에 최대 1 GB까지 캐시됩니다."
+
+msgid "Show all chats"
+msgstr "모든 채팅 표시"
+
+msgid "Show contact list"
+msgstr "연락처 목록 표시"
+
+msgid "Show dark or light themes."
+msgstr "다크 또는 라이트 테마를 표시합니다."
+
+msgid "Show fewer files"
+msgstr "파일 적게 표시"
+
+msgid "Show group members"
+msgstr "그룹 멤버 표시"
+
+msgid "Show hint"
+msgstr "힌트 표시"
+
+msgid "Show less"
+msgstr "간단히 보기"
+
+msgid "Show maps from OpenStreetMap?"
+msgstr "OpenStreetMap 지도를 표시하시겠습니까?"
+
+msgid "Show message preview"
+msgstr "메시지 미리 보기 표시"
+
+msgid "Show or hide message previews"
+msgstr "메시지 미리 보기 표시 또는 숨기기"
+
+msgid "Show original"
+msgstr "원문 보기"
+
+msgid "Show passwords"
+msgstr "비밀번호 표시"
+
+msgid "Show translation"
+msgstr "번역 보기"
+
+msgid "Shown on the message menu. Tap one to remove it. Up to 16."
+msgstr "메시지 메뉴에 표시됩니다. 탭하면 제거됩니다. 최대 16개입니다."
+
+msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
+msgstr "진단 정보와 MLS 내부 정보를 표시합니다. 계정, 키 패키지, 그룹 상태가 포함된 Debug 항목을 추가합니다."
+
+msgid "Sign out"
+msgstr "로그아웃"
+
+msgid "Sign out of this account?"
+msgstr "이 계정에서 로그아웃하시겠습니까?"
+
+msgid "Signal call"
+msgstr "Signal 통화"
+
+msgid "Signer cancelled"
+msgstr "서명자 요청 취소됨"
+
+msgid "Signer connected"
+msgstr "서명자 연결됨"
+
+msgid "Signer signed out"
+msgstr "서명자 로그아웃됨"
+
+msgid "Signer unavailable"
+msgstr "서명자를 사용할 수 없음"
+
+msgid "Signer unavailable. Reconnect from Add account."
+msgstr "서명자를 사용할 수 없습니다. 계정 추가에서 다시 연결하세요."
+
+msgid "Signing out and removing your signer session"
+msgstr "로그아웃하고 서명자 세션을 제거하는 중"
+
+msgid "Signing you in"
+msgstr "로그인하는 중"
+
+msgid "Single sided"
+msgstr "단면"
+
+msgid "Size"
+msgstr "크기"
+
+#, c-format
+msgid "Size: %s"
+msgstr "크기: %s"
+
+msgid "Slanted"
+msgstr "기울임"
+
+msgid "Slovak"
+msgstr "슬로바키아어"
+
+msgid "Slovenian"
+msgstr "슬로베니아어"
+
+msgid "Small"
+msgstr "작게"
+
+msgid "Sold"
+msgstr "판매됨"
+
+msgid "Sort chats by recent activity"
+msgstr "최근 활동순으로 채팅 정렬"
+
+msgid "Sort: A-Z"
+msgstr "정렬: A-Z"
+
+msgid "Sort: Contacts first, then A-Z"
+msgstr "정렬: 연락처 우선, 그다음 A-Z"
+
+msgid "Sounds don't play"
+msgstr "소리가 나지 않음"
+
+msgid "Source"
+msgstr "출처"
+
+msgid "Source language"
+msgstr "원본 언어"
+
+msgid "Spanish"
+msgstr "스페인어"
+
+msgid "Sparkle manages update checks and downloads."
+msgstr "Sparkle이 업데이트 확인과 다운로드를 관리합니다."
+
+msgid "Speech"
+msgstr "음성"
+
+msgid "Speech model"
+msgstr "음성 모델"
+
+msgid "Speech to text"
+msgstr "음성 인식"
+
+msgid "Split down"
+msgstr "아래로 분할"
+
+msgid "Split right"
+msgstr "오른쪽으로 분할"
+
+msgid "Square"
+msgstr "정사각형"
+
+msgid "Start"
+msgstr "시작"
+
+msgid "Start a group and invite people."
+msgstr "그룹을 만들고 사람들을 초대하세요."
+
+msgid "Start chat"
+msgstr "채팅 시작"
+
+msgid "Start day"
+msgstr "시작 요일"
+
+msgid "Start group"
+msgstr "그룹 시작"
+
+msgid "Start minimized to tray"
+msgstr "트레이로 최소화하여 시작"
+
+msgid "Start your first chat"
+msgstr "첫 채팅 시작하기"
+
+#, c-format
+msgid "Started offline: %s"
+msgstr "오프라인으로 시작됨: %s"
+
+msgid "Starting a chat does not add someone to People. You can also import a contacts CSV or JSON export."
+msgstr "채팅을 시작해도 상대가 사람 목록에 추가되지 않습니다. 연락처 CSV 또는 JSON 내보내기 파일을 가져올 수도 있습니다."
+
+msgid "Starting microphone…"
+msgstr "마이크를 시작하는 중…"
+
+msgid "Starting over deletes the vault on this device and everything sealed with it: account keys stored here, remote signer sessions, unsent messages, saved stickers and GIFs, and cached media. This can't be undone. Signing in again later can give you your account back, but not what was deleted, and your chats may not return."
+msgstr "다시 시작하면 이 기기의 금고와 금고로 보호된 모든 것이 삭제됩니다. 여기에 저장된 계정 키, 원격 서명자 세션, 보내지 않은 메시지, 저장한 스티커와 GIF, 캐시된 미디어가 포함됩니다. 이 작업은 되돌릴 수 없습니다. 나중에 다시 로그인하면 계정은 되찾을 수 있지만 삭제된 항목은 복구되지 않으며 채팅이 돌아오지 않을 수 있습니다."
+
+msgid "Starting the runtime"
+msgstr "런타임을 시작하는 중"
+
+msgid "Startup"
+msgstr "시작"
+
+msgid "State"
+msgstr "상태"
+
+msgid "Status bar"
+msgstr "상태 표시줄"
+
+msgid "Step down"
+msgstr "관리자 사임"
+
+msgid "Step down as admin?"
+msgstr "관리자에서 물러나시겠습니까?"
+
+msgid "Step one: find a warm rock. Step two: become one."
+msgstr "1단계: 따뜻한 바위를 찾습니다. 2단계: 바위가 됩니다."
+
+msgid "Sticker"
+msgstr "스티커"
+
+msgid "Sticker name"
+msgstr "스티커 이름"
+
+msgid "Sticker pack"
+msgstr "스티커 팩"
+
+msgid "Sticker unavailable. Click to view options."
+msgstr "스티커를 사용할 수 없습니다. 클릭하여 옵션을 확인하세요."
+
+msgid "Stickers"
+msgstr "스티커"
+
+#, c-format
+msgid "Stickers: %d"
+msgstr "스티커: %d"
+
+#, c-format
+msgid "Stock: %s"
+msgstr "재고: %s"
+
+msgid "Stop reading"
+msgstr "읽기 중지"
+
+msgid "Storage"
+msgstr "저장 공간"
+
+msgid "Store it in a password manager. It is separate from your nsec, remote signer, and backup file passwords."
+msgstr "비밀번호 관리자에 보관하세요. nsec, 원격 서명자, 백업 파일 비밀번호와는 별개입니다."
+
+msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."
+msgstr "안전한 곳에 보관하고 이 대화 상자를 닫으세요. 이 파일을 가져오는 사람은 복호화를 위해 방금 입력한 비밀번호가 필요합니다."
+
+msgid "Stored on this device, not published to any relay yet."
+msgstr "이 기기에 저장되어 있으며 아직 어떤 릴레이에도 게시되지 않았습니다."
+
+msgid "Stripes"
+msgstr "줄무늬"
+
+msgid "Strong enough"
+msgstr "충분히 강력함"
+
+msgid "Study"
+msgstr "학습"
+
+msgid "Sunday"
+msgstr "일요일"
+
+msgid "Support"
+msgstr "지원"
+
+msgid "Swahili (Kenya)"
+msgstr "스와힐리어(케냐)"
+
+msgid "Swahili (Tanzania)"
+msgstr "스와힐리어(탄자니아)"
+
+msgid "Swedish"
+msgstr "스웨덴어"
+
+msgid "Switching your account"
+msgstr "계정 전환 중"
+
+msgid "Synthwave"
+msgstr "신스웨이브"
+
+msgid "System"
+msgstr "시스템"
+
+msgid "TEXT"
+msgstr "텍스트"
+
+msgid "THEM"
+msgstr "상대"
+
+msgid "THEME"
+msgstr "테마"
+
+msgid "TIMINGS"
+msgstr "처리 시간"
+
+msgid "TROUBLESHOOTERS"
+msgstr "문제 해결"
+
+#, c-format
+msgid "Take %d"
+msgstr "테이크 %d"
+
+msgid "Takes effect on the next launch."
+msgstr "다음 실행 시 적용됩니다."
+
+msgid "Tamil"
+msgstr "타밀어"
+
+msgid "Tap again to download this model."
+msgstr "이 모델을 다운로드하려면 다시 탭하세요."
+
+msgid "Tap again to rotate"
+msgstr "다시 탭하여 교체"
+
+msgid "Tap one, then confirm, to remove it."
+msgstr "하나를 탭한 뒤 확인하면 제거됩니다."
+
+msgid "Tasks"
+msgstr "작업"
+
+msgid "Teal"
+msgstr "청록"
+
+msgid "Telugu"
+msgstr "텔루구어"
+
+msgid "Terminal"
+msgstr "터미널"
+
+msgid "Terminal agent by Nous Research"
+msgstr "Nous Research의 터미널 에이전트"
+
+#, c-format
+msgid "Terrain: %d/5"
+msgstr "지형: %d/5"
+
+msgid "Test notification"
+msgstr "테스트 알림"
+
+msgid "Test notification sent."
+msgstr "테스트 알림을 보냈습니다."
+
+msgid "Text"
+msgstr "텍스트"
+
+msgid "Text is hard to read"
+msgstr "글자를 읽기 어려움"
+
+msgid "Text low"
+msgstr "텍스트 낮음"
+
+msgid "Text lowest"
+msgstr "텍스트 최저"
+
+msgid "Text mid"
+msgstr "텍스트 중간"
+
+msgid "Textured strokes and sketched avatars. Shapes stay fixed."
+msgstr "질감 있는 획과 스케치풍 아바타입니다. 모양은 움직이지 않습니다."
+
+msgid "Thai"
+msgstr "태국어"
+
+msgid "That isn't a bunker link. Double-check it and try again."
+msgstr "bunker 링크가 아닙니다. 다시 확인하고 다시 시도하세요."
+
+msgid "That isn't your current password. Double-check it and try again."
+msgstr "현재 비밀번호가 아닙니다. 다시 확인하고 다시 시도하세요."
+
+msgid "That key isn't an nsec. Double-check it and try again."
+msgstr "이 키는 nsec가 아닙니다. 다시 확인하고 다시 시도하세요."
+
+msgid "That path is not a folder. Choose an existing project folder."
+msgstr "이 경로는 폴더가 아닙니다. 기존 프로젝트 폴더를 선택하세요."
+
+msgid "The AppImage folder is not writable. Move it to a writable folder to enable updates."
+msgstr "AppImage 폴더에 쓸 수 없습니다. 업데이트를 사용하려면 쓰기 가능한 폴더로 옮기세요."
+
+msgid "The AppImage folder is shared or has unsafe permissions. Move it to a private folder to enable updates."
+msgstr "AppImage 폴더가 공유되어 있거나 권한이 안전하지 않습니다. 업데이트를 사용하려면 개인 폴더로 옮기세요."
+
+msgid "The call runs outside White Noise."
+msgstr "통화는 White Noise 외부에서 진행됩니다."
+
+msgid "The chat leaves your list. Joining later needs a new invite."
+msgstr "채팅이 목록에서 사라집니다. 나중에 참여하려면 새 초대가 필요합니다."
+
+msgid "The colors and settings you changed in the editor are lost."
+msgstr "편집기에서 변경한 색상과 설정이 사라집니다."
+
+msgid "The group name was removed"
+msgstr "그룹 이름이 제거되었습니다"
+
+#, c-format
+msgid "The group was renamed to %s"
+msgstr "그룹 이름이 %s(으)로 변경되었습니다"
+
+msgid "The new password re-encrypts the vault on this device. White Noise still can't reset it. If you forget it, the only way forward is to delete this vault and start over."
+msgstr "새 비밀번호로 이 기기의 금고를 다시 암호화합니다. White Noise는 여전히 이 비밀번호를 재설정할 수 없습니다. 잊어버리면 이 금고를 삭제하고 처음부터 다시 시작하는 방법밖에 없습니다."
+
+msgid "The ngit web client a patch card opens. That site receives the patch link."
+msgstr "패치 카드가 여는 ngit 웹 클라이언트입니다. 해당 사이트에 패치 링크가 전달됩니다."
+
+msgid "The original message isn't loaded in this view."
+msgstr "원본 메시지가 이 화면에 로드되지 않았습니다."
+
+msgid "The passwords don't match. Type them again."
+msgstr "비밀번호가 일치하지 않습니다. 다시 입력하세요."
+
+msgid "The relay in the middle stores and forwards. It never holds a key."
+msgstr "중간의 릴레이는 저장하고 전달만 합니다. 키를 보관하지 않습니다."
+
+msgid "The signer request was cancelled."
+msgstr "서명자 요청이 취소되었습니다."
+
+msgid "The updated list is published to your relays."
+msgstr "업데이트된 목록이 릴레이에 게시됩니다."
+
+msgid "The vault on this device was deleted. Pick a new password to start over."
+msgstr "이 기기의 금고가 삭제되었습니다. 새 비밀번호를 정해 다시 시작하세요."
+
+#, c-format
+msgid "The web client an event card opens. For example %s. %s is replaced with the event id."
+msgstr "이벤트 카드가 여는 웹 클라이언트입니다. 예: %s. %s는 이벤트 ID로 바뀝니다."
+
+msgid "Their messages stay hidden until you show them. Nothing is published, and you can unblock them here."
+msgstr "표시하기 전까지 이 사용자의 메시지는 숨겨집니다. 아무것도 게시되지 않으며 여기에서 차단을 해제할 수 있습니다."
+
+msgid "Theme"
+msgstr "테마"
+
+msgid "Theme applied"
+msgstr "테마 적용됨"
+
+msgid "Theme deleted"
+msgstr "테마 삭제됨"
+
+msgid "Theme from Sidecar by dmnyc."
+msgstr "dmnyc의 Sidecar 테마입니다."
+
+msgid "Theme saved"
+msgstr "테마 저장됨"
+
+#, c-format
+msgid "Theme shared with %s"
+msgstr "%s에게 테마 공유됨"
+
+msgid "Themes, text size, and the look of your conversations."
+msgstr "테마, 글자 크기, 대화 모양을 설정합니다."
+
+msgid "These are installation prompts. Choose your agent, review its prompt, and paste it into that agent to connect it to White Noise. The prompt includes your public npub, never your private key, and asks the agent to explain the connector before requesting your approval to install it. Use only an agent you run and trust."
+msgstr "설치용 프롬프트입니다. 에이전트를 선택하고 프롬프트를 검토한 뒤 해당 에이전트에 붙여넣어 White Noise에 연결하세요. 프롬프트에는 공개 npub이 포함되며 비밀 키는 절대 포함되지 않습니다. 또한 설치 승인을 요청하기 전에 에이전트가 커넥터를 설명하도록 요청합니다. 직접 운영하고 신뢰하는 에이전트만 사용하세요."
+
+msgid "These settings and messages are only yours."
+msgstr "이 설정과 메시지는 나만 볼 수 있습니다."
+
+msgid "They can be added to a chat."
+msgstr "채팅에 추가할 수 있습니다."
+
+msgid "They come off your published contact list. Groups you already share stay as they are."
+msgstr "게시된 연락처 목록에서 제외됩니다. 이미 함께 있는 그룹은 그대로 유지됩니다."
+
+msgid "They haven't published a relay list."
+msgstr "이 사용자는 릴레이 목록을 게시하지 않았습니다."
+
+msgid "They lose access to new messages in this group."
+msgstr "이 그룹의 새 메시지에 더 이상 접근할 수 없습니다."
+
+msgid "They stay in the group as a regular member."
+msgstr "일반 멤버로 그룹에 남습니다."
+
+msgid "This changes White Noise project metadata, not running shells."
+msgstr "White Noise 프로젝트 메타데이터만 변경하며 실행 중인 셸은 변경하지 않습니다."
+
+msgid "This chat is archived. Restore it from Archive to send messages."
+msgstr "이 채팅은 보관되었습니다. 메시지를 보내려면 보관함에서 복원하세요."
+
+msgid "This has no visible text, so the GM button sends GM."
+msgstr "표시되는 텍스트가 없으므로 GM 버튼은 GM을 보냅니다."
+
+msgid "This is a common password"
+msgstr "흔히 쓰이는 비밀번호입니다"
+
+#, c-format
+msgid "This is an installation prompt for connecting this Claude Code setup to White Noise through Marmot. Read the authoritative Claude Code harness guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/claude/marmot/README.md and the evergreen connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Confirm prerequisites: Claude Code CLI is installed, authenticated, and available on PATH, and this machine uses the same public relay set as my current account in the White Noise app. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, use the checksum-verified install-claude-marmot.sh release flow, bootstrap wn-agent for that npub with the allowed welcomer, and verify wn-claude --version. Then reply with your agent npub and ask me to invite it from White Noise and send a test message from this allowed npub over the configured relays. Do not report setup complete until wn-claude returns a reply through White Noise; if that round trip cannot be verified automatically, clearly mark device verification required."
+msgstr "Marmot을 통해 이 Claude Code 환경을 White Noise에 연결하기 위한 설치 프롬프트입니다. https://github.com/marmot-protocol/mdk/blob/master/integrations/claude/marmot/README.md 의 공식 Claude Code 하네스 가이드와 https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md 의 최신 커넥터 가이드를 읽으세요. 커넥터의 작동 방식과 설치로 무엇이 변경되는지 설명하세요. 사전 요구 사항을 확인하세요. Claude Code CLI가 설치 및 인증되어 PATH에서 실행 가능해야 하며, 이 컴퓨터는 White Noise 앱에서 현재 사용 중인 내 계정과 같은 공개 릴레이 세트를 사용해야 합니다. 그런 다음 내 공개 npub: %s 에 대한 설치 단계를 제안하고, 변경하기 전에 내 승인을 요청하세요. 승인하면 체크섬으로 검증된 install-claude-marmot.sh 릴리스 절차를 사용하고, 허용된 welcomer로 해당 npub용 wn-agent를 부트스트랩한 뒤 wn-claude --version을 확인하세요. 그런 다음 에이전트 npub를 답장으로 알려 주고, White Noise에서 에이전트를 초대한 뒤 설정된 릴레이를 통해 이 허용된 npub에서 테스트 메시지를 보내 달라고 요청하세요. wn-claude가 White Noise를 통해 답장하기 전까지는 설정 완료로 보고하지 마세요. 이 왕복 통신을 자동으로 검증할 수 없으면 기기 검증이 필요하다고 명확히 표시하세요."
+
+#, c-format
+msgid "This is an installation prompt for connecting this Codex setup to White Noise through Marmot. Read the authoritative Codex harness guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/codex/marmot/README.md and the evergreen connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Confirm prerequisites: Codex CLI is installed, authenticated, and available on PATH, and this machine uses the same public relay set as my current account in the White Noise app. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, use the checksum-verified install-codex-marmot.sh release flow, bootstrap wn-agent for that npub with the allowed welcomer, and verify wn-codex --version. Then reply with your agent npub and ask me to invite it from White Noise and send a test message from this allowed npub over the configured relays. Do not report setup complete until wn-codex returns a reply through White Noise; if that round trip cannot be verified automatically, clearly mark device verification required."
+msgstr "Marmot을 통해 이 Codex 환경을 White Noise에 연결하기 위한 설치 프롬프트입니다. https://github.com/marmot-protocol/mdk/blob/master/integrations/codex/marmot/README.md 의 공식 Codex 하네스 가이드와 https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md 의 최신 커넥터 가이드를 읽으세요. 커넥터의 작동 방식과 설치로 무엇이 변경되는지 설명하세요. 사전 요구 사항을 확인하세요. Codex CLI가 설치 및 인증되어 PATH에서 실행 가능해야 하며, 이 컴퓨터는 White Noise 앱에서 현재 사용 중인 내 계정과 같은 공개 릴레이 세트를 사용해야 합니다. 그런 다음 내 공개 npub: %s 에 대한 설치 단계를 제안하고, 변경하기 전에 내 승인을 요청하세요. 승인하면 체크섬으로 검증된 install-codex-marmot.sh 릴리스 절차를 사용하고, 허용된 welcomer로 해당 npub용 wn-agent를 부트스트랩한 뒤 wn-codex --version을 확인하세요. 그런 다음 에이전트 npub를 답장으로 알려 주고, White Noise에서 에이전트를 초대한 뒤 설정된 릴레이를 통해 이 허용된 npub에서 테스트 메시지를 보내 달라고 요청하세요. wn-codex가 White Noise를 통해 답장하기 전까지는 설정 완료로 보고하지 마세요. 이 왕복 통신을 자동으로 검증할 수 없으면 기기 검증이 필요하다고 명확히 표시하세요."
+
+#, c-format
+msgid "This is an installation prompt for connecting this Hermes installation to White Noise through Marmot. Read the latest connector guide at https://github.com/marmot-protocol/mdk/blob/master/integrations/hermes/marmot/README.md / https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, install and verify the connector, then reply with your agent npub. Before proposing changes, confirm the intended Hermes profile, Hermes home, Marmot home/socket, agent account and service, and gateway instance; do not assume the default profile or overwrite another installation. Use the checksum-verified Hermes installer flow. Distinguish invite authorization from message-sender authorization. Guide me through the invitation from my current account in the White Noise app and a test message, and verify that the selected profile replies in White Noise before calling pairing complete."
+msgstr "Marmot을 통해 이 Hermes 설치를 White Noise에 연결하기 위한 설치 프롬프트입니다. https://github.com/marmot-protocol/mdk/blob/master/integrations/hermes/marmot/README.md / https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md 의 최신 커넥터 가이드를 읽으세요. 커넥터의 작동 방식과 설치로 무엇이 변경되는지 설명하세요. 그런 다음 내 공개 npub: %s 에 대한 설치 단계를 제안하고, 변경하기 전에 내 승인을 요청하세요. 승인하면 커넥터를 설치하고 검증한 뒤 에이전트 npub를 답장으로 알려 주세요. 변경을 제안하기 전에 대상 Hermes 프로필, Hermes 홈, Marmot 홈/소켓, 에이전트 계정과 서비스, 게이트웨이 인스턴스를 확인하세요. 기본 프로필을 가정하거나 다른 설치를 덮어쓰지 마세요. 체크섬으로 검증된 Hermes 설치 프로그램 절차를 사용하세요. 초대 권한과 메시지 발신자 권한을 구분하세요. White Noise 앱에서 현재 사용 중인 내 계정으로 초대하고 테스트 메시지를 보내는 과정을 안내하고, 선택한 프로필이 White Noise에서 답장하는지 확인한 뒤에 페어링 완료로 판단하세요."
+
+#, c-format
+msgid "This is an installation prompt for connecting this OpenClaw instance to White Noise through Marmot. Read the latest connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, install and verify the connector, then reply with your agent npub."
+msgstr "Marmot을 통해 이 OpenClaw 인스턴스를 White Noise에 연결하기 위한 설치 프롬프트입니다. https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md 의 최신 커넥터 가이드를 읽으세요. 커넥터의 작동 방식과 설치로 무엇이 변경되는지 설명하세요. 그런 다음 내 공개 npub: %s 에 대한 설치 단계를 제안하고, 변경하기 전에 내 승인을 요청하세요. 승인하면 커넥터를 설치하고 검증한 뒤 에이전트 npub를 답장으로 알려 주세요."
+
+#, c-format
+msgid "This is an installation prompt for connecting this OpenCode setup to White Noise through Marmot. Read the latest connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, install and verify the connector, then reply with your agent npub."
+msgstr "Marmot을 통해 이 OpenCode 환경을 White Noise에 연결하기 위한 설치 프롬프트입니다. https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md 의 최신 커넥터 가이드를 읽으세요. 커넥터의 작동 방식과 설치로 무엇이 변경되는지 설명하세요. 그런 다음 내 공개 npub: %s 에 대한 설치 단계를 제안하고, 변경하기 전에 내 승인을 요청하세요. 승인하면 커넥터를 설치하고 검증한 뒤 에이전트 npub를 답장으로 알려 주세요."
+
+msgid "This is what a message alert looks like."
+msgstr "메시지 알림은 이렇게 표시됩니다."
+
+msgid "This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."
+msgstr "입력한 비밀번호로 암호화된 비밀 키입니다. 이 문자열과 비밀번호를 가진 사람은 누구나 내 신원을 제어할 수 있습니다."
+
+msgid "This key has a typo."
+msgstr "이 키에 오타가 있습니다."
+
+msgid "This leaves White Noise and opens in your browser."
+msgstr "White Noise를 벗어나 브라우저에서 엽니다."
+
+#, c-format
+msgid "This leaves White Noise and opens the call in %s."
+msgstr "White Noise를 벗어나 %s에서 통화를 엽니다."
+
+msgid "This message was deleted"
+msgstr "이 메시지는 삭제되었습니다"
+
+msgid "This number increases when the group's encryption keys change."
+msgstr "그룹의 암호화 키가 바뀌면 이 숫자가 증가합니다."
+
+msgid "This pairing link is too long for a QR code. Use Copy pairing link."
+msgstr "이 페어링 링크는 QR 코드로 만들기에 너무 깁니다. 페어링 링크 복사를 사용하세요."
+
+msgid "This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it."
+msgstr "이 비밀번호는 이 기기의 금고를 암호화합니다. 계정을 만들지 않으며 White Noise는 이 비밀번호를 재설정할 수 없습니다."
+
+msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
+msgstr "이 비밀번호는 너무 쉽게 추측됩니다. 서로 관련 없는 단어나 비밀번호 관리자가 생성한 비밀번호를 사용하세요."
+
+msgid "This project is no longer available."
+msgstr "이 프로젝트는 더 이상 사용할 수 없습니다."
+
+msgid "This project is no longer available. Close this editor and reopen it from the current project."
+msgstr "이 프로젝트는 더 이상 사용할 수 없습니다. 이 편집기를 닫고 현재 프로젝트에서 다시 여세요."
+
+msgid "This relay is already in your list."
+msgstr "이 릴레이는 이미 목록에 있습니다."
+
+msgid "This session"
+msgstr "현재 세션"
+
+msgid "This sticker is not in the current pack."
+msgstr "이 스티커는 현재 팩에 없습니다."
+
+msgid "Thread"
+msgstr "스레드"
+
+msgid "Three things and you can send your first message."
+msgstr "세 가지만 하면 첫 메시지를 보낼 수 있습니다."
+
+#, c-format
+msgid "Through: %s"
+msgstr "종료: %s"
+
+msgid "Thursday"
+msgstr "목요일"
+
+msgid "Time format"
+msgstr "시간 형식"
+
+msgid "Timeline subscription closed."
+msgstr "타임라인 구독이 종료되었습니다."
+
+msgid "Timings"
+msgstr "처리 시간"
+
+msgid "Title font"
+msgstr "제목 글꼴"
+
+msgid "To start a chat with someone new, paste their public key."
+msgstr "새로운 사람과 채팅을 시작하려면 상대의 공개 키를 붙여넣으세요."
+
+msgid "Today"
+msgstr "오늘"
+
+msgid "Toggle developer mode"
+msgstr "개발자 모드 전환"
+
+msgid "Too easy to guess"
+msgstr "너무 쉽게 추측됨"
+
+msgid "Tools"
+msgstr "도구"
+
+msgid "Top glint"
+msgstr "상단 광택"
+
+msgid "Torrent"
+msgstr "토렌트"
+
+msgid "Trackers"
+msgstr "트래커"
+
+msgid "Trackers only, no DHT or peer exchange."
+msgstr "트래커만 사용하며 DHT나 피어 교환은 사용하지 않습니다."
+
+msgid "Transcribe"
+msgstr "받아쓰기"
+
+msgid "Transcribing..."
+msgstr "받아쓰는 중..."
+
+msgid "Transcription model"
+msgstr "받아쓰기 모델"
+
+msgid "Transition ms"
+msgstr "전환 ms"
+
+msgid "Translate"
+msgstr "번역"
+
+msgid "Translate into"
+msgstr "번역할 언어"
+
+msgid "Translate messages on your device"
+msgstr "기기에서 메시지 번역"
+
+msgid "Translate received messages automatically"
+msgstr "받은 메시지 자동 번역"
+
+msgid "Translates received messages as you read them. The first translation downloads the local model."
+msgstr "받은 메시지를 읽을 때 번역합니다. 첫 번역 시 로컬 모델을 다운로드합니다."
+
+msgid "Translating on your device..."
+msgstr "기기에서 번역하는 중..."
+
+msgid "Translations can be inaccurate. The original message is always available."
+msgstr "번역이 정확하지 않을 수 있습니다. 원본 메시지는 언제든 확인할 수 있습니다."
+
+msgid "Travel"
+msgstr "여행"
+
+msgid "Trophy"
+msgstr "트로피"
+
+msgid "Trusted link sites"
+msgstr "신뢰하는 링크 사이트"
+
+msgid "Try OpenGL or CPU if the window draws incorrectly. CPU draws without the graphics card and uses more processor time. Restart White Noise to apply a change."
+msgstr "창이 제대로 그려지지 않으면 OpenGL 또는 CPU를 사용해 보세요. CPU는 그래픽 카드 없이 그리므로 프로세서를 더 많이 사용합니다. 변경 사항을 적용하려면 White Noise를 다시 시작하세요."
+
+msgid "Try a different search."
+msgstr "다른 검색어를 사용해 보세요."
+
+msgid "Try again"
+msgstr "다시 시도"
+
+msgid "Tuesday"
+msgstr "화요일"
+
+msgid "Turkish"
+msgstr "튀르키예어"
+
+msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
+msgstr "애니메이션 전환, 이동, 효과를 끕니다. 상태는 바뀌지만 아무것도 움직이지 않습니다."
+
+msgid "Turn on developer mode"
+msgstr "개발자 모드 켜기"
+
+msgid "Type a command"
+msgstr "명령 입력"
+
+msgid "Type to search all chats."
+msgstr "입력하여 모든 채팅을 검색하세요."
+
+msgid "Type your new password again"
+msgstr "새 비밀번호를 다시 입력하세요"
+
+msgid "Type your password again"
+msgstr "비밀번호를 다시 입력하세요"
+
+msgid "Type your password first."
+msgstr "먼저 비밀번호를 입력하세요."
+
+msgid "UPTIME"
+msgstr "가동 시간"
+
+msgid "UV checker"
+msgstr "UV 검사기"
+
+msgid "Ukrainian"
+msgstr "우크라이나어"
+
+msgid "Unavailable conversation"
+msgstr "사용할 수 없는 대화"
+
+msgid "Unblock"
+msgstr "차단 해제"
+
+msgid "Unfiled"
+msgstr "미분류"
+
+msgid "Unlock"
+msgstr "잠금 해제"
+
+msgid "Unlocking…"
+msgstr "잠금 해제 중…"
+
+msgid "Unmute"
+msgstr "알림 켜기"
+
+msgid "Unnamed group"
+msgstr "이름 없는 그룹"
+
+msgid "Unpin"
+msgstr "고정 해제"
+
+msgid "Unread"
+msgstr "읽지 않음"
+
+msgid "Unsupported attachment format."
+msgstr "지원하지 않는 첨부 파일 형식입니다."
+
+msgid "Untitled emoji set"
+msgstr "제목 없는 이모지 세트"
+
+msgid "Untitled patch"
+msgstr "제목 없는 패치"
+
+msgid "Updates"
+msgstr "업데이트"
+
+msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot safely use the app's explicit proxy. Disable the proxy and restart to update, or install an authenticated release manually."
+msgstr "SOCKS5 프록시가 설정되어 있는 동안에는 업데이트가 비활성화됩니다. Sparkle은 앱에 지정된 프록시를 안전하게 사용할 수 없습니다. 프록시를 끄고 다시 시작하여 업데이트하거나, 인증된 릴리스를 직접 설치하세요."
+
+msgid "Updating your contacts"
+msgstr "연락처 업데이트 중"
+
+msgid "Upload custom emoji"
+msgstr "사용자 지정 이모지 업로드"
+
+msgid "Uploaded emoji"
+msgstr "업로드한 이모지"
+
+msgid "Uploading picture"
+msgstr "사진 업로드 중"
+
+msgid "Urdu"
+msgstr "우르두어"
+
+msgid "Use"
+msgstr "사용"
+
+msgid "Use New folder to create a folder, then drag a chat onto it."
+msgstr "새 폴더로 폴더를 만든 다음 채팅을 폴더로 끌어 놓으세요."
+
+msgid "Use New folder to create a folder. Your chats appear here once you have some."
+msgstr "새 폴더로 폴더를 만드세요. 채팅이 생기면 여기에 표시됩니다."
+
+msgid "Use a SOCKS5 proxy"
+msgstr "SOCKS5 프록시 사용"
+
+msgid "Use a separate group for each project and start with its location and context. Session controls vary by connector; check its guide before using resume or branch commands."
+msgstr "프로젝트마다 별도의 그룹을 사용하고, 먼저 프로젝트 위치와 배경 정보를 알려 주세요. 세션 제어 방식은 커넥터마다 다릅니다. 재개 또는 분기 명령을 사용하기 전에 해당 커넥터의 가이드를 확인하세요."
+
+msgid "Use a shorter search."
+msgstr "더 짧은 검색어를 사용하세요."
+
+msgid "Use crop circle"
+msgstr "크롭 서클 사용"
+
+msgid "Use current location"
+msgstr "현재 위치 사용"
+
+msgid "Use emoji image"
+msgstr "이모지 이미지 사용"
+
+msgid "Use only an agent you run and trust. Your private key is never included."
+msgstr "직접 운영하고 신뢰하는 에이전트만 사용하세요. 비밀 키는 절대 포함되지 않습니다."
+
+msgid "Use original"
+msgstr "원본 사용"
+
+msgid "Use this photo?"
+msgstr "이 사진을 사용하시겠습니까?"
+
+msgid "Use this theme"
+msgstr "이 테마 사용"
+
+msgid "Use unrelated words or a password-manager password."
+msgstr "관련 없는 단어 조합이나 비밀번호 관리자의 비밀번호를 사용하세요."
+
+msgid "Use username and password"
+msgstr "사용자 이름과 비밀번호 사용"
+
+msgid "Used for generated user and group avatars."
+msgstr "자동 생성되는 사용자 및 그룹 아바타에 사용됩니다."
+
+msgid "Used for profile photos without a published shape."
+msgstr "게시된 모양이 없는 프로필 사진에 사용됩니다."
+
+msgid "Username"
+msgstr "사용자 이름"
+
+msgid "VERIFIED ADDRESS"
+msgstr "인증된 주소"
+
+msgid "Vault password changed."
+msgstr "금고 비밀번호를 변경했습니다."
+
+msgid "Verified address"
+msgstr "인증된 주소"
+
+msgid "Verifying download..."
+msgstr "다운로드 확인 중..."
+
+msgid "Vertex normals"
+msgstr "정점 법선"
+
+msgid "Videos"
+msgstr "동영상"
+
+msgid "Vietnamese"
+msgstr "베트남어"
+
+msgid "View"
+msgstr "보기"
+
+msgid "View as hex"
+msgstr "16진수로 보기"
+
+msgid "View keyboard shortcuts"
+msgstr "키보드 단축키 보기"
+
+msgid "View profile"
+msgstr "프로필 보기"
+
+msgid "View raw event"
+msgstr "원시 이벤트 보기"
+
+msgid "View sticker pack"
+msgstr "스티커 팩 보기"
+
+msgid "View transcription"
+msgstr "받아쓴 내용 보기"
+
+msgid "Vignette"
+msgstr "비네트"
+
+msgid "Violet"
+msgstr "보라"
+
+msgid "Visual fingerprint"
+msgstr "시각적 지문"
+
+msgid "Voice message"
+msgstr "음성 메시지"
+
+msgid "Voting has ended."
+msgstr "투표가 종료되었습니다."
+
+msgid "WIREFRAME"
+msgstr "와이어프레임"
+
+msgid "Waiting for signer approval"
+msgstr "서명자 승인 대기 중"
+
+msgid "Waiting to translate..."
+msgstr "번역 대기 중..."
+
+msgid "Warning"
+msgstr "경고"
+
+msgid "Wave hi"
+msgstr "손 흔들어 인사하기"
+
+msgid "Waves"
+msgstr "물결"
+
+msgid "Weak password"
+msgstr "약한 비밀번호"
+
+msgid "Webxdc app"
+msgstr "Webxdc 앱"
+
+msgid "Webxdc apps are only supported on Linux."
+msgstr "Webxdc 앱은 Linux에서만 지원됩니다."
+
+msgid "Wednesday"
+msgstr "수요일"
+
+msgid "What is shared"
+msgstr "공유되는 정보"
+
+msgid "What it is"
+msgstr "개요"
+
+msgid "What the GM button sends. You can use it once a day in each chat."
+msgstr "GM 버튼으로 보내는 메시지입니다. 채팅마다 하루에 한 번 사용할 수 있습니다."
+
+msgid "Whatever you send in this chat is encrypted on your device with MLS before it goes out. The relays that pass it along can't read it, and neither can anyone else."
+msgstr "이 채팅에서 보내는 모든 내용은 전송 전에 기기에서 MLS로 암호화됩니다. 내용을 전달하는 릴레이도, 다른 누구도 읽을 수 없습니다."
+
+msgid "Where"
+msgstr "위치"
+
+msgid "Where a message goes"
+msgstr "메시지의 경로"
+
+msgid "Where a shared location opens from its card. That site receives the location. Map images on the card always load from OpenStreetMap."
+msgstr "공유된 위치를 카드에서 열 때 사용하는 사이트입니다. 해당 사이트로 위치가 전송됩니다. 카드의 지도 이미지는 항상 OpenStreetMap에서 불러옵니다."
+
+msgid "Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these."
+msgstr "연결된 Nostr 이벤트(nevent, note)를 가져오는 곳입니다. 채팅은 이 릴레이를 거치지 않습니다."
+
+msgid "Where peers reach you."
+msgstr "다른 사람이 나에게 연락하는 곳입니다."
+
+msgid "Where you publish."
+msgstr "내가 게시하는 곳입니다."
+
+#, c-format
+msgid "White Noise %s is ready to install."
+msgstr "White Noise %s을(를) 설치할 준비가 되었습니다."
+
+msgid "White Noise and this session."
+msgstr "White Noise 및 현재 세션 정보입니다."
+
+msgid "White Noise can't reset this password, and no one else has a copy. Without it, the vault on this device can't be opened."
+msgstr "White Noise는 이 비밀번호를 재설정할 수 없으며, 다른 누구도 사본을 갖고 있지 않습니다. 비밀번호가 없으면 이 기기의 금고를 열 수 없습니다."
+
+msgid "White Noise doesn't open at login"
+msgstr "로그인 시 White Noise가 열리지 않음"
+
+msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
+msgstr "White Noise는 GifSnap과 제휴 관계가 아닙니다. GifSnap이 이 데이터를 악용할 것이라고 볼 이유는 없지만, White Noise가 관리할 수 없는 제3자입니다."
+
+#, c-format
+msgid "White Noise · %d unread"
+msgstr "White Noise · 읽지 않음 %d개"
+
+msgid "Who put a sun lounger outside the burrow?"
+msgstr "굴 앞에 선베드를 둔 게 누구입니까?"
+
+msgid "Wireframe"
+msgstr "와이어프레임"
+
+msgid "With a keyboard connected"
+msgstr "키보드 연결 시"
+
+msgid "Word"
+msgstr "단어"
+
+msgid "Work"
+msgstr "업무"
+
+msgid "World"
+msgstr "세계"
+
+msgid "YOU"
+msgstr "나"
+
+msgid "YOUR KEY PACKAGES"
+msgstr "내 키 패키지"
+
+msgid "YOUR PACKS"
+msgstr "내 팩"
+
+msgid "YOUR STICKERS"
+msgstr "내 스티커"
+
+msgid "Yellow"
+msgstr "노랑"
+
+msgid "Yesterday"
+msgstr "어제"
+
+msgid "You"
+msgstr "나"
+
+msgid "You are signed out, but your signer record could not be removed from the encrypted vault."
+msgstr "로그아웃되었지만, 암호화된 금고에서 서명자 기록을 제거할 수 없었습니다."
+
+msgid "You can find it in Archived and restore it to your chat list there."
+msgstr "보관함에서 이 채팅을 찾아 채팅 목록으로 복원할 수 있습니다."
+
+msgid "You can't send messages to someone you blocked."
+msgstr "차단한 사람에게는 메시지를 보낼 수 없습니다."
+
+msgid "You have no chats to share this with."
+msgstr "공유할 채팅이 없습니다."
+
+msgid "You have no folders yet. Create one with New folder."
+msgstr "아직 폴더가 없습니다. 새 폴더로 만들 수 있습니다."
+
+msgid "You have no groups to add this person to."
+msgstr "이 사람을 추가할 그룹이 없습니다."
+
+msgid "You have no other chats to forward this to."
+msgstr "전달할 다른 채팅이 없습니다."
+
+msgid "You have read every chat."
+msgstr "모든 채팅을 읽었습니다."
+
+msgid "You have the latest version."
+msgstr "최신 버전입니다."
+
+msgid "You have unsaved changes."
+msgstr "저장하지 않은 변경 사항이 있습니다."
+
+msgid "You said GM here today"
+msgstr "오늘 여기서 GM을 보냈음"
+
+msgid "You said GM here today."
+msgstr "오늘 이 채팅에서 이미 GM을 보냈습니다."
+
+msgid "You stay in the group, but another admin has to grant the rights back."
+msgstr "그룹에는 남지만, 권한을 되찾으려면 다른 관리자가 다시 부여해야 합니다."
+
+msgid "You stay in the group, but no other admin can grant your rights back."
+msgstr "그룹에는 남지만, 권한을 다시 부여할 수 있는 다른 관리자가 없습니다."
+
+msgid "You stop receiving its messages. Rejoining needs a new invite."
+msgstr "이 그룹의 메시지를 더 이상 받지 않습니다. 다시 참여하려면 새 초대가 필요합니다."
+
+msgid "You were invited to this chat."
+msgstr "이 채팅에 초대되었습니다."
+
+msgid "You were invited to this group."
+msgstr "이 그룹에 초대되었습니다."
+
+msgid "You will stop receiving its messages."
+msgstr "이 그룹의 메시지를 더 이상 받지 않게 됩니다."
+
+#, c-format
+msgid "You: %s"
+msgstr "나: %s"
+
+msgid "Your GM"
+msgstr "내 GM"
+
+msgid "Your account has a pending action. Complete it before reconnecting your signer."
+msgstr "계정에 대기 중인 작업이 있습니다. 서명자를 다시 연결하기 전에 완료하세요."
+
+msgid "Your account is removed, but its signer record couldn't be removed from the encrypted vault."
+msgstr "계정은 제거되었지만, 암호화된 금고에서 서명자 기록을 제거할 수 없었습니다."
+
+msgid "Your chats appear here once you have some."
+msgstr "채팅이 생기면 여기에 표시됩니다."
+
+msgid "Your current password"
+msgstr "현재 비밀번호"
+
+msgid "Your device asks for permission. Nothing is sent to the chat until you choose Send location."
+msgstr "기기에서 권한을 요청합니다. 위치 보내기를 선택하기 전에는 채팅에 아무것도 전송되지 않습니다."
+
+msgid "Your disk is filling up"
+msgstr "디스크 공간이 부족해지고 있습니다"
+
+msgid "Your existing and new notes are deleted after this time."
+msgstr "기존 메모와 새 메모 모두 이 시간이 지나면 삭제됩니다."
+
+msgid "Your identity and the secrets on this device."
+msgstr "내 신원과 이 기기의 비밀 정보입니다."
+
+msgid "Your identity, key packages, and device security."
+msgstr "내 신원, 키 패키지, 기기 보안입니다."
+
+msgid "Your key stays on this device"
+msgstr "키는 이 기기에만 보관됩니다"
+
+msgid "Your new password"
+msgstr "새 비밀번호"
+
+msgid "Your nsec or remote signer can let you use your account again, but it can't open this vault, and your chats on this device may not return. A backup file has its own password and holds only settings, drafts, custom emoji, and themes."
+msgstr "nsec 또는 원격 서명자로 계정을 다시 사용할 수는 있지만, 이 금고는 열 수 없으며 이 기기의 채팅은 복구되지 않을 수 있습니다. 백업 파일에는 별도의 비밀번호가 있으며 설정, 임시 저장 메시지, 사용자 지정 이모지, 테마만 포함됩니다."
+
+msgid "Your own notepad"
+msgstr "나만의 메모장"
+
+msgid "Your password"
+msgstr "비밀번호"
+
+msgid "Your previous account action is still running."
+msgstr "이전 계정 작업이 아직 실행 중입니다."
+
+msgid "Your previous account action is still waiting. Check your signer for approval."
+msgstr "이전 계정 작업이 아직 대기 중입니다. 서명자에서 승인을 확인하세요."
+
+msgid "Your profile"
+msgstr "내 프로필"
+
+msgid "Your proxy credentials are stored in your encrypted vault."
+msgstr "프록시 인증 정보는 암호화된 금고에 저장됩니다."
+
+msgid "Your public key"
+msgstr "내 공개 키"
+
+msgid "Your public key is unavailable. Choose another account and try again."
+msgstr "공개 키를 사용할 수 없습니다. 다른 계정을 선택하고 다시 시도하세요."
+
+msgid "Your public key. Safe to share."
+msgstr "공개 키입니다. 공유해도 안전합니다."
+
+msgid "Your secret key stays in your remote signer. Reveal and export are unavailable on this device."
+msgstr "비밀 키는 원격 서명자에 보관됩니다. 이 기기에서는 표시 및 내보내기를 할 수 없습니다."
+
+msgid "Your secret key stays on this device or in your connected signer. Never share it."
+msgstr "비밀 키는 이 기기 또는 연결된 서명자에 보관됩니다. 절대 공유하지 마세요."
+
+msgid "Your signer is connected."
+msgstr "서명자가 연결되었습니다."
+
+msgid "Your signer is unavailable."
+msgstr "서명자를 사용할 수 없습니다."
+
+msgid "Your signer rejected the request."
+msgstr "서명자가 요청을 거부했습니다."
+
+msgid "Your signer session has ended."
+msgstr "서명자 세션이 종료되었습니다."
+
+msgid "Your stickers"
+msgstr "내 스티커"
+
+msgid "Your themes"
+msgstr "내 테마"
+
+msgid "Your unpublished profile changes are lost."
+msgstr "게시하지 않은 프로필 변경 사항은 사라집니다."
+
+msgid "Zoom in"
+msgstr "확대"
+
+msgid "Zoom out"
+msgstr "축소"
+
+msgid "Zoom the interface"
+msgstr "화면 확대/축소"
+
+msgid "Zulu"
+msgstr "줄루어"
+
+#, c-format
+msgid "aka %s"
+msgstr "별칭 %s"
+
+#, c-format
+msgid "and %d more blocks"
+msgstr "외 블록 %d개"
+
+#, c-format
+msgid "and %d more files"
+msgstr "외 파일 %d개"
+
+#, c-format
+msgid "and %d more lines"
+msgstr "외 %d줄"
+
+#, c-format
+msgid "and %s more"
+msgstr "외 %s"
+
+msgid "carries the blob"
+msgstr "암호화 데이터 전달"
+
+msgid "e.g. ~/Work/project"
+msgstr "예: ~/Work/project"
+
+msgid "edited"
+msgstr "수정됨"
+
+msgid "failed · tap to retry"
+msgstr "실패 · 탭하여 다시 시도"
+
+#, c-format
+msgid "in %d day"
+msgstr "%d일 후"
+
+#, c-format
+msgid "in %d days"
+msgstr "%d일 후"
+
+#, c-format
+msgid "in %d hour"
+msgstr "%d시간 후"
+
+#, c-format
+msgid "in %d hours"
+msgstr "%d시간 후"
+
+#, c-format
+msgid "in %d minute"
+msgstr "%d분 후"
+
+#, c-format
+msgid "in %d minutes"
+msgstr "%d분 후"
+
+#, c-format
+msgid "in %d month"
+msgstr "%d개월 후"
+
+#, c-format
+msgid "in %d months"
+msgstr "%d개월 후"
+
+#, c-format
+msgid "in %d second"
+msgstr "%d초 후"
+
+#, c-format
+msgid "in %d seconds"
+msgstr "%d초 후"
+
+#, c-format
+msgid "in %d year"
+msgstr "%d년 후"
+
+#, c-format
+msgid "in %d years"
+msgstr "%d년 후"
+
+msgid "inbox"
+msgstr "받은편지함"
+
+msgid "local + relay"
+msgstr "로컬 + 릴레이"
+
+msgid "local only"
+msgstr "로컬만"
+
+msgid "marmot exposes publish metadata only. Ciphersuite, capabilities, and credential decoding are not available in this build."
+msgstr "marmot은 게시 메타데이터만 제공합니다. 이 빌드에서는 암호 스위트, 기능, 자격 증명 디코딩을 사용할 수 없습니다."
+
+msgid "npub copied"
+msgstr "npub을 복사했습니다"
+
+msgid "npub or hex pubkey"
+msgstr "npub 또는 16진수 공개 키"
+
+msgid "opened there"
+msgstr "상대방 기기에서 복호화"
+
+msgid "or pick a page"
+msgstr "또는 페이지 선택"
+
+msgid "people"
+msgstr "명"
+
+msgid "plaintext"
+msgstr "평문"
+
+msgid "relay"
+msgstr "릴레이"
+
+msgid "sealed here"
+msgstr "여기서 암호화"
+
+msgid "© OpenStreetMap contributors"
+msgstr "© OpenStreetMap 기여자"
+
+msgid "• CHAT REQUEST •"
+msgstr "• 채팅 요청 •"
+
+msgid "• NEW MESSAGES •"
+msgstr "• 새 메시지 •"
+
+msgid "• THREAD •"
+msgstr "• 스레드 •"
+
+msgid "↑↓ move   ⏎ run   esc close"
+msgstr "↑↓ 이동   ⏎ 실행   esc 닫기"

@@ -85,7 +85,7 @@ login_input_required :: proc(t: ^testing.T) {
 	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	defer delete(ui.accounts)
 	ui.add_account_open = true
-	for language in ([]string{"en", "it", "de", "ja"}) {
+	for language in ([]string{"en", "it", "de", "ja", "ko"}) {
 		set_locale(language)
 		rl.PushKey(.ENTER, true)
 		handle_login(&ui, &client)
@@ -113,7 +113,7 @@ login_input_required :: proc(t: ^testing.T) {
 		for _ in 0 ..< 3 {frame(&ui)}
 		click(t, &ui, &client, "LoginBunkerBtn")
 		testing.expect_value(t, ui.login_method, Login_Method.Bunker)
-		for language in ([]string{"en", "it", "de", "ja"}) {
+		for language in ([]string{"en", "it", "de", "ja", "ko"}) {
 			set_locale(language)
 			for input in ([]string{"", " 	\r\n", "\u00a0\u2003"}) {
 				clear(&ui.login_input)

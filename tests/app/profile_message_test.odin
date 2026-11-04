@@ -28,7 +28,7 @@ profile_message_layout :: proc(t: ^testing.T) {
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; wrap_clear(); profile_session_clear()}
 	defer set_locale(locale)
-	for language in ([]string{"en", "it", "de", "ja"}) {
+	for language in ([]string{"en", "it", "de", "ja", "ko"}) {
 		set_locale(language)
 		for width in ([]f32{360, 1024}) {
 			nendo.set_dimensions({width, 700})

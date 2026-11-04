@@ -368,7 +368,7 @@ to bundle and a `res_dir` that stopped finding its data.
 
 User-visible strings go through `tr()` (`app/i18n.odin`), which looks the
 English source string up in the gettext catalog for the active locale. The
-catalogs in `lang/` (`it`, `de`, `ja`; `en` is the msgid source) are `#load`ed
+catalogs in `lang/` (`it`, `de`, `ja`, `ko`; `en` is the msgid source) are `#load`ed
 at build time and parsed on boot and on locale switch. A missing entry falls
 back to English, so an unextracted string is invisible until someone switches
 locale.
@@ -427,8 +427,9 @@ One voice for every user-visible string. English source rules:
   sentences ending with a period.
 
 Translations keep one register per language across the whole catalog: `it`
-informal *tu*, `de` informal *du*, `ja` polite です／ます form. Don't switch
-register per string.
+informal *tu*, `de` informal *du*, `ja` polite です／ます form, `ko` formal
+합니다체 with noun-form buttons ("저장", "다시 시도"). Don't switch register
+per string.
 
 ## Conventions
 

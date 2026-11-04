@@ -174,7 +174,7 @@ chat_title_overflow :: proc(t: ^testing.T) {
 	)
 	append(&ui.messages, Msg_Ui{system = true, body = "Disappearing timer changed", at = "12:00"})
 	defer delete(ui.messages)
-	for locale in ([]string{"en", "it", "de", "ja"}) {
+	for locale in ([]string{"en", "it", "de", "ja", "ko"}) {
 		set_locale(locale)
 		for search in ([]bool{false, true}) {
 			ui.search_open = search

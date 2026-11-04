@@ -67,7 +67,7 @@ theme_gallery_interactions :: proc(t: ^testing.T) {
 	append(&theme_packs, custom)
 	defer resize(&theme_packs, custom_index)
 	ui.theme = native
-	for locale in ([]string{"en", "de", "it", "ja"}) {
+	for locale in ([]string{"en", "de", "it", "ja", "ko"}) {
 		set_locale(locale)
 		for pack in theme_packs {
 			name := pack.custom ? pack.name : tr(pack.name)

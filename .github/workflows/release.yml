@@ -9,7 +9,7 @@
 #     app/paths.odin resolve those relative to the binary, so the layout
 #     is a contract with them.
 #   * Noto Sans CJK is deliberately NOT bundled: the .ttc is tens of
-#     megabytes, so Japanese falls back to the host's system copy.
+#     megabytes, so Japanese and Korean fall back to the host's system copy.
 #
 # AppImage: linuxdeploy copies the binary's shared-library dependencies
 # into the AppDir (SDL3, libmpv and its codec deps, poppler, cairo,

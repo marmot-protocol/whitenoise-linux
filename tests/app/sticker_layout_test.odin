@@ -166,7 +166,7 @@ sticker_layout :: proc(t: ^testing.T) {
 		draw(&ui, "add", width)
 		testing.expect(t, nendo.element(nendo.id("StickerInput")).found)
 	}
-	for locale in ([]string{"it", "de", "ja"}) {
+	for locale in ([]string{"it", "de", "ja", "ko"}) {
 		set_locale(locale)
 		sticker_show(&ui, {pack = coordinate})
 		draw(&ui, fmt.tprintf("%s-pack", locale), 320)

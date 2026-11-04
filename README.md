@@ -118,7 +118,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 - Chalkboard erases the photo to reveal its identity fingerprint on avatar hover, then redraws the photo when the pointer leaves. Other themes keep the swivel reveal.
 - Terminal uses a fixed green accent and hides its accent chooser.
 - Button text derives separately for each accent color using sRGB contrast. Custom packs can set `on-accent` to override the text color for all five accents.
-- English, Italian, German, and Japanese, switchable at runtime, including search dialogs, theme notifications, and confirmation errors.
+- English, Italian, German, Japanese, and Korean, switchable at runtime, including search dialogs, theme notifications, and confirmation errors.
 - Native desktop notifications, a command palette, and full keyboard navigation.
 - Chat transitions follow the conversation, not its position in the list. New messages can reorder the list without sliding the open chat.
 - Reduce motion hides animated synth, dust, scan, and wave backdrops, including the vault gate's synth backdrop. Static decorations remain visible.
@@ -203,7 +203,7 @@ chmod +x WhiteNoise-*-x86_64.AppImage
 ./WhiteNoise-*-x86_64.AppImage
 ```
 
-Japanese text is the one exception: Noto Sans CJK is tens of megabytes, so it is not bundled and comes from your system instead (`noto-fonts-cjk` on Arch, `fonts-noto-cjk` on Debian and Ubuntu).
+Japanese and Korean text are the one exception: Noto Sans CJK is tens of megabytes, so it is not bundled and comes from your system instead (`noto-fonts-cjk` on Arch, `fonts-noto-cjk` on Debian and Ubuntu).
 
 For Flatpak updates, install [Orchard](https://github.com/Letdown2491/orchard)
 0.3 or newer and find White Noise in its Orchard catalog. Check the publisher
@@ -1060,8 +1060,8 @@ partly open cover floats over its revealed fingerprint.
 Use `tr("text")` for UI strings and `tr("%d item", "%d items", count)` for
 counted labels, then format the returned string with the count. The latter
 selects the first catalog entry for one and the second for every other count.
-Run `just translations` to extract both entries. Japanese uses the same
-translation for both; English, Italian, and German distinguish singular
+Run `just translations` to extract both entries. Japanese and Korean use the
+same translation for both; English, Italian, and German distinguish singular
 and plural. This does not interpret gettext `Plural-Forms` expressions;
 adding a language with other count rules requires extending `tr()`.
 

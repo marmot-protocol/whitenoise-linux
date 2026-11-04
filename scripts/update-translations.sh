@@ -22,7 +22,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="$ROOT/app"
 POT="$ROOT/lang/wnl-ui.pot"
-LOCALES=(it de ja)
+LOCALES=(it de ja ko)
 
 for tool in xgettext msgmerge; do
     command -v "$tool" >/dev/null || { echo "✗ $tool not found — install gettext." >&2; exit 1; }
