@@ -1585,6 +1585,10 @@ msgstr "Impossibile pubblicare la foto. %s"
 msgid "Couldn't publish the picture. %s"
 msgstr "Impossibile pubblicare l'immagine. %s"
 
+#, c-format
+msgid "Couldn't publish your name. %s"
+msgstr "Impossibile pubblicare il tuo nome. %s"
+
 msgid "Couldn't reach your signer. Please try again."
 msgstr "Impossibile raggiungere il tuo firmatario. Riprova."
 
@@ -5211,6 +5215,9 @@ msgstr "Esci da White Noise e apri la chiamata in %s."
 msgid "This message was deleted"
 msgstr "Questo messaggio è stato eliminato"
 
+msgid "This name is public. You can change it later in your profile."
+msgstr "Questo nome è pubblico. Puoi cambiarlo più tardi nel tuo profilo."
+
 msgid "This number increases when the group's encryption keys change."
 msgstr "Questo numero aumenta quando cambiano le chiavi di crittografia del gruppo."
 
@@ -5580,6 +5587,9 @@ msgstr "Dati condivisi"
 
 msgid "What it is"
 msgstr "Cos'è"
+
+msgid "What should people call you?"
+msgstr "Come vuoi che gli altri ti chiamino?"
 
 msgid "What the GM button sends. You can use it once a day in each chat."
 msgstr "Il messaggio inviato dal pulsante GM. Puoi usarlo una volta al giorno in ogni chat."

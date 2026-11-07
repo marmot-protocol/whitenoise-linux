@@ -1880,12 +1880,13 @@ drain_relays :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // window. They run here instead; the login pane shows a progress card
 // and the frame loop finishes the job on the UI thread, where texture
 // creation belongs.
-
-// Whether the finished job still owes the UI a starter face.
-Auth_Seed :: enum {
-	None,
-	Starter_Face,
-}
+//
+// A fresh identity makes two trips, with the name step between them:
+//
+//   Generate a new key ─► worker: create + upload face
+//                          ─► card: "What should people call you?"
+//                                    (generated name prefilled)
+//   Continue ──────────────► worker: publish kind-0 ─► land
 
 Auth_Job :: struct {
 	client:                    ^marmot.Client,
@@ -1895,9 +1896,10 @@ Auth_Job :: struct {
 	session:                   ^marmot.Nip46_Session,
 	remote_login:              bool,
 	cancelled, cancel_cleanup: bool,
+	naming:                    bool, // a fresh key waits on the card for its name
 	previous_session:          ^Nip46_Account,
 	signer_state:              Nip46_State,
-	seed:                      Auth_Seed,
+	name:                      string, // a fresh key's chosen name; "" before Continue
 	hex:                       string, // result: the account just added
 	pic_url:                   string,
 	err:                       string, // "" = it worked
@@ -1926,7 +1928,7 @@ auth_job_free :: proc(job: ^Auth_Job) {
 	mem.zero_slice(transmute([]u8)job.nsec)
 	for id in job.prior_accounts {delete(id)}
 	delete(job.prior_accounts)
-	delete(job.nsec); delete(job.hex); delete(job.pic_url); delete(job.err)
+	delete(job.nsec); delete(job.name); delete(job.hex); delete(job.pic_url); delete(job.err)
 	job.client = nil
 	free(job)
 }
@@ -1961,7 +1963,11 @@ auth_worker :: proc(t: ^thread.Thread) {
 	case .Import:
 		job.hex, job.err = import_identity_blocking(job.client, job.nsec)
 	case .Create:
-		job.hex, job.pic_url, job.err = create_identity_blocking(job.client)
+		if job.name == "" {
+			job.hex, job.pic_url, job.err = create_identity_blocking(job.client)
+		} else {
+			job.err = publish_starter_name(job.client, job.hex, job.name, job.pic_url)
+		}
 	case .Bunker, .Pair:
 		if job.cancel_cleanup {
 			if job.remote_login {
@@ -2048,7 +2054,20 @@ start_auth :: proc(
 		for account in ui.accounts {append(&auth_job.prior_accounts, strings.clone(account.id_hex))}
 	}
 	auth_job.session = session
-	auth_job.seed = auth_job.method == .Create ? .Starter_Face : .None
+	auth_thread = thread.create(auth_worker)
+	auth_thread.data = auth_job
+	thread.start(auth_thread)
+}
+
+// Continue on the name step: publish the fresh key's name on the worker.
+auth_name_start :: proc(ui: ^Ui_State, name: string) {
+	if auth_job == nil || !auth_job.naming {
+		return
+	}
+	ui.login_error = ""
+	auth_job.naming = false
+	delete(auth_job.name)
+	auth_job.name = strings.clone(name)
 	auth_thread = thread.create(auth_worker)
 	auth_thread.data = auth_job
 	thread.start(auth_thread)
@@ -2110,6 +2129,21 @@ drain_auth :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			tr("Your account has a pending action. Complete it before reconnecting your signer."),
 		)
 	}
+	// A fresh key stops on the card to ask for its name, prefilled with
+	// the generated one. A failed publish asks again with the error.
+	if job.method == .Create && !job.cancelled {
+		if job.name == "" && job.err == "" {
+			job.naming = true
+			ed_set(ui, &ui.login_input, profile_fallback(job.hex))
+			return
+		}
+		if job.name != "" && job.err != "" {
+			ui.login_error = job.err
+			job.err = ""
+			job.naming = true
+			return
+		}
+	}
 	auth_job = nil
 	defer auth_job_free(job)
 
@@ -2130,7 +2164,7 @@ drain_auth :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		item.handle = job.session; job.session = nil
 	}
 	login_pair_clear(ui)
-	finish_auth(ui, client, job.hex, job.pic_url, job.seed)
+	finish_auth(ui, client, job.hex, job.pic_url, job.name)
 	if job.method == .Create {
 		open_key_export(ui, job.hex)
 	}

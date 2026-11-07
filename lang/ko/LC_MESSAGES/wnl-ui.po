@@ -1584,6 +1584,10 @@ msgstr "사진을 게시할 수 없습니다. %s"
 msgid "Couldn't publish the picture. %s"
 msgstr "사진을 게시할 수 없습니다. %s"
 
+#, c-format
+msgid "Couldn't publish your name. %s"
+msgstr "이름을 게시할 수 없습니다. %s"
+
 msgid "Couldn't reach your signer. Please try again."
 msgstr "서명자에 연결할 수 없습니다. 다시 시도하세요."
 
@@ -5210,6 +5214,9 @@ msgstr "White Noise를 벗어나 %s에서 통화를 엽니다."
 msgid "This message was deleted"
 msgstr "이 메시지는 삭제되었습니다"
 
+msgid "This name is public. You can change it later in your profile."
+msgstr "이 이름은 공개됩니다. 나중에 프로필에서 변경할 수 있습니다."
+
 msgid "This number increases when the group's encryption keys change."
 msgstr "그룹의 암호화 키가 바뀌면 이 숫자가 증가합니다."
 
@@ -5579,6 +5586,9 @@ msgstr "공유되는 정보"
 
 msgid "What it is"
 msgstr "개요"
+
+msgid "What should people call you?"
+msgstr "어떤 이름으로 불리고 싶습니까?"
 
 msgid "What the GM button sends. You can use it once a day in each chat."
 msgstr "GM 버튼으로 보내는 메시지입니다. 채팅마다 하루에 한 번 사용할 수 있습니다."

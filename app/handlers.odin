@@ -17,6 +17,15 @@ auth_cancel :: proc(ui: ^Ui_State) {
 	ui.login_error = ""
 	login_input_error = false
 	if auth_job == nil {return}
+	// Leaving the name step discards the fresh key, as Back does while
+	// it is generated: it never landed and has no name yet.
+	if auth_job.naming {
+		account_job_start(account_job_new(ui, auth_job.client, .Remove, auth_job.hex))
+		auth_job_free(auth_job)
+		auth_job = nil
+		clear(&ui.login_input)
+		return
+	}
 	auth_job.cancelled = true
 	if auth_job.session == nil {return}
 	marmot.nip46_cancel(auth_job.session)
@@ -54,6 +63,16 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if client == nil {return}
+	if auth_job != nil && auth_job.naming {
+		if clicked("LoginErrorCopy") {copy_text(ui, ui.login_error, tr("Error copied"))}
+		if rl.IsKeyPressed(.ESCAPE) {auth_cancel(ui); return}
+		field_mouse(ui, &ui.login_input, "LoginInput", 16)
+		edit_text(ui, &ui.login_input)
+		name := strings.trim_space(string(ui.login_input[:]))
+		if name != "" &&
+		   (rl.IsKeyPressed(.ENTER) || clicked("LoginGo")) {auth_name_start(ui, name)}
+		return
+	}
 	if auth_job != nil {
 		if clicked("LoginCancel") || rl.IsKeyPressed(.ESCAPE) {
 			auth_cancel(ui)

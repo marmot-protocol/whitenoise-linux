@@ -829,9 +829,9 @@ import_identity_blocking :: proc(
 	return strings.clone(string(summary.account_id_hex), allocator), ""
 }
 
-// Mint a fresh identity and seed its starter profile on the wire. Same
-// blocking contract as import_identity_blocking; `pic_url` is what the
-// local seed registers the face under.
+// Mint a fresh identity and upload its starter face. Same blocking
+// contract as import_identity_blocking; `pic_url` is the face URL its
+// kind-0 and the local seed use once the user names the account.
 create_identity_blocking :: proc(
 	client: ^marmot.Client,
 	allocator := context.allocator,
@@ -860,20 +860,15 @@ create_identity_blocking :: proc(
 	}
 	hex = strings.clone(string(summary.account_id_hex), allocator)
 	marmot.account_summary_free(summary)
-	return hex, publish_starter_profile(client, hex, allocator), ""
+	return hex, upload_starter_face(client, hex, allocator), ""
 }
 
-// UI-thread tail of a sign-in: register the starter face (fresh
-// identities only) and land on the account just added.
-finish_auth :: proc(
-	ui: ^Ui_State,
-	client: ^marmot.Client,
-	hex: string,
-	pic_url: string,
-	seed: Auth_Seed,
-) {
-	if seed == .Starter_Face {
-		seed_starter_local(client, hex, pic_url)
+// UI-thread tail of a sign-in: register the starter face under the
+// chosen name (fresh identities only; `name` is "" when signing in an
+// existing one) and land on the account just added.
+finish_auth :: proc(ui: ^Ui_State, client: ^marmot.Client, hex, pic_url, name: string) {
+	if name != "" {
+		seed_starter_local(client, hex, name, pic_url)
 	}
 	after_login(ui, client, hex)
 	remember_account(ui, ui.account_ref)
@@ -891,14 +886,20 @@ remember_account :: proc(ui: ^Ui_State, hex: string) {
 }
 
 // Synchronous create, for the WN_TEST_CREATE boot hook: the harness
-// screenshots a few frames in and can't wait on the worker.
+// screenshots a few frames in and can't wait on the worker, so it skips
+// the name step and publishes the generated name.
 do_create_identity :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	hex, pic_url, err := create_identity_blocking(client, context.temp_allocator)
 	if len(err) > 0 {
 		ui.login_error = strings.clone(err)
 		return
 	}
-	finish_auth(ui, client, hex, pic_url, .Starter_Face)
+	name := profile_fallback(hex)
+	if failed := publish_starter_name(client, hex, name, pic_url, context.temp_allocator);
+	   failed != "" {
+		fmt.eprintln(failed)
+	}
+	finish_auth(ui, client, hex, pic_url, name)
 }
 
 // Re-snapshot accounts and chats after a successful login/create.

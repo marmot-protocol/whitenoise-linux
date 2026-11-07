@@ -1,6 +1,7 @@
 package main
 
 import "core:math"
+import "core:strings"
 
 import "nendo"
 import rl "sdlrl"
@@ -131,23 +132,25 @@ login_show: bool
 @(private)
 login_input_error: bool
 @(private = "file")
+login_naming: bool
+@(private = "file")
 login_had_error: bool
 
 login_pane :: proc(ui: ^Ui_State) {
 	viewport := rl.Vector2{f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}
+	naming := auth_job != nil && auth_job.naming
 	if (ui.login_error != "") != login_had_error {
 		login_had_error = ui.login_error != ""
 		login_reveal_frames = 2
 	}
-	if viewport != login_viewport || ui.login_method != login_form {
-		login_viewport, login_form = viewport, ui.login_method
+	if viewport != login_viewport || ui.login_method != login_form || naming != login_naming {
+		login_viewport, login_form, login_naming = viewport, ui.login_method, naming
 		// The first pass still sees nendo's previous viewport; the next
 		// sees the keyboard-reduced layout and reveals the focused box.
 		login_reveal_frames = 2
 	}
 	if login_reveal_frames > 0 &&
-	   auth_job == nil &&
-	   ui.login_method != .Menu &&
+	   (naming || (auth_job == nil && ui.login_method != .Menu)) &&
 	   !ui.socks5_login_open {
 		onboard_reveal_field("LoginCard", login_had_error ? "LoginFieldError" : "LoginInput")
 		if login_had_error {onboard_reveal_field("LoginCard", "LoginButtons")}
@@ -185,6 +188,36 @@ login_pane :: proc(ui: ^Ui_State) {
 		} else if ui.picking_backup {
 			nendo.text(tr("Opening file picker…"), {font = FONT_BODY, size = 15, color = TEXT})
 			busy_bar("LoginFileBusy")
+		} else if naming {
+			// A fresh key asks for its public name before it lands.
+			nendo.text(
+				tr("What should people call you?"),
+				{font = FONT_BODY, size = 15, color = TEXT_DIM},
+			)
+			if nendo.box(nendo.id("LoginGapA"))({height = nendo.fixed(10)}) {}
+			eyebrow(tr("DISPLAY NAME"))
+			gate_field(ui, "LoginInput", &ui.login_input, true, "", .Plain)
+			nendo.text(
+				tr("This name is public. You can change it later in your profile."),
+				{font = FONT_BODY, size = 12, color = TEXT_LO, align = .Center},
+			)
+			if ui.login_error != "" {
+				if nendo.box(nendo.id("LoginFieldError"))(
+				{width = nendo.grow(), direction = .Column, gap = 6},
+				) {
+					nendo.text(ui.login_error, {font = FONT_BODY, size = 14, color = DANGER})
+					micro_button("LoginErrorCopy", tr("Copy error"))
+				}
+			}
+			if nendo.box(nendo.id("LoginGapB"))({height = nendo.fixed(6)}) {}
+			if nendo.box(nendo.id("LoginButtons"))({width = nendo.grow(), align = {x = .Center}}) {
+				login_big_button(
+					"LoginGo",
+					tr("Continue"),
+					true,
+					strings.trim_space(string(ui.login_input[:])) != "" ? .Enabled : .Disabled,
+				)
+			}
 		} else if auth_job != nil {
 			// The round trip runs on the sign-in worker; this is the only
 			// thing the card offers until drain_auth picks it up.
@@ -195,6 +228,7 @@ login_pane :: proc(ui: ^Ui_State) {
 				state, detail = "connecting", "connecting to remote signer"
 			}
 			heading := minting ? tr("Generating your key") : tr("Signing you in")
+			if minting && auth_job.name != "" {heading = tr("Publishing your profile")}
 			if remote &&
 			   !(auth_job.remote_login && state == "ready") {heading = nip46_label(state)}
 			nendo.text(heading, {font = FONT_BODY, size = 15, color = TEXT_DIM})
@@ -343,7 +377,7 @@ login_pane :: proc(ui: ^Ui_State) {
 			)
 		}
 
-		if len(ui.login_error) > 0 && (auth_job != nil || ui.login_method == .Menu) {
+		if len(ui.login_error) > 0 && !naming && (auth_job != nil || ui.login_method == .Menu) {
 			nendo.text(nip46_detail(ui.login_error), {font = FONT_BODY, size = 14, color = DANGER})
 			if !login_input_error {micro_button("LoginErrorCopy", tr("Copy error"))}
 		}

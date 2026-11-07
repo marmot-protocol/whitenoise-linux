@@ -1,11 +1,7 @@
 // Starter identity for freshly generated accounts: a deterministic
-// "[Adjective] [Animal]" name from the new npub, published as the
-// kind-0 name, plus a composed face (emoji animal glyph over the npub
-// gradient) shown locally.
-//
-// marmot-c exports neither a public upload nor an event signer, so the
-// face stays session-local (registered under a starter:// pseudo-URL
-// in the picture cache).
+// "[Adjective] [Animal]" name from the new npub, offered as the name
+// the user is asked for, plus a composed face (emoji animal glyph over
+// the npub gradient) uploaded to Blossom for its kind-0 picture.
 package main
 
 import "base:runtime"
@@ -144,10 +140,6 @@ starter_face :: proc(npub: string, cp: rune) -> rl.Image {
 	return {data = raw_data(out), width = STARTER_SIDE, height = STARTER_SIDE}
 }
 
-// Seed a freshly generated account: publish the name as its kind-0
-// profile and register the local face so the rail, switcher, and
-// outgoing rows show the identity immediately. Publish failures only
-// log; the local seed still applies and the user can rename by hand.
 // PNG-encode an RGBA image via stb, collecting the writer callbacks
 // into one buffer.
 @(private = "file")
@@ -188,12 +180,12 @@ account_npub :: proc(client: ^marmot.Client, hex: string) -> string {
 	return strings.clone(string(npub_c), context.temp_allocator)
 }
 
-// Seed a freshly generated account on the wire: upload the face to
-// public Blossom, then publish the starter name and that URL as kind-0.
-// Blocks on both round trips, so it runs on the sign-in worker; the
-// returned URL is cloned into `allocator` for the UI thread to adopt.
-// Failures only log, and an empty URL still leaves a local face.
-publish_starter_profile :: proc(
+// Upload a freshly generated account's face to public Blossom so its
+// kind-0 can carry the URL; peers and future sessions then fetch it like
+// any picture. Blocks on the upload, so it runs on the sign-in worker;
+// the URL is cloned into `allocator` for the UI thread to adopt. A
+// failure only logs, and an empty URL still leaves a local face.
+upload_starter_face :: proc(
 	client: ^marmot.Client,
 	hex: string,
 	allocator := context.allocator,
@@ -202,34 +194,42 @@ publish_starter_profile :: proc(
 	if len(npub) == 0 {
 		return ""
 	}
-	account := strings.clone_to_cstring(hex, context.temp_allocator)
-	name, cp := starter_identity(npub)
-
-	// The face goes to public Blossom first so kind-0 can carry its
-	// URL; peers and future sessions then fetch it like any picture.
-	pic_url := ""
-	if face := starter_face(npub, cp); face.data != nil {
-		png := image_png(face)
-		url_c: cstring
-		if len(png) > 0 &&
-		   marmot.upload_profile_image(
-			   client,
-			   account,
-			   raw_data(png),
-			   uint(len(png)),
-			   "image/png",
-			   nil,
-			   &url_c,
-		   ) ==
-			   .OK &&
-		   url_c != nil {
-			pic_url = strings.clone(string(url_c), allocator)
-			marmot.string_free(url_c)
-		} else {
-			fmt.eprintfln("starter: couldn't upload the face: %s", marmot.last_error())
-		}
+	_, cp := starter_identity(npub)
+	face := starter_face(npub, cp)
+	if face.data == nil {
+		return ""
 	}
 
+	png := image_png(face)
+	url_c: cstring
+	if len(png) == 0 ||
+	   marmot.upload_profile_image(
+		   client,
+		   strings.clone_to_cstring(hex, context.temp_allocator),
+		   raw_data(png),
+		   uint(len(png)),
+		   "image/png",
+		   nil,
+		   &url_c,
+	   ) !=
+		   .OK ||
+	   url_c == nil {
+		fmt.eprintfln("starter: couldn't upload the face: %s", marmot.last_error())
+		return ""
+	}
+	defer marmot.string_free(url_c)
+	return strings.clone(string(url_c), allocator)
+}
+
+// Publish the name the user chose for a fresh account, with its face
+// URL, as the account's kind-0. Blocks on the relay round trip, so it
+// runs on the sign-in worker. Returns "" once published, else the error
+// with marmot's thread-local detail, cloned into `allocator`.
+publish_starter_name :: proc(
+	client: ^marmot.Client,
+	hex, name, pic_url: string,
+	allocator := context.allocator,
+) -> string {
 	name_c := strings.clone_to_cstring(name, context.temp_allocator)
 	metadata := marmot.User_Profile_Metadata {
 		name         = name_c,
@@ -239,7 +239,7 @@ publish_starter_profile :: proc(
 	out: ^marmot.User_Profile_Metadata
 	if marmot.publish_user_profile(
 		   client,
-		   account,
+		   strings.clone_to_cstring(hex, context.temp_allocator),
 		   &metadata,
 		   raw_data(DEFAULT_RELAYS),
 		   uint(len(DEFAULT_RELAYS)),
@@ -248,22 +248,26 @@ publish_starter_profile :: proc(
 		   &out,
 	   ) !=
 	   .OK {
-		fmt.eprintfln("starter: couldn't publish the name: %s", marmot.last_error())
-	} else {
-		marmot.user_profile_metadata_free(out)
+		return fmt.aprintf(
+			tr("Couldn't publish your name. %s"),
+			marmot.last_error(),
+			allocator = allocator,
+		)
 	}
-	return pic_url
+	marmot.user_profile_metadata_free(out)
+	return ""
 }
 
-// The local half of the seed: recompose the face and register it under
-// its Blossom URL (or a starter:// pseudo-URL when the upload failed).
-// Texture creation, so this stays on the render thread.
-seed_starter_local :: proc(client: ^marmot.Client, hex: string, pic_url: string) {
+// The local half of the seed: recompose the face and register it, with
+// the chosen name, under its Blossom URL (or a starter:// pseudo-URL
+// when the upload failed). Texture creation, so this stays on the
+// render thread.
+seed_starter_local :: proc(client: ^marmot.Client, hex, name, pic_url: string) {
 	npub := account_npub(client, hex)
 	if len(npub) == 0 {
 		return
 	}
-	name, cp := starter_identity(npub)
+	_, cp := starter_identity(npub)
 	register_starter_pic(
 		hex,
 		name,

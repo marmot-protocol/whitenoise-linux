@@ -946,7 +946,7 @@ Ui_State :: struct {
 	fx_open:                                           bool, // effect picker popover
 	compose_more:                                      bool, // phone composer tools menu
 	fx_armed:                                          int, // catalog id armed for the next send; 0 = none
-	login_input:                                       [dynamic]u8, // nsec being typed/pasted
+	login_input:                                       [dynamic]u8, // sign-in form input, or a fresh key's name
 	login_method:                                      Login_Method,
 	login_uri:                                         string,
 	login_qr:                                          ^rl.Texture2D,

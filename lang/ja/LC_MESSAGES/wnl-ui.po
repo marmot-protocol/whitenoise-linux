@@ -1585,6 +1585,10 @@ msgstr "写真を公開できませんでした。%s"
 msgid "Couldn't publish the picture. %s"
 msgstr "画像を公開できませんでした。%s"
 
+#, c-format
+msgid "Couldn't publish your name. %s"
+msgstr "名前を公開できませんでした。%s"
+
 msgid "Couldn't reach your signer. Please try again."
 msgstr "署名者に接続できませんでした。もう一度お試しください。"
 
@@ -5211,6 +5215,9 @@ msgstr "White Noise を離れ、%s で通話を開きます。"
 msgid "This message was deleted"
 msgstr "このメッセージは削除されました"
 
+msgid "This name is public. You can change it later in your profile."
+msgstr "この名前は公開されます。後でプロフィールから変更できます。"
+
 msgid "This number increases when the group's encryption keys change."
 msgstr "グループの暗号鍵が変わると、この番号が増えます。"
 
@@ -5580,6 +5587,9 @@ msgstr "共有されるデータ"
 
 msgid "What it is"
 msgstr "概要"
+
+msgid "What should people call you?"
+msgstr "どのように呼ばれたいですか？"
 
 msgid "What the GM button sends. You can use it once a day in each chat."
 msgstr "GMボタンで送信するメッセージです。各チャットで1日1回使えます。"

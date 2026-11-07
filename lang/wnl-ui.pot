@@ -1584,6 +1584,10 @@ msgstr ""
 msgid "Couldn't publish the picture. %s"
 msgstr ""
 
+#, c-format
+msgid "Couldn't publish your name. %s"
+msgstr ""
+
 msgid "Couldn't reach your signer. Please try again."
 msgstr ""
 
@@ -5210,6 +5214,9 @@ msgstr ""
 msgid "This message was deleted"
 msgstr ""
 
+msgid "This name is public. You can change it later in your profile."
+msgstr ""
+
 msgid "This number increases when the group's encryption keys change."
 msgstr ""
 
@@ -5578,6 +5585,9 @@ msgid "What is shared"
 msgstr ""
 
 msgid "What it is"
+msgstr ""
+
+msgid "What should people call you?"
 msgstr ""
 
 msgid "What the GM button sends. You can use it once a day in each chat."

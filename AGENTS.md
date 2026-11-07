@@ -208,6 +208,12 @@ discarding snapshots from before its relays were installed. Initialized,
 pending, and connecting relays show CONNECTING; an empty or disconnected
 pool after setup shows OFFLINE.
 
+Generate a new key stops on the sign-in card to ask "What should people call
+you?", prefilled with the generated "Adjective Animal" name. Continue
+publishes that name and the uploaded starter face as kind-0, then lands on the
+account. Leaving the step removes the unnamed key, as Back does during
+generation. `WN_TEST_CREATE` skips the step and publishes the generated name.
+
 Video tiles render at up to 480 pixels wide. The preview requests its displayed
 physical width, including UI zoom and display density, capped at the source
 width. Resizing repaints paused frames too. Closing a shared fullscreen player
