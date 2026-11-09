@@ -53,7 +53,7 @@ refresh_ui_scale :: proc() {
 	rl.SetPixelScale(UI_SCALE)
 }
 
-// Theme stacks occupy 6..29 and 96..97; profile fonts reserve 32..95.
+// Theme stacks occupy 6..29 and 96..99; profile fonts reserve 32..95.
 // Native text, markdown and input measurement retain their logical role IDs.
 @(private)
 FONT_GALLERY_BOLD :: u16(30)
@@ -113,6 +113,9 @@ THEME_FONTS := []struct {
 	{"Yuji Syuku", "sidecar-yuji-syuku.ttf", "", 27, {"sidecar-manrope-700.ttf"}},
 	{"Syncopate", "sidecar-syncopate-700.ttf", "", 28, {"sidecar-manrope-700.ttf"}},
 	{"Kalam", "Kalam-Regular.ttf", "Kalam-Bold.ttf", 96, nil},
+	// One weight: naming it twice gives body text regular fallbacks for
+	// missing glyphs and titles bold ones, like the other two-file faces.
+	{"W95FA", "W95FA.otf", "W95FA.otf", 98, nil},
 	// The CSS unicode-range face owns only digits and their separators.
 	// Letters must reach Fell before the complete Cormorant fallback.
 	{
@@ -142,6 +145,15 @@ theme_font_stack :: proc(family: string, role: Theme_Font_Role) -> u16 {
 		}
 	}
 	return role == .Title ? FONT_TITLE : FONT_BODY
+}
+
+// Whether a pack names a bundled face for body or titles, which is what
+// the "Theme font" switch can turn off.
+@(private)
+pack_ships_face :: proc(pack: ^Theme_Pack) -> bool {
+	body := theme_font_stack(pack.font, .Body) != FONT_BODY
+	title := theme_font_stack(pack.font_title, .Title) != FONT_TITLE
+	return body || title
 }
 
 @(private)

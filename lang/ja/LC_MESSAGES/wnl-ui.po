@@ -5074,6 +5074,9 @@ msgstr "テキスト（最低）"
 msgid "Text mid"
 msgstr "テキスト（中）"
 
+msgid "Text uses the typeface this theme ships with."
+msgstr "このテーマに付属する書体で文字を表示します。"
+
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr "質感のある線とスケッチ風のアバターです。形は動きません。"
 
@@ -5153,6 +5156,9 @@ msgstr "テーマを適用しました"
 
 msgid "Theme deleted"
 msgstr "テーマを削除しました"
+
+msgid "Theme font"
+msgstr "テーマのフォント"
 
 msgid "Theme from Sidecar by dmnyc."
 msgstr "dmnyc 作の Sidecar のテーマです。"

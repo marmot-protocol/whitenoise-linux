@@ -63,6 +63,7 @@ Prefs :: struct {
 	message_lines:         int, // 0 never collapses message bodies
 	reduce_motion:         bool, // snaps every transition; nothing animates
 	hand_drawn_disabled:   bool, // only affects packs that opt into drawn material
+	theme_font_disabled:   bool, // only affects packs that ship their own typeface
 	body_font:             int, // message-body px delta; -2/0/+2 = small/default/large
 	emoji_set:             Emoji_Set, // art for the picker, reactions and message emoji
 	// Gutters: drag-resized, persisted widths and the collapsed rail.

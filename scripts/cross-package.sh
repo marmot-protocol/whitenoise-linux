@@ -110,7 +110,7 @@ CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 if [ "$(uname -s)" = Darwin ]; then CA_BUNDLE=/etc/ssl/cert.pem; fi
 # cp dereferences these globbed leaves; reject excluded targets even on hits,
 # rather than relying on the enclosing directory's filtered content key.
-for resource in "$HERE/vendor/emoji-licenses/"*.txt "$HERE/vendor/fonts/"*.ttf "$HERE/vendor/fonts/"*.txt; do
+for resource in "$HERE/vendor/emoji-licenses/"*.txt "$HERE/vendor/fonts/"*.ttf "$HERE/vendor/fonts/"*.otf "$HERE/vendor/fonts/"*.txt; do
   if [ ! -f "$resource" ] || ! package_allowed "$resource"; then
     echo 'Missing or excluded required package resource' >&2
     exit 1
@@ -219,7 +219,7 @@ if [ "$STAGE_HIT" = false ]; then
   copy_resources "$HERE/vendor/emoji" "$RES/emoji"
   cp "$HERE/vendor/emoji-licenses/"*.txt "$RES/licenses/"
   cp "$HERE/vendor/emoji-catalog.tsv" "$RES/"
-  cp "$HERE/vendor/fonts/"*.ttf "$RES/fonts/"
+  cp "$HERE/vendor/fonts/"*.ttf "$HERE/vendor/fonts/"*.otf "$RES/fonts/"
   cp "$HERE/vendor/fonts/"*.txt "$RES/licenses/"
   cat >"$RES/fonts.conf" <<'FONTCONFIG'
 <?xml version="1.0"?>

@@ -5073,6 +5073,9 @@ msgstr "텍스트 최저"
 msgid "Text mid"
 msgstr "텍스트 중간"
 
+msgid "Text uses the typeface this theme ships with."
+msgstr "이 테마에 포함된 서체로 텍스트를 표시합니다."
+
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr "질감 있는 획과 스케치풍 아바타입니다. 모양은 움직이지 않습니다."
 
@@ -5152,6 +5155,9 @@ msgstr "테마 적용됨"
 
 msgid "Theme deleted"
 msgstr "테마 삭제됨"
+
+msgid "Theme font"
+msgstr "테마 글꼴"
 
 msgid "Theme from Sidecar by dmnyc."
 msgstr "dmnyc의 Sidecar 테마입니다."

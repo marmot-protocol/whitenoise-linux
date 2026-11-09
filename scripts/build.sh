@@ -554,6 +554,14 @@ Kalam-Bold.ttf 2f6576601db015d4f6c08678120277fc8510b98c06e932ce7a6a9cbff4cbdded
 Kalam-OFL.txt f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f
 KALAM
 cp "$HERE/assets/fonts/kalam/"*.ttf "$HERE/assets/fonts/kalam/"*.txt "$FONTS/"
+# W95FA, the Memphis themes' face, is committed unmodified the same way.
+while read -r file sha; do
+  echo "$sha  $HERE/assets/fonts/w95fa/$file" | sha256sum -c -
+done <<'W95FA'
+W95FA.otf 9e1ad53708307b2b68e06d43799b2267f6aec620dda972bc62753ad16ba50f2b
+W95FA-OFL.txt ca122f3bda0154f692817450168cb650a7fc59ef96c93582acd2e7a744d464d3
+W95FA
+cp "$HERE/assets/fonts/w95fa/"*.otf "$HERE/assets/fonts/w95fa/"*.txt "$FONTS/"
 if [ ! -f "$FONTS/JetBrainsMonoNerdFont-Regular.ttf" ]; then
   NERD_ZIP="$(fetch nerd-fonts)"
   unzip -qo "$NERD_ZIP" JetBrainsMonoNerdFont-Regular.ttf -d "$FONTS"

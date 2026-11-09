@@ -5073,6 +5073,9 @@ msgstr ""
 msgid "Text mid"
 msgstr ""
 
+msgid "Text uses the typeface this theme ships with."
+msgstr ""
+
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr ""
 
@@ -5151,6 +5154,9 @@ msgid "Theme applied"
 msgstr ""
 
 msgid "Theme deleted"
+msgstr ""
+
+msgid "Theme font"
 msgstr ""
 
 msgid "Theme from Sidecar by dmnyc."

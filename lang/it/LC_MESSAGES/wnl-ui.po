@@ -5074,6 +5074,9 @@ msgstr "Testo più tenue"
 msgid "Text mid"
 msgstr "Testo medio"
 
+msgid "Text uses the typeface this theme ships with."
+msgstr "Il testo usa il carattere incluso in questo tema."
+
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr "Tratti con texture e avatar abbozzati. Le forme restano fisse."
 
@@ -5153,6 +5156,9 @@ msgstr "Tema applicato"
 
 msgid "Theme deleted"
 msgstr "Tema eliminato"
+
+msgid "Theme font"
+msgstr "Carattere del tema"
 
 msgid "Theme from Sidecar by dmnyc."
 msgstr "Tema di Sidecar creato da dmnyc."

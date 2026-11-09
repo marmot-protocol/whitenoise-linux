@@ -14,6 +14,7 @@ APPEARANCE_CONTROLS := []struct {
 	{"ZoomPlus", "ZoomPlus", 0},
 	{"ZoomReset", "ZoomReset", 0},
 	{"TgHandDrawn", "TgHandDrawn", 0},
+	{"TgThemeFont", "TgThemeFont", 0},
 	{"BodyFontChip0", "BodyFontChip", 0},
 	{"BodyFontChip1", "BodyFontChip", 1},
 	{"BodyFontChip2", "BodyFontChip", 2},
@@ -163,7 +164,10 @@ appearance_control_input :: proc(ui: ^Ui_State, pressed: string) -> bool {
 		if pressed != entry.key && !(mouse_released() && nendo.pointer_over(control)) {
 			continue
 		}
-		if entry.id == "TgMotion" || entry.id == "TgCentered" || entry.id == "TgHandDrawn" {
+		if entry.id == "TgMotion" ||
+		   entry.id == "TgCentered" ||
+		   entry.id == "TgHandDrawn" ||
+		   entry.id == "TgThemeFont" {
 			settings_flip(ui, nil, entry.id)
 		} else {
 			appearance_activate(ui, control)
@@ -320,6 +324,18 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 					!ui.prefs.hand_drawn_disabled,
 					tr("Hand-drawn filter"),
 					tr("Textured strokes and sketched avatars. Shapes stay fixed."),
+				)
+			}
+		}
+		// The committed theme decides, so hovering a gallery tile never
+		// inserts the row and pushes the tile out from under the pointer.
+		if len(theme_packs) > 0 && pack_ships_face(&theme_packs[active_theme(ui)]) {
+			if nendo.box(nendo.id("RowThemeFont"))(settings_row()) {
+				settings_check(
+					"TgThemeFont",
+					!ui.prefs.theme_font_disabled,
+					tr("Theme font"),
+					tr("Text uses the typeface this theme ships with."),
 				)
 			}
 		}
@@ -483,6 +499,8 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 	for control in APPEARANCE_CONTROLS {
 		if control.id == "TgHandDrawn" &&
 		   (len(theme_packs) == 0 || !theme_packs[preview_theme].chalk_drawn) {continue}
+		if control.id == "TgThemeFont" &&
+		   (len(theme_packs) == 0 || !pack_ships_face(&theme_packs[active_theme(ui)])) {continue}
 		append(&theme_control_order, control.key)
 	}
 	if nendo.box(nendo.id("ThemeActionsGroup"))(settings_box()) {

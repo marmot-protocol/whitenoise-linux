@@ -155,8 +155,11 @@ apply_theme :: proc(theme: int, accent: int) {
 	SELECTED_INVERTS_TEXT = pack.selected_inverts_text
 	BRACKET_LABELS = pack.bracket_labels
 	MOTION_FAST = pack.motion_fast
-	THEME_FONT = pack.font
-	THEME_FONT_TITLE = pack.font_title
+	// A pack's own typeface is optional; the default stacks stand in
+	// when the user turns it off.
+	own_face := g_prefs == nil || !g_prefs.theme_font_disabled
+	THEME_FONT = own_face ? pack.font : ""
+	THEME_FONT_TITLE = own_face ? pack.font_title : ""
 	apply_theme_fonts()
 	BACKDROP = pack.backdrop
 	BG_2 = pack.bg_2

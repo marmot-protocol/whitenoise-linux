@@ -5074,6 +5074,9 @@ msgstr "Text am schwächsten"
 msgid "Text mid"
 msgstr "Text mittel"
 
+msgid "Text uses the typeface this theme ships with."
+msgstr "Text verwendet die Schrift, die dieses Theme mitbringt."
+
 msgid "Textured strokes and sketched avatars. Shapes stay fixed."
 msgstr "Texturierte Striche und skizzierte Avatare. Formen bleiben unverändert."
 
@@ -5153,6 +5156,9 @@ msgstr "Theme angewendet"
 
 msgid "Theme deleted"
 msgstr "Theme gelöscht"
+
+msgid "Theme font"
+msgstr "Theme-Schrift"
 
 msgid "Theme from Sidecar by dmnyc."
 msgstr "Theme aus Sidecar von dmnyc."
