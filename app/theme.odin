@@ -38,7 +38,7 @@ THEME_SOURCES := []struct {
 	{"Dark", "dark", #load("../themes/dark.toml", string), .White_Noise},
 	{"Light", "light", #load("../themes/light.toml", string), .White_Noise},
 	{"AMOLED", "amoled", #load("../themes/amoled.toml", string), .White_Noise},
-	{"Retro", "retro", #load("../themes/retro.toml", string), .White_Noise},
+	{"16-Bit", "16bit", #load("../themes/16bit.toml", string), .White_Noise},
 	{"Terminal", "terminal", #load("../themes/terminal.toml", string), .White_Noise},
 	{"Crayon", "crayon", #load("../themes/crayon.toml", string), .White_Noise},
 	{"Synthwave", "synthwave", #load("../themes/synthwave.toml", string), .White_Noise},
@@ -352,7 +352,7 @@ theme_token_pointer :: proc(pack: ^Theme_Pack, token: Theme_Token) -> rawptr {
 theme_packs: [dynamic]Theme_Pack
 
 // Structural metrics of the active pack, set by apply_theme. rr/bw
-// route every corner radius and hairline border through them so retro
+// route every corner radius and hairline border through them so 16-Bit
 // can square corners and thicken borders without per-site branches.
 R_SCALE: f32 = 1
 BORDER_W: u16 = 1

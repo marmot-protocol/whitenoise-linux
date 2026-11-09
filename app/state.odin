@@ -123,7 +123,7 @@ apply_theme :: proc(theme: int, accent: int) {
 	MEDIA_CHIP_OUTLINE = pack.media_chip_outline
 	MEDIA_CONTROL_BG = pack.media_control_bg
 
-	// Structural metrics + capability flags (retro squares corners and
+	// Structural metrics + capability flags (16-Bit squares corners and
 	// doubles borders; synthwave mounts the grid backdrop).
 	R_SCALE = pack.r_scale
 	BORDER_W = u16(max(pack.border_w, 1))

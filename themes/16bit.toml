@@ -1,4 +1,5 @@
-name = "Retro"
+# 16-bit console RPG menus: navy windows, cream frames, square pixel edges.
+name = "16-Bit"
 accent-name-1 = "Coin gold"
 accent-name-2 = "Arcade blue"
 accent-name-3 = "Pixel pink"
