@@ -68,6 +68,8 @@ THEME_SOURCES := []struct {
 	{"Werkstätte", "werkstatte", #load("../themes/werkstatte.toml", string), .Sidecar},
 	{"Royale", "royale", #load("../themes/royale.toml", string), .White_Noise},
 	{"Royale Dark", "royaledark", #load("../themes/royaledark.toml", string), .White_Noise},
+	{"Memphis", "memphis", #load("../themes/memphis.toml", string), .White_Noise},
+	{"Memphis Dark", "memphisdark", #load("../themes/memphisdark.toml", string), .White_Noise},
 }
 
 // A pack is written as seeds plus overrides: anything a pack does not
