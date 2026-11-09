@@ -10,7 +10,8 @@ tile loads the GIF itself and shows its brightest early frame instead. GIFs
 that fail to load, or have no visible frame, disappear. An error appears if
 none can load.
 
-Hover to animate a GIF, or use Tab and the arrow keys to browse. Click a GIF
+Hover to animate a GIF; the still stays until the animation's first frame is
+ready. Use Tab and the arrow keys to browse. Click a GIF
 or press Enter on a focused tile to send it immediately. The picker closes
 without adding a composer attachment. Your draft, reply, and other staged
 files stay intact. A pending message shows preparation and sending status;

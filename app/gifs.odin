@@ -719,9 +719,11 @@ gif_picker :: proc(ui: ^Ui_State) {
 				for at := column; at < len(matches); at += columns {
 					i := matches[at]; item := items[i]
 					tex := thumbs[i]
+					// A fresh stream texture is black; keep the still until mpv draws.
 					playing :=
 						ui.gif_view != nil &&
 						!ui.gif_view.failed &&
+						ui.gif_view.framed &&
 						gif_same(item, ui.gif_selected)
 					if playing {tex = &ui.gif_view.tex}
 					ratio :=

@@ -35,6 +35,7 @@ Video_View :: struct {
 	w, h:                             i32, // texture size (placeholder until mpv reports)
 	max_width:                        i32, // preview's physical width; zero uses the inline cap
 	sized:                            bool, // real video dimensions adopted
+	framed:                           bool, // a decoded frame has reached tex
 	paused:                           bool,
 	looping:                          bool, // GIF mode: autoplay, loop, no scrub bar
 	audio:                            bool, // audio-only: no frames, the tile is the controls
@@ -447,6 +448,7 @@ advance_one :: proc(view: ^Video_View) {
 		}
 		if mpv_render_context_render(view.rctx, &params[0]) == 0 {
 			rl.UpdateTexturePixels(&view.tex, raw_data(view.buf))
+			view.framed = true
 		}
 	}
 }
