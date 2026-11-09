@@ -14,6 +14,8 @@ elevated = "#c0c0c0ff"
 status-bar = "#c0c0c0ff"
 field = "#ffffffff"
 field-hover = "#ffffffff"
+control = "#c0c0c0ff"
+tooltip = "#ffffe1ff"
 field-border = "#0a0a0aff"
 card-border = "#0a0a0aff"
 elevated-border = "#0a0a0aff"
@@ -33,7 +35,7 @@ bevel-hi = "#ffffffff"
 top-glint = "#dfdfdfff"
 bevel-lo = "#808080ff"
 avatar-ring = "#808080ff"
-overlay = "#00000040"
+overlay = "#00000020"
 shadow-card = "#000000ff"
 danger = "#900000ff"
 warning = "#604400ff"
@@ -52,6 +54,14 @@ accent-surface = [
     "#005400ff",
     "#800080ff",
 ]
+# The light end of each title band, as the late-90s caption gradients ran.
+accent-hi = [
+    "#1084d0ff",
+    "#1a9a9aff",
+    "#c06848ff",
+    "#2a9a2aff",
+    "#b060b0ff",
+]
 
 [style]
 noir = false
@@ -61,8 +71,12 @@ font-scale = 1
 chalk-drawn = false
 bevel = true
 relief = true
+title-wash = true
+sharp-backdrop = true
 selected-inverts-text = true
 motion-fast = true
+font = "W95FA"
+font-title = "W95FA"
 r-scale = 0.0
 border-w = 2.0
 bubble-r = 0.0
