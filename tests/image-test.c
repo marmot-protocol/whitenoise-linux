@@ -139,6 +139,16 @@ int main(int argc, char **argv) {
     assert(pixels && w == 1 && h == 1 && memcmp(pixels, black, 4) == 0);
     free(pixels);
 
+    // A GIF that opens on a black frame keeps its first visible frame as the still.
+    const unsigned char fade[] = {'G', 'I', 'F', '8', '9', 'a',  1,    0,    1,    0, 0x80, 0, 0,
+                                  0,   0,   0,   255, 255, 255,  0x2c, 0,    0,    0, 0,    1, 0,
+                                  1,   0,   0,   2,   2,   0x44, 1,    0,    0x2c, 0, 0,    0, 0,
+                                  1,   0,   1,   0,   0,   2,    2,    0x4c, 1,    0, 0x3b};
+    pixels = wn_image_decode(helper, fade, sizeof(fade), 1, 4, &w, &h);
+    const unsigned char white[] = {255, 255, 255, 255};
+    assert(pixels && w == 1 && h == 1 && memcmp(pixels, white, 4) == 0);
+    free(pixels);
+
     unsigned char rgb[8 * 8 * 3];
     for (size_t i = 0; i < sizeof(rgb); i += 3) {
         rgb[i] = 240;
