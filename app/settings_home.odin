@@ -611,7 +611,7 @@ settings_pane_link :: proc(id: nendo.Id, mark: Settings_Mark, art: Settings_Art,
 		nendo.text(
 			label,
 			{
-				font = gallery ? FONT_GALLERY_TITLE : FONT_BODY,
+				font = gallery ? gallery_font(g_ui, FONT_GALLERY_TITLE) : FONT_BODY,
 				size = 12,
 				color = hovered() ? ACCENT : TEXT_DIM,
 			},
@@ -656,11 +656,19 @@ settings_banner :: proc(ui: ^Ui_State) {
 		) {
 			nendo.text(
 				tr(SETTINGS_SECTIONS[section].label),
-				{font = gallery ? FONT_GALLERY_BOLD : FONT_TITLE, size = 16, color = ON_ACCENT},
+				{
+					font = gallery ? gallery_font(ui, FONT_GALLERY_BOLD) : FONT_TITLE,
+					size = 16,
+					color = ON_ACCENT,
+				},
 			)
 			nendo.text(
 				tr(settings_description(section)),
-				{font = gallery ? FONT_GALLERY_TITLE : FONT_BODY, size = 11, color = ON_ACCENT},
+				{
+					font = gallery ? gallery_font(ui, FONT_GALLERY_TITLE) : FONT_BODY,
+					size = 11,
+					color = ON_ACCENT,
+				},
 			)
 		}
 	}

@@ -1499,9 +1499,21 @@ settings_theme_preview_hover :: proc(ui: ^Ui_State) {
 	anim_moving += 1 // present the new palette before the idle wait
 }
 
+// The gallery's stable face: the committed pack's own bundled family, or
+// `fallback` when it ships none. Hover previews swap the app's font
+// aliases; this reads the committed slot, so the gallery never reflows
+// under the pointer while it still speaks the chosen theme's type.
+@(private)
+gallery_font :: proc(ui: ^Ui_State, fallback: u16) -> u16 {
+	if len(theme_packs) == 0 || ui.prefs.theme_font_disabled {
+		return fallback
+	}
+	face := theme_font_stack(theme_packs[active_theme(ui)].font, .Title)
+	return face == FONT_TITLE ? fallback : face
+}
 
 @(private)
-theme_collection_header :: proc(collection: Theme_Collection) {
+theme_collection_header :: proc(ui: ^Ui_State, collection: Theme_Collection) {
 	if nendo.box(nendo.id("ThemeCollection", u32(collection)))(
 	{width = nendo.grow(), height = nendo.fixed(30), align = {y = .Center}},
 	) {
@@ -1515,7 +1527,7 @@ theme_collection_header :: proc(collection: Theme_Collection) {
 		case .System:
 			label = tr("System")
 		}
-		nendo.text(label, {font = FONT_GALLERY_BOLD, size = 15, color = TEXT})
+		nendo.text(label, {font = gallery_font(ui, FONT_GALLERY_BOLD), size = 15, color = TEXT})
 	}
 }
 
@@ -1559,10 +1571,10 @@ theme_tone_button :: proc(ui: ^Ui_State, tone: Theme_Tone, id, label: string) {
 			color = kb_focus == id || selected ? ACCENT : FIELD_BORDER,
 			width = {2, 2, 2, 2, 0},
 		},
-		radius = nendo.radius(6),
+		radius = rr(6),
 	},
 	) {
-		nendo.text(label, {font = FONT_GALLERY_BOLD, size = 13, color = TEXT})
+		nendo.text(label, {font = gallery_font(ui, FONT_GALLERY_BOLD), size = 13, color = TEXT})
 	}
 }
 
@@ -1584,7 +1596,7 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 			color = selected || kb_focus == theme_tile_keys[i] ? ACCENT : (hovered() ? TEXT_DIM : FIELD_BORDER),
 			width = {2, 2, 2, 2, 0},
 		},
-		radius = nendo.radius(8),
+		radius = rr(8),
 	},
 	) {
 		if nendo.box(nendo.id("ThemeOptArtwork", u32(i)))(
@@ -1595,7 +1607,7 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 			gap = 8,
 			color = pack.bg,
 			image = pack.wallpaper,
-			radius = nendo.radius(4),
+			radius = nendo.radius(4 * pack.r_scale),
 		},
 		) {
 			if nendo.box(nendo.id_local("MiniRail"))(
@@ -1606,7 +1618,7 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 				padding = nendo.pad(5),
 				gap = 5,
 				color = pack.rail,
-				radius = nendo.radius(3),
+				radius = nendo.radius(3 * pack.r_scale),
 			},
 			) {
 				for n in 0 ..< 3 {
@@ -1615,7 +1627,7 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 						width = nendo.fixed(12),
 						height = nendo.fixed(12),
 						color = n == 0 ? accent : pack.panel_2,
-						radius = nendo.radius(6),
+						radius = nendo.radius(6 * pack.r_scale),
 					},
 					) {}
 				}
@@ -1631,7 +1643,7 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 					padding = nendo.pad(6),
 					gap = 4,
 					color = pack.plate,
-					radius = nendo.radius(4),
+					radius = nendo.radius(4 * pack.r_scale),
 				},
 				) {
 					if nendo.box(nendo.id_local("MiniAuthor"))(
@@ -1651,7 +1663,7 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 					padding = nendo.pad(6),
 					align = {x = .Right},
 					color = pack.accent_surface[ui.accent],
-					radius = nendo.radius(4),
+					radius = nendo.radius(4 * pack.r_scale),
 				},
 				) {
 					if nendo.box(nendo.id_local("MiniSentLine"))(
@@ -1663,7 +1675,7 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 					width = nendo.grow(),
 					height = nendo.grow(),
 					color = pack.field,
-					radius = nendo.radius(3),
+					radius = nendo.radius(3 * pack.r_scale),
 				},
 				) {}
 			}
@@ -1701,7 +1713,7 @@ theme_gallery_tile :: proc(ui: ^Ui_State, i: int, width: f32) {
 					height = nendo.fixed(18),
 					align = {x = .Center, y = .Center},
 					color = accent,
-					radius = nendo.radius(9),
+					radius = rr(9),
 				},
 				) {
 					nendo.text(
@@ -1722,10 +1734,13 @@ settings_theme_gallery :: proc(ui: ^Ui_State, width: f32) {
 	columns := max(1, int((width + 12) / (single_pane() ? 132 : 196)))
 	tile_width := (width - f32(columns - 1) * 12) / f32(columns)
 	if nendo.box(nendo.id("RowTheme"))({width = nendo.grow(), direction = .Column, gap = 12}) {
-		nendo.text(tr("Theme"), {font = FONT_GALLERY_BOLD, size = 20, color = TEXT})
+		nendo.text(
+			tr("Theme"),
+			{font = gallery_font(ui, FONT_GALLERY_BOLD), size = 20, color = TEXT},
+		)
 		nendo.text(
 			tr("Pick the whole app's look."),
-			{font = FONT_GALLERY_TITLE, size = 12, color = TEXT_DIM},
+			{font = gallery_font(ui, FONT_GALLERY_TITLE), size = 12, color = TEXT_DIM},
 		)
 		nendo.text(
 			tr("Show dark or light themes."),
@@ -1742,14 +1757,14 @@ settings_theme_gallery :: proc(ui: ^Ui_State, width: f32) {
 			if len(theme_packs) > 0 {
 				nendo.text(
 					theme_packs[selected].custom ? theme_packs[selected].name : tr(theme_packs[selected].name),
-					{font = FONT_GALLERY_BOLD, size = 14, color = TEXT},
+					{font = gallery_font(ui, FONT_GALLERY_BOLD), size = 14, color = TEXT},
 				)
 			}
 			if len(theme_packs) > 0 && theme_gallery_collection(selected) == .Sidecar {
 				if nendo.box(nendo.id("ThemeSourceNotice"))({width = nendo.grow()}) {
 					nendo.text(
 						tr("Theme from Sidecar by dmnyc."),
-						{font = FONT_GALLERY_TITLE, size = 11, color = TEXT_DIM},
+						{font = gallery_font(ui, FONT_GALLERY_TITLE), size = 11, color = TEXT_DIM},
 					)
 				}
 			}
@@ -1761,7 +1776,7 @@ settings_theme_gallery :: proc(ui: ^Ui_State, width: f32) {
 				   theme_gallery_visible(ui, i) {count += 1}
 			}
 			if count == 0 {continue}
-			theme_collection_header(collection)
+			theme_collection_header(ui, collection)
 			cursor := 0
 			for row in 0 ..< (count + columns - 1) / columns {
 				if nendo.box(
