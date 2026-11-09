@@ -1,7 +1,7 @@
 # Luna after dark: navy chrome and slate panels with the same raised edges.
 name = "Luna Dark"
-accent-name-1 = "Moonlit lime"
-accent-name-2 = "Night-chrome blue"
+accent-name-1 = "Night-chrome blue"
+accent-name-2 = "Moonlit lime"
 accent-name-3 = "Moonrise rose"
 accent-name-4 = "Dusk apricot"
 accent-name-5 = "Moonlit lilac"
@@ -12,6 +12,8 @@ panel = "#222e43ff"
 elevated = "#243c64ff"
 status-bar = "#1c3052ff"
 field = "#101a2aff"
+# Toolbar buttons sit flat on their strip and light up on hover.
+control = "#243c64ff"
 field-hover = "#1b2b45ff"
 field-border = "#5876a1ff"
 card-border = "#45628eff"
@@ -29,9 +31,18 @@ bevel-lo = "#0c1425ff"
 top-glint = "#b6d5ff40"
 danger = "#ff9181ff"
 warning = "#f2c36bff"
+# Caption blue leads, as the title bars did; the Start button's green follows.
 accent-base = [
-    "#83c95aff",
     "#75a8ffff",
+    "#83c95aff",
+    "#f19bb9ff",
+    "#f3ac70ff",
+    "#bca5efff",
+]
+# Selection is the accent itself, with inverted ink.
+accent-surface = [
+    "#75a8ffff",
+    "#83c95aff",
     "#f19bb9ff",
     "#f3ac70ff",
     "#bca5efff",
@@ -45,6 +56,9 @@ font-scale = 1
 chalk-drawn = false
 bevel = true
 outline-surfaces = true
+title-wash = true
+sharp-backdrop = true
+selected-inverts-text = true
 motion-fast = true
 r-scale = 0.45
 border-w = 1.0

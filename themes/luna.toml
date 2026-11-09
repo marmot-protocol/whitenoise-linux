@@ -1,7 +1,7 @@
 # Windows XP Luna: warm dialog panels, blue chrome, and raised controls.
 name = "Luna"
-accent-name-1 = "Start-menu green"
-accent-name-2 = "Luna blue"
+accent-name-1 = "Luna blue"
+accent-name-2 = "Start-menu green"
 accent-name-3 = "Desktop raspberry"
 accent-name-4 = "Autumn copper"
 accent-name-5 = "Classic violet"
@@ -12,6 +12,9 @@ panel = "#f5f3e8ff"
 elevated = "#d6dff7ff"
 status-bar = "#c1d2eeff"
 field = "#ffffffff"
+# Toolbar buttons sit flat on their strip and light up on hover.
+control = "#d6dff7ff"
+tooltip = "#ffffe1ff"
 field-hover = "#f5f9ffff"
 field-border = "#7f9db9ff"
 card-border = "#7495caff"
@@ -29,9 +32,26 @@ bevel-lo = "#7a8baaff"
 top-glint = "#ffffffb8"
 danger = "#b52c20ff"
 warning = "#895300ff"
+# Caption blue leads, as the title bars did; the Start button's green follows.
 accent-base = [
-    "#267326ff",
     "#0054e3ff",
+    "#267326ff",
+    "#a92752ff",
+    "#aa450cff",
+    "#6841a3ff",
+]
+# The light end of each caption gradient.
+accent-hi = [
+    "#3d95ffff",
+    "#4fb84fff",
+    "#d9658cff",
+    "#e07a3cff",
+    "#9a7ad8ff",
+]
+# Selection is the accent itself, with inverted ink.
+accent-surface = [
+    "#0054e3ff",
+    "#267326ff",
     "#a92752ff",
     "#aa450cff",
     "#6841a3ff",
@@ -45,6 +65,9 @@ font-scale = 1
 chalk-drawn = false
 bevel = true
 outline-surfaces = true
+title-wash = true
+sharp-backdrop = true
+selected-inverts-text = true
 motion-fast = true
 r-scale = 0.45
 border-w = 1.0
