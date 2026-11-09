@@ -1,5 +1,5 @@
-# Memphis with the lights off: charcoal dialog faces, black wells,
-# and the same square two-pixel bevels.
+# Memphis with the lights off: charcoal dialog faces, black wells, and
+# the same two-pixel 3D edges and inverted selection.
 name = "Memphis Dark"
 accent-name-1 = "Title-bar blue"
 accent-name-2 = "Desktop teal"
@@ -13,29 +13,39 @@ panel = "#3a3a3aff"
 elevated = "#3a3a3aff"
 status-bar = "#3a3a3aff"
 field = "#1a1a1aff"
-field-hover = "#202020ff"
-field-border = "#1a1a1aff"
-card-border = "#202020ff"
+field-hover = "#1a1a1aff"
+field-border = "#000000ff"
+card-border = "#000000ff"
 elevated-border = "#000000ff"
 divider = "#202020ff"
 plate = "#1a1a1aff"
 card-well = "#1a1a1aff"
 code-plate = "#1a1a1aff"
-hover = "#4a4a4aff"
+hover = "#464646ff"
 text-hi = "#f0f0f0ff"
 text-mid = "#d8d8d8ff"
 text-lo = "#b8b8b8ff"
 text-vlo = "#989898ff"
 
-bevel-hi = "#5e5e5eff"
-bevel-lo = "#1a1a1aff"
-top-glint = "#5e5e5eff"
+# The relief edges: lit outer, lit inner, shaded inner. The darkest
+# line is each border's own color.
+bevel-hi = "#6a6a6aff"
+top-glint = "#4c4c4cff"
+bevel-lo = "#202020ff"
 avatar-ring = "#202020ff"
 overlay = "#00000060"
 shadow-card = "#000000ff"
 danger = "#ff8a8aff"
 warning = "#e0c050ff"
 accent-base = [
+    "#7aa6e0ff",
+    "#30c0c0ff",
+    "#e8946cff",
+    "#50c850ff",
+    "#d890d8ff",
+]
+# Selection is the accent itself, with inverted ink.
+accent-surface = [
     "#7aa6e0ff",
     "#30c0c0ff",
     "#e8946cff",
@@ -50,8 +60,8 @@ avatar-erase = false
 font-scale = 1
 chalk-drawn = false
 bevel = true
-outline-surfaces = true
-hard-shadow = true
+relief = true
+selected-inverts-text = true
 motion-fast = true
 r-scale = 0.0
 border-w = 2.0

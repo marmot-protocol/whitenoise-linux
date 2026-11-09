@@ -1,5 +1,5 @@
-# Late-90s desktop: silver dialog faces, white wells, navy title bars,
-# and square two-pixel bevels.
+# Late-90s desktop: silver dialog faces, white wells, navy selection,
+# and two-pixel 3D edges (raised buttons, sunken fields, etched groups).
 name = "Memphis"
 accent-name-1 = "Title-bar navy"
 accent-name-2 = "Desktop teal"
@@ -14,28 +14,38 @@ elevated = "#c0c0c0ff"
 status-bar = "#c0c0c0ff"
 field = "#ffffffff"
 field-hover = "#ffffffff"
-field-border = "#808080ff"
-card-border = "#808080ff"
-elevated-border = "#404040ff"
+field-border = "#0a0a0aff"
+card-border = "#0a0a0aff"
+elevated-border = "#0a0a0aff"
 divider = "#808080ff"
 plate = "#ffffffff"
 card-well = "#ffffffff"
 code-plate = "#ffffffff"
-hover = "#dfdfdfff"
+hover = "#d4d4d4ff"
 text-hi = "#000000ff"
 text-mid = "#202020ff"
 text-lo = "#404040ff"
 text-vlo = "#606060ff"
 
+# The relief edges: lit outer, lit inner, shaded inner. The darkest
+# line is each border's own color.
 bevel-hi = "#ffffffff"
+top-glint = "#dfdfdfff"
 bevel-lo = "#808080ff"
-top-glint = "#ffffffff"
 avatar-ring = "#808080ff"
 overlay = "#00000040"
 shadow-card = "#000000ff"
 danger = "#900000ff"
 warning = "#604400ff"
 accent-base = [
+    "#000080ff",
+    "#005555ff",
+    "#800000ff",
+    "#005400ff",
+    "#800080ff",
+]
+# Selection is the accent itself, with inverted ink.
+accent-surface = [
     "#000080ff",
     "#005555ff",
     "#800000ff",
@@ -50,8 +60,8 @@ avatar-erase = false
 font-scale = 1
 chalk-drawn = false
 bevel = true
-outline-surfaces = true
-hard-shadow = true
+relief = true
+selected-inverts-text = true
 motion-fast = true
 r-scale = 0.0
 border-w = 2.0
