@@ -66,6 +66,8 @@ THEME_FIELDS := []Theme_Field {
 	{"", N_("Code plate"), .Code_Plate, .Color, 0},
 	{"", N_("Field"), .Field, .Color, 0},
 	{"", N_("Field hover"), .Field_Hover, .Color, 0},
+	{"", N_("Toolbar button"), .Control, .Color, 0},
+	{"", N_("Tooltip"), .Tooltip, .Color, 0},
 	{"", N_("Hover"), .Hover, .Color, 0},
 	{"", N_("Status bar"), .Status_Bar, .Color, 0},
 	{N_("TEXT"), N_("Text mid"), .Text_Mid, .Color, 0},
@@ -109,6 +111,8 @@ THEME_FLAGS := []struct {
 } {
 	{N_("Bevelled surfaces"), .Bevel},
 	{N_("Relief edges"), .Relief},
+	{N_("Title wash"), .Title_Wash},
+	{N_("Sharp modal backdrop"), .Sharp_Backdrop},
 	{N_("Hard shadows"), .Hard_Shadow},
 	{N_("Focus glow"), .Focus_Glow},
 	{N_("Outline surfaces"), .Outline_Surfaces},

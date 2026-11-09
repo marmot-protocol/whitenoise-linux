@@ -152,7 +152,7 @@ header_chip :: proc(id_str: string, glyph: string, active: bool, label: string) 
 		height = nendo.fit(min = tap_size() ? tap_min() : 0),
 		padding = {left = 10, right = 10, top = pad, bottom = pad},
 		align = {x = .Center, y = .Center},
-		color = active ? ACCENT : hovered() ? HOVER : ROW_BG,
+		color = active ? ACCENT : hovered() ? HOVER : CONTROL,
 		radius = rr(8),
 	},
 	) {

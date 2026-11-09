@@ -912,7 +912,7 @@ tooltip :: proc(text: string, side: Tip_Side = .Below, shift_x: f32 = 0) {
 		width = nendo.fixed(width),
 		padding = {left = 8, right = 8, top = 4, bottom = 4},
 		floating = {attach_to = .Root, z = 18, offset = offset, pointer = .Passthrough},
-		color = CARD,
+		color = TOOLTIP,
 		radius = rr(6),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},

@@ -4710,6 +4710,9 @@ msgstr "공유된 미디어"
 msgid "Sharing"
 msgstr "공유"
 
+msgid "Sharp modal backdrop"
+msgstr "대화 상자 배경 선명하게"
+
 msgid "Shell"
 msgstr "셸"
 
@@ -5290,6 +5293,9 @@ msgstr "처리 시간"
 msgid "Title font"
 msgstr "제목 글꼴"
 
+msgid "Title wash"
+msgstr "제목 그라데이션"
+
 msgid "Today"
 msgstr "오늘"
 
@@ -5299,8 +5305,14 @@ msgstr "개발자 모드 전환"
 msgid "Too easy to guess"
 msgstr "너무 쉽게 추측됨"
 
+msgid "Toolbar button"
+msgstr "도구 모음 버튼"
+
 msgid "Tools"
 msgstr "도구"
+
+msgid "Tooltip"
+msgstr "툴팁"
 
 msgid "Top glint"
 msgstr "상단 광택"

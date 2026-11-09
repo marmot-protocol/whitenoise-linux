@@ -482,7 +482,7 @@ render_nendo :: proc(
 	render_range(render_commands[:split], allocator)
 	rl.EndTarget()
 	rl.DrawTarget(SCENE_SLOT, 1)
-	rl.DrawTargetBlurred(SCENE_SLOT, veil)
+	if !SHARP_BACKDROP {rl.DrawTargetBlurred(SCENE_SLOT, veil)}
 
 	if !rl.BeginTarget(LAYER_SLOT) {
 		render_range(render_commands[split:], allocator)
@@ -492,6 +492,11 @@ render_nendo :: proc(
 	rl.EndTarget()
 	rl.DrawTarget(LAYER_SLOT, veil, 1 - MODAL_LIFT * (1 - veil))
 }
+
+// A box's user_data marking a title band: on a title-wash pack its fill
+// fades to ACCENT_HI, left to right, like a desktop window's caption.
+// Distinct from STICKER_IMAGE, which marks images.
+TITLE_BAND :: uintptr(2)
 
 // A relief theme draws its structural borders as 3D edges, the way the
 // late-90s desktop did, instead of one flat color. The border's shape
@@ -692,7 +697,16 @@ render_range :: proc(
 			// is exactly the key the motion store wants.
 			config := render_command.rectangle
 			fill := nendo_color(anim_color(render_command.id, config.color, HOVER_RATE))
-			if config.radius.top_left > 0 {
+			if uintptr(render_command.user_data) == TITLE_BAND && TITLE_WASH {
+				rl.DrawRectangleGradientH(
+					bounds.x,
+					bounds.y,
+					bounds.width,
+					bounds.height,
+					fill,
+					nendo_color(ACCENT_HI),
+				)
+			} else if config.radius.top_left > 0 {
 				rl.DrawRectangleRoundedPx(
 					bounds.x,
 					bounds.y,

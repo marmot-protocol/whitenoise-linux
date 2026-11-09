@@ -1383,6 +1383,23 @@ DrawRectangleRec :: proc(x, y, w, h: f32, color: Color) {
 	sdl.RenderFillRect(state.renderer, &rect)
 }
 
+// A rectangle fading from `left` to `right`: two triangles with
+// per-vertex color, so the GPU interpolates the whole span at once.
+DrawRectangleGradientH :: proc(x, y, w, h: f32, left, right: Color) {
+	fcolor :: proc(c: Color) -> sdl.FColor {
+		return {f32(c.r) / 255, f32(c.g) / 255, f32(c.b) / 255, f32(c.a) / 255}
+	}
+	l, r := fcolor(left), fcolor(right)
+	vertices := [4]sdl.Vertex {
+		{position = {x, y}, color = l},
+		{position = {x + w, y}, color = r},
+		{position = {x + w, y + h}, color = r},
+		{position = {x, y + h}, color = l},
+	}
+	indices := [6]c.int{0, 1, 2, 0, 2, 3}
+	sdl.RenderGeometry(state.renderer, nil, raw_data(vertices[:]), 4, raw_data(indices[:]), 6)
+}
+
 DrawTextureRect :: proc(texture: ^Texture2D, x, y, w, h: f32, tint: Color) {
 	sdl.SetTextureColorMod(texture.tex, tint.r, tint.g, tint.b)
 	sdl.SetTextureAlphaMod(texture.tex, tint.a)

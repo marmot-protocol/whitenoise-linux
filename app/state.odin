@@ -17,6 +17,8 @@ CARD_BORDER := nendo.Color{20, 24, 29, 255}
 STATUS_BAR := nendo.Color{11, 13, 15, 255}
 RAIL_BG := nendo.Color{15, 19, 24, 255} // in-card strips; blends with CARD
 ROW_BG := nendo.Color{10, 13, 17, 255} // fields, chips
+CONTROL := nendo.Color{10, 13, 17, 255} // header toolbar button faces
+TOOLTIP := nendo.Color{20, 26, 33, 255}
 FIELD_BORDER := nendo.Color{31, 36, 42, 255}
 HOVER := nendo.Color{13, 17, 20, 255}
 SELECTED := nendo.Color{18, 40, 32, 255}
@@ -80,6 +82,8 @@ apply_theme :: proc(theme: int, accent: int) {
 	STATUS_BAR = pack.status_bar
 	RAIL_BG = pack.elevated
 	ROW_BG = pack.field
+	CONTROL = pack.control
+	TOOLTIP = pack.tooltip
 	FIELD_BORDER = pack.field_border
 	HOVER = pack.hover
 	SELECTED = pack.accent_surface[slot]
@@ -145,6 +149,8 @@ apply_theme :: proc(theme: int, accent: int) {
 	FOCUS_GLOW = pack.focus_glow
 	BEVEL = pack.bevel
 	RELIEF = pack.relief
+	TITLE_WASH = pack.title_wash
+	SHARP_BACKDROP = pack.sharp_backdrop
 	OUTLINE_SURFACES = pack.outline_surfaces
 	SELECTED_INVERTS_TEXT = pack.selected_inverts_text
 	BRACKET_LABELS = pack.bracket_labels

@@ -641,6 +641,7 @@ settings_banner :: proc(ui: ^Ui_State) {
 		gap = phone ? 6 : 12,
 		align = {y = .Center},
 		color = ACCENT,
+		user_data = rawptr(TITLE_BAND),
 	},
 	) {
 		// Phones go back from the banner itself instead of a separate bar

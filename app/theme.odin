@@ -84,6 +84,8 @@ Theme_Pack :: struct {
 	status_bar, banner, canvas_top:                         nendo.Color,
 	text_hi, text_mid, text_lo, text_vlo:                   nendo.Color,
 	field, field_hover, field_border, hover, plate:         nendo.Color,
+	control:                                                nendo.Color, // button face, distinct from a text field
+	tooltip:                                                nendo.Color,
 	plate_inset, code_plate, card_well, divider:            nendo.Color,
 	on_accent:                                              [5]nendo.Color,
 	on_accent_explicit:                                     bool, // scalar override inherited by every accent slot
@@ -113,7 +115,7 @@ Theme_Pack :: struct {
 	avatar_erase:                                           bool,
 	noir:                                                   bool,
 	hard_shadow, focus_glow, bevel, outline_surfaces:       bool,
-	relief:                                                 bool,
+	relief, title_wash, sharp_backdrop:                     bool,
 	selected_inverts_text, bracket_labels, motion_fast:     bool,
 	font:                                                   string, // family name, "" = the default stack
 	font_title:                                             string, // display family, "" = the default bold stack
@@ -155,6 +157,8 @@ Theme_Token :: enum {
 	Text_Vlo,
 	Field,
 	Field_Hover,
+	Control,
+	Tooltip,
 	Field_Border,
 	Hover,
 	Plate,
@@ -207,6 +211,8 @@ Theme_Token :: enum {
 	Focus_Glow,
 	Bevel,
 	Relief,
+	Title_Wash,
+	Sharp_Backdrop,
 	Outline_Surfaces,
 	Selected_Inverts_Text,
 	Bracket_Labels,
@@ -280,6 +286,8 @@ THEME_TOKENS := [Theme_Token]Theme_Token_Descriptor {
 	.Text_Vlo              = {"text-vlo", .Color, offset_of(Theme_Pack, text_vlo)},
 	.Field                 = {"field", .Color, offset_of(Theme_Pack, field)},
 	.Field_Hover           = {"field-hover", .Color, offset_of(Theme_Pack, field_hover)},
+	.Control               = {"control", .Color, offset_of(Theme_Pack, control)},
+	.Tooltip               = {"tooltip", .Color, offset_of(Theme_Pack, tooltip)},
 	.Field_Border          = {"field-border", .Color, offset_of(Theme_Pack, field_border)},
 	.Hover                 = {"hover", .Color, offset_of(Theme_Pack, hover)},
 	.Plate                 = {"plate", .Color, offset_of(Theme_Pack, plate)},
@@ -339,6 +347,8 @@ THEME_TOKENS := [Theme_Token]Theme_Token_Descriptor {
 	.Focus_Glow            = {"focus-glow", .Flag, offset_of(Theme_Pack, focus_glow)},
 	.Bevel                 = {"bevel", .Flag, offset_of(Theme_Pack, bevel)},
 	.Relief                = {"relief", .Flag, offset_of(Theme_Pack, relief)},
+	.Title_Wash            = {"title-wash", .Flag, offset_of(Theme_Pack, title_wash)},
+	.Sharp_Backdrop        = {"sharp-backdrop", .Flag, offset_of(Theme_Pack, sharp_backdrop)},
 	.Outline_Surfaces      = {"outline-surfaces", .Flag, offset_of(Theme_Pack, outline_surfaces)},
 	.Selected_Inverts_Text = {
 		"selected-inverts-text",
@@ -372,6 +382,8 @@ HARD_SHADOW := false // an offset solid shadow instead of a soft one
 FOCUS_GLOW := false // a soft ring around the focused field
 BEVEL := false // raised surfaces get a lit top and a shaded bottom
 RELIEF := false // structural borders draw as 3D edges (renderer.odin, relief_border)
+TITLE_WASH := false // title bands fade from the accent to its light tone (TITLE_BAND)
+SHARP_BACKDROP := false // the page behind a modal stays sharp instead of blurring
 OUTLINE_SURFACES := false // every surface takes a hairline, not just cards
 SELECTED_INVERTS_TEXT := false // the selected row flips its ink
 BRACKET_LABELS := false // captions render as [LABEL]
@@ -540,6 +552,8 @@ derive_pack :: proc(p: ^Theme_Pack, present: map[string]bool) {
 	if !has(present, "card-well") {p.card_well = lift(p.bg, ink, 0.09)}
 	if !has(present, "field") {p.field = lift(p.bg, ink, 0.04)}
 	if !has(present, "field-hover") {p.field_hover = lift(p.bg, ink, 0.10)}
+	if !has(present, "control") {p.control = p.field}
+	if !has(present, "tooltip") {p.tooltip = p.elevated}
 	if !has(present, "hover") {p.hover = alpha(ink, 20)}
 
 	// Lines: one hairline tint, reused at three strengths.

@@ -4711,6 +4711,9 @@ msgstr "Media condivisi"
 msgid "Sharing"
 msgstr "Condivisione"
 
+msgid "Sharp modal backdrop"
+msgstr "Sfondo nitido dietro i dialoghi"
+
 msgid "Shell"
 msgstr "Shell"
 
@@ -5291,6 +5294,9 @@ msgstr "Tempi"
 msgid "Title font"
 msgstr "Carattere del titolo"
 
+msgid "Title wash"
+msgstr "Sfumatura del titolo"
+
 msgid "Today"
 msgstr "Oggi"
 
@@ -5300,8 +5306,14 @@ msgstr "Attiva/disattiva la modalità sviluppatore"
 msgid "Too easy to guess"
 msgstr "Troppo facile da indovinare"
 
+msgid "Toolbar button"
+msgstr "Pulsante della barra degli strumenti"
+
 msgid "Tools"
 msgstr "Strumenti"
+
+msgid "Tooltip"
+msgstr "Suggerimento"
 
 msgid "Top glint"
 msgstr "Riflesso superiore"

@@ -87,20 +87,40 @@ scrollbar :: proc(container: nendo.Id, z: i16 = 5) {
 		data.position.y = -y / travel * span
 	}
 
+	// A relief theme draws the desktop scrollbar: a light track down the
+	// container's edge under a raised thumb. Others keep the hairline thumb.
+	width := RELIEF ? f32(14) : f32(5)
+	if RELIEF {
+		if nendo.box(nendo.id("ScrollTrack", container.id))(
+		{
+			width = nendo.fixed(width),
+			height = nendo.fixed(track),
+			floating = {
+				attach_to = .Element,
+				parent = container.id,
+				z = z,
+				pointer = .Passthrough,
+				attach = {element = .Right_Top, parent = .Right_Top},
+			},
+			color = TOP_GLINT,
+		},
+		) {}
+	}
 	if nendo.box(thumb_id)(
 	{
-		width = nendo.fixed(5),
+		width = nendo.fixed(width),
 		height = nendo.fixed(thumb),
 		floating = {
 			attach_to = .Element,
 			parent = container.id,
-			offset = {-3, y},
+			offset = {RELIEF ? 0 : -3, y},
 			z = z,
 			pointer = rl.TouchActive() ? .Passthrough : .Capture,
 			attach = {element = .Right_Top, parent = .Right_Top},
 		},
-		color = dragging || nendo.pointer_over(thumb_id) ? ACCENT : FIELD_BORDER,
+		color = RELIEF ? PANEL : dragging || nendo.pointer_over(thumb_id) ? ACCENT : FIELD_BORDER,
 		radius = rr(3),
+		border = RELIEF ? {color = CARD_BORDER, width = bw()} : {},
 	},
 	) {}
 }

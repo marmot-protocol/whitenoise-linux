@@ -518,7 +518,7 @@ bell_chip :: proc(ui: ^Ui_State) {
 	{
 		padding = {left = 10, right = 10, top = 8, bottom = 8},
 		align = {y = .Center},
-		color = ui.mi_open ? ACCENT : hovered() ? HOVER : ROW_BG,
+		color = ui.mi_open ? ACCENT : hovered() ? HOVER : CONTROL,
 		radius = rr(8),
 	},
 	) {

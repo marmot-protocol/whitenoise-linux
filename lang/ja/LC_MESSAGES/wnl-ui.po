@@ -4711,6 +4711,9 @@ msgstr "共有メディア"
 msgid "Sharing"
 msgstr "共有"
 
+msgid "Sharp modal backdrop"
+msgstr "ダイアログの背景をぼかさない"
+
 msgid "Shell"
 msgstr "シェル"
 
@@ -5291,6 +5294,9 @@ msgstr "処理時間"
 msgid "Title font"
 msgstr "タイトルのフォント"
 
+msgid "Title wash"
+msgstr "タイトルのグラデーション"
+
 msgid "Today"
 msgstr "今日"
 
@@ -5300,8 +5306,14 @@ msgstr "開発者モードを切り替え"
 msgid "Too easy to guess"
 msgstr "簡単に推測されてしまいます"
 
+msgid "Toolbar button"
+msgstr "ツールバーボタン"
+
 msgid "Tools"
 msgstr "ツール"
+
+msgid "Tooltip"
+msgstr "ツールチップ"
 
 msgid "Top glint"
 msgstr "上端の光沢"

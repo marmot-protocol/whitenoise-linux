@@ -4710,6 +4710,9 @@ msgstr ""
 msgid "Sharing"
 msgstr ""
 
+msgid "Sharp modal backdrop"
+msgstr ""
+
 msgid "Shell"
 msgstr ""
 
@@ -5290,6 +5293,9 @@ msgstr ""
 msgid "Title font"
 msgstr ""
 
+msgid "Title wash"
+msgstr ""
+
 msgid "Today"
 msgstr ""
 
@@ -5299,7 +5305,13 @@ msgstr ""
 msgid "Too easy to guess"
 msgstr ""
 
+msgid "Toolbar button"
+msgstr ""
+
 msgid "Tools"
+msgstr ""
+
+msgid "Tooltip"
 msgstr ""
 
 msgid "Top glint"
