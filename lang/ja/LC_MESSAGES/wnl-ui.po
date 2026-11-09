@@ -4167,6 +4167,9 @@ msgstr "リレーは暗号化されたメッセージを運びます。デフォ
 msgid "Relays checked."
 msgstr "リレーを確認しました。"
 
+msgid "Relief edges"
+msgstr "立体的な縁"
+
 msgid "Reload previews"
 msgstr "プレビューを再読み込み"
 

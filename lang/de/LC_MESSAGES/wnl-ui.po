@@ -4167,6 +4167,9 @@ msgstr "Relays übertragen deine verschlüsselten Nachrichten. Die Standard-Rela
 msgid "Relays checked."
 msgstr "Relays geprüft."
 
+msgid "Relief edges"
+msgstr "Reliefkanten"
+
 msgid "Reload previews"
 msgstr "Vorschauen neu laden"
 

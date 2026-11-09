@@ -4166,6 +4166,9 @@ msgstr ""
 msgid "Relays checked."
 msgstr ""
 
+msgid "Relief edges"
+msgstr ""
+
 msgid "Reload previews"
 msgstr ""
 

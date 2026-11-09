@@ -313,6 +313,7 @@ Custom_Command :: struct {
 
 Border_Command :: struct {
 	color:  Color,
+	fill:   Color, // the element's own fill, so a renderer can shade the edge against it
 	radius: Radius,
 	width:  Border_Width,
 }

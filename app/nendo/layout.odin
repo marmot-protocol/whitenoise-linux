@@ -699,6 +699,7 @@ calculate_final_layout :: proc(
 							data = {
 								border = {
 									color = border_config.color,
+									fill = current_element.config.color,
 									radius = current_element.config.radius,
 									width = border_config.width,
 								},

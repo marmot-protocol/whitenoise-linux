@@ -111,7 +111,6 @@ focus-glow = false
 motion-fast = true
 bevel = true
 pixel-icons = true
-selected-inverts-text = true
 pixel-select-marker = true
 pixel-metrics = true
 outline-surfaces = true

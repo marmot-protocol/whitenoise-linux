@@ -144,6 +144,7 @@ apply_theme :: proc(theme: int, accent: int) {
 	HARD_SHADOW = pack.hard_shadow
 	FOCUS_GLOW = pack.focus_glow
 	BEVEL = pack.bevel
+	RELIEF = pack.relief
 	OUTLINE_SURFACES = pack.outline_surfaces
 	SELECTED_INVERTS_TEXT = pack.selected_inverts_text
 	BRACKET_LABELS = pack.bracket_labels

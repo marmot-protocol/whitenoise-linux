@@ -113,6 +113,7 @@ Theme_Pack :: struct {
 	avatar_erase:                                           bool,
 	noir:                                                   bool,
 	hard_shadow, focus_glow, bevel, outline_surfaces:       bool,
+	relief:                                                 bool,
 	selected_inverts_text, bracket_labels, motion_fast:     bool,
 	font:                                                   string, // family name, "" = the default stack
 	font_title:                                             string, // display family, "" = the default bold stack
@@ -205,6 +206,7 @@ Theme_Token :: enum {
 	Hard_Shadow,
 	Focus_Glow,
 	Bevel,
+	Relief,
 	Outline_Surfaces,
 	Selected_Inverts_Text,
 	Bracket_Labels,
@@ -336,6 +338,7 @@ THEME_TOKENS := [Theme_Token]Theme_Token_Descriptor {
 	.Hard_Shadow           = {"hard-shadow", .Flag, offset_of(Theme_Pack, hard_shadow)},
 	.Focus_Glow            = {"focus-glow", .Flag, offset_of(Theme_Pack, focus_glow)},
 	.Bevel                 = {"bevel", .Flag, offset_of(Theme_Pack, bevel)},
+	.Relief                = {"relief", .Flag, offset_of(Theme_Pack, relief)},
 	.Outline_Surfaces      = {"outline-surfaces", .Flag, offset_of(Theme_Pack, outline_surfaces)},
 	.Selected_Inverts_Text = {
 		"selected-inverts-text",
@@ -368,6 +371,7 @@ BG_2 := nendo.Color{} // second stop of the page wash, a == 0 means flat
 HARD_SHADOW := false // an offset solid shadow instead of a soft one
 FOCUS_GLOW := false // a soft ring around the focused field
 BEVEL := false // raised surfaces get a lit top and a shaded bottom
+RELIEF := false // structural borders draw as 3D edges (renderer.odin, relief_border)
 OUTLINE_SURFACES := false // every surface takes a hairline, not just cards
 SELECTED_INVERTS_TEXT := false // the selected row flips its ink
 BRACKET_LABELS := false // captions render as [LABEL]

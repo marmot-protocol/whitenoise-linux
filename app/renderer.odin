@@ -493,12 +493,123 @@ render_nendo :: proc(
 	rl.DrawTarget(LAYER_SLOT, veil, 1 - MODAL_LIFT * (1 - veil))
 }
 
+// A relief theme draws its structural borders as 3D edges, the way the
+// late-90s desktop did, instead of one flat color. The border's shape
+// picks the relief:
+//
+//   2px+ on all four sides, field fill   sunken well    text boxes, lists
+//   2px+ on all four sides, other fill   raised face    buttons, cards
+//   thinner or partial                   etched groove  group boxes, rules
+//
+// Focus rings, accents and rounded corners are not structural and stay flat.
+@(private = "file")
+Relief :: enum {
+	Raised,
+	Sunken,
+	Etched,
+}
+
+@(private = "file")
+relief_of :: proc(border: nendo.Border_Command) -> (Relief, bool) {
+	structural :=
+		border.color == FIELD_BORDER ||
+		border.color == CARD_BORDER ||
+		border.color == ELEVATED_BORDER ||
+		border.color == DIVIDER ||
+		border.color == BORDER_2
+	r := border.radius
+	if !RELIEF || !structural || r.top_left + r.top_right + r.bottom_left + r.bottom_right > 0 {
+		return {}, false
+	}
+	w := border.width
+	if min(w.left, w.right, w.top, w.bottom) < 2 {
+		return .Etched, true
+	}
+	return border.fill == ROW_BG ? .Sunken : .Raised, true
+}
+
+// Two 1px frames, outer then inner. Each frame paints its top-left pair
+// first and its bottom-right pair over it, so the shaded side owns the
+// two corners where they meet. The darkest line is the border's color.
+//
+//   raised           sunken           etched
+//   hi  hi  hi  dk   lo  lo  lo  hi   lo  lo  lo  hi
+//   hi  gl  lo  dk   lo  dk  gl  hi   lo  hi  lo  hi
+//   hi  lo  lo  dk   lo  gl  gl  hi   lo  lo  lo  hi
+//   dk  dk  dk  dk   hi  hi  hi  hi   hi  hi  hi  hi
+@(private = "file")
+relief_border :: proc(box: nendo.Rect, border: nendo.Border_Command, relief: Relief) {
+	dark := nendo_color(border.color)
+	hi, lo, glint := nendo_color(BEVEL_HI), nendo_color(BEVEL_LO), nendo_color(TOP_GLINT)
+	lines: [4]rl.Color // outer top-left, outer bottom-right, inner top-left, inner bottom-right
+	switch relief {
+	case .Raised:
+		lines = {hi, dark, glint, lo}
+	case .Sunken:
+		lines = {lo, hi, dark, glint}
+	case .Etched:
+		lines = {lo, hi, hi, lo}
+	}
+	sides := border.width
+	for color, i in lines {
+		inset := f32(i / 2)
+		x, y := box.x + inset, box.y + inset
+		w, h := box.width - 2 * inset, box.height - 2 * inset
+		if i % 2 == 0 {
+			if sides.top > 0 {rl.DrawRectangleRec(x, y, w, 1, color)}
+			if sides.left > 0 {rl.DrawRectangleRec(x, y, 1, h, color)}
+		} else {
+			if sides.bottom > 0 {rl.DrawRectangleRec(x, y + h - 1, w, 1, color)}
+			if sides.right > 0 {rl.DrawRectangleRec(x + w - 1, y, 1, h, color)}
+		}
+	}
+}
+
+// A theme with selected-inverts-text re-inks text that sits on a
+// SELECTED fill, so an opaque selection reads like a desktop list
+// (white on navy) without every row choosing its own text color. The
+// text tokens flip, and so does accent ink, which would vanish into an
+// accent selection; status colors keep their hue. Fills match on z, so
+// a menu floating over a selected row keeps its ink.
+@(private = "file")
+Selected_Fill :: struct {
+	rect: nendo.Rect,
+	z:    i16,
+}
+
+@(private = "file")
+on_selection :: proc(fills: []Selected_Fill, text: ^nendo.Render_Command) -> bool {
+	ink := text.text.color
+	text_ink := ink == TEXT || ink == TEXT_DIM || ink == TEXT_LO || ink == TEXT_VLO
+	accent_ink := ink == ACCENT || ink == ACCENT_HI || ink == ACCENT_DIM
+	if !text_ink && !accent_ink {
+		return false
+	}
+	cx := text.rect.x + text.rect.width / 2
+	cy := text.rect.y + text.rect.height / 2
+	for fill in fills {
+		r := fill.rect
+		if fill.z == text.z &&
+		   cx >= r.x &&
+		   cx < r.x + r.width &&
+		   cy >= r.y &&
+		   cy < r.y + r.height {
+			return true
+		}
+	}
+	return false
+}
+
 @(private = "file")
 render_range :: proc(
 	render_commands: []nendo.Render_Command,
 	allocator := context.temp_allocator,
 ) {
 	overlay_colors := make([dynamic]nendo.Color, allocator)
+	// ponytail: a frame shows a handful of selected rows; past 16 the
+	// extra rows keep their ink. Grow this if a multi-select list lands.
+	selected_fills: [16]Selected_Fill
+	selected_count := 0
 	for &command in render_commands {
 		render_command := &command
 		bounds := render_command.rect
@@ -522,6 +633,11 @@ render_range :: proc(
 					nendo_color(plate),
 				)
 			}
+			ink := config.color
+			if SELECTED_INVERTS_TEXT &&
+			   on_selection(selected_fills[:selected_count], render_command) {
+				ink = ON_ACCENT
+			}
 			rl.DrawTextLine(
 				config.font,
 				config.size,
@@ -529,7 +645,7 @@ render_range :: proc(
 				bounds.x,
 				bounds.y,
 				f32(config.spacing),
-				nendo_color(config.color),
+				nendo_color(ink),
 			)
 			if style & (TEXT_STRIKE | TEXT_REMOVED) != 0 {
 				rl.DrawRectangleRec(
@@ -537,7 +653,7 @@ render_range :: proc(
 					bounds.y + bounds.height / 2,
 					bounds.width,
 					1,
-					nendo_color(config.color),
+					nendo_color(ink),
 				)
 			}
 		case .Image:
@@ -588,11 +704,21 @@ render_range :: proc(
 			} else {
 				rl.DrawRectangleRec(bounds.x, bounds.y, bounds.width, bounds.height, fill)
 			}
+			if SELECTED_INVERTS_TEXT &&
+			   config.color == SELECTED &&
+			   selected_count < len(selected_fills) {
+				selected_fills[selected_count] = {bounds, render_command.z}
+				selected_count += 1
+			}
 		case .Border:
 			config := render_command.border
 			color := nendo_color(
 				anim_color(anim_key(render_command.id, 1), config.color, HOVER_RATE),
 			)
+			if relief, ok := relief_of(config); ok {
+				relief_border(bounds, config, relief)
+				continue
+			}
 			min_radius := min(bounds.width, bounds.height) / 2
 			tl := min(config.radius.top_left, min_radius)
 			tr := min(config.radius.top_right, min_radius)

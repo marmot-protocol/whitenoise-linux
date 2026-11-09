@@ -4166,6 +4166,9 @@ msgstr "릴레이는 암호화된 메시지를 전달합니다. 기본 릴레이
 msgid "Relays checked."
 msgstr "릴레이를 확인했습니다."
 
+msgid "Relief edges"
+msgstr "입체 테두리"
+
 msgid "Reload previews"
 msgstr "미리 보기 다시 불러오기"
 

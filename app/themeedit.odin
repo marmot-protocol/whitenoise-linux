@@ -108,6 +108,7 @@ THEME_FLAGS := []struct {
 	token: Theme_Token,
 } {
 	{N_("Bevelled surfaces"), .Bevel},
+	{N_("Relief edges"), .Relief},
 	{N_("Hard shadows"), .Hard_Shadow},
 	{N_("Focus glow"), .Focus_Glow},
 	{N_("Outline surfaces"), .Outline_Surfaces},

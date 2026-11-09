@@ -4167,6 +4167,9 @@ msgstr "I relay trasportano i tuoi messaggi crittografati. Quelli predefiniti so
 msgid "Relays checked."
 msgstr "Relay controllati."
 
+msgid "Relief edges"
+msgstr "Bordi in rilievo"
+
 msgid "Reload previews"
 msgstr "Ricarica le anteprime"
 
