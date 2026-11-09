@@ -18,8 +18,8 @@ ROOT=doas
 if command -v sudo >/dev/null 2>&1; then ROOT=sudo; fi
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$HERE/build/openbsd"
-ODIN_VERSION=dev-2026-09
-ODIN_COMMIT=a2fb372b76e81ef31fbbc8a2cf2b4fdf5ac6c924
+ODIN_VERSION=dev-2026-10
+ODIN_COMMIT=84bc3fc2100b0f7880a3af37f71bccdcda41c6f9
 
 # Odin has no OpenBSD package: build the pinned release from source (~1 min).
 ODIN="$OUT/odin"

@@ -141,7 +141,9 @@ the offline queue. UI prefs are a separate JSON blob at
 
 ### System dependencies
 
-Odin (a recent nightly; CI pins one in `.github/workflows/ci.yml`), a C and
+Odin dev-2026-10 (the upstream release binary, pinned in
+`packaging/ci/Containerfile`; MDK's Markdown parser requires `odin version`
+to report commit `84bc3fc`), a C and
 C++ compiler, CMake, a Rust toolchain for `marmot-c`, and `zstd` to stage
 the emoji bundle. `rsvg-convert` is only needed to regenerate that bundle.
 Then SDL3 plus

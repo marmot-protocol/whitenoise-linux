@@ -154,8 +154,8 @@ modules:
       - mkdir -p /app/odin && cp -r . /app/odin/
     sources:
       - type: archive
-        url: https://github.com/odin-lang/Odin/releases/download/dev-2026-09/odin-linux-amd64-dev-2026-09.tar.gz
-        sha256: 167c3e1d7056419dad2e04bb3bd98715b7ff286d4c125f3c5a5ee337c6254283
+        url: https://github.com/odin-lang/Odin/releases/download/dev-2026-10/odin-linux-amd64-dev-2026-10.tar.gz
+        sha256: c3c8b095621fd0c75f7f73e3a0829f1b4d45324225f20ba11ed8dc4da310a8ab
 
   - name: whitenoise-linux
     buildsystem: simple

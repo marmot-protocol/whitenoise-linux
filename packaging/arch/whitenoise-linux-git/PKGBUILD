@@ -53,12 +53,12 @@ conflicts=(whitenoise-linux whitenoise)
 # into GCC bitcode objects, which the clang link Odin drives cannot see
 # (undefined sqlite3_* at link time).
 options=(!lto)
-_odin=dev-2026-09
-_odin_dir=odin-linux-amd64-nightly+2026-09-01
+_odin=dev-2026-10
+_odin_dir=odin-linux-amd64-nightly+2026-10-06
 source=("$pkgname::git+$url.git"
         "https://github.com/odin-lang/Odin/releases/download/$_odin/odin-linux-amd64-$_odin.tar.gz")
 sha256sums=('SKIP'
-            '167c3e1d7056419dad2e04bb3bd98715b7ff286d4c125f3c5a5ee337c6254283')
+            'c3c8b095621fd0c75f7f73e3a0829f1b4d45324225f20ba11ed8dc4da310a8ab')
 
 pkgver() {
   cd "$pkgname"

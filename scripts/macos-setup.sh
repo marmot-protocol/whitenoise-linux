@@ -10,7 +10,7 @@
 set -euo pipefail
 
 TOOLS="${1:-${WN_MACOS_TOOLS:-$HOME/.cache/whitenoise-macos-tools}}"
-ODIN_VERSION=dev-2026-09
+ODIN_VERSION=dev-2026-10
 BUN_VERSION=1.3.10
 
 if [ "$(uname -s)" != Darwin ]; then
@@ -21,18 +21,15 @@ command -v brew >/dev/null || { echo 'Install Homebrew first: https://brew.sh' >
 command -v rustup >/dev/null || { echo 'Install rustup first: https://rustup.rs' >&2; exit 1; }
 xcrun --sdk macosx --show-sdk-path >/dev/null || { echo 'Install Xcode or its Command Line Tools: xcode-select --install' >&2; exit 1; }
 
+# Odin publishes no Intel Mac binary from dev-2026-10 on. An Apple silicon
+# host still cross-compiles the darwin-amd64 package.
 case "$(uname -m)" in
   arm64)
     ODIN_ASSET=odin-macos-arm64-$ODIN_VERSION.tar.gz
-    ODIN_SHA256=3e6cbc1f247d8d14fe02c3151272d0a5b8d6d77acb7219f5b62914e4d95d97f7
+    ODIN_SHA256=b276c6ac87c3eea17446a6ca9080089b6e9f492057fb773591775ee49d92a1cf
     BUN_ASSET=bun-darwin-aarch64
     BUN_SHA256=82034e87c9d9b4398ea619aee2eed5d2a68c8157e9a6ae2d1052d84d533ccd8d ;;
-  x86_64)
-    ODIN_ASSET=odin-macos-amd64-$ODIN_VERSION.tar.gz
-    ODIN_SHA256=c1f6d6320218ec7e511093a87bdd599b72a8417a9d2a00de2c9691103562165b
-    BUN_ASSET=bun-darwin-x64
-    BUN_SHA256=c1d90bf6140f20e572c473065dc6b37a4b036349b5e9e4133779cc642ad94323 ;;
-  *) echo "Unsupported Mac architecture: $(uname -m)" >&2; exit 2 ;;
+  *) echo "Unsupported Mac architecture: $(uname -m); building needs Apple silicon." >&2; exit 2 ;;
 esac
 
 # GNU userland (the cross scripts use GNU sed/tar/find flags and bash 4+),

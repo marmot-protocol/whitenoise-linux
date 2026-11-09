@@ -36,7 +36,7 @@ env:
   CARGO_BUILD_JOBS: "6"
   WN_BUILD_JOBS: "6"
   CMAKE_BUILD_PARALLEL_LEVEL: "6"
-  ODIN_VERSION: dev-2026-09
+  ODIN_VERSION: dev-2026-10
   SDL_VERSION: "3.4.14"
   FLATPAK_ID: dev.ipf.whitenoise
   # The AppImage tooling, pinned by tag and sha256 like everything else

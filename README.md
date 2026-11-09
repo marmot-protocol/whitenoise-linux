@@ -337,7 +337,8 @@ the FHS shell hook consumes command arguments:
 nix --extra-experimental-features 'nix-command flakes' run . -- odin version
 ```
 
-The lock pins Odin and OLS to dev-2026-10, while CI uses Odin dev-2026-09.
+The flake installs the upstream Odin dev-2026-10 release binary, the same
+compiler CI uses, and pins OLS to dev-2026-10 through the nixpkgs lock.
 Rust is pinned to 1.97.1; install that toolchain with `rustup` if it is not
 already available. Cargo output defaults to `target/nix` in the working
 directory unless `CARGO_TARGET_DIR` is set.
@@ -350,7 +351,7 @@ pinned source dependencies and resource bundles described below.
 
 ### System packages
 
-You need `just`, the [Odin compiler](https://odin-lang.org/docs/install/), a C and C++ compiler, CMake, and a Rust toolchain (Marmot's C bundle is built from source). Plus SDL 3.4 or newer and the media libraries the viewers bind. Flatpak bundles SDL because the GNOME 50 SDK ships SDL 3.2.
+You need `just`, the [Odin dev-2026-10 release binary](https://github.com/odin-lang/Odin/releases/tag/dev-2026-10), a C and C++ compiler, CMake, and a Rust toolchain (Marmot's C bundle is built from source). MDK compiles its Markdown parser with Odin and requires `odin version` to report commit `84bc3fc`; distribution packages may not. Plus SDL 3.4 or newer and the media libraries the viewers bind. Flatpak bundles SDL because the GNOME 50 SDK ships SDL 3.2.
 
 **Debian / Ubuntu** (SDL3 needs 25.04 or newer, or a source build):
 
@@ -364,7 +365,7 @@ sudo apt-get install -y just pkg-config cmake clang git curl \
 **Arch:**
 
 ```sh
-sudo pacman -S --needed just odin rust cmake sdl3 libarchive mpv ffmpeg poppler-glib cairo glib2 curl openssl freetype2 libwebp zstd
+sudo pacman -S --needed just rust cmake sdl3 libarchive mpv ffmpeg poppler-glib cairo glib2 curl openssl freetype2 libwebp zstd
 ```
 
 **Then:**
@@ -598,7 +599,8 @@ and staged locally by native and cross builds, without contacting CTAN mirrors.
 
 macOS bundles build on a Mac, where Apple's SDK is licensed: Xcode or its
 Command Line Tools supply it, and no Apple account is needed. An Apple silicon
-Mac builds both architectures. `scripts/macos-setup.sh` installs the pinned
+Mac builds both architectures; Odin publishes no compiler for Intel Macs.
+`scripts/macos-setup.sh` installs the pinned
 tools with Homebrew (GNU userland, bash 5, Odin, Bun, Meson) the way the
 container does on Linux, and needs Homebrew, rustup and the Command Line
 Tools already present:

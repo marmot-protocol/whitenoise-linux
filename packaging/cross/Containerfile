@@ -1,6 +1,6 @@
 FROM ubuntu:24.04
-ARG ODIN_VERSION=dev-2026-09
-ARG ODIN_SHA256=167c3e1d7056419dad2e04bb3bd98715b7ff286d4c125f3c5a5ee337c6254283
+ARG ODIN_VERSION=dev-2026-10
+ARG ODIN_SHA256=c3c8b095621fd0c75f7f73e3a0829f1b4d45324225f20ba11ed8dc4da310a8ab
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential clang llvm lld cmake ninja-build pkg-config git curl ca-certificates \

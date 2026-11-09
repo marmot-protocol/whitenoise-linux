@@ -46,6 +46,23 @@
         fi
         exec "$@"
       '';
+      # The upstream release, not nixpkgs' source build: MDK's marmot-markdown
+      # requires `odin version` to name commit 84bc3fc, which only the release
+      # binary reports. It is statically linked and finds its root beside itself.
+      odinRelease = pkgs.stdenvNoCC.mkDerivation {
+        pname = "odin";
+        version = "dev-2026-10";
+        src = pkgs.fetchurl {
+          url = "https://github.com/odin-lang/Odin/releases/download/dev-2026-10/odin-linux-amd64-dev-2026-10.tar.gz";
+          hash = "sha256-w8iwlWIf0Mdff3PjoIKfG01FMkIl8guhHtjcTaMQqKs=";
+        };
+        dontFixup = true;
+        installPhase = ''
+          mkdir -p "$out/share/odin" "$out/bin"
+          cp -R . "$out/share/odin"
+          ln -s "$out/share/odin/odin" "$out/bin/odin"
+        '';
+      };
       # Odin's emitted linker recipe is replayed by scripts/build.sh using clang.
       llvm = pkgs.llvmPackages_21;
       libraries = with pkgs; [
@@ -85,7 +102,7 @@
           commonPackages
           ++ libraries
           ++ (with pkgs; [
-            odin
+            odinRelease
             ols
             gdb
             llvm.lldb
