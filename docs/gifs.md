@@ -5,7 +5,10 @@ trending GIFs from [GifSnap](https://gifsnap.com/docs), without an API key.
 Typing searches after a 300 ms pause. Search stays editable during requests.
 Scroll to load more results. Only visible tiles request thumbnails, including
 saved GIFs. Loading dots appear while searches and previews are pending.
-GIFs that fail to load disappear. An error appears if none can load.
+Some GIFs open on a black or empty frame, which makes a blank thumbnail. Such a
+tile loads the GIF itself and shows its brightest early frame instead. GIFs
+that fail to load, or have no visible frame, disappear. An error appears if
+none can load.
 
 Hover to animate a GIF, or use Tab and the arrow keys to browse. Click a GIF
 or press Enter on a focused tile to send it immediately. The picker closes

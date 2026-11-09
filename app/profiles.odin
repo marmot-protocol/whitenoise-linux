@@ -523,13 +523,30 @@ local_pic :: proc(url: string) -> ^rl.Texture2D {
 }
 
 // GIFs share the image queue, but only visible tiles request a thumbnail.
+// A thumbnail that is missing or blank falls back to a still from the GIF itself.
 @(private)
 gif_thumb :: proc(item: Gif_Item, index: int) -> (tex: ^rl.Texture2D, loading, failed: bool) {
 	if item.sha == "" && item.thumb == "" {return}
 	key := item.sha != "" ? fmt.tprintf("gif:%s", item.sha) : fmt.tprintf("image:%s", item.thumb)
+	if cached, ready := pic_textures[key];
+	   ready && cached == nil && item.sha == "" && item.url != item.thumb {
+		key = fmt.tprintf("image:%s", item.url)
+	}
 	if cached, ready := pic_textures[key]; ready {return cached, false, cached == nil}
 	if !gif_visible(index) {return}
 	return url_pic(key), true, false
+}
+
+// Fewer than 1% of pixels opaque and not near black, the rule wn-image uses to
+// pick a GIF still. A GIF whose every frame is like that has no useful thumbnail.
+@(private = "file")
+image_blank :: proc(image: rl.Image) -> bool {
+	pixels := ([^][4]u8)(image.data)[:image.width * image.height]
+	lit := 0
+	for p in pixels {
+		if p.a >= 128 && max(p.r, p.g, p.b) >= 24 {lit += 1}
+	}
+	return lit * 100 < len(pixels)
 }
 
 @(private)
@@ -634,6 +651,8 @@ pic_worker :: proc(_: ^thread.Thread) {
 			delete(data)
 			if pic.kind == .Photo {
 				if image.data != nil {pic.pixels, pic.side = photo_square(image)}
+				rl.UnloadImage(image)
+			} else if image.data != nil && image_blank(image) {
 				rl.UnloadImage(image)
 			} else {
 				pic.thumb = image
