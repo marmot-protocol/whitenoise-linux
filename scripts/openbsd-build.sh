@@ -32,7 +32,10 @@ if [ ! -x "$ODIN/odin" ] || [ "$(git -C "$ODIN" rev-parse HEAD 2>/dev/null || tr
   fi
   (cd "$ODIN" && LLVM_CONFIG=/usr/local/llvm21/bin/llvm-config ./build_odin.sh release)
 fi
-export PATH="$ODIN:$PATH"
+# MDK's Markdown build renames Odin symbols with llvm-nm and llvm-objcopy;
+# without rustup's llvm-tools it takes them from PATH. Appended so llvm21
+# does not shadow the base system's compilers.
+export PATH="$ODIN:$PATH:/usr/local/llvm21/bin"
 
 bash "$HERE/scripts/build.sh"
 # One thread: OpenBSD spawns by fork+exec, so a child forked by one test

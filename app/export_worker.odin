@@ -54,13 +54,14 @@ transcript_record_strings :: proc(r: ^marmot.Timeline_Message_Record) -> [10]^cs
 }
 
 @(private)
-transcript_reference_strings :: proc(r: ^marmot.Media_Attachment_Reference) -> [7]^cstring {
+transcript_reference_strings :: proc(r: ^marmot.Media_Attachment_Reference) -> [8]^cstring {
 	return {
 		&r.ciphertext_sha256,
 		&r.plaintext_sha256,
 		&r.nonce_hex,
 		&r.file_name,
 		&r.media_type,
+		&r.source_epoch_identity,
 		&r.dim,
 		&r.thumbhash,
 	}

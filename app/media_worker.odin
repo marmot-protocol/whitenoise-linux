@@ -348,7 +348,7 @@ media_ref_clone :: proc(
 	ref: ^marmot.Media_Attachment_Reference,
 ) -> marmot.Media_Attachment_Reference {
 	r := ref^
-	for field in ([]^cstring{&r.ciphertext_sha256, &r.plaintext_sha256, &r.nonce_hex, &r.file_name, &r.media_type, &r.dim, &r.thumbhash}) {
+	for field in ([]^cstring{&r.ciphertext_sha256, &r.plaintext_sha256, &r.nonce_hex, &r.file_name, &r.media_type, &r.source_epoch_identity, &r.dim, &r.thumbhash}) {
 		if field^ != nil {field^ = strings.clone_to_cstring(string(field^))}
 	}
 	locators := make([]marmot.Media_Locator, r.locators_len)
@@ -574,7 +574,7 @@ media_publish :: proc(job: ^Media_Job) {
 @(private)
 media_job_free :: proc(job: ^Media_Job) {
 	r := &job.reference
-	for value in ([]cstring{job.account, job.group, r.ciphertext_sha256, r.plaintext_sha256, r.nonce_hex, r.file_name, r.media_type, r.dim, r.thumbhash}) {delete(value)}
+	for value in ([]cstring{job.account, job.group, r.ciphertext_sha256, r.plaintext_sha256, r.nonce_hex, r.file_name, r.media_type, r.source_epoch_identity, r.dim, r.thumbhash}) {delete(value)}
 	for locator in r.locators[:r.locators_len] {
 		delete(locator.kind)
 		delete(locator.value)

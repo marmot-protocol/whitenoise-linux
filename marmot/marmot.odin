@@ -204,10 +204,11 @@ Client_Options :: struct {
 	client_name:                 cstring,
 	store:                       ^Secret_Store,
 	attachment_acquisition_mode: u32,
+	device_platform:             cstring,
 }
 
 #assert(offset_of(Client_Options, store) == 16)
-#assert(size_of(Client_Options) == 32)
+#assert(size_of(Client_Options) == 40)
 
 // Opaque subscription handle; free before the client that created it.
 Chat_List_Subscription :: struct {}
@@ -279,6 +280,7 @@ Self_Membership :: enum i32 {
 	MEMBER,
 	LEFT,
 	REMOVED,
+	DEVICE_REMOVED,
 }
 
 Group_Lifecycle_State :: enum i32 {
@@ -307,6 +309,10 @@ Existing_Direct_Conversation :: struct {
 
 // Opaque here: reached only through Chat_List_Row, freed by its deep-free.
 Disband_Request :: struct {}
+// Opaque here: reached only through records, freed with their page or list.
+Sticker_Ref :: struct {}
+History_Import_Source :: struct {}
+History_Import_Provenance :: struct {}
 
 Chat_List_Avatar :: struct {
 	image_hash_hex:       cstring,
@@ -332,6 +338,7 @@ Chat_List_Message_Preview :: struct {
 	plaintext:                cstring,
 	content_tokens:           Markdown_Document,
 	kind:                     u64,
+	sticker:                  ^Sticker_Ref,
 	timeline_at:              u64,
 	has_retention_seconds:    bool,
 	retention_seconds:        u64,
@@ -345,7 +352,7 @@ Chat_List_Message_Preview :: struct {
 	delivery_state:           Delivery_State,
 }
 
-#assert(size_of(Chat_List_Message_Preview) == 152)
+#assert(size_of(Chat_List_Message_Preview) == 160)
 
 // Full mirror of MarmotChatListRow.
 Chat_List_Row :: struct {
@@ -383,6 +390,7 @@ Chat_List_Row :: struct {
 	leave_request_pending:       bool,
 	has_leave_requested_at_ms:   bool,
 	leave_requested_at_ms:       u64,
+	leave_blocked:               bool,
 }
 
 // Selected names and avatars from the runtime, including unnamed DMs.
@@ -473,7 +481,7 @@ Presented_Chat_List :: struct {
 #assert(size_of(Presentation_Text) == 24)
 #assert(size_of(Selected_Avatar) == 56)
 #assert(offset_of(Presented_Chat_Row, preview) == 8)
-#assert(size_of(Presented_Chat_Row) == 384)
+#assert(size_of(Presented_Chat_Row) == 392)
 #assert(size_of(Presented_Chat_List) == 40)
 
 Send_Accept_Disposition :: enum i32 {
@@ -825,6 +833,7 @@ Timeline_Reply_Preview :: struct {
 	plaintext:              cstring,
 	content_tokens:         Markdown_Document,
 	kind:                   u64,
+	sticker:                ^Sticker_Ref,
 	media_json:             cstring,
 	media:                  [^]Media_Attachment_Outcome,
 	media_len:              uint,
@@ -834,8 +843,8 @@ Timeline_Reply_Preview :: struct {
 	invalidation_status:    cstring,
 }
 
-#assert(size_of(Timeline_Reply_Preview) == 120)
-#assert(offset_of(Timeline_Reply_Preview, media) == 80)
+#assert(size_of(Timeline_Reply_Preview) == 128)
+#assert(offset_of(Timeline_Reply_Preview, media) == 88)
 
 Timeline_Reaction_Emoji :: struct {
 	emoji:       cstring,
@@ -959,6 +968,7 @@ Timeline_Message_Record :: struct {
 	plaintext:                 cstring,
 	content_tokens:            Markdown_Document,
 	kind:                      u64,
+	sticker:                   ^Sticker_Ref,
 	tags:                      [^]Message_Tag,
 	tags_len:                  uint,
 	timeline_at:               u64,
@@ -976,7 +986,10 @@ Timeline_Message_Record :: struct {
 	deletion_source:           i32,
 	deleted_by_message_id_hex: cstring,
 	invalidation_status:       cstring,
+	recipient_confirmed:       bool,
 	client_token:              cstring,
+	imported_from:             ^History_Import_Source,
+	history_import_provenance: ^History_Import_Provenance,
 }
 
 Media_Locator :: struct {
@@ -986,17 +999,19 @@ Media_Locator :: struct {
 
 // Also a borrowed input to send_media_reference / download_media.
 Media_Attachment_Reference :: struct {
-	locators:          [^]Media_Locator,
-	locators_len:      uint,
-	ciphertext_sha256: cstring,
-	plaintext_sha256:  cstring,
-	nonce_hex:         cstring,
-	file_name:         cstring,
-	media_type:        cstring,
-	version:           i32, // MarmotEncryptedMediaVersion
-	source_epoch:      u64,
-	dim:               cstring,
-	thumbhash:         cstring,
+	locators:              [^]Media_Locator,
+	locators_len:          uint,
+	ciphertext_sha256:     cstring,
+	plaintext_sha256:      cstring,
+	nonce_hex:             cstring,
+	file_name:             cstring,
+	media_type:            cstring,
+	version:               i32, // MarmotEncryptedMediaVersion
+	source_epoch:          u64,
+	// Nullable local upload branch identity; preserve unchanged when sending.
+	source_epoch_identity: cstring,
+	dim:                   cstring,
+	thumbhash:             cstring,
 }
 
 Media_Rejection_Kind :: enum i32 {
@@ -1094,7 +1109,7 @@ Timeline_Page :: struct {
 // Layout guards: sizes taken from sizeof() under gcc against the
 // vendored marmot.h (x86_64). A mismatch means a mirror drifted from
 // the C layout; fix the struct, then update the constant.
-#assert(size_of(Timeline_Message_Record) == 320)
+#assert(size_of(Timeline_Message_Record) == 352)
 #assert(offset_of(Timeline_Message_Record, poll) == 16)
 #assert(size_of(Poll_Type) == 4)
 #assert(size_of(Poll_Option_Result) == 24)
@@ -1117,23 +1132,23 @@ Timeline_Page :: struct {
 #assert(offset_of(Timeline_Message_Query, search_wall_clock) == 116)
 #assert(offset_of(Timeline_Message_Query, cursor_group_id) == 120)
 #assert(size_of(Send_Summary) == 32)
-#assert(size_of(Chat_List_Row) == 208)
+#assert(size_of(Chat_List_Row) == 216)
 #assert(size_of(Markdown_Document) == 40)
 #assert(size_of(Markdown_Block) == 56)
 #assert(size_of(Markdown_Inline) == 48)
 #assert(size_of(Markdown_List_Item) == 40)
 #assert(size_of(Markdown_List_Kind) == 24)
-#assert(size_of(Media_Attachment_Reference) == 88)
-#assert(size_of(Media_Attachment_Outcome) == 104)
+#assert(size_of(Media_Attachment_Reference) == 96)
+#assert(size_of(Media_Attachment_Outcome) == 112)
 #assert(offset_of(Media_Attachment_Outcome, body) == 8)
 #assert(size_of(Media_Upload_Request) == 56)
 #assert(size_of(Media_Upload_Attachment_Request) == 48)
 #assert(size_of(Media_Upload_Result) == 24)
-#assert(size_of(Media_Upload_Attachment_Result) == 96)
+#assert(size_of(Media_Upload_Attachment_Result) == 104)
 #assert(size_of(Media_Download_Result) == 40)
-#assert(size_of(Media_Record) == 152)
+#assert(size_of(Media_Record) == 160)
 #assert(offset_of(Media_Record, reference) == 40)
-#assert(offset_of(Media_Record, caption) == 128)
+#assert(offset_of(Media_Record, caption) == 136)
 
 String_List :: struct {
 	items: [^]cstring,
@@ -1175,6 +1190,7 @@ Group_Member_Record :: struct {
 	member_id_hex: cstring,
 	account:       cstring, // nullable: local account label
 	local:         bool,
+	device_count:  u32,
 }
 
 Group_Member_Details :: struct {
@@ -1185,11 +1201,12 @@ Group_Member_Details :: struct {
 	is_self:       bool,
 	npub:          cstring,
 	display_name:  cstring, // nullable
+	device_count:  u32,
 }
 
 // Leading fields of the embedded MarmotAppGroupRecord, mirrored far
 // enough to read the group's profile (name/description/avatar_url);
-// the rest is padded to the record's 256-byte size.
+// the rest is padded to the record's 264-byte size.
 Group_Record_Head :: struct {
 	group_id_hex:              cstring,
 	protocol_profile:          i32,
@@ -1205,7 +1222,7 @@ Group_Record_Head :: struct {
 	avatar_url:                cstring, // nullable; wins over the Blossom image
 	_mid:                      [88]u8, // avatar_dim .. encrypted_media
 	disappearing_message_secs: u64, // 0 = messages never expire
-	_tail:                     [64]u8, // archived .. via_welcome_message_id_hex
+	_tail:                     [72]u8, // archived .. leave_blocked
 }
 
 // Partial mirror of MarmotGroupDetails: the trailing mls_state is
@@ -1218,13 +1235,13 @@ Group_Details :: struct {
 	// mls_state tail ignored
 }
 
-#assert(size_of(Group_Member_Details) == 40)
+#assert(size_of(Group_Member_Details) == 48)
 #assert(offset_of(Group_Record_Head, description) == 40)
 #assert(offset_of(Group_Record_Head, avatar_url) == 88)
 #assert(offset_of(Group_Record_Head, disappearing_message_secs) == 184)
-#assert(size_of(Group_Record_Head) == 256)
-#assert(offset_of(Group_Details, members) == 256)
-#assert(offset_of(Group_Details, members_len) == 264)
+#assert(size_of(Group_Record_Head) == 264)
+#assert(offset_of(Group_Details, members) == 264)
+#assert(offset_of(Group_Details, members_len) == 272)
 
 // Leading fields of MarmotAppGroupMlsState, mirrored far enough to
 // read the epoch. Reached by pointer only, freed by
@@ -1280,6 +1297,7 @@ Account_Summary :: struct {
 	external_signing: bool,
 	signed_out:       bool,
 	running:          bool,
+	unlinked:         bool,
 }
 
 Account_Summary_List :: struct {
@@ -1810,6 +1828,7 @@ App_Message_Record :: struct {
 	kind:                                                       u64,
 	tags:                                                       [^]Message_Tag,
 	tags_len:                                                   uint,
+	sticker:                                                    ^Sticker_Ref,
 	has_source_epoch:                                           bool,
 	source_epoch:                                               u64,
 	has_retention_seconds:                                      bool,
@@ -1836,9 +1855,9 @@ foreign lib {
 	app_message_list_free :: proc(value: ^App_Message_List) ---
 }
 
-#assert(size_of(App_Message_Record) == 176)
-#assert(offset_of(App_Message_Record, has_moderation_grant) == 168)
-#assert(offset_of(App_Message_Record, invalidated) == 170)
+#assert(size_of(App_Message_Record) == 184)
+#assert(offset_of(App_Message_Record, has_moderation_grant) == 176)
+#assert(offset_of(App_Message_Record, invalidated) == 178)
 #assert(size_of(Group_App_Component) == 24)
 
 Timeline_Edit_Summary :: struct {

@@ -232,7 +232,7 @@ forward_snapshot :: proc(ui: ^Ui_State, client: ^marmot.Client) -> ^Forward_Job 
 			if ref == nil {job.invalid = true; continue}
 			job.emoji[i] = strings.clone(emoji_tag_code(record.tags[:record.tags_len], ref))
 			r = ref^
-			for field in ([]^cstring{&r.ciphertext_sha256, &r.plaintext_sha256, &r.nonce_hex, &r.file_name, &r.media_type, &r.dim, &r.thumbhash}) {
+			for field in ([]^cstring{&r.ciphertext_sha256, &r.plaintext_sha256, &r.nonce_hex, &r.file_name, &r.media_type, &r.source_epoch_identity, &r.dim, &r.thumbhash}) {
 				if field^ != nil {field^ = strings.clone_to_cstring(string(field^))}
 			}
 			locators := make([]marmot.Media_Locator, r.locators_len)
@@ -262,7 +262,7 @@ forward_free :: proc(job: ^Forward_Job) {
 	if job == nil {return}
 	forward_payload_clear(job)
 	for &r in job.refs {
-		for field in ([]cstring{r.ciphertext_sha256, r.plaintext_sha256, r.nonce_hex, r.file_name, r.media_type, r.dim, r.thumbhash}) {
+		for field in ([]cstring{r.ciphertext_sha256, r.plaintext_sha256, r.nonce_hex, r.file_name, r.media_type, r.source_epoch_identity, r.dim, r.thumbhash}) {
 			if field != nil {delete(field)}
 		}
 		for locator in r.locators[:r.locators_len] {delete(locator.kind); delete(locator.value)}

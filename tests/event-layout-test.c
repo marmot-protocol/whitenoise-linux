@@ -29,8 +29,8 @@ _Static_assert(offsetof(MarmotEvent, GROUP_CHANGE_SUPERSEDED.group_id_hex) == 24
                "superseded prefix");
 
 /* Timeline media is now an outcome union, including rejected source slots. */
-_Static_assert(sizeof(MarmotMediaAttachmentReference) == 88, "media reference stride");
-_Static_assert(sizeof(MarmotMediaAttachmentOutcome) == 104, "media outcome stride");
+_Static_assert(sizeof(MarmotMediaAttachmentReference) == 96, "media reference stride");
+_Static_assert(sizeof(MarmotMediaAttachmentOutcome) == 112, "media outcome stride");
 _Static_assert(MARMOT_MEDIA_ATTACHMENT_OUTCOME_ACCEPTED == 0, "accepted tag");
 _Static_assert(MARMOT_MEDIA_ATTACHMENT_OUTCOME_REJECTED == 1, "rejected tag");
 _Static_assert(offsetof(MarmotMediaAttachmentOutcome, ACCEPTED.attachment_index) == 8,
@@ -43,8 +43,8 @@ _Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.kind) =
                "rejection kind");
 _Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.detail) == 24,
                "rejection detail");
-_Static_assert(sizeof(MarmotTimelineMessageRecord) == 320, "timeline stride");
-_Static_assert(offsetof(MarmotTimelineMessageRecord, media) == 216, "timeline media");
+_Static_assert(sizeof(MarmotTimelineMessageRecord) == 352, "timeline stride");
+_Static_assert(offsetof(MarmotTimelineMessageRecord, media) == 224, "timeline media");
 _Static_assert(offsetof(MarmotTimelineMessageRecord, poll) == 16, "timeline poll");
 _Static_assert(sizeof(MarmotPollType) == 4, "poll type width");
 _Static_assert(MARMOT_POLL_TYPE_SINGLE_CHOICE == 0, "single-choice poll");
@@ -56,20 +56,20 @@ _Static_assert(offsetof(MarmotPollProjection, participants) == 32, "poll partici
 _Static_assert(offsetof(MarmotPollProjection, local_selection) == 40, "poll selection");
 _Static_assert(offsetof(MarmotPollProjection, ends_at) == 72, "poll deadline");
 _Static_assert(offsetof(MarmotPollProjection, open) == 80, "poll voting state");
-_Static_assert(sizeof(MarmotTimelineReplyPreview) == 120, "reply preview stride");
-_Static_assert(offsetof(MarmotTimelineReplyPreview, media) == 80, "reply preview media");
+_Static_assert(sizeof(MarmotTimelineReplyPreview) == 128, "reply preview stride");
+_Static_assert(offsetof(MarmotTimelineReplyPreview, media) == 88, "reply preview media");
 
-_Static_assert(sizeof(MarmotChatListMessagePreview) == 152, "chat preview stride");
+_Static_assert(sizeof(MarmotChatListMessagePreview) == 160, "chat preview stride");
 _Static_assert(offsetof(MarmotPresentedChatRow, draft_version) == 0, "borrowed draft version");
 _Static_assert(offsetof(MarmotPresentedChatRow, preview) == 8, "presented preview alignment");
-_Static_assert(sizeof(MarmotPresentedChatRow) == 384, "presented row stride");
+_Static_assert(sizeof(MarmotPresentedChatRow) == 392, "presented row stride");
 _Static_assert(sizeof(MarmotAuditLogSettings) == 1, "audit enable flag only");
 _Static_assert(offsetof(MarmotClientOptions, store) == 16, "host secret store");
-_Static_assert(sizeof(MarmotClientOptions) == 32, "client options stride");
+_Static_assert(sizeof(MarmotClientOptions) == 40, "client options stride");
 _Static_assert(sizeof(MarmotGroupSystemEvent) == 104, "system event stride");
-_Static_assert(sizeof(MarmotAppMessageRecord) == 176, "raw message stride");
-_Static_assert(offsetof(MarmotAppMessageRecord, has_moderation_grant) == 168, "source authority");
-_Static_assert(offsetof(MarmotAppMessageRecord, invalidated) == 170, "invalidated event");
+_Static_assert(sizeof(MarmotAppMessageRecord) == 184, "raw message stride");
+_Static_assert(offsetof(MarmotAppMessageRecord, has_moderation_grant) == 176, "source authority");
+_Static_assert(offsetof(MarmotAppMessageRecord, invalidated) == 178, "invalidated event");
 _Static_assert(sizeof(MarmotGroupAppComponent) == 24, "component stride");
 _Static_assert(MARMOT_HOST_PERFORMANCE_OPERATION_LINUX_STARTUP_BEFORE_VAULT == 6,
                "host operation order");
