@@ -25,15 +25,22 @@ vault_change_password_policy :: proc(t: ^pw_testing.T) {
 	append(&ui.vault_pw[.Current], "x")
 	append(&ui.vault_pw[.New], "Password123!")
 	append(&ui.vault_pw[.Confirm], "Password123!")
-	vault_pw_apply(&ui)
-	pw_testing.expect(t, ui.vault_pw_open)
+	vault_pw_apply(&ui, .Warn)
+	pw_testing.expect(t, ui.vault_pw_open && vault_pw_weak_warned)
 	pw_testing.expect(t, vault_verify("x"))
 	pw_testing.expect(t, !vault_verify("Password123!"))
 
+	// The explicit confirmation re-seals under the weak password.
+	vault_pw_apply(&ui, .Accept)
+	pw_testing.expect(t, !ui.vault_pw_open)
+	pw_testing.expect(t, vault_verify("Password123!"))
+
 	strong := "marmot on burrowed time thimble lantern"
-	clear(&ui.vault_pw[.New]); append(&ui.vault_pw[.New], strong)
-	clear(&ui.vault_pw[.Confirm]); append(&ui.vault_pw[.Confirm], strong)
-	vault_pw_apply(&ui)
+	ui.vault_pw_open = true
+	append(&ui.vault_pw[.Current], "Password123!")
+	append(&ui.vault_pw[.New], strong)
+	append(&ui.vault_pw[.Confirm], strong)
+	vault_pw_apply(&ui, .Warn)
 	pw_testing.expect(t, !ui.vault_pw_open)
 	pw_testing.expect(t, !vault_verify("x"))
 	pw_testing.expect(t, vault_verify(strong))

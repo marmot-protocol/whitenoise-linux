@@ -22,6 +22,7 @@ vault_pw_begin :: proc(ui: ^Ui_State) {
 	ui.vault_pw_open = true
 	ui.vault_pw_focus = .Current
 	ui.vault_pw_err = ""
+	vault_pw_weak_warned = false
 }
 
 vault_pw_close :: proc(ui: ^Ui_State) {
@@ -52,10 +53,19 @@ vault_pw_field :: proc(ui: ^Ui_State, buf: ^[dynamic]u8) -> bool {
 	return false
 }
 
+// A weak new password is the user's call: Warn stops with a warning, and
+// Accept comes only from the "Use this password anyway" click.
 @(private = "file")
-vault_pw_apply :: proc(ui: ^Ui_State) {
+Weak_Password :: enum {
+	Warn,
+	Accept,
+}
+
+@(private = "file")
+vault_pw_apply :: proc(ui: ^Ui_State, weak: Weak_Password) {
 	fresh := string(ui.vault_pw[.New][:])
 	vault_pw_error_field = .Current
+	vault_pw_weak_warned = false
 
 	if !vault_verify(string(ui.vault_pw[.Current][:])) {
 		ui.vault_pw_err = tr("That isn't your current password. Double-check it and try again.")
@@ -70,20 +80,20 @@ vault_pw_apply :: proc(ui: ^Ui_State) {
 		ui.vault_pw_focus = .New
 		return
 	}
-	if password_bits(fresh, &ui.vault_pw_check) < PASSWORD_MIN_BITS {
-		vault_pw_error_field = .New
-		ui.vault_pw_err = tr(
-			"This password is too easy to guess. Use unrelated words or a password-manager password.",
-		)
-		ui.vault_pw_focus = .New
-		return
-	}
 	if fresh != string(ui.vault_pw[.Confirm][:]) {
 		vault_pw_error_field = .Confirm
 		ui.vault_pw_err = tr("The passwords don't match. Type them again.")
 		mem.zero_slice(ui.vault_pw[.Confirm][:])
 		clear(&ui.vault_pw[.Confirm])
 		ui.vault_pw_focus = .Confirm
+		return
+	}
+	if weak == .Warn && password_bits(fresh, &ui.vault_pw_check) < PASSWORD_MIN_BITS {
+		vault_pw_error_field = .Confirm
+		ui.vault_pw_err = tr(
+			"This password is easy to guess. Someone with this device could guess it and open the vault.",
+		)
+		vault_pw_weak_warned = true
 		return
 	}
 	if vault_rekey(fresh) != .None {
@@ -104,6 +114,8 @@ vault_pw_height: i32 = -1
 vault_pw_show: bool
 @(private = "file")
 vault_pw_error_field: Vault_Pw_Field
+@(private = "file")
+vault_pw_weak_warned: bool
 
 @(private)
 secure_password_hint :: proc(bits: f64) {
@@ -132,8 +144,12 @@ handle_vault_pw :: proc(ui: ^Ui_State) {
 	}
 	previous_length := len(ui.vault_pw[ui.vault_pw_focus])
 	edit_text(ui, &ui.vault_pw[ui.vault_pw_focus])
-	if previous_length != len(ui.vault_pw[ui.vault_pw_focus]) &&
-	   vault_pw_error_field == ui.vault_pw_focus {ui.vault_pw_err = ""}
+	if previous_length != len(ui.vault_pw[ui.vault_pw_focus]) {
+		if vault_pw_error_field == ui.vault_pw_focus || vault_pw_weak_warned {
+			ui.vault_pw_err = ""
+		}
+		vault_pw_weak_warned = false
+	}
 	if clicked("VaultPwShow") {vault_pw_show = !vault_pw_show; return}
 
 	if rl.IsKeyPressed(.ESCAPE) || clicked("VaultPwClose") || clicked("VaultPwCancel") {
@@ -151,6 +167,10 @@ handle_vault_pw :: proc(ui: ^Ui_State) {
 	}
 	tab_focus([]Vault_Pw_Field{.Current, .New, .Confirm}, &ui.vault_pw_focus)
 
+	if vault_pw_weak_warned && clicked("VaultPwWeakOk") {
+		vault_pw_apply(ui, .Accept)
+		return
+	}
 	go := clicked("VaultPwGo")
 	if !go && !rl.IsKeyPressed(.ENTER) {
 		return
@@ -161,7 +181,7 @@ handle_vault_pw :: proc(ui: ^Ui_State) {
 		ui.vault_pw_focus = Vault_Pw_Field(int(ui.vault_pw_focus) + 1)
 		return
 	}
-	vault_pw_apply(ui)
+	vault_pw_apply(ui, .Warn)
 }
 
 vault_pw_modal :: proc(ui: ^Ui_State) {
@@ -258,6 +278,9 @@ vault_pw_modal :: proc(ui: ^Ui_State) {
 
 			if len(ui.vault_pw_err) > 0 && vault_pw_error_field == .Confirm {
 				nendo.text(ui.vault_pw_err, {font = FONT_BODY, size = 12, color = DANGER})
+			}
+			if vault_pw_weak_warned {
+				micro_button("VaultPwWeakOk", tr("Use this password anyway"), DANGER)
 			}
 		}
 

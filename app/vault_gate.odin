@@ -160,7 +160,7 @@ gate_confirm: bool // the confirm box has focus
 @(private = "file")
 gate_err: string
 @(private = "file")
-gate_err_strength: bool
+gate_weak_warned: bool // a weak password was submitted; "Use this password anyway" shows
 // The forgot-password steps. Help explains that no reset exists and has
 // no delete control; only Review renders one, so reading help or backing
 // out never arms the deletion.
@@ -281,7 +281,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 
 	gate_err = ""
 	gate_confirm = false
-	gate_err_strength = false
+	gate_weak_warned = false
 	gate_reset = .Closed
 	gate_reset_done = false
 	gate_pw_view = .Masked
@@ -419,18 +419,13 @@ gate_input :: proc(ui: ^Ui_State) {
 		len(ui.ed.redo) != previous_redo
 	if edited {
 		gate_err = ""
+		gate_weak_warned = false
 	}
 	if clicked("GatePwShow") {
 		gate_pw_view = gate_pw_view == .Masked ? .Plain : .Masked
 	}
 	if clicked("GatePw2Show") {
 		gate_pw2_view = gate_pw2_view == .Masked ? .Plain : .Masked
-	}
-	if creating &&
-	   gate_err_strength &&
-	   password_bits(string(gate_pw[:]), &gate_check) >= PASSWORD_MIN_BITS {
-		gate_err = ""
-		gate_err_strength = false
 	}
 	if clicked("GatePwBox") {
 		gate_confirm = false
@@ -485,33 +480,30 @@ gate_input :: proc(ui: ^Ui_State) {
 		gate_reset_done = true
 		gate_check = {}
 		gate_err = ""
-		gate_err_strength = false
+		gate_weak_warned = false
 		return
 	}
 	if other {
 		gate_reset = .Closed
 	}
 
-	if !clicked("GateGo") && !rl.IsKeyPressed(.ENTER) {
+	// A weak password is the user's call: the first submit warns, and only
+	// the explicit "Use this password anyway" click creates the vault.
+	accept_weak := gate_weak_warned && !other && clicked("GateWeakOk")
+	go := clicked("GateGo") || accept_weak
+	if !go && !rl.IsKeyPressed(.ENTER) {
 		return
 	}
-	gate_err_strength = false
+	gate_weak_warned = false
 	password := string(gate_pw[:])
 	if len(password) == 0 {
 		gate_err = creating ? tr("Pick a password first.") : tr("Type your password first.")
 		return
 	}
-	if creating && password_bits(password, &gate_check) < PASSWORD_MIN_BITS {
-		gate_err = tr(
-			"This password is too easy to guess. Use unrelated words or a password-manager password.",
-		)
-		gate_err_strength = true
-		return
-	}
 
 	// Enter walks from the password to the confirm box; the second Enter
 	// submits.
-	if creating && !gate_confirm && !clicked("GateGo") {
+	if creating && !gate_confirm && !go {
 		gate_confirm = true
 		return
 	}
@@ -520,6 +512,13 @@ gate_input :: proc(ui: ^Ui_State) {
 		gate_err = tr("The passwords don't match. Type them again.")
 		clear(&gate_pw2)
 		gate_confirm = true
+		return
+	}
+	if creating && !accept_weak && password_bits(password, &gate_check) < PASSWORD_MIN_BITS {
+		gate_err = tr(
+			"This password is easy to guess. Someone with this device could guess it and open the vault.",
+		)
+		gate_weak_warned = true
 		return
 	}
 	gate_start(creating)
@@ -734,16 +733,23 @@ gate_layout :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 				{width = nendo.grow(), direction = .Column, gap = 8},
 				) {
 					if nendo.box(nendo.id("GateError"))(
-					{width = nendo.grow(), height = nendo.fit(min = 68)},
+					{
+						width = nendo.grow(),
+						height = nendo.fit(min = 68),
+						direction = .Column,
+						gap = 8,
+					},
 					) {
 						if gate_err != "" {
 							nendo.text(gate_err, {font = FONT_BODY, size = 14, color = DANGER})
 						}
+						if gate_weak_warned {
+							micro_button("GateWeakOk", tr("Use this password anyway"), DANGER)
+						}
 					}
 					ready :=
 						!creating ||
-						(password_bits(string(gate_pw[:]), &gate_check) >= PASSWORD_MIN_BITS &&
-								string(gate_pw[:]) == string(gate_pw2[:]))
+						(len(gate_pw) > 0 && string(gate_pw[:]) == string(gate_pw2[:]))
 					if busy {
 						login_big_button(
 							"GateGo",

@@ -5227,8 +5227,8 @@ msgstr "このペアリングリンクは QR コードには長すぎます。�
 msgid "This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it."
 msgstr "このパスワードは、この端末の保管庫を暗号化します。アカウントは作成されず、White Noise はこのパスワードをリセットできません。"
 
-msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
-msgstr "このパスワードは推測されやすいものです。関連のない単語を組み合わせるか、パスワードマネージャーで生成したパスワードを使用してください。"
+msgid "This password is easy to guess. Someone with this device could guess it and open the vault."
+msgstr "このパスワードは推測されやすいものです。この端末を手にした人が推測して、保管庫を開けるおそれがあります。"
 
 msgid "This project is no longer available."
 msgstr "このプロジェクトは利用できなくなりました。"
@@ -5473,6 +5473,9 @@ msgstr "ご自身で運用する信頼できるエージェントだけに使用
 
 msgid "Use original"
 msgstr "元の画像を使用"
+
+msgid "Use this password anyway"
+msgstr "このパスワードをそのまま使う"
 
 msgid "Use this photo?"
 msgstr "この写真を使いますか？"

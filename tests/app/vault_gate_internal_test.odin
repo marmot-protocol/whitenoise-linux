@@ -245,6 +245,7 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 		gate_close()
 		gate_confirm = false
 		gate_err = ""
+		gate_weak_warned = false
 		gate_reset = .Closed
 		gate_reset_done = false
 		rl.PushKey(.ENTER, false)
@@ -284,30 +285,30 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 	append(&gate_pw, "Password123!")
 	append(&gate_pw2, "Password123!")
 	click(&ui, "GateGo")
+	gate_layout(&ui)
 	gate_testing.expect(
 		t,
 		gate_job.worker == nil && !vault_exists(),
-		"weak passwords cannot create a vault",
+		"a weak password asks before creating a vault",
+	)
+	gate_testing.expect(t, nendo.element(nendo.id("GateWeakOk")).found)
+	rl.PushChar('x')
+	gate_input(&ui)
+	gate_layout(&ui)
+	gate_testing.expect(
+		t,
+		gate_err == "" && !nendo.element(nendo.id("GateWeakOk")).found,
+		"editing the password withdraws the weak-password confirmation",
 	)
 	clear(&gate_pw)
 	append(&gate_pw, strong)
-	gate_input(&ui)
-	gate_testing.expect(
-		t,
-		gate_err == "",
-		"correcting strength clears the stale rejection without submitting",
-	)
 	gate_confirm = false
 	click(&ui, "GateGo")
 	gate_testing.expect(t, gate_job.worker == nil && !vault_exists())
 	gate_testing.expect(t, gate_confirm)
 	mismatch_error := gate_err
 	gate_input(&ui)
-	gate_testing.expect(
-		t,
-		gate_err == mismatch_error,
-		"a strong password must not clear an unrelated rejection",
-	)
+	gate_testing.expect(t, gate_err == mismatch_error, "an idle frame keeps the rejection")
 
 	// An idle frame cannot launch a job after a rejected click.
 	gate_input(&ui)
@@ -344,6 +345,19 @@ vault_gate_confirmation_dispatch :: proc(t: ^gate_testing.T) {
 	clear(&gate_pw2)
 	click(&ui, "GateGo")
 	gate_testing.expect(t, gate_job.worker != nil && !gate_job.creating)
+	for gate_job.worker != nil && !gate_poll() {}
+	gate_testing.expect(t, vault_verify("x"))
+
+	// The confirmation creates the vault with the weak password it warned about.
+	vault_delete()
+	clear(&gate_pw)
+	append(&gate_pw, "x")
+	clear(&gate_pw2)
+	append(&gate_pw2, "x")
+	click(&ui, "GateGo")
+	gate_testing.expect(t, gate_job.worker == nil && !vault_exists())
+	click(&ui, "GateWeakOk")
+	gate_testing.expect(t, gate_job.worker != nil && gate_job.creating)
 	for gate_job.worker != nil && !gate_poll() {}
 	gate_testing.expect(t, vault_verify("x"))
 

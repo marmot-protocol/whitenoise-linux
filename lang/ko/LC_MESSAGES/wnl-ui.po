@@ -5226,8 +5226,8 @@ msgstr "이 페어링 링크는 QR 코드로 만들기에 너무 깁니다. 페�
 msgid "This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it."
 msgstr "이 비밀번호는 이 기기의 금고를 암호화합니다. 계정을 만들지 않으며 White Noise는 이 비밀번호를 재설정할 수 없습니다."
 
-msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
-msgstr "이 비밀번호는 너무 쉽게 추측됩니다. 서로 관련 없는 단어나 비밀번호 관리자가 생성한 비밀번호를 사용하세요."
+msgid "This password is easy to guess. Someone with this device could guess it and open the vault."
+msgstr "이 비밀번호는 쉽게 추측됩니다. 이 기기를 가진 사람이 비밀번호를 추측해 금고를 열 수 있습니다."
 
 msgid "This project is no longer available."
 msgstr "이 프로젝트는 더 이상 사용할 수 없습니다."
@@ -5472,6 +5472,9 @@ msgstr "직접 운영하고 신뢰하는 에이전트만 사용하세요. 비밀
 
 msgid "Use original"
 msgstr "원본 사용"
+
+msgid "Use this password anyway"
+msgstr "이 비밀번호 그대로 사용"
 
 msgid "Use this photo?"
 msgstr "이 사진을 사용하시겠습니까?"

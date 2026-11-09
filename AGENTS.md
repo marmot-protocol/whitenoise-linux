@@ -281,6 +281,9 @@ The create-vault and change-password hints distinguish empty input, known
 common passwords, other weak passwords, and passwords that meet the existing
 40-bit estimate threshold. Common-password feedback uses the estimator's
 whole-password corpus match; it does not change password acceptance.
+A vault password below the threshold is accepted only from the warning's
+"Use this password anyway" button, after the confirmation matches; any edit
+withdraws it. Backup and key-export passwords still require 40 bits.
 
 First run shows a two-step map in the gate, "Protect this device" then
 "Create or use an account", and says the password does not create an

@@ -5227,8 +5227,8 @@ msgstr "Dieser Kopplungslink ist für einen QR-Code zu lang. Verwende Kopplungsl
 msgid "This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it."
 msgstr "Dieses Passwort verschlüsselt den Tresor auf diesem Gerät. Es erstellt kein Konto, und White Noise kann es nicht zurücksetzen."
 
-msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
-msgstr "Dieses Passwort ist zu leicht zu erraten. Verwende unzusammenhängende Wörter oder ein von einem Passwortmanager erzeugtes Passwort."
+msgid "This password is easy to guess. Someone with this device could guess it and open the vault."
+msgstr "Dieses Passwort ist leicht zu erraten. Wer dieses Gerät in die Hände bekommt, könnte es erraten und den Tresor öffnen."
 
 msgid "This project is no longer available."
 msgstr "Dieses Projekt ist nicht mehr verfügbar."
@@ -5473,6 +5473,9 @@ msgstr "Verwende nur einen Agenten, den du selbst betreibst und dem du vertraust
 
 msgid "Use original"
 msgstr "Original verwenden"
+
+msgid "Use this password anyway"
+msgstr "Dieses Passwort trotzdem verwenden"
 
 msgid "Use this photo?"
 msgstr "Dieses Foto verwenden?"

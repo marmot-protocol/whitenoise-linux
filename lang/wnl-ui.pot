@@ -5226,7 +5226,7 @@ msgstr ""
 msgid "This password encrypts the vault on this device. It doesn't create an account, and White Noise can't reset it."
 msgstr ""
 
-msgid "This password is too easy to guess. Use unrelated words or a password-manager password."
+msgid "This password is easy to guess. Someone with this device could guess it and open the vault."
 msgstr ""
 
 msgid "This project is no longer available."
@@ -5471,6 +5471,9 @@ msgid "Use only an agent you run and trust. Your private key is never included."
 msgstr ""
 
 msgid "Use original"
+msgstr ""
+
+msgid "Use this password anyway"
 msgstr ""
 
 msgid "Use this photo?"
