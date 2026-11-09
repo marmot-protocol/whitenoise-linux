@@ -917,6 +917,9 @@ msgstr "새 버전을 확인합니다."
 msgid "Check now"
 msgstr "지금 확인"
 
+msgid "Check the spelling, or paste their public key."
+msgstr "철자를 확인하거나 상대의 공개 키를 붙여넣으세요."
+
 msgid "Check your key package"
 msgstr "키 패키지 확인"
 
@@ -958,9 +961,6 @@ msgstr "칩 윤곽선"
 
 msgid "Chip text"
 msgstr "칩 텍스트"
-
-msgid "Choose a contact or paste public keys separated by commas."
-msgstr "연락처를 선택하거나 쉼표로 구분된 공개 키를 붙여넣으세요."
 
 msgid "Choose a contacts CSV or JSON export to import."
 msgstr "가져올 연락처 CSV 또는 JSON 내보내기 파일을 선택하세요."
@@ -1009,6 +1009,9 @@ msgstr "이모지를 1개 또는 2개 선택하세요. 모든 멤버에게 같�
 
 msgid "Choose one-tap reactions"
 msgstr "원탭 반응 선택"
+
+msgid "Choose someone or paste public keys separated by commas."
+msgstr "사람을 선택하거나 공개 키를 쉼표로 구분해 붙여넣으세요."
 
 msgid "Choose someone to talk to."
 msgstr "대화할 상대를 선택하세요."
@@ -1693,6 +1696,9 @@ msgstr "GIF를 검색할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't search messages. Please try again."
 msgstr "메시지를 검색할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't search the network. Please try again."
+msgstr "네트워크를 검색할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't search. Please try again."
 msgstr "검색할 수 없습니다. 다시 시도하세요."
@@ -3424,6 +3430,9 @@ msgstr "해당 공개 키로 게시된 키 패키지가 없습니다."
 msgid "No key package yet. Publish one so people can invite you."
 msgstr "아직 키 패키지가 없습니다. 다른 사람이 초대할 수 있도록 게시하세요."
 
+msgid "No matches"
+msgstr "일치하는 항목 없음"
+
 msgid "No matches."
 msgstr "일치하는 항목이 없습니다."
 
@@ -3727,6 +3736,9 @@ msgstr "비밀번호"
 msgid "PATCH"
 msgstr "패치"
 
+msgid "PEOPLE"
+msgstr "사람"
+
 msgid "PRODUCT"
 msgstr "상품"
 
@@ -3776,9 +3788,6 @@ msgstr "붙여넣기"
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "팩 링크를 붙여넣으면 추가하기 전에 스티커를 미리 볼 수 있습니다."
 
-msgid "Paste someone's public key to start a chat."
-msgstr "상대방의 공개 키를 붙여넣어 채팅을 시작하세요."
-
 #, c-format
 msgid "Paste this into %s. Review the installation plan before approving changes."
 msgstr "이 내용을 %s에 붙여넣으세요. 변경 사항을 승인하기 전에 설치 계획을 검토하세요."
@@ -3801,8 +3810,8 @@ msgstr "다른 사람이 나를 초대할 수 없습니다"
 msgid "People you follow show up here."
 msgstr "팔로우하는 사람이 여기에 표시됩니다."
 
-msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
-msgstr "팔로우하는 사람이 여기에 표시됩니다. 지금 채팅을 시작하려면 위 입력란에 상대방의 공개 키를 붙여넣으세요."
+msgid "People you follow show up here. To start a chat now, search for someone by name or paste their public key above."
+msgstr "팔로우하는 사람이 여기에 표시됩니다. 지금 채팅을 시작하려면 위에서 이름으로 검색하거나 상대의 공개 키를 붙여넣으세요."
 
 msgid "Perfect. Wake me up when it's spring."
 msgstr "완벽합니다. 봄이 오면 깨워 주세요."
@@ -4478,11 +4487,11 @@ msgstr "모든 채팅 검색"
 msgid "Search archived chats..."
 msgstr "보관된 채팅 검색..."
 
-msgid "Search contacts or paste a public key..."
-msgstr "연락처 검색 또는 공개 키 붙여넣기..."
+msgid "Search by name or Nostr address, or paste a public key..."
+msgstr "이름 또는 Nostr 주소로 검색하거나 공개 키 붙여넣기..."
 
-msgid "Search contacts or paste public keys..."
-msgstr "연락처 검색 또는 공개 키 붙여넣기..."
+msgid "Search by name or paste public keys..."
+msgstr "이름으로 검색하거나 공개 키 붙여넣기..."
 
 msgid "Search contacts..."
 msgstr "연락처 검색..."
@@ -4495,6 +4504,9 @@ msgstr "전체 검색"
 
 msgid "Search folders..."
 msgstr "폴더 검색..."
+
+msgid "Search for someone or paste their public key to start a chat."
+msgstr "상대를 검색하거나 공개 키를 붙여넣어 채팅을 시작하세요."
 
 msgid "Search images"
 msgstr "이미지 검색"
@@ -4522,6 +4534,9 @@ msgstr "이 기기에 저장된 기록만 검색합니다. 오래되었거나 �
 
 msgid "Searching local history…"
 msgstr "로컬 기록 검색 중…"
+
+msgid "Searching the network..."
+msgstr "네트워크 검색 중..."
 
 msgid "Searching…"
 msgstr "검색 중…"
@@ -4806,6 +4821,9 @@ msgstr "작게"
 
 msgid "Sold"
 msgstr "판매됨"
+
+msgid "Some network results may be missing."
+msgstr "일부 네트워크 결과가 누락되었을 수 있습니다."
 
 msgid "Sort chats by recent activity"
 msgstr "최근 활동순으로 채팅 정렬"
@@ -5269,9 +5287,6 @@ msgstr "처리 시간"
 msgid "Title font"
 msgstr "제목 글꼴"
 
-msgid "To start a chat with someone new, paste their public key."
-msgstr "새로운 사람과 채팅을 시작하려면 상대의 공개 키를 붙여넣으세요."
-
 msgid "Today"
 msgstr "오늘"
 
@@ -5684,6 +5699,9 @@ msgstr "보관함에서 이 채팅을 찾아 채팅 목록으로 복원할 수 �
 
 msgid "You can't send messages to someone you blocked."
 msgstr "차단한 사람에게는 메시지를 보낼 수 없습니다."
+
+msgid "You follow"
+msgstr "팔로우 중"
 
 msgid "You have no chats to share this with."
 msgstr "공유할 채팅이 없습니다."

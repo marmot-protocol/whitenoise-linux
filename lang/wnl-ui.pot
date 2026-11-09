@@ -917,6 +917,9 @@ msgstr ""
 msgid "Check now"
 msgstr ""
 
+msgid "Check the spelling, or paste their public key."
+msgstr ""
+
 msgid "Check your key package"
 msgstr ""
 
@@ -957,9 +960,6 @@ msgid "Chip outline"
 msgstr ""
 
 msgid "Chip text"
-msgstr ""
-
-msgid "Choose a contact or paste public keys separated by commas."
 msgstr ""
 
 msgid "Choose a contacts CSV or JSON export to import."
@@ -1008,6 +1008,9 @@ msgid "Choose one or two emoji. Every member sees the same image."
 msgstr ""
 
 msgid "Choose one-tap reactions"
+msgstr ""
+
+msgid "Choose someone or paste public keys separated by commas."
 msgstr ""
 
 msgid "Choose someone to talk to."
@@ -1692,6 +1695,9 @@ msgid "Couldn't search GIFs. Please try again."
 msgstr ""
 
 msgid "Couldn't search messages. Please try again."
+msgstr ""
+
+msgid "Couldn't search the network. Please try again."
 msgstr ""
 
 msgid "Couldn't search. Please try again."
@@ -3424,6 +3430,9 @@ msgstr ""
 msgid "No key package yet. Publish one so people can invite you."
 msgstr ""
 
+msgid "No matches"
+msgstr ""
+
 msgid "No matches."
 msgstr ""
 
@@ -3727,6 +3736,9 @@ msgstr ""
 msgid "PATCH"
 msgstr ""
 
+msgid "PEOPLE"
+msgstr ""
+
 msgid "PRODUCT"
 msgstr ""
 
@@ -3776,9 +3788,6 @@ msgstr ""
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr ""
 
-msgid "Paste someone's public key to start a chat."
-msgstr ""
-
 #, c-format
 msgid "Paste this into %s. Review the installation plan before approving changes."
 msgstr ""
@@ -3801,7 +3810,7 @@ msgstr ""
 msgid "People you follow show up here."
 msgstr ""
 
-msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
+msgid "People you follow show up here. To start a chat now, search for someone by name or paste their public key above."
 msgstr ""
 
 msgid "Perfect. Wake me up when it's spring."
@@ -4478,10 +4487,10 @@ msgstr ""
 msgid "Search archived chats..."
 msgstr ""
 
-msgid "Search contacts or paste a public key..."
+msgid "Search by name or Nostr address, or paste a public key..."
 msgstr ""
 
-msgid "Search contacts or paste public keys..."
+msgid "Search by name or paste public keys..."
 msgstr ""
 
 msgid "Search contacts..."
@@ -4494,6 +4503,9 @@ msgid "Search everywhere"
 msgstr ""
 
 msgid "Search folders..."
+msgstr ""
+
+msgid "Search for someone or paste their public key to start a chat."
 msgstr ""
 
 msgid "Search images"
@@ -4521,6 +4533,9 @@ msgid "Searches only history stored on this device. Older or unsynced messages m
 msgstr ""
 
 msgid "Searching local history…"
+msgstr ""
+
+msgid "Searching the network..."
 msgstr ""
 
 msgid "Searching…"
@@ -4805,6 +4820,9 @@ msgid "Small"
 msgstr ""
 
 msgid "Sold"
+msgstr ""
+
+msgid "Some network results may be missing."
 msgstr ""
 
 msgid "Sort chats by recent activity"
@@ -5269,9 +5287,6 @@ msgstr ""
 msgid "Title font"
 msgstr ""
 
-msgid "To start a chat with someone new, paste their public key."
-msgstr ""
-
 msgid "Today"
 msgstr ""
 
@@ -5683,6 +5698,9 @@ msgid "You can find it in Archived and restore it to your chat list there."
 msgstr ""
 
 msgid "You can't send messages to someone you blocked."
+msgstr ""
+
+msgid "You follow"
 msgstr ""
 
 msgid "You have no chats to share this with."

@@ -918,6 +918,9 @@ msgstr "新しいバージョンを確認します。"
 msgid "Check now"
 msgstr "今すぐ確認"
 
+msgid "Check the spelling, or paste their public key."
+msgstr "綴りを確認するか、相手の公開鍵を貼り付けてください。"
+
 msgid "Check your key package"
 msgstr "キーパッケージを確認"
 
@@ -959,9 +962,6 @@ msgstr "チップの輪郭"
 
 msgid "Chip text"
 msgstr "チップの文字"
-
-msgid "Choose a contact or paste public keys separated by commas."
-msgstr "連絡先を選ぶか、公開鍵をカンマで区切って貼り付けてください。"
 
 msgid "Choose a contacts CSV or JSON export to import."
 msgstr "インポートする連絡先のCSVまたはJSONエクスポートを選んでください。"
@@ -1010,6 +1010,9 @@ msgstr "絵文字を1つか2つ選択してください。すべてのメンバ�
 
 msgid "Choose one-tap reactions"
 msgstr "ワンタップリアクションを選択"
+
+msgid "Choose someone or paste public keys separated by commas."
+msgstr "相手を選ぶか、公開鍵をカンマ区切りで貼り付けてください。"
 
 msgid "Choose someone to talk to."
 msgstr "会話する相手を選んでください。"
@@ -1694,6 +1697,9 @@ msgstr "GIFを検索できませんでした。もう一度お試しください
 
 msgid "Couldn't search messages. Please try again."
 msgstr "メッセージを検索できませんでした。もう一度お試しください。"
+
+msgid "Couldn't search the network. Please try again."
+msgstr "ネットワークを検索できませんでした。もう一度お試しください。"
 
 msgid "Couldn't search. Please try again."
 msgstr "検索できませんでした。もう一度お試しください。"
@@ -3425,6 +3431,9 @@ msgstr "その公開鍵のキーパッケージは公開されていません。
 msgid "No key package yet. Publish one so people can invite you."
 msgstr "キーパッケージがまだありません。公開すると、ほかの人があなたを招待できるようになります。"
 
+msgid "No matches"
+msgstr "一致する結果はありません"
+
 msgid "No matches."
 msgstr "一致する結果はありません。"
 
@@ -3728,6 +3737,9 @@ msgstr "パスワード"
 msgid "PATCH"
 msgstr "パッチ"
 
+msgid "PEOPLE"
+msgstr "ユーザー"
+
 msgid "PRODUCT"
 msgstr "商品"
 
@@ -3777,9 +3789,6 @@ msgstr "貼り付け"
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "パックのリンクを貼り付けると、追加する前にステッカーを確認できます。"
 
-msgid "Paste someone's public key to start a chat."
-msgstr "相手の公開鍵を貼り付けてチャットを始めてください。"
-
 #, c-format
 msgid "Paste this into %s. Review the installation plan before approving changes."
 msgstr "このプロンプトを%sに貼り付けてください。変更を承認する前に、インストール計画を確認してください。"
@@ -3802,8 +3811,8 @@ msgstr "ほかの人があなたを招待できません"
 msgid "People you follow show up here."
 msgstr "フォローしている人がここに表示されます。"
 
-msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
-msgstr "フォローしている人がここに表示されます。今すぐチャットを始めるには、上の欄に相手の公開鍵を貼り付けてください。"
+msgid "People you follow show up here. To start a chat now, search for someone by name or paste their public key above."
+msgstr "フォローしている人がここに表示されます。今すぐチャットを始めるには、上の欄で名前を検索するか公開鍵を貼り付けてください。"
 
 msgid "Perfect. Wake me up when it's spring."
 msgstr "最高です。春になったら起こしてください。"
@@ -4479,11 +4488,11 @@ msgstr "すべてのチャットを検索"
 msgid "Search archived chats..."
 msgstr "アーカイブしたチャットを検索..."
 
-msgid "Search contacts or paste a public key..."
-msgstr "連絡先を検索するか、公開鍵を貼り付け..."
+msgid "Search by name or Nostr address, or paste a public key..."
+msgstr "名前やNostrアドレスで検索、または公開鍵を貼り付け..."
 
-msgid "Search contacts or paste public keys..."
-msgstr "連絡先を検索するか、公開鍵を貼り付けます..."
+msgid "Search by name or paste public keys..."
+msgstr "名前で検索、または公開鍵を貼り付け..."
 
 msgid "Search contacts..."
 msgstr "連絡先を検索..."
@@ -4496,6 +4505,9 @@ msgstr "すべてを検索"
 
 msgid "Search folders..."
 msgstr "フォルダを検索..."
+
+msgid "Search for someone or paste their public key to start a chat."
+msgstr "相手を検索するか公開鍵を貼り付けて、チャットを始めてください。"
 
 msgid "Search images"
 msgstr "画像を検索"
@@ -4523,6 +4535,9 @@ msgstr "この端末に保存された履歴のみを検索します。古いメ
 
 msgid "Searching local history…"
 msgstr "端末の履歴を検索中…"
+
+msgid "Searching the network..."
+msgstr "ネットワークを検索中..."
 
 msgid "Searching…"
 msgstr "検索中…"
@@ -4807,6 +4822,9 @@ msgstr "小"
 
 msgid "Sold"
 msgstr "売却済み"
+
+msgid "Some network results may be missing."
+msgstr "ネットワークの結果の一部が表示されていない可能性があります。"
 
 msgid "Sort chats by recent activity"
 msgstr "最近のアクティビティ順にチャットを並べ替え"
@@ -5270,9 +5288,6 @@ msgstr "処理時間"
 msgid "Title font"
 msgstr "タイトルのフォント"
 
-msgid "To start a chat with someone new, paste their public key."
-msgstr "新しい相手とチャットを始めるには、その人の公開鍵を貼り付けてください。"
-
 msgid "Today"
 msgstr "今日"
 
@@ -5685,6 +5700,9 @@ msgstr "アーカイブ済みからこのチャットを見つけて、チャッ
 
 msgid "You can't send messages to someone you blocked."
 msgstr "ブロックした相手にはメッセージを送信できません。"
+
+msgid "You follow"
+msgstr "フォロー中"
 
 msgid "You have no chats to share this with."
 msgstr "共有先にできるチャットはありません。"

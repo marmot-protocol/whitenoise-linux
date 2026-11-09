@@ -758,6 +758,67 @@ User_Profile_Metadata :: struct {
 
 #assert(size_of(User_Profile_Metadata) == 56)
 
+// Identity-directory search: one subscription walks outward from the
+// searching account, radius by radius, and streams each step's hits.
+User_Search_Subscription :: struct {}
+
+Matched_Field :: enum i32 {
+	NAME,
+	NIP05,
+	DISPLAY_NAME,
+	ABOUT,
+	NPUB,
+	PUBKEY,
+}
+
+Match_Quality :: enum i32 {
+	EXACT,
+	PREFIX,
+	CONTAINS,
+}
+
+User_Directory_Search_Result :: struct {
+	account_id_hex, npub:    cstring,
+	radius:                  u8, // social hops from the searcher
+	is_followed_by_searcher: bool,
+	matched_field:           Matched_Field,
+	match_quality:           Match_Quality,
+	has_provider_rank:       bool,
+	provider_rank:           f64,
+	profile:                 ^User_Profile_Metadata, // nullable
+}
+
+#assert(size_of(User_Directory_Search_Result) == 48)
+
+User_Search_Update :: struct {
+	trigger:             struct {
+		tag:  enum i32 {
+			RADIUS_STARTED,
+			RESULTS_FOUND,
+			DISCOVERY_RESULTS_FOUND,
+			RADIUS_COMPLETED,
+			RADIUS_TIMEOUT,
+			RADIUS_TRUNCATED,
+			SEARCH_COMPLETED, // terminal: the stream closes next
+			ERROR,
+			CACHED_RESULTS_FOUND,
+		},
+		body: struct #raw_union {
+			radius:  u8,
+			message: cstring, // ERROR
+		},
+	},
+	// Hits new since the previous update, then replacements for earlier
+	// hits, keyed by account id.
+	new_results:         [^]User_Directory_Search_Result,
+	new_results_len:     uint,
+	updated_results:     [^]User_Directory_Search_Result,
+	updated_results_len: uint,
+	total_result_count:  u32,
+}
+
+#assert(size_of(User_Search_Update) == 56)
+
 Timeline_Reply_Preview :: struct {
 	message_id_hex:         cstring,
 	sender:                 cstring,
@@ -1377,6 +1438,15 @@ foreign lib {
 	// input does not decode.
 	account_id_hex :: proc(client: ^Client, reference: cstring, out: ^cstring) -> Status ---
 	display_name :: proc(client: ^Client, account_id_hex: cstring, out: ^cstring) -> Status ---
+	// Stream directory hits from radius_start to radius_end (at most 2)
+	// hops out. timeout_ms 0 waits forever; TIMEOUT and CLOSED leave out
+	// NULL. Freeing the subscription cancels the traversal.
+	search_users :: proc(client: ^Client, account_id_hex, query: cstring, radius_start, radius_end: u8, out_sub: ^^User_Search_Subscription) -> Status ---
+	@(link_name = "marmot_user_search_subscription_next")
+	user_search_next :: proc(sub: ^User_Search_Subscription, timeout_ms: u32, out: ^^User_Search_Update) -> Status ---
+	@(link_name = "marmot_user_search_subscription_free")
+	user_search_free :: proc(sub: ^User_Search_Subscription) ---
+	user_search_update_free :: proc(update: ^User_Search_Update) ---
 	reveal_nsec :: proc(client: ^Client, account_ref: cstring, out: ^cstring) -> Status ---
 
 	// SENSITIVE: reveal_nsec marks the account key handled-insecurely;

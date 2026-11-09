@@ -107,6 +107,7 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	group_files_stop()
 	export_stop(ui)
 	search_stop()
+	people_search_stop(ui)
 	if live.refresh != nil {chat_list_free(live.refresh); free(live.refresh); live.refresh = nil}
 	agent_shutdown()
 	// These owners publish textures on the render thread; join only here.

@@ -918,6 +918,9 @@ msgstr "Nach einer neueren Version suchen."
 msgid "Check now"
 msgstr "Jetzt prüfen"
 
+msgid "Check the spelling, or paste their public key."
+msgstr "Prüfe die Schreibweise oder füge den öffentlichen Schlüssel der Person ein."
+
 msgid "Check your key package"
 msgstr "Prüfe dein Schlüsselpaket"
 
@@ -959,9 +962,6 @@ msgstr "Chip-Umriss"
 
 msgid "Chip text"
 msgstr "Chip-Text"
-
-msgid "Choose a contact or paste public keys separated by commas."
-msgstr "Wähle einen Kontakt oder füge öffentliche Schlüssel durch Kommas getrennt ein."
 
 msgid "Choose a contacts CSV or JSON export to import."
 msgstr "Wähle einen CSV- oder JSON-Kontaktexport zum Importieren."
@@ -1010,6 +1010,9 @@ msgstr "Wähle ein oder zwei Emojis. Alle Mitglieder sehen dasselbe Bild."
 
 msgid "Choose one-tap reactions"
 msgstr "Schnellreaktionen wählen"
+
+msgid "Choose someone or paste public keys separated by commas."
+msgstr "Wähle jemanden aus oder füge öffentliche Schlüssel durch Kommas getrennt ein."
 
 msgid "Choose someone to talk to."
 msgstr "Wähle jemanden zum Chatten aus."
@@ -1694,6 +1697,9 @@ msgstr "GIFs konnten nicht gesucht werden. Bitte versuche es erneut."
 
 msgid "Couldn't search messages. Please try again."
 msgstr "Die Nachrichten konnten nicht durchsucht werden. Bitte versuche es erneut."
+
+msgid "Couldn't search the network. Please try again."
+msgstr "Das Netzwerk konnte nicht durchsucht werden. Bitte versuche es erneut."
 
 msgid "Couldn't search. Please try again."
 msgstr "Die Suche konnte nicht ausgeführt werden. Bitte versuche es erneut."
@@ -3425,6 +3431,9 @@ msgstr "Für diesen Pubkey ist kein Schlüsselpaket veröffentlicht."
 msgid "No key package yet. Publish one so people can invite you."
 msgstr "Noch kein Schlüsselpaket. Veröffentliche eines, damit andere dich einladen können."
 
+msgid "No matches"
+msgstr "Keine Treffer"
+
 msgid "No matches."
 msgstr "Keine Treffer."
 
@@ -3728,6 +3737,9 @@ msgstr "PASSWORT"
 msgid "PATCH"
 msgstr "PATCH"
 
+msgid "PEOPLE"
+msgstr "PERSONEN"
+
 msgid "PRODUCT"
 msgstr "PRODUKT"
 
@@ -3777,9 +3789,6 @@ msgstr "Einfügen"
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "Füge einen Paketlink ein, um die Sticker vor dem Hinzufügen anzusehen."
 
-msgid "Paste someone's public key to start a chat."
-msgstr "Füge den öffentlichen Schlüssel einer Person ein, um einen Chat zu starten."
-
 #, c-format
 msgid "Paste this into %s. Review the installation plan before approving changes."
 msgstr "Füge diese Anweisung in %s ein. Prüfe den Installationsplan, bevor du Änderungen genehmigst."
@@ -3802,8 +3811,8 @@ msgstr "Andere können dich nicht einladen"
 msgid "People you follow show up here."
 msgstr "Hier erscheinen Personen, denen du folgst."
 
-msgid "People you follow show up here. To start a chat now, paste someone's public key in the field above."
-msgstr "Hier erscheinen die Personen, denen du folgst. Um jetzt einen Chat zu starten, füge oben den öffentlichen Schlüssel einer Person ein."
+msgid "People you follow show up here. To start a chat now, search for someone by name or paste their public key above."
+msgstr "Hier erscheinen Personen, denen du folgst. Um jetzt einen Chat zu starten, suche oben nach einem Namen oder füge einen öffentlichen Schlüssel ein."
 
 msgid "Perfect. Wake me up when it's spring."
 msgstr "Perfekt. Weck mich, wenn es Frühling ist."
@@ -4479,11 +4488,11 @@ msgstr "Alle Chats durchsuchen"
 msgid "Search archived chats..."
 msgstr "Archivierte Chats durchsuchen..."
 
-msgid "Search contacts or paste a public key..."
-msgstr "Kontakte suchen oder öffentlichen Schlüssel einfügen..."
+msgid "Search by name or Nostr address, or paste a public key..."
+msgstr "Nach Name oder Nostr-Adresse suchen oder öffentlichen Schlüssel einfügen..."
 
-msgid "Search contacts or paste public keys..."
-msgstr "Kontakte suchen oder öffentliche Schlüssel einfügen..."
+msgid "Search by name or paste public keys..."
+msgstr "Nach Name suchen oder öffentliche Schlüssel einfügen..."
 
 msgid "Search contacts..."
 msgstr "Kontakte durchsuchen..."
@@ -4496,6 +4505,9 @@ msgstr "Überall suchen"
 
 msgid "Search folders..."
 msgstr "Ordner suchen..."
+
+msgid "Search for someone or paste their public key to start a chat."
+msgstr "Suche nach jemandem oder füge den öffentlichen Schlüssel der Person ein, um einen Chat zu starten."
 
 msgid "Search images"
 msgstr "Bilder suchen"
@@ -4523,6 +4535,9 @@ msgstr "Durchsucht nur den auf diesem Gerät gespeicherten Verlauf. Ältere oder
 
 msgid "Searching local history…"
 msgstr "Lokaler Verlauf wird durchsucht…"
+
+msgid "Searching the network..."
+msgstr "Netzwerk wird durchsucht..."
 
 msgid "Searching…"
 msgstr "Suche…"
@@ -4807,6 +4822,9 @@ msgstr "Klein"
 
 msgid "Sold"
 msgstr "Verkauft"
+
+msgid "Some network results may be missing."
+msgstr "Einige Netzwerkergebnisse fehlen möglicherweise."
 
 msgid "Sort chats by recent activity"
 msgstr "Chats nach letzter Aktivität sortieren"
@@ -5270,9 +5288,6 @@ msgstr "Laufzeiten"
 msgid "Title font"
 msgstr "Titelschriftart"
 
-msgid "To start a chat with someone new, paste their public key."
-msgstr "Um mit jemand Neuem zu chatten, füge den öffentlichen Schlüssel der Person ein."
-
 msgid "Today"
 msgstr "Heute"
 
@@ -5685,6 +5700,9 @@ msgstr "Du findest ihn unter Archiviert und kannst ihn dort in deiner Chatliste 
 
 msgid "You can't send messages to someone you blocked."
 msgstr "Du kannst Personen, die du blockiert hast, keine Nachrichten senden."
+
+msgid "You follow"
+msgstr "Du folgst"
 
 msgid "You have no chats to share this with."
 msgstr "Du hast keine Chats, mit denen du das teilen kannst."

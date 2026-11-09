@@ -917,6 +917,7 @@ app_main :: proc() {
 			contacts_import_drain(&ui, client)
 			whip_project_poll(&ui)
 			search_drain(&ui, client)
+			people_search_drain(&ui, client)
 			media_drain(&ui)
 			agent_tick(&ui, tl_at_bottom ? .Follow : .Hold)
 			drain_sends(&ui, client)

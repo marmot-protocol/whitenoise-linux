@@ -51,7 +51,7 @@ new_chat_invalid_npub_feedback :: proc(t: ^testing.T) {
 		},
 		{"  NPUB1INVALID  ", "This key has a typo.", true},
 		{"npub1", "This key has a typo.", true},
-		{"Alice", "No matching contacts", false},
+		{"Alice", "No matches", false},
 		{"  ", "No contacts yet", false},
 		{valid, "Start chat", false},
 		{hex, "Start chat", false},
@@ -68,7 +68,7 @@ new_chat_invalid_npub_feedback :: proc(t: ^testing.T) {
 				t,
 				strings.contains(text, "Check each character against the original and try again."),
 			)
-			testing.expect(t, !strings.contains(text, "No matching contacts"))
+			testing.expect(t, !strings.contains(text, "No matches"))
 			testing.expect(t, !strings.contains(text, "Start chat"))
 		}
 	}

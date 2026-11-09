@@ -1452,15 +1452,19 @@ nc_member_options :: proc(ui: ^Ui_State) {
 	field := nendo.element(nendo.id("NCMember"))
 	if !field.found {return}
 	rows := nc_contact_matches(ui, string(ui.nc_member[:]))
-	count := len(rows)
-	if nc_member_menu(string(ui.nc_member[:]), count, nc_member_ref(ui) != "") == .Hidden {return}
+	people := people_rows(ui, rows)
+	count := len(rows) + len(people)
+	// The directory search status takes the last line while it runs.
+	lines := count
+	if ui.people.status != .Idle && ui.people.status != .Done {lines += 1}
+	if nc_member_menu(string(ui.nc_member[:]), lines, nc_member_ref(ui) != "") == .Hidden {return}
 	ui.nc_contact_sel = clamp(ui.nc_contact_sel, 0, max(0, count - 1))
 	below := nendo.element(nendo.id("NCCreate")).rect.y - field.rect.y - field.rect.height - 4
 	header := nendo.element(nendo.id("NCHeader")).rect
 	above := field.rect.y - header.y - header.height - 4
 	up := below < NC_MEMBER_H * 2 && above > below
 	height := min(
-		f32(max(1, count)) * NC_MEMBER_H,
+		f32(max(1, lines)) * NC_MEMBER_H,
 		NC_MEMBER_H * 5,
 		max(NC_MEMBER_H, up ? above : below),
 	)
@@ -1486,58 +1490,146 @@ nc_member_options :: proc(ui: ^Ui_State) {
 	},
 	) {
 		data := nendo.scroll(nendo.id("NCMemberOptions"))
-		if data.found {data.position.y = clamp(data.position.y, -max(0, f32(count) * NC_MEMBER_H - height), 0)}
-		first := data.found ? clamp(int(-data.position.y / NC_MEMBER_H), 0, count) : 0
-		last := min(first + 7, count)
+		if data.found {data.position.y = clamp(data.position.y, -max(0, f32(lines) * NC_MEMBER_H - height), 0)}
+		first := data.found ? clamp(int(-data.position.y / NC_MEMBER_H), 0, lines) : 0
+		last := min(first + 7, lines)
 		if nendo.box(nendo.id("NCMemberBefore"))(
 		{height = nendo.fixed(f32(first) * NC_MEMBER_H)},
 		) {}
-		if count == 0 {
-			nendo.text(tr("No matching contacts"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
+		if lines == 0 {
+			nendo.text(tr("No matches"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 		}
-		for row, i in rows[first:last] {
-			contact := ui.nc_contacts[row.idx]
-			if nendo.box(nendo.id("NCMemberOption", u32(row.idx)))(
-			{
-				width = nendo.grow(),
-				height = nendo.fixed(NC_MEMBER_H),
-				padding = {left = 10, right = 10},
-				gap = 10,
-				align = {y = .Center},
-				color = first + i == ui.nc_contact_sel ? SELECTED : hovered() ? HOVER : {},
-				clip = {x = true},
-			},
-			) {
-				avatar(
-					"NCMemberAvatar",
-					u32(row.idx),
+		for i in first ..< last {
+			lit := i == ui.nc_contact_sel
+			if i == count {
+				people_status_row(ui, nendo.fixed(NC_MEMBER_H))
+			} else if i < len(rows) {
+				contact := ui.nc_contacts[rows[i].idx]
+				label := contact_label(ui, contact)
+				nc_member_option(
+					"NCMemberOption",
+					u32(rows[i].idx),
 					contact.id_hex,
-					contact_label(ui, contact),
-					28,
-					url_pic(contact.pic_url),
+					label,
+					npub_tail(contact.npub),
+					contact.pic_url,
+					lit,
 				)
-				row_labels(contact_label(ui, contact), npub_tail(contact.npub))
-				if hovered() {cursor_raise(.Pointer)}
+			} else {
+				at := people[i - len(rows)]
+				hit := ui.people.hits[at]
+				nc_member_option(
+					"NCMemberPerson",
+					u32(at),
+					hit.id_hex,
+					people_label(ui, hit),
+					people_sublabel(hit),
+					hit.pic_url,
+					lit,
+				)
 			}
 		}
 		if nendo.box(nendo.id("NCMemberAfter"))(
-		{height = nendo.fixed(f32(count - last) * NC_MEMBER_H)},
+		{height = nendo.fixed(f32(lines - last) * NC_MEMBER_H)},
 		) {}
 	}
 	scrollbar(nendo.id("NCMemberOptions"), 16)
 }
 
+// One group-member suggestion: a contact, or a person the directory found.
+@(private = "file")
+nc_member_option :: proc(id: string, index: u32, hex, label, sub, pic_url: string, lit: bool) {
+	if nendo.box(nendo.id(id, index))(
+	{
+		width = nendo.grow(),
+		height = nendo.fixed(NC_MEMBER_H),
+		padding = {left = 10, right = 10},
+		gap = 10,
+		align = {y = .Center},
+		color = lit ? SELECTED : hovered() ? HOVER : {},
+		clip = {x = true},
+	},
+	) {
+		avatar(fmt.tprintf("%sAvatar", id), index, hex, label, 28, url_pic(pic_url))
+		row_labels(label, sub)
+		if hovered() {cursor_raise(.Pointer)}
+	}
+}
+
+// One New chat row: a contact, or a person the directory search found.
+@(private = "file")
+nc_person_row :: proc(id: string, index: u32, hex, label, sub, pic_url: string, lit: bool) {
+	if nendo.box(nendo.id(id, index))(
+	{
+		width = nendo.grow(),
+		height = nendo.fixed(NC_CONTACT_H),
+		padding = {left = 12, right = 12},
+		gap = 14,
+		align = {y = .Center},
+		color = hovered() || lit ? HOVER : nendo.Color{},
+		radius = rr(10),
+	},
+	) {
+		avatar(fmt.tprintf("%sAvatar", id), index, hex, label, 40, url_pic(pic_url))
+		if nendo.box(nendo.id_local("Text"))(
+		{width = nendo.grow(), direction = .Column, gap = 4, clip = {x = true}},
+		) {
+			nendo.text(label, {font = FONT_TITLE, size = 15, color = TEXT, wrap = .None})
+			nendo.text(sub, {font = FONT_MONO, size = 11, color = TEXT_DIM, wrap = .None})
+		}
+		nendo.text(ICON_CHATS, {font = FONT_ICON, size = 14, color = TEXT_LO})
+	}
+}
+
+// Directory search progress: a sweep while it runs, then a retry when a
+// radius gave up or the search failed. Nothing once it has finished.
+@(private = "file")
+people_status_row :: proc(ui: ^Ui_State, height: nendo.Size) {
+	status := ui.people.status
+	if status == .Idle || status == .Done {return}
+	if nendo.box(nendo.id("PeopleStatus"))(
+	{
+		width = nendo.grow(),
+		height = height,
+		padding = {left = 12, right = 12, top = 4, bottom = 4},
+		gap = 10,
+		align = {y = .Center},
+	},
+	) {
+		text := tr("Searching the network...")
+		if status == .Incomplete {text = tr("Some network results may be missing.")}
+		if status == .Failed {text = tr("Couldn't search the network. Please try again.")}
+		nendo.text(
+			text,
+			{
+				font = FONT_BODY,
+				size = 12,
+				color = status == .Failed ? DANGER : TEXT_DIM,
+				wrap = .None,
+			},
+		)
+		if status == .Searching {
+			busy_bar("PeopleBusy")
+		} else {
+			micro_button("PeopleRetry", tr("Try again"))
+		}
+	}
+}
+
 @(private = "file")
 nc_contact_list :: proc(ui: ^Ui_State) {
 	rows := nc_contact_matches(ui, string(ui.nc_search[:]))
-	count := len(rows)
+	people := people_rows(ui, rows)
+	count := len(rows) + len(people)
 	ui.nc_contact_sel = clamp(ui.nc_contact_sel, 0, max(0, count - 1))
 	if nendo.box(nendo.id("NCContactsCaption"))(
 	{width = nendo.grow(), padding = {top = 14, bottom = 4}, gap = 8},
 	) {
-		eyebrow(tr("CONTACTS"))
+		// Network hits are people, not contacts yet.
+		eyebrow(len(people) > 0 ? tr("PEOPLE") : tr("CONTACTS"))
 		nendo.text(fmt.tprintf("%d", count), {font = FONT_BODY, size = 11, color = TEXT_LO})
 	}
+	people_status_row(ui, nendo.fit())
 	if nendo.box(nendo.id("NCContacts"))(
 	{
 		width = nendo.grow(),
@@ -1586,6 +1678,10 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 						nendo.text(npub_tail(npub), {font = FONT_MONO, size = 11, color = TEXT_LO})
 					}
 				}
+			} else if ui.people.status == .Searching {
+				// The status row above the list already says the network is
+				// being searched. Keep this a separate branch: nendo.box closes
+				// its element when the `if` ends, so it must never sit behind `&&`.
 			} else if nendo.box(nendo.id("NCEmptyContacts"))(
 			{
 				width = nendo.grow(),
@@ -1600,12 +1696,12 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 					strings.has_prefix(strings.to_lower(query, context.temp_allocator), "npub1") &&
 					deeplink_hex(query) == ""
 				nendo.text(
-					invalid_key ? tr("This key has a typo.") : loading ? tr("Loading your contacts") : searching ? tr("No matching contacts") : tr("No contacts yet"),
+					invalid_key ? tr("This key has a typo.") : loading ? tr("Loading your contacts") : searching ? tr("No matches") : tr("No contacts yet"),
 					{font = FONT_TITLE, size = 16, color = TEXT},
 				)
 				if invalid_key || !loading {
 					nendo.text(
-						invalid_key ? tr("Check each character against the original and try again.") : searching ? tr("To start a chat with someone new, paste their public key.") : tr("People you follow show up here. To start a chat now, paste someone's public key in the field above."),
+						invalid_key ? tr("Check each character against the original and try again.") : searching ? tr("Check the spelling, or paste their public key.") : tr("People you follow show up here. To start a chat now, search for someone by name or paste their public key above."),
 						{font = FONT_BODY, size = 13, color = TEXT_DIM},
 					)
 				}
@@ -1622,41 +1718,32 @@ nc_contact_list :: proc(ui: ^Ui_State) {
 			last := clamp(int((offset + height) / ROW_H) + 3, first, count)
 			if first >
 			   0 {if nendo.box(nendo.id("NCContactsTop"))({height = nendo.fixed(f32(first) * ROW_H)}) {}}
-			for row, visible in rows[first:last] {
-				contact := ui.nc_contacts[row.idx]
-				if nendo.box(nendo.id("NCContact", u32(row.idx)))(
-				{
-					width = nendo.grow(),
-					height = nendo.fixed(ROW_H),
-					padding = {left = 12, right = 12},
-					gap = 14,
-					align = {y = .Center},
-					color = hovered() || ui.focus == .NC_Search && ui.nc_contact_sel == first + visible ? HOVER : nendo.Color{},
-					radius = rr(10),
-				},
-				) {
-					avatar(
-						"NCContactAvatar",
-						u32(row.idx),
+			for i in first ..< last {
+				lit := ui.focus == .NC_Search && ui.nc_contact_sel == i
+				if i < len(rows) {
+					contact := ui.nc_contacts[rows[i].idx]
+					nc_person_row(
+						"NCContact",
+						u32(rows[i].idx),
 						contact.id_hex,
 						contact_label(ui, contact),
-						40,
-						url_pic(contact.pic_url),
+						existing_dm(ui, contact.id_hex) >= 0 ? tr("Open chat") : npub_tail(contact.npub),
+						contact.pic_url,
+						lit,
 					)
-					if nendo.box(nendo.id("NCContactText", u32(row.idx)))(
-					{width = nendo.grow(), direction = .Column, gap = 4, clip = {x = true}},
-					) {
-						nendo.text(
-							contact_label(ui, contact),
-							{font = FONT_TITLE, size = 15, color = TEXT, wrap = .None},
-						)
-						nendo.text(
-							existing_dm(ui, contact.id_hex) >= 0 ? tr("Open chat") : npub_tail(contact.npub),
-							{font = FONT_MONO, size = 11, color = TEXT_DIM, wrap = .None},
-						)
-					}
-					nendo.text(ICON_CHATS, {font = FONT_ICON, size = 14, color = TEXT_LO})
+					continue
 				}
+				at := people[i - len(rows)]
+				hit := ui.people.hits[at]
+				nc_person_row(
+					"NCPerson",
+					u32(at),
+					hit.id_hex,
+					people_label(ui, hit),
+					existing_dm(ui, hit.id_hex) >= 0 ? tr("Open chat") : people_sublabel(hit),
+					hit.pic_url,
+					lit,
+				)
 			}
 			if last <
 			   count {if nendo.box(nendo.id("NCContactsBottom"))({height = nendo.fixed(f32(count - last) * ROW_H)}) {}}
@@ -1706,7 +1793,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 						{font = FONT_TITLE, size = 26, color = TEXT},
 					)
 					nendo.text(
-						group ? tr("Give your group a name and a photo.") : no_contacts ? tr("Paste someone's public key to start a chat.") : tr("Choose someone to talk to."),
+						group ? tr("Give your group a name and a photo.") : no_contacts ? tr("Search for someone or paste their public key to start a chat.") : tr("Choose someone to talk to."),
 						{font = FONT_BODY, size = 14, color = TEXT_DIM},
 					)
 				}
@@ -1716,7 +1803,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 					ui,
 					"NCSearch",
 					&ui.nc_search,
-					tr("Search contacts or paste a public key..."),
+					tr("Search by name or Nostr address, or paste a public key..."),
 					ui.focus == .NC_Search,
 					0,
 				)
@@ -1779,11 +1866,11 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 						ui,
 						"NCMember",
 						&ui.nc_member,
-						tr("Search contacts or paste public keys..."),
+						tr("Search by name or paste public keys..."),
 						ui.focus == .NC_Member,
 						0,
 					)
-					hint := tr("Choose a contact or paste public keys separated by commas.")
+					hint := tr("Choose someone or paste public keys separated by commas.")
 					if ui.nc_member_choice > 0 {
 						hint = fmt.tprintf(
 							tr("%s will be added to the group."),

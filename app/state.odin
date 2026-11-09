@@ -916,6 +916,7 @@ Ui_State :: struct {
 	nip05_ticket:                                      int,
 	nc_name:                                           [dynamic]u8,
 	nc_pic:                                            Pic_Draft, // group image staged for Create
+	people:                                            People_Search, // directory hits for the new-chat fields
 	client_status:                                     string, // written only through set_status
 	client_status_kind:                                Status_Kind,
 	// ── Shell chrome (shell.odin, palette.odin, confirm.odin,

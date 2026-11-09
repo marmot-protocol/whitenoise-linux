@@ -222,6 +222,15 @@ returns its texture to the inline cap without restarting playback.
 Slideshow and PDF previous/next arrows dim at the first and last item.
 Disabled arrows do not navigate; PDF attachment tiles use the same boundaries.
 
+New chat and the group Members field search people the way Android and iOS
+do. A typed name or Nostr address runs `marmot_search_users` over radius 1
+to 2 after a 300 ms pause (`app/people_search.odin`). Hits list after the
+matching contacts, ranked as MDK ranks them, and replace earlier copies of
+the same person. Keys and links resolve locally and skip the search. The
+status row shows progress from the frame the query changes, then offers a
+retry when a radius timed out or the search failed. Typing past a query
+cancels its worker within 100 ms.
+
 Chats keeps DMs and groups in one inbox, with Unread and Groups filters.
 Archived conversations live on the separate Archive page, not a Chats tab.
 `Chat_Row_Ui.conversation_kind` preserves the engine's type; UNKNOWN

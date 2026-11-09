@@ -1845,6 +1845,33 @@ nc_member_choose :: proc(ui: ^Ui_State, index: int) {
 	ed_set(ui, &ui.nc_member, contact_label(ui, ui.nc_contacts[index]))
 }
 
+// A directory hit joins the picker's contacts, so the member field holds it
+// like any other choice.
+@(private = "file")
+nc_member_choose_person :: proc(ui: ^Ui_State, hit: People_Hit) {
+	for contact, i in ui.nc_contacts {
+		if contact.id_hex == hit.id_hex {nc_member_choose(ui, i); return}
+	}
+	append(
+		&ui.nc_contacts,
+		Contact_Ui {
+			id_hex = strings.clone(hit.id_hex),
+			name = strings.clone(hit.name),
+			npub = strings.clone(hit.npub),
+			pic_url = strings.clone(hit.pic_url),
+		},
+	)
+	nc_member_choose(ui, len(ui.nc_contacts) - 1)
+}
+
+// The account behind a row of the combined list: matching contacts first,
+// then the people the directory search found.
+@(private = "file")
+nc_row_hex :: proc(ui: ^Ui_State, rows: []Contact_Order, people: []int, at: int) -> string {
+	if at < len(rows) {return ui.nc_contacts[rows[at].idx].id_hex}
+	return ui.people.hits[people[at - len(rows)]].id_hex
+}
+
 // Contact selection and the group form share asynchronous creation.
 handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.nc_page == .Group &&
@@ -1859,6 +1886,10 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if nc_pending_label(ui) != "" {return}
+	if clicked("PeopleRetry") {
+		people_retry(ui)
+		return
+	}
 	edit_text(ui, active_buf(ui))
 	address_input := ui.nc_page == .Contacts ? string(ui.nc_search[:]) : string(ui.nc_member[:])
 	if address := nc_address_hex(ui, address_input); address != "" {profile_info(client, address)}
@@ -1887,24 +1918,31 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		if field_mouse(ui, &ui.nc_search, "NCSearch", 14) {ui.focus = .NC_Search}
+		// Matching contacts, then the people the directory search found.
+		rows := nc_contact_matches(ui, string(ui.nc_search[:]))
+		people := people_rows(ui, rows)
+		count := len(rows) + len(people)
 		// A pasted key with no matching contact starts a chat with that person.
 		// MDK types an unnamed pair as a DM and a named one as a group, so a
 		// one-to-one chat starts without a name; each side shows its peer.
 		if address := nc_address_hex(ui, string(ui.nc_search[:]));
 		   address != "" &&
-		   len(nc_contact_matches(ui, string(ui.nc_search[:]))) == 0 &&
+		   len(rows) == 0 &&
 		   (clicked("NCStartAddress") || rl.IsKeyPressed(.ENTER)) {
 			new_chat_create_and_open(ui, client, "", address)
 			return
 		}
 		if rl.IsKeyPressed(.UP) || rl.IsKeyPressed(.DOWN) || rl.IsKeyPressed(.ENTER) {
-			rows := nc_contact_matches(ui, string(ui.nc_search[:]))
-			if len(rows) == 0 {return}
+			if count == 0 {return}
 			step := rl.IsKeyPressed(.UP) ? -1 : rl.IsKeyPressed(.DOWN) ? 1 : 0
-			ui.nc_contact_sel = clamp(ui.nc_contact_sel + step, 0, len(rows) - 1)
+			ui.nc_contact_sel = clamp(ui.nc_contact_sel + step, 0, count - 1)
 			if rl.IsKeyPressed(.ENTER) {
-				contact := ui.nc_contacts[rows[ui.nc_contact_sel].idx]
-				new_chat_create_and_open(ui, client, "", contact.id_hex)
+				new_chat_create_and_open(
+					ui,
+					client,
+					"",
+					nc_row_hex(ui, rows, people, ui.nc_contact_sel),
+				)
 				return
 			}
 			if data := nendo.scroll(nendo.id("NCContacts")); data.found {
@@ -1916,9 +1954,14 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 		}
 		if mouse_released() {
-			for contact, i in ui.nc_contacts {
-				if !nendo.pointer_over(nendo.id("NCContact", u32(i))) {continue}
-				new_chat_create_and_open(ui, client, "", contact.id_hex)
+			for row in rows {
+				if !nendo.pointer_over(nendo.id("NCContact", u32(row.idx))) {continue}
+				new_chat_create_and_open(ui, client, "", ui.nc_contacts[row.idx].id_hex)
+				return
+			}
+			for at in people {
+				if !nendo.pointer_over(nendo.id("NCPerson", u32(at))) {continue}
+				new_chat_create_and_open(ui, client, "", ui.people.hits[at].id_hex)
 				return
 			}
 		}
@@ -1933,11 +1976,18 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	tab_focus([]Focus{.NC_Name, .NC_Member}, &ui.focus)
 	if ui.focus == .NC_Member && ui.nc_member_choice == 0 {
 		rows := nc_contact_matches(ui, string(ui.nc_member[:]))
-		if len(rows) > 0 && (key_hit(.UP) || key_hit(.DOWN) || rl.IsKeyPressed(.ENTER)) {
+		people := people_rows(ui, rows)
+		count := len(rows) + len(people)
+		if count > 0 && (key_hit(.UP) || key_hit(.DOWN) || rl.IsKeyPressed(.ENTER)) {
 			step := key_hit(.UP) ? -1 : key_hit(.DOWN) ? 1 : 0
-			ui.nc_contact_sel = clamp(ui.nc_contact_sel + step, 0, len(rows) - 1)
+			ui.nc_contact_sel = clamp(ui.nc_contact_sel + step, 0, count - 1)
 			if rl.IsKeyPressed(.ENTER) {
-				nc_member_choose(ui, rows[ui.nc_contact_sel].idx)
+				sel := ui.nc_contact_sel
+				if sel < len(rows) {
+					nc_member_choose(ui, rows[sel].idx)
+				} else {
+					nc_member_choose_person(ui, ui.people.hits[people[sel - len(rows)]])
+				}
 				return // Selection must not also create the group.
 			}
 			if data := nendo.scroll(nendo.id("NCMemberOptions")); data.found {
@@ -1951,6 +2001,11 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			for row in rows {
 				if !nendo.pointer_over(nendo.id("NCMemberOption", u32(row.idx))) {continue}
 				nc_member_choose(ui, row.idx)
+				return
+			}
+			for at in people {
+				if !nendo.pointer_over(nendo.id("NCMemberPerson", u32(at))) {continue}
+				nc_member_choose_person(ui, ui.people.hits[at])
 				return
 			}
 			if !nendo.pointer_over(nendo.id("NCMember")) &&
