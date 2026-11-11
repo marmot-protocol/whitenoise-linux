@@ -1,0 +1,250 @@
+diff --git i/crates/marmot-app/src/client/audit.rs w/crates/marmot-app/src/client/audit.rs
+index 3efc66a8..bedd0a24 100644
+--- i/crates/marmot-app/src/client/audit.rs
++++ w/crates/marmot-app/src/client/audit.rs
+@@ -780,6 +780,7 @@ mod tests {
+                 shortcode: "wave".to_owned(),
+                 plaintext_sha256: "11".repeat(32),
+             },
++            message_tags: Vec::new(),
+         };
+         let action = super::AppClient::message_human_action_context(&sticker)
+             .and_then(|context| context.human_action)
+diff --git i/crates/marmot-app/src/client/mod.rs w/crates/marmot-app/src/client/mod.rs
+index 08107d5f..1f9df9c3 100644
+--- i/crates/marmot-app/src/client/mod.rs
++++ w/crates/marmot-app/src/client/mod.rs
+@@ -4620,7 +4620,7 @@ impl AppClient {
+             .observed(family, operation, ProductUnit::Action);
+         let work = async move {
+             self.ensure_group_application_messages_allowed(group_id)?;
+-            if let AppMessageIntent::Sticker { sticker_ref } = &intent {
++            if let AppMessageIntent::Sticker { sticker_ref, .. } = &intent {
+                 self.app
+                     .authorize_sticker_ref(&self.state.label, sticker_ref)?;
+             }
+diff --git i/crates/marmot-app/src/messages/intents.rs w/crates/marmot-app/src/messages/intents.rs
+index 744e5063..d39dd5a5 100644
+--- i/crates/marmot-app/src/messages/intents.rs
++++ w/crates/marmot-app/src/messages/intents.rs
+@@ -212,6 +212,8 @@ pub(crate) enum AppMessageIntent {
+     },
+     Sticker {
+         sticker_ref: crate::AppStickerRef,
++        /// Reply and effect context; the sticker tag itself is built here.
++        message_tags: Vec<Vec<String>>,
+     },
+     Reaction {
+         target_message_id: String,
+@@ -353,11 +355,20 @@ pub(crate) fn build_inner_event_with_media_reply(
+             }
+             Ok(event(MARMOT_APP_EVENT_KIND_CHAT, tags, content.clone()))
+         }
+-        AppMessageIntent::Sticker { sticker_ref } => Ok(event(
+-            MARMOT_APP_EVENT_KIND_CHAT,
+-            vec![crate::stickers::sticker_ref_tag(sticker_ref)?],
+-            String::new(),
+-        )),
++        AppMessageIntent::Sticker {
++            sticker_ref,
++            message_tags,
++        } => {
++            validate_message_tags(message_tags)?;
++            if message_tags.iter().any(|tag| tag[0] == "sticker") {
++                return Err(AppError::InvalidAppMessagePayload(
++                    "sticker context cannot carry another sticker".into(),
++                ));
++            }
++            let mut tags = vec![crate::stickers::sticker_ref_tag(sticker_ref)?];
++            tags.extend_from_slice(message_tags);
++            Ok(event(MARMOT_APP_EVENT_KIND_CHAT, tags, String::new()))
++        }
+         AppMessageIntent::Reaction {
+             target_message_id,
+             emoji,
+diff --git i/crates/marmot-app/src/runtime/mod.rs w/crates/marmot-app/src/runtime/mod.rs
+index f4e74155..24c92a8f 100644
+--- i/crates/marmot-app/src/runtime/mod.rs
++++ w/crates/marmot-app/src/runtime/mod.rs
+@@ -4086,13 +4086,17 @@ impl MarmotAppRuntime {
+         account_ref: &str,
+         group_id: &GroupId,
+         sticker_ref: crate::AppStickerRef,
++        message_tags: Vec<Vec<String>>,
+     ) -> Result<SendSummary, AppError> {
+         let summary = self
+             .accounts
+             .send_app_event(
+                 account_ref,
+                 group_id,
+-                AppMessageIntent::Sticker { sticker_ref },
++                AppMessageIntent::Sticker {
++                    sticker_ref,
++                    message_tags,
++                },
+             )
+             .await?;
+         let _ = self.publish_chat_list_projection_refresh(
+diff --git i/crates/marmot-app/src/tests.rs w/crates/marmot-app/src/tests.rs
+index 467d7a0a..8fca47b4 100644
+--- i/crates/marmot-app/src/tests.rs
++++ w/crates/marmot-app/src/tests.rs
+@@ -13862,6 +13862,7 @@ fn sticker_intent_builds_sonar_kind_nine_tag() {
+             shortcode: "wave".to_owned(),
+             plaintext_sha256: hash.clone(),
+         },
++        message_tags: Vec::new(),
+     });
+     assert_eq!(event.kind, MARMOT_APP_EVENT_KIND_CHAT);
+     assert!(event.content.is_empty());
+@@ -13876,6 +13877,41 @@ fn sticker_intent_builds_sonar_kind_nine_tag() {
+     );
+ }
+ 
++#[test]
++fn sticker_intent_appends_bounded_context() {
++    let sticker_ref = AppStickerRef {
++        pack_coordinate: format!("30031:{}:cats", "ab".repeat(32)),
++        shortcode: "wave".to_owned(),
++        plaintext_sha256: "11".repeat(32),
++    };
++    let reply = "22".repeat(32);
++    let event = build(AppMessageIntent::Sticker {
++        sticker_ref: sticker_ref.clone(),
++        message_tags: vec![
++            vec!["e".to_owned(), reply.clone()],
++            vec!["effect".to_owned(), "confetti".to_owned()],
++        ],
++    });
++    assert_eq!(event.tags[0][0], "sticker");
++    assert_eq!(event.tags[1], vec!["e".to_owned(), reply]);
++    assert_eq!(event.tags.len(), 3);
++    for tag in [
++        vec!["sticker".to_owned(), "x".to_owned()],
++        vec!["imeta".to_owned(), "url x".to_owned()],
++        vec!["e".to_owned(), " ".to_owned()],
++    ] {
++        let result = build_inner_event(
++            &AppMessageIntent::Sticker {
++                sticker_ref: sticker_ref.clone(),
++                message_tags: vec![tag],
++            },
++            SENDER_HEX,
++            1,
++        );
++        assert!(result.is_err());
++    }
++}
++
+ #[test]
+ fn reaction_intent_builds_kind_seven_with_e_tag() {
+     let event = build(AppMessageIntent::Reaction {
+diff --git i/crates/marmot-c/include/marmot.h w/crates/marmot-c/include/marmot.h
+index 840a4c88..175a59b2 100644
+--- i/crates/marmot-c/include/marmot.h
++++ w/crates/marmot-c/include/marmot.h
+@@ -12496,10 +12496,13 @@ MarmotStatus marmot_fetch_sticker_asset(const struct MarmotClient *client,
+                                         struct MarmotStickerAsset **out);
+ 
+ /**
+- * Send an exact sticker reference into a group.
++ * Send an exact sticker reference into a group. `tags` adds reply and
++ * effect context as a flat array of `tags_len` rows (or NULL with length
++ * 0); a second `sticker` tag or an `imeta` tag is rejected.
+  *
+  * # Safety
+- * `client` must be live, strings must be NUL-terminated, and `out` must be valid.
++ * `client` must be live, strings must be NUL-terminated, `tags` must point
++ * to `tags_len` valid rows, and `out` must be valid.
+  */
+ MarmotStatus marmot_send_sticker(const struct MarmotClient *client,
+                                  const char *account_ref,
+@@ -12507,6 +12510,8 @@ MarmotStatus marmot_send_sticker(const struct MarmotClient *client,
+                                  const char *pack_coordinate,
+                                  const char *shortcode,
+                                  const char *plaintext_sha256,
++                                 const struct MarmotStringArray *tags,
++                                 uintptr_t tags_len,
+                                  struct MarmotSendSummary **out);
+ 
+ /**
+diff --git i/crates/marmot-c/src/commands.rs w/crates/marmot-c/src/commands.rs
+index 0af336a5..9f3492d7 100644
+--- i/crates/marmot-c/src/commands.rs
++++ w/crates/marmot-c/src/commands.rs
+@@ -3913,10 +3913,13 @@ pub unsafe extern "C" fn marmot_fetch_sticker_asset(
+     })
+ }
+ 
+-/// Send an exact sticker reference into a group.
++/// Send an exact sticker reference into a group. `tags` adds reply and
++/// effect context as a flat array of `tags_len` rows (or NULL with length
++/// 0); a second `sticker` tag or an `imeta` tag is rejected.
+ ///
+ /// # Safety
+-/// `client` must be live, strings must be NUL-terminated, and `out` must be valid.
++/// `client` must be live, strings must be NUL-terminated, `tags` must point
++/// to `tags_len` valid rows, and `out` must be valid.
+ #[unsafe(no_mangle)]
+ pub unsafe extern "C" fn marmot_send_sticker(
+     client: *const MarmotClient,
+@@ -3925,6 +3928,8 @@ pub unsafe extern "C" fn marmot_send_sticker(
+     pack_coordinate: *const c_char,
+     shortcode: *const c_char,
+     plaintext_sha256: *const c_char,
++    tags: *const MarmotStringArray,
++    tags_len: usize,
+     out: *mut *mut MarmotSendSummary,
+ ) -> MarmotStatus {
+     ffi_guard(|| {
+@@ -3938,13 +3943,17 @@ pub unsafe extern "C" fn marmot_send_sticker(
+             shortcode: try_arg!(unsafe { required_str(shortcode) }),
+             plaintext_sha256: try_arg!(unsafe { required_str(plaintext_sha256) }),
+         };
++        let tags = try_arg!(unsafe {
++            struct_array(tags, tags_len, |row| str_array(row.values, row.values_len))
++        });
+         unsafe {
+             deliver(
+-                client.block_on(
+-                    client
+-                        .marmot
+-                        .send_sticker(account_ref, group_id_hex, sticker_ref),
+-                ),
++                client.block_on(client.marmot.send_sticker(
++                    account_ref,
++                    group_id_hex,
++                    sticker_ref,
++                    tags,
++                )),
+                 out,
+             )
+         }
+diff --git i/crates/marmot-uniffi/src/commands/message.rs w/crates/marmot-uniffi/src/commands/message.rs
+index ea20acc3..87a1b324 100644
+--- i/crates/marmot-uniffi/src/commands/message.rs
++++ w/crates/marmot-uniffi/src/commands/message.rs
+@@ -52,18 +52,20 @@ impl Marmot {
+     }
+ 
+     /// Send a Sonar sticker as a kind-9 message carrying the immutable
+-    /// coordinate/shortcode/plaintext-hash reference. Native storage must
+-    /// currently authorize the exact reference before the send is accepted.
++    /// coordinate/shortcode/plaintext-hash reference plus optional reply and
++    /// effect tags. Native storage must currently authorize the exact
++    /// reference before the send is accepted.
+     pub async fn send_sticker(
+         &self,
+         account_ref: String,
+         group_id_hex: String,
+         sticker_ref: StickerRefFfi,
++        tags: Vec<Vec<String>>,
+     ) -> Result<SendSummaryFfi, MarmotKitError> {
+         let group_id = group_id_from_hex(&group_id_hex)?;
+         let summary = self
+             .runtime
+-            .send_sticker(&account_ref, &group_id, sticker_ref.into())
++            .send_sticker(&account_ref, &group_id, sticker_ref.into(), tags)
+             .await?;
+         Ok(summary.into())
+     }
