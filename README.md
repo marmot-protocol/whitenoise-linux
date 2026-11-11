@@ -76,7 +76,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 **Media**
 
 - Drag one or more files into the open chat to stage attachments. Files prepare in the background, with image thumbnails when available. Remove unwanted files with the × on each chip; press Enter when preparation finishes to send. Drops outside the conversation or over a modal do not attach files.
-- [Personal stickers and Nostr packs](docs/stickers.md), with pack previews from received stickers.
+- [Personal stickers and Sonar sticker packs](docs/stickers.md); packs come from MDK and sync across your devices, with pack previews from received stickers.
 - Image albums, inline video (libmpv), voice messages, and a preview modal that reads PDFs (poppler), archives (libarchive), STL, OBJ, FBX, and GLB models, and source files with syntax highlighting.
 - Enable Speech to text in Settings to transcribe audio attachments locally. M4A files use the audio card and its Transcribe button, including attachments labeled `video/mp4` by another client.
 - Direct JPG, PNG, GIF, and WebP links show inline cards with the image above its clickable URL. Messages ending with two or more standalone image links show them as one grid. Four portrait images use two rows of two, for both links and attachments. Click a grid image to browse the loaded images in the lightbox. Link previews are on by default; turn them off in Settings > Advanced > Security & privacy to stop new automatic preview requests, including supported-site cards. Preview hosts can see your IP address. Attachment downloads are unaffected.

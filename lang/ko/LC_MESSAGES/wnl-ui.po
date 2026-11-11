@@ -1298,8 +1298,8 @@ msgstr "레코드 %d을(를) 추가할 수 없습니다. %s 릴레이 설정을 
 msgid "Couldn't add that relay. Double-check the address and try again."
 msgstr "해당 릴레이를 추가할 수 없습니다. 주소를 다시 확인하고 다시 시도하세요."
 
-msgid "Couldn't add the pack. No supported stickers are available."
-msgstr "팩을 추가할 수 없습니다. 지원되는 스티커가 없습니다."
+msgid "Couldn't add the pack. Please try again."
+msgstr "팩을 추가할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't add the relay. Enter a ws:// or wss:// URL with a host, such as wss://relay.example.com."
 msgstr "릴레이를 추가할 수 없습니다. wss://relay.example.com처럼 호스트가 포함된 ws:// 또는 wss:// URL을 입력하세요."
@@ -1639,6 +1639,9 @@ msgstr "기존 연락처를 읽을 수 없습니다. 다시 시도하세요."
 msgid "Couldn't remove the GIF. Please try again."
 msgstr "GIF를 제거할 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't remove the pack. Please try again."
+msgstr "팩을 제거할 수 없습니다. 다시 시도하세요."
+
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "저장된 파일을 제거할 수 없습니다. 다시 시도하세요."
 
@@ -1743,6 +1746,9 @@ msgstr "받아쓰기를 시작할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't start translation. Reinstall White Noise and try again."
 msgstr "번역을 시작할 수 없습니다. White Noise를 다시 설치하고 다시 시도하세요."
+
+msgid "Couldn't sync your sticker packs. Check your relay settings and try again."
+msgstr "스티커 팩을 동기화할 수 없습니다. 릴레이 설정을 확인하고 다시 시도하세요."
 
 msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
 msgstr "이 오디오를 받아쓸 수 없습니다. 10분 미만의 녹음을 선택하세요."
@@ -3051,6 +3057,9 @@ msgstr "연락처를 불러오는 중"
 msgid "Loading your key packages"
 msgstr "키 패키지를 불러오는 중"
 
+msgid "Loading your sticker packs…"
+msgstr "스티커 팩을 불러오는 중…"
+
 msgid "Loading..."
 msgstr "불러오는 중..."
 
@@ -3080,6 +3089,9 @@ msgstr "잠그는 중…"
 
 msgid "Look up"
 msgstr "조회"
+
+msgid "Looking up the pack…"
+msgstr "팩을 찾는 중…"
 
 msgid "Looking up..."
 msgstr "조회 중..."
@@ -4213,6 +4225,9 @@ msgstr "이 릴레이를 제거하시겠습니까?"
 
 msgid "Removing your account from this device"
 msgstr "이 기기에서 계정을 제거하는 중"
+
+msgid "Removing…"
+msgstr "제거 중…"
 
 msgid "Rename"
 msgstr "이름 변경"

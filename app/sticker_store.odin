@@ -14,38 +14,50 @@ import "core:thread"
 import rl "sdlrl"
 import stbi "vendor:stb/image"
 
+// library.bin holds personal stickers and recents. `packs` is what remains
+// of the pack list kept here before MDK owned the installed list.
 @(private)
 Sticker_Library :: struct {
 	items:  [dynamic]Sticker_Item,
 	packs:  [dynamic]Sticker_Pack,
 	recent: [dynamic]string,
 }
+// MDK calls and disk work block, so each runs as one queued job on a worker:
+//
+//   UI ── sticker_job_add ──► sticker_jobs ── one worker ──► marmot_* / disk
+//    ▲                                                            │
+//    └──────────── drain_stickers (account still active?) ◄───────┘
 @(private)
 Sticker_Operation :: enum {
-	Load,
-	Save,
-	Pack,
-	Asset,
-	Import,
-	Send,
-	Receive,
+	Load, // library.bin, moving its old packs into MDK, then the installed list
+	Sync, // kind-10031 and recent packs from relays, then the installed list
+	Save, // library.bin
+	Pack, // one pack for preview: MDK's local projection first, then relays
+	Install,
+	Uninstall,
+	Asset, // artwork: encrypted local copy, then MDK's validated download
+	Import, // a personal sticker from an image file
+	Send, // a personal sticker's image, for an attachment send
+	Receive, // a received personal sticker, saved from the media cache
 }
 @(private)
 Sticker_Job :: struct {
-	op:                          Sticker_Operation,
-	worker:                      ^thread.Thread,
-	input:                       string,
-	item:                        Sticker_Item,
-	pack:                        Sticker_Pack,
-	items:                       [dynamic]Sticker_Item,
-	library:                     Sticker_Library,
-	relays:                      []string,
-	data:                        []u8,
-	image:                       rl.Image,
-	error:                       string,
-	account, group, reply, root: string,
-	dim:                         string,
-	effect:                      int,
+	op:                      Sticker_Operation,
+	worker:                  ^thread.Thread,
+	client:                  ^marmot.Client, // set when the worker starts
+	account:                 string,
+	input:                   string, // pack coordinate, naddr or link; or a file path
+	item:                    Sticker_Item, // .Asset, .Import, .Send, .Receive
+	pack:                    Sticker_Pack, // .Pack
+	items:                   [dynamic]Sticker_Item, // .Pack preview, else installed stickers
+	packs:                   [dynamic]Sticker_Pack, // installed packs, when `listed`
+	listed, read, moved:     bool,
+	library:                 Sticker_Library, // .Load
+	data:                    []u8,
+	image:                   rl.Image,
+	error:                   string,
+	group, reply, root, dim: string, // .Send
+	effect:                  int,
 }
 @(private)
 sticker_jobs: [dynamic]^Sticker_Job
@@ -69,6 +81,11 @@ sticker_blob_path :: proc(sha: string) -> string {
 }
 
 @(private)
+sticker_library_path :: proc() -> string {
+	return fmt.tprintf("%s/stickers/library.bin", data_home)
+}
+
+@(private)
 media_write_sealed :: proc(path: string, data: []u8) -> bool {
 	sealed, ok := vault_seal_blob(data, context.temp_allocator)
 	if !ok {return false}
@@ -78,24 +95,26 @@ media_write_sealed :: proc(path: string, data: []u8) -> bool {
 	return os.rename(next, path) == nil
 }
 
-// Bound input before allocating or decoding. Animated formats remain unsupported.
+// Bound input before allocating or decoding. The format comes from the
+// bytes, since a message reference carries no MIME type. Animated PNG and
+// WebP, and GIF, remain unsupported.
 @(private)
-sticker_image :: proc(bytes: []u8, mime: string) -> rl.Image {
+sticker_image :: proc(bytes: []u8) -> rl.Image {
 	if len(bytes) < 12 || len(bytes) > STICKER_BYTES_LIMIT {return {}}
-	if mime == "image/webp" {
-		if string(bytes[:4]) != "RIFF" || string(bytes[8:12]) != "WEBP" {return {}}
+	switch {
+	case string(bytes[:4]) == "RIFF" && string(bytes[8:12]) == "WEBP":
 		if len(bytes) >= 21 && string(bytes[12:16]) == "VP8X" && bytes[20] & 2 != 0 {return {}}
-	} else {
-		if mime == "image/png" {
-			if string(bytes[:8]) != "\x89PNG\r\n\x1a\n" {return {}}
-			for at := 8; at + 12 <= len(bytes); {
-				size: u32
-				for b in bytes[at:at + 4] {size = size << 8 | u32(b)}
-				if u64(size) + 12 > u64(len(bytes) - at) {return {}}
-				if string(bytes[at + 4:at + 8]) == "acTL" {return {}}
-				at += int(size) + 12
-			}
-		} else if mime != "image/jpeg" || bytes[0] != 0xff || bytes[1] != 0xd8 {return {}}
+	case string(bytes[:8]) == "\x89PNG\r\n\x1a\n":
+		for at := 8; at + 12 <= len(bytes); {
+			size: u32
+			for b in bytes[at:at + 4] {size = size << 8 | u32(b)}
+			if u64(size) + 12 > u64(len(bytes) - at) {return {}}
+			if string(bytes[at + 4:at + 8]) == "acTL" {return {}}
+			at += int(size) + 12
+		}
+	case bytes[0] == 0xff && bytes[1] == 0xd8:
+	case:
+		return {}
 	}
 	return rl.LoadImageFromMemory(
 		"",
@@ -147,58 +166,64 @@ sticker_read_blob :: proc(sha: string) -> []u8 {
 }
 
 @(private)
-sticker_job_add :: proc(op: Sticker_Operation) -> ^Sticker_Job {
+sticker_job_add :: proc(op: Sticker_Operation, account := "") -> ^Sticker_Job {
 	job := new(Sticker_Job)
 	job.op = op
+	job.account = strings.clone(account)
 	append(&sticker_jobs, job)
 	return job
 }
 
+// Replace the job's installed rows with MDK's projection, in install order.
 @(private)
-sticker_fetch_pack :: proc(job: ^Sticker_Job) {
-	coordinate := job.input
-	if !sticker_coordinate(coordinate) {return}
-	identifier, _ := json.marshal(coordinate[71:], allocator = context.temp_allocator)
-	req := fmt.ctprintf(
-		`["REQ","wn",{{"authors":["%s"],"kinds":[30031],"#d":[%s],"limit":1}}]`,
-		coordinate[6:70],
-		string(identifier),
-	)
-	buffer := make([]u8, NEV_MAX, context.temp_allocator)
-	latest: u64
-	for relay in job.relays {
-		if !strings.has_prefix(relay, "wss://") {continue}
-		n := wn_ws_fetch(
-			strings.clone_to_cstring(relay, context.temp_allocator),
-			req,
-			raw_data(buffer),
-			uint(len(buffer)),
-			3000,
-		)
-		if n <= 0 {continue}
-		value, err := json.parse(buffer[:n], allocator = context.temp_allocator)
-		if err != nil {continue}
-		arr, ok := value.(json.Array)
-		if !ok || len(arr) != 3 {continue}
-		kind, _ := arr[0].(json.String); subscription, _ := arr[1].(json.String)
-		if kind != "EVENT" || subscription != "wn" {continue}
-		encoded, enc_err := json.marshal(arr[2], allocator = context.temp_allocator)
-		if enc_err != nil {continue}
-		event: Sticker_Event
-		if json.unmarshal(encoded, &event, allocator = context.temp_allocator) != nil ||
-		   !sticker_event_valid(event) {continue}
-		if job.pack.coordinate != "" &&
-		   (event.created_at < latest ||
-				   event.created_at == latest && event.id >= job.pack.event) {continue}
-		pack, items := sticker_parse_pack(event, coordinate, relay)
-		if len(items) == 0 {continue}
-		sticker_pack_free(job.pack)
-		for item in job.items {sticker_item_free(item)}
-		delete(job.items)
-		job.pack, job.items, latest = pack, items, event.created_at
+sticker_list_installed :: proc(job: ^Sticker_Job, account: cstring) {
+	list: ^marmot.Sticker_Pack_List
+	if marmot.sticker_packs(job.client, account, 1, nil, 1, STICKER_PACK_LIMIT, &list) != .OK {
+		if job.error == "" {job.error = N_("Couldn't load your stickers. Please try again.")}
+		return
 	}
-	if job.pack.coordinate ==
-	   "" {job.error = N_("Couldn't load the pack. Check your relay settings and try again.")}
+	defer marmot.sticker_pack_list_free(list)
+	for &pack in list.items[:list.len] {append(&job.packs, sticker_pack_copy(&pack, &job.items))}
+	job.listed = true
+}
+
+// Read library.bin. Its pack stickers belong to MDK now, so only personal
+// ones stay. Old packs move into MDK's installed list, in their order, on
+// the first account to open stickers; one MDK cannot reach stays for the
+// next open, and installing a pack twice is harmless. False means the file
+// is unreadable and must not be overwritten.
+@(private)
+sticker_library_load :: proc(job: ^Sticker_Job, account: cstring) -> bool {
+	sealed, err := os.read_entire_file(sticker_library_path(), context.temp_allocator)
+	if err == .Not_Exist {job.read = true; return true}
+	if err != nil {job.error = N_("Couldn't load your stickers. Please try again."); return false}
+	plain, ok := vault_open_blob(sealed, context.temp_allocator)
+	if !ok || json.unmarshal(plain, &job.library) != nil {
+		job.error = N_("Couldn't load your stickers. Please try again."); return false
+	}
+	for i := len(job.library.items) - 1; i >= 0; i -= 1 {
+		if job.library.items[i].ref.pack == "" {continue}
+		sticker_item_free(job.library.items[i]); ordered_remove(&job.library.items, i)
+		job.moved = true
+	}
+	unmoved: [dynamic]Sticker_Pack
+	for pack in job.library.packs {
+		out: ^marmot.Sticker_Pack
+		status := marmot.install_sticker_pack(
+			job.client,
+			account,
+			strings.clone_to_cstring(pack.coordinate, context.temp_allocator),
+			&out,
+		)
+		if out != nil {marmot.sticker_pack_free(out)}
+		if status == .STICKER_NETWORK {append(&unmoved, pack); continue}
+		sticker_pack_free(pack)
+		job.moved = true
+	}
+	delete(job.library.packs)
+	job.library.packs = unmoved
+	job.read = true
+	return true
 }
 
 @(private)
@@ -207,25 +232,49 @@ sticker_worker :: proc(t: ^thread.Thread) {
 	defer free_all(context.temp_allocator)
 	defer frame_wake()
 	job := (^Sticker_Job)(t.data)
+	account := strings.clone_to_cstring(job.account, context.temp_allocator)
+	input := strings.clone_to_cstring(job.input, context.temp_allocator)
 	switch job.op {
-	case .Pack:
-		sticker_fetch_pack(job)
 	case .Load:
-		sealed, err := os.read_entire_file(
-			fmt.tprintf("%s/stickers/library.bin", data_home),
-			context.temp_allocator,
-		)
-		if err == .Not_Exist {return}
-		if err != nil {job.error = N_("Couldn't load your stickers. Please try again."); return}
-		plain, ok := vault_open_blob(sealed, context.temp_allocator)
-		if !ok ||
-		   json.unmarshal(plain, &job.library) !=
-			   nil {job.error = N_("Couldn't load your stickers. Please try again.")}
+		if sticker_library_load(job, account) {sticker_list_installed(job, account)}
+	case .Sync:
+		result: ^marmot.Sticker_Sync_Result
+		if marmot.sync_sticker_packs(job.client, account, &result) == .OK {
+			marmot.sticker_sync_result_free(result)
+		} else {job.error = N_(
+				"Couldn't sync your sticker packs. Check your relay settings and try again.",
+			)}
+		sticker_list_installed(job, account)
 	case .Save:
 		if !media_write_sealed(
-			fmt.tprintf("%s/stickers/library.bin", data_home),
+			sticker_library_path(),
 			job.data,
 		) {job.error = N_("Couldn't save your stickers. Please try again.")}
+	case .Pack:
+		pack: ^marmot.Sticker_Pack
+		status := marmot.sticker_pack(job.client, account, input, &pack)
+		if status == .OK && pack == nil {
+			status = marmot.fetch_sticker_pack(job.client, account, input, &pack)
+		}
+		if status != .OK || pack == nil {
+			job.error =
+				status == .INVALID_STICKER ? N_("Enter a valid pack link or address.") : N_("Couldn't load the pack. Check your relay settings and try again.")
+			return
+		}
+		job.pack = sticker_pack_copy(pack, &job.items)
+		marmot.sticker_pack_free(pack)
+	case .Install:
+		pack: ^marmot.Sticker_Pack
+		if marmot.install_sticker_pack(job.client, account, input, &pack) != .OK {
+			job.error = N_("Couldn't add the pack. Please try again."); return
+		}
+		marmot.sticker_pack_free(pack)
+		sticker_list_installed(job, account)
+	case .Uninstall:
+		if marmot.uninstall_sticker_pack(job.client, account, input) != .OK {
+			job.error = N_("Couldn't remove the pack. Please try again."); return
+		}
+		sticker_list_installed(job, account)
 	case .Import:
 		file, err := os.open(job.input)
 		if err != nil {job.error = N_("Couldn't read the image. Please try again."); return}
@@ -261,15 +310,22 @@ sticker_worker :: proc(t: ^thread.Thread) {
 			)
 			if err == nil {job.data, _ = vault_open_blob(sealed)}
 		}
-		if len(job.data) == 0 && job.op == .Asset && strings.has_prefix(job.item.url, "https://") {
-			buffer := make([]u8, STICKER_BYTES_LIMIT, context.temp_allocator)
-			n := wn_https_get(
-				strings.clone_to_cstring(job.item.url, context.temp_allocator),
-				raw_data(buffer),
-				uint(len(buffer)),
-				HTTPS_TIMEOUT_MS,
-			)
-			if n > 0 {job.data = make([]u8, int(n)); copy(job.data, buffer[:n])}
+		// Pack art is MDK's to download and check against its exact reference.
+		if len(job.data) == 0 && job.op == .Asset && job.item.ref.pack != "" {
+			asset: ^marmot.Sticker_Asset
+			if marmot.fetch_sticker_asset(
+				   job.client,
+				   account,
+				   strings.clone_to_cstring(job.item.ref.pack, context.temp_allocator),
+				   strings.clone_to_cstring(job.item.ref.code, context.temp_allocator),
+				   strings.clone_to_cstring(job.item.ref.sha, context.temp_allocator),
+				   &asset,
+			   ) ==
+			   .OK {
+				job.data = make([]u8, asset.bytes_len)
+				copy(job.data, asset.bytes[:asset.bytes_len])
+				marmot.sticker_asset_free(asset)
+			}
 		}
 		if len(job.data) == 0 ||
 		   string(
@@ -281,7 +337,7 @@ sticker_worker :: proc(t: ^thread.Thread) {
 			   job.item.ref.sha {
 			job.error = N_("Couldn't load the sticker. Please try again."); return
 		}
-		job.image = sticker_image(job.data, job.item.mime)
+		job.image = sticker_image(job.data)
 		if job.image.data ==
 		   nil {job.error = N_("Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."); return}
 		job.dim = fmt.aprintf("%dx%d", job.image.width, job.image.height)
@@ -292,43 +348,27 @@ sticker_worker :: proc(t: ^thread.Thread) {
 	}
 }
 
+// The texture for exact artwork, or nil while it loads (or after it failed).
 @(private)
-sticker_item_clone :: proc(item: Sticker_Item) -> Sticker_Item {
-	return {
-		sticker_ref_clone(item.ref),
-		strings.clone(item.label),
-		strings.clone(item.mime),
-		strings.clone(item.url),
-	}
-}
-
-@(private)
-sticker_texture :: proc(item: Sticker_Item) -> ^rl.Texture2D {
-	if !sticker_hex(item.ref.sha) {return nil}
-	if tex, ok := sticker_textures[item.ref.sha]; ok {return tex}
-	if item.mime == "image/gif" ||
-	   item.mime == "image/apng" {sticker_textures[strings.clone(item.ref.sha)] = nil; return nil}
-	if !sticker_requested[item.ref.sha] {
-		sticker_requested[strings.clone(item.ref.sha)] = true
+sticker_texture :: proc(ref: Sticker_Ref) -> ^rl.Texture2D {
+	if !sticker_hex(ref.sha) {return nil}
+	if tex, ok := sticker_textures[ref.sha]; ok {return tex}
+	if !sticker_requested[ref.sha] {
+		sticker_requested[strings.clone(ref.sha)] = true
 		job := sticker_job_add(.Asset)
-		job.item = sticker_item_clone(item)
+		job.item.ref = sticker_ref_clone(ref)
 	}
 	return nil
 }
 
 @(private)
 sticker_save_library :: proc(ui: ^Ui_State) {
-	bytes, err := json.marshal(Sticker_Library{ui.stickers, ui.sticker_packs, ui.sticker_recent})
+	personal := make([dynamic]Sticker_Item, context.temp_allocator)
+	for item in ui.stickers {if item.ref.pack == "" {append(&personal, item)}}
+	bytes, err := json.marshal(Sticker_Library{personal, ui.sticker_unmoved, ui.sticker_recent})
 	if err != nil {ui.sticker_error = N_("Couldn't save your stickers. Please try again."); return}
 	job := sticker_job_add(.Save)
 	job.data = bytes
-}
-
-@(private)
-sticker_library_open :: proc(ui: ^Ui_State) {
-	if ui.sticker_loaded {return}
-	for job in sticker_jobs {if job.op == .Load {return}}
-	sticker_job_add(.Load)
 }
 
 @(private)
@@ -341,22 +381,63 @@ sticker_add_item :: proc(ui: ^Ui_State, item: Sticker_Item) {
 	append(&ui.stickers, sticker_item_clone(item))
 }
 
+// Load the library once per account, then sync its packs from relays.
+@(private)
+sticker_library_open :: proc(ui: ^Ui_State) {
+	if ui.sticker_account != ui.account_ref {
+		for item in ui.stickers {sticker_item_free(item)}
+		for pack in ui.sticker_packs {sticker_pack_free(pack)}
+		clear(&ui.stickers); clear(&ui.sticker_packs)
+		ui.sticker_loaded = false
+	}
+	if ui.sticker_loaded {return}
+	if sticker_busy(ui, .Load) {return}
+	sticker_job_add(.Load, ui.account_ref)
+	sticker_job_add(.Sync, ui.account_ref)
+}
+
+// True while the active account has `op` queued or running. A pack lookup
+// counts only for the pack on screen.
+@(private)
+sticker_busy :: proc(ui: ^Ui_State, op: Sticker_Operation) -> bool {
+	for job in sticker_jobs {
+		if job.op != op || job.account != ui.account_ref {continue}
+		if op == .Pack && job.input != ui.sticker_pack.coordinate {continue}
+		return true
+	}
+	return false
+}
+
 @(private)
 sticker_job_free :: proc(job: ^Sticker_Job) {
-	delete(job.input); delete(job.data)
-	delete(job.account); delete(job.group); delete(job.reply); delete(job.root)
-	delete(job.dim)
+	delete(job.account); delete(job.input); delete(job.data)
+	delete(job.group); delete(job.reply); delete(job.root); delete(job.dim)
 	sticker_item_free(job.item); sticker_pack_free(job.pack)
 	for item in job.items {sticker_item_free(item)}
 	delete(job.items)
+	for pack in job.packs {sticker_pack_free(pack)}
+	delete(job.packs)
 	for item in job.library.items {sticker_item_free(item)}
 	for pack in job.library.packs {sticker_pack_free(pack)}
 	for sha in job.library.recent {delete(sha)}
 	delete(job.library.items); delete(job.library.packs); delete(job.library.recent)
-	for relay in job.relays {delete(relay)}
-	delete(job.relays)
 	if job.image.data != nil {rl.UnloadImage(job.image)}
 	free(job)
+}
+
+// Swap in MDK's installed list, keeping personal stickers first.
+@(private)
+sticker_take_installed :: proc(ui: ^Ui_State, job: ^Sticker_Job) {
+	for i := len(ui.stickers) - 1; i >= 0; i -= 1 {
+		if ui.stickers[i].ref.pack == "" {continue}
+		sticker_item_free(ui.stickers[i]); ordered_remove(&ui.stickers, i)
+	}
+	append(&ui.stickers, ..job.items[:]); clear(&job.items)
+	ui.sticker_packs, job.packs = job.packs, ui.sticker_packs
+	if ui.sticker_account != job.account {
+		delete(ui.sticker_account); ui.sticker_account = strings.clone(job.account)
+	}
+	ui.sticker_loaded = true
 }
 
 @(private)
@@ -366,6 +447,18 @@ drain_stickers :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if job.worker == nil || !thread.is_done(job.worker) {i += 1; continue}
 		thread.join(job.worker); thread.destroy(job.worker)
 		ordered_remove(&sticker_jobs, i)
+		defer sticker_job_free(job)
+		if job.op == .Asset || job.op == .Import || job.op == .Receive {
+			if !(job.item.ref.sha in sticker_textures) && (job.error == "" || job.op == .Asset) {
+				tex: ^rl.Texture2D // nil marks a failure until Retry
+				if job.error == "" {
+					tex = new(rl.Texture2D)
+					tex^ = sticker_texture_load(job.image)
+					rl.SetTextureFilter(tex^, .BILINEAR)
+				}
+				sticker_textures[strings.clone(job.item.ref.sha)] = tex
+			}
+		}
 		if job.op == .Send &&
 		   job.account !=
 			   ui.account_ref {job.error = N_("Couldn't send the sticker. Switch back to your account and try again.")}
@@ -373,59 +466,49 @@ drain_stickers :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if job.op == .Send {sticker_show(ui, job.item.ref)}
 			ui.sticker_error = job.error
 		}
-		if job.op == .Pack && job.input == ui.sticker_pack.coordinate {
-			ui.sticker_loading = false
-			if job.error == "" {
+		switch job.op {
+		case .Asset, .Save:
+		case .Import, .Receive:
+			if job.error != "" {break}
+			sticker_add_item(ui, job.item)
+			sticker_save_library(ui)
+			ui.sticker_tab = true
+			if job.op == .Import {
+				sticker_ref_free(ui.sticker_selected)
+				ui.sticker_selected = sticker_ref_clone(job.item.ref)
+				clear(&ui.sticker_name); append(&ui.sticker_name, job.item.label)
+				ui.sticker_open = true
+				ui.sticker_page = .Detail
+			}
+		case .Send:
+			if job.error == "" {queue_sticker_payload(ui, client, job)}
+		case .Load, .Sync, .Pack, .Install, .Uninstall:
+			// Account results land only while that account is active.
+			if job.account != ui.account_ref {break}
+			if job.op == .Load && job.read {
+				for item in ui.stickers {sticker_item_free(item)}
+				delete(ui.stickers)
+				ui.stickers, job.library.items = job.library.items, {}
+				ui.sticker_recent, job.library.recent = job.library.recent, ui.sticker_recent
+				ui.sticker_unmoved, job.library.packs = job.library.packs, ui.sticker_unmoved
+			}
+			if job.op == .Pack && job.input == ui.sticker_pack.coordinate && job.error == "" {
+				ui.sticker_page = .Pack
 				sticker_pack_free(ui.sticker_pack)
 				ui.sticker_pack, job.pack = job.pack, {}
-				for item in ui.sticker_preview {sticker_item_free(item)}
-				delete(ui.sticker_preview)
-				ui.sticker_preview, job.items = job.items, nil
+				ui.sticker_preview, job.items = job.items, ui.sticker_preview
 			}
+			if job.listed {sticker_take_installed(ui, job)}
+			if job.moved {sticker_save_library(ui)}
 		}
-		if job.error == "" {
-			switch job.op {
-			case .Load:
-				ui.stickers, ui.sticker_packs, ui.sticker_recent =
-					job.library.items, job.library.packs, job.library.recent
-				job.library = {}
-				ui.sticker_loaded = true
-			case .Import, .Receive:
-				sticker_add_item(ui, job.item)
-				sticker_save_library(ui)
-				ui.sticker_tab = true
-				if job.op == .Import {
-					sticker_ref_free(ui.sticker_selected)
-					ui.sticker_selected = sticker_ref_clone(job.item.ref)
-					clear(&ui.sticker_name); append(&ui.sticker_name, job.item.label)
-					ui.sticker_open = true
-					ui.sticker_page = .Detail
-				}
-			case .Send:
-				queue_sticker_payload(ui, client, job)
-			case .Save, .Asset, .Pack:
-			}
-		}
-		if job.op == .Asset || job.op == .Import || job.op == .Receive {
-			if job.image.data != nil &&
-			   job.error == "" &&
-			   sticker_textures[job.item.ref.sha] == nil {
-				tex := new(rl.Texture2D)
-				tex^ = sticker_texture_load(job.image)
-				rl.SetTextureFilter(tex^, .BILINEAR)
-				sticker_textures[strings.clone(job.item.ref.sha)] = tex
-			} else if job.op == .Asset && job.error != "" {
-				sticker_textures[strings.clone(job.item.ref.sha)] = nil
-			}
-		}
-		sticker_job_free(job)
 	}
-	if ui.sticker_installing {sticker_finish_install(ui)}
 	// ponytail: one bounded IO job at a time; use two asset workers if packs need it.
 	for job in sticker_jobs {if job.worker != nil {return}}
 	if len(sticker_jobs) == 0 {return}
 	job := sticker_jobs[0]
 	for candidate in sticker_jobs {if candidate.op != .Asset {job = candidate; break}}
+	job.client = client
+	if job.account == "" {job.account = strings.clone(ui.account_ref)}
 	job.worker = thread.create(sticker_worker)
 	job.worker.data = job
 	thread.start(job.worker)
@@ -433,12 +516,12 @@ drain_stickers :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 @(private)
 sticker_stop :: proc() {
-	// Join owned workers before unloading; finish queued index writes in order.
+	// Join owned workers before unloading; finish queued library writes in order.
 	for job in sticker_jobs {
 		if job.worker != nil {thread.join(job.worker); thread.destroy(job.worker)}
 		if job.op == .Save && job.worker == nil {
 			if !media_write_sealed(
-				fmt.tprintf("%s/stickers/library.bin", data_home),
+				sticker_library_path(),
 				job.data,
 			) {fmt.eprintln("Couldn't save sticker library during shutdown.")}
 		}

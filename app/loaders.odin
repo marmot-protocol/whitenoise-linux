@@ -400,6 +400,13 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 					chat_preview(preview.plaintext != nil ? string(preview.plaintext) : ""),
 				)
 				msg.reply_image = reply_image_load(client, account, group, preview)
+				if ref := preview.sticker; ref != nil {
+					msg.reply_sticker = {
+						strings.clone(string(ref.pack_coordinate)),
+						strings.clone(string(ref.shortcode)),
+						strings.clone(string(ref.plaintext_sha256)),
+					}
+				}
 			} else if record.reply_to_message_id_hex != nil {
 				// Parent outside the loaded window (or deleted): keep the
 				// reply frame with a plain note instead of dropping it.

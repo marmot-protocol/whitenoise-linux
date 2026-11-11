@@ -446,7 +446,7 @@ media_worker :: proc(t: ^thread.Thread) {
 	name := strings.to_lower(string(job.reference.file_name), context.temp_allocator)
 	switch job.kind {
 	case .Sticker:
-		job.image = image_fit(sticker_image(bytes, string(job.reference.media_type)), STICKER_PX)
+		job.image = image_fit(sticker_image(bytes), STICKER_PX)
 	case .Image:
 		// Animated WebP cannot use the still-image decoder.
 		if len(bytes) >= 30 &&

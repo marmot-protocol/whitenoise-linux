@@ -111,6 +111,21 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 				}
 			}
 
+			// A pack sticker carries no attachment; its art is MDK's asset.
+			if p.sticker.pack != "" {
+				if tex := sticker_texture(p.sticker); tex != nil {
+					ratio := tex.height > 0 ? f32(tex.width) / f32(tex.height) : 1
+					if nendo.box(nendo.id("PendingSticker", index))(
+					{
+						width = nendo.fixed(min(att_w(), min(220, 220 * ratio))),
+						aspect = ratio,
+						image = tex,
+						user_data = rawptr(STICKER_IMAGE),
+					},
+					) {}
+				}
+			}
+
 			for a, j in p.atts {
 				if a.tex == nil {
 					continue
@@ -1071,11 +1086,25 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 								}
 							}
 						}
+						// An MDK sticker parent has no attachment, only its reference.
+						if reply_image == "" && !reply_blocked && msg.reply_sticker.sha != "" {
+							tex := sticker_texture(msg.reply_sticker)
+							if tex != nil && tex.width > 0 && tex.height > 0 {
+								scale := min(f32(96) / f32(tex.width), f32(64) / f32(tex.height))
+								if nendo.box(nendo.id("MsgReplySticker", index))(
+								{
+									width = nendo.fixed(f32(tex.width) * scale),
+									height = nendo.fixed(f32(tex.height) * scale),
+									image = tex,
+								},
+								) {}
+							}
+						}
 					}
 				}
 			}
 
-			if msg.sticker.sha != "" {message_sticker(g_ui, index, msg)}
+			if msg.sticker.sha != "" {message_sticker(index, msg)}
 			media_failed := false
 			// Seeds for the markdown and code-line id ranges, which share the
 			// row's index * 4096 band and so stay compact per kind.

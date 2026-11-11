@@ -7,7 +7,8 @@ import "core:time"
 import rl "sdlrl"
 
 // Owned C rows survive until the send worker completes. The same tags follow
-// text, media, thread and retry paths; imeta remains Marmot's responsibility.
+// text, media, sticker, thread and retry paths; imeta remains Marmot's
+// responsibility, as does a pack sticker's tag.
 @(private)
 send_message_tags :: proc(p: ^Pending_Send) -> []marmot.Message_Tag {
 	rows := make([dynamic][]string, context.temp_allocator)
@@ -25,6 +26,7 @@ send_message_tags :: proc(p: ^Pending_Send) -> []marmot.Message_Tag {
 	return tags
 }
 
+// A personal sticker goes out as its encrypted image plus the wn-sticker tag.
 @(private)
 queue_sticker_payload :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Sticker_Job) {
 	info := profile_info(client, ui.account_ref)

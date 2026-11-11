@@ -1,6 +1,7 @@
 package main
 
 import "base:runtime"
+import "core:c"
 import "core:crypto/hash"
 import "core:encoding/hex"
 import "core:encoding/json"
@@ -11,7 +12,15 @@ import "core:sync"
 import "core:testing"
 import rl "sdlrl"
 
-// The signer is the same linked secp256k1 fixture used by sticker_test.odin.
+// Sign with the secp256k1 already linked by the marmot-c bundle.
+@(private, default_calling_convention = "c", link_prefix = "rustsecp256k1_v0_10_0_")
+foreign _ {
+	context_create :: proc(flags: u32) -> rawptr ---
+	context_destroy :: proc(ctx: rawptr) ---
+	keypair_create :: proc(ctx: rawptr, pair: ^[96]u8, secret: [^]u8) -> c.int ---
+	schnorrsig_sign32 :: proc(ctx: rawptr, sig: ^[64]u8, msg: [^]u8, pair: ^[96]u8, aux: rawptr) -> c.int ---
+}
+
 @(private)
 emoji_test_event :: proc(identifier, title: string, at: u64 = 123) -> Sticker_Event {
 	event := Sticker_Event {

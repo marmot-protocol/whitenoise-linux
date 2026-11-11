@@ -431,6 +431,7 @@ Msg_Ui :: struct {
 	reply_from_id:       string, // its account hex, so a blocked parent quotes as blocked
 	reply_text:          string,
 	reply_image:         string, // first parent image's session cache key
+	reply_sticker:       Sticker_Ref, // parent's MDK sticker, drawn when it has no image
 	reply_id:            string, // parent message id, the preview's jump target
 	attachments:         [dynamic]Att_Slot, // one per imeta tag; position = source attachment index
 	at:                  string, // HH:MM
@@ -561,21 +562,21 @@ Ui_State :: struct {
 	gif_due:                                           f64,
 	gif_hover:                                         int,
 	gif_hover_at:                                      f64,
-	stickers:                                          [dynamic]Sticker_Item,
-	sticker_packs:                                     [dynamic]Sticker_Pack,
+	stickers:                                          [dynamic]Sticker_Item, // personal stickers, then installed packs' stickers
+	sticker_packs:                                     [dynamic]Sticker_Pack, // installed packs, from MDK in install order
+	sticker_unmoved:                                   [dynamic]Sticker_Pack, // library.bin packs MDK could not install yet
+	sticker_account:                                   string, // account whose installed list is loaded
 	sticker_recent:                                    [dynamic]string,
 	sticker_preview:                                   [dynamic]Sticker_Item,
 	sticker_pack:                                      Sticker_Pack,
 	sticker_selected:                                  Sticker_Ref,
 	sticker_input:                                     [dynamic]u8,
 	sticker_name:                                      [dynamic]u8,
-	sticker_filter:                                    string,
+	sticker_filter:                                    string, // "", "recent", "personal" or a pack coordinate
 	sticker_error:                                     string,
 	sticker_open:                                      bool,
 	sticker_tab:                                       bool,
 	sticker_loaded:                                    bool,
-	sticker_loading:                                   bool,
-	sticker_installing:                                bool,
 	picking_sticker:                                   bool,
 	sticker_focus:                                     int,
 	sticker_page:                                      Sticker_Page,

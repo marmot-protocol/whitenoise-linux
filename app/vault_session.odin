@@ -271,7 +271,11 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	for pack in ui.sticker_packs {sticker_pack_free(pack)}
 	delete(ui.sticker_packs); ui.sticker_packs = {}
 	sticker_pack_free(ui.sticker_pack); ui.sticker_pack = {}
+	for pack in ui.sticker_unmoved {sticker_pack_free(pack)}
+	delete(ui.sticker_unmoved); ui.sticker_unmoved = {}
 	sticker_ref_free(ui.sticker_selected); ui.sticker_selected = {}
+	session_string_forget(&ui.sticker_account)
+	ui.sticker_loaded = false
 	for text in ([]^string{&ui.account_ref, &ui.raw_json, &ui.reply_hint, &ui.sel_copy, &ui.group_desc, &ui.debug_json, &ui.debug_text, &ui.kp_own_json, &ui.kp_peer_json}) {session_string_forget(text)}
 	for &pending in ui.pending {
 		mem.zero_slice(transmute([]u8)pending.body)

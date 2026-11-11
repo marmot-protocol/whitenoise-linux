@@ -1,8 +1,10 @@
 package main
 
+import marmot "../marmot"
 import "core:fmt"
 import "core:slice"
 import "core:strings"
+import "core:time"
 import "core:unicode/utf8"
 import "nendo"
 import rl "sdlrl"
@@ -66,6 +68,20 @@ sticker_copy :: proc(
 	}
 }
 
+// What is happening plus an indeterminate bar, for MDK calls that can wait
+// on relays.
+@(private)
+sticker_progress :: proc(id, label: string) {
+	if nendo.box(nendo.id(id))({direction = .Column, gap = 4}) {
+		nendo.text(label, {font = FONT_BODY, size = 13, color = TEXT_DIM})
+		nendo.text(
+			tr("Progress is indeterminate."),
+			{font = FONT_BODY, size = 11, color = TEXT_LO},
+		)
+		busy_bar(fmt.tprintf("%sBar", id))
+	}
+}
+
 @(private)
 sticker_pack_index :: proc(ui: ^Ui_State, coordinate: string) -> int {
 	for pack, i in ui.sticker_packs {if pack.coordinate == coordinate {return i}}
@@ -73,19 +89,31 @@ sticker_pack_index :: proc(ui: ^Ui_State, coordinate: string) -> int {
 }
 
 @(private)
-message_sticker :: proc(ui: ^Ui_State, index: u32, msg: Msg_Ui) {
+sticker_label :: proc(ui: ^Ui_State, ref: Sticker_Ref) -> string {
+	for items in ([][]Sticker_Item{ui.sticker_preview[:], ui.stickers[:]}) {
+		for item in items {
+			if item.ref.pack == ref.pack && item.ref.code == ref.code && item.ref.sha == ref.sha {
+				return item.label
+			}
+		}
+	}
+	return ref.code
+}
+
+@(private)
+message_sticker :: proc(index: u32, msg: Msg_Ui) {
+	// A personal sticker, and a pack sticker sent before MDK owned packs,
+	// carry their art as an attachment.
 	tex: ^rl.Texture2D
 	for slot in msg.attachments {
 		if slot.kind != .Sticker {continue}
 		tex = slot.view.(^rl.Texture2D) or_continue
 		break
 	}
-	if tex == nil && ui != nil {
-		for item in ui.stickers {
-			if item.ref.pack == msg.sticker.pack &&
-			   item.ref.code == msg.sticker.code &&
-			   item.ref.sha == msg.sticker.sha {tex = sticker_texture(item); break}
-		}
+	// Pack art is MDK's to fetch; personal art exists only if you saved it.
+	if tex == nil {
+		tex =
+			msg.sticker.pack != "" ? sticker_texture(msg.sticker) : sticker_textures[msg.sticker.sha]
 	}
 	if nendo.box(nendo.id("MessageSticker", index))({direction = .Column, gap = 4}) {
 		if hovered() {cursor_raise(.Pointer)}
@@ -118,7 +146,6 @@ sticker_show :: proc(ui: ^Ui_State, ref: Sticker_Ref) {
 	if ui.picker_open {close_picker(ui)}
 	ui.sticker_open = true
 	ui.sticker_page = ref.pack != "" ? .Pack : ref.sha != "" ? .Detail : .Library
-	ui.sticker_loading, ui.sticker_installing = false, false
 	ui.sticker_error = ""
 	sticker_ref_free(ui.sticker_selected)
 	ui.sticker_selected = sticker_ref_clone(ref)
@@ -127,56 +154,51 @@ sticker_show :: proc(ui: ^Ui_State, ref: Sticker_Ref) {
 	for item in ui.sticker_preview {sticker_item_free(item)}
 	clear(&ui.sticker_preview)
 	clear(&ui.sticker_input); clear(&ui.sticker_name)
-	append(&ui.sticker_input, ref.pack)
 	append(&ui.sticker_name, ref.code)
 	ui.sticker_focus = 0
-	if ref.pack != "" {sticker_open_pack(ui, ref.pack, ref.relay)}
+	if ref.pack != "" {sticker_open_pack(ui, ref.pack)}
 }
 
+// `input` is a coordinate, naddr or pack link; MDK parses and validates it.
 @(private)
-sticker_open_pack :: proc(ui: ^Ui_State, coordinate, relay: string) {
-	if !sticker_coordinate(coordinate) {
-		ui.sticker_error = N_("Enter a valid pack link or address."); return
-	}
-	if ui.sticker_loading {return}
-	ui.sticker_page = .Pack
+sticker_open_pack :: proc(ui: ^Ui_State, input: string) {
+	input := strings.trim_space(input)
+	if input == "" {ui.sticker_error = N_("Enter a valid pack link or address."); return}
+	if sticker_busy(ui, .Pack) {return}
 	for item in ui.sticker_preview {sticker_item_free(item)}
 	clear(&ui.sticker_preview)
 	sticker_pack_free(ui.sticker_pack)
 	ui.sticker_pack = {
-		coordinate = strings.clone(coordinate),
+		coordinate = strings.clone(input),
 	}
 	ui.sticker_error = ""
-	if index := sticker_pack_index(ui, coordinate); index >= 0 {
-		pack := ui.sticker_packs[index]
-		ui.sticker_pack.title = strings.clone(pack.title)
-		ui.sticker_pack.author = strings.clone(pack.author)
-		ui.sticker_pack.event = strings.clone(pack.event)
-		ui.sticker_pack.relay = strings.clone(pack.relay)
-		for item in ui.stickers {if item.ref.pack == coordinate {append(&ui.sticker_preview, sticker_item_clone(item))}}
+	if index := sticker_pack_index(ui, input); index >= 0 {
+		ui.sticker_pack.title = strings.clone(ui.sticker_packs[index].title)
+		for item in ui.stickers {if item.ref.pack == input {append(&ui.sticker_preview, sticker_item_clone(item))}}
+		ui.sticker_page = .Pack
 		return
 	}
-	ui.sticker_pack.relay = strings.clone(relay)
-	ui.sticker_loading = true
-	job := sticker_job_add(.Pack)
-	job.input = strings.clone(coordinate)
-	relays := make([dynamic]string, context.temp_allocator)
-	if strings.has_prefix(relay, "wss://") {append(&relays, relay)}
-	for url in ui.prefs.fetch_relays {if strings.has_prefix(url, "wss://") && !slice.contains(relays[:], url) {append(&relays, url)}}
-	if len(relays) == 0 {append(&relays, ..DEFAULT_FETCH_RELAYS)}
-	job.relays = make([]string, min(len(relays), 4))
-	for url, i in relays[:len(job.relays)] {job.relays[i] = strings.clone(url)}
+	job := sticker_job_add(.Pack, ui.account_ref)
+	job.input = strings.clone(input)
 }
 
 @(private)
 sticker_matches :: proc(ui: ^Ui_State) -> []int {
 	indices := make([dynamic]int, context.temp_allocator)
 	filter := strings.to_lower(string(ui.picker_filter[:]), context.temp_allocator)
+	// MDK recognizes pack stickers only in kind 9; thread messages are kind 1111.
+	in_thread := thread_cur(ui) != ""
 	for item, i in ui.stickers {
-		if ui.sticker_filter == "recent" &&
-		   !slice.contains(ui.sticker_recent[:], item.ref.sha) {continue}
-		if ui.sticker_filter == "personal" && item.ref.pack != "" {continue}
-		if sticker_coordinate(ui.sticker_filter) && item.ref.pack != ui.sticker_filter {continue}
+		if in_thread && item.ref.pack != "" {continue}
+		switch ui.sticker_filter {
+		case "":
+		case "recent":
+			if !slice.contains(ui.sticker_recent[:], item.ref.sha) {continue}
+		case "personal":
+			if item.ref.pack != "" {continue}
+		case:
+			if item.ref.pack != ui.sticker_filter {continue}
+		}
 		if filter != "" &&
 		   !strings.contains(strings.to_lower(item.label, context.temp_allocator), filter) &&
 		   !strings.contains(
@@ -213,7 +235,7 @@ sticker_tile :: proc(
 		radius = rr(6),
 	},
 	) {
-		tex := sticker_texture(item)
+		tex := sticker_texture(item.ref)
 		if tex != nil {
 			ratio := f32(tex.width) / f32(max(tex.height, 1))
 			if nendo.box(nendo.id_local("StickerArt"))(
@@ -225,7 +247,7 @@ sticker_tile :: proc(
 			},
 			) {}
 		} else {nendo.text(
-				sticker_requested[item.ref.sha] && item.ref.sha in sticker_textures ? "?" : "…",
+				item.ref.sha in sticker_textures ? "?" : "…",
 				{size = 18, color = TEXT_LO},
 			)}
 		if hovered() {tooltip(item.label); cursor_raise(.Pointer)}
@@ -256,7 +278,9 @@ sticker_picker :: proc(ui: ^Ui_State) {
 			tr("Your stickers"),
 			ui.sticker_filter == "personal" ? .Selected : .Normal,
 		)
-		for pack, i in ui.sticker_packs {sticker_control("StickerPack", u32(i), pack.title, ui.sticker_filter == pack.coordinate ? .Selected : .Normal)}
+		if thread_cur(ui) == "" {
+			for pack, i in ui.sticker_packs {sticker_control("StickerPack", u32(i), pack.title, ui.sticker_filter == pack.coordinate ? .Selected : .Normal)}
+		}
 	}
 	scrollbar(nendo.id("StickerPacks"), 13)
 	if nendo.box(nendo.id("PickerSearch"))(
@@ -289,12 +313,16 @@ sticker_picker :: proc(ui: ^Ui_State) {
 	) {
 		matches := sticker_matches(ui)
 		if len(matches) == 0 {
-			nendo.text(
-				tr(
-					len(ui.picker_filter) > 0 ? N_("No matching stickers.") : N_("No stickers here yet. Choose Manage to add stickers or sticker packs."),
-				),
-				{font = FONT_BODY, size = 13, color = TEXT_DIM},
-			)
+			if sticker_busy(ui, .Load) || sticker_busy(ui, .Sync) {
+				sticker_progress("StickerPickerBusy", tr("Loading your sticker packs…"))
+			} else {
+				nendo.text(
+					tr(
+						len(ui.picker_filter) > 0 ? N_("No matching stickers.") : N_("No stickers here yet. Choose Manage to add stickers or sticker packs."),
+					),
+					{font = FONT_BODY, size = 13, color = TEXT_DIM},
+				)
+			}
 		}
 		columns := max(1, int((modal_w(nendo.id("PickerPanel"), 400) - 24) / 84))
 		for start := 0; start < len(matches); start += columns {
@@ -304,21 +332,43 @@ sticker_picker :: proc(ui: ^Ui_State) {
 		}
 	}
 	scrollbar(nendo.id("StickerGrid"), 13)
-	if sticker_coordinate(
-		ui.sticker_filter,
-	) {sticker_control("StickerViewPack", 0, tr("View sticker pack"))}
+	if sticker_pack_index(ui, ui.sticker_filter) >=
+	   0 {sticker_control("StickerViewPack", 0, tr("View sticker pack"))}
 }
 
+// A pack sticker goes through MDK with the composer's reply and armed effect.
+// A personal sticker is first read from the vault, then sent as an encrypted
+// attachment, which also works inside a thread.
 @(private)
-sticker_send :: proc(ui: ^Ui_State, item: Sticker_Item) {
+sticker_send :: proc(ui: ^Ui_State, client: ^marmot.Client, item: Sticker_Item) {
 	if ui.selected < 0 || ui.editing != "" {return}
-	job := sticker_job_add(.Send)
-	job.item = sticker_item_clone(item)
-	job.account = strings.clone(ui.account_ref)
-	job.group = strings.clone(ui.chats[ui.selected].group_id)
-	job.root = strings.clone(thread_cur(ui))
-	job.reply = strings.clone(job.root == "" ? ui.replying : "")
-	job.effect = ui.fx_armed
+	root := thread_cur(ui)
+	if item.ref.pack != "" && root != "" {return}
+	if item.ref.pack == "" {
+		job := sticker_job_add(.Send, ui.account_ref)
+		job.item = sticker_item_clone(item)
+		job.group = strings.clone(ui.chats[ui.selected].group_id)
+		job.root = strings.clone(root)
+		job.reply = strings.clone(root == "" ? ui.replying : "")
+		job.effect = ui.fx_armed
+	} else {
+		info := profile_info(client, ui.account_ref)
+		send_ticket += 1
+		append(
+			&ui.pending,
+			Pending_Send {
+				ticket = send_ticket,
+				visible_since = time.tick_now(),
+				group_id = strings.clone(ui.chats[ui.selected].group_id),
+				sender = strings.clone(info.name != "" ? info.name : "you"),
+				sticker = sticker_ref_clone(item.ref),
+				effect = ui.fx_armed,
+				reply_to = strings.clone(ui.replying),
+			},
+		)
+		spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
+		ui.scroll_pending = true
+	}
 	ui.replying = ""
 	ui.fx_armed = 0
 	close_picker(ui)
@@ -329,7 +379,7 @@ sticker_send :: proc(ui: ^Ui_State, item: Sticker_Item) {
 }
 
 @(private)
-handle_sticker_picker :: proc(ui: ^Ui_State) {
+handle_sticker_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.focus == .Picker {edit_text(ui, &ui.picker_filter)}
 	if field_mouse(ui, &ui.picker_filter, "PickerSearch") {ui.focus = .Picker}
 	if clicked_indexed("StickerManage", 0) {sticker_show(ui, {}); return}
@@ -372,7 +422,7 @@ handle_sticker_picker :: proc(ui: ^Ui_State) {
 		   ) {sticker_show(ui, ui.stickers[index].ref); return}
 		if clicked_indexed("StickerPick", u32(index)) ||
 		   at == ui.sticker_focus &&
-			   rl.IsKeyPressed(.ENTER) {sticker_send(ui, ui.stickers[index]); return}
+			   rl.IsKeyPressed(.ENTER) {sticker_send(ui, client, ui.stickers[index]); return}
 	}
 	if rl.IsKeyPressed(.ESCAPE) ||
 	   mouse_released() && !nendo.pointer_over(nendo.id("PickerPanel")) {close_picker(ui)}
@@ -441,10 +491,14 @@ sticker_panel :: proc(ui: ^Ui_State) {
 				for item in ui.stickers {
 					if i, found := pack_indices[item.ref.pack]; found {
 						counts[i] += 1
-						if covers[i] == nil {covers[i] = sticker_texture(item)}
+						if covers[i] == nil {covers[i] = sticker_texture(item.ref)}
 					}
 				}
-				if !ui.sticker_loaded {nendo.text(tr("Loading…"), {font = FONT_BODY, size = 14, color = TEXT_DIM})}
+				if sticker_busy(ui, .Load) ||
+				   sticker_busy(
+					   ui,
+					   .Sync,
+				   ) {sticker_progress("StickerSyncBusy", tr("Loading your sticker packs…"))}
 				if len(ui.sticker_packs) > 0 {eyebrow(tr("YOUR PACKS"))}
 				for pack, i in ui.sticker_packs {
 					if nendo.box(nendo.id("StickerLibraryPack", u32(i)))(
@@ -526,14 +580,19 @@ sticker_panel :: proc(ui: ^Ui_State) {
 						TEXT_LO,
 					)
 				}
+				if sticker_busy(
+					ui,
+					.Pack,
+				) {sticker_progress("StickerLookupBusy", tr("Looking up the pack…"))}
 			case .Pack:
+				loading := sticker_busy(ui, .Pack)
 				if ui.sticker_selected.sha != "" {
 					found := false
 					for item in ui.sticker_preview {found ||= item.ref.sha == ui.sticker_selected.sha && item.ref.code == ui.sticker_selected.code}
-					if !ui.sticker_loading &&
+					if !loading &&
 					   !found {sticker_copy(2, tr("This sticker is not in the current pack."), width - 40, 13)}
 				}
-				if ui.sticker_loading {nendo.text(tr("Loading…"), {font = FONT_BODY, size = 14, color = TEXT_DIM})}
+				if loading {sticker_progress("StickerPackBusy", tr("Looking up the pack…"))}
 				if len(ui.sticker_preview) > 0 {
 					nendo.text(
 						fmt.tprintf(tr("Stickers: %d"), len(ui.sticker_preview)),
@@ -548,9 +607,15 @@ sticker_panel :: proc(ui: ^Ui_State) {
 					sticker_copy(3, tr("Click a sticker for a larger preview."), width - 40, 13)
 				}
 			case .Detail:
-				tex := sticker_textures[ui.sticker_selected.sha]
-				if tex ==
-				   nil {view, _ := media_cached(.Sticker, ui.sticker_selected.sha); tex = (^rl.Texture2D)(view)}
+				// Personal art is local only; a received one may still be its attachment.
+				tex: ^rl.Texture2D
+				if ui.sticker_selected.pack != "" {
+					tex = sticker_texture(ui.sticker_selected)
+				} else {
+					tex = sticker_textures[ui.sticker_selected.sha]
+					if tex ==
+					   nil {view, _ := media_cached(.Sticker, ui.sticker_selected.sha); tex = (^rl.Texture2D)(view)}
+				}
 				if nendo.box(nendo.id("StickerPreviewStage"))(
 				{
 					width = nendo.grow(),
@@ -563,7 +628,7 @@ sticker_panel :: proc(ui: ^Ui_State) {
 					if tex != nil {
 						ratio := f32(tex.width) / f32(max(tex.height, 1))
 						size := min(240, width - 64)
-						if nendo.box(nendo.id("StickerPersonalPreview"))(
+						if nendo.box(nendo.id("StickerDetailArt"))(
 						{
 							width = nendo.fixed(min(size, size * ratio)),
 							aspect = ratio,
@@ -597,7 +662,13 @@ sticker_panel :: proc(ui: ^Ui_State) {
 							TEXT_LO,
 						)
 					}
-				} else {sticker_copy(4, string(ui.sticker_name[:]), width - 40, 15, TEXT)}
+				} else {sticker_copy(
+						4,
+						sticker_label(ui, ui.sticker_selected),
+						width - 40,
+						15,
+						TEXT,
+					)}
 			}
 			if ui.sticker_error != "" {
 				sticker_copy(5, tr(ui.sticker_error), width - 40, 13, DANGER)
@@ -618,9 +689,14 @@ sticker_panel :: proc(ui: ^Ui_State) {
 						{font = FONT_BODY, size = 13, color = TEXT_DIM},
 					)
 					if nendo.box(nendo.id("StickerFooterGap"))({width = nendo.grow()}) {}
-					sticker_control("StickerRemovePack", 0, tr("Remove pack"), .Danger)
+					sticker_control(
+						"StickerRemovePack",
+						0,
+						tr(sticker_busy(ui, .Uninstall) ? N_("Removing…") : N_("Remove pack")),
+						.Danger,
+					)
 				} else if len(ui.sticker_preview) >
-				   0 {sticker_control("StickerInstall", 0, tr(ui.sticker_installing ? N_("Adding…") : N_("Add pack")), .Primary)}
+				   0 {sticker_control("StickerInstall", 0, tr(sticker_busy(ui, .Install) ? N_("Adding…") : N_("Add pack")), .Primary)}
 			}
 			if ui.sticker_page == .Detail && ui.sticker_selected.pack == "" {
 				sticker_control("StickerSave", 0, tr("Save sticker"), .Primary)
@@ -636,31 +712,6 @@ sticker_panel :: proc(ui: ^Ui_State) {
 }
 
 @(private)
-sticker_finish_install :: proc(ui: ^Ui_State) {
-	for item in ui.sticker_preview {if !(item.ref.sha in sticker_textures) {return}}
-	ui.sticker_installing = false
-	added := 0
-	for item in ui.sticker_preview {
-		if sticker_textures[item.ref.sha] == nil {continue}
-		sticker_add_item(ui, item); added += 1
-	}
-	if added ==
-	   0 {ui.sticker_error = N_("Couldn't add the pack. No supported stickers are available."); return}
-	p := ui.sticker_pack
-	append(
-		&ui.sticker_packs,
-		Sticker_Pack {
-			strings.clone(p.coordinate),
-			strings.clone(p.title),
-			strings.clone(p.author),
-			strings.clone(p.event),
-			strings.clone(p.relay),
-		},
-	)
-	sticker_save_library(ui)
-}
-
-@(private)
 handle_sticker_panel :: proc(ui: ^Ui_State) {
 	if clicked_indexed("StickerBack", 0) ||
 	   rl.IsKeyPressed(.ESCAPE) && ui.sticker_page != .Library {
@@ -671,8 +722,7 @@ handle_sticker_panel :: proc(ui: ^Ui_State) {
 	if rl.IsKeyPressed(.ESCAPE) ||
 	   clicked_indexed("StickerClose", 0) ||
 	   mouse_released() && !nendo.pointer_over(nendo.id("StickerPanel")) {
-		ui.sticker_open =
-			false; ui.sticker_installing = false; ui.picking_sticker = false; ui.focus = .Compose; return
+		ui.sticker_open = false; ui.picking_sticker = false; ui.focus = .Compose; return
 	}
 	if !ui.sticker_loaded {
 		if clicked_indexed("StickerRetry", 0) {ui.sticker_error = ""; sticker_library_open(ui)}
@@ -695,35 +745,15 @@ handle_sticker_panel :: proc(ui: ^Ui_State) {
 		ui.sticker_page = .Detail
 		return
 	}
-	if ui.sticker_page == .AddPack ||
-	   ui.sticker_page == .Detail && ui.sticker_selected.pack == "" {
-		buf := ui.sticker_page == .AddPack ? &ui.sticker_input : &ui.sticker_name
-		id := ui.sticker_page == .AddPack ? "StickerInput" : "StickerName"
-		edit_text(ui, buf); field_mouse(ui, buf, id)
+	if ui.sticker_page == .AddPack {
+		edit_text(ui, &ui.sticker_input); field_mouse(ui, &ui.sticker_input, "StickerInput")
+		if clicked_indexed("StickerLookup", 0) ||
+		   rl.IsKeyPressed(.ENTER) {sticker_open_pack(ui, string(ui.sticker_input[:]))}
+	}
+	if ui.sticker_page == .Detail && ui.sticker_selected.pack == "" {
+		edit_text(ui, &ui.sticker_name); field_mouse(ui, &ui.sticker_name, "StickerName")
 	}
 	if clicked_indexed("StickerImport", 0) {ui.picking_sticker = true; rl.OpenFileDialog(false)}
-	if clicked_indexed("StickerLookup", 0) ||
-	   rl.IsKeyPressed(.ENTER) && ui.sticker_page == .AddPack {
-		coordinate, relay := sticker_pack_input(string(ui.sticker_input[:]))
-		sticker_open_pack(ui, coordinate, relay)
-	}
-	if clicked_indexed("StickerInstall", 0) &&
-	   !ui.sticker_installing &&
-	   sticker_pack_index(ui, ui.sticker_pack.coordinate) < 0 {
-		ui.sticker_installing = true
-		for item in ui.sticker_preview {sticker_texture(item)}
-	}
-	if clicked_indexed("StickerRemovePack", 0) {
-		coordinate := ui.sticker_pack.coordinate
-		for i := len(ui.stickers) - 1; i >= 0; i -= 1 {
-			if ui.stickers[i].ref.pack ==
-			   coordinate {sticker_item_free(ui.stickers[i]); ordered_remove(&ui.stickers, i)}
-		}
-		if index := sticker_pack_index(ui, coordinate);
-		   index >=
-		   0 {sticker_pack_free(ui.sticker_packs[index]); ordered_remove(&ui.sticker_packs, index)}
-		sticker_save_library(ui)
-	}
 	if clicked_indexed("StickerRemove", 0) {
 		for i := len(ui.stickers) - 1; i >= 0; i -= 1 {
 			if ui.stickers[i].ref.sha == ui.sticker_selected.sha &&
@@ -744,6 +774,7 @@ handle_sticker_panel :: proc(ui: ^Ui_State) {
 				sticker_save_library(ui); sticker_show(ui, {}); return
 			}
 		}
+		// Save a received personal sticker from its downloaded attachment.
 		for msg in ui.messages {
 			if msg.sticker.sha != ui.sticker_selected.sha {continue}
 			for slot in msg.attachments {
@@ -761,20 +792,32 @@ handle_sticker_panel :: proc(ui: ^Ui_State) {
 			"Couldn't save the sticker. Wait for its image to load and try again.",
 		)
 	}
+	coordinate := ui.sticker_pack.coordinate
+	if clicked_indexed("StickerInstall", 0) &&
+	   !sticker_busy(ui, .Install) &&
+	   sticker_pack_index(ui, coordinate) < 0 {
+		job := sticker_job_add(.Install, ui.account_ref)
+		job.input = strings.clone(coordinate)
+	}
+	if clicked_indexed("StickerRemovePack", 0) && !sticker_busy(ui, .Uninstall) {
+		job := sticker_job_add(.Uninstall, ui.account_ref)
+		job.input = strings.clone(coordinate)
+	}
 	if clicked_indexed("StickerRetry", 0) {
 		ui.sticker_error = ""
-		if ui.sticker_pack.coordinate != "" && len(ui.sticker_preview) == 0 {
-			coordinate := strings.clone(ui.sticker_pack.coordinate); defer delete(coordinate)
-			relay := strings.clone(ui.sticker_pack.relay); defer delete(relay)
-			sticker_open_pack(ui, coordinate, relay)
-		} else {
-			for item in ui.sticker_preview {
-				if tex, seen := sticker_textures[item.ref.sha]; seen && tex == nil {
-					key, _ := delete_key(&sticker_textures, item.ref.sha); delete(key)
-					key, _ = delete_key(&sticker_requested, item.ref.sha); delete(key)
-				}
-			}
-			sticker_save_library(ui)
+		if coordinate != "" && len(ui.sticker_preview) == 0 {
+			input := strings.clone(coordinate); defer delete(input)
+			sticker_open_pack(ui, input)
+			return
 		}
+		// Forget failed artwork so its tiles download again.
+		failed := make([dynamic]string, context.temp_allocator)
+		for sha, tex in sticker_textures {if tex == nil {append(&failed, sha)}}
+		for sha in failed {
+			key, _ := delete_key(&sticker_requested, sha); delete(key)
+			key, _ = delete_key(&sticker_textures, sha); delete(key)
+		}
+		if ui.sticker_page == .Library &&
+		   !sticker_busy(ui, .Sync) {sticker_job_add(.Sync, ui.account_ref)}
 	}
 }

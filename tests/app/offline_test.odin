@@ -105,7 +105,6 @@ offline_roundtrip :: proc(t: ^testing.T) {
 			pack = "30031:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:tiny",
 			code = "ok",
 			sha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-			relay = "wss://relay.example",
 		},
 		group_id = "g1",
 		sender = "you",
@@ -128,7 +127,6 @@ offline_roundtrip :: proc(t: ^testing.T) {
 	testing.expect_value(t, q.effect, 3)
 	testing.expect_value(t, q.sticker.pack, p.sticker.pack)
 	testing.expect_value(t, q.sticker.sha, p.sticker.sha)
-	testing.expect_value(t, q.sticker.relay, p.sticker.relay)
 	testing.expect_value(t, q.body, "hello")
 	testing.expect_value(t, q.reply_to, "r1")
 	testing.expect_value(t, q.attempts, 2)

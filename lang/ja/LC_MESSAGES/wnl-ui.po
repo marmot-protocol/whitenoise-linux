@@ -1299,8 +1299,8 @@ msgstr "レコード%dを追加できませんでした。%s リレー設定を�
 msgid "Couldn't add that relay. Double-check the address and try again."
 msgstr "そのリレーを追加できませんでした。アドレスを確認して、もう一度お試しください。"
 
-msgid "Couldn't add the pack. No supported stickers are available."
-msgstr "パックを追加できませんでした。対応するステッカーがありません。"
+msgid "Couldn't add the pack. Please try again."
+msgstr "パックを追加できませんでした。もう一度お試しください。"
 
 msgid "Couldn't add the relay. Enter a ws:// or wss:// URL with a host, such as wss://relay.example.com."
 msgstr "リレーを追加できませんでした。wss://relay.example.com のように、ホストを含む ws:// または wss:// の URL を入力してください。"
@@ -1640,6 +1640,9 @@ msgstr "既存の連絡先を読み取れませんでした。もう一度お試
 msgid "Couldn't remove the GIF. Please try again."
 msgstr "GIFを削除できませんでした。もう一度お試しください。"
 
+msgid "Couldn't remove the pack. Please try again."
+msgstr "パックを削除できませんでした。もう一度お試しください。"
+
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "保存したファイルを削除できませんでした。もう一度お試しください。"
 
@@ -1744,6 +1747,9 @@ msgstr "文字起こしを開始できませんでした。もう一度お試し
 
 msgid "Couldn't start translation. Reinstall White Noise and try again."
 msgstr "翻訳を開始できませんでした。White Noiseを再インストールして、もう一度お試しください。"
+
+msgid "Couldn't sync your sticker packs. Check your relay settings and try again."
+msgstr "ステッカーパックを同期できませんでした。リレーの設定を確認して、もう一度お試しください。"
 
 msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
 msgstr "この音声を文字に変換できませんでした。10分未満の録音を選んでください。"
@@ -3052,6 +3058,9 @@ msgstr "連絡先を読み込んでいます"
 msgid "Loading your key packages"
 msgstr "鍵パッケージを読み込んでいます"
 
+msgid "Loading your sticker packs…"
+msgstr "ステッカーパックを読み込んでいます…"
+
 msgid "Loading..."
 msgstr "読み込んでいます..."
 
@@ -3081,6 +3090,9 @@ msgstr "ロックしています…"
 
 msgid "Look up"
 msgstr "検索"
+
+msgid "Looking up the pack…"
+msgstr "パックを検索しています…"
 
 msgid "Looking up..."
 msgstr "検索中..."
@@ -4214,6 +4226,9 @@ msgstr "このリレーを削除しますか？"
 
 msgid "Removing your account from this device"
 msgstr "この端末からアカウントを削除しています"
+
+msgid "Removing…"
+msgstr "削除中…"
 
 msgid "Rename"
 msgstr "名前を変更"

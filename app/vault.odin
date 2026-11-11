@@ -498,7 +498,7 @@ vault_relock :: proc() {
 //
 //   vault.db               account secrets and the blob key
 //   offline-queue.json     unsent sends
-//   stickers/              library.bin and personal images
+//   stickers/              library.bin, personal images and cached pack art
 //   gifs/                  library.bin and saved GIF blobs
 //   media-cache/           attachments, profile-*.bin avatars, *.stt transcripts,
 //                          tile-*.bin map tiles (geo.odin)

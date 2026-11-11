@@ -4,6 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
+import "core:thread"
 import "nendo"
 import rl "sdlrl"
 
@@ -39,7 +40,6 @@ sticker_layout :: proc(t: ^testing.T) {
 	ui.sticker_pack = {
 		coordinate = strings.clone(coordinate),
 		title      = strings.clone("Marmots"),
-		author     = strings.clone(sha),
 	}
 	tex := new(rl.Texture2D)
 	image := rl.LoadImage("vendor/emoji/noto/1f9ab.png")
@@ -73,7 +73,6 @@ sticker_layout :: proc(t: ^testing.T) {
 		item := Sticker_Item {
 			ref = {pack = coordinate, code = fmt.tprintf("marmot_%d_long_label", i), sha = sha},
 			label = "A marmot",
-			mime = "image/png",
 		}
 		append(&ui.sticker_preview, sticker_item_clone(item))
 		append(&ui.stickers, sticker_item_clone(item))
@@ -108,16 +107,6 @@ sticker_layout :: proc(t: ^testing.T) {
 			rl.EndDrawing()
 		}
 	}
-	ui.sticker_installing = true
-	sticker_finish_install(&ui)
-	testing.expect_value(t, len(ui.sticker_packs), 1)
-	testing.expect(t, !ui.sticker_installing)
-	append(
-		&ui.stickers,
-		sticker_item_clone(
-			{ref = {sha = sha, code = "Marmot"}, label = "Marmot", mime = "image/png"},
-		),
-	)
 	draw :: proc(ui: ^Ui_State, name: string, width: i32) {
 		for _ in 0 ..< 8 {anim_frame += 1; build_layout(ui, 0)}
 		commands := build_layout(ui, 0)
@@ -136,6 +125,24 @@ sticker_layout :: proc(t: ^testing.T) {
 		handle_sticker_panel(ui)
 		forced_release = false
 	}
+	// Add pack hands the coordinate to MDK and shows progress until it lands.
+	ui.sticker_open, ui.picker_open = true, false
+	rl.SetWindowSize(900, 760)
+	nendo.set_dimensions({900, 760})
+	draw(&ui, "adding", 900)
+	press(t, &ui, nendo.id("StickerInstall", 0))
+	testing.expect(t, ui.sticker_open)
+	testing.expect(t, sticker_busy(&ui, .Install))
+	testing.expect(t, len(sticker_jobs) == 1 && sticker_jobs[0].input == coordinate)
+	for job in sticker_jobs {sticker_job_free(job)}
+	clear(&sticker_jobs)
+	append(&ui.sticker_packs, Sticker_Pack{strings.clone(coordinate), strings.clone("Marmots")})
+	append(
+		&ui.stickers,
+		sticker_item_clone(
+			{ref = {sha = sha, code = "Marmot"}, label = "Marmot", mime = "image/png"},
+		),
+	)
 	for width in ([]i32{900, 420, 320}) {
 		rl.SetWindowSize(width, 760)
 		nendo.set_dimensions({f32(width), 760})
@@ -147,7 +154,7 @@ sticker_layout :: proc(t: ^testing.T) {
 		press(t, &ui, nendo.id("StickerPreviewTile", 0))
 		testing.expect_value(t, ui.sticker_page, Sticker_Page.Detail)
 		draw(&ui, "detail", width)
-		stage := nendo.element(nendo.id("StickerPersonalPreview")).rect
+		stage := nendo.element(nendo.id("StickerDetailArt")).rect
 		testing.expect(t, stage.width >= 220)
 		press(t, &ui, nendo.id("StickerBack", 0))
 		testing.expect_value(t, ui.sticker_page, Sticker_Page.Pack)
@@ -158,8 +165,10 @@ sticker_layout :: proc(t: ^testing.T) {
 		press(t, &ui, nendo.id("StickerLibraryItem", 14))
 		testing.expect_value(t, ui.sticker_page, Sticker_Page.Detail)
 		draw(&ui, "personal", width)
+		testing.expect(t, nendo.element(nendo.id("StickerName")).found)
 		testing.expect(t, nendo.element(nendo.id("StickerRemove", 0)).found)
 		press(t, &ui, nendo.id("StickerBack", 0))
+		testing.expect_value(t, ui.sticker_page, Sticker_Page.Library)
 		draw(&ui, "library", width)
 		press(t, &ui, nendo.id("StickerAddPack", 0))
 		testing.expect_value(t, ui.sticker_page, Sticker_Page.AddPack)
@@ -187,10 +196,34 @@ sticker_layout :: proc(t: ^testing.T) {
 	}
 	set_locale("en")
 	// A send captures the destination/reply/effect and leaves the text draft intact.
+	old_threads, old_done := send_threads, sends_done
+	send_threads, sends_done = {}, {}
+	defer {
+		for worker in send_threads {thread.join(worker); thread.destroy(worker)}
+		for done in sends_done {delete(done.err); for id in done.ids {delete(id)}; delete(done.ids)}
+		delete(send_threads); delete(sends_done)
+		send_threads, sends_done = old_threads, old_done
+		for &p in ui.pending {free_pending(&p)}
+		delete(ui.pending)
+	}
 	ui.account_ref = "account"
 	ui.replying = sha
 	ui.fx_armed = 3
-	sticker_send(&ui, ui.stickers[0])
+	sticker_send(&ui, nil, ui.stickers[0])
+	testing.expect_value(t, len(ui.pending), 1)
+	if len(ui.pending) == 1 {
+		p := ui.pending[0]
+		testing.expect_value(t, p.group_id, "test")
+		testing.expect_value(t, p.reply_to, sha)
+		testing.expect_value(t, p.effect, 3)
+		testing.expect_value(t, p.sticker.pack, coordinate)
+		testing.expect_value(t, p.sticker.sha, sha)
+	}
+	testing.expect_value(t, string(ui.compose[:]), "Your draft stays here")
+	// A personal sticker first reads its vault copy, keeping the same context.
+	ui.replying = sha
+	ui.fx_armed = 3
+	sticker_send(&ui, nil, ui.stickers[14])
 	found := false
 	for job in sticker_jobs {
 		if job.op != .Send {continue}
@@ -201,7 +234,6 @@ sticker_layout :: proc(t: ^testing.T) {
 		testing.expect_value(t, job.effect, 3)
 	}
 	testing.expect(t, found)
-	testing.expect_value(t, string(ui.compose[:]), "Your draft stays here")
 	// No disk or relay work in this UI fixture.
 	for job in sticker_jobs {sticker_job_free(job)}
 	clear(&sticker_jobs)

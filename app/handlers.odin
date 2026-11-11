@@ -1318,7 +1318,7 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			gif_open(ui); return
 		}
 		if ui.gif_tab {handle_gif_picker(ui, client); return}
-		if ui.sticker_tab {handle_sticker_picker(ui); return}
+		if ui.sticker_tab {handle_sticker_picker(ui, client); return}
 	}
 	if ui.picker_mode == .Group_Image && handle_emoji_mix(ui, client) {
 		return

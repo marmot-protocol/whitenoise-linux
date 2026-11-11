@@ -1299,8 +1299,8 @@ msgstr "Datensatz %d konnte nicht hinzugefügt werden. %s Prüfe deine Relay-Ein
 msgid "Couldn't add that relay. Double-check the address and try again."
 msgstr "Dieses Relay konnte nicht hinzugefügt werden. Überprüfe die Adresse und versuche es erneut."
 
-msgid "Couldn't add the pack. No supported stickers are available."
-msgstr "Das Paket konnte nicht hinzugefügt werden. Es sind keine unterstützten Sticker verfügbar."
+msgid "Couldn't add the pack. Please try again."
+msgstr "Das Paket konnte nicht hinzugefügt werden. Bitte versuche es erneut."
 
 msgid "Couldn't add the relay. Enter a ws:// or wss:// URL with a host, such as wss://relay.example.com."
 msgstr "Relay konnte nicht hinzugefügt werden. Gib eine ws://- oder wss://-URL mit einem Host ein, zum Beispiel wss://relay.example.com."
@@ -1640,6 +1640,9 @@ msgstr "Deine vorhandenen Kontakte konnten nicht gelesen werden. Bitte versuche 
 msgid "Couldn't remove the GIF. Please try again."
 msgstr "Das GIF konnte nicht entfernt werden. Bitte versuche es erneut."
 
+msgid "Couldn't remove the pack. Please try again."
+msgstr "Das Paket konnte nicht entfernt werden. Bitte versuche es erneut."
+
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "Die gespeicherte Datei konnte nicht entfernt werden. Bitte versuche es erneut."
 
@@ -1744,6 +1747,9 @@ msgstr "Die Transkription konnte nicht gestartet werden. Bitte versuche es erneu
 
 msgid "Couldn't start translation. Reinstall White Noise and try again."
 msgstr "Die Übersetzung konnte nicht gestartet werden. Installiere White Noise neu und versuche es erneut."
+
+msgid "Couldn't sync your sticker packs. Check your relay settings and try again."
+msgstr "Deine Stickerpakete konnten nicht synchronisiert werden. Prüfe deine Relay-Einstellungen und versuche es erneut."
 
 msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
 msgstr "Dieses Audio konnte nicht transkribiert werden. Wähle eine Aufnahme unter 10 Minuten."
@@ -3052,6 +3058,9 @@ msgstr "Deine Kontakte werden geladen"
 msgid "Loading your key packages"
 msgstr "Deine Schlüsselpakete werden geladen"
 
+msgid "Loading your sticker packs…"
+msgstr "Deine Stickerpakete werden geladen…"
+
 msgid "Loading..."
 msgstr "Wird geladen..."
 
@@ -3081,6 +3090,9 @@ msgstr "Wird gesperrt…"
 
 msgid "Look up"
 msgstr "Nachschlagen"
+
+msgid "Looking up the pack…"
+msgstr "Paket wird gesucht…"
 
 msgid "Looking up..."
 msgstr "Wird nachgeschlagen..."
@@ -4214,6 +4226,9 @@ msgstr "Dieses Relay entfernen?"
 
 msgid "Removing your account from this device"
 msgstr "Dein Konto wird von diesem Gerät entfernt"
+
+msgid "Removing…"
+msgstr "Wird entfernt…"
 
 msgid "Rename"
 msgstr "Umbenennen"

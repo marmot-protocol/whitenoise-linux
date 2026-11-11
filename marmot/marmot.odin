@@ -135,6 +135,11 @@ Status :: enum i32 {
 	INVALID_EDIT_TARGET                          = 105,
 	STORAGE_FULL                                 = 106,
 	FOLLOW_LIST_TOO_LARGE                        = 107,
+	INVALID_STICKER                              = 111,
+	STICKER_NOT_FOUND                            = 112,
+	STICKER_NETWORK                              = 113,
+	STICKER_IMPORT                               = 114,
+	STICKER_IMPORT_UNSUPPORTED                   = 115,
 }
 
 // Opaque runtime handle.
@@ -309,8 +314,48 @@ Existing_Direct_Conversation :: struct {
 
 // Opaque here: reached only through Chat_List_Row, freed by its deep-free.
 Disband_Request :: struct {}
+// Exact kind-9 sticker reference, also borrowed by fetch_sticker_asset.
+Sticker_Ref :: struct {
+	pack_coordinate, shortcode, plaintext_sha256: cstring,
+}
+
+// One sticker in a pack projection.
+Sticker :: struct {
+	pack_coordinate, shortcode, url, plaintext_sha256, mime: cstring,
+	has_width:                                               bool,
+	width:                                                   u32,
+	has_height:                                              bool,
+	height:                                                  u32,
+	alt, emoji:                                              cstring,
+}
+
+Sticker_Pack :: struct {
+	coordinate, author_pubkey_hex, identifier, event_id_hex: cstring,
+	created_at:                                              u64,
+	title, description:                                      cstring,
+	cover:                                                   ^Sticker,
+	stickers:                                                [^]Sticker,
+	stickers_len:                                            uint,
+	license:                                                 cstring,
+	installed:                                               bool,
+}
+
+Sticker_Pack_List :: struct {
+	items: [^]Sticker_Pack,
+	len:   uint,
+}
+
+Sticker_Asset :: struct {
+	sticker:   Sticker,
+	bytes:     [^]u8,
+	bytes_len: uint,
+}
+
+Sticker_Sync_Result :: struct {
+	discovered, updated, installed, pending_operations: u32,
+}
+
 // Opaque here: reached only through records, freed with their page or list.
-Sticker_Ref :: struct {}
 History_Import_Source :: struct {}
 History_Import_Provenance :: struct {}
 
@@ -1527,6 +1572,21 @@ foreign lib {
 	// Kind-9 media from upload_media(send=false) references plus extra
 	// tags that name them (NIP-30 emoji). imeta tags are rejected.
 	send_tagged_media :: proc(client: ^Client, account_ref, group_id_hex: cstring, attachments: [^]Media_Attachment_Reference, attachments_len: uint, tags: [^]Message_Tag, tags_len: uint, caption: cstring, out: ^^Send_Summary) -> Status ---
+	// Sonar stickers. Packs, the kind-10031 installed list and asset
+	// downloads all live in MDK; `input` is a coordinate, naddr or pack link.
+	sticker_packs :: proc(client: ^Client, account_ref: cstring, installed_only: u8, search: cstring, has_limit: u8, limit: u32, out: ^^Sticker_Pack_List) -> Status ---
+	sticker_pack :: proc(client: ^Client, account_ref, input: cstring, out: ^^Sticker_Pack) -> Status ---
+	sync_sticker_packs :: proc(client: ^Client, account_ref: cstring, out: ^^Sticker_Sync_Result) -> Status ---
+	fetch_sticker_pack :: proc(client: ^Client, account_ref, input: cstring, out: ^^Sticker_Pack) -> Status ---
+	install_sticker_pack :: proc(client: ^Client, account_ref, input: cstring, out: ^^Sticker_Pack) -> Status ---
+	uninstall_sticker_pack :: proc(client: ^Client, account_ref, input: cstring) -> Status ---
+	fetch_sticker_asset :: proc(client: ^Client, account_ref, pack_coordinate, shortcode, plaintext_sha256: cstring, out: ^^Sticker_Asset) -> Status ---
+	// Reply and effect rows ride in `tags` (patches/mdk-sticker-context.patch).
+	send_sticker :: proc(client: ^Client, account_ref, group_id_hex, pack_coordinate, shortcode, plaintext_sha256: cstring, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
+	sticker_pack_free :: proc(pack: ^Sticker_Pack) ---
+	sticker_pack_list_free :: proc(list: ^Sticker_Pack_List) ---
+	sticker_asset_free :: proc(asset: ^Sticker_Asset) ---
+	sticker_sync_result_free :: proc(result: ^Sticker_Sync_Result) ---
 	create_poll :: proc(client: ^Client, account_ref, group_id_hex, question: cstring, options: [^]cstring, options_len: uint, poll_type: u32, has_ends_at: u8, ends_at: u64, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
 	cast_poll_vote :: proc(client: ^Client, account_ref, group_id_hex, poll_event_id: cstring, option_ids: [^]cstring, option_ids_len: uint, out: ^^Send_Summary) -> Status ---
 	// An imeta tag for an uploaded reference, so a custom event can

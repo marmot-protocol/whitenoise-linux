@@ -1,48 +1,56 @@
 # Stickers
 
-Open the composer's emoji picker and choose **Stickers**. Import a static PNG,
-WebP or JPEG, or preview a Nostr pack using its naddr or
-`30031:<author hex>:<identifier>` coordinate. Click a tile to send it. Right-click
-it (or press Tab on the selected tile) to manage its image or pack. Arrow keys
-select tiles; Enter sends. The text draft stays in the composer.
+Open the composer's emoji picker and choose **Stickers**. Click a tile to send
+it. Right-click it (or press Tab on the selected tile) to manage its image or
+pack. Arrow keys select tiles; Enter sends. The text draft stays in the
+composer, and the reply you are composing and the armed effect go with the
+sticker. Inside a thread the picker lists only your own stickers.
 
-When you reply with a sticker, the quoted message appears above the artwork.
+Choose **Manage** to import a static PNG, WebP or JPEG as one of your own
+stickers, or to add a pack: paste its `naddr`, its
+`30031:<author hex>:<identifier>` coordinate, or a Sonar
+`https://sonarprivacy.xyz/stickers?a=…` link to preview it first. Click a
+received personal sticker to save it to your own stickers, or a pack sticker
+to open its pack.
 
-Click a received sticker to save a personal image or preview and add its pack.
-Pack installation stores the supported, successfully downloaded images locally.
-Images are limited to 4 MiB and 4096 pixels per dimension. Animated stickers,
-pack publishing, and library synchronization are outside this version.
+Images are limited to 4 MiB and 4096 pixels per side. Animated stickers show
+as unavailable.
 
-## Message format
+## Sticker packs
 
-Stickers are ordinary encrypted image attachments with extra message tags:
+MDK owns packs end to end, through the `marmot_*sticker*` C API:
 
-- Pack: `["sticker", coordinate, shortcode, plaintext_sha256, pack_event_id]`.
-- Personal: `["wn-sticker", plaintext_sha256, name]` (a Linux extension).
-- Optional relay hint: `["sticker-relay", coordinate, relay_url]`.
+- `marmot_sticker_packs` lists the installed packs, and
+  `marmot_sync_sticker_packs` refreshes them and recent public packs from your
+  relays when the sticker library first opens for an account.
+- `marmot_install_sticker_pack` and `marmot_uninstall_sticker_pack` record the
+  change and publish your kind-10031 installed list, so your other devices
+  pick it up. An offline change is kept and published on the next sync.
+- `marmot_sticker_pack` reads a cached pack; `marmot_fetch_sticker_pack` looks
+  one up on its relay hints and your relays.
+- `marmot_fetch_sticker_asset` downloads one exact `(pack, shortcode, hash)`
+  image and checks its hash, type and dimensions. The app keeps a copy sealed
+  with the vault's blob key under `stickers/` so it is not downloaded again.
+- `marmot_send_sticker` sends a kind-9 message whose content is the sticker
+  tag. `patches/mdk-sticker-context.patch` adds a `tags` argument for the
+  reply (`e`, `q`) and `effect` tags; MDK rejects a second `sticker` tag and
+  `imeta`.
 
-The pack format follows the [NIP-F6 draft, revision baa8a49](https://github.com/vincenzopalazzo/nips/blob/baa8a4920ab42f65bab24d6edb955aa710f083a0/F6.md).
-It uses kind 30031, `pack_format=sonar-sticker-pack-v1`, and keyed sticker
-fields. This is a draft, not a finalized NIP. Signature and image hash checks
-bind previewed artwork to its publisher. A relay hint is only a discovery hint.
-The panel resolves the current pack; it indicates when the sent sticker is no
-longer listed. Pack lookups happen when you request a preview. Chat images use
-Marmot's encrypted media path, so clients without sticker support retain an
-ordinary image attachment.
+Timeline records and reply previews carry the pack sticker MDK parsed, so the
+app does not read pack sticker tags itself. MDK only recognizes pack stickers
+in kind-9 messages. Thread messages are kind 1111, so packs are not offered
+there.
 
-The library and artwork use the vault's encrypted blob store under the data
-directory. Forwarding and offline retries retain the sticker reference and
-effect tag. Removing a sticker or pack removes it from your library; cached
-artwork can remain on disk.
+## Your own stickers
 
-## Marmot API
+MDK has no personal stickers, so these stay on this device: the images are
+sealed with the vault's blob key under `stickers/`, and `stickers/library.bin`
+lists them with your recent stickers. Sending one uploads it as an ordinary
+encrypted image attachment tagged `["wn-sticker", plaintext_sha256, name]`, a
+Linux extension. Clients without it show an ordinary image. These stickers do
+not sync to your other devices.
 
-MDK provides `message_tags` on media upload requests and `send_tagged_text`
-for kind-9 text. Empty tags preserve existing behavior.
-Additional tags are limited to 64 rows and 16 KiB; generated `imeta` references
-cannot be overridden. Kind-9 effects use `["effect", effect_name]` and
-share the normal send, reply, thread, and offline paths.
-
-Validation includes signed pack parsing, encrypted storage, message tags,
-offline replay metadata, narrow picker/panel layouts, and Marmot event building.
-Cross-client sticker rendering has not been verified.
+Packs added before MDK owned the installed list were also kept in
+`library.bin`. The first account to open stickers installs them through MDK
+and removes them from the file. A pack that cannot be reached stays for a
+later open.

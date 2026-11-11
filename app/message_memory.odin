@@ -119,6 +119,7 @@ links_free :: proc(links: [dynamic]Inline_Link) {
 @(private)
 message_free :: proc(msg: Msg_Ui) {
 	sticker_ref_free(msg.sticker)
+	sticker_ref_free(msg.reply_sticker)
 	for value in ([]string{msg.id, msg.sender, msg.sender_id, msg.pic_url, msg.body, msg.reply_from, msg.reply_from_id, msg.reply_text, msg.reply_id, msg.reply_image, msg.at, msg.at_full, msg.day, msg.sys_text, msg.sys_added_hex, msg.theme_name, msg.theme_toml, msg.thread_of}) {
 		mem.zero_slice(transmute([]u8)value)
 		delete(value)

@@ -582,6 +582,7 @@ Send_Job :: struct {
 	thread:  cstring, // nil = main timeline; else the kind-1111 root
 	caption: cstring, // nil, or the body to ride along with atts (aliases text)
 	atts:    []Job_Att, // non-empty = upload_media instead of a text send
+	sticker: [3]cstring, // pack, shortcode, hash; nil pack = not a sticker
 }
 
 Send_Done :: struct {
@@ -740,7 +741,25 @@ send_worker :: proc(t: ^thread.Thread) {
 	job := (^Send_Job)(t.data)
 	status := marmot.Status.OK
 	ids: [dynamic]string
-	if len(job.atts) > 0 {
+	if job.sticker[0] != nil {
+		// MDK builds the sticker tag; the reply and effect ride in job.tags.
+		summary: ^marmot.Send_Summary
+		status = marmot.send_sticker(
+			job.client,
+			job.account,
+			job.group,
+			job.sticker[0],
+			job.sticker[1],
+			job.sticker[2],
+			raw_data(job.tags),
+			uint(len(job.tags)),
+			&summary,
+		)
+		if status == .OK {
+			sent_ids(&ids, summary)
+			marmot.send_summary_free(summary)
+		}
+	} else if len(job.atts) > 0 {
 		// One upload_media round trip: encrypt, push to Blossom, and
 		// (main timeline) publish the kind-9 message in the same call.
 		// A thread upload keeps send=false and publishes the references
@@ -843,6 +862,7 @@ send_worker :: proc(t: ^thread.Thread) {
 		// a.data belongs to the Pending_Att; drain_sends frees it.
 	}
 	delete(job.atts)
+	for value in job.sticker {delete(value)}
 	for tag in job.tags {
 		for value in tag.values[:tag.values_len] {delete(value)}
 		delete(tag.values[:tag.values_len])
@@ -864,7 +884,13 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
 	job.reply = len(p.reply_to) > 0 ? strings.clone_to_cstring(p.reply_to) : nil
 	job.thread = len(p.thread) > 0 ? strings.clone_to_cstring(p.thread) : nil
 	job.tags = send_message_tags(p)
-	if len(p.atts) > 0 {
+	if p.sticker.pack != "" {
+		job.sticker = {
+			strings.clone_to_cstring(p.sticker.pack),
+			strings.clone_to_cstring(p.sticker.code),
+			strings.clone_to_cstring(p.sticker.sha),
+		}
+	} else if len(p.atts) > 0 {
 		// upload_media publishes the kind-9 itself, so the typed body
 		// only survives as its caption. Staged files carry no typed
 		// body (their name is the row label), and the thread path

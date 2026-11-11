@@ -1298,7 +1298,7 @@ msgstr ""
 msgid "Couldn't add that relay. Double-check the address and try again."
 msgstr ""
 
-msgid "Couldn't add the pack. No supported stickers are available."
+msgid "Couldn't add the pack. Please try again."
 msgstr ""
 
 msgid "Couldn't add the relay. Enter a ws:// or wss:// URL with a host, such as wss://relay.example.com."
@@ -1639,6 +1639,9 @@ msgstr ""
 msgid "Couldn't remove the GIF. Please try again."
 msgstr ""
 
+msgid "Couldn't remove the pack. Please try again."
+msgstr ""
+
 msgid "Couldn't remove the saved file. Please try again."
 msgstr ""
 
@@ -1742,6 +1745,9 @@ msgid "Couldn't start transcription. Please try again."
 msgstr ""
 
 msgid "Couldn't start translation. Reinstall White Noise and try again."
+msgstr ""
+
+msgid "Couldn't sync your sticker packs. Check your relay settings and try again."
 msgstr ""
 
 msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
@@ -3051,6 +3057,9 @@ msgstr ""
 msgid "Loading your key packages"
 msgstr ""
 
+msgid "Loading your sticker packs…"
+msgstr ""
+
 msgid "Loading..."
 msgstr ""
 
@@ -3079,6 +3088,9 @@ msgid "Locking…"
 msgstr ""
 
 msgid "Look up"
+msgstr ""
+
+msgid "Looking up the pack…"
 msgstr ""
 
 msgid "Looking up..."
@@ -4212,6 +4224,9 @@ msgid "Remove this relay?"
 msgstr ""
 
 msgid "Removing your account from this device"
+msgstr ""
+
+msgid "Removing…"
 msgstr ""
 
 msgid "Rename"
