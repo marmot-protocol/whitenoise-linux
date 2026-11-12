@@ -371,8 +371,8 @@ sudo pacman -S --needed just rust cmake sdl3 libarchive mpv ffmpeg poppler-glib 
 **Then:**
 
 ```sh
-git clone https://github.com/marmot-protocol/whitenoise-linux
-cd whitenoise-linux
+git clone https://relay.ngit.dev/npub1ven4zk8xxw873876gx8y9g9l9fazkye9qnwnglcptgvfwxmygscqsxddfh/darkmatter-linux.git
+cd darkmatter-linux
 just build
 just run
 ```
@@ -1157,7 +1157,7 @@ setting. See [timing and observability configuration](docs/timings.md).
 
 ## Contributing
 
-Issues and pull requests are welcome. If you're working with an AI coding agent, point it at [`AGENTS.md`](AGENTS.md) first; it has the architecture and conventions in more detail than this file.
+Issues and patches are welcome on [Committish](https://committish.app/r/naddr1qvzqqqrhnypzqen829vwvvu0az0a5svwg2st72n69vfj2pxax3lszkscjudkg3psqyv8wumn8ghj7un9d3shjtnr093x2un8w4ujuenedyq3gamnwvaz7tmjv4kxz7fwdenkjapwv3jhvqqsv3shy6mdv968getj94kxjmn40qlzryl7), this repository's primary forge over ngit. GitHub is a secondary mirror. If you're working with an AI coding agent, point it at [`AGENTS.md`](AGENTS.md) first; it has the architecture and conventions in more detail than this file. When a commit closes an ngit issue, add one `fixes nevent1…` trailer per issue with its full bech32 identifier, instead of a GitHub `Fixes #N`.
 
 Before your first commit, install the project git hooks (**required**):
 
