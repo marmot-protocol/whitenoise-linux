@@ -33,6 +33,20 @@ disk_mode=reuse
 if [ ! -f "$cache/build.ready" ]; then
   disk_mode=initialize
 fi
+# A job the runner abandoned can leave its VM running, holding the qcow2
+# write locks and 20 GiB. Each slot has its own UID and cache and runs one
+# job at a time, so a VM on this slot's disk is stale. The guest fscks the
+# build disk on every boot.
+stale_vm="file=$cache/root.qcow2,"
+if pkill -u "$UID" -f -- "$stale_vm"; then
+  for _ in $(seq 1 30); do
+    if ! pgrep -u "$UID" -f -- "$stale_vm" >/dev/null; then
+      break
+    fi
+    sleep 1
+  done
+  pkill -KILL -u "$UID" -f -- "$stale_vm" || true
+fi
 cp /usr/share/edk2/x64/OVMF_VARS.4m.fd "$out/OVMF_VARS.fd"
 available=$(</proc/meminfo)
 available=${available#*MemAvailable:}
