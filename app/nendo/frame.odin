@@ -94,7 +94,8 @@ set_pointer :: proc(position: Vector2, button: Pointer_Button) {
 					}
 				}
 
-				if skip_tree {
+				if skip_tree ||
+				   (!current_element.is_text_element && current_element.config.inert) {
 					dfs_buffer.length -= 1
 					continue
 				}

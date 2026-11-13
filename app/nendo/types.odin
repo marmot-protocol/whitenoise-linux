@@ -272,6 +272,9 @@ Box :: struct {
 	clip:          Clip,
 	border:        Border,
 	transition:    Transition,
+	// The pointer never reaches an inert element or its children: they report
+	// no hover and take no clicks. For static samples of live UI.
+	inert:         bool,
 	user_data:     rawptr,
 }
 
