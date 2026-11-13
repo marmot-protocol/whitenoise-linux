@@ -687,6 +687,12 @@ end :: proc(delta_time: f32) -> []Render_Command {
 		}
 	}
 
+	// A resized window or a settle request (a zoom or font change) moves
+	// everything at once. That geometry lands where it is laid out; it
+	// does not glide there.
+	jumped := ctx.root_resized_last_frame || ctx.settle_requested
+	ctx.settle_requested = false
+
 	if ctx.warnings.max_elements_exceeded {
 		message :: "nendo error: layout elements exceeded the element limit"
 		report_error(.Elements_Capacity_Exceeded, message)
@@ -772,7 +778,7 @@ end :: proc(delta_time: f32) -> []Render_Command {
 							if (!float_equal(
 									   old_target_state.rect.x, // The element's absolute position didn't change
 									   target_state.rect.x,
-								   ) && (!(float_equal(old_relative_position.x, new_relative_position.x)) || transition_data.reparented) && !ctx.root_resized_last_frame) { 	// The element is still in the same parent container, and it's parent-relative position didn't change (parent moved) // The position changed was triggered by the outer window resizing
+								   ) && (!(float_equal(old_relative_position.x, new_relative_position.x)) || transition_data.reparented) && !jumped) { 	// The element is still in the same parent container, and it's parent-relative position didn't change (parent moved) // The position changed was triggered by the outer window resizing
 								new_active_properties += {.X}
 							}
 						}
@@ -781,7 +787,7 @@ end :: proc(delta_time: f32) -> []Render_Command {
 							if !float_equal(old_target_state.rect.y, target_state.rect.y) &&
 							   (!(float_equal(old_relative_position.y, new_relative_position.y)) ||
 									   transition_data.reparented) &&
-							   !ctx.root_resized_last_frame {
+							   !jumped {
 								new_active_properties += {.Y}
 							}
 						}
@@ -790,7 +796,7 @@ end :: proc(delta_time: f32) -> []Render_Command {
 								   old_target_state.rect.width,
 								   target_state.rect.width,
 							   ) &&
-							   !ctx.root_resized_last_frame {
+							   !jumped {
 								new_active_properties += {.Width}
 							}
 						}
@@ -799,7 +805,7 @@ end :: proc(delta_time: f32) -> []Render_Command {
 								   old_target_state.rect.height,
 								   target_state.rect.height,
 							   ) &&
-							   !ctx.root_resized_last_frame {
+							   !jumped {
 								new_active_properties += {.Height}
 							}
 						}
@@ -943,6 +949,24 @@ end :: proc(delta_time: f32) -> []Render_Command {
 
 open_id :: proc() -> u32 {
 	return get_open_layout_element().id
+}
+
+// Whether any element is still moving toward its layout. The app keeps
+// drawing frames instead of idling until this is false.
+transitioning :: proc() -> bool {
+	ctx := active_context
+	for i: i32 = 0; i < ctx.transition_datas.length; i += 1 {
+		if array_get(&ctx.transition_datas, i).state != .Idle {
+			return true
+		}
+	}
+	return false
+}
+
+// Treat the next end() as a window resize: elements land where they are
+// laid out instead of gliding from coordinates that no longer exist.
+settle_transitions :: proc() {
+	active_context.settle_requested = true
 }
 
 hovered :: proc() -> bool {

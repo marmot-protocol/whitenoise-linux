@@ -188,6 +188,7 @@ Context :: struct {
 	max_element_count:                        i32,
 	max_measure_text_cache_word_count:        i32,
 	root_resized_last_frame:                  bool,
+	settle_requested:                         bool, // next end() treats geometry as resized
 	error_handler:                            Error_Handler,
 	warnings:                                 Warnings,
 	pointer_info:                             Pointer,
