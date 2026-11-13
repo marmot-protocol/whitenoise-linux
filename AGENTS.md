@@ -186,7 +186,7 @@ packaged `wn-archive` and `wn-pdf` helpers, not in the UI process.
   stable id and `transition = layout_motion()` (`app/anim.odin`) glides to
   a new position over the theme's `transition-dur` when a reorder or
   reflow moves it; scrolling, resizes and `anim_snap_all` land it at once.
-  The inbox and archived rows and folder headers use it. Change
+  The inbox and archived rows, folder headers and the toast use it. Change
   layout behavior there, not in callers. `tests/app/nendo_test.odin` covers
   its hash map reuse, scroll targeting and layout motion.
 - **`app/sdlrl/`** is an SDL3 shim with a raylib-shaped API (window, input,

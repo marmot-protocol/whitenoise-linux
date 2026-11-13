@@ -857,6 +857,12 @@ toast_layer :: proc(ui: ^Ui_State) {
 			bottom = max(bottom, f32(rl.GetScreenHeight()) / UI_ZOOM - composer.rect.y + 8)
 		}
 	}
+	// Arrives rising the last few px, and follows the composer when it
+	// grows under it.
+	motion := layout_motion({.Y})
+	if motion_on() {
+		motion.enter.initial = toast_rise
+	}
 	if nendo.box(nendo.id("Toast"))(
 	{
 		width = nendo.fit(max = fit_w(420)),
@@ -870,10 +876,21 @@ toast_layer :: proc(ui: ^Ui_State) {
 		color = CARD,
 		radius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
+		transition = motion,
 	},
 	) {
 		nendo.text(ui.toast, {font = FONT_BODY, size = 12, color = TEXT})
 	}
+}
+
+@(private = "file")
+toast_rise :: proc(
+	target: nendo.Transition_Data,
+	_: nendo.Transition_Properties,
+) -> nendo.Transition_Data {
+	from := target
+	from.rect.y += RISE_PX
+	return from
 }
 
 // ── Tooltip ─────────────────────────────────────────────────────────
