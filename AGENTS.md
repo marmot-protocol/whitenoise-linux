@@ -182,9 +182,13 @@ packaged `wn-archive` and `wn-pdf` helpers, not in the UI process.
   gap = 8, color = BG}) {...}`; the declaration is curried so `nendo.hovered()`
   inside it sees the element being declared. `clip = {y = true, scroll = true}`
   applies the container's scroll position; `nendo.text(s, {font, size, color})`
-  adds text; `nendo.end` returns `[]nendo.Render_Command`. Transitions exist
-  but are unused so far. Change layout behavior there, not in callers.
-  `tests/app/nendo_test.odin` covers its hash map reuse and scroll targeting.
+  adds text; `nendo.end` returns `[]nendo.Render_Command`. A box with a
+  stable id and `transition = layout_motion()` (`app/anim.odin`) glides to
+  a new position over the theme's `transition-dur` when a reorder or
+  reflow moves it; scrolling, resizes and `anim_snap_all` land it at once.
+  The inbox and archived rows and folder headers use it. Change
+  layout behavior there, not in callers. `tests/app/nendo_test.odin` covers
+  its hash map reuse, scroll targeting and layout motion.
 - **`app/sdlrl/`** is an SDL3 shim with a raylib-shaped API (window, input,
   clipboard, screenshots, IME, and a stb_truetype text engine with a CJK
   fallback stack). It exists because the app was written against raylib

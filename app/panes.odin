@@ -67,7 +67,13 @@ chat_rows_window :: proc(
 	}
 	for i in order[first:last] {
 		active := !ui.whip_open && chip == .Archive && ui.selected == i
-		chat_row(u32(i), rows[i], active, chip)
+		// Keyed by the chat rather than its slot, so a restore that
+		// closes the list up slides the rows below into place.
+		if nendo.box(nendo.id("ChatRowMove", nendo.id(rows[i].group_id).id))(
+		{width = nendo.grow(), transition = layout_motion()},
+		) {
+			chat_row(u32(i), rows[i], active, chip)
+		}
 	}
 	if last < len(order) {
 		if nendo.box(nendo.id("ChatRowsAfter", section))(
@@ -296,6 +302,7 @@ folder_header :: proc(
 		align = {y = .Center},
 		color = hovered() ? HOVER : {},
 		radius = rr(6),
+		transition = layout_motion(), // follows the rows when a folder above changes
 	},
 	) {
 		if nendo.box(nendo.id("FolderChevron", index))(

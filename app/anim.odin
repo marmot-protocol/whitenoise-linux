@@ -119,6 +119,9 @@ anim_set :: proc(key: u32, v: f32) {
 // first sighting of each key snaps to its target.
 anim_snap_all :: proc() {
 	clear(&anim_vals)
+	if nendo.current_context() != nil {
+		nendo.settle_transitions()
+	}
 }
 
 // Damped spring. Overshoots by design: that is what reads as physical.
@@ -390,6 +393,43 @@ stagger :: proc(key: u32, index: int) -> f32 {
 		anim_moving += 1
 	}
 	return ease_out(t)
+}
+
+// ── Layout moves ────────────────────────────────────────────────────
+//
+// Everything above eases values the app keeps. nendo can also move an
+// element between two of its own layouts: give a box a stable id and
+// `transition = layout_motion()`, and when a reorder or reflow puts it
+// somewhere else it glides there over the theme's transition-dur
+// instead of jumping. nendo leaves scrolling and window resizes alone,
+// and anim_snap_all settles a zoom or font change the same way.
+//
+//   frame N    A B C      a message arrives in C
+//   frame N+1  C A B      C rises from where B was, A and B slide down
+
+layout_motion :: proc(properties := nendo.TRANSITION_POSITION) -> nendo.Transition {
+	return {
+		handler     = layout_ease,
+		duration    = TRANSITION_DUR / 1000,
+		properties  = properties,
+		interaction = .Allow_While_Moving, // a row on its way still takes the click
+	}
+}
+
+@(private = "file")
+layout_ease :: proc(args: nendo.Transition_Args) -> bool {
+	t := f32(1)
+	if motion_on() && args.duration > 0 {
+		t = min(args.elapsed / args.duration, 1)
+	}
+	k := ease_out(t)
+	from, to := args.initial.rect, args.target.rect
+	rect := &args.current.rect
+	if .X in args.properties {rect.x = math.lerp(from.x, to.x, k)}
+	if .Y in args.properties {rect.y = math.lerp(from.y, to.y, k)}
+	if .Width in args.properties {rect.width = math.lerp(from.width, to.width, k)}
+	if .Height in args.properties {rect.height = math.lerp(from.height, to.height, k)}
+	return t >= 1
 }
 
 // ── Message arrival ─────────────────────────────────────────────────

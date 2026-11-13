@@ -161,13 +161,24 @@ inbox_rows_window :: proc(ui: ^Ui_State, rows: []Inbox_Row, offset_y: f32, secti
 	}
 	projects := rl.WhipProjects()
 	for row in rows[first:last] {
-		if row.kind == .Terminal {whip_project_row(ui, projects[row.index]); continue}
-		chat_row(
-			u32(row.index),
-			ui.chats[row.index],
-			!ui.whip_open && row.index == ui.selected,
-			.Archive,
-		)
+		// Keyed by the chat rather than its slot: when activity reorders
+		// the inbox, each row glides to its new place instead of jumping.
+		// Filled like the rail beneath, so a row gliding past another
+		// covers it instead of mixing the two rows' text.
+		if nendo.box(nendo.id("InboxRowMove", nendo.id(row.key).id))(
+		{width = nendo.grow(), color = PANEL, transition = layout_motion()},
+		) {
+			if row.kind == .Terminal {
+				whip_project_row(ui, projects[row.index])
+			} else {
+				chat_row(
+					u32(row.index),
+					ui.chats[row.index],
+					!ui.whip_open && row.index == ui.selected,
+					.Archive,
+				)
+			}
+		}
 	}
 	if last < len(rows) {
 		if nendo.box(nendo.id("InboxRowsAfter", section))(

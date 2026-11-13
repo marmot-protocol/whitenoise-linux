@@ -151,3 +151,73 @@ layout_scroll_targets_movable_container :: proc(t: ^testing.T) {
 	testing.expect_value(t, detail.viewport.height, 120)
 	testing.expect_value(t, errors, 0)
 }
+
+// Three fixed rows keyed by identity, laid out in `order` inside a
+// scrolling list, like the inbox after a message reorders it.
+@(private = "file")
+moves_layout :: proc(order: []u32) {
+	nendo.begin()
+	if nendo.box(nendo.id("Moves"))(
+	{
+		width = nendo.fixed(200),
+		height = nendo.fixed(100),
+		direction = .Column,
+		clip = {y = true, scroll = true},
+	},
+	) {
+		for key in order {
+			if nendo.box(nendo.id("Move", key))(
+			{width = nendo.grow(), height = nendo.fixed(40), transition = layout_motion()},
+			) {}
+		}
+	}
+	nendo.end(1.0 / 60)
+}
+
+// A reordered row glides from its old slot to its new one and stops
+// there; scrolling and a settle request land rows without a glide.
+@(test)
+layout_motion_glides_reordered_rows :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	errors := 0
+	nendo.init(memory, {800, 600}, {handler = count_layout_error, user_data = &errors})
+
+	for _ in 0 ..< 2 {moves_layout({0, 1, 2})}
+	testing.expect(t, !nendo.transitioning())
+
+	// The bottom row moves to the top: it starts where it was.
+	moves_layout({2, 0, 1})
+	testing.expect(t, nendo.transitioning())
+	last := nendo.element(nendo.id("Move", 2)).rect.y
+	testing.expect_value(t, last, 80)
+
+	frames := 0
+	for nendo.transitioning() && frames < 120 {
+		moves_layout({2, 0, 1})
+		y := nendo.element(nendo.id("Move", 2)).rect.y
+		testing.expect(t, y <= last)
+		last = y
+		frames += 1
+	}
+	testing.expect(t, frames > 2 && frames < 120)
+	testing.expect_value(t, last, 0)
+	testing.expect_value(t, nendo.element(nendo.id("Move", 1)).rect.y, 80)
+
+	// Scrolling moves every row on screen, but none of them moved.
+	nendo.scroll(nendo.id("Moves")).position.y = -20
+	moves_layout({2, 0, 1})
+	testing.expect(t, !nendo.transitioning())
+	testing.expect_value(t, nendo.element(nendo.id("Move", 2)).rect.y, -20)
+
+	// A zoom or font change settles: the next reorder lands at once.
+	nendo.settle_transitions()
+	moves_layout({0, 1, 2})
+	testing.expect(t, !nendo.transitioning())
+	testing.expect_value(t, nendo.element(nendo.id("Move", 2)).rect.y, 60)
+	testing.expect_value(t, errors, 0)
+}

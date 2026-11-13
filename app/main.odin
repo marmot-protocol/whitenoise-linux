@@ -362,6 +362,9 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	}
 
 	commands := nendo.end(frame_time)
+	if nendo.transitioning() {
+		anim_moving += 1 // a layout move is still gliding; keep drawing
+	}
 	tab_scroll_restore(ui)
 	timeline_measure(ui)
 	compose_scroll(ui)
@@ -1157,14 +1160,16 @@ app_main :: proc() {
 				}
 			}
 			settings_theme_preview_guard(&ui)
-			render_commands := build_layout(&ui, rl.GetFrameTime())
+			// anim_dt, not the raw frame time: the first frame after an idle
+			// wait would otherwise spend a whole layout move in one step.
+			render_commands := build_layout(&ui, anim_dt)
 			if !layout_overflow && settings_resolve_scroll(&ui) {
 				render_commands = build_layout(&ui, 0)
 			}
 			if tl_restore && !layout_overflow {
 				if data := nendo.scroll(nendo.id("Timeline")); data.found {
 					data.position.y = tl_offset
-					render_commands = build_layout(&ui, rl.GetFrameTime())
+					render_commands = build_layout(&ui, anim_dt)
 				}
 				tl_restore = false
 			}
@@ -1184,7 +1189,7 @@ app_main :: proc() {
 				if container != tl_container_was && tl_at_bottom {
 					data.position.y = -overflow
 					scroll_jumped = true
-					render_commands = build_layout(&ui, rl.GetFrameTime())
+					render_commands = build_layout(&ui, anim_dt)
 					data = nendo.scroll(nendo.id("Timeline"))
 					overflow = max(data.content.height - data.viewport.height, 0)
 					data.position.y = -overflow
