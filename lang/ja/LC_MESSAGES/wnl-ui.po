@@ -5867,8 +5867,11 @@ msgstr "公開鍵を取得できません。別のアカウントを選んで、
 msgid "Your public key. Safe to share."
 msgstr "公開鍵。共有して問題ありません。"
 
-msgid "Your secret key stays in your remote signer. Reveal and export are unavailable on this device."
-msgstr "秘密鍵はリモート署名アプリにとどまります。この端末では表示とエクスポートはできません。"
+msgid "Your secret key stays in your remote signer, so this device can't reveal or export it. Back it up and recover it through your signer. A White Noise backup file doesn't include it."
+msgstr "秘密鍵はリモート署名アプリにとどまるため、この端末では表示もエクスポートもできません。バックアップと復元は署名アプリで行ってください。White Noise のバックアップファイルには含まれません。"
+
+msgid "Your secret key stays in your signer, and this device only asks it to sign. Approve the connection and each signature there, so keep your signer open. This device can't reveal or export the key, so back it up and recover it through your signer."
+msgstr "秘密鍵は署名アプリにとどまり、この端末は署名を依頼するだけです。接続と各署名は署名アプリで承認するため、署名アプリを開いたままにしてください。この端末では鍵を表示もエクスポートもできないため、バックアップと復元は署名アプリで行ってください。"
 
 msgid "Your secret key stays on this device or in your connected signer. Never share it."
 msgstr "秘密鍵はこの端末か接続中の署名アプリにとどまります。決して共有しないでください。"

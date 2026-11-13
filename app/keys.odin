@@ -434,7 +434,7 @@ settings_keys :: proc(ui: ^Ui_State) {
 	if !account_local(ui) {
 		nendo.text(
 			tr(
-				"Your secret key stays in your remote signer. Reveal and export are unavailable on this device.",
+				"Your secret key stays in your remote signer, so this device can't reveal or export it. Back it up and recover it through your signer. A White Noise backup file doesn't include it.",
 			),
 			{font = FONT_BODY, size = 12, color = TEXT_DIM},
 		)

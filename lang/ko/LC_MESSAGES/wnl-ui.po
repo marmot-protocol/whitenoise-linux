@@ -5866,8 +5866,11 @@ msgstr "공개 키를 사용할 수 없습니다. 다른 계정을 선택하고 
 msgid "Your public key. Safe to share."
 msgstr "공개 키입니다. 공유해도 안전합니다."
 
-msgid "Your secret key stays in your remote signer. Reveal and export are unavailable on this device."
-msgstr "비밀 키는 원격 서명자에 보관됩니다. 이 기기에서는 표시 및 내보내기를 할 수 없습니다."
+msgid "Your secret key stays in your remote signer, so this device can't reveal or export it. Back it up and recover it through your signer. A White Noise backup file doesn't include it."
+msgstr "비밀 키는 원격 서명자에 보관되므로 이 기기에서는 표시하거나 내보낼 수 없습니다. 백업과 복구는 서명자에서 하세요. White Noise 백업 파일에는 포함되지 않습니다."
+
+msgid "Your secret key stays in your signer, and this device only asks it to sign. Approve the connection and each signature there, so keep your signer open. This device can't reveal or export the key, so back it up and recover it through your signer."
+msgstr "비밀 키는 서명자에 보관되며, 이 기기는 서명만 요청합니다. 연결과 각 서명은 서명자에서 승인하므로 서명자를 열어 두세요. 이 기기에서는 키를 표시하거나 내보낼 수 없으므로 백업과 복구는 서명자에서 하세요."
 
 msgid "Your secret key stays on this device or in your connected signer. Never share it."
 msgstr "비밀 키는 이 기기 또는 연결된 서명자에 보관됩니다. 절대 공유하지 마세요."

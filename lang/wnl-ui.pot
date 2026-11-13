@@ -5866,7 +5866,10 @@ msgstr ""
 msgid "Your public key. Safe to share."
 msgstr ""
 
-msgid "Your secret key stays in your remote signer. Reveal and export are unavailable on this device."
+msgid "Your secret key stays in your remote signer, so this device can't reveal or export it. Back it up and recover it through your signer. A White Noise backup file doesn't include it."
+msgstr ""
+
+msgid "Your secret key stays in your signer, and this device only asks it to sign. Approve the connection and each signature there, so keep your signer open. This device can't reveal or export the key, so back it up and recover it through your signer."
 msgstr ""
 
 msgid "Your secret key stays on this device or in your connected signer. Never share it."

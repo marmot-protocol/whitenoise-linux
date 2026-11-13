@@ -5867,8 +5867,11 @@ msgstr "La tua chiave pubblica non è disponibile. Scegli un altro account e rip
 msgid "Your public key. Safe to share."
 msgstr "La tua chiave pubblica. Sicura da condividere."
 
-msgid "Your secret key stays in your remote signer. Reveal and export are unavailable on this device."
-msgstr "La tua chiave segreta resta nel tuo firmatario remoto. Mostra ed esporta non sono disponibili su questo dispositivo."
+msgid "Your secret key stays in your remote signer, so this device can't reveal or export it. Back it up and recover it through your signer. A White Noise backup file doesn't include it."
+msgstr "La tua chiave segreta resta nel tuo firmatario remoto, quindi questo dispositivo non può mostrarla né esportarla. Fanne il backup e recuperala tramite il tuo firmatario. Un file di backup di White Noise non la contiene."
+
+msgid "Your secret key stays in your signer, and this device only asks it to sign. Approve the connection and each signature there, so keep your signer open. This device can't reveal or export the key, so back it up and recover it through your signer."
+msgstr "La tua chiave segreta resta nel tuo firmatario e questo dispositivo gli chiede solo di firmare. Approva lì la connessione e ogni firma, quindi tieni aperto il tuo firmatario. Questo dispositivo non può mostrare né esportare la chiave, quindi fanne il backup e recuperala tramite il tuo firmatario."
 
 msgid "Your secret key stays on this device or in your connected signer. Never share it."
 msgstr "La tua chiave segreta resta su questo dispositivo o nel tuo firmatario collegato. Non condividerla mai."

@@ -335,6 +335,17 @@ login_pane :: proc(ui: ^Ui_State) {
 				ui.login_method == .Bunker ? tr("Connect your remote signer") : ui.login_method == .Pair ? tr("Pair with your remote signer") : tr("Import a key"),
 				{font = FONT_BODY, size = 15, color = TEXT_DIM},
 			)
+			// Remote methods hand signing to another app. Say where the key
+			// lives and where approvals happen before any session starts, so
+			// "Pair" doesn't read as copying another device's chats.
+			if ui.login_method == .Bunker || ui.login_method == .Pair {
+				nendo.text(
+					tr(
+						"Your secret key stays in your signer, and this device only asks it to sign. Approve the connection and each signature there, so keep your signer open. This device can't reveal or export the key, so back it up and recover it through your signer.",
+					),
+					{font = FONT_BODY, size = 13, color = TEXT_DIM, align = .Center},
+				)
+			}
 			if nendo.box(nendo.id("LoginGapA"))({height = nendo.fixed(10)}) {}
 			eyebrow(
 				ui.login_method == .Bunker ? tr("BUNKER LINK") : ui.login_method == .Pair ? tr("SIGNER RELAY") : "NSEC",
