@@ -189,7 +189,6 @@ appearance_hold: struct {
 @(private)
 appearance_scroll :: proc(ui: ^Ui_State, field: nendo.Id) -> nendo.Id {
 	if appearance_layout(ui).columns == 1 {return nendo.id("SettingsPage")}
-	if field == nendo.id("Composer") {return nendo.id("AppearancePreview")}
 	box := nendo.element(field).rect
 	for id in ([2]string{"AppearanceThemes", "AppearancePreview"}) {
 		panel := nendo.element(nendo.id(id)).rect

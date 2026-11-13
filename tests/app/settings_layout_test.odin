@@ -192,9 +192,19 @@ settings_viewport :: proc(t: ^testing.T) {
 		}
 		if !testing.expect(t, last >= 0) {return}
 		if settings_test_appearance_wide() {
+			// The sample conversation is inert: it never lights up or offers a composer.
+			head := nendo.element(nendo.id("ChatHeadInfo")).rect
+			nendo.set_pointer({head.x + head.width / 2, head.y + head.height / 2}, .Up)
+			testing.expect(
+				t,
+				nendo.pointer_over(nendo.id("AppearancePreview")) &&
+				!nendo.pointer_over(nendo.id("ChatHeadInfo")) &&
+				!nendo.element(nendo.id("Composer")).found,
+				"The Appearance conversation preview must not look interactive",
+			)
 			settings_test_scroll_panel(t, &ui, "AppearanceThemes", nendo.id("ThemeOpt", u32(last)))
 			settings_test_scroll_panel(t, &ui, "AppearanceControls", nendo.id("RowCropShape"))
-			settings_test_scroll_panel(t, &ui, "AppearancePreview", nendo.id("Composer"))
+			settings_test_scroll_panel(t, &ui, "AppearancePreview", nendo.id("MsgRow", 4))
 			nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
 		}
 		for _ in 0 ..< 128 {

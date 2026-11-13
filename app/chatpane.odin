@@ -500,7 +500,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 				scrollbar(nendo.id("Timeline"))
 				jump_latest_button()
 
-				if !chat.pending || !single_pane() {chat_composer(ui)}
+				if !preview && (!chat.pending || !single_pane()) {chat_composer(ui)}
 			}
 		}
 		chat_drop_overlay(ui)
@@ -2166,7 +2166,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 			}
 			scrollbar(nendo.id("StagedRow"))
 		}
-		if ui.chat_preview_w == 0 && voice_active() {
+		if voice_active() {
 			voice_bar()
 		} else if nendo.box(nendo.id("ComposeBox"))(
 		{
@@ -2206,7 +2206,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 				if nendo.box(nendo.id("ComposeText"))(
 				{width = nendo.grow(), direction = .Column, gap = 2},
 				) {
-					if len(ui.compose) == 0 && (ui.chat_preview_w > 0 || len(rl.Preedit()) == 0) {
+					if len(ui.compose) == 0 && len(rl.Preedit()) == 0 {
 						compose_view.row = 0
 						if nendo.box(nendo.id("ComposeLine", 0))(
 						{gap = 1, align = {y = .Center}},
@@ -2376,7 +2376,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 				if open_now(nendo.id("FxPanel"), ui.fx_open) {effect_picker(ui)}
 			}
 		}
-		if !tap_size() && submit_available && (ui.chat_preview_w > 0 || !voice_active()) {
+		if !tap_size() && submit_available && !voice_active() {
 			if nendo.box(nendo.id("ComposeSubmitRow"))(
 			{width = nendo.grow(), gap = 8, align = {y = .Center}},
 			) {

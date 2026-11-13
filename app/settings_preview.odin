@@ -7,13 +7,13 @@ import rl "sdlrl"
 settings_conversation_preview :: proc(ui: ^Ui_State) {
 	// Borrow only appearance preferences. No real chat, draft or signing key
 	// enters the sample, and empty message IDs cannot trigger arrival effects.
+	// The sample is inert: none of its controls work, so none may look live.
 	preview := Ui_State {
 		selected       = -1,
 		focus          = .Search,
 		chat_preview_w = appearance_layout(ui).preview,
 	}
 	preview.prefs.centered_chat = ui.prefs.centered_chat
-	preview.prefs.stt_enabled = ui.prefs.stt_enabled
 	chat := Chat_Row_Ui {
 		group_id   = "marmot-preview",
 		avatar_key = "marmot-preview",
@@ -80,6 +80,7 @@ settings_conversation_preview :: proc(ui: ^Ui_State) {
 		color = BG,
 		border = {color = FIELD_BORDER, width = bw()},
 		radius = rr(8),
+		inert = true,
 	},
 	) {
 		if nendo.box(nendo.id("SettingsPreviewTitle"))(
