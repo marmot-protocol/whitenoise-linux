@@ -171,19 +171,26 @@ export "CFLAGS_$RUST_KEY=${CFLAGS[*]}" "CXXFLAGS_$RUST_KEY=${CFLAGS[*]}"
 export "PKG_CONFIG_LIBDIR_$RUST_KEY=$PKG_CONFIG_LIBDIR"
 export "PKG_CONFIG_SYSROOT_DIR_$RUST_KEY=${PKG_CONFIG_SYSROOT_DIR:-}"
 export "CARGO_TARGET_${RUST_UPPER}_RUSTFLAGS=${RUST_ARGS[*]}"
+# rustup picks MDK's pinned toolchain from the working directory, never from
+# --manifest-path. Its llvm-tools-preview component supplies the opt, lld and
+# llvm-nm that MDK's Markdown build script runs on the Odin parser.
 MARMOT_STAMP="$({
   printf '%s\n' "$TOOLCHAIN_STAMP" "${RUST_ARGS[*]}" "${RUSTFLAGS:-}" "${CARGO_ENCODED_RUSTFLAGS:-}" \
     "${RUSTC:-}" "${RUSTC_WRAPPER:-}" "${RUSTC_WORKSPACE_WRAPPER:-}"
+  cd "$HERE/vendor/mdk"
   rustc -vV
   cargo -V
 } | sha256sum | cut -d' ' -f1)"
-if ! rustup target list --installed | grep -qx "$RUST_TARGET"; then
-  rustup target add "$RUST_TARGET"
-fi
-# Rust host proc macros/build scripts use the host compiler, not target CC.
-env -u CC -u CXX -u AR -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_SYSROOT_DIR \
-  CARGO_TARGET_DIR="$OUT/cargo/$MARMOT_STAMP" cargo build --manifest-path "$HERE/vendor/mdk/Cargo.toml" \
-  --locked --release --target "$RUST_TARGET" -p marmot-c --features otlp-export
+(
+  cd "$HERE/vendor/mdk"
+  if ! rustup target list --installed | grep -qx "$RUST_TARGET"; then
+    rustup target add "$RUST_TARGET"
+  fi
+  # Rust host proc macros/build scripts use the host compiler, not target CC.
+  env -u CC -u CXX -u AR -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_SYSROOT_DIR \
+    CARGO_TARGET_DIR="$OUT/cargo/$MARMOT_STAMP" cargo build \
+    --locked --release --target "$RUST_TARGET" -p marmot-c --features otlp-export
+)
 MARMOT_ARCHIVE="$OUT/cargo/$MARMOT_STAMP/$RUST_TARGET/release/libmarmot_c.a"
 if ! cmp -s "$MARMOT_ARCHIVE" "$OUT/libmarmot_c.a"; then cp "$MARMOT_ARCHIVE" "$OUT/libmarmot_c.a"; fi
 
