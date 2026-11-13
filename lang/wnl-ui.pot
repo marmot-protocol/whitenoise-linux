@@ -659,6 +659,9 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
+msgid "Back to account options"
+msgstr ""
+
 msgid "Back to chat"
 msgstr ""
 
@@ -1197,6 +1200,9 @@ msgid "Connecting your remote signer. Approve the connection there before using 
 msgstr ""
 
 msgid "Connection cancelled."
+msgstr ""
+
+msgid "Connection settings (SOCKS5 proxy)"
 msgstr ""
 
 msgid "Connector guide"
@@ -3706,6 +3712,9 @@ msgstr ""
 msgid "Optional Nostr identifier (NIP-05), not your email address. This is public."
 msgstr ""
 
+msgid "Optional. You can set up a proxy before choosing an account, or later in Network & relays. This does not create an account."
+msgstr ""
+
 msgid "Orange"
 msgstr ""
 
@@ -3950,6 +3959,9 @@ msgid "Press Ctrl P for the command palette."
 msgstr ""
 
 msgid "Press Enter to save; Escape returns to Network & relays."
+msgstr ""
+
+msgid "Press Enter to save; Escape returns to account options."
 msgstr ""
 
 msgid "Press Enter to search."

@@ -59,7 +59,6 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if clicked("SaveSocks5") ||
 		   (ui.focus in SOCKS5_FIELDS && rl.IsKeyPressed(.ENTER)) {save_socks5(ui)}
-		if rl.IsKeyPressed(.ESCAPE) {ui.focus = .Compose}
 		return
 	}
 	if client == nil {return}

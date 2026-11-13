@@ -457,9 +457,9 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 			valid && dirty && ui.socks5_job == nil ? ACCENT : TEXT_DIM,
 			valid && dirty && ui.socks5_job == nil ? .Enabled : .Disabled,
 		)
-		if !tap_size() && !ui.socks5_login_open {
+		if !tap_size() {
 			nendo.text(
-				tr("Press Enter to save; Escape returns to Network & relays."),
+				ui.socks5_login_open ? tr("Press Enter to save; Escape returns to account options.") : tr("Press Enter to save; Escape returns to Network & relays."),
 				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
 		}

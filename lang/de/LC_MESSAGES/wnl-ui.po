@@ -660,6 +660,9 @@ msgstr "BUNKER-LINK"
 msgid "Back"
 msgstr "Zurück"
 
+msgid "Back to account options"
+msgstr "Zurück zu den Kontooptionen"
+
 msgid "Back to chat"
 msgstr "Zurück zum Chat"
 
@@ -1199,6 +1202,9 @@ msgstr "Dein Remote-Signer wird verbunden. Genehmige dort die Verbindung, bevor 
 
 msgid "Connection cancelled."
 msgstr "Verbindung abgebrochen."
+
+msgid "Connection settings (SOCKS5 proxy)"
+msgstr "Verbindungseinstellungen (SOCKS5-Proxy)"
 
 msgid "Connector guide"
 msgstr "Konnektor-Anleitung"
@@ -3707,6 +3713,9 @@ msgstr "Öffnet signal.link in deinem Browser. Zum Beitreten brauchst du die Sig
 msgid "Optional Nostr identifier (NIP-05), not your email address. This is public."
 msgstr "Optionale Nostr-Kennung (NIP-05), nicht deine E-Mail-Adresse. Sie ist öffentlich."
 
+msgid "Optional. You can set up a proxy before choosing an account, or later in Network & relays. This does not create an account."
+msgstr "Optional. Du kannst einen Proxy einrichten, bevor du ein Konto wählst, oder später unter Netzwerk & Relays. Dabei wird kein Konto erstellt."
+
 msgid "Orange"
 msgstr "Orange"
 
@@ -3952,6 +3961,9 @@ msgstr "Drücke Ctrl P für die Befehlspalette."
 
 msgid "Press Enter to save; Escape returns to Network & relays."
 msgstr "Drücke die Eingabetaste zum Speichern; Escape führt zurück zu Netzwerk und Relays."
+
+msgid "Press Enter to save; Escape returns to account options."
+msgstr "Drücke die Eingabetaste zum Speichern; Escape führt zurück zu den Kontooptionen."
 
 msgid "Press Enter to search."
 msgstr "Drücke die Eingabetaste, um zu suchen."

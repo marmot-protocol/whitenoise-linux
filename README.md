@@ -934,8 +934,9 @@ Each accepts 1 to 255 UTF-8 bytes. Credentials are stored in the encrypted
 vault, not `settings.json`; `prefs.socks5_auth` stores only the authentication
 choice. Leave that switch off for an unauthenticated proxy. Hostnames and
 proxy URLs are not supported.
-Before signing in, choose SOCKS5 proxy on the sign-in screen to configure
-the same setting.
+Before signing in, choose "Connection settings (SOCKS5 proxy)" on the sign-in
+screen to configure the same setting without creating an account. Back and
+Escape return to the account options. A saved change applies after a restart.
 
 The proxy carries relay and remote-signer connections, media transfers,
 link previews, embedded web pages, speech and translation model downloads, and enabled

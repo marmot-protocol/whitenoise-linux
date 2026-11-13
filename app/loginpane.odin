@@ -181,10 +181,18 @@ login_pane :: proc(ui: ^Ui_State) {
 		}
 
 		if ui.socks5_login_open {
+			// Reached from the account menu before any identity exists, so
+			// say it is optional and that it returns there.
+			nendo.text(
+				tr(
+					"Optional. You can set up a proxy before choosing an account, or later in Network & relays. This does not create an account.",
+				),
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
+			)
 			if nendo.box(nendo.id("LoginProxyHost"))({width = nendo.grow(), direction = .Column}) {
 				settings_socks5(ui)
 			}
-			micro_button("LoginProxyBack", tr("Back"))
+			micro_button("LoginProxyBack", tr("Back to account options"))
 		} else if ui.picking_backup {
 			nendo.text(tr("Opening file picker…"), {font = FONT_BODY, size = 15, color = TEXT})
 			busy_bar("LoginFileBusy")

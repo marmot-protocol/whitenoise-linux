@@ -660,6 +660,9 @@ msgstr "LINK BUNKER"
 msgid "Back"
 msgstr "Indietro"
 
+msgid "Back to account options"
+msgstr "Torna alle opzioni dell'account"
+
 msgid "Back to chat"
 msgstr "Torna alla chat"
 
@@ -1199,6 +1202,9 @@ msgstr "Connessione al tuo firmatario remoto in corso. Approva la connessione ne
 
 msgid "Connection cancelled."
 msgstr "Connessione annullata."
+
+msgid "Connection settings (SOCKS5 proxy)"
+msgstr "Impostazioni di connessione (proxy SOCKS5)"
 
 msgid "Connector guide"
 msgstr "Guida del connettore"
@@ -3707,6 +3713,9 @@ msgstr "Apre signal.link nel tuo browser. Per partecipare ti serve l'app Signal.
 msgid "Optional Nostr identifier (NIP-05), not your email address. This is public."
 msgstr "Identificativo Nostr facoltativo (NIP-05), non il tuo indirizzo email. È pubblico."
 
+msgid "Optional. You can set up a proxy before choosing an account, or later in Network & relays. This does not create an account."
+msgstr "Facoltativo. Puoi configurare un proxy prima di scegliere un account, oppure più tardi in Rete e relay. Questo non crea un account."
+
 msgid "Orange"
 msgstr "Arancione"
 
@@ -3952,6 +3961,9 @@ msgstr "Premi Ctrl P per la tavolozza dei comandi."
 
 msgid "Press Enter to save; Escape returns to Network & relays."
 msgstr "Premi Invio per salvare; Esc torna a Rete e relay."
+
+msgid "Press Enter to save; Escape returns to account options."
+msgstr "Premi Invio per salvare; Esc torna alle opzioni dell'account."
 
 msgid "Press Enter to search."
 msgstr "Premi Invio per cercare."

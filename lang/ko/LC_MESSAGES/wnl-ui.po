@@ -659,6 +659,9 @@ msgstr "bunker 링크"
 msgid "Back"
 msgstr "뒤로"
 
+msgid "Back to account options"
+msgstr "계정 선택으로 돌아가기"
+
 msgid "Back to chat"
 msgstr "채팅으로 돌아가기"
 
@@ -1198,6 +1201,9 @@ msgstr "원격 서명자에 연결하고 있습니다. 이 계정을 사용하�
 
 msgid "Connection cancelled."
 msgstr "연결을 취소했습니다."
+
+msgid "Connection settings (SOCKS5 proxy)"
+msgstr "연결 설정(SOCKS5 프록시)"
 
 msgid "Connector guide"
 msgstr "커넥터 가이드"
@@ -3706,6 +3712,9 @@ msgstr "브라우저에서 signal.link를 엽니다. 참여하려면 Signal 앱�
 msgid "Optional Nostr identifier (NIP-05), not your email address. This is public."
 msgstr "선택 사항인 Nostr 식별자(NIP-05)이며 이메일 주소가 아닙니다. 이 정보는 공개됩니다."
 
+msgid "Optional. You can set up a proxy before choosing an account, or later in Network & relays. This does not create an account."
+msgstr "선택 사항입니다. 계정을 선택하기 전에 프록시를 설정하거나, 나중에 네트워크 및 릴레이에서 설정할 수 있습니다. 계정은 만들어지지 않습니다."
+
 msgid "Orange"
 msgstr "주황"
 
@@ -3951,6 +3960,9 @@ msgstr "Ctrl P를 누르면 명령 팔레트가 열립니다."
 
 msgid "Press Enter to save; Escape returns to Network & relays."
 msgstr "Enter를 누르면 저장되고, Escape를 누르면 네트워크 및 릴레이로 돌아갑니다."
+
+msgid "Press Enter to save; Escape returns to account options."
+msgstr "Enter를 누르면 저장되고, Escape를 누르면 계정 선택으로 돌아갑니다."
 
 msgid "Press Enter to search."
 msgstr "Enter를 눌러 검색하세요."

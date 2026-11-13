@@ -660,6 +660,9 @@ msgstr "BUNKER リンク"
 msgid "Back"
 msgstr "戻る"
 
+msgid "Back to account options"
+msgstr "アカウントの選択に戻る"
+
 msgid "Back to chat"
 msgstr "チャットに戻る"
 
@@ -1199,6 +1202,9 @@ msgstr "リモート署名者に接続しています。このアカウントを
 
 msgid "Connection cancelled."
 msgstr "接続をキャンセルしました。"
+
+msgid "Connection settings (SOCKS5 proxy)"
+msgstr "接続設定（SOCKS5 プロキシ）"
 
 msgid "Connector guide"
 msgstr "コネクターガイド"
@@ -3707,6 +3713,9 @@ msgstr "ブラウザで signal.link を開きます。参加するには Signal 
 msgid "Optional Nostr identifier (NIP-05), not your email address. This is public."
 msgstr "任意のNostr識別子（NIP-05）です。メールアドレスではありません。この情報は公開されます。"
 
+msgid "Optional. You can set up a proxy before choosing an account, or later in Network & relays. This does not create an account."
+msgstr "任意です。アカウントを選ぶ前にプロキシを設定できます。後で「ネットワークとリレー」から設定することもできます。アカウントは作成されません。"
+
 msgid "Orange"
 msgstr "オレンジ"
 
@@ -3952,6 +3961,9 @@ msgstr "Ctrl P を押すとコマンドパレットが開きます。"
 
 msgid "Press Enter to save; Escape returns to Network & relays."
 msgstr "Enterで保存します。Escapeで「ネットワークとリレー」に戻ります。"
+
+msgid "Press Enter to save; Escape returns to account options."
+msgstr "Enterで保存します。Escapeでアカウントの選択に戻ります。"
 
 msgid "Press Enter to search."
 msgstr "Enter キーを押すと検索できます。"
