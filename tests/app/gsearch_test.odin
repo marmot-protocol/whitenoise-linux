@@ -174,6 +174,33 @@ gs_sender_identity_validation :: proc(t: ^testing.T) {
 	testing.expect(t, !valid)
 }
 
+// Choosing a Known senders entry fills the field with its name, never the
+// hex key, and that name must resolve back to the chosen key, even when
+// another contact shares the display name.
+@(test)
+gs_known_sender_shows_name :: proc(t: ^testing.T) {
+	SELF :: "05c6a606d76f90238022afe4b92824d44127f10c42d68605c16ae072262f4b8f"
+	ALICE :: "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+	TWIN :: "1111111111111111111111111111111111111111111111111111111111111111"
+	ui := Ui_State {
+		gs_picker   = 2,
+		account_ref = SELF,
+	}
+	append(&ui.contacts, Contact_Ui{id_hex = ALICE, name = "Alice"})
+	append(&ui.contacts, Contact_Ui{id_hex = TWIN, name = "Alice"})
+	append(&ui.gs_senders, ALICE, TWIN)
+	defer {delete(ui.contacts); delete(ui.gs_senders); delete(ui.gs_sender_input)}
+	for i in 1 ..< len(ui.gs_senders) + 2 {
+		label, want := gs_option(&ui, i)
+		testing.expect(t, deeplink_hex(label) == "", "A known sender must be listed by name")
+		ui.gs_sender = want
+		clear(&ui.gs_sender_input); append(&ui.gs_sender_input, label)
+		key, valid := gs_sender_key(&ui)
+		testing.expect(t, valid)
+		testing.expect_value(t, key, want)
+	}
+}
+
 @(test)
 gs_old_result_keeps_seek_target :: proc(t: ^testing.T) {
 	previous := timeline_job
