@@ -1,0 +1,47 @@
+diff --git i/crates/marmot-markdown/build.rs w/crates/marmot-markdown/build.rs
+--- i/crates/marmot-markdown/build.rs
++++ w/crates/marmot-markdown/build.rs
+@@ -45,7 +45,10 @@ fn main() {
+         _ => panic!("unsupported Odin target OS: {target}"),
+     };
+     let out_dir = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo OUT_DIR"));
+-    let archive = out_dir.join(if os == "windows" {
++    // rustc looks for `name.lib` on MSVC and `libname.a` everywhere else,
++    // including the windows-gnullvm target.
++    let msvc = env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc");
++    let archive = out_dir.join(if msvc {
+         "marmot_markdown_odin.lib"
+     } else {
+         "libmarmot_markdown_odin.a"
+@@ -55,7 +58,11 @@ fn main() {
+     if archive.exists() {
+         fs::remove_file(&archive).expect("remove previous Odin archive");
+     }
+-    let object_output = os == "android" || os == "ios";
++    // Off Windows, Odin rejects a Windows target without an SDK root and
++    // cannot archive one, so a cross build emits an object and archives it.
++    println!("cargo:rerun-if-env-changed=ODIN_WINDOWS_SDK_ROOT");
++    let windows_sdk = env::var_os("ODIN_WINDOWS_SDK_ROOT").filter(|_| os == "windows");
++    let object_output = os == "android" || os == "ios" || windows_sdk.is_some();
+     let parallel_codegen =
+         target == "x86_64-unknown-linux-gnu" && env::var("OPT_LEVEL").as_deref() != Ok("0");
+     let llvm_output = parallel_codegen || os == "android";
+@@ -104,6 +111,9 @@ fn main() {
+     if os == "windows" {
+         command.arg("-linker:msvc");
+     }
++    if let Some(root) = &windows_sdk {
++        command.arg(format!("-windows-sdk-root:{}", Path::new(root).display()));
++    }
+     if os == "ios" {
+         command.arg(if target.ends_with("-sim") || arch == "amd64" {
+             "-subtarget:iphonesimulator"
+@@ -136,6 +146,8 @@ fn main() {
+         Some(Command::new(archiver))
+     } else if os == "ios" {
+         Some(Command::new("ar"))
++    } else if windows_sdk.is_some() {
++        Some(Command::new(llvm_tool("llvm-ar")))
+     } else {
+         None
+     };

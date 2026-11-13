@@ -405,10 +405,13 @@ if [ "$SYSTEM" = Windows ]; then
   fi
   WINDOWS_RUNTIME=("$OUT/mingw_shim.o")
 fi
+ODIN_ARGS=(-target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" -o:speed -build-mode:obj)
+if [ -n "${ODIN_WINDOWS_SDK_ROOT:-}" ]; then
+  ODIN_ARGS+=(-windows-sdk-root:"$ODIN_WINDOWS_SDK_ROOT")
+fi
 KEY="$(cross_key "mesh-object $ODIN_ID" "$HERE/model-decoder")"
 if ! cross_fresh mesh-object "$KEY" "$OUT/mesh.o"; then
-  odin build "$HERE/model-decoder" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
-    -o:speed -build-mode:obj -out:"$OUT/mesh.o"
+  odin build "$HERE/model-decoder" "${ODIN_ARGS[@]}" -out:"$OUT/mesh.o"
   cross_store mesh-object "$KEY" "$OUT/mesh.o"
 fi
 KEY="$(cross_key "$LINK_ID mesh-link" "$OUT/mesh.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmesh.a" "$OUT/cgltf.a")"
@@ -419,8 +422,7 @@ if ! cross_fresh mesh-link "$KEY" "$OUT/wn-mesh$EXE"; then
 fi
 KEY="$(cross_key "math-object $ODIN_ID" "$HERE/math-decoder" "$HERE/vendor/bragi")"
 if ! cross_fresh math-object "$KEY" "$OUT/math.o"; then
-  odin build "$HERE/math-decoder" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
-    -o:speed -build-mode:obj -out:"$OUT/math.o"
+  odin build "$HERE/math-decoder" "${ODIN_ARGS[@]}" -out:"$OUT/math.o"
   cross_store math-object "$KEY" "$OUT/math.o"
 fi
 KEY="$(cross_key "$LINK_ID math-link $CAIRO_KEY" "$OUT/math.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmath.a")"
@@ -432,8 +434,7 @@ if ! cross_fresh math-link "$KEY" "$OUT/wn-math$EXE"; then
 fi
 KEY="$(cross_key "nes-object $ODIN_ID" "$HERE/nes-decoder")"
 if ! cross_fresh nes-object "$KEY" "$OUT/nes.o"; then
-  odin build "$HERE/nes-decoder" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
-    -o:speed -build-mode:obj -out:"$OUT/nes.o"
+  odin build "$HERE/nes-decoder" "${ODIN_ARGS[@]}" -out:"$OUT/nes.o"
   cross_store nes-object "$KEY" "$OUT/nes.o"
 fi
 KEY="$(cross_key "$LINK_ID nes-link" "$OUT/nes.o" "${WINDOWS_RUNTIME[@]}" "$OUT/libwnmesh.a")"
@@ -450,8 +451,7 @@ KEY="$(cross_key "app-object $ODIN_ID" "$HERE/app" "$HERE/marmot" \
   "$HERE/vendor/crop-circles" "$HERE/lang" "$HERE/themes" \
   "$HERE/vendor/common-passwords.txt" "$HERE/build/observability-tokens.toml")"
 if ! cross_fresh app-object "$KEY" "$OUT/app.o"; then
-  odin build "$HERE/app" -target:"$ODIN_TARGET" -define:WN_TARGET="$TARGET" \
-    -o:speed -build-mode:obj -out:"$OUT/app.o"
+  odin build "$HERE/app" "${ODIN_ARGS[@]}" -out:"$OUT/app.o"
   cross_store app-object "$KEY" "$OUT/app.o"
 fi
 APP_LINK_ARGS=()

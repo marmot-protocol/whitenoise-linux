@@ -97,6 +97,9 @@ CLANG
     fi
     RUST_TARGET=x86_64-pc-windows-gnullvm; ODIN_TARGET=windows_amd64
     CPU=x86_64; SYSTEM=Windows; EXE=.exe
+    # Odin refuses Windows targets off Windows without an SDK root, though it
+    # reads one only to link. Its objects link with the MinGW driver instead.
+    export ODIN_WINDOWS_SDK_ROOT="$LLVM_MINGW/x86_64-w64-mingw32"
     CC="$LLVM_MINGW/bin/x86_64-w64-mingw32-clang"
     CXX="$LLVM_MINGW/bin/x86_64-w64-mingw32-clang++"
     AR="$LLVM_MINGW/bin/llvm-ar"; STRIP="$LLVM_MINGW/bin/llvm-strip"; OBJCOPY="$LLVM_MINGW/bin/llvm-objcopy"
