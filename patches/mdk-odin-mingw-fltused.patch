@@ -1,0 +1,29 @@
+diff --git i/crates/marmot-markdown/build.rs w/crates/marmot-markdown/build.rs
+--- i/crates/marmot-markdown/build.rs
++++ w/crates/marmot-markdown/build.rs
+@@ -114,6 +114,9 @@ fn main() {
+     if let Some(root) = &windows_sdk {
+         command.arg(format!("-windows-sdk-root:{}", Path::new(root).display()));
+     }
++    if os == "windows" && !msvc {
++        command.arg("-define:MARMOT_MARKDOWN_MINGW=true");
++    }
+     if os == "ios" {
+         command.arg(if target.ends_with("-sim") || arch == "amd64" {
+             "-subtarget:iphonesimulator"
+diff --git i/crates/marmot-markdown/odin/fltused_windows.odin w/crates/marmot-markdown/odin/fltused_windows.odin
+new file mode 100644
+--- /dev/null
++++ w/crates/marmot-markdown/odin/fltused_windows.odin
+@@ -0,0 +1,11 @@
++#+build windows
++package markdown
++
++// MSVC's "this object uses floating point" marker. LLVM references it from
++// every Windows object with float code and the MSVC CRT defines it; a
++// MinGW link has no CRT definition. Built only for MinGW cross builds.
++// Not exported: @(export) would add an /EXPORT directive naming _fltused.
++when #config(MARMOT_MARKDOWN_MINGW, false) {
++	@(require, linkage = "strong", link_name = "_fltused")
++	_fltused: i32 = 0x9875
++}
