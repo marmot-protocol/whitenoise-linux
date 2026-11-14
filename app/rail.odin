@@ -258,7 +258,7 @@ rail_content :: proc(ui: ^Ui_State) {
 						width = nendo.fixed(tap_size() ? tap_min() : 32),
 						height = nendo.fixed(tap_size() ? tap_min() : 32),
 						padding = {left = 6, right = 6, top = 5, bottom = 5},
-						align = {y = .Center},
+						align = {x = .Center, y = .Center},
 						color = hovered() ? HOVER : ROW_BG,
 						radius = rr(6),
 					},
