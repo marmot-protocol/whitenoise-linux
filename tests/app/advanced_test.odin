@@ -14,16 +14,16 @@ obs_parse_reads_keys :: proc(t: ^testing.T) {
 	obs_parse(
 		"otlp_metrics_endpoint = \"https://metrics.example/v1/metrics\"\n" +
 		"otlp_token = \"metrics-test\"\n" +
-		"goggles_audit_endpoint = \"https://audit.example/\"\n" +
-		"goggles_token = \"audit-test\"\n" +
+		"audit_otlp_endpoint = \"https://audit.example/v1/logs\"\n" +
+		"audit_otlp_token = \"audit-test\"\n" +
 		"tenant = \"test\"\n" +
 		"deployment_environment = \"development\"\n",
 		&cfg,
 	)
 	testing.expect_value(t, cfg.otlp_metrics_endpoint, "https://metrics.example/v1/metrics")
 	testing.expect_value(t, cfg.otlp_token, "metrics-test")
-	testing.expect_value(t, cfg.goggles_audit_endpoint, "https://audit.example/")
-	testing.expect_value(t, cfg.goggles_token, "audit-test")
+	testing.expect_value(t, cfg.audit_otlp_endpoint, "https://audit.example/v1/logs")
+	testing.expect_value(t, cfg.audit_otlp_token, "audit-test")
 	testing.expect_value(t, cfg.tenant, "test")
 	testing.expect_value(t, cfg.deployment_environment, "development")
 
@@ -32,7 +32,7 @@ obs_parse_reads_keys :: proc(t: ^testing.T) {
 	testing.expect_value(t, cfg.tenant, "other")
 	testing.expect_value(t, cfg.deployment_environment, "development")
 	testing.expect_value(t, cfg.otlp_token, "metrics-test")
-	testing.expect_value(t, cfg.goggles_token, "audit-test")
+	testing.expect_value(t, cfg.audit_otlp_token, "audit-test")
 }
 
 @(test)
@@ -100,20 +100,16 @@ obs_override_precedence :: proc(t: ^testing.T) {
 	if !testing.expect(t, err == nil) {return}
 	defer os.remove_all(home)
 	path := fmt.tprintf("%s/observability.toml", home)
-	tokens :: "otlp_token = \"metrics-test\"\ngoggles_token = \"audit-test\"\n"
+	tokens :: "otlp_token = \"metrics-test\"\naudit_otlp_token = \"audit-test\"\n"
 
 	// A missing override keeps both the public routes and embedded tokens.
 	cfg := obs_load(path, tokens)
 	testing.expect_value(t, cfg.otlp_metrics_endpoint, "https://otlp.ipf.dev/v1/metrics")
-	testing.expect_value(
-		t,
-		cfg.goggles_audit_endpoint,
-		"https://goggles.ipf.dev/api/v1/audit-logs/",
-	)
+	testing.expect_value(t, cfg.audit_otlp_endpoint, "https://otlp.whitenoise.chat/v1/logs")
 	testing.expect_value(t, cfg.tenant, "whitenoise-linux")
 	testing.expect_value(t, cfg.deployment_environment, "production")
 	testing.expect_value(t, cfg.otlp_token, "metrics-test")
-	testing.expect_value(t, cfg.goggles_token, "audit-test")
+	testing.expect_value(t, cfg.audit_otlp_token, "audit-test")
 
 	override ::
 		"otlp_metrics_endpoint = \"https://metrics.example/v1/metrics\"\n" +
@@ -124,12 +120,8 @@ obs_override_precedence :: proc(t: ^testing.T) {
 	cfg = obs_load(path, tokens)
 	testing.expect_value(t, cfg.otlp_metrics_endpoint, "https://metrics.example/v1/metrics")
 	testing.expect_value(t, cfg.otlp_token, "")
-	testing.expect_value(
-		t,
-		cfg.goggles_audit_endpoint,
-		"https://goggles.ipf.dev/api/v1/audit-logs/",
-	)
-	testing.expect_value(t, cfg.goggles_token, "audit-test")
+	testing.expect_value(t, cfg.audit_otlp_endpoint, "https://otlp.whitenoise.chat/v1/logs")
+	testing.expect_value(t, cfg.audit_otlp_token, "audit-test")
 	testing.expect_value(t, cfg.tenant, "test-tenant")
 	testing.expect_value(t, cfg.deployment_environment, "development")
 }

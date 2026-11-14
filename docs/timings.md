@@ -10,7 +10,7 @@ Debug > Timings shows where the app spends its time, for this process only. Noth
   <source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="../assets/docs/timings-routes-narrow-dark.svg">
   <source media="(max-width: 600px)" srcset="../assets/docs/timings-routes-narrow-light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="../assets/docs/timings-routes-dark.svg">
-  <img alt="Where timing data goes. This process: counters for 79 MDK operations and 37 Linux stages fill up across all accounts, keep nanosecond totals locally, and reset on restart or module reload. Debug > Timings: you click Refresh and Copy JSON, empty metrics show zero samples, and WN_TIMINGS writes the JSON on normal exit. With consent: MDK exports aggregate histograms over OTLP in whole milliseconds to otlp.ipf.dev/v1/metrics, never to Goggles' audit-logs endpoint." src="../assets/docs/timings-routes-light.svg" width="880">
+  <img alt="Where timing data goes. This process: counters for 79 MDK operations and 37 Linux stages fill up across all accounts, keep nanosecond totals locally, and reset on restart or module reload. Debug > Timings: you click Refresh and Copy JSON, empty metrics show zero samples, and WN_TIMINGS writes the JSON on normal exit. With consent: MDK exports aggregate histograms over OTLP in whole milliseconds to otlp.ipf.dev/v1/metrics, never to the audit receiver." src="../assets/docs/timings-routes-light.svg" width="880">
 </picture>
 
 ## Open Debug > Timings
@@ -44,9 +44,9 @@ MDK exports its fixed set of aggregate timing histograms and counters to the con
 - **No contents or IDs.** Raw message contents and account/group IDs are not timing dimensions. Resource metadata includes a consent-scoped installation ID; relay diagnostics also include relay labels.
 
 > [!WARNING]
-> Goggles' `/api/v1/audit-logs/` endpoint accepts forensic audit events, not OTLP metrics. Do not send timing JSON there.
+> The audit receiver's `/v1/logs` route accepts MDK's v5 audit records, not OTLP metrics. Do not send timing JSON there.
 
-Displaying these aggregates in Goggles requires a collector-backed metrics view in that separate project. Production retention and server ingestion were not verified by local tests.
+Production retention and server ingestion were not verified by local tests.
 
 ### Collector configuration
 
@@ -55,10 +55,10 @@ The app starts with public defaults, then loads the write tokens embedded from g
 | Key | Default |
 | --- | --- |
 | `otlp_metrics_endpoint` | `https://otlp.ipf.dev/v1/metrics` |
-| `goggles_audit_endpoint` | `https://goggles.ipf.dev/api/v1/audit-logs/` |
+| `audit_otlp_endpoint` | `https://otlp.whitenoise.chat/v1/logs` |
 | `tenant` | `whitenoise-linux` |
 | `deployment_environment` | `production` |
-| `otlp_token`, `goggles_token` | Embedded write tokens |
+| `otlp_token`, `audit_otlp_token` | Embedded write tokens |
 
 An optional per-user `observability.toml` overrides only the keys it names. It lives in the same directory as `settings.json`:
 
@@ -78,7 +78,7 @@ The accepted keys are the six in the table above. Use one `key = "value"` assign
 <details>
 <summary><b>The thirteen histograms to chart first</b></summary>
 
-Prioritize these OTLP histograms when building that view:
+Prioritize these OTLP histograms when building a metrics view:
 
 | Measurement | OTLP histogram |
 | --- | --- |

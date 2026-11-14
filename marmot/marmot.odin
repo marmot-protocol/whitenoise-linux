@@ -1428,6 +1428,18 @@ Audit_Log_Source :: struct {
 	app_version:    cstring,
 }
 
+// v5 OTLP audit delivery. The cursor is bound to `destination`, so it must
+// stay stable across endpoint or token rotation. The returned copy omits
+// the token.
+Audit_Otlp_Config_V5 :: struct {
+	enabled:                    bool,
+	destination:                cstring,
+	endpoint:                   cstring,
+	authorization_bearer_token: cstring,
+	allow_loopback_dev:         bool,
+}
+#assert(size_of(Audit_Otlp_Config_V5) == 40)
+
 @(default_calling_convention = "c", link_prefix = "marmot_")
 foreign lib {
 	deployment_white_noise :: proc(out: ^^Deployment) -> Status ---
@@ -1480,6 +1492,8 @@ foreign lib {
 	audit_log_settings_free :: proc(ptr: ^Audit_Log_Settings) ---
 	set_audit_log_source :: proc(client: ^Client, source: ^Audit_Log_Source, out: ^^Audit_Log_Source) -> Status ---
 	audit_log_source_free :: proc(ptr: ^Audit_Log_Source) ---
+	set_audit_otlp_config_v5 :: proc(client: ^Client, config: ^Audit_Otlp_Config_V5, out: ^^Audit_Otlp_Config_V5) -> Status ---
+	audit_otlp_config_v5_free :: proc(ptr: ^Audit_Otlp_Config_V5) ---
 
 	audit_log_files :: proc(client: ^Client, out: ^^Audit_Log_File_List) -> Status ---
 	audit_log_file_list_free :: proc(list: ^Audit_Log_File_List) ---

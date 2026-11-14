@@ -25,4 +25,4 @@ for token in "$metrics" "$audit"; do
 done
 
 # printf is a shell builtin: token values never enter a process argument list.
-printf 'otlp_token = "%s"\ngoggles_token = "%s"\n' "$metrics" "$audit" > "$OUT"
+printf 'otlp_token = "%s"\naudit_otlp_token = "%s"\n' "$metrics" "$audit" > "$OUT"

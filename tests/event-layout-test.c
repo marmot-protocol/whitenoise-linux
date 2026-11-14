@@ -78,6 +78,8 @@ _Static_assert(sizeof(MarmotGroupCreationResult) == 24, "creation result");
 _Static_assert(sizeof(MarmotInviteMembersResult) == 24, "invite result");
 _Static_assert(MARMOT_MEMBER_RESOLUTION_STATUS_INCOMPLETE == 6, "member status order");
 _Static_assert(sizeof(MarmotAuditLogSource) == 24, "audit source");
+_Static_assert(sizeof(MarmotAuditOtlpConfigV5) == 40, "audit v5 config");
+_Static_assert(offsetof(MarmotAuditOtlpConfigV5, allow_loopback_dev) == 32, "audit loopback");
 
 int main(void) {
     return 0;

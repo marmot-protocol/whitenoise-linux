@@ -478,8 +478,8 @@ audit_delete :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 Observability :: struct {
 	otlp_metrics_endpoint:  string,
 	otlp_token:             string,
-	goggles_audit_endpoint: string,
-	goggles_token:          string,
+	audit_otlp_endpoint:    string,
+	audit_otlp_token:       string,
 	tenant:                 string,
 	deployment_environment: string,
 }
@@ -499,10 +499,10 @@ obs_parse :: proc(text: string, out: ^Observability) {
 			out.otlp_metrics_endpoint = value
 		case "otlp_token":
 			out.otlp_token = value
-		case "goggles_audit_endpoint":
-			out.goggles_audit_endpoint = value
-		case "goggles_token":
-			out.goggles_token = value
+		case "audit_otlp_endpoint":
+			out.audit_otlp_endpoint = value
+		case "audit_otlp_token":
+			out.audit_otlp_token = value
 		case "tenant":
 			out.tenant = value
 		case "deployment_environment":
@@ -519,7 +519,7 @@ obs_load :: proc(
 ) -> Observability {
 	cfg := Observability {
 		otlp_metrics_endpoint  = "https://otlp.ipf.dev/v1/metrics",
-		goggles_audit_endpoint = "https://goggles.ipf.dev/api/v1/audit-logs/",
+		audit_otlp_endpoint    = "https://otlp.whitenoise.chat/v1/logs",
 		tenant                 = "whitenoise-linux",
 		deployment_environment = "production",
 	}
@@ -565,6 +565,21 @@ apply_observability :: proc(client: ^marmot.Client) {
 	if marmot.set_relay_telemetry_runtime_config(client, &route) != .OK {
 		fmt.eprintfln("telemetry route rejected: %s", marmot.last_error())
 	}
+
+	// The delivery cursor is bound to the destination, shared with the
+	// iOS and macOS apps; without a token the sender stays off.
+	token := obs_cstr(cfg.audit_otlp_token)
+	audit := marmot.Audit_Otlp_Config_V5 {
+		enabled                    = token != nil,
+		destination                = "whitenoise-audit-receiver",
+		endpoint                   = obs_cstr(cfg.audit_otlp_endpoint),
+		authorization_bearer_token = token,
+	}
+	audit_out: ^marmot.Audit_Otlp_Config_V5
+	if marmot.set_audit_otlp_config_v5(client, &audit, &audit_out) != .OK {
+		fmt.eprintfln("audit delivery config rejected: %s", marmot.last_error())
+	}
+	marmot.audit_otlp_config_v5_free(audit_out)
 
 	source := marmot.Audit_Log_Source {
 		hardware_model = obs_device_model(),
