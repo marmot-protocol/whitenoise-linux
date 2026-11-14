@@ -336,7 +336,8 @@ secret exists.
 
 `just publish` (`scripts/publish.sh [tag]`) publishes a release everywhere
 from a maintainer's machine. It asks for the Zapstore signer (bunker URL or
-nsec), runs `scripts/release.sh` (or takes an existing tag), waits for the
+nsec), tags the merged release PR from `just release` with
+`scripts/release.sh --tag` (or takes an existing tag), waits for the
 release workflow to create the GitHub release, then downloads the AppImage
 and Flatpak, checks them against `SHA256SUMS.txt`, and runs
 `scripts/zapstore.ts`. That signs NIP-82 events with `nak` and sends them to

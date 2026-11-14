@@ -1,34 +1,46 @@
 #!/usr/bin/env bash
-# Cut a release, date-versioned:
+# Cut a release, date-versioned, in two steps around a reviewed PR
+# (master only moves by merging one):
+#
+#   scripts/release.sh            open the release PR
+#   scripts/release.sh --tag      tag the merged release
+#
+# Opening the PR:
 #
 #   1. APP_VERSION becomes today's date plus the next revision
 #      (2026.9.27+1, then +2 the same day, +1 again on a new date; Velopack
-#      orders by the date first). The tag is v2026.9.27-build.1.
+#      orders by the date first). The tag will be v2026.9.27-build.1.
 #   2. A small model drafts release notes from the commits since the last
 #      tag. WN_NOTES_CMD replaces it: any command reading the prompt on
 #      stdin and printing notes (default: claude -p --model haiku).
 #   3. The notes open in $VISUAL/$EDITOR (vim by default) for editing, then
-#      you confirm. Nothing is committed, tagged or pushed before that.
+#      you confirm. Nothing is committed or pushed before that.
 #   4. The version bump and a metainfo <release> entry are committed on top
 #      of origin/master (in a detached worktree, so a dirty checkout or
-#      another branch is left alone), the tag is created with the notes as
-#      its message, and that commit plus the tag are pushed to both remotes.
+#      another branch is left alone) with the notes as the commit body, and
+#      pushed to origin as pr/release-<tag>.
+#
+# Tagging, once that PR is merged: the "Release <APP_VERSION>" commit on
+# origin/master is tagged with the notes from its body, and the tag alone
+# is pushed to both remotes.
 #
 # The tag reaching `github` starts .github/workflows/release.yml. It builds
 # every package and then creates the GitHub release, titled from the tag's
 # first line with the notes as its body. It refuses a tag that does not
 # match APP_VERSION (scripts/version.sh).
 #
-# Usage: scripts/release.sh [--dry-run] [--tag-output FILE]
+# Usage: scripts/release.sh [--dry-run] | --tag [--tag-output FILE]
 # --tag-output writes the pushed tag for callers whose HEAD stays unchanged.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 DRY_RUN=
+TAG_MODE=
 TAG_OUTPUT=
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --dry-run) DRY_RUN=1; shift ;;
+    --tag) TAG_MODE=1; shift ;;
     --tag-output)
       if [ "$#" -lt 2 ] || [[ -z "$2" || "$2" == --* ]]; then
         echo '--tag-output requires a file path.' >&2
@@ -40,16 +52,24 @@ while [ "$#" -gt 0 ]; do
       esac
       shift 2
       ;;
-    *) echo "Usage: scripts/release.sh [--dry-run] [--tag-output FILE]" >&2; exit 2 ;;
+    *) echo "Usage: scripts/release.sh [--dry-run] | --tag [--tag-output FILE]" >&2; exit 2 ;;
   esac
 done
+if [ -n "$TAG_OUTPUT" ] && [ -z "$TAG_MODE" ]; then
+  echo '--tag-output only applies to --tag.' >&2
+  exit 2
+fi
+if [ -n "$TAG_MODE" ] && [ -n "$DRY_RUN" ]; then
+  echo '--dry-run does not apply to --tag.' >&2
+  exit 2
+fi
 REMOTES=(origin github)
 NOTES_CMD="${WN_NOTES_CMD:-claude -p --model haiku}"
 EDITOR_CMD="${VISUAL:-${EDITOR:-vim}}"
 
 # Release origin/master, not the working tree. A detached worktree keeps a
 # dirty checkout or another branch out of the commit CI will build.
-if [ -z "$DRY_RUN" ] && [ ! -t 0 ]; then
+if [ -z "$DRY_RUN$TAG_MODE" ] && [ ! -t 0 ]; then
   echo "Run this from a terminal: the notes open in your editor." >&2
   exit 1
 fi
@@ -73,6 +93,34 @@ cleanup() {
 trap cleanup EXIT
 git worktree add --detach -q "$work" origin/master
 cd "$work"
+
+# The merged release PR left "Release <APP_VERSION>" on origin/master. Tag
+# that commit, not master's tip, so later merges stay out of the release.
+if [ -n "$TAG_MODE" ]; then
+  version="$(bash scripts/version.sh)"
+  tag="v${version/+/-build.}"
+  if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+    echo "Tag $tag already exists. Open and merge a new release PR first." >&2
+    exit 1
+  fi
+  release="$(git log --format='%H%x09%s' | awk -F '\t' -v s="Release $version" '$2 == s { print $1; exit }')"
+  if [ -z "$release" ]; then
+    echo "origin/master has no 'Release $version' commit. Merge the release PR first." >&2
+    exit 1
+  fi
+  # verbatim: the default cleanup strips lines starting with "#", which would
+  # drop the Markdown headings.
+  { printf 'White Noise %s\n\n' "$version"; git log -1 --format=%b "$release"; } |
+    git tag -a "$tag" --cleanup=verbatim -F - "$release"
+  for remote in "${REMOTES[@]}"; do
+    git push -q "$remote" "refs/tags/$tag"
+  done
+  if [ -n "$TAG_OUTPUT" ]; then printf '%s\n' "$tag" > "$TAG_OUTPUT"; fi
+  echo "Pushed $tag at ${release:0:12}. This checkout was left as it was."
+  echo "GitHub builds every package, then publishes the release:"
+  echo "https://github.com/marmot-protocol/whitenoise-linux/actions"
+  exit 0
+fi
 
 current="$(bash scripts/version.sh)"
 today="$(date +%Y).$((10#$(date +%m))).$((10#$(date +%d)))"
@@ -99,7 +147,7 @@ if [ -z "$commits" ]; then
   echo "Nothing to release $since." >&2
   exit 1
 fi
-echo "Release $tag: APP_VERSION $current -> $version, commits $since, push to ${REMOTES[*]}"
+echo "Release $tag: APP_VERSION $current -> $version, commits $since, PR pr/release-$tag"
 
 notes="$(mktemp)"
 echo "Drafting release notes with: $NOTES_CMD"
@@ -137,7 +185,7 @@ fi
 echo
 cat "$notes"
 echo
-read -r -p "Tag $tag with these notes and push to ${REMOTES[*]}? [y/N] " answer
+read -r -p "Open pr/release-$tag on origin with these notes? [y/N] " answer
 case "$answer" in
   y | Y | yes) ;;
   *) echo "Nothing was released." >&2; exit 1 ;;
@@ -151,14 +199,11 @@ METAINFO=assets/whitenoise-linux.metainfo.xml
 sed "s|^  <releases>\$|&\n    <release version=\"$version\" date=\"$(date +%F)\"/>|" "$METAINFO" >"$METAINFO.tmp"
 mv "$METAINFO.tmp" "$METAINFO"
 bash scripts/version.sh "$tag" >/dev/null
-git commit -q -m "Release $version" app/advanced.odin "$METAINFO"
+# The notes ride in the commit body until --tag copies them into the tag.
 # verbatim: the default cleanup strips lines starting with "#", which would
 # drop the Markdown headings.
-{ printf 'White Noise %s\n\n' "$version"; cat "$notes"; } | git tag -a "$tag" --cleanup=verbatim -F -
-for remote in "${REMOTES[@]}"; do
-  git push "$remote" HEAD:master "$tag"
-done
-if [ -n "$TAG_OUTPUT" ]; then printf '%s\n' "$tag" > "$TAG_OUTPUT"; fi
-echo "Pushed $tag from origin/master. This checkout was left as it was."
-echo "GitHub builds every package, then publishes the release:"
-echo "https://github.com/marmot-protocol/whitenoise-linux/actions"
+{ printf 'Release %s\n\n' "$version"; cat "$notes"; } |
+  git commit -q --cleanup=verbatim -F - app/advanced.odin "$METAINFO"
+git push -q origin "HEAD:refs/heads/pr/release-$tag"
+echo "Opened pr/release-$tag on origin. This checkout was left as it was."
+echo "Once it is merged, run just publish (or scripts/release.sh --tag)."

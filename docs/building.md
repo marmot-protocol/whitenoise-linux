@@ -206,7 +206,7 @@ These commands type-check the app; they do not link it or verify runtime behavio
   <source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="../assets/docs/building-release-narrow-dark.svg">
   <source media="(max-width: 600px)" srcset="../assets/docs/building-release-narrow-light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="../assets/docs/building-release-dark.svg">
-  <img alt="From just release to the stores. just release sets APP_VERSION to today's date and next revision, commits on origin/master, tags vYYYY.M.D-build.REVISION and pushes to both remotes. The tag on GitHub runs release.yml, which rejects a mismatched tag and publishes the GitHub release with the packages and Orchard OCI files. just publish waits for it, then you approve seven NIP-46 signing requests in your bunker. One NIP-82 release goes to four relays, for Zapstore and Orchard; a tag push alone adds nothing to Orchard." src="../assets/docs/building-release-light.svg" width="880">
+  <img alt="From just release to the stores. just release sets APP_VERSION to today's date and next revision and opens a release PR against origin/master; once it is merged, just release --tag tags vYYYY.M.D-build.REVISION and pushes the tag to both remotes. The tag on GitHub runs release.yml, which rejects a mismatched tag and publishes the GitHub release with the packages and Orchard OCI files. just publish waits for it, then you approve seven NIP-46 signing requests in your bunker. One NIP-82 release goes to four relays, for Zapstore and Orchard; a tag push alone adds nothing to Orchard." src="../assets/docs/building-release-light.svg" width="880">
 </picture>
 
 `APP_VERSION` in `app/advanced.odin` is `YYYY.M.D+REVISION`, starting at `2026.9.15+1`. Like Android and iOS, the date is the release date and the numeric revision increases for every shipment, including on a new date. Set it before releasing and tag that commit `vYYYY.M.D-build.REVISION` (for example, `v2026.9.15-build.1`). About, diagnostics, AppImage, Flatpak, and Arch packaging use this version.
@@ -218,11 +218,12 @@ The app shows the version written in `APP_VERSION` (`app/advanced.odin`); a tag 
 
 | Command | What it does |
 | --- | --- |
-| `just release` (`scripts/release.sh`) | takes `origin/master` (a dirty checkout or another branch is left untouched), sets `APP_VERSION` to today's date with the next revision (`2026.9.27+1`, then `+2` the same day), commits that on top, tags `v2026.9.27-build.1`, and pushes the result and the tag to both remotes; the tag reaching GitHub starts the release build |
+| `just release` (`scripts/release.sh`) | takes `origin/master` (a dirty checkout or another branch is left untouched), sets `APP_VERSION` to today's date with the next revision (`2026.9.27+1`, then `+2` the same day), commits that on top with the edited notes as the commit body, and pushes it to `origin` as the PR `pr/release-v2026.9.27-build.1`; `master` only moves when that PR is merged |
 | `just release --dry-run` | prints the version and tag without changing anything |
-| `just publish` (`scripts/publish.sh`) | does all of that, waits for the release workflow to publish the GitHub release, then signs its AppImage, Flatpak bundle, and Orchard OCI components with your bunker or nsec |
+| `just release --tag` | tags the merged `Release <version>` commit on `origin/master` with its notes and pushes only the tag to both remotes; the tag reaching GitHub starts the release build |
+| `just publish` (`scripts/publish.sh`) | runs `just release --tag`, waits for the release workflow to publish the GitHub release, then signs its AppImage, Flatpak bundle, and Orchard OCI components with your bunker or nsec |
 | `just publish <tag>` | waits for and announces an existing release without creating another one; use it to resume publication after the tag was pushed |
-| `bash tests/release-test.sh` | checks the release-to-publish tag handoff with signed commits and local remotes, without publishing publicly |
+| `bash tests/release-test.sh` | checks the release PR, merge, and tag handoff with signed commits and local remotes, without publishing publicly |
 
 One NIP-82 release lists all five assets and is sent to `wss://relay.cyberguy.fyi`, `wss://relay.orchard.rocks`, `wss://relay.ditto.pub`, and `wss://relay.zapstore.dev`. Both stores use the publisher in `zapstore.yaml`; `orchard.txt` records that public key for Orchard's repository check.
 
