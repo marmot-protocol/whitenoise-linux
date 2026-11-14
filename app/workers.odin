@@ -1924,6 +1924,13 @@ drain_relays :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 //                          ─► card: "What should people call you?"
 //                                    (generated name prefilled)
 //   Continue ──────────────► worker: publish kind-0 ─► land
+//
+// A remote signer makes up to three trips, after a permission review:
+//
+//   Continue ─► card: review grants (no worker; Cancel drops the session)
+//   Allow ────► worker: approve ─► pair: offer ─► card: pairing code
+//                                  bunker: connect
+//               worker: connect (pair) ─► worker: login ─► land
 
 Auth_Job :: struct {
 	client:                    ^marmot.Client,
@@ -1931,6 +1938,10 @@ Auth_Job :: struct {
 	method:                    Login_Method,
 	prior_accounts:            [dynamic]string,
 	session:                   ^marmot.Nip46_Session,
+	grants:                    Nip46_Grants, // what the review step shows and approves
+	reviewing:                 bool, // the card waits for "Allow and connect"
+	approved:                  bool,
+	pair_uri:                  string, // pairing offer; a credential
 	remote_login:              bool,
 	cancelled, cancel_cleanup: bool,
 	naming:                    bool, // a fresh key waits on the card for its name
@@ -1962,10 +1973,13 @@ auth_stop :: proc() {
 auth_job_free :: proc(job: ^Auth_Job) {
 	if job.session != nil {marmot.nip46_free(job.session)}
 	nip46_state_free(&job.signer_state)
+	nip46_grants_free(&job.grants)
 	mem.zero_slice(transmute([]u8)job.nsec)
+	mem.zero_slice(transmute([]u8)job.pair_uri)
 	for id in job.prior_accounts {delete(id)}
 	delete(job.prior_accounts)
-	delete(job.nsec); delete(job.name); delete(job.hex); delete(job.pic_url); delete(job.err)
+	delete(job.nsec); delete(job.pair_uri)
+	delete(job.name); delete(job.hex); delete(job.pic_url); delete(job.err)
 	job.client = nil
 	free(job)
 }
@@ -2016,18 +2030,31 @@ auth_worker :: proc(t: ^thread.Thread) {
 					&outcome,
 				)
 				if outcome != nil {marmot.sign_out_outcome_free(outcome)}
-				if status ==
-				   .OK {vault_remove(fmt.tprintf("nip46:%s", job.hex))} else {job.err = marmot.last_error()}
+				if status != .OK {job.err = marmot.last_error()}
 			}
 			marmot.nip46_logout(job.session)
 			if job.err == "" {job.err = strings.clone(tr("Connection cancelled."))}
+		} else if !job.approved {
+			job.err = nip46_approve(job.session, job.grants)
+			job.approved = job.err == ""
+			// Pairing shows its code before connecting; drain_auth restarts.
+			if job.approved && job.method == .Pair {
+				uri: cstring
+				if marmot.nip46_pairing_offer(job.session, &uri) != .OK {
+					job.err = marmot.last_error()
+				} else {
+					job.pair_uri = strings.clone(string(uri))
+					mem.zero_slice(transmute([]u8)string(uri)); marmot.string_free(uri)
+				}
+			} else if job.approved {
+				auth_connect(job)
+			}
 		} else if !job.remote_login {
-			user: cstring
-			if marmot.nip46_connect(job.session, &user) !=
-			   .OK {job.err = marmot.last_error()} else {job.hex = strings.clone(string(user)); marmot.string_free(user)}
+			auth_connect(job)
 		} else {
 			if job.previous_session !=
 			   nil {nip46_account_free(job.previous_session); job.previous_session = nil}
+			// MDK persists the verified session; nothing goes to the vault.
 			summary: ^marmot.Account_Summary
 			if marmot.nip46_login(
 				   job.client,
@@ -2045,19 +2072,6 @@ auth_worker :: proc(t: ^thread.Thread) {
 			} else {
 				delete(job.hex); job.hex = strings.clone(string(summary.account_id_hex))
 				marmot.account_summary_free(summary)
-				job.err = nip46_store(job.session, job.hex)
-				if job.err != "" {
-					outcome: ^marmot.Sign_Out_Outcome
-					marmot.sign_out(
-						job.client,
-						strings.clone_to_cstring(job.hex, context.temp_allocator),
-						false,
-						&outcome,
-					)
-					if outcome != nil {marmot.sign_out_outcome_free(outcome)}
-					vault_remove(fmt.tprintf("nip46:%s", job.hex))
-					marmot.nip46_logout(job.session)
-				}
 			}
 		}
 	case .Menu:
@@ -2068,6 +2082,13 @@ auth_worker :: proc(t: ^thread.Thread) {
 	sync.lock(&auth_mutex)
 	auth_done = true
 	sync.unlock(&auth_mutex)
+}
+
+@(private = "file")
+auth_connect :: proc(job: ^Auth_Job) {
+	user: cstring
+	if marmot.nip46_connect(job.session, &user) != .OK {job.err = marmot.last_error(); return}
+	job.hex = strings.clone(string(user)); marmot.string_free(user)
 }
 
 // The optional method preserves devctl callers; the UI always selects it explicitly.
@@ -2091,6 +2112,19 @@ start_auth :: proc(
 		for account in ui.accounts {append(&auth_job.prior_accounts, strings.clone(account.id_hex))}
 	}
 	auth_job.session = session
+	// A remote session first waits on the card for its permission review.
+	if session != nil {auth_job.reviewing = true; return}
+	auth_thread = thread.create(auth_worker)
+	auth_thread.data = auth_job
+	thread.start(auth_thread)
+}
+
+// "Allow and connect" on the review step: approve and connect on the worker.
+auth_allow :: proc() {
+	if auth_job == nil || !auth_job.reviewing {
+		return
+	}
+	auth_job.reviewing = false
 	auth_thread = thread.create(auth_worker)
 	auth_thread.data = auth_job
 	thread.start(auth_thread)
@@ -2143,6 +2177,12 @@ drain_auth :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if job.cancelled && job.err == "" {
 		job.cancel_cleanup = true
+		auth_thread = thread.create(auth_worker); auth_thread.data = job; thread.start(auth_thread)
+		return
+	}
+	// The pairing offer landed: show its code while the signer connects.
+	if job.err == "" && job.pair_uri != "" && job.hex == "" {
+		login_pair_show(ui, job.pair_uri)
 		auth_thread = thread.create(auth_worker); auth_thread.data = job; thread.start(auth_thread)
 		return
 	}

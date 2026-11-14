@@ -84,8 +84,11 @@ account_job_new :: proc(
 	   kind != .Read_Archived &&
 	   signer != nil &&
 	   (signer.attach != nil || !signer.registered) {
-		if kind ==
-		   .Switch {signer.switch_requested = true; if signer.attach == nil {nip46_attach_start(signer)}}
+		if kind == .Switch {signer.switch_requested = true}
+		if signer.attach == nil {
+			set_status(ui, tr("Allow your signer's permissions to use this account."), .Info)
+			return nil
+		}
 		set_status(
 			ui,
 			tr(
@@ -131,10 +134,6 @@ account_worker :: proc(t: ^thread.Thread) {
 		if job.signer != nil &&
 		   job.signer.attach !=
 			   nil {thread.join(job.signer.attach); job.signer.attach_joined = true}
-		// A descriptor writer must finish before deletion, never resurrect it.
-		if job.signer != nil &&
-		   job.signer.persist !=
-			   nil {thread.join(job.signer.persist); job.signer.persist_joined = true}
 		if job.kind == .Remove {
 			status = marmot.remove_account(job.client, account)
 		} else {
@@ -560,6 +559,30 @@ account_pending_ui :: proc(ui: ^Ui_State) {
 		}
 	}
 	for item, i in nip46_accounts {
+		// A signer saved before MDK owned its credentials needs one approval.
+		if item.attach == nil && len(item.grants.grants) > 0 {
+			if nendo.box(nendo.id("SignerPending", u32(i)))(
+			{
+				width = nendo.grow(),
+				padding = nendo.pad(8),
+				gap = 6,
+				direction = .Column,
+				color = STATUS_BAR,
+			},
+			) {
+				nendo.text(
+					fmt.tprintf(
+						"%s · %s",
+						account_label(ui, item.account),
+						tr("Allow your signer's permissions to keep using this account."),
+					),
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
+				)
+				nip46_grants_ui(item.grants)
+				micro_button(fmt.tprintf("SignerAllow%d", i), tr("Allow and connect"))
+			}
+			continue
+		}
 		if item.state.state == "approval" ||
 		   item.state.state == "connecting" ||
 		   item.attach != nil {

@@ -1421,12 +1421,13 @@ boot_worker :: proc(t: ^thread.Thread) {
 	// Configure the destination before startup restores the saved consent.
 	local_timing_bind(job.client)
 	apply_observability(job.client)
-	nip46_restore(job.client)
 
 	job.status = marmot.client_start(job.client)
 	if job.status != .OK {
 		job.error = marmot.last_error()
 	}
+	// Startup restored MDK-owned signer sessions; take handles to them.
+	nip46_restore(job.client)
 }
 
 boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {

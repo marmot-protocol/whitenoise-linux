@@ -523,6 +523,18 @@ msgstr "Alle Absender"
 msgid "All types"
 msgstr "Alle Typen"
 
+msgid "Allow and connect"
+msgstr "Erlauben und verbinden"
+
+msgid "Allow the signer permissions to continue."
+msgstr "Erlaube die Signer-Berechtigungen, um fortzufahren."
+
+msgid "Allow your signer's permissions to keep using this account."
+msgstr "Erlaube die Berechtigungen deines Signers, um dieses Konto weiter zu nutzen."
+
+msgid "Allow your signer's permissions to use this account."
+msgstr "Erlaube die Berechtigungen deines Signers, um dieses Konto zu nutzen."
+
 msgid "Always open links to this site"
 msgstr "Links zu dieser Website immer öffnen"
 
@@ -561,9 +573,6 @@ msgstr "Gilt für Nachrichtentexte und das Eingabefeld."
 
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr "Gilt für die Auswahl, Reaktionen und Emojis in Nachrichten."
-
-msgid "Approve the request in your signer to continue."
-msgstr "Genehmige die Anfrage in deinem Signer, um fortzufahren."
 
 msgid "Apps"
 msgstr "Apps"
@@ -1202,9 +1211,6 @@ msgstr "Verbindung zu Relays wird hergestellt"
 msgid "Connecting to your signer"
 msgstr "Verbindung zu deinem Signer wird hergestellt"
 
-msgid "Connecting to your signer through its relays."
-msgstr "Dein Signer wird über seine Relays verbunden."
-
 msgid "Connecting your remote signer. Approve the connection there before using this account."
 msgstr "Dein Remote-Signer wird verbunden. Genehmige dort die Verbindung, bevor du dieses Konto verwendest."
 
@@ -1638,6 +1644,9 @@ msgstr "Das Bild konnte nicht gelesen werden. Bitte versuche es erneut."
 msgid "Couldn't read the project photo. Please try again."
 msgstr "Das Projektfoto konnte nicht gelesen werden. Bitte versuche es erneut."
 
+msgid "Couldn't read the signer permissions. Please try again."
+msgstr "Die Signer-Berechtigungen konnten nicht gelesen werden. Bitte versuche es erneut."
+
 msgid "Couldn't read the vault file. Please try again."
 msgstr "Die Tresordatei konnte nicht gelesen werden. Bitte versuche es erneut."
 
@@ -1709,9 +1718,6 @@ msgstr "Dein Emoji konnte nicht gespeichert werden. Bitte versuche es erneut."
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "Deine Signer-Sitzung konnte nicht im verschlüsselten Tresor gespeichert werden. Bitte versuche es erneut."
 
-msgid "Couldn't save your signer session. Please try again."
-msgstr "Deine Signer-Sitzung konnte nicht gespeichert werden. Bitte versuche es erneut."
-
 msgid "Couldn't save your stickers. Please try again."
 msgstr "Deine Sticker konnten nicht gespeichert werden. Bitte versuche es erneut."
 
@@ -1729,6 +1735,9 @@ msgstr "Die Suche konnte nicht ausgeführt werden. Bitte versuche es erneut."
 
 msgid "Couldn't send the notification. Please try again."
 msgstr "Die Benachrichtigung konnte nicht gesendet werden. Bitte versuche es erneut."
+
+msgid "Couldn't send the signer request. Wait a moment and try again."
+msgstr "Die Signer-Anfrage konnte nicht gesendet werden. Warte einen Moment und versuche es erneut."
 
 msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr "Der Sticker konnte nicht gesendet werden. Wechsle zurück zu deinem Konto und versuche es erneut."
@@ -1943,6 +1952,9 @@ msgstr "Deine Einladung wird abgelehnt"
 
 msgid "Decode own"
 msgstr "Eigene dekodieren"
+
+msgid "Decrypt with NIP-44"
+msgstr "Mit NIP-44 entschlüsseln"
 
 msgid "Decrypting..."
 msgstr "Wird entschlüsselt..."
@@ -2208,6 +2220,9 @@ msgstr "Emoji-Stil"
 
 msgid "Enable local translation"
 msgstr "Lokale Übersetzung aktivieren"
+
+msgid "Encrypt with NIP-44"
+msgstr "Mit NIP-44 verschlüsseln"
 
 msgid "Encrypted key copied"
 msgstr "Verschlüsselter Schlüssel kopiert"
@@ -3970,6 +3985,9 @@ msgstr "Transkription wird vorbereitet..."
 msgid "Preparing translation model..."
 msgstr "Übersetzungsmodell wird vorbereitet..."
 
+msgid "Preparing your pairing code"
+msgstr "Dein Kopplungscode wird vorbereitet"
+
 msgid "Press Ctrl P for the command palette."
 msgstr "Drücke Ctrl P für die Befehlspalette."
 
@@ -4162,6 +4180,9 @@ msgstr "Aktuelle Sets von deinen Ereignis-Abruf-Relays. Vorschauen kontaktieren 
 msgid "Recenter"
 msgstr "Zentrieren"
 
+msgid "Reconnecting to your signer"
+msgstr "Verbindung zu deinem Signer wird wiederhergestellt"
+
 #, c-format
 msgid "Record %d has an invalid npub. Correct it and import again."
 msgstr "Datensatz %d enthält einen ungültigen npub. Korrigiere ihn und importiere erneut."
@@ -4345,6 +4366,9 @@ msgstr "Prüfen und genehmigen"
 
 msgid "Review signer approval link"
 msgstr "Genehmigungslink des Signers prüfen"
+
+msgid "Review signer permissions"
+msgstr "Signer-Berechtigungen prüfen"
 
 msgid "Review starting over"
 msgstr "Neuanfang prüfen"
@@ -4815,6 +4839,10 @@ msgstr "Werden im Nachrichtenmenü angezeigt. Tippe eines an, um es zu entfernen
 msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
 msgstr "Zeigt Diagnosen und MLS-Interna. Fügt einen Debug-Eintrag mit Konto, Schlüsselpaketen und Gruppenstatus hinzu."
 
+#, c-format
+msgid "Sign events of these kinds: %s"
+msgstr "Events dieser Arten signieren: %s"
+
 msgid "Sign out"
 msgstr "Abmelden"
 
@@ -4829,6 +4857,9 @@ msgstr "Signer-Anfrage abgebrochen"
 
 msgid "Signer connected"
 msgstr "Signer verbunden"
+
+msgid "Signer disconnected"
+msgstr "Signer getrennt"
 
 msgid "Signer signed out"
 msgstr "Signer abgemeldet"
@@ -5638,6 +5669,9 @@ msgstr "DRAHTGITTER"
 msgid "Waiting for signer approval"
 msgstr "Warten auf Genehmigung des Signers"
 
+msgid "Waiting for your signer"
+msgstr "Warten auf deinen Signer"
+
 msgid "Waiting to translate..."
 msgstr "Warten auf die Übersetzung..."
 
@@ -5710,6 +5744,9 @@ msgstr "White Noise startet nicht bei der Anmeldung"
 
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
 msgstr "White Noise ist nicht mit GifSnap verbunden. Es gibt keinen Grund zu erwarten, dass GifSnap diese Daten missbraucht, aber es ist ein Drittanbieter außerhalb der Kontrolle von White Noise."
+
+msgid "White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too."
+msgstr "White Noise bittet deinen Signer um diese Berechtigungen. Dein Signer fragt dich eventuell auch, sie zu bestätigen."
 
 #, c-format
 msgid "White Noise · %d unread"
@@ -5890,8 +5927,11 @@ msgstr "Dein geheimer Schlüssel bleibt in deinem Signer, und dieses Gerät bitt
 msgid "Your secret key stays on this device or in your connected signer. Never share it."
 msgstr "Dein geheimer Schlüssel bleibt auf diesem Gerät oder in deinem verbundenen Signer. Teile ihn niemals."
 
-msgid "Your signer is connected."
-msgstr "Dein Signer ist verbunden."
+msgid "Your signer is connected, but its old record could not be removed from the encrypted vault."
+msgstr "Dein Signer ist verbunden, aber sein alter Eintrag konnte nicht aus dem verschlüsselten Tresor entfernt werden."
+
+msgid "Your signer is disconnected."
+msgstr "Dein Signer ist getrennt."
 
 msgid "Your signer is unavailable."
 msgstr "Dein Signer ist nicht verfügbar."

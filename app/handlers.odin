@@ -26,6 +26,12 @@ auth_cancel :: proc(ui: ^Ui_State) {
 		clear(&ui.login_input)
 		return
 	}
+	// The review step has no worker yet; drop its unbound session.
+	if auth_job.reviewing {
+		auth_job_free(auth_job)
+		auth_job = nil
+		return
+	}
 	auth_job.cancelled = true
 	if auth_job.session == nil {return}
 	marmot.nip46_cancel(auth_job.session)
@@ -35,7 +41,13 @@ auth_cancel :: proc(ui: ^Ui_State) {
 }
 
 handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	for item, i in nip46_accounts {if mouse_released() && nendo.pointer_over(nendo.id("SignerApproval", u32(i))) {nip46_auth_url(ui, item.state.auth_url); return}}
+	for item, i in nip46_accounts {
+		if mouse_released() &&
+		   nendo.pointer_over(
+			   nendo.id("SignerApproval", u32(i)),
+		   ) {nip46_auth_url(ui, item.state.auth_url); return}
+		if clicked(fmt.tprintf("SignerAllow%d", i)) {nip46_allow(item); return}
+	}
 	if len(ui.accounts) > 0 && !ui.add_account_open {
 		return
 	}
@@ -75,7 +87,9 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if auth_job != nil {
 		if clicked("LoginCancel") || rl.IsKeyPressed(.ESCAPE) {
 			auth_cancel(ui)
+			return
 		}
+		if auth_job.reviewing && (clicked("LoginAllow") || rl.IsKeyPressed(.ENTER)) {auth_allow()}
 		if clicked("LoginPairCopy") {copy_text(ui, ui.login_uri, tr("Pairing link copied"))}
 		if clicked("LoginApproval") {nip46_auth_url(ui, auth_job.signer_state.auth_url)}
 		return // a sign-in is in flight; the pane shows its progress

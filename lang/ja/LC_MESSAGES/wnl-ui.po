@@ -523,6 +523,18 @@ msgstr "すべての送信者"
 msgid "All types"
 msgstr "すべての種類"
 
+msgid "Allow and connect"
+msgstr "許可して接続"
+
+msgid "Allow the signer permissions to continue."
+msgstr "続けるには署名者の権限を許可してください。"
+
+msgid "Allow your signer's permissions to keep using this account."
+msgstr "このアカウントを引き続き使うには、署名者の権限を許可してください。"
+
+msgid "Allow your signer's permissions to use this account."
+msgstr "このアカウントを使うには、署名者の権限を許可してください。"
+
 msgid "Always open links to this site"
 msgstr "このサイトへのリンクを常に開く"
 
@@ -561,9 +573,6 @@ msgstr "メッセージ本文と入力欄に適用されます。"
 
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr "ピッカー、リアクション、メッセージ内の絵文字に適用されます。"
-
-msgid "Approve the request in your signer to continue."
-msgstr "続けるには署名者で要求を承認してください。"
 
 msgid "Apps"
 msgstr "アプリ"
@@ -1202,9 +1211,6 @@ msgstr "リレーに接続しています"
 msgid "Connecting to your signer"
 msgstr "署名者に接続しています"
 
-msgid "Connecting to your signer through its relays."
-msgstr "署名者のリレーを通じて接続しています。"
-
 msgid "Connecting your remote signer. Approve the connection there before using this account."
 msgstr "リモート署名者に接続しています。このアカウントを使う前に、署名者で接続を承認してください。"
 
@@ -1638,6 +1644,9 @@ msgstr "画像を読み取れませんでした。もう一度お試しくださ
 msgid "Couldn't read the project photo. Please try again."
 msgstr "プロジェクトの写真を読み込めませんでした。もう一度お試しください。"
 
+msgid "Couldn't read the signer permissions. Please try again."
+msgstr "署名者の権限を読み込めませんでした。もう一度お試しください。"
+
 msgid "Couldn't read the vault file. Please try again."
 msgstr "保管庫ファイルを読み取れませんでした。もう一度お試しください。"
 
@@ -1709,9 +1718,6 @@ msgstr "絵文字を保存できませんでした。もう一度お試しくだ
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "署名者のセッションを暗号化された保管庫に保存できませんでした。もう一度お試しください。"
 
-msgid "Couldn't save your signer session. Please try again."
-msgstr "署名者のセッションを保存できませんでした。もう一度お試しください。"
-
 msgid "Couldn't save your stickers. Please try again."
 msgstr "ステッカーを保存できませんでした。もう一度お試しください。"
 
@@ -1729,6 +1735,9 @@ msgstr "検索できませんでした。もう一度お試しください。"
 
 msgid "Couldn't send the notification. Please try again."
 msgstr "通知を送信できませんでした。もう一度お試しください。"
+
+msgid "Couldn't send the signer request. Wait a moment and try again."
+msgstr "署名者への要求を送信できませんでした。しばらく待ってから、もう一度お試しください。"
 
 msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr "ステッカーを送信できませんでした。元のアカウントに戻って、もう一度お試しください。"
@@ -1943,6 +1952,9 @@ msgstr "招待を辞退しています"
 
 msgid "Decode own"
 msgstr "自分のものをデコード"
+
+msgid "Decrypt with NIP-44"
+msgstr "NIP-44 で復号"
 
 msgid "Decrypting..."
 msgstr "復号しています..."
@@ -2208,6 +2220,9 @@ msgstr "絵文字のスタイル"
 
 msgid "Enable local translation"
 msgstr "端末上での翻訳を有効にする"
+
+msgid "Encrypt with NIP-44"
+msgstr "NIP-44 で暗号化"
 
 msgid "Encrypted key copied"
 msgstr "暗号化された鍵をコピーしました"
@@ -3970,6 +3985,9 @@ msgstr "文字起こしを準備しています..."
 msgid "Preparing translation model..."
 msgstr "翻訳モデルを準備しています..."
 
+msgid "Preparing your pairing code"
+msgstr "ペアリングコードを準備しています"
+
 msgid "Press Ctrl P for the command palette."
 msgstr "Ctrl P を押すとコマンドパレットが開きます。"
 
@@ -4162,6 +4180,9 @@ msgstr "イベント取得用リレーの最近のセットです。プレビュ
 msgid "Recenter"
 msgstr "中心に戻す"
 
+msgid "Reconnecting to your signer"
+msgstr "署名者に再接続しています"
+
 #, c-format
 msgid "Record %d has an invalid npub. Correct it and import again."
 msgstr "レコード%dのnpubが無効です。修正して再度インポートしてください。"
@@ -4345,6 +4366,9 @@ msgstr "確認と承認"
 
 msgid "Review signer approval link"
 msgstr "署名者の承認リンクを確認"
+
+msgid "Review signer permissions"
+msgstr "署名者の権限を確認"
 
 msgid "Review starting over"
 msgstr "やり直す前に確認する"
@@ -4815,6 +4839,10 @@ msgstr "メッセージメニューに表示されます。タップすると削
 msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
 msgstr "診断情報と MLS の内部状態を表示します。アカウント、キーパッケージ、グループ状態を含む Debug 項目を追加します。"
 
+#, c-format
+msgid "Sign events of these kinds: %s"
+msgstr "次の種類のイベントに署名: %s"
+
 msgid "Sign out"
 msgstr "サインアウト"
 
@@ -4829,6 +4857,9 @@ msgstr "署名者への要求をキャンセルしました"
 
 msgid "Signer connected"
 msgstr "署名者に接続しました"
+
+msgid "Signer disconnected"
+msgstr "署名者の接続が切れました"
 
 msgid "Signer signed out"
 msgstr "署名者からサインアウトしました"
@@ -5638,6 +5669,9 @@ msgstr "ワイヤーフレーム"
 msgid "Waiting for signer approval"
 msgstr "署名者の承認を待っています"
 
+msgid "Waiting for your signer"
+msgstr "署名者を待っています"
+
 msgid "Waiting to translate..."
 msgstr "翻訳を待っています..."
 
@@ -5710,6 +5744,9 @@ msgstr "ログイン時に White Noise が起動しません"
 
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
 msgstr "White NoiseはGifSnapと提携していません。GifSnapがこのデータを悪用すると考える理由はありませんが、White Noiseが管理できない第三者です。"
+
+msgid "White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too."
+msgstr "White Noise は署名者にこれらの権限を求めます。署名者でも確認を求められることがあります。"
 
 #, c-format
 msgid "White Noise · %d unread"
@@ -5890,8 +5927,11 @@ msgstr "秘密鍵は署名アプリにとどまり、この端末は署名を依
 msgid "Your secret key stays on this device or in your connected signer. Never share it."
 msgstr "秘密鍵はこの端末か接続中の署名アプリにとどまります。決して共有しないでください。"
 
-msgid "Your signer is connected."
-msgstr "署名者に接続しています。"
+msgid "Your signer is connected, but its old record could not be removed from the encrypted vault."
+msgstr "署名者は接続されましたが、古い記録を暗号化された保管庫から削除できませんでした。"
+
+msgid "Your signer is disconnected."
+msgstr "署名者の接続が切れています。"
 
 msgid "Your signer is unavailable."
 msgstr "署名者を利用できません。"

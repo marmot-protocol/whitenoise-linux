@@ -522,6 +522,18 @@ msgstr ""
 msgid "All types"
 msgstr ""
 
+msgid "Allow and connect"
+msgstr ""
+
+msgid "Allow the signer permissions to continue."
+msgstr ""
+
+msgid "Allow your signer's permissions to keep using this account."
+msgstr ""
+
+msgid "Allow your signer's permissions to use this account."
+msgstr ""
+
 msgid "Always open links to this site"
 msgstr ""
 
@@ -559,9 +571,6 @@ msgid "Applies to message bodies and the composer."
 msgstr ""
 
 msgid "Applies to the picker, reactions and emoji in messages."
-msgstr ""
-
-msgid "Approve the request in your signer to continue."
 msgstr ""
 
 msgid "Apps"
@@ -1201,9 +1210,6 @@ msgstr ""
 msgid "Connecting to your signer"
 msgstr ""
 
-msgid "Connecting to your signer through its relays."
-msgstr ""
-
 msgid "Connecting your remote signer. Approve the connection there before using this account."
 msgstr ""
 
@@ -1637,6 +1643,9 @@ msgstr ""
 msgid "Couldn't read the project photo. Please try again."
 msgstr ""
 
+msgid "Couldn't read the signer permissions. Please try again."
+msgstr ""
+
 msgid "Couldn't read the vault file. Please try again."
 msgstr ""
 
@@ -1708,9 +1717,6 @@ msgstr ""
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr ""
 
-msgid "Couldn't save your signer session. Please try again."
-msgstr ""
-
 msgid "Couldn't save your stickers. Please try again."
 msgstr ""
 
@@ -1727,6 +1733,9 @@ msgid "Couldn't search. Please try again."
 msgstr ""
 
 msgid "Couldn't send the notification. Please try again."
+msgstr ""
+
+msgid "Couldn't send the signer request. Wait a moment and try again."
 msgstr ""
 
 msgid "Couldn't send the sticker. Switch back to your account and try again."
@@ -1941,6 +1950,9 @@ msgid "Declining your invitation"
 msgstr ""
 
 msgid "Decode own"
+msgstr ""
+
+msgid "Decrypt with NIP-44"
 msgstr ""
 
 msgid "Decrypting..."
@@ -2206,6 +2218,9 @@ msgid "Emoji style"
 msgstr ""
 
 msgid "Enable local translation"
+msgstr ""
+
+msgid "Encrypt with NIP-44"
 msgstr ""
 
 msgid "Encrypted key copied"
@@ -3969,6 +3984,9 @@ msgstr ""
 msgid "Preparing translation model..."
 msgstr ""
 
+msgid "Preparing your pairing code"
+msgstr ""
+
 msgid "Press Ctrl P for the command palette."
 msgstr ""
 
@@ -4161,6 +4179,9 @@ msgstr ""
 msgid "Recenter"
 msgstr ""
 
+msgid "Reconnecting to your signer"
+msgstr ""
+
 #, c-format
 msgid "Record %d has an invalid npub. Correct it and import again."
 msgstr ""
@@ -4343,6 +4364,9 @@ msgid "Review and approve"
 msgstr ""
 
 msgid "Review signer approval link"
+msgstr ""
+
+msgid "Review signer permissions"
 msgstr ""
 
 msgid "Review starting over"
@@ -4814,6 +4838,10 @@ msgstr ""
 msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
 msgstr ""
 
+#, c-format
+msgid "Sign events of these kinds: %s"
+msgstr ""
+
 msgid "Sign out"
 msgstr ""
 
@@ -4827,6 +4855,9 @@ msgid "Signer cancelled"
 msgstr ""
 
 msgid "Signer connected"
+msgstr ""
+
+msgid "Signer disconnected"
 msgstr ""
 
 msgid "Signer signed out"
@@ -5637,6 +5668,9 @@ msgstr ""
 msgid "Waiting for signer approval"
 msgstr ""
 
+msgid "Waiting for your signer"
+msgstr ""
+
 msgid "Waiting to translate..."
 msgstr ""
 
@@ -5708,6 +5742,9 @@ msgid "White Noise doesn't open at login"
 msgstr ""
 
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
+msgstr ""
+
+msgid "White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too."
 msgstr ""
 
 #, c-format
@@ -5889,7 +5926,10 @@ msgstr ""
 msgid "Your secret key stays on this device or in your connected signer. Never share it."
 msgstr ""
 
-msgid "Your signer is connected."
+msgid "Your signer is connected, but its old record could not be removed from the encrypted vault."
+msgstr ""
+
+msgid "Your signer is disconnected."
 msgstr ""
 
 msgid "Your signer is unavailable."

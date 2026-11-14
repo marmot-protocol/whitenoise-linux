@@ -522,6 +522,18 @@ msgstr "모든 보낸 사람"
 msgid "All types"
 msgstr "모든 유형"
 
+msgid "Allow and connect"
+msgstr "허용 및 연결"
+
+msgid "Allow the signer permissions to continue."
+msgstr "계속하려면 서명자 권한을 허용하세요."
+
+msgid "Allow your signer's permissions to keep using this account."
+msgstr "이 계정을 계속 사용하려면 서명자 권한을 허용하세요."
+
+msgid "Allow your signer's permissions to use this account."
+msgstr "이 계정을 사용하려면 서명자 권한을 허용하세요."
+
 msgid "Always open links to this site"
 msgstr "이 사이트 링크를 항상 열기"
 
@@ -560,9 +572,6 @@ msgstr "메시지 본문과 입력창에 적용됩니다."
 
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr "선택기, 반응, 메시지 속 이모지에 적용됩니다."
-
-msgid "Approve the request in your signer to continue."
-msgstr "계속하려면 서명자에서 요청을 승인하세요."
 
 msgid "Apps"
 msgstr "앱"
@@ -1201,9 +1210,6 @@ msgstr "릴레이에 연결 중"
 msgid "Connecting to your signer"
 msgstr "서명자에 연결 중"
 
-msgid "Connecting to your signer through its relays."
-msgstr "서명자의 릴레이를 통해 연결하고 있습니다."
-
 msgid "Connecting your remote signer. Approve the connection there before using this account."
 msgstr "원격 서명자에 연결하고 있습니다. 이 계정을 사용하기 전에 서명자에서 연결을 승인하세요."
 
@@ -1637,6 +1643,9 @@ msgstr "이미지를 읽을 수 없습니다. 다시 시도하세요."
 msgid "Couldn't read the project photo. Please try again."
 msgstr "프로젝트 사진을 읽을 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't read the signer permissions. Please try again."
+msgstr "서명자 권한을 읽을 수 없습니다. 다시 시도하세요."
+
 msgid "Couldn't read the vault file. Please try again."
 msgstr "금고 파일을 읽을 수 없습니다. 다시 시도하세요."
 
@@ -1708,9 +1717,6 @@ msgstr "이모지를 저장할 수 없습니다. 다시 시도하세요."
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "암호화된 금고에 서명자 세션을 저장할 수 없습니다. 다시 시도하세요."
 
-msgid "Couldn't save your signer session. Please try again."
-msgstr "서명자 세션을 저장할 수 없습니다. 다시 시도하세요."
-
 msgid "Couldn't save your stickers. Please try again."
 msgstr "스티커를 저장할 수 없습니다. 다시 시도하세요."
 
@@ -1728,6 +1734,9 @@ msgstr "검색할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't send the notification. Please try again."
 msgstr "알림을 보낼 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't send the signer request. Wait a moment and try again."
+msgstr "서명자 요청을 보낼 수 없습니다. 잠시 기다린 뒤 다시 시도하세요."
 
 msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr "스티커를 보낼 수 없습니다. 내 계정으로 다시 전환하고 다시 시도하세요."
@@ -1942,6 +1951,9 @@ msgstr "초대를 거절하는 중"
 
 msgid "Decode own"
 msgstr "내 메시지 디코딩"
+
+msgid "Decrypt with NIP-44"
+msgstr "NIP-44로 복호화"
 
 msgid "Decrypting..."
 msgstr "복호화 중..."
@@ -2207,6 +2219,9 @@ msgstr "이모지 스타일"
 
 msgid "Enable local translation"
 msgstr "로컬 번역 사용"
+
+msgid "Encrypt with NIP-44"
+msgstr "NIP-44로 암호화"
 
 msgid "Encrypted key copied"
 msgstr "암호화된 키를 복사했습니다"
@@ -3969,6 +3984,9 @@ msgstr "받아쓰기 준비 중..."
 msgid "Preparing translation model..."
 msgstr "번역 모델 준비 중..."
 
+msgid "Preparing your pairing code"
+msgstr "페어링 코드 준비 중"
+
 msgid "Press Ctrl P for the command palette."
 msgstr "Ctrl P를 누르면 명령 팔레트가 열립니다."
 
@@ -4161,6 +4179,9 @@ msgstr "이벤트 가져오기 릴레이의 최근 세트입니다. 미리 보�
 msgid "Recenter"
 msgstr "중앙으로 이동"
 
+msgid "Reconnecting to your signer"
+msgstr "서명자에 다시 연결 중"
+
 #, c-format
 msgid "Record %d has an invalid npub. Correct it and import again."
 msgstr "레코드 %d의 npub이 잘못되었습니다. 수정한 후 다시 가져오세요."
@@ -4344,6 +4365,9 @@ msgstr "검토 및 승인"
 
 msgid "Review signer approval link"
 msgstr "서명자 승인 링크 검토"
+
+msgid "Review signer permissions"
+msgstr "서명자 권한 검토"
 
 msgid "Review starting over"
 msgstr "처음부터 다시 시작 검토"
@@ -4814,6 +4838,10 @@ msgstr "메시지 메뉴에 표시됩니다. 탭하면 제거됩니다. 최대 1
 msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
 msgstr "진단 정보와 MLS 내부 정보를 표시합니다. 계정, 키 패키지, 그룹 상태가 포함된 Debug 항목을 추가합니다."
 
+#, c-format
+msgid "Sign events of these kinds: %s"
+msgstr "다음 종류의 이벤트 서명: %s"
+
 msgid "Sign out"
 msgstr "로그아웃"
 
@@ -4828,6 +4856,9 @@ msgstr "서명자 요청 취소됨"
 
 msgid "Signer connected"
 msgstr "서명자 연결됨"
+
+msgid "Signer disconnected"
+msgstr "서명자 연결 끊김"
 
 msgid "Signer signed out"
 msgstr "서명자 로그아웃됨"
@@ -5637,6 +5668,9 @@ msgstr "와이어프레임"
 msgid "Waiting for signer approval"
 msgstr "서명자 승인 대기 중"
 
+msgid "Waiting for your signer"
+msgstr "서명자 대기 중"
+
 msgid "Waiting to translate..."
 msgstr "번역 대기 중..."
 
@@ -5709,6 +5743,9 @@ msgstr "로그인 시 White Noise가 열리지 않음"
 
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
 msgstr "White Noise는 GifSnap과 제휴 관계가 아닙니다. GifSnap이 이 데이터를 악용할 것이라고 볼 이유는 없지만, White Noise가 관리할 수 없는 제3자입니다."
+
+msgid "White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too."
+msgstr "White Noise가 서명자에게 이 권한을 요청합니다. 서명자에서도 확인을 요청할 수 있습니다."
 
 #, c-format
 msgid "White Noise · %d unread"
@@ -5889,8 +5926,11 @@ msgstr "비밀 키는 서명자에 보관되며, 이 기기는 서명만 요청�
 msgid "Your secret key stays on this device or in your connected signer. Never share it."
 msgstr "비밀 키는 이 기기 또는 연결된 서명자에 보관됩니다. 절대 공유하지 마세요."
 
-msgid "Your signer is connected."
-msgstr "서명자가 연결되었습니다."
+msgid "Your signer is connected, but its old record could not be removed from the encrypted vault."
+msgstr "서명자가 연결되었지만 이전 기록을 암호화된 금고에서 삭제할 수 없습니다."
+
+msgid "Your signer is disconnected."
+msgstr "서명자 연결이 끊겼습니다."
 
 msgid "Your signer is unavailable."
 msgstr "서명자를 사용할 수 없습니다."

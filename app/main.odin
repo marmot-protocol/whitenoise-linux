@@ -598,7 +598,6 @@ app_main :: proc() {
 		ui.banner_seen = ui.client_status
 		g_ui = &ui
 		g_client = client
-		if client != nil {nip46_attach_all()}
 		restore_workspace(&ui, client)
 		if mode := os.get_env("WN_TEST_NIP46", context.temp_allocator);
 		   mode != "" && client != nil {

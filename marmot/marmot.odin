@@ -1451,11 +1451,18 @@ foreign lib {
 	client_shutdown :: proc(client: ^Client) -> Status ---
 	client_free :: proc(client: ^Client) ---
 	nip46_new :: proc(client: ^Client, config_json: cstring, out: ^^Nip46_Session) -> Status ---
-	nip46_uri :: proc(session: ^Nip46_Session, out: ^cstring) -> Status ---
+	// Every session needs its permission grants reviewed, then approved
+	// with the exact reviewed list, before pairing or connecting.
+	nip46_review_grants :: proc(session: ^Nip46_Session, out_json: ^cstring) -> Status ---
+	nip46_approve_grants :: proc(session: ^Nip46_Session, version: u32, grants: [^]cstring, grants_len: uint) -> Status ---
+	// Blocks until the signer relays listen, then yields the nostrconnect URI.
+	nip46_pairing_offer :: proc(session: ^Nip46_Session, out_uri: ^cstring) -> Status ---
 	nip46_connect :: proc(session: ^Nip46_Session, out_user_hex: ^cstring) -> Status ---
-	nip46_export :: proc(session: ^Nip46_Session, out_config_json: ^cstring) -> Status ---
 	nip46_login :: proc(client: ^Client, session: ^Nip46_Session, default_relays: [^]cstring, default_len: uint, bootstrap_relays: [^]cstring, bootstrap_len: uint, inbox_relays: [^]cstring, inbox_len: uint, out: ^^Account_Summary) -> Status ---
 	nip46_register :: proc(client: ^Client, account_ref: cstring, session: ^Nip46_Session) -> Status ---
+	// MDK persists login/register credentials and restores them during
+	// client_start; resume returns a handle to that restored session.
+	nip46_resume :: proc(client: ^Client, account_ref: cstring, out: ^^Nip46_Session) -> Status ---
 	nip46_state :: proc(session: ^Nip46_Session, out_json: ^cstring) -> Status ---
 	nip46_cancel :: proc(session: ^Nip46_Session) ---
 	nip46_logout :: proc(session: ^Nip46_Session) -> Status ---

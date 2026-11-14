@@ -523,6 +523,18 @@ msgstr "Tutti i mittenti"
 msgid "All types"
 msgstr "Tutti i tipi"
 
+msgid "Allow and connect"
+msgstr "Consenti e connetti"
+
+msgid "Allow the signer permissions to continue."
+msgstr "Consenti i permessi del firmatario per continuare."
+
+msgid "Allow your signer's permissions to keep using this account."
+msgstr "Consenti i permessi del tuo firmatario per continuare a usare questo account."
+
+msgid "Allow your signer's permissions to use this account."
+msgstr "Consenti i permessi del tuo firmatario per usare questo account."
+
 msgid "Always open links to this site"
 msgstr "Apri sempre i link a questo sito"
 
@@ -561,9 +573,6 @@ msgstr "Si applica al testo dei messaggi e al campo di scrittura."
 
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr "Si applica al selettore, alle reazioni e alle emoji nei messaggi."
-
-msgid "Approve the request in your signer to continue."
-msgstr "Approva la richiesta nel tuo firmatario per continuare."
 
 msgid "Apps"
 msgstr "App"
@@ -1202,9 +1211,6 @@ msgstr "Connessione ai relay"
 msgid "Connecting to your signer"
 msgstr "Connessione al tuo firmatario"
 
-msgid "Connecting to your signer through its relays."
-msgstr "Connessione al tuo firmatario tramite i suoi relay."
-
 msgid "Connecting your remote signer. Approve the connection there before using this account."
 msgstr "Connessione al tuo firmatario remoto in corso. Approva la connessione nel firmatario prima di usare questo account."
 
@@ -1638,6 +1644,9 @@ msgstr "Impossibile leggere l'immagine. Riprova."
 msgid "Couldn't read the project photo. Please try again."
 msgstr "Impossibile leggere la foto del progetto. Riprova."
 
+msgid "Couldn't read the signer permissions. Please try again."
+msgstr "Impossibile leggere i permessi del firmatario. Riprova."
+
 msgid "Couldn't read the vault file. Please try again."
 msgstr "Impossibile leggere il file della cassaforte. Riprova."
 
@@ -1709,9 +1718,6 @@ msgstr "Impossibile salvare la tua emoji. Riprova."
 msgid "Couldn't save your signer session in the encrypted vault. Please try again."
 msgstr "Impossibile salvare la sessione del tuo firmatario nella cassaforte cifrata. Riprova."
 
-msgid "Couldn't save your signer session. Please try again."
-msgstr "Impossibile salvare la sessione del tuo firmatario. Riprova."
-
 msgid "Couldn't save your stickers. Please try again."
 msgstr "Impossibile salvare i tuoi adesivi. Riprova."
 
@@ -1729,6 +1735,9 @@ msgstr "Impossibile eseguire la ricerca. Riprova."
 
 msgid "Couldn't send the notification. Please try again."
 msgstr "Impossibile inviare la notifica. Riprova."
+
+msgid "Couldn't send the signer request. Wait a moment and try again."
+msgstr "Impossibile inviare la richiesta al firmatario. Attendi un momento e riprova."
 
 msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr "Impossibile inviare l'adesivo. Torna al tuo account e riprova."
@@ -1943,6 +1952,9 @@ msgstr "Rifiuto del tuo invito"
 
 msgid "Decode own"
 msgstr "Decodifica i tuoi"
+
+msgid "Decrypt with NIP-44"
+msgstr "Decifrare con NIP-44"
 
 msgid "Decrypting..."
 msgstr "Decifratura in corso..."
@@ -2208,6 +2220,9 @@ msgstr "Stile delle emoji"
 
 msgid "Enable local translation"
 msgstr "Abilita la traduzione locale"
+
+msgid "Encrypt with NIP-44"
+msgstr "Cifrare con NIP-44"
 
 msgid "Encrypted key copied"
 msgstr "Chiave crittografata copiata"
@@ -3970,6 +3985,9 @@ msgstr "Preparazione della trascrizione..."
 msgid "Preparing translation model..."
 msgstr "Preparazione del modello di traduzione..."
 
+msgid "Preparing your pairing code"
+msgstr "Preparazione del tuo codice di abbinamento"
+
 msgid "Press Ctrl P for the command palette."
 msgstr "Premi Ctrl P per la tavolozza dei comandi."
 
@@ -4162,6 +4180,9 @@ msgstr "Set recenti dai tuoi relay di recupero eventi. Le anteprime contattano g
 msgid "Recenter"
 msgstr "Ricentra"
 
+msgid "Reconnecting to your signer"
+msgstr "Riconnessione al tuo firmatario"
+
 #, c-format
 msgid "Record %d has an invalid npub. Correct it and import again."
 msgstr "Il record %d ha un npub non valido. Correggilo e importa di nuovo."
@@ -4345,6 +4366,9 @@ msgstr "Verifica e approva"
 
 msgid "Review signer approval link"
 msgstr "Controlla il link di approvazione del firmatario"
+
+msgid "Review signer permissions"
+msgstr "Controlla i permessi del firmatario"
 
 msgid "Review starting over"
 msgstr "Valuta di ricominciare"
@@ -4815,6 +4839,10 @@ msgstr "Mostrate nel menu del messaggio. Toccane una per rimuoverla. Fino a 16."
 msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
 msgstr "Mostra diagnostica e componenti interni di MLS. Aggiunge una voce Debug con account, pacchetti chiavi e stato dei gruppi."
 
+#, c-format
+msgid "Sign events of these kinds: %s"
+msgstr "Firmare eventi di questi tipi: %s"
+
 msgid "Sign out"
 msgstr "Disconnetti"
 
@@ -4829,6 +4857,9 @@ msgstr "Richiesta al firmatario annullata"
 
 msgid "Signer connected"
 msgstr "Firmatario connesso"
+
+msgid "Signer disconnected"
+msgstr "Firmatario disconnesso"
 
 msgid "Signer signed out"
 msgstr "Firmatario disconnesso"
@@ -5638,6 +5669,9 @@ msgstr "WIREFRAME"
 msgid "Waiting for signer approval"
 msgstr "In attesa dell'approvazione del firmatario"
 
+msgid "Waiting for your signer"
+msgstr "In attesa del tuo firmatario"
+
 msgid "Waiting to translate..."
 msgstr "In attesa di tradurre..."
 
@@ -5710,6 +5744,9 @@ msgstr "White Noise non si apre all'accesso"
 
 msgid "White Noise is not affiliated with GifSnap. There is no reason to expect GifSnap to misuse this data, but it is a third party outside White Noise's control."
 msgstr "White Noise non è affiliato a GifSnap. Non c'è motivo di pensare che GifSnap faccia un uso improprio di questi dati, ma è una terza parte fuori dal controllo di White Noise."
+
+msgid "White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too."
+msgstr "White Noise chiederà questi permessi al tuo firmatario. Anche il tuo firmatario potrebbe chiederti di confermarli."
 
 #, c-format
 msgid "White Noise · %d unread"
@@ -5890,8 +5927,11 @@ msgstr "La tua chiave segreta resta nel tuo firmatario e questo dispositivo gli 
 msgid "Your secret key stays on this device or in your connected signer. Never share it."
 msgstr "La tua chiave segreta resta su questo dispositivo o nel tuo firmatario collegato. Non condividerla mai."
 
-msgid "Your signer is connected."
-msgstr "Il tuo firmatario è connesso."
+msgid "Your signer is connected, but its old record could not be removed from the encrypted vault."
+msgstr "Il tuo firmatario è connesso, ma il suo vecchio record non è stato rimosso dalla cassaforte cifrata."
+
+msgid "Your signer is disconnected."
+msgstr "Il tuo firmatario è disconnesso."
 
 msgid "Your signer is unavailable."
 msgstr "Il tuo firmatario non è disponibile."

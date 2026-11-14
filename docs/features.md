@@ -369,6 +369,8 @@ Accounts hold Nostr keys, either local or in a remote signer, and several can ru
 
 Remote signers:
 
+- Connecting starts with a permission review: the event kinds and NIP-44 operations the app asks your signer for. Allow and connect approves them.
+- A signer connected before this review existed asks for the same approval once, from the status strip.
 - Approve requests in your signer. Pending operations show their status and approval links.
 
 Removing an account:

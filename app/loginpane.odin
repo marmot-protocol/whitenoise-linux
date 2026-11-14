@@ -114,7 +114,7 @@ login_progress :: proc(job: ^Auth_Job, detail: string) {
 		tr("Keep your signer open. Approve the connection and requested signatures there."),
 		{font = FONT_BODY, size = 12, color = TEXT_DIM},
 	)
-	if detail != "" && detail != "connecting to remote signer" {
+	if detail != "" {
 		nendo.text(nip46_detail(detail), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 	}
 }
@@ -156,7 +156,7 @@ login_pane :: proc(ui: ^Ui_State) {
 		if login_had_error {onboard_reveal_field("LoginCard", "LoginButtons")}
 		login_reveal_frames -= 1
 	}
-	pairing := auth_job != nil && auth_job.session != nil && auth_job.method == .Pair
+	pairing := auth_job != nil && auth_job.method == .Pair && ui.login_uri != ""
 	menu := auth_job == nil && ui.login_method == .Menu
 	if nendo.box(nendo.id("LoginCard"))(
 	{
@@ -226,19 +226,58 @@ login_pane :: proc(ui: ^Ui_State) {
 					strings.trim_space(string(ui.login_input[:])) != "" ? .Enabled : .Disabled,
 				)
 			}
+		} else if auth_job != nil && auth_job.reviewing {
+			// MDK refuses to pair or connect until these exact grants are approved.
+			nendo.text(
+				tr("Review signer permissions"),
+				{font = FONT_BODY, size = 15, color = TEXT_DIM},
+			)
+			nendo.text(
+				tr(
+					"White Noise will ask your signer for these permissions. Your signer may ask you to confirm them too.",
+				),
+				{font = FONT_BODY, size = 13, color = TEXT_DIM, align = .Center},
+			)
+			if nendo.box(nendo.id("LoginGrants"))(
+			{
+				width = nendo.grow(),
+				direction = .Column,
+				gap = 6,
+				padding = nendo.pad(12),
+				color = ROW_BG,
+				radius = rr(8),
+			},
+			) {
+				nip46_grants_ui(auth_job.grants)
+			}
+			if nendo.box(nendo.id("LoginRemoteActions"))(
+			{
+				width = nendo.grow(),
+				direction = single_pane() ? .Column : .Row,
+				gap = 12,
+				align = {y = .Center},
+			},
+			) {
+				login_big_button("LoginAllow", tr("Allow and connect"), true)
+				login_big_button("LoginCancel", tr("Cancel connection"), false)
+			}
 		} else if auth_job != nil {
 			// The round trip runs on the sign-in worker; this is the only
 			// thing the card offers until drain_auth picks it up.
 			minting := auth_job.method == .Create
 			remote := auth_job.session != nil
 			state, detail := auth_job.signer_state.state, auth_job.signer_state.detail
-			if remote && (state == "" || detail == "remote signer not connected") {
-				state, detail = "connecting", "connecting to remote signer"
+			// Approval leaves the session "unavailable" until connect starts.
+			if remote && (state == "" || (state == "unavailable" && detail == "")) {
+				state = "connecting"
 			}
 			heading := minting ? tr("Generating your key") : tr("Signing you in")
 			if minting && auth_job.name != "" {heading = tr("Publishing your profile")}
 			if remote &&
 			   !(auth_job.remote_login && state == "ready") {heading = nip46_label(state)}
+			if auth_job.method == .Pair &&
+			   ui.login_uri == "" &&
+			   detail == "" {heading = tr("Preparing your pairing code")}
 			nendo.text(heading, {font = FONT_BODY, size = 15, color = TEXT_DIM})
 			if pairing {
 				if nendo.box(nendo.id("LoginPairBody"))(
