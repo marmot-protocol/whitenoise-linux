@@ -328,7 +328,7 @@ login_pane :: proc(ui: ^Ui_State) {
 			if nendo.box(nendo.id("LoginGapB"))({height = nendo.fixed(10)}) {}
 			if nendo.box(nendo.id("LoginExtras"))({gap = 10}) {
 				micro_button("LoginBackup", tr("Import backup"))
-				micro_button("LoginProxy", tr("SOCKS5 proxy"))
+				micro_button("LoginProxy", tr("Connection settings (SOCKS5 proxy)"))
 			}
 		} else {
 			nendo.text(
