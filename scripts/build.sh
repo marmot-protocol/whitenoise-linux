@@ -253,10 +253,11 @@ if [ "${1:-}" != sources ]; then
   RUST_ENV=()
   if [ "$(uname -s)" = OpenBSD ]; then
     # ponytail: OpenBSD has no rustup, and its rust package (1.94) predates
-    # MDK's pinned toolchain; libsqlite3-sys's build script uses cfg_select!,
-    # still unstable there. Unlock that one feature on the stable compiler.
+    # MDK's pinned toolchain. libsqlite3-sys's build script uses cfg_select!
+    # and marmot-observability uses AtomicU64::try_update, both still
+    # unstable there. Unlock those features on the stable compiler.
     # Drop this once the package reaches vendor/mdk/rust-toolchain.toml.
-    RUST_ENV=(RUSTC_BOOTSTRAP=1 RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-Zcrate-attr=feature(cfg_select)")
+    RUST_ENV=(RUSTC_BOOTSTRAP=1 RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-Zcrate-attr=feature(cfg_select) -Zcrate-attr=feature(atomic_try_update)")
   fi
   # Keep artifacts outside vendor/mdk: changing its pin cleans that checkout.
   # cc-rs does not fingerprint compiler upgrades at the same path, so isolate
