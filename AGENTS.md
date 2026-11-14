@@ -499,3 +499,8 @@ cannot run workflows through symlinks).
 Commit messages: imperative subject under 50 characters, capitalized, no
 trailing period, a blank line, then a body wrapped at 72 explaining what and
 why rather than how.
+
+`master` moves only by merging a reviewed PR, on `origin` and the `github`
+mirror alike. Never push commits to it directly, maintainers included: push
+a topic branch to `origin` as `pr/<topic>` (or use `ngit send`) and merge it
+after review.
