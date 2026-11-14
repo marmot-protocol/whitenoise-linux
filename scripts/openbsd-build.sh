@@ -33,9 +33,14 @@ if [ ! -x "$ODIN/odin" ] || [ "$(git -C "$ODIN" rev-parse HEAD 2>/dev/null || tr
   (cd "$ODIN" && LLVM_CONFIG=/usr/local/llvm21/bin/llvm-config ./build_odin.sh release)
 fi
 # MDK's Markdown build renames Odin symbols with llvm-nm and llvm-objcopy;
-# without rustup's llvm-tools it takes them from PATH. Appended so llvm21
-# does not shadow the base system's compilers.
-export PATH="$ODIN:$PATH:/usr/local/llvm21/bin"
+# without rustup's llvm-tools it runs them by bare name from PATH. Base has
+# llvm-objcopy but not llvm-nm. The raw /usr/local/llvm21/bin/llvm-nm fails
+# by bare name: ld.so cannot expand its $ORIGIN rpath to find libLLVM. Link
+# the package's llvm-nm-21 wrapper, which sets LD_LIBRARY_PATH, instead.
+LLVM_TOOLS="$OUT/llvm-tools"
+mkdir -p "$LLVM_TOOLS"
+ln -sfn /usr/local/bin/llvm-nm-21 "$LLVM_TOOLS/llvm-nm"
+export PATH="$ODIN:$PATH:$LLVM_TOOLS"
 
 bash "$HERE/scripts/build.sh"
 # One thread: OpenBSD spawns by fork+exec, so a child forked by one test
