@@ -1,65 +1,82 @@
+<sub>REFERENCE&ensp;·&ensp;DIAGNOSTICS</sub>
+
 # Timing diagnostics
 
-The pinned MDK includes the timing work from marmot-protocol/mdk#1760. Enable Developer
-mode in Settings > Advanced, then open Debug > Timings and click Refresh.
-Copy JSON exports all **79 distinct operation distributions**. The names
-are listed explicitly in `app/timings.odin`, matching the C snapshot in
-`marmot/marmot.odin`. Empty metrics remain visible with zero samples and
-null mean/p95, so unexercised paths are distinguishable from measured zeroes.
+### 79 operations, 37 stages, and a p95 that names its bucket's upper bound.
 
-Each operation reports samples, successes, failures, total milliseconds,
-mean milliseconds, the p95 bucket upper bound, and overflow count. The p95
-is a histogram bound, not an exact percentile. A null p95 with samples
-means its rank falls in the unbounded overflow bucket. Local counters cover
-the current process, across accounts; restart the app for a fresh baseline.
-Nested stages overlap, so do not sum their means into an end-to-end total.
+Debug > Timings shows where the app spends its time, for this process only. Nothing leaves your machine unless you turn on sharing.
 
-## Uploads
+<picture>
+  <source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="../assets/docs/timings-routes-narrow-dark.svg">
+  <source media="(max-width: 600px)" srcset="../assets/docs/timings-routes-narrow-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="../assets/docs/timings-routes-dark.svg">
+  <img alt="Where timing data goes. This process: counters for 79 MDK operations and 37 Linux stages fill up across all accounts, keep nanosecond totals locally, and reset on restart or module reload. Debug > Timings: you click Refresh and Copy JSON, empty metrics show zero samples, and WN_TIMINGS writes the JSON on normal exit. With consent: MDK exports aggregate histograms over OTLP in whole milliseconds to otlp.ipf.dev/v1/metrics, never to Goggles' audit-logs endpoint." src="../assets/docs/timings-routes-light.svg" width="880">
+</picture>
 
-Settings > Advanced > Share usage and diagnostics explicitly grants MDK's
-combined consent. Existing relay-only consent requires a new decision.
-Turning sharing off revokes export. Audit logging has a separate switch.
-The app configures its route before starting MDK and builds marmot-c with
-`otlp-export`; cached bundles without that feature are rebuilt.
+## Open Debug > Timings
 
-MDK exports its fixed set of aggregate timing histograms and counters to
-the configured `otlp_metrics_endpoint`, by default
-`https://otlp.ipf.dev/v1/metrics`. The runtime does not offer a per-operation
-export filter. The local report's `otlp_export` field describes readiness,
-not delivery acknowledgement. Raw message contents and account/group IDs
-are not timing dimensions. Resource metadata includes a consent-scoped
-installation ID; relay diagnostics also include relay labels.
+The pinned MDK includes the timing work from marmot-protocol/mdk#1760.
 
-Goggles' `/api/v1/audit-logs/` endpoint accepts forensic audit events, not
-OTLP metrics. Do not send timing JSON there. Displaying these aggregates in
-Goggles requires a collector-backed metrics view in that separate project.
-Production retention and server ingestion were not verified by local tests.
+1. Enable Developer mode in Settings > Advanced.
+2. Open Debug > Timings and click Refresh.
+3. Copy JSON exports all **79 distinct operation distributions**.
+
+The names are listed explicitly in `app/timings.odin`, matching the C snapshot in `marmot/marmot.odin`. Empty metrics stay visible with zero samples and null mean/p95, so you can tell unexercised paths from measured zeroes.
+
+## Reading one operation
+
+Each operation reports samples, successes, failures, total milliseconds, mean milliseconds, the p95 bucket upper bound, and overflow count.
+
+- **The p95 is a histogram bound.** It is not an exact percentile. A null p95 with samples means its rank falls in the unbounded overflow bucket.
+- **Counters cover this process.** They span all accounts; restart the app for a fresh baseline.
+- **Nested stages overlap.** Do not sum their means into an end-to-end total.
+
+## Uploads need your consent
+
+Settings > Advanced > Share usage and diagnostics explicitly grants MDK's combined consent. Existing relay-only consent requires a new decision. Turning sharing off revokes export. Audit logging has a separate switch.
+
+The app configures its route before starting MDK and builds marmot-c with `otlp-export`; cached bundles without that feature are rebuilt.
+
+MDK exports its fixed set of aggregate timing histograms and counters to the configured `otlp_metrics_endpoint`, by default `https://otlp.ipf.dev/v1/metrics`.
+
+- **No per-operation filter.** The runtime does not offer a per-operation export filter.
+- **`otlp_export` means ready, not delivered.** The local report's field describes readiness, not delivery acknowledgement.
+- **No contents or IDs.** Raw message contents and account/group IDs are not timing dimensions. Resource metadata includes a consent-scoped installation ID; relay diagnostics also include relay labels.
+
+> [!WARNING]
+> Goggles' `/api/v1/audit-logs/` endpoint accepts forensic audit events, not OTLP metrics. Do not send timing JSON there.
+
+Displaying these aggregates in Goggles requires a collector-backed metrics view in that separate project. Production retention and server ingestion were not verified by local tests.
 
 ### Collector configuration
 
-The app starts with public defaults: metrics at
-`https://otlp.ipf.dev/v1/metrics`, audit uploads at
-`https://goggles.ipf.dev/api/v1/audit-logs/`, tenant `whitenoise-linux`, and
-deployment environment `production`. It then loads the write tokens embedded
-from generated `build/observability-tokens.toml`.
+The app starts with public defaults, then loads the write tokens embedded from generated `build/observability-tokens.toml`.
 
-An optional per-user `observability.toml` overrides only the keys it names.
-On Linux, put it at `$XDG_CONFIG_HOME/whitenoise/observability.toml`, or
-`~/.config/whitenoise/observability.toml` when `XDG_CONFIG_HOME` is unset or
-empty. This is the same directory as `settings.json`. macOS uses
-`~/Library/Application Support/whitenoise/observability.toml`; Windows uses
-the LocalAppData known folder followed by `whitenoise/observability.toml`.
-Those platforms use their native config directory, not `XDG_CONFIG_HOME`.
-The app does not read configuration from its data directory or the repository.
-A missing or unreadable override leaves the embedded configuration intact.
+| Key | Default |
+| --- | --- |
+| `otlp_metrics_endpoint` | `https://otlp.ipf.dev/v1/metrics` |
+| `goggles_audit_endpoint` | `https://goggles.ipf.dev/api/v1/audit-logs/` |
+| `tenant` | `whitenoise-linux` |
+| `deployment_environment` | `production` |
+| `otlp_token`, `goggles_token` | Embedded write tokens |
 
-The accepted keys are `otlp_metrics_endpoint`, `otlp_token`,
-`goggles_audit_endpoint`, `goggles_token`, `tenant`, and
-`deployment_environment`. Use one `key = "value"` assignment per line;
-lines beginning with `#` are comments. An empty value overrides the embedded
-value too. Protect files containing credentials with mode 0600 on Unix or
-an equivalent user-only ACL on Windows. Routes and tokens never grant consent;
-uploads still require the corresponding setting in Settings > Advanced.
+An optional per-user `observability.toml` overrides only the keys it names. It lives in the same directory as `settings.json`:
+
+| Platform | Path |
+| --- | --- |
+| Linux | `$XDG_CONFIG_HOME/whitenoise/observability.toml`, or `~/.config/whitenoise/observability.toml` when `XDG_CONFIG_HOME` is unset or empty |
+| macOS | `~/Library/Application Support/whitenoise/observability.toml` |
+| Windows | The LocalAppData known folder, then `whitenoise/observability.toml` |
+
+macOS and Windows use their native config directory, not `XDG_CONFIG_HOME`. The app does not read configuration from its data directory or the repository. A missing or unreadable override leaves the embedded configuration intact.
+
+The accepted keys are the six in the table above. Use one `key = "value"` assignment per line; lines beginning with `#` are comments. An empty value overrides the embedded value too.
+
+- **Protect credentials.** Use mode 0600 on Unix or an equivalent user-only ACL on Windows.
+- **Routes are not consent.** Routes and tokens never grant consent; uploads still require the corresponding setting in Settings > Advanced.
+
+<details>
+<summary><b>The thirteen histograms to chart first</b></summary>
 
 Prioritize these OTLP histograms when building that view:
 
@@ -79,67 +96,47 @@ Prioritize these OTLP histograms when building that view:
 | Media first byte | `app_media_download_first_byte_duration_ms` |
 | Media transfer | `app_media_download_body_transfer_duration_ms` |
 
+</details>
+
 ## Host measurement boundaries
 
-- `host_splash_ready`: after vault unlock, before booting the runtime, until
-  the first foreground application frame is presented. Includes synchronous
-  boot work and excludes password-entry time.
-- `host_foreground_local_ready`: observing a foreground transition in the
-  frame loop until that frame is presented. This is host update/layout/draw
-  time, not relay catch-up or full startup.
-- `host_outbound_message_visible`: queueing a new text or attachment send
-  until its optimistic row intersects the timeline viewport in a presented
-  foreground frame. Retrying does not restart this measurement. Sends that
-  settle before their optimistic row is drawn do not produce this sample.
-- `host_inbound_message_visible`: receiving a chat-list change naming a new
-  incoming message until its row intersects the timeline viewport in a
-  presented foreground frame. Only changes for the selected conversation
-  are eligible. Initial history, polling-only discoveries, edits, and rows
-  not presented do not produce samples. Coalesced stream updates can omit
-  intermediate messages; this is a sampled host-render metric.
+| Metric | Starts | Ends | Notes |
+| --- | --- | --- | --- |
+| `host_splash_ready` | After vault unlock, before booting the runtime | First foreground application frame presented | Includes synchronous boot work; excludes password-entry time. |
+| `host_foreground_local_ready` | A foreground transition observed in the frame loop | That frame presented | Host update/layout/draw time, not relay catch-up or full startup. |
+| `host_outbound_message_visible` | Queueing a new text or attachment send | Its optimistic row intersects the timeline viewport in a presented foreground frame | Retrying does not restart it. Sends that settle before their optimistic row is drawn produce no sample. |
+| `host_inbound_message_visible` | A chat-list change naming a new incoming message | Its row intersects the timeline viewport in a presented foreground frame | Selected conversation only. Initial history, polling-only discoveries, edits, and rows not presented produce no samples. |
 
-Message visibility includes any wait for foregrounding or scrolling to the
-row. Compare it with projection timings to separate that wait from processing.
+`host_inbound_message_visible` is a sampled host-render metric: coalesced stream updates can omit intermediate messages.
 
-Visibility means SDL presentation of a row intersecting the viewport. It
-cannot establish compositor scanout, actual reading, recipient delivery,
-or whether another window obscures part of the app. Host milestones record
-success only on presentation; missing observations are not counted as failures.
+Message visibility includes any wait for foregrounding or scrolling to the row. Compare it with projection timings to separate that wait from processing.
 
-Run `just test` for report/percentile/viewport checks, and
-`build/smoke <fresh-empty-directory>` for real C snapshot and consent checks.
-The smoke test never starts the runtime or uploads telemetry.
+Visibility means SDL presentation of a row intersecting the viewport. It cannot establish compositor scanout, actual reading, recipient delivery, or whether another window obscures part of the app. Host milestones record success only on presentation; missing observations are not counted as failures.
+
+Run `just test` for report/percentile/viewport checks, and `build/smoke <fresh-empty-directory>` for real C snapshot and consent checks. The smoke test never starts the runtime or uploads telemetry.
 
 ## Linux stages
 
 Debug > Timings also includes `linux_performance`, with 37 fixed stages.
-Each reports a sample count, sum, min, max, mean, p50/p95/p99 upper bounds,
-and overflow. Totals retain nanoseconds and display fractional milliseconds.
-The local histogram uses powers of two microseconds through 67,108.864 ms;
-larger samples enter overflow. Empty values and overflow percentiles are null.
-These counters reset on process start or development module reload.
 
-All 37 stages also feed MDK's consent-controlled OTLP exporter to the
-configured IPF endpoint. They are MDK's host-performance operations after
-`CONVERSATION_COMPOSER_READY`: 28 shared across platforms and nine
-Linux-specific (`linux_*`). MDK exports each through its runtime registry
-as `app_runtime_host_<stage>_*` series (started, completed, outcome
-counters, and `_duration_ms`), and lists it by `host_<stage>` in the C
-snapshot's `runtime_operations`. Local stage names match MDK's, and
-`Local_Timing` keeps MDK's order so each stage maps to its C value by
-offset. The upstream catalog defines each boundary:
-`docs/marmot-architecture/runtime-latency-telemetry.md` in `vendor/mdk`.
-They use the same installation metadata, route, retry policy, and sharing
-switch as the original timings. No separate uploader or consent is added.
-Startup samples are buffered until client construction. Collection becomes
-local-only at runtime shutdown. Turning off sharing stops remote export,
-while local diagnostics remain available, as with the original timings.
+- **Each stage reports.** Sample count, sum, min, max, mean, p50/p95/p99 upper bounds, and overflow.
+- **Totals keep nanoseconds.** They display as fractional milliseconds.
+- **Buckets are powers of two.** The local histogram uses powers of two microseconds through 67,108.864 ms; larger samples enter overflow. Empty values and overflow percentiles are null.
+- **Counters reset.** On process start or development module reload.
 
-The C API accepts whole milliseconds, so exported samples truncate below
-one millisecond and use MDK's histogram bounds. Use the local report for
-sub-millisecond comparisons. These stage spans include error and early
-returns but always report `Success`, so the exported success counters count
-samples, not successful actions.
+All 37 stages also feed MDK's consent-controlled OTLP exporter to the configured IPF endpoint. They are MDK's host-performance operations after `CONVERSATION_COMPOSER_READY`: 28 shared across platforms and nine Linux-specific (`linux_*`). They use the same installation metadata, route, retry policy, and sharing switch as the original timings. No separate uploader or consent is added.
+
+> [!NOTE]
+> The C API accepts whole milliseconds, so exported samples truncate below one millisecond and use MDK's histogram bounds. Use the local report for sub-millisecond comparisons. Stage spans include error and early returns but always report `Success`, so exported success counters count samples, not successful actions.
+
+<details>
+<summary><b>How a stage maps to MDK's exporter</b></summary>
+
+MDK exports each stage through its runtime registry as `app_runtime_host_<stage>_*` series (started, completed, outcome counters, and `_duration_ms`), and lists it by `host_<stage>` in the C snapshot's `runtime_operations`. Local stage names match MDK's, and `Local_Timing` keeps MDK's order so each stage maps to its C value by offset. The upstream catalog defines each boundary: `docs/marmot-architecture/runtime-latency-telemetry.md` in `vendor/mdk`.
+
+Startup samples are buffered until client construction. Collection becomes local-only at runtime shutdown. Turning off sharing stops remote export, while local diagnostics remain available, as with the original timings.
+
+</details>
 
 | Stages | Boundaries |
 | --- | --- |
@@ -159,65 +156,46 @@ samples, not successful actions.
 | `media_load`, `media_cache_read`, `media_decode`, `media_apply` | Cache/download work, successful cache reads, decode/preparation, and UI texture/view installation. Cache reads are a subset of loads. |
 | `linux_vault_derive_key`, `linux_vault_open`, `linux_vault_create`, `linux_vault_persist`, `settings_save` | Key derivation, vault operations and settings persistence, including failures. No paths or secret values are recorded. |
 
-Screenshot-exit frames contribute update/layout/draw samples but skip the
-normal presentation and post-present measurements. Nested spans overlap;
-their sums are not elapsed wall time. Collection itself adds clock reads
-and mutex updates and is included in outer spans.
+Screenshot-exit frames contribute update/layout/draw samples but skip the normal presentation and post-present measurements. Nested spans overlap; their sums are not elapsed wall time. Collection itself adds clock reads and mutex updates and is included in outer spans.
 
-For automated runs, `WN_TIMINGS=/absolute/path/timings.json build/app`
-writes the local Linux report on normal exit, including screenshot runs.
-The report can also be copied alongside MDK counters from Debug > Timings.
-Record the build, hardware, renderer/display, window size, dataset, workload,
-network, cache state, sample counts, and warm-up policy with each comparison.
-Run the same workload on the other apps before making comparative claims.
+### Recording a comparison
+
+For automated runs, this writes the local Linux report on normal exit, including screenshot runs:
+
+```sh
+WN_TIMINGS=/absolute/path/timings.json build/app
+```
+
+The report can also be copied alongside MDK counters from Debug > Timings. Record the build, hardware, renderer/display, window size, dataset, workload, network, cache state, sample counts, and warm-up policy with each comparison. Run the same workload on the other apps before making comparative claims.
 
 ## Emoji memory and drawing buffers
 
-The active emoji pixel pack is mapped read-only. Catalog entries borrow
-pixel slices from that mapping; switching sets clears those slices and the
-texture cache before unmapping the old pack. App shutdown and development
-module reload release the active mapping. Validation still scans every
-record, and textures upload on demand, so mapping avoids the whole-pack
-heap copy without guaranteeing that only displayed tiles become resident.
-
-Rounded rectangles and border arcs use stack buffers through 64 segments.
-Larger shapes allocate exact-size temporary buffers. Rounded corners share
-adjacent segment endpoints instead of calculating and submitting them twice.
-The chalk renderer uses its separate drawing path.
+- **The emoji pack is mapped, not copied.** The active emoji pixel pack is mapped read-only, and catalog entries borrow pixel slices from that mapping.
+- **Switching sets cleans up first.** It clears those slices and the texture cache before unmapping the old pack. App shutdown and development module reload release the active mapping.
+- **Mapping is not a residency promise.** Validation still scans every record, and textures upload on demand, so mapping avoids the whole-pack heap copy without guaranteeing that only displayed tiles become resident.
+- **Small shapes stay on the stack.** Rounded rectangles and border arcs use stack buffers through 64 segments; larger shapes allocate exact-size temporary buffers.
+- **Corners share endpoints.** Rounded corners share adjacent segment endpoints instead of calculating and submitting them twice. The chalk renderer uses its separate drawing path.
 
 ## Chat switching
 
-Chat selection restores the draft and staged attachments before rendering.
-The timeline shows "Loading messages…" with an indeterminate bar until its
-worker returns. Load failures stay in that chat's timeline, so an unrelated
-worker cannot replace the error with a different operation's status.
+<picture>
+  <source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="../assets/docs/timings-switch-narrow-dark.svg">
+  <source media="(max-width: 600px)" srcset="../assets/docs/timings-switch-narrow-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="../assets/docs/timings-switch-dark.svg">
+  <img alt="Chat switching with 700 ms delayed dependencies, measured from input to the first rendered selection highlight. SDL Ctrl+Tab: 702.30 ms before, 1.31 ms after. Cold and warm row switches: 701.90 to 703.18 ms before, 1.25 to 1.81 ms after. The delayed run added 700 ms to settings writes, timeline subscription opening and automatic read marks." src="../assets/docs/timings-switch-light.svg" width="880">
+</picture>
 
-Switch-triggered preference snapshots are queued after presentation. One
-settings writer keeps the latest pending snapshot behind the current write;
-later preference changes cannot be overwritten by an older switch. Shutdown
-flushes the queue. For these saves, `settings_save` measures serialization
-and enqueueing, not the background filesystem write. Other saves retain
-their synchronous path unless a switch write is already outstanding.
+Chat selection restores the draft and staged attachments before rendering. The timeline shows "Loading messages…" with an indeterminate bar until its worker returns. Load failures stay in that chat's timeline, so an unrelated worker cannot replace the error with a different operation's status.
 
-Automatic read marks run on the timeline worker after the selected window
-has been applied. They use the newest MLS order in that window, preserve
-the unread-divider snapshot, and do not mark unseen newer pages read.
-Retired subscriptions cannot apply their results to a later selection.
+- **Preference saves wait until after presentation.** Switch-triggered preference snapshots are queued after presentation. One settings writer keeps the latest pending snapshot behind the current write, so an older switch cannot overwrite later preference changes. Shutdown flushes the queue.
+- **`settings_save` measures less here.** For these saves it measures serialization and enqueueing, not the background filesystem write. Other saves keep their synchronous path unless a switch write is already outstanding.
+- **Read marks run on the timeline worker.** Automatic read marks run after the selected window has been applied. They use the newest MLS order in that window, preserve the unread-divider snapshot, and do not mark unseen newer pages read. Retired subscriptions cannot apply their results to a later selection.
+- **Avatars are prepared off the frame loop.** Avatars a newly opened chat needs are decoded and cropped to 256 px on the picture worker; the frame loop only uploads the pixels.
+- **One media texture per frame.** Finished message media publishes one texture per frame, because uploading a 12-megapixel photo took 6 to 12 ms on the UI thread.
+- **Timeline images are capped at 1280 px.** The media worker scales them so their longest side is at most 1280 px. Full-size textures (48 MB for a 12-megapixel photo) stalled later draws while the driver caught up.
+- **The lightbox upgrades in place.** It shows the scaled texture at once, labels the slide "Loading full resolution" with an indeterminate bar, and swaps in the original at the same on-screen size. Originals are freed when the lightbox closes.
 
-Avatars that a newly opened chat needs are decoded and cropped to 256 px on
-the picture worker; the frame loop only uploads the pixels. Finished message
-media publishes one texture per frame, because uploading a 12-megapixel
-photo took 6 to 12 ms on the UI thread.
-
-Timeline images are scaled on the media worker so their longest side is at
-most 1280 px. Full-size textures (48 MB for a 12-megapixel photo) stalled
-later draws while the driver caught up. The lightbox shows the scaled
-texture at once, labels the slide "Loading full resolution" with an
-indeterminate bar, and swaps in the original at the same on-screen size.
-Originals are freed when the lightbox closes.
-
-An isolated Linux SDL offscreen run at 1024 by 700 measured the following
-input-to-render intervals with temporary timestamp probes:
+An isolated Linux SDL offscreen run at 1024 by 700 measured these input-to-render intervals with temporary timestamp probes:
 
 | Scenario | Before | After |
 | --- | --- | --- |
@@ -226,16 +204,13 @@ input-to-render intervals with temporary timestamp probes:
 | Normal row switches | Not measured | 1.49–2.58 ms (3 samples) |
 | Returning to a 100-row window after 110 fixture sends | Not measured | 1.60 ms |
 
-The delayed run added 700 ms to settings writes, timeline subscription
-opening and automatic read marks. Rapid switches completed in the latest
-chat with its draft and preference intact. A forced subscription failure
-cleared loading and displayed the local error. The normal run completed
-with the expected 100-row window and no timeline error.
+<details>
+<summary><b>What the probes saw, and what they could not</b></summary>
 
-The keyboard probe timestamps SDL event enqueueing; row probes timestamp
-devctl's injected mouse release before input dispatch. The endpoint is the
-first rendered selection highlight, before SDL presentation. Screenshots
-confirmed the pending bar and terminal states, but did not supply the
-timings. These samples exclude external devctl command-file delivery and
-do not measure compositor presentation, display scanout, or physical input
-latency. The temporary probes and dependency delays are not shipped.
+The delayed run added 700 ms to settings writes, timeline subscription opening and automatic read marks. Rapid switches completed in the latest chat with its draft and preference intact. A forced subscription failure cleared loading and displayed the local error. The normal run completed with the expected 100-row window and no timeline error.
+
+The keyboard probe timestamps SDL event enqueueing; row probes timestamp devctl's injected mouse release before input dispatch. The endpoint is the first rendered selection highlight, before SDL presentation. Screenshots confirmed the pending bar and terminal states, but did not supply the timings. These samples exclude external devctl command-file delivery and do not measure compositor presentation, display scanout, or physical input latency. The temporary probes and dependency delays are not shipped.
+
+</details>
+
+<sub>[Back to the README](../README.md#further-reading)</sub>

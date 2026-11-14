@@ -127,5 +127,9 @@ Issues and patches go to [Committish](https://committish.app/r/naddr1qvzqqqrhnyp
 | [Building from source](docs/building.md) | Nix, distro packages, cross builds, releases |
 | [Whip](docs/whip.md) | Terminal projects inside Chats |
 | [Development](docs/development.md) | Tests, hot reload, caches, MDK patches |
+| [Stickers](docs/stickers.md) and [GIFs](docs/gifs.md) | The picker's two media tabs |
+| [Dictation](docs/stt.md) and [Read aloud](docs/tts.md) | Local speech models, sizes, licenses |
+| [Timing diagnostics](docs/timings.md) | Debug > Timings and what each stage measures |
+| [Performance notes](docs/send-connections.md) | Send reuse, [outbound latency](docs/outbound-latency.md), [large groups](docs/large-group-performance.md) |
 
 <sub>Licensed under [AGPL-3.0](LICENSE). The AI agent icons in Settings are [third-party marks](docs/features.md#third-party-marks).</sub>
