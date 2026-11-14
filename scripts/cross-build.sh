@@ -181,6 +181,12 @@ MARMOT_STAMP="$({
   rustc -vV
   cargo -V
 } | sha256sum | cut -d' ' -f1)"
+# Each compiler/flags change starts a new multi-GB tree. A slot builds one
+# job at a time, so trees for other stamps are dead; remove them before they
+# fill the runner's disk.
+if [ -d "$OUT/cargo" ]; then
+  find "$OUT/cargo" -mindepth 1 -maxdepth 1 ! -name "$MARMOT_STAMP" -exec rm -rf {} +
+fi
 (
   cd "$HERE/vendor/mdk"
   if ! rustup target list --installed | grep -qx "$RUST_TARGET"; then
