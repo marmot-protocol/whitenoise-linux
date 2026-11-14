@@ -303,15 +303,6 @@ Chat_Conversation_Kind :: enum i32 {
 	GROUP,
 }
 
-Existing_Direct_Conversation :: struct {
-	group_id_hex:                                                      cstring,
-	reusable:                                                          bool,
-	lifecycle_state:                                                   Group_Lifecycle_State,
-	self_membership:                                                   Self_Membership,
-	pending_confirmation, leave_request_pending, disbanding, archived: bool,
-	activity_sort_at:                                                  u64,
-}
-
 // Opaque here: reached only through Chat_List_Row, freed by its deep-free.
 Disband_Request :: struct {}
 // Exact kind-9 sticker reference, also borrowed by fetch_sticker_asset.
@@ -545,6 +536,38 @@ Send_Summary :: struct {
 	message_ids_len:         uint,
 	accept_disposition:      Send_Accept_Disposition,
 	maintenance_disposition: Send_Maintenance_Disposition,
+}
+
+// Per-account KeyPackage resolution. Create and invite proceed with the
+// accounts that resolved and report every requested account in order.
+Member_Resolution_Status :: enum i32 {
+	SELECTED,
+	MISSING_KEY_PACKAGE,
+	OBSOLETE_KEY_PACKAGE,
+	INVALID_KEY_PACKAGE,
+	INCOMPATIBLE_KEY_PACKAGE,
+	MISSING_INBOX_ROUTE,
+	INCOMPLETE,
+}
+
+Member_Resolution_Outcome :: struct {
+	account_id_hex:        cstring,
+	status:                Member_Resolution_Status,
+	selected_device_count: u32,
+}
+
+// group_id_hex is NULL when no requested account could be added.
+Group_Creation_Result :: struct {
+	group_id_hex:        cstring,
+	member_outcomes:     [^]Member_Resolution_Outcome,
+	member_outcomes_len: uint,
+}
+
+// summary is NULL when no requested account could be invited.
+Invite_Members_Result :: struct {
+	summary:             ^Send_Summary,
+	member_outcomes:     [^]Member_Resolution_Outcome,
+	member_outcomes_len: uint,
 }
 
 Markdown_Inline_Tag :: enum i32 {
@@ -1177,6 +1200,9 @@ Timeline_Page :: struct {
 #assert(offset_of(Timeline_Message_Query, search_wall_clock) == 116)
 #assert(offset_of(Timeline_Message_Query, cursor_group_id) == 120)
 #assert(size_of(Send_Summary) == 32)
+#assert(size_of(Member_Resolution_Outcome) == 16)
+#assert(size_of(Group_Creation_Result) == 24)
+#assert(size_of(Invite_Members_Result) == 24)
 #assert(size_of(Chat_List_Row) == 216)
 #assert(size_of(Markdown_Document) == 40)
 #assert(size_of(Markdown_Block) == 56)
@@ -1395,16 +1421,11 @@ Audit_Log_Delete_Result :: struct {
 	still_recording: bool,
 }
 
-Audit_Log_Upload_Source :: struct {
-	device_label: cstring,
-	platform:     cstring,
-	app_version:  cstring,
-}
-
-Audit_Log_Tracker_Config :: struct {
-	endpoint:                   cstring,
-	authorization_bearer_token: cstring,
-	source:                     Audit_Log_Upload_Source,
+// System-sourced provenance stamped on audit files recorded after it is set.
+Audit_Log_Source :: struct {
+	hardware_model: cstring,
+	platform:       cstring,
+	app_version:    cstring,
 }
 
 @(default_calling_convention = "c", link_prefix = "marmot_")
@@ -1457,8 +1478,8 @@ foreign lib {
 	audit_log_settings :: proc(client: ^Client, out: ^^Audit_Log_Settings) -> Status ---
 	set_audit_log_settings :: proc(client: ^Client, settings: ^Audit_Log_Settings, out: ^^Audit_Log_Settings) -> Status ---
 	audit_log_settings_free :: proc(ptr: ^Audit_Log_Settings) ---
-	set_audit_log_tracker_config :: proc(client: ^Client, config: ^Audit_Log_Tracker_Config, out: ^^Audit_Log_Tracker_Config) -> Status ---
-	audit_log_tracker_config_free :: proc(ptr: ^Audit_Log_Tracker_Config) ---
+	set_audit_log_source :: proc(client: ^Client, source: ^Audit_Log_Source, out: ^^Audit_Log_Source) -> Status ---
+	audit_log_source_free :: proc(ptr: ^Audit_Log_Source) ---
 
 	audit_log_files :: proc(client: ^Client, out: ^^Audit_Log_File_List) -> Status ---
 	audit_log_file_list_free :: proc(list: ^Audit_Log_File_List) ---
@@ -1534,7 +1555,8 @@ foreign lib {
 	app_group_mls_state_free :: proc(ptr: ^Group_Mls_State_Head) ---
 	retry_group_convergence :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Send_Summary) -> Status ---
 
-	invite_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Send_Summary) -> Status ---
+	invite_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Invite_Members_Result) -> Status ---
+	invite_members_free :: proc(ptr: ^Invite_Members_Result) ---
 	remove_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Send_Summary) -> Status ---
 	promote_admin :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_ref: cstring, out: ^^Send_Summary) -> Status ---
 	demote_admin :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_ref: cstring, out: ^^Send_Summary) -> Status ---
@@ -1560,10 +1582,10 @@ foreign lib {
 	agent_stream_free :: proc(sub: ^Agent_Stream_Subscription) ---
 	agent_stream_update_free :: proc(update: ^Agent_Stream_Update) ---
 
-	existing_direct_conversation :: proc(client: ^Client, account_ref, peer_account_id: cstring, out: ^^Existing_Direct_Conversation) -> Status ---
-	@(link_name = "marmot_existing_direct_conversation_free")
-	existing_direct_free :: proc(ptr: ^Existing_Direct_Conversation) ---
-	create_group :: proc(client: ^Client, account_ref: cstring, name: cstring, member_refs: [^]cstring, member_refs_len: uint, description: cstring, out: ^cstring) -> Status ---
+	// Reuses this account's DM with the peer or creates one with both as admins.
+	start_direct_chat :: proc(client: ^Client, account_ref, peer_account_id: cstring, out: ^cstring) -> Status ---
+	create_group :: proc(client: ^Client, account_ref: cstring, name: cstring, member_refs: [^]cstring, member_refs_len: uint, description: cstring, out: ^^Group_Creation_Result) -> Status ---
+	group_creation_free :: proc(ptr: ^Group_Creation_Result) ---
 	send_text :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
 	// App-defined event: any non-reserved kind with caller-built tags
 	// (borrowed, MarmotStringArray rows == Message_Tag layout).

@@ -148,8 +148,16 @@ msgid "%d of %d shared with you"
 msgstr "%d di %d in comune con te"
 
 #, c-format
+msgid "%d people couldn't be added. Ask them to open White Noise, then invite them again."
+msgstr "Impossibile aggiungere %d persone. Chiedi loro di aprire White Noise, poi invitale di nuovo."
+
+#, c-format
 msgid "%d people will be added to the group."
 msgstr "%d persone verranno aggiunte al gruppo."
+
+#, c-format
+msgid "%d person couldn't be added. Ask them to open White Noise, then invite them again."
+msgstr "Impossibile aggiungere %d persona. Chiedile di aprire White Noise, poi invitala di nuovo."
 
 #, c-format
 msgid "%d published, so people can invite you."
@@ -1376,6 +1384,9 @@ msgstr "Impossibile creare un'identità. %s"
 msgid "Couldn't create the backup. Please try again."
 msgstr "Impossibile creare il backup. Riprova."
 
+msgid "Couldn't create the chat. No one you picked has a key package White Noise can use. Ask them to open White Noise, then try again."
+msgstr "Impossibile creare la chat. Nessuna delle persone scelte ha un pacchetto chiavi che White Noise possa usare. Chiedi loro di aprire White Noise, poi riprova."
+
 msgid "Couldn't create the group. Enter a name and try again."
 msgstr "Impossibile creare il gruppo. Inserisci un nome e riprova."
 
@@ -1481,6 +1492,9 @@ msgstr "Impossibile importare l'adesivo. Scegli un'immagine inferiore a 4 MiB."
 
 msgid "Couldn't invite the member. Enter a public key or verified address and try again."
 msgstr "Non è stato possibile invitare il membro. Inserisci una chiave pubblica o un indirizzo verificato e riprova."
+
+msgid "Couldn't invite them. They have no key package White Noise can use. Ask them to open White Noise, then try again."
+msgstr "Impossibile invitare questa persona. Non ha un pacchetto chiavi che White Noise possa usare. Chiedile di aprire White Noise, poi riprova."
 
 #, c-format
 msgid "Couldn't keep %s running. Please try again."

@@ -148,8 +148,16 @@ msgid "%d of %d shared with you"
 msgstr "%d / %d 공유받음"
 
 #, c-format
+msgid "%d people couldn't be added. Ask them to open White Noise, then invite them again."
+msgstr "%d명을 추가할 수 없습니다. White Noise를 열도록 요청한 뒤 다시 초대하세요."
+
+#, c-format
 msgid "%d people will be added to the group."
 msgstr "%d명이 그룹에 추가됩니다."
+
+#, c-format
+msgid "%d person couldn't be added. Ask them to open White Noise, then invite them again."
+msgstr "%d명을 추가할 수 없습니다. White Noise를 열도록 요청한 뒤 다시 초대하세요."
 
 #, c-format
 msgid "%d published, so people can invite you."
@@ -1375,6 +1383,9 @@ msgstr "신원을 만들 수 없습니다. %s"
 msgid "Couldn't create the backup. Please try again."
 msgstr "백업을 만들 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't create the chat. No one you picked has a key package White Noise can use. Ask them to open White Noise, then try again."
+msgstr "채팅을 만들 수 없습니다. 선택한 사람 중 White Noise가 사용할 수 있는 키 패키지가 있는 사람이 없습니다. White Noise를 열도록 요청한 뒤 다시 시도하세요."
+
 msgid "Couldn't create the group. Enter a name and try again."
 msgstr "그룹을 만들 수 없습니다. 이름을 입력하고 다시 시도하세요."
 
@@ -1480,6 +1491,9 @@ msgstr "스티커를 가져올 수 없습니다. 4 MiB 미만의 이미지를 �
 
 msgid "Couldn't invite the member. Enter a public key or verified address and try again."
 msgstr "멤버를 초대할 수 없습니다. 공개 키 또는 인증된 주소를 입력하고 다시 시도하세요."
+
+msgid "Couldn't invite them. They have no key package White Noise can use. Ask them to open White Noise, then try again."
+msgstr "초대할 수 없습니다. 상대에게 White Noise가 사용할 수 있는 키 패키지가 없습니다. White Noise를 열도록 요청한 뒤 다시 시도하세요."
 
 #, c-format
 msgid "Couldn't keep %s running. Please try again."

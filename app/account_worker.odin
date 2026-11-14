@@ -42,6 +42,7 @@ Account_Job :: struct {
 	kind:                                         Account_Operation,
 	fresh, notes, form, open_chat, departed:      bool,
 	accepted:                                     u64,
+	skipped:                                      int, // requested members the create left out
 	key_rows:                                     [dynamic]Kp_Row,
 	contacts:                                     [dynamic]Contact_Ui,
 	chat_list:                                    Chat_List_Work,
@@ -50,6 +51,15 @@ Account_Job :: struct {
 }
 @(private)
 account_jobs: [dynamic]^Account_Job
+
+// Requested accounts a create or invite left out: no usable KeyPackage,
+// no inbox relay, or a lookup that didn't finish.
+@(private)
+members_skipped :: proc(outcomes: []marmot.Member_Resolution_Outcome) -> int {
+	skipped := 0
+	for outcome in outcomes {if outcome.status != .SELECTED {skipped += 1}}
+	return skipped
+}
 
 @(private)
 account_job_new :: proc(
@@ -232,18 +242,9 @@ account_worker :: proc(t: ^thread.Thread) {
 		}
 		status = .OK
 	case .Open_DM:
-		existing: ^marmot.Existing_Direct_Conversation
-		status = marmot.existing_direct_conversation(job.client, account, target, &existing)
-		if existing != nil {
-			if existing.reusable {job.result = strings.clone(string(existing.group_id_hex))}
-			marmot.existing_direct_free(existing)
-		}
-		if status == .OK && job.result == "" {
-			out: cstring
-			// An unnamed pair is a DM; a named pair is a group.
-			status = marmot.create_group(job.client, account, "", &target, 1, nil, &out)
-			if out != nil {job.result = strings.clone(string(out)); marmot.string_free(out)}
-		}
+		out: cstring
+		status = marmot.start_direct_chat(job.client, account, target, &out)
+		if out != nil {job.result = strings.clone(string(out)); marmot.string_free(out)}
 		if status == .OK {
 			chat_list_read(&job.chat_list)
 			if job.chat_list.err != "" {job.error = strings.clone(job.chat_list.err)}
@@ -256,7 +257,7 @@ account_worker :: proc(t: ^thread.Thread) {
 			seen[peer] = true
 			append(&members, strings.clone_to_cstring(peer, context.temp_allocator))
 		}
-		out: cstring
+		out: ^marmot.Group_Creation_Result
 		status = marmot.create_group(
 			job.client,
 			account,
@@ -266,8 +267,19 @@ account_worker :: proc(t: ^thread.Thread) {
 			nil,
 			&out,
 		)
-		if out != nil {job.result = strings.clone(string(out)); marmot.string_free(out)}
-		if status == .OK && len(job.pic_data) > 0 {
+		if out != nil {
+			if out.group_id_hex != nil {job.result = strings.clone(string(out.group_id_hex))}
+			job.skipped = members_skipped(out.member_outcomes[:out.member_outcomes_len])
+			marmot.group_creation_free(out)
+		}
+		// With no invitable member the runtime creates nothing.
+		if status == .OK && job.result == "" {
+			job.error = strings.clone(
+				tr(
+					"Couldn't create the chat. No one you picked has a key package White Noise can use. Ask them to open White Noise, then try again.",
+				),
+			)
+		} else if status == .OK && len(job.pic_data) > 0 {
 			group_pic_queue(job.client, job.account, job.result, job.pic_data, job.pic_media)
 			job.pic_data = nil
 		}
@@ -448,6 +460,18 @@ account_job_drain :: proc(ui: ^Ui_State) {
 					if job.notes {delete(ui.prefs.notes_group); ui.prefs.notes_group = strings.clone(job.result); ui.prefs.pinned[strings.clone(job.result)] = true; save_settings(ui)}
 					load_chat_list(job.client, job.account, ui)
 					if job.open_chat {if job.form {clear(&ui.nc_member); clear(&ui.nc_name)}; ui.focus = .Compose; ui.page = .Chats; ui.new_chat_open = false; select_by_id(ui, job.client, job.result)}
+					if job.skipped > 0 {
+						set_status(
+							ui,
+							fmt.aprintf(
+								tr(
+									job.skipped == 1 ? N_("%d person couldn't be added. Ask them to open White Noise, then invite them again.") : N_("%d people couldn't be added. Ask them to open White Noise, then invite them again."),
+								),
+								job.skipped,
+							),
+							.Info,
+						)
+					}
 				case .Leave, .Decline:
 					if ui.photo.account == job.account &&
 					   ui.photo.group == job.group {photo_cancel(ui)}

@@ -148,8 +148,16 @@ msgid "%d of %d shared with you"
 msgstr "%d von %d mit dir gemeinsam"
 
 #, c-format
+msgid "%d people couldn't be added. Ask them to open White Noise, then invite them again."
+msgstr "%d Personen konnten nicht hinzugefügt werden. Bitte sie, White Noise zu öffnen, und lade sie dann erneut ein."
+
+#, c-format
 msgid "%d people will be added to the group."
 msgstr "%d Personen werden zur Gruppe hinzugefügt."
+
+#, c-format
+msgid "%d person couldn't be added. Ask them to open White Noise, then invite them again."
+msgstr "%d Person konnte nicht hinzugefügt werden. Bitte sie, White Noise zu öffnen, und lade sie dann erneut ein."
 
 #, c-format
 msgid "%d published, so people can invite you."
@@ -1376,6 +1384,9 @@ msgstr "Die Identität konnte nicht erstellt werden. %s"
 msgid "Couldn't create the backup. Please try again."
 msgstr "Das Backup konnte nicht erstellt werden. Bitte versuche es erneut."
 
+msgid "Couldn't create the chat. No one you picked has a key package White Noise can use. Ask them to open White Noise, then try again."
+msgstr "Der Chat konnte nicht erstellt werden. Niemand, den du ausgewählt hast, hat ein Schlüsselpaket, das White Noise verwenden kann. Bitte sie, White Noise zu öffnen, und versuche es dann erneut."
+
 msgid "Couldn't create the group. Enter a name and try again."
 msgstr "Die Gruppe konnte nicht erstellt werden. Gib einen Namen ein und versuche es erneut."
 
@@ -1481,6 +1492,9 @@ msgstr "Der Sticker konnte nicht importiert werden. Wähle ein Bild unter 4 MiB.
 
 msgid "Couldn't invite the member. Enter a public key or verified address and try again."
 msgstr "Das Mitglied konnte nicht eingeladen werden. Gib einen öffentlichen Schlüssel oder eine verifizierte Adresse ein und versuch es erneut."
+
+msgid "Couldn't invite them. They have no key package White Noise can use. Ask them to open White Noise, then try again."
+msgstr "Die Person konnte nicht eingeladen werden. Sie hat kein Schlüsselpaket, das White Noise verwenden kann. Bitte sie, White Noise zu öffnen, und versuche es dann erneut."
 
 #, c-format
 msgid "Couldn't keep %s running. Please try again."

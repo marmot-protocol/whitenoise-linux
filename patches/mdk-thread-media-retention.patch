@@ -1,8 +1,8 @@
 diff --git i/crates/storage-sqlite/CHANGELOG.md w/crates/storage-sqlite/CHANGELOG.md
-index 5ba91774..a97d714c 100644
+index 52df8693..9a3b4fb4 100644
 --- i/crates/storage-sqlite/CHANGELOG.md
 +++ w/crates/storage-sqlite/CHANGELOG.md
-@@ -1052,6 +1052,12 @@ is unsupported.
+@@ -957,6 +957,12 @@ is unsupported.
    Roster membership is materialized once per deletion statement instead of
    rescanning the JSON roster for every stored destination.
  
@@ -132,10 +132,10 @@ index 6223d940..373b7de4 100644
      fn shared_epoch_secret_survives_partial_sweep_until_final_reference() {
          let store = SqliteAccountStorage::in_memory().unwrap();
 diff --git i/crates/storage-sqlite/src/app/timeline.rs w/crates/storage-sqlite/src/app/timeline.rs
-index 59b0373a..8fa1e80a 100644
+index 92b4f44b..99169711 100644
 --- i/crates/storage-sqlite/src/app/timeline.rs
 +++ w/crates/storage-sqlite/src/app/timeline.rs
-@@ -1891,10 +1891,7 @@ fn secure_prune_selected_app_events_tx(
+@@ -2012,10 +2012,7 @@ fn secure_prune_selected_app_events_tx(
          } else {
              !encrypted_media_component_ids(&event.tags).is_empty()
          };

@@ -89,7 +89,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		),
 		marmot.Status.OK,
 	) {return}
-	group: cstring
+	created: ^marmot.Group_Creation_Result
 	status = marmot.create_group(
 		client,
 		strings.clone_to_cstring(account, context.temp_allocator),
@@ -97,12 +97,12 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		nil,
 		0,
 		"",
-		&group,
+		&created,
 	)
 	if !testing.expect(t, status == .OK, marmot.last_error()) {return}
-	target := strings.clone(string(group))
+	target := strings.clone(string(created.group_id_hex))
 	defer delete(target)
-	marmot.string_free(group)
+	marmot.group_creation_free(created)
 	status = marmot.create_group(
 		client,
 		strings.clone_to_cstring(account, context.temp_allocator),
@@ -110,12 +110,12 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		nil,
 		0,
 		"",
-		&group,
+		&created,
 	)
 	if !testing.expect(t, status == .OK, marmot.last_error()) {return}
-	other := strings.clone(string(group))
+	other := strings.clone(string(created.group_id_hex))
 	defer delete(other)
-	marmot.string_free(group)
+	marmot.group_creation_free(created)
 	rl.InitWindow(1024, 700, "Restore chat")
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1

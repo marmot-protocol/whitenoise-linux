@@ -148,7 +148,15 @@ msgid "%d of %d shared with you"
 msgstr ""
 
 #, c-format
+msgid "%d people couldn't be added. Ask them to open White Noise, then invite them again."
+msgstr ""
+
+#, c-format
 msgid "%d people will be added to the group."
+msgstr ""
+
+#, c-format
+msgid "%d person couldn't be added. Ask them to open White Noise, then invite them again."
 msgstr ""
 
 #, c-format
@@ -1375,6 +1383,9 @@ msgstr ""
 msgid "Couldn't create the backup. Please try again."
 msgstr ""
 
+msgid "Couldn't create the chat. No one you picked has a key package White Noise can use. Ask them to open White Noise, then try again."
+msgstr ""
+
 msgid "Couldn't create the group. Enter a name and try again."
 msgstr ""
 
@@ -1479,6 +1490,9 @@ msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr ""
 
 msgid "Couldn't invite the member. Enter a public key or verified address and try again."
+msgstr ""
+
+msgid "Couldn't invite them. They have no key package White Noise can use. Ask them to open White Noise, then try again."
 msgstr ""
 
 #, c-format

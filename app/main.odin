@@ -650,7 +650,7 @@ app_main :: proc() {
 		   len(ui.accounts) > 0 &&
 		   len(ui.chats) == 0 &&
 		   os.get_env("WN_TEST_GROUP", context.allocator) != "" {
-			group_id: cstring
+			created: ^marmot.Group_Creation_Result
 			account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 			if marmot.create_group(
 				   client,
@@ -659,7 +659,7 @@ app_main :: proc() {
 				   nil,
 				   0,
 				   "test group",
-				   &group_id,
+				   &created,
 			   ) !=
 			   .OK {
 				set_status(
@@ -668,7 +668,7 @@ app_main :: proc() {
 					.Error,
 				)
 			} else {
-				marmot.string_free(group_id)
+				marmot.group_creation_free(created)
 				load_chat_list(client, ui.account_ref, &ui)
 			}
 		}

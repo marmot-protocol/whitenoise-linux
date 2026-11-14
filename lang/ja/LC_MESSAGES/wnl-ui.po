@@ -148,8 +148,16 @@ msgid "%d of %d shared with you"
 msgstr "%d / %d 件をあなたと共有"
 
 #, c-format
+msgid "%d people couldn't be added. Ask them to open White Noise, then invite them again."
+msgstr "%d人を追加できませんでした。White Noise を開くよう依頼してから、もう一度招待してください。"
+
+#, c-format
 msgid "%d people will be added to the group."
 msgstr "%d人がグループに追加されます。"
+
+#, c-format
+msgid "%d person couldn't be added. Ask them to open White Noise, then invite them again."
+msgstr "%d人を追加できませんでした。White Noise を開くよう依頼してから、もう一度招待してください。"
 
 #, c-format
 msgid "%d published, so people can invite you."
@@ -1376,6 +1384,9 @@ msgstr "IDを作成できませんでした。%s"
 msgid "Couldn't create the backup. Please try again."
 msgstr "バックアップを作成できませんでした。もう一度お試しください。"
 
+msgid "Couldn't create the chat. No one you picked has a key package White Noise can use. Ask them to open White Noise, then try again."
+msgstr "チャットを作成できませんでした。選んだ相手のうち、White Noise が使えるキーパッケージを持つ人がいません。White Noise を開くよう依頼してから、もう一度お試しください。"
+
 msgid "Couldn't create the group. Enter a name and try again."
 msgstr "グループを作成できませんでした。名前を入力して、もう一度お試しください。"
 
@@ -1481,6 +1492,9 @@ msgstr "ステッカーを読み込めませんでした。4 MiB未満の画像�
 
 msgid "Couldn't invite the member. Enter a public key or verified address and try again."
 msgstr "メンバーを招待できませんでした。公開鍵または認証済みアドレスを入力して、もう一度お試しください。"
+
+msgid "Couldn't invite them. They have no key package White Noise can use. Ask them to open White Noise, then try again."
+msgstr "招待できませんでした。相手には White Noise が使えるキーパッケージがありません。White Noise を開くよう依頼してから、もう一度お試しください。"
 
 #, c-format
 msgid "Couldn't keep %s running. Please try again."

@@ -534,7 +534,7 @@ obs_load :: proc(
 
 // Tell the runtime where telemetry and audit uploads would go. Borrowed
 // inputs only, so everything here can live in the temp allocator.
-apply_observability :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+apply_observability :: proc(client: ^marmot.Client) {
 	if client == nil {
 		return
 	}
@@ -566,21 +566,17 @@ apply_observability :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		fmt.eprintfln("telemetry route rejected: %s", marmot.last_error())
 	}
 
-	tracker := marmot.Audit_Log_Tracker_Config {
-		endpoint = obs_cstr(cfg.goggles_audit_endpoint),
-		authorization_bearer_token = obs_cstr(cfg.goggles_token),
-		source = {
-			device_label = obs_cstr(ui.account_ref, "whitenoise-linux"),
-			platform = obs_os_type(),
-			app_version = APP_VERSION,
-		},
+	source := marmot.Audit_Log_Source {
+		hardware_model = obs_device_model(),
+		platform       = obs_os_type(),
+		app_version    = APP_VERSION,
 	}
-	out: ^marmot.Audit_Log_Tracker_Config
-	if marmot.set_audit_log_tracker_config(client, &tracker, &out) != .OK {
-		fmt.eprintfln("audit-log tracker config rejected: %s", marmot.last_error())
+	source_out: ^marmot.Audit_Log_Source
+	if marmot.set_audit_log_source(client, &source, &source_out) != .OK {
+		fmt.eprintfln("audit source rejected: %s", marmot.last_error())
 		return
 	}
-	marmot.audit_log_tracker_config_free(out)
+	marmot.audit_log_source_free(source_out)
 }
 
 obs_cstr :: proc(s: string, fallback: string = "") -> cstring {

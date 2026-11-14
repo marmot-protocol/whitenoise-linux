@@ -1,5 +1,5 @@
 diff --git i/crates/marmot-app/src/messages/intents.rs w/crates/marmot-app/src/messages/intents.rs
-index 9a005676..24c3772b 100644
+index 635f661a..a9084dd5 100644
 --- i/crates/marmot-app/src/messages/intents.rs
 +++ w/crates/marmot-app/src/messages/intents.rs
 @@ -755,7 +755,16 @@ pub(crate) fn build_inner_event_with_media_reply(
@@ -43,10 +43,10 @@ index 9a005676..24c3772b 100644
          nostr::prelude::Keys::generate().public_key().to_hex()
      }
 diff --git i/crates/marmot-app/tests/relay_runtime.rs w/crates/marmot-app/tests/relay_runtime.rs
-index 8ff071ae..eb7e8af2 100644
+index d1ded6d8..b74901b0 100644
 --- i/crates/marmot-app/tests/relay_runtime.rs
 +++ w/crates/marmot-app/tests/relay_runtime.rs
-@@ -17613,6 +17613,191 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
+@@ -18575,6 +18575,191 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
      carol.shutdown().await;
  }
  
@@ -239,10 +239,10 @@ index 8ff071ae..eb7e8af2 100644
  mod attachment_retention;
  
 diff --git i/crates/marmot-c/include/marmot.h w/crates/marmot-c/include/marmot.h
-index e48a4e6b..33b9f52a 100644
+index 975cb2b9..52ef1edf 100644
 --- i/crates/marmot-c/include/marmot.h
 +++ w/crates/marmot-c/include/marmot.h
-@@ -4455,6 +4455,15 @@ typedef struct MarmotAppMessageRecord {
+@@ -4689,6 +4689,15 @@ typedef struct MarmotAppMessageRecord {
     * Local wall-clock time when this device observed the delivery.
     */
    uint64_t received_at;
@@ -259,7 +259,7 @@ index e48a4e6b..33b9f52a 100644
  
  /**
 diff --git i/crates/marmot-c/src/types/message.rs w/crates/marmot-c/src/types/message.rs
-index 34c552ca..44fc29df 100644
+index ae70a97c..d4ffcb3c 100644
 --- i/crates/marmot-c/src/types/message.rs
 +++ w/crates/marmot-c/src/types/message.rs
 @@ -37,6 +37,9 @@ c_mirror! {
@@ -273,7 +273,7 @@ index 34c552ca..44fc29df 100644
  }
  
 diff --git i/crates/marmot-uniffi/src/conversions/message.rs w/crates/marmot-uniffi/src/conversions/message.rs
-index 29af1564..8bd09201 100644
+index 6b7db809..c7057faf 100644
 --- i/crates/marmot-uniffi/src/conversions/message.rs
 +++ w/crates/marmot-uniffi/src/conversions/message.rs
 @@ -32,6 +32,9 @@ pub struct AppMessageRecordFfi {
@@ -295,7 +295,7 @@ index 29af1564..8bd09201 100644
          }
      }
  }
-@@ -295,3 +300,40 @@ mod tests {
+@@ -338,3 +343,40 @@ mod tests {
          );
      }
  }
@@ -337,7 +337,7 @@ index 29af1564..8bd09201 100644
 +    }
 +}
 diff --git i/crates/storage-sqlite/src/app/timeline.rs w/crates/storage-sqlite/src/app/timeline.rs
-index 64b38597..2eb3be39 100644
+index 0bf8b3e7..fc776587 100644
 --- i/crates/storage-sqlite/src/app/timeline.rs
 +++ w/crates/storage-sqlite/src/app/timeline.rs
 @@ -95,6 +95,9 @@ const DEFAULT_TIMELINE_LIMIT: usize = 50;
@@ -350,7 +350,7 @@ index 64b38597..2eb3be39 100644
  /// The invalidation reason a locally-sent row carries when its publish reached
  /// no one. Storage owns the literal because it is both a stored column value
  /// and a projection predicate (a retracted own send stays visible as `failed`
-@@ -820,7 +823,7 @@ impl SqliteAppStorage {
+@@ -849,7 +852,7 @@ impl SqliteAppStorage {
                              authority_context = ?3,
                              moderation_grant = CASE
                                  WHEN kind = 5 AND authority_state = 0 THEN moderation_grant
@@ -359,7 +359,7 @@ index 64b38597..2eb3be39 100644
                                  ELSE 0
                              END
                           WHERE group_id_hex = ?1 AND message_id_hex = ?2 AND authority_state != 2",
-@@ -4410,6 +4413,9 @@ fn timeline_row_from_app_event(event: &RawAppEvent) -> TimelineRow {
+@@ -4710,6 +4713,9 @@ fn timeline_row_from_app_event(event: &RawAppEvent) -> TimelineRow {
  /// Ordinary chat replies can still target a custom row — reply linkage is
  /// derived from the replying event's own tags, not the target's.
  fn timeline_row_from_custom_event(event: &RawAppEvent) -> TimelineRow {
@@ -407,7 +407,7 @@ index 6163da95..307b6775 100644
                      params![group, target],
                      |r| r.get(0),
 diff --git i/crates/storage-sqlite/src/app/timeline/reports.rs w/crates/storage-sqlite/src/app/timeline/reports.rs
-index 5c8e2d64..a8678f52 100644
+index a0bce5dd..e599cfb9 100644
 --- i/crates/storage-sqlite/src/app/timeline/reports.rs
 +++ w/crates/storage-sqlite/src/app/timeline/reports.rs
 @@ -210,7 +210,7 @@ impl SqliteAppStorage {
@@ -420,12 +420,12 @@ index 5c8e2d64..a8678f52 100644
                      END
                   WHERE group_id_hex = ?1 AND message_id_hex = ?2 AND authority_state != 2",
 diff --git i/crates/storage-sqlite/src/app/timeline/tests.rs w/crates/storage-sqlite/src/app/timeline/tests.rs
-index 928abb29..52bc3e51 100644
+index f9c635c7..359b6176 100644
 --- i/crates/storage-sqlite/src/app/timeline/tests.rs
 +++ w/crates/storage-sqlite/src/app/timeline/tests.rs
-@@ -4904,3 +4904,26 @@ fn reactions_that_settle_nothing_leave_replies_alone() {
-         );
-     }
+@@ -5742,3 +5742,26 @@ fn discarding_a_send_updates_the_replies_that_quote_it() {
+         "the update carries the reply as it now reads"
+     );
  }
 +
 +#[test]

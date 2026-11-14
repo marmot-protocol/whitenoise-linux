@@ -73,6 +73,11 @@ _Static_assert(offsetof(MarmotAppMessageRecord, invalidated) == 178, "invalidate
 _Static_assert(sizeof(MarmotGroupAppComponent) == 24, "component stride");
 _Static_assert(MARMOT_HOST_PERFORMANCE_OPERATION_LINUX_STARTUP_BEFORE_VAULT == 6,
                "host operation order");
+_Static_assert(sizeof(MarmotMemberResolutionOutcome) == 16, "member outcome stride");
+_Static_assert(sizeof(MarmotGroupCreationResult) == 24, "creation result");
+_Static_assert(sizeof(MarmotInviteMembersResult) == 24, "invite result");
+_Static_assert(MARMOT_MEMBER_RESOLUTION_STATUS_INCOMPLETE == 6, "member status order");
+_Static_assert(sizeof(MarmotAuditLogSource) == 24, "audit source");
 
 int main(void) {
     return 0;

@@ -11,10 +11,10 @@ index 3efc66a8..bedd0a24 100644
          let action = super::AppClient::message_human_action_context(&sticker)
              .and_then(|context| context.human_action)
 diff --git i/crates/marmot-app/src/client/mod.rs w/crates/marmot-app/src/client/mod.rs
-index 08107d5f..1f9df9c3 100644
+index 1bd12f52..b4dfece8 100644
 --- i/crates/marmot-app/src/client/mod.rs
 +++ w/crates/marmot-app/src/client/mod.rs
-@@ -4620,7 +4620,7 @@ impl AppClient {
+@@ -4940,7 +4940,7 @@ impl AppClient {
              .observed(family, operation, ProductUnit::Action);
          let work = async move {
              self.ensure_group_application_messages_allowed(group_id)?;
@@ -24,7 +24,7 @@ index 08107d5f..1f9df9c3 100644
                      .authorize_sticker_ref(&self.state.label, sticker_ref)?;
              }
 diff --git i/crates/marmot-app/src/messages/intents.rs w/crates/marmot-app/src/messages/intents.rs
-index 744e5063..d39dd5a5 100644
+index 37c999c6..ee695693 100644
 --- i/crates/marmot-app/src/messages/intents.rs
 +++ w/crates/marmot-app/src/messages/intents.rs
 @@ -212,6 +212,8 @@ pub(crate) enum AppMessageIntent {
@@ -63,10 +63,10 @@ index 744e5063..d39dd5a5 100644
              target_message_id,
              emoji,
 diff --git i/crates/marmot-app/src/runtime/mod.rs w/crates/marmot-app/src/runtime/mod.rs
-index f4e74155..24c92a8f 100644
+index bd14e414..787aaee9 100644
 --- i/crates/marmot-app/src/runtime/mod.rs
 +++ w/crates/marmot-app/src/runtime/mod.rs
-@@ -4086,13 +4086,17 @@ impl MarmotAppRuntime {
+@@ -4176,13 +4176,17 @@ impl MarmotAppRuntime {
          account_ref: &str,
          group_id: &GroupId,
          sticker_ref: crate::AppStickerRef,
@@ -86,10 +86,10 @@ index f4e74155..24c92a8f 100644
              .await?;
          let _ = self.publish_chat_list_projection_refresh(
 diff --git i/crates/marmot-app/src/tests.rs w/crates/marmot-app/src/tests.rs
-index 467d7a0a..8fca47b4 100644
+index e18e9f27..e7758e92 100644
 --- i/crates/marmot-app/src/tests.rs
 +++ w/crates/marmot-app/src/tests.rs
-@@ -13862,6 +13862,7 @@ fn sticker_intent_builds_sonar_kind_nine_tag() {
+@@ -14389,6 +14389,7 @@ fn sticker_intent_builds_sonar_kind_nine_tag() {
              shortcode: "wave".to_owned(),
              plaintext_sha256: hash.clone(),
          },
@@ -97,7 +97,7 @@ index 467d7a0a..8fca47b4 100644
      });
      assert_eq!(event.kind, MARMOT_APP_EVENT_KIND_CHAT);
      assert!(event.content.is_empty());
-@@ -13876,6 +13877,41 @@ fn sticker_intent_builds_sonar_kind_nine_tag() {
+@@ -14403,6 +14404,41 @@ fn sticker_intent_builds_sonar_kind_nine_tag() {
      );
  }
  
@@ -140,10 +140,10 @@ index 467d7a0a..8fca47b4 100644
  fn reaction_intent_builds_kind_seven_with_e_tag() {
      let event = build(AppMessageIntent::Reaction {
 diff --git i/crates/marmot-c/include/marmot.h w/crates/marmot-c/include/marmot.h
-index 840a4c88..175a59b2 100644
+index 21e5f54b..961e2ed0 100644
 --- i/crates/marmot-c/include/marmot.h
 +++ w/crates/marmot-c/include/marmot.h
-@@ -12496,10 +12496,13 @@ MarmotStatus marmot_fetch_sticker_asset(const struct MarmotClient *client,
+@@ -12826,10 +12826,13 @@ MarmotStatus marmot_fetch_sticker_asset(const struct MarmotClient *client,
                                          struct MarmotStickerAsset **out);
  
  /**
@@ -159,7 +159,7 @@ index 840a4c88..175a59b2 100644
   */
  MarmotStatus marmot_send_sticker(const struct MarmotClient *client,
                                   const char *account_ref,
-@@ -12507,6 +12510,8 @@ MarmotStatus marmot_send_sticker(const struct MarmotClient *client,
+@@ -12837,6 +12840,8 @@ MarmotStatus marmot_send_sticker(const struct MarmotClient *client,
                                   const char *pack_coordinate,
                                   const char *shortcode,
                                   const char *plaintext_sha256,
@@ -169,10 +169,10 @@ index 840a4c88..175a59b2 100644
  
  /**
 diff --git i/crates/marmot-c/src/commands.rs w/crates/marmot-c/src/commands.rs
-index 0af336a5..9f3492d7 100644
+index 7c29afa6..f2b8a3a0 100644
 --- i/crates/marmot-c/src/commands.rs
 +++ w/crates/marmot-c/src/commands.rs
-@@ -3913,10 +3913,13 @@ pub unsafe extern "C" fn marmot_fetch_sticker_asset(
+@@ -3949,10 +3949,13 @@ pub unsafe extern "C" fn marmot_fetch_sticker_asset(
      })
  }
  
@@ -188,7 +188,7 @@ index 0af336a5..9f3492d7 100644
  #[unsafe(no_mangle)]
  pub unsafe extern "C" fn marmot_send_sticker(
      client: *const MarmotClient,
-@@ -3925,6 +3928,8 @@ pub unsafe extern "C" fn marmot_send_sticker(
+@@ -3961,6 +3964,8 @@ pub unsafe extern "C" fn marmot_send_sticker(
      pack_coordinate: *const c_char,
      shortcode: *const c_char,
      plaintext_sha256: *const c_char,
@@ -197,7 +197,7 @@ index 0af336a5..9f3492d7 100644
      out: *mut *mut MarmotSendSummary,
  ) -> MarmotStatus {
      ffi_guard(|| {
-@@ -3938,13 +3943,17 @@ pub unsafe extern "C" fn marmot_send_sticker(
+@@ -3974,13 +3979,17 @@ pub unsafe extern "C" fn marmot_send_sticker(
              shortcode: try_arg!(unsafe { required_str(shortcode) }),
              plaintext_sha256: try_arg!(unsafe { required_str(plaintext_sha256) }),
          };
@@ -221,7 +221,7 @@ index 0af336a5..9f3492d7 100644
              )
          }
 diff --git i/crates/marmot-uniffi/src/commands/message.rs w/crates/marmot-uniffi/src/commands/message.rs
-index ea20acc3..87a1b324 100644
+index 3de2d90b..ce8ed9c0 100644
 --- i/crates/marmot-uniffi/src/commands/message.rs
 +++ w/crates/marmot-uniffi/src/commands/message.rs
 @@ -52,18 +52,20 @@ impl Marmot {

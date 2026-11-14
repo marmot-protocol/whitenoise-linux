@@ -1272,6 +1272,7 @@ op_worker :: proc(t: ^thread.Thread) {
 		op     = job.op,
 	}
 	status: marmot.Status
+	uninvited: bool
 	switch job.op {
 	case .Lookup_Member:
 		done.content = nip05_lookup(string(job.target))
@@ -1397,27 +1398,30 @@ op_worker :: proc(t: ^thread.Thread) {
 			nil,
 			&summary,
 		)
-	case .Invite, .Remove:
+	case .Invite:
 		refs := [1]cstring{job.target}
-		if job.op == .Invite {
-			status = marmot.invite_members(
-				job.client,
-				job.account,
-				job.group,
-				raw_data(refs[:]),
-				1,
-				&summary,
-			)
-		} else {
-			status = marmot.remove_members(
-				job.client,
-				job.account,
-				job.group,
-				raw_data(refs[:]),
-				1,
-				&summary,
-			)
-		}
+		invite: ^marmot.Invite_Members_Result
+		status = marmot.invite_members(
+			job.client,
+			job.account,
+			job.group,
+			raw_data(refs[:]),
+			1,
+			&invite,
+		)
+		// An invitee without a usable KeyPackage leaves nothing to send.
+		uninvited = invite != nil && invite.summary == nil
+		marmot.invite_members_free(invite)
+	case .Remove:
+		refs := [1]cstring{job.target}
+		status = marmot.remove_members(
+			job.client,
+			job.account,
+			job.group,
+			raw_data(refs[:]),
+			1,
+			&summary,
+		)
 	case .Promote:
 		status = marmot.promote_admin(job.client, job.account, job.group, job.target, &summary)
 	case .Demote:
@@ -1430,6 +1434,13 @@ op_worker :: proc(t: ^thread.Thread) {
 	} else {
 		err = marmot.last_error()
 		if err == "" {err = strings.clone(N_("Group action unavailable."))}
+	}
+	if uninvited {
+		err = strings.clone(
+			N_(
+				"Couldn't invite them. They have no key package White Noise can use. Ask them to open White Noise, then try again.",
+			),
+		)
 	}
 	done.err = err
 	if job.op == .Retry_Convergence && string(job.target) != "" {

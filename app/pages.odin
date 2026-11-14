@@ -1375,7 +1375,6 @@ convert_blocks :: proc(
 @(private = "file")
 Boot_Job :: struct {
 	home:   string,
-	ui:     ^Ui_State,
 	client: ^marmot.Client,
 	status: marmot.Status,
 	error:  string, // marmot's last_error is per thread
@@ -1421,7 +1420,7 @@ boot_worker :: proc(t: ^thread.Thread) {
 
 	// Configure the destination before startup restores the saved consent.
 	local_timing_bind(job.client)
-	apply_observability(job.ui, job.client)
+	apply_observability(job.client)
 	nip46_restore(job.client)
 
 	job.status = marmot.client_start(job.client)
@@ -1437,7 +1436,6 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 
 	job := Boot_Job {
 		home = home,
-		ui   = ui,
 	}
 	worker := thread.create(boot_worker)
 	worker.data = &job
