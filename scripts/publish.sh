@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # Publish a release everywhere, in order:
 #
-#   1. GitHub. scripts/release.sh bumps APP_VERSION, tags and pushes. The tag
-#      starts .github/workflows/release.yml, which builds every package,
-#      creates the GitHub release and then updates the AUR.
+#   1. GitHub. scripts/release.sh --tag tags the merged release PR (opened
+#      by `just release`) and pushes the tag. The tag starts
+#      .github/workflows/release.yml, which builds every package, creates
+#      the GitHub release and then updates the AUR.
 #   2. Zapstore and Orchard. Once the GitHub release exists, its AppImage,
 #      Flatpak bundle and direct-download OCI components are downloaded,
 #      checked against SHA256SUMS.txt, and announced together by
 #      scripts/zapstore.ts, signed by you. No registry or second release.
 #
-#   scripts/publish.sh          cut a new release, then both steps
+#   scripts/publish.sh          tag the merged release PR, then both steps
 #   scripts/publish.sh <tag>    an existing tag: wait for its GitHub
 #                               release if needed, then Zapstore and Orchard
 #
@@ -56,9 +57,9 @@ trap 'rm -rf "$WORK"' EXIT
 
 # 1. GitHub. release.sh deliberately leaves this checkout's HEAD unchanged.
 if [ "$#" -eq 0 ]; then
-  scripts/release.sh --tag-output "$WORK/release-tag"
+  scripts/release.sh --tag --tag-output "$WORK/release-tag"
   if [ ! -s "$WORK/release-tag" ]; then
-    echo 'No release was created; publication stopped.' >&2
+    echo 'No release was tagged; publication stopped.' >&2
     exit 1
   fi
   TAG="$(<"$WORK/release-tag")"
