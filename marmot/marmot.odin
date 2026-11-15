@@ -1624,13 +1624,13 @@ foreign lib {
 	install_sticker_pack :: proc(client: ^Client, account_ref, input: cstring, out: ^^Sticker_Pack) -> Status ---
 	uninstall_sticker_pack :: proc(client: ^Client, account_ref, input: cstring) -> Status ---
 	fetch_sticker_asset :: proc(client: ^Client, account_ref, pack_coordinate, shortcode, plaintext_sha256: cstring, out: ^^Sticker_Asset) -> Status ---
-	// Reply and effect rows ride in `tags` (patches/mdk-sticker-context.patch).
-	send_sticker :: proc(client: ^Client, account_ref, group_id_hex, pack_coordinate, shortcode, plaintext_sha256: cstring, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
+	// Reply and effect rows ride in `tags`; MDK rejects `imeta` and a second `sticker`.
+	send_tagged_sticker :: proc(client: ^Client, account_ref, group_id_hex, pack_coordinate, shortcode, plaintext_sha256: cstring, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
 	sticker_pack_free :: proc(pack: ^Sticker_Pack) ---
 	sticker_pack_list_free :: proc(list: ^Sticker_Pack_List) ---
 	sticker_asset_free :: proc(asset: ^Sticker_Asset) ---
 	sticker_sync_result_free :: proc(result: ^Sticker_Sync_Result) ---
-	create_poll :: proc(client: ^Client, account_ref, group_id_hex, question: cstring, options: [^]cstring, options_len: uint, poll_type: u32, has_ends_at: u8, ends_at: u64, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
+	create_tagged_poll :: proc(client: ^Client, account_ref, group_id_hex, question: cstring, options: [^]cstring, options_len: uint, poll_type: u32, has_ends_at: u8, ends_at: u64, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
 	cast_poll_vote :: proc(client: ^Client, account_ref, group_id_hex, poll_event_id: cstring, option_ids: [^]cstring, option_ids_len: uint, out: ^^Send_Summary) -> Status ---
 	// An imeta tag for an uploaded reference, so a custom event can
 	// carry media the timeline resolves like a kind-9's.
@@ -1741,7 +1741,6 @@ Performance_Snapshot :: struct {
 	account_session_open:                        Performance_Operation,
 	account_group_hydration:                     Performance_Operation,
 	account_profile_load:                        Performance_Operation,
-	account_group_read_snapshot:                 Performance_Operation,
 	account_transport_activation:                Performance_Operation,
 	account_subscription_registration:           Performance_Operation,
 	account_catch_up:                            Performance_Operation,

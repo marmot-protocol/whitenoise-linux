@@ -87,7 +87,6 @@ timing_snapshot_json :: proc(s: ^marmot.Performance_Snapshot) -> string {
 		{"account_session_open", s.account_session_open},
 		{"account_group_hydration", s.account_group_hydration},
 		{"account_profile_load", s.account_profile_load},
-		{"account_group_read_snapshot", s.account_group_read_snapshot},
 		{"account_transport_activation", s.account_transport_activation},
 		{"account_subscription_registration", s.account_subscription_registration},
 		{"account_catch_up", s.account_catch_up},
