@@ -48,11 +48,11 @@ MDK owns packs end to end, through the `marmot_*sticker*` C API:
 | `marmot_sticker_pack` | Reads a cached pack |
 | `marmot_fetch_sticker_pack` | Looks one up on its relay hints and your relays |
 | `marmot_fetch_sticker_asset` | Downloads one exact `(pack, shortcode, hash)` image and checks its hash, type and dimensions |
-| `marmot_send_sticker` | Sends a kind-9 message whose content is the sticker tag |
+| `marmot_send_tagged_sticker` | Sends a kind-9 message whose content is the sticker tag |
 
 - **An offline change waits.** It is kept and published on the next sync.
 - **Pack images download once.** The app keeps a copy sealed with the vault's blob key under `stickers/` so it is not downloaded again.
-- **Replies and effects ride along.** `patches/mdk-sticker-context.patch` adds a `tags` argument for the reply (`e`, `q`) and `effect` tags; MDK rejects a second `sticker` tag and `imeta`.
+- **Replies and effects ride along.** The `tags` argument carries the reply (`e`, `q`) and `effect` tags; MDK rejects a second `sticker` tag and `imeta`.
 
 Timeline records and reply previews carry the pack sticker MDK parsed, so the app does not read pack sticker tags itself. MDK only recognizes pack stickers in kind-9 messages. Thread messages are kind 1111, so packs are not offered there.
 

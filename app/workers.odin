@@ -744,7 +744,7 @@ send_worker :: proc(t: ^thread.Thread) {
 	if job.sticker[0] != nil {
 		// MDK builds the sticker tag; the reply and effect ride in job.tags.
 		summary: ^marmot.Send_Summary
-		status = marmot.send_sticker(
+		status = marmot.send_tagged_sticker(
 			job.client,
 			job.account,
 			job.group,
@@ -1357,7 +1357,7 @@ op_worker :: proc(t: ^thread.Thread) {
 				values_len = uint(len(row)),
 			}
 		}
-		status = marmot.create_poll(
+		status = marmot.create_tagged_poll(
 			job.client,
 			job.account,
 			job.group,
