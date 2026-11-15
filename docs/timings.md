@@ -2,7 +2,7 @@
 
 # Timing diagnostics
 
-### 79 operations, 37 stages, and a p95 that names its bucket's upper bound.
+### 78 operations, 37 stages, and a p95 that names its bucket's upper bound.
 
 Debug > Timings shows where the app spends its time, for this process only. Nothing leaves your machine unless you turn on sharing.
 
@@ -10,7 +10,7 @@ Debug > Timings shows where the app spends its time, for this process only. Noth
   <source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="../assets/docs/timings-routes-narrow-dark.svg">
   <source media="(max-width: 600px)" srcset="../assets/docs/timings-routes-narrow-light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="../assets/docs/timings-routes-dark.svg">
-  <img alt="Where timing data goes. This process: counters for 79 MDK operations and 37 Linux stages fill up across all accounts, keep nanosecond totals locally, and reset on restart or module reload. Debug > Timings: you click Refresh and Copy JSON, empty metrics show zero samples, and WN_TIMINGS writes the JSON on normal exit. With consent: MDK exports aggregate histograms over OTLP in whole milliseconds to otlp.ipf.dev/v1/metrics, never to the audit receiver." src="../assets/docs/timings-routes-light.svg" width="880">
+  <img alt="Where timing data goes. This process: counters for 78 MDK operations and 37 Linux stages fill up across all accounts, keep nanosecond totals locally, and reset on restart or module reload. Debug > Timings: you click Refresh and Copy JSON, empty metrics show zero samples, and WN_TIMINGS writes the JSON on normal exit. With consent: MDK exports aggregate histograms over OTLP in whole milliseconds to otlp.ipf.dev/v1/metrics, never to the audit receiver." src="../assets/docs/timings-routes-light.svg" width="880">
 </picture>
 
 ## Open Debug > Timings
@@ -19,7 +19,7 @@ The pinned MDK includes the timing work from marmot-protocol/mdk#1760.
 
 1. Enable Developer mode in Settings > Advanced.
 2. Open Debug > Timings and click Refresh.
-3. Copy JSON exports all **79 distinct operation distributions**.
+3. Copy JSON exports all **78 distinct operation distributions**.
 
 The names are listed explicitly in `app/timings.odin`, matching the C snapshot in `marmot/marmot.odin`. Empty metrics stay visible with zero samples and null mean/p95, so you can tell unexercised paths from measured zeroes.
 

@@ -39,7 +39,7 @@ timing_report_boundaries :: proc(t: ^testing.T) {
 	}
 	err := json.unmarshal(transmute([]u8)report, &decoded, allocator = context.temp_allocator)
 	testing.expect(t, err == nil)
-	testing.expect_value(t, len(decoded.timings), 79)
+	testing.expect_value(t, len(decoded.timings), 78)
 	testing.expect_value(t, decoded.timings["outbound_message_queue_wait"].samples, 21)
 	testing.expect_value(t, decoded.timings["outbound_message_queue_wait"].sum_ms, 1000)
 	testing.expect(t, "host_foreground_local_ready" in decoded.timings)
