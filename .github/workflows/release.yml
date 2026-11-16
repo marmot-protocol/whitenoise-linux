@@ -277,9 +277,17 @@ jobs:
             find "$FLATPAK_STATE_DIR/build" -name observability-tokens.toml -delete
           fi
           source="$FLATPAK_STATE_DIR/build/whitenoise-linux"
-          if [ -d "$source/build/cargo/native" ]; then
-            mkdir -p .flatpak-cache/build/cargo
-            cp -a "$source/build/cargo/native" .flatpak-cache/build/cargo/
+          # A disk-full build leaves empty .rlib/.rmeta files that cargo's
+          # fingerprints still trust. Keep the previous target instead.
+          native="$source/build/cargo/native"
+          if [ -d "$native" ]; then
+            truncated="$(find "$native" -type f -size 0 \( -name '*.rlib' -o -name '*.rmeta' \) -print -quit)"
+            if [ -n "$truncated" ]; then
+              echo "::warning::Not caching the cargo target: $truncated is empty."
+            else
+              mkdir -p .flatpak-cache/build/cargo
+              cp -a "$native" .flatpak-cache/build/cargo/
+            fi
           fi
           for state in registry git; do
             if [ -d "$source/cargo/$state" ]; then
