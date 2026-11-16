@@ -14,6 +14,7 @@ CATALOGS := [?][2]string {
 	{"de", #load("../lang/de/LC_MESSAGES/wnl-ui.po", string)},
 	{"ja", #load("../lang/ja/LC_MESSAGES/wnl-ui.po", string)},
 	{"ko", #load("../lang/ko/LC_MESSAGES/wnl-ui.po", string)},
+	{"fi", #load("../lang/fi/LC_MESSAGES/wnl-ui.po", string)},
 }
 
 // Parsed catalogs are never mutated or freed once published, so worker

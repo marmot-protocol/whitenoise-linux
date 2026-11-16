@@ -70,10 +70,11 @@ theme_gallery_interactions :: proc(t: ^testing.T) {
 	append(&theme_packs, custom)
 	defer resize(&theme_packs, custom_index)
 	ui.theme = native
-	for locale in ([]string{"en", "de", "it", "ja", "ko"}) {
+	for locale in ([]string{"en", "de", "it", "ja", "ko", "fi"}) {
 		set_locale(locale)
 		for pack in theme_packs {
 			name := pack.custom ? pack.name : tr(pack.name)
+			if locale == "fi" && !pack.custom && pack.mode == "terminal" {name = "Pääte"}
 			query := strings.to_lower(name, context.temp_allocator)
 			matches := 0
 			for task in SETTINGS_TASKS {

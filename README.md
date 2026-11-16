@@ -41,7 +41,7 @@ It is one Odin binary with its own layout engine, nendo, drawing through SDL3.
 - **A `.nes` attachment gets a Play button.** The cartridge runs in a modal: arrows move, X is A, Z is B.
 - **Speech and translation stay on your machine.** Transcription and translation run locally; translation fetches about 2.5 GB of model files the first time.
 - **Several accounts run at once.** Local nsec keys sit beside NIP-46 remote signers, and an offline queue sends what you wrote once you reconnect.
-- **35 themes and 5 languages switch at runtime.** Pick from Chalkboard to Film Noir or drop in your own `themes/*.toml` pack; read in English, Italian, German, Japanese or Korean.
+- **35 themes and 6 languages switch at runtime.** Pick from Chalkboard to Film Noir or drop in your own `themes/*.toml` pack; read in English, Italian, German, Japanese, Korean or Finnish.
 
 Narrow windows switch to a one-view phone layout for mobile Linux. The [feature tour](docs/features.md) covers the rest, from folder rules to Jitsi call cards.
 
