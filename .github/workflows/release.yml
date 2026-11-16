@@ -229,6 +229,10 @@ jobs:
           echo "WN_FLATPAK_BUNDLE=WhiteNoise-${GITHUB_REF_NAME//\//-}-x86_64.flatpak" >> "$GITHUB_ENV"
           rm -rf build/flatpak build/flatpak-repo build/orchard-release build/flatpak-tag-state .flatpak-cache
           rm -f WhiteNoise-*.flatpak build/orchard-publish
+          # --keep-build-dirs adds a 15-18G build/<module>-N tree per run and
+          # never removes old ones. Collect copies what it needs from the latest
+          # into build/flatpak-deps, so each run can start without them.
+          rm -rf "$FLATPAK_STATE_DIR/build"
           mkdir -p .flatpak-cache
           if [ -d build/flatpak-deps ]; then
             cp -a build/flatpak-deps/. .flatpak-cache/
