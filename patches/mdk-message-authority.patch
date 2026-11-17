@@ -1,52 +1,8 @@
-diff --git i/crates/marmot-app/src/messages/intents.rs w/crates/marmot-app/src/messages/intents.rs
-index 635f661a..a9084dd5 100644
---- i/crates/marmot-app/src/messages/intents.rs
-+++ w/crates/marmot-app/src/messages/intents.rs
-@@ -755,7 +755,16 @@ pub(crate) fn build_inner_event_with_media_reply(
-             content,
-         } => {
-             validate_custom_event_kind(*kind)?;
--            Ok(event(*kind, tags.clone(), content.clone()))
-+            const COMMENT_KIND: u64 = 1111;
-+            let mut tags = tags.clone();
-+            if *kind == COMMENT_KIND {
-+                for mention in mention_p_tags(content) {
-+                    if !tags.iter().any(|tag| tag.get(..2) == mention.get(..2)) {
-+                        tags.push(mention);
-+                    }
-+                }
-+            }
-+            Ok(event(*kind, tags, content.clone()))
-         }
-     }
- }
-@@ -946,6 +955,21 @@ mod mention_tests {
-     use super::*;
-     use crate::ids::{nprofile_for_account_id, npub_for_account_id};
- 
-+    #[test]
-+    fn comment_mentions() {
-+        let hex = valid_pubkey_hex();
-+        let npub = npub_for_account_id(&hex).unwrap();
-+        for tags in [vec![], vec![vec!["p".to_owned(), hex.clone()]]] {
-+            let intent = AppMessageIntent::Custom {
-+                kind: 1111,
-+                tags,
-+                content: format!("hello @{npub} and again nostr:{npub}"),
-+            };
-+            let event = build_inner_event(&intent, &hex, 1).unwrap();
-+            assert_eq!(event.tags, vec![vec!["p".to_owned(), hex.clone()]]);
-+        }
-+    }
-+
-     fn valid_pubkey_hex() -> String {
-         nostr::prelude::Keys::generate().public_key().to_hex()
-     }
 diff --git i/crates/marmot-app/tests/relay_runtime.rs w/crates/marmot-app/tests/relay_runtime.rs
-index d1ded6d8..b74901b0 100644
+index 26452599..25d29a5b 100644
 --- i/crates/marmot-app/tests/relay_runtime.rs
 +++ w/crates/marmot-app/tests/relay_runtime.rs
-@@ -18575,6 +18575,191 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
+@@ -18873,6 +18873,191 @@ async fn offline_member_recovers_dismissal_label_after_admin_demotion() {
      carol.shutdown().await;
  }
  
@@ -239,10 +195,10 @@ index d1ded6d8..b74901b0 100644
  mod attachment_retention;
  
 diff --git i/crates/marmot-c/include/marmot.h w/crates/marmot-c/include/marmot.h
-index 975cb2b9..52ef1edf 100644
+index 7550bb53..62c4bdf5 100644
 --- i/crates/marmot-c/include/marmot.h
 +++ w/crates/marmot-c/include/marmot.h
-@@ -4689,6 +4689,15 @@ typedef struct MarmotAppMessageRecord {
+@@ -4820,6 +4820,14 @@ typedef struct MarmotAppMessageRecord {
     * Local wall-clock time when this device observed the delivery.
     */
    uint64_t received_at;
@@ -254,48 +210,44 @@ index 975cb2b9..52ef1edf 100644
 +   *Only meaningful when the matching `has_` flag is set.
 +   */
 +  bool moderation_grant;
-+  bool invalidated;
- } MarmotAppMessageRecord;
- 
- /**
+   /**
+    * True when this raw row is retained only as an invalidated
+    * tombstone.
 diff --git i/crates/marmot-c/src/types/message.rs w/crates/marmot-c/src/types/message.rs
-index ae70a97c..d4ffcb3c 100644
+index 182049a0..aeef32f8 100644
 --- i/crates/marmot-c/src/types/message.rs
 +++ w/crates/marmot-c/src/types/message.rs
-@@ -37,6 +37,9 @@ c_mirror! {
+@@ -37,6 +37,8 @@ c_mirror! {
          copy recorded_at: u64,
          /// Local wall-clock time when this device observed the delivery.
          copy received_at: u64,
 +        /// Engine-derived source-state admin authority; absent means unknown.
 +        opt_copy has_moderation_grant/moderation_grant: bool,
-+        copy invalidated: bool,
-     }
- }
- 
+         /// True when this raw row is retained only as an invalidated
+         /// tombstone.
+         copy invalidated: bool,
 diff --git i/crates/marmot-uniffi/src/conversions/message.rs w/crates/marmot-uniffi/src/conversions/message.rs
-index 6b7db809..c7057faf 100644
+index 74e573bb..6d9c298a 100644
 --- i/crates/marmot-uniffi/src/conversions/message.rs
 +++ w/crates/marmot-uniffi/src/conversions/message.rs
-@@ -32,6 +32,9 @@ pub struct AppMessageRecordFfi {
+@@ -32,6 +32,8 @@ pub struct AppMessageRecordFfi {
      pub recorded_at: u64,
      /// Local wall-clock time when this device observed the delivery.
      pub received_at: u64,
 +    /// Engine-derived admin authority at this message's authenticated source state.
 +    pub moderation_grant: Option<bool>,
-+    pub invalidated: bool,
+     /// True when this raw row is retained only as an invalidated tombstone.
+     pub invalidated: bool,
  }
- 
- impl From<AppMessageRecord> for AppMessageRecordFfi {
-@@ -53,6 +56,8 @@ impl From<AppMessageRecord> for AppMessageRecordFfi {
+@@ -55,6 +57,7 @@ impl From<AppMessageRecord> for AppMessageRecordFfi {
              retention_expires_at: value.retention.and_then(|decision| decision.expires_at),
              recorded_at: value.recorded_at,
              received_at: value.received_at,
 +            moderation_grant: value.authority.map(|authority| authority.moderation_grant),
-+            invalidated: value.invalidated,
+             invalidated: value.invalidated,
          }
      }
- }
-@@ -338,3 +343,40 @@ mod tests {
+@@ -341,3 +344,40 @@ mod tests {
          );
      }
  }
@@ -337,20 +289,10 @@ index 6b7db809..c7057faf 100644
 +    }
 +}
 diff --git i/crates/storage-sqlite/src/app/timeline.rs w/crates/storage-sqlite/src/app/timeline.rs
-index 0bf8b3e7..fc776587 100644
+index 7bd99a2b..20c2153d 100644
 --- i/crates/storage-sqlite/src/app/timeline.rs
 +++ w/crates/storage-sqlite/src/app/timeline.rs
-@@ -95,6 +95,9 @@ const DEFAULT_TIMELINE_LIMIT: usize = 50;
- /// window owners should not exceed it.
- pub const MAX_TIMELINE_LIMIT: usize = 200;
- 
-+// NIP-22 comments share chat media, quotes and author edits.
-+const COMMENT_KIND: u64 = 1111;
-+
- /// The invalidation reason a locally-sent row carries when its publish reached
- /// no one. Storage owns the literal because it is both a stored column value
- /// and a projection predicate (a retracted own send stays visible as `failed`
-@@ -849,7 +852,7 @@ impl SqliteAppStorage {
+@@ -850,7 +850,7 @@ impl SqliteAppStorage {
                              authority_context = ?3,
                              moderation_grant = CASE
                                  WHEN kind = 5 AND authority_state = 0 THEN moderation_grant
@@ -359,55 +301,8 @@ index 0bf8b3e7..fc776587 100644
                                  ELSE 0
                              END
                           WHERE group_id_hex = ?1 AND message_id_hex = ?2 AND authority_state != 2",
-@@ -4710,6 +4713,9 @@ fn timeline_row_from_app_event(event: &RawAppEvent) -> TimelineRow {
- /// Ordinary chat replies can still target a custom row — reply linkage is
- /// derived from the replying event's own tags, not the target's.
- fn timeline_row_from_custom_event(event: &RawAppEvent) -> TimelineRow {
-+	if event.kind == COMMENT_KIND {
-+		return timeline_row_from_chat(event);
-+	}
-     TimelineRow {
-         reply_to_message_id_hex: None,
-         ..timeline_row_from_app_event(event)
-diff --git i/crates/storage-sqlite/src/app/timeline/edits.rs w/crates/storage-sqlite/src/app/timeline/edits.rs
-index 6163da95..307b6775 100644
---- i/crates/storage-sqlite/src/app/timeline/edits.rs
-+++ w/crates/storage-sqlite/src/app/timeline/edits.rs
-@@ -62,7 +62,10 @@ fn resolve<'a>(
-     edits: impl Iterator<Item = &'a RawAppEvent>,
-     deleted: &HashSet<String>,
- ) -> Vec<TimelineEditVersion> {
--    if row.kind != MARMOT_APP_EVENT_KIND_CHAT || row.invalidation_status.is_some() || row.deleted {
-+    if !matches!(row.kind, MARMOT_APP_EVENT_KIND_CHAT | COMMENT_KIND)
-+        || row.invalidation_status.is_some()
-+        || row.deleted
-+    {
-         return Vec::new();
-     }
-     let mut versions = edits
-@@ -93,7 +96,10 @@ pub(super) fn accepted_versions_tx(
-     conn: &Connection,
-     row: &TimelineRow,
- ) -> StorageResult<Vec<TimelineEditVersion>> {
--    if row.kind != MARMOT_APP_EVENT_KIND_CHAT || row.invalidation_status.is_some() || row.deleted {
-+    if !matches!(row.kind, MARMOT_APP_EVENT_KIND_CHAT | COMMENT_KIND)
-+        || row.invalidation_status.is_some()
-+        || row.deleted
-+    {
-         return Ok(Vec::new());
-     }
-     let edits = app_events_targeting_message_tx(
-@@ -138,7 +144,7 @@ impl SqliteAppStorage {
-             let visible: bool = conn
-                 .query_row_cached(
-                     "SELECT EXISTS(SELECT 1 FROM visible_message_timeline
--                 WHERE group_id_hex=?1 AND message_id_hex=?2 AND kind=9
-+                 WHERE group_id_hex=?1 AND message_id_hex=?2 AND kind IN (9, 1111)
-                  AND deleted=0 AND invalidation_status IS NULL)",
-                     params![group, target],
-                     |r| r.get(0),
 diff --git i/crates/storage-sqlite/src/app/timeline/reports.rs w/crates/storage-sqlite/src/app/timeline/reports.rs
-index a0bce5dd..e599cfb9 100644
+index d5c9aaae..e098ee82 100644
 --- i/crates/storage-sqlite/src/app/timeline/reports.rs
 +++ w/crates/storage-sqlite/src/app/timeline/reports.rs
 @@ -210,7 +210,7 @@ impl SqliteAppStorage {
@@ -419,37 +314,6 @@ index a0bce5dd..e599cfb9 100644
                          ELSE 0
                      END
                   WHERE group_id_hex = ?1 AND message_id_hex = ?2 AND authority_state != 2",
-diff --git i/crates/storage-sqlite/src/app/timeline/tests.rs w/crates/storage-sqlite/src/app/timeline/tests.rs
-index f9c635c7..359b6176 100644
---- i/crates/storage-sqlite/src/app/timeline/tests.rs
-+++ w/crates/storage-sqlite/src/app/timeline/tests.rs
-@@ -5742,3 +5742,26 @@ fn discarding_a_send_updates_the_replies_that_quote_it() {
-         "the update carries the reply as it now reads"
-     );
- }
-+
-+#[test]
-+fn comment_chat_features() {
-+    let store = SqliteAccountStorage::in_memory().unwrap().app_storage();
-+    let mut comment = chat("comment", "alice", 1, "original");
-+    comment.kind = COMMENT_KIND;
-+    comment.tags = vec![vec!["e".into(), "issue".into()], vec!["imeta".into(), "url https://example.com/image.png".into(), "m image/png".into()]];
-+    store.record_app_event(&comment).unwrap();
-+    let group = &comment.group_id_hex;
-+    let original = store.timeline_message(group, "comment").unwrap().unwrap();
-+    assert_eq!(original.reply_to_message_id_hex.as_deref(), Some("issue"));
-+    assert!(original.media.is_some());
-+    store.record_app_event(&edit("edit", "alice", "comment", 2, "updated")).unwrap();
-+    store.record_app_event(&edit("forged", "bob", "comment", 9, "forged")).unwrap();
-+    store.record_app_event(&reaction("react", "bob", "comment", 3, "+")).unwrap();
-+    let updated = store.timeline_message(group, "comment").unwrap().unwrap();
-+    assert_eq!(updated.plaintext, "updated");
-+    assert_eq!(updated.edit.unwrap().edit_count, 1);
-+    assert_eq!(updated.reactions.user_reactions.len(), 1);
-+    assert_eq!(store.message_edit_history(group, "comment", None, 100).unwrap().versions.len(), 1);
-+    store.record_app_event(&delete("delete", "alice", "comment", 4)).unwrap();
-+    assert!(store.timeline_message(group, "comment").unwrap().unwrap().deleted);
-+}
 diff --git i/crates/traits/src/reporting.rs w/crates/traits/src/reporting.rs
 index 66f20d71..66db2105 100644
 --- i/crates/traits/src/reporting.rs

@@ -56,15 +56,16 @@ Offline_Att :: struct {
 }
 
 Offline_Item :: struct {
-	sticker:  Sticker_Ref,
-	effect:   int,
-	group_id: string,
-	sender:   string,
-	body:     string,
-	reply_to: string,
-	thread:   string,
-	attempts: int,
-	atts:     [dynamic]Offline_Att,
+	sticker:     Sticker_Ref,
+	effect:      int,
+	group_id:    string,
+	sender:      string,
+	body:        string,
+	reply_to:    string,
+	thread:      string,
+	thread_kind: u64, // absent in older queues: unknown, resolved again on send
+	attempts:    int,
+	atts:        [dynamic]Offline_Att,
 }
 
 offline_path :: proc(allocator := context.temp_allocator) -> string {
@@ -88,14 +89,15 @@ save_offline :: proc(ui: ^Ui_State) {
 			continue
 		}
 		item := Offline_Item {
-			sticker  = p.sticker,
-			effect   = p.effect,
-			group_id = p.group_id,
-			sender   = p.sender,
-			body     = p.body,
-			reply_to = p.reply_to,
-			thread   = p.thread,
-			attempts = p.attempts,
+			sticker     = p.sticker,
+			effect      = p.effect,
+			group_id    = p.group_id,
+			sender      = p.sender,
+			body        = p.body,
+			reply_to    = p.reply_to,
+			thread      = p.thread,
+			thread_kind = p.thread_kind,
+			attempts    = p.attempts,
 		}
 		item.atts = make([dynamic]Offline_Att, context.temp_allocator)
 		for a in p.atts {
@@ -148,16 +150,17 @@ load_offline :: proc(ui: ^Ui_State) {
 	for &item in items {
 		send_ticket += 1
 		p := Pending_Send {
-			sticker  = item.sticker,
-			effect   = item.effect,
-			ticket   = send_ticket,
-			group_id = item.group_id, // unmarshal allocated; adopt
-			sender   = item.sender,
-			body     = item.body,
-			reply_to = item.reply_to,
-			thread   = item.thread,
-			attempts = item.attempts,
-			queued   = true,
+			sticker     = item.sticker,
+			effect      = item.effect,
+			ticket      = send_ticket,
+			group_id    = item.group_id, // unmarshal allocated; adopt
+			sender      = item.sender,
+			body        = item.body,
+			reply_to    = item.reply_to,
+			thread      = item.thread,
+			thread_kind = item.thread_kind,
+			attempts    = item.attempts,
+			queued      = true,
 		}
 		for att in item.atts {
 			bytes, b64_err := base64.decode(att.data)
