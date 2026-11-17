@@ -10,8 +10,9 @@
 //
 // One timeline, one composer: the view filters rows by the top of the
 // stack (thread_of == thread_cur), and every send routes there. A
-// thread message is a kind-1111 custom event tagged ["e", root]; the
-// root can itself be a thread message, so threads nest to any depth.
+// thread message is a kind-1111 NIP-22 comment tagged ["e", root] and
+// ["k", root kind]; the root can itself be a thread message, so threads
+// nest to any depth.
 // Back (or Escape with an empty composer) pops one level.
 package main
 

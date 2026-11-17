@@ -542,6 +542,7 @@ Pending_Send :: struct {
 	body:              string, // composed text; file name for a non-image upload
 	reply_to:          string, // message id, "" = plain send
 	thread:            string, // thread root id, "" = main timeline
+	thread_kind:       u64, // thread root's event kind for NIP-22's k tag, 0 = unknown
 	atts:              [dynamic]Pending_Att, // upload payloads, owned until drained
 	failed:            bool,
 	queued:            bool, // waiting for the auto-retry timer (offline.odin)
@@ -572,17 +573,18 @@ Job_Att :: struct {
 }
 
 Send_Job :: struct {
-	tags:    []marmot.Message_Tag,
-	ticket:  int,
-	client:  ^marmot.Client,
-	account: cstring,
-	group:   cstring,
-	text:    cstring,
-	reply:   cstring, // nil = plain send
-	thread:  cstring, // nil = main timeline; else the kind-1111 root
-	caption: cstring, // nil, or the body to ride along with atts (aliases text)
-	atts:    []Job_Att, // non-empty = upload_media instead of a text send
-	sticker: [3]cstring, // pack, shortcode, hash; nil pack = not a sticker
+	tags:        []marmot.Message_Tag,
+	ticket:      int,
+	client:      ^marmot.Client,
+	account:     cstring,
+	group:       cstring,
+	text:        cstring,
+	reply:       cstring, // nil = plain send
+	thread:      cstring, // nil = main timeline; else the kind-1111 root
+	thread_kind: u64, // root's event kind, 0 = unknown
+	caption:     cstring, // nil, or the body to ride along with atts (aliases text)
+	atts:        []Job_Att, // non-empty = upload_media instead of a text send
+	sticker:     [3]cstring, // pack, shortcode, hash; nil pack = not a sticker
 }
 
 Send_Done :: struct {
@@ -609,9 +611,13 @@ send_threads: [dynamic]^thread.Thread
 send_ticket: int
 
 // Publish uploaded references into a thread: one kind-1111 event
-// carrying the root e tag plus one imeta tag per attachment (built by
-// marmot, the same shape its own kind-9 media messages use, so the
-// timeline resolves them into downloadable media on every client).
+// carrying the root e tag, its kind as NIP-22's k tag, plus one imeta tag
+// per attachment (built by marmot, the same shape its own kind-9 media
+// messages use, so the timeline resolves them into downloadable media on
+// every client). MDK projects media, edits and mentions only for a 1111
+// with a numeric k tag:
+//
+//   ["e", root_id] ["k", "9"] ["imeta", …]
 @(private = "file")
 send_thread :: proc(
 	job: ^Send_Job,
@@ -623,6 +629,10 @@ send_thread :: proc(
 	defer delete(rows)
 	append(&rows, ..job.tags)
 	append(&rows, marmot.Message_Tag{values = raw_data(e_vals[:]), values_len = 2})
+	k_vals := [2]cstring{"k", fmt.ctprint(job.thread_kind)}
+	if job.thread_kind != 0 {
+		append(&rows, marmot.Message_Tag{values = raw_data(k_vals[:]), values_len = 2})
+	}
 
 	built := make([dynamic]^marmot.Message_Tag)
 	defer {
@@ -872,6 +882,13 @@ send_worker :: proc(t: ^thread.Thread) {
 }
 
 spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
+	// Resolve the root's kind while its thread is open; a GIF send comes
+	// back here once prepared, and retries reuse the value.
+	if p.thread != "" && p.thread_kind == 0 {
+		for &msg in ui.messages {
+			if msg.id == p.thread {p.thread_kind = msg.kind; break}
+		}
+	}
 	if p.gif != nil {gif_send_start(p); return}
 	if p.forward != nil {forward_start(p); return}
 	p.sending_since = time.tick_now()
@@ -883,6 +900,7 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
 	job.text = strings.clone_to_cstring(p.body)
 	job.reply = len(p.reply_to) > 0 ? strings.clone_to_cstring(p.reply_to) : nil
 	job.thread = len(p.thread) > 0 ? strings.clone_to_cstring(p.thread) : nil
+	job.thread_kind = p.thread_kind
 	job.tags = send_message_tags(p)
 	if p.sticker.pack != "" {
 		job.sticker = {

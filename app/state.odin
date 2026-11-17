@@ -420,6 +420,7 @@ Msg_Ui :: struct {
 	row_measure:         [4]f32, // width, pixel scale, corner scale, action height
 	visible_since:       time.Tick, // live observation until first presented row
 	id:                  string, // message_id_hex
+	kind:                u64, // event kind; a thread reply names its root's kind
 	sender:              string, // display label: kind-0 name, else short hex / "you"
 	sender_id:           string, // account hex
 	pic_url:             string, // sender's kind-0 picture, "" = none
@@ -458,10 +459,10 @@ Msg_Ui :: struct {
 	thread_replies:      int, // thread messages under this root
 }
 
-// Native polls are projected by MDK; thread messages remain app-defined.
+// Native polls are projected by MDK; thread messages are NIP-22 comments.
 KIND_POLL :: 1068
 KIND_POLL_VOTE :: 1018
-KIND_THREAD :: 1111 // thread message: ["e", root], text in content
+KIND_THREAD :: 1111 // thread message: ["e", root], ["k", root kind], text in content
 KIND_DELETE :: 5
 KIND_EDIT :: 1009
 KIND_GROUP_SYSTEM :: 1210

@@ -1,130 +1,83 @@
-diff --git i/crates/storage-sqlite/CHANGELOG.md w/crates/storage-sqlite/CHANGELOG.md
-index 52df8693..9a3b4fb4 100644
---- i/crates/storage-sqlite/CHANGELOG.md
-+++ w/crates/storage-sqlite/CHANGELOG.md
-@@ -957,6 +957,12 @@ is unsupported.
-   Roster membership is materialized once per deletion statement instead of
-   rescanning the JSON roster for every stored destination.
- 
-+### Fixed
-+
-+- Kind-1111 thread replies and kind-1621 issues retain V1/V2 media epoch
-+  secrets for attachments and NIP-30 emoji images. Pruning the final media
-+  reference retires the epoch secret for custom events and reactions too.
-+
- ## 0.12.0 - 2026-10-02
- 
- Account storage advances from migration 98 through 101 on first open; downgrade
 diff --git i/crates/storage-sqlite/src/app/encrypted_media_secrets.rs w/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
-index 6223d940..373b7de4 100644
+index fd621d60..547b822d 100644
 --- i/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
 +++ w/crates/storage-sqlite/src/app/encrypted_media_secrets.rs
-@@ -14,6 +14,9 @@ use cgka_traits::app_event::{MARMOT_APP_EVENT_KIND_CHAT, MARMOT_APP_EVENT_KIND_R
- use cgka_traits::storage::{StorageError, StorageResult};
- use rusqlite::{Connection, OptionalExtension, params};
- 
-+const COMMENT_KIND: u64 = 1111;
-+const ISSUE_KIND: u64 = 1621;
-+
- impl SqliteAppStorage {
-     pub fn remember_encrypted_media_epoch_secret(
-         &self,
-@@ -242,9 +245,11 @@ pub(crate) fn replace_encrypted_media_secret_references_for_parts_tx(
+@@ -242,9 +242,13 @@ pub(crate) fn replace_encrypted_media_secret_references_for_parts_tx(
      )
      .storage()?;
  
--    // Reactions carry imeta for NIP-30 custom emoji images.
--    if (kind == MARMOT_APP_EVENT_KIND_CHAT || kind == MARMOT_APP_EVENT_KIND_REACTION)
--        && let Some(source_epoch) = source_epoch
-+    // Comments and issues carry attachments; reactions carry NIP-30 images.
-+    if matches!(
-+        kind,
-+        MARMOT_APP_EVENT_KIND_CHAT | MARMOT_APP_EVENT_KIND_REACTION | COMMENT_KIND | ISSUE_KIND
-+    ) && let Some(source_epoch) = source_epoch
+-    // Comments carry attachments; reactions carry NIP-30 custom emoji images.
++    // Comments and issues carry attachments; reactions carry NIP-30 custom emoji images.
+     let comment = super::timeline::is_nip22_comment(kind, tags);
+-    if (kind == MARMOT_APP_EVENT_KIND_CHAT || kind == MARMOT_APP_EVENT_KIND_REACTION || comment)
++    let issue = kind == super::timeline::NIP34_ISSUE_KIND;
++    if (kind == MARMOT_APP_EVENT_KIND_CHAT
++        || kind == MARMOT_APP_EVENT_KIND_REACTION
++        || comment
++        || issue)
+         && let Some(source_epoch) = source_epoch
      {
          let source_epoch = u64_to_i64(source_epoch)?;
-         let component_ids = encrypted_media_component_ids(tags);
-@@ -680,6 +685,86 @@ mod tests {
-         );
+@@ -787,6 +791,65 @@ mod tests {
+         }
      }
  
 +    #[test]
-+    fn custom_imeta_retains_secret() {
-+        for (kind, id, content) in [
-+            (COMMENT_KIND, "thread", ""),
-+            (COMMENT_KIND, "emoji", ":party:"),
-+            (ISSUE_KIND, "issue", "Description"),
++    fn issue_media_retains_secret() {
++        for (version, component_id) in [
++            (
++                ENCRYPTED_MEDIA_FORMAT_V1,
++                GROUP_ENCRYPTED_MEDIA_V1_COMPONENT_ID,
++            ),
++            (
++                ENCRYPTED_MEDIA_FORMAT_V2,
++                GROUP_ENCRYPTED_MEDIA_V2_COMPONENT_ID,
++            ),
 +        ] {
-+            for (version, component_id) in [
-+                (
-+                    ENCRYPTED_MEDIA_FORMAT_V1,
-+                    GROUP_ENCRYPTED_MEDIA_V1_COMPONENT_ID,
-+                ),
-+                (
-+                    ENCRYPTED_MEDIA_FORMAT_V2,
-+                    GROUP_ENCRYPTED_MEDIA_V2_COMPONENT_ID,
-+                ),
-+            ] {
-+                let store = SqliteAccountStorage::in_memory().unwrap();
-+                let app = store.app_storage();
-+                app
-+                    .remember_encrypted_media_epoch_secret("aa", component_id, 7, &[1; 32])
-+                    .unwrap();
-+                app.record_app_event(&media_event("old", 10, 7)).unwrap();
-+                let mut custom = media_event_with_versions(id, 20, 7, &[version]);
-+                custom.kind = kind;
-+                custom.plaintext = content.to_owned();
-+                custom.tags.push(vec!["e".into(), "old".into()]);
-+                if id == "emoji" {
-+                    custom.tags.push(vec![
-+                        "emoji".into(),
-+                        "party".into(),
-+                        "https://blossom.example/image".into(),
-+                    ]);
-+                }
-+                if kind == ISSUE_KIND {
-+                    custom
-+                        .tags
-+                        .push(vec!["subject".into(), "Media issue".into()]);
-+                }
-+                app.record_app_event(&custom).unwrap();
-+                assert!(secret_is_referenced(&store, "aa", component_id, 7));
++            let store = SqliteAccountStorage::in_memory().unwrap();
++            let app = store.app_storage();
++            app.remember_encrypted_media_epoch_secret("aa", component_id, 7, &[1; 32])
++                .unwrap();
++            app.record_app_event(&media_event("old", 10, 7)).unwrap();
++            let mut issue = media_event_with_versions("issue", 20, 7, &[version]);
++            issue.kind = super::super::timeline::NIP34_ISSUE_KIND;
++            issue.plaintext = "Description".to_owned();
++            issue
++                .tags
++                .push(vec!["subject".into(), "Media issue".into()]);
++            app.record_app_event(&issue).unwrap();
++            assert!(secret_is_referenced(&store, "aa", component_id, 7));
 +
-+                let partial = app
-+                    .secure_prune_app_events_before("aa", 15, "local", &no_mentions)
-+                    .unwrap();
-+                assert_eq!(partial.pruned_messages, 1);
-+                assert_eq!(partial.pruned_media_epoch_secrets, 0, "{id}: {version}");
-+                assert_eq!(
-+                    app
-+                        .encrypted_media_epoch_secret("aa", component_id, 7)
-+                        .unwrap(),
-+                    Some(vec![1; 32]),
-+                    "{id}: {version}"
-+                );
++            let partial = app
++                .secure_prune_app_events_before("aa", 15, "local", &no_mentions)
++                .unwrap();
++            assert_eq!(partial.pruned_messages, 1);
++            assert_eq!(partial.pruned_media_epoch_secrets, 0, "{version}");
++            assert_eq!(
++                app.encrypted_media_epoch_secret("aa", component_id, 7)
++                    .unwrap(),
++                Some(vec![1; 32]),
++                "{version}"
++            );
 +
-+                let final_sweep = app
-+                    .secure_prune_app_events_before("aa", 21, "local", &no_mentions)
-+                    .unwrap();
-+                assert_eq!(final_sweep.pruned_messages, 1);
-+                assert_eq!(final_sweep.pruned_media_epoch_secrets, 1);
-+                assert_eq!(
-+                    app
-+                        .encrypted_media_epoch_secret("aa", component_id, 7)
-+                        .unwrap(),
-+                    None
-+                );
-+                app
-+                    .remember_encrypted_media_epoch_secret("aa", component_id, 7, &[1; 32])
-+                    .unwrap();
-+                assert_eq!(
-+                    app
-+                        .encrypted_media_epoch_secret("aa", component_id, 7)
-+                        .unwrap(),
-+                    None,
-+                    "pruned custom media must not resurrect its epoch"
-+                );
-+            }
++            let final_sweep = app
++                .secure_prune_app_events_before("aa", 21, "local", &no_mentions)
++                .unwrap();
++            assert_eq!(final_sweep.pruned_messages, 1);
++            assert_eq!(final_sweep.pruned_media_epoch_secrets, 1);
++            assert_eq!(
++                app.encrypted_media_epoch_secret("aa", component_id, 7)
++                    .unwrap(),
++                None
++            );
++            app.remember_encrypted_media_epoch_secret("aa", component_id, 7, &[1; 32])
++                .unwrap();
++            assert_eq!(
++                app.encrypted_media_epoch_secret("aa", component_id, 7)
++                    .unwrap(),
++                None,
++                "pruned issue media must not resurrect its epoch"
++            );
 +        }
 +    }
 +
@@ -132,18 +85,24 @@ index 6223d940..373b7de4 100644
      fn shared_epoch_secret_survives_partial_sweep_until_final_reference() {
          let store = SqliteAccountStorage::in_memory().unwrap();
 diff --git i/crates/storage-sqlite/src/app/timeline.rs w/crates/storage-sqlite/src/app/timeline.rs
-index 92b4f44b..99169711 100644
+index 20c2153d..6287b565 100644
 --- i/crates/storage-sqlite/src/app/timeline.rs
 +++ w/crates/storage-sqlite/src/app/timeline.rs
-@@ -2012,10 +2012,7 @@ fn secure_prune_selected_app_events_tx(
-         } else {
-             !encrypted_media_component_ids(&event.tags).is_empty()
-         };
--        if matches!(
--            event.kind,
+@@ -2012,7 +2012,7 @@ fn secure_prune_selected_app_events_tx(
+             )?);
+         } else if matches!(
+             event.kind,
 -            MARMOT_APP_EVENT_KIND_CHAT | MARMOT_APP_EVENT_KIND_REACTION
--        ) && carries_encrypted_media
-+        if carries_encrypted_media
++            MARMOT_APP_EVENT_KIND_CHAT | MARMOT_APP_EVENT_KIND_REACTION | NIP34_ISSUE_KIND
+         ) && !encrypted_media_component_ids(&event.tags).is_empty()
              && let Some(source_epoch) = event.source_epoch
          {
-             retiring_media_epochs.insert(u64_to_i64(source_epoch)?);
+@@ -4703,6 +4703,8 @@ fn keep_receipts_of_pruned_reactions_tx(
+ }
+ 
+ const NIP22_COMMENT_KIND: u64 = 1111;
++// NIP-34 issues carry attachments like chat messages.
++pub(super) const NIP34_ISSUE_KIND: u64 = 1621;
+ 
+ pub(super) fn is_nip22_comment(kind: u64, tags: &[Vec<String>]) -> bool {
+     kind == NIP22_COMMENT_KIND && tag_values(tags, "k").any(|kind| kind.parse::<u64>().is_ok())
