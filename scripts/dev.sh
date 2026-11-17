@@ -4,7 +4,8 @@
 # Unlock once per just dev session. The key stays in an anonymous memory file.
 #
 # Usage: just dev [data-dir]
-# Env: WN_DEV_OPT (default -o:minimal), WN_DEV_CMD (default build/dev-cmd).
+# Env: WN_DEV_OPT (default -o:minimal), WN_DEV_CMD (default build/dev-cmd),
+# WN_MULTI_DEVICE=1 (MDK device groups on, as in scripts/build.sh).
 # Append commands such as 'state', 'select New group', or 'send hello'
 # to WN_DEV_CMD to drive the running app. Needs inotify-tools.
 set -uo pipefail
@@ -19,6 +20,10 @@ fi
 shift
 OPT="${WN_DEV_OPT:--o:minimal}"
 export WN_DEV_CMD="${WN_DEV_CMD:-$HERE/build/dev-cmd}"
+MULTI_DEVICE_ARGS=()
+if [ "${WN_MULTI_DEVICE:-}" = 1 ]; then
+	MULTI_DEVICE_ARGS=(-define:WN_MULTI_DEVICE=true)
+fi
 command -v inotifywait >/dev/null || { echo "just dev needs inotify-tools"; exit 1; }
 "$HERE/scripts/build.sh" stage {WN_DEV_VAULT_FD}>&- || exit $?
 ODIN_ROOT_ARG=()
@@ -73,7 +78,7 @@ build_module() {
 	fi
 	source "$HERE/scripts/whip-flags.sh" || return $?
 	env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" $OPT -build-mode:dynamic \
-		-define:WN_DEV=true -define:WN_RELOAD=true "${WHIP_ARGS[@]}" -out:"$module" \
+		-define:WN_DEV=true -define:WN_RELOAD=true "${WHIP_ARGS[@]}" "${MULTI_DEVICE_ARGS[@]}" -out:"$module" \
 		"-extra-linker-flags:-Wl,-rpath,$HERE/build -Wl,--version-script=$HERE/scripts/dev-exports.map" {WN_DEV_VAULT_FD}>&-
 }
 

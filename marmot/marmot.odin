@@ -1445,6 +1445,7 @@ foreign lib {
 	deployment_white_noise :: proc(out: ^^Deployment) -> Status ---
 	deployment_free :: proc(deployment: ^Deployment) ---
 	client_new_with_configuration :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, options: ^Client_Options, deployment: ^Deployment, out_client: ^^Client) -> Status ---
+	client_new_with_experimental_device_groups :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, options: ^Client_Options, deployment: ^Deployment, out_client: ^^Client) -> Status ---
 	client_new :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, deployment: ^Deployment, out_client: ^^Client) -> Status ---
 	client_new_with_secret_store :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, store: ^Secret_Store, deployment: ^Deployment, out_client: ^^Client) -> Status ---
 	client_start :: proc(client: ^Client) -> Status ---
