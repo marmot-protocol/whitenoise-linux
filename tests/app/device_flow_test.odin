@@ -600,14 +600,44 @@ devices_chat_activation :: proc(t: ^testing.T) {
 	ui.page, ui.selected, ui.show_members, ui.info_tab = .Chats, 0, true, .Settings
 	activation_refresh(&ui)
 	a := &ui.activation
+	device_test_frame(&ui)
+	testing.expect(t, nendo.element(nendo.id("InfoLinkedDevicesProgress")).found)
 	read := Activation_Read {
 		account     = "account-a",
 		group       = "older-dm",
 		revision    = a.revision,
 		eligibility = .ALREADY_ENABLED,
+		status      = .RUNTIME,
 	}
+	a.dirty = false
 	activation_apply_read(&ui, &read)
 	device_test_frame(&ui)
+	retry := nendo.element(nendo.id("RetryAccountDevices"))
+	if !testing.expect(t, retry.found) {return}
+	nendo.set_pointer(
+		{retry.rect.x + retry.rect.width / 2, retry.rect.y + retry.rect.height / 2},
+		.Up,
+	)
+	forced_release = true
+	handle_members(&ui, nil)
+	forced_release = false
+	device_test_frame(&ui)
+	testing.expect(t, nendo.element(nendo.id("InfoLinkedDevicesProgress")).found)
+	a.dirty = false
+	read.status = .OK
+	read.eligibility = .LEGACY_GROUP
+	activation_apply_read(&ui, &read)
+	testing.expect(
+		t,
+		strings.contains(device_test_frame(&ui), "This chat doesn't support linked devices."),
+	)
+	testing.expect(t, !nendo.element(nendo.id("EnableAccountDevices")).found)
+	read.eligibility = .ALREADY_ENABLED
+	activation_apply_read(&ui, &read)
+	testing.expect(
+		t,
+		strings.contains(device_test_frame(&ui), "Linked devices are turned on for this chat."),
+	)
 	testing.expect(t, !nendo.element(nendo.id("EnableAccountDevices")).found)
 	read.eligibility = .ELIGIBLE
 	activation_apply_read(&ui, &read)

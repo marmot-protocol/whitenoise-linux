@@ -1094,6 +1094,9 @@ msgstr ""
 msgid "Checking relays..."
 msgstr ""
 
+msgid "Checking whether this chat supports linked devices…"
+msgstr ""
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr ""
 
@@ -1531,7 +1534,7 @@ msgstr ""
 msgid "Couldn't check for updates. Please try again."
 msgstr ""
 
-msgid "Couldn't check why linked devices weren't turned on. Please try again."
+msgid "Couldn't check linked devices for this chat. Please try again."
 msgstr ""
 
 msgid "Couldn't choose a photo. Close your open file picker and try again."
@@ -3511,9 +3514,6 @@ msgid "Linked by: %s"
 msgstr ""
 
 msgid "Linked devices"
-msgstr ""
-
-msgid "Linked devices are ready"
 msgstr ""
 
 msgid "Linked devices are turned on for this chat."

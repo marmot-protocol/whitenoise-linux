@@ -278,10 +278,7 @@ activation_apply_read :: proc(ui: ^Ui_State, work: ^Activation_Read) {
 	if a.revision != work.revision || a.key != key || activation_key(ui) != key {return}
 	a.known = work.status == .OK
 	if !a.known {
-		if a.reread_refusal {
-			a.reread_refusal = false
-			a.notice = N_("Couldn't check why linked devices weren't turned on. Please try again.")
-		}
+		a.reread_refusal = false
 		return
 	}
 	a.eligibility = work.eligibility
@@ -386,21 +383,38 @@ activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
 	a := &ui.activation
 	if a.key.group == "" || a.key != activation_key(ui) {return}
 	pending, active := a.pending[a.key]
-	ready := a.known && a.eligibility == .ELIGIBLE && !active && a.advisory == .None
-	if !ready && !active && a.notice == "" {return}
 	if nendo.box(nendo.id("InfoLinkedDevices"))(card) {
+		row_labels(tr("Linked devices"), "")
 		if active {
 			label :=
 				pending.settling ? tr("Waiting for the linked devices change to reach the chat…") : tr("Turning on linked devices…")
 			nendo.text(label, {font = FONT_BODY, size = 13, color = TEXT_DIM})
 			busy_bar("InfoLinkedDevicesProgress")
-		} else {
-			if a.notice !=
-			   "" {nendo.text(tr(a.notice), {font = FONT_BODY, size = 13, color = TEXT_DIM})}
-			if ready {
-				row_labels(tr("Linked devices are ready"), "")
-				micro_button("EnableAccountDevices", tr("Turn on linked devices"))
+			return
+		}
+		if !a.known {
+			if a.dirty || a.read != nil {
+				nendo.text(
+					tr("Checking whether this chat supports linked devices…"),
+					{font = FONT_BODY, size = 13, color = TEXT_DIM},
+				)
+				busy_bar("InfoLinkedDevicesProgress")
+			} else {
+				nendo.text(
+					tr("Couldn't check linked devices for this chat. Please try again."),
+					{font = FONT_BODY, size = 13, color = TEXT_DIM},
+				)
+				micro_button("RetryAccountDevices", tr("Retry"))
 			}
+			return
+		}
+
+		status := a.eligibility != .ELIGIBLE ? activation_blocker(a.eligibility) : a.notice
+		if status != "" {
+			nendo.text(tr(status), {font = FONT_BODY, size = 13, color = TEXT_DIM})
+		}
+		if a.eligibility == .ELIGIBLE && a.advisory == .None {
+			micro_button("EnableAccountDevices", tr("Turn on linked devices"))
 		}
 	}
 }

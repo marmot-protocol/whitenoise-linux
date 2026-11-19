@@ -2266,6 +2266,10 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		confirm_ask(ui, dm ? .Leave_Chat : .Leave_Group, "", ui.chats[ui.selected].title)
 		return
 	}
+	if MULTI_DEVICE && clicked("RetryAccountDevices") {
+		activation_refresh(ui)
+		return
+	}
 	if MULTI_DEVICE && clicked("EnableAccountDevices") {
 		confirm_ask(ui, .Enable_Account_Devices, ui.chats[ui.selected].group_id)
 		return
