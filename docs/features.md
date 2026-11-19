@@ -423,10 +423,14 @@ bring over earlier messages. A chat shows progress while it receives history
 and marks where that history ends. Messages sent from your other device still
 appear as yours, without this device's delivery ticks.
 
-Devices lists the linked devices and lets you rename or remove them. An admin
-of an eligible older chat can turn on linked devices from the chat's settings.
-That change can't be undone. Keep linked profiles on experimental builds;
-an ordinary build can't open a profile joined to a device group.
+Devices lists the linked devices and lets you rename or remove them. If you
+recognize a sign-in but want to keep it separate, choose **This was me, don't
+link**. Only this installation remembers the answer. It does not link the
+device or change what other devices see.
+
+An admin of an eligible older chat can turn on linked devices from the
+chat's settings. That change can't be undone. An ordinary build can't open
+a profile joined to a device group.
 
 ### Setup prompts for AI agents
 

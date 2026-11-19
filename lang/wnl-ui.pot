@@ -4094,6 +4094,9 @@ msgstr ""
 msgid "No one in this chat matches @%s."
 msgstr ""
 
+msgid "No other sign-ins."
+msgstr ""
+
 msgid "No preview available"
 msgstr ""
 
@@ -4123,9 +4126,6 @@ msgid "No trusted sites."
 msgstr ""
 
 msgid "No unread chats"
-msgstr ""
-
-msgid "No unrecognized sign-ins."
 msgstr ""
 
 msgid "No, start fresh"
@@ -4398,6 +4398,9 @@ msgid "Other members' linked devices can join without an admin. This can't be tu
 msgstr ""
 
 msgid "Other profiles"
+msgstr ""
+
+msgid "Other sign-ins"
 msgstr ""
 
 msgid "Out of stock"
@@ -4834,6 +4837,9 @@ msgid "Recent sets from your event-fetch relays. Previews contact image hosts."
 msgstr ""
 
 msgid "Recenter"
+msgstr ""
+
+msgid "Recognized on this device. Not linked."
 msgstr ""
 
 msgid "Reconnecting to your signer"
@@ -5641,9 +5647,6 @@ msgstr ""
 msgid "Sign out of this account?"
 msgstr ""
 
-msgid "Sign-ins to review"
-msgstr ""
-
 msgid "Sign-out and wipe report"
 msgstr ""
 
@@ -6229,9 +6232,6 @@ msgstr ""
 msgid "This is an installation prompt for connecting this OpenCode setup to White Noise through Marmot. Read the latest connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, install and verify the connector, then reply with your agent npub."
 msgstr ""
 
-msgid "This is my device"
-msgstr ""
-
 msgid "This is what a message alert looks like."
 msgstr ""
 
@@ -6294,6 +6294,9 @@ msgid "This sign-in was rejected on one of your devices."
 msgstr ""
 
 msgid "This sticker is not in the current pack."
+msgstr ""
+
+msgid "This was me, don't link"
 msgstr ""
 
 msgid "This wasn't me"

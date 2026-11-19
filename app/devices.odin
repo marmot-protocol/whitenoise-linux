@@ -224,6 +224,10 @@ devices_mark_unlinked :: proc(ui: ^Ui_State, account, label: string) {
 
 @(private)
 devices_wipe_applied :: proc(ui: ^Ui_State, account: string) {
+	if account in ui.prefs.sign_ins_recognized {
+		sign_in_reviews_drop(&ui.prefs, account)
+		ui.settings_dirty = true
+	}
 	profile := ui.devices.profiles[account]
 	if profile == nil {return}
 	profile.revoked, profile.signed_in, profile.first_import = false, false, false
@@ -272,15 +276,16 @@ devices_first_import :: proc(ui: ^Ui_State) {
 }
 
 @(private)
-device_earlier_sign_in :: proc(profile: ^Device_Profile) -> bool {
-	if !device_can_start_fresh(profile) ||
+device_earlier_sign_in :: proc(ui: ^Ui_State, profile: ^Device_Profile) -> bool {
+	if profile == nil ||
+	   !device_can_start_fresh(profile, ui.prefs.sign_ins_recognized[profile.account]) ||
 	   .Link not_in profile.known ||
 	   .Link in profile.stale {return false}
 	return profile.view.link == nil || profile.view.link.new_device == nil
 }
 
 @(private)
-device_can_start_fresh :: proc(profile: ^Device_Profile) -> bool {
+device_can_start_fresh :: proc(profile: ^Device_Profile, reviews: map[string]u64 = nil) -> bool {
 	NEEDED :: Device_Parts{.Roster, .Started_Fresh, .Sign_Ins}
 	if profile == nil ||
 	   (profile.known & NEEDED) != NEEDED ||
@@ -290,7 +295,9 @@ device_can_start_fresh :: proc(profile: ^Device_Profile) -> bool {
 	   view.sign_ins == nil ||
 	   (view.roster != nil && view.roster.len != 0) {return false}
 	for row in view.sign_ins.items[:view.sign_ins.len] {
-		if row.before_this_device && row.state == .PROMPT {return true}
+		if !row.before_this_device || row.state != .PROMPT {continue}
+		seen, recognized := reviews[string(row.slot_id_hex)]
+		if !recognized || seen != row.appeared_at {return true}
 	}
 	return false
 }
@@ -613,7 +620,7 @@ devices_present :: proc(ui: ^Ui_State, focused: bool) {
 		if profile != nil &&
 		   profile.first_import &&
 		   device_busy(profile) == .None &&
-		   device_earlier_sign_in(profile) {
+		   device_earlier_sign_in(ui, profile) {
 			devices_show(ui, .Offer)
 			return
 		}

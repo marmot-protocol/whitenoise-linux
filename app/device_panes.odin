@@ -176,7 +176,9 @@ handle_devices :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	if clicked("DeviceCheckSignIns") {return device_queue(ui, {kind = .Check_Sign_Ins})}
 	if clicked("DeviceDismissWarning") &&
 	   device_has_warning(profile) {return device_queue(ui, {kind = .Dismiss_Warning})}
-	if clicked("DeviceStartFresh") && device_can_start_fresh(profile) {
+	if profile != nil &&
+	   clicked("DeviceStartFresh") &&
+	   device_can_start_fresh(profile, ui.prefs.sign_ins_recognized[profile.account]) {
 		confirm_ask(ui, .Device_Start_Fresh, "")
 		return true
 	}
@@ -607,17 +609,21 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 	items: []marmot.Unrecognized_Sign_In
 	if list := profile.view.sign_ins; list != nil {items = list.items[:list.len]}
 	if pass == .Draw {
-		settings_group(tr("Sign-ins to review"))
+		settings_group(tr("Other sign-ins"))
 		if profile.view.started_fresh {device_copy(tr("Only future invitations will appear here until you link this device."))}
-		if .Sign_Ins in profile.known &&
-		   len(items) == 0 {device_copy(tr("No unrecognized sign-ins."))}
+		if .Sign_Ins in profile.known && len(items) == 0 {device_copy(tr("No other sign-ins."))}
 	}
+	reviewed := ui.prefs.sign_ins_recognized[profile.account]
 	for row, i in items {
 		client := string(row.client)
 		if client == "" {client = tr("Unknown app")}
 		unresolved := row.state == .PROMPT || row.state == .NOT_NOW
-		link, not_now, reject, dismiss :=
+		slot := string(row.slot_id_hex)
+		seen, found := reviewed[slot]
+		recognized := unresolved && found && seen == row.appeared_at
+		link, recognize, not_now, reject, dismiss :=
 			fmt.tprintf("SignInLink%d", i),
+			fmt.tprintf("SignInRecognize%d", i),
 			fmt.tprintf("SignInLater%d", i),
 			fmt.tprintf("SignInReject%d", i),
 			fmt.tprintf("SignInDismiss%d", i)
@@ -632,24 +638,52 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 				radius = rr(7),
 			},
 			) {
-				device_copy(device_sign_in_state(row), TEXT)
+				device_copy(
+					recognized ? tr("Recognized on this device. Not linked.") : device_sign_in_state(row),
+					TEXT,
+				)
 				device_copy(
 					row.appeared_at == 0 ? client : fmt.tprintf("%s · %s", client, timestamp_label(i64(row.appeared_at), .SHORT_DATE_TIME, 0)),
 				)
 				if !row.signed_in {device_copy(tr("Signed out"))}
 				if row.previously_linked_here {device_copy(tr("Previously linked on this device"))}
 				if unresolved {
-					settings_button(link, tr("This is my device"))
-					if row.state == .PROMPT {settings_button(not_now, tr("Not now"))}
+					settings_button(link, tr("Link this device"))
+					if !recognized {
+						settings_button(
+							recognize,
+							tr("This was me, don't link"),
+							ACCENT,
+							.Sign_Ins in profile.stale ? .Disabled : .Enabled,
+						)
+						if row.state == .PROMPT {settings_button(not_now, tr("Not now"))}
+					}
 					settings_button(reject, tr("This wasn't me"), DANGER)
 				} else {
 					settings_button(dismiss, tr("Dismiss"))
 				}
 			}
 		} else {
-			slot := string(row.slot_id_hex)
 			if unresolved && clicked(link) {devices_show(ui, .Add); return true}
+			if unresolved &&
+			   !recognized &&
+			   .Sign_Ins not_in profile.stale &&
+			   slot != "" &&
+			   clicked(recognize) {
+				context.allocator = reload_allocator()
+				if reviewed == nil {
+					ui.prefs.sign_ins_recognized[strings.clone(profile.account)] = make(
+						map[string]u64,
+					)
+				}
+				slots := &ui.prefs.sign_ins_recognized[profile.account]
+				if !found {slot = strings.clone(slot)}
+				slots^[slot] = row.appeared_at
+				ui.settings_dirty = true
+				return true
+			}
 			if row.state == .PROMPT &&
+			   !recognized &&
 			   clicked(
 				   not_now,
 			   ) {return device_queue(ui, {kind = .Answer_Sign_In, slot = slot, response = .NOT_NOW})}
@@ -667,6 +701,7 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 		settings_button("DeviceCheckSignIns", tr("Check now"))
 		if device_can_start_fresh(
 			profile,
+			reviewed,
 		) {settings_button("DeviceStartFresh", tr("No, start fresh"))}
 	}
 	return false
@@ -1199,6 +1234,7 @@ devices_modal :: proc(ui: ^Ui_State) {
 						),
 					)
 					if device_earlier_sign_in(
+						ui,
 						profile,
 					) {settings_button("DeviceLinkOffer", tr("Link this device"), ACCENT)}
 					settings_button("DeviceClose", tr("Not now"))
@@ -1280,7 +1316,7 @@ handle_device_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			profile.first_import = false
 			devices_close(ui)
 		} else if clicked("DeviceLinkOffer") &&
-		   device_earlier_sign_in(profile) &&
+		   device_earlier_sign_in(ui, profile) &&
 		   device_queue(ui, {kind = .Start}) {
 			profile.first_import = false
 			devices_show(ui, .New)
