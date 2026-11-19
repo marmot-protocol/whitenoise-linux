@@ -262,7 +262,9 @@ activation_blocker :: proc(result: marmot.Account_Devices_Activation) -> string 
 	case .LEGACY_GROUP:
 		return N_("This chat doesn't support linked devices.")
 	case .MEMBERS_NEED_UPDATE:
-		return N_("Some members need to update their app before linked devices can be turned on.")
+		return N_(
+			"Not every device in this chat has reported support for linked devices. If everyone's app is up to date, keep the apps online so the chat can sync.",
+		)
 	case .DEVICES_NEED_REPLACEMENT:
 		return N_("Some devices need to be replaced before linked devices can be turned on.")
 	case .DEVICE_LIMIT_EXCEEDED:

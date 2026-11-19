@@ -4146,6 +4146,9 @@ msgstr ""
 msgid "Not downloaded"
 msgstr ""
 
+msgid "Not every device in this chat has reported support for linked devices. If everyone's app is up to date, keep the apps online so the chat can sync."
+msgstr ""
+
 msgid "Not found"
 msgstr ""
 
@@ -5727,9 +5730,6 @@ msgid "Some chat changes weren't delivered"
 msgstr ""
 
 msgid "Some devices need to be replaced before linked devices can be turned on."
-msgstr ""
-
-msgid "Some members need to update their app before linked devices can be turned on."
 msgstr ""
 
 msgid "Some network results may be missing."

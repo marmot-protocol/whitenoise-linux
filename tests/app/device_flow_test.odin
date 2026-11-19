@@ -716,8 +716,9 @@ devices_chat_activation :: proc(t: ^testing.T) {
 	apply(&ui, .ACCOUNT_DEVICES_ACTIVATION_REFUSED)
 	read.eligibility = .MEMBERS_NEED_UPDATE
 	activation_apply_read(&ui, &read)
-	testing.expect(t, strings.contains(a.notice, "Some members need to update"))
-	device_test_frame(&ui)
+	text := device_test_frame(&ui)
+	testing.expect(t, strings.contains(text, "has reported support for linked devices"))
+	testing.expect(t, strings.contains(text, "If everyone's app is up to date"))
 	testing.expect(t, !nendo.element(nendo.id("EnableAccountDevices")).found)
 	for verdict in ([?]marmot.Account_Devices_Activation{.ELIGIBLE, .ALREADY_ENABLED}) {
 		key := Activation_Key{strings.clone(a.key.account), strings.clone(a.key.group)}

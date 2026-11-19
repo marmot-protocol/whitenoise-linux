@@ -433,6 +433,11 @@ linked devices are on or why you can't turn them on. If you're an admin and
 the chat is eligible, choose **Turn on linked devices**. That change can't
 be undone. An ordinary build can't open a profile joined to a device group.
 
+New chats negotiate support from the KeyPackages used to invite members.
+Updating an app doesn't change capabilities already recorded in a chat.
+The updated device must sync its refreshed capabilities before an admin
+can turn on linked devices.
+
 ### Setup prompts for AI agents
 
 Settings > AI agents offers setup prompts for Hermes, OpenClaw, OpenCode, Codex, and Claude Code. White Noise does not install anything or share your private key.
