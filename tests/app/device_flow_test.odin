@@ -595,6 +595,16 @@ devices_sign_in_review :: proc(t: ^testing.T) {
 	testing.expect(t, !device_can_start_fresh(profile))
 	command.response = .REJECT
 	testing.expect(t, device_command_current(profile, command))
+	device_test_frame(&ui)
+	testing.expect(t, !nendo.element(nendo.id("SignInRecognize0")).found)
+	button = nendo.element(nendo.id("DeviceSignIn", 0))
+	if !testing.expect(t, button.found) {return}
+	r = button.rect
+	nendo.set_pointer({r.x + r.width / 2, r.y + r.height / 2}, .Up)
+	forced_release = true
+	testing.expect(t, handle_devices(&ui, nil))
+	forced_release = false
+	device_test_frame(&ui)
 	button = nendo.element(nendo.id("SignInRecognize0"))
 	if !testing.expect(t, button.found) {return}
 	defer {
@@ -611,6 +621,15 @@ devices_sign_in_review :: proc(t: ^testing.T) {
 	testing.expect(t, nendo.element(nendo.id("SignInReject0")).found)
 	testing.expect(t, ui.devices.panel == .None && profile.queued.kind == .None)
 	sign_in.appeared_at += 1
+	device_test_frame(&ui)
+	testing.expect(t, !nendo.element(nendo.id("SignInReject0")).found)
+	button = nendo.element(nendo.id("DeviceSignIn", 0))
+	if !testing.expect(t, button.found) {return}
+	r = button.rect
+	nendo.set_pointer({r.x + r.width / 2, r.y + r.height / 2}, .Up)
+	forced_release = true
+	testing.expect(t, handle_devices(&ui, nil))
+	forced_release = false
 	device_test_frame(&ui)
 	testing.expect(t, nendo.element(nendo.id("SignInRecognize0")).found)
 	sign_in.state = .LINKED_ELSEWHERE

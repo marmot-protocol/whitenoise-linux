@@ -86,31 +86,70 @@ device_request_list :: proc(ui: ^Ui_State, draw: bool) -> bool {
 	return false
 }
 
+@(private = "file")
+device_section :: proc() -> nendo.Box {
+	return {width = nendo.grow(), direction = .Column, gap = 8}
+}
+
+@(private = "file")
+device_list :: proc() -> nendo.Box {
+	return {
+		width = nendo.grow(),
+		direction = .Column,
+		color = mix_color(CARD, TEXT, 0.065),
+		radius = rr(10),
+		border = {color = FIELD_BORDER, width = {between = 1}},
+	}
+}
+
+@(private = "file")
+device_list_row :: proc() -> nendo.Box {
+	return {
+		width = nendo.grow(),
+		height = nendo.fit(min = settings_tap_size(48)),
+		padding = {left = 12, right = 12, top = 8, bottom = 8},
+		gap = 10,
+		align = {y = .Center},
+		color = hovered() ? HOVER : {},
+		radius = rr(8),
+	}
+}
+
+@(private = "file")
+device_heading :: proc(label: string) {
+	nendo.text(label, {font = FONT_TITLE, size = 14, color = TEXT})
+}
+
 @(private)
 devices_pane :: proc(ui: ^Ui_State) {
 	if !devices_visible(ui) {return}
+	if ui.devices.unavailable {
+		device_copy(tr("Device linking isn't available in this session."))
+		return
+	}
 	profile := device_current(ui)
-	if !ui.devices.unavailable {device_warnings(profile)}
-	if nendo.box(nendo.id("DevicesRoster"))(settings_box()) {
-		settings_group(tr("Linked devices"))
-		if ui.devices.unavailable {
-			device_copy(tr("Device linking isn't available in this session."))
-			return
-		}
-		if profile == nil || .Roster not_in profile.known {
-			if profile == nil || .Roster not_in profile.stale {
-				device_copy(tr("Loading linked devices…"))
-				busy_bar("DevicesRosterBusy")
+	device_warnings(profile)
+	if nendo.box(nendo.id("DevicesRoster"))(device_section()) {
+		device_heading(tr("Your devices"))
+		if nendo.box(nendo.id("DeviceRosterList"))(device_list()) {
+			if profile != nil &&
+			   .Roster in profile.known &&
+			   profile.view.roster != nil &&
+			   profile.view.roster.len != 0 {
+				device_roster_rows(ui, profile, .Draw)
+			} else if nendo.box(nendo.id("EmptyDeviceRoster"))(
+			{width = nendo.grow(), direction = .Column, padding = nendo.pad(12), gap = 6},
+			) {
+				if profile == nil ||
+				   (.Roster not_in profile.known && .Roster not_in profile.stale) {
+					device_copy(tr("Loading linked devices…"))
+					busy_bar("DevicesRosterBusy")
+				} else if .Roster not_in profile.stale {
+					device_copy(tr("No devices are linked to this profile yet."))
+				} else {
+					device_copy(tr("Couldn't refresh device information."), DANGER)
+				}
 			}
-		} else if roster := profile.view.roster; roster != nil && roster.len != 0 {
-			device_roster_rows(ui, profile, .Draw)
-		} else {
-			device_copy(tr("No devices are linked to this profile yet."))
-			device_copy(
-				tr(
-					"Link this device to bring chats over, or add a new device if your chats are here.",
-				),
-			)
 		}
 		if profile != nil {
 			if .Closed_Chats in profile.known && profile.view.closed_chats != 0 {
@@ -144,19 +183,33 @@ devices_pane :: proc(ui: ^Ui_State) {
 				device_copy(device_busy_text(action)); busy_bar("DevicesPageBusy")
 			}
 		}
-		settings_button("DevicesAdd", tr("Add a new device"))
-		settings_button("DevicesNew", tr("Link to another device"))
-		if profile != nil && device_command_current(profile, {kind = .Reset}) {
-			settings_button("DeviceReset", tr("Reset and link again"), DANGER)
+	}
+	if nendo.box(nendo.id("DevicesPairing"))(device_section()) {
+		device_heading(tr("Link a device"))
+		pairing := device_list()
+		pairing.gap, pairing.padding = 12, nendo.pad(12)
+		if nendo.box(nendo.id("DevicesPairingCard"))(pairing) {
+			if nendo.box(nendo.id("DevicesPairingActions"))(settings_row(stacked = true)) {
+				settings_button("DevicesAdd", tr("Add a new device"), ACCENT)
+				settings_button("DevicesNew", tr("Link to another device"))
+			}
+			device_copy(
+				tr(
+					"Link this device to bring chats over, or add a new device if your chats are here.",
+				),
+			)
 		}
-		device_moves(ui, profile, .Draw)
 		device_request_list(ui, true)
+		device_moves(ui, profile, .Draw)
 		if accounts_have_tombstones(
 			ui,
 		) {settings_button("DevicesUnlinkedProfiles", tr("Review unlinked profiles"))}
 	}
-	if profile != nil && nendo.box(nendo.id("DevicesSignIns"))(settings_box()) {
-		device_sign_ins(ui, profile, .Draw)
+	if profile != nil && nendo.box(nendo.id("DevicesSignIns"))(device_section()) {
+		device_heading(tr("Sign-ins"))
+		if nendo.box(nendo.id("DevicesSignInList"))(
+			device_list(),
+		) {device_sign_ins(ui, profile, .Draw)}
 	}
 }
 
@@ -538,10 +591,22 @@ Device_Pass :: enum {
 }
 
 @(private = "file")
+device_notice :: proc(color: nendo.Color) -> nendo.Box {
+	return {
+		width = nendo.grow(),
+		direction = .Column,
+		padding = nendo.pad(12),
+		gap = 6,
+		color = mix_color(CARD, color, 0.13),
+		radius = rr(10),
+	}
+}
+
+@(private = "file")
 device_warnings :: proc(profile: ^Device_Profile) {
 	if profile == nil {return}
 	if device_has_warning(profile) {
-		if nendo.box(nendo.id("DevicesWarning"))(settings_box()) {
+		if nendo.box(nendo.id("DevicesWarning"))(device_notice(DANGER)) {
 			nendo.text(
 				tr("Someone may have your private key"),
 				{font = FONT_TITLE, size = 16, color = DANGER},
@@ -573,8 +638,14 @@ device_warnings :: proc(profile: ^Device_Profile) {
 			)
 		}
 	}
+	if device_command_current(profile, {kind = .Reset}) {
+		if nendo.box(nendo.id("DevicesStalled"))(device_notice(WARNING)) {
+			device_heading(tr("This device can't catch up with your other devices."))
+			settings_button("DeviceReset", tr("Reset and link again"), DANGER)
+		}
+	}
 	if .Overdue in profile.known && profile.view.overdue {
-		if nendo.box(nendo.id("DevicesOverdue"))(settings_box()) {
+		if nendo.box(nendo.id("DevicesOverdue"))(device_notice(WARNING)) {
 			nendo.text(
 				tr("Key package refresh overdue"),
 				{font = FONT_TITLE, size = 15, color = WARNING},
@@ -608,11 +679,7 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 	if profile == nil {return false}
 	items: []marmot.Unrecognized_Sign_In
 	if list := profile.view.sign_ins; list != nil {items = list.items[:list.len]}
-	if pass == .Draw {
-		settings_group(tr("Other sign-ins"))
-		if profile.view.started_fresh {device_copy(tr("Only future invitations will appear here until you link this device."))}
-		if .Sign_Ins in profile.known && len(items) == 0 {device_copy(tr("No other sign-ins."))}
-	}
+	d := &ui.devices
 	reviewed := ui.prefs.sign_ins_recognized[profile.account]
 	for row, i in items {
 		client := string(row.client)
@@ -621,6 +688,31 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 		slot := string(row.slot_id_hex)
 		seen, found := reviewed[slot]
 		recognized := unresolved && found && seen == row.appeared_at
+		expanded :=
+			slot != "" && slot == d.expanded_sign_in && row.appeared_at == d.expanded_sign_in_at
+		if pass == .Draw {
+			if nendo.box(nendo.id("DeviceSignIn", u32(i)))(device_list_row()) {
+				if nendo.box(nendo.id("DeviceSignInText", u32(i)))(
+				{width = nendo.grow(), direction = .Column, gap = 2},
+				) {
+					device_copy(
+						recognized ? tr("Recognized on this device. Not linked.") : device_sign_in_state(row),
+						TEXT,
+					)
+					device_copy(
+						row.appeared_at == 0 ? client : fmt.tprintf("%s · %s", client, timestamp_label(i64(row.appeared_at), .SHORT_DATE_TIME, 0)),
+					)
+				}
+				if slot !=
+				   "" {nendo.text(expanded ? "⌄" : "›", {font = FONT_TITLE, size = 18, color = TEXT_DIM})}
+			}
+		} else if slot != "" && clicked_indexed("DeviceSignIn", u32(i)) {
+			delete(d.expanded_sign_in, reload_allocator())
+			d.expanded_sign_in = expanded ? "" : strings.clone(slot, reload_allocator())
+			d.expanded_sign_in_at = row.appeared_at
+			return true
+		}
+		if !expanded {continue}
 		link, recognize, not_now, reject, dismiss :=
 			fmt.tprintf("SignInLink%d", i),
 			fmt.tprintf("SignInRecognize%d", i),
@@ -628,23 +720,9 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 			fmt.tprintf("SignInReject%d", i),
 			fmt.tprintf("SignInDismiss%d", i)
 		if pass == .Draw {
-			if nendo.box(nendo.id("DeviceSignIn", u32(i)))(
-			{
-				width = nendo.grow(),
-				direction = .Column,
-				padding = nendo.pad(10),
-				gap = 6,
-				color = ROW_BG,
-				radius = rr(7),
-			},
+			if nendo.box(nendo.id("SignInActions", u32(i)))(
+			{width = nendo.grow(), direction = .Column, padding = nendo.pad(12), gap = 6},
 			) {
-				device_copy(
-					recognized ? tr("Recognized on this device. Not linked.") : device_sign_in_state(row),
-					TEXT,
-				)
-				device_copy(
-					row.appeared_at == 0 ? client : fmt.tprintf("%s · %s", client, timestamp_label(i64(row.appeared_at), .SHORT_DATE_TIME, 0)),
-				)
 				if !row.signed_in {device_copy(tr("Signed out"))}
 				if row.previously_linked_here {device_copy(tr("Previously linked on this device"))}
 				if unresolved {
@@ -665,11 +743,7 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 			}
 		} else {
 			if unresolved && clicked(link) {devices_show(ui, .Add); return true}
-			if unresolved &&
-			   !recognized &&
-			   .Sign_Ins not_in profile.stale &&
-			   slot != "" &&
-			   clicked(recognize) {
+			if unresolved && !recognized && .Sign_Ins not_in profile.stale && clicked(recognize) {
 				context.allocator = reload_allocator()
 				if reviewed == nil {
 					ui.prefs.sign_ins_recognized[strings.clone(profile.account)] = make(
@@ -697,12 +771,21 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 			   ) {return device_queue(ui, {kind = .Answer_Sign_In, slot = slot, response = .DISMISS})}
 		}
 	}
-	if pass == .Draw {
-		settings_button("DeviceCheckSignIns", tr("Check now"))
-		if device_can_start_fresh(
-			profile,
-			reviewed,
-		) {settings_button("DeviceStartFresh", tr("No, start fresh"))}
+	if pass == .Draw &&
+	   nendo.box(nendo.id("DevicesSignInFooter"))(
+	   {width = nendo.grow(), direction = .Column, gap = 8, padding = nendo.pad(12)},
+	   ) {
+		if .Sign_Ins in profile.known &&
+		   .Sign_Ins not_in profile.stale &&
+		   len(items) == 0 {device_copy(tr("No other sign-ins."))}
+		if profile.view.started_fresh {device_copy(tr("Only future invitations will appear here until you link this device."))}
+		if nendo.box(nendo.id("DevicesSignInChecks"))(settings_row(stacked = true)) {
+			settings_button("DeviceCheckSignIns", tr("Check now"))
+			if device_can_start_fresh(
+				profile,
+				reviewed,
+			) {settings_button("DeviceStartFresh", tr("No, start fresh"))}
+		}
 	}
 	return false
 }
@@ -738,23 +821,36 @@ device_roster_rows :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device
 				!row.keep_while_inactive &&
 				!row.removal_pending
 			if pass == .Draw {
-				if nendo.box(nendo.id("DeviceRosterRow", index))(srow()) {
+				if nendo.box(nendo.id("DeviceRosterRow", index))(device_list_row()) {
+					platform := string(row.platform)
+					mobile :=
+						strings.equal_fold(platform, "Android") ||
+						strings.equal_fold(platform, "iOS")
+					nendo.text(
+						mobile ? "\uf10b" : "\uf108",
+						{font = FONT_ICON, size = 17, color = TEXT_DIM},
+					)
 					if nendo.box(nendo.id("DeviceRosterText", index))(
-					{width = nendo.grow(), direction = .Column, gap = 4},
+					{width = nendo.grow(), direction = .Column, gap = 2},
 					) {
-						device_copy(
-							own ? fmt.tprintf(tr("%s (this device)"), device_label(&row)) : device_label(&row),
-							TEXT,
-						)
-						device_copy(device_status_text(&row))
-						platform, client := string(row.platform), string(row.client)
-						if platform != "" &&
-						   client !=
-							   "" {device_copy(fmt.tprintf("%s · %s", platform, client))} else if platform != "" || client != "" {device_copy(platform == "" ? client : platform)}
-						if row.has_last_active_at {device_copy(fmt.tprintf(tr("Last active: %s"), timestamp_label(i64(row.last_active_at), .SHORT_DATE_TIME, 0)))}
+						device_copy(device_label(&row), TEXT)
+						status := device_status_text(&row)
+						if row.status == .ACTIVE && !row.inactive && !row.removal_pending {
+							if own {
+								status = tr("This device")
+							} else if row.has_last_active_at {
+								status = fmt.tprintf(
+									tr("Last active: %s"),
+									timestamp_label(i64(row.last_active_at), .SHORT_DATE_TIME, 0),
+								)
+							}
+						} else if own {
+							status = fmt.tprintf("%s · %s", tr("This device"), status)
+						}
+						device_copy(status)
 					}
 					if keep {settings_button(fmt.tprintf("DeviceKeep%d", i), tr("Keep"))}
-					nendo.text("›", {font = FONT_TITLE, size = 18, color = ACCENT})
+					nendo.text("›", {font = FONT_TITLE, size = 18, color = TEXT_DIM})
 				}
 			} else if keep &&
 			   clicked(fmt.tprintf("DeviceKeep%d", i)) &&
@@ -781,7 +877,7 @@ device_roster_rows :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device
 device_moves :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pass) -> bool {
 	if profile == nil || profile.view.link == nil {return false}
 	link := profile.view.link
-	if pass == .Draw && link.moves_len != 0 {settings_group(tr("Moving this device"))}
+	if pass == .Draw && link.moves_len != 0 {device_heading(tr("Moving this device"))}
 	index := 0
 	for move in link.moves[:link.moves_len] {
 		if pass == .Draw {
@@ -836,8 +932,23 @@ device_detail :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
 		settings_button("DeviceClose", tr("Close"))
 		return
 	}
-	device_copy(row.is_this_device ? tr("This device") : device_label(row), TEXT)
+	device_heading(device_label(row))
+	if row.is_this_device {device_copy(tr("This device"))}
+	platform, client := string(row.platform), string(row.client)
+	if platform != "" && client != "" && platform != client {
+		device_copy(fmt.tprintf("%s · %s", platform, client))
+	} else if platform != "" || client != "" {
+		device_copy(platform != "" ? platform : client)
+	}
 	device_copy(device_status_text(row))
+	if row.has_last_active_at {
+		device_copy(
+			fmt.tprintf(
+				tr("Last active: %s"),
+				timestamp_label(i64(row.last_active_at), .SHORT_DATE_TIME, 0),
+			),
+		)
+	}
 	if row.linked_at !=
 	   0 {device_copy(fmt.tprintf(tr("Linked: %s"), timestamp_label(i64(row.linked_at), .SHORT_DATE_TIME, 0)))}
 	if by := device_find_slot(profile, string(row.linked_by_slot_id_hex)); by != nil {

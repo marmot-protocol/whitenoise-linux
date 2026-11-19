@@ -113,7 +113,8 @@ Devices_State :: struct {
 	inventory_dirty, inventory_stale:                                bool,
 	panel:                                                           Device_Panel,
 	panel_account, panel_prompt, review_account, error:              string,
-	panel_slot:                                                      string,
+	panel_slot, expanded_sign_in:                                    string,
+	expanded_sign_in_at:                                             u64,
 	wipe_report:                                                     string,
 	wipe_report_error:                                               bool,
 	name, own_name:                                                  [dynamic]u8,
@@ -500,6 +501,7 @@ devices_close :: proc(ui: ^Ui_State) {
 	d := &ui.devices
 	delete(d.panel_account); delete(d.panel_prompt); delete(d.review_account); delete(d.error)
 	delete(d.panel_slot); d.panel_slot = ""
+	delete(d.expanded_sign_in); d.expanded_sign_in = ""
 	d.panel_account, d.panel_prompt, d.review_account, d.error = "", "", "", ""
 	d.panel = .None
 	d.show_attempt, d.mismatch, d.move_consent = false, false, false

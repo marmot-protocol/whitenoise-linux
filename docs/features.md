@@ -425,10 +425,11 @@ bring over earlier messages. A chat shows progress while it receives history
 and marks where that history ends. Messages sent from your other device still
 appear as yours, without this device's delivery ticks.
 
-Devices lists the linked devices and lets you rename or remove them. If you
-recognize a sign-in but want to keep it separate, choose **This was me, don't
-link**. Only this installation remembers the answer. It does not link the
-device or change what other devices see.
+Select a row under **Your devices** to see its settings or rename or remove
+it. Open an entry under **Sign-ins** to review it. If it was you but you want
+to keep the device separate, choose **This was me, don't link**. Only this
+installation remembers the answer. It does not link the device or change
+what other devices see.
 
 Open a chat's details and look for **Linked devices**. The card shows whether
 linked devices are on or why you can't turn them on. If you're an admin and

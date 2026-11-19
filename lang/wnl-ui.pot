@@ -232,10 +232,6 @@ msgid "%dd"
 msgstr ""
 
 #, c-format
-msgid "%s (this device)"
-msgstr ""
-
-#, c-format
 msgid "%s added %s"
 msgstr ""
 
@@ -3482,6 +3478,9 @@ msgstr ""
 msgid "Lime"
 msgstr ""
 
+msgid "Link a device"
+msgstr ""
+
 msgid "Link a new device?"
 msgstr ""
 
@@ -4401,9 +4400,6 @@ msgid "Other members' linked devices can join without an admin. This can't be tu
 msgstr ""
 
 msgid "Other profiles"
-msgstr ""
-
-msgid "Other sign-ins"
 msgstr ""
 
 msgid "Out of stock"
@@ -5650,6 +5646,9 @@ msgstr ""
 msgid "Sign out of this account?"
 msgstr ""
 
+msgid "Sign-ins"
+msgstr ""
+
 msgid "Sign-out and wipe report"
 msgstr ""
 
@@ -6186,6 +6185,9 @@ msgid "This device"
 msgstr ""
 
 msgid "This device can't be linked."
+msgstr ""
+
+msgid "This device can't catch up with your other devices."
 msgstr ""
 
 msgid "This device can't link because it doesn't support everything this profile needs."
@@ -6940,6 +6942,9 @@ msgid "Your desktop location service handles the permission request. Nothing is 
 msgstr ""
 
 msgid "Your device asks for permission. Nothing is sent to the chat until you choose Send location."
+msgstr ""
+
+msgid "Your devices"
 msgstr ""
 
 msgid "Your disk is filling up"
