@@ -146,6 +146,11 @@ Settings :: struct {
 }
 
 settings_path :: proc(allocator := context.temp_allocator, filename := "settings.json") -> string {
+	when ODIN_PLATFORM_SUBTARGET == .Android {
+		native_cfg := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
+		if native_cfg == "" {return ""}
+		return fmt.aprintf("%s/whitenoise/%s", native_cfg, filename, allocator = allocator)
+	}
 	when ODIN_OS == .OpenBSD {
 		if sandbox_settings_dir != "" {
 			return fmt.aprintf("%s/%s", sandbox_settings_dir, filename, allocator = allocator)

@@ -605,6 +605,7 @@ field_mouse :: proc(
 	touch := rl.TouchActive()
 	if over && (touch ? mouse_released() : mouse_pressed()) {
 		if touch {touch_field = nendo.id(id_str)}
+		when ODIN_PLATFORM_SUBTARGET == .Android {rl.ReopenTextInput()}
 		ed_begin(ui, buf)
 		text_drag_sentence = {}
 		switch {
@@ -734,6 +735,7 @@ compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Co
 		compose_keyboard = true
 		if rl.HasTouch() {touch_field = nendo.id("ComposeClip")}
 		ui.focus = focus
+		when ODIN_PLATFORM_SUBTARGET == .Android {rl.ReopenTextInput()}
 		ed_begin(ui, buf)
 		text_drag_sentence = {}
 		switch {

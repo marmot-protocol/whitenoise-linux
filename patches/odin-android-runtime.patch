@@ -1,0 +1,69 @@
+--- a/core/thread/thread_unix.odin
++++ b/core/thread/thread_unix.odin
+@@ -28,15 +32,13 @@
+ 			sync.wait(&t.start_ok)
+ 		}
+ 
+-		// Enable thread's cancelability.
++		// Bionic supports cooperative joins, but not pthread cancellation.
++		when ODIN_PLATFORM_SUBTARGET != .Android {
+ 		err := posix.pthread_setcancelstate(.ENABLE, nil)
+ 		assert_contextless(err == nil)
+-
+-		// NOTE(laytan): .ASYNCHRONOUS should make `pthread_cancel` cancel immediately
+-		// instead of waiting for a cancellation point.
+-		// This does not seem to work on at least Darwin and NetBSD though.
+ 		err = posix.pthread_setcanceltype(.ASYNCHRONOUS, nil)
+ 		assert_contextless(err == nil)
++		}
+ 
+ 		{
+ 			init_context := t.init_context
+--- a/core/c/libc/errno.odin
++++ b/core/c/libc/errno.odin
+@@ -15,12 +15,19 @@
+ //	EILSEQ
+ //	ERANGE
+ when ODIN_OS == .Linux {
+-	@(private="file")
+-	@(default_calling_convention="c")
++	when ODIN_PLATFORM_SUBTARGET == .Android {
++		@(private = "file", default_calling_convention = "c")
++		foreign libc {
++			@(link_name = "__errno")
++			_get_errno :: proc() -> ^i32 ---
++		}
++	} else {
++		@(private = "file", default_calling_convention = "c")
+ 	foreign libc {
+ 		@(link_name="__errno_location")
+ 		_get_errno :: proc() -> ^int ---
+ 	}
++	}
+ 
+ 	EDOM   :: 33
+ 	EILSEQ :: 84
+@@ -92,6 +99,6 @@
+ // read the value, or to produce an lvalue such that you can assign a different
+ // error value to errno. To work around this, just expose it as a function like
+ // it actually is.
+-errno :: #force_inline proc "contextless" () -> ^int {
++errno :: #force_inline proc "contextless" () -> type_of(_get_errno()) {
+ 	return _get_errno()
+ }
+--- a/core/sys/posix/pthread.odin
++++ b/core/sys/posix/pthread.odin
+@@ -567,8 +562,13 @@
+ 	PTHREAD_CREATE_JOINABLE :: 0
+ 	PTHREAD_CREATE_DETACHED :: 1
+ 
++	when ODIN_PLATFORM_SUBTARGET == .Android {
++		PTHREAD_INHERIT_SCHED :: 1
++		PTHREAD_EXPLICIT_SCHED :: 0
++	} else {
+ 	PTHREAD_INHERIT_SCHED  :: 0
+ 	PTHREAD_EXPLICIT_SCHED :: 1
++	}
+ 
+ 	PTHREAD_PRIO_NONE    :: 0
+ 	PTHREAD_PRIO_INHERIT :: 1

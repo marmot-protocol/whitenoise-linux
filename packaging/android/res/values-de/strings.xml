@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preparing_resources">Die Ressourcen von White Noise werden vorbereitet.</string>
+    <string name="resources_failed">Die Ressourcen von White Noise konnten nicht vorbereitet werden. Bitte versuche es erneut.</string>
+    <string name="start_failed">White Noise konnte nicht gestartet werden</string>
+    <string name="close">Schließen</string>
+</resources>

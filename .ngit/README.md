@@ -12,6 +12,7 @@ watches the repo over Nostr and runs `act/workflows/` using the
 | `act/workflows/release-appimage.yml` | ngit-ci | Native build and tests, AppImage packaging, then a headless launch of the packaged app. Publishes the AppImage to Blossom. |
 | `act/workflows/release-cross.yml` | ngit-ci | Linux ARM64 cross-build and packaged-app smoke run. |
 | `act/workflows/release-windows.yml` | ngit-ci | Windows AMD64 cross-build and packaged-app smoke run under Wine. Separate workflow and runner selector allow it to overlap the native/ARM64 slot. |
+| `act/workflows/release-android.yml` | ngit-ci | Builds and verifies a debug-signed ARM64 APK on every `master` push. Publishes it to Blossom. |
 | `.github/workflows/ci.yml` + `_build.yml` | GitHub | Linux release-profile builds. Quality gates come from the mirrored `pr-precommit.yml`. |
 | `.github/workflows/release.yml` | GitHub | Tag-triggered (`v*`) GitHub Release of the build tarballs. |
 

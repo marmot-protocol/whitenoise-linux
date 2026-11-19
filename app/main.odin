@@ -576,8 +576,10 @@ app_main :: proc() {
 		// Tray icon for either tray pref; start-in-tray also hides the
 		// window, honored at boot only, after the unlock.
 		apply_tray(&ui)
-		if first_session && ui.prefs.start_in_tray && reload_generation == 0 {
-			rl.HideWindow()
+		when ODIN_PLATFORM_SUBTARGET != .Android {
+			if first_session && ui.prefs.start_in_tray && reload_generation == 0 {
+				rl.HideWindow()
+			}
 		}
 
 		ready_started := time.tick_now()

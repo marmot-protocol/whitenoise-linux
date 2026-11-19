@@ -290,6 +290,10 @@ InitWindow :: proc(
 	n: c.int
 	if devices := sdl.GetTouchDevices(&n); devices != nil {
 		for id in devices[:n] {
+			when ODIN_PLATFORM_SUBTARGET == .Android {
+				// SDL also registers Android's virtual devices with negative IDs.
+				if i64(id) < 0 {continue}
+			}
 			if id != sdl.MOUSE_TOUCHID && id != sdl.PEN_TOUCHID {
 				state.touch = true
 				break
@@ -973,6 +977,16 @@ SetTextInput :: proc(on: bool) {
 	_ = sdl.StopTextInput(state.window)
 	state.text_input = false
 	set_preedit("") // a half-composed string has nowhere to land now
+}
+
+when ODIN_PLATFORM_SUBTARGET == .Android {
+	// Android can hide the keyboard without ending text input. Reopen it
+	// on a field tap, not on every frame that the field keeps focus.
+	ReopenTextInput :: proc() {
+		if state.text_input && !sdl.ScreenKeyboardShown(state.window) {
+			_ = sdl.StartTextInput(state.window)
+		}
+	}
 }
 
 // Where the text being edited sits, in window points. The compositor

@@ -294,9 +294,21 @@ The script uses the native or Flatpak KeePassXC CLI and prompts for the database
 
 ## Staging releases on ngit
 
-ngit staging uses `.ngit/act/workflows/release-cross.yml` alongside the existing x86-64 AppImage workflow. The act worker needs Podman with working user namespaces and permission to build and run nested containers. Each target is passed to `actions/upload-artifact`.
+On each `master` push, ngit builds staging packages for Linux, Windows, and Android. Find each package under the corresponding job's Blossom artifacts. The cross-build worker needs Podman with working user namespaces and permission to run nested containers.
 
 - **It has no macOS job yet.** Those need a Mac act runner, and until one exists macOS bundles come from the GitHub workflow.
 - **Blossom publication needs coordinator settings.** It requires the coordinator's `--blossom-servers` setting and an artifact-size limit large enough for the archives (`--blossom-max-artifact-bytes`, commonly above the default 64 MiB).
+
+### Build the Android APK locally
+
+On x86-64 Linux, use the same pinned Odin and Rust toolchains as the desktop build. Install a JDK 17 or newer, the Android API 36 platform, Build Tools 36.0.0, and NDK 30.0.16248370. See the [APK workflow](../.ngit/act/workflows/release-android.yml) for the remaining Ubuntu packages.
+
+```bash
+bash scripts/android-build.sh android-arm64
+```
+
+Set `JAVA_HOME` to your JDK and `ANDROID_HOME` to your SDK. The script produces `build/cross/android-arm64/WhiteNoise-arm64-v8a-debug.apk`. Use `android-amd64` for an x86-64 emulator. Both builds require a user systemd session and reserve 8 GiB of available RAM for the rest of the system.
+
+The APK is for sideloading, uses a debug key, and does not update the separate White Noise Android app.
 
 <sub>[Back to the README](../README.md#further-reading)</sub>

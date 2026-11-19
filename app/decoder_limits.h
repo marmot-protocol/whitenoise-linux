@@ -23,6 +23,27 @@ typedef enum {
     WN_DECODER_SESSION,
 } WnDecoderLifetime;
 
+#ifdef __ANDROID__
+static inline int wn_android_data_limit(rlim_t additional) {
+    // The runtime and native bridge can map writable data before main().
+    // Limit growth from that baseline without charging reserved Scudo arenas.
+    long page_size = sysconf(_SC_PAGESIZE);
+    FILE *statm = fopen("/proc/self/statm", "r");
+    if (!statm) {
+        return 0;
+    }
+    unsigned long long pages;
+    int scanned = fscanf(statm, "%*s %*s %*s %*s %*s %llu", &pages);
+    fclose(statm);
+    if (scanned != 1 || page_size <= 0 || pages > (RLIM_INFINITY - additional) / page_size) {
+        return 0;
+    }
+    rlim_t bytes = (rlim_t)pages * (rlim_t)page_size + additional;
+    const struct rlimit memory = {bytes, bytes};
+    return setrlimit(RLIMIT_DATA, &memory) == 0;
+}
+#endif
+
 /* Set before parsing; each decoder installs its own filesystem capability policy.
  * Sessions use the parent's per-transaction deadline, not a cumulative CPU quota
  * that would eventually terminate a healthy looping animation. */
@@ -74,7 +95,11 @@ static inline int wn_decoder_limits(WnDecoderLifetime lifetime) {
     }
     memory.rlim_max = memory.rlim_cur;
 #endif
-#ifdef RLIMIT_AS
+#if defined(__ANDROID__)
+    if (!wn_android_data_limit(memory.rlim_cur)) {
+        return 0;
+    }
+#elif defined(RLIMIT_AS)
     if (setrlimit(RLIMIT_AS, &memory)) {
         return 0;
     }

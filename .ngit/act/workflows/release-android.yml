@@ -1,0 +1,62 @@
+name: staging-android
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: Build staging Android APK (arm64-v8a)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      ANDROID_HOME: /var/cache/wn-ci/android-sdk
+      JAVA_HOME: /usr/lib/jvm/java-21-openjdk-amd64
+      # The ngit worker and its host already enforce the build limits.
+      WN_ANDROID_BUILD_SCOPED: "1"
+    defaults:
+      run:
+        shell: bash
+        working-directory: /var/cache/wn-ci/worktree
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Restore the exact source revision and build state
+        working-directory: ${{ github.workspace }}
+        run: bash scripts/ngit-stage.sh
+      - name: Install Android build tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            autoconf automake autopoint bison build-essential flex libtool \
+            libtool-bin m4 meson nasm openjdk-21-jdk-headless patch patchelf \
+            perl python3 zip
+          tools="$ANDROID_HOME/cmdline-tools/15859902"
+          if [ ! -x "$tools/bin/sdkmanager" ]; then
+            mkdir -p "$(dirname "$tools")"
+            scratch="$(mktemp -d "$(dirname "$tools")/.install.XXXXXX")"
+            trap 'rm -rf "$scratch"' EXIT
+            curl -fsSL https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip \
+              -o "$scratch/tools.zip"
+            echo "4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583  $scratch/tools.zip" | sha256sum -c -
+            unzip -q "$scratch/tools.zip" -d "$scratch"
+            mv -T "$scratch/cmdline-tools" "$tools"
+          fi
+          if [ ! -x "$ANDROID_HOME/build-tools/36.0.0/aapt2" ] ||
+             [ ! -f "$ANDROID_HOME/platforms/android-36/android.jar" ] ||
+             [ ! -f "$ANDROID_HOME/ndk/30.0.16248370/source.properties" ]; then
+            "$tools/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --licenses < <(yes) >/dev/null
+            "$tools/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
+              'build-tools;36.0.0' 'platforms;android-36' 'ndk;30.0.16248370'
+          fi
+      - name: Build, sign, and verify the APK
+        run: bash scripts/android-build.sh android-arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whitenoise-staging-android-${{ github.sha }}
+          path: /var/cache/wn-ci/worktree/build/cross/android-arm64/WhiteNoise-arm64-v8a-debug.apk
+          if-no-files-found: error

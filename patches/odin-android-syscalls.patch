@@ -1,0 +1,213 @@
+--- a/core/sys/linux/sys.odin
++++ b/core/sys/linux/sys.odin
+@@ -40,8 +40,14 @@
+ 	On ARM64 available since Linux 2.6.16.
+ */
+ open :: proc "contextless" (name: cstring, flags: Open_Flags, mode: Mode = {}) -> (Fd, Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+-		ret := syscall(SYS_openat, AT_FDCWD, transmute(uintptr) name, transmute(u32) flags, transmute(u32) mode)
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++		ret := syscall(
++			SYS_openat,
++			AT_FDCWD,
++			transmute(uintptr)name,
++			transmute(u32)flags,
++			transmute(u32)mode,
++		)
+ 		return errno_unwrap(ret, Fd)
+ 	} else {
+ 		ret := syscall(SYS_open, transmute(uintptr) name, transmute(u32) flags, transmute(u32) mode)
+@@ -67,8 +73,10 @@
+ 	For 32-bit systems a different syscall is used that became available since 2.4.
+ 	Not available on ARM64.
+ */
+-stat :: proc "contextless" (filename: cstring, stat: ^Stat) -> (Errno) {
+-	when size_of(int) == 8 {
++stat :: proc "contextless" (filename: cstring, stat: ^Stat) -> Errno {
++	when ODIN_PLATFORM_SUBTARGET == .Android {
++		return fstatat(AT_FDCWD, filename, stat, {})
++	} else when size_of(int) == 8 {
+ 		when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 			ret := syscall(SYS_fstatat, AT_FDCWD, cast(rawptr) filename, stat, 0)
+ 			return Errno(-ret)
+@@ -110,9 +118,9 @@
+ 	For 32-bit systems a different syscall is used that became available since 2.4.
+ 	Not available on arm64.
+ */
+-lstat :: proc "contextless" (filename: cstring, stat: ^Stat) -> (Errno) {
++lstat :: proc "contextless" (filename: cstring, stat: ^Stat) -> Errno {
+ 	when size_of(int) == 8 {
+-		when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++		when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 			return fstatat(AT_FDCWD, filename, stat, {.SYMLINK_NOFOLLOW})
+ 		} else {
+ 			ret := syscall(SYS_lstat, cast(rawptr) filename, stat)
+@@ -129,7 +137,11 @@
+ 	Available since Linux 2.2.
+ */
+ poll :: proc "contextless" (fds: []Poll_Fd, timeout: i32) -> (i32, Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++		if timeout < 0 {
++			ret := syscall(SYS_ppoll, raw_data(fds), len(fds), cast(rawptr)nil, 0, 0)
++			return errno_unwrap(ret, i32)
++		}
+ 		seconds := cast(uint) timeout / 1000
+ 		nanoseconds := cast(uint) (timeout % 1000) * 1_000_000
+ 		timeout_spec := Time_Spec{seconds, nanoseconds}
+@@ -300,8 +338,8 @@
+ 	Available since Linux 1.0.
+ 	For ARM64 available since Linux 2.6.16.
+ */
+-access :: proc "contextless" (name: cstring, mode: Mode = F_OK) -> (Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++access :: proc "contextless" (name: cstring, mode: Mode = F_OK) -> Errno {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 		ret := syscall(SYS_faccessat, AT_FDCWD, cast(rawptr) name, transmute(u32) mode)
+ 		return Errno(-ret)
+ 	} else {
+@@ -417,7 +467,7 @@
+ 	On ARM64 available since Linux 2.6.27.
+ */
+ dup2 :: proc "contextless" (old: Fd, new: Fd) -> (Fd, Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 		ret := syscall(SYS_dup3, old, new, 0)
+ 
+ 		// Differences between dup2 and dup3 are:
+@@ -783,8 +932,15 @@
+ 	Available since Linux 1.0.
+ */
+ fork :: proc "contextless" () -> (Pid, Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+-		ret := syscall(SYS_clone, u64(Signal.SIGCHLD), cast(rawptr) nil, cast(rawptr) nil, cast(rawptr) nil, u64(0))
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++		ret := syscall(
++			SYS_clone,
++			u64(Signal.SIGCHLD),
++			cast(rawptr)nil,
++			cast(rawptr)nil,
++			cast(rawptr)nil,
++			u64(0),
++		)
+ 		return errno_unwrap(ret, Pid)
+ 	} else {
+ 		ret := syscall(SYS_fork)
+@@ -1216,8 +1453,8 @@
+ 	Available since Linux 1.0.
+ 	On ARM64 available since Linux 2.6.16.
+ */
+-rename :: proc "contextless" (old: cstring, new: cstring) -> (Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++rename :: proc "contextless" (old: cstring, new: cstring) -> Errno {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 		ret := syscall(SYS_renameat, AT_FDCWD, cast(rawptr) old, AT_FDCWD, cast(rawptr) new)
+ 		return Errno(-ret)
+ 	} else {
+@@ -1231,8 +1468,8 @@
+ 	Available since Linux 1.0.
+ 	On ARM64 available since Linux 2.6.16.
+ */
+-mkdir :: proc "contextless" (name: cstring, mode: Mode) -> (Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++mkdir :: proc "contextless" (name: cstring, mode: Mode) -> Errno {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 		ret := syscall(SYS_mkdirat, AT_FDCWD, cast(rawptr) name, transmute(u32) mode)
+ 		return Errno(-ret)
+ 	} else {
+@@ -1246,9 +1483,14 @@
+ 	Available since Linux 1.0.
+ 	On ARM64 available since Linux 2.6.16.
+ */
+-rmdir :: proc "contextless" (name: cstring) -> (Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+-		ret := syscall(SYS_unlinkat, AT_FDCWD, cast(rawptr) name, transmute(i32) FD_Flags{.REMOVEDIR})
++rmdir :: proc "contextless" (name: cstring) -> Errno {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++		ret := syscall(
++			SYS_unlinkat,
++			AT_FDCWD,
++			cast(rawptr)name,
++			transmute(i32)FD_Flags{.REMOVEDIR},
++		)
+ 		return Errno(-ret)
+ 	} else {
+ 		ret := syscall(SYS_rmdir, cast(rawptr) name)
+@@ -1262,7 +1504,7 @@
+ 	On ARM64 available since Linux 2.6.16.
+ */
+ creat :: proc "contextless" (name: cstring, mode: Mode) -> (Fd, Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 		return openat(AT_FDCWD, name, {.CREAT, .WRONLY,.TRUNC}, mode)
+ 	} else {
+ 		ret := syscall(SYS_creat, cast(rawptr) name, transmute(u32) mode)
+@@ -1275,8 +1517,8 @@
+ 	Available since Linux 1.0.
+ 	On ARM64 available since Linux 2.6.16.
+ */
+-link :: proc "contextless" (target: cstring, linkpath: cstring) -> (Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++link :: proc "contextless" (target: cstring, linkpath: cstring) -> Errno {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 		ret := syscall(SYS_linkat, AT_FDCWD, cast(rawptr) target, AT_FDCWD, cast(rawptr) linkpath, 0)
+ 		return Errno(-ret)
+ 	} else {
+@@ -1290,8 +1532,8 @@
+ 	Available since Linux 1.0.
+ 	On ARM64 available since Linux 2.6.16.
+ */
+-unlink :: proc "contextless" (name: cstring) -> (Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++unlink :: proc "contextless" (name: cstring) -> Errno {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 		ret := syscall(SYS_unlinkat, AT_FDCWD, cast(rawptr) name, 0)
+ 		return Errno(-ret)
+ 	} else {
+@@ -1305,8 +1547,8 @@
+ 	Available since Linux 1.0.
+ 	On arm64 available since Linux 2.6.16.
+ */
+-symlink :: proc "contextless" (target: cstring, linkpath: cstring) -> (Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++symlink :: proc "contextless" (target: cstring, linkpath: cstring) -> Errno {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 		ret := syscall(SYS_symlinkat, cast(rawptr) target, AT_FDCWD, cast(rawptr) linkpath)
+ 		return Errno(-ret)
+ 	} else {
+@@ -1321,7 +1563,7 @@
+ 	On arm64 available since Linux 2.6.16.
+ */
+ readlink :: proc "contextless" (name: cstring, buf: []u8) -> (int, Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 		ret := syscall(SYS_readlinkat, AT_FDCWD, cast(rawptr) name, raw_data(buf), len(buf))
+ 		return errno_unwrap(ret, int)
+ 	} else {
+@@ -1335,8 +1577,8 @@
+ 	Available since Linux 1.0.
+ 	On ARM64 available since Linux 2.6.16.
+ */
+-chmod :: proc "contextless" (name: cstring, mode: Mode) -> (Errno) {
+-	when ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
++chmod :: proc "contextless" (name: cstring, mode: Mode) -> Errno {
++	when ODIN_PLATFORM_SUBTARGET == .Android || ODIN_ARCH == .arm64 || ODIN_ARCH == .riscv64 {
+ 		ret := syscall(SYS_fchmodat, AT_FDCWD, cast(rawptr) name, transmute(u32) mode)
+ 		return Errno(-ret)
+ 	} else {
+--- a/core/os/process_linux.odin
++++ b/core/os/process_linux.odin
+@@ -573,7 +608,12 @@
+ 			}
+ 		}
+ 
+-		errno = linux.execveat(dir_fd, exe_path, &cargs[0], env)
++		when ODIN_PLATFORM_SUBTARGET == .Android {
++			// The child already changed directory; Android permits execve, not execveat.
++			errno = linux.execve(exe_path, &cargs[0], env)
++		} else {
++			errno = linux.execveat(dir_fd, exe_path, &cargs[0], env)
++		}
+ 		assert(errno != nil)
+ 		write_errno_to_parent_and_abort(child_pipe_fds[WRITE], errno)
+ 	}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preparing_resources">White Noise のリソースを準備しています。</string>
+    <string name="resources_failed">White Noise のリソースを準備できませんでした。もう一度お試しください。</string>
+    <string name="start_failed">White Noise を起動できませんでした</string>
+    <string name="close">閉じる</string>
+</resources>
