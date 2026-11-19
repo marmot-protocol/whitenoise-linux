@@ -2328,6 +2328,9 @@ msgstr "ユーザー名とパスワードを、それぞれ UTF-8 で 1 から 2
 msgid "Enter a username and password, each up to 255 characters."
 msgstr "ユーザー名とパスワードをそれぞれ255文字以内で入力してください。"
 
+msgid "Enter a valid emoji set naddr."
+msgstr "有効な絵文字セットのnaddrを入力してください。"
+
 msgid "Enter a valid pack link or address."
 msgstr "有効なパックのリンクまたはアドレスを入力してください。"
 
@@ -3985,6 +3988,9 @@ msgstr "貼り付け"
 
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "パックのリンクを貼り付けると、追加する前にステッカーを確認できます。"
+
+msgid "Paste an emoji set naddr, then choose Refresh."
+msgstr "絵文字セットのnaddrを貼り付けてから、更新を選んでください。"
 
 msgid "Paste someone's public key to start a chat."
 msgstr "相手の公開鍵を貼り付けてチャットを始めてください。"

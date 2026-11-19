@@ -149,6 +149,7 @@ Export:
 ### Emoji, standard and custom
 
 - **Emoji search accepts names and shortcodes.** `100` finds hundred points and `thumbsup` finds thumbs up, with or without surrounding colons.
+- **Thirteen custom emoji are built in.** `:marmot:` is the pixel face, `:marmot_classic:` is the classic marmot, and `:wn:` is the White Noise logo. The expressions are `:marmot_wave:`, `:marmot_yes:`, `:marmot_laugh:`, `:marmot_love:`, `:marmot_party:`, `:marmot_fire:`, `:marmot_wow:`, `:marmot_smirk:`, `:marmot_cry:`, and `:marmot_angry:`. They appear in picker search, reactions, and inline text. Messages and reactions send the bundled PNG bytes unchanged, matching iOS. Imported sets cannot replace built-in shortcodes.
 - **Recent emoji survive restarts.** The picker keeps your eight most recent choices, newest first.
 - **Custom emoji sets come from Nostr.** Settings > General > Messaging > Custom emoji browses recent [NIP-51 kind-30030 emoji sets](https://github.com/nostr-protocol/nips/blob/master/51.md) from your event-fetch relays.
 - **Custom `:shortcode:` emoji use NIP-30.** The image goes out as an encrypted attachment, not a public link.
@@ -160,6 +161,7 @@ Export:
 - Sets with no valid emoji stay hidden.
 - Each row shows artwork and an author mention chip.
 - Search by title, author, or shortcode, then open a set to preview it. Previews appear as each download finishes.
+- To open a specific set, paste its `naddr` into the search field and choose Refresh. The lookup uses its relay hints before your event-fetch relays and opens the matching set's preview.
 - Import the whole set, or use the + button beside one emoji.
 - Imported emoji keep their set title and verified author after a restart.
 - Imports preserve existing shortcodes and report skipped entries and failed downloads.
