@@ -272,6 +272,7 @@ link_cards_enabled :: proc() -> bool {
 // GitHub link is one only when it is alone on its line.
 @(private)
 link_card :: proc(url: string, place: Link_Place) -> bool {
+	if web_viewer != "" && youtube_id(url) != "" {return true}
 	_, gh := gh_ref(url)
 	_, geo := geo_ref(url)
 	_, call := call_link(url)
@@ -390,6 +391,8 @@ render_segs :: proc(
 			) {}
 		} else if card && nev_image_url(seg.url) {
 			image_link(id * 128 + u32(k), seg.url, font_size, max(1, att_w() - 24))
+		} else if video := card && web_viewer != "" ? youtube_id(seg.url) : ""; video != "" {
+			youtube_card(id * 128 + u32(k), seg.url, video)
 		} else if ref, is_gh := gh_ref(seg.url); card && is_gh {
 			// A GitHub PR or issue link replaces the URL run: a card
 			// when it is alone on its line, a chip inside a sentence.

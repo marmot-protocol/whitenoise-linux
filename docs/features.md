@@ -278,14 +278,15 @@ GLB attachments open as static 3D scenes with orbit, zoom, and the model inspect
 
 </details>
 
-### Image links, maps and call cards
+### Image links, YouTube, maps and call cards
 
 - **Direct image links show inline.** JPG, PNG, GIF, and WebP links show the image above its clickable URL.
+- **YouTube links play in White Noise.** On Linux with WebKitGTK and GStreamer media codecs, choose Play YouTube video. Watch URLs, `youtu.be` links, Shorts, and livestream links work. Choose Open in browser if the video does not allow embedding.
 - **Map links become an OpenStreetMap card.** Android location shares and pasted map links get a card you can pan and zoom.
 - **Call links become a call card.** Signal call links and Jitsi Meet room links show a join button and a line saying the call runs outside White Noise.
 - **Link previews are on by default.** Turn them off in Settings > Advanced > Security & privacy to stop new automatic preview requests, including supported-site cards; attachment downloads are unaffected.
 
-Loading a card contacts a third party. This is who learns what:
+Some cards contact third parties. This is who learns what:
 
 | Who is contacted | What they learn |
 | --- | --- |
@@ -294,8 +295,7 @@ Loading a card contacts a third party. This is who learns what:
 | Nominatim, for place names | Coordinates, rounded to three decimals |
 | Your Open in map site | The location |
 | A Jitsi host other than meet.jit.si | One request for `external_api.js` |
-
-The app never contacts Google on its own.
+| YouTube, after you choose Play | Your IP address and the video ID |
 
 <details>
 <summary><b>Image grids and lightbox</b></summary>

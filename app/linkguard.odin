@@ -111,11 +111,16 @@ external_link_action :: proc() -> string {
 
 // Click on a link run in a body.
 handle_link_click :: proc(ui: ^Ui_State) {
-	if len(link_hover) == 0 || !mouse_released() {
+	if !mouse_released() {
 		return
 	}
-	open_link(ui, link_hover)
-	link_hover = ""
+	if youtube_hover != "" && !modal_open(ui) {
+		youtube_play(ui, youtube_hover)
+		youtube_hover = ""
+	} else if link_hover != "" {
+		open_link(ui, link_hover)
+		link_hover = ""
+	}
 }
 
 link_modal :: proc(ui: ^Ui_State) {

@@ -3183,6 +3183,9 @@ msgstr "Testo letterale del messaggio"
 msgid "Lithuanian"
 msgstr "Lituano"
 
+msgid "Loading YouTube video…"
+msgstr "Caricamento del video di YouTube…"
+
 msgid "Loading emoji previews"
 msgstr "Caricamento delle anteprime delle emoji"
 
@@ -4091,6 +4094,9 @@ msgstr "Piastra"
 
 msgid "Play"
 msgstr "Riproduci"
+
+msgid "Play YouTube video"
+msgstr "Riproduci il video di YouTube"
 
 msgid "Play a sound"
 msgstr "Riproduci un suono"

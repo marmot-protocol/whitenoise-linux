@@ -115,6 +115,7 @@ Web_Modal :: struct {
 	tex_w:  u32, // what the texture currently holds, so a resize rebuilds it
 	tex_h:  u32,
 	title:  string,
+	mode:   Web_Mode,
 	seen:   u32, // last frame taken from the child
 	open:   bool,
 	down:   bool, // left button is held on the page
@@ -123,18 +124,35 @@ Web_Modal :: struct {
 	drag:   bool,
 	watch:  ^thread.Thread, // web_watch, joined by web_disconnect
 	stop:   bool, // tells web_watch to return
+	exited: bool, // web_watch already reaped the child
 }
 
 web_modal: Web_Modal
 
-web_open :: proc(url, title: string) -> bool {
+@(private)
+Web_Mode :: enum {
+	Page,
+	YouTube,
+}
+
+@(private)
+web_viewer: string
+
+@(private)
+web_init :: proc() {
+	when WEBXDC_SUPPORTED {
+		path := helper_path("wn-webview")
+		if os.is_file(path) {web_viewer = strings.clone(path)}
+	}
+}
+
+web_open :: proc(url, title: string, mode: Web_Mode = .Page) -> bool {
 	when !WEBXDC_SUPPORTED {return false}
 	web_close()
 
-	viewer := web_viewer_path()
-	if len(viewer) == 0 {
+	if web_viewer == "" {
 		fmt.eprintfln(
-			"webxdc: no wn-webview beside %s (webkit2gtk-4.1 missing at build time?)",
+			"webview: no wn-webview beside %s (webkit2gtk-4.1 missing at build time?)",
 			os.args[0],
 		)
 		return false
@@ -143,7 +161,7 @@ web_open :: proc(url, title: string) -> bool {
 	size := uint(size_of(Web_Shm) + WEB_CAP_W * WEB_CAP_H * 4)
 	ipc := wn_ipc_create(size)
 	if ipc == nil {
-		fmt.eprintln("webxdc: cannot create shared memory")
+		fmt.eprintln("webview: cannot create shared memory")
 		return false
 	}
 	mapped := wn_ipc_data(ipc)
@@ -152,18 +170,19 @@ web_open :: proc(url, title: string) -> bool {
 	// dies the app's window goes with it.
 	reader, writer, pipe_err := os.pipe()
 	if pipe_err != nil {
-		fmt.eprintfln("webxdc: pipe failed: %v", pipe_err)
+		fmt.eprintfln("webview: pipe failed: %v", pipe_err)
 		wn_ipc_close(ipc)
 		return false
 	}
 	child, err := os.process_start(
 	{
 		command = {
-			viewer,
+			web_viewer,
 			url,
 			string(wn_ipc_name(ipc)),
 			fmt.tprintf("%d", WEB_CAP_W),
 			fmt.tprintf("%d", WEB_CAP_H),
+			mode == .YouTube ? "youtube" : "page",
 		},
 		stdin   = reader,
 		// The child's own output (and, under WN_DEBUG, the page's
@@ -176,7 +195,7 @@ web_open :: proc(url, title: string) -> bool {
 	if err != nil {
 		os.close(writer)
 		wn_ipc_close(ipc)
-		fmt.eprintfln("webxdc: %s failed to start: %v", viewer, err)
+		fmt.eprintfln("webview: %s failed to start: %v", web_viewer, err)
 		return false
 	}
 
@@ -190,6 +209,7 @@ web_open :: proc(url, title: string) -> bool {
 		tex_w  = WEB_W,
 		tex_h  = WEB_H,
 		title  = strings.clone(title),
+		mode   = mode,
 		open   = true,
 	}
 	web_modal.watch = thread.create_and_start(web_watch)
@@ -206,13 +226,21 @@ WEB_WATCH_MS :: 8
 
 @(private = "file")
 web_watch :: proc() {
-	seen := sync.atomic_load(&web_modal.shm.seq)
+	seen: u32
 	for !sync.atomic_load(&web_modal.stop) {
 		time.sleep(WEB_WATCH_MS * time.Millisecond)
 		seq := sync.atomic_load(&web_modal.shm.seq)
 		if seq != seen {
 			seen = seq
 			frame_wake()
+		}
+		if seen == 0 && web_modal.mode == .YouTube {
+			_, err := os.process_wait(web_modal.child, timeout = 0)
+			if err != .Timeout {
+				sync.atomic_store(&web_modal.exited, true)
+				frame_wake()
+				return
+			}
 		}
 	}
 }
@@ -237,23 +265,20 @@ web_disconnect :: proc() {
 	thread.destroy(web_modal.watch)
 	web_modal.watch = nil
 	os.close(web_modal.pipe)
-	_, _ = os.process_wait(web_modal.child)
+	if !sync.atomic_load(&web_modal.exited) {_, _ = os.process_wait(web_modal.child)}
 
 	wn_ipc_close(web_modal.ipc)
 	web_modal.child = {}
 }
 
-// wn-webview sits beside the app binary; scripts/build.sh only produces it
-// when webkit2gtk-4.1 is installed.
-@(private = "file")
-web_viewer_path :: proc() -> string {
-	path := helper_path("wn-webview")
-	return os.is_file(path) ? path : ""
-}
-
 // Frame-loop step: take the child's newest frame, if there is one.
-web_tick :: proc() {
+web_tick :: proc(ui: ^Ui_State) {
 	if !web_modal.open {
+		return
+	}
+	if sync.atomic_load(&web_modal.exited) {
+		toast(ui, fmt.tprintf(tr("Couldn't open %s. Please try again."), web_modal.title))
+		web_close()
 		return
 	}
 	// Ask for the size the modal actually occupies on screen, in device
@@ -264,7 +289,7 @@ web_tick :: proc() {
 	web_modal.shm.want_h = u32(h * UI_ZOOM)
 	web_modal.shm.zoom_milli = u32(UI_ZOOM * 1000)
 
-	seq := web_modal.shm.seq
+	seq := sync.atomic_load(&web_modal.shm.seq)
 	if seq == web_modal.seen {
 		return
 	}
@@ -299,6 +324,7 @@ handle_web_input :: proc(ui: ^Ui_State) {
 		web_close()
 		return
 	}
+	if web_modal.mode == .YouTube && web_modal.seen == 0 {return}
 
 	box := nendo.element(nendo.id("WebPage")).rect
 	if box.width <= 0 {
@@ -425,8 +451,26 @@ web_modal_draw :: proc(ui: ^Ui_State) {
 				nendo.text(tr("Close"), {font = FONT_BODY, size = 12, color = TEXT})
 			}
 		}
+		loading := web_modal.mode == .YouTube && web_modal.seen == 0
 		if nendo.box(nendo.id("WebPage"))(
-		{width = nendo.fixed(w), height = nendo.fixed(h), image = &web_modal.tex, radius = rr(8)},
-		) {}
+		{
+			width = nendo.fixed(w),
+			height = nendo.fixed(h),
+			radius = rr(8),
+			image = loading ? nil : &web_modal.tex,
+			color = loading ? PLATE : {},
+			direction = .Column,
+			gap = 8,
+			align = {x = .Center, y = .Center},
+		},
+		) {
+			if loading {
+				nendo.text(
+					tr("Loading YouTube video…"),
+					{font = FONT_BODY, size = 13, color = TEXT},
+				)
+				busy_bar("YouTubeLoading")
+			}
+		}
 	}
 }
