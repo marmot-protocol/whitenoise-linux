@@ -332,7 +332,6 @@ fit_w :: proc(w: f32, margin: f32 = 12) -> f32 {
 // Match the actual shell allocation, including the draggable separator.
 page_w :: proc(ui: ^Ui_State) -> f32 {
 	if ui.chat_preview_w > 0 {return ui.chat_preview_w}
-	if ui.whip_chat_width > 0 {return ui.whip_chat_width}
 	width := f32(rl.GetScreenWidth()) / UI_ZOOM
 	if single_pane() {
 		return phone_detail(ui) ? width : 0
@@ -441,7 +440,7 @@ phone_detail :: proc(ui: ^Ui_State) -> bool {
 	}
 	switch ui.page {
 	case .Chats:
-		return ui.whip_open || ui.selected >= 0
+		return ui.selected >= 0
 	case .Contacts:
 		return ui.selected_contact >= 0 || len(ui.profile_contact.id_hex) > 0
 	case .Settings, .Archived, .Profile:
@@ -518,7 +517,6 @@ phone_back_action :: proc(ui: ^Ui_State) {
 		compose_keyboard = false
 		touch_field = {}
 		ui.chat_head_menu = false
-		ui.whip_open = false
 		ui.selected = -1
 	case .Contacts:
 		if ui.focus == .Nick {save_nickname(ui)}
@@ -792,7 +790,6 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 		ui.shortcuts_open ||
 		ui.export_open ||
 		ui.folder_open ||
-		ui.whip_edit_open ||
 		ui.theme_edit ||
 		ui.backup_mode != .None ||
 		ui.vault_pw_open ||

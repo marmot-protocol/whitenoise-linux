@@ -37,14 +37,11 @@ rail_content :: proc(ui: ^Ui_State) {
 	) {
 		// The header counts what the chat list below shows.
 		chat_rows: []int
-		terminal_rows: []u32
 		inbox: []Inbox_Row
 		chat_total: int
 		if ui.page == .Chats {
 			chat_rows, chat_total = chat_rail_matches(ui)
-			terminal_rows = whip_rail_matches(ui)
-			if rl.WhipAvailable() {chat_total += len(rl.WhipProjects())}
-			inbox = inbox_rows(ui, chat_rows, terminal_rows)
+			inbox = inbox_rows(ui, chat_rows)
 			if ui.prefs.recent_chats && ui.chat_folder != "" {
 				sections, grouped := inbox_sections(ui, inbox)
 				for name, i in ui.prefs.folders {
@@ -194,16 +191,13 @@ rail_content :: proc(ui: ^Ui_State) {
 							.Chats  = tr("Chats"),
 							.Unread = tr("Unread"),
 							.Groups = tr("Groups"),
-							.Whip   = "Whip",
 						}
 						ids := #sparse[Chat_Filter]string {
 							.Chats  = "AllPill",
 							.Unread = "UnreadPill",
 							.Groups = "GroupsPill",
-							.Whip   = "WhipPill",
 						}
 						for t in Chat_Filter {
-							if t == .Whip && !rl.WhipAvailable() {continue}
 							active := t == ui.chat_filter && ui.chat_folder == ""
 							if nendo.box(nendo.id(ids[t]))(
 							{
@@ -443,7 +437,6 @@ rail_content :: proc(ui: ^Ui_State) {
 		}
 
 		if ui.page == .Chats && logged_in && !rail_narrow(ui) {
-			whip_inbox_progress(ui)
 			if nendo.box(nendo.id("ChatList"))(
 			{
 				width = nendo.grow(),

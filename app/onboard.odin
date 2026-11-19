@@ -199,7 +199,7 @@ step_view :: proc(ui: ^Ui_State, step: Step) -> Step_View {
 	return {}
 }
 
-// Inline shares the rail's scroll container so Notes and Whip remain reachable.
+// Inline shares the rail's scroll container so Notes remains reachable.
 get_started_pane :: proc(ui: ^Ui_State, mode: Onboard_Layout = .Scroll) {
 	if nendo.box(nendo.id("GetStarted"))(
 	{

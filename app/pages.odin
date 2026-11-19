@@ -13,9 +13,7 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if ui.focus == .Whip {return}
 	if ui.sticker_open {handle_sticker_panel(ui); return}
-	if len(ui.accounts) > 0 && whip_inbox_input(ui) {return}
 	// Wipe private keys off their page without disarming other settings actions.
 	if ui.page != .Settings ||
 	   (ui.settings_section != .Keys && (len(ui.keys_nsec) > 0 || ui.keys_nsec_show)) {
@@ -210,7 +208,6 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Theme browsing needs hover deadlines and keyboard input on every frame,
 	// not just the pointer release used by the remaining page actions.
 	if ui.page == .Settings {handle_settings(ui, client)}
-	if ui.page == .Chats && ui.whip_open {whip_pane_input(ui)}
 
 	if !mouse_released() {
 		return
@@ -233,10 +230,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			.Chats  = "AllPill",
 			.Unread = "UnreadPill",
 			.Groups = "GroupsPill",
-			.Whip   = "WhipPill",
 		}
 		for scope in Chat_Filter {
-			if scope == .Whip && !rl.WhipAvailable() {continue}
 			if !clicked(ids[scope]) && !(scope == .Chats && clicked("ChatListShowAll")) {continue}
 			ui.chat_filter = scope
 			ui.chat_folder = ""
@@ -962,7 +957,6 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 
 // Activate another already-stored account and reload everything.
 switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
-	whip_workspace_navigation(ui)
 	job := account_job_new(ui, client, .Switch, account_id); account_job_start(job)
 }
 

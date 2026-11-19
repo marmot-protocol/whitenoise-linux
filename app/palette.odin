@@ -334,7 +334,6 @@ handle_palette :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // clicks do (handle_pages).
 run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 	goto_page :: proc(ui: ^Ui_State, client: ^marmot.Client, page: Page) {
-		whip_workspace_navigation(ui)
 		ui.page = page
 		switch page {
 		case .Chats:

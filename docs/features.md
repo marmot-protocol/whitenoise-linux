@@ -218,7 +218,6 @@ Each folder matches all of its rules or any one of them.
 | Fewer than, More than | Has fewer or more than N people, you included |
 | Has unread messages | Has unread messages |
 | Has a draft | Has unsent composer text saved |
-| Is Whip | Is a [Whip](whip.md) project |
 
 - **Hand placement wins over rules.** Choosing "Follow folder rules" in the move dialog hands the chat back to the rules.
 - **Deleting a folder asks first.** This applies from both Settings and its context menu; only the folder is removed and its chats stay in your chat list.
@@ -228,7 +227,7 @@ Each folder matches all of its rules or any one of them.
 <summary><b>Checked boxes, sidebar modes and when member lists are read</b></summary>
 
 - In Settings > Folders, chats placed by hand show a checked box. Clearing it hands the chat back to the rules.
-- In Recent mode, every folder appears beside Chats, Unread, Groups, and Whip as a filter, keeping recent activity order within the selected folder.
+- In Recent mode, every folder appears beside Chats, Unread, and Groups as a filter, keeping recent activity order within the selected folder.
 - In Grouped mode, empty folders stay out of the chat list sidebar.
 - Member rules read each group's member list on every chat-list refresh, and only while such a rule exists.
 

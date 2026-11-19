@@ -387,7 +387,7 @@ exception: the `.ttc` is tens of megabytes, so Japanese falls back to the
 system copy. The system paths behind the bundled ones in each stack cover
 Arch, Debian/Ubuntu, and Fedora layouts.
 
-Private-use characters in text, including chat messages and Whip titles,
+Private-use characters in text, including chat messages,
 prefer the bundled Nerd Font when it has the glyph. Other characters retain
 the selected text stack. Inline glyphs use native text metrics; icon buttons
 apply ink-box centering without changing the shared glyph cache.

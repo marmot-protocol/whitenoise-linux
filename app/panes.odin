@@ -66,7 +66,7 @@ chat_rows_window :: proc(
 		) {}
 	}
 	for i in order[first:last] {
-		active := !ui.whip_open && chip == .Archive && ui.selected == i
+		active := chip == .Archive && ui.selected == i
 		// Keyed by the chat rather than its slot, so a restore that
 		// closes the list up slides the rows below into place.
 		if nendo.box(nendo.id("ChatRowMove", nendo.id(rows[i].group_id).id))(
@@ -96,7 +96,6 @@ Chat_Rail_Empty :: enum {
 	No_Matches,
 	No_Unread,
 	No_Groups,
-	No_Whip,
 }
 
 @(private)
@@ -104,8 +103,6 @@ chat_rail_empty :: proc(total, rows: int, query: bool, scope: Chat_Filter) -> Ch
 	switch {
 	case rows > 0:
 		return .None
-	case scope == .Whip && !query:
-		return .No_Whip
 	case total == 0:
 		return .No_Chats
 	case query:
@@ -130,7 +127,6 @@ chat_rail_matches :: proc(ui: ^Ui_State) -> (matched: []int, total: int) {
 		chat := &chats[i]
 		if chat.archived || chat.search_only {continue}
 		total += 1
-		if ui.chat_filter == .Whip {continue}
 		if len(filter) > 0 &&
 		   !strings.contains(strings.to_lower(chat.title, context.temp_allocator), filter) &&
 		   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {continue}
@@ -236,8 +232,6 @@ chat_rail_empty_note :: proc(ui: ^Ui_State, rows, total: int) {
 	case .None:
 	case .No_Chats:
 		nendo.text(tr("No chats yet"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
-	case .No_Whip:
-		nendo.text(tr("No Whip projects"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
 	case .No_Matches:
 		chat_rail_hint(
 			"ChatListNoMatch",
@@ -821,7 +815,6 @@ accounts_modal :: proc(ui: ^Ui_State) {
 	scrollbar(nendo.id("AccountsModal"), 14)
 }
 
-// Shared by conversations and terminal work waiting for attention.
 @(private)
 unread_badge :: proc(id: nendo.Id, unread: u64) {
 	if unread == 0 {return}
@@ -863,21 +856,6 @@ nav_button :: proc(page: Page, active: bool) {
 			PAGE_ICONS[page],
 			{font = FONT_ICON, size = 17, color = active ? ACCENT : TEXT_DIM},
 		)
-		if page == .Chats && rl.WhipAvailable() {
-			waiting: u64
-			for project in rl.WhipProjects() {waiting += u64(project.waiting)}
-			if waiting > 0 {
-				if nendo.box(nendo.id("TerminalInboxBadge"))(
-				{
-					floating = {
-						attach_to = .Parent,
-						attach = {element = .Center_Center, parent = .Right_Top},
-						z = 2,
-					},
-				},
-				) {unread_badge(nendo.id("TerminalInboxUnread"), waiting)}
-			}
-		}
 	}
 }
 

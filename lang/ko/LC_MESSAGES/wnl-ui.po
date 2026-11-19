@@ -204,24 +204,12 @@ msgid "%d seconds ago"
 msgstr "%d초 전"
 
 #, c-format
-msgid "%d terminal"
-msgstr "터미널 %d개"
-
-#, c-format
-msgid "%d terminals"
-msgstr "터미널 %d개"
-
-#, c-format
 msgid "%d voters"
 msgstr "투표자 %d명"
 
 #, c-format
 msgid "%d votes"
 msgstr "%d표"
-
-#, c-format
-msgid "%d waiting"
-msgstr "%d개 대기 중"
 
 #, c-format
 msgid "%d waiting to connect"
@@ -376,9 +364,6 @@ msgstr "키 패키지가 있으면 다른 사람이 암호화된 채팅에 초�
 
 msgid "A message at this size."
 msgstr "이 크기의 메시지입니다."
-
-msgid "A terminal is waiting for you."
-msgstr "터미널이 입력을 기다리고 있습니다."
 
 msgid "ABOUT"
 msgstr "소개"
@@ -851,9 +836,6 @@ msgstr "사진 변경"
 msgid "Change picture"
 msgstr "이미지 변경"
 
-msgid "Change project avatar"
-msgstr "프로젝트 아바타 변경"
-
 msgid "Change rule type"
 msgstr "규칙 유형 변경"
 
@@ -916,8 +898,8 @@ msgstr "채팅: %s"
 msgid "Chats"
 msgstr "채팅"
 
-msgid "Chats and Whip projects that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
-msgstr "조건에 맞는 채팅과 Whip 프로젝트는 자동으로 여기에 분류됩니다. 인원 수에는 본인도 포함됩니다. 직접 옮긴 항목은 옮긴 위치에 그대로 남습니다."
+msgid "Chats that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
+msgstr ""
 
 msgid "Chats you archive will appear here."
 msgstr "보관한 채팅이 여기에 표시됩니다."
@@ -948,9 +930,6 @@ msgstr "시스템 알림에서 테스트 알림을 확인하세요."
 
 msgid "Checking for updates."
 msgstr "업데이트를 확인하고 있습니다."
-
-msgid "Checking project folder..."
-msgstr "프로젝트 폴더 확인 중..."
 
 msgid "Checking relays..."
 msgstr "릴레이 확인 중..."
@@ -988,20 +967,11 @@ msgstr "가져올 연락처 CSV 또는 JSON 내보내기 파일을 선택하세�
 msgid "Choose a destination for this chat."
 msgstr "이 채팅을 옮길 위치를 선택하세요."
 
-msgid "Choose a destination for this project."
-msgstr "이 프로젝트를 옮길 위치를 선택하세요."
-
 msgid "Choose a known sender or enter a public key."
 msgstr "알려진 발신자를 선택하거나 공개 키를 입력하세요."
 
 msgid "Choose a location before sending."
 msgstr "보내기 전에 위치를 선택하세요."
-
-msgid "Choose a project folder to open a terminal."
-msgstr "터미널을 열 프로젝트 폴더를 선택하세요."
-
-msgid "Choose a project folder."
-msgstr "프로젝트 폴더를 선택하세요."
 
 msgid "Choose a sign-in method."
 msgstr "로그인 방법을 선택하세요."
@@ -1108,20 +1078,11 @@ msgstr "닫기"
 msgid "Close White Noise"
 msgstr "White Noise 닫기"
 
-msgid "Close pane"
-msgstr "창 닫기"
-
-msgid "Close tab"
-msgstr "탭 닫기"
-
 msgid "Close to tray"
 msgstr "닫을 때 트레이로 최소화"
 
 msgid "Closing connections and clearing this session."
 msgstr "연결을 닫고 이 세션을 지우고 있습니다."
-
-msgid "Closing tab…"
-msgstr "탭 닫는 중…"
 
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr "창을 닫으면 숨겨집니다. 트레이 아이콘에 읽지 않은 메시지 수가 표시되며, 아이콘을 눌러 다시 열 수 있습니다."
@@ -1347,17 +1308,8 @@ msgstr "비밀번호를 변경할 수 없습니다. 다시 시도하세요."
 msgid "Couldn't check for updates. Please try again."
 msgstr "업데이트를 확인할 수 없습니다. 다시 시도하세요."
 
-msgid "Couldn't check the project folder. Please try again."
-msgstr "프로젝트 폴더를 확인할 수 없습니다. 다시 시도하세요."
-
-msgid "Couldn't choose a folder. Close your open file picker and try again."
-msgstr "폴더를 선택할 수 없습니다. 열려 있는 파일 선택기를 닫고 다시 시도하세요."
-
 msgid "Couldn't choose a photo. Close your open file picker and try again."
 msgstr "사진을 선택할 수 없습니다. 열려 있는 파일 선택기를 닫고 다시 시도하세요."
-
-msgid "Couldn't close the tab. Please try again."
-msgstr "탭을 닫을 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't complete the signer request. Please try again."
 msgstr "서명자 요청을 완료할 수 없습니다. 다시 시도하세요."
@@ -1394,12 +1346,6 @@ msgstr "채팅을 만들 수 없습니다. 선택한 사람 중 White Noise가 �
 
 msgid "Couldn't create the group. Enter a name and try again."
 msgstr "그룹을 만들 수 없습니다. 이름을 입력하고 다시 시도하세요."
-
-msgid "Couldn't create the project. Please try again."
-msgstr "프로젝트를 만들 수 없습니다. 다시 시도하세요."
-
-msgid "Couldn't create the tab. Please try again."
-msgstr "탭을 만들 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't create the vault. Please try again."
 msgstr "금고를 만들 수 없습니다. 다시 시도하세요."
@@ -1442,9 +1388,6 @@ msgstr "키를 내보낼 수 없습니다. %s"
 
 msgid "Couldn't find your account on the relays. Check your relay settings and try again."
 msgstr "릴레이에서 계정을 찾을 수 없습니다. 릴레이 설정을 확인하고 다시 시도하세요."
-
-msgid "Couldn't find your home folder. Enter an absolute project folder path."
-msgstr "홈 폴더를 찾을 수 없습니다. 프로젝트 폴더의 절대 경로를 입력하세요."
 
 msgid "Couldn't finish dictation. Please try again."
 msgstr "받아쓰기를 완료할 수 없습니다. 다시 시도하세요."
@@ -1574,24 +1517,15 @@ msgstr "채팅을 읽음으로 표시할 수 없습니다. %s"
 msgid "Couldn't mark the chat read. Please try again."
 msgstr "채팅을 읽음으로 표시할 수 없습니다. 다시 시도하세요."
 
-msgid "Couldn't normalize the project folder. Check the path and try again."
-msgstr "프로젝트 폴더 경로를 정규화할 수 없습니다. 경로를 확인하고 다시 시도하세요."
-
 #, c-format
 msgid "Couldn't open %s. Please try again."
 msgstr "%s을(를) 열 수 없습니다. 다시 시도하세요."
-
-msgid "Couldn't open Whip. Please try again."
-msgstr "Whip을 열 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "백업을 열 수 없습니다. 비밀번호를 다시 확인하고 다시 시도하세요."
 
 msgid "Couldn't open the microphone. Please try again."
 msgstr "마이크를 열 수 없습니다. 다시 시도하세요."
-
-msgid "Couldn't open the project folder. Check that it exists and you have permission to access it."
-msgstr "프로젝트 폴더를 열 수 없습니다. 폴더가 존재하고 접근 권한이 있는지 확인하세요."
 
 msgid "Couldn't open the restored chat. Please try again."
 msgstr "복원된 채팅을 열 수 없습니다. 다시 시도하세요."
@@ -1639,9 +1573,6 @@ msgstr "백업을 읽을 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't read the image. Please try again."
 msgstr "이미지를 읽을 수 없습니다. 다시 시도하세요."
-
-msgid "Couldn't read the project photo. Please try again."
-msgstr "프로젝트 사진을 읽을 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't read the signer permissions. Please try again."
 msgstr "서명자 권한을 읽을 수 없습니다. 다시 시도하세요."
@@ -1698,9 +1629,6 @@ msgstr "GIF를 저장할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't save the edit. Please try again."
 msgstr "수정 내용을 저장할 수 없습니다. 다시 시도하세요."
-
-msgid "Couldn't save the project photo. Please try again."
-msgstr "프로젝트 사진을 저장할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't save the sticker. Wait for its image to load and try again."
 msgstr "스티커를 저장할 수 없습니다. 이미지가 로드될 때까지 기다린 후 다시 시도하세요."
@@ -1867,12 +1795,6 @@ msgstr "만든 사람"
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "비밀번호로 암호화된 NIP-49 키를 만듭니다. 안전하게 보관하거나 다른 클라이언트로 옮길 수 있습니다."
-
-msgid "Creating project…"
-msgstr "프로젝트 만드는 중…"
-
-msgid "Creating tab…"
-msgstr "탭 만드는 중…"
 
 msgid "Creating your chat"
 msgstr "채팅 만드는 중"
@@ -2086,9 +2008,6 @@ msgstr "둘러보기"
 msgid "Divider"
 msgstr "구분선"
 
-msgid "Dock to chat"
-msgstr "채팅에 고정"
-
 msgid "Documents"
 msgstr "문서"
 
@@ -2183,9 +2102,6 @@ msgstr "메시지 수정"
 msgid "Edit profile"
 msgstr "프로필 편집"
 
-msgid "Edit project"
-msgstr "프로젝트 편집"
-
 msgid "Edit theme"
 msgstr "테마 편집"
 
@@ -2256,9 +2172,6 @@ msgstr "비밀번호 입력"
 msgid "Enter a password to encrypt your backup."
 msgstr "백업을 암호화할 비밀번호를 입력하세요."
 
-msgid "Enter a project name."
-msgstr "프로젝트 이름을 입력하세요."
-
 msgid "Enter a relay URL (wss://…)"
 msgstr "릴레이 URL 입력 (wss://…)"
 
@@ -2273,9 +2186,6 @@ msgstr "각각 255자 이내로 사용자 이름과 비밀번호를 입력하세
 
 msgid "Enter a valid pack link or address."
 msgstr "올바른 팩 링크 또는 주소를 입력하세요."
-
-msgid "Enter an absolute project folder path, or a path starting with ~/."
-msgstr "프로젝트 폴더의 절대 경로 또는 ~/로 시작하는 경로를 입력하세요."
 
 msgid "Enter at least 2 people. Counts include you."
 msgstr "2명 이상 입력하세요. 인원 수에는 본인이 포함됩니다."
@@ -2451,9 +2361,6 @@ msgstr "깃발"
 
 msgid "Flat"
 msgstr "단색"
-
-msgid "Float"
-msgstr "띄우기"
 
 msgid "Focus glow"
 msgstr "포커스 광"
@@ -2867,9 +2774,6 @@ msgstr "선택한 텍스트 반전"
 msgid "Invite"
 msgstr "초대"
 
-msgid "Is Whip"
-msgstr "Whip 프로젝트"
-
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr "채팅의 모든 사람에게서 사라집니다. 이 작업은 되돌릴 수 없습니다."
 
@@ -3200,9 +3104,6 @@ msgstr "모든 규칙과 일치"
 msgid "Match any rule"
 msgstr "하나 이상의 규칙과 일치"
 
-msgid "Maximize pane"
-msgstr "창 최대화"
-
 msgid "May"
 msgstr "5월"
 
@@ -3365,12 +3266,6 @@ msgstr "새 메시지"
 msgid "New name"
 msgstr "새 이름"
 
-msgid "New tab"
-msgstr "새 탭"
-
-msgid "New terminal"
-msgstr "새 터미널"
-
 msgid "News"
 msgstr "뉴스"
 
@@ -3396,9 +3291,6 @@ msgstr "%s의 별명"
 msgid "No GIFs found. Try another search."
 msgstr "GIF를 찾을 수 없습니다. 다른 검색어로 시도하세요."
 
-msgid "No Whip projects"
-msgstr "Whip 프로젝트 없음"
-
 msgid "No archived chats"
 msgstr "보관된 채팅 없음"
 
@@ -3413,9 +3305,6 @@ msgstr "열린 채팅이 없습니다. 채팅을 선택하고 새로 고치세�
 
 msgid "No chats match your filter."
 msgstr "필터와 일치하는 채팅이 없습니다."
-
-msgid "No chats or terminals yet"
-msgstr "아직 채팅이나 터미널이 없음"
 
 msgid "No chats to share with yet."
 msgstr "아직 공유할 채팅이 없습니다."
@@ -3711,9 +3600,6 @@ msgstr "오픈 소스 코딩 에이전트"
 msgid "OpenAI Codex CLI coding agent"
 msgstr "OpenAI Codex CLI 코딩 에이전트"
 
-msgid "Opening Whip…"
-msgstr "Whip 여는 중…"
-
 msgid "Opening file picker…"
 msgstr "파일 선택기 여는 중…"
 
@@ -3825,9 +3711,6 @@ msgstr "패널"
 
 msgid "Panel 2"
 msgstr "패널 2"
-
-msgid "Panes are floating or docked to chats."
-msgstr "창이 떠 있거나 채팅에 고정되어 있습니다."
 
 msgid "Password"
 msgstr "비밀번호"
@@ -3969,9 +3852,6 @@ msgstr "받아쓰기 준비 중..."
 msgid "Preparing download..."
 msgstr "다운로드 준비 중..."
 
-msgid "Preparing project photo…"
-msgstr "프로젝트 사진 준비 중…"
-
 msgid "Preparing speech..."
 msgstr "음성 준비 중..."
 
@@ -4031,15 +3911,6 @@ msgstr "프로필"
 
 msgid "Progress is indeterminate."
 msgstr "진행률을 알 수 없습니다."
-
-msgid "Project created."
-msgstr "프로젝트를 만들었습니다."
-
-msgid "Project name"
-msgstr "프로젝트 이름"
-
-msgid "Projects"
-msgstr "프로젝트"
 
 msgid "Promote"
 msgstr "관리자로 지정"
@@ -4318,9 +4189,6 @@ msgstr "재설정"
 msgid "Reset zoom"
 msgstr "확대/축소 재설정"
 
-msgid "Resize terminal"
-msgstr "터미널 크기 조정"
-
 msgid "Restart now"
 msgstr "지금 다시 시작"
 
@@ -4330,23 +4198,14 @@ msgstr "복원"
 msgid "Restore last selected chat on launch"
 msgstr "시작 시 마지막으로 선택한 채팅 복원"
 
-msgid "Restore panes"
-msgstr "창 복원"
-
 msgid "Restore the default reactions"
 msgstr "기본 반응 복원"
 
 msgid "Restore the last chat on launch"
 msgstr "시작 시 마지막 채팅 복원"
 
-msgid "Restoring terminal history…"
-msgstr "터미널 기록 복원 중…"
-
 msgid "Retry"
 msgstr "다시 시도"
-
-msgid "Return to project"
-msgstr "프로젝트로 돌아가기"
 
 msgid "Reveal"
 msgstr "표시"
@@ -4380,9 +4239,6 @@ msgstr "로켓"
 
 msgid "Romanian"
 msgstr "루마니아어"
-
-msgid "Root folder"
-msgstr "루트 폴더"
 
 msgid "Rotate"
 msgstr "교체"
@@ -4503,9 +4359,6 @@ msgstr "이 기기에 저장했습니다. 릴레이 전송 대기 중입니다."
 
 msgid "Saved. Restart White Noise to apply this connection setting."
 msgstr "저장했습니다. 이 연결 설정을 적용하려면 White Noise를 다시 시작하세요."
-
-msgid "Saving project photo…"
-msgstr "프로젝트 사진 저장 중…"
 
 msgid "Saving vote…"
 msgstr "투표 저장 중…"
@@ -4638,9 +4491,6 @@ msgstr "목록에서 연락처를 선택하세요."
 
 msgid "Select a model to download it for dictation and audio messages."
 msgstr "받아쓰기 및 음성 메시지에 사용할 모델을 선택하여 다운로드하세요."
-
-msgid "Select a project"
-msgstr "프로젝트 선택"
 
 msgid "Self-hosted personal AI assistant"
 msgstr "자체 호스팅 개인 AI 어시스턴트"
@@ -4936,12 +4786,6 @@ msgstr "음성 모델"
 msgid "Speech to text"
 msgstr "음성 인식"
 
-msgid "Split down"
-msgstr "아래로 분할"
-
-msgid "Split right"
-msgstr "오른쪽으로 분할"
-
 msgid "Square"
 msgstr "정사각형"
 
@@ -5163,9 +5007,6 @@ msgstr "현재 비밀번호가 아닙니다. 다시 확인하고 다시 시도�
 msgid "That key isn't an nsec. Double-check it and try again."
 msgstr "이 키는 nsec가 아닙니다. 다시 확인하고 다시 시도하세요."
 
-msgid "That path is not a folder. Choose an existing project folder."
-msgstr "이 경로는 폴더가 아닙니다. 기존 프로젝트 폴더를 선택하세요."
-
 msgid "The AppImage folder is not writable. Move it to a writable folder to enable updates."
 msgstr "AppImage 폴더에 쓸 수 없습니다. 업데이트를 사용하려면 쓰기 가능한 폴더로 옮기세요."
 
@@ -5265,9 +5106,6 @@ msgstr "이 그룹의 새 메시지에 더 이상 접근할 수 없습니다."
 msgid "They stay in the group as a regular member."
 msgstr "일반 멤버로 그룹에 남습니다."
 
-msgid "This changes White Noise project metadata, not running shells."
-msgstr "White Noise 프로젝트 메타데이터만 변경하며 실행 중인 셸은 변경하지 않습니다."
-
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "이 채팅은 보관되었습니다. 메시지를 보내려면 보관함에서 복원하세요."
 
@@ -5330,12 +5168,6 @@ msgstr "이 비밀번호는 이 기기의 금고를 암호화합니다. 계정�
 
 msgid "This password is easy to guess. Someone with this device could guess it and open the vault."
 msgstr "이 비밀번호는 쉽게 추측됩니다. 이 기기를 가진 사람이 비밀번호를 추측해 금고를 열 수 있습니다."
-
-msgid "This project is no longer available."
-msgstr "이 프로젝트는 더 이상 사용할 수 없습니다."
-
-msgid "This project is no longer available. Close this editor and reopen it from the current project."
-msgstr "이 프로젝트는 더 이상 사용할 수 없습니다. 이 편집기를 닫고 현재 프로젝트에서 다시 여세요."
 
 msgid "This relay is already in your list."
 msgstr "이 릴레이는 이미 목록에 있습니다."
@@ -5984,9 +5816,6 @@ msgstr "외 %s"
 
 msgid "carries the blob"
 msgstr "암호화 데이터 전달"
-
-msgid "e.g. ~/Work/project"
-msgstr "예: ~/Work/project"
 
 msgid "edited"
 msgstr "수정됨"

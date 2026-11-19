@@ -1,77 +1,35 @@
 package main
 
 import marmot "../marmot"
-import "core:fmt"
 import "core:slice"
-import "core:strings"
 import "nendo"
 import rl "sdlrl"
 
 @(private)
-Inbox_Kind :: enum {
-	Chat,
-	Terminal,
-}
-
-@(private)
 Inbox_Row :: struct {
-	kind:           Inbox_Kind,
 	index:          int,
-	project:        u32,
-	key, title:     string,
+	key:            string,
 	activity_at:    u64,
 	top:            f32,
 	pinned, unread: bool,
 }
 
 @(private)
-inbox_terminal_key :: proc(dir: string) -> string {
-	key := whip_avatar_key(dir)
-	if key.inbox == "" {key.inbox = fmt.aprintf("whip:%s", key.folder)}
-	return key.inbox
-}
-
-@(private)
-inbox_rows :: proc(ui: ^Ui_State, chats: []int, terminals: []u32) -> []Inbox_Row {
-	rows := make([]Inbox_Row, len(chats) + len(terminals), context.temp_allocator)
+inbox_rows :: proc(ui: ^Ui_State, chats: []int) -> []Inbox_Row {
+	rows := make([]Inbox_Row, len(chats), context.temp_allocator)
 	for index, at in chats {
 		chat := &ui.chats[index]
 		rows[at] = {
-			kind        = .Chat,
 			index       = index,
 			key         = chat.group_id,
-			title       = chat.title,
 			activity_at = chat.activity_at > 100_000_000_000 ? chat.activity_at / 1000 : chat.activity_at,
 			pinned      = ui.prefs.pinned[chat.group_id],
 			unread      = chat.unread > 0 || ui.prefs.unread_ids[chat.group_id],
 		}
 	}
-	at := 0
-	for project, index in rl.WhipProjects() {
-		if at == len(terminals) {break}
-		if project.id != terminals[at] {continue}
-		key := inbox_terminal_key(project.dir)
-		rows[len(chats) + at] = {
-			kind        = .Terminal,
-			index       = index,
-			project     = project.id,
-			key         = key,
-			title       = project.name,
-			activity_at = max(
-				project.activity_at,
-				ui.prefs.whip_activity[whip_avatar_key(project.dir).folder],
-			),
-			pinned      = ui.prefs.pinned[key],
-			unread      = project.waiting > 0,
-		}
-		at += 1
-	}
-	rows = rows[:len(chats) + at]
 	slice.sort_by(rows, proc(a, b: Inbox_Row) -> bool {
 		if a.pinned != b.pinned {return a.pinned}
 		if a.activity_at != b.activity_at {return a.activity_at > b.activity_at}
-		if a.kind != b.kind {return a.kind < b.kind}
-		if a.kind == .Terminal {return a.project < b.project}
 		return a.index < b.index
 	})
 	return rows
@@ -81,10 +39,7 @@ inbox_rows :: proc(ui: ^Ui_State, chats: []int, terminals: []u32) -> []Inbox_Row
 inbox_all :: proc(ui: ^Ui_State) -> []Inbox_Row {
 	chats := make([dynamic]int, 0, len(ui.chats), context.temp_allocator)
 	for chat, index in ui.chats {if !chat.archived && !chat.search_only {append(&chats, index)}}
-	projects := rl.WhipAvailable() ? rl.WhipProjects() : nil
-	ids := make([]u32, len(projects), context.temp_allocator)
-	for project, index in projects {ids[index] = project.id}
-	return inbox_rows(ui, chats[:], ids)
+	return inbox_rows(ui, chats[:])
 }
 
 // Stable partition keeps recent/pinned order inside every folder.
@@ -103,21 +58,7 @@ inbox_sections :: proc(
 	for name, index in ui.prefs.folders {slots[name] = index}
 	row_slots := make([]int, len(rows), context.temp_allocator)
 	for row, index in rows {
-		slot := len(ui.prefs.folders)
-		if row.kind == .Chat {
-			slot = chat_folder_slot(ui, &ui.chats[row.index], slots)
-		} else if folder, placed := ui.prefs.folder_of[row.key]; placed && folder == "" {
-			// Explicit Unfiled placement overrides automatic rules.
-		} else if assigned, found := slots[folder]; placed && found {
-			slot = assigned
-		} else {
-			facts := Chat_Facts {
-				title  = strings.to_lower(row.title, context.temp_allocator),
-				unread = row.unread,
-				whip   = true,
-			}
-			for name, i in ui.prefs.folders {if folder_rules_match(ui.prefs.folder_rules[name], facts) {slot = i; break}}
-		}
+		slot := chat_folder_slot(ui, &ui.chats[row.index], slots)
 		row_slots[index] = slot
 		sections[slot].count += 1
 		if row.unread {sections[slot].unread += 1}
@@ -159,7 +100,6 @@ inbox_rows_window :: proc(ui: ^Ui_State, rows: []Inbox_Row, offset_y: f32, secti
 		{height = nendo.fixed(f32(first) * stride - 2)},
 		) {}
 	}
-	projects := rl.WhipProjects()
 	for row in rows[first:last] {
 		// Keyed by the chat rather than its slot: when activity reorders
 		// the inbox, each row glides to its new place instead of jumping.
@@ -168,16 +108,7 @@ inbox_rows_window :: proc(ui: ^Ui_State, rows: []Inbox_Row, offset_y: f32, secti
 		if nendo.box(nendo.id("InboxRowMove", nendo.id(row.key).id))(
 		{width = nendo.grow(), color = PANEL, transition = layout_motion()},
 		) {
-			if row.kind == .Terminal {
-				whip_project_row(ui, projects[row.index])
-			} else {
-				chat_row(
-					u32(row.index),
-					ui.chats[row.index],
-					!ui.whip_open && row.index == ui.selected,
-					.Archive,
-				)
-			}
+			chat_row(u32(row.index), ui.chats[row.index], row.index == ui.selected, .Archive)
 		}
 	}
 	if last < len(rows) {
@@ -193,9 +124,7 @@ inbox_cycle :: proc(ui: ^Ui_State, client: ^marmot.Client, step: int) {
 	// A selection outside this filter enters from the nearest end.
 	at := step > 0 ? step - 1 : step
 	for row, pos in ui.rail_rows {
-		selected :=
-			row.kind == .Terminal ? ui.whip_open && row.project == ui.whip_project : !ui.whip_open && row.index == ui.selected
-		if selected {at = pos + step; break}
+		if row.index == ui.selected {at = pos + step; break}
 	}
 	row := ui.rail_rows[(at + len(ui.rail_rows)) %% len(ui.rail_rows)]
 	if view := nendo.scroll(nendo.id("ChatList")); view.found {
@@ -206,7 +135,6 @@ inbox_cycle :: proc(ui: ^Ui_State, client: ^marmot.Client, step: int) {
 		view.position.y = -clamp(top, 0, max(view.content.height - height, 0))
 		scroll_residual = {}
 	}
-	if row.kind == .Terminal {whip_open_project(ui, row.project); return}
 	ui.page = .Chats
 	select_chat(ui, client, row.index)
 }

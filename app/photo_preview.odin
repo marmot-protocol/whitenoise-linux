@@ -12,21 +12,20 @@ Photo_Kind :: enum {
 	None,
 	Profile,
 	Group,
-	Whip,
 }
 @(private)
 Photo_Preview :: struct {
-	kind:                   Photo_Kind,
-	account, group, folder: string,
-	pending:                bool, // stays armed even after invalidation, until the callback drains
-	draft:                  Pic_Draft,
-	texture:                rl.Texture2D,
-	crop:                   Photo_Crop,
-	crop_job:               ^Photo_Crop_Job,
-	crop_drag:              bool,
-	crop_pointer:           rl.Vector2,
-	crop_origin:            Photo_Crop,
-	crop_corner:            int, // 0 moves; 1..4 resize top-left, top-right, bottom-left, bottom-right
+	kind:           Photo_Kind,
+	account, group: string,
+	pending:        bool, // stays armed even after invalidation, until the callback drains
+	draft:          Pic_Draft,
+	texture:        rl.Texture2D,
+	crop:           Photo_Crop,
+	crop_job:       ^Photo_Crop_Job,
+	crop_drag:      bool,
+	crop_pointer:   rl.Vector2,
+	crop_origin:    Photo_Crop,
+	crop_corner:    int, // 0 moves; 1..4 resize top-left, top-right, bottom-left, bottom-right
 }
 
 @(private)
@@ -42,7 +41,6 @@ photo_cancel :: proc(ui: ^Ui_State) {
 	if ui.photo.texture.tex != nil {rl.UnloadTexture(ui.photo.texture)}
 	pic_draft_free(&ui.photo.draft)
 	delete(ui.photo.account); delete(ui.photo.group)
-	delete(ui.photo.folder)
 	ui.photo = {
 		pending = pending,
 	}
@@ -51,7 +49,6 @@ photo_cancel :: proc(ui: ^Ui_State) {
 @(private)
 photo_target_valid :: proc(ui: ^Ui_State) -> bool {
 	p := &ui.photo
-	if p.kind == .Whip {return whip_avatar_valid(p.folder)}
 	if p.kind == .None ||
 	   p.account == "" ||
 	   p.account != ui.account_ref ||
@@ -78,7 +75,6 @@ photo_can_use :: proc(ui: ^Ui_State) -> bool {
 	if !photo_target_valid(ui) ||
 	   ui.photo.pending ||
 	   ui.photo.draft.image.data == nil {return false}
-	if ui.photo.kind == .Whip {return ui.whip_avatar_job == nil}
 	if ui.photo.kind == .Group && members_job != nil {return false}
 	for job in account_jobs {if job.account == ui.photo.account || job.kind == .Switch {return false}}
 	if signer := nip46_find(ui.photo.account);
@@ -89,8 +85,7 @@ photo_can_use :: proc(ui: ^Ui_State) -> bool {
 // Capture before opening SDL's dialog. No other outstanding open dialog may
 // share its untagged queue, and pending photo input is captured by main.
 @(private)
-photo_pick_begin :: proc(ui: ^Ui_State, kind: Photo_Kind, folder := "") -> bool {
-	if kind == .Whip && ui.whip_avatar_job != nil {return false}
+photo_pick_begin :: proc(ui: ^Ui_State, kind: Photo_Kind) -> bool {
 	if rl.FileDialogPending() || ui.photo.pending {
 		set_status(
 			ui,
@@ -103,11 +98,7 @@ photo_pick_begin :: proc(ui: ^Ui_State, kind: Photo_Kind, folder := "") -> bool 
 	}
 	photo_cancel(ui)
 	ui.photo.kind = kind
-	if kind == .Whip {
-		ui.photo.folder = strings.clone(whip_avatar_key(folder).folder)
-	} else {
-		ui.photo.account = strings.clone(ui.account_ref)
-	}
+	ui.photo.account = strings.clone(ui.account_ref)
 	if kind == .Group && ui.selected >= 0 && ui.selected < len(ui.chats) {
 		ui.photo.group = strings.clone(ui.chats[ui.selected].group_id)
 	}
@@ -123,7 +114,6 @@ photo_pick_complete :: proc(ui: ^Ui_State, paths: []string) {
 	if !ui.photo.pending {return}
 	ui.photo.pending = false
 	if len(paths) == 0 || !photo_target_valid(ui) {photo_cancel(ui); return}
-	if ui.photo.kind == .Whip {whip_avatar_load(ui, paths[0]); return}
 	draft, ok := load_pic_draft(ui, paths[0])
 	if !ok {photo_cancel(ui); return}
 	texture := rl.LoadTextureFromImage(draft.image)
@@ -147,7 +137,7 @@ photo_check_target :: proc(ui: ^Ui_State) {
 
 @(private)
 photo_use :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if (client == nil && ui.photo.kind != .Whip) || !photo_can_use(ui) {
+	if client == nil || !photo_can_use(ui) {
 		photo_check_target(ui)
 		set_status(
 			ui,
@@ -168,8 +158,6 @@ photo_use :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		upload_profile_pic(client, p.account, draft)
 	case .Group:
 		upload_group_pic_for(client, p.account, p.group, draft)
-	case .Whip:
-		whip_avatar_save(ui, p.folder, draft)
 	case .None:
 	}
 	photo_cancel(ui)
@@ -196,14 +184,6 @@ handle_photo_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if clicked("PhotoOriginal") {
 		ui.photo.crop = {}; ui.photo.crop_drag = false
-		return
-	}
-	if clicked("PhotoReset") &&
-	   ui.photo.kind == .Whip &&
-	   photo_target_valid(ui) &&
-	   ui.whip_avatar_job == nil {
-		whip_avatar_reset(ui, ui.photo.folder)
-		photo_cancel(ui)
 		return
 	}
 	if rl.IsKeyPressed(.ENTER) || clicked("PhotoUse") {
@@ -337,9 +317,6 @@ photo_preview_modal :: proc(ui: ^Ui_State) {
 					tr("Drag inside to move. Drag a corner to resize."),
 					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
-			}
-			if ui.photo.kind == .Whip && ui.whip_avatar_job == nil {
-				micro_button("PhotoReset", tr("Use crop circle"))
 			}
 		}
 		if nendo.box(nendo.id("PhotoActions"))({width = nendo.grow(), gap = 10}) {
