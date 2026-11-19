@@ -78,7 +78,7 @@ In a real emergency you can bypass a single commit with `git commit --no-verify`
 
 To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `just build` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
 
-The current pin is MDK master at `c8210585cab6` (0.14.0-dev). The build applies the patches listed in `scripts/build.sh`.
+The build applies the patches listed in `scripts/build.sh`.
 
 - **Upstream now carries the old patches.** NIP-46 C sessions, Windows portability, OpenBSD sandbox support, SOCKS5 routing, and Markdown timestamps come from upstream MDK.
 - **Deployments are explicit.** The app supplies White Noise's deployment services when creating the Marmot client; every C constructor requires a deployment.
