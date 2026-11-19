@@ -285,13 +285,18 @@ InitWindow :: proc(
 	sdl.EnableScreenSaver()
 	state.density = max(sdl.GetWindowPixelDensity(state.window), 1)
 	state.fullscreen = .FULLSCREEN in sdl.GetWindowFlags(state.window)
-	// Asked once: SDL synthesizes mouse events from touch, so this is
-	// the only way to tell a finger from a pointer.
+	// SDL lists emulated mouse and pen touch devices even without a touchscreen.
+	state.touch = false
 	n: c.int
 	if devices := sdl.GetTouchDevices(&n); devices != nil {
+		for id in devices[:n] {
+			if id != sdl.MOUSE_TOUCHID && id != sdl.PEN_TOUCHID {
+				state.touch = true
+				break
+			}
+		}
 		sdl.free(devices)
 	}
-	state.touch = n > 0
 	// Test hook: a headless display has no touch device, so harness runs
 	// that drive the touch layout with devctl's finger commands say so.
 	if os.get_env("WN_TEST_TOUCH", context.temp_allocator) != "" {state.touch = true}

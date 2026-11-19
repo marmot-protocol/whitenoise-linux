@@ -87,6 +87,10 @@ rail_default_window :: proc(t: ^testing.T) {
 	ui.prefs.reduce_motion = true
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Compact chat"})
+	// A virtual touch device must not switch the desktop to phone layout.
+	previous_mouse_touch := os.get_env("SDL_MOUSE_TOUCH_EVENTS", context.temp_allocator)
+	os.set_env("SDL_MOUSE_TOUCH_EVENTS", "1")
+	defer os.set_env("SDL_MOUSE_TOUCH_EVENTS", previous_mouse_touch)
 	rl.InitWindow(i32(ui.prefs.window_w), i32(ui.prefs.window_h), "Default chat list")
 	defer rl.CloseWindow()
 	UI_ZOOM = zoom_for_width(i32(ui.prefs.window_w)) * f32(ui.prefs.zoom_pct) / 100
