@@ -1,0 +1,24 @@
+name: PR native
+
+on:
+  pull_request:
+
+jobs:
+  native:
+    name: Linux x86_64 build and tests
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Restore the exact source revision and build state
+        working-directory: ${{ github.workspace }}
+        run: bash scripts/ngit-stage.sh
+
+      - name: Build and test
+        working-directory: /var/cache/wn-ci/worktree
+        run: CI=true setpriv --bounding-set=-dac_override,-dac_read_search bash scripts/build.sh test
