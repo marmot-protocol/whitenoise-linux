@@ -4,6 +4,9 @@
 #include FT_TRUETYPE_TABLES_H
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef __ANDROID__
+#include "decoder_limits.h"
+#endif
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -67,13 +70,23 @@ int main(int argc, char **argv) {
     memory.rlim_cur += info.virtual_size;
     memory.rlim_max = memory.rlim_cur;
 #endif
-#ifndef RLIMIT_AS
-    // OpenBSD has no address-space limit; RLIMIT_DATA bounds malloc and
-    // anonymous mmap there, which is what a hostile font would grow.
-#define RLIMIT_AS RLIMIT_DATA
-#endif
-    if (setrlimit(RLIMIT_AS, &memory) || setrlimit(RLIMIT_CPU, &cpu))
+#if defined(__ANDROID__)
+    if (!wn_android_data_limit(memory.rlim_cur)) {
         return 1;
+    }
+#elif !defined(RLIMIT_AS)
+    const int memory_resource = RLIMIT_DATA;
+#else
+    const int memory_resource = RLIMIT_AS;
+#endif
+#ifndef __ANDROID__
+    if (setrlimit(memory_resource, &memory)) {
+        return 1;
+    }
+#endif
+    if (setrlimit(RLIMIT_CPU, &cpu)) {
+        return 1;
+    }
 #endif
 #ifdef __OpenBSD__
     /* The confined caller pins the input descriptor, never a post-exec path. */

@@ -6,6 +6,7 @@ vcpkg-commit = 10541e317a660f4165ba4ac2851ab54a8d4577b1
 mpv-commit = 2a4eb8067ca68ec19adf23daf8ccbb1a05afd6ed
 libplacebo-commit = c42968d8616a1d1c8ad5f4f1a8d6f5a9cb396e56
 sdl-commit = 683181b47cfabd293e3ea409f838915b8297a4fd
+sdl-android-commit = 147a8ee32dbf9ac02f3794964490687b6bbda1bc
 noto-emoji-commit = e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e
 noto-emoji-file = 17cceee0e80d055bf3ab39f4339a5093b5d9f00c45a1c5af656f9a3d6c6379af https://github.com/marmot-protocol/whitenoise-linux/releases/download/deps/noto-emoji-128-e20cbc2bbec1926686be9f9bee7d1d2cfa1fea0e.tar.gz
 twemoji-file = 6857896b4a287e70f8197ab8fb9d68b3c43bb7ae97595aceaf2d11c21b93d9e9 https://static.crates.io/crates/twemoji-assets/twemoji-assets-1.5.1+17.0.2.crate

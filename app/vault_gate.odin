@@ -502,6 +502,9 @@ gate_input :: proc(ui: ^Ui_State) {
 		editor_forget(ui)
 		return
 	}
+	when ODIN_PLATFORM_SUBTARGET == .Android {
+		if clicked(confirming ? "GatePw2Box" : "GatePwBox") {rl.ReopenTextInput()}
+	}
 	if clicked("GatePwShow") {
 		gate_pw_view = gate_pw_view == .Masked ? .Plain : .Masked
 	}

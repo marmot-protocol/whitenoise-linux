@@ -184,7 +184,7 @@ update_start :: proc(test_feed: string) {
 		updater.phase = .Idle
 		updater.worker = thread.create(update_worker)
 		thread.start(updater.worker)
-	} else when ODIN_OS == .Linux {
+	} else when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 		mode: Update_Mode = .Manual
 		if g_prefs != nil && g_prefs.auto_updates {mode = .Automatic}
 		appimage_update_start(test_feed, mode)
@@ -206,7 +206,7 @@ update_stop :: proc() {
 		vpkc_free_update_manager(updater.manager)
 		vpkc_free_source(updater.source)
 		updater = {}
-	} else when ODIN_OS == .Linux {
+	} else when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 		when !#config(WN_RELOAD, false) {appimage_update_prepare_exit()}
 		appimage_update_stop()
 	} else when ODIN_OS == .Darwin {
@@ -215,7 +215,7 @@ update_stop :: proc() {
 }
 
 update_phase :: proc() -> Update_Phase {
-	when ODIN_OS == .Linux {
+	when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 		return appimage_update_phase()
 	} else when ODIN_OS == .Darwin {
 		return macos_update_available() || macos_update_status() != "" ? .Idle : .Off
@@ -225,7 +225,8 @@ update_phase :: proc() -> Update_Phase {
 
 @(private = "file")
 update_version :: proc() -> string {
-	when ODIN_OS == .Linux {return appimage_update_version()}
+	when ODIN_OS ==
+		.Linux && ODIN_PLATFORM_SUBTARGET != .Android {return appimage_update_version()}
 	// Velopack spells the revision "-build.N" (see cross-package.sh); show
 	// the app's own "YYYY.M.D+N" form, as About does.
 	version := string(updater.version[:updater.version_len])
@@ -254,7 +255,7 @@ update_apply :: proc() {
 			sync.atomic_store(&updater.phase, .Failed)
 			return
 		}
-	} else when ODIN_OS == .Linux {
+	} else when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 		if !appimage_update_apply() {return}
 	} else {
 		return
@@ -266,7 +267,8 @@ update_apply :: proc() {
 update_bar :: proc() {
 	phase := update_phase()
 	busy := false
-	when ODIN_OS == .Linux {busy = phase == .Checking || phase == .Downloading}
+	when ODIN_OS ==
+		.Linux && ODIN_PLATFORM_SUBTARGET != .Android {busy = phase == .Checking || phase == .Downloading}
 	if !busy && (phase != .Ready || updater.dismissed) {
 		return
 	}
@@ -295,7 +297,7 @@ update_bar :: proc() {
 
 @(private = "file")
 update_status :: proc(phase: Update_Phase) -> string {
-	when ODIN_OS == .Linux {
+	when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 		if phase == .Failed {return tr(appimage_update_status())}
 		if phase == .Idle {return tr("Check for a newer version.")}
 	}
@@ -317,7 +319,7 @@ update_status :: proc(phase: Update_Phase) -> string {
 @(private = "file")
 update_feedback :: proc(id: string, phase: Update_Phase) {
 	progress: i32 = -1
-	when ODIN_OS == .Linux {
+	when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 		if phase == .Downloading {progress = appimage_update_progress()}
 	}
 	if progress < 0 {
@@ -365,7 +367,7 @@ update_settings_row :: proc() {
 				if macos_update_can_check() {settings_button("UpdateCheck", tr("Check now"))}
 			}
 			return
-		} else when ODIN_OS == .Linux {
+		} else when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 			if g_prefs != nil {
 				settings_check(
 					"TgUpdates",
@@ -400,7 +402,7 @@ update_handle :: proc() {
 	}
 	if clicked("UpdateCheck") {
 		updater.dismissed = false
-		when ODIN_OS == .Linux {
+		when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 			appimage_update_check()
 		} else when ODIN_OS == .Darwin {
 			if macos_update_can_check() {macos_update_check()}

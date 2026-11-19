@@ -3,7 +3,7 @@ package main
 
 import "core:strings"
 
-when ODIN_OS == .Linux {
+when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 	@(private)
 	Update_Mode :: enum {
 		Manual,

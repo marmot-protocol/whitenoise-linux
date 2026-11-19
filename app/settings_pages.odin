@@ -7,9 +7,11 @@ import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:sys/windows"
+import sdl "vendor:sdl3"
 
 _ :: base64
 _ :: windows
+_ :: sdl
 
 import "nendo"
 import rl "sdlrl"
@@ -832,12 +834,12 @@ settings_general :: proc(ui: ^Ui_State) {
 	switch ui.settings_tab {
 	case 0:
 		if nendo.box(nendo.id("StartupGroup"))(settings_box()) {
-			when ODIN_OS != .OpenBSD {
+			when ODIN_OS != .OpenBSD && ODIN_PLATFORM_SUBTARGET != .Android {
 				if nendo.box(nendo.id("RowLaunch"))(settings_row()) {
 					settings_check("TgLaunch", ui.prefs.launch_at_login, tr("Launch at login"), "")
 				}
 			}
-			if !tap_size() {
+			if ODIN_PLATFORM_SUBTARGET != .Android && !tap_size() {
 				if nendo.box(nendo.id("RowTray"))(settings_row()) {
 					settings_check(
 						"TgTray",
@@ -2070,7 +2072,15 @@ spawn_argv :: proc(args: []string) {
 
 @(private)
 open_external :: proc(target: string) {
-	when ODIN_OS == .Windows {
+	when ODIN_PLATFORM_SUBTARGET == .Android {
+		if !sdl.OpenURL(strings.clone_to_cstring(target, context.temp_allocator)) {
+			set_status(
+				g_ui,
+				fmt.aprintf(tr("Couldn't open %s. Please try again."), target),
+				.Error,
+			)
+		}
+	} else when ODIN_OS == .Windows {
 		windows.ShellExecuteW(nil, nil, windows.utf8_to_wstring(target), nil, nil, 1)
 	} else when ODIN_OS == .Darwin {
 		spawn_argv({"open", "--", target})
@@ -2154,7 +2164,13 @@ apply_zoom :: proc(ui: ^Ui_State) {
 	// the same text size and landscape gains room instead of magnifying.
 	base := rl.GetScreenWidth()
 	if rl.HasTouch() && rl.GetScreenHeight() > 0 {base = min(base, rl.GetScreenHeight())}
-	zoom := zoom_for_width(base) * f32(ui.prefs.zoom_pct) / 100
+	scale: f32 = 1
+	when ODIN_PLATFORM_SUBTARGET == .Android {
+		// SDL reports Android window dimensions in pixels.
+		scale = max(sdl.GetDisplayContentScale(sdl.GetPrimaryDisplay()), 1)
+		base = i32(f32(base) / scale)
+	}
+	zoom := zoom_for_width(base) * scale * f32(ui.prefs.zoom_pct) / 100
 	changed := zoom != UI_ZOOM
 	UI_ZOOM = zoom
 	// A zoom change is a geometry discontinuity: re-bake glyphs at the
@@ -2202,7 +2218,7 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 			tts_stop(ui)
 		}
 	case "TgLaunch":
-		when ODIN_OS != .OpenBSD {
+		when ODIN_OS != .OpenBSD && ODIN_PLATFORM_SUBTARGET != .Android {
 			flip(ui, &ui.prefs.launch_at_login)
 			apply_autostart(ui.prefs.launch_at_login)
 		}
@@ -2214,7 +2230,7 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 	case "TgRestore":
 		flip(ui, &ui.prefs.restore_last_chat)
 	case "TgUpdates":
-		when ODIN_OS == .Linux {
+		when ODIN_OS == .Linux && ODIN_PLATFORM_SUBTARGET != .Android {
 			flip(ui, &ui.prefs.auto_updates)
 			appimage_update_set_mode(ui.prefs.auto_updates ? .Automatic : .Manual)
 		} else when ODIN_OS == .Darwin {

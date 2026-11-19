@@ -38,6 +38,45 @@ struct WnIpc {
 #endif
 };
 
+#ifndef _WIN32
+enum Memory_Action { MEMORY_OPEN, MEMORY_CREATE, MEMORY_REMOVE };
+
+static int memory_file(const char *name, enum Memory_Action action) {
+    int flags = O_RDWR;
+    if (action == MEMORY_CREATE) {
+        flags |= O_CREAT | O_EXCL;
+    }
+#ifdef __ANDROID__
+    // Bionic has no named POSIX shm. Private cache files retain the same
+    // mapping protocol and are unlinked as soon as the helper attaches.
+    const char *directory = getenv("TMPDIR");
+    if (!directory || strncmp(name, "/wn-", 4) || strchr(name + 1, '/')) {
+        errno = EINVAL;
+        return -1;
+    }
+    int root = open(directory, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
+    if (root < 0) {
+        return -1;
+    }
+    int result;
+    if (action == MEMORY_REMOVE) {
+        result = unlinkat(root, name + 1, 0);
+    } else {
+        result = openat(root, name + 1, flags | O_CLOEXEC | O_NOFOLLOW, 0600);
+    }
+    int error = errno;
+    close(root);
+    errno = error;
+    return result;
+#else
+    if (action == MEMORY_REMOVE) {
+        return shm_unlink(name);
+    }
+    return shm_open(name, flags, 0600);
+#endif
+}
+#endif
+
 static WnIpc *map_memory(const char *name, size_t size, int create) {
     if (!size || size > 128 * 1024 * 1024)
         return NULL;
@@ -63,7 +102,7 @@ static WnIpc *map_memory(const char *name, size_t size, int create) {
     }
     ipc->data = MapViewOfFile(ipc->mapping, FILE_MAP_ALL_ACCESS, 0, 0, size);
 #else
-    int fd = shm_open(name, O_RDWR | (create ? O_CREAT | O_EXCL : 0), 0600);
+    int fd = memory_file(name, create ? MEMORY_CREATE : MEMORY_OPEN);
     if (fd < 0) {
         free(ipc);
         return NULL;
@@ -71,8 +110,9 @@ static WnIpc *map_memory(const char *name, size_t size, int create) {
     struct stat st;
     if ((create && ftruncate(fd, (off_t)size)) || fstat(fd, &st) || (size_t)st.st_size != size) {
         close(fd);
-        if (create)
-            shm_unlink(name);
+        if (create) {
+            memory_file(name, MEMORY_REMOVE);
+        }
         free(ipc);
         return NULL;
     }
@@ -81,8 +121,9 @@ static WnIpc *map_memory(const char *name, size_t size, int create) {
     if (ipc->data == MAP_FAILED)
         ipc->data = NULL;
     // Once attached, no future process can reopen the private payload by name.
-    if (!create)
-        shm_unlink(name);
+    if (!create) {
+        memory_file(name, MEMORY_REMOVE);
+    }
 #endif
     if (!ipc->data) {
         wn_ipc_close(ipc);
@@ -147,8 +188,9 @@ void wn_ipc_close(WnIpc *ipc) {
 #else
     if (ipc->data)
         munmap(ipc->data, ipc->size);
-    if (ipc->owner)
-        shm_unlink(ipc->name);
+    if (ipc->owner) {
+        memory_file(ipc->name, MEMORY_REMOVE);
+    }
 #endif
     free(ipc);
 }

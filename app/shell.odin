@@ -1053,6 +1053,7 @@ splash_frame :: proc(step: int) {
 // Create the tray (once) and point the window-close route at it. Both
 // tray prefs need the icon: one to start hidden, one to hide on close.
 apply_tray :: proc(ui: ^Ui_State) {
+	when ODIN_PLATFORM_SUBTARGET == .Android {return}
 	if !ui.prefs.start_in_tray && !ui.prefs.minimize_tray {
 		rl.SetHideOnClose(false)
 		return
@@ -1074,6 +1075,7 @@ tray_unread: u64 = max(u64) // forces the first tooltip write
 
 // Unread total in the tray tooltip, rewritten only when it moves.
 tray_tick :: proc(ui: ^Ui_State) {
+	when ODIN_PLATFORM_SUBTARGET == .Android {return}
 	if !ui.prefs.start_in_tray && !ui.prefs.minimize_tray {
 		return
 	}

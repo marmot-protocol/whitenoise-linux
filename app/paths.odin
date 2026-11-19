@@ -3,6 +3,7 @@
 //
 // Packaged resources live in usr/share on Linux, resources beside the
 // executable on Windows, and Contents/Resources inside the macOS app.
+// Android stages APK assets into app-private files before Odin starts.
 // Linux and OpenBSD packages keep helper programs in usr/lib (helper_path).
 // A dev build falls back to the vendor tree staged by scripts/build.sh.
 package main
@@ -33,6 +34,10 @@ WN_BUILD_DIR ::
 // The bundled-data directory, resolved once from the running binary.
 res_dir :: proc() -> string {
 	if g_res != "" {
+		return g_res
+	}
+	when ODIN_PLATFORM_SUBTARGET == .Android {
+		g_res = os.get_env("WN_RESOURCE_DIR", context.allocator)
 		return g_res
 	}
 	g_res = DEV_RES
@@ -81,6 +86,15 @@ executable_path :: proc(allocator := context.temp_allocator) -> string {
 
 @(private)
 helper_path :: proc(name: string) -> string {
+	when ODIN_PLATFORM_SUBTARGET == .Android {
+		native_dir := os.get_env("WN_HELPER_DIR", context.temp_allocator)
+		if native_dir == "" {return ""}
+		stem := strings.trim_prefix(name, "wn-")
+		native_file := strings.concatenate({"libwn-", stem, ".so"}, context.temp_allocator)
+		native_path, native_err := filepath.join({native_dir, native_file}, context.temp_allocator)
+		if native_err != nil {return ""}
+		return native_path
+	}
 	when ODIN_OS == .OpenBSD {
 		if path, ok := sandbox_helpers[name]; ok {return path}
 	}
