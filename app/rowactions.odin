@@ -262,33 +262,14 @@ row_menu_index :: proc(ui: ^Ui_State) -> int {
 	return row_menu_shown
 }
 
-// Resolve the stable project id afresh; the borrowed project list can reorder
-// or lose entries while a menu is open. Never fall back to a chat index.
-@(private = "file")
-row_terminal_key :: proc(ui: ^Ui_State) -> string {
-	for project in rl.WhipProjects() {
-		if project.id == ui.row_terminal {return inbox_terminal_key(project.dir)}
-	}
-	return ""
-}
-
 chat_row_menu :: proc(ui: ^Ui_State) {
-	terminal := ui.row_terminal != 0
-	key: string
-	if terminal {
-		key = row_terminal_key(ui)
-		if key == "" {
-			ui.row_menu = -1
-			return
-		}
-	} else {
-		index := row_menu_index(ui)
-		if index < 0 || index >= len(ui.chats) {return}
-		key = ui.chats[index].group_id
-	}
+	index := row_menu_index(ui)
+	if index < 0 || index >= len(ui.chats) {return}
+	chat := &ui.chats[index]
+	key := chat.group_id
 
 	width := fit_w(single_pane() ? 280 : 230)
-	height := modal_h(terminal ? 98 : (tap_size() ? 412 : 320))
+	height := modal_h(tap_size() ? 412 : 320)
 	if data := nendo.element(nendo.id("RowMenu")); data.found {
 		width = min(fit_w(560), max(width, data.rect.width))
 		height = min(modal_h(560), max(height, data.rect.height))
@@ -319,24 +300,23 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if single_pane() {sheet_title(terminal ? key : ui.chats[row_menu_index(ui)].title)}
-		if !terminal {ctx_item("RowInfo", ICON_SETTINGS, chat_is_dm(ui.chats[row_menu_index(ui)]) ? tr("Chat settings") : tr("Group settings"))}
-		if terminal {ctx_item("RowProjectEdit", ICON_SETTINGS, tr("Edit project"))}
+		if single_pane() {sheet_title(chat.title)}
+		ctx_item(
+			"RowInfo",
+			ICON_SETTINGS,
+			chat_is_dm(chat^) ? tr("Chat settings") : tr("Group settings"),
+		)
 		ctx_item("RowPin", ICON_PIN, ui.prefs.pinned[key] ? tr("Unpin") : tr("Pin to top"))
-		if !terminal {
-			ctx_item("RowMute", ICON_BELL_OFF, ui.prefs.muted_ids[key] ? tr("Unmute") : tr("Mute"))
-			if ui.chats[row_menu_index(ui)].unread > 0 || ui.prefs.unread_ids[key] {
-				ctx_item("RowRead", ICON_ENVELOPE_OPEN, tr("Mark read"))
-			} else {
-				ctx_item("RowUnread", ICON_ENVELOPE, tr("Mark unread"))
-			}
+		ctx_item("RowMute", ICON_BELL_OFF, ui.prefs.muted_ids[key] ? tr("Unmute") : tr("Mute"))
+		if chat.unread > 0 || ui.prefs.unread_ids[key] {
+			ctx_item("RowRead", ICON_ENVELOPE_OPEN, tr("Mark read"))
+		} else {
+			ctx_item("RowUnread", ICON_ENVELOPE, tr("Mark unread"))
 		}
 		ctx_item("RowFolder", ICON_FOLDER, tr("Move to folder"))
-		if !terminal {
-			ctx_item("RowArchive", ICON_ARCHIVE, tr("Archive"))
-			ctx_item("RowExportHtml", ICON_DOWNLOAD, tr("Export as HTML"))
-			ctx_item("RowExportMd", ICON_DOWNLOAD, tr("Export as Markdown"))
-		}
+		ctx_item("RowArchive", ICON_ARCHIVE, tr("Archive"))
+		ctx_item("RowExportHtml", ICON_DOWNLOAD, tr("Export as HTML"))
+		ctx_item("RowExportMd", ICON_DOWNLOAD, tr("Export as Markdown"))
 	}
 	scrollbar(nendo.id("RowMenu"), 11)
 }
@@ -760,7 +740,7 @@ folder_modal :: proc(ui: ^Ui_State) {
 		}
 		if moving {
 			nendo.text(
-				len(ui.prefs.folders) == 0 ? tr("You have no folders yet. Create one with New folder.") : (strings.has_prefix(ui.folder_gid, "whip:") ? tr("Choose a destination for this project.") : tr("Choose a destination for this chat.")),
+				len(ui.prefs.folders) == 0 ? tr("You have no folders yet. Create one with New folder.") : tr("Choose a destination for this chat."),
 				{font = FONT_BODY, size = 13, color = TEXT_DIM},
 			)
 			if folder_searchable(ui) {
@@ -867,36 +847,15 @@ folder_modal :: proc(ui: ^Ui_State) {
 // (ponytail: rough clamp from an estimated panel size).
 open_row_menu :: proc(ui: ^Ui_State, index: int) {
 	m := rl.GetMousePosition()
-	ui.row_terminal = 0
 	ui.row_menu = index
 	ui.row_menu_x, ui.row_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 230, 320)
 }
 
-@(private)
-open_terminal_menu :: proc(ui: ^Ui_State, id: u32) {
-	if id == 0 {return}
-	ui.row_terminal = id
-	ui.row_menu = -1
-	if row_terminal_key(ui) == "" {return}
-	m := rl.GetMousePosition()
-	ui.row_menu = 0
-	ui.row_menu_x, ui.row_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 230, 119)
-}
-
 // Clicks in the open row menu; anything unhandled closes it.
 handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	terminal := ui.row_terminal != 0
-	if ui.row_menu < 0 || (!terminal && ui.row_menu >= len(ui.chats)) || rl.IsKeyPressed(.ESCAPE) {
+	if ui.row_menu < 0 || ui.row_menu >= len(ui.chats) || rl.IsKeyPressed(.ESCAPE) {
 		ui.row_menu = -1
 		return
-	}
-	key: string
-	if terminal {
-		key = row_terminal_key(ui)
-		if key == "" {
-			ui.row_menu = -1
-			return
-		}
 	}
 	if rl.IsMouseButtonPressed(.RIGHT) && !nendo.pointer_over(nendo.id("RowMenu")) {
 		ui.row_menu = -1
@@ -906,18 +865,6 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if menu_keep(nendo.id("RowMenu")) {return}
-	if terminal {
-		ui.row_menu = -1
-		if nendo.pointer_over(nendo.id("RowProjectEdit")) {
-			whip_project_edit_open(ui, ui.row_terminal)
-		} else if nendo.pointer_over(nendo.id("RowPin")) {
-			toggle_flag(&ui.prefs.pinned, key)
-			save_settings(ui)
-		} else if nendo.pointer_over(nendo.id("RowFolder")) {
-			open_folder_modal(ui, key)
-		}
-		return
-	}
 	index := ui.row_menu
 	gid := ui.chats[index].group_id
 	ui.row_menu = -1

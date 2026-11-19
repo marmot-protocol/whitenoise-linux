@@ -135,10 +135,6 @@ rail_default_window :: proc(t: ^testing.T) {
 			}
 		}
 	}
-	ui.new_chat_open, ui.nc_page = true, .Contacts
-	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
-	testing.expect_value(t, nendo.element(nendo.id("NCTerminal")).found, rl.WhipAvailable())
-	close_new_chat(&ui)
 	toggle_rail(&ui)
 	anim_tick(1.0 / 60)
 	build_layout(&ui, 0)
@@ -276,8 +272,7 @@ status_bar_viewports :: proc(t: ^testing.T) {
 					}
 					target := nendo.id(page == .Profile ? "SignOutBtn" : "ZoomMinus")
 					if page == .Settings && section == .Folders {
-						// Board rows interleave chats (even) and terminals (odd): chat 11 is 22.
-						target = nendo.id("BoardChat", 11 * 2)
+						target = nendo.id("BoardChat", 11)
 						for id in ([]string{"SettingsPage", "FolderBoard"}) {
 							data := nendo.scroll(nendo.id(id))
 							if data.found {data.position.y = min(0, data.viewport.height - data.content.height)}
@@ -468,15 +463,6 @@ test_phone_detail :: proc(t: ^testing.T) {
 		ui.page == .Chats && !phone_detail(&ui),
 		"back from settings returns to the chat list",
 	)
-	ui.page = .Chats
-	testing.expect(t, !phone_detail(&ui), "the unified inbox has no detail before selection")
-	ui.whip_project, ui.whip_open = 42, true
-	testing.expect(t, phone_detail(&ui), "a selected project opens its terminal")
-	phone_back_action(&ui)
-	testing.expect_value(t, ui.page, Page.Chats)
-	testing.expect_value(t, ui.whip_project, u32(42))
-	testing.expect(t, !ui.whip_open, "back closes the terminal without forgetting its project")
-	testing.expect(t, !phone_detail(&ui), "back returns to the unified inbox")
 }
 
 // Escape on a settings page lets go of a focused box first, then steps

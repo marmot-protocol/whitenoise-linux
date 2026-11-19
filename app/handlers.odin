@@ -213,9 +213,6 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // the subscriptions phase.
 // The input buffer that currently receives typed characters.
 active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
-	if ui.whip_edit_open {
-		return ui.focus == .WhipProjectPath ? &ui.whip_edit_path : &ui.whip_edit_name
-	}
 	if ui.folder_open {
 		if ui.folder_mode != .Move && ui.focus == .FolderColor {return &ui.folder_color_input}
 		if ui.folder_mode != .Move &&
@@ -313,14 +310,12 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_geo_picker(ui, client)
 		return
 	}
-	if ui.focus == .Whip {return}
 	if ui.sticker_open || ui.picker_open {return}
 	if preview_shown {return}
 	// A shared theme is taken only on the tap: adopt_theme writes it
 	// under the data dir and returns its slot, which then applies.
 	for msg, i in ui.messages {
-		if ui.whip_open ||
-		   ui.selected < 0 ||
+		if ui.selected < 0 ||
 		   len(msg.theme_name) == 0 ||
 		   !clicked(fmt.tprintf("ThemeApply%d", u32(i))) {
 			continue
@@ -352,11 +347,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	// The get-started checklist stands in for the timeline until the
 	// account has a chat.
-	if ui.page == .Chats &&
-	   !ui.whip_open &&
-	   ui.selected < 0 &&
-	   onboard_pending(ui) &&
-	   handle_onboard(ui, client) {
+	if ui.page == .Chats && ui.selected < 0 && onboard_pending(ui) && handle_onboard(ui, client) {
 		return
 	}
 
@@ -371,17 +362,17 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	// Forward picker captures everything while open (before the rail
 	// row clicks, so a pick can't also select the chat under it).
-	if !ui.whip_open && ui.selected >= 0 && ui.fwd_open {
+	if ui.selected >= 0 && ui.fwd_open {
 		handle_forward(ui, client)
 		return
 	}
 	// Openverse image-search modal, same early capture.
-	if !ui.whip_open && ui.selected >= 0 && ui.ov_open {
+	if ui.selected >= 0 && ui.ov_open {
 		handle_openverse(ui, client)
 		return
 	}
 	// Create-poll modal, same early capture.
-	if !ui.whip_open && ui.selected >= 0 && ui.poll_open {
+	if ui.selected >= 0 && ui.poll_open {
 		handle_poll(ui, client)
 		return
 	}
@@ -397,12 +388,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if ui.page == .Chats && (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) {
-		for project in rl.WhipProjects() {
-			if nendo.pointer_over(nendo.id("WhipProject", project.id)) {
-				open_terminal_menu(ui, project.id)
-				return
-			}
-		}
 		for _, i in ui.chats {
 			if nendo.pointer_over(nendo.id("ChatRow", u32(i))) {
 				open_row_menu(ui, i)
@@ -413,8 +398,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if mouse_released() {
 		for msg, i in ui.messages {
-			if !ui.whip_open &&
-			   ui.selected >= 0 &&
+			if ui.selected >= 0 &&
 			   msg.sticker.sha != "" &&
 			   clicked_indexed("MessageSticker", u32(i)) {sticker_show(ui, msg.sticker); return}
 		}
@@ -430,7 +414,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		// Tap a failed optimistic row to retry the send.
 		for &p, i in ui.pending {
-			if ui.whip_open {break}
 			if nendo.pointer_over(nendo.id("MessageMore", 0xF00000 + u32(i) * 8)) {
 				excerpt_toggle(&p.excerpt, 0xF00000 + u32(i) * 8)
 				return
@@ -453,7 +436,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	// Open edit-history modal captures everything while open.
-	if !ui.whip_open && ui.selected >= 0 && ui.hist_open {
+	if ui.selected >= 0 && ui.hist_open {
 		if rl.IsKeyPressed(.ESCAPE) ||
 		   (mouse_released() &&
 				   (clicked("HistClose") || !nendo.pointer_over(nendo.id("HistModal")))) {
@@ -462,7 +445,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	// Open raw-event modal captures everything while open.
-	if !ui.whip_open && ui.selected >= 0 && ui.raw_open {
+	if ui.selected >= 0 && ui.raw_open {
 		if rl.IsKeyPressed(.ESCAPE) ||
 		   (mouse_released() &&
 				   (clicked("RawClose") || !nendo.pointer_over(nendo.id("RawModal")))) {
@@ -475,7 +458,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	// Open encryption-info modal captures everything while open.
-	if !ui.whip_open && ui.selected >= 0 && ui.enc_open {
+	if ui.selected >= 0 && ui.enc_open {
 		if rl.IsKeyPressed(.ESCAPE) ||
 		   (mouse_released() &&
 				   (clicked("EncClose") || !nendo.pointer_over(nendo.id("EncModal")))) {
@@ -488,16 +471,16 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	// Open mentions inbox captures everything while open.
-	if !ui.whip_open && ui.selected >= 0 && ui.mi_open && !clicked("ChatHeadMore") {
+	if ui.selected >= 0 && ui.mi_open && !clicked("ChatHeadMore") {
 		handle_mi(ui, client)
 		return
 	}
 	// Open message context menu captures everything while open.
-	if !ui.whip_open && ui.selected >= 0 && ui.ctx_open {
+	if ui.selected >= 0 && ui.ctx_open {
 		handle_ctx_menu(ui, client)
 		return
 	}
-	if !ui.whip_open && (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) && ui.selected >= 0 {
+	if (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) && ui.selected >= 0 {
 		for msg, i in ui.messages {
 			// A tombstone's only menu row is the dev-mode View raw.
 			if msg.deleted && !ui.prefs.dev_mode {
@@ -556,7 +539,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	if ui.whip_open || ui.selected < 0 {
+	if ui.selected < 0 {
 		return
 	}
 
@@ -1544,9 +1527,8 @@ drop_draft :: proc(ui: ^Ui_State) {
 // Select a chat, load its timeline, and clear the unread badge by
 // marking the newest message read.
 select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int) {
-	switching := ui.whip_open || ui.selected != requested_index
+	switching := ui.selected != requested_index
 	if switching {reading_remember(ui); voice_cancel()}
-	whip_workspace_navigation(ui)
 	if ui.location_open {geo_picker_close(ui)}
 	if ui.photo.kind == .Group {photo_cancel(ui)}
 	index := requested_index
@@ -1554,7 +1536,6 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 	ui.nip05_ticket = 0
 	stash_draft(ui)
 	stash_staged(ui)
-	ui.whip_open = false
 	thread_clear(ui) // thread roots belong to the chat being left
 	#reverse for chat, i in ui.chats {
 		if !chat.search_only || i == index {continue}
@@ -1926,10 +1907,6 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if ui.nc_page == .Contacts {
-		if rl.WhipAvailable() && clicked("NCTerminal") {
-			if whip_new_project(ui) {close_new_chat(ui)}
-			return
-		}
 		if field_mouse(ui, &ui.nc_search, "NCSearch", 14) {ui.focus = .NC_Search}
 		// Matching contacts, then the people the directory search found.
 		rows := nc_contact_matches(ui, string(ui.nc_search[:]))

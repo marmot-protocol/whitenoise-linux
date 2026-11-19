@@ -204,24 +204,12 @@ msgid "%d seconds ago"
 msgstr "%d秒前"
 
 #, c-format
-msgid "%d terminal"
-msgstr "%d個のターミナル"
-
-#, c-format
-msgid "%d terminals"
-msgstr "%d個のターミナル"
-
-#, c-format
 msgid "%d voters"
 msgstr "投票者%d人"
 
 #, c-format
 msgid "%d votes"
 msgstr "%d票"
-
-#, c-format
-msgid "%d waiting"
-msgstr "%d件が待機中です"
 
 #, c-format
 msgid "%d waiting to connect"
@@ -388,9 +376,6 @@ msgstr "このサイズのメッセージです。"
 
 msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
 msgstr "別に保存した秘密鍵または署名ツールがあれば、同じIDを再び使えます。ただし、チャット、送信待ちのメッセージ、保存したライブラリは復元されません。"
-
-msgid "A terminal is waiting for you."
-msgstr "ターミナルがあなたの操作を待っています。"
 
 msgid "ABOUT"
 msgstr "自己紹介"
@@ -894,9 +879,6 @@ msgstr "写真を変更"
 msgid "Change picture"
 msgstr "画像を変更"
 
-msgid "Change project avatar"
-msgstr "プロジェクトのアバターを変更"
-
 msgid "Change rule type"
 msgstr "ルールの種類を変更"
 
@@ -959,8 +941,8 @@ msgstr "チャット: %s"
 msgid "Chats"
 msgstr "チャット"
 
-msgid "Chats and Whip projects that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
-msgstr "条件に一致するチャットとWhipプロジェクトはここに自動で分類されます。人数にはあなたも含まれます。手動で移動した項目は移動先に残ります。"
+msgid "Chats that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
+msgstr ""
 
 msgid "Chats you archive will appear here."
 msgstr "アーカイブしたチャットがここに表示されます。"
@@ -991,9 +973,6 @@ msgstr "システム通知でテスト通知を確認してください。"
 
 msgid "Checking for updates."
 msgstr "アップデートを確認しています。"
-
-msgid "Checking project folder..."
-msgstr "プロジェクトフォルダーを確認しています..."
 
 msgid "Checking relays..."
 msgstr "リレーを確認しています..."
@@ -1040,9 +1019,6 @@ msgstr "インポートする連絡先のCSVまたはJSONエクスポートを�
 msgid "Choose a destination for this chat."
 msgstr "このチャットの移動先を選んでください。"
 
-msgid "Choose a destination for this project."
-msgstr "このプロジェクトの移動先を選んでください。"
-
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr "既知の送信者を選択するか、64文字の16進数の公開鍵を入力してください。"
 
@@ -1051,12 +1027,6 @@ msgstr "既知の送信者を選ぶか、公開鍵を入力してください。
 
 msgid "Choose a location before sending."
 msgstr "送信する前に位置を選んでください。"
-
-msgid "Choose a project folder to open a terminal."
-msgstr "ターミナルを開くプロジェクトフォルダーを選んでください。"
-
-msgid "Choose a project folder."
-msgstr "プロジェクトのフォルダーを選択してください。"
 
 msgid "Choose a sign-in method."
 msgstr "サインイン方法を選んでください。"
@@ -1169,12 +1139,6 @@ msgstr "閉じる"
 msgid "Close White Noise"
 msgstr "White Noise を閉じる"
 
-msgid "Close pane"
-msgstr "ペインを閉じる"
-
-msgid "Close tab"
-msgstr "タブを閉じる"
-
 msgid "Close to tray"
 msgstr "閉じたらトレイに格納"
 
@@ -1183,9 +1147,6 @@ msgstr "終了"
 
 msgid "Closing connections and clearing this session."
 msgstr "接続を閉じて、このセッションを消去しています。"
-
-msgid "Closing tab…"
-msgstr "タブを閉じています…"
 
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr "ウィンドウを閉じると非表示になります。トレイアイコンには未読の合計数が表示され、そこから再表示できます。"
@@ -1426,17 +1387,8 @@ msgstr "パスワードを変更できませんでした。もう一度お試し
 msgid "Couldn't check for updates. Please try again."
 msgstr "アップデートを確認できませんでした。もう一度お試しください。"
 
-msgid "Couldn't check the project folder. Please try again."
-msgstr "プロジェクトフォルダーを確認できませんでした。もう一度お試しください。"
-
-msgid "Couldn't choose a folder. Close your open file picker and try again."
-msgstr "フォルダーを選択できませんでした。開いているファイル選択画面を閉じて、もう一度お試しください。"
-
 msgid "Couldn't choose a photo. Close your open file picker and try again."
 msgstr "写真を選択できませんでした。開いているファイル選択画面を閉じて、もう一度お試しください。"
-
-msgid "Couldn't close the tab. Please try again."
-msgstr "タブを閉じられませんでした。もう一度お試しください。"
 
 msgid "Couldn't complete the signer request. Please try again."
 msgstr "署名者への要求を完了できませんでした。もう一度お試しください。"
@@ -1473,12 +1425,6 @@ msgstr "チャットを作成できませんでした。選んだ相手のうち
 
 msgid "Couldn't create the group. Enter a name and try again."
 msgstr "グループを作成できませんでした。名前を入力して、もう一度お試しください。"
-
-msgid "Couldn't create the project. Please try again."
-msgstr "プロジェクトを作成できませんでした。もう一度お試しください。"
-
-msgid "Couldn't create the tab. Please try again."
-msgstr "タブを作成できませんでした。もう一度お試しください。"
 
 msgid "Couldn't create the vault. Please try again."
 msgstr "保管庫を作成できませんでした。もう一度お試しください。"
@@ -1521,9 +1467,6 @@ msgstr "鍵をエクスポートできませんでした。%s"
 
 msgid "Couldn't find your account on the relays. Check your relay settings and try again."
 msgstr "リレーでアカウントを見つけられませんでした。リレー設定を確認して、もう一度お試しください。"
-
-msgid "Couldn't find your home folder. Enter an absolute project folder path."
-msgstr "ホームフォルダーが見つかりませんでした。プロジェクトフォルダーの絶対パスを入力してください。"
 
 msgid "Couldn't finish dictation. Please try again."
 msgstr "音声入力を完了できませんでした。もう一度お試しください。"
@@ -1662,24 +1605,15 @@ msgstr "チャットを既読にできませんでした。%s"
 msgid "Couldn't mark the chat read. Please try again."
 msgstr "チャットを既読にできませんでした。もう一度お試しください。"
 
-msgid "Couldn't normalize the project folder. Check the path and try again."
-msgstr "プロジェクトフォルダーのパスを正規化できませんでした。パスを確認して、もう一度お試しください。"
-
 #, c-format
 msgid "Couldn't open %s. Please try again."
 msgstr "%sを開けませんでした。もう一度お試しください。"
-
-msgid "Couldn't open Whip. Please try again."
-msgstr "Whipを開けませんでした。もう一度お試しください。"
 
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "バックアップを開けませんでした。パスワードを確認して、もう一度お試しください。"
 
 msgid "Couldn't open the microphone. Please try again."
 msgstr "マイクを開けませんでした。もう一度お試しください。"
-
-msgid "Couldn't open the project folder. Check that it exists and you have permission to access it."
-msgstr "プロジェクトフォルダーを開けませんでした。フォルダーが存在し、アクセス権限があることを確認してください。"
 
 msgid "Couldn't open the restored chat. Please try again."
 msgstr "復元したチャットを開けませんでした。もう一度お試しください。"
@@ -1730,9 +1664,6 @@ msgstr "バックアップを読み取れませんでした。もう一度お試
 
 msgid "Couldn't read the image. Please try again."
 msgstr "画像を読み取れませんでした。もう一度お試しください。"
-
-msgid "Couldn't read the project photo. Please try again."
-msgstr "プロジェクトの写真を読み込めませんでした。もう一度お試しください。"
 
 msgid "Couldn't read the signer permissions. Please try again."
 msgstr "署名者の権限を読み込めませんでした。もう一度お試しください。"
@@ -1797,9 +1728,6 @@ msgstr "GIFを保存できませんでした。もう一度お試しください
 
 msgid "Couldn't save the edit. Please try again."
 msgstr "編集を保存できませんでした。もう一度お試しください。"
-
-msgid "Couldn't save the project photo. Please try again."
-msgstr "プロジェクトの写真を保存できませんでした。もう一度お試しください。"
 
 msgid "Couldn't save the sticker. Wait for its image to load and try again."
 msgstr "ステッカーを保存できませんでした。画像の読み込みが完了してから、もう一度お試しください。"
@@ -1978,12 +1906,6 @@ msgstr "作成者"
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "パスワードで暗号化したNIP-49形式の鍵を作成します。安全に保存したり、別のクライアントに移したりできます。"
-
-msgid "Creating project…"
-msgstr "プロジェクトを作成しています…"
-
-msgid "Creating tab…"
-msgstr "タブを作成しています…"
 
 msgid "Creating your chat"
 msgstr "チャットを作成しています"
@@ -2224,9 +2146,6 @@ msgstr "議論"
 msgid "Divider"
 msgstr "区切り線"
 
-msgid "Dock to chat"
-msgstr "チャットにドッキング"
-
 msgid "Documents"
 msgstr "文書"
 
@@ -2321,9 +2240,6 @@ msgstr "メッセージを編集"
 msgid "Edit profile"
 msgstr "プロフィールを編集"
 
-msgid "Edit project"
-msgstr "プロジェクトを編集"
-
 msgid "Edit theme"
 msgstr "テーマを編集"
 
@@ -2397,9 +2313,6 @@ msgstr "パスワードを入力してください"
 msgid "Enter a password to encrypt your backup."
 msgstr "バックアップを暗号化するパスワードを入力してください。"
 
-msgid "Enter a project name."
-msgstr "プロジェクト名を入力してください。"
-
 msgid "Enter a relay URL (wss://…)"
 msgstr "リレーのURLを入力してください (wss://…)"
 
@@ -2417,9 +2330,6 @@ msgstr "ユーザー名とパスワードをそれぞれ255文字以内で入力
 
 msgid "Enter a valid pack link or address."
 msgstr "有効なパックのリンクまたはアドレスを入力してください。"
-
-msgid "Enter an absolute project folder path, or a path starting with ~/."
-msgstr "プロジェクトフォルダーの絶対パス、または ~/ で始まるパスを入力してください。"
 
 msgid "Enter an issue title and description."
 msgstr "報告のタイトルと説明を入力してください。"
@@ -2616,9 +2526,6 @@ msgstr "旗"
 
 msgid "Flat"
 msgstr "単色"
-
-msgid "Float"
-msgstr "フローティング表示"
 
 msgid "Focus glow"
 msgstr "フォーカスの光"
@@ -3050,9 +2957,6 @@ msgstr "選択テキストを反転"
 msgid "Invite"
 msgstr "招待"
 
-msgid "Is Whip"
-msgstr "Whipプロジェクトである"
-
 msgid "Issue title"
 msgstr "報告のタイトル"
 
@@ -3426,9 +3330,6 @@ msgstr "すべてのルールに一致"
 msgid "Match any rule"
 msgstr "いずれかのルールに一致"
 
-msgid "Maximize pane"
-msgstr "ペインを最大化"
-
 msgid "May"
 msgstr "5月"
 
@@ -3606,12 +3507,6 @@ msgstr "新しいメッセージ"
 msgid "New name"
 msgstr "新しい名前"
 
-msgid "New tab"
-msgstr "新しいタブ"
-
-msgid "New terminal"
-msgstr "新しいターミナル"
-
 msgid "News"
 msgstr "ニュース"
 
@@ -3637,9 +3532,6 @@ msgstr "%sのニックネーム"
 msgid "No GIFs found. Try another search."
 msgstr "GIFが見つかりませんでした。別のキーワードで検索してください。"
 
-msgid "No Whip projects"
-msgstr "Whipプロジェクトはありません"
-
 msgid "No archived chats"
 msgstr "アーカイブしたチャットはありません"
 
@@ -3654,9 +3546,6 @@ msgstr "チャットが開かれていません。チャットを選択して更
 
 msgid "No chats match your filter."
 msgstr "フィルターに一致するチャットはありません。"
-
-msgid "No chats or terminals yet"
-msgstr "チャットや端末はまだありません"
 
 msgid "No chats to share with yet."
 msgstr "共有できるチャットはまだありません。"
@@ -3973,9 +3862,6 @@ msgstr "オープンソースのコーディングエージェント"
 msgid "OpenAI Codex CLI coding agent"
 msgstr "OpenAI Codex CLIのコーディングエージェント"
 
-msgid "Opening Whip…"
-msgstr "Whipを開いています…"
-
 msgid "Opening file picker…"
 msgstr "ファイル選択画面を開いています…"
 
@@ -4090,9 +3976,6 @@ msgstr "パネル"
 
 msgid "Panel 2"
 msgstr "パネル 2"
-
-msgid "Panes are floating or docked to chats."
-msgstr "ペインはフローティング表示、またはチャットにドッキングされています。"
 
 msgid "Password"
 msgstr "パスワード"
@@ -4249,9 +4132,6 @@ msgstr "音声入力を準備しています..."
 msgid "Preparing download..."
 msgstr "ダウンロードを準備しています..."
 
-msgid "Preparing project photo…"
-msgstr "プロジェクトの写真を準備しています…"
-
 msgid "Preparing speech..."
 msgstr "読み上げを準備しています..."
 
@@ -4311,15 +4191,6 @@ msgstr "プロフィール"
 
 msgid "Progress is indeterminate."
 msgstr "進捗率は未確定です。"
-
-msgid "Project created."
-msgstr "プロジェクトを作成しました。"
-
-msgid "Project name"
-msgstr "プロジェクト名"
-
-msgid "Projects"
-msgstr "プロジェクト"
 
 msgid "Promote"
 msgstr "管理者にする"
@@ -4611,9 +4482,6 @@ msgstr "リセット"
 msgid "Reset zoom"
 msgstr "ズームをリセット"
 
-msgid "Resize terminal"
-msgstr "ターミナルのサイズを変更"
-
 msgid "Resolve"
 msgstr "解決済みにする"
 
@@ -4629,23 +4497,14 @@ msgstr "復元"
 msgid "Restore last selected chat on launch"
 msgstr "起動時に最後のチャットを復元"
 
-msgid "Restore panes"
-msgstr "ペインを元に戻す"
-
 msgid "Restore the default reactions"
 msgstr "デフォルトのリアクションに戻す"
 
 msgid "Restore the last chat on launch"
 msgstr "起動時に前回のチャットを開く"
 
-msgid "Restoring terminal history…"
-msgstr "端末の履歴を復元しています…"
-
 msgid "Retry"
 msgstr "再試行"
-
-msgid "Return to project"
-msgstr "プロジェクトに戻す"
 
 msgid "Reveal"
 msgstr "表示する"
@@ -4685,9 +4544,6 @@ msgstr "ロケット"
 
 msgid "Romanian"
 msgstr "ルーマニア語"
-
-msgid "Root folder"
-msgstr "ルートフォルダー"
 
 msgid "Rotate"
 msgstr "更新"
@@ -4817,9 +4673,6 @@ msgstr "この端末に保存しました。リレーへの配信を待ってい
 
 msgid "Saved. Restart White Noise to apply this connection setting."
 msgstr "保存しました。この接続設定を適用するには White Noise を再起動してください。"
-
-msgid "Saving project photo…"
-msgstr "プロジェクトの写真を保存しています…"
 
 msgid "Saving vote…"
 msgstr "投票を保存しています…"
@@ -4967,9 +4820,6 @@ msgstr "リストから連絡先を選択してください。"
 
 msgid "Select a model to download it for dictation and audio messages."
 msgstr "音声入力や音声メッセージに使用するモデルを選択してダウンロードします。"
-
-msgid "Select a project"
-msgstr "プロジェクトを選択"
 
 msgid "Select an issue"
 msgstr "報告を選択"
@@ -5289,12 +5139,6 @@ msgstr "音声モデル"
 msgid "Speech to text"
 msgstr "音声認識"
 
-msgid "Split down"
-msgstr "下に分割"
-
-msgid "Split right"
-msgstr "右に分割"
-
 msgid "Square"
 msgstr "四角"
 
@@ -5523,9 +5367,6 @@ msgstr "現在のパスワードと一致しません。確認して、もう一
 msgid "That key isn't an nsec. Double-check it and try again."
 msgstr "このキーはnsecではありません。確認して、もう一度お試しください。"
 
-msgid "That path is not a folder. Choose an existing project folder."
-msgstr "このパスはフォルダーではありません。既存のプロジェクトフォルダーを選択してください。"
-
 msgid "The AppImage folder is not writable. Move it to a writable folder to enable updates."
 msgstr "AppImageのフォルダーに書き込めません。アップデートを有効にするには、AppImageを書き込み可能なフォルダーに移動してください。"
 
@@ -5631,9 +5472,6 @@ msgstr "一般メンバーとしてグループに残ります。"
 msgid "This can't be undone."
 msgstr "この操作は取り消せません。"
 
-msgid "This changes White Noise project metadata, not running shells."
-msgstr "White Noise のプロジェクト情報のみを変更します。実行中のシェルは変更されません。"
-
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "このチャットはアーカイブされています。メッセージを送信するには、アーカイブから復元してください。"
 
@@ -5702,12 +5540,6 @@ msgstr "このパスワードは推測されやすいものです。関連のな
 
 msgid "This password protects sensitive local data. It is not a service login or a password to share with contacts. Save it in your password manager."
 msgstr "このパスワードは、端末内の機密データを保護します。サービスへのログイン用でも、連絡先と共有するためのものでもありません。パスワードマネージャーに保存してください。"
-
-msgid "This project is no longer available."
-msgstr "このプロジェクトは利用できなくなりました。"
-
-msgid "This project is no longer available. Close this editor and reopen it from the current project."
-msgstr "このプロジェクトは利用できなくなりました。この編集画面を閉じて、現在のプロジェクトから開き直してください。"
 
 msgid "This relay is already in your list."
 msgstr "このリレーはすでにリストに追加されています。"
@@ -6398,9 +6230,6 @@ msgstr "ほか%d行"
 #, c-format
 msgid "and %s more"
 msgstr "ほか%s"
-
-msgid "e.g. ~/Work/project"
-msgstr "例: ~/Work/project"
 
 msgid "edited"
 msgstr "編集済み"

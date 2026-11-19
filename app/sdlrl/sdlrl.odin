@@ -172,7 +172,6 @@ when #config(WN_RELOAD, false) {
 		Open_One,
 		Open_Many,
 		Save,
-		Open_Folder,
 	}
 	foreign _ {
 		// driver is an SDL renderer name; the host keeps its first renderer across reloads.
@@ -417,23 +416,6 @@ OpenFileDialog :: proc(allow_many: bool) {
 		wn_dev_dialog(allow_many ? .Open_Many : .Open_One, dialog_cb, nil)
 	} else {
 		sdl.ShowOpenFileDialog(dialog_cb, nil, state.window, nil, 0, nil, allow_many)
-	}
-}
-
-// Folder selection shares the picked queue and reload-safe callback lifecycle.
-OpenFolderDialog :: proc() {
-	sync.lock(&picked_mutex)
-	picked_pending += 1
-	sync.unlock(&picked_mutex)
-	when ODIN_OS == .Linux {
-		when #config(WN_RELOAD, false) {
-			wn_dev_dialog(.Open_Folder, dialog_cb, nil)
-		} else {
-			sdl.ShowOpenFolderDialog(dialog_cb, nil, state.window, nil, false)
-		}
-	} else {
-		sdl.SetError("Folder selection is not supported on this platform")
-		dialog_cb(nil, nil, -1)
 	}
 }
 
@@ -704,7 +686,6 @@ ShowWindow :: proc() {
 
 CloseWindow :: proc() {
 	when #config(WN_RELOAD, false) {wn_dev_wait_dialogs()}
-	WhipClose()
 	clear_drop_paths(&state.drop_paths)
 	clear_dropped_files()
 	state.drop_active = false
@@ -792,51 +773,8 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 	state.density = max(sdl.GetWindowPixelDensity(state.window), 1)
 
 	event: sdl.Event
-	// Apply navigation before reading input intended for its destination.
-	whip_input_yield = false
-	if whip_input_pending() {sdl.PumpEvents()}
-	for !whip_input_yield {
-		// SDL owns queued text storage. Leave commits and their keys in order
-		// until its terminal is ready, without copying an input backlog.
-		defer_input := false
-		if whip_input_pending() &&
-		   sdl.PeepEvents(cast([^]sdl.Event)&event, 1, .PEEKEVENT, .FIRST, .LAST) > 0 &&
-		   !inbox_navigation(event) {
-			defer_input =
-				event.type == .KEY_DOWN ||
-				event.type == .KEY_UP ||
-				event.type == .TEXT_INPUT ||
-				event.type == .TEXT_EDITING
-		}
-		if defer_input {
-			// A pending terminal must not hold the window's Close button hostage.
-			if sdl.PeepEvents(
-				   cast([^]sdl.Event)&event,
-				   1,
-				   .GETEVENT,
-				   .WINDOW_CLOSE_REQUESTED,
-				   .WINDOW_CLOSE_REQUESTED,
-			   ) <=
-				   0 &&
-			   sdl.PeepEvents(cast([^]sdl.Event)&event, 1, .GETEVENT, .QUIT, .QUIT) <= 0 {break}
-		} else if !sdl.PollEvent(&event) {break}
+	for sdl.PollEvent(&event) {
 		if changed != nil {changed^ = true}
-		if inbox_navigation(event) {whip_input_yield = true}
-		captured := whip_event(event)
-		// A held shortcut must survive moving from a terminal into a chat.
-		if captured && (event.type == .KEY_DOWN || event.type == .KEY_UP) {
-			#partial switch event.key.scancode {
-			case .LCTRL:
-				state.down[.LEFT_CONTROL] = event.key.down
-			case .RCTRL:
-				state.down[.RIGHT_CONTROL] = event.key.down
-			case .LSHIFT:
-				state.down[.LEFT_SHIFT] = event.key.down
-			case .RSHIFT:
-				state.down[.RIGHT_SHIFT] = event.key.down
-			}
-		}
-		if captured {continue}
 		#partial switch event.type {
 		case .WINDOW_CLOSE_REQUESTED:
 			if hide_on_close {
@@ -952,6 +890,14 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 				}
 				clear(&state.drop_paths)
 			}
+		}
+		// Apply chat navigation before polling input for its destination.
+		if event.type == .KEY_DOWN &&
+		   event.key.mod & sdl.KMOD_CTRL != {} &&
+		   (event.key.scancode == .TAB ||
+				   event.key.mod & sdl.KMOD_SHIFT != {} &&
+					   (event.key.scancode == .UP || event.key.scancode == .DOWN)) {
+			break
 		}
 	}
 	return state.quit

@@ -76,8 +76,7 @@ timeline_measure :: proc(ui: ^Ui_State) {
 
 @(private)
 reading_remember :: proc(ui: ^Ui_State) {
-	if ui.whip_open ||
-	   ui.page != .Chats ||
+	if ui.page != .Chats ||
 	   ui.selected < 0 ||
 	   ui.selected >= len(ui.chats) ||
 	   ui.timeline_loading ||

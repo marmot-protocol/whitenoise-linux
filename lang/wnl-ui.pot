@@ -204,23 +204,11 @@ msgid "%d seconds ago"
 msgstr ""
 
 #, c-format
-msgid "%d terminal"
-msgstr ""
-
-#, c-format
-msgid "%d terminals"
-msgstr ""
-
-#, c-format
 msgid "%d voters"
 msgstr ""
 
 #, c-format
 msgid "%d votes"
-msgstr ""
-
-#, c-format
-msgid "%d waiting"
 msgstr ""
 
 #, c-format
@@ -387,9 +375,6 @@ msgid "A message at this size."
 msgstr ""
 
 msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
-msgstr ""
-
-msgid "A terminal is waiting for you."
 msgstr ""
 
 msgid "ABOUT"
@@ -887,9 +872,6 @@ msgstr ""
 msgid "Change picture"
 msgstr ""
 
-msgid "Change project avatar"
-msgstr ""
-
 msgid "Change rule type"
 msgstr ""
 
@@ -952,7 +934,7 @@ msgstr ""
 msgid "Chats"
 msgstr ""
 
-msgid "Chats and Whip projects that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
+msgid "Chats that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
 msgstr ""
 
 msgid "Chats you archive will appear here."
@@ -983,9 +965,6 @@ msgid "Check your system notifications for the test alert."
 msgstr ""
 
 msgid "Checking for updates."
-msgstr ""
-
-msgid "Checking project folder..."
 msgstr ""
 
 msgid "Checking relays..."
@@ -1030,9 +1009,6 @@ msgstr ""
 msgid "Choose a destination for this chat."
 msgstr ""
 
-msgid "Choose a destination for this project."
-msgstr ""
-
 msgid "Choose a known sender or enter a 64-character hex public key."
 msgstr ""
 
@@ -1040,12 +1016,6 @@ msgid "Choose a known sender or enter a public key."
 msgstr ""
 
 msgid "Choose a location before sending."
-msgstr ""
-
-msgid "Choose a project folder to open a terminal."
-msgstr ""
-
-msgid "Choose a project folder."
 msgstr ""
 
 msgid "Choose a sign-in method."
@@ -1159,12 +1129,6 @@ msgstr ""
 msgid "Close White Noise"
 msgstr ""
 
-msgid "Close pane"
-msgstr ""
-
-msgid "Close tab"
-msgstr ""
-
 msgid "Close to tray"
 msgstr ""
 
@@ -1172,9 +1136,6 @@ msgid "Closed"
 msgstr ""
 
 msgid "Closing connections and clearing this session."
-msgstr ""
-
-msgid "Closing tab…"
 msgstr ""
 
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
@@ -1416,16 +1377,7 @@ msgstr ""
 msgid "Couldn't check for updates. Please try again."
 msgstr ""
 
-msgid "Couldn't check the project folder. Please try again."
-msgstr ""
-
-msgid "Couldn't choose a folder. Close your open file picker and try again."
-msgstr ""
-
 msgid "Couldn't choose a photo. Close your open file picker and try again."
-msgstr ""
-
-msgid "Couldn't close the tab. Please try again."
 msgstr ""
 
 msgid "Couldn't complete the signer request. Please try again."
@@ -1462,12 +1414,6 @@ msgid "Couldn't create the chat. No one you picked has a key package White Noise
 msgstr ""
 
 msgid "Couldn't create the group. Enter a name and try again."
-msgstr ""
-
-msgid "Couldn't create the project. Please try again."
-msgstr ""
-
-msgid "Couldn't create the tab. Please try again."
 msgstr ""
 
 msgid "Couldn't create the vault. Please try again."
@@ -1510,9 +1456,6 @@ msgid "Couldn't export the key. %s"
 msgstr ""
 
 msgid "Couldn't find your account on the relays. Check your relay settings and try again."
-msgstr ""
-
-msgid "Couldn't find your home folder. Enter an absolute project folder path."
 msgstr ""
 
 msgid "Couldn't finish dictation. Please try again."
@@ -1652,23 +1595,14 @@ msgstr ""
 msgid "Couldn't mark the chat read. Please try again."
 msgstr ""
 
-msgid "Couldn't normalize the project folder. Check the path and try again."
-msgstr ""
-
 #, c-format
 msgid "Couldn't open %s. Please try again."
-msgstr ""
-
-msgid "Couldn't open Whip. Please try again."
 msgstr ""
 
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr ""
 
 msgid "Couldn't open the microphone. Please try again."
-msgstr ""
-
-msgid "Couldn't open the project folder. Check that it exists and you have permission to access it."
 msgstr ""
 
 msgid "Couldn't open the restored chat. Please try again."
@@ -1719,9 +1653,6 @@ msgid "Couldn't read the backup. Please try again."
 msgstr ""
 
 msgid "Couldn't read the image. Please try again."
-msgstr ""
-
-msgid "Couldn't read the project photo. Please try again."
 msgstr ""
 
 msgid "Couldn't read the signer permissions. Please try again."
@@ -1786,9 +1717,6 @@ msgid "Couldn't save the GIF. Please try again."
 msgstr ""
 
 msgid "Couldn't save the edit. Please try again."
-msgstr ""
-
-msgid "Couldn't save the project photo. Please try again."
 msgstr ""
 
 msgid "Couldn't save the sticker. Wait for its image to load and try again."
@@ -1967,12 +1895,6 @@ msgid "Created by"
 msgstr ""
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
-msgstr ""
-
-msgid "Creating project…"
-msgstr ""
-
-msgid "Creating tab…"
 msgstr ""
 
 msgid "Creating your chat"
@@ -2214,9 +2136,6 @@ msgstr ""
 msgid "Divider"
 msgstr ""
 
-msgid "Dock to chat"
-msgstr ""
-
 msgid "Documents"
 msgstr ""
 
@@ -2311,9 +2230,6 @@ msgstr ""
 msgid "Edit profile"
 msgstr ""
 
-msgid "Edit project"
-msgstr ""
-
 msgid "Edit theme"
 msgstr ""
 
@@ -2387,9 +2303,6 @@ msgstr ""
 msgid "Enter a password to encrypt your backup."
 msgstr ""
 
-msgid "Enter a project name."
-msgstr ""
-
 msgid "Enter a relay URL (wss://…)"
 msgstr ""
 
@@ -2406,9 +2319,6 @@ msgid "Enter a username and password, each up to 255 characters."
 msgstr ""
 
 msgid "Enter a valid pack link or address."
-msgstr ""
-
-msgid "Enter an absolute project folder path, or a path starting with ~/."
 msgstr ""
 
 msgid "Enter an issue title and description."
@@ -2605,9 +2515,6 @@ msgid "Flag"
 msgstr ""
 
 msgid "Flat"
-msgstr ""
-
-msgid "Float"
 msgstr ""
 
 msgid "Focus glow"
@@ -3040,9 +2947,6 @@ msgstr ""
 msgid "Invite"
 msgstr ""
 
-msgid "Is Whip"
-msgstr ""
-
 msgid "Issue title"
 msgstr ""
 
@@ -3416,9 +3320,6 @@ msgstr ""
 msgid "Match any rule"
 msgstr ""
 
-msgid "Maximize pane"
-msgstr ""
-
 msgid "May"
 msgstr ""
 
@@ -3596,12 +3497,6 @@ msgstr ""
 msgid "New name"
 msgstr ""
 
-msgid "New tab"
-msgstr ""
-
-msgid "New terminal"
-msgstr ""
-
 msgid "News"
 msgstr ""
 
@@ -3627,9 +3522,6 @@ msgstr ""
 msgid "No GIFs found. Try another search."
 msgstr ""
 
-msgid "No Whip projects"
-msgstr ""
-
 msgid "No archived chats"
 msgstr ""
 
@@ -3643,9 +3535,6 @@ msgid "No chat is open. Select one and refresh."
 msgstr ""
 
 msgid "No chats match your filter."
-msgstr ""
-
-msgid "No chats or terminals yet"
 msgstr ""
 
 msgid "No chats to share with yet."
@@ -3960,9 +3849,6 @@ msgstr ""
 msgid "OpenAI Codex CLI coding agent"
 msgstr ""
 
-msgid "Opening Whip…"
-msgstr ""
-
 msgid "Opening file picker…"
 msgstr ""
 
@@ -4076,9 +3962,6 @@ msgid "Panel"
 msgstr ""
 
 msgid "Panel 2"
-msgstr ""
-
-msgid "Panes are floating or docked to chats."
 msgstr ""
 
 msgid "Password"
@@ -4236,9 +4119,6 @@ msgstr ""
 msgid "Preparing download..."
 msgstr ""
 
-msgid "Preparing project photo…"
-msgstr ""
-
 msgid "Preparing speech..."
 msgstr ""
 
@@ -4297,15 +4177,6 @@ msgid "Profile"
 msgstr ""
 
 msgid "Progress is indeterminate."
-msgstr ""
-
-msgid "Project created."
-msgstr ""
-
-msgid "Project name"
-msgstr ""
-
-msgid "Projects"
 msgstr ""
 
 msgid "Promote"
@@ -4598,9 +4469,6 @@ msgstr ""
 msgid "Reset zoom"
 msgstr ""
 
-msgid "Resize terminal"
-msgstr ""
-
 msgid "Resolve"
 msgstr ""
 
@@ -4616,22 +4484,13 @@ msgstr ""
 msgid "Restore last selected chat on launch"
 msgstr ""
 
-msgid "Restore panes"
-msgstr ""
-
 msgid "Restore the default reactions"
 msgstr ""
 
 msgid "Restore the last chat on launch"
 msgstr ""
 
-msgid "Restoring terminal history…"
-msgstr ""
-
 msgid "Retry"
-msgstr ""
-
-msgid "Return to project"
 msgstr ""
 
 msgid "Reveal"
@@ -4671,9 +4530,6 @@ msgid "Rocket"
 msgstr ""
 
 msgid "Romanian"
-msgstr ""
-
-msgid "Root folder"
 msgstr ""
 
 msgid "Rotate"
@@ -4803,9 +4659,6 @@ msgid "Saved locally. Relay delivery pending."
 msgstr ""
 
 msgid "Saved. Restart White Noise to apply this connection setting."
-msgstr ""
-
-msgid "Saving project photo…"
 msgstr ""
 
 msgid "Saving vote…"
@@ -4950,9 +4803,6 @@ msgid "Select a contact from the list."
 msgstr ""
 
 msgid "Select a model to download it for dictation and audio messages."
-msgstr ""
-
-msgid "Select a project"
 msgstr ""
 
 msgid "Select an issue"
@@ -5273,12 +5123,6 @@ msgstr ""
 msgid "Speech to text"
 msgstr ""
 
-msgid "Split down"
-msgstr ""
-
-msgid "Split right"
-msgstr ""
-
 msgid "Square"
 msgstr ""
 
@@ -5504,9 +5348,6 @@ msgstr ""
 msgid "That key isn't an nsec. Double-check it and try again."
 msgstr ""
 
-msgid "That path is not a folder. Choose an existing project folder."
-msgstr ""
-
 msgid "The AppImage folder is not writable. Move it to a writable folder to enable updates."
 msgstr ""
 
@@ -5612,9 +5453,6 @@ msgstr ""
 msgid "This can't be undone."
 msgstr ""
 
-msgid "This changes White Noise project metadata, not running shells."
-msgstr ""
-
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr ""
 
@@ -5682,12 +5520,6 @@ msgid "This password is too easy to guess. Use unrelated words or a password-man
 msgstr ""
 
 msgid "This password protects sensitive local data. It is not a service login or a password to share with contacts. Save it in your password manager."
-msgstr ""
-
-msgid "This project is no longer available."
-msgstr ""
-
-msgid "This project is no longer available. Close this editor and reopen it from the current project."
 msgstr ""
 
 msgid "This relay is already in your list."
@@ -6372,9 +6204,6 @@ msgstr ""
 
 #, c-format
 msgid "and %s more"
-msgstr ""
-
-msgid "e.g. ~/Work/project"
 msgstr ""
 
 msgid "edited"

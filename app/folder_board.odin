@@ -156,12 +156,11 @@ board_find_row :: proc(rows: []Inbox_Row, key: string) -> (Inbox_Row, bool) {
 
 @(private = "file")
 board_row_id :: proc(row: Inbox_Row) -> u32 {
-	return u32(row.index) * 2 + (row.kind == .Terminal ? 1 : 0)
+	return u32(row.index)
 }
 
 @(private = "file")
 board_row_title :: proc(ui: ^Ui_State, row: Inbox_Row) -> string {
-	if row.kind == .Terminal {return rl.WhipProjects()[row.index].name}
 	return ui.chats[row.index].title
 }
 
@@ -505,7 +504,7 @@ board_empty :: proc(index: int, target: bool) {
 	},
 	) {
 		nendo.text(
-			target ? tr("Drop here") : tr("No chats or terminals yet"),
+			target ? tr("Drop here") : tr("No chats yet"),
 			{font = FONT_BODY, size = 12, color = target ? ACCENT : TEXT_LO},
 		)
 	}
@@ -529,12 +528,8 @@ board_row :: proc(ui: ^Ui_State, row: Inbox_Row, section: int) {
 	},
 	) {
 		nendo.text(ICON_GRIP, {font = FONT_ICON, size = 12, color = held ? ACCENT : TEXT_LO})
-		if row.kind == .Terminal {
-			nendo.text("\ue795", {font = FONT_ICON, size = 20, color = TEXT_DIM})
-		} else {
-			chat := ui.chats[row.index]
-			avatar("BoardAvatar", id, chat.avatar_key, title, 24, chat_pic(chat))
-		}
+		chat := ui.chats[row.index]
+		avatar("BoardAvatar", id, chat.avatar_key, title, 24, chat_pic(chat))
 		if nendo.box(nendo.id("BoardChatName", id))({width = nendo.grow(), clip = {x = true}}) {
 			nendo.text(
 				title,
@@ -599,7 +594,6 @@ board_ghost :: proc(ui: ^Ui_State, rows: []Inbox_Row) {
 		row, exists := board_find_row(rows, drag.key)
 		if !exists {return}
 		label = board_row_title(ui, row)
-		if row.kind == .Terminal {icon = "\ue795"}
 	case .Folder:
 		if drag.folder >= len(ui.prefs.folders) {return}
 		label = ui.prefs.folders[drag.folder]

@@ -135,7 +135,6 @@ Issues and patches go to [Committish](https://committish.app/r/naddr1qvzqqqrhnyp
 | [Configuration](docs/configuration.md) | Data directory, SOCKS5 proxy, telemetry, `marmot://` links |
 | [Security model](docs/security.md) | The vault, password checks, helper sandboxing |
 | [Building from source](docs/building.md) | Nix, distro packages, cross builds, releases |
-| [Whip](docs/whip.md) | Terminal projects inside Chats |
 | [Development](docs/development.md) | Tests, hot reload, caches, MDK patches |
 | [Stickers](docs/stickers.md) and [GIFs](docs/gifs.md) | The picker's two media tabs |
 | [Dictation](docs/stt.md) and [Read aloud](docs/tts.md) | Local speech models, sizes, licenses |
