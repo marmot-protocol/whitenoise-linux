@@ -216,7 +216,7 @@ timings_presented :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	for &p, i in ui.pending {
 		if p.visible_since == {} ||
-		   p.group_id != ui.chats[ui.selected].group_id ||
+		   !pending_in_workspace(ui, p, ui.chats[ui.selected].group_id) ||
 		   p.thread != cur {
 			continue
 		}

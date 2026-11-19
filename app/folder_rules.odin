@@ -144,7 +144,7 @@ chat_folder_slot :: proc(ui: ^Ui_State, chat: ^Chat_Row_Ui, slots: map[string]in
 	facts := Chat_Facts {
 		title   = strings.to_lower(chat.title, context.temp_allocator),
 		unread  = chat.unread > 0 || ui.prefs.unread_ids[chat.group_id],
-		draft   = chat.group_id in ui.drafts,
+		draft   = draft_key(ui.account_ref, chat.group_id) in ui.drafts,
 		members = members,
 		known   = known,
 	}

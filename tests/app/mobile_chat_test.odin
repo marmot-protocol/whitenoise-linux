@@ -34,6 +34,7 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 	defer edit.destroy(&ui.ed)
 	ui.prefs.reduce_motion = true
 	ed_set(&ui, &ui.compose, "A draft")
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Mobile"})
 	append(
 		&ui.chats,

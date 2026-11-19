@@ -135,11 +135,30 @@ Status :: enum i32 {
 	INVALID_EDIT_TARGET                          = 105,
 	STORAGE_FULL                                 = 106,
 	FOLLOW_LIST_TOO_LARGE                        = 107,
+	MEDIA_REFERENCE_STALE_EPOCH                  = 108,
+	MEDIA_REFERENCE_EPOCH_UNSETTLED              = 109,
+	ACCOUNT_DEVICES_ACTIVATION_REFUSED           = 110,
 	INVALID_STICKER                              = 111,
 	STICKER_NOT_FOUND                            = 112,
 	STICKER_NETWORK                              = 113,
 	STICKER_IMPORT                               = 114,
 	STICKER_IMPORT_UNSUPPORTED                   = 115,
+	ACCOUNT_UNLINKED                             = 116,
+	GROUP_RECOVERY_UNSETTLED                     = 117,
+	GROUP_RECOVERY_SOURCE_MISMATCH               = 118,
+	EVENT_TOO_LARGE                              = 119,
+	INVALID_CHAT_LIST_QUERY                      = 120,
+	INVALID_EMOJI_SET                            = 121,
+	EMOJI_SET_NOT_FOUND                          = 122,
+	EMOJI_SET_NETWORK                            = 123,
+	EMOJI_IMAGE_TOO_LARGE                        = 124,
+	EMOJI_IMAGE_UNSUPPORTED                      = 125,
+	EMOJI_SET_LIMIT                              = 126,
+	EMOJI_SET_CHANGED                            = 127,
+	EMOJI_SET_INSTALL_CANCELLED                  = 128,
+	LEAVE_NOT_BLOCKED                            = 129,
+	CREATED_GROUP_MEMBER_REPORT_UNAVAILABLE      = 130,
+	GROUP_COMMIT_PENDING                         = 131,
 }
 
 // Opaque runtime handle.
@@ -221,31 +240,75 @@ Timeline_Subscription :: struct {}
 
 // Opaque handle for the runtime-event firehose.
 Events_Subscription :: struct {}
+
+Runtime_Event_Tag :: enum i32 {
+	Group_Joined,
+	Group_State_Updated,
+	Message_Received,
+	Projection_Updated,
+	Group_Event,
+	Account_Error,
+	Agent_Stream_Activity,
+	Welcome_Delivery_Pending,
+	Epoch_Stall_Escalated,
+	Group_Change_Superseded,
+	History_Notices_Changed,
+	Linked_Devices_Changed = 11,
+	Key_Package_Refresh_Overdue_Changed,
+	Unrecognized_Sign_Ins_Changed,
+	Compromise_Warning_Changed,
+	Device_Link_Changed,
+	Recovery_Status_Changed,
+	Device_Unlinked,
+	Chat_History_Imports_Changed,
+}
+
+Group_Event_Kind :: struct {
+	tag:  enum i32 {
+		QUEUED_INTENT_REFUSED      = 17,
+		GROUP_CHANGE_NOT_DELIVERED = 18,
+	},
+	body: struct #raw_union {
+		failure: struct {
+			id, intent_kind, reason: cstring,
+		},
+		storage: [40]u8,
+	},
+}
+
+@(private = "file")
+Account_Event_Prefix :: struct {
+	account, label: cstring,
+}
+
+@(private = "file")
+Group_Event_Prefix :: struct {
+	account, label, group: cstring,
+	event:                 Group_Event_Kind,
+}
+
 // Borrowed prefix view of MarmotEvent. Only read fields selected by tag;
 // the runtime owns the full union and event_free releases it.
 Runtime_Event :: struct {
-	tag:  enum i32 {
-		Group_Joined,
-		Group_State_Updated,
-		Message_Received,
-		Projection_Updated,
-		Group_Event,
-		Account_Error,
-		Agent_Stream_Activity,
-		Welcome_Delivery_Pending,
-		Epoch_Stall_Escalated,
-		Group_Change_Superseded,
-		History_Notices_Changed,
-	},
+	tag:  Runtime_Event_Tag,
 	body: struct #raw_union {
-		group:   struct {
+		account:     Account_Event_Prefix,
+		group:       struct {
 			account, label, group: cstring,
 		},
-		message: struct {
+		group_event: Group_Event_Prefix,
+		message:     struct {
 			account, label, message, group: cstring,
 		},
 	},
 }
+
+#assert(size_of(Group_Event_Kind) == 48)
+#assert(offset_of(Group_Event_Kind, body) == 8)
+#assert(offset_of(Runtime_Event, body) == 8)
+#assert(offset_of(Account_Event_Prefix, account) == 0)
+#assert(offset_of(Account_Event_Prefix, label) == 8)
+#assert(offset_of(Group_Event_Prefix, event) == 24)
 
 Agent_Stream_Subscription :: struct {}
 Agent_Stream_Update :: struct {
@@ -346,9 +409,34 @@ Sticker_Sync_Result :: struct {
 	discovered, updated, installed, pending_operations: u32,
 }
 
-// Opaque here: reached only through records, freed with their page or list.
-History_Import_Source :: struct {}
-History_Import_Provenance :: struct {}
+History_Import_Source :: struct {
+	device_slot_id_hex, device_label: cstring,
+}
+
+Backup_History_Source :: struct {
+	recovery_public_key_hex, backup_id_hex, head_sha256_hex: cstring,
+	written_at:                                              u64,
+}
+
+History_Import_Provenance :: struct {
+	tag:  enum i32 {
+		DEVICE,
+		BACKUP,
+	},
+	body: struct #raw_union {
+		device: struct {
+			device_slot_id_hex: cstring,
+		},
+		backup: struct {
+			source: Backup_History_Source,
+		},
+	},
+}
+
+#assert(size_of(History_Import_Source) == 16)
+#assert(size_of(Backup_History_Source) == 32)
+#assert(size_of(History_Import_Provenance) == 40)
+#assert(offset_of(History_Import_Provenance, body) == 8)
 
 Chat_List_Avatar :: struct {
 	image_hash_hex:       cstring,
@@ -523,6 +611,7 @@ Presented_Chat_List :: struct {
 Send_Accept_Disposition :: enum i32 {
 	PUBLISHED,
 	ACCEPTED_PENDING,
+	COMPLETION_UNKNOWN = 2,
 }
 
 Send_Maintenance_Disposition :: enum i32 {
@@ -537,6 +626,14 @@ Send_Summary :: struct {
 	accept_disposition:      Send_Accept_Disposition,
 	maintenance_disposition: Send_Maintenance_Disposition,
 }
+
+// Read only the leading summary. The native root owns the unread tail.
+Group_Mutation_Result :: struct {
+	summary: Send_Summary,
+}
+
+#assert(size_of(Send_Summary) == 32)
+#assert(offset_of(Group_Mutation_Result, summary) == 0)
 
 // Per-account KeyPackage resolution. Create and invite proceed with the
 // accounts that resolved and report every requested account in order.
@@ -764,7 +861,45 @@ Markdown_Document :: struct {
 // Opaque outputs; freed with their matching free functions.
 App_Group_Record :: struct {}
 Group_Invite_Decline_Result :: struct {}
-Sign_Out_Outcome :: struct {}
+
+Relay_Failure :: struct {
+	event_id_hex, reason: cstring,
+}
+
+Group_Leave_Failure :: struct {
+	group_id_hex, reason: cstring,
+}
+
+Local_Cleanup_Report :: struct {
+	completed: bool,
+	reason:    cstring,
+}
+
+Sign_Out_Outcome :: struct {
+	key_packages_deleted:     u32,
+	key_package_failures:     [^]Relay_Failure,
+	key_package_failures_len: uint,
+	local_cleanup:            Local_Cleanup_Report,
+}
+
+Wipe_Outcome :: struct {
+	groups_left:              u32,
+	group_leave_failures:     [^]Group_Leave_Failure,
+	group_leave_failures_len: uint,
+	key_packages_deleted:     u32,
+	key_package_failures:     [^]Relay_Failure,
+	key_package_failures_len: uint,
+	local_cleanup:            Local_Cleanup_Report,
+	groups_left_to_siblings:  u32,
+	siblings_not_reached:     bool,
+}
+
+#assert(size_of(Relay_Failure) == 16)
+#assert(size_of(Group_Leave_Failure) == 16)
+#assert(size_of(Local_Cleanup_Report) == 16)
+#assert(size_of(Sign_Out_Outcome) == 40)
+#assert(size_of(Wipe_Outcome) == 72)
+
 // One published relay list; `kind` is its Nostr event kind (10002
 // NIP-65, 10050 inbox).
 Relay_List :: struct {
@@ -1376,6 +1511,251 @@ Account_Summary_List :: struct {
 	len:   uint,
 }
 
+#assert(size_of(Account_Summary) == 24)
+#assert(offset_of(Account_Summary, signed_out) == 18)
+#assert(offset_of(Account_Summary, running) == 19)
+#assert(offset_of(Account_Summary, unlinked) == 20)
+
+Linked_Device_Status :: enum i32 {
+	ACTIVE,
+	INACTIVE,
+	LEAVING,
+	MOVED,
+}
+
+Linked_Device :: struct {
+	slot_id_hex:                                                              cstring,
+	is_this_device:                                                           bool,
+	label, client, platform:                                                  cstring,
+	linked_at:                                                                u64,
+	linked_by_slot_id_hex:                                                    cstring,
+	status:                                                                   Linked_Device_Status,
+	add_to_all_chats, bring_history, keep_while_inactive, has_last_active_at: bool,
+	last_active_at:                                                           u64,
+	inactive, removal_pending:                                                bool,
+}
+
+Linked_Device_List :: struct {
+	items: [^]Linked_Device,
+	len:   uint,
+}
+
+Chat_History_Import_State :: struct {
+	tag:  enum i32 {
+		RECEIVING,
+		IMPORTED,
+	},
+	body: struct #raw_union {
+		receiving: struct {
+			retrying: bool,
+		},
+		imported:  struct {
+			from: History_Import_Source,
+			at:   u64,
+		},
+	},
+}
+
+Chat_History_Import :: struct {
+	group_id_hex: cstring,
+	state:        Chat_History_Import_State,
+}
+
+Chat_History_Import_List :: struct {
+	items: [^]Chat_History_Import,
+	len:   uint,
+}
+
+Unrecognized_Sign_In_State :: enum i32 {
+	PROMPT,
+	NOT_NOW,
+	LINKED_ELSEWHERE,
+	REJECTED_ELSEWHERE,
+}
+Sign_In_Response :: enum u32 {
+	NOT_NOW,
+	REJECT,
+	DISMISS,
+}
+
+Unrecognized_Sign_In :: struct {
+	slot_id_hex, client:           cstring,
+	appeared_at, last_seen_at:     u64,
+	before_this_device, signed_in: bool,
+	state:                         Unrecognized_Sign_In_State,
+	linked_by_slot_id_hex:         cstring,
+	previously_linked_here:        bool,
+}
+
+Unrecognized_Sign_In_List :: struct {
+	items: [^]Unrecognized_Sign_In,
+	len:   uint,
+}
+
+Compromise_Warning_Reason :: enum u32 {
+	REJECTED_SIGN_IN,
+	FOREIGN_OWN_SLOT_KEY_PACKAGE,
+}
+
+Compromise_Warning_Item :: struct {
+	reason:                           Compromise_Warning_Reason,
+	slot_id_hex, key_package_ref_hex: cstring,
+	occurred_at:                      u64,
+}
+
+Compromise_Warning_Item_List :: struct {
+	items: [^]Compromise_Warning_Item,
+	len:   uint,
+}
+
+Device_Link_Emoji :: struct {
+	emoji, description: cstring,
+}
+
+Device_Link_End_Reason :: enum i32 {
+	CANCELLED,
+	CANCELLED_ELSEWHERE,
+	CODES_DIFFER,
+	VERIFICATION_FAILED,
+	TIMED_OUT,
+	ANSWERED_ELSEWHERE,
+	CANNOT_LINK,
+	REJECTED,
+	LINK_FAILED,
+}
+
+Device_Link_Code :: struct {
+	code:     [^]Device_Link_Emoji,
+	code_len: uint,
+}
+
+New_Device_Link_State :: struct {
+	tag:  enum i32 {
+		WAITING_FOR_ANSWER,
+		COMPARING,
+		WAITING_FOR_OTHER_DEVICE,
+		JOINING,
+		LINKED,
+		ENDED,
+	},
+	body: struct #raw_union {
+		comparing: Device_Link_Code,
+		ended:     struct {
+			reason: Device_Link_End_Reason,
+		},
+	},
+}
+
+Device_Link_Prompt_State :: struct {
+	tag:  enum i32 {
+		PREPARING,
+		COMPARING,
+		COMPETING_REQUESTS,
+		RATE_LIMITED,
+		CANNOT_LINK,
+		TOO_MANY_DEVICES,
+		LINKING,
+		LINKED,
+		ADDED_ELSEWHERE,
+		ENDED,
+	},
+	body: struct #raw_union {
+		comparing:       Device_Link_Code,
+		rate_limited:    struct {
+			retry_at: u64,
+		},
+		cannot_link:     struct {
+			missing:     [^]cstring,
+			missing_len: uint,
+		},
+		added_elsewhere: struct {
+			device_label, added_by_label: cstring,
+		},
+		ended:           struct {
+			reason: Device_Link_End_Reason,
+		},
+	},
+}
+
+Device_Link_Prompt :: struct {
+	prompt_id, slot_id_hex: cstring,
+	requested_at:           u64,
+	state:                  Device_Link_Prompt_State,
+}
+
+Device_Group_Move_State :: enum i32 {
+	WAITING_FOR_WELCOME,
+	JOINING,
+	MADE,
+	FAILED,
+}
+
+Device_Group_Move_Sibling :: struct {
+	slot_id_hex, label:  cstring,
+	question_suppressed: bool,
+}
+
+Device_Group_Move_View :: struct {
+	move_id:                        cstring,
+	state:                          Device_Group_Move_State,
+	old_siblings:                   [^]Device_Group_Move_Sibling,
+	old_siblings_len:               uint,
+	overridden_rejection_slots:     [^]cstring,
+	overridden_rejection_slots_len: uint,
+}
+
+// Prefix of the Marmot-owned snapshot; the app does not read its trailing counters.
+Device_Link_Snapshot :: struct {
+	new_device:           ^New_Device_Link_State,
+	prompts:              [^]Device_Link_Prompt,
+	prompts_len:          uint,
+	moves:                [^]Device_Group_Move_View,
+	moves_len:            uint,
+	device_group_stalled: bool,
+}
+
+Account_Devices_Activation :: enum i32 {
+	ELIGIBLE,
+	NOT_ADMIN,
+	ALREADY_ENABLED,
+	LEGACY_GROUP,
+	MEMBERS_NEED_UPDATE,
+	DEVICES_NEED_REPLACEMENT,
+	DEVICE_LIMIT_EXCEEDED,
+}
+
+Group_Change_Not_Delivered :: struct {
+	group_id_hex, commit_id_hex, queued_intent_id_hex, intent_kind, reason: cstring,
+	at:                                                                     u64,
+}
+
+Group_Change_Not_Delivered_List :: struct {
+	items: [^]Group_Change_Not_Delivered,
+	len:   uint,
+}
+
+#assert(size_of(Linked_Device) == 80)
+#assert(size_of(Device_Link_Emoji) == 16)
+#assert(size_of(New_Device_Link_State) == 24)
+#assert(offset_of(New_Device_Link_State, body) == 8)
+#assert(size_of(Device_Link_Prompt_State) == 24)
+#assert(offset_of(Device_Link_Prompt_State, body) == 8)
+#assert(size_of(Device_Link_Prompt) == 48)
+#assert(size_of(Device_Group_Move_View) == 48)
+#assert(size_of(Device_Group_Move_Sibling) == 24)
+#assert(offset_of(Device_Link_Snapshot, new_device) == 0)
+#assert(offset_of(Device_Link_Snapshot, prompts) == 8)
+#assert(offset_of(Device_Link_Snapshot, prompts_len) == 16)
+#assert(offset_of(Device_Link_Snapshot, moves) == 24)
+#assert(offset_of(Device_Link_Snapshot, moves_len) == 32)
+#assert(offset_of(Device_Link_Snapshot, device_group_stalled) == 40)
+#assert(size_of(Unrecognized_Sign_In) == 56)
+#assert(size_of(Compromise_Warning_Item) == 32)
+#assert(size_of(Chat_History_Import_State) == 32)
+#assert(offset_of(Chat_History_Import_State, body) == 8)
+#assert(size_of(Chat_History_Import) == 40)
+#assert(size_of(Group_Change_Not_Delivered) == 48)
+
 // ── Observability: relay telemetry + audit logs ──────────────────────
 
 // OTLP route for the telemetry exporter. Borrowed input.
@@ -1477,9 +1857,50 @@ foreign lib {
 	account_summary_list_free :: proc(list: ^Account_Summary_List) ---
 
 	sign_in_account :: proc(client: ^Client, account_ref: cstring, out: ^^Account_Summary) -> Status ---
-	sign_out :: proc(client: ^Client, account_ref: cstring, delete_key_packages: bool, out: ^^Sign_Out_Outcome) -> Status ---
+	sign_out :: proc(client: ^Client, account_ref: cstring, delete_key_packages: u8, out: ^^Sign_Out_Outcome) -> Status ---
 	sign_out_outcome_free :: proc(ptr: ^Sign_Out_Outcome) ---
+	sign_out_and_wipe :: proc(client: ^Client, account_ref: cstring, out: ^^Wipe_Outcome) -> Status ---
+	wipe_outcome_free :: proc(ptr: ^Wipe_Outcome) ---
 	remove_account :: proc(client: ^Client, account_ref: cstring) -> Status ---
+
+	device_link_snapshot :: proc(client: ^Client, account_ref: cstring, out: ^^Device_Link_Snapshot) -> Status ---
+	start_device_link :: proc(client: ^Client, account_ref: cstring, out: ^^Device_Link_Snapshot) -> Status ---
+	reset_device_group_for_repair :: proc(client: ^Client, account_ref: cstring, out: ^^Device_Link_Snapshot) -> Status ---
+	confirm_device_link_match :: proc(client: ^Client, account_ref: cstring, out: ^^Device_Link_Snapshot) -> Status ---
+	cancel_device_link :: proc(client: ^Client, account_ref: cstring, out: ^^Device_Link_Snapshot) -> Status ---
+	dismiss_device_group_move_sibling :: proc(client: ^Client, account_ref, move_id, slot_id_hex: cstring, out: ^^Device_Link_Snapshot) -> Status ---
+	link_device :: proc(client: ^Client, account_ref, prompt_id, label: cstring, add_to_all_chats, bring_history: u8, out: ^^Device_Link_Snapshot) -> Status ---
+	decline_device_link :: proc(client: ^Client, account_ref, prompt_id: cstring, out: ^^Device_Link_Snapshot) -> Status ---
+	device_link_snapshot_free :: proc(ptr: ^Device_Link_Snapshot) ---
+
+	linked_devices :: proc(client: ^Client, account_ref: cstring, out: ^^Linked_Device_List) -> Status ---
+	linked_device_list_free :: proc(list: ^Linked_Device_List) ---
+	rename_linked_device :: proc(client: ^Client, account_ref, slot_id_hex, label: cstring) -> Status ---
+	update_linked_device_settings :: proc(client: ^Client, account_ref, slot_id_hex: cstring, has_add_to_all_chats, add_to_all_chats, has_bring_history, bring_history, has_keep_while_inactive, keep_while_inactive: u8) -> Status ---
+	remove_linked_device :: proc(client: ^Client, account_ref, slot_id_hex: cstring) -> Status ---
+	removed_device_leftover_chats :: proc(client: ^Client, account_ref: cstring, out: ^u32) -> Status ---
+	chats_closed_to_linked_devices :: proc(client: ^Client, account_ref: cstring, out: ^u32) -> Status ---
+	rotate_key_package :: proc(client: ^Client, account_ref: cstring, out: ^u64) -> Status ---
+	key_package_refresh_overdue :: proc(client: ^Client, account_ref: cstring, out: ^bool) -> Status ---
+	unrecognized_sign_ins :: proc(client: ^Client, account_ref: cstring, out: ^^Unrecognized_Sign_In_List) -> Status ---
+	check_sign_ins :: proc(client: ^Client, account_ref: cstring, out: ^^Unrecognized_Sign_In_List) -> Status ---
+	unrecognized_sign_in_list_free :: proc(list: ^Unrecognized_Sign_In_List) ---
+	answer_sign_in :: proc(client: ^Client, account_ref, slot_id_hex: cstring, response: Sign_In_Response) -> Status ---
+	start_fresh :: proc(client: ^Client, account_ref: cstring) -> Status ---
+	started_fresh :: proc(client: ^Client, account_ref: cstring, out: ^bool) -> Status ---
+	compromise_warning :: proc(client: ^Client, account_ref: cstring, out: ^^Compromise_Warning_Item_List) -> Status ---
+	compromise_warning_item_list_free :: proc(list: ^Compromise_Warning_Item_List) ---
+	dismiss_compromise_warning :: proc(client: ^Client, account_ref: cstring) -> Status ---
+	chat_history_imports :: proc(client: ^Client, account_ref: cstring, out: ^^Chat_History_Import_List) -> Status ---
+	chat_history_import_list_free :: proc(list: ^Chat_History_Import_List) ---
+
+	account_devices_activation :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^Account_Devices_Activation) -> Status ---
+	enable_account_devices :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^^Group_Mutation_Result) -> Status ---
+	group_mutation_result_free :: proc(ptr: ^Group_Mutation_Result) ---
+	acknowledge_group_catching_up :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^bool) -> Status ---
+	acknowledge_group_commit_undelivered :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^bool) -> Status ---
+	group_changes_not_delivered :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^^Group_Change_Not_Delivered_List) -> Status ---
+	group_change_not_delivered_list_free :: proc(list: ^Group_Change_Not_Delivered_List) ---
 
 	set_account_nip65_relays :: proc(client: ^Client, account_ref: cstring, relays: [^]cstring, relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Relay_Lists) -> Status ---
 	set_account_inbox_relays :: proc(client: ^Client, account_ref: cstring, relays: [^]cstring, relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Relay_Lists) -> Status ---

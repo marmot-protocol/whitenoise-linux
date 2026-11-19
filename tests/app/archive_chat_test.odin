@@ -127,9 +127,7 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 		testing.expect(t, strings.contains(text, "Archive example"))
 		switched := strings.has_prefix(cancel, "switch-")
 		if switched {
-			previous_account := ui.account_ref
 			finish_account_switch(&ui, client, other)
-			delete(previous_account)
 			testing.expect_value(t, ui.account_ref, other)
 			// The nonexistent account fails the real list read. Clear only
 			// that error so an archive attempt would produce a new error.

@@ -81,6 +81,73 @@ _Static_assert(sizeof(MarmotAuditLogSource) == 24, "audit source");
 _Static_assert(sizeof(MarmotAuditOtlpConfigV5) == 40, "audit v5 config");
 _Static_assert(offsetof(MarmotAuditOtlpConfigV5, allow_loopback_dev) == 32, "audit loopback");
 
+#define ABI_SIZE(type, n) _Static_assert(sizeof(Marmot##type) == n, #type " size")
+#define ABI_OFFSET(type, field, n)                                                                 \
+    _Static_assert(offsetof(Marmot##type, field) == n, #type "." #field)
+#define ACCOUNT_EVENT(tag, body, n)                                                                \
+    _Static_assert(MARMOT_EVENT_##tag == n, #tag " discriminant");                                 \
+    ABI_OFFSET(Event, body.account_id_hex, 8);                                                     \
+    ABI_OFFSET(Event, body.account_label, 16)
+
+ACCOUNT_EVENT(LINKED_DEVICES_CHANGED, LINKED_DEVICES_CHANGED, 11);
+ACCOUNT_EVENT(KEY_PACKAGE_REFRESH_OVERDUE_CHANGED, KEY_PACKAGE_REFRESH_OVERDUE_CHANGED, 12);
+ACCOUNT_EVENT(UNRECOGNIZED_SIGN_INS_CHANGED, UNRECOGNIZED_SIGN_INS_CHANGED, 13);
+ACCOUNT_EVENT(COMPROMISE_WARNING_CHANGED, COMPROMISE_WARNING_CHANGED, 14);
+ACCOUNT_EVENT(DEVICE_LINK_CHANGED, DEVICE_LINK_CHANGED, 15);
+ACCOUNT_EVENT(RECOVERY_STATUS_CHANGED, RECOVERY_STATUS_CHANGED, 16);
+ACCOUNT_EVENT(DEVICE_UNLINKED, DEVICE_UNLINKED, 17);
+ACCOUNT_EVENT(CHAT_HISTORY_IMPORTS_CHANGED, CHAT_HISTORY_IMPORTS_CHANGED, 18);
+
+ABI_SIZE(AccountSummary, 24);
+ABI_OFFSET(AccountSummary, signed_out, 18);
+ABI_OFFSET(AccountSummary, running, 19);
+ABI_OFFSET(AccountSummary, unlinked, 20);
+ABI_SIZE(LinkedDevice, 80);
+ABI_SIZE(DeviceLinkEmoji, 16);
+ABI_SIZE(NewDeviceLinkState, 24);
+ABI_OFFSET(NewDeviceLinkState, COMPARING, 8);
+ABI_OFFSET(NewDeviceLinkState, ENDED, 8);
+ABI_SIZE(DeviceLinkPromptState, 24);
+ABI_OFFSET(DeviceLinkPromptState, COMPARING, 8);
+ABI_OFFSET(DeviceLinkPromptState, RATE_LIMITED, 8);
+ABI_OFFSET(DeviceLinkPromptState, CANNOT_LINK, 8);
+ABI_OFFSET(DeviceLinkPromptState, ADDED_ELSEWHERE, 8);
+ABI_OFFSET(DeviceLinkPromptState, ENDED, 8);
+ABI_SIZE(DeviceLinkPrompt, 48);
+ABI_SIZE(DeviceGroupMoveView, 48);
+ABI_SIZE(DeviceGroupMoveSibling, 24);
+ABI_OFFSET(DeviceLinkSnapshot, new_device, 0);
+ABI_OFFSET(DeviceLinkSnapshot, prompts, 8);
+ABI_OFFSET(DeviceLinkSnapshot, prompts_len, 16);
+ABI_OFFSET(DeviceLinkSnapshot, moves, 24);
+ABI_OFFSET(DeviceLinkSnapshot, moves_len, 32);
+ABI_OFFSET(DeviceLinkSnapshot, device_group_stalled, 40);
+ABI_SIZE(UnrecognizedSignIn, 56);
+ABI_SIZE(CompromiseWarningItem, 32);
+ABI_SIZE(ChatHistoryImportState, 32);
+ABI_OFFSET(ChatHistoryImportState, RECEIVING, 8);
+ABI_OFFSET(ChatHistoryImportState, IMPORTED, 8);
+ABI_SIZE(ChatHistoryImport, 40);
+ABI_SIZE(HistoryImportSource, 16);
+ABI_SIZE(BackupHistorySource, 32);
+ABI_SIZE(HistoryImportProvenance, 40);
+ABI_OFFSET(HistoryImportProvenance, DEVICE, 8);
+ABI_OFFSET(HistoryImportProvenance, BACKUP, 8);
+ABI_OFFSET(TimelineMessageRecord, imported_from, 336);
+ABI_OFFSET(TimelineMessageRecord, history_import_provenance, 344);
+ABI_SIZE(GroupEventKind, 48);
+ABI_OFFSET(GroupEventKind, QUEUED_INTENT_REFUSED, 8);
+ABI_OFFSET(GroupEventKind, GROUP_CHANGE_NOT_DELIVERED, 8);
+ABI_OFFSET(Event, GROUP_EVENT.event, 32);
+ABI_SIZE(GroupChangeNotDelivered, 48);
+ABI_SIZE(SendSummary, 32);
+ABI_OFFSET(GroupMutationResult, summary, 0);
+ABI_SIZE(SignOutOutcome, 40);
+ABI_SIZE(WipeOutcome, 72);
+ABI_SIZE(LocalCleanupReport, 16);
+ABI_SIZE(GroupLeaveFailure, 16);
+ABI_SIZE(RelayFailure, 16);
+
 int main(void) {
     return 0;
 }

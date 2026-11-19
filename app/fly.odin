@@ -178,7 +178,7 @@ send_land_y :: proc(ui: ^Ui_State, view: nendo.Rect) -> f32 {
 	// The tail is the newest optimistic row when there is one, else
 	// the newest delivered message.
 	for p, i in ui.pending {
-		if p.group_id != ui.chats[ui.selected].group_id {
+		if !pending_in_workspace(ui, p, ui.chats[ui.selected].group_id) {
 			continue
 		}
 		if box, ok := element_box(nendo.id("PendingRow", u32(i))); ok {

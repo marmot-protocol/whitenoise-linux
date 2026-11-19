@@ -142,6 +142,22 @@ QUICK_REACT := [6]string{"👍", "❤️", "😂", "😮", "😢", "🙏"}
 @(private)
 timeline_draw_offset: f32
 
+@(private = "file")
+shell_overlay_open :: proc(ui: ^Ui_State) -> bool {
+	return(
+		ui.confirm.kind != .None ||
+		ui.link_open ||
+		ui.sticker_open ||
+		ui.pal_open ||
+		ui.accounts_open ||
+		ui.gs_open ||
+		ui.peer_open ||
+		ui.folder_open ||
+		ui.devices.panel != .None ||
+		ui.event_data.id != "" \
+	)
+}
+
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	tab_scroll_save(ui)
 	timeline_draw_offset = 0
@@ -158,7 +174,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 
 	page_advance(ui)
 
-	logged_in := len(ui.accounts) > 0
+	logged_in := ui.account_ref != ""
 	page_backdrop := wash_payload()
 
 	if nendo.box(nendo.id("Root"))(
@@ -239,7 +255,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 						   !(ui.page == .Chats && ui.selected >= 0) {
 							phone_back(ui)
 						}
-						if !logged_in || ui.add_account_open {
+						if ui.add_account_open {
 							if nendo.box(nendo.id("Main"))(
 							{
 								width = nendo.grow(),
@@ -287,21 +303,16 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 			contacts_import_progress(ui)
 			status_bar(ui)
 			phone_navigation(ui)
+		}
 
-			// One backdrop for every centered modal, whichever pane drew it.
-			if open_now(nendo.id("ModalVeil"), modal_open(ui)) {
-				modal_backdrop()
-			}
+		// Root overlays can also open over the sign-in screen.
+		if open_now(nendo.id("ModalVeil"), modal_open(ui)) {
+			modal_backdrop()
+		}
 
-			if open_now(nendo.id("EventDataModal"), ui.event_data.id != "") &&
-			   ui.event_data.id != "" {
-				event_data_modal(&ui.event_data)
-			}
+		if logged_in {
 			if open_now(nendo.id("PalModal"), ui.pal_open) {
 				palette_modal(ui)
-			}
-			if open_now(nendo.id("ConfirmModal"), ui.confirm.kind != .None) {
-				confirm_modal(ui)
 			}
 			if open_now(nendo.id("ExportModal"), ui.export_open) {
 				export_modal(ui)
@@ -338,9 +349,6 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 			if open_now(nendo.id("FolderModal"), ui.folder_open) {
 				folder_modal(ui)
 			}
-			if open_now(nendo.id("AccountsModal"), ui.accounts_open) {
-				accounts_modal(ui)
-			}
 			if open_now(nendo.id("PeerModal"), ui.peer_open) {
 				peer_modal(ui)
 			}
@@ -350,12 +358,19 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 			if open_now(nendo.id("GsModal"), ui.gs_open) {
 				gsearch_modal(ui)
 			}
+			if open_now(nendo.id("EventDataModal"), ui.event_data.id != "") &&
+			   ui.event_data.id != "" {
+				event_data_modal(&ui.event_data)
+			}
 			// The reaction fan and the flights cross everything, so they are
 			// declared last.
 			fan_layer(ui)
 			fly_layer()
 		}
+		if open_now(nendo.id("AccountsModal"), ui.accounts_open) {accounts_modal(ui)}
+		if open_now(nendo.id("DeviceModal"), ui.devices.panel != .None) {devices_modal(ui)}
 		if open_now(nendo.id("LinkModal"), ui.link_open) {link_modal(ui)}
+		if open_now(nendo.id("ConfirmModal"), ui.confirm.kind != .None) {confirm_modal(ui)}
 		toast_layer(ui)
 	}
 
@@ -602,11 +617,11 @@ app_main :: proc() {
 		restore_workspace(&ui, client)
 		if mode := os.get_env("WN_TEST_NIP46", context.temp_allocator);
 		   mode != "" && client != nil {
-			ui.add_account_open = len(ui.accounts) > 0
+			ui.add_account_open = ui.account_ref != ""
 			ui.login_method = mode == "bunker" ? .Bunker : .Pair
 			if mode == "pair" {start_remote_auth(&ui, client, .Pair, string(DEFAULT_RELAYS[0]))}
 		}
-		if client != nil && len(ui.account_ref) > 0 {
+		if client != nil {
 			load_offline(&ui) // restore queued sends; first flush_queued tick retries them
 		}
 
@@ -647,7 +662,7 @@ app_main :: proc() {
 			do_create_identity(&ui, client)
 		}
 		if client != nil &&
-		   len(ui.accounts) > 0 &&
+		   ui.account_ref != "" &&
 		   len(ui.chats) == 0 &&
 		   os.get_env("WN_TEST_GROUP", context.allocator) != "" {
 			created: ^marmot.Group_Creation_Result
@@ -689,11 +704,11 @@ app_main :: proc() {
 		}
 		test_peer_pending := false
 		if path := os.get_env("WN_TEST_CONTACT_IMPORT", context.temp_allocator);
-		   path != "" && client != nil && len(ui.accounts) > 0 {
+		   path != "" && client != nil && ui.account_ref != "" {
 			ui.page = .Contacts
 			contacts_import_start(&ui, client, path)
 		}
-		if client != nil && len(ui.accounts) > 0 {
+		if client != nil && ui.account_ref != "" {
 			switch os.get_env("WN_TEST_PAGE", context.allocator) {
 			case "contacts":
 				ui.page = .Contacts
@@ -839,10 +854,11 @@ app_main :: proc() {
 			if ui.lock_requested {lock_wait_frame(); break}
 			if dev_reload_poll(&ui) {break}
 			defer free_all(context.temp_allocator)
-			// Latch before drains can invalidate a preview. Its closing frame
-			// still owns input, including global shortcuts and media handlers.
+			// A worker can close an overlay. Keep its closing frame from
+			// passing input to the page underneath.
 			photo_captured := photo_input_capture(&ui)
 			location_captured := ui.location_open
+			overlay_captured := shell_overlay_open(&ui)
 			photo_interactive := photo_image(&ui.photo).data != nil
 			defer messages_collect()
 			defer chats_collect()
@@ -853,6 +869,8 @@ app_main :: proc() {
 			focused := rl.IsWindowFocused()
 			if focused && !focused_was {
 				foreground_started = time.tick_now()
+				devices_reconcile(&ui)
+				activation_focus(&ui)
 			}
 			focused_was = focused
 
@@ -889,13 +907,15 @@ app_main :: proc() {
 				}
 			}
 
-			start_live(&live, client, ui.account_ref) // no-op once running
+			start_events(&live, client)
+			devices_drain(&ui, client, &live)
+			start_live(&live, client, ui.account_ref)
 			live_tick(&live, &ui, client) // poll fallback when the stream stalls
 			drain_live(&live, &ui, client)
 			timeline_drain(&ui, client)
 			members_drain(&ui, client)
 			group_files_tick(&ui, client)
-			if !ui.timeline_loading && test_peer_pending {
+			if ui.account_ref != "" && !ui.timeline_loading && test_peer_pending {
 				test_peer_pending = false
 				for msg in ui.messages {
 					if !msg.mine && msg.sender_id != "" {
@@ -903,7 +923,15 @@ app_main :: proc() {
 						break
 					}
 				}
-				if !ui.peer_open {open_peer(&ui, client, ui.account_ref, ui.accounts[0].name, ui.my_pic_url)}
+				if !ui.peer_open {
+					open_peer(
+						&ui,
+						client,
+						ui.account_ref,
+						account_label(&ui, ui.account_ref),
+						ui.my_pic_url,
+					)
+				}
 			}
 			if !ui.timeline_loading && test_thread_pending && ui.selected >= 0 {
 				test_thread_pending = false
@@ -925,11 +953,14 @@ app_main :: proc() {
 			tts_tick(&ui)
 			translation_tick(&ui)
 			drain_ops(&ui, client)
+			activation_drain(&ui, client)
 			web_tick(&ui)
 			nes_tick(&ui) // NES player: emulate the owed frames, queue their audio
 			xdc_drain(&ui, client) // webxdc sendUpdate() becomes a group message
 			drain_auth(&ui, client) // a finished sign-in lands on the UI thread
 			nip46_tick(&ui)
+			devices_present(&ui, focused)
+			overlay_captured = overlay_captured || shell_overlay_open(&ui)
 			flush_queued(&ui, client)
 			mi_tick(&ui, client) // periodic mentions-inbox badge refresh
 			health_tick(&ui, client) // relay-pool counters, Network page only
@@ -942,6 +973,7 @@ app_main :: proc() {
 			photo_crop_drain(&ui, client, false)
 			if !photo_captured &&
 			   !location_captured &&
+			   !overlay_captured &&
 			   (rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL)) {
 				if rl.IsKeyPressed(.EQUAL) {
 					ui.prefs.zoom_pct += 10
@@ -959,7 +991,9 @@ app_main :: proc() {
 					save_settings(&ui)
 				}
 			}
-			if !photo_captured {inbox_shortcuts(&ui, client)}
+			if ui.account_ref != "" && !photo_captured && !location_captured && !overlay_captured {
+				inbox_shortcuts(&ui, client)
+			}
 
 			// Synthetic click injection for headless tests: "x,y[,x,y...]",
 			// one click per pair, released every 25 frames from frame 20.
@@ -1005,6 +1039,7 @@ app_main :: proc() {
 			// selection (select-to-copy), except from the masked nsec field.
 			if !photo_captured &&
 			   !location_captured &&
+			   !overlay_captured &&
 			   rl.IsMouseButtonReleased(.LEFT) &&
 			   text_drag != nil {
 				if text_drag != &ui.login_input &&
@@ -1048,7 +1083,7 @@ app_main :: proc() {
 			}
 			// Ctrl + wheel zooms the interface; the wheel is consumed so
 			// it doesn't also scroll.
-			if !location_scroll && ctrl_down() && wheel.y != 0 {
+			if !location_scroll && !overlay_captured && ctrl_down() && wheel.y != 0 {
 				ui.prefs.zoom_pct += wheel.y > 0 ? 10 : -10
 				apply_zoom(&ui)
 				save_settings(&ui)
@@ -1350,6 +1385,8 @@ app_main :: proc() {
 			}
 			delete(picked)
 			photo_captured = photo_captured || photo_input_capture(&ui)
+			location_captured = location_captured || ui.location_open
+			overlay_captured = overlay_captured || shell_overlay_open(&ui)
 
 			if tc := os.get_env("WN_TEST_COMPOSE", context.temp_allocator); tc != "" {
 				// Semicolon-separated "N:text" entries. Text lands in the
@@ -1387,7 +1424,9 @@ app_main :: proc() {
 				long_press_tick() // before any handler reads long_pressed
 			}
 			blur_field, blur_focus := touch_field, ui.focus
-			if ui.add_account_open {
+			background_captured :=
+				composer_captured || photo_captured || location_captured || overlay_captured
+			if ui.add_account_open && !background_captured {
 				for page in Page {
 					if clicked_indexed("Nav", u32(page)) {
 						auth_cancel(&ui)
@@ -1396,8 +1435,9 @@ app_main :: proc() {
 					}
 				}
 			}
-			shell_back := !composer_captured && clicked("PhoneBack")
-			if single_pane() &&
+			shell_back := !background_captured && clicked("PhoneBack")
+			if !background_captured &&
+			   single_pane() &&
 			   rl.IsKeyPressed(.ESCAPE) &&
 			   ui.page == .Chats &&
 			   ui.selected >= 0 &&
@@ -1422,8 +1462,7 @@ app_main :: proc() {
 				}
 			}
 			if shell_back {phone_back_action(&ui)}
-			location_captured = location_captured || ui.location_open
-			if !composer_captured && !photo_captured && !location_captured {
+			if !background_captured && !shell_back {
 				if clicked("LockNow") {
 					lock_now(&ui)
 					lock_wait_frame()
@@ -1454,10 +1493,7 @@ app_main :: proc() {
 				}
 			}
 
-			event_data_captured := ui.event_data.id != ""
-			// Modal capture order: a confirm sits over everything, then the
-			// link guard, then the palette, then the older modals. Global
-			// search opens on Ctrl+K, the palette on Ctrl+P.
+			// After a claimed drag or Back, dispatch the top visible modal.
 			if composer_captured || shell_back {
 				// The drag or Back already owns this input.
 			} else if photo_captured {
@@ -1467,7 +1503,21 @@ app_main :: proc() {
 				handle_confirm(&ui, client)
 			} else if ui.link_open {
 				handle_link_modal(&ui)
-			} else if event_data_captured {
+			} else if ui.sticker_open {
+				handle_sticker_panel(&ui)
+			} else if ui.pal_open {
+				handle_palette(&ui, client)
+			} else if ui.accounts_open {
+				handle_accounts(&ui, client)
+			} else if ui.gs_open {
+				handle_gsearch(&ui, client)
+			} else if ui.peer_open {
+				handle_peer_modal(&ui, client)
+			} else if ui.folder_open {
+				handle_folder_modal(&ui, client)
+			} else if ui.devices.panel != .None {
+				handle_device_modal(&ui, client)
+			} else if ui.event_data.id != "" {
 				handle_event_data(&ui)
 			} else if location_captured {
 				if ui.location_open {
@@ -1475,13 +1525,11 @@ app_main :: proc() {
 					handle_geo_picker(&ui, client)
 				}
 				if !ui.location_open {scroll_residual = {}}
+			} else if overlay_captured {
+				// The overlay closed during a worker drain.
 			} else if nes_player.open {
 				handle_nes_input(&ui) // the game owns the keyboard
-			} else if ui.folder_open {
-				handle_folder_modal(&ui, client)
-			} else if ui.pal_open {
-				handle_palette(&ui, client)
-			} else if len(ui.accounts) > 0 &&
+			} else if ui.account_ref != "" &&
 			   !ui.add_account_open &&
 			   ctrl_down() &&
 			   rl.IsKeyPressed(.P) {
@@ -1495,24 +1543,35 @@ app_main :: proc() {
 				handle_backup(&ui)
 			} else if ui.vault_pw_open {
 				handle_vault_pw(&ui)
-			} else if ui.sticker_open {
-				handle_sticker_panel(&ui)
 			} else if ui.picker_open {
 				// Closing the picker still consumes this frame's input.
 				handle_picker(&ui, client)
-			} else if ui.gs_open {
-				handle_gsearch(&ui, client)
 			} else if ui.folder_menu_open {
 				handle_folder_navigation(&ui)
-			} else if len(ui.accounts) > 0 &&
+			} else if ui.account_ref != "" &&
 			   !ui.add_account_open &&
 			   ((ctrl_down() && rl.IsKeyPressed(.K)) || clicked("GSearchBtn")) {
 				gs_open_modal(&ui)
+			} else if ui.account_ref != "" &&
+			   ui.page == .Chats &&
+			   !ui.add_account_open &&
+			   !modal_open(&ui) &&
+			   handle_devices_banner(&ui, client) {
+				background_captured = true
+			} else if ui.account_ref == "" &&
+			   clicked("LoginChooseAccount") &&
+			   len(ui.accounts) != 0 {
+				ui.accounts_open = true
+			} else if ui.account_ref == "" && clicked("LoginUnlinkedProfiles") {
+				devices_open_unlinked(&ui)
 			} else {
 				handle_login(&ui, client)
 				chat_input := ui.page == .Chats
 				handle_pages(&ui, client)
-				if chat_input && ui.page == .Chats && !ui.add_account_open {
+				if ui.account_ref != "" &&
+				   chat_input &&
+				   ui.page == .Chats &&
+				   !ui.add_account_open {
 					handle_chat(&ui, client)
 				}
 			}
@@ -1527,15 +1586,13 @@ app_main :: proc() {
 			// message bodies: a drag that selected something swallows the
 			// release, so dragging across a link doesn't open it.
 			photo_captured = photo_captured || photo_input_capture(&ui)
-			if !composer_captured &&
-			   !event_data_captured &&
-			   !photo_captured &&
-			   !location_captured &&
-			   !ui.location_open &&
-			   !ui.pal_open &&
-			   !ui.link_open &&
-			   !ui.gs_open &&
-			   ui.confirm.kind == .None {
+			background_captured =
+				background_captured ||
+				shell_back ||
+				photo_captured ||
+				ui.location_open ||
+				shell_overlay_open(&ui)
+			if ui.account_ref != "" && !background_captured {
 				if !rl.TouchActive() {handle_body_sel(&ui)}
 				handle_body_copy(&ui)
 				// A press that missed a body drags the timeline instead, and
@@ -1574,7 +1631,7 @@ app_main :: proc() {
 					if nev_hint_hover != "" && mouse_released() && !modal_open(&ui) {
 						preview_message(nev_cards[nev_hint_hover].geocache.hint)
 					}
-					handle_geo(&ui)
+					if !shell_overlay_open(&ui) {handle_geo(&ui)}
 				}
 			}
 			// Keep the held target still until its release has been dispatched.
@@ -1605,7 +1662,10 @@ app_main :: proc() {
 				)
 			}
 			text_field_live = false
-			if !photo_captured && !location_captured && !ui.location_open {
+			if ui.account_ref != "" &&
+			   !background_captured &&
+			   !ui.location_open &&
+			   !shell_overlay_open(&ui) {
 				handle_orbit()
 				handle_gcode_bar()
 				handle_anim_bar()
@@ -1850,17 +1910,9 @@ app_main :: proc() {
 		web_close()
 		nes_close()
 		lock_scrub_ui(&ui)
-		delete(live.account)
 		for done in failed_edits {edit_result_free(done)}
 		delete(failed_edits); failed_edits = {}
-		for done in ops_done {
-			for page in done.history {marmot.edit_history_free(page)}
-			delete(done.history)
-			if done.op == .Edit ||
-			   done.op == .Lookup_Member ||
-			   done.op == .History {edit_result_free(done)} else {delete(done.err)}
-		}
-		delete(ops_done); ops_done = {}
+		ops_stop()
 		for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
 		delete(ui.staged)
 		for key, files in ui.staged_drafts {

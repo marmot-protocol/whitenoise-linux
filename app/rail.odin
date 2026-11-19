@@ -437,6 +437,7 @@ rail_content :: proc(ui: ^Ui_State) {
 		}
 
 		if ui.page == .Chats && logged_in && !rail_narrow(ui) {
+			if !ui.add_account_open {devices_banner(ui)}
 			if nendo.box(nendo.id("ChatList"))(
 			{
 				width = nendo.grow(),

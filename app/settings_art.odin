@@ -49,6 +49,7 @@ SECTION_ART := [Settings_Section]Settings_Art {
 	.Debug         = .Advanced,
 	.KP            = .Keys,
 	.Agents        = .Agents,
+	.Devices       = .Network,
 }
 
 // Original artwork. SVG sources and the embedded transparent PNGs live

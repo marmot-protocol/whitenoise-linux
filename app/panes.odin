@@ -591,7 +591,7 @@ chat_send_state :: proc(group_id: string) -> Send_State {
 	}
 	state := Send_State.Idle
 	for p in g_ui.pending {
-		if p.group_id != group_id {
+		if !pending_in_workspace(g_ui, p, group_id) {
 			continue
 		}
 		// Worst news wins: a failure is what the row should say even if

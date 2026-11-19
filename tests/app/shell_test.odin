@@ -85,6 +85,7 @@ rail_default_window :: proc(t: ^testing.T) {
 		wrap_clear()
 	}
 	ui.prefs.reduce_motion = true
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Compact chat"})
 	// A virtual touch device must not switch the desktop to phone layout.
@@ -197,6 +198,7 @@ status_bar_viewports :: proc(t: ^testing.T) {
 		prefs       = default_prefs(),
 	}
 	ui.prefs.reduce_motion = true
+	ui.account_ref = "viewport"
 	append(&ui.accounts, Account_Row_Ui{id_hex = "viewport", name = "Viewport"})
 	for i in 0 ..< 12 {append(&ui.chats, Chat_Row_Ui{group_id = fmt.tprintf("group-%d", i), title = fmt.tprintf("Group %d", i)})}
 	defer {
@@ -488,6 +490,7 @@ test_settings_escape :: proc(t: ^testing.T) {
 		delete(ui.accounts)
 		delete(ui.settings_search)
 	}
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	client: marmot.Client
 	press_escape :: proc(ui: ^Ui_State, client: ^marmot.Client) {

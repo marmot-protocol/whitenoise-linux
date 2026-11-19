@@ -232,6 +232,10 @@ msgid "%dd"
 msgstr ""
 
 #, c-format
+msgid "%s (this device)"
+msgstr ""
+
+#, c-format
 msgid "%s added %s"
 msgstr ""
 
@@ -268,6 +272,10 @@ msgid "%s is no longer an admin"
 msgstr ""
 
 #, c-format
+msgid "%s is still in your old device list. Link it from that device."
+msgstr ""
+
+#, c-format
 msgid "%s left the group"
 msgstr ""
 
@@ -300,11 +308,23 @@ msgid "%s was added to the group"
 msgstr ""
 
 #, c-format
+msgid "%s was linked by %s."
+msgstr ""
+
+#, c-format
 msgid "%s was made an admin"
 msgstr ""
 
 #, c-format
 msgid "%s was removed from the group"
+msgstr ""
+
+#, c-format
+msgid "%s was removed from this device."
+msgstr ""
+
+#, c-format
+msgid "%s was unlinked from this device. Remove its local keys and chats before signing in again. Other devices keep their chats."
 msgstr ""
 
 #, c-format
@@ -351,7 +371,16 @@ msgstr ""
 msgid "1 voter"
 msgstr ""
 
+msgid "1. Install White Noise on the other device and sign in to this profile."
+msgstr ""
+
+msgid "2. Open Settings → Devices there and choose Link to another device."
+msgstr ""
+
 msgid "25 European languages, including English and Italian."
+msgstr ""
+
+msgid "3. When the request appears here, check that both screens show the same emoji."
 msgstr ""
 
 msgid "3D models"
@@ -369,10 +398,21 @@ msgstr ""
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr ""
 
+#, c-format
+msgid "A device is asking to link to %s."
+msgstr ""
+
+msgid "A different code can mean someone else is trying to link. Don't approve unless both codes match exactly."
+msgstr ""
+
 msgid "A display name is required."
 msgstr ""
 
 msgid "A key package lets people invite you to encrypted chats."
+msgstr ""
+
+#, c-format
+msgid "A key package this device didn't make was found and replaced: %s."
 msgstr ""
 
 msgid "A line about you"
@@ -382,6 +422,10 @@ msgid "A message at this size."
 msgstr ""
 
 msgid "A separate secret key or signer lets you use an identity again. It does not restore chats, pending sends or saved collections."
+msgstr ""
+
+#, c-format
+msgid "A sign-in was marked as not you: %s."
 msgstr ""
 
 msgid "ABOUT"
@@ -451,7 +495,13 @@ msgstr ""
 msgid "Action failed: %s"
 msgstr ""
 
+msgid "Active"
+msgstr ""
+
 msgid "Add"
+msgstr ""
+
+msgid "Add a new device"
 msgstr ""
 
 msgid "Add a question for your poll."
@@ -496,6 +546,9 @@ msgstr ""
 msgid "Add someone from their profile or paste their npub above. You can also import a contacts CSV or JSON export."
 msgstr ""
 
+msgid "Add to all chats"
+msgstr ""
+
 msgid "Add to group"
 msgstr ""
 
@@ -512,6 +565,12 @@ msgid "Admins can add and remove members and change group details."
 msgstr ""
 
 msgid "Advanced"
+msgstr ""
+
+msgid "Affected members may miss the change. Turning on linked devices now dismisses the relay refusals for those earlier changes."
+msgstr ""
+
+msgid "After signing in, open Devices in Settings to link another device."
 msgstr ""
 
 msgid "Agent connector documentation"
@@ -568,6 +627,19 @@ msgstr ""
 msgid "Animations are distracting"
 msgstr ""
 
+msgid "Another device approved this request."
+msgstr ""
+
+msgid "Another device change is still in progress. Wait a moment and try again."
+msgstr ""
+
+msgid "Another device is still linking. Let it finish before moving this device."
+msgstr ""
+
+#, c-format
+msgid "Another device removed this one from %s. This device no longer gets that profile's messages."
+msgstr ""
+
 msgid "Another group change took precedence. Review your group settings."
 msgstr ""
 
@@ -596,6 +668,9 @@ msgid "Applies to the picker, reactions and emoji in messages."
 msgstr ""
 
 msgid "Approve the request in your signer to continue."
+msgstr ""
+
+msgid "Approving the other device…"
 msgstr ""
 
 msgid "Apps"
@@ -798,6 +873,12 @@ msgstr ""
 msgid "Bracket labels"
 msgstr ""
 
+msgid "Bring chat history"
+msgstr ""
+
+msgid "Bringing earlier messages from your other device…"
+msgstr ""
+
 msgid "Browse emoji sets"
 msgstr ""
 
@@ -858,10 +939,16 @@ msgstr ""
 msgid "Cancel edit / reply, close panels"
 msgstr ""
 
+msgid "Cancel linking"
+msgstr ""
+
 msgid "Cancel reply"
 msgstr ""
 
 msgid "Cancel translation"
+msgstr ""
+
+msgid "Cancelling the link attempt…"
 msgstr ""
 
 msgid "Card border"
@@ -953,6 +1040,18 @@ msgstr ""
 msgid "Chats"
 msgstr ""
 
+#, c-format
+msgid "Chats left or asked to leave: %d. Chats handed off to other linked devices: %d."
+msgstr ""
+
+#, c-format
+msgid "Chats still holding a device you removed: %d. A chat admin can remove it."
+msgstr ""
+
+#, c-format
+msgid "Chats that can't add linked devices: %d."
+msgstr ""
+
 msgid "Chats that match file here automatically. People counts include you. Anything you move by hand stays where you put it."
 msgstr ""
 
@@ -981,6 +1080,12 @@ msgid "Check your key package"
 msgstr ""
 
 msgid "Check your system notifications for the test alert."
+msgstr ""
+
+msgid "Checking device information…"
+msgstr ""
+
+msgid "Checking for sign-ins…"
 msgstr ""
 
 msgid "Checking for updates."
@@ -1047,6 +1152,9 @@ msgid "Choose a translation target language"
 msgstr ""
 
 msgid "Choose a vault password"
+msgstr ""
+
+msgid "Choose an account"
 msgstr ""
 
 msgid "Choose an emoji style"
@@ -1193,6 +1301,9 @@ msgstr ""
 msgid "Comment"
 msgstr ""
 
+msgid "Compare the codes on both devices"
+msgstr ""
+
 msgid "Composer"
 msgstr ""
 
@@ -1232,6 +1343,9 @@ msgstr ""
 msgid "Confirm: delete this vault"
 msgstr ""
 
+msgid "Confirming that the codes match…"
+msgstr ""
+
 msgid "Connect an AI agent"
 msgstr ""
 
@@ -1251,6 +1365,9 @@ msgid "Connect with the relays you choose."
 msgstr ""
 
 msgid "Connect your remote signer"
+msgstr ""
+
+msgid "Connect your signer again to sign in."
 msgstr ""
 
 msgid "Connected to relays"
@@ -1297,6 +1414,9 @@ msgid "Continue"
 msgstr ""
 
 msgid "Continue to account setup"
+msgstr ""
+
+msgid "Continue with moving this device"
 msgstr ""
 
 msgid "Control background"
@@ -1389,6 +1509,9 @@ msgstr ""
 msgid "Couldn't cache your transcription. Please try again."
 msgstr ""
 
+msgid "Couldn't cancel linking. Please try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't change audit logs. %s"
 msgstr ""
@@ -1402,10 +1525,19 @@ msgstr ""
 msgid "Couldn't change the password. Please try again."
 msgstr ""
 
+msgid "Couldn't check for sign-ins. Check your relay settings and try again."
+msgstr ""
+
 msgid "Couldn't check for updates. Please try again."
 msgstr ""
 
+msgid "Couldn't check why linked devices weren't turned on. Please try again."
+msgstr ""
+
 msgid "Couldn't choose a photo. Close your open file picker and try again."
+msgstr ""
+
+msgid "Couldn't complete the account action."
 msgstr ""
 
 msgid "Couldn't complete the signer request. Please try again."
@@ -1422,6 +1554,9 @@ msgid "Couldn't complete your account action. Please try again. (%s)"
 msgstr ""
 
 msgid "Couldn't configure the proxy. Please try again."
+msgstr ""
+
+msgid "Couldn't confirm the emoji code. Please try again."
 msgstr ""
 
 #, c-format
@@ -1450,6 +1585,9 @@ msgstr ""
 msgid "Couldn't crop the picture. Please try again."
 msgstr ""
 
+msgid "Couldn't decline the request. Please try again."
+msgstr ""
+
 msgid "Couldn't decode the image. Choose a PNG or JPEG."
 msgstr ""
 
@@ -1461,7 +1599,21 @@ msgid "Couldn't delete %s. Please try again."
 msgstr ""
 
 #, c-format
+msgid "Couldn't delete key package %s from relays: %s"
+msgstr ""
+
+#, c-format
 msgid "Couldn't delete the audit log file. %s"
+msgstr ""
+
+#, c-format
+msgid "Couldn't delete this device's key package from relays: %s"
+msgstr ""
+
+msgid "Couldn't dismiss the device hint. Please try again."
+msgstr ""
+
+msgid "Couldn't dismiss the warning. Please try again."
 msgstr ""
 
 msgid "Couldn't download speech files. Please try again."
@@ -1551,6 +1703,13 @@ msgstr ""
 msgid "Couldn't keep %s running. Please try again."
 msgstr ""
 
+#, c-format
+msgid "Couldn't leave chat %s: %s"
+msgstr ""
+
+msgid "Couldn't link the device. Please try again."
+msgstr ""
+
 msgid "Couldn't load GIFs. Please try again."
 msgstr ""
 
@@ -1621,6 +1780,9 @@ msgid "Couldn't mark the chat read. %s"
 msgstr ""
 
 msgid "Couldn't mark the chat read. Please try again."
+msgstr ""
+
+msgid "Couldn't move to your other device group. Try linking again."
 msgstr ""
 
 #, c-format
@@ -1705,13 +1867,28 @@ msgstr ""
 msgid "Couldn't read your existing contacts. Please try again."
 msgstr ""
 
+msgid "Couldn't refresh device information."
+msgstr ""
+
+msgid "Couldn't refresh device information. Previously loaded information may be out of date."
+msgstr ""
+
+msgid "Couldn't refresh the link request. Please try again."
+msgstr ""
+
 msgid "Couldn't remove the GIF. Please try again."
+msgstr ""
+
+msgid "Couldn't remove the device. Please try again."
 msgstr ""
 
 msgid "Couldn't remove the pack. Please try again."
 msgstr ""
 
 msgid "Couldn't remove the saved file. Please try again."
+msgstr ""
+
+msgid "Couldn't rename the device. Please try again."
 msgstr ""
 
 msgid "Couldn't rename the group. Enter a name and try again."
@@ -1721,6 +1898,9 @@ msgid "Couldn't render that emoji. Choose another one."
 msgstr ""
 
 msgid "Couldn't render the QR code. Please try again."
+msgstr ""
+
+msgid "Couldn't reset the device list. Please try again."
 msgstr ""
 
 #, c-format
@@ -1742,6 +1922,9 @@ msgid "Couldn't save proxy credentials. Please try again."
 msgstr ""
 
 msgid "Couldn't save the GIF. Please try again."
+msgstr ""
+
+msgid "Couldn't save the device setting. Please try again."
 msgstr ""
 
 msgid "Couldn't save the edit. Please try again."
@@ -1805,8 +1988,17 @@ msgstr ""
 msgid "Couldn't show a notification. Check your system notification settings and try again."
 msgstr ""
 
+msgid "Couldn't sign in with that key. Double-check it and try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't start %s. Its cartridge type isn't supported."
+msgstr ""
+
+msgid "Couldn't start fresh. Check for sign-ins and try again."
+msgstr ""
+
+msgid "Couldn't start linking. Please try again."
 msgstr ""
 
 msgid "Couldn't start reading aloud. Please try again."
@@ -1822,6 +2014,9 @@ msgid "Couldn't start transcription. Please try again."
 msgstr ""
 
 msgid "Couldn't start translation. Reinstall White Noise and try again."
+msgstr ""
+
+msgid "Couldn't switch profiles. Please try again."
 msgstr ""
 
 msgid "Couldn't sync your sticker packs. Check your relay settings and try again."
@@ -1842,6 +2037,9 @@ msgstr ""
 msgid "Couldn't translate this message. Please try again."
 msgstr ""
 
+msgid "Couldn't turn on linked devices. Please try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't unarchive. %s"
 msgstr ""
@@ -1850,6 +2048,9 @@ msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr ""
 
 msgid "Couldn't update issues. Please try again."
+msgstr ""
+
+msgid "Couldn't update that sign-in. Please try again."
 msgstr ""
 
 #, c-format
@@ -2003,6 +2204,9 @@ msgstr ""
 msgid "Decline this invitation?"
 msgstr ""
 
+msgid "Declining the link request…"
+msgstr ""
+
 msgid "Declining your invitation"
 msgstr ""
 
@@ -2102,7 +2306,25 @@ msgstr ""
 msgid "Developer tools"
 msgstr ""
 
+msgid "Device details"
+msgstr ""
+
+msgid "Device linked"
+msgstr ""
+
+msgid "Device linking isn't available in this session."
+msgstr ""
+
+msgid "Device name"
+msgstr ""
+
+msgid "Device unlinked"
+msgstr ""
+
 msgid "Device vault"
+msgstr ""
+
+msgid "Devices"
 msgstr ""
 
 msgid "Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."
@@ -2165,6 +2387,18 @@ msgid "Discover"
 msgstr ""
 
 msgid "Discussion"
+msgstr ""
+
+msgid "Dismiss"
+msgstr ""
+
+msgid "Dismissing the device hint…"
+msgstr ""
+
+msgid "Dismissing the warning on this device…"
+msgstr ""
+
+msgid "Dismissing this warning only affects this device."
 msgstr ""
 
 msgid "Divider"
@@ -2251,6 +2485,9 @@ msgstr ""
 msgid "ENCRYPTION REVISION"
 msgstr ""
 
+msgid "Earlier sign-ins stop prompting you. Until you link, only future invitations will appear here."
+msgstr ""
+
 msgid "Edit"
 msgstr ""
 
@@ -2332,6 +2569,9 @@ msgid "Enter a display name."
 msgstr ""
 
 msgid "Enter a folder name."
+msgstr ""
+
+msgid "Enter a name of 1 to 64 UTF-8 bytes for each device."
 msgstr ""
 
 msgid "Enter a number of people."
@@ -2855,6 +3095,9 @@ msgstr ""
 msgid "Identity"
 msgstr ""
 
+msgid "If the codes don't match, don't link. Only try again if you control both devices."
+msgstr ""
+
 msgid "If you forgot this password, you can try again or close White Noise without deleting anything. Starting over deletes the vault and its protected local data, including chats and pending sends. Review the deletion before deciding."
 msgstr ""
 
@@ -2921,6 +3164,9 @@ msgstr ""
 
 #, c-format
 msgid "In use: %s."
+msgstr ""
+
+msgid "Inactive"
 msgstr ""
 
 msgid "Incoming messages"
@@ -3020,6 +3266,9 @@ msgstr ""
 msgid "It stays for everyone else. You won't see it on this device again."
 msgstr ""
 
+msgid "It will stop receiving this profile's messages. A chat admin may need to remove it from chats that don't support linked devices."
+msgstr ""
+
 msgid "Italian"
 msgstr ""
 
@@ -3048,6 +3297,12 @@ msgstr ""
 msgid "Join in browser"
 msgstr ""
 
+msgid "Joining the other device…"
+msgstr ""
+
+msgid "Joining your other device group…"
+msgstr ""
+
 msgid "Jul"
 msgstr ""
 
@@ -3070,6 +3325,12 @@ msgstr ""
 msgid "Kannada"
 msgstr ""
 
+msgid "Keep"
+msgstr ""
+
+msgid "Keep White Noise open and online so your devices can sync. If this continues, people may not be able to add this device to chats."
+msgstr ""
+
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr ""
 
@@ -3077,6 +3338,9 @@ msgid "Keep this vault"
 msgstr ""
 
 msgid "Keep vault"
+msgstr ""
+
+msgid "Keep while inactive"
 msgstr ""
 
 msgid "Keep your chat list focused without deleting conversations."
@@ -3102,10 +3366,17 @@ msgstr ""
 msgid "Key package ref"
 msgstr ""
 
+msgid "Key package refresh overdue"
+msgstr ""
+
 msgid "Key packages"
 msgstr ""
 
 msgid "Key packages are published to your key package relays."
+msgstr ""
+
+#, c-format
+msgid "Key packages deleted: %d."
 msgstr ""
 
 msgid "Key packages let people invite you. Refresh checks the app's default relays for published copies."
@@ -3151,6 +3422,10 @@ msgid "Language, startup, and everyday preferences."
 msgstr ""
 
 msgid "Large"
+msgstr ""
+
+#, c-format
+msgid "Last active: %s"
 msgstr ""
 
 msgid "Last backup"
@@ -3204,13 +3479,72 @@ msgstr ""
 msgid "Lime"
 msgstr ""
 
+msgid "Link a new device?"
+msgstr ""
+
+msgid "Link another device to this profile."
+msgstr ""
+
 msgid "Link copied"
 msgstr ""
 
 msgid "Link previews"
 msgstr ""
 
+msgid "Link requests"
+msgstr ""
+
+msgid "Link this device"
+msgstr ""
+
+msgid "Link this device to bring chats over, or add a new device if your chats are here."
+msgstr ""
+
+msgid "Link this device to the one that has your chats. You’ll compare the same seven emoji on both screens."
+msgstr ""
+
+msgid "Link to another device"
+msgstr ""
+
+#, c-format
+msgid "Linked by: %s"
+msgstr ""
+
+msgid "Linked devices"
+msgstr ""
+
+msgid "Linked devices are ready"
+msgstr ""
+
+msgid "Linked devices are turned on for this chat."
+msgstr ""
+
+msgid "Linked devices weren't turned on for this chat."
+msgstr ""
+
 msgid "Linked events"
+msgstr ""
+
+msgid "Linked on another device"
+msgstr ""
+
+#, c-format
+msgid "Linked: %s"
+msgstr ""
+
+msgid "Linking ended."
+msgstr ""
+
+msgid "Linking moves only this device. The other devices stay in their current device group."
+msgstr ""
+
+msgid "Linking starts on the new device. Keep White Noise open here while you set it up."
+msgstr ""
+
+msgid "Linking the other device…"
+msgstr ""
+
+msgid "Linking was cancelled."
 msgstr ""
 
 msgid "Links"
@@ -3246,6 +3580,9 @@ msgstr ""
 msgid "Loading full resolution…"
 msgstr ""
 
+msgid "Loading linked devices…"
+msgstr ""
+
 msgid "Loading map"
 msgstr ""
 
@@ -3277,6 +3614,13 @@ msgid "Loading..."
 msgstr ""
 
 msgid "Loading…"
+msgstr ""
+
+msgid "Local cleanup did not report completion."
+msgstr ""
+
+#, c-format
+msgid "Local cleanup reported a problem: %s"
 msgstr ""
 
 msgid "Local data & backups"
@@ -3357,6 +3701,9 @@ msgstr ""
 msgid "Manage contacts"
 msgstr ""
 
+msgid "Manage linked devices"
+msgstr ""
+
 msgid "Manage local files and encrypted backups."
 msgstr ""
 
@@ -3367,6 +3714,9 @@ msgid "Marathi"
 msgstr ""
 
 msgid "Mark read"
+msgstr ""
+
+msgid "Mark this sign-in as not you?"
 msgstr ""
 
 msgid "Mark unread"
@@ -3435,6 +3785,13 @@ msgstr ""
 msgid "Message translation is available in native Linux builds."
 msgstr ""
 
+#, c-format
+msgid "Messages above were imported from %s"
+msgstr ""
+
+msgid "Messages above were restored from a backup"
+msgstr ""
+
 msgid "Messages already in the chat are affected, not only new ones. Everyone in the group sees the change."
 msgstr ""
 
@@ -3457,6 +3814,9 @@ msgid "Metalness"
 msgstr ""
 
 msgid "Micro"
+msgstr ""
+
+msgid "Missing capabilities:"
 msgstr ""
 
 msgid "Model inspector"
@@ -3487,6 +3847,15 @@ msgid "Move later"
 msgstr ""
 
 msgid "Move to folder"
+msgstr ""
+
+msgid "Moved to another device group"
+msgstr ""
+
+msgid "Moved to your other device group."
+msgstr ""
+
+msgid "Moving this device"
 msgstr ""
 
 msgid "Multi-device is coming very soon™."
@@ -3528,6 +3897,9 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
+msgid "Name for this device"
+msgstr ""
+
 msgid "Name includes"
 msgstr ""
 
@@ -3558,6 +3930,12 @@ msgstr ""
 msgid "New chat"
 msgstr ""
 
+msgid "New device"
+msgstr ""
+
+msgid "New device name"
+msgstr ""
+
 msgid "New folder"
 msgstr ""
 
@@ -3571,6 +3949,9 @@ msgid "New message"
 msgstr ""
 
 msgid "New name"
+msgstr ""
+
+msgid "New sign-in"
 msgstr ""
 
 msgid "News"
@@ -3626,6 +4007,9 @@ msgid "No contacts yet"
 msgstr ""
 
 msgid "No description."
+msgstr ""
+
+msgid "No devices are linked to this profile yet."
 msgstr ""
 
 msgid "No emoji match your search."
@@ -3741,6 +4125,12 @@ msgstr ""
 msgid "No unread chats"
 msgstr ""
 
+msgid "No unrecognized sign-ins."
+msgstr ""
+
+msgid "No, start fresh"
+msgstr ""
+
 msgid "Noir film treatment"
 msgstr ""
 
@@ -3822,6 +4212,9 @@ msgstr ""
 msgid "Off shows only \"New message\" without the text."
 msgstr ""
 
+msgid "Old queued messages were kept, but can't be assigned to a profile."
+msgstr ""
+
 msgid "On"
 msgstr ""
 
@@ -3862,7 +4255,16 @@ msgstr ""
 msgid "One-tap reactions"
 msgstr ""
 
+msgid "Only a chat admin can turn on linked devices."
+msgstr ""
+
+msgid "Only future invitations will appear here until you link this device."
+msgstr ""
+
 msgid "Only group admins can change this setting."
+msgstr ""
+
+msgid "Only link if both screens show the same seven emoji in the same order."
 msgstr ""
 
 msgid "Only the folder is removed. Its chats stay in your chat list."
@@ -3872,6 +4274,9 @@ msgid "Only you see this name."
 msgstr ""
 
 msgid "Open"
+msgstr ""
+
+msgid "Open White Noise on the device that has your chats. Keep both devices online so you can compare the codes they show."
 msgstr ""
 
 msgid "Open a chat before inviting someone."
@@ -3986,6 +4391,15 @@ msgstr ""
 msgid "Other files"
 msgstr ""
 
+msgid "Other linked devices could not be reached for cleanup."
+msgstr ""
+
+msgid "Other members' linked devices can join without an admin. This can't be turned off."
+msgstr ""
+
+msgid "Other profiles"
+msgstr ""
+
 msgid "Out of stock"
 msgstr ""
 
@@ -4030,6 +4444,9 @@ msgstr ""
 
 #, c-format
 msgid "Page %d of %d"
+msgstr ""
+
+msgid "Pair and view devices linked to this profile."
 msgstr ""
 
 msgid "Pair with a remote signer"
@@ -4214,6 +4631,9 @@ msgstr ""
 msgid "Preparing the cropped picture…"
 msgstr ""
 
+msgid "Preparing the link request…"
+msgstr ""
+
 msgid "Preparing transcription..."
 msgstr ""
 
@@ -4250,6 +4670,9 @@ msgstr ""
 msgid "Previous chat"
 msgstr ""
 
+msgid "Previously linked on this device"
+msgstr ""
+
 msgid "Privacy"
 msgstr ""
 
@@ -4263,6 +4686,10 @@ msgid "Private group chat over Nostr"
 msgstr ""
 
 msgid "Profile"
+msgstr ""
+
+#, c-format
+msgid "Profile: %s"
 msgstr ""
 
 msgid "Progress is indeterminate."
@@ -4437,6 +4864,9 @@ msgstr ""
 msgid "Regular"
 msgstr ""
 
+msgid "Rejected on another device"
+msgstr ""
+
 msgid "Relay lists republished."
 msgstr ""
 
@@ -4461,6 +4891,12 @@ msgstr ""
 msgid "Reload previews"
 msgstr ""
 
+msgid "Removal from this device could not be confirmed."
+msgstr ""
+
+msgid "Removal pending"
+msgstr ""
+
 msgid "Remove"
 msgstr ""
 
@@ -4470,7 +4906,16 @@ msgstr ""
 msgid "Remove admin rights?"
 msgstr ""
 
+msgid "Remove and sign in"
+msgstr ""
+
 msgid "Remove contact"
+msgstr ""
+
+msgid "Remove device"
+msgstr ""
+
+msgid "Remove from this device"
 msgstr ""
 
 msgid "Remove option"
@@ -4494,10 +4939,25 @@ msgstr ""
 msgid "Remove this contact?"
 msgstr ""
 
+msgid "Remove this device?"
+msgstr ""
+
 msgid "Remove this member?"
 msgstr ""
 
 msgid "Remove this relay?"
+msgstr ""
+
+msgid "Remove this unlinked profile?"
+msgstr ""
+
+msgid "Remove unlinked profile?"
+msgstr ""
+
+msgid "Removing the linked device…"
+msgstr ""
+
+msgid "Removing the profile from this device…"
 msgstr ""
 
 msgid "Removing your account from this device"
@@ -4507,6 +4967,9 @@ msgid "Removing…"
 msgstr ""
 
 msgid "Rename"
+msgstr ""
+
+msgid "Rename this device"
 msgstr ""
 
 msgid "Renderer"
@@ -4555,7 +5018,16 @@ msgstr ""
 msgid "Reset"
 msgstr ""
 
+msgid "Reset and link again"
+msgstr ""
+
+msgid "Reset this device list?"
+msgstr ""
+
 msgid "Reset zoom"
+msgstr ""
+
+msgid "Resetting the device list and publishing a key package…"
 msgstr ""
 
 msgid "Resolve"
@@ -4582,6 +5054,9 @@ msgstr ""
 msgid "Restore the last chat on launch"
 msgstr ""
 
+msgid "Resume device linking"
+msgstr ""
+
 msgid "Retry"
 msgstr ""
 
@@ -4600,10 +5075,16 @@ msgstr ""
 msgid "Reveal your secret key"
 msgstr ""
 
+msgid "Review"
+msgstr ""
+
 msgid "Review and approve"
 msgstr ""
 
 msgid "Review local data deletion"
+msgstr ""
+
+msgid "Review postponed"
 msgstr ""
 
 msgid "Review signer approval link"
@@ -4613,6 +5094,9 @@ msgid "Review signer permissions"
 msgstr ""
 
 msgid "Review starting over"
+msgstr ""
+
+msgid "Review unlinked profiles"
 msgstr ""
 
 msgid "Right"
@@ -4737,6 +5221,9 @@ msgstr ""
 msgid "Save file"
 msgstr ""
 
+msgid "Save name"
+msgstr ""
+
 msgid "Save sticker"
 msgstr ""
 
@@ -4757,6 +5244,12 @@ msgid "Saved locally. Relay delivery pending."
 msgstr ""
 
 msgid "Saved. Restart White Noise to apply this connection setting."
+msgstr ""
+
+msgid "Saving the device name…"
+msgstr ""
+
+msgid "Saving the device setting…"
 msgstr ""
 
 msgid "Saving vote…"
@@ -5015,6 +5508,9 @@ msgstr ""
 msgid "Setup prompts for connecting an AI agent to White Noise."
 msgstr ""
 
+msgid "Several devices are trying to link. Cancel the other attempts to continue."
+msgstr ""
+
 msgid "Shadow card"
 msgstr ""
 
@@ -5114,6 +5610,9 @@ msgstr ""
 msgid "Show passwords"
 msgstr ""
 
+msgid "Show this profile's keys"
+msgstr ""
+
 msgid "Show translation"
 msgstr ""
 
@@ -5133,10 +5632,34 @@ msgstr ""
 msgid "Sign out"
 msgstr ""
 
+msgid "Sign out and wipe"
+msgstr ""
+
+msgid "Sign out and wipe your profile?"
+msgstr ""
+
 msgid "Sign out of this account?"
 msgstr ""
 
+msgid "Sign-ins to review"
+msgstr ""
+
+msgid "Sign-out and wipe report"
+msgstr ""
+
+msgid "Sign-out on this device could not be confirmed."
+msgstr ""
+
 msgid "Signal call"
+msgstr ""
+
+msgid "Signed in before this device"
+msgstr ""
+
+msgid "Signed in on another device?"
+msgstr ""
+
+msgid "Signed out"
 msgstr ""
 
 msgid "Signer cancelled"
@@ -5157,7 +5680,13 @@ msgstr ""
 msgid "Signer unavailable. Reconnect from Add account."
 msgstr ""
 
+msgid "Signing out"
+msgstr ""
+
 msgid "Signing out and removing your signer session"
+msgstr ""
+
+msgid "Signing out and wiping this device's copy of the profile"
 msgstr ""
 
 msgid "Signing you in"
@@ -5191,7 +5720,19 @@ msgstr ""
 msgid "Sold"
 msgstr ""
 
+msgid "Some chat changes weren't delivered"
+msgstr ""
+
+msgid "Some devices need to be replaced before linked devices can be turned on."
+msgstr ""
+
+msgid "Some members need to update their app before linked devices can be turned on."
+msgstr ""
+
 msgid "Some network results may be missing."
+msgstr ""
+
+msgid "Someone may have your private key"
 msgstr ""
 
 msgid "Sort chats by recent activity"
@@ -5248,7 +5789,16 @@ msgstr ""
 msgid "Start day"
 msgstr ""
 
+msgid "Start fresh"
+msgstr ""
+
+msgid "Start fresh on this device?"
+msgstr ""
+
 msgid "Start group"
+msgstr ""
+
+msgid "Start linking"
 msgstr ""
 
 msgid "Start minimized to tray"
@@ -5262,6 +5812,12 @@ msgid "Started offline: %s"
 msgstr ""
 
 msgid "Starting a chat does not add someone to People. You can also import a contacts CSV or JSON export."
+msgstr ""
+
+msgid "Starting device linking…"
+msgstr ""
+
+msgid "Starting fresh on this device…"
 msgstr ""
 
 msgid "Starting microphone…"
@@ -5310,6 +5866,9 @@ msgstr ""
 msgid "Stickers: %d"
 msgstr ""
 
+msgid "Still trying to bring earlier messages from your other device…"
+msgstr ""
+
 #, c-format
 msgid "Stock: %s"
 msgstr ""
@@ -5351,6 +5910,9 @@ msgid "Swahili (Tanzania)"
 msgstr ""
 
 msgid "Swedish"
+msgstr ""
+
+msgid "Switching profiles and checking the request…"
 msgstr ""
 
 msgid "Switching your account"
@@ -5473,7 +6035,16 @@ msgstr ""
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr ""
 
+msgid "The codes didn't match. Only link devices whose codes match exactly."
+msgstr ""
+
 msgid "The colors and settings you changed in the editor are lost."
+msgstr ""
+
+msgid "The comparison code is missing or invalid. Don't approve this request."
+msgstr ""
+
+msgid "The device list was reset, but the key package couldn't be published. Start linking to try again."
 msgstr ""
 
 msgid "The group name was removed"
@@ -5481,6 +6052,12 @@ msgstr ""
 
 #, c-format
 msgid "The group was renamed to %s"
+msgstr ""
+
+msgid "The link attempt ended."
+msgstr ""
+
+msgid "The link request expired."
 msgstr ""
 
 msgid "The new password re-encrypts the vault on this device. White Noise still can't reset it. If you forget it, the only way forward is to delete this vault and start over."
@@ -5495,7 +6072,16 @@ msgstr ""
 msgid "The original message isn't loaded in this view."
 msgstr ""
 
+msgid "The other device cancelled linking."
+msgstr ""
+
+msgid "The other device declined the request."
+msgstr ""
+
 msgid "The passwords don't match. Type them again."
+msgstr ""
+
+msgid "The signer record could not be removed from the encrypted vault."
 msgstr ""
 
 msgid "The signer request was cancelled."
@@ -5554,19 +6140,64 @@ msgstr ""
 msgid "They come off your published contact list. Groups you already share stay as they are."
 msgstr ""
 
+msgid "They don't match"
+msgstr ""
+
 msgid "They haven't published a relay list."
 msgstr ""
 
 msgid "They lose access to new messages in this group."
 msgstr ""
 
+msgid "They match"
+msgstr ""
+
+msgid "They match, link device"
+msgstr ""
+
 msgid "They stay in the group as a regular member."
+msgstr ""
+
+msgid "This build keeps your chats separate on each device. Your other devices' chats won't appear here."
 msgstr ""
 
 msgid "This can't be undone."
 msgstr ""
 
+msgid "This chat doesn't support linked devices."
+msgstr ""
+
+msgid "This chat exceeds the device limit."
+msgstr ""
+
 msgid "This chat is archived. Restore it from Archive to send messages."
+msgstr ""
+
+msgid "This chat is still catching up"
+msgstr ""
+
+msgid "This deletes the keys and chats for this profile from this device. It doesn't remove the profile or its chats from other devices. This can't be undone."
+msgstr ""
+
+msgid "This device"
+msgstr ""
+
+msgid "This device can't be linked."
+msgstr ""
+
+msgid "This device can't link because it doesn't support everything this profile needs."
+msgstr ""
+
+msgid "This device forgets its local device list and unfinished sync. Your chats and keys stay. Link again to get a new device list."
+msgstr ""
+
+msgid "This device is no longer in your device list."
+msgstr ""
+
+msgid "This device tries to leave its chats, then deletes its local copy of the profile, including its keys and chats. This can't be undone."
+msgstr ""
+
+msgid "This device was unlinked. Remove the unlinked profile before signing in again."
 msgstr ""
 
 msgid "This event is no longer available."
@@ -5596,6 +6227,9 @@ msgstr ""
 
 #, c-format
 msgid "This is an installation prompt for connecting this OpenCode setup to White Noise through Marmot. Read the latest connector guide at https://github.com/marmot-protocol/mdk/blob/master/crates/agent-connector/README.md. Explain to me how the connector works and what the installation will change. Then propose the installation steps for my public npub: %s, and ask for my approval before making any changes. Once I approve, install and verify the connector, then reply with your agent npub."
+msgstr ""
+
+msgid "This is my device"
 msgstr ""
 
 msgid "This is what a message alert looks like."
@@ -5638,10 +6272,31 @@ msgstr ""
 msgid "This password protects sensitive local data. It is not a service login or a password to share with contacts. Save it in your password manager."
 msgstr ""
 
+msgid "This profile has reached its device limit. Unlink an existing device before trying again."
+msgstr ""
+
+msgid "This profile has too many linked devices. Remove a device and try again."
+msgstr ""
+
+msgid "This profile needs a White Noise build that supports device linking."
+msgstr ""
+
 msgid "This relay is already in your list."
 msgstr ""
 
+msgid "This request is no longer active."
+msgstr ""
+
+msgid "This request was answered on another device."
+msgstr ""
+
+msgid "This sign-in was rejected on one of your devices."
+msgstr ""
+
 msgid "This sticker is not in the current pack."
+msgstr ""
+
+msgid "This wasn't me"
 msgstr ""
 
 msgid "Thread"
@@ -5688,6 +6343,9 @@ msgid "Toggle developer mode"
 msgstr ""
 
 msgid "Too easy to guess"
+msgstr ""
+
+msgid "Too many recent attempts. Try again later."
 msgstr ""
 
 msgid "Toolbar button"
@@ -5765,6 +6423,10 @@ msgstr ""
 msgid "Try again"
 msgstr ""
 
+#, c-format
+msgid "Try again after %s."
+msgstr ""
+
 msgid "Tuesday"
 msgstr ""
 
@@ -5774,7 +6436,28 @@ msgstr ""
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
 
+msgid "Turn on anyway"
+msgstr ""
+
 msgid "Turn on developer mode"
+msgstr ""
+
+msgid "Turn on linked devices"
+msgstr ""
+
+msgid "Turn on linked devices?"
+msgstr ""
+
+msgid "Turning on linked devices now could split the chat. Wait for it to catch up, or turn on linked devices anyway."
+msgstr ""
+
+msgid "Turning on linked devices…"
+msgstr ""
+
+msgid "Turning this off doesn't leave any chats."
+msgstr ""
+
+msgid "Turning this on doesn't bring history to chats this device already joined."
 msgstr ""
 
 msgid "Type a command"
@@ -5810,8 +6493,14 @@ msgstr ""
 msgid "Unfiled"
 msgstr ""
 
+msgid "Unknown app"
+msgstr ""
+
 #, c-format
 msgid "Unknown event kind %d"
+msgstr ""
+
+msgid "Unknown link request state."
 msgstr ""
 
 msgid "Unlock"
@@ -5826,6 +6515,9 @@ msgstr ""
 msgid "Unmute"
 msgstr ""
 
+msgid "Unnamed device"
+msgstr ""
+
 msgid "Unnamed group"
 msgstr ""
 
@@ -5833,6 +6525,13 @@ msgid "Unpin"
 msgstr ""
 
 msgid "Unread"
+msgstr ""
+
+#, c-format
+msgid "Unrecognized activity: %s."
+msgstr ""
+
+msgid "Unrecognized sign-in"
 msgstr ""
 
 msgid "Unresolved"
@@ -5857,6 +6556,9 @@ msgid "Updates are disabled while a SOCKS5 proxy is configured. Sparkle cannot s
 msgstr ""
 
 msgid "Updating issue tracking..."
+msgstr ""
+
+msgid "Updating the sign-in…"
 msgstr ""
 
 msgid "Updating your contacts"
@@ -5890,6 +6592,9 @@ msgid "Use a separate group for each project and start with its location and con
 msgstr ""
 
 msgid "Use a shorter search."
+msgstr ""
+
+msgid "Use at most 64 bytes for the device name."
 msgstr ""
 
 msgid "Use crop circle"
@@ -6000,10 +6705,28 @@ msgstr ""
 msgid "WIREFRAME"
 msgstr ""
 
+msgid "Wait"
+msgstr ""
+
+msgid "Waiting for a link request…"
+msgstr ""
+
 msgid "Waiting for signer approval"
 msgstr ""
 
+msgid "Waiting for the linked devices change to reach the chat…"
+msgstr ""
+
+msgid "Waiting for the other device to answer. Open White Noise there to review the request."
+msgstr ""
+
 msgid "Waiting for your signer"
+msgstr ""
+
+msgid "Waiting to join the other device group…"
+msgstr ""
+
+msgid "Waiting to join your other device group."
 msgstr ""
 
 msgid "Waiting to translate..."
@@ -6065,6 +6788,12 @@ msgid "White Noise can't reset this password, and no one else has a copy. Withou
 msgstr ""
 
 msgid "White Noise cannot reset this password to unlock your existing vault."
+msgstr ""
+
+msgid "White Noise couldn't finish linking the device."
+msgstr ""
+
+msgid "White Noise couldn't verify the other device."
 msgstr ""
 
 msgid "White Noise doesn't open at login"
@@ -6132,6 +6861,9 @@ msgid "You can find it in Archived and restore it to your chat list there."
 msgstr ""
 
 msgid "You can't send messages to someone you blocked."
+msgstr ""
+
+msgid "You confirmed the code. Waiting for the other device to approve the request."
 msgstr ""
 
 msgid "You follow"
@@ -6225,6 +6957,9 @@ msgstr ""
 msgid "Your key stays on this device"
 msgstr ""
 
+msgid "Your keys and chats are deleted from this device. Other linked devices keep their chats. Asking them to help with cleanup can take about 30 seconds. This can't be undone."
+msgstr ""
+
 msgid "Your name"
 msgstr ""
 
@@ -6232,6 +6967,9 @@ msgid "Your new password"
 msgstr ""
 
 msgid "Your nsec or remote signer can let you use your account again, but it can't open this vault, and your chats on this device may not return. A backup file has its own password and holds only settings, drafts, custom emoji, and themes."
+msgstr ""
+
+msgid "Your other linked devices will refuse this sign-in's link request and warn you about it. Someone may have your private key."
 msgstr ""
 
 msgid "Your own notepad"
@@ -6333,6 +7071,9 @@ msgstr ""
 
 #, c-format
 msgid "and %s more"
+msgstr ""
+
+msgid "another device"
 msgstr ""
 
 msgid "edited"

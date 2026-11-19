@@ -23,6 +23,7 @@ preview_boundaries :: proc(t: ^testing.T) {
 		selected = 0,
 	}
 	ui.prefs.reduce_motion = true
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "preview", title = "Preview"})
 	g_ui, g_prefs = &ui, &ui.prefs

@@ -26,7 +26,7 @@ chat_row_preview :: proc(
 ) {
 	last := row.last_message
 	if last == nil {return "", nil}
-	mine := last.sender != nil && string(last.sender) == account_ref
+	mine := message_is_mine(nil, last.sender, account_ref)
 	is_blocked := !mine && last.sender != nil && blocked[string(last.sender)]
 	raw := last.plaintext != nil ? string(last.plaintext) : ""
 	class := record_class(last.kind, raw)
@@ -37,7 +37,7 @@ chat_row_preview :: proc(
 		page := page
 		owned := page == nil
 		if owned {page = window_preview(client, account_ref, row)}
-		phrased, system := preview_text(client, page, blocked, mode)
+		phrased, system := preview_text(client, page, account_ref, blocked, mode)
 		// Profile labels use UI-owned caches. Only these fallback pages
 		// survive worker preparation, to be phrased on UI adoption.
 		if system && mode == .Worker {return "", page}
@@ -115,6 +115,7 @@ window_preview :: proc(
 preview_text :: proc(
 	client: ^marmot.Client,
 	page: ^marmot.Timeline_Page,
+	account_ref: string,
 	blocked: map[string]bool,
 	mode: Chat_Preview_Mode,
 ) -> (
@@ -136,11 +137,11 @@ preview_text :: proc(
 			continue
 		case .Message, .Unsupported:
 		}
-		if record.sender != nil && blocked[string(record.sender)] {continue}
+		mine := message_is_mine(record.direction, record.sender, account_ref)
+		if !mine && record.sender != nil && blocked[string(record.sender)] {continue}
 		text = class == .Unsupported ? tr("Unsupported event") : reading_text(client, raw)
 		if text == "" {continue}
-		if record.direction != nil &&
-		   string(record.direction) == "sent" {return fmt.tprintf(tr("You: %s"), text), false}
+		if mine {return fmt.tprintf(tr("You: %s"), text), false}
 		return strings.clone(text, context.temp_allocator), false
 	}
 	return "", false

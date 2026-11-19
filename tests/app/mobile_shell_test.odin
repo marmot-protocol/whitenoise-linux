@@ -49,6 +49,7 @@ mobile_shell_viewports :: proc(t: ^testing.T) {
 		prefs            = default_prefs(),
 	}
 	ui.prefs.reduce_motion = true
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Mobile"})
 	append(
 		&ui.chats,

@@ -318,6 +318,10 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 				direction = .Column,
 			},
 			) {
+				profile := device_current(ui)
+				if profile != nil {
+					history_import_progress(profile, chat.group_id)
+				}
 				// Timeline: a real scroll container, top-anchored.
 				// Loads jump to the newest message.
 				// The thread route's push/pop transition: content slides
@@ -390,8 +394,15 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 								{font = FONT_BODY, size = 14, color = TEXT},
 							)
 						}
-					} else if len(messages) == 0 && len(ui.pending) == 0 {
-						empty_timeline(ui)
+					} else if len(messages) == 0 {
+						has_pending := false
+						for p in ui.pending {
+							if p.thread == cur && pending_in_workspace(ui, p, chat.group_id) {
+								has_pending = true
+								break
+							}
+						}
+						if !has_pending {empty_timeline(ui)}
 					}
 					// The thread route filters the one timeline: the main
 					// view shows unthreaded rows, a thread view shows its
@@ -403,6 +414,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					run: Msg_Run
 					wrap_w := body_wrap_w()
 					blocked_at := -1 // first row of the blocked run in progress
+					last_import := -1
 					for msg, i in messages {
 						if msg.thread_of != cur {
 							continue
@@ -462,7 +474,8 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 						}
 						// Grouping restarts on both sides of a blocked run, so a
 						// collapsed run never glues its neighbours together.
-						if !msg_blocked(ui, msg) {
+						blocked := msg_blocked(ui, msg)
+						if !blocked {
 							if blocked_at >= 0 {run = {}}
 							blocked_at = -1
 						} else {
@@ -477,8 +490,27 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 							}
 							if !ui.blocked_open[messages[blocked_at].id] {continue}
 						}
+						skip := timeline_skip(ui, msg)
+						if (msg.origin.kind != .None || last_import >= 0) &&
+						   !msg.system &&
+						   !msg.deleted &&
+						   !blocked &&
+						   !ui.hidden[msg.id] {
+							if msg.origin.kind != .None {
+								last_import = i
+							} else {
+								history_import_divider(
+									msg.id,
+									messages[last_import].origin,
+									profile,
+									skip,
+								)
+								run = {}
+								last_import = -1
+							}
+						}
 						head := msg_run_step(&run, msg, wrap_w)
-						if timeline_skip(ui, msg) {
+						if skip {
 							if nendo.box(nendo.id(msg.system ? "SysRow" : "MsgRow", u32(i)))(
 							{width = nendo.grow(), height = nendo.fixed(msg.row_height)},
 							) {}
@@ -491,7 +523,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 					// Optimistic rows at the tail: unacked sends grayed,
 					// failed ones danger with tap-to-retry.
 					for p, i in ui.pending {
-						if p.group_id == chat.group_id && p.thread == cur {
+						if p.thread == cur && pending_in_workspace(ui, p, chat.group_id) {
 							pending_row(u32(i), ui, p)
 						}
 					}
@@ -504,6 +536,58 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 			}
 		}
 		chat_drop_overlay(ui)
+	}
+}
+
+@(private = "file")
+history_import_progress :: proc(profile: ^Device_Profile, group: string) {
+	item := profile.view.history_by_group[group]
+	if item == nil || item.state.tag != .RECEIVING {return}
+	retrying := item.state.body.receiving.retrying
+	if nendo.box(nendo.id(retrying ? "HistoryImportRetrying" : "HistoryImportReceiving"))(
+	{width = nendo.grow(), padding = nendo.pad(12), gap = 6, direction = .Column, color = CARD},
+	) {
+		nendo.text(
+			retrying ? tr("Still trying to bring earlier messages from your other device…") : tr("Bringing earlier messages from your other device…"),
+			{font = FONT_BODY, size = 12, color = TEXT_DIM},
+		)
+		busy_bar("HistoryImportBusy")
+	}
+}
+
+@(private = "file")
+history_import_divider :: proc(
+	message_id: string,
+	origin: Message_Origin,
+	profile: ^Device_Profile,
+	placeholder: bool,
+) {
+	// One line, so a roster rename cannot move the rows below this marker.
+	if nendo.box(nendo.id("HistoryImportDivider", nendo.id(message_id).id))(
+	{
+		width = nendo.grow(),
+		height = nendo.fixed(28),
+		padding = {left = 16, right = 16},
+		align = {y = .Center},
+		clip = {x = true, y = true},
+	},
+	) {
+		if placeholder {return}
+		label: string
+		switch origin.kind {
+		case .None:
+			return
+		case .Backup:
+			label = tr("Messages above were restored from a backup")
+		case .Device:
+			name := origin.label
+			if profile != nil && .Roster in profile.known {
+				name = profile.view.roster_labels[origin.slot]
+			}
+			if name == "" {name = tr("another device")}
+			label = fmt.tprintf(tr("Messages above were imported from %s"), name)
+		}
+		nendo.text(label, {font = FONT_BODY, size = 12, color = TEXT_DIM, wrap = .None})
 	}
 }
 
@@ -777,6 +861,7 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 		}
 	}
 
+	activation_card(ui, info_card())
 	if admin && !dm {
 		if nendo.box(nendo.id("InfoNameCard"))(info_card()) {
 			row_labels(

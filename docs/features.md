@@ -411,6 +411,23 @@ Contacts:
 
 </details>
 
+### Linked devices (experimental)
+
+Build with `WN_MULTI_DEVICE=1` to use **Settings > Devices**. Sign in with the
+same profile on both devices, then choose **Link to another device** on the
+new one. Approve the request on the existing device and confirm on the new
+one only if all seven emoji match in order.
+
+The existing device chooses whether to add the new one to eligible chats and
+bring over earlier messages. A chat shows progress while it receives history
+and marks where that history ends. Messages sent from your other device still
+appear as yours, without this device's delivery ticks.
+
+Devices lists the linked devices and lets you rename or remove them. An admin
+of an eligible older chat can turn on linked devices from the chat's settings.
+That change can't be undone. Keep linked profiles on experimental builds;
+an ordinary build can't open a profile joined to a device group.
+
 ### Setup prompts for AI agents
 
 Settings > AI agents offers setup prompts for Hermes, OpenClaw, OpenCode, Codex, and Claude Code. White Noise does not install anything or share your private key.

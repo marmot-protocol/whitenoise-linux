@@ -38,6 +38,7 @@ folder_picker_dispatch :: proc(t: ^testing.T) {
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "offline-chat", title = "Example chat"})
 	g_ui, g_prefs = &ui, &ui.prefs

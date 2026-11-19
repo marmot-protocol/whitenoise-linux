@@ -278,6 +278,7 @@ gif_keyboard :: proc(t: ^testing.T) {
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs.rail_w = RAIL_W_MIN; ui.prefs.reduce_motion = true
 	ui.prefs.gif_consent = true
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "GIFs"})
 	append(&ui.compose, "Keep your draft")

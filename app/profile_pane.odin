@@ -43,7 +43,7 @@ profile_rail :: proc(ui: ^Ui_State) {
 			if active {
 				nendo.text(tr("ACTIVE"), {font = FONT_MONO, size = 9, color = ACCENT, spacing = 2})
 			}
-			account_remove_button("PrAcctRemove", u32(i))
+			if !MULTI_DEVICE {account_remove_button("PrAcctRemove", u32(i))}
 		}
 	}
 	if nendo.box(nendo.id("PrAddRow"))({padding = {left = 4, top = 4, bottom = 8}}) {
@@ -546,7 +546,11 @@ profile_pane :: proc(ui: ^Ui_State) {
 		if nendo.box(nendo.id("SignOutPad"))({padding = {top = 6}}) {
 			login_button("SignOutBtn", tr("Sign out"))
 		}
-		if single_pane() {micro_button("ProfileRemoveAccount", tr("Remove account"), DANGER)}
+		if MULTI_DEVICE {
+			micro_button("SignOutWipeBtn", tr("Sign out and wipe"), DANGER)
+		} else if single_pane() {
+			micro_button("ProfileRemoveAccount", tr("Remove account"), DANGER)
+		}
 		if open_now(nendo.id("QrModal"), ui.qr_open) && ui.qr_tex != nil {
 			qr_modal(
 				ui,

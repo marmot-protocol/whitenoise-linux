@@ -94,6 +94,9 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	auth_stop()
 	stage_files_stop()
 	account_jobs_stop()
+	devices_stop(ui)
+	activation_stop(ui)
+	offline_clear(ui)
 	stop_gimg_worker()
 	stop_pic_worker()
 	photo_crop_stop()
@@ -115,11 +118,8 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	for p in ui.pending {if p.gif != nil {thread.join(p.gif.worker)}}
 	for job in media_jobs {if job.worker != nil {thread.join(job.worker)}}
 	for job in sticker_jobs {if job.worker != nil {thread.join(job.worker)}}
+	live_stop(live)
 	if client != nil {
-		if live.worker != nil {
-			thread.join(live.worker); thread.destroy(live.worker)
-			marmot.chat_list_subscription_free(live.sub)
-		}
 		if live.events_worker != nil {
 			thread.join(live.events_worker); thread.destroy(live.events_worker)
 			marmot.events_subscription_free(live.events_sub)
@@ -156,6 +156,12 @@ session_stop :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 	login_pair_clear(ui)
 	for change in live.dirty_groups {delete(change.group); delete(change.account)}
 	delete(live.dirty_groups); live.dirty_groups = {}
+	for account, change in live.dirty_devices {
+		delete(account)
+		delete(change.unlink_label)
+	}
+	delete(live.dirty_devices)
+	live.dirty_devices = {}
 	forward_stop(ui)
 	sticker_stop()
 	emoji_sets_stop(ui)
@@ -286,7 +292,7 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	delete(sends_done); sends_done = {}
 }
 
-@(private = "file")
+@(private)
 session_buffer_forget :: proc(buffer: ^[dynamic]u8) {
 	mem.zero_slice(raw_data(buffer^)[:cap(buffer^)])
 	delete(buffer^)

@@ -14,6 +14,10 @@ cleanup() {
 	rm -rf "$TASK_DIR"
 }
 trap cleanup EXIT
+MULTI_DEVICE_ARGS=()
+if [ "${WN_MULTI_DEVICE:-}" = 1 ]; then
+	MULTI_DEVICE_ARGS=(-define:WN_MULTI_DEVICE=true)
+fi
 cp -a "$HERE/app" "$TASK_DIR/app"
 for entry in vendor marmot themes lang build; do ln -s "$HERE/$entry" "$TASK_DIR/$entry"; done
 for helper in wn-image wn-archive wn-pdf wn-mesh wn-fbx wn-math wn-nes; do ln -s "$HERE/build/$helper" "$TASK_DIR/$helper"; done
@@ -24,7 +28,7 @@ mv "$HERE/build/libmarmot-dev.so.next" "$HERE/build/libmarmot-dev.so"
 cc -Wall -Wextra -Werror -rdynamic "$HERE/scripts/dev-host.c" -o "$TASK_DIR/host" $(pkg-config --cflags --libs sdl3) -ldl
 cc -Wall -Wextra -Werror "$HERE/tests/dev-host-test.c" -o "$TASK_DIR/host-test" $(pkg-config --cflags --libs sdl3) -ldl
 "$TASK_DIR/host-test"
-odin build "$TASK_DIR/app" -o:minimal -define:WN_DEV=true -out:"$TASK_DIR/seed"
+odin build "$TASK_DIR/app" -o:minimal -define:WN_DEV=true "${MULTI_DEVICE_ARGS[@]}" -out:"$TASK_DIR/seed"
 export SDL_VIDEODRIVER=dummy XDG_CONFIG_HOME="$TASK_DIR/config" WN_DEV_CMD="$TASK_DIR/cmd"
 for variable in ${!WN_TEST_@}; do unset "$variable"; done
 cd "$TASK_DIR"
@@ -34,7 +38,7 @@ export WN_TEST_PREVIEW="$HERE/vendor/ufbx/data/max2009_cube_anim_6100_binary.fbx
 
 build_module() {
 	odin build "$TASK_DIR/app" -o:minimal -build-mode:dynamic -define:WN_DEV=true -define:WN_RELOAD=true \
-		"-extra-linker-flags:-Wl,-rpath,$HERE/build -Wl,--version-script=$HERE/scripts/dev-exports.map" -out:"$1"
+		"${MULTI_DEVICE_ARGS[@]}" "-extra-linker-flags:-Wl,-rpath,$HERE/build -Wl,--version-script=$HERE/scripts/dev-exports.map" -out:"$1"
 }
 probe() {
 	printf 'package main\nimport "core:fmt"\nimport "base:runtime"\n@(init) reload_probe :: proc "contextless" () { context = runtime.default_context(); fmt.eprintln("reload-probe:%s") }\n' "$1" > app/reload_probe.odin

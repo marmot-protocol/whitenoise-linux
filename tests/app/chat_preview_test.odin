@@ -7,6 +7,9 @@ import "core:sync"
 import "core:testing"
 import "core:unicode/utf8"
 
+@(private = "file")
+PREVIEW_SELF :: "1111111111111111111111111111111111111111111111111111111111111111"
+
 @(test)
 chat_hidden_preview :: proc(t: ^testing.T) {
 	secret := secret_fixture(strings.repeat("secret ", 6000, context.temp_allocator))
@@ -69,7 +72,7 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 	for tc in ([]struct {
 			body, want: string,
 		}{{"**not-bold** and [a link](https://example.com)", "not-bold and a link"}, {"# Heading\n\nFirst *paragraph*.\n\n> Quoted **words**\n\n- one\n- two\n\n```text\n**literal** [code](url)\n```", "Heading First paragraph. Quoted words one two **literal** [code](url)"}, {"first  \nsecond\n\n`**inline code**`", "first second **inline code**"}, {"| **Name** | Value |\n| --- | --- |\n| [label](https://example.com) | `raw()` |", "Name Value label raw()"}, {strings.concatenate({"**Visible**", secret_fixture("[hidden payload](https://secret.example)")}, context.temp_allocator), "Visible"}, {secret_fixture("**Only hidden payload**"), ""}, {strings.concatenate({"[", strings.repeat("日", 100, context.temp_allocator), "](https://example.com)"}, context.temp_allocator), strings.concatenate({strings.repeat("日", 85, context.temp_allocator), "…"}, context.temp_allocator)}, {"Location: https://maps.google.com/maps?q=51.5074,-0.1278", "Shared location"}, {"Meet at https://maps.google.com/maps?q=51.5074,-0.1278 at noon", "Meet at Shared location at noon"}, {"Location: https://example.com/maps?q=51.5074,-0.1278", "Location: https://example.com/maps?q=51.5074,-0.1278"}}) {
-		for sender in ([]cstring{"peer", "self"}) {
+		for sender in ([]cstring{"peer", PREVIEW_SELF}) {
 			last := marmot.Chat_List_Message_Preview {
 				plaintext = strings.clone_to_cstring(tc.body, context.temp_allocator),
 				sender    = sender,
@@ -78,7 +81,7 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 			row := marmot.Presented_Chat_Row {
 				row = {group_id_hex = "group", last_message = &last},
 			}
-			preview := row_to_ui(client, &row, "self")
+			preview := row_to_ui(client, &row, PREVIEW_SELF)
 			want := tc.want
 			// A group row names the peer who sent its last message.
 			if sender == "peer" && want != "" {
@@ -87,7 +90,7 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 					context.temp_allocator,
 				)
 			}
-			if sender == "self" && want != "" {
+			if sender == PREVIEW_SELF && want != "" {
 				// The sent prefix participates in the UTF-8 byte cap.
 				if strings.has_suffix(want, "…") {
 					want = strings.concatenate(
@@ -103,11 +106,11 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 			chat_free(preview)
 			// UI adoption consumes a prepared worker snapshot, including empty
 			// entries, without parsing the retained source again.
-			prepared, _ := chat_row_preview(client, &row.row, "self", nil)
+			prepared, _ := chat_row_preview(client, &row.row, PREVIEW_SELF, nil)
 			previews := make(map[string]string, context.temp_allocator)
 			previews["group"] = prepared
 			last.plaintext = "**not the prepared preview**"
-			adopted := row_to_ui(nil, &row, "self", nil, previews)
+			adopted := row_to_ui(nil, &row, PREVIEW_SELF, nil, previews)
 			testing.expect_value(t, adopted.preview, want)
 			chat_free(adopted)
 		}
@@ -118,8 +121,8 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 		{
 			kind = 9,
 			plaintext = "**older** [link](https://example.com)",
-			direction = "sent",
-			sender = "self",
+			direction = "received",
+			sender = PREVIEW_SELF,
 		},
 		{
 			kind = 9,
@@ -141,12 +144,19 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 	row := marmot.Presented_Chat_Row {
 		row = {group_id_hex = "fallback", last_message = &last},
 	}
-	prepared, system_page := chat_row_preview(client, &row.row, "self", ui.blocked, &page, .Worker)
+	prepared, system_page := chat_row_preview(
+		client,
+		&row.row,
+		PREVIEW_SELF,
+		ui.blocked,
+		&page,
+		.Worker,
+	)
 	testing.expect_value(t, prepared, "You: older link")
 	testing.expect_value(t, system_page, nil)
 	previews := make(map[string]string, context.temp_allocator)
 	previews["fallback"] = prepared
-	fallback := row_to_ui(nil, &row, "self", nil, previews)
+	fallback := row_to_ui(nil, &row, PREVIEW_SELF, nil, previews)
 	testing.expect_value(t, fallback.preview, "You: older link")
 	chat_free(fallback)
 	// A fallback system is retained for the existing UI label resolver,
@@ -160,11 +170,18 @@ chat_markdown_reading_preview :: proc(t: ^testing.T) {
 		kind         = 1210,
 		group_system = &system,
 	}
-	prepared, system_page = chat_row_preview(client, &row.row, "self", ui.blocked, &page, .Worker)
+	prepared, system_page = chat_row_preview(
+		client,
+		&row.row,
+		PREVIEW_SELF,
+		ui.blocked,
+		&page,
+		.Worker,
+	)
 	testing.expect_value(t, system_page, &page)
 	pages := make(map[string]^marmot.Timeline_Page, context.temp_allocator)
 	pages["fallback"] = system_page
-	summary := row_to_ui(nil, &row, "self", pages)
+	summary := row_to_ui(nil, &row, PREVIEW_SELF, pages)
 	testing.expect_value(t, summary.preview, "Alice added Bob")
 	chat_free(summary)
 }
@@ -192,9 +209,9 @@ chat_blocked_and_system_preview :: proc(t: ^testing.T) {
 	testing.expect(t, blocked.last_blocked)
 	chat_free(blocked)
 	// A sent message is not hidden by a blocked entry for its own account.
-	last.sender = "self"
-	ui.blocked["self"] = true
-	mine := row_to_ui(nil, &row, "self")
+	last.sender = PREVIEW_SELF
+	ui.blocked[PREVIEW_SELF] = true
+	mine := row_to_ui(nil, &row, PREVIEW_SELF)
 	testing.expect_value(t, mine.preview, "You: private blocked text")
 	chat_free(mine)
 	system := marmot.Group_System_Event {
@@ -217,7 +234,7 @@ chat_audio_preview :: proc(t: ^testing.T) {
 			kind:              i32,
 			has_kind, deleted: bool,
 			want:              string,
-		}{{"", "self", CHAT_ATTACHMENT_AUDIO, true, false, "You: Audio message"}, {nil, "self", CHAT_ATTACHMENT_AUDIO, true, false, "You: Audio message"}, {"  \n", "peer", CHAT_ATTACHMENT_AUDIO, true, false, "Audio message"}, {"Listen to this", "self", CHAT_ATTACHMENT_AUDIO, true, false, "You: Listen to this"}, {"", "self", CHAT_ATTACHMENT_AUDIO, false, false, ""}, {"", "self", CHAT_ATTACHMENT_AUDIO, true, true, ""}, {"", "self", 0, true, false, ""}}) {
+		}{{"", PREVIEW_SELF, CHAT_ATTACHMENT_AUDIO, true, false, "You: Audio message"}, {nil, PREVIEW_SELF, CHAT_ATTACHMENT_AUDIO, true, false, "You: Audio message"}, {"  \n", "peer", CHAT_ATTACHMENT_AUDIO, true, false, "Audio message"}, {"Listen to this", PREVIEW_SELF, CHAT_ATTACHMENT_AUDIO, true, false, "You: Listen to this"}, {"", PREVIEW_SELF, CHAT_ATTACHMENT_AUDIO, false, false, ""}, {"", PREVIEW_SELF, CHAT_ATTACHMENT_AUDIO, true, true, ""}, {"", PREVIEW_SELF, 0, true, false, ""}}) {
 		last := marmot.Chat_List_Message_Preview {
 			plaintext           = tc.body,
 			sender              = tc.sender,
@@ -229,7 +246,7 @@ chat_audio_preview :: proc(t: ^testing.T) {
 		row := marmot.Presented_Chat_Row {
 			row = {group_id_hex = "group", last_message = &last},
 		}
-		ui := row_to_ui(nil, &row, "self")
+		ui := row_to_ui(nil, &row, PREVIEW_SELF)
 		want := tc.want
 		if tc.sender == "peer" && want != "" {
 			want = strings.concatenate({sender_label("peer"), ": ", want}, context.temp_allocator)

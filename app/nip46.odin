@@ -214,7 +214,7 @@ nip46_tick :: proc(ui: ^Ui_State) {
 		// Boot asks to open the last account once its signer is usable.
 		if item.switch_requested && item.attach == nil && item.registered {
 			item.switch_requested = false
-			account_job_start(account_job_new(ui, item.client, .Switch, item.account))
+			switch_account(ui, item.client, item.account)
 		}
 	}
 	if rl.GetTime() - nip46_polled < 0.5 {return}

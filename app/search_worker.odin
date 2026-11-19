@@ -279,7 +279,8 @@ search_hit :: proc(
 	}
 	hit.group = strings.clone(group)
 	hit.msg_id = strings.clone(id)
-	hit.sender = strings.clone(string(record.direction) == "sent" ? "you" : string(record.sender))
+	mine := message_is_mine(record.direction, record.sender, job.account)
+	hit.sender = strings.clone(mine ? "you" : string(record.sender))
 	hit.when_at = record.timeline_at
 	return hit, true
 }
@@ -320,7 +321,7 @@ search_mentions_page :: proc(job: ^Search_Job, group: string, page: ^marmot.Time
 		if record.deleted ||
 		   id == "" ||
 		   job.hidden[id] ||
-		   string(record.direction) == "sent" ||
+		   message_is_mine(record.direction, record.sender, job.account) ||
 		   record_class(record.kind, raw) != .Message ||
 		   !text_mentions_me(raw, job.account) {continue}
 		text := reading_text(job.client, raw)

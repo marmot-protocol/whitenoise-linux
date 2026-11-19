@@ -6,6 +6,21 @@ import "core:fmt"
 import "core:strconv"
 import "core:strings"
 
+@(private)
+message_is_mine :: proc(direction, sender: cstring, account_id: string) -> bool {
+	if string(direction) == "sent" {return true}
+	if len(account_id) != 64 {return false}
+	sender_id := string(sender)
+	if len(sender_id) != 64 {return false}
+	for i in 0 ..< 64 {
+		a, b := account_id[i], sender_id[i]
+		if 'A' <= a && a <= 'F' {a += 'a' - 'A'}
+		if 'A' <= b && b <= 'F' {b += 'a' - 'A'}
+		if a != b || !(('0' <= a && a <= '9') || ('a' <= a && a <= 'f')) {return false}
+	}
+	return true
+}
+
 // What a timeline record is, decided once for the timeline, chat-list
 // previews, search, mentions and exports. Each surface then says which
 // classes it shows, and how:

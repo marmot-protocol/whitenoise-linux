@@ -79,6 +79,7 @@ contact_name_text :: proc(t: ^testing.T) {
 	ui.prefs.rail_w = RAIL_W_MIN
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil}
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(
 		&ui.contacts,

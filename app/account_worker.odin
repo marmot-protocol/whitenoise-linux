@@ -13,6 +13,7 @@ Account_Operation :: enum {
 	Switch,
 	Sign_Out,
 	Remove,
+	Wipe,
 	Profile,
 	Outbox,
 	Inbox,
@@ -32,6 +33,12 @@ Account_Operation :: enum {
 	Avatar,
 }
 @(private)
+Sign_Out_Intent :: enum {
+	User,
+	Back,
+}
+
+@(private)
 Account_Job :: struct {
 	client:                                       ^marmot.Client,
 	account, group, target, title, result, error: string,
@@ -40,6 +47,12 @@ Account_Job :: struct {
 	pic_media:                                    string,
 	relays:                                       []cstring,
 	kind:                                         Account_Operation,
+	sign_out_intent:                              Sign_Out_Intent,
+	accounts:                                     ^marmot.Account_Summary_List,
+	accounts_revision:                            u64,
+	accounts_read:                                bool,
+	wipe_report:                                  string,
+	wipe_report_error:                            bool,
 	fresh, notes, form, open_chat, departed:      bool,
 	accepted:                                     u64,
 	skipped:                                      int, // requested members the create left out
@@ -67,20 +80,31 @@ account_job_new :: proc(
 	client: ^marmot.Client,
 	kind: Account_Operation,
 	account := "",
+	sign_out_intent: Sign_Out_Intent = .User,
 ) -> ^Account_Job {
 	owner := account == "" ? ui.account_ref : account
 	if client == nil || owner == "" {return nil}
+	revoked := account_revoked(ui, owner)
+	if kind == .Wipe {
+		if !MULTI_DEVICE || (!revoked && !account_signed_in(ui, owner)) {return nil}
+	} else if revoked || (kind == .Switch && !account_signed_in(ui, owner)) {
+		if kind == .Switch {devices_switch_failed(ui, owner)}
+		return nil
+	}
 	if kind == .Switch {for item in nip46_accounts {item.switch_requested = false}}
 	for job in account_jobs {
-		if job.account == owner ||
-		   (kind == .Switch &&
-				   job.kind ==
-					   .Switch) {set_status(ui, job.signer == nil ? tr("Your previous account action is still running.") : tr("Your previous account action is still waiting. Check your signer for approval."), .Info); return nil}
+		if job.account == owner || (kind == job.kind && (kind == .Switch || kind == .Wipe)) {
+			waiting_for_signer := job.signer != nil && !account_exit(job.kind)
+			set_status(
+				ui,
+				waiting_for_signer ? tr("Your previous account action is still waiting. Check your signer for approval.") : tr("Your previous account action is still running."),
+				.Info,
+			)
+			return nil
+		}
 	}
 	signer := nip46_find(owner)
-	// Leaving an account never waits on its signer: a dead one is a reason to remove it.
-	leaving := kind == .Sign_Out || kind == .Remove
-	if !leaving &&
+	if !account_exit(kind) &&
 	   kind != .Read_Archived &&
 	   signer != nil &&
 	   (signer.attach != nil || !signer.registered) {
@@ -100,7 +124,13 @@ account_job_new :: proc(
 	}
 	job := new(Account_Job)
 	job.client, job.account, job.kind = client, strings.clone(owner), kind
-	job.signer = nip46_find(owner)
+	job.signer, job.sign_out_intent = signer, sign_out_intent
+	job.accounts_revision = ui.accounts_revision
+	if kind == .Wipe {
+		label: string
+		if profile := ui.devices.profiles[owner]; profile != nil {label = profile.unlink_label}
+		job.title = strings.clone(label != "" ? label : account_label(ui, owner))
+	}
 	if ui.selected >= 0 &&
 	   ui.selected < len(ui.chats) {job.group = strings.clone(ui.chats[ui.selected].group_id)}
 	return job
@@ -130,34 +160,8 @@ account_worker :: proc(t: ^thread.Thread) {
 		out: ^marmot.Account_Summary
 		status = marmot.sign_in_account(job.client, account, &out)
 		if out != nil {marmot.account_summary_free(out)}
-	case .Sign_Out, .Remove:
-		if job.signer != nil &&
-		   job.signer.attach !=
-			   nil {thread.join(job.signer.attach); job.signer.attach_joined = true}
-		if job.kind == .Remove {
-			status = marmot.remove_account(job.client, account)
-		} else {
-			out: ^marmot.Sign_Out_Outcome
-			status = marmot.sign_out(job.client, account, false, &out)
-			if out != nil {marmot.sign_out_outcome_free(out)}
-		}
-		if status == .OK {
-			job.departed = true
-			if job.signer != nil {job.signer.registered = false}
-			removed := vault_remove(fmt.tprintf("nip46:%s", job.account))
-			if job.signer != nil {marmot.nip46_logout(job.signer.handle)}
-			if removed != .None {
-				message := tr(
-					"You are signed out, but your signer record could not be removed from the encrypted vault.",
-				)
-				if job.kind == .Remove {
-					message = tr(
-						"Your account is removed, but its signer record couldn't be removed from the encrypted vault.",
-					)
-				}
-				job.error = strings.clone(message)
-			}
-		}
+	case .Sign_Out, .Remove, .Wipe:
+		account_exit_worker(job, account)
 	case .Profile:
 		optional :: proc(value: string) -> cstring {return(
 				value == "" ? nil : strings.clone_to_cstring(value, context.temp_allocator) \
@@ -314,6 +318,146 @@ account_worker :: proc(t: ^thread.Thread) {
 	}
 }
 @(private)
+account_exit :: proc(kind: Account_Operation) -> bool {
+	return kind == .Sign_Out || kind == .Remove || kind == .Wipe
+}
+
+@(private)
+account_exit_confirmed :: proc(
+	job: ^Account_Job,
+	status: marmot.Status,
+	local_completed: bool,
+) -> bool {
+	if local_completed || (job.kind == .Remove && status == .OK) {return true}
+	if !job.accounts_read {return false}
+	if job.accounts != nil {
+		for row in job.accounts.items[:job.accounts.len] {
+			if string(row.account_id_hex) ==
+			   job.account {return job.kind == .Sign_Out && row.signed_out}
+		}
+	}
+	return true
+}
+
+@(private = "file")
+account_exit_worker :: proc(job: ^Account_Job, account: cstring) {
+	if signer := job.signer; signer != nil && signer.attach != nil {
+		if !signer.attach_joined {thread.join(signer.attach)}
+		signer.attach_joined = true
+	}
+
+	status: marmot.Status
+	local: marmot.Local_Cleanup_Report
+	issues := strings.builder_make(context.temp_allocator)
+	append_issue :: proc(out: ^strings.Builder, text: string) {
+		if text != "" {fmt.sbprintfln(out, "%s", text)}
+	}
+	wipe: ^marmot.Wipe_Outcome
+	signed_out: ^marmot.Sign_Out_Outcome
+	#partial switch job.kind {
+	case .Wipe:
+		status = marmot.sign_out_and_wipe(job.client, account, &wipe)
+	case .Sign_Out:
+		delete_packages := u8(MULTI_DEVICE && job.sign_out_intent == .User)
+		status = marmot.sign_out(job.client, account, delete_packages, &signed_out)
+	case .Remove:
+		status = marmot.remove_account(job.client, account)
+	case:
+		return
+	}
+	if status != .OK {
+		detail := marmot.last_error()
+		append_issue(&issues, detail != "" ? detail : tr("Couldn't complete the account action."))
+		delete(detail)
+	}
+	defer if wipe != nil {marmot.wipe_outcome_free(wipe)}
+	defer if signed_out != nil {marmot.sign_out_outcome_free(signed_out)}
+
+	if wipe != nil {
+		local = wipe.local_cleanup
+		for failure in wipe.group_leave_failures[:wipe.group_leave_failures_len] {
+			fmt.sbprintfln(
+				&issues,
+				tr("Couldn't leave chat %s: %s"),
+				string(failure.group_id_hex),
+				string(failure.reason),
+			)
+		}
+		for failure in wipe.key_package_failures[:wipe.key_package_failures_len] {
+			fmt.sbprintfln(
+				&issues,
+				tr("Couldn't delete key package %s from relays: %s"),
+				string(failure.event_id_hex),
+				string(failure.reason),
+			)
+		}
+		if wipe.siblings_not_reached {
+			append_issue(&issues, tr("Other linked devices could not be reached for cleanup."))
+		}
+	} else if signed_out != nil {
+		local = signed_out.local_cleanup
+		for failure in signed_out.key_package_failures[:signed_out.key_package_failures_len] {
+			fmt.sbprintfln(
+				&issues,
+				tr("Couldn't delete this device's key package from relays: %s"),
+				string(failure.reason),
+			)
+		}
+	}
+
+	job.accounts_read = marmot.list_accounts(job.client, &job.accounts) == .OK
+	job.departed = account_exit_confirmed(job, status, local.completed)
+	if local.reason != nil && string(local.reason) != "" {
+		fmt.sbprintfln(&issues, tr("Local cleanup reported a problem: %s"), string(local.reason))
+	} else if (wipe != nil || signed_out != nil) && !local.completed {
+		append_issue(&issues, tr("Local cleanup did not report completion."))
+	}
+	if !job.departed {
+		append_issue(
+			&issues,
+			job.kind == .Sign_Out ? tr("Sign-out on this device could not be confirmed.") : tr("Removal from this device could not be confirmed."),
+		)
+	} else {
+		if vault_remove(fmt.tprintf("nip46:%s", job.account)) != .None {
+			append_issue(
+				&issues,
+				tr("The signer record could not be removed from the encrypted vault."),
+			)
+		}
+		if job.signer != nil {
+			job.signer.registered = false
+			marmot.nip46_logout(job.signer.handle)
+		}
+	}
+
+	problems := strings.trim_space(strings.to_string(issues))
+	if job.kind == .Wipe {
+		report := strings.builder_make(context.temp_allocator)
+		if job.departed {
+			fmt.sbprintfln(&report, tr("%s was removed from this device."), job.title)
+		} else {
+			fmt.sbprintfln(&report, tr("Profile: %s"), job.title)
+		}
+		if wipe != nil {
+			fmt.sbprintfln(
+				&report,
+				tr(
+					"Chats left or asked to leave: %d. Chats handed off to other linked devices: %d.",
+				),
+				wipe.groups_left,
+				wipe.groups_left_to_siblings,
+			)
+			fmt.sbprintfln(&report, tr("Key packages deleted: %d."), wipe.key_packages_deleted)
+		}
+		append_issue(&report, problems)
+		job.wipe_report = strings.clone(strings.trim_space(strings.to_string(report)))
+		job.wipe_report_error = problems != ""
+	} else if problems != "" {
+		job.error = strings.clone(problems)
+	}
+}
+
+@(private)
 Account_Join :: enum {
 	Pending,
 	Joined,
@@ -324,6 +468,8 @@ account_job_free :: proc(job: ^Account_Job, join: Account_Join = .Pending) {
 	if join == .Pending {thread.join(job.worker)}
 	thread.destroy(job.worker)
 	for text in ([]string{job.account, job.group, job.target, job.title, job.result, job.error}) {delete(text)}
+	delete(job.wipe_report)
+	if job.accounts != nil {marmot.account_summary_list_free(job.accounts)}
 	for text in job.fields {delete(text)}
 	for relay in job.relays {delete(relay)}
 	kp_rows_free(&job.key_rows); delete(job.key_rows)
@@ -336,12 +482,68 @@ account_jobs_stop :: proc() {
 	for job in account_jobs {account_job_free(job)}
 	delete(account_jobs); account_jobs = {}
 }
+
+@(private = "file")
+account_exit_apply :: proc(ui: ^Ui_State, job: ^Account_Job) {
+	if job.accounts_read && job.accounts_revision == ui.accounts_revision {
+		accounts_adopt(ui, job.client, job.accounts)
+	} else if MULTI_DEVICE {
+		ui.devices.inventory_dirty = true
+	}
+	if job.departed {
+		if ui.photo.account == job.account {photo_cancel(ui)}
+		if item := job.signer; item != nil {
+			for candidate, i in nip46_accounts {
+				if candidate == item {ordered_remove(&nip46_accounts, i); break}
+			}
+			nip46_account_free(item)
+		}
+		account_departed(ui, job.client, job.account)
+	}
+	if job.kind != .Wipe {
+		if job.error != "" {set_status(ui, strings.clone(job.error), .Error)}
+		return
+	}
+	if job.departed {
+		devices_wipe_applied(ui, job.account)
+		drafts_wipe(ui, job.account)
+		offline_wipe(ui, job.account)
+		prefix := fmt.tprintf("%s:", job.account)
+		keys := make([dynamic]string, context.temp_allocator)
+		for key in ui.reading_places {
+			if strings.has_prefix(key, prefix) {append(&keys, key)}
+		}
+		for key in keys {
+			owned, place := delete_key(&ui.reading_places, key)
+			delete(place.message); delete(owned)
+		}
+	}
+	delete(ui.devices.wipe_report, reload_allocator())
+	ui.devices.wipe_report, job.wipe_report = job.wipe_report, ""
+	ui.devices.wipe_report_error = job.wipe_report_error
+	auth_wipe_finished(ui, job.client, job.account, job.departed)
+}
+
 @(private)
 account_job_drain :: proc(ui: ^Ui_State) {
 	for i := len(account_jobs) - 1; i >= 0; i -= 1 {
 		job := account_jobs[i]
 		if !thread.is_done(job.worker) {continue}
 		thread.join(job.worker)
+		if account_exit(job.kind) {
+			ordered_remove(&account_jobs, i)
+			account_exit_apply(ui, job)
+			account_job_free(job, .Joined)
+			continue
+		}
+		if account_revoked(ui, job.account) ||
+		   (job.kind == .Switch && !account_signed_in(ui, job.account)) {
+			if job.kind == .Switch {devices_switch_failed(ui, job.account)}
+			ordered_remove(&account_jobs, i)
+			account_job_free(job, .Joined)
+			continue
+		}
+		if job.kind == .Switch && job.error != "" {devices_switch_failed(ui, job.account)}
 		if job.error != "" {set_status(ui, strings.clone(job.error), .Error)}
 		if job.error != "" &&
 		   job.kind == .Create_Chat &&
@@ -360,16 +562,7 @@ account_job_drain :: proc(ui: ^Ui_State) {
 					image      = image,
 				}; job.pic_data = nil}
 		}
-		if job.departed {
-			if ui.photo.account == job.account {photo_cancel(ui)}
-			if job.signer != nil {
-				item := job.signer
-				for candidate, n in nip46_accounts {if candidate == item {ordered_remove(&nip46_accounts, n); break}}
-				nip46_account_free(item)
-			}
-			if ui.account_ref ==
-			   job.account {ui.page = .Chats; ui.selected = -1; keys_forget(ui); close_export(ui); after_login(ui, job.client)} else {after_login(ui, job.client, ui.account_ref)}
-		} else if job.error == "" {
+		if job.error == "" {
 			if job.kind == .Switch {
 				finish_account_switch(ui, job.client, job.account)
 				if ui.page == .Profile || ui.page == .Settings {load_profile(job.client, ui)}
@@ -496,7 +689,7 @@ account_job_drain :: proc(ui: ^Ui_State) {
 					ui.ov_open = false
 					ui.focus = .Invite
 					refresh_after_action(ui, job.client)
-				case .Switch, .Sign_Out, .Remove:
+				case .Switch, .Sign_Out, .Remove, .Wipe:
 				}
 			}
 		}
@@ -512,6 +705,8 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 		return tr("Signing out and removing your signer session")
 	case .Remove:
 		return tr("Removing your account from this device")
+	case .Wipe:
+		return tr("Signing out and wiping this device's copy of the profile")
 	case .Profile:
 		return tr("Publishing your profile")
 	case .Outbox, .Inbox, .Relays:
@@ -565,6 +760,7 @@ account_pending_ui :: proc(ui: ^Ui_State) {
 		}
 	}
 	for item, i in nip46_accounts {
+		if account_departing(item.account) || account_revoked(ui, item.account) {continue}
 		// A signer saved before MDK owned its credentials needs one approval.
 		if item.attach == nil && len(item.grants.grants) > 0 {
 			if nendo.box(nendo.id("SignerPending", u32(i)))(
@@ -632,7 +828,7 @@ account_relays_start :: proc(
 @(private)
 account_departing :: proc(account: string) -> bool {
 	for job in account_jobs {
-		if job.account == account && (job.kind == .Sign_Out || job.kind == .Remove) {return true}
+		if job.account == account && account_exit(job.kind) {return true}
 	}
 	return false
 }

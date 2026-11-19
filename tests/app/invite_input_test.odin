@@ -37,6 +37,7 @@ invite_input_dispatch :: proc(t: ^testing.T) {
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "offline-group", title = "Example group"})
 	append(&ui.members, Member_Ui{is_self = true, is_admin = true, name = "You"})

@@ -173,7 +173,11 @@ forward_failure_retry_and_dismissal :: proc(t: ^testing.T) {
 	defer sync.unlock(&test_home_lock)
 	old_threads := send_threads
 	send_threads = {}
-	ui: Ui_State
+	ui := Ui_State {
+		account_ref = "account",
+	}
+	append(&ui.accounts, Account_Row_Ui{id_hex = ui.account_ref})
+	defer delete(ui.accounts)
 	old_ui := g_ui
 	g_ui = &ui
 	defer {g_ui = old_ui}
@@ -192,6 +196,7 @@ forward_failure_retry_and_dismissal :: proc(t: ^testing.T) {
 		&ui.pending,
 		Pending_Send {
 			ticket = 4,
+			account_ref = strings.clone(ui.account_ref),
 			body = strings.clone("do not send without attachments"),
 			forward = job,
 		},
@@ -227,6 +232,12 @@ forward_success_preserves_destination_and_tags :: proc(t: ^testing.T) {
 	ui := Ui_State {
 		account_ref = "changed-account",
 	}
+	append(
+		&ui.accounts,
+		Account_Row_Ui{id_hex = "original-account"},
+		Account_Row_Ui{id_hex = ui.account_ref},
+	)
+	defer delete(ui.accounts)
 	defer {
 		for worker in send_threads {thread.join(worker); thread.destroy(worker)}
 		for done in sends_done {delete(done.err); for id in done.ids {delete(id)}; delete(done.ids)}

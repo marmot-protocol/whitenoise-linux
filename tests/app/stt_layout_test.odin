@@ -28,6 +28,7 @@ stt_layout :: proc(t: ^testing.T) {
 		selected_contact = -1,
 	}
 	ui.prefs.stt_enabled = true
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Dictation"})
 	g_ui, g_prefs = &ui, &ui.prefs
