@@ -8,6 +8,13 @@ import "nendo"
 import rl "sdlrl"
 
 @(private = "file")
+DEVICE_MODAL_W :: 460
+@(private = "file")
+DEVICE_MODAL_PAD :: 18
+@(private = "file")
+DEVICE_SCROLL_GUTTER :: 8
+
+@(private = "file")
 device_copy :: proc(text: string, color: nendo.Color = TEXT_DIM) {
 	nendo.text(text, {font = FONT_BODY, size = 13, color = color})
 }
@@ -118,6 +125,21 @@ device_list_row :: proc() -> nendo.Box {
 @(private = "file")
 device_heading :: proc(label: string) {
 	nendo.text(label, {font = FONT_TITLE, size = 14, color = TEXT})
+}
+
+@(private)
+device_emblem :: proc(icon: string, ink: nendo.Color, size: f32 = 32) {
+	if nendo.box(nendo.id_local("DeviceEmblem"))(
+	{
+		width = nendo.fixed(size),
+		height = nendo.fixed(size),
+		align = {x = .Center, y = .Center},
+		color = mix_color(CARD, ink, 0.14),
+		radius = rr(8),
+	},
+	) {
+		nendo.text(icon, {font = FONT_ICON, size = 15, color = ink})
+	}
 }
 
 @(private)
@@ -310,29 +332,48 @@ device_render_code :: proc(code: marmot.Device_Link_Code) -> bool {
 		)
 		return false
 	}
-	for row in 0 ..< 2 {
-		if nendo.box(nendo.id("DeviceCodeRow", u32(row)))(
-		{width = nendo.grow(), gap = 6, align = {x = .Center}},
-		) {
-			for index in (4 * row) ..< min(4 * row + 4, 7) {
-				entry := &code.code[index]
-				if nendo.box(nendo.id("DeviceCodeEmoji", u32(index)))(
-				{
-					width = nendo.grow(max = 86),
-					direction = .Column,
-					align = {x = .Center},
-					gap = 4,
-				},
-				) {
-					emoji := string(entry.emoji)
-					if tex := emoji_tex(emoji); tex != nil {
-						if nendo.box(nendo.id_local("Glyph"))(
-						{width = nendo.fixed(32), aspect = 1, image = tex},
-						) {}
-					} else {
-						nendo.text(emoji, {font = FONT_BODY, size = 28, color = TEXT})
+	if nendo.box(nendo.id("DeviceComparison"))(
+	{
+		width = nendo.grow(),
+		direction = .Column,
+		padding = nendo.pad(10),
+		gap = 8,
+		color = mix_color(CARD, ACCENT, 0.09),
+		radius = rr(10),
+	},
+	) {
+		device_heading(tr("Compare the codes on both devices"))
+		device_copy(tr("Only link if both screens show the same seven emoji in the same order."))
+		for row in 0 ..< 2 {
+			if nendo.box(nendo.id("DeviceCodeRow", u32(row)))(
+			{width = nendo.grow(), gap = 6, align = {x = .Center}},
+			) {
+				for index in (4 * row) ..< min(4 * row + 4, 7) {
+					entry := &code.code[index]
+					if nendo.box(nendo.id("DeviceCodeEmoji", u32(index)))(
+					{
+						width = nendo.grow(max = 80),
+						padding = {top = 8, bottom = 8, left = 3, right = 3},
+						direction = .Column,
+						align = {x = .Center},
+						gap = 5,
+						color = CARD,
+						radius = rr(7),
+					},
+					) {
+						emoji := string(entry.emoji)
+						if tex := emoji_tex(emoji); tex != nil {
+							if nendo.box(nendo.id_local("Glyph"))(
+							{width = nendo.fixed(32), aspect = 1, image = tex},
+							) {}
+						} else {
+							nendo.text(emoji, {font = FONT_BODY, size = 28, color = TEXT})
+						}
+						nendo.text(
+							string(entry.description),
+							{font = FONT_BODY, size = 11, color = TEXT},
+						)
 					}
-					device_copy(string(entry.description))
 				}
 			}
 		}
@@ -477,9 +518,6 @@ device_modal_new :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
 				),
 			)
 		case .COMPARING:
-			device_copy(
-				tr("Only link if both screens show the same seven emoji in the same order."),
-			)
 			if device_render_code(attempt.body.comparing) {
 				settings_button(
 					"DeviceMatch",
@@ -568,18 +606,24 @@ device_modal_new :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
 }
 
 @(private = "file")
-device_choice :: proc(id, toggle_id, label: string, on: bool) {
+device_choice :: proc(id, toggle_id, label: string, on: bool, hint: string = "") {
 	if nendo.box(nendo.id(id))(
 	{
 		width = nendo.grow(),
 		height = nendo.fit(min = settings_tap_size(30)),
+		padding = {left = 12, right = 12, top = 8, bottom = 8},
 		gap = 12,
 		align = {y = .Center},
 		color = hovered() ? HOVER : {},
 		radius = rr(6),
 	},
 	) {
-		nendo.text(label, {font = FONT_BODY, size = 13, color = TEXT})
+		if nendo.box(nendo.id_local("ChoiceCopy"))(
+		{width = nendo.grow(), direction = .Column, gap = 3},
+		) {
+			device_copy(label, TEXT)
+			if hint != "" {device_copy(hint)}
+		}
 		toggle(toggle_id, on)
 	}
 }
@@ -692,12 +736,15 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 			slot != "" && slot == d.expanded_sign_in && row.appeared_at == d.expanded_sign_in_at
 		if pass == .Draw {
 			if nendo.box(nendo.id("DeviceSignIn", u32(i)))(device_list_row()) {
+				device_emblem(
+					recognized ? ICON_CHECK : unresolved ? ICON_KEY : ICON_INFO,
+					recognized ? ACCENT : unresolved ? WARNING : TEXT_DIM,
+				)
 				if nendo.box(nendo.id("DeviceSignInText", u32(i)))(
 				{width = nendo.grow(), direction = .Column, gap = 2},
 				) {
-					device_copy(
+					device_heading(
 						recognized ? tr("Recognized on this device. Not linked.") : device_sign_in_state(row),
-						TEXT,
 					)
 					device_copy(
 						row.appeared_at == 0 ? client : fmt.tprintf("%s · %s", client, timestamp_label(i64(row.appeared_at), .SHORT_DATE_TIME, 0)),
@@ -822,18 +869,14 @@ device_roster_rows :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device
 				!row.removal_pending
 			if pass == .Draw {
 				if nendo.box(nendo.id("DeviceRosterRow", index))(device_list_row()) {
-					platform := string(row.platform)
-					mobile :=
-						strings.equal_fold(platform, "Android") ||
-						strings.equal_fold(platform, "iOS")
-					nendo.text(
-						mobile ? "\uf10b" : "\uf108",
-						{font = FONT_ICON, size = 17, color = TEXT_DIM},
+					device_emblem(
+						device_hardware_icon(string(row.platform)),
+						own ? ACCENT : TEXT_DIM,
 					)
 					if nendo.box(nendo.id("DeviceRosterText", index))(
 					{width = nendo.grow(), direction = .Column, gap = 2},
 					) {
-						device_copy(device_label(&row), TEXT)
+						device_heading(device_label(&row))
 						status := device_status_text(&row)
 						if row.status == .ACTIVE && !row.inactive && !row.removal_pending {
 							if own {
@@ -871,6 +914,13 @@ device_roster_rows :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device
 		}
 	}
 	return false
+}
+
+@(private = "file")
+device_hardware_icon :: proc(platform: string) -> string {
+	return(
+		strings.equal_fold(platform, "Android") || strings.equal_fold(platform, "iOS") ? "\uf10b" : "\uf108" \
+	)
 }
 
 @(private = "file")
@@ -925,14 +975,12 @@ device_moves :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pass)
 }
 
 @(private = "file")
-device_detail :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
-	row := device_find_slot(profile, ui.devices.panel_slot)
+device_detail :: proc(ui: ^Ui_State, profile: ^Device_Profile, row: ^marmot.Linked_Device) {
 	if row == nil {
 		device_copy(tr("This device is no longer in your device list."))
 		settings_button("DeviceClose", tr("Close"))
 		return
 	}
-	device_heading(device_label(row))
 	if row.is_this_device {device_copy(tr("This device"))}
 	platform, client := string(row.platform), string(row.client)
 	if platform != "" && client != "" && platform != client {
@@ -976,26 +1024,28 @@ device_detail :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
 		   ) {device_copy(tr("Use at most 64 bytes for the device name."), DANGER)}
 	valid := name != string(row.label) && (name == "" || device_name_valid(name))
 	settings_button("DeviceSaveName", tr("Save name"), ACCENT, valid ? .Enabled : .Disabled)
-	device_choice(
-		"DeviceDetailAdd",
-		"DeviceDetailAddToggle",
-		tr("Add to all chats"),
-		row.add_to_all_chats,
-	)
-	device_copy(tr("Turning this off doesn't leave any chats."))
-	device_choice(
-		"DeviceDetailHistory",
-		"DeviceDetailHistoryToggle",
-		tr("Bring chat history"),
-		row.bring_history,
-	)
-	device_copy(tr("Turning this on doesn't bring history to chats this device already joined."))
-	device_choice(
-		"DeviceDetailKeep",
-		"DeviceDetailKeepToggle",
-		tr("Keep while inactive"),
-		row.keep_while_inactive,
-	)
+	if nendo.box(nendo.id("DeviceDetailOptions"))(device_list()) {
+		device_choice(
+			"DeviceDetailAdd",
+			"DeviceDetailAddToggle",
+			tr("Add to all chats"),
+			row.add_to_all_chats,
+			tr("Turning this off doesn't leave any chats."),
+		)
+		device_choice(
+			"DeviceDetailHistory",
+			"DeviceDetailHistoryToggle",
+			tr("Bring chat history"),
+			row.bring_history,
+			tr("Turning this on doesn't bring history to chats this device already joined."),
+		)
+		device_choice(
+			"DeviceDetailKeep",
+			"DeviceDetailKeepToggle",
+			tr("Keep while inactive"),
+			row.keep_while_inactive,
+		)
+	}
 	if !row.is_this_device {settings_button("DeviceRemoveSibling", tr("Remove device"), DANGER)}
 	settings_button("DeviceClose", tr("Close"))
 }
@@ -1063,10 +1113,9 @@ device_modal_approve :: proc(
 		return
 	}
 	state := &prompt.state
-	device_copy(device_prompt_text(state), TEXT)
+	if state.tag != .COMPARING {device_copy(device_prompt_text(state), TEXT)}
 	#partial switch state.tag {
 	case .COMPARING:
-		device_copy(tr("Only link if both screens show the same seven emoji in the same order."))
 		if device_render_code(state.body.comparing) {
 			device_copy(tr("New device name"))
 			gate_field(
@@ -1078,18 +1127,6 @@ device_modal_approve :: proc(
 				.Plain,
 			)
 			own_name := device_edit_own_name(profile)
-			device_choice(
-				"DeviceAddToChats",
-				"DeviceAddToChatsToggle",
-				tr("Add to all chats"),
-				ui.devices.add_to_all,
-			)
-			device_choice(
-				"DeviceBringHistory",
-				"DeviceBringHistoryToggle",
-				tr("Bring chat history"),
-				ui.devices.bring_history,
-			)
 			if own_name {
 				device_copy(tr("Name for this device"))
 				gate_field(
@@ -1101,23 +1138,67 @@ device_modal_approve :: proc(
 					.Plain,
 				)
 			}
+			if nendo.box(nendo.id("DeviceApproveOptions"))(device_list()) {
+				device_choice(
+					"DeviceAddToChats",
+					"DeviceAddToChatsToggle",
+					tr("Add to all chats"),
+					ui.devices.add_to_all,
+				)
+				device_choice(
+					"DeviceBringHistory",
+					"DeviceBringHistoryToggle",
+					tr("Bring chat history"),
+					ui.devices.bring_history,
+				)
+			}
 			names_valid :=
 				device_name_valid(strings.trim_space(string(ui.devices.name[:]))) &&
 				(!own_name ||
 						device_name_valid(strings.trim_space(string(ui.devices.own_name[:]))))
 			if !names_valid {device_copy(tr("Enter a name of 1 to 64 UTF-8 bytes for each device."), DANGER)}
-			settings_button(
-				"DeviceLink",
-				tr("They match, link device"),
-				ACCENT,
-				names_valid && device_can_start(profile) ? .Enabled : .Disabled,
-			)
 			device_copy(
 				tr(
 					"A different code can mean someone else is trying to link. Don't approve unless both codes match exactly.",
 				),
 			)
-			settings_button("DeviceMismatch", tr("They don't match"), DANGER)
+			later, mismatch, match :=
+				tr("Not now"), tr("They don't match"), tr("They match, link device")
+			gap :: 8
+			width :=
+				modal_w(nendo.id("DeviceModal"), DEVICE_MODAL_W) -
+				2 * DEVICE_MODAL_PAD -
+				DEVICE_SCROLL_GUTTER
+			button_w :: proc(label: string) -> f32 {return max(
+					56,
+					24 + rl.MeasureTextLine(FONT_BODY, 12, label, 0).x,
+				)}
+			secondary_w := button_w(later) + gap + button_w(mismatch)
+			stacked := secondary_w + gap + button_w(match) > width
+			enabled :=
+				names_valid && device_can_start(profile) ? Settings_Control_State.Enabled : .Disabled
+			if nendo.box(nendo.id("DeviceApprovalActions"))(
+			{
+				width = nendo.grow(),
+				gap = gap,
+				direction = stacked ? .Column : .Row,
+				align = {x = .Right},
+			},
+			) {
+				if stacked {settings_button("DeviceLink", match, ACCENT, enabled)}
+				if nendo.box(nendo.id_local("Secondary"))(
+				{
+					gap = gap,
+					direction = secondary_w > width ? .Column : .Row,
+					align = {x = .Right},
+				},
+				) {
+					settings_button("DeviceDecline", later)
+					settings_button("DeviceMismatch", mismatch, DANGER)
+				}
+				if !stacked {settings_button("DeviceLink", match, ACCENT, enabled)}
+			}
+			return
 		}
 	case .RATE_LIMITED:
 		if retry := state.body.rate_limited.retry_at; retry != 0 {
@@ -1238,12 +1319,13 @@ devices_modal :: proc(ui: ^Ui_State) {
 	   panel == .None ||
 	   (!devices_visible(ui) && !device_root_panel(panel)) {return}
 	profile := device_current(ui)
+	detail := panel == .Detail ? device_find_slot(profile, ui.devices.panel_slot) : nil
 	if nendo.box(nendo.id("DeviceModal"))(
 	{
 		direction = .Column,
-		width = nendo.fixed(modal_w(nendo.id("DeviceModal"), 460)),
+		width = nendo.fixed(modal_w(nendo.id("DeviceModal"), DEVICE_MODAL_W)),
 		height = nendo.fit(max = modal_h(1200)),
-		padding = nendo.pad(18),
+		padding = nendo.pad(DEVICE_MODAL_PAD),
 		gap = 10,
 		floating = {
 			attach_to = .Root,
@@ -1256,13 +1338,27 @@ devices_modal :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		nendo.text(device_modal_title(panel), {font = FONT_TITLE, size = 17, color = TEXT})
+		if nendo.box(nendo.id_local("Header"))(
+		{width = nendo.grow(), gap = 10, align = {y = .Center}},
+		) {
+			icon, color := "\uf0c1", ACCENT
+			if detail != nil {icon = device_hardware_icon(string(detail.platform))}
+			if device_root_panel(panel) {icon, color = ICON_INFO, WARNING}
+			device_emblem(icon, color)
+			if nendo.box(nendo.id_local("Title"))({width = nendo.grow()}) {
+				nendo.text(
+					detail != nil ? device_label(detail) : device_modal_title(panel),
+					{font = FONT_TITLE, size = 18, color = TEXT},
+				)
+			}
+		}
 		if nendo.box(nendo.id("DeviceModalBody"))(
 		{
 			width = nendo.grow(),
 			height = nendo.fit(max = max(1, modal_h(1200) - 80)),
 			direction = .Column,
 			gap = 10,
+			padding = {right = DEVICE_SCROLL_GUTTER},
 			clip = {y = true, scroll = true},
 		},
 		) {
@@ -1312,21 +1408,26 @@ devices_modal :: proc(ui: ^Ui_State) {
 							"Linking starts on the new device. Keep White Noise open here while you set it up.",
 						),
 					)
-					device_copy(
-						tr(
-							"1. Install White Noise on the other device and sign in to this profile.",
-						),
-					)
-					device_copy(
-						tr(
-							"2. Open Settings → Devices there and choose Link to another device.",
-						),
-					)
-					device_copy(
-						tr(
-							"3. When the request appears here, check that both screens show the same emoji.",
-						),
-					)
+					if nendo.box(nendo.id("DeviceSetupSteps"))(device_notice(ACCENT)) {
+						device_copy(
+							tr(
+								"1. Install White Noise on the other device and sign in to this profile.",
+							),
+							TEXT,
+						)
+						device_copy(
+							tr(
+								"2. Open Settings → Devices there and choose Link to another device.",
+							),
+							TEXT,
+						)
+						device_copy(
+							tr(
+								"3. When the request appears here, check that both screens show the same emoji.",
+							),
+							TEXT,
+						)
+					}
 					if account_local(
 						ui,
 					) {settings_button("DeviceShowKeys", tr("Show this profile's keys"))}
@@ -1346,7 +1447,7 @@ devices_modal :: proc(ui: ^Ui_State) {
 				case .Approve:
 					device_modal_approve(ui, profile, device_panel_prompt(ui, profile))
 				case .Detail:
-					device_detail(ui, profile)
+					device_detail(ui, profile, detail)
 				case .Offer:
 					device_copy(
 						tr(
@@ -1517,11 +1618,17 @@ devices_banner :: proc(ui: ^Ui_State) {
 		width = nendo.grow(),
 		height = nendo.fit(min = settings_tap_size(36)),
 		padding = {left = 12, right = 12, top = 6, bottom = 6},
+		gap = 8,
 		align = {y = .Center},
 		color = hovered() ? HOVER : CARD,
 	},
 	) {
-		nendo.text(label, {font = FONT_TITLE, size = 13, color = warning ? DANGER : ACCENT})
+		ink := warning ? DANGER : ACCENT
+		device_emblem(warning ? ICON_LOCK : "\uf0c1", ink, 26)
+		if nendo.box(nendo.id_local("AttentionLabel"))({width = nendo.grow()}) {
+			nendo.text(label, {font = FONT_TITLE, size = 13, color = ink})
+		}
+		nendo.text("›", {font = FONT_TITLE, size = 17, color = ink})
 	}
 }
 

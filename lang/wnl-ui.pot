@@ -3515,6 +3515,9 @@ msgstr ""
 msgid "Linked devices"
 msgstr ""
 
+msgid "Linked devices are ready"
+msgstr ""
+
 msgid "Linked devices are turned on for this chat."
 msgstr ""
 
@@ -3752,6 +3755,9 @@ msgid "Media metadata"
 msgstr ""
 
 msgid "Members"
+msgstr ""
+
+msgid "Members' linked devices can join without an admin."
 msgstr ""
 
 msgid "Mentions"

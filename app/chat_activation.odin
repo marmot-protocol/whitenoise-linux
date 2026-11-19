@@ -385,8 +385,21 @@ activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
 	a := &ui.activation
 	if a.key.group == "" || a.key != activation_key(ui) {return}
 	pending, active := a.pending[a.key]
+	ready := a.known && a.eligibility == .ELIGIBLE && a.advisory == .None
+	enabled := a.known && a.eligibility == .ALREADY_ENABLED
 	if nendo.box(nendo.id("InfoLinkedDevices"))(card) {
-		row_labels(tr("Linked devices"), "")
+		if nendo.box(nendo.id_local("Header"))(
+		{width = nendo.grow(), gap = 10, align = {y = .Center}},
+		) {
+			device_emblem(
+				enabled && !active ? ICON_CHECK : "\uf0c1",
+				ready || enabled ? ACCENT : TEXT_DIM,
+			)
+			row_labels(
+				ready && !active ? tr("Linked devices are ready") : tr("Linked devices"),
+				"",
+			)
+		}
 		if active {
 			label :=
 				pending.settling ? tr("Waiting for the linked devices change to reach the chat…") : tr("Turning on linked devices…")
@@ -414,9 +427,14 @@ activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
 		status := a.eligibility != .ELIGIBLE ? activation_blocker(a.eligibility) : a.notice
 		if status != "" {
 			nendo.text(tr(status), {font = FONT_BODY, size = 13, color = TEXT_DIM})
+		} else if ready {
+			nendo.text(
+				tr("Members' linked devices can join without an admin."),
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
+			)
 		}
-		if a.eligibility == .ELIGIBLE && a.advisory == .None {
-			micro_button("EnableAccountDevices", tr("Turn on linked devices"))
+		if ready {
+			settings_button("EnableAccountDevices", tr("Turn on linked devices"), ACCENT)
 		}
 	}
 }

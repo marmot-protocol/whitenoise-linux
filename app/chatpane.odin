@@ -545,13 +545,18 @@ history_import_progress :: proc(profile: ^Device_Profile, group: string) {
 	if item == nil || item.state.tag != .RECEIVING {return}
 	retrying := item.state.body.receiving.retrying
 	if nendo.box(nendo.id(retrying ? "HistoryImportRetrying" : "HistoryImportReceiving"))(
-	{width = nendo.grow(), padding = nendo.pad(12), gap = 6, direction = .Column, color = CARD},
+	{width = nendo.grow(), padding = nendo.pad(12), gap = 8, align = {y = .Center}, color = CARD},
 	) {
-		nendo.text(
-			retrying ? tr("Still trying to bring earlier messages from your other device…") : tr("Bringing earlier messages from your other device…"),
-			{font = FONT_BODY, size = 12, color = TEXT_DIM},
-		)
-		busy_bar("HistoryImportBusy")
+		device_emblem(ICON_DOWNLOAD, retrying ? WARNING : ACCENT)
+		if nendo.box(nendo.id_local("HistoryActivity"))(
+		{width = nendo.grow(), direction = .Column, gap = 6},
+		) {
+			nendo.text(
+				retrying ? tr("Still trying to bring earlier messages from your other device…") : tr("Bringing earlier messages from your other device…"),
+				{font = FONT_BODY, size = 12, color = TEXT},
+			)
+			busy_bar("HistoryImportBusy")
+		}
 	}
 }
 
@@ -568,6 +573,7 @@ history_import_divider :: proc(
 		width = nendo.grow(),
 		height = nendo.fixed(28),
 		padding = {left = 16, right = 16},
+		gap = 8,
 		align = {y = .Center},
 		clip = {x = true, y = true},
 	},
@@ -587,6 +593,7 @@ history_import_divider :: proc(
 			if name == "" {name = tr("another device")}
 			label = fmt.tprintf(tr("Messages above were imported from %s"), name)
 		}
+		nendo.text(ICON_DOWNLOAD, {font = FONT_ICON, size = 11, color = ACCENT_DIM})
 		nendo.text(label, {font = FONT_BODY, size = 12, color = TEXT_DIM, wrap = .None})
 	}
 }

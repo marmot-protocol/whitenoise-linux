@@ -416,7 +416,8 @@ Contacts:
 Build with `WN_MULTI_DEVICE=1` to use **Settings > Devices**. Sign in with the
 same profile on both devices, then choose **Link to another device** on the
 new one. Approve the request on the existing device and confirm on the new
-one only if all seven emoji match in order.
+one only if all seven emoji match. Compare left to right, starting with the
+top row.
 If the request hasn't appeared, open **Add a new device** on the existing
 device and choose **Check now**.
 
@@ -432,9 +433,10 @@ installation remembers the answer. It does not link the device or change
 what other devices see.
 
 Open a chat's details and look for **Linked devices**. The card shows whether
-linked devices are on or why you can't turn them on. If you're an admin and
-the chat is eligible, choose **Turn on linked devices**. That change can't
-be undone. An ordinary build can't open a profile joined to a device group.
+linked devices are on or why you can't turn them on. If you see **Linked
+devices are ready**, choose **Turn on linked devices** to let members' linked
+devices join without an admin. That change can't be undone. An ordinary build
+can't open a profile joined to a device group.
 
 New chats negotiate support from the KeyPackages used to invite members.
 Updating an app doesn't change capabilities already recorded in a chat.
