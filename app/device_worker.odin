@@ -102,6 +102,13 @@ device_worker :: proc(t: ^thread.Thread) {
 }
 
 @(private)
+device_checking_link :: proc(profile: ^Device_Profile) -> bool {
+	if profile == nil || .Link in profile.dirty {return true}
+	job := profile.job
+	return job != nil && job.command.kind == .None && .Link in job.reads
+}
+
+@(private)
 device_busy :: proc(profile: ^Device_Profile) -> Device_Action {
 	if profile == nil {return .None}
 	if profile.queued.kind != .None {return profile.queued.kind}

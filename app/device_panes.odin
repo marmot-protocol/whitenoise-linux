@@ -1219,7 +1219,16 @@ devices_modal :: proc(ui: ^Ui_State) {
 					if account_local(
 						ui,
 					) {settings_button("DeviceShowKeys", tr("Show this profile's keys"))}
-					device_copy(tr("Waiting for a link request…"))
+					if device_checking_link(profile) {
+						device_copy(tr("Checking device information…"))
+						busy_bar("DeviceChecking")
+					} else if .Link in profile.stale {
+						device_copy(tr("Couldn't refresh device information."), DANGER)
+						settings_button("DeviceCheckRequest", tr("Retry"))
+					} else {
+						device_copy(tr("Waiting for a link request…"))
+						settings_button("DeviceCheckRequest", tr("Check now"))
+					}
 					settings_button("DeviceClose", tr("Close"))
 				case .New:
 					device_modal_new(ui, profile)
@@ -1273,7 +1282,9 @@ handle_device_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	#partial switch panel {
 	case .Add:
-		if account_local(ui) && clicked("DeviceShowKeys") {
+		if !device_checking_link(profile) && clicked("DeviceCheckRequest") {
+			profile.dirty += {.Link}
+		} else if account_local(ui) && clicked("DeviceShowKeys") {
 			devices_put_away(ui)
 			settings_open(ui, client, .Keys, anchor = "RowReveal")
 		} else if close || escape {devices_put_away(ui)}

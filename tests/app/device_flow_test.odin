@@ -290,6 +290,49 @@ devices_pairing_projection :: proc(t: ^testing.T) {
 	devices_show(&ui, .Other_Profile, "account-b", "request-b")
 	text = device_test_frame(&ui)
 	testing.expect(t, !strings.contains(text, "They match, link device"))
+
+	profile.dirty = {}
+	devices_show(&ui, .Add)
+	text = device_test_frame(&ui)
+	testing.expect(t, strings.contains(text, "Checking device information"))
+	testing.expect(t, nendo.element(nendo.id("DeviceChecking")).found)
+	testing.expect(t, !strings.contains(text, "Waiting for a link request"))
+	profile.dirty = {}
+	profile.stale = {.Link}
+	text = device_test_frame(&ui)
+	testing.expect(t, strings.contains(text, "Couldn't refresh device information."))
+	testing.expect(t, !strings.contains(text, "Waiting for a link request"))
+	button := nendo.element(nendo.id("DeviceCheckRequest"))
+	if !testing.expect(t, button.found) {return}
+	r := button.rect
+	nendo.set_pointer({r.x + r.width / 2, r.y + r.height / 2}, .Up)
+	forced_release = true
+	handle_device_modal(&ui, nil)
+	forced_release = false
+	text = device_test_frame(&ui)
+	testing.expect(t, nendo.element(nendo.id("DeviceChecking")).found)
+	testing.expect(t, !strings.contains(text, "Couldn't refresh device information."))
+
+	read := Device_Job {
+		reads = {.Link},
+	}
+	profile.dirty, profile.stale = {}, {}
+	profile.job = &read
+	prompt.state.tag, link.prompts_len = .COMPARING, 1
+	devices_present(&ui, true)
+	device_test_frame(&ui)
+	testing.expect_value(t, ui.devices.panel, Device_Panel.Add)
+	testing.expect(t, nendo.element(nendo.id("DeviceChecking")).found)
+	profile.job = nil
+	link.prompts_len = 0
+	text = device_test_frame(&ui)
+	testing.expect(t, strings.contains(text, "Waiting for a link request"))
+	testing.expect(t, nendo.element(nendo.id("DeviceCheckRequest")).found)
+	link.prompts_len = 1
+	devices_present(&ui, true)
+	text = device_test_frame(&ui)
+	testing.expect_value(t, ui.devices.panel, Device_Panel.Approve)
+	testing.expect(t, !strings.contains(text, "Waiting for a link request"))
 }
 
 @(test)

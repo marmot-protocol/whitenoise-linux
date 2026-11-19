@@ -522,6 +522,7 @@ devices_show :: proc(
 	d.panel, d.panel_account, d.panel_prompt = panel, owner, id
 	profile := d.profiles[owner]
 	d.show_attempt = panel == .New && profile != nil && device_live_attempt(profile.view.link)
+	if panel == .Add && profile != nil && !device_checking_link(profile) {profile.dirty += {.Link}}
 	if panel == .Approve {
 		append(&d.name, ..transmute([]u8)tr("New device"))
 		append(&d.own_name, DEVICE_PLATFORM == "" ? tr("This device") : DEVICE_PLATFORM)
@@ -608,7 +609,9 @@ devices_present :: proc(ui: ^Ui_State, focused: bool) {
 	}
 	if !devices_visible(ui) || ui.add_account_open || ui.devices.unavailable {return}
 	if d.panel == .Add && ui.confirm.kind == .None && !ui.link_open {
-		if p := device_latest_prompt(device_current(ui)); p != nil {
+		profile := device_current(ui)
+		if device_checking_link(profile) {return}
+		if p := device_latest_prompt(profile); p != nil {
 			devices_show(ui, .Approve, ui.account_ref, string(p.prompt_id))
 		}
 		return
