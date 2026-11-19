@@ -1218,6 +1218,7 @@ emoji_sets_panel :: proc(ui: ^Ui_State) {
 			emoji_set_text(
 				tr("Recent sets from your event-fetch relays. Previews contact image hosts."),
 			)
+			emoji_set_text(tr("Paste an emoji set naddr, then choose Refresh."))
 			emoji_sets_feedback(ui)
 			if nendo.box(nendo.id("EmojiSetsContactFilter"))(settings_row()) {
 				settings_check(

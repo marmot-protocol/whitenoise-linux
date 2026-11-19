@@ -2415,6 +2415,9 @@ msgstr "Inserisci nome utente e password, ciascuno da 1 a 255 byte UTF-8."
 msgid "Enter a username and password, each up to 255 characters."
 msgstr "Inserisci un nome utente e una password, ciascuno di massimo 255 caratteri."
 
+msgid "Enter a valid emoji set naddr."
+msgstr "Inserisci un naddr valido per un set di emoji."
+
 msgid "Enter a valid pack link or address."
 msgstr "Inserisci un link o un indirizzo valido per il pacchetto."
 
@@ -4102,6 +4105,9 @@ msgstr "Incolla"
 
 msgid "Paste a pack link to preview its stickers before adding it."
 msgstr "Incolla il link di un pacchetto per vedere gli adesivi prima di aggiungerlo."
+
+msgid "Paste an emoji set naddr, then choose Refresh."
+msgstr "Incolla il naddr di un set di emoji, poi scegli Aggiorna."
 
 msgid "Paste someone's public key to start a chat."
 msgstr "Incolla la chiave pubblica di qualcuno per avviare una chat."

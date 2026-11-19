@@ -204,6 +204,27 @@ emoji_import_mutation_guard :: proc(t: ^testing.T) {
 }
 
 @(test)
+emoji_set_address_validation :: proc(t: ^testing.T) {
+	data: [42]u8
+	data[2], data[3] = 2, 32
+	data[36], data[37] = 3, 4
+	data[40], data[41] = 0x75, 0x4f // kind 30031 is a sticker pack, not an emoji set
+	pack := bech32_encode("naddr", data[:])
+	defer delete(pack)
+	data[41] = 0x4e
+	address := bech32_encode("naddr", data[:])
+	defer delete(address)
+	for input in ([]string{pack, fmt.tprintf("%s!", address), "naddr1invalid"}) {
+		ui: Ui_State
+		append(&ui.emoji_sets_query, input)
+		emoji_sets_job_start(&ui, .Browse)
+		testing.expect(t, ui.emoji_sets_job == nil)
+		testing.expect_value(t, ui.emoji_sets_error, "Enter a valid emoji set naddr.")
+		delete(ui.emoji_sets_query)
+	}
+}
+
+@(test)
 emoji_set_contact_order :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
 	first :: "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"

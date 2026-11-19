@@ -1,6 +1,8 @@
 package main
 
 import "base:runtime"
+import "core:crypto/hash"
+import "core:encoding/hex"
 import "core:fmt"
 import "core:os"
 import "core:strings"
@@ -173,6 +175,36 @@ test_save_staged_emoji_sanitization :: proc(t: ^testing.T) {
 		testing.expect_value(t, ui.focus, Focus.Compose)
 		testing.expect_value(t, ui.client_status, "")
 		delete(ui.emoji_name)
+	}
+}
+
+@(test)
+builtin_emoji_payloads :: proc(t: ^testing.T) {
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	expected := [13]struct {
+		code, sha256: string,
+	} {
+		{"marmot", "e787c7deee497eb439c4515607cc8e04043a3f5ac6dc32a6d667a3d3dcfd0c82"},
+		{"wn", "af8ffecb318167d4f5ebfc020ce9aba86cb7222f60a64067750e86ec61d539a2"},
+		{"marmot_classic", "2eb14069ef98a307e8cde88e85f73c34aeaa191e8a033a125f41909c9368991e"},
+		{"marmot_wave", "733a03c928f7fa1040a8d25306c00cdc41532eea3b1446adaa514cd9fd603284"},
+		{"marmot_yes", "e91d12edd023ed6af2ec0df44a8526d8d2c1f28ab2d34d7af43728a013200bdf"},
+		{"marmot_laugh", "ea7b4f760778396a63b0935653fe6ee37a5a31243b959553a90879adaac9dc61"},
+		{"marmot_love", "096ee61fd705e6b6616cf5ef2f2b94f45252e91e8f94aca597b19e4d6a4daeff"},
+		{"marmot_party", "9eb8e1bfc64dd96a1a873df837e77f77e4c8ea33a0c0c14e1f2e5dfec1c2c0bd"},
+		{"marmot_fire", "00047e800a0a6386b628d0043e9b66cf88cbe0cf597f70e409f02e8caa6f53a1"},
+		{"marmot_wow", "906c4ad53f92691fea2c06efb509adad9b48caac74a217d91761bcb6ef961bdb"},
+		{"marmot_smirk", "9573a1d7a97f13c68f47294db74ef6f29a65f401d485c6f3359d40f61ab1778e"},
+		{"marmot_cry", "51e57e230b8510a9b548b852ed1871dab1d88995a496d9924e08010b87c5a27d"},
+		{"marmot_angry", "93b03b1590585c11b0d5036150483d92dece1012c1382a17bdeabaae0c6762a1"},
+	}
+	for item in expected {
+		name, bytes := emoji_payload(item.code)
+		defer {delete(name); delete(bytes)}
+		testing.expect_value(t, name, fmt.tprintf("%s.png", item.code))
+		digest := hash.hash_bytes(.SHA256, bytes, context.temp_allocator)
+		testing.expect_value(t, string(hex.encode(digest, context.temp_allocator)), item.sha256)
 	}
 }
 

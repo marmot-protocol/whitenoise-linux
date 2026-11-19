@@ -2405,6 +2405,9 @@ msgstr ""
 msgid "Enter a username and password, each up to 255 characters."
 msgstr ""
 
+msgid "Enter a valid emoji set naddr."
+msgstr ""
+
 msgid "Enter a valid pack link or address."
 msgstr ""
 
@@ -4088,6 +4091,9 @@ msgid "Paste"
 msgstr ""
 
 msgid "Paste a pack link to preview its stickers before adding it."
+msgstr ""
+
+msgid "Paste an emoji set naddr, then choose Refresh."
 msgstr ""
 
 msgid "Paste someone's public key to start a chat."

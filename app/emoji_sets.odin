@@ -54,6 +54,7 @@ Emoji_Set_Job :: struct {
 	contacts:                  [dynamic]Contact_Ui,
 	client:                    ^marmot.Client,
 	account:                   string,
+	address:                   string,
 	relays:                    [dynamic]string,
 	directory:                 string,
 	index:                     int,
@@ -216,11 +217,14 @@ emoji_sets_fetch :: proc(job: ^Emoji_Set_Job) {
 		return
 	}
 	job.contacts = snapshot.contacts
+	request :=
+		job.address == "" ? `["REQ","wn",{"kinds":[30030],"limit":60}]` : nev_request(job.address)
+	_, ref := nostr_at(job.address, 0)
 	buffer := make([]u8, EMOJI_ASSET_LIMIT, context.temp_allocator)
 	for relay, i in job.relays {
 		n := wn_ws_fetch_many(
 			strings.clone_to_cstring(relay, context.temp_allocator),
-			`["REQ","wn",{"kinds":[30030],"limit":60}]`,
+			strings.clone_to_cstring(request, context.temp_allocator),
 			raw_data(buffer),
 			uint(len(buffer)),
 			3000,
@@ -241,6 +245,11 @@ emoji_sets_fetch :: proc(job: ^Emoji_Set_Job) {
 				if json.unmarshal(encoded, &event, allocator = context.temp_allocator) != nil ||
 				   !sticker_event_valid(event) {continue}
 				set, valid := emoji_set_parse(event, relay)
+				if valid &&
+				   job.address != "" &&
+				   set.coordinate != fmt.tprintf("30030:%s:%s", ref.author, ref.identifier) {
+					emoji_set_free(set); continue
+				}
 				if valid {emoji_set_merge(&job.sets, set)}
 			}
 		}
@@ -525,6 +534,16 @@ emoji_sets_job_start :: proc(
 	if item_index < -1 ||
 	   (item_index >= 0 &&
 			   (op != .Import || item_index >= len(ui.emoji_sets[index].items))) {return}
+	ref: Nostr_Ref
+	if op == .Browse {
+		query := strings.trim_space(string(ui.emoji_sets_query[:]))
+		end: int
+		end, ref = nostr_at(query, 0)
+		if ref.kind != .None &&
+		   (ref.kind != .Address || end != len(query) || ref.event_kind != EMOJI_SET_KIND) {
+			ui.emoji_sets_error = N_("Enter a valid emoji set naddr."); return
+		}
+	}
 	job := new(Emoji_Set_Job)
 	job.op, job.index = op, index
 	job.item_index = item_index
@@ -532,7 +551,10 @@ emoji_sets_job_start :: proc(
 	if op == .Browse {
 		job.client = g_client
 		job.account = strings.clone(ui.account_ref)
-		for relay in ui.prefs.fetch_relays {
+		job.address = strings.clone(ref.token)
+		relays := make([dynamic]string, context.temp_allocator)
+		append(&relays, ..ref.relays); append(&relays, ..ui.prefs.fetch_relays[:])
+		for relay in relays {
 			if !strings.has_prefix(relay, "wss://") ||
 			   slice.contains(job.relays[:], relay) {continue}
 			append(&job.relays, strings.clone(relay))
@@ -561,6 +583,7 @@ emoji_sets_job_free :: proc(job: ^Emoji_Set_Job) {
 	delete(job.sets)
 	nc_contacts_free(&job.contacts)
 	delete(job.account)
+	delete(job.address)
 	for relay in job.relays {delete(relay)}
 	delete(job.relays); delete(job.directory); free(job)
 }
@@ -596,6 +619,7 @@ emoji_sets_drain :: proc(ui: ^Ui_State) {
 	thread.destroy(job.worker)
 	ui.emoji_sets_job = nil
 	ui.emoji_sets_error = job.error
+	preview := job.op == .Browse && job.address != "" && len(job.sets) == 1
 	switch job.op {
 	case .Cover:
 	case .Browse:
@@ -615,6 +639,7 @@ emoji_sets_drain :: proc(ui: ^Ui_State) {
 		delete(ui.emoji_sets)
 		ui.emoji_sets, job.sets = job.sets, nil
 		ui.emoji_sets_selected = -1
+		if preview {clear(&ui.emoji_sets_query); ui.emoji_sets_selected = 0}
 		ui.emoji_sets_page = 0
 		clear(&ui.emoji_sets_order)
 	case .Preview:
@@ -635,6 +660,7 @@ emoji_sets_drain :: proc(ui: ^Ui_State) {
 		)
 	}
 	emoji_sets_job_free(job)
+	if preview {emoji_sets_job_start(ui, .Preview, 0)}
 }
 
 // List artwork has its own worker so selecting or importing a set never

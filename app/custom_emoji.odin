@@ -21,23 +21,30 @@ custom_emoji_textures: map[string]^rl.Texture2D
 
 // Built-in shortcodes shipped in the binary, always available and not
 // removable. A user file with the same code takes precedence.
-BUILTIN_EMOJI := [2]struct {
+BUILTIN_EMOJI := [13]struct {
 	code: string,
 	png:  []u8,
 } {
 	{"marmot", #load("assets/marmot.png")},
 	// The logomark on its dark tile, so it reads on light themes too.
 	{"wn", #load("assets/wn.png")},
+	{"marmot_classic", #load("assets/marmot_classic.png")},
+	{"marmot_wave", #load("assets/marmot_wave.png")},
+	{"marmot_yes", #load("assets/marmot_yes.png")},
+	{"marmot_laugh", #load("assets/marmot_laugh.png")},
+	{"marmot_love", #load("assets/marmot_love.png")},
+	{"marmot_party", #load("assets/marmot_party.png")},
+	{"marmot_fire", #load("assets/marmot_fire.png")},
+	{"marmot_wow", #load("assets/marmot_wow.png")},
+	{"marmot_smirk", #load("assets/marmot_smirk.png")},
+	{"marmot_cry", #load("assets/marmot_cry.png")},
+	{"marmot_angry", #load("assets/marmot_angry.png")},
 }
 builtin_emoji_tex: [len(BUILTIN_EMOJI)]^rl.Texture2D
 
 emoji_dir :: proc(allocator := context.temp_allocator) -> string {
 	path := settings_path(allocator)
-	return fmt.aprintf(
-		"%s/emoji",
-		path[:len(path) - len("/settings.json")],
-		allocator = allocator,
-	)
+	return fmt.aprintf("%s/emoji", path[:len(path) - len("/settings.json")], allocator = allocator)
 }
 
 // Shortcode of a stored file: the filename stem ("party.png" → "party").
@@ -288,11 +295,7 @@ save_staged_emoji :: proc(ui: ^Ui_State) {
 	os.make_directory(emoji_dir())
 	// Publish only a complete copy, so a failed write cannot truncate an
 	// existing emoji. The private staging directory is removed on every exit.
-	staging, staging_err := os.make_directory_temp(
-		emoji_dir(),
-		".save-*",
-		context.temp_allocator,
-	)
+	staging, staging_err := os.make_directory_temp(emoji_dir(), ".save-*", context.temp_allocator)
 	if staging_err != nil {
 		ui.banner_seen = ""
 		set_status(ui, tr("Couldn't save your emoji. Please try again."), .Error)
