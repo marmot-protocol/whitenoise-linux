@@ -1317,7 +1317,7 @@ Nc_Page :: enum {
 
 @(private)
 Nc_Member :: struct {
-	hex, label: string,
+	hex, label, pic_url: string,
 }
 
 @(private)
@@ -1503,20 +1503,21 @@ nc_member_options :: proc(ui: ^Ui_State, query: string) {
 nc_selected_members :: proc(ui: ^Ui_State) {
 	if len(ui.nc_members) == 0 {return}
 	row_h := tap_size() ? tap_min() : 30
-	if nendo.box(nendo.id("NCSelectedMembers"))(
-	{
-		width = nendo.grow(),
-		height = nendo.fixed(f32(min(2, len(ui.nc_members))) * row_h),
-		direction = .Column,
-		padding = {right = len(ui.nc_members) > 2 ? 16 : 0},
-		clip = {y = true, scroll = true},
-	},
-	) {
+	if nendo.box(nendo.id("NCSelectedMembers"))({width = nendo.grow(), direction = .Column}) {
 		for member, i in ui.nc_members {
 			if nendo.box(nendo.id("NCMemberPicked", u32(i)))(
 			{width = nendo.grow(), height = nendo.fixed(row_h), align = {y = .Center}, gap = 8},
 			) {
-				avatar("NCMemberPickedAvatar", u32(i), member.hex, member.label, 22)
+				pic_url := member.pic_url
+				if pic_url == "" {pic_url = profile_info(g_client, member.hex).pic_url}
+				avatar(
+					"NCMemberPickedAvatar",
+					u32(i),
+					member.hex,
+					member.label,
+					22,
+					url_pic(pic_url),
+				)
 				if nendo.box(nendo.id_local("Name"))({width = nendo.grow(), clip = {x = true}}) {
 					nendo.text(
 						member.label,
@@ -1538,7 +1539,6 @@ nc_selected_members :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
-	scrollbar(nendo.id("NCSelectedMembers"), 16)
 }
 
 // One group-member suggestion: a contact, or a person the directory found.
@@ -1885,10 +1885,10 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 							micro_button("NCMemberAdd", pasted ? tr("Add") : tr("Look up"))
 						}
 					}
-					nc_selected_members(ui)
 					if ui.focus == .NC_Member && pending == "" && !pasted {
 						nc_member_options(ui, query)
 					}
+					nc_selected_members(ui)
 				}
 				scrollbar(nendo.id("NCForm"))
 			}

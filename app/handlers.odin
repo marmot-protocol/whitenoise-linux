@@ -1799,13 +1799,13 @@ open_existing_dm :: proc(ui: ^Ui_State, client: ^marmot.Client, peer: string) ->
 
 @(private)
 nc_members_clear :: proc(ui: ^Ui_State) {
-	for member in ui.nc_members {delete(member.hex); delete(member.label)}
+	for member in ui.nc_members {delete(member.hex); delete(member.label); delete(member.pic_url)}
 	delete(ui.nc_members)
 	ui.nc_members = {}
 }
 
 @(private)
-nc_member_add :: proc(ui: ^Ui_State, hex: string, label := "") {
+nc_member_add :: proc(ui: ^Ui_State, hex: string, label := "", pic_url := "") {
 	if hex == "" || strings.equal_fold(hex, ui.account_ref) {return}
 	for member in ui.nc_members {
 		if strings.equal_fold(member.hex, hex) {return}
@@ -1815,6 +1815,7 @@ nc_member_add :: proc(ui: ^Ui_State, hex: string, label := "") {
 		Nc_Member {
 			hex = strings.to_lower(hex),
 			label = strings.clone(label != "" ? label : sender_label(hex)),
+			pic_url = strings.clone(pic_url),
 		},
 	)
 }
@@ -1928,7 +1929,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if mouse_released() {
 		for member, i in ui.nc_members {
 			if !nendo.pointer_over(nendo.id("NCMemberRemove", u32(i))) {continue}
-			delete(member.hex); delete(member.label)
+			delete(member.hex); delete(member.label); delete(member.pic_url)
 			ordered_remove(&ui.nc_members, i)
 			return
 		}
@@ -1979,10 +1980,10 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if pick >= 0 {
 			if pick < len(rows) {
 				contact := ui.nc_contacts[rows[pick].idx]
-				nc_member_add(ui, contact.id_hex, contact_label(ui, contact))
+				nc_member_add(ui, contact.id_hex, contact_label(ui, contact), contact.pic_url)
 			} else {
 				hit := ui.people.hits[people[pick - len(rows)]]
-				nc_member_add(ui, hit.id_hex, people_label(ui, hit))
+				nc_member_add(ui, hit.id_hex, people_label(ui, hit), hit.pic_url)
 			}
 			ed_set(ui, &ui.nc_member, "")
 			ui.nc_contact_sel = 0
@@ -2079,15 +2080,11 @@ handle_dm_details :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		return true
 	}
 	if clicked("DmStartGroup") {
-		// open_new_chat resets the form; snapshot its peer before it does.
-		label := strings.clone(ui.chats[ui.selected].title)
-		defer delete(label)
-		member := strings.clone(peer)
-		defer delete(member)
+		chat := &ui.chats[ui.selected]
 		close_group_info(ui)
 		open_new_chat(ui, client)
 		ui.nc_page = .Group
-		nc_member_add(ui, member, label)
+		nc_member_add(ui, peer, chat.title, chat.avatar_url)
 		ui.focus = .NC_Name
 		return true
 	}
