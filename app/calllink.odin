@@ -167,7 +167,7 @@ jitsi_fresh: [dynamic]struct {
 // userinfo ("https://a@b/") is refused so the card names the real host.
 @(private)
 jitsi_room :: proc(url: string) -> (host, room: string, ok: bool) {
-	if !strings.has_prefix(url, "https://") {return}
+	if !strings.has_prefix(url, "https://") || youtube_id(url) != "" {return}
 	rest := url[len("https://"):]
 	slash := strings.index_byte(rest, '/')
 	if slash <= 0 {return}

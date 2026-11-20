@@ -415,6 +415,8 @@ app_main :: proc() {
 		libc.signal(libc.int(posix.SIGPIPE), transmute(proc "c" (_: libc.int))libc.SIG_IGN)
 	}
 	configure_bundle_environment()
+	web_init()
+	defer {delete(web_viewer); web_viewer = ""}
 	startup_start := time.tick_now()
 	local_timing_stopped = false
 	defer local_timings_export()
@@ -919,7 +921,7 @@ app_main :: proc() {
 			tts_tick(&ui)
 			translation_tick(&ui)
 			drain_ops(&ui, client)
-			web_tick() // webxdc modal: run WebKit, take its pixels
+			web_tick(&ui)
 			nes_tick(&ui) // NES player: emulate the owed frames, queue their audio
 			xdc_drain(&ui, client) // webxdc sendUpdate() becomes a group message
 			drain_auth(&ui, client) // a finished sign-in lands on the UI thread
@@ -1099,7 +1101,7 @@ app_main :: proc() {
 
 			orbit_hover = nil // rebound by the build when a tile is hovered
 			geo_hover, geo_action = "", .None
-			link_hover = ""
+			link_hover, youtube_hover = "", ""
 			md_code_hover = ""
 			nev_more_hover = ""
 			nev_retry_hover = ""

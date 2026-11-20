@@ -2969,6 +2969,9 @@ msgstr "듣는 중... 다 말하면 완료하세요(최대 30초)."
 msgid "Lithuanian"
 msgstr "리투아니아어"
 
+msgid "Loading YouTube video…"
+msgstr "YouTube 동영상을 불러오는 중…"
+
 msgid "Loading emoji previews..."
 msgstr "이모지 미리보기를 불러오는 중..."
 
@@ -3811,6 +3814,9 @@ msgstr "플레이트"
 
 msgid "Play"
 msgstr "재생"
+
+msgid "Play YouTube video"
+msgstr "YouTube 동영상 재생"
 
 msgid "Play a sound"
 msgstr "소리 재생"

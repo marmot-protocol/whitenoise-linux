@@ -3183,6 +3183,9 @@ msgstr "メッセージ本文を文字どおり検索"
 msgid "Lithuanian"
 msgstr "リトアニア語"
 
+msgid "Loading YouTube video…"
+msgstr "YouTube の動画を読み込んでいます…"
+
 msgid "Loading emoji previews"
 msgstr "絵文字のプレビューを読み込んでいます"
 
@@ -4091,6 +4094,9 @@ msgstr "プレート"
 
 msgid "Play"
 msgstr "再生"
+
+msgid "Play YouTube video"
+msgstr "YouTube の動画を再生"
 
 msgid "Play a sound"
 msgstr "音を鳴らす"

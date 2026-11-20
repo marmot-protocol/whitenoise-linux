@@ -1,8 +1,7 @@
-// wn-webview: the process that runs a webxdc app, so the app can draw
-// it inside a modal of its own.
+// wn-webview renders webxdc apps and the YouTube player in a modal.
 //
-// The page renders offscreen (a GtkOffscreenWindow, never mapped) into
-// a cairo surface; the pixels are copied into a shared-memory buffer
+// The page renders into a cairo surface without showing a GTK window.
+// The pixels are copied into a shared-memory buffer
 // the parent maps and uploads as a streaming texture. Input travels
 // the other way through a ring in the same buffer, synthesized onto
 // the view's GdkWindow.
@@ -21,6 +20,7 @@
 // compositing on, the page renders into a GL surface the offscreen
 // draw never sees, and every frame comes back blank.
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -32,7 +32,7 @@
 #include "helper_ipc.h"
 #include "proxy_credentials.h"
 
-#define WN_TICK_MS 16 // ~60Hz at most; a frame is published only after the page drew
+#define WN_TICK_MS 16 // ~60Hz at most
 
 struct WnWeb {
     GtkWidget *win;
@@ -44,6 +44,8 @@ struct WnWeb {
     int w, h;         // current page size
     int cap_w, cap_h; // what the shared buffer can hold
     int dirty;        // the page drew since the last publish
+    gboolean youtube;
+    gboolean loading;
 };
 
 // Our own origin, plus the in-page schemes a running app uses. Any
@@ -60,12 +62,51 @@ static gboolean on_decide(WebKitWebView *view, WebKitPolicyDecision *decision,
     WebKitNavigationAction *action = webkit_navigation_policy_decision_get_navigation_action(
         WEBKIT_NAVIGATION_POLICY_DECISION(decision));
     const char *uri = webkit_uri_request_get_uri(webkit_navigation_action_get_request(action));
+    if (web->youtube) {
+        if (type == WEBKIT_POLICY_DECISION_TYPE_NAVIGATION_ACTION) {
+            if (g_strcmp0(uri, web->origin) == 0) {
+                // The launch click came from the chat, not the web page.
+                WebKitWebsitePolicies *policies = g_object_new(
+                    WEBKIT_TYPE_WEBSITE_POLICIES, "autoplay", WEBKIT_AUTOPLAY_ALLOW, NULL);
+                webkit_policy_decision_use_with_policies(decision, policies);
+                g_object_unref(policies);
+                return TRUE;
+            }
+            if (g_strcmp0(uri, "about:blank") == 0) {
+                return FALSE;
+            }
+        }
+        webkit_policy_decision_ignore(decision);
+        return TRUE;
+    }
     if (uri && (strncmp(uri, web->origin, strlen(web->origin)) == 0 ||
                 strncmp(uri, "blob:", 5) == 0 || strncmp(uri, "about:", 6) == 0)) {
         return FALSE;
     }
 
     webkit_policy_decision_ignore(decision);
+    return TRUE;
+}
+
+static void on_load_changed(WebKitWebView *view, WebKitLoadEvent event, gpointer data) {
+    (void)view;
+    struct WnWeb *web = data;
+    if (event == WEBKIT_LOAD_FINISHED) {
+        web->loading = FALSE;
+        web->dirty = 1;
+    }
+}
+
+static gboolean on_load_failed(WebKitWebView *view, WebKitLoadEvent event, const char *uri,
+                               GError *error, gpointer data) {
+    (void)view;
+    (void)event;
+    (void)uri;
+    struct WnWeb *web = data;
+    if (web->loading) {
+        g_printerr("wn-webview: YouTube load failed: %s\n", error->message);
+        gtk_main_quit();
+    }
     return TRUE;
 }
 
@@ -116,7 +157,12 @@ static int wn_resize(struct WnWeb *web) {
     web->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, web->w, web->h);
     web->cr = cairo_create(web->surface);
     gtk_widget_set_size_request(web->view, web->w, web->h);
-    gtk_window_resize(GTK_WINDOW(web->win), web->w, web->h);
+    if (web->youtube) {
+        GtkAllocation allocation = {0, 0, web->w, web->h};
+        gtk_widget_size_allocate(web->view, &allocation);
+    } else {
+        gtk_window_resize(GTK_WINDOW(web->win), web->w, web->h);
+    }
     return 1;
 }
 
@@ -139,15 +185,25 @@ static void wn_publish(struct WnWeb *web) {
     const unsigned char *src = cairo_image_surface_get_data(web->surface);
     int stride = cairo_image_surface_get_stride(web->surface);
     unsigned char *dst = web->shm->pixels;
+    uint32_t changed = web->shm->w != (unsigned)web->w || web->shm->h != (unsigned)web->h;
     for (int y = 0; y < web->h; y++) {
         const unsigned char *row = src + (size_t)y * stride;
         unsigned char *out = dst + (size_t)y * web->w * 4;
         for (int x = 0; x < web->w; x++) {
-            out[x * 4 + 0] = row[x * 4 + 2];
-            out[x * 4 + 1] = row[x * 4 + 1];
-            out[x * 4 + 2] = row[x * 4 + 0];
-            out[x * 4 + 3] = 255;
+            uint32_t bgra;
+            memcpy(&bgra, row + x * 4, sizeof bgra);
+            uint32_t rgba =
+                0xff000000 | (bgra & 0x0000ff00) | ((bgra & 0xff) << 16) | ((bgra >> 16) & 0xff);
+            if (web->youtube) {
+                uint32_t previous;
+                memcpy(&previous, out + x * 4, sizeof previous);
+                changed |= rgba ^ previous;
+            }
+            memcpy(out + x * 4, &rgba, sizeof rgba);
         }
+    }
+    if (web->youtube && !changed) {
+        return;
     }
     web->shm->w = web->w;
     web->shm->h = web->h;
@@ -169,7 +225,23 @@ static void wn_dispatch(struct WnWeb *web, GdkEvent *event, gboolean keyboard) {
     gdk_event_set_device(event,
                          keyboard ? gdk_seat_get_keyboard(seat) : gdk_seat_get_pointer(seat));
 
-    gtk_main_do_event(event);
+    if (web->youtube) {
+        // GTK drops presses and motion for an unmapped toplevel. These
+        // events already target the view, so emit its corresponding signal.
+        static const char *const signals[] = {
+            [GDK_MOTION_NOTIFY] = "motion-notify-event",
+            [GDK_BUTTON_PRESS] = "button-press-event",
+            [GDK_BUTTON_RELEASE] = "button-release-event",
+            [GDK_SCROLL] = "scroll-event",
+            [GDK_KEY_PRESS] = "key-press-event",
+            [GDK_KEY_RELEASE] = "key-release-event",
+            [GDK_FOCUS_CHANGE] = "focus-in-event",
+        };
+        gboolean handled;
+        g_signal_emit_by_name(web->view, signals[event->type], event, &handled);
+    } else {
+        gtk_main_do_event(event);
+    }
     gdk_event_free(event);
 }
 
@@ -278,7 +350,7 @@ static gboolean on_tick(gpointer data) {
         web->dirty = 1;
         return G_SOURCE_CONTINUE;
     }
-    if (!web->dirty) {
+    if (web->loading || (!web->dirty && !web->youtube)) {
         return G_SOURCE_CONTINUE;
     }
     web->dirty = 0;
@@ -326,7 +398,7 @@ static const char *WN_CONSOLE_HOOK =
 
 int main(int argc, char **argv) {
     if (argc < 5) {
-        g_printerr("usage: wn-webview <url> <shm-token> <width> <height>\n");
+        g_printerr("usage: wn-webview <url> <shm-token> <width> <height> [mode]\n");
         return 2;
     }
     const char *url = argv[1];
@@ -382,6 +454,8 @@ int main(int argc, char **argv) {
 
     struct WnWeb *web = calloc(1, sizeof *web);
     web->origin = g_strdup(url);
+    web->youtube = argc > 5 && strcmp(argv[5], "youtube") == 0;
+    web->loading = web->youtube;
     web->shm = shm;
     web->w = w;
     web->h = h;
@@ -390,7 +464,7 @@ int main(int argc, char **argv) {
     web->dirty = 1;
     web->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
     web->cr = cairo_create(web->surface);
-    web->win = gtk_offscreen_window_new();
+    web->win = web->youtube ? gtk_window_new(GTK_WINDOW_TOPLEVEL) : gtk_offscreen_window_new();
 
     // Ephemeral: nothing the app stores outlives the process.
     WebKitWebsiteDataManager *data = webkit_website_data_manager_new_ephemeral();
@@ -430,15 +504,36 @@ int main(int argc, char **argv) {
                                         WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, NULL, NULL));
     }
     g_signal_connect(web->view, "decide-policy", G_CALLBACK(on_decide), web);
-    g_signal_connect(web->win, "damage-event", G_CALLBACK(on_damage), web);
 
     gtk_container_add(GTK_CONTAINER(web->win), web->view);
     gtk_widget_set_size_request(web->view, w, h);
     gtk_window_resize(GTK_WINDOW(web->win), w, h);
-    gtk_widget_show_all(web->win);
+    if (web->youtube) {
+        // WebKit won't start media in GtkOffscreenWindow. Map only the view,
+        // not its toplevel. With no damage events, on_tick samples the view.
+        gtk_widget_realize(web->win);
+        gtk_widget_show(web->view);
+        gtk_widget_map(web->view);
+    } else {
+        g_signal_connect(web->win, "damage-event", G_CALLBACK(on_damage), web);
+        gtk_widget_show_all(web->win);
+    }
     gtk_widget_grab_focus(web->view);
     wn_focus_in(web);
-    webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web->view), url);
+    WebKitWebView *view = WEBKIT_WEB_VIEW(web->view);
+    if (web->youtube) {
+        WebKitSettings *settings = webkit_web_view_get_settings(view);
+        webkit_settings_set_enable_fullscreen(settings, FALSE);
+        g_signal_connect(view, "load-changed", G_CALLBACK(on_load_changed), web);
+        g_signal_connect(view, "load-failed", G_CALLBACK(on_load_failed), web);
+        WebKitURIRequest *request = webkit_uri_request_new(url);
+        soup_message_headers_replace(webkit_uri_request_get_http_headers(request), "Referer",
+                                     "https://dev.ipf.whitenoise/");
+        webkit_web_view_load_request(view, request);
+        g_object_unref(request);
+    } else {
+        webkit_web_view_load_uri(view, url);
+    }
 
     GIOChannel *stdin_channel = g_io_channel_unix_new(STDIN_FILENO);
     g_io_add_watch(stdin_channel, G_IO_HUP | G_IO_ERR, on_parent_gone, NULL);

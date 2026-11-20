@@ -3173,6 +3173,9 @@ msgstr ""
 msgid "Lithuanian"
 msgstr ""
 
+msgid "Loading YouTube video…"
+msgstr ""
+
 msgid "Loading emoji previews"
 msgstr ""
 
@@ -4077,6 +4080,9 @@ msgid "Plate"
 msgstr ""
 
 msgid "Play"
+msgstr ""
+
+msgid "Play YouTube video"
 msgstr ""
 
 msgid "Play a sound"
