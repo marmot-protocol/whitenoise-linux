@@ -316,6 +316,7 @@ SETTINGS_GENERAL_TABS := []Settings_Page {
 	{N_("Startup"), .Startup},
 	{N_("Language"), .Language},
 	{N_("Messaging"), .Messaging},
+	{N_("Composer"), .Messaging},
 }
 SETTINGS_SPEECH_TABS := []Settings_Page {
 	{N_("Dictation"), .Speech},
@@ -387,6 +388,8 @@ settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
 		     "RowShortcuts",
 		     "ShortcutsView":
 			return 2
+		case "ComposerSettings":
+			return COMPOSER_TAB
 		}
 
 	case .Speech:
@@ -1082,6 +1085,8 @@ settings_general :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
+	case COMPOSER_TAB:
+		settings_composer(ui)
 	}
 }
 
@@ -2520,6 +2525,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				ui.emoji_sets_selected = -1
 			}
 			ui.translation.language_menu = 0
+			ui.composer_settings_from_chat = false
 			ui.settings_tab = i
 			ui.settings_anchor = ""
 			ui.settings_scroll_pending = true
@@ -2580,6 +2586,10 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 
 	case .General:
+		if ui.settings_tab == COMPOSER_TAB {
+			handle_settings_composer(ui)
+			return
+		}
 		if handle_settings_translation(ui) {return}
 		if ui.settings_tab == 2 {
 			if clicked("EmojiSetsBrowse") && ui.emoji_sets_job == nil {

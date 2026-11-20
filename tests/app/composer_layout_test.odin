@@ -1,6 +1,7 @@
 package main
 
 import "base:runtime"
+import "core:encoding/json"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
@@ -27,6 +28,11 @@ composer_layout :: proc(t: ^testing.T) {
 	}
 	ui.prefs.stt_enabled = true
 	ui.prefs.rail_w = RAIL_W_MIN
+	ui.prefs.composer = composer_config(&ui.prefs)^
+	ui.prefs.composer.layout = .Expanded
+	for action in ([]Composer_Action{.Effect, .Poll, .Location, .Dictate, .Voice}) {
+		ui.prefs.composer.slots[action] = .Right
+	}
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Composer"})
 	for i in 0 ..< 20 {
@@ -128,7 +134,7 @@ composer_layout :: proc(t: ^testing.T) {
 						"nendo must not wrap a manually wrapped line again",
 					)
 				}
-				for id in ([]string{"AttachBtn", "EmojiBtn", "FxBtn", "PollBtn", "LocationBtn", "DictateBtn", "MicBtn", "SendBtn"}) {
+				for id in ([]string{"ComposeMoreBtn", "AttachBtn", "EmojiBtn", "LocationBtn", "MicBtn", "SendBtn"}) {
 					element := nendo.element(nendo.id(id))
 					testing.expect(t, element.found, id)
 					button := element.rect
@@ -211,5 +217,105 @@ composer_layout :: proc(t: ^testing.T) {
 		t,
 		nendo.element(nendo.id("LocationBtn")).found,
 		"new messages offer location again",
+	)
+
+	// The narrow toolbar keeps the first pins and moves the rest into More.
+	testing.expect(t, !nendo.element(nendo.id("DictateBtn")).found)
+	ui.compose_more = true
+	build_layout(&ui, 0)
+	menu := nendo.element(nendo.id("ComposeMoreMenu"))
+	dictate := nendo.element(nendo.id("DictateBtn"))
+	testing.expect(t, menu.found && dictate.found && dictate.rect.y >= menu.rect.y)
+	ui.compose_more = false
+
+	for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
+	ui.prefs.composer = {}
+	ed_set(&ui, &ui.compose, "")
+	build_layout(&ui, 0)
+	clip := nendo.element(nendo.id("ComposeClip")).rect
+	mic := nendo.element(nendo.id("MicBtn"))
+	testing.expect(t, mic.found && mic.rect.x > clip.x && mic.rect.y < clip.y + clip.height)
+	testing.expect(
+		t,
+		!nendo.element(nendo.id("SendBtn")).found,
+		"voice uses Send's slot when empty",
+	)
+	ed_set(&ui, &ui.compose, "Two\nlines")
+	build_layout(&ui, 0)
+	clip = nendo.element(nendo.id("ComposeClip")).rect
+	send := nendo.element(nendo.id("SendBtn"))
+	testing.expect(
+		t,
+		send.found && send.rect.y >= clip.y + clip.height,
+		"multiline text expands the toolbar",
+	)
+	testing.expect(t, !nendo.element(nendo.id("MicBtn")).found)
+
+	legacy := `{"order":[5,2,1,3,4,6,7,8,9,10,11],"slots":{"Paste":1,"Files":1,"More":1,"Emoji":2,"Voice":4},"layout":1}`
+	if !testing.expect_value(t, json.unmarshal_string(legacy, &ui.prefs.composer), nil) {return}
+	if !testing.expect(t, composer_config_load(&ui.prefs.composer)) {return}
+	build_layout(&ui, 0)
+	attach := nendo.element(nendo.id("AttachBtn"))
+	more := nendo.element(nendo.id("ComposeMoreBtn"))
+	clip = nendo.element(nendo.id("ComposeClip")).rect
+	testing.expect(
+		t,
+		attach.found &&
+		more.found &&
+		attach.rect.x < more.rect.x &&
+		more.rect.y >= clip.y + clip.height,
+		"existing toolbar order and layout survive migration",
+	)
+	testing.expect(
+		t,
+		!nendo.element(nendo.id("MicBtn")).found,
+		"existing voice placement survives migration",
+	)
+	ui.compose_more = true
+	build_layout(&ui, 0)
+	testing.expect(
+		t,
+		nendo.element(nendo.id("PollBtn")).found &&
+		!nendo.element(nendo.id("ComposePasteBtn")).found,
+	)
+	ui.prefs.reduce_motion = true
+	ui.page, ui.settings_section, ui.settings_tab, ui.settings_level =
+		.Settings, .General, COMPOSER_TAB, .Sheet
+	commands := build_layout(&ui, 0)
+	testing.expect(t, nendo.element(nendo.id("ComposerTile", u32(Composer_Action.Poll))).found)
+	testing.expect(
+		t,
+		!nendo.element(nendo.id("ComposerTile", 5)).found,
+		"the retired action cannot be pinned again",
+	)
+	rl.BeginDrawing()
+	draw_frame(commands)
+	rl.TakeScreenshot("/tmp/wn-composer-no-paste.png")
+	rl.EndDrawing()
+
+	poll := nendo.element(nendo.id("ComposerTile", u32(Composer_Action.Poll))).rect
+	point := nendo.Vector2{poll.x + poll.width * 0.5, poll.y + poll.height * 0.5}
+	nendo.set_pointer(point, .Up)
+	forced_press, forced_release = true, true
+	defer {forced_press, forced_release = false, false}
+	handle_composer_drag(&ui)
+	forced_press, forced_release = false, false
+	build_layout(&ui, 0)
+	testing.expect(
+		t,
+		nendo.element(nendo.id("ComposerPlace", u32(Composer_Slot.Left))).found,
+		"a press and release in the same frame opens the shortcut's placement controls",
+	)
+
+	nendo.set_pointer(point, .Down)
+	forced_press = true
+	if !testing.expect(t, handle_composer_drag(&ui), "the editor owns the tile press") {return}
+	ui.page = .Chats
+	nendo.set_pointer(point, .Up)
+	forced_press, forced_release = false, true
+	testing.expect(
+		t,
+		handle_composer_drag(&ui),
+		"leaving settings cannot pass the release to chat",
 	)
 }

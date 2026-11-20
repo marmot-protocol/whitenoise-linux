@@ -330,6 +330,9 @@ msgstr ""
 msgid "(unpublished)"
 msgstr ""
 
+msgid "+ menu"
+msgstr ""
+
 #, c-format
 msgid "+%d more"
 msgstr ""
@@ -543,6 +546,9 @@ msgstr ""
 msgid "Allow your signer's permissions to use this account."
 msgstr ""
 
+msgid "Always expanded"
+msgstr ""
+
 msgid "Always open links to this site"
 msgstr ""
 
@@ -656,6 +662,9 @@ msgstr ""
 
 #, c-format
 msgid "Author: %s"
+msgstr ""
+
+msgid "Automatic"
 msgstr ""
 
 msgid "Automatic AppImage updates are unavailable with SOCKS5 enabled. Update the AppImage manually."
@@ -1172,6 +1181,15 @@ msgid "Command palette"
 msgstr ""
 
 msgid "Comment"
+msgstr ""
+
+msgid "Composer"
+msgstr ""
+
+msgid "Composer preview"
+msgstr ""
+
+msgid "Composer shortcuts"
 msgstr ""
 
 msgid "Config"
@@ -1927,6 +1945,9 @@ msgstr ""
 msgid "Custom emoji"
 msgstr ""
 
+msgid "Customize composer"
+msgstr ""
+
 msgid "Cyan"
 msgstr ""
 
@@ -2181,6 +2202,9 @@ msgstr ""
 msgid "Drag inside to move. Drag a corner to resize."
 msgstr ""
 
+msgid "Drag shortcuts to move them. Select one for more options."
+msgstr ""
+
 msgid "Drag the map to place the pin, or use your current location."
 msgstr ""
 
@@ -2259,6 +2283,9 @@ msgid "Emoji"
 msgstr ""
 
 msgid "Emoji style"
+msgstr ""
+
+msgid "Enable dictation in Speech to use this shortcut."
 msgstr ""
 
 msgid "Enable local translation"
@@ -3140,6 +3167,9 @@ msgstr ""
 msgid "Leaving your group"
 msgstr ""
 
+msgid "Left"
+msgstr ""
+
 msgid "Light"
 msgstr ""
 
@@ -3414,6 +3444,15 @@ msgid "More results"
 msgstr ""
 
 msgid "More than"
+msgstr ""
+
+msgid "More tools"
+msgstr ""
+
+msgid "Move earlier"
+msgstr ""
+
+msgid "Move later"
 msgstr ""
 
 msgid "Move to folder"
@@ -4493,6 +4532,9 @@ msgstr ""
 msgid "Restore"
 msgstr ""
 
+msgid "Restore defaults"
+msgstr ""
+
 msgid "Restore last selected chat on launch"
 msgstr ""
 
@@ -4533,6 +4575,9 @@ msgid "Review signer permissions"
 msgstr ""
 
 msgid "Review starting over"
+msgstr ""
+
+msgid "Right"
 msgstr ""
 
 msgid "Right click"
@@ -4836,6 +4881,9 @@ msgid "Send a message..."
 msgstr ""
 
 msgid "Send a test notification"
+msgstr ""
+
+msgid "Send button"
 msgstr ""
 
 #, c-format

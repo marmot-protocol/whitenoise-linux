@@ -794,6 +794,8 @@ Ui_State :: struct {
 	settings_tab:                        int,
 	settings_anchor:                     string, // borrowed control ID for a task link
 	settings_scroll_pending:             bool,
+	composer_settings_from_chat:         bool,
+	composer_editor:                     Composer_Editor,
 	agent_connector:                     int, // 0 = connector list; 1..5 = prompt review
 	prefs:                               Prefs, // settings-page knobs (settings.odin)
 	tts:                                 Tts_State,
@@ -913,7 +915,7 @@ Ui_State :: struct {
 	sel_copy:                            string, // the selected text, refreshed as the drag moves
 	// Message effects (effects.odin): the composer's armed burst.
 	fx_open:                             bool, // effect picker popover
-	compose_more:                        bool, // phone composer tools menu
+	compose_more:                        bool, // composer tools not pinned to the toolbar
 	fx_armed:                            int, // catalog id armed for the next send; 0 = none
 	login_input:                         [dynamic]u8, // sign-in form input, or a fresh key's name
 	login_method:                        Login_Method,

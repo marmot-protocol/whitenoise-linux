@@ -975,6 +975,8 @@ finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id:
 	ui.selected = -1
 	ui.show_members = false
 	ui.group_files_open = false
+	ui.compose_more, ui.fx_open = false, false
+	ui.composer_settings_from_chat = false
 	ui.profile = {}
 	reset_profile_view(ui)
 	clear(&ui.contacts)

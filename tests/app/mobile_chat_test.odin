@@ -30,6 +30,7 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		prefs            = default_prefs(),
 	}
 	ui.prefs.reduce_motion = true
+	ed_set(&ui, &ui.compose, "A draft")
 	append(&ui.accounts, Account_Row_Ui{name = "Mobile"})
 	append(
 		&ui.chats,

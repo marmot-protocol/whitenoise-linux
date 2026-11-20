@@ -441,8 +441,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 		edit.perform_command(ed, .Cut)
 	}
 	if (cmd && key_hit(.V)) || (shift && key_hit(.INSERT)) {
-		// A pasted picture or file becomes a staged attachment; only
-		// a clipboard holding neither falls through to text.
+		// Stage files and images before falling back to text at the caret.
 		if buf != &ui.compose || !paste_clipboard_files(ui) {
 			edit.perform_command(ed, .Paste)
 		}
@@ -703,8 +702,7 @@ compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Co
 	if !box.found {
 		return
 	}
-	over :=
-		nendo.pointer_over(nendo.id("ComposeBox")) && !nendo.pointer_over(nendo.id("ComposeTools"))
+	over := nendo.pointer_over(nendo.id("ComposeClip"))
 	touch := rl.TouchActive()
 	left := over && (touch ? mouse_released() : mouse_pressed())
 	middle := over && rl.IsMouseButtonPressed(.MIDDLE)

@@ -410,7 +410,6 @@ ICON_FX :: "\U000f0674" // creation: sparkle, not the saved-item star
 effect_picker :: proc(ui: ^Ui_State) {
 	if nendo.box(nendo.id("FxPanel"))(
 	{
-		// The parent is FxBtn on desktop and ComposeBox on phone (overflow tools).
 		direction = .Column,
 		width = nendo.fixed(fit_w(300)),
 		height = nendo.fit(max = modal_h(300)),

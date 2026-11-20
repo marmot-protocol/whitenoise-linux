@@ -376,6 +376,11 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_poll(ui, client)
 		return
 	}
+	if ui.selected >= 0 &&
+	   (ui.stt.file == nil || ui.stt.message != "") &&
+	   nendo.element(nendo.id("ComposeBox")).found {
+		if handle_effects(ui) || handle_composer_menu(ui, client) {return}
+	}
 
 	// The rail row menu and its folder modal capture everything while
 	// open (before the row clicks, so a menu click can't also select
@@ -649,10 +654,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		return
 	}
-	if clicked("DictateBtn") {
-		stt_start(ui)
-		return
-	}
 	// Voice recording swallows the composer keys while active.
 	if voice_active() {
 		if clicked("VoiceSend") || (!rl.HasTouch() && rl.IsKeyPressed(.ENTER)) {
@@ -662,61 +663,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		return
 	}
-	if clicked("MicBtn") {
-		voice_start(ui)
-		return
-	}
-	if clicked("ComposeMoreBtn") {
-		ui.compose_more = !ui.compose_more
-		return
-	}
-	if ui.compose_more {
-		if rl.IsKeyPressed(.ESCAPE) {ui.compose_more = false; return}
-		if mouse_released() {
-			ui.compose_more = false
-			if !nendo.pointer_over(nendo.id("ComposeMoreMenu")) {return}
-		}
-	}
-
-	// The effect picker captures everything while open.
-	if handle_effects(ui) {
-		return
-	}
-	if clicked("FxBtn") {
-		ui.fx_open = !ui.fx_open
-		return
-	}
-	if clicked("EmojiBtn") {
-		open_picker(ui, "")
-		return
-	}
-	if clicked("AttachBtn") {
-		rl.OpenFileDialog(true)
-		return
-	}
-	if clicked("PollBtn") && ui.editing == "" {
-		poll_reset(ui)
-		ui.poll_open = true
-		return
-	}
-	if clicked("LocationBtn") && ui.editing == "" && blocked_dm == "" {
-		geo_picker_open(ui)
-		return
-	}
-	if clicked("GmBtn") {
-		if gm_sent_today(ui) {
-			toast(ui, tr("You said GM here today."))
-		} else if ui.editing == "" {
-			text := strings.trim_space(ui.prefs.gm_text)
-			confirm_ask(
-				ui,
-				.Say_GM,
-				ui.chats[ui.selected].group_id,
-				text == "" ? GM_DEFAULT : text,
-			)
-		}
-		return
-	}
+	if !read_only && blocked_dm == "" && handle_composer_action(ui) {return}
 	for _, i in ui.staged {
 		if mouse_released() && nendo.pointer_over(nendo.id("StagedX", u32(i))) {
 			remove_staged(ui, i)
@@ -1504,6 +1451,7 @@ stash_staged :: proc(ui: ^Ui_State) {
 @(private = "file")
 open_msg_menu :: proc(ui: ^Ui_State, index: int) {
 	m := rl.GetMousePosition()
+	ui.compose_more = false
 	ui.ctx_open = true
 	ui.ctx_msg = index
 	// ponytail: rough clamp from an estimated panel size;
@@ -1550,7 +1498,7 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 	ui.search_open = false
 	ui.show_members = false
 	ui.group_files_open = false
-	ui.compose_more = false
+	ui.compose_more, ui.fx_open = false, false
 	// The header count and @-mention list share the asynchronous roster.
 	members_clear(ui)
 	if client != nil && !chat_is_dm(ui.chats[index]) {load_members(client, ui)}

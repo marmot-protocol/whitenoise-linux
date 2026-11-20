@@ -93,6 +93,13 @@ SETTINGS_TASKS := []Settings_Task {
 	{.General, N_("Launch at login"), "RowLaunch", "startup autostart", true},
 	{.General, N_("Change the time format"), "RowTimeFmt", "clock 12 24 hour", true},
 	{.General, N_("Choose one-tap reactions"), "RowQuick", "emoji messaging quick", true},
+	{
+		.General,
+		N_("Customize composer"),
+		"ComposerSettings",
+		"chat toolbar shortcuts reorder pin voice",
+		true,
+	},
 	{.General, N_("View keyboard shortcuts"), "RowShortcuts", "keys hotkeys", true},
 	{.General, N_("Start minimized to tray"), "RowTray", "startup background", false},
 	{.General, N_("Close to tray"), "RowMinTray", "window background", false},
@@ -930,6 +937,7 @@ settings_open :: proc(
 	level: Settings_Level = .Menu,
 ) {
 	if !settings_available(ui, section) {return}
+	ui.composer_settings_from_chat = false
 	settings_theme_preview_reset(ui)
 	ui.translation.language_menu = 0
 	ui.agent_connector = 0
@@ -1006,6 +1014,11 @@ restore_workspace :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // the chat list. Sections without a menu go straight to All categories.
 @(private)
 settings_back :: proc(ui: ^Ui_State) {
+	if ui.composer_settings_from_chat {
+		ui.page, ui.focus = .Chats, .Compose
+		ui.composer_settings_from_chat = false
+		return
+	}
 	if ui.settings_section == .General && ui.settings_tab == 2 && ui.emoji_sets_open {
 		if ui.emoji_sets_selected >= 0 {
 			ui.emoji_sets_selected = -1
@@ -1068,6 +1081,7 @@ settings_search_field :: proc(ui: ^Ui_State) {
 		// The task pane searches from any page; results live on home.
 		if ui.settings_section != .Home {
 			keys_forget(ui)
+			ui.composer_settings_from_chat = false
 			ui.settings_section = .Home
 			ui.settings_tab = 0
 		}
