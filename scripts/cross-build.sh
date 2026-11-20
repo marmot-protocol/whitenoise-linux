@@ -452,16 +452,11 @@ fi
 # target driver; Bragi and Cairo belong only to the math helper.
 # Archive existence is checked by Odin, but archive bytes do not affect an
 # object-only compile. In particular MDK edits must change only the final link.
-# WN_MULTI_DEVICE=1 opens the runtime with MDK device groups on (pages.odin).
-MULTI_DEVICE_ARGS=()
-if [ "${WN_MULTI_DEVICE:-}" = 1 ]; then
-  MULTI_DEVICE_ARGS=(-define:WN_MULTI_DEVICE=true)
-fi
-KEY="$(cross_key "app-object $ODIN_ID ${MULTI_DEVICE_ARGS[*]}" "$HERE/app" "$HERE/marmot" \
+KEY="$(cross_key "app-object $ODIN_ID" "$HERE/app" "$HERE/marmot" \
   "$HERE/vendor/crop-circles" "$HERE/lang" "$HERE/themes" \
   "$HERE/vendor/common-passwords.txt" "$HERE/build/observability-tokens.toml")"
 if ! cross_fresh app-object "$KEY" "$OUT/app.o"; then
-  odin build "$HERE/app" "${ODIN_ARGS[@]}" "${MULTI_DEVICE_ARGS[@]}" -out:"$OUT/app.o"
+  odin build "$HERE/app" "${ODIN_ARGS[@]}" -out:"$OUT/app.o"
   cross_store app-object "$KEY" "$OUT/app.o"
 fi
 APP_LINK_ARGS=()

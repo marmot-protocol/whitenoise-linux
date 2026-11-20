@@ -20,12 +20,8 @@ just run           # run against ~/.local/share/whitenoise
 The recipes use the shell implementations under `scripts/`, also called
 directly by CI and packaging.
 
-`WN_MULTI_DEVICE=1` before `just build`, `just dev` or a cross build compiles
-with `-define:WN_MULTI_DEVICE=true`, which opens the runtime through
-`marmot_client_new_with_experimental_device_groups` (MDK device groups on).
-Every MDK library includes multi-device; only the constructor differs. An
-account that joined a device group will not open in a build without the
-flag, so keep a data dir on one kind of build.
+MDK enables device groups in every build. Once an account joins a device
+group, open its data directory only with builds that support device groups.
 
 `just build` stages everything the build needs and skips each step when its
 output is already present, so only the first run is slow:

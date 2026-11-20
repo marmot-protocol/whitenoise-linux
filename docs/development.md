@@ -78,11 +78,11 @@ In a real emergency you can bypass a single commit with `git commit --no-verify`
 
 To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `just build` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
 
-The current pin is MDK master at `c8210585cab6` (0.14.0-dev). The build applies the patches listed in `scripts/build.sh`.
+The build applies the patches listed in `scripts/build.sh`.
 
 - **Upstream now carries the old patches.** NIP-46 C sessions, Windows portability, OpenBSD sandbox support, SOCKS5 routing, and Markdown timestamps come from upstream MDK.
 - **Deployments are explicit.** The app supplies White Noise's deployment services when creating the Marmot client; every C constructor requires a deployment.
-- **History uses MDK's replay.** History catch-up uses MDK's ordered replay and account-owned recovery. The `retry-convergence` dev command retries convergence for the selected group.
+- **History uses MDK's replay.** History catch-up uses MDK's ordered replay and account-owned recovery. Partial epoch advances reassess retained unreadable messages after local replay settles, carrying recovery forward without reopening the account. The `retry-convergence` dev command retries convergence for the selected group.
 - **Polls are native.** Poll creation, voting, and tallies use MDK's native poll APIs and timeline projection. `marmot_create_tagged_poll` preserves thread and issue context through native creation. MDK supports poll creation in direct and group conversations, and a multiple-choice vote must retain at least one selection. Poll cards stay compact in wide chats and wrap option labels in narrow panes; checkmarks identify your selections.
 
 <details>
