@@ -202,12 +202,14 @@ forward_failure_retry_and_dismissal :: proc(t: ^testing.T) {
 		"a completed preparation still needs its frame-boundary handoff",
 	)
 	drain_forwards(&ui, nil)
+	if !testing.expect_value(t, len(ui.pending), 1) {return}
 	testing.expect(t, ui.pending[0].failed)
 	testing.expect_value(t, len(send_threads), 0)
 	testing.expect(t, ui.pending[0].forward == job, "failure must retain the source for retry")
 	ui.pending[0].failed = false
 	forward_start(&ui.pending[0])
 	ui.pending[0].dismissed = true
+	if !testing.expect_value(t, len(send_threads), 1) {return}
 	thread.join(send_threads[0])
 	thread.destroy(send_threads[0])
 	clear(&send_threads)
