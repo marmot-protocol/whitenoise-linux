@@ -3750,6 +3750,9 @@ msgstr "Keiner"
 msgid "Norwegian"
 msgstr "Norwegisch"
 
+msgid "Nostr event"
+msgstr "Nostr-Ereignis"
+
 msgid "Not downloaded"
 msgstr "Nicht heruntergeladen"
 

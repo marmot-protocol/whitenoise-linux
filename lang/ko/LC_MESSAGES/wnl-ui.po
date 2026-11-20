@@ -3500,6 +3500,9 @@ msgstr "없음"
 msgid "Norwegian"
 msgstr "노르웨이어"
 
+msgid "Nostr event"
+msgstr "Nostr 이벤트"
+
 msgid "Not downloaded"
 msgstr "다운로드 안 됨"
 

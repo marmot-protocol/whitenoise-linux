@@ -31,7 +31,7 @@ chat_row_preview :: proc(
 	raw := last.plaintext != nil ? string(last.plaintext) : ""
 	class := record_class(last.kind, raw)
 	if class == .System && last.group_system != nil {
-		return chat_preview(system_text(client, last.group_system)), nil
+		return rail_preview(system_text(client, last.group_system)), nil
 	}
 	if is_blocked || (class != .Message && class != .Unsupported) {
 		page := page
@@ -43,7 +43,7 @@ chat_row_preview :: proc(
 		if system && mode == .Worker {return "", page}
 		if owned && page != nil {marmot.timeline_page_free(page)}
 		if phrased == "" {return "", nil}
-		return chat_preview(phrased), nil
+		return rail_preview(phrased), nil
 	}
 	if class == .Unsupported {
 		preview = tr("Unsupported event")
@@ -56,7 +56,39 @@ chat_row_preview :: proc(
 		preview = reading_text(client, raw)
 	}
 	if mine && strings.trim_space(preview) != "" {preview = fmt.tprintf(tr("You: %s"), preview)}
-	return chat_preview(preview), nil
+	return rail_preview(preview), nil
+}
+
+// Decode the whole link before either preview limit can cut its checksum.
+@(private = "file")
+rail_preview :: proc(text: string) -> string {
+	cover, _ := hidden_message(text)
+	builder: strings.Builder
+	start := 0
+	for i := 0; i < len(cover) && strings.builder_len(builder) + i - start < PREVIEW_BYTES; {
+		end, ref := nostr_at(cover, i)
+		if ref.kind == .None {
+			if cover[i] == 'h' {
+				if end, _, ok := url_at(cover, i); ok {
+					i = end
+					continue
+				}
+			}
+			i += 1
+			continue
+		}
+		if ref.kind == .Event || ref.kind == .Address {
+			if start == 0 {builder = strings.builder_make(context.temp_allocator)}
+			strings.write_string(&builder, cover[start:i])
+			strings.write_string(&builder, tr("Nostr event"))
+			start = end
+		}
+		i = end
+	}
+	if start == 0 {return cap_preview(cover)}
+	remaining := max(0, PREVIEW_BYTES + 1 - strings.builder_len(builder))
+	strings.write_string(&builder, cover[start:start + min(remaining, len(cover) - start)])
+	return cap_preview(strings.to_string(builder))
 }
 
 // Read a bounded timeline window only for rows whose newest record cannot

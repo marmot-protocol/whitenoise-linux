@@ -24,6 +24,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 - **Group settings belong to admins.** Only admins see the name, description, photo, disappearing-message, and issue-tracking controls.
 - **Only admins promote, demote, or remove members.** Nicknames change your local labels and remain available to other members.
 - **Unread state is tracked per chat.** It shows up as badges on the rail.
+- The chat list shows “Nostr event” for event links. Open the conversation to see the event card.
 
 <details>
 <summary><b>What members see, and what developer mode adds</b></summary>
