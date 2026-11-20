@@ -508,7 +508,14 @@ Commit messages: imperative subject under 50 characters, capitalized, no
 trailing period, a blank line, then a body wrapped at 72 explaining what and
 why rather than how.
 
-`master` moves only by merging a reviewed PR, on `origin` and the `github`
-mirror alike. Never push commits to it directly, maintainers included: push
-a topic branch to `origin` as `pr/<topic>` (or use `ngit send`) and merge it
-after review.
+`master` requires a reviewed PR on both `origin` and the `github` mirror.
+Push a topic branch to `origin` as `pr/<topic>` (or use `ngit send`) and
+merge it after review. Direct pushes to `master` are allowed in two cases:
+
+- Release commits that only update the version or release metadata do not
+  need a PR.
+- A quick fix can go directly to `master` only if the committer's Nostr
+  `npub` is Danny's
+  (`npub1ven4zk8xxw873876gx8y9g9l9fazkye9qnwnglcptgvfwxmygscqsxddfh`)
+  and Danny explicitly approves that specific push. Each commit must have
+  fewer than 100 added and deleted lines combined.
