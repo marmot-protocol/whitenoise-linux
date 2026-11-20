@@ -6,11 +6,17 @@ package="${1:-}"
 case "$package" in
 app | app/sdlrl) ;;
 *)
-  echo "Usage: tests/odin.sh app|app/sdlrl [odin test flags]" >&2
+  echo "Usage: tests/odin.sh app|app/sdlrl [odin test flags | --isolated TEST ...]" >&2
   exit 1
   ;;
 esac
 shift
+isolated=()
+if [ "${1:-}" = --isolated ]; then
+  shift
+  isolated=("$@")
+  set --
+fi
 export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-dummy}"
 bash "$HERE/scripts/observability.sh"
 
@@ -23,6 +29,14 @@ if [ "$(uname -s)" = OpenBSD ]; then
 elif [ "$(uname -s)" = Linux ]; then
   LINK_ARGS=('-extra-linker-flags:-Wl,--exclude-libs=libmarmot_c.a')
 fi
+
+run_isolated() {
+  local check
+  for check in "${isolated[@]}"; do
+    SDL_VIDEODRIVER=dummy "$fixture/test" "-tests:$check"
+  done
+}
+
 mkdir -p "$HERE/build"
 if [ -n "${WN_ODIN_TEST_BUILD_KEY:-}" ]; then
   source "$HERE/scripts/build-cache.sh"
@@ -32,7 +46,12 @@ if [ -n "${WN_ODIN_TEST_BUILD_KEY:-}" ]; then
   fixture="$HERE/build/odin-test-cache/$variant"
   if build_cache_fresh "$key" "$fixture/stamp" "$fixture/test"; then
     echo "==> native test cache hit: $package $*"
-    exec "$fixture/test"
+    if [ "${#isolated[@]}" -eq 0 ]; then
+      exec "$fixture/test"
+    fi
+    "$fixture/test"
+    run_isolated
+    exit 0
   fi
   rm -rf "$fixture"
   mkdir -p "$fixture"
@@ -61,3 +80,4 @@ odin test "$fixture/$package" -keep-executable -out:"$fixture/test" "${LINK_ARGS
 if [ -n "${WN_ODIN_TEST_BUILD_KEY:-}" ]; then
   build_cache_store "$key" "$fixture/stamp" "$fixture/test"
 fi
+run_isolated

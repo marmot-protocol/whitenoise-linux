@@ -10,7 +10,7 @@ import rl "sdlrl"
 // SDL and nendo use process globals; the canonical suite runs this separately.
 @(test)
 backup_password_dispatch :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "backup_password_dispatch" {return}
+	if !test_isolated("backup_password_dispatch") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(1024, 700, "Backup password")
 	defer rl.CloseWindow()

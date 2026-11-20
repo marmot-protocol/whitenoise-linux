@@ -23,7 +23,7 @@ foreign _ {
 
 @(test)
 restore_chat_dispatch :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "restore_chat_dispatch" {return}
+	if !test_isolated("restore_chat_dispatch") {return}
 	context.allocator = runtime.default_context().allocator
 	dir, err := os.make_directory_temp("", "wn-restore-chat-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}

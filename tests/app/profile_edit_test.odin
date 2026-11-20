@@ -9,7 +9,7 @@ import rl "sdlrl"
 // Run in its own process, like the other SDL layout regressions.
 @(test)
 profile_edit_summary :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "profile_edit_summary" {return}
+	if !test_isolated("profile_edit_summary") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(1100, 1100, "Profile edit summary")
 	defer rl.CloseWindow()

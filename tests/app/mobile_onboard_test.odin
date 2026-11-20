@@ -64,7 +64,7 @@ mobile_onboard_frame :: proc(ui: ^Ui_State, surface: Mobile_Onboard_Surface) {
 // selected explicitly rather than sharing a window with unrelated tests.
 @(test)
 mobile_onboard_viewport :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "mobile_onboard_viewport" {return}
+	if !test_isolated("mobile_onboard_viewport") {return}
 	context.allocator = runtime.default_context().allocator
 	sync.lock(&nendo_test_mutex)
 	defer sync.unlock(&nendo_test_mutex)

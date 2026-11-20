@@ -38,7 +38,7 @@ mobile_back_keeps_draft :: proc(t: ^testing.T) {
 
 @(test)
 mobile_shell_viewports :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "mobile_shell_viewports" {return}
+	if !test_isolated("mobile_shell_viewports") {return}
 	context.allocator = runtime.default_context().allocator
 	ui := Ui_State {
 		page             = .Chats,

@@ -7,7 +7,7 @@ import rl "sdlrl"
 // Run alone because SDL and the font caches are global.
 @(test)
 nerd_font_fallback :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "nerd_font_fallback" {return}
+	if !test_isolated("nerd_font_fallback") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(640, 240, "Nerd Font fallback")
 	defer rl.CloseWindow()

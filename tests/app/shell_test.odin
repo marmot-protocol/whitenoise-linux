@@ -56,7 +56,7 @@ test_initial_relay_state :: proc(t: ^testing.T) {
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=rail_default_window
 @(test)
 rail_default_window :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "rail_default_window" {return}
+	if !test_isolated("rail_default_window") {return}
 	context.allocator = runtime.default_context().allocator
 	dir, err := os.make_directory_temp("/tmp", "wn-rail-default-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
@@ -177,7 +177,7 @@ rail_default_window :: proc(t: ^testing.T) {
 
 @(test)
 status_bar_viewports :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "status_bar_viewports" {return}
+	if !test_isolated("status_bar_viewports") {return}
 	context.allocator = runtime.default_context().allocator
 	dir, err := os.make_directory_temp("/tmp", "wn-status-viewport-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
@@ -341,7 +341,7 @@ status_bar_viewports :: proc(t: ^testing.T) {
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=rail_expand_narrow
 @(test)
 rail_expand_narrow :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "rail_expand_narrow" {return}
+	if !test_isolated("rail_expand_narrow") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(600, 700, "Rail expand")
 	defer rl.CloseWindow()

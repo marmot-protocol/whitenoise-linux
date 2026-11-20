@@ -10,7 +10,7 @@ import rl "sdlrl"
 // Full shell layout and pointer hit testing, without a live account or network.
 @(test)
 chat_timestamp_hover :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "chat_timestamp_hover" {return}
+	if !test_isolated("chat_timestamp_hover") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(1024, 700, "Chat timestamp hover")
 	defer rl.CloseWindow()

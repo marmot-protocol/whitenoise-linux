@@ -15,7 +15,7 @@ import rl "sdlrl"
 // dispatch paths with real filesystem failures, then retry and cancel.
 @(test)
 test_emoji_save_io_dispatch :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "test_emoji_save_io_dispatch" {return}
+	if !test_isolated("test_emoji_save_io_dispatch") {return}
 	context.allocator = runtime.default_context().allocator
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)

@@ -9,7 +9,7 @@ import rl "sdlrl"
 
 @(test)
 mobile_touch_scrolling :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "mobile_touch_scrolling" {return}
+	if !test_isolated("mobile_touch_scrolling") {return}
 	context.allocator = runtime.default_context().allocator
 	sync.lock(&nendo_test_mutex)
 	defer sync.unlock(&nendo_test_mutex)
