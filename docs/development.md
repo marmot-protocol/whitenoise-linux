@@ -105,7 +105,7 @@ Keep `build/cargo/native` and `build/cross/<target>/cargo` between builds. Cargo
 
 - **Cargo.** Rust and C/C++ compiler versions, target, and build flags select separate cache directories. `CARGO_TARGET_DIR` selects the native cache root; the build appends its compiler-environment fingerprint.
 - **Cross dependencies.** Cross builds also retain the target sysroot, SDL, speech runtime, and vcpkg outputs. Their stamps include the inputs that produced them; changing those inputs rebuilds the affected dependency.
-- **CI restores.** CI restores Cargo state from older source revisions within the same compiler/target boundary, rather than treating a previously staged Marmot library as proof that its inputs are unchanged.
+- **CI restores.** CI restores Cargo state within the same compiler and target boundary and lets Cargo check the inputs. GitHub's macOS jobs save one snapshot per dependency and toolchain key, not per app commit.
 - **C/C++ helpers and Odin outputs.** Native and cross builds cache these by input contents, compiler, target, and flags. Output manifests detect missing or corrupted files and reject dangling links.
 - **SDK symlinks.** Dangling SDK symlinks contribute their link metadata to input keys; resolving or retargeting them invalidates the cache.
 - **Odin objects.** Native Linux/OpenBSD and cross builds cache Odin objects separately from linking.
@@ -134,6 +134,10 @@ The build-server workflow builds native Linux, Linux amd64/arm64, Windows amd64,
 - **Scope.** The workflow does not change the default-branch runner routing or include macOS.
 
 </details>
+
+The GitHub `Release` workflow keeps one Flatpak cache warm-up running and one
+waiting for the latest `master` push. Tagged builds, PR checks, and manual runs
+are independent.
 
 ## Observability tokens come from CI secrets
 

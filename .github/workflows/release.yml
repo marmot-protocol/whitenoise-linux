@@ -32,6 +32,12 @@ on:
     branches: [master]
     tags: ["v*"]
 
+# Warm the cache once for the latest waiting master push, without stopping
+# the current build or grouping tags, PRs, and manual runs together.
+concurrency:
+  group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 'release-warm-master' || format('release-run-{0}', github.run_id) }}
+  cancel-in-progress: false
+
 env:
   CARGO_BUILD_JOBS: "6"
   WN_BUILD_JOBS: "6"
@@ -277,6 +283,7 @@ jobs:
             find "$FLATPAK_STATE_DIR/build" -name observability-tokens.toml -delete
           fi
           source="$FLATPAK_STATE_DIR/build/whitenoise-linux"
+          cache=build/flatpak-deps
           # A disk-full build leaves empty .rlib/.rmeta files that cargo's
           # fingerprints still trust. Keep the previous target instead.
           native="$source/build/cargo/native"
@@ -285,23 +292,19 @@ jobs:
             if [ -n "$truncated" ]; then
               echo "::warning::Not caching the cargo target: $truncated is empty."
             else
-              mkdir -p .flatpak-cache/build/cargo
-              cp -a "$native" .flatpak-cache/build/cargo/
+              mkdir -p "$cache/build/cargo"
+              cp -a "$native" "$cache/build/cargo/"
             fi
           fi
           for state in registry git; do
             if [ -d "$source/cargo/$state" ]; then
-              mkdir -p .flatpak-cache/cargo
-              cp -a "$source/cargo/$state" .flatpak-cache/cargo/
+              mkdir -p "$cache/cargo"
+              cp -a "$source/cargo/$state" "$cache/cargo/"
             fi
           done
           if [ -f "$source/build/fbx/ufbx.stamp" ]; then
-            mkdir -p .flatpak-cache/build/fbx
-            cp -a "$source/build/fbx/ufbx.o" "$source/build/fbx/ufbx.stamp" .flatpak-cache/build/fbx/
-          fi
-          if [ -d .flatpak-cache ]; then
-            mkdir -p build/flatpak-deps
-            cp -a .flatpak-cache/. build/flatpak-deps/
+            mkdir -p "$cache/build/fbx"
+            cp -a "$source/build/fbx/ufbx.o" "$source/build/fbx/ufbx.stamp" "$cache/build/fbx/"
           fi
 
       # Same smoke test as the AppImage: install the bundle and boot it

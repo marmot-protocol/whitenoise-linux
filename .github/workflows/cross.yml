@@ -246,7 +246,6 @@ jobs:
             xcrun --sdk macosx --show-sdk-path
           } | sha256sum | cut -d' ' -f1)
           echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
-      # Restore incremental Cargo state, never an unchecked final archive.
       - name: Restore vcpkg binary cache
         id: vcpkg-cache
         uses: actions/cache/restore@v4
@@ -254,6 +253,7 @@ jobs:
           path: ~/.cache/vcpkg/archives
           key: vcpkg-${{ matrix.target }}-${{ hashFiles('DEPS_PIN', 'packaging/cross/vcpkg.json', 'scripts/cross-toolchain.sh', 'scripts/cross-deps.sh') }}
           restore-keys: vcpkg-${{ matrix.target }}-
+      # App-only commits reuse the same Cargo snapshot. Cargo still checks it.
       - name: Restore Cargo state
         id: cargo-cache
         uses: actions/cache/restore@v4
@@ -263,7 +263,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ~/.rustup/toolchains
-          key: cross-cargo-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-${{ hashFiles('DEPS_PIN', 'patches/mdk-*.patch', 'scripts/cross-build.sh', 'scripts/cross-toolchain.sh') }}-${{ github.sha }}
+          key: cross-cargo-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-${{ hashFiles('DEPS_PIN', 'patches/mdk-*.patch', 'packaging/cross/Containerfile', 'scripts/cross-build.sh', 'scripts/cross-toolchain.sh', 'scripts/macos-setup.sh') }}
           restore-keys: |
             cross-cargo-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-${{ hashFiles('DEPS_PIN', 'patches/mdk-*.patch', 'scripts/cross-build.sh', 'scripts/cross-toolchain.sh') }}-
             cross-cargo-v2-${{ matrix.target }}-${{ steps.toolchain.outputs.fingerprint }}-
@@ -297,7 +297,7 @@ jobs:
         if: always()
         run: rm -f build/observability-tokens.toml
       - name: Save Cargo state
-        if: always() && steps.cargo-cache.outputs.cache-hit != 'true'
+        if: success() && steps.cargo-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
