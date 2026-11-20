@@ -504,9 +504,11 @@ Commit messages: imperative subject under 50 characters, capitalized, no
 trailing period, a blank line, then a body wrapped at 72 explaining what and
 why rather than how.
 
-`master` requires a reviewed PR on both `origin` and the `github` mirror.
-Push a topic branch to `origin` as `pr/<topic>` (or use `ngit send`) and
-merge it after review. Direct pushes to `master` are allowed in two cases:
+`master` requires a reviewed PR on ngit (`origin`). Push a topic branch as
+`pr/<topic>` to `origin`, or use `ngit send`. Merge the PR after review.
+GitHub is a mirror. Do not open PRs there.
+
+Direct pushes to `master` are allowed in two cases:
 
 - Release commits that only update the version or release metadata do not
   need a PR.
