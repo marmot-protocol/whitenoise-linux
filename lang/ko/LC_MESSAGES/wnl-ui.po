@@ -5422,6 +5422,10 @@ msgstr "차단 해제"
 msgid "Unfiled"
 msgstr "미분류"
 
+#, c-format
+msgid "Unknown event kind %d"
+msgstr "알 수 없는 이벤트 종류 %d"
+
 msgid "Unlock"
 msgstr "잠금 해제"
 

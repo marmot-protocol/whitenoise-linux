@@ -5806,6 +5806,10 @@ msgstr "Sblocca"
 msgid "Unfiled"
 msgstr "Senza cartella"
 
+#, c-format
+msgid "Unknown event kind %d"
+msgstr "Tipo di evento sconosciuto %d"
+
 msgid "Unlock"
 msgstr "Sblocca"
 

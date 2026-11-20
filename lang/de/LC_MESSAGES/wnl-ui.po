@@ -5806,6 +5806,10 @@ msgstr "Blockierung aufheben"
 msgid "Unfiled"
 msgstr "Ohne Ordner"
 
+#, c-format
+msgid "Unknown event kind %d"
+msgstr "Unbekannter Ereignistyp %d"
+
 msgid "Unlock"
 msgstr "Entsperren"
 

@@ -18,15 +18,16 @@ Event_Data_Field :: struct {
 }
 
 @(private)
-event_kind_label :: proc(kind: u64) -> (label, icon: string) {
+event_kind_label :: proc(kind: u64) -> (label, icon, detail: string) {
 	switch kind {
 	case KIND_VIDEO, KIND_VIDEO_ADDRESS:
-		return tr("VIDEO EVENT"), "\uf03d"
+		label = tr("VIDEO EVENT")
 	case KIND_SHORT_VIDEO, KIND_SHORT_VIDEO_ADDRESS:
-		return tr("SHORT VIDEO EVENT"), "\uf03d"
+		label = tr("SHORT VIDEO EVENT")
 	case:
-		return tr("NOSTR EVENT"), ICON_GLOBE
+		return fmt.tprintf(tr("Unknown event kind %d"), kind), ICON_GLOBE, ""
 	}
+	return label, "\uf03d", fmt.tprintf(tr("KIND %d"), kind)
 }
 
 @(private)
@@ -224,7 +225,7 @@ event_data_body :: proc(
 	record: ^marmot.Timeline_Message_Record,
 	width: f32,
 ) {
-	kind, icon := event_kind_label(record.kind)
+	kind, icon, detail := event_kind_label(record.kind)
 	if nendo.box(nendo.id("EventDataHero"))(
 	{
 		width = nendo.fixed(width),
@@ -239,10 +240,9 @@ event_data_body :: proc(
 		if nendo.box(nendo.id("EventDataKind"))({align = {y = .Center}, gap = 8}) {
 			nendo.text(icon, {font = FONT_ICON, size = 13, color = ACCENT})
 			nendo.text(kind, {font = FONT_TITLE, size = 11, color = ACCENT, spacing = 1})
-			nendo.text(
-				fmt.tprintf(tr("KIND %d"), record.kind),
-				{font = FONT_MONO, size = 10, color = TEXT_DIM},
-			)
+			if detail != "" {
+				nendo.text(detail, {font = FONT_MONO, size = 10, color = TEXT_DIM})
+			}
 		}
 		if view.title != "" {event_data_text(view.title, width - 28, FONT_TITLE, 19, TEXT)}
 		event_data_text(view.sender, width - 28, FONT_TITLE, 13, TEXT)

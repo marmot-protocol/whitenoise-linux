@@ -5806,6 +5806,10 @@ msgstr "ブロック解除"
 msgid "Unfiled"
 msgstr "未分類"
 
+#, c-format
+msgid "Unknown event kind %d"
+msgstr "不明なイベント種別 %d"
+
 msgid "Unlock"
 msgstr "ロック解除"
 

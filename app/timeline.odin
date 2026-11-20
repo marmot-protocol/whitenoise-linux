@@ -837,7 +837,7 @@ msg_actions :: proc(index: u32, msg: Msg_Ui) {
 
 @(private = "file")
 unsupported_event_card :: proc(index: u32, msg: Msg_Ui) {
-	kind_label, icon := event_kind_label(msg.kind)
+	kind_label, icon, kind_detail := event_kind_label(msg.kind)
 	width := att_w(380)
 	PAD :: 14
 	inner := width - 2 * PAD
@@ -874,10 +874,9 @@ unsupported_event_card :: proc(index: u32, msg: Msg_Ui) {
 						kind_label,
 						{font = FONT_TITLE, size = 10, color = ACCENT, spacing = 1},
 					)
-					nendo.text(
-						fmt.tprintf(tr("KIND %d"), msg.kind),
-						{font = FONT_MONO, size = 10, color = TEXT_DIM},
-					)
+					if kind_detail != "" {
+						nendo.text(kind_detail, {font = FONT_MONO, size = 10, color = TEXT_DIM})
+					}
 				}
 			}
 			if msg.event_title != "" {

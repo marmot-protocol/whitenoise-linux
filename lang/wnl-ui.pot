@@ -5784,6 +5784,10 @@ msgstr ""
 msgid "Unfiled"
 msgstr ""
 
+#, c-format
+msgid "Unknown event kind %d"
+msgstr ""
+
 msgid "Unlock"
 msgstr ""
 
