@@ -22,7 +22,7 @@ Fixture_Row :: struct {
 fixture_rows :: proc(
 	system: ^marmot.Group_System_Event,
 	edit: ^marmot.Timeline_Edit_Summary,
-) -> [13]Fixture_Row {
+) -> [14]Fixture_Row {
 	return {
 		{
 			{
@@ -143,6 +143,15 @@ fixture_rows :: proc(
 			},
 			.Message,
 		},
+		{
+			{
+				message_id_hex = "video",
+				sender = "bob",
+				kind = 21,
+				plaintext = "wnxdc1:session:cGF5bG9hZA==",
+			},
+			.Unsupported,
+		},
 	}
 }
 
@@ -154,6 +163,39 @@ record_classes :: proc(t: ^testing.T) {
 		class := record_class(row.record.kind, string(row.record.plaintext))
 		testing.expectf(t, class == row.class, "%s: %v", row.record.message_id_hex, class)
 	}
+}
+
+@(test)
+unsupported_event_summary :: proc(t: ^testing.T) {
+	title_tag := [?]cstring{"title", " Station cat "}
+	alt_tag := [?]cstring{"alt", "A cat on the platform"}
+	imeta := [?]cstring {
+		"imeta",
+		"dim 1280x720",
+		"duration 24.1",
+		"m video/mp4",
+		"url https://media.example/video.mp4?private=1",
+	}
+	other := [?]cstring{"imeta", "dim 1920x1080", "duration 11"}
+	tags := [?]marmot.Message_Tag {
+		{raw_data(title_tag[:]), len(title_tag)},
+		{raw_data(alt_tag[:]), len(alt_tag)},
+		{raw_data(imeta[:]), len(imeta)},
+		{raw_data(other[:]), len(other)},
+	}
+	record := marmot.Timeline_Message_Record {
+		kind      = 21,
+		tags      = raw_data(tags[:]),
+		tags_len  = len(tags),
+		plaintext = `{"opaque":"payload"}`,
+	}
+	title, description, details := unsupported_event_text(&record)
+	testing.expect_value(t, title, "Station cat")
+	testing.expect_value(t, description, "A cat on the platform")
+	testing.expect_value(t, details, "0:24 · 1280×720 · video/mp4 · media.example")
+	record.plaintext = "Train arriving at platform two."
+	_, description, _ = unsupported_event_text(&record)
+	testing.expect_value(t, description, "Train arriving at platform two.")
 }
 
 @(test)
@@ -277,5 +319,11 @@ surfaces_read_effective_content :: proc(t: ^testing.T) {
 	}
 	preview, system_page := chat_row_preview(client, &row, "self", nil, &page, .Worker)
 	testing.expect_value(t, preview, "second edit")
+	testing.expect_value(t, system_page, nil)
+
+	last.kind = 21
+	last.plaintext = "**Video caption**"
+	preview, system_page = chat_row_preview(client, &row, "self", nil, &page, .Worker)
+	testing.expect_value(t, preview, "Unsupported event")
 	testing.expect_value(t, system_page, nil)
 }

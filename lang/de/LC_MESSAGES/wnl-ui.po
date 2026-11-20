@@ -4642,6 +4642,9 @@ msgstr "EINSTELLUNGEN"
 msgid "SHARED THEME"
 msgstr "GETEILTES THEME"
 
+msgid "SHORT VIDEO EVENT"
+msgstr "KURZVIDEO"
+
 msgid "SIGNER RELAY"
 msgstr "SIGNER-RELAY"
 
@@ -5803,6 +5806,9 @@ msgstr "Offen"
 msgid "Unsupported attachment format."
 msgstr "Nicht unterstütztes Anhangformat."
 
+msgid "Unsupported event"
+msgstr "Nicht unterstütztes Ereignis"
+
 msgid "Untitled emoji set"
 msgstr "Unbenanntes Emoji-Set"
 
@@ -5892,6 +5898,9 @@ msgstr "Benutzername"
 
 msgid "VERIFIED ADDRESS"
 msgstr "VERIFIZIERTE ADRESSE"
+
+msgid "VIDEO EVENT"
+msgstr "VIDEO"
 
 msgid "Vault password changed."
 msgstr "Tresor-Passwort geändert."

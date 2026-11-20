@@ -63,6 +63,11 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 - **Long messages fold after 6 lines.** Settings > Appearance sets the message line limit for messages and event cards; 0 shows them in full without Read more.
 - **Chat-list previews show reading text.** Markdown markup is left out.
 
+Unsupported Nostr events sent into a chat show their kind, title, and a short
+description when available. Video events are labeled as such. Standard media
+tags can supply duration, dimensions, format, and the host name. The card does
+not load links or media.
+
 <details>
 <summary><b>The external-link guard, for addresses longer than the dialog</b></summary>
 

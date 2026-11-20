@@ -908,7 +908,12 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   rl.IsKeyPressed(.UP) {
 		cur := thread_cur(ui)
 		#reverse for msg in ui.messages {
-			if msg.mine && !msg.deleted && !msg.system && len(msg.id) > 0 && msg.thread_of == cur {
+			if msg.mine &&
+			   !msg.deleted &&
+			   !msg.system &&
+			   !msg.unsupported &&
+			   len(msg.id) > 0 &&
+			   msg.thread_of == cur {
 				start_edit(ui, msg)
 				return
 			}

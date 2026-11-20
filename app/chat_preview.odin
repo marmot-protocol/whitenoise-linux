@@ -33,9 +33,7 @@ chat_row_preview :: proc(
 	if class == .System && last.group_system != nil {
 		return chat_preview(system_text(client, last.group_system)), nil
 	}
-	// Only a message speaks for itself. Anything else, and a blocked
-	// sender's message, reads the newest previewable row in a window.
-	if class != .Message || is_blocked {
+	if is_blocked || (class != .Message && class != .Unsupported) {
 		page := page
 		owned := page == nil
 		if owned {page = window_preview(client, account_ref, row)}
@@ -47,12 +45,15 @@ chat_row_preview :: proc(
 		if phrased == "" {return "", nil}
 		return chat_preview(phrased), nil
 	}
-	preview = reading_text(client, raw)
-	if strings.trim_space(raw) == "" &&
+	if class == .Unsupported {
+		preview = tr("Unsupported event")
+	} else if strings.trim_space(raw) == "" &&
 	   !last.deleted &&
 	   last.has_attachment_kind &&
 	   last.attachment_kind == CHAT_ATTACHMENT_AUDIO {
 		preview = tr("Audio message")
+	} else {
+		preview = reading_text(client, raw)
 	}
 	if mine && strings.trim_space(preview) != "" {preview = fmt.tprintf(tr("You: %s"), preview)}
 	return chat_preview(preview), nil
@@ -92,7 +93,8 @@ preview_text :: proc(
 	for i := int(page.messages_len) - 1; i >= 0; i -= 1 {
 		record := &page.messages[i]
 		raw := record.plaintext != nil ? string(record.plaintext) : ""
-		switch record_class(record.kind, raw) {
+		class := record_class(record.kind, raw)
+		switch class {
 		case .System:
 			if record.group_system == nil {continue}
 			if mode == .Worker {return "", true}
@@ -100,10 +102,10 @@ preview_text :: proc(
 				true
 		case .Theme, .Webxdc, .Agent_Stream, .Agent_State, .Modifier:
 			continue
-		case .Message:
+		case .Message, .Unsupported:
 		}
 		if record.sender != nil && blocked[string(record.sender)] {continue}
-		text = reading_text(client, raw)
+		text = class == .Unsupported ? tr("Unsupported event") : reading_text(client, raw)
 		if text == "" {continue}
 		if record.direction != nil &&
 		   string(record.direction) == "sent" {return fmt.tprintf(tr("You: %s"), text), false}

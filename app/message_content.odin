@@ -1,6 +1,8 @@
 package main
 
 import marmot "../marmot"
+import "core:fmt"
+import "core:strconv"
 import "core:strings"
 
 // What a timeline record is, decided once for the timeline, chat-list
@@ -15,6 +17,7 @@ import "core:strings"
 //   Agent_Stream  1200                     live text     skipped (not retained)
 //   Agent_State   1201, 1202               skipped       skipped
 //   Modifier      edit, deletion, vote     skipped       skipped
+//   Unsupported   other kinds              summary card  label, skipped
 //
 // MDK applies modifiers before a page reaches the app. An accepted edit
 // (the target's author, one e tag, newest by time then id) replaces the
@@ -32,12 +35,13 @@ Record_Class :: enum u8 {
 	Agent_Stream,
 	Agent_State,
 	Modifier,
+	Unsupported,
 }
 
 @(private)
 record_class :: proc(kind: u64, plaintext: string) -> Record_Class {
 	switch kind {
-	case KIND_EDIT, KIND_DELETE, KIND_POLL_VOTE:
+	case KIND_EDIT, KIND_DELETE, KIND_POLL_VOTE, KIND_REACTION:
 		return .Modifier
 	case AGENT_ACTIVITY, AGENT_OPERATION:
 		return .Agent_State
@@ -47,10 +51,98 @@ record_class :: proc(kind: u64, plaintext: string) -> Record_Class {
 		return .System
 	case THEME_EVENT_KIND:
 		return .Theme
+	case KIND_CHAT_MESSAGE:
+		if strings.has_prefix(strings.trim_left_space(plaintext), XDC_SENTINEL) {
+			return .Webxdc
+		}
+		return .Message
+	case KIND_THREAD, KIND_POLL:
+		return .Message
+	case:
+		return .Unsupported
 	}
-	// Webxdc state updates ride ordinary text messages.
-	if strings.has_prefix(strings.trim_left_space(plaintext), XDC_SENTINEL) {return .Webxdc}
-	return .Message
+}
+
+@(private)
+unsupported_event_text :: proc(
+	record: ^marmot.Timeline_Message_Record,
+) -> (
+	title, description, details: string,
+) {
+	subject, summary, alt, duration: string
+	media: []cstring
+	for tag in record.tags[:record.tags_len] {
+		if tag.values_len < 2 {continue}
+		value := strings.trim_space(string(tag.values[1]))
+		switch string(tag.values[0]) {
+		case "title":
+			if title == "" {title = value}
+		case "subject":
+			if subject == "" {subject = value}
+		case "summary", "description":
+			if summary == "" {summary = value}
+		case "alt":
+			if alt == "" {alt = value}
+		case "duration":
+			if duration == "" {duration = value}
+		case "imeta":
+			if media == nil {media = tag.values[1:tag.values_len]}
+		}
+	}
+	if title == "" {title = subject}
+	// Structured payloads belong in the developer inspector, not in chat.
+	description = strings.trim_space(string(record.plaintext))
+	if description == "" || description[0] == '{' || description[0] == '[' {
+		description = summary != "" ? summary : alt
+	}
+	if description == title {description = ""}
+	return chat_preview(title), chat_preview(description), unsupported_media_info(media, duration)
+}
+
+@(private = "file")
+unsupported_media_info :: proc(media: []cstring, duration: string) -> string {
+	var_duration, dimensions, mime, host: string
+	// Keep dimensions, format and host from the same imeta variant.
+	for raw in media {
+		field := string(raw)
+		sep := strings.index_byte(field, ' ')
+		if sep < 0 {continue}
+		value := strings.trim_space(field[sep + 1:])
+		switch field[:sep] {
+		case "duration":
+			var_duration = value
+		case "dim":
+			if x := strings.index_byte(value, 'x'); x > 0 && len(value) <= 13 {
+				w, wok := strconv.parse_u64(value[:x])
+				h, hok := strconv.parse_u64(value[x + 1:])
+				if wok && hok && w > 0 && h > 0 {dimensions = fmt.tprintf("%d×%d", w, h)}
+			}
+		case "m":
+			if strings.index_byte(value, '/') > 0 &&
+			   len(value) <= 32 &&
+			   strings.index_any(value, " \t\r\n") < 0 {mime = value}
+		case "url":
+			if strings.has_prefix(value, "https://") || strings.has_prefix(value, "http://") {
+				domain := url_host(value)
+				if len(domain) <= 63 && strings.index_any(domain, "@ \t\r\n") < 0 {host = domain}
+			}
+		}
+	}
+	parts: [4]string
+	n := 0
+	seconds, ok := strconv.parse_f64(var_duration != "" ? var_duration : duration)
+	if ok && seconds > 0 && seconds < 360_000 {
+		total := int(seconds + 0.5)
+		parts[n] =
+			total < 3600 ? fmt.tprintf("%d:%02d", total / 60, total % 60) : fmt.tprintf("%d:%02d:%02d", total / 3600, total / 60 % 60, total % 60)
+		n += 1
+	}
+	for part in ([3]string{dimensions, mime, host}) {
+		if part == "" {continue}
+		parts[n] = part
+		n += 1
+	}
+	return strings.join(parts[:n], " · ", context.temp_allocator)
 }
 
 // The words a message shows, without markup, for previews and search.

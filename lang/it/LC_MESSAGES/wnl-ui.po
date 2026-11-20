@@ -4642,6 +4642,9 @@ msgstr "IMPOSTAZIONI"
 msgid "SHARED THEME"
 msgstr "TEMA CONDIVISO"
 
+msgid "SHORT VIDEO EVENT"
+msgstr "VIDEO BREVE"
+
 msgid "SIGNER RELAY"
 msgstr "RELAY DEL FIRMATARIO"
 
@@ -5803,6 +5806,9 @@ msgstr "Aperta"
 msgid "Unsupported attachment format."
 msgstr "Formato dell'allegato non supportato."
 
+msgid "Unsupported event"
+msgstr "Evento non supportato"
+
 msgid "Untitled emoji set"
 msgstr "Set di emoji senza titolo"
 
@@ -5892,6 +5898,9 @@ msgstr "Nome utente"
 
 msgid "VERIFIED ADDRESS"
 msgstr "INDIRIZZO VERIFICATO"
+
+msgid "VIDEO EVENT"
+msgstr "VIDEO"
 
 msgid "Vault password changed."
 msgstr "Password della cassaforte cambiata."

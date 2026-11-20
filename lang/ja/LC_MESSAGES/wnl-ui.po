@@ -4642,6 +4642,9 @@ msgstr "設定"
 msgid "SHARED THEME"
 msgstr "共有されたテーマ"
 
+msgid "SHORT VIDEO EVENT"
+msgstr "ショート動画"
+
 msgid "SIGNER RELAY"
 msgstr "署名者のリレー"
 
@@ -5803,6 +5806,9 @@ msgstr "未解決"
 msgid "Unsupported attachment format."
 msgstr "この添付ファイルの形式には対応していません。"
 
+msgid "Unsupported event"
+msgstr "未対応のイベント"
+
 msgid "Untitled emoji set"
 msgstr "無題の絵文字セット"
 
@@ -5892,6 +5898,9 @@ msgstr "ユーザー名"
 
 msgid "VERIFIED ADDRESS"
 msgstr "認証済みアドレス"
+
+msgid "VIDEO EVENT"
+msgstr "動画"
 
 msgid "Vault password changed."
 msgstr "保管庫のパスワードを変更しました。"

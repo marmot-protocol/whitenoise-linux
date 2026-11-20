@@ -4629,6 +4629,9 @@ msgstr ""
 msgid "SHARED THEME"
 msgstr ""
 
+msgid "SHORT VIDEO EVENT"
+msgstr ""
+
 msgid "SIGNER RELAY"
 msgstr ""
 
@@ -5781,6 +5784,9 @@ msgstr ""
 msgid "Unsupported attachment format."
 msgstr ""
 
+msgid "Unsupported event"
+msgstr ""
+
 msgid "Untitled emoji set"
 msgstr ""
 
@@ -5869,6 +5875,9 @@ msgid "Username"
 msgstr ""
 
 msgid "VERIFIED ADDRESS"
+msgstr ""
+
+msgid "VIDEO EVENT"
 msgstr ""
 
 msgid "Vault password changed."

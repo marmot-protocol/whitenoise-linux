@@ -4337,6 +4337,9 @@ msgstr "설정"
 msgid "SHARED THEME"
 msgstr "공유된 테마"
 
+msgid "SHORT VIDEO EVENT"
+msgstr "짧은 동영상"
+
 msgid "SIGNER RELAY"
 msgstr "서명자 릴레이"
 
@@ -5413,6 +5416,9 @@ msgstr "읽지 않음"
 msgid "Unsupported attachment format."
 msgstr "지원하지 않는 첨부 파일 형식입니다."
 
+msgid "Unsupported event"
+msgstr "지원하지 않는 이벤트"
+
 msgid "Untitled emoji set"
 msgstr "제목 없는 이모지 세트"
 
@@ -5499,6 +5505,9 @@ msgstr "사용자 이름"
 
 msgid "VERIFIED ADDRESS"
 msgstr "인증된 주소"
+
+msgid "VIDEO EVENT"
+msgstr "동영상"
 
 msgid "Vault password changed."
 msgstr "금고 비밀번호를 변경했습니다."

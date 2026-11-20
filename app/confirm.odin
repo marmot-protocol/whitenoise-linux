@@ -152,6 +152,9 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 // only rows have no body and get no subject card.
 msg_preview :: proc(msg: Msg_Ui) -> string {
 	line := msg.body
+	if msg.unsupported {
+		line = msg.event_title != "" ? msg.event_title : tr("Unsupported event")
+	}
 	if nl := strings.index_byte(line, '\n'); nl >= 0 {
 		line = line[:nl]
 	}

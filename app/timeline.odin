@@ -800,7 +800,7 @@ Msg_Run :: struct {
 // `wrap_w` is the body column width (body_wrap_w), so the budget counts
 // lines as drawn: one long paragraph that wraps to 20 lines is 20.
 msg_run_step :: proc(run: ^Msg_Run, msg: Msg_Ui, wrap_w: f32) -> Msg_Head {
-	if msg.system || msg.deleted {
+	if msg.system || msg.deleted || msg.unsupported {
 		run^ = {}
 		return .Full
 	}
@@ -830,8 +830,102 @@ msg_actions :: proc(index: u32, msg: Msg_Ui) {
 	}
 	action_chip("MsgThread", index, tr("Thread"))
 	if msg.mine {
-		action_chip("MsgEdit", index, tr("Edit"))
+		if !msg.unsupported {action_chip("MsgEdit", index, tr("Edit"))}
 		action_chip("MsgDel", index, tr("Delete"))
+	}
+}
+
+@(private = "file")
+unsupported_event_card :: proc(index: u32, msg: Msg_Ui) {
+	kind_label, icon := tr("NOSTR EVENT"), ICON_GLOBE
+	switch msg.kind {
+	case KIND_VIDEO, KIND_VIDEO_ADDRESS:
+		kind_label, icon = tr("VIDEO EVENT"), "\uf03d"
+	case KIND_SHORT_VIDEO, KIND_SHORT_VIDEO_ADDRESS:
+		kind_label, icon = tr("SHORT VIDEO EVENT"), "\uf03d"
+	}
+	width := att_w(380)
+	PAD :: 14
+	inner := width - 2 * PAD
+	if nendo.box(nendo.id("UnsupportedEvent", index))(
+	{
+		width = nendo.fixed(width),
+		direction = .Column,
+		color = PLATE,
+		radius = rr(12),
+		border = {color = mix_color(CARD_BORDER, ACCENT, 0.26), width = bw()},
+	},
+	) {
+		if nendo.box(nendo.id("UnsupportedEventMain", index))(
+		{width = nendo.fixed(width), direction = .Column, padding = nendo.pad(PAD), gap = 9},
+		) {
+			if nendo.box(nendo.id("UnsupportedEventHeader", index))(
+			{width = nendo.fixed(inner), align = {y = .Center}, gap = 10},
+			) {
+				if nendo.box(nendo.id("UnsupportedEventIcon", index))(
+				{
+					width = nendo.fixed(34),
+					height = nendo.fixed(34),
+					align = {x = .Center, y = .Center},
+					color = fade(ACCENT, 0.15),
+					radius = rr(9),
+				},
+				) {
+					nendo.text(icon, {font = FONT_ICON, size = 16, color = ACCENT})
+				}
+				if nendo.box(nendo.id("UnsupportedEventKind", index))(
+				{width = nendo.fixed(inner - 44), direction = .Column, gap = 3},
+				) {
+					nendo.text(
+						kind_label,
+						{font = FONT_TITLE, size = 10, color = ACCENT, spacing = 1},
+					)
+					nendo.text(
+						fmt.tprintf(tr("KIND %d"), msg.kind),
+						{font = FONT_MONO, size = 10, color = TEXT_DIM},
+					)
+				}
+			}
+			if msg.event_title != "" {
+				nendo.text(
+					text_ellipsis(msg.event_title, inner, FONT_TITLE, 18),
+					{font = FONT_TITLE, size = 18, color = TEXT, wrap = .None},
+				)
+			}
+			if msg.event_description != "" {
+				MAX_LINES :: 3
+				if nendo.box(nendo.id("UnsupportedEventDescription", index))(
+				{width = nendo.fixed(inner), direction = .Column, gap = 2},
+				) {
+					lines := wrapped_lines(msg.event_description, inner, 13)
+					for line, i in lines[:min(len(lines), MAX_LINES)] {
+						text := msg.event_description[line.start:line.end]
+						if i == MAX_LINES - 1 &&
+						   len(lines) > MAX_LINES {text = fmt.tprintf("%s…", text)}
+						nendo.text(
+							text_ellipsis(text, inner, FONT_BODY, 13),
+							{font = FONT_BODY, size = 13, color = TEXT_DIM, wrap = .None},
+						)
+					}
+				}
+			}
+		}
+		if nendo.box(nendo.id("UnsupportedEventFooter", index))(
+		{
+			width = nendo.fixed(width),
+			direction = .Column,
+			gap = 6,
+			padding = {left = PAD, right = PAD, top = 8, bottom = 9},
+			color = mix_color(PLATE, BG, 0.32),
+			radius = {bottom_left = 12 * R_SCALE, bottom_right = 12 * R_SCALE},
+			border = {color = CARD_BORDER, width = {top = 1}},
+		},
+		) {
+			if msg.event_details != "" {
+				nendo.text(msg.event_details, {font = FONT_MONO, size = 11, color = TEXT})
+			}
+			nendo.text(tr("Unsupported event"), {font = FONT_BODY, size = 11, color = TEXT_DIM})
+		}
 	}
 }
 
@@ -1715,6 +1809,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			if len(msg.theme_name) > 0 {
 				theme_offer(index, msg)
 			}
+			if msg.unsupported {unsupported_event_card(index, msg)}
 
 			// Tombstone placeholder for a deleted message.
 			if msg.deleted {
