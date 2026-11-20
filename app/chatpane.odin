@@ -82,6 +82,9 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 		if open_now(nendo.id("RawModal"), ui.raw_open) {
 			raw_event_modal(ui)
 		}
+		if open_now(nendo.id("EventDataModal"), ui.event_data.id != "") && ui.event_data.id != "" {
+			event_data_modal(&ui.event_data)
+		}
 		if open_now(nendo.id("EncModal"), ui.enc_open) {
 			encryption_modal(ui, chat)
 		}

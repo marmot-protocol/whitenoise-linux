@@ -680,6 +680,7 @@ Ui_State :: struct {
 	hist_msg:                            int, // index into messages
 	raw_open:                            bool, // view-raw-event modal (dev mode)
 	raw_json:                            string, // its pretty-printed record JSON
+	event_data:                          Event_Data_View,
 	enc_open:                            bool, // encryption-details modal
 	enc_epoch:                           string, // its MLS epoch, "" when the lookup failed
 	fwd_open:                            bool, // destination-chat picker

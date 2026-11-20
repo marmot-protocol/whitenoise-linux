@@ -779,6 +779,7 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 		photo_input_capture(ui) ||
 		ui.hist_open ||
 		ui.raw_open ||
+		ui.event_data.id != "" ||
 		ui.enc_open ||
 		ui.fwd_open ||
 		ui.sticker_open ||

@@ -449,6 +449,19 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		return
 	}
+	if !ui.whip_open && ui.selected >= 0 && ui.event_data.id != "" {
+		if rl.IsKeyPressed(.ESCAPE) ||
+		   (mouse_released() &&
+				   (clicked("EventDataClose") ||
+						   !nendo.pointer_over(nendo.id("EventDataModal")))) {
+			event_data_close(&ui.event_data)
+		} else if clicked("EventDataCopy") {
+			if record := timeline_record(ui.event_data.id); record != nil && !record.deleted {
+				copy_text(ui, record_json(record, context.temp_allocator), tr("Copied"))
+			}
+		}
+		return
+	}
 	// Open raw-event modal captures everything while open.
 	if ui.selected >= 0 && ui.raw_open {
 		if rl.IsKeyPressed(.ESCAPE) ||
@@ -790,6 +803,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Per-message row actions.
 	if mouse_released() {
 		for msg, i in ui.messages {
+			if msg.unsupported && nendo.pointer_over(nendo.id("EventDataButton", u32(i))) {
+				event_data_open(&ui.event_data, msg)
+				return
+			}
 			if nendo.pointer_over(nendo.id("BlockedToggle", u32(i))) {
 				if ui.blocked_open[msg.id] {
 					key, _ := delete_key(&ui.blocked_open, msg.id)
@@ -1382,7 +1399,11 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if ui.prefs.dev_mode && nendo.pointer_over(nendo.id("CtxRaw")) {
 		delete(ui.raw_json)
-		ui.raw_json = raw_event_json(client, ui, msg.id)
+		if record := timeline_record(msg.id); record != nil {
+			ui.raw_json = record_json(record)
+		} else {
+			ui.raw_json = fmt.aprintf(tr("No record with id %s in this chat's window."), msg.id)
+		}
 		ui.raw_open = true
 		return
 	}

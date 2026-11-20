@@ -962,6 +962,7 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 
 @(private)
 finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
+	event_data_close(&ui.event_data)
 	if ui.location_open {geo_picker_close(ui)}
 	photo_cancel(ui)
 	keys_forget(ui); close_export(ui)

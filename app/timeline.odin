@@ -837,13 +837,7 @@ msg_actions :: proc(index: u32, msg: Msg_Ui) {
 
 @(private = "file")
 unsupported_event_card :: proc(index: u32, msg: Msg_Ui) {
-	kind_label, icon := tr("NOSTR EVENT"), ICON_GLOBE
-	switch msg.kind {
-	case KIND_VIDEO, KIND_VIDEO_ADDRESS:
-		kind_label, icon = tr("VIDEO EVENT"), "\uf03d"
-	case KIND_SHORT_VIDEO, KIND_SHORT_VIDEO_ADDRESS:
-		kind_label, icon = tr("SHORT VIDEO EVENT"), "\uf03d"
-	}
+	kind_label, icon := event_kind_label(msg.kind)
 	width := att_w(380)
 	PAD :: 14
 	inner := width - 2 * PAD
@@ -924,7 +918,23 @@ unsupported_event_card :: proc(index: u32, msg: Msg_Ui) {
 			if msg.event_details != "" {
 				nendo.text(msg.event_details, {font = FONT_MONO, size = 11, color = TEXT})
 			}
-			nendo.text(tr("Unsupported event"), {font = FONT_BODY, size = 11, color = TEXT_DIM})
+			if nendo.box(nendo.id("EventDataRow", index))(
+			{
+				width = nendo.fixed(inner),
+				direction = inner < 240 ? .Column : .Row,
+				align = {y = .Center},
+				gap = 6,
+			},
+			) {
+				nendo.text(
+					tr("Unsupported event"),
+					{font = FONT_BODY, size = 11, color = TEXT_DIM},
+				)
+				if inner >= 240 {
+					if nendo.box(nendo.id("EventDataGap", index))({width = nendo.grow()}) {}
+				}
+				action_chip("EventDataButton", index, tr("View event data"))
+			}
 		}
 	}
 }

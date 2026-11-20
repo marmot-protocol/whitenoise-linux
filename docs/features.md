@@ -68,6 +68,10 @@ description when available. Video events are labeled as such. Standard media
 tags can supply duration, dimensions, format, and the host name. The card does
 not load links or media.
 
+Choose **View event data** to see the sender, content, and tags. Unrecognized
+tags keep their original names and values. **Copy JSON** includes the original
+content and tags without shortening them.
+
 <details>
 <summary><b>The external-link guard, for addresses longer than the dialog</b></summary>
 

@@ -612,29 +612,18 @@ system_text :: proc(
 // next page (handle_chat).
 TL_FETCH_MARGIN :: f32(300)
 
-// Raw-event JSON for the View raw modal (dev mode). marmot-c has no
-// accessor for the outer signed wire event, so this pretty-prints the
-// retained timeline record's projection of the
-// inner app event (id, kind, tags, sender, timestamps, ...).
-raw_event_json :: proc(client: ^marmot.Client, ui: ^Ui_State, msg_id: string) -> string {
-	if ui.selected < 0 {
-		return ""
-	}
-	page := timeline_page
-	if page == nil {return ""}
 
-	for i in 0 ..< page.messages_len {
-		record := &page.messages[i]
-		if record.message_id_hex == nil || string(record.message_id_hex) != msg_id {
-			continue
-		}
-		return record_json(record)
+@(private)
+timeline_record :: proc(msg_id: string) -> ^marmot.Timeline_Message_Record {
+	if timeline_page == nil {return nil}
+	for &record in timeline_page.messages[:timeline_page.messages_len] {
+		if string(record.message_id_hex) == msg_id {return &record}
 	}
-	return fmt.aprintf(tr("No record with id %s in this chat's window."), msg_id)
+	return nil
 }
 
 // Pretty-print one record's projection of the inner app event.
-// Shared by the View raw modal and the HTML transcript export.
+// Shared by the event inspectors and HTML transcript export.
 record_json :: proc(
 	record: ^marmot.Timeline_Message_Record,
 	allocator := context.allocator,

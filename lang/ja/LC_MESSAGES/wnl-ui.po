@@ -553,6 +553,9 @@ msgstr "このアカウントを引き続き使うには、署名者の権限を
 msgid "Allow your signer's permissions to use this account."
 msgstr "このアカウントを使うには、署名者の権限を許可してください。"
 
+msgid "Alt text"
+msgstr "代替テキスト"
+
 msgid "Always expanded"
 msgstr "常に展開"
 
@@ -830,6 +833,9 @@ msgstr "接続中"
 
 msgid "CONTACTS"
 msgstr "連絡先"
+
+msgid "CONTENT"
+msgstr "内容"
 
 msgid "CURRENT PASSWORD"
 msgstr "現在のパスワード"
@@ -2136,6 +2142,9 @@ msgstr "音声入力が動作しません"
 msgid "Difficulty: %d/5"
 msgstr "難易度: %d/5"
 
+msgid "Dimensions"
+msgstr "寸法"
+
 msgid "Disabled for this group."
 msgstr "このグループでは無効です。"
 
@@ -2223,6 +2232,9 @@ msgstr "ファイルをドロップして添付"
 
 msgid "Drop here"
 msgstr "ここにドロップ"
+
+msgid "Duration"
+msgstr "再生時間"
 
 msgid "Dust"
 msgstr "ほこり"
@@ -2416,6 +2428,9 @@ msgstr "エラーをコピーしました"
 msgid "Estonian"
 msgstr "エストニア語"
 
+msgid "Event data"
+msgstr "イベントデータ"
+
 msgid "Event fetch relays"
 msgstr "イベント取得リレー"
 
@@ -2601,6 +2616,9 @@ msgstr "パスワードをお忘れですか？"
 
 msgid "Forgot your password?"
 msgstr "パスワードを忘れましたか？"
+
+msgid "Format"
+msgstr "形式"
 
 msgid "Forward"
 msgstr "転送"
@@ -3380,6 +3398,9 @@ msgstr "メディアキャッシュを消去しました。"
 
 msgid "Media highlight"
 msgstr "メディアのハイライト"
+
+msgid "Media metadata"
+msgstr "メディアのメタデータ"
 
 msgid "Members"
 msgstr "メンバー"
@@ -5340,6 +5361,9 @@ msgstr "シンセウェイヴ"
 msgid "System"
 msgstr "システム"
 
+msgid "TAGS"
+msgstr "タグ"
+
 msgid "TEXT"
 msgstr "テキスト"
 
@@ -5537,6 +5561,9 @@ msgstr "この操作は取り消せません。"
 
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "このチャットはアーカイブされています。メッセージを送信するには、アーカイブから復元してください。"
+
+msgid "This event is no longer available."
+msgstr "このイベントは利用できなくなりました。"
 
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "表示される文字がないため、GMボタンはGMを送信します。"
@@ -5925,6 +5952,9 @@ msgstr "表示"
 
 msgid "View as hex"
 msgstr "16進数で表示"
+
+msgid "View event data"
+msgstr "イベントデータを表示"
 
 msgid "View keyboard shortcuts"
 msgstr "キーボードショートカットを表示"

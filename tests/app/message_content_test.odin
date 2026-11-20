@@ -199,6 +199,20 @@ unsupported_event_summary :: proc(t: ^testing.T) {
 }
 
 @(test)
+event_data_keeps_wire_values :: proc(t: ^testing.T) {
+	fields := event_data_fields(
+		`{"sensor":"platform\t2","tick":9007199254740993,"sensor":null,"ok":false}`,
+	)
+	if !testing.expect_value(t, len(fields), 4) {return}
+	for want, i in ([4]Event_Data_Field{{"sensor", "platform\t2"}, {"tick", "9007199254740993"}, {"sensor", "null"}, {"ok", "false"}}) {
+		testing.expect_value(t, fields[i], want)
+	}
+	for text in ([3]string{`{"a":"first","b":[1,2]}`, `{"a": 1,}`, `{"a": 1} garbage`}) {
+		testing.expect_value(t, len(event_data_fields(text)), 0)
+	}
+}
+
+@(test)
 surfaces_read_effective_content :: proc(t: ^testing.T) {
 	dir, err := os.make_directory_temp("/tmp", "wn-message-content-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
