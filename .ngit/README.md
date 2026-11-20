@@ -8,10 +8,11 @@ watches the repo over Nostr and runs `act/workflows/` using the
 
 | File | Runs on | Notes |
 | --- | --- | --- |
+| `act/workflows/pr-native.yml` | ngit-ci | Native Linux build and tests on each proposal. |
 | `act/workflows/pr-precommit.yml` | ngit-ci and GitHub | Canonical quality gate. Runs `.githooks/pre-commit` against the whole tree using an isolated Git index; normalization fails the gate. The hook maintains the byte-identical `.github/workflows/pr-precommit.yml` mirror. Edit the canonical file only. |
 | `act/workflows/release-appimage.yml` | ngit-ci | Native build and tests, AppImage packaging, then a headless launch of the packaged app. Publishes the AppImage to Blossom. |
 | `act/workflows/release-cross.yml` | ngit-ci | Linux ARM64 cross-build and packaged-app smoke run. |
-| `act/workflows/release-windows.yml` | ngit-ci | Windows AMD64 cross-build and packaged-app smoke run under Wine. Separate workflow and runner selector allow it to overlap the native/ARM64 slot. |
+| `act/workflows/release-windows.yml` | ngit-ci | Windows AMD64 cross-build and packaged-app smoke run under Wine. |
 | `act/workflows/release-android.yml` | ngit-ci | Builds and verifies a debug-signed ARM64 APK on every `master` push. Publishes it to Blossom. |
 | `.github/workflows/ci.yml` + `_build.yml` | GitHub | Linux release-profile builds. Quality gates come from the mirrored `pr-precommit.yml`. |
 | `.github/workflows/release.yml` | GitHub | Tag-triggered (`v*`) GitHub Release of the build tarballs. |
@@ -23,10 +24,15 @@ budget. Each pair runs one disposable KVM guest at a time. Two pairs allow
 concurrent builds without the upstream adapter's overlapping-cache fallback.
 GitHub runner services and their routing are independent of these services.
 
-| Slot | Selector | Coordinator |
-| --- | --- | --- |
-| 1 | `wn-ngit-windows` | `npub1g60evye0t0adawuttrgl7xvymm7latgz86f6406kcfpx52mj8szqmjykaj` |
-| 2 | `ubuntu-24.04` | `npub16j3janvkrze82x22cl0f7p2nqeqlsck8dacfry4w58yh29gdlzxs4xdnv9` |
+| Slot | Work | Selectors | Coordinator |
+| --- | --- | --- | --- |
+| 1 | Staging packages | `wn-ngit-staging`, `wn-ngit-windows` | `npub1g60evye0t0adawuttrgl7xvymm7latgz86f6406kcfpx52mj8szqmjykaj` |
+| 2 | PR checks | `ubuntu-24.04` | `npub16j3janvkrze82x22cl0f7p2nqeqlsck8dacfry4w58yh29gdlzxs4xdnv9` |
+
+Install the slot 1 mapping before merging a workflow that uses
+`wn-ngit-staging`. Restart `ngit-ci@1` while idle to load the mapping.
+The adapter and slot 2 do not need to restart for this change. Staging
+jobs already queued on slot 2 still run there.
 
 `runner/` contains the SDK recipe, guest boot configuration, service templates,
 slot mappings, and service-account policy. The deployed coordinator, adapter,
@@ -53,9 +59,8 @@ uses the pinned base image, Odin, Rust, and SDL revisions in `runner/Containerfi
 The worker tag is `localhost/wn-ngit-worker:<Containerfile-sha256>`; both
 `runner/slot*.conf` mappings must match the image baked into the guest template.
 A recipe change requires rebuilding that template, not pulling SDK packages in
-every job. After installing a new template or slot mapping, restart both
-coordinator/adapter pairs while idle. Install the guest files before sealing
-the template:
+every job. Restart the coordinator/adapter pairs while idle after installing
+a new template. Install the guest files before sealing the template:
 
 - `act.sh` as `/usr/bin/act`, with the pinned act binary at `/opt/ngit-ci/act`.
 - `guest-cache.service` and `guest-ssh-key.service` as the corresponding

@@ -10,7 +10,7 @@ permissions:
 jobs:
   apk:
     name: Build staging Android APK (arm64-v8a)
-    runs-on: ubuntu-24.04
+    runs-on: wn-ngit-staging
     timeout-minutes: 90
     env:
       ANDROID_HOME: /var/cache/wn-ci/android-sdk
