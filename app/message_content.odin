@@ -1,6 +1,7 @@
 package main
 
 import marmot "../marmot"
+import "core:encoding/json"
 import "core:fmt"
 import "core:strconv"
 import "core:strings"
@@ -64,17 +65,60 @@ record_class :: proc(kind: u64, plaintext: string) -> Record_Class {
 }
 
 @(private)
-unsupported_event_text :: proc(
-	record: ^marmot.Timeline_Message_Record,
-) -> (
+Event_Tags :: union {
+	[]marmot.Message_Tag,
+	json.Array,
+}
+
+@(private)
+Event_Tag :: struct {
+	c:    []cstring,
+	json: json.Array,
+}
+
+@(private)
+event_tag_count :: proc(tags: Event_Tags) -> int {
+	switch rows in tags {
+	case []marmot.Message_Tag:
+		return len(rows)
+	case json.Array:
+		return len(rows)
+	}
+	return 0
+}
+
+@(private)
+event_tag_at :: proc(tags: Event_Tags, i: int) -> Event_Tag {
+	switch rows in tags {
+	case []marmot.Message_Tag:
+		return {c = rows[i].values[:rows[i].values_len]}
+	case json.Array:
+		return {json = rows[i].(json.Array) or_else nil}
+	}
+	return {}
+}
+
+@(private)
+event_tag_value :: proc(tag: Event_Tag, i: int) -> string {
+	if tag.c != nil {return string(tag.c[i])}
+	return string(tag.json[i].(json.String) or_else "")
+}
+
+@(private)
+Event_Summary :: struct {
 	title, description, details: string,
-) {
+}
+
+@(private)
+event_summary :: proc(content: string, tags: Event_Tags) -> Event_Summary {
+	title: string
 	subject, summary, alt, duration: string
-	media: []cstring
-	for tag in record.tags[:record.tags_len] {
-		if tag.values_len < 2 {continue}
-		value := strings.trim_space(string(tag.values[1]))
-		switch string(tag.values[0]) {
+	media: Event_Tag
+	for i in 0 ..< event_tag_count(tags) {
+		tag := event_tag_at(tags, i)
+		if len(tag.c) + len(tag.json) < 2 {continue}
+		value := strings.trim_space(event_tag_value(tag, 1))
+		switch event_tag_value(tag, 0) {
 		case "title":
 			if title == "" {title = value}
 		case "subject":
@@ -86,25 +130,29 @@ unsupported_event_text :: proc(
 		case "duration":
 			if duration == "" {duration = value}
 		case "imeta":
-			if media == nil {media = tag.values[1:tag.values_len]}
+			if media.c == nil && media.json == nil {media = tag}
 		}
 	}
 	if title == "" {title = subject}
-	// Structured payloads belong in the developer inspector, not in chat.
-	description = strings.trim_space(string(record.plaintext))
+	// Structured payloads belong in the inspector, not in chat.
+	description := strings.trim_space(content)
 	if description == "" || description[0] == '{' || description[0] == '[' {
 		description = summary != "" ? summary : alt
 	}
 	if description == title {description = ""}
-	return chat_preview(title), chat_preview(description), unsupported_media_info(media, duration)
+	return {
+		strings.clone(chat_preview(title)),
+		strings.clone(chat_preview(description)),
+		strings.clone(unsupported_media_info(media, duration)),
+	}
 }
 
 @(private = "file")
-unsupported_media_info :: proc(media: []cstring, duration: string) -> string {
+unsupported_media_info :: proc(media: Event_Tag, duration: string) -> string {
 	var_duration, dimensions, mime, host: string
 	// Keep dimensions, format and host from the same imeta variant.
-	for raw in media {
-		field := string(raw)
+	for i in 1 ..< len(media.c) + len(media.json) {
+		field := event_tag_value(media, i)
 		sep := strings.index_byte(field, ' ')
 		if sep < 0 {continue}
 		value := strings.trim_space(field[sep + 1:])

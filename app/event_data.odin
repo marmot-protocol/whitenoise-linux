@@ -1,15 +1,155 @@
 package main
 
-import marmot "../marmot"
 import "core:encoding/json"
 import "core:fmt"
 import "core:strings"
 import "nendo"
+import rl "sdlrl"
+
+@(private)
+Event_Card_Link :: struct {
+	key, byline, open_url: string,
+}
+
+@(private)
+unsupported_event_card :: proc(
+	index: u32,
+	kind: u64,
+	summary: Event_Summary,
+	link: Event_Card_Link = {},
+) {
+	kind_label, icon, kind_detail := event_kind_label(kind)
+	width := att_w(380)
+	PAD :: 14
+	inner := width - 2 * PAD
+	if nendo.box(nendo.id(link.key == "" ? "UnsupportedEvent" : "NevCard", index))(
+	{
+		width = nendo.fixed(width),
+		direction = .Column,
+		color = PLATE,
+		radius = rr(12),
+		border = {color = mix_color(CARD_BORDER, ACCENT, 0.26), width = bw()},
+	},
+	) {
+		if nendo.box(nendo.id_local("UnsupportedEventMain"))(
+		{width = nendo.fixed(width), direction = .Column, padding = nendo.pad(PAD), gap = 9},
+		) {
+			if nendo.box(nendo.id_local("UnsupportedEventHeader"))(
+			{width = nendo.fixed(inner), align = {y = .Center}, gap = 10},
+			) {
+				if nendo.box(nendo.id_local("UnsupportedEventIcon"))(
+				{
+					width = nendo.fixed(34),
+					height = nendo.fixed(34),
+					align = {x = .Center, y = .Center},
+					color = fade(ACCENT, 0.15),
+					radius = rr(9),
+				},
+				) {
+					nendo.text(icon, {font = FONT_ICON, size = 16, color = ACCENT})
+				}
+				if nendo.box(nendo.id_local("UnsupportedEventKind"))(
+				{width = nendo.fixed(inner - 44), direction = .Column, gap = 3},
+				) {
+					nendo.text(
+						kind_label,
+						{font = FONT_TITLE, size = 10, color = ACCENT, spacing = 1},
+					)
+					if kind_detail != "" {
+						nendo.text(kind_detail, {font = FONT_MONO, size = 10, color = TEXT_DIM})
+					}
+				}
+			}
+			if link.byline != "" {
+				nendo.text(
+					text_ellipsis(link.byline, inner, FONT_BODY, 11),
+					{font = FONT_BODY, size = 11, color = TEXT_DIM, wrap = .None},
+				)
+			}
+			if summary.title != "" {
+				nendo.text(
+					text_ellipsis(summary.title, inner, FONT_TITLE, 18),
+					{font = FONT_TITLE, size = 18, color = TEXT, wrap = .None},
+				)
+			}
+			if summary.description != "" {
+				MAX_LINES :: 3
+				if nendo.box(nendo.id_local("UnsupportedEventDescription"))(
+				{width = nendo.fixed(inner), direction = .Column, gap = 2},
+				) {
+					lines := wrapped_lines(summary.description, inner, 13)
+					for line, i in lines[:min(len(lines), MAX_LINES)] {
+						text := summary.description[line.start:line.end]
+						if i == MAX_LINES - 1 &&
+						   len(lines) > MAX_LINES {text = fmt.tprintf("%s…", text)}
+						nendo.text(
+							text_ellipsis(text, inner, FONT_BODY, 13),
+							{font = FONT_BODY, size = 13, color = TEXT_DIM, wrap = .None},
+						)
+					}
+				}
+			}
+		}
+		if nendo.box(nendo.id_local("UnsupportedEventFooter"))(
+		{
+			width = nendo.fixed(width),
+			direction = .Column,
+			gap = 6,
+			padding = {left = PAD, right = PAD, top = 8, bottom = 9},
+			color = mix_color(PLATE, BG, 0.32),
+			radius = {bottom_left = 12 * R_SCALE, bottom_right = 12 * R_SCALE},
+			border = {color = CARD_BORDER, width = {top = 1}},
+		},
+		) {
+			if summary.details != "" {
+				nendo.text(summary.details, {font = FONT_MONO, size = 11, color = TEXT})
+			}
+			if nendo.box(nendo.id_local("EventDataRow"))(
+			{
+				width = nendo.fixed(inner),
+				direction = inner < 240 ? .Column : .Row,
+				align = {y = .Center},
+				gap = 6,
+			},
+			) {
+				nendo.text(
+					tr("Unsupported event"),
+					{font = FONT_BODY, size = 11, color = TEXT_DIM},
+				)
+				if inner >= 240 {
+					if nendo.box(nendo.id_local("EventDataGap"))({width = nendo.grow()}) {}
+				}
+				button := link.key == "" ? "EventDataButton" : "NevEventDataButton"
+				action_chip(button, index, tr("View event data"))
+				if link.key != "" &&
+				   nendo.pointer_over(nendo.id(button, index)) {nev_data_hover = link.key}
+			}
+			if link.open_url != "" {
+				action_chip("NevOpen", index, tr("Open in client"))
+				if nendo.pointer_over(nendo.id("NevOpen", index)) {link_hover = link.open_url}
+			}
+		}
+	}
+}
 
 @(private)
 Event_Data_View :: struct {
 	id, title, sender, at: string,
+	source:                Event_Data_Source,
 	fields:                []Event_Data_Field,
+}
+
+@(private)
+Event_Data_Source :: enum {
+	Timeline,
+	Linked,
+}
+
+@(private = "file")
+Event_Data_Record :: struct {
+	id, author, content: string,
+	kind:                u64,
+	tags:                Event_Tags,
 }
 
 @(private)
@@ -31,22 +171,65 @@ event_kind_label :: proc(kind: u64) -> (label, icon, detail: string) {
 }
 
 @(private)
-event_data_open :: proc(view: ^Event_Data_View, msg: Msg_Ui) {
+event_data_open :: proc(
+	view: ^Event_Data_View,
+	source: Event_Data_Source,
+	id, title, sender, at: string,
+) {
 	event_data_close(view)
 	view^ = {
-		id     = strings.clone(msg.id),
-		title  = strings.clone(msg.event_title),
-		sender = strings.clone(msg.sender),
-		at     = strings.clone(msg.at_full),
+		id     = strings.clone(id),
+		title  = strings.clone(title),
+		sender = strings.clone(sender),
+		at     = strings.clone(at),
+		source = source,
 	}
-	if record := timeline_record(msg.id); record != nil {
-		fields := event_data_fields(string(record.plaintext))
+	if record, ok := event_data_record(view); ok {
+		fields := event_data_fields(record.content)
 		view.fields = make([]Event_Data_Field, len(fields))
 		for field, i in fields {
 			view.fields[i] = {strings.clone(field.name), strings.clone(field.value)}
 		}
 	}
 	if scroll := nendo.scroll(nendo.id("EventDataScroll")); scroll.found {scroll.position^ = {}}
+}
+
+@(private = "file")
+event_data_record :: proc(view: ^Event_Data_View) -> (Event_Data_Record, bool) {
+	if view.source == .Linked {
+		card := nev_cards[view.id]
+		return {card.id, card.pubkey, card.content, u64(card.kind), card.tags}, card.raw != ""
+	}
+	record := timeline_record(view.id)
+	if record == nil || record.deleted {return {}, false}
+	return {
+			view.id,
+			string(record.sender),
+			string(record.plaintext),
+			record.kind,
+			record.tags[:record.tags_len],
+		},
+		true
+}
+
+@(private)
+event_data_json :: proc(view: ^Event_Data_View) -> string {
+	if view.source == .Linked {return nev_cards[view.id].raw}
+	if record := timeline_record(view.id); record != nil && !record.deleted {
+		return record_json(record, context.temp_allocator)
+	}
+	return ""
+}
+
+@(private)
+handle_event_data :: proc(ui: ^Ui_State) {
+	if rl.IsKeyPressed(.ESCAPE) ||
+	   clicked("EventDataClose") ||
+	   (mouse_released() && !nendo.pointer_over(nendo.id("EventDataModal"))) {
+		event_data_close(&ui.event_data)
+	} else if clicked("EventDataCopy") {
+		if text := event_data_json(&ui.event_data); text != "" {copy_text(ui, text, tr("Copied"))}
+	}
 }
 
 @(private)
@@ -168,8 +351,7 @@ event_data_modal :: proc(view: ^Event_Data_View) {
 	width := modal_w(id, 584)
 	PAD :: 18
 	inner := width - 2 * PAD - 6
-	record := timeline_record(view.id)
-	if record != nil && record.deleted {record = nil}
+	record, available := event_data_record(view)
 	if nendo.box(id)(
 	{
 		width = nendo.fixed(width),
@@ -205,7 +387,7 @@ event_data_modal :: proc(view: ^Event_Data_View) {
 			clip = {y = true, scroll = true},
 		},
 		) {
-			if record == nil {
+			if !available {
 				nendo.text(
 					tr("This event is no longer available."),
 					{font = FONT_BODY, size = 13, color = TEXT_DIM},
@@ -215,16 +397,12 @@ event_data_modal :: proc(view: ^Event_Data_View) {
 			}
 		}
 		scrollbar(nendo.id("EventDataScroll"), 12)
-		if record != nil {micro_button("EventDataCopy", tr("Copy JSON"))}
+		if available {micro_button("EventDataCopy", tr("Copy JSON"))}
 	}
 }
 
 @(private = "file")
-event_data_body :: proc(
-	view: ^Event_Data_View,
-	record: ^marmot.Timeline_Message_Record,
-	width: f32,
-) {
+event_data_body :: proc(view: ^Event_Data_View, record: Event_Data_Record, width: f32) {
 	kind, icon, detail := event_kind_label(record.kind)
 	if nendo.box(nendo.id("EventDataHero"))(
 	{
@@ -248,7 +426,7 @@ event_data_body :: proc(
 		event_data_text(view.sender, width - 28, FONT_TITLE, 13, TEXT)
 		nendo.text(view.at, {font = FONT_BODY, size = 11, color = TEXT_DIM})
 	}
-	if content := string(record.plaintext); content != "" {
+	if content := record.content; content != "" {
 		eyebrow(tr("CONTENT"))
 		if len(view.fields) == 0 {
 			if nendo.box(nendo.id("EventContent"))(
@@ -273,36 +451,38 @@ event_data_body :: proc(
 			}
 		}
 	}
-	if record.tags_len > 0 {
+	if event_tag_count(record.tags) > 0 {
 		eyebrow(tr("TAGS"))
-		TAG_LIMIT :: 24
-		event_data_tags(record.tags[:min(record.tags_len, TAG_LIMIT)], width)
-		if record.tags_len >
-		   TAG_LIMIT {nendo.text("…", {font = FONT_BODY, size = 13, color = TEXT_DIM})}
+		event_data_tags(record.tags, width)
 	}
 	eyebrow(tr("DETAILS"))
-	event_field_row(nendo.id("EventDataId"), tr("Event id"), {view.id}, width)
-	event_field_row(nendo.id("EventDataSender"), tr("Public key"), {string(record.sender)}, width)
+	event_field_row(nendo.id("EventDataId"), tr("Event id"), {record.id}, width)
+	event_field_row(nendo.id("EventDataSender"), tr("Public key"), {record.author}, width)
 }
 
 @(private = "file")
-event_data_tags :: proc(tags: []marmot.Message_Tag, width: f32) {
-	for tag, i in tags {
-		if tag.values_len == 0 {continue}
-		key := string(tag.values[0])
+event_data_tags :: proc(tags: Event_Tags, width: f32) {
+	TAG_LIMIT :: 24
+	count := event_tag_count(tags)
+	for i in 0 ..< min(count, TAG_LIMIT) {
+		tag := event_tag_at(tags, i)
+		length := len(tag.c) + len(tag.json)
+		if length == 0 {continue}
+		key := event_tag_value(tag, 0)
 		label := event_tag_name(key)
 		if label != "" {label = fmt.tprintf("%s · %s", label, key)} else {label = key}
 		VALUE_LIMIT :: 8
 		values: [VALUE_LIMIT + 1]string
-		n := min(tag.values_len - 1, VALUE_LIMIT)
-		for raw, j in tag.values[1:1 + n] {
-			value := string(raw)
+		n := min(length - 1, VALUE_LIMIT)
+		for j in 0 ..< n {
+			value := event_tag_value(tag, j + 1)
 			if key == "imeta" {value = event_media_value(value)}
 			values[j] = value
 		}
-		if tag.values_len > VALUE_LIMIT + 1 {values[n] = "…"; n += 1}
+		if length > VALUE_LIMIT + 1 {values[n] = "…"; n += 1}
 		event_field_row(nendo.id("EventDataTag", u32(i)), label, values[:n], width)
 	}
+	if count > TAG_LIMIT {nendo.text("…", {font = FONT_BODY, size = 13, color = TEXT_DIM})}
 }
 
 @(private = "file")

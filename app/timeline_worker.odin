@@ -225,7 +225,9 @@ timeline_mark_read :: proc(ui: ^Ui_State) {
 
 @(private)
 timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if ui.event_data.id != "" && (ui.selected < 0 || ui.page != .Chats || ui.whip_open) {
+	if ui.event_data.id != "" &&
+	   ui.event_data.source == .Timeline &&
+	   (ui.selected < 0 || ui.page != .Chats || ui.whip_open) {
 		event_data_close(&ui.event_data)
 	}
 	for i := len(timeline_retired) - 1; i >= 0; i -= 1 {

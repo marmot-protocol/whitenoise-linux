@@ -83,6 +83,10 @@ Long addresses in the guard scroll horizontally without breaking path words. Scr
 
 Linked Nostr events render as cards instead of raw identifiers. Cards with an Open in client button use your configured Nostr web client.
 
+Links to unsupported event kinds use the same summary and **View event data**
+inspector as unsupported events sent directly to a chat. **Copy JSON** on a
+linked event copies the event object returned by the relay.
+
 | You paste or link | What you get |
 | --- | --- |
 | `https://njump.me/<reference>` or `http://njump.me/<reference>` | The same as a `nostr:` reference: profile chips for `npub`/`nprofile`, event cards for `note`/`nevent`/`naddr` |

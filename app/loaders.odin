@@ -269,11 +269,8 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			delivery  = delivery,
 		}
 		if class == .Unsupported {
-			title, description, details := unsupported_event_text(record)
 			msg.unsupported = true
-			msg.event_title = strings.clone(title)
-			msg.event_description = strings.clone(description)
-			msg.event_details = strings.clone(details)
+			msg.event_summary = event_summary(plaintext, record.tags[:record.tags_len])
 		} else {
 			msg.sticker = sticker_from_record(record)
 			msg.body = strings.clone(body)

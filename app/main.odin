@@ -293,6 +293,10 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 				modal_backdrop()
 			}
 
+			if open_now(nendo.id("EventDataModal"), ui.event_data.id != "") &&
+			   ui.event_data.id != "" {
+				event_data_modal(&ui.event_data)
+			}
 			if open_now(nendo.id("PalModal"), ui.pal_open) {
 				palette_modal(ui)
 			}
@@ -1106,6 +1110,7 @@ app_main :: proc() {
 			nev_more_hover = ""
 			nev_retry_hover = ""
 			nev_hint_hover = ""
+			nev_data_hover = ""
 			clear(&sel_lines) // body lines re-register during the build
 			video_hover = nil
 			video_full_hover = {}
@@ -1448,6 +1453,7 @@ app_main :: proc() {
 				}
 			}
 
+			event_data_captured := ui.event_data.id != ""
 			// Modal capture order: a confirm sits over everything, then the
 			// link guard, then the palette, then the older modals. Global
 			// search opens on Ctrl+K, the palette on Ctrl+P.
@@ -1460,6 +1466,8 @@ app_main :: proc() {
 				handle_confirm(&ui, client)
 			} else if ui.link_open {
 				handle_link_modal(&ui)
+			} else if event_data_captured {
+				handle_event_data(&ui)
 			} else if location_captured {
 				if ui.location_open {
 					handle_geo(&ui)
@@ -1519,6 +1527,7 @@ app_main :: proc() {
 			// release, so dragging across a link doesn't open it.
 			photo_captured = photo_captured || photo_input_capture(&ui)
 			if !composer_captured &&
+			   !event_data_captured &&
 			   !photo_captured &&
 			   !location_captured &&
 			   !ui.location_open &&
@@ -1533,6 +1542,17 @@ app_main :: proc() {
 				handle_react_fan(&ui, client)
 				if len(ui.sel_copy) == 0 && !drag_moved {
 					handle_link_click(&ui)
+					if nev_data_hover != "" && mouse_released() && !modal_open(&ui) {
+						card := nev_cards[nev_data_hover]
+						event_data_open(
+							&ui.event_data,
+							.Linked,
+							nev_data_hover,
+							card.summary.title,
+							mention_label(card.pubkey),
+							card.stamp,
+						)
+					}
 					if md_code_hover != "" && mouse_released() {
 						copy_text(&ui, md_code_hover, tr("Copied"))
 					}

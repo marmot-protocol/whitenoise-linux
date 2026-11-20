@@ -183,19 +183,13 @@ unsupported_event_summary :: proc(t: ^testing.T) {
 		{raw_data(imeta[:]), len(imeta)},
 		{raw_data(other[:]), len(other)},
 	}
-	record := marmot.Timeline_Message_Record {
-		kind      = 21,
-		tags      = raw_data(tags[:]),
-		tags_len  = len(tags),
-		plaintext = `{"opaque":"payload"}`,
-	}
-	title, description, details := unsupported_event_text(&record)
-	testing.expect_value(t, title, "Station cat")
-	testing.expect_value(t, description, "A cat on the platform")
-	testing.expect_value(t, details, "0:24 · 1280×720 · video/mp4 · media.example")
-	record.plaintext = "Train arriving at platform two."
-	_, description, _ = unsupported_event_text(&record)
-	testing.expect_value(t, description, "Train arriving at platform two.")
+	context.allocator = context.temp_allocator
+	summary := event_summary(`{"opaque":"payload"}`, tags[:])
+	testing.expect_value(t, summary.title, "Station cat")
+	testing.expect_value(t, summary.description, "A cat on the platform")
+	testing.expect_value(t, summary.details, "0:24 · 1280×720 · video/mp4 · media.example")
+	summary = event_summary("Train arriving at platform two.", tags[:])
+	testing.expect_value(t, summary.description, "Train arriving at platform two.")
 }
 
 @(test)

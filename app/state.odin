@@ -446,9 +446,7 @@ Msg_Ui :: struct {
 	theme_toml:          string, // its pack source, applied only on the tap
 	theme_swatch:        [THEME_SWATCHES]nendo.Color, // parsed once at load, drawn every frame
 	unsupported:         bool,
-	event_title:         string,
-	event_description:   string,
-	event_details:       string,
+	event_summary:       Event_Summary,
 	deleted:             bool, // tombstone: placeholder row, no body/actions
 	edited:              bool, // MDK applied an accepted edit; body holds the latest
 	effect:              int, // ["effect", key] burst id from the event tags, 0 = none
