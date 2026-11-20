@@ -1840,7 +1840,9 @@ nc_row_hex :: proc(ui: ^Ui_State, rows: []Contact_Order, people: []int, at: int)
 
 // Contact selection and the group form share asynchronous creation.
 handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if ui.nc_page == .Group && ui.focus == .NC_Member && rl.IsKeyPressed(.ESCAPE) {
+	if ui.nc_page == .Group &&
+	   (ui.focus == .NC_Member || ui.focus == .NC_Remove) &&
+	   rl.IsKeyPressed(.ESCAPE) {
 		ui.focus = .NC_Name
 		return
 	}
@@ -1853,7 +1855,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		people_retry(ui)
 		return
 	}
-	edit_text(ui, active_buf(ui))
+	if ui.focus != .NC_Remove {edit_text(ui, active_buf(ui))}
 	address_input := ui.nc_page == .Contacts ? string(ui.nc_search[:]) : string(ui.nc_member[:])
 	if address := nc_address_hex(ui, address_input); address != "" {profile_info(client, address)}
 
@@ -1925,16 +1927,40 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if field_mouse(ui, &ui.nc_name, "NCName", 14) {
 		ui.focus = .NC_Name
 	}
-	tab_focus([]Focus{.NC_Name, .NC_Member}, &ui.focus)
-	if mouse_released() {
-		for member, i in ui.nc_members {
-			if !nendo.pointer_over(nendo.id("NCMemberRemove", u32(i))) {continue}
-			delete(member.hex); delete(member.label); delete(member.pic_url)
-			ordered_remove(&ui.nc_members, i)
-			return
+	if step := tab_step(); step != 0 {
+		at := ui.focus == .NC_Name ? 0 : ui.focus == .NC_Member ? 1 : ui.nc_remove_focus + 2
+		at = (at + step) %% (2 + len(ui.nc_members))
+		field := nendo.id("NCName")
+		ui.focus = .NC_Name
+		if at == 1 {
+			ui.focus = .NC_Member
+			field = nendo.id("NCMember")
+		} else if at >= 2 {
+			ui.focus, ui.nc_remove_focus = .NC_Remove, at - 2
+			field = nendo.id("NCMemberRemove", u32(ui.nc_remove_focus))
 		}
+		scroll_into_view(nendo.id("NCForm"), field)
+		return
 	}
 	enter := rl.IsKeyPressed(.ENTER)
+	remove := -1
+	if ui.focus == .NC_Remove && (enter || rl.IsKeyPressed(.SPACE)) {
+		remove = ui.nc_remove_focus
+	} else if mouse_released() {
+		for _, i in ui.nc_members {
+			if nendo.pointer_over(nendo.id("NCMemberRemove", u32(i))) {remove = i; break}
+		}
+	}
+	if remove >= 0 {
+		member := ui.nc_members[remove]
+		delete(member.hex); delete(member.label); delete(member.pic_url)
+		ordered_remove(&ui.nc_members, remove)
+		if ui.focus == .NC_Remove && ui.nc_remove_focus >= len(ui.nc_members) {
+			ui.focus = .NC_Member
+			scroll_into_view(nendo.id("NCForm"), nendo.id("NCMember"))
+		}
+		return
+	}
 	add := clicked("NCMemberAdd")
 	lookup: string
 	if add || (ui.focus == .NC_Member && enter) {
@@ -1943,6 +1969,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			for key in keys {nc_member_add(ui, key)}
 			ed_set(ui, &ui.nc_member, "")
 			ui.nc_contact_sel = 0
+			if data := nendo.scroll(nendo.id("NCMemberOptions")); data.found {data.position.y = 0}
 			ui.focus = .NC_Member
 			return
 		}
@@ -1957,14 +1984,14 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if count > 0 && (key_hit(.UP) || key_hit(.DOWN) || enter) {
 			step := key_hit(.UP) ? -1 : key_hit(.DOWN) ? 1 : 0
 			ui.nc_contact_sel = clamp(ui.nc_contact_sel + step, 0, count - 1)
-			if enter {
-				pick = ui.nc_contact_sel
-			} else if data := nendo.scroll(nendo.id("NCMemberOptions")); data.found {
+			if data := nendo.scroll(nendo.id("NCMemberOptions")); data.found {
 				y := f32(ui.nc_contact_sel) * NC_MEMBER_H
-				if y < -data.position.y {data.position.y = -y}
-				if bottom := y + NC_MEMBER_H - data.viewport.height;
-				   bottom > -data.position.y {data.position.y = -bottom}
+				top := -data.position.y
+				visible_top := clamp(top, y + NC_MEMBER_H - data.viewport.height, y)
+				data.position.y = -visible_top
+				if enter && visible_top != top {return}
 			}
+			if enter {pick = ui.nc_contact_sel}
 		} else if mouse_released() {
 			for row, i in rows {
 				if nendo.pointer_over(nendo.id("NCMemberOption", u32(row.idx))) {pick = i; break}
@@ -1987,6 +2014,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 			ed_set(ui, &ui.nc_member, "")
 			ui.nc_contact_sel = 0
+			if data := nendo.scroll(nendo.id("NCMemberOptions")); data.found {data.position.y = 0}
 			return
 		}
 		if enter && lookup == "" {return}

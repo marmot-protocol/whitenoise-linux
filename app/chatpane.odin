@@ -1508,8 +1508,8 @@ nc_selected_members :: proc(ui: ^Ui_State) {
 			if nendo.box(nendo.id("NCMemberPicked", u32(i)))(
 			{width = nendo.grow(), height = nendo.fixed(row_h), align = {y = .Center}, gap = 8},
 			) {
-				pic_url := member.pic_url
-				if pic_url == "" {pic_url = profile_info(g_client, member.hex).pic_url}
+				pic_url := profile_info(g_client, member.hex).pic_url
+				if pic_url == "" {pic_url = member.pic_url}
 				avatar(
 					"NCMemberPickedAvatar",
 					u32(i),
@@ -1530,6 +1530,7 @@ nc_selected_members :: proc(ui: ^Ui_State) {
 					height = nendo.fixed(row_h),
 					align = {x = .Center, y = .Center},
 					color = hovered() ? HOVER : {},
+					border = ui.focus == .NC_Remove && ui.nc_remove_focus == i ? kb_ring(ACCENT) : {},
 					radius = rr(7),
 				},
 				) {

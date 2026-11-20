@@ -171,11 +171,31 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	)
 	append(
 		&ui.nc_contacts,
-		Contact_Ui{id_hex = strings.clone(third), name = strings.clone("Casey")},
+		Contact_Ui {
+			id_hex = strings.clone(third),
+			name = strings.clone("Casey"),
+			pic_url = strings.clone(bea_pic),
+		},
 	)
+	for key in ([2]string{"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"}) {
+		append(
+			&ui.nc_contacts,
+			Contact_Ui{id_hex = strings.clone(key), name = strings.clone("Extra")},
+		)
+	}
 	defer nc_contacts_free(&ui.nc_contacts)
 	layout(&ui)
 	click(t, &ui, client, nendo.id("NCMember"))
+	layout(&ui)
+	options := nendo.scroll(nendo.id("NCMemberOptions"))
+	if !testing.expect(t, options.found) {return}
+	options.position.y = -NC_MEMBER_H
+	layout(&ui)
+	rl.PushKey(.ENTER, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.ENTER, false)
+	rl.WindowShouldClose()
+	testing.expect_value(t, nc_group_targets(&ui), peer)
 	layout(&ui)
 	click(t, &ui, client, nendo.id("NCMemberOption", 0))
 	layout(&ui)
@@ -197,7 +217,22 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		}
 		testing.expect(t, shown, "selected member renders their profile photo")
 	}
-	click(t, &ui, client, nendo.id("NCMemberRemove", 2))
+	third_remove := nendo.id("NCMemberRemove", 2)
+	box := nendo.element(third_remove).rect
+	nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
+	testing.expect(
+		t,
+		nendo.pointer_over(third_remove),
+		"third invitee is visible without scrolling",
+	)
+	nendo.set_pointer({0, 0}, .Up)
+	for key in ([4]rl.KeyboardKey{.TAB, .TAB, .TAB, .ENTER}) {
+		rl.PushKey(key, true)
+		handle_chat(&ui, client)
+		rl.PushKey(key, false)
+		rl.WindowShouldClose()
+		layout(&ui)
+	}
 	testing.expect_value(t, nc_group_targets(&ui), peer + "\n" + second)
 	ed_set(&ui, &ui.nc_name, "Weekend plans")
 	ui.account_ref = "offline-fixture"
