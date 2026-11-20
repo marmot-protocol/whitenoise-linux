@@ -1400,16 +1400,7 @@ boot_worker :: proc(t: ^thread.Thread) {
 	options := marmot.Client_Options {
 		store = &store,
 	}
-	// `WN_MULTI_DEVICE=1 just build` opens with multi-device (MDK device
-	// groups) on. Every library includes it; only the constructor differs.
-	// An account that joined a device group refuses to open in a build
-	// without the flag (`experimental_device_groups_required`), so keep one
-	// data dir on one kind of build.
-	client_open := marmot.client_new_with_configuration
-	when #config(WN_MULTI_DEVICE, false) {
-		client_open = marmot.client_new_with_experimental_device_groups
-	}
-	job.status = client_open(
+	job.status = marmot.client_new_with_configuration(
 		strings.clone_to_cstring(job.home),
 		raw_data(relays),
 		len(relays),

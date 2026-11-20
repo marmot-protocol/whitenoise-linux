@@ -767,12 +767,7 @@ esac
 APP_INPUTS=("$HERE/app" "$HERE/marmot" "$HERE/lang" "$HERE/themes" "$CROP" "$HERE/vendor/common-passwords.txt" "$HERE/build/observability-tokens.toml")
 APP_OBJECT_KEY="$(native_compile_key "app Odin speed $ODIN_ENV" "${APP_INPUTS[@]}")"
 APP_KEY="$(native_key "app Odin speed $ODIN_LINK_ENV ${APP_LINK_ARGS[*]}" "${APP_INPUTS[@]}" "${APP_LIBS[@]}")"
-# WN_MULTI_DEVICE=1 opens the runtime with MDK device groups on (pages.odin).
-MULTI_DEVICE_ARGS=()
-if [ "${WN_MULTI_DEVICE:-}" = 1 ]; then
-  MULTI_DEVICE_ARGS=(-define:WN_MULTI_DEVICE=true)
-fi
-native_odin_build app "$HERE/app" "$ACTIVE_ODIN" speed "$APP_OBJECT_KEY" "$APP_KEY" "${APP_LINK_ARGS[@]}" "${MULTI_DEVICE_ARGS[@]}"
+native_odin_build app "$HERE/app" "$ACTIVE_ODIN" speed "$APP_OBJECT_KEY" "$APP_KEY" "${APP_LINK_ARGS[@]}"
 # Unused imports: fatal in CI, a warning locally so a work-in-progress
 # import does not block a build.
 if ! env "${ODIN_ROOT_ARG[@]}" "$HERE/scripts/vet-imports.sh"; then
