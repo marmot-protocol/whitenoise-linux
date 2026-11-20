@@ -1838,6 +1838,19 @@ nc_row_hex :: proc(ui: ^Ui_State, rows: []Contact_Order, people: []int, at: int)
 	return ui.people.hits[people[at - len(rows)]].id_hex
 }
 
+@(private = "file")
+nc_control_visible :: proc(id: nendo.Id) -> bool {
+	if !nendo.element(id).found {return false}
+	for container in ([2]nendo.Id{nendo.id("NCForm"), nendo.id("NewChatPane")}) {
+		scroll := nendo.scroll(container)
+		if !scroll.found {continue}
+		top := scroll.position.y
+		scroll_into_view(container, id)
+		if scroll.position.y != top {return false}
+	}
+	return true
+}
+
 // Contact selection and the group form share asynchronous creation.
 handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.nc_page == .Group &&
@@ -1939,13 +1952,14 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			ui.focus, ui.nc_remove_focus = .NC_Remove, at - 2
 			field = nendo.id("NCMemberRemove", u32(ui.nc_remove_focus))
 		}
-		scroll_into_view(nendo.id("NCForm"), field)
+		nc_control_visible(field)
 		return
 	}
 	enter := rl.IsKeyPressed(.ENTER)
 	remove := -1
 	if ui.focus == .NC_Remove && (enter || rl.IsKeyPressed(.SPACE)) {
 		remove = ui.nc_remove_focus
+		if !nc_control_visible(nendo.id("NCMemberRemove", u32(remove))) {return}
 	} else if mouse_released() {
 		for _, i in ui.nc_members {
 			if nendo.pointer_over(nendo.id("NCMemberRemove", u32(i))) {remove = i; break}
@@ -1957,7 +1971,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ordered_remove(&ui.nc_members, remove)
 		if ui.focus == .NC_Remove && ui.nc_remove_focus >= len(ui.nc_members) {
 			ui.focus = .NC_Member
-			scroll_into_view(nendo.id("NCForm"), nendo.id("NCMember"))
+			nc_control_visible(nendo.id("NCMember"))
 		}
 		return
 	}
@@ -1995,14 +2009,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				at := ui.nc_contact_sel
 				row :=
 					at < len(rows) ? nendo.id("NCMemberOption", u32(rows[at].idx)) : nendo.id("NCMemberPerson", u32(people[at - len(rows)]))
-				if !nendo.element(row).found {return}
-				for container in ([2]nendo.Id{nendo.id("NCForm"), nendo.id("NewChatPane")}) {
-					scroll := nendo.scroll(container)
-					if !scroll.found {continue}
-					top := scroll.position.y
-					scroll_into_view(container, row)
-					if scroll.position.y != top {return}
-				}
+				if !nc_control_visible(row) {return}
 				pick = at
 			}
 		} else if mouse_released() {

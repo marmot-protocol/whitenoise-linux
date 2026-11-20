@@ -217,9 +217,35 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	rl.PushKey(.ENTER, false)
 	rl.WindowShouldClose()
 	if !testing.expect_value(t, len(ui.nc_members), 25) {return}
+	pane.position.y = 0
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCName"))
+	layout(&ui)
+	rl.PushKey(.LEFT_SHIFT, true)
+	rl.PushKey(.TAB, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.TAB, false)
+	rl.PushKey(.LEFT_SHIFT, false)
+	rl.WindowShouldClose()
+	layout(&ui)
+	last_remove := nendo.element(nendo.id("NCMemberRemove", 24)).rect
+	testing.expect(
+		t,
+		last_remove.y + last_remove.height <= view.y + view.height,
+		"Tab reveals the last removal control",
+	)
+	pane.position.y = 0
+	layout(&ui)
+	rl.PushKey(.ENTER, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.ENTER, false)
+	rl.WindowShouldClose()
+	if !testing.expect_value(t, len(ui.nc_members), 25) {return}
 	for member in ui.nc_members[1:] {delete(member.hex); delete(member.label); delete(member.pic_url)}
 	resize(&ui.nc_members, 1)
 	pane.position.y = 0
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCMember"))
 	layout(&ui)
 	click(t, &ui, client, nendo.id("NCMemberOption", 0))
 	layout(&ui)
