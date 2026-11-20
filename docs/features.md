@@ -422,15 +422,21 @@ If the request hasn't appeared, open **Add a new device** on the existing
 device and choose **Check now**.
 
 The existing device chooses whether to add the new one to eligible chats and
-bring over earlier messages. A chat shows progress while it receives history
-and marks where that history ends. Messages sent from your other device still
-appear as yours, without this device's delivery ticks.
+bring over earlier messages. After linking, choose **Open chats** to see
+what's already available. Earlier messages can still be arriving in chats you
+can open. Each chat shows its own history progress and marks where imported
+history ends. Messages sent from your other device still appear as yours,
+without this device's delivery ticks.
 
 Select a row under **Your devices** to see its settings or rename or remove
 it. Open an entry under **Sign-ins** to review it. If it was you but you want
 to keep the device separate, choose **This was me, don't link**. Only this
 installation remembers the answer. It does not link the device or change
 what other devices see.
+
+If **Settings > Devices** shows a count of chats that can't add linked devices,
+choose **Review chats** to see what's blocking each chat. Selecting a chat
+opens its settings without changing them.
 
 Open a chat's details and look for **Linked devices**. The card shows whether
 linked devices are on or why you can't turn them on. If you see **Linked

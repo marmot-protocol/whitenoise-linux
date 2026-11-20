@@ -15,6 +15,7 @@ Device_Job :: struct {
 	active:                  bool,
 	roster_event:            u64,
 	reads, failed:           Device_Parts,
+	chat_review_cancel:      bool,
 	unavailable:             bool,
 	data:                    Device_View,
 	command:                 Device_Command,
@@ -93,19 +94,38 @@ device_worker :: proc(t: ^thread.Thread) {
 			status = marmot.key_package_refresh_overdue(client, account, &view.overdue)
 		case .History:
 			status = marmot.chat_history_imports(client, account, &view.history)
-			if status == .OK {view.history_by_group = device_history_index(view.history)}
+			if status == .OK {
+				view.history_by_group = device_history_index(view.history)
+				for _, item in view.history_by_group {
+					if item.state.tag == .RECEIVING {view.history_receiving += 1}
+				}
+			}
 		case .Unlinked:
 			continue
+		case .Chat_Review:
+			if !sync.atomic_load(&job.chat_review_cancel) {
+				status = device_read_chat_review(
+					client,
+					account,
+					&view.chat_review,
+					&job.chat_review_cancel,
+				)
+			}
 		}
 		device_read_status(job, part, status)
 	}
 }
 
 @(private)
-device_checking_link :: proc(profile: ^Device_Profile) -> bool {
-	if profile == nil || .Link in profile.dirty {return true}
+device_read_pending :: proc(profile: ^Device_Profile, part: Device_Part) -> bool {
+	if profile == nil || part in profile.dirty {return true}
 	job := profile.job
-	return job != nil && job.command.kind == .None && .Link in job.reads
+	return job != nil && job.command.kind == .None && part in job.reads
+}
+
+@(private)
+device_checking_link :: proc(profile: ^Device_Profile) -> bool {
+	return device_read_pending(profile, .Link)
 }
 
 @(private)
@@ -403,11 +423,23 @@ device_apply :: proc(devices: ^Devices_State, profile: ^Device_Profile, job: ^De
 	   (job.generation != devices.generation || job.account != devices.active) {return}
 	if !job.active && job.account == devices.active {return}
 	if job.unavailable {devices.unavailable = true; return}
+	if sync.atomic_load(&job.chat_review_cancel) {
+		job.reads -= {.Chat_Review}
+		job.failed -= {.Chat_Review}
+	}
 	ready := job.reads - job.failed
 	profile.known += ready
 	profile.stale = (profile.stale - ready) + job.failed
 	view, data := &profile.view, &job.data
 	if .Link in ready {
+		if data.link != nil &&
+		   data.link.new_device != nil &&
+		   data.link.new_device.tag == .LINKED &&
+		   (view.link == nil ||
+				   view.link.new_device == nil ||
+				   view.link.new_device.tag != .LINKED) {
+			profile.dirty += {.History}
+		}
 		if device_move_pending(view.link) &&
 		   !device_move_pending(data.link) {profile.dirty += {.Roster}}
 		view.link, data.link = data.link, view.link
@@ -422,11 +454,14 @@ device_apply :: proc(devices: ^Devices_State, profile: ^Device_Profile, job: ^De
 	if .History in ready {
 		view.history, data.history = data.history, view.history
 		view.history_by_group, data.history_by_group = data.history_by_group, view.history_by_group
+		view.history_receiving = data.history_receiving
 	}
 	if .Started_Fresh in ready {view.started_fresh = data.started_fresh}
 	if .Overdue in ready {view.overdue = data.overdue}
 	if .Closed_Chats in ready {view.closed_chats = data.closed_chats}
 	if .Leftover_Chats in ready {view.leftover_chats = data.leftover_chats}
+	if .Chat_Review in
+	   ready {view.chat_review, data.chat_review = data.chat_review, view.chat_review}
 }
 
 @(private = "file")
@@ -642,6 +677,7 @@ device_try_own_name :: proc(ui: ^Ui_State) {
 devices_stop :: proc(ui: ^Ui_State) {
 	context.allocator = reload_allocator()
 	devices := &ui.devices
+	devices_close(ui)
 	if devices.inventory != nil {device_inventory_free(devices.inventory)}
 	for _, profile in devices.profiles {
 		if profile.job != nil {device_job_free(profile.job)}
@@ -655,7 +691,6 @@ devices_stop :: proc(ui: ^Ui_State) {
 		delete(profile.unlink_label, reload_allocator())
 		free(profile, reload_allocator())
 	}
-	devices_close(ui)
 	delete(devices.wipe_report)
 	delete(devices.name); delete(devices.own_name)
 	delete(devices.profiles)

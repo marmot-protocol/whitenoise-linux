@@ -177,12 +177,15 @@ devices_pane :: proc(ui: ^Ui_State) {
 		}
 		if profile != nil {
 			if .Closed_Chats in profile.known && profile.view.closed_chats != 0 {
-				device_copy(
-					fmt.tprintf(
-						tr("Chats that can't add linked devices: %d."),
-						profile.view.closed_chats,
-					),
-				)
+				if nendo.box(nendo.id("DevicesChatReviewNotice"))(device_notice(WARNING)) {
+					device_copy(
+						fmt.tprintf(
+							tr("Chats that can't add linked devices: %d."),
+							profile.view.closed_chats,
+						),
+					)
+					settings_button("DevicesReviewChats", tr("Review chats"), ACCENT)
+				}
 			}
 			if .Leftover_Chats in profile.known && profile.view.leftover_chats != 0 {
 				device_copy(
@@ -266,12 +269,16 @@ handle_devices :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	profile := device_current(ui)
 	if device_busy(profile) != .None {return true}
 	if clicked("DevicesRetry") {
-		if profile != nil {profile.dirty += profile.stale}
+		if profile != nil {profile.dirty += profile.stale - {.Chat_Review}}
 		devices_refresh_open(ui)
 		return true
 	}
 	if clicked("DevicesAdd") {devices_show(ui, .Add); return true}
 	if clicked("DevicesNew") {devices_show(ui, .New); return true}
+	if clicked("DevicesReviewChats") && profile != nil {
+		devices_show(ui, .Chat_Review)
+		return true
+	}
 	if clicked("DevicesUnlinkedProfiles") {return devices_open_unlinked(ui)}
 	if clicked("DeviceCheckSignIns") {return device_queue(ui, {kind = .Check_Sign_Ins})}
 	if clicked("DeviceDismissWarning") &&
@@ -472,6 +479,8 @@ device_modal_title :: proc(panel: Device_Panel) -> string {
 		return tr("Sign-out and wipe report")
 	case .Offer:
 		return tr("Signed in on another device?")
+	case .Chat_Review:
+		return tr("Review chats")
 	}
 	return ""
 }
@@ -568,7 +577,7 @@ device_modal_new :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
 			device_copy(tr("Joining the other device…"))
 			busy_bar("DeviceJoining")
 		case .LINKED:
-			device_copy(tr("Device linked"), TEXT)
+			device_link_handoff(ui, profile)
 			if device_roster_ready(profile) && device_own_slot(profile) != nil {
 				settings_button("DeviceNameThis", tr("Rename this device"))
 			}
@@ -636,6 +645,188 @@ device_modal_new :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
 		}
 	}
 	settings_button("DeviceClose", tr("Close"))
+}
+
+@(private = "file")
+device_link_handoff :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
+	if nendo.box(nendo.id("DeviceLinkHandoff"))(device_notice(ACCENT)) {
+		device_heading(tr("Device linked"))
+		available := false
+		for chat in ui.chats {
+			if !chat.pending &&
+			   !chat.archived &&
+			   !chat.search_only &&
+			   chat.group_id != ui.prefs.notes_group {
+				available = true
+				break
+			}
+		}
+		device_copy(
+			available ? tr("You can open the chats already on this device.") : tr("No chats are available in your inbox yet."),
+		)
+		if device_read_pending(profile, .History) ||
+		   (.History not_in profile.known && .History not_in profile.stale) {
+			device_copy(tr("Checking for chat history…"))
+			busy_bar("DeviceHistoryCheck")
+		} else if .History in profile.stale {
+			device_copy(tr("Couldn't check chat history. Please try again."), DANGER)
+			settings_button("DeviceRetryHistory", tr("Retry"))
+		} else if count := profile.view.history_receiving; count != 0 {
+			device_copy(
+				fmt.tprintf(
+					tr(
+						count == 1 ? N_("Earlier messages are still arriving in %d chat.") : N_("Earlier messages are still arriving in %d chats."),
+					),
+					count,
+				),
+			)
+			busy_bar("DeviceHistoryReceiving")
+		}
+		device_copy(
+			tr(
+				"Keep both devices online. Eligible chats can appear before their earlier messages arrive.",
+			),
+		)
+	}
+	settings_button("DeviceOpenChats", tr("Open chats"), ACCENT)
+}
+
+@(private = "file")
+DEVICE_REVIEW_PAGE_SIZE :: 8
+
+@(private = "file")
+device_chat_review_draw :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
+	if profile == nil {settings_button("DeviceClose", tr("Close")); return}
+	review := &profile.view.chat_review
+	if device_read_pending(profile, .Chat_Review) {
+		device_copy(tr("Checking which chats can add linked devices…"))
+		busy_bar("DevicesChatReviewBusy")
+	} else if .Chat_Review in profile.stale {
+		device_copy(
+			tr("Couldn't check which chats can add linked devices. Please try again."),
+			DANGER,
+		)
+		settings_button("DeviceReviewRetry", tr("Retry"))
+	} else {
+		partial :=
+			review.incomplete ||
+			.Closed_Chats in profile.stale ||
+			len(review.rows) < int(profile.view.closed_chats)
+		if partial {
+			device_copy(tr("Some chats couldn't be checked. Please try again."), WARNING)
+			settings_button("DeviceReviewRetry", tr("Retry"))
+		} else if len(review.rows) == 0 {
+			device_copy(tr("No chats to review right now."))
+		}
+		if len(review.rows) > 0 {
+			device_copy(
+				tr(
+					"Choose a chat to open its settings. Nothing changes until you confirm it there.",
+				),
+			)
+		}
+		pages := max(1, (len(review.rows) + DEVICE_REVIEW_PAGE_SIZE - 1) / DEVICE_REVIEW_PAGE_SIZE)
+		page := clamp(ui.devices.chat_review_page, 0, pages - 1)
+		if pages > 1 {
+			if nendo.box(nendo.id("DeviceReviewPages"))(
+				settings_choices(nendo.id("DeviceReviewPages")),
+			) {
+				settings_button(
+					"DeviceReviewPrev",
+					tr("Previous"),
+					{},
+					page > 0 ? .Enabled : .Disabled,
+				)
+				device_copy(fmt.tprintf(tr("Page %d of %d"), page + 1, pages))
+				settings_button(
+					"DeviceReviewNext",
+					tr("Next"),
+					{},
+					page + 1 < pages ? .Enabled : .Disabled,
+				)
+			}
+		}
+		first := page * DEVICE_REVIEW_PAGE_SIZE
+		for entry in review.rows[first:min(first + DEVICE_REVIEW_PAGE_SIZE, len(review.rows))] {
+			row := &review.chats.rows[entry.index]
+			title := string(row.row.title)
+			#partial switch row.presentation.title.tag {
+			case .Literal:
+				title = string(row.presentation.title.body.literal)
+			case .Unnamed_Group:
+				title = tr("Unnamed group")
+			case .Unavailable_Conversation:
+				title = tr("Unavailable conversation")
+			}
+			if peer := string(row.presentation.peer_id); peer != "" {
+				if nick := ui.nicknames[peer]; nick != "" {title = nick}
+			}
+			device_pair_choice(
+				fmt.tprintf("DeviceReviewChat%d", entry.index),
+				title,
+				device_chat_reason(entry.blocker),
+				entry.blocker == .Ready ? ACCENT : TEXT,
+			)
+		}
+	}
+	settings_button("DeviceClose", tr("Close"))
+}
+
+@(private = "file")
+device_chat_reason :: proc(blocker: Device_Chat_Blocker) -> string {
+	switch blocker {
+	case .Ready:
+		return tr("You can turn on linked devices.")
+	case .Needs_Admin:
+		return tr("Only a chat admin can turn on linked devices.")
+	case .Waiting_For_Support:
+		return tr("Waiting for every device to report support.")
+	case .Replacement:
+		return tr("Some devices need to be replaced before linked devices can be turned on.")
+	case .Activation_Limit:
+		return tr("This chat exceeds the device limit.")
+	case .Unsupported:
+		return tr("This chat doesn't support linked devices.")
+	case .No_Relays:
+		return tr("This chat has no relays for inviting linked devices.")
+	case .Account_Limit:
+		return tr("Your profile has reached the device limit in this chat.")
+	}
+	return ""
+}
+
+@(private = "file")
+device_chat_review_input :: proc(ui: ^Ui_State, client: ^marmot.Client, profile: ^Device_Profile) {
+	if profile == nil || device_read_pending(profile, .Chat_Review) {return}
+	if clicked("DeviceReviewRetry") {
+		profile.dirty += {.Chat_Review, .Closed_Chats}
+		ui.devices.chat_review_page = 0
+		return
+	}
+	if .Chat_Review in profile.stale {return}
+	review := &profile.view.chat_review
+	pages := max(1, (len(review.rows) + DEVICE_REVIEW_PAGE_SIZE - 1) / DEVICE_REVIEW_PAGE_SIZE)
+	page := clamp(ui.devices.chat_review_page, 0, pages - 1)
+	if page > 0 && clicked("DeviceReviewPrev") {ui.devices.chat_review_page = page - 1; return}
+	if page + 1 < pages &&
+	   clicked("DeviceReviewNext") {ui.devices.chat_review_page = page + 1; return}
+	first := page * DEVICE_REVIEW_PAGE_SIZE
+	for entry in review.rows[first:min(first + DEVICE_REVIEW_PAGE_SIZE, len(review.rows))] {
+		if !clicked(fmt.tprintf("DeviceReviewChat%d", entry.index)) {continue}
+		row := &review.chats.rows[entry.index]
+		group := string(row.row.group_id_hex)
+		ui.page = .Chats
+		clear(&ui.sidebar_filter)
+		if !select_by_id(ui, client, group) {
+			chat := row_to_ui(nil, row, ui.account_ref)
+			chat.search_only = true
+			append(&ui.chats, chat)
+			select_chat(ui, client, len(ui.chats) - 1)
+		}
+		devices_put_away(ui)
+		open_group_info(ui, client, .Settings)
+		return
+	}
 }
 
 @(private = "file")
@@ -1451,6 +1642,8 @@ devices_modal :: proc(ui: ^Ui_State) {
 					}
 				}
 				#partial switch panel {
+				case .Chat_Review:
+					device_chat_review_draw(ui, profile)
 				case .Add:
 					device_copy(
 						tr(
@@ -1542,6 +1735,9 @@ handle_device_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	#partial switch panel {
+	case .Chat_Review:
+		if close || escape {devices_put_away(ui); return}
+		device_chat_review_input(ui, client, profile)
 	case .Add:
 		if !device_checking_link(profile) && clicked("DeviceCheckRequest") {
 			profile.dirty += {.Link}
@@ -1569,6 +1765,12 @@ handle_device_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if close || escape {devices_put_away(ui); return}
 		if attempt != nil && attempt.tag == .LINKED {
+			if clicked("DeviceOpenChats") {
+				devices_put_away(ui)
+				ui.page, ui.focus = .Chats, .Compose
+				return
+			}
+			if clicked("DeviceRetryHistory") {profile.dirty += {.History}; return}
 			if clicked("DeviceNameThis") &&
 			   device_roster_ready(profile) {devices_show_detail(ui, device_own_slot(profile))}
 			return

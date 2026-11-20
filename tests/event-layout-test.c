@@ -28,6 +28,12 @@ _Static_assert(offsetof(MarmotEvent, EPOCH_STALL_ESCALATED.group_id_hex) == 24, 
 _Static_assert(offsetof(MarmotEvent, GROUP_CHANGE_SUPERSEDED.group_id_hex) == 24,
                "superseded prefix");
 
+_Static_assert(offsetof(MarmotGroupDetails, mls_state) == 280, "group MLS state");
+_Static_assert(offsetof(MarmotAppGroupMlsState, required_app_components) == 32,
+               "required app components");
+_Static_assert(offsetof(MarmotAppGroupMlsState, required_app_components_len) == 40,
+               "required app component count");
+
 /* Timeline media is now an outcome union, including rejected source slots. */
 _Static_assert(sizeof(MarmotMediaAttachmentReference) == 96, "media reference stride");
 _Static_assert(sizeof(MarmotMediaAttachmentOutcome) == 112, "media outcome stride");

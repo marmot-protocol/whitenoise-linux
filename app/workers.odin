@@ -35,6 +35,7 @@ Device_Part :: enum {
 	Overdue,
 	History,
 	Unlinked,
+	Chat_Review,
 }
 
 @(private)

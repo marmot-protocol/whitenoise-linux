@@ -1,6 +1,7 @@
 package main
 
 import "core:strings"
+import "core:sync"
 import "core:unicode"
 import "core:unicode/utf8"
 
@@ -33,6 +34,7 @@ Device_Panel :: enum {
 	Wipe_Report,
 	Auth_Unlinked,
 	Offer,
+	Chat_Review,
 }
 
 @(private)
@@ -82,6 +84,8 @@ Device_View :: struct {
 	// Keys and values borrow from the corresponding list root.
 	roster_labels:                map[string]string,
 	history_by_group:             map[string]^marmot.Chat_History_Import,
+	history_receiving:            int,
+	chat_review:                  Device_Chat_Review,
 	started_fresh, overdue:       bool,
 	closed_chats, leftover_chats: u32,
 }
@@ -115,6 +119,7 @@ Devices_State :: struct {
 	panel_account, panel_prompt, review_account, error:              string,
 	panel_slot, expanded_sign_in:                                    string,
 	expanded_sign_in_at:                                             u64,
+	chat_review_page:                                                int,
 	wipe_report:                                                     string,
 	wipe_report_error:                                               bool,
 	name, own_name:                                                  [dynamic]u8,
@@ -137,6 +142,8 @@ device_profile :: proc(devices: ^Devices_State, account: string) -> ^Device_Prof
 device_view_free :: proc(view: ^Device_View) {
 	delete(view.roster_labels)
 	delete(view.history_by_group)
+	delete(view.chat_review.rows)
+	if view.chat_review.chats != nil {marmot.presented_chat_list_free(view.chat_review.chats)}
 	if view.link != nil {marmot.device_link_snapshot_free(view.link)}
 	if view.roster != nil {marmot.linked_device_list_free(view.roster)}
 	if view.sign_ins != nil {marmot.unrecognized_sign_in_list_free(view.sign_ins)}
@@ -499,11 +506,20 @@ devices_show_detail :: proc(ui: ^Ui_State, row: ^marmot.Linked_Device) {
 devices_close :: proc(ui: ^Ui_State) {
 	context.allocator = reload_allocator()
 	d := &ui.devices
+	if d.panel == .Chat_Review {
+		if profile := d.profiles[d.panel_account]; profile != nil {
+			profile.dirty -= {.Chat_Review}
+			if job := profile.job; job != nil && .Chat_Review in job.reads {
+				sync.atomic_store(&job.chat_review_cancel, true)
+			}
+		}
+	}
 	delete(d.panel_account); delete(d.panel_prompt); delete(d.review_account); delete(d.error)
 	delete(d.panel_slot); d.panel_slot = ""
 	delete(d.expanded_sign_in); d.expanded_sign_in = ""
 	d.panel_account, d.panel_prompt, d.review_account, d.error = "", "", "", ""
 	d.panel = .None
+	d.chat_review_page = 0
 	d.show_attempt, d.mismatch, d.move_consent = false, false, false
 	clear(&d.name); clear(&d.own_name)
 	if ui.focus == .Device_Name || ui.focus == .Device_Own_Name {ui.focus = .Compose}
@@ -525,6 +541,7 @@ devices_show :: proc(
 	profile := d.profiles[owner]
 	d.show_attempt = panel == .New && profile != nil && device_live_attempt(profile.view.link)
 	if panel == .Add && profile != nil && !device_checking_link(profile) {profile.dirty += {.Link}}
+	if panel == .Chat_Review && profile != nil {profile.dirty += {.Chat_Review, .Closed_Chats}}
 	if panel == .Approve {
 		append(&d.name, ..transmute([]u8)tr("New device"))
 		append(&d.own_name, DEVICE_PLATFORM == "" ? tr("This device") : DEVICE_PLATFORM)

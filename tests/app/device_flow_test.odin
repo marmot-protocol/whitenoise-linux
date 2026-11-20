@@ -1,6 +1,7 @@
 package main
 
 import "base:runtime"
+import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:testing"
@@ -225,6 +226,117 @@ devices_visibility :: proc(t: ^testing.T) {
 	devices_select(&ui)
 	restore_workspace(&ui, nil)
 	testing.expect_value(t, ui.settings_section, Settings_Section.Home)
+}
+
+@(test)
+devices_post_link_review :: proc(t: ^testing.T) {
+	if !MULTI_DEVICE ||
+	   !strings.contains(#config(ODIN_TEST_NAMES, ""), "devices_post_link_review") {return}
+	context.allocator = runtime.default_context().allocator
+	ui: Ui_State
+	memory: []u8
+	old := device_test_ui(&ui, &memory)
+	defer device_test_finish(&ui, memory, old)
+	defer delete(ui.chats)
+	settings_open(&ui, nil, .Devices)
+	profile := device_current(&ui)
+	profile.known = {.Link, .Roster, .Closed_Chats}
+	profile.dirty = {}
+	attempt := marmot.New_Device_Link_State {
+		tag = .LINKED,
+	}
+	link := marmot.Device_Link_Snapshot {
+		new_device = &attempt,
+	}
+	profile.view.link = &link
+	defer profile.view.link = nil
+	devices_show(&ui, .New)
+	ui.devices.show_attempt = true
+	device_test_frame(&ui)
+	testing.expect(t, nendo.element(nendo.id("DeviceHistoryCheck")).found)
+	profile.known += {.History}
+	profile.view.history_receiving = 2
+	append(&ui.chats, Chat_Row_Ui{group_id = "one", title = "Studio chat"})
+	text := device_test_frame(&ui)
+	testing.expect(t, strings.contains(text, "You can open the chats already on this device."))
+	testing.expect(t, strings.contains(text, "Earlier messages are still arriving in 2 chats."))
+	device_test_click(t, &ui, nil, "DeviceOpenChats")
+	testing.expect_value(t, ui.page, Page.Chats)
+	testing.expect_value(t, ui.devices.panel, Device_Panel.None)
+
+	settings_open(&ui, nil, .Devices)
+	profile.view.closed_chats = 3
+	devices_show(&ui, .Chat_Review)
+	device_test_frame(&ui)
+	testing.expect(t, nendo.element(nendo.id("DevicesChatReviewBusy")).found)
+	profile.dirty = {}
+	profile.known += {.Chat_Review}
+	rows := [?]marmot.Presented_Chat_Row {
+		{
+			row = {group_id_hex = "one"},
+			presentation = {title = {tag = .Literal, body = {literal = "Studio chat"}}},
+		},
+		{
+			row = {group_id_hex = "two"},
+			presentation = {title = {tag = .Literal, body = {literal = "Family group"}}},
+		},
+		{
+			row = {group_id_hex = "three"},
+			presentation = {title = {tag = .Literal, body = {literal = "Book club"}}},
+		},
+	}
+	list := marmot.Presented_Chat_List {
+		rows     = raw_data(rows[:]),
+		rows_len = len(rows),
+	}
+	profile.view.chat_review.chats = &list
+	defer profile.view.chat_review.chats = nil
+	append(
+		&profile.view.chat_review.rows,
+		Device_Chat_Block{0, .Ready},
+		Device_Chat_Block{1, .Needs_Admin},
+		Device_Chat_Block{2, .Waiting_For_Support},
+	)
+	text = device_test_frame(&ui)
+	testing.expect(t, strings.contains(text, "turn on linked devices"))
+	testing.expect(t, strings.contains(text, "Only a chat admin"))
+	testing.expect(t, strings.contains(text, "Waiting for every device"))
+
+	dir, err := os.make_directory_temp("", "wn-device-review-*", context.temp_allocator)
+	if !testing.expect_value(t, err, nil) {return}
+	defer os.remove_all(dir)
+	deployment: ^marmot.Deployment
+	if !testing.expect_value(t, marmot.deployment_white_noise(&deployment), .OK) {return}
+	defer marmot.deployment_free(deployment)
+	client: ^marmot.Client
+	store := vault_secret_store()
+	status := marmot.client_new_with_secret_store(
+		strings.clone_to_cstring(dir, context.temp_allocator),
+		nil,
+		0,
+		&store,
+		deployment,
+		&client,
+	)
+	if !testing.expect_value(t, status, .OK) {return}
+	defer marmot.client_free(client)
+	defer {members_stop(); timeline_stop(); activation_stop(&ui)}
+	device_test_click(t, &ui, client, "DeviceReviewChat0")
+	testing.expect_value(t, ui.page, Page.Chats)
+	testing.expect_value(t, ui.selected, 0)
+	testing.expect(t, ui.show_members && ui.info_tab == .Settings)
+	testing.expect_value(t, ui.confirm.kind, Confirm_Kind.None)
+}
+
+@(private = "file")
+device_test_click :: proc(t: ^testing.T, ui: ^Ui_State, client: ^marmot.Client, id: string) {
+	element := nendo.element(nendo.id(id))
+	if !testing.expect(t, element.found, id) {return}
+	r := element.rect
+	nendo.set_pointer({r.x + r.width / 2, r.y + r.height / 2}, .Up)
+	forced_release = true
+	handle_device_modal(ui, client)
+	forced_release = false
 }
 
 @(test)

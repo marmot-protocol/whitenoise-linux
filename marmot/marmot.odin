@@ -1431,14 +1431,12 @@ Group_Record_Head :: struct {
 	_tail:                     [72]u8, // archived .. leave_blocked
 }
 
-// Partial mirror of MarmotGroupDetails: the trailing mls_state is
-// ignored. Reached by pointer only, freed by group_details_free.
-// Offsets from offsetof() under gcc against the vendored marmot.h.
+// Prefix of MarmotGroupDetails. Reached by pointer only; group_details_free owns it.
 Group_Details :: struct {
 	group:       Group_Record_Head, // embedded MarmotAppGroupRecord
 	members:     [^]Group_Member_Details,
 	members_len: uint,
-	// mls_state tail ignored
+	mls_state:   Group_Mls_State_Head,
 }
 
 #assert(size_of(Group_Member_Details) == 48)
@@ -1448,18 +1446,23 @@ Group_Details :: struct {
 #assert(size_of(Group_Record_Head) == 264)
 #assert(offset_of(Group_Details, members) == 264)
 #assert(offset_of(Group_Details, members_len) == 272)
+#assert(offset_of(Group_Details, mls_state) == 280)
 
-// Leading fields of MarmotAppGroupMlsState, mirrored far enough to
-// read the epoch. Reached by pointer only, freed by
-// app_group_mls_state_free.
+// Prefix of MarmotAppGroupMlsState, also embedded at the end of Group_Details.
 Group_Mls_State_Head :: struct {
-	group_id_hex:     cstring,
-	protocol_profile: i32,
-	lifecycle_state:  i32,
-	epoch:            u64,
+	group_id_hex:                cstring,
+	protocol_profile:            i32,
+	lifecycle_state:             Group_Lifecycle_State,
+	epoch:                       u64,
+	member_count:                u32,
+	unrecoverable:               bool,
+	required_app_components:     [^]u16,
+	required_app_components_len: uint,
 }
 
 #assert(offset_of(Group_Mls_State_Head, epoch) == 16)
+#assert(offset_of(Group_Mls_State_Head, required_app_components) == 32)
+#assert(offset_of(Group_Mls_State_Head, required_app_components_len) == 40)
 
 // One group's outcome from a retention sweep. Deferred statuses
 // (unread, clock skew) mean MDK retries on a later sweep.

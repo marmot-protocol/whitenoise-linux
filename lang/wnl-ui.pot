@@ -1087,6 +1087,9 @@ msgstr ""
 msgid "Checking device information…"
 msgstr ""
 
+msgid "Checking for chat history…"
+msgstr ""
+
 msgid "Checking for sign-ins…"
 msgstr ""
 
@@ -1097,6 +1100,9 @@ msgid "Checking relays..."
 msgstr ""
 
 msgid "Checking whether this chat supports linked devices…"
+msgstr ""
+
+msgid "Checking which chats can add linked devices…"
 msgstr ""
 
 msgid "Checking your key with the relays. This takes a few seconds."
@@ -1127,6 +1133,9 @@ msgid "Chip outline"
 msgstr ""
 
 msgid "Chip text"
+msgstr ""
+
+msgid "Choose a chat to open its settings. Nothing changes until you confirm it there."
 msgstr ""
 
 msgid "Choose a contact or paste a Nostr address."
@@ -1530,6 +1539,9 @@ msgstr ""
 msgid "Couldn't change the password. Please try again."
 msgstr ""
 
+msgid "Couldn't check chat history. Please try again."
+msgstr ""
+
 msgid "Couldn't check for sign-ins. Check your relay settings and try again."
 msgstr ""
 
@@ -1537,6 +1549,9 @@ msgid "Couldn't check for updates. Please try again."
 msgstr ""
 
 msgid "Couldn't check linked devices for this chat. Please try again."
+msgstr ""
+
+msgid "Couldn't check which chats can add linked devices. Please try again."
 msgstr ""
 
 msgid "Couldn't choose a photo. Close your open file picker and try again."
@@ -2490,6 +2505,14 @@ msgstr ""
 msgid "ENCRYPTION REVISION"
 msgstr ""
 
+#, c-format
+msgid "Earlier messages are still arriving in %d chat."
+msgstr ""
+
+#, c-format
+msgid "Earlier messages are still arriving in %d chats."
+msgstr ""
+
 msgid "Earlier sign-ins stop prompting you. Until you link, only future invitations will appear here."
 msgstr ""
 
@@ -3336,6 +3359,9 @@ msgstr ""
 msgid "Keep White Noise open and online so your devices can sync. If this continues, people may not be able to add this device to chats."
 msgstr ""
 
+msgid "Keep both devices online. Eligible chats can appear before their earlier messages arrive."
+msgstr ""
+
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr ""
 
@@ -3996,7 +4022,13 @@ msgstr ""
 msgid "No chat is open. Select one and refresh."
 msgstr ""
 
+msgid "No chats are available in your inbox yet."
+msgstr ""
+
 msgid "No chats match your filter."
+msgstr ""
+
+msgid "No chats to review right now."
 msgstr ""
 
 msgid "No chats to share with yet."
@@ -4291,6 +4323,9 @@ msgid "Open a chat before inviting someone."
 msgstr ""
 
 msgid "Open chat"
+msgstr ""
+
+msgid "Open chats"
 msgstr ""
 
 msgid "Open events in"
@@ -5092,6 +5127,9 @@ msgstr ""
 msgid "Review and approve"
 msgstr ""
 
+msgid "Review chats"
+msgstr ""
+
 msgid "Review local data deletion"
 msgstr ""
 
@@ -5737,6 +5775,9 @@ msgstr ""
 msgid "Some chat changes weren't delivered"
 msgstr ""
 
+msgid "Some chats couldn't be checked. Please try again."
+msgstr ""
+
 msgid "Some devices need to be replaced before linked devices can be turned on."
 msgstr ""
 
@@ -6179,6 +6220,9 @@ msgid "This chat doesn't support linked devices."
 msgstr ""
 
 msgid "This chat exceeds the device limit."
+msgstr ""
+
+msgid "This chat has no relays for inviting linked devices."
 msgstr ""
 
 msgid "This chat is archived. Restore it from Archive to send messages."
@@ -6725,6 +6769,9 @@ msgstr ""
 msgid "Waiting for a link request…"
 msgstr ""
 
+msgid "Waiting for every device to report support."
+msgstr ""
+
 msgid "Waiting for signer approval"
 msgstr ""
 
@@ -6874,6 +6921,12 @@ msgstr ""
 msgid "You can find it in Archived and restore it to your chat list there."
 msgstr ""
 
+msgid "You can open the chats already on this device."
+msgstr ""
+
+msgid "You can turn on linked devices."
+msgstr ""
+
 msgid "You can't send messages to someone you blocked."
 msgstr ""
 
@@ -7005,6 +7058,9 @@ msgid "Your private key stays in your remote signer. Reveal and export are unava
 msgstr ""
 
 msgid "Your profile"
+msgstr ""
+
+msgid "Your profile has reached the device limit in this chat."
 msgstr ""
 
 msgid "Your proxy credentials are stored in your encrypted vault."
