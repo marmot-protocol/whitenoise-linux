@@ -31,11 +31,9 @@ chat_row_preview :: proc(
 	raw := last.plaintext != nil ? string(last.plaintext) : ""
 	class := record_class(last.kind, raw)
 	if class == .System && last.group_system != nil {
-		return chat_preview(system_text(client, last.group_system)), nil
+		return rail_preview(system_text(client, last.group_system)), nil
 	}
-	// Only a message speaks for itself. Anything else, and a blocked
-	// sender's message, reads the newest previewable row in a window.
-	if class != .Message || is_blocked {
+	if is_blocked || (class != .Message && class != .Unsupported) {
 		page := page
 		owned := page == nil
 		if owned {page = window_preview(client, account_ref, row)}
@@ -45,17 +43,52 @@ chat_row_preview :: proc(
 		if system && mode == .Worker {return "", page}
 		if owned && page != nil {marmot.timeline_page_free(page)}
 		if phrased == "" {return "", nil}
-		return chat_preview(phrased), nil
+		return rail_preview(phrased), nil
 	}
-	preview = reading_text(client, raw)
-	if strings.trim_space(raw) == "" &&
+	if class == .Unsupported {
+		preview = tr("Unsupported event")
+	} else if strings.trim_space(raw) == "" &&
 	   !last.deleted &&
 	   last.has_attachment_kind &&
 	   last.attachment_kind == CHAT_ATTACHMENT_AUDIO {
 		preview = tr("Audio message")
+	} else {
+		preview = reading_text(client, raw)
 	}
 	if mine && strings.trim_space(preview) != "" {preview = fmt.tprintf(tr("You: %s"), preview)}
-	return chat_preview(preview), nil
+	return rail_preview(preview), nil
+}
+
+// Decode the whole link before either preview limit can cut its checksum.
+@(private = "file")
+rail_preview :: proc(text: string) -> string {
+	cover, _ := hidden_message(text)
+	builder: strings.Builder
+	start := 0
+	for i := 0; i < len(cover) && strings.builder_len(builder) + i - start < PREVIEW_BYTES; {
+		end, ref := nostr_at(cover, i)
+		if ref.kind == .None {
+			if cover[i] == 'h' {
+				if end, _, ok := url_at(cover, i); ok {
+					i = end
+					continue
+				}
+			}
+			i += 1
+			continue
+		}
+		if ref.kind == .Event || ref.kind == .Address {
+			if start == 0 {builder = strings.builder_make(context.temp_allocator)}
+			strings.write_string(&builder, cover[start:i])
+			strings.write_string(&builder, tr("Nostr event"))
+			start = end
+		}
+		i = end
+	}
+	if start == 0 {return cap_preview(cover)}
+	remaining := max(0, PREVIEW_BYTES + 1 - strings.builder_len(builder))
+	strings.write_string(&builder, cover[start:start + min(remaining, len(cover) - start)])
+	return cap_preview(strings.to_string(builder))
 }
 
 // Read a bounded timeline window only for rows whose newest record cannot
@@ -92,7 +125,8 @@ preview_text :: proc(
 	for i := int(page.messages_len) - 1; i >= 0; i -= 1 {
 		record := &page.messages[i]
 		raw := record.plaintext != nil ? string(record.plaintext) : ""
-		switch record_class(record.kind, raw) {
+		class := record_class(record.kind, raw)
+		switch class {
 		case .System:
 			if record.group_system == nil {continue}
 			if mode == .Worker {return "", true}
@@ -100,10 +134,10 @@ preview_text :: proc(
 				true
 		case .Theme, .Webxdc, .Agent_Stream, .Agent_State, .Modifier:
 			continue
-		case .Message:
+		case .Message, .Unsupported:
 		}
 		if record.sender != nil && blocked[string(record.sender)] {continue}
-		text = reading_text(client, raw)
+		text = class == .Unsupported ? tr("Unsupported event") : reading_text(client, raw)
 		if text == "" {continue}
 		if record.direction != nil &&
 		   string(record.direction) == "sent" {return fmt.tprintf(tr("You: %s"), text), false}

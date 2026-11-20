@@ -445,6 +445,8 @@ Msg_Ui :: struct {
 	theme_name:          string, // a shared theme's name, "" = not a theme offer
 	theme_toml:          string, // its pack source, applied only on the tap
 	theme_swatch:        [THEME_SWATCHES]nendo.Color, // parsed once at load, drawn every frame
+	unsupported:         bool,
+	event_summary:       Event_Summary,
 	deleted:             bool, // tombstone: placeholder row, no body/actions
 	edited:              bool, // MDK applied an accepted edit; body holds the latest
 	effect:              int, // ["effect", key] burst id from the event tags, 0 = none
@@ -461,6 +463,11 @@ KIND_POLL :: 1068
 KIND_POLL_VOTE :: 1018
 KIND_THREAD :: 1111 // thread message: ["e", root], ["k", root kind], text in content
 KIND_DELETE :: 5
+KIND_REACTION :: 7
+KIND_VIDEO :: 21
+KIND_SHORT_VIDEO :: 22
+KIND_VIDEO_ADDRESS :: 34235
+KIND_SHORT_VIDEO_ADDRESS :: 34236
 KIND_EDIT :: 1009
 KIND_GROUP_SYSTEM :: 1210
 
@@ -671,6 +678,7 @@ Ui_State :: struct {
 	hist_msg:                            int, // index into messages
 	raw_open:                            bool, // view-raw-event modal (dev mode)
 	raw_json:                            string, // its pretty-printed record JSON
+	event_data:                          Event_Data_View,
 	enc_open:                            bool, // encryption-details modal
 	enc_epoch:                           string, // its MLS epoch, "" when the lookup failed
 	fwd_open:                            bool, // destination-chat picker

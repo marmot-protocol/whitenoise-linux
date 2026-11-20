@@ -250,7 +250,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 
 		// The local copy of an in-flight optimistic send: skip it, the
 		// pending row is its visual until the ack lands.
-		if mine && !(id_str in old_times) && inflight[body] > 0 {
+		if mine && class != .Unsupported && !(id_str in old_times) && inflight[body] > 0 {
 			inflight[body] -= 1
 			continue
 		}
@@ -258,19 +258,24 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		msg := Msg_Ui {
 			id        = strings.clone(id_str),
 			kind      = record.kind,
-			sticker   = sticker_from_record(record),
 			sender    = strings.clone(label),
 			sender_id = strings.clone(sender),
 			pic_url   = strings.clone(info.pic_url),
-			body      = strings.clone(body),
 			at        = format_when(record.timeline_at),
 			at_full   = format_full(record.timeline_at),
 			day       = format_day(record.timeline_at),
 			sort_at   = record.timeline_at,
 			mine      = mine,
 			delivery  = delivery,
-			edited    = record.edit != nil,
-			effect    = record_effect(record),
+		}
+		if class == .Unsupported {
+			msg.unsupported = true
+			msg.event_summary = event_summary(plaintext, record.tags[:record.tags_len])
+		} else {
+			msg.sticker = sticker_from_record(record)
+			msg.body = strings.clone(body)
+			msg.edited = record.edit != nil
+			msg.effect = record_effect(record)
 		}
 		// Native poll projections include votes outside the visible page.
 		if record.poll != nil {
@@ -291,7 +296,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		// Edited bodies and poll questions arrive without parsed content
 		// tokens; run the text through marmot's markdown parser so they
 		// render like any other body.
-		cover, secret := hidden_message(body)
+		cover, secret := hidden_message(msg.body)
 		msg.secrets = secret_layers(client, secret)
 		if old, found := previous_ids[id_str]; found && previous[old].body == body {
 			msg.excerpt = previous[old].excerpt
@@ -323,7 +328,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			if secret != "" && len(msg.blocks) == 0 {
 				append(&msg.blocks, Md_Block_Ui{kind = .Para, text = strings.clone(cover)})
 			}
-		} else if class != .Agent_Stream {
+		} else if class != .Agent_Stream && !msg.unsupported {
 			convert_blocks(
 				&msg.blocks,
 				record.content_tokens.blocks,
@@ -371,6 +376,10 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			   custom && custom_tex_by_code(code) == nil {
 				reaction_emoji_enqueue(client, account, group, code)
 			}
+		}
+		if msg.unsupported {
+			append(&ui.messages, msg)
+			continue
 		}
 		tags := record.tags[:record.tags_len]
 		// The thread's e tag sets membership; only an explicit q tag quotes its parent.
@@ -600,29 +609,18 @@ system_text :: proc(
 // next page (handle_chat).
 TL_FETCH_MARGIN :: f32(300)
 
-// Raw-event JSON for the View raw modal (dev mode). marmot-c has no
-// accessor for the outer signed wire event, so this pretty-prints the
-// retained timeline record's projection of the
-// inner app event (id, kind, tags, sender, timestamps, ...).
-raw_event_json :: proc(client: ^marmot.Client, ui: ^Ui_State, msg_id: string) -> string {
-	if ui.selected < 0 {
-		return ""
-	}
-	page := timeline_page
-	if page == nil {return ""}
 
-	for i in 0 ..< page.messages_len {
-		record := &page.messages[i]
-		if record.message_id_hex == nil || string(record.message_id_hex) != msg_id {
-			continue
-		}
-		return record_json(record)
+@(private)
+timeline_record :: proc(msg_id: string) -> ^marmot.Timeline_Message_Record {
+	if timeline_page == nil {return nil}
+	for &record in timeline_page.messages[:timeline_page.messages_len] {
+		if string(record.message_id_hex) == msg_id {return &record}
 	}
-	return fmt.aprintf(tr("No record with id %s in this chat's window."), msg_id)
+	return nil
 }
 
 // Pretty-print one record's projection of the inner app event.
-// Shared by the View raw modal and the HTML transcript export.
+// Shared by the event inspectors and HTML transcript export.
 record_json :: proc(
 	record: ^marmot.Timeline_Message_Record,
 	allocator := context.allocator,

@@ -24,6 +24,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 - **Group settings belong to admins.** Only admins see the name, description, photo, disappearing-message, and issue-tracking controls.
 - **Only admins promote, demote, or remove members.** Nicknames change your local labels and remain available to other members.
 - **Unread state is tracked per chat.** It shows up as badges on the rail.
+- The chat list shows “Nostr event” for event links. Open the conversation to see the event card.
 
 <details>
 <summary><b>What members see, and what developer mode adds</b></summary>
@@ -63,6 +64,15 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 - **Long messages fold after 6 lines.** Settings > Appearance sets the message line limit for messages and event cards; 0 shows them in full without Read more.
 - **Chat-list previews show reading text.** Markdown markup is left out.
 
+Unsupported Nostr events sent into a chat show their kind, title, and a short
+description when available. Video events are labeled as such. Standard media
+tags can supply duration, dimensions, format, and the host name. The card does
+not load links or media.
+
+Choose **View event data** to see the sender, content, and tags. Unrecognized
+tags keep their original names and values. **Copy JSON** includes the original
+content and tags without shortening them.
+
 <details>
 <summary><b>The external-link guard, for addresses longer than the dialog</b></summary>
 
@@ -73,6 +83,10 @@ Long addresses in the guard scroll horizontally without breaking path words. Scr
 ### Cards for Nostr events and njump links
 
 Linked Nostr events render as cards instead of raw identifiers. Cards with an Open in client button use your configured Nostr web client.
+
+Links to unsupported event kinds use the same summary and **View event data**
+inspector as unsupported events sent directly to a chat. **Copy JSON** on a
+linked event copies the event object returned by the relay.
 
 | You paste or link | What you get |
 | --- | --- |

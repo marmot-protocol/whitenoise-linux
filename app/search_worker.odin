@@ -274,7 +274,7 @@ search_hit :: proc(
 			if at < 0 {return}
 		}
 		hit.snippet = gs_snippet(text, utf8.rune_count(text[:at]))
-	case .Theme, .Webxdc, .Agent_Stream, .Agent_State, .Modifier:
+	case .Theme, .Webxdc, .Agent_Stream, .Agent_State, .Modifier, .Unsupported:
 		return
 	}
 	hit.group = strings.clone(group)

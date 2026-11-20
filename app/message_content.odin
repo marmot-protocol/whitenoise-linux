@@ -1,6 +1,9 @@
 package main
 
 import marmot "../marmot"
+import "core:encoding/json"
+import "core:fmt"
+import "core:strconv"
 import "core:strings"
 
 // What a timeline record is, decided once for the timeline, chat-list
@@ -15,6 +18,7 @@ import "core:strings"
 //   Agent_Stream  1200                     live text     skipped (not retained)
 //   Agent_State   1201, 1202               skipped       skipped
 //   Modifier      edit, deletion, vote     skipped       skipped
+//   Unsupported   other kinds              summary card  label, skipped
 //
 // MDK applies modifiers before a page reaches the app. An accepted edit
 // (the target's author, one e tag, newest by time then id) replaces the
@@ -32,12 +36,13 @@ Record_Class :: enum u8 {
 	Agent_Stream,
 	Agent_State,
 	Modifier,
+	Unsupported,
 }
 
 @(private)
 record_class :: proc(kind: u64, plaintext: string) -> Record_Class {
 	switch kind {
-	case KIND_EDIT, KIND_DELETE, KIND_POLL_VOTE:
+	case KIND_EDIT, KIND_DELETE, KIND_POLL_VOTE, KIND_REACTION:
 		return .Modifier
 	case AGENT_ACTIVITY, AGENT_OPERATION:
 		return .Agent_State
@@ -47,10 +52,145 @@ record_class :: proc(kind: u64, plaintext: string) -> Record_Class {
 		return .System
 	case THEME_EVENT_KIND:
 		return .Theme
+	case KIND_CHAT_MESSAGE:
+		if strings.has_prefix(strings.trim_left_space(plaintext), XDC_SENTINEL) {
+			return .Webxdc
+		}
+		return .Message
+	case KIND_THREAD, KIND_POLL:
+		return .Message
+	case:
+		return .Unsupported
 	}
-	// Webxdc state updates ride ordinary text messages.
-	if strings.has_prefix(strings.trim_left_space(plaintext), XDC_SENTINEL) {return .Webxdc}
-	return .Message
+}
+
+@(private)
+Event_Tags :: union {
+	[]marmot.Message_Tag,
+	json.Array,
+}
+
+@(private)
+Event_Tag :: struct {
+	c:    []cstring,
+	json: json.Array,
+}
+
+@(private)
+event_tag_count :: proc(tags: Event_Tags) -> int {
+	switch rows in tags {
+	case []marmot.Message_Tag:
+		return len(rows)
+	case json.Array:
+		return len(rows)
+	}
+	return 0
+}
+
+@(private)
+event_tag_at :: proc(tags: Event_Tags, i: int) -> Event_Tag {
+	switch rows in tags {
+	case []marmot.Message_Tag:
+		return {c = rows[i].values[:rows[i].values_len]}
+	case json.Array:
+		return {json = rows[i].(json.Array) or_else nil}
+	}
+	return {}
+}
+
+@(private)
+event_tag_value :: proc(tag: Event_Tag, i: int) -> string {
+	if tag.c != nil {return string(tag.c[i])}
+	return string(tag.json[i].(json.String) or_else "")
+}
+
+@(private)
+Event_Summary :: struct {
+	title, description, details: string,
+}
+
+@(private)
+event_summary :: proc(content: string, tags: Event_Tags) -> Event_Summary {
+	title: string
+	subject, summary, alt, duration: string
+	media: Event_Tag
+	for i in 0 ..< event_tag_count(tags) {
+		tag := event_tag_at(tags, i)
+		if len(tag.c) + len(tag.json) < 2 {continue}
+		value := strings.trim_space(event_tag_value(tag, 1))
+		switch event_tag_value(tag, 0) {
+		case "title":
+			if title == "" {title = value}
+		case "subject":
+			if subject == "" {subject = value}
+		case "summary", "description":
+			if summary == "" {summary = value}
+		case "alt":
+			if alt == "" {alt = value}
+		case "duration":
+			if duration == "" {duration = value}
+		case "imeta":
+			if media.c == nil && media.json == nil {media = tag}
+		}
+	}
+	if title == "" {title = subject}
+	// Structured payloads belong in the inspector, not in chat.
+	description := strings.trim_space(content)
+	if description == "" || description[0] == '{' || description[0] == '[' {
+		description = summary != "" ? summary : alt
+	}
+	if description == title {description = ""}
+	return {
+		strings.clone(chat_preview(title)),
+		strings.clone(chat_preview(description)),
+		strings.clone(unsupported_media_info(media, duration)),
+	}
+}
+
+@(private = "file")
+unsupported_media_info :: proc(media: Event_Tag, duration: string) -> string {
+	var_duration, dimensions, mime, host: string
+	// Keep dimensions, format and host from the same imeta variant.
+	for i in 1 ..< len(media.c) + len(media.json) {
+		field := event_tag_value(media, i)
+		sep := strings.index_byte(field, ' ')
+		if sep < 0 {continue}
+		value := strings.trim_space(field[sep + 1:])
+		switch field[:sep] {
+		case "duration":
+			var_duration = value
+		case "dim":
+			if x := strings.index_byte(value, 'x'); x > 0 && len(value) <= 13 {
+				w, wok := strconv.parse_u64(value[:x])
+				h, hok := strconv.parse_u64(value[x + 1:])
+				if wok && hok && w > 0 && h > 0 {dimensions = fmt.tprintf("%d×%d", w, h)}
+			}
+		case "m":
+			if strings.index_byte(value, '/') > 0 &&
+			   len(value) <= 32 &&
+			   strings.index_any(value, " \t\r\n") < 0 {mime = value}
+		case "url":
+			if strings.has_prefix(value, "https://") || strings.has_prefix(value, "http://") {
+				domain := url_host(value)
+				if len(domain) <= 63 && strings.index_any(domain, "@ \t\r\n") < 0 {host = domain}
+			}
+		}
+	}
+	parts: [4]string
+	n := 0
+	seconds, ok := strconv.parse_f64(var_duration != "" ? var_duration : duration)
+	if ok && seconds > 0 && seconds < 360_000 {
+		total := int(seconds + 0.5)
+		parts[n] =
+			total < 3600 ? fmt.tprintf("%d:%02d", total / 60, total % 60) : fmt.tprintf("%d:%02d:%02d", total / 3600, total / 60 % 60, total % 60)
+		n += 1
+	}
+	for part in ([3]string{dimensions, mime, host}) {
+		if part == "" {continue}
+		parts[n] = part
+		n += 1
+	}
+	return strings.join(parts[:n], " · ", context.temp_allocator)
 }
 
 // The words a message shows, without markup, for previews and search.

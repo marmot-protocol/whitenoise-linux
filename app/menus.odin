@@ -299,7 +299,9 @@ context_menu :: proc(ui: ^Ui_State) {
 				ctx_item("CtxReply", ICON_REPLY, tr("Reply"))
 			}
 			ctx_item("CtxThread", ICON_COMMENTS, tr("Reply in thread"))
-			if msg.mine && !read_only {ctx_item("CtxEdit", ICON_PENCIL, tr("Edit message"))}
+			if msg.mine && !read_only && !msg.unsupported {
+				ctx_item("CtxEdit", ICON_PENCIL, tr("Edit message"))
+			}
 			if len(msg.body) > 0 {
 				ctx_item("CtxCopy", ICON_COPY, tr("Copy text"))
 				when ODIN_OS == .Linux {
@@ -315,7 +317,7 @@ context_menu :: proc(ui: ^Ui_State) {
 				ctx_item("CtxCopyLink", ICON_COPY, tr("Copy link"))
 				ctx_item("CtxOpenLink", ICON_GLOBE, tr("Open link"))
 			}
-			ctx_item("CtxForward", ICON_FORWARD, tr("Forward"))
+			if !msg.unsupported {ctx_item("CtxForward", ICON_FORWARD, tr("Forward"))}
 			for slot, i in msg.attachments {
 				if slot.state == .Rejected {
 					continue

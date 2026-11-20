@@ -17,11 +17,18 @@ Secret_Ui :: struct {
 @(private)
 chat_preview :: proc(text: string) -> string {
 	cover, _ := hidden_message(text)
-	PREVIEW_BYTES :: 256
-	if len(cover) <= PREVIEW_BYTES {return cover}
+	return cap_preview(cover)
+}
+
+@(private)
+PREVIEW_BYTES :: 256
+
+@(private)
+cap_preview :: proc(text: string) -> string {
+	if len(text) <= PREVIEW_BYTES {return text}
 	end := PREVIEW_BYTES
-	for end > 0 && cover[end] & 0xc0 == 0x80 {end -= 1}
-	return strings.concatenate({cover[:end], "…"}, context.temp_allocator)
+	for end > 0 && text[end] & 0xc0 == 0x80 {end -= 1}
+	return strings.concatenate({text[:end], "…"}, context.temp_allocator)
 }
 
 // Decoding shrinks each layer. Keep nesting flat and parse Markdown once.

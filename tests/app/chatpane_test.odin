@@ -2,6 +2,7 @@ package main
 
 // nendo and the UI caches are global. Run this check alone:
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=chat_title_overflow
+import marmot "../marmot"
 import "base:runtime"
 import "core:fmt"
 import "core:strings"
@@ -297,6 +298,44 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 		},
 		Chat_Row_Ui{group_id = "d", title = "Short", preview = "See you there"},
 	)
+	token := strings.trim_prefix(TEST_PRIMAL, "https://primal.net/e/")
+	short_event := fmt.tprintf("Look at nostr:%s today", token)
+	ordinary_url := fmt.tprintf("https://example.com/%s", token)
+	relay := fmt.tprintf(
+		"wss://relay.example/%s",
+		strings.repeat("r", 120, context.temp_allocator),
+	)
+	payload := make([]u8, 36 + len(relay), context.temp_allocator)
+	payload[1], payload[34], payload[35] = 32, 1, u8(len(relay))
+	copy(payload[36:], transmute([]u8)relay)
+	long_event := bech32_encode("nevent", payload)
+	for source, i in ([]string{short_event, long_event, "nostr:nevent1qqqq"}) {
+		last := marmot.Chat_List_Message_Preview {
+			kind      = 9,
+			plaintext = strings.clone_to_cstring(source, context.temp_allocator),
+		}
+		row := marmot.Chat_List_Row {
+			last_message = &last,
+		}
+		preview, _ := chat_row_preview(nil, &row, ui.account_ref, nil)
+		append(
+			&ui.chats,
+			Chat_Row_Ui {
+				group_id = fmt.tprintf("event-%d", i),
+				title = "Event link",
+				preview = preview,
+			},
+		)
+	}
+	url_message := marmot.Chat_List_Message_Preview {
+		kind      = 9,
+		plaintext = strings.clone_to_cstring(ordinary_url, context.temp_allocator),
+	}
+	url_row := marmot.Chat_List_Row {
+		last_message = &url_message,
+	}
+	url_preview, _ := chat_row_preview(nil, &url_row, ui.account_ref, nil)
+	testing.expect_value(t, url_preview, ordinary_url)
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {
 		g_ui, g_prefs = nil, nil
@@ -341,6 +380,11 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 		}
 		text, _ := shown(commands, 3)
 		testing.expect_value(t, text, "See you there")
+		for want, i in ([]string{"Look at Nostr event today", "Nostr event", "Invalid Nostr reference"}) {
+			text, inside := shown(commands, u32(4 + i))
+			testing.expect_value(t, text, want)
+			testing.expect(t, inside, text)
+		}
 		rl.BeginDrawing()
 		draw_frame(commands)
 		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-chat-previews-%d.png", rail_w))

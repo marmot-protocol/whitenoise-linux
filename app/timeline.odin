@@ -800,7 +800,7 @@ Msg_Run :: struct {
 // `wrap_w` is the body column width (body_wrap_w), so the budget counts
 // lines as drawn: one long paragraph that wraps to 20 lines is 20.
 msg_run_step :: proc(run: ^Msg_Run, msg: Msg_Ui, wrap_w: f32) -> Msg_Head {
-	if msg.system || msg.deleted {
+	if msg.system || msg.deleted || msg.unsupported {
 		run^ = {}
 		return .Full
 	}
@@ -830,7 +830,7 @@ msg_actions :: proc(index: u32, msg: Msg_Ui) {
 	}
 	action_chip("MsgThread", index, tr("Thread"))
 	if msg.mine {
-		action_chip("MsgEdit", index, tr("Edit"))
+		if !msg.unsupported {action_chip("MsgEdit", index, tr("Edit"))}
 		action_chip("MsgDel", index, tr("Delete"))
 	}
 }
@@ -1715,6 +1715,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			if len(msg.theme_name) > 0 {
 				theme_offer(index, msg)
 			}
+			if msg.unsupported {unsupported_event_card(index, msg.kind, msg.event_summary)}
 
 			// Tombstone placeholder for a deleted message.
 			if msg.deleted {

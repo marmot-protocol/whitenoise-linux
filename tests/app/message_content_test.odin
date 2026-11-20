@@ -22,7 +22,7 @@ Fixture_Row :: struct {
 fixture_rows :: proc(
 	system: ^marmot.Group_System_Event,
 	edit: ^marmot.Timeline_Edit_Summary,
-) -> [13]Fixture_Row {
+) -> [14]Fixture_Row {
 	return {
 		{
 			{
@@ -143,6 +143,15 @@ fixture_rows :: proc(
 			},
 			.Message,
 		},
+		{
+			{
+				message_id_hex = "video",
+				sender = "bob",
+				kind = 21,
+				plaintext = "wnxdc1:session:cGF5bG9hZA==",
+			},
+			.Unsupported,
+		},
 	}
 }
 
@@ -153,6 +162,47 @@ record_classes :: proc(t: ^testing.T) {
 	for row in fixture_rows(&system, &edit) {
 		class := record_class(row.record.kind, string(row.record.plaintext))
 		testing.expectf(t, class == row.class, "%s: %v", row.record.message_id_hex, class)
+	}
+}
+
+@(test)
+unsupported_event_summary :: proc(t: ^testing.T) {
+	title_tag := [?]cstring{"title", " Station cat "}
+	alt_tag := [?]cstring{"alt", "A cat on the platform"}
+	imeta := [?]cstring {
+		"imeta",
+		"dim 1280x720",
+		"duration 24.1",
+		"m video/mp4",
+		"url https://media.example/video.mp4?private=1",
+	}
+	other := [?]cstring{"imeta", "dim 1920x1080", "duration 11"}
+	tags := [?]marmot.Message_Tag {
+		{raw_data(title_tag[:]), len(title_tag)},
+		{raw_data(alt_tag[:]), len(alt_tag)},
+		{raw_data(imeta[:]), len(imeta)},
+		{raw_data(other[:]), len(other)},
+	}
+	context.allocator = context.temp_allocator
+	summary := event_summary(`{"opaque":"payload"}`, tags[:])
+	testing.expect_value(t, summary.title, "Station cat")
+	testing.expect_value(t, summary.description, "A cat on the platform")
+	testing.expect_value(t, summary.details, "0:24 · 1280×720 · video/mp4 · media.example")
+	summary = event_summary("Train arriving at platform two.", tags[:])
+	testing.expect_value(t, summary.description, "Train arriving at platform two.")
+}
+
+@(test)
+event_data_keeps_wire_values :: proc(t: ^testing.T) {
+	fields := event_data_fields(
+		`{"sensor":"platform\t2","tick":9007199254740993,"sensor":null,"ok":false}`,
+	)
+	if !testing.expect_value(t, len(fields), 4) {return}
+	for want, i in ([4]Event_Data_Field{{"sensor", "platform\t2"}, {"tick", "9007199254740993"}, {"sensor", "null"}, {"ok", "false"}}) {
+		testing.expect_value(t, fields[i], want)
+	}
+	for text in ([3]string{`{"a":"first","b":[1,2]}`, `{"a": 1,}`, `{"a": 1} garbage`}) {
+		testing.expect_value(t, len(event_data_fields(text)), 0)
 	}
 }
 
@@ -277,5 +327,11 @@ surfaces_read_effective_content :: proc(t: ^testing.T) {
 	}
 	preview, system_page := chat_row_preview(client, &row, "self", nil, &page, .Worker)
 	testing.expect_value(t, preview, "second edit")
+	testing.expect_value(t, system_page, nil)
+
+	last.kind = 21
+	last.plaintext = "**Video caption**"
+	preview, system_page = chat_row_preview(client, &row, "self", nil, &page, .Worker)
+	testing.expect_value(t, preview, "Unsupported event")
 	testing.expect_value(t, system_page, nil)
 }

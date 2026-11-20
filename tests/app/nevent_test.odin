@@ -45,6 +45,7 @@ nev_parse_shapes :: proc(t: ^testing.T) {
 		`["EVENT","wn",{"content":"hi","created_at":1788349644,"id":"ab","kind":1,"pubkey":"6b8f","sig":"00","tags":[]}]`,
 	)
 	card := nev_parse(msg, .Message)
+	defer nev_card_free(&card)
 	testing.expect(t, card.done)
 	testing.expect_value(t, card.kind, 1)
 	testing.expect_value(t, card.pubkey, "6b8f")
@@ -54,6 +55,7 @@ nev_parse_shapes :: proc(t: ^testing.T) {
 
 	// The disk cache holds the bare object, and round-trips.
 	again := nev_parse(transmute([]u8)card.raw, .Event)
+	defer nev_card_free(&again)
 	testing.expect_value(t, again.kind, 1)
 	testing.expect_value(t, again.content, "hi")
 
@@ -62,6 +64,26 @@ nev_parse_shapes :: proc(t: ^testing.T) {
 	testing.expect_value(t, miss.raw, "")
 	bad := nev_parse(transmute([]u8)string("nope"), .Event)
 	testing.expect_value(t, bad.raw, "")
+}
+
+@(test)
+nev_unknown_event_data :: proc(t: ^testing.T) {
+	body :: `{"id":"ab","kind":4242,"pubkey":"6b8f","sig":"00","content":"{\"platform\":2}","tags":[["title","Signal box"],["alt","A train approaches"],["signal-zone","1.0000000000000000","North"],["imeta","dim 1280x720","duration 24.1","m video/mp4"]]}`
+	frame :: `["EVENT", "wn", ` + body + `]`
+	card := nev_parse(transmute([]u8)string(frame), .Message, "ab")
+	defer nev_card_free(&card)
+	testing.expect_value(t, card.raw, body)
+	testing.expect_value(
+		t,
+		card.summary,
+		Event_Summary{"Signal box", "A train approaches", "0:24 · 1280×720 · video/mp4"},
+	)
+	if testing.expect_value(t, event_tag_count(card.tags), 4) {
+		tag := event_tag_at(card.tags, 2)
+		testing.expect_value(t, event_tag_value(tag, 0), "signal-zone")
+		testing.expect_value(t, event_tag_value(tag, 1), "1.0000000000000000")
+		testing.expect_value(t, event_tag_value(tag, 2), "North")
+	}
 }
 
 @(test)

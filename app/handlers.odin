@@ -790,6 +790,17 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Per-message row actions.
 	if mouse_released() {
 		for msg, i in ui.messages {
+			if msg.unsupported && nendo.pointer_over(nendo.id("EventDataButton", u32(i))) {
+				event_data_open(
+					&ui.event_data,
+					.Timeline,
+					msg.id,
+					msg.event_summary.title,
+					msg.sender,
+					msg.at_full,
+				)
+				return
+			}
 			if nendo.pointer_over(nendo.id("BlockedToggle", u32(i))) {
 				if ui.blocked_open[msg.id] {
 					key, _ := delete_key(&ui.blocked_open, msg.id)
@@ -908,7 +919,12 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   rl.IsKeyPressed(.UP) {
 		cur := thread_cur(ui)
 		#reverse for msg in ui.messages {
-			if msg.mine && !msg.deleted && !msg.system && len(msg.id) > 0 && msg.thread_of == cur {
+			if msg.mine &&
+			   !msg.deleted &&
+			   !msg.system &&
+			   !msg.unsupported &&
+			   len(msg.id) > 0 &&
+			   msg.thread_of == cur {
 				start_edit(ui, msg)
 				return
 			}
@@ -1377,7 +1393,11 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if ui.prefs.dev_mode && nendo.pointer_over(nendo.id("CtxRaw")) {
 		delete(ui.raw_json)
-		ui.raw_json = raw_event_json(client, ui, msg.id)
+		if record := timeline_record(msg.id); record != nil {
+			ui.raw_json = record_json(record)
+		} else {
+			ui.raw_json = fmt.aprintf(tr("No record with id %s in this chat's window."), msg.id)
+		}
 		ui.raw_open = true
 		return
 	}

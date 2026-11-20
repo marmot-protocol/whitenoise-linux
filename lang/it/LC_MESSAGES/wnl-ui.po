@@ -553,6 +553,9 @@ msgstr "Consenti i permessi del tuo firmatario per continuare a usare questo acc
 msgid "Allow your signer's permissions to use this account."
 msgstr "Consenti i permessi del tuo firmatario per usare questo account."
 
+msgid "Alt text"
+msgstr "Testo alternativo"
+
 msgid "Always expanded"
 msgstr "Sempre espanso"
 
@@ -830,6 +833,9 @@ msgstr "CONNESSIONE"
 
 msgid "CONTACTS"
 msgstr "CONTATTI"
+
+msgid "CONTENT"
+msgstr "CONTENUTO"
 
 msgid "CURRENT PASSWORD"
 msgstr "PASSWORD ATTUALE"
@@ -2136,6 +2142,9 @@ msgstr "La dettatura non funziona"
 msgid "Difficulty: %d/5"
 msgstr "Difficoltà: %d/5"
 
+msgid "Dimensions"
+msgstr "Dimensioni"
+
 msgid "Disabled for this group."
 msgstr "Disattivato per questo gruppo."
 
@@ -2223,6 +2232,9 @@ msgstr "Rilascia i file per allegarli"
 
 msgid "Drop here"
 msgstr "Rilascia qui"
+
+msgid "Duration"
+msgstr "Durata"
 
 msgid "Dust"
 msgstr "Pulviscolo"
@@ -2416,6 +2428,9 @@ msgstr "Errore copiato"
 msgid "Estonian"
 msgstr "Estone"
 
+msgid "Event data"
+msgstr "Dati dell’evento"
+
 msgid "Event fetch relays"
 msgstr "Relay per il recupero degli eventi"
 
@@ -2601,6 +2616,9 @@ msgstr "Password dimenticata?"
 
 msgid "Forgot your password?"
 msgstr "Hai dimenticato la password?"
+
+msgid "Format"
+msgstr "Formato"
 
 msgid "Forward"
 msgstr "Inoltra"
@@ -3381,6 +3399,9 @@ msgstr "Cache multimediale svuotata."
 msgid "Media highlight"
 msgstr "Evidenziazione multimediale"
 
+msgid "Media metadata"
+msgstr "Metadati multimediali"
+
 msgid "Members"
 msgstr "Membri"
 
@@ -3728,6 +3749,9 @@ msgstr "Nessuno"
 
 msgid "Norwegian"
 msgstr "Norvegese"
+
+msgid "Nostr event"
+msgstr "Evento Nostr"
 
 msgid "Not downloaded"
 msgstr "Non scaricato"
@@ -4642,6 +4666,9 @@ msgstr "IMPOSTAZIONI"
 msgid "SHARED THEME"
 msgstr "TEMA CONDIVISO"
 
+msgid "SHORT VIDEO EVENT"
+msgstr "VIDEO BREVE"
+
 msgid "SIGNER RELAY"
 msgstr "RELAY DEL FIRMATARIO"
 
@@ -5337,6 +5364,9 @@ msgstr "Synthwave"
 msgid "System"
 msgstr "Sistema"
 
+msgid "TAGS"
+msgstr "TAG"
+
 msgid "TEXT"
 msgstr "TESTO"
 
@@ -5534,6 +5564,9 @@ msgstr "Questa operazione è irreversibile."
 
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "Questa chat è archiviata. Ripristinala dall'Archivio per inviare messaggi."
+
+msgid "This event is no longer available."
+msgstr "Questo evento non è più disponibile."
 
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "Non contiene testo visibile, quindi il pulsante GM invia GM."
@@ -5776,6 +5809,10 @@ msgstr "Sblocca"
 msgid "Unfiled"
 msgstr "Senza cartella"
 
+#, c-format
+msgid "Unknown event kind %d"
+msgstr "Tipo di evento sconosciuto %d"
+
 msgid "Unlock"
 msgstr "Sblocca"
 
@@ -5802,6 +5839,9 @@ msgstr "Aperta"
 
 msgid "Unsupported attachment format."
 msgstr "Formato dell'allegato non supportato."
+
+msgid "Unsupported event"
+msgstr "Evento non supportato"
 
 msgid "Untitled emoji set"
 msgstr "Set di emoji senza titolo"
@@ -5893,6 +5933,9 @@ msgstr "Nome utente"
 msgid "VERIFIED ADDRESS"
 msgstr "INDIRIZZO VERIFICATO"
 
+msgid "VIDEO EVENT"
+msgstr "VIDEO"
+
 msgid "Vault password changed."
 msgstr "Password della cassaforte cambiata."
 
@@ -5916,6 +5959,9 @@ msgstr "Visualizza"
 
 msgid "View as hex"
 msgstr "Visualizza in esadecimale"
+
+msgid "View event data"
+msgstr "Visualizza dati dell’evento"
 
 msgid "View keyboard shortcuts"
 msgstr "Vedi le scorciatoie da tastiera"

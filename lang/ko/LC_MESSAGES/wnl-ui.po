@@ -522,6 +522,9 @@ msgstr "이 계정을 계속 사용하려면 서명자 권한을 허용하세요
 msgid "Allow your signer's permissions to use this account."
 msgstr "이 계정을 사용하려면 서명자 권한을 허용하세요."
 
+msgid "Alt text"
+msgstr "대체 텍스트"
+
 msgid "Always expanded"
 msgstr "항상 펼치기"
 
@@ -790,6 +793,9 @@ msgstr "연결 중"
 
 msgid "CONTACTS"
 msgstr "연락처"
+
+msgid "CONTENT"
+msgstr "내용"
 
 msgid "CURRENT PASSWORD"
 msgstr "현재 비밀번호"
@@ -2004,6 +2010,9 @@ msgstr "받아쓰기가 작동하지 않음"
 msgid "Difficulty: %d/5"
 msgstr "난이도: %d/5"
 
+msgid "Dimensions"
+msgstr "크기"
+
 msgid "Disappearing messages"
 msgstr "사라지는 메시지"
 
@@ -2085,6 +2094,9 @@ msgstr "파일을 놓아 첨부"
 
 msgid "Drop here"
 msgstr "여기에 놓기"
+
+msgid "Duration"
+msgstr "재생 시간"
 
 msgid "Dust"
 msgstr "먼지"
@@ -2263,6 +2275,9 @@ msgstr "오류를 복사했습니다"
 msgid "Estonian"
 msgstr "에스토니아어"
 
+msgid "Event data"
+msgstr "이벤트 데이터"
+
 msgid "Event fetch relays"
 msgstr "이벤트 조회 릴레이"
 
@@ -2433,6 +2448,9 @@ msgstr "모두 삭제"
 
 msgid "Forgot your password?"
 msgstr "비밀번호를 잊으셨습니까?"
+
+msgid "Format"
+msgstr "형식"
 
 msgid "Forward"
 msgstr "전달"
@@ -3155,6 +3173,9 @@ msgstr "미디어 캐시를 지웠습니다."
 msgid "Media highlight"
 msgstr "미디어 강조 색"
 
+msgid "Media metadata"
+msgstr "미디어 메타데이터"
+
 msgid "Members"
 msgstr "멤버"
 
@@ -3478,6 +3499,9 @@ msgstr "없음"
 
 msgid "Norwegian"
 msgstr "노르웨이어"
+
+msgid "Nostr event"
+msgstr "Nostr 이벤트"
 
 msgid "Not downloaded"
 msgstr "다운로드 안 됨"
@@ -4337,6 +4361,9 @@ msgstr "설정"
 msgid "SHARED THEME"
 msgstr "공유된 테마"
 
+msgid "SHORT VIDEO EVENT"
+msgstr "짧은 동영상"
+
 msgid "SIGNER RELAY"
 msgstr "서명자 릴레이"
 
@@ -4975,6 +5002,9 @@ msgstr "신스웨이브"
 msgid "System"
 msgstr "시스템"
 
+msgid "TAGS"
+msgstr "태그"
+
 msgid "TEXT"
 msgstr "텍스트"
 
@@ -5168,6 +5198,9 @@ msgstr "일반 멤버로 그룹에 남습니다."
 
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "이 채팅은 보관되었습니다. 메시지를 보내려면 보관함에서 복원하세요."
+
+msgid "This event is no longer available."
+msgstr "이 이벤트를 더 이상 볼 수 없습니다."
 
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "표시되는 텍스트가 없으므로 GM 버튼은 GM을 보냅니다."
@@ -5392,6 +5425,10 @@ msgstr "차단 해제"
 msgid "Unfiled"
 msgstr "미분류"
 
+#, c-format
+msgid "Unknown event kind %d"
+msgstr "알 수 없는 이벤트 종류 %d"
+
 msgid "Unlock"
 msgstr "잠금 해제"
 
@@ -5412,6 +5449,9 @@ msgstr "읽지 않음"
 
 msgid "Unsupported attachment format."
 msgstr "지원하지 않는 첨부 파일 형식입니다."
+
+msgid "Unsupported event"
+msgstr "지원하지 않는 이벤트"
 
 msgid "Untitled emoji set"
 msgstr "제목 없는 이모지 세트"
@@ -5500,6 +5540,9 @@ msgstr "사용자 이름"
 msgid "VERIFIED ADDRESS"
 msgstr "인증된 주소"
 
+msgid "VIDEO EVENT"
+msgstr "동영상"
+
 msgid "Vault password changed."
 msgstr "금고 비밀번호를 변경했습니다."
 
@@ -5523,6 +5566,9 @@ msgstr "보기"
 
 msgid "View as hex"
 msgstr "16진수로 보기"
+
+msgid "View event data"
+msgstr "이벤트 데이터 보기"
 
 msgid "View keyboard shortcuts"
 msgstr "키보드 단축키 보기"

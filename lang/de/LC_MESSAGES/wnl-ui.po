@@ -553,6 +553,9 @@ msgstr "Erlaube die Berechtigungen deines Signers, um dieses Konto weiter zu nut
 msgid "Allow your signer's permissions to use this account."
 msgstr "Erlaube die Berechtigungen deines Signers, um dieses Konto zu nutzen."
 
+msgid "Alt text"
+msgstr "Alternativtext"
+
 msgid "Always expanded"
 msgstr "Immer ausgeklappt"
 
@@ -830,6 +833,9 @@ msgstr "VERBINDET"
 
 msgid "CONTACTS"
 msgstr "KONTAKTE"
+
+msgid "CONTENT"
+msgstr "INHALT"
 
 msgid "CURRENT PASSWORD"
 msgstr "AKTUELLES PASSWORT"
@@ -2136,6 +2142,9 @@ msgstr "Diktieren funktioniert nicht"
 msgid "Difficulty: %d/5"
 msgstr "Schwierigkeit: %d/5"
 
+msgid "Dimensions"
+msgstr "Abmessungen"
+
 msgid "Disabled for this group."
 msgstr "Für diese Gruppe deaktiviert."
 
@@ -2223,6 +2232,9 @@ msgstr "Dateien zum Anhängen ablegen"
 
 msgid "Drop here"
 msgstr "Hier ablegen"
+
+msgid "Duration"
+msgstr "Dauer"
 
 msgid "Dust"
 msgstr "Staub"
@@ -2416,6 +2428,9 @@ msgstr "Fehler kopiert"
 msgid "Estonian"
 msgstr "Estnisch"
 
+msgid "Event data"
+msgstr "Ereignisdaten"
+
 msgid "Event fetch relays"
 msgstr "Relays zum Abrufen von Ereignissen"
 
@@ -2601,6 +2616,9 @@ msgstr "Passwort vergessen?"
 
 msgid "Forgot your password?"
 msgstr "Passwort vergessen?"
+
+msgid "Format"
+msgstr "Format"
 
 msgid "Forward"
 msgstr "Weiterleiten"
@@ -3381,6 +3399,9 @@ msgstr "Medien-Cache geleert."
 msgid "Media highlight"
 msgstr "Medienmarkierung"
 
+msgid "Media metadata"
+msgstr "Medienmetadaten"
+
 msgid "Members"
 msgstr "Mitglieder"
 
@@ -3728,6 +3749,9 @@ msgstr "Keiner"
 
 msgid "Norwegian"
 msgstr "Norwegisch"
+
+msgid "Nostr event"
+msgstr "Nostr-Ereignis"
 
 msgid "Not downloaded"
 msgstr "Nicht heruntergeladen"
@@ -4642,6 +4666,9 @@ msgstr "EINSTELLUNGEN"
 msgid "SHARED THEME"
 msgstr "GETEILTES THEME"
 
+msgid "SHORT VIDEO EVENT"
+msgstr "KURZVIDEO"
+
 msgid "SIGNER RELAY"
 msgstr "SIGNER-RELAY"
 
@@ -5337,6 +5364,9 @@ msgstr "Synthwave"
 msgid "System"
 msgstr "System"
 
+msgid "TAGS"
+msgstr "TAGS"
+
 msgid "TEXT"
 msgstr "TEXT"
 
@@ -5534,6 +5564,9 @@ msgstr "Das kann nicht rückgängig gemacht werden."
 
 msgid "This chat is archived. Restore it from Archive to send messages."
 msgstr "Dieser Chat ist archiviert. Stelle ihn im Archiv wieder her, um Nachrichten zu senden."
+
+msgid "This event is no longer available."
+msgstr "Dieses Ereignis ist nicht mehr verfügbar."
 
 msgid "This has no visible text, so the GM button sends GM."
 msgstr "Das enthält keinen sichtbaren Text, daher sendet die GM-Taste GM."
@@ -5776,6 +5809,10 @@ msgstr "Blockierung aufheben"
 msgid "Unfiled"
 msgstr "Ohne Ordner"
 
+#, c-format
+msgid "Unknown event kind %d"
+msgstr "Unbekannter Ereignistyp %d"
+
 msgid "Unlock"
 msgstr "Entsperren"
 
@@ -5802,6 +5839,9 @@ msgstr "Offen"
 
 msgid "Unsupported attachment format."
 msgstr "Nicht unterstütztes Anhangformat."
+
+msgid "Unsupported event"
+msgstr "Nicht unterstütztes Ereignis"
 
 msgid "Untitled emoji set"
 msgstr "Unbenanntes Emoji-Set"
@@ -5893,6 +5933,9 @@ msgstr "Benutzername"
 msgid "VERIFIED ADDRESS"
 msgstr "VERIFIZIERTE ADRESSE"
 
+msgid "VIDEO EVENT"
+msgstr "VIDEO"
+
 msgid "Vault password changed."
 msgstr "Tresor-Passwort geändert."
 
@@ -5916,6 +5959,9 @@ msgstr "Anzeigen"
 
 msgid "View as hex"
 msgstr "Als Hex anzeigen"
+
+msgid "View event data"
+msgstr "Ereignisdaten ansehen"
 
 msgid "View keyboard shortcuts"
 msgstr "Tastenkürzel ansehen"

@@ -148,6 +148,7 @@ timeline_start :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string) {
 	delete(ui.timeline_error); ui.timeline_error = ""
 	if ui.messages_account != ui.account_ref ||
 	   ui.messages_group != ui.chats[ui.selected].group_id {
+		event_data_close(&ui.event_data)
 		append(&retired_messages, ..ui.messages[:])
 		clear(&ui.messages)
 		messages_rebind(ui) // nothing left to bind to: clears every borrowed ID
@@ -224,6 +225,11 @@ timeline_mark_read :: proc(ui: ^Ui_State) {
 
 @(private)
 timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if ui.event_data.id != "" &&
+	   ui.event_data.source == .Timeline &&
+	   (ui.selected < 0 || ui.page != .Chats) {
+		event_data_close(&ui.event_data)
+	}
 	for i := len(timeline_retired) - 1; i >= 0; i -= 1 {
 		if thread.is_done(timeline_retired[i].worker) {
 			timeline_free(timeline_retired[i])

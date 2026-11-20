@@ -546,6 +546,9 @@ msgstr ""
 msgid "Allow your signer's permissions to use this account."
 msgstr ""
 
+msgid "Alt text"
+msgstr ""
+
 msgid "Always expanded"
 msgstr ""
 
@@ -822,6 +825,9 @@ msgid "CONNECTING"
 msgstr ""
 
 msgid "CONTACTS"
+msgstr ""
+
+msgid "CONTENT"
 msgstr ""
 
 msgid "CURRENT PASSWORD"
@@ -2126,6 +2132,9 @@ msgstr ""
 msgid "Difficulty: %d/5"
 msgstr ""
 
+msgid "Dimensions"
+msgstr ""
+
 msgid "Disabled for this group."
 msgstr ""
 
@@ -2212,6 +2221,9 @@ msgid "Drop files to attach"
 msgstr ""
 
 msgid "Drop here"
+msgstr ""
+
+msgid "Duration"
 msgstr ""
 
 msgid "Dust"
@@ -2406,6 +2418,9 @@ msgstr ""
 msgid "Estonian"
 msgstr ""
 
+msgid "Event data"
+msgstr ""
+
 msgid "Event fetch relays"
 msgstr ""
 
@@ -2590,6 +2605,9 @@ msgid "Forgot password?"
 msgstr ""
 
 msgid "Forgot your password?"
+msgstr ""
+
+msgid "Format"
 msgstr ""
 
 msgid "Forward"
@@ -3371,6 +3389,9 @@ msgstr ""
 msgid "Media highlight"
 msgstr ""
 
+msgid "Media metadata"
+msgstr ""
+
 msgid "Members"
 msgstr ""
 
@@ -3717,6 +3738,9 @@ msgid "None"
 msgstr ""
 
 msgid "Norwegian"
+msgstr ""
+
+msgid "Nostr event"
 msgstr ""
 
 msgid "Not downloaded"
@@ -4629,6 +4653,9 @@ msgstr ""
 msgid "SHARED THEME"
 msgstr ""
 
+msgid "SHORT VIDEO EVENT"
+msgstr ""
+
 msgid "SIGNER RELAY"
 msgstr ""
 
@@ -5318,6 +5345,9 @@ msgstr ""
 msgid "System"
 msgstr ""
 
+msgid "TAGS"
+msgstr ""
+
 msgid "TEXT"
 msgstr ""
 
@@ -5514,6 +5544,9 @@ msgid "This can't be undone."
 msgstr ""
 
 msgid "This chat is archived. Restore it from Archive to send messages."
+msgstr ""
+
+msgid "This event is no longer available."
 msgstr ""
 
 msgid "This has no visible text, so the GM button sends GM."
@@ -5754,6 +5787,10 @@ msgstr ""
 msgid "Unfiled"
 msgstr ""
 
+#, c-format
+msgid "Unknown event kind %d"
+msgstr ""
+
 msgid "Unlock"
 msgstr ""
 
@@ -5779,6 +5816,9 @@ msgid "Unresolved"
 msgstr ""
 
 msgid "Unsupported attachment format."
+msgstr ""
+
+msgid "Unsupported event"
 msgstr ""
 
 msgid "Untitled emoji set"
@@ -5871,6 +5911,9 @@ msgstr ""
 msgid "VERIFIED ADDRESS"
 msgstr ""
 
+msgid "VIDEO EVENT"
+msgstr ""
+
 msgid "Vault password changed."
 msgstr ""
 
@@ -5893,6 +5936,9 @@ msgid "View"
 msgstr ""
 
 msgid "View as hex"
+msgstr ""
+
+msgid "View event data"
 msgstr ""
 
 msgid "View keyboard shortcuts"

@@ -87,7 +87,7 @@ NEV_IMG_MAX_BYTES :: 16 * 1024 * 1024
 NEV_MAX :: 256 * 1024
 NEV_TIMEOUT_MS :: 6000
 
-// Kinds drawn as author + text. Everything else is raw JSON.
+// Kinds drawn as author + text.
 NEV_TEXT_KINDS := []i64{1, 11, 1111, NEV_PULL_REQUEST_KIND, NEV_ISSUE_KIND, 30023}
 
 @(private = "file")
@@ -113,7 +113,10 @@ Nev_Card :: struct {
 	subject_fonts: string, // cached title font map for bounded wrapping
 	created:       i64,
 	stamp:         string, // created formatted for the header, set on drain
-	raw:           string, // pretty-printed event JSON
+	raw:           string, // bare event object as received
+	id:            string, // signed id, not the address used as the cache key
+	tags:          json.Array, // owned only by cards using the fallback
+	summary:       Event_Summary,
 	blocks:        [dynamic]Md_Block_Ui, // content as markdown blocks, built on drain
 }
 
@@ -240,16 +243,7 @@ nev_worker :: proc(job: ^Nev_Job) {
 				if len(fresh.raw) == 0 {
 					continue
 				}
-				delete(card.raw); delete(card.content); delete(card.pubkey); delete(card.subject)
-				delete(card.subject_fonts)
-				delete(card.patch.repository); delete(card.patch.series); delete(card.patch.lines)
-				delete(card.highlight.comment); delete(card.highlight.surrounding)
-				delete(card.highlight.fonts)
-				for source in card.highlight.sources {delete(source.text); delete(source.url)}
-				for author in card.highlight.authors {delete(author.pubkey); delete(author.role)}
-				delete(card.highlight.sources); delete(card.highlight.authors)
-				nev_product_free(&card.product)
-				nev_geocache_free(&card.geocache)
+				nev_card_free(&card)
 				card = fresh
 				found = true
 				os.make_directory(fmt.tprintf("%s/events", data_home))
@@ -435,27 +429,29 @@ Nev_Shape :: enum {
 	Event,
 }
 
-// Fields the card reads plus the pretty JSON it shows. raw stays ""
-// when the bytes are not an event.
+// Retain the bare wire object so copying an event also keeps its signature
+// and the exact strings covered by it.
 nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_Card) {
 	card.done = true
-	val, perr := json.parse(body)
-	if perr != nil {
-		return
-	}
-	defer json.destroy_value(val)
-
-	ev_val := val
+	p := json.make_parser_from_bytes(body)
 	if shape == .Message {
-		arr, is_arr := val.(json.Array)
-		if !is_arr || len(arr) != 3 {
-			return
+		if !json.allow_token(&p, .Open_Bracket) {return}
+		for expected in ([2]string{"EVENT", "wn"}) {
+			if p.curr_token.kind != .String {return}
+			value, err := json.unquote_string(p.curr_token, p.spec, context.temp_allocator)
+			if err != nil || value != expected {return}
+			json.advance_token(&p)
+			if !json.allow_token(&p, .Comma) {return}
 		}
-		message, _ := arr[0].(json.String)
-		subscription, _ := arr[1].(json.String)
-		if message != "EVENT" || subscription != "wn" {return}
-		ev_val = arr[2]
 	}
+	if p.curr_token.kind != .Open_Brace {return}
+	start := p.curr_token.pos.offset
+	ev_val, perr := json.parse_value(&p)
+	if perr != nil {return}
+	defer json.destroy_value(ev_val)
+	end := p.prev_token.pos.offset + 1
+	if shape == .Message && p.curr_token.kind != .Close_Bracket {return}
+
 	ev, is_obj := ev_val.(json.Object)
 	if !is_obj {
 		return
@@ -515,18 +511,31 @@ nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_
 	if created, ok := ev["created_at"].(json.Float); ok {
 		card.created = i64(created)
 	}
-	pretty, merr := json.marshal(ev_val, {pretty = true, use_spaces = true, spaces = 2})
-	if merr != nil {
-		card.raw = strings.clone(string(body))
-		return
+	if !nev_has_renderer(card.kind) {
+		card.id = strings.clone(string(ev["id"].(json.String) or_else ""))
+		if tags, ok := ev["tags"].(json.Array); ok {
+			card.tags = tags
+			ev["tags"] = nil
+		}
+		card.summary = event_summary(card.content, card.tags)
 	}
-	// ponytail: marshal prints every json.Float with a fractional
-	// tail, so integer fields (kind, created_at) come out as
-	// 1788350645.0000000000000000; a real fraction is left alone.
-	raw, _ := strings.replace_all(string(pretty), ".0000000000000000", "")
-	delete(pretty)
-	card.raw = raw
+	card.raw = strings.clone(string(body[start:end]))
 	return
+}
+
+@(private)
+nev_card_free :: proc(card: ^Nev_Card) {
+	for s in ([]string{card.raw, card.content, card.pubkey, card.stamp, card.subject, card.subject_fonts, card.id, card.summary.title, card.summary.description, card.summary.details, card.patch.repository, card.patch.series, card.highlight.comment, card.highlight.surrounding, card.highlight.fonts}) {delete(s)}
+	delete(card.patch.lines)
+	for source in card.highlight.sources {delete(source.text); delete(source.url)}
+	for author in card.highlight.authors {delete(author.pubkey); delete(author.role)}
+	delete(card.highlight.sources)
+	delete(card.highlight.authors)
+	json.destroy_value(card.tags)
+	blocks_free(card.blocks)
+	nev_product_free(&card.product)
+	nev_geocache_free(&card.geocache)
+	card^ = {}
 }
 
 // Hard-wrap literal text, including unbroken ids and URLs. ASCII uses the
@@ -579,9 +588,8 @@ drain_nev :: proc() {
 			// Cache the quote's font map; the literal text stays in card.content.
 			font := [1]u8{u8(FONT_TITLE)}
 			card.highlight.fonts = strings.repeat(string(font[:]), len(card.content))
-		} else if card.kind != 0 &&
+		} else if nev_has_renderer(card.kind) &&
 		   card.kind != NEV_PATCH_KIND &&
-		   card.kind != 16767 &&
 		   len(card.content) > 0 &&
 		   g_client != nil {
 			doc: ^marmot.Markdown_Document
@@ -650,19 +658,42 @@ nev_lookup :: proc(evid: string, token: string, hints: []string = nil) -> Nev_Ca
 	return card
 }
 
+@(private = "file")
+nev_text_kind :: proc(kind: i64) -> bool {
+	for k in NEV_TEXT_KINDS {if kind == k {return true}}
+	return false
+}
+
+@(private = "file")
+nev_has_renderer :: proc(kind: i64) -> bool {
+	return(
+		nev_text_kind(kind) ||
+		kind == NEV_PATCH_KIND ||
+		kind == NEV_HIGHLIGHT_KIND ||
+		kind == NEV_PRODUCT_KIND ||
+		kind == NEV_GEOCACHE_KIND \
+	)
+}
+
 // The card itself, drawn where the token was written. token is the
 // bech32 as written (minus any nostr: prefix), what the button opens.
 nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 	card := nev_lookup(evid, token, hints)
+	if card.raw != "" && !nev_has_renderer(card.kind) {
+		byline := mention_label(card.pubkey)
+		if card.stamp != "" {byline = fmt.tprintf("%s · %s", byline, card.stamp)}
+		unsupported_event_card(
+			id,
+			u64(card.kind),
+			card.summary,
+			{evid, byline, nev_open_url(card.kind, token)},
+		)
+		return
+	}
 	nev_depth += 1
 	defer {nev_depth -= 1}
 
-	textual := false
-	for k in NEV_TEXT_KINDS {
-		if card.kind == k {
-			textual = true
-		}
-	}
+	textual := nev_text_kind(card.kind)
 	git_card :=
 		(card.kind == NEV_PATCH_KIND ||
 			card.kind == NEV_PULL_REQUEST_KIND ||
@@ -721,11 +752,6 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 					)
 				case textual:
 					eyebrow(tr("NOTE"))
-				case:
-					nendo.text(
-						fmt.tprintf(tr("KIND %d"), card.kind),
-						{font = FONT_BODY, size = 11, color = TEXT_LO},
-					)
 				}
 				if len(card.pubkey) > 0 &&
 				   !git_card &&
@@ -815,8 +841,6 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			} else {
 				nev_card_excerpt(id, evid, card, inner_w)
 			}
-		case:
-			nev_card_excerpt(id, evid, card, inner_w, card.raw)
 		}
 
 		// Hovering binds link_hover, so a click goes through the same
@@ -1250,6 +1274,8 @@ nev_more_id: u32
 nev_retry_hover: string
 @(private)
 nev_hint_hover: string
+@(private)
+nev_data_hover: string
 
 // Read preview metadata once, while the event JSON is already parsed.
 @(private)
