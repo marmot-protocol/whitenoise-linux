@@ -17,6 +17,37 @@ watches the repo over Nostr and runs `act/workflows/` using the
 | `.github/workflows/ci.yml` + `_build.yml` | GitHub | Linux release-profile builds. Quality gates come from the mirrored `pr-precommit.yml`. |
 | `.github/workflows/release.yml` | GitHub | Tag-triggered (`v*`) GitHub Release of the build tarballs. |
 
+## Boat PR workers
+
+`wn-ngit-coordinator.exe.xyz` runs `wn-ngit-pr.service` and
+`wn-ngit-boat.service`. The coordinator watches ngit and signs results as
+`npub14snvzh5t0vrz29xnl88aw7y35wfk3m9en7xmhjazazn29j9eq2hss4zh56`.
+Its `ubuntu-24.04` mapping covers native and pre-commit PR workflows. The
+staging and Windows selectors stay on `wn-build-server`.
+
+Install the Boat CLI, Bun, and the pinned coordinator binary in `/opt/wn-ngit`,
+along with `boat-adapter.ts`, `boat-act.sh`, and `boat-guest.sh`. Install the
+matching units from `runner/`. Use separate `wn-ngit` and `wn-boat` system
+users. Sign the adapter into Boat as `wn-boat` using a scoped key with
+`account.read`, `sandbox.read`, `sandbox.create`, `sandbox.delete-own`,
+`snapshot.read`, and `exec`. Pass the key on stdin with `boat login --key-stdin`.
+The coordinator's signing key and Boat credential never enter job VMs.
+
+The adapter restores `wn-ngit-native-06cbe039-pax` in a fresh large VM for each
+job. The VM discards its disk at teardown. Only trusted `master` builds seed
+the snapshot. The snapshot holds the Podman SDK and `/wn-ci/cargo-cache.tar`.
+Use GNU tar `--format=pax` for the Cargo target, MDK checkout, and Cargo
+registry and Git volumes. A raw filesystem snapshot rounded some timestamps
+down to whole seconds, making Cargo rebuild unchanged crates. Upload a new
+snapshot under a new name and verify it on a fresh worker before changing
+the adapter's `snapshot` value.
+
+The kernel limits the worker's job container to 80% of VM CPU and leaves
+8 GiB of physical RAM available. The container can use up to 8 GiB of disk
+swap. The wrapper limits Cargo to one build job if `DEPS_PIN` or `patches/`
+differs from the seed. Job output goes to ngit through the adapter; PR
+workflows do not publish artifacts.
+
 ## wn-build-server
 
 Two independent coordinator/adapter pairs share the host's enforced CI resource

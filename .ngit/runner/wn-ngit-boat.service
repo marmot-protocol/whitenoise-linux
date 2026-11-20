@@ -1,0 +1,26 @@
+[Unit]
+Description=White Noise Boat execution adapter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=wn-boat
+Group=wn-boat
+StateDirectory=wn-ngit-boat
+StateDirectoryMode=0700
+RuntimeDirectory=wn-ngit-boat
+RuntimeDirectoryMode=0750
+WorkingDirectory=/var/lib/wn-ngit-boat
+ExecStart=/opt/wn-ngit/bun /opt/wn-ngit/boat-adapter.ts
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=100
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+UMask=0077
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target
