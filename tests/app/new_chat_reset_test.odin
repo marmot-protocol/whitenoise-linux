@@ -1,6 +1,7 @@
 package main
 
 import "base:runtime"
+import "core:fmt"
 import "core:os"
 
 import marmot "../marmot"
@@ -196,6 +197,29 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	rl.PushKey(.ENTER, false)
 	rl.WindowShouldClose()
 	testing.expect_value(t, nc_group_targets(&ui), peer)
+	layout(&ui)
+	for i in 0 ..< 24 {
+		nc_member_add(&ui, fmt.tprintf("%064x", i + 1), "Extra invitee")
+	}
+	layout(&ui)
+	pane := nendo.scroll(nendo.id("NewChatPane"))
+	pane.position.y = pane.viewport.height - pane.content.height
+	layout(&ui)
+	option := nendo.element(nendo.id("NCMemberOption", 0)).rect
+	view := nendo.element(nendo.id("NewChatPane")).rect
+	if !testing.expect(
+		t,
+		option.y + option.height < view.y,
+		fmt.tprintf("suggestion %v must be above pane %v at %v", option, view, pane.position^),
+	) {return}
+	rl.PushKey(.ENTER, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.ENTER, false)
+	rl.WindowShouldClose()
+	if !testing.expect_value(t, len(ui.nc_members), 25) {return}
+	for member in ui.nc_members[1:] {delete(member.hex); delete(member.label); delete(member.pic_url)}
+	resize(&ui.nc_members, 1)
+	pane.position.y = 0
 	layout(&ui)
 	click(t, &ui, client, nendo.id("NCMemberOption", 0))
 	layout(&ui)

@@ -1991,7 +1991,20 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				data.position.y = -visible_top
 				if enter && visible_top != top {return}
 			}
-			if enter {pick = ui.nc_contact_sel}
+			if enter {
+				at := ui.nc_contact_sel
+				row :=
+					at < len(rows) ? nendo.id("NCMemberOption", u32(rows[at].idx)) : nendo.id("NCMemberPerson", u32(people[at - len(rows)]))
+				if !nendo.element(row).found {return}
+				for container in ([2]nendo.Id{nendo.id("NCForm"), nendo.id("NewChatPane")}) {
+					scroll := nendo.scroll(container)
+					if !scroll.found {continue}
+					top := scroll.position.y
+					scroll_into_view(container, row)
+					if scroll.position.y != top {return}
+				}
+				pick = at
+			}
 		} else if mouse_released() {
 			for row, i in rows {
 				if nendo.pointer_over(nendo.id("NCMemberOption", u32(row.idx))) {pick = i; break}
