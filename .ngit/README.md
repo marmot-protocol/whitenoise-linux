@@ -33,14 +33,15 @@ users. Sign the adapter into Boat as `wn-boat` using a scoped key with
 `snapshot.read`, and `exec`. Pass the key on stdin with `boat login --key-stdin`.
 The coordinator's signing key and Boat credential never enter job VMs.
 
-The adapter restores `wn-ngit-native-06cbe039-pax` in a fresh large VM for each
+The adapter restores `wn-ngit-native-70fd486b-pax` in a fresh large VM for each
 job. The VM discards its disk at teardown. Only trusted `master` builds seed
 the snapshot. The snapshot holds the Podman SDK and `/wn-ci/cargo-cache.tar`.
-Use GNU tar `--format=pax` for the Cargo target, MDK checkout, and Cargo
-registry and Git volumes. A raw filesystem snapshot rounded some timestamps
-down to whole seconds, making Cargo rebuild unchanged crates. Upload a new
-snapshot under a new name and verify it on a fresh worker before changing
-the adapter's `snapshot` value.
+Run `scripts/ngit-stage.sh` before building the seed so Cargo and Rustup use
+the same `/var/cache/wn-ci` paths as PR jobs. Pack the Cargo target, MDK
+checkout, Rustup directory, and Cargo registry and Git volumes with GNU tar
+`--format=pax`. A raw filesystem snapshot rounded some timestamps down to
+whole seconds, making Cargo rebuild unchanged crates. Verify a new snapshot
+on a fresh worker before changing the adapter's `snapshot` value.
 
 The kernel limits the worker's job container to 80% of VM CPU and leaves
 8 GiB of physical RAM available. The container can use up to 8 GiB of disk
