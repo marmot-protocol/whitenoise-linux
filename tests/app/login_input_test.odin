@@ -11,7 +11,7 @@ import rl "sdlrl"
 // SDL and nendo have process globals; run this in its own test invocation.
 @(test)
 login_input_required :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "login_input_required" {return}
+	if !test_isolated("login_input_required") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(1024, 700, "Import key validation")
 	defer rl.CloseWindow()

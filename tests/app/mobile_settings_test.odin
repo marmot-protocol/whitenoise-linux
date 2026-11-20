@@ -10,7 +10,7 @@ import rl "sdlrl"
 // Kept isolated like settings_viewport: fonts and nendo own process-global state.
 @(test)
 mobile_settings_viewport :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "mobile_settings_viewport" {return}
+	if !test_isolated("mobile_settings_viewport") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(320, 480, "Mobile settings")
 	defer rl.CloseWindow()

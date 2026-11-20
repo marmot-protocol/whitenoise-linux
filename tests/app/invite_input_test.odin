@@ -10,7 +10,7 @@ import rl "sdlrl"
 // SDL and nendo own process globals. The canonical suite runs this alone.
 @(test)
 invite_input_dispatch :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "invite_input_dispatch" {return}
+	if !test_isolated("invite_input_dispatch") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(1024, 700, "Invite input")
 	defer rl.CloseWindow()

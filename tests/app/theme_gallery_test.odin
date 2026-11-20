@@ -14,7 +14,7 @@ import rl "sdlrl"
 // -define:ODIN_TEST_NAMES=theme_gallery_interactions, like settings_viewport.
 @(test)
 theme_gallery_interactions :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "theme_gallery_interactions" {return}
+	if !test_isolated("theme_gallery_interactions") {return}
 	context.allocator = runtime.default_context().allocator
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)

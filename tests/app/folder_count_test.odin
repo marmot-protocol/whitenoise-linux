@@ -13,7 +13,7 @@ import rl "sdlrl"
 // Run alone because SDL and nendo own process globals.
 @(test)
 folder_count_dispatch :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "folder_count_dispatch" {return}
+	if !test_isolated("folder_count_dispatch") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(1024, 700, "Folder count")
 	defer rl.CloseWindow()

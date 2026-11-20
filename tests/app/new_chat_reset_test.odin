@@ -14,7 +14,7 @@ import rl "sdlrl"
 // -define:ODIN_TEST_NAMES=new_chat_reset_dispatch
 @(test)
 new_chat_reset_dispatch :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "new_chat_reset_dispatch" {return}
+	if !test_isolated("new_chat_reset_dispatch") {return}
 	context.allocator = runtime.default_context().allocator
 	dir, err := os.make_directory_temp(
 		os.get_env("TMPDIR", context.temp_allocator),

@@ -10,7 +10,7 @@ import rl "sdlrl"
 // Runs in its own headless process through scripts/build.sh test.
 @(test)
 settings_viewport :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "settings_viewport" {return}
+	if !test_isolated("settings_viewport") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(740, 500, "Settings viewport")
 	defer rl.CloseWindow()

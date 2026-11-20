@@ -11,7 +11,7 @@ import rl "sdlrl"
 // SDL and nendo are process-global; run this test alone with ODIN_TEST_NAMES.
 @(test)
 mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "mobile_chat_layout_boundaries" {return}
+	if !test_isolated("mobile_chat_layout_boundaries") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(360, 640, "Mobile conversation layouts")
 	defer rl.CloseWindow()

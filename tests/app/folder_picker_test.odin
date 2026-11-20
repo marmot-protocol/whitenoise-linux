@@ -13,7 +13,7 @@ import rl "sdlrl"
 // SDL and nendo own process globals, so the canonical suite runs this alone.
 @(test)
 folder_picker_dispatch :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "folder_picker_dispatch" {return}
+	if !test_isolated("folder_picker_dispatch") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(1024, 700, "Folder picker")
 	defer rl.CloseWindow()

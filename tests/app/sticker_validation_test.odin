@@ -10,7 +10,7 @@ import rl "sdlrl"
 // everything else, so a lookup shows progress until it returns.
 @(test)
 sticker_input_validation :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "sticker_input_validation" {return}
+	if !test_isolated("sticker_input_validation") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(900, 760, "Sticker validation")
 	defer rl.CloseWindow()

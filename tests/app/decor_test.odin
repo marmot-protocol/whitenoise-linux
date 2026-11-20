@@ -10,7 +10,7 @@ import rl "sdlrl"
 // SDL rendering tests run separately because the renderer is global.
 @(test)
 wallpaper_proportions :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "wallpaper_proportions" {
+	if !test_isolated("wallpaper_proportions") {
 		return
 	}
 	context.allocator = runtime.default_context().allocator

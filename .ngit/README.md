@@ -110,9 +110,10 @@ follow the existing build scripts' input keys; a cache hit does not skip tests
 or packaged-app smoke runs.
 
 Native test executables are keyed by application, test, compiler, library, and
-flag inputs. Unchanged tests execute the cached binary in a fresh process; the
-isolated UI cases remain separate processes. Each flag variant replaces its
-previous executable when inputs change rather than accumulating generations.
+flag inputs. The app compiles its test executable once per input change. Each
+isolated UI test runs that same executable in a fresh process. Cache hits still
+run every selected test. Linux CI gives each test process two minutes to exit.
+Compilation is outside that limit.
 
 ## Requests and results
 

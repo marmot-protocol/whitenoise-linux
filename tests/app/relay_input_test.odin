@@ -13,7 +13,7 @@ import rl "sdlrl"
 // SDL and nendo own process globals, so run this in its own process.
 @(test)
 relay_input_dispatch :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "relay_input_dispatch" {return}
+	if !test_isolated("relay_input_dispatch") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(1024, 900, "Relay input")
 	defer rl.CloseWindow()

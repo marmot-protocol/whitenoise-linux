@@ -13,7 +13,7 @@ import rl "sdlrl"
 // SDL and nendo own process globals; run this separately like the other UI tests.
 @(test)
 archive_chat_dispatch :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "archive_chat_dispatch" {return}
+	if !test_isolated("archive_chat_dispatch") {return}
 	context.allocator = runtime.default_context().allocator
 	dir, err := os.make_directory_temp("", "wn-archive-chat-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}

@@ -10,7 +10,7 @@ import rl "sdlrl"
 // SDL and nendo process globals require this isolated canonical invocation.
 @(test)
 export_password_dispatch :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "export_password_dispatch" {return}
+	if !test_isolated("export_password_dispatch") {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(1024, 700, "Export password")
 	defer rl.CloseWindow()

@@ -10,7 +10,7 @@ import rl "sdlrl"
 
 @(test)
 recent_folder_filters :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "recent_folder_filters" {return}
+	if !test_isolated("recent_folder_filters") {return}
 	context.allocator = runtime.default_context().allocator
 	home, err := os.make_directory_temp("", "wn-recent-folders-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
