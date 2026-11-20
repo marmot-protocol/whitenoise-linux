@@ -24,16 +24,25 @@ if [ -d "$HERE/build/odin-root" ]; then
   export ODIN_ROOT="$HERE/build/odin-root"
 fi
 LINK_ARGS=()
-if [ "$(uname -s)" = OpenBSD ]; then
+TEST_COMMAND=()
+case "$(uname -s)" in
+OpenBSD)
   LINK_ARGS=('-extra-linker-flags:-Wl,--wrap=execve,--exclude-libs=libmarmot_c.a')
-elif [ "$(uname -s)" = Linux ]; then
+  ;;
+Linux)
   LINK_ARGS=('-extra-linker-flags:-Wl,--exclude-libs=libmarmot_c.a')
-fi
+  if [ "${CI:-}" = true ]; then
+    # A crashed Odin test can leave a mutex locked in the test runner.
+    TEST_COMMAND=(timeout --verbose --kill-after=5s 2m)
+  fi
+  ;;
+esac
 
-run_isolated() {
+run_tests() {
+  "${TEST_COMMAND[@]}" "$fixture/test"
   local check
   for check in "${isolated[@]}"; do
-    SDL_VIDEODRIVER=dummy "$fixture/test" "-tests:$check"
+    SDL_VIDEODRIVER=dummy "${TEST_COMMAND[@]}" "$fixture/test" "-tests:$check"
   done
 }
 
@@ -46,11 +55,7 @@ if [ -n "${WN_ODIN_TEST_BUILD_KEY:-}" ]; then
   fixture="$HERE/build/odin-test-cache/$variant"
   if build_cache_fresh "$key" "$fixture/stamp" "$fixture/test"; then
     echo "==> native test cache hit: $package $*"
-    if [ "${#isolated[@]}" -eq 0 ]; then
-      exec "$fixture/test"
-    fi
-    "$fixture/test"
-    run_isolated
+    run_tests
     exit 0
   fi
   rm -rf "$fixture"
@@ -76,8 +81,8 @@ done
 for helper in wn-archive wn-pdf wn-mesh wn-fbx wn-math wn-font wn-image; do
   ln -s "$HERE/build/$helper" "$fixture/$helper"
 done
-odin test "$fixture/$package" -keep-executable -out:"$fixture/test" "${LINK_ARGS[@]}" "$@"
+odin build "$fixture/$package" -build-mode:test -out:"$fixture/test" "${LINK_ARGS[@]}" "$@"
+run_tests
 if [ -n "${WN_ODIN_TEST_BUILD_KEY:-}" ]; then
   build_cache_store "$key" "$fixture/stamp" "$fixture/test"
 fi
-run_isolated
