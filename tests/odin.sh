@@ -6,16 +6,25 @@ package="${1:-}"
 case "$package" in
 app | app/sdlrl) ;;
 *)
-  echo "Usage: tests/odin.sh app|app/sdlrl [odin test flags | --isolated TEST ...]" >&2
+  echo "Usage: tests/odin.sh app|app/sdlrl [compiler flags [-- runner args] | --isolated TEST ...]" >&2
   exit 1
   ;;
 esac
 shift
 isolated=()
+runner_args=()
 if [ "${1:-}" = --isolated ]; then
   shift
   isolated=("$@")
   set --
+else
+  for ((i = 1; i <= $#; i++)); do
+    if [ "${!i}" = -- ]; then
+      runner_args=("${@:i+1}")
+      set -- "${@:1:i-1}"
+      break
+    fi
+  done
 fi
 export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-dummy}"
 bash "$HERE/scripts/observability.sh"
@@ -39,7 +48,7 @@ Linux)
 esac
 
 run_tests() {
-  "${TEST_COMMAND[@]}" "$fixture/test"
+  "${TEST_COMMAND[@]}" "$fixture/test" "${runner_args[@]}"
   local check
   for check in "${isolated[@]}"; do
     SDL_VIDEODRIVER=dummy "${TEST_COMMAND[@]}" "$fixture/test" "-tests:$check"
