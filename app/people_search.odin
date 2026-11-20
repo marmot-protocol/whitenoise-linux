@@ -75,7 +75,7 @@ people_query :: proc(ui: ^Ui_State) -> string {
 	text: string
 	if ui.nc_page == .Contacts {
 		text = string(ui.nc_search[:])
-	} else if ui.focus == .NC_Member && ui.nc_member_choice == 0 {
+	} else if ui.focus == .NC_Member {
 		text = string(ui.nc_member[:])
 	}
 	query := strings.trim_space(text)
@@ -90,12 +90,16 @@ people_query :: proc(ui: ^Ui_State) -> string {
 // Hits not already listed among the matching contacts, as ui.people.hits
 // indices in rank order.
 @(private)
-people_rows :: proc(ui: ^Ui_State, contacts: []Contact_Order) -> []int {
+people_rows :: proc(
+	ui: ^Ui_State,
+	contacts: []Contact_Order,
+	excluded: map[string]bool = nil,
+) -> []int {
 	listed := make(map[string]bool, len(contacts), context.temp_allocator)
 	for row in contacts {listed[ui.nc_contacts[row.idx].id_hex] = true}
 	rows := make([dynamic]int, 0, len(ui.people.hits), context.temp_allocator)
 	for hit, i in ui.people.hits {
-		if !listed[hit.id_hex] {append(&rows, i)}
+		if !listed[hit.id_hex] && !excluded[hit.id_hex] {append(&rows, i)}
 	}
 	return rows[:]
 }

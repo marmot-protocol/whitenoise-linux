@@ -102,7 +102,9 @@ nip05_complete :: proc(ui: ^Ui_State, done: Op_Done) {
 		   ui.chats[ui.selected].group_id != done.group {return}
 		buf = &ui.invite_input
 	}
-	if string(buf[:]) != done.target {return}
+	input := string(buf[:])
+	if done.group == "" {input = strings.trim_space(input)}
+	if input != done.target {return}
 	if done.content == "" {
 		set_status(
 			ui,

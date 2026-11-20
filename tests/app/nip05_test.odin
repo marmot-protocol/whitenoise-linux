@@ -39,7 +39,7 @@ nip05 :: proc(t: ^testing.T) {
 		ui.selected = ui.new_chat_open ? -1 : 0
 		append(&ui.chats, Chat_Row_Ui{group_id = "group"})
 		buf := ui.new_chat_open ? &ui.nc_member : &ui.invite_input
-		ed_set(&ui, buf, "bob@example.com")
+		ed_set(&ui, buf, scenario == 0 ? " bob@example.com " : "bob@example.com")
 		done := Op_Done {
 			ticket  = 1,
 			account = strings.clone(scenario == 1 ? "other" : "account"),

@@ -45,12 +45,13 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		marmot.Status.OK,
 	) {return}
 	defer marmot.client_free(client)
-	rl.InitWindow(1280, 800, "New chat reset")
+	rl.InitWindow(1024, 700, "New chat reset")
 	defer rl.CloseWindow()
+	defer account_jobs_stop()
 	UI_ZOOM, UI_SCALE = 1, 1
 	load_themes(); apply_theme(0, 0); init_fonts()
 	memory: []u8
-	init_layout(&memory, 32768, {1280, 800})
+	init_layout(&memory, 32768, {1024, 700})
 	defer delete(memory)
 	ui := Ui_State {
 		row_menu         = -1,
@@ -60,11 +61,10 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	}
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs.reduce_motion = true
-	// No signed-in account: the real opener cannot start a contact worker.
 	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "fixture", title = "Fixture chat"})
 	g_ui, g_prefs = &ui, &ui.prefs
-	defer {g_ui, g_prefs = nil, nil; forced_release = false}
+	defer {g_ui, g_prefs = nil, nil; forced_release = false; text_drag = nil}
 
 
 	layout :: proc(ui: ^Ui_State) {
@@ -76,7 +76,14 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		data := nendo.element(id)
 		if !testing.expect(t, data.found, "navigation control must exist") {return}
 		box := data.rect
-		nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
+		point := [2]f32{box.x + box.width / 2, box.y + box.height / 2}
+		text_drag = nil
+		nendo.set_pointer(point, .Down)
+		forced_press = true
+		handle_pages(ui, client)
+		if ui.page == .Chats {handle_chat(ui, client)}
+		forced_press = false
+		nendo.set_pointer(point, .Up)
 		forced_release = true
 		handle_pages(ui, client)
 		if ui.page == .Chats {handle_chat(ui, client)}
@@ -125,7 +132,7 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		back_out(t, &ui, client)
 	}
 	// The intentional DM-to-group prefill is applied after the fresh reset.
-	peer := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	peer :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	ui.chats[0].conversation_kind = .DIRECT
 	ui.chats[0].peer_hex = peer
 	ui.show_members = true
@@ -134,7 +141,42 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	layout(&ui)
 	click(t, &ui, client, nendo.id("DmStartGroup"))
 	testing.expect(t, ui.new_chat_open && ui.nc_page == .Group)
-	testing.expect_value(t, string(ui.nc_member[:]), peer)
+	testing.expect_value(t, nc_group_targets(&ui), peer)
+	testing.expect_value(t, string(ui.nc_member[:]), "")
 	testing.expect(t, len(ui.nc_name) == 0)
 	testing.expect(t, ui.focus == .NC_Name)
+
+	second :: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	third :: "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+	append(
+		&ui.nc_contacts,
+		Contact_Ui{id_hex = strings.clone(second), name = strings.clone("Bea")},
+	)
+	append(
+		&ui.nc_contacts,
+		Contact_Ui{id_hex = strings.clone(third), name = strings.clone("Casey")},
+	)
+	defer nc_contacts_free(&ui.nc_contacts)
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCMember"))
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCMemberOption", 0))
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCMemberOption", 1))
+	testing.expect_value(t, nc_group_targets(&ui), peer + "\n" + second + "\n" + third)
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCMemberRemove", 0))
+	testing.expect_value(t, nc_group_targets(&ui), second + "\n" + third)
+	ed_set(&ui, &ui.nc_name, "Weekend plans")
+	ui.account_ref = "offline-fixture"
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCCreate"))
+	if testing.expect_value(t, len(account_jobs), 1) {
+		testing.expect_value(t, account_jobs[0].kind, Account_Operation.Create_Chat)
+		testing.expect_value(t, account_jobs[0].target, second + "\n" + third)
+	}
+	account_jobs_stop()
+	layout(&ui)
+	back_out(t, &ui, client)
+	testing.expect_value(t, nc_group_targets(&ui), "")
 }

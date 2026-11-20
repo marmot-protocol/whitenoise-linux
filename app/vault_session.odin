@@ -187,6 +187,7 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 	photo_cancel(ui)
 	login_pair_clear(ui)
 	editor_forget(ui)
+	nc_members_clear(ui)
 	keys_forget(ui)
 	close_export(ui)
 	backup_close(ui)

@@ -20,7 +20,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 ### Chats, groups and who may change them
 
 - **New chat opens a searchable contact picker.** Choose a contact, or select New group to set its name and photo.
-- **A group needs a first member.** Type to filter your contacts and select one, or paste a Nostr address.
+- **Choose who to invite before you create the group.** In **Members**, select people from the search results, or paste one or more comma-separated public keys and select **Add**. Choose at least one person, then select **Create group**.
 - **Group settings belong to admins.** Only admins see the name, description, photo, disappearing-message, and issue-tracking controls.
 - **Only admins promote, demote, or remove members.** Nicknames change your local labels and remain available to other members.
 - **Unread state is tracked per chat.** It shows up as badges on the rail.

@@ -458,7 +458,13 @@ account_job_drain :: proc(ui: ^Ui_State) {
 				case .Create_Chat:
 					if job.notes {delete(ui.prefs.notes_group); ui.prefs.notes_group = strings.clone(job.result); ui.prefs.pinned[strings.clone(job.result)] = true; save_settings(ui)}
 					load_chat_list(job.client, job.account, ui)
-					if job.open_chat {if job.form {clear(&ui.nc_member); clear(&ui.nc_name)}; ui.focus = .Compose; ui.page = .Chats; ui.new_chat_open = false; select_by_id(ui, job.client, job.result)}
+					if job.open_chat {
+						if job.form {close_new_chat(ui)}
+						ui.focus = .Compose
+						ui.page = .Chats
+						ui.new_chat_open = false
+						select_by_id(ui, job.client, job.result)
+					}
 					if job.skipped > 0 {
 						set_status(
 							ui,
