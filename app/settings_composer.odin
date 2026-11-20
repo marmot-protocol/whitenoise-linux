@@ -7,6 +7,9 @@ import rl "sdlrl"
 COMPOSER_TAB :: 3
 
 @(private = "file")
+COMPOSER_PREVIEW_PAD :: 12
+
+@(private = "file")
 COMPOSER_SLOT_LABELS := [Composer_Slot]string {
 	.Menu  = N_("+ menu"),
 	.Left  = N_("Left"),
@@ -62,13 +65,18 @@ settings_composer :: proc(ui: ^Ui_State) {
 
 @(private = "file")
 composer_preview :: proc(ui: ^Ui_State) {
-	plan := composer_plan(ui, settings_body_width(ui) - 24, .Preview)
+	plan := composer_plan(
+		ui,
+		composer_config(&ui.prefs),
+		settings_body_width(ui) - 2 * COMPOSER_PREVIEW_PAD,
+		.Preview,
+	)
 	inline := plan.config.layout == .Automatic && plan.inline_width >= COMPOSER_TEXT_MIN
 	if nendo.box(nendo.id("ComposerPreview"))(
 	{
 		width = nendo.grow(),
 		direction = .Column,
-		padding = nendo.pad(12),
+		padding = nendo.pad(COMPOSER_PREVIEW_PAD),
 		gap = 8,
 		color = PLATE,
 		radius = rr(12),
@@ -266,10 +274,10 @@ Composer_Drag :: struct {
 
 @(private = "file")
 Composer_Drop :: struct {
-	slot:           Composer_Slot,
-	before:         Composer_Action,
-	mark:           nendo.Id,
-	valid, preview: bool,
+	slot:                     Composer_Slot,
+	before:                   Composer_Action,
+	mark:                     nendo.Id,
+	valid, preview, trailing: bool,
 }
 
 @(private = "file")
@@ -308,7 +316,9 @@ composer_drop_at :: proc(ui: ^Ui_State, point: nendo.Vector2) -> Composer_Drop {
 	source := ui.composer_editor.drag.source
 	if !drop.valid || drop.slot not_in composer_slots(source) {return {}}
 	config := composer_config(&ui.prefs)
-	for action in config.order[:COMPOSER_SHORTCUT_COUNT] {
+	order := config.order[:COMPOSER_SHORTCUT_COUNT]
+	last := -1
+	for action, i in order {
 		if action == source || config.slots[action] != drop.slot {continue}
 		id := drop.preview ? nendo.id(COMPOSER_ACTIONS[action].id) : composer_tile_id(action)
 		box := nendo.element(id)
@@ -318,8 +328,33 @@ composer_drop_at :: proc(ui: ^Ui_State, point: nendo.Vector2) -> Composer_Drop {
 			drop.before, drop.mark = action, id
 			break
 		}
-		drop.mark = id
+		drop.mark, last = id, i
 	}
+	drop.trailing = drop.before == .None
+	if !drop.preview {return drop}
+	if drop.trailing {
+		// A trailing drop follows the visible pin, not the pins hidden by overflow.
+		for action in order[last + 1:] {
+			if action == source {continue}
+			if last < 0 {
+				slot := config.slots[action]
+				if slot != .Left && slot != .Right {continue}
+				if nendo.element(nendo.id(COMPOSER_ACTIONS[action].id)).found {continue}
+			}
+			drop.before = action
+			break
+		}
+	}
+	// Show a preview insertion only if the moved shortcut will appear there.
+	candidate := config^
+	composer_move(&candidate, source, drop.slot, drop.before)
+	plan := composer_plan(
+		ui,
+		&candidate,
+		settings_body_width(ui) - 2 * COMPOSER_PREVIEW_PAD,
+		.Preview,
+	)
+	if source not_in plan.pinned {return {}}
 	return drop
 }
 
@@ -415,17 +450,15 @@ handle_settings_composer :: proc(ui: ^Ui_State) {
 handle_composer_drag :: proc(ui: ^Ui_State) -> bool {
 	editor := &ui.composer_editor
 	drag := &editor.drag
-	if ui.page != .Settings ||
-	   ui.settings_section != .General ||
-	   ui.settings_tab != COMPOSER_TAB ||
-	   settings_on_menu(ui) ||
-	   modal_open(ui) ||
-	   ui.add_account_open {
-		drag^ = {}
-		return false
-	}
+	shown :=
+		ui.page == .Settings &&
+		ui.settings_section == .General &&
+		ui.settings_tab == COMPOSER_TAB &&
+		!settings_on_menu(ui) &&
+		!modal_open(ui) &&
+		!ui.add_account_open
 	if drag.source == .None {
-		if !mouse_pressed() {return false}
+		if !shown || !mouse_pressed() {return false}
 		source := composer_hit(ui)
 		if source == .None {return false}
 		drag^ = {
@@ -433,9 +466,11 @@ handle_composer_drag :: proc(ui: ^Ui_State) -> bool {
 			from   = nendo.pointer().position,
 		}
 		anim_moving += 1
-		return true
+	} else if !shown || !rl.IsWindowFocused() {
+		// Leaving the editor cancels the drop, but the release still belongs to it.
+		drag.cancelled, drag.active = true, false
 	}
-	if rl.IsKeyPressed(.ESCAPE) || !rl.IsWindowFocused() {
+	if rl.IsKeyPressed(.ESCAPE) {
 		drag.cancelled, drag.active = true, false
 	}
 	point := nendo.pointer().position
@@ -516,7 +551,7 @@ composer_drag_feedback :: proc(ui: ^Ui_State) {
 			found = true
 		}
 		if found {
-			x := drag.drop.before != .None ? r.x - 3 : r.x + r.width + 1
+			x := drag.drop.trailing ? r.x + r.width + 1 : r.x - 3
 			page := nendo.element(nendo.id("SettingsPage")).rect
 			top := max(r.y, page.y)
 			height := max(0, min(r.y + r.height, page.y + page.height) - top)

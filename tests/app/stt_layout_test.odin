@@ -39,7 +39,10 @@ stt_layout :: proc(t: ^testing.T) {
 		nendo.set_dimensions({width, 700})
 		ui.stt.file = nil
 		_ = build_layout(&ui, 0)
+		ui.compose_more = true
+		_ = build_layout(&ui, 0)
 		testing.expect(t, nendo.element(nendo.id("DictateBtn")).found)
+		ui.compose_more = false
 		ui.stt.file, ui.stt.status = file, 'R'
 		commands := build_layout(&ui, 0)
 		for id in ([]string{"SttCancel", "SttFinish"}) {

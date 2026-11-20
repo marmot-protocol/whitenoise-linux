@@ -2113,7 +2113,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 
 @(private = "file")
 composer_edit :: proc(ui: ^Ui_State, width: f32) {
-	plan := composer_plan(ui, width)
+	plan := composer_plan(ui, composer_config(&ui.prefs), width)
 	text := string(ui.compose[:])
 	inline :=
 		plan.config.layout == .Automatic &&

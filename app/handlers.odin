@@ -1451,6 +1451,7 @@ stash_staged :: proc(ui: ^Ui_State) {
 @(private = "file")
 open_msg_menu :: proc(ui: ^Ui_State, index: int) {
 	m := rl.GetMousePosition()
+	ui.compose_more = false
 	ui.ctx_open = true
 	ui.ctx_msg = index
 	// ponytail: rough clamp from an estimated panel size;

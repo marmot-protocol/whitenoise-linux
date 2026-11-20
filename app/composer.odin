@@ -144,11 +144,12 @@ Composer_Plan :: struct {
 @(private)
 composer_plan :: proc(
 	ui: ^Ui_State,
+	config: ^Composer_Config,
 	width: f32,
 	surface: Composer_Surface = .Chat,
 ) -> Composer_Plan {
 	p := Composer_Plan {
-		config = composer_config(&ui.prefs),
+		config = config,
 		size   = tap_size() ? tap_min() : 28,
 		gap    = tap_size() ? 2 : 4,
 	}

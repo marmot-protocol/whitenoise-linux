@@ -292,4 +292,30 @@ composer_layout :: proc(t: ^testing.T) {
 	draw_frame(commands)
 	rl.TakeScreenshot("/tmp/wn-composer-no-paste.png")
 	rl.EndDrawing()
+
+	poll := nendo.element(nendo.id("ComposerTile", u32(Composer_Action.Poll))).rect
+	point := nendo.Vector2{poll.x + poll.width * 0.5, poll.y + poll.height * 0.5}
+	nendo.set_pointer(point, .Up)
+	forced_press, forced_release = true, true
+	defer {forced_press, forced_release = false, false}
+	handle_composer_drag(&ui)
+	forced_press, forced_release = false, false
+	build_layout(&ui, 0)
+	testing.expect(
+		t,
+		nendo.element(nendo.id("ComposerPlace", u32(Composer_Slot.Left))).found,
+		"a press and release in the same frame opens the shortcut's placement controls",
+	)
+
+	nendo.set_pointer(point, .Down)
+	forced_press = true
+	if !testing.expect(t, handle_composer_drag(&ui), "the editor owns the tile press") {return}
+	ui.page = .Chats
+	nendo.set_pointer(point, .Up)
+	forced_press, forced_release = false, true
+	testing.expect(
+		t,
+		handle_composer_drag(&ui),
+		"leaving settings cannot pass the release to chat",
+	)
 }

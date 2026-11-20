@@ -1403,6 +1403,8 @@ app_main :: proc() {
 			   !ui.ctx_open &&
 			   !ui.mi_open &&
 			   !ui.chat_head_menu &&
+			   !ui.compose_more &&
+			   !ui.fx_open &&
 			   !ui.mention_active &&
 			   !ui.shortcode_active {
 				if ui.show_members ||
@@ -1499,8 +1501,9 @@ app_main :: proc() {
 				gs_open_modal(&ui)
 			} else {
 				handle_login(&ui, client)
+				chat_input := ui.page == .Chats
 				handle_pages(&ui, client)
-				if ui.page == .Chats && !ui.add_account_open {
+				if chat_input && ui.page == .Chats && !ui.add_account_open {
 					handle_chat(&ui, client)
 				}
 			}
