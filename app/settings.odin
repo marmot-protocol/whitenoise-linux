@@ -49,6 +49,7 @@ Prefs :: struct {
 	mention_read:          [dynamic]string, // seen mention message ids, capped
 	gm_text:               string, // GM button message; "" sends GM_DEFAULT
 	gm_sent:               map[string]i64, // group id → local day of its last GM, today's only
+	composer:              Composer_Config,
 	// Notifications
 	notify_desktop:        bool,
 	notify_sound:          bool,
@@ -258,6 +259,9 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 		delete(ui.prefs.quick_reactions)
 		delete(ui.prefs.fetch_relays)
 		ui.prefs = settings.prefs
+	}
+	if ui.prefs.composer.order[0] != .None && !composer_config_load(&ui.prefs.composer) {
+		ui.prefs.composer = {}
 	}
 	ui.prefs.message_lines = max(ui.prefs.message_lines, 0)
 	if ui.prefs.window_w <= 0 {ui.prefs.window_w = 1024}

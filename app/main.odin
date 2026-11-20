@@ -1149,7 +1149,8 @@ app_main :: proc() {
 			// anim_dt, not the raw frame time: the first frame after an idle
 			// wait would otherwise spend a whole layout move in one step.
 			render_commands := build_layout(&ui, anim_dt)
-			if !layout_overflow && settings_resolve_scroll(&ui) {
+			if !layout_overflow &&
+			   (settings_resolve_scroll(&ui) || composer_reveal_inspector(&ui)) {
 				render_commands = build_layout(&ui, 0)
 			}
 			if tl_restore && !layout_overflow {
@@ -1363,8 +1364,10 @@ app_main :: proc() {
 						(preview.kind == .Image || preview.kind == .Slides) &&
 						nendo.pointer_over(nendo.id("PvScroll"))) ||
 				(ui.photo.crop.active && nendo.pointer_over(nendo.id("PhotoImage")))
+			composer_captured := handle_composer_drag(&ui)
 			update_drag_scroll(
 				&ui,
+				composer_captured ||
 				native_drag ||
 				text_drag != nil ||
 				orbit_hover != nil ||
@@ -1373,7 +1376,11 @@ app_main :: proc() {
 				fan_open() ||
 				video_bar_active(),
 			)
-			long_press_tick() // before any handler reads long_pressed
+			if composer_captured {
+				long_pressed = false
+			} else {
+				long_press_tick() // before any handler reads long_pressed
+			}
 			blur_field, blur_focus := touch_field, ui.focus
 			if ui.add_account_open {
 				for page in Page {
@@ -1384,7 +1391,7 @@ app_main :: proc() {
 					}
 				}
 			}
-			shell_back := clicked("PhoneBack")
+			shell_back := !composer_captured && clicked("PhoneBack")
 			if single_pane() &&
 			   rl.IsKeyPressed(.ESCAPE) &&
 			   ui.page == .Chats &&
@@ -1408,7 +1415,7 @@ app_main :: proc() {
 			}
 			if shell_back {phone_back_action(&ui)}
 			location_captured = location_captured || ui.location_open
-			if !photo_captured && !location_captured {
+			if !composer_captured && !photo_captured && !location_captured {
 				if clicked("LockNow") {
 					lock_now(&ui)
 					lock_wait_frame()
@@ -1442,8 +1449,8 @@ app_main :: proc() {
 			// Modal capture order: a confirm sits over everything, then the
 			// link guard, then the palette, then the older modals. Global
 			// search opens on Ctrl+K, the palette on Ctrl+P.
-			if shell_back {
-				// The release/Escape belongs only to the layer just popped.
+			if composer_captured || shell_back {
+				// The drag or Back already owns this input.
 			} else if photo_captured {
 				if photo_interactive &&
 				   photo_input_capture(&ui) {handle_photo_preview(&ui, client)}
@@ -1508,7 +1515,8 @@ app_main :: proc() {
 			// message bodies: a drag that selected something swallows the
 			// release, so dragging across a link doesn't open it.
 			photo_captured = photo_captured || photo_input_capture(&ui)
-			if !photo_captured &&
+			if !composer_captured &&
+			   !photo_captured &&
 			   !location_captured &&
 			   !ui.location_open &&
 			   !ui.pal_open &&

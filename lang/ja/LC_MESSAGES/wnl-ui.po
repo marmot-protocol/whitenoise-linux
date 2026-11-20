@@ -330,6 +330,9 @@ msgstr "（不明）"
 msgid "(unpublished)"
 msgstr "（未公開）"
 
+msgid "+ menu"
+msgstr "+ メニュー"
+
 #, c-format
 msgid "+%d more"
 msgstr "+%d 件"
@@ -550,6 +553,9 @@ msgstr "このアカウントを引き続き使うには、署名者の権限を
 msgid "Allow your signer's permissions to use this account."
 msgstr "このアカウントを使うには、署名者の権限を許可してください。"
 
+msgid "Always expanded"
+msgstr "常に展開"
+
 msgid "Always open links to this site"
 msgstr "このサイトへのリンクを常に開く"
 
@@ -664,6 +670,9 @@ msgstr "作者"
 #, c-format
 msgid "Author: %s"
 msgstr "著者: %s"
+
+msgid "Automatic"
+msgstr "自動"
 
 msgid "Automatic AppImage updates are unavailable with SOCKS5 enabled. Update the AppImage manually."
 msgstr "SOCKS5が有効な間はAppImageの自動アップデートを利用できません。AppImageを手動でアップデートしてください。"
@@ -1183,6 +1192,15 @@ msgstr "コマンドパレット"
 
 msgid "Comment"
 msgstr "コメント"
+
+msgid "Composer"
+msgstr "メッセージ入力欄"
+
+msgid "Composer preview"
+msgstr "入力欄のプレビュー"
+
+msgid "Composer shortcuts"
+msgstr "入力欄のショートカット"
 
 msgid "Config"
 msgstr "設定ファイル"
@@ -1937,6 +1955,9 @@ msgstr "カスタムカラー"
 msgid "Custom emoji"
 msgstr "カスタム絵文字"
 
+msgid "Customize composer"
+msgstr "入力欄をカスタマイズ"
+
 msgid "Cyan"
 msgstr "シアン"
 
@@ -2191,6 +2212,9 @@ msgstr "フォルダをドラッグすると並べ替えられます。チャッ
 msgid "Drag inside to move. Drag a corner to resize."
 msgstr "内側をドラッグすると移動します。角をドラッグするとサイズを変更します。"
 
+msgid "Drag shortcuts to move them. Select one for more options."
+msgstr "ショートカットはドラッグで移動できます。ほかの操作を表示するには選択してください。"
+
 msgid "Drag the map to place the pin, or use your current location."
 msgstr "地図をドラッグしてピンの位置を決めるか、現在地を使用してください。"
 
@@ -2270,6 +2294,9 @@ msgstr "絵文字"
 
 msgid "Emoji style"
 msgstr "絵文字のスタイル"
+
+msgid "Enable dictation in Speech to use this shortcut."
+msgstr "このショートカットを使うには、音声設定で音声入力を有効にしてください。"
 
 msgid "Enable local translation"
 msgstr "端末上での翻訳を有効にする"
@@ -3150,6 +3177,9 @@ msgstr "このグループを退出しますか？"
 msgid "Leaving your group"
 msgstr "グループから退出しています"
 
+msgid "Left"
+msgstr "左"
+
 msgid "Light"
 msgstr "ライト"
 
@@ -3425,6 +3455,15 @@ msgstr "さらに表示"
 
 msgid "More than"
 msgstr "人数が次より多い"
+
+msgid "More tools"
+msgstr "その他のツール"
+
+msgid "Move earlier"
+msgstr "前へ移動"
+
+msgid "Move later"
+msgstr "後ろへ移動"
 
 msgid "Move to folder"
 msgstr "フォルダに移動"
@@ -4506,6 +4545,9 @@ msgstr "今すぐ再起動"
 msgid "Restore"
 msgstr "復元"
 
+msgid "Restore defaults"
+msgstr "初期設定に戻す"
+
 msgid "Restore last selected chat on launch"
 msgstr "起動時に最後のチャットを復元"
 
@@ -4547,6 +4589,9 @@ msgstr "署名者の権限を確認"
 
 msgid "Review starting over"
 msgstr "やり直す前に確認する"
+
+msgid "Right"
+msgstr "右"
 
 msgid "Right click"
 msgstr "右クリック"
@@ -4853,6 +4898,9 @@ msgstr "メッセージを送信..."
 
 msgid "Send a test notification"
 msgstr "テスト通知を送信"
+
+msgid "Send button"
+msgstr "送信ボタン"
 
 #, c-format
 msgid "Send failed: %s"

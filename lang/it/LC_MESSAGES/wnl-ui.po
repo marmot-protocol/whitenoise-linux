@@ -330,6 +330,9 @@ msgstr "(sconosciuto)"
 msgid "(unpublished)"
 msgstr "(non pubblicato)"
 
+msgid "+ menu"
+msgstr "Menu +"
+
 #, c-format
 msgid "+%d more"
 msgstr "+%d altri"
@@ -550,6 +553,9 @@ msgstr "Consenti i permessi del tuo firmatario per continuare a usare questo acc
 msgid "Allow your signer's permissions to use this account."
 msgstr "Consenti i permessi del tuo firmatario per usare questo account."
 
+msgid "Always expanded"
+msgstr "Sempre espanso"
+
 msgid "Always open links to this site"
 msgstr "Apri sempre i link a questo sito"
 
@@ -664,6 +670,9 @@ msgstr "Autore"
 #, c-format
 msgid "Author: %s"
 msgstr "Autore: %s"
+
+msgid "Automatic"
+msgstr "Automatico"
 
 msgid "Automatic AppImage updates are unavailable with SOCKS5 enabled. Update the AppImage manually."
 msgstr "Gli aggiornamenti automatici dell’AppImage non sono disponibili con SOCKS5 attivo. Aggiorna l’AppImage manualmente."
@@ -1183,6 +1192,15 @@ msgstr "Tavolozza dei comandi"
 
 msgid "Comment"
 msgstr "Commento"
+
+msgid "Composer"
+msgstr "Compositore"
+
+msgid "Composer preview"
+msgstr "Anteprima del compositore"
+
+msgid "Composer shortcuts"
+msgstr "Scorciatoie del compositore"
 
 msgid "Config"
 msgstr "Configurazione"
@@ -1937,6 +1955,9 @@ msgstr "Colore personalizzato"
 msgid "Custom emoji"
 msgstr "Emoji personalizzate"
 
+msgid "Customize composer"
+msgstr "Personalizza il compositore"
+
 msgid "Cyan"
 msgstr "Ciano"
 
@@ -2191,6 +2212,9 @@ msgstr "Trascina una cartella per riordinarla. Le tue chat appariranno qui quand
 msgid "Drag inside to move. Drag a corner to resize."
 msgstr "Trascina all'interno per spostare. Trascina un angolo per ridimensionare."
 
+msgid "Drag shortcuts to move them. Select one for more options."
+msgstr "Trascina le scorciatoie per spostarle. Selezionane una per vedere altre opzioni."
+
 msgid "Drag the map to place the pin, or use your current location."
 msgstr "Trascina la mappa per posizionare il segnaposto, oppure usa la tua posizione attuale."
 
@@ -2270,6 +2294,9 @@ msgstr "Emoji"
 
 msgid "Emoji style"
 msgstr "Stile delle emoji"
+
+msgid "Enable dictation in Speech to use this shortcut."
+msgstr "Per usare questa scorciatoia, attiva la dettatura nelle impostazioni vocali."
 
 msgid "Enable local translation"
 msgstr "Abilita la traduzione locale"
@@ -3150,6 +3177,9 @@ msgstr "Lasciare questo gruppo?"
 msgid "Leaving your group"
 msgstr "Uscita dal tuo gruppo"
 
+msgid "Left"
+msgstr "Sinistra"
+
 msgid "Light"
 msgstr "Chiaro"
 
@@ -3425,6 +3455,15 @@ msgstr "Altri risultati"
 
 msgid "More than"
 msgstr "Più di"
+
+msgid "More tools"
+msgstr "Altri strumenti"
+
+msgid "Move earlier"
+msgstr "Sposta prima"
+
+msgid "Move later"
+msgstr "Sposta dopo"
 
 msgid "Move to folder"
 msgstr "Sposta nella cartella"
@@ -4506,6 +4545,9 @@ msgstr "Riavvia ora"
 msgid "Restore"
 msgstr "Ripristina"
 
+msgid "Restore defaults"
+msgstr "Ripristina impostazioni predefinite"
+
 msgid "Restore last selected chat on launch"
 msgstr "Ripristina l'ultima chat selezionata all'avvio"
 
@@ -4547,6 +4589,9 @@ msgstr "Controlla i permessi del firmatario"
 
 msgid "Review starting over"
 msgstr "Valuta di ricominciare"
+
+msgid "Right"
+msgstr "Destra"
 
 msgid "Right click"
 msgstr "Clic destro"
@@ -4853,6 +4898,9 @@ msgstr "Invia un messaggio..."
 
 msgid "Send a test notification"
 msgstr "Invia una notifica di prova"
+
+msgid "Send button"
+msgstr "Pulsante Invia"
 
 #, c-format
 msgid "Send failed: %s"

@@ -540,11 +540,11 @@ render_segs :: proc(
 // Wrap to the resolved text viewport, including the current pane and zoom.
 compose_wrap_w :: proc() -> f32 {
 	box := nendo.element(nendo.id("ComposeClip"))
+	if box.found && box.rect.width > CARET_W {return box.rect.width - CARET_W}
 	width := g_ui != nil ? page_w(g_ui) - 64 - CARET_W : 480
 	if g_ui != nil && g_ui.prefs.centered_chat {
 		width = min(width, CHAT_WIDTH_MAX - 64 - CARET_W)
 	}
-	if box.found && box.rect.width > CARET_W {width = min(width, box.rect.width - CARET_W)}
 	return max(width, 1)
 }
 
@@ -559,12 +559,12 @@ compose_cache: struct {
 // greedily wrapped to the pill's text width. Spaces stay in the ranges
 // so every byte keeps exactly one row and caret
 // hit-mapping stays byte-accurate.
-compose_lines :: proc(text: string) -> [][2]int {
+compose_lines :: proc(text: string, width: f32 = 0) -> [][2]int {
 	// Only the wrap cache uses the process heap. Mention lookups inherit the
 	// caller's allocator so queued profile IDs stay owned by the UI heap.
 	allocator := runtime.default_context().allocator
 	compose_cache.lines.allocator = allocator
-	width := compose_wrap_w()
+	width := width > 0 ? width : compose_wrap_w()
 	keep := 0
 	start := 0
 	if compose_cache.width == width &&
@@ -1628,11 +1628,6 @@ wrap_break :: proc(
 	cjk_cut := at
 	fit := rune_fit(text, at, end, width, font_size, mode, tile_px, fonts, &cjk_cut)
 	if fit == end || text[fit] == ' ' {
-		// The separator belongs to the upper composer row, even if
-		// its invisible advance would exceed the measured viewport.
-		if mode == .Compose {
-			for fit < end && text[fit] == ' ' {fit += 1}
-		}
 		return fit
 	}
 	cut := fit

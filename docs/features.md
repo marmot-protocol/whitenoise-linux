@@ -37,7 +37,8 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 ### Writing, sending and forwarding
 
 - **Messages are Markdown.** Bodies support typeset `$` math blocks, reactions, replies, edits with history, forwarding, and search.
-- **Enter sends; Shift+Enter starts a new line.** You can also click Send, which reads Save while you edit a message.
+- **Enter sends; Shift+Enter starts a new line.** You can also click the paper plane to send or the checkmark to save an edit.
+- **Choose what appears beside your draft.** Open **+ > Customize composer** or **Settings > General > Composer**. Drag shortcuts in the preview to reorder them, or drag between **Left**, **Right**, and **+ menu**. Select a shortcut for placement and reorder buttons.
 - **Messages written offline are not lost.** A durable on-disk send queue sends them when you reconnect.
 - **Polls explain what is missing.** Creation keeps your draft open and names a missing question or fewer than two nonblank options.
 - **Forwards show their progress until they finish.** A status strip names the destination through preparation and sending, even if you switch chats.
@@ -45,7 +46,8 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 <details>
 <summary><b>Composer, poll and forward details</b></summary>
 
-- Hover over the attach, emoji, and microphone buttons for their labels.
+- **Automatic** puts shortcuts beside short drafts when they fit. **Always expanded** keeps the toolbar on its own line. You can move the microphone to either side, hide it, or show it in Send's place while the draft is empty.
+- Press Ctrl+V to paste into the draft. Pasting a file or image adds it as an attachment.
 - In poll creation, Multiple choice is an on/off switch. Create is the primary action and Cancel is secondary.
 - The Forward picker shows the message's first line, or its first attachment's filename, above the destination filter.
 - Forwarded attachments download and prepare in the background.

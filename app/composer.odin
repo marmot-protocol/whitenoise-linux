@@ -1,0 +1,395 @@
+package main
+
+import "core:strings"
+
+import marmot "../marmot"
+import "nendo"
+import rl "sdlrl"
+
+@(private)
+Composer_Action :: enum {
+	None,
+	More,
+	Files,
+	Emoji,
+	Voice,
+	Paste, // Retired. Keep its name and value to decode existing settings.
+	Effect,
+	Poll,
+	Location,
+	GM,
+	Dictate,
+	Stickers,
+}
+
+@(private)
+Composer_Slot :: enum {
+	Menu,
+	Left,
+	Right,
+	Send,
+	Off,
+}
+
+@(private)
+Composer_Layout :: enum {
+	Automatic,
+	Expanded,
+}
+
+@(private)
+Composer_Surface :: enum {
+	Chat,
+	Preview,
+}
+
+@(private)
+Composer_Config :: struct {
+	order:  [int(max(Composer_Action))]Composer_Action,
+	slots:  [Composer_Action]Composer_Slot,
+	layout: Composer_Layout,
+}
+
+@(private)
+COMPOSER_SHORTCUT_COUNT :: int(max(Composer_Action)) - 1
+
+@(private = "file")
+COMPOSER_DEFAULT := Composer_Config {
+	order = {
+		.More,
+		.Files,
+		.Emoji,
+		.Voice,
+		.Effect,
+		.Poll,
+		.Location,
+		.GM,
+		.Dictate,
+		.Stickers,
+		.None,
+	},
+	slots = #partial{.More = .Left, .Files = .Left, .Emoji = .Right, .Voice = .Send},
+}
+
+@(private)
+COMPOSER_ACTIONS := #partial [Composer_Action]struct {
+	id, icon, name: string,
+} {
+	.More     = {"ComposeMoreBtn", "+", N_("More tools")},
+	.Files    = {"AttachBtn", ICON_CLIP, N_("Attach a file")},
+	.Emoji    = {"EmojiBtn", ICON_SMILE, N_("Emoji")},
+	.Voice    = {"MicBtn", ICON_MIC, N_("Voice message")},
+	.Effect   = {"FxBtn", ICON_FX, N_("Send with an effect")},
+	.Poll     = {"PollBtn", ICON_POLL, N_("Create a poll")},
+	.Location = {"LocationBtn", ICON_LOCATION, N_("Send location")},
+	.GM       = {"GmBtn", "GM", N_("Say GM (once a day)")},
+	.Dictate  = {"DictateBtn", ICON_MIC, N_("Dictate")},
+	.Stickers = {"ComposeStickerBtn", "\U000f136e", N_("Stickers")},
+}
+
+@(private)
+composer_config :: proc(prefs: ^Prefs) -> ^Composer_Config {
+	return prefs.composer.order[0] == .None ? &COMPOSER_DEFAULT : &prefs.composer
+}
+
+@(private)
+composer_slots :: proc(action: Composer_Action) -> bit_set[Composer_Slot] {
+	#partial switch action {
+	case .More:
+		return {.Left, .Right}
+	case .Voice:
+		return {.Left, .Right, .Send, .Off}
+	case:
+		return {.Menu, .Left, .Right}
+	}
+}
+
+@(private)
+composer_config_load :: proc(config: ^Composer_Config) -> bool {
+	if config.layout < min(Composer_Layout) || config.layout > max(Composer_Layout) {return false}
+	seen: bit_set[Composer_Action]
+	order: [len(config.order)]Composer_Action
+	count := 0
+	for action, i in config.order {
+		if action == .Paste || (action == .None && i == COMPOSER_SHORTCUT_COUNT) {continue}
+		if action <= .None || action > max(Composer_Action) || action in seen {return false}
+		slot := config.slots[action]
+		if slot < min(Composer_Slot) ||
+		   slot > max(Composer_Slot) ||
+		   slot not_in composer_slots(action) {
+			return false
+		}
+		seen += {action}
+		order[count] = action
+		count += 1
+	}
+	if count != COMPOSER_SHORTCUT_COUNT {return false}
+	config.order = order
+	config.slots[.Paste] = .Menu
+	return true
+}
+
+@(private)
+Composer_Action_Set :: bit_set[Composer_Action]
+
+@(private)
+Composer_Plan :: struct {
+	config:       ^Composer_Config,
+	pinned, menu: Composer_Action_Set,
+	size:         f32,
+	gap:          u16,
+	inline_width: f32,
+}
+
+@(private)
+composer_plan :: proc(
+	ui: ^Ui_State,
+	width: f32,
+	surface: Composer_Surface = .Chat,
+) -> Composer_Plan {
+	p := Composer_Plan {
+		config = composer_config(&ui.prefs),
+		size   = tap_size() ? tap_min() : 28,
+		gap    = tap_size() ? 2 : 4,
+	}
+	pitch := p.size + f32(p.gap)
+	// More and Send always fit; any additional shortcuts spill back into More.
+	remaining := max(0, int(width / pitch) - 2)
+	p.pinned = {.More}
+	count := 1
+	for action in p.config.order[:COMPOSER_SHORTCUT_COUNT] {
+		if action == .More ||
+		   (action == .Dictate && !ui.prefs.stt_enabled) ||
+		   (surface == .Chat &&
+				   ui.editing != "" &&
+				   action in Composer_Action_Set{.Poll, .Location, .GM, .Voice, .Stickers}) {
+			continue
+		}
+		switch p.config.slots[action] {
+		case .Send, .Off:
+		case .Menu:
+			p.menu += {action}
+		case .Left, .Right:
+			if remaining > 0 {
+				p.pinned += {action}
+				remaining -= 1
+				count += 1
+			} else {
+				p.menu += {action}
+			}
+		}
+	}
+	p.inline_width = width - pitch * f32(count + 1)
+	return p
+}
+
+@(private)
+COMPOSER_TEXT_MIN :: f32(96)
+
+@(private)
+composer_tools :: proc(ui: ^Ui_State, plan: Composer_Plan, side: Composer_Slot) {
+	for action in plan.config.order[:COMPOSER_SHORTCUT_COUNT] {
+		if action in plan.pinned && plan.config.slots[action] == side {
+			composer_button(ui, action, plan.size)
+		}
+	}
+}
+
+@(private = "file")
+composer_button :: proc(ui: ^Ui_State, action: Composer_Action, size: f32) {
+	tool := COMPOSER_ACTIONS[action]
+	sent := action == .GM && gm_sent_today(ui)
+	selected := action == .More && ui.compose_more
+	if nendo.box(nendo.id(tool.id))(
+	{
+		width = nendo.fixed(size),
+		height = nendo.fixed(size),
+		align = {x = .Center, y = .Center},
+		color = selected ? SELECTED : (hovered() ? HOVER : {}),
+		radius = rr(6),
+	},
+	) {
+		if !selected && ui.composer_editor.drag.source == .None && hovered() {
+			tooltip(sent ? tr("You said GM here today") : tr(tool.name))
+		}
+		if action == .Effect && ui.fx_armed != 0 {
+			if tex := emoji_tex(effect_emoji(ui.fx_armed)); tex != nil {
+				if nendo.box(nendo.id("FxBtnArmed"))(
+				{width = nendo.fixed(16), aspect = 1, image = tex},
+				) {}
+				return
+			}
+		}
+		text_icon := action == .More || action == .GM
+		color := action == .GM && sent || action == .Effect && ui.fx_armed != 0 ? ACCENT : TEXT_LO
+		nendo.text(
+			tool.icon,
+			{
+				font = text_icon ? FONT_TITLE : FONT_ICON,
+				size = action == .More ? 22 : (text_icon ? 12 : 14),
+				color = color,
+			},
+		)
+	}
+}
+
+@(private)
+composer_primary :: proc(ui: ^Ui_State, plan: Composer_Plan, surface: Composer_Surface = .Chat) {
+	size := plan.size
+	if surface == .Chat && (ui.search_open || ui.stt.file != nil && ui.stt.message == "") {
+		if nendo.box(nendo.id("ComposePrimaryGap"))({width = nendo.fixed(size)}) {}
+		return
+	}
+	preview := surface == .Preview
+	has_text := !preview && strings.trim_space(string(ui.compose[:])) != ""
+	editing := !preview && ui.editing != ""
+	if plan.config.slots[.Voice] == .Send &&
+	   (preview || (!has_text && len(ui.staged) == 0 && !editing)) {
+		composer_button(ui, .Voice, size)
+		return
+	}
+	ready :=
+		preview || stage_files_ready(ui) && (has_text || len(ui.staged) > 0 && ui.editing == "")
+	if nendo.box(nendo.id("SendBtn"))(
+	{
+		width = nendo.fixed(size),
+		height = nendo.fixed(size),
+		align = {x = .Center, y = .Center},
+		color = ready ? (hovered() ? ACCENT_DIM : ACCENT) : ROW_BG,
+		radius = rr(8),
+	},
+	) {
+		if ui.composer_editor.drag.source == .None && hovered() {
+			if editing {
+				tooltip(tap_size() ? tr("Save") : tr("Enter to save. Shift+Enter for a new line."))
+			} else {
+				tooltip(tap_size() ? tr("Send") : tr("Enter to send. Shift+Enter for a new line."))
+			}
+		}
+		nendo.text(
+			editing ? ICON_CHECK : "\uf1d8",
+			{font = FONT_ICON, size = 14, color = ready ? ON_ACCENT : TEXT_LO},
+		)
+	}
+}
+
+@(private)
+composer_menu :: proc(ui: ^Ui_State, plan: Composer_Plan) {
+	anchor, ok := element_box(nendo.id("ComposeMoreBtn"))
+	if !ok {return}
+	box, box_ok := element_box(nendo.id("ComposeBox"))
+	if !box_ok {return}
+	width := fit_w(250)
+	x, _ := panel_pos(anchor.x, 0, width + 8, 0)
+	height := f32(rl.GetScreenHeight()) / UI_ZOOM
+	above := box.y - 12
+	below := height - box.y - box.height - 12
+	open_above := above >= min(220, max(96, below))
+	limit := open_above ? above : below
+	y := open_above ? box.y - 6 : box.y + box.height + 6
+	if limit < 64 {
+		// A short window can have no room beside the composer. The menu scrolls from the top.
+		open_above, y, limit = false, 8, height - 16
+	}
+	id := nendo.id("ComposeMoreMenu")
+	if nendo.box(id)(
+	{
+		width = nendo.fixed(width),
+		height = nendo.fit(max = limit),
+		direction = .Column,
+		padding = nendo.pad(4),
+		clip = {y = true, scroll = true},
+		floating = {
+			attach_to = .Root,
+			attach = {element = open_above ? .Left_Bottom : .Left_Top},
+			offset = {x, y},
+			z = 12,
+		},
+		color = CARD,
+		radius = rr(10),
+		border = {color = ELEVATED_BORDER, width = bw()},
+	},
+	) {
+		for action in plan.config.order[:COMPOSER_SHORTCUT_COUNT] {
+			if action not_in plan.menu {continue}
+			tool := COMPOSER_ACTIONS[action]
+			sent := action == .GM && gm_sent_today(ui)
+			ctx_item(
+				tool.id,
+				action == .GM ? "" : tool.icon,
+				sent ? tr("You said GM here today") : tr(tool.name),
+				sent ? ACCENT_DIM : {},
+			)
+		}
+		ctx_item("ComposeCustomize", ICON_SETTINGS, tr("Customize composer"))
+	}
+	scrollbar(id, 13)
+}
+
+@(private)
+handle_composer_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
+	if clicked("ComposeMoreBtn") {
+		ui.compose_more = !ui.compose_more
+		return true
+	}
+	if !ui.compose_more {return false}
+	if rl.IsKeyPressed(.ESCAPE) {
+		ui.compose_more = false
+		return true
+	}
+	if !mouse_released() {return false}
+	ui.compose_more = false
+	if nendo.pointer_over(nendo.id("ComposeMoreMenu")) {
+		if clicked("ComposeCustomize") {
+			settings_open(ui, client, .General, anchor = "ComposerSettings")
+			ui.composer_settings_from_chat = true
+		} else {
+			handle_composer_action(ui)
+		}
+	}
+	return true
+}
+
+@(private)
+handle_composer_action :: proc(ui: ^Ui_State) -> bool {
+	if !mouse_released() {return false}
+	for action in composer_config(&ui.prefs).order[:COMPOSER_SHORTCUT_COUNT] {
+		if action == .More || !clicked(COMPOSER_ACTIONS[action].id) {continue}
+		#partial switch action {
+		case .Files:
+			rl.OpenFileDialog(true)
+		case .Emoji:
+			ui.sticker_tab, ui.gif_tab = false, false
+			open_picker(ui, "")
+		case .Stickers:
+			ui.sticker_tab, ui.gif_tab = true, false
+			ui.sticker_focus = 0
+			open_picker(ui, "")
+		case .Voice:
+			voice_start(ui)
+		case .Effect:
+			ui.fx_open = true
+		case .Poll:
+			poll_reset(ui)
+			ui.poll_open = true
+		case .Location:
+			geo_picker_open(ui)
+		case .Dictate:
+			stt_start(ui)
+		case .GM:
+			if gm_sent_today(ui) {
+				toast(ui, tr("You said GM here today."))
+			} else {
+				text := strings.trim_space(ui.prefs.gm_text)
+				confirm_ask(
+					ui,
+					.Say_GM,
+					ui.chats[ui.selected].group_id,
+					text == "" ? GM_DEFAULT : text,
+				)
+			}
+		}
+		return true
+	}
+	return false
+}

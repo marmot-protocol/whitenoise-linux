@@ -542,15 +542,6 @@ panel_target :: proc(ui: ^Ui_State) -> f32 {
 	return f32(clamp(ui.prefs.panel_w, PANEL_W_MIN, PANEL_W_MAX))
 }
 
-@(private = "file")
-COMPOSE_TOOLS_H :: f32(28)
-COMPOSE_CHROME_H :: f32(16 + 8) + COMPOSE_TOOLS_H // padding, gap, toolbar
-
-@(private)
-compose_chrome_height :: proc() -> f32 {
-	return COMPOSE_CHROME_H + (tap_size() ? 16 : 0)
-}
-
 @(private)
 compose_tool :: proc(color: nendo.Color) -> nendo.Box {
 	size := nendo.fit(min = tap_size() ? tap_min() : 0)
@@ -564,16 +555,12 @@ compose_tool :: proc(color: nendo.Color) -> nendo.Box {
 	}
 }
 
-// Height of the input surface from last frame's text column. The surface
-// and its clip use the same height so growing drafts never animate apart.
-compose_height :: proc() -> f32 {
-	minimum := f32(20) + compose_chrome_height()
-	target := minimum
-	if box := nendo.element(nendo.id("ComposeText")); box.found {
-		target = max(minimum, box.rect.height + compose_chrome_height())
-	}
-	if single_pane() && f32(rl.GetScreenHeight()) / UI_ZOOM < 400 {return minimum}
-	return min(target, max(minimum, min(240, f32(rl.GetScreenHeight()) / UI_ZOOM * 0.35)))
+// The previous layout gives the draft's height, capped so the timeline stays visible.
+@(private = "file")
+compose_draft_height :: proc(chrome: f32) -> f32 {
+	if single_pane() && f32(rl.GetScreenHeight()) / UI_ZOOM < 400 {return 20}
+	limit := min(240, f32(rl.GetScreenHeight()) / UI_ZOOM * 0.35) - chrome
+	return clamp(nendo.element(nendo.id("ComposeText")).rect.height, 20, max(20, limit))
 }
 
 @(private = "file")
@@ -1970,41 +1957,6 @@ multiline_field :: proc(
 	}
 }
 
-@(private = "file")
-compose_more_menu :: proc(ui: ^Ui_State) {
-	if nendo.box(nendo.id("ComposeMoreMenu"))(
-	{
-		width = nendo.fixed(fit_w(240)),
-		direction = .Column,
-		padding = nendo.pad(4),
-		floating = {
-			attach_to = .Element,
-			parent = nendo.id("ComposeTools").id,
-			attach = {element = .Left_Bottom, parent = .Left_Top},
-			offset = {0, -6},
-			z = 12,
-		},
-		color = CARD,
-		radius = rr(10),
-		border = {color = ELEVATED_BORDER, width = bw()},
-	},
-	) {
-		if ui.editing == "" {
-			ctx_item("PollBtn", ICON_POLL, tr("Create a poll"))
-			ctx_item("LocationBtn", ICON_LOCATION, tr("Send location"))
-			sent := gm_sent_today(ui)
-			ctx_item(
-				"GmBtn",
-				"",
-				sent ? tr("You said GM here today") : tr("Say GM (once a day)"),
-				sent ? ACCENT_DIM : nendo.Color{},
-			)
-		}
-		ctx_item("FxBtn", ICON_FX, tr("Send with an effect"))
-		if ui.prefs.stt_enabled {ctx_item("DictateBtn", ICON_MIC, tr("Dictate"))}
-	}
-}
-
 @(private)
 chat_composer :: proc(ui: ^Ui_State) {
 	if ui.selected >= 0 && ui.chats[ui.selected].archived {
@@ -2022,8 +1974,6 @@ chat_composer :: proc(ui: ^Ui_State) {
 		blocked_bar()
 		return
 	}
-	submit_available := !ui.search_open && (ui.stt.file == nil || ui.stt.message != "")
-
 	// Edit banner: the composer holds a sent message, not a new one.
 	// It stands in for the reply banner, which returns once the edit ends.
 	if len(ui.editing) > 0 {
@@ -2074,17 +2024,9 @@ chat_composer :: proc(ui: ^Ui_State) {
 		}
 	}
 
-	// A filled input surface anchored to the conversation. Enter sends;
-	// the existing toolbar stays separate from the growing draft.
+	padding := u16(single_pane() ? (f32(rl.GetScreenHeight()) / UI_ZOOM < 500 ? 4 : 8) : 16)
 	if nendo.box(nendo.id("Composer"))(
-	{
-		width = nendo.grow(),
-		padding = nendo.pad(
-			single_pane() ? (f32(rl.GetScreenHeight()) / UI_ZOOM < 500 ? 4 : 8) : 16,
-		),
-		gap = 8,
-		direction = .Column,
-	},
+	{width = nendo.grow(), padding = nendo.pad(padding), gap = 8, direction = .Column},
 	) {
 		burst_pane_layer() // own send's effect rises from here
 		// A capped scrollable list keeps every removal control reachable
@@ -2160,226 +2102,95 @@ chat_composer :: proc(ui: ^Ui_State) {
 		}
 		if voice_active() {
 			voice_bar()
-		} else if nendo.box(nendo.id("ComposeBox"))(
+		} else {
+			width := page_w(ui)
+			if ui.prefs.centered_chat {width = min(width, CHAT_WIDTH_MAX)}
+			composer_edit(ui, width - 2 * f32(padding) - 32)
+		}
+	}
+}
+
+
+@(private = "file")
+composer_edit :: proc(ui: ^Ui_State, width: f32) {
+	plan := composer_plan(ui, width)
+	text := string(ui.compose[:])
+	inline :=
+		plan.config.layout == .Automatic &&
+		plan.inline_width >= COMPOSER_TEXT_MIN &&
+		wrap_break(text, 0, len(text), plan.inline_width - CARET_W, BODY_FS, .Compose) ==
+			len(text) &&
+		strings.index_byte(text, '\n') < 0
+	if nendo.box(nendo.id("ComposeBox"))(
+	{
+		width = nendo.grow(),
+		direction = .Column,
+		gap = 8,
+		padding = {left = 16, right = 16, top = 8, bottom = 8},
+		color = PLATE,
+		radius = rr(8),
+		border = {color = ui.focus == .Compose ? ACCENT_DIM : FIELD_BORDER, width = bw()},
+	},
+	) {
+		if open_now(nendo.id("MentionPop"), ui.mention_active) {mention_popover(ui)}
+		if open_now(nendo.id("ShortcodePop"), ui.shortcode_active) {shortcode_popover(ui)}
+		if open_now(nendo.id("FxPanel"), ui.fx_open) {effect_picker(ui)}
+		if !inline {
+			composer_draft(ui, text, width, compose_draft_height(24 + plan.size))
+		}
+		if nendo.box(nendo.id("ComposeTools"))(
 		{
-			// The draft owns the full width; controls stay on their own row.
 			width = nendo.grow(),
-			height = nendo.fixed(compose_height()),
-			padding = {left = 16, right = 16, top = 8, bottom = 8},
-			gap = 8,
-			direction = .Column,
-			color = PLATE,
-			radius = rr(8),
-			border = {color = ui.focus == .Compose ? ACCENT_DIM : FIELD_BORDER, width = bw()},
+			height = nendo.fixed(plan.size),
+			gap = plan.gap,
+			align = {y = .Center},
 		},
 		) {
-			if nendo.hovered() {
-				cursor_raise(.Text)
-			}
-			// The @-mention and :shortcode: popovers float above the box.
-			if open_now(nendo.id("MentionPop"), ui.mention_active) {
-				mention_popover(ui)
-			}
-			if open_now(nendo.id("ShortcodePop"), ui.shortcode_active) {
-				shortcode_popover(ui)
-			}
-			// One row per physical line ('\n' from Shift+Enter or
-			// paste); each splits at the selection so the caret
-			// sits at its head and the selected span highlights.
-			// Emoji render as tiles like message bodies.
-			// Long drafts scroll inside the capped text viewport.
-			if nendo.box(nendo.id("ComposeClip"))(
-			{
-				width = nendo.grow(),
-				height = nendo.fixed(compose_height() - compose_chrome_height()),
-				clip = {x = true, y = true, scroll = true},
-			},
-			) {
-				if nendo.box(nendo.id("ComposeText"))(
-				{width = nendo.grow(), direction = .Column, gap = 2},
-				) {
-					if len(ui.compose) == 0 && len(rl.Preedit()) == 0 {
-						compose_view.row = 0
-						if nendo.box(nendo.id("ComposeLine", 0))(
-						{gap = 1, align = {y = .Center}},
-						) {
-							// Caret first: typing starts at the left edge.
-							if ui.focus == .Compose {
-								caret()
-							}
-							nendo.text(
-								len(ui.thread_stack) > 0 ? tr("Reply in thread…") : tr("Send a message..."),
-								{font = FONT_BODY, size = BODY_FS, color = TEXT_LO},
-							)
-						}
-					} else {
-						text := string(ui.compose[:])
-						lo, hi, head := field_sel(ui, &ui.compose)
-						if ui.focus != .Compose {
-							head = -1
-						}
-						for r, i in compose_lines(text) {
-							h := head
-							// A caret on a wrap boundary belongs to
-							// the upper visual line.
-							if head == r[0] && r[0] > 0 && text[r[0] - 1] != '\n' {
-								h = -1
-							}
-							compose_line(u32(i), text, r[0], r[1], lo, hi, h)
-							if h >= r[0] && h <= r[1] {compose_view.row = u32(i)}
-						}
-					}
-				}
-			}
-			scrollbar(nendo.id("ComposeClip"))
-			if nendo.box(nendo.id("ComposeTools"))(
-			{
-				width = nendo.grow(),
-				height = nendo.fixed(tap_size() ? tap_min() : COMPOSE_TOOLS_H),
-				gap = single_pane() ? 2 : 10,
-				align = {y = .Center},
-			},
-			) {
-				if nendo.box(nendo.id("ComposeToolScroll"))(
-				{
-					width = nendo.grow(),
-					height = nendo.grow(),
-					gap = single_pane() ? 2 : 10,
-					align = {y = .Center},
-					clip = {x = !single_pane(), scroll = true},
-				},
-				) {
-					if nendo.box(nendo.id("AttachBtn"))(compose_tool(hovered() ? HOVER : {})) {
-						nendo.text(ICON_CLIP, {font = FONT_ICON, size = 14, color = TEXT_LO})
-						if hovered() {tooltip(tr("Attach a file"))}
-					}
-					if nendo.box(nendo.id("ComposeGap"))({width = nendo.grow()}) {}
-					if nendo.box(nendo.id("EmojiBtn"))(compose_tool(hovered() ? HOVER : {})) {
-						nendo.text(ICON_SMILE, {font = FONT_ICON, size = 14, color = TEXT_LO})
-						if hovered() {tooltip(tr("Emoji"))}
-					}
-					if single_pane() {
-						if nendo.box(nendo.id("ComposeMoreBtn"))(
-							compose_tool(ui.compose_more ? SELECTED : (hovered() ? HOVER : {})),
-						) {
-							nendo.text("+", {font = FONT_TITLE, size = 22, color = TEXT_DIM})
-						}
-					} else {
-						// Effect picker: arms a burst for the next send.
-						if nendo.box(nendo.id("FxBtn"))(compose_tool(hovered() ? HOVER : {})) {
-							if open_now(nendo.id("FxPanel"), ui.fx_open) {
-								effect_picker(ui)
-							}
-							if hovered() {
-								tooltip(tr("Send with an effect"))
-							}
-							if tex := emoji_tex(effect_emoji(ui.fx_armed));
-							   ui.fx_armed != 0 && tex != nil {
-								if nendo.box(nendo.id("FxBtnArmed"))(
-								{width = nendo.fixed(16), aspect = 1, image = tex},
-								) {}
-							} else {
-								nendo.text(
-									ICON_STAR,
-									{
-										font = FONT_ICON,
-										size = 14,
-										color = ui.fx_armed != 0 ? ACCENT : TEXT_LO,
-									},
-								)
-							}
-						}
-						if nendo.box(nendo.id("PollBtn"))(compose_tool(hovered() ? HOVER : {})) {
-							if hovered() {
-								tooltip(tr("Create a poll"))
-							}
-							nendo.text(ICON_POLL, {font = FONT_ICON, size = 14, color = TEXT_LO})
-						}
-						if ui.editing == "" {
-							if nendo.box(nendo.id("LocationBtn"))(
-								compose_tool(hovered() ? HOVER : {}),
-							) {
-								if hovered() {tooltip(tr("Send location"))}
-								nendo.text(
-									ICON_LOCATION,
-									{font = FONT_ICON, size = 14, color = TEXT_LO},
-								)
-							}
-						}
-						// Once a day per chat; lit and inert after it went out.
-						if ui.editing == "" {
-							sent := gm_sent_today(ui)
-							if nendo.box(nendo.id("GmBtn"))(
-								compose_tool(hovered() && !sent ? HOVER : {}),
-							) {
-								if hovered() {
-									tooltip(
-										sent ? tr("You said GM here today") : tr("Say GM (once a day)"),
-									)
-								}
-								nendo.text(
-									"GM",
-									{
-										font = FONT_TITLE,
-										size = 12,
-										color = sent ? ACCENT_DIM : TEXT_LO,
-									},
-								)
-							}
-						}
-						if ui.prefs.stt_enabled {
-							micro_button(
-								"DictateBtn",
-								tr("Dictate"),
-								ui.stt.file != nil ? TEXT_LO : {},
-							)
-						}
-					}
-					if nendo.box(nendo.id("MicBtn"))(compose_tool(hovered() ? HOVER : {})) {
-						nendo.text(ICON_MIC, {font = FONT_ICON, size = 14, color = TEXT_LO})
-						if hovered() {tooltip(tr("Voice message"))}
-					}
-				}
-				if !single_pane() {scrollbar(nendo.id("ComposeToolScroll"))}
-				if tap_size() && submit_available {
-					ready :=
-						stage_files_ready(ui) &&
-						(strings.trim_space(string(ui.compose[:])) != "" ||
-								(len(ui.staged) > 0 && ui.editing == ""))
-					if nendo.box(nendo.id("SendBtn"))(
-					{
-						width = nendo.fit(min = 44),
-						height = nendo.fixed(44),
-						padding = {left = 12, right = 12},
-						align = {x = .Center, y = .Center},
-						color = ready ? (hovered() ? ACCENT_DIM : ACCENT) : ROW_BG,
-						radius = rr(8),
-					},
-					) {
-						nendo.text(
-							ui.editing != "" ? tr("Save") : tr("Send"),
-							{font = FONT_TITLE, size = 12, color = ready ? ON_ACCENT : TEXT_LO},
-						)
-					}
-				}
-			}
-			if single_pane() {
-				if ui.compose_more {compose_more_menu(ui)}
-				if open_now(nendo.id("FxPanel"), ui.fx_open) {effect_picker(ui)}
-			}
+			composer_tools(ui, plan, .Left)
+			if inline {
+				composer_draft(ui, text, plan.inline_width, 20)
+			} else if nendo.box(nendo.id("ComposeGap"))({width = nendo.grow()}) {}
+			composer_tools(ui, plan, .Right)
+			composer_primary(ui, plan)
 		}
-		if !tap_size() && submit_available && !voice_active() {
-			if nendo.box(nendo.id("ComposeSubmitRow"))(
-			{width = nendo.grow(), gap = 8, align = {y = .Center}},
-			) {
-				if nendo.box(nendo.id("ComposeSubmitHint"))({width = nendo.grow()}) {
+		if ui.compose_more {composer_menu(ui, plan)}
+	}
+}
+
+@(private = "file")
+composer_draft :: proc(ui: ^Ui_State, text: string, width, height: f32) {
+	if nendo.box(nendo.id("ComposeClip"))(
+	{
+		width = nendo.grow(),
+		height = nendo.fixed(height),
+		clip = {x = true, y = true, scroll = true},
+	},
+	) {
+		if nendo.hovered() {cursor_raise(.Text)}
+		if nendo.box(nendo.id("ComposeText"))(
+		{width = nendo.grow(), direction = .Column, gap = 2},
+		) {
+			if text == "" && len(rl.Preedit()) == 0 {
+				compose_view.row = 0
+				if nendo.box(nendo.id("ComposeLine", 0))({gap = 1, align = {y = .Center}}) {
+					if ui.focus == .Compose {caret()}
 					nendo.text(
-						ui.editing != "" ? tr("Enter to save. Shift+Enter for a new line.") : tr("Enter to send. Shift+Enter for a new line."),
-						{font = FONT_BODY, size = 11, color = TEXT_LO},
+						len(ui.thread_stack) > 0 ? tr("Reply in thread…") : tr("Send a message..."),
+						{font = FONT_BODY, size = BODY_FS, color = TEXT_LO, wrap = .None},
 					)
 				}
-				folder_action("SendBtn", ui.editing != "" ? tr("Save") : tr("Send"), true)
+			} else {
+				lo, hi, head := field_sel(ui, &ui.compose)
+				if ui.focus != .Compose {head = -1}
+				for line, i in compose_lines(text, max(1, width - CARET_W)) {
+					h := head
+					// At a soft wrap, the caret belongs to the upper line.
+					if h == line[0] && line[0] > 0 && text[line[0] - 1] != '\n' {h = -1}
+					compose_line(u32(i), text, line[0], line[1], lo, hi, h)
+					if h >= line[0] && h <= line[1] {compose_view.row = u32(i)}
+				}
 			}
 		}
 	}
+	scrollbar(nendo.id("ComposeClip"))
 }
