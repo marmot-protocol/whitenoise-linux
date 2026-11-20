@@ -18,6 +18,7 @@ TOOLS="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
 CC="$TOOLS/${TRIPLE}29-clang"
 CXX="$TOOLS/${TRIPLE}29-clang++"
 AR="$TOOLS/llvm-ar"
+RANLIB="$TOOLS/llvm-ranlib"
 ODIN_REAL="$(env -u ODIN_ROOT odin root)"
 ODIN_REAL="${ODIN_REAL%/}"
 export ANDROID_NDK_HOME="$NDK" ODIN_ANDROID_NDK="$NDK"
@@ -77,8 +78,8 @@ build_backend() {
   (
     cd "$HERE/vendor/mdk"
     rustup target add "$TRIPLE"
-    env -u CC -u CXX -u AR -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_PATH -u PKG_CONFIG_SYSROOT_DIR \
-      "CC_$key=$CC" "CXX_$key=$CXX" "AR_$key=$AR" \
+    env -u CC -u CXX -u AR -u RANLIB -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_PATH -u PKG_CONFIG_SYSROOT_DIR \
+      "CC_$key=$CC" "CXX_$key=$CXX" "AR_$key=$AR" "RANLIB_$key=$RANLIB" \
       "CARGO_TARGET_${upper}_LINKER=$CC" \
       "CARGO_TARGET_${upper}_RUSTFLAGS=-C link-arg=-Wl,-z,max-page-size=16384" \
       cargo build --locked --release --target "$TRIPLE" -p marmot-c --features otlp-export -j 6
