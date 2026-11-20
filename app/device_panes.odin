@@ -56,26 +56,27 @@ device_request_list :: proc(ui: ^Ui_State, draw: bool) -> bool {
 				if !device_prompt_attention(&prompt) || string(prompt.prompt_id) == "" {continue}
 				if draw {
 					if !heading {
-						device_copy(
-							asking_other ? tr("Other profiles") : tr("Link requests"),
-							TEXT,
-						)
+						device_heading(asking_other ? tr("Other profiles") : tr("Link requests"))
 						heading = true
 					}
 					if nendo.box(nendo.id("DeviceRequest", index))(
 					{
 						width = nendo.grow(),
-						height = nendo.fit(min = settings_tap_size(30)),
-						padding = nendo.pad(8),
-						color = hovered() ? HOVER : CARD,
-						radius = rr(7),
+						height = nendo.fit(min = settings_tap_size(48)),
+						padding = nendo.pad(12),
+						align = {y = .Center},
+						gap = 8,
+						color = hovered() ? HOVER : mix_color(CARD, ACCENT, 0.09),
+						radius = rr(9),
 					},
 					) {
-						if asking_other {device_copy(account_label(ui, account), TEXT)}
-						device_copy(
+						row_labels(
+							asking_other ? account_label(ui, account) : tr("Review request"),
 							device_prompt_text(&prompt.state),
-							asking_other ? TEXT_DIM : TEXT,
+							ACCENT,
 						)
+						nendo.text("›", {font = FONT_TITLE, size = 18, color = ACCENT})
+						if hovered() {cursor_raise(.Pointer)}
 					}
 				} else if clicked_indexed("DeviceRequest", index) {
 					devices_show(
@@ -151,6 +152,7 @@ devices_pane :: proc(ui: ^Ui_State) {
 	}
 	profile := device_current(ui)
 	device_warnings(profile)
+	device_request_list(ui, true)
 	if nendo.box(nendo.id("DevicesRoster"))(device_section()) {
 		device_heading(tr("Your devices"))
 		if nendo.box(nendo.id("DeviceRosterList"))(device_list()) {
@@ -208,20 +210,23 @@ devices_pane :: proc(ui: ^Ui_State) {
 	}
 	if nendo.box(nendo.id("DevicesPairing"))(device_section()) {
 		device_heading(tr("Link a device"))
-		pairing := device_list()
-		pairing.gap, pairing.padding = 12, nendo.pad(12)
-		if nendo.box(nendo.id("DevicesPairingCard"))(pairing) {
-			if nendo.box(nendo.id("DevicesPairingActions"))(settings_row(stacked = true)) {
-				settings_button("DevicesAdd", tr("Add a new device"), ACCENT)
-				settings_button("DevicesNew", tr("Link to another device"))
-			}
-			device_copy(
-				tr(
-					"Link this device to bring chats over, or add a new device if your chats are here.",
-				),
+		stacked := settings_body_width(ui) < 480
+		if nendo.box(nendo.id("DevicesPairingActions"))(
+		{width = nendo.grow(), gap = 10, direction = stacked ? .Column : .Row},
+		) {
+			device_pair_choice(
+				"DevicesAdd",
+				tr("Add a new device"),
+				tr("Approve from the device with your chats."),
+				ACCENT,
+			)
+			device_pair_choice(
+				"DevicesNew",
+				tr("Link to another device"),
+				tr("Bring chats to this device."),
+				TEXT,
 			)
 		}
-		device_request_list(ui, true)
 		device_moves(ui, profile, .Draw)
 		if accounts_have_tombstones(
 			ui,
@@ -232,6 +237,26 @@ devices_pane :: proc(ui: ^Ui_State) {
 		if nendo.box(nendo.id("DevicesSignInList"))(
 			device_list(),
 		) {device_sign_ins(ui, profile, .Draw)}
+	}
+}
+
+@(private = "file")
+device_pair_choice :: proc(id, title, sub: string, ink: nendo.Color) {
+	if nendo.box(nendo.id(id))(
+	{
+		width = nendo.grow(),
+		height = nendo.fit(min = settings_tap_size(66)),
+		padding = nendo.pad(12),
+		align = {y = .Center},
+		gap = 8,
+		color = hovered() ? HOVER : mix_color(CARD, TEXT, 0.065),
+		radius = rr(9),
+		border = kb_focus == id ? kb_ring(ACCENT) : nendo.Border{color = ink == ACCENT ? ACCENT : FIELD_BORDER, width = bw()},
+	},
+	) {
+		row_labels(title, sub, ink)
+		nendo.text("›", {font = FONT_TITLE, size = 18, color = ink})
+		if hovered() {cursor_raise(.Pointer)}
 	}
 }
 
@@ -344,6 +369,7 @@ device_render_code :: proc(code: marmot.Device_Link_Code) -> bool {
 	) {
 		device_heading(tr("Compare the codes on both devices"))
 		device_copy(tr("Only link if both screens show the same seven emoji in the same order."))
+		glyph_size := modal_w(nendo.id("DeviceModal"), DEVICE_MODAL_W) >= 350 ? f32(40) : f32(32)
 		for row in 0 ..< 2 {
 			if nendo.box(nendo.id("DeviceCodeRow", u32(row)))(
 			{width = nendo.grow(), gap = 6, align = {x = .Center}},
@@ -361,13 +387,20 @@ device_render_code :: proc(code: marmot.Device_Link_Code) -> bool {
 						radius = rr(7),
 					},
 					) {
+						nendo.text(
+							fmt.tprintf("%d", index + 1),
+							{font = FONT_TITLE, size = 11, color = TEXT_DIM},
+						)
 						emoji := string(entry.emoji)
 						if tex := emoji_tex(emoji); tex != nil {
 							if nendo.box(nendo.id_local("Glyph"))(
-							{width = nendo.fixed(32), aspect = 1, image = tex},
+							{width = nendo.fixed(glyph_size), aspect = 1, image = tex},
 							) {}
 						} else {
-							nendo.text(emoji, {font = FONT_BODY, size = 28, color = TEXT})
+							nendo.text(
+								emoji,
+								{font = FONT_BODY, size = u16(glyph_size - 4), color = TEXT},
+							)
 						}
 						nendo.text(
 							string(entry.description),
@@ -822,11 +855,13 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 	   nendo.box(nendo.id("DevicesSignInFooter"))(
 	   {width = nendo.grow(), direction = .Column, gap = 8, padding = nendo.pad(12)},
 	   ) {
-		if .Sign_Ins in profile.known &&
-		   .Sign_Ins not_in profile.stale &&
-		   len(items) == 0 {device_copy(tr("No other sign-ins."))}
 		if profile.view.started_fresh {device_copy(tr("Only future invitations will appear here until you link this device."))}
 		if nendo.box(nendo.id("DevicesSignInChecks"))(settings_row(stacked = true)) {
+			if len(items) == 0 && .Sign_Ins in profile.known && .Sign_Ins not_in profile.stale {
+				if nendo.box(nendo.id_local("SignInSummary"))({width = nendo.grow()}) {
+					device_copy(tr("No sign-ins to review."))
+				}
+			}
 			settings_button("DeviceCheckSignIns", tr("Check now"))
 			if device_can_start_fresh(
 				profile,
@@ -880,20 +915,34 @@ device_roster_rows :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device
 						status := device_status_text(&row)
 						if row.status == .ACTIVE && !row.inactive && !row.removal_pending {
 							if own {
-								status = tr("This device")
+								if platform := string(row.platform);
+								   platform != "" {status = platform}
 							} else if row.has_last_active_at {
 								status = fmt.tprintf(
 									tr("Last active: %s"),
 									timestamp_label(i64(row.last_active_at), .SHORT_DATE_TIME, 0),
 								)
 							}
-						} else if own {
-							status = fmt.tprintf("%s · %s", tr("This device"), status)
 						}
 						device_copy(status)
 					}
+					if own {
+						if nendo.box(nendo.id_local("ThisDeviceBadge"))(
+						{
+							padding = {left = 8, right = 8, top = 3, bottom = 3},
+							color = mix_color(CARD, ACCENT, 0.14),
+							radius = rr(9),
+						},
+						) {
+							nendo.text(
+								tr("This device"),
+								{font = FONT_TITLE, size = 10, color = ACCENT},
+							)
+						}
+					}
 					if keep {settings_button(fmt.tprintf("DeviceKeep%d", i), tr("Keep"))}
 					nendo.text("›", {font = FONT_TITLE, size = 18, color = TEXT_DIM})
+					if hovered() {cursor_raise(.Pointer)}
 				}
 			} else if keep &&
 			   clicked(fmt.tprintf("DeviceKeep%d", i)) &&

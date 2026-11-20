@@ -562,7 +562,7 @@ settings_description :: proc(section: Settings_Section) -> string {
 	case .Agents:
 		return N_("Connect an AI agent using your public key and a setup prompt.")
 	case .Devices:
-		return N_("Link another device to this profile.")
+		return ""
 	}
 	return ""
 }

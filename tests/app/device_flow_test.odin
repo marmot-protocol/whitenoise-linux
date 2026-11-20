@@ -259,7 +259,19 @@ devices_pairing_projection :: proc(t: ^testing.T) {
 	}
 	profile.view.link = &link
 	defer profile.view.link = nil
-	devices_show(&ui, .Approve, profile.account, "opaque-request")
+	settings_open(&ui, nil, .Devices)
+	device_test_frame(&ui)
+	request := nendo.element(nendo.id("DeviceRequest", 0))
+	roster := nendo.element(nendo.id("DevicesRoster"))
+	if !testing.expect(t, request.found && roster.found && request.rect.y < roster.rect.y) {return}
+	request_rect := request.rect
+	nendo.set_pointer(
+		{request_rect.x + request_rect.width / 2, request_rect.y + request_rect.height / 2},
+		.Up,
+	)
+	forced_release = true
+	testing.expect(t, handle_devices(&ui, nil))
+	forced_release = false
 	text: string
 	for _ in 0 ..< 2 {text = device_test_frame(&ui)}
 	after := text
@@ -311,7 +323,7 @@ devices_pairing_projection :: proc(t: ^testing.T) {
 	forced_release = false
 	text = device_test_frame(&ui)
 	testing.expect(t, nendo.element(nendo.id("DeviceChecking")).found)
-	testing.expect(t, !strings.contains(text, "Couldn't refresh device information."))
+	testing.expect(t, !nendo.element(nendo.id("DeviceCheckRequest")).found)
 
 	read := Device_Job {
 		reads = {.Link},

@@ -657,23 +657,29 @@ settings_banner :: proc(ui: ^Ui_State) {
 	section := ui.settings_section
 	gallery := section == .Appearance && !settings_on_menu(ui) && ui.settings_tab == 0
 	phone := single_pane()
+	devices := section == .Devices
+	vertical_pad: u16 = phone ? 3 : devices ? 14 : 8
 	if nendo.box(nendo.id("SettingsHead"))(
 	{
 		width = nendo.grow(),
-		padding = {left = phone ? 0 : 24, right = 24, top = phone ? 3 : 8, bottom = phone ? 3 : 8},
+		padding = {left = phone ? 0 : 24, right = 24, top = vertical_pad, bottom = vertical_pad},
 		gap = phone ? 6 : 12,
 		align = {y = .Center},
-		color = ACCENT,
-		user_data = rawptr(TITLE_BAND),
+		color = devices ? BG : ACCENT,
+		border = devices ? nendo.Border{color = DIVIDER, width = {bottom = 1}} : {},
+		user_data = devices ? nil : rawptr(TITLE_BAND),
 	},
 	) {
 		// Phones go back from the banner itself instead of a separate bar
 		// above it; the shell's PhoneBack handler runs it.
 		if phone {if nendo.box(nendo.id("PhoneBack"))({width = nendo.fixed(44), height = nendo.fixed(44), align = {x = .Center, y = .Center}}) {
-				nendo.text("\uf053", {font = FONT_ICON, size = 18, color = ON_ACCENT})
+				nendo.text(
+					"\uf053",
+					{font = FONT_ICON, size = 18, color = devices ? TEXT : ON_ACCENT},
+				)
 				if hovered() {cursor_raise(.Pointer); tooltip(tr("Back"))}
 			}}
-		settings_illustration("SettingsHeadArt", SECTION_ART[section], 34)
+		if !devices {settings_illustration("SettingsHeadArt", SECTION_ART[section], 34)}
 		if nendo.box(nendo.id("SettingsHeadCol"))(
 		{width = nendo.grow(), direction = .Column, gap = 2},
 		) {
@@ -681,18 +687,20 @@ settings_banner :: proc(ui: ^Ui_State) {
 				tr(SETTINGS_SECTIONS[section].label),
 				{
 					font = gallery ? gallery_font(ui, FONT_GALLERY_BOLD) : FONT_TITLE,
-					size = 16,
-					color = ON_ACCENT,
+					size = devices ? 22 : 16,
+					color = devices ? TEXT : ON_ACCENT,
 				},
 			)
-			nendo.text(
-				tr(settings_description(section)),
-				{
-					font = gallery ? gallery_font(ui, FONT_GALLERY_TITLE) : FONT_BODY,
-					size = 11,
-					color = ON_ACCENT,
-				},
-			)
+			if !devices {
+				nendo.text(
+					tr(settings_description(section)),
+					{
+						font = gallery ? gallery_font(ui, FONT_GALLERY_TITLE) : FONT_BODY,
+						size = 11,
+						color = ON_ACCENT,
+					},
+				)
+			}
 		}
 	}
 }

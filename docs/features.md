@@ -416,8 +416,8 @@ Contacts:
 Build with `WN_MULTI_DEVICE=1` to use **Settings > Devices**. Sign in with the
 same profile on both devices, then choose **Link to another device** on the
 new one. Approve the request on the existing device and confirm on the new
-one only if all seven emoji match. Compare left to right, starting with the
-top row.
+one only if all seven numbered emoji match. Find incoming requests above
+**Your devices**.
 If the request hasn't appeared, open **Add a new device** on the existing
 device and choose **Check now**.
 

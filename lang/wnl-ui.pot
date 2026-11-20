@@ -663,6 +663,9 @@ msgstr ""
 msgid "Applies to the picker, reactions and emoji in messages."
 msgstr ""
 
+msgid "Approve from the device with your chats."
+msgstr ""
+
 msgid "Approve the request in your signer to continue."
 msgstr ""
 
@@ -870,6 +873,9 @@ msgid "Bracket labels"
 msgstr ""
 
 msgid "Bring chat history"
+msgstr ""
+
+msgid "Bring chats to this device."
 msgstr ""
 
 msgid "Bringing earlier messages from your other device…"
@@ -3484,9 +3490,6 @@ msgstr ""
 msgid "Link a new device?"
 msgstr ""
 
-msgid "Link another device to this profile."
-msgstr ""
-
 msgid "Link copied"
 msgstr ""
 
@@ -3497,9 +3500,6 @@ msgid "Link requests"
 msgstr ""
 
 msgid "Link this device"
-msgstr ""
-
-msgid "Link this device to bring chats over, or add a new device if your chats are here."
 msgstr ""
 
 msgid "Link this device to the one that has your chats. You’ll compare the same seven emoji on both screens."
@@ -4099,9 +4099,6 @@ msgstr ""
 msgid "No one in this chat matches @%s."
 msgstr ""
 
-msgid "No other sign-ins."
-msgstr ""
-
 msgid "No preview available"
 msgstr ""
 
@@ -4119,6 +4116,9 @@ msgid "No results. Try another search."
 msgstr ""
 
 msgid "No rules"
+msgstr ""
+
+msgid "No sign-ins to review."
 msgstr ""
 
 msgid "No stickers here yet."
@@ -5096,6 +5096,9 @@ msgid "Review local data deletion"
 msgstr ""
 
 msgid "Review postponed"
+msgstr ""
+
+msgid "Review request"
 msgstr ""
 
 msgid "Review signer approval link"
