@@ -50,20 +50,17 @@ workflows do not publish artifacts.
 
 ## wn-build-server
 
-Two independent coordinator/adapter pairs share the host's enforced CI resource
-budget. Each pair runs one disposable KVM guest at a time. Two pairs allow
-concurrent builds without the upstream adapter's overlapping-cache fallback.
-GitHub runner services and their routing are independent of these services.
+Slot 1 runs staging in one disposable KVM guest at a time. GitHub and Rctngl
+runner services on this host are separate from ngit.
 
 | Slot | Work | Selectors | Coordinator |
 | --- | --- | --- | --- |
 | 1 | Staging packages | `wn-ngit-staging`, `wn-ngit-windows` | `npub1g60evye0t0adawuttrgl7xvymm7latgz86f6406kcfpx52mj8szqmjykaj` |
-| 2 | PR checks | `ubuntu-24.04` | `npub16j3janvkrze82x22cl0f7p2nqeqlsck8dacfry4w58yh29gdlzxs4xdnv9` |
+| 2 | PR rollback only | `ubuntu-24.04` | `npub16j3janvkrze82x22cl0f7p2nqeqlsck8dacfry4w58yh29gdlzxs4xdnv9` |
 
-Install the slot 1 mapping before merging a workflow that uses
-`wn-ngit-staging`. Restart `ngit-ci@1` while idle to load the mapping.
-The adapter and slot 2 do not need to restart for this change. Staging
-jobs already queued on slot 2 still run there.
+To roll back PR routing, start `ngit-ci@2` and its adapter if needed. Send
+`ngit ci request` to the slot 2 coordinator and `ngit ci stop` to the Boat
+coordinator. Leave slot 1 running; it does not take PR checks.
 
 `runner/` contains the SDK recipe, guest boot configuration, service templates,
 slot mappings, and service-account policy. The deployed coordinator, adapter,
@@ -153,7 +150,7 @@ Compilation is outside that limit.
 
 ## Requests and results
 
-Both coordinators use `request-required` execution policy and advertise through
+The coordinators use `request-required` execution policy and advertise through
 `wss://relay.cyberguy.fyi` and `wss://relay.ngit.dev`. A maintainer-signed
 `ngit ci request <coordinator>` enables automatic service; `ngit ci stop
 <coordinator>` withdraws it. Manual runs use `ngit ci trigger <coordinator>
