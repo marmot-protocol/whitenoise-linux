@@ -148,14 +148,17 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 						width := nendo.element(nendo.id("ChatHeadTitleClip")).rect.width
 						if width > 0 {title = text_ellipsis(title, width, FONT_TITLE, 16)}
 					}
-					nendo.text(title, {font = FONT_TITLE, size = 16, color = TEXT, wrap = .None})
+					nendo.text(
+						title,
+						{font = FONT_TITLE, size = 16, color = CARD_TEXT, wrap = .None},
+					)
 					if !chat_is_dm(chat) && len(ui.members) > 0 {
 						nendo.text(
 							fmt.tprintf(
 								tr(len(ui.members) == 1 ? N_("%d member") : N_("%d members")),
 								len(ui.members),
 							),
-							{font = FONT_BODY, size = 11, color = TEXT_LO, wrap = .None},
+							{font = FONT_BODY, size = 11, color = CARD_DIM, wrap = .None},
 						)
 					}
 				}
@@ -368,8 +371,8 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 							},
 							) {
 								phase :=
-									ui.prefs.reduce_motion ? f32(0.5) : f32(rl.GetTime() - f64(int(rl.GetTime())))
-								if !ui.prefs.reduce_motion {anim_moving += 1}
+									!motion_on() ? f32(0.5) : f32(rl.GetTime() - f64(int(rl.GetTime())))
+								if motion_on() {anim_moving += 1}
 								if nendo.box(nendo.id("TimelineLoadingOffset"))(
 								{width = nendo.fixed(phase * 132)},
 								) {}

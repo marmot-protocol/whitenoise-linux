@@ -32,6 +32,8 @@ ACCENT_DIM := nendo.Color{61, 214, 138, 255}
 TEXT := nendo.Color{228, 231, 236, 255}
 TEXT_DIM := nendo.Color{156, 163, 175, 255}
 TEXT_LO := nendo.Color{107, 114, 128, 255}
+SIDEBAR_TEXT, SIDEBAR_DIM, CARD_TEXT, CARD_DIM, HEADER_TEXT, HEADER_DIM, POPOVER_TEXT: nendo.Color
+SIDEBAR_SURFACE_TEXT, MESSAGE_SURFACE_TEXT: bool
 DANGER := nendo.Color{255, 90, 90, 255}
 DANGER_SOFT := nendo.Color{255, 90, 90, 38}
 DANGER_BORDER := nendo.Color{255, 90, 90, 110}
@@ -112,6 +114,25 @@ apply_theme :: proc(theme: int, accent: int) {
 	AVATAR_RING = pack.avatar_ring
 	ACCENT_HI = pack.accent_hi[slot]
 	ACCENT_GLOW = pack.accent_glow[slot]
+	contrast := high_contrast_enabled(g_prefs)
+	if contrast {
+		TEXT = readable_ink(TEXT, BG, 7)
+		TEXT_DIM, TEXT_LO, TEXT_VLO = TEXT, TEXT, TEXT
+		CARD_BORDER = readable_ink(CARD_BORDER, CARD, 3)
+		ELEVATED_BORDER = CARD_BORDER
+		FIELD_BORDER = readable_ink(FIELD_BORDER, ROW_BG, 3)
+		DIVIDER = readable_ink(DIVIDER, BG, 3)
+		ON_ACCENT = readable_ink(ON_ACCENT, ACCENT, 7)
+	}
+	SIDEBAR_TEXT = surface_ink(pack.sidebar_text, TEXT, PANEL, contrast)
+	SIDEBAR_DIM = surface_dim_ink(pack.sidebar_text, TEXT_LO, PANEL, contrast)
+	CARD_TEXT = surface_ink(pack.card_text, TEXT, CARD, contrast)
+	CARD_DIM = surface_dim_ink(pack.card_text, TEXT_LO, CARD, contrast)
+	HEADER_TEXT = surface_ink(pack.header_text, TEXT, STATUS_BAR, contrast)
+	HEADER_DIM = surface_dim_ink(pack.header_text, TEXT_LO, STATUS_BAR, contrast)
+	POPOVER_TEXT = surface_ink(pack.popover_text, TEXT, TOOLTIP, contrast)
+	SIDEBAR_SURFACE_TEXT = pack.sidebar_text.a != 0 || contrast
+	MESSAGE_SURFACE_TEXT = pack.card_text.a != 0 || contrast
 
 	OVERLAY = pack.overlay
 	OVERLAY_STRONG = pack.overlay_strong

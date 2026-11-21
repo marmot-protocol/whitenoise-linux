@@ -2932,6 +2932,9 @@ msgstr "使用中: %s"
 msgid "Incoming messages"
 msgstr "受信メッセージ"
 
+msgid "Increase contrast"
+msgstr "コントラストを上げる"
+
 msgid "Indonesian"
 msgstr "インドネシア語"
 
@@ -3338,6 +3341,9 @@ msgstr "White Noise の動作を自分に合わせて設定します。"
 
 msgid "Make everything larger or smaller."
 msgstr "画面全体の表示を大きくしたり小さくしたりできます。"
+
+msgid "Make text and borders easier to see."
+msgstr "文字と枠線を見やすくします。"
 
 msgid "Make this member an admin?"
 msgstr "このメンバーを管理者にしますか？"
@@ -5363,6 +5369,12 @@ msgstr "シンセウェイヴ"
 
 msgid "System"
 msgstr "システム"
+
+msgid "System (off)"
+msgstr "システム（オフ）"
+
+msgid "System (on)"
+msgstr "システム（オン）"
 
 msgid "TAGS"
 msgstr "タグ"

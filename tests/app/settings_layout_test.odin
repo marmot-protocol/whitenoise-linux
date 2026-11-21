@@ -358,6 +358,7 @@ SETTINGS_TEST_APPEARANCE_ANCHORS := []string {
 	"RowEmojiSet",
 	"RowScroll",
 	"RowMotion",
+	"RowContrast",
 	"RowCentered",
 	"RowMessageLines",
 	"RowAvatarShape",

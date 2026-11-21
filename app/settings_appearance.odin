@@ -25,7 +25,12 @@ APPEARANCE_CONTROLS := []struct {
 	{"ScrollChip1", "ScrollChip", 1},
 	{"ScrollChip2", "ScrollChip", 2},
 	{"ScrollChip3", "ScrollChip", 3},
-	{"TgMotion", "TgMotion", 0},
+	{"Motion0", "Motion", 0},
+	{"Motion1", "Motion", 1},
+	{"Motion2", "Motion", 2},
+	{"Contrast0", "Contrast", 0},
+	{"Contrast1", "Contrast", 1},
+	{"Contrast2", "Contrast", 2},
 	{"TgCentered", "TgCentered", 0},
 	{"MessageLinesMinus", "MessageLinesMinus", 0},
 	{"MessageLinesPlus", "MessageLinesPlus", 0},
@@ -164,10 +169,7 @@ appearance_control_input :: proc(ui: ^Ui_State, pressed: string) -> bool {
 		if pressed != entry.key && !(mouse_released() && nendo.pointer_over(control)) {
 			continue
 		}
-		if entry.id == "TgMotion" ||
-		   entry.id == "TgCentered" ||
-		   entry.id == "TgHandDrawn" ||
-		   entry.id == "TgThemeFont" {
+		if entry.id == "TgCentered" || entry.id == "TgHandDrawn" || entry.id == "TgThemeFont" {
 			settings_flip(ui, nil, entry.id)
 		} else {
 			appearance_activate(ui, control)
@@ -201,6 +203,21 @@ appearance_scroll :: proc(ui: ^Ui_State, field: nendo.Id) -> nendo.Id {
 
 @(private)
 appearance_activate :: proc(ui: ^Ui_State, control: nendo.Id) {
+	for i in 0 ..< 3 {
+		if control == nendo.id("Motion", u32(i)) {
+			ui.prefs.motion_override, ui.prefs.reduce_motion = i != 0, i == 1
+			if reduce_motion_enabled(&ui.prefs) {anim_snap_all()}
+			save_settings(ui)
+			return
+		}
+		if control == nendo.id("Contrast", u32(i)) {
+			ui.prefs.contrast_override, ui.prefs.high_contrast = i != 0, i == 1
+			settings_theme_preview_reset(ui)
+			apply_theme(ui.theme, ui.accent)
+			save_settings(ui)
+			return
+		}
+	}
 	if control == nendo.id("MessageLinesMinus") ||
 	   control == nendo.id("MessageLinesPlus") ||
 	   control == nendo.id("MessageLinesReset") {
@@ -424,15 +441,32 @@ settings_appearance_controls :: proc(ui: ^Ui_State) {
 
 	if nendo.box(nendo.id("LayoutGroup"))(settings_box()) {
 		settings_group(tr("Layout"))
-		if nendo.box(nendo.id("RowMotion"))(settings_row()) {
-			settings_check(
-				"TgMotion",
-				ui.prefs.reduce_motion,
-				tr("Reduce motion"),
-				tr(
-					"Turn off animated transitions, flights and effects. State still changes, nothing moves.",
-				),
-			)
+		for motion in ([2]bool{true, false}) {
+			if nendo.box(nendo.id(motion ? "RowMotion" : "RowContrast"))(settings_row(true)) {
+				row_labels(
+					motion ? tr("Reduce motion") : tr("Increase contrast"),
+					motion ? tr("Turn off animated transitions, flights and effects. State still changes, nothing moves.") : tr("Make text and borders easier to see."),
+					SIDEBAR_TEXT,
+					SIDEBAR_DIM,
+				)
+				using_system :=
+					motion ? !ui.prefs.motion_override && !ui.prefs.reduce_motion : !ui.prefs.contrast_override
+				on := motion ? reduce_motion_enabled(&ui.prefs) : high_contrast_enabled(&ui.prefs)
+				system_on := motion ? reduce_motion_enabled(nil) : high_contrast_enabled(nil)
+				if nendo.box(nendo.id(motion ? "MotionChoices" : "ContrastChoices"))(
+					settings_choices(nendo.id(motion ? "MotionChoices" : "ContrastChoices")),
+				) {
+					selected := using_system ? 0 : on ? 1 : 2
+					for label, i in ([3]string{system_on ? tr("System (on)") : tr("System (off)"), tr("On"), tr("Off")}) {
+						settings_option(
+							motion ? "Motion" : "Contrast",
+							u32(i),
+							label,
+							selected == i,
+						)
+					}
+				}
+			}
 		}
 		if nendo.box(nendo.id("RowCentered"))(settings_row()) {
 			settings_check(

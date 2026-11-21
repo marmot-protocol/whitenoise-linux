@@ -371,7 +371,7 @@ PAGE_PUSH :: f32(0.03) // how far the outgoing page pulls away from the eye
 // costs nothing.
 draw_frame :: proc(render_commands: []nendo.Render_Command) {
 	rl.ChalkDrawn = CHALK_DRAWN
-	if rl.Noir && (g_prefs == nil || !g_prefs.reduce_motion) {
+	if rl.Noir && motion_on() {
 		GRAIN_HZ :: 24
 		frame := rl.GetTime() * GRAIN_HZ
 		rl.NoirFrame = u32(u64(frame) & 0xffff)

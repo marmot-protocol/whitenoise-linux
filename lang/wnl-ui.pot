@@ -2922,6 +2922,9 @@ msgstr ""
 msgid "Incoming messages"
 msgstr ""
 
+msgid "Increase contrast"
+msgstr ""
+
 msgid "Indonesian"
 msgstr ""
 
@@ -3327,6 +3330,9 @@ msgid "Make White Noise work your way."
 msgstr ""
 
 msgid "Make everything larger or smaller."
+msgstr ""
+
+msgid "Make text and borders easier to see."
 msgstr ""
 
 msgid "Make this member an admin?"
@@ -5343,6 +5349,12 @@ msgid "Synthwave"
 msgstr ""
 
 msgid "System"
+msgstr ""
+
+msgid "System (off)"
+msgstr ""
+
+msgid "System (on)"
 msgstr ""
 
 msgid "TAGS"

@@ -270,7 +270,16 @@ settings_option :: proc(id_str: string, index: u32, label: string, selected: boo
 		radius = rr(6),
 	},
 	) {
-		nendo.text(label, {font = FONT_BODY, size = 12, color = TEXT})
+		ink := TEXT
+		if MESSAGE_SURFACE_TEXT {
+			fill := selected ? SELECTED : hovered() ? HOVER : CARD
+			ink = readable_ink(
+				CARD_TEXT,
+				mix_color(PANEL, fill, fill.a / 255),
+				high_contrast_enabled(g_prefs) ? 7 : 4.5,
+			)
+		}
+		nendo.text(label, {font = FONT_BODY, size = 12, color = ink})
 	}
 }
 
@@ -472,7 +481,11 @@ settings_tab_strip :: proc(ui: ^Ui_State) {
 
 // Left half of a row: title over a dim sublabel, then the implicit
 // grow pushes the caller's control to the right edge.
-row_labels :: proc(title: string, sub: string, title_color: nendo.Color = {}) {
+row_labels :: proc(
+	title, sub: string,
+	title_color: nendo.Color = {},
+	sub_color: nendo.Color = {},
+) {
 	color := title_color
 	if color.a == 0 {
 		color = TEXT
@@ -482,7 +495,10 @@ row_labels :: proc(title: string, sub: string, title_color: nendo.Color = {}) {
 	) {
 		nendo.text(title, {font = FONT_TITLE, size = 13, color = color})
 		if len(sub) > 0 {
-			nendo.text(sub, {font = FONT_BODY, size = 11, color = TEXT_DIM})
+			nendo.text(
+				sub,
+				{font = FONT_BODY, size = 11, color = sub_color.a == 0 ? TEXT_DIM : sub_color},
+			)
 		}
 	}
 }
@@ -1562,7 +1578,7 @@ theme_gallery_collection :: proc(i: int) -> Theme_Collection {
 
 @(private)
 theme_gallery_visible :: proc(ui: ^Ui_State, i: int) -> bool {
-	return theme_packs[i].tone == ui.theme_tone
+	return i == system_theme_index || theme_packs[i].tone == ui.theme_tone
 }
 
 @(private)
@@ -2241,8 +2257,6 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 		} else when ODIN_OS == .Darwin {
 			macos_update_set_auto(!macos_update_auto())
 		}
-	case "TgMotion":
-		flip(ui, &ui.prefs.reduce_motion)
 	case "TgHandDrawn":
 		flip(ui, &ui.prefs.hand_drawn_disabled)
 		apply_theme(active_theme(ui), ui.accent)

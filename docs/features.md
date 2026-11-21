@@ -469,6 +469,18 @@ Theme gallery:
 - The gallery has separate Dark and Light views and collection headings. Collection headings have no links.
 - Settings search finds the picker by any loaded theme's displayed name, including custom packs, without changing your theme.
 - Selecting a Sidecar theme shows its source credit on the page and the selected tile.
+- On DinOS, **System** follows the current Din theme, including custom and
+  profile colors. It appears at the top of both the Dark and Light galleries.
+  White Noise checks Din's native app palette once a second while open.
+  The sidebar, chat cards, status bar, and tooltips use their matching
+  text colors. White Noise keeps its own fonts, layout, and wallpaper.
+  Until a palette arrives, System follows the desktop's light or dark
+  preference when available. Later read errors leave the last palette in place.
+  If Din creates the `gtk-4.0` directory after the Flatpak starts, restart White
+  Noise so Flatpak can mount it.
+- **Reduce motion** and **Increase contrast** follow Din's desktop settings by
+  default, even with a different theme selected. Choose **On** or **Off**
+  in Appearance to override either setting.
 
 Theme quirks:
 

@@ -338,7 +338,7 @@ advance_videos :: proc() {
 	if preview_shown && preview.vid != nil && !preview.vid_shared {
 		advance_one(preview.vid)
 	}
-	if g_ui != nil && g_ui.picker_open && g_ui.gif_tab {
+	if g_ui != nil && g_ui.picker_open && g_ui.gif_tab && !reduce_motion_enabled(&g_ui.prefs) {
 		advance_one(g_ui.gif_view)
 	}
 

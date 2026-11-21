@@ -2932,6 +2932,9 @@ msgstr "Aktiv: %s."
 msgid "Incoming messages"
 msgstr "Eingehende Nachrichten"
 
+msgid "Increase contrast"
+msgstr "Kontrast erhöhen"
+
 msgid "Indonesian"
 msgstr "Indonesisch"
 
@@ -3338,6 +3341,9 @@ msgstr "Passe White Noise an deine Bedürfnisse an."
 
 msgid "Make everything larger or smaller."
 msgstr "Vergrößere oder verkleinere die gesamte Oberfläche."
+
+msgid "Make text and borders easier to see."
+msgstr "Texte und Rahmen sind leichter zu erkennen."
 
 msgid "Make this member an admin?"
 msgstr "Dieses Mitglied zum Admin machen?"
@@ -5363,6 +5369,12 @@ msgstr "Synthwave"
 
 msgid "System"
 msgstr "System"
+
+msgid "System (off)"
+msgstr "System (aus)"
+
+msgid "System (on)"
+msgstr "System (an)"
 
 msgid "TAGS"
 msgstr "TAGS"

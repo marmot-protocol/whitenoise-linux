@@ -314,6 +314,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		when ODIN_OS == .Darwin {macos_update_tick()}
 		if dev_reload_poll() {return false}
 		defer free_all(context.temp_allocator)
+		poll_system_theme(ui, rl.GetTime())
 		anim_tick(rl.GetFrameTime()) // the gate runs its own loop, so it steps its own motion
 		apply_zoom(ui) // and its own resize response; a no-op unless the width moved
 

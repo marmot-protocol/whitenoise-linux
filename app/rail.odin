@@ -97,8 +97,8 @@ rail_content :: proc(ui: ^Ui_State) {
 						count = fmt.tprintf(tr("%d of %d"), len(inbox), chat_total)
 					}
 				}
-				nendo.text(head, {font = FONT_TITLE, size = 16, color = TEXT})
-				nendo.text(count, {font = FONT_BODY, size = 12, color = TEXT_LO})
+				nendo.text(head, {font = FONT_TITLE, size = 16, color = SIDEBAR_TEXT})
+				nendo.text(count, {font = FONT_BODY, size = 12, color = SIDEBAR_DIM})
 				if nendo.box(nendo.id("RailHeadGap"))({width = nendo.grow()}) {}
 				if ui.page == .Chats {
 					if nendo.box(nendo.id("ChatsMenuBtn"))(

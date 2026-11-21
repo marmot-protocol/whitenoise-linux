@@ -367,11 +367,12 @@ gif_hide :: proc(ui: ^Ui_State, failed: Gif_Item) {
 
 @(private)
 gif_drain :: proc(ui: ^Ui_State) {
+	reduce_motion := reduce_motion_enabled(&ui.prefs)
 	if ui.gif_view != nil && ui.gif_view.failed {
 		gif_hide(ui, ui.gif_selected)
 		video_view_free(ui.gif_view); ui.gif_view = nil
 	}
-	if ui.gif_view != nil && (!ui.picker_open || !ui.gif_tab) {
+	if ui.gif_view != nil && (!ui.picker_open || !ui.gif_tab || reduce_motion) {
 		video_view_free(ui.gif_view); ui.gif_view = nil
 	}
 	job := ui.gif_job
@@ -412,10 +413,10 @@ gif_drain :: proc(ui: ^Ui_State) {
 			ui.gif_library, job.items = job.items, nil
 			ui.gif_loaded = true
 		case .Preview:
-			if !ui.picker_open || !ui.gif_tab {break}
+			if !ui.picker_open || !ui.gif_tab || (reduce_motion && job.action == .Preview) {break}
 			if ui.gif_view != nil {video_view_free(ui.gif_view)}
 			ui.gif_view, job.view = job.view, nil
-			ui.gif_view.tex = rl.CreateStreamTexture(ui.gif_view.w, ui.gif_view.h)
+			if !reduce_motion {ui.gif_view.tex = rl.CreateStreamTexture(ui.gif_view.w, ui.gif_view.h)}
 			gif_item_free(ui.gif_selected); ui.gif_selected, job.item = job.item, {}
 			sha := string(
 				hex.encode(
@@ -908,7 +909,7 @@ handle_gif_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// ponytail: animate one hovered GIF; a shared decoder can replace per-view mpv if simultaneous playback is needed.
 	if hover >= 0 &&
 	   ui.gif_error == "" &&
-	   !ui.prefs.reduce_motion &&
+	   !reduce_motion_enabled(&ui.prefs) &&
 	   rl.GetTime() - ui.gif_hover_at >= GIF_SEARCH_DELAY {
 		gif_choose(ui, items[hover], .Preview)
 	}

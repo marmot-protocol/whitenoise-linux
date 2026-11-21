@@ -63,6 +63,9 @@ Prefs :: struct {
 	centered_chat:         bool,
 	message_lines:         int, // 0 never collapses message bodies
 	reduce_motion:         bool, // snaps every transition; nothing animates
+	motion_override:       bool, // false with reduce_motion set is the legacy explicit On
+	high_contrast:         bool,
+	contrast_override:     bool,
 	hand_drawn_disabled:   bool, // only affects packs that opt into drawn material
 	theme_font_disabled:   bool, // only affects packs that ship their own typeface
 	body_font:             int, // message-body px delta; -2/0/+2 = small/default/large

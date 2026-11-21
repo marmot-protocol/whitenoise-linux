@@ -53,6 +53,8 @@ finish-args:
   - --filesystem=xdg-download
   - --filesystem=~/.local/state/omarchy/current:ro
   - --filesystem=xdg-config/omarchy:ro
+  # Din replaces gtk.css on theme changes. Mount the directory, not the file.
+  - --filesystem=xdg-config/gtk-4.0:ro
 
 cleanup:
   - /include
