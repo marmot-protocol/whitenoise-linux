@@ -832,6 +832,10 @@ if [ "${1:-}" = test ]; then
   "$HERE/build/speech-decode-test"
   WN_ODIN_TEST_BUILD_KEY="$(build_cache_key "$APP_OBJECT_KEY $APP_KEY" "$HERE/tests/odin.sh" "$HERE/tests/app" "$HERE/scripts/build-cache.sh")"
   export WN_ODIN_TEST_BUILD_KEY
+  din_tests=()
+  if [ "$(uname -s)" = Linux ]; then
+    din_tests=(theme_din_live)
+  fi
   env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app --isolated \
     rail_default_window rail_expand_narrow status_bar_viewports \
     mobile_shell_viewports mobile_touch_scrolling mobile_onboard_viewport \
@@ -840,6 +844,6 @@ if [ "${1:-}" = test ]; then
     restore_chat_dispatch folder_count_dispatch new_chat_reset_dispatch test_emoji_save_io_dispatch \
     backup_password_dispatch invite_input_dispatch recent_folder_filters nerd_font_fallback \
     chat_timestamp_hover export_password_dispatch relay_input_dispatch settings_viewport \
-    theme_gallery_interactions test_emoji_save_dispatch wallpaper_proportions
+    theme_gallery_interactions test_emoji_save_dispatch wallpaper_proportions "${din_tests[@]}"
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app/sdlrl
 fi

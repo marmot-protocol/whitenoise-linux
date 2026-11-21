@@ -788,6 +788,7 @@ md_table :: proc(
 	width: f32 = 480,
 	depth: u16 = 0,
 	cell_links: [][][dynamic]Inline_Link = nil,
+	ink: nendo.Color = {},
 ) {
 	if len(cells) == 0 {
 		return
@@ -831,6 +832,7 @@ md_table :: proc(
 			if nendo.box(nendo.id("MsgTableRow", id + u32(r) * 64))(
 			{color = md_hover(depth + 1, r == 0 ? PLATE : {})},
 			) {
+				row_fill := md_hover(depth + 1, r == 0 ? PLATE : {})
 				for c in 0 ..< cols {
 					text := c < len(row) ? row[c] : ""
 					pad := u16(min(f32(MD_TABLE_PAD), widths[c] / 4))
@@ -849,6 +851,17 @@ md_table :: proc(
 						},
 					},
 					) {
+						color := ink.a == 0 ? TEXT : ink
+						if ink.a != 0 {
+							fill := md_hover(depth + 2, row_fill)
+							if fill.a != 0 {
+								color = readable_ink(
+									ink,
+									mix_color(CARD, fill, fill.a / 255),
+									high_contrast_enabled(g_prefs) ? 7 : 4.5,
+								)
+							}
+						}
 						fonts :=
 							r < len(cell_fonts) && c < len(cell_fonts[r]) ? cell_fonts[r][c] : ""
 						if r == 0 && len(fonts) == 0 {
@@ -872,7 +885,7 @@ md_table :: proc(
 									(id + u32(r) * 64 + u32(c)) * 128 + line.index,
 									text[line.start:line.end],
 									13,
-									TEXT,
+									color,
 									fonts = text_fonts(fonts, line.start, line.end),
 									links = r < len(cell_links) && c < len(cell_links[r]) ? cell_links[r][c][:] : nil,
 									offset = line.start,
@@ -941,7 +954,9 @@ md_blocks :: proc(
 	indent_base: u16 = 0,
 	lines_used: ^int = nil,
 	emoji := Emoji_Scale.Inline,
+	ink: nendo.Color = {},
 ) -> bool {
+	body_ink := ink.a == 0 ? TEXT : ink
 	remaining := max_lines
 	defer {if lines_used != nil {lines_used^ = max_lines - remaining}}
 	tail := len(blocks)
@@ -1010,6 +1025,7 @@ md_blocks :: proc(
 						quote_level + 1,
 						max(indent_base, block.indent),
 						&used,
+						ink = ink,
 					)
 				}
 			}
@@ -1030,7 +1046,7 @@ md_blocks :: proc(
 					block_id + 1,
 					block.text,
 					BODY_FS,
-					block.kind == .Quote ? TEXT_DIM : TEXT,
+					block.kind == .Quote && ink.a == 0 ? TEXT_DIM : body_ink,
 					selectable,
 					width,
 					remaining,
@@ -1070,7 +1086,7 @@ md_blocks :: proc(
 							block_id + 1,
 							block.text,
 							size,
-							TEXT,
+							body_ink,
 							selectable,
 							max(f32(1), width - gutter),
 							remaining,
@@ -1231,7 +1247,7 @@ md_blocks :: proc(
 							}
 						} else {nendo.text(
 								marker,
-								{font = FONT_BODY, size = BODY_FS, color = TEXT},
+								{font = FONT_BODY, size = BODY_FS, color = body_ink},
 							)}
 					}
 					if nendo.box(nendo.id("MsgListBody", block_id))({direction = .Column}) {
@@ -1239,7 +1255,7 @@ md_blocks :: proc(
 							block_id + 2,
 							block.text[block.marker_len:],
 							BODY_FS,
-							TEXT,
+							body_ink,
 							selectable,
 							width > 0 ? max(f32(1), width - 12 - marker_w) : 0,
 							remaining,
@@ -1265,6 +1281,7 @@ md_blocks :: proc(
 					width,
 					quote_level + block.indent / 24,
 					block.cell_links,
+					ink,
 				)
 			}
 		}
@@ -1403,6 +1420,7 @@ Excerpt :: struct {
 @(private)
 Excerpt_Source :: enum {
 	Message,
+	Cover,
 	Embed,
 }
 
@@ -1466,6 +1484,7 @@ excerpt_body :: proc(
 						limit,
 						lines_used = &lines,
 						emoji = emoji,
+						ink = source != .Embed && MESSAGE_SURFACE_TEXT ? color : {},
 					) ||
 					more
 				more ||= lines > threshold

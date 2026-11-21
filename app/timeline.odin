@@ -870,20 +870,35 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 		g_ui.selected < len(g_ui.chats) &&
 		g_ui.chats[g_ui.selected].group_id == g_ui.prefs.notes_group
 	base := THEME_WALLPAPER != nil || BACKDROP != "" ? fade(BG, 0.94) : nendo.Color{}
-	if msg.mine && !notes {base = mix_color(base, SELECTED, 0.22)}
+	if MESSAGE_SURFACE_TEXT {
+		base = CARD
+		if msg.mine && !notes {base = mix_color(base, ACCENT, 0.12)}
+	} else if msg.mine && !notes {base = mix_color(base, SELECTED, 0.22)}
 	glow := max(fresh * 0.85, gs_jump_glow(msg.id))
+	row_fill :: proc(base: nendo.Color, selected, hover: bool, glow: f32) -> nendo.Color {
+		return(
+			selected ? SELECTED : mix_color(hover && !rl.HasTouch() ? HOVER : base, SELECTED, glow) \
+		)
+	}
 	if nendo.box(nendo.id("MsgRow", index))(
 	{
 		width = nendo.grow(),
 		height = collapsing ? nendo.fixed(collapse_h) : {},
 		padding = {left = 16, right = 16, top = pad_top, bottom = MSG_PAD_Y},
 		gap = 10,
-		color = editing || replying ? SELECTED : mix_color(!rl.HasTouch() && hovered() ? HOVER : base, SELECTED, glow),
+		color = row_fill(base, editing || replying, hovered(), glow),
 		border = editing || replying ? nendo.Border{color = ACCENT, width = {left = 3}} : (msg.mine && !notes ? nendo.Border{color = ACCENT_DIM, width = {left = 2}} : {}),
 		clip = collapsing ? nendo.Clip{y = true} : {},
 	},
 	) {
 		row_hovered := hovered()
+		message_ink := TEXT
+		if MESSAGE_SURFACE_TEXT {
+			fill := row_fill(base, editing || replying, row_hovered, glow)
+			solid := mix_color(CARD, fill, fill.a / 255)
+			message_ink = readable_ink(CARD_TEXT, solid, high_contrast_enabled(g_prefs) ? 7 : 4.5)
+		}
+		markdown_ink := MESSAGE_SURFACE_TEXT ? message_ink : nendo.Color{}
 		burst_layer(index, msg.id) // particle effect anchored to this row
 		if notes {
 			// Self notes need no repeated sender identity or avatar gutter.
@@ -1684,7 +1699,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			rendition := g_ui != nil ? translation_lookup(g_ui, msg) : nil
 			translated := rendition != nil && rendition.phase == .Ready && rendition.show
 			if translated {
-				body_text(index * 4096, rendition.text, 14, TEXT, true)
+				body_text(index * 4096, rendition.text, 14, message_ink, true)
 			}
 			giphy := !translated && !msg.deleted && giphy_message(index, msg.body)
 			// GIPHY already owns the download, including its loading fallback.
@@ -1705,9 +1720,9 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				!replaced &&
 				len(msg.blocks) == 0 &&
 				!msg.deleted &&
-				message_excerpt(index * 4096, msg.body, TEXT, msg.excerpt)
+				message_excerpt(index * 4096, msg.body, message_ink, msg.excerpt)
 			if !replaced && !cropped && len(msg.blocks) == 0 && len(msg.body) > 0 {
-				body_text(index * 4096, msg.body, 14, TEXT, true, emoji = .Jumbo)
+				body_text(index * 4096, msg.body, 14, message_ink, true, emoji = .Jumbo)
 			}
 
 			// A shared theme: swatches off the pack itself, so the offer
@@ -1734,7 +1749,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 				   msg.blocks[:],
 				   msg.excerpt,
 				   body_wrap_w(),
-				   TEXT,
+				   message_ink,
 				   emoji = .Jumbo,
 			   ) {
 				message_more(index * 4096, msg.excerpt)
@@ -1755,7 +1770,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					block_id :=
 						layer == 0 ? index * 4096 : 0x60000008 + index * 65536 + u32(layer) * 4096
 					if layer == len(msg.secrets) {
-						md_blocks(blocks, block_id, true)
+						md_blocks(blocks, block_id, true, ink = markdown_ink)
 						continue
 					}
 					// Leave Markdown above an emoji carrier outside its outline.
@@ -1764,7 +1779,7 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 					if last > 0 &&
 					   blocks[last].kind == .Para &&
 					   text_emoji(strings.trim_space(blocks[last].text)) != nil {
-						md_blocks(blocks[:last], block_id, true)
+						md_blocks(blocks[:last], block_id, true, ink = markdown_ink)
 						block_id += u32(last) * 16
 						carrier[0] = blocks[last]
 						carrier[0].blank_lines_before = 0
@@ -1787,11 +1802,16 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 								blocks,
 								msg.excerpt,
 								body_wrap_w() - 16,
-								TEXT,
-								.Embed,
+								message_ink,
+								.Cover,
 							)
 						} else {
-							md_blocks(blocks, block_id, wrap_w = body_wrap_w() - 16)
+							md_blocks(
+								blocks,
+								block_id,
+								wrap_w = body_wrap_w() - 16,
+								ink = markdown_ink,
+							)
 						}
 						if hovered() {
 							tooltip(

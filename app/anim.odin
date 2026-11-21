@@ -210,7 +210,7 @@ ease_out :: proc(t: f32) -> f32 {
 // (flights, bursts, the theme reveal, shake) never start, so the app
 // still changes state, it just stops moving.
 motion_on :: proc() -> bool {
-	return g_prefs == nil || !g_prefs.reduce_motion
+	return !reduce_motion_enabled(g_prefs)
 }
 
 // Slow at both ends: the curve for something crossing the screen.

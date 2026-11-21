@@ -46,6 +46,7 @@ SETTINGS_TASKS := []Settings_Task {
 	},
 	{.Appearance, N_("Change the scroll speed"), "RowScroll", "mouse wheel", false},
 	{.Appearance, N_("Reduce motion"), "RowMotion", "animation accessibility", false},
+	{.Appearance, N_("Increase contrast"), "RowContrast", "accessibility text borders", false},
 	{
 		.Appearance,
 		N_("Center the conversation"),

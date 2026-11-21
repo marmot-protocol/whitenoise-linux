@@ -460,11 +460,13 @@ if ! cross_fresh app-object "$KEY" "$OUT/app.o"; then
   cross_store app-object "$KEY" "$OUT/app.o"
 fi
 APP_LINK_ARGS=()
+APP_PKGS=(sdl3 mpv libcurl openssl)
 if [ "$SYSTEM" = Windows ]; then
   APP_LINK_ARGS=("${WINDOWS_RUNTIME[@]}" "$OUT/velopack/libvelopack_libc.dll.a")
 elif [ "$SYSTEM" = Linux ]; then
   # System libssl must not resolve crypto calls to Marmot's bundled OpenSSL.
   APP_LINK_ARGS=(-Wl,--exclude-libs=libmarmot_c.a "$OUT/libwnappimage.a")
+  APP_PKGS+=(gio-2.0)
 elif [ "$SYSTEM" = Darwin ]; then
   APP_LINK_ARGS=("$OUT/libwnsparkle.a")
 fi
@@ -475,13 +477,13 @@ Windows) APP_LINK_INPUTS+=("${WINDOWS_RUNTIME[@]}" "$OUT/velopack/libvelopack_li
 Linux) APP_LINK_INPUTS+=("$OUT/libwnappimage.a") ;;
 Darwin) APP_LINK_INPUTS+=("$OUT/libwnsparkle.a") ;;
 esac
-APP_PKG_KEY="$(cross_pkg_key sdl3 mpv libcurl openssl)"
+APP_PKG_KEY="$(cross_pkg_key "${APP_PKGS[@]}")"
 KEY="$(cross_key "$LINK_ID app-link $APP_PKG_KEY ${APP_LINK_ARGS[*]}" "${APP_LINK_INPUTS[@]}")"
 if ! cross_fresh app-link "$KEY" "$OUT/whitenoise$EXE"; then
   "$CC" "${CFLAGS[@]}" "$OUT/app.o" "${APP_LINK_ARGS[@]}" \
     "$OUT/libwnws.a" "$OUT/libwnipc.a" "$OUT/libwndecoder.a" "$OUT/libwntimestamp.a" \
     "$OUT/stb/stb.a" "$OUT/libmarmot_c.a" \
-    $(pkg-config --libs sdl3 mpv libcurl openssl) \
+    $(pkg-config --libs "${APP_PKGS[@]}") \
     "${SYSTEM_LIBS[@]}" "${RPATH[@]}" -o "$OUT/whitenoise$EXE"
   cross_store app-link "$KEY" "$OUT/whitenoise$EXE"
 fi

@@ -14,9 +14,12 @@ Row_Chip :: enum {
 }
 
 @(private)
-chat_timestamp :: proc(index: u32, chat: Chat_Row_Ui) {
+chat_timestamp :: proc(index: u32, chat: Chat_Row_Ui, ink: nendo.Color = {}) {
 	if nendo.box(nendo.id("ChatRowTime", index))({}) {
-		nendo.text(chat.at, {font = FONT_BODY, size = 11, color = TEXT_LO, wrap = .None})
+		nendo.text(
+			chat.at,
+			{font = FONT_BODY, size = 11, color = ink.a == 0 ? TEXT_LO : ink, wrap = .None},
+		)
 		if hovered() && !tap_size() && chat.activity_at > 0 && len(chat.at) > 0 {
 			context.allocator = context.temp_allocator
 			tooltip(format_full(chat.activity_at), .Above)
@@ -374,6 +377,13 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 			radius = rr(6),
 		},
 		) {
+			title_ink, detail_ink := SIDEBAR_TEXT, SIDEBAR_DIM
+			if SIDEBAR_SURFACE_TEXT {
+				fill :=
+					active ? SELECTED : hovered() ? mix_color(PANEL, HOVER, HOVER.a / 255) : PANEL
+				title_ink = readable_ink(title_ink, fill)
+				detail_ink = readable_ink(detail_ink, fill)
+			}
 			if nendo.box(nendo.id("ChatRowBar", index))(
 			{
 				width = nendo.fixed(3),
@@ -427,7 +437,12 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							) {
 								nendo.text(
 									chat.title,
-									{font = FONT_TITLE, size = 14, color = TEXT, wrap = .None},
+									{
+										font = FONT_TITLE,
+										size = 14,
+										color = title_ink,
+										wrap = .None,
+									},
 								)
 							}
 							// Row-action markers (rowactions.odin): pinned rows lead
@@ -462,7 +477,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 							if chat.unread > 0 {
 								unread_badge(nendo.id("ChatRowBadge", index), chat.unread)
 							}
-							chat_timestamp(index, chat)
+							chat_timestamp(index, chat, detail_ink)
 							// Archive and the other row actions live in this menu,
 							// which right-click and long-press also open. A finger
 							// uses long-press; a pointer on a narrow window gets the
@@ -505,7 +520,11 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 									clip = {x = true},
 								},
 								) {
-									row_preview(index, chat.preview)
+									row_preview(
+										index,
+										chat.preview,
+										SIDEBAR_SURFACE_TEXT ? detail_ink : TEXT_DIM,
+									)
 								}
 							} else if nendo.box(nendo.id("ChatRowPrevGap", index))(
 							{width = nendo.grow()},
@@ -538,7 +557,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 //   Are you still coming to the marmot meetup to|   clipped
 //   Are you still coming to the marmot meetup…   |   fitted
 @(private)
-row_preview :: proc(index: u32, preview: string) {
+row_preview :: proc(index: u32, preview: string, ink: nendo.Color = {}) {
 	tile_px := body_tile_size(preview, 12)
 	end := strings.index_byte(preview, '\n')
 	if end < 0 {
@@ -554,7 +573,7 @@ row_preview :: proc(index: u32, preview: string) {
 		cut := rune_fit(preview, 0, end, room, 12, tile_px = tile_px)
 		shown = fmt.tprintf("%s…", strings.trim_right_space(preview[:cut]))
 	}
-	body_line(0xC0000 + index, shown, 12, TEXT_DIM, tile_px = tile_px)
+	body_line(0xC0000 + index, shown, 12, ink.a == 0 ? TEXT_DIM : ink, tile_px = tile_px)
 }
 
 // What the rail row says about this chat's optimistic sends

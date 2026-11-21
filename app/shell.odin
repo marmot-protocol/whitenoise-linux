@@ -660,11 +660,11 @@ status_bar :: proc(ui: ^Ui_State) {
 
 		syncing := rl.GetTime() - sync_at < SYNCING_SECS
 		if !single_pane() {
-			status_pill("RelayPill", relay_counter(ui), TEXT_LO, false)
+			status_pill("RelayPill", relay_counter(ui), HEADER_DIM, false)
 			status_pill(
 				"SyncPill",
 				syncing ? tr("SYNCING") : tr("SYNCED"),
-				syncing ? ACCENT : TEXT_LO,
+				syncing ? ACCENT : HEADER_DIM,
 				false,
 			)
 		}
@@ -678,8 +678,8 @@ status_bar :: proc(ui: ^Ui_State) {
 			if f32(rl.GetScreenWidth()) / UI_ZOOM < HINTS_W {
 				break
 			}
-			nendo.text(hint[0], {font = FONT_MONO, size = 10, color = TEXT_DIM, spacing = 1})
-			nendo.text(hint[1], {font = FONT_MONO, size = 10, color = TEXT_LO, spacing = 2})
+			nendo.text(hint[0], {font = FONT_MONO, size = 10, color = HEADER_TEXT, spacing = 1})
+			nendo.text(hint[1], {font = FONT_MONO, size = 10, color = HEADER_DIM, spacing = 2})
 		}
 	}
 }
@@ -943,7 +943,7 @@ tooltip :: proc(text: string, side: Tip_Side = .Below, shift_x: f32 = 0) {
 		for line in strings.split_lines_iterator(&rest) {
 			nendo.text(
 				text_ellipsis(line, width - 16, FONT_BODY, 11),
-				{font = FONT_BODY, size = 11, color = TEXT, wrap = .None},
+				{font = FONT_BODY, size = 11, color = POPOVER_TEXT, wrap = .None},
 			)
 		}
 	}

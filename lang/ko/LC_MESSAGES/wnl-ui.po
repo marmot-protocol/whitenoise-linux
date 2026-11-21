@@ -2749,6 +2749,9 @@ msgstr "사용 중: %s."
 msgid "Incoming messages"
 msgstr "수신 메시지"
 
+msgid "Increase contrast"
+msgstr "대비 높이기"
+
 msgid "Indonesian"
 msgstr "인도네시아어"
 
@@ -3112,6 +3115,9 @@ msgstr "White Noise를 원하는 방식으로 설정하세요."
 
 msgid "Make everything larger or smaller."
 msgstr "화면 전체를 크게 또는 작게 표시합니다."
+
+msgid "Make text and borders easier to see."
+msgstr "텍스트와 테두리를 더 쉽게 볼 수 있게 합니다."
 
 msgid "Make this member an admin?"
 msgstr "이 멤버를 관리자로 지정하시겠습니까?"
@@ -5001,6 +5007,12 @@ msgstr "신스웨이브"
 
 msgid "System"
 msgstr "시스템"
+
+msgid "System (off)"
+msgstr "시스템 (꺼짐)"
+
+msgid "System (on)"
+msgstr "시스템 (켜짐)"
 
 msgid "TAGS"
 msgstr "태그"

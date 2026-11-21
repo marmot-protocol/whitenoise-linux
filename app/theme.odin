@@ -83,6 +83,7 @@ Theme_Pack :: struct {
 	bg, panel, panel_2, rail, elevated, card_border:        nendo.Color,
 	status_bar, banner, canvas_top:                         nendo.Color,
 	text_hi, text_mid, text_lo, text_vlo:                   nendo.Color,
+	sidebar_text, card_text, header_text, popover_text:     nendo.Color,
 	field, field_hover, field_border, hover, plate:         nendo.Color,
 	control:                                                nendo.Color, // button face, distinct from a text field
 	tooltip:                                                nendo.Color,
@@ -155,6 +156,10 @@ Theme_Token :: enum {
 	Text_Mid,
 	Text_Lo,
 	Text_Vlo,
+	Sidebar_Text,
+	Card_Text,
+	Header_Text,
+	Popover_Text,
 	Field,
 	Field_Hover,
 	Control,
@@ -284,6 +289,10 @@ THEME_TOKENS := [Theme_Token]Theme_Token_Descriptor {
 	.Text_Mid              = {"text-mid", .Color, offset_of(Theme_Pack, text_mid)},
 	.Text_Lo               = {"text-lo", .Color, offset_of(Theme_Pack, text_lo)},
 	.Text_Vlo              = {"text-vlo", .Color, offset_of(Theme_Pack, text_vlo)},
+	.Sidebar_Text          = {"sidebar-text", .Color, offset_of(Theme_Pack, sidebar_text)},
+	.Card_Text             = {"card-text", .Color, offset_of(Theme_Pack, card_text)},
+	.Header_Text           = {"header-text", .Color, offset_of(Theme_Pack, header_text)},
+	.Popover_Text          = {"popover-text", .Color, offset_of(Theme_Pack, popover_text)},
 	.Field                 = {"field", .Color, offset_of(Theme_Pack, field)},
 	.Field_Hover           = {"field-hover", .Color, offset_of(Theme_Pack, field_hover)},
 	.Control               = {"control", .Color, offset_of(Theme_Pack, control)},
@@ -490,17 +499,52 @@ luma :: proc(c: nendo.Color) -> f32 {
 BLACK :: nendo.Color{0, 0, 0, 255}
 WHITE :: nendo.Color{255, 255, 255, 255}
 
+@(private)
+theme_luminance :: proc(color: nendo.Color) -> f32 {
+	linear :: proc(c: f32) -> f32 {
+		c := c / 255
+		return c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4)
+	}
+	return 0.2126 * linear(color.r) + 0.7152 * linear(color.g) + 0.0722 * linear(color.b)
+}
+
+@(private)
+theme_contrast :: proc(a, b: nendo.Color) -> f32 {
+	x, y := theme_luminance(a), theme_luminance(b)
+	return (max(x, y) + 0.05) / (min(x, y) + 0.05)
+}
+
+@(private)
+readable_ink :: proc(preferred, fill: nendo.Color, minimum: f32 = 4.5) -> nendo.Color {
+	if theme_contrast(mix(fill, preferred, preferred.a / 255), fill) >= minimum {
+		return preferred
+	}
+	return ink_on(fill)
+}
+
+@(private)
+surface_ink :: proc(surface, fallback, fill: nendo.Color, contrast: bool) -> nendo.Color {
+	preferred := surface.a == 0 ? fallback : surface
+	return(
+		surface.a == 0 && !contrast ? preferred : readable_ink(preferred, fill, contrast ? 7 : 4.5) \
+	)
+}
+
+@(private)
+surface_dim_ink :: proc(surface, fallback, fill: nendo.Color, contrast: bool) -> nendo.Color {
+	if surface.a == 0 || contrast {return surface_ink(surface, fallback, fill, contrast)}
+	dim := mix(surface, fill, 0.22)
+	if theme_contrast(dim, fill) >= 4.5 {return dim}
+	return readable_ink(surface, fill)
+}
+
 // Black or white, whichever has the higher WCAG contrast on fill. The
 // two tie at relative luminance 0.179, where (L + 0.05)^2 = 0.05 * 1.05,
 // so the winner always reaches at least 4.58:1 (amber gets black, navy
 // gets white).
 @(private)
 ink_on :: proc(fill: nendo.Color) -> nendo.Color {
-	linear :: proc(c: f32) -> f32 {
-		c := c / 255
-		return c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4)
-	}
-	lum := 0.2126 * linear(fill.r) + 0.7152 * linear(fill.g) + 0.0722 * linear(fill.b)
+	lum := theme_luminance(fill)
 	black_contrast := (lum + 0.05) / 0.05
 	white_contrast := 1.05 / (lum + 0.05)
 	return black_contrast >= white_contrast ? BLACK : WHITE
@@ -842,6 +886,7 @@ resolve_base :: proc(base: string) -> Theme_Pack {
 load_themes :: proc() {
 	// Idempotent: a second call reloads rather than appending a second
 	// copy of every pack.
+	if system_theme_index >= 0 {delete(theme_packs[system_theme_index].source)}
 	clear(&theme_packs)
 	for source in THEME_SOURCES {
 		base := resolve_base(toml_str_key(source.source, "base"))

@@ -113,7 +113,7 @@ theme_gallery_interactions :: proc(t: ^testing.T) {
 		native_box.y < sidecar_box.y && sidecar_box.y < custom_box.y,
 		"Source groups must preserve the real indices and put custom themes last",
 	)
-	if system_theme_index >= 0 && theme_packs[system_theme_index].tone == ui.theme_tone {
+	if system_theme_index >= 0 {
 		box := nendo.element(nendo.id("ThemeOpt", u32(system_theme_index))).rect
 		testing.expect(t, box.y < native_box.y, "System must precede the source collections")
 	}
@@ -235,7 +235,7 @@ theme_gallery_interactions :: proc(t: ^testing.T) {
 	gallery_click(&ui, nendo.id("ThemeOpt", u32(native)))
 	testing.expect(t, !nendo.element(nendo.id("ThemeSourceNotice")).found)
 	if system_theme_index >= 0 {
-		ui.theme_tone = theme_packs[system_theme_index].tone
+		ui.theme_tone = theme_packs[system_theme_index].tone == .Light ? .Dark : .Light
 		gallery_frames(&ui)
 		gallery_click(&ui, nendo.id("ThemeOpt", u32(system_theme_index)))
 		testing.expect_value(t, ui.theme, system_theme_index)
@@ -263,7 +263,8 @@ theme_gallery_interactions :: proc(t: ^testing.T) {
 		"BodyFontChip0",
 		"EmojiSetChip0",
 		"ScrollChip0",
-		"TgMotion",
+		"Motion0",
+		"Contrast0",
 		"TgCentered",
 		"MessageLinesPlus",
 		"AvatarShapeChip0",
@@ -445,7 +446,7 @@ gallery_filter_check :: proc(t: ^testing.T, ui: ^Ui_State) {
 		tile := nendo.element(nendo.id("ThemeOpt", u32(i)))
 		testing.expect(
 			t,
-			tile.found == (pack.tone == ui.theme_tone),
+			tile.found == (i == system_theme_index || pack.tone == ui.theme_tone),
 			"The gallery must expose exactly the tiles in its active tone filter",
 		)
 	}

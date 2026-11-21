@@ -2,7 +2,12 @@
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 
+import "base:runtime"
+import "core:fmt"
+import "core:os"
+import "core:strings"
 import "core:testing"
+import "core:time"
 
 @(test)
 theme_hex_color :: proc(t: ^testing.T) {
@@ -66,6 +71,10 @@ theme_amoled_monochrome :: proc(t: ^testing.T) {
 		#partial switch descriptor.kind {
 		case .Color:
 			color := (cast(^[4]f32)entry)^
+			#partial switch token {
+			case .Sidebar_Text, .Card_Text, .Header_Text, .Popover_Text:
+				if color.a == 0 {continue} 	// Use the regular foreground.
+			}
 			testing.expect(t, color == BLACK || color == WHITE)
 		case .Colors, .Ink:
 			for color in (cast(^[5][4]f32)entry)^ {
@@ -242,5 +251,170 @@ theme_system_palette :: proc(t: ^testing.T) {
 	for source in ([]string{"", "background = \"#112233\"", "background = \"#112233\"\nforeground = \"#ffffff\"\naccent = \"#GGGGGG\"", "background = \"#112233\"\nforeground = \"#ffffff\"\naccent = \"#1234567\""}) {
 		_, ok := parse_system_theme(source)
 		testing.expect(t, !ok)
+	}
+}
+
+DIN_NATIVE_CSS :: `/* Din's colors: Din rewrites this block when its theme changes. Add your own below it. */
+@define-color accent_bg_color #c98a4b;
+@define-color accent_fg_color #ffffff;
+@define-color destructive_bg_color #dc2828;
+@define-color window_bg_color #131518;
+@define-color window_fg_color #ece6da;
+@define-color view_bg_color #171a1e;
+@define-color headerbar_bg_color #202326;
+@define-color headerbar_fg_color #f0f1f2;
+@define-color headerbar_border_color #5d4d3c;
+@define-color sidebar_bg_color #222426;
+@define-color sidebar_fg_color #f3f4f5;
+@define-color sidebar_border_color #494132;
+@define-color card_bg_color #292c30;
+@define-color card_fg_color #eaebec;
+@define-color popover_bg_color #303236;
+@define-color popover_fg_color #e7e8e9;
+:root {
+  --window-bg-color: #131518;
+}
+/* End of Din's colors */
+
+@define-color window_bg_color #ff0000;
+`
+
+@(test)
+theme_din_palette :: proc(t: ^testing.T) {
+	pack, ok := parse_din_theme(DIN_NATIVE_CSS)
+	if !testing.expect(t, ok) {return}
+	defer delete(pack.source)
+	testing.expect_value(t, pack.name, "System")
+	testing.expect_value(t, pack.mode, "@system")
+	testing.expect_value(t, pack.collection, Theme_Collection.System)
+	testing.expect_value(t, pack.tone, Theme_Tone.Dark)
+	testing.expect_value(t, pack.bg, [4]f32{19, 21, 24, 255})
+	testing.expect_value(t, pack.text_hi, [4]f32{236, 230, 218, 255})
+	testing.expect_value(t, pack.field, [4]f32{23, 26, 30, 255})
+	testing.expect_value(t, pack.status_bar, [4]f32{32, 35, 38, 255})
+	testing.expect_value(t, pack.panel, [4]f32{34, 36, 38, 255})
+	testing.expect_value(t, pack.elevated, [4]f32{41, 44, 48, 255})
+	testing.expect_value(t, pack.tooltip, [4]f32{48, 50, 54, 255})
+	testing.expect_value(t, pack.sidebar_text, [4]f32{243, 244, 245, 255})
+	testing.expect_value(t, pack.card_text, [4]f32{234, 235, 236, 255})
+	testing.expect_value(t, pack.header_text, [4]f32{240, 241, 242, 255})
+	testing.expect_value(t, pack.popover_text, [4]f32{231, 232, 233, 255})
+	testing.expect_value(t, pack.card_border, [4]f32{73, 65, 50, 255})
+	testing.expect_value(t, pack.divider, [4]f32{93, 77, 60, 255})
+	testing.expect_value(t, pack.danger, [4]f32{220, 40, 40, 255})
+	for accent, i in pack.accent_base {
+		testing.expect_value(t, accent, [4]f32{201, 138, 75, 255})
+		testing.expect_value(t, pack.on_accent[i], BLACK)
+	}
+	testing.expect_value(t, theme_offer_name(pack.source), "Din")
+	snapshot := parse_theme("Din", "din", pack.source, default_pack())
+	testing.expect_value(t, snapshot.panel, pack.panel)
+	testing.expect_value(t, snapshot.on_accent, pack.on_accent)
+	testing.expect_value(t, snapshot.card_text, pack.card_text)
+
+	// #797979 falls between the app's default cutoff and Din's 0.2 cutoff.
+	for bg in ([2]string{"#797979", "#eeeeee"}) {
+		css, _ := strings.replace_all(DIN_NATIVE_CSS, "#131518", bg, context.temp_allocator)
+		css, _ = strings.replace_all(css, "#c98a4b", "#113355", context.temp_allocator)
+		next, valid := parse_din_theme(css)
+		if !testing.expect(t, valid) {continue}
+		defer delete(next.source)
+		testing.expect_value(t, next.tone, bg == "#797979" ? Theme_Tone.Dark : .Light)
+		testing.expect(t, next.on_accent_explicit)
+		testing.expect_value(t, next.on_accent[0], WHITE)
+	}
+
+	for edit in ([][2]string{{"/* End of Din's colors */", ""}, {"#dc2828", "#GGGGGG"}, {"sidebar_bg_color", "window_bg_color"}, {"/* Din's colors:", "/* Local override:"}}) {
+		bad, _ := strings.replace_all(DIN_NATIVE_CSS, edit[0], edit[1], context.temp_allocator)
+		_, valid := parse_din_theme(bad)
+		testing.expect(t, !valid)
+	}
+}
+
+// Run alone: this test owns the theme registry, renderer colors and environment.
+@(test)
+theme_din_live :: proc(t: ^testing.T) {
+	when ODIN_OS == .Linux {
+		if !test_isolated("theme_din_live") {return}
+		context.allocator = runtime.default_context().allocator
+		home, err := os.make_directory_temp("", "wn-din-theme", context.temp_allocator)
+		if !testing.expect(t, err == nil) {return}
+		defer os.remove_all(home)
+		if !testing.expect(t, os.set_env("XDG_CONFIG_HOME", home) == nil) ||
+		   !testing.expect(t, os.set_env("DIN_DESKTOP_SESSION", "1") == nil) {return}
+		load_themes()
+		defer stop_system_theme()
+		if !testing.expect(t, system_theme_index >= 0) {return}
+		dir := fmt.tprintf("%s/gtk-4.0", home)
+		path, temporary := fmt.tprintf("%s/gtk.css", dir), fmt.tprintf("%s/gtk.css.tmp", dir)
+		if !testing.expect(t, os.make_directory(dir) == nil) {return}
+
+		ui := Ui_State {
+			theme = system_theme_index,
+		}
+		apply_theme(ui.theme, 0)
+		testing.expect_value(t, BG, theme_packs[0].bg)
+		publish :: proc(t: ^testing.T, temporary, path, css: string) -> bool {
+			return(
+				testing.expect(t, os.write_entire_file(temporary, transmute([]u8)css) == nil) &&
+				testing.expect(t, os.rename(temporary, path) == nil) \
+			)
+		}
+		wait_for :: proc(ui: ^Ui_State, want: [4]f32, now: f64) -> bool {
+			for _ in 0 ..< 1000 {
+				poll_system_theme(ui, now)
+				if theme_packs[system_theme_index].bg == want {return true}
+				time.sleep(time.Millisecond)
+			}
+			return false
+		}
+		desktop := read_din_appearance()
+		if desktop.tone == .Light {
+			if !testing.expect(t, wait_for(&ui, theme_packs[1].bg, 0)) {return}
+			testing.expect_value(t, BG, theme_packs[1].bg)
+		}
+		if !publish(t, temporary, path, DIN_NATIVE_CSS) {return}
+		dark := [4]f32{19, 21, 24, 255}
+		if !testing.expect(t, wait_for(&ui, dark, 1)) {return}
+		testing.expect_value(t, BG, dark)
+		testing.expect_value(t, reduce_motion_enabled(&ui.prefs), desktop.reduce_motion)
+		testing.expect_value(t, high_contrast_enabled(&ui.prefs), desktop.high_contrast)
+		ui.prefs.motion_override, ui.prefs.reduce_motion = true, !desktop.reduce_motion
+		ui.prefs.contrast_override, ui.prefs.high_contrast = true, !desktop.high_contrast
+		testing.expect_value(t, reduce_motion_enabled(&ui.prefs), !desktop.reduce_motion)
+		testing.expect_value(t, high_contrast_enabled(&ui.prefs), !desktop.high_contrast)
+		ui.prefs.high_contrast = true
+		g_prefs = &ui.prefs
+		defer g_prefs = nil
+		apply_theme(ui.theme, 0)
+		testing.expect_value(t, TEXT_DIM, TEXT)
+		testing.expect(t, theme_contrast(CARD_BORDER, CARD) >= 3)
+		testing.expect(t, theme_contrast(CARD_TEXT, CARD) >= 7)
+
+		light, _ := strings.replace_all(
+			DIN_NATIVE_CSS,
+			"#131518",
+			"#eeeeee",
+			context.temp_allocator,
+		)
+		if !publish(t, temporary, path, light) {return}
+		if !testing.expect(t, wait_for(&ui, {238, 238, 238, 255}, 2)) {return}
+		testing.expect_value(t, BG, [4]f32{238, 238, 238, 255})
+		testing.expect_value(t, ui.theme_tone, Theme_Tone.Dark)
+
+		// A desktop change updates the tile but leaves a manual theme alone.
+		ui.theme = 0
+		apply_theme(ui.theme, 0)
+		if !publish(t, temporary, path, DIN_NATIVE_CSS) {return}
+		if !testing.expect(t, wait_for(&ui, dark, 3)) {return}
+		testing.expect_value(t, BG, theme_packs[0].bg)
+		testing.expect_value(t, theme_packs[system_theme_index].tone, Theme_Tone.Dark)
+
+		// Native launches through Din can have its socket but no session flag.
+		if !testing.expect(t, os.unset_env("DIN_DESKTOP_SESSION")) ||
+		   !testing.expect(t, os.set_env("DIN_SOCKET", "/fixture/din.sock") == nil) {return}
+		load_themes()
+		if !testing.expect_value(t, system_theme_index, len(THEME_SOURCES)) {return}
+		testing.expect_value(t, theme_packs[system_theme_index].bg, dark)
 	}
 }
