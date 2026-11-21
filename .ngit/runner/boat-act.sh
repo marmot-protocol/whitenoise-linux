@@ -18,6 +18,10 @@ options+=" --memory=$WN_JOB_MEMORY_BYTES --memory-swap=$WN_JOB_MEMORY_SWAP --pid
 options+=" --volume=/wn-ci:/var/cache/wn-ci --volume=/wn-scratch:/tmp"
 options+=" --volume=wn-pilot-registry:/usr/local/cargo/registry --volume=wn-pilot-git:/usr/local/cargo/git"
 if [[ ${WN_BOAT_STAGING:-} == 1 ]]; then
+  if [[ ${1:-} != push ]]; then
+    echo 'Boat staging only runs push workflows' >&2
+    exit 2
+  fi
   options+=" --privileged --volume=/wn-stage-containers:/var/lib/containers/storage"
 fi
 cargo_jobs=1
