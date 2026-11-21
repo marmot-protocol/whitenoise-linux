@@ -15,7 +15,7 @@ case "${1:-}" in
     available=${available%%kB*}
     memory=$((available * 1024 * 80 / 100))
     if ((memory > 24 * 1024 * 1024 * 1024)); then memory=$((24 * 1024 * 1024 * 1024)); fi
-    limits=(--cpu-period 100000 --cpu-quota "$quota" --memory "${memory}b" --memory-swap "${memory}b")
+    limits=(--cpu-period 100000 --cpu-quota "$quota" --memory "${memory}b" --memory-swap "$((memory + 8 * 1024 * 1024 * 1024))b")
     case "$kind" in
       native | cross)
         definition="packaging/ci/Containerfile"
