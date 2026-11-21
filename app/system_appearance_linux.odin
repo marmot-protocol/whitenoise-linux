@@ -1,6 +1,9 @@
 package main
 
 import "core:c"
+import "core:fmt"
+import "core:os"
+import "core:strings"
 
 foreign import gio {"system:gio-2.0", "system:gobject-2.0", "system:glib-2.0"}
 
@@ -13,7 +16,9 @@ foreign gio {
 
 @(private = "file")
 foreign gio {
-	g_bus_get_sync :: proc "c" (kind: c.int, cancellable, error: rawptr) -> rawptr ---
+	g_dbus_connection_new_for_address_sync :: proc "c" (address: cstring, flags: c.int, observer, cancellable, error: rawptr) -> rawptr ---
+	g_dbus_address_escape_value :: proc "c" (value: cstring) -> cstring ---
+	g_free :: proc "c" (value: rawptr) ---
 	g_dbus_connection_call_sync :: proc "c" (bus: rawptr, destination, path, interface, method: cstring, args, reply_type: rawptr, flags, timeout_ms: c.int, cancellable, error: rawptr) -> rawptr ---
 	g_variant_new_tuple :: proc "c" (children: [^]rawptr, count: c.size_t) -> rawptr ---
 	g_variant_new_string :: proc "c" (value: cstring) -> rawptr ---
@@ -75,7 +80,28 @@ read_setting :: proc(
 // The settings portal exposes Din's GTK preferences even in a Flatpak.
 @(private)
 read_din_appearance :: proc(cancel: rawptr = nil) -> (appearance: System_Appearance) {
-	bus := g_bus_get_sync(2, cancel, nil) // G_BUS_TYPE_SESSION
+	address := os.get_env("DBUS_SESSION_BUS_ADDRESS", context.temp_allocator)
+	// Use an existing bus. GLib's X11 autolaunch cannot be cancelled.
+	parts := address
+	for addr in strings.split_iterator(&parts, ";") {
+		if addr == "autolaunch:" {return}
+	}
+	if address == "" {
+		runtime_dir := os.get_env("XDG_RUNTIME_DIR", context.temp_allocator)
+		if !strings.has_prefix(runtime_dir, "/") {return}
+		path := fmt.ctprintf("%s/bus", runtime_dir)
+		escaped := g_dbus_address_escape_value(path)
+		defer g_free(rawptr(escaped))
+		address = fmt.tprintf("unix:path=%s", string(escaped))
+	}
+	AUTHENTICATED_BUS :: 0x01 | 0x08 // AUTHENTICATION_CLIENT | MESSAGE_BUS_CONNECTION
+	bus := g_dbus_connection_new_for_address_sync(
+		strings.clone_to_cstring(address, context.temp_allocator),
+		AUTHENTICATED_BUS,
+		nil,
+		cancel,
+		nil,
+	)
 	if bus == nil {return}
 	defer g_object_unref(bus)
 	if animations, ok := read_setting(
