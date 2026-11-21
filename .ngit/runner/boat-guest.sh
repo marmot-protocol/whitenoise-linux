@@ -13,6 +13,9 @@ pod=(podman --root "$root/containers" --storage-opt overlay.mount_program=/usr/b
 tar --extract --numeric-owner --file "$root/cargo-cache.tar" -C "$root"
 install -d -m 0755 /run/wn-ci /wn-tools
 install -d -m 1777 /wn-scratch
+if [[ ${WN_BOAT_STAGING:-} == 1 ]]; then
+  install -d -m 0700 /wn-stage-containers
+fi
 ln -s /usr/local/cargo "$root/cargo"
 install -m 0755 /home/user/wn-act.sh /wn-tools/act
 ln -s /usr/bin/podman /wn-tools/docker
