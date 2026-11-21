@@ -39,8 +39,12 @@ The coordinator's signing key and Boat credential never enter job VMs.
 Each job starts in a fresh large VM and discards its disk at teardown.
 Only trusted `master` builds seed snapshots. The PR snapshot
 `wn-ngit-native-70fd486b-pax` holds the Podman SDK and `/wn-ci/cargo-cache.tar`.
-The staging snapshot `wn-ngit-staging-70fd486b-pax` also holds the cross SDK
-OCI archive under `/wn-ci/images/`.
+The staging snapshot `wn-ngit-staging-70fd486b-android-pax` also holds the
+cross SDK OCI archive under `/wn-ci/images/`. Only `release-android.yml`
+restores `/wn-ci/android-cache.tar`. It contains the Android SDK, Cargo
+target and toolchain state, and the stamped native dependency prefix. The
+job still builds, signs, and verifies a fresh APK; the seed holds no APK or
+signing key.
 Run `scripts/ngit-stage.sh` before building the seed so Cargo and Rustup use
 the same `/var/cache/wn-ci` paths as PR jobs. Pack the Cargo target, MDK
 checkout, Rustup directory, and Cargo registry and Git volumes with GNU tar

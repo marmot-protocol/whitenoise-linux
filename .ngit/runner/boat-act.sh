@@ -22,6 +22,14 @@ if [[ ${WN_BOAT_STAGING:-} == 1 ]]; then
     echo 'Boat staging only runs push workflows' >&2
     exit 2
   fi
+  previous=
+  for arg; do
+    if [[ $previous == -W && ${arg##*/} == release-android.yml ]]; then
+      tar --extract --numeric-owner --file /wn-ci/android-cache.tar -C /wn-ci
+      break
+    fi
+    previous=$arg
+  done
   options+=" --privileged --volume=/wn-stage-containers:/var/lib/containers/storage"
 fi
 cargo_jobs=1
