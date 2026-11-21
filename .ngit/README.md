@@ -34,9 +34,11 @@ users. Sign the adapter into Boat as `wn-boat` using a scoped key with
 artifacts. Pass the key on stdin with `boat login --key-stdin`.
 The coordinator's signing key and Boat credential never enter job VMs.
 
-The adapter restores `wn-ngit-native-70fd486b-pax` in a fresh large VM for each
-job. The VM discards its disk at teardown. Only trusted `master` builds seed
-the snapshot. The snapshot holds the Podman SDK and `/wn-ci/cargo-cache.tar`.
+Each job starts in a fresh large VM and discards its disk at teardown.
+Only trusted `master` builds seed snapshots. The PR snapshot
+`wn-ngit-native-70fd486b-pax` holds the Podman SDK and `/wn-ci/cargo-cache.tar`.
+The staging snapshot `wn-ngit-staging-70fd486b-pax` also holds the cross SDK
+OCI archive under `/wn-ci/images/`.
 Run `scripts/ngit-stage.sh` before building the seed so Cargo and Rustup use
 the same `/var/cache/wn-ci` paths as PR jobs. Pack the Cargo target, MDK
 checkout, Rustup directory, and Cargo registry and Git volumes with GNU tar
@@ -51,12 +53,12 @@ differs from the seed. Job output goes to ngit through the adapter; PR
 workflows do not publish artifacts.
 
 Install `wn-ngit-staging.service` with its own `wn-ngit-stage` system user.
-The staging socket accepts only `refs/heads/master`. It runs one job at a
-time and permits nested Podman for the cross builds. Before deleting a
-worker, the adapter retrieves at most 1 GiB of staged ZIPs and passes them
-to ngit-ci. The coordinator checks and extracts the archives, publishes
-packages to Blossom, and signs the results. PR workers cannot use this
-artifact path or start privileged containers.
+Staging runs only `master` push workflows, one at a time. Nested Podman uses
+a private ext4 directory. The outer overlay does not support the writes
+needed to build the cross SDK. Before deleting a worker, the adapter
+retrieves at most 1 GiB of staged ZIPs. ngit-ci validates the archives,
+publishes packages to Blossom, and signs the results. PR workers cannot
+use this artifact path or start privileged containers.
 
 ## wn-build-server
 

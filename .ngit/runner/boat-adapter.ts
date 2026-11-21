@@ -16,7 +16,6 @@ const home = "/var/lib/wn-ngit-boat";
 const install = "/opt/wn-ngit";
 const sockets = "/run/wn-ngit-boat";
 const jobs = join(home, "jobs");
-const snapshot = "wn-ngit-native-70fd486b-pax";
 const ttl = 5700;
 const jobId = /^[a-f0-9]{64}$/;
 const sandboxId = /^bx_[a-z0-9]+$/;
@@ -29,8 +28,20 @@ const metadata = {
   NGIT_CI_TRIGGER_EVENT: true,
 };
 const queues = [
-  { socket: "adapter.sock", staging: false, active: 0, limit: 4 },
-  { socket: "staging.sock", staging: true, active: 0, limit: 1 },
+  {
+    socket: "adapter.sock",
+    snapshot: "wn-ngit-native-70fd486b-pax",
+    staging: false,
+    active: 0,
+    limit: 4,
+  },
+  {
+    socket: "staging.sock",
+    snapshot: "wn-ngit-staging-70fd486b-pax",
+    staging: true,
+    active: 0,
+    limit: 1,
+  },
 ];
 
 function boat(args: string[], signal: AbortSignal) {
@@ -250,7 +261,7 @@ async function serve(socket: Socket, queue: (typeof queues)[number]) {
         "--type",
         "large",
         "--from",
-        snapshot,
+        queue.snapshot,
         "--ttl",
         String(ttl),
         "--no-env",
