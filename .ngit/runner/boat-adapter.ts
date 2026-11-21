@@ -37,7 +37,7 @@ const queues = [
   },
   {
     socket: "staging.sock",
-    snapshot: "wn-ngit-staging-70fd486b-android-pax",
+    snapshot: "wn-ngit-staging-82ff7da6-cross-pax",
     staging: true,
     active: 0,
     limit: 1,

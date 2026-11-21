@@ -24,8 +24,16 @@ if [[ ${WN_BOAT_STAGING:-} == 1 ]]; then
   fi
   previous=
   for arg; do
-    if [[ $previous == -W && ${arg##*/} == release-android.yml ]]; then
-      tar --extract --numeric-owner --file /wn-ci/android-cache.tar -C /wn-ci
+    if [[ $previous == -W ]]; then
+      case "${arg##*/}" in
+        release-android.yml) caches=(android) ;;
+        release-cross.yml) caches=(cross linux-arm64) ;;
+        release-windows.yml) caches=(cross windows-amd64) ;;
+        *) caches=() ;;
+      esac
+      for cache in "${caches[@]}"; do
+        tar --extract --numeric-owner --file "/wn-ci/$cache-cache.tar" -C /wn-ci
+      done
       break
     fi
     previous=$arg

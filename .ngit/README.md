@@ -39,12 +39,22 @@ The coordinator's signing key and Boat credential never enter job VMs.
 Each job starts in a fresh large VM and discards its disk at teardown.
 Only trusted `master` builds seed snapshots. The PR snapshot
 `wn-ngit-native-70fd486b-pax` holds the Podman SDK and `/wn-ci/cargo-cache.tar`.
-The staging snapshot `wn-ngit-staging-70fd486b-android-pax` also holds the
-cross SDK OCI archive under `/wn-ci/images/`. Only `release-android.yml`
+The staging snapshot `wn-ngit-staging-82ff7da6-cross-pax` also holds the cross
+SDK OCI archive under `/wn-ci/images/`. Only `release-android.yml`
 restores `/wn-ci/android-cache.tar`. It contains the Android SDK, Cargo
 target and toolchain state, and the stamped native dependency prefix. The
 job still builds, signs, and verifies a fresh APK; the seed holds no APK or
 signing key.
+
+`release-cross.yml` and `release-windows.yml` restore `/wn-ci/cross-cache.tar`
+plus their own `linux-arm64-cache.tar` or `windows-amd64-cache.tar`. The
+shared archive holds `cross/` and the MDK checkout. Each target archive
+holds its `worktree/build/cross/` subtree; only Windows needs LLVM-MinGW
+and vcpkg. Seed through `scripts/ngit-cross.sh` so Cargo paths match inside
+`/work`. Leave the compiled app, package staging trees, `dist`, and
+`build/cross-evidence` out of the seed. Each run builds the app and boots
+the new package before publishing it.
+
 Run `scripts/ngit-stage.sh` before building the seed so Cargo and Rustup use
 the same `/var/cache/wn-ci` paths as PR jobs. Pack the Cargo target, MDK
 checkout, Rustup directory, and Cargo registry and Git volumes with GNU tar
