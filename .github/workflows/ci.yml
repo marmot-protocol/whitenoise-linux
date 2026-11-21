@@ -3,9 +3,6 @@ name: CI
 
 on:
   workflow_dispatch:
-  push:
-    branches: [master]
-  pull_request:
 
 permissions:
   contents: read
@@ -15,9 +12,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CARGO_BUILD_JOBS: 6
-  WN_BUILD_JOBS: 6
-  CMAKE_BUILD_PARALLEL_LEVEL: 6
+  CARGO_BUILD_JOBS: 1
+  WN_BUILD_JOBS: 4
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
   LINUXDEPLOY_VERSION: 1-alpha-20251107-1
   LINUXDEPLOY_SHA256: c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d
   APPIMAGETOOL_VERSION: "1.9.1"
@@ -27,8 +24,7 @@ env:
 jobs:
   build:
     name: build + test
-    # Fork code must not enter a persistent runner or its caches.
-    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && '"ubuntu-24.04"' || '["self-hosted","Linux","X64","wn-build-server","arch","wn-cache-2"]') }}
+    runs-on: boat-qualify-native-${{ github.run_id }}-${{ github.run_attempt }}
     timeout-minutes: 90
     defaults:
       run:
@@ -97,6 +93,3 @@ jobs:
         shell: bash
         run: bash scripts/ci-container.sh stop
 
-  cross:
-    uses: ./.github/workflows/cross.yml
-    secrets: inherit
