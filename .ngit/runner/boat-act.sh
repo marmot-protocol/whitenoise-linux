@@ -17,6 +17,9 @@ options="--cpu-period=100000 --cpu-quota=$((WN_JOB_CPUS * 1000))"
 options+=" --memory=$WN_JOB_MEMORY_BYTES --memory-swap=$WN_JOB_MEMORY_SWAP --pids-limit=8192"
 options+=" --volume=/wn-ci:/var/cache/wn-ci --volume=/wn-scratch:/tmp"
 options+=" --volume=wn-pilot-registry:/usr/local/cargo/registry --volume=wn-pilot-git:/usr/local/cargo/git"
+if [[ ${WN_BOAT_STAGING:-} == 1 ]]; then
+  options+=" --privileged"
+fi
 cargo_jobs=1
 if cmp -s DEPS_PIN /wn-ci/worktree/DEPS_PIN && diff -qr patches /wn-ci/worktree/patches >/dev/null; then
   cargo_jobs=4

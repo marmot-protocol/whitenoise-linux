@@ -17,7 +17,7 @@ watches the repo over Nostr and runs `act/workflows/` using the
 | `.github/workflows/ci.yml` + `_build.yml` | GitHub | Linux release-profile builds. Quality gates come from the mirrored `pr-precommit.yml`. |
 | `.github/workflows/release.yml` | GitHub | Tag-triggered (`v*`) GitHub Release of the build tarballs. |
 
-## Boat PR workers
+## Boat workers
 
 `wn-ngit-coordinator.exe.xyz` runs `wn-ngit-pr.service` and
 `wn-ngit-boat.service`. The coordinator watches ngit and signs results as
@@ -30,7 +30,8 @@ along with `boat-adapter.ts`, `boat-act.sh`, and `boat-guest.sh`. Install the
 matching units from `runner/`. Use separate `wn-ngit` and `wn-boat` system
 users. Sign the adapter into Boat as `wn-boat` using a scoped key with
 `account.read`, `sandbox.read`, `sandbox.create`, `sandbox.delete-own`,
-`snapshot.read`, and `exec`. Pass the key on stdin with `boat login --key-stdin`.
+`snapshot.read`, and `exec`. Include `ssh` if the adapter serves staging
+artifacts. Pass the key on stdin with `boat login --key-stdin`.
 The coordinator's signing key and Boat credential never enter job VMs.
 
 The adapter restores `wn-ngit-native-70fd486b-pax` in a fresh large VM for each
@@ -49,10 +50,18 @@ swap. The wrapper limits Cargo to one build job if `DEPS_PIN` or `patches/`
 differs from the seed. Job output goes to ngit through the adapter; PR
 workflows do not publish artifacts.
 
+Install `wn-ngit-staging.service` with its own `wn-ngit-stage` system user.
+The staging socket accepts only `refs/heads/master`. It runs one job at a
+time and permits nested Podman for the cross builds. Before deleting a
+worker, the adapter retrieves at most 1 GiB of staged ZIPs and passes them
+to ngit-ci. The coordinator checks and extracts the archives, publishes
+packages to Blossom, and signs the results. PR workers cannot use this
+artifact path or start privileged containers.
+
 ## wn-build-server
 
-Slot 1 runs staging in one disposable KVM guest at a time. GitHub and Rctngl
-runner services on this host are separate from ngit.
+Slot 1 runs staging in one disposable KVM guest at a time. The GitHub
+release runners on this host are separate from ngit.
 
 | Slot | Work | Selectors | Coordinator |
 | --- | --- | --- | --- |

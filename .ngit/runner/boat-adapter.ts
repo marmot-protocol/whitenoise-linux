@@ -1,5 +1,12 @@
 import { once } from "node:events";
-import { chmod, mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { createServer, type Socket } from "node:net";
 import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
@@ -7,20 +14,24 @@ import { join } from "node:path";
 
 const home = "/var/lib/wn-ngit-boat";
 const install = "/opt/wn-ngit";
-const socketPath = "/run/wn-ngit-boat/adapter.sock";
+const sockets = "/run/wn-ngit-boat";
 const jobs = join(home, "jobs");
 const snapshot = "wn-ngit-native-70fd486b-pax";
-const limit = 4;
 const ttl = 5700;
 const jobId = /^[a-f0-9]{64}$/;
 const sandboxId = /^bx_[a-z0-9]+$/;
+const artifactPath = /^1\/([A-Za-z0-9_-][A-Za-z0-9_.-]*)\/\1\.zip$/;
+const artifactBudget = 1024 ** 3;
 const metadata = {
   GITHUB_SHA: true,
   GITHUB_REF: true,
   NGIT_CI_REPOSITORY: true,
   NGIT_CI_TRIGGER_EVENT: true,
 };
-let active = 0;
+const queues = [
+  { socket: "adapter.sock", staging: false, active: 0, limit: 4 },
+  { socket: "staging.sock", staging: true, active: 0, limit: 1 },
+];
 
 function boat(args: string[], signal: AbortSignal) {
   return Bun.spawn([join(install, "boat"), "--no-update", "--json", ...args], {
@@ -83,7 +94,94 @@ async function send(socket: Socket, signal: AbortSignal, message: object) {
   }
 }
 
-async function serve(socket: Socket) {
+async function exportArtifacts(
+  socket: Socket,
+  id: string,
+  dir: string,
+  signal: AbortSignal,
+) {
+  const list = boat(
+    [
+      "exec",
+      id,
+      "--",
+      "sh",
+      "-ec",
+      'if [ -d "$1" ]; then find -P "$1" -mindepth 3 -maxdepth 3 -type f -name "*.zip" -printf "%s\\t%P\\n"; fi',
+      "sh",
+      dir,
+    ],
+    signal,
+  );
+  const result = await new Response(list.stdout).json();
+  if ((await list.exited) !== 0 || result.stdoutTruncated) {
+    throw new Error(`Boat could not enumerate staged artifacts for ${id}`);
+  }
+  if (!result.stdout) {
+    return;
+  }
+  const paths = new Set<string>();
+  let bytes = 0;
+  const files = (result.stdout as string)
+    .trimEnd()
+    .split("\n")
+    .map((line) => {
+      const [sizeStr, path, extra] = line.split("\t");
+      const size = Number(sizeStr);
+      bytes += size;
+      if (
+        extra !== undefined ||
+        !artifactPath.test(path) ||
+        paths.has(path) ||
+        !Number.isSafeInteger(size) ||
+        size <= 0 ||
+        bytes > artifactBudget ||
+        paths.size >= 32
+      ) {
+        throw new Error(`Invalid Boat artifact inventory for ${id}`);
+      }
+      paths.add(path);
+      return { path, size };
+    });
+  const scratch = await mkdtemp(join(home, "artifact-"));
+  const local = join(scratch, "artifact.zip");
+  try {
+    for (const { path, size } of files) {
+      const copy = boat(
+        ["scp", `${id}:${dir}/${path}`, local],
+        AbortSignal.any([signal, AbortSignal.timeout(240_000)]),
+      );
+      await new Response(copy.stdout).text();
+      const file = Bun.file(local);
+      if ((await copy.exited) !== 0 || file.size !== size) {
+        throw new Error(`Boat artifact transfer failed for ${path}`);
+      }
+      for await (const chunk of file.stream()) {
+        await send(socket, signal, {
+          type: "artifact",
+          path,
+          data: Buffer.from(
+            chunk.buffer,
+            chunk.byteOffset,
+            chunk.byteLength,
+          ).toString("base64"),
+          eof: false,
+        });
+      }
+      await send(socket, signal, {
+        type: "artifact",
+        path,
+        data: "",
+        eof: true,
+      });
+      await rm(local);
+    }
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+}
+
+async function serve(socket: Socket, queue: (typeof queues)[number]) {
   const abort = new AbortController();
   socket.on("error", () => abort.abort());
   socket.on("close", () => abort.abort());
@@ -124,10 +222,13 @@ async function serve(socket: Socket) {
     ) {
       throw new Error("Unsupported Boat execute request");
     }
-    if (active === limit) {
+    if (queue.staging && req.env.GITHUB_REF !== "refs/heads/master") {
+      throw new Error("Boat staging workers only run master");
+    }
+    if (queue.active === queue.limit) {
       throw new Error("Boat workers are busy");
     }
-    active++;
+    queue.active++;
     acquired = true;
     const env: string[] = [];
     for (const [key, value] of Object.entries(req.env)) {
@@ -207,6 +308,7 @@ async function serve(socket: Socket) {
         "-i",
         "HOME=/root",
         ...env,
+        ...(queue.staging ? ["WN_BOAT_STAGING=1"] : []),
         "bash",
         "/home/user/wn-guest.sh",
         req.artifact_dir ?? "",
@@ -234,6 +336,9 @@ async function serve(socket: Socket) {
     if (exit === undefined || status !== exit) {
       throw new Error(`Boat lost the exit status for ${id}`);
     }
+    if (queue.staging && req.artifact_dir) {
+      await exportArtifacts(socket, id, req.artifact_dir, abort.signal);
+    }
     terminal = {
       type: "completed",
       exitCode: exit,
@@ -255,7 +360,7 @@ async function serve(socket: Socket) {
       await rm(script, { force: true });
     }
     if (acquired) {
-      active--;
+      queue.active--;
     }
   }
   await send(socket, abort.signal, terminal);
@@ -268,14 +373,23 @@ for (const id of await readdir(jobs)) {
     await deleteVM(id);
   }
 }
-await rm(socketPath, { force: true });
-const server = createServer((socket) => {
-  void serve(socket).catch((error) => {
-    console.error(error);
-    socket.destroy();
+const servers = [];
+for (const queue of queues) {
+  const path = join(sockets, queue.socket);
+  await rm(path, { force: true });
+  const server = createServer((socket) => {
+    void serve(socket, queue).catch((error) => {
+      console.error(error);
+      socket.destroy();
+    });
   });
+  server.listen(path);
+  await once(server, "listening");
+  await chmod(path, 0o660);
+  servers.push(server);
+}
+process.once("SIGTERM", () => {
+  for (const server of servers) {
+    server.close();
+  }
 });
-server.listen(socketPath);
-await once(server, "listening");
-await chmod(socketPath, 0o660);
-process.once("SIGTERM", () => server.close());

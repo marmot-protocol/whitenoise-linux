@@ -1,0 +1,35 @@
+[Unit]
+Description=White Noise ngit staging coordinator
+Wants=network-online.target
+After=network-online.target wn-ngit-boat.service
+Requires=wn-ngit-boat.service
+
+[Service]
+User=wn-ngit-stage
+SupplementaryGroups=wn-boat
+StateDirectory=wn-ngit-staging
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/wn-ngit-staging
+ExecStart=/opt/wn-ngit/ngit-ci-whitenoise \
+  --repos=66675158e6338fe89fda418e42a0bf2a7a2b132504dd347f015a18971b644430/darkmatter-linux \
+  --execution-policy=request-required --index-relays=wss://relay.cyberguy.fyi,wss://relay.ngit.dev \
+  --runner=socket-adapter --adapter-socket=/run/wn-ngit-boat/staging.sock \
+  --act-platforms=wn-ngit-staging=localhost/wn-native-pilot,wn-ngit-windows=localhost/wn-native-pilot \
+  --act-bind-workspace=false --act-cache-enabled=false --act-container-daemon-socket=- \
+  --act-job-container-policy=admin --max-concurrent-jobs=1 --job-timeout-secs=5400 \
+  --work-dir=work --event-cache-dir=events --processed-ids-path=processed-ids.json \
+  --queue-state-path=queued-jobs.json \
+  --blossom-servers=https://cyberguy-blossom.exe.xyz,https://blossom.primal.net \
+  --blossom-max-artifact-bytes=1073741824 --blossom-upload-budget-secs=600
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=300
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+UMask=0077
+MemoryMax=900M
+
+[Install]
+WantedBy=multi-user.target

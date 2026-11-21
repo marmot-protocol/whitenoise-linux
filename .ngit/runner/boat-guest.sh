@@ -50,7 +50,8 @@ while [[ -n $(jobs -pr | grep -x "$job") ]]; do
 done
 rc=0
 wait "$job" || rc=$?
-if [[ -n ${1:-} ]] && [[ -d $1 ]] && [[ -n $(find "$1" -mindepth 1 -print -quit) ]]; then
+if [[ ${WN_BOAT_STAGING:-} != 1 && -n ${1:-} && -d $1 ]] &&
+    [[ -n $(find "$1" -mindepth 1 -print -quit) ]]; then
   echo 'The Boat PR worker does not publish artifacts' >&2
   exit 1
 fi
