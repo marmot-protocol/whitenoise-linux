@@ -81,11 +81,6 @@ read_setting :: proc(
 @(private)
 read_din_appearance :: proc(cancel: rawptr = nil) -> (appearance: System_Appearance) {
 	address := os.get_env("DBUS_SESSION_BUS_ADDRESS", context.temp_allocator)
-	// Use an existing bus. GLib's X11 autolaunch cannot be cancelled.
-	parts := address
-	for addr in strings.split_iterator(&parts, ";") {
-		if addr == "autolaunch:" {return}
-	}
 	if address == "" {
 		runtime_dir := os.get_env("XDG_RUNTIME_DIR", context.temp_allocator)
 		if !strings.has_prefix(runtime_dir, "/") {return}
@@ -94,14 +89,21 @@ read_din_appearance :: proc(cancel: rawptr = nil) -> (appearance: System_Appeara
 		defer g_free(rawptr(escaped))
 		address = fmt.tprintf("unix:path=%s", string(escaped))
 	}
+	// Only use local Unix endpoints. Autolaunch and nonce-file reads
+	// do not honor cancellation.
 	AUTHENTICATED_BUS :: 0x01 | 0x08 // AUTHENTICATION_CLIENT | MESSAGE_BUS_CONNECTION
-	bus := g_dbus_connection_new_for_address_sync(
-		strings.clone_to_cstring(address, context.temp_allocator),
-		AUTHENTICATED_BUS,
-		nil,
-		cancel,
-		nil,
-	)
+	bus: rawptr
+	for addr in strings.split_iterator(&address, ";") {
+		if !strings.has_prefix(addr, "unix:") {continue}
+		bus = g_dbus_connection_new_for_address_sync(
+			strings.clone_to_cstring(addr, context.temp_allocator),
+			AUTHENTICATED_BUS,
+			nil,
+			cancel,
+			nil,
+		)
+		if bus != nil {break}
+	}
 	if bus == nil {return}
 	defer g_object_unref(bus)
 	if animations, ok := read_setting(
