@@ -19,11 +19,13 @@ watches the repo over Nostr and runs `act/workflows/` using the
 
 ## Boat workers
 
-`wn-ngit-coordinator.exe.xyz` runs `wn-ngit-pr.service` and
-`wn-ngit-boat.service`. The coordinator watches ngit and signs results as
-`npub14snvzh5t0vrz29xnl88aw7y35wfk3m9en7xmhjazazn29j9eq2hss4zh56`.
-Its `ubuntu-24.04` mapping covers native and pre-commit PR workflows. The
-staging and Windows selectors stay on `wn-build-server`.
+`wn-ngit-coordinator.exe.xyz` watches ngit and dispatches to Boat. It does
+not build packages. Both coordinators use `wn-ngit-boat.service`.
+
+| Service | Selectors | Signing key |
+| --- | --- | --- |
+| `wn-ngit-pr.service` | `ubuntu-24.04` | `npub14snvzh5t0vrz29xnl88aw7y35wfk3m9en7xmhjazazn29j9eq2hss4zh56` |
+| `wn-ngit-staging.service` | `wn-ngit-staging`, `wn-ngit-windows` | `npub1a0kp3kryq6z4d4z4s3x5ju2stsl4lqu2dd4rqacyn7hejqlsamjqtwlf69` |
 
 Install the Boat CLI, Bun, and the pinned coordinator binary in `/opt/wn-ngit`,
 along with `boat-adapter.ts`, `boat-act.sh`, and `boat-guest.sh`. Install the
@@ -62,17 +64,17 @@ use this artifact path or start privileged containers.
 
 ## wn-build-server
 
-Slot 1 runs staging in one disposable KVM guest at a time. The GitHub
-release runners on this host are separate from ngit.
+Both ngit slots are disabled. The GitHub Linux release runners on this
+host are separate from ngit.
 
 | Slot | Work | Selectors | Coordinator |
 | --- | --- | --- | --- |
-| 1 | Staging packages | `wn-ngit-staging`, `wn-ngit-windows` | `npub1g60evye0t0adawuttrgl7xvymm7latgz86f6406kcfpx52mj8szqmjykaj` |
+| 1 | Staging rollback | `wn-ngit-staging`, `wn-ngit-windows` | `npub1g60evye0t0adawuttrgl7xvymm7latgz86f6406kcfpx52mj8szqmjykaj` |
 | 2 | PR rollback only | `ubuntu-24.04` | `npub16j3janvkrze82x22cl0f7p2nqeqlsck8dacfry4w58yh29gdlzxs4xdnv9` |
 
-To roll back PR routing, start `ngit-ci@2` and its adapter if needed. Send
-`ngit ci request` to the slot 2 coordinator and `ngit ci stop` to the Boat
-coordinator. Leave slot 1 running; it does not take PR checks.
+To roll back, start `ngit-ci@1` for staging or `ngit-ci@2` for PRs with its
+matching adapter. Send `ngit ci request` to that slot and `ngit ci stop`
+to the matching Boat coordinator.
 
 `runner/` contains the SDK recipe, guest boot configuration, service templates,
 slot mappings, and service-account policy. The deployed coordinator, adapter,
