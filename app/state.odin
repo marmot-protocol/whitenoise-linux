@@ -338,6 +338,7 @@ Focus :: enum {
 	PollOpt, // poll-modal option box, index in ui.poll_focus
 	ThemeSeed, // theme-editor seed box, index in ui.theme_edit_idx
 	SettingsSearch, // control-panel search, separate from chat drafts and filters
+	NC_Remove,
 }
 
 // The create-poll modal grows one option row at a time up to this cap
@@ -910,8 +911,9 @@ Ui_State :: struct {
 	nc_search:                           [dynamic]u8,
 	nc_contacts:                         [dynamic]Contact_Ui,
 	nc_contact_sel:                      int,
-	nc_member:                           [dynamic]u8, // typed address or selected contact label
-	nc_member_choice:                    int, // nc_contacts index + 1; zero = typed address
+	nc_member:                           [dynamic]u8, // member search or pasted keys
+	nc_members:                          [dynamic]Nc_Member,
+	nc_remove_focus:                     int,
 	nip05_ticket:                        int,
 	nc_name:                             [dynamic]u8,
 	nc_pic:                              Pic_Draft, // group image staged for Create

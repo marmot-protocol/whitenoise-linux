@@ -1316,6 +1316,11 @@ Nc_Page :: enum {
 }
 
 @(private)
+Nc_Member :: struct {
+	hex, label, pic_url: string,
+}
+
+@(private)
 NC_CONTACT_H :: f32(64)
 
 @(private)
@@ -1360,7 +1365,11 @@ nc_action_row :: proc(id, icon, title, detail: string) {
 }
 
 @(private)
-nc_contact_matches :: proc(ui: ^Ui_State, query: string) -> []Contact_Order {
+nc_contact_matches :: proc(
+	ui: ^Ui_State,
+	query: string,
+	excluded: map[string]bool = nil,
+) -> []Contact_Order {
 	filter := strings.to_lower(strings.trim_space(query), context.temp_allocator)
 	rows := contact_order(ui, ui.nc_contacts[:])
 	// Short queries search names, not the shared npub prefix or single hex digits.
@@ -1368,6 +1377,7 @@ nc_contact_matches :: proc(ui: ^Ui_State, query: string) -> []Contact_Order {
 	count := 0
 	for row in rows {
 		contact := ui.nc_contacts[row.idx]
+		if excluded[contact.id_hex] {continue}
 		if filter != "" &&
 		   !strings.contains(row.key, filter) &&
 		   (!key_query ||
@@ -1380,28 +1390,20 @@ nc_contact_matches :: proc(ui: ^Ui_State, query: string) -> []Contact_Order {
 }
 
 @(private)
-nc_member_ref :: proc(ui: ^Ui_State) -> string {
-	if ui.nc_member_choice > 0 && ui.nc_member_choice <= len(ui.nc_contacts) {
-		contact := ui.nc_contacts[ui.nc_member_choice - 1]
-		if string(ui.nc_member[:]) == contact_label(ui, contact) {return contact.id_hex}
+nc_pasted_members :: proc(ui: ^Ui_State, text: string) -> []string {
+	if !strings.contains(text, ",") {
+		hex := nc_address_hex(ui, text)
+		if hex == "" {return nil}
+		keys := make([]string, 1, context.temp_allocator)
+		keys[0] = hex
+		return keys
 	}
-	member := strings.trim_space(string(ui.nc_member[:]))
-	if member == "" {return member}
-	if strings.contains(member, ",") {
-		out := strings.builder_make(context.temp_allocator)
-		for key in strings.split(member, ",", context.temp_allocator) {
-			ref := strings.trim_space(key)
-			if link := marmot_link_ref(ref); link != "" {ref = link}
-			hx := deeplink_hex(ref)
-			if hx == "" || strings.equal_fold(hx, ui.account_ref) {return ""}
-			if len(out.buf) > 0 {strings.write_byte(&out, '\n')}
-			strings.write_string(&out, hx)
-		}
-		return strings.to_string(out)
+	keys := strings.split(text, ",", context.temp_allocator)
+	for &key in keys {
+		key = nc_address_hex(ui, key)
+		if key == "" {return nil}
 	}
-	if strings.contains(member, "@") {return member}
-	if ref := marmot_link_ref(member); ref != "" {member = ref}
-	return deeplink_hex(member)
+	return keys
 }
 
 // Pubkey hex of a pasted npub, nprofile, hex key or marmot://profile link;
@@ -1416,67 +1418,36 @@ nc_address_hex :: proc(ui: ^Ui_State, text: string) -> string {
 }
 
 @(private)
-Nc_Member_Menu :: enum {
-	Hidden,
-	Contacts,
-	No_Matches,
-}
-
-// An empty field or an address Create group accepts is not a failed search.
-@(private)
-nc_member_menu :: proc(query: string, matches: int, accepted: bool) -> Nc_Member_Menu {
-	if matches > 0 {return .Contacts}
-	if strings.trim_space(query) == "" || accepted {return .Hidden}
-	return .No_Matches
+nc_member_rows :: proc(ui: ^Ui_State) -> (rows: []Contact_Order, people: []int) {
+	excluded := make(map[string]bool, len(ui.nc_members), context.temp_allocator)
+	for member in ui.nc_members {excluded[member.hex] = true}
+	rows = nc_contact_matches(ui, string(ui.nc_member[:]), excluded)
+	people = people_rows(ui, rows, excluded)
+	return
 }
 
 @(private)
 NC_MEMBER_H :: f32(48)
 
 @(private = "file")
-nc_member_options :: proc(ui: ^Ui_State) {
-	if ui.nc_page != .Group ||
-	   ui.focus != .NC_Member ||
-	   ui.nc_member_choice != 0 ||
-	   nc_pending_label(ui) != "" {return}
-	field := nendo.element(nendo.id("NCMember"))
-	if !field.found {return}
-	rows := nc_contact_matches(ui, string(ui.nc_member[:]))
-	people := people_rows(ui, rows)
+nc_member_options :: proc(ui: ^Ui_State, query: string) {
+	rows, people := nc_member_rows(ui)
 	count := len(rows) + len(people)
-	// The directory search status takes the last line while it runs.
 	lines := count
 	if ui.people.status != .Idle && ui.people.status != .Done {lines += 1}
-	if nc_member_menu(string(ui.nc_member[:]), lines, nc_member_ref(ui) != "") == .Hidden {return}
+	if lines == 0 && (query == "" || strings.contains(query, "@")) {return}
 	ui.nc_contact_sel = clamp(ui.nc_contact_sel, 0, max(0, count - 1))
-	below := nendo.element(nendo.id("NCCreate")).rect.y - field.rect.y - field.rect.height - 4
-	header := nendo.element(nendo.id("NCHeader")).rect
-	above := field.rect.y - header.y - header.height - 4
-	up := below < NC_MEMBER_H * 2 && above > below
-	height := min(
-		f32(max(1, lines)) * NC_MEMBER_H,
-		NC_MEMBER_H * 5,
-		max(NC_MEMBER_H, up ? above : below),
-	)
+	height := f32(clamp(lines, 1, 3)) * NC_MEMBER_H
 	if nendo.box(nendo.id("NCMemberOptions"))(
 	{
-		width = nendo.fixed(field.rect.width),
+		width = nendo.grow(),
 		height = nendo.fixed(height),
 		direction = .Column,
 		color = CARD,
 		border = {color = CARD_BORDER, width = bw()},
 		radius = rr(8),
+		align = {y = lines == 0 ? .Center : .Top},
 		clip = {y = true, scroll = true},
-		floating = {
-			attach_to = .Element,
-			parent = nendo.id("NCMember").id,
-			z = 15,
-			offset = {0, up ? -4 : 4},
-			attach = {
-				element = up ? .Left_Bottom : .Left_Top,
-				parent = up ? .Left_Top : .Left_Bottom,
-			},
-		},
 	},
 	) {
 		data := nendo.scroll(nendo.id("NCMemberOptions"))
@@ -1487,7 +1458,9 @@ nc_member_options :: proc(ui: ^Ui_State) {
 		{height = nendo.fixed(f32(first) * NC_MEMBER_H)},
 		) {}
 		if lines == 0 {
-			nendo.text(tr("No matches"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
+			if nendo.box(nendo.id("NCMemberEmpty"))({padding = {left = 12, right = 12}}) {
+				nendo.text(tr("No matches"), {font = FONT_BODY, size = 13, color = TEXT_DIM})
+			}
 		}
 		for i in first ..< last {
 			lit := i == ui.nc_contact_sel
@@ -1524,6 +1497,49 @@ nc_member_options :: proc(ui: ^Ui_State) {
 		) {}
 	}
 	scrollbar(nendo.id("NCMemberOptions"), 16)
+}
+
+@(private = "file")
+nc_selected_members :: proc(ui: ^Ui_State) {
+	if len(ui.nc_members) == 0 {return}
+	row_h := tap_size() ? tap_min() : 30
+	if nendo.box(nendo.id("NCSelectedMembers"))({width = nendo.grow(), direction = .Column}) {
+		for member, i in ui.nc_members {
+			if nendo.box(nendo.id("NCMemberPicked", u32(i)))(
+			{width = nendo.grow(), height = nendo.fixed(row_h), align = {y = .Center}, gap = 8},
+			) {
+				pic_url := profile_info(g_client, member.hex).pic_url
+				if pic_url == "" {pic_url = member.pic_url}
+				avatar(
+					"NCMemberPickedAvatar",
+					u32(i),
+					member.hex,
+					member.label,
+					22,
+					url_pic(pic_url),
+				)
+				if nendo.box(nendo.id_local("Name"))({width = nendo.grow(), clip = {x = true}}) {
+					nendo.text(
+						member.label,
+						{font = FONT_BODY, size = 14, color = TEXT, wrap = .None},
+					)
+				}
+				if nendo.box(nendo.id("NCMemberRemove", u32(i)))(
+				{
+					width = nendo.fixed(row_h),
+					height = nendo.fixed(row_h),
+					align = {x = .Center, y = .Center},
+					color = hovered() ? HOVER : {},
+					border = ui.focus == .NC_Remove && ui.nc_remove_focus == i ? kb_ring(ACCENT) : {},
+					radius = rr(7),
+				},
+				) {
+					nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 12, color = TEXT_DIM})
+					if hovered() {tooltip(tr("Remove")); cursor_raise(.Pointer)}
+				}
+			}
+		}
+	}
 }
 
 // One group-member suggestion: a contact, or a person the directory found.
@@ -1843,34 +1859,37 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 					}
 					nendo.text(tr("Group name"), {font = FONT_TITLE, size = 14, color = TEXT})
 					input_box(ui, "NCName", &ui.nc_name, tr("Group name"), ui.focus == .NC_Name, 0)
-					nendo.text(tr("Members"), {font = FONT_TITLE, size = 14, color = TEXT})
-					input_box(
-						ui,
-						"NCMember",
-						&ui.nc_member,
-						tr("Search by name or paste public keys..."),
-						ui.focus == .NC_Member,
-						0,
-					)
-					hint := tr("Choose someone or paste public keys separated by commas.")
-					if ui.nc_member_choice > 0 {
-						hint = fmt.tprintf(
-							tr("%s will be added to the group."),
-							contact_label(ui, ui.nc_contacts[ui.nc_member_choice - 1]),
-						)
-					} else if address := nc_address_hex(ui, string(ui.nc_member[:]));
-					   address != "" {
-						hint = fmt.tprintf(
-							tr("%s will be added to the group."),
-							sender_label(address),
-						)
-					} else if members := nc_member_ref(ui); strings.contains(members, "\n") {
-						hint = fmt.tprintf(
-							tr("%d people will be added to the group."),
-							len(strings.split(members, "\n", context.temp_allocator)),
-						)
+					if nendo.box(nendo.id("NCMemberHeading"))({gap = 8, align = {y = .Center}}) {
+						nendo.text(tr("Members"), {font = FONT_TITLE, size = 14, color = TEXT})
+						if len(ui.nc_members) > 0 {
+							nendo.text(
+								fmt.tprintf("%d", len(ui.nc_members)),
+								{font = FONT_BODY, size = 12, color = TEXT_DIM},
+							)
+						}
 					}
-					nendo.text(hint, {font = FONT_BODY, size = 13, color = TEXT_DIM})
+					query := strings.trim_space(string(ui.nc_member[:]))
+					pasted := len(nc_pasted_members(ui, query)) > 0
+					lookup := strings.contains(query, "@") && !strings.contains(query, ",")
+					if nendo.box(nendo.id("NCMemberSearch"))(
+					{width = nendo.grow(), align = {y = .Center}, gap = 8},
+					) {
+						input_box(
+							ui,
+							"NCMember",
+							&ui.nc_member,
+							tr("Search by name or paste public keys..."),
+							ui.focus == .NC_Member,
+							0,
+						)
+						if pending == "" && (pasted || lookup) {
+							micro_button("NCMemberAdd", pasted ? tr("Add") : tr("Look up"))
+						}
+					}
+					if ui.focus == .NC_Member && pending == "" && !pasted {
+						nc_member_options(ui, query)
+					}
+					nc_selected_members(ui)
 				}
 				scrollbar(nendo.id("NCForm"))
 			}
@@ -1879,13 +1898,9 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 				busy_bar("NCBusy")
 			}
 			if ui.nc_page != .Contacts {
-				label :=
-					pending != "" ? pending : ui.nc_member_choice == 0 && strings.contains(string(ui.nc_member[:]), "@") ? tr("Look up") : tr("Create group")
-				// A NIP-05 lookup only fills in the member, so it needs no name yet.
-				member := nc_member_ref(ui)
-				nip05 := strings.contains(member, "@")
+				label := pending != "" ? pending : tr("Create group")
 				named := strings.trim_space(string(ui.nc_name[:])) != ""
-				ready := pending == "" && member != "" && (named || nip05)
+				ready := pending == "" && named && len(ui.nc_members) > 0
 				login_big_button("NCCreate", label, true, ready ? .Enabled : .Disabled)
 			}
 			if nendo.box(nendo.id("NCPrivacy"))(
@@ -1902,7 +1917,6 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 					{font = FONT_BODY, size = 12, color = TEXT_DIM},
 				)
 			}
-			nc_member_options(ui)
 		}
 	}
 }

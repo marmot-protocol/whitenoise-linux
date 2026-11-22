@@ -67,30 +67,26 @@ contacts_named_first :: proc(t: ^testing.T) {
 @(test)
 new_group_member_selection :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
+	first :: "6e80970922164ce444ac29f7042a6c8b3d921e4170ead651242ddb10f31c86c2"
+	second :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	self :: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 	ui := Ui_State {
-		nc_page          = .Group,
-		nc_member_choice = 2,
+		account_ref = self,
 	}
-	append(
-		&ui.nc_contacts,
-		Contact_Ui{id_hex = "first", name = "Alex"},
-		Contact_Ui{id_hex = "second", name = "Alex"},
+	nc_member_add(&ui, first, "Alex")
+	nc_member_add(&ui, second, "Alex")
+	keys := nc_pasted_members(
+		&ui,
+		" npub1d6qfwzfzzexwg39v98msg2nv3v7ey8jpwr4dv5fy9hd3pucusmpqasx9s6 , AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA ",
 	)
-	append(&ui.nc_member, "Alex")
-	// Duplicate names must resolve to the selected contact, not the first match.
-	testing.expect_value(t, nc_member_ref(&ui), "second")
-	clear(&ui.nc_member)
-	append(&ui.nc_member, "Al")
-	testing.expect_value(t, nc_member_ref(&ui), "")
-	clear(&ui.nc_member)
-	append(&ui.nc_member, "  npub1d6qfwzfzzexwg39v98msg2nv3v7ey8jpwr4dv5fy9hd3pucusmpqasx9s6  ")
-	testing.expect_value(
-		t,
-		nc_member_ref(&ui),
-		"6e80970922164ce444ac29f7042a6c8b3d921e4170ead651242ddb10f31c86c2",
-	)
-	clear(&ui.nc_member)
-	testing.expect_value(t, nc_member_ref(&ui), "")
+	if !testing.expect_value(t, len(keys), 2) {return}
+	testing.expect_value(t, keys[0], first)
+	for key in keys {
+		nc_member_add(&ui, key)
+	}
+	testing.expect_value(t, nc_group_targets(&ui), first + "\n" + second)
+	testing.expect_value(t, len(nc_pasted_members(&ui, first + ", " + self)), 0)
+	testing.expect_value(t, len(nc_pasted_members(&ui, first + ", typo")), 0)
 }
 
 @(test)

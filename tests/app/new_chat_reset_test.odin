@@ -1,6 +1,7 @@
 package main
 
 import "base:runtime"
+import "core:fmt"
 import "core:os"
 
 import marmot "../marmot"
@@ -45,12 +46,14 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		marmot.Status.OK,
 	) {return}
 	defer marmot.client_free(client)
-	rl.InitWindow(1280, 800, "New chat reset")
+	rl.InitWindow(1024, 700, "New chat reset")
 	defer rl.CloseWindow()
+	defer profile_session_clear()
+	defer account_jobs_stop()
 	UI_ZOOM, UI_SCALE = 1, 1
 	load_themes(); apply_theme(0, 0); init_fonts()
 	memory: []u8
-	init_layout(&memory, 32768, {1280, 800})
+	init_layout(&memory, 32768, {1024, 700})
 	defer delete(memory)
 	ui := Ui_State {
 		row_menu         = -1,
@@ -60,11 +63,10 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	}
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs.reduce_motion = true
-	// No signed-in account: the real opener cannot start a contact worker.
 	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "fixture", title = "Fixture chat"})
 	g_ui, g_prefs = &ui, &ui.prefs
-	defer {g_ui, g_prefs = nil, nil; forced_release = false}
+	defer {g_ui, g_prefs = nil, nil; forced_release = false; text_drag = nil}
 
 
 	layout :: proc(ui: ^Ui_State) {
@@ -76,7 +78,14 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		data := nendo.element(id)
 		if !testing.expect(t, data.found, "navigation control must exist") {return}
 		box := data.rect
-		nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
+		point := [2]f32{box.x + box.width / 2, box.y + box.height / 2}
+		text_drag = nil
+		nendo.set_pointer(point, .Down)
+		forced_press = true
+		handle_pages(ui, client)
+		if ui.page == .Chats {handle_chat(ui, client)}
+		forced_press = false
+		nendo.set_pointer(point, .Up)
 		forced_release = true
 		handle_pages(ui, client)
 		if ui.page == .Chats {handle_chat(ui, client)}
@@ -125,7 +134,7 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		back_out(t, &ui, client)
 	}
 	// The intentional DM-to-group prefill is applied after the fresh reset.
-	peer := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	peer :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	ui.chats[0].conversation_kind = .DIRECT
 	ui.chats[0].peer_hex = peer
 	ui.show_members = true
@@ -134,7 +143,157 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	layout(&ui)
 	click(t, &ui, client, nendo.id("DmStartGroup"))
 	testing.expect(t, ui.new_chat_open && ui.nc_page == .Group)
-	testing.expect_value(t, string(ui.nc_member[:]), peer)
+	testing.expect_value(t, nc_group_targets(&ui), peer)
+	testing.expect_value(t, string(ui.nc_member[:]), "")
 	testing.expect(t, len(ui.nc_name) == 0)
 	testing.expect(t, ui.focus == .NC_Name)
+
+	second :: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	third :: "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+	bea_pic :: "test://group-picker-bea"
+	casey_pic :: "test://group-picker-casey"
+	pixels: [16][4]u8
+	for &pixel in pixels {pixel = {70, 160, 220, 255}}
+	image := rl.Image {
+		data   = cast([^]u8)raw_data(pixels[:]),
+		width  = 4,
+		height = 4,
+	}
+	register_local_pic(bea_pic, image)
+	for &pixel in pixels {pixel = {210, 100, 60, 255}}
+	register_starter_pic(third, "Casey", casey_pic, image)
+	append(
+		&ui.nc_contacts,
+		Contact_Ui {
+			id_hex = strings.clone(second),
+			name = strings.clone("Bea"),
+			pic_url = strings.clone(bea_pic),
+		},
+	)
+	append(
+		&ui.nc_contacts,
+		Contact_Ui {
+			id_hex = strings.clone(third),
+			name = strings.clone("Casey"),
+			pic_url = strings.clone(bea_pic),
+		},
+	)
+	for key in ([2]string{"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"}) {
+		append(
+			&ui.nc_contacts,
+			Contact_Ui{id_hex = strings.clone(key), name = strings.clone("Extra")},
+		)
+	}
+	defer nc_contacts_free(&ui.nc_contacts)
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCMember"))
+	layout(&ui)
+	options := nendo.scroll(nendo.id("NCMemberOptions"))
+	if !testing.expect(t, options.found) {return}
+	options.position.y = -NC_MEMBER_H
+	layout(&ui)
+	rl.PushKey(.ENTER, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.ENTER, false)
+	rl.WindowShouldClose()
+	testing.expect_value(t, nc_group_targets(&ui), peer)
+	layout(&ui)
+	for i in 0 ..< 24 {
+		nc_member_add(&ui, fmt.tprintf("%064x", i + 1), "Extra invitee")
+	}
+	layout(&ui)
+	pane := nendo.scroll(nendo.id("NewChatPane"))
+	pane.position.y = pane.viewport.height - pane.content.height
+	layout(&ui)
+	option := nendo.element(nendo.id("NCMemberOption", 0)).rect
+	view := nendo.element(nendo.id("NewChatPane")).rect
+	if !testing.expect(
+		t,
+		option.y + option.height < view.y,
+		fmt.tprintf("suggestion %v must be above pane %v at %v", option, view, pane.position^),
+	) {return}
+	rl.PushKey(.ENTER, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.ENTER, false)
+	rl.WindowShouldClose()
+	if !testing.expect_value(t, len(ui.nc_members), 25) {return}
+	pane.position.y = 0
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCName"))
+	layout(&ui)
+	rl.PushKey(.LEFT_SHIFT, true)
+	rl.PushKey(.TAB, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.TAB, false)
+	rl.PushKey(.LEFT_SHIFT, false)
+	rl.WindowShouldClose()
+	layout(&ui)
+	last_remove := nendo.element(nendo.id("NCMemberRemove", 24)).rect
+	testing.expect(
+		t,
+		last_remove.y + last_remove.height <= view.y + view.height,
+		"Tab reveals the last removal control",
+	)
+	pane.position.y = 0
+	layout(&ui)
+	rl.PushKey(.ENTER, true)
+	handle_chat(&ui, client)
+	rl.PushKey(.ENTER, false)
+	rl.WindowShouldClose()
+	if !testing.expect_value(t, len(ui.nc_members), 25) {return}
+	for member in ui.nc_members[1:] {delete(member.hex); delete(member.label); delete(member.pic_url)}
+	resize(&ui.nc_members, 1)
+	pane.position.y = 0
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCMember"))
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCMemberOption", 0))
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCMemberOption", 1))
+	testing.expect_value(t, nc_group_targets(&ui), peer + "\n" + second + "\n" + third)
+	nc_contacts_free(&ui.nc_contacts)
+	layout(&ui)
+	commands := build_layout(&ui, 0)
+	for url, i in ([]string{bea_pic, casey_pic}) {
+		avatar := nendo.id("NCMemberPickedAvatar", u32(i + 1))
+		image_id := nendo.id("AvatarImage", avatar.id).id
+		want := shaped_avatar(local_pic(url), "circle")
+		shown := false
+		for command in commands {
+			if command.kind == .Image && command.id == image_id && command.image.image == want {
+				shown = true
+				break
+			}
+		}
+		testing.expect(t, shown, "selected member renders their profile photo")
+	}
+	third_remove := nendo.id("NCMemberRemove", 2)
+	box := nendo.element(third_remove).rect
+	nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
+	testing.expect(
+		t,
+		nendo.pointer_over(third_remove),
+		"third invitee is visible without scrolling",
+	)
+	nendo.set_pointer({0, 0}, .Up)
+	for key in ([4]rl.KeyboardKey{.TAB, .TAB, .TAB, .ENTER}) {
+		rl.PushKey(key, true)
+		handle_chat(&ui, client)
+		rl.PushKey(key, false)
+		rl.WindowShouldClose()
+		layout(&ui)
+	}
+	testing.expect_value(t, nc_group_targets(&ui), peer + "\n" + second)
+	ed_set(&ui, &ui.nc_name, "Weekend plans")
+	ui.account_ref = "offline-fixture"
+	layout(&ui)
+	click(t, &ui, client, nendo.id("NCCreate"))
+	if testing.expect_value(t, len(account_jobs), 1) {
+		testing.expect_value(t, account_jobs[0].kind, Account_Operation.Create_Chat)
+		testing.expect_value(t, account_jobs[0].target, peer + "\n" + second)
+	}
+	account_jobs_stop()
+	layout(&ui)
+	back_out(t, &ui, client)
+	testing.expect_value(t, nc_group_targets(&ui), "")
 }

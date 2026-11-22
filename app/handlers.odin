@@ -1728,12 +1728,8 @@ open_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.nc_contact_sel = 0
 	clear(&ui.nc_search)
 	ed_set(ui, &ui.nc_name, "")
-	if ui.nc_member_choice > 0 && ui.nc_member_choice <= len(ui.nc_contacts) {
-		npub := hex_npub(ui.nc_contacts[ui.nc_member_choice - 1].id_hex)
-		ed_set(ui, &ui.nc_member, npub)
-		delete(npub)
-	}
-	ui.nc_member_choice = 0
+	ed_set(ui, &ui.nc_member, "")
+	nc_members_clear(ui)
 	nc_contacts_free(&ui.nc_contacts)
 	job := account_job_new(ui, client, .Read_Contacts)
 	account_job_start(job)
@@ -1801,29 +1797,37 @@ open_existing_dm :: proc(ui: ^Ui_State, client: ^marmot.Client, peer: string) ->
 	return false
 }
 
-@(private = "file")
-nc_member_choose :: proc(ui: ^Ui_State, index: int) {
-	ui.nc_member_choice = index + 1
-	ed_set(ui, &ui.nc_member, contact_label(ui, ui.nc_contacts[index]))
+@(private)
+nc_members_clear :: proc(ui: ^Ui_State) {
+	for member in ui.nc_members {delete(member.hex); delete(member.label); delete(member.pic_url)}
+	delete(ui.nc_members)
+	ui.nc_members = {}
 }
 
-// A directory hit joins the picker's contacts, so the member field holds it
-// like any other choice.
-@(private = "file")
-nc_member_choose_person :: proc(ui: ^Ui_State, hit: People_Hit) {
-	for contact, i in ui.nc_contacts {
-		if contact.id_hex == hit.id_hex {nc_member_choose(ui, i); return}
+@(private)
+nc_member_add :: proc(ui: ^Ui_State, hex: string, label := "", pic_url := "") {
+	if hex == "" || strings.equal_fold(hex, ui.account_ref) {return}
+	for member in ui.nc_members {
+		if strings.equal_fold(member.hex, hex) {return}
 	}
 	append(
-		&ui.nc_contacts,
-		Contact_Ui {
-			id_hex = strings.clone(hit.id_hex),
-			name = strings.clone(hit.name),
-			npub = strings.clone(hit.npub),
-			pic_url = strings.clone(hit.pic_url),
+		&ui.nc_members,
+		Nc_Member {
+			hex = strings.to_lower(hex),
+			label = strings.clone(label != "" ? label : sender_label(hex)),
+			pic_url = strings.clone(pic_url),
 		},
 	)
-	nc_member_choose(ui, len(ui.nc_contacts) - 1)
+}
+
+@(private)
+nc_group_targets :: proc(ui: ^Ui_State) -> string {
+	targets := strings.builder_make(context.temp_allocator)
+	for member, i in ui.nc_members {
+		if i > 0 {strings.write_byte(&targets, '\n')}
+		strings.write_string(&targets, member.hex)
+	}
+	return strings.to_string(targets)
 }
 
 // The account behind a row of the combined list: matching contacts first,
@@ -1834,11 +1838,23 @@ nc_row_hex :: proc(ui: ^Ui_State, rows: []Contact_Order, people: []int, at: int)
 	return ui.people.hits[people[at - len(rows)]].id_hex
 }
 
+@(private = "file")
+nc_control_visible :: proc(id: nendo.Id) -> bool {
+	if !nendo.element(id).found {return false}
+	for container in ([2]nendo.Id{nendo.id("NCForm"), nendo.id("NewChatPane")}) {
+		scroll := nendo.scroll(container)
+		if !scroll.found {continue}
+		top := scroll.position.y
+		scroll_into_view(container, id)
+		if scroll.position.y != top {return false}
+	}
+	return true
+}
+
 // Contact selection and the group form share asynchronous creation.
 handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.nc_page == .Group &&
-	   ui.focus == .NC_Member &&
-	   ui.nc_member_choice == 0 &&
+	   (ui.focus == .NC_Member || ui.focus == .NC_Remove) &&
 	   rl.IsKeyPressed(.ESCAPE) {
 		ui.focus = .NC_Name
 		return
@@ -1852,16 +1868,9 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		people_retry(ui)
 		return
 	}
-	edit_text(ui, active_buf(ui))
+	if ui.focus != .NC_Remove {edit_text(ui, active_buf(ui))}
 	address_input := ui.nc_page == .Contacts ? string(ui.nc_search[:]) : string(ui.nc_member[:])
 	if address := nc_address_hex(ui, address_input); address != "" {profile_info(client, address)}
-	if ui.nc_member_choice > 0 &&
-	   (ui.nc_member_choice > len(ui.nc_contacts) ||
-			   string(ui.nc_member[:]) !=
-				   contact_label(ui, ui.nc_contacts[ui.nc_member_choice - 1])) {
-		ui.nc_member_choice = 0
-		ui.nc_contact_sel = 0
-	}
 
 	if clicked("NCBack") {
 		ui.nc_page = .Contacts
@@ -1931,44 +1940,111 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if field_mouse(ui, &ui.nc_name, "NCName", 14) {
 		ui.focus = .NC_Name
 	}
-	tab_focus([]Focus{.NC_Name, .NC_Member}, &ui.focus)
-	if ui.focus == .NC_Member && ui.nc_member_choice == 0 {
-		rows := nc_contact_matches(ui, string(ui.nc_member[:]))
-		people := people_rows(ui, rows)
+	if step := tab_step(); step != 0 {
+		at := ui.focus == .NC_Name ? 0 : ui.focus == .NC_Member ? 1 : ui.nc_remove_focus + 2
+		at = (at + step) %% (2 + len(ui.nc_members))
+		field := nendo.id("NCName")
+		ui.focus = .NC_Name
+		if at == 1 {
+			ui.focus = .NC_Member
+			field = nendo.id("NCMember")
+		} else if at >= 2 {
+			ui.focus, ui.nc_remove_focus = .NC_Remove, at - 2
+			field = nendo.id("NCMemberRemove", u32(ui.nc_remove_focus))
+		}
+		nc_control_visible(field)
+		return
+	}
+	enter := rl.IsKeyPressed(.ENTER)
+	remove := -1
+	if ui.focus == .NC_Remove && (enter || rl.IsKeyPressed(.SPACE)) {
+		remove = ui.nc_remove_focus
+		if !nc_control_visible(nendo.id("NCMemberRemove", u32(remove))) {return}
+	} else if mouse_released() {
+		for _, i in ui.nc_members {
+			if nendo.pointer_over(nendo.id("NCMemberRemove", u32(i))) {remove = i; break}
+		}
+	}
+	if remove >= 0 {
+		member := ui.nc_members[remove]
+		delete(member.hex); delete(member.label); delete(member.pic_url)
+		ordered_remove(&ui.nc_members, remove)
+		if ui.focus == .NC_Remove && ui.nc_remove_focus >= len(ui.nc_members) {
+			ui.focus = .NC_Member
+			nc_control_visible(nendo.id("NCMember"))
+		}
+		return
+	}
+	add := clicked("NCMemberAdd")
+	lookup: string
+	if add || (ui.focus == .NC_Member && enter) {
+		query := strings.trim_space(string(ui.nc_member[:]))
+		if keys := nc_pasted_members(ui, query); len(keys) > 0 {
+			for key in keys {nc_member_add(ui, key)}
+			ed_set(ui, &ui.nc_member, "")
+			ui.nc_contact_sel = 0
+			if data := nendo.scroll(nendo.id("NCMemberOptions")); data.found {data.position.y = 0}
+			ui.focus = .NC_Member
+			return
+		}
+		if strings.contains(query, "@") && !strings.contains(query, ",") {lookup = query}
+	}
+	if !add &&
+	   ui.focus == .NC_Member &&
+	   (mouse_released() || enter || key_hit(.UP) || key_hit(.DOWN)) {
+		rows, people := nc_member_rows(ui)
 		count := len(rows) + len(people)
-		if count > 0 && (key_hit(.UP) || key_hit(.DOWN) || rl.IsKeyPressed(.ENTER)) {
+		pick := -1
+		if count > 0 && (key_hit(.UP) || key_hit(.DOWN) || enter) {
 			step := key_hit(.UP) ? -1 : key_hit(.DOWN) ? 1 : 0
 			ui.nc_contact_sel = clamp(ui.nc_contact_sel + step, 0, count - 1)
-			if rl.IsKeyPressed(.ENTER) {
-				sel := ui.nc_contact_sel
-				if sel < len(rows) {
-					nc_member_choose(ui, rows[sel].idx)
-				} else {
-					nc_member_choose_person(ui, ui.people.hits[people[sel - len(rows)]])
-				}
-				return // Selection must not also create the group.
-			}
 			if data := nendo.scroll(nendo.id("NCMemberOptions")); data.found {
 				y := f32(ui.nc_contact_sel) * NC_MEMBER_H
-				if y < -data.position.y {data.position.y = -y}
-				if bottom := y + NC_MEMBER_H - data.viewport.height;
-				   bottom > -data.position.y {data.position.y = -bottom}
+				top := -data.position.y
+				visible_top := clamp(top, y + NC_MEMBER_H - data.viewport.height, y)
+				data.position.y = -visible_top
+				if enter && visible_top != top {return}
+			}
+			if enter {
+				at := ui.nc_contact_sel
+				row :=
+					at < len(rows) ? nendo.id("NCMemberOption", u32(rows[at].idx)) : nendo.id("NCMemberPerson", u32(people[at - len(rows)]))
+				if !nc_control_visible(row) {return}
+				pick = at
+			}
+		} else if mouse_released() {
+			for row, i in rows {
+				if nendo.pointer_over(nendo.id("NCMemberOption", u32(row.idx))) {pick = i; break}
+			}
+			if pick < 0 {
+				for at, i in people {
+					if nendo.pointer_over(
+						nendo.id("NCMemberPerson", u32(at)),
+					) {pick = len(rows) + i; break}
+				}
 			}
 		}
-		if mouse_released() {
-			for row in rows {
-				if !nendo.pointer_over(nendo.id("NCMemberOption", u32(row.idx))) {continue}
-				nc_member_choose(ui, row.idx)
-				return
+		if pick >= 0 {
+			if pick < len(rows) {
+				contact := ui.nc_contacts[rows[pick].idx]
+				nc_member_add(ui, contact.id_hex, contact_label(ui, contact), contact.pic_url)
+			} else {
+				hit := ui.people.hits[people[pick - len(rows)]]
+				nc_member_add(ui, hit.id_hex, people_label(ui, hit), hit.pic_url)
 			}
-			for at in people {
-				if !nendo.pointer_over(nendo.id("NCMemberPerson", u32(at))) {continue}
-				nc_member_choose_person(ui, ui.people.hits[at])
-				return
-			}
-			if !nendo.pointer_over(nendo.id("NCMember")) &&
-			   !nendo.pointer_over(nendo.id("NCMemberOptions")) {ui.focus = .NC_Name}
+			ed_set(ui, &ui.nc_member, "")
+			ui.nc_contact_sel = 0
+			if data := nendo.scroll(nendo.id("NCMemberOptions")); data.found {data.position.y = 0}
+			return
 		}
+		if enter && lookup == "" {return}
+		if mouse_released() &&
+		   !nendo.pointer_over(nendo.id("NCMemberSearch")) &&
+		   !nendo.pointer_over(nendo.id("NCMemberOptions")) {ui.focus = .NC_Name}
+	}
+	if lookup != "" {
+		ui.nip05_ticket = spawn_op(ui, client, .Lookup_Member, lookup, "")
+		return
 	}
 	if clicked("NCPicFile") {
 		ui.picking_ncpic = true
@@ -1984,17 +2060,7 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if clicked("NCCreate") || rl.IsKeyPressed(.ENTER) {
-		if ui.nip05_ticket != 0 {return}
-		member := nc_member_ref(ui)
-
-		// `@` addresses go through the NIP-05 lookup, which only fills
-		// in the member field.
-		if len(member) > 0 && strings.contains(member, "@") {
-			ui.nip05_ticket = spawn_op(ui, client, .Lookup_Member, member, "")
-			return
-		}
-
+	if clicked("NCCreate") || enter {
 		// A filled-in default would make every unnamed group look the same.
 		name := strings.trim_space(string(ui.nc_name[:]))
 		if name == "" {
@@ -2006,8 +2072,8 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			)
 			return
 		}
-		if member == "" {return}
-		new_chat_create_and_open(ui, client, name, member)
+		if len(ui.nc_members) == 0 {return}
+		new_chat_create_and_open(ui, client, name, nc_group_targets(ui))
 	}
 }
 
@@ -2021,6 +2087,7 @@ close_new_chat :: proc(ui: ^Ui_State) {
 		}
 	}
 	ui.nip05_ticket = 0
+	nc_members_clear(ui)
 	ui.new_chat_open = false
 	ui.focus = .Compose
 }
@@ -2061,14 +2128,11 @@ handle_dm_details :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 		return true
 	}
 	if clicked("DmStartGroup") {
-		// open_new_chat resets the form; snapshot its peer before it does.
-		member := strings.clone(peer)
-		defer delete(member)
+		chat := &ui.chats[ui.selected]
 		close_group_info(ui)
 		open_new_chat(ui, client)
 		ui.nc_page = .Group
-		ed_set(ui, &ui.nc_member, member)
-		clear(&ui.nc_name)
+		nc_member_add(ui, peer, chat.title, chat.avatar_url)
 		ui.focus = .NC_Name
 		return true
 	}
