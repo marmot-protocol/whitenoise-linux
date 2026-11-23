@@ -326,8 +326,9 @@ thread_reply_previews :: proc(t: ^testing.T) {
 	for kind in ([]u64{KIND_CHAT_MESSAGE, KIND_THREAD, KIND_POLL, KIND_AGENT_ITEM}) {
 		parent: cstring = kind == KIND_POLL ? "legacy-parent" : "parent"
 		parent_tag[1] = parent
+		ref.parent_message_id_hex = parent
 		record.kind = kind
-		record.thread = kind == KIND_THREAD || kind == KIND_AGENT_ITEM ? &ref : nil
+		record.thread = kind != KIND_CHAT_MESSAGE ? &ref : nil
 		record.agent_item = kind == KIND_AGENT_ITEM ? &agent : nil
 		record.reply_to_message_id_hex = parent
 		preview.message_id_hex = parent
