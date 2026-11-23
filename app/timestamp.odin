@@ -146,7 +146,7 @@ timestamp_picker_open :: proc(ui: ^Ui_State) {
 	}
 	picker := &ui.timestamp
 	picker.open = true
-	picker.format = .Date_Time
+	picker.format = .Pair
 	lo, hi, head := field_sel(ui, &ui.compose)
 	picker.selection = {head, head == lo ? hi : lo}
 	ed_set(
