@@ -443,9 +443,11 @@ choose **Review chats** to see what's blocking each chat. Selecting a chat
 opens its settings without changing them.
 
 Open a chat's details and look for **Linked devices**. The card shows whether
-linked devices are on or why you can't turn them on. If you see **Linked
-devices are ready**, choose **Turn on linked devices** to let members' linked
-devices join without an admin. That change can't be undone.
+linked devices are on or why you can't turn them on. If you're an admin,
+**Members to check** names the members whose devices block the upgrade and
+shows what needs attention for each one. If you see **Linked devices are
+ready**, choose **Turn on linked devices** to let members' linked devices
+join without an admin. That change can't be undone.
 If the chat is still catching up, wait before trying again.
 
 New chats negotiate support from the KeyPackages used to invite members.

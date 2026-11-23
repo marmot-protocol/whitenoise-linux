@@ -1073,6 +1073,34 @@ devices_chat_activation :: proc(t: ^testing.T) {
 		want := verdict == .ELIGIBLE ? "weren't turned on" : "are turned on"
 		testing.expect(t, strings.contains(a.notice, want))
 	}
+
+	ui.chats[0].title = "Studio chat"
+	ui.chats[0].conversation_kind = .GROUP
+	ui.nicknames = make(map[string]string)
+	ui.nicknames["9842bc97"] = "Casey"
+	ui.nicknames["be821f72"] = "Morgan"
+	defer delete(ui.nicknames)
+	blockers := [?]marmot.Account_Devices_Blocker {
+		{"9842bc97", .MEMBERS_NEED_UPDATE},
+		{"be821f72", .DEVICES_NEED_REPLACEMENT},
+		{"account-a", .DEVICE_LIMIT_EXCEEDED},
+	}
+	report := marmot.Account_Devices_Report {
+		eligibility  = .MEMBERS_NEED_UPDATE,
+		blockers     = raw_data(blockers[:]),
+		blockers_len = len(blockers),
+	}
+	read.eligibility, read.report = report.eligibility, &report
+	activation_apply_read(&ui, &read)
+	defer a.report = nil // The test report lives on the stack, not in marmot-c.
+	text = device_test_frame(&ui)
+	for line in ([?]string{"Members to check", "Casey A device hasn't reported support.", "Morgan A device needs to be replaced.", "You This member has too many devices in this chat."}) {
+		testing.expect(t, strings.contains(text, line), line)
+	}
+	testing.expect(t, !nendo.element(nendo.id("EnableAccountDevices")).found)
+	ui.selected = 1
+	text = device_test_frame(&ui)
+	testing.expect(t, !strings.contains(text, "Members to check"))
 }
 
 @(test)

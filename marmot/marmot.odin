@@ -1704,6 +1704,20 @@ Account_Devices_Activation :: enum i32 {
 	DEVICE_LIMIT_EXCEEDED,
 }
 
+Account_Devices_Blocker :: struct {
+	member_id_hex: cstring,
+	reason:        Account_Devices_Activation,
+}
+
+Account_Devices_Report :: struct {
+	eligibility:  Account_Devices_Activation,
+	blockers:     [^]Account_Devices_Blocker,
+	blockers_len: uint,
+}
+
+#assert(size_of(Account_Devices_Blocker) == 16)
+#assert(size_of(Account_Devices_Report) == 24)
+
 Group_Change_Not_Delivered :: struct {
 	group_id_hex, commit_id_hex, queued_intent_id_hex, intent_kind, reason: cstring,
 	at:                                                                     u64,
@@ -1875,6 +1889,8 @@ foreign lib {
 	chat_history_import_list_free :: proc(list: ^Chat_History_Import_List) ---
 
 	account_devices_activation :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^Account_Devices_Activation) -> Status ---
+	account_devices_report :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^^Account_Devices_Report) -> Status ---
+	account_devices_report_free :: proc(ptr: ^Account_Devices_Report) ---
 	enable_account_devices :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^^Group_Mutation_Result) -> Status ---
 	group_mutation_result_free :: proc(ptr: ^Group_Mutation_Result) ---
 	acknowledge_group_commit_undelivered :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^bool) -> Status ---

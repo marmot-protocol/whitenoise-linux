@@ -397,8 +397,14 @@ msgstr ""
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr ""
 
+msgid "A device hasn't reported support."
+msgstr ""
+
 #, c-format
 msgid "A device is asking to link to %s."
+msgstr ""
+
+msgid "A device needs to be replaced."
 msgstr ""
 
 msgid "A different code can mean someone else is trying to link. Don't approve unless both codes match exactly."
@@ -3819,6 +3825,9 @@ msgstr ""
 msgid "Members"
 msgstr ""
 
+msgid "Members to check"
+msgstr ""
+
 msgid "Members' linked devices can join without an admin."
 msgstr ""
 
@@ -6362,6 +6371,9 @@ msgstr ""
 
 #, c-format
 msgid "This leaves White Noise and opens the call in %s."
+msgstr ""
+
+msgid "This member has too many devices in this chat."
 msgstr ""
 
 msgid "This message was deleted"

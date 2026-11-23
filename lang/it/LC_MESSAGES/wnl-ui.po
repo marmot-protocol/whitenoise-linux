@@ -372,6 +372,12 @@ msgstr "Un client per chat di gruppo private. I messaggi vengono sigillati con M
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "Un client desktop per chat di gruppo private. I messaggi vengono sigillati con MLS su questa macchina, consegnati ai relay Nostr come blob opachi e riaperti solo all'interno del gruppo."
 
+msgid "A device hasn't reported support."
+msgstr "Un dispositivo non ha ancora segnalato il supporto."
+
+msgid "A device needs to be replaced."
+msgstr "Un dispositivo deve essere sostituito."
+
 msgid "A display name is required."
 msgstr "È necessario un nome visualizzato."
 
@@ -3442,6 +3448,9 @@ msgstr "Metadati multimediali"
 msgid "Members"
 msgstr "Membri"
 
+msgid "Members to check"
+msgstr "Membri da contattare"
+
 msgid "Mentions"
 msgstr "Menzioni"
 
@@ -5693,6 +5702,9 @@ msgstr "Questo esce da White Noise e si apre nel tuo browser."
 #, c-format
 msgid "This leaves White Noise and opens the call in %s."
 msgstr "Esci da White Noise e apri la chiamata in %s."
+
+msgid "This member has too many devices in this chat."
+msgstr "Questo membro ha troppi dispositivi in questa chat."
 
 msgid "This message was deleted"
 msgstr "Questo messaggio è stato eliminato"
