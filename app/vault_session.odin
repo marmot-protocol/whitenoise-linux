@@ -346,7 +346,10 @@ session_textures_clear :: proc(textures: ^map[string]^rl.Texture2D) {
 
 @(private)
 session_media_clear :: proc() {
-	for _, view in video_views {if view != nil {video_view_free(view)}}
+	for key, view in video_views {
+		if view != nil {video_view_free(view)}
+		delete(key.key)
+	}
 	for _, view in stl_views {if view != nil {stl_view_free(view)}}
 	for _, view in pdf_views {
 		if view != nil {mem.zero_slice(view.data); mem.zero_slice(view.pix); pdf_view_free(view)}

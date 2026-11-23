@@ -237,17 +237,16 @@ handle_media_retry :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	load_timeline(client, ui)
 }
 
-@(private = "file")
-drop_nil_views :: proc(views: ^map[string]^$T) {
-	stale := make([dynamic]string, context.temp_allocator)
+@(private)
+drop_nil_views :: proc(views: ^$M/map[$K]$V) {
 	for key, view in views {
-		if view == nil {
-			append(&stale, key)
-		}
-	}
-	for key in stale {
+		if view != nil {continue}
 		k, _ := delete_key(views, key)
-		delete(k)
+		when K == Media_Key {
+			delete(k.key)
+		} else {
+			delete(k)
+		}
 	}
 }
 

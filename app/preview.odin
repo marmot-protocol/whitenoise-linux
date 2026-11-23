@@ -72,6 +72,9 @@ Preview :: struct {
 	vid_shared:     bool, // timeline cache owns the view and its bytes
 	pdf:            ^Pdf_View,
 	pdf_fullscreen: bool, // fills the app window without changing desktop fullscreen
+	pdf_raster:     Pdf_View, // owns a modal-only raster with no source bytes
+	pdf_size:       rl.Vector2, // last size requested for the attachment preview
+	pdf_failed:     bool,
 	arc:            ^Arc_View,
 	txt:            ^Txt_View,
 	message_blocks: [dynamic]Md_Block_Ui,
@@ -151,7 +154,7 @@ preview_attachment_poll :: proc() {
 	}
 	switch preview.media.kind {
 	case .Image:
-		if video := video_views[preview.media.key]; video != nil {
+		if video := video_views[preview.media]; video != nil {
 			preview.kind, preview.vid, preview.vid_shared = .Video, video, true
 		} else {
 			pick := preview.attachment
@@ -185,6 +188,88 @@ preview_attachment_poll :: proc() {
 		preview.kind, preview.font = .Font, (^Ttf_View)(view)
 	case .File, .Sticker, .Emoji, .Xdc, .Torrent, .Nes, .Original:
 	}
+}
+
+@(private = "file")
+Pdf_Preview_Load :: struct {
+	mutex:         sync.Mutex,
+	view:          Pdf_View,
+	allocator:     mem.Allocator,
+	done, dropped: bool,
+}
+
+@(private = "file")
+pdf_preview_load: ^Pdf_Preview_Load
+
+@(private = "file")
+preview_pdf_worker :: proc(job: ^Pdf_Preview_Load) {
+	context.allocator = job.allocator
+	defer free_all(context.temp_allocator)
+	pdf_render_page(&job.view, .Prepare)
+	sync.lock(&job.mutex)
+	job.done = true
+	dropped := job.dropped
+	sync.unlock(&job.mutex)
+	if dropped {
+		pdf_raster_free(&job.view)
+		free(job)
+	}
+	frame_wake()
+}
+
+@(private = "file")
+preview_pdf_start :: proc(page: int, size: rl.Vector2) {
+	job := new(Pdf_Preview_Load)
+	job.allocator = context.allocator
+	job.view = {
+		data     = preview.pdf.data,
+		page     = page,
+		max_size = size,
+	}
+	pdf_preview_load = job
+	preview.pdf_size = size
+	preview.pdf_failed = false
+	append(&send_threads, thread.create_and_start_with_poly_data(job, preview_pdf_worker))
+}
+
+@(private = "file")
+preview_pdf_poll :: proc() {
+	job := pdf_preview_load
+	if job == nil {return}
+	sync.lock(&job.mutex)
+	done := job.done
+	sync.unlock(&job.mutex)
+	if !done {return}
+	pdf_preview_load = nil
+	view := job.view
+	free(job)
+	if view.failed {
+		pdf_raster_free(&view)
+		preview.pdf_failed = true
+		return
+	}
+	view.data = nil // the cache owns the source
+	view.tex = rl.LoadTextureFromImage(
+		{data = raw_data(view.pix), width = view.w, height = view.h},
+	)
+	pdf_raster_free(&preview.pdf_raster)
+	preview.pdf_raster = view
+}
+
+@(private = "file")
+preview_pdf_close :: proc() {
+	if job := pdf_preview_load; job != nil {
+		sync.lock(&job.mutex)
+		job.dropped = true
+		done := job.done
+		sync.unlock(&job.mutex)
+		if done {
+			pdf_raster_free(&job.view)
+			free(job)
+		}
+		pdf_preview_load = nil
+	}
+	pdf_raster_free(&preview.pdf_raster)
 }
 
 // A model the modal is decoding off the UI thread: parse, stand-in and
@@ -756,7 +841,7 @@ preview_close :: proc() {
 		if preview.code != nil {code_view_free(preview.code)}
 		if preview.font != nil {ttf_view_free(preview.font)}
 	} else if preview.pdf != nil {
-		preview.pdf.max_size = {}
+		preview_pdf_close()
 	}
 	rl.UnloadTexture(preview.tex)
 	for s in preview.slides {
@@ -1040,7 +1125,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 								{font = FONT_ICON, size = 14, color = TEXT},
 							)
 						}
-						video_scrub_bar(nendo.id("PvAudioBar"), view, fit_w(360))
+						video_scrub_bar(nendo.id("PvAudioBar"), view, fit_w(360), 14)
 						nendo.text(
 							fmt.tprintf("%s / %s", fmt_clock(view.time), fmt_clock(view.dur)),
 							{font = FONT_BODY, size = 11, color = TEXT_DIM},
@@ -1178,12 +1263,32 @@ preview_modal :: proc(ui: ^Ui_State) {
 
 			case .Pdf:
 				view := preview.pdf
+				shared := preview.attachment.msg_id != ""
 				dpi := rl.GetWindowScaleDPI()
 				size :=
 					full ? rl.Vector2{f32(rl.GetScreenWidth()) * dpi.x, f32(rl.GetScreenHeight()) * dpi.y} : rl.Vector2{}
-				if view.max_size != size {
+				if shared {
+					preview_pdf_poll()
+					if preview.pdf_raster.pages > 0 {view = &preview.pdf_raster}
+					if pdf_preview_load == nil && preview.pdf_size != size {
+						preview_pdf_start(view.page, size)
+					}
+				} else if view.max_size != size {
 					view.max_size = size
 					pdf_render_page(view)
+				}
+				pending := pdf_preview_load != nil
+				if pending {
+					nendo.text(tr("Loading…"), {font = FONT_BODY, size = 13, color = TEXT})
+					busy_bar("PvPdfBusy")
+				} else if preview.pdf_failed {
+					nendo.text(
+						fmt.tprintf(
+							tr("Couldn't open %s. Please try again."),
+							arc_short_name(preview.name),
+						),
+						{font = FONT_BODY, size = 12, color = TEXT_DIM},
+					)
 				}
 				ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 0.77
 				if nendo.box(nendo.id("PvPdf"))(
@@ -1198,6 +1303,8 @@ preview_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					if view.pages > 1 {
+						prev := !pending && view.page > 0
+						next := !pending && view.page < view.pages - 1
 						if nendo.box(nendo.id("PvPdfNav"))(
 						{
 							padding = {left = 8, right = 8, top = 4, bottom = 4},
@@ -1215,7 +1322,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 								align = {x = .Center, y = .Center},
 							},
 							) {
-								if view.page > 0 && hovered() {
+								if !shared && prev && hovered() {
 									pdf_flip_hover = view
 									pdf_flip_dir = -1
 								}
@@ -1224,7 +1331,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 									{
 										font = FONT_TITLE,
 										size = 13,
-										color = {255, 255, 255, view.page > 0 ? 230 : 80},
+										color = {255, 255, 255, prev ? 230 : 80},
 									},
 								)
 							}
@@ -1240,7 +1347,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 								align = {x = .Center, y = .Center},
 							},
 							) {
-								if view.page < view.pages - 1 && hovered() {
+								if !shared && next && hovered() {
 									pdf_flip_hover = view
 									pdf_flip_dir = 1
 								}
@@ -1249,12 +1356,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 									{
 										font = FONT_TITLE,
 										size = 13,
-										color = {
-											255,
-											255,
-											255,
-											view.page < view.pages - 1 ? 230 : 80,
-										},
+										color = {255, 255, 255, next ? 230 : 80},
 									},
 								)
 							}
@@ -1367,10 +1469,9 @@ preview_modal :: proc(ui: ^Ui_State) {
 						width = nendo.fixed(fit_w(480, 26)),
 						padding = nendo.pad(8),
 						gap = 10,
-						color = hovered() ? HOVER : PLATE,
+						color = PLATE,
 					},
 					) {
-						if hovered() {arc_hover = {preview.arc, entry.index, entry.name}}
 						nendo.text(
 							text_ellipsis(entry.name, fit_w(380, 26), FONT_BODY, 12),
 							{font = FONT_BODY, size = 12, color = TEXT},
@@ -1501,6 +1602,15 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			data.position^ = {}
 		}
 		return
+	}
+	if preview.kind == .Pdf && preview.attachment.msg_id != "" && pdf_preview_load == nil {
+		view := preview.pdf_raster.pages > 0 ? &preview.pdf_raster : preview.pdf
+		step := clicked("PvPdfPrev") ? -1 : clicked("PvPdfNext") ? 1 : 0
+		next := clamp(view.page + step, 0, view.pages - 1)
+		if next != view.page {
+			preview_pdf_start(next, preview.pdf_size)
+			return
+		}
 	}
 	if preview.kind == .Message && clicked("PvRead") {
 		tts_read(ui, string(preview.bytes))

@@ -340,7 +340,13 @@ group_file_preview_clicks :: proc(t: ^testing.T) {
 	}
 	group_files_job = &job
 	defer {group_files_job = nil; delete(job.files)}
-	defer {preview_close(); media_stop(); session_media_clear()}
+	defer {
+		preview_close()
+		for worker in send_threads {thread.join(worker); thread.destroy(worker)}
+		delete(send_threads); send_threads = {}
+		media_stop()
+		session_media_clear()
+	}
 
 	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 		nendo.set_pointer({-100, -100}, .Up)
@@ -361,10 +367,13 @@ group_file_preview_clicks :: proc(t: ^testing.T) {
 << /Type /Catalog /Pages 2 0 R >>
 endobj
 2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>
 endobj
 3 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 200] >>
 endobj
 trailer
 << /Root 1 0 R >>
@@ -405,8 +414,16 @@ trailer
 	if !testing.expect(t, len(media_jobs) == 1 && media_jobs[0].worker != nil) {return}
 	thread.join(media_jobs[0].worker)
 	media_drain(&ui)
-	commands := frame(&ui)
+	frame(&ui)
 	testing.expect(t, nendo.element(nendo.id("PvPdf")).found, "the PDF page is visible")
+	if !point(t, nendo.id("PvPdfNext")) {return}
+	handle_preview(&ui, client)
+	if !testing.expect(t, len(send_threads) == 1, "flipping queues a page render") {return}
+	thread.join(send_threads[0])
+	commands := frame(&ui)
+	page := nendo.element(nendo.id("PvPdf")).rect
+	testing.expect(t, page.height > page.width, "the second page is portrait")
+	testing.expect_value(t, pdf_views[sha].page, 0)
 	rl.BeginDrawing(); render_nendo(commands)
 	rl.TakeScreenshot("/tmp/wn-group-files-pdf.png")
 	rl.EndDrawing()

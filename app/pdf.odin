@@ -90,9 +90,14 @@ pdf_render_page :: proc(view: ^Pdf_View, phase: Media_Phase = .Present) {
 
 pdf_view_free :: proc(view: ^Pdf_View) {
 	delete(view.data)
+	pdf_raster_free(view)
+	free(view)
+}
+
+@(private)
+pdf_raster_free :: proc(view: ^Pdf_View) {
 	rl.UnloadTexture(view.tex)
 	libc.free(raw_data(view.pix))
-	free(view)
 }
 
 // Page-flip chips: hover recorded during the build, click after it.
