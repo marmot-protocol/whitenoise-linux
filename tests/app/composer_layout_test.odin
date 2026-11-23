@@ -277,6 +277,7 @@ composer_layout :: proc(t: ^testing.T) {
 	testing.expect(
 		t,
 		nendo.element(nendo.id("PollBtn")).found &&
+		nendo.element(nendo.id("ComposeTimestampBtn")).found &&
 		!nendo.element(nendo.id("ComposePasteBtn")).found,
 	)
 	ui.prefs.reduce_motion = true

@@ -643,13 +643,14 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	read_only := ui.chats[ui.selected].archived
 	typed_len := -1
 	if ui.focus != .Filter &&
+	   ui.focus != .Timestamp &&
 	   (!read_only || ui.focus == .Search || ui.show_members) &&
 	   !(ui.show_members && (selected_chat_is_dm(ui) || ui.focus == .Compose)) &&
 	   !web_modal.open &&
 	   (ui.stt.file == nil || ui.stt.message != "") &&
 	   blocked_dm == "" {
 		buf := active_buf(ui)
-		if buf != &ui.compose || !ui.poll_open {
+		if buf != &ui.compose || (!ui.poll_open && !ui.timestamp.open) {
 			n := edit_text(ui, buf, buf == &ui.compose || buf == &ui.desc_input)
 			if buf == &ui.compose {typed_len = n}
 		}
@@ -662,6 +663,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 		if !ui.poll_open &&
+		   !ui.timestamp.open &&
 		   rl.IsKeyPressed(.ESCAPE) &&
 		   len(ui.compose) == 0 &&
 		   len(ui.editing) == 0 {
@@ -669,7 +671,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
-	if !ui.poll_open {compose_mouse(ui)}
+	if !ui.poll_open && !ui.timestamp.open {compose_mouse(ui)}
 	if ui.search_open &&
 	   !clicked("SearchClear") &&
 	   field_mouse(ui, &ui.search_input, "SearchBox") {
@@ -744,6 +746,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("SearchBtn") {
+		timestamp_picker_close(ui)
 		ui.group_files_open = false
 		// From members or settings, Search returns to the conversation
 		// with the search open rather than toggling a hidden bar.
@@ -829,6 +832,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   !web_modal.open &&
 	   nendo.element(nendo.id("PollFields")).found &&
 	   handle_poll(ui, client) {return}
+	if ui.timestamp.open &&
+	   !web_modal.open &&
+	   nendo.element(nendo.id("TimestampFields")).found &&
+	   handle_timestamp_picker(ui) {return}
 
 	// Per-message row actions.
 	if mouse_released() {
@@ -938,7 +945,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	if ui.poll_open {return}
+	if ui.poll_open || ui.timestamp.open {return}
 
 	// The @-mention and :shortcode: popovers consume Escape/Enter/arrows
 	// while open.
@@ -1470,6 +1477,7 @@ start_reply :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 start_edit :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 	if !message_can_edit(msg) {return}
 	poll_close(ui)
+	timestamp_picker_close(ui)
 	stash_draft(ui) // the edit borrows the composer; keep the draft
 	ed_set(ui, &ui.compose, msg.body)
 	ui.editing = msg.id
@@ -1479,6 +1487,7 @@ start_edit :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 // Leave the edit and bring back the draft it borrowed the composer from.
 @(private = "file")
 cancel_edit :: proc(ui: ^Ui_State) {
+	timestamp_picker_close(ui)
 	ui.editing = ""
 	ed_set(ui, &ui.compose, ui.drafts[draft_key(ui.account_ref, ui.chats[ui.selected].group_id)])
 }

@@ -1914,6 +1914,9 @@ msgstr ""
 msgid "Couldn't read your existing contacts. Please try again."
 msgstr ""
 
+msgid "Couldn't read your local time. Check your device's clock and try again."
+msgstr ""
+
 msgid "Couldn't refresh device information."
 msgstr ""
 
@@ -2242,7 +2245,19 @@ msgstr ""
 msgid "Data folder"
 msgstr ""
 
+msgid "Date and time"
+msgstr ""
+
+msgid "Date and time with relative time"
+msgstr ""
+
+msgid "Date and time with seconds"
+msgstr ""
+
 msgid "Date format"
+msgstr ""
+
+msgid "Date only"
 msgstr ""
 
 msgid "Debug"
@@ -2674,6 +2689,9 @@ msgstr ""
 msgid "Enter a username and password, each up to 255 characters."
 msgstr ""
 
+msgid "Enter a valid date and time in your timezone."
+msgstr ""
+
 msgid "Enter a valid emoji set naddr."
 msgstr ""
 
@@ -2962,6 +2980,9 @@ msgstr ""
 
 #, c-format
 msgid "From: %s"
+msgstr ""
+
+msgid "Full date and time"
 msgstr ""
 
 msgid "Fullscreen"
@@ -3257,7 +3278,13 @@ msgstr ""
 msgid "Info hash copied"
 msgstr ""
 
+msgid "Insert"
+msgstr ""
+
 msgid "Insert a new line"
+msgstr ""
+
+msgid "Insert timestamp"
 msgstr ""
 
 msgid "Inspect"
@@ -3700,6 +3727,9 @@ msgid "Local cleanup reported a problem: %s"
 msgstr ""
 
 msgid "Local data & backups"
+msgstr ""
+
+msgid "Local date and time (YYYY-MM-DD HH:MM[:SS])."
 msgstr ""
 
 msgid "Local files, cached media, and encrypted backups."
@@ -4965,6 +4995,9 @@ msgid "Regular"
 msgstr ""
 
 msgid "Rejected on another device"
+msgstr ""
+
+msgid "Relative time"
 msgstr ""
 
 msgid "Relay lists republished."
@@ -6447,6 +6480,12 @@ msgid "Thursday"
 msgstr ""
 
 msgid "Time format"
+msgstr ""
+
+msgid "Time only"
+msgstr ""
+
+msgid "Time with seconds"
 msgstr ""
 
 msgid "Timeline subscription closed."

@@ -1645,6 +1645,9 @@ msgstr "연락처 파일을 읽을 수 없습니다. 파일 권한을 확인하�
 msgid "Couldn't read your existing contacts. Please try again."
 msgstr "기존 연락처를 읽을 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't read your local time. Check your device's clock and try again."
+msgstr "현지 시간을 확인할 수 없습니다. 기기의 시계를 확인하고 다시 시도하세요."
+
 msgid "Couldn't remove the GIF. Please try again."
 msgstr "GIF를 제거할 수 없습니다. 다시 시도하세요."
 
@@ -1908,8 +1911,20 @@ msgstr "다크"
 msgid "Data folder"
 msgstr "데이터 폴더"
 
+msgid "Date and time"
+msgstr "날짜와 시간"
+
+msgid "Date and time with relative time"
+msgstr "상대 시간을 포함한 날짜와 시간"
+
+msgid "Date and time with seconds"
+msgstr "초를 포함한 날짜와 시간"
+
 msgid "Date format"
 msgstr "날짜 형식"
+
+msgid "Date only"
+msgstr "날짜만"
 
 msgid "Debug"
 msgstr "디버그"
@@ -2263,6 +2278,9 @@ msgstr "1~64자의 스티커 이름을 입력하세요."
 msgid "Enter a username and password, each up to 255 characters."
 msgstr "각각 255자 이내로 사용자 이름과 비밀번호를 입력하세요."
 
+msgid "Enter a valid date and time in your timezone."
+msgstr "현재 시간대에서 유효한 날짜와 시간을 입력하세요."
+
 msgid "Enter a valid emoji set naddr."
 msgstr "유효한 이모지 세트 naddr를 입력하세요."
 
@@ -2528,6 +2546,9 @@ msgstr "파일에서"
 #, c-format
 msgid "From: %s"
 msgstr "보낸 사람: %s"
+
+msgid "Full date and time"
+msgstr "요일을 포함한 날짜와 시간"
 
 msgid "Fullscreen"
 msgstr "전체 화면"
@@ -2801,8 +2822,14 @@ msgstr "정보 해시"
 msgid "Info hash copied"
 msgstr "정보 해시를 복사했습니다"
 
+msgid "Insert"
+msgstr "삽입"
+
 msgid "Insert a new line"
 msgstr "줄 바꿈 삽입"
+
+msgid "Insert timestamp"
+msgstr "타임스탬프 삽입"
 
 msgid "Inspect"
 msgstr "조회"
@@ -3107,6 +3134,9 @@ msgstr "불러오는 중…"
 
 msgid "Local data & backups"
 msgstr "로컬 데이터 및 백업"
+
+msgid "Local date and time (YYYY-MM-DD HH:MM[:SS])."
+msgstr "현지 날짜와 시간(YYYY-MM-DD HH:MM[:SS])입니다."
 
 msgid "Local files, cached media, and encrypted backups."
 msgstr "로컬 파일, 캐시된 미디어, 암호화된 백업입니다."
@@ -4211,6 +4241,9 @@ msgstr "새로고침"
 
 msgid "Regular"
 msgstr "보통"
+
+msgid "Relative time"
+msgstr "상대 시간"
 
 msgid "Relay lists republished."
 msgstr "릴레이 목록을 다시 게시했습니다."
@@ -5388,6 +5421,12 @@ msgstr "목요일"
 
 msgid "Time format"
 msgstr "시간 형식"
+
+msgid "Time only"
+msgstr "시간만"
+
+msgid "Time with seconds"
+msgstr "초를 포함한 시간"
 
 msgid "Timeline subscription closed."
 msgstr "타임라인 구독이 종료되었습니다."

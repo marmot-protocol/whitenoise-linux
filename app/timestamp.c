@@ -76,3 +76,54 @@ int wn_timestamp_local(int64_t seconds, wn_local_time *out) {
     return 1;
 }
 #endif
+
+static int same_wall_time(int64_t seconds, const wn_local_time *input) {
+    wn_local_time local;
+    return wn_timestamp_local(seconds, &local) && local.year == input->year &&
+           local.month == input->month && local.day == input->day && local.hour == input->hour &&
+           local.minute == input->minute && local.second == input->second;
+}
+
+int wn_timestamp_unix(const wn_local_time *input, int64_t *out) {
+    if (input->year < 1 || input->year > 9999) {
+        return 0;
+    }
+#ifdef _WIN32
+    SYSTEMTIME local = {
+        (WORD)input->year,   (WORD)input->month,  0, (WORD)input->day, (WORD)input->hour,
+        (WORD)input->minute, (WORD)input->second, 0};
+    DYNAMIC_TIME_ZONE_INFORMATION zone;
+    SYSTEMTIME utc;
+    FILETIME file;
+    if (GetDynamicTimeZoneInformation(&zone) == TIME_ZONE_ID_INVALID ||
+        !TzSpecificLocalTimeToSystemTimeEx(&zone, &local, &utc) ||
+        !SystemTimeToFileTime(&utc, &file)) {
+        return 0;
+    }
+    uint64_t ticks = ((uint64_t)file.dwHighDateTime << 32) | file.dwLowDateTime;
+    int64_t seconds = (int64_t)(ticks / UINT64_C(10000000)) - INT64_C(11644473600);
+    if (same_wall_time(seconds, input)) {
+        *out = seconds;
+        return 1;
+    }
+#else
+    // Match Windows: prefer the daylight occurrence in a fall-back fold.
+    // A round trip rejects spring-forward gaps and normalized dates such as Feb 30.
+    tzset();
+    for (int isdst = 1; isdst >= 0; --isdst) {
+        struct tm local = {.tm_year = input->year - 1900,
+                           .tm_mon = input->month - 1,
+                           .tm_mday = input->day,
+                           .tm_hour = input->hour,
+                           .tm_min = input->minute,
+                           .tm_sec = input->second,
+                           .tm_isdst = isdst};
+        int64_t seconds = (int64_t)mktime(&local);
+        if (same_wall_time(seconds, input)) {
+            *out = seconds;
+            return 1;
+        }
+    }
+#endif
+    return 0;
+}

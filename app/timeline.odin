@@ -1705,13 +1705,13 @@ message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 			if giphy_message_url(msg.body) != "" {
 				gh_cards_on = false
 			}
-			// A body that is one bare npub/nprofile becomes that person's
-			// card. Either way the text itself is not drawn.
 			replaced := giphy || translated
 			if !replaced && !msg.deleted && len(msg.secrets) == 0 {
 				if hex := bare_mention_hex(msg.body); len(hex) > 0 {
 					profile_card(index * 4096, hex, att_w(360), .Message)
 					replaced = true
+				} else {
+					replaced = timestamp_card(index, msg)
 				}
 			}
 

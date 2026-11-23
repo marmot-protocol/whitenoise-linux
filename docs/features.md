@@ -127,8 +127,10 @@ Git patches:
 
 ### Timestamps that read in your timezone
 
+- Select the composer clock or type `/time` to open the picker inside the composer. By default, it inserts both the absolute and relative forms for the same instant.
 - **Markdown timestamps localize themselves.** A token such as `<t:1791280800:F>` displays in your current timezone with a clock icon.
-- **Hovering shows the source.** You see the absolute local date and time and the original token.
+- A timestamp sent on its own appears as a card. So does an absolute timestamp followed by the same instant in relative form, such as `<t:1795451400:S> (<t:1795451400:R>)`.
+- **Hovering shows the source.** You see the absolute local date and time and the timestamp markup.
 - **Day dividers say Today.** They follow the current local day and update at midnight.
 - **The chat list counts back from today.** It shows the time for today, Yesterday, then the date.
 

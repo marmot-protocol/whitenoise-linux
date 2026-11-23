@@ -1736,6 +1736,9 @@ msgstr "連絡先ファイルを読み取れませんでした。ファイルの
 msgid "Couldn't read your existing contacts. Please try again."
 msgstr "既存の連絡先を読み取れませんでした。もう一度お試しください。"
 
+msgid "Couldn't read your local time. Check your device's clock and try again."
+msgstr "現地時刻を取得できませんでした。端末の時計を確認してから、もう一度お試しください。"
+
 msgid "Couldn't remove the GIF. Please try again."
 msgstr "GIFを削除できませんでした。もう一度お試しください。"
 
@@ -2022,8 +2025,20 @@ msgstr "ダーク"
 msgid "Data folder"
 msgstr "データフォルダー"
 
+msgid "Date and time"
+msgstr "日付と時刻"
+
+msgid "Date and time with relative time"
+msgstr "日付と時刻（相対時刻付き）"
+
+msgid "Date and time with seconds"
+msgstr "日付と時刻（秒まで）"
+
 msgid "Date format"
 msgstr "日付形式"
+
+msgid "Date only"
+msgstr "日付のみ"
 
 msgid "Debug"
 msgstr "デバッグ"
@@ -2407,6 +2422,9 @@ msgstr "ユーザー名とパスワードを、それぞれ UTF-8 で 1 から 2
 msgid "Enter a username and password, each up to 255 characters."
 msgstr "ユーザー名とパスワードをそれぞれ255文字以内で入力してください。"
 
+msgid "Enter a valid date and time in your timezone."
+msgstr "お使いのタイムゾーンで有効な日付と時刻を入力してください。"
+
 msgid "Enter a valid emoji set naddr."
 msgstr "有効な絵文字セットのnaddrを入力してください。"
 
@@ -2697,6 +2715,9 @@ msgstr "ファイルから"
 msgid "From: %s"
 msgstr "開始: %s"
 
+msgid "Full date and time"
+msgstr "日付と時刻（曜日付き）"
+
 msgid "Fullscreen"
 msgstr "全画面表示"
 
@@ -2984,8 +3005,14 @@ msgstr "情報ハッシュ"
 msgid "Info hash copied"
 msgstr "情報ハッシュをコピーしました"
 
+msgid "Insert"
+msgstr "挿入"
+
 msgid "Insert a new line"
 msgstr "改行を挿入"
+
+msgid "Insert timestamp"
+msgstr "タイムスタンプを挿入"
 
 msgid "Inspect"
 msgstr "調べる"
@@ -3330,6 +3357,9 @@ msgstr "読み込み中…"
 
 msgid "Local data & backups"
 msgstr "ローカルデータとバックアップ"
+
+msgid "Local date and time (YYYY-MM-DD HH:MM[:SS])."
+msgstr "現地の日付と時刻（YYYY-MM-DD HH:MM[:SS]）。"
 
 msgid "Local files, cached media, and encrypted backups."
 msgstr "ローカルファイル、メディアキャッシュ、暗号化バックアップを管理します。"
@@ -4494,6 +4524,9 @@ msgstr "更新"
 
 msgid "Regular"
 msgstr "標準"
+
+msgid "Relative time"
+msgstr "相対時刻"
 
 msgid "Relay lists republished."
 msgstr "リレーリストを再公開しました。"
@@ -5757,6 +5790,12 @@ msgstr "木曜日"
 
 msgid "Time format"
 msgstr "時刻形式"
+
+msgid "Time only"
+msgstr "時刻のみ"
+
+msgid "Time with seconds"
+msgstr "時刻（秒まで）"
 
 msgid "Timeline subscription closed."
 msgstr "タイムラインの購読が終了しました。"

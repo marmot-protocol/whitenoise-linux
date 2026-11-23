@@ -2,15 +2,24 @@ package main
 
 import "core:c"
 import "core:fmt"
+import "core:strings"
+import "core:text/edit"
+import "core:time"
 
 import marmot "../marmot"
+import "nendo"
+import rl "sdlrl"
 
 foreign import timestamp_lib {WN_BUILD_DIR + "/libwntimestamp.a"}
 
 @(private = "file", default_calling_convention = "c")
 foreign timestamp_lib {
 	wn_timestamp_local :: proc(seconds: i64, out: ^Local_Time) -> c.int ---
+	wn_timestamp_unix :: proc(local: ^Local_Time, out: ^i64) -> c.int ---
 }
+
+@(private)
+TIMESTAMP_ICON :: "\uf017"
 
 @(private)
 timestamp_token :: proc(seconds: i64, style: marmot.Markdown_Timestamp_Style) -> string {
@@ -65,6 +74,11 @@ timestamp_label :: proc(seconds: i64, style: marmot.Markdown_Timestamp_Style, no
 	if style == .RELATIVE {return timestamp_relative(seconds, now)}
 	local: Local_Time
 	if wn_timestamp_local(seconds, &local) == 0 {return timestamp_token(seconds, style)}
+	return timestamp_absolute(local, style)
+}
+
+@(private = "file")
+timestamp_absolute :: proc(local: Local_Time, style: marmot.Markdown_Timestamp_Style) -> string {
 	context.allocator = context.temp_allocator
 	#partial switch style {
 	case .SHORT_TIME:
@@ -84,5 +98,329 @@ timestamp_label :: proc(seconds: i64, style: marmot.Markdown_Timestamp_Style, no
 			date_clock_text(local, .Omit),
 		)
 	}
-	return timestamp_token(seconds, style)
+	return ""
+}
+
+@(private)
+Timestamp_Editor :: struct {
+	open:      bool,
+	format:    Timestamp_Format,
+	input:     [dynamic]u8,
+	selection: [2]int,
+	initial:   [19]u8,
+	seconds:   i64,
+}
+
+@(private = "file")
+Timestamp_Format :: enum {
+	Date_Time,
+	Pair,
+	Time,
+	Time_Seconds,
+	Date,
+	Full_Date_Time,
+	Date_Time_Seconds,
+	Relative,
+}
+
+@(private = "file")
+TIMESTAMP_FORMATS := [Timestamp_Format]struct {
+	style: marmot.Markdown_Timestamp_Style,
+	label: string,
+} {
+	.Date_Time         = {.SHORT_DATE_TIME, N_("Date and time")},
+	.Pair              = {.COMPACT_DATE_TIME_SECONDS, N_("Date and time with relative time")},
+	.Time              = {.SHORT_TIME, N_("Time only")},
+	.Time_Seconds      = {.LONG_TIME, N_("Time with seconds")},
+	.Date              = {.SHORT_DATE, N_("Date only")},
+	.Full_Date_Time    = {.LONG_DATE_TIME, N_("Full date and time")},
+	.Date_Time_Seconds = {.COMPACT_DATE_TIME_SECONDS, N_("Date and time with seconds")},
+	.Relative          = {.RELATIVE, N_("Relative time")},
+}
+
+@(private)
+timestamp_picker_open :: proc(ui: ^Ui_State) {
+	if ui.poll_open || ui.search_open {return}
+	now := time.time_to_unix(time.now())
+	local: Local_Time
+	if wn_timestamp_local(now, &local) == 0 {
+		toast(ui, tr("Couldn't read your local time. Check your device's clock and try again."))
+		return
+	}
+	picker := &ui.timestamp
+	picker.open = true
+	picker.format = .Pair
+	picker.seconds = now
+	lo, hi, head := field_sel(ui, &ui.compose)
+	picker.selection = {head, head == lo ? hi : lo}
+	ed_set(
+		ui,
+		&picker.input,
+		fmt.bprintf(
+			picker.initial[:],
+			"%04d-%02d-%02d %02d:%02d:%02d",
+			local.year,
+			local.month,
+			local.day,
+			local.hour,
+			local.minute,
+			local.second,
+		),
+	)
+	touch_field = {}
+	ui.focus = rl.HasTouch() ? .Compose : .Timestamp
+	if ui.focus == .Timestamp {
+		ed_begin(ui, &picker.input)
+		ui.ed.selection = {len(picker.input), 0}
+		ed_end(ui, &picker.input)
+	}
+}
+
+@(private)
+timestamp_picker_close :: proc(ui: ^Ui_State) {
+	if !ui.timestamp.open {return}
+	ui.timestamp.open = false
+	if ui.focus == .Timestamp {
+		ui.focus = .Compose
+		touch_field = {}
+	}
+}
+
+@(private = "file")
+timestamp_parse_input :: proc(text: string) -> (seconds: i64, valid: bool) {
+	text := strings.trim_space(text)
+	if len(text) != 16 && len(text) != 19 {return}
+	if text[4] != '-' ||
+	   text[7] != '-' ||
+	   text[10] != ' ' ||
+	   text[13] != ':' ||
+	   (len(text) == 19 && text[16] != ':') {return}
+	local: Local_Time
+	fields := [6]^i32 {
+		&local.year,
+		&local.month,
+		&local.day,
+		&local.hour,
+		&local.minute,
+		&local.second,
+	}
+	for span, i in ([6][2]int{{0, 4}, {5, 7}, {8, 10}, {11, 13}, {14, 16}, {17, 19}}) {
+		if span[1] > len(text) {break}
+		for digit in transmute([]u8)text[span[0]:span[1]] {
+			if digit < '0' || digit > '9' {return}
+			fields[i]^ = fields[i]^ * 10 + i32(digit - '0')
+		}
+	}
+	valid = wn_timestamp_unix(&local, &seconds) != 0
+	return
+}
+
+@(private = "file")
+timestamp_input_seconds :: proc(picker: ^Timestamp_Editor) -> (i64, bool) {
+	text := string(picker.input[:])
+	if strings.trim_space(text) == string(picker.initial[:]) {
+		return picker.seconds, true
+	}
+	return timestamp_parse_input(text)
+}
+
+@(private)
+timestamp_picker :: proc(ui: ^Ui_State) {
+	picker := &ui.timestamp
+	seconds, valid := timestamp_input_seconds(picker)
+	id := nendo.id("TimestampFields")
+	view_h := f32(rl.GetScreenHeight()) / UI_ZOOM
+	limit := max(44, view_h * 0.55)
+	gap :: 4
+	controls_h := tap_size() ? 2 * tap_min() : 66
+	minimum := min(limit, controls_h + 14 + 2 * gap)
+	if nendo.box(id)(
+	{
+		width = nendo.grow(),
+		height = nendo.fit(min = minimum, max = limit),
+		direction = .Column,
+		gap = gap,
+		clip = {y = true, scroll = true},
+	},
+	) {
+		nendo.text(
+			tr("Local date and time (YYYY-MM-DD HH:MM[:SS])."),
+			{font = FONT_BODY, size = 12, color = TEXT_DIM},
+		)
+		gs_field(ui, "TimestampInput", &picker.input, "YYYY-MM-DD HH:MM", .Timestamp)
+		formats := nendo.id("TimestampFormats")
+		if nendo.box(formats)({width = nendo.grow(), gap = 6, clip = {x = true, scroll = true}}) {
+			for option, format in TIMESTAMP_FORMATS {
+				settings_option(
+					"TimestampStyle",
+					u32(format),
+					tr(option.label),
+					picker.format == format,
+				)
+			}
+		}
+		scrollbar(formats)
+		if valid {
+			now := time.time_to_unix(time.now())
+			style := TIMESTAMP_FORMATS[picker.format].style
+			nendo.text(
+				timestamp_label(seconds, style, now),
+				{font = FONT_TITLE, size = 14, color = TEXT},
+			)
+			if picker.format == .Pair {
+				nendo.text(
+					timestamp_relative(seconds, now),
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
+				)
+			}
+		} else {
+			nendo.text(
+				tr("Enter a valid date and time in your timezone."),
+				{font = FONT_BODY, size = 12, color = DANGER},
+			)
+		}
+	}
+	scrollbar(id)
+	if nendo.box()({width = nendo.grow(), gap = 8, align = {x = .Right}}) {
+		settings_button("TimestampCancel", tr("Cancel"))
+		settings_button("TimestampInsert", tr("Insert"), ACCENT, valid ? .Enabled : .Disabled)
+	}
+}
+
+@(private)
+handle_timestamp_picker :: proc(ui: ^Ui_State) -> bool {
+	picker := &ui.timestamp
+	if field_mouse(ui, &picker.input, "TimestampInput") {
+		ui.focus = .Timestamp
+		return true
+	}
+	if ui.focus == .Timestamp {edit_text(ui, &picker.input)}
+	for format in Timestamp_Format {
+		if clicked_indexed("TimestampStyle", u32(format)) {
+			picker.format = format
+			return true
+		}
+	}
+	cancel := rl.IsKeyPressed(.ESCAPE) || clicked("TimestampCancel")
+	insert :=
+		clicked("TimestampInsert") ||
+		(ui.focus == .Timestamp && rl.IsKeyPressed(.ENTER) && len(rl.Preedit()) == 0)
+	if !cancel && !insert {return false}
+	seconds: i64
+	if !cancel {
+		valid: bool
+		seconds, valid = timestamp_input_seconds(picker)
+		if !valid {return true}
+	}
+	timestamp_picker_close(ui)
+	ui.focus = .Compose
+	ed_begin(ui, &ui.compose)
+	ui.ed.selection = picker.selection
+	if !cancel {
+		markup :=
+			picker.format == .Pair ? fmt.tprintf("<t:%d:S> (<t:%d:R>)", seconds, seconds) : timestamp_token(seconds, TIMESTAMP_FORMATS[picker.format].style)
+		edit.input_text(&ui.ed, markup)
+	}
+	ed_end(ui, &ui.compose)
+	return true
+}
+
+@(private)
+standalone_timestamp :: proc(
+	body: string,
+	blocks: []Md_Block_Ui,
+) -> (
+	stamp: ^Md_Timestamp,
+	paired: bool,
+) {
+	if len(blocks) != 1 {return}
+	block := &blocks[0]
+	stamps := block.timestamps[:]
+	if block.kind != .Para || len(stamps) == 0 || len(stamps) > 2 || stamps[0].start != 0 {return}
+	// Markdown normalizes tokens and removes escapes. Match the plain source too.
+	body := strings.trim_space(body)
+	if !strings.has_prefix(body, "<t:") {return}
+	end := strings.index_byte(body, '>')
+	if end < 0 {return}
+	first := &stamps[0]
+	if len(stamps) == 1 {
+		if first.end == len(block.text) && end == len(body) - 1 {return first, false}
+		return
+	}
+
+	second := &stamps[1]
+	if first.style == .RELATIVE ||
+	   second.style != .RELATIVE ||
+	   first.seconds != second.seconds {return}
+	tail := strings.trim_left(body[end + 1:], " \t")
+	if !strings.has_prefix(tail, "(<t:") ||
+	   !strings.has_suffix(tail, ">)") ||
+	   strings.index_byte(tail, '>') != len(tail) - 2 {return}
+	if strings.trim_space(block.text[first.end:second.start]) != "(" ||
+	   strings.trim_space(block.text[second.end:]) != ")" {return}
+	return first, true
+}
+
+@(private)
+timestamp_card :: proc(index: u32, msg: Msg_Ui) -> bool {
+	stamp, paired := standalone_timestamp(msg.body, msg.blocks[:])
+	if stamp == nil {return false}
+	local: Local_Time
+	localized := wn_timestamp_local(stamp.seconds, &local) != 0
+	if !localized && stamp.style != .RELATIVE {return false}
+	now := time.time_to_unix(time.now())
+	label, detail: string
+	if stamp.style == .RELATIVE {
+		label = timestamp_relative(stamp.seconds, now)
+		if localized {detail = timestamp_absolute(local, .LONG_DATE_TIME)}
+	} else {
+		label = timestamp_absolute(local, stamp.style)
+		if !paired && (stamp.style == .SHORT_TIME || stamp.style == .LONG_TIME) {
+			detail = timestamp_absolute(local, .LONG_DATE)
+		} else {
+			detail = timestamp_relative(stamp.seconds, now)
+		}
+	}
+	width := att_w(360)
+	if nendo.box(nendo.id("MsgTimestamp", index))(
+	{
+		width = nendo.fit(max = width),
+		padding = nendo.pad(10),
+		gap = 10,
+		align = {y = .Center},
+		color = PLATE,
+		radius = rr(10),
+		border = {color = FIELD_BORDER, width = bw()},
+	},
+	) {
+		if hovered() {
+			source := strings.trim_space(msg.body)
+			if paired {
+				end := strings.index_byte(source, '>') + 1
+				second := strings.trim_left(source[end:], " \t")
+				timestamp_tooltip(stamp, source[:end], second[1:len(second) - 1])
+			} else {
+				timestamp_tooltip(stamp, source)
+			}
+		}
+		if nendo.box()(
+		{
+			width = nendo.fixed(34),
+			height = nendo.fixed(34),
+			align = {x = .Center, y = .Center},
+			color = ACCENT,
+			radius = rr(8),
+		},
+		) {
+			nendo.text(TIMESTAMP_ICON, {font = FONT_ICON, size = 17, color = ON_ACCENT})
+		}
+		if nendo.box()({direction = .Column, gap = 2}) {
+			wrap := max(width - 64, 1)
+			font := [1]u8{u8(FONT_TITLE)}
+			fonts := strings.repeat(string(font[:]), len(label), context.temp_allocator)
+			body_text(index * 4096, label, 16, TEXT, true, wrap, fonts = fonts)
+			if detail != "" {body_text(index * 4096 + 512, detail, 12, TEXT_DIM, true, wrap)}
+		}
+	}
+	return true
 }

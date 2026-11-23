@@ -1118,6 +1118,13 @@ app_main :: proc() {
 				wheel = {}
 			}
 			chat_filter_wheel(&ui, &wheel)
+			if ui.timestamp.open && nendo.pointer_over(nendo.id("TimestampFormats")) {
+				data := nendo.scroll(nendo.id("TimestampFormats"))
+				if data.found && data.content.width > data.viewport.width {
+					wheel.x += wheel.y
+					wheel.y = 0
+				}
+			}
 			if ui.link_open && nendo.pointer_over(nendo.id("LinkAddress")) {
 				wheel.x += wheel.y
 				wheel.y = 0
@@ -1473,6 +1480,7 @@ app_main :: proc() {
 			   !modal_open(&ui) &&
 			   !ui.picker_open &&
 			   !ui.poll_open &&
+			   !ui.timestamp.open &&
 			   !ui.ctx_open &&
 			   !ui.mi_open &&
 			   !ui.chat_head_menu &&

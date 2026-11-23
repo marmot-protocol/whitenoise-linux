@@ -1736,6 +1736,9 @@ msgstr "Deine Kontaktdatei konnte nicht gelesen werden. Prüfe die Dateiberechti
 msgid "Couldn't read your existing contacts. Please try again."
 msgstr "Deine vorhandenen Kontakte konnten nicht gelesen werden. Bitte versuche es erneut."
 
+msgid "Couldn't read your local time. Check your device's clock and try again."
+msgstr "Deine Ortszeit konnte nicht ermittelt werden. Prüfe die Uhr deines Geräts und versuche es erneut."
+
 msgid "Couldn't remove the GIF. Please try again."
 msgstr "Das GIF konnte nicht entfernt werden. Bitte versuche es erneut."
 
@@ -2022,8 +2025,20 @@ msgstr "Dunkel"
 msgid "Data folder"
 msgstr "Datenordner"
 
+msgid "Date and time"
+msgstr "Datum und Uhrzeit"
+
+msgid "Date and time with relative time"
+msgstr "Datum und Uhrzeit mit relativer Zeit"
+
+msgid "Date and time with seconds"
+msgstr "Datum und Uhrzeit mit Sekunden"
+
 msgid "Date format"
 msgstr "Datumsformat"
+
+msgid "Date only"
+msgstr "Nur Datum"
 
 msgid "Debug"
 msgstr "Debug"
@@ -2407,6 +2422,9 @@ msgstr "Gib einen Benutzernamen und ein Passwort mit jeweils 1 bis 255 UTF-8-Byt
 msgid "Enter a username and password, each up to 255 characters."
 msgstr "Gib einen Benutzernamen und ein Passwort mit jeweils bis zu 255 Zeichen ein."
 
+msgid "Enter a valid date and time in your timezone."
+msgstr "Gib ein gültiges Datum und eine Uhrzeit in deiner Zeitzone ein."
+
 msgid "Enter a valid emoji set naddr."
 msgstr "Gib eine gültige naddr für ein Emoji-Set ein."
 
@@ -2697,6 +2715,9 @@ msgstr "Aus Datei"
 msgid "From: %s"
 msgstr "Ab: %s"
 
+msgid "Full date and time"
+msgstr "Datum und Uhrzeit mit Wochentag"
+
 msgid "Fullscreen"
 msgstr "Vollbild"
 
@@ -2984,8 +3005,14 @@ msgstr "Info-Hash"
 msgid "Info hash copied"
 msgstr "Info-Hash kopiert"
 
+msgid "Insert"
+msgstr "Einfügen"
+
 msgid "Insert a new line"
 msgstr "Neue Zeile einfügen"
+
+msgid "Insert timestamp"
+msgstr "Zeitstempel einfügen"
 
 msgid "Inspect"
 msgstr "Prüfen"
@@ -3330,6 +3357,9 @@ msgstr "Wird geladen…"
 
 msgid "Local data & backups"
 msgstr "Lokale Daten und Sicherungen"
+
+msgid "Local date and time (YYYY-MM-DD HH:MM[:SS])."
+msgstr "Lokales Datum und Uhrzeit (JJJJ-MM-TT hh:mm[:ss])."
 
 msgid "Local files, cached media, and encrypted backups."
 msgstr "Verwalte lokale Dateien, zwischengespeicherte Medien und verschlüsselte Backups."
@@ -4494,6 +4524,9 @@ msgstr "Aktualisieren"
 
 msgid "Regular"
 msgstr "Normal"
+
+msgid "Relative time"
+msgstr "Relative Zeit"
 
 msgid "Relay lists republished."
 msgstr "Relay-Listen erneut veröffentlicht."
@@ -5757,6 +5790,12 @@ msgstr "Donnerstag"
 
 msgid "Time format"
 msgstr "Zeitformat"
+
+msgid "Time only"
+msgstr "Nur Uhrzeit"
+
+msgid "Time with seconds"
+msgstr "Uhrzeit mit Sekunden"
 
 msgid "Timeline subscription closed."
 msgstr "Das Timeline-Abonnement wurde beendet."

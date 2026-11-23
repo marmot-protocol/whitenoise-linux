@@ -511,6 +511,7 @@ phone_back_action :: proc(ui: ^Ui_State) {
 			if ui.poll_ticket == 0 {poll_close(ui)}
 			return
 		}
+		if ui.timestamp.open {timestamp_picker_close(ui); return}
 		if len(ui.thread_stack) > 0 {thread_back(ui); return}
 		if ui.selected >= 0 && ui.selected < len(ui.chats) {
 			stash_draft(ui)

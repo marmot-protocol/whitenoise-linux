@@ -36,6 +36,7 @@ edit_complete :: proc(ui: ^Ui_State, done: Op_Done) {
 	   ui.chats[ui.selected].group_id == done.group &&
 	   ui.editing == done.target &&
 	   string(ui.compose[:]) == done.content {
+		timestamp_picker_close(ui)
 		ui.editing = ""
 		ed_set(ui, &ui.compose, ui.drafts[draft_key(done.account, done.group)])
 	}
@@ -59,6 +60,7 @@ edit_restore :: proc(ui: ^Ui_State) {
 				if msg.id == done.target &&
 				   message_can_edit(msg) &&
 				   msg.thread_of == thread_cur(ui) {
+					timestamp_picker_close(ui)
 					ui.editing = msg.id
 					ed_set(ui, &ui.compose, done.content)
 					return
