@@ -266,23 +266,44 @@ handle_timestamp_picker :: proc(ui: ^Ui_State) {
 }
 
 @(private)
-standalone_timestamp :: proc(body: string, blocks: []Md_Block_Ui) -> ^Md_Timestamp {
-	if len(blocks) != 1 {return nil}
+standalone_timestamp :: proc(
+	body: string,
+	blocks: []Md_Block_Ui,
+) -> (
+	stamp: ^Md_Timestamp,
+	paired: bool,
+) {
+	if len(blocks) != 1 {return}
 	block := &blocks[0]
-	if block.kind != .Para || len(block.timestamps) != 1 {return nil}
-	stamp := &block.timestamps[0]
-	if stamp.start != 0 || stamp.end != len(block.text) {return nil}
-	// Markdown normalizes the token, so check the source only for a bare token.
+	stamps := block.timestamps[:]
+	if block.kind != .Para || len(stamps) == 0 || len(stamps) > 2 || stamps[0].start != 0 {return}
+	// Markdown normalizes tokens and removes escapes. Match the plain source too.
 	body := strings.trim_space(body)
-	if !strings.has_prefix(body, "<t:") || strings.index_byte(body, '>') != len(body) - 1 {
-		return nil
+	if !strings.has_prefix(body, "<t:") {return}
+	end := strings.index_byte(body, '>')
+	if end < 0 {return}
+	first := &stamps[0]
+	if len(stamps) == 1 {
+		if first.end == len(block.text) && end == len(body) - 1 {return first, false}
+		return
 	}
-	return stamp
+
+	second := &stamps[1]
+	if first.style == .RELATIVE ||
+	   second.style != .RELATIVE ||
+	   first.seconds != second.seconds {return}
+	tail := strings.trim_left(body[end + 1:], " \t")
+	if !strings.has_prefix(tail, "(<t:") ||
+	   !strings.has_suffix(tail, ">)") ||
+	   strings.index_byte(tail, '>') != len(tail) - 2 {return}
+	if strings.trim_space(block.text[first.end:second.start]) != "(" ||
+	   strings.trim_space(block.text[second.end:]) != ")" {return}
+	return first, true
 }
 
 @(private)
 timestamp_card :: proc(index: u32, msg: Msg_Ui) -> bool {
-	stamp := standalone_timestamp(msg.body, msg.blocks[:])
+	stamp, paired := standalone_timestamp(msg.body, msg.blocks[:])
 	if stamp == nil {return false}
 	local: Local_Time
 	if wn_timestamp_local(stamp.seconds, &local) == 0 {return false}
@@ -293,7 +314,7 @@ timestamp_card :: proc(index: u32, msg: Msg_Ui) -> bool {
 		detail = timestamp_absolute(local, .LONG_DATE_TIME)
 	} else {
 		label = timestamp_absolute(local, stamp.style)
-		if stamp.style == .SHORT_TIME || stamp.style == .LONG_TIME {
+		if !paired && (stamp.style == .SHORT_TIME || stamp.style == .LONG_TIME) {
 			detail = timestamp_absolute(local, .LONG_DATE)
 		} else {
 			detail = timestamp_relative(stamp.seconds, now)
@@ -310,7 +331,9 @@ timestamp_card :: proc(index: u32, msg: Msg_Ui) -> bool {
 		border = {color = FIELD_BORDER, width = bw()},
 	},
 	) {
-		if hovered() {timestamp_tooltip(stamp)}
+		if hovered() {
+			timestamp_tooltip(stamp, paired ? strings.trim_space(msg.body) : "")
+		}
 		if nendo.box()(
 		{
 			width = nendo.fixed(34),

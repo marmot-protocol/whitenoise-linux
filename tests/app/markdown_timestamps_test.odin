@@ -116,10 +116,28 @@ markdown_timestamps :: proc(t: ^testing.T) {
 		timestamp_block(image_blocks[2], 240).text,
 		"after \uf017 2 minutes ago",
 	)
-	for example in ([?]struct {
-			source: cstring,
-			card:   bool,
-		}{{"<t:120>", true}, {"<t:000120:R>", true}, {"**<t:120>**", false}, {"`<t:120>`", false}, {"<t:120> <t:120>", false}, {"Meet at <t:120>", false}}) {
+	pair_source :: "<t:1795451400:S> (<t:1795451400:R>)"
+	examples := [?]struct {
+		source:       cstring,
+		card, paired: bool,
+	} {
+		{"<t:120>", true, false},
+		{"<t:000120:R>", true, false},
+		{pair_source, true, true},
+		{"<t:120> (<t:000120:R>)", true, true},
+		{"**<t:120>**", false, false},
+		{"`<t:120>`", false, false},
+		{"<t:120> <t:120>", false, false},
+		{"Meet at <t:120>", false, false},
+		{"<t:120:S> (<t:121:R>)", false, false},
+		{"<t:120:S> (<t:120:t>)", false, false},
+		{"<t:120:S> (soon: <t:120:R>)", false, false},
+		{"<t:120:S> (**<t:120:R>**)", false, false},
+		{"<t:120:S> \\(<t:120:R>\\)", false, false},
+		{"<t:120:S> (<t:<t:120:R>)", false, false},
+		{"<t:120:S> (<t:120:R>) today", false, false},
+	}
+	for example in examples {
 		if !testing.expect_value(
 			t,
 			marmot.parse_markdown(client, example.source, &doc),
@@ -128,8 +146,9 @@ markdown_timestamps :: proc(t: ^testing.T) {
 		parsed: [dynamic]Md_Block_Ui
 		convert_blocks(&parsed, doc.blocks, doc.blocks_len, false)
 		marmot.markdown_document_free(doc)
-		stamp := standalone_timestamp(string(example.source), parsed[:])
+		stamp, paired := standalone_timestamp(string(example.source), parsed[:])
 		testing.expect(t, (stamp != nil) == example.card, string(example.source))
+		testing.expect(t, paired == example.paired, string(example.source))
 		blocks_free(parsed)
 	}
 	if #config(ODIN_TEST_NAMES, "") != "markdown_timestamps" {return}
@@ -234,6 +253,42 @@ markdown_timestamps :: proc(t: ^testing.T) {
 			commands = timestamp_smoke_frame(smoke_blocks[:], width)
 			testing.expect_value(t, timestamp_smoke_tip(commands), "")
 		}
+	}
+
+	if !testing.expect_value(
+		t,
+		marmot.parse_markdown(client, pair_source, &doc),
+		marmot.Status.OK,
+	) {return}
+	pair: Msg_Ui
+	pair.body = pair_source
+	convert_blocks(&pair.blocks, doc.blocks, doc.blocks_len, false)
+	marmot.markdown_document_free(doc)
+	defer blocks_free(pair.blocks)
+	nendo.set_pointer({-100, -100}, .Up)
+	for frame in 0 ..< 3 {
+		nendo.begin()
+		timestamp_card(0, pair)
+		commands := nendo.end(0)
+		if frame < 2 {
+			box := nendo.element(nendo.id("MsgTimestamp", 0)).rect
+			nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
+			continue
+		}
+		label := timestamp_label(1795451400, .COMPACT_DATE_TIME_SECONDS, 0)
+		shown := false
+		for cmd in commands {
+			if cmd.kind == .Text && cmd.text.text == label {shown = true}
+		}
+		testing.expect(t, shown, "card preserves the absolute style with seconds")
+		testing.expect(
+			t,
+			strings.contains(timestamp_smoke_tip(commands), pair_source),
+			"hover shows both tokens",
+		)
+		rl.BeginDrawing(); render_nendo(commands)
+		rl.TakeScreenshot("/tmp/wn-markdown-timestamp-pair.png")
+		rl.EndDrawing()
 	}
 }
 

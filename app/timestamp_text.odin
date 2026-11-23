@@ -87,9 +87,9 @@ timestamp_text :: proc(
 }
 
 @(private)
-timestamp_tooltip :: proc(stamp: ^Md_Timestamp) {
+timestamp_tooltip :: proc(stamp: ^Md_Timestamp, source: string = "") {
 	date := timestamp_label(stamp.seconds, .LONG_DATE_TIME, 0)
-	token := timestamp_token(stamp.seconds, stamp.style)
+	token := source != "" ? source : timestamp_token(stamp.seconds, stamp.style)
 	width :=
 		max(
 			rl.MeasureTextLine(FONT_BODY, 11, date, 0).x,
