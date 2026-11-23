@@ -7,10 +7,21 @@
     { nixpkgs, ... }:
     let
       pkgs = import nixpkgs { system = "x86_64-linux"; };
-      commonPackages = with pkgs; [
+      tools = with pkgs; [
+        odinRelease
+        ols
+        gdb
+        llvm.lldb
+        llvm.clang
+        llvm.bintools
+        llvm.llvm
+        llvm.llvm.dev
+        llvm.lld
         rustup
-        clang
+        cmake
+        ninja
         gnumake
+        patch
         perl
         pkg-config
         git
@@ -29,15 +40,31 @@
         unzip
         zip
         zstd
+        inotify-tools
+        which
+        procps
+        file
+        xdg-utils
+        zenity
+        libnotify
+        pulseaudio
+        libcanberra-gtk3
+        sound-theme-freedesktop
+        gsettings-desktop-schemas
+        gst_all_1.gst-plugins-base
+        gst_all_1.gst-plugins-good
+        gst_all_1.gst-plugins-bad
+        gst_all_1.gst-libav
       ];
       commonProfile = ''
         export RUSTUP_TOOLCHAIN=1.97.1
         export CARGO_TARGET_DIR="''${CARGO_TARGET_DIR:-$PWD/target/nix}"
-        export CC=${pkgs.clang}/bin/clang
-        export CXX=${pkgs.clang}/bin/clang++
+        export PATH="${llvm.clang}/bin:${llvm.bintools}/bin:${pkgs.rustup}/bin:$PATH"
+        export CC="${llvm.clang}/bin/clang"
+        export CXX="${llvm.clang}/bin/clang++"
+        export AR="${llvm.bintools}/bin/ar"
         export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
         export CARGO_HTTP_CAINFO="$SSL_CERT_FILE"
-        export PATH=${pkgs.rustup}/bin:$PATH
       '';
       commonRunScript = pkgs.writeShellScript "development-shell" ''
         if [ "$#" -eq 0 ]; then
@@ -95,41 +122,14 @@
         # Downloaded sherpa-onnx/ONNX Runtime binaries use libstdc++.so.6.
         stdenv.cc.cc.lib
       ];
+      devShell = pkgs.mkShell {
+        nativeBuildInputs = tools;
+        buildInputs = libraries;
+        shellHook = commonProfile;
+      };
       environment = pkgs.buildFHSEnv {
         name = "whitenoise-linux";
-        targetPkgs =
-          _:
-          commonPackages
-          ++ libraries
-          ++ (with pkgs; [
-            odinRelease
-            ols
-            gdb
-            llvm.lldb
-            llvm.clang
-            llvm.bintools
-            llvm.llvm
-            llvm.lld
-            cmake
-            ninja
-            inotify-tools
-            patch
-            which
-            procps
-            file
-            xdg-utils
-            dbus
-            zenity
-            libnotify
-            pulseaudio
-            libcanberra-gtk3
-            sound-theme-freedesktop
-            gsettings-desktop-schemas
-            gst_all_1.gst-plugins-base
-            gst_all_1.gst-plugins-good
-            gst_all_1.gst-plugins-bad
-            gst_all_1.gst-libav
-          ]);
+        targetPkgs = _: tools ++ libraries;
         # FHS does not run stdenv setup hooks. Merge development outputs and their
         # referenced dependencies so transitive .pc files and headers are visible.
         extraOutputsToInstall = [ "dev" ];
@@ -146,10 +146,6 @@
           "/usr/share/omarchy"
         ];
         profile = commonProfile + ''
-          export PATH="${llvm.clang}/bin:${llvm.bintools}/bin:${llvm.llvm}/bin:$PATH"
-          export CC="${llvm.clang}/bin/clang"
-          export CXX="${llvm.clang}/bin/clang++"
-          export AR="${llvm.bintools}/bin/ar"
           export LIBRARY_PATH="/usr/lib''${LIBRARY_PATH:+:$LIBRARY_PATH}"
           export PKG_CONFIG_PATH="/usr/lib/pkgconfig:/usr/share/pkgconfig''${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
           export CMAKE_PREFIX_PATH="/usr''${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
@@ -173,7 +169,7 @@
     in
     {
       packages.x86_64-linux.default = environment;
-      devShells.x86_64-linux.default = environment.env;
+      devShells.x86_64-linux.default = devShell;
       apps.x86_64-linux.default = {
         type = "app";
         program = pkgs.lib.getExe environment;

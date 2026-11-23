@@ -15,7 +15,7 @@ Install the tools with Nix or your distribution, then run `just build` and `just
 
 ## Build it with Nix on x86-64 Linux
 
-The repository's flake supplies the native build tools and libraries in an FHS environment; it does not require a global `nix-ld` setup. From this checkout, enter the interactive shell and use the existing build commands:
+`nix develop` supplies the build tools and libraries from the flake. From this checkout, run:
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop
@@ -23,20 +23,21 @@ just build
 just run
 ```
 
-For a single command, use the app entrypoint instead of `nix develop -c`, because the FHS shell hook consumes command arguments:
+To run one command without opening a shell, pass it to `nix develop -c`:
 
 ```sh
-nix --extra-experimental-features 'nix-command flakes' run . -- odin version
+nix --extra-experimental-features 'nix-command flakes' develop -c odin version
 ```
 
 | Tool | Version in the flake |
 | --- | --- |
 | Odin | upstream dev-2026-10 release binary, the same compiler CI uses |
+| LLVM | 21, including Clang and `llvm-config` |
 | OLS | dev-2026-10, pinned through the nixpkgs lock |
 | Rust | 1.97.1; install that toolchain with `rustup` if it is not already available |
 | Cargo output | `target/nix` in the working directory, unless `CARGO_TARGET_DIR` is set |
 
-Running the GUI still needs the host desktop session, display/audio sockets, and GPU devices. The shell preserves access to host desktop resources, including Omarchy Compose data when present. It uses the host driver set on NixOS and Nix Mesa elsewhere. The first build still downloads the project's pinned source dependencies and resource bundles described below.
+The GUI needs access to your desktop session, display and audio sockets, and GPU devices. To build and run in the FHS environment instead, enter it with `nix --extra-experimental-features 'nix-command flakes' run .`. It uses the host drivers on NixOS and Nix Mesa elsewhere, and does not require a global `nix-ld` setup. The first build still downloads the pinned dependencies and resource bundles described below.
 
 ## Build it with your distribution's packages
 
