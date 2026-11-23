@@ -19,7 +19,8 @@ staged_file_draft_ownership :: proc(t: ^testing.T) {
 	path := fmt.tprintf("%s/file with spaces.txt", dir)
 	if !testing.expect_value(t, os.write_entire_file(path, "original bytes"), nil) {return}
 	ui := Ui_State {
-		selected = 0,
+		account_ref = "account",
+		selected    = 0,
 	}
 	append(&ui.chats, Chat_Row_Ui{group_id = "original"})
 	defer {
@@ -46,7 +47,7 @@ staged_file_draft_ownership :: proc(t: ^testing.T) {
 	thread.join(worker)
 	stage_files_tick(&ui)
 	testing.expect(t, len(ui.staged) == 0, "removed file must not reappear")
-	files := ui.staged_drafts["original"]
+	files := ui.staged_drafts["account:original"]
 	if testing.expect_value(t, len(files), 1) {
 		testing.expect_value(t, string(files[0].data), "original bytes")
 		testing.expect_value(t, files[0].media_type, "text/plain")

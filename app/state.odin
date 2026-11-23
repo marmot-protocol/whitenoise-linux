@@ -9,6 +9,14 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
+@(private)
+DEVICE_PLATFORM ::
+	"Linux" when ODIN_OS ==
+	.Linux else "Windows" when ODIN_OS ==
+	.Windows else "macOS" when ODIN_OS ==
+	.Darwin else "OpenBSD" when ODIN_OS ==
+	.OpenBSD else ""
+
 // Palette globals, filled from the active Theme_Pack (themes/*.toml
 // packs, embedded and parsed in theme.odin).
 BG := nendo.Color{6, 7, 8, 255}
@@ -339,6 +347,8 @@ Focus :: enum {
 	ThemeSeed, // theme-editor seed box, index in ui.theme_edit_idx
 	SettingsSearch, // control-panel search, separate from chat drafts and filters
 	NC_Remove,
+	Device_Name,
+	Device_Own_Name,
 }
 
 // The create-poll modal grows one option row at a time up to this cap
@@ -432,6 +442,15 @@ Att_View :: union {
 	^Nes_View,
 }
 
+Message_Origin :: struct {
+	kind:        enum {
+		None,
+		Device,
+		Backup,
+	},
+	slot, label: string,
+}
+
 Msg_Ui :: struct {
 	excerpt:             Excerpt,
 	sticker:             Sticker_Ref,
@@ -461,6 +480,7 @@ Msg_Ui :: struct {
 	mls_order:           int, // position in the marmot page, the read cursor's order
 	mine:                bool,
 	delivery:            marmot.Delivery_State, // local projection versus published relay event
+	origin:              Message_Origin,
 	system:              bool, // kind-1210 group-system line; body holds the sentence
 	sys_text:            string, // system sentence with profile references for mention chips
 	sys_added_hex:       string, // member_added row: subject hex, "" = not an add
@@ -612,6 +632,9 @@ Ui_State :: struct {
 	messages_group, messages_account:    string,
 	account_ref:                         string, // active account's full hex; "" when logged out
 	accounts:                            [dynamic]Account_Row_Ui, // switcher rows; non-empty means signed in
+	accounts_revision:                   u64,
+	devices:                             Devices_State,
+	activation:                          Chat_Activation,
 	accounts_open:                       bool, // the Accounts switcher modal
 	peer_open:                           bool, // peer-profile popup (any avatar click)
 	peer_hex:                            string,
@@ -649,6 +672,8 @@ Ui_State :: struct {
 	stamp_day:                           i64, // local day the cached stamps were formatted on; 0 = reformat next frame
 	transcript:                          ^Transcript_Job,
 	pending:                             [dynamic]Pending_Send, // optimistic sends awaiting ack
+	offline_unowned:                     [dynamic]Offline_Item,
+	offline_unowned_warned:              bool,
 	react_pending:                       [dynamic]Pending_React, // optimistic reactions awaiting ack
 	compose:                             [dynamic]u8,
 	// One shared caret/selection/undo state, targeting whichever input

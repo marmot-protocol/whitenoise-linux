@@ -37,6 +37,7 @@ group_settings_permissions :: proc(t: ^testing.T) {
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
 	ui.prefs.reduce_motion = true
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Shared group"})
 	append(&ui.members, Member_Ui{is_self = true})
@@ -152,6 +153,7 @@ chat_title_overflow :: proc(t: ^testing.T) {
 	}
 	g_ui = &ui
 	g_prefs = &ui.prefs
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	defer delete(ui.accounts)
 	ui.prefs.rail_w = RAIL_W_MIN
@@ -278,6 +280,7 @@ chat_preview_ellipsis :: proc(t: ^testing.T) {
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
 	ui.prefs.reduce_motion = true
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	long_word :=
 		"Pneumonoultramicroscopicsilicovolcanoconiosis" +

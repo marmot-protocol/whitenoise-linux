@@ -225,19 +225,27 @@ gif_send_failure :: proc(t: ^testing.T) {
 		picker_open = true,
 		account_ref = "original-account",
 	}
+	append(
+		&ui.accounts,
+		Account_Row_Ui{id_hex = "original-account"},
+		Account_Row_Ui{id_hex = "other-account"},
+	)
 	append(&ui.chats, Chat_Row_Ui{group_id = "original-group"})
 	old_ui := g_ui; g_ui = &ui; defer {g_ui = old_ui}
 	defer {
 		for &p in ui.pending {free_pending(&p)}
-		delete(ui.pending); delete(ui.chats); delete(ui.client_status); delete(ui.jump_id)
+		delete(
+			ui.pending,
+		); delete(ui.accounts); delete(ui.chats); delete(ui.client_status); delete(ui.jump_id)
 	}
 	gif_send(&ui, nil, Gif_Item{url = "https://invalid.test/animation.gif"})
-	testing.expect_value(t, len(ui.pending), 1)
+	if !testing.expect_value(t, len(ui.pending), 1) {return}
 	testing.expect(t, !ui.picker_open && reload_jobs_busy())
 	ui.account_ref = "other-account"
 	ui.chats[0].group_id = "other-group"
 	thread.join(ui.pending[0].gif.worker)
 	drain_gif_sends(&ui, nil)
+	if !testing.expect_value(t, len(ui.pending), 1) {return}
 	testing.expect(t, ui.pending[0].failed && ui.pending[0].gif != nil)
 	testing.expect_value(t, len(ui.pending[0].atts), 0)
 	testing.expect_value(t, ui.pending[0].account_ref, "original-account")
@@ -278,7 +286,8 @@ gif_keyboard :: proc(t: ^testing.T) {
 	edit.init(&ui.ed, context.allocator, context.allocator)
 	ui.prefs.rail_w = RAIL_W_MIN; ui.prefs.reduce_motion = true
 	ui.prefs.gif_consent = true
-	append(&ui.accounts, Account_Row_Ui{name = "Test"})
+	ui.account_ref = "offline-fixture"
+	append(&ui.accounts, Account_Row_Ui{id_hex = ui.account_ref, name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "GIFs"})
 	append(&ui.compose, "Keep your draft")
 	g_ui, g_prefs = &ui, &ui.prefs; defer {g_ui, g_prefs = nil, nil}

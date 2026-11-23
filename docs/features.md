@@ -411,6 +411,43 @@ Contacts:
 
 </details>
 
+### Linked devices
+
+Sign in with the same profile on both devices. On the new device, open
+**Settings > Devices** and choose **Link to another device**. On the existing
+device, find the request above **Your devices**. Confirm on both devices only
+if all seven numbered emoji match.
+If the request hasn't appeared, open **Add a new device** on the existing
+device and choose **Check now**.
+
+On the existing device, choose whether to add the new one to eligible chats
+and bring over earlier messages. Both options start off. After linking,
+choose **Open chats** to see what's available. Earlier messages can still
+be arriving in chats you can open. Each chat shows its own history progress
+and marks where imported history ends. Messages sent from your other device
+still appear as yours, without this device's delivery ticks.
+
+Select a row under **Your devices** to see its settings or rename or remove
+it. Open an entry under **Sign-ins** to review it. If it was you but you want
+to keep the device separate, choose **This was me, don't link**. Only this
+installation remembers the answer. It does not link the device or change
+what other devices see.
+
+If **Settings > Devices** shows a count of chats that can't add linked devices,
+choose **Review chats** to see what's blocking each chat. Selecting a chat
+opens its settings without changing them.
+
+Open a chat's details and look for **Linked devices**. The card shows whether
+linked devices are on or why you can't turn them on. If you see **Linked
+devices are ready**, choose **Turn on linked devices** to let members' linked
+devices join without an admin. That change can't be undone.
+If the chat is still catching up, wait before trying again.
+
+New chats negotiate support from the KeyPackages used to invite members.
+Updating an app doesn't change capabilities already recorded in a chat.
+The updated device must sync its refreshed capabilities before an admin
+can turn on linked devices.
+
 ### Setup prompts for AI agents
 
 Settings > AI agents offers setup prompts for Hermes, OpenClaw, OpenCode, Codex, and Claude Code. White Noise does not install anything or share your private key.

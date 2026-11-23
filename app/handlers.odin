@@ -48,7 +48,7 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		   ) {nip46_auth_url(ui, item.state.auth_url); return}
 		if clicked(fmt.tprintf("SignerAllow%d", i)) {nip46_allow(item); return}
 	}
-	if len(ui.accounts) > 0 && !ui.add_account_open {
+	if ui.account_ref != "" && !ui.add_account_open {
 		return
 	}
 	// Proxy setup remains available if runtime construction failed, and before
@@ -213,6 +213,8 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // the subscriptions phase.
 // The input buffer that currently receives typed characters.
 active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
+	if ui.focus == .Device_Name {return &ui.devices.name}
+	if ui.focus == .Device_Own_Name {return &ui.devices.own_name}
 	if ui.folder_open {
 		if ui.folder_mode != .Move && ui.focus == .FolderColor {return &ui.folder_color_input}
 		if ui.folder_mode != .Move &&
@@ -342,7 +344,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if client == nil || len(ui.accounts) == 0 {
+	if client == nil || ui.account_ref == "" {
 		return
 	}
 
@@ -420,6 +422,9 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		// Tap a failed optimistic row to retry the send.
 		for &p, i in ui.pending {
+			if ui.selected < 0 || ui.selected >= len(ui.chats) {break}
+			if !pending_in_workspace(ui, p, ui.chats[ui.selected].group_id) ||
+			   p.thread != thread_cur(ui) {continue}
 			if nendo.pointer_over(nendo.id("MessageMore", 0xF00000 + u32(i) * 8)) {
 				excerpt_toggle(&p.excerpt, 0xF00000 + u32(i) * 8)
 				return
@@ -432,7 +437,9 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				delete_pending(ui, i)
 				return
 			}
-			if p.failed && nendo.pointer_over(nendo.id("PendingRow", u32(i))) {
+			if p.failed &&
+			   pending_send_allowed(ui, p) &&
+			   nendo.pointer_over(nendo.id("PendingRow", u32(i))) {
 				p.failed = false
 				p.attempts = 0 // a manual retry restarts the auto-retry cap
 				spawn_send(ui, client, &p)
@@ -970,6 +977,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				clicked("SendBtn") ||
 				test_send_now)
 	test_send_now = false
+	if send && new_send_paused(ui) {return}
 	// Staged attachments send on their own only outside an edit (an
 	// edit needs text and never sends them). A composer of only
 	// whitespace counts as empty: it stays put rather than sending a
@@ -1114,17 +1122,7 @@ stage_bytes :: proc(ui: ^Ui_State, base: string, data: []u8) {
 }
 
 remove_staged :: proc(ui: ^Ui_State, index: int) {
-	f := &ui.staged[index]
-	if f.load != nil {
-		f.load.detached = true
-		if f.load.worker == nil {stage_load_free(f.load)}
-	}
-	if f.tex != nil {
-		rl.UnloadTexture(f.tex^)
-		free(f.tex)
-	}
-	delete(f.data)
-	delete(f.name)
+	staged_file_free(&ui.staged[index])
 	ordered_remove(&ui.staged, index)
 }
 
@@ -1462,31 +1460,41 @@ start_edit :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 @(private = "file")
 cancel_edit :: proc(ui: ^Ui_State) {
 	ui.editing = ""
-	ed_set(ui, &ui.compose, ui.drafts[ui.chats[ui.selected].group_id])
+	ed_set(ui, &ui.compose, ui.drafts[draft_key(ui.account_ref, ui.chats[ui.selected].group_id)])
 }
 
 // Stash the composer as the selected chat's draft (whitespace-only
 // drops it). Skipped while an edit borrows the composer, so edit text
 // never masquerades as a draft.
 stash_draft :: proc(ui: ^Ui_State) {
-	if ui.selected < 0 || len(ui.editing) > 0 {
+	if ui.selected < 0 || len(ui.editing) > 0 || account_revoked(ui, ui.account_ref) {
 		return
 	}
-	gid := ui.chats[ui.selected].group_id
-	if len(strings.trim_space(string(ui.compose[:]))) == 0 {
-		delete_key(&ui.drafts, gid)
+	key := draft_key(ui.account_ref, ui.chats[ui.selected].group_id)
+	if key == "" {return}
+	body := string(ui.compose[:])
+	if len(strings.trim_space(body)) == 0 {
+		draft_delete(ui, key)
 		return
 	}
-	ui.drafts[strings.clone(gid)] = strings.clone(string(ui.compose[:]))
+	if old, found := ui.drafts[key]; found {
+		if old == body {return}
+		delete(old)
+	} else {
+		key = strings.clone(key)
+	}
+	ui.drafts[key] = strings.clone(body)
 }
 
 // Park the composer's staged files under the selected chat, the
 // attachment counterpart of stash_draft.
 @(private)
 stash_staged :: proc(ui: ^Ui_State) {
-	if ui.selected < 0 || len(ui.staged) == 0 {return}
-	key := ui.chats[ui.selected].group_id
-	if !(key in ui.staged_drafts) {key = strings.clone(key)}
+	if ui.selected < 0 || len(ui.staged) == 0 || account_revoked(ui, ui.account_ref) {return}
+	key := draft_key(ui.account_ref, ui.chats[ui.selected].group_id)
+	if key == "" {return}
+	if old, found := ui.staged_drafts[key];
+	   found {staged_files_free(old)} else {key = strings.clone(key)}
 	ui.staged_drafts[key] = ui.staged
 	ui.staged = {}
 }
@@ -1508,9 +1516,8 @@ drop_draft :: proc(ui: ^Ui_State) {
 	if ui.selected < 0 {
 		return
 	}
-	gid := ui.chats[ui.selected].group_id
-	if gid in ui.drafts {
-		delete_key(&ui.drafts, gid)
+	key := draft_key(ui.account_ref, ui.chats[ui.selected].group_id)
+	if draft_delete(ui, key) {
 		save_settings(ui)
 	}
 }
@@ -1535,11 +1542,10 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 		if i < index {index -= 1}
 	}
 	ui.selected = index
-	key := ui.chats[index].group_id
-	ui.staged = ui.staged_drafts[key]
-	if key in ui.staged_drafts {ui.staged_drafts[key] = {}}
+	key := draft_key(ui.account_ref, ui.chats[index].group_id)
+	ui.staged = staged_draft_take(ui, key)
 	ui.search_open = false
-	ui.show_members = false
+	close_group_info(ui)
 	ui.group_files_open = false
 	ui.compose_more, ui.fx_open = false, false
 	ui.slash = {}
@@ -1550,7 +1556,7 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 	// Restore this chat's saved draft (empty if none). A switch also
 	// abandons any in-progress edit; it targeted the old chat.
 	ui.editing = ""
-	ed_set(ui, &ui.compose, ui.drafts[ui.chats[index].group_id])
+	ed_set(ui, &ui.compose, ui.drafts[key])
 	// Snapshot the NEW MESSAGES anchor now: the mark-as-read below
 	// clears the row's first_unread on the chat-list reload.
 	delete(ui.unread_mark_id)
@@ -1586,6 +1592,7 @@ open_group_info :: proc(ui: ^Ui_State, client: ^marmot.Client, tab: Info_Tab) {
 	}
 	ui.show_members = true
 	ui.info_tab = dm ? .Settings : tab
+	activation_refresh(ui)
 	ui.focus = dm || rl.HasTouch() ? .Compose : tab == .Members ? .Invite : .Rename
 	ui.desc_editing = false
 	ui.gpic_menu_open = false
@@ -1598,6 +1605,7 @@ open_group_info :: proc(ui: ^Ui_State, client: ^marmot.Client, tab: Info_Tab) {
 
 // Back to the conversation from either group info page.
 close_group_info :: proc(ui: ^Ui_State) {
+	activation_reset(ui)
 	ui.show_members = false
 	ui.nip05_ticket = 0
 	ui.desc_editing = false
@@ -1638,9 +1646,8 @@ set_archived :: proc(ui: ^Ui_State, client: ^marmot.Client, group_id: string, ar
 			ui.selected = selected >= 0 && selected < len(ui.chats) ? selected : -1
 			// Return only files moved by this action, not an older saved draft.
 			if stashed_files && ui.selected >= 0 {
-				key := ui.chats[ui.selected].group_id
-				ui.staged = ui.staged_drafts[key]
-				ui.staged_drafts[key] = {}
+				key := draft_key(ui.account_ref, ui.chats[ui.selected].group_id)
+				ui.staged = staged_draft_take(ui, key)
 			}
 			return
 		}
@@ -2260,6 +2267,14 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		confirm_ask(ui, dm ? .Leave_Chat : .Leave_Group, "", ui.chats[ui.selected].title)
 		return
 	}
+	if clicked("RetryAccountDevices") {
+		activation_refresh(ui)
+		return
+	}
+	if clicked("EnableAccountDevices") {
+		confirm_ask(ui, .Enable_Account_Devices, ui.chats[ui.selected].group_id)
+		return
+	}
 
 	if admin && clicked("RenameBtn") {
 		start_rename(ui, client)
@@ -2383,6 +2398,7 @@ Msg_Op :: enum {
 	Promote,
 	Demote,
 	Lookup_Member,
+	Enable_Account_Devices,
 }
 
 // Fire and forget onto the op worker: the round trip is a relay's

@@ -342,6 +342,7 @@ sticker_picker :: proc(ui: ^Ui_State) {
 @(private)
 sticker_send :: proc(ui: ^Ui_State, client: ^marmot.Client, item: Sticker_Item) {
 	if ui.selected < 0 || ui.editing != "" {return}
+	if new_send_paused(ui) {return}
 	root := thread_cur(ui)
 	if item.ref.pack != "" && root != "" {return}
 	if item.ref.pack == "" {
@@ -359,6 +360,7 @@ sticker_send :: proc(ui: ^Ui_State, client: ^marmot.Client, item: Sticker_Item) 
 			Pending_Send {
 				ticket = send_ticket,
 				visible_since = time.tick_now(),
+				account_ref = strings.clone(ui.account_ref),
 				group_id = strings.clone(ui.chats[ui.selected].group_id),
 				sender = strings.clone(info.name != "" ? info.name : "you"),
 				sticker = sticker_ref_clone(item.ref),

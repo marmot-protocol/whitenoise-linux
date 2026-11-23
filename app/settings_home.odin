@@ -187,6 +187,7 @@ SETTINGS_TASKS := []Settings_Task {
 	{.Keys, N_("Publish a key package"), "KpStatus", "mls invite identity", true},
 	{.Keys, N_("Change your vault password"), "RowVaultPw", "security encryption secret", true},
 	{.Keys, N_("Reveal your secret key"), "RowReveal", "nsec export security", true},
+	{.Devices, N_("Manage linked devices"), "DevicesRoster", "pair link roster", false},
 	{.Storage, N_("Clear cached attachments"), "RowCache", "media space disk", true},
 	{.Storage, N_("Back up local data"), "RowBackup", "export data encrypted", true},
 	{.Storage, N_("Import a backup"), "RowImport", "restore data encrypted", true},
@@ -275,6 +276,7 @@ SETTINGS_SEE_ALSO := [Settings_Section][]Settings_Task {
 		{.Keys, N_("Copy your public key"), "NpubRow", "", false},
 		{.Network, N_("Choose where people reach you"), "AddInboxRow", "", false},
 	},
+	.Devices       = nil,
 }
 
 // The "Troubleshooters" box: a symptom in the user's words, linked to the
@@ -332,6 +334,7 @@ SETTINGS_SUMMARIES := [Settings_Section]string {
 	.Debug         = N_("Inspect the current session."),
 	.KP            = N_("Inspect MLS key packages."),
 	.Agents        = N_("Setup prompts for connecting an AI agent to White Noise."),
+	.Devices       = N_("Pair and view devices linked to this profile."),
 }
 
 // How a pane link is marked: the target category's art, or a help mark.
@@ -343,6 +346,7 @@ Settings_Mark :: enum {
 
 @(private)
 settings_available :: proc(ui: ^Ui_State, section: Settings_Section) -> bool {
+	if section == .Devices {return devices_visible(ui)}
 	return (section != .Debug && section != .KP) || ui.prefs.dev_mode
 }
 
@@ -653,23 +657,29 @@ settings_banner :: proc(ui: ^Ui_State) {
 	section := ui.settings_section
 	gallery := section == .Appearance && !settings_on_menu(ui) && ui.settings_tab == 0
 	phone := single_pane()
+	devices := section == .Devices
+	vertical_pad: u16 = phone ? 3 : devices ? 14 : 8
 	if nendo.box(nendo.id("SettingsHead"))(
 	{
 		width = nendo.grow(),
-		padding = {left = phone ? 0 : 24, right = 24, top = phone ? 3 : 8, bottom = phone ? 3 : 8},
+		padding = {left = phone ? 0 : 24, right = 24, top = vertical_pad, bottom = vertical_pad},
 		gap = phone ? 6 : 12,
 		align = {y = .Center},
-		color = ACCENT,
-		user_data = rawptr(TITLE_BAND),
+		color = devices ? BG : ACCENT,
+		border = devices ? nendo.Border{color = DIVIDER, width = {bottom = 1}} : {},
+		user_data = devices ? nil : rawptr(TITLE_BAND),
 	},
 	) {
 		// Phones go back from the banner itself instead of a separate bar
 		// above it; the shell's PhoneBack handler runs it.
 		if phone {if nendo.box(nendo.id("PhoneBack"))({width = nendo.fixed(44), height = nendo.fixed(44), align = {x = .Center, y = .Center}}) {
-				nendo.text("\uf053", {font = FONT_ICON, size = 18, color = ON_ACCENT})
+				nendo.text(
+					"\uf053",
+					{font = FONT_ICON, size = 18, color = devices ? TEXT : ON_ACCENT},
+				)
 				if hovered() {cursor_raise(.Pointer); tooltip(tr("Back"))}
 			}}
-		settings_illustration("SettingsHeadArt", SECTION_ART[section], 34)
+		if !devices {settings_illustration("SettingsHeadArt", SECTION_ART[section], 34)}
 		if nendo.box(nendo.id("SettingsHeadCol"))(
 		{width = nendo.grow(), direction = .Column, gap = 2},
 		) {
@@ -677,18 +687,20 @@ settings_banner :: proc(ui: ^Ui_State) {
 				tr(SETTINGS_SECTIONS[section].label),
 				{
 					font = gallery ? gallery_font(ui, FONT_GALLERY_BOLD) : FONT_TITLE,
-					size = 16,
-					color = ON_ACCENT,
+					size = devices ? 22 : 16,
+					color = devices ? TEXT : ON_ACCENT,
 				},
 			)
-			nendo.text(
-				tr(settings_description(section)),
-				{
-					font = gallery ? gallery_font(ui, FONT_GALLERY_TITLE) : FONT_BODY,
-					size = 11,
-					color = ON_ACCENT,
-				},
-			)
+			if !devices {
+				nendo.text(
+					tr(settings_description(section)),
+					{
+						font = gallery ? gallery_font(ui, FONT_GALLERY_TITLE) : FONT_BODY,
+						size = 11,
+						color = ON_ACCENT,
+					},
+				)
+			}
 		}
 	}
 }
@@ -856,7 +868,7 @@ settings_home :: proc(ui: ^Ui_State) {
 
 	// Icon and name only; the summary moves to a tooltip.
 	settings_pick_heading(tr("Pick a category"))
-	categories := [10]Settings_Section {
+	categories := [?]Settings_Section {
 		.Appearance,
 		.General,
 		.Folders,
@@ -867,6 +879,7 @@ settings_home :: proc(ui: ^Ui_State) {
 		.Storage,
 		.Advanced,
 		.Agents,
+		.Devices,
 	}
 	columns := settings_main_w(ui) >= 600 ? 2 : 1
 	rows := (len(categories) + columns - 1) / columns
@@ -881,6 +894,7 @@ settings_home :: proc(ui: ^Ui_State) {
 					at := row * columns + col
 					if at >= len(categories) {break}
 					section := categories[at]
+					if !settings_available(ui, section) {continue}
 					if nendo.box(nendo.id("SettingsNav", u32(section)))(
 					{
 						width = nendo.grow(),
@@ -969,6 +983,7 @@ settings_open :: proc(
 	settings_flash_until = anchor != "" ? rl.GetTime() + 1.5 : 0
 	ui.focus = .Compose
 	if section == .Home {clear(&ui.settings_search)}
+	if section == .Devices {devices_refresh_open(ui)}
 	if client != nil {
 		#partial switch section {
 		case .Network, .Keys:
@@ -990,17 +1005,22 @@ restore_workspace :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.settings_tab = ui.prefs.settings_tab
 	ui.settings_level = ui.prefs.settings_level
 	ui.chat_filter = ui.prefs.chat_filter
+	if ui.settings_section == .Devices && !settings_available(ui, .Devices) {
+		ui.settings_section = .Home
+		ui.settings_tab = 0
+		ui.settings_level = .Sheet
+	}
 	if ui.page == .Settings {
 		settings_open(
 			ui,
-			client,
+			ui.account_ref == "" ? nil : client,
 			ui.settings_section,
 			tab = ui.settings_tab,
 			level = ui.settings_level,
 		)
 		return
 	}
-	if client == nil {return}
+	if client == nil || ui.account_ref == "" {return}
 	#partial switch ui.page {
 	case .Contacts:
 		load_contacts(client, ui, .Details)

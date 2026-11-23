@@ -29,6 +29,31 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 	}
 }
 
+@(private = "file")
+message_origin_view :: proc(record: ^marmot.Timeline_Message_Record) -> Message_Origin {
+	legacy := record.imported_from
+	if typed := record.history_import_provenance; typed != nil {
+		switch typed.tag {
+		case .BACKUP:
+			return {kind = .Backup}
+		case .DEVICE:
+			slot := string(typed.body.device.device_slot_id_hex)
+			label := ""
+			if slot != "" && legacy != nil && string(legacy.device_slot_id_hex) == slot {
+				label = string(legacy.device_label)
+			}
+			return {kind = .Device, slot = slot, label = label}
+		}
+	} else if legacy != nil {
+		return {
+			kind = .Device,
+			slot = string(legacy.device_slot_id_hex),
+			label = string(legacy.device_label),
+		}
+	}
+	return {}
+}
+
 @(private)
 timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Timeline_Page) {
 	timing_start := time.tick_now()
@@ -52,12 +77,10 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	// send worker is still in flight; the build loop below hides that
 	// copy so the grayed pending row stays alone until the ack.
 	old_times := make(map[string]time.Tick, context.temp_allocator)
-	for old in ui.messages {
-		old_times[old.id] = old.visible_since
-	}
+	group_id := ui.chats[ui.selected].group_id
 	inflight := make(map[string]int, context.temp_allocator)
 	for p in ui.pending {
-		if !p.failed && len(p.atts) == 0 && p.group_id == ui.chats[ui.selected].group_id {
+		if !p.failed && len(p.atts) == 0 && pending_in_workspace(ui, p, group_id) {
 			inflight[p.body] += 1
 		}
 	}
@@ -67,9 +90,11 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	previous := make([]Msg_Ui, len(ui.messages), context.temp_allocator)
 	copy(previous, ui.messages[:])
 	previous_ids := make(map[string]int, context.temp_allocator)
-	group_id := ui.chats[ui.selected].group_id
 	if ui.messages_group == group_id && ui.messages_account == ui.account_ref {
-		for msg, i in previous {previous_ids[msg.id] = i}
+		for msg, i in previous {
+			old_times[msg.id] = msg.visible_since
+			previous_ids[msg.id] = i
+		}
 	} else {
 		// Revealed blocked runs collapse again when you leave the chat.
 		for id in ui.blocked_open {delete(id)}
@@ -103,16 +128,15 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 
 		id_str := record.message_id_hex != nil ? string(record.message_id_hex) : ""
 		sender := record.sender != nil ? string(record.sender) : "?"
-		mine := record.direction != nil && string(record.direction) == "sent"
-		// Match MDK's chat-list delivery projection. A successful local send
-		// is not a relay acknowledgement until the source event exists.
+		sent := string(record.direction) == "sent"
+		mine := sent || message_is_mine(nil, record.sender, ui.account_ref)
 		delivery := marmot.Delivery_State.NOT_APPLICABLE
-		if mine {
+		if sent {
 			delivery = .PENDING
 			if record.invalidation_status != nil &&
 			   string(record.invalidation_status) == "local_publish_failed" {
 				delivery = .FAILED
-			} else if record.source_message_id_hex != nil {
+			} else if record.source_message_id_hex != nil || record.recipient_confirmed {
 				delivery = .DELIVERED
 			}
 		}
@@ -158,6 +182,9 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			continue
 		}
 
+		origin: Message_Origin
+		if !record.deleted {origin = message_origin_view(record)}
+
 		// A shared theme rides its own kind: the body is a toml pack,
 		// which renders as an offer card rather than as text. An
 		// unparseable one is dropped, not shown half-read.
@@ -191,6 +218,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 					sort_at = record.timeline_at,
 					mine = mine,
 					delivery = delivery,
+					origin = message_origin_clone(origin),
 				},
 			)
 			continue
@@ -209,10 +237,10 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 
 		if old, found := previous_ids[id_str];
-		   found && message_matches(previous[old], record, label, info.pic_url) {
+		   found &&
+		   message_matches(previous[old], record, label, info.pic_url, mine, delivery, origin) {
 			msg := previous[old]
 			msg.thread_replies = 0
-			msg.delivery = delivery
 			append(&ui.messages, msg)
 			previous[old] = {} // ownership moved into the new snapshot
 			continue
@@ -250,7 +278,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 
 		// The local copy of an in-flight optimistic send: skip it, the
 		// pending row is its visual until the ack lands.
-		if mine && class != .Unsupported && !(id_str in old_times) && inflight[body] > 0 {
+		if sent && class != .Unsupported && !(id_str in old_times) && inflight[body] > 0 {
 			inflight[body] -= 1
 			continue
 		}
@@ -267,6 +295,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			sort_at   = record.timeline_at,
 			mine      = mine,
 			delivery  = delivery,
+			origin    = message_origin_clone(origin),
 		}
 		if class == .Unsupported {
 			msg.unsupported = true

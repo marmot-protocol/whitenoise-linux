@@ -33,6 +33,7 @@ contacts_layout :: proc(t: ^testing.T) {
 		selected_contact = -1,
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil}
@@ -263,7 +264,7 @@ edit_completion_scope :: proc(t: ^testing.T) {
 	}
 	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
 	append(&ui.messages, Msg_Ui{id = "message"})
-	ui.drafts["group"] = "draft"
+	ui.drafts["account:group"] = "draft"
 	defer {delete(ui.chats); delete(ui.messages); delete(ui.compose); delete(ui.drafts)
 		delete(ui.client_status)}
 	ed_set(&ui, &ui.compose, "newer typing")
@@ -315,6 +316,7 @@ performance_sidebar :: proc(t: ^testing.T) {
 	}
 	g_ui, g_prefs = &ui, &ui.prefs
 	ui.prefs.rail_w = RAIL_W_MIN
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	for i in 0 ..< 100 {
 		append(

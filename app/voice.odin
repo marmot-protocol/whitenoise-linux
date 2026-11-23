@@ -174,7 +174,7 @@ voice_poll :: proc() {
 // Stop, wrap the samples in a WAV, and queue it like a staged
 // non-image attachment (own pending row + upload worker).
 voice_send :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if voice.stream == nil {
+	if voice.stream == nil || new_send_paused(ui) {
 		return
 	}
 	voice_stop()
@@ -186,11 +186,12 @@ voice_send :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	send_ticket += 1
 	p := Pending_Send {
-		ticket   = send_ticket,
-		group_id = strings.clone(ui.chats[ui.selected].group_id),
-		sender   = strings.clone(len(info.name) > 0 ? info.name : "you"),
-		body     = strings.clone(name),
-		thread   = strings.clone(thread_cur(ui)),
+		ticket      = send_ticket,
+		account_ref = strings.clone(ui.account_ref),
+		group_id    = strings.clone(ui.chats[ui.selected].group_id),
+		sender      = strings.clone(len(info.name) > 0 ? info.name : "you"),
+		body        = strings.clone(name),
+		thread      = strings.clone(thread_cur(ui)),
 	}
 	append(
 		&p.atts,

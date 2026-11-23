@@ -64,11 +64,7 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
 	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
-	append(
-		&ui.chats,
-		Chat_Row_Ui{group_id = "selected-chat", title = "Open conversation"},
-		Chat_Row_Ui{group_id = "menu-chat", title = "Archive example"},
-	)
+	defer {chats_replace(&ui.chats, {}); chats_collect()}
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; forced_release = false; text_field_live = false}
 
@@ -101,6 +97,13 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 	for cancel in ([]string{"ConfirmCancel", "escape", "backdrop", "switch-click", "switch-enter", "confirm-click", "confirm-enter"}) {
 		delete(ui.account_ref)
 		ui.account_ref = strings.clone(owner)
+		if len(ui.chats) == 0 {
+			append(
+				&ui.chats,
+				chat_clone({group_id = "selected-chat", title = "Open conversation"}),
+				chat_clone({group_id = "menu-chat", title = "Archive example"}),
+			)
+		}
 		ui.selected = 0
 		ui.row_menu, ui.row_menu_x, ui.row_menu_y = 1, 100, 80
 		for _ in 0 ..< 3 {frame(&ui)}
@@ -127,9 +130,7 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 		testing.expect(t, strings.contains(text, "Archive example"))
 		switched := strings.has_prefix(cancel, "switch-")
 		if switched {
-			previous_account := ui.account_ref
 			finish_account_switch(&ui, client, other)
-			delete(previous_account)
 			testing.expect_value(t, ui.account_ref, other)
 			// The nonexistent account fails the real list read. Clear only
 			// that error so an archive attempt would produce a new error.
@@ -157,9 +158,11 @@ archive_chat_dispatch :: proc(t: ^testing.T) {
 		}
 		testing.expect_value(t, ui.confirm.kind, Confirm_Kind.None)
 		testing.expect_value(t, ui.selected, switched ? -1 : 0)
-		testing.expect_value(t, len(ui.chats), 2)
-		testing.expect_value(t, ui.chats[0].group_id, "selected-chat")
-		testing.expect_value(t, ui.chats[1].group_id, "menu-chat")
+		if !testing.expect_value(t, len(ui.chats), switched ? 0 : 2) {return}
+		if !switched {
+			testing.expect_value(t, ui.chats[0].group_id, "selected-chat")
+			testing.expect_value(t, ui.chats[1].group_id, "menu-chat")
+		}
 		if strings.has_prefix(cancel, "confirm-") {
 			// Real ABI failure: confirmation must still use the existing error
 			// path and never claim success or remove the selected conversation.

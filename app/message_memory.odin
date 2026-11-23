@@ -16,6 +16,9 @@ message_matches :: proc(
 	old: Msg_Ui,
 	record: ^marmot.Timeline_Message_Record,
 	label, picture: string,
+	mine: bool,
+	delivery: marmot.Delivery_State,
+	origin: Message_Origin,
 ) -> bool {
 	if record.kind != KIND_CHAT_MESSAGE ||
 	   record.deleted ||
@@ -41,7 +44,9 @@ message_matches :: proc(
 	   old.sender_id != string(record.sender) ||
 	   old.sender != label ||
 	   old.pic_url != picture ||
-	   old.mine != (string(record.direction) == "sent") {
+	   old.mine != mine ||
+	   old.delivery != delivery ||
+	   old.origin != origin {
 		return false
 	}
 	// Time/date preferences and midnight can change labels without a wire update.
@@ -117,10 +122,16 @@ links_free :: proc(links: [dynamic]Inline_Link) {
 }
 
 @(private)
+message_origin_clone :: proc(origin: Message_Origin) -> Message_Origin {
+	if origin.kind != .Device {return origin}
+	return {origin.kind, strings.clone(origin.slot), strings.clone(origin.label)}
+}
+
+@(private)
 message_free :: proc(msg: Msg_Ui) {
 	sticker_ref_free(msg.sticker)
 	sticker_ref_free(msg.reply_sticker)
-	for value in ([]string{msg.id, msg.sender, msg.sender_id, msg.pic_url, msg.body, msg.event_summary.title, msg.event_summary.description, msg.event_summary.details, msg.reply_from, msg.reply_from_id, msg.reply_text, msg.reply_id, msg.reply_image, msg.at, msg.at_full, msg.day, msg.sys_text, msg.sys_added_hex, msg.theme_name, msg.theme_toml, msg.thread_of}) {
+	for value in ([]string{msg.id, msg.sender, msg.sender_id, msg.pic_url, msg.body, msg.event_summary.title, msg.event_summary.description, msg.event_summary.details, msg.reply_from, msg.reply_from_id, msg.reply_text, msg.reply_id, msg.reply_image, msg.at, msg.at_full, msg.day, msg.sys_text, msg.sys_added_hex, msg.theme_name, msg.theme_toml, msg.thread_of, msg.origin.slot, msg.origin.label}) {
 		mem.zero_slice(transmute([]u8)value)
 		delete(value)
 	}

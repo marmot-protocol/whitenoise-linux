@@ -542,6 +542,7 @@ gif_send :: proc(ui: ^Ui_State, client: ^marmot.Client, item: Gif_Item) {
 	   ui.selected < 0 ||
 	   ui.selected >= len(ui.chats) ||
 	   ui.editing != "" {return}
+	if new_send_paused(ui) {return}
 	job := new(Gif_Job)
 	job.op, job.item = .Send, gif_item_clone(item)
 	if ui.gif_view != nil && !ui.gif_view.failed && gif_same(item, ui.gif_selected) {
@@ -591,12 +592,17 @@ drain_gif_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for i := len(ui.pending) - 1; i >= 0; i -= 1 {
 		p := &ui.pending[i]
 		job := p.gif
-		if job == nil || p.failed || !thread.is_done(job.worker) {continue}
+		if job == nil || job.worker == nil || p.failed || !thread.is_done(job.worker) {continue}
+		if !p.dismissed && !p.purged && account_send_paused(ui, p.account_ref) {continue}
 		thread.join(job.worker)
-		if p.dismissed {free_pending(p); ordered_remove(&ui.pending, i); continue}
+		if !pending_send_allowed(
+			ui,
+			p^,
+		) {free_pending(p); ordered_remove(&ui.pending, i); continue}
 		if job.error != "" {
 			p.failed = true
-			set_status(ui, strings.clone(tr(job.error)), .Error)
+			if p.account_ref ==
+			   ui.account_ref {set_status(ui, strings.clone(tr(job.error)), .Error)}
 			continue
 		}
 		name := string(job.data[:4]) == "RIFF" ? "animation.webp" : "animation.gif"

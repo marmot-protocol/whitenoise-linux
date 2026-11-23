@@ -4,6 +4,7 @@
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 
+import "core:encoding/json"
 import "core:os"
 import "core:strings"
 import "core:sync"
@@ -29,9 +30,33 @@ offline_delete_pending :: proc(t: ^testing.T) {
 		selected = -1,
 	}
 	defer delete(ui.pending)
-	append(&ui.pending, Pending_Send{ticket = 1, body = strings.repeat("x", 65537), failed = true})
-	append(&ui.pending, Pending_Send{ticket = 2, body = strings.clone("queued"), queued = true})
-	append(&ui.pending, Pending_Send{ticket = 3, body = strings.clone("sending"), attempts = 1})
+	append(
+		&ui.pending,
+		Pending_Send {
+			ticket = 1,
+			account_ref = strings.clone("account"),
+			body = strings.repeat("x", 65537),
+			failed = true,
+		},
+	)
+	append(
+		&ui.pending,
+		Pending_Send {
+			ticket = 2,
+			account_ref = strings.clone("account"),
+			body = strings.clone("queued"),
+			queued = true,
+		},
+	)
+	append(
+		&ui.pending,
+		Pending_Send {
+			ticket = 3,
+			account_ref = strings.clone("account"),
+			body = strings.clone("sending"),
+			attempts = 1,
+		},
+	)
 	save_offline(&ui)
 
 	delete_pending(&ui, 2)
@@ -61,7 +86,14 @@ offline_delete_pending :: proc(t: ^testing.T) {
 	previous_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
 	os.set_env("XDG_CONFIG_HOME", OFFLINE_TEST_HOME)
 	defer os.set_env("XDG_CONFIG_HOME", previous_config)
-	append(&ui.pending, Pending_Send{ticket = 4, body = strings.clone("sending")})
+	append(
+		&ui.pending,
+		Pending_Send {
+			ticket = 4,
+			account_ref = strings.clone("account"),
+			body = strings.clone("sending"),
+		},
+	)
 	delete_pending(&ui, 0)
 	done := Send_Done {
 		ticket = 4,
@@ -107,6 +139,7 @@ offline_roundtrip :: proc(t: ^testing.T) {
 			sha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 		},
 		group_id = "g1",
+		account_ref = "account",
 		sender = "you",
 		body = "hello",
 		reply_to = "r1",
@@ -124,6 +157,7 @@ offline_roundtrip :: proc(t: ^testing.T) {
 	load_offline(&restored)
 	testing.expect_value(t, len(restored.pending), 1)
 	q := restored.pending[0]
+	testing.expect_value(t, q.account_ref, "account")
 	testing.expect_value(t, q.effect, 3)
 	testing.expect_value(t, q.sticker.pack, p.sticker.pack)
 	testing.expect_value(t, q.sticker.sha, p.sticker.sha)
@@ -140,4 +174,53 @@ offline_roundtrip :: proc(t: ^testing.T) {
 	save_offline(&ui)
 	_, read_err := os.read_entire_file(offline_path(), context.temp_allocator)
 	testing.expect(t, read_err != nil)
+}
+
+@(test)
+offline_ownerless_preserved :: proc(t: ^testing.T) {
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	defer vault_lock()
+	dir, err := os.make_directory_temp("", "wn-owned-queue-*", context.temp_allocator)
+	if !testing.expect(t, err == nil) {return}
+	defer os.remove_all(dir)
+	old := data_home
+	data_home = dir
+	defer data_home = old
+	if !testing.expect_value(t, vault_create("test"), Vault_Err.None) {return}
+	items := []Offline_Item {
+		{group_id = "same-chat", body = "legacy"},
+		{group_id = "same-chat", body = "A", account_ref = "owner-a"},
+		{group_id = "same-chat", body = "B", account_ref = "owner-b"},
+	}
+	plain, _ := json.marshal(items, allocator = context.temp_allocator)
+	sealed, ok := vault_seal_blob(plain, context.temp_allocator)
+	if !testing.expect(t, ok) {return}
+	if !testing.expect(t, os.write_entire_file(offline_path(), sealed) == nil) {return}
+	ui: Ui_State
+	load_offline(&ui)
+	defer {
+		for &p in ui.pending {free_pending(&p)}
+		delete(ui.pending)
+		offline_clear(&ui)
+		delete(ui.toast)
+	}
+	if !testing.expect_value(t, len(ui.pending), 2) {return}
+	testing.expect_value(t, len(ui.offline_unowned), 1)
+	offline_wipe(&ui, "owner-a")
+	if !testing.expect_value(t, len(ui.pending), 1) {return}
+	testing.expect_value(t, ui.pending[0].account_ref, "owner-b")
+	saved, read_err := os.read_entire_file(offline_path(), context.temp_allocator)
+	if !testing.expect(t, read_err == nil) {return}
+	plain, ok = vault_open_blob(saved, context.temp_allocator)
+	if !testing.expect(t, ok) {return}
+	var: []Offline_Item
+	if !testing.expect(
+		t,
+		json.unmarshal(plain, &var, allocator = context.temp_allocator) == nil,
+	) {return}
+	if !testing.expect_value(t, len(var), 2) {return}
+	testing.expect_value(t, var[0].body, "legacy")
+	testing.expect_value(t, var[0].account_ref, "")
+	testing.expect_value(t, var[1].account_ref, "owner-b")
 }

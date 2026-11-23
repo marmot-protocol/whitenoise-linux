@@ -368,6 +368,12 @@ login_pane :: proc(ui: ^Ui_State) {
 				{font = FONT_BODY, size = 15, color = TEXT_DIM},
 			)
 			if nendo.box(nendo.id("LoginGapA"))({height = nendo.fixed(10)}) {}
+			if ui.account_ref == "" && len(ui.accounts) != 0 {
+				login_big_button("LoginChooseAccount", tr("Choose an account"), false)
+			}
+			if ui.account_ref == "" && accounts_have_tombstones(ui) {
+				login_big_button("LoginUnlinkedProfiles", tr("Review unlinked profiles"), false)
+			}
 			if nendo.box(nendo.id("LoginLocalMethods"))(
 			{
 				width = nendo.grow(),
@@ -447,14 +453,9 @@ login_pane :: proc(ui: ^Ui_State) {
 					len(ui.login_input) > 0 ? .Enabled : .Disabled,
 				)
 			}
-			// Every form here signs in an existing identity. Each installation
-			// publishes its own key package and keeps its own MLS state, so a
-			// second device starts with none of the first one's chats.
 			if nendo.box(nendo.id("LoginGapC"))({height = nendo.fixed(6)}) {}
 			nendo.text(
-				tr(
-					"Multi-device isn't built yet. Each device that signs in with this key keeps its own separate chats. Groups and messages from your other devices won't appear here, and new invites reach only one of your devices.",
-				),
+				tr("After signing in, open Devices in Settings to link another device."),
 				{font = FONT_BODY, size = 12, color = TEXT_LO, align = .Center},
 			)
 		}

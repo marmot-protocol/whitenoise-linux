@@ -39,8 +39,15 @@ Confirm_Kind :: enum {
 	Remove_Relay,
 	Remove_Inbox,
 	Sign_Out,
-	Remove_Account,
 	Retention, // disappearing-message timer; seconds ride Confirm.idx
+	Reset_Devices,
+	Wipe_Account,
+	Wipe_Unlinked,
+	Remove_Linked_Device,
+	Reject_Sign_In,
+	Device_Start_Fresh,
+	Enable_Account_Devices,
+	Activation_Undelivered,
 }
 
 Confirm :: struct {
@@ -135,10 +142,43 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_(
 			"Sign out of this account?",
 		), N_("Its keys stay in the vault on this device. You can sign in again from the accounts screen."), N_("Sign out")
-	case .Remove_Account:
+	case .Wipe_Account:
+		if c.idx == 1 {
+			return N_(
+				"Sign out and wipe your profile?",
+			), N_("Your keys and chats are deleted from this device. Other linked devices keep their chats. Asking them to help with cleanup can take about 30 seconds. This can't be undone."), N_("Sign out and wipe")
+		}
 		return N_(
-			"Remove this account?",
-		), N_("Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."), N_("Remove")
+			"Sign out and wipe your profile?",
+		), N_("This device tries to leave its chats, then deletes its local copy of the profile, including its keys and chats. This can't be undone."), N_("Sign out and wipe")
+	case .Wipe_Unlinked:
+		return N_(
+			"Remove this unlinked profile?",
+		), N_("This deletes the keys and chats for this profile from this device. It doesn't remove the profile or its chats from other devices. This can't be undone."), N_("Remove from this device")
+	case .Reset_Devices:
+		return N_(
+			"Reset this device list?",
+		), N_("This device forgets its local device list and unfinished sync. Your chats and keys stay. Link again to get a new device list."), N_("Reset and link again")
+	case .Remove_Linked_Device:
+		return N_(
+			"Remove this device?",
+		), N_("It will stop receiving this profile's messages. A chat admin may need to remove it from chats that don't support linked devices."), N_("Remove device")
+	case .Reject_Sign_In:
+		return N_(
+			"Mark this sign-in as not you?",
+		), N_("Your other linked devices will refuse this sign-in's link request and warn you about it. Someone may have your private key."), N_("This wasn't me")
+	case .Device_Start_Fresh:
+		return N_(
+			"Start fresh on this device?",
+		), N_("Earlier sign-ins stop prompting you. Until you link, only future invitations will appear here."), N_("Start fresh")
+	case .Enable_Account_Devices:
+		return N_(
+			"Turn on linked devices?",
+		), N_("Other members' linked devices can join without an admin. This can't be turned off."), N_("Turn on linked devices")
+	case .Activation_Undelivered:
+		return N_(
+			"Some chat changes weren't delivered",
+		), N_("Affected members may miss the change. Turning on linked devices now dismisses the relay refusals for those earlier changes."), N_("Turn on anyway")
 	case .Retention:
 		return N_(
 			"Change disappearing messages?",
@@ -171,6 +211,7 @@ confirm_ask :: proc(
 	name: string = "",
 	idx: int = -1,
 ) {
+	if kind == .Wipe_Unlinked && !account_revoked(ui, arg) {return}
 	// Frees the previous ask's payload, which confirm_close left alone.
 	delete(ui.confirm.arg)
 	delete(ui.confirm.name)
@@ -181,7 +222,14 @@ confirm_ask :: proc(
 		name = strings.clone(name),
 		idx  = idx,
 	}
-	if kind == .Archive_Chat {
+	#partial switch kind {
+	case .Archive_Chat,
+	     .Reset_Devices,
+	     .Remove_Linked_Device,
+	     .Reject_Sign_In,
+	     .Device_Start_Fresh,
+	     .Enable_Account_Devices,
+	     .Activation_Undelivered:
 		ui.confirm.account = strings.clone(ui.account_ref)
 	}
 	if kind == .Step_Down {
@@ -192,7 +240,6 @@ confirm_ask :: proc(
 			}
 		}
 	}
-	if kind == .Remove_Account {ui.accounts_open = false}
 	confirm_shown = kind
 }
 
@@ -234,12 +281,12 @@ confirm_modal :: proc(ui: ^Ui_State) {
 	) {
 		nendo.text(tr(title), {font = FONT_TITLE, size = 18, color = TEXT})
 		scrollbar(nendo.id("ConfirmModal"), 17)
-		if len(ui.confirm.name) > 0 &&
-		   (shown.kind == .Remove_Account || shown.kind == .Archive_Chat) {
+		account_subject := shown.kind == .Wipe_Account || shown.kind == .Wipe_Unlinked
+		if len(ui.confirm.name) > 0 && (account_subject || shown.kind == .Archive_Chat) {
 			if nendo.box(nendo.id("ConfirmAccount"))(
 			{width = nendo.grow(), gap = 10, align = {y = .Center}},
 			) {
-				if shown.kind == .Remove_Account {
+				if account_subject {
 					avatar("ConfirmAvatar", 0, ui.confirm.arg, ui.confirm.name, 36)
 				}
 				nendo.text(ui.confirm.name, {font = FONT_TITLE, size = 16, color = TEXT})
@@ -268,9 +315,6 @@ confirm_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 		nendo.text(tr(body), {font = FONT_BODY, size = 12, color = TEXT_DIM})
-		if shown.kind == .Remove_Account && confirm_exportable(ui) {
-			login_big_button("ConfirmExport", tr("Export key first"), true)
-		}
 
 		if nendo.box(nendo.id("ConfirmActions"))(
 		{width = nendo.grow(), gap = 10, padding = {top = 6}},
@@ -286,7 +330,10 @@ confirm_modal :: proc(ui: ^Ui_State) {
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				nendo.text(tr("Cancel"), {font = FONT_TITLE, size = 13, color = TEXT})
+				nendo.text(
+					shown.kind == .Activation_Undelivered ? tr("Wait") : tr("Cancel"),
+					{font = FONT_TITLE, size = 13, color = TEXT},
+				)
 			}
 			if !single_pane() {if nendo.box(nendo.id("ConfirmGap"))({width = nendo.grow()}) {}}
 			if nendo.box(nendo.id("ConfirmGo"))(
@@ -318,21 +365,9 @@ confirm_modal :: proc(ui: ^Ui_State) {
 
 // Input while the modal is open; Enter confirms, Escape and the
 // backdrop cancel.
-@(private = "file")
-confirm_exportable :: proc(ui: ^Ui_State) -> bool {
-	for account in ui.accounts {
-		if account.id_hex == ui.confirm.arg {return account.local}
-	}
-	return false
-}
-
 handle_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if clicked("ConfirmExport") && ui.confirm.kind == .Remove_Account && confirm_exportable(ui) {
-		open_key_export(ui, ui.confirm.arg)
-		confirm_close(ui)
-		return
-	}
 	if rl.IsKeyPressed(.ESCAPE) {
+		activation_wait(ui)
 		confirm_close(ui)
 		return
 	}
@@ -343,6 +378,7 @@ handle_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if mouse_released() &&
 	   (clicked("ConfirmCancel") || !nendo.pointer_over(nendo.id("ConfirmModal"))) {
+		activation_wait(ui)
 		confirm_close(ui)
 	}
 }
@@ -409,8 +445,43 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		set_inbox_relays(ui, client, relays_without(ui.profile.inbox[:], c.idx))
 	case .Sign_Out:
 		account_job_start(account_job_new(ui, client, .Sign_Out, c.arg))
-	case .Remove_Account:
-		account_job_start(account_job_new(ui, client, .Remove, c.arg))
+	case .Wipe_Account:
+		if c.arg == ui.account_ref && account_signed_in(ui, c.arg) && !account_revoked(ui, c.arg) {
+			account_job_start(account_job_new(ui, client, .Wipe, c.arg))
+		}
+	case .Wipe_Unlinked:
+		if account_revoked(ui, c.arg) {
+			account_job_start(account_job_new(ui, client, .Wipe_Unlinked, c.arg))
+		}
+	case .Reset_Devices:
+		if c.account == ui.account_ref {
+			if profile := device_current(ui);
+			   profile != nil && device_command_current(profile, {kind = .Reset}) {
+				device_queue(ui, {kind = .Reset})
+			}
+		}
+	case .Remove_Linked_Device:
+		command := Device_Command {
+			kind = .Remove_Sibling,
+			slot = c.arg,
+		}
+		if c.account == ui.account_ref {
+			if profile := device_current(ui);
+			   profile != nil && device_command_current(profile, command) {
+				device_queue(ui, command)
+			}
+		}
+	case .Reject_Sign_In, .Device_Start_Fresh:
+		if c.account != ui.account_ref {return}
+		command := Device_Command {
+			kind     = c.kind == .Reject_Sign_In ? .Answer_Sign_In : .Start_Fresh,
+			slot     = c.arg,
+			response = .REJECT,
+		}
+		if profile := device_current(ui);
+		   profile != nil && device_command_current(profile, command) {device_queue(ui, command)}
+	case .Enable_Account_Devices, .Activation_Undelivered:
+		activation_confirm(ui, client, c)
 	case .Retention:
 		// idx is the captured duration. The open chat must still be the
 		// group named in arg; a later selection is not a substitute.

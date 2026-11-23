@@ -33,6 +33,7 @@ Settings_Section :: enum {
 	Debug, // dev-mode only
 	KP, // dev-mode only
 	Agents,
+	Devices,
 }
 
 // A category opens on its menu of tasks and pages; a task or page opens its
@@ -60,6 +61,7 @@ SETTINGS_SECTIONS := [Settings_Section]struct {
 	.Debug         = {N_("Debug"), ICON_BUG},
 	.KP            = {N_("KP inspector"), ICON_KEY},
 	.Agents        = {N_("AI agents"), ICON_CODE},
+	.Devices       = {N_("Devices"), ICON_GLOBE},
 }
 
 STUB_STATUS :: "Not available in the odin port yet."
@@ -559,11 +561,16 @@ settings_description :: proc(section: Settings_Section) -> string {
 		return N_("Inspect published MLS key packages.")
 	case .Agents:
 		return N_("Connect an AI agent using your public key and a setup prompt.")
+	case .Devices:
+		return ""
 	}
 	return ""
 }
 
 settings_pane :: proc(ui: ^Ui_State) {
+	if ui.settings_section == .Devices && !settings_available(ui, .Devices) {
+		settings_open(ui, nil, .Home)
+	}
 	wide := settings_wide(ui)
 	pinned_tabs :=
 		single_pane() &&
@@ -693,6 +700,8 @@ settings_pane :: proc(ui: ^Ui_State) {
 							settings_kp(ui)
 						case .Agents:
 							settings_agents(ui)
+						case .Devices:
+							devices_pane(ui)
 						}
 					}
 					// Related links follow the page when the pane can't sit beside it.
@@ -2513,6 +2522,9 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.settings_section == .Appearance && appearance_control_input(ui, theme_pressed) {return}
 	if ui.settings_section == .Agents && handle_agents(ui) {return}
 	if ui.settings_section == .Home && handle_support(ui, client) {return}
+	if ui.settings_section == .Devices &&
+	   settings_available(ui, .Devices) &&
+	   handle_devices(ui, client) {return}
 
 	if !mouse_released() {
 		return
@@ -2754,6 +2766,8 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_kp(ui, client)
 	case .Agents:
 	// Keyboard and mouse actions are handled before the release-only dispatch.
+	case .Devices:
+		return
 	}
 }
 

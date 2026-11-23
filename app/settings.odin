@@ -32,6 +32,7 @@ Prefs :: struct {
 	restore_last_chat:     bool,
 	last_chat:             string, // group id to reopen on launch
 	last_account:          string, // account hex chosen last; boot opens on it
+	sign_ins_recognized:   map[string]map[string]u64, // account and slot → first seen time
 	page:                  Page,
 	settings_section:      Settings_Section,
 	settings_tab:          int,
@@ -214,6 +215,7 @@ Settings_Load :: enum {
 }
 
 load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
+	sign_in_reviews_free(ui.prefs.sign_ins_recognized)
 	ui.prefs = default_prefs()
 	defer {
 		if len(ui.prefs.recent_emoji) == 0 {
@@ -232,6 +234,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	settings := Settings {
 		prefs = {message_lines = DEFAULT_MESSAGE_LINES},
 	}
+	defer sign_in_reviews_free(settings.prefs.sign_ins_recognized)
 	if json.unmarshal(data, &settings) != nil {
 		settings_discard_private(settings.nicknames, settings.drafts, settings.blocked)
 		return
@@ -262,6 +265,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 		delete(ui.prefs.quick_reactions)
 		delete(ui.prefs.fetch_relays)
 		ui.prefs = settings.prefs
+		settings.prefs.sign_ins_recognized = nil
 	}
 	if ui.prefs.composer.order[0] != .None && !composer_config_load(&ui.prefs.composer) {
 		ui.prefs.composer = {}
@@ -272,7 +276,8 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	if int(ui.prefs.page) < 0 || ui.prefs.page > max(Page) {ui.prefs.page = .Chats}
 	if int(ui.prefs.settings_section) < 0 ||
 	   ui.prefs.settings_section > max(Settings_Section) ||
-	   !settings_available(ui, ui.prefs.settings_section) {
+	   (ui.prefs.settings_section != .Devices &&
+			   !settings_available(ui, ui.prefs.settings_section)) {
 		ui.prefs.settings_section = .Home
 	}
 	ui.prefs.settings_tab = clamp(
@@ -338,6 +343,28 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	if len(ui.prefs.event_client) == 0 {
 		ui.prefs.event_client = strings.clone(DEFAULT_EVENT_CLIENT)
 	}
+}
+
+@(private)
+sign_in_reviews_drop :: proc(prefs: ^Prefs, account: string) {
+	key, slots := delete_key(&prefs.sign_ins_recognized, account)
+	sign_in_review_slots_free(slots)
+	delete(key)
+}
+
+@(private = "file")
+sign_in_reviews_free :: proc(accounts: map[string]map[string]u64) {
+	for account, slots in accounts {
+		sign_in_review_slots_free(slots)
+		delete(account)
+	}
+	delete(accounts)
+}
+
+@(private = "file")
+sign_in_review_slots_free :: proc(slots: map[string]u64) {
+	for slot in slots {delete(slot)}
+	delete(slots)
 }
 
 // Unlock restores only session-local data. The already loaded preferences

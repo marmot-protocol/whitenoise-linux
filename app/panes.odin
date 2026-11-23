@@ -591,7 +591,7 @@ chat_send_state :: proc(group_id: string) -> Send_State {
 	}
 	state := Send_State.Idle
 	for p in g_ui.pending {
-		if p.group_id != group_id {
+		if !pending_in_workspace(g_ui, p, group_id) {
 			continue
 		}
 		// Worst news wins: a failure is what the row should say even if
@@ -670,30 +670,6 @@ account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 			nendo.text(tr("ACTIVE"), {font = FONT_MONO, size = 10, color = ACCENT, spacing = 2})
 		}
 		nendo.text("›", {font = FONT_BODY, size = 16, color = TEXT_LO})
-	}
-}
-
-// Trash button on a switcher row; the click asks to remove that account
-// from this device (handlers check it before the row's switch).
-@(private)
-account_remove_button :: proc(id_str: string, index: u32) {
-	if nendo.box(nendo.id(id_str, index))(
-	{
-		width = nendo.fixed(tap_size() ? tap_min() : 28),
-		height = nendo.fixed(tap_size() ? tap_min() : 28),
-		align = {x = .Center, y = .Center},
-		color = hovered() ? HOVER : {},
-		radius = rr(6),
-	},
-	) {
-		if hovered() {
-			tooltip(tr("Remove account"))
-			cursor_raise(.Pointer)
-		}
-		nendo.text(
-			ICON_TRASH,
-			{font = FONT_ICON, size = 13, color = hovered() ? DANGER : TEXT_DIM},
-		)
 	}
 }
 

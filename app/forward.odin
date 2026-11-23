@@ -340,7 +340,8 @@ drain_forwards :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if job == nil || p.failed {continue}
 		sync.lock(&job.mutex); done := job.done; sync.unlock(&job.mutex)
 		if !done {continue}
-		if p.dismissed {
+		if !p.dismissed && !p.purged && account_send_paused(ui, p.account_ref) {continue}
+		if !pending_send_allowed(ui, p^) {
 			forward_settled(ui, p, .Cancelled)
 			free_pending(p)
 			ordered_remove(&ui.pending, i)
@@ -348,7 +349,9 @@ drain_forwards :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if !job.ok {
 			p.failed = true
-			set_status(ui, strings.clone(tr("Couldn't forward. Please try again.")), .Error)
+			if p.account_ref == ui.account_ref {
+				set_status(ui, strings.clone(tr("Couldn't forward. Please try again.")), .Error)
+			}
 			continue
 		}
 		p.atts = job.atts; job.atts = {}
@@ -401,6 +404,7 @@ drain_forwards :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 do_forward :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 	index := forward_source(ui)
 	if index < 0 || dest < 0 || dest >= len(ui.chats) {return}
+	if new_send_paused(ui) {return}
 	msg := ui.messages[index]
 	if msg.body == "" && len(msg.attachments) == 0 && msg.sticker.pack == "" {return}
 	info := profile_info(client, ui.account_ref)
@@ -458,7 +462,7 @@ forward_settled :: proc(ui: ^Ui_State, part: ^Pending_Send, outcome: Forward_Out
 forward_progress :: proc(ui: ^Ui_State) {
 	chosen := -1
 	for p, i in ui.pending {
-		if p.forward_title == "" || p.dismissed || p.account_ref != ui.account_ref {continue}
+		if p.forward_title == "" || !pending_in_workspace(ui, p, p.group_id) {continue}
 		if chosen < 0 || (ui.pending[chosen].failed && !p.failed) {chosen = i}
 	}
 	if chosen < 0 {return}

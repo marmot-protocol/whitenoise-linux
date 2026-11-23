@@ -25,6 +25,7 @@ centered_chat_layout :: proc(t: ^testing.T) {
 		selected_contact = -1,
 	}
 	ui.prefs.rail_w = RAIL_W_MIN
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Centered conversation"})
 	text := strings.repeat(

@@ -173,7 +173,7 @@ export_page_snapshot :: proc(ui: ^Ui_State, job: ^Transcript_Job) {
 			body    = string(record.plaintext),
 			at_full = format_full(record.timeline_at),
 			sort_at = record.timeline_at,
-			mine    = string(record.direction) == "sent",
+			mine    = message_is_mine(record.direction, record.sender, job.account),
 			deleted = record.deleted,
 		}
 		if class == .System &&

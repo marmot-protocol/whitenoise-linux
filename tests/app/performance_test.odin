@@ -97,16 +97,22 @@ message_reuse_guards :: proc(t: ^testing.T) {
 		day       = format_day(1000),
 	}
 	defer delete(msg.at); defer delete(msg.at_full); defer delete(msg.day)
-	testing.expect(t, message_matches(msg, &record, "Alice", ""))
-	testing.expect(t, !message_matches(msg, &record, "Renamed", ""))
+	testing.expect(t, message_matches(msg, &record, "Alice", "", false, .NOT_APPLICABLE, {}))
+	testing.expect(t, !message_matches(msg, &record, "Renamed", "", false, .NOT_APPLICABLE, {}))
+	testing.expect(t, !message_matches(msg, &record, "Alice", "", true, .NOT_APPLICABLE, {}))
+	testing.expect(t, !message_matches(msg, &record, "Alice", "", false, .DELIVERED, {}))
+	testing.expect(
+		t,
+		!message_matches(msg, &record, "Alice", "", false, .NOT_APPLICABLE, {.Backup, "", ""}),
+	)
 	record.deleted = true
-	testing.expect(t, !message_matches(msg, &record, "Alice", ""))
+	testing.expect(t, !message_matches(msg, &record, "Alice", "", false, .NOT_APPLICABLE, {}))
 	record.deleted = false
 	record.reactions.by_emoji_len = 1
-	testing.expect(t, !message_matches(msg, &record, "Alice", ""))
+	testing.expect(t, !message_matches(msg, &record, "Alice", "", false, .NOT_APPLICABLE, {}))
 	record.reactions.by_emoji_len = 0
 	record.plaintext = "edited"
-	testing.expect(t, !message_matches(msg, &record, "Alice", ""))
+	testing.expect(t, !message_matches(msg, &record, "Alice", "", false, .NOT_APPLICABLE, {}))
 }
 
 @(test)
@@ -263,6 +269,7 @@ performance_layout :: proc(t: ^testing.T) {
 	}
 	g_ui, g_prefs = &ui, &ui.prefs
 	ui.prefs.rail_w = RAIL_W_MIN
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Timeline"})
 	for i in 0 ..< 1000 {

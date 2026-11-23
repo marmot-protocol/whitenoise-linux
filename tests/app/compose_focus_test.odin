@@ -22,9 +22,10 @@ compose_up_edits_latest_own :: proc(t: ^testing.T) {
 	}
 
 	ui := Ui_State {
-		selected = 0,
-		row_menu = -1,
-		focus    = .Compose,
+		account_ref = "account",
+		selected    = 0,
+		row_menu    = -1,
+		focus       = .Compose,
 	}
 	defer {
 		delete(ui.accounts)
@@ -141,9 +142,10 @@ escape_keeps_draft :: proc(t: ^testing.T) {
 	}
 
 	ui := Ui_State {
-		selected = 0,
-		row_menu = -1,
-		focus    = .Filter,
+		account_ref = "account",
+		selected    = 0,
+		row_menu    = -1,
+		focus       = .Filter,
 	}
 	defer {
 		delete(ui.accounts)

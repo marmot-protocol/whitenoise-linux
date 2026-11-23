@@ -93,7 +93,9 @@ inbox_sections_keep_order_and_count_unread :: proc(t: ^testing.T) {
 
 @(test)
 folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
-	ui: Ui_State
+	ui := Ui_State {
+		account_ref = "account",
+	}
 	append(&ui.prefs.folders, "Unread", "Drafts", "Small", "Acme")
 	unread := Folder_Rules {
 		match = .Any,
@@ -139,8 +141,8 @@ folder_rules_file_unplaced_chats :: proc(t: ^testing.T) {
 	ui.prefs.folder_of["placed"] = "Acme" // by hand, over the Unread rule
 	ui.prefs.folder_of["stale"] = "Removed folder" // gone, so rules decide
 	ui.prefs.folder_of["kept-unfiled"] = "" // by hand into Unfiled, over every rule
-	ui.drafts["drafted"] = "see you at 5"
-	ui.drafts["unread"] = "later"
+	ui.drafts["account:drafted"] = "see you at 5"
+	ui.drafts["account:unread"] = "later"
 	big := make([]string, 11)
 	for &id in big {id = "someone"}
 	ui.chat_members["dm-bob"] = []string{"me", "bob"}

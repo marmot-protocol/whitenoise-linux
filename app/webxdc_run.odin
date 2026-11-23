@@ -40,19 +40,20 @@ XDC_POLL_MS :: 250
 // Everything the server thread and the UI thread share. Both take the
 // mutex; nothing here is touched without it.
 Xdc_Session :: struct {
-	mutex:     sync.Mutex,
-	view:      ^Xdc_View, // borrowed from the xdc_views cache
-	session:   string, // sharing message id hex, the NIP-DC identifier
-	group_id:  string,
-	self_addr: string, // npub
-	self_name: string,
-	token:     string, // path prefix, so a stray local page can't poke it
-	updates:   [dynamic]string, // payload JSON in timeline order
-	outbox:    [dynamic]string, // payloads waiting for the UI thread to send
-	staging:   [dynamic]string, // the reload being collected
-	pending:   [dynamic]string, // sent, not yet back from the group
-	port:      int,
-	serving:   bool,
+	mutex:       sync.Mutex,
+	view:        ^Xdc_View, // borrowed from the xdc_views cache
+	session:     string, // sharing message id hex, the NIP-DC identifier
+	account_ref: string,
+	group_id:    string,
+	self_addr:   string, // npub
+	self_name:   string,
+	token:       string, // path prefix, so a stray local page can't poke it
+	updates:     [dynamic]string, // payload JSON in timeline order
+	outbox:      [dynamic]string, // payloads waiting for the UI thread to send
+	staging:     [dynamic]string, // the reload being collected
+	pending:     [dynamic]string, // sent, not yet back from the group
+	port:        int,
+	serving:     bool,
 }
 
 xdc: Xdc_Session
@@ -152,10 +153,12 @@ xdc_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	out := slice_clone_strings(xdc.outbox[:])
 	clear(&xdc.outbox)
 	session, group := strings.clone(xdc.session), strings.clone(xdc.group_id)
+	account := strings.clone(xdc.account_ref)
 	sync.unlock(&xdc.mutex)
 	defer {
 		delete(session)
 		delete(group)
+		delete(account)
 		delete(out)
 	}
 
@@ -170,9 +173,10 @@ xdc_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		// its own update.
 		send_ticket += 1
 		p := Pending_Send {
-			ticket   = send_ticket,
-			group_id = group,
-			body     = line,
+			ticket      = send_ticket,
+			account_ref = account,
+			group_id    = group,
+			body        = line,
 		}
 		spawn_send(ui, client, &p) // clones everything it keeps
 	}
@@ -202,6 +206,10 @@ xdc_launch :: proc(
 	crypto.rand_bytes(token[:])
 
 	sync.lock(&xdc.mutex)
+	if xdc.account_ref != ui.account_ref || xdc.group_id != group_id || xdc.session != session {
+		xdc_clear_unsent()
+	}
+	delete(xdc.account_ref)
 	delete(xdc.session)
 	delete(xdc.group_id)
 	delete(xdc.token)
@@ -212,6 +220,7 @@ xdc_launch :: proc(
 	}
 	clear(&xdc.updates)
 	xdc.view = view
+	xdc.account_ref = strings.clone(ui.account_ref)
 	xdc.session = strings.clone(session)
 	xdc.group_id = strings.clone(group_id)
 	token_hex, _ := hex.encode(token[:])
@@ -263,8 +272,10 @@ xdc_stopping: bool
 
 @(private)
 xdc_stop :: proc() {
-	if xdc_worker == nil {return}
 	sync.lock(&xdc.mutex)
+	delete(xdc.account_ref)
+	xdc.account_ref = ""
+	if xdc_worker == nil {sync.unlock(&xdc.mutex); return}
 	xdc_stopping = true
 	net.shutdown(listener, .Both)
 	if xdc_connection != {} {net.shutdown(xdc_connection, .Both)}
@@ -275,6 +286,24 @@ xdc_stop :: proc() {
 	xdc_worker = nil
 	listener = {}
 	xdc_connection = {}
+}
+
+@(private = "file")
+xdc_clear_unsent :: proc() {
+	for payload in xdc.outbox {delete(payload)}
+	for payload in xdc.pending {delete(payload)}
+	clear(&xdc.outbox)
+	clear(&xdc.pending)
+}
+
+@(private)
+xdc_revoke :: proc(account: string) {
+	sync.lock(&xdc.mutex)
+	defer sync.unlock(&xdc.mutex)
+	if xdc.account_ref != account {return}
+	delete(xdc.account_ref)
+	xdc.account_ref = ""
+	xdc_clear_unsent()
 }
 
 // Caller holds the mutex. Binds an ephemeral loopback port and leaves
@@ -525,6 +554,7 @@ xdc_queue_send :: proc(body: string) {
 	}
 	sync.lock(&xdc.mutex)
 	defer sync.unlock(&xdc.mutex)
+	if xdc.account_ref == "" {return}
 	append(&xdc.outbox, strings.clone(body))
 
 	// The app sees its own update now, not after a relay round trip:

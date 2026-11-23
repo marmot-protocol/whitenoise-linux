@@ -29,10 +29,13 @@ pending_delete_clicks :: proc(t: ^testing.T) {
 		delete(memory)
 	}
 	ui := Ui_State {
-		selected = -1,
-		row_menu = -1,
+		selected    = 0,
+		row_menu    = -1,
+		account_ref = "account",
 	}
-	append(&ui.accounts, Account_Row_Ui{name = "Test"})
+	append(&ui.accounts, Account_Row_Ui{id_hex = "account", name = "Test"})
+	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
+	defer delete(ui.chats)
 	defer delete(ui.accounts)
 	defer delete(ui.pending)
 	client: marmot.Client
@@ -62,6 +65,8 @@ pending_delete_clicks :: proc(t: ^testing.T) {
 				&ui.pending,
 				Pending_Send {
 					ticket = 1,
+					account_ref = strings.clone("account"),
+					group_id = strings.clone("group"),
 					body = strings.clone("stuck"),
 					failed = state == 0,
 					queued = state == 1,

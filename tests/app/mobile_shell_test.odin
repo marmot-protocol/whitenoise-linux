@@ -10,8 +10,9 @@ import rl "sdlrl"
 @(test)
 mobile_back_keeps_draft :: proc(t: ^testing.T) {
 	ui := Ui_State {
-		page     = .Chats,
-		selected = 0,
+		account_ref = "account",
+		page        = .Chats,
+		selected    = 0,
 	}
 	append(&ui.chats, Chat_Row_Ui{group_id = "first"})
 	append(&ui.compose, "unsent draft")
@@ -26,9 +27,9 @@ mobile_back_keeps_draft :: proc(t: ^testing.T) {
 	}
 	phone_back_action(&ui)
 	testing.expect_value(t, ui.selected, -1)
-	testing.expect_value(t, ui.drafts["first"], "unsent draft")
+	testing.expect_value(t, ui.drafts["account:first"], "unsent draft")
 	testing.expect_value(t, len(ui.staged), 0)
-	staged := ui.staged_drafts["first"]
+	staged := ui.staged_drafts["account:first"]
 	if testing.expect_value(
 		t,
 		len(staged),
@@ -49,6 +50,7 @@ mobile_shell_viewports :: proc(t: ^testing.T) {
 		prefs            = default_prefs(),
 	}
 	ui.prefs.reduce_motion = true
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Mobile"})
 	append(
 		&ui.chats,

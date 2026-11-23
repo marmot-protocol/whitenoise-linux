@@ -8,6 +8,66 @@ import "core:thread"
 
 import rl "sdlrl"
 
+draft_key :: proc(account, group: string) -> string {
+	if account == "" {return ""}
+	return fmt.tprintf("%s:%s", account, group)
+}
+
+@(private)
+draft_delete :: proc(ui: ^Ui_State, key: string) -> bool {
+	text, found := ui.drafts[key]
+	if !found {return false}
+	owned_key, _ := delete_key(&ui.drafts, key)
+	delete(owned_key)
+	delete(text)
+	return true
+}
+
+@(private)
+staged_draft_take :: proc(ui: ^Ui_State, key: string) -> [dynamic]Staged_File {
+	files, found := ui.staged_drafts[key]
+	if found {
+		owned_key, _ := delete_key(&ui.staged_drafts, key)
+		delete(owned_key)
+	}
+	return files
+}
+
+@(private)
+drafts_wipe :: proc(ui: ^Ui_State, prefix: string) {
+	keys := make([dynamic]string, context.temp_allocator)
+	for key in ui.drafts {if strings.has_prefix(key, prefix) {append(&keys, key)}}
+	for key in keys {draft_delete(ui, key)}
+	if len(keys) != 0 {ui.settings_dirty = true}
+}
+
+@(private)
+staged_drafts_wipe :: proc(ui: ^Ui_State, prefix: string) {
+	keys := make([dynamic]string, context.temp_allocator)
+	for key in ui.staged_drafts {if strings.has_prefix(key, prefix) {append(&keys, key)}}
+	for key in keys {staged_files_free(staged_draft_take(ui, key))}
+}
+
+@(private)
+staged_file_free :: proc(file: ^Staged_File) {
+	if file.load != nil {
+		file.load.detached = true
+		if file.load.worker == nil {stage_load_free(file.load)}
+	}
+	if file.tex != nil {
+		rl.UnloadTexture(file.tex^)
+		free(file.tex)
+	}
+	delete(file.data)
+	delete(file.name)
+}
+
+@(private)
+staged_files_free :: proc(files: [dynamic]Staged_File) {
+	for &file in files {staged_file_free(&file)}
+	delete(files)
+}
+
 // The draft entry owns its job. Removed entries leave their job in this flat
 // registry until it finishes; shutdown also uses it to join every worker.
 @(private)
@@ -57,7 +117,7 @@ stage_files_ready :: proc(ui: ^Ui_State) -> bool {
 }
 
 @(private = "file")
-stage_files_drain :: proc(ui: ^Ui_State, files: ^[dynamic]Staged_File) {
+stage_files_drain :: proc(ui: ^Ui_State, files: ^[dynamic]Staged_File, report_failure: bool) {
 	for i := len(files^) - 1; i >= 0; i -= 1 {
 		file := &files^[i]
 		job := file.load
@@ -69,7 +129,7 @@ stage_files_drain :: proc(ui: ^Ui_State, files: ^[dynamic]Staged_File) {
 			job.worker = nil
 		}
 		if job.failed || job.stopped {
-			if !job.stopped {
+			if !job.stopped && report_failure {
 				set_status(
 					ui,
 					fmt.aprintf(tr("Couldn't read %s. Please try again."), job.path),
@@ -94,10 +154,11 @@ stage_files_drain :: proc(ui: ^Ui_State, files: ^[dynamic]Staged_File) {
 @(private)
 stage_files_tick :: proc(ui: ^Ui_State) {
 	if len(stage_loads) == 0 {return}
-	stage_files_drain(ui, &ui.staged)
+	stage_files_drain(ui, &ui.staged, true)
+	prefix := ui.account_ref != "" ? fmt.tprintf("%s:", ui.account_ref) : ""
 	for key, files in ui.staged_drafts {
 		draft := files
-		stage_files_drain(ui, &draft)
+		stage_files_drain(ui, &draft, prefix != "" && strings.has_prefix(key, prefix))
 		ui.staged_drafts[key] = draft
 	}
 	for i := len(stage_loads) - 1; i >= 0; i -= 1 {

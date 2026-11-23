@@ -94,7 +94,15 @@ send_waits_for_timeline :: proc(t: ^testing.T) {
 	}
 	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
 	defer {delete(ui.chats); delete(ui.pending)}
-	append(&ui.pending, Pending_Send{ticket = 1, group_id = strings.clone("group"), attempts = 1})
+	append(
+		&ui.pending,
+		Pending_Send {
+			ticket = 1,
+			account_ref = strings.clone("account"),
+			group_id = strings.clone("group"),
+			attempts = 1,
+		},
+	)
 	append(&ui.pending[0].atts, Pending_Att{name = strings.clone("photo.png")})
 	save_offline(&ui)
 	persisted, read_err := os.read_entire_file(offline_path(), context.temp_allocator)

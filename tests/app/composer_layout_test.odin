@@ -33,6 +33,7 @@ composer_layout :: proc(t: ^testing.T) {
 	for action in ([]Composer_Action{.Effect, .Poll, .Location, .Dictate, .Voice}) {
 		ui.prefs.composer.slots[action] = .Right
 	}
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Composer"})
 	for i in 0 ..< 20 {

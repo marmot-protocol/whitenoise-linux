@@ -55,6 +55,7 @@ hidden_message_perf :: proc(t: ^testing.T) {
 	ui.prefs.rail_w = RAIL_W_MIN
 	ui.prefs.reduce_motion = true
 	g_ui, g_prefs, g_client = &ui, &ui.prefs, client
+	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
 	defer {delete(ui.accounts); delete(ui.chats); delete(ui.messages); wrap_clear()
 		g_ui, g_prefs, g_client = nil, nil, nil}

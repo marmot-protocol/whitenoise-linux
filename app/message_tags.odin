@@ -29,7 +29,8 @@ send_message_tags :: proc(p: ^Pending_Send) -> []marmot.Message_Tag {
 // A personal sticker goes out as its encrypted image plus the wn-sticker tag.
 @(private)
 queue_sticker_payload :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Sticker_Job) {
-	info := profile_info(client, ui.account_ref)
+	if !account_signed_in(ui, job.account) {return}
+	info := profile_info(client, job.account)
 	send_ticket += 1
 	tex := new(rl.Texture2D)
 	tex^ = sticker_texture_load(job.image)
@@ -45,6 +46,7 @@ queue_sticker_payload :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Stick
 	p := Pending_Send {
 		ticket        = send_ticket,
 		visible_since = time.tick_now(),
+		account_ref   = strings.clone(job.account),
 		group_id      = strings.clone(job.group),
 		sender        = strings.clone(info.name != "" ? info.name : "you"),
 		sticker       = sticker_ref_clone(job.item.ref),

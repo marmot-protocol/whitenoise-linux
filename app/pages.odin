@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:mem"
 import "core:os"
 import "core:strings"
 import "core:thread"
@@ -20,7 +21,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		keys_forget(ui)
 	}
 
-	if client == nil || len(ui.accounts) == 0 || ui.add_account_open {
+	if client == nil || ui.account_ref == "" || ui.add_account_open {
 		return
 	}
 	if ui.page == .Settings && mention_hover != "" && mouse_released() {
@@ -133,73 +134,6 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// the release, so form clicks used to vanish here.
 	if ui.page == .Profile {
 		profile_fields(ui, client)
-	}
-
-	// Peer-profile popup captures everything while open. Handled here
-	// (not handle_chat) so it also swallows nav clicks on every page.
-	if ui.peer_open {
-		if rl.IsKeyPressed(.ESCAPE) {
-			ui.peer_open = false
-			return
-		}
-		if !mouse_released() {
-			return
-		}
-		if (clicked("PeerCopyNpub") || clicked("PeerCopyNpubKey")) && len(ui.peer_npub) > 0 {
-			copy_text(ui, ui.peer_npub, tr("npub copied"))
-			return
-		}
-		if clicked("PeerViewProfile") {
-			view_peer_profile(ui, client)
-			return
-		}
-		if clicked("PeerAddContact") {add_contact(ui, client, ui.peer_hex); return}
-		if clicked("PeerMessage") && ui.peer_hex != ui.account_ref {
-			start_dm(
-				ui,
-				client,
-				Contact_Ui{id_hex = ui.peer_hex, name = ui.peer_name, npub = ui.peer_npub},
-			)
-			return
-		}
-		if clicked("PeerClose") || !nendo.pointer_over(nendo.id("PeerModal")) {
-			ui.peer_open = false
-		}
-		return
-	}
-
-	// Accounts switcher modal captures everything while open.
-	if ui.accounts_open {
-		if rl.IsKeyPressed(.ESCAPE) {
-			ui.accounts_open = false
-			return
-		}
-		if !mouse_released() {
-			return
-		}
-		for account, i in ui.accounts {
-			id := account.id_hex
-			if nendo.pointer_over(nendo.id("AccountRow", u32(i))) {
-				ui.accounts_open = false
-				if id != ui.account_ref {
-					switch_account(ui, client, id)
-				}
-				return
-			}
-		}
-		if clicked("AddAccountBtn") {
-			ui.accounts_open = false
-			ui.add_account_open = true
-			clear(&ui.login_input)
-			ui.login_error = ""
-			return
-		}
-		if clicked("AcctClose") ||
-		   clicked("AcctCloseBtn") ||
-		   !nendo.pointer_over(nendo.id("AccountsModal")) {
-			ui.accounts_open = false
-		}
-		return
 	}
 
 	if ui.page == .Settings && (settings_escape(ui) || settings_switch_keys(ui, client)) {
@@ -677,10 +611,6 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.page == .Profile {
 		for account, i in ui.accounts {
 			id := account.id_hex
-			if nendo.pointer_over(nendo.id("PrAcctRemove", u32(i))) {
-				confirm_ask(ui, .Remove_Account, id, account_label(ui, id))
-				return
-			}
 			if nendo.pointer_over(nendo.id("PrAcct", u32(i))) {
 				if id != ui.account_ref {
 					switch_account(ui, client, id)
@@ -772,8 +702,19 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("SignOutBtn") {
 		confirm_ask(ui, .Sign_Out, ui.account_ref, account_label(ui, ui.account_ref))
 	}
-	if clicked("ProfileRemoveAccount") {
-		confirm_ask(ui, .Remove_Account, ui.account_ref, account_label(ui, ui.account_ref))
+	if clicked("SignOutWipeBtn") {
+		profile := device_current(ui)
+		linked :=
+			profile == nil ||
+			.Roster not_in profile.known ||
+			(profile.view.roster != nil && profile.view.roster.len != 0)
+		confirm_ask(
+			ui,
+			.Wipe_Account,
+			ui.account_ref,
+			account_label(ui, ui.account_ref),
+			int(linked),
+		)
 	}
 }
 
@@ -790,38 +731,34 @@ short_hex :: proc(s: string) -> string {
 }
 
 // Register an nsec with marmot. Blocks on the relay round trip, so the
-// UI calls it through the sign-in worker (workers.odin); the returned
-// hex and error are cloned into `allocator` for the UI thread to adopt.
+// UI calls it through the sign-in worker (workers.odin).
 import_identity_blocking :: proc(
 	client: ^marmot.Client,
 	identity: string,
-	allocator := context.allocator,
 ) -> (
 	hex: string,
-	err: string,
+	status: marmot.Status,
+	detail: string,
 ) {
 	summary: ^marmot.Account_Summary
 	id := strings.clone_to_cstring(identity, context.temp_allocator)
-	if marmot.login(
-		   client,
-		   id,
-		   raw_data(ONBOARDING_RELAYS),
-		   len(ONBOARDING_RELAYS),
-		   raw_data(ONBOARDING_RELAYS),
-		   len(ONBOARDING_RELAYS),
-		   nil,
-		   0,
-		   &summary,
-	   ) !=
-	   .OK {
-		return "", fmt.aprintf(
-			tr("Couldn't log in. %s"),
-			marmot.last_error(),
-			allocator = allocator,
-		)
+	defer mem.zero_slice(transmute([]u8)string(id))
+	status = marmot.login(
+		client,
+		id,
+		raw_data(ONBOARDING_RELAYS),
+		len(ONBOARDING_RELAYS),
+		raw_data(ONBOARDING_RELAYS),
+		len(ONBOARDING_RELAYS),
+		nil,
+		0,
+		&summary,
+	)
+	if status != .OK {
+		return "", status, marmot.last_error()
 	}
 	defer marmot.account_summary_free(summary)
-	return strings.clone(string(summary.account_id_hex), allocator), ""
+	return strings.clone(string(summary.account_id_hex)), status, ""
 }
 
 // Mint a fresh identity and upload its starter face. Same blocking
@@ -897,9 +834,128 @@ do_create_identity :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	finish_auth(ui, client, hex, pic_url, name)
 }
 
-// Re-snapshot accounts and chats after a successful login/create.
-// `active` is the account to land on (the one just added); empty falls
-// back to the first row, which is what boot and sign-out want.
+@(private)
+accounts_adopt :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	accounts: ^marmot.Account_Summary_List,
+) {
+	revision := ui.accounts_revision + 1
+	ui.accounts_revision = revision
+	cleared_unlinked := false
+	if accounts != nil {
+		for summary in accounts.items[:accounts.len] {
+			hex := string(summary.account_id_hex)
+			if hex == "" {continue}
+			if summary.signed_out && summary.unlinked {
+				devices_mark_unlinked(ui, hex, string(summary.label))
+				continue
+			}
+			// MDK can omit unreadable records and report stopped workers when
+			// its worker lock is busy. Only a running replacement clears the fence.
+			profile := ui.devices.profiles[hex]
+			if profile == nil ||
+			   !(profile.unlink_check || profile.revoked) ||
+			   !summary.running ||
+			   summary.signed_out {continue}
+			profile.revoked, profile.unlink_check, profile.unlink_notice_seen = false, false, false
+			delete(profile.unlink_label, reload_allocator()); profile.unlink_label = ""
+			cleared_unlinked = true
+			if ui.devices.panel_account == hex &&
+			   (ui.devices.panel == .Unlinked || ui.devices.panel == .Auth_Unlinked) {
+				devices_close(ui)
+			}
+		}
+	}
+	old := ui.accounts
+	previous := make(map[string]int, len(old), context.temp_allocator)
+	for row, i in old {previous[row.id_hex] = i}
+	ui.accounts = {}
+	if accounts != nil {
+		for summary in accounts.items[:accounts.len] {
+			hex := string(summary.account_id_hex)
+			if hex == "" {continue}
+			if summary.signed_out {continue}
+			if device := ui.devices.profiles[hex];
+			   device != nil && (device.revoked || device.unlink_check) {continue}
+			row: Account_Row_Ui
+			if i, ok := previous[hex]; ok {
+				row, old[i] = old[i], {}
+			} else {
+				restore_starter_pic(ui, client, hex)
+				row.id_hex = strings.clone(hex)
+				row.name = strings.clone(profile_label(client, hex))
+				row.pic_url = strings.clone(profile_info(client, hex).pic_url)
+				npub: cstring
+				if marmot.npub(client, summary.account_id_hex, &npub) == .OK && npub != nil {
+					row.npub = strings.clone(string(npub))
+					marmot.string_free(npub)
+				}
+			}
+			row.local, row.external = summary.local_signing, summary.external_signing
+			append(&ui.accounts, row)
+		}
+	}
+	for row in old {
+		delete(row.id_hex); delete(row.name); delete(row.pic_url); delete(row.npub)
+	}
+	delete(old)
+	devices_seed(ui)
+	if cleared_unlinked &&
+	   ui.account_ref == "" &&
+	   auth_job == nil &&
+	   !accounts_have_tombstones(ui) {
+		ui.accounts_open = len(ui.accounts) != 0
+	}
+}
+
+@(private)
+account_revoked :: proc(ui: ^Ui_State, account: string) -> bool {
+	profile := ui.devices.profiles[account]
+	return profile != nil && profile.revoked
+}
+
+@(private)
+account_signed_in :: proc(ui: ^Ui_State, account: string) -> bool {
+	if account == "" {return false}
+	if profile := ui.devices.profiles[account];
+	   profile != nil && (profile.revoked || profile.unlink_check) {return false}
+	for row in ui.accounts {if row.id_hex == account {return true}}
+	return false
+}
+
+@(private)
+accounts_have_tombstones :: proc(ui: ^Ui_State) -> bool {
+	for _, profile in ui.devices.profiles {if profile.revoked || profile.unlink_check {return true}}
+	return false
+}
+
+@(private)
+account_departed :: proc(ui: ^Ui_State, client: ^marmot.Client, account: string) {
+	if account == "" {return}
+	activation_departed(ui, account)
+	active := ui.account_ref == account
+	if ui.prefs.last_account == account {remember_account(ui, "")}
+	for row, i in ui.accounts {
+		if row.id_hex != account {continue}
+		delete(row.id_hex); delete(row.name); delete(row.pic_url); delete(row.npub)
+		ordered_remove(&ui.accounts, i)
+		ui.accounts_revision += 1
+		break
+	}
+	devices_seed(ui)
+	if !active {return}
+	confirm_close(ui)
+	account_workspace_clear(ui)
+	delete(ui.account_ref); ui.account_ref = ""
+	devices_select(ui)
+	gs_check_account(ui)
+	ui.page = .Chats
+	ui.add_account_open = false
+	ui.accounts_open = len(ui.accounts) != 0 && auth_job == nil && !accounts_have_tombstones(ui)
+}
+
+// Land on the signed-in profile selected by boot or authentication.
 after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 	// Discard the empty-pool snapshot taken while account setup was running.
 	ui.health_ok = false
@@ -911,79 +967,161 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 	delete(ui.kp_own_json); ui.kp_own_json = ""
 	timing_start := time.tick_now()
 	defer local_timing_end(.account_load, timing_start)
-	clear(&ui.accounts)
 	clear(&ui.login_input)
 	ui.login_method = .Menu
 	ui.login_error = ""
 
 	accounts: ^marmot.Account_Summary_List
 	if marmot.list_accounts(client, &accounts) == .OK {
-		first: string
-		for i in 0 ..< accounts.len {
-			if accounts.items[i].signed_out {continue}
-			hex := string(accounts.items[i].account_id_hex)
-			restore_starter_pic(ui, client, hex)
-			if first == "" || hex == active {
-				delete(first)
-				first = strings.clone(hex)
-			}
-			row := Account_Row_Ui {
-				id_hex   = strings.clone(hex),
-				name     = strings.clone(profile_label(client, hex)),
-				pic_url  = strings.clone(profile_info(client, hex).pic_url),
-				local    = accounts.items[i].local_signing,
-				external = accounts.items[i].external_signing,
-			}
-			npub: cstring
-			if marmot.npub(client, strings.clone_to_cstring(hex, context.temp_allocator), &npub) ==
-				   .OK &&
-			   npub != nil {
-				row.npub = strings.clone(string(npub))
-				marmot.string_free(npub)
-			}
-			append(&ui.accounts, row)
-		}
+		accounts_adopt(ui, client, accounts)
 		marmot.account_summary_list_free(accounts)
-		if len(first) > 0 {
-			ui.account_ref = first
-			load_chat_list(client, first, ui)
-		} else {
-			ui.account_ref = ""
-			clear(&ui.chats)
-		}
+		account_land(ui, client, active)
 	}
 	ui.add_account_open = false
 	ui.profile = {}
 }
 
+@(private = "file")
+account_land :: proc(ui: ^Ui_State, client: ^marmot.Client, active: string) {
+	if account_signed_in(ui, active) {
+		finish_account_switch(ui, client, active)
+		ui.accounts_open = false
+	} else if ui.account_ref == "" {
+		ui.accounts_open = len(ui.accounts) != 0 && !accounts_have_tombstones(ui)
+	}
+}
+
+@(private)
+handle_peer_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if rl.IsKeyPressed(.ESCAPE) {
+		ui.peer_open = false
+		return
+	}
+	if !mouse_released() {return}
+	if (clicked("PeerCopyNpub") || clicked("PeerCopyNpubKey")) && len(ui.peer_npub) > 0 {
+		copy_text(ui, ui.peer_npub, tr("npub copied"))
+		return
+	}
+	if clicked("PeerViewProfile") {
+		view_peer_profile(ui, client)
+		return
+	}
+	if clicked("PeerAddContact") {add_contact(ui, client, ui.peer_hex); return}
+	if clicked("PeerMessage") && ui.peer_hex != ui.account_ref {
+		start_dm(
+			ui,
+			client,
+			Contact_Ui{id_hex = ui.peer_hex, name = ui.peer_name, npub = ui.peer_npub},
+		)
+		return
+	}
+	if clicked("PeerClose") || !nendo.pointer_over(nendo.id("PeerModal")) {
+		ui.peer_open = false
+	}
+}
+
+@(private)
+handle_accounts :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if rl.IsKeyPressed(.ESCAPE) {ui.accounts_open = false; return}
+	if !mouse_released() {return}
+	for row, i in ui.accounts {
+		if !nendo.pointer_over(nendo.id("AccountRow", u32(i))) {continue}
+		ui.accounts_open = false
+		if row.id_hex != ui.account_ref {switch_account(ui, client, row.id_hex)}
+		return
+	}
+	if clicked("AddAccountBtn") {
+		ui.accounts_open = false
+		ui.add_account_open = ui.account_ref != ""
+		ui.login_method = .Menu
+		clear(&ui.login_input)
+		ui.login_error = ""
+		return
+	}
+	if clicked("AcctClose") ||
+	   clicked("AcctCloseBtn") ||
+	   !nendo.pointer_over(nendo.id("AccountsModal")) {
+		ui.accounts_open = false
+	}
+}
+
 // Activate another already-stored account and reload everything.
-switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
-	job := account_job_new(ui, client, .Switch, account_id); account_job_start(job)
+switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) -> bool {
+	if !account_signed_in(ui, account_id) {return false}
+	job := account_job_new(ui, client, .Switch, account_id)
+	if job == nil {return false}
+	account_job_start(job)
+	return true
 }
 
 @(private)
 finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
+	if profile := ui.devices.profiles[account_id];
+	   profile != nil && (profile.revoked || profile.unlink_check) {return}
+	selected := strings.clone(account_id)
+	account_workspace_clear(ui)
+	delete(ui.account_ref)
+	ui.account_ref = selected
+	devices_select(ui)
+	devices_refresh_reads(ui)
+	remember_account(ui, selected)
+	gs_check_account(ui)
+	if client != nil {load_chat_list(client, selected, ui)}
+}
+
+@(private = "file")
+account_workspace_clear :: proc(ui: ^Ui_State) {
 	event_data_close(&ui.event_data)
 	if ui.location_open {geo_picker_close(ui)}
 	poll_close(ui)
+	close_group_info(ui)
+	if account_revoked(ui, ui.account_ref) {
+		staged_files_free(ui.staged)
+		ui.staged = {}
+	} else if ui.account_ref != "" && ui.selected >= 0 && ui.selected < len(ui.chats) {
+		stash_draft(ui)
+		stash_staged(ui)
+	}
+	timeline_retire()
+	append(&retired_messages, ..ui.messages[:]); clear(&ui.messages)
+	messages_rebind(ui); sel_clear(ui)
+	delete(ui.timeline_error); ui.timeline_error = ""
+	ui.timeline_loading, ui.timeline_paging = false, false
+	ui.tl_has_more, ui.tl_has_after = false, false
+	thread_clear(ui)
+	chat_list_revision += 1
+	chats_replace(&ui.chats, {}); chats_replace(&ui.archived, {})
+	clear(&ui.rail_rows)
+	chat_members_free(&ui.chat_members); ui.chat_members_read = false
+	members_clear(ui)
+	ui.selected, ui.row_menu, ui.member_menu, ui.selected_contact = -1, -1, -1, -1
+	ui.show_members, ui.group_files_open, ui.search_open, ui.chat_head_menu =
+		false, false, false, false
+	ui.ctx_open, ui.hist_open, ui.raw_open, ui.enc_open = false, false, false, false
+	ui.peer_open, ui.qr_open, ui.fwd_open, ui.picker_open, ui.sticker_open =
+		false, false, false, false, false
+	ui.folder_open, ui.folder_menu_open, ui.mi_open, ui.pal_open = false, false, false, false
+	ui.compose_more, ui.fx_open = false, false
+	ui.composer_settings_from_chat = false
+	if ui.gs_open {gs_close(ui)}
+	if ui.new_chat_open {close_new_chat(ui)}
+	if preview_shown {preview_close()}
+	web_close()
+	nes_close()
+	voice_cancel(); editor_forget(ui); session_buffer_forget(&ui.compose)
+	touch_field = {}
+	compose_keyboard = false
+	ui.focus = .Compose
+	ui.editing, ui.replying = "", ""
 	photo_cancel(ui)
 	keys_forget(ui); close_export(ui)
 	session_string_forget(&ui.profile.nsec)
 	kp_rows_free(&ui.kp_list); ui.kp_fetched = false
 	delete(ui.kp_own_json); ui.kp_own_json = ""
 
-	ui.account_ref = strings.clone(account_id)
-	remember_account(ui, account_id)
-	gs_check_account(ui)
-	ui.selected = -1
-	ui.show_members = false
-	ui.group_files_open = false
-	ui.compose_more, ui.fx_open = false, false
-	ui.composer_settings_from_chat = false
 	ui.profile = {}
 	reset_profile_view(ui)
 	clear(&ui.contacts)
-	load_chat_list(client, account_id, ui)
 }
 
 // Capacity errors request a larger arena; other layout errors are logged.
@@ -1401,7 +1539,11 @@ boot_worker :: proc(t: ^thread.Thread) {
 	}
 	defer marmot.deployment_free(deployment)
 	options := marmot.Client_Options {
-		store = &store,
+		client_name = "whitenoise",
+		store       = &store,
+	}
+	when DEVICE_PLATFORM != "" {
+		options.device_platform = DEVICE_PLATFORM
 	}
 	job.status = marmot.client_new_with_configuration(
 		strings.clone_to_cstring(job.home),
@@ -1451,6 +1593,7 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	thread.destroy(worker)
 
 	client := job.client
+	defer delete(job.error)
 	switch {
 	case client == nil:
 		set_status(ui, fmt.aprintf(tr("Runtime failed: %s"), job.error), .Error)
@@ -1484,13 +1627,16 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 					item.switch_requested = true
 				}
 			}
-			if local && (boot_active == "" || last) {
+			if local && last {
 				boot_active = strings.clone(hex, context.temp_allocator)
 			}
 		}
+		accounts_adopt(ui, client, accounts)
 		marmot.account_summary_list_free(accounts)
+		account_land(ui, client, boot_active)
 	}
-	after_login(ui, client, boot_active)
+	ui.health_ok = false
+	health_refresh(ui, client)
 
 	return client
 }
@@ -1603,7 +1749,7 @@ row_to_ui :: proc(
 	preview: string
 	mine, blocked: bool
 	if row.last_message != nil {
-		mine = row.last_message.sender != nil && string(row.last_message.sender) == account_ref
+		mine = message_is_mine(nil, row.last_message.sender, account_ref)
 		blocked =
 			!mine &&
 			row.last_message.sender != nil &&

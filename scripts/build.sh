@@ -844,6 +844,9 @@ if [ "${1:-}" = test ]; then
     restore_chat_dispatch folder_count_dispatch new_chat_reset_dispatch test_emoji_save_io_dispatch \
     backup_password_dispatch invite_input_dispatch recent_folder_filters nerd_font_fallback \
     chat_timestamp_hover export_password_dispatch relay_input_dispatch settings_viewport \
-    theme_gallery_interactions test_emoji_save_dispatch wallpaper_proportions "${din_tests[@]}"
+    theme_gallery_interactions test_emoji_save_dispatch wallpaper_proportions \
+    devices_visibility devices_post_link_review devices_pairing_projection devices_roster_repair \
+    devices_account_fence devices_sign_in_review devices_chat_activation devices_chat_sync \
+    "${din_tests[@]}"
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app/sdlrl
 fi
