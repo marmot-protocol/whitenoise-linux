@@ -1,5 +1,6 @@
 package main
 
+import marmot "../marmot"
 import "core:encoding/json"
 import "core:os"
 import "core:strings"
@@ -66,8 +67,14 @@ chat_switch_read_anchor_and_latest_window :: proc(t: ^testing.T) {
 	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
 	append(
 		&ui.messages,
-		Msg_Ui{id = "mls-newest", mls_order = 9},
-		Msg_Ui{id = "wall-clock-newest", mls_order = 3},
+		Msg_Ui{id = "mls-newest", mls_order = 9, kind = KIND_CHAT_MESSAGE, read_markable = true},
+		Msg_Ui{id = "agent", mls_order = 20, kind = KIND_AGENT_ITEM},
+		Msg_Ui {
+			id = "wall-clock-newest",
+			mls_order = 3,
+			kind = KIND_CHAT_MESSAGE,
+			read_markable = true,
+		},
 	)
 	defer delete(ui.chats)
 	defer delete(ui.messages)
@@ -86,10 +93,55 @@ chat_switch_read_anchor_and_latest_window :: proc(t: ^testing.T) {
 	timeline_mark_read(&ui)
 	testing.expect_value(t, string(job.read_request), "mls-newest")
 	testing.expect_value(t, ui.unread_mark_id, "first-unread")
-	ui.account_ref = "other-account"
-	ui.messages[0].id = "must-not-cross-account"
+	delete(job.read_request)
+	job.read_request = nil
+	ui.messages[1].id = "newer-agent"
 	timeline_mark_read(&ui)
-	testing.expect_value(t, string(job.read_request), "mls-newest")
+	testing.expect(
+		t,
+		job.read_request == nil,
+		"new agent ids must not requeue the selected chat marker",
+	)
+	testing.expect_value(t, job.read_latest, "mls-newest")
+	comment := marmot.Timeline_Message_Record {
+		kind = KIND_THREAD,
+	}
+	testing.expect(t, !timeline_record_markable(&comment))
+	comment.reply_to_message_id_hex = "parent"
+	append(
+		&ui.messages,
+		Msg_Ui {
+			id = "comment",
+			mls_order = 15,
+			kind = comment.kind,
+			read_markable = timeline_record_markable(&comment),
+		},
+	)
+	timeline_mark_read(&ui)
+	testing.expect_value(t, string(job.read_request), "comment")
+	ui.account_ref = "other-account"
+	ui.messages[3].id = "must-not-cross-account"
+	timeline_mark_read(&ui)
+	testing.expect_value(t, string(job.read_request), "comment")
+	ui.account_ref = "account"
+	ui.messages[3].id = "comment"
+	append(
+		&ui.messages,
+		Msg_Ui{id = "member-added", mls_order = 21, system = true, read_markable = true},
+	)
+	timeline_mark_read(&ui)
+	testing.expect_value(t, string(job.read_request), "comment")
+	// The rail can learn that this chat is a group after its timeline arrives.
+	ui.chats[0].group_read_activity = true
+	timeline_mark_read(&ui)
+	testing.expect_value(t, string(job.read_request), "member-added")
+
+	delete(job.read_request)
+	job.read_request = nil
+	for &msg in ui.messages {msg.read_markable = false}
+	timeline_mark_read(&ui)
+	testing.expect(t, job.read_request == nil)
+	testing.expect_value(t, job.read_latest, "member-added")
 }
 
 @(test)

@@ -417,8 +417,11 @@ activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
 	a := &ui.activation
 	if a.key.group == "" || a.key != activation_key(ui) {return}
 	pending, active := a.pending[a.key]
-	ready := a.known && a.eligibility == .ELIGIBLE && a.advisory == .None
-	enabled := a.known && a.eligibility == .ALREADY_ENABLED
+	checking := a.dirty || a.read != nil
+	// Blocker details are admin-only. A roster change can revoke access.
+	known := a.known && !(a.report != nil && checking)
+	ready := known && a.eligibility == .ELIGIBLE && a.advisory == .None
+	enabled := known && a.eligibility == .ALREADY_ENABLED
 	if nendo.box(nendo.id("InfoLinkedDevices"))(card) {
 		if nendo.box(nendo.id_local("Header"))(
 		{width = nendo.grow(), gap = 10, align = {y = .Center}},
@@ -433,7 +436,7 @@ activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
 			)
 		}
 		if active {
-			if !pending.settling || a.dirty || a.read != nil {
+			if !pending.settling || checking {
 				label :=
 					pending.settling ? tr("Checking whether linked devices are on…") : tr("Turning on linked devices…")
 				nendo.text(label, {font = FONT_BODY, size = 13, color = TEXT_DIM})
@@ -446,8 +449,8 @@ activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
 			}
 			return
 		}
-		if !a.known {
-			if a.dirty || a.read != nil {
+		if !known {
+			if checking {
 				nendo.text(
 					tr("Checking whether this chat supports linked devices…"),
 					{font = FONT_BODY, size = 13, color = TEXT_DIM},

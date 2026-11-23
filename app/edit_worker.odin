@@ -9,7 +9,13 @@ failed_edits: [dynamic]Op_Done
 @(private)
 queue_edit :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.edit_ticket != 0 || ui.selected < 0 || ui.editing == "" {return}
-	ui.edit_ticket = spawn_op(ui, client, .Edit, ui.editing, string(ui.compose[:]))
+	for msg in ui.messages {
+		if msg.id != ui.editing {continue}
+		if message_can_edit(msg) {
+			ui.edit_ticket = spawn_op(ui, client, .Edit, msg.id, string(ui.compose[:]))
+		}
+		return
+	}
 }
 
 @(private)
@@ -50,7 +56,9 @@ edit_restore :: proc(ui: ^Ui_State) {
 		done := failed_edits[i]
 		if done.account == ui.account_ref && done.group == ui.chats[ui.selected].group_id {
 			for msg in ui.messages {
-				if msg.id == done.target && msg.thread_of == thread_cur(ui) {
+				if msg.id == done.target &&
+				   message_can_edit(msg) &&
+				   msg.thread_of == thread_cur(ui) {
 					ui.editing = msg.id
 					ed_set(ui, &ui.compose, done.content)
 					return

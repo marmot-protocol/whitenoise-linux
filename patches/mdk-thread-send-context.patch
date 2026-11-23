@@ -1,0 +1,245 @@
+diff --git a/crates/marmot-app/src/client/thread_placement.rs b/crates/marmot-app/src/client/thread_placement.rs
+--- a/crates/marmot-app/src/client/thread_placement.rs
++++ b/crates/marmot-app/src/client/thread_placement.rs
+@@ -45,6 +45,30 @@
+         root_kind,
+         root_author,
+         parent_kind: parent.kind,
+         parent_author: parent.sender,
+     })
+ }
++
++impl crate::MarmotApp {
++    pub(crate) fn thread_reply_context(
++        &self,
++        label: &str,
++        group_id_hex: &str,
++        parent_message_id: &str,
++    ) -> Result<Option<crate::ThreadReplyContext>, AppError> {
++        self.ensure_account_state(label)?;
++        let storage = self.account_storage(label)?.app_storage();
++        let placement = match thread_placement(&storage, group_id_hex, parent_message_id) {
++            Ok(placement) => placement,
++            Err(AppError::InvalidAppMessagePayload(_)) => return Ok(None),
++            Err(error) => return Err(error),
++        };
++        Ok(Some(crate::ThreadReplyContext {
++            root_message_id: placement.root_message_id,
++            root_kind: placement.root_kind,
++            root_author: placement.root_author,
++            parent_kind: placement.parent_kind,
++            parent_author: placement.parent_author,
++        }))
++    }
++}
+diff --git a/crates/marmot-app/src/lib.rs b/crates/marmot-app/src/lib.rs
+--- a/crates/marmot-app/src/lib.rs
++++ b/crates/marmot-app/src/lib.rs
+@@ -603,6 +603,15 @@
+     active: Vec<Nip46Adoption>,
+ }
+ 
++/// Local evidence for the root and direct-parent tags of a thread reply.
++pub struct ThreadReplyContext {
++    pub root_message_id: String,
++    pub root_kind: u64,
++    pub root_author: String,
++    pub parent_kind: u64,
++    pub parent_author: String,
++}
++
+ #[derive(Clone)]
+ pub struct MarmotApp {
+     block_list_locks: Arc<Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>>,
+diff --git a/crates/marmot-app/src/runtime/mod.rs b/crates/marmot-app/src/runtime/mod.rs
+--- a/crates/marmot-app/src/runtime/mod.rs
++++ b/crates/marmot-app/src/runtime/mod.rs
+@@ -6181,9 +6181,25 @@
+             .poll_votes(&account.label, group_id_hex, poll_event_id, after, limit)
+     }
+ 
++    /// Resolve thread placement from local storage without sending or uploading.
++    /// An unavailable parent or root returns None; a storage error propagates.
++    pub fn thread_reply_context(
++        &self,
++        account_ref: &str,
++        group_id: &GroupId,
++        parent_message_id: &str,
++    ) -> Result<Option<crate::ThreadReplyContext>, AppError> {
++        let account = self.accounts.resolve(account_ref)?;
++        self.accounts.app.thread_reply_context(
++            &account.label,
++            &hex::encode(group_id.as_slice()),
++            parent_message_id,
++        )
++    }
++
+     pub fn timeline_message(
+         &self,
+         account_ref: &str,
+         group_id_hex: &str,
+         message_id_hex: &str,
+     ) -> Result<Option<TimelineMessageRecord>, AppError> {
+diff --git a/crates/marmot-uniffi/src/commands/message.rs b/crates/marmot-uniffi/src/commands/message.rs
+--- a/crates/marmot-uniffi/src/commands/message.rs
++++ b/crates/marmot-uniffi/src/commands/message.rs
+@@ -9,9 +9,22 @@
+     group_id_from_hex,
+ };
+ use crate::errors::MarmotKitError;
+ use crate::optional_group_id_hex;
+ 
++impl Marmot {
++    /// C host's blocking, local-only preflight for thread sends.
++    pub fn thread_reply_context(
++        &self,
++        account_ref: &str,
++        group_id_hex: &str,
++        parent_message_id: &str,
++    ) -> Result<Option<marmot_app::ThreadReplyContext>, MarmotKitError> {
++        let group = group_id_from_hex(group_id_hex)?;
++        Ok(self.runtime.thread_reply_context(account_ref, &group, parent_message_id)?)
++    }
++}
++
+ #[marmot_uniffi_macros::on_tokio_runtime]
+ #[uniffi::export]
+ impl Marmot {
+     // -----------------------------------------------------------------------
+diff --git a/crates/marmot-c/src/commands.rs b/crates/marmot-c/src/commands.rs
+--- a/crates/marmot-c/src/commands.rs
++++ b/crates/marmot-c/src/commands.rs
+@@ -2147,7 +2147,84 @@
+     })
+ }
+ 
++/// Local root and direct-parent evidence for the thread placement tags.
++#[repr(C)]
++pub struct MarmotThreadReplyContext {
++    pub root_message_id_hex: *mut c_char,
++    pub root_author: *mut c_char,
++    pub parent_author: *mut c_char,
++    pub root_kind: u64,
++    pub parent_kind: u64,
++}
++
++impl CFree for MarmotThreadReplyContext {
++    unsafe fn free_in_place(&mut self) {
++        unsafe {
++            crate::memory::free_c_string(self.root_message_id_hex);
++            crate::memory::free_c_string(self.root_author);
++            crate::memory::free_c_string(self.parent_author);
++        }
++    }
++}
++
++/// Check whether the local timeline can place a new thread reply. This
++/// synchronous read does not upload or publish. A successful read writes 0 to
++/// `available` for a missing or deleted parent, or if root evidence is missing.
++/// Pass NULL for `out` to check availability only. Otherwise free the returned
++/// context with `marmot_thread_reply_context_free`.
++///
++/// # Safety
++/// `client` must be live; strings valid; `available` writable; `out` writable
++/// if non-NULL.
++#[unsafe(no_mangle)]
++pub unsafe extern "C" fn marmot_thread_reply_context(
++    client: *const MarmotClient,
++    account_ref: *const c_char,
++    group_id_hex: *const c_char,
++    parent_message_id: *const c_char,
++    available: *mut u8,
++    out: *mut *mut MarmotThreadReplyContext,
++) -> MarmotStatus {
++    ffi_guard(|| {
++        if !out.is_null() {
++            try_arg!(unsafe { crate::preflight_out_ptr(out) });
++        }
++        try_arg!(unsafe { write_out(available, 0) });
++        let client = try_arg!(unsafe { client_ref(client) });
++        let account_ref = try_arg!(unsafe { required_str(account_ref) });
++        let group_id_hex = try_arg!(unsafe { required_str(group_id_hex) });
++        let parent_message_id = try_arg!(unsafe { required_str(parent_message_id) });
++        let context = try_arg!(client.marmot.thread_reply_context(
++            &account_ref,
++            &group_id_hex,
++            &parent_message_id,
++        ).map_err(|err| status_from_error(&err)));
++        if let Some(context) = context {
++            if !out.is_null() {
++                unsafe { out.write(boxed(MarmotThreadReplyContext {
++                    root_message_id_hex: owned_c_string(context.root_message_id),
++                    root_author: owned_c_string(context.root_author),
++                    parent_author: owned_c_string(context.parent_author),
++                    root_kind: context.root_kind,
++                    parent_kind: context.parent_kind,
++                })) };
++            }
++            unsafe { available.write(1) };
++        }
++        MarmotStatus::Ok
++    })
++}
++
++/// Free a thread reply context. NULL is a no-op.
++///
++/// # Safety
++/// `ptr` must be NULL or an unfreed pointer returned by this library.
++#[unsafe(no_mangle)]
++pub unsafe extern "C" fn marmot_thread_reply_context_free(ptr: *mut MarmotThreadReplyContext) {
++    crate::memory::free_guard(|| unsafe { crate::memory::free_boxed(ptr) });
++}
++
+ /// Send a NIP-22 thread message (kind 1111) answering `parent_message_id`:
+ /// `text`, previously uploaded `attachments`, or both, plus application
+ /// `tags` (for example NIP-30 `emoji`), each row a `(char **, len)` pair.
+ /// MDK builds the thread's `E`/`K`/`P` and `e`/`k` tags from the parent's
+diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
+--- a/crates/marmot-c/include/marmot.h
++++ b/crates/marmot-c/include/marmot.h
+@@ -12236,8 +12236,45 @@
+                                       const char *caption,
+                                       struct MarmotSendSummary **out);
+ 
+ /**
++ * Local root and direct-parent evidence for the thread placement tags.
++ */
++typedef struct MarmotThreadReplyContext {
++  char *root_message_id_hex;
++  char *root_author;
++  char *parent_author;
++  uint64_t root_kind;
++  uint64_t parent_kind;
++} MarmotThreadReplyContext;
++
++/**
++ * Check whether the local timeline can place a new thread reply. This
++ * synchronous read does not upload or publish. A successful read writes 0 to
++ * `available` for a missing or deleted parent, or if root evidence is missing.
++ * Pass NULL for `out` to check availability only. Otherwise free the returned
++ * context with `marmot_thread_reply_context_free`.
++ *
++ * # Safety
++ * `client` must be live; strings valid; `available` writable; `out` writable
++ * if non-NULL.
++ */
++MarmotStatus marmot_thread_reply_context(const struct MarmotClient *client,
++                                         const char *account_ref,
++                                         const char *group_id_hex,
++                                         const char *parent_message_id,
++                                         uint8_t *available,
++                                         struct MarmotThreadReplyContext **out);
++
++/**
++ * Free a thread reply context. NULL is a no-op.
++ *
++ * # Safety
++ * `ptr` must be NULL or an unfreed pointer returned by this library.
++ */
++void marmot_thread_reply_context_free(struct MarmotThreadReplyContext *ptr);
++
++/**
+  * Send a NIP-22 thread message (kind 1111) answering `parent_message_id`:
+  * `text`, previously uploaded `attachments`, or both, plus application
+  * `tags` (for example NIP-30 `emoji`), each row a `(char **, len)` pair.
+  * MDK builds the thread's `E`/`K`/`P` and `e`/`k` tags from the parent's

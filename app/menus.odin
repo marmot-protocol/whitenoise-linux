@@ -299,7 +299,7 @@ context_menu :: proc(ui: ^Ui_State) {
 				ctx_item("CtxReply", ICON_REPLY, tr("Reply"))
 			}
 			ctx_item("CtxThread", ICON_COMMENTS, tr("Reply in thread"))
-			if msg.mine && !read_only && !msg.unsupported {
+			if !read_only && message_can_edit(msg) {
 				ctx_item("CtxEdit", ICON_PENCIL, tr("Edit message"))
 			}
 			if len(msg.body) > 0 {

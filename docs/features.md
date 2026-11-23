@@ -39,6 +39,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 ### Writing, sending and forwarding
 
 - **Messages are Markdown.** Bodies support typeset `$` math blocks, reactions, replies, edits with history, forwarding, and search.
+- **A thread stays readable without its parent.** If the parent was deleted or is unavailable on this device, you cannot send new replies there.
 - **Enter sends; Shift+Enter starts a new line.** You can also click the paper plane to send or the checkmark to save an edit.
 - **Type `/` in an empty draft to open commands.** Keep typing to filter. Use the arrow keys and Enter or Tab, or click a command. Escape closes the menu without changing your draft. `/shrug` inserts a shrug without sending it.
 - **Choose what appears beside your draft.** Open **+ > Customize composer** or **Settings > General > Composer**. Drag shortcuts in the preview to reorder them, or drag between **Left**, **Right**, and **+ menu**. Select a shortcut for placement and reorder buttons.
@@ -446,9 +447,10 @@ opens its settings without changing them.
 Open a chat's details and look for **Linked devices**. The card shows whether
 linked devices are on or why you can't turn them on. If you're an admin,
 **Members to check** names the members whose devices block the upgrade and
-shows what needs attention for each one. If you see **Linked devices are
-ready**, choose **Turn on linked devices** to let members' linked devices
-join without an admin. That change can't be undone.
+shows what needs attention for each one. The list is hidden while the app
+rechecks a changed roster. If you see **Linked devices are ready**, choose
+**Turn on linked devices** to let members' linked devices join without an
+admin. That change can't be undone.
 If the chat is still catching up, wait before trying again.
 
 New chats negotiate support from the KeyPackages used to invite members.

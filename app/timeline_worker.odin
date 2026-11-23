@@ -27,7 +27,7 @@ Timeline_Work :: struct {
 	paged:                  bool,
 	at:                     time.Tick,
 	read_request:           cstring,
-	read_latest:            string, // UI-thread deduplication, newest MLS order seen
+	read_latest:            string, // UI-thread deduplication, newest eligible id queued
 	read_row:               ^marmot.Chat_List_Row,
 	read_error:             string,
 }
@@ -206,21 +206,22 @@ timeline_free :: proc(job: ^Timeline_Work) {
 @(private)
 timeline_mark_read :: proc(ui: ^Ui_State) {
 	job := timeline_job
-	if job == nil ||
-	   !timeline_scope(ui, "") ||
-	   ui.timeline_loading ||
-	   ui.tl_has_after ||
-	   len(ui.messages) == 0 {return}
-	last := len(ui.messages) - 1
-	for msg, i in ui.messages {
-		if msg.mls_order > ui.messages[last].mls_order {last = i}
+	if job == nil || !timeline_scope(ui, "") || ui.timeline_loading || ui.tl_has_after {return}
+	chat := &ui.chats[ui.selected]
+	last := -1
+	for &msg, i in ui.messages {
+		if msg.read_markable &&
+		   (!msg.system || chat.group_read_activity) &&
+		   msg.id != "" &&
+		   (last < 0 || msg.mls_order > ui.messages[last].mls_order) {last = i}
 	}
+	if last < 0 {return}
 	id := ui.messages[last].id
 	if id == job.read_latest {return}
 	delete(job.read_latest)
 	job.read_latest = strings.clone(id)
-	if ui.chats[ui.selected].group_id in ui.prefs.unread_ids {
-		delete_key(&ui.prefs.unread_ids, ui.chats[ui.selected].group_id)
+	if chat.group_id in ui.prefs.unread_ids {
+		delete_key(&ui.prefs.unread_ids, chat.group_id)
 		ui.settings_dirty = true
 	}
 	sync.lock(&job.mutex)

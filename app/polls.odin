@@ -365,9 +365,10 @@ poll_reset :: proc(ui: ^Ui_State) {
 	if rl.HasTouch() {touch_field = nendo.id("ComposeClip")}
 }
 
-// MDK assigns option IDs and authors the event. The composer supplies the thread root.
+// MDK assigns option IDs and authors the event. The worker resolves the thread tags.
 @(private = "file")
 poll_create :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if new_send_paused(ui) || thread_send_paused(ui) {return}
 	ui.poll_error = poll_input_error(ui)
 	if ui.poll_error != .None {return}
 	question := strings.trim_space(string(ui.poll_question[:]))
@@ -379,17 +380,14 @@ poll_create :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		options[count] = label
 		count += 1
 	}
-	ref := [2]string{"e", thread_cur(ui)}
-	tags := [1][]string{ref[:]}
 	spawn_poll(
 		ui,
 		client,
 		.Poll_Create,
-		"",
+		thread_cur(ui),
 		question,
 		options[:count],
 		ui.poll_multi_in ? .Multiple_Choice : .Single_Choice,
-		ref[1] == "" ? nil : tags[:],
 		ends_at = ui.poll_days == 0 ? 0 : now_unix() + ui.poll_days * 86_400,
 	)
 	ui.poll_ticket = op_ticket

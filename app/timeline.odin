@@ -169,7 +169,7 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 			}
 			if p.failed {
 				nendo.text(
-					tr("failed · tap to retry"),
+					p.thread_unavailable ? tr("Original message unavailable") : tr("failed · tap to retry"),
 					{font = FONT_BODY, size = 11, color = DANGER},
 				)
 			}
@@ -828,8 +828,8 @@ msg_actions :: proc(index: u32, msg: Msg_Ui) {
 		action_chip("MsgReply", index, tr("Reply"))
 	}
 	action_chip("MsgThread", index, tr("Thread"))
+	if message_can_edit(msg) {action_chip("MsgEdit", index, tr("Edit"))}
 	if msg.mine {
-		if !msg.unsupported {action_chip("MsgEdit", index, tr("Edit"))}
 		action_chip("MsgDel", index, tr("Delete"))
 	}
 }

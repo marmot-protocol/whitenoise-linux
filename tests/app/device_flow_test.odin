@@ -1090,6 +1090,7 @@ devices_chat_activation :: proc(t: ^testing.T) {
 		blockers     = raw_data(blockers[:]),
 		blockers_len = len(blockers),
 	}
+	a.dirty = false
 	read.eligibility, read.report = report.eligibility, &report
 	activation_apply_read(&ui, &read)
 	defer a.report = nil // The test report lives on the stack, not in marmot-c.
@@ -1098,6 +1099,16 @@ devices_chat_activation :: proc(t: ^testing.T) {
 		testing.expect(t, strings.contains(text, line), line)
 	}
 	testing.expect(t, !nendo.element(nendo.id("EnableAccountDevices")).found)
+	activation_live(&ui, {group = "older-dm", account = "account-a", activation_signal = true})
+	text = device_test_frame(&ui)
+	testing.expect(t, !strings.contains(text, "Members to check"))
+	testing.expect(t, nendo.element(nendo.id("InfoLinkedDevicesProgress")).found)
+	a.read, a.dirty = &read, false
+	text = device_test_frame(&ui)
+	testing.expect(t, !strings.contains(text, "Members to check"))
+	testing.expect(t, nendo.element(nendo.id("InfoLinkedDevicesProgress")).found)
+	a.read = nil
+
 	ui.selected = 1
 	text = device_test_frame(&ui)
 	testing.expect(t, !strings.contains(text, "Members to check"))

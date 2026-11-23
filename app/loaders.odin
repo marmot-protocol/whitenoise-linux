@@ -155,14 +155,15 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			subject := sys.subject_account_id_hex != nil ? string(sys.subject_account_id_hex) : ""
 			is_add := kind == "member_added" && len(subject) > 0
 			msg := Msg_Ui {
-				id       = strings.clone(id_str),
-				body     = strings.clone(system_text(client, sys)),
-				sys_text = strings.clone(system_text(client, sys, .Mentions)),
-				at       = format_when(record.timeline_at),
-				at_full  = format_full(record.timeline_at),
-				day      = format_day(record.timeline_at),
-				sort_at  = record.timeline_at,
-				system   = true,
+				id            = strings.clone(id_str),
+				body          = strings.clone(system_text(client, sys)),
+				sys_text      = strings.clone(system_text(client, sys, .Mentions)),
+				at            = format_when(record.timeline_at),
+				at_full       = format_full(record.timeline_at),
+				day           = format_day(record.timeline_at),
+				sort_at       = record.timeline_at,
+				system        = true,
+				read_markable = timeline_record_markable(record),
 			}
 			if is_add {
 				msg.sys_added_hex = strings.clone(subject)
@@ -258,6 +259,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 					mine = mine,
 					deleted = true,
 					thread_of = strings.clone(parent),
+					read_markable = timeline_record_markable(record),
 				},
 			)
 			continue
@@ -277,18 +279,19 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 
 		msg := Msg_Ui {
-			id        = strings.clone(id_str),
-			kind      = record.kind,
-			sender    = strings.clone(label),
-			sender_id = strings.clone(sender),
-			pic_url   = strings.clone(info.pic_url),
-			at        = format_when(record.timeline_at),
-			at_full   = format_full(record.timeline_at),
-			day       = format_day(record.timeline_at),
-			sort_at   = record.timeline_at,
-			mine      = mine,
-			delivery  = delivery,
-			origin    = message_origin_clone(origin),
+			id            = strings.clone(id_str),
+			kind          = record.kind,
+			sender        = strings.clone(label),
+			sender_id     = strings.clone(sender),
+			pic_url       = strings.clone(info.pic_url),
+			at            = format_when(record.timeline_at),
+			at_full       = format_full(record.timeline_at),
+			day           = format_day(record.timeline_at),
+			sort_at       = record.timeline_at,
+			mine          = mine,
+			read_markable = timeline_record_markable(record),
+			delivery      = delivery,
+			origin        = message_origin_clone(origin),
 		}
 		if class == .Unsupported {
 			msg.unsupported = true
@@ -401,19 +404,14 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			continue
 		}
 		tags := record.tags[:record.tags_len]
-		// Thread membership alone is not a quote. An explicit q tag can quote the parent.
-		quoted := false
-		for tag in tags {quoted ||= tag.values_len >= 2 && string(tag.values[0]) == "q"}
-		thread_parent :=
-			msg.thread_of != "" &&
-			string(record.reply_to_message_id_hex) == msg.thread_of &&
-			!quoted
-		if !thread_parent {
-			if record.reply_to_message_id_hex != nil {
-				msg.reply_id = strings.clone(string(record.reply_to_message_id_hex))
-			}
-			if record.reply_preview != nil {
-				preview := record.reply_preview
+		if target := timeline_quote_target(record, parent); target != "" {
+			msg.reply_id = strings.clone(target)
+			preview := record.reply_preview
+			if target !=
+			   string(record.reply_to_message_id_hex) {preview = record.body_quote_preview}
+			if reply_preview_visible(preview) &&
+			   string(preview.message_id_hex) == target &&
+			   !ui.hidden[target] {
 				reply_label := "?"
 				if preview.sender != nil {
 					reply_label = ui.nicknames[string(preview.sender)]
@@ -436,12 +434,9 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 						strings.clone(string(ref.plaintext_sha256)),
 					}
 				}
-			} else if record.reply_to_message_id_hex != nil {
-				// Parent outside the loaded window (or deleted): keep the
-				// reply frame with a plain note instead of dropping it.
+			} else {
 				msg.reply_text = strings.clone(tr("Original message unavailable"))
 			}
-
 		}
 
 		for j in 0 ..< record.media_len {
@@ -491,6 +486,18 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 
 	apply_pending_reacts(ui)
 	messages_rebind(ui)
+}
+
+@(private = "file")
+timeline_quote_target :: proc(record: ^marmot.Timeline_Message_Record, parent: string) -> string {
+	reply := string(record.reply_to_message_id_hex)
+	if record.kind != KIND_THREAD && (parent == "" || reply != parent) {return reply}
+	for tag in record.tags[:record.tags_len] {
+		if tag.values_len == 0 || string(tag.values[0]) != "q" {continue}
+		if record.kind == KIND_THREAD {return tag.values_len >= 2 ? string(tag.values[1]) : ""}
+		if tag.values_len >= 2 {return reply}
+	}
+	return ""
 }
 
 // Overlay the in-flight reactions onto the rows just built. An add

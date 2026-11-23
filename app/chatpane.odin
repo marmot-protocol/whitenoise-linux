@@ -2101,6 +2101,18 @@ chat_composer :: proc(ui: ^Ui_State) {
 		blocked_bar()
 		return
 	}
+	can_send := ui.editing != "" || thread_can_send(ui)
+	if !can_send {
+		if nendo.box(nendo.id("ThreadComposeUnavailable"))(
+		{width = nendo.grow(), padding = nendo.pad(16), color = RAIL_BG},
+		) {
+			nendo.text(
+				tr("Original message unavailable"),
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
+			)
+		}
+		if !ui.poll_open && !voice_active() {return}
+	}
 	poll_suspended := ui.poll_open && ui.search_open
 	if poll_suspended && ui.poll_ticket == 0 {return}
 	// Edit banner: the composer holds a sent message, not a new one.
@@ -2239,14 +2251,14 @@ chat_composer :: proc(ui: ^Ui_State) {
 		} else {
 			width := page_w(ui)
 			if ui.prefs.centered_chat {width = min(width, CHAT_WIDTH_MAX)}
-			composer_edit(ui, width - 2 * f32(padding) - 32)
+			composer_edit(ui, width - 2 * f32(padding) - 32, can_send)
 		}
 	}
 }
 
 
 @(private = "file")
-composer_edit :: proc(ui: ^Ui_State, width: f32) {
+composer_edit :: proc(ui: ^Ui_State, width: f32, can_send: bool) {
 	plan := composer_plan(ui, composer_config(&ui.prefs), width)
 	buf := ui.poll_open ? &ui.poll_question : &ui.compose
 	focus := ui.poll_open ? Focus.PollQ : .Compose
@@ -2315,7 +2327,7 @@ composer_edit :: proc(ui: ^Ui_State, width: f32) {
 				composer_draft(ui, buf, focus, placeholder, inline_width, 20)
 			} else if nendo.box(nendo.id("ComposeGap"))({width = nendo.grow()}) {}
 			if !ui.poll_open {composer_tools(ui, plan, .Right)}
-			composer_primary(ui, plan)
+			if can_send {composer_primary(ui, plan)}
 		}
 		if ui.poll_open {
 			poll_fields(ui, width)

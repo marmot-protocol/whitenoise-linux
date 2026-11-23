@@ -263,7 +263,7 @@ edit_completion_scope :: proc(t: ^testing.T) {
 		edit_ticket = 1,
 	}
 	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
-	append(&ui.messages, Msg_Ui{id = "message"})
+	append(&ui.messages, Msg_Ui{id = "message", kind = KIND_CHAT_MESSAGE, mine = true})
 	ui.drafts["account:group"] = "draft"
 	defer {delete(ui.chats); delete(ui.messages); delete(ui.compose); delete(ui.drafts)
 		delete(ui.client_status)}
@@ -288,6 +288,10 @@ edit_completion_scope :: proc(t: ^testing.T) {
 	edit_restore(&ui)
 	testing.expect_value(t, string(ui.compose[:]), "newer typing")
 	ui.account_ref = "account"
+	ui.messages[0].kind = KIND_AGENT_ITEM
+	edit_restore(&ui)
+	testing.expect_value(t, string(ui.compose[:]), "newer typing")
+	ui.messages[0].kind = KIND_CHAT_MESSAGE
 	edit_restore(&ui)
 	testing.expect_value(t, string(ui.compose[:]), "submitted")
 	testing.expect_value(t, ui.editing, "message")

@@ -311,6 +311,7 @@ thread_reply_previews :: proc(t: ^testing.T) {
 	preview := marmot.Timeline_Reply_Preview {
 		sender    = "alice",
 		plaintext = "Original",
+		kind      = KIND_CHAT_MESSAGE,
 	}
 	record := marmot.Timeline_Message_Record {
 		message_id_hex = "message",
@@ -324,6 +325,7 @@ thread_reply_previews :: proc(t: ^testing.T) {
 	}
 	for kind in ([]u64{KIND_CHAT_MESSAGE, KIND_THREAD, KIND_POLL, KIND_AGENT_ITEM}) {
 		parent: cstring = kind == KIND_POLL ? "legacy-parent" : "parent"
+		parent_tag[1] = parent
 		record.kind = kind
 		record.thread = kind == KIND_THREAD || kind == KIND_AGENT_ITEM ? &ref : nil
 		record.agent_item = kind == KIND_AGENT_ITEM ? &agent : nil
@@ -359,6 +361,40 @@ thread_reply_previews :: proc(t: ^testing.T) {
 		testing.expect_value(t, ui.messages[0].thread_of, thread_parent)
 		testing.expect_value(t, ui.messages[0].reply_id, "")
 		record.deleted = false
+	}
+	// Numeric-k comments can have q or e in the old reply target field.
+	record.kind = KIND_THREAD
+	record.thread = &ref
+	quote_tag[1] = "body-quote"
+	kind_tag := [2]cstring{"k", "9"}
+	comment_tags := [?]marmot.Message_Tag{tags[0], tags[1], {raw_data(kind_tag[:]), 2}}
+	record.tags, record.tags_len = raw_data(comment_tags[:]), len(comment_tags)
+	quote := marmot.Timeline_Reply_Preview {
+		message_id_hex = "body-quote",
+		sender         = "bob",
+		plaintext      = "Quoted body",
+		kind           = KIND_CHAT_MESSAGE,
+	}
+	for legacy in ([]bool{false, true}) {
+		record.reply_to_message_id_hex = legacy ? "body-quote" : "parent"
+		record.reply_preview = legacy ? &quote : &preview
+		record.body_quote_preview = legacy ? nil : &quote
+		timeline_apply(nil, &ui, &page)
+		if !testing.expect_value(t, len(ui.messages), 1) {return}
+		msg := ui.messages[0]
+		testing.expect_value(t, msg.thread_of, "parent")
+		testing.expect_value(t, msg.reply_id, "body-quote")
+		testing.expect_value(t, msg.reply_text, "Quoted body")
+		testing.expect(t, msg.read_markable)
+	}
+	for hidden_kind in ([]u64{1200, 1202, KIND_EDIT}) {
+		quote.kind = hidden_kind
+		quote.plaintext = "Private wire payload"
+		timeline_apply(nil, &ui, &page)
+		if !testing.expect_value(t, len(ui.messages), 1) {return}
+		testing.expect_value(t, ui.messages[0].reply_text, "Original message unavailable")
+		testing.expect_value(t, ui.messages[0].reply_from, "")
+		testing.expect_value(t, ui.messages[0].reply_from_id, "")
 	}
 }
 

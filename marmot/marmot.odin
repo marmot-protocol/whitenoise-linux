@@ -977,6 +977,18 @@ Timeline_Thread_Ref :: struct {
 	parent_message_id_hex: cstring,
 }
 
+Thread_Reply_Context :: struct {
+	root_message_id_hex: cstring,
+	root_author:         cstring,
+	parent_author:       cstring,
+	root_kind:           u64,
+	parent_kind:         u64,
+}
+
+#assert(size_of(Thread_Reply_Context) == 40)
+#assert(offset_of(Thread_Reply_Context, root_kind) == 24)
+#assert(offset_of(Thread_Reply_Context, parent_kind) == 32)
+
 Timeline_Reply_Preview :: struct {
 	message_id_hex:          cstring,
 	sender:                  cstring,
@@ -1167,6 +1179,7 @@ Timeline_Message_Record :: struct {
 	imported_from:             ^History_Import_Source,
 	history_import_provenance: ^History_Import_Provenance,
 	thread:                    ^Timeline_Thread_Ref,
+	body_quote_preview:        ^Timeline_Reply_Preview, // distinct kind-1111 q target
 }
 
 Media_Locator :: struct {
@@ -1286,11 +1299,12 @@ Timeline_Page :: struct {
 // Layout guards: sizes taken from sizeof() under gcc against the
 // vendored marmot.h (x86_64). A mismatch means a mirror drifted from
 // the C layout; fix the struct, then update the constant.
-#assert(size_of(Timeline_Message_Record) == 360)
+#assert(size_of(Timeline_Message_Record) == 368)
 #assert(offset_of(Timeline_Message_Record, poll) == 16)
 #assert(offset_of(Timeline_Message_Record, group_system) == 240)
 #assert(offset_of(Timeline_Message_Record, agent_item) == 248)
 #assert(offset_of(Timeline_Message_Record, thread) == 352)
+#assert(offset_of(Timeline_Message_Record, body_quote_preview) == 360)
 #assert(size_of(Agent_Item) == 112)
 #assert(offset_of(Agent_Item, fields_json) == 56)
 #assert(size_of(Poll_Type) == 4)
@@ -2027,6 +2041,8 @@ foreign lib {
 	// tags that name them (NIP-30 emoji). imeta tags are rejected.
 	send_tagged_media :: proc(client: ^Client, account_ref, group_id_hex: cstring, attachments: [^]Media_Attachment_Reference, attachments_len: uint, tags: [^]Message_Tag, tags_len: uint, caption: cstring, out: ^^Send_Summary) -> Status ---
 	send_thread_message :: proc(client: ^Client, account_ref, group_id_hex, parent_message_id, text: cstring, attachments: [^]Media_Attachment_Reference, attachments_len: uint, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
+	thread_reply_context :: proc(client: ^Client, account_ref, group_id_hex, parent_message_id: cstring, available: ^u8, out: ^^Thread_Reply_Context) -> Status ---
+	thread_reply_context_free :: proc(out: ^Thread_Reply_Context) ---
 	// Sonar stickers. Packs, the kind-10031 installed list and asset
 	// downloads all live in MDK; `input` is a coordinate, naddr or pack link.
 	sticker_packs :: proc(client: ^Client, account_ref: cstring, installed_only: u8, search: cstring, has_limit: u8, limit: u32, out: ^^Sticker_Pack_List) -> Status ---

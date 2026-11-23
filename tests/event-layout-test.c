@@ -48,12 +48,17 @@ _Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.kind) =
                "rejection kind");
 _Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.detail) == 24,
                "rejection detail");
-_Static_assert(sizeof(MarmotTimelineMessageRecord) == 360, "timeline stride");
+_Static_assert(sizeof(MarmotTimelineMessageRecord) == 368, "timeline stride");
 _Static_assert(offsetof(MarmotTimelineMessageRecord, media) == 224, "timeline media");
 _Static_assert(offsetof(MarmotTimelineMessageRecord, poll) == 16, "timeline poll");
 _Static_assert(offsetof(MarmotTimelineMessageRecord, group_system) == 240, "timeline system row");
 _Static_assert(offsetof(MarmotTimelineMessageRecord, agent_item) == 248, "timeline agent item");
 _Static_assert(offsetof(MarmotTimelineMessageRecord, thread) == 352, "timeline thread reference");
+_Static_assert(offsetof(MarmotTimelineMessageRecord, body_quote_preview) == 360,
+               "timeline body quote preview");
+_Static_assert(sizeof(MarmotThreadReplyContext) == 40, "thread reply context");
+_Static_assert(offsetof(MarmotThreadReplyContext, root_kind) == 24, "thread reply root kind");
+_Static_assert(offsetof(MarmotThreadReplyContext, parent_kind) == 32, "thread reply parent kind");
 _Static_assert(sizeof(MarmotAgentItem) == 112, "agent item size");
 _Static_assert(offsetof(MarmotAgentItem, fields_json) == 56, "agent item fields");
 _Static_assert(sizeof(MarmotPollType) == 4, "poll type width");

@@ -8,7 +8,7 @@ import "nendo"
 import rl "sdlrl"
 
 // Up in an empty composer edits the newest own message the current view
-// shows: not someone else's, not a tombstone, not another thread's row.
+// shows, skipping agent items, other senders, tombstones and other threads.
 @(test)
 compose_up_edits_latest_own :: proc(t: ^testing.T) {
 	sync.lock(&nendo_test_mutex)
@@ -41,6 +41,7 @@ compose_up_edits_latest_own :: proc(t: ^testing.T) {
 		&ui.messages,
 		Msg_Ui{id = "a", body = "older", mine = true},
 		Msg_Ui{id = "b", body = "latest", mine = true},
+		Msg_Ui{id = "agent", body = "checking", mine = true, kind = KIND_AGENT_ITEM},
 		Msg_Ui{id = "c", body = "theirs"},
 		Msg_Ui{id = "d", mine = true, deleted = true},
 		Msg_Ui{id = "e", body = "in thread", mine = true, thread_of = "b"},

@@ -633,6 +633,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// A DM with someone you blocked has no composer to type into.
 	blocked_dm := blocked_peer(ui)
 	read_only := ui.chats[ui.selected].archived
+	thread_writable := thread_can_send(ui)
 	typed_len := -1
 	if ui.focus != .Filter &&
 	   (!read_only || ui.focus == .Search || ui.show_members) &&
@@ -641,7 +642,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   (ui.stt.file == nil || ui.stt.message != "") &&
 	   blocked_dm == "" {
 		buf := active_buf(ui)
-		if !ui.poll_open || buf != &ui.compose {
+		if buf != &ui.compose || (!ui.poll_open && (thread_writable || ui.editing != "")) {
 			n := edit_text(ui, buf, buf == &ui.compose || buf == &ui.desc_input)
 			if buf == &ui.compose {typed_len = n}
 		}
@@ -655,7 +656,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if !ui.poll_open &&
 		   rl.IsKeyPressed(.ESCAPE) &&
-		   len(ui.compose) == 0 &&
+		   (!thread_writable || len(ui.compose) == 0) &&
 		   len(ui.editing) == 0 {
 			thread_back(ui)
 			return
@@ -680,7 +681,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Voice recording swallows the composer keys while active.
 	if voice_active() {
 		if clicked("VoiceSend") || (!rl.HasTouch() && rl.IsKeyPressed(.ENTER)) {
-			voice_send(ui, client)
+			if !thread_send_paused(ui) {voice_send(ui, client)}
 		} else if clicked("VoiceCancel") || rl.IsKeyPressed(.ESCAPE) {
 			voice_cancel()
 		}
@@ -691,7 +692,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   blocked_dm == "" &&
 	   nendo.element(nendo.id("ComposeClip")).found &&
 	   handle_slash_menu(ui, typed_len) {return}
-	if !read_only && blocked_dm == "" && handle_composer_action(ui) {return}
+	if !read_only && blocked_dm == "" && thread_writable && handle_composer_action(ui) {return}
 	for _, i in ui.staged {
 		if mouse_released() && nendo.pointer_over(nendo.id("StagedX", u32(i))) {
 			remove_staged(ui, i)
@@ -882,7 +883,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if !read_only &&
 			   len(msg.sys_added_hex) > 0 &&
 			   nendo.pointer_over(nendo.id("SysWave", u32(i))) {
-				if npub := hex_npub(msg.sys_added_hex); len(npub) > 0 {
+				if npub := hex_npub(msg.sys_added_hex); len(npub) > 0 && !thread_send_paused(ui) {
 					queue_send(ui, client, fmt.tprintf("👋 @%s", npub))
 				}
 				return
@@ -891,7 +892,9 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				start_reply(ui, msg)
 				return
 			}
-			if !read_only && msg.mine && nendo.pointer_over(nendo.id("MsgEdit", u32(i))) {
+			if !read_only &&
+			   message_can_edit(msg) &&
+			   nendo.pointer_over(nendo.id("MsgEdit", u32(i))) {
 				start_edit(ui, msg)
 				return
 			}
@@ -956,12 +959,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   rl.IsKeyPressed(.UP) {
 		cur := thread_cur(ui)
 		#reverse for msg in ui.messages {
-			if msg.mine &&
-			   !msg.deleted &&
-			   !msg.system &&
-			   !msg.unsupported &&
-			   len(msg.id) > 0 &&
-			   msg.thread_of == cur {
+			if msg.thread_of == cur && message_can_edit(msg) {
 				start_edit(ui, msg)
 				return
 			}
@@ -971,6 +969,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// A phone keyboard's Enter is a line break; sending has its own button.
 	if ui.focus == .Compose &&
 	   blocked_dm == "" &&
+	   (thread_writable || ui.editing != "") &&
 	   rl.IsKeyPressed(.ENTER) &&
 	   (rl.HasTouch() || shift_down()) {
 		ed_begin(ui, &ui.compose)
@@ -985,22 +984,27 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				clicked("SendBtn") ||
 				test_send_now)
 	test_send_now = false
-	if send && new_send_paused(ui) {return}
+	if send {send_composer(ui, client, read_only)}
+}
+
+@(private)
+send_composer :: proc(ui: ^Ui_State, client: ^marmot.Client, read_only: bool) {
+	if new_send_paused(ui) {return}
 	// Staged attachments send on their own only outside an edit (an
 	// edit needs text and never sends them). A composer of only
 	// whitespace counts as empty: it stays put rather than sending a
 	// blank row.
 	has_text := strings.trim_space(string(ui.compose[:])) != ""
-	if send && !has_text && len(ui.editing) > 0 {
+	if !has_text && len(ui.editing) > 0 {
 		// An empty edit cancels like Escape, without sending the restored
 		// draft or any staged attachments in this same frame.
 		cancel_edit(ui)
 		return
 	}
-	if send &&
-	   !read_only &&
+	if !read_only &&
 	   stage_files_ready(ui) &&
 	   (has_text || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
+		if ui.editing == "" && thread_send_paused(ui) {return}
 		// Sending finishes a trailing emoticon: "ok :D" goes out as "ok 😃".
 		ed_begin(ui, &ui.compose)
 		ui.ed.selection = {len(ui.compose), len(ui.compose)}
@@ -1407,7 +1411,7 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		translation_request(ui, msg)
 		return
 	}
-	if !read_only && msg.mine && nendo.pointer_over(nendo.id("CtxEdit")) {
+	if !read_only && message_can_edit(msg) && nendo.pointer_over(nendo.id("CtxEdit")) {
 		start_edit(ui, msg)
 		return
 	}
@@ -1457,6 +1461,7 @@ start_reply :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 
 @(private = "file")
 start_edit :: proc(ui: ^Ui_State, msg: Msg_Ui) {
+	if !message_can_edit(msg) {return}
 	poll_close(ui)
 	stash_draft(ui) // the edit borrows the composer; keep the draft
 	ed_set(ui, &ui.compose, msg.body)

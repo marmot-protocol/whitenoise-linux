@@ -27,6 +27,25 @@ thread_cur :: proc(ui: ^Ui_State) -> string {
 	return len(ui.thread_stack) > 0 ? ui.thread_stack[len(ui.thread_stack) - 1] : ""
 }
 
+thread_can_send :: proc(ui: ^Ui_State) -> bool {
+	parent := thread_cur(ui)
+	if parent == "" {return true}
+	if ui.selected < 0 ||
+	   ui.selected >= len(ui.chats) ||
+	   ui.messages_group != ui.chats[ui.selected].group_id ||
+	   ui.messages_account != ui.account_ref {return false}
+	#reverse for msg in ui.messages {
+		if msg.id == parent {return !msg.deleted && msg.sender_id != "" && msg.sender_id != "?"}
+	}
+	return false
+}
+
+thread_send_paused :: proc(ui: ^Ui_State) -> bool {
+	if thread_can_send(ui) {return false}
+	toast(ui, tr("Original message unavailable"))
+	return true
+}
+
 thread_push :: proc(ui: ^Ui_State, root_id: string) {
 	if root_id == thread_cur(ui) {
 		return // the open thread's own root plate can't re-push it
