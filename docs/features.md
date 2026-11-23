@@ -423,12 +423,13 @@ if all seven numbered emoji match.
 If the request hasn't appeared, open **Add a new device** on the existing
 device and choose **Check now**.
 
-On the existing device, **Add to all chats** starts on and applies only to
-eligible chats. **Bring chat history** starts off. After linking, choose
-**Open chats** to see what's available. Earlier messages can still
-be arriving in chats you can open. Each chat shows its own history progress
-and marks where imported history ends. Messages sent from your other device
-still appear as yours, without this device's delivery ticks.
+On the existing device, **Add to all chats** and **Bring chat history** start
+on. You can turn either off before approving the link. Only eligible chats
+are added. After linking, choose **Open chats** to see what's available.
+Earlier messages can still be arriving in chats you can open. Each chat
+shows its own history progress and marks where imported history ends.
+Messages sent from your other device still appear as yours, without this
+device's delivery ticks.
 
 Select a row under **Your devices** to see its settings or rename or remove
 it. Open an entry under **Sign-ins** to review it. If it was you but you want

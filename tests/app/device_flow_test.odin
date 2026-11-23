@@ -423,6 +423,8 @@ devices_pairing_projection :: proc(t: ^testing.T) {
 		after = after[at + len(label):]
 	}
 	testing.expect(t, strings.contains(text, "They match, link device"))
+	testing.expect(t, ui.devices.add_to_all && ui.devices.bring_history)
+	device_test_click(t, &ui, nil, "DeviceBringHistory")
 	testing.expect(t, ui.devices.add_to_all && !ui.devices.bring_history)
 	device_test_click(t, &ui, nil, "DeviceAddToChats")
 	testing.expect(t, !ui.devices.add_to_all)
