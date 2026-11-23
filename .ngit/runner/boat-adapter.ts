@@ -37,12 +37,29 @@ const queues = [
   },
   {
     socket: "staging.sock",
-    snapshot: "wn-ngit-staging-82ff7da6-cross-zstd",
+    snapshot: "wn-ngit-staging-70fd486b-android-pax",
     staging: true,
     active: 0,
     limit: 1,
   },
 ];
+const crossSnapshot = "wn-ngit-staging-82ff7da6-cross-only";
+
+function isCrossWorkflow(script: string) {
+  // The pinned socket runner emits either an ACT_WORKFLOW assignment or a
+  // literal -W path in the final act command.
+  const end = script.trimEnd();
+  const invocation = end.slice(end.lastIndexOf("\n") + 1);
+  return (
+    /'-W' '\.ngit\/act\/workflows\/release-(cross|windows)\.yml'(?: |$)/.test(
+      invocation,
+    ) ||
+    (invocation.includes(`'-W' "$ACT_WORKFLOW"`) &&
+      /^ACT_WORKFLOW="\$JOB_DIR\/selected-workflow\/"'release-(cross|windows)\.yml'$/m.test(
+        script,
+      ))
+  );
+}
 
 function boat(args: string[], signal: AbortSignal) {
   return Bun.spawn([join(install, "boat"), "--no-update", "--json", ...args], {
@@ -255,13 +272,18 @@ async function serve(socket: Socket, queue: (typeof queues)[number]) {
     abort.signal.throwIfAborted();
     script = join(home, `${crypto.randomUUID()}.sh`);
     await writeFile(script, req.stdin, { mode: 0o600, flag: "wx" });
+    const snapshot =
+      queue.staging && isCrossWorkflow(req.stdin)
+        ? crossSnapshot
+        : queue.snapshot;
+    const creating = performance.now();
     const create = boat(
       [
         "new",
         "--type",
         "large",
         "--from",
-        queue.snapshot,
+        snapshot,
         "--ttl",
         String(ttl),
         "--no-env",
@@ -304,7 +326,14 @@ async function serve(socket: Socket, queue: (typeof queues)[number]) {
       type: "stdout",
       data: `Boat VM ${id} ready\n`,
     });
+    const readyAt = performance.now();
     await waitHydrated(id, abort.signal);
+    if (queue.staging) {
+      const hydratedAt = performance.now();
+      console.info(
+        `Boat staging ${id} snapshot=${snapshot} provision_ms=${Math.round(readyAt - creating)} hydrate_ms=${Math.round(hydratedAt - readyAt)}`,
+      );
+    }
     const exec = boat(
       [
         "exec",
