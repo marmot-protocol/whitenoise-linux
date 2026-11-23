@@ -2248,6 +2248,9 @@ msgstr ""
 msgid "Date and time"
 msgstr ""
 
+msgid "Date and time with relative time"
+msgstr ""
+
 msgid "Date and time with seconds"
 msgstr ""
 

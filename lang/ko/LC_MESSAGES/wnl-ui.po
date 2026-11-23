@@ -1914,6 +1914,9 @@ msgstr "데이터 폴더"
 msgid "Date and time"
 msgstr "날짜와 시간"
 
+msgid "Date and time with relative time"
+msgstr "상대 시간을 포함한 날짜와 시간"
+
 msgid "Date and time with seconds"
 msgstr "초를 포함한 날짜와 시간"
 

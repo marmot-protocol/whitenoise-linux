@@ -2028,6 +2028,9 @@ msgstr "Datenordner"
 msgid "Date and time"
 msgstr "Datum und Uhrzeit"
 
+msgid "Date and time with relative time"
+msgstr "Datum und Uhrzeit mit relativer Zeit"
+
 msgid "Date and time with seconds"
 msgstr "Datum und Uhrzeit mit Sekunden"
 

@@ -72,6 +72,7 @@ thread_push :: proc(ui: ^Ui_State, root_id: string) {
 	}
 	if ui.location_open {geo_picker_close(ui)}
 	poll_close(ui)
+	timestamp_picker_close(ui)
 	append(&ui.thread_stack, strings.clone(root_id))
 	thread_check_placement(ui)
 	ui.replying = "" // a reply can't cross into a thread
@@ -85,6 +86,7 @@ thread_back :: proc(ui: ^Ui_State) {
 	}
 	if ui.location_open {geo_picker_close(ui)}
 	poll_close(ui)
+	timestamp_picker_close(ui)
 	delete(ui.jump_id)
 	ui.jump_id = strings.clone(ui.thread_stack[len(ui.thread_stack) - 1])
 	gs_flash_jump(ui, ui.jump_id)
@@ -98,6 +100,7 @@ thread_back :: proc(ui: ^Ui_State) {
 thread_clear :: proc(ui: ^Ui_State) {
 	if ui.location_open {geo_picker_close(ui)}
 	poll_close(ui)
+	timestamp_picker_close(ui)
 	if len(ui.thread_stack) == 0 {return}
 	for id in ui.thread_stack {
 		delete(id)

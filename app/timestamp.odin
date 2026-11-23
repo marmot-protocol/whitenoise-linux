@@ -104,28 +104,41 @@ timestamp_absolute :: proc(local: Local_Time, style: marmot.Markdown_Timestamp_S
 @(private)
 Timestamp_Editor :: struct {
 	open:      bool,
-	style:     marmot.Markdown_Timestamp_Style,
+	format:    Timestamp_Format,
 	input:     [dynamic]u8,
 	selection: [2]int,
 }
 
 @(private = "file")
-TIMESTAMP_STYLES := [?]struct {
+Timestamp_Format :: enum {
+	Date_Time,
+	Pair,
+	Time,
+	Time_Seconds,
+	Date,
+	Full_Date_Time,
+	Date_Time_Seconds,
+	Relative,
+}
+
+@(private = "file")
+TIMESTAMP_FORMATS := [Timestamp_Format]struct {
 	style: marmot.Markdown_Timestamp_Style,
 	label: string,
 } {
-	{.SHORT_TIME, N_("Time only")},
-	{.LONG_TIME, N_("Time with seconds")},
-	{.SHORT_DATE, N_("Date only")},
-	{.SHORT_DATE_TIME, N_("Date and time")},
-	{.LONG_DATE_TIME, N_("Full date and time")},
-	{.COMPACT_DATE_TIME_SECONDS, N_("Date and time with seconds")},
-	{.RELATIVE, N_("Relative time")},
+	.Date_Time         = {.SHORT_DATE_TIME, N_("Date and time")},
+	.Pair              = {.COMPACT_DATE_TIME_SECONDS, N_("Date and time with relative time")},
+	.Time              = {.SHORT_TIME, N_("Time only")},
+	.Time_Seconds      = {.LONG_TIME, N_("Time with seconds")},
+	.Date              = {.SHORT_DATE, N_("Date only")},
+	.Full_Date_Time    = {.LONG_DATE_TIME, N_("Full date and time")},
+	.Date_Time_Seconds = {.COMPACT_DATE_TIME_SECONDS, N_("Date and time with seconds")},
+	.Relative          = {.RELATIVE, N_("Relative time")},
 }
 
 @(private)
 timestamp_picker_open :: proc(ui: ^Ui_State) {
-	if ui.poll_open {return}
+	if ui.poll_open || ui.search_open {return}
 	local: Local_Time
 	if wn_timestamp_local(time.time_to_unix(time.now()), &local) == 0 {
 		toast(ui, tr("Couldn't read your local time. Check your device's clock and try again."))
@@ -133,7 +146,7 @@ timestamp_picker_open :: proc(ui: ^Ui_State) {
 	}
 	picker := &ui.timestamp
 	picker.open = true
-	picker.style = .SHORT_DATE_TIME
+	picker.format = .Date_Time
 	lo, hi, head := field_sel(ui, &ui.compose)
 	picker.selection = {head, head == lo ? hi : lo}
 	ed_set(
@@ -155,6 +168,16 @@ timestamp_picker_open :: proc(ui: ^Ui_State) {
 		ed_begin(ui, &picker.input)
 		ui.ed.selection = {len(picker.input), 0}
 		ed_end(ui, &picker.input)
+	}
+}
+
+@(private)
+timestamp_picker_close :: proc(ui: ^Ui_State) {
+	if !ui.timestamp.open {return}
+	ui.timestamp.open = false
+	if ui.focus == .Timestamp {
+		ui.focus = .Compose
+		touch_field = {}
 	}
 }
 
@@ -191,78 +214,101 @@ timestamp_parse_input :: proc(text: string) -> (seconds: i64, valid: bool) {
 timestamp_picker :: proc(ui: ^Ui_State) {
 	picker := &ui.timestamp
 	seconds, valid := timestamp_parse_input(string(picker.input[:]))
-	id := nendo.id("TimestampModal")
+	id := nendo.id("TimestampFields")
+	view_h := f32(rl.GetScreenHeight()) / UI_ZOOM
+	limit := max(44, view_h * 0.55)
+	gap :: 4
+	controls_h := tap_size() ? 2 * tap_min() : 66
+	minimum := min(limit, controls_h + 14 + 2 * gap)
 	if nendo.box(id)(
 	{
-		width = nendo.fixed(modal_w(id, 400)),
-		height = nendo.fit(max = modal_h(560)),
+		width = nendo.grow(),
+		height = nendo.fit(min = minimum, max = limit),
 		direction = .Column,
-		padding = nendo.pad(16),
-		gap = 6,
+		gap = gap,
 		clip = {y = true, scroll = true},
-		color = CARD,
-		radius = rr(12),
-		border = {color = ELEVATED_BORDER, width = bw()},
-		floating = {
-			attach_to = .Root,
-			z = 11,
-			attach = {element = .Center_Center, parent = .Center_Center},
-		},
 	},
 	) {
-		nendo.text(tr("Insert timestamp"), {font = FONT_TITLE, size = 18, color = TEXT})
 		nendo.text(
 			tr("Local date and time (YYYY-MM-DD HH:MM[:SS])."),
 			{font = FONT_BODY, size = 12, color = TEXT_DIM},
 		)
 		gs_field(ui, "TimestampInput", &picker.input, "YYYY-MM-DD HH:MM", .Timestamp)
-		for option, i in TIMESTAMP_STYLES {
-			settings_option(
-				"TimestampStyle",
-				u32(i),
-				tr(option.label),
-				picker.style == option.style,
+		formats := nendo.id("TimestampFormats")
+		if nendo.box(formats)({width = nendo.grow(), gap = 6, clip = {x = true, scroll = true}}) {
+			for option, format in TIMESTAMP_FORMATS {
+				settings_option(
+					"TimestampStyle",
+					u32(format),
+					tr(option.label),
+					picker.format == format,
+				)
+			}
+		}
+		scrollbar(formats)
+		if valid {
+			now := time.time_to_unix(time.now())
+			style := TIMESTAMP_FORMATS[picker.format].style
+			nendo.text(
+				timestamp_label(seconds, style, now),
+				{font = FONT_TITLE, size = 14, color = TEXT},
+			)
+			if picker.format == .Pair {
+				nendo.text(
+					timestamp_relative(seconds, now),
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
+				)
+			}
+		} else {
+			nendo.text(
+				tr("Enter a valid date and time in your timezone."),
+				{font = FONT_BODY, size = 12, color = DANGER},
 			)
 		}
-		now := time.time_to_unix(time.now())
-		label :=
-			valid ? timestamp_label(seconds, picker.style, now) : tr("Enter a valid date and time in your timezone.")
-		nendo.text(label, {font = FONT_TITLE, size = 14, color = valid ? TEXT : DANGER})
-		if nendo.box()({width = nendo.grow(), gap = 8}) {
-			login_big_button("TimestampCancel", tr("Cancel"), false)
-			login_big_button("TimestampInsert", tr("Insert"), true, valid ? .Enabled : .Disabled)
-		}
 	}
-	scrollbar(id, 12)
+	scrollbar(id)
+	if nendo.box()({width = nendo.grow(), gap = 8, align = {x = .Right}}) {
+		settings_button("TimestampCancel", tr("Cancel"))
+		settings_button("TimestampInsert", tr("Insert"), ACCENT, valid ? .Enabled : .Disabled)
+	}
 }
 
 @(private)
-handle_timestamp_picker :: proc(ui: ^Ui_State) {
+handle_timestamp_picker :: proc(ui: ^Ui_State) -> bool {
 	picker := &ui.timestamp
-	if field_mouse(ui, &picker.input, "TimestampInput") {ui.focus = .Timestamp}
+	if field_mouse(ui, &picker.input, "TimestampInput") {
+		ui.focus = .Timestamp
+		return true
+	}
 	if ui.focus == .Timestamp {edit_text(ui, &picker.input)}
-	for option, i in TIMESTAMP_STYLES {
-		if clicked_indexed("TimestampStyle", u32(i)) {
-			picker.style = option.style
-			return
+	for format in Timestamp_Format {
+		if clicked_indexed("TimestampStyle", u32(format)) {
+			picker.format = format
+			return true
 		}
 	}
 	cancel := rl.IsKeyPressed(.ESCAPE) || clicked("TimestampCancel")
-	insert := clicked("TimestampInsert") || (rl.IsKeyPressed(.ENTER) && len(rl.Preedit()) == 0)
-	if !cancel && !insert {return}
+	insert :=
+		clicked("TimestampInsert") ||
+		(ui.focus == .Timestamp && rl.IsKeyPressed(.ENTER) && len(rl.Preedit()) == 0)
+	if !cancel && !insert {return false}
 	seconds: i64
 	if !cancel {
 		valid: bool
 		seconds, valid = timestamp_parse_input(string(picker.input[:]))
-		if !valid {return}
+		if !valid {return true}
 	}
-	picker.open = false
-	touch_field = {}
+	timestamp_picker_close(ui)
 	ui.focus = .Compose
 	ed_begin(ui, &ui.compose)
 	ui.ed.selection = picker.selection
-	if !cancel {edit.input_text(&ui.ed, timestamp_token(seconds, picker.style))}
+	if !cancel {
+		markup :=
+			picker.format == .Pair ? fmt.tprintf("<t:%d:S> (<t:%d:R>)", seconds, seconds) : timestamp_token(seconds, TIMESTAMP_FORMATS[picker.format].style)
+		edit.input_text(&ui.ed, markup)
+	}
 	ed_end(ui, &ui.compose)
+	return true
 }
 
 @(private)

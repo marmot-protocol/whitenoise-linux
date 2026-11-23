@@ -2103,7 +2103,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 	}
 	placement := ui.editing != "" ? Thread_Placement.Ready : thread_placement_state(ui)
 	poll_suspended := ui.poll_open && ui.search_open
-	if poll_suspended && ui.poll_ticket == 0 {return}
+	if (poll_suspended && ui.poll_ticket == 0) || (ui.timestamp.open && ui.search_open) {return}
 	// Edit banner: the composer holds a sent message, not a new one.
 	// It stands in for the reply banner, which returns once the edit ends.
 	if len(ui.editing) > 0 {
@@ -2174,7 +2174,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 		if poll_suspended {return}
 		// A capped scrollable list keeps every removal control reachable
 		// without letting attachments widen or consume the chat pane.
-		if !ui.poll_open && len(ui.staged) > 0 {
+		if !ui.poll_open && !ui.timestamp.open && len(ui.staged) > 0 {
 			if nendo.box(nendo.id("StagedRow"))(
 			{
 				width = nendo.grow(),
@@ -2256,30 +2256,32 @@ chat_composer :: proc(ui: ^Ui_State) {
 
 @(private = "file")
 composer_edit :: proc(ui: ^Ui_State, width: f32, can_send: bool) {
-	plan := composer_plan(ui, composer_config(&ui.prefs), width)
-	buf := ui.poll_open ? &ui.poll_question : &ui.compose
-	focus := ui.poll_open ? Focus.PollQ : .Compose
-	text := string(buf[:])
-	inline_width := ui.poll_open ? width - 2 * (plan.size + f32(plan.gap)) : plan.inline_width
+	focus := ui.timestamp.open ? Focus.Timestamp : ui.poll_open ? .PollQ : .Compose
 	active := ui.focus == focus && ui.poll_ticket == 0
-	placeholder :=
-		ui.poll_open ? tr("Ask a question...") : (len(ui.thread_stack) > 0 ? tr("Reply in thread…") : tr("Send a message..."))
-	inline :=
-		plan.config.layout == .Automatic &&
-		inline_width >= COMPOSER_TEXT_MIN &&
-		wrap_break(text, 0, len(text), inline_width - CARET_W, BODY_FS, .Compose) == len(text) &&
-		strings.index_byte(text, '\n') < 0
 	if nendo.box(nendo.id("ComposeBox"))(
 	{
 		width = nendo.grow(),
 		direction = .Column,
-		gap = 8,
+		gap = ui.timestamp.open ? 6 : 8,
 		padding = {left = 16, right = 16, top = 8, bottom = 8},
 		color = PLATE,
 		radius = rr(8),
 		border = {color = active ? ACCENT_DIM : FIELD_BORDER, width = bw()},
 	},
 	) {
+		if ui.timestamp.open {timestamp_picker(ui); return}
+		plan := composer_plan(ui, composer_config(&ui.prefs), width)
+		buf := ui.poll_open ? &ui.poll_question : &ui.compose
+		text := string(buf[:])
+		inline_width := ui.poll_open ? width - 2 * (plan.size + f32(plan.gap)) : plan.inline_width
+		placeholder :=
+			ui.poll_open ? tr("Ask a question...") : (len(ui.thread_stack) > 0 ? tr("Reply in thread…") : tr("Send a message..."))
+		inline :=
+			plan.config.layout == .Automatic &&
+			inline_width >= COMPOSER_TEXT_MIN &&
+			wrap_break(text, 0, len(text), inline_width - CARET_W, BODY_FS, .Compose) ==
+				len(text) &&
+			strings.index_byte(text, '\n') < 0
 		if !ui.poll_open {
 			if open_now(nendo.id("MentionPop"), ui.mention_active) {mention_popover(ui)}
 			if open_now(nendo.id("ShortcodePop"), ui.shortcode_active) {shortcode_popover(ui)}

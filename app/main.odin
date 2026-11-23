@@ -154,7 +154,6 @@ shell_overlay_open :: proc(ui: ^Ui_State) -> bool {
 		ui.peer_open ||
 		ui.folder_open ||
 		ui.devices.panel != .None ||
-		ui.timestamp.open ||
 		ui.event_data.id != "" \
 	)
 }
@@ -363,7 +362,6 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 			if open_now(nendo.id("GsModal"), ui.gs_open) {
 				gsearch_modal(ui)
 			}
-			if ui.timestamp.open {timestamp_picker(ui)}
 			if open_now(nendo.id("EventDataModal"), ui.event_data.id != "") &&
 			   ui.event_data.id != "" {
 				event_data_modal(&ui.event_data)
@@ -1120,6 +1118,13 @@ app_main :: proc() {
 				wheel = {}
 			}
 			chat_filter_wheel(&ui, &wheel)
+			if ui.timestamp.open && nendo.pointer_over(nendo.id("TimestampFormats")) {
+				data := nendo.scroll(nendo.id("TimestampFormats"))
+				if data.found && data.content.width > data.viewport.width {
+					wheel.x += wheel.y
+					wheel.y = 0
+				}
+			}
 			if ui.link_open && nendo.pointer_over(nendo.id("LinkAddress")) {
 				wheel.x += wheel.y
 				wheel.y = 0
@@ -1475,6 +1480,7 @@ app_main :: proc() {
 			   !modal_open(&ui) &&
 			   !ui.picker_open &&
 			   !ui.poll_open &&
+			   !ui.timestamp.open &&
 			   !ui.ctx_open &&
 			   !ui.mi_open &&
 			   !ui.chat_head_menu &&
@@ -1553,8 +1559,6 @@ app_main :: proc() {
 				handle_device_modal(&ui, client)
 			} else if ui.event_data.id != "" {
 				handle_event_data(&ui)
-			} else if ui.timestamp.open {
-				handle_timestamp_picker(&ui)
 			} else if location_captured {
 				if ui.location_open {
 					handle_geo(&ui)

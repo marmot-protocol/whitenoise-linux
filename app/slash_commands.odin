@@ -63,6 +63,7 @@ slash_open :: proc(ui: ^Ui_State) -> bool {
 		ui.slash.count > 0 &&
 		!ui.slash.dismissed &&
 		!ui.poll_open &&
+		!ui.timestamp.open &&
 		ui.focus == .Compose &&
 		ui.editing == "" &&
 		!ui.search_open &&

@@ -2028,6 +2028,9 @@ msgstr "データフォルダー"
 msgid "Date and time"
 msgstr "日付と時刻"
 
+msgid "Date and time with relative time"
+msgstr "日付と時刻（相対時刻付き）"
+
 msgid "Date and time with seconds"
 msgstr "日付と時刻（秒まで）"
 

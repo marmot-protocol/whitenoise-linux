@@ -2028,6 +2028,9 @@ msgstr "Cartella dei dati"
 msgid "Date and time"
 msgstr "Data e ora"
 
+msgid "Date and time with relative time"
+msgstr "Data e ora con tempo relativo"
+
 msgid "Date and time with seconds"
 msgstr "Data e ora con secondi"
 

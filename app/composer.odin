@@ -174,7 +174,9 @@ composer_plan :: proc(
 	count := 1
 	for action in p.config.order[:COMPOSER_SHORTCUT_COUNT] {
 		if action == .More ||
-		   (surface == .Chat && ui.search_open && action == .Poll) ||
+		   (surface == .Chat &&
+				   ui.search_open &&
+				   action in Composer_Action_Set{.Poll, .Timestamp}) ||
 		   (action == .Dictate && !ui.prefs.stt_enabled) ||
 		   (surface == .Chat &&
 				   ui.editing != "" &&
