@@ -555,7 +555,7 @@ devices_show :: proc(
 	if panel == .Approve {
 		append(&d.name, ..transmute([]u8)tr("New device"))
 		append(&d.own_name, DEVICE_PLATFORM == "" ? tr("This device") : DEVICE_PLATFORM)
-		d.add_to_all, d.bring_history = false, false
+		d.add_to_all, d.bring_history = true, false
 	}
 	kb_focus = ""
 	if nendo.current_context() != nil {

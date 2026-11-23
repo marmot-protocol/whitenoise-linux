@@ -423,9 +423,9 @@ if all seven numbered emoji match.
 If the request hasn't appeared, open **Add a new device** on the existing
 device and choose **Check now**.
 
-On the existing device, choose whether to add the new one to eligible chats
-and bring over earlier messages. Both options start off. After linking,
-choose **Open chats** to see what's available. Earlier messages can still
+On the existing device, **Add to all chats** starts on and applies only to
+eligible chats. **Bring chat history** starts off. After linking, choose
+**Open chats** to see what's available. Earlier messages can still
 be arriving in chats you can open. Each chat shows its own history progress
 and marks where imported history ends. Messages sent from your other device
 still appear as yours, without this device's delivery ticks.
