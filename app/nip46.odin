@@ -197,7 +197,6 @@ nip46_snapshot :: proc(handle: ^marmot.Nip46_Session, state: ^Nip46_State) {
 }
 @(private)
 nip46_tick :: proc(ui: ^Ui_State) {
-	account_job_drain(ui)
 	for item in nip46_accounts {
 		if account_departing(item.account) {continue}
 		if item.attach != nil && thread.is_done(item.attach) {
