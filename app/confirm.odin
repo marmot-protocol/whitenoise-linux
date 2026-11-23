@@ -144,9 +144,15 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 			"Remove this relay?",
 		), N_("The updated list is published to your relays."), N_("Remove")
 	case .Sign_Out:
+		// idx 1: a remote-signer account, which this device can't sign back in.
+		if c.idx == 1 {
+			return N_(
+				"Sign out of this account?",
+			), N_("Its chats stay on this device. To sign back in, connect your remote signer again."), N_("Sign out")
+		}
 		return N_(
 			"Sign out of this account?",
-		), N_("Its keys stay in the vault on this device. You can sign in again from the accounts screen."), N_("Sign out")
+		), N_("Its key and chats stay on this device. You can sign back in from Accounts or the sign-in screen without your secret key."), N_("Sign out")
 	case .Wipe_Account:
 		if c.idx == 1 {
 			return N_(

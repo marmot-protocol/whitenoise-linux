@@ -131,6 +131,14 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
+	if ui.login_method == .Menu && account_signing_in() == "" {
+		for account, i in ui.signed_out_accounts {
+			if !clicked(fmt.tprintf("LoginResume%d", i)) {continue}
+			ui.login_error = ""
+			account_job_start(account_job_new(ui, client, .Sign_In, account.id_hex))
+			return
+		}
+	}
 	if clicked("LoginBackup") {
 		ui.picking_backup = true
 		rl.OpenFileDialog(false)

@@ -3057,14 +3057,17 @@ msgstr "ほかの人の画面には残ります。この端末では再び表示
 msgid "Italian"
 msgstr "イタリア語"
 
+msgid "Its chats stay on this device. To sign back in, connect your remote signer again."
+msgstr "チャットはこの端末に残ります。再度サインインするには、リモート署名者をもう一度接続してください。"
+
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr "テーマのファイルがこの端末から削除されます。チャットで共有したテーマはそのまま残ります。"
 
+msgid "Its key and chats stay on this device. You can sign back in from Accounts or the sign-in screen without your secret key."
+msgstr "鍵とチャットはこの端末に残ります。秘密鍵がなくても、アカウントまたはサインイン画面から再度サインインできます。"
+
 msgid "Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."
 msgstr "鍵とチャットはこの端末から削除されます。ほかのメンバーからは、引き続きグループのメンバーとして見えます。この操作は取り消せません。"
-
-msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
-msgstr "鍵はこの端末の保管庫に残ります。アカウント画面から再度サインインできます。"
 
 msgid "Jan"
 msgstr "1月"
@@ -3975,6 +3978,9 @@ msgstr "%s で開いています"
 msgid "Opening in your browser"
 msgstr "ブラウザで開いています"
 
+msgid "Opening in your file manager"
+msgstr "ファイルマネージャーで開いています"
+
 msgid "Opening your chat"
 msgstr "チャットを開いています"
 
@@ -4710,6 +4716,9 @@ msgstr "共有されたテーマ"
 msgid "SHORT VIDEO EVENT"
 msgstr "ショート動画"
 
+msgid "SIGNED OUT"
+msgstr "サインアウト済み"
+
 msgid "SIGNER RELAY"
 msgstr "署名者のリレー"
 
@@ -5139,6 +5148,9 @@ msgstr "グループのメンバーを表示"
 msgid "Show hint"
 msgstr "ヒントを表示"
 
+msgid "Show in folder"
+msgstr "フォルダに表示"
+
 msgid "Show less"
 msgstr "折りたたむ"
 
@@ -5170,6 +5182,10 @@ msgstr "診断情報と MLS の内部状態を表示します。アカウント�
 msgid "Sign events of these kinds: %s"
 msgstr "次の種類のイベントに署名: %s"
 
+#, c-format
+msgid "Sign in as %s"
+msgstr "%s としてサインイン"
+
 msgid "Sign in to your Nostr identity"
 msgstr "Nostr ID でサインイン"
 
@@ -5181,6 +5197,9 @@ msgstr "このアカウントからサインアウトしますか？"
 
 msgid "Signal call"
 msgstr "Signal 通話"
+
+msgid "Signed out. Choose it to sign back in."
+msgstr "サインアウトしています。選ぶと再度サインインします。"
 
 msgid "Signer cancelled"
 msgstr "署名者への要求をキャンセルしました"

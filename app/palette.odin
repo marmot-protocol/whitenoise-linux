@@ -421,7 +421,7 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 	case .Shortcuts:
 		ui.shortcuts_open = true
 	case .Sign_Out:
-		confirm_ask(ui, .Sign_Out, ui.account_ref, account_label(ui, ui.account_ref))
+		confirm_ask(ui, .Sign_Out, ui.account_ref, account_label(ui, ui.account_ref), account_local(ui) ? 0 : 1)
 	case .Lock_Now:
 		lock_now(ui)
 	}

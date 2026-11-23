@@ -700,7 +700,7 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if clicked("SignOutBtn") {
-		confirm_ask(ui, .Sign_Out, ui.account_ref, account_label(ui, ui.account_ref))
+		confirm_ask(ui, .Sign_Out, ui.account_ref, account_label(ui, ui.account_ref), account_local(ui) ? 0 : 1)
 	}
 	if clicked("SignOutWipeBtn") {
 		profile := device_current(ui)
@@ -867,22 +867,26 @@ accounts_adopt :: proc(
 			}
 		}
 	}
-	old := ui.accounts
-	previous := make(map[string]int, len(old), context.temp_allocator)
-	for row, i in old {previous[row.id_hex] = i}
-	ui.accounts = {}
+	old, old_signed_out := ui.accounts, ui.signed_out_accounts
+	previous := make(map[string]^Account_Row_Ui, len(old) + len(old_signed_out), context.temp_allocator)
+	for &row in old {previous[row.id_hex] = &row}
+	for &row in old_signed_out {previous[row.id_hex] = &row}
+	ui.accounts, ui.signed_out_accounts = {}, {}
 	if accounts != nil {
 		for summary in accounts.items[:accounts.len] {
 			hex := string(summary.account_id_hex)
 			if hex == "" {continue}
-			if summary.signed_out {continue}
+			// A signed-out account with its key in the vault can sign back in
+			// from the list. A remote signer reconnects from the sign-in card.
+			if summary.signed_out &&
+			   (summary.unlinked || !summary.local_signing || summary.external_signing) {continue}
 			if device := ui.devices.profiles[hex];
 			   device != nil && (device.revoked || device.unlink_check) {continue}
 			row: Account_Row_Ui
-			if i, ok := previous[hex]; ok {
-				row, old[i] = old[i], {}
+			if prev, ok := previous[hex]; ok {
+				row, prev^ = prev^, {}
 			} else {
-				restore_starter_pic(ui, client, hex)
+				if !summary.signed_out {restore_starter_pic(ui, client, hex)}
 				row.id_hex = strings.clone(hex)
 				row.name = strings.clone(profile_label(client, hex))
 				row.pic_url = strings.clone(profile_info(client, hex).pic_url)
@@ -893,13 +897,12 @@ accounts_adopt :: proc(
 				}
 			}
 			row.local, row.external = summary.local_signing, summary.external_signing
-			append(&ui.accounts, row)
+			append(summary.signed_out ? &ui.signed_out_accounts : &ui.accounts, row)
 		}
 	}
-	for row in old {
-		delete(row.id_hex); delete(row.name); delete(row.pic_url); delete(row.npub)
-	}
-	delete(old)
+	for row in old {account_row_free(row)}
+	for row in old_signed_out {account_row_free(row)}
+	delete(old); delete(old_signed_out)
 	devices_seed(ui)
 	if cleared_unlinked &&
 	   ui.account_ref == "" &&
@@ -931,6 +934,17 @@ accounts_have_tombstones :: proc(ui: ^Ui_State) -> bool {
 }
 
 @(private)
+account_signed_out :: proc(ui: ^Ui_State, account: string) -> bool {
+	for row in ui.signed_out_accounts {if row.id_hex == account {return true}}
+	return false
+}
+
+@(private)
+account_row_free :: proc(row: Account_Row_Ui) {
+	delete(row.id_hex); delete(row.name); delete(row.pic_url); delete(row.npub)
+}
+
+@(private)
 account_departed :: proc(ui: ^Ui_State, client: ^marmot.Client, account: string) {
 	if account == "" {return}
 	activation_departed(ui, account)
@@ -938,7 +952,7 @@ account_departed :: proc(ui: ^Ui_State, client: ^marmot.Client, account: string)
 	if ui.prefs.last_account == account {remember_account(ui, "")}
 	for row, i in ui.accounts {
 		if row.id_hex != account {continue}
-		delete(row.id_hex); delete(row.name); delete(row.pic_url); delete(row.npub)
+		account_row_free(row)
 		ordered_remove(&ui.accounts, i)
 		ui.accounts_revision += 1
 		break
@@ -1028,6 +1042,15 @@ handle_accounts :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if !nendo.pointer_over(nendo.id("AccountRow", u32(i))) {continue}
 		ui.accounts_open = false
 		if row.id_hex != ui.account_ref {switch_account(ui, client, row.id_hex)}
+		return
+	}
+	// The modal stays open so the row can show the sign-in running;
+	// landing on the account closes it.
+	for row, i in ui.signed_out_accounts {
+		if !nendo.pointer_over(nendo.id("AccountRow", u32(len(ui.accounts) + i))) {continue}
+		if account_signing_in() == "" {
+			account_job_start(account_job_new(ui, client, .Sign_In, row.id_hex))
+		}
 		return
 	}
 	if clicked("AddAccountBtn") {

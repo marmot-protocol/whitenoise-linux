@@ -632,6 +632,7 @@ Ui_State :: struct {
 	messages_group, messages_account:    string,
 	account_ref:                         string, // active account's full hex; "" when logged out
 	accounts:                            [dynamic]Account_Row_Ui, // switcher rows; non-empty means signed in
+	signed_out_accounts:                 [dynamic]Account_Row_Ui, // signed out, key still in the vault; offered for sign-in
 	accounts_revision:                   u64,
 	devices:                             Devices_State,
 	activation:                          Chat_Activation,
@@ -948,6 +949,7 @@ Ui_State :: struct {
 	people:                              People_Search, // directory hits for the new-chat fields
 	client_status:                       string, // written only through set_status
 	client_status_kind:                  Status_Kind,
+	status_reveal:                       string, // folder the next Info toast offers to open; owned
 	// ── Shell chrome (shell.odin, palette.odin, confirm.odin,
 	// linkguard.odin) ────────────────────────────────────────────────
 	banner:                              string, // status/error strip over the status bar; "" = none
@@ -955,6 +957,7 @@ Ui_State :: struct {
 	banner_seen:                         string, // client_status already routed to the banner
 	toast:                               string, // transient confirmation ("Copied")
 	toast_until:                         f64, // rl.GetTime() deadline; 0 = no toast
+	toast_reveal:                        string, // folder behind the toast's "Show in folder"; owned, "" = none
 	pal_open:                            bool, // command palette (Ctrl+P)
 	pal_input:                           [dynamic]u8,
 	pal_sel:                             int, // highlighted row in pal_hits

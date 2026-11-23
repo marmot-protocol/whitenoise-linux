@@ -173,12 +173,13 @@ backup_create :: proc(ui: ^Ui_State) {
 }
 
 // The save dialog wrote the archive: stamp the receipt.
-backup_saved :: proc(ui: ^Ui_State) {
+backup_saved :: proc(ui: ^Ui_State, path: string) {
 	backup_saving = false
 	backup_close(ui)
 	ui.prefs.last_backup = time.time_to_unix(time.now())
 	save_settings(ui)
 	set_status(ui, tr("Backup created."), .Info)
+	status_reveal_file(ui, path)
 }
 
 // A picked file becomes the import source; the password comes next.

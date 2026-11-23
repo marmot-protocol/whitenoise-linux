@@ -1516,6 +1516,10 @@ app_main :: proc() {
 				if clicked("BannerCopy") {
 					copy_text(&ui, ui.banner, tr("Copied"))
 				}
+				if clicked("ToastReveal") && ui.toast_reveal != "" {
+					open_external(ui.toast_reveal)
+					toast(&ui, tr("Opening in your file manager"))
+				}
 				update_handle()
 				if clicked("RailCollapse") {
 					toggle_rail(&ui)
@@ -1735,7 +1739,7 @@ app_main :: proc() {
 			for path in saved {
 				save_attachment(&ui, client, path)
 				if backup_saving {
-					backup_saved(&ui)
+					backup_saved(&ui, path)
 				}
 				delete(path)
 			}
