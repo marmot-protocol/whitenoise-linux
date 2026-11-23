@@ -365,8 +365,14 @@ handle_backup :: proc(ui: ^Ui_State) {
 		return
 	}
 	edit_text(ui, backup_confirm_focus ? &backup_confirm : &ui.backup_pw)
-	if clicked("BackupConfirmBox") {backup_confirm_focus = true; ui.focus = .BackupPw}
-	if clicked("BackupPwBox") {backup_confirm_focus = false; ui.focus = .BackupPw}
+	confirm_clicked := clicked("BackupConfirmBox")
+	if confirm_clicked || clicked("BackupPwBox") {
+		backup_confirm_focus = confirm_clicked
+		ui.focus = .BackupPw
+		when ODIN_PLATFORM_SUBTARGET == .Android {
+			rl.ReopenTextInput()
+		}
+	}
 	if ui.backup_mode == .Create &&
 	   rl.IsKeyPressed(.TAB) {backup_confirm_focus = !backup_confirm_focus}
 	if len(ui.backup_pw) > 0 {
