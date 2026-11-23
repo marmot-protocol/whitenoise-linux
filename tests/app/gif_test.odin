@@ -450,7 +450,7 @@ gif_keyboard :: proc(t: ^testing.T) {
 	drain_gif_sends(&ui, nil)
 	testing.expect_value(t, len(ui.pending[1].atts), 1)
 	if len(ui.pending[1].atts) != 1 {return}
-	testing.expect_value(t, ui.pending[1].atts[0].name, "animation.webp")
+	testing.expect_value(t, ui.pending[1].atts[0].name, "Saved GIF 0.webp")
 	testing.expect_value(t, ui.pending[1].atts[0].media_type, "image/webp")
 	// Received animated WebP must become a looping tile, not a failed still image.
 	{
