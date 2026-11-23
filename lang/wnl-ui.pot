@@ -5563,6 +5563,9 @@ msgstr ""
 msgid "Settings backups do not include these stores and cannot restore them."
 msgstr ""
 
+msgid "Settings: AI agents"
+msgstr ""
+
 msgid "Settings: about"
 msgstr ""
 
@@ -5570,6 +5573,12 @@ msgid "Settings: advanced"
 msgstr ""
 
 msgid "Settings: appearance"
+msgstr ""
+
+msgid "Settings: devices"
+msgstr ""
+
+msgid "Settings: folders"
 msgstr ""
 
 msgid "Settings: general"
@@ -5582,6 +5591,9 @@ msgid "Settings: network and relays"
 msgstr ""
 
 msgid "Settings: notifications"
+msgstr ""
+
+msgid "Settings: speech"
 msgstr ""
 
 msgid "Settings: storage"

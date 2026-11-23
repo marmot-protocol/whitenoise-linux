@@ -5031,6 +5031,9 @@ msgstr "設定"
 msgid "Settings backups do not include these stores and cannot restore them."
 msgstr "設定のバックアップにはこれらのデータは含まれず、復元することはできません。"
 
+msgid "Settings: AI agents"
+msgstr "設定: AIエージェント"
+
 msgid "Settings: about"
 msgstr "設定: このアプリについて"
 
@@ -5039,6 +5042,12 @@ msgstr "設定: 詳細"
 
 msgid "Settings: appearance"
 msgstr "設定: 外観"
+
+msgid "Settings: devices"
+msgstr "設定: デバイス"
+
+msgid "Settings: folders"
+msgstr "設定: フォルダ"
 
 msgid "Settings: general"
 msgstr "設定: 一般"
@@ -5051,6 +5060,9 @@ msgstr "設定: ネットワークとリレー"
 
 msgid "Settings: notifications"
 msgstr "設定: 通知"
+
+msgid "Settings: speech"
+msgstr "設定: 音声"
 
 msgid "Settings: storage"
 msgstr "設定: ストレージ"

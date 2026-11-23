@@ -5031,6 +5031,9 @@ msgstr "Einstellungen"
 msgid "Settings backups do not include these stores and cannot restore them."
 msgstr "Einstellungssicherungen enthalten diese Speicher nicht und können sie nicht wiederherstellen."
 
+msgid "Settings: AI agents"
+msgstr "Einstellungen: KI-Agenten"
+
 msgid "Settings: about"
 msgstr "Einstellungen: Über"
 
@@ -5039,6 +5042,12 @@ msgstr "Einstellungen: Erweitert"
 
 msgid "Settings: appearance"
 msgstr "Einstellungen: Erscheinungsbild"
+
+msgid "Settings: devices"
+msgstr "Einstellungen: Geräte"
+
+msgid "Settings: folders"
+msgstr "Einstellungen: Ordner"
 
 msgid "Settings: general"
 msgstr "Einstellungen: Allgemein"
@@ -5051,6 +5060,9 @@ msgstr "Einstellungen: Netzwerk und Relays"
 
 msgid "Settings: notifications"
 msgstr "Einstellungen: Benachrichtigungen"
+
+msgid "Settings: speech"
+msgstr "Einstellungen: Sprache & Stimme"
 
 msgid "Settings: storage"
 msgstr "Einstellungen: Speicher"

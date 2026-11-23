@@ -10,7 +10,6 @@ package main
 import "core:fmt"
 import "core:mem"
 import "core:os"
-import "core:strings"
 import "core:time"
 
 import "nendo"
@@ -379,9 +378,6 @@ handle_backup :: proc(ui: ^Ui_State) {
 		return
 	}
 	if !clicked("BackupGo") && !rl.IsKeyPressed(.ENTER) {
-		if field_mouse(ui, &ui.backup_pw, "BackupPwBox", 14) {
-			ui.focus = .BackupPw
-		}
 		return
 	}
 	if len(ui.backup_pw) == 0 {
@@ -455,34 +451,16 @@ backup_modal :: proc(ui: ^Ui_State) {
 		}
 		nendo.text(blurb, {font = FONT_BODY, size = 12, color = TEXT_DIM})
 
+		// Both fields draw through gate_field, so they share height, mask and
+		// focus ring; only the field taking keys shows the ring and caret.
 		eyebrow(tr("PASSWORD"))
-		if nendo.box(nendo.id("BackupPwBox"))(
-		{
-			width = nendo.grow(),
-			height = nendo.fixed(settings_tap_size(38)),
-			padding = {left = 12, right = 12},
-			align = {y = .Center},
-			color = ROW_BG,
-			clip = {x = true},
-			radius = rr(9),
-			border = {color = ui.focus == .BackupPw ? ACCENT : FIELD_BORDER, width = bw()},
-		},
-		) {
-			if len(ui.backup_pw) == 0 {
-				if ui.focus == .BackupPw {
-					caret(15)
-				}
-				nendo.text(tr("Your password"), {font = FONT_BODY, size = 13, color = TEXT_LO})
-			} else {
-				nendo.text(
-					strings.repeat("*", min(len(ui.backup_pw), 48), context.temp_allocator),
-					{font = FONT_BODY, size = 13, color = TEXT},
-				)
-				if ui.focus == .BackupPw {
-					caret(15)
-				}
-			}
-		}
+		gate_field(
+			ui,
+			"BackupPwBox",
+			&ui.backup_pw,
+			ui.focus == .BackupPw && !backup_confirm_focus,
+			tr("Your password"),
+		)
 
 		if backup_error != "" {
 			nendo.text(backup_error, {font = FONT_BODY, size = 12, color = DANGER})
@@ -494,7 +472,7 @@ backup_modal :: proc(ui: ^Ui_State) {
 				ui,
 				"BackupConfirmBox",
 				&backup_confirm,
-				backup_confirm_focus,
+				ui.focus == .BackupPw && backup_confirm_focus,
 				tr("Type your password again"),
 			)
 			if len(backup_confirm) > 0 && string(backup_confirm[:]) != string(ui.backup_pw[:]) {

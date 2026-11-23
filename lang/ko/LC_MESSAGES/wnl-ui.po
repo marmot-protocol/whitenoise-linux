@@ -4687,6 +4687,9 @@ msgstr "세트: %s"
 msgid "Settings"
 msgstr "설정"
 
+msgid "Settings: AI agents"
+msgstr "설정: AI 에이전트"
+
 msgid "Settings: about"
 msgstr "설정: 정보"
 
@@ -4695,6 +4698,12 @@ msgstr "설정: 고급"
 
 msgid "Settings: appearance"
 msgstr "설정: 모양"
+
+msgid "Settings: devices"
+msgstr "설정: 기기"
+
+msgid "Settings: folders"
+msgstr "설정: 폴더"
 
 msgid "Settings: general"
 msgstr "설정: 일반"
@@ -4707,6 +4716,9 @@ msgstr "설정: 네트워크 및 릴레이"
 
 msgid "Settings: notifications"
 msgstr "설정: 알림"
+
+msgid "Settings: speech"
+msgstr "설정: 음성"
 
 msgid "Settings: storage"
 msgstr "설정: 저장 공간"
