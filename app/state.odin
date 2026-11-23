@@ -350,6 +350,7 @@ Focus :: enum {
 	NC_Remove,
 	Device_Name,
 	Device_Own_Name,
+	Timestamp,
 }
 
 // The create-poll modal grows one option row at a time up to this cap
@@ -744,6 +745,7 @@ Ui_State :: struct {
 	poll_days:                           u64, // zero leaves the poll open indefinitely
 	poll_ticket:                         int,
 	poll_error:                          Poll_Error,
+	timestamp:                           Timestamp_Editor,
 	location_open:                       bool,
 	location_selected:                   bool,
 	location_busy:                       bool,

@@ -116,6 +116,22 @@ markdown_timestamps :: proc(t: ^testing.T) {
 		timestamp_block(image_blocks[2], 240).text,
 		"after \uf017 2 minutes ago",
 	)
+	for example in ([?]struct {
+			source: cstring,
+			card:   bool,
+		}{{"<t:120>", true}, {"<t:000120:R>", true}, {"**<t:120>**", false}, {"`<t:120>`", false}, {"<t:120> <t:120>", false}, {"Meet at <t:120>", false}}) {
+		if !testing.expect_value(
+			t,
+			marmot.parse_markdown(client, example.source, &doc),
+			marmot.Status.OK,
+		) {return}
+		parsed: [dynamic]Md_Block_Ui
+		convert_blocks(&parsed, doc.blocks, doc.blocks_len, false)
+		marmot.markdown_document_free(doc)
+		stamp := standalone_timestamp(string(example.source), parsed[:])
+		testing.expect(t, (stamp != nil) == example.card, string(example.source))
+		blocks_free(parsed)
+	}
 	if #config(ODIN_TEST_NAMES, "") != "markdown_timestamps" {return}
 
 	smoke_source :: "# Local timestamps\n\nt: <t:1791280800:t> / T: <t:1791280800:T>\n\nd: <t:1791280800:d> / D: <t:1791280800:D>\n\nf: <t:1791280800:f>\n\nF: <t:1791280800:F>\n\ns: <t:1791280800:s> / S: <t:1791280800:S>\n\nR: <t:1791280800:R>\n\n- **[<t:1791280800:R>](https://example.com/time)**\n\n| <t:1791280800:F> | <t:1791280800:R> |\n| --- | --- |\n| <t:-1:F> | <t:1791280800:t> |"

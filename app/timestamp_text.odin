@@ -6,7 +6,7 @@ import "nendo"
 import rl "sdlrl"
 
 @(private)
-TIMESTAMP_CLOCK :: "\uf017 "
+TIMESTAMP_CLOCK :: TIMESTAMP_ICON + " "
 
 // Source ranges stay immutable. Display text, font bytes and link ranges share
 // the same replacement pass, so wrapping and selection see the current label.

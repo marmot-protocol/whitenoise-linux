@@ -20,6 +20,7 @@ Composer_Action :: enum {
 	GM,
 	Dictate,
 	Stickers,
+	Timestamp,
 }
 
 @(private)
@@ -66,25 +67,33 @@ COMPOSER_DEFAULT := Composer_Config {
 		.GM,
 		.Dictate,
 		.Stickers,
+		.Timestamp,
 		.None,
 	},
-	slots = #partial{.More = .Left, .Files = .Left, .Emoji = .Right, .Voice = .Send},
+	slots = #partial{
+		.More = .Left,
+		.Files = .Left,
+		.Emoji = .Right,
+		.Voice = .Send,
+		.Timestamp = .Right,
+	},
 }
 
 @(private)
 COMPOSER_ACTIONS := #partial [Composer_Action]struct {
 	id, icon, name: string,
 } {
-	.More     = {"ComposeMoreBtn", "+", N_("More tools")},
-	.Files    = {"AttachBtn", ICON_CLIP, N_("Attach a file")},
-	.Emoji    = {"EmojiBtn", ICON_SMILE, N_("Emoji")},
-	.Voice    = {"MicBtn", ICON_MIC, N_("Voice message")},
-	.Effect   = {"FxBtn", ICON_FX, N_("Send with an effect")},
-	.Poll     = {"PollBtn", ICON_POLL, N_("Create a poll")},
-	.Location = {"LocationBtn", ICON_LOCATION, N_("Send location")},
-	.GM       = {"GmBtn", "GM", N_("Say GM (once a day)")},
-	.Dictate  = {"DictateBtn", ICON_MIC, N_("Dictate")},
-	.Stickers = {"ComposeStickerBtn", "\U000f136e", N_("Stickers")},
+	.More      = {"ComposeMoreBtn", "+", N_("More tools")},
+	.Files     = {"AttachBtn", ICON_CLIP, N_("Attach a file")},
+	.Emoji     = {"EmojiBtn", ICON_SMILE, N_("Emoji")},
+	.Voice     = {"MicBtn", ICON_MIC, N_("Voice message")},
+	.Effect    = {"FxBtn", ICON_FX, N_("Send with an effect")},
+	.Poll      = {"PollBtn", ICON_POLL, N_("Create a poll")},
+	.Location  = {"LocationBtn", ICON_LOCATION, N_("Send location")},
+	.GM        = {"GmBtn", "GM", N_("Say GM (once a day)")},
+	.Dictate   = {"DictateBtn", ICON_MIC, N_("Dictate")},
+	.Stickers  = {"ComposeStickerBtn", "\U000f136e", N_("Stickers")},
+	.Timestamp = {"ComposeTimestampBtn", TIMESTAMP_ICON, N_("Insert timestamp")},
 }
 
 @(private)
@@ -110,8 +119,8 @@ composer_config_load :: proc(config: ^Composer_Config) -> bool {
 	seen: bit_set[Composer_Action]
 	order: [len(config.order)]Composer_Action
 	count := 0
-	for action, i in config.order {
-		if action == .Paste || (action == .None && i == COMPOSER_SHORTCUT_COUNT) {continue}
+	for action in config.order {
+		if action == .Paste || action == .None {continue}
 		if action <= .None || action > max(Composer_Action) || action in seen {return false}
 		slot := config.slots[action]
 		if slot < min(Composer_Slot) ||
@@ -121,6 +130,11 @@ composer_config_load :: proc(config: ^Composer_Config) -> bool {
 		}
 		seen += {action}
 		order[count] = action
+		count += 1
+	}
+	if count == COMPOSER_SHORTCUT_COUNT - 1 && .Timestamp not_in seen {
+		order[count] = .Timestamp
+		config.slots[.Timestamp] = .Menu
 		count += 1
 	}
 	if count != COMPOSER_SHORTCUT_COUNT {return false}
@@ -388,6 +402,8 @@ perform_composer_action :: proc(ui: ^Ui_State, action: Composer_Action) {
 		poll_reset(ui)
 	case .Location:
 		geo_picker_open(ui)
+	case .Timestamp:
+		timestamp_picker_open(ui)
 	case .Dictate:
 		stt_start(ui)
 	case .GM:

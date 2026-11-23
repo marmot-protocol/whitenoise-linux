@@ -19,6 +19,7 @@ Slash_Id :: enum u8 {
 	Location,
 	Shrug,
 	Stickers,
+	Time,
 }
 
 @(private = "file")
@@ -46,6 +47,7 @@ SLASH_COMMANDS := [Slash_Id]Slash_Command {
 	.Location = {name = "/location", action = .Location},
 	.Shrug = {name = "/shrug", insert = `¯\\\_(ツ)\_/¯`, preview = SHRUG},
 	.Stickers = {name = "/stickers", action = .Stickers},
+	.Time = {name = "/time", action = .Timestamp, trigger = .Exact},
 }
 
 @(private)

@@ -127,7 +127,9 @@ Git patches:
 
 ### Timestamps that read in your timezone
 
+- Select the clock in the composer or type `/time` to insert a timestamp. The picker uses your local date and time.
 - **Markdown timestamps localize themselves.** A token such as `<t:1791280800:F>` displays in your current timezone with a clock icon.
+- A message containing only a timestamp appears as a card.
 - **Hovering shows the source.** You see the absolute local date and time and the original token.
 - **Day dividers say Today.** They follow the current local day and update at midnight.
 - **The chat list counts back from today.** It shows the time for today, Yesterday, then the date.

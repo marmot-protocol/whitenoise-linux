@@ -154,6 +154,7 @@ shell_overlay_open :: proc(ui: ^Ui_State) -> bool {
 		ui.peer_open ||
 		ui.folder_open ||
 		ui.devices.panel != .None ||
+		ui.timestamp.open ||
 		ui.event_data.id != "" \
 	)
 }
@@ -362,6 +363,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 			if open_now(nendo.id("GsModal"), ui.gs_open) {
 				gsearch_modal(ui)
 			}
+			if ui.timestamp.open {timestamp_picker(ui)}
 			if open_now(nendo.id("EventDataModal"), ui.event_data.id != "") &&
 			   ui.event_data.id != "" {
 				event_data_modal(&ui.event_data)
@@ -1551,6 +1553,8 @@ app_main :: proc() {
 				handle_device_modal(&ui, client)
 			} else if ui.event_data.id != "" {
 				handle_event_data(&ui)
+			} else if ui.timestamp.open {
+				handle_timestamp_picker(&ui)
 			} else if location_captured {
 				if ui.location_open {
 					handle_geo(&ui)
