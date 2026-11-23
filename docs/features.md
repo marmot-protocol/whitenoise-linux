@@ -260,6 +260,7 @@ Attachments travel over Marmot's encrypted MIP-04 path. Profile pictures are the
 
 - **Drag files into the open chat to stage them.** Files prepare in the background, with image thumbnails when available.
 - **Most files open in place.** Image albums, inline video (libmpv), voice messages, and a preview modal cover the common formats.
+- **Preview from Group Files.** Click a file card to preview it, or use the download icon to save it. Files without a preview can still be saved.
 - **Stickers have their own guide.** [Personal stickers and Sonar sticker packs](stickers.md) come from MDK and sync across your devices, with pack previews from received stickers.
 - **Audio can be transcribed locally.** Enable Speech to text in Settings, then use the Transcribe button on an audio card.
 

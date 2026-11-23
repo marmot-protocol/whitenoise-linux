@@ -1,6 +1,8 @@
 package main
 
 import "base:runtime"
+import "core:fmt"
+import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:testing"
@@ -275,4 +277,145 @@ group_files_layout :: proc(t: ^testing.T) {
 	nendo.set_pointer({-100, -100}, .Up)
 	press(&ui, .ESCAPE)
 	testing.expect(t, !ui.group_files_open)
+}
+
+@(test)
+group_file_preview_clicks :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "group_file_preview_clicks" {return}
+	context.allocator = runtime.default_context().allocator
+	dir, err := os.make_directory_temp("/tmp", "wn-group-file-preview-*", context.temp_allocator)
+	if !testing.expect_value(t, err, nil) {return}
+	defer os.remove_all(dir)
+	old_home := data_home
+	data_home = dir
+	defer {vault_lock(); data_home = old_home}
+	if !testing.expect_value(t, vault_create("test"), Vault_Err.None) {return}
+	os.make_directory(media_cache_dir())
+	deployment: ^marmot.Deployment
+	if !testing.expect_value(
+		t,
+		marmot.deployment_white_noise(&deployment),
+		marmot.Status.OK,
+	) {return}
+	defer marmot.deployment_free(deployment)
+	client: ^marmot.Client
+	if !testing.expect_value(
+		t,
+		marmot.client_new(
+			strings.clone_to_cstring(dir, context.temp_allocator),
+			nil,
+			0,
+			deployment,
+			&client,
+		),
+		marmot.Status.OK,
+	) {return}
+	defer marmot.client_free(client)
+
+	rl.InitWindow(1024, 800, "Group Files")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	load_themes(); apply_theme(0, 0); init_fonts()
+	memory: []u8
+	init_layout(&memory, 32768, {1024, 800})
+	defer delete(memory)
+	ui := Ui_State {
+		group_files_open = true,
+		selected         = 0,
+		account_ref      = "offline-fixture",
+		row_menu         = -1,
+		member_menu      = -1,
+	}
+	ui.prefs = default_prefs()
+	ui.prefs.reduce_motion = true
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer {g_ui, g_prefs = nil, nil}
+	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
+	append(&ui.chats, Chat_Row_Ui{group_id = "group", title = "Workshop"})
+	defer {delete(ui.accounts); delete(ui.chats)}
+	job := Group_Files_Job {
+		client  = client,
+		account = "offline-fixture",
+		group   = "group",
+	}
+	group_files_job = &job
+	defer {group_files_job = nil; delete(job.files)}
+	defer {preview_close(); media_stop(); session_media_clear()}
+
+	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
+		nendo.set_pointer({-100, -100}, .Up)
+		anim_tick(1.0 / 60)
+		return build_layout(ui, 0)
+	}
+	point :: proc(t: ^testing.T, id: nendo.Id) -> bool {
+		element := nendo.element(id)
+		if !testing.expect(t, element.found) {return false}
+		b := element.rect
+		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
+		rl.PushMouseButton(.LEFT, false)
+		return testing.expect(t, nendo.pointer_over(id))
+	}
+	sha :: "0000000000000000000000000000000000000000000000000000000000000000"
+	pdf :: `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] >>
+endobj
+trailer
+<< /Root 1 0 R >>
+%%EOF
+`
+	sealed, ok := vault_seal_blob(transmute([]u8)string(pdf), context.temp_allocator)
+	if !testing.expect(
+		t,
+		ok &&
+		os.write_entire_file(fmt.tprintf("%s/%s.bin", media_cache_dir(), sha), sealed) == nil,
+	) {return}
+	media := marmot.Media_Attachment_Outcome {
+		body = {
+			accepted = {
+				0,
+				{
+					file_name = "Project notes.pdf",
+					media_type = "application/pdf",
+					plaintext_sha256 = sha,
+				},
+			},
+		},
+	}
+	record := marmot.Timeline_Message_Record {
+		message_id_hex = "file",
+		sender         = "alice",
+		media          = &media,
+		media_len      = 1,
+	}
+	append(&job.files, Group_File{&record, 0, .Documents})
+	frame(&ui)
+	if !point(t, nendo.id("GroupFilePreview", 0)) {return}
+	handle_group_files(&ui)
+	frame(&ui)
+	testing.expect(t, pending_save.name == "", "the card did not open Save")
+	testing.expect(t, nendo.element(nendo.id("PvAttachmentBusy")).found)
+	media_drain(&ui)
+	if !testing.expect(t, len(media_jobs) == 1 && media_jobs[0].worker != nil) {return}
+	thread.join(media_jobs[0].worker)
+	media_drain(&ui)
+	commands := frame(&ui)
+	testing.expect(t, nendo.element(nendo.id("PvPdf")).found, "the PDF page is visible")
+	rl.BeginDrawing(); render_nendo(commands)
+	rl.TakeScreenshot("/tmp/wn-group-files-pdf.png")
+	rl.EndDrawing()
+	preview_close()
+	frame(&ui)
+	if !point(t, nendo.id("GroupFileSave", 0)) {return}
+	handle_group_files(&ui)
+	testing.expect(t, !preview_shown)
+	testing.expect_value(t, pending_save.name, "Project notes.pdf")
+	delete(pending_save.name); delete(pending_save.group); delete(pending_save.msg_id)
+	pending_save = {}
 }

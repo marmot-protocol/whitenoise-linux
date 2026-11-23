@@ -1,8 +1,5 @@
-// The preview modal: any (name, bytes) pair shown with the same
-// renderers the timeline tiles use. Today it opens from archive
-// entries; anything that can hand over bytes can call preview_show.
-// The modal owns everything it creates and frees it on close (the
-// timeline caches keep their views forever; a modal must not).
+// The preview modal uses the timeline's renderers. Group Files borrows
+// decoded views from the media cache; previews from bytes own their views.
 package main
 
 import "base:runtime"
@@ -23,8 +20,11 @@ Preview_Kind :: enum {
 	Mesh,
 	Gcode,
 	Model_Loading,
+	Attachment_Loading,
+	Attachment_Failed,
 	Video,
 	Pdf,
+	Archive,
 	Text,
 	Message,
 	Code,
@@ -63,6 +63,8 @@ Preview :: struct {
 	kind:           Preview_Kind,
 	name:           string, // owned
 	bytes:          []u8, // owned; also the save source
+	attachment:     Att_Pick, // owns group and message IDs; name aliases preview.name
+	media:          Media_Key, // owns the key while waiting for a Group Files attachment
 	tex:            rl.Texture2D, // Image
 	mesh:           ^Stl_View,
 	gc:             ^Gcode_View,
@@ -70,6 +72,7 @@ Preview :: struct {
 	vid_shared:     bool, // timeline cache owns the view and its bytes
 	pdf:            ^Pdf_View,
 	pdf_fullscreen: bool, // fills the app window without changing desktop fullscreen
+	arc:            ^Arc_View,
 	txt:            ^Txt_View,
 	message_blocks: [dynamic]Md_Block_Ui,
 	code:           ^Code_View,
@@ -98,6 +101,91 @@ img_link_cells: []Att_Slot // borrowed from the hovered mosaic for this frame
 
 preview: Preview
 preview_shown: bool
+
+@(private)
+preview_attachment :: proc(
+	client: ^marmot.Client,
+	account, group: cstring,
+	ref: ^marmot.Media_Attachment_Reference,
+	pick: Att_Pick,
+) {
+	preview_close()
+	name, mime := string(ref.file_name), string(ref.media_type)
+	if mime == "" || mime == "application/octet-stream" {
+		mime = media_type_for(name)
+	}
+	key := string(ref.plaintext_sha256)
+	kind := media_kind(name, mime)
+	preview = {
+		kind = .Attachment_Loading,
+		name = strings.clone(pick.name),
+		attachment = {
+			group = strings.clone(pick.group),
+			msg_id = strings.clone(pick.msg_id),
+			index = pick.index,
+		},
+		media = {strings.clone(key), kind},
+	}
+	preview.attachment.name = preview.name
+	preview_shown = true
+	switch kind {
+	case .Image, .Loop, .Video, .Audio, .Pdf, .Arc, .Mesh, .Gcode, .Text, .Code, .Font:
+		if view, _ := media_cached(kind, key); view == nil && client != nil {
+			media_enqueue(client, account, group, ref, kind, key)
+		}
+		preview_attachment_poll()
+	case .File, .Sticker, .Emoji, .Xdc, .Torrent, .Nes, .Original:
+		preview.kind = .Unsupported
+	}
+}
+
+@(private = "file")
+preview_attachment_poll :: proc() {
+	if preview.kind != .Attachment_Loading || media_inflight[preview.media] {
+		return
+	}
+	view, _ := media_cached(preview.media.kind, preview.media.key)
+	if view == nil {
+		preview.kind = .Attachment_Failed
+		return
+	}
+	switch preview.media.kind {
+	case .Image:
+		if video := video_views[preview.media.key]; video != nil {
+			preview.kind, preview.vid, preview.vid_shared = .Video, video, true
+		} else {
+			pick := preview.attachment
+			preview.kind = .Slides
+			append(
+				&preview.slides,
+				Slide {
+					strings.clone(pick.msg_id),
+					strings.clone(pick.name),
+					pick.index,
+					(^rl.Texture2D)(view),
+					strings.clone(preview.media.key),
+				},
+			)
+		}
+	case .Loop, .Video, .Audio:
+		preview.kind, preview.vid, preview.vid_shared = .Video, (^Video_View)(view), true
+	case .Pdf:
+		preview.kind, preview.pdf = .Pdf, (^Pdf_View)(view)
+	case .Arc:
+		preview.kind, preview.arc = .Archive, (^Arc_View)(view)
+	case .Mesh:
+		preview.kind, preview.mesh = .Mesh, (^Stl_View)(view)
+	case .Gcode:
+		preview.kind, preview.gc = .Gcode, (^Gcode_View)(view)
+	case .Text:
+		preview.kind, preview.txt = .Text, (^Txt_View)(view)
+	case .Code:
+		preview.kind, preview.code = .Code, (^Code_View)(view)
+	case .Font:
+		preview.kind, preview.font = .Font, (^Ttf_View)(view)
+	case .File, .Sticker, .Emoji, .Xdc, .Torrent, .Nes, .Original:
+	}
+}
 
 // A model the modal is decoding off the UI thread: parse, stand-in and
 // face normals take ~230 ms for a 1.2M-triangle STL. The worker owns
@@ -652,27 +740,23 @@ preview_close :: proc() {
 		if preview.vid_shared {
 			preview.vid.max_width = 0
 			preview.vid.sized = false
+			if preview.attachment.msg_id != "" && !preview.vid.looping && !preview.vid.failed {
+				cmd := [4]cstring{"set", "pause", "yes", nil}
+				mpv_command_async(preview.vid.mpv, 0, &cmd[0])
+			}
 		} else {
 			video_view_free(preview.vid)
 		}
 	}
-	if preview.mesh != nil {
-		stl_view_free(preview.mesh)
-	}
-	if preview.gc != nil {
-		gcode_view_free(preview.gc)
-	}
-	if preview.pdf != nil {
-		pdf_view_free(preview.pdf)
-	}
-	if preview.txt != nil {
-		txt_view_free(preview.txt)
-	}
-	if preview.code != nil {
-		code_view_free(preview.code)
-	}
-	if preview.font != nil {
-		ttf_view_free(preview.font)
+	if preview.attachment.msg_id == "" {
+		if preview.mesh != nil {stl_view_free(preview.mesh)}
+		if preview.gc != nil {gcode_view_free(preview.gc)}
+		if preview.pdf != nil {pdf_view_free(preview.pdf)}
+		if preview.txt != nil {txt_view_free(preview.txt)}
+		if preview.code != nil {code_view_free(preview.code)}
+		if preview.font != nil {ttf_view_free(preview.font)}
+	} else if preview.pdf != nil {
+		preview.pdf.max_size = {}
 	}
 	rl.UnloadTexture(preview.tex)
 	for s in preview.slides {
@@ -693,6 +777,9 @@ preview_close :: proc() {
 	} else if !preview.vid_shared {
 		delete(preview.bytes)
 	}
+	delete(preview.attachment.group)
+	delete(preview.attachment.msg_id)
+	delete(preview.media.key)
 	delete(preview.name)
 	if preview.kind == .Video {
 		rl.SetFullscreen(false)
@@ -703,6 +790,7 @@ preview_close :: proc() {
 
 // Modal layout, mounted with the other overlays.
 preview_modal :: proc(ui: ^Ui_State) {
+	preview_attachment_poll()
 	narrow := single_pane()
 	full :=
 		preview.kind == .Pdf ? preview.pdf_fullscreen : (preview.kind == .Video && rl.IsFullscreen())
@@ -763,7 +851,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 				if preview.kind == .Message && ui.prefs.tts_enabled {
 					micro_button("PvRead", tr("Read aloud"))
 				}
-				if preview.kind == .Code {
+				if preview.kind == .Code && preview.attachment.msg_id == "" {
 					micro_button("PvCopyCode", tr("Copy"))
 				}
 				stored := !slides || preview.slides[preview.slide].msg_id != ""
@@ -782,7 +870,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 						nendo.text(tr("Copy image"), {font = FONT_BODY, size = 12, color = TEXT})
 					}
 				}
-				if preview.kind == .Video || preview.kind == .Pdf {
+				if (preview.kind == .Video && !preview.vid.audio) || preview.kind == .Pdf {
 					if nendo.box(nendo.id("PvFull"))(
 					{
 						height = nendo.fit(min = tap_size() ? tap_min() : 0),
@@ -935,6 +1023,27 @@ preview_modal :: proc(ui: ^Ui_State) {
 						nendo.text(
 							tr("Couldn't play video. Click to retry."),
 							{font = FONT_BODY, size = 12, color = TEXT_DIM},
+						)
+					}
+					break
+				}
+				if view.audio {
+					if nendo.box(nendo.id("PvAudio"))(
+					{width = nendo.fixed(fit_w(360)), direction = .Column, gap = 8},
+					) {
+						if nendo.box(nendo.id("PvAudioPlay"))(
+						{padding = nendo.pad(8), color = hovered() ? HOVER : ROW_BG},
+						) {
+							if hovered() {video_hover = view}
+							nendo.text(
+								view.paused ? "" : "",
+								{font = FONT_ICON, size = 14, color = TEXT},
+							)
+						}
+						video_scrub_bar(nendo.id("PvAudioBar"), view, fit_w(360))
+						nendo.text(
+							fmt.tprintf("%s / %s", fmt_clock(view.time), fmt_clock(view.dur)),
+							{font = FONT_BODY, size = 11, color = TEXT_DIM},
 						)
 					}
 					break
@@ -1251,7 +1360,49 @@ preview_modal :: proc(ui: ^Ui_State) {
 				{width = nendo.fixed(fit_w(480)), aspect = ratio, image = &view.tex},
 				) {}
 
+			case .Archive:
+				for entry, i in preview.arc.entries {
+					if nendo.box(nendo.id("PvArcEntry", u32(i)))(
+					{
+						width = nendo.fixed(fit_w(480, 26)),
+						padding = nendo.pad(8),
+						gap = 10,
+						color = hovered() ? HOVER : PLATE,
+					},
+					) {
+						if hovered() {arc_hover = {preview.arc, entry.index, entry.name}}
+						nendo.text(
+							text_ellipsis(entry.name, fit_w(380, 26), FONT_BODY, 12),
+							{font = FONT_BODY, size = 12, color = TEXT},
+						)
+						nendo.text(
+							arc_size_label(entry.size),
+							{font = FONT_BODY, size = 11, color = TEXT_DIM},
+						)
+					}
+				}
+
+			case .Attachment_Loading:
+				nendo.text(tr("Loading…"), {font = FONT_BODY, size = 13, color = TEXT})
+				busy_bar("PvAttachmentBusy")
+
+			case .Attachment_Failed:
+				nendo.text(
+					fmt.tprintf(
+						tr("Couldn't open %s. Please try again."),
+						arc_short_name(preview.name),
+					),
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
+				)
+
 			case .Unsupported, .None:
+				if preview.attachment.msg_id != "" {
+					nendo.text(
+						tr("No preview available"),
+						{font = FONT_BODY, size = 12, color = TEXT_DIM},
+					)
+					break
+				}
 				if nendo.box(nendo.id("PvNone"))(
 				{direction = .Column, padding = nendo.pad(20), gap = 10, align = {x = .Center}},
 				) {
@@ -1418,14 +1569,17 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if preview.kind == .Video {
 		if clicked("PvFull") {
-			if preview.vid_shared && rl.IsFullscreen() {preview_close(); return}
+			if preview.vid_shared &&
+			   preview.attachment.msg_id == "" &&
+			   rl.IsFullscreen() {preview_close(); return}
 			rl.SetFullscreen(!rl.IsFullscreen())
 			return
 		}
 		if preview.vid.failed && clicked("PvVidRetry") {
-			mode := preview.vid.looping ? Video_Mode.Loop : Video_Mode.Clip
+			mode :=
+				preview.vid.audio ? Video_Mode.Audio : (preview.vid.looping ? Video_Mode.Loop : Video_Mode.Clip)
 			if preview.vid_shared {
-				preview.bytes = clone_bytes(preview.bytes)
+				preview.bytes = clone_bytes(preview.vid.data)
 				preview.vid_shared = false
 			} else {
 				video_view_free(preview.vid)
@@ -1475,7 +1629,9 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if nendo.pointer_over(nendo.id("PvSave")) {
-		if preview.kind == .Slides {
+		if preview.attachment.msg_id != "" {
+			start_att_save(preview.attachment)
+		} else if preview.kind == .Slides {
 			if ui.selected >= 0 && ui.selected < len(ui.chats) {
 				s := &preview.slides[preview.slide]
 				start_att_save(
