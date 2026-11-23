@@ -30,8 +30,8 @@ message_is_mine :: proc(direction, sender: cstring, account_id: string) -> bool 
 //   System        1210 group change        sentence row  the same sentence
 //   Theme         30078 theme pack         offer card    skipped
 //   Webxdc        "wnxdc1:" text           feeds the app skipped
-//   Agent_Stream  1200                     live text     skipped (not retained)
-//   Agent_State   1201, 1202               skipped       skipped
+//   Agent_Item    1201                     rich row      skipped, reading_text
+//   Hidden        1200, 1202               skipped       skipped
 //   Modifier      edit, deletion, vote     skipped       skipped
 //   Unsupported   other kinds              summary card  label, skipped
 //
@@ -48,8 +48,8 @@ Record_Class :: enum u8 {
 	System,
 	Theme,
 	Webxdc,
-	Agent_Stream,
-	Agent_State,
+	Agent_Item,
+	Hidden,
 	Modifier,
 	Unsupported,
 }
@@ -59,10 +59,11 @@ record_class :: proc(kind: u64, plaintext: string) -> Record_Class {
 	switch kind {
 	case KIND_EDIT, KIND_DELETE, KIND_POLL_VOTE, KIND_REACTION:
 		return .Modifier
-	case AGENT_ACTIVITY, AGENT_OPERATION:
-		return .Agent_State
-	case AGENT_STREAM_START:
-		return .Agent_Stream
+	case KIND_AGENT_ITEM:
+		return .Agent_Item
+	case 1200, 1202:
+		// Retired stream starts and agent answers or controls.
+		return .Hidden
 	case KIND_GROUP_SYSTEM:
 		return .System
 	case THEME_EVENT_KIND:
@@ -89,6 +90,64 @@ Event_Tags :: union {
 Event_Tag :: struct {
 	c:    []cstring,
 	json: json.Array,
+}
+
+@(private)
+KIND_AGENT_ITEM :: u64(1201)
+
+@(private)
+message_can_edit :: proc(msg: Msg_Ui) -> bool {
+	return(
+		msg.mine &&
+		!msg.deleted &&
+		!msg.system &&
+		!msg.unsupported &&
+		msg.id != "" &&
+		msg.kind != KIND_AGENT_ITEM \
+	)
+}
+
+@(private)
+timeline_record_class :: proc(
+	record: ^marmot.Timeline_Message_Record,
+	plaintext: string,
+) -> Record_Class {
+	class := record_class(record.kind, plaintext)
+	// MDK clears the projection for tombstones and unreadable agent items.
+	if class == .Agent_Item && record.agent_item == nil && !record.deleted {return .Hidden}
+	return class
+}
+
+@(private)
+reply_preview_visible :: proc(preview: ^marmot.Timeline_Reply_Preview) -> bool {
+	if preview == nil || preview.deleted {return false}
+	// MDK omits unreadable agent items before hydrating previews.
+	#partial switch record_class(preview.kind, string(preview.plaintext)) {
+	case .Hidden, .Modifier, .Webxdc:
+		return false
+	case:
+		return true
+	}
+}
+
+// Match the row predicates in MDK's chat_list_activity_filter_sql.
+@(private)
+timeline_record_markable :: proc(record: ^marmot.Timeline_Message_Record) -> bool {
+	switch record.kind {
+	case KIND_CHAT_MESSAGE, KIND_POLL:
+		return true
+	case KIND_THREAD:
+		return record.reply_to_message_id_hex != nil
+	case KIND_GROUP_SYSTEM:
+		if record.tags_len != 1 {return false}
+		tag := record.tags[0]
+		if tag.values_len != 2 || string(tag.values[0]) != "system" {return false}
+		switch string(tag.values[1]) {
+		case "member_added", "member_removed", "member_left", "admin_added", "admin_removed":
+			return true
+		}
+	}
+	return false
 }
 
 @(private)

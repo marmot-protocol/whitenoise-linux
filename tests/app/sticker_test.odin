@@ -142,6 +142,13 @@ message_application_tags :: proc(t: ^testing.T) {
 	testing.expect_value(t, string(tags[0].values[0]), "wn-sticker")
 	testing.expect_value(t, string(tags[0].values[1]), sha)
 	testing.expect_value(t, string(tags[0].values[2]), "ok")
+	// A thread send lets MDK write the e tag while keeping the quote.
+	p.thread = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	tags = send_message_tags(&p)
+	for tag in tags {testing.expect(t, string(tag.values[0]) != "e")}
+	quote := tags[len(tags) - 1]
+	testing.expect_value(t, string(quote.values[0]), "q")
+	testing.expect_value(t, string(quote.values[1]), sha)
 }
 
 @(test)

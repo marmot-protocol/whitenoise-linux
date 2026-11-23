@@ -23,6 +23,7 @@ message_matches :: proc(
 	if record.kind != KIND_CHAT_MESSAGE ||
 	   record.deleted ||
 	   record.edit != nil ||
+	   record.thread != nil ||
 	   old.deleted ||
 	   old.edited ||
 	   old.system ||

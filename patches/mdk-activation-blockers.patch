@@ -1,0 +1,590 @@
+diff --git a/crates/cgka-engine/src/account_devices_activation.rs b/crates/cgka-engine/src/account_devices_activation.rs
+--- a/crates/cgka-engine/src/account_devices_activation.rs
++++ b/crates/cgka-engine/src/account_devices_activation.rs
+@@ -9,9 +9,8 @@
+ //!
+ //! [`account_devices_activation_refusal`] is the one eligibility answer: the
+ //! host's read before offering the action and the intent's check before
+-//! staging both call it, on the state the Commit is prepared on. Its reasons
+-//! are aggregate and never name the members or devices that block activation.
+-//! The checks only name the reason for a refusal; the resulting-state rules
++//! staging both call it, on the state the Commit is prepared on. A detail
++//! read can also collect the blocking member accounts. The resulting-state rules
+ //! that 2.1 enforces on every staged Commit stay the backstop
+ //! ([`crate::app_components::validate_current_profile_invariants_for_staged_commit`]).
+ //!
+@@ -45,16 +44,26 @@ use cgka_traits::types::GroupId;
+ use openmls::group::MlsGroup;
+ use openmls::prelude::BasicCredential;
+ 
++type BlockerVisitor<'a> = &'a mut dyn FnMut(Vec<u8>, AccountDevicesActivationRefusal);
++
++#[derive(Default)]
++struct AccountLeaves {
++    count: usize,
++    unsupported: bool,
++    carries_data: bool,
++}
++
+ /// Why `self_id` cannot activate account-devices in `group` now, or `None`
+-/// when it can.
++/// when it can. Report at most one blocker per account, in rule order.
+ ///
+ /// The admin check comes first, so a member that may not activate learns
+ /// nothing else about the group's leaves. The leaf checks walk the ratchet
+ /// tree, so one device's support never stands in for a sibling's; the first
+ /// failing rule, in the order the reasons are listed, is reported.
+-pub(crate) fn account_devices_activation_refusal(
++fn account_devices_activation_refusal(
+     group: &MlsGroup,
+     self_id: &MemberId,
++    mut blockers: Option<BlockerVisitor<'_>>,
+ ) -> Result<Option<AccountDevicesActivationRefusal>, EngineError> {
+     let account = crate::app_components::admin_pubkey_from_member_id(self_id)?;
+     if !crate::app_components::admins_of_group(group)?.contains(&account) {
+@@ -69,33 +78,44 @@ pub(crate) fn account_devices_activation_refusal(
+         return Ok(Some(AccountDevicesActivationRefusal::AlreadyRequired));
+     }
+ 
+-    let mut unsupported = false;
+-    let mut carries_data = false;
+-    let mut leaves_per_account: BTreeMap<Vec<u8>, usize> = BTreeMap::new();
++    let mut leaves_per_account: BTreeMap<Vec<u8>, AccountLeaves> = BTreeMap::new();
+     for leaf in crate::app_components::ratchet_tree_leaves(group.export_ratchet_tree())? {
+-        unsupported |= !crate::app_components::app_components_of_leaf(&leaf)?
++        let credential = BasicCredential::try_from(leaf.credential().clone())
++            .map_err(|_| EngineError::Other("a leaf has no basic credential".into()))?;
++        let identity = credential.identity();
++        let account = match leaves_per_account.get_mut(identity) {
++            Some(account) => account,
++            None => leaves_per_account.entry(identity.to_vec()).or_default(),
++        };
++        account.count += 1;
++        account.unsupported |= !crate::app_components::app_components_of_leaf(&leaf)?
+             .contains(ACCOUNT_DEVICES_COMPONENT_ID);
+-        carries_data |= crate::app_components::carries_account_devices_data(
++        account.carries_data |= crate::app_components::carries_account_devices_data(
+             leaf.extensions().app_data_dictionary(),
+         );
+-        let identity = BasicCredential::try_from(leaf.credential().clone())
+-            .map_err(|_| EngineError::Other("a leaf has no basic credential".into()))?
+-            .identity()
+-            .to_vec();
+-        *leaves_per_account.entry(identity).or_default() += 1;
+     }
+-    Ok(if unsupported {
+-        Some(AccountDevicesActivationRefusal::UnsupportedLeaves)
+-    } else if carries_data {
+-        Some(AccountDevicesActivationRefusal::LeafCarriesData)
+-    } else if leaves_per_account
+-        .values()
+-        .any(|count| *count > MAX_LEAVES_PER_ACCOUNT)
+-    {
+-        Some(AccountDevicesActivationRefusal::LeafLimitExceeded)
+-    } else {
+-        None
+-    })
++    let mut first = None;
++    let mut first_rank = u8::MAX;
++    for (identity, account) in leaves_per_account {
++        use AccountDevicesActivationRefusal as Refusal;
++        let (rank, reason) = if account.unsupported {
++            (0, Refusal::UnsupportedLeaves)
++        } else if account.carries_data {
++            (1, Refusal::LeafCarriesData)
++        } else if account.count > MAX_LEAVES_PER_ACCOUNT {
++            (2, Refusal::LeafLimitExceeded)
++        } else {
++            continue;
++        };
++        if rank < first_rank {
++            first = Some(reason);
++            first_rank = rank;
++        }
++        if let Some(visit) = &mut blockers {
++            visit(identity, reason);
++        }
++    }
++    Ok(first)
+ }
+ 
+ /// The error a refused activation returns: a non-admin gets the same answer
+@@ -128,10 +148,19 @@ impl<S: StorageProvider> Engine<S> {
+     pub fn account_devices_activation_refusal(
+         &self,
+         group_id: &GroupId,
++    ) -> Result<Option<AccountDevicesActivationRefusal>, EngineError> {
++        self.read_devices_activation(group_id, None)
++    }
++
++    /// Report the first refusal and visit each blocking member account, if requested.
++    pub fn read_devices_activation(
++        &self,
++        group_id: &GroupId,
++        blockers: Option<BlockerVisitor<'_>>,
+     ) -> Result<Option<AccountDevicesActivationRefusal>, EngineError> {
+         self.ensure_group_live(group_id)?;
+         self.with_mls_group(group_id, |group| {
+-            account_devices_activation_refusal(group, self.identity.self_id())
++            account_devices_activation_refusal(group, self.identity.self_id(), blockers)
+         })
+     }
+ 
+@@ -141,7 +170,7 @@ impl<S: StorageProvider> Engine<S> {
+     ) -> Result<SendResult, EngineError> {
+         let mls_group = self.load_mls_group(&group_id)?;
+         if let Some(reason) =
+-            account_devices_activation_refusal(&mls_group, self.identity.self_id())?
++            account_devices_activation_refusal(&mls_group, self.identity.self_id(), None)?
+         {
+             return Err(refusal_error(group_id, reason));
+         }
+diff --git a/crates/cgka-engine/tests/account_devices/activation.rs b/crates/cgka-engine/tests/account_devices/activation.rs
+--- a/crates/cgka-engine/tests/account_devices/activation.rs
++++ b/crates/cgka-engine/tests/account_devices/activation.rs
+@@ -102,8 +102,24 @@ async fn a_leaf_without_support_refuses_before_staging() {
+     let epoch = alice.engine.epoch(&gid).unwrap().0;
+     let result = alice.engine.send(enable(&gid)).await;
+     assert_activation_refused(&alice, &gid, result, Refusal::UnsupportedLeaves, epoch);
++    let mut blockers = Vec::new();
++    let report = alice
++        .engine
++        .read_devices_activation(&gid, Some(&mut |id, reason| blockers.push((id, reason))));
++    assert_eq!(report.unwrap(), Some(Refusal::UnsupportedLeaves));
++    assert_eq!(
++        blockers,
++        [(
++            bob.engine.self_id().as_slice().to_vec(),
++            Refusal::UnsupportedLeaves
++        )]
++    );
+     // Bob, not an admin, still learns only that he cannot decide.
+-    assert_eq!(refusal(&bob, &gid), Some(Refusal::NotAdmin));
++    let report = bob.engine.read_devices_activation(
++        &gid,
++        Some(&mut |_, _| panic!("non-admin learned the blocking member")),
++    );
++    assert_eq!(report.unwrap(), Some(Refusal::NotAdmin));
+ 
+     // Nothing was left staged: the admin's next Commit goes through.
+     let remove = alice
+diff --git a/crates/marmot-app/src/client/mod.rs b/crates/marmot-app/src/client/mod.rs
+--- a/crates/marmot-app/src/client/mod.rs
++++ b/crates/marmot-app/src/client/mod.rs
+@@ -3630,6 +3630,27 @@ impl AppClient {
+             .into())
+     }
+ 
++    pub(crate) fn read_devices_activation(
++        &self,
++        group_id: &GroupId,
++        detail: crate::runtime::ActivationDetail,
++    ) -> Result<crate::runtime::ActivationReport, AppError> {
++        use crate::runtime::ActivationDetail;
++        let mut members = Vec::new();
++        let eligibility = match detail {
++            ActivationDetail::Summary => self.account_devices_activation(group_id)?,
++            ActivationDetail::Members => {
++                self.ensure_group(group_id)?;
++                self.runtime
++                    .read_devices_activation(group_id, &mut |id, reason| {
++                        members.push((hex::encode(id), Some(reason).into()));
++                    })?
++                    .into()
++            }
++        };
++        Ok((eligibility, members))
++    }
++
+     /// Require `marmot.group.account-devices.v1` in one admin Commit, because
+     /// the user asked: nothing else turns it on. Refused before anything is
+     /// published unless [`Self::account_devices_activation`] would say
+diff --git a/crates/marmot-app/src/runtime/account_worker/tests/read_queue_tests.rs b/crates/marmot-app/src/runtime/account_worker/tests/read_queue_tests.rs
+--- a/crates/marmot-app/src/runtime/account_worker/tests/read_queue_tests.rs
++++ b/crates/marmot-app/src/runtime/account_worker/tests/read_queue_tests.rs
+@@ -112,7 +112,7 @@ fn host_reads(
+         }
+         Waits HistoryImportProvenance { group_id: group_id(), event_id: "00".repeat(32) }
+         Waits PendingWelcomeDeliveries {}
+-        Waits AccountDevicesActivation { group_id: group_id() }
++        Waits AccountDevicesActivation { group_id: group_id(), detail: crate::runtime::ActivationDetail::Summary }
+         Waits GroupPushDebugInfo { group_id: group_id() }
+         Waits ExporterSecret { group_id: group_id(), label: "probe".into(), length: 32 }
+         Waits SafeExportSecret { group_id: group_id(), component_id: 0 }
+diff --git a/crates/marmot-app/src/runtime/account_worker.rs b/crates/marmot-app/src/runtime/account_worker.rs
+--- a/crates/marmot-app/src/runtime/account_worker.rs
++++ b/crates/marmot-app/src/runtime/account_worker.rs
+@@ -457,7 +457,8 @@ pub(crate) enum AccountWorkerCommand {
+     },
+     AccountDevicesActivation {
+         group_id: GroupId,
+-        respond: ReadReply<Result<crate::AppAccountDevicesActivation, AppError>>,
++        detail: super::ActivationDetail,
++        respond: ReadReply<Result<super::ActivationReport, AppError>>,
+     },
+     EnableAccountDevices {
+         group_id: GroupId,
+@@ -4844,13 +4845,14 @@ async fn handle_startup_hydration_command(
+         }
+         AccountWorkerCommand::AccountDevicesActivation {
+             group_id,
++            detail,
+             mut respond,
+         } => {
+             respond.dispatched();
+             let _ = client.runtime.ensure_group_hydrated(&group_id);
+             let _ = reply(
+                 respond,
+-                client.account_devices_activation(&group_id),
++                client.read_devices_activation(&group_id, detail),
+                 client,
+             );
+         }
+@@ -6459,14 +6461,16 @@ fn account_worker_command_future<'a>(
+             let _ = respond_diagnosed(shared, storage_permit.as_ref(), respond, result, client);
+             true
+         }),
+-        AccountWorkerCommand::AccountDevicesActivation { group_id, respond } => {
+-            Box::pin(async move {
+-                let _ = client.runtime.ensure_group_hydrated(&group_id);
+-                let result = client.account_devices_activation(&group_id);
+-                let _ = respond_diagnosed(shared, storage_permit.as_ref(), respond, result, client);
+-                true
+-            })
+-        }
++        AccountWorkerCommand::AccountDevicesActivation {
++            group_id,
++            detail,
++            respond,
++        } => Box::pin(async move {
++            let _ = client.runtime.ensure_group_hydrated(&group_id);
++            let result = client.read_devices_activation(&group_id, detail);
++            let _ = respond_diagnosed(shared, storage_permit.as_ref(), respond, result, client);
++            true
++        }),
+         AccountWorkerCommand::EnableAccountDevices { group_id, respond } => Box::pin(async move {
+             let result = client.enable_account_devices(&group_id).await;
+             if result.is_ok() {
+diff --git a/crates/marmot-app/src/runtime/commands.rs b/crates/marmot-app/src/runtime/commands.rs
+--- a/crates/marmot-app/src/runtime/commands.rs
++++ b/crates/marmot-app/src/runtime/commands.rs
+@@ -1117,15 +1117,17 @@ impl AccountManager {
+         Ok(summary)
+     }
+ 
+-    pub async fn account_devices_activation(
++    pub(super) async fn read_devices_activation(
+         &self,
+         account_ref: &str,
+         group_id: &GroupId,
+-    ) -> Result<crate::AppAccountDevicesActivation, AppError> {
++        detail: super::ActivationDetail,
++    ) -> Result<super::ActivationReport, AppError> {
+         let (command, respond, response) = self.read_command(account_ref, ReadClass::R4).await?;
+         command
+             .send(AccountWorkerCommand::AccountDevicesActivation {
+                 group_id: group_id.clone(),
++                detail,
+                 respond,
+             })
+             .await
+diff --git a/crates/marmot-app/src/runtime/mod.rs b/crates/marmot-app/src/runtime/mod.rs
+--- a/crates/marmot-app/src/runtime/mod.rs
++++ b/crates/marmot-app/src/runtime/mod.rs
+@@ -185,6 +185,16 @@ pub(crate) use subscriptions::{
+ #[cfg(test)]
+ use crate::TimelineMessageChange;
+ 
++pub type ActivationReport = (
++    crate::AppAccountDevicesActivation,
++    Vec<(String, crate::AppAccountDevicesActivation)>,
++);
++
++pub(crate) enum ActivationDetail {
++    Summary,
++    Members,
++}
++
+ #[derive(Clone)]
+ pub struct MarmotAppRuntime {
+     events: broadcast::Sender<MarmotAppEvent>,
+@@ -2411,8 +2421,21 @@ impl MarmotAppRuntime {
+         account_ref: &str,
+         group_id: &GroupId,
+     ) -> Result<crate::AppAccountDevicesActivation, AppError> {
++        Ok(self
++            .accounts
++            .read_devices_activation(account_ref, group_id, ActivationDetail::Summary)
++            .await?
++            .0)
++    }
++
++    /// Blocking member accounts and their reasons from the same eligibility read.
++    pub async fn account_devices_report(
++        &self,
++        account_ref: &str,
++        group_id: &GroupId,
++    ) -> Result<ActivationReport, AppError> {
+         self.accounts
+-            .account_devices_activation(account_ref, group_id)
++            .read_devices_activation(account_ref, group_id, ActivationDetail::Members)
+             .await
+     }
+ 
+diff --git a/crates/marmot-c/include/marmot.h b/crates/marmot-c/include/marmot.h
+--- a/crates/marmot-c/include/marmot.h
++++ b/crates/marmot-c/include/marmot.h
+@@ -1132,6 +1132,17 @@
+   MARMOT_ACCOUNT_DEVICES_ACTIVATION_DEVICES_NEED_REPLACEMENT,
+   MARMOT_ACCOUNT_DEVICES_ACTIVATION_DEVICE_LIMIT_EXCEEDED,
+ } MarmotAccountDevicesActivation;
++
++typedef struct MarmotAccountDevicesBlocker {
++  char *member_id_hex;
++  enum MarmotAccountDevicesActivation reason;
++} MarmotAccountDevicesBlocker;
++
++typedef struct MarmotAccountDevicesReport {
++  enum MarmotAccountDevicesActivation eligibility;
++  struct MarmotAccountDevicesBlocker *blockers;
++  uintptr_t blockers_len;
++} MarmotAccountDevicesReport;
+ 
+ /**
+  * How far an account's setup has progressed.
+@@ -11406,6 +11417,27 @@
+                                                const char *account_ref,
+                                                const char *group_id_hex,
+                                                enum MarmotAccountDevicesActivation *out);
++
++/**
++ * Group eligibility and one reason per blocking member account. Only admins see blockers.
++ * Free with marmot_account_devices_report_free.
++ *
++ * # Safety
++ * `client` must be a live handle; string arguments must be valid
++ * NUL-terminated strings; the out-pointer must be valid.
++ */
++MarmotStatus marmot_account_devices_report(const struct MarmotClient *client,
++                                                     const char *account_ref,
++                                                     const char *group_id_hex,
++                                                     struct MarmotAccountDevicesReport **out);
++
++/**
++ * Free a report returned by this library. NULL is a no-op.
++ *
++ * # Safety
++ * The pointer must be NULL or an unfreed pointer returned by this library.
++ */
++void marmot_account_devices_report_free(struct MarmotAccountDevicesReport *ptr);
+ 
+ /**
+  * Turn on account-devices in one admin Commit, only when the user asks;
+diff --git a/crates/marmot-c/src/commands.rs b/crates/marmot-c/src/commands.rs
+--- a/crates/marmot-c/src/commands.rs
++++ b/crates/marmot-c/src/commands.rs
+@@ -62,17 +62,17 @@ use crate::types::follow_availability::{
+     MarmotFollowAvailabilityPage, MarmotFollowAvailabilityRefreshStatus,
+ };
+ use crate::types::group::{
+-    MarmotAccountDevicesActivation, MarmotAppBlobEndpoint, MarmotAppGroupMemberIdsList,
+-    MarmotAppGroupMemberRecordList, MarmotAppGroupMlsState, MarmotAppGroupRecord,
+-    MarmotAppQuarantinedGroupList, MarmotCreateGroupOptions, MarmotDetailedGroupCreationResult,
+-    MarmotDirectConversationOptions, MarmotDisbandRequest, MarmotGroupAppComponent,
+-    MarmotGroupChangeNotDeliveredList, MarmotGroupCommitDelivery, MarmotGroupConversationSnapshot,
+-    MarmotGroupCreationResult, MarmotGroupDetails, MarmotGroupInviteDeclineResult,
+-    MarmotGroupInviteResult, MarmotGroupManagementState, MarmotGroupMutationResult,
+-    MarmotGroupPendingCommit, MarmotGroupRecoveryStatus, MarmotGroupRoster,
+-    MarmotInitialGroupImage, MarmotInviteMembersResult, MarmotMemberKeyPackagePrewarmSummary,
+-    MarmotMemberRef, MarmotPendingWelcomeDeliveryList, MarmotPreparedGroupImageUpload,
+-    MarmotPreparedGroupImageUploadList,
++    MarmotAccountDevicesActivation, MarmotAccountDevicesReport, MarmotAppBlobEndpoint,
++    MarmotAppGroupMemberIdsList, MarmotAppGroupMemberRecordList, MarmotAppGroupMlsState,
++    MarmotAppGroupRecord, MarmotAppQuarantinedGroupList, MarmotCreateGroupOptions,
++    MarmotDetailedGroupCreationResult, MarmotDirectConversationOptions, MarmotDisbandRequest,
++    MarmotGroupAppComponent, MarmotGroupChangeNotDeliveredList, MarmotGroupCommitDelivery,
++    MarmotGroupConversationSnapshot, MarmotGroupCreationResult, MarmotGroupDetails,
++    MarmotGroupInviteDeclineResult, MarmotGroupInviteResult, MarmotGroupManagementState,
++    MarmotGroupMutationResult, MarmotGroupPendingCommit, MarmotGroupRecoveryStatus,
++    MarmotGroupRoster, MarmotInitialGroupImage, MarmotInviteMembersResult,
++    MarmotMemberKeyPackagePrewarmSummary, MarmotMemberRef, MarmotPendingWelcomeDeliveryList,
++    MarmotPreparedGroupImageUpload, MarmotPreparedGroupImageUploadList,
+ };
+ use crate::types::history_import::MarmotChatHistoryImportList;
+ use crate::types::history_notice::{MarmotAccountRecoveryStatus, MarmotHistoryNoticeList};
+@@ -1383,6 +1383,10 @@ c_cmd! {
+     /// about the whole group, never which members or devices hold it back.
+     async fn marmot_account_devices_activation(account_ref: str, group_id_hex: str) -> enum_ret(MarmotAccountDevicesActivation) = account_devices_activation;
+ 
++    /// Group eligibility and one reason per blocking member account. Only admins see blockers.
++    /// Free with marmot_account_devices_report_free.
++    async fn marmot_account_devices_report(account_ref: str, group_id_hex: str) -> rec(MarmotAccountDevicesReport) = account_devices_report;
++
+     /// Turn on account-devices in one admin Commit, only when the user asks;
+     /// it can never be turned off. Returns
+     /// `MARMOT_STATUS_ACCOUNT_DEVICES_ACTIVATION_REFUSED` unless
+diff --git a/crates/marmot-c/src/types/group.rs b/crates/marmot-c/src/types/group.rs
+--- a/crates/marmot-c/src/types/group.rs
++++ b/crates/marmot-c/src/types/group.rs
+@@ -15,9 +15,9 @@ use marmot_uniffi::conversions::{
+ // Group-creation option/image records live on the command module rather
+ // than `conversions`, because they are inputs, not projections.
+ use marmot_uniffi::{
+-    CreateGroupOptionsFfi, DirectConversationOptionsFfi, InitialGroupImageFfi,
+-    MemberKeyPackagePrewarmSummaryFfi, PreparedGroupImageUploadFfi,
+-    PreparedGroupImageUploadStateFfi,
++    AccountDevicesBlockerFfi, AccountDevicesReportFfi, CreateGroupOptionsFfi,
++    DirectConversationOptionsFfi, InitialGroupImageFfi, MemberKeyPackagePrewarmSummaryFfi,
++    PreparedGroupImageUploadFfi, PreparedGroupImageUploadStateFfi,
+ };
+ 
+ use super::account::MarmotSendSummary;
+@@ -226,6 +226,21 @@ c_enum! {
+     }
+ }
+ 
++c_mirror! {
++    MarmotAccountDevicesBlocker from AccountDevicesBlockerFfi {
++        str member_id_hex,
++        copy reason: MarmotAccountDevicesActivation,
++    }
++}
++
++c_mirror! {
++    MarmotAccountDevicesReport from AccountDevicesReportFfi,
++    free marmot_account_devices_report_free {
++        copy eligibility: MarmotAccountDevicesActivation,
++        vec blockers/blockers_len: MarmotAccountDevicesBlocker,
++    }
++}
++
+ c_enum! {
+     /// Marmot protocol profile the group runs.
+     MarmotAppProtocolProfile from AppProtocolProfileFfi {
+diff --git a/crates/marmot-session/src/runtime.rs b/crates/marmot-session/src/runtime.rs
+--- a/crates/marmot-session/src/runtime.rs
++++ b/crates/marmot-session/src/runtime.rs
+@@ -850,6 +850,16 @@ where
+         Ok(self.session.account_devices_activation_refusal(group_id)?)
+     }
+ 
++    pub fn read_devices_activation(
++        &self,
++        group_id: &GroupId,
++        blockers: &mut dyn FnMut(Vec<u8>, cgka_traits::error::AccountDevicesActivationRefusal),
++    ) -> AccountResult<Option<cgka_traits::error::AccountDevicesActivationRefusal>> {
++        Ok(self
++            .session
++            .read_devices_activation(group_id, blockers)?)
++    }
++
+     /// Why a same-account Add of `sibling` to `group_id` would be refused
+     /// now, or `None`, without spending its KeyPackage. The send repeats the
+     /// checks. See [`cgka_engine::engine::Engine::sibling_add_refusal`].
+diff --git a/crates/marmot-session/src/session.rs b/crates/marmot-session/src/session.rs
+--- a/crates/marmot-session/src/session.rs
++++ b/crates/marmot-session/src/session.rs
+@@ -2288,6 +2288,15 @@ impl AccountDeviceSession {
+         self.engine.account_devices_activation_refusal(group_id)
+     }
+ 
++    pub fn read_devices_activation(
++        &self,
++        group_id: &GroupId,
++        blockers: &mut dyn FnMut(Vec<u8>, AccountDevicesActivationRefusal),
++    ) -> Result<Option<AccountDevicesActivationRefusal>, EngineError> {
++        self.engine
++            .read_devices_activation(group_id, Some(blockers))
++    }
++
+     /// See [`cgka_engine::engine::Engine::sibling_add_refusal`].
+     pub fn sibling_add_refusal(
+         &self,
+diff --git a/crates/marmot-uniffi/src/commands/group.rs b/crates/marmot-uniffi/src/commands/group.rs
+--- a/crates/marmot-uniffi/src/commands/group.rs
++++ b/crates/marmot-uniffi/src/commands/group.rs
+@@ -22,6 +22,18 @@ use crate::conversions::{
+ };
+ use crate::errors::MarmotKitError;
+ 
++#[derive(Clone, uniffi::Record)]
++pub struct AccountDevicesBlockerFfi {
++    pub member_id_hex: String,
++    pub reason: AccountDevicesActivationFfi,
++}
++
++#[derive(Clone, uniffi::Record)]
++pub struct AccountDevicesReportFfi {
++    pub eligibility: AccountDevicesActivationFfi,
++    pub blockers: Vec<AccountDevicesBlockerFfi>,
++}
++
+ #[derive(Clone, uniffi::Record)]
+ pub struct InitialGroupImageFfi {
+     pub plaintext: Vec<u8>,
+@@ -809,6 +821,29 @@ impl Marmot {
+             .into())
+     }
+ 
++    /// Group eligibility and one reason per blocking member account. Only admins see blockers.
++    pub async fn account_devices_report(
++        &self,
++        account_ref: String,
++        group_id_hex: String,
++    ) -> Result<AccountDevicesReportFfi, MarmotKitError> {
++        let group_id = group_id_from_hex(&group_id_hex)?;
++        let (eligibility, blockers) = self
++            .runtime
++            .account_devices_report(&account_ref, &group_id)
++            .await?;
++        Ok(AccountDevicesReportFfi {
++            eligibility: eligibility.into(),
++            blockers: blockers
++                .into_iter()
++                .map(|(member_id_hex, reason)| AccountDevicesBlockerFfi {
++                    member_id_hex,
++                    reason: reason.into(),
++                })
++                .collect(),
++        })
++    }
++
+     /// Turn on account-devices in one admin Commit. Call it only when the user
+     /// asks; it can never be turned off. Refused with
+     /// `AccountDevicesActivationRefused` unless `account_devices_activation`
+diff --git a/crates/marmot-uniffi/src/commands/mod.rs b/crates/marmot-uniffi/src/commands/mod.rs
+--- a/crates/marmot-uniffi/src/commands/mod.rs
++++ b/crates/marmot-uniffi/src/commands/mod.rs
+@@ -37,9 +37,9 @@ mod telemetry;
+ mod timeline;
+ 
+ pub use group::{
+-    CreateGroupOptionsFfi, DirectConversationOptionsFfi, InitialGroupImageFfi,
+-    MemberKeyPackagePrewarmSummaryFfi, PreparedGroupImageUploadFfi,
+-    PreparedGroupImageUploadStateFfi,
++    AccountDevicesBlockerFfi, AccountDevicesReportFfi, CreateGroupOptionsFfi,
++    DirectConversationOptionsFfi, InitialGroupImageFfi, MemberKeyPackagePrewarmSummaryFfi,
++    PreparedGroupImageUploadFfi, PreparedGroupImageUploadStateFfi,
+ };
+ pub use media::parse_media_imeta_tag;
+ pub use nostr_verification::verify_public_nostr_event_json;
+diff --git a/crates/marmot-uniffi/src/lib.rs b/crates/marmot-uniffi/src/lib.rs
+--- a/crates/marmot-uniffi/src/lib.rs
++++ b/crates/marmot-uniffi/src/lib.rs
+@@ -86,11 +86,11 @@ pub enum RelayPolicyFfi {
+ }
+ 
+ pub use commands::{
+-    CreateGroupOptionsFfi, DirectConversationOptionsFfi, InitialGroupImageFfi,
+-    LocalSendAcceptanceFfi, LocalSendStatusFfi, MediaUploadSubmissionFfi,
+-    MemberKeyPackagePrewarmSummaryFfi, OnboardingSubscription, PreparedGroupImageUploadFfi,
+-    PreparedGroupImageUploadStateFfi, PublicEventPreviewFfi, PublicEventPreviewStateFfi,
+-    parse_media_imeta_tag, verify_public_nostr_event_json,
++    AccountDevicesBlockerFfi, AccountDevicesReportFfi, CreateGroupOptionsFfi,
++    DirectConversationOptionsFfi, InitialGroupImageFfi, LocalSendAcceptanceFfi, LocalSendStatusFfi,
++    MediaUploadSubmissionFfi, MemberKeyPackagePrewarmSummaryFfi, OnboardingSubscription,
++    PreparedGroupImageUploadFfi, PreparedGroupImageUploadStateFfi, PublicEventPreviewFfi,
++    PublicEventPreviewStateFfi, parse_media_imeta_tag, verify_public_nostr_event_json,
+ };
+ pub use conversions::{
+     AccountDevicesActivationFfi, AppBlobEndpointFfi, AppGroupEncryptedMediaComponentFfi,

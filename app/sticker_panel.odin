@@ -342,7 +342,7 @@ sticker_picker :: proc(ui: ^Ui_State) {
 @(private)
 sticker_send :: proc(ui: ^Ui_State, client: ^marmot.Client, item: Sticker_Item) {
 	if ui.selected < 0 || ui.editing != "" {return}
-	if new_send_paused(ui) {return}
+	if new_send_paused(ui) || thread_send_paused(ui) {return}
 	root := thread_cur(ui)
 	if item.ref.pack != "" && root != "" {return}
 	if item.ref.pack == "" {

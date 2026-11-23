@@ -61,7 +61,6 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	ui.tl_has_more = page.has_more_before
 	ui.tl_has_after = page.has_more_after
-	agent_collect(client, ui, page)
 
 	// Message textures are owned by the media_textures session cache
 	// now (shared across reloads), so rows never free them.
@@ -84,7 +83,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			inflight[p.body] += 1
 		}
 	}
-	// Thread replies fold into their root rows after the page is built.
+	// Thread replies fold into their parent rows after the page is built.
 	thread_counts := make(map[string]int, context.temp_allocator)
 
 	previous := make([]Msg_Ui, len(ui.messages), context.temp_allocator)
@@ -111,19 +110,9 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	for i in 0 ..< page.messages_len {
 		record := &page.messages[i]
 		plaintext := string(record.plaintext)
-		class := record_class(record.kind, plaintext)
-		// Modifiers act on other rows and agent state feeds the stream
-		// projection; neither renders as its own message.
-		if class == .Modifier || class == .Agent_State {
+		class := timeline_record_class(record, plaintext)
+		if class == .Modifier || class == .Hidden {
 			continue
-		}
-		stream_body: string
-		if class == .Agent_Stream {
-			visible: bool
-			stream_body, visible = agent_body(record)
-			if !visible {
-				continue
-			}
 		}
 
 		id_str := record.message_id_hex != nil ? string(record.message_id_hex) : ""
@@ -166,14 +155,15 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			subject := sys.subject_account_id_hex != nil ? string(sys.subject_account_id_hex) : ""
 			is_add := kind == "member_added" && len(subject) > 0
 			msg := Msg_Ui {
-				id       = strings.clone(id_str),
-				body     = strings.clone(system_text(client, sys)),
-				sys_text = strings.clone(system_text(client, sys, .Mentions)),
-				at       = format_when(record.timeline_at),
-				at_full  = format_full(record.timeline_at),
-				day      = format_day(record.timeline_at),
-				sort_at  = record.timeline_at,
-				system   = true,
+				id            = strings.clone(id_str),
+				body          = strings.clone(system_text(client, sys)),
+				sys_text      = strings.clone(system_text(client, sys, .Mentions)),
+				at            = format_when(record.timeline_at),
+				at_full       = format_full(record.timeline_at),
+				day           = format_day(record.timeline_at),
+				sort_at       = record.timeline_at,
+				system        = true,
+				read_markable = timeline_record_markable(record),
 			}
 			if is_add {
 				msg.sys_added_hex = strings.clone(subject)
@@ -247,6 +237,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 
 		// Other participants' deletions retain their placeholder row.
+		parent := record.thread != nil ? string(record.thread.parent_message_id_hex) : ""
 		if record.deleted {
 			append(
 				&ui.messages,
@@ -261,19 +252,17 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 					sort_at = record.timeline_at,
 					mine = mine,
 					deleted = true,
-					thread_of = strings.clone(first_event_ref(record)),
+					thread_of = strings.clone(parent),
+					read_markable = timeline_record_markable(record),
 				},
 			)
 			continue
 		}
 
-		// MDK has already applied an accepted edit to plaintext.
+		// MDK supplies the current plaintext for edits and agent item updates.
 		body := plaintext
 		if record.poll != nil {
 			body = string(record.poll.question)
-		}
-		if class == .Agent_Stream {
-			body = stream_body
 		}
 
 		// The local copy of an in-flight optimistic send: skip it, the
@@ -284,18 +273,19 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 
 		msg := Msg_Ui {
-			id        = strings.clone(id_str),
-			kind      = record.kind,
-			sender    = strings.clone(label),
-			sender_id = strings.clone(sender),
-			pic_url   = strings.clone(info.pic_url),
-			at        = format_when(record.timeline_at),
-			at_full   = format_full(record.timeline_at),
-			day       = format_day(record.timeline_at),
-			sort_at   = record.timeline_at,
-			mine      = mine,
-			delivery  = delivery,
-			origin    = message_origin_clone(origin),
+			id            = strings.clone(id_str),
+			kind          = record.kind,
+			sender        = strings.clone(label),
+			sender_id     = strings.clone(sender),
+			pic_url       = strings.clone(info.pic_url),
+			at            = format_when(record.timeline_at),
+			at_full       = format_full(record.timeline_at),
+			day           = format_day(record.timeline_at),
+			sort_at       = record.timeline_at,
+			mine          = mine,
+			read_markable = timeline_record_markable(record),
+			delivery      = delivery,
+			origin        = message_origin_clone(origin),
 		}
 		if class == .Unsupported {
 			msg.unsupported = true
@@ -310,21 +300,14 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		if record.poll != nil {
 			poll_project(client, &msg, record.poll)
 		}
-		// A kind-1111 thread message, or a poll created inside a
-		// thread, references its root as the first e tag and renders
-		// only in that thread's view.
-		if record.kind == KIND_THREAD || record.kind == KIND_POLL {
-			if root := first_event_ref(record); len(root) > 0 {
-				msg.thread_of = strings.clone(root)
-				thread_counts[msg.thread_of] += 1
-			}
+		if parent != "" {
+			msg.thread_of = strings.clone(parent)
+			thread_counts[parent] += 1
 		}
 		// A burst plays the first time its message is seen, not on every
 		// reload (effects.odin keeps the seen set).
 		burst_arrive(msg.id, msg.effect, mine)
-		// Edited bodies and poll questions arrive without parsed content
-		// tokens; run the text through marmot's markdown parser so they
-		// render like any other body.
+		// Parse visible text when MDK did not supply tokens for this body.
 		cover, secret := hidden_message(msg.body)
 		msg.secrets = secret_layers(client, secret)
 		if old, found := previous_ids[id_str]; found && previous[old].body == body {
@@ -335,7 +318,11 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 		if record.poll != nil ||
 		   secret != "" ||
-		   ((msg.edited || record.kind == KIND_POLL || record.kind == KIND_THREAD) &&
+		   (client != nil &&
+				   (msg.edited ||
+						   class == .Agent_Item ||
+						   record.kind == KIND_POLL ||
+						   record.kind == KIND_THREAD) &&
 				   record.content_tokens.blocks_len == 0 &&
 				   len(body) > 0) {
 			doc: ^marmot.Markdown_Document
@@ -357,7 +344,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			if secret != "" && len(msg.blocks) == 0 {
 				append(&msg.blocks, Md_Block_Ui{kind = .Para, text = strings.clone(cover)})
 			}
-		} else if class != .Agent_Stream && !msg.unsupported {
+		} else if !msg.unsupported {
 			convert_blocks(
 				&msg.blocks,
 				record.content_tokens.blocks,
@@ -411,19 +398,14 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			continue
 		}
 		tags := record.tags[:record.tags_len]
-		// The thread's e tag sets membership; only an explicit q tag quotes its parent.
-		quoted := false
-		for tag in tags {quoted ||= tag.values_len >= 2 && string(tag.values[0]) == "q"}
-		thread_parent :=
-			msg.thread_of != "" &&
-			string(record.reply_to_message_id_hex) == msg.thread_of &&
-			!quoted
-		if !thread_parent {
-			if record.reply_to_message_id_hex != nil {
-				msg.reply_id = strings.clone(string(record.reply_to_message_id_hex))
-			}
-			if record.reply_preview != nil {
-				preview := record.reply_preview
+		if target := timeline_quote_target(record, parent); target != "" {
+			msg.reply_id = strings.clone(target)
+			preview := record.reply_preview
+			if target !=
+			   string(record.reply_to_message_id_hex) {preview = record.body_quote_preview}
+			if reply_preview_visible(preview) &&
+			   string(preview.message_id_hex) == target &&
+			   !ui.hidden[target] {
 				reply_label := "?"
 				if preview.sender != nil {
 					reply_label = ui.nicknames[string(preview.sender)]
@@ -446,12 +428,9 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 						strings.clone(string(ref.plaintext_sha256)),
 					}
 				}
-			} else if record.reply_to_message_id_hex != nil {
-				// Parent outside the loaded window (or deleted): keep the
-				// reply frame with a plain note instead of dropping it.
+			} else {
 				msg.reply_text = strings.clone(tr("Original message unavailable"))
 			}
-
 		}
 
 		for j in 0 ..< record.media_len {
@@ -501,6 +480,18 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 
 	apply_pending_reacts(ui)
 	messages_rebind(ui)
+}
+
+@(private = "file")
+timeline_quote_target :: proc(record: ^marmot.Timeline_Message_Record, parent: string) -> string {
+	reply := string(record.reply_to_message_id_hex)
+	if record.kind != KIND_THREAD && (parent == "" || reply != parent) {return reply}
+	for tag in record.tags[:record.tags_len] {
+		if tag.values_len == 0 || string(tag.values[0]) != "q" {continue}
+		if record.kind == KIND_THREAD {return tag.values_len >= 2 ? string(tag.values[1]) : ""}
+		if tag.values_len >= 2 {return reply}
+	}
+	return ""
 }
 
 // Overlay the in-flight reactions onto the rows just built. An add

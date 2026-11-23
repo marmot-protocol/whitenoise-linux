@@ -57,17 +57,17 @@ Offline_Att :: struct {
 }
 
 Offline_Item :: struct {
-	sticker:     Sticker_Ref,
-	effect:      int,
-	account_ref: string,
-	group_id:    string,
-	sender:      string,
-	body:        string,
-	reply_to:    string,
-	thread:      string,
-	thread_kind: u64, // absent in older queues: unknown, resolved again on send
-	attempts:    int,
-	atts:        [dynamic]Offline_Att,
+	sticker:            Sticker_Ref,
+	effect:             int,
+	account_ref:        string,
+	group_id:           string,
+	sender:             string,
+	body:               string,
+	reply_to:           string,
+	thread:             string,
+	thread_unavailable: bool,
+	attempts:           int,
+	atts:               [dynamic]Offline_Att,
 }
 
 offline_path :: proc(allocator := context.temp_allocator) -> string {
@@ -95,6 +95,7 @@ pending_send_allowed :: proc(ui: ^Ui_State, p: Pending_Send) -> bool {
 	return(
 		!p.dismissed &&
 		!p.purged &&
+		!p.thread_unavailable &&
 		!account_departing(p.account_ref) &&
 		account_signed_in(ui, p.account_ref) \
 	)
@@ -126,16 +127,16 @@ save_offline :: proc(ui: ^Ui_State) {
 			continue
 		}
 		item := Offline_Item {
-			sticker     = p.sticker,
-			effect      = p.effect,
-			account_ref = p.account_ref,
-			group_id    = p.group_id,
-			sender      = p.sender,
-			body        = p.body,
-			reply_to    = p.reply_to,
-			thread      = p.thread,
-			thread_kind = p.thread_kind,
-			attempts    = p.attempts,
+			sticker            = p.sticker,
+			effect             = p.effect,
+			account_ref        = p.account_ref,
+			group_id           = p.group_id,
+			sender             = p.sender,
+			body               = p.body,
+			reply_to           = p.reply_to,
+			thread             = p.thread,
+			thread_unavailable = p.thread_unavailable,
+			attempts           = p.attempts,
 		}
 		item.atts = make([dynamic]Offline_Att, context.temp_allocator)
 		for a in p.atts {
@@ -193,18 +194,18 @@ load_offline :: proc(ui: ^Ui_State) {
 		}
 		send_ticket += 1
 		p := Pending_Send {
-			sticker     = item.sticker,
-			effect      = item.effect,
-			ticket      = send_ticket,
-			account_ref = item.account_ref,
-			group_id    = item.group_id, // unmarshal allocated; adopt
-			sender      = item.sender,
-			body        = item.body,
-			reply_to    = item.reply_to,
-			thread      = item.thread,
-			thread_kind = item.thread_kind,
-			attempts    = item.attempts,
-			queued      = !account_revoked(ui, item.account_ref),
+			sticker            = item.sticker,
+			effect             = item.effect,
+			ticket             = send_ticket,
+			account_ref        = item.account_ref,
+			group_id           = item.group_id, // unmarshal allocated; adopt
+			sender             = item.sender,
+			body               = item.body,
+			reply_to           = item.reply_to,
+			thread             = item.thread,
+			thread_unavailable = item.thread_unavailable,
+			attempts           = item.attempts,
+			queued             = !item.thread_unavailable && !account_revoked(ui, item.account_ref),
 		}
 		p.failed = !p.queued
 		for att in item.atts {

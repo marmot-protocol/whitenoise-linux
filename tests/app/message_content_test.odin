@@ -22,7 +22,8 @@ Fixture_Row :: struct {
 fixture_rows :: proc(
 	system: ^marmot.Group_System_Event,
 	edit: ^marmot.Timeline_Edit_Summary,
-) -> [14]Fixture_Row {
+	agent: ^marmot.Agent_Item,
+) -> [17]Fixture_Row {
 	return {
 		{
 			{
@@ -120,19 +121,43 @@ fixture_rows :: proc(
 			{
 				message_id_hex = "agent",
 				sender = "bob",
-				kind = AGENT_ACTIVITY,
-				plaintext = "agent payload",
+				kind = KIND_AGENT_ITEM,
+				plaintext = "Finished **checking** the files",
+				agent_item = agent,
 			},
-			.Agent_State,
+			.Agent_Item,
+		},
+		{
+			{message_id_hex = "stream", sender = "bob", kind = 1200, plaintext = "stream payload"},
+			.Hidden,
 		},
 		{
 			{
-				message_id_hex = "stream",
+				message_id_hex = "control",
 				sender = "bob",
-				kind = AGENT_STREAM_START,
-				plaintext = "stream payload",
+				kind = 1202,
+				plaintext = "control payload",
 			},
-			.Agent_Stream,
+			.Hidden,
+		},
+		{
+			{
+				message_id_hex = "unreadable",
+				sender = "bob",
+				kind = KIND_AGENT_ITEM,
+				plaintext = "unreadable payload",
+			},
+			.Hidden,
+		},
+		{
+			{
+				message_id_hex = "deleted-agent",
+				sender = "bob",
+				kind = KIND_AGENT_ITEM,
+				plaintext = "deleted payload",
+				deleted = true,
+			},
+			.Agent_Item,
 		},
 		{
 			{
@@ -159,8 +184,10 @@ fixture_rows :: proc(
 record_classes :: proc(t: ^testing.T) {
 	system: marmot.Group_System_Event
 	edit: marmot.Timeline_Edit_Summary
-	for row in fixture_rows(&system, &edit) {
-		class := record_class(row.record.kind, string(row.record.plaintext))
+	agent: marmot.Agent_Item
+	rows := fixture_rows(&system, &edit, &agent)
+	for &row in rows {
+		class := timeline_record_class(&row.record, string(row.record.plaintext))
 		testing.expectf(t, class == row.class, "%s: %v", row.record.message_id_hex, class)
 	}
 }
@@ -243,13 +270,17 @@ surfaces_read_effective_content :: proc(t: ^testing.T) {
 		edit_count = 2,
 		latest_id  = "edit-b",
 	}
-	rows := fixture_rows(&system, &edit)
+	agent := marmot.Agent_Item {
+		title = "Metadata-only title",
+		state = .Done,
+	}
+	rows := fixture_rows(&system, &edit, &agent)
 
 	// Search matches what the timeline shows. A system hit waits for its
 	// sentence, which must itself match.
 	for tc in ([]struct {
 			input, id, snippet: string,
-		}{{"second", "original", "second edit"}, {"**second", "", ""}, {"first edit", "", ""}, {"forged", "", ""}, {"renamed", "system", "Alice renamed the group to Ops"}, {"system_type", "", ""}, {"REPLY", "thread", "thread reply"}, {"location", "location", "Shared location"}, {"maps.google", "", ""}, {"payload", "", ""}}) {
+		}{{"second", "original", "second edit"}, {"**second", "", ""}, {"first edit", "", ""}, {"forged", "", ""}, {"renamed", "system", "Alice renamed the group to Ops"}, {"system_type", "", ""}, {"REPLY", "thread", "thread reply"}, {"location", "location", "Shared location"}, {"maps.google", "", ""}, {"checking", "agent", "Finished checking the files"}, {"Metadata-only", "", ""}, {"payload", "", ""}}) {
 		job := new(Search_Job)
 		job.client, job.input = client, strings.clone(tc.input)
 		job.hidden[strings.clone("hidden")] = true
@@ -310,7 +341,11 @@ surfaces_read_effective_content :: proc(t: ^testing.T) {
 		rows[0].record,
 		rows[5].record,
 		rows[9].record,
+		rows[10].record,
 		rows[11].record,
+		rows[12].record,
+		rows[13].record,
+		rows[14].record,
 	}
 	page = {
 		messages     = raw_data(window[:]),
@@ -334,4 +369,8 @@ surfaces_read_effective_content :: proc(t: ^testing.T) {
 	preview, system_page = chat_row_preview(client, &row, "self", nil, &page, .Worker)
 	testing.expect_value(t, preview, "Unsupported event")
 	testing.expect_value(t, system_page, nil)
+
+	last.deleted = true
+	preview, _ = chat_row_preview(client, &row, "self", nil, &page, .Worker)
+	testing.expect_value(t, preview, "")
 }

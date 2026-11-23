@@ -1252,6 +1252,7 @@ handle_geo_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("LocationSend") && ui.location_selected && client != nil {
+		if thread_send_paused(ui) {return}
 		body := fmt.tprintf(
 			"Location: https://maps.google.com/maps?q=%.6f,%.6f",
 			ui.location_pin.lat,

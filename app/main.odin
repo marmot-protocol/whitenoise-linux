@@ -976,7 +976,6 @@ app_main :: proc() {
 			search_drain(&ui, client)
 			people_search_drain(&ui, client)
 			media_drain(&ui)
-			agent_tick(&ui, tl_at_bottom ? .Follow : .Hold)
 			drain_sends(&ui, client)
 			stage_files_tick(&ui)
 			tts_tick(&ui)

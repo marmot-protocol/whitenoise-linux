@@ -372,6 +372,12 @@ msgstr "Ein Client für private Gruppenchats. Nachrichten werden auf diesem Ger�
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "Ein Desktop-Client für private Gruppenchats. Nachrichten werden auf diesem Rechner mit MLS versiegelt, als opake Blobs an Nostr-Relays übergeben und erst innerhalb der Gruppe wieder geöffnet."
 
+msgid "A device hasn't reported support."
+msgstr "Ein Gerät hat noch keine Unterstützung gemeldet."
+
+msgid "A device needs to be replaced."
+msgstr "Ein Gerät muss ersetzt werden."
+
 msgid "A display name is required."
 msgstr "Ein Anzeigename ist erforderlich."
 
@@ -999,6 +1005,9 @@ msgstr "Suche nach Updates."
 msgid "Checking relays..."
 msgstr "Relays werden geprüft..."
 
+msgid "Checking the original message…"
+msgstr "Die ursprüngliche Nachricht wird geprüft…"
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "Dein Schlüssel wird bei den Relays geprüft. Das dauert ein paar Sekunden."
 
@@ -1417,6 +1426,9 @@ msgstr "Das Passwort konnte nicht geändert werden. Bitte versuche es erneut."
 
 msgid "Couldn't check for updates. Please try again."
 msgstr "Nach Updates konnte nicht gesucht werden. Bitte versuche es erneut."
+
+msgid "Couldn't check the original message. Please try again."
+msgstr "Die ursprüngliche Nachricht konnte nicht geprüft werden. Bitte versuche es erneut."
 
 msgid "Couldn't check the translation model. Please try again."
 msgstr "Das Übersetzungsmodell konnte nicht überprüft werden. Bitte versuche es erneut."
@@ -3441,6 +3453,9 @@ msgstr "Medienmetadaten"
 
 msgid "Members"
 msgstr "Mitglieder"
+
+msgid "Members to check"
+msgstr "Mitglieder, bei denen etwas zu prüfen ist"
 
 msgid "Mentions"
 msgstr "Erwähnungen"
@@ -5693,6 +5708,9 @@ msgstr "Damit verlässt du White Noise, und der Link wird in deinem Browser geö
 #, c-format
 msgid "This leaves White Noise and opens the call in %s."
 msgstr "Damit verlässt du White Noise und öffnest den Anruf in %s."
+
+msgid "This member has too many devices in this chat."
+msgstr "Dieses Mitglied hat zu viele Geräte in diesem Chat."
 
 msgid "This message was deleted"
 msgstr "Diese Nachricht wurde gelöscht"

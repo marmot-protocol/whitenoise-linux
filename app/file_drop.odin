@@ -25,6 +25,7 @@ chat_drop_target :: proc(ui: ^Ui_State, position: rl.Vector2) -> bool {
 	   ui.row_menu >= 0 ||
 	   ui.folder_menu_open ||
 	   modal_open(ui) ||
+	   !thread_can_send(ui) ||
 	   blocked_peer(ui) != "" {
 		return false
 	}

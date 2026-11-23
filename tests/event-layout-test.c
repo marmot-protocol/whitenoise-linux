@@ -9,11 +9,10 @@ _Static_assert(MARMOT_EVENT_MESSAGE_RECEIVED == 2, "message received tag");
 _Static_assert(MARMOT_EVENT_PROJECTION_UPDATED == 3, "projection tag");
 _Static_assert(MARMOT_EVENT_GROUP_EVENT == 4, "group event tag");
 _Static_assert(MARMOT_EVENT_ACCOUNT_ERROR == 5, "account error tag");
-_Static_assert(MARMOT_EVENT_AGENT_STREAM_ACTIVITY == 6, "agent stream tag");
-_Static_assert(MARMOT_EVENT_WELCOME_DELIVERY_PENDING == 7, "welcome tag");
-_Static_assert(MARMOT_EVENT_EPOCH_STALL_ESCALATED == 8, "stall tag");
-_Static_assert(MARMOT_EVENT_GROUP_CHANGE_SUPERSEDED == 9, "superseded tag");
-_Static_assert(MARMOT_EVENT_HISTORY_NOTICES_CHANGED == 10, "history notices tag");
+_Static_assert(MARMOT_EVENT_WELCOME_DELIVERY_PENDING == 6, "welcome tag");
+_Static_assert(MARMOT_EVENT_EPOCH_STALL_ESCALATED == 7, "stall tag");
+_Static_assert(MARMOT_EVENT_GROUP_CHANGE_SUPERSEDED == 8, "superseded tag");
+_Static_assert(MARMOT_EVENT_HISTORY_NOTICES_CHANGED == 9, "history notices tag");
 _Static_assert(offsetof(MarmotEvent, GROUP_JOINED.account_id_hex) == 8, "body alignment");
 _Static_assert(offsetof(MarmotEvent, GROUP_JOINED.group_id_hex) == 24, "group prefix");
 _Static_assert(offsetof(MarmotEvent, GROUP_STATE_UPDATED.group_id_hex) == 24, "state prefix");
@@ -49,9 +48,19 @@ _Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.kind) =
                "rejection kind");
 _Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.detail) == 24,
                "rejection detail");
-_Static_assert(sizeof(MarmotTimelineMessageRecord) == 352, "timeline stride");
+_Static_assert(sizeof(MarmotTimelineMessageRecord) == 368, "timeline stride");
 _Static_assert(offsetof(MarmotTimelineMessageRecord, media) == 224, "timeline media");
 _Static_assert(offsetof(MarmotTimelineMessageRecord, poll) == 16, "timeline poll");
+_Static_assert(offsetof(MarmotTimelineMessageRecord, group_system) == 240, "timeline system row");
+_Static_assert(offsetof(MarmotTimelineMessageRecord, agent_item) == 248, "timeline agent item");
+_Static_assert(offsetof(MarmotTimelineMessageRecord, thread) == 352, "timeline thread reference");
+_Static_assert(offsetof(MarmotTimelineMessageRecord, body_quote_preview) == 360,
+               "timeline body quote preview");
+_Static_assert(sizeof(MarmotThreadReplyContext) == 40, "thread reply context");
+_Static_assert(offsetof(MarmotThreadReplyContext, root_kind) == 24, "thread reply root kind");
+_Static_assert(offsetof(MarmotThreadReplyContext, parent_kind) == 32, "thread reply parent kind");
+_Static_assert(sizeof(MarmotAgentItem) == 112, "agent item size");
+_Static_assert(offsetof(MarmotAgentItem, fields_json) == 56, "agent item fields");
 _Static_assert(sizeof(MarmotPollType) == 4, "poll type width");
 _Static_assert(MARMOT_POLL_TYPE_SINGLE_CHOICE == 0, "single-choice poll");
 _Static_assert(MARMOT_POLL_TYPE_MULTIPLE_CHOICE == 1, "multiple-choice poll");
@@ -62,8 +71,9 @@ _Static_assert(offsetof(MarmotPollProjection, participants) == 32, "poll partici
 _Static_assert(offsetof(MarmotPollProjection, local_selection) == 40, "poll selection");
 _Static_assert(offsetof(MarmotPollProjection, ends_at) == 72, "poll deadline");
 _Static_assert(offsetof(MarmotPollProjection, open) == 80, "poll voting state");
-_Static_assert(sizeof(MarmotTimelineReplyPreview) == 128, "reply preview stride");
+_Static_assert(sizeof(MarmotTimelineReplyPreview) == 136, "reply preview stride");
 _Static_assert(offsetof(MarmotTimelineReplyPreview, media) == 88, "reply preview media");
+_Static_assert(offsetof(MarmotTimelineReplyPreview, thread) == 120, "reply preview thread");
 
 _Static_assert(sizeof(MarmotChatListMessagePreview) == 160, "chat preview stride");
 _Static_assert(offsetof(MarmotPresentedChatRow, draft_version) == 0, "borrowed draft version");
@@ -95,14 +105,14 @@ _Static_assert(offsetof(MarmotAuditOtlpConfigV5, allow_loopback_dev) == 32, "aud
     ABI_OFFSET(Event, body.account_id_hex, 8);                                                     \
     ABI_OFFSET(Event, body.account_label, 16)
 
-ACCOUNT_EVENT(LINKED_DEVICES_CHANGED, LINKED_DEVICES_CHANGED, 11);
-ACCOUNT_EVENT(KEY_PACKAGE_REFRESH_OVERDUE_CHANGED, KEY_PACKAGE_REFRESH_OVERDUE_CHANGED, 12);
-ACCOUNT_EVENT(UNRECOGNIZED_SIGN_INS_CHANGED, UNRECOGNIZED_SIGN_INS_CHANGED, 13);
-ACCOUNT_EVENT(COMPROMISE_WARNING_CHANGED, COMPROMISE_WARNING_CHANGED, 14);
-ACCOUNT_EVENT(DEVICE_LINK_CHANGED, DEVICE_LINK_CHANGED, 15);
-ACCOUNT_EVENT(RECOVERY_STATUS_CHANGED, RECOVERY_STATUS_CHANGED, 16);
-ACCOUNT_EVENT(DEVICE_UNLINKED, DEVICE_UNLINKED, 17);
-ACCOUNT_EVENT(CHAT_HISTORY_IMPORTS_CHANGED, CHAT_HISTORY_IMPORTS_CHANGED, 18);
+ACCOUNT_EVENT(LINKED_DEVICES_CHANGED, LINKED_DEVICES_CHANGED, 10);
+ACCOUNT_EVENT(KEY_PACKAGE_REFRESH_OVERDUE_CHANGED, KEY_PACKAGE_REFRESH_OVERDUE_CHANGED, 11);
+ACCOUNT_EVENT(UNRECOGNIZED_SIGN_INS_CHANGED, UNRECOGNIZED_SIGN_INS_CHANGED, 12);
+ACCOUNT_EVENT(COMPROMISE_WARNING_CHANGED, COMPROMISE_WARNING_CHANGED, 13);
+ACCOUNT_EVENT(DEVICE_LINK_CHANGED, DEVICE_LINK_CHANGED, 14);
+ACCOUNT_EVENT(RECOVERY_STATUS_CHANGED, RECOVERY_STATUS_CHANGED, 15);
+ACCOUNT_EVENT(DEVICE_UNLINKED, DEVICE_UNLINKED, 16);
+ACCOUNT_EVENT(CHAT_HISTORY_IMPORTS_CHANGED, CHAT_HISTORY_IMPORTS_CHANGED, 17);
 
 ABI_SIZE(AccountSummary, 24);
 ABI_OFFSET(AccountSummary, signed_out, 18);

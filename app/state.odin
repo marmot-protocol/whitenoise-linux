@@ -240,28 +240,29 @@ MONO_CANDIDATES := []cstring {
 }
 
 Chat_Row_Ui :: struct {
-	group_id:          string, // group_id_hex, the chat's stable key
-	conversation_kind: marmot.Chat_Conversation_Kind, // resolved at snapshot adoption, never inferred from title
-	peer_hex:          string, // accepted DM counterparty; owned independently of avatar selection
-	title:             string,
-	preview:           string,
-	at:                string, // last activity: clock today, "Yesterday", else the date
-	activity_at:       u64, // activity_sort_at, so `at` can be reformatted
-	unread:            u64,
-	archived:          bool,
-	pending:           bool, // invite awaiting accept/decline
-	stable:            bool, // MLS lifecycle stable (session established)
-	tick:              marmot.Delivery_State,
-	first_unread:      string, // first unread message id, "" = none
-	avatar_url:        string, // chat picture URL, "" = none
-	avatar_key:        string, // peer public key for a DM, otherwise group id
-	image_hash:        string, // encrypted-Blossom avatar hash, "" = none
-	muted:             bool, // marmot's per-chat mute, suppresses notifications
-	last_id:           string, // latest message id, "" = none (notification dedupe)
-	last_kind:         u64, // latest message's event kind
-	last_mine:         bool, // latest message is an own send
-	last_blocked:      bool, // latest message is from someone you blocked (no preview, no alert)
-	search_only:       bool, // archived search destination, hidden from the active rail
+	group_id:            string, // group_id_hex, the chat's stable key
+	conversation_kind:   marmot.Chat_Conversation_Kind, // resolved at snapshot adoption, never inferred from title
+	group_read_activity: bool, // native chat-list eligibility for membership/admin rows
+	peer_hex:            string, // accepted DM counterparty; owned independently of avatar selection
+	title:               string,
+	preview:             string,
+	at:                  string, // last activity: clock today, "Yesterday", else the date
+	activity_at:         u64, // activity_sort_at, so `at` can be reformatted
+	unread:              u64,
+	archived:            bool,
+	pending:             bool, // invite awaiting accept/decline
+	stable:              bool, // MLS lifecycle stable (session established)
+	tick:                marmot.Delivery_State,
+	first_unread:        string, // first unread message id, "" = none
+	avatar_url:          string, // chat picture URL, "" = none
+	avatar_key:          string, // peer public key for a DM, otherwise group id
+	image_hash:          string, // encrypted-Blossom avatar hash, "" = none
+	muted:               bool, // marmot's per-chat mute, suppresses notifications
+	last_id:             string, // latest message id, "" = none (notification dedupe)
+	last_kind:           u64, // latest message's event kind
+	last_mine:           bool, // latest message is an own send
+	last_blocked:        bool, // latest message is from someone you blocked (no preview, no alert)
+	search_only:         bool, // archived search destination, hidden from the active rail
 }
 
 // One picked-but-unsent attachment, shown as a chip above the composer.
@@ -478,6 +479,7 @@ Msg_Ui :: struct {
 	day:                 string, // "Today" or the date, for day markers
 	sort_at:             u64, // record timeline_at, the render order key
 	mls_order:           int, // position in the marmot page, the read cursor's order
+	read_markable:       bool, // row qualifies by kind and tags; system rows also need a group
 	mine:                bool,
 	delivery:            marmot.Delivery_State, // local projection versus published relay event
 	origin:              Message_Origin,
@@ -496,14 +498,14 @@ Msg_Ui :: struct {
 	poll_multi:          bool,
 	poll_total:          u64, // authenticated participants, including votes outside this page
 	poll_open:           bool, // MDK's projected voting state
-	thread_of:           string, // kind-1111: root message id; "" = main timeline
+	thread_of:           string, // direct parent id; "" = main timeline
 	thread_replies:      int, // thread messages under this root
 }
 
 // Native polls are projected by MDK; thread messages are NIP-22 comments.
 KIND_POLL :: 1068
 KIND_POLL_VOTE :: 1018
-KIND_THREAD :: 1111 // thread message: ["e", root], ["k", root kind], text in content
+KIND_THREAD :: 1111
 KIND_DELETE :: 5
 KIND_REACTION :: 7
 KIND_VIDEO :: 21
@@ -761,6 +763,8 @@ Ui_State :: struct {
 	theme_last:                          string, // last previewed toml, so a still frame reparses nothing
 	theme_base:                          string, // toml as the editor opened, so Cancel knows if anything changed
 	thread_stack:                        [dynamic]string, // open thread route, last = current root
+	thread_placement:                    Thread_Placement,
+	thread_placement_revision:           u64,
 	gs_open:                             bool, // global cross-chat search modal
 	gs_input:                            [dynamic]u8, // its query box
 	gs_hits:                             [dynamic]Gs_Hit, // its result cards

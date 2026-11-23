@@ -38,6 +38,7 @@ Activation_Read :: struct {
 	revision:       u64,
 	status:         marmot.Status,
 	eligibility:    marmot.Account_Devices_Activation,
+	report:         ^marmot.Account_Devices_Report,
 	ticket:         int,
 	failures:       map[string]bool,
 }
@@ -48,6 +49,7 @@ Chat_Activation :: struct {
 	revision:                     u64,
 	known, dirty, reread_refusal: bool,
 	eligibility:                  marmot.Account_Devices_Activation,
+	report:                       ^marmot.Account_Devices_Report,
 	notice:                       string, // gettext msgid
 	advisory:                     Activation_Advisory,
 	acknowledged:                 bit_set[Activation_Advisory],
@@ -72,6 +74,7 @@ activation_reset :: proc(ui: ^Ui_State) {
 	a := &ui.activation
 	activation_key_free(a.key)
 	a.key = {}
+	if a.report != nil {marmot.account_devices_report_free(a.report); a.report = nil}
 	sync.atomic_add(&activation_epoch, 1)
 	a.revision = sync.atomic_load(&activation_epoch)
 	a.known, a.dirty, a.reread_refusal = false, false, false
@@ -260,12 +263,14 @@ activation_apply_read :: proc(ui: ^Ui_State, work: ^Activation_Read) {
 	a := &ui.activation
 	key := Activation_Key{string(work.account), string(work.group)}
 	if a.revision != work.revision || a.key != key || activation_key(ui) != key {return}
+	if a.report != nil {marmot.account_devices_report_free(a.report); a.report = nil}
 	a.known = work.status == .OK
 	if !a.known {
 		a.reread_refusal = false
 		return
 	}
 	a.eligibility = work.eligibility
+	a.report, work.report = work.report, nil
 	if pending, found := &a.pending[key]; found && pending.settling {
 		if work.eligibility == .ALREADY_ENABLED {
 			activation_remove(a, key)
@@ -317,13 +322,16 @@ activation_read_worker :: proc(t: ^thread.Thread) {
 		work.eligibility = .ALREADY_ENABLED
 		return
 	}
-	work.status = marmot.account_devices_activation(
+	work.status = marmot.account_devices_report(
 		work.client,
 		work.account,
 		work.group,
-		&work.eligibility,
+		&work.report,
 	)
-	if work.status == .OK && work.eligibility != .ALREADY_ENABLED && work.ticket != 0 {
+	if work.status != .OK {return}
+	if work.report == nil {work.status = .RUNTIME; return}
+	work.eligibility = work.report.eligibility
+	if work.eligibility != .ALREADY_ENABLED && work.ticket != 0 {
 		work.status = activation_failures(work.client, work.account, work.group, &work.failures)
 	}
 }
@@ -334,6 +342,7 @@ activation_read_free :: proc(work: ^Activation_Read) {
 	thread.destroy(work.worker)
 	delete(work.account)
 	delete(work.group)
+	if work.report != nil {marmot.account_devices_report_free(work.report)}
 	activation_free_failures(work.failures)
 	free(work)
 }
@@ -377,13 +386,42 @@ activation_stop :: proc(ui: ^Ui_State) {
 	a.pending = nil
 }
 
+@(private = "file")
+activation_members :: proc(ui: ^Ui_State, report: ^marmot.Account_Devices_Report) {
+	if report == nil || report.blockers_len == 0 {return}
+	nendo.text(tr("Members to check"), {font = FONT_TITLE, size = 13, color = TEXT})
+	for blocker in report.blockers[:report.blockers_len] {
+		id := string(blocker.member_id_hex)
+		reason: string
+		#partial switch blocker.reason {
+		case .MEMBERS_NEED_UPDATE:
+			reason = tr("A device hasn't reported support.")
+		case .DEVICES_NEED_REPLACEMENT:
+			reason = tr("A device needs to be replaced.")
+		case .DEVICE_LIMIT_EXCEEDED:
+			reason = tr("This member has too many devices in this chat.")
+		case:
+			continue
+		}
+		if nendo.box(nendo.id_local(id))(
+		{width = nendo.grow(), gap = 8, padding = nendo.pad(8), color = ROW_BG, radius = rr(8)},
+		) {
+			row_labels(id == ui.account_ref ? tr("You") : dm_title(g_client, id), reason)
+			nendo.text(id[:min(len(id), 8)], {font = FONT_MONO, size = 10, color = TEXT_DIM})
+		}
+	}
+}
+
 @(private)
 activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
 	a := &ui.activation
 	if a.key.group == "" || a.key != activation_key(ui) {return}
 	pending, active := a.pending[a.key]
-	ready := a.known && a.eligibility == .ELIGIBLE && a.advisory == .None
-	enabled := a.known && a.eligibility == .ALREADY_ENABLED
+	checking := a.dirty || a.read != nil
+	// Blocker details are admin-only. A roster change can revoke access.
+	known := a.known && !(a.report != nil && checking)
+	ready := known && a.eligibility == .ELIGIBLE && a.advisory == .None
+	enabled := known && a.eligibility == .ALREADY_ENABLED
 	if nendo.box(nendo.id("InfoLinkedDevices"))(card) {
 		if nendo.box(nendo.id_local("Header"))(
 		{width = nendo.grow(), gap = 10, align = {y = .Center}},
@@ -398,7 +436,7 @@ activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
 			)
 		}
 		if active {
-			if !pending.settling || a.dirty || a.read != nil {
+			if !pending.settling || checking {
 				label :=
 					pending.settling ? tr("Checking whether linked devices are on…") : tr("Turning on linked devices…")
 				nendo.text(label, {font = FONT_BODY, size = 13, color = TEXT_DIM})
@@ -411,8 +449,8 @@ activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
 			}
 			return
 		}
-		if !a.known {
-			if a.dirty || a.read != nil {
+		if !known {
+			if checking {
 				nendo.text(
 					tr("Checking whether this chat supports linked devices…"),
 					{font = FONT_BODY, size = 13, color = TEXT_DIM},
@@ -440,5 +478,6 @@ activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
 		if ready {
 			settings_button("EnableAccountDevices", tr("Turn on linked devices"), ACCENT)
 		}
+		activation_members(ui, a.report)
 	}
 }

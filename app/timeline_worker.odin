@@ -15,6 +15,16 @@ Timeline_Direction :: enum {
 	Newer,
 }
 @(private)
+Timeline_Thread_Request :: struct {
+	revision: u64,
+	parent:   cstring, // owned by the mailbox, then by the worker
+}
+@(private)
+Timeline_Thread_Result :: struct {
+	revision: u64,
+	state:    Thread_Placement,
+}
+@(private)
 Timeline_Work :: struct {
 	mutex:                  sync.Mutex,
 	worker:                 ^thread.Thread,
@@ -27,9 +37,12 @@ Timeline_Work :: struct {
 	paged:                  bool,
 	at:                     time.Tick,
 	read_request:           cstring,
-	read_latest:            string, // UI-thread deduplication, newest MLS order seen
+	read_latest:            string, // UI-thread deduplication, newest eligible id queued
 	read_row:               ^marmot.Chat_List_Row,
 	read_error:             string,
+	thread_request:         Timeline_Thread_Request,
+	thread_result:          Timeline_Thread_Result,
+	closed:                 bool,
 }
 @(private)
 timeline_job: ^Timeline_Work
@@ -39,14 +52,60 @@ timeline_retired: [dynamic]^Timeline_Work
 timeline_page: ^marmot.Timeline_Page // UI-owned; local actions can re-project it
 
 @(private)
-timeline_scope :: proc(ui: ^Ui_State, search: string) -> bool {
+timeline_group_scope :: proc(ui: ^Ui_State, job: ^Timeline_Work) -> bool {
 	return(
-		timeline_job != nil &&
+		job != nil &&
 		ui.selected >= 0 &&
-		string(timeline_job.account) == ui.account_ref &&
-		string(timeline_job.group) == ui.chats[ui.selected].group_id &&
-		string(timeline_job.search) == search \
+		ui.selected < len(ui.chats) &&
+		string(job.account) == ui.account_ref &&
+		string(job.group) == ui.chats[ui.selected].group_id \
 	)
+}
+
+@(private)
+timeline_scope :: proc(ui: ^Ui_State, search: string) -> bool {
+	return timeline_group_scope(ui, timeline_job) && string(timeline_job.search) == search
+}
+
+@(private)
+thread_check_placement :: proc(ui: ^Ui_State) -> bool {
+	ui.thread_placement_revision += 1
+	ui.thread_placement = .Checking
+	job := timeline_job
+	if !timeline_group_scope(ui, job) {return false}
+	sync.lock(&job.mutex)
+	defer sync.unlock(&job.mutex)
+	if job.closed {
+		ui.thread_placement = .Error
+		return false
+	}
+	parent := thread_cur(ui)
+	delete(job.thread_request.parent)
+	job.thread_request = {
+		revision = ui.thread_placement_revision,
+		parent   = parent == "" ? nil : strings.clone_to_cstring(parent),
+	}
+	return true
+}
+
+@(private)
+timeline_check_thread :: proc(job: ^Timeline_Work, parent: cstring) -> Thread_Placement {
+	available: u8
+	status := marmot.thread_reply_context(
+		job.client,
+		job.account,
+		job.group,
+		parent,
+		&available,
+		nil,
+	)
+	if status != .OK {
+		detail := marmot.last_error()
+		fmt.eprintfln("thread placement: %v %s", status, detail)
+		delete(detail)
+		return .Error
+	}
+	return available != 0 ? .Ready : .Unavailable
 }
 
 @(private)
@@ -64,7 +123,11 @@ timeline_worker :: proc(t: ^thread.Thread) {
 	}
 	local_timing_end(.timeline_open, open_start)
 	direction := Timeline_Direction.None
+	placement: Timeline_Thread_Request
+	defer delete(placement.parent)
 	for {
+		// A live update can affect placement even if none of its rows are in the window.
+		refresh_placement := status == .OK && page != nil && direction == .None
 		if status == .OK && page != nil && string(job.search) != "" {
 			marmot.timeline_page_free(page)
 			page = nil
@@ -77,6 +140,16 @@ timeline_worker :: proc(t: ^thread.Thread) {
 			status = marmot.timeline_messages(job.client, job.account, &query, &page)
 		}
 		sync.lock(&job.mutex)
+		cancel := job.cancel
+		job.closed = cancel || (status != .OK && status != .TIMEOUT)
+		if job.thread_request.revision != 0 {
+			delete(placement.parent)
+			placement = job.thread_request
+			job.thread_request = {}
+			refresh_placement = true
+		}
+		check_placement := refresh_placement && placement.parent != nil && !job.closed
+		if check_placement {job.thread_result = {placement.revision, .Checking}}
 		if status == .OK && page != nil {
 			if job.page != nil {marmot.timeline_page_free(job.page)}
 			job.page = page
@@ -89,13 +162,19 @@ timeline_worker :: proc(t: ^thread.Thread) {
 			job.err = marmot.last_error()
 			if job.err == "" {job.err = strings.clone(N_("Timeline subscription closed."))}
 		}
-		cancel := job.cancel
 		direction = job.request
 		job.request = .None
 		read_request := job.read_request
 		job.read_request = nil
 		sync.unlock(&job.mutex)
-		if status != .TIMEOUT {frame_wake()}
+		if status != .TIMEOUT || check_placement {frame_wake()}
+		if check_placement {
+			state := timeline_check_thread(job, placement.parent)
+			sync.lock(&job.mutex)
+			job.thread_result = {placement.revision, state}
+			sync.unlock(&job.mutex)
+			frame_wake()
+		}
 		if read_request != nil {
 			row: ^marmot.Chat_List_Row
 			read_status := marmot.mark_timeline_message_read(
@@ -170,6 +249,7 @@ timeline_start :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string) {
 	job.worker = thread.create(timeline_worker)
 	job.worker.data = job
 	timeline_job = job
+	if thread_cur(ui) != "" {thread_check_placement(ui)}
 	thread.start(job.worker)
 }
 
@@ -197,6 +277,7 @@ timeline_free :: proc(job: ^Timeline_Work) {
 	if job.page != nil {marmot.timeline_page_free(job.page)}
 	delete(job.account); delete(job.group); delete(job.search); delete(job.err)
 	delete(job.read_request); delete(job.read_latest); delete(job.read_error)
+	delete(job.thread_request.parent)
 	if job.read_row != nil {marmot.chat_list_row_free(job.read_row)}
 	free(job)
 }
@@ -206,21 +287,22 @@ timeline_free :: proc(job: ^Timeline_Work) {
 @(private)
 timeline_mark_read :: proc(ui: ^Ui_State) {
 	job := timeline_job
-	if job == nil ||
-	   !timeline_scope(ui, "") ||
-	   ui.timeline_loading ||
-	   ui.tl_has_after ||
-	   len(ui.messages) == 0 {return}
-	last := len(ui.messages) - 1
-	for msg, i in ui.messages {
-		if msg.mls_order > ui.messages[last].mls_order {last = i}
+	if job == nil || !timeline_scope(ui, "") || ui.timeline_loading || ui.tl_has_after {return}
+	chat := &ui.chats[ui.selected]
+	last := -1
+	for &msg, i in ui.messages {
+		if msg.read_markable &&
+		   (!msg.system || chat.group_read_activity) &&
+		   msg.id != "" &&
+		   (last < 0 || msg.mls_order > ui.messages[last].mls_order) {last = i}
 	}
+	if last < 0 {return}
 	id := ui.messages[last].id
 	if id == job.read_latest {return}
 	delete(job.read_latest)
 	job.read_latest = strings.clone(id)
-	if ui.chats[ui.selected].group_id in ui.prefs.unread_ids {
-		delete_key(&ui.prefs.unread_ids, ui.chats[ui.selected].group_id)
+	if chat.group_id in ui.prefs.unread_ids {
+		delete_key(&ui.prefs.unread_ids, chat.group_id)
 		ui.settings_dirty = true
 	}
 	sync.lock(&job.mutex)
@@ -254,7 +336,16 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	job.page, job.err, job.paged = nil, "", false
 	read_row, read_error := job.read_row, job.read_error
 	job.read_row, job.read_error = nil, ""
+	placement, closed := job.thread_result, job.closed
+	job.thread_result = {}
 	sync.unlock(&job.mutex)
+	if thread_cur(ui) != "" {
+		if closed {
+			ui.thread_placement = .Error
+		} else if placement.revision != 0 && placement.revision == ui.thread_placement_revision {
+			ui.thread_placement = placement.state
+		}
+	}
 	if read_row != nil {
 		chat := &ui.chats[ui.selected]
 		// A newer rail event may already have arrived while this write ran.

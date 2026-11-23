@@ -248,12 +248,11 @@ Runtime_Event_Tag :: enum i32 {
 	Projection_Updated,
 	Group_Event,
 	Account_Error,
-	Agent_Stream_Activity,
 	Welcome_Delivery_Pending,
 	Epoch_Stall_Escalated,
 	Group_Change_Superseded,
 	History_Notices_Changed,
-	Linked_Devices_Changed = 11,
+	Linked_Devices_Changed = 10,
 	Key_Package_Refresh_Overdue_Changed,
 	Unrecognized_Sign_Ins_Changed,
 	Compromise_Warning_Changed,
@@ -286,40 +285,6 @@ Runtime_Event :: struct {
 #assert(offset_of(Runtime_Event, body) == 8)
 #assert(offset_of(Account_Event_Prefix, account) == 0)
 #assert(offset_of(Account_Event_Prefix, label) == 8)
-
-Agent_Stream_Subscription :: struct {}
-Agent_Stream_Update :: struct {
-	tag:  enum i32 {
-		CHUNK,
-		STATUS,
-		PROGRESS,
-		RECORD,
-		FINISHED,
-		FAILED,
-	},
-	data: struct #raw_union {
-		chunk:    struct {
-			seq:  u64,
-			text: cstring,
-		},
-		record:   struct {
-			seq:         u64,
-			record_type: enum u8 {
-				CHECKPOINT   = 4,
-				ABORT        = 5,
-				FINAL_NOTICE = 6,
-			},
-			text:        cstring,
-		},
-		finished: struct {
-			text, transcript_hash_hex: cstring,
-			chunk_count:               u64,
-		},
-		failed:   struct {
-			message: cstring,
-		},
-	},
-}
 
 Self_Membership :: enum i32 {
 	MEMBER,
@@ -1007,24 +972,43 @@ User_Search_Update :: struct {
 
 #assert(size_of(User_Search_Update) == 56)
 
-Timeline_Reply_Preview :: struct {
-	message_id_hex:         cstring,
-	sender:                 cstring,
-	plaintext:              cstring,
-	content_tokens:         Markdown_Document,
-	kind:                   u64,
-	sticker:                ^Sticker_Ref,
-	media_json:             cstring,
-	media:                  [^]Media_Attachment_Outcome,
-	media_len:              uint,
-	agent_text_stream_json: cstring,
-	deleted:                bool,
-	deletion_source:        i32,
-	invalidation_status:    cstring,
+Timeline_Thread_Ref :: struct {
+	root_message_id_hex:   cstring,
+	parent_message_id_hex: cstring,
 }
 
-#assert(size_of(Timeline_Reply_Preview) == 128)
+Thread_Reply_Context :: struct {
+	root_message_id_hex: cstring,
+	root_author:         cstring,
+	parent_author:       cstring,
+	root_kind:           u64,
+	parent_kind:         u64,
+}
+
+#assert(size_of(Thread_Reply_Context) == 40)
+#assert(offset_of(Thread_Reply_Context, root_kind) == 24)
+#assert(offset_of(Thread_Reply_Context, parent_kind) == 32)
+
+Timeline_Reply_Preview :: struct {
+	message_id_hex:          cstring,
+	sender:                  cstring,
+	plaintext:               cstring,
+	content_tokens:          Markdown_Document,
+	kind:                    u64,
+	sticker:                 ^Sticker_Ref,
+	media_json:              cstring,
+	media:                   [^]Media_Attachment_Outcome,
+	media_len:               uint,
+	deleted:                 bool,
+	deletion_source:         i32,
+	invalidation_status:     cstring,
+	thread:                  ^Timeline_Thread_Ref,
+	reply_to_message_id_hex: cstring,
+}
+
+#assert(size_of(Timeline_Reply_Preview) == 136)
 #assert(offset_of(Timeline_Reply_Preview, media) == 88)
+#assert(offset_of(Timeline_Reply_Preview, thread) == 120)
 
 Timeline_Reaction_Emoji :: struct {
 	emoji:       cstring,
@@ -1129,6 +1113,30 @@ Poll_Projection :: struct {
 	open:                bool,
 }
 
+Agent_Item :: struct {
+	version:                   u64,
+	state:                     enum i32 {
+		Running,
+		Waiting,
+		Done,
+		Failed,
+		Declined,
+		Cancelled,
+	},
+	title:                     cstring,
+	harness:                   cstring,
+	item_id:                   cstring,
+	seq:                       u64,
+	item_type:                 cstring,
+	fields_json:               cstring,
+	session:                   cstring,
+	turn:                      cstring,
+	started_by_message_id_hex: cstring,
+	settles:                   [^]cstring,
+	settles_len:               uint,
+	alerts:                    bool,
+}
+
 // Full mirror of MarmotTimelineMessageRecord: records are indexed by
 // value out of Timeline_Page, so the stride must match C exactly.
 Timeline_Message_Record :: struct {
@@ -1158,8 +1166,8 @@ Timeline_Message_Record :: struct {
 	media_json:                cstring,
 	media:                     [^]Media_Attachment_Outcome,
 	media_len:                 uint,
-	agent_text_stream_json:    cstring,
 	group_system:              ^Group_System_Event, // kind-1210 only, else nil
+	agent_item:                ^Agent_Item,
 	reactions:                 Timeline_Reaction_Summary,
 	edit:                      ^Timeline_Edit_Summary,
 	deleted:                   bool,
@@ -1170,6 +1178,8 @@ Timeline_Message_Record :: struct {
 	client_token:              cstring,
 	imported_from:             ^History_Import_Source,
 	history_import_provenance: ^History_Import_Provenance,
+	thread:                    ^Timeline_Thread_Ref,
+	body_quote_preview:        ^Timeline_Reply_Preview, // distinct kind-1111 q target
 }
 
 Media_Locator :: struct {
@@ -1289,8 +1299,14 @@ Timeline_Page :: struct {
 // Layout guards: sizes taken from sizeof() under gcc against the
 // vendored marmot.h (x86_64). A mismatch means a mirror drifted from
 // the C layout; fix the struct, then update the constant.
-#assert(size_of(Timeline_Message_Record) == 352)
+#assert(size_of(Timeline_Message_Record) == 368)
 #assert(offset_of(Timeline_Message_Record, poll) == 16)
+#assert(offset_of(Timeline_Message_Record, group_system) == 240)
+#assert(offset_of(Timeline_Message_Record, agent_item) == 248)
+#assert(offset_of(Timeline_Message_Record, thread) == 352)
+#assert(offset_of(Timeline_Message_Record, body_quote_preview) == 360)
+#assert(size_of(Agent_Item) == 112)
+#assert(offset_of(Agent_Item, fields_json) == 56)
 #assert(size_of(Poll_Type) == 4)
 #assert(size_of(Poll_Option_Result) == 24)
 #assert(size_of(Poll_Projection) == 88)
@@ -1704,6 +1720,20 @@ Account_Devices_Activation :: enum i32 {
 	DEVICE_LIMIT_EXCEEDED,
 }
 
+Account_Devices_Blocker :: struct {
+	member_id_hex: cstring,
+	reason:        Account_Devices_Activation,
+}
+
+Account_Devices_Report :: struct {
+	eligibility:  Account_Devices_Activation,
+	blockers:     [^]Account_Devices_Blocker,
+	blockers_len: uint,
+}
+
+#assert(size_of(Account_Devices_Blocker) == 16)
+#assert(size_of(Account_Devices_Report) == 24)
+
 Group_Change_Not_Delivered :: struct {
 	group_id_hex, commit_id_hex, queued_intent_id_hex, intent_kind, reason: cstring,
 	at:                                                                     u64,
@@ -1875,6 +1905,8 @@ foreign lib {
 	chat_history_import_list_free :: proc(list: ^Chat_History_Import_List) ---
 
 	account_devices_activation :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^Account_Devices_Activation) -> Status ---
+	account_devices_report :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^^Account_Devices_Report) -> Status ---
+	account_devices_report_free :: proc(ptr: ^Account_Devices_Report) ---
 	enable_account_devices :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^^Group_Mutation_Result) -> Status ---
 	group_mutation_result_free :: proc(ptr: ^Group_Mutation_Result) ---
 	acknowledge_group_commit_undelivered :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^bool) -> Status ---
@@ -1996,13 +2028,6 @@ foreign lib {
 	events_subscription_free :: proc(sub: ^Events_Subscription) ---
 	event_free :: proc(event: ^Runtime_Event) ---
 
-	watch_agent_text_stream :: proc(client: ^Client, account_ref, group_id_hex, stream_id_hex: cstring, server_cert_der: [^]u8, server_cert_der_len: uint, insecure_local: u8, out_sub: ^^Agent_Stream_Subscription) -> Status ---
-	@(link_name = "marmot_agent_stream_subscription_next")
-	agent_stream_next :: proc(sub: ^Agent_Stream_Subscription, timeout_ms: u32, out: ^^Agent_Stream_Update) -> Status ---
-	@(link_name = "marmot_agent_stream_subscription_free")
-	agent_stream_free :: proc(sub: ^Agent_Stream_Subscription) ---
-	agent_stream_update_free :: proc(update: ^Agent_Stream_Update) ---
-
 	// Reuses this account's DM with the peer or creates one with both as admins.
 	start_direct_chat :: proc(client: ^Client, account_ref, peer_account_id: cstring, out: ^cstring) -> Status ---
 	create_group :: proc(client: ^Client, account_ref: cstring, name: cstring, member_refs: [^]cstring, member_refs_len: uint, description: cstring, out: ^^Group_Creation_Result) -> Status ---
@@ -2015,6 +2040,9 @@ foreign lib {
 	// Kind-9 media from upload_media(send=false) references plus extra
 	// tags that name them (NIP-30 emoji). imeta tags are rejected.
 	send_tagged_media :: proc(client: ^Client, account_ref, group_id_hex: cstring, attachments: [^]Media_Attachment_Reference, attachments_len: uint, tags: [^]Message_Tag, tags_len: uint, caption: cstring, out: ^^Send_Summary) -> Status ---
+	send_thread_message :: proc(client: ^Client, account_ref, group_id_hex, parent_message_id, text: cstring, attachments: [^]Media_Attachment_Reference, attachments_len: uint, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
+	thread_reply_context :: proc(client: ^Client, account_ref, group_id_hex, parent_message_id: cstring, available: ^u8, out: ^^Thread_Reply_Context) -> Status ---
+	thread_reply_context_free :: proc(out: ^Thread_Reply_Context) ---
 	// Sonar stickers. Packs, the kind-10031 installed list and asset
 	// downloads all live in MDK; `input` is a coordinate, naddr or pack link.
 	sticker_packs :: proc(client: ^Client, account_ref: cstring, installed_only: u8, search: cstring, has_limit: u8, limit: u32, out: ^^Sticker_Pack_List) -> Status ---
@@ -2030,12 +2058,8 @@ foreign lib {
 	sticker_pack_list_free :: proc(list: ^Sticker_Pack_List) ---
 	sticker_asset_free :: proc(asset: ^Sticker_Asset) ---
 	sticker_sync_result_free :: proc(result: ^Sticker_Sync_Result) ---
-	create_tagged_poll :: proc(client: ^Client, account_ref, group_id_hex, question: cstring, options: [^]cstring, options_len: uint, poll_type: u32, has_ends_at: u8, ends_at: u64, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
-	cast_poll_vote :: proc(client: ^Client, account_ref, group_id_hex, poll_event_id: cstring, option_ids: [^]cstring, option_ids_len: uint, out: ^^Send_Summary) -> Status ---
-	// An imeta tag for an uploaded reference, so a custom event can
-	// carry media the timeline resolves like a kind-9's.
-	build_media_imeta_tag :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, reference: ^Media_Attachment_Reference, out: ^^Message_Tag) -> Status ---
-	message_tag_free :: proc(tag: ^Message_Tag) ---
+	create_tagged_poll :: proc(client: ^Client, account_ref, group_id_hex: cstring, question: cstring, options: [^]cstring, options_len: uint, poll_type: u32, has_ends_at: u8, ends_at: u64, tags: [^]Message_Tag, tags_len: uint, out: ^^Send_Summary) -> Status ---
+	cast_poll_vote :: proc(client: ^Client, account_ref, group_id_hex: cstring, poll_event_id: cstring, option_ids: [^]cstring, option_ids_len: uint, out: ^^Send_Summary) -> Status ---
 	react_to_message :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, emoji: cstring, out: ^^Send_Summary) -> Status ---
 	// Kind-7 with uploaded attachments as imeta plus tags naming them
 	// (NIP-30 emoji). imeta rows in tags are rejected.

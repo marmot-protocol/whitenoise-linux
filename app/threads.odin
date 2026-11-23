@@ -9,10 +9,9 @@
 //   └─────────────────┘   └──────────────────┘   └──────────────────┘
 //
 // One timeline, one composer: the view filters rows by the top of the
-// stack (thread_of == thread_cur), and every send routes there. A
-// thread message is a kind-1111 NIP-22 comment tagged ["e", root] and
-// ["k", root kind]; the root can itself be a thread message, so threads
-// nest to any depth.
+// stack (thread_of == thread_cur), and sends use that row as their parent.
+// MDK writes the NIP-22 root and parent tags. A parent can itself be a
+// thread message, so threads nest to any depth.
 // Back (or Escape with an empty composer) pops one level.
 package main
 
@@ -28,6 +27,45 @@ thread_cur :: proc(ui: ^Ui_State) -> string {
 	return len(ui.thread_stack) > 0 ? ui.thread_stack[len(ui.thread_stack) - 1] : ""
 }
 
+@(private)
+Thread_Placement :: enum {
+	Checking,
+	Ready,
+	Unavailable,
+	Error,
+}
+
+@(private)
+thread_placement_state :: proc(ui: ^Ui_State) -> Thread_Placement {
+	if thread_cur(ui) == "" {return .Ready}
+	if !timeline_group_scope(ui, timeline_job) {return .Error}
+	return ui.thread_placement
+}
+
+thread_can_send :: proc(ui: ^Ui_State) -> bool {
+	return thread_placement_state(ui) == .Ready
+}
+
+@(private)
+thread_placement_text :: proc(placement: Thread_Placement) -> string {
+	#partial switch placement {
+	case .Checking:
+		return tr("Checking the original message…")
+	case .Unavailable:
+		return tr("Original message unavailable")
+	case .Error:
+		return tr("Couldn't check the original message. Please try again.")
+	}
+	return ""
+}
+
+thread_send_paused :: proc(ui: ^Ui_State) -> bool {
+	placement := thread_placement_state(ui)
+	if placement == .Ready {return false}
+	toast(ui, thread_placement_text(placement))
+	return true
+}
+
 thread_push :: proc(ui: ^Ui_State, root_id: string) {
 	if root_id == thread_cur(ui) {
 		return // the open thread's own root plate can't re-push it
@@ -35,6 +73,7 @@ thread_push :: proc(ui: ^Ui_State, root_id: string) {
 	if ui.location_open {geo_picker_close(ui)}
 	poll_close(ui)
 	append(&ui.thread_stack, strings.clone(root_id))
+	thread_check_placement(ui)
 	ui.replying = "" // a reply can't cross into a thread
 	ui.scroll_pending = true
 	thread_kick()
@@ -51,6 +90,7 @@ thread_back :: proc(ui: ^Ui_State) {
 	gs_flash_jump(ui, ui.jump_id)
 	delete(ui.thread_stack[len(ui.thread_stack) - 1])
 	pop(&ui.thread_stack)
+	thread_check_placement(ui)
 	ui.scroll_pending = false
 	thread_kick()
 }
@@ -58,10 +98,12 @@ thread_back :: proc(ui: ^Ui_State) {
 thread_clear :: proc(ui: ^Ui_State) {
 	if ui.location_open {geo_picker_close(ui)}
 	poll_close(ui)
+	if len(ui.thread_stack) == 0 {return}
 	for id in ui.thread_stack {
 		delete(id)
 	}
 	clear(&ui.thread_stack)
+	thread_check_placement(ui)
 }
 
 // The route transition: kick the slide offset, anim_to eases it home.

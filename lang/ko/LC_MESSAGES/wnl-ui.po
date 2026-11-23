@@ -366,6 +366,12 @@ msgstr "체크 표시는 채팅을 직접 배치했다는 뜻입니다. 체크�
 msgid "A client for private group chat. Messages are sealed with MLS on this device, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "비공개 그룹 채팅을 위한 클라이언트입니다. 메시지는 이 기기에서 MLS로 봉인되어 내용을 알 수 없는 데이터로 Nostr 릴레이에 전달되고, 그룹 안에서만 다시 열립니다."
 
+msgid "A device hasn't reported support."
+msgstr "아직 지원 여부를 알리지 않은 기기가 있습니다."
+
+msgid "A device needs to be replaced."
+msgstr "교체해야 하는 기기가 있습니다."
+
 msgid "A display name is required."
 msgstr "표시 이름을 입력해야 합니다."
 
@@ -956,6 +962,9 @@ msgstr "업데이트를 확인하고 있습니다."
 msgid "Checking relays..."
 msgstr "릴레이 확인 중..."
 
+msgid "Checking the original message…"
+msgstr "원본 메시지를 확인하고 있습니다…"
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "릴레이에서 키를 확인하고 있습니다. 몇 초 정도 걸립니다."
 
@@ -1338,6 +1347,9 @@ msgstr "비밀번호를 변경할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't check for updates. Please try again."
 msgstr "업데이트를 확인할 수 없습니다. 다시 시도하세요."
+
+msgid "Couldn't check the original message. Please try again."
+msgstr "원본 메시지를 확인할 수 없습니다. 다시 시도하세요."
 
 msgid "Couldn't check the translation model. Please try again."
 msgstr "번역 모델을 확인할 수 없습니다. 다시 시도하세요."
@@ -3215,6 +3227,9 @@ msgstr "미디어 메타데이터"
 
 msgid "Members"
 msgstr "멤버"
+
+msgid "Members to check"
+msgstr "확인이 필요한 멤버"
 
 msgid "Mentions"
 msgstr "멘션"
@@ -5327,6 +5342,9 @@ msgstr "White Noise를 벗어나 브라우저에서 엽니다."
 #, c-format
 msgid "This leaves White Noise and opens the call in %s."
 msgstr "White Noise를 벗어나 %s에서 통화를 엽니다."
+
+msgid "This member has too many devices in this chat."
+msgstr "이 멤버의 기기 수가 이 채팅의 한도를 초과했습니다."
 
 msgid "This message was deleted"
 msgstr "이 메시지는 삭제되었습니다"

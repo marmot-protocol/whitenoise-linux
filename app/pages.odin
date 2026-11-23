@@ -1811,33 +1811,35 @@ row_to_ui :: proc(
 	}
 
 	return Chat_Row_Ui {
-		group_id          = strings.clone(string(row.group_id_hex)),
-		conversation_kind = kind,
-		peer_hex          = strings.clone(peer),
-		title             = strings.clone(title),
-		preview           = strings.clone(preview),
-		at                = format_activity(row.activity_sort_at),
-		activity_at       = row.activity_sort_at,
-		unread            = row.unread_count,
-		archived          = row.archived,
-		pending           = row.pending_confirmation,
-		stable            = row.lifecycle_state == .STABLE,
-		tick              = tick,
-		first_unread      = strings.clone(
+		group_id            = strings.clone(string(row.group_id_hex)),
+		conversation_kind   = kind,
+		group_read_activity = row.conversation_kind ==
+			.GROUP || strings.trim(string(row.group_name), " ") != "",
+		peer_hex            = strings.clone(peer),
+		title               = strings.clone(title),
+		preview             = strings.clone(preview),
+		at                  = format_activity(row.activity_sort_at),
+		activity_at         = row.activity_sort_at,
+		unread              = row.unread_count,
+		archived            = row.archived,
+		pending             = row.pending_confirmation,
+		stable              = row.lifecycle_state == .STABLE,
+		tick                = tick,
+		first_unread        = strings.clone(
 			row.first_unread_message_id_hex != nil ? string(row.first_unread_message_id_hex) : "",
 		),
-		avatar_url        = strings.clone(avatar_url),
-		avatar_key        = strings.clone(avatar_key),
-		image_hash        = strings.clone(image_hash),
+		avatar_url          = strings.clone(avatar_url),
+		avatar_key          = strings.clone(avatar_key),
+		image_hash          = strings.clone(image_hash),
 		// marmot's mute OR the local one from the row menu (its C API
 		// has no mute setter); the notification gate reads this flag.
-		muted             = row.muted || (g_prefs != nil && g_prefs.muted_ids[string(row.group_id_hex)]),
-		last_id           = strings.clone(
+		muted               = row.muted || (g_prefs != nil && g_prefs.muted_ids[string(row.group_id_hex)]),
+		last_id             = strings.clone(
 			row.last_message != nil && row.last_message.message_id_hex != nil ? string(row.last_message.message_id_hex) : "",
 		),
-		last_kind         = row.last_message != nil ? row.last_message.kind : 0,
-		last_mine         = mine,
-		last_blocked      = blocked,
+		last_kind           = row.last_message != nil ? row.last_message.kind : 0,
+		last_mine           = mine,
+		last_blocked        = blocked,
 	}
 }
 

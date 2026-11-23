@@ -2101,6 +2101,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 		blocked_bar()
 		return
 	}
+	placement := ui.editing != "" ? Thread_Placement.Ready : thread_placement_state(ui)
 	poll_suspended := ui.poll_open && ui.search_open
 	if poll_suspended && ui.poll_ticket == 0 {return}
 	// Edit banner: the composer holds a sent message, not a new one.
@@ -2158,6 +2159,14 @@ chat_composer :: proc(ui: ^Ui_State) {
 	{width = nendo.grow(), padding = nendo.pad(padding), gap = 8, direction = .Column},
 	) {
 		burst_pane_layer() // own send's effect rises from here
+		if placement != .Ready {
+			nendo.text(
+				thread_placement_text(placement),
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
+			)
+			if placement == .Checking {busy_bar("ThreadPlacementBusy")}
+			if placement == .Error {action_chip("ThreadPlacementRetry", 0, tr("Try again"))}
+		}
 		if ui.poll_ticket != 0 {
 			nendo.text(tr("Sending..."), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 			busy_bar("PollBusy")
@@ -2239,14 +2248,14 @@ chat_composer :: proc(ui: ^Ui_State) {
 		} else {
 			width := page_w(ui)
 			if ui.prefs.centered_chat {width = min(width, CHAT_WIDTH_MAX)}
-			composer_edit(ui, width - 2 * f32(padding) - 32)
+			composer_edit(ui, width - 2 * f32(padding) - 32, placement == .Ready)
 		}
 	}
 }
 
 
 @(private = "file")
-composer_edit :: proc(ui: ^Ui_State, width: f32) {
+composer_edit :: proc(ui: ^Ui_State, width: f32, can_send: bool) {
 	plan := composer_plan(ui, composer_config(&ui.prefs), width)
 	buf := ui.poll_open ? &ui.poll_question : &ui.compose
 	focus := ui.poll_open ? Focus.PollQ : .Compose
@@ -2308,18 +2317,18 @@ composer_edit :: proc(ui: ^Ui_State, width: f32) {
 					if ui.poll_ticket == 0 && hovered() {tooltip(tr("Cancel"))}
 					nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 14, color = TEXT_DIM})
 				}
-			} else {
+			} else if can_send {
 				composer_tools(ui, plan, .Left)
 			}
 			if inline {
 				composer_draft(ui, buf, focus, placeholder, inline_width, 20)
 			} else if nendo.box(nendo.id("ComposeGap"))({width = nendo.grow()}) {}
-			if !ui.poll_open {composer_tools(ui, plan, .Right)}
-			composer_primary(ui, plan)
+			if !ui.poll_open && can_send {composer_tools(ui, plan, .Right)}
+			if can_send {composer_primary(ui, plan)}
 		}
 		if ui.poll_open {
 			poll_fields(ui, width)
-		} else if ui.compose_more {
+		} else if ui.compose_more && can_send {
 			composer_menu(ui, plan)
 		}
 	}

@@ -115,7 +115,6 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	search_stop()
 	people_search_stop(ui)
 	if live.refresh != nil {chat_list_free(live.refresh); free(live.refresh); live.refresh = nil}
-	agent_shutdown()
 	// These owners publish textures on the render thread; join only here.
 	if ui.gif_job != nil && ui.gif_job.worker != nil {thread.join(ui.gif_job.worker)}
 	for p in ui.pending {if p.gif != nil {thread.join(p.gif.worker)}}

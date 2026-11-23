@@ -1073,6 +1073,45 @@ devices_chat_activation :: proc(t: ^testing.T) {
 		want := verdict == .ELIGIBLE ? "weren't turned on" : "are turned on"
 		testing.expect(t, strings.contains(a.notice, want))
 	}
+
+	ui.chats[0].title = "Studio chat"
+	ui.chats[0].conversation_kind = .GROUP
+	ui.nicknames = make(map[string]string)
+	ui.nicknames["9842bc97"] = "Casey"
+	ui.nicknames["be821f72"] = "Morgan"
+	defer delete(ui.nicknames)
+	blockers := [?]marmot.Account_Devices_Blocker {
+		{"9842bc97", .MEMBERS_NEED_UPDATE},
+		{"be821f72", .DEVICES_NEED_REPLACEMENT},
+		{"account-a", .DEVICE_LIMIT_EXCEEDED},
+	}
+	report := marmot.Account_Devices_Report {
+		eligibility  = .MEMBERS_NEED_UPDATE,
+		blockers     = raw_data(blockers[:]),
+		blockers_len = len(blockers),
+	}
+	a.dirty = false
+	read.eligibility, read.report = report.eligibility, &report
+	activation_apply_read(&ui, &read)
+	defer a.report = nil // The test report lives on the stack, not in marmot-c.
+	text = device_test_frame(&ui)
+	for line in ([?]string{"Members to check", "Casey A device hasn't reported support.", "Morgan A device needs to be replaced.", "You This member has too many devices in this chat."}) {
+		testing.expect(t, strings.contains(text, line), line)
+	}
+	testing.expect(t, !nendo.element(nendo.id("EnableAccountDevices")).found)
+	activation_live(&ui, {group = "older-dm", account = "account-a", activation_signal = true})
+	text = device_test_frame(&ui)
+	testing.expect(t, !strings.contains(text, "Members to check"))
+	testing.expect(t, nendo.element(nendo.id("InfoLinkedDevicesProgress")).found)
+	a.read, a.dirty = &read, false
+	text = device_test_frame(&ui)
+	testing.expect(t, !strings.contains(text, "Members to check"))
+	testing.expect(t, nendo.element(nendo.id("InfoLinkedDevicesProgress")).found)
+	a.read = nil
+
+	ui.selected = 1
+	text = device_test_frame(&ui)
+	testing.expect(t, !strings.contains(text, "Members to check"))
 }
 
 @(test)
@@ -1128,10 +1167,9 @@ devices_chat_sync :: proc(t: ^testing.T) {
 	change := marmot.Group_System_Event {
 		text = "A member joined",
 	}
-	event := [?]cstring{"e", "thread-root"}
-	tag := marmot.Message_Tag {
-		values     = raw_data(event[:]),
-		values_len = len(event),
+	thread := marmot.Timeline_Thread_Ref {
+		root_message_id_hex   = "thread-root",
+		parent_message_id_hex = "thread-root",
 	}
 	rows := [?]marmot.Timeline_Message_Record {
 		{
@@ -1157,8 +1195,7 @@ devices_chat_sync :: proc(t: ^testing.T) {
 			message_id_hex = "thread",
 			direction = "received",
 			plaintext = "off-route",
-			tags = &tag,
-			tags_len = 1,
+			thread = &thread,
 			history_import_provenance = &backup,
 			timeline_at = 1003,
 		},

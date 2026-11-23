@@ -388,6 +388,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if ui.selected >= 0 &&
+	   thread_can_send(ui) &&
 	   (ui.stt.file == nil || ui.stt.message != "") &&
 	   nendo.element(nendo.id("ComposeBox")).found {
 		if handle_effects(ui) || handle_composer_menu(ui, client) {return}
@@ -564,6 +565,13 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
+	if clicked("ThreadPlacementRetry") && thread_placement_state(ui) == .Error {
+		if !thread_check_placement(ui) && client != nil {
+			timeline_start(client, ui, string(ui.search_input[:]))
+		}
+		return
+	}
+
 	if clicked("FilesBtn") {
 		ui.group_files_open = !ui.group_files_open
 		ui.show_members = false
@@ -641,7 +649,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   (ui.stt.file == nil || ui.stt.message != "") &&
 	   blocked_dm == "" {
 		buf := active_buf(ui)
-		if !ui.poll_open || buf != &ui.compose {
+		if buf != &ui.compose || !ui.poll_open {
 			n := edit_text(ui, buf, buf == &ui.compose || buf == &ui.desc_input)
 			if buf == &ui.compose {typed_len = n}
 		}
@@ -882,7 +890,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if !read_only &&
 			   len(msg.sys_added_hex) > 0 &&
 			   nendo.pointer_over(nendo.id("SysWave", u32(i))) {
-				if npub := hex_npub(msg.sys_added_hex); len(npub) > 0 {
+				if npub := hex_npub(msg.sys_added_hex); len(npub) > 0 && !thread_send_paused(ui) {
 					queue_send(ui, client, fmt.tprintf("👋 @%s", npub))
 				}
 				return
@@ -891,7 +899,9 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				start_reply(ui, msg)
 				return
 			}
-			if !read_only && msg.mine && nendo.pointer_over(nendo.id("MsgEdit", u32(i))) {
+			if !read_only &&
+			   message_can_edit(msg) &&
+			   nendo.pointer_over(nendo.id("MsgEdit", u32(i))) {
 				start_edit(ui, msg)
 				return
 			}
@@ -956,12 +966,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   rl.IsKeyPressed(.UP) {
 		cur := thread_cur(ui)
 		#reverse for msg in ui.messages {
-			if msg.mine &&
-			   !msg.deleted &&
-			   !msg.system &&
-			   !msg.unsupported &&
-			   len(msg.id) > 0 &&
-			   msg.thread_of == cur {
+			if msg.thread_of == cur && message_can_edit(msg) {
 				start_edit(ui, msg)
 				return
 			}
@@ -985,22 +990,27 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				clicked("SendBtn") ||
 				test_send_now)
 	test_send_now = false
-	if send && new_send_paused(ui) {return}
+	if send {send_composer(ui, client, read_only)}
+}
+
+@(private)
+send_composer :: proc(ui: ^Ui_State, client: ^marmot.Client, read_only: bool) {
+	if new_send_paused(ui) {return}
 	// Staged attachments send on their own only outside an edit (an
 	// edit needs text and never sends them). A composer of only
 	// whitespace counts as empty: it stays put rather than sending a
 	// blank row.
 	has_text := strings.trim_space(string(ui.compose[:])) != ""
-	if send && !has_text && len(ui.editing) > 0 {
+	if !has_text && len(ui.editing) > 0 {
 		// An empty edit cancels like Escape, without sending the restored
 		// draft or any staged attachments in this same frame.
 		cancel_edit(ui)
 		return
 	}
-	if send &&
-	   !read_only &&
+	if !read_only &&
 	   stage_files_ready(ui) &&
 	   (has_text || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
+		if ui.editing == "" && thread_send_paused(ui) {return}
 		// Sending finishes a trailing emoticon: "ok :D" goes out as "ok 😃".
 		ed_begin(ui, &ui.compose)
 		ui.ed.selection = {len(ui.compose), len(ui.compose)}
@@ -1148,6 +1158,7 @@ PASTE_IMAGES := [?]struct {
 }
 
 paste_clipboard_files :: proc(ui: ^Ui_State) -> bool {
+	if !thread_can_send(ui) {return false}
 	for m in PASTE_IMAGES {
 		data := rl.GetClipboardBytes(m.mime)
 		if len(data) == 0 {
@@ -1407,7 +1418,7 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		translation_request(ui, msg)
 		return
 	}
-	if !read_only && msg.mine && nendo.pointer_over(nendo.id("CtxEdit")) {
+	if !read_only && message_can_edit(msg) && nendo.pointer_over(nendo.id("CtxEdit")) {
 		start_edit(ui, msg)
 		return
 	}
@@ -1457,6 +1468,7 @@ start_reply :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 
 @(private = "file")
 start_edit :: proc(ui: ^Ui_State, msg: Msg_Ui) {
+	if !message_can_edit(msg) {return}
 	poll_close(ui)
 	stash_draft(ui) // the edit borrows the composer; keep the draft
 	ed_set(ui, &ui.compose, msg.body)
@@ -2444,17 +2456,6 @@ message_op :: proc(
 		)
 		apply_pending_reacts(ui) // the ghost is on screen this frame
 	}
-}
-
-// First "e"-tag value of a record: a deletion's target or a thread's root.
-first_event_ref :: proc(record: ^marmot.Timeline_Message_Record) -> string {
-	for t in 0 ..< record.tags_len {
-		tag := &record.tags[t]
-		if tag.values_len >= 2 && string(tag.values[0]) == "e" {
-			return string(tag.values[1])
-		}
-	}
-	return ""
 }
 
 // Per-chat message-body hits for the rail filter: a paged search per

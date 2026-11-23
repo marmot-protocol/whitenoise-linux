@@ -39,6 +39,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 ### Writing, sending and forwarding
 
 - **Messages are Markdown.** Bodies support typeset `$` math blocks, reactions, replies, edits with history, forwarding, and search.
+- **A thread stays readable when you can't reply.** You can reply to a parent outside the visible page if this device still has it and can place the reply in the thread. If not, the existing replies and your draft stay in place.
 - **Enter sends; Shift+Enter starts a new line.** You can also click the paper plane to send or the checkmark to save an edit.
 - **Type `/` in an empty draft to open commands.** Keep typing to filter. Use the arrow keys and Enter or Tab, or click a command. Escape closes the menu without changing your draft. `/shrug` inserts a shrug without sending it.
 - **Choose what appears beside your draft.** Open **+ > Customize composer** or **Settings > General > Composer**. Drag shortcuts in the preview to reorder them, or drag between **Left**, **Right**, and **+ menu**. Select a shortcut for placement and reorder buttons.
@@ -65,6 +66,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 - **Links keep their labels and destinations.** HTTP(S) links show their URL on hover, and opening one goes through the external-link guard.
 - **Long messages fold after 6 lines.** Settings > Appearance sets the message line limit for messages and event cards; 0 shows them in full without Read more.
 - **Chat-list previews show reading text.** Markdown markup is left out.
+- **Agent updates stay in the conversation.** An update replaces the text on the same row. Agent controls do not appear as messages.
 
 Unsupported Nostr events sent into a chat show their kind, title, and a short
 description when available. Video events are labeled as such. Standard media
@@ -443,9 +445,12 @@ choose **Review chats** to see what's blocking each chat. Selecting a chat
 opens its settings without changing them.
 
 Open a chat's details and look for **Linked devices**. The card shows whether
-linked devices are on or why you can't turn them on. If you see **Linked
-devices are ready**, choose **Turn on linked devices** to let members' linked
-devices join without an admin. That change can't be undone.
+linked devices are on or why you can't turn them on. If you're an admin,
+**Members to check** names the members whose devices block the upgrade and
+shows what needs attention for each one. The list is hidden while the app
+rechecks a changed roster. If you see **Linked devices are ready**, choose
+**Turn on linked devices** to let members' linked devices join without an
+admin. That change can't be undone.
 If the chat is still catching up, wait before trying again.
 
 New chats negotiate support from the KeyPackages used to invite members.

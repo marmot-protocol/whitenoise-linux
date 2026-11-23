@@ -372,6 +372,12 @@ msgstr "プライベートなグループチャットのためのクライアン
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "プライベートなグループチャットのためのデスクトップクライアントです。メッセージはこのマシン上で MLS により暗号化され、中身の読めないデータとして Nostr リレーに渡され、グループ内でのみ再び復号されます。"
 
+msgid "A device hasn't reported support."
+msgstr "対応状況をまだ報告していない端末があります。"
+
+msgid "A device needs to be replaced."
+msgstr "入れ替えが必要な端末があります。"
+
 msgid "A display name is required."
 msgstr "表示名を入力してください。"
 
@@ -999,6 +1005,9 @@ msgstr "アップデートを確認しています。"
 msgid "Checking relays..."
 msgstr "リレーを確認しています..."
 
+msgid "Checking the original message…"
+msgstr "元のメッセージを確認しています…"
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "リレーで鍵を確認しています。数秒かかります。"
 
@@ -1417,6 +1426,9 @@ msgstr "パスワードを変更できませんでした。もう一度お試し
 
 msgid "Couldn't check for updates. Please try again."
 msgstr "アップデートを確認できませんでした。もう一度お試しください。"
+
+msgid "Couldn't check the original message. Please try again."
+msgstr "元のメッセージを確認できませんでした。もう一度お試しください。"
 
 msgid "Couldn't check the translation model. Please try again."
 msgstr "翻訳モデルを確認できませんでした。もう一度お試しください。"
@@ -3441,6 +3453,9 @@ msgstr "メディアのメタデータ"
 
 msgid "Members"
 msgstr "メンバー"
+
+msgid "Members to check"
+msgstr "確認が必要なメンバー"
 
 msgid "Mentions"
 msgstr "メンション"
@@ -5693,6 +5708,9 @@ msgstr "White Noise を離れて、ブラウザで開きます。"
 #, c-format
 msgid "This leaves White Noise and opens the call in %s."
 msgstr "White Noise を離れ、%s で通話を開きます。"
+
+msgid "This member has too many devices in this chat."
+msgstr "このメンバーの端末数がチャットの上限を超えています。"
 
 msgid "This message was deleted"
 msgstr "このメッセージは削除されました"
