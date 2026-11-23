@@ -1194,20 +1194,21 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // reloads when the worker reports back. Threads are reaped by
 // drain_sends, which joins whatever is done in send_threads.
 Op_Job :: struct {
-	ticket:      int,
-	client:      ^marmot.Client,
-	op:          Msg_Op,
-	account:     cstring,
-	group:       cstring,
-	target:      cstring,
-	emoji:       cstring, // nil for delete
-	emoji_file:  cstring, // .React with a :code: this device has an image for
-	emoji_png:   []u8, // that image's bytes, owned
-	tags:        [][]cstring, // owned poll-context tags
-	content:     cstring, // poll question or edit
-	poll_values: []cstring, // option labels on creation; selected ids on voting
-	poll_type:   marmot.Poll_Type,
-	secs:        u64, // .Retention only
+	ticket:       int,
+	client:       ^marmot.Client,
+	op:           Msg_Op,
+	account:      cstring,
+	group:        cstring,
+	target:       cstring,
+	emoji:        cstring, // nil for delete
+	emoji_file:   cstring, // .React with a :code: this device has an image for
+	emoji_png:    []u8, // that image's bytes, owned
+	tags:         [][]cstring, // owned poll-context tags
+	content:      cstring, // poll question or edit
+	poll_values:  []cstring, // option labels on creation; selected ids on voting
+	poll_type:    marmot.Poll_Type,
+	poll_ends_at: u64,
+	secs:         u64, // .Retention only
 }
 
 Op_Done :: struct {
@@ -1383,8 +1384,8 @@ op_worker :: proc(t: ^thread.Thread) {
 			raw_data(job.poll_values),
 			uint(len(job.poll_values)),
 			u32(job.poll_type),
-			0,
-			0,
+			u8(job.poll_ends_at != 0),
+			job.poll_ends_at,
 			raw_data(rows),
 			uint(len(rows)),
 			&summary,
@@ -1505,7 +1506,7 @@ op_worker :: proc(t: ^thread.Thread) {
 	free(job)
 }
 
-// Own every string before starting the worker: modal drafts and timeline
+// Own every string before starting the worker: drafts and timeline
 // projections can be replaced while native validation/publishing is in flight.
 spawn_poll :: proc(
 	ui: ^Ui_State,
@@ -1515,6 +1516,7 @@ spawn_poll :: proc(
 	values: []string,
 	poll_type: marmot.Poll_Type = .Single_Choice,
 	tags: [][]string = nil,
+	ends_at: u64 = 0,
 ) {
 	op_ticket += 1
 	job := new(Op_Job)
@@ -1526,6 +1528,7 @@ spawn_poll :: proc(
 	job.target = strings.clone_to_cstring(target)
 	job.content = strings.clone_to_cstring(question)
 	job.poll_type = poll_type
+	job.poll_ends_at = ends_at
 	job.poll_values = make([]cstring, len(values))
 	for value, i in values {job.poll_values[i] = strings.clone_to_cstring(value)}
 	job.tags = make([][]cstring, len(tags))
@@ -1590,6 +1593,14 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	reload := false
 	for d in done {
 		poll_complete(d.ticket)
+		if d.op == .Poll_Create && d.ticket == ui.poll_ticket {
+			ui.poll_ticket = 0
+			if d.err == "" {
+				poll_close(ui)
+				ui.scroll_pending = true
+				play_sound(.Send)
+			}
+		}
 		if d.op == .Lookup_Member {nip05_complete(ui, d); continue}
 		reload = true
 		if d.op == .History {

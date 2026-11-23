@@ -334,8 +334,8 @@ Focus :: enum {
 	FolderColor, // custom folder RGB input
 	FolderRule, // folder-editor rule box, index in ui.folder_rule_focus
 	Pal, // command-palette query box
-	PollQ, // poll-modal question box
-	PollOpt, // poll-modal option box, index in ui.poll_focus
+	PollQ, // question in the composer
+	PollOpt, // poll option box, index in ui.poll_focus
 	ThemeSeed, // theme-editor seed box, index in ui.theme_edit_idx
 	SettingsSearch, // control-panel search, separate from chat drafts and filters
 	NC_Remove,
@@ -708,11 +708,13 @@ Ui_State :: struct {
 	fwd_msg:                             string, // stable source message ID (.Message only)
 	fwd_source:                          string, // source group when the picker opened
 	fwd_filter:                          [dynamic]u8, // its chat filter box
-	poll_open:                           bool, // create-poll modal
+	poll_open:                           bool, // composer is in poll mode
 	poll_question:                       [dynamic]u8,
 	poll_inputs:                         [dynamic][dynamic]u8, // option drafts, blanks skipped
 	poll_focus:                          int, // which option input has the caret (focus == .PollOpt)
-	poll_multi_in:                       bool, // modal's multiple-choice toggle
+	poll_multi_in, poll_reveal:          bool,
+	poll_days:                           u64, // zero leaves the poll open indefinitely
+	poll_ticket:                         int,
 	poll_error:                          Poll_Error,
 	location_open:                       bool,
 	location_selected:                   bool,
@@ -762,6 +764,7 @@ Ui_State :: struct {
 	settings_pending:                    []u8, // newest snapshot, behind the in-flight write
 	unread_mark_id:                      string, // NEW MESSAGES divider anchor, snapshotted at select
 	// time (mark-as-read clears the row's first_unread)
+	slash:                               Slash_Menu,
 	mention_active:                      bool, // composer @-autocomplete popover
 	mention_at_b:                        int, // byte offset of the active "@"
 	mention_sel:                         int, // selected candidate row

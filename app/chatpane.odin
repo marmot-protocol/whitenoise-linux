@@ -94,9 +94,6 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 		if open_now(nendo.id("OvModal"), ui.ov_open) {
 			openverse_modal(ui)
 		}
-		if open_now(nendo.id("PollModal"), ui.poll_open) {
-			poll_modal(ui)
-		}
 		if open_now(nendo.id("LocationModal"), ui.location_open) {
 			geo_picker(ui)
 		}
@@ -584,6 +581,9 @@ compose_scroll :: proc(ui: ^Ui_State) {
 	} else if ui.show_members && ui.desc_editing {
 		buf = &ui.desc_input
 		focus = .Desc
+	} else if ui.page == .Chats && ui.poll_open {
+		buf = &ui.poll_question
+		focus = .PollQ
 	}
 	data := nendo.scroll(nendo.id("ComposeClip"))
 	if ui.focus != focus || !data.found {
@@ -2007,7 +2007,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 			nendo.text(tr("Editing message"), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 			action_chip("EditCancel", 0, tr("Cancel"))
 		}
-	} else if len(ui.replying) > 0 {
+	} else if !ui.poll_open && len(ui.replying) > 0 {
 		if nendo.box(nendo.id("ReplyBanner"))(
 		{
 			width = nendo.grow(),
@@ -2048,7 +2048,7 @@ chat_composer :: proc(ui: ^Ui_State) {
 		burst_pane_layer() // own send's effect rises from here
 		// A capped scrollable list keeps every removal control reachable
 		// without letting attachments widen or consume the chat pane.
-		if len(ui.staged) > 0 {
+		if !ui.poll_open && len(ui.staged) > 0 {
 			if nendo.box(nendo.id("StagedRow"))(
 			{
 				width = nendo.grow(),
@@ -2131,12 +2131,17 @@ chat_composer :: proc(ui: ^Ui_State) {
 @(private = "file")
 composer_edit :: proc(ui: ^Ui_State, width: f32) {
 	plan := composer_plan(ui, composer_config(&ui.prefs), width)
-	text := string(ui.compose[:])
+	buf := ui.poll_open ? &ui.poll_question : &ui.compose
+	focus := ui.poll_open ? Focus.PollQ : .Compose
+	text := string(buf[:])
+	inline_width := ui.poll_open ? width - 2 * (plan.size + f32(plan.gap)) : plan.inline_width
+	active := ui.focus == focus && ui.poll_ticket == 0
+	placeholder :=
+		ui.poll_open ? tr("Ask a question...") : (len(ui.thread_stack) > 0 ? tr("Reply in thread…") : tr("Send a message..."))
 	inline :=
 		plan.config.layout == .Automatic &&
-		plan.inline_width >= COMPOSER_TEXT_MIN &&
-		wrap_break(text, 0, len(text), plan.inline_width - CARET_W, BODY_FS, .Compose) ==
-			len(text) &&
+		inline_width >= COMPOSER_TEXT_MIN &&
+		wrap_break(text, 0, len(text), inline_width - CARET_W, BODY_FS, .Compose) == len(text) &&
 		strings.index_byte(text, '\n') < 0
 	if nendo.box(nendo.id("ComposeBox"))(
 	{
@@ -2146,14 +2151,24 @@ composer_edit :: proc(ui: ^Ui_State, width: f32) {
 		padding = {left = 16, right = 16, top = 8, bottom = 8},
 		color = PLATE,
 		radius = rr(8),
-		border = {color = ui.focus == .Compose ? ACCENT_DIM : FIELD_BORDER, width = bw()},
+		border = {color = active ? ACCENT_DIM : FIELD_BORDER, width = bw()},
 	},
 	) {
-		if open_now(nendo.id("MentionPop"), ui.mention_active) {mention_popover(ui)}
-		if open_now(nendo.id("ShortcodePop"), ui.shortcode_active) {shortcode_popover(ui)}
-		if open_now(nendo.id("FxPanel"), ui.fx_open) {effect_picker(ui)}
+		if !ui.poll_open {
+			if open_now(nendo.id("MentionPop"), ui.mention_active) {mention_popover(ui)}
+			if open_now(nendo.id("ShortcodePop"), ui.shortcode_active) {shortcode_popover(ui)}
+			if slash_open(ui) {slash_popover(ui)}
+			if open_now(nendo.id("FxPanel"), ui.fx_open) {effect_picker(ui)}
+		}
 		if !inline {
-			composer_draft(ui, text, width, compose_draft_height(24 + plan.size))
+			composer_draft(
+				ui,
+				buf,
+				focus,
+				placeholder,
+				width,
+				compose_draft_height(24 + plan.size),
+			)
 		}
 		if nendo.box(nendo.id("ComposeTools"))(
 		{
@@ -2163,19 +2178,46 @@ composer_edit :: proc(ui: ^Ui_State, width: f32) {
 			align = {y = .Center},
 		},
 		) {
-			composer_tools(ui, plan, .Left)
+			if ui.poll_open {
+				if nendo.box(nendo.id("PollCancel"))(
+				{
+					width = nendo.fixed(plan.size),
+					height = nendo.fixed(plan.size),
+					align = {x = .Center, y = .Center},
+					color = ui.poll_ticket == 0 && hovered() ? HOVER : {},
+					radius = rr(6),
+				},
+				) {
+					if ui.poll_ticket == 0 && hovered() {tooltip(tr("Cancel"))}
+					nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 14, color = TEXT_DIM})
+				}
+			} else {
+				composer_tools(ui, plan, .Left)
+			}
 			if inline {
-				composer_draft(ui, text, plan.inline_width, 20)
+				composer_draft(ui, buf, focus, placeholder, inline_width, 20)
 			} else if nendo.box(nendo.id("ComposeGap"))({width = nendo.grow()}) {}
-			composer_tools(ui, plan, .Right)
+			if !ui.poll_open {composer_tools(ui, plan, .Right)}
 			composer_primary(ui, plan)
 		}
-		if ui.compose_more {composer_menu(ui, plan)}
+		if ui.poll_open {
+			poll_fields(ui, width)
+		} else if ui.compose_more {
+			composer_menu(ui, plan)
+		}
 	}
 }
 
 @(private = "file")
-composer_draft :: proc(ui: ^Ui_State, text: string, width, height: f32) {
+composer_draft :: proc(
+	ui: ^Ui_State,
+	buf: ^[dynamic]u8,
+	focus: Focus,
+	placeholder: string,
+	width, height: f32,
+) {
+	text := string(buf[:])
+	active := ui.focus == focus && ui.poll_ticket == 0
 	if nendo.box(nendo.id("ComposeClip"))(
 	{
 		width = nendo.grow(),
@@ -2187,18 +2229,18 @@ composer_draft :: proc(ui: ^Ui_State, text: string, width, height: f32) {
 		if nendo.box(nendo.id("ComposeText"))(
 		{width = nendo.grow(), direction = .Column, gap = 2},
 		) {
-			if text == "" && len(rl.Preedit()) == 0 {
+			if text == "" && (!active || len(rl.Preedit()) == 0) {
 				compose_view.row = 0
 				if nendo.box(nendo.id("ComposeLine", 0))({gap = 1, align = {y = .Center}}) {
-					if ui.focus == .Compose {caret()}
+					if active {caret()}
 					nendo.text(
-						len(ui.thread_stack) > 0 ? tr("Reply in thread…") : tr("Send a message..."),
+						placeholder,
 						{font = FONT_BODY, size = BODY_FS, color = TEXT_LO, wrap = .None},
 					)
 				}
 			} else {
-				lo, hi, head := field_sel(ui, &ui.compose)
-				if ui.focus != .Compose {head = -1}
+				lo, hi, head := field_sel(ui, buf)
+				if !active {head = -1}
 				for line, i in compose_lines(text, max(1, width - CARET_W)) {
 					h := head
 					// At a soft wrap, the caret belongs to the upper line.

@@ -302,6 +302,12 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 }
 
 handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if slash_open(ui) &&
+	   mouse_pressed() &&
+	   !nendo.pointer_over(nendo.id("SlashMenu")) &&
+	   !nendo.pointer_over(nendo.id("ComposeClip")) {
+		ui.slash.dismissed = true
+	}
 	if clicked("ChatBack") {
 		phone_back_action(ui)
 		return
@@ -369,11 +375,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Openverse image-search modal, same early capture.
 	if ui.selected >= 0 && ui.ov_open {
 		handle_openverse(ui, client)
-		return
-	}
-	// Create-poll modal, same early capture.
-	if ui.selected >= 0 && ui.poll_open {
-		handle_poll(ui, client)
 		return
 	}
 	if ui.selected >= 0 &&
@@ -617,6 +618,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// A DM with someone you blocked has no composer to type into.
 	blocked_dm := blocked_peer(ui)
 	read_only := ui.chats[ui.selected].archived
+	draft_len := len(ui.compose)
 	if ui.focus != .Filter &&
 	   (!read_only || ui.focus == .Search || ui.show_members) &&
 	   !(ui.show_members && (selected_chat_is_dm(ui) || ui.focus == .Compose)) &&
@@ -624,7 +626,9 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   (ui.stt.file == nil || ui.stt.message != "") &&
 	   blocked_dm == "" {
 		buf := active_buf(ui)
-		edit_text(ui, buf, buf == &ui.compose || buf == &ui.desc_input)
+		if !ui.poll_open || buf != &ui.compose {
+			edit_text(ui, buf, buf == &ui.compose || buf == &ui.desc_input)
+		}
 	}
 	// Thread route: back chevron pops one level; Escape does too while
 	// the composer holds no draft or edit.
@@ -633,12 +637,15 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			thread_back(ui)
 			return
 		}
-		if rl.IsKeyPressed(.ESCAPE) && len(ui.compose) == 0 && len(ui.editing) == 0 {
+		if !ui.poll_open &&
+		   rl.IsKeyPressed(.ESCAPE) &&
+		   len(ui.compose) == 0 &&
+		   len(ui.editing) == 0 {
 			thread_back(ui)
 			return
 		}
 	}
-	compose_mouse(ui)
+	if !ui.poll_open {compose_mouse(ui)}
 	if ui.search_open &&
 	   !clicked("SearchClear") &&
 	   field_mouse(ui, &ui.search_input, "SearchBox") {
@@ -663,6 +670,11 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		return
 	}
+	if !ui.poll_open &&
+	   !read_only &&
+	   blocked_dm == "" &&
+	   nendo.element(nendo.id("ComposeClip")).found &&
+	   handle_slash_menu(ui, draft_len) {return}
 	if !read_only && blocked_dm == "" && handle_composer_action(ui) {return}
 	for _, i in ui.staged {
 		if mouse_released() && nendo.pointer_over(nendo.id("StagedX", u32(i))) {
@@ -787,6 +799,13 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
+	if ui.poll_open &&
+	   !read_only &&
+	   blocked_dm == "" &&
+	   !web_modal.open &&
+	   nendo.element(nendo.id("PollFields")).found &&
+	   handle_poll(ui, client) {return}
+
 	// Per-message row actions.
 	if mouse_released() {
 		for msg, i in ui.messages {
@@ -892,6 +911,8 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
+
+	if ui.poll_open {return}
 
 	// The @-mention and :shortcode: popovers consume Escape/Enter/arrows
 	// while open.
@@ -1429,6 +1450,7 @@ start_reply :: proc(ui: ^Ui_State, msg: Msg_Ui) {
 
 @(private = "file")
 start_edit :: proc(ui: ^Ui_State, msg: Msg_Ui) {
+	poll_close(ui)
 	stash_draft(ui) // the edit borrows the composer; keep the draft
 	ed_set(ui, &ui.compose, msg.body)
 	ui.editing = msg.id
@@ -1519,6 +1541,7 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, requested_index: int)
 	ui.show_members = false
 	ui.group_files_open = false
 	ui.compose_more, ui.fx_open = false, false
+	ui.slash = {}
 	// The header count and @-mention list share the asynchronous roster.
 	members_clear(ui)
 	if client != nil && !chat_is_dm(ui.chats[index]) {load_members(client, ui)}

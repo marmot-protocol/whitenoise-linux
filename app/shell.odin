@@ -784,7 +784,6 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 		ui.fwd_open ||
 		ui.sticker_open ||
 		ui.ov_open ||
-		ui.poll_open ||
 		ui.location_open ||
 		ui.qr_open ||
 		ui.lang_open ||

@@ -317,7 +317,8 @@ menu_keep :: proc(container: nendo.Id) -> bool {
 }
 
 edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
-	text_field_live = !tap_size() || buf != &ui.compose || compose_keyboard
+	composer := buf == &ui.compose || buf == &ui.poll_question
+	text_field_live = !tap_size() || !composer || compose_keyboard
 	ed_begin(ui, buf)
 	defer ed_end(ui, buf)
 	ed := &ui.ed
@@ -414,10 +415,11 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 		}
 	}
 	inbox_arrow := buf == &ui.compose && ctrl && shift
-	if multiline && !inbox_arrow && key_hit(.UP) {
+	slash_arrow := buf == &ui.compose && !cmd && !shift && slash_open(ui)
+	if multiline && !inbox_arrow && !slash_arrow && key_hit(.UP) {
 		edit.perform_command(ed, shift ? edit.Command.Select_Up : .Up)
 	}
-	if multiline && !inbox_arrow && key_hit(.DOWN) {
+	if multiline && !inbox_arrow && !slash_arrow && key_hit(.DOWN) {
 		edit.perform_command(ed, shift ? edit.Command.Select_Down : .Down)
 	}
 	if rl.IsKeyPressed(.HOME) {

@@ -228,6 +228,10 @@ msgid "%d/%d RELAYS"
 msgstr "%d/%d 릴레이"
 
 #, c-format
+msgid "%dd"
+msgstr "%d일"
+
+#, c-format
 msgid "%s added %s"
 msgstr "%s 님이 %s 님을 추가했습니다"
 
@@ -3699,6 +3703,10 @@ msgstr "White Noise 외부에서 %s을(를) 엽니다."
 msgid "Opens signal.link in your browser. You need the Signal app to join."
 msgstr "브라우저에서 signal.link를 엽니다. 참여하려면 Signal 앱이 필요합니다."
 
+#, c-format
+msgid "Option %d"
+msgstr "선택지 %d"
+
 msgid "Optional Nostr identifier (NIP-05), not your email address. This is public."
 msgstr "선택 사항인 Nostr 식별자(NIP-05)이며 이메일 주소가 아닙니다. 이 정보는 공개됩니다."
 
@@ -4817,6 +4825,9 @@ msgstr "로그아웃하고 서명자 세션을 제거하는 중"
 
 msgid "Signing you in"
 msgstr "로그인하는 중"
+
+msgid "Single choice"
+msgstr "단일 선택"
 
 msgid "Single sided"
 msgstr "단면"
