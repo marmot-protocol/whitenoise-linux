@@ -223,6 +223,17 @@ publishes that name and the uploaded starter face as kind-0, then lands on the
 account. Leaving the step removes the unnamed key, as Back does during
 generation. `WN_TEST_CREATE` skips the step and publishes the generated name.
 
+Sign out keeps a local key in the vault and its chats on disk.
+`accounts_adopt` keeps such accounts in `ui.signed_out_accounts`. They appear
+as "Sign in as <name>" on the sign-in card and under SIGNED OUT in Accounts.
+Choosing one runs `marmot_sign_in_account` on the account worker, so no nsec
+is needed. Remote-signer accounts are left out of that list. Their sign-out
+copy says to connect the signer again.
+
+A finished file save, export or backup toast offers "Show in folder", which
+opens the folder through `open_external`. The toast stays up longer and
+remains while the pointer is on it. OpenBSD and Android skip the button.
+
 Video tiles render at up to 480 pixels wide. The preview requests its displayed
 physical width, including UI zoom and display density, capped at the source
 width. Resizing repaints paused frames too. Closing a shared fullscreen player

@@ -11,6 +11,7 @@ import "nendo"
 @(private)
 Account_Operation :: enum {
 	Switch,
+	Sign_In, // a signed-out account back on; its key is still in the vault
 	Sign_Out,
 	Remove,
 	Wipe,
@@ -89,7 +90,9 @@ account_job_new :: proc(
 	revoked := account_revoked(ui, owner)
 	if kind == .Wipe_Unlinked {
 		if !revoked {return nil}
-	} else if revoked || ((kind == .Switch || kind == .Wipe) && !account_signed_in(ui, owner)) {
+	} else if revoked ||
+	   ((kind == .Switch || kind == .Wipe) && !account_signed_in(ui, owner)) ||
+	   (kind == .Sign_In && !account_signed_out(ui, owner)) {
 		if kind == .Switch {devices_switch_failed(ui, owner)}
 		return nil
 	}
@@ -183,7 +186,7 @@ account_worker :: proc(t: ^thread.Thread) {
 	case .Read_Archived:
 		chat_list_read(&job.chat_list)
 		if job.chat_list.err != "" {job.error = strings.clone(job.chat_list.err)}
-	case .Switch:
+	case .Switch, .Sign_In:
 		out: ^marmot.Account_Summary
 		status = marmot.sign_in_account(job.client, account, &out)
 		if out != nil {marmot.account_summary_free(out)}
@@ -761,7 +764,14 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 			continue
 		}
 		if job.kind == .Switch && job.error != "" {devices_switch_failed(ui, job.account)}
-		if job.error != "" {set_status(ui, strings.clone(job.error), .Error)}
+		if job.error != "" {
+			// The sign-in card shows its own failure; the banner sits behind it.
+			if job.kind == .Sign_In && (ui.account_ref == "" || ui.add_account_open) {
+				ui.login_error = strings.clone(job.error)
+			} else {
+				set_status(ui, strings.clone(job.error), .Error)
+			}
+		}
 		if job.error != "" &&
 		   job.kind == .Create_Chat &&
 		   ui.account_ref == job.account &&
@@ -783,6 +793,8 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 			if job.kind == .Switch {
 				finish_account_switch(ui, job.client, job.account)
 				if ui.page == .Profile || ui.page == .Settings {load_profile(job.client, ui)}
+			} else if job.kind == .Sign_In {
+				finish_auth(ui, job.client, job.account, "", "")
 			} else if ui.account_ref == job.account {
 				switch job.kind {
 				case .Profile:
@@ -906,18 +918,26 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 					ui.ov_open = false
 					ui.focus = .Invite
 					refresh_after_action(ui, job.client)
-				case .Switch, .Sign_Out, .Remove, .Wipe, .Wipe_Unlinked, .Delete_Conversation:
+				case .Switch, .Sign_In, .Sign_Out, .Remove, .Wipe, .Wipe_Unlinked, .Delete_Conversation:
 				}
 			}
 		}
 		ordered_remove(&account_jobs, i); account_job_free(job, .Joined)
 	}
 }
+// The signed-out account a running sign-in turns back on, or "".
+@(private)
+account_signing_in :: proc() -> string {
+	for job in account_jobs {if job.kind == .Sign_In {return job.account}}
+	return ""
+}
 @(private)
 account_pending_label :: proc(kind: Account_Operation) -> string {
 	switch kind {
 	case .Switch:
 		return tr("Switching your account")
+	case .Sign_In:
+		return tr("Signing you in")
 	case .Sign_Out:
 		return tr("Signing out and removing your signer session")
 	case .Remove, .Wipe_Unlinked:

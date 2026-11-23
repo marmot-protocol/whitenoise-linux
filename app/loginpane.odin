@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import "core:math"
 import "core:strings"
 
@@ -373,6 +374,19 @@ login_pane :: proc(ui: ^Ui_State) {
 			}
 			if ui.account_ref == "" && accounts_have_tombstones(ui) {
 				login_big_button("LoginUnlinkedProfiles", tr("Review unlinked profiles"), false)
+			}
+			// A signed-out account keeps its key in the vault, so it comes
+			// back without the nsec.
+			signing_in := account_signing_in()
+			for account, i in ui.signed_out_accounts {
+				busy := signing_in == account.id_hex
+				login_big_button(
+					fmt.tprintf("LoginResume%d", i),
+					busy ? tr("Signing you in") : fmt.tprintf(tr("Sign in as %s"), account.name),
+					false,
+					busy ? .Busy : signing_in != "" ? .Disabled : .Enabled,
+				)
+				if busy {busy_bar("LoginResumeBusy")}
 			}
 			if nendo.box(nendo.id("LoginLocalMethods"))(
 			{

@@ -138,6 +138,7 @@ save_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 			fail(ui, pending_save.name)
 		} else {
 			set_status(ui, fmt.aprintf(tr("Saved %s."), path), .Info)
+			status_reveal_file(ui, path)
 		}
 		return
 	}
@@ -163,6 +164,7 @@ save_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 		return
 	}
 	set_status(ui, fmt.aprintf(tr("Saved %s."), path), .Info)
+	status_reveal_file(ui, path)
 }
 
 // Use the retained window's media reference, or query if its chat was left.

@@ -10,6 +10,7 @@ package main
 import "core:fmt"
 import "core:math"
 import "core:os"
+import "core:path/filepath"
 import "core:strings"
 import "core:sys/linux"
 import "core:sys/posix"
@@ -708,6 +709,17 @@ set_status :: proc(ui: ^Ui_State, text: string, kind: Status_Kind) {
 	if ui.client_status == text {ui.banner_seen = ""}
 	ui.client_status = text
 	ui.client_status_kind = kind
+	delete(ui.status_reveal); ui.status_reveal = ""
+}
+
+// Offer "Show in folder" on the toast of the status just posted, for a
+// file the user saved. The folder, not the file: xdg-open would launch
+// the file's handler instead of the file manager.
+status_reveal_file :: proc(ui: ^Ui_State, path: string) {
+	when ODIN_OS != .OpenBSD && ODIN_PLATFORM_SUBTARGET != .Android {
+		delete(ui.status_reveal)
+		ui.status_reveal = filepath.dir(path)
+	}
 }
 
 // Route a new client_status into the banner.
@@ -722,6 +734,8 @@ banner_tick :: proc(ui: ^Ui_State) {
 	}
 	if ui.client_status_kind == .Info {
 		toast(ui, ui.client_status)
+		ui.toast_reveal, ui.status_reveal = ui.status_reveal, ""
+		if ui.toast_reveal != "" {ui.toast_until = rl.GetTime() + TOAST_ACTION_SECS}
 		return
 	}
 	ui.toast_until = 0
@@ -835,6 +849,7 @@ modal_backdrop :: proc() {
 // ── Toast ───────────────────────────────────────────────────────────
 
 TOAST_SECS :: 4.0
+TOAST_ACTION_SECS :: 8.0 // long enough to reach the toast's button
 
 // Transient confirmation for actions with no visible result of their
 // own (copy chips, mostly).
@@ -842,6 +857,7 @@ toast :: proc(ui: ^Ui_State, text: string) {
 	delete(ui.toast)
 	ui.toast = strings.clone(text)
 	ui.toast_until = rl.GetTime() + TOAST_SECS
+	delete(ui.toast_reveal); ui.toast_reveal = ""
 }
 
 // Copy chips have no visible result of their own, so every one of them
@@ -854,6 +870,10 @@ copy_text :: proc(ui: ^Ui_State, text: string, label: string) {
 toast_layer :: proc(ui: ^Ui_State) {
 	if len(ui.toast) == 0 || rl.GetTime() > ui.toast_until {
 		return
+	}
+	// An actionable toast stays while the pointer is on it.
+	if ui.toast_reveal != "" && nendo.pointer_over(nendo.id("Toast")) {
+		ui.toast_until = max(ui.toast_until, rl.GetTime() + 1)
 	}
 	frame_deadline = min(frame_deadline, ui.toast_until)
 	bottom: f32 = 60
@@ -875,7 +895,9 @@ toast_layer :: proc(ui: ^Ui_State) {
 	if nendo.box(nendo.id("Toast"))(
 	{
 		width = nendo.fit(max = fit_w(420)),
-		padding = {left = 16, right = 16, top = 9, bottom = 9},
+		padding = {left = 16, right = ui.toast_reveal != "" ? 9 : 16, top = 9, bottom = 9},
+		gap = 12,
+		align = {y = .Center},
 		floating = {
 			attach_to = .Root,
 			z = 20,
@@ -889,6 +911,7 @@ toast_layer :: proc(ui: ^Ui_State) {
 	},
 	) {
 		nendo.text(ui.toast, {font = FONT_BODY, size = 12, color = TEXT})
+		if ui.toast_reveal != "" {micro_button("ToastReveal", tr("Show in folder"))}
 	}
 }
 

@@ -3333,13 +3333,16 @@ msgstr ""
 msgid "Italian"
 msgstr ""
 
+msgid "Its chats stay on this device. To sign back in, connect your remote signer again."
+msgstr ""
+
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr ""
 
-msgid "Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."
+msgid "Its key and chats stay on this device. You can sign back in from Accounts or the sign-in screen without your secret key."
 msgstr ""
 
-msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
+msgid "Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."
 msgstr ""
 
 msgid "Jan"
@@ -4419,6 +4422,9 @@ msgstr ""
 msgid "Opening in your browser"
 msgstr ""
 
+msgid "Opening in your file manager"
+msgstr ""
+
 msgid "Opening your chat"
 msgstr ""
 
@@ -5236,6 +5242,9 @@ msgstr ""
 msgid "SHORT VIDEO EVENT"
 msgstr ""
 
+msgid "SIGNED OUT"
+msgstr ""
+
 msgid "SIGNER RELAY"
 msgstr ""
 
@@ -5674,6 +5683,9 @@ msgstr ""
 msgid "Show hint"
 msgstr ""
 
+msgid "Show in folder"
+msgstr ""
+
 msgid "Show less"
 msgstr ""
 
@@ -5706,6 +5718,10 @@ msgstr ""
 
 #, c-format
 msgid "Sign events of these kinds: %s"
+msgstr ""
+
+#, c-format
+msgid "Sign in as %s"
 msgstr ""
 
 msgid "Sign in to your Nostr identity"
@@ -5742,6 +5758,9 @@ msgid "Signed in on another device?"
 msgstr ""
 
 msgid "Signed out"
+msgstr ""
+
+msgid "Signed out. Choose it to sign back in."
 msgstr ""
 
 msgid "Signer cancelled"

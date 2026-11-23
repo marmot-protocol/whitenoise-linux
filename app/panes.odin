@@ -636,9 +636,15 @@ send_spinner :: proc(index: u32, state: Send_State) {
 }
 
 // One switcher row: avatar, name over npub tail, ACTIVE badge on the
-// row you're looking at, chevron hinting the tap.
-account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
-	account := ui.accounts[index]
+// row you're looking at, chevron hinting the tap. A signed-out row says
+// so, and shows progress while its sign-in runs.
+account_row :: proc(
+	ui: ^Ui_State,
+	account: Account_Row_Ui,
+	index: u32,
+	active: bool,
+	signed_out := false,
+) {
 	if nendo.box(nendo.id("AccountRow", index))(
 	{
 		width = nendo.grow(),
@@ -662,6 +668,15 @@ account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 			nendo.text(account.name, {font = FONT_TITLE, size = 14, color = TEXT})
 			nendo.text(npub_tail(account.npub), {font = FONT_MONO, size = 11, color = TEXT_LO})
 			if account.external {nip46_status_ui(ui, account.id_hex, index)}
+			if signed_out && account_signing_in() == account.id_hex {
+				nendo.text(tr("Signing you in"), {font = FONT_BODY, size = 11, color = TEXT_DIM})
+				busy_bar(fmt.tprintf("AccountRowBusy%d", index))
+			} else if signed_out {
+				nendo.text(
+					tr("Signed out. Choose it to sign back in."),
+					{font = FONT_BODY, size = 11, color = TEXT_DIM},
+				)
+			}
 		}
 		if nendo.box(nendo.id("AccountRowGap", index))(
 		{width = single_pane() ? nendo.fixed(0) : nendo.grow()},
@@ -777,7 +792,12 @@ accounts_modal :: proc(ui: ^Ui_State) {
 			order[at] = i
 		}
 		for i in order {
-			account_row(ui, u32(i), ui.accounts[i].id_hex == ui.account_ref)
+			account_row(ui, ui.accounts[i], u32(i), ui.accounts[i].id_hex == ui.account_ref)
+		}
+		// Indices continue past the signed-in rows, so row ids stay unique.
+		if len(ui.signed_out_accounts) > 0 {eyebrow(tr("SIGNED OUT"))}
+		for account, i in ui.signed_out_accounts {
+			account_row(ui, account, u32(len(ui.accounts) + i), false, signed_out = true)
 		}
 
 		if nendo.box(nendo.id("AcctFoot"))({width = nendo.grow(), gap = 10, padding = {top = 6}}) {

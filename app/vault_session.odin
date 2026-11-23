@@ -259,10 +259,12 @@ lock_scrub_ui :: proc(ui: ^Ui_State) {
 		delete(version.at); delete(version.text); blocks_free(version.blocks)
 	}
 	delete(ui.hist_versions); ui.hist_versions = {}
-	for &account in ui.accounts {
-		for text in ([]^string{&account.id_hex, &account.name, &account.npub, &account.pic_url}) {session_string_forget(text)}
+	for list in ([]^[dynamic]Account_Row_Ui{&ui.accounts, &ui.signed_out_accounts}) {
+		for &account in list^ {
+			for text in ([]^string{&account.id_hex, &account.name, &account.npub, &account.pic_url}) {session_string_forget(text)}
+		}
+		delete(list^); list^ = {}
 	}
-	delete(ui.accounts); ui.accounts = {}
 	session_strings_forget(&ui.sticker_recent)
 	for item in ui.stickers {mem.zero_slice(transmute([]u8)item.label); sticker_item_free(item)}
 	delete(ui.stickers); ui.stickers = {}

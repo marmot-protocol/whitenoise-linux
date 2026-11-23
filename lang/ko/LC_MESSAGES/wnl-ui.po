@@ -2862,14 +2862,17 @@ msgstr "다른 사람에게는 남아 있습니다. 이 기기에서는 다시 �
 msgid "Italian"
 msgstr "이탈리아어"
 
+msgid "Its chats stay on this device. To sign back in, connect your remote signer again."
+msgstr "채팅은 이 기기에 남아 있습니다. 다시 로그인하려면 원격 서명자를 다시 연결하세요."
+
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr "이 기기에서 파일이 제거됩니다. 채팅에 공유한 테마는 그대로 남습니다."
 
+msgid "Its key and chats stay on this device. You can sign back in from Accounts or the sign-in screen without your secret key."
+msgstr "키와 채팅은 이 기기에 남아 있습니다. 비밀 키 없이 계정 또는 로그인 화면에서 다시 로그인할 수 있습니다."
+
 msgid "Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."
 msgstr "키와 채팅이 이 기기에서 삭제됩니다. 다른 사람에게는 계속 그룹 멤버로 표시됩니다. 이 작업은 되돌릴 수 없습니다."
-
-msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
-msgstr "키는 이 기기의 금고에 남아 있습니다. 계정 화면에서 다시 로그인할 수 있습니다."
 
 msgid "Jan"
 msgstr "1월"
@@ -3713,6 +3716,9 @@ msgstr "%s에서 여는 중"
 msgid "Opening in your browser"
 msgstr "브라우저에서 여는 중"
 
+msgid "Opening in your file manager"
+msgstr "파일 관리자에서 여는 중"
+
 msgid "Opening your chat"
 msgstr "채팅 여는 중"
 
@@ -4405,6 +4411,9 @@ msgstr "공유된 테마"
 msgid "SHORT VIDEO EVENT"
 msgstr "짧은 동영상"
 
+msgid "SIGNED OUT"
+msgstr "로그아웃됨"
+
 msgid "SIGNER RELAY"
 msgstr "서명자 릴레이"
 
@@ -4789,6 +4798,9 @@ msgstr "그룹 멤버 표시"
 msgid "Show hint"
 msgstr "힌트 표시"
 
+msgid "Show in folder"
+msgstr "폴더에서 보기"
+
 msgid "Show less"
 msgstr "간단히 보기"
 
@@ -4820,6 +4832,10 @@ msgstr "진단 정보와 MLS 내부 정보를 표시합니다. 계정, 키 패�
 msgid "Sign events of these kinds: %s"
 msgstr "다음 종류의 이벤트 서명: %s"
 
+#, c-format
+msgid "Sign in as %s"
+msgstr "%s(으)로 로그인"
+
 msgid "Sign out"
 msgstr "로그아웃"
 
@@ -4828,6 +4844,9 @@ msgstr "이 계정에서 로그아웃하시겠습니까?"
 
 msgid "Signal call"
 msgstr "Signal 통화"
+
+msgid "Signed out. Choose it to sign back in."
+msgstr "로그아웃되었습니다. 선택하면 다시 로그인합니다."
 
 msgid "Signer cancelled"
 msgstr "서명자 요청 취소됨"

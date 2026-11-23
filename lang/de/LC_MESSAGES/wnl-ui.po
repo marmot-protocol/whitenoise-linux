@@ -3057,14 +3057,17 @@ msgstr "Für alle anderen bleibt sie erhalten. Auf diesem Gerät siehst du sie n
 msgid "Italian"
 msgstr "Italienisch"
 
+msgid "Its chats stay on this device. To sign back in, connect your remote signer again."
+msgstr "Seine Chats bleiben auf diesem Gerät. Um dich wieder anzumelden, verbinde deinen Remote-Signer erneut."
+
 msgid "Its file is removed from this device. Themes shared into a chat stay there."
 msgstr "Seine Datei wird von diesem Gerät entfernt. In einen Chat geteilte Themes bleiben dort erhalten."
 
+msgid "Its key and chats stay on this device. You can sign back in from Accounts or the sign-in screen without your secret key."
+msgstr "Sein Schlüssel und seine Chats bleiben auf diesem Gerät. Du kannst dich ohne deinen geheimen Schlüssel über Konten oder den Anmeldebildschirm wieder anmelden."
+
 msgid "Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."
 msgstr "Seine Schlüssel und Chats werden von diesem Gerät gelöscht. Für alle anderen bleibt es Mitglied seiner Gruppen. Das lässt sich nicht rückgängig machen."
-
-msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
-msgstr "Seine Schlüssel bleiben im Tresor auf diesem Gerät. Du kannst dich über die Kontenübersicht wieder anmelden."
 
 msgid "Jan"
 msgstr "Jan."
@@ -3975,6 +3978,9 @@ msgstr "Wird in %s geöffnet"
 msgid "Opening in your browser"
 msgstr "Wird in deinem Browser geöffnet"
 
+msgid "Opening in your file manager"
+msgstr "Wird in deinem Dateimanager geöffnet"
+
 msgid "Opening your chat"
 msgstr "Dein Chat wird geöffnet"
 
@@ -4710,6 +4716,9 @@ msgstr "GETEILTES THEME"
 msgid "SHORT VIDEO EVENT"
 msgstr "KURZVIDEO"
 
+msgid "SIGNED OUT"
+msgstr "ABGEMELDET"
+
 msgid "SIGNER RELAY"
 msgstr "SIGNER-RELAY"
 
@@ -5139,6 +5148,9 @@ msgstr "Gruppenmitglieder anzeigen"
 msgid "Show hint"
 msgstr "Hinweis anzeigen"
 
+msgid "Show in folder"
+msgstr "Im Ordner zeigen"
+
 msgid "Show less"
 msgstr "Weniger anzeigen"
 
@@ -5170,6 +5182,10 @@ msgstr "Zeigt Diagnosen und MLS-Interna. Fügt einen Debug-Eintrag mit Konto, Sc
 msgid "Sign events of these kinds: %s"
 msgstr "Events dieser Arten signieren: %s"
 
+#, c-format
+msgid "Sign in as %s"
+msgstr "Als %s anmelden"
+
 msgid "Sign in to your Nostr identity"
 msgstr "Bei deiner Nostr-Identität anmelden"
 
@@ -5181,6 +5197,9 @@ msgstr "Von diesem Konto abmelden?"
 
 msgid "Signal call"
 msgstr "Signal-Anruf"
+
+msgid "Signed out. Choose it to sign back in."
+msgstr "Abgemeldet. Wähle es aus, um dich wieder anzumelden."
 
 msgid "Signer cancelled"
 msgstr "Signer-Anfrage abgebrochen"
