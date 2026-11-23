@@ -373,6 +373,9 @@ msgstr ""
 msgid "2. Open Settings → Devices there and choose Link to another device."
 msgstr ""
 
+msgid "2.5 GB"
+msgstr ""
+
 msgid "25 European languages, including English and Italian."
 msgstr ""
 
@@ -1557,6 +1560,9 @@ msgstr ""
 msgid "Couldn't check linked devices for this chat. Please try again."
 msgstr ""
 
+msgid "Couldn't check the translation model. Please try again."
+msgstr ""
+
 msgid "Couldn't check which chats can add linked devices. Please try again."
 msgstr ""
 
@@ -1912,6 +1918,9 @@ msgid "Couldn't remove the pack. Please try again."
 msgstr ""
 
 msgid "Couldn't remove the saved file. Please try again."
+msgstr ""
+
+msgid "Couldn't remove the translation model. Please try again."
 msgstr ""
 
 msgid "Couldn't rename the device. Please try again."
@@ -2440,6 +2449,9 @@ msgid "Done"
 msgstr ""
 
 msgid "Done."
+msgstr ""
+
+msgid "Download"
 msgstr ""
 
 msgid "Downloaded"

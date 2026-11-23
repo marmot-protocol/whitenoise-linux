@@ -351,6 +351,9 @@ msgstr "1 Stimme"
 msgid "1 voter"
 msgstr "1 abstimmende Person"
 
+msgid "2.5 GB"
+msgstr "2,5 GB"
+
 msgid "25 European languages, including English and Italian."
 msgstr "25 europäische Sprachen, darunter Englisch und Italienisch."
 
@@ -1415,6 +1418,9 @@ msgstr "Das Passwort konnte nicht geändert werden. Bitte versuche es erneut."
 msgid "Couldn't check for updates. Please try again."
 msgstr "Nach Updates konnte nicht gesucht werden. Bitte versuche es erneut."
 
+msgid "Couldn't check the translation model. Please try again."
+msgstr "Das Übersetzungsmodell konnte nicht überprüft werden. Bitte versuche es erneut."
+
 msgid "Couldn't choose a photo. Close your open file picker and try again."
 msgstr "Es konnte kein Foto ausgewählt werden. Schließe deine geöffnete Dateiauswahl und versuche es erneut."
 
@@ -1723,6 +1729,9 @@ msgstr "Das Paket konnte nicht entfernt werden. Bitte versuche es erneut."
 
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "Die gespeicherte Datei konnte nicht entfernt werden. Bitte versuche es erneut."
+
+msgid "Couldn't remove the translation model. Please try again."
+msgstr "Das Übersetzungsmodell konnte nicht entfernt werden. Bitte versuche es erneut."
 
 msgid "Couldn't rename the group. Enter a name and try again."
 msgstr "Die Gruppe konnte nicht umbenannt werden. Gib einen Namen ein und versuche es erneut."
@@ -2188,6 +2197,9 @@ msgstr "Fertig"
 
 msgid "Done."
 msgstr "Erledigt."
+
+msgid "Download"
+msgstr "Herunterladen"
 
 msgid "Downloaded"
 msgstr "Heruntergeladen"

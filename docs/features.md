@@ -198,11 +198,13 @@ Export:
 
 ### Translation on your device
 
-Native Linux builds translate messages and audio transcriptions locally with [TranslateGemma 4B Q4_K_M](https://huggingface.co/mradermacher/translategemma-4b-it-GGUF). The first translation downloads about 2.5 GB of model files; later translations work offline.
+Native Linux builds translate messages and audio transcriptions locally with [TranslateGemma 4B](https://huggingface.co/mradermacher/translategemma-4b-it-GGUF). The model download uses about 2.5 GB. Once downloaded, translations work offline.
 
 1. Enable it in Settings > General > Language > Message translation.
 2. Choose the target language.
 3. Use Translate in a message's context menu. For audio, finish a transcription and use Translate below its expanded text.
+
+Use **Download** in Message translation to get the model in advance, or let the first translation download it. **Remove** frees the disk space. The next translation downloads the files again.
 
 Enabling it accepts the [Gemma terms](https://ai.google.dev/gemma/terms) and [prohibited use policy](https://ai.google.dev/gemma/prohibited_use_policy).
 

@@ -1508,7 +1508,7 @@ app_main :: proc() {
 					tts_stop(&ui)
 				}
 				if clicked("TranslationStopGlobal") {
-					translation_stop(&ui)
+					translation_cancel(&ui)
 				}
 				if clicked("BannerClose") {
 					ui.banner = "" // borrowed from client_status; never freed here

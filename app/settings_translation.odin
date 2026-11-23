@@ -103,11 +103,48 @@ settings_translation :: proc(ui: ^Ui_State) {
 			if nendo.box(nendo.id("TranslationModel"))(
 			{width = nendo.grow(), direction = .Column, gap = 6},
 			) {
-				row_labels(TRANSLATION_MODEL_NAME, human_size(TRANSLATION_MODEL_BYTES))
-				status := translation_status(ui)
-				if status !=
-				   "" {nendo.text(status, {font = FONT_BODY, size = 11, color = TEXT_DIM})}
-				if ui.translation.file != nil {translation_progress(ui, "TranslationProgress")}
+				model := ui.translation.model_state
+				busy := ui.translation.file != nil
+				detail := tr("2.5 GB")
+				status: string
+				if busy {
+					status = translation_status(ui)
+				} else {
+					switch model {
+					case .Unknown:
+					case .Missing, .Partial:
+						status = tr("Not downloaded")
+					case .Ready:
+						status = tr("Downloaded")
+					case .CheckFailed:
+						status = tr("Couldn't check the translation model. Please try again.")
+					}
+				}
+				if status != "" {
+					detail = fmt.tprintf("%s · %s", detail, status)
+				}
+				if nendo.box(nendo.id_local("TranslationModelRow"))(
+					settings_row(model == .Partial || model == .CheckFailed),
+				) {
+					row_labels(TRANSLATION_MODEL_NAME, detail)
+					if ui.translation.model_action == .Download {
+						settings_translation_register("TranslationStopGlobal")
+						settings_button("TranslationStopGlobal", tr("Cancel"))
+					} else if !busy && model == .CheckFailed {
+						settings_translation_register("TranslationRetryCheck")
+						settings_button("TranslationRetryCheck", tr("Try again"))
+					} else if !busy && model != .Unknown {
+						if model != .Ready {
+							settings_translation_register("TranslationDownload")
+							settings_button("TranslationDownload", tr("Download"))
+						}
+						if model != .Missing {
+							settings_translation_register("TranslationRemove")
+							settings_button("TranslationRemove", tr("Remove"))
+						}
+					}
+				}
+				if busy {translation_progress(ui, "TranslationProgress")}
 			}
 		}
 	} else {
@@ -222,6 +259,7 @@ settings_translation_action :: proc(ui: ^Ui_State, id: string) -> bool {
 	switch id {
 	case "TgTranslation":
 		ui.prefs.translation_enabled = !ui.prefs.translation_enabled
+		if !ui.prefs.translation_enabled {translation_stop(ui)}
 		translation_clear(ui)
 		ui.translation.language_menu = 0
 		save_settings(ui)
@@ -234,6 +272,24 @@ settings_translation_action :: proc(ui: ^Ui_State, id: string) -> bool {
 		open_external("https://ai.google.dev/gemma/terms")
 	case "TranslationPolicy":
 		open_external("https://ai.google.dev/gemma/prohibited_use_policy")
+	case "TranslationRetryCheck":
+		if !ui.prefs.translation_enabled ||
+		   ui.translation.file != nil ||
+		   ui.translation.model_state != .CheckFailed {return false}
+		translation_launch(ui, nil, .Check)
+	case "TranslationDownload", "TranslationRemove":
+		s := &ui.translation
+		if !ui.prefs.translation_enabled ||
+		   s.file != nil ||
+		   s.model_state == .Unknown ||
+		   s.model_state == .CheckFailed {return false}
+		action := id == "TranslationDownload" ? Translation_Model_Action.Download : .Remove
+		if (action == .Download && s.model_state == .Ready) ||
+		   (action == .Remove && s.model_state == .Missing) {return false}
+		translation_launch(ui, nil, action)
+	case "TranslationStopGlobal":
+		if ui.translation.model_action != .Download {return false}
+		translation_cancel(ui)
 	case "TranslationSource", "TranslationTarget":
 		if !ui.prefs.translation_enabled {return false}
 		menu := id == "TranslationSource" ? 1 : 2
@@ -306,7 +362,7 @@ settings_translation_keys :: proc(ui: ^Ui_State) -> bool {
 handle_settings_translation :: proc(ui: ^Ui_State) -> bool {
 	when !TRANSLATION_AVAILABLE {return false}
 	if ui.settings_tab != 1 {return false}
-	for id in ([]string{"TranslationSource", "TranslationTarget", "TranslationTerms", "TranslationPolicy"}) {
+	for id in ([]string{"TranslationSource", "TranslationTarget", "TranslationTerms", "TranslationPolicy", "TranslationDownload", "TranslationRemove", "TranslationRetryCheck"}) {
 		if clicked(id) {return settings_translation_action(ui, id)}
 	}
 	if ui.prefs.translation_enabled && ui.translation.language_menu != 0 {
