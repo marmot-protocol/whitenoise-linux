@@ -373,7 +373,7 @@ index 18308854..fd80bf83 100644
      assert_eq!(old.reply_to_message_id_hex, None);
      assert_eq!(old.timeline_order_seq, 0);
 +
-+    store.record_app_event(&item("valid", 11, 1, "done", 0)).unwrap();
++    store.record_app_event(&item("valid", 11, 1, "done", 1)).unwrap();
 +    for (target, expected) in [("old", None), ("valid", Some("v1 done"))] {
 +        for (kind, label) in [
 +            (MARMOT_APP_EVENT_KIND_CHAT, "inline"),
