@@ -1167,10 +1167,9 @@ devices_chat_sync :: proc(t: ^testing.T) {
 	change := marmot.Group_System_Event {
 		text = "A member joined",
 	}
-	event := [?]cstring{"e", "thread-root"}
-	tag := marmot.Message_Tag {
-		values     = raw_data(event[:]),
-		values_len = len(event),
+	thread := marmot.Timeline_Thread_Ref {
+		root_message_id_hex   = "thread-root",
+		parent_message_id_hex = "thread-root",
 	}
 	rows := [?]marmot.Timeline_Message_Record {
 		{
@@ -1196,8 +1195,7 @@ devices_chat_sync :: proc(t: ^testing.T) {
 			message_id_hex = "thread",
 			direction = "received",
 			plaintext = "off-route",
-			tags = &tag,
-			tags_len = 1,
+			thread = &thread,
 			history_import_provenance = &backup,
 			timeline_at = 1003,
 		},
