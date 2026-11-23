@@ -34,7 +34,13 @@ if [ ! -f "$rustup/settings.toml" ]; then
 fi
 rm -rf dist build/cross-evidence
 mkdir -p build/cross-evidence
+package_options=()
+if [ "$target" = linux-arm64 ]; then
+  # Boat's ARM64 snapshot carries build caches, not package stages or archives.
+  package_options=(-e WN_CROSS_PACKAGE_CACHE=off)
+fi
 podman run --rm --network=host --entrypoint bash \
+  "${package_options[@]}" \
   -e CARGO_BUILD_JOBS -e WN_BUILD_JOBS -e CMAKE_BUILD_PARALLEL_LEVEL \
   -e WN_RELEASE_VERSION -e WN_METRICS_WRITE_TOKEN -e WN_AUDIT_WRITE_TOKEN \
   -v "$PWD:/work" -v "$cache/vcpkg:/root/.cache/vcpkg" \

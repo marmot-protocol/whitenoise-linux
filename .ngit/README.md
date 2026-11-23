@@ -114,6 +114,10 @@ content-keyed OCI archive and retains its Rust and vcpkg state. Outputs still
 follow the existing build scripts' input keys; a cache hit does not skip tests
 or packaged-app smoke runs.
 
+Boat's ARM64 staging workers discard the package stage and archive after each
+run. They skip package cache keys and manifests, but still check the dependency
+closure, unpack the new archive, and boot it under QEMU.
+
 Native test executables are keyed by application, test, compiler, library, and
 flag inputs. The app compiles its test executable once per input change. Each
 isolated UI test runs that same executable in a fresh process. Cache hits still

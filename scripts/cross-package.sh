@@ -14,7 +14,7 @@ package_allowed() {
   return 0
 }
 stage_clean() {
-  local excluded link listing root="${1:-$STAGE}"
+  local excluded link listing root="${1:-$STAGE}" mode="${2:-copied}"
   excluded="$(find "$root" \( -name .git -o -name .hg -o -name .svn -o -name .env -o -name '*.env' \) -print -quit)" || return 1
   [ -z "$excluded" ] || return 1
   listing="$(mktemp)"
@@ -23,7 +23,7 @@ stage_clean() {
     return 1
   fi
   while IFS= read -r -d '' link; do
-    if ! package_allowed "$link"; then
+    if ! package_allowed "$link" || { [ "$mode" = complete ] && [ ! -e "$link" ]; }; then
       rm -f "$listing"
       return 1
     fi
@@ -49,6 +49,10 @@ find_curl() {
   return 1
 }
 copy_resources() {
+  if ! package_allowed "$1"; then
+    echo 'Excluded package resource directory' >&2
+    return 1
+  fi
   mkdir -p "$2"
   TAR_OPTIONS= tar -C "$1" --exclude=.git --exclude=.hg --exclude=.svn --exclude=.env --exclude='*.env' -cf - . |
     TAR_OPTIONS= tar -C "$2" --no-same-owner -xpf -
@@ -119,9 +123,9 @@ done
 STAGE_STAMP="$OUT/package/$NAME.stage.stamp"
 STAGE_KEY=
 STAGE_HIT=false
+PACKAGE_CACHE=false
 if [ "$SYSTEM" != darwin ]; then
-  INPUTS=("$HERE/scripts/cross-package.sh" "$HERE/scripts/cross-bundle.js"
-    "$HERE/scripts/build-cache.sh" "$CA_BUNDLE" "$(command -v bun)" "$(command -v tar)"
+  INPUTS=("$CA_BUNDLE"
     "$HERE/vendor/emoji" "$HERE/vendor/emoji-licenses" "$HERE/vendor/emoji-catalog.tsv"
     "$HERE/vendor/fonts" "$HERE/vendor/crop-circles/LICENSE"
     "$HERE/vendor/crop-circles/README.txt" "$HERE/vendor/common-passwords.LICENSE"
@@ -132,11 +136,28 @@ if [ "$SYSTEM" != darwin ]; then
   for helper in whitenoise wn-tts wn-stt wn-font wn-image wn-archive wn-pdf wn-mesh wn-fbx wn-math wn-nes; do
     INPUTS+=("$OUT/$helper$EXE")
   done
+  if [ "$SYSTEM" = linux ]; then
+    INPUTS+=("$OUT/wn-webview" "$OUT/wn-location" "$PREFIX/bin/curl")
+  fi
+  for input in "${INPUTS[@]}"; do
+    if ! package_allowed "$input"; then
+      echo 'Missing or excluded required package input' >&2
+      exit 1
+    fi
+  done
+  if [ "$SYSTEM" = windows ] || [ "${WN_CROSS_PACKAGE_CACHE:-on}" = on ]; then
+    PACKAGE_CACHE=true
+  fi
+else
+  echo 'Package cache disabled for macOS: rerun nested code signing and Sparkle release handling.'
+fi
+if [ "$PACKAGE_CACHE" = true ]; then
+  INPUTS+=("$HERE/scripts/cross-package.sh" "$HERE/scripts/cross-bundle.js"
+    "$HERE/scripts/build-cache.sh" "$(command -v bun)" "$(command -v tar)")
   ROOTS=("$PREFIX" "$TTS")
   if [ "$SYSTEM" = linux ]; then
     ROOTS+=("$SYSROOT/lib")
-    INPUTS+=("$OUT/wn-webview" "$PREFIX/bin/curl" "$(command -v readelf)"
-    "$(command -v patchelf)" "$(command -v glib-compile-schemas)")
+    INPUTS+=("$(command -v readelf)" "$(command -v patchelf)" "$(command -v glib-compile-schemas)")
     for dir in webkit2gtk-4.1 gstreamer-1.0 gio; do
       if [ -d "$PREFIX/lib/$TRIPLE/$dir" ]; then INPUTS+=("$PREFIX/lib/$TRIPLE/$dir"); fi
     done
@@ -194,8 +215,6 @@ if [ "$SYSTEM" != darwin ]; then
     STAGE_HIT=true
     printf 'Cached package stage %s\n' "$NAME"
   fi
-else
-  echo 'Package cache disabled for macOS: rerun nested code signing and Sparkle release handling.'
 fi
 if [ "$STAGE_HIT" = false ]; then
   # Remove stale output only after the content/output check, never before it.
@@ -400,11 +419,11 @@ PLIST
     codesign --force --sign - --timestamp=none "$STAGE"
     codesign --verify --strict --deep "$STAGE"
   fi
-  if ! stage_clean; then
+  if ! stage_clean "$STAGE" complete; then
     echo 'Package stage contains excluded paths or symlink targets' >&2
     exit 1
   fi
-  if [ "$SYSTEM" != darwin ]; then
+  if [ "$PACKAGE_CACHE" = true ]; then
     build_cache_store "$STAGE_KEY" "$STAGE_STAMP" "$STAGE"
   fi
 fi
@@ -498,16 +517,16 @@ else
   ARCHIVE="$HERE/dist/$NAME.tar.gz"
   ARCHIVE_STAMP="$OUT/package/$NAME.archive.stamp"
   ARCHIVE_KEY=
-  if [ "$SYSTEM" != darwin ]; then
+  if [ "$PACKAGE_CACHE" = true ]; then
     ARCHIVE_KEY="$(build_cache_key "tar-v1 stage=$STAGE_KEY TAR_OPTIONS=${TAR_OPTIONS:-} GZIP=${GZIP:-} TZ=${TZ:-}" \
       "$(command -v tar)" "$(command -v gzip)")"
   fi
-  if [ "$SYSTEM" != darwin ] && build_cache_fresh "$ARCHIVE_KEY" "$ARCHIVE_STAMP" "$ARCHIVE"; then
+  if [ "$PACKAGE_CACHE" = true ] && build_cache_fresh "$ARCHIVE_KEY" "$ARCHIVE_STAMP" "$ARCHIVE"; then
     printf 'Cached archive %s\n' "$NAME"
   else
     rm -f "$ARCHIVE_STAMP"
     tar -C "$OUT/package" -czf "$ARCHIVE" "$NAME"
-    if [ "$SYSTEM" != darwin ]; then build_cache_store "$ARCHIVE_KEY" "$ARCHIVE_STAMP" "$ARCHIVE"; fi
+    if [ "$PACKAGE_CACHE" = true ]; then build_cache_store "$ARCHIVE_KEY" "$ARCHIVE_STAMP" "$ARCHIVE"; fi
   fi
   if [ "$SYSTEM" = darwin ] && [ -n "${WN_SPARKLE_PRIVATE_KEY:-}" ]; then
     bun "$HERE/scripts/sparkle-package.js" publish "$HERE/dist/$NAME.tar.gz" "$VERSION" \
