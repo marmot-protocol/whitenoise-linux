@@ -842,34 +842,29 @@ accounts_adopt :: proc(
 ) {
 	revision := ui.accounts_revision + 1
 	ui.accounts_revision = revision
+	cleared_unlinked := false
 	if accounts != nil {
 		for summary in accounts.items[:accounts.len] {
 			hex := string(summary.account_id_hex)
 			if hex == "" {continue}
 			if summary.signed_out && summary.unlinked {
 				devices_mark_unlinked(ui, hex, string(summary.label))
-				profile := ui.devices.profiles[hex]
-				profile.unlink_check, profile.seen = false, revision
-			} else if profile := ui.devices.profiles[hex]; profile != nil && profile.unlink_check {
-				if summary.running && !summary.signed_out {
-					profile.unlink_check = false
-				} else {
-					devices_mark_unlinked(ui, hex, string(summary.label))
-					profile.seen = revision
-				}
+				continue
 			}
-		}
-	}
-	cleared_unlinked := false
-	for hex, profile in ui.devices.profiles {
-		if !profile.revoked || profile.seen == revision {continue}
-		profile.revoked, profile.unlink_notice_seen = false, false
-		profile.unlink_check = false
-		delete(profile.unlink_label, reload_allocator()); profile.unlink_label = ""
-		cleared_unlinked = true
-		if ui.devices.panel_account == hex &&
-		   (ui.devices.panel == .Unlinked || ui.devices.panel == .Auth_Unlinked) {
-			devices_close(ui)
+			// MDK can omit unreadable records and report stopped workers when
+			// its worker lock is busy. Only a running replacement clears the fence.
+			profile := ui.devices.profiles[hex]
+			if profile == nil ||
+			   !(profile.unlink_check || profile.revoked) ||
+			   !summary.running ||
+			   summary.signed_out {continue}
+			profile.revoked, profile.unlink_check, profile.unlink_notice_seen = false, false, false
+			delete(profile.unlink_label, reload_allocator()); profile.unlink_label = ""
+			cleared_unlinked = true
+			if ui.devices.panel_account == hex &&
+			   (ui.devices.panel == .Unlinked || ui.devices.panel == .Auth_Unlinked) {
+				devices_close(ui)
+			}
 		}
 	}
 	old := ui.accounts
@@ -881,7 +876,8 @@ accounts_adopt :: proc(
 			hex := string(summary.account_id_hex)
 			if hex == "" {continue}
 			if summary.signed_out {continue}
-			if device := ui.devices.profiles[hex]; device != nil && device.revoked {continue}
+			if device := ui.devices.profiles[hex];
+			   device != nil && (device.revoked || device.unlink_check) {continue}
 			row: Account_Row_Ui
 			if i, ok := previous[hex]; ok {
 				row, old[i] = old[i], {}
@@ -921,14 +917,16 @@ account_revoked :: proc(ui: ^Ui_State, account: string) -> bool {
 
 @(private)
 account_signed_in :: proc(ui: ^Ui_State, account: string) -> bool {
-	if account == "" || account_revoked(ui, account) {return false}
+	if account == "" {return false}
+	if profile := ui.devices.profiles[account];
+	   profile != nil && (profile.revoked || profile.unlink_check) {return false}
 	for row in ui.accounts {if row.id_hex == account {return true}}
 	return false
 }
 
 @(private)
 accounts_have_tombstones :: proc(ui: ^Ui_State) -> bool {
-	for _, profile in ui.devices.profiles {if profile.revoked {return true}}
+	for _, profile in ui.devices.profiles {if profile.revoked || profile.unlink_check {return true}}
 	return false
 }
 
@@ -1058,7 +1056,7 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 
 @(private)
 finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
-	if account_revoked(ui, account_id) {return}
+	if !account_signed_in(ui, account_id) {return}
 	selected := strings.clone(account_id)
 	account_workspace_clear(ui)
 	delete(ui.account_ref)

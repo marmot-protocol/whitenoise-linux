@@ -214,6 +214,7 @@ devices_seed :: proc(ui: ^Ui_State) {
 devices_mark_unlinked :: proc(ui: ^Ui_State, account, label: string) {
 	if account == "" {return}
 	profile := device_profile(&ui.devices, account)
+	profile.unlink_check = false
 	if profile.revoked {return}
 	profile.revoked, profile.signed_in = true, false
 	profile.unlink_notice_seen = false
@@ -259,7 +260,8 @@ devices_wipe_applied :: proc(ui: ^Ui_State, account: string) {
 devices_open_unlinked :: proc(ui: ^Ui_State, mode: Device_Unlink_Mode = .Manual) -> bool {
 	best: ^Device_Profile
 	for _, profile in ui.devices.profiles {
-		if !profile.revoked || (mode == .Automatic && profile.unlink_notice_seen) {continue}
+		if !(profile.revoked || profile.unlink_check) ||
+		   (mode == .Automatic && profile.unlink_notice_seen) {continue}
 		if best == nil || profile.account < best.account {best = profile}
 	}
 	if best == nil {return false}
@@ -355,7 +357,7 @@ devices_refresh_reads :: proc(ui: ^Ui_State) {
 devices_visible :: proc(ui: ^Ui_State) -> bool {
 	if ui.account_ref == "" {return false}
 	profile := ui.devices.profiles[ui.account_ref]
-	return profile == nil || !profile.revoked
+	return profile == nil || !(profile.revoked || profile.unlink_check)
 }
 
 @(private)

@@ -81,6 +81,12 @@ new_send_paused :: proc(ui: ^Ui_State) -> bool {
 	return true
 }
 
+@(private)
+account_send_paused :: proc(ui: ^Ui_State, account: string) -> bool {
+	profile := ui.devices.profiles[account]
+	return account_departing(account) || (profile != nil && profile.unlink_check)
+}
+
 pending_send_allowed :: proc(ui: ^Ui_State, p: Pending_Send) -> bool {
 	return(
 		!p.dismissed &&

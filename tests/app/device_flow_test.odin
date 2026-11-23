@@ -10,6 +10,7 @@ import "core:text/edit"
 import marmot "../marmot"
 import "nendo"
 import rl "sdlrl"
+import sdl "vendor:sdl3"
 
 @(test)
 devices_event_dispatch :: proc(t: ^testing.T) {
@@ -634,6 +635,21 @@ devices_account_fence :: proc(t: ^testing.T) {
 		testing.expect(t, !test_send_now)
 		testing.expect_value(t, string(ui.compose[:]), "a draft")
 		testing.expect_value(t, len(ui.pending), 0)
+		spec := sdl.AudioSpec {
+			format   = .S16,
+			channels = 1,
+			freq     = VOICE_RATE,
+		}
+		stream := sdl.CreateAudioStream(&spec, &spec)
+		if testing.expect(t, stream != nil) {
+			voice.stream = stream
+			defer voice_cancel()
+			append(&voice.samples, i16(123))
+			voice_send(&ui, &client)
+			testing.expect(t, voice.stream == stream)
+			testing.expect_value(t, len(voice.samples), 1)
+			testing.expect_value(t, len(ui.pending), 0)
+		}
 	}
 	devices_mark_unlinked(&ui, "account-b", "B")
 	testing.expect_value(t, ui.account_ref, "account-a")
@@ -661,17 +677,30 @@ devices_account_fence :: proc(t: ^testing.T) {
 	profile_a.unlink_check = true
 	remaining.running = false
 	accounts_adopt(&ui, nil, &accounts)
+	testing.expect_value(t, ui.account_ref, "account-a")
+	testing.expect_value(t, ui.selected, 0)
+	testing.expect_value(t, string(ui.compose[:]), "a draft")
+	testing.expect(t, !pending_send_allowed(&ui, a))
+	accounts.len = 0
+	accounts_adopt(&ui, nil, &accounts)
+	ui.devices.inventory_dirty = false
+	blocked := device_test_frame(&ui)
+	testing.expect(t, strings.contains(blocked, "Couldn't verify that this profile was unlinked."))
+	testing.expect(t, !strings.contains(blocked, "Chat A"))
+	testing.expect(t, !strings.contains(blocked, "a draft"))
+	testing.expect(t, !nendo.element(nendo.id("DeviceWipe")).found)
+	testing.expect(t, nendo.element(nendo.id("DeviceVerifyUnlink")).found)
+	accounts.len, remaining.running = 1, true
+	accounts_adopt(&ui, nil, &accounts)
+	testing.expect(t, pending_send_allowed(&ui, a))
+	testing.expect_value(t, string(ui.compose[:]), "a draft")
+	profile_a.unlink_check = true
+	remaining.signed_out, remaining.unlinked = true, true
+	accounts_adopt(&ui, nil, &accounts)
 	testing.expect_value(t, ui.account_ref, "")
 	testing.expect_value(t, ui.selected, -1)
 	testing.expect_value(t, len(ui.compose), 0)
-	testing.expect(t, !pending_send_allowed(&ui, a))
-	finish_account_switch(&ui, nil, "account-a")
-	testing.expect_value(t, ui.account_ref, "")
 	devices_present(&ui, true)
-	device_test_frame(&ui)
-	testing.expect(t, !nendo.element(nendo.id("DeviceWipe")).found)
-	remaining.signed_out, remaining.unlinked = true, true
-	accounts_adopt(&ui, nil, &accounts)
 	text := device_test_frame(&ui)
 	testing.expect(t, strings.contains(text, "Device unlinked"))
 	testing.expect(t, strings.contains(text, "Remove from this device"))

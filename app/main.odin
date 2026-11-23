@@ -172,6 +172,10 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	}
 	nendo.begin()
 
+	if profile := ui.devices.profiles[ui.account_ref]; profile != nil && profile.unlink_check {
+		device_unlink_screen(ui)
+		return nendo.end(frame_time)
+	}
 	page_advance(ui)
 
 	logged_in := ui.account_ref != ""
@@ -909,6 +913,30 @@ app_main :: proc() {
 
 			start_events(&live, client)
 			devices_drain(&ui, client, &live)
+			if profile := ui.devices.profiles[ui.account_ref];
+			   profile != nil && profile.unlink_check {
+				// Keep the workspace intact but do not run any of its input handlers.
+				rl.SetTextInput(false)
+				for rl.GetCharPressed() != 0 {}
+				forced_press, forced_release = false, false
+				pointer := transmute(nendo.Vector2)rl.GetMousePosition() / UI_ZOOM
+				nendo.set_pointer(pointer, rl.IsMouseButtonDown(.LEFT) ? .Down : .Up)
+				nendo.set_dimensions({f32(win_now.x) / UI_ZOOM, f32(win_now.y) / UI_ZOOM})
+				if clicked("DeviceVerifyUnlink") {ui.devices.inventory_dirty = true; frame_wake()}
+				if clicked("VoiceCancel") {voice_cancel()}
+				voice_poll()
+				if rl.IsWindowVisible() {
+					commands := build_layout(&ui, 0)
+					rl.BeginDrawing()
+					rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM})
+					render_nendo(commands)
+					rl.EndMode2D()
+					rl.EndDrawing()
+				}
+				if !frame_input {rl.Wait(IDLE_REFRESH_MS)}
+				frame += 1
+				continue
+			}
 			start_live(&live, client, ui.account_ref)
 			live_tick(&live, &ui, client) // poll fallback when the stream stalls
 			drain_live(&live, &ui, client)

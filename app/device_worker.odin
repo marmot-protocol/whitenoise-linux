@@ -510,7 +510,10 @@ devices_drain :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 	for account, parts in changes {
 		if .Unlinked in parts {
 			devices.inventory_dirty = true
-			if profile := devices.profiles[account]; profile != nil && !profile.revoked {
+			if profile := devices.profiles[account];
+			   profile != nil &&
+			   !profile.revoked &&
+			   (profile.signed_in || account == ui.account_ref) {
 				profile.unlink_check = true
 				ui.accounts_revision += 1
 			}
@@ -531,10 +534,6 @@ devices_drain :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 			devices.inventory_stale = job.status != .OK
 			if job.status == .OK {
 				accounts_adopt(ui, client, job.accounts)
-			} else {
-				for _, profile in devices.profiles {
-					if profile.unlink_check {devices_mark_unlinked(ui, profile.account, "")}
-				}
 			}
 		} else {
 			devices.inventory_dirty = true
@@ -565,6 +564,7 @@ devices_drain :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 	for _, profile in devices.profiles {
 		if profile.job != nil ||
 		   !profile.signed_in ||
+		   profile.unlink_check ||
 		   (profile.queued.kind == .None && profile.dirty == {}) {continue}
 		parts := device_requirements(profile.queued.kind)
 		if profile.queued.kind != .None &&

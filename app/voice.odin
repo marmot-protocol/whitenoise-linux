@@ -174,7 +174,7 @@ voice_poll :: proc() {
 // Stop, wrap the samples in a WAV, and queue it like a staged
 // non-image attachment (own pending row + upload worker).
 voice_send :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if voice.stream == nil {
+	if voice.stream == nil || new_send_paused(ui) {
 		return
 	}
 	voice_stop()

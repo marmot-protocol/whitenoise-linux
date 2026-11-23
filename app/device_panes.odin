@@ -1498,6 +1498,34 @@ device_root_panel :: proc(panel: Device_Panel) -> bool {
 }
 
 @(private = "file")
+device_unlink_status :: proc(d: ^Devices_State) {
+	if d.inventory_dirty || d.inventory != nil {
+		device_copy(tr("Checking device information…"), TEXT)
+		busy_bar("UnlinkedProfileBusy")
+		return
+	}
+	device_copy(tr("Couldn't verify that this profile was unlinked. Please try again."), WARNING)
+	settings_button("DeviceVerifyUnlink", tr("Check now"))
+}
+
+@(private)
+device_unlink_screen :: proc(ui: ^Ui_State) {
+	if nendo.box(nendo.id("UnlinkCheck"))(
+	{width = nendo.grow(), height = nendo.grow(), align = {x = .Center, y = .Center}, color = BG},
+	) {
+		if nendo.box(nendo.id("UnlinkCheckCard"))(
+		{width = nendo.percent(0.85), direction = .Column, gap = 12, padding = nendo.pad(16)},
+		) {
+			device_unlink_status(&ui.devices)
+			if voice_active() {
+				if voice.stream != nil {device_copy(tr("Recording"), TEXT)}
+				settings_button("VoiceCancel", tr("Cancel"))
+			}
+		}
+	}
+}
+
+@(private = "file")
 device_root_content :: proc(ui: ^Ui_State) {
 	d := &ui.devices
 	if d.panel == .Wipe_Report {
@@ -1512,16 +1540,7 @@ device_root_content :: proc(ui: ^Ui_State) {
 	}
 	profile := d.profiles[d.panel_account]
 	if profile != nil && profile.unlink_check {
-		if d.inventory_dirty || d.inventory != nil {
-			device_copy(tr("Checking device information…"), TEXT)
-			busy_bar("UnlinkedProfileBusy")
-		} else {
-			device_copy(
-				tr("Couldn't verify that this profile was unlinked. Please try again."),
-				WARNING,
-			)
-			settings_button("DeviceVerifyUnlink", tr("Check now"))
-		}
+		device_unlink_status(d)
 		settings_button("DeviceClose", tr("Later"))
 		return
 	}

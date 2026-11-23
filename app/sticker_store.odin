@@ -445,7 +445,7 @@ drain_stickers :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for i := 0; i < len(sticker_jobs); {
 		job := sticker_jobs[i]
 		if job.worker == nil || !thread.is_done(job.worker) {i += 1; continue}
-		if job.op == .Send && account_departing(job.account) {i += 1; continue}
+		if job.op == .Send && account_send_paused(ui, job.account) {i += 1; continue}
 		thread.join(job.worker); thread.destroy(job.worker)
 		ordered_remove(&sticker_jobs, i)
 		defer sticker_job_free(job)
