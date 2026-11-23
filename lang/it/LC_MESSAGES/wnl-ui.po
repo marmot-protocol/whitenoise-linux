@@ -351,6 +351,9 @@ msgstr "1 voto"
 msgid "1 voter"
 msgstr "1 votante"
 
+msgid "2.5 GB"
+msgstr "2,5 GB"
+
 msgid "25 European languages, including English and Italian."
 msgstr "25 lingue europee, tra cui inglese e italiano."
 
@@ -1724,6 +1727,9 @@ msgstr "Impossibile rimuovere il pacchetto. Riprova."
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "Impossibile rimuovere il file salvato. Riprova."
 
+msgid "Couldn't remove the translation model. Please try again."
+msgstr "Impossibile rimuovere il modello di traduzione. Riprova."
+
 msgid "Couldn't rename the group. Enter a name and try again."
 msgstr "Impossibile rinominare il gruppo. Inserisci un nome e riprova."
 
@@ -2188,6 +2194,9 @@ msgstr "Fatto"
 
 msgid "Done."
 msgstr "Fatto."
+
+msgid "Download"
+msgstr "Scarica"
 
 msgid "Downloaded"
 msgstr "Scaricato"

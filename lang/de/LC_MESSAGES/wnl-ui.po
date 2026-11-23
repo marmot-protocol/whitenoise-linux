@@ -351,6 +351,9 @@ msgstr "1 Stimme"
 msgid "1 voter"
 msgstr "1 abstimmende Person"
 
+msgid "2.5 GB"
+msgstr "2,5 GB"
+
 msgid "25 European languages, including English and Italian."
 msgstr "25 europäische Sprachen, darunter Englisch und Italienisch."
 
@@ -1724,6 +1727,9 @@ msgstr "Das Paket konnte nicht entfernt werden. Bitte versuche es erneut."
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "Die gespeicherte Datei konnte nicht entfernt werden. Bitte versuche es erneut."
 
+msgid "Couldn't remove the translation model. Please try again."
+msgstr "Das Übersetzungsmodell konnte nicht entfernt werden. Bitte versuche es erneut."
+
 msgid "Couldn't rename the group. Enter a name and try again."
 msgstr "Die Gruppe konnte nicht umbenannt werden. Gib einen Namen ein und versuche es erneut."
 
@@ -2188,6 +2194,9 @@ msgstr "Fertig"
 
 msgid "Done."
 msgstr "Erledigt."
+
+msgid "Download"
+msgstr "Herunterladen"
 
 msgid "Downloaded"
 msgstr "Heruntergeladen"

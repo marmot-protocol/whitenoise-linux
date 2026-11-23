@@ -49,10 +49,27 @@ Translation_Result :: struct {
 }
 
 @(private)
+Translation_Model_Action :: enum {
+	None,
+	Download,
+	Remove,
+}
+
+@(private)
+Translation_Model_State :: enum {
+	Unknown,
+	Missing,
+	Partial,
+	Ready,
+}
+
+@(private)
 Translation_State :: struct {
 	child:                          os.Process,
 	file:                           ^Helper_Ipc,
 	status, model, percent:         u8,
+	model_action:                   Translation_Model_Action,
+	model_state:                    Translation_Model_State,
 	account, group, source, target: string,
 	active:                         ^Translation_Result,
 	results:                        map[Translation_Key]^Translation_Result,
@@ -104,6 +121,29 @@ translation_eligible :: proc(
 }
 
 @(private)
+translation_model_dir :: proc() -> string {
+	return fmt.tprintf("%s/translation/%s", data_home, TRANSLATION_MODEL_DIR)
+}
+
+@(private)
+translation_model_state :: proc() -> Translation_Model_State {
+	dir := translation_model_dir()
+	ready, present := true, false
+	for file in TRANSLATION_MODEL_FILES {
+		path := fmt.tprintf("%s/%s", dir, file.name)
+		info, err := os.stat(path, context.temp_allocator)
+		ready = ready && err == nil && info.type == .Regular && info.size == file.size
+		present = present || err == nil || os.exists(fmt.tprintf("%s.part", path))
+	}
+	return ready ? .Ready : (present ? .Partial : .Missing)
+}
+
+@(private)
+translation_settings_open :: proc(ui: ^Ui_State) -> bool {
+	return ui.page == .Settings && ui.settings_section == .General && ui.settings_tab == 1
+}
+
+@(private)
 translation_stop :: proc(ui: ^Ui_State) {
 	s := &ui.translation
 	if s.file != nil {
@@ -112,6 +152,7 @@ translation_stop :: proc(ui: ^Ui_State) {
 		wn_ipc_close(s.file)
 		if s.active != nil {s.active.phase = .Cancelled}
 		s.file, s.child, s.active = nil, {}, nil
+		s.model_action, s.model_state = .None, .Unknown
 	}
 	s.status, s.model, s.percent = 0, 0, 0
 }
@@ -127,14 +168,14 @@ translation_free :: proc(result: ^Translation_Result) {
 
 @(private)
 translation_clear :: proc(ui: ^Ui_State) {
-	translation_stop(ui)
-	if len(ui.translation.results) > 0 {sel_clear(ui)}
-	for _, result in ui.translation.results {translation_free(result)}
-	delete(ui.translation.results)
-	for value in ([]string{ui.translation.account, ui.translation.group, ui.translation.source, ui.translation.target}) {delete(value)}
-	ui.translation = {
-		language_menu = ui.translation.language_menu,
-	}
+	s := &ui.translation
+	if s.active != nil {translation_stop(ui)}
+	if len(s.results) > 0 {sel_clear(ui)}
+	for _, result in s.results {translation_free(result)}
+	delete(s.results)
+	for value in ([]string{s.account, s.group, s.source, s.target}) {delete(value)}
+	s.results, s.order, s.language_choice, s.paused = nil, 0, 0, false
+	s.account, s.group, s.source, s.target = "", "", "", ""
 	for &msg in ui.messages {msg.row_height = 0}
 }
 
@@ -240,46 +281,92 @@ translation_fail :: proc(ui: ^Ui_State, result: ^Translation_Result, code: int) 
 }
 
 @(private)
-translation_launch :: proc(ui: ^Ui_State, result: ^Translation_Result) {
+translation_model_error :: proc(ui: ^Ui_State, action: Translation_Model_Action) {
+	text :=
+		action == .Remove ? tr("Couldn't remove the translation model. Please try again.") : tr("Couldn't download the translation model. Check your connection and available disk space, then try again.")
+	set_status(ui, text, .Error)
+}
+
+@(private)
+translation_launch :: proc(
+	ui: ^Ui_State,
+	result: ^Translation_Result,
+	action := Translation_Model_Action.None,
+) {
 	s := &ui.translation
+	source, target := s.source, s.target
+	switch action {
+	case .None:
+	case .Download:
+		source, target = "download", ""
+	case .Remove:
+		source, target = "remove", ""
+	}
 	file := wn_ipc_create(TRANSLATION_IPC_SIZE)
-	if file == nil {translation_fail(ui, result, 2); return}
 	ok := false
-	defer if !ok {wn_ipc_close(file)}
-	if helper_write_at(file, []u8{'G', 0, 0, 0, 0, 0, 0, 0}) != 8 ||
-	   helper_write_at(file, transmute([]u8)result.original, 8) != len(result.original) ||
-	   helper_write_at(file, []u8{0}, uint(8 + len(result.original))) != 1 {
-		translation_fail(ui, result, 2)
+	defer if !ok {
+		if file != nil {wn_ipc_close(file)}
+		if result != nil {
+			translation_fail(ui, result, 2)
+			result.error = N_("Couldn't start translation. Reinstall White Noise and try again.")
+		} else {
+			translation_model_error(ui, action)
+		}
+	}
+	if file == nil || helper_write_at(file, []u8{'G', 0, 0, 0, 0, 0, 0, 0}) != 8 {
+		return
+	}
+	if result != nil &&
+	   (helper_write_at(file, transmute([]u8)result.original, 8) != len(result.original) ||
+			   helper_write_at(file, []u8{0}, uint(8 + len(result.original))) != 1) {
 		return
 	}
 	child, err := os.process_start(
 		{
 			command = {
 				helper_path("wn-translate"),
-				fmt.tprintf("%s/translation/%s", data_home, TRANSLATION_MODEL_DIR),
+				translation_model_dir(),
 				fmt.tprintf("%d", os.get_pid()),
-				s.source,
-				s.target,
+				source,
+				target,
 				string(wn_ipc_name(file)),
 				fmt.tprintf("%d", TRANSLATION_IPC_SIZE),
 			},
 		},
 	)
-	if err != nil {
-		translation_fail(ui, result, 2)
-		result.error = N_("Couldn't start translation. Reinstall White Noise and try again.")
-		return
-	}
+	if err != nil {return}
 	ok = true
 	s.child, s.file, s.active, s.status = child, file, result, 'G'
-	result.phase = .Running
+	s.model_action = action
+	if result != nil {result.phase = .Running}
+	if action == .Remove {
+		// A queued request must not immediately download what Remove just deleted.
+		for _, queued in s.results {
+			if queued.phase == .Queued {
+				queued.phase = .Cancelled
+				translation_reflow(ui, queued.key.id)
+			}
+		}
+	}
 }
 
 @(private)
 translation_tick :: proc(ui: ^Ui_State) {
-	if !ui.prefs.translation_enabled {if len(ui.translation.results) > 0 || ui.translation.file != nil {translation_clear(ui)}; return}
-	translation_bind(ui)
 	s := &ui.translation
+	if !ui.prefs.translation_enabled {
+		if s.file != nil {translation_stop(ui)}
+		if len(s.results) > 0 {translation_clear(ui)}
+		s.model_state = .Unknown
+		return
+	}
+	if translation_settings_open(ui) {
+		if s.model_state == .Unknown && s.file == nil {
+			s.model_state = translation_model_state()
+		}
+	} else {
+		s.model_state = .Unknown
+	}
+	translation_bind(ui)
 	for _, result in s.results {result.current = false}
 	for msg in ui.messages {
 		for source in Translation_Source {
@@ -308,6 +395,18 @@ translation_tick :: proc(ui: ^Ui_State) {
 		state, err := os.process_wait(s.child, timeout = 0)
 		if err == .Timeout {return}
 		result := s.active
+		if translation_settings_open(ui) {s.model_state = translation_model_state()}
+		if result == nil {
+			wn_ipc_close(s.file)
+			action := s.model_action
+			s.file, s.child, s.model_action = nil, {}, .None
+			if err != nil || state.exit_code != 0 {
+				translation_model_error(ui, action)
+			} else if action == .Download {
+				s.paused = false
+			}
+			return
+		}
 		// The child can publish and exit between the progress read and wait.
 		finished := helper_read_at(s.file, header[:], 0) == len(header)
 		if err == nil && state.exit_code == 0 && finished && header[0] == 'R' {
@@ -361,12 +460,14 @@ translation_tick :: proc(ui: ^Ui_State) {
 @(private)
 translation_status :: proc(ui: ^Ui_State) -> string {
 	if ui.translation.file == nil {return ""}
+	if ui.translation.model_action == .Remove {return tr("Removing…")}
 	switch ui.translation.status {
 	case 'D':
 		return tr("Downloading translation model...")
 	case 'T':
 		return tr("Translating on your device...")
 	case:
+		if ui.translation.model_action == .Download {return tr("Preparing download...")}
 		return tr("Preparing translation model...")
 	}
 }

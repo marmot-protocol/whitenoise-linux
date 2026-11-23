@@ -218,6 +218,43 @@ static int translate(const std::string &text, const Language &source, const Lang
     return LIMIT_ERROR;
 }
 
+enum class Model_Action { Download, Remove };
+
+static int manage_models(const char *directory, Model_Action action) {
+    if (g_mkdir_with_parents(directory, 0700)) {
+        return DOWNLOAD_ERROR;
+    }
+    void *lock = wn_model_lock(directory);
+    if (!lock) {
+        return DOWNLOAD_ERROR;
+    }
+
+    int result = 0;
+    if (action == Model_Action::Remove) {
+        // Retain the lock file so another helper always locks the same inode.
+        for (const auto &file : models) {
+            const std::string path = std::string(directory) + "/" + file.name;
+            for (const auto &name : {path, path + ".part"}) {
+                if (g_unlink(name.c_str()) && errno != ENOENT) {
+                    result = DOWNLOAD_ERROR;
+                }
+            }
+        }
+    } else if (curl_global_init(CURL_GLOBAL_DEFAULT)) {
+        result = DOWNLOAD_ERROR;
+    } else {
+        for (const auto &file : models) {
+            if (!ensure_model(directory, &file)) {
+                result = DOWNLOAD_ERROR;
+                break;
+            }
+        }
+        curl_global_cleanup();
+    }
+    wn_model_unlock(lock);
+    return result;
+}
+
 static int run(int argc, char **argv) {
     if (argc != 7) {
         return INFERENCE_ERROR;
@@ -235,6 +272,14 @@ static int run(int argc, char **argv) {
     }
     if (strcmp(argv[6], "131080") || !(speech_ipc = wn_ipc_open(argv[5], IPC_SIZE))) {
         return INFERENCE_ERROR;
+    }
+    if (!*argv[4]) {
+        if (!strcmp(argv[3], "download")) {
+            return manage_models(argv[1], Model_Action::Download);
+        }
+        if (!strcmp(argv[3], "remove")) {
+            return manage_models(argv[1], Model_Action::Remove);
+        }
     }
     const Language *source = language(argv[3]), *target = language(argv[4]);
     if (!target || (!source && strcmp(argv[3], "auto"))) {
@@ -270,25 +315,7 @@ static int run(int argc, char **argv) {
     if (!status('G')) {
         return INFERENCE_ERROR;
     }
-    if (curl_global_init(CURL_GLOBAL_DEFAULT)) {
-        return DOWNLOAD_ERROR;
-    }
-    if (g_mkdir_with_parents(argv[1], 0700)) {
-        return DOWNLOAD_ERROR;
-    }
-    void *lock = wn_model_lock(argv[1]);
-    if (!lock) {
-        return DOWNLOAD_ERROR;
-    }
-    int result = 0;
-    for (const auto &file : models) {
-        if (!ensure_model(argv[1], &file)) {
-            result = DOWNLOAD_ERROR;
-            break;
-        }
-    }
-    wn_model_unlock(lock);
-    curl_global_cleanup();
+    int result = manage_models(argv[1], Model_Action::Download);
     if (result) {
         return result;
     }

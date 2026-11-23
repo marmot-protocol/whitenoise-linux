@@ -616,7 +616,8 @@ status_bar :: proc(ui: ^Ui_State) {
 		}
 	}
 	update_bar()
-	if ui.translation.file != nil {
+	if ui.translation.file != nil &&
+	   (ui.translation.model_action == .None || !translation_settings_open(ui)) {
 		if nendo.box(nendo.id("TranslationBar"))(
 		{
 			width = nendo.grow(),
@@ -627,7 +628,13 @@ status_bar :: proc(ui: ^Ui_State) {
 		},
 		) {
 			if nendo.box(nendo.id("TranslationBarActions"))({gap = 12, align = {y = .Center}}) {
-				micro_button("TranslationStopGlobal", tr("Cancel translation"))
+				switch ui.translation.model_action {
+				case .None:
+					micro_button("TranslationStopGlobal", tr("Cancel translation"))
+				case .Download:
+					micro_button("TranslationStopGlobal", tr("Cancel"))
+				case .Remove:
+				}
 				nendo.text(translation_status(ui), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 			}
 			translation_progress(ui, "TranslationGlobalProgress")

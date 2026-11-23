@@ -351,6 +351,9 @@ msgstr "1票"
 msgid "1 voter"
 msgstr "投票者1人"
 
+msgid "2.5 GB"
+msgstr "2.5 GB"
+
 msgid "25 European languages, including English and Italian."
 msgstr "英語とイタリア語を含む25のヨーロッパ言語に対応しています。"
 
@@ -1724,6 +1727,9 @@ msgstr "パックを削除できませんでした。もう一度お試しくだ
 msgid "Couldn't remove the saved file. Please try again."
 msgstr "保存したファイルを削除できませんでした。もう一度お試しください。"
 
+msgid "Couldn't remove the translation model. Please try again."
+msgstr "翻訳モデルを削除できませんでした。もう一度お試しください。"
+
 msgid "Couldn't rename the group. Enter a name and try again."
 msgstr "グループ名を変更できませんでした。名前を入力して、もう一度お試しください。"
 
@@ -2188,6 +2194,9 @@ msgstr "完了"
 
 msgid "Done."
 msgstr "完了しました。"
+
+msgid "Download"
+msgstr "ダウンロード"
 
 msgid "Downloaded"
 msgstr "ダウンロード済み"
