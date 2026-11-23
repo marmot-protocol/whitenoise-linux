@@ -587,6 +587,26 @@ gif_send_start :: proc(p: ^Pending_Send) {
 	thread.start(job.worker)
 }
 
+// A GIF attachment is named for its title, so a chat's GIFs can be told
+// apart. Characters a file system or path would reject become spaces; an
+// untitled GIF stays "animation".
+@(private = "file")
+gif_file_name :: proc(title, ext: string) -> string {
+	MAX_BYTES :: 80
+	b := strings.builder_make(context.temp_allocator)
+	for r, at in strings.trim_space(title) {
+		if at >= MAX_BYTES {break}
+		switch r {
+		case 0 ..< 0x20, 0x7f, '/', '\\', ':', '*', '?', '"', '<', '>', '|':
+			strings.write_byte(&b, ' ')
+		case:
+			strings.write_rune(&b, r)
+		}
+	}
+	base := strings.trim_left(strings.trim_space(strings.to_string(b)), ".")
+	return fmt.tprintf("%s%s", base == "" ? "animation" : base, ext)
+}
+
 @(private)
 drain_gif_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for i := len(ui.pending) - 1; i >= 0; i -= 1 {
@@ -605,7 +625,7 @@ drain_gif_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			   ui.account_ref {set_status(ui, strings.clone(tr(job.error)), .Error)}
 			continue
 		}
-		name := string(job.data[:4]) == "RIFF" ? "animation.webp" : "animation.gif"
+		name := gif_file_name(job.item.title, string(job.data[:4]) == "RIFF" ? ".webp" : ".gif")
 		tex: ^rl.Texture2D
 		dim: string
 		if job.image.data != nil {
