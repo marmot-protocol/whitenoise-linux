@@ -2,8 +2,6 @@ package main
 
 import "core:fmt"
 import "core:strings"
-import "nendo"
-import rl "sdlrl"
 
 @(private)
 TIMESTAMP_CLOCK :: TIMESTAMP_ICON + " "
@@ -87,19 +85,14 @@ timestamp_text :: proc(
 }
 
 @(private)
-timestamp_tooltip :: proc(stamp: ^Md_Timestamp, source: string = "") {
+timestamp_tooltip :: proc(stamp: ^Md_Timestamp, source: string = "", second: string = "") {
 	date := timestamp_label(stamp.seconds, .LONG_DATE_TIME, 0)
 	token := source != "" ? source : timestamp_token(stamp.seconds, stamp.style)
-	width :=
-		max(
-			rl.MeasureTextLine(FONT_BODY, 11, date, 0).x,
-			rl.MeasureTextLine(FONT_BODY, 11, token, 0).x,
-		) +
-		16
-	box := nendo.element({id = nendo.open_id()}).rect
-	left := box.x + box.width / 2 - width / 2
-	x, _ := panel_pos(left, box.y, width, 0)
-	tooltip(fmt.tprintf("%s\n%s", date, token), .Below, x - left)
+	if second != "" {
+		tooltip(fmt.tprintf("%s\n%s\n%s", date, token, second))
+	} else {
+		tooltip(fmt.tprintf("%s\n%s", date, token))
+	}
 }
 
 @(private = "file")

@@ -107,6 +107,8 @@ Timestamp_Editor :: struct {
 	format:    Timestamp_Format,
 	input:     [dynamic]u8,
 	selection: [2]int,
+	initial:   [19]u8,
+	seconds:   i64,
 }
 
 @(private = "file")
@@ -139,20 +141,23 @@ TIMESTAMP_FORMATS := [Timestamp_Format]struct {
 @(private)
 timestamp_picker_open :: proc(ui: ^Ui_State) {
 	if ui.poll_open || ui.search_open {return}
+	now := time.time_to_unix(time.now())
 	local: Local_Time
-	if wn_timestamp_local(time.time_to_unix(time.now()), &local) == 0 {
+	if wn_timestamp_local(now, &local) == 0 {
 		toast(ui, tr("Couldn't read your local time. Check your device's clock and try again."))
 		return
 	}
 	picker := &ui.timestamp
 	picker.open = true
 	picker.format = .Pair
+	picker.seconds = now
 	lo, hi, head := field_sel(ui, &ui.compose)
 	picker.selection = {head, head == lo ? hi : lo}
 	ed_set(
 		ui,
 		&picker.input,
-		fmt.tprintf(
+		fmt.bprintf(
+			picker.initial[:],
 			"%04d-%02d-%02d %02d:%02d:%02d",
 			local.year,
 			local.month,
@@ -163,7 +168,7 @@ timestamp_picker_open :: proc(ui: ^Ui_State) {
 		),
 	)
 	touch_field = {}
-	ui.focus = tap_size() ? .Compose : .Timestamp
+	ui.focus = rl.HasTouch() ? .Compose : .Timestamp
 	if ui.focus == .Timestamp {
 		ed_begin(ui, &picker.input)
 		ui.ed.selection = {len(picker.input), 0}
@@ -210,10 +215,19 @@ timestamp_parse_input :: proc(text: string) -> (seconds: i64, valid: bool) {
 	return
 }
 
+@(private = "file")
+timestamp_input_seconds :: proc(picker: ^Timestamp_Editor) -> (i64, bool) {
+	text := string(picker.input[:])
+	if strings.trim_space(text) == string(picker.initial[:]) {
+		return picker.seconds, true
+	}
+	return timestamp_parse_input(text)
+}
+
 @(private)
 timestamp_picker :: proc(ui: ^Ui_State) {
 	picker := &ui.timestamp
-	seconds, valid := timestamp_parse_input(string(picker.input[:]))
+	seconds, valid := timestamp_input_seconds(picker)
 	id := nendo.id("TimestampFields")
 	view_h := f32(rl.GetScreenHeight()) / UI_ZOOM
 	limit := max(44, view_h * 0.55)
@@ -295,7 +309,7 @@ handle_timestamp_picker :: proc(ui: ^Ui_State) -> bool {
 	seconds: i64
 	if !cancel {
 		valid: bool
-		seconds, valid = timestamp_parse_input(string(picker.input[:]))
+		seconds, valid = timestamp_input_seconds(picker)
 		if !valid {return true}
 	}
 	timestamp_picker_close(ui)
@@ -352,12 +366,13 @@ timestamp_card :: proc(index: u32, msg: Msg_Ui) -> bool {
 	stamp, paired := standalone_timestamp(msg.body, msg.blocks[:])
 	if stamp == nil {return false}
 	local: Local_Time
-	if wn_timestamp_local(stamp.seconds, &local) == 0 {return false}
+	localized := wn_timestamp_local(stamp.seconds, &local) != 0
+	if !localized && stamp.style != .RELATIVE {return false}
 	now := time.time_to_unix(time.now())
 	label, detail: string
 	if stamp.style == .RELATIVE {
 		label = timestamp_relative(stamp.seconds, now)
-		detail = timestamp_absolute(local, .LONG_DATE_TIME)
+		if localized {detail = timestamp_absolute(local, .LONG_DATE_TIME)}
 	} else {
 		label = timestamp_absolute(local, stamp.style)
 		if !paired && (stamp.style == .SHORT_TIME || stamp.style == .LONG_TIME) {
@@ -366,9 +381,10 @@ timestamp_card :: proc(index: u32, msg: Msg_Ui) -> bool {
 			detail = timestamp_relative(stamp.seconds, now)
 		}
 	}
+	width := att_w(360)
 	if nendo.box(nendo.id("MsgTimestamp", index))(
 	{
-		width = nendo.fit(max = att_w(360)),
+		width = nendo.fit(max = width),
 		padding = nendo.pad(10),
 		gap = 10,
 		align = {y = .Center},
@@ -378,7 +394,14 @@ timestamp_card :: proc(index: u32, msg: Msg_Ui) -> bool {
 	},
 	) {
 		if hovered() {
-			timestamp_tooltip(stamp, paired ? strings.trim_space(msg.body) : "")
+			source := strings.trim_space(msg.body)
+			if paired {
+				end := strings.index_byte(source, '>') + 1
+				second := strings.trim_left(source[end:], " \t")
+				timestamp_tooltip(stamp, source[:end], second[1:len(second) - 1])
+			} else {
+				timestamp_tooltip(stamp, source)
+			}
 		}
 		if nendo.box()(
 		{
@@ -392,8 +415,11 @@ timestamp_card :: proc(index: u32, msg: Msg_Ui) -> bool {
 			nendo.text(TIMESTAMP_ICON, {font = FONT_ICON, size = 17, color = ON_ACCENT})
 		}
 		if nendo.box()({direction = .Column, gap = 2}) {
-			nendo.text(label, {font = FONT_TITLE, size = 16, color = TEXT})
-			nendo.text(detail, {font = FONT_BODY, size = 12, color = TEXT_DIM})
+			wrap := max(width - 64, 1)
+			font := [1]u8{u8(FONT_TITLE)}
+			fonts := strings.repeat(string(font[:]), len(label), context.temp_allocator)
+			body_text(index * 4096, label, 16, TEXT, true, wrap, fonts = fonts)
+			if detail != "" {body_text(index * 4096 + 512, detail, 12, TEXT_DIM, true, wrap)}
 		}
 	}
 	return true

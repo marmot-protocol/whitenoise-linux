@@ -33,7 +33,7 @@ int main(void) {
     t = (wn_local_time){.year = 2026, .month = 3, .day = 8, .hour = 2, .minute = 30};
     assert(!wn_timestamp_unix(&t, &unix_seconds));
     t = (wn_local_time){.year = 2026, .month = 11, .day = 1, .hour = 1, .minute = 30};
-    assert(wn_timestamp_unix(&t, &unix_seconds) && unix_seconds == 1793514600);
+    assert(wn_timestamp_unix(&t, &unix_seconds) && unix_seconds == 1793511000);
     t = (wn_local_time){.year = 2026, .month = 2, .day = 29, .hour = 8};
     assert(!wn_timestamp_unix(&t, &unix_seconds));
     // A zone change applies on the next call, and can move the date.

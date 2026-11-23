@@ -107,10 +107,10 @@ int wn_timestamp_unix(const wn_local_time *input, int64_t *out) {
         return 1;
     }
 #else
-    // Prefer standard time in a fall-back fold. A round trip rejects both
-    // nonexistent spring-forward times and normalized dates such as Feb 30.
+    // Match Windows: prefer the daylight occurrence in a fall-back fold.
+    // A round trip rejects spring-forward gaps and normalized dates such as Feb 30.
     tzset();
-    for (int isdst = 0; isdst <= 1; ++isdst) {
+    for (int isdst = 1; isdst >= 0; --isdst) {
         struct tm local = {.tm_year = input->year - 1900,
                            .tm_mon = input->month - 1,
                            .tm_mday = input->day,

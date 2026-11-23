@@ -746,6 +746,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("SearchBtn") {
+		timestamp_picker_close(ui)
 		ui.group_files_open = false
 		// From members or settings, Search returns to the conversation
 		// with the search open rather than toggling a hidden bar.

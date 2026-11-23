@@ -267,6 +267,7 @@ markdown_timestamps :: proc(t: ^testing.T) {
 	defer blocks_free(pair.blocks)
 	nendo.set_pointer({-100, -100}, .Up)
 	for frame in 0 ..< 3 {
+		clear(&sel_lines)
 		nendo.begin()
 		timestamp_card(0, pair)
 		commands := nendo.end(0)
@@ -281,9 +282,14 @@ markdown_timestamps :: proc(t: ^testing.T) {
 			if cmd.kind == .Text && cmd.text.text == label {shown = true}
 		}
 		testing.expect(t, shown, "card preserves the absolute style with seconds")
+		selectable := false
+		for line in sel_lines {
+			if line.block_text == label {selectable = true}
+		}
+		testing.expect(t, selectable, "the selected card text is the formatted date")
 		testing.expect(
 			t,
-			strings.contains(timestamp_smoke_tip(commands), pair_source),
+			strings.contains(timestamp_smoke_tip(commands), "<t:1795451400:S>\n<t:1795451400:R>"),
 			"hover shows both tokens",
 		)
 		rl.BeginDrawing(); render_nendo(commands)
