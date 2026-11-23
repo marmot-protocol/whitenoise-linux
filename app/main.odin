@@ -1411,7 +1411,8 @@ app_main :: proc() {
 			   !ui.compose_more &&
 			   !ui.fx_open &&
 			   !ui.mention_active &&
-			   !ui.shortcode_active {
+			   !ui.shortcode_active &&
+			   !slash_open(&ui) {
 				if ui.show_members ||
 				   ui.group_files_open ||
 				   ui.search_open ||

@@ -316,8 +316,9 @@ menu_keep :: proc(container: nendo.Id) -> bool {
 	return nendo.pointer_over(container)
 }
 
-edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
-	text_field_live = !tap_size() || buf != &ui.compose || compose_keyboard
+edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) -> (typed_len: int) {
+	composer := buf == &ui.compose || buf == &ui.poll_question
+	text_field_live = !tap_size() || !composer || compose_keyboard
 	ed_begin(ui, buf)
 	defer ed_end(ui, buf)
 	ed := &ui.ed
@@ -326,6 +327,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 	prev_edit := ed.last_edit_time
 	prev_undo, prev_redo := len(ed.undo), len(ed.redo)
 
+	typed_len = -1
 	for ch := rl.GetCharPressed(); ch != 0; ch = rl.GetCharPressed() {
 		if ch < 32 {
 			continue
@@ -334,6 +336,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 			emoticon_swap(ed)
 		}
 		edit.input_rune(ed, ch)
+		typed_len = len(ed.builder.buf)
 	}
 
 	ctrl := ctrl_down()
@@ -414,10 +417,11 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 		}
 	}
 	inbox_arrow := buf == &ui.compose && ctrl && shift
-	if multiline && !inbox_arrow && key_hit(.UP) {
+	slash_arrow := buf == &ui.compose && !cmd && !shift && slash_open(ui)
+	if multiline && !inbox_arrow && !slash_arrow && key_hit(.UP) {
 		edit.perform_command(ed, shift ? edit.Command.Select_Up : .Up)
 	}
-	if multiline && !inbox_arrow && key_hit(.DOWN) {
+	if multiline && !inbox_arrow && !slash_arrow && key_hit(.DOWN) {
 		edit.perform_command(ed, shift ? edit.Command.Select_Down : .Down)
 	}
 	if rl.IsKeyPressed(.HOME) {
@@ -468,6 +472,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 			strings.clone_to_cstring(edit.current_selected_text(ed), context.temp_allocator),
 		)
 	}
+	return
 }
 
 // ── Mouse: click-to-caret, drag selection, middle-click paste ───────

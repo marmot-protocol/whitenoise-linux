@@ -3,6 +3,7 @@ package main
 import "base:runtime"
 import "core:strings"
 import "core:testing"
+import "core:text/edit"
 
 import marmot "../marmot"
 import "nendo"
@@ -29,6 +30,8 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		member_nick      = -1,
 		prefs            = default_prefs(),
 	}
+	edit.init(&ui.ed, context.allocator, context.allocator)
+	defer edit.destroy(&ui.ed)
 	ui.prefs.reduce_motion = true
 	ed_set(&ui, &ui.compose, "A draft")
 	append(&ui.accounts, Account_Row_Ui{name = "Mobile"})
@@ -99,38 +102,45 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		testing.expect(t, header.height <= 60, "phone header stays one row")
 
 		poll_reset(&ui)
-		for len(ui.poll_inputs) < POLL_OPTS_CAP {append(&ui.poll_inputs, [dynamic]u8{})}
-		for _ in 0 ..< 3 {
-			nendo.begin()
-			poll_modal(&ui)
-			nendo.end(0)
-		}
-		modal := nendo.element(nendo.id("PollModal")).rect
-		testing.expect(
-			t,
-			modal.width <= width - 23 && modal.height <= height - 23,
-			"poll form fits narrow and keyboard-short viewports",
-		)
-		question := nendo.element(nendo.id("PollQBox")).rect
-		testing.expect(
-			t,
-			question.x >= modal.x && question.x + question.width <= modal.x + modal.width + 0.1,
-			"default input width cannot widen a narrow poll",
-		)
-		scroll := nendo.scroll(nendo.id("PollModal"))
-		testing.expect(t, scroll.found, "poll form has a scroll container")
-		if height < 400 {
-			testing.expect(
+		if height >= 568 {
+			for _ in 0 ..< 2 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+			fields := nendo.element(nendo.id("PollFields")).rect
+			duration := nendo.element(nendo.id("PollDurationRow"))
+			testing.expectf(
 				t,
-				scroll.content.height > scroll.viewport.height,
-				"a full poll remains scrollable to its actions on short screens",
+				duration.found && inside(duration.rect, fields),
+				"duration controls %v must fit in %v at %dx%d",
+				duration.rect,
+				fields,
+				size[0],
+				size[1],
 			)
 		}
+		for len(ui.poll_inputs) < POLL_OPTS_CAP {append(&ui.poll_inputs, [dynamic]u8{})}
+		for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+		composer := nendo.element(nendo.id("ComposeBox")).rect
+		pane = nendo.element(nendo.id("ChatPane")).rect
+		testing.expect(t, inside(composer, pane), "poll composer stays inside the chat")
+		fields := nendo.element(nendo.id("PollFields"))
 		testing.expect(
 			t,
-			nendo.element(nendo.id("PollCancel")).found &&
-			nendo.element(nendo.id("PollCreate")).found,
+			fields.found && inside(fields.rect, composer),
+			"options are in the composer",
 		)
+		for id in ([]string{"ComposeClip", "PollCancel", "SendBtn"}) {
+			control := nendo.element(nendo.id(id))
+			testing.expect(t, control.found && inside(control.rect, composer), id)
+			testing.expect(t, control.rect.y + control.rect.height <= fields.rect.y, id)
+		}
+		if height < 400 {
+			scroll := nendo.scroll(nendo.id("PollFields"))
+			testing.expect(
+				t,
+				scroll.found && scroll.content.height > scroll.viewport.height,
+				"the poll options scroll without taking Send offscreen",
+			)
+		}
+		poll_close(&ui)
 
 		for _ in 0 ..< 3 {
 			nendo.begin()
@@ -174,4 +184,49 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 	nendo.set_pointer({20, 600}, .Up)
 	handle_chat(&ui, &client)
 	testing.expect(t, !ui.chat_head_menu, "a tap elsewhere closes the menu")
+
+	forced_release = false
+	ed_set(&ui, &ui.compose, "/poll?")
+	rl.PushKey(.BACKSPACE, true)
+	handle_chat(&ui, &client)
+	rl.PushKey(.BACKSPACE, false)
+	testing.expect(
+		t,
+		!ui.poll_open && string(ui.compose[:]) == "/poll",
+		"deleting text does not run a command",
+	)
+
+	ed_set(&ui, &ui.compose, "/pol")
+	rl.PushChar('l')
+	handle_chat(&ui, &client)
+	testing.expect(
+		t,
+		ui.poll_open && len(ui.compose) == 0,
+		"typing the last letter opens the poll",
+	)
+	ed_set(&ui, &ui.poll_question, "Where should we meet?")
+	ui.search_open = true
+	ui.focus = .Search
+	build_layout(&ui, 0)
+	testing.expect(t, !nendo.element(nendo.id("PollFields")).found, "search hides the poll form")
+	phone_back_action(&ui)
+	build_layout(&ui, 0)
+	testing.expect(
+		t,
+		nendo.element(nendo.id("PollFields")).found &&
+		string(ui.poll_question[:]) == "Where should we meet?",
+		"Back from search resumes the poll draft",
+	)
+
+	ui.poll_ticket = 1
+	phone_back_action(&ui)
+	build_layout(&ui, 0)
+	testing.expect(
+		t,
+		nendo.element(nendo.id("PollBusy")).found && ui.poll_ticket == 1,
+		"Back keeps an in-flight publish visible",
+	)
+	ui.poll_ticket = 0
+	phone_back_action(&ui)
+	testing.expect(t, !ui.poll_open, "Back closes a poll that is not sending")
 }

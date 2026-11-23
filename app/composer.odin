@@ -160,6 +160,7 @@ composer_plan :: proc(
 	count := 1
 	for action in p.config.order[:COMPOSER_SHORTCUT_COUNT] {
 		if action == .More ||
+		   (surface == .Chat && ui.search_open && action == .Poll) ||
 		   (action == .Dictate && !ui.prefs.stt_enabled) ||
 		   (surface == .Chat &&
 				   ui.editing != "" &&
@@ -242,15 +243,17 @@ composer_primary :: proc(ui: ^Ui_State, plan: Composer_Plan, surface: Composer_S
 		return
 	}
 	preview := surface == .Preview
+	poll := !preview && ui.poll_open
 	has_text := !preview && strings.trim_space(string(ui.compose[:])) != ""
 	editing := !preview && ui.editing != ""
-	if plan.config.slots[.Voice] == .Send &&
+	if !poll &&
+	   plan.config.slots[.Voice] == .Send &&
 	   (preview || (!has_text && len(ui.staged) == 0 && !editing)) {
 		composer_button(ui, .Voice, size)
 		return
 	}
 	ready :=
-		preview || stage_files_ready(ui) && (has_text || len(ui.staged) > 0 && ui.editing == "")
+		poll ? ui.poll_ticket == 0 && poll_input_error(ui) == .None : preview || stage_files_ready(ui) && (has_text || len(ui.staged) > 0 && !editing)
 	if nendo.box(nendo.id("SendBtn"))(
 	{
 		width = nendo.fixed(size),
@@ -261,7 +264,9 @@ composer_primary :: proc(ui: ^Ui_State, plan: Composer_Plan, surface: Composer_S
 	},
 	) {
 		if ui.composer_editor.drag.source == .None && hovered() {
-			if editing {
+			if poll {
+				tooltip(tr("Create poll"))
+			} else if editing {
 				tooltip(tap_size() ? tr("Save") : tr("Enter to save. Shift+Enter for a new line."))
 			} else {
 				tooltip(tap_size() ? tr("Send") : tr("Enter to send. Shift+Enter for a new line."))
@@ -356,41 +361,45 @@ handle_composer_action :: proc(ui: ^Ui_State) -> bool {
 	if !mouse_released() {return false}
 	for action in composer_config(&ui.prefs).order[:COMPOSER_SHORTCUT_COUNT] {
 		if action == .More || !clicked(COMPOSER_ACTIONS[action].id) {continue}
-		#partial switch action {
-		case .Files:
-			rl.OpenFileDialog(true)
-		case .Emoji:
-			ui.sticker_tab, ui.gif_tab = false, false
-			open_picker(ui, "")
-		case .Stickers:
-			ui.sticker_tab, ui.gif_tab = true, false
-			ui.sticker_focus = 0
-			open_picker(ui, "")
-		case .Voice:
-			voice_start(ui)
-		case .Effect:
-			ui.fx_open = true
-		case .Poll:
-			poll_reset(ui)
-			ui.poll_open = true
-		case .Location:
-			geo_picker_open(ui)
-		case .Dictate:
-			stt_start(ui)
-		case .GM:
-			if gm_sent_today(ui) {
-				toast(ui, tr("You said GM here today."))
-			} else {
-				text := strings.trim_space(ui.prefs.gm_text)
-				confirm_ask(
-					ui,
-					.Say_GM,
-					ui.chats[ui.selected].group_id,
-					text == "" ? GM_DEFAULT : text,
-				)
-			}
-		}
+		perform_composer_action(ui, action)
 		return true
 	}
 	return false
+}
+
+@(private)
+perform_composer_action :: proc(ui: ^Ui_State, action: Composer_Action) {
+	#partial switch action {
+	case .Files:
+		rl.OpenFileDialog(true)
+	case .Emoji:
+		ui.sticker_tab, ui.gif_tab = false, false
+		open_picker(ui, "")
+	case .Stickers:
+		ui.sticker_tab, ui.gif_tab = true, false
+		ui.sticker_focus = 0
+		open_picker(ui, "")
+	case .Voice:
+		voice_start(ui)
+	case .Effect:
+		ui.fx_open = true
+	case .Poll:
+		poll_reset(ui)
+	case .Location:
+		geo_picker_open(ui)
+	case .Dictate:
+		stt_start(ui)
+	case .GM:
+		if gm_sent_today(ui) {
+			toast(ui, tr("You said GM here today."))
+		} else {
+			text := strings.trim_space(ui.prefs.gm_text)
+			confirm_ask(
+				ui,
+				.Say_GM,
+				ui.chats[ui.selected].group_id,
+				text == "" ? GM_DEFAULT : text,
+			)
+		}
+	}
 }

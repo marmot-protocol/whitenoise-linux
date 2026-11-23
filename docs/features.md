@@ -39,9 +39,10 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 
 - **Messages are Markdown.** Bodies support typeset `$` math blocks, reactions, replies, edits with history, forwarding, and search.
 - **Enter sends; Shift+Enter starts a new line.** You can also click the paper plane to send or the checkmark to save an edit.
+- **Type `/` in an empty draft to open commands.** Keep typing to filter. Use the arrow keys and Enter or Tab, or click a command. Escape closes the menu without changing your draft. `/shrug` inserts a shrug without sending it.
 - **Choose what appears beside your draft.** Open **+ > Customize composer** or **Settings > General > Composer**. Drag shortcuts in the preview to reorder them, or drag between **Left**, **Right**, and **+ menu**. Select a shortcut for placement and reorder buttons.
 - **Messages written offline are not lost.** A durable on-disk send queue sends them when you reconnect.
-- **Polls explain what is missing.** Creation keeps your draft open and names a missing question or fewer than two nonblank options.
+- **Write polls in the composer.** Type `/poll` or pick it from the command menu. Add a question and at least two options, then click the paper plane. Before sending, Escape or × returns you to your message draft. Chat search hides the poll form without discarding it.
 - **Forwards show their progress until they finish.** A status strip names the destination through preparation and sending, even if you switch chats.
 
 <details>
@@ -49,7 +50,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 
 - **Automatic** puts shortcuts beside short drafts when they fit. **Always expanded** keeps the toolbar on its own line. You can move the microphone to either side, hide it, or show it in Send's place while the draft is empty.
 - Press Ctrl+V to paste into the draft. Pasting a file or image adds it as an attachment.
-- In poll creation, Multiple choice is an on/off switch. Create is the primary action and Cancel is secondary.
+- Polls start in single-choice mode and close after seven days by default. Choose multiple choice or change the duration to one day, three days, or no deadline.
 - The Forward picker shows the message's first line, or its first attachment's filename, above the destination filter.
 - Forwarded attachments download and prepare in the background.
 - Failed forwards can be retried from the destination chat.

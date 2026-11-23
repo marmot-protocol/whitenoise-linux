@@ -228,6 +228,10 @@ msgid "%d/%d RELAYS"
 msgstr ""
 
 #, c-format
+msgid "%dd"
+msgstr ""
+
+#, c-format
 msgid "%s added %s"
 msgstr ""
 
@@ -3948,6 +3952,10 @@ msgstr ""
 msgid "Opens signal.link in your browser. You need the Signal app to join."
 msgstr ""
 
+#, c-format
+msgid "Option %d"
+msgstr ""
+
 msgid "Optional Nostr identifier (NIP-05), not your email address. This is public."
 msgstr ""
 
@@ -5153,6 +5161,9 @@ msgid "Signing out and removing your signer session"
 msgstr ""
 
 msgid "Signing you in"
+msgstr ""
+
+msgid "Single choice"
 msgstr ""
 
 msgid "Single sided"

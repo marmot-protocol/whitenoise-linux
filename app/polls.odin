@@ -241,342 +241,253 @@ poll_input_error :: proc(ui: ^Ui_State) -> Poll_Error {
 	return .Options
 }
 
-// The create-poll modal: question, fixed option rows (blanks are
-// skipped), choice-mode toggle.
-poll_modal :: proc(ui: ^Ui_State) {
-	if nendo.box(nendo.id("PollModal"))(
+@(private = "file")
+POLL_DAYS :: [?]u64{1, 3, 7, 0}
+
+@(private)
+poll_fields :: proc(ui: ^Ui_State, width: f32) {
+	if ui.poll_error != .None {
+		nendo.text(
+			ui.poll_error == .Question ? tr("Add a question for your poll.") : tr("Add at least two options."),
+			{font = FONT_BODY, size = 12, color = DANGER},
+		)
+	}
+	id := nendo.id("PollFields")
+	view_h := f32(rl.GetScreenHeight()) / UI_ZOOM
+	// Keep room for the header and question even when the options scroll.
+	limit := max(44, min(300, view_h - 132, view_h * 0.65))
+	stack := width < 460
+	chip_h := tap_size() ? tap_min() : 26
+	settings_h := stack ? 2 * chip_h + 8 : chip_h
+	option_h := tap_size() ? tap_min() : 38
+	gap :: 6
+	minimum := min(
+		limit,
+		POLL_OPTS_MIN * option_h + chip_h + settings_h + (POLL_OPTS_MIN + 1) * gap,
+	)
+	if nendo.box(id)(
 	{
+		width = nendo.grow(),
+		height = nendo.fit(min = minimum, max = limit),
 		direction = .Column,
-		width = nendo.fixed(modal_w(nendo.id("PollModal"), 460)),
-		height = nendo.fit(max = modal_h(680)),
-		padding = nendo.pad(16),
-		gap = 10,
+		gap = gap,
 		clip = {y = true, scroll = true},
-		floating = {
-			attach_to = .Root,
-			z = 11,
-			offset = {0, rise(nendo.id("PollModal"))},
-			attach = {element = .Center_Center, parent = .Center_Center},
-		},
-		color = CARD,
-		radius = rr(12),
-		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		nendo.text(tr("Create poll"), {font = FONT_TITLE, size = 18, color = TEXT})
-		poll_question_box(ui)
-		for i in 0 ..< len(ui.poll_inputs) {
+		for &input, i in ui.poll_inputs {
 			if nendo.box(nendo.id("PollInputRow", u32(i)))(
-			{width = nendo.grow(), gap = 8, align = {y = .Center}},
+			{width = nendo.grow(), gap = 6, align = {y = .Center}},
 			) {
 				input_box(
 					ui,
 					fmt.tprintf("PollOptBox%d", i),
-					&ui.poll_inputs[i],
-					tr("Add an option..."),
-					ui.focus == .PollOpt && ui.poll_focus == i,
+					&input,
+					fmt.tprintf(tr("Option %d"), i + 1),
+					ui.poll_ticket == 0 && ui.focus == .PollOpt && ui.poll_focus == i,
 					width = 0,
 				)
 				if len(ui.poll_inputs) > POLL_OPTS_MIN {
 					if nendo.box(nendo.id("PollRemoveOpt", u32(i)))(
-					{
-						width = nendo.fixed(44),
-						height = nendo.fixed(44),
-						align = {x = .Center, y = .Center},
-						color = hovered() ? HOVER : ROW_BG,
-						radius = rr(8),
-					},
+						compose_tool(hovered() ? HOVER : ROW_BG),
 					) {
 						nendo.text(ICON_CLOSE, {font = FONT_ICON, size = 14, color = TEXT_DIM})
-					}
-					if nendo.pointer_over(nendo.id("PollRemoveOpt", u32(i))) {
-						tooltip(tr("Remove option"))
+						if hovered() {tooltip(tr("Remove option"))}
 					}
 				}
 			}
 		}
 		if len(ui.poll_inputs) < POLL_OPTS_CAP {
-			micro_button("PollAddOpt", tr("Add option"))
+			poll_chip(nendo.id("PollAddOpt"), tr("Add option"), false)
 		}
-		if ui.poll_error != .None {
-			nendo.text(
-				ui.poll_error == .Question ? tr("Add a question for your poll.") : tr("Add at least two options."),
-				{font = FONT_BODY, size = 12, color = DANGER},
-			)
-		}
-		if nendo.box(nendo.id("PollBtnRow"))(
-		{
-			width = nendo.grow(),
-			direction = single_pane() ? .Column : .Row,
-			gap = 8,
-			align = {y = .Center},
-		},
+		if nendo.box(nendo.id("PollSettings"))(
+		{height = nendo.fixed(settings_h), direction = stack ? .Column : .Row, gap = 8},
 		) {
-			if nendo.box(nendo.id("PollChoiceRow"))(
-			{width = nendo.grow(), height = nendo.fixed(44), gap = 8, align = {y = .Center}},
-			) {
-				toggle("PollMulti", ui.poll_multi_in)
-				nendo.text(tr("Multiple choice"), {font = FONT_BODY, size = 12, color = TEXT})
+			if nendo.box(nendo.id("PollChoiceRow"))({gap = 4}) {
+				poll_chip(nendo.id("PollSingle"), tr("Single choice"), !ui.poll_multi_in)
+				poll_chip(nendo.id("PollMulti"), tr("Multiple choice"), ui.poll_multi_in)
 			}
-			if nendo.box(nendo.id("PollBtnGap"))({width = nendo.grow()}) {}
-			if nendo.box(nendo.id("PollActions"))(
-			{width = nendo.grow(), gap = 8, align = {y = .Center}},
-			) {
-				login_button("PollCancel", tr("Cancel"))
-				login_big_button("PollCreate", tr("Create"), true)
+			if nendo.box(nendo.id("PollDurationRow"))({gap = 4}) {
+				for days, i in POLL_DAYS {
+					chip := nendo.id("PollDays", u32(i))
+					label := days == 0 ? "∞" : fmt.tprintf(tr("%dd"), days)
+					poll_chip(chip, label, days == ui.poll_days)
+					if days == 0 && nendo.pointer_over(chip) {tooltip(tr("Never"))}
+				}
 			}
 		}
 	}
-	scrollbar(nendo.id("PollModal"), 12)
-}
-
-// Keep the modal's question separate from the composer's IDs and wrap
-// cache, but use the same grapheme rendering, selection, and IME spans.
-@(private = "file")
-poll_q_lines :: proc(ui: ^Ui_State) -> []Wrap_Line {
-	box := nendo.element(nendo.id("PollQBox"))
-	width := box.found ? box.rect.width - 20 : modal_w(nendo.id("PollModal"), 460) - 52
-	return wrapped_lines(string(ui.poll_question[:]), max(width - CARET_W, 1), BODY_FS, .Compose)
+	scrollbar(id)
 }
 
 @(private = "file")
-poll_question_box :: proc(ui: ^Ui_State) {
-	if nendo.box(nendo.id("PollQBox"))(
+poll_chip :: proc(id: nendo.Id, label: string, selected: bool) {
+	if nendo.box(id)(
 	{
-		width = nendo.grow(),
-		height = nendo.fit(min = 80),
-		direction = .Column,
-		padding = nendo.pad(10),
-		color = ROW_BG,
-		border = ui.focus == .PollQ ? focus_border(true) : nendo.Border{color = FIELD_BORDER, width = bw()},
-		radius = rr(8),
+		width = nendo.fit(min = tap_size() ? tap_min() : 28),
+		height = nendo.fixed(tap_size() ? tap_min() : 26),
+		padding = {left = 8, right = 8},
+		align = {x = .Center, y = .Center},
+		color = selected ? SELECTED : (hovered() ? HOVER : ROW_BG),
+		radius = rr(6),
 	},
 	) {
-		if len(ui.poll_question) == 0 && len(rl.Preedit()) == 0 {
-			if nendo.box(nendo.id("PollQPlaceholder"))({align = {y = .Center}}) {
-				if ui.focus == .PollQ {
-					caret()
-				}
-				nendo.text(
-					tr("Ask a question..."),
-					{font = FONT_BODY, size = BODY_FS, color = TEXT_DIM},
-				)
-			}
-		} else {
-			text := string(ui.poll_question[:])
-			lo, hi, head := field_sel(ui, &ui.poll_question)
-			if ui.focus != .PollQ {
-				head = -1
-			}
-			for line, i in poll_q_lines(ui) {
-				h := head
-				if i > 0 && head == line.start && text[line.start - 1] != '\n' {
-					h = -1
-				}
-				compose_line(0x10000 + u32(i), text, line.start, line.end, lo, hi, h)
-			}
-		}
+		nendo.text(label, {font = FONT_BODY, size = 12, color = selected ? ACCENT : TEXT_DIM})
 	}
-}
-
-@(private = "file")
-poll_q_mouse :: proc(ui: ^Ui_State) -> bool {
-	over := nendo.pointer_over(nendo.id("PollQBox"))
-	pressed := over && (rl.HasTouch() ? mouse_released() : mouse_pressed())
-	dragging := !rl.HasTouch() && text_drag == &ui.poll_question && rl.IsMouseButtonDown(.LEFT)
-	if !pressed && !dragging {
-		return false
-	}
-	point := rl.GetMousePosition()
-	point.x /= UI_ZOOM
-	point.y /= UI_ZOOM
-	text := string(ui.poll_question[:])
-	hit := len(text)
-	for line, i in poll_q_lines(ui) {
-		row := nendo.element(nendo.id("ComposeLine", 0x10000 + u32(i)))
-		if row.found && point.y < row.rect.y + row.rect.height {
-			hit = line.start + hit_compose_line(text[line.start:line.end], point.x - row.rect.x)
-			break
-		}
-	}
-	ui.focus = .PollQ
-	if rl.HasTouch() {
-		touch_field = nendo.id("PollQBox")
-	}
-	ed_begin(ui, &ui.poll_question)
-	if pressed && !shift_down() {
-		ui.ed.selection = {hit, hit}
-	} else {
-		ui.ed.selection[0] = hit
-	}
-	ed_end(ui, &ui.poll_question)
-	if !rl.HasTouch() {
-		text_drag = &ui.poll_question
-		text_drag_box = nendo.id("PollQBox")
-	}
-	caret_wake()
-	return true
 }
 
 poll_close :: proc(ui: ^Ui_State) {
+	if !ui.poll_open {return}
 	ui.poll_open = false
-	ui.poll_error = .None
-	ui.focus = .Compose
+	ui.poll_ticket = 0
+	if ui.focus == .PollQ || ui.focus == .PollOpt {
+		ui.focus = .Compose
+		touch_field = {}
+		compose_keyboard = false
+	}
 }
 
-// Blank modal: question, two empty option rows. Reserved to the cap so
-// the edit state's pointers into the array survive "Add option".
 poll_reset :: proc(ui: ^Ui_State) {
+	ui.ed_target = nil
 	clear(&ui.poll_question)
-	for &b in ui.poll_inputs {
-		delete(b)
-	}
+	for &b in ui.poll_inputs {delete(b)}
 	clear(&ui.poll_inputs)
+	// Appending an option must not move buffers the editor points into.
 	reserve(&ui.poll_inputs, POLL_OPTS_CAP)
-	for _ in 0 ..< POLL_OPTS_MIN {
-		append(&ui.poll_inputs, [dynamic]u8{})
-	}
+	for _ in 0 ..< POLL_OPTS_MIN {append(&ui.poll_inputs, [dynamic]u8{})}
 	ui.poll_multi_in = false
+	ui.poll_days = 7
 	ui.poll_error = .None
 	ui.poll_focus = 0
+	ui.poll_reveal = false
+	ui.poll_open = true
 	ui.focus = .PollQ
+	compose_keyboard = true
+	if rl.HasTouch() {touch_field = nendo.id("ComposeClip")}
 }
 
-// MDK assigns option ids, validates the poll and authors its event. Only
-// conversation/thread context tags are supplied by the application.
+// MDK assigns option IDs and authors the event. The composer supplies the thread root.
+@(private = "file")
 poll_create :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.poll_error = poll_input_error(ui)
 	if ui.poll_error != .None {return}
 	question := strings.trim_space(string(ui.poll_question[:]))
-	options := make([dynamic]string, 0, len(ui.poll_inputs), context.temp_allocator)
-	for i in 0 ..< len(ui.poll_inputs) {
-		label := strings.trim_space(string(ui.poll_inputs[i][:]))
-		if len(label) == 0 {
-			continue
-		}
-		append(&options, label)
+	options: [POLL_OPTS_CAP]string
+	count := 0
+	for input in ui.poll_inputs {
+		label := strings.trim_space(string(input[:]))
+		if label == "" {continue}
+		options[count] = label
+		count += 1
 	}
-	tags := make([dynamic][]string, context.temp_allocator)
-
-	// A poll created inside a thread carries the root e tag and lives
-	// in that thread's view.
-	if cur := thread_cur(ui); len(cur) > 0 {
-		ref := make([]string, 2, context.temp_allocator)
-		ref[0] = "e"
-		ref[1] = cur
-		append(&tags, ref)
-	}
-
+	ref := [2]string{"e", thread_cur(ui)}
+	tags := [1][]string{ref[:]}
 	spawn_poll(
 		ui,
 		client,
 		.Poll_Create,
 		"",
 		question,
-		options[:],
+		options[:count],
 		ui.poll_multi_in ? .Multiple_Choice : .Single_Choice,
-		tags[:],
+		ref[1] == "" ? nil : tags[:],
+		ends_at = ui.poll_days == 0 ? 0 : now_unix() + ui.poll_days * 86_400,
 	)
-	play_sound(.Send)
-	poll_close(ui)
+	ui.poll_ticket = op_ticket
 }
 
-// Modal input: typing routes to the focused box, Tab walks the boxes,
-// clicks hit the toggle and buttons. Captures everything while open.
-handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+@(private)
+handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
+	if ui.poll_ticket != 0 {return false}
 	if rl.IsKeyPressed(.ESCAPE) {
 		poll_close(ui)
-		return
+		return true
 	}
+	if ui.focus == .Compose {ui.focus = .PollQ}
+	compose_mouse(ui, &ui.poll_question, .PollQ)
 	if ui.focus == .PollQ {
 		edit_text(ui, &ui.poll_question, true)
 	} else if ui.focus == .PollOpt {
+		if ui.poll_reveal {
+			id := nendo.id(fmt.tprintf("PollOptBox%d", ui.poll_focus))
+			if nendo.element(id).found {
+				scroll_into_view(nendo.id("PollFields"), id)
+				ui.poll_reveal = false
+				anim_moving += 1
+			}
+		}
 		edit_text(ui, &ui.poll_inputs[ui.poll_focus])
 	}
-	if ui.poll_error != .None {
-		ui.poll_error = poll_input_error(ui)
-	}
-	// Tab walks question → options and wraps; position 0 is the question,
-	// 1 + i is option i.
-	if step := tab_step(); step != 0 {
+	if ui.poll_error != .None {ui.poll_error = poll_input_error(ui)}
+
+	if step := tab_step(); step != 0 && (ui.focus == .PollQ || ui.focus == .PollOpt) {
 		count := 1 + len(ui.poll_inputs)
 		at := ui.focus == .PollOpt ? 1 + ui.poll_focus : 0
-		at = (at + step + count) %% count
+		at = (at + step + count) % count
 		ui.focus = at == 0 ? .PollQ : .PollOpt
 		ui.poll_focus = max(at - 1, 0)
-		return
+		ui.poll_reveal = at != 0
+		return true
 	}
-	// Enter inserts a question line; option fields advance top to bottom.
-	if rl.IsKeyPressed(.ENTER) {
+	if rl.IsKeyPressed(.ENTER) && (ui.focus == .PollQ || ui.focus == .PollOpt) {
 		if ui.focus == .PollQ {
-			ed_insert(ui, &ui.poll_question, "\n")
+			if shift_down() || rl.HasTouch() {
+				ed_insert(ui, &ui.poll_question, "\n")
+			} else {
+				poll_create(ui, client)
+			}
 		} else if ui.poll_focus < len(ui.poll_inputs) - 1 {
 			ui.poll_focus += 1
+			ui.poll_reveal = true
 		} else if len(ui.poll_inputs) < POLL_OPTS_CAP && len(ui.poll_inputs[ui.poll_focus]) > 0 {
 			append(&ui.poll_inputs, [dynamic]u8{})
 			ui.poll_focus += 1
+			ui.poll_reveal = true
 		}
-		return
+		return true
 	}
-	if poll_q_mouse(ui) {
-		return
-	}
-	for i in 0 ..< len(ui.poll_inputs) {
-		if field_mouse(ui, &ui.poll_inputs[i], fmt.tprintf("PollOptBox%d", i)) {
-			ui.focus = .PollOpt
-			ui.poll_focus = i
-			return
+	for &input, i in ui.poll_inputs {
+		if field_mouse(ui, &input, fmt.tprintf("PollOptBox%d", i)) {
+			ui.focus, ui.poll_focus = .PollOpt, i
+			return true
 		}
 	}
-	if !mouse_released() {
-		return
-	}
+	if !mouse_released() {return false}
 	if len(ui.poll_inputs) > POLL_OPTS_MIN {
-		for i in 0 ..< len(ui.poll_inputs) {
-			if !nendo.pointer_over(nendo.id("PollRemoveOpt", u32(i))) {
-				continue
-			}
-			// Removing a row moves the remaining buffers. Drop their old
-			// edit pointer before moving them so undo cannot target a neighbour.
-			if ui.ed_target != &ui.poll_question {
-				ui.ed_target = nil
-			}
+		for _, i in ui.poll_inputs {
+			if !clicked_indexed("PollRemoveOpt", u32(i)) {continue}
+			// Removing a row moves the remaining buffers.
+			if ui.ed_target != &ui.poll_question {ui.ed_target = nil}
 			delete(ui.poll_inputs[i])
 			ordered_remove(&ui.poll_inputs, i)
-			if ui.poll_focus > i {
-				ui.poll_focus -= 1
-			}
+			if ui.poll_focus > i {ui.poll_focus -= 1}
 			ui.poll_focus = min(ui.poll_focus, len(ui.poll_inputs) - 1)
-			return
+			return true
 		}
 	}
-	if nendo.pointer_over(nendo.id("PollAddOpt")) && len(ui.poll_inputs) < POLL_OPTS_CAP {
+	if clicked("PollAddOpt") && len(ui.poll_inputs) < POLL_OPTS_CAP {
 		append(&ui.poll_inputs, [dynamic]u8{})
-		ui.focus = .PollOpt
-		ui.poll_focus = len(ui.poll_inputs) - 1
-		return
+		ui.focus, ui.poll_focus = .PollOpt, len(ui.poll_inputs) - 1
+		if rl.HasTouch() {touch_field = nendo.id(fmt.tprintf("PollOptBox%d", ui.poll_focus))}
+		ui.poll_reveal = true
+		return true
 	}
-	if nendo.pointer_over(nendo.id("PollChoiceRow")) {
-		ui.poll_multi_in = !ui.poll_multi_in
-		return
+	if clicked("PollSingle") || clicked("PollMulti") {
+		ui.poll_multi_in = clicked("PollMulti")
+		return true
 	}
-	if nendo.pointer_over(nendo.id("PollCreate")) {
+	for days, i in POLL_DAYS {
+		if clicked_indexed("PollDays", u32(i)) {
+			ui.poll_days = days
+			return true
+		}
+	}
+	if clicked("SendBtn") {
 		poll_create(ui, client)
-		return
+		return true
 	}
-	if nendo.pointer_over(nendo.id("PollCancel")) {
+	if clicked("PollCancel") {
 		poll_close(ui)
-		return
+		return true
 	}
-	if !nendo.pointer_over(nendo.id("PollModal")) {
-		if len(ui.poll_question) > 0 {
-			return
-		}
-		for option in ui.poll_inputs {
-			if len(option) > 0 {
-				return
-			}
-		}
-		poll_close(ui)
-	}
+	return false
 }
