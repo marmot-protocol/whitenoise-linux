@@ -49,26 +49,25 @@ target and toolchain state, and the stamped native dependency prefix. The
 job still builds, signs, and verifies a fresh APK; the seed holds no APK or
 signing key.
 
-`release-cross.yml` and `release-windows.yml` use
-`wn-ngit-staging-82ff7da6-cross-only`. It holds the cross SDK under
-`/wn-ci/images/`, `cross-cache.tar.zst`, and the two target archives. Leave
-the native and Android archives out so Boat never hydrates them for cross
-jobs. Each cross job extracts the shared archive and its target archive.
-The shared archive holds `cross/` and the MDK checkout. Each target archive
-holds its `worktree/build/cross/` subtree; only Windows needs LLVM-MinGW
-and vcpkg. Seed through `scripts/ngit-cross.sh` so Cargo paths match inside
-`/work`. Leave the compiled app, package staging trees, `dist`, and
-`build/cross-evidence` out of the seed. Each run builds the app and boots
-the new package before publishing it.
+ARM64 staging uses `wn-ngit-staging-arm64-70f4e07f`. Windows still uses
+`wn-ngit-staging-82ff7da6-cross-only`. Each job extracts `cross-cache.tar.zst`
+and its target archive. The shared archive holds `cross/` and the patched
+MDK checkout; the target archive holds its `worktree/build/cross/` subtree.
+The cross SDK image lives under `/wn-ci/images/`. The ARM64 snapshot does not
+contain the Windows archive, native caches, or Android caches.
+Seed through `scripts/ngit-cross.sh` so Cargo paths match inside `/work`.
+Leave the compiled app, package staging trees, `dist`, and `build/cross-evidence`
+out of the seed. Each run builds the app and boots the new package before
+publishing it.
 
 Run `scripts/ngit-stage.sh` before building the seed so Cargo and Rustup use
 the same `/var/cache/wn-ci` paths as PR jobs. Pack the Cargo target, MDK
 checkout, Rustup directory, and Cargo registry and Git volumes with GNU tar
 `--format=pax`. A raw filesystem snapshot rounded some timestamps down to
-whole seconds, making Cargo rebuild unchanged crates. Compress the three
-cross archives with `zstd -T4 -3` and keep only the compressed copies in
-the cross snapshot. Verify it on a fresh worker before changing the
-snapshot name in the adapter.
+whole seconds, making Cargo rebuild unchanged crates. Compress each cross
+archive with `zstd -T4 -3`. Refresh the seed when the MDK pin or patch set
+changes. Verify it on a fresh worker before changing the snapshot name in
+the adapter.
 
 The kernel limits the worker's job container to 80% of VM CPU and leaves
 8 GiB of physical RAM available. The container can use up to 8 GiB of disk

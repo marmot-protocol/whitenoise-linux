@@ -43,22 +43,24 @@ const queues = [
     limit: 4,
   },
 ];
-const crossSnapshot = "wn-ngit-staging-82ff7da6-cross-only";
+const crossSnapshots = {
+  cross: "wn-ngit-staging-arm64-70f4e07f",
+  windows: "wn-ngit-staging-82ff7da6-cross-only",
+};
 
-function isCrossWorkflow(script: string) {
+function findCrossSnapshot(script: string) {
   // The pinned socket runner emits either an ACT_WORKFLOW assignment or a
   // literal -W path in the final act command.
   const end = script.trimEnd();
   const invocation = end.slice(end.lastIndexOf("\n") + 1);
-  return (
-    /'-W' '\.ngit\/act\/workflows\/release-(cross|windows)\.yml'(?: |$)/.test(
-      invocation,
-    ) ||
-    (invocation.includes(`'-W' "$ACT_WORKFLOW"`) &&
-      /^ACT_WORKFLOW="\$JOB_DIR\/selected-workflow\/"'release-(cross|windows)\.yml'$/m.test(
+  const workflow = invocation.includes(`'-W' "$ACT_WORKFLOW"`)
+    ? /^ACT_WORKFLOW="\$JOB_DIR\/selected-workflow\/"'release-(cross|windows)\.yml'$/m.exec(
         script,
-      ))
-  );
+      )
+    : /'-W' '\.ngit\/act\/workflows\/release-(cross|windows)\.yml'(?: |$)/.exec(
+        invocation,
+      );
+  return workflow && crossSnapshots[workflow[1] as keyof typeof crossSnapshots];
 }
 
 function boat(args: string[], signal: AbortSignal) {
@@ -273,9 +275,7 @@ async function serve(socket: Socket, queue: (typeof queues)[number]) {
     script = join(home, `${crypto.randomUUID()}.sh`);
     await writeFile(script, req.stdin, { mode: 0o600, flag: "wx" });
     const snapshot =
-      queue.staging && isCrossWorkflow(req.stdin)
-        ? crossSnapshot
-        : queue.snapshot;
+      (queue.staging && findCrossSnapshot(req.stdin)) || queue.snapshot;
     const creating = performance.now();
     const create = boat(
       [
