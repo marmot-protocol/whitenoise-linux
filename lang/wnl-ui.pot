@@ -2263,9 +2263,6 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
-msgid "Delete chat"
-msgstr ""
-
 msgid "Delete for everyone"
 msgstr ""
 
@@ -2276,9 +2273,6 @@ msgid "Delete for you?"
 msgstr ""
 
 msgid "Delete group"
-msgstr ""
-
-msgid "Delete this chat?"
 msgstr ""
 
 msgid "Delete this device's vault?"

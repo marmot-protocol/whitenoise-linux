@@ -1490,8 +1490,14 @@ stash_draft :: proc(ui: ^Ui_State) {
 // attachment counterpart of stash_draft.
 @(private)
 stash_staged :: proc(ui: ^Ui_State) {
-	if ui.selected < 0 || len(ui.staged) == 0 || account_revoked(ui, ui.account_ref) {return}
-	key := draft_key(ui.account_ref, ui.chats[ui.selected].group_id)
+	if len(ui.staged) == 0 || account_revoked(ui, ui.account_ref) {return}
+	group := ui.prefs.last_chat
+	if ui.selected >= 0 {
+		group = ui.chats[ui.selected].group_id
+	} else if !conversation_deleting(ui.account_ref, group) {
+		return
+	}
+	key := draft_key(ui.account_ref, group)
 	if key == "" {return}
 	if old, found := ui.staged_drafts[key];
 	   found {staged_files_free(old)} else {key = strings.clone(key)}
@@ -2264,8 +2270,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	kind := conversation_exit_kind(ui)
-	deleting := kind == .Delete_Chat || kind == .Delete_Group
-	if kind != .None && clicked(deleting ? "DeleteConversationBtn" : "LeaveBtn") {
+	if kind != .None && clicked(kind == .Delete_Group ? "DeleteConversationBtn" : "LeaveBtn") {
 		chat := ui.chats[ui.selected]
 		confirm_ask(ui, kind, chat.group_id, chat.title)
 		return

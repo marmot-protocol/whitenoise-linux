@@ -857,11 +857,10 @@ conversation_exit_kind :: proc(ui: ^Ui_State) -> Confirm_Kind {
 	if ui.selected < 0 || len(ui.members) == 0 {return .None}
 	chat := ui.chats[ui.selected]
 	if chat.pending || conversation_deleting(ui.account_ref, chat.group_id) {return .None}
-	dm := chat_is_dm(chat)
 	if len(ui.members) == 1 && ui.members[0].is_self {
-		return dm ? .Delete_Chat : .Delete_Group
+		return .Delete_Group
 	}
-	return dm ? .Leave_Chat : .Leave_Group
+	return chat_is_dm(chat) ? .Leave_Chat : .Leave_Group
 }
 
 // Settings: the group's face, then its controls and destructive action.
@@ -970,7 +969,7 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 
 	kind := conversation_exit_kind(ui)
 	if kind == .None {return}
-	deleting := kind == .Delete_Chat || kind == .Delete_Group
+	deleting := kind == .Delete_Group
 	// The one destructive action sits last, apart from the settings.
 	if nendo.box(nendo.id(deleting ? "DeleteConversationBtn" : "LeaveBtn"))(
 	{
@@ -985,11 +984,7 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 	) {
 		nendo.text(deleting ? ICON_TRASH : ICON_BAN, {font = FONT_ICON, size = 15, color = DANGER})
 		if deleting {
-			row_labels(
-				dm ? tr("Delete chat") : tr("Delete group"),
-				tr("Remove the conversation from this device."),
-				DANGER,
-			)
+			row_labels(tr("Delete group"), tr("Remove the conversation from this device."), DANGER)
 		} else {
 			row_labels(
 				dm ? tr("Leave chat") : tr("Leave group"),

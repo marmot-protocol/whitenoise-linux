@@ -130,6 +130,33 @@ gs_clear_hits :: proc(ui: ^Ui_State) {
 	clear(&ui.gs_hits)
 }
 
+@(private)
+gs_forget_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, account, group: string) {
+	if ui.gs_account != account {return}
+	#reverse for hit, i in ui.gs_hits {
+		if hit.group != group {continue}
+		gs_free_hit(hit)
+		ordered_remove(&ui.gs_hits, i)
+	}
+	#reverse for chat, i in ui.gs_chats {
+		if chat.group_id != group {continue}
+		append(&retired_chats, chat)
+		ordered_remove(&ui.gs_chats, i)
+	}
+	open := ui.gs_open && ui.account_ref == account
+	if ui.gs_group == group {
+		gs_remove_filter(ui, 1)
+		if open {
+			gs_refresh(ui, client)
+		} else {
+			gs_reset_page(ui)
+			ui.gs_resume = ui.gs_error == "" && (len(ui.gs_input) > 0 || gs_has_filters(ui))
+		}
+	} else if open && ui.gs_loading {
+		search_request(ui, client, .Global)
+	}
+}
+
 gs_check_account :: proc(ui: ^Ui_State) {
 	if ui.gs_account == ui.account_ref {return}
 	gs_clear_hits(ui)
@@ -353,13 +380,19 @@ gs_remove_filter :: proc(ui: ^Ui_State, index: u32) {
 	}
 }
 
-gs_refresh :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	gs_check_account(ui)
-	gs_clear_hits(ui)
-	ui.gs_more, ui.gs_append, ui.gs_resume = false, false, false
+@(private = "file")
+gs_reset_page :: proc(ui: ^Ui_State) {
+	ui.gs_more, ui.gs_append = false, false
 	ui.gs_cursor_at = 0
 	delete(ui.gs_cursor_id); ui.gs_cursor_id = ""
 	delete(ui.gs_cursor_group); ui.gs_cursor_group = ""
+}
+
+gs_refresh :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	gs_check_account(ui)
+	gs_clear_hits(ui)
+	gs_reset_page(ui)
+	ui.gs_resume = false
 	delete(ui.gs_error); ui.gs_error = ""
 	key, sender_valid := gs_sender_key(ui)
 	sender := strings.clone(key)

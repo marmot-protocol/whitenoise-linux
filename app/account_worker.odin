@@ -324,19 +324,12 @@ account_worker :: proc(t: ^thread.Thread) {
 	case .Leave:
 		status = marmot.leave_group(job.client, account, group, &summary)
 	case .Delete_Conversation:
-		details: ^marmot.Group_Details
-		status = marmot.group_details(job.client, account, group, &details)
-		if status == .OK {
-			alone := details.members_len == 1 && details.members[0].is_self
-			marmot.group_details_free(details)
-			if !alone {
-				job.error = strings.clone(
-					tr("Couldn't delete the conversation. Review its members and try again."),
-				)
-				return
-			}
-			forgotten: bool
-			status = marmot.forget_group_local(job.client, account, group, &forgotten)
+		forgotten: bool
+		status = marmot.forget_solo_group_local(job.client, account, group, &forgotten)
+		if status == .OK && !forgotten {
+			job.error = strings.clone(
+				tr("Couldn't delete the conversation. Review its members and try again."),
+			)
 		}
 	case .Description:
 		status = marmot.update_group_profile(job.client, account, group, nil, target, &summary)
@@ -551,6 +544,19 @@ account_jobs_stop :: proc() {
 	delete(account_jobs); account_jobs = {}
 }
 
+@(private)
+account_deletes_finish :: proc(ui: ^Ui_State) {
+	#reverse for job, i in account_jobs {
+		if job.kind != .Delete_Conversation {continue}
+		if job.worker != nil {
+			thread.join(job.worker)
+			if job.error == "" {conversation_deleted_persist(ui, job)}
+		}
+		ordered_remove(&account_jobs, i)
+		account_job_free(job, .Joined)
+	}
+}
+
 @(private = "file")
 account_wipe_prefs :: proc(ui: ^Ui_State, account, prefix: string) {
 	if ui.prefs.last_account == account {
@@ -626,41 +632,66 @@ account_exit_apply :: proc(ui: ^Ui_State, job: ^Account_Job) {
 }
 
 @(private = "file")
-conversation_deleted :: proc(ui: ^Ui_State, job: ^Account_Job) {
+conversation_deleted_persist :: proc(ui: ^Ui_State, job: ^Account_Job) {
 	key := draft_key(job.account, job.group)
 	ui.settings_dirty |= draft_delete(ui, key)
-	staged_files_free(staged_draft_take(ui, key))
 	queue_changed := false
-	for i := len(ui.pending) - 1; i >= 0; i -= 1 {
-		p := &ui.pending[i]
+	for &p in ui.pending {
 		if p.account_ref != job.account || p.group_id != job.group {continue}
 		p.purged = true
-		discard_pending(ui, i)
 		queue_changed = true
 	}
 	if queue_changed {save_offline(ui)}
 	if ui.account_ref != job.account {return}
+	if ui.prefs.last_chat == job.group {delete(ui.prefs.last_chat); ui.prefs.last_chat = ""}
+	if ui.prefs.notes_group == job.group {delete(ui.prefs.notes_group); ui.prefs.notes_group = ""}
+	owned, _ := delete_key(&ui.prefs.pinned, job.group)
+	delete(owned)
+	ui.settings_dirty = true
+}
+
+@(private = "file")
+conversation_deleted :: proc(ui: ^Ui_State, job: ^Account_Job) {
+	current_account := ui.account_ref == job.account
+	// live_apply can drop the row before the delete job returns, without clearing its composer.
+	open :=
+		current_account &&
+		(ui.selected < 0 ? ui.prefs.last_chat == job.group : ui.chats[ui.selected].group_id == job.group)
+	conversation_deleted_persist(ui, job)
+	staged_files_free(staged_draft_take(ui, draft_key(job.account, job.group)))
+	#reverse for p, i in ui.pending {
+		if p.account_ref == job.account && p.group_id == job.group {discard_pending(ui, i)}
+	}
+	gs_forget_chat(ui, job.client, job.account, job.group)
+	if ui.mi_account == job.account {
+		#reverse for hit, i in ui.mi_hits {
+			if hit.group != job.group {continue}
+			mi_free_hit(hit)
+			ordered_remove(&ui.mi_hits, i)
+		}
+	}
+	if !current_account {return}
 	if ui.messages_account == job.account && ui.messages_group == job.group {
 		timeline_clear_content(ui)
 		delete(ui.messages_group)
 		ui.messages_group = ""
 	}
 	if ui.photo.account == job.account && ui.photo.group == job.group {photo_cancel(ui)}
+	if open {
+		voice_cancel()
+		thread_clear(ui)
+		staged_files_free(ui.staged)
+		ui.staged = nil
+		ed_set(ui, &ui.compose, "")
+		ui.selected = -1
+		close_group_info(ui)
+	}
 	for chat, i in ui.chats {
 		if chat.group_id != job.group {continue}
-		if ui.selected == i {
-			voice_cancel()
-			thread_clear(ui)
-			staged_files_free(ui.staged)
-			ui.staged = nil
-			ed_set(ui, &ui.compose, "")
-			ui.selected = -1
-			close_group_info(ui)
-		} else if ui.selected > i {
-			ui.selected -= 1
-		}
+		if ui.selected > i {ui.selected -= 1}
 		append(&retired_chats, chat)
 		ordered_remove(&ui.chats, i)
+		refresh_filter_hits(job.client, ui)
 		break
 	}
 	for chat, i in ui.archived {
@@ -670,11 +701,6 @@ conversation_deleted :: proc(ui: ^Ui_State, job: ^Account_Job) {
 		break
 	}
 	clear(&ui.rail_rows)
-	if ui.prefs.last_chat == job.group {delete(ui.prefs.last_chat); ui.prefs.last_chat = ""}
-	if ui.prefs.notes_group == job.group {delete(ui.prefs.notes_group); ui.prefs.notes_group = ""}
-	owned, _ := delete_key(&ui.prefs.pinned, job.group)
-	delete(owned)
-	ui.settings_dirty = true
 }
 
 @(private)
@@ -706,6 +732,27 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 			account_job_free(job, .Joined)
 			continue
 		}
+		if job.kind == .Delete_Conversation {
+			ordered_remove(&account_jobs, i)
+			if job.error == "" {
+				if ui.account_ref == job.account {
+					chat_list_revision += 1
+					search_revision += 1
+					if live != nil {live.refresh_dirty = true}
+				}
+				conversation_deleted(ui, job)
+			} else if !account_revoked(ui, job.account) {
+				set_status(ui, strings.clone(job.error), .Error)
+				if ui.account_ref == job.account &&
+				   ui.selected >= 0 &&
+				   ui.chats[ui.selected].group_id == job.group {
+					load_members(job.client, ui)
+					load_timeline(job.client, ui, string(ui.search_input[:]))
+				}
+			}
+			account_job_free(job, .Joined)
+			continue
+		}
 		if account_revoked(ui, job.account) ||
 		   (job.kind == .Switch && !account_signed_in(ui, job.account)) {
 			if job.kind == .Switch {devices_switch_failed(ui, job.account)}
@@ -715,24 +762,6 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 		}
 		if job.kind == .Switch && job.error != "" {devices_switch_failed(ui, job.account)}
 		if job.error != "" {set_status(ui, strings.clone(job.error), .Error)}
-		if job.kind == .Delete_Conversation {
-			ordered_remove(&account_jobs, i)
-			if job.error == "" {
-				conversation_deleted(ui, job)
-				if ui.account_ref == job.account {
-					chat_list_revision += 1
-					search_revision += 1
-					if live != nil {live.refresh_dirty = true}
-				}
-			} else if ui.account_ref == job.account &&
-			   ui.selected >= 0 &&
-			   ui.chats[ui.selected].group_id == job.group {
-				load_members(job.client, ui)
-				load_timeline(job.client, ui, string(ui.search_input[:]))
-			}
-			account_job_free(job, .Joined)
-			continue
-		}
 		if job.error != "" &&
 		   job.kind == .Create_Chat &&
 		   ui.account_ref == job.account &&

@@ -25,7 +25,6 @@ Confirm_Kind :: enum {
 	Leave_Group,
 	Leave_Chat,
 	Delete_Group,
-	Delete_Chat,
 	Archive_Chat,
 	Block,
 	Remove_Contact,
@@ -83,8 +82,10 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_(
 			"Leave this chat?",
 		), N_("You stop receiving its messages. Rejoining needs a new invite."), N_("Leave")
-	case .Delete_Group, .Delete_Chat:
-		return c.kind == .Delete_Chat ? N_("Delete this chat?") : N_("Delete this group?"), N_("The conversation and its messages are removed from this device. This can't be undone."), N_("Delete")
+	case .Delete_Group:
+		return N_(
+			"Delete this group?",
+		), N_("The conversation and its messages are removed from this device. This can't be undone."), N_("Delete")
 	case .Block:
 		return N_(
 			"Block this contact?",
@@ -231,7 +232,6 @@ confirm_ask :: proc(
 	     .Leave_Group,
 	     .Leave_Chat,
 	     .Delete_Group,
-	     .Delete_Chat,
 	     .Reset_Devices,
 	     .Remove_Linked_Device,
 	     .Reject_Sign_In,
@@ -411,12 +411,11 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.hidden[strings.clone(c.arg)] = true
 		save_hidden(ui)
 		load_timeline(client, ui)
-	case .Leave_Group, .Leave_Chat, .Delete_Group, .Delete_Chat:
+	case .Leave_Group, .Leave_Chat, .Delete_Group:
 		if c.account != ui.account_ref ||
 		   conversation_exit_kind(ui) != c.kind ||
 		   ui.chats[ui.selected].group_id != c.arg {return}
-		kind :=
-			c.kind == .Delete_Group || c.kind == .Delete_Chat ? Account_Operation.Delete_Conversation : .Leave
+		kind := c.kind == .Delete_Group ? Account_Operation.Delete_Conversation : .Leave
 		account_job_start(account_job_new(ui, client, kind))
 	case .Archive_Chat:
 		// A background account switch must not retarget the captured intent.

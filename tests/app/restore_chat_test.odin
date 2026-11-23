@@ -28,6 +28,9 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	dir, err := os.make_directory_temp("", "wn-restore-chat-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
+	previous_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
+	os.set_env("XDG_CONFIG_HOME", dir)
+	defer os.set_env("XDG_CONFIG_HOME", previous_config)
 	previous_home := data_home
 	data_home = dir
 	defer {vault_lock(); data_home = previous_home}
@@ -322,7 +325,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	if !testing.expect(t, scroll.found) {return}
 	scroll.position.y = min(0, scroll.viewport.height - scroll.content.height)
 	ui.chats[ui.selected].conversation_kind = .DIRECT
-	testing.expect(t, strings.contains(frame(&ui), "Delete chat"))
+	testing.expect(t, strings.contains(frame(&ui), "Delete group"))
 	append(&ui.members, Member_Ui{})
 	testing.expect(t, strings.contains(frame(&ui), "Leave chat"))
 	ui.chats[ui.selected].conversation_kind = .GROUP
@@ -340,10 +343,30 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	forced_release = false
 	if !testing.expect_value(t, ui.confirm.kind, Confirm_Kind.Delete_Group) {return}
 	testing.expect_value(t, len(ui.staged), 1)
+	ui.gs_account = strings.clone(account)
+	defer {delete(ui.gs_account); gs_clear_hits(&ui); delete(ui.gs_hits)
+		for chat in ui.gs_chats {chat_free(chat)}; delete(ui.gs_chats)}
+	for chat in ui.chats {append(&ui.gs_chats, chat_clone(chat))}
+	append(
+		&ui.gs_hits,
+		Gs_Hit{group = strings.clone(target), snippet = strings.clone("Deleted history")},
+	)
+	append(
+		&ui.gs_hits,
+		Gs_Hit{group = strings.clone(other), snippet = strings.clone("Kept history")},
+	)
+	ui.mi_account = strings.clone(account)
+	defer {delete(ui.mi_account); mi_clear(&ui); delete(ui.mi_hits)}
+	append(&ui.mi_hits, Mention_Hit{group = strings.clone(target), unread = true})
+	append(&ui.mi_hits, Mention_Hit{group = strings.clone(other), unread = true})
 	run_confirm(&ui, client)
+	testing.expect(t, strings.contains(frame(&ui), "Deleting your conversation"))
 	for timeline in timeline_retired {thread.join(timeline.worker)}
 	account_job_drain(&ui)
 	for job in account_jobs {thread.join(job.worker)}
+	// A background read can adopt the storage deletion before the account job drains.
+	testing.expect(t, refresh_after_action(&ui, client))
+	testing.expect_value(t, ui.selected, -1)
 	account_job_drain(&ui)
 
 	testing.expect_value(t, ui.client_status, "")
@@ -352,5 +375,44 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	testing.expect(t, load_chat_list(client, account, &ui))
 	testing.expect_value(t, len(ui.chats), 1)
 	if len(ui.chats) == 1 {testing.expect_value(t, ui.chats[0].group_id, other)}
+	if testing.expect_value(
+		t,
+		len(ui.gs_chats),
+		1,
+	) {testing.expect_value(t, ui.gs_chats[0].group_id, other)}
+	if testing.expect_value(
+		t,
+		len(ui.gs_hits),
+		1,
+	) {testing.expect_value(t, ui.gs_hits[0].snippet, "Kept history")}
+	testing.expect_value(t, mi_unread_count(&ui), 1)
+	if len(ui.mi_hits) == 1 {testing.expect_value(t, ui.mi_hits[0].group, other)}
 	testing.expect_value(t, ui.drafts[draft_key(account, other)], "Keep this draft")
+
+	// Closing before the next frame must still remove a committed delete's saved data.
+	if !testing.expect(t, select_by_id(&ui, client, other)) {return}
+	thread.join(members_job.worker)
+	members_drain(&ui, client)
+	append(
+		&ui.pending,
+		Pending_Send {
+			account_ref = strings.clone(account),
+			group_id = strings.clone(other),
+			body = strings.clone("Queued for the group"),
+			queued = true,
+		},
+	)
+	defer {for &pending in ui.pending {free_pending(&pending)}; delete(ui.pending)}
+	save_offline(&ui)
+	_, queue_err := os.read_entire_file(offline_path(), context.temp_allocator)
+	if !testing.expect_value(t, queue_err, nil) {return}
+	confirm_ask(&ui, .Delete_Group, other)
+	run_confirm(&ui, client)
+	for timeline in timeline_retired {thread.join(timeline.worker)}
+	account_job_drain(&ui)
+	account_deletes_finish(&ui)
+	_, queue_err = os.read_entire_file(offline_path(), context.temp_allocator)
+	testing.expect(t, queue_err != nil)
+	_, have_draft := ui.drafts[draft_key(account, other)]
+	testing.expect(t, !have_draft)
 }

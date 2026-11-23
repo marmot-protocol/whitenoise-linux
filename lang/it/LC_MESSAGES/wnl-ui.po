@@ -2040,9 +2040,6 @@ msgstr "Serie predefinita"
 msgid "Delete"
 msgstr "Elimina"
 
-msgid "Delete chat"
-msgstr "Elimina chat"
-
 msgid "Delete for everyone"
 msgstr "Elimina per tutti"
 
@@ -2054,9 +2051,6 @@ msgstr "Eliminare per te?"
 
 msgid "Delete group"
 msgstr "Elimina gruppo"
-
-msgid "Delete this chat?"
-msgstr "Eliminare questa chat?"
 
 msgid "Delete this device's vault?"
 msgstr "Eliminare la cassaforte di questo dispositivo?"

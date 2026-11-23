@@ -2040,9 +2040,6 @@ msgstr "デフォルトのフォント"
 msgid "Delete"
 msgstr "削除"
 
-msgid "Delete chat"
-msgstr "チャットを削除"
-
 msgid "Delete for everyone"
 msgstr "全員に対して削除"
 
@@ -2054,9 +2051,6 @@ msgstr "自分のみ削除しますか？"
 
 msgid "Delete group"
 msgstr "グループを削除"
-
-msgid "Delete this chat?"
-msgstr "このチャットを削除しますか？"
 
 msgid "Delete this device's vault?"
 msgstr "この端末の保管庫を削除しますか？"

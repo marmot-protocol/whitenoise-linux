@@ -1926,9 +1926,6 @@ msgstr "기본 글꼴"
 msgid "Delete"
 msgstr "삭제"
 
-msgid "Delete chat"
-msgstr "채팅 삭제"
-
 msgid "Delete for everyone"
 msgstr "모두에게서 삭제"
 
@@ -1937,9 +1934,6 @@ msgstr "나에게서 삭제"
 
 msgid "Delete group"
 msgstr "그룹 삭제"
-
-msgid "Delete this chat?"
-msgstr "이 채팅을 삭제하시겠습니까?"
 
 msgid "Delete this folder?"
 msgstr "이 폴더를 삭제하시겠습니까?"
