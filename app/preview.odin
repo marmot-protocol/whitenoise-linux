@@ -1113,11 +1113,17 @@ preview_modal :: proc(ui: ^Ui_State) {
 					break
 				}
 				if view.audio {
+					width := fit_w(360, 26)
 					if nendo.box(nendo.id("PvAudio"))(
-					{width = nendo.fixed(fit_w(360)), direction = .Column, gap = 8},
+					{width = nendo.fixed(width), direction = .Column, gap = 8},
 					) {
 						if nendo.box(nendo.id("PvAudioPlay"))(
-						{padding = nendo.pad(8), color = hovered() ? HOVER : ROW_BG},
+						{
+							height = nendo.fit(min = tap_size() ? tap_min() : 0),
+							padding = nendo.pad(8),
+							align = {y = .Center},
+							color = hovered() ? HOVER : ROW_BG,
+						},
 						) {
 							if hovered() {video_hover = view}
 							nendo.text(
@@ -1125,7 +1131,11 @@ preview_modal :: proc(ui: ^Ui_State) {
 								{font = FONT_ICON, size = 14, color = TEXT},
 							)
 						}
-						video_scrub_bar(nendo.id("PvAudioBar"), view, fit_w(360), 14)
+						if nendo.box(nendo.id("PvAudioSeek"))(
+						{width = nendo.grow(), height = nendo.fixed(tap_size() ? tap_min() : 14)},
+						) {
+							video_scrub_bar(nendo.id("PvAudioBar"), view, width, 14)
+						}
 						nendo.text(
 							fmt.tprintf("%s / %s", fmt_clock(view.time), fmt_clock(view.dur)),
 							{font = FONT_BODY, size = 11, color = TEXT_DIM},
