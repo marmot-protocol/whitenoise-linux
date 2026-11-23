@@ -27,22 +27,42 @@ thread_cur :: proc(ui: ^Ui_State) -> string {
 	return len(ui.thread_stack) > 0 ? ui.thread_stack[len(ui.thread_stack) - 1] : ""
 }
 
+@(private)
+Thread_Placement :: enum {
+	Checking,
+	Ready,
+	Unavailable,
+	Error,
+}
+
+@(private)
+thread_placement_state :: proc(ui: ^Ui_State) -> Thread_Placement {
+	if thread_cur(ui) == "" {return .Ready}
+	if !timeline_group_scope(ui, timeline_job) {return .Error}
+	return ui.thread_placement
+}
+
 thread_can_send :: proc(ui: ^Ui_State) -> bool {
-	parent := thread_cur(ui)
-	if parent == "" {return true}
-	if ui.selected < 0 ||
-	   ui.selected >= len(ui.chats) ||
-	   ui.messages_group != ui.chats[ui.selected].group_id ||
-	   ui.messages_account != ui.account_ref {return false}
-	#reverse for msg in ui.messages {
-		if msg.id == parent {return !msg.deleted && msg.sender_id != "" && msg.sender_id != "?"}
+	return thread_placement_state(ui) == .Ready
+}
+
+@(private)
+thread_placement_text :: proc(placement: Thread_Placement) -> string {
+	#partial switch placement {
+	case .Checking:
+		return tr("Checking the original message…")
+	case .Unavailable:
+		return tr("Original message unavailable")
+	case .Error:
+		return tr("Couldn't check the original message. Please try again.")
 	}
-	return false
+	return ""
 }
 
 thread_send_paused :: proc(ui: ^Ui_State) -> bool {
-	if thread_can_send(ui) {return false}
-	toast(ui, tr("Original message unavailable"))
+	placement := thread_placement_state(ui)
+	if placement == .Ready {return false}
+	toast(ui, thread_placement_text(placement))
 	return true
 }
 
@@ -53,6 +73,7 @@ thread_push :: proc(ui: ^Ui_State, root_id: string) {
 	if ui.location_open {geo_picker_close(ui)}
 	poll_close(ui)
 	append(&ui.thread_stack, strings.clone(root_id))
+	thread_check_placement(ui)
 	ui.replying = "" // a reply can't cross into a thread
 	ui.scroll_pending = true
 	thread_kick()
@@ -69,6 +90,7 @@ thread_back :: proc(ui: ^Ui_State) {
 	gs_flash_jump(ui, ui.jump_id)
 	delete(ui.thread_stack[len(ui.thread_stack) - 1])
 	pop(&ui.thread_stack)
+	thread_check_placement(ui)
 	ui.scroll_pending = false
 	thread_kick()
 }
@@ -76,10 +98,12 @@ thread_back :: proc(ui: ^Ui_State) {
 thread_clear :: proc(ui: ^Ui_State) {
 	if ui.location_open {geo_picker_close(ui)}
 	poll_close(ui)
+	if len(ui.thread_stack) == 0 {return}
 	for id in ui.thread_stack {
 		delete(id)
 	}
 	clear(&ui.thread_stack)
+	thread_check_placement(ui)
 }
 
 // The route transition: kick the slide offset, anim_to eases it home.

@@ -369,6 +369,7 @@ handle_composer_action :: proc(ui: ^Ui_State) -> bool {
 
 @(private)
 perform_composer_action :: proc(ui: ^Ui_State, action: Composer_Action) {
+	if thread_send_paused(ui) {return}
 	#partial switch action {
 	case .Files:
 		rl.OpenFileDialog(true)

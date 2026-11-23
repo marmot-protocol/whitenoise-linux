@@ -39,7 +39,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 ### Writing, sending and forwarding
 
 - **Messages are Markdown.** Bodies support typeset `$` math blocks, reactions, replies, edits with history, forwarding, and search.
-- **A thread stays readable without its parent.** If the parent was deleted or is unavailable on this device, you cannot send new replies there.
+- **A thread stays readable when you can't reply.** You can reply to a parent outside the visible page if this device still has it and can place the reply in the thread. If not, the existing replies and your draft stay in place.
 - **Enter sends; Shift+Enter starts a new line.** You can also click the paper plane to send or the checkmark to save an edit.
 - **Type `/` in an empty draft to open commands.** Keep typing to filter. Use the arrow keys and Enter or Tab, or click a command. Escape closes the menu without changing your draft. `/shrug` inserts a shrug without sending it.
 - **Choose what appears beside your draft.** Open **+ > Customize composer** or **Settings > General > Composer**. Drag shortcuts in the preview to reorder them, or drag between **Left**, **Right**, and **+ menu**. Select a shortcut for placement and reorder buttons.

@@ -230,4 +230,48 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 	ui.poll_ticket = 0
 	phone_back_action(&ui)
 	testing.expect(t, !ui.poll_open, "Back closes a poll that is not sending")
+
+	job := Timeline_Work {
+		account = "offline-fixture",
+		group   = "mobile-chat",
+	}
+	previous_job := timeline_job
+	timeline_job = &job
+	defer {
+		thread_clear(&ui)
+		timeline_job = previous_job
+		delete(job.thread_request.parent)
+		delete(ui.thread_stack)
+		delete(ui.toast)
+	}
+	thread_push(&ui, "mobile-message")
+	ed_set(&ui, &ui.compose, "/pol")
+	build_layout(&ui, 0)
+	testing.expect(t, nendo.element(nendo.id("ThreadPlacementBusy")).found)
+	testing.expect(t, nendo.element(nendo.id("ComposeClip")).found)
+	testing.expect(t, !nendo.element(nendo.id("SendBtn")).found)
+	rl.PushChar('l')
+	handle_chat(&ui, &client)
+	testing.expect(t, !ui.poll_open && string(ui.compose[:]) == "/poll")
+
+	job.thread_result = {job.thread_request.revision, .Ready}
+	timeline_drain(&ui, &client)
+	perform_composer_action(&ui, .Poll)
+	ed_set(&ui, &ui.poll_question, "Where should we meet?")
+	append(&ui.poll_inputs[0], "Here")
+	append(&ui.poll_inputs[1], "There")
+	build_layout(&ui, 0)
+	send := nendo.element(nendo.id("SendBtn"))
+	if !testing.expect(t, send.found) {return}
+	// A stale click can land after the native result changes, before redraw.
+	job.thread_result = {job.thread_request.revision, .Unavailable}
+	timeline_drain(&ui, &client)
+	forced_release = true
+	nendo.set_pointer({send.rect.x + send.rect.width / 2, send.rect.y + send.rect.height / 2}, .Up)
+	testing.expect(t, handle_poll(&ui, &client))
+	forced_release = false
+	testing.expect(t, ui.poll_open && ui.poll_ticket == 0)
+	testing.expect_value(t, string(ui.poll_question[:]), "Where should we meet?")
+	testing.expect_value(t, string(ui.poll_inputs[0][:]), "Here")
+	testing.expect_value(t, string(ui.poll_inputs[1][:]), "There")
 }

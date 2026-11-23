@@ -1111,6 +1111,9 @@ msgstr ""
 msgid "Checking relays..."
 msgstr ""
 
+msgid "Checking the original message…"
+msgstr ""
+
 msgid "Checking whether linked devices are on…"
 msgstr ""
 
@@ -1564,6 +1567,9 @@ msgid "Couldn't check for updates. Please try again."
 msgstr ""
 
 msgid "Couldn't check linked devices for this chat. Please try again."
+msgstr ""
+
+msgid "Couldn't check the original message. Please try again."
 msgstr ""
 
 msgid "Couldn't check the translation model. Please try again."

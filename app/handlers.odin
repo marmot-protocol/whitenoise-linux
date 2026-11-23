@@ -388,6 +388,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if ui.selected >= 0 &&
+	   thread_can_send(ui) &&
 	   (ui.stt.file == nil || ui.stt.message != "") &&
 	   nendo.element(nendo.id("ComposeBox")).found {
 		if handle_effects(ui) || handle_composer_menu(ui, client) {return}
@@ -564,6 +565,13 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
+	if clicked("ThreadPlacementRetry") && thread_placement_state(ui) == .Error {
+		if !thread_check_placement(ui) && client != nil {
+			timeline_start(client, ui, string(ui.search_input[:]))
+		}
+		return
+	}
+
 	if clicked("FilesBtn") {
 		ui.group_files_open = !ui.group_files_open
 		ui.show_members = false
@@ -633,7 +641,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// A DM with someone you blocked has no composer to type into.
 	blocked_dm := blocked_peer(ui)
 	read_only := ui.chats[ui.selected].archived
-	thread_writable := thread_can_send(ui)
 	typed_len := -1
 	if ui.focus != .Filter &&
 	   (!read_only || ui.focus == .Search || ui.show_members) &&
@@ -642,7 +649,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   (ui.stt.file == nil || ui.stt.message != "") &&
 	   blocked_dm == "" {
 		buf := active_buf(ui)
-		if buf != &ui.compose || (!ui.poll_open && (thread_writable || ui.editing != "")) {
+		if buf != &ui.compose || !ui.poll_open {
 			n := edit_text(ui, buf, buf == &ui.compose || buf == &ui.desc_input)
 			if buf == &ui.compose {typed_len = n}
 		}
@@ -656,7 +663,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if !ui.poll_open &&
 		   rl.IsKeyPressed(.ESCAPE) &&
-		   (!thread_writable || len(ui.compose) == 0) &&
+		   len(ui.compose) == 0 &&
 		   len(ui.editing) == 0 {
 			thread_back(ui)
 			return
@@ -681,7 +688,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Voice recording swallows the composer keys while active.
 	if voice_active() {
 		if clicked("VoiceSend") || (!rl.HasTouch() && rl.IsKeyPressed(.ENTER)) {
-			if !thread_send_paused(ui) {voice_send(ui, client)}
+			voice_send(ui, client)
 		} else if clicked("VoiceCancel") || rl.IsKeyPressed(.ESCAPE) {
 			voice_cancel()
 		}
@@ -692,7 +699,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   blocked_dm == "" &&
 	   nendo.element(nendo.id("ComposeClip")).found &&
 	   handle_slash_menu(ui, typed_len) {return}
-	if !read_only && blocked_dm == "" && thread_writable && handle_composer_action(ui) {return}
+	if !read_only && blocked_dm == "" && handle_composer_action(ui) {return}
 	for _, i in ui.staged {
 		if mouse_released() && nendo.pointer_over(nendo.id("StagedX", u32(i))) {
 			remove_staged(ui, i)
@@ -969,7 +976,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// A phone keyboard's Enter is a line break; sending has its own button.
 	if ui.focus == .Compose &&
 	   blocked_dm == "" &&
-	   (thread_writable || ui.editing != "") &&
 	   rl.IsKeyPressed(.ENTER) &&
 	   (rl.HasTouch() || shift_down()) {
 		ed_begin(ui, &ui.compose)
@@ -1152,6 +1158,7 @@ PASTE_IMAGES := [?]struct {
 }
 
 paste_clipboard_files :: proc(ui: ^Ui_State) -> bool {
+	if !thread_can_send(ui) {return false}
 	for m in PASTE_IMAGES {
 		data := rl.GetClipboardBytes(m.mime)
 		if len(data) == 0 {
@@ -2449,17 +2456,6 @@ message_op :: proc(
 		)
 		apply_pending_reacts(ui) // the ghost is on screen this frame
 	}
-}
-
-// First "e"-tag value of a record: a deletion's target or a thread's root.
-first_event_ref :: proc(record: ^marmot.Timeline_Message_Record) -> string {
-	for t in 0 ..< record.tags_len {
-		tag := &record.tags[t]
-		if tag.values_len >= 2 && string(tag.values[0]) == "e" {
-			return string(tag.values[1])
-		}
-	}
-	return ""
 }
 
 // Per-chat message-body hits for the rail filter: a paged search per

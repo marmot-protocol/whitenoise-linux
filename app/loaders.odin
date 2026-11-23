@@ -237,13 +237,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 
 		// Other participants' deletions retain their placeholder row.
-		parent := ""
-		if ref := record.thread; ref != nil {
-			parent = string(ref.parent_message_id_hex)
-		} else if record.kind == KIND_POLL {
-			// Polls sent by older clients can have only an e tag.
-			parent = first_event_ref(record)
-		}
+		parent := record.thread != nil ? string(record.thread.parent_message_id_hex) : ""
 		if record.deleted {
 			append(
 				&ui.messages,

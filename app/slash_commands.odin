@@ -31,7 +31,6 @@ Slash_Trigger :: enum {
 Slash_Command :: struct {
 	name:    string,
 	action:  Composer_Action,
-	run:     proc(ui: ^Ui_State),
 	trigger: Slash_Trigger,
 	insert:  string,
 	preview: string,
@@ -39,7 +38,7 @@ Slash_Command :: struct {
 
 @(private = "file")
 SLASH_COMMANDS := [Slash_Id]Slash_Command {
-	.Poll = {name = "/poll", action = .Poll, run = poll_reset, trigger = .Exact},
+	.Poll = {name = "/poll", action = .Poll, trigger = .Exact},
 	.Attach = {name = "/attach", action = .Files},
 	.Effect = {name = "/effect", action = .Effect},
 	.Emoji = {name = "/emoji", action = .Emoji},
@@ -103,13 +102,10 @@ slash_pick :: proc(ui: ^Ui_State, row: Slash_Id) {
 		ed_end(ui, &ui.compose)
 		return
 	}
+	if thread_send_paused(ui) {return}
 	ed_set(ui, &ui.compose, "")
 	drop_draft(ui)
-	if command.run != nil {
-		command.run(ui)
-	} else {
-		perform_composer_action(ui, command.action)
-	}
+	perform_composer_action(ui, command.action)
 }
 
 @(private)

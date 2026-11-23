@@ -763,6 +763,8 @@ Ui_State :: struct {
 	theme_last:                          string, // last previewed toml, so a still frame reparses nothing
 	theme_base:                          string, // toml as the editor opened, so Cancel knows if anything changed
 	thread_stack:                        [dynamic]string, // open thread route, last = current root
+	thread_placement:                    Thread_Placement,
+	thread_placement_revision:           u64,
 	gs_open:                             bool, // global cross-chat search modal
 	gs_input:                            [dynamic]u8, // its query box
 	gs_hits:                             [dynamic]Gs_Hit, // its result cards

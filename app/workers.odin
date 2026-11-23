@@ -371,6 +371,7 @@ retention_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Retention_J
 		refresh_after_action(ui, client)
 		if pruned_open {
 			load_timeline(client, ui)
+			if thread_cur(ui) != "" {thread_check_placement(ui)}
 		}
 	}
 }

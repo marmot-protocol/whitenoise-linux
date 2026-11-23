@@ -9,42 +9,132 @@ import "core:testing"
 import "core:thread"
 
 @(test)
-thread_send_preserves_unavailable_draft :: proc(t: ^testing.T) {
+thread_send_uses_native_placement :: proc(t: ^testing.T) {
 	context.allocator = runtime.default_context().allocator
 	sync.lock(&nendo_test_mutex)
 	defer sync.unlock(&nendo_test_mutex)
-	ui := Ui_State {
-		account_ref      = "me",
-		messages_account = "me",
-		messages_group   = "chat",
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	previous_ticket := send_ticket
+	defer send_ticket = previous_ticket
+	job := Timeline_Work {
+		account = "me",
+		group   = "chat",
 	}
+	previous_job, previous_prefs := timeline_job, g_prefs
+	timeline_job = &job
+	defer {timeline_job = previous_job; g_prefs = previous_prefs
+		delete(job.thread_request.parent)}
+	ui := Ui_State {
+		account_ref = "me",
+		messages_account = "me",
+		messages_group = "chat",
+		prefs = {reduce_motion = true},
+	}
+	g_prefs = &ui.prefs
 	append(&ui.chats, Chat_Row_Ui{group_id = "chat"})
-	append(&ui.thread_stack, "root", "parent")
-	append(&ui.messages, Msg_Ui{id = "root", sender_id = "author"})
 	append(&ui.messages, Msg_Ui{id = "reply", thread_of = "parent", sender_id = "author"})
 	append(&ui.compose, "keep this :D")
-	append(&ui.staged, Staged_File{name = "file.txt"})
+	append(&ui.staged, Staged_File{name = strings.clone("file.txt")})
 	defer {
+		thread_clear(&ui)
+		for &pending in ui.pending {free_pending(&pending)}
+		delete(ui.pending)
 		delete(ui.chats); delete(ui.thread_stack); delete(ui.messages); delete(ui.compose)
-		delete(ui.staged); delete(ui.toast)
+		staged_files_free(ui.staged); delete(ui.toast)
 	}
-	for parent in ([]Msg_Ui{{}, {id = "parent", sender_id = "author", deleted = true}, {id = "parent"}}) {
-		resize(&ui.messages, 2)
-		if parent.id != "" {append(&ui.messages, parent)}
+	thread_push(&ui, "parent")
+	testing.expect_value(t, thread_placement_state(&ui), Thread_Placement.Checking)
+	testing.expect_value(t, string(job.thread_request.parent), "parent")
+
+	job.thread_result = {job.thread_request.revision, .Ready}
+	timeline_drain(&ui, nil)
+	testing.expect(t, thread_can_send(&ui), "native placement can use a parent outside the window")
+	queue_send(&ui, nil, "reply to an older message")
+	if !testing.expect_value(t, len(ui.pending), 1) {return}
+	testing.expect_value(t, ui.pending[0].thread, "parent")
+	free_pending(&ui.pending[0])
+	clear(&ui.pending)
+
+	// Loading the parent into the window cannot authorize a reply if the
+	// native root or parent evidence is missing.
+	append(&ui.messages, Msg_Ui{id = "parent", sender_id = "author"})
+	for state in ([]Thread_Placement{.Checking, .Unavailable, .Error}) {
+		job.thread_result = {job.thread_request.revision, state}
+		timeline_drain(&ui, nil)
+		testing.expect_value(t, thread_placement_state(&ui), state)
 		testing.expect(t, !thread_can_send(&ui))
 		send_composer(&ui, nil, false)
 		queue_send(&ui, nil, "shortcut send")
 		queue_staged(&ui, nil)
+		perform_composer_action(&ui, .Poll)
 		testing.expect_value(t, string(ui.compose[:]), "keep this :D")
 		testing.expect_value(t, len(ui.staged), 1)
 		testing.expect_value(t, len(ui.pending), 0)
-		testing.expect_value(t, ui.messages[1].thread_of, thread_cur(&ui))
+		testing.expect(t, !ui.poll_open)
+		testing.expect_value(t, ui.messages[0].thread_of, thread_cur(&ui))
 	}
-	ui.messages[2].sender_id = "author"
-	ui.messages[0].deleted = true
-	testing.expect(t, thread_can_send(&ui), "only the direct parent must still be available")
-	ui.messages_group = "other chat"
-	testing.expect(t, !thread_can_send(&ui), "a stale timeline must not authorize a new send")
+}
+
+@(test)
+thread_placement_ignores_stale_routes :: proc(t: ^testing.T) {
+	context.allocator = runtime.default_context().allocator
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	job := Timeline_Work {
+		account = "me",
+		group   = "chat",
+	}
+	previous_job, previous_retired, previous_page := timeline_job, timeline_retired, timeline_page
+	previous_prefs := g_prefs
+	timeline_job, timeline_retired, timeline_page = &job, {}, nil
+	defer {
+		delete(timeline_retired)
+		timeline_job, timeline_retired, timeline_page =
+			previous_job, previous_retired, previous_page
+		g_prefs = previous_prefs
+		delete(job.thread_request.parent)
+	}
+	ui := Ui_State {
+		account_ref = "me",
+		prefs = {reduce_motion = true},
+	}
+	g_prefs = &ui.prefs
+	append(&ui.chats, Chat_Row_Ui{group_id = "chat"})
+	defer {
+		thread_clear(&ui)
+		delete(ui.thread_stack); delete(ui.chats); delete(ui.jump_id); delete(ui.gs_flash_id)
+	}
+	thread_push(&ui, "parent")
+	parent_revision := job.thread_request.revision
+	thread_push(&ui, "nested")
+	job.thread_result = {parent_revision, .Ready}
+	timeline_drain(&ui, nil)
+	testing.expect_value(t, thread_placement_state(&ui), Thread_Placement.Checking)
+
+	nested_revision := job.thread_request.revision
+	thread_back(&ui)
+	job.thread_result = {nested_revision, .Ready}
+	timeline_drain(&ui, nil)
+	testing.expect_value(t, thread_cur(&ui), "parent")
+	testing.expect_value(t, thread_placement_state(&ui), Thread_Placement.Checking)
+	job.thread_result = {parent_revision, .Ready}
+	timeline_drain(&ui, nil)
+	testing.expect(t, !thread_can_send(&ui), "an earlier check for the same parent is stale")
+
+	job.thread_result = {job.thread_request.revision, .Ready}
+	timeline_drain(&ui, nil)
+	ui.chats[0].group_id = "other chat"
+	testing.expect(t, !thread_can_send(&ui), "a matching parent and account cannot cross chats")
+	ui.chats[0].group_id = "chat"
+	thread_check_placement(&ui)
+	job.thread_result = {job.thread_request.revision, .Ready}
+	ui.account_ref = "other account"
+	timeline_drain(&ui, nil)
+	testing.expect(t, !thread_can_send(&ui), "a matching parent and group cannot cross accounts")
+	testing.expect(t, timeline_job == nil)
 }
 
 @(test)
@@ -137,6 +227,14 @@ thread_offline_retry_preflights_destination :: proc(t: ^testing.T) {
 		marmot.thread_reply_context(client, account_c, "not-a-group-id", parent, &available, nil),
 		marmot.Status.INVALID_HEX,
 	)
+	job := Timeline_Work {
+		client  = client,
+		account = account_c,
+		group   = group,
+	}
+	testing.expect_value(t, timeline_check_thread(&job, parent), Thread_Placement.Unavailable)
+	job.group = "not-a-group-id"
+	testing.expect_value(t, timeline_check_thread(&job, parent), Thread_Placement.Error)
 
 	ui := Ui_State {
 		account_ref = account,

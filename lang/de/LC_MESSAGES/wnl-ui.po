@@ -1005,6 +1005,9 @@ msgstr "Suche nach Updates."
 msgid "Checking relays..."
 msgstr "Relays werden geprüft..."
 
+msgid "Checking the original message…"
+msgstr "Die ursprüngliche Nachricht wird geprüft…"
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr "Dein Schlüssel wird bei den Relays geprüft. Das dauert ein paar Sekunden."
 
@@ -1423,6 +1426,9 @@ msgstr "Das Passwort konnte nicht geändert werden. Bitte versuche es erneut."
 
 msgid "Couldn't check for updates. Please try again."
 msgstr "Nach Updates konnte nicht gesucht werden. Bitte versuche es erneut."
+
+msgid "Couldn't check the original message. Please try again."
+msgstr "Die ursprüngliche Nachricht konnte nicht geprüft werden. Bitte versuche es erneut."
 
 msgid "Couldn't check the translation model. Please try again."
 msgstr "Das Übersetzungsmodell konnte nicht überprüft werden. Bitte versuche es erneut."

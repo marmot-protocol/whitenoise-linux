@@ -1,0 +1,90 @@
+--- a/crates/storage-sqlite/src/app/timeline/threads.rs
++++ b/crates/storage-sqlite/src/app/timeline/threads.rs
+@@ -5,10 +5,10 @@
+ //! by walking its stored parents, and the answer improves as late parents
+ //! arrive without any reprojection.
+ 
+-use super::TimelineThreadRef;
++use super::{TimelineThreadRef, tag_value};
+ use crate::SqliteResultExt;
+ use crate::base::connection::CachedSql;
+-use cgka_traits::app_event::MARMOT_APP_EVENT_KIND_CHAT;
++use cgka_traits::app_event::{EVENT_REF_TAG, MARMOT_APP_EVENT_KIND_CHAT};
+ use cgka_traits::storage::StorageResult;
+ use cgka_traits::{
+     MARMOT_APP_EVENT_KIND_AGENT_ITEM, MARMOT_APP_EVENT_KIND_POLL, NIP22_COMMENT_KIND,
+@@ -82,9 +82,9 @@
+     parent: &'a str,
+ }
+ 
+-/// What a row's own fields say about its thread: a thread message always has
+-/// a parent; a chat, sticker or poll joins a thread only by naming its root
+-/// with `E`, and answers its reply target or else that root. An agent item
++/// A thread message always has a parent. A chat or sticker joins a thread
++/// only by naming its root with `E`. Polls can inherit the root from their
++/// `e` parent, like older White Noise Linux polls without `E`. An agent item
+ /// joins with `E` too, and answers the parent its `e` names or else the root
+ /// (marmot-agents D-121); its reply target is a turn's starting message.
+ fn own_thread<'a>(
+@@ -98,7 +98,13 @@
+             named_root,
+             parent: thread_message_parent(kind, tags)?,
+         }),
+-        MARMOT_APP_EVENT_KIND_CHAT | MARMOT_APP_EVENT_KIND_POLL => {
++        MARMOT_APP_EVENT_KIND_POLL => Some(OwnThread {
++            named_root,
++            parent: tag_value(tags, EVENT_REF_TAG)
++                .filter(|parent| !parent.is_empty())
++                .or(named_root)?,
++        }),
++        MARMOT_APP_EVENT_KIND_CHAT => {
+             let root = named_root?;
+             Some(OwnThread {
+                 named_root,
+--- a/crates/storage-sqlite/src/app/timeline/tests.rs
++++ b/crates/storage-sqlite/src/app/timeline/tests.rs
+@@ -199,6 +199,44 @@
+     }
+ }
+ 
++#[test]
++fn legacy_polls_keep_thread_root() {
++    let store = SqliteAccountStorage::in_memory().unwrap().app_storage();
++    let root = chat("root", "alice", 1, "parent");
++    let group = &root.group_id_hex;
++    store.record_app_event(&root).unwrap();
++
++    let standalone = poll("standalone", "alice", 2);
++    store.record_app_event(&standalone).unwrap();
++    assert!(
++        store
++            .timeline_message(group, "standalone")
++            .unwrap()
++            .unwrap()
++            .thread
++            .is_none()
++    );
++
++    for (id, parent, canonical) in [
++        ("old", "root", false),
++        ("nested", "old", false),
++        ("new", "nested", true),
++    ] {
++        let mut message = poll(id, "bob", 3);
++        message.tags.push(vec!["e".into(), parent.into()]);
++        message.tags.push(vec!["q".into(), "standalone".into()]);
++        if canonical {
++            message.tags.push(vec!["E".into(), "root".into()]);
++        }
++        store.record_app_event(&message).unwrap();
++        let row = store.timeline_message(group, id).unwrap().unwrap();
++        let thread = row.thread.unwrap();
++        assert_eq!(thread.root_message_id_hex, "root");
++        assert_eq!(thread.parent_message_id_hex, parent);
++        assert_eq!(row.reply_to_message_id_hex.as_deref(), Some("standalone"));
++    }
++}
++
+ fn poll_response(
+     id: &str,
+     sender: &str,
