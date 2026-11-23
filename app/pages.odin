@@ -1047,7 +1047,7 @@ handle_accounts :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 // Activate another already-stored account and reload everything.
 switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) -> bool {
-	if !account_signed_in(ui, account_id) || account_revoked(ui, account_id) {return false}
+	if !account_signed_in(ui, account_id) {return false}
 	job := account_job_new(ui, client, .Switch, account_id)
 	if job == nil {return false}
 	account_job_start(job)
@@ -1056,7 +1056,8 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 
 @(private)
 finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
-	if !account_signed_in(ui, account_id) {return}
+	if profile := ui.devices.profiles[account_id];
+	   profile != nil && (profile.revoked || profile.unlink_check) {return}
 	selected := strings.clone(account_id)
 	account_workspace_clear(ui)
 	delete(ui.account_ref)
