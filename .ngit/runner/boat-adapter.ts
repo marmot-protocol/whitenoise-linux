@@ -44,7 +44,7 @@ const queues = [
   },
 ];
 const crossSnapshots = {
-  cross: "wn-ngit-staging-arm64-70f4e07f",
+  cross: "wn-ngit-staging-arm64-70f4e07f-preloaded",
   windows: "wn-ngit-staging-82ff7da6-cross-only",
 };
 

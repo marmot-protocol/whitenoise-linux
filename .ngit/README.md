@@ -49,12 +49,15 @@ target and toolchain state, and the stamped native dependency prefix. The
 job still builds, signs, and verifies a fresh APK; the seed holds no APK or
 signing key.
 
-ARM64 staging uses `wn-ngit-staging-arm64-70f4e07f`. Windows still uses
+ARM64 staging uses `wn-ngit-staging-arm64-70f4e07f-preloaded`. Windows uses
 `wn-ngit-staging-82ff7da6-cross-only`. Each job extracts `cross-cache.tar.zst`
 and its target archive. The shared archive holds `cross/` and the patched
 MDK checkout; the target archive holds its `worktree/build/cross/` subtree.
-The cross SDK image lives under `/wn-ci/images/`. The ARM64 snapshot does not
-contain the Windows archive, native caches, or Android caches.
+Windows keeps the SDK archive under `/wn-ci/images/`. The ARM64 seed keeps
+the loaded image in `/wn-stage-containers`, mounted as nested Podman's image
+store. Load the SDK there when building the seed, then drop the duplicate OCI
+archive. A changed `Containerfile` still builds a new image. Leave the Windows
+archive, native caches, and Android caches out of the ARM64 snapshot.
 Seed through `scripts/ngit-cross.sh` so Cargo paths match inside `/work`.
 Leave the compiled app, package staging trees, `dist`, and `build/cross-evidence`
 out of the seed. Each run builds the app and boots the new package before
