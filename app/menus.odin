@@ -708,6 +708,11 @@ picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D, width: f32 =
 	}
 }
 
+// Shortest a message picker gets to keep the chat header visible: the
+// tabs, search box and two rows of the grid.
+@(private = "file")
+PICKER_MIN_H :: f32(220)
+
 // Emoji picker: recents, search, and an emoji grid.
 emoji_picker :: proc(ui: ^Ui_State) {
 	gif := ui.gif_tab && ui.picker_target == "" && ui.picker_mode == .Message
@@ -720,6 +725,19 @@ emoji_picker :: proc(ui: ^Ui_State) {
 		if composer := nendo.element(nendo.id("ComposeBox")); composer.found {
 			if single_pane() {height = min(height, max(120, composer.rect.y - 16))}
 			x, y = composer.rect.x + composer.rect.width - width, composer.rect.y - height - 8
+		}
+	}
+	// A message picker keeps the chat name readable: it stays below the chat
+	// header, and above the composer when it inserts there, giving up height
+	// when the window is short.
+	if ui.picker_mode == .Message {
+		if head := nendo.element(nendo.id("ChatHeader")); head.found {
+			top := head.rect.y + head.rect.height + 8
+			limit := f32(rl.GetScreenHeight()) / UI_ZOOM - 8
+			if composer := nendo.element(nendo.id("ComposeBox"));
+			   composer.found && ui.picker_target == "" {limit = composer.rect.y - 8}
+			height = min(height, max(PICKER_MIN_H, limit - top))
+			y = max(top, min(y, limit - height))
 		}
 	}
 	x, y = panel_pos(x, y, width, height)
