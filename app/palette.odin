@@ -25,12 +25,16 @@ Cmd :: enum {
 	Toggle_Rail,
 	Toggle_Members,
 	Set_General,
+	Set_Folders,
+	Set_Speech,
 	Set_Network,
 	Set_Keys,
 	Set_Appearance,
 	Set_Notifications,
 	Set_Storage,
 	Set_Advanced,
+	Set_Agents,
+	Set_Devices,
 	Set_About,
 	Next_Theme,
 	Next_Accent,
@@ -60,12 +64,16 @@ COMMANDS := [Cmd]struct {
 	.Toggle_Rail       = {N_("Collapse the chat list"), N_("View")},
 	.Toggle_Members    = {N_("Show group members"), N_("View")},
 	.Set_General       = {N_("Settings: general"), N_("Settings")},
+	.Set_Folders       = {N_("Settings: folders"), N_("Settings")},
+	.Set_Speech        = {N_("Settings: speech"), N_("Settings")},
 	.Set_Network       = {N_("Settings: network and relays"), N_("Settings")},
 	.Set_Keys          = {N_("Settings: keys and identity"), N_("Settings")},
 	.Set_Appearance    = {N_("Settings: appearance"), N_("Settings")},
 	.Set_Notifications = {N_("Settings: notifications"), N_("Settings")},
 	.Set_Storage       = {N_("Settings: storage"), N_("Settings")},
 	.Set_Advanced      = {N_("Settings: advanced"), N_("Settings")},
+	.Set_Agents        = {N_("Settings: AI agents"), N_("Settings")},
+	.Set_Devices       = {N_("Settings: devices"), N_("Settings")},
 	.Set_About         = {N_("Settings: about"), N_("Settings")},
 	.Next_Theme        = {N_("Next theme"), N_("Appearance")},
 	.Next_Accent       = {N_("Next accent color"), N_("Appearance")},
@@ -119,6 +127,7 @@ pal_refresh :: proc(ui: ^Ui_State) {
 			if single_pane() && (cmd == .Toggle_Rail || cmd == .Toggle_Centered) {continue}
 			if cmd == .Toggle_Members &&
 			   (ui.selected < 0 || ui.page != .Chats || selected_chat_is_dm(ui)) {continue}
+			if cmd == .Set_Devices && !settings_available(ui, .Devices) {continue}
 			hay := gs_fold(fmt.tprintf("%s %s", COMMANDS[cmd].label, COMMANDS[cmd].hint))
 			exact := strings.contains(hay, needle)
 			if len(needle) == 0 {
@@ -388,6 +397,10 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		}
 	case .Set_General:
 		settings_open(ui, client, .General)
+	case .Set_Folders:
+		settings_open(ui, client, .Folders)
+	case .Set_Speech:
+		settings_open(ui, client, .Speech)
 	case .Set_Network:
 		settings_open(ui, client, .Network)
 	case .Set_Keys:
@@ -400,6 +413,10 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		settings_open(ui, client, .Storage)
 	case .Set_Advanced:
 		settings_open(ui, client, .Advanced)
+	case .Set_Agents:
+		settings_open(ui, client, .Agents)
+	case .Set_Devices:
+		settings_open(ui, client, .Devices)
 	case .Set_About:
 		settings_open(ui, client, .About)
 	case .Next_Theme:
