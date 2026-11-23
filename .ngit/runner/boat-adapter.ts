@@ -40,7 +40,7 @@ const queues = [
     snapshot: "wn-ngit-staging-70fd486b-android-pax",
     staging: true,
     active: 0,
-    limit: 1,
+    limit: 4,
   },
 ];
 const crossSnapshot = "wn-ngit-staging-82ff7da6-cross-only";

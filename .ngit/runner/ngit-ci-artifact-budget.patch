@@ -1,3 +1,26 @@
+diff --git a/src/blossom.rs b/src/blossom.rs
+--- a/src/blossom.rs
++++ b/src/blossom.rs
+@@ -13,6 +13,8 @@ use tokio::sync::Mutex;
+ 
+ use crate::runner::JobOutcome;
+ 
++static ARTIFACT_UPLOAD: Mutex<()> = Mutex::const_new(());
++
+ async fn read_export_blob(path: &Path) -> anyhow::Result<Vec<u8>> {
+     use tokio::io::AsyncReadExt;
+     let file = tokio::fs::File::open(path).await?;
+@@ -151,6 +153,10 @@ impl BlossomUploader {
+     ) -> anyhow::Result<()> {
+         use anyhow::Context;
+         use ngit_ci_artifacts::{ArtifactFile, ArtifactReference, Manifest};
++        if job.artifacts.is_empty() {
++            return Ok(());
++        }
++        let _upload_slot = ARTIFACT_UPLOAD.lock().await;
+         let files = job
+             .artifacts
+             .iter()
 diff --git a/src/runner/mod.rs b/src/runner/mod.rs
 --- a/src/runner/mod.rs
 +++ b/src/runner/mod.rs

@@ -77,12 +77,15 @@ differs from the seed. Job output goes to ngit through the adapter; PR
 workflows do not publish artifacts.
 
 Install `wn-ngit-staging.service` with its own `wn-ngit-stage` system user.
-Staging runs only `master` push workflows, one at a time. Nested Podman uses
-a private ext4 directory. The outer overlay does not support the writes
-needed to build the cross SDK. Before deleting a worker, the adapter
-retrieves at most 1 GiB of staged ZIPs. ngit-ci validates the archives,
-publishes packages to Blossom, and signs the results. PR workers cannot
-use this artifact path or start privileged containers.
+Staging runs up to four `master` push jobs at a time, separate from the
+four PR slots. Nested Podman uses a private ext4 directory. The outer
+overlay does not support the writes needed to build the cross SDK.
+Before deleting a worker, the adapter retrieves at most 1 GiB of staged ZIPs.
+ngit-ci validates the archives and signs the results. Apply
+`runner/ngit-ci-artifact-budget.patch` to the pinned coordinator source.
+The patch keeps the 1 GiB export cap and limits Blossom to one artifact
+upload at a time so the coordinator does not buffer several packages in RAM.
+PR workers cannot use this artifact path or start privileged containers.
 
 ## wn-build-server
 
