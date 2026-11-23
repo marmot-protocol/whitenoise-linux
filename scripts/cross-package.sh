@@ -2,6 +2,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 source "$HERE/scripts/build-cache.sh"
+package_started=$SECONDS
 package_allowed() {
   local path="$1" resolved
   case "/$path/" in */.git/* | */.hg/* | */.svn/* | */.env/* | *.env/*) return 1 ;; esac
@@ -373,7 +374,11 @@ PLIST
     ROOTS+=("${WN_CROSS_WINDOWS_RUNTIME:?LLVM-MinGW runtime root required}/x86_64-w64-mingw32" "$WN_CROSS_VELOPACK/lib")
   fi
   if [ "$SYSTEM" = linux ]; then ROOTS+=("$SYSROOT/lib"); fi
+  bundle_started=$SECONDS
   bun "$HERE/scripts/cross-bundle.js" "$SYSTEM" "$STAGE" "${ROOTS[@]}"
+  if [ "${WN_CROSS_TIMING:-0}" = 1 ]; then
+    printf 'Cross phase bundle: %ss\n' "$((SECONDS - bundle_started))"
+  fi
   if [ "$SYSTEM" = windows ]; then
     # The resource helper cannot load DLLs from its parent's directory. Keep the
     # executable only beside the app; helper_path resolves this first.
@@ -525,7 +530,11 @@ else
     printf 'Cached archive %s\n' "$NAME"
   else
     rm -f "$ARCHIVE_STAMP"
+    archive_started=$SECONDS
     tar -C "$OUT/package" -czf "$ARCHIVE" "$NAME"
+    if [ "${WN_CROSS_TIMING:-0}" = 1 ]; then
+      printf 'Cross phase compress: %ss\n' "$((SECONDS - archive_started))"
+    fi
     if [ "$PACKAGE_CACHE" = true ]; then build_cache_store "$ARCHIVE_KEY" "$ARCHIVE_STAMP" "$ARCHIVE"; fi
   fi
   if [ "$SYSTEM" = darwin ] && [ -n "${WN_SPARKLE_PRIVATE_KEY:-}" ]; then
@@ -533,5 +542,8 @@ else
       "${TARGET#darwin-}" "$SPARKLE" "$HERE/packaging/sparkle-public-key.txt" \
       "$HERE/dist/appcast-${TARGET#darwin-}.xml"
   fi
+fi
+if [ "${WN_CROSS_TIMING:-0}" = 1 ]; then
+  printf 'Cross phase package: %ss\n' "$((SECONDS - package_started))"
 fi
 printf 'Packaged %s\n' "$NAME"

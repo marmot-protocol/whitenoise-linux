@@ -115,7 +115,11 @@ if [ "$target" = linux-arm64 ] || [ "$target" = linux-amd64 ]; then
     export LD_LIBRARY_PATH="$libs"
   fi
 fi
+boot_started=$SECONDS
 timeout 120 "${run[@]}" "$exe"
+if [ "${WN_CROSS_TIMING:-0}" = 1 ]; then
+  printf 'Cross phase app_boot: %ss\n' "$((SECONDS - boot_started))"
+fi
 if [ ! -f wn-odin-shot.png ] || ! file --brief wn-odin-shot.png | grep -q '^PNG image data'; then
   echo "Packaged app did not produce a PNG screenshot." >&2
   exit 1
