@@ -103,7 +103,7 @@ relay_add_valid :: proc(value: []u8, focus: Focus) -> bool {
 relay_input_error :: proc(focus: Focus, value: []u8) {
 	if relay_error_focus != focus || relay_error_hash != hash.fnv64a(value) {return}
 	nendo.text(
-		tr("Couldn't add that relay. Double-check the address and try again."),
+		tr("Couldn't add that relay. Enter an address that starts with wss:// and try again."),
 		{font = FONT_BODY, size = 12, color = DANGER},
 	)
 }

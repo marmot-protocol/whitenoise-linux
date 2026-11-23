@@ -1383,8 +1383,8 @@ msgstr "角の丸みの倍率"
 msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr "レコード%dを追加できませんでした。%s リレー設定を確認して再度インポートしてください。"
 
-msgid "Couldn't add that relay. Double-check the address and try again."
-msgstr "そのリレーを追加できませんでした。アドレスを確認して、もう一度お試しください。"
+msgid "Couldn't add that relay. Enter an address that starts with wss:// and try again."
+msgstr "そのリレーを追加できませんでした。wss:// で始まるアドレスを入力して、もう一度お試しください。"
 
 msgid "Couldn't add the pack. No supported stickers are available."
 msgstr "パックを追加できませんでした。対応するステッカーがありません。"
