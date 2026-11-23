@@ -2045,6 +2045,7 @@ foreign lib {
 
 	set_group_archived :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, archived: bool, out: ^^App_Group_Record) -> Status ---
 	leave_group :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Send_Summary) -> Status ---
+	forget_solo_group_local :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out_forgotten: ^bool) -> Status ---
 	accept_group_invite :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^App_Group_Record) -> Status ---
 	decline_group_invite :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Invite_Decline_Result) -> Status ---
 	update_group_profile :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, name: cstring, description: cstring, out: ^^Send_Summary) -> Status ---

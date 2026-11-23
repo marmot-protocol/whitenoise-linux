@@ -76,6 +76,10 @@ offline_path :: proc(allocator := context.temp_allocator) -> string {
 
 @(private)
 new_send_paused :: proc(ui: ^Ui_State) -> bool {
+	if ui.selected >= 0 && conversation_deleting(ui.account_ref, ui.chats[ui.selected].group_id) {
+		toast(ui, account_pending_label(.Delete_Conversation))
+		return true
+	}
 	if !account_departing(ui.account_ref) {return false}
 	toast(ui, tr("Wait for sign-out to finish before sending."))
 	return true
@@ -301,17 +305,21 @@ next_flush: time.Time
 
 @(private)
 delete_pending :: proc(ui: ^Ui_State, index: int) {
+	discard_pending(ui, index)
+	save_offline(ui)
+}
+
+@(private)
+discard_pending :: proc(ui: ^Ui_State, index: int) {
 	// An active upload still borrows attachment bytes from this row.
 	p := &ui.pending[index]
 	if !p.failed && !p.queued {
 		p.dismissed = true
-		save_offline(ui)
 		return
 	}
 	forward_settled(ui, p, .Cancelled)
 	free_pending(p)
 	ordered_remove(&ui.pending, index)
-	save_offline(ui)
 }
 
 // Frame-loop tick: re-send every queued row on a fixed interval. The
@@ -326,7 +334,10 @@ flush_queued :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	next_flush = time.time_add(time.now(), FLUSH_INTERVAL)
 
 	for &p in ui.pending {
-		if !p.queued || p.account_ref != ui.account_ref || !pending_send_allowed(ui, p) {
+		if !p.queued ||
+		   p.account_ref != ui.account_ref ||
+		   !pending_send_allowed(ui, p) ||
+		   conversation_deleting(p.account_ref, p.group_id) {
 			continue
 		}
 		p.queued = false

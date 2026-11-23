@@ -852,7 +852,18 @@ info_width :: proc(ui: ^Ui_State) -> f32 {
 	return max(1, min(w, page_w(ui)) - 28) // the scroll's own side padding
 }
 
-// Settings: the group's face, one card per setting, then leaving.
+@(private)
+conversation_exit_kind :: proc(ui: ^Ui_State) -> Confirm_Kind {
+	if ui.selected < 0 || len(ui.members) == 0 {return .None}
+	chat := ui.chats[ui.selected]
+	if chat.pending || conversation_deleting(ui.account_ref, chat.group_id) {return .None}
+	if len(ui.members) == 1 && ui.members[0].is_self {
+		return .Delete_Group
+	}
+	return chat_is_dm(chat) ? .Leave_Chat : .Leave_Group
+}
+
+// Settings: the group's face, then its controls and destructive action.
 @(private = "file")
 info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 	admin := self_is_admin(ui)
@@ -956,8 +967,11 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 
 	shared_media_grid(ui, col_w - 32) // the card's side padding
 
+	kind := conversation_exit_kind(ui)
+	if kind == .None {return}
+	deleting := kind == .Delete_Group
 	// The one destructive action sits last, apart from the settings.
-	if nendo.box(nendo.id("LeaveBtn"))(
+	if nendo.box(nendo.id(deleting ? "DeleteConversationBtn" : "LeaveBtn"))(
 	{
 		width = nendo.grow(),
 		padding = nendo.pad(16),
@@ -968,12 +982,16 @@ info_settings_page :: proc(ui: ^Ui_State, col_w: f32) {
 		border = {color = CARD_BORDER, width = bw()},
 	},
 	) {
-		nendo.text(ICON_BAN, {font = FONT_ICON, size = 15, color = DANGER})
-		row_labels(
-			dm ? tr("Leave chat") : tr("Leave group"),
-			tr("You will stop receiving its messages."),
-			DANGER,
-		)
+		nendo.text(deleting ? ICON_TRASH : ICON_BAN, {font = FONT_ICON, size = 15, color = DANGER})
+		if deleting {
+			row_labels(tr("Delete group"), tr("Remove the conversation from this device."), DANGER)
+		} else {
+			row_labels(
+				dm ? tr("Leave chat") : tr("Leave group"),
+				tr("You will stop receiving its messages."),
+				DANGER,
+			)
+		}
 		if hovered() {cursor_raise(.Pointer)}
 	}
 }

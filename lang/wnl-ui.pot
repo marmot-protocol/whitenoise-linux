@@ -1638,6 +1638,9 @@ msgstr ""
 msgid "Couldn't delete the audit log file. %s"
 msgstr ""
 
+msgid "Couldn't delete the conversation. Review its members and try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't delete this device's key package from relays: %s"
 msgstr ""
@@ -2278,10 +2281,16 @@ msgstr ""
 msgid "Delete for you?"
 msgstr ""
 
+msgid "Delete group"
+msgstr ""
+
 msgid "Delete this device's vault?"
 msgstr ""
 
 msgid "Delete this folder?"
+msgstr ""
+
+msgid "Delete this group?"
 msgstr ""
 
 msgid "Delete this message for you?"
@@ -2303,6 +2312,9 @@ msgid "Deleted. Recording continues in a fresh file."
 msgstr ""
 
 msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
+msgstr ""
+
+msgid "Deleting your conversation"
 msgstr ""
 
 msgid "Demote"
@@ -4997,6 +5009,9 @@ msgstr ""
 msgid "Remove sticker"
 msgstr ""
 
+msgid "Remove the conversation from this device."
+msgstr ""
+
 msgid "Remove this contact?"
 msgstr ""
 
@@ -6109,6 +6124,9 @@ msgid "The colors and settings you changed in the editor are lost."
 msgstr ""
 
 msgid "The comparison code is missing or invalid. Don't approve this request."
+msgstr ""
+
+msgid "The conversation and its messages are removed from this device. This can't be undone."
 msgstr ""
 
 msgid "The device list was reset, but the key package couldn't be published. Start linking to try again."

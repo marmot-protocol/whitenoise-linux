@@ -1401,6 +1401,9 @@ msgstr "%s을(를) 삭제할 수 없습니다. 다시 시도하세요."
 msgid "Couldn't delete the audit log file. %s"
 msgstr "감사 로그 파일을 삭제할 수 없습니다. %s"
 
+msgid "Couldn't delete the conversation. Review its members and try again."
+msgstr "대화를 삭제할 수 없습니다. 멤버를 확인한 후 다시 시도하세요."
+
 msgid "Couldn't download speech files. Please try again."
 msgstr "음성 파일을 다운로드할 수 없습니다. 다시 시도하세요."
 
@@ -1938,8 +1941,14 @@ msgstr "모두에게서 삭제"
 msgid "Delete for me"
 msgstr "나에게서 삭제"
 
+msgid "Delete group"
+msgstr "그룹 삭제"
+
 msgid "Delete this folder?"
 msgstr "이 폴더를 삭제하시겠습니까?"
+
+msgid "Delete this group?"
+msgstr "이 그룹을 삭제하시겠습니까?"
 
 msgid "Delete this message for you?"
 msgstr "이 메시지를 나에게서 삭제하시겠습니까?"
@@ -1958,6 +1967,9 @@ msgstr "삭제했습니다. 기록은 새 파일에서 계속됩니다."
 
 msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
 msgstr "기록 중인 파일을 삭제하면 파일이 교체됩니다. 기록은 새 파일에서 계속됩니다."
+
+msgid "Deleting your conversation"
+msgstr "대화 삭제 중"
 
 msgid "Demote"
 msgstr "관리자 해제"
@@ -4230,6 +4242,9 @@ msgstr "저장된 GIF 제거"
 msgid "Remove sticker"
 msgstr "스티커 제거"
 
+msgid "Remove the conversation from this device."
+msgstr "이 기기에서 대화를 제거합니다."
+
 msgid "Remove this account?"
 msgstr "이 계정을 제거하시겠습니까?"
 
@@ -5146,6 +5161,9 @@ msgstr "채팅이 목록에서 사라집니다. 나중에 참여하려면 새 �
 
 msgid "The colors and settings you changed in the editor are lost."
 msgstr "편집기에서 변경한 색상과 설정이 사라집니다."
+
+msgid "The conversation and its messages are removed from this device. This can't be undone."
+msgstr "이 기기에서 대화와 메시지가 제거됩니다. 이 작업은 되돌릴 수 없습니다."
 
 msgid "The group name was removed"
 msgstr "그룹 이름이 제거되었습니다"

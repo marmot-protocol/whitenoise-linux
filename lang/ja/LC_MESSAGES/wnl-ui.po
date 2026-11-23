@@ -1480,6 +1480,9 @@ msgstr "%sを削除できませんでした。もう一度お試しください�
 msgid "Couldn't delete the audit log file. %s"
 msgstr "監査ログファイルを削除できませんでした。%s"
 
+msgid "Couldn't delete the conversation. Review its members and try again."
+msgstr "会話を削除できませんでした。メンバーを確認してから、もう一度お試しください。"
+
 msgid "Couldn't download speech files. Please try again."
 msgstr "音声ファイルをダウンロードできませんでした。もう一度お試しください。"
 
@@ -2055,11 +2058,17 @@ msgstr "自分のみ削除"
 msgid "Delete for you?"
 msgstr "自分のみ削除しますか？"
 
+msgid "Delete group"
+msgstr "グループを削除"
+
 msgid "Delete this device's vault?"
 msgstr "この端末の保管庫を削除しますか？"
 
 msgid "Delete this folder?"
 msgstr "このフォルダを削除しますか？"
+
+msgid "Delete this group?"
+msgstr "このグループを削除しますか？"
 
 msgid "Delete this message for you?"
 msgstr "このメッセージをあなたの端末から削除しますか？"
@@ -2081,6 +2090,9 @@ msgstr "削除しました。記録は新しいファイルで続きます。"
 
 msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
 msgstr "記録中のファイルを削除するとローテーションされます。記録は新しいファイルで続きます。"
+
+msgid "Deleting your conversation"
+msgstr "会話を削除しています"
 
 msgid "Demote"
 msgstr "管理者から外す"
@@ -4513,6 +4525,9 @@ msgstr "保存したGIFを削除"
 msgid "Remove sticker"
 msgstr "ステッカーを削除"
 
+msgid "Remove the conversation from this device."
+msgstr "この端末から会話を削除します。"
+
 msgid "Remove this account?"
 msgstr "このアカウントを削除しますか？"
 
@@ -5506,6 +5521,9 @@ msgstr "チャットが一覧から消えます。後で参加するには新し
 
 msgid "The colors and settings you changed in the editor are lost."
 msgstr "エディターで変更した色と設定は失われます。"
+
+msgid "The conversation and its messages are removed from this device. This can't be undone."
+msgstr "会話とメッセージはこの端末から削除されます。この操作は取り消せません。"
 
 msgid "The group name was removed"
 msgstr "グループ名が削除されました"

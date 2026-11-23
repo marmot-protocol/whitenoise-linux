@@ -1,0 +1,297 @@
+diff --git i/crates/marmot-app/src/runtime/account_worker.rs w/crates/marmot-app/src/runtime/account_worker.rs
+index fd34ed1b9..1365e8afc 100644
+--- i/crates/marmot-app/src/runtime/account_worker.rs
++++ w/crates/marmot-app/src/runtime/account_worker.rs
+@@ -530,6 +530,7 @@ pub(crate) enum AccountWorkerCommand {
+     },
+     ForgetGroupLocal {
+         group_id: GroupId,
++        solo_only: bool,
+         respond: oneshot::Sender<Result<bool, AppError>>,
+     },
+ 
+@@ -4819,10 +4820,14 @@ async fn handle_startup_hydration_command(
+         // is scheduled only after startup sync, so no pass waits to be noted
+         // done; the forget drops the group's buffered convergence request
+         // with the rest of its state.
+-        AccountWorkerCommand::ForgetGroupLocal { group_id, respond } => {
++        AccountWorkerCommand::ForgetGroupLocal {
++            group_id,
++            solo_only,
++            respond,
++        } => {
+             wait.take_up();
+             let storage_permit = shared.observer.product().permit();
+-            let result = client.forget_group_local(&group_id).await;
++            let result = forget_group_local(client, &group_id, solo_only).await;
+             if matches!(result, Ok(true)) {
+                 publish_app_runtime_group_state_updated(
+                     Emit::Quiescent(client),
+@@ -6871,9 +6876,13 @@ fn account_worker_command_future<'a>(
+             let _ = respond_diagnosed(shared, storage_permit.as_ref(), respond, result, client);
+             true
+         }),
+-        AccountWorkerCommand::ForgetGroupLocal { group_id, respond } => Box::pin(async move {
+-            let result = client.forget_group_local(&group_id).await;
+-            if result.is_ok() {
++        AccountWorkerCommand::ForgetGroupLocal {
++            group_id,
++            solo_only,
++            respond,
++        } => Box::pin(async move {
++            let result = forget_group_local(client, &group_id, solo_only).await;
++            if matches!(result, Ok(true)) || (!solo_only && result.is_ok()) {
+                 scheduled_convergence.note_success(&group_id);
+             }
+             if matches!(result, Ok(true)) {
+@@ -8307,6 +8316,26 @@ async fn send_message_on_worker(
+     let _ = respond_diagnosed(shared, storage_permit.as_ref(), respond, result, client);
+ }
+ 
++async fn forget_group_local(
++    client: &mut AppClient,
++    group_id: &GroupId,
++    solo_only: bool,
++) -> Result<bool, AppError> {
++    if solo_only {
++        if !client.runtime.ensure_group_hydrated(group_id)? {
++            return Err(AppError::UnknownGroup(hex::encode(group_id.as_slice())));
++        }
++        let local_id = client.adapter.account_id();
++        let roster = client.runtime.canonical_group_membership(group_id)?;
++        if roster.member_leaves.is_empty()
++            || roster.member_leaves.iter().any(|leaf| &leaf.member != local_id)
++        {
++            return Ok(false);
++        }
++    }
++    client.forget_group_local(group_id).await
++}
++
+ pub(super) fn group_roster_after_hydration(
+     client: &mut AppClient,
+     group_id: &GroupId,
+@@ -10180,6 +10209,7 @@ mod tests {
+         commands
+             .try_send(AccountWorkerCommand::ForgetGroupLocal {
+                 group_id: group.clone(),
++                solo_only: false,
+                 respond,
+             })
+             .unwrap();
+diff --git i/crates/marmot-app/src/runtime/account_worker/tests/hydration_request_tests.rs w/crates/marmot-app/src/runtime/account_worker/tests/hydration_request_tests.rs
+index 359c8b1aa..237f22a21 100644
+--- i/crates/marmot-app/src/runtime/account_worker/tests/hydration_request_tests.rs
++++ w/crates/marmot-app/src/runtime/account_worker/tests/hydration_request_tests.rs
+@@ -483,6 +483,7 @@ async fn a_hydration_request_behind_a_forget_answers_its_group_gone() {
+     commands
+         .try_send(AccountWorkerCommand::ForgetGroupLocal {
+             group_id: forgotten.clone(),
++            solo_only: false,
+             respond,
+         })
+         .unwrap();
+diff --git i/crates/marmot-app/src/runtime/commands.rs w/crates/marmot-app/src/runtime/commands.rs
+--- i/crates/marmot-app/src/runtime/commands.rs
++++ w/crates/marmot-app/src/runtime/commands.rs
+@@ -1489,14 +1489,36 @@ impl AccountManager {
+             return Ok(changed);
+         }
+ 
++        self.forget_group_on_worker(account_ref, group_id, false).await
++    }
++
++    pub(super) async fn forget_solo_group_local(
++        &self,
++        account_ref: &str,
++        group_id: &GroupId,
++    ) -> Result<bool, AppError> {
++        self.forget_group_on_worker(account_ref, group_id, true).await
++    }
++
++    async fn forget_group_on_worker(
++        &self,
++        account_ref: &str,
++        group_id: &GroupId,
++        solo_only: bool,
++    ) -> Result<bool, AppError> {
+         let command = self.worker_commands(account_ref).await?;
+         let (respond, response) = oneshot::channel();
+         command
+             .send(AccountWorkerCommand::ForgetGroupLocal {
+                 group_id: group_id.clone(),
++                solo_only,
+                 respond,
+             })
+             .await
+             .map_err(|_| AppError::TransportClosed)?;
++        if solo_only {
++            // A queued reset can still commit after a reply deadline.
++            return response.await.map_err(|_| AppError::TransportClosed)?;
++        }
+         account_worker_response(response).await
+     }
+diff --git i/crates/marmot-app/src/runtime/mod.rs w/crates/marmot-app/src/runtime/mod.rs
+index 8548d6347..e08ff2a99 100644
+--- i/crates/marmot-app/src/runtime/mod.rs
++++ w/crates/marmot-app/src/runtime/mod.rs
+@@ -2634,6 +2634,16 @@ impl MarmotAppRuntime {
+             .await
+     }
+ 
++    pub async fn forget_solo_group_local(
++        &self,
++        account_ref: &str,
++        group_id: &GroupId,
++    ) -> Result<bool, AppError> {
++        self.accounts
++            .forget_solo_group_local(account_ref, group_id)
++            .await
++    }
++
+     /// Delete local chat data while retaining MLS membership and state.
+     /// Fresh group traffic may recreate the chat; use `forget_group_local`
+     /// to discard an unusable MLS copy and wait for a fresh invitation.
+diff --git i/crates/marmot-app/src/tests.rs w/crates/marmot-app/src/tests.rs
+index 41be7558c..d2b006ef4 100644
+--- i/crates/marmot-app/src/tests.rs
++++ w/crates/marmot-app/src/tests.rs
+@@ -27160,33 +27160,60 @@ fn runtime_forget_group_local_works_without_leaving() {
+ async fn runtime_forget_group_local_body() {
+     use cgka_traits::storage::GroupStorage;
+     let dir = tempfile::tempdir().unwrap();
+-    AccountHome::open(dir.path())
+-        .create_account("alice")
+-        .unwrap();
++    let home = AccountHome::open(dir.path());
++    home.create_account("alice").unwrap();
++    let bob = home.create_account("bob").unwrap();
+     let relay = Arc::new(ScriptedPushRelayClient::default());
+     let app =
+         MarmotApp::with_relay(dir.path(), "wss://relay.example").with_test_relay_client(relay);
++    remember_test_member_inbox(&app, &bob.account_id_hex, "wss://relay.example");
++    let shared_group = {
++        let mut bob_client = app.client("bob").await.unwrap();
++        bob_client.publish_key_package().await.unwrap();
++        let mut alice_client = app.client("alice").await.unwrap();
++        alice_client
++            .create_group("shared", &[&bob.account_id_hex])
++            .await
++            .unwrap()
++            .operation
++            .expect("eligible fixture members")
++    };
+     let runtime = MarmotAppRuntime::new(app.clone());
+     runtime.reconcile_accounts().await.unwrap();
++    let storage = app.account_storage("alice").unwrap();
++    assert!(
++        !runtime
++            .forget_solo_group_local("alice", &shared_group)
++            .await
++            .unwrap()
++    );
++    assert!(!storage.is_group_forgotten(&shared_group).unwrap());
++    assert!(
++        runtime
++            .forget_group_local("alice", &shared_group)
++            .await
++            .unwrap()
++    );
+     let group = runtime
+         .create_group("alice", "abandoned", &[], None)
+         .await
+         .unwrap()
+         .operation
+         .expect("eligible fixture members");
+-    assert!(runtime.forget_group_local("alice", &group).await.unwrap());
++    assert!(
++        runtime
++            .forget_solo_group_local("alice", &group)
++            .await
++            .unwrap()
++    );
+     assert!(
+         app.group("alice", &hex::encode(group.as_slice()))
+             .unwrap()
+             .is_none()
+     );
+-    assert!(
+-        app.account_storage("alice")
+-            .unwrap()
+-            .is_group_forgotten(&group)
+-            .unwrap()
+-    );
++    assert!(storage.is_group_forgotten(&group).unwrap());
+     assert!(!runtime.forget_group_local("alice", &group).await.unwrap());
++    assert!(runtime.forget_solo_group_local("alice", &group).await.is_err());
+     runtime.shutdown().await;
+ }
+ #[test]
+diff --git i/crates/marmot-c/include/marmot.h w/crates/marmot-c/include/marmot.h
+index ffdf2ba85..e69de29bb 100644
+--- i/crates/marmot-c/include/marmot.h
++++ w/crates/marmot-c/include/marmot.h
+@@ -9302,6 +9302,22 @@ MarmotStatus marmot_forget_group_local(const struct MarmotClient *client,
+                                        const char *group_id_hex,
+                                        bool *out);
+ 
++/**
++ * Reset this group on this device without publishing, only if its current
++ * MLS roster has at least one leaf and every leaf belongs to this account.
++ * Writes false if the roster is not solo. An unreadable roster is an error.
++ *
++ * # Safety
++ * `client` must be a live handle; string arguments must be valid
++ * NUL-terminated strings (nullable ones may be NULL); array
++ * arguments must hold their stated length (or be NULL with
++ * length 0); out-pointers must be valid.
++ */
++MarmotStatus marmot_forget_solo_group_local(const struct MarmotClient *client,
++                                            const char *account_ref,
++                                            const char *group_id_hex,
++                                            bool *out);
++
+ /**
+  * Set the per-group disappearing-message retention.
+  * `disappearing_message_secs` of `0` disables expiry. Free with
+diff --git i/crates/marmot-c/src/commands.rs w/crates/marmot-c/src/commands.rs
+index f8a6e9c85..e00c3b950 100644
+--- i/crates/marmot-c/src/commands.rs
++++ w/crates/marmot-c/src/commands.rs
+@@ -763,6 +763,11 @@ c_cmd! {
+     /// Writes true for a new forget, false if already forgotten.
+     async fn marmot_forget_group_local(account_ref: str, group_id_hex: str) -> scalar(bool) = forget_group_local;
+ 
++    /// Reset this group on this device without publishing, only if its current
++    /// MLS roster has at least one leaf and every leaf belongs to this account.
++    /// Writes false if the roster is not solo. An unreadable roster is an error.
++    async fn marmot_forget_solo_group_local(account_ref: str, group_id_hex: str) -> scalar(bool) = forget_solo_group_local;
++
+     /// Set the per-group disappearing-message retention.
+     /// `disappearing_message_secs` of `0` disables expiry. Free with
+     /// `marmot_send_summary_free`.
+diff --git i/crates/marmot-uniffi/src/commands/group.rs w/crates/marmot-uniffi/src/commands/group.rs
+index add541724..81e229009 100644
+--- i/crates/marmot-uniffi/src/commands/group.rs
++++ w/crates/marmot-uniffi/src/commands/group.rs
+@@ -409,6 +409,20 @@ fn ensure_can_self_demote_admin(
+     Ok(())
+ }
+ 
++impl Marmot {
++    pub async fn forget_solo_group_local(
++        &self,
++        account_ref: String,
++        group_id_hex: String,
++    ) -> Result<bool, MarmotKitError> {
++        let group_id = group_id_from_hex(&group_id_hex)?;
++        Ok(self
++            .runtime
++            .forget_solo_group_local(&account_ref, &group_id)
++            .await?)
++    }
++}
++
+ #[marmot_uniffi_macros::on_tokio_runtime]
+ #[uniffi::export]
+ impl Marmot {

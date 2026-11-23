@@ -388,9 +388,17 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	if len(groups) > 0 {live.dirty_groups = {}}
 	sync.unlock(&live.mutex)
 
+	refresh_members := false
 	for group in groups {
 		if group.account == ui.account_ref {dirty = true}
 		if group.activation_signal {activation_live(ui, group)}
+		refresh_members |=
+			group.activation_signal &&
+			group.account == ui.account_ref &&
+			ui.show_members &&
+			ui.selected >= 0 &&
+			group.group == ui.chats[ui.selected].group_id &&
+			!conversation_deleting(group.account, group.group)
 		if group.superseded &&
 		   group.account == ui.account_ref &&
 		   ui.selected >= 0 &&
@@ -406,6 +414,7 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 		delete(group.group)
 		delete(group.account)
 	}
+	if refresh_members {load_members(client, ui)}
 
 	if dirty {live.refresh_dirty = true}
 	if len(groups) > 0 {

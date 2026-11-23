@@ -1480,6 +1480,9 @@ msgstr "%s konnte nicht gelöscht werden. Bitte versuche es erneut."
 msgid "Couldn't delete the audit log file. %s"
 msgstr "Die Audit-Protokolldatei konnte nicht gelöscht werden. %s"
 
+msgid "Couldn't delete the conversation. Review its members and try again."
+msgstr "Die Unterhaltung konnte nicht gelöscht werden. Prüfe die Mitgliederliste und versuche es erneut."
+
 msgid "Couldn't download speech files. Please try again."
 msgstr "Die Sprachdateien konnten nicht heruntergeladen werden. Bitte versuche es erneut."
 
@@ -2055,11 +2058,17 @@ msgstr "Für mich löschen"
 msgid "Delete for you?"
 msgstr "Für dich löschen?"
 
+msgid "Delete group"
+msgstr "Gruppe löschen"
+
 msgid "Delete this device's vault?"
 msgstr "Den Tresor dieses Geräts löschen?"
 
 msgid "Delete this folder?"
 msgstr "Diesen Ordner löschen?"
+
+msgid "Delete this group?"
+msgstr "Diese Gruppe löschen?"
 
 msgid "Delete this message for you?"
 msgstr "Diese Nachricht für dich löschen?"
@@ -2081,6 +2090,9 @@ msgstr "Gelöscht. Die Aufzeichnung wird in einer neuen Datei fortgesetzt."
 
 msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
 msgstr "Das Löschen der gerade aufgezeichneten Datei rotiert sie. Die Aufzeichnung wird in einer neuen Datei fortgesetzt."
+
+msgid "Deleting your conversation"
+msgstr "Deine Unterhaltung wird gelöscht"
 
 msgid "Demote"
 msgstr "Zurückstufen"
@@ -4513,6 +4525,9 @@ msgstr "Gespeichertes GIF entfernen"
 msgid "Remove sticker"
 msgstr "Sticker entfernen"
 
+msgid "Remove the conversation from this device."
+msgstr "Entferne die Unterhaltung von diesem Gerät."
+
 msgid "Remove this account?"
 msgstr "Dieses Konto entfernen?"
 
@@ -5506,6 +5521,9 @@ msgstr "Der Chat verschwindet aus deiner Liste. Für einen späteren Beitritt br
 
 msgid "The colors and settings you changed in the editor are lost."
 msgstr "Die Farben und Einstellungen, die du im Editor geändert hast, gehen verloren."
+
+msgid "The conversation and its messages are removed from this device. This can't be undone."
+msgstr "Die Unterhaltung und ihre Nachrichten werden von diesem Gerät entfernt. Das lässt sich nicht rückgängig machen."
 
 msgid "The group name was removed"
 msgstr "Der Gruppenname wurde entfernt"

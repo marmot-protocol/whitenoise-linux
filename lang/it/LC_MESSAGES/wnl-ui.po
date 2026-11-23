@@ -1480,6 +1480,9 @@ msgstr "Impossibile eliminare %s. Riprova."
 msgid "Couldn't delete the audit log file. %s"
 msgstr "Impossibile eliminare il file di log di audit. %s"
 
+msgid "Couldn't delete the conversation. Review its members and try again."
+msgstr "Impossibile eliminare la conversazione. Controlla i membri e riprova."
+
 msgid "Couldn't download speech files. Please try again."
 msgstr "Impossibile scaricare i file vocali. Riprova."
 
@@ -2055,11 +2058,17 @@ msgstr "Elimina per me"
 msgid "Delete for you?"
 msgstr "Eliminare per te?"
 
+msgid "Delete group"
+msgstr "Elimina gruppo"
+
 msgid "Delete this device's vault?"
 msgstr "Eliminare la cassaforte di questo dispositivo?"
 
 msgid "Delete this folder?"
 msgstr "Eliminare questa cartella?"
+
+msgid "Delete this group?"
+msgstr "Eliminare questo gruppo?"
 
 msgid "Delete this message for you?"
 msgstr "Eliminare questo messaggio per te?"
@@ -2081,6 +2090,9 @@ msgstr "Eliminato. La registrazione continua in un nuovo file."
 
 msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
 msgstr "Eliminare il file in registrazione lo ruota. La registrazione continua in un nuovo file."
+
+msgid "Deleting your conversation"
+msgstr "Eliminazione della tua conversazione"
 
 msgid "Demote"
 msgstr "Declassa"
@@ -4513,6 +4525,9 @@ msgstr "Rimuovi GIF salvata"
 msgid "Remove sticker"
 msgstr "Rimuovi adesivo"
 
+msgid "Remove the conversation from this device."
+msgstr "Rimuovi la conversazione da questo dispositivo."
+
 msgid "Remove this account?"
 msgstr "Rimuovere questo account?"
 
@@ -5506,6 +5521,9 @@ msgstr "La chat esce dal tuo elenco. Per unirti più avanti serve un nuovo invit
 
 msgid "The colors and settings you changed in the editor are lost."
 msgstr "I colori e le impostazioni che hai cambiato nell'editor andranno persi."
+
+msgid "The conversation and its messages are removed from this device. This can't be undone."
+msgstr "La conversazione e i suoi messaggi vengono rimossi da questo dispositivo. Non puoi annullare questa azione."
 
 msgid "The group name was removed"
 msgstr "Il nome del gruppo è stato rimosso"
