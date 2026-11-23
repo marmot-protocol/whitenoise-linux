@@ -23,11 +23,11 @@ Activation_Advisory :: enum {
 
 @(private)
 Activation_Pending :: struct {
-	key:               Activation_Key,
-	ticket:            int,
-	revision:          u64,
-	settling, refused: bool,
-	baseline:          map[string]bool,
+	key:      Activation_Key,
+	ticket:   int,
+	revision: u64,
+	settling: bool,
+	baseline: map[string]bool,
 }
 
 @(private)
@@ -178,8 +178,6 @@ activation_live :: proc(ui: ^Ui_State, group: Live_Change) {
 	if !group.activation_signal {return}
 	key := Activation_Key{group.account, group.group}
 	a := &ui.activation
-	if pending, exists := &a.pending[key];
-	   exists && group.activation_failure {pending.refused = true}
 	if a.key == key && activation_key(ui) == key {a.dirty = true}
 }
 
@@ -276,11 +274,10 @@ activation_apply_read :: proc(ui: ^Ui_State, work: ^Activation_Read) {
 		}
 		if pending.ticket == work.ticket {
 			for id in work.failures {
-				if id not_in pending.baseline {pending.refused = true; break}
-			}
-			if pending.refused {
+				if id in pending.baseline {continue}
 				activation_remove(a, key)
 				a.notice = N_("Linked devices weren't turned on for this chat.")
+				return
 			}
 		}
 	}
@@ -327,7 +324,7 @@ activation_read_worker :: proc(t: ^thread.Thread) {
 		&work.eligibility,
 	)
 	if work.status == .OK && work.eligibility != .ALREADY_ENABLED && work.ticket != 0 {
-		activation_failures(work.client, work.account, work.group, &work.failures)
+		work.status = activation_failures(work.client, work.account, work.group, &work.failures)
 	}
 }
 

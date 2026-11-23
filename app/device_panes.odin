@@ -1511,6 +1511,20 @@ device_root_content :: proc(ui: ^Ui_State) {
 		return
 	}
 	profile := d.profiles[d.panel_account]
+	if profile != nil && profile.unlink_check {
+		if d.inventory_dirty || d.inventory != nil {
+			device_copy(tr("Checking device information…"), TEXT)
+			busy_bar("UnlinkedProfileBusy")
+		} else {
+			device_copy(
+				tr("Couldn't verify that this profile was unlinked. Please try again."),
+				WARNING,
+			)
+			settings_button("DeviceVerifyUnlink", tr("Check now"))
+		}
+		settings_button("DeviceClose", tr("Later"))
+		return
+	}
 	name :=
 		profile == nil || profile.unlink_label == "" ? short_hex(d.panel_account) : profile.unlink_label
 	if d.panel == .Auth_Unlinked {
@@ -1545,6 +1559,7 @@ device_root_content :: proc(ui: ^Ui_State) {
 handle_device_root :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	d := &ui.devices
 	if account_departing(d.panel_account) {return}
+	if clicked("DeviceVerifyUnlink") {d.inventory_dirty = true; return}
 	close := clicked("DeviceClose") || rl.IsKeyPressed(.ESCAPE)
 	#partial switch d.panel {
 	case .Unlinked:

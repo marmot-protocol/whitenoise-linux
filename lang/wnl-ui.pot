@@ -2101,6 +2101,9 @@ msgstr ""
 msgid "Couldn't use this Nostr address. Double-check it and try again."
 msgstr ""
 
+msgid "Couldn't verify that this profile was unlinked. Please try again."
+msgstr ""
+
 msgid "Couldn't verify the update. Please try again."
 msgstr ""
 
@@ -6755,6 +6758,9 @@ msgid "WIREFRAME"
 msgstr ""
 
 msgid "Wait"
+msgstr ""
+
+msgid "Wait for sign-out to finish before sending."
 msgstr ""
 
 msgid "Wait for this chat to finish catching up, then try again."

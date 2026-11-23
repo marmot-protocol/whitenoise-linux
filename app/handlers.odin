@@ -977,6 +977,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				clicked("SendBtn") ||
 				test_send_now)
 	test_send_now = false
+	if send && new_send_paused(ui) {return}
 	// Staged attachments send on their own only outside an edit (an
 	// edit needs text and never sends them). A composer of only
 	// whitespace counts as empty: it stays put rather than sending a

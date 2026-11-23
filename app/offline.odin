@@ -74,6 +74,13 @@ offline_path :: proc(allocator := context.temp_allocator) -> string {
 	return fmt.aprintf("%s/offline-queue.json", data_home, allocator = allocator)
 }
 
+@(private)
+new_send_paused :: proc(ui: ^Ui_State) -> bool {
+	if !account_departing(ui.account_ref) {return false}
+	toast(ui, tr("Wait for sign-out to finish before sending."))
+	return true
+}
+
 pending_send_allowed :: proc(ui: ^Ui_State, p: Pending_Send) -> bool {
 	return(
 		!p.dismissed &&

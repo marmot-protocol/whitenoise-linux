@@ -263,28 +263,9 @@ Runtime_Event_Tag :: enum i32 {
 	Chat_History_Imports_Changed,
 }
 
-Group_Event_Kind :: struct {
-	tag:  enum i32 {
-		QUEUED_INTENT_REFUSED      = 17,
-		GROUP_CHANGE_NOT_DELIVERED = 18,
-	},
-	body: struct #raw_union {
-		failure: struct {
-			id, intent_kind, reason: cstring,
-		},
-		storage: [40]u8,
-	},
-}
-
 @(private = "file")
 Account_Event_Prefix :: struct {
 	account, label: cstring,
-}
-
-@(private = "file")
-Group_Event_Prefix :: struct {
-	account, label, group: cstring,
-	event:                 Group_Event_Kind,
 }
 
 // Borrowed prefix view of MarmotEvent. Only read fields selected by tag;
@@ -292,23 +273,19 @@ Group_Event_Prefix :: struct {
 Runtime_Event :: struct {
 	tag:  Runtime_Event_Tag,
 	body: struct #raw_union {
-		account:     Account_Event_Prefix,
-		group:       struct {
+		account: Account_Event_Prefix,
+		group:   struct {
 			account, label, group: cstring,
 		},
-		group_event: Group_Event_Prefix,
-		message:     struct {
+		message: struct {
 			account, label, message, group: cstring,
 		},
 	},
 }
 
-#assert(size_of(Group_Event_Kind) == 48)
-#assert(offset_of(Group_Event_Kind, body) == 8)
 #assert(offset_of(Runtime_Event, body) == 8)
 #assert(offset_of(Account_Event_Prefix, account) == 0)
 #assert(offset_of(Account_Event_Prefix, label) == 8)
-#assert(offset_of(Group_Event_Prefix, event) == 24)
 
 Agent_Stream_Subscription :: struct {}
 Agent_Stream_Update :: struct {

@@ -43,22 +43,13 @@ devices_event_dispatch :: proc(t: ^testing.T) {
 	)
 
 	event.tag = .Group_Event
-	event.body.group_event.account = "account-a"
-	event.body.group_event.group = "older-dm"
-	event.body.group_event.event.tag = .QUEUED_INTENT_REFUSED
-	event.body.group_event.event.body.failure.intent_kind = "enable_account_devices"
+	event.body.group.account = "account-a"
+	event.body.group.group = "older-dm"
 	testing.expect(t, queue_live_event(&live, &event))
-	testing.expect(t, live.dirty_groups[0].activation_failure)
-	event.body.group_event.event.tag = .GROUP_CHANGE_NOT_DELIVERED
-	testing.expect(t, queue_live_event(&live, &event))
-	testing.expect(t, live.dirty_groups[1].activation_failure)
-	event.body.group_event.event.body.failure.intent_kind = "remove_member"
-	testing.expect(t, queue_live_event(&live, &event))
-	testing.expect(t, !live.dirty_groups[2].activation_failure)
-	event.body.group_event.event.body.failure.intent_kind = "enable_account_devices"
+	testing.expect(t, live.dirty_groups[0].activation_signal)
 	event.tag = .Group_Change_Superseded
 	testing.expect(t, queue_live_event(&live, &event))
-	testing.expect(t, !live.dirty_groups[3].activation_failure)
+	testing.expect(t, live.dirty_groups[1].activation_signal)
 }
 
 @(test)
@@ -628,6 +619,22 @@ devices_account_fence :: proc(t: ^testing.T) {
 	testing.expect(t, pending_in_workspace(&ui, a, "chat-a"))
 	testing.expect(t, !pending_in_workspace(&ui, b, "chat-a"))
 	testing.expect(t, pending_send_allowed(&ui, b))
+	{
+		old_jobs := account_jobs
+		account_jobs = {}
+		defer {delete(account_jobs); account_jobs = old_jobs; test_send_now = false}
+		departing := Account_Job {
+			kind    = .Wipe,
+			account = ui.account_ref,
+		}
+		append(&account_jobs, &departing)
+		test_send_now = true
+		client: marmot.Client
+		handle_chat(&ui, &client)
+		testing.expect(t, !test_send_now)
+		testing.expect_value(t, string(ui.compose[:]), "a draft")
+		testing.expect_value(t, len(ui.pending), 0)
+	}
 	devices_mark_unlinked(&ui, "account-b", "B")
 	testing.expect_value(t, ui.account_ref, "account-a")
 	testing.expect_value(t, ui.selected, 0)
@@ -636,7 +643,24 @@ devices_account_fence :: proc(t: ^testing.T) {
 	finish_account_switch(&ui, nil, "account-b")
 	testing.expect_value(t, ui.account_ref, "account-a")
 
-	devices_mark_unlinked(&ui, "account-a", "A")
+	profile_a := ui.devices.profiles["account-a"]
+	profile_a.unlink_check = true
+	remaining := marmot.Account_Summary {
+		account_id_hex = "account-a",
+		label          = "A",
+		running        = true,
+	}
+	accounts := marmot.Account_Summary_List {
+		items = &remaining,
+		len   = 1,
+	}
+	accounts_adopt(&ui, nil, &accounts)
+	testing.expect_value(t, ui.account_ref, "account-a")
+	testing.expect(t, !profile_a.unlink_check && !profile_a.revoked)
+
+	profile_a.unlink_check = true
+	remaining.running = false
+	accounts_adopt(&ui, nil, &accounts)
 	testing.expect_value(t, ui.account_ref, "")
 	testing.expect_value(t, ui.selected, -1)
 	testing.expect_value(t, len(ui.compose), 0)
@@ -644,6 +668,10 @@ devices_account_fence :: proc(t: ^testing.T) {
 	finish_account_switch(&ui, nil, "account-a")
 	testing.expect_value(t, ui.account_ref, "")
 	devices_present(&ui, true)
+	device_test_frame(&ui)
+	testing.expect(t, !nendo.element(nendo.id("DeviceWipe")).found)
+	remaining.signed_out, remaining.unlinked = true, true
+	accounts_adopt(&ui, nil, &accounts)
 	text := device_test_frame(&ui)
 	testing.expect(t, strings.contains(text, "Device unlinked"))
 	testing.expect(t, strings.contains(text, "Remove from this device"))
@@ -651,15 +679,6 @@ devices_account_fence :: proc(t: ^testing.T) {
 	devices_present(&ui, true)
 	testing.expect(t, ui.devices.panel_account != "account-a")
 
-	remaining := marmot.Account_Summary {
-		account_id_hex = "account-a",
-		signed_out     = true,
-		unlinked       = true,
-	}
-	accounts := marmot.Account_Summary_List {
-		items = &remaining,
-		len   = 1,
-	}
 	exit := Account_Job {
 		account       = "account-a",
 		kind          = .Wipe,
@@ -926,6 +945,7 @@ devices_chat_activation :: proc(t: ^testing.T) {
 		ui: ^Ui_State,
 		status: marmot.Status,
 		disposition: marmot.Send_Accept_Disposition = .PUBLISHED,
+		baseline: map[string]bool = nil,
 	) {
 		a := &ui.activation
 		key := Activation_Key{strings.clone(a.key.account), strings.clone(a.key.group)}
@@ -941,7 +961,7 @@ devices_chat_activation :: proc(t: ^testing.T) {
 				account = strings.clone(a.key.account),
 				group = strings.clone(a.key.group),
 				ticket = 1,
-				activation = {status = status, disposition = disposition},
+				activation = {status = status, disposition = disposition, baseline = baseline},
 			},
 		)
 	}
@@ -990,16 +1010,10 @@ devices_chat_activation :: proc(t: ^testing.T) {
 			ticket   = 1,
 			revision = a.revision,
 		}
-		activation_live(
-			&ui,
-			{
-				group = key.group,
-				account = key.account,
-				activation_signal = true,
-				activation_failure = true,
-			},
-		)
-		apply(&ui, .OK, .ACCEPTED_PENDING)
+		baseline := make(map[string]bool)
+		baseline[strings.clone("older-failure")] = true
+		activation_live(&ui, {group = key.group, account = key.account, activation_signal = true})
+		apply(&ui, .OK, .ACCEPTED_PENDING, baseline)
 		testing.expect(t, a.pending[key].settling)
 		text := device_test_frame(&ui)
 		testing.expect(t, strings.contains(text, "Checking whether linked devices are on"))
@@ -1010,6 +1024,16 @@ devices_chat_activation :: proc(t: ^testing.T) {
 		testing.expect(t, nendo.element(nendo.id("RetryAccountDevices")).found)
 		testing.expect(t, !nendo.element(nendo.id("EnableAccountDevices")).found)
 		read.status = .OK
+		read.ticket, read.eligibility = 1, .ELIGIBLE
+		read.failures = make(map[string]bool, context.temp_allocator)
+		read.failures["older-failure"] = true
+		activation_apply_read(&ui, &read)
+		if !testing.expect(
+			t,
+			key in a.pending,
+			"an older refusal cannot clear this attempt",
+		) {return}
+		if verdict == .ELIGIBLE {read.failures["current-failure"] = true}
 		read.ticket, read.eligibility = 1, verdict
 		activation_apply_read(&ui, &read)
 		testing.expect_value(t, len(a.pending), 0)

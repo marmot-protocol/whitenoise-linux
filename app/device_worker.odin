@@ -508,7 +508,13 @@ devices_drain :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 	live.dirty_devices = {}
 	sync.unlock(&live.mutex)
 	for account, parts in changes {
-		if .Unlinked in parts {devices.inventory_dirty = true}
+		if .Unlinked in parts {
+			devices.inventory_dirty = true
+			if profile := devices.profiles[account]; profile != nil && !profile.revoked {
+				profile.unlink_check = true
+				ui.accounts_revision += 1
+			}
+		}
 		if profile := devices.profiles[account]; profile != nil && profile.signed_in {
 			if .Roster in parts {profile.roster_event += 1}
 			profile.dirty += account == devices.active ? parts - {.Unlinked} : parts & {.Link}
@@ -523,7 +529,13 @@ devices_drain :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 	if job := devices.inventory; job != nil && thread.is_done(job.worker) {
 		if !devices.inventory_dirty && job.revision == ui.accounts_revision {
 			devices.inventory_stale = job.status != .OK
-			if job.status == .OK {accounts_adopt(ui, client, job.accounts)}
+			if job.status == .OK {
+				accounts_adopt(ui, client, job.accounts)
+			} else {
+				for _, profile in devices.profiles {
+					if profile.unlink_check {devices_mark_unlinked(ui, profile.account, "")}
+				}
+			}
 		} else {
 			devices.inventory_dirty = true
 		}

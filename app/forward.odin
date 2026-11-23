@@ -404,6 +404,7 @@ drain_forwards :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 do_forward :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 	index := forward_source(ui)
 	if index < 0 || dest < 0 || dest >= len(ui.chats) {return}
+	if new_send_paused(ui) {return}
 	msg := ui.messages[index]
 	if msg.body == "" && len(msg.attachments) == 0 && msg.sticker.pack == "" {return}
 	info := profile_info(client, ui.account_ref)

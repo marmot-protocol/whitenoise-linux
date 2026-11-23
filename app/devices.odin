@@ -94,6 +94,7 @@ Device_View :: struct {
 Device_Profile :: struct {
 	account, unlink_label:                   string,
 	signed_in, revoked:                      bool,
+	unlink_check:                            bool,
 	unlink_notice_seen:                      bool,
 	first_import:                            bool,
 	link_result_seen:                        bool,
@@ -244,6 +245,7 @@ devices_wipe_applied :: proc(ui: ^Ui_State, account: string) {
 	profile := ui.devices.profiles[account]
 	if profile == nil {return}
 	profile.revoked, profile.signed_in, profile.first_import = false, false, false
+	profile.unlink_check = false
 	profile.unlink_notice_seen = true
 	profile.link_result_seen = false
 	profile.incarnation += 1

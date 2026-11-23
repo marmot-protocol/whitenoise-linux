@@ -78,11 +78,11 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	job := (^Session_Stop)(t.data)
 	client, ui, live := job.client, job.ui, job.live
 	socks5_stop(ui)
-	account_wipes_finish(ui)
-	if ui.lock_requested {vault_relock()}
 	local_timing_bind(nil)
 	nip46_cancel_all()
 	if client != nil {marmot.client_shutdown(client)}
+	account_wipes_finish(ui)
+	if ui.lock_requested {vault_relock()}
 	mem.zero_slice(transmute([]u8)ui.stt.draft)
 	stt_stop(ui)
 	tts_stop(ui)

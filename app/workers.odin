@@ -18,9 +18,9 @@ WORKER_POLL_INTERVAL :: 100 * time.Millisecond
 
 @(private)
 Live_Change :: struct {
-	group, account:                        string,
-	superseded:                            bool,
-	activation_signal, activation_failure: bool,
+	group, account:    string,
+	superseded:        bool,
+	activation_signal: bool,
 }
 
 @(private)
@@ -123,25 +123,14 @@ events_worker :: proc(t: ^thread.Thread) {
 queue_live_event :: proc(live: ^Live, event: ^marmot.Runtime_Event) -> bool {
 	group, account: cstring
 	parts: Device_Parts
-	activation_signal, activation_failure: bool
+	activation_signal: bool
 	switch event.tag {
 	case .Message_Received:
 		group, account = event.body.message.group, event.body.message.account
-	case .Group_Joined, .Group_State_Updated, .Group_Event:
+	case .Group_Joined, .Group_State_Updated, .Group_Event, .Group_Change_Superseded:
 		group, account = event.body.group.group, event.body.group.account
 		activation_signal = true
-		if event.tag == .Group_Event {
-			kind := &event.body.group_event.event
-			#partial switch kind.tag {
-			case .QUEUED_INTENT_REFUSED, .GROUP_CHANGE_NOT_DELIVERED:
-				activation_failure =
-					string(kind.body.failure.intent_kind) == ENABLE_ACCOUNT_DEVICES_INTENT
-			}
-		}
-	case .Projection_Updated,
-	     .Welcome_Delivery_Pending,
-	     .Epoch_Stall_Escalated,
-	     .Group_Change_Superseded:
+	case .Projection_Updated, .Welcome_Delivery_Pending, .Epoch_Stall_Escalated:
 		group, account = event.body.group.group, event.body.group.account
 	case .Linked_Devices_Changed:
 		parts = {.Roster, .Started_Fresh}
@@ -184,7 +173,6 @@ queue_live_event :: proc(live: ^Live, event: ^marmot.Runtime_Event) -> bool {
 			account = strings.clone(string(account)),
 			superseded = event.tag == .Group_Change_Superseded,
 			activation_signal = activation_signal,
-			activation_failure = activation_failure,
 		},
 	)
 	sync.unlock(&live.mutex)

@@ -845,15 +845,26 @@ accounts_adopt :: proc(
 	if accounts != nil {
 		for summary in accounts.items[:accounts.len] {
 			hex := string(summary.account_id_hex)
-			if hex == "" || !summary.signed_out || !summary.unlinked {continue}
-			devices_mark_unlinked(ui, hex, string(summary.label))
-			ui.devices.profiles[hex].seen = revision
+			if hex == "" {continue}
+			if summary.signed_out && summary.unlinked {
+				devices_mark_unlinked(ui, hex, string(summary.label))
+				profile := ui.devices.profiles[hex]
+				profile.unlink_check, profile.seen = false, revision
+			} else if profile := ui.devices.profiles[hex]; profile != nil && profile.unlink_check {
+				if summary.running && !summary.signed_out {
+					profile.unlink_check = false
+				} else {
+					devices_mark_unlinked(ui, hex, string(summary.label))
+					profile.seen = revision
+				}
+			}
 		}
 	}
 	cleared_unlinked := false
 	for hex, profile in ui.devices.profiles {
 		if !profile.revoked || profile.seen == revision {continue}
 		profile.revoked, profile.unlink_notice_seen = false, false
+		profile.unlink_check = false
 		delete(profile.unlink_label, reload_allocator()); profile.unlink_label = ""
 		cleared_unlinked = true
 		if ui.devices.panel_account == hex &&
