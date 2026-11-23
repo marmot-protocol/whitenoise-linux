@@ -291,9 +291,9 @@ diff --git a/crates/marmot-app/src/runtime/commands.rs b/crates/marmot-app/src/r
 diff --git a/crates/marmot-app/src/runtime/mod.rs b/crates/marmot-app/src/runtime/mod.rs
 --- a/crates/marmot-app/src/runtime/mod.rs
 +++ b/crates/marmot-app/src/runtime/mod.rs
-@@ -206,6 +206,16 @@ use cgka_traits::app_event::{
-     MARMOT_APP_EVENT_KIND_AGENT_STREAM_START, STREAM_ROUTE_TAG, STREAM_TAG,
- };
+@@ -185,6 +185,16 @@ pub(crate) use subscriptions::{
+ #[cfg(test)]
+ use crate::TimelineMessageChange;
  
 +pub type ActivationReport = (
 +    crate::AppAccountDevicesActivation,
@@ -308,7 +308,7 @@ diff --git a/crates/marmot-app/src/runtime/mod.rs b/crates/marmot-app/src/runtim
  #[derive(Clone)]
  pub struct MarmotAppRuntime {
      events: broadcast::Sender<MarmotAppEvent>,
-@@ -2451,8 +2461,21 @@ impl MarmotAppRuntime {
+@@ -2411,8 +2421,21 @@ impl MarmotAppRuntime {
          account_ref: &str,
          group_id: &GroupId,
      ) -> Result<crate::AppAccountDevicesActivation, AppError> {

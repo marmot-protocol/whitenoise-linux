@@ -65,6 +65,7 @@ One-to-one and group chats are end-to-end encrypted through Marmot's MLS, with s
 - **Links keep their labels and destinations.** HTTP(S) links show their URL on hover, and opening one goes through the external-link guard.
 - **Long messages fold after 6 lines.** Settings > Appearance sets the message line limit for messages and event cards; 0 shows them in full without Read more.
 - **Chat-list previews show reading text.** Markdown markup is left out.
+- **Agent updates stay in the conversation.** An update replaces the text on the same row. Agent controls do not appear as messages.
 
 Unsupported Nostr events sent into a chat show their kind, title, and a short
 description when available. Video events are labeled as such. Standard media

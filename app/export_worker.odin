@@ -164,17 +164,27 @@ export_page_snapshot :: proc(ui: ^Ui_State, job: ^Transcript_Job) {
 	page := job.page
 	for &record in page.messages[:page.messages_len] {
 		id := string(record.message_id_hex)
-		class := record_class(record.kind, string(record.plaintext))
-		if class == .Modifier || ui.hidden[id] || ui.blocked[string(record.sender)] {continue}
+		plaintext := string(record.plaintext)
+		class := timeline_record_class(&record, plaintext)
+		if class == .Modifier ||
+		   class == .Hidden ||
+		   class == .Webxdc ||
+		   ui.hidden[id] ||
+		   ui.blocked[string(record.sender)] {continue}
 		// MDK has already applied an accepted edit to plaintext.
 		msg := Msg_Ui {
 			id      = id,
 			sender  = dm_title(job.client, string(record.sender)),
-			body    = string(record.plaintext),
+			body    = plaintext,
 			at_full = format_full(record.timeline_at),
 			sort_at = record.timeline_at,
 			mine    = message_is_mine(record.direction, record.sender, job.account),
 			deleted = record.deleted,
+		}
+		if record.deleted {
+			msg.body = ""
+			append(&rows, msg)
+			continue
 		}
 		if class == .System &&
 		   record.group_system !=

@@ -179,9 +179,7 @@ incoming_preserves_scroll :: proc(t: ^testing.T) {
 // cursor keeps the page's MLS position.
 @(test)
 timeline_renders_by_wall_clock :: proc(t: ^testing.T) {
-	// timeline_apply writes package-global state (the agent scope,
-	// retired_messages), as incoming_preserves_scroll does; unlocked, the
-	// two race (ThreadSanitizer: agent_scope) and one can crash.
+	// timeline_apply shares the retired message list with incoming_preserves_scroll.
 	sync.lock(&nendo_test_mutex)
 	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
@@ -285,10 +283,9 @@ reload_rebinds_picker_target :: proc(t: ^testing.T) {
 	testing.expect(t, !ui.picker_open)
 }
 
-// tests/odin.sh app -define:ODIN_TEST_NAMES=thread_reply_previews
 @(test)
 thread_reply_previews :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "thread_reply_previews" {return}
+	if !test_isolated("thread_reply_previews") {return}
 	context.allocator = runtime.default_context().allocator
 	ui := Ui_State {
 		account_ref      = "account",
@@ -301,37 +298,49 @@ thread_reply_previews :: proc(t: ^testing.T) {
 		delete(ui.messages_account); delete(ui.messages_group)
 		messages_collect()
 	}
-	root_tag := [2]cstring{"e", "root"}
-	quote_tag := [2]cstring{"q", "root"}
-	tags := [2]marmot.Message_Tag{{raw_data(root_tag[:]), 2}, {raw_data(quote_tag[:]), 2}}
+	parent_tag := [2]cstring{"e", "legacy-parent"}
+	quote_tag := [2]cstring{"q", "parent"}
+	tags := [2]marmot.Message_Tag{{raw_data(parent_tag[:]), 2}, {raw_data(quote_tag[:]), 2}}
+	ref := marmot.Timeline_Thread_Ref {
+		root_message_id_hex   = "root",
+		parent_message_id_hex = "parent",
+	}
+	agent := marmot.Agent_Item {
+		state = .Done,
+	}
 	preview := marmot.Timeline_Reply_Preview {
-		message_id_hex = "root",
-		sender         = "alice",
-		plaintext      = "Original",
+		sender    = "alice",
+		plaintext = "Original",
 	}
 	record := marmot.Timeline_Message_Record {
-		message_id_hex          = "message",
-		sender                  = "alice",
-		plaintext               = "Reply",
-		tags                    = raw_data(tags[:]),
-		reply_to_message_id_hex = "root",
+		message_id_hex = "message",
+		sender         = "alice",
+		plaintext      = "Reply",
+		tags           = raw_data(tags[:]),
 	}
 	page := marmot.Timeline_Page {
 		messages     = &record,
 		messages_len = 1,
 	}
-	for kind in ([]u64{9, KIND_THREAD, KIND_POLL}) {
+	for kind in ([]u64{KIND_CHAT_MESSAGE, KIND_THREAD, KIND_POLL, KIND_AGENT_ITEM}) {
+		parent: cstring = kind == KIND_POLL ? "legacy-parent" : "parent"
+		record.kind = kind
+		record.thread = kind == KIND_THREAD || kind == KIND_AGENT_ITEM ? &ref : nil
+		record.agent_item = kind == KIND_AGENT_ITEM ? &agent : nil
+		record.reply_to_message_id_hex = parent
+		preview.message_id_hex = parent
+		quote_tag[1] = parent
+		thread_parent := kind == KIND_CHAT_MESSAGE ? "" : string(parent)
 		for quoted in ([]bool{false, true}) {
 			for available in ([]bool{false, true}) {
-				record.kind = kind
 				record.tags_len = quoted ? 2 : 1
 				record.reply_preview = available ? &preview : nil
 				timeline_apply(nil, &ui, &page)
-				testing.expect_value(t, len(ui.messages), 1)
+				if !testing.expect_value(t, len(ui.messages), 1) {return}
 				msg := ui.messages[0]
-				show := kind == 9 || quoted
-				testing.expect_value(t, msg.thread_of, kind == 9 ? "" : "root")
-				testing.expect_value(t, msg.reply_id, show ? "root" : "")
+				show := kind == KIND_CHAT_MESSAGE || quoted
+				testing.expect_value(t, msg.thread_of, thread_parent)
+				testing.expect_value(t, msg.reply_id, show ? string(parent) : "")
 				testing.expect_value(
 					t,
 					msg.reply_text,
@@ -341,5 +350,93 @@ thread_reply_previews :: proc(t: ^testing.T) {
 				testing.expect_value(t, msg.reply_image, "")
 			}
 		}
+		record.deleted = true
+		record.agent_item = nil
+		record.reply_preview = nil
+		timeline_apply(nil, &ui, &page)
+		if !testing.expect_value(t, len(ui.messages), 1) {return}
+		testing.expect(t, ui.messages[0].deleted)
+		testing.expect_value(t, ui.messages[0].thread_of, thread_parent)
+		testing.expect_value(t, ui.messages[0].reply_id, "")
+		record.deleted = false
+	}
+}
+
+@(test)
+agent_item_timeline_visibility :: proc(t: ^testing.T) {
+	if !test_isolated("agent_item_timeline_visibility") {return}
+	context.allocator = runtime.default_context().allocator
+	ui := Ui_State {
+		account_ref      = "account",
+		timeline_loading = true,
+	}
+	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
+	defer {
+		for msg in ui.messages {message_free(msg)}
+		delete(ui.messages); delete(ui.chats)
+		delete(ui.messages_account); delete(ui.messages_group)
+		messages_collect()
+	}
+	agent := marmot.Agent_Item {
+		title = "Not the message body",
+		state = .Running,
+	}
+	records := [?]marmot.Timeline_Message_Record {
+		{
+			kind = KIND_AGENT_ITEM,
+			sender = "agent",
+			message_id_hex = "item",
+			plaintext = "Checking files",
+			agent_item = &agent,
+		},
+		{kind = 1200, sender = "agent", message_id_hex = "retired", plaintext = "retired payload"},
+		{kind = 1202, sender = "agent", message_id_hex = "control", plaintext = "control payload"},
+		{
+			kind = KIND_AGENT_ITEM,
+			sender = "agent",
+			message_id_hex = "unreadable",
+			plaintext = "unreadable payload",
+		},
+	}
+	page := marmot.Timeline_Page {
+		messages     = raw_data(records[:]),
+		messages_len = len(records),
+	}
+	for body in ([]cstring{"Checking files", "Finished checking files"}) {
+		records[0].plaintext = body
+		timeline_apply(nil, &ui, &page)
+		if !testing.expect_value(t, len(ui.messages), 1) {return}
+		testing.expect_value(t, ui.messages[0].id, "item")
+		testing.expect_value(t, ui.messages[0].body, string(body))
+		testing.expect(t, !ui.messages[0].unsupported)
+		agent.state = .Done
+	}
+	job := new(Transcript_Job)
+	ui.transcript = job
+	job.page = &page
+	export_page_snapshot(&ui, job)
+	job.page = nil
+	if testing.expect_value(t, len(job.messages), 1) {
+		testing.expect_value(t, job.messages[0].body, "Finished checking files")
+	}
+	export_stop(&ui)
+
+	records[0].agent_item = nil
+	records[0].deleted = true
+	timeline_apply(nil, &ui, &page)
+	if !testing.expect_value(t, len(ui.messages), 1) {return}
+	testing.expect(t, ui.messages[0].deleted)
+	testing.expect_value(t, ui.messages[0].body, "")
+
+	job = new(Transcript_Job)
+	ui.transcript = job
+	job.page = &page
+	export_page_snapshot(&ui, job)
+	job.page = nil
+	defer export_stop(&ui)
+	if testing.expect_value(t, len(job.messages), 1) {
+		testing.expect(t, job.messages[0].deleted)
+		testing.expect_value(t, job.messages[0].body, "")
+		testing.expect(t, job.messages[0].record == nil)
 	}
 }

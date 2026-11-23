@@ -36,6 +36,11 @@ notify_gate :: proc(t: ^testing.T) {
 	react := base; react.kind = 7
 	testing.expect(t, !should_notify(react), "reaction is not a message")
 
+	for kind in ([]u64{1200, KIND_AGENT_ITEM, 1202}) {
+		agent := base; agent.kind = kind
+		testing.expect(t, !should_notify(agent), "agent records do not trigger chat notifications")
+	}
+
 	seen := base; seen.seen_id = "m1"
 	testing.expect(t, !should_notify(seen), "already notified for this id")
 

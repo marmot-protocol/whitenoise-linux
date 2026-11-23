@@ -496,14 +496,14 @@ Msg_Ui :: struct {
 	poll_multi:          bool,
 	poll_total:          u64, // authenticated participants, including votes outside this page
 	poll_open:           bool, // MDK's projected voting state
-	thread_of:           string, // kind-1111: root message id; "" = main timeline
+	thread_of:           string, // direct parent id; "" = main timeline
 	thread_replies:      int, // thread messages under this root
 }
 
 // Native polls are projected by MDK; thread messages are NIP-22 comments.
 KIND_POLL :: 1068
 KIND_POLL_VOTE :: 1018
-KIND_THREAD :: 1111 // thread message: ["e", root], ["k", root kind], text in content
+KIND_THREAD :: 1111
 KIND_DELETE :: 5
 KIND_REACTION :: 7
 KIND_VIDEO :: 21

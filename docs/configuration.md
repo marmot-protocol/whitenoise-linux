@@ -47,7 +47,7 @@ To return to direct connections, disable the switch, save, and restart. Hostname
   <source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="../assets/docs/configuration-proxy-narrow-dark.svg">
   <source media="(max-width: 600px)" srcset="../assets/docs/configuration-proxy-narrow-light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="../assets/docs/configuration-proxy-dark.svg">
-  <img alt="What the SOCKS5 proxy carries. Through it: relay connections, with relay names resolved through the proxy, remote signers, media transfers, link previews and embedded pages, speech and translation model downloads, and telemetry exports when enabled; a failed request never falls back to a direct connection. Not through it: QUIC agent previews need UDP and are off; Marmot's HTTP host checks use local DNS; external browsers and other apps ignore it; AppImage and macOS update checks are off. So the proxy does not hide every DNS query." src="../assets/docs/configuration-proxy-light.svg" width="880">
+  <img alt="What the SOCKS5 proxy carries. Through it: relay connections, with relay names resolved through the proxy, remote signers, media transfers, link previews and embedded pages, speech and translation model downloads, and telemetry exports when enabled; a failed request never falls back to a direct connection. Not through it: Marmot's HTTP host checks use local DNS; external browsers and other apps ignore it; AppImage and macOS update checks are off. So the proxy does not hide every DNS query." src="../assets/docs/configuration-proxy-light.svg" width="880">
 </picture>
 
 The proxy carries relay and remote-signer connections, media transfers, link previews, embedded web pages, speech and translation model downloads, and enabled telemetry exports. Failed proxied requests do not fall back to direct connections. Relay names are resolved through the proxy.
@@ -55,7 +55,7 @@ The proxy carries relay and remote-signer connections, media transfers, link pre
 > [!WARNING]
 > This setting does not hide all DNS queries. Marmot's HTTP host checks still use local DNS so downloads and telemetry retain their validated address pins.
 
-QUIC agent previews are unavailable while the proxy is enabled because they require UDP. External browsers and other apps do not use this setting. AppImage and macOS update checks are also disabled while a proxy is configured; see [Install](install.md#how-each-build-updates-itself).
+External browsers and other apps do not use this setting. AppImage and macOS update checks are disabled while a proxy is configured; see [Install](install.md#how-each-build-updates-itself).
 
 ## Telemetry endpoints, if you want your own
 

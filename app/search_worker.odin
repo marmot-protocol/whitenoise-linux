@@ -240,9 +240,7 @@ search_sidebar_chat :: proc(
 
 // One record as a search hit, matched against the text the timeline shows
 // rather than the stored source Marmot's LIKE matched: markup, link
-// targets and hidden payloads do not count. Theme packs, webxdc state,
-// agent records and modifiers are not conversation text; an agent
-// stream's live text is never retained in its record. A system sentence
+// targets and hidden payloads do not count. A system sentence
 // needs UI-owned profile labels, so its hit borrows the event until
 // search_phrase runs on the UI thread.
 @(private)
@@ -256,12 +254,13 @@ search_hit :: proc(
 ) {
 	id := string(record.message_id_hex)
 	if record.deleted || id == "" || job.hidden[id] {return}
-	switch record_class(record.kind, string(record.plaintext)) {
+	plaintext := string(record.plaintext)
+	switch timeline_record_class(record, plaintext) {
 	case .System:
 		if record.group_system == nil {return}
 		hit.system = record.group_system
-	case .Message:
-		text := reading_text(job.client, string(record.plaintext))
+	case .Message, .Agent_Item:
+		text := reading_text(job.client, plaintext)
 		// An attachment without a caption reads as its file name.
 		for &outcome in record.media[:record.media_len] {
 			if text != "" || outcome.tag != .ACCEPTED {continue}
@@ -274,7 +273,7 @@ search_hit :: proc(
 			if at < 0 {return}
 		}
 		hit.snippet = gs_snippet(text, utf8.rune_count(text[:at]))
-	case .Theme, .Webxdc, .Agent_Stream, .Agent_State, .Modifier, .Unsupported:
+	case .Theme, .Webxdc, .Hidden, .Modifier, .Unsupported:
 		return
 	}
 	hit.group = strings.clone(group)

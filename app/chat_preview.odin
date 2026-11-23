@@ -25,7 +25,7 @@ chat_row_preview :: proc(
 	system_page: ^marmot.Timeline_Page,
 ) {
 	last := row.last_message
-	if last == nil {return "", nil}
+	if last == nil || last.deleted {return "", nil}
 	mine := message_is_mine(nil, last.sender, account_ref)
 	is_blocked := !mine && last.sender != nil && blocked[string(last.sender)]
 	raw := last.plaintext != nil ? string(last.plaintext) : ""
@@ -48,7 +48,6 @@ chat_row_preview :: proc(
 	if class == .Unsupported {
 		preview = tr("Unsupported event")
 	} else if strings.trim_space(raw) == "" &&
-	   !last.deleted &&
 	   last.has_attachment_kind &&
 	   last.attachment_kind == CHAT_ATTACHMENT_AUDIO {
 		preview = tr("Audio message")
@@ -125,6 +124,7 @@ preview_text :: proc(
 	if page == nil {return "", false}
 	for i := int(page.messages_len) - 1; i >= 0; i -= 1 {
 		record := &page.messages[i]
+		if record.deleted {continue}
 		raw := record.plaintext != nil ? string(record.plaintext) : ""
 		class := record_class(record.kind, raw)
 		switch class {
@@ -133,7 +133,8 @@ preview_text :: proc(
 			if mode == .Worker {return "", true}
 			return strings.clone(system_text(client, record.group_system), context.temp_allocator),
 				true
-		case .Theme, .Webxdc, .Agent_Stream, .Agent_State, .Modifier:
+		case .Theme, .Webxdc, .Agent_Item, .Hidden, .Modifier:
+			// MDK does not count agent items as chat-list activity.
 			continue
 		case .Message, .Unsupported:
 		}

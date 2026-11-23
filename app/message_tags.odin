@@ -15,7 +15,8 @@ send_message_tags :: proc(p: ^Pending_Send) -> []marmot.Message_Tag {
 	append(&rows, ..sticker_tags(p.sticker))
 	for effect in EFFECTS {if effect.id == p.effect {append(&rows, []string{"effect", effect.key}); break}}
 	if p.reply_to != "" {
-		append(&rows, []string{"e", p.reply_to}, []string{"q", p.reply_to})
+		if p.thread == "" {append(&rows, []string{"e", p.reply_to})}
+		append(&rows, []string{"q", p.reply_to})
 	}
 	tags := make([]marmot.Message_Tag, len(rows))
 	for row, i in rows {

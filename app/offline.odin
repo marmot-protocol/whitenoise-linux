@@ -65,7 +65,6 @@ Offline_Item :: struct {
 	body:        string,
 	reply_to:    string,
 	thread:      string,
-	thread_kind: u64, // absent in older queues: unknown, resolved again on send
 	attempts:    int,
 	atts:        [dynamic]Offline_Att,
 }
@@ -134,7 +133,6 @@ save_offline :: proc(ui: ^Ui_State) {
 			body        = p.body,
 			reply_to    = p.reply_to,
 			thread      = p.thread,
-			thread_kind = p.thread_kind,
 			attempts    = p.attempts,
 		}
 		item.atts = make([dynamic]Offline_Att, context.temp_allocator)
@@ -202,7 +200,6 @@ load_offline :: proc(ui: ^Ui_State) {
 			body        = item.body,
 			reply_to    = item.reply_to,
 			thread      = item.thread,
-			thread_kind = item.thread_kind,
 			attempts    = item.attempts,
 			queued      = !account_revoked(ui, item.account_ref),
 		}

@@ -146,10 +146,7 @@ queue_live_event :: proc(live: ^Live, event: ^marmot.Runtime_Event) -> bool {
 		parts = {.Unlinked}
 	case .Chat_History_Imports_Changed:
 		parts = {.History}
-	case .Account_Error,
-	     .Agent_Stream_Activity,
-	     .History_Notices_Changed,
-	     .Recovery_Status_Changed:
+	case .Account_Error, .History_Notices_Changed, .Recovery_Status_Changed:
 		return false
 	}
 	if parts != {} {
@@ -658,8 +655,7 @@ Pending_Send :: struct {
 	sender:            string, // own display label, mirrors confirmed rows
 	body:              string, // composed text; file name for a non-image upload
 	reply_to:          string, // message id, "" = plain send
-	thread:            string, // thread root id, "" = main timeline
-	thread_kind:       u64, // thread root's event kind for NIP-22's k tag, 0 = unknown
+	thread:            string, // thread parent id, "" = main timeline
 	atts:              [dynamic]Pending_Att, // upload payloads, owned until drained
 	failed:            bool,
 	queued:            bool, // waiting for the auto-retry timer (offline.odin)
@@ -691,18 +687,17 @@ Job_Att :: struct {
 }
 
 Send_Job :: struct {
-	tags:        []marmot.Message_Tag,
-	ticket:      int,
-	client:      ^marmot.Client,
-	account:     cstring,
-	group:       cstring,
-	text:        cstring,
-	reply:       cstring, // nil = plain send
-	thread:      cstring, // nil = main timeline; else the kind-1111 root
-	thread_kind: u64, // root's event kind, 0 = unknown
-	caption:     cstring, // nil, or the body to ride along with atts (aliases text)
-	atts:        []Job_Att, // non-empty = upload_media instead of a text send
-	sticker:     [3]cstring, // pack, shortcode, hash; nil pack = not a sticker
+	tags:    []marmot.Message_Tag,
+	ticket:  int,
+	client:  ^marmot.Client,
+	account: cstring,
+	group:   cstring,
+	text:    cstring,
+	reply:   cstring, // nil = plain send
+	thread:  cstring, // nil = main timeline; else the kind-1111 parent
+	caption: cstring, // nil, or the body to ride along with atts (aliases text)
+	atts:    []Job_Att, // non-empty = upload_media instead of a text send
+	sticker: [3]cstring, // pack, shortcode, hash; nil pack = not a sticker
 }
 
 Send_Done :: struct {
@@ -728,132 +723,74 @@ sends_done: [dynamic]Send_Done
 send_threads: [dynamic]^thread.Thread
 send_ticket: int
 
-// Publish uploaded references into a thread: one kind-1111 event
-// carrying the root e tag, its kind as NIP-22's k tag, plus one imeta tag
-// per attachment (built by marmot, the same shape its own kind-9 media
-// messages use, so the timeline resolves them into downloadable media on
-// every client). MDK projects media, edits and mentions only for a 1111
-// with a numeric k tag:
-//
-//   ["e", root_id] ["k", "9"] ["imeta", …]
+// MDK authors thread placement and imeta. Only NIP-30 needs a tag
+// built from the upload result: ["emoji", shortcode, blossom_url].
 @(private = "file")
-send_thread :: proc(
+send_message_refs :: proc(
 	job: ^Send_Job,
 	result: ^marmot.Media_Upload_Result,
 	ids: ^[dynamic]string,
 ) -> marmot.Status {
-	e_vals := [2]cstring{"e", job.thread}
-	rows := make([dynamic]marmot.Message_Tag)
-	defer delete(rows)
-	append(&rows, ..job.tags)
-	append(&rows, marmot.Message_Tag{values = raw_data(e_vals[:]), values_len = 2})
-	k_vals := [2]cstring{"k", fmt.ctprint(job.thread_kind)}
-	if job.thread_kind != 0 {
-		append(&rows, marmot.Message_Tag{values = raw_data(k_vals[:]), values_len = 2})
+	tags := job.tags
+	refs: []marmot.Media_Attachment_Reference
+	if result != nil {
+		refs = make(
+			[]marmot.Media_Attachment_Reference,
+			result.attachments_len,
+			context.temp_allocator,
+		)
+		rows: [dynamic]marmot.Message_Tag
+		for &ref, i in refs {
+			ref = result.attachments[i].reference
+			if i >= len(job.atts) || job.atts[i].emoji == nil || ref.locators_len == 0 {
+				continue
+			}
+			if rows == nil {
+				rows = make(
+					[dynamic]marmot.Message_Tag,
+					0,
+					len(tags) + len(refs),
+					context.temp_allocator,
+				)
+				append(&rows, ..tags)
+			}
+			values := make([]cstring, 3, context.temp_allocator)
+			values[0] = "emoji"
+			values[1] = job.atts[i].emoji
+			values[2] = ref.locators[0].value
+			append(&rows, marmot.Message_Tag{raw_data(values), 3})
+		}
+		if rows != nil {tags = rows[:]}
 	}
 
-	built := make([dynamic]^marmot.Message_Tag)
-	defer {
-		for tag in built {
-			marmot.message_tag_free(tag)
-		}
-		delete(built)
-	}
-	for i in 0 ..< (result != nil ? result.attachments_len : 0) {
-		tag: ^marmot.Message_Tag
-		if s := marmot.build_media_imeta_tag(
+	summary: ^marmot.Send_Summary
+	status: marmot.Status
+	if job.thread != nil {
+		status = marmot.send_thread_message(
 			job.client,
 			job.account,
 			job.group,
-			&result.attachments[i].reference,
-			&tag,
-		); s != .OK {
-			return s
-		}
-		append(&built, tag)
-		append(&rows, tag^)
+			job.thread,
+			job.text,
+			raw_data(refs),
+			uint(len(refs)),
+			raw_data(tags),
+			uint(len(tags)),
+			&summary,
+		)
+	} else {
+		status = marmot.send_tagged_media(
+			job.client,
+			job.account,
+			job.group,
+			raw_data(refs),
+			uint(len(refs)),
+			raw_data(tags),
+			uint(len(tags)),
+			job.caption,
+			&summary,
+		)
 	}
-	emoji_tags(&rows, job, result)
-
-	summary: ^marmot.Send_Summary
-	status := marmot.send_custom_event(
-		job.client,
-		job.account,
-		job.group,
-		KIND_THREAD,
-		raw_data(rows[:]),
-		uint(len(rows)),
-		job.text,
-		&summary,
-	)
-	if status == .OK {
-		sent_ids(ids, summary)
-		marmot.send_summary_free(summary)
-	}
-	return status
-}
-
-// NIP-30: one ["emoji", code, url] row per custom-emoji attachment.
-// The url is the Blossom locator its imeta tag also carries, so a
-// receiver pairs the shortcode with that encrypted attachment:
-//
-//   ["imeta", "locator blossom https://b.example/ab12…", …]
-//   ["emoji", "party", "https://b.example/ab12…"]
-@(private = "file")
-emoji_tags :: proc(
-	rows: ^[dynamic]marmot.Message_Tag,
-	job: ^Send_Job,
-	result: ^marmot.Media_Upload_Result,
-) {
-	if result == nil {
-		return
-	}
-	for a, i in job.atts[:min(len(job.atts), int(result.attachments_len))] {
-		ref := &result.attachments[i].reference
-		if a.emoji == nil || ref.locators_len == 0 {
-			continue
-		}
-		values := make([]cstring, 3, context.temp_allocator)
-		values[0] = "emoji"
-		values[1] = a.emoji
-		values[2] = ref.locators[0].value
-		append(rows, marmot.Message_Tag{raw_data(values), 3})
-	}
-}
-
-// Main-timeline counterpart of send_thread for a body with custom
-// emoji: the kind-9 carries the uploaded references plus their tags.
-@(private = "file")
-send_emoji_media :: proc(
-	job: ^Send_Job,
-	result: ^marmot.Media_Upload_Result,
-	ids: ^[dynamic]string,
-) -> marmot.Status {
-	rows := make([dynamic]marmot.Message_Tag, context.temp_allocator)
-	append(&rows, ..job.tags)
-	emoji_tags(&rows, job, result)
-
-	refs := make(
-		[]marmot.Media_Attachment_Reference,
-		result.attachments_len,
-		context.temp_allocator,
-	)
-	for &ref, i in refs {
-		ref = result.attachments[i].reference
-	}
-
-	summary: ^marmot.Send_Summary
-	status := marmot.send_tagged_media(
-		job.client,
-		job.account,
-		job.group,
-		raw_data(refs),
-		uint(len(refs)),
-		raw_data(rows[:]),
-		uint(len(rows)),
-		job.caption,
-		&summary,
-	)
 	if status == .OK {
 		sent_ids(ids, summary)
 		marmot.send_summary_free(summary)
@@ -917,10 +854,8 @@ send_worker :: proc(t: ^thread.Thread) {
 		result: ^marmot.Media_Upload_Result
 		status = marmot.upload_media(job.client, job.account, job.group, &request, &result)
 		if status == .OK {
-			if job.thread != nil {
-				status = send_thread(job, result, &ids)
-			} else if has_emoji {
-				status = send_emoji_media(job, result, &ids)
+			if job.thread != nil || has_emoji {
+				status = send_message_refs(job, result, &ids)
 			} else {
 				sent_ids(&ids, result.sent)
 			}
@@ -930,7 +865,7 @@ send_worker :: proc(t: ^thread.Thread) {
 	} else {
 		summary: ^marmot.Send_Summary
 		if job.thread != nil {
-			status = send_thread(job, nil, &ids)
+			status = send_message_refs(job, nil, &ids)
 		} else if len(job.tags) > 0 {
 			status = marmot.send_tagged_text(
 				job.client,
@@ -1001,18 +936,6 @@ send_worker :: proc(t: ^thread.Thread) {
 
 spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
 	if !pending_send_allowed(ui, p^) {return}
-	// Resolve the root's kind while its thread is open; a GIF send comes
-	// back here once prepared, and retries reuse the value.
-	if p.account_ref == ui.account_ref &&
-	   ui.selected >= 0 &&
-	   ui.selected < len(ui.chats) &&
-	   p.group_id == ui.chats[ui.selected].group_id &&
-	   p.thread != "" &&
-	   p.thread_kind == 0 {
-		for &msg in ui.messages {
-			if msg.id == p.thread {p.thread_kind = msg.kind; break}
-		}
-	}
 	if p.gif != nil {gif_send_start(p); return}
 	if p.forward != nil {forward_start(p); return}
 	p.sending_since = time.tick_now()
@@ -1024,7 +947,6 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
 	job.text = strings.clone_to_cstring(p.body)
 	job.reply = len(p.reply_to) > 0 ? strings.clone_to_cstring(p.reply_to) : nil
 	job.thread = len(p.thread) > 0 ? strings.clone_to_cstring(p.thread) : nil
-	job.thread_kind = p.thread_kind
 	job.tags = send_message_tags(p)
 	if p.sticker.pack != "" {
 		job.sticker = {
