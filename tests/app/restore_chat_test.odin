@@ -144,7 +144,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	}
 	ui.prefs = default_prefs(); ui.prefs.reduce_motion = true
 	ui.account_ref = account
-	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
+	append(&ui.accounts, Account_Row_Ui{id_hex = account, name = "Offline fixture"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; forced_release = false; text_field_live = false}
 	// Selecting a chat starts timeline and roster workers; join them before
@@ -231,7 +231,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 			testing.expect_value(t, ui.selected, selected)
 			testing.expect_value(t, len(ui.staged), 1)
 			testing.expect_value(t, raw_data(ui.staged), staged)
-			testing.expect_value(t, len(ui.staged_drafts[other]), 0)
+			testing.expect_value(t, len(ui.staged_drafts[draft_key(account, other)]), 0)
 			testing.expect(t, strings.has_prefix(ui.client_status, "Couldn't unarchive."))
 			testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
 			for job in account_jobs {thread.join(job.worker)}
@@ -262,7 +262,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		testing.expect_value(t, ui.client_status, "Chat restored.")
 		testing.expect_value(t, ui.client_status_kind, Status_Kind.Info)
 		// Files staged in the open conversation stay parked with that chat.
-		files := ui.staged_drafts[other_selected ? other : target]
+		files := ui.staged_drafts[draft_key(account, other_selected ? other : target)]
 		if testing.expect_value(t, len(files), 1) {
 			testing.expect_value(t, raw_data(files), staged)
 			testing.expect_value(t, files[0].name, "draft.txt")
@@ -271,21 +271,21 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 			testing.expect_value(t, string(files[0].data), "x")
 		}
 		testing.expect_value(t, len(ui.staged), 0)
-		if other_selected {testing.expect_value(t, len(ui.staged_drafts[target]), 0)}
+		if other_selected {testing.expect_value(t, len(ui.staged_drafts[draft_key(account, target)]), 0)}
 		text := frame(&ui)
 		testing.expect(t, strings.contains(text, "Chat restored."), "Success is visibly confirmed")
 		timeline_stop()
 		for job in account_jobs {thread.join(job.worker)}
 		account_job_drain(&ui)
 		testing.expect_value(t, len(ui.archived), 0)
-		testing.expect_value(t, ui.drafts[other], "Keep this draft")
+		testing.expect_value(t, ui.drafts[draft_key(account, other)], "Keep this draft")
 		testing.expect_value(t, ui.selected, -1)
 		chats_collect()
 		if !other_selected {
 			// Opening the restored chat brings back the files staged in it.
 			if !testing.expect(t, select_by_id(&ui, client, target)) {return}
 			testing.expect_value(t, raw_data(ui.staged), staged)
-			testing.expect_value(t, len(ui.staged_drafts[target]), 0)
+			testing.expect_value(t, len(ui.staged_drafts[draft_key(account, target)]), 0)
 		}
 	}
 	// Exercise a real C API read failure without a mock or production hook.
@@ -306,7 +306,7 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 		testing.expect_value(t, ui.staged[0].name, "draft.txt")
 		testing.expect_value(t, string(ui.staged[0].data), "x")
 	}
-	testing.expect_value(t, len(ui.staged_drafts[target]), 0)
+	testing.expect_value(t, len(ui.staged_drafts[draft_key(account, target)]), 0)
 	testing.expect(t, strings.has_prefix(ui.client_status, "Chat list failed: "))
 	testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
 	ui.account_ref = account

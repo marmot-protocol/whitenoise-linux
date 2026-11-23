@@ -14,6 +14,7 @@ Account_Operation :: enum {
 	Sign_Out,
 	Remove,
 	Wipe,
+	Wipe_Unlinked,
 	Profile,
 	Outbox,
 	Inbox,
@@ -85,15 +86,17 @@ account_job_new :: proc(
 	owner := account == "" ? ui.account_ref : account
 	if client == nil || owner == "" {return nil}
 	revoked := account_revoked(ui, owner)
-	if kind == .Wipe {
-		if !MULTI_DEVICE || (!revoked && !account_signed_in(ui, owner)) {return nil}
-	} else if revoked || (kind == .Switch && !account_signed_in(ui, owner)) {
+	if kind == .Wipe_Unlinked {
+		if !revoked {return nil}
+	} else if revoked || ((kind == .Switch || kind == .Wipe) && !account_signed_in(ui, owner)) {
 		if kind == .Switch {devices_switch_failed(ui, owner)}
 		return nil
 	}
 	if kind == .Switch {for item in nip46_accounts {item.switch_requested = false}}
 	for job in account_jobs {
-		if job.account == owner || (kind == job.kind && (kind == .Switch || kind == .Wipe)) {
+		if job.account == owner ||
+		   (kind == .Switch && job.kind == .Switch) ||
+		   (account_wiping(kind) && account_wiping(job.kind)) {
 			waiting_for_signer := job.signer != nil && !account_exit(job.kind)
 			set_status(
 				ui,
@@ -126,7 +129,7 @@ account_job_new :: proc(
 	job.client, job.account, job.kind = client, strings.clone(owner), kind
 	job.signer, job.sign_out_intent = signer, sign_out_intent
 	job.accounts_revision = ui.accounts_revision
-	if kind == .Wipe {
+	if account_wiping(kind) {
 		label: string
 		if profile := ui.devices.profiles[owner]; profile != nil {label = profile.unlink_label}
 		job.title = strings.clone(label != "" ? label : account_label(ui, owner))
@@ -160,7 +163,7 @@ account_worker :: proc(t: ^thread.Thread) {
 		out: ^marmot.Account_Summary
 		status = marmot.sign_in_account(job.client, account, &out)
 		if out != nil {marmot.account_summary_free(out)}
-	case .Sign_Out, .Remove, .Wipe:
+	case .Sign_Out, .Remove, .Wipe, .Wipe_Unlinked:
 		account_exit_worker(job, account)
 	case .Profile:
 		optional :: proc(value: string) -> cstring {return(
@@ -319,7 +322,12 @@ account_worker :: proc(t: ^thread.Thread) {
 }
 @(private)
 account_exit :: proc(kind: Account_Operation) -> bool {
-	return kind == .Sign_Out || kind == .Remove || kind == .Wipe
+	return kind == .Sign_Out || kind == .Remove || account_wiping(kind)
+}
+
+@(private = "file")
+account_wiping :: proc(kind: Account_Operation) -> bool {
+	return kind == .Wipe || kind == .Wipe_Unlinked
 }
 
 @(private)
@@ -354,11 +362,30 @@ account_exit_worker :: proc(job: ^Account_Job, account: cstring) {
 	}
 	wipe: ^marmot.Wipe_Outcome
 	signed_out: ^marmot.Sign_Out_Outcome
+	attempted := true
 	#partial switch job.kind {
 	case .Wipe:
 		status = marmot.sign_out_and_wipe(job.client, account, &wipe)
+	case .Wipe_Unlinked:
+		attempted = false
+		status = marmot.list_accounts(job.client, &job.accounts)
+		job.accounts_read = status == .OK
+		if job.accounts_read && job.accounts != nil {
+			for row in job.accounts.items[:job.accounts.len] {
+				if string(row.account_id_hex) != job.account {continue}
+				attempted = row.signed_out && row.unlinked
+				break
+			}
+		}
+		if attempted {
+			marmot.account_summary_list_free(job.accounts); job.accounts = nil
+			status = marmot.remove_account(job.client, account)
+			local.completed = status == .OK
+		} else if status == .OK {
+			append_issue(&issues, tr("This profile is no longer unlinked."))
+		}
 	case .Sign_Out:
-		delete_packages := u8(MULTI_DEVICE && job.sign_out_intent == .User)
+		delete_packages := u8(job.sign_out_intent == .User)
 		status = marmot.sign_out(job.client, account, delete_packages, &signed_out)
 	case .Remove:
 		status = marmot.remove_account(job.client, account)
@@ -405,8 +432,8 @@ account_exit_worker :: proc(job: ^Account_Job, account: cstring) {
 		}
 	}
 
-	job.accounts_read = marmot.list_accounts(job.client, &job.accounts) == .OK
-	job.departed = account_exit_confirmed(job, status, local.completed)
+	if attempted {job.accounts_read = marmot.list_accounts(job.client, &job.accounts) == .OK}
+	job.departed = attempted && account_exit_confirmed(job, status, local.completed)
 	if local.reason != nil && string(local.reason) != "" {
 		fmt.sbprintfln(&issues, tr("Local cleanup reported a problem: %s"), string(local.reason))
 	} else if (wipe != nil || signed_out != nil) && !local.completed {
@@ -431,7 +458,7 @@ account_exit_worker :: proc(job: ^Account_Job, account: cstring) {
 	}
 
 	problems := strings.trim_space(strings.to_string(issues))
-	if job.kind == .Wipe {
+	if account_wiping(job.kind) {
 		report := strings.builder_make(context.temp_allocator)
 		if job.departed {
 			fmt.sbprintfln(&report, tr("%s was removed from this device."), job.title)
@@ -484,10 +511,43 @@ account_jobs_stop :: proc() {
 }
 
 @(private = "file")
+account_wipe_prefs :: proc(ui: ^Ui_State, account, prefix: string) {
+	if ui.prefs.last_account == account {
+		delete(ui.prefs.last_account); ui.prefs.last_account = ""
+		ui.settings_dirty = true
+	}
+	devices_wipe_prefs(ui, account)
+	drafts_wipe(ui, prefix)
+	keys := make([dynamic]string, context.temp_allocator)
+	for key in ui.reading_places {
+		if strings.has_prefix(key, prefix) {append(&keys, key)}
+	}
+	for key in keys {
+		owned, place := delete_key(&ui.reading_places, key)
+		delete(place.message); delete(owned)
+	}
+}
+
+@(private)
+account_wipes_finish :: proc(ui: ^Ui_State) {
+	for i := len(account_jobs) - 1; i >= 0; i -= 1 {
+		job := account_jobs[i]
+		if !account_wiping(job.kind) {continue}
+		thread.join(job.worker)
+		if job.departed {
+			account_wipe_prefs(ui, job.account, fmt.tprintf("%s:", job.account))
+			offline_wipe_persist(ui, job.account)
+		}
+		ordered_remove(&account_jobs, i)
+		account_job_free(job, .Joined)
+	}
+}
+
+@(private = "file")
 account_exit_apply :: proc(ui: ^Ui_State, job: ^Account_Job) {
 	if job.accounts_read && job.accounts_revision == ui.accounts_revision {
 		accounts_adopt(ui, job.client, job.accounts)
-	} else if MULTI_DEVICE {
+	} else {
 		ui.devices.inventory_dirty = true
 	}
 	if job.departed {
@@ -500,28 +560,28 @@ account_exit_apply :: proc(ui: ^Ui_State, job: ^Account_Job) {
 		}
 		account_departed(ui, job.client, job.account)
 	}
-	if job.kind != .Wipe {
+	if !account_wiping(job.kind) {
 		if job.error != "" {set_status(ui, strings.clone(job.error), .Error)}
 		return
 	}
 	if job.departed {
 		devices_wipe_applied(ui, job.account)
-		drafts_wipe(ui, job.account)
-		offline_wipe(ui, job.account)
 		prefix := fmt.tprintf("%s:", job.account)
-		keys := make([dynamic]string, context.temp_allocator)
-		for key in ui.reading_places {
-			if strings.has_prefix(key, prefix) {append(&keys, key)}
-		}
-		for key in keys {
-			owned, place := delete_key(&ui.reading_places, key)
-			delete(place.message); delete(owned)
-		}
+		account_wipe_prefs(ui, job.account, prefix)
+		staged_drafts_wipe(ui, prefix)
+		offline_wipe(ui, job.account)
 	}
 	delete(ui.devices.wipe_report, reload_allocator())
 	ui.devices.wipe_report, job.wipe_report = job.wipe_report, ""
 	ui.devices.wipe_report_error = job.wipe_report_error
 	auth_wipe_finished(ui, job.client, job.account, job.departed)
+	if job.kind == .Wipe_Unlinked &&
+	   !job.departed &&
+	   ui.account_ref == "" &&
+	   auth_job == nil &&
+	   !accounts_have_tombstones(ui) {
+		ui.accounts_open = len(ui.accounts) != 0
+	}
 }
 
 @(private)
@@ -689,7 +749,7 @@ account_job_drain :: proc(ui: ^Ui_State) {
 					ui.ov_open = false
 					ui.focus = .Invite
 					refresh_after_action(ui, job.client)
-				case .Switch, .Sign_Out, .Remove, .Wipe:
+				case .Switch, .Sign_Out, .Remove, .Wipe, .Wipe_Unlinked:
 				}
 			}
 		}
@@ -703,7 +763,7 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 		return tr("Switching your account")
 	case .Sign_Out:
 		return tr("Signing out and removing your signer session")
-	case .Remove:
+	case .Remove, .Wipe_Unlinked:
 		return tr("Removing your account from this device")
 	case .Wipe:
 		return tr("Signing out and wiping this device's copy of the profile")

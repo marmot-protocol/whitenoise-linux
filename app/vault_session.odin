@@ -78,6 +78,7 @@ session_stop_worker :: proc(t: ^thread.Thread) {
 	job := (^Session_Stop)(t.data)
 	client, ui, live := job.client, job.ui, job.live
 	socks5_stop(ui)
+	account_wipes_finish(ui)
 	if ui.lock_requested {vault_relock()}
 	local_timing_bind(nil)
 	nip46_cancel_all()
@@ -156,10 +157,7 @@ session_stop :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
 	login_pair_clear(ui)
 	for change in live.dirty_groups {delete(change.group); delete(change.account)}
 	delete(live.dirty_groups); live.dirty_groups = {}
-	for account, change in live.dirty_devices {
-		delete(account)
-		delete(change.unlink_label)
-	}
+	for account in live.dirty_devices {delete(account)}
 	delete(live.dirty_devices)
 	live.dirty_devices = {}
 	forward_stop(ui)

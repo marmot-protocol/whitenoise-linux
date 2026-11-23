@@ -264,7 +264,7 @@ edit_completion_scope :: proc(t: ^testing.T) {
 	}
 	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
 	append(&ui.messages, Msg_Ui{id = "message"})
-	ui.drafts["group"] = "draft"
+	ui.drafts["account:group"] = "draft"
 	defer {delete(ui.chats); delete(ui.messages); delete(ui.compose); delete(ui.drafts)
 		delete(ui.client_status)}
 	ed_set(&ui, &ui.compose, "newer typing")

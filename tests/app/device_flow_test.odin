@@ -15,10 +15,7 @@ import rl "sdlrl"
 devices_event_dispatch :: proc(t: ^testing.T) {
 	live: Live
 	defer {
-		for account, change in live.dirty_devices {
-			delete(account)
-			delete(change.unlink_label)
-		}
+		for account in live.dirty_devices {delete(account)}
 		delete(live.dirty_devices)
 		for change in live.dirty_groups {delete(change.group); delete(change.account)}
 		delete(live.dirty_groups)
@@ -28,29 +25,22 @@ devices_event_dispatch :: proc(t: ^testing.T) {
 	// A non-nil word beyond the account prefix must not be read as a group.
 	event.body.group.group = "not-a-group"
 	event.body.account.account = "account-a"
-	event.body.account.label = "Profile A"
 	event.tag = .Device_Link_Changed
-	testing.expect_value(t, queue_live_event(&live, &event), MULTI_DEVICE)
+	testing.expect(t, queue_live_event(&live, &event))
 	event.tag = .Linked_Devices_Changed
-	testing.expect_value(t, queue_live_event(&live, &event), MULTI_DEVICE)
+	testing.expect(t, queue_live_event(&live, &event))
 	event.tag = .Recovery_Status_Changed
 	testing.expect(t, !queue_live_event(&live, &event))
 	event.tag = .Device_Unlinked
-	testing.expect_value(t, queue_live_event(&live, &event), MULTI_DEVICE)
+	testing.expect(t, queue_live_event(&live, &event))
 
 	testing.expect_value(t, len(live.dirty_groups), 0)
-	if MULTI_DEVICE {
-		testing.expect_value(t, len(live.dirty_devices), 1)
-		change := live.dirty_devices["account-a"]
-		testing.expect_value(
-			t,
-			change.parts,
-			Device_Parts{.Link, .Roster, .Started_Fresh, .Unlinked},
-		)
-		testing.expect_value(t, change.unlink_label, "Profile A")
-	} else {
-		testing.expect_value(t, len(live.dirty_devices), 0)
-	}
+	testing.expect_value(t, len(live.dirty_devices), 1)
+	testing.expect_value(
+		t,
+		live.dirty_devices["account-a"],
+		Device_Parts{.Link, .Roster, .Started_Fresh, .Unlinked},
+	)
 
 	event.tag = .Group_Event
 	event.body.group_event.account = "account-a"
@@ -58,10 +48,10 @@ devices_event_dispatch :: proc(t: ^testing.T) {
 	event.body.group_event.event.tag = .QUEUED_INTENT_REFUSED
 	event.body.group_event.event.body.failure.intent_kind = "enable_account_devices"
 	testing.expect(t, queue_live_event(&live, &event))
-	testing.expect_value(t, live.dirty_groups[0].activation_failure, MULTI_DEVICE)
+	testing.expect(t, live.dirty_groups[0].activation_failure)
 	event.body.group_event.event.tag = .GROUP_CHANGE_NOT_DELIVERED
 	testing.expect(t, queue_live_event(&live, &event))
-	testing.expect_value(t, live.dirty_groups[1].activation_failure, MULTI_DEVICE)
+	testing.expect(t, live.dirty_groups[1].activation_failure)
 	event.body.group_event.event.body.failure.intent_kind = "remove_member"
 	testing.expect(t, queue_live_event(&live, &event))
 	testing.expect(t, !live.dirty_groups[2].activation_failure)
@@ -73,7 +63,6 @@ devices_event_dispatch :: proc(t: ^testing.T) {
 
 @(test)
 devices_snapshot_scope :: proc(t: ^testing.T) {
-	if !MULTI_DEVICE {return}
 	ui: Ui_State
 	defer devices_stop(&ui)
 	ui.account_ref = "account-a"
@@ -166,7 +155,7 @@ device_test_frame :: proc(ui: ^Ui_State) -> string {
 
 @(test)
 devices_visibility :: proc(t: ^testing.T) {
-	if !strings.contains(#config(ODIN_TEST_NAMES, ""), "devices_visibility") {return}
+	if !test_isolated("devices_visibility") {return}
 	context.allocator = runtime.default_context().allocator
 	ui: Ui_State
 	memory: []u8
@@ -180,7 +169,7 @@ devices_visibility :: proc(t: ^testing.T) {
 	if !testing.expect(t, index >= 0) {return}
 	result_id := nendo.id("SettingsTask", u32(index))
 	result := nendo.element(result_id)
-	testing.expect_value(t, result.found, MULTI_DEVICE)
+	testing.expect(t, result.found)
 	if result.found {
 		r := result.rect
 		nendo.set_pointer({r.x + r.width / 2, r.y + r.height / 2}, .Up)
@@ -195,7 +184,7 @@ devices_visibility :: proc(t: ^testing.T) {
 	}
 	ui.prefs.page, ui.prefs.settings_section = .Settings, .Devices
 	restore_workspace(&ui, nil)
-	testing.expect_value(t, ui.settings_section, MULTI_DEVICE ? Settings_Section.Devices : .Home)
+	testing.expect_value(t, ui.settings_section, Settings_Section.Devices)
 	if profile := device_current(&ui); profile != nil {
 		ui.page = .Chats
 		profile.first_import = true
@@ -230,8 +219,7 @@ devices_visibility :: proc(t: ^testing.T) {
 
 @(test)
 devices_post_link_review :: proc(t: ^testing.T) {
-	if !MULTI_DEVICE ||
-	   !strings.contains(#config(ODIN_TEST_NAMES, ""), "devices_post_link_review") {return}
+	if !test_isolated("devices_post_link_review") {return}
 	context.allocator = runtime.default_context().allocator
 	ui: Ui_State
 	memory: []u8
@@ -250,10 +238,16 @@ devices_post_link_review :: proc(t: ^testing.T) {
 	}
 	profile.view.link = &link
 	defer profile.view.link = nil
+	attempt.tag = .WAITING_FOR_ANSWER
 	devices_show(&ui, .New)
-	ui.devices.show_attempt = true
+	device_test_frame(&ui)
+	device_test_click(t, &ui, nil, "DeviceClose")
+	testing.expect_value(t, ui.devices.panel, Device_Panel.None)
+	attempt.tag = .LINKED
+	devices_show(&ui, .New)
 	device_test_frame(&ui)
 	testing.expect(t, nendo.element(nendo.id("DeviceHistoryCheck")).found)
+	testing.expect(t, nendo.element(nendo.id("DeviceStart")).found)
 	profile.known += {.History}
 	profile.view.history_receiving = 2
 	append(&ui.chats, Chat_Row_Ui{group_id = "one", title = "Studio chat"})
@@ -263,6 +257,31 @@ devices_post_link_review :: proc(t: ^testing.T) {
 	device_test_click(t, &ui, nil, "DeviceOpenChats")
 	testing.expect_value(t, ui.page, Page.Chats)
 	testing.expect_value(t, ui.devices.panel, Device_Panel.None)
+	devices_show(&ui, .New)
+	device_test_frame(&ui)
+	testing.expect(t, !nendo.element(nendo.id("DeviceOpenChats")).found)
+	devices_close(&ui)
+	ended := marmot.New_Device_Link_State {
+		tag = .ENDED,
+	}
+	ended.body.ended.reason = .TIMED_OUT
+	ended_link := marmot.Device_Link_Snapshot {
+		new_device = &ended,
+	}
+	job := Device_Job {
+		account = profile.account,
+		active = true,
+		generation = ui.devices.generation,
+		incarnation = profile.incarnation,
+		reads = {.Link},
+		data = {link = &ended_link},
+	}
+	device_apply(&ui.devices, profile, &job)
+	devices_show(&ui, .New)
+	text = device_test_frame(&ui)
+	testing.expect(t, strings.contains(text, "The link request expired."))
+	testing.expect(t, strings.contains(text, "Try again"))
+	devices_close(&ui)
 
 	settings_open(&ui, nil, .Devices)
 	profile.view.closed_chats = 3
@@ -277,7 +296,7 @@ devices_post_link_review :: proc(t: ^testing.T) {
 			presentation = {title = {tag = .Literal, body = {literal = "Studio chat"}}},
 		},
 		{
-			row = {group_id_hex = "two"},
+			row = {group_id_hex = "two", archived = true},
 			presentation = {title = {tag = .Literal, body = {literal = "Family group"}}},
 		},
 		{
@@ -321,11 +340,30 @@ devices_post_link_review :: proc(t: ^testing.T) {
 	if !testing.expect_value(t, status, .OK) {return}
 	defer marmot.client_free(client)
 	defer {members_stop(); timeline_stop(); activation_stop(&ui)}
+	defer {
+		for chat in ui.chats[1:] {chat_free(chat)}
+		for chat in ui.archived {chat_free(chat)}
+		delete(ui.archived)
+	}
 	device_test_click(t, &ui, client, "DeviceReviewChat0")
 	testing.expect_value(t, ui.page, Page.Chats)
 	testing.expect_value(t, ui.selected, 0)
 	testing.expect(t, ui.show_members && ui.info_tab == .Settings)
 	testing.expect_value(t, ui.confirm.kind, Confirm_Kind.None)
+	settings_open(&ui, nil, .Devices)
+	devices_show(&ui, .Chat_Review)
+	profile.dirty -= {.Chat_Review, .Closed_Chats}
+	device_test_frame(&ui)
+	device_test_click(t, &ui, client, "DeviceReviewChat1")
+	testing.expect_value(t, ui.page, Page.Chats)
+	if !testing.expect_value(t, ui.selected, 1) {return}
+	testing.expect(t, ui.show_members && ui.info_tab == .Settings)
+	testing.expect_value(t, ui.confirm.kind, Confirm_Kind.None)
+	chat_free(pop(&ui.chats))
+	gs_keep_open_chat(&ui, "two")
+	if !testing.expect_value(t, len(ui.chats), 2) {return}
+	testing.expect(t, ui.chats[1].archived && ui.chats[1].search_only)
+	testing.expect_value(t, ui.chats[1].group_id, "two")
 }
 
 @(private = "file")
@@ -341,8 +379,7 @@ device_test_click :: proc(t: ^testing.T, ui: ^Ui_State, client: ^marmot.Client, 
 
 @(test)
 devices_pairing_projection :: proc(t: ^testing.T) {
-	if !MULTI_DEVICE ||
-	   !strings.contains(#config(ODIN_TEST_NAMES, ""), "devices_pairing_projection") {return}
+	if !test_isolated("devices_pairing_projection") {return}
 	context.allocator = runtime.default_context().allocator
 	ui: Ui_State
 	memory: []u8
@@ -394,6 +431,7 @@ devices_pairing_projection :: proc(t: ^testing.T) {
 		after = after[at + len(label):]
 	}
 	testing.expect(t, strings.contains(text, "They match, link device"))
+	testing.expect(t, !ui.devices.add_to_all && !ui.devices.bring_history)
 	clear(&ui.devices.name)
 	for _ in 0 ..< 21 {append(&ui.devices.name, "界")}
 	append(&ui.devices.name, "ab")
@@ -461,8 +499,7 @@ devices_pairing_projection :: proc(t: ^testing.T) {
 
 @(test)
 devices_roster_repair :: proc(t: ^testing.T) {
-	if !MULTI_DEVICE ||
-	   !strings.contains(#config(ODIN_TEST_NAMES, ""), "devices_roster_repair") {return}
+	if !test_isolated("devices_roster_repair") {return}
 	context.allocator = runtime.default_context().allocator
 	ui: Ui_State
 	memory: []u8
@@ -559,8 +596,7 @@ devices_roster_repair :: proc(t: ^testing.T) {
 
 @(test)
 devices_account_fence :: proc(t: ^testing.T) {
-	if !MULTI_DEVICE ||
-	   !strings.contains(#config(ODIN_TEST_NAMES, ""), "devices_account_fence") {return}
+	if !test_isolated("devices_account_fence") {return}
 	context.allocator = runtime.default_context().allocator
 	ui: Ui_State
 	memory: []u8
@@ -659,8 +695,7 @@ devices_account_fence :: proc(t: ^testing.T) {
 
 @(test)
 devices_sign_in_review :: proc(t: ^testing.T) {
-	if !MULTI_DEVICE ||
-	   !strings.contains(#config(ODIN_TEST_NAMES, ""), "devices_sign_in_review") {return}
+	if !test_isolated("devices_sign_in_review") {return}
 	context.allocator = runtime.default_context().allocator
 	ui: Ui_State
 	memory: []u8
@@ -756,6 +791,32 @@ devices_sign_in_review :: proc(t: ^testing.T) {
 	forced_release = false
 	device_test_frame(&ui)
 	testing.expect(t, nendo.element(nendo.id("SignInRecognize0")).found)
+	button = nendo.element(nendo.id("SignInLink0"))
+	if !testing.expect(t, button.found) {return}
+	r = button.rect
+	nendo.set_pointer({r.x + r.width / 2, r.y + r.height / 2}, .Up)
+	forced_release = true
+	testing.expect(t, handle_devices(&ui, nil))
+	forced_release = false
+	testing.expect_value(t, ui.devices.panel, Device_Panel.Add)
+	testing.expect_value(t, ui.devices.panel_slot, "sign-in-slot")
+	prompts := [?]marmot.Device_Link_Prompt {
+		{prompt_id = "other", slot_id_hex = "other-slot", requested_at = 2},
+		{prompt_id = "selected", slot_id_hex = "sign-in-slot", requested_at = 1},
+	}
+	link := marmot.Device_Link_Snapshot {
+		prompts     = raw_data(prompts[:]),
+		prompts_len = 1,
+	}
+	profile.view.link = &link
+	defer profile.view.link = nil
+	profile.dirty -= {.Link}
+	devices_present(&ui, true)
+	testing.expect_value(t, ui.devices.panel, Device_Panel.Add)
+	link.prompts_len = 2
+	devices_present(&ui, true)
+	testing.expect_value(t, ui.devices.panel, Device_Panel.Approve)
+	testing.expect_value(t, ui.devices.panel_prompt, "selected")
 	sign_in.state = .LINKED_ELSEWHERE
 	testing.expect(t, !device_command_current(profile, command))
 	command.response = .DISMISS
@@ -764,8 +825,7 @@ devices_sign_in_review :: proc(t: ^testing.T) {
 
 @(test)
 devices_chat_activation :: proc(t: ^testing.T) {
-	if !MULTI_DEVICE ||
-	   !strings.contains(#config(ODIN_TEST_NAMES, ""), "devices_chat_activation") {return}
+	if !test_isolated("devices_chat_activation") {return}
 	context.allocator = runtime.default_context().allocator
 	ui: Ui_State
 	memory: []u8
@@ -818,15 +878,29 @@ devices_chat_activation :: proc(t: ^testing.T) {
 		strings.contains(device_test_frame(&ui), "This chat doesn't support linked devices."),
 	)
 	testing.expect(t, !nendo.element(nendo.id("EnableAccountDevices")).found)
-	read.eligibility = .ALREADY_ENABLED
+	components := [?]u16{0x8001, 0x800d}
+	mls := marmot.Group_Mls_State_Head {
+		required_app_components     = raw_data(components[:]),
+		required_app_components_len = 2,
+	}
+	read.eligibility = activation_component_required(mls) ? .ALREADY_ENABLED : .NOT_ADMIN
+	if !testing.expect_value(
+		t,
+		read.eligibility,
+		marmot.Account_Devices_Activation.ALREADY_ENABLED,
+	) {return}
+	a.reread_refusal = true
 	activation_apply_read(&ui, &read)
 	testing.expect(
 		t,
 		strings.contains(device_test_frame(&ui), "Linked devices are turned on for this chat."),
 	)
 	testing.expect(t, !nendo.element(nendo.id("EnableAccountDevices")).found)
+	mls.required_app_components_len = 1
+	testing.expect(t, !activation_component_required(mls))
 	read.eligibility = .ELIGIBLE
 	activation_apply_read(&ui, &read)
+	testing.expect_value(t, a.notice, "")
 	device_test_frame(&ui)
 	button := nendo.element(nendo.id("EnableAccountDevices"))
 	if !testing.expect(t, button.found) {return}
@@ -871,34 +945,37 @@ devices_chat_activation :: proc(t: ^testing.T) {
 			},
 		)
 	}
-	for advice in ([?]struct {
-			kind:   Confirm_Kind,
-			status: marmot.Status,
-		}{{.Activation_Catching_Up, .GROUP_CATCHING_UP}, {.Activation_Undelivered, .GROUP_COMMIT_UNDELIVERED}}) {
-		apply(&ui, advice.status)
-		activation_drain(&ui, nil)
-		testing.expect_value(t, ui.confirm.kind, advice.kind)
-		for _ in 0 ..< 3 {device_test_frame(&ui)}
-		cancel := nendo.element(nendo.id("ConfirmCancel"))
-		if !testing.expect(t, cancel.found) {return}
-		r := cancel.rect
-		nendo.set_pointer({r.x + r.width / 2, r.y + r.height / 2}, .Up)
-		forced_release = true
-		handle_confirm(&ui, nil)
-		forced_release = false
-		testing.expect_value(t, a.advisory, Activation_Advisory.None)
-		testing.expect_value(t, ui.confirm.kind, Confirm_Kind.None)
-		apply(&ui, advice.status)
-		activation_drain(&ui, nil)
-		status, ok := activation_prepare(&ui, ui.confirm)
-		testing.expect(t, ok)
-		testing.expect_value(t, status, advice.status)
-		confirm_close(&ui)
-		apply(&ui, advice.status)
-		activation_drain(&ui, nil)
-		testing.expect_value(t, ui.confirm.kind, Confirm_Kind.None)
-		testing.expect(t, strings.contains(a.notice, "Couldn't turn on linked devices"))
-	}
+	apply(&ui, .GROUP_CATCHING_UP)
+	activation_drain(&ui, nil)
+	testing.expect_value(t, ui.confirm.kind, Confirm_Kind.None)
+	testing.expect_value(t, len(a.pending), 0)
+	testing.expect(
+		t,
+		strings.contains(device_test_frame(&ui), "finish catching up, then try again"),
+	)
+
+	apply(&ui, .GROUP_COMMIT_UNDELIVERED)
+	activation_drain(&ui, nil)
+	testing.expect_value(t, ui.confirm.kind, Confirm_Kind.Activation_Undelivered)
+	for _ in 0 ..< 3 {device_test_frame(&ui)}
+	cancel := nendo.element(nendo.id("ConfirmCancel"))
+	if !testing.expect(t, cancel.found) {return}
+	r = cancel.rect
+	nendo.set_pointer({r.x + r.width / 2, r.y + r.height / 2}, .Up)
+	forced_release = true
+	handle_confirm(&ui, nil)
+	forced_release = false
+	testing.expect_value(t, ui.confirm.kind, Confirm_Kind.None)
+	apply(&ui, .GROUP_COMMIT_UNDELIVERED)
+	activation_drain(&ui, nil)
+	status, ok := activation_prepare(&ui, ui.confirm)
+	testing.expect(t, ok)
+	testing.expect_value(t, status, marmot.Status.GROUP_COMMIT_UNDELIVERED)
+	confirm_close(&ui)
+	apply(&ui, .GROUP_COMMIT_UNDELIVERED)
+	activation_drain(&ui, nil)
+	testing.expect_value(t, ui.confirm.kind, Confirm_Kind.None)
+	testing.expect(t, strings.contains(a.notice, "Couldn't turn on linked devices"))
 	apply(&ui, .ACCOUNT_DEVICES_ACTIVATION_REFUSED)
 	read.eligibility = .MEMBERS_NEED_UPDATE
 	activation_apply_read(&ui, &read)
@@ -925,7 +1002,14 @@ devices_chat_activation :: proc(t: ^testing.T) {
 		apply(&ui, .OK, .ACCEPTED_PENDING)
 		testing.expect(t, a.pending[key].settling)
 		text := device_test_frame(&ui)
-		testing.expect(t, strings.contains(text, "Waiting for the linked devices change"))
+		testing.expect(t, strings.contains(text, "Checking whether linked devices are on"))
+		a.dirty = false
+		read.status = .RUNTIME
+		activation_apply_read(&ui, &read)
+		device_test_frame(&ui)
+		testing.expect(t, nendo.element(nendo.id("RetryAccountDevices")).found)
+		testing.expect(t, !nendo.element(nendo.id("EnableAccountDevices")).found)
+		read.status = .OK
 		read.ticket, read.eligibility = 1, verdict
 		activation_apply_read(&ui, &read)
 		testing.expect_value(t, len(a.pending), 0)
@@ -936,8 +1020,7 @@ devices_chat_activation :: proc(t: ^testing.T) {
 
 @(test)
 devices_chat_sync :: proc(t: ^testing.T) {
-	if !MULTI_DEVICE ||
-	   !strings.contains(#config(ODIN_TEST_NAMES, ""), "devices_chat_sync") {return}
+	if !test_isolated("devices_chat_sync") {return}
 	context.allocator = runtime.default_context().allocator
 	ui: Ui_State
 	memory: []u8

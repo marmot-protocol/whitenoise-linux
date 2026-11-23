@@ -219,8 +219,11 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	rl.WindowShouldClose()
 	if !testing.expect_value(t, len(ui.nc_members), 25) {return}
 	pane.position.y = 0
+	form := nendo.scroll(nendo.id("NCForm"))
+	if form.found {form.position.y = 0}
 	layout(&ui)
 	click(t, &ui, client, nendo.id("NCName"))
+	if !testing.expect_value(t, ui.focus, Focus.NC_Name) {return}
 	layout(&ui)
 	rl.PushKey(.LEFT_SHIFT, true)
 	rl.PushKey(.TAB, true)
@@ -230,10 +233,16 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	rl.WindowShouldClose()
 	layout(&ui)
 	last_remove := nendo.element(nendo.id("NCMemberRemove", 24)).rect
+	view = nendo.element(nendo.id("NewChatPane")).rect
 	testing.expect(
 		t,
-		last_remove.y + last_remove.height <= view.y + view.height,
-		"Tab reveals the last removal control",
+		i32(last_remove.y + last_remove.height) <= i32(view.y + view.height),
+		fmt.tprintf(
+			"Tab reveals the last removal control: focus %v, button %v, viewport %v",
+			ui.focus,
+			last_remove,
+			view,
+		),
 	)
 	pane.position.y = 0
 	layout(&ui)
@@ -286,7 +295,7 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 	}
 	testing.expect_value(t, nc_group_targets(&ui), peer + "\n" + second)
 	ed_set(&ui, &ui.nc_name, "Weekend plans")
-	ui.account_ref = "offline-fixture"
+	account_jobs_stop()
 	layout(&ui)
 	click(t, &ui, client, nendo.id("NCCreate"))
 	if testing.expect_value(t, len(account_jobs), 1) {

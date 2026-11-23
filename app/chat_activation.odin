@@ -18,7 +18,6 @@ activation_epoch: u64
 @(private)
 Activation_Advisory :: enum {
 	None,
-	Catching_Up,
 	Undelivered,
 }
 
@@ -70,7 +69,6 @@ activation_key_free :: proc(key: Activation_Key) {
 
 @(private)
 activation_reset :: proc(ui: ^Ui_State) {
-	if !MULTI_DEVICE {return}
 	a := &ui.activation
 	activation_key_free(a.key)
 	a.key = {}
@@ -83,7 +81,6 @@ activation_reset :: proc(ui: ^Ui_State) {
 
 @(private)
 activation_refresh :: proc(ui: ^Ui_State) {
-	if !MULTI_DEVICE {return}
 	key := activation_key(ui)
 	if key.group == "" {return}
 	a := &ui.activation
@@ -96,17 +93,12 @@ activation_refresh :: proc(ui: ^Ui_State) {
 
 @(private)
 activation_focus :: proc(ui: ^Ui_State) {
-	if !MULTI_DEVICE {return}
 	if activation_key(ui) in ui.activation.pending {activation_refresh(ui)}
 }
 
 @(private)
 activation_confirmation :: proc(kind: Confirm_Kind) -> bool {
-	return(
-		kind == .Enable_Account_Devices ||
-		kind == .Activation_Catching_Up ||
-		kind == .Activation_Undelivered \
-	)
+	return kind == .Enable_Account_Devices || kind == .Activation_Undelivered
 }
 
 @(private)
@@ -117,11 +109,7 @@ activation_wait :: proc(ui: ^Ui_State) {
 
 @(private)
 activation_can_submit :: proc(ui: ^Ui_State, c: Confirm) -> bool {
-	if !MULTI_DEVICE ||
-	   ui.page != .Chats ||
-	   !ui.show_members ||
-	   c.account == "" ||
-	   c.arg == "" {return false}
+	if ui.page != .Chats || !ui.show_members || c.account == "" || c.arg == "" {return false}
 	key := Activation_Key{c.account, c.arg}
 	a := &ui.activation
 	if key != activation_key(ui) ||
@@ -131,8 +119,6 @@ activation_can_submit :: proc(ui: ^Ui_State, c: Confirm) -> bool {
 	#partial switch c.kind {
 	case .Enable_Account_Devices:
 		return a.advisory == .None && a.known && a.eligibility == .ELIGIBLE
-	case .Activation_Catching_Up:
-		return a.advisory == .Catching_Up && .Catching_Up not_in a.acknowledged
 	case .Activation_Undelivered:
 		return a.advisory == .Undelivered && .Undelivered not_in a.acknowledged
 	}
@@ -147,8 +133,6 @@ activation_prepare :: proc(ui: ^Ui_State, c: Confirm) -> (marmot.Status, bool) {
 	switch a.advisory {
 	case .None:
 		a.acknowledged = {}; advisory = .OK
-	case .Catching_Up:
-		advisory = .GROUP_CATCHING_UP
 	case .Undelivered:
 		advisory = .GROUP_COMMIT_UNDELIVERED
 	}
@@ -182,7 +166,6 @@ activation_remove :: proc(a: ^Chat_Activation, key: Activation_Key) {
 
 @(private)
 activation_departed :: proc(ui: ^Ui_State, account: string) {
-	if !MULTI_DEVICE {return}
 	a := &ui.activation
 	if a.key.account == account {activation_reset(ui)}
 	keys := make([dynamic]Activation_Key, context.temp_allocator)
@@ -192,7 +175,7 @@ activation_departed :: proc(ui: ^Ui_State, account: string) {
 
 @(private)
 activation_live :: proc(ui: ^Ui_State, group: Live_Change) {
-	if !MULTI_DEVICE || !group.activation_signal {return}
+	if !group.activation_signal {return}
 	key := Activation_Key{group.account, group.group}
 	a := &ui.activation
 	if pending, exists := &a.pending[key];
@@ -237,12 +220,13 @@ activation_complete :: proc(ui: ^Ui_State, client: ^marmot.Client, done: Op_Done
 		return
 	case .CLOSED:
 		if !consent_scope {return}
-	case .GROUP_CATCHING_UP, .GROUP_COMMIT_UNDELIVERED:
-		advisory: Activation_Advisory =
-			result.status == .GROUP_CATCHING_UP ? .Catching_Up : .Undelivered
+	case .GROUP_CATCHING_UP:
+		a.notice = N_("Wait for this chat to finish catching up, then try again.")
+		return
+	case .GROUP_COMMIT_UNDELIVERED:
 		if !consent_scope {return}
-		if advisory not_in a.acknowledged {
-			a.advisory = advisory
+		if .Undelivered not_in a.acknowledged {
+			a.advisory = .Undelivered
 			return
 		}
 	case:
@@ -307,7 +291,19 @@ activation_apply_read :: proc(ui: ^Ui_State, work: ^Activation_Read) {
 		a.notice = activation_blocker(.ALREADY_ENABLED)
 		a.advisory = .None
 		if activation_confirmation(ui.confirm.kind) {confirm_close(ui)}
+	} else if work.eligibility != .ALREADY_ENABLED &&
+	   a.notice == activation_blocker(.ALREADY_ENABLED) {
+		a.notice = ""
 	}
+}
+
+@(private)
+activation_component_required :: proc(state: marmot.Group_Mls_State_Head) -> bool {
+	ACCOUNT_DEVICES_COMPONENT :: 0x800d
+	for component in state.required_app_components[:state.required_app_components_len] {
+		if component == ACCOUNT_DEVICES_COMPONENT {return true}
+	}
+	return false
 }
 
 @(private = "file")
@@ -315,6 +311,15 @@ activation_read_worker :: proc(t: ^thread.Thread) {
 	context.allocator = reload_allocator()
 	defer frame_wake()
 	work := (^Activation_Read)(t.data)
+	state: ^marmot.Group_Mls_State_Head
+	work.status = marmot.group_mls_state(work.client, work.account, work.group, &state)
+	defer if state != nil {marmot.app_group_mls_state_free(state)}
+	if work.status != .OK {return}
+	if state == nil {work.status = .RUNTIME; return}
+	if activation_component_required(state^) {
+		work.eligibility = .ALREADY_ENABLED
+		return
+	}
 	work.status = marmot.account_devices_activation(
 		work.client,
 		work.account,
@@ -338,7 +343,6 @@ activation_read_free :: proc(work: ^Activation_Read) {
 
 @(private)
 activation_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if !MULTI_DEVICE {return}
 	a := &ui.activation
 	if a.key.group != "" && a.key != activation_key(ui) {activation_reset(ui)}
 	if work := a.read; work != nil && thread.is_done(work.worker) {
@@ -347,9 +351,7 @@ activation_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		a.read = nil
 	}
 	if a.advisory != .None && ui.page == .Chats && ui.show_members && ui.confirm.kind == .None {
-		kind: Confirm_Kind =
-			a.advisory == .Catching_Up ? .Activation_Catching_Up : .Activation_Undelivered
-		confirm_ask(ui, kind, a.key.group)
+		confirm_ask(ui, .Activation_Undelivered, a.key.group)
 	}
 	if !a.dirty || a.read != nil || client == nil || account_revoked(ui, a.key.account) {return}
 	pending := a.pending[a.key]
@@ -367,7 +369,6 @@ activation_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 @(private)
 activation_stop :: proc(ui: ^Ui_State) {
-	if !MULTI_DEVICE {return}
 	activation_reset(ui)
 	a := &ui.activation
 	if a.read != nil {activation_read_free(a.read); a.read = nil}
@@ -381,7 +382,6 @@ activation_stop :: proc(ui: ^Ui_State) {
 
 @(private)
 activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
-	if !MULTI_DEVICE {return}
 	a := &ui.activation
 	if a.key.group == "" || a.key != activation_key(ui) {return}
 	pending, active := a.pending[a.key]
@@ -401,10 +401,17 @@ activation_card :: proc(ui: ^Ui_State, card: nendo.Box) {
 			)
 		}
 		if active {
-			label :=
-				pending.settling ? tr("Waiting for the linked devices change to reach the chat…") : tr("Turning on linked devices…")
-			nendo.text(label, {font = FONT_BODY, size = 13, color = TEXT_DIM})
-			busy_bar("InfoLinkedDevicesProgress")
+			if !pending.settling || a.dirty || a.read != nil {
+				label :=
+					pending.settling ? tr("Checking whether linked devices are on…") : tr("Turning on linked devices…")
+				nendo.text(label, {font = FONT_BODY, size = 13, color = TEXT_DIM})
+				busy_bar("InfoLinkedDevicesProgress")
+			} else {
+				text :=
+					a.known ? tr("The linked devices change isn't confirmed yet.") : tr("Couldn't check linked devices for this chat. Please try again.")
+				nendo.text(text, {font = FONT_BODY, size = 13, color = TEXT_DIM})
+				micro_button("RetryAccountDevices", tr("Check status"))
+			}
 			return
 		}
 		if !a.known {

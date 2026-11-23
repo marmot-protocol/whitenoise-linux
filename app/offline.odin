@@ -75,7 +75,12 @@ offline_path :: proc(allocator := context.temp_allocator) -> string {
 }
 
 pending_send_allowed :: proc(ui: ^Ui_State, p: Pending_Send) -> bool {
-	return !p.dismissed && !p.purged && account_signed_in(ui, p.account_ref)
+	return(
+		!p.dismissed &&
+		!p.purged &&
+		!account_departing(p.account_ref) &&
+		account_signed_in(ui, p.account_ref) \
+	)
 }
 
 pending_in_workspace :: proc(ui: ^Ui_State, p: Pending_Send, group: string) -> bool {
@@ -87,10 +92,6 @@ pending_in_workspace :: proc(ui: ^Ui_State, p: Pending_Send, group: string) -> b
 		p.group_id == group &&
 		!account_revoked(ui, p.account_ref) \
 	)
-}
-
-offline_can_adopt_legacy :: proc(ui: ^Ui_State) -> bool {
-	return !MULTI_DEVICE && ui.account_ref != "" && !accounts_have_tombstones(ui)
 }
 
 // Persist every pending row that has failed at least once (queued,
@@ -168,16 +169,10 @@ load_offline :: proc(ui: ^Ui_State) {
 		return
 	}
 
-	adopt_legacy := offline_can_adopt_legacy(ui)
-	adopted_legacy := false
-	for &item in items {
+	for item in items {
 		if item.account_ref == "" {
-			if !adopt_legacy {
-				append(&ui.offline_unowned, item)
-				continue
-			}
-			item.account_ref = strings.clone(ui.account_ref)
-			adopted_legacy = true
+			append(&ui.offline_unowned, item)
+			continue
 		}
 		send_ticket += 1
 		p := Pending_Send {
@@ -229,7 +224,6 @@ load_offline :: proc(ui: ^Ui_State) {
 		append(&ui.pending, p)
 	}
 	delete(items)
-	if adopted_legacy {save_offline(ui)}
 	if len(ui.offline_unowned) > 0 && !ui.offline_unowned_warned {
 		ui.offline_unowned_warned = true
 		toast(ui, tr("Old queued messages were kept, but can't be assigned to a profile."))
@@ -270,20 +264,24 @@ offline_revoke :: proc(ui: ^Ui_State, account: string) {
 	}
 }
 
+@(private)
+offline_wipe_persist :: proc(ui: ^Ui_State, account: string) {
+	if account == "" {return}
+	for &p in ui.pending {if p.account_ref == account {p.purged = true}}
+	save_offline(ui)
+}
+
 offline_wipe :: proc(ui: ^Ui_State, account: string) {
 	if account == "" {return}
 	xdc_revoke(account)
 	for i := len(ui.pending) - 1; i >= 0; i -= 1 {
 		p := &ui.pending[i]
 		if p.account_ref != account {continue}
-		if !p.failed && !p.queued {
-			p.purged = true
-			continue
-		}
+		if !p.failed && !p.queued {continue}
 		free_pending(p)
 		ordered_remove(&ui.pending, i)
 	}
-	save_offline(ui)
+	offline_wipe_persist(ui, account)
 }
 
 next_flush: time.Time

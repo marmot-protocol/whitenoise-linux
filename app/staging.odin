@@ -9,12 +9,8 @@ import "core:thread"
 import rl "sdlrl"
 
 draft_key :: proc(account, group: string) -> string {
-	when MULTI_DEVICE {
-		if account == "" {return ""}
-		return fmt.tprintf("%s:%s", account, group)
-	} else {
-		return group
-	}
+	if account == "" {return ""}
+	return fmt.tprintf("%s:%s", account, group)
 }
 
 @(private)
@@ -37,17 +33,19 @@ staged_draft_take :: proc(ui: ^Ui_State, key: string) -> [dynamic]Staged_File {
 	return files
 }
 
-drafts_wipe :: proc(ui: ^Ui_State, account: string) {
-	if account == "" {return}
-	prefix := fmt.tprintf("%s:", account)
+@(private)
+drafts_wipe :: proc(ui: ^Ui_State, prefix: string) {
 	keys := make([dynamic]string, context.temp_allocator)
 	for key in ui.drafts {if strings.has_prefix(key, prefix) {append(&keys, key)}}
 	for key in keys {draft_delete(ui, key)}
-	changed := len(keys) > 0
-	clear(&keys)
+	if len(keys) != 0 {ui.settings_dirty = true}
+}
+
+@(private)
+staged_drafts_wipe :: proc(ui: ^Ui_State, prefix: string) {
+	keys := make([dynamic]string, context.temp_allocator)
 	for key in ui.staged_drafts {if strings.has_prefix(key, prefix) {append(&keys, key)}}
 	for key in keys {staged_files_free(staged_draft_take(ui, key))}
-	if changed {save_settings(ui)}
 }
 
 @(private)
@@ -157,14 +155,10 @@ stage_files_drain :: proc(ui: ^Ui_State, files: ^[dynamic]Staged_File, report_fa
 stage_files_tick :: proc(ui: ^Ui_State) {
 	if len(stage_loads) == 0 {return}
 	stage_files_drain(ui, &ui.staged, true)
-	prefix := MULTI_DEVICE && ui.account_ref != "" ? fmt.tprintf("%s:", ui.account_ref) : ""
+	prefix := ui.account_ref != "" ? fmt.tprintf("%s:", ui.account_ref) : ""
 	for key, files in ui.staged_drafts {
 		draft := files
-		stage_files_drain(
-			ui,
-			&draft,
-			!MULTI_DEVICE || (prefix != "" && strings.has_prefix(key, prefix)),
-		)
+		stage_files_drain(ui, &draft, prefix != "" && strings.has_prefix(key, prefix))
 		ui.staged_drafts[key] = draft
 	}
 	for i := len(stage_loads) - 1; i >= 0; i -= 1 {

@@ -39,7 +39,6 @@ Confirm_Kind :: enum {
 	Remove_Relay,
 	Remove_Inbox,
 	Sign_Out,
-	Remove_Account,
 	Retention, // disappearing-message timer; seconds ride Confirm.idx
 	Reset_Devices,
 	Wipe_Account,
@@ -48,7 +47,6 @@ Confirm_Kind :: enum {
 	Reject_Sign_In,
 	Device_Start_Fresh,
 	Enable_Account_Devices,
-	Activation_Catching_Up,
 	Activation_Undelivered,
 }
 
@@ -144,10 +142,6 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_(
 			"Sign out of this account?",
 		), N_("Its keys stay in the vault on this device. You can sign in again from the accounts screen."), N_("Sign out")
-	case .Remove_Account:
-		return N_(
-			"Remove this account?",
-		), N_("Its keys and chats are deleted from this device. It stays a member of its groups for everyone else. This can't be undone."), N_("Remove")
 	case .Wipe_Account:
 		if c.idx == 1 {
 			return N_(
@@ -181,10 +175,6 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_(
 			"Turn on linked devices?",
 		), N_("Other members' linked devices can join without an admin. This can't be turned off."), N_("Turn on linked devices")
-	case .Activation_Catching_Up:
-		return N_(
-			"This chat is still catching up",
-		), N_("Turning on linked devices now could split the chat. Wait for it to catch up, or turn on linked devices anyway."), N_("Turn on anyway")
 	case .Activation_Undelivered:
 		return N_(
 			"Some chat changes weren't delivered",
@@ -221,7 +211,7 @@ confirm_ask :: proc(
 	name: string = "",
 	idx: int = -1,
 ) {
-	if kind == .Wipe_Unlinked && (!MULTI_DEVICE || !account_revoked(ui, arg)) {return}
+	if kind == .Wipe_Unlinked && !account_revoked(ui, arg) {return}
 	// Frees the previous ask's payload, which confirm_close left alone.
 	delete(ui.confirm.arg)
 	delete(ui.confirm.name)
@@ -239,7 +229,6 @@ confirm_ask :: proc(
 	     .Reject_Sign_In,
 	     .Device_Start_Fresh,
 	     .Enable_Account_Devices,
-	     .Activation_Catching_Up,
 	     .Activation_Undelivered:
 		ui.confirm.account = strings.clone(ui.account_ref)
 	}
@@ -251,7 +240,6 @@ confirm_ask :: proc(
 			}
 		}
 	}
-	if kind == .Remove_Account {ui.accounts_open = false}
 	confirm_shown = kind
 }
 
@@ -293,10 +281,7 @@ confirm_modal :: proc(ui: ^Ui_State) {
 	) {
 		nendo.text(tr(title), {font = FONT_TITLE, size = 18, color = TEXT})
 		scrollbar(nendo.id("ConfirmModal"), 17)
-		account_subject :=
-			shown.kind == .Remove_Account ||
-			shown.kind == .Wipe_Account ||
-			shown.kind == .Wipe_Unlinked
+		account_subject := shown.kind == .Wipe_Account || shown.kind == .Wipe_Unlinked
 		if len(ui.confirm.name) > 0 && (account_subject || shown.kind == .Archive_Chat) {
 			if nendo.box(nendo.id("ConfirmAccount"))(
 			{width = nendo.grow(), gap = 10, align = {y = .Center}},
@@ -330,9 +315,6 @@ confirm_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 		nendo.text(tr(body), {font = FONT_BODY, size = 12, color = TEXT_DIM})
-		if shown.kind == .Remove_Account && confirm_exportable(ui) {
-			login_big_button("ConfirmExport", tr("Export key first"), true)
-		}
 
 		if nendo.box(nendo.id("ConfirmActions"))(
 		{width = nendo.grow(), gap = 10, padding = {top = 6}},
@@ -348,10 +330,8 @@ confirm_modal :: proc(ui: ^Ui_State) {
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {
-				wait :=
-					shown.kind == .Activation_Catching_Up || shown.kind == .Activation_Undelivered
 				nendo.text(
-					wait ? tr("Wait") : tr("Cancel"),
+					shown.kind == .Activation_Undelivered ? tr("Wait") : tr("Cancel"),
 					{font = FONT_TITLE, size = 13, color = TEXT},
 				)
 			}
@@ -385,20 +365,7 @@ confirm_modal :: proc(ui: ^Ui_State) {
 
 // Input while the modal is open; Enter confirms, Escape and the
 // backdrop cancel.
-@(private = "file")
-confirm_exportable :: proc(ui: ^Ui_State) -> bool {
-	for account in ui.accounts {
-		if account.id_hex == ui.confirm.arg {return account.local}
-	}
-	return false
-}
-
 handle_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if clicked("ConfirmExport") && ui.confirm.kind == .Remove_Account && confirm_exportable(ui) {
-		open_key_export(ui, ui.confirm.arg)
-		confirm_close(ui)
-		return
-	}
 	if rl.IsKeyPressed(.ESCAPE) {
 		activation_wait(ui)
 		confirm_close(ui)
@@ -478,18 +445,13 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		set_inbox_relays(ui, client, relays_without(ui.profile.inbox[:], c.idx))
 	case .Sign_Out:
 		account_job_start(account_job_new(ui, client, .Sign_Out, c.arg))
-	case .Remove_Account:
-		account_job_start(account_job_new(ui, client, .Remove, c.arg))
 	case .Wipe_Account:
-		if MULTI_DEVICE &&
-		   c.arg == ui.account_ref &&
-		   account_signed_in(ui, c.arg) &&
-		   !account_revoked(ui, c.arg) {
+		if c.arg == ui.account_ref && account_signed_in(ui, c.arg) && !account_revoked(ui, c.arg) {
 			account_job_start(account_job_new(ui, client, .Wipe, c.arg))
 		}
 	case .Wipe_Unlinked:
-		if MULTI_DEVICE && account_revoked(ui, c.arg) {
-			account_job_start(account_job_new(ui, client, .Wipe, c.arg))
+		if account_revoked(ui, c.arg) {
+			account_job_start(account_job_new(ui, client, .Wipe_Unlinked, c.arg))
 		}
 	case .Reset_Devices:
 		if c.account == ui.account_ref {
@@ -518,7 +480,7 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if profile := device_current(ui);
 		   profile != nil && device_command_current(profile, command) {device_queue(ui, command)}
-	case .Enable_Account_Devices, .Activation_Catching_Up, .Activation_Undelivered:
+	case .Enable_Account_Devices, .Activation_Undelivered:
 		activation_confirm(ui, client, c)
 	case .Retention:
 		// idx is the captured duration. The open chat must still be the

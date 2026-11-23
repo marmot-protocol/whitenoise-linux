@@ -277,8 +277,7 @@ load_settings :: proc(ui: ^Ui_State, mode: Settings_Load = .Session) {
 	if int(ui.prefs.settings_section) < 0 ||
 	   ui.prefs.settings_section > max(Settings_Section) ||
 	   (ui.prefs.settings_section != .Devices &&
-			   !settings_available(ui, ui.prefs.settings_section)) ||
-	   (ui.prefs.settings_section == .Devices && !MULTI_DEVICE) {
+			   !settings_available(ui, ui.prefs.settings_section)) {
 		ui.prefs.settings_section = .Home
 	}
 	ui.prefs.settings_tab = clamp(

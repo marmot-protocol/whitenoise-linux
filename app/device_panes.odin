@@ -493,19 +493,21 @@ device_panel_prompt :: proc(
 	if profile == nil ||
 	   ui.devices.panel_account != ui.account_ref ||
 	   ui.devices.panel_prompt == "" {return nil}
-	return device_find_prompt(profile, ui.devices.panel_prompt)
+	prompt := device_find_prompt(profile, ui.devices.panel_prompt)
+	slot := ui.devices.panel_slot
+	if prompt != nil && slot != "" && string(prompt.slot_id_hex) != slot {return nil}
+	return prompt
 }
 
 @(private = "file")
-device_panel_attempt :: proc(
-	ui: ^Ui_State,
-	profile: ^Device_Profile,
-) -> ^marmot.New_Device_Link_State {
+device_panel_attempt :: proc(profile: ^Device_Profile) -> ^marmot.New_Device_Link_State {
 	attempt := device_attempt(profile)
-	if attempt != nil &&
-	   attempt.tag == .LINKED &&
-	   device_move_pending(profile.view.link) {return nil}
-	return ui.devices.show_attempt || device_attempt_live(attempt) ? attempt : nil
+	if attempt == nil || device_attempt_live(attempt) {return attempt}
+	if profile.link_result_seen ||
+	   (attempt.tag == .LINKED && device_move_pending(profile.view.link)) {
+		return nil
+	}
+	return attempt
 }
 
 @(private = "file")
@@ -549,7 +551,7 @@ device_can_decline :: proc(prompt: ^marmot.Device_Link_Prompt) -> bool {
 
 @(private = "file")
 device_modal_new :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
-	attempt := device_panel_attempt(ui, profile)
+	attempt := device_panel_attempt(profile)
 	moving := attempt == nil && profile != nil && device_live_attempt(profile.view.link)
 	if attempt != nil {
 		switch attempt.tag {
@@ -609,7 +611,7 @@ device_modal_new :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
 		if attempt.tag != .COMPARING {settings_button("DeviceClose", tr("Close"))}
 		return
 	}
-	if !moving && (attempt == nil || attempt.tag == .ENDED) {
+	if !moving {
 		if device_prepare_move(profile) {
 			device_copy(
 				tr(
@@ -636,9 +638,10 @@ device_modal_new :: proc(ui: ^Ui_State, profile: ^Device_Profile) {
 			}
 		}
 		if !device_prepare_move(profile) || ui.devices.move_consent {
+			retry := (attempt != nil && attempt.tag == .ENDED) || ui.devices.show_attempt
 			settings_button(
 				"DeviceStart",
-				ui.devices.show_attempt ? tr("Try again") : tr("Start linking"),
+				retry ? tr("Try again") : tr("Start linking"),
 				ACCENT,
 				device_can_start(profile) ? .Enabled : .Disabled,
 			)
@@ -820,6 +823,13 @@ device_chat_review_input :: proc(ui: ^Ui_State, client: ^marmot.Client, profile:
 		if !select_by_id(ui, client, group) {
 			chat := row_to_ui(nil, row, ui.account_ref)
 			chat.search_only = true
+			if chat.archived {
+				cached := false
+				for archived in ui.archived {
+					if archived.group_id == group {cached = true; break}
+				}
+				if !cached {append(&ui.archived, chat_clone(chat))}
+			}
 			append(&ui.chats, chat)
 			select_chat(ui, client, len(ui.chats) - 1)
 		}
@@ -997,7 +1007,7 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 				if !row.signed_in {device_copy(tr("Signed out"))}
 				if row.previously_linked_here {device_copy(tr("Previously linked on this device"))}
 				if unresolved {
-					settings_button(link, tr("Link this device"))
+					if slot != "" {settings_button(link, tr("Link this device"))}
 					if !recognized {
 						settings_button(
 							recognize,
@@ -1013,7 +1023,10 @@ device_sign_ins :: proc(ui: ^Ui_State, profile: ^Device_Profile, pass: Device_Pa
 				}
 			}
 		} else {
-			if unresolved && clicked(link) {devices_show(ui, .Add); return true}
+			if unresolved && slot != "" && clicked(link) {
+				devices_show(ui, .Add, slot = slot)
+				return true
+			}
 			if unresolved && !recognized && .Sign_Ins not_in profile.stale && clicked(recognize) {
 				context.allocator = reload_allocator()
 				if reviewed == nil {
@@ -1555,9 +1568,7 @@ handle_device_root :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 @(private)
 devices_modal :: proc(ui: ^Ui_State) {
 	panel := ui.devices.panel
-	if !MULTI_DEVICE ||
-	   panel == .None ||
-	   (!devices_visible(ui) && !device_root_panel(panel)) {return}
+	if panel == .None || (!devices_visible(ui) && !device_root_panel(panel)) {return}
 	profile := device_current(ui)
 	detail := panel == .Detail ? device_find_slot(profile, ui.devices.panel_slot) : nil
 	if nendo.box(nendo.id("DeviceModal"))(
@@ -1746,7 +1757,7 @@ handle_device_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			settings_open(ui, client, .Keys, anchor = "RowReveal")
 		} else if close || escape {devices_put_away(ui)}
 	case .New:
-		attempt := device_panel_attempt(ui, profile)
+		attempt := device_panel_attempt(profile)
 		if device_attempt_live(attempt) {
 			comparing := attempt.tag == .COMPARING
 			mismatch :=
@@ -1763,17 +1774,24 @@ handle_device_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 			return
 		}
-		if close || escape {devices_put_away(ui); return}
+		if close || escape {
+			if attempt != nil {profile.link_result_seen = true}
+			devices_put_away(ui)
+			return
+		}
 		if attempt != nil && attempt.tag == .LINKED {
 			if clicked("DeviceOpenChats") {
+				profile.link_result_seen = true
 				devices_put_away(ui)
 				ui.page, ui.focus = .Chats, .Compose
 				return
 			}
 			if clicked("DeviceRetryHistory") {profile.dirty += {.History}; return}
-			if clicked("DeviceNameThis") &&
-			   device_roster_ready(profile) {devices_show_detail(ui, device_own_slot(profile))}
-			return
+			if clicked("DeviceNameThis") && device_roster_ready(profile) {
+				profile.link_result_seen = true
+				devices_show_detail(ui, device_own_slot(profile))
+				return
+			}
 		}
 		if profile != nil && device_live_attempt(profile.view.link) {return}
 		if device_prepare_move(profile) && !ui.devices.move_consent {

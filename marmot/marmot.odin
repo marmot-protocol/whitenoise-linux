@@ -1900,7 +1900,6 @@ foreign lib {
 	account_devices_activation :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^Account_Devices_Activation) -> Status ---
 	enable_account_devices :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^^Group_Mutation_Result) -> Status ---
 	group_mutation_result_free :: proc(ptr: ^Group_Mutation_Result) ---
-	acknowledge_group_catching_up :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^bool) -> Status ---
 	acknowledge_group_commit_undelivered :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^bool) -> Status ---
 	group_changes_not_delivered :: proc(client: ^Client, account_ref, group_id_hex: cstring, out: ^^Group_Change_Not_Delivered_List) -> Status ---
 	group_change_not_delivered_list_free :: proc(list: ^Group_Change_Not_Delivered_List) ---

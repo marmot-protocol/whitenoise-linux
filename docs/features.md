@@ -411,22 +411,21 @@ Contacts:
 
 </details>
 
-### Linked devices (experimental)
+### Linked devices
 
-Build with `WN_MULTI_DEVICE=1` to use **Settings > Devices**. Sign in with the
-same profile on both devices, then choose **Link to another device** on the
-new one. Approve the request on the existing device and confirm on the new
-one only if all seven numbered emoji match. Find incoming requests above
-**Your devices**.
+Sign in with the same profile on both devices. On the new device, open
+**Settings > Devices** and choose **Link to another device**. On the existing
+device, find the request above **Your devices**. Confirm on both devices only
+if all seven numbered emoji match.
 If the request hasn't appeared, open **Add a new device** on the existing
 device and choose **Check now**.
 
-The existing device chooses whether to add the new one to eligible chats and
-bring over earlier messages. After linking, choose **Open chats** to see
-what's already available. Earlier messages can still be arriving in chats you
-can open. Each chat shows its own history progress and marks where imported
-history ends. Messages sent from your other device still appear as yours,
-without this device's delivery ticks.
+On the existing device, choose whether to add the new one to eligible chats
+and bring over earlier messages. Both options start off. After linking,
+choose **Open chats** to see what's available. Earlier messages can still
+be arriving in chats you can open. Each chat shows its own history progress
+and marks where imported history ends. Messages sent from your other device
+still appear as yours, without this device's delivery ticks.
 
 Select a row under **Your devices** to see its settings or rename or remove
 it. Open an entry under **Sign-ins** to review it. If it was you but you want
@@ -441,8 +440,8 @@ opens its settings without changing them.
 Open a chat's details and look for **Linked devices**. The card shows whether
 linked devices are on or why you can't turn them on. If you see **Linked
 devices are ready**, choose **Turn on linked devices** to let members' linked
-devices join without an admin. That change can't be undone. An ordinary build
-can't open a profile joined to a device group.
+devices join without an admin. That change can't be undone.
+If the chat is still catching up, wait before trying again.
 
 New chats negotiate support from the KeyPackages used to invite members.
 Updating an app doesn't change capabilities already recorded in a chat.

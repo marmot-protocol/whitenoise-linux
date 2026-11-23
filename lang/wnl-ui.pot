@@ -1075,6 +1075,9 @@ msgstr ""
 msgid "Check now"
 msgstr ""
 
+msgid "Check status"
+msgstr ""
+
 msgid "Check the spelling, or paste their public key."
 msgstr ""
 
@@ -1097,6 +1100,9 @@ msgid "Checking for updates."
 msgstr ""
 
 msgid "Checking relays..."
+msgstr ""
+
+msgid "Checking whether linked devices are on…"
 msgstr ""
 
 msgid "Checking whether this chat supports linked devices…"
@@ -4946,9 +4952,6 @@ msgstr ""
 msgid "Remove"
 msgstr ""
 
-msgid "Remove account"
-msgstr ""
-
 msgid "Remove admin rights?"
 msgstr ""
 
@@ -4977,9 +4980,6 @@ msgid "Remove saved GIF"
 msgstr ""
 
 msgid "Remove sticker"
-msgstr ""
-
-msgid "Remove this account?"
 msgstr ""
 
 msgid "Remove this contact?"
@@ -6112,6 +6112,9 @@ msgstr ""
 msgid "The link request expired."
 msgstr ""
 
+msgid "The linked devices change isn't confirmed yet."
+msgstr ""
+
 msgid "The new password re-encrypts the vault on this device. White Noise still can't reset it. If you forget it, the only way forward is to delete this vault and start over."
 msgstr ""
 
@@ -6210,9 +6213,6 @@ msgstr ""
 msgid "They stay in the group as a regular member."
 msgstr ""
 
-msgid "This build keeps your chats separate on each device. Your other devices' chats won't appear here."
-msgstr ""
-
 msgid "This can't be undone."
 msgstr ""
 
@@ -6226,9 +6226,6 @@ msgid "This chat has no relays for inviting linked devices."
 msgstr ""
 
 msgid "This chat is archived. Restore it from Archive to send messages."
-msgstr ""
-
-msgid "This chat is still catching up"
 msgstr ""
 
 msgid "This deletes the keys and chats for this profile from this device. It doesn't remove the profile or its chats from other devices. This can't be undone."
@@ -6331,9 +6328,6 @@ msgid "This profile has reached its device limit. Unlink an existing device befo
 msgstr ""
 
 msgid "This profile has too many linked devices. Remove a device and try again."
-msgstr ""
-
-msgid "This profile needs a White Noise build that supports device linking."
 msgstr ""
 
 msgid "This relay is already in your list."
@@ -6504,9 +6498,6 @@ msgid "Turn on linked devices"
 msgstr ""
 
 msgid "Turn on linked devices?"
-msgstr ""
-
-msgid "Turning on linked devices now could split the chat. Wait for it to catch up, or turn on linked devices anyway."
 msgstr ""
 
 msgid "Turning on linked devices…"
@@ -6766,6 +6757,9 @@ msgstr ""
 msgid "Wait"
 msgstr ""
 
+msgid "Wait for this chat to finish catching up, then try again."
+msgstr ""
+
 msgid "Waiting for a link request…"
 msgstr ""
 
@@ -6773,9 +6767,6 @@ msgid "Waiting for every device to report support."
 msgstr ""
 
 msgid "Waiting for signer approval"
-msgstr ""
-
-msgid "Waiting for the linked devices change to reach the chat…"
 msgstr ""
 
 msgid "Waiting for the other device to answer. Open White Noise there to review the request."

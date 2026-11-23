@@ -611,10 +611,6 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.page == .Profile {
 		for account, i in ui.accounts {
 			id := account.id_hex
-			if !MULTI_DEVICE && nendo.pointer_over(nendo.id("PrAcctRemove", u32(i))) {
-				confirm_ask(ui, .Remove_Account, id, account_label(ui, id))
-				return
-			}
 			if nendo.pointer_over(nendo.id("PrAcct", u32(i))) {
 				if id != ui.account_ref {
 					switch_account(ui, client, id)
@@ -706,7 +702,7 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("SignOutBtn") {
 		confirm_ask(ui, .Sign_Out, ui.account_ref, account_label(ui, ui.account_ref))
 	}
-	if MULTI_DEVICE && clicked("SignOutWipeBtn") {
+	if clicked("SignOutWipeBtn") {
 		profile := device_current(ui)
 		linked :=
 			profile == nil ||
@@ -719,9 +715,6 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			account_label(ui, ui.account_ref),
 			int(linked),
 		)
-	}
-	if !MULTI_DEVICE && clicked("ProfileRemoveAccount") {
-		confirm_ask(ui, .Remove_Account, ui.account_ref, account_label(ui, ui.account_ref))
 	}
 }
 
@@ -847,12 +840,25 @@ accounts_adopt :: proc(
 	client: ^marmot.Client,
 	accounts: ^marmot.Account_Summary_List,
 ) {
-	ui.accounts_revision += 1
-	if MULTI_DEVICE && accounts != nil {
+	revision := ui.accounts_revision + 1
+	ui.accounts_revision = revision
+	if accounts != nil {
 		for summary in accounts.items[:accounts.len] {
-			if summary.signed_out && summary.unlinked {
-				devices_mark_unlinked(ui, string(summary.account_id_hex), string(summary.label))
-			}
+			hex := string(summary.account_id_hex)
+			if hex == "" || !summary.signed_out || !summary.unlinked {continue}
+			devices_mark_unlinked(ui, hex, string(summary.label))
+			ui.devices.profiles[hex].seen = revision
+		}
+	}
+	cleared_unlinked := false
+	for hex, profile in ui.devices.profiles {
+		if !profile.revoked || profile.seen == revision {continue}
+		profile.revoked, profile.unlink_notice_seen = false, false
+		delete(profile.unlink_label, reload_allocator()); profile.unlink_label = ""
+		cleared_unlinked = true
+		if ui.devices.panel_account == hex &&
+		   (ui.devices.panel == .Unlinked || ui.devices.panel == .Auth_Unlinked) {
+			devices_close(ui)
 		}
 	}
 	old := ui.accounts
@@ -888,12 +894,18 @@ accounts_adopt :: proc(
 	}
 	delete(old)
 	devices_seed(ui)
+	if cleared_unlinked &&
+	   ui.account_ref == "" &&
+	   auth_job == nil &&
+	   !accounts_have_tombstones(ui) {
+		ui.accounts_open = len(ui.accounts) != 0
+	}
 }
 
 @(private)
 account_revoked :: proc(ui: ^Ui_State, account: string) -> bool {
 	profile := ui.devices.profiles[account]
-	return MULTI_DEVICE && profile != nil && profile.revoked
+	return profile != nil && profile.revoked
 }
 
 @(private)
@@ -931,12 +943,7 @@ account_departed :: proc(ui: ^Ui_State, client: ^marmot.Client, account: string)
 	gs_check_account(ui)
 	ui.page = .Chats
 	ui.add_account_open = false
-	if !MULTI_DEVICE && len(ui.accounts) != 0 && client != nil {
-		finish_account_switch(ui, client, ui.accounts[0].id_hex)
-	} else {
-		ui.accounts_open =
-			len(ui.accounts) != 0 && auth_job == nil && !accounts_have_tombstones(ui)
-	}
+	ui.accounts_open = len(ui.accounts) != 0 && auth_job == nil && !accounts_have_tombstones(ui)
 }
 
 // Land on the signed-in profile selected by boot or authentication.
@@ -967,12 +974,8 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 
 @(private = "file")
 account_land :: proc(ui: ^Ui_State, client: ^marmot.Client, active: string) {
-	pick := active
-	if !account_signed_in(ui, pick) {
-		pick = !MULTI_DEVICE && len(ui.accounts) != 0 ? ui.accounts[0].id_hex : ""
-	}
-	if pick != "" {
-		finish_account_switch(ui, client, pick)
+	if account_signed_in(ui, active) {
+		finish_account_switch(ui, client, active)
 		ui.accounts_open = false
 	} else if ui.account_ref == "" {
 		ui.accounts_open = len(ui.accounts) != 0 && !accounts_have_tombstones(ui)
@@ -1614,7 +1617,7 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 					item.switch_requested = true
 				}
 			}
-			if local && (last || (!MULTI_DEVICE && boot_active == "")) {
+			if local && last {
 				boot_active = strings.clone(hex, context.temp_allocator)
 			}
 		}

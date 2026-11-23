@@ -178,7 +178,6 @@ offline_roundtrip :: proc(t: ^testing.T) {
 
 @(test)
 offline_ownerless_preserved :: proc(t: ^testing.T) {
-	if !MULTI_DEVICE {return}
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
 	defer vault_lock()
@@ -204,6 +203,7 @@ offline_ownerless_preserved :: proc(t: ^testing.T) {
 		for &p in ui.pending {free_pending(&p)}
 		delete(ui.pending)
 		offline_clear(&ui)
+		delete(ui.toast)
 	}
 	if !testing.expect_value(t, len(ui.pending), 2) {return}
 	testing.expect_value(t, len(ui.offline_unowned), 1)

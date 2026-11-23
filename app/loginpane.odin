@@ -189,12 +189,6 @@ login_pane :: proc(ui: ^Ui_State) {
 	},
 	) {
 		scrollbar(nendo.id("LoginCard"))
-		if ui.device_build_required {
-			logo_mark()
-			nendo.text("White Noise", {font = FONT_TITLE, size = 28, color = TEXT})
-			nendo.text(ui.client_status, {font = FONT_BODY, size = 14, color = DANGER})
-			return
-		}
 		if first_account {
 			onboard_steps(.Account)
 		} else if !ui.socks5_login_open {
@@ -461,7 +455,7 @@ login_pane :: proc(ui: ^Ui_State) {
 			}
 			if nendo.box(nendo.id("LoginGapC"))({height = nendo.fixed(6)}) {}
 			nendo.text(
-				MULTI_DEVICE ? tr("After signing in, open Devices in Settings to link another device.") : tr("This build keeps your chats separate on each device. Your other devices' chats won't appear here."),
+				tr("After signing in, open Devices in Settings to link another device."),
 				{font = FONT_BODY, size = 12, color = TEXT_LO, align = .Center},
 			)
 		}

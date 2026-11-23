@@ -673,30 +673,6 @@ account_row :: proc(ui: ^Ui_State, index: u32, active: bool) {
 	}
 }
 
-// Trash button on a switcher row; the click asks to remove that account
-// from this device (handlers check it before the row's switch).
-@(private)
-account_remove_button :: proc(id_str: string, index: u32) {
-	if nendo.box(nendo.id(id_str, index))(
-	{
-		width = nendo.fixed(tap_size() ? tap_min() : 28),
-		height = nendo.fixed(tap_size() ? tap_min() : 28),
-		align = {x = .Center, y = .Center},
-		color = hovered() ? HOVER : {},
-		radius = rr(6),
-	},
-	) {
-		if hovered() {
-			tooltip(tr("Remove account"))
-			cursor_raise(.Pointer)
-		}
-		nendo.text(
-			ICON_TRASH,
-			{font = FONT_ICON, size = 13, color = hovered() ? DANGER : TEXT_DIM},
-		)
-	}
-}
-
 // hex pubkey → npub bech32; "" when the hex is malformed.
 hex_npub :: proc(hex_str: string) -> string {
 	bytes, ok := hex.decode(transmute([]u8)hex_str, context.temp_allocator)

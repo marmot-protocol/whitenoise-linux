@@ -496,9 +496,9 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 						   !msg.deleted &&
 						   !blocked &&
 						   !ui.hidden[msg.id] {
-							if msg.origin.kind != .None {
-								last_import = i
-							} else {
+							if last_import >= 0 &&
+							   (messages[last_import].origin.kind != msg.origin.kind ||
+									   messages[last_import].origin.slot != msg.origin.slot) {
 								history_import_divider(
 									msg.id,
 									messages[last_import].origin,
@@ -506,8 +506,8 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 									skip,
 								)
 								run = {}
-								last_import = -1
 							}
+							last_import = msg.origin.kind == .None ? -1 : i
 						}
 						head := msg_run_step(&run, msg, wrap_w)
 						if skip {

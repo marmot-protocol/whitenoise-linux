@@ -10,9 +10,6 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 @(private)
-MULTI_DEVICE :: #config(WN_MULTI_DEVICE, false)
-
-@(private)
 DEVICE_PLATFORM ::
 	"Linux" when ODIN_OS ==
 	.Linux else "Windows" when ODIN_OS ==
@@ -984,7 +981,6 @@ Ui_State :: struct {
 	login_uri:                           string,
 	login_qr:                            ^rl.Texture2D,
 	login_error:                         string,
-	device_build_required:               bool,
 }
 
 // Relays a new account starts with.

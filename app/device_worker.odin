@@ -432,6 +432,16 @@ device_apply :: proc(devices: ^Devices_State, profile: ^Device_Profile, job: ^De
 	profile.stale = (profile.stale - ready) + job.failed
 	view, data := &profile.view, &job.data
 	if .Link in ready {
+		if profile.link_result_seen {
+			previous := view.link == nil ? nil : view.link.new_device
+			current := data.link == nil ? nil : data.link.new_device
+			if previous == nil ||
+			   current == nil ||
+			   previous.tag != current.tag ||
+			   (current.tag == .ENDED &&
+					   previous.body.ended.reason != current.body.ended.reason) ||
+			   (job.command.kind == .Start && job.status == .OK) {profile.link_result_seen = false}
+		}
 		if data.link != nil &&
 		   data.link.new_device != nil &&
 		   data.link.new_device.tag == .LINKED &&
@@ -491,29 +501,27 @@ device_inventory_free :: proc(job: ^Device_Inventory) {
 
 @(private)
 devices_drain :: proc(ui: ^Ui_State, client: ^marmot.Client, live: ^Live) {
-	if !MULTI_DEVICE || client == nil {return}
+	if client == nil {return}
 	devices := &ui.devices
 	sync.lock(&live.mutex)
 	changes := live.dirty_devices
 	live.dirty_devices = {}
 	sync.unlock(&live.mutex)
-	for account, change in changes {
-		if .Unlinked in change.parts {
-			devices_mark_unlinked(ui, account, change.unlink_label)
-		} else if profile := devices.profiles[account]; profile != nil && profile.signed_in {
-			if .Roster in change.parts {profile.roster_event += 1}
-			profile.dirty += account == devices.active ? change.parts : change.parts & {.Link}
+	for account, parts in changes {
+		if .Unlinked in parts {devices.inventory_dirty = true}
+		if profile := devices.profiles[account]; profile != nil && profile.signed_in {
+			if .Roster in parts {profile.roster_event += 1}
+			profile.dirty += account == devices.active ? parts - {.Unlinked} : parts & {.Link}
 			if account == devices.active &&
-			   .Roster in change.parts &&
+			   .Roster in parts &&
 			   devices_open_now(ui) {profile.dirty += DEVICE_COUNTS}
 		}
 		delete(account, reload_allocator())
-		delete(change.unlink_label, reload_allocator())
 	}
 	delete(changes)
 
 	if job := devices.inventory; job != nil && thread.is_done(job.worker) {
-		if job.revision == ui.accounts_revision {
+		if !devices.inventory_dirty && job.revision == ui.accounts_revision {
 			devices.inventory_stale = job.status != .OK
 			if job.status == .OK {accounts_adopt(ui, client, job.accounts)}
 		} else {

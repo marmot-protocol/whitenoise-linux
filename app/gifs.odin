@@ -592,6 +592,7 @@ drain_gif_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		p := &ui.pending[i]
 		job := p.gif
 		if job == nil || job.worker == nil || p.failed || !thread.is_done(job.worker) {continue}
+		if !p.dismissed && !p.purged && account_departing(p.account_ref) {continue}
 		thread.join(job.worker)
 		if !pending_send_allowed(
 			ui,

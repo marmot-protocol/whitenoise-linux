@@ -96,6 +96,7 @@ Device_Profile :: struct {
 	signed_in, revoked:                      bool,
 	unlink_notice_seen:                      bool,
 	first_import:                            bool,
+	link_result_seen:                        bool,
 	seen, incarnation:                       u64,
 	dirty, known, stale:                     Device_Parts,
 	view:                                    Device_View,
@@ -154,7 +155,6 @@ device_view_free :: proc(view: ^Device_View) {
 
 @(private)
 devices_select :: proc(ui: ^Ui_State) {
-	if !MULTI_DEVICE {return}
 	devices := &ui.devices
 	if devices.active == ui.account_ref {return}
 	if devices.review_account != ui.account_ref || devices.review_account == "" {
@@ -186,7 +186,6 @@ devices_select :: proc(ui: ^Ui_State) {
 
 @(private)
 devices_seed :: proc(ui: ^Ui_State) {
-	if !MULTI_DEVICE {return}
 	devices := &ui.devices
 	for row in ui.accounts {
 		profile := device_profile(devices, row.id_hex)
@@ -200,6 +199,7 @@ devices_seed :: proc(ui: ^Ui_State) {
 	for _, profile in devices.profiles {
 		if profile.signed_in && profile.seen != ui.accounts_revision {
 			profile.signed_in = false
+			profile.link_result_seen = false
 			profile.incarnation += 1
 			device_command_free(&profile.queued)
 			delete(profile.deferred_name, reload_allocator()); profile.deferred_name = ""
@@ -211,10 +211,11 @@ devices_seed :: proc(ui: ^Ui_State) {
 
 @(private)
 devices_mark_unlinked :: proc(ui: ^Ui_State, account, label: string) {
-	if !MULTI_DEVICE || account == "" {return}
+	if account == "" {return}
 	profile := device_profile(&ui.devices, account)
 	if profile.revoked {return}
 	profile.revoked, profile.signed_in = true, false
+	profile.unlink_notice_seen = false
 	profile.incarnation += 1
 	resolved := label
 	for row in ui.accounts {if row.id_hex == account && row.name != "" {resolved = row.name; break}}
@@ -231,15 +232,20 @@ devices_mark_unlinked :: proc(ui: ^Ui_State, account, label: string) {
 }
 
 @(private)
-devices_wipe_applied :: proc(ui: ^Ui_State, account: string) {
+devices_wipe_prefs :: proc(ui: ^Ui_State, account: string) {
 	if account in ui.prefs.sign_ins_recognized {
 		sign_in_reviews_drop(&ui.prefs, account)
 		ui.settings_dirty = true
 	}
+}
+
+@(private)
+devices_wipe_applied :: proc(ui: ^Ui_State, account: string) {
 	profile := ui.devices.profiles[account]
 	if profile == nil {return}
 	profile.revoked, profile.signed_in, profile.first_import = false, false, false
 	profile.unlink_notice_seen = true
+	profile.link_result_seen = false
 	profile.incarnation += 1
 	delete(profile.unlink_label, reload_allocator()); profile.unlink_label = ""
 	for id in profile.dismissed {delete(id, reload_allocator())}
@@ -330,14 +336,12 @@ device_has_warning :: proc(profile: ^Device_Profile) -> bool {
 
 @(private)
 devices_reconcile :: proc(ui: ^Ui_State) {
-	if !MULTI_DEVICE {return}
 	ui.devices.inventory_dirty = true
 	if devices_open_now(ui) {devices_refresh_open(ui)} else {devices_refresh_reads(ui)}
 }
 
 @(private)
 devices_refresh_reads :: proc(ui: ^Ui_State) {
-	if !MULTI_DEVICE {return}
 	for _, profile in ui.devices.profiles {
 		if profile.signed_in {
 			profile.dirty += profile.account == ui.devices.active ? DEVICE_READS : {.Link}
@@ -347,7 +351,7 @@ devices_refresh_reads :: proc(ui: ^Ui_State) {
 
 @(private)
 devices_visible :: proc(ui: ^Ui_State) -> bool {
-	if !MULTI_DEVICE || ui.account_ref == "" {return false}
+	if ui.account_ref == "" {return false}
 	profile := ui.devices.profiles[ui.account_ref]
 	return profile == nil || !profile.revoked
 }
@@ -497,8 +501,7 @@ device_find_move_sibling :: proc(profile: ^Device_Profile, move_id, slot: string
 devices_show_detail :: proc(ui: ^Ui_State, row: ^marmot.Linked_Device) {
 	if row == nil || string(row.slot_id_hex) == "" {return}
 	context.allocator = reload_allocator()
-	devices_show(ui, .Detail)
-	ui.devices.panel_slot = strings.clone(string(row.slot_id_hex))
+	devices_show(ui, .Detail, slot = string(row.slot_id_hex))
 	append(&ui.devices.name, string(row.label))
 }
 
@@ -531,13 +534,16 @@ devices_show :: proc(
 	panel: Device_Panel,
 	account: string = "",
 	prompt: string = "",
+	slot: string = "",
 ) {
 	context.allocator = reload_allocator()
 	owner := strings.clone(account == "" ? ui.account_ref : account)
 	id := strings.clone(prompt)
+	owner_slot := strings.clone(slot)
 	devices_close(ui)
 	d := &ui.devices
 	d.panel, d.panel_account, d.panel_prompt = panel, owner, id
+	d.panel_slot = owner_slot
 	profile := d.profiles[owner]
 	d.show_attempt = panel == .New && profile != nil && device_live_attempt(profile.view.link)
 	if panel == .Add && profile != nil && !device_checking_link(profile) {profile.dirty += {.Link}}
@@ -545,7 +551,7 @@ devices_show :: proc(
 	if panel == .Approve {
 		append(&d.name, ..transmute([]u8)tr("New device"))
 		append(&d.own_name, DEVICE_PLATFORM == "" ? tr("This device") : DEVICE_PLATFORM)
-		d.add_to_all, d.bring_history = true, true
+		d.add_to_all, d.bring_history = false, false
 	}
 	kb_focus = ""
 	if nendo.current_context() != nil {
@@ -566,7 +572,10 @@ devices_put_away :: proc(ui: ^Ui_State) {
 }
 
 @(private)
-device_latest_prompt :: proc(profile: ^Device_Profile) -> ^marmot.Device_Link_Prompt {
+device_latest_prompt :: proc(
+	profile: ^Device_Profile,
+	slot: string = "",
+) -> ^marmot.Device_Link_Prompt {
 	if profile == nil ||
 	   !profile.signed_in ||
 	   profile.revoked ||
@@ -576,6 +585,7 @@ device_latest_prompt :: proc(profile: ^Device_Profile) -> ^marmot.Device_Link_Pr
 	link := profile.view.link
 	for &prompt in link.prompts[:link.prompts_len] {
 		if !device_prompt_attention(&prompt) ||
+		   (slot != "" && string(prompt.slot_id_hex) != slot) ||
 		   string(prompt.prompt_id) in profile.dismissed {continue}
 		if best == nil || prompt.requested_at > best.requested_at {best = &prompt}
 	}
@@ -613,7 +623,7 @@ device_attention :: proc(ui: ^Ui_State) -> (panel: Device_Panel, account, prompt
 
 @(private)
 devices_present :: proc(ui: ^Ui_State, focused: bool) {
-	if !MULTI_DEVICE || !focused {return}
+	if !focused {return}
 	d := &ui.devices
 	if (d.panel == .None || d.panel == .Unlinked) && ui.confirm.kind == .None && !ui.link_open {
 		if d.wipe_report != "" {
@@ -630,8 +640,8 @@ devices_present :: proc(ui: ^Ui_State, focused: bool) {
 	if d.panel == .Add && ui.confirm.kind == .None && !ui.link_open {
 		profile := device_current(ui)
 		if device_checking_link(profile) {return}
-		if p := device_latest_prompt(profile); p != nil {
-			devices_show(ui, .Approve, ui.account_ref, string(p.prompt_id))
+		if p := device_latest_prompt(profile, d.panel_slot); p != nil {
+			devices_show(ui, .Approve, ui.account_ref, string(p.prompt_id), slot = d.panel_slot)
 		}
 		return
 	}

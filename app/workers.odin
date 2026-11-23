@@ -41,17 +41,11 @@ Device_Part :: enum {
 @(private)
 Device_Parts :: bit_set[Device_Part]
 
-@(private)
-Device_Change :: struct {
-	parts:        Device_Parts,
-	unlink_label: string,
-}
-
 Live :: struct {
 	mutex:            sync.Mutex,
 	dirty:            bool, // chat list changed
 	dirty_groups:     [dynamic]Live_Change, // group ids with changed rows
-	dirty_devices:    map[string]Device_Change,
+	dirty_devices:    map[string]Device_Parts,
 	stream:           ^Live_Stream,
 	retired:          [dynamic]^Live_Stream,
 	events_sub:       ^marmot.Events_Subscription,
@@ -135,8 +129,8 @@ queue_live_event :: proc(live: ^Live, event: ^marmot.Runtime_Event) -> bool {
 		group, account = event.body.message.group, event.body.message.account
 	case .Group_Joined, .Group_State_Updated, .Group_Event:
 		group, account = event.body.group.group, event.body.group.account
-		activation_signal = MULTI_DEVICE
-		if MULTI_DEVICE && event.tag == .Group_Event {
+		activation_signal = true
+		if event.tag == .Group_Event {
 			kind := &event.body.group_event.event
 			#partial switch kind.tag {
 			case .QUEUED_INTENT_REFUSED, .GROUP_CHANGE_NOT_DELIVERED:
@@ -170,22 +164,13 @@ queue_live_event :: proc(live: ^Live, event: ^marmot.Runtime_Event) -> bool {
 		return false
 	}
 	if parts != {} {
-		if !MULTI_DEVICE {return false}
 		id := string(event.body.account.account)
 		if id == "" {return false}
 		sync.lock(&live.mutex)
 		if change, ok := &live.dirty_devices[id]; ok {
-			change.parts += parts
-			if .Unlinked in parts && change.unlink_label == "" {
-				change.unlink_label = strings.clone(string(event.body.account.label))
-			}
+			change^ += parts
 		} else {
-			change := Device_Change {
-				parts = parts,
-			}
-			if .Unlinked in
-			   parts {change.unlink_label = strings.clone(string(event.body.account.label))}
-			live.dirty_devices[strings.clone(id)] = change
+			live.dirty_devices[strings.clone(id)] = parts
 		}
 		sync.unlock(&live.mutex)
 		return true
@@ -1431,8 +1416,6 @@ enable_account_devices :: proc(job: ^Op_Job, out: ^Activation_Op_Result) -> marm
 	acknowledged: bool
 	#partial switch job.advisory {
 	case .OK:
-	case .GROUP_CATCHING_UP:
-		status = marmot.acknowledge_group_catching_up(client, account, group, &acknowledged)
 	case .GROUP_COMMIT_UNDELIVERED:
 		status = marmot.acknowledge_group_commit_undelivered(client, account, group, &acknowledged)
 	case:
@@ -2298,7 +2281,7 @@ auth_worker :: proc(t: ^thread.Thread) {
 	switch job.method {
 	case .Import:
 		before: ^marmot.Account_Summary_List
-		known := MULTI_DEVICE && marmot.list_accounts(job.client, &before) == .OK
+		known := marmot.list_accounts(job.client, &before) == .OK
 		hex, status, detail := import_identity_blocking(job.client, job.nsec)
 		job.hex = hex
 		if status != .OK {
@@ -2415,7 +2398,7 @@ auth_unlinked_target :: proc(
 
 @(private = "file")
 auth_check_unlinked :: proc(job: ^Auth_Job, status: marmot.Status, detail: string) {
-	if !MULTI_DEVICE || status != .ACCOUNT_UNLINKED {return}
+	if status != .ACCOUNT_UNLINKED {return}
 	job.refused_unlinked = true
 	if job.wipe_retried {return}
 	accounts: ^marmot.Account_Summary_List
@@ -2434,7 +2417,7 @@ auth_wipe_start :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   job.unlinked_target == "" ||
 	   job.wiping ||
 	   ui.devices.panel_account != job.unlinked_target {return}
-	if wipe := account_job_new(ui, client, .Wipe, job.unlinked_target); wipe != nil {
+	if wipe := account_job_new(ui, client, .Wipe_Unlinked, job.unlinked_target); wipe != nil {
 		job.wiping = true
 		account_job_start(wipe)
 	}

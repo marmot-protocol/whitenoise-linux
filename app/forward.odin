@@ -340,6 +340,7 @@ drain_forwards :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if job == nil || p.failed {continue}
 		sync.lock(&job.mutex); done := job.done; sync.unlock(&job.mutex)
 		if !done {continue}
+		if !p.dismissed && !p.purged && account_departing(p.account_ref) {continue}
 		if !pending_send_allowed(ui, p^) {
 			forward_settled(ui, p, .Cancelled)
 			free_pending(p)
