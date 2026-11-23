@@ -51,6 +51,7 @@ Translation_Result :: struct {
 @(private)
 Translation_Model_Action :: enum {
 	None,
+	Check,
 	Download,
 	Remove,
 }
@@ -61,6 +62,7 @@ Translation_Model_State :: enum {
 	Missing,
 	Partial,
 	Ready,
+	CheckFailed,
 }
 
 @(private)
@@ -73,6 +75,7 @@ Translation_State :: struct {
 	account, group, source, target: string,
 	active:                         ^Translation_Result,
 	results:                        map[Translation_Key]^Translation_Result,
+	auto_cancelled:                 map[string]bool,
 	order:                          u64,
 	language_menu:                  int,
 	language_choice:                int,
@@ -126,21 +129,15 @@ translation_model_dir :: proc() -> string {
 }
 
 @(private)
-translation_model_state :: proc() -> Translation_Model_State {
-	dir := translation_model_dir()
-	ready, present := true, false
-	for file in TRANSLATION_MODEL_FILES {
-		path := fmt.tprintf("%s/%s", dir, file.name)
-		info, err := os.stat(path, context.temp_allocator)
-		ready = ready && err == nil && info.type == .Regular && info.size == file.size
-		present = present || err == nil || os.exists(fmt.tprintf("%s.part", path))
-	}
-	return ready ? .Ready : (present ? .Partial : .Missing)
-}
-
-@(private)
 translation_settings_open :: proc(ui: ^Ui_State) -> bool {
-	return ui.page == .Settings && ui.settings_section == .General && ui.settings_tab == 1
+	return(
+		ui.page == .Settings &&
+		ui.settings_section == .General &&
+		ui.settings_tab == 1 &&
+		!ui.add_account_open &&
+		!ui.new_chat_open &&
+		!settings_on_menu(ui) \
+	)
 }
 
 @(private)
@@ -155,6 +152,33 @@ translation_stop :: proc(ui: ^Ui_State) {
 		s.model_action, s.model_state = .None, .Unknown
 	}
 	s.status, s.model, s.percent = 0, 0, 0
+}
+
+@(private)
+translation_cancel_queued :: proc(ui: ^Ui_State) {
+	for _, result in ui.translation.results {
+		if result.phase != .Queued {continue}
+		result.phase = .Cancelled
+		translation_reflow(ui, result.key.id)
+	}
+}
+
+@(private)
+translation_clear_auto :: proc(s: ^Translation_State) {
+	for id in s.auto_cancelled {delete(id)}
+	delete(s.auto_cancelled)
+	s.auto_cancelled = nil
+}
+
+@(private)
+translation_cancel :: proc(ui: ^Ui_State) {
+	if ui.translation.model_action == .Download {
+		// Keep visible messages from immediately restarting a cancelled download.
+		translation_clear_auto(&ui.translation)
+		translation_visible(ui, .Remember)
+		translation_cancel_queued(ui)
+	}
+	translation_stop(ui)
 }
 
 @(private)
@@ -173,6 +197,7 @@ translation_clear :: proc(ui: ^Ui_State) {
 	if len(s.results) > 0 {sel_clear(ui)}
 	for _, result in s.results {translation_free(result)}
 	delete(s.results)
+	translation_clear_auto(s)
 	for value in ([]string{s.account, s.group, s.source, s.target}) {delete(value)}
 	s.results, s.order, s.language_choice, s.paused = nil, 0, 0, false
 	s.account, s.group, s.source, s.target = "", "", "", ""
@@ -282,8 +307,20 @@ translation_fail :: proc(ui: ^Ui_State, result: ^Translation_Result, code: int) 
 
 @(private)
 translation_model_error :: proc(ui: ^Ui_State, action: Translation_Model_Action) {
-	text :=
-		action == .Remove ? tr("Couldn't remove the translation model. Please try again.") : tr("Couldn't download the translation model. Check your connection and available disk space, then try again.")
+	text: string
+	switch action {
+	case .Check:
+		ui.translation.model_state = .CheckFailed
+		return
+	case .Remove:
+		text = tr("Couldn't remove the translation model. Please try again.")
+	case .Download:
+		text = tr(
+			"Couldn't download the translation model. Check your connection and available disk space, then try again.",
+		)
+	case .None:
+		return
+	}
 	set_status(ui, text, .Error)
 }
 
@@ -297,6 +334,8 @@ translation_launch :: proc(
 	source, target := s.source, s.target
 	switch action {
 	case .None:
+	case .Check:
+		source, target = "check", ""
 	case .Download:
 		source, target = "download", ""
 	case .Remove:
@@ -304,11 +343,12 @@ translation_launch :: proc(
 	}
 	file := wn_ipc_create(TRANSLATION_IPC_SIZE)
 	ok := false
+	start_error: string
 	defer if !ok {
 		if file != nil {wn_ipc_close(file)}
 		if result != nil {
 			translation_fail(ui, result, 2)
-			result.error = N_("Couldn't start translation. Reinstall White Noise and try again.")
+			if start_error != "" {result.error = start_error}
 		} else {
 			translation_model_error(ui, action)
 		}
@@ -334,19 +374,17 @@ translation_launch :: proc(
 			},
 		},
 	)
-	if err != nil {return}
+	if err != nil {
+		start_error = N_("Couldn't start translation. Reinstall White Noise and try again.")
+		return
+	}
 	ok = true
 	s.child, s.file, s.active, s.status = child, file, result, 'G'
 	s.model_action = action
 	if result != nil {result.phase = .Running}
 	if action == .Remove {
 		// A queued request must not immediately download what Remove just deleted.
-		for _, queued in s.results {
-			if queued.phase == .Queued {
-				queued.phase = .Cancelled
-				translation_reflow(ui, queued.key.id)
-			}
-		}
+		translation_cancel_queued(ui)
 	}
 }
 
@@ -355,18 +393,17 @@ translation_tick :: proc(ui: ^Ui_State) {
 	s := &ui.translation
 	if !ui.prefs.translation_enabled {
 		if s.file != nil {translation_stop(ui)}
-		if len(s.results) > 0 {translation_clear(ui)}
+		if s.results != nil {translation_clear(ui)}
 		s.model_state = .Unknown
 		return
 	}
-	if translation_settings_open(ui) {
-		if s.model_state == .Unknown && s.file == nil {
-			s.model_state = translation_model_state()
-		}
-	} else {
-		s.model_state = .Unknown
-	}
 	translation_bind(ui)
+	show_model := translation_settings_open(ui)
+	defer if !show_model {s.model_state = .Unknown}
+	if show_model && s.model_state == .Unknown && s.file == nil {
+		translation_launch(ui, nil, .Check)
+		return
+	}
 	for _, result in s.results {result.current = false}
 	for msg in ui.messages {
 		for source in Translation_Source {
@@ -395,21 +432,41 @@ translation_tick :: proc(ui: ^Ui_State) {
 		state, err := os.process_wait(s.child, timeout = 0)
 		if err == .Timeout {return}
 		result := s.active
-		if translation_settings_open(ui) {s.model_state = translation_model_state()}
+		// The child can publish and exit between the progress read and wait.
+		finished := helper_read_at(s.file, header[:], 0) == len(header)
 		if result == nil {
 			wn_ipc_close(s.file)
 			action := s.model_action
 			s.file, s.child, s.model_action = nil, {}, .None
 			if err != nil || state.exit_code != 0 {
+				s.model_state = .Unknown
 				translation_model_error(ui, action)
-			} else if action == .Download {
-				s.paused = false
+				return
+			}
+			switch action {
+			case .Check:
+				if !finished {header[0] = 0}
+				switch header[0] {
+				case 'R':
+					s.model_state = .Ready
+				case 'P':
+					s.model_state = .Partial
+				case 'M':
+					s.model_state = .Missing
+				case:
+					translation_model_error(ui, action)
+				}
+			case .Download:
+				s.model_state, s.paused = .Ready, false
+			case .Remove:
+				s.model_state = .Missing
+			case .None:
 			}
 			return
 		}
-		// The child can publish and exit between the progress read and wait.
-		finished := helper_read_at(s.file, header[:], 0) == len(header)
+		s.model_state = .Unknown
 		if err == nil && state.exit_code == 0 && finished && header[0] == 'R' {
+			s.model_state = .Ready
 			word, _ := endian.get_u32(header[4:8], .Little)
 			length := int(word)
 			if length > 0 && length < TRANSLATION_TEXT_CAP {
@@ -428,28 +485,7 @@ translation_tick :: proc(ui: ^Ui_State) {
 		translation_reflow(ui, result.key.id)
 	}
 	if s.paused {return}
-	// Queue only measured rows in the viewport, not a conversation's entire history.
-	if ui.prefs.translation_auto && ui.page == .Chats && !ui.show_members {
-		view := nendo.scroll(nendo.id("Timeline"))
-		if view.found {
-			for msg in ui.messages {
-				y := msg.row_top + view.position.y
-				if msg.mine ||
-				   (msg.thread_of != thread_cur(ui) && msg.id != thread_cur(ui)) ||
-				   msg.row_height <= 0 ||
-				   y + msg.row_height < 0 ||
-				   y > view.viewport.height {continue}
-				if s.results[Translation_Key{id = msg.id}] == nil {translation_request(ui, msg)}
-				for _, attachment in msg.attachments {
-					view := msg_audio(msg, attachment)
-					if view == nil || !view.transcript_open {continue}
-					key := Translation_Key{msg.id, .Transcript, attachment}
-					if s.results[key] ==
-					   nil {translation_request(ui, msg, .Transcript, attachment)}
-				}
-			}
-		}
-	}
+	translation_visible(ui, .Queue)
 	next: ^Translation_Result
 	for _, result in s.results {
 		if result.phase == .Queued && (next == nil || result.order < next.order) {next = result}
@@ -458,8 +494,52 @@ translation_tick :: proc(ui: ^Ui_State) {
 }
 
 @(private)
+Translation_Viewport_Action :: enum {
+	Queue,
+	Remember,
+}
+
+// Consider only measured rows in the viewport, not the whole conversation.
+@(private)
+translation_visible :: proc(ui: ^Ui_State, action: Translation_Viewport_Action) {
+	if !ui.prefs.translation_auto ||
+	   ui.page != .Chats ||
+	   ui.show_members ||
+	   ui.add_account_open ||
+	   ui.new_chat_open ||
+	   ui.selected < 0 ||
+	   ui.selected >= len(ui.chats) {return}
+	view := nendo.scroll(nendo.id("Timeline"))
+	if !view.found {return}
+	s := &ui.translation
+	if action == .Remember {s.auto_cancelled = make(map[string]bool)}
+	thread := thread_cur(ui)
+	for msg in ui.messages {
+		y := msg.row_top + view.position.y
+		if msg.mine ||
+		   (msg.thread_of != thread && msg.id != thread) ||
+		   msg.row_height <= 0 ||
+		   y + msg.row_height < 0 ||
+		   y > view.viewport.height {continue}
+		if s.auto_cancelled[msg.id] {continue}
+		if action == .Remember {
+			s.auto_cancelled[strings.clone(msg.id)] = true
+			continue
+		}
+		if s.results[Translation_Key{id = msg.id}] == nil {translation_request(ui, msg)}
+		for _, attachment in msg.attachments {
+			audio := msg_audio(msg, attachment)
+			if audio == nil || !audio.transcript_open {continue}
+			key := Translation_Key{msg.id, .Transcript, attachment}
+			if s.results[key] == nil {translation_request(ui, msg, .Transcript, attachment)}
+		}
+	}
+}
+
+@(private)
 translation_status :: proc(ui: ^Ui_State) -> string {
 	if ui.translation.file == nil {return ""}
+	if ui.translation.model_action == .Check {return tr("Verifying download...")}
 	if ui.translation.model_action == .Remove {return tr("Removing…")}
 	switch ui.translation.status {
 	case 'D':

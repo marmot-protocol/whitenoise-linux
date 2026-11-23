@@ -1339,6 +1339,9 @@ msgstr "비밀번호를 변경할 수 없습니다. 다시 시도하세요."
 msgid "Couldn't check for updates. Please try again."
 msgstr "업데이트를 확인할 수 없습니다. 다시 시도하세요."
 
+msgid "Couldn't check the translation model. Please try again."
+msgstr "번역 모델을 확인할 수 없습니다. 다시 시도하세요."
+
 msgid "Couldn't choose a photo. Close your open file picker and try again."
 msgstr "사진을 선택할 수 없습니다. 열려 있는 파일 선택기를 닫고 다시 시도하세요."
 

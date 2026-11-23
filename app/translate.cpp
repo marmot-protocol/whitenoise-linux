@@ -218,40 +218,46 @@ static int translate(const std::string &text, const Language &source, const Lang
     return LIMIT_ERROR;
 }
 
-enum class Model_Action { Download, Remove };
-
-static int manage_models(const char *directory, Model_Action action) {
-    if (g_mkdir_with_parents(directory, 0700)) {
-        return DOWNLOAD_ERROR;
+static int check_models(const char *directory) {
+    bool ready = true, present = false;
+    // Check the small language detector before hashing the translation model.
+    for (size_t i = sizeof(models) / sizeof(models[0]); i-- > 0;) {
+        const auto &file = models[i];
+        const std::string path = std::string(directory) + "/" + file.name;
+        GStatBuf info;
+        bool found = g_lstat(path.c_str(), &info) == 0;
+        present = present || found || g_lstat((path + ".part").c_str(), &info) == 0;
+        ready = ready && found && valid_file(path.c_str(), &file);
     }
-    void *lock = wn_model_lock(directory);
-    if (!lock) {
-        return DOWNLOAD_ERROR;
-    }
+    return status(ready ? 'R' : present ? 'P' : 'M') ? 0 : INFERENCE_ERROR;
+}
 
+static int remove_models(const char *directory) {
     int result = 0;
-    if (action == Model_Action::Remove) {
-        // Retain the lock file so another helper always locks the same inode.
-        for (const auto &file : models) {
-            const std::string path = std::string(directory) + "/" + file.name;
-            for (const auto &name : {path, path + ".part"}) {
-                if (g_unlink(name.c_str()) && errno != ENOENT) {
-                    result = DOWNLOAD_ERROR;
-                }
-            }
-        }
-    } else if (curl_global_init(CURL_GLOBAL_DEFAULT)) {
-        result = DOWNLOAD_ERROR;
-    } else {
-        for (const auto &file : models) {
-            if (!ensure_model(directory, &file)) {
+    // Retain the lock file so another helper always locks the same inode.
+    for (const auto &file : models) {
+        const std::string path = std::string(directory) + "/" + file.name;
+        for (const auto &name : {path, path + ".part"}) {
+            if (g_unlink(name.c_str()) && errno != ENOENT) {
                 result = DOWNLOAD_ERROR;
-                break;
             }
         }
-        curl_global_cleanup();
     }
-    wn_model_unlock(lock);
+    return result;
+}
+
+static int download_models(const char *directory) {
+    if (curl_global_init(CURL_GLOBAL_DEFAULT)) {
+        return DOWNLOAD_ERROR;
+    }
+    int result = 0;
+    for (const auto &file : models) {
+        if (!ensure_model(directory, &file)) {
+            result = DOWNLOAD_ERROR;
+            break;
+        }
+    }
+    curl_global_cleanup();
     return result;
 }
 
@@ -273,12 +279,26 @@ static int run(int argc, char **argv) {
     if (strcmp(argv[6], "131080") || !(speech_ipc = wn_ipc_open(argv[5], IPC_SIZE))) {
         return INFERENCE_ERROR;
     }
+
+    // An inference job must hold the same lock as Remove until it has finished
+    // using both files, including when two data directories share a cache.
+    if (g_mkdir_with_parents(argv[1], 0700)) {
+        return DOWNLOAD_ERROR;
+    }
+    std::unique_ptr<void, decltype(&wn_model_unlock)> lock(wn_model_lock(argv[1]), wn_model_unlock);
+    if (!lock) {
+        return DOWNLOAD_ERROR;
+    }
+
     if (!*argv[4]) {
+        if (!strcmp(argv[3], "check")) {
+            return check_models(argv[1]);
+        }
         if (!strcmp(argv[3], "download")) {
-            return manage_models(argv[1], Model_Action::Download);
+            return download_models(argv[1]);
         }
         if (!strcmp(argv[3], "remove")) {
-            return manage_models(argv[1], Model_Action::Remove);
+            return remove_models(argv[1]);
         }
     }
     const Language *source = language(argv[3]), *target = language(argv[4]);
@@ -315,7 +335,7 @@ static int run(int argc, char **argv) {
     if (!status('G')) {
         return INFERENCE_ERROR;
     }
-    int result = manage_models(argv[1], Model_Action::Download);
+    int result = download_models(argv[1]);
     if (result) {
         return result;
     }

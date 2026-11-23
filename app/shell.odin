@@ -633,7 +633,7 @@ status_bar :: proc(ui: ^Ui_State) {
 					micro_button("TranslationStopGlobal", tr("Cancel translation"))
 				case .Download:
 					micro_button("TranslationStopGlobal", tr("Cancel"))
-				case .Remove:
+				case .Check, .Remove:
 				}
 				nendo.text(translation_status(ui), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 			}

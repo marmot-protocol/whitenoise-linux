@@ -1418,6 +1418,9 @@ msgstr "パスワードを変更できませんでした。もう一度お試し
 msgid "Couldn't check for updates. Please try again."
 msgstr "アップデートを確認できませんでした。もう一度お試しください。"
 
+msgid "Couldn't check the translation model. Please try again."
+msgstr "翻訳モデルを確認できませんでした。もう一度お試しください。"
+
 msgid "Couldn't choose a photo. Close your open file picker and try again."
 msgstr "写真を選択できませんでした。開いているファイル選択画面を閉じて、もう一度お試しください。"
 

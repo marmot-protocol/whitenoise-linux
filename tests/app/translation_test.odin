@@ -80,6 +80,34 @@ translation_session_cancel :: proc(t: ^testing.T) {
 }
 
 @(test)
+translation_cancel_download :: proc(t: ^testing.T) {
+	when !TRANSLATION_AVAILABLE {return}
+	ui: Ui_State
+	ui.account_ref = "account"
+	ui.prefs.translation_enabled = true
+	ui.prefs.translation_auto = true
+	append(&ui.messages, Msg_Ui{id = "first", body = "Buongiorno."})
+	defer {translation_clear(&ui); delete(ui.messages)}
+	translation_request(&ui, ui.messages[0])
+	child, pipe, started := speech_test_process()
+	if !testing.expect(t, started) {return}
+	defer os.close(pipe)
+	ui.translation.file = wn_ipc_create(TRANSLATION_IPC_SIZE)
+	if !testing.expect(t, ui.translation.file != nil) {
+		_ = os.process_kill(child)
+		_, _ = os.process_wait(child)
+		return
+	}
+	ui.translation.child = child
+	ui.translation.model_action = .Download
+	translation_cancel(&ui)
+	translation_tick(&ui)
+	result := translation_lookup(&ui, ui.messages[0])
+	testing.expect(t, result != nil && result.phase == .Cancelled)
+	testing.expect(t, ui.translation.file == nil, "Cancel must not start the waiting translation")
+}
+
+@(test)
 translation_selection :: proc(t: ^testing.T) {
 	ui: Ui_State
 	append(&ui.messages, Msg_Ui{id = "first"}, Msg_Ui{id = "second"})

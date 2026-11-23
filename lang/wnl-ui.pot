@@ -1560,6 +1560,9 @@ msgstr ""
 msgid "Couldn't check linked devices for this chat. Please try again."
 msgstr ""
 
+msgid "Couldn't check the translation model. Please try again."
+msgstr ""
+
 msgid "Couldn't check which chats can add linked devices. Please try again."
 msgstr ""
 
