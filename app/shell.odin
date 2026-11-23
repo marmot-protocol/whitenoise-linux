@@ -718,7 +718,7 @@ set_status :: proc(ui: ^Ui_State, text: string, kind: Status_Kind) {
 status_reveal_file :: proc(ui: ^Ui_State, path: string) {
 	when ODIN_OS != .OpenBSD && ODIN_PLATFORM_SUBTARGET != .Android {
 		delete(ui.status_reveal)
-		ui.status_reveal = filepath.dir(path)
+		ui.status_reveal = strings.clone(filepath.dir(path))
 	}
 }
 

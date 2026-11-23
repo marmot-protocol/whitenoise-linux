@@ -11,6 +11,27 @@ import "nendo"
 import rl "sdlrl"
 
 @(test)
+test_toast_owns_folder :: proc(t: ^testing.T) {
+	when ODIN_OS != .OpenBSD && ODIN_PLATFORM_SUBTARGET != .Android {
+		file :: "/tmp/white-noise/export.txt"
+		path := make([]u8, len(file))
+		defer delete(path)
+		copy(path, file)
+
+		ui: Ui_State
+		set_status(&ui, "Saved", .Info)
+		status_reveal_file(&ui, string(path))
+		path[5] = 'x'
+		banner_tick(&ui)
+
+		defer delete(ui.toast)
+		if testing.expect_value(t, ui.toast_reveal, "/tmp/white-noise") {
+			delete(ui.toast_reveal)
+		}
+	}
+}
+
+@(test)
 test_rail_fits :: proc(t: ^testing.T) {
 	for rail_w in ([]int{0, RAIL_W_MIN, RAIL_W_DEFAULT, RAIL_W_MAX, 900}) {
 		threshold := f32(clamp(rail_w, RAIL_W_MIN, RAIL_W_MAX)) + GUTTER_W + PAGE_W_MIN
