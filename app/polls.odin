@@ -246,10 +246,7 @@ POLL_DAYS :: [?]u64{1, 3, 7, 0}
 
 @(private)
 poll_fields :: proc(ui: ^Ui_State, width: f32) {
-	if ui.poll_ticket != 0 {
-		nendo.text(tr("Sending..."), {font = FONT_BODY, size = 12, color = TEXT_DIM})
-		busy_bar("PollBusy")
-	} else if ui.poll_error != .None {
+	if ui.poll_error != .None {
 		nendo.text(
 			ui.poll_error == .Question ? tr("Add a question for your poll.") : tr("Add at least two options."),
 			{font = FONT_BODY, size = 12, color = DANGER},
@@ -470,6 +467,7 @@ handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	if clicked("PollAddOpt") && len(ui.poll_inputs) < POLL_OPTS_CAP {
 		append(&ui.poll_inputs, [dynamic]u8{})
 		ui.focus, ui.poll_focus = .PollOpt, len(ui.poll_inputs) - 1
+		if rl.HasTouch() {touch_field = nendo.id(fmt.tprintf("PollOptBox%d", ui.poll_focus))}
 		ui.poll_reveal = true
 		return true
 	}

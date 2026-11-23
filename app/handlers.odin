@@ -618,7 +618,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// A DM with someone you blocked has no composer to type into.
 	blocked_dm := blocked_peer(ui)
 	read_only := ui.chats[ui.selected].archived
-	draft_len := len(ui.compose)
+	typed_len := -1
 	if ui.focus != .Filter &&
 	   (!read_only || ui.focus == .Search || ui.show_members) &&
 	   !(ui.show_members && (selected_chat_is_dm(ui) || ui.focus == .Compose)) &&
@@ -627,7 +627,8 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   blocked_dm == "" {
 		buf := active_buf(ui)
 		if !ui.poll_open || buf != &ui.compose {
-			edit_text(ui, buf, buf == &ui.compose || buf == &ui.desc_input)
+			n := edit_text(ui, buf, buf == &ui.compose || buf == &ui.desc_input)
+			if buf == &ui.compose {typed_len = n}
 		}
 	}
 	// Thread route: back chevron pops one level; Escape does too while
@@ -674,7 +675,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	   !read_only &&
 	   blocked_dm == "" &&
 	   nendo.element(nendo.id("ComposeClip")).found &&
-	   handle_slash_menu(ui, draft_len) {return}
+	   handle_slash_menu(ui, typed_len) {return}
 	if !read_only && blocked_dm == "" && handle_composer_action(ui) {return}
 	for _, i in ui.staged {
 		if mouse_released() && nendo.pointer_over(nendo.id("StagedX", u32(i))) {

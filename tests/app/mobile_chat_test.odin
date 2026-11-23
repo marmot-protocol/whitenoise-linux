@@ -3,6 +3,7 @@ package main
 import "base:runtime"
 import "core:strings"
 import "core:testing"
+import "core:text/edit"
 
 import marmot "../marmot"
 import "nendo"
@@ -29,6 +30,8 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		member_nick      = -1,
 		prefs            = default_prefs(),
 	}
+	edit.init(&ui.ed, context.allocator, context.allocator)
+	defer edit.destroy(&ui.ed)
 	ui.prefs.reduce_motion = true
 	ed_set(&ui, &ui.compose, "A draft")
 	append(&ui.accounts, Account_Row_Ui{name = "Mobile"})
@@ -181,4 +184,49 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 	nendo.set_pointer({20, 600}, .Up)
 	handle_chat(&ui, &client)
 	testing.expect(t, !ui.chat_head_menu, "a tap elsewhere closes the menu")
+
+	forced_release = false
+	ed_set(&ui, &ui.compose, "/poll?")
+	rl.PushKey(.BACKSPACE, true)
+	handle_chat(&ui, &client)
+	rl.PushKey(.BACKSPACE, false)
+	testing.expect(
+		t,
+		!ui.poll_open && string(ui.compose[:]) == "/poll",
+		"deleting text does not run a command",
+	)
+
+	ed_set(&ui, &ui.compose, "/pol")
+	rl.PushChar('l')
+	handle_chat(&ui, &client)
+	testing.expect(
+		t,
+		ui.poll_open && len(ui.compose) == 0,
+		"typing the last letter opens the poll",
+	)
+	ed_set(&ui, &ui.poll_question, "Where should we meet?")
+	ui.search_open = true
+	ui.focus = .Search
+	build_layout(&ui, 0)
+	testing.expect(t, !nendo.element(nendo.id("PollFields")).found, "search hides the poll form")
+	phone_back_action(&ui)
+	build_layout(&ui, 0)
+	testing.expect(
+		t,
+		nendo.element(nendo.id("PollFields")).found &&
+		string(ui.poll_question[:]) == "Where should we meet?",
+		"Back from search resumes the poll draft",
+	)
+
+	ui.poll_ticket = 1
+	phone_back_action(&ui)
+	build_layout(&ui, 0)
+	testing.expect(
+		t,
+		nendo.element(nendo.id("PollBusy")).found && ui.poll_ticket == 1,
+		"Back keeps an in-flight publish visible",
+	)
+	ui.poll_ticket = 0
+	phone_back_action(&ui)
+	testing.expect(t, !ui.poll_open, "Back closes a poll that is not sending")
 }

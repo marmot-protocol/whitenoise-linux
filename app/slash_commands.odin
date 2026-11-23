@@ -66,6 +66,7 @@ slash_open :: proc(ui: ^Ui_State) -> bool {
 		ui.editing == "" &&
 		!ui.search_open &&
 		!ui.show_members &&
+		!ui.ctx_open &&
 		!ui.compose_more &&
 		!ui.fx_open &&
 		!ui.picker_open &&
@@ -112,7 +113,7 @@ slash_pick :: proc(ui: ^Ui_State, row: Slash_Id) {
 }
 
 @(private)
-handle_slash_menu :: proc(ui: ^Ui_State, draft_len: int) -> bool {
+handle_slash_menu :: proc(ui: ^Ui_State, typed_len: int) -> bool {
 	menu := &ui.slash
 	was_dismissed := menu.dismissed
 	next := slash_matches(string(ui.compose[:]))
@@ -130,7 +131,7 @@ handle_slash_menu :: proc(ui: ^Ui_State, draft_len: int) -> bool {
 		return true
 	}
 	if !shortcut_down() && !shift_down() {
-		if !was_dismissed && menu.query_len != draft_len && menu.count == 1 {
+		if !was_dismissed && menu.query_len == typed_len && menu.count == 1 {
 			command := SLASH_COMMANDS[menu.rows[0]]
 			if command.trigger == .Exact && menu.query_len == len(command.name) {
 				slash_pick(ui, menu.rows[0])

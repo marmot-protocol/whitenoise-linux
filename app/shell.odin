@@ -476,7 +476,6 @@ phone_back_action :: proc(ui: ^Ui_State) {
 	touch_field = {}
 	compose_keyboard = false
 	if ui.picker_open {close_picker(ui); return}
-	if ui.poll_open {poll_close(ui); return}
 	if ui.location_open {
 		geo_picker_close(ui)
 		return
@@ -505,6 +504,10 @@ phone_back_action :: proc(ui: ^Ui_State) {
 			ui.search_open = false
 			clear(&ui.search_input)
 			ui.focus = .Compose
+			return
+		}
+		if ui.poll_open {
+			if ui.poll_ticket == 0 {poll_close(ui)}
 			return
 		}
 		if len(ui.thread_stack) > 0 {thread_back(ui); return}

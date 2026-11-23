@@ -905,6 +905,7 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 	ui.health_ok = false
 	health_refresh(ui, client)
 	if ui.location_open {geo_picker_close(ui)}
+	poll_close(ui)
 	keys_forget(ui); close_export(ui); session_string_forget(&ui.profile.nsec)
 	kp_rows_free(&ui.kp_list); ui.kp_fetched = false
 	delete(ui.kp_own_json); ui.kp_own_json = ""
@@ -964,6 +965,7 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 finish_account_switch :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
 	event_data_close(&ui.event_data)
 	if ui.location_open {geo_picker_close(ui)}
+	poll_close(ui)
 	photo_cancel(ui)
 	keys_forget(ui); close_export(ui)
 	session_string_forget(&ui.profile.nsec)

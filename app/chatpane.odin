@@ -1991,6 +1991,8 @@ chat_composer :: proc(ui: ^Ui_State) {
 		blocked_bar()
 		return
 	}
+	poll_suspended := ui.poll_open && ui.search_open
+	if poll_suspended && ui.poll_ticket == 0 {return}
 	// Edit banner: the composer holds a sent message, not a new one.
 	// It stands in for the reply banner, which returns once the edit ends.
 	if len(ui.editing) > 0 {
@@ -2046,6 +2048,11 @@ chat_composer :: proc(ui: ^Ui_State) {
 	{width = nendo.grow(), padding = nendo.pad(padding), gap = 8, direction = .Column},
 	) {
 		burst_pane_layer() // own send's effect rises from here
+		if ui.poll_ticket != 0 {
+			nendo.text(tr("Sending..."), {font = FONT_BODY, size = 12, color = TEXT_DIM})
+			busy_bar("PollBusy")
+		}
+		if poll_suspended {return}
 		// A capped scrollable list keeps every removal control reachable
 		// without letting attachments widen or consume the chat pane.
 		if !ui.poll_open && len(ui.staged) > 0 {
