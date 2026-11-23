@@ -16,7 +16,7 @@ fi
 options="--cpu-period=100000 --cpu-quota=$((WN_JOB_CPUS * 1000))"
 options+=" --memory=$WN_JOB_MEMORY_BYTES --memory-swap=$WN_JOB_MEMORY_SWAP --pids-limit=8192"
 options+=" --volume=/wn-ci:/var/cache/wn-ci --volume=/wn-scratch:/tmp"
-options+=" --volume=wn-pilot-registry:/usr/local/cargo/registry --volume=wn-pilot-git:/usr/local/cargo/git"
+archives=(cargo-cache.tar)
 if [[ ${WN_BOAT_STAGING:-} == 1 ]]; then
   if [[ ${1:-} != push ]]; then
     echo 'Boat staging only runs push workflows' >&2
@@ -26,20 +26,22 @@ if [[ ${WN_BOAT_STAGING:-} == 1 ]]; then
   for arg; do
     if [[ $previous == -W ]]; then
       case "${arg##*/}" in
-        release-android.yml) caches=(android) ;;
-        release-cross.yml) caches=(cross linux-arm64) ;;
-        release-windows.yml) caches=(cross windows-amd64) ;;
-        *) caches=() ;;
+        release-android.yml) archives+=(android-cache.tar) ;;
+        release-cross.yml) archives=(cross-cache.tar.zst linux-arm64-cache.tar.zst) ;;
+        release-windows.yml) archives=(cross-cache.tar.zst windows-amd64-cache.tar.zst) ;;
       esac
-      for cache in "${caches[@]}"; do
-        tar --extract --numeric-owner --file "/wn-ci/$cache-cache.tar" -C /wn-ci
-      done
       break
     fi
     previous=$arg
   done
   options+=" --privileged --volume=/wn-stage-containers:/var/lib/containers/storage"
 fi
+if [[ ${archives[0]} == cargo-cache.tar ]]; then
+  options+=" --volume=wn-pilot-registry:/usr/local/cargo/registry --volume=wn-pilot-git:/usr/local/cargo/git"
+fi
+for archive in "${archives[@]}"; do
+  tar --extract --numeric-owner --file "/wn-ci/$archive" -C /wn-ci
+done
 cargo_jobs=1
 if cmp -s DEPS_PIN /wn-ci/worktree/DEPS_PIN && diff -qr patches /wn-ci/worktree/patches >/dev/null; then
   cargo_jobs=4

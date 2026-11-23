@@ -8,9 +8,7 @@ root=/wn-ci
 image=localhost/wn-native-pilot
 pod=(podman --root "$root/containers" --storage-opt overlay.mount_program=/usr/bin/fuse-overlayfs)
 
-# Snapshot restore must be complete before opening the image or cache.
 "${pod[@]}" image exists "$image"
-tar --extract --numeric-owner --file "$root/cargo-cache.tar" -C "$root"
 install -d -m 0755 /run/wn-ci /wn-tools
 install -d -m 1777 /wn-scratch
 if [[ ${WN_BOAT_STAGING:-} == 1 ]]; then

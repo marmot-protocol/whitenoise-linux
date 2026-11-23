@@ -37,18 +37,21 @@ artifacts. Pass the key on stdin with `boat login --key-stdin`.
 The coordinator's signing key and Boat credential never enter job VMs.
 
 Each job starts in a fresh large VM and discards its disk at teardown.
+The adapter waits for hydration before extracting caches. Starting at
+`ready` stalled on archive reads and one Windows extraction failed.
 Only trusted `master` builds seed snapshots. The PR snapshot
 `wn-ngit-native-70fd486b-pax` holds the Podman SDK and `/wn-ci/cargo-cache.tar`.
-The staging snapshot `wn-ngit-staging-82ff7da6-cross-pax` also holds the cross
+The staging snapshot `wn-ngit-staging-82ff7da6-cross-zstd` also holds the cross
 SDK OCI archive under `/wn-ci/images/`. Only `release-android.yml`
 restores `/wn-ci/android-cache.tar`. It contains the Android SDK, Cargo
 target and toolchain state, and the stamped native dependency prefix. The
 job still builds, signs, and verifies a fresh APK; the seed holds no APK or
 signing key.
 
-`release-cross.yml` and `release-windows.yml` restore `/wn-ci/cross-cache.tar`
-plus their own `linux-arm64-cache.tar` or `windows-amd64-cache.tar`. The
-shared archive holds `cross/` and the MDK checkout. Each target archive
+`release-cross.yml` and `release-windows.yml` restore `/wn-ci/cross-cache.tar.zst`
+plus their own `linux-arm64-cache.tar.zst` or `windows-amd64-cache.tar.zst`.
+They skip `cargo-cache.tar` and use the cross SDK's Cargo paths. The shared
+archive holds `cross/` and the MDK checkout. Each target archive
 holds its `worktree/build/cross/` subtree; only Windows needs LLVM-MinGW
 and vcpkg. Seed through `scripts/ngit-cross.sh` so Cargo paths match inside
 `/work`. Leave the compiled app, package staging trees, `dist`, and
@@ -59,8 +62,10 @@ Run `scripts/ngit-stage.sh` before building the seed so Cargo and Rustup use
 the same `/var/cache/wn-ci` paths as PR jobs. Pack the Cargo target, MDK
 checkout, Rustup directory, and Cargo registry and Git volumes with GNU tar
 `--format=pax`. A raw filesystem snapshot rounded some timestamps down to
-whole seconds, making Cargo rebuild unchanged crates. Verify a new snapshot
-on a fresh worker before changing the adapter's `snapshot` value.
+whole seconds, making Cargo rebuild unchanged crates. Compress the three
+cross archives with `zstd -T4 -3` and keep only the compressed copies in
+the staging snapshot. Verify it on a fresh worker before changing the
+adapter's `snapshot` value.
 
 The kernel limits the worker's job container to 80% of VM CPU and leaves
 8 GiB of physical RAM available. The container can use up to 8 GiB of disk
