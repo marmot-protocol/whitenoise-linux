@@ -310,4 +310,47 @@ restore_chat_dispatch :: proc(t: ^testing.T) {
 	testing.expect(t, strings.has_prefix(ui.client_status, "Chat list failed: "))
 	testing.expect_value(t, ui.client_status_kind, Status_Kind.Error)
 	ui.account_ref = account
+
+	ui.page, ui.chat_filter = .Chats, .Chats
+	ui.client_status = ""
+	open_group_info(&ui, client, .Settings)
+	thread.join(members_job.worker)
+	members_drain(&ui, client)
+	if !testing.expect_value(t, len(ui.members), 1) {return}
+	for _ in 0 ..< 3 {frame(&ui)}
+	scroll := nendo.scroll(nendo.id("MembersScroll"))
+	if !testing.expect(t, scroll.found) {return}
+	scroll.position.y = min(0, scroll.viewport.height - scroll.content.height)
+	ui.chats[ui.selected].conversation_kind = .DIRECT
+	testing.expect(t, strings.contains(frame(&ui), "Delete chat"))
+	append(&ui.members, Member_Ui{})
+	testing.expect(t, strings.contains(frame(&ui), "Leave chat"))
+	ui.chats[ui.selected].conversation_kind = .GROUP
+	testing.expect(t, strings.contains(frame(&ui), "Leave group"))
+	pop(&ui.members)
+	text := frame(&ui)
+	testing.expect(t, strings.contains(text, "Delete group"))
+	testing.expect(t, !nendo.element(nendo.id("LeaveBtn")).found)
+	button := nendo.element(nendo.id("DeleteConversationBtn"))
+	if !testing.expect(t, button.found) {return}
+	b := button.rect
+	nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
+	forced_release = true
+	handle_members(&ui, client)
+	forced_release = false
+	if !testing.expect_value(t, ui.confirm.kind, Confirm_Kind.Delete_Group) {return}
+	testing.expect_value(t, len(ui.staged), 1)
+	run_confirm(&ui, client)
+	for timeline in timeline_retired {thread.join(timeline.worker)}
+	account_job_drain(&ui)
+	for job in account_jobs {thread.join(job.worker)}
+	account_job_drain(&ui)
+
+	testing.expect_value(t, ui.client_status, "")
+	testing.expect_value(t, ui.selected, -1)
+	testing.expect_value(t, len(ui.staged), 0)
+	testing.expect(t, load_chat_list(client, account, &ui))
+	testing.expect_value(t, len(ui.chats), 1)
+	if len(ui.chats) == 1 {testing.expect_value(t, ui.chats[0].group_id, other)}
+	testing.expect_value(t, ui.drafts[draft_key(account, other)], "Keep this draft")
 }

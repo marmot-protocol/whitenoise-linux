@@ -913,7 +913,7 @@ app_main :: proc() {
 
 			start_events(&live, client)
 			devices_drain(&ui, client, &live)
-			account_job_drain(&ui)
+			account_job_drain(&ui, &live)
 			if profile := ui.devices.profiles[ui.account_ref];
 			   profile != nil && profile.unlink_check {
 				// Keep the workspace intact but do not run any of its input handlers.

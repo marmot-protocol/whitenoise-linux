@@ -30,6 +30,7 @@ Account_Operation :: enum {
 	Accept,
 	Decline,
 	Leave,
+	Delete_Conversation,
 	Description,
 	Avatar,
 }
@@ -142,7 +143,30 @@ account_job_new :: proc(
 account_job_start :: proc(job: ^Account_Job) {
 	if job == nil {return}
 	append(&account_jobs, job)
+	if job.kind == .Delete_Conversation {
+		if timeline_job != nil &&
+		   string(timeline_job.account) == job.account &&
+		   string(timeline_job.group) == job.group {
+			timeline_retire()
+		}
+		return
+	}
+	account_worker_start(job)
+}
+
+@(private = "file")
+account_worker_start :: proc(job: ^Account_Job) {
 	job.worker = thread.create(account_worker); job.worker.data = job; thread.start(job.worker)
+}
+
+@(private)
+conversation_deleting :: proc(account, group: string) -> bool {
+	for job in account_jobs {
+		if job.kind == .Delete_Conversation &&
+		   job.account == account &&
+		   job.group == group {return true}
+	}
+	return false
 }
 @(private = "file")
 account_worker :: proc(t: ^thread.Thread) {
@@ -299,6 +323,21 @@ account_worker :: proc(t: ^thread.Thread) {
 		if out != nil {marmot.group_invite_decline_result_free(out)}
 	case .Leave:
 		status = marmot.leave_group(job.client, account, group, &summary)
+	case .Delete_Conversation:
+		details: ^marmot.Group_Details
+		status = marmot.group_details(job.client, account, group, &details)
+		if status == .OK {
+			alone := details.members_len == 1 && details.members[0].is_self
+			marmot.group_details_free(details)
+			if !alone {
+				job.error = strings.clone(
+					tr("Couldn't delete the conversation. Review its members and try again."),
+				)
+				return
+			}
+			forgotten: bool
+			status = marmot.forget_group_local(job.client, account, group, &forgotten)
+		}
 	case .Description:
 		status = marmot.update_group_profile(job.client, account, group, nil, target, &summary)
 	case .Avatar:
@@ -492,8 +531,10 @@ Account_Join :: enum {
 
 @(private)
 account_job_free :: proc(job: ^Account_Job, join: Account_Join = .Pending) {
-	if join == .Pending {thread.join(job.worker)}
-	thread.destroy(job.worker)
+	if job.worker != nil {
+		if join == .Pending {thread.join(job.worker)}
+		thread.destroy(job.worker)
+	}
 	for text in ([]string{job.account, job.group, job.target, job.title, job.result, job.error}) {delete(text)}
 	delete(job.wipe_report)
 	if job.accounts != nil {marmot.account_summary_list_free(job.accounts)}
@@ -584,10 +625,79 @@ account_exit_apply :: proc(ui: ^Ui_State, job: ^Account_Job) {
 	}
 }
 
+@(private = "file")
+conversation_deleted :: proc(ui: ^Ui_State, job: ^Account_Job) {
+	key := draft_key(job.account, job.group)
+	ui.settings_dirty |= draft_delete(ui, key)
+	staged_files_free(staged_draft_take(ui, key))
+	queue_changed := false
+	for i := len(ui.pending) - 1; i >= 0; i -= 1 {
+		p := &ui.pending[i]
+		if p.account_ref != job.account || p.group_id != job.group {continue}
+		p.purged = true
+		discard_pending(ui, i)
+		queue_changed = true
+	}
+	if queue_changed {save_offline(ui)}
+	if ui.account_ref != job.account {return}
+	if ui.messages_account == job.account && ui.messages_group == job.group {
+		timeline_clear_content(ui)
+		delete(ui.messages_group)
+		ui.messages_group = ""
+	}
+	if ui.photo.account == job.account && ui.photo.group == job.group {photo_cancel(ui)}
+	for chat, i in ui.chats {
+		if chat.group_id != job.group {continue}
+		if ui.selected == i {
+			voice_cancel()
+			thread_clear(ui)
+			staged_files_free(ui.staged)
+			ui.staged = nil
+			ed_set(ui, &ui.compose, "")
+			ui.selected = -1
+			close_group_info(ui)
+		} else if ui.selected > i {
+			ui.selected -= 1
+		}
+		append(&retired_chats, chat)
+		ordered_remove(&ui.chats, i)
+		break
+	}
+	for chat, i in ui.archived {
+		if chat.group_id != job.group {continue}
+		append(&retired_chats, chat)
+		ordered_remove(&ui.archived, i)
+		break
+	}
+	clear(&ui.rail_rows)
+	if ui.prefs.last_chat == job.group {delete(ui.prefs.last_chat); ui.prefs.last_chat = ""}
+	if ui.prefs.notes_group == job.group {delete(ui.prefs.notes_group); ui.prefs.notes_group = ""}
+	owned, _ := delete_key(&ui.prefs.pinned, job.group)
+	delete(owned)
+	ui.settings_dirty = true
+}
+
 @(private)
-account_job_drain :: proc(ui: ^Ui_State) {
-	for i := len(account_jobs) - 1; i >= 0; i -= 1 {
+account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
+	jobs: for i := len(account_jobs) - 1; i >= 0; i -= 1 {
 		job := account_jobs[i]
+		if job.worker == nil {
+			if account_revoked(ui, job.account) {
+				ordered_remove(&account_jobs, i)
+				account_job_free(job)
+				continue
+			}
+			// The SDK forget operation must follow cancellation of this group's subscriptions.
+			for timeline in timeline_retired {
+				if string(timeline.account) == job.account &&
+				   string(timeline.group) == job.group &&
+				   !thread.is_done(timeline.worker) {
+					continue jobs
+				}
+			}
+			account_worker_start(job)
+			continue
+		}
 		if !thread.is_done(job.worker) {continue}
 		thread.join(job.worker)
 		if account_exit(job.kind) {
@@ -605,6 +715,24 @@ account_job_drain :: proc(ui: ^Ui_State) {
 		}
 		if job.kind == .Switch && job.error != "" {devices_switch_failed(ui, job.account)}
 		if job.error != "" {set_status(ui, strings.clone(job.error), .Error)}
+		if job.kind == .Delete_Conversation {
+			ordered_remove(&account_jobs, i)
+			if job.error == "" {
+				conversation_deleted(ui, job)
+				if ui.account_ref == job.account {
+					chat_list_revision += 1
+					search_revision += 1
+					if live != nil {live.refresh_dirty = true}
+				}
+			} else if ui.account_ref == job.account &&
+			   ui.selected >= 0 &&
+			   ui.chats[ui.selected].group_id == job.group {
+				load_members(job.client, ui)
+				load_timeline(job.client, ui, string(ui.search_input[:]))
+			}
+			account_job_free(job, .Joined)
+			continue
+		}
 		if job.error != "" &&
 		   job.kind == .Create_Chat &&
 		   ui.account_ref == job.account &&
@@ -749,7 +877,7 @@ account_job_drain :: proc(ui: ^Ui_State) {
 					ui.ov_open = false
 					ui.focus = .Invite
 					refresh_after_action(ui, job.client)
-				case .Switch, .Sign_Out, .Remove, .Wipe, .Wipe_Unlinked:
+				case .Switch, .Sign_Out, .Remove, .Wipe, .Wipe_Unlinked, .Delete_Conversation:
 				}
 			}
 		}
@@ -791,6 +919,8 @@ account_pending_label :: proc(kind: Account_Operation) -> string {
 		return tr("Declining your invitation")
 	case .Leave:
 		return tr("Leaving your group")
+	case .Delete_Conversation:
+		return tr("Deleting your conversation")
 	case .Description, .Avatar:
 		return tr("Publishing your group profile")
 	}

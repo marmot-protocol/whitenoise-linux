@@ -2263,8 +2263,11 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.focus = .Rename
 	}
 
-	if clicked("LeaveBtn") {
-		confirm_ask(ui, dm ? .Leave_Chat : .Leave_Group, "", ui.chats[ui.selected].title)
+	kind := conversation_exit_kind(ui)
+	deleting := kind == .Delete_Chat || kind == .Delete_Group
+	if kind != .None && clicked(deleting ? "DeleteConversationBtn" : "LeaveBtn") {
+		chat := ui.chats[ui.selected]
+		confirm_ask(ui, kind, chat.group_id, chat.title)
 		return
 	}
 	if clicked("RetryAccountDevices") {

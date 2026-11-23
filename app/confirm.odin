@@ -24,6 +24,8 @@ Confirm_Kind :: enum {
 	Say_GM,
 	Leave_Group,
 	Leave_Chat,
+	Delete_Group,
+	Delete_Chat,
 	Archive_Chat,
 	Block,
 	Remove_Contact,
@@ -55,7 +57,7 @@ Confirm :: struct {
 	arg:     string, // message id, member hex, relay url: whatever the kind acts on
 	name:    string, // what the copy names ("Ana", "wss://relay.example")
 	idx:     int, // relay index, retention seconds, or other-admin count
-	account: string, // owning account for Archive_Chat
+	account: string, // owning account for account-scoped actions
 }
 
 // Title, body, and the danger button's label per kind.
@@ -81,6 +83,8 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_(
 			"Leave this chat?",
 		), N_("You stop receiving its messages. Rejoining needs a new invite."), N_("Leave")
+	case .Delete_Group, .Delete_Chat:
+		return c.kind == .Delete_Chat ? N_("Delete this chat?") : N_("Delete this group?"), N_("The conversation and its messages are removed from this device. This can't be undone."), N_("Delete")
 	case .Block:
 		return N_(
 			"Block this contact?",
@@ -224,6 +228,10 @@ confirm_ask :: proc(
 	}
 	#partial switch kind {
 	case .Archive_Chat,
+	     .Leave_Group,
+	     .Leave_Chat,
+	     .Delete_Group,
+	     .Delete_Chat,
 	     .Reset_Devices,
 	     .Remove_Linked_Device,
 	     .Reject_Sign_In,
@@ -403,8 +411,13 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.hidden[strings.clone(c.arg)] = true
 		save_hidden(ui)
 		load_timeline(client, ui)
-	case .Leave_Group, .Leave_Chat:
-		leave_group(ui, client)
+	case .Leave_Group, .Leave_Chat, .Delete_Group, .Delete_Chat:
+		if c.account != ui.account_ref ||
+		   conversation_exit_kind(ui) != c.kind ||
+		   ui.chats[ui.selected].group_id != c.arg {return}
+		kind :=
+			c.kind == .Delete_Group || c.kind == .Delete_Chat ? Account_Operation.Delete_Conversation : .Leave
+		account_job_start(account_job_new(ui, client, kind))
 	case .Archive_Chat:
 		// A background account switch must not retarget the captured intent.
 		if c.account != ui.account_ref {return}
@@ -519,13 +532,6 @@ relays_without :: proc(relays: []string, skip: int) -> []cstring {
 		}
 	}
 	return out[:]
-}
-
-leave_group :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if ui.selected < 0 {
-		return
-	}
-	account_job_start(account_job_new(ui, client, .Leave))
 }
 
 decline_invite :: proc(ui: ^Ui_State, client: ^marmot.Client) {
