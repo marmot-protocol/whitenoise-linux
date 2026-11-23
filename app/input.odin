@@ -815,7 +815,7 @@ stl_views: map[string]^Stl_View
 
 // And for video embeds; playback position survives reloads because
 // the mpv instance lives in the cached view.
-video_views: map[string]^Video_View
+video_views: map[Media_Key]^Video_View
 
 // And for g-code extrusion previews (orbit + slider state persist).
 gcode_views: map[string]^Gcode_View

@@ -43,7 +43,7 @@ gif_ios_message :: proc(t: ^testing.T) {
 	}
 	old_views := video_views
 	video_views = {}
-	video_views[url] = &view
+	video_views[Media_Key{url, .Loop}] = &view
 	defer {delete(video_views); video_views = old_views}
 	previous := nendo.current_context()
 	memory: []u8
@@ -489,11 +489,12 @@ gif_keyboard :: proc(t: ^testing.T) {
 		old_views, old_sizes := video_views, blob_sizes
 		video_views, blob_sizes = {}, {}
 		defer {
-			for key in video_views {delete(key)}; delete(video_views)
+			for key in video_views {delete(key.key)}; delete(video_views)
 			for key in blob_sizes {delete(key)}; delete(blob_sizes)
 			video_views, blob_sizes = old_views, old_sizes
 		}
 		media_publish(&job)
+		testing.expect(t, video_views[Media_Key{sha, .Image}] == view)
 		msg: Msg_Ui
 		defer message_free(msg)
 		outcome := marmot.Media_Attachment_Outcome {

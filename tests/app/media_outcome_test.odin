@@ -158,7 +158,7 @@ media_slots_mixed :: proc(t: ^testing.T) {
 		}
 		delete(media_jobs); delete(media_inflight)
 		for key in media_textures {delete(key)}
-		for key in video_views {delete(key)}
+		for key in video_views {delete(key.key)}
 		for key in txt_views {delete(key)}
 		for key in blob_sizes {delete(key)}
 		for key in msg_seen {delete(key)}
@@ -176,7 +176,21 @@ media_slots_mixed :: proc(t: ^testing.T) {
 	text: Txt_View
 	media_textures[strings.clone("img-a")] = &tex
 	media_textures[strings.clone("sticker:stk")] = &tex
-	video_views[strings.clone("aud")] = &audio
+	video_views[Media_Key{strings.clone("aud"), .Audio}] = &audio
+	failed_video := Media_Job {
+		key  = "aud",
+		kind = .Video,
+	}
+	media_publish(&failed_video)
+	clip, clip_seen := media_cached(.Video, "aud")
+	testing.expect(t, clip_seen && clip == nil)
+	player, player_seen := media_cached(.Audio, "aud")
+	testing.expect(t, player_seen && player == &audio)
+	drop_nil_views(&video_views)
+	_, clip_seen = media_cached(.Video, "aud")
+	testing.expect(t, !clip_seen)
+	player, player_seen = media_cached(.Audio, "aud")
+	testing.expect(t, player_seen && player == &audio)
 
 	ui: Ui_State
 	defer {for msg in ui.messages {message_free(msg)}; delete(ui.messages)}

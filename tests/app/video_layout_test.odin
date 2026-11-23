@@ -133,6 +133,30 @@ video_tile_bounds :: proc(t: ^testing.T) {
 		draw_frame(commands)
 		rl.TakeScreenshot("/tmp/wn-video-fullscreen.png")
 		rl.EndDrawing()
+
+		rl.SetFullscreen(false)
+		rl.SetWindowSize(400, 800)
+		nendo.set_dimensions({400, 800})
+		view.audio = true
+		nendo.begin()
+		preview_modal(&ui)
+		nendo.end(0)
+		play := nendo.element(nendo.id("PvAudioPlay"))
+		seek := nendo.element(nendo.id("PvAudioBar"))
+		testing.expect(
+			t,
+			play.found && seek.found && seek.rect.y >= play.rect.y + play.rect.height,
+		)
+		nendo.set_pointer(
+			{play.rect.x + play.rect.width / 2, play.rect.y + play.rect.height / 2},
+			.Up,
+		)
+		testing.expect(t, nendo.pointer_over(nendo.id("PvAudioPlay")) && !video_bar_active())
+		nendo.set_pointer(
+			{seek.rect.x + seek.rect.width / 2, seek.rect.y + seek.rect.height / 2},
+			.Up,
+		)
+		testing.expect(t, video_bar_active())
 	}
 	rl.PushKey(.ESCAPE, true)
 	handle_preview(&ui, nil)

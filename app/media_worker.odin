@@ -117,7 +117,7 @@ media_kind :: proc(name, mime: string) -> Media_Kind {
 media_cached :: proc(kind: Media_Kind, key: string) -> (rawptr, bool) {
 	switch kind {
 	case .Image:
-		if v, ok := video_views[key]; ok && v != nil {return &v.tex, true}
+		if v := video_views[Media_Key{key, kind}]; v != nil {return &v.tex, true}
 		v, ok := media_textures[key]; return v, ok
 	case .Sticker:
 		v, ok := media_textures[fmt.tprintf("sticker:%s", key)]; return v, ok
@@ -128,7 +128,7 @@ media_cached :: proc(kind: Media_Kind, key: string) -> (rawptr, bool) {
 	case .Gcode:
 		v, ok := gcode_views[key]; return v, ok
 	case .Video, .Loop, .Audio:
-		v, ok := video_views[key]; return v, ok
+		v, ok := video_views[Media_Key{key, kind}]; return v, ok
 	case .Pdf:
 		v, ok := pdf_views[key]; return v, ok
 	case .Xdc:
@@ -262,7 +262,7 @@ media_ready :: proc(slot: ^Att_Slot, view: rawptr) {
 		return
 	}
 	if slot.kind == .Image {
-		if animation := video_views[slot.key]; animation != nil {
+		if animation := video_views[Media_Key{slot.key, .Image}]; animation != nil {
 			slot.kind, slot.view = .Loop, animation
 			return
 		}
@@ -509,7 +509,7 @@ media_publish :: proc(job: ^Media_Job) {
 		if job.kind == .Image && job.view != nil {
 			view := (^Video_View)(job.view)
 			view.tex = rl.CreateStreamTexture(view.w, view.h)
-			video_views[key] = view
+			video_views[Media_Key{key, job.kind}] = view
 			break
 		}
 		tex :=
@@ -541,7 +541,7 @@ media_publish :: proc(job: ^Media_Job) {
 	case .Video, .Loop, .Audio:
 		view := (^Video_View)(job.view)
 		if view != nil {view.tex = rl.CreateStreamTexture(view.w, view.h)}
-		video_views[key] = view
+		video_views[Media_Key{key, job.kind}] = view
 	case .Pdf:
 		view := (^Pdf_View)(job.view)
 		if view != nil && view.failed {pdf_view_free(view); view = nil}

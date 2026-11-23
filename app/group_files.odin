@@ -657,36 +657,17 @@ handle_group_files :: proc(ui: ^Ui_State) {
 		ref := media_reference(file.record, file.index)
 		name := string(ref.file_name)
 		if name == "" {name = tr("Attachment")}
-		if file.kind == .Images && !nendo.pointer_over(nendo.id("GroupFileSave", u32(i))) {
-			key := string(ref.plaintext_sha256)
-			tex, cached := media_textures[key]
-			if tex == nil {
-				if cached {old, _ := delete_key(&media_textures, key); delete(old)}
-				return
-			}
-			preview_close()
-			preview.kind = .Slides
-			append(
-				&preview.slides,
-				Slide {
-					strings.clone(string(file.record.message_id_hex)),
-					strings.clone(name),
-					file.index,
-					tex,
-					strings.clone(key),
-				},
-			)
-			preview_shown = true
-			return
+		pick := Att_Pick {
+			group  = string(job.group),
+			msg_id = string(file.record.message_id_hex),
+			index  = file.index,
+			name   = name,
 		}
-		start_att_save(
-			{
-				group = string(job.group),
-				msg_id = string(file.record.message_id_hex),
-				index = file.index,
-				name = name,
-			},
-		)
+		if nendo.pointer_over(nendo.id("GroupFileSave", u32(i))) {
+			start_att_save(pick)
+		} else {
+			preview_attachment(job.client, job.account, job.group, ref, pick)
+		}
 		return
 	}
 }
