@@ -168,6 +168,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	if rl.IsKeyPressed(.ESCAPE) {touch_field = {}; compose_keyboard = false}
 	if mouse_pressed() {
 		menu_press = {}
+		composer_capture_press(ui)
 		kb_focus = ""
 	}
 	nendo.begin()

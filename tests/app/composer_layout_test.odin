@@ -30,7 +30,7 @@ composer_layout :: proc(t: ^testing.T) {
 	ui.prefs.rail_w = RAIL_W_MIN
 	ui.prefs.composer = composer_config(&ui.prefs)^
 	ui.prefs.composer.layout = .Expanded
-	for action in ([]Composer_Action{.Effect, .Poll, .Location, .Dictate, .Voice}) {
+	for action in ([]Composer_Action{.Effect, .Poll, .Location, .GM, .Dictate, .Voice}) {
 		ui.prefs.composer.slots[action] = .Right
 	}
 	ui.account_ref = "offline-fixture"
@@ -135,7 +135,7 @@ composer_layout :: proc(t: ^testing.T) {
 						"nendo must not wrap a manually wrapped line again",
 					)
 				}
-				for id in ([]string{"ComposeMoreBtn", "AttachBtn", "EmojiBtn", "LocationBtn", "MicBtn", "SendBtn"}) {
+				for id in ([]string{"ComposeMoreBtn", "AttachBtn", "EmojiBtn", "SendBtn"}) {
 					element := nendo.element(nendo.id(id))
 					testing.expect(t, element.found, id)
 					button := element.rect
@@ -149,6 +149,26 @@ composer_layout :: proc(t: ^testing.T) {
 						button.x + button.width <= f32(width),
 						"controls fit the pane",
 					)
+				}
+				send := nendo.element(nendo.id("SendBtn")).rect
+				tools := nendo.element(nendo.id("ComposeTools")).rect
+				testing.expect(t, abs(send.x + send.width - tools.x - tools.width) < 0.01)
+				label_fits := false
+				for command in commands {
+					if command.kind == .Text && command.text.text == tr("Send") {
+						r := command.rect
+						label_fits =
+							r.x >= send.x &&
+							r.x + r.width <= send.x + send.width &&
+							r.y >= send.y &&
+							r.y + r.height <= send.y + send.height
+						break
+					}
+				}
+				testing.expect(t, label_fits, "Send has a visible label inside its button")
+				if strings.trim_space(text) != "" {
+					testing.expect(t, !nendo.element(nendo.id("GmBtn")).found)
+					testing.expect(t, !nendo.element(nendo.id("MicBtn")).found)
 				}
 				if nendo.scroll(nendo.id("ComposeClip")).content.height > clip.height {
 					data := nendo.scroll(nendo.id("ComposeClip"))
@@ -221,6 +241,8 @@ composer_layout :: proc(t: ^testing.T) {
 	)
 
 	// The narrow toolbar keeps the first pins and moves the rest into More.
+	ed_set(&ui, &ui.compose, "")
+	build_layout(&ui, 0)
 	testing.expect(t, !nendo.element(nendo.id("DictateBtn")).found)
 	ui.compose_more = true
 	build_layout(&ui, 0)
@@ -230,8 +252,15 @@ composer_layout :: proc(t: ^testing.T) {
 	ui.compose_more = false
 
 	for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
+	ui.prefs.composer.slots[.Effect] = .Menu
+	ui.prefs.composer.slots[.Poll] = .Menu
+	ui.prefs.composer.slots[.Location] = .Menu
+	ui.prefs.composer.slots[.GM] = .Left
+	ui.prefs.composer.slots[.Voice] = .Left
+	build_layout(&ui, 0)
+	testing.expect(t, nendo.element(nendo.id("GmBtn")).found)
+	testing.expect(t, nendo.element(nendo.id("MicBtn")).found)
 	ui.prefs.composer = {}
-	ed_set(&ui, &ui.compose, "")
 	build_layout(&ui, 0)
 	clip := nendo.element(nendo.id("ComposeClip")).rect
 	mic := nendo.element(nendo.id("MicBtn"))

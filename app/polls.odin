@@ -479,7 +479,7 @@ handle_poll :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 			return true
 		}
 	}
-	if clicked("SendBtn") {
+	if composer_clicked("SendBtn") {
 		poll_create(ui, client)
 		return true
 	}

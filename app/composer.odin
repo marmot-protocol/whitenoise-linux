@@ -148,11 +148,22 @@ Composer_Action_Set :: bit_set[Composer_Action]
 
 @(private)
 Composer_Plan :: struct {
-	config:       ^Composer_Config,
-	pinned, menu: Composer_Action_Set,
-	size:         f32,
-	gap:          u16,
-	inline_width: f32,
+	config:        ^Composer_Config,
+	pinned, menu:  Composer_Action_Set,
+	size:          f32,
+	gap:           u16,
+	has_text:      bool,
+	send_label:    string,
+	primary_width: f32,
+	inline_width:  f32,
+}
+
+@(private = "file")
+COMPOSER_SEND_FS :: 13
+
+@(private)
+composer_has_text :: proc(ui: ^Ui_State) -> bool {
+	return strings.trim_space(string(ui.compose[:])) != ""
 }
 
 @(private)
@@ -167,22 +178,33 @@ composer_plan :: proc(
 		size   = tap_size() ? tap_min() : 28,
 		gap    = tap_size() ? 2 : 4,
 	}
+	p.primary_width = p.size
+	if surface == .Chat {
+		p.has_text = composer_has_text(ui)
+		if !ui.poll_open && ui.editing == "" && (p.has_text || len(ui.staged) > 0) {
+			p.send_label = tr("Send")
+			p.primary_width = max(
+				p.size,
+				20 + rl.MeasureTextLine(FONT_TITLE, COMPOSER_SEND_FS, p.send_label, 0).x,
+			)
+		}
+	}
 	pitch := p.size + f32(p.gap)
 	// More and Send always fit; any additional shortcuts spill back into More.
-	tools_width := width
+	p.inline_width = width - p.primary_width - f32(p.gap) - pitch
+	draft_min: f32
 	if surface == .Chat &&
 	   config.layout == .Automatic &&
 	   !ui.poll_open &&
 	   single_pane() &&
 	   short_conversation(ui) &&
-	   width >= COMPOSER_TEXT_MIN + 2 * pitch {
-		tools_width -= COMPOSER_TEXT_MIN
+	   p.inline_width >= COMPOSER_TEXT_MIN {
+		draft_min = COMPOSER_TEXT_MIN
 	}
-	remaining := max(0, int(tools_width / pitch) - 2)
 	p.pinned = {.More}
-	count := 1
 	for action in p.config.order[:COMPOSER_SHORTCUT_COUNT] {
 		if action == .More ||
+		   (p.has_text && action in Composer_Action_Set{.GM, .Voice}) ||
 		   (surface == .Chat &&
 				   ui.search_open &&
 				   action in Composer_Action_Set{.Poll, .Timestamp}) ||
@@ -197,16 +219,14 @@ composer_plan :: proc(
 		case .Menu:
 			p.menu += {action}
 		case .Left, .Right:
-			if remaining > 0 {
+			if p.inline_width >= draft_min + pitch {
 				p.pinned += {action}
-				remaining -= 1
-				count += 1
+				p.inline_width -= pitch
 			} else {
 				p.menu += {action}
 			}
 		}
 	}
-	p.inline_width = width - pitch * f32(count + 1)
 	return p
 }
 
@@ -264,24 +284,23 @@ composer_button :: proc(ui: ^Ui_State, action: Composer_Action, size: f32) {
 composer_primary :: proc(ui: ^Ui_State, plan: Composer_Plan, surface: Composer_Surface = .Chat) {
 	size := plan.size
 	if surface == .Chat && (ui.search_open || ui.stt.file != nil && ui.stt.message == "") {
-		if nendo.box(nendo.id("ComposePrimaryGap"))({width = nendo.fixed(size)}) {}
+		if nendo.box(nendo.id("ComposePrimaryGap"))({width = nendo.fixed(plan.primary_width)}) {}
 		return
 	}
 	preview := surface == .Preview
 	poll := !preview && ui.poll_open
-	has_text := !preview && strings.trim_space(string(ui.compose[:])) != ""
 	editing := !preview && ui.editing != ""
 	if !poll &&
 	   plan.config.slots[.Voice] == .Send &&
-	   (preview || (!has_text && len(ui.staged) == 0 && !editing)) {
+	   (preview || (!plan.has_text && len(ui.staged) == 0 && !editing)) {
 		composer_button(ui, .Voice, size)
 		return
 	}
 	ready :=
-		poll ? ui.poll_ticket == 0 && poll_input_error(ui) == .None : preview || stage_files_ready(ui) && (has_text || len(ui.staged) > 0 && !editing)
+		poll ? ui.poll_ticket == 0 && poll_input_error(ui) == .None : preview || stage_files_ready(ui) && (plan.has_text || len(ui.staged) > 0 && !editing)
 	if nendo.box(nendo.id("SendBtn"))(
 	{
-		width = nendo.fixed(size),
+		width = nendo.fixed(plan.primary_width),
 		height = nendo.fixed(size),
 		align = {x = .Center, y = .Center},
 		color = ready ? (hovered() ? ACCENT_DIM : ACCENT) : ROW_BG,
@@ -297,10 +316,18 @@ composer_primary :: proc(ui: ^Ui_State, plan: Composer_Plan, surface: Composer_S
 				tooltip(tap_size() ? tr("Send") : tr("Enter to send. Shift+Enter for a new line."))
 			}
 		}
-		nendo.text(
-			editing ? ICON_CHECK : "\uf1d8",
-			{font = FONT_ICON, size = 14, color = ready ? ON_ACCENT : TEXT_LO},
-		)
+		color := ready ? ON_ACCENT : TEXT_LO
+		if plan.send_label != "" {
+			nendo.text(
+				plan.send_label,
+				{font = FONT_TITLE, size = COMPOSER_SEND_FS, color = color, wrap = .None},
+			)
+		} else {
+			nendo.text(
+				editing ? ICON_CHECK : "\uf1d8",
+				{font = FONT_ICON, size = 14, color = color},
+			)
+		}
 	}
 }
 
@@ -359,7 +386,7 @@ composer_menu :: proc(ui: ^Ui_State, plan: Composer_Plan) {
 
 @(private)
 handle_composer_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
-	if clicked("ComposeMoreBtn") {
+	if composer_clicked("ComposeMoreBtn") {
 		ui.compose_more = !ui.compose_more
 		return true
 	}
@@ -371,7 +398,7 @@ handle_composer_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	if !mouse_released() {return false}
 	ui.compose_more = false
 	if nendo.pointer_over(nendo.id("ComposeMoreMenu")) {
-		if clicked("ComposeCustomize") {
+		if composer_clicked("ComposeCustomize") {
 			settings_open(ui, client, .General, anchor = "ComposerSettings")
 			ui.composer_settings_from_chat = true
 		} else {
@@ -381,11 +408,44 @@ handle_composer_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	return true
 }
 
+@(private = "file")
+composer_press: u32
+
+@(private)
+composer_capture_press :: proc(ui: ^Ui_State) {
+	// The hit list belongs to the last displayed layout, before tools move.
+	composer_press = 0
+	if !nendo.pointer_over(nendo.id("ComposeTools")) &&
+	   !nendo.pointer_over(nendo.id("ComposeMoreMenu")) {return}
+	for name in ([2]string{"SendBtn", "ComposeCustomize"}) {
+		id := nendo.id(name)
+		if nendo.pointer_over(id) {
+			composer_press = id.id
+			return
+		}
+	}
+	for action in composer_config(&ui.prefs).order[:COMPOSER_SHORTCUT_COUNT] {
+		id := nendo.id(COMPOSER_ACTIONS[action].id)
+		if nendo.pointer_over(id) {
+			composer_press = id.id
+			return
+		}
+	}
+}
+
+@(private)
+composer_clicked :: proc(name: string) -> bool {
+	if !mouse_released() || composer_press == 0 {return false}
+	id := nendo.id(name)
+	return composer_press == id.id && nendo.pointer_over(id)
+}
+
 @(private)
 handle_composer_action :: proc(ui: ^Ui_State) -> bool {
 	if !mouse_released() {return false}
 	for action in composer_config(&ui.prefs).order[:COMPOSER_SHORTCUT_COUNT] {
-		if action == .More || !clicked(COMPOSER_ACTIONS[action].id) {continue}
+		if action == .More || !composer_clicked(COMPOSER_ACTIONS[action].id) {continue}
+		if (action == .GM || action == .Voice) && composer_has_text(ui) {return true}
 		perform_composer_action(ui, action)
 		return true
 	}

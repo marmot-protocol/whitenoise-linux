@@ -994,7 +994,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	send :=
 		blocked_dm == "" &&
 		((rl.IsKeyPressed(.ENTER) && !rl.HasTouch() && !shift_down()) ||
-				clicked("SendBtn") ||
+				composer_clicked("SendBtn") ||
 				test_send_now)
 	test_send_now = false
 	if send {send_composer(ui, client, read_only)}
@@ -1007,7 +1007,7 @@ send_composer :: proc(ui: ^Ui_State, client: ^marmot.Client, read_only: bool) {
 	// edit needs text and never sends them). A composer of only
 	// whitespace counts as empty: it stays put rather than sending a
 	// blank row.
-	has_text := strings.trim_space(string(ui.compose[:])) != ""
+	has_text := composer_has_text(ui)
 	if !has_text && len(ui.editing) > 0 {
 		// An empty edit cancels like Escape, without sending the restored
 		// draft or any staged attachments in this same frame.
