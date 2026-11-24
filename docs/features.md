@@ -178,6 +178,7 @@ Export:
 - **Recent emoji survive restarts.** The picker keeps your eight most recent choices, newest first.
 - **Custom emoji sets come from Nostr.** Under **Settings > Chats > Custom emoji**, you can browse recent [NIP-51 kind-30030 emoji sets](https://github.com/nostr-protocol/nips/blob/master/51.md) from your event-fetch relays.
 - **Custom `:shortcode:` emoji use NIP-30.** The image goes out as an encrypted attachment, not a public link.
+  If a shortcode is installed or built in, the app draws the local image instead of the received copy.
 
 <details>
 <summary><b>Browsing and importing emoji sets</b></summary>

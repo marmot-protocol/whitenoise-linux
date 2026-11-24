@@ -207,6 +207,66 @@ builtin_emoji_payloads :: proc(t: ^testing.T) {
 	}
 }
 
+@(test)
+test_inline_custom_emoji :: proc(t: ^testing.T) {
+	if !test_isolated("test_inline_custom_emoji") {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(640, 128, "Inline custom emoji")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts()
+	load_themes(); apply_theme(0, 0)
+	memory: []u8
+	init_layout(&memory, 2048, {640, 128})
+	defer delete(memory)
+
+	// A received image can use the same name as a bundled emoji.
+	image := custom_emoji_image("marmot_classic")
+	received := rl.LoadTextureFromImage(image)
+	rl.UnloadImage(image)
+	if !testing.expect(t, received.tex != nil) {return}
+	defer rl.UnloadTexture(received)
+	defer {
+		delete(remote_emoji_tex)
+		remote_emoji_tex = nil
+		for &tex in builtin_emoji_tex {
+			if tex != nil {rl.UnloadTexture(tex^); free(tex); tex = nil}
+		}
+	}
+	text := strings.builder_make(context.temp_allocator)
+	for asset in BUILTIN_EMOJI {
+		remote_emoji_tex[asset.code] = &received
+		fmt.sbprintf(&text, ":%s:", asset.code)
+	}
+	remote_emoji_tex["received_emoji"] = &received
+	strings.write_string(&text, ":received_emoji: :undefined_emoji:")
+
+	nendo.begin()
+	body_line(42, strings.to_string(text), 16, TEXT)
+	commands := nendo.end(0)
+	images := 0
+	unknown_visible := false
+	for cmd in commands {
+		if cmd.kind == .Text && strings.contains(cmd.text.text, ":undefined_emoji:") {
+			unknown_visible = true
+		}
+		if cmd.kind != .Image {continue}
+		expected :=
+			images < len(BUILTIN_EMOJI) ? builtin_tex_by_code(BUILTIN_EMOJI[images].code) : &received
+		testing.expect(t, expected != nil && expected.tex != nil)
+		testing.expect_value(t, cmd.image.image, rawptr(expected))
+		images += 1
+	}
+	testing.expect_value(t, images, len(BUILTIN_EMOJI) + 1)
+	testing.expect(t, unknown_visible)
+	if path := os.get_env("WN_INLINE_EMOJI_CAPTURE", context.temp_allocator); path != "" {
+		rl.BeginDrawing()
+		render_nendo(commands)
+		rl.TakeScreenshot(strings.clone_to_cstring(path, context.temp_allocator))
+		rl.EndDrawing()
+	}
+}
+
 // A body's shortcodes are found once each; unknown codes are skipped.
 @(test)
 test_emoji_codes_in :: proc(t: ^testing.T) {

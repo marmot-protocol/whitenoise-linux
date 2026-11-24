@@ -213,34 +213,19 @@ inline_segs :: proc(
 				continue
 			}
 		}
-		if r == ':' {
-			// Known :shortcode: becomes a custom-emoji tile; anything
-			// else stays literal text.
-			if end, ctex := shortcode_at(text, i); ctex != nil {
-				if i > plain_start {
-					append(
-						&segs,
-						Inline_Seg {
-							text = text[plain_start:i],
-							fonts = text_fonts(fonts, plain_start, i),
-						},
-					)
-				}
-				append(&segs, Inline_Seg{tex = ctex})
-				i = end
-				plain_start = end
-				continue
+		next := i + w
+		tex: ^rl.Texture2D
+		switch {
+		case r == ':':
+			if end, custom := shortcode_at(text, i); custom != nil {
+				next, tex = end, custom
 			}
+		case is_emoji_rune(r) || (r >= '0' && r <= '9') || r == '#' || r == '*':
+			it := utf8.decode_grapheme_iterator_make(text[i:])
+			cluster, _, _ := rl.grapheme_iterate(&it)
+			next, tex = i + len(cluster), text_emoji(cluster)
 		}
-		if !is_emoji_rune(r) && !(r >= '0' && r <= '9') && r != '#' && r != '*' {
-			i += w
-			continue
-		}
-		it := utf8.decode_grapheme_iterator_make(text[i:])
-		cluster, _, _ := rl.grapheme_iterate(&it)
-		j := i + len(cluster)
-		tex := text_emoji(cluster)
-		if tex == nil {i = j; continue}
+		if tex == nil {i = next; continue}
 		if i > plain_start {
 			append(
 				&segs,
@@ -248,8 +233,7 @@ inline_segs :: proc(
 			)
 		}
 		append(&segs, Inline_Seg{tex = tex})
-		i = j
-		plain_start = j
+		i, plain_start = next, next
 	}
 	if plain_start < len(text) {
 		append(

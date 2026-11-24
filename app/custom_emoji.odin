@@ -213,17 +213,13 @@ custom_emoji_texture :: proc(name: string) -> ^rl.Texture2D {
 // Texture for a shortcode, nil when undefined.
 // ponytail: linear scan; index it if the emoji set ever grows large.
 custom_tex_by_code :: proc(code: string) -> ^rl.Texture2D {
-	for name in custom_emoji_names {
-		if emoji_code(name) == code {
-			return custom_emoji_texture(name)
-		}
+	if name := emoji_file_for(code); name != "" {
+		return custom_emoji_texture(name)
 	}
-
-	if tex, ok := remote_emoji_tex[code]; ok && tex != nil {
+	if tex := builtin_tex_by_code(code); tex != nil {
 		return tex
 	}
-
-	return builtin_tex_by_code(code)
+	return remote_emoji_tex[code]
 }
 
 // Built-in artwork stays independent of user shortcode overrides.
@@ -238,10 +234,13 @@ builtin_tex_by_code :: proc(code: string) -> ^rl.Texture2D {
 			if img.data == nil {
 				return nil
 			}
-			tex := new(rl.Texture2D)
-			tex^ = rl.LoadTextureFromImage(img)
+			texture := rl.LoadTextureFromImage(img)
 			rl.UnloadImage(img)
-			rl.SetTextureFilter(tex^, .BILINEAR)
+			if texture.tex == nil {
+				return nil
+			}
+			tex := new(rl.Texture2D)
+			tex^ = texture
 			builtin_emoji_tex[i] = tex
 		}
 		return builtin_emoji_tex[i]
