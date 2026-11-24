@@ -1422,6 +1422,9 @@ msgstr "公開鍵をコピー"
 msgid "Corner scale"
 msgstr "角の丸みの倍率"
 
+msgid "Couldn't add a reaction. Choose a message and try again."
+msgstr "リアクションを追加できませんでした。メッセージを選んで、もう一度お試しください。"
+
 #, c-format
 msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr "レコード%dを追加できませんでした。%s リレー設定を確認して再度インポートしてください。"

@@ -31,9 +31,6 @@ Shortcode_Cand :: struct {
 // ":t-rex:"), custom codes the same minus '+'.
 @(private = "file")
 query_ok :: proc(query: string) -> bool {
-	if len(query) < SHORTCODE_QUERY_MIN {
-		return false
-	}
 	for c in transmute([]u8)query {
 		alnum := (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
 		if !alnum && c != '_' && c != '-' && c != '+' {
@@ -80,6 +77,40 @@ catalog_alias :: proc(name, q: string) -> (alias: string, rank: int) {
 	return
 }
 
+@(private)
+reaction_emoji :: proc(text: string) -> string {
+	if !strings.has_prefix(text, "+:") {
+		return ""
+	}
+	code, ok := emoji_shortcode(text[1:])
+	if !ok {
+		return ""
+	}
+	if !query_ok(code) {
+		for entry in emoji_catalog {
+			if entry.emoji == code {
+				return entry.emoji
+			}
+		}
+		return ""
+	}
+	code = strings.to_lower(code, context.temp_allocator)
+	if emoji_file_for(code) != "" {
+		return fmt.tprintf(":%s:", code)
+	}
+	for builtin in BUILTIN_EMOJI {
+		if builtin.code == code {
+			return fmt.tprintf(":%s:", code)
+		}
+	}
+	for entry in emoji_catalog {
+		if _, rank := catalog_alias(entry.name, code); rank == 0 {
+			return entry.emoji
+		}
+	}
+	return ""
+}
+
 // Rebuild the candidate list from the caret's ":token". Exact hits
 // come first, then prefix, then substring; custom codes lead each tier.
 shortcode_update :: proc(ui: ^Ui_State) {
@@ -88,8 +119,15 @@ shortcode_update :: proc(ui: ^Ui_State) {
 		return
 	}
 	_, _, head := field_sel(ui, &ui.compose)
-	at, query, ok := detect_token(string(ui.compose[:]), head, ':')
-	if !ok || !query_ok(query) {
+	text := string(ui.compose[:])
+	at, query, ok := detect_token(text, head, ':')
+	if !ok && ui.editing == "" && len(ui.staged) == 0 {
+		prefix := strings.trim_left_space(text[:head])
+		if strings.has_prefix(prefix, "+:") && strings.trim_space(text[head:]) == "" {
+			at, query, ok = head - len(prefix) + 1, prefix[2:], true
+		}
+	}
+	if !ok || len(query) < SHORTCODE_QUERY_MIN || !query_ok(query) {
 		ui.shortcode_dismissed = -1
 		return
 	}
@@ -131,8 +169,7 @@ shortcode_update :: proc(ui: ^Ui_State) {
 	ui.shortcode_active = true
 }
 
-// Splice the emoji (or ":code:" for a custom one) plus a space over
-// the active ":token", caret after the space.
+// Replace the token. A reaction keeps its leading '+' and needs no space.
 shortcode_commit :: proc(ui: ^Ui_State, index: int) {
 	ui.shortcode_active = false
 	if index < 0 || index >= len(ui.shortcode_cands) {
@@ -144,10 +181,17 @@ shortcode_commit :: proc(ui: ^Ui_State, index: int) {
 	if at > head || head > len(ui.compose) {
 		return
 	}
-	insert := len(cand.emoji) > 0 ? cand.emoji : fmt.tprintf(":%s:", cand.code)
+	reaction := at > 0 && ui.compose[at - 1] == '+'
+	insert := cand.emoji
+	if insert == "" || reaction {
+		insert = fmt.tprintf(":%s:", insert == "" ? cand.code : insert)
+	}
+	if !reaction {
+		insert = fmt.tprintf("%s ", insert)
+	}
 	ed_begin(ui, &ui.compose)
 	ui.ed.selection = {at, head}
-	edit.input_text(&ui.ed, fmt.tprintf("%s ", insert))
+	edit.input_text(&ui.ed, insert)
 	ed_end(ui, &ui.compose)
 }
 
