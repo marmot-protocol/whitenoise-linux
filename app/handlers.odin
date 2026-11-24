@@ -1704,18 +1704,7 @@ set_archived :: proc(ui: ^Ui_State, client: ^marmot.Client, group_id: string, ar
 }
 
 refresh_after_action :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
-	selected_group: string
-	if ui.selected >= 0 {
-		selected_group = ui.chats[ui.selected].group_id
-	}
 	if !load_chat_list(client, ui.account_ref, ui) {return false}
-	ui.selected = -1
-	for chat, i in ui.chats {
-		if chat.group_id == selected_group {
-			ui.selected = i
-			break
-		}
-	}
 	if ui.location_open && ui.selected < 0 {geo_picker_close(ui)}
 	return true
 }

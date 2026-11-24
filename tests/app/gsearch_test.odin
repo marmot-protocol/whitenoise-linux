@@ -292,17 +292,20 @@ gs_archived_destination_owns_navigation_metadata :: proc(t: ^testing.T) {
 }
 
 @(test)
-gs_refresh_clears_missing_search_chat :: proc(t: ^testing.T) {
+chat_refresh_remaps_selection :: proc(t: ^testing.T) {
 	// Chat refresh writes the global profile cache and retired_chats. They
 	// outlive this test, so they must not grow in its per-test allocator.
 	sync.lock(&nendo_test_mutex)
 	defer sync.unlock(&nendo_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	defer profile_session_clear()
-	rows := [?]marmot.Presented_Chat_Row{{row = {group_id_hex = "visible"}}}
+	rows := [?]marmot.Presented_Chat_Row {
+		{row = {group_id_hex = "notes"}},
+		{row = {group_id_hex = "peer"}},
+	}
 	list := marmot.Presented_Chat_List {
 		rows     = raw_data(rows[:]),
-		rows_len = 1,
+		rows_len = len(rows),
 	}
 	job := Chat_List_Work {
 		account = "acct",
@@ -318,12 +321,25 @@ gs_refresh_clears_missing_search_chat :: proc(t: ^testing.T) {
 		delete(ui.filter_hits)
 	}
 
+	// The restored conversation was first until the new notepad arrived.
+	append(&ui.chats, chat_clone(Chat_Row_Ui{group_id = "peer"}))
+	ui.selected = 0
+	chat_list_apply(&ui, &job)
+	if !testing.expect_value(t, ui.selected, 1) {return}
+	testing.expect_value(t, ui.chats[ui.selected].group_id, "peer")
+
+	list.rows_len = 1
+	chat_list_apply(&ui, &job)
+	testing.expect_value(t, ui.selected, -1)
+
+	for chat in ui.chats {chat_free(chat)}
+	clear(&ui.chats)
 	ui.selected = 0
 	append(&ui.chats, chat_clone(Chat_Row_Ui{group_id = "archived", search_only = true}))
 	chat_list_apply(&ui, &job)
 	testing.expect_value(t, ui.selected, -1)
 	testing.expect_value(t, len(ui.chats), 1)
-	testing.expect_value(t, ui.chats[0].group_id, "visible")
+	testing.expect_value(t, ui.chats[0].group_id, "notes")
 
 	for chat in ui.chats {chat_free(chat)}
 	clear(&ui.chats)

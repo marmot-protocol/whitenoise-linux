@@ -22,7 +22,9 @@ This page covers where White Noise keeps its files, which settings survive a res
 
 ## What comes back after a restart
 
-The app restores your last page, settings section and tab, the rail's Unread filter, and window size after a restart. Reopening Settings returns to the section you left. These preferences are independent of General's "Restore last chat" toggle, which controls only the selected conversation.
+The app restores your last page, settings section and tab, the rail's Unread filter, and window size after a restart. Reopening Settings returns to the section you left.
+
+General's "Restore last chat" toggle reopens the conversation you left, even if the chat list changes order after startup.
 
 ## Relay fields refuse bad input without losing it
 
