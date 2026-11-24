@@ -1462,6 +1462,8 @@ DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
 		}
 		// Taper to zero at the tangents so straight edges stay sharp.
 		fringe := min(half_fringe, radius * min(sin, cos))
+		// Coincident vertices need matching alpha when the fringe collapses.
+		outer_color := fringe == 0 ? fcolor : clear
 		directions := [4]sdl.FPoint{{-cos, -sin}, {sin, -cos}, {cos, sin}, {-sin, cos}}
 		for dir, corner in directions {
 			cx, cy := centers[corner].x, centers[corner].y
@@ -1474,7 +1476,7 @@ DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
 			}
 			vertices[a + 1] = {
 				position = {cx + dir.x * (radius + fringe), cy + dir.y * (radius + fringe)},
-				color    = clear,
+				color    = outer_color,
 			}
 			indices[p] = {0, a, b, a, a + 1, b, b, a + 1, b + 1}
 		}
@@ -1533,7 +1535,9 @@ DrawArc :: proc(cx, cy, radius, start_deg, end_deg, thickness: f32, color: Color
 			outer_band, inner_band = inner_band, outer_band
 		}
 		radii := [4]f32{radius + fringe, outer_band, inner_band, max(inner - fringe, 0)}
-		alphas := [4]f32{0, peak, peak, inner > 0 ? 0 : peak}
+		// Both sides of a collapsed fringe must meet the solid straight stroke.
+		edge_alpha := fringe == 0 ? peak : 0
+		alphas := [4]f32{edge_alpha, peak, peak, inner > 0 ? edge_alpha : peak}
 		for r, j in radii {
 			fc := fcolor
 			fc.a = alphas[j]
