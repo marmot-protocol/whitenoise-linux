@@ -156,8 +156,7 @@ chat_rail :: proc(ui: ^Ui_State, ordered: []Inbox_Row, total: int) {
 			}
 			height += f32(len(rows)) * (chat_row_height() + 2)
 		}
-		// Offscreen headers need no text clips. nendo tracks every clip as
-		// a scroll container, so mounting all folders exhausts its pool.
+		// Keep offscreen sections' height without building their headers or rows.
 		if y + height < top - 72 || y > bottom + 72 {
 			if nendo.box(nendo.id("FolderSectionGap", u32(i)))(
 			{height = nendo.fixed(height - 2)},

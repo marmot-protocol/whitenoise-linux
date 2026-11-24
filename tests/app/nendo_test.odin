@@ -57,10 +57,9 @@ layout_hash_map_reuses_slots :: proc(t: ^testing.T) {
 	testing.expect(t, nendo.element(nendo.id("Floating")).found)
 }
 
-// A vertical list whose rows hold a clipped, overflowing one-line label,
-// like a chat row with a long preview. The label can only scroll sideways.
+// Most rows only clip their preview; the second can also scroll sideways.
 @(private = "file")
-scroll_list_layout :: proc() {
+scroll_list_layout :: proc(second_clip := nendo.Clip{x = true, scroll = true}) {
 	nendo.begin()
 	if nendo.box(nendo.id("List"))(
 	{
@@ -70,14 +69,18 @@ scroll_list_layout :: proc() {
 		clip = {y = true, scroll = true},
 	},
 	) {
-		for i in 0 ..< 10 {
+		for i in 0 ..< 140 {
+			clip := i == 1 ? second_clip : nendo.Clip{x = true, offset = {-7, 0}}
+			width := i == 0 ? nendo.fixed(160) : nendo.grow()
 			if nendo.box(nendo.id("Label", u32(i)))(
-			{width = nendo.grow(), height = nendo.fixed(40), clip = {x = true}},
+			{width = width, height = nendo.fixed(40), clip = clip},
 			) {
-				nendo.text(
-					"a preview far too long for the row it sits in",
-					{size = 16, wrap = .None},
-				)
+				if nendo.box(nendo.id("LabelInk", u32(i)))({}) {
+					nendo.text(
+						"a preview far too long for the row it sits in",
+						{size = 16, wrap = .None},
+					)
+				}
 			}
 		}
 	}
@@ -122,10 +125,17 @@ layout_scroll_targets_movable_container :: proc(t: ^testing.T) {
 		nendo.update_scroll(.Off, {0, 0}, 0.016)
 		scroll_list_layout()
 	}
+	testing.expect(t, !nendo.scroll(nendo.id("Label", 0)).found)
+	ink := nendo.id("LabelInk", 0)
+	testing.expect_value(t, nendo.element(ink).rect.x, -7)
+	nendo.set_pointer({20, 8}, .Up)
+	testing.expect(t, nendo.pointer_over(ink))
+	nendo.set_pointer({180, 8}, .Up)
+	testing.expect(t, nendo.pointer_over(nendo.id("List")))
+	testing.expect(t, !nendo.pointer_over(ink))
 
-	// A vertical wheel over the label scrolls the list instead of vanishing
-	// into the label's horizontal-only clip.
-	nendo.set_pointer({20, 20}, .Up)
+	// A vertical wheel goes to the list even over the sideways scroller.
+	nendo.set_pointer({20, 50}, .Up)
 	nendo.update_scroll(.Off, {0, -3}, 0.016)
 	scroll_list_layout()
 	list := nendo.scroll(nendo.id("List"))
@@ -140,11 +150,17 @@ layout_scroll_targets_movable_container :: proc(t: ^testing.T) {
 	label := nendo.scroll(nendo.id("Label", 1))
 	if !testing.expect(t, label.found) {return}
 	testing.expect_value(t, label.position.x, -20)
+	testing.expect_value(t, nendo.element(nendo.id("LabelInk", 1)).rect.x, -20)
 	testing.expect_value(t, list.position.y, -30)
+
+	scroll_list_layout({x = true, offset = {-5, 0}})
+	testing.expect(t, !nendo.scroll(nendo.id("Label", 1)).found)
+	testing.expect_value(t, nendo.element(nendo.id("LabelInk", 1)).rect.x, -5)
 
 	// A responsive rebuild can replace a container before the next event
 	// pump. Reused layout slots must not give its extents to the old list.
 	scroll_detail_layout()
+	testing.expect(t, !nendo.scroll(nendo.id("List")).found)
 	detail := nendo.scroll(nendo.id("Detail"))
 	if !testing.expect(t, detail.found) {return}
 	testing.expect_value(t, detail.content.height, 400)
@@ -153,7 +169,11 @@ layout_scroll_targets_movable_container :: proc(t: ^testing.T) {
 }
 
 @(private = "file")
-virtual_rows_layout :: proc(count: int, height: nendo.Size) -> []nendo.Render_Command {
+virtual_rows_layout :: proc(
+	count: int,
+	height: nendo.Size,
+	clip := nendo.Clip{y = true, scroll = true},
+) -> []nendo.Render_Command {
 	nendo.begin()
 	if nendo.box(nendo.id("VirtualList"))(
 	{
@@ -162,7 +182,7 @@ virtual_rows_layout :: proc(count: int, height: nendo.Size) -> []nendo.Render_Co
 		padding = {left = 11, right = 7, top = 7, bottom = 9},
 		gap = 5,
 		direction = .Column,
-		clip = {y = true, scroll = true},
+		clip = clip,
 	},
 	) {
 		if nendo.box(nendo.id("VirtualHeader"))({height = nendo.fixed(19)}) {}
@@ -242,6 +262,12 @@ layout_virtual_rows_preserves_geometry_when_scrolled_and_shrunk :: proc(t: ^test
 	last := nendo.element(nendo.id("VirtualRow", 11))
 	testing.expect(t, last.found)
 	testing.expect_value(t, last.rect, nendo.Rect{11, 71, 182, 20})
+
+	virtual_rows_layout(1000, nendo.fixed(100), {y = true, offset = {0, -200}})
+	testing.expect(t, !nendo.scroll(list_id).found)
+	row := nendo.element(nendo.id("VirtualRow", 8))
+	testing.expect(t, row.found)
+	testing.expect_value(t, row.rect, nendo.Rect{11, 23, 182, 20})
 	testing.expect_value(t, errors, 0)
 }
 

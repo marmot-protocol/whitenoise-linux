@@ -912,18 +912,13 @@ configure_open_element_ptr :: proc(declaration: ^Box) {
 
 	if declaration.clip.x || declaration.clip.y {
 		array_add(&ctx.open_clip_element_stack, i32(open_layout_element.id))
-		// Retrieve or create cached data to track scroll position across frames
-		scroll_offset: ^Scroll_Container_Data_Internal = nil
-		for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
-			mapping := array_get(&ctx.scroll_container_datas, i)
-			if open_layout_element.id == mapping.element_id {
-				scroll_offset = mapping
-				scroll_offset.layout_element = open_layout_element
-				scroll_offset.open_this_frame = true
-			}
-		}
-		if scroll_offset == nil {
-			scroll_offset = array_add(
+	}
+	if scroll_enabled(&declaration.clip) {
+		if mapping := find_scroll_data(open_layout_element.id); mapping != nil {
+			mapping.layout_element = open_layout_element
+			mapping.open_this_frame = true
+		} else {
+			array_add(
 				&ctx.scroll_container_datas,
 				Scroll_Container_Data_Internal {
 					layout_element = open_layout_element,

@@ -122,7 +122,7 @@ Text_Style :: struct {
 }
 
 // `x`/`y` clip overflowing children on that axis; `offset` shifts every child,
-// and `scroll` sets it to the element's retained scroll position.
+// and `scroll` enables input and replaces `offset` with the retained position.
 Clip :: struct {
 	x, y:   bool,
 	scroll: bool,

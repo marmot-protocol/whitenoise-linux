@@ -926,16 +926,9 @@ calculate_final_layout :: proc(pass: Layout_Pass) {
 				if generate_render_commands &&
 				   !element_is_offscreen(&current_element_data.bounding_box) {
 					// DFS is returning upwards backwards
-					close_clip_element := false
-					if current_element.config.clip.x || current_element.config.clip.y {
-						close_clip_element = true
-						for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
-							mapping := array_get(&ctx.scroll_container_datas, i)
-							if mapping.element_id == current_element.id {
-								scroll_offset = current_element.config.clip.offset
-								break
-							}
-						}
+					close_clip_element := layout_config.clip.x || layout_config.clip.y
+					if close_clip_element {
+						scroll_offset = layout_config.clip.offset
 					}
 
 					if border_has_any_width(&current_element.config.border) {
@@ -1096,17 +1089,12 @@ calculate_final_layout :: proc(pass: Layout_Pass) {
 					current_element_bounding_box.height += expand.height * 2
 				}
 
-				// Apply scroll offsets to container
-				if current_element.config.clip.x || current_element.config.clip.y {
-					// This linear scan could theoretically be slow under very strange conditions, but I can't imagine a real UI with more than a few 10's of scroll containers
-					for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
-						mapping := array_get(&ctx.scroll_container_datas, i)
-						if mapping.element_id == current_element.id {
-							scroll_container_data = mapping
-							mapping.bounding_box = current_element_bounding_box
-							scroll_offset = current_element.config.clip.offset
-							mapping.laid_out_y = scroll_offset.y
-							break
+				if layout_config.clip.x || layout_config.clip.y {
+					scroll_offset = layout_config.clip.offset
+					if layout_config.clip.scroll {
+						scroll_container_data = find_scroll_data(current_element.id)
+						if scroll_container_data != nil {
+							scroll_container_data.bounding_box = current_element_bounding_box
 						}
 					}
 				}
@@ -1261,6 +1249,7 @@ calculate_final_layout :: proc(pass: Layout_Pass) {
 			hash_map_item.bounding_box = current_element_bounding_box
 
 			if current_element.is_text_element {continue}
+			hash_map_item.laid_out_y = scroll_offset.y
 
 			// Setup positions for child elements and add to DFS buffer ----------
 

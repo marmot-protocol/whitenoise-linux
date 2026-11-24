@@ -12,7 +12,7 @@ package nendo
 @(private)
 configure :: proc(declaration: Box) -> bool {
 	declaration := declaration
-	if declaration.clip.scroll {
+	if scroll_enabled(&declaration.clip) {
 		declaration.clip.offset = get_scroll_offset()
 	}
 	configure_open_element_ptr(&declaration)
@@ -59,8 +59,9 @@ virtual_rows :: proc(id: Id, count: int, row_height: f32, gap: u16 = 0) -> Virtu
 	if owner.config.height.max <= 0 || owner.config.height.max > ctx.layout_dimensions.height {
 		top, window, inherited_clip = virtual_ancestor_window(owner, limit)
 	}
-	if view := find_scroll_data(owner.id); view != nil {
-		prefix := flow_prefix_y(owner, ctx.layout_element_children_buffer.length)
+	clip := &owner.config.clip
+	prefix := flow_prefix_y(owner, ctx.layout_element_children_buffer.length)
+	if view := scroll_enabled(clip) ? find_scroll_data(owner.id) : nil; view != nil {
 		viewport := view.bounding_box.height
 		if owner.config.height.kind == .Fixed {
 			viewport = owner.config.height.min
@@ -72,9 +73,10 @@ virtual_rows :: proc(id: Id, count: int, row_height: f32, gap: u16 = 0) -> Virtu
 		content := prefix + height + f32(owner.config.padding.bottom)
 		offset := clamp(-view.scroll_position.y, 0, cmax(f32(0), content - viewport))
 		view.scroll_position.y = -offset
-		owner.config.clip.offset.y = -offset
-		top += offset - prefix
+		clip.offset.y = -offset
 	}
+	top -= prefix
+	if clip.x || clip.y {top -= clip.offset.y}
 	first := clamp(int(top / stride) - 1, 0, count)
 	end := clamp(int((top + window) / stride) + 2, first, count)
 
@@ -134,10 +136,12 @@ virtual_ancestor_window :: proc(
 		} else {
 			// Layout-dependent positions come from the last arrangement, without its scroll.
 			prior_child, prior_parent :=
-				element({id = child.id}).rect, element({id = ancestor.id}).rect
-			if prior_child.height > 0 && prior_parent.height > 0 {
-				relative += prior_child.y - prior_parent.y
-				if view := find_scroll_data(ancestor.id); view != nil {relative -= view.laid_out_y}
+				get_hash_map_item(child.id), get_hash_map_item(ancestor.id)
+			if prior_child.bounding_box.height > 0 && prior_parent.bounding_box.height > 0 {
+				relative +=
+					prior_child.bounding_box.y -
+					prior_parent.bounding_box.y -
+					prior_parent.laid_out_y
 			}
 		}
 		if config.clip.x || config.clip.y {

@@ -166,6 +166,11 @@ get_scroll_offset :: proc() -> Vector2 {
 }
 
 @(private)
+scroll_enabled :: proc "contextless" (clip: ^Clip) -> bool {
+	return clip.scroll && (clip.x || clip.y)
+}
+
+@(private)
 find_scroll_data :: proc(id: u32) -> ^Scroll_Container_Data_Internal {
 	ctx := active_context
 	for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
@@ -187,17 +192,16 @@ update_scroll :: proc(drag: Drag_Scroll, scroll_delta: Vector2, delta_time: f32)
 	highest_priority_scroll_data: ^Scroll_Container_Data_Internal = nil
 	for i: i32 = 0; i < ctx.scroll_container_datas.length; i += 1 {
 		scroll_data := array_get(&ctx.scroll_container_datas, i)
-		if !scroll_data.open_this_frame {
+		element := get_hash_map_item(scroll_data.element_id).layout_element
+		if !scroll_data.open_this_frame ||
+		   element == nil ||
+		   element.is_text_element ||
+		   !scroll_enabled(&element.config.clip) {
 			array_remove_swapback(&ctx.scroll_container_datas, i)
+			i -= 1
 			continue
 		}
 		scroll_data.open_this_frame = false
-		hash_map_item := get_hash_map_item(scroll_data.element_id)
-		// Element isn't rendered this frame but scroll offset has been retained
-		if hash_map_item == nil {
-			array_remove_swapback(&ctx.scroll_container_datas, i)
-			continue
-		}
 
 		// Touch / click is released
 		if !is_pointer_active && scroll_data.pointer_scroll_active {
@@ -1006,7 +1010,14 @@ pointer_over :: proc(id: Id) -> bool { 	// TODO return priority for separating m
 
 scroll :: proc(id: Id) -> Scroll_Data {
 	data := find_scroll_data(id.id)
-	if data == nil || data.layout_element == nil {
+	if data == nil {
+		return {}
+	}
+	item := get_hash_map_item(id.id)
+	element := item.layout_element
+	if element == nil ||
+	   (item.generation > active_context.generation &&
+			   (element.is_text_element || !scroll_enabled(&element.config.clip))) {
 		return {}
 	}
 	return Scroll_Data {
