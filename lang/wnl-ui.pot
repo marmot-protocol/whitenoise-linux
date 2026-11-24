@@ -1546,6 +1546,9 @@ msgstr ""
 msgid "Corner scale"
 msgstr ""
 
+msgid "Couldn't add a reaction. Choose a message and try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr ""

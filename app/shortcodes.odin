@@ -31,9 +31,6 @@ Shortcode_Cand :: struct {
 // ":t-rex:"), custom codes the same minus '+'.
 @(private = "file")
 query_ok :: proc(query: string) -> bool {
-	if len(query) < SHORTCODE_QUERY_MIN {
-		return false
-	}
 	for c in transmute([]u8)query {
 		alnum := (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
 		if !alnum && c != '_' && c != '-' && c != '+' {
@@ -80,6 +77,33 @@ catalog_alias :: proc(name, q: string) -> (alias: string, rank: int) {
 	return
 }
 
+@(private)
+reaction_shortcode :: proc(text: string) -> string {
+	if !strings.has_prefix(text, "+:") {
+		return ""
+	}
+	token := text[1:]
+	code, ok := emoji_shortcode(token)
+	if !ok || !query_ok(code) {
+		return ""
+	}
+	code = strings.to_lower(code, context.temp_allocator)
+	if emoji_file_for(code) != "" {
+		return fmt.tprintf(":%s:", code)
+	}
+	for builtin in BUILTIN_EMOJI {
+		if builtin.code == code {
+			return fmt.tprintf(":%s:", code)
+		}
+	}
+	for entry in emoji_catalog {
+		if _, rank := catalog_alias(entry.name, code); rank == 0 {
+			return entry.emoji
+		}
+	}
+	return ""
+}
+
 // Rebuild the candidate list from the caret's ":token". Exact hits
 // come first, then prefix, then substring; custom codes lead each tier.
 shortcode_update :: proc(ui: ^Ui_State) {
@@ -89,7 +113,7 @@ shortcode_update :: proc(ui: ^Ui_State) {
 	}
 	_, _, head := field_sel(ui, &ui.compose)
 	at, query, ok := detect_token(string(ui.compose[:]), head, ':')
-	if !ok || !query_ok(query) {
+	if !ok || len(query) < SHORTCODE_QUERY_MIN || !query_ok(query) {
 		ui.shortcode_dismissed = -1
 		return
 	}

@@ -1346,6 +1346,9 @@ msgstr "내 공개 키 복사"
 msgid "Corner scale"
 msgstr "모서리 배율"
 
+msgid "Couldn't add a reaction. Choose a message and try again."
+msgstr "반응을 추가할 수 없습니다. 메시지를 선택하고 다시 시도하세요."
+
 #, c-format
 msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr "레코드 %d을(를) 추가할 수 없습니다. %s 릴레이 설정을 확인하고 다시 가져오세요."

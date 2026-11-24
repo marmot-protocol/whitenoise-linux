@@ -1007,7 +1007,8 @@ send_composer :: proc(ui: ^Ui_State, client: ^marmot.Client, read_only: bool) {
 	// edit needs text and never sends them). A composer of only
 	// whitespace counts as empty: it stays put rather than sending a
 	// blank row.
-	has_text := composer_has_text(ui)
+	body := strings.trim_space(string(ui.compose[:]))
+	has_text := body != ""
 	if !has_text && len(ui.editing) > 0 {
 		// An empty edit cancels like Escape, without sending the restored
 		// draft or any staged attachments in this same frame.
@@ -1018,6 +1019,26 @@ send_composer :: proc(ui: ^Ui_State, client: ^marmot.Client, read_only: bool) {
 	   stage_files_ready(ui) &&
 	   (has_text || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
 		if ui.editing == "" && thread_send_paused(ui) {return}
+		if ui.editing == "" && len(ui.staged) == 0 {
+			if emoji := reaction_shortcode(body); emoji != "" {
+				if target := reaction_target(ui); target != "" {
+					message_op(ui, client, .React, target, emoji)
+					clear(&ui.compose)
+					drop_draft(ui)
+					ui.replying = ""
+				} else {
+					set_status(
+						ui,
+						strings.clone(
+							tr("Couldn't add a reaction. Choose a message and try again."),
+						),
+						.Error,
+					)
+				}
+				return
+			}
+		}
+
 		// Sending finishes a trailing emoticon: "ok :D" goes out as "ok 😃".
 		ed_begin(ui, &ui.compose)
 		ui.ed.selection = {len(ui.compose), len(ui.compose)}
@@ -1047,6 +1068,30 @@ send_composer :: proc(ui: ^Ui_State, client: ^marmot.Client, read_only: bool) {
 		}
 		ui.replying = ""
 	}
+}
+
+@(private = "file")
+reaction_target :: proc(ui: ^Ui_State) -> string {
+	if ui.replying == "" && ui.tl_has_after {
+		return ""
+	}
+	cur := thread_cur(ui)
+	#reverse for msg in ui.messages {
+		if msg.id == "" ||
+		   msg.thread_of != cur ||
+		   msg.deleted ||
+		   msg.system ||
+		   msg.unsupported ||
+		   msg.delivery == .PENDING ||
+		   msg.delivery == .FAILED ||
+		   msg_blocked(ui, msg) {
+			continue
+		}
+		if ui.replying == "" || msg.id == ui.replying {
+			return msg.id
+		}
+	}
+	return ""
 }
 
 // Staged attachments now go out through queue_staged (optimistic

@@ -1422,6 +1422,9 @@ msgstr "Copia la tua chiave pubblica"
 msgid "Corner scale"
 msgstr "Scala angoli"
 
+msgid "Couldn't add a reaction. Choose a message and try again."
+msgstr "Impossibile aggiungere la reazione. Scegli un messaggio e riprova."
+
 #, c-format
 msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr "Impossibile aggiungere il record %d. %s Controlla le impostazioni dei tuoi relay e importa di nuovo."

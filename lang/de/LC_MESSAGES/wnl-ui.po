@@ -1422,6 +1422,9 @@ msgstr "Deinen öffentlichen Schlüssel kopieren"
 msgid "Corner scale"
 msgstr "Eckenskalierung"
 
+msgid "Couldn't add a reaction. Choose a message and try again."
+msgstr "Die Reaktion konnte nicht hinzugefügt werden. Wähle eine Nachricht und versuche es erneut."
+
 #, c-format
 msgid "Couldn't add record %d. %s Check your relay settings and import again."
 msgstr "Datensatz %d konnte nicht hinzugefügt werden. %s Prüfe deine Relay-Einstellungen und importiere erneut."
