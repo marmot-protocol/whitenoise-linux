@@ -1020,7 +1020,7 @@ send_composer :: proc(ui: ^Ui_State, client: ^marmot.Client, read_only: bool) {
 	   (has_text || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
 		if ui.editing == "" && thread_send_paused(ui) {return}
 		if ui.editing == "" && len(ui.staged) == 0 {
-			if emoji := reaction_shortcode(body); emoji != "" {
+			if emoji := reaction_emoji(body); emoji != "" {
 				if target := reaction_target(ui); target != "" {
 					message_op(ui, client, .React, target, emoji)
 					clear(&ui.compose)

@@ -78,13 +78,20 @@ catalog_alias :: proc(name, q: string) -> (alias: string, rank: int) {
 }
 
 @(private)
-reaction_shortcode :: proc(text: string) -> string {
+reaction_emoji :: proc(text: string) -> string {
 	if !strings.has_prefix(text, "+:") {
 		return ""
 	}
-	token := text[1:]
-	code, ok := emoji_shortcode(token)
-	if !ok || !query_ok(code) {
+	code, ok := emoji_shortcode(text[1:])
+	if !ok {
+		return ""
+	}
+	if !query_ok(code) {
+		for entry in emoji_catalog {
+			if entry.emoji == code {
+				return entry.emoji
+			}
+		}
 		return ""
 	}
 	code = strings.to_lower(code, context.temp_allocator)
@@ -112,7 +119,14 @@ shortcode_update :: proc(ui: ^Ui_State) {
 		return
 	}
 	_, _, head := field_sel(ui, &ui.compose)
-	at, query, ok := detect_token(string(ui.compose[:]), head, ':')
+	text := string(ui.compose[:])
+	at, query, ok := detect_token(text, head, ':')
+	if !ok && ui.editing == "" && len(ui.staged) == 0 {
+		prefix := strings.trim_left_space(text[:head])
+		if strings.has_prefix(prefix, "+:") && strings.trim_space(text[head:]) == "" {
+			at, query, ok = head - len(prefix) + 1, prefix[2:], true
+		}
+	}
 	if !ok || len(query) < SHORTCODE_QUERY_MIN || !query_ok(query) {
 		ui.shortcode_dismissed = -1
 		return
@@ -155,8 +169,7 @@ shortcode_update :: proc(ui: ^Ui_State) {
 	ui.shortcode_active = true
 }
 
-// Splice the emoji (or ":code:" for a custom one) plus a space over
-// the active ":token", caret after the space.
+// Replace the token. A reaction keeps its leading '+' and needs no space.
 shortcode_commit :: proc(ui: ^Ui_State, index: int) {
 	ui.shortcode_active = false
 	if index < 0 || index >= len(ui.shortcode_cands) {
@@ -168,10 +181,17 @@ shortcode_commit :: proc(ui: ^Ui_State, index: int) {
 	if at > head || head > len(ui.compose) {
 		return
 	}
-	insert := len(cand.emoji) > 0 ? cand.emoji : fmt.tprintf(":%s:", cand.code)
+	reaction := at > 0 && ui.compose[at - 1] == '+'
+	insert := cand.emoji
+	if insert == "" || reaction {
+		insert = fmt.tprintf(":%s:", insert == "" ? cand.code : insert)
+	}
+	if !reaction {
+		insert = fmt.tprintf("%s ", insert)
+	}
 	ed_begin(ui, &ui.compose)
 	ui.ed.selection = {at, head}
-	edit.input_text(&ui.ed, fmt.tprintf("%s ", insert))
+	edit.input_text(&ui.ed, insert)
 	ed_end(ui, &ui.compose)
 }
 

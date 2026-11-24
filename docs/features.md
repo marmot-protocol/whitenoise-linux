@@ -172,6 +172,7 @@ Export:
 
 - **Emoji search accepts names and shortcodes.** `100` finds hundred points and `thumbsup` finds thumbs up, with or without surrounding colons.
 - **React from the composer.** Send `+:thumbsup:` on its own to react to the latest message in the chat or thread. If you're replying, the reaction goes to the message you're replying to.
+  Type `+:` and the first few letters of a shortcode to find an emoji. Pick one, then send.
   If you're viewing older history, jump to the latest message first or reply to the message you want to react to.
 - **Thirteen custom emoji are built in.** `:marmot:` is the pixel face, `:marmot_classic:` is the classic marmot, and `:wn:` is the White Noise logo. The expressions are `:marmot_wave:`, `:marmot_yes:`, `:marmot_laugh:`, `:marmot_love:`, `:marmot_party:`, `:marmot_fire:`, `:marmot_wow:`, `:marmot_smirk:`, `:marmot_cry:`, and `:marmot_angry:`. They appear in picker search, reactions, and inline text. Messages and reactions send the bundled PNG bytes unchanged, matching iOS. Imported sets cannot replace built-in shortcodes.
 - **Recent emoji survive restarts.** The picker keeps your eight most recent choices, newest first.
