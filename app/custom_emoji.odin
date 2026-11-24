@@ -10,7 +10,9 @@ import "core:fmt"
 import "core:os"
 import "core:slice"
 import "core:strings"
+import "core:thread"
 
+import "nendo"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -18,6 +20,20 @@ import marmot "../marmot"
 custom_emoji_names: [dynamic]string // filenames under emoji_dir()
 custom_emoji_scanned: bool
 custom_emoji_textures: map[string]^rl.Texture2D
+
+@(private = "file")
+emoji_preview: struct {
+	worker:    ^thread.Thread,
+	directory: string,
+	revision:  u64,
+	count:     int,
+	items:     [2]struct {
+		name:  string,
+		image: rl.Image,
+	},
+}
+@(private = "file")
+emoji_revision: u64
 
 // Built-in shortcodes shipped in the binary, always available and not
 // removable. A user file with the same code takes precedence.
@@ -84,6 +100,7 @@ emoji_remove :: proc(ui: ^Ui_State, name: string) {
 custom_emoji_scan :: proc() {
 	// The worker owns disk publication until drain; never block a frame on IO.
 	if g_ui != nil && g_ui.emoji_sets_job != nil && g_ui.emoji_sets_job.op == .Import {return}
+	emoji_revision += 1
 	custom_emoji_scanned = true
 	for name in custom_emoji_names {
 		delete(name)
@@ -91,6 +108,86 @@ custom_emoji_scan :: proc() {
 	clear(&custom_emoji_names)
 	emoji_sources_clear()
 	emoji_scan_files(emoji_dir(), &custom_emoji_names, &emoji_sources)
+}
+
+@(private = "file")
+emoji_preview_worker :: proc(_: ^thread.Thread) {
+	context.allocator = reload_allocator()
+	defer frame_wake()
+	for &item in emoji_preview.items[:emoji_preview.count] {
+		item.image = rl.LoadImage(fmt.ctprintf("%s/%s", emoji_preview.directory, item.name))
+		free_all(context.temp_allocator)
+	}
+}
+
+@(private)
+Emoji_Preview_End :: enum {
+	Publish,
+	Discard,
+}
+
+@(private)
+emoji_preview_finish :: proc(end: Emoji_Preview_End) {
+	if emoji_preview.worker == nil {return}
+	thread.join(emoji_preview.worker)
+	thread.destroy(emoji_preview.worker)
+	for item in emoji_preview.items[:emoji_preview.count] {
+		if _, cached := custom_emoji_textures[item.name];
+		   !cached && end == .Publish && emoji_preview.revision == emoji_revision {
+			tex: ^rl.Texture2D
+			if item.image.data != nil {
+				tex = new(rl.Texture2D)
+				tex^ = rl.LoadTextureFromImage(item.image)
+			}
+			custom_emoji_textures[item.name] = tex
+			frame_wake()
+		} else {
+			delete(item.name)
+		}
+		rl.UnloadImage(item.image)
+	}
+	delete(emoji_preview.directory)
+	emoji_preview = {}
+}
+
+@(private)
+settings_emoji_tick :: proc(ui: ^Ui_State) {
+	if emoji_preview.worker != nil {
+		if !thread.is_done(emoji_preview.worker) {return}
+		emoji_preview_finish(.Publish)
+	}
+	if !settings_workspace_visible(ui) ||
+	   ui.settings_section != .Chats ||
+	   settings_index(ui) {return}
+	page := nendo.element(nendo.id("SettingsPage")).rect
+	queue :: proc(name: string) {
+		if name == "" || emoji_preview.count == len(emoji_preview.items) {return}
+		if _, cached := custom_emoji_textures[name]; cached {return}
+		for item in emoji_preview.items[:emoji_preview.count] {if item.name == name {return}}
+		emoji_preview.items[emoji_preview.count].name = strings.clone(name)
+		emoji_preview.count += 1
+	}
+	for emoji, i in ui.prefs.quick_reactions {
+		code, custom := emoji_shortcode(emoji)
+		if !custom {continue}
+		chip := nendo.element(nendo.id("QuickChip", u32(i)))
+		if chip.found &&
+		   chip.rect.y < page.y + page.height &&
+		   chip.rect.y + chip.rect.height > page.y {
+			queue(emoji_file_for(code))
+		}
+	}
+	for name, i in custom_emoji_names {
+		if emoji_preview.count == len(emoji_preview.items) {break}
+		row := nendo.element(nendo.id("EmojiChip", u32(i)))
+		if !row.found || row.rect.y >= page.y + page.height {break}
+		if row.rect.y + row.rect.height > page.y {queue(name)}
+	}
+	if emoji_preview.count == 0 {return}
+	emoji_preview.revision = emoji_revision
+	emoji_preview.directory = strings.clone(emoji_dir())
+	emoji_preview.worker = thread.create(emoji_preview_worker)
+	thread.start(emoji_preview.worker)
 }
 
 custom_emoji_texture :: proc(name: string) -> ^rl.Texture2D {

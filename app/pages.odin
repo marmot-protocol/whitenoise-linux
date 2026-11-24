@@ -14,12 +14,19 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if ui.sticker_open {handle_sticker_panel(ui); return}
 	// Wipe private keys off their page without disarming other settings actions.
 	if ui.page != .Settings ||
-	   (ui.settings_section != .Keys && (len(ui.keys_nsec) > 0 || ui.keys_nsec_show)) {
+	   ((ui.settings_section != .Account || settings_index(ui)) &&
+			   (ui.keys_nsec != "" ||
+					   ui.keys_nsec_show ||
+					   ui.keys_npub_show ||
+					   keys_reveal_frames > 0)) {
 		keys_forget(ui)
 	}
+	if ui.settings_profile_return && (ui.page != .Profile || !ui.profile.editing) {
+		ui.settings_profile_return = false
+	}
+	if ui.sticker_open {handle_sticker_panel(ui); return}
 
 	if client == nil || ui.account_ref == "" || ui.add_account_open {
 		return
@@ -124,9 +131,13 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			handle_settings(ui, client) // open modals capture Esc every frame
 			return
 		}
-		if settings_handle_navigation(ui, client) {return}
-		// Drags need every frame, not just the release gate below.
-		if ui.settings_section == .Folders && handle_folder_board(ui) {return}
+		if ui.settings_section == .Chats &&
+		   (ui.board_drag.kind != .None ||
+				   nendo.pointer_over(nendo.id("FolderBoard")) ||
+				   clicked("SettingsFolderNew")) &&
+		   handle_folder_board(ui) {return}
+		if !settings_escape(ui) {handle_settings(ui, client)}
+		return
 	}
 
 	// Profile presses and keys, before the release gate below:
@@ -134,14 +145,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// the release, so form clicks used to vanish here.
 	if ui.page == .Profile {
 		profile_fields(ui, client)
+		if ui.page != .Profile {return}
 	}
-
-	if ui.page == .Settings && (settings_escape(ui) || settings_switch_keys(ui, client)) {
-		return
-	}
-	// Theme browsing needs hover deadlines and keyboard input on every frame,
-	// not just the pointer release used by the remaining page actions.
-	if ui.page == .Settings {handle_settings(ui, client)}
 
 	if !mouse_released() {
 		return
@@ -191,6 +196,11 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	for page in Page {
 		if nendo.pointer_over(nendo.id("Nav", u32(page))) {
+			if page == .Settings && ui.page != .Settings {
+				settings_enter(ui, client)
+				ui.settings_scroll_pending = false // restore the workspace's saved scroll
+				return
+			}
 			if ui.page == page {
 				if single_pane() {
 					if page == .Chats {
@@ -209,8 +219,6 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 					} else if page == .Contacts {
 						reset_profile_view(ui)
 						ui.selected_contact = -1
-					} else if page == .Settings {
-						settings_open(ui, client, .Home)
 					}
 				} else if page == .Chats && rail_narrow(ui) {
 					toggle_rail(ui)
@@ -218,25 +226,17 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				return
 			}
 			settings_theme_preview_reset(ui)
+			if ui.page == .Settings && ui.settings_section == .Account {keys_forget(ui)}
 			clear(&ui.sidebar_filter)
 			clear(&ui.filter_hits)
 			ui.focus = .Compose
+			ui.settings_profile_return = false
 			ui.page = page
-			switch page {
-			case .Chats:
+			#partial switch page {
 			case .Contacts:
 				load_contacts(client, ui, .Details)
 			case .Archived:
 				load_archived(client, ui)
-			case .Settings:
-				settings_open(
-					ui,
-					client,
-					ui.settings_section,
-					tab = ui.settings_tab,
-					level = ui.settings_level,
-				)
-				ui.settings_scroll_pending = false // the tab restores its saved scroll
 			case .Profile:
 				load_profile(client, ui)
 			}
@@ -528,8 +528,24 @@ profile_ready :: proc(ui: ^Ui_State) -> bool {
 @(private)
 profile_cancel :: proc(ui: ^Ui_State) {
 	if profile_dirty(ui) {confirm_ask(ui, .Discard_Profile, ""); return}
-	ui.profile.editing = false
 	ui.focus = .Compose
+	profile_edit_finish(ui)
+}
+
+@(private)
+profile_edit_finish :: proc(ui: ^Ui_State) {
+	ui.profile.editing = false
+	if !ui.settings_profile_return {return}
+	ui.settings_profile_return = false
+	if ui.page != .Profile {return}
+	ui.page, ui.focus = .Settings, .Compose
+	if ui.settings_search_return == .Home {
+		settings_return_results(ui)
+		return
+	}
+	ui.settings_anchor = "RowEditProfile"
+	ui.settings_target_focus = "SettingsEditProfile"
+	ui.settings_scroll_pending = true
 }
 
 // Only the explicit button publishes public kind-0 data.
@@ -554,12 +570,22 @@ publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 // Enter the edit form with drafts seeded from the loaded profile.
 edit_profile_start :: proc(ui: ^Ui_State) {
+	ui.focus = .Name
+	if ui.profile.editing {return}
 	ui.profile.editing = true
 	ed_set(ui, &ui.name_input, ui.profile.name)
 	ed_set(ui, &ui.about_input, ui.profile.about)
 	ed_set(ui, &ui.nip05_input, ui.profile.nip05)
 	ed_set(ui, &ui.lud16_input, ui.profile.lud16)
-	ui.focus = .Name
+}
+
+settings_edit_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if client == nil || ui.account_ref == "" {return}
+	keys_forget(ui)
+	load_profile(client, ui)
+	ui.settings_profile_return = true
+	ui.page = .Profile
+	edit_profile_start(ui)
 }
 
 // Press-phase half of the Profile page: field focus clicks and the
@@ -590,6 +616,7 @@ profile_fields :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if rl.IsKeyPressed(.ESCAPE) {
 		profile_cancel(ui)
+		return
 	}
 	if rl.IsKeyPressed(.ENTER) {
 		for field, i in fields {
@@ -626,7 +653,8 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if clicked("PrKeys") || clicked("PrNetwork") {
 			keys := clicked("PrKeys")
-			settings_open(ui, client, keys ? .Keys : .Network)
+			ui.settings_profile_return = false
+			settings_open(ui, client, keys ? .Account : .Connection)
 			return
 		}
 	}
@@ -1002,6 +1030,7 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 		account_land(ui, client, active)
 	}
 	ui.add_account_open = false
+	ui.settings_profile_return = false
 	ui.profile = {}
 }
 
@@ -1136,6 +1165,9 @@ account_workspace_clear :: proc(ui: ^Ui_State) {
 	ui.folder_open, ui.folder_menu_open, ui.mi_open, ui.pal_open = false, false, false, false
 	ui.compose_more, ui.fx_open = false, false
 	ui.composer_settings_from_chat = false
+	ui.settings_profile_return = false
+	ui.settings_return_page = nil
+	ui.settings_return_focus = .Compose
 	if ui.gs_open {gs_close(ui)}
 	if ui.new_chat_open {close_new_chat(ui)}
 	if preview_shown {preview_close()}

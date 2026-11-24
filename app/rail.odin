@@ -15,13 +15,13 @@ chat_filter_wheel :: proc(ui: ^Ui_State, wheel: ^rl.Vector2) {
 
 // The expanded sidebar: section controls and the active page's list.
 @(private)
-rail_content :: proc(ui: ^Ui_State) {
+rail_content :: proc(ui: ^Ui_State, page: Page) {
 	logged_in := len(ui.accounts) > 0
 	// A phone pins the inbox header and scrolls only the chat list. Short
 	// windows (landscape, open keyboard) scroll the whole column instead,
 	// so the list never shrinks below one row.
-	pinned := ui.page == .Chats && f32(rl.GetScreenHeight()) / UI_ZOOM >= 480
-	page_scroll := ui.page == .Profile || ((single_pane() || ui.page == .Chats) && !pinned)
+	pinned := page == .Chats && f32(rl.GetScreenHeight()) / UI_ZOOM >= 480
+	page_scroll := page == .Profile || ((single_pane() || page == .Chats) && !pinned)
 
 	if nendo.box(nendo.id("RailContent"))(
 	{
@@ -39,7 +39,7 @@ rail_content :: proc(ui: ^Ui_State) {
 		chat_rows: []int
 		inbox: []Inbox_Row
 		chat_total: int
-		if ui.page == .Chats {
+		if page == .Chats {
 			chat_rows, chat_total = chat_rail_matches(ui)
 			inbox = inbox_rows(ui, chat_rows)
 			if ui.prefs.recent_chats && ui.chat_folder != "" {
@@ -53,11 +53,11 @@ rail_content :: proc(ui: ^Ui_State) {
 			}
 		}
 		contact_rows: []Contact_Order
-		if ui.page == .Contacts {
+		if page == .Contacts {
 			contact_rows = contact_rail_matches(ui)
 		}
 		// Profile replaces the conversation list with accounts.
-		if ui.page == .Profile {
+		if page == .Profile {
 			profile_rail(ui)
 		} else {
 			// Section header: CHATS/CONTACTS count + new-chat button.
@@ -72,7 +72,7 @@ rail_content :: proc(ui: ^Ui_State) {
 			) {
 				// A phone has no navigation column, so the account switcher
 				// rides at the head of the inbox.
-				if single_pane() && ui.page == .Chats {
+				if single_pane() && page == .Chats {
 					avatar(
 						"RailAvatar",
 						0,
@@ -84,12 +84,12 @@ rail_content :: proc(ui: ^Ui_State) {
 				}
 				head := tr("Chats")
 				count := fmt.tprintf("%d", len(ui.chats))
-				if ui.page == .Contacts {
+				if page == .Contacts {
 					head, count = tr("People"), fmt.tprintf("%d", len(ui.contacts))
 					if len(ui.sidebar_filter) > 0 {
 						count = fmt.tprintf(tr("%d of %d"), len(contact_rows), len(ui.contacts))
 					}
-				} else if ui.page == .Chats {
+				} else if page == .Chats {
 					count = fmt.tprintf("%d", chat_total)
 					if len(ui.sidebar_filter) > 0 ||
 					   ui.chat_filter != .Chats ||
@@ -100,7 +100,7 @@ rail_content :: proc(ui: ^Ui_State) {
 				nendo.text(head, {font = FONT_TITLE, size = 16, color = SIDEBAR_TEXT})
 				nendo.text(count, {font = FONT_BODY, size = 12, color = SIDEBAR_DIM})
 				if nendo.box(nendo.id("RailHeadGap"))({width = nendo.grow()}) {}
-				if ui.page == .Chats {
+				if page == .Chats {
 					if nendo.box(nendo.id("ChatsMenuBtn"))(
 					{
 						width = nendo.fit(min = tap_size() ? tap_min() : 0),
@@ -115,7 +115,7 @@ rail_content :: proc(ui: ^Ui_State) {
 						if hovered() {tooltip(tr("Chat options"))}
 					}
 				}
-				if ui.page != .Contacts {
+				if page != .Contacts {
 					// Global-search chip, also on Ctrl+K.
 					if nendo.box(nendo.id("GSearchBtn"))(
 					{
@@ -161,7 +161,7 @@ rail_content :: proc(ui: ^Ui_State) {
 					ui,
 					"FilterBox",
 					&ui.sidebar_filter,
-					ui.page == .Contacts ? tr("Search contacts...") : tr("Search messages..."),
+					page == .Contacts ? tr("Search contacts...") : tr("Search messages..."),
 					ui.focus == .Filter,
 					13,
 					TEXT_LO,
@@ -180,7 +180,7 @@ rail_content :: proc(ui: ^Ui_State) {
 					}
 				}
 			}
-			if ui.page == .Chats {
+			if page == .Chats {
 				if nendo.box(nendo.id("ChatFilterRow"))(
 				{width = nendo.grow(), gap = 4, align = {y = .Center}},
 				) {
@@ -271,7 +271,7 @@ rail_content :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		if ui.page == .Contacts && logged_in && !rail_narrow(ui) {
+		if page == .Contacts && logged_in && !rail_narrow(ui) {
 			empty := contacts_empty(len(ui.contacts), len(contact_rows), len(ui.sidebar_filter))
 			if empty != .None {
 				nendo.text(
@@ -436,7 +436,7 @@ rail_content :: proc(ui: ^Ui_State) {
 			}
 		}
 
-		if ui.page == .Chats && logged_in && !rail_narrow(ui) {
+		if page == .Chats && logged_in && !rail_narrow(ui) {
 			if !ui.add_account_open {devices_banner(ui)}
 			if nendo.box(nendo.id("ChatList"))(
 			{

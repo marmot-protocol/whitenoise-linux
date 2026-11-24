@@ -20,51 +20,41 @@ import marmot "../marmot"
 
 Settings_Section :: enum {
 	Home,
-	General,
-	Folders,
-	Speech,
-	Network,
-	Keys,
 	Appearance,
 	Notifications,
-	Storage,
+	Chats,
+	Language,
+	Account,
+	Privacy,
+	Connection,
 	Advanced,
-	About,
-	Debug, // dev-mode only
-	KP, // dev-mode only
-	Agents,
+	Help,
+	Composer,
 	Devices,
+	Agents,
+	Debug,
+	KP,
+	Mute,
 }
 
-// A category opens on its menu of tasks and pages; a task or page opens its
-// property sheet. Utility sections (About, Debug, KP) have only the sheet.
-Settings_Level :: enum {
-	Menu,
-	Sheet,
+SETTINGS_SECTIONS := [Settings_Section]string {
+	.Home          = N_("Settings"),
+	.Appearance    = N_("Appearance"),
+	.Notifications = N_("Notifications"),
+	.Chats         = N_("Chats"),
+	.Language      = N_("Language & speech"),
+	.Account       = N_("Account & devices"),
+	.Privacy       = N_("Privacy & storage"),
+	.Connection    = N_("Connection"),
+	.Advanced      = N_("Advanced"),
+	.Help          = N_("Help & about"),
+	.Composer      = N_("Customize composer"),
+	.Devices       = N_("Devices"),
+	.Agents        = N_("AI agents"),
+	.Debug         = N_("Debug"),
+	.KP            = N_("KP inspector"),
+	.Mute          = N_("Mute a conversation"),
 }
-
-SETTINGS_SECTIONS := [Settings_Section]struct {
-	label: string,
-	icon:  string,
-} {
-	.Home          = {N_("Settings"), ICON_SETTINGS},
-	.General       = {N_("General"), ICON_SETTINGS},
-	.Folders       = {N_("Folders"), ICON_FOLDER},
-	.Speech        = {N_("Speech"), ICON_MIC},
-	.Network       = {N_("Network & relays"), ICON_GLOBE},
-	.Keys          = {N_("Keys & identity"), ICON_KEY},
-	.Appearance    = {N_("Appearance"), ICON_BRUSH},
-	.Notifications = {N_("Notifications"), ICON_BELL},
-	.Storage       = {N_("Storage"), ICON_ARCHIVE},
-	.Advanced      = {N_("Advanced"), ICON_CODE},
-	.About         = {N_("About"), ICON_INFO},
-	.Debug         = {N_("Debug"), ICON_BUG},
-	.KP            = {N_("KP inspector"), ICON_KEY},
-	.Agents        = {N_("AI agents"), ICON_CODE},
-	.Devices       = {N_("Devices"), ICON_GLOBE},
-}
-
-STUB_STATUS :: "Not available in the odin port yet."
 
 DATE_FORMATS := []string{"Jun 12", "12 Jun", "2026-06-12"}
 LOCALES := [][2]string {
@@ -101,22 +91,9 @@ settings_row :: proc(stacked: bool = false) -> nendo.Box {
 	}
 }
 
-settings_content_width :: proc(ui: ^Ui_State) -> f32 {
-	// Reserve the floating scrollbar's width on every sheet, even when it fits.
-	available := max(120, settings_main_w(ui) - (settings_main_w(ui) < 560 ? 32 : 56))
-	if ui.settings_section == .Appearance {
-		return available
-	}
-	menu := ui.settings_section == .Home || settings_on_menu(ui)
-	return min(menu ? 900 : (ui.settings_section == .General ? 560 : 740), available)
-}
-
-@(private)
 settings_body_width :: proc(ui: ^Ui_State) -> f32 {
-	if ui.settings_section == .Appearance {
-		return appearance_layout(ui).controls
-	}
-	return max(120, settings_content_width(ui) - (settings_main_w(ui) < 560 ? 16 : 32))
+	available := max(120, settings_main_w(ui) - (settings_main_w(ui) < 560 ? 32 : 56))
+	return ui.settings_gallery ? available : min(available, 740)
 }
 
 // A row of choices. On phones it fills the width and scrolls sideways when
@@ -138,58 +115,73 @@ settings_choices :: proc(id: nendo.Id) -> nendo.Box {
 
 @(private)
 settings_tap_size :: proc(pointer_size: f32) -> f32 {
-	return tap_size() ? max(44, pointer_size) : pointer_size
+	return tap_size() ? max(tap_min(), pointer_size) : pointer_size
 }
 
 @(private)
-SETTINGS_PANE_W :: 220
+SETTINGS_PANE_W :: 192
 
-// Beside the page when both fit; narrower windows stack the task boxes.
 @(private)
-settings_wide :: proc(ui: ^Ui_State) -> bool {
-	return page_w(ui) >= 760
+settings_wide :: proc() -> bool {
+	return !single_pane() && f32(rl.GetScreenWidth()) / UI_ZOOM >= 600
 }
 
 @(private)
 settings_main_w :: proc(ui: ^Ui_State) -> f32 {
-	return page_w(ui) - (settings_wide(ui) ? SETTINGS_PANE_W : 0)
+	w := settings_modal(ui) ? SETTINGS_MODAL_W : f32(rl.GetScreenWidth()) / UI_ZOOM
+	return w - (settings_wide() ? SETTINGS_PANE_W : 0)
+}
+
+@(private)
+settings_float_z :: proc(ui: ^Ui_State, inline_z: i16 = 5) -> i16 {
+	return settings_modal(ui) ? SETTINGS_MODAL_Z : inline_z
 }
 
 @(private)
 settings_box :: proc() -> nendo.Box {
 	return {
-		width = g_ui == nil ? nendo.grow() : nendo.fixed(settings_body_width(g_ui)),
+		width = nendo.grow(),
 		direction = .Column,
-		padding = {left = 12, right = 12, top = 18, bottom = 10},
-		gap = 8,
-		color = PANEL,
-		border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
-		radius = rr(2),
+		gap = 4,
+		padding = nendo.pad(10),
+		color = PLATE,
+		radius = rr(9),
+		border = {color = FIELD_BORDER, width = bw()},
 	}
+}
+
+@(private)
+settings_line :: proc() -> nendo.Box {
+	return {
+		width = nendo.grow(),
+		height = nendo.fit(min = settings_tap_size(30)),
+		padding = {top = 4, bottom = 4},
+		gap = 10,
+		align = {y = .Center},
+	}
+}
+
+@(private)
+settings_divider :: proc() {
+	if nendo.box()({width = nendo.grow(), height = nendo.fixed(1), color = DIVIDER}) {}
 }
 
 settings_group :: proc(label: string) {
-	width := g_ui == nil ? f32(600) : settings_body_width(g_ui) - 24
-	long := rl.MeasureTextLine(FONT_TITLE, 12, label, 0).x > width - 8
-	if nendo.box(nendo.id_local(label))(
-	{
-		width = long ? nendo.fixed(width) : nendo.fit(),
-		padding = {left = 4, right = 4},
-		floating = long ? nendo.Floating{} : nendo.Floating{attach_to = .Parent, clip_to = .Parent, offset = {8, -8}, pointer = .Passthrough},
-		color = PANEL,
-	},
-	) {
-		nendo.text(label, {font = FONT_TITLE, size = 12, color = TEXT})
-	}
+	nendo.text(label, {font = FONT_TITLE, size = 16, color = TEXT})
 }
 
-// The switches settings_check drew this frame, in layout order: the Tab
-// order for the keyboard and the hit list for clicks. A page holds at
-// most a handful, so a fixed array covers every page.
+// Enabled controls in layout order, shared by keyboard and pointer input.
 @(private)
-settings_check_ids: [32]string
+settings_check_ids: [48]string
 @(private)
 settings_check_count: int
+
+@(private)
+settings_register :: proc(id: string) {
+	if settings_check_count == len(settings_check_ids) {return}
+	settings_check_ids[settings_check_count] = id
+	settings_check_count += 1
+}
 
 @(private)
 Settings_Control_State :: enum {
@@ -206,40 +198,14 @@ settings_check :: proc(
 	state: Settings_Control_State = .Enabled,
 ) {
 	enabled := state == .Enabled
-	if enabled && settings_check_count < len(settings_check_ids) {
-		settings_check_ids[settings_check_count] = id_str
-		settings_check_count += 1
-	}
-	if nendo.box(nendo.id(id_str))(
-	{
-		width = nendo.grow(),
-		height = nendo.fit(min = settings_tap_size(22)),
-		gap = 9,
-		align = {y = .Top},
-		padding = {
-			left = 4,
-			right = 4,
-			top = single_pane() ? 12 : 3,
-			bottom = single_pane() ? 12 : 3,
-		},
-		color = enabled && hovered() ? HOVER : {},
-		border = kb_focus == id_str ? kb_ring(ACCENT) : {},
-		radius = rr(2),
-	},
-	) {
-		if nendo.box(nendo.id_local("Check"))(
-		{
-			width = nendo.fixed(16),
-			height = nendo.fixed(16),
-			align = {x = .Center, y = .Center},
-			color = CARD,
-			border = {color = hovered() ? ACCENT : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
-			radius = rr(2),
-		},
-		) {
-			if checked {nendo.text(ICON_CHECK, {font = FONT_ICON, size = 12, color = ACCENT})}
-		}
-		row_labels(title, sub, enabled ? TEXT : TEXT_LO)
+	if enabled {settings_register(id_str)}
+	row := settings_line()
+	row.color = enabled && nendo.pointer_over(nendo.id(id_str)) ? HOVER : {}
+	row.border = enabled && kb_focus == id_str ? kb_ring(ACCENT) : {}
+	row.radius = rr(5)
+	if nendo.box(nendo.id(id_str))(row) {
+		row_labels(title, sub, enabled ? TEXT : TEXT_LO, enabled ? TEXT_DIM : TEXT_LO)
+		toggle(nendo.id_local("Switch"), checked, state)
 	}
 }
 
@@ -316,173 +282,26 @@ settings_button :: proc(
 	}
 }
 
-// One tab of a property sheet, which the category menu also offers as an icon.
 @(private)
-Settings_Page :: struct {
-	label: string,
-	art:   Settings_Art,
+settings_nav_button :: proc(id, label: string, state: Settings_Control_State = .Enabled) {
+	if state == .Enabled {settings_register(id)}
+	settings_button(id, label, state = state)
 }
 
-SETTINGS_GENERAL_TABS := []Settings_Page {
-	{N_("Startup"), .Startup},
-	{N_("Language"), .Language},
-	{N_("Messaging"), .Messaging},
-	{N_("Composer"), .Messaging},
-}
-SETTINGS_SPEECH_TABS := []Settings_Page {
-	{N_("Dictation"), .Speech},
-	{N_("Read aloud"), .Read_Aloud},
-}
-SETTINGS_NETWORK_TABS := []Settings_Page {
-	{N_("Relays"), .Network},
-	{N_("Linked events"), .Linked_Events},
-}
-SETTINGS_KEYS_TABS := []Settings_Page {
-	{N_("Identity"), .Keys},
-	{N_("Key packages"), .Key_Packages},
-	{N_("Security"), .Security},
-}
-SETTINGS_ADVANCED_TABS := []Settings_Page {
-	{N_("Privacy"), .Privacy},
-	{N_("Audit logs"), .Audit_Logs},
-	{N_("Developer"), .Advanced},
-}
-
-settings_tabs :: proc(section: Settings_Section) -> []Settings_Page {
-	#partial switch section {
-	case .General:
-		return SETTINGS_GENERAL_TABS
-	case .Speech:
-		return SETTINGS_SPEECH_TABS
-	case .Network:
-		return SETTINGS_NETWORK_TABS
-	case .Keys:
-		return SETTINGS_KEYS_TABS
-	case .Advanced:
-		return SETTINGS_ADVANCED_TABS
-	case:
-		return nil
+@(private)
+settings_nav_row :: proc(id, title, detail: string) {
+	settings_register(id)
+	row := settings_line()
+	row.color = nendo.pointer_over(nendo.id(id)) ? HOVER : {}
+	row.border = kb_focus == id ? kb_ring(ACCENT) : {}
+	row.radius = rr(5)
+	if nendo.box(nendo.id(id))(row) {
+		row_labels(title, detail)
+		nendo.text("›", {font = FONT_TITLE, size = 18, color = TEXT_DIM})
 	}
 }
 
-settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
-	#partial switch section {
-	case .General:
-		switch anchor {
-		case "RowLang",
-		     "LangChange",
-		     "RowTimeFmt",
-		     "TimeFmt",
-		     "RowDateFmt",
-		     "DateFmt",
-		     "TranslationGroup",
-		     "RowTranslation",
-		     "TgTranslation",
-		     "RowTranslationAuto",
-		     "TgTranslationAuto",
-		     "RowTranslationSource",
-		     "TranslationSource",
-		     "RowTranslationTarget",
-		     "TranslationTarget":
-			return 1
-		case "RowQuick",
-		     "RowQuickReset",
-		     "QuickAdd",
-		     "QuickReset",
-		     "RowEmoji",
-		     "EmojiAdd",
-		     "EmojiNameBox",
-		     "EmojiSetsBrowse",
-		     "EmojiSetsQuery",
-		     "RowGm",
-		     "GmBox",
-		     "RowShortcuts",
-		     "ShortcutsView":
-			return 2
-		case "ComposerSettings":
-			return COMPOSER_TAB
-		}
-
-	case .Speech:
-		switch anchor {
-		case "RowTts", "TgTts", "TtsModel", "TtsVoice":
-			return 1
-		}
-	case .Network:
-		switch anchor {
-		case "AddFetchRow",
-		     "FetchBox",
-		     "AddFetchBtn",
-		     "NetworkFetchGroup",
-		     "ClientBox",
-		     "NetworkClientGroup",
-		     "NetworkGitClientGroup":
-			return 1
-		}
-	case .Keys:
-		switch anchor {
-		case "KpStatus", "KpPublish", "KpRefresh", "RowRotate", "RotateBtn":
-			return 1
-		case "RowVaultPw", "VaultPwBtn", "RowReveal", "RevealNsecBtn", "RowExport", "ExportBtn":
-			return 2
-		}
-	case .Advanced:
-		switch anchor {
-		case "RowAudit", "TgAudit", "AuditRefresh", "AdvancedAuditGroup":
-			return 1
-		case "RowDevMode",
-		     "TgDevMode",
-		     "AdvancedDeveloperGroup",
-		     "RowRenderer",
-		     "AdvancedGraphicsGroup":
-			return 2
-		}
-	case:
-	}
-	return 0
-}
-
-settings_tab_strip :: proc(ui: ^Ui_State) {
-	tabs := settings_tabs(ui.settings_section)
-	if len(tabs) == 0 {return}
-	if nendo.box(nendo.id("SettingsTabs"))(
-	{width = nendo.grow(), gap = 2, align = {y = .Bottom}},
-	) {
-		for page, i in tabs {
-			selected := ui.settings_tab == i
-			if nendo.box(nendo.id("SettingsTab", u32(i)))(
-			{
-				width = single_pane() ? nendo.grow() : nendo.grow(max = 120),
-				height = nendo.fixed(settings_tap_size(selected ? 32 : 29)),
-				padding = {left = 8, right = 8},
-				align = {x = .Center, y = .Center},
-				color = selected ? PANEL : (hovered() ? HOVER : ROW_BG),
-				radius = {top_left = 3 * R_SCALE, top_right = 3 * R_SCALE},
-				border = {
-					color = FIELD_BORDER,
-					width = {
-						left = 1,
-						right = 1,
-						top = selected ? 2 : 1,
-						bottom = selected ? 0 : 1,
-					},
-				},
-			},
-			) {
-				nendo.text(
-					tr(page.label),
-					{font = FONT_TITLE, size = 12, color = selected ? ACCENT : TEXT_DIM},
-				)
-			}
-		}
-		if nendo.box(nendo.id("SettingsTabEdge"))(
-		{width = nendo.grow(), height = nendo.fixed(1), color = FIELD_BORDER},
-		) {}
-	}
-}
-
-// Left half of a row: title over a dim sublabel, then the implicit
-// grow pushes the caller's control to the right edge.
+@(private)
 row_labels :: proc(
 	title, sub: string,
 	title_color: nendo.Color = {},
@@ -506,224 +325,213 @@ row_labels :: proc(
 }
 
 // On/off pill.
-toggle :: proc(id_str: string, on: bool) {
-	if nendo.box(nendo.id(id_str))(
+toggle :: proc(id: nendo.Id, on: bool, state: Settings_Control_State = .Enabled) {
+	enabled := state == .Enabled
+	if nendo.box(id)(
 	{
 		width = nendo.fixed(34),
 		height = nendo.fixed(18),
 		padding = nendo.pad(2),
 		align = {x = on ? .Right : .Left, y = .Center},
-		color = on ? ACCENT : ROW_BG,
+		color = on && enabled ? ACCENT : ROW_BG,
 		radius = rr(9),
-		border = on ? {} : nendo.Border{color = FIELD_BORDER, width = bw()},
+		border = on && enabled ? {} : nendo.Border{color = FIELD_BORDER, width = bw()},
 	},
 	) {
 		if nendo.box(nendo.id_local("Knob"))(
 		{
 			width = nendo.fixed(14),
 			height = nendo.fixed(14),
-			color = on ? ON_ACCENT : TEXT_DIM,
+			color = !enabled ? TEXT_LO : on ? ON_ACCENT : TEXT_DIM,
 			radius = rr(7),
 		},
 		) {}
 	}
 }
 
-// ── Pane dispatch ───────────────────────────────────────────────────
-
-settings_description :: proc(section: Settings_Section) -> string {
-	switch section {
-	case .Home:
-		return ""
-	case .General:
-		return N_("Make White Noise work your way.")
-	case .Folders:
-		return N_("Organize your conversations.")
-	case .Speech:
-		return N_("Dictate and listen on this device.")
-	case .Network:
-		return N_("Manage connections and published relay lists.")
-	case .Keys:
-		return N_("Your identity, key packages, and device security.")
-	case .Appearance:
-		return N_("Choose how your conversations look and feel.")
-	case .Notifications:
-		return N_("Choose when and how White Noise alerts you.")
-	case .Storage:
-		return N_("Manage local files and encrypted backups.")
-	case .Advanced:
-		return N_("Privacy, diagnostics, and developer tools.")
-	case .About:
-		return N_("Learn about White Noise.")
-	case .Debug:
-		return N_("Inspect application state and events.")
-	case .KP:
-		return N_("Inspect published MLS key packages.")
-	case .Agents:
-		return N_("Connect an AI agent using your public key and a setup prompt.")
-	case .Devices:
-		return ""
+@(private)
+settings_heading :: proc(ui: ^Ui_State, wide: bool) {
+	inline := wide || (settings_main_w(ui) >= 270 && f32(rl.GetScreenHeight()) / UI_ZOOM < 300)
+	if nendo.box(nendo.id("SettingsHead"))(
+	{
+		width = nendo.grow(),
+		direction = inline ? .Row : .Column,
+		align = {y = .Center},
+		padding = {left = 16, right = 16, top = 8, bottom = 5},
+		gap = 8,
+	},
+	) {
+		parent := settings_category(ui.settings_section)
+		back_to_results := ui.settings_search_return == ui.settings_section
+		if !wide || ui.settings_gallery || parent != ui.settings_section {
+			label := tr("All settings")
+			switch {
+			case ui.composer_settings_from_chat:
+				label = tr("Back to chat")
+			case ui.settings_gallery:
+				label = tr("Appearance")
+			case ui.settings_section == .Agents && ui.agent_connector > 0:
+				label = tr("AI agents")
+			case back_to_results:
+				label = tr("Search results")
+			case parent != ui.settings_section:
+				label = tr(SETTINGS_SECTIONS[parent])
+			}
+			caption := fmt.tprintf("‹ %s", label)
+			settings_button("SettingsBack", caption)
+			settings_register_nav(ui, "SettingsBack")
+		}
+		title :=
+			ui.settings_gallery ? tr("Browse themes") : tr(SETTINGS_SECTIONS[ui.settings_section])
+		if nendo.box(nendo.id_local("Title"))({width = nendo.grow()}) {
+			nendo.text(title, {font = FONT_TITLE, size = 21, color = TEXT})
+		}
 	}
-	return ""
 }
 
 settings_pane :: proc(ui: ^Ui_State) {
-	if ui.settings_section == .Devices && !settings_available(ui, .Devices) {
-		settings_open(ui, nil, .Home)
+	if !settings_available(ui, ui.settings_section) {
+		settings_open(ui, nil, settings_category(ui.settings_section))
 	}
-	wide := settings_wide(ui)
-	pinned_tabs :=
-		single_pane() &&
-		ui.settings_section != .Home &&
-		!settings_on_menu(ui) &&
-		len(settings_tabs(ui.settings_section)) > 0
-	workbench := ui.settings_section == .Appearance && appearance_layout(ui).columns > 1
-	// A scroll parent does not shrink growing children to its viewport.
-	// Bound the workbench to the last layout's page height before nendo sizes its columns.
-	workbench_h := max(1, nendo.element(nendo.id("SettingsPage")).rect.height - 48)
-	if nendo.box(nendo.id("SettingsRoot"))(
-	{width = nendo.fixed(page_w(ui)), height = nendo.grow()},
-	) {
+	wide := settings_wide()
+	query := settings_query(ui)
+	index := settings_index(ui)
+	floating := settings_modal(ui)
+	card: nendo.Box = {
+		width  = nendo.grow(),
+		height = nendo.grow(),
+	}
+	if floating {
+		card.width = nendo.fixed(SETTINGS_MODAL_W)
+		card.height = nendo.fixed(modal_h(600))
+		card.floating = {
+			attach_to = .Root,
+			z = SETTINGS_MODAL_Z,
+			attach = {element = .Center_Center, parent = .Center_Center},
+		}
+		card.border = {
+			color = ELEVATED_BORDER,
+			width = bw(),
+		}
+		card.color = PANEL
+		card.radius = rr(14)
+	}
+	if ui.settings_section == .Appearance {clear(&theme_control_order)}
+	if nendo.box(nendo.id("SettingsRoot"))(card) {
 		if wide {
-			if nendo.box(nendo.id("SettingsTaskPane"))(
+			if nendo.box(nendo.id("SettingsSidebar"))(
 			{
 				width = nendo.fixed(SETTINGS_PANE_W),
 				height = nendo.grow(),
 				direction = .Column,
-				padding = nendo.pad(12),
-				gap = 14,
-				color = STATUS_BAR,
+				padding = nendo.pad(10),
+				gap = 9,
+				color = floating ? {} : STATUS_BAR,
 				border = {color = DIVIDER, width = {right = 1}},
-				clip = {y = true, scroll = true},
 			},
 			) {
 				settings_nav_box(ui)
-				settings_related_boxes(ui)
+				if nendo.box(nendo.id("SettingsTaskPane"))(
+				{
+					width = nendo.grow(),
+					height = nendo.grow(),
+					direction = .Column,
+					gap = 8,
+					clip = {y = true, scroll = true},
+				},
+				) {
+					if query != "" {settings_result_list(ui)} else {settings_categories(ui)}
+				}
+				scrollbar(nendo.id("SettingsTaskPane"), settings_float_z(ui))
 			}
-			scrollbar(nendo.id("SettingsTaskPane"))
 		}
 		if nendo.box(nendo.id("SettingsMain"))(
-		{width = nendo.grow(), height = nendo.grow(), direction = .Column},
+		{
+			width = nendo.grow(),
+			height = nendo.grow(),
+			direction = .Column,
+			color = floating ? {} : PANEL,
+		},
 		) {
-			if ui.settings_section != .Home {settings_banner(ui)}
-			if pinned_tabs {
-				if nendo.box(nendo.id("SettingsPinnedTabs"))(
-				{width = nendo.grow(), padding = {left = 12, right = 20, top = 12}, color = BG},
-				) {settings_tab_strip(ui)}
+			side := settings_main_w(ui) < 560 ? u16(12) : u16(24)
+			if !index {
+				settings_heading(ui, wide)
+			} else if !wide {
+				if nendo.box(nendo.id("SettingsCompactSearch"))(
+				{
+					width = nendo.grow(),
+					direction = .Column,
+					gap = 7,
+					padding = {left = side, right = side + 8, top = 6},
+				},
+				) {
+					settings_nav_box(ui)
+				}
 			}
 			if nendo.box(nendo.id("SettingsPage"))(
 			{
 				width = nendo.grow(),
 				height = nendo.grow(),
 				direction = .Column,
-				padding = {
-					left = settings_main_w(ui) < 560 ? 12 : 24,
-					right = settings_main_w(ui) < 560 ? 20 : 32,
-					top = pinned_tabs ? 0 : (settings_main_w(ui) < 560 ? 12 : 24),
-					bottom = settings_main_w(ui) < 560 ? 12 : 24,
-				},
-				align = {
-					x = single_pane() || ui.settings_section == .Appearance ? .Left : .Center,
-				},
+				padding = {left = side, right = side + 8, top = side, bottom = side},
 				clip = {y = true, scroll = true},
 			},
 			) {
 				if nendo.box(nendo.id("SettingsContent"))(
-				{
-					width = nendo.fixed(settings_content_width(ui)),
-					height = workbench ? nendo.fixed(workbench_h) : nendo.fit(),
-					direction = .Column,
-					gap = 0,
-				},
+				{width = nendo.fixed(settings_body_width(ui)), direction = .Column, gap = 12},
 				) {
-					// Phone sheets go back through the shell's Back bar; the
-					// category home keeps search and breadcrumbs.
-					if !wide &&
-					   !(ui.settings_section != .Home &&
-							   (single_pane() || f32(rl.GetScreenHeight()) / UI_ZOOM < 500)) {
-						if nendo.box(nendo.id("SettingsTaskStack"))(
-						{
-							width = nendo.grow(),
-							direction = .Column,
-							padding = {bottom = 18},
-							gap = 12,
-						},
-						) {
-							settings_nav_box(ui)
+					if index {
+						if !wide {
+							if query !=
+							   "" {settings_result_list(ui)} else {settings_categories(ui)}
+						} else {
+							nendo.text(
+								tr("Choose what you'd like to change."),
+								{font = FONT_BODY, size = 14, color = TEXT_DIM},
+							)
 						}
-					}
-					tabs := settings_tabs(ui.settings_section)
-					on_menu := settings_on_menu(ui)
-					if ui.settings_section != .Home && !on_menu && !pinned_tabs {
-						settings_tab_strip(ui)
-					}
-					if ui.settings_section == .Home {
-						settings_home(ui)
-					} else if on_menu {
-						settings_category_menu(ui)
 					} else if nendo.box(nendo.id("SettingsSheet"))(
-					{
-						width = nendo.grow(),
-						height = workbench ? nendo.grow() : nendo.fit(),
-						direction = .Column,
-						padding = nendo.pad(settings_main_w(ui) < 560 ? 8 : 16),
-						gap = 18,
-						color = len(tabs) > 0 ? PANEL : {},
-						border = len(tabs) > 0 ? nendo.Border{color = FIELD_BORDER, width = {left = 1, right = 1, bottom = 1}} : {},
-						radius = {bottom_left = 3 * R_SCALE, bottom_right = 3 * R_SCALE},
-					},
+					{width = nendo.grow(), direction = .Column, gap = 12},
 					) {
 						#partial switch ui.settings_section {
-						case .General:
-							settings_general(ui)
-						case .Folders:
-							settings_folders(ui)
-						case .Speech:
-							settings_speech(ui)
-						case .Network:
-							settings_network(ui)
-						case .Keys:
-							settings_keys(ui)
 						case .Appearance:
 							settings_appearance(ui)
 						case .Notifications:
 							settings_notifications(ui)
-						case .Storage:
+						case .Chats:
+							settings_chats(ui)
+						case .Language:
+							settings_language(ui)
+						case .Account:
+							settings_account(ui)
+						case .Privacy:
 							settings_storage(ui)
+						case .Connection:
+							settings_network(ui)
 						case .Advanced:
 							settings_advanced(ui)
-						case .About:
-							settings_about(ui)
+						case .Help:
+							settings_help(ui)
+						case .Composer:
+							settings_composer(ui)
+						case .Devices:
+							devices_pane(ui)
+						case .Agents:
+							settings_agents(ui)
 						case .Debug:
 							settings_debug(ui)
 						case .KP:
 							settings_kp(ui)
-						case .Agents:
-							settings_agents(ui)
-						case .Devices:
-							devices_pane(ui)
-						}
-					}
-					// Related links follow the page when the pane can't sit beside it.
-					if !wide {
-						if nendo.box(nendo.id("SettingsRelatedStack"))(
-						{
-							width = nendo.grow(),
-							direction = .Column,
-							padding = {top = 24},
-							gap = 12,
-						},
-						) {
-							settings_related_boxes(ui)
+						case .Mute:
+							settings_mute()
 						}
 					}
 				}
-				settings_link_flash()
+				if !index {settings_link_flash(ui)}
 			}
-			scrollbar(nendo.id("SettingsPage"))
+			scrollbar(nendo.id("SettingsPage"), settings_float_z(ui))
 		}
 	}
-
 	if open_now(nendo.id("ThemeEdit"), ui.theme_edit) {
 		theme_edit_modal(ui)
 	}
@@ -748,8 +556,7 @@ settings_pane :: proc(ui: ^Ui_State) {
 
 @(private)
 settings_folders :: proc(ui: ^Ui_State) {
-	box := settings_box()
-	if nendo.box(nendo.id("FoldersGroup"))(box) {
+	if nendo.box(nendo.id("FoldersGroup"))(settings_box()) {
 		settings_group(tr("Folders"))
 		if nendo.box(nendo.id("SettingsFolderActions"))(
 		{
@@ -856,263 +663,272 @@ settings_tts_download :: proc(ui: ^Ui_State, model: int) {
 	}
 }
 
-// ── General ─────────────────────────────────────────────────────────
-
-settings_general :: proc(ui: ^Ui_State) {
-	switch ui.settings_tab {
-	case 0:
-		if nendo.box(nendo.id("StartupGroup"))(settings_box()) {
-			when ODIN_OS != .OpenBSD && ODIN_PLATFORM_SUBTARGET != .Android {
-				if nendo.box(nendo.id("RowLaunch"))(settings_row()) {
-					settings_check("TgLaunch", ui.prefs.launch_at_login, tr("Launch at login"), "")
-				}
+@(private)
+settings_startup :: proc(ui: ^Ui_State) {
+	if nendo.box(nendo.id("StartupGroup"))(settings_box()) {
+		settings_group(tr("Startup"))
+		when ODIN_OS != .OpenBSD && ODIN_PLATFORM_SUBTARGET != .Android {
+			if nendo.box(nendo.id("RowLaunch"))(settings_row()) {
+				settings_check("TgLaunch", ui.prefs.launch_at_login, tr("Launch at login"), "")
 			}
-			if ODIN_PLATFORM_SUBTARGET != .Android && !tap_size() {
-				if nendo.box(nendo.id("RowTray"))(settings_row()) {
-					settings_check(
-						"TgTray",
-						ui.prefs.start_in_tray,
-						tr("Start minimized to tray"),
-						tr("Takes effect on the next launch."),
-					)
-				}
-				if nendo.box(nendo.id("RowMinTray"))(settings_row()) {
-					settings_check(
-						"TgMinTray",
-						ui.prefs.minimize_tray,
-						tr("Close to tray"),
-						tr(
-							"Closing the window hides it. The tray icon shows your unread total and brings it back.",
-						),
-					)
-				}
-			}
-			if nendo.box(nendo.id("RowRestore"))(settings_row()) {
+			settings_divider()
+		}
+		if ODIN_PLATFORM_SUBTARGET != .Android && !tap_size() {
+			if nendo.box(nendo.id("RowTray"))(settings_row()) {
 				settings_check(
-					"TgRestore",
-					ui.prefs.restore_last_chat,
-					tr("Restore last selected chat on launch"),
-					"",
+					"TgTray",
+					ui.prefs.start_in_tray,
+					tr("Start minimized to tray"),
+					tr("Takes effect on the next launch."),
 				)
+			}
+			settings_divider()
+			if nendo.box(nendo.id("RowMinTray"))(settings_row()) {
+				settings_check(
+					"TgMinTray",
+					ui.prefs.minimize_tray,
+					tr("Close to tray"),
+					tr(
+						"Closing the window hides it. The tray icon shows your unread total and brings it back.",
+					),
+				)
+			}
+			settings_divider()
+		}
+		if nendo.box(nendo.id("RowRestore"))(settings_row()) {
+			settings_check(
+				"TgRestore",
+				ui.prefs.restore_last_chat,
+				tr("Restore last selected chat on launch"),
+				"",
+			)
+		}
+	}
+}
+
+@(private)
+settings_language :: proc(ui: ^Ui_State) {
+	if nendo.box(nendo.id("LanguageGroup"))(settings_box()) {
+		settings_group(tr("Language and formats"))
+		column := settings_row()
+		column.direction = .Column
+		column.gap = 8
+		if nendo.box(nendo.id("RowLang"))(settings_line()) {
+			row_labels(tr("Interface language"), "")
+			settings_register("LangChange")
+			if nendo.box(nendo.id("LangChange"))(
+			{
+				height = nendo.fixed(settings_tap_size(30)),
+				padding = {left = 12, right = 12},
+				gap = 10,
+				align = {y = .Center},
+				color = hovered() ? HOVER : CARD,
+				border = kb_focus == "LangChange" ? kb_ring(ACCENT) : nendo.Border{color = FIELD_BORDER, width = bw()},
+				radius = rr(7),
+			},
+			) {
+				nendo.text(
+					locale_label(ui.prefs.locale),
+					{font = FONT_BODY, size = 12, color = TEXT},
+				)
+				nendo.text(ICON_DOWN, {font = FONT_ICON, size = 12, color = TEXT_DIM})
 			}
 		}
-
-	case 1:
-		if nendo.box(nendo.id("LanguageGroup"))(settings_box()) {
-			column := settings_row()
-			column.direction = .Column
-			column.gap = 8
-			if nendo.box(nendo.id("RowLang"))(column) {
-				row_labels(tr("Interface language"), "")
-				if nendo.box(nendo.id("LangChange"))(
-				{
-					height = nendo.fixed(settings_tap_size(30)),
-					padding = {left = 12, right = 12},
-					gap = 10,
-					align = {y = .Center},
-					color = hovered() ? HOVER : CARD,
-					border = {color = FIELD_BORDER, width = bw()},
-					radius = rr(7),
-				},
-				) {
-					nendo.text(
-						locale_label(ui.prefs.locale),
-						{font = FONT_BODY, size = 12, color = TEXT},
-					)
-					nendo.text(ICON_DOWN, {font = FONT_ICON, size = 12, color = TEXT_DIM})
-				}
+		settings_divider()
+		if nendo.box(nendo.id("RowTimeFmt"))(column) {
+			row_labels(tr("Time format"), "")
+			if nendo.box(nendo.id("TimeFmtCol"))(settings_choices(nendo.id("TimeFmtCol"))) {
+				settings_option("TimeFmt", 0, "14:30", !ui.prefs.hour12)
+				settings_option("TimeFmt", 1, "2:30 PM", ui.prefs.hour12)
 			}
-			if nendo.box(nendo.id("RowTimeFmt"))(column) {
-				row_labels(tr("Time format"), "")
-				if nendo.box(nendo.id("TimeFmtCol"))(settings_choices(nendo.id("TimeFmtCol"))) {
-					settings_option("TimeFmt", 0, "14:30", !ui.prefs.hour12)
-					settings_option("TimeFmt", 1, "2:30 PM", ui.prefs.hour12)
-				}
-			}
-			if nendo.box(nendo.id("RowDateFmt"))(column) {
-				row_labels(tr("Date format"), "")
-				if nendo.box(nendo.id("DateFmtCol"))(settings_choices(nendo.id("DateFmtCol"))) {
-					for label, i in DATE_FORMATS {
-						settings_option("DateFmt", u32(i), label, ui.prefs.date_format == i)
-					}
+		}
+		settings_divider()
+		if nendo.box(nendo.id("RowDateFmt"))(column) {
+			row_labels(tr("Date format"), "")
+			if nendo.box(nendo.id("DateFmtCol"))(settings_choices(nendo.id("DateFmtCol"))) {
+				for label, i in DATE_FORMATS {
+					settings_option("DateFmt", u32(i), label, ui.prefs.date_format == i)
 				}
 			}
 		}
-		settings_translation(ui)
+	}
+	settings_translation(ui)
+	settings_speech(ui)
+}
 
-	case 2:
-		if nendo.box(nendo.id("ReactionsGroup"))(settings_box()) {
-			settings_group(tr("Quick reactions"))
-			row := settings_row()
-			row.direction = .Column
-			if nendo.box(nendo.id("RowQuick"))(row) {
-				row_labels(
-					tr("One-tap reactions"),
-					tr("Shown on the message menu. Tap one to remove it. Up to 16."),
-				)
-				columns := max(
-					1,
-					int((settings_body_width(ui) - 24) / (settings_tap_size(24) + 8)),
-				)
-				// The add button takes the next grid cell instead of a row of
-				// its own.
-				count := len(ui.prefs.quick_reactions)
-				cells := count + (count < QUICK_MAX ? 1 : 0)
-				for first := 0; first < cells; first += columns {
-					if nendo.box(nendo.id("QuickChoiceRow", u32(first)))({gap = 8}) {
-						for i in first ..< min(first + columns, cells) {
-							if i == count {
-								if nendo.box(nendo.id("QuickAdd"))(
-								{
-									width = nendo.fixed(settings_tap_size(24)),
-									height = nendo.fixed(settings_tap_size(24)),
-									align = {x = .Center, y = .Center},
-									color = hovered() ? HOVER : {},
-									radius = rr(6),
-									border = {color = FIELD_BORDER, width = bw()},
-								},
-								) {
-									nendo.text("+", {font = FONT_BODY, size = 14, color = TEXT})
-								}
-								continue
-							}
-							emoji := ui.prefs.quick_reactions[i]
-							if nendo.box(nendo.id("QuickChip", u32(i)))(
+@(private)
+settings_chats :: proc(ui: ^Ui_State) {
+	if nendo.box(nendo.id("RowComposer"))(settings_box()) {
+		settings_nav_row(
+			"SettingsComposer",
+			tr("Customize composer"),
+			tr("Choose which shortcuts appear beside your draft."),
+		)
+	}
+	if nendo.box(nendo.id("ReactionsGroup"))(settings_box()) {
+		settings_group(tr("Quick reactions"))
+		row := settings_row()
+		row.direction = .Column
+		if nendo.box(nendo.id("RowQuick"))(row) {
+			row_labels(
+				tr("One-tap reactions"),
+				tr("Shown on the message menu. Tap one to remove it. Up to 16."),
+			)
+			columns := max(1, int((settings_body_width(ui) - 24) / (settings_tap_size(24) + 8)))
+			// The add button takes the next grid cell instead of a row of
+			// its own.
+			count := len(ui.prefs.quick_reactions)
+			cells := count + (count < QUICK_MAX ? 1 : 0)
+			for first := 0; first < cells; first += columns {
+				if nendo.box(nendo.id("QuickChoiceRow", u32(first)))({gap = 8}) {
+					for i in first ..< min(first + columns, cells) {
+						if i == count {
+							if nendo.box(nendo.id("QuickAdd"))(
 							{
 								width = nendo.fixed(settings_tap_size(24)),
 								height = nendo.fixed(settings_tap_size(24)),
 								align = {x = .Center, y = .Center},
 								color = hovered() ? HOVER : {},
 								radius = rr(6),
+								border = {color = FIELD_BORDER, width = bw()},
 							},
 							) {
-								if tex := emoji_tex(emoji); tex != nil {
-									if nendo.box(nendo.id("QuickChipImg", u32(i)))(
-									{
-										width = nendo.fixed(tap_size() ? 22 : 16),
-										aspect = 1,
-										image = tex,
-									},
-									) {}
-								} else {
-									nendo.text(emoji, {font = FONT_BODY, size = 13, color = TEXT})
-								}
+								nendo.text("+", {font = FONT_BODY, size = 14, color = TEXT})
+							}
+							continue
+						}
+						emoji := ui.prefs.quick_reactions[i]
+						if nendo.box(nendo.id("QuickChip", u32(i)))(
+						{
+							width = nendo.fixed(settings_tap_size(24)),
+							height = nendo.fixed(settings_tap_size(24)),
+							align = {x = .Center, y = .Center},
+							color = hovered() ? HOVER : {},
+							radius = rr(6),
+						},
+						) {
+							name: string
+							if code, custom := emoji_shortcode(emoji);
+							   custom {name = emoji_file_for(code)}
+							tex := name != "" ? custom_emoji_textures[name] : emoji_tex(emoji)
+							if tex != nil {
+								if nendo.box(nendo.id("QuickChipImg", u32(i)))(
+								{
+									width = nendo.fixed(tap_size() ? 22 : 16),
+									aspect = 1,
+									image = tex,
+								},
+								) {}
+							} else {
+								nendo.text(emoji, {font = FONT_BODY, size = 13, color = TEXT})
 							}
 						}
 					}
 				}
-			}
-			if nendo.box(nendo.id("RowQuickReset"))(settings_row()) {
-				row_labels(tr("Restore the default reactions"), "")
-				settings_button("QuickReset", tr("Reset"))
 			}
 		}
+		settings_divider()
+		if nendo.box(nendo.id("RowQuickReset"))(settings_line()) {
+			row_labels(tr("Restore the default reactions"), "")
+			settings_button("QuickReset", tr("Reset"))
+		}
+	}
 
-		if nendo.box(nendo.id("CustomEmojiGroup"))(settings_box()) {
-			settings_group(tr("Custom emoji"))
-			emoji_busy := ui.emoji_sets_job != nil
-			row := settings_row()
-			row.direction = .Column
-			if nendo.box(nendo.id("RowEmoji"))(row) {
-				row_labels(tr("Uploaded emoji"), tr("Tap one, then confirm, to remove it."))
-				for name, i in custom_emoji_names {
-					if nendo.box(nendo.id("EmojiChip", u32(i)))(
-					{
-						width = nendo.grow(),
-						height = nendo.fit(min = settings_tap_size(24)),
-						direction = single_pane() ? .Column : .Row,
-						padding = {left = 6, right = 8, top = 3, bottom = 3},
-						gap = 5,
-						align = {y = .Center},
-						color = hovered() && !emoji_busy ? HOVER : ROW_BG,
-						radius = rr(6),
-					},
-					) {
-						if tex := custom_emoji_texture(name); tex != nil {
-							if nendo.box(nendo.id("EmojiChipImg", u32(i)))(
-							{width = nendo.fixed(18), aspect = 1, image = tex},
-							) {}
-						}
-						armed_emoji :=
-							!emoji_busy && ui.keys_confirm == fmt.tprintf("EmojiDelete:%s", name)
-						nendo.text(
-							armed_emoji ? tr("Confirm delete") : fmt.tprintf(":%s:", emoji_code(name)),
-							{font = FONT_BODY, size = 12, color = armed_emoji ? DANGER : TEXT_DIM},
-						)
-						title, author, coordinate := emoji_source_for(name)
-						if coordinate != "" {
-							if nendo.box(nendo.id("EmojiSource", u32(i)))(
-							{width = nendo.grow(), direction = .Column, gap = 2},
-							) {
-								emoji_set_text(fmt.tprintf(tr("Set: %s"), title))
-								emoji_set_author(0x481000 + u32(i), author)
-							}
-						}
-					}
-				}
-				settings_button("EmojiAdd", "+", emoji_busy ? TEXT_LO : TEXT)
-			}
-			if len(ui.emoji_staged) > 0 {
-				nendo.text(
-					tr("Name the shortcode. Type it in messages as :name:."),
-					{font = FONT_BODY, size = 11, color = TEXT_DIM},
-				)
-				// Fixed-size input first: this nendo build drops a fixed sibling
-				// declared after a grow sibling (see PORT.md quirks).
-				if nendo.box(nendo.id("RowEmojiName"))(
+	if nendo.box(nendo.id("CustomEmojiGroup"))(settings_box()) {
+		settings_group(tr("Custom emoji"))
+		emoji_busy := ui.emoji_sets_job != nil
+		row := settings_row()
+		row.direction = .Column
+		if nendo.box(nendo.id("RowEmoji"))(row) {
+			row_labels(tr("Uploaded emoji"), tr("Tap one, then confirm, to remove it."))
+			for name, i in custom_emoji_names {
+				if nendo.box(nendo.id("EmojiChip", u32(i)))(
 				{
 					width = nendo.grow(),
+					height = nendo.fit(min = settings_tap_size(24)),
 					direction = single_pane() ? .Column : .Row,
-					gap = 10,
+					padding = {left = 6, right = 8, top = 3, bottom = 3},
+					gap = 5,
 					align = {y = .Center},
+					color = hovered() && !emoji_busy ? HOVER : ROW_BG,
+					radius = rr(6),
 				},
 				) {
-					settings_input(
-						ui,
-						"EmojiNameBox",
-						&ui.emoji_name,
-						"party_parrot",
-						ui.focus == .EmojiName,
-						single_pane() ? 0 : min(220, settings_body_width(ui) - 200),
-					)
-					if !emoji_busy {settings_button("EmojiSave", tr("Save"))}
-					settings_button("EmojiCancel", tr("Cancel"))
-				}
-			}
-			emoji_sets_panel(ui)
-		}
-
-		if nendo.box(nendo.id("GmGroup"))(settings_box()) {
-			settings_group(tr("GM button"))
-			row := settings_row()
-			row.direction = .Column
-			if nendo.box(nendo.id("RowGm"))(row) {
-				row_labels(
-					tr("Your GM"),
-					tr("What the GM button sends. You can use it once a day in each chat."),
-				)
-				settings_input(ui, "GmBox", &ui.gm_input, GM_DEFAULT, ui.focus == .Gm)
-				if len(ui.gm_input) > 0 && ui.prefs.gm_text == "" {
+					if nendo.box(nendo.id("EmojiChipImg", u32(i)))(
+					{
+						width = nendo.fixed(18),
+						height = nendo.fixed(18),
+						image = custom_emoji_textures[name],
+					},
+					) {}
+					armed_emoji :=
+						!emoji_busy && ui.keys_confirm == fmt.tprintf("EmojiDelete:%s", name)
 					nendo.text(
-						tr("This has no visible text, so the GM button sends GM."),
-						{font = FONT_BODY, size = 12, color = TEXT_DIM},
+						armed_emoji ? tr("Confirm delete") : fmt.tprintf(":%s:", emoji_code(name)),
+						{font = FONT_BODY, size = 12, color = armed_emoji ? DANGER : TEXT_DIM},
 					)
+					title, author, coordinate := emoji_source_for(name)
+					if coordinate != "" {
+						if nendo.box(nendo.id("EmojiSource", u32(i)))(
+						{width = nendo.grow(), direction = .Column, gap = 2},
+						) {
+							emoji_set_text(fmt.tprintf(tr("Set: %s"), title))
+							emoji_set_author(0x481000 + u32(i), author)
+						}
+					}
 				}
 			}
+			settings_button("EmojiAdd", "+", emoji_busy ? TEXT_LO : TEXT)
 		}
-
-		if !tap_size() {
-			if nendo.box(nendo.id("ShortcutsGroup"))(settings_box()) {
-				settings_group(tr("Help"))
-				if nendo.box(nendo.id("RowShortcuts"))(settings_row()) {
-					row_labels(tr("Keyboard shortcuts"), "")
-					settings_button("ShortcutsView", tr("View"))
-				}
+		if len(ui.emoji_staged) > 0 {
+			nendo.text(
+				tr("Name the shortcode. Type it in messages as :name:."),
+				{font = FONT_BODY, size = 11, color = TEXT_DIM},
+			)
+			// Fixed-size input first: this nendo build drops a fixed sibling
+			// declared after a grow sibling (see PORT.md quirks).
+			if nendo.box(nendo.id("RowEmojiName"))(
+			{
+				width = nendo.grow(),
+				direction = single_pane() ? .Column : .Row,
+				gap = 10,
+				align = {y = .Center},
+			},
+			) {
+				settings_input(
+					ui,
+					"EmojiNameBox",
+					&ui.emoji_name,
+					"party_parrot",
+					ui.focus == .EmojiName,
+					single_pane() ? 0 : min(220, settings_body_width(ui) - 200),
+				)
+				if !emoji_busy {settings_button("EmojiSave", tr("Save"))}
+				settings_button("EmojiCancel", tr("Cancel"))
 			}
 		}
-	case COMPOSER_TAB:
-		settings_composer(ui)
+		emoji_sets_panel(ui)
 	}
+
+	if nendo.box(nendo.id("GmGroup"))(settings_box()) {
+		settings_group(tr("GM button"))
+		row := settings_row()
+		row.direction = .Column
+		if nendo.box(nendo.id("RowGm"))(row) {
+			row_labels(
+				tr("Your GM"),
+				tr("What the GM button sends. You can use it once a day in each chat."),
+			)
+			settings_input(ui, "GmBox", &ui.gm_input, GM_DEFAULT, ui.focus == .Gm)
+			if len(ui.gm_input) > 0 && ui.prefs.gm_text == "" {
+				nendo.text(
+					tr("This has no visible text, so the GM button sends GM."),
+					{font = FONT_BODY, size = 12, color = TEXT_DIM},
+				)
+			}
+		}
+	}
+	settings_folders(ui)
 }
 
 @(private)
@@ -1493,7 +1309,7 @@ settings_theme_preview_guard :: proc(ui: ^Ui_State) {
 	if !ui.theme_preview_active && ui.theme_candidate < 0 {return}
 	if ui.page != .Settings ||
 	   ui.settings_section != .Appearance ||
-	   settings_on_menu(ui) ||
+	   !ui.settings_gallery ||
 	   ui.add_account_open ||
 	   ui.focus == .SettingsSearch ||
 	   modal_open(ui) {
@@ -1836,64 +1652,6 @@ settings_theme_gallery :: proc(ui: ^Ui_State, width: f32) {
 }
 
 
-// ── Notifications ───────────────────────────────────────────────────
-
-settings_notifications :: proc(ui: ^Ui_State) {
-	if nendo.box(nendo.id("NotificationsGroup"))(settings_box()) {
-		settings_group(tr("Incoming messages"))
-		if nendo.box(nendo.id("RowNotify"))(settings_row()) {
-			settings_check(
-				"TgNotify",
-				ui.prefs.notify_desktop,
-				tap_size() ? tr("Message notifications") : tr("Desktop notifications"),
-				tr("Get an alert when a message arrives in a chat you're not viewing."),
-			)
-		}
-		if nendo.box(nendo.id("RowSound"))(settings_row()) {
-			settings_check(
-				"TgSound",
-				ui.prefs.notify_sound,
-				tr("Play a sound"),
-				"",
-				ui.prefs.notify_desktop ? .Enabled : .Disabled,
-			)
-		}
-		if nendo.box(nendo.id("RowPreview"))(settings_row()) {
-			settings_check(
-				"TgPreview",
-				ui.prefs.notify_preview,
-				tr("Show message preview"),
-				tr("Off shows only \"New message\" without the text."),
-				ui.prefs.notify_desktop ? .Enabled : .Disabled,
-			)
-		}
-		if nendo.box(nendo.id("RowNotifyTest"))(settings_row()) {
-			row_labels(
-				tr("Send a test notification"),
-				tr("See and hear it with your current sound and preview settings."),
-			)
-			settings_button(
-				"NotifyTest",
-				notify_test_pending ? tr("Sending a test notification...") : tr("Send test"),
-				notify_test_pending ? TEXT_LO : TEXT,
-				notify_test_pending ? .Disabled : .Enabled,
-			)
-			if notify_test_pending {busy_bar("NotifyTestBusy")}
-		}
-	}
-	if nendo.box(nendo.id("InterfaceSoundsGroup"))(settings_box()) {
-		settings_group(tr("Interface sounds"))
-		if nendo.box(nendo.id("RowUiSounds"))(settings_row()) {
-			settings_check(
-				"TgUiSounds",
-				ui.prefs.ui_sounds,
-				tr("Interface sounds"),
-				tr("Short tones when a message leaves, arrives, or fails to send."),
-			)
-		}
-	}
-}
-
 // ── Modals ──────────────────────────────────────────────────────────
 
 lang_modal :: proc(ui: ^Ui_State) {
@@ -2223,10 +1981,42 @@ flip :: proc(ui: ^Ui_State, flag: ^bool) {
 	save_settings(ui)
 }
 
-// Flips the settings switch drawn as `id`, from a click or the keyboard.
+// Activate the same control from a click or the keyboard.
 @(private)
 settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
+	if settings_nav_action(ui, client, id) {return}
+	if ui.settings_section == .Help {
+		for link in SETTINGS_TROUBLESHOOTERS {
+			if id != link.label {continue}
+			settings_open(ui, client, link.section, anchor = link.anchor)
+			return
+		}
+	}
 	switch id {
+	case "SettingsComposer":
+		settings_open(ui, client, .Composer, anchor = "ComposerSettings", jump = .Keep_Search)
+	case "SettingsLinkedDevices":
+		settings_open(ui, client, .Devices, jump = .Keep_Search)
+	case "SettingsEditProfile":
+		settings_edit_profile(ui, client)
+	case "VaultPwBtn":
+		vault_pw_begin(ui)
+	case "SettingsCopyNpub", "SettingsShowNpub":
+		keys_public_action(ui, id)
+	case "SettingsAgents":
+		settings_open(ui, client, .Agents, jump = .Keep_Search)
+	case "SettingsDebug":
+		settings_open(ui, client, .Debug, jump = .Keep_Search)
+	case "SettingsKP":
+		settings_open(ui, client, .KP, jump = .Keep_Search)
+	case "SettingsMuteHelp":
+		settings_open(ui, client, .Mute, jump = .Keep_Search)
+	case "SupportChat":
+		open_support_chat(ui, client)
+	case "ShortcutsView":
+		ui.shortcuts_open = true
+	case "LangChange":
+		ui.lang_open = true
 	case "TgSocks5":
 		if ui.socks5_job != nil {return}
 		ui.socks5_enabled = !ui.socks5_enabled
@@ -2279,18 +2069,28 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 	case "TgEmojiContacts":
 		flip(ui, &ui.prefs.emoji_contacts_only)
 		ui.emoji_sets_page = 0
+	case "NotifyTest":
+		notify_test_start(ui)
 	case "TgNotify":
-		flip(ui, &ui.prefs.notify_desktop)
+		ui.prefs.notify_desktop = !ui.prefs.notify_desktop
+		ui.settings_dirty = true
 	case "TgSound":
-		flip(ui, &ui.prefs.notify_sound)
+		if ui.prefs.notify_desktop {
+			ui.prefs.notify_sound = !ui.prefs.notify_sound
+			ui.settings_dirty = true
+		}
 	case "TgUiSounds":
-		flip(ui, &ui.prefs.ui_sounds)
+		ui.prefs.ui_sounds = !ui.prefs.ui_sounds
+		ui.settings_dirty = true
 		// Play the thing being turned on, so the toggle answers.
 		if ui.prefs.ui_sounds {
 			play_sound(.Receive)
 		}
 	case "TgPreview":
-		flip(ui, &ui.prefs.notify_preview)
+		if ui.prefs.notify_desktop {
+			ui.prefs.notify_preview = !ui.prefs.notify_preview
+			ui.settings_dirty = true
+		}
 	case "TgLinkPreviews":
 		flip(ui, &ui.prefs.disable_link_previews)
 	case "TgMaps":
@@ -2308,11 +2108,15 @@ settings_flip :: proc(ui: ^Ui_State, client: ^marmot.Client, id: string) {
 
 // Tab and Shift+Tab walk the page's switches, Space or Enter flips the
 // focused one. Not while a settings text box has focus, so Space still
-// types into it. Runs before the release gate in handle_pages.
+// types into it.
 @(private)
 settings_switch_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
+	if ui.focus == .SettingsSearch && tab_step() != 0 {
+		ui.focus = .Compose
+		kb_focus = "SettingsSearchBox"
+	}
 	if ui.settings_section == .Appearance {
-		return false // The workbench has one order for switches, chips and themes.
+		return false // Appearance uses its own order for switches, chips and themes.
 	}
 	FIELDS :: bit_set[Focus] {
 		.Relay,
@@ -2336,7 +2140,9 @@ settings_switch_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 	case .None:
 		return false
 	case .Moved:
-		scroll_into_view(nendo.id("SettingsPage"), nendo.id(kb_focus))
+		if !settings_nav_focus(ui, kb_focus) {
+			scroll_into_view(nendo.id("SettingsPage"), nendo.id(kb_focus))
+		}
 	case .Pressed:
 		settings_flip(ui, client, kb_focus)
 	}
@@ -2344,10 +2150,15 @@ settings_switch_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 }
 
 @(private)
-settings_theme_input :: proc(ui: ^Ui_State) -> (handled: bool, pressed: string) {
+settings_theme_input :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+) -> (
+	handled: bool,
+	pressed: string,
+) {
 	if ui.page != .Settings ||
 	   ui.settings_section != .Appearance ||
-	   settings_on_menu(ui) ||
 	   modal_open(ui) ||
 	   ui.add_account_open {
 		settings_theme_preview_reset(ui)
@@ -2361,6 +2172,7 @@ settings_theme_input :: proc(ui: ^Ui_State) -> (handled: bool, pressed: string) 
 	switch control_keys(theme_control_order[:]) {
 	case .Moved:
 		settings_theme_preview_reset(ui)
+		if settings_nav_focus(ui, kb_focus) {return true, ""}
 		field := nendo.id(kb_focus)
 		for key, i in theme_tile_keys {
 			if key == kb_focus {field = nendo.id("ThemeOpt", u32(i)); break}
@@ -2371,11 +2183,23 @@ settings_theme_input :: proc(ui: ^Ui_State) -> (handled: bool, pressed: string) 
 		for control in APPEARANCE_CONTROLS {
 			if control.key == kb_focus {field = nendo.id(control.id, control.index); break}
 		}
-		scroll_into_view(appearance_scroll(ui, field), field)
+		if kb_focus != "SettingsBack" {scroll_into_view(nendo.id("SettingsPage"), field)}
 		return true, ""
 	case .Pressed:
 		pressed = kb_focus
 	case .None:
+	}
+	if pressed != "" && settings_nav_action(ui, client, pressed) {return true, ""}
+	if !ui.settings_gallery {
+		for key, i in THEME_ACCENT_KEYS {
+			if ui.theme != system_theme_index &&
+			   (pressed == key ||
+					   (mouse_released() && nendo.pointer_over(nendo.id("AccentDot", u32(i))))) {
+				theme_switch(ui, ui.theme, i)
+				return true, ""
+			}
+		}
+		return false, pressed
 	}
 	if pressed == "ThemeToneDark" ||
 	   pressed == "ThemeToneLight" ||
@@ -2395,21 +2219,13 @@ settings_theme_input :: proc(ui: ^Ui_State) -> (handled: bool, pressed: string) 
 			return true, ""
 		}
 	}
-	for key, i in THEME_ACCENT_KEYS {
-		if ui.theme != system_theme_index &&
-		   (pressed == key ||
-				   (mouse_released() && nendo.pointer_over(nendo.id("AccentDot", u32(i))))) {
-			theme_switch(ui, ui.theme, i)
-			return true, ""
-		}
-	}
 	if pressed != "" {settings_theme_preview_reset(ui)} else {settings_theme_preview_hover(ui)}
 	return false, pressed
 }
 
 @(private)
 settings_theme_action :: proc(ui: ^Ui_State, pressed: string) -> bool {
-	if ui.settings_section != .Appearance || settings_on_menu(ui) {return false}
+	if ui.settings_section != .Appearance || ui.settings_gallery {return false}
 	pressed := pressed
 	if pressed == "" && mouse_released() {
 		for id in ([]string{"ThemeShareBtn", "ThemeEditBtn", "ThemeDeleteBtn"}) {
@@ -2515,13 +2331,15 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		return
 	}
-	theme_handled, theme_pressed := settings_theme_input(ui)
-	if theme_handled {return}
 	if settings_handle_navigation(ui, client) {return}
+	if settings_switch_keys(ui, client) {return}
+	theme_handled, theme_pressed := settings_theme_input(ui, client)
+	if theme_handled {return}
 	if settings_theme_action(ui, theme_pressed) {return}
-	if ui.settings_section == .Appearance && appearance_control_input(ui, theme_pressed) {return}
+	if ui.settings_section == .Appearance &&
+	   !ui.settings_gallery &&
+	   appearance_control_input(ui, theme_pressed) {return}
 	if ui.settings_section == .Agents && handle_agents(ui) {return}
-	if ui.settings_section == .Home && handle_support(ui, client) {return}
 	if ui.settings_section == .Devices &&
 	   settings_available(ui, .Devices) &&
 	   handle_devices(ui, client) {return}
@@ -2538,31 +2356,6 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	for _, i in settings_tabs(ui.settings_section) {
-		if nendo.pointer_over(nendo.id("SettingsTab", u32(i))) && ui.settings_tab != i {
-			if ui.settings_section == .Keys {
-				keys_forget(ui)
-			} else {
-				keys_disarm(ui)
-			}
-			settings_theme_preview_reset(ui)
-			if ui.settings_section == .General && i != 2 {
-				ui.emoji_sets_open = false
-				ui.emoji_sets_selected = -1
-			}
-			ui.translation.language_menu = 0
-			ui.composer_settings_from_chat = false
-			ui.settings_tab = i
-			ui.settings_anchor = ""
-			ui.settings_scroll_pending = true
-			ui.focus = .Compose
-			if scroll := nendo.scroll(nendo.id("SettingsPage")); scroll.found {
-				scroll.position^ = {}
-			}
-			return
-		}
-	}
-
 	for id in settings_check_ids[:settings_check_count] {
 		if clicked(id) {
 			settings_flip(ui, client, id)
@@ -2570,13 +2363,25 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	switch ui.settings_section {
-	case .Home:
-		return
-	case .Folders:
-		// handle_folder_board took every click on this page.
-		return
-	case .Speech:
+	#partial switch ui.settings_section {
+	case .Language:
+		if handle_settings_translation(ui) {return}
+		for i in 0 ..< 2 {
+			if nendo.pointer_over(nendo.id("TimeFmt", u32(i))) {
+				ui.prefs.hour12 = i == 1
+				ui.stamp_day = 0
+				save_settings(ui)
+				return
+			}
+		}
+		for _, i in DATE_FORMATS {
+			if nendo.pointer_over(nendo.id("DateFmt", u32(i))) {
+				ui.prefs.date_format = i
+				ui.stamp_day = 0
+				save_settings(ui)
+				return
+			}
+		}
 		if rl.GetTime() < speech_shift_until {return}
 		if ui.prefs.stt_enabled {
 			for model, i in STT_MODELS {
@@ -2610,80 +2415,45 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				}
 			}
 		}
-
-	case .General:
-		if ui.settings_tab == COMPOSER_TAB {
-			handle_settings_composer(ui)
+	case .Chats:
+		if clicked("EmojiSetsBrowse") && ui.emoji_sets_job == nil {
+			ui.emoji_sets_open = !ui.emoji_sets_open
+			if ui.emoji_sets_open && len(ui.emoji_sets) == 0 && ui.emoji_sets_job == nil {
+				ui.emoji_sets_selected = -1
+				emoji_sets_job_start(ui, .Browse)
+			}
+			if !ui.emoji_sets_open && ui.focus == .EmojiSetsQuery {ui.focus = .Compose}
 			return
 		}
-		if handle_settings_translation(ui) {return}
-		if ui.settings_tab == 2 {
-			if clicked("EmojiSetsBrowse") && ui.emoji_sets_job == nil {
-				ui.emoji_sets_open = !ui.emoji_sets_open
-				if ui.emoji_sets_open && len(ui.emoji_sets) == 0 && ui.emoji_sets_job == nil {
-					ui.emoji_sets_selected = -1
-					emoji_sets_job_start(ui, .Browse)
+		if ui.emoji_sets_open && ui.emoji_sets_job == nil {
+			if clicked("EmojiSetsRefresh") {emoji_sets_job_start(ui, .Browse); return}
+			if clicked("EmojiSetsBack") {ui.emoji_sets_selected = -1; ui.focus = .Compose; return}
+			if clicked("EmojiSetsPrev") && ui.emoji_sets_page > 0 {ui.emoji_sets_page -= 1; return}
+			if clicked("EmojiSetsNext") {ui.emoji_sets_page += 1; return}
+			query := strings.to_lower(
+				strings.trim_space(string(ui.emoji_sets_query[:])),
+				context.temp_allocator,
+			)
+			for &set, i in ui.emoji_sets {
+				if ui.emoji_sets_selected < 0 &&
+				   emoji_set_matches(&set, query) &&
+				   nendo.pointer_over(nendo.id("EmojiSetRow", u32(i))) {
+					ui.emoji_sets_selected = i
+					ui.focus = .Compose
+					emoji_sets_job_start(ui, .Preview, i)
+					return
 				}
-				if !ui.emoji_sets_open && ui.focus == .EmojiSetsQuery {ui.focus = .Compose}
-				return
 			}
-			if ui.emoji_sets_open && ui.emoji_sets_job == nil {
-				if clicked("EmojiSetsRefresh") {emoji_sets_job_start(ui, .Browse); return}
-				if clicked(
-					"EmojiSetsBack",
-				) {ui.emoji_sets_selected = -1; ui.focus = .Compose; return}
-				if clicked("EmojiSetsPrev") &&
-				   ui.emoji_sets_page > 0 {ui.emoji_sets_page -= 1; return}
-				if clicked("EmojiSetsNext") {ui.emoji_sets_page += 1; return}
-				query := strings.to_lower(
-					strings.trim_space(string(ui.emoji_sets_query[:])),
-					context.temp_allocator,
-				)
-				for &set, i in ui.emoji_sets {
-					if ui.emoji_sets_selected < 0 &&
-					   emoji_set_matches(&set, query) &&
-					   nendo.pointer_over(nendo.id("EmojiSetRow", u32(i))) {
-						ui.emoji_sets_selected = i
-						ui.focus = .Compose
-						emoji_sets_job_start(ui, .Preview, i)
+			index := ui.emoji_sets_selected
+			if index >= 0 && index < len(ui.emoji_sets) {
+				if clicked("EmojiSetsPreview") {emoji_sets_job_start(ui, .Preview, index); return}
+				if clicked("EmojiSetsImport") {emoji_sets_job_start(ui, .Import, index); return}
+				for _, i in ui.emoji_sets[index].items {
+					if nendo.pointer_over(nendo.id("EmojiSetImportItem", u32(i))) {
+						emoji_sets_job_start(ui, .Import, index, i)
 						return
 					}
 				}
-				index := ui.emoji_sets_selected
-				if index >= 0 && index < len(ui.emoji_sets) {
-					if clicked(
-						"EmojiSetsPreview",
-					) {emoji_sets_job_start(ui, .Preview, index); return}
-					if clicked(
-						"EmojiSetsImport",
-					) {emoji_sets_job_start(ui, .Import, index); return}
-					for _, i in ui.emoji_sets[index].items {
-						if nendo.pointer_over(nendo.id("EmojiSetImportItem", u32(i))) {
-							emoji_sets_job_start(ui, .Import, index, i)
-							return
-						}
-					}
-				}
-			}
-		}
-		if clicked("LangChange") {
-			ui.lang_open = true
-			return
-		}
-		for i in 0 ..< 2 {
-			if nendo.pointer_over(nendo.id("TimeFmt", u32(i))) {
-				ui.prefs.hour12 = i == 1
-				ui.stamp_day = 0
-				save_settings(ui)
-				return
-			}
-		}
-		for _, i in DATE_FORMATS {
-			if nendo.pointer_over(nendo.id("DateFmt", u32(i))) {
-				ui.prefs.date_format = i
-				ui.stamp_day = 0
-				save_settings(ui)
-				return
 			}
 		}
 		for _, i in ui.prefs.quick_reactions {
@@ -2729,55 +2499,30 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			cancel_staged_emoji(ui)
 			return
 		}
-		if clicked("ShortcutsView") {
-			ui.shortcuts_open = true
-			return
-		}
-
-	case .Network:
+	case .Composer:
+		handle_settings_composer(ui)
+	case .Connection:
 		handle_network(ui, client)
-
-	case .Keys:
+		handle_advanced(ui, client)
+	case .Account:
 		handle_keys(ui, client)
-
-	case .Appearance:
-		return
-
-	case .Notifications:
-		if clicked("NotifyTest") {
-			notify_test_start(ui)
-			return
-		}
-
-	case .Storage:
+	case .Privacy:
 		handle_storage(ui)
-
 	case .Advanced:
 		handle_advanced(ui, client)
-		return
-
-	case .About:
-	// Static application information.
-
 	case .Debug:
 		handle_debug(ui, client)
-
 	case .KP:
 		handle_kp(ui, client)
-	case .Agents:
-	// Keyboard and mouse actions are handled before the release-only dispatch.
-	case .Devices:
-		return
 	}
 }
 
 // Focus clicks for the settings text boxes run on press, not release;
 // the frame loop calls this before the release-gated handler.
 settings_fields :: proc(ui: ^Ui_State) {
-	notify_test_tick(ui)
 	settings_search_field(ui)
-	if ui.settings_section == .Keys {keys_fields(ui)}
-	if ui.settings_section == .Network {
+	if ui.settings_section == .Account {keys_fields(ui)}
+	if ui.settings_section == .Connection {
 		if field_mouse(ui, &ui.relay_input, "RelayBox", 14) {
 			ui.focus = .Relay
 		}
@@ -2790,12 +2535,10 @@ settings_fields :: proc(ui: ^Ui_State) {
 		if field_mouse(ui, &ui.client_input, "ClientBox", 14) {
 			ui.focus = .Client
 		}
-		if ui.settings_tab == 0 {
-			socks5_fields(ui)
-			if ui.focus in SOCKS5_FIELDS {
-				if rl.IsKeyPressed(.ENTER) {save_socks5(ui)}
-				if rl.IsKeyPressed(.ESCAPE) {ui.focus = .Compose}
-			}
+		socks5_fields(ui)
+		if ui.focus in SOCKS5_FIELDS {
+			if rl.IsKeyPressed(.ENTER) {save_socks5(ui)}
+			if rl.IsKeyPressed(.ESCAPE) {ui.focus = .Compose}
 		}
 	}
 	if ui.settings_section == .KP {
@@ -2803,7 +2546,7 @@ settings_fields :: proc(ui: ^Ui_State) {
 			ui.focus = .KP
 		}
 	}
-	if ui.settings_section == .General && ui.settings_tab == 2 {
+	if ui.settings_section == .Chats {
 		if ui.emoji_sets_open &&
 		   ui.emoji_sets_selected < 0 &&
 		   field_mouse(ui, &ui.emoji_sets_query, "EmojiSetsQuery", 14) {
@@ -2820,7 +2563,7 @@ settings_fields :: proc(ui: ^Ui_State) {
 			ui.settings_dirty = true
 		}
 	}
-	if ui.settings_section == .General && ui.settings_tab == 2 && len(ui.emoji_staged) > 0 {
+	if ui.settings_section == .Chats && len(ui.emoji_staged) > 0 {
 		if field_mouse(ui, &ui.emoji_name, "EmojiNameBox", 14) {
 			ui.focus = .EmojiName
 		}

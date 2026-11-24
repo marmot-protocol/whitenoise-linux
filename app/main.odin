@@ -158,6 +158,28 @@ shell_overlay_open :: proc(ui: ^Ui_State) -> bool {
 	)
 }
 
+@(private = "file")
+shell_child_open :: proc(ui: ^Ui_State) -> bool {
+	return modal_open(ui) || ui.picker_open || ui.folder_menu_open
+}
+
+@(private)
+handle_shell_foreground :: proc(ui: ^Ui_State, captured: bool) -> bool {
+	if captured || !mouse_released() || shell_child_open(ui) {return false}
+	if ui.toast_reveal != "" && nendo.pointer_over(nendo.id("ToastReveal")) {
+		open_external(ui.toast_reveal)
+		toast(ui, tr("Opening in your file manager"))
+		return true
+	}
+	// The toast floats above Settings. The other actions must hit its sheet.
+	if settings_modal(ui) && !nendo.pointer_over(nendo.id("SettingsRoot")) {return false}
+	if nendo.pointer_over(nendo.id("SttCancel")) {
+		stt_stop(ui)
+		return true
+	}
+	return update_handle()
+}
+
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	tab_scroll_save(ui)
 	timeline_draw_offset = 0
@@ -180,6 +202,9 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	page_advance(ui)
 
 	logged_in := ui.account_ref != ""
+	settings_float := settings_modal(ui)
+	settings_full := settings_workspace_visible(ui) && !settings_float
+	page := shell_page(ui)
 	page_backdrop := wash_payload()
 
 	if nendo.box(nendo.id("Root"))(
@@ -208,7 +233,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 			) {
 				// Navigation and the list share one width preference. Narrow
 				// windows show either this sidebar or the detail pane.
-				hide_rail := single_pane() && phone_detail(ui)
+				hide_rail := settings_full || (single_pane() && phone_detail(ui))
 				if !hide_rail {
 					if nendo.box(nendo.id("Rail"))(
 					{
@@ -224,13 +249,13 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 					) {
 						shell_navigation(ui)
 						if !rail_narrow(ui) {
-							rail_content(ui)
+							rail_content(ui, page)
 						}
 					}
 				}
 
 				// Keep the resize target between the connected panes.
-				if !rail_narrow(ui) && !single_pane() {
+				if !hide_rail && !single_pane() && !rail_narrow(ui) {
 					gutter("RailGutter")
 				}
 
@@ -242,13 +267,15 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 					{
 						// Chat and tab pushes translate rendered panes without
 						// changing layout. Other views retain the vertical rise.
-						width = hide_main ? nendo.fixed(0) : nendo.grow(),
+						width = nendo.grow(),
 						height = nendo.grow(),
 						direction = .Column,
 						padding = {top = page_push ? 0 : u16((1 - page_t) * PAGE_SLIDE)},
-						clip = {x = hide_main},
-						color = hide_main ? {} : decor_canvas_fill(),
-						border = {color = DIVIDER, width = {left = u16(BORDER_W)}},
+						color = decor_canvas_fill(),
+						border = {
+							color = DIVIDER,
+							width = {left = settings_full ? 0 : u16(BORDER_W)},
+						},
 					},
 					) {
 						// No rail on screen to click back to. A conversation,
@@ -275,7 +302,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 						} else if ui.new_chat_open {
 							new_chat_pane(ui)
 						} else {
-							switch ui.page {
+							switch page {
 							case .Chats:
 								if ui.selected >= 0 {
 									chat_pane(ui, ui.chats[ui.selected], ui.messages[:])
@@ -307,12 +334,21 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 			export_progress(ui)
 			contacts_import_progress(ui)
 			status_bar(ui)
-			phone_navigation(ui)
+			if !settings_full {phone_navigation(ui)}
 		}
 
 		// Root overlays can also open over the sign-in screen.
-		if open_now(nendo.id("ModalVeil"), modal_open(ui)) {
-			modal_backdrop()
+		modal := modal_open(ui)
+		capture := settings_float || modal
+		if open_now(nendo.id("ModalVeil"), capture) && (!settings_full || modal) {
+			modal_backdrop(
+				z = settings_float ? SETTINGS_MODAL_Z : 9,
+				pointer = capture ? .Capture : .Passthrough,
+			)
+		}
+		if settings_float {
+			settings_pane(ui)
+			if modal {modal_backdrop("SettingsChildVeil")}
 		}
 
 		if logged_in {
@@ -385,7 +421,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> []nendo.Render_Command {
 	}
 	tab_scroll_restore(ui)
 	timeline_measure(ui)
-	compose_scroll(ui)
+	if !settings_float {compose_scroll(ui)}
 	return commands
 }
 
@@ -731,32 +767,25 @@ app_main :: proc() {
 					load_members(client, &ui)
 				}
 			case "settings":
-				ui.page = .Settings
+				settings_enter(&ui, client)
 			case "debug", "kp":
 				// Both are dev-mode only; the harness forces the flag on.
-				ui.page = .Settings
 				ui.prefs.dev_mode = true
-				ui.settings_section =
+				section: Settings_Section =
 					os.get_env("WN_TEST_PAGE", context.temp_allocator) == "kp" ? .KP : .Debug
-				if ui.settings_section == .Debug {
-					compose_debug_json(&ui, client)
-				}
+				settings_open(&ui, client, section)
 			case "fx":
 				// Arms the first catalog effect, so WN_TEST_COMPOSE's send
 				// exercises the tagged path.
 				ui.fx_armed = 1
 			case "about":
-				ui.page = .Settings
-				ui.settings_section = .About
+				settings_open(&ui, client, .Help)
 			case "palette":
 				pal_open_modal(&ui)
 			case "advanced":
-				ui.page = .Settings
-				ui.settings_section = .Advanced
-				load_advanced(&ui, client)
+				settings_open(&ui, client, .Advanced)
 			case "network":
-				ui.page = .Settings
-				ui.settings_section = .Network
+				settings_open(&ui, client, .Connection)
 			case "profile":
 				ui.page = .Profile
 				load_profile(client, &ui)
@@ -864,6 +893,7 @@ app_main :: proc() {
 			photo_captured := photo_input_capture(&ui)
 			location_captured := ui.location_open
 			overlay_captured := shell_overlay_open(&ui)
+			child_captured := shell_child_open(&ui)
 			photo_interactive := photo_image(&ui.photo).data != nil
 			defer messages_collect()
 			defer chats_collect()
@@ -978,6 +1008,7 @@ app_main :: proc() {
 			people_search_drain(&ui, client)
 			media_drain(&ui)
 			drain_sends(&ui, client)
+			notify_test_tick(&ui)
 			stage_files_tick(&ui)
 			tts_tick(&ui)
 			translation_tick(&ui)
@@ -1020,7 +1051,11 @@ app_main :: proc() {
 					save_settings(&ui)
 				}
 			}
-			if ui.account_ref != "" && !photo_captured && !location_captured && !overlay_captured {
+			if ui.account_ref != "" &&
+			   !photo_captured &&
+			   !location_captured &&
+			   !overlay_captured &&
+			   !settings_modal(&ui) {
 				inbox_shortcuts(&ui, client)
 			}
 
@@ -1083,6 +1118,21 @@ app_main :: proc() {
 			if !rl.IsMouseButtonDown(.LEFT) && !rl.IsMouseButtonReleased(.LEFT) {
 				text_drag = nil
 			}
+
+			// Sidebar hit boxes come from the frame the user clicked. Switch
+			// before drawing so the release doesn't present the old modal again.
+			settings_captured :=
+				client != nil &&
+				settings_modal(&ui) &&
+				!photo_captured &&
+				!location_captured &&
+				!overlay_captured &&
+				!modal_open(&ui) &&
+				!ui.picker_open &&
+				!ui.folder_menu_open &&
+				ui.board_drag.kind == .None &&
+				ui.composer_editor.drag.source == .None &&
+				settings_category_click(&ui, client)
 
 			if os.get_env("WN_DEBUG_INPUT", context.temp_allocator) != "" {
 				if rl.IsMouseButtonPressed(.LEFT) || rl.IsMouseButtonReleased(.LEFT) {
@@ -1218,6 +1268,7 @@ app_main :: proc() {
 				}
 			}
 			settings_theme_preview_guard(&ui)
+			child_captured = child_captured || shell_child_open(&ui)
 			// anim_dt, not the raw frame time: the first frame after an idle
 			// wait would otherwise spend a whole layout move in one step.
 			render_commands := build_layout(&ui, anim_dt)
@@ -1378,6 +1429,7 @@ app_main :: proc() {
 			drain_geo()
 			drain_stickers(&ui, client)
 			emoji_sets_drain(&ui)
+			settings_emoji_tick(&ui)
 			gif_drain(&ui)
 
 			// Files picked in the async SDL dialog land here; they become
@@ -1456,8 +1508,9 @@ app_main :: proc() {
 				long_press_tick() // before any handler reads long_pressed
 			}
 			blur_field, blur_focus := touch_field, ui.focus
-			background_captured :=
+			shell_captured :=
 				composer_captured || photo_captured || location_captured || overlay_captured
+			background_captured := shell_captured || settings_modal(&ui)
 			if ui.add_account_open && !background_captured {
 				for page in Page {
 					if clicked_indexed("Nav", u32(page)) {
@@ -1502,9 +1555,6 @@ app_main :: proc() {
 					break
 				}
 				handle_gutters(&ui)
-				if clicked("SttCancel") {
-					stt_stop(&ui)
-				}
 				if clicked("SttFinish") {
 					stt_finish(&ui)
 				}
@@ -1520,19 +1570,18 @@ app_main :: proc() {
 				if clicked("BannerCopy") {
 					copy_text(&ui, ui.banner, tr("Copied"))
 				}
-				if clicked("ToastReveal") && ui.toast_reveal != "" {
-					open_external(ui.toast_reveal)
-					toast(&ui, tr("Opening in your file manager"))
-				}
-				update_handle()
 				if clicked("RailCollapse") {
 					toggle_rail(&ui)
 				}
 			}
+			foreground_captured := handle_shell_foreground(
+				&ui,
+				shell_captured || shell_back || settings_captured || child_captured,
+			)
 
-			// After a claimed drag or Back, dispatch the top visible modal.
-			if composer_captured || shell_back {
-				// The drag or Back already owns this input.
+			// After consumed input, dispatch the top visible modal.
+			if composer_captured || shell_back || settings_captured || foreground_captured {
+				// Already handled.
 			} else if photo_captured {
 				if photo_interactive &&
 				   photo_input_capture(&ui) {handle_photo_preview(&ui, client)}
@@ -1587,6 +1636,7 @@ app_main :: proc() {
 				handle_folder_navigation(&ui)
 			} else if ui.account_ref != "" &&
 			   !ui.add_account_open &&
+			   !settings_modal(&ui) &&
 			   ((ctrl_down() && rl.IsKeyPressed(.K)) || clicked("GSearchBtn")) {
 				gs_open_modal(&ui)
 			} else if ui.account_ref != "" &&
@@ -1626,9 +1676,11 @@ app_main :: proc() {
 			background_captured =
 				background_captured ||
 				shell_back ||
+				foreground_captured ||
 				photo_captured ||
 				ui.location_open ||
-				shell_overlay_open(&ui)
+				shell_overlay_open(&ui) ||
+				settings_modal(&ui)
 			if ui.account_ref != "" && !background_captured {
 				if !rl.TouchActive() {handle_body_sel(&ui)}
 				handle_body_copy(&ui)

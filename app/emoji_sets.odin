@@ -728,6 +728,7 @@ emoji_sets_order :: proc(ui: ^Ui_State) {
 
 @(private)
 emoji_sets_stop :: proc(ui: ^Ui_State) {
+	emoji_preview_finish(.Discard)
 	if job := ui.emoji_sets_cover; job != nil {
 		thread.join(job.worker); thread.destroy(job.worker)
 		emoji_sets_job_free(job); ui.emoji_sets_cover = nil

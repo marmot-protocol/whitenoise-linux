@@ -160,14 +160,14 @@ publish_key_package :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: Kp_Publ
 
 // ── Danger zone secrets ─────────────────────────────────────────────
 
-// Wipe everything the page held: the revealed key, its unmask toggle,
-// and any armed confirmation.
+// Hide both keys, wipe the decrypted secret, and disarm any confirmation.
 keys_forget :: proc(ui: ^Ui_State) {
 	if len(ui.keys_nsec) > 0 {
 		mem.zero_slice(transmute([]u8)ui.keys_nsec)
 		delete(ui.keys_nsec)
 		ui.keys_nsec = ""
 	}
+	ui.keys_npub_show = false
 	ui.keys_nsec_show = false
 	keys_reveal_frames = 0
 	keys_disarm(ui)
@@ -237,7 +237,7 @@ export_confirm_focus: bool
 export_account: string
 @(private = "file")
 export_check: Password_Check
-@(private = "file")
+@(private)
 keys_reveal_frames: int
 
 @(private)
@@ -280,141 +280,108 @@ keys_fields :: proc(ui: ^Ui_State) {
 		keys_reveal_frames -= 1
 		if keys_reveal_frames == 0 {reveal_nsec(ui, g_client)}
 	}
-	if long_pressed && nendo.pointer_over(nendo.id("NpubInset")) && ui.profile.npub != "" {
-		copy_text(ui, ui.profile.npub, tr("npub copied"))
+	if ui.keys_npub_show && long_pressed && nendo.pointer_over(nendo.id("NpubInset")) {
+		keys_public_action(ui, "SettingsCopyNpub")
 	}
 }
 
-settings_keys :: proc(ui: ^Ui_State) {
-	body_width := settings_body_width(ui) - 24
+settings_account :: proc(ui: ^Ui_State) {
+	card := settings_box()
+	body_width := settings_body_width(ui) - f32(card.padding.left) - f32(card.padding.right)
 	account_busy := settings_account_busy(ui)
-	if ui.settings_tab == 0 {
-		if nendo.box(nendo.id("KeysIdentityGroup"))(settings_box()) {
-			settings_group(tr("Keys & identity"))
-			if nendo.box(nendo.id("KeysProfile"))(settings_row()) {
+	local_account := account_local(ui)
+	settings_group(tr("Profile & devices"))
+	if nendo.box(nendo.id("AccountProfileGroup"))(card) {
+		if !settings_wide() && ui.account_ref != "" {
+			if nendo.box(nendo.id("KeysProfile"))(settings_line()) {
 				name :=
-					len(ui.profile.name) > 0 ? ui.profile.name : profile_label(nil, ui.account_ref)
-				avatar("KeysAvatar", 0, ui.account_ref, name, 44, url_pic(ui.my_pic_url))
-				if nendo.box(nendo.id("KeysProfileName"))(
-				{width = nendo.grow(), clip = {x = true}},
-				) {
-					nendo.text(name, {font = FONT_TITLE, size = 16, color = TEXT})
-				}
+					ui.profile.name != "" ? ui.profile.name : profile_label(nil, ui.account_ref)
+				avatar("KeysAvatar", 0, ui.account_ref, name, 32, url_pic(ui.my_pic_url))
+				row_labels(name, "")
 			}
-			public_row := settings_row()
-			public_row.direction = body_width < 220 ? .Column : .Row
-			if nendo.box(nendo.id("NpubRow"))(public_row) {
-				nendo.text(tr("Public key (npub)"), {font = FONT_TITLE, size = 13, color = TEXT})
-				settings_button("SettingsCopyNpub", tr("Copy"))
+			settings_divider()
+		}
+		if nendo.box(nendo.id("RowEditProfile"))({width = nendo.grow()}) {
+			settings_nav_row(
+				"SettingsEditProfile",
+				tr("Edit profile"),
+				tr("Your display name and profile are public."),
+			)
+		}
+		if devices_visible(ui) {
+			settings_divider()
+			if nendo.box(nendo.id("RowLinkedDevices"))({width = nendo.grow()}) {
+				settings_nav_row(
+					"SettingsLinkedDevices",
+					tr("Linked devices"),
+					tr("Manage the devices linked to this account."),
+				)
 			}
+		}
+	}
+	settings_group(tr("Keys & identity"))
+	if nendo.box(nendo.id("KeysIdentityGroup"))(card) {
+		npub_row := settings_line()
+		if body_width < 400 {
+			npub_row.direction = .Column
+			npub_row.align.x = .Right
+		}
+		if nendo.box(nendo.id("NpubRow"))(npub_row) {
+			row_labels(tr("Public key (npub)"), tr("Safe to share. This is how people find you."))
+			if nendo.box(nendo.id_local("Actions"))(
+			{direction = body_width < 260 ? .Column : .Row, gap = 6, align = {x = .Right}},
+			) {
+				settings_nav_button("SettingsCopyNpub", tr("Copy"))
+				settings_nav_button(
+					"SettingsShowNpub",
+					ui.keys_npub_show ? tr("Hide key") : tr("Show key"),
+				)
+			}
+		}
+		if ui.keys_npub_show {
+			KEY_INSET_PAD :: 10
 			if nendo.box(nendo.id("NpubInset"))(
 			{
 				width = nendo.grow(),
-				padding = nendo.pad(10),
-				color = CARD,
+				padding = nendo.pad(KEY_INSET_PAD),
+				color = ROW_BG,
 				border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
 				radius = rr(2),
 			},
 			) {
-				keys_key_lines(
-					"NpubCol",
-					len(ui.profile.npub) > 0 ? ui.profile.npub : tr("(unknown)"),
-					body_width - 20,
-				)
-			}
-			nendo.text(
-				tr("Safe to share. This is how people find you."),
-				{font = FONT_BODY, size = 11, color = TEXT_DIM},
-			)
-			identity_note := settings_row()
-			identity_note.direction = .Row
-			identity_note.align.y = .Top
-			if nendo.box(nendo.id("RowSovereign"))(identity_note) {
-				nendo.text(ICON_LOCK, {font = FONT_ICON, size = 13, color = ACCENT})
-				row_labels(
-					tr("Your key stays on this device"),
-					tr(
-						"Your secret key stays on this device or in your connected signer. Never share it.",
-					),
-				)
-			}
-		}
-		return
-	}
-
-	action_row := settings_row()
-	action_row.direction = .Column
-	action_row.gap = 6
-	if ui.settings_tab == 1 {
-		if nendo.box(nendo.id("KpStatus"))(settings_box()) {
-			settings_group(tr("Key packages"))
-			nendo.text(kp_status_line(ui), {font = FONT_BODY, size = 12, color = TEXT})
-			if nendo.box(nendo.id("KpStatusActions"))(
-			{direction = body_width < 260 ? .Column : .Row, gap = 6},
-			) {
-				settings_button(
-					"KpPublish",
-					tr("Publish"),
-					ACCENT,
-					account_busy ? .Disabled : .Enabled,
-				)
-				settings_button(
-					"KpRefresh",
-					tr("Refresh"),
-					{},
-					account_busy ? .Disabled : .Enabled,
-				)
-			}
-			nendo.text(
-				tr(
-					"Key packages let people invite you. Refresh checks the app's default relays for published copies.",
-				),
-				{font = FONT_BODY, size = 11, color = TEXT_DIM},
-			)
-			for row, i in ui.kp_list {
-				if nendo.box(nendo.id("KpRow", u32(i)))(settings_row()) {
-					if nendo.box(nendo.id("KpRowCol", u32(i)))(
-					{width = nendo.grow(), direction = .Column, gap = 3},
-					) {
-						nendo.text(
-							row.relay && row.id != "" ? short_hex(row.id) : tr("Not published yet"),
-							{font = FONT_MONO, size = 11, color = TEXT_LO},
-						)
-						nendo.text(row.at, {font = FONT_BODY, size = 11, color = TEXT_DIM})
-						nendo.text(
-							kp_location(row),
-							{font = FONT_BODY, size = 11, color = TEXT_DIM},
-						)
-					}
-
+				if ui.profile.npub != "" {
+					keys_key_lines("NpubCol", ui.profile.npub, body_width - 2 * KEY_INSET_PAD)
+				} else {
+					nendo.text(tr("(unknown)"), {font = FONT_MONO, size = 11, color = TEXT})
 				}
 			}
 		}
-		if nendo.box(nendo.id("RowRotate"))(settings_box()) {
-			settings_group(tr("Rotate key package now"))
-			nendo.text(
-				tr("Invalidates the current package and uploads a fresh one to your relays."),
-				{font = FONT_BODY, size = 11, color = TEXT_DIM},
+		settings_divider()
+		if nendo.box(nendo.id("RowSovereign"))(settings_line()) {
+			row_labels(
+				tr("Your key stays on this device"),
+				tr(
+					"Your secret key stays on this device or in your connected signer. Never share it.",
+				),
 			)
-			label := ui.keys_confirm == "RotateBtn" ? tr("Tap again to rotate") : tr("Rotate")
-			settings_button("RotateBtn", label, DANGER, account_busy ? .Disabled : .Enabled)
+			nendo.text(ICON_LOCK, {font = FONT_ICON, size = 13, color = ACCENT})
 		}
-		return
 	}
 
-	if nendo.box(nendo.id("KeysVaultGroup"))(settings_box()) {
-		settings_group(tr("Device vault"))
-		if nendo.box(nendo.id("RowVaultPw"))(action_row) {
+	settings_group(tr("Device vault"))
+	if nendo.box(nendo.id("KeysVaultGroup"))(card) {
+		if nendo.box(nendo.id("RowVaultPw"))(settings_line()) {
 			row_labels(
 				tr("Change vault password"),
 				tr(
 					"Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one.",
 				),
 			)
-			settings_button("VaultPwBtn", tr("Change..."))
+			settings_nav_button("VaultPwBtn", tr("Change..."))
 		}
-		if account_local(ui) {
-			if nendo.box(nendo.id("RowExport"))(action_row) {
+		if local_account {
+			settings_divider()
+			if nendo.box(nendo.id("RowExport"))(settings_line()) {
 				row_labels(
 					tr("Export encrypted key (ncryptsec)"),
 					tr(
@@ -426,46 +393,84 @@ settings_keys :: proc(ui: ^Ui_State) {
 		}
 	}
 
-	security := settings_box()
+	account_action_state: Settings_Control_State = account_busy ? .Disabled : .Enabled
+	settings_group(tr("Key packages"))
+	if nendo.box(nendo.id("KpStatus"))(card) {
+		status_row := settings_line()
+		if body_width < 400 {
+			status_row.direction = .Column
+			status_row.align.x = .Right
+		}
+		if nendo.box(nendo.id_local("StatusRow"))(status_row) {
+			row_labels(
+				kp_status_line(ui),
+				tr(
+					"Key packages let people invite you. Refresh checks the app's default relays for published copies.",
+				),
+			)
+			if nendo.box(nendo.id("KpStatusActions"))(
+			{direction = body_width < 260 ? .Column : .Row, gap = 6, align = {x = .Right}},
+			) {
+				settings_button("KpPublish", tr("Publish"), ACCENT, account_action_state)
+				settings_button("KpRefresh", tr("Refresh"), state = account_action_state)
+			}
+		}
+		for row, i in ui.kp_list {
+			settings_divider()
+			if nendo.box(nendo.id("KpRow", u32(i)))(
+			{width = nendo.grow(), direction = .Column, gap = 3},
+			) {
+				nendo.text(
+					row.relay && row.id != "" ? short_hex(row.id) : tr("Not published yet"),
+					{font = FONT_MONO, size = 11, color = TEXT_LO},
+				)
+				nendo.text(row.at, {font = FONT_BODY, size = 11, color = TEXT_DIM})
+				nendo.text(kp_location(row), {font = FONT_BODY, size = 11, color = TEXT_DIM})
+			}
+		}
+	}
+
+	settings_group(tr("Security actions"))
+	security := card
 	security.border = {
 		color = DANGER_BORDER,
 		width = {left = 2, right = 1, top = 1, bottom = 1},
 	}
-	if !account_local(ui) {
-		nendo.text(
-			tr(
-				"Your secret key stays in your remote signer, so this device can't reveal or export it. Back it up and recover it through your signer. A White Noise backup file doesn't include it.",
-			),
-			{font = FONT_BODY, size = 12, color = TEXT_DIM},
-		)
-		return
-	}
 	if nendo.box(nendo.id("KeysDangerGroup"))(security) {
-		settings_group(tr("Security actions"))
+		if nendo.box(nendo.id("RowRotate"))(settings_line()) {
+			row_labels(
+				tr("Rotate key package now"),
+				tr("Invalidates the current package and uploads a fresh one to your relays."),
+			)
+			label := ui.keys_confirm == "RotateBtn" ? tr("Tap again to rotate") : tr("Rotate")
+			settings_button("RotateBtn", label, DANGER, account_action_state)
+		}
+		settings_divider()
+		if !local_account {
+			nendo.text(
+				tr(
+					"Your secret key stays in your remote signer, so this device can't reveal or export it. Back it up and recover it through your signer. A White Noise backup file doesn't include it.",
+				),
+				{font = FONT_BODY, size = 12, color = TEXT_DIM},
+			)
+			return
+		}
+
 		// Reveal: arm, confirm, then a masked plate with copy and unmask.
-		if nendo.box(nendo.id("RowReveal"))(action_row) {
-			if nendo.box(nendo.id("RevealCol"))(
-			{width = nendo.grow(), direction = .Column, gap = 3},
-			) {
-				nendo.text(
-					tr("Reveal secret key (nsec)"),
-					{font = FONT_TITLE, size = 13, color = TEXT},
-				)
-				nendo.text(
-					tr("Never share it. It is your identity."),
-					{font = FONT_BODY, size = 11, color = TEXT_DIM},
-				)
-			}
+		if nendo.box(nendo.id("RowReveal"))(settings_line()) {
+			row_labels(tr("Reveal secret key (nsec)"), tr("Never share it. It is your identity."))
 			if len(ui.keys_nsec) > 0 {
 				if nendo.box(nendo.id("NsecActions"))(
-				{direction = body_width < 180 ? .Column : .Row, gap = 6},
+				{direction = body_width < 260 ? .Column : .Row, gap = 6, align = {x = .Right}},
 				) {
 					settings_button("NsecShow", ui.keys_nsec_show ? tr("Hide") : tr("Show"))
 					settings_button("NsecCopy", tr("Copy"))
 				}
 			} else if keys_reveal_frames > 0 {
-				nendo.text(tr("Decrypting..."), {font = FONT_BODY, size = 13, color = TEXT})
-				busy_bar("KeysRevealProgress")
+				if nendo.box(nendo.id_local("RevealProgress"))({direction = .Column, gap = 4}) {
+					nendo.text(tr("Decrypting..."), {font = FONT_BODY, size = 13, color = TEXT})
+					busy_bar("KeysRevealProgress")
+				}
 			} else {
 				label := ui.keys_confirm == "RevealNsecBtn" ? tr("Confirm reveal") : tr("Reveal")
 				settings_button("RevealNsecBtn", label, DANGER)
@@ -556,15 +561,17 @@ owned_arm :: proc(ui: ^Ui_State, id: string) -> bool {
 	return false
 }
 
+@(private)
+keys_public_action :: proc(ui: ^Ui_State, id: string) {
+	switch id {
+	case "SettingsCopyNpub":
+		if ui.profile.npub != "" {copy_text(ui, ui.profile.npub, tr("npub copied"))}
+	case "SettingsShowNpub":
+		ui.keys_npub_show = !ui.keys_npub_show
+	}
+}
+
 handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if clicked("VaultPwBtn") {
-		vault_pw_begin(ui)
-		return
-	}
-	if clicked("SettingsCopyNpub") && len(ui.profile.npub) > 0 {
-		copy_text(ui, ui.profile.npub, tr("npub copied"))
-		return
-	}
 	if clicked("KpRefresh") {
 		if settings_account_busy(ui) {return}
 		fetch_key_packages(ui, client)

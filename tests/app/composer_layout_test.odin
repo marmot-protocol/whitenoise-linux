@@ -310,8 +310,7 @@ composer_layout :: proc(t: ^testing.T) {
 		!nendo.element(nendo.id("ComposePasteBtn")).found,
 	)
 	ui.prefs.reduce_motion = true
-	ui.page, ui.settings_section, ui.settings_tab, ui.settings_level =
-		.Settings, .General, COMPOSER_TAB, .Sheet
+	settings_open(&ui, nil, .Composer)
 	commands := build_layout(&ui, 0)
 	testing.expect(t, nendo.element(nendo.id("ComposerTile", u32(Composer_Action.Poll))).found)
 	testing.expect(

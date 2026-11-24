@@ -25,33 +25,12 @@ crop_circle_raw_digest :: proc(t: ^testing.T) {
 	defer delete(square)
 	testing.expect(t, square_side == side && slice.equal(square, expected.pixels))
 	testing.expect_value(t, side, i32(expected.width))
-	// Both original edges survive on every row, even at the slanted boundaries.
-	for y in 0 ..< int(side) {
-		row := y * int(side) * 4
-		first, last := -1, -1
-		for x in 0 ..< int(side) {
-			if pixels[row + x * 4 + 3] == 0 {continue}
-			if first < 0 {first = x}
-			last = x
-		}
-		testing.expect(t, first >= 0 && last >= first)
-		if first < 0 {continue}
-		testing.expect(
-			t,
-			slice.equal(pixels[row + first * 4:row + first * 4 + 3], expected.pixels[row:row + 3]),
-		)
-		end := row + (int(side) - 1) * 4
-		testing.expect(
-			t,
-			slice.equal(pixels[row + last * 4:row + last * 4 + 3], expected.pixels[end:end + 3]),
-		)
+	width := int(side)
+	for pixel in ([4]int{0, width - 1, width * (width - 1), width * width - 1}) {
+		testing.expect_value(t, pixels[pixel * 4 + 3], u8(0))
 	}
-	// The sloped sides remove opposite corners and retain the center and other corners.
-	testing.expect(t, pixels[3] > 0)
-	testing.expect(t, pixels[len(pixels) - 1] > 0)
-	testing.expect_value(t, pixels[(int(side) - 1) * 4 + 3], u8(0))
-	testing.expect_value(t, pixels[(int(side) - 1) * int(side) * 4 + 3], u8(0))
-	testing.expect_value(t, pixels[(int(side) / 2 * int(side) + int(side) / 2) * 4 + 3], u8(255))
+	center := (width / 2 * width + width / 2) * 4
+	testing.expect(t, slice.equal(pixels[center:][:4], square[center:][:4]))
 	upper, upper_side := crop_circle_pixels(strings.to_upper(string(key), context.temp_allocator))
 	defer delete(upper)
 	testing.expect(t, side == upper_side && slice.equal(pixels, upper))
@@ -88,11 +67,11 @@ crop_circle_layout :: proc(t: ^testing.T) {
 	init_layout(&memory, 32768, {1000, 1000})
 	defer delete(memory)
 	key := "66675158e6338fe89fda418e42a0bf2a7a2b132504dd347f015a18971b644430"
-	url := fmt.tprintf("crop-circle:%s", key)
+	url := fmt.tprintf("crop-round:%s", key)
 	start_pic_worker()
 	defer stop_pic_worker()
 	tex := url_pic(url)
-	group_url := fmt.tprintf("crop-circle:%s", key[:32])
+	group_url := fmt.tprintf("crop-round:%s", key[:32])
 	group_tex := url_pic(group_url)
 	square_url := fmt.tprintf("crop-square:%s", key)
 	square_tex := url_pic(square_url)
@@ -108,7 +87,7 @@ crop_circle_layout :: proc(t: ^testing.T) {
 	testing.expect(
 		t,
 		square_tex != nil && square_tex != tex,
-		"square and slanted fingerprints need separate cached textures",
+		"square and circular fingerprints need separate cached textures",
 	)
 	for tc in ([]struct {
 			key:         string,
@@ -142,6 +121,7 @@ crop_circle_layout :: proc(t: ^testing.T) {
 		selected_contact = 0,
 	}
 	ui.prefs.reduce_motion = true
+	ui.prefs.dev_mode = true
 	ui.nicknames[key] = "Danny"
 	ui.profile.npub = hex_npub(key)
 	ui.profile.qr = qr_texture(ui.profile.npub)
@@ -339,7 +319,7 @@ crop_circle_layout :: proc(t: ^testing.T) {
 			)
 		}
 	}
-	ui.prefs.crop_avatar_shape = .Slanted
+	ui.prefs.crop_avatar_shape = .Circle
 	for pane in 0 ..< 9 {
 		width := pane == 6 || pane == 7 ? f32(350) : f32(900)
 		if pane == 8 {

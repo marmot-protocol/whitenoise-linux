@@ -1,6 +1,5 @@
-// Settings → Network & relays: the two published relay lists
-// (NIP-65 outbox, kind-10050 inbox) plus the relay-pool health
-// counters marmot exposes.
+// Connection settings: relay health, published and event-fetch relay lists,
+// SOCKS5, and link preferences.
 //
 // ponytail: every marmot call here runs on the UI thread, like the
 // rest of the port. A frame stalls for the round trip; move to the
@@ -117,193 +116,182 @@ settings_network :: proc(ui: ^Ui_State) {
 		if relay_list_contains(ui.profile.inbox[:], ui.inbox_input[:]) {clear(&ui.inbox_input)}
 	}
 	narrow := settings_body_width(ui) < 400
-	if ui.settings_tab == 0 {
-		settings_socks5(ui)
-		if nendo.box(nendo.id("NetworkStatusGroup"))(
-		{width = nendo.grow(), direction = .Column, gap = 3},
-		) {
-			status := settings_row()
-			status.direction = narrow ? .Column : .Row
-			if nendo.box(nendo.id("RowNetStatus"))(status) {
-				if nendo.box(nendo.id("NetworkConnectionSummary"))(
-				{gap = 8, align = {y = .Center}},
-				) {
-					dot := ui.health_ok && ui.health.connected > 0 ? ACCENT : TEXT_DIM
-					if nendo.box(nendo.id("NetDot"))(
-					{width = nendo.fixed(7), height = nendo.fixed(7), color = dot, radius = rr(4)},
-					) {}
-					nendo.text(health_line(ui), {font = FONT_TITLE, size = 13, color = TEXT})
-				}
-				settings_button(
-					"NetRefresh",
-					tr("Refresh"),
-					{},
-					net_refresh_frames > 0 ? .Disabled : .Enabled,
-				)
-			}
-			if net_refresh_frames > 0 {
-				nendo.text(tr("Checking relays..."), {font = FONT_BODY, size = 13, color = TEXT})
-				busy_bar("NetRefreshProgress")
-			}
-			if detail := health_detail(ui); detail != "" {
-				nendo.text(detail, {font = FONT_BODY, size = 11, color = TEXT_DIM})
-			}
-		}
-
-		if nendo.box(nendo.id("NetworkOutboxGroup"))(settings_box()) {
-			settings_group(tr("Published outbox relays"))
-			nendo.text(tr("Where you publish."), {font = FONT_BODY, size = 11, color = TEXT_DIM})
-			if len(ui.profile.nip65) == 0 {
-				nendo.text(
-					tr("No relay list published."),
-					{font = FONT_BODY, size = 13, color = TEXT_DIM},
-				)
-			}
-			for relay, i in ui.profile.nip65 {
-				relay_row("RelayRow", "RelayRemove", u32(i), relay)
-			}
-			if nendo.box(nendo.id("AddRelayRow"))(
-			{
-				width = nendo.grow(),
-				direction = narrow ? .Column : .Row,
-				gap = 6,
-				align = {y = .Center},
-			},
+	settings_group(tr("Relay status"))
+	if nendo.box(nendo.id("NetworkStatusGroup"))(settings_box()) {
+		status := settings_line()
+		if settings_body_width(ui) < 260 {status = settings_row(true)}
+		if nendo.box(nendo.id("RowNetStatus"))(status) {
+			if nendo.box(nendo.id("NetworkConnectionSummary"))(
+			{width = nendo.grow(), gap = 8, align = {y = .Center}},
 			) {
-				settings_input(
-					ui,
-					"RelayBox",
-					&ui.relay_input,
-					tr("Enter a relay URL (wss://…)"),
-					ui.focus == .Relay,
-				)
-				settings_button("AddRelayBtn", tr("Add"))
+				dot := ui.health_ok && ui.health.connected > 0 ? ACCENT : TEXT_DIM
+				if nendo.box(nendo.id("NetDot"))(
+				{width = nendo.fixed(7), height = nendo.fixed(7), color = dot, radius = rr(4)},
+				) {}
+				nendo.text(health_line(ui), {font = FONT_TITLE, size = 13, color = TEXT})
 			}
-			relay_input_error(.Relay, ui.relay_input[:])
-		}
-
-		if nendo.box(nendo.id("NetworkInboxGroup"))(settings_box()) {
-			settings_group(tr("Published inbox relays"))
-			nendo.text(
-				tr("Where peers reach you."),
-				{font = FONT_BODY, size = 11, color = TEXT_DIM},
+			settings_button(
+				"NetRefresh",
+				tr("Refresh"),
+				{},
+				net_refresh_frames > 0 ? .Disabled : .Enabled,
 			)
-			if len(ui.profile.inbox) == 0 {
-				nendo.text(tr("No inbox relays."), {font = FONT_BODY, size = 13, color = TEXT_DIM})
-			}
-			for relay, i in ui.profile.inbox {
-				relay_row("InboxRow", "InboxRemove", u32(i), relay)
-			}
-			if nendo.box(nendo.id("AddInboxRow"))(
-			{
-				width = nendo.grow(),
-				direction = narrow ? .Column : .Row,
-				gap = 6,
-				align = {y = .Center},
-			},
-			) {
-				settings_input(
-					ui,
-					"InboxBox",
-					&ui.inbox_input,
-					tr("Enter a relay URL (wss://…)"),
-					ui.focus == .Inbox,
-				)
-				settings_button("AddInboxBtn", tr("Add"))
-			}
-			relay_input_error(.Inbox, ui.inbox_input[:])
 		}
+		if net_refresh_frames > 0 {
+			nendo.text(tr("Checking relays..."), {font = FONT_BODY, size = 13, color = TEXT})
+			busy_bar("NetRefreshProgress")
+		}
+		if detail := health_detail(ui); detail != "" {
+			nendo.text(detail, {font = FONT_BODY, size = 11, color = TEXT_DIM})
+		}
+	}
 
-		if nendo.box(nendo.id("NetworkSyncGroup"))(
+	settings_group(tr("Published outbox relays"))
+	if nendo.box(nendo.id("NetworkOutboxGroup"))(settings_box()) {
+		nendo.text(tr("Where you publish."), {font = FONT_BODY, size = 11, color = TEXT_DIM})
+		if len(ui.profile.nip65) == 0 {
+			nendo.text(
+				tr("No relay list published."),
+				{font = FONT_BODY, size = 13, color = TEXT_DIM},
+			)
+		}
+		for relay, i in ui.profile.nip65 {
+			relay_row("RelayRow", "RelayRemove", u32(i), relay)
+		}
+		if nendo.box(nendo.id("AddRelayRow"))(
 		{
 			width = nendo.grow(),
-			padding = {top = 8},
-			border = {color = FIELD_BORDER, width = {top = 1}},
+			direction = narrow ? .Column : .Row,
+			gap = 6,
+			align = {y = .Center},
 		},
 		) {
-			recovery := settings_row()
-			recovery.direction = .Column
-			recovery.gap = 8
-			if nendo.box(nendo.id("RowRepublish"))(recovery) {
-				row_labels(
-					tr("Republish relay lists"),
-					tr(
-						"Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you.",
-					),
-				)
-				settings_button(
-					"RepublishBtn",
-					tr("Republish"),
-					{},
-					account_busy ? .Disabled : .Enabled,
-				)
-			}
-		}
-	} else {
-		if nendo.box(nendo.id("NetworkFetchGroup"))(settings_box()) {
-			settings_group(tr("Event fetch relays"))
-			nendo.text(
-				tr(
-					"Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these.",
-				),
-				{font = FONT_BODY, size = 11, color = TEXT_DIM},
-			)
-			for relay, i in ui.prefs.fetch_relays {
-				relay_row("FetchRow", "FetchRemove", u32(i), relay)
-			}
-			if nendo.box(nendo.id("AddFetchRow"))(
-			{
-				width = nendo.grow(),
-				direction = narrow ? .Column : .Row,
-				gap = 6,
-				align = {y = .Center},
-			},
-			) {
-				settings_input(
-					ui,
-					"FetchBox",
-					&ui.fetch_input,
-					tr("Enter a relay URL (wss://…)"),
-					ui.focus == .Fetch,
-				)
-				settings_button("AddFetchBtn", tr("Add"))
-			}
-			relay_input_error(.Fetch, ui.fetch_input[:])
-		}
-
-		if nendo.box(nendo.id("NetworkClientGroup"))(settings_box()) {
-			settings_group(tr("Open events in"))
-			nendo.text(
-				fmt.tprintf(
-					tr(
-						"The web client an event card opens. For example %s. %s is replaced with the event id.",
-					),
-					DEFAULT_EVENT_CLIENT,
-					"{id}",
-				),
-				{font = FONT_BODY, size = 11, color = TEXT_DIM},
-			)
 			settings_input(
 				ui,
-				"ClientBox",
-				&ui.client_input,
-				DEFAULT_EVENT_CLIENT,
-				ui.focus == .Client,
+				"RelayBox",
+				&ui.relay_input,
+				tr("Enter a relay URL (wss://…)"),
+				ui.focus == .Relay,
+			)
+			settings_button("AddRelayBtn", tr("Add"))
+		}
+		relay_input_error(.Relay, ui.relay_input[:])
+	}
+
+	settings_group(tr("Published inbox relays"))
+	if nendo.box(nendo.id("NetworkInboxGroup"))(settings_box()) {
+		nendo.text(tr("Where peers reach you."), {font = FONT_BODY, size = 11, color = TEXT_DIM})
+		if len(ui.profile.inbox) == 0 {
+			nendo.text(tr("No inbox relays."), {font = FONT_BODY, size = 13, color = TEXT_DIM})
+		}
+		for relay, i in ui.profile.inbox {
+			relay_row("InboxRow", "InboxRemove", u32(i), relay)
+		}
+		if nendo.box(nendo.id("AddInboxRow"))(
+		{
+			width = nendo.grow(),
+			direction = narrow ? .Column : .Row,
+			gap = 6,
+			align = {y = .Center},
+		},
+		) {
+			settings_input(
+				ui,
+				"InboxBox",
+				&ui.inbox_input,
+				tr("Enter a relay URL (wss://…)"),
+				ui.focus == .Inbox,
+			)
+			settings_button("AddInboxBtn", tr("Add"))
+		}
+		relay_input_error(.Inbox, ui.inbox_input[:])
+	}
+
+	if nendo.box(nendo.id("NetworkSyncGroup"))(settings_box()) {
+		recovery := settings_line()
+		if narrow {recovery = settings_row(true)}
+		if nendo.box(nendo.id("RowRepublish"))(recovery) {
+			row_labels(
+				tr("Republish relay lists"),
+				tr(
+					"Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you.",
+				),
+			)
+			settings_button(
+				"RepublishBtn",
+				tr("Republish"),
+				{},
+				account_busy ? .Disabled : .Enabled,
 			)
 		}
+	}
 
-		if nendo.box(nendo.id("NetworkGitClientGroup"))(settings_box()) {
-			settings_group(tr("Open git patches in"))
-			nendo.text(
-				tr("The ngit web client a patch card opens. That site receives the patch link."),
-				{font = FONT_BODY, size = 11, color = TEXT_DIM},
+	settings_group(tr("Event fetch relays"))
+	if nendo.box(nendo.id("NetworkFetchGroup"))(settings_box()) {
+		nendo.text(
+			tr(
+				"Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these.",
+			),
+			{font = FONT_BODY, size = 11, color = TEXT_DIM},
+		)
+		for relay, i in ui.prefs.fetch_relays {
+			relay_row("FetchRow", "FetchRemove", u32(i), relay)
+		}
+		if nendo.box(nendo.id("AddFetchRow"))(
+		{
+			width = nendo.grow(),
+			direction = narrow ? .Column : .Row,
+			gap = 6,
+			align = {y = .Center},
+		},
+		) {
+			settings_input(
+				ui,
+				"FetchBox",
+				&ui.fetch_input,
+				tr("Enter a relay URL (wss://…)"),
+				ui.focus == .Fetch,
 			)
-			if nendo.box(nendo.id("GitClientChoices"))(
-				settings_choices(nendo.id("GitClientChoices")),
-			) {
-				for name, git in GIT_CLIENT_NAMES {
-					settings_option("GitClientChip", u32(git), name, ui.prefs.git_client == git)
-				}
+			settings_button("AddFetchBtn", tr("Add"))
+		}
+		relay_input_error(.Fetch, ui.fetch_input[:])
+	}
+
+	settings_socks5(ui)
+	settings_link_prefs(ui)
+
+	settings_group(tr("Open events in"))
+	if nendo.box(nendo.id("NetworkClientGroup"))(settings_box()) {
+		nendo.text(
+			fmt.tprintf(
+				tr(
+					"The web client an event card opens. For example %s. %s is replaced with the event id.",
+				),
+				DEFAULT_EVENT_CLIENT,
+				"{id}",
+			),
+			{font = FONT_BODY, size = 11, color = TEXT_DIM},
+		)
+		settings_input(
+			ui,
+			"ClientBox",
+			&ui.client_input,
+			DEFAULT_EVENT_CLIENT,
+			ui.focus == .Client,
+		)
+	}
+
+	settings_group(tr("Open git patches in"))
+	if nendo.box(nendo.id("NetworkGitClientGroup"))(settings_box()) {
+		nendo.text(
+			tr("The ngit web client a patch card opens. That site receives the patch link."),
+			{font = FONT_BODY, size = 11, color = TEXT_DIM},
+		)
+		if nendo.box(nendo.id("GitClientChoices"))(
+			settings_choices(nendo.id("GitClientChoices")),
+		) {
+			for name, git in GIT_CLIENT_NAMES {
+				settings_option("GitClientChip", u32(git), name, ui.prefs.git_client == git)
 			}
 		}
 	}
@@ -395,10 +383,8 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 	}
 	socks5_previous = values
 	dirty := socks5_changed(ui)
-	box := settings_box()
-	if ui.socks5_login_open {box.width = nendo.grow()}
-	if nendo.box(nendo.id("NetworkProxyGroup"))(box) {
-		settings_group(tr("SOCKS5 proxy"))
+	settings_group(tr("SOCKS5 proxy"))
+	if nendo.box(nendo.id("NetworkProxyGroup"))(settings_box()) {
 		settings_check(
 			"TgSocks5",
 			ui.socks5_enabled,
@@ -406,6 +392,7 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 			tr("Save changes, then restart White Noise to apply them."),
 		)
 		if ui.socks5_enabled {
+			settings_divider()
 			settings_input(
 				ui,
 				"Socks5Box",
@@ -419,6 +406,7 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 				),
 				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
+			settings_divider()
 			settings_check(
 				"TgSocks5Auth",
 				ui.socks5_auth,
@@ -450,6 +438,7 @@ settings_socks5 :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
+		settings_divider()
 		valid := socks5_form_valid(ui)
 		settings_button(
 			"SaveSocks5",
@@ -920,6 +909,15 @@ reload_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	load_profile(client, ui)
 }
 
+@(private)
+network_sync_event_client :: proc(ui: ^Ui_State) {
+	value := string(ui.client_input[:])
+	if value == ui.prefs.event_client {return}
+	delete(ui.prefs.event_client)
+	ui.prefs.event_client = strings.clone(value)
+	ui.settings_dirty = true
+}
+
 // ── Clicks ──────────────────────────────────────────────────────────
 
 handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
@@ -970,8 +968,7 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
-	// Fetch relays and the client template are local prefs, so no
-	// confirm and no relay round trip: edit, save, done.
+	// Fetch relays are local prefs, with no confirm or relay round trip.
 	if clicked("AddFetchBtn") {
 		relay := strings.trim_space(string(ui.fetch_input[:]))
 		if relay == "" {
@@ -1008,11 +1005,6 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			save_settings(ui)
 			return
 		}
-	}
-	if string(ui.client_input[:]) != ui.prefs.event_client {
-		delete(ui.prefs.event_client)
-		ui.prefs.event_client = strings.clone(string(ui.client_input[:]))
-		save_settings(ui)
 	}
 	for _, git in GIT_CLIENT_NAMES {
 		if clicked_indexed("GitClientChip", u32(git)) {

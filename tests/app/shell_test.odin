@@ -170,6 +170,28 @@ rail_default_window :: proc(t: ^testing.T) {
 	anim_tick(1.0 / 60)
 	build_layout(&ui, 0)
 	testing.expect(t, nendo.element(nendo.id("ChatList")).found, "expand restores the list")
+
+	ui.page, ui.focus = .Archived, .Filter
+	append(&ui.sidebar_filter, "archive query")
+	defer delete(ui.sidebar_filter)
+	anim_tick(1.0 / 60)
+	build_layout(&ui, 0)
+	nav := nendo.element(nendo.id("Nav", u32(Page.Settings)))
+	if testing.expect(t, nav.found, "the archive can open Settings") {
+		nendo.set_pointer({nav.rect.x + nav.rect.width / 2, nav.rect.y + nav.rect.height / 2}, .Up)
+		forced_release = true
+		client: marmot.Client
+		handle_pages(&ui, &client)
+		forced_release = false
+		testing.expect_value(t, ui.page, Page.Settings)
+		settings_leave(&ui)
+		testing.expect_value(t, ui.page, Page.Archived)
+		testing.expect_value(t, ui.focus, Focus.Filter)
+		testing.expect_value(t, string(ui.sidebar_filter[:]), "archive query")
+	}
+	clear(&ui.sidebar_filter)
+	ui.page, ui.focus = .Chats, .Compose
+
 	rl.SetWindowSize(720, ui.prefs.window_h)
 	UI_ZOOM = zoom_for_width(720) * f32(ui.prefs.zoom_pct) / 100
 	refresh_ui_scale()
@@ -201,7 +223,7 @@ rail_default_window :: proc(t: ^testing.T) {
 status_bar_viewports :: proc(t: ^testing.T) {
 	if !test_isolated("status_bar_viewports") {return}
 	context.allocator = runtime.default_context().allocator
-	dir, err := os.make_directory_temp("/tmp", "wn-status-viewport-*", context.temp_allocator)
+	dir, err := os.make_directory_temp("", "wn-status-viewport-*", context.temp_allocator)
 	if !testing.expect_value(t, err, nil) {return}
 	defer os.remove_all(dir)
 	previous_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
@@ -242,8 +264,14 @@ status_bar_viewports :: proc(t: ^testing.T) {
 			nendo.set_dimensions({f32(size[0]) / zoom, f32(size[1]) / zoom})
 			for page in ([]Page{.Profile, .Settings}) {
 				ui.page = page
-				for section in ([]Settings_Section{.Folders, .Appearance}) {
+				for section in ([]Settings_Section{.Chats, .Appearance}) {
 					if page == .Profile && section == .Appearance {continue}
+					rail_w, collapsed := ui.prefs.rail_w, ui.prefs.rail_collapsed
+					defer ui.prefs.rail_w, ui.prefs.rail_collapsed = rail_w, collapsed
+					if page == .Settings {
+						ui.prefs.rail_collapsed = section == .Chats
+						ui.prefs.rail_w = section == .Chats ? RAIL_W_MIN : RAIL_W_MAX
+					}
 					settings_open(&ui, nil, section)
 					ui.page = page
 					if page == .Profile {
@@ -251,6 +279,11 @@ status_bar_viewports :: proc(t: ^testing.T) {
 						   data.found {data.position^ = {}}
 					}
 					for _ in 0 ..< 4 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+					if page == .Settings &&
+					   section == .Appearance &&
+					   settings_resolve_scroll(&ui) {
+						build_layout(&ui, 0)
+					}
 					viewport := nendo.id(page == .Profile ? "ProfilePage" : "SettingsPage")
 					box := nendo.element(viewport).rect
 					status := nendo.element(nendo.id("StatusBar")).rect
@@ -265,6 +298,56 @@ status_bar_viewports :: proc(t: ^testing.T) {
 						box,
 						status,
 					)
+					if page == .Settings {
+						root := nendo.element(nendo.id("SettingsRoot"))
+						width := f32(size[0]) / zoom
+						if size[0] == 2560 && size[1] == 1080 && zoom == 1.5 {
+							height := f32(size[1]) / zoom
+							testing.expectf(
+								t,
+								root.found &&
+								root.rect.x > 0 &&
+								root.rect.y > 0 &&
+								abs(2 * root.rect.x + root.rect.width - width) <= 0.1 &&
+								abs(2 * root.rect.y + root.rect.height - height) <= 0.1,
+								"Settings must be centered in the large viewport: %v",
+								root.rect,
+							)
+							testing.expect(t, nendo.element(nendo.id("Rail")).found)
+						} else {
+							testing.expectf(
+								t,
+								root.found &&
+								abs(root.rect.x) <= 0.1 &&
+								abs(root.rect.y) <= 0.1 &&
+								abs(root.rect.width - width) <= 0.1 &&
+								abs(root.rect.height - status.y) <= 0.1,
+								"Settings root %v must fill the logical width %v up to the status bar %v",
+								root.rect,
+								width,
+								status,
+							)
+							for id in ([]string{"Rail", "RailGutter", "PhoneNavigation"}) {
+								testing.expect(t, !nendo.element(nendo.id(id)).found, id)
+							}
+						}
+					}
+					if page == .Settings &&
+					   section == .Appearance &&
+					   size[0] == 1024 &&
+					   size[1] == 700 &&
+					   zoom == 3 {
+						reset := nendo.element(nendo.id("ZoomReset"))
+						testing.expectf(
+							t,
+							reset.found &&
+							reset.rect.y >= box.y - 0.1 &&
+							reset.rect.y + reset.rect.height <= box.y + box.height + 0.1,
+							"At 200%%, ZoomReset %v must fit on entry inside SettingsPage %v above the status bar",
+							reset.rect,
+							box,
+						)
+					}
 					if page == .Profile {
 						avatar := nendo.element(nendo.id("ProfileAvatarPick")).rect
 						y := status.y + status.height - 2
@@ -298,7 +381,7 @@ status_bar_viewports :: proc(t: ^testing.T) {
 						}
 					}
 					target := nendo.id(page == .Profile ? "SignOutBtn" : "ZoomMinus")
-					if page == .Settings && section == .Folders {
+					if page == .Settings && section == .Chats {
 						target = nendo.id("BoardChat", 11)
 						for id in ([]string{"SettingsPage", "FolderBoard"}) {
 							data := nendo.scroll(nendo.id(id))
@@ -315,10 +398,7 @@ status_bar_viewports :: proc(t: ^testing.T) {
 							for _ in 0 ..< 3 {build_layout(&ui, 0)}
 						}
 					}
-					owner := viewport
-					if page == .Settings &&
-					   section == .Appearance {owner = appearance_scroll(&ui, target)}
-					scroll_into_view(owner, target)
+					scroll_into_view(viewport, target)
 					for _ in 0 ..< 3 {build_layout(&ui, 0)}
 					control := nendo.element(target)
 					b := control.rect
@@ -346,21 +426,126 @@ status_bar_viewports :: proc(t: ^testing.T) {
 						status,
 					)
 					nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
-					testing.expect(
+					testing.expectf(
 						t,
 						nendo.pointer_over(target) && !nendo.pointer_over(nendo.id("StatusBar")),
-						"Scrolled controls must receive input instead of the status bar",
+						"%v/%v at %v scale %v must receive input instead of the status bar",
+						page,
+						section,
+						size,
+						zoom,
 					)
 				}
 			}
 		}
 	}
+	settings_modal_reflow(t, &ui)
+}
+
+@(private)
+settings_modal_reflow :: proc(t: ^testing.T, ui: ^Ui_State) {
+	resize :: proc(ui: ^Ui_State, width, height: i32) {
+		rl.SetWindowSize(width, height)
+		UI_ZOOM = 1.5
+		refresh_ui_scale()
+		nendo.set_dimensions({f32(width) / UI_ZOOM, f32(height) / UI_ZOOM})
+		for _ in 0 ..< 3 {
+			anim_tick(1.0 / 60)
+			build_layout(ui, 0)
+			if settings_resolve_scroll(ui) {build_layout(ui, 0)}
+		}
+	}
+	ui.page, ui.focus = .Chats, .Compose
+	ui.settings_return_page = nil
+	ui.selected = 0
+	resize(ui, 1600, 1000)
+	settings_open(ui, nil, .Composer)
+	resize(ui, 1600, 1000)
+	preview_files := composer_action_id(.Files, .Preview)
+	chat_files := composer_action_id(.Files, .Chat)
+	if testing.expect(t, nendo.element(preview_files).found && nendo.element(chat_files).found) {
+		settings_test_point(preview_files)
+		testing.expect(t, nendo.pointer_over(preview_files) && !nendo.pointer_over(chat_files))
+		forced_press = true
+		testing.expect(t, handle_composer_drag(ui))
+		forced_press = false
+		testing.expect_value(t, ui.composer_editor.drag.source, Composer_Action.Files)
+		ui.composer_editor.drag = {}
+	}
+	settings_open(ui, nil, .Language)
+	resize(ui, 1600, 1000)
+	testing.expect(t, nendo.element(nendo.id("ChatPane")).found, "The conversation stays visible")
+	settings_test_point(nendo.id("Nav", u32(Page.Contacts)))
+	testing.expect(
+		t,
+		!nendo.pointer_over(nendo.id("Nav", u32(Page.Contacts))),
+		"The backdrop blocks the rail",
+	)
+	settings_test_point(nendo.id("LangChange"))
+	settings_test_release(ui)
+	resize(ui, 1600, 1000)
+	testing.expect(t, ui.lang_open)
+	settings_test_point(nendo.id("SettingsExit"))
+	testing.expect(
+		t,
+		!nendo.pointer_over(nendo.id("SettingsExit")),
+		"A child dialog blocks Settings",
+	)
+	rl.PushKey(.ESCAPE, true)
+	handle_settings(ui, nil)
+	rl.PushKey(.ESCAPE, false)
+	testing.expect(t, !ui.lang_open)
+	resize(ui, 780, 700)
+	testing.expect(
+		t,
+		!nendo.element(nendo.id("ChatPane")).found,
+		"Small windows use full-page Settings",
+	)
+	testing.expect(t, nendo.element(nendo.id("RowLang")).found)
+	resize(ui, 1600, 1000)
+	testing.expect(
+		t,
+		nendo.element(nendo.id("RowLang")).found,
+		"Resizing preserves the selected settings section",
+	)
+	rl.PushKey(.ESCAPE, true)
+	settings_escape(ui)
+	rl.PushKey(.ESCAPE, false)
+	resize(ui, 1600, 1000)
+	testing.expect(
+		t,
+		ui.page == .Chats && ui.selected == 0 && nendo.element(nendo.id("ChatPane")).found,
+	)
+	testing.expect(t, !nendo.element(nendo.id("SettingsRoot")).found, "Escape closes the dialog")
+
+	ui.stt.file = wn_ipc_create(4)
+	if !testing.expect(t, ui.stt.file != nil) {return}
+	defer stt_stop(ui)
+	ui.stt.purpose = .Download
+	ui.prefs.stt_enabled, ui.prefs.stt_model = true, STT_MODELS[0].name
+	settings_open(ui, nil, .Language, "SttCancel")
+	resize(ui, 1600, 1000)
+	cancel := nendo.id("SttCancel")
+	settings_test_point(cancel)
+	testing.expect(
+		t,
+		settings_modal(ui) && nendo.pointer_over(cancel),
+		"Cancel is visible in the Settings dialog",
+	)
+	forced_release = true
+	defer {forced_release = false}
+	ui.lang_open = true
+	testing.expect(t, !handle_shell_foreground(ui, false), "A child dialog owns the release")
+	ui.lang_open = false
+	testing.expect(t, !handle_shell_foreground(ui, true), "A captured release stays consumed")
+	testing.expect(t, ui.stt.file != nil)
+	testing.expect(t, handle_shell_foreground(ui, false), "Settings can cancel the download")
+	testing.expect(t, ui.stt.file == nil)
 }
 
 // A two-card window too narrow for the saved rail collapses it on its
 // own; the expand toggle must still open the list there, and collapse
-// it again. Settings pins the rail shut, so its toggle flips the pref
-// without forcing the list open for the Chats page later.
+// it again. A rail command in Settings must not change the chat layout.
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=rail_expand_narrow
 @(test)
 rail_expand_narrow :: proc(t: ^testing.T) {
@@ -395,10 +580,14 @@ rail_expand_narrow :: proc(t: ^testing.T) {
 	testing.expect(t, ui.prefs.rail_collapsed)
 
 	ui.page = .Settings
+	ui.rail_peek = true
 	toggle_rail(&ui)
-	toggle_rail(&ui)
-	testing.expect(t, ui.prefs.rail_collapsed, "Settings toggle round-trips the pref")
-	testing.expect(t, !ui.rail_peek, "Settings must not force the list open")
+	testing.expect(
+		t,
+		ui.prefs.rail_collapsed,
+		"Settings must not change the saved rail preference",
+	)
+	testing.expect(t, ui.rail_peek, "Settings must not change the transient rail state")
 	ui.page = .Chats
 	testing.expect_value(t, width(&ui), f32(RAIL_W_COLLAPSED))
 }
@@ -475,7 +664,7 @@ test_phone_detail :: proc(t: ^testing.T) {
 	phone_back_action(&ui)
 	testing.expect(t, !phone_detail(&ui), "back from the chat shows the list")
 
-	settings_open(&ui, nil, .Appearance, 2)
+	settings_open(&ui, nil, .Appearance)
 	testing.expect(t, phone_detail(&ui), "settings uses the page rather than a second sidebar")
 	phone_back_action(&ui)
 	testing.expect(
@@ -510,6 +699,12 @@ test_settings_escape :: proc(t: ^testing.T) {
 	defer {
 		delete(ui.accounts)
 		delete(ui.settings_search)
+		delete(ui.pal_hits)
+		delete(ui.sidebar_filter)
+		delete(ui.filter_hits)
+		delete(ui.chats)
+		delete(ui.compose)
+		delete(ui.staged)
 	}
 	ui.account_ref = "offline-fixture"
 	append(&ui.accounts, Account_Row_Ui{name = "Test"})
@@ -520,37 +715,81 @@ test_settings_escape :: proc(t: ^testing.T) {
 		rl.PushKey(.ESCAPE, false)
 	}
 
-	settings_open(&ui, nil, .Folders)
+	settings_open(&ui, nil, .Chats)
 	press_escape(&ui, &client)
 	testing.expect(t, ui.page == .Settings && ui.settings_section == .Home)
 	press_escape(&ui, &client)
 	testing.expect_value(t, ui.page, Page.Chats)
 
-	settings_open(&ui, nil, .Appearance, 1, level = .Sheet)
+	settings_open(&ui, nil, .Appearance)
 	append(&ui.settings_search, "dark")
 	ui.focus = .SettingsSearch
 	press_escape(&ui, &client)
 	testing.expect(t, ui.focus == .Compose && len(ui.settings_search) == 0)
-	testing.expect(t, ui.settings_section == .Appearance && ui.settings_level == .Sheet)
+	testing.expect_value(t, ui.settings_section, Settings_Section.Appearance)
+	settings_gallery_open(&ui)
+	testing.expect(t, ui.settings_gallery)
+	press_escape(&ui, &client)
+	testing.expect(t, ui.settings_section == .Appearance && !ui.settings_gallery)
 	press_escape(&ui, &client)
 	testing.expect_value(t, ui.settings_section, Settings_Section.Home)
 	press_escape(&ui, &client)
 	testing.expect_value(t, ui.page, Page.Chats)
+
+	ui.page, ui.focus = .Contacts, .Filter
+	ui.selected, ui.selected_contact = 0, 2
+	append(&ui.sidebar_filter, "people query")
+	append(&ui.filter_hits, true)
+	append(&ui.chats, Chat_Row_Ui{group_id = "open-chat"})
+	append(&ui.compose, "unsent draft")
+	append(&ui.staged, Staged_File{name = "attachment.txt"})
+	ui.replying = "pending-reply"
+	pal_open_modal(&ui)
+	run_command(&ui, nil, .Goto_Settings)
+	testing.expect_value(t, ui.page, Page.Settings)
+	testing.expect(t, !ui.pal_open)
+	settings_open(&ui, nil, .Appearance, "ZoomReset")
+	press_escape(&ui, &client)
+	testing.expect(t, ui.page == .Settings && ui.settings_section == .Home)
+	press_escape(&ui, &client)
+	testing.expect_value(t, ui.page, Page.Contacts)
+	testing.expect_value(t, ui.focus, Focus.Filter)
+	testing.expect_value(t, ui.selected_contact, 2)
+	testing.expect_value(t, string(ui.sidebar_filter[:]), "people query")
+	testing.expect(t, len(ui.filter_hits) == 1 && ui.filter_hits[0])
+	testing.expect(t, ui.settings_return_page == nil, "leave consumes the captured origin")
+
+	ui.page, ui.focus = .Chats, .Compose
+	pal_open_modal(&ui)
+	run_command(&ui, nil, .Set_Notifications)
+	settings_open(&ui, nil, .Appearance, "ZoomReset")
+	phone_back_action(&ui)
+	phone_back_action(&ui)
+	testing.expect_value(t, ui.page, Page.Chats)
+	if testing.expect_value(t, ui.selected, 0) {
+		testing.expect_value(t, ui.chats[ui.selected].group_id, "open-chat")
+	}
+	testing.expect_value(t, string(ui.compose[:]), "unsent draft")
+	testing.expect_value(t, ui.replying, "pending-reply")
+	if testing.expect_value(t, len(ui.staged), 1) {
+		testing.expect_value(t, ui.staged[0].name, "attachment.txt")
+	}
+	testing.expect_value(t, len(ui.drafts), 0)
+	testing.expect_value(t, len(ui.staged_drafts), 0)
 }
 
 @(test)
-test_keys_tab_clears_secret :: proc(t: ^testing.T) {
+test_key_navigation_clears_secret :: proc(t: ^testing.T) {
 	ui := Ui_State {
 		page             = .Settings,
-		settings_section = .Keys,
-		settings_tab     = 2,
+		settings_section = .Account,
 		keys_nsec        = string(make([]u8, 63)),
 		keys_nsec_show   = true,
 		keys_confirm     = "RevealNsecBtn",
 	}
 	defer keys_forget(&ui)
 
-	settings_open(&ui, nil, .Keys, anchor = "NpubRow")
+	settings_open(&ui, nil, .Account, "NpubRow")
 	testing.expect(
 		t,
 		len(ui.keys_nsec) == 0 && !ui.keys_nsec_show && ui.keys_confirm == "",
@@ -572,7 +811,7 @@ test_keys_tab_clears_secret :: proc(t: ^testing.T) {
 test_confirm_survives_frame :: proc(t: ^testing.T) {
 	ui := Ui_State {
 		page             = .Settings,
-		settings_section = .Advanced,
+		settings_section = .Connection,
 		keys_confirm     = "TrustForgetAll",
 	}
 	handle_pages(&ui, nil)

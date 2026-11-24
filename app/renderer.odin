@@ -493,10 +493,10 @@ render_nendo :: proc(
 	}
 	render_range(render_commands[:split], allocator)
 	rl.EndTarget()
-	rl.DrawTarget(SCENE_SLOT, 1)
+	if SHARP_BACKDROP || veil < 1 {rl.DrawTarget(SCENE_SLOT, 1)}
 	if !SHARP_BACKDROP {rl.DrawTargetBlurred(SCENE_SLOT, veil)}
 
-	if !rl.BeginTarget(LAYER_SLOT) {
+	if veil == 1 || !rl.BeginTarget(LAYER_SLOT) {
 		render_range(render_commands[split:], allocator)
 		return
 	}

@@ -798,7 +798,11 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 			} else if ui.account_ref == job.account {
 				switch job.kind {
 				case .Profile:
-					reload_profile(ui, job.client); ui.profile.editing = false
+					reload_profile(ui, job.client)
+					if ui.settings_profile_return && ui.confirm.kind == .Discard_Profile {
+						confirm_close(ui)
+					}
+					profile_edit_finish(ui)
 				case .Outbox, .Inbox:
 					reload_profile(ui, job.client)
 				case .Key_Package, .Read_Key_Packages:
@@ -918,7 +922,13 @@ account_job_drain :: proc(ui: ^Ui_State, live: ^Live = nil) {
 					ui.ov_open = false
 					ui.focus = .Invite
 					refresh_after_action(ui, job.client)
-				case .Switch, .Sign_In, .Sign_Out, .Remove, .Wipe, .Wipe_Unlinked, .Delete_Conversation:
+				case .Switch,
+				     .Sign_In,
+				     .Sign_Out,
+				     .Remove,
+				     .Wipe,
+				     .Wipe_Unlinked,
+				     .Delete_Conversation:
 				}
 			}
 		}

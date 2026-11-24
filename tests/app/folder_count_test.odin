@@ -40,7 +40,7 @@ folder_count_dispatch :: proc(t: ^testing.T) {
 	ui := Ui_State {
 		page             = .Settings,
 		selected         = -1,
-		settings_section = .Folders,
+		settings_section = .Chats,
 		row_menu         = -1,
 		member_menu      = -1,
 		audit_scanned    = true,
@@ -52,11 +52,14 @@ folder_count_dispatch :: proc(t: ^testing.T) {
 	append(&ui.accounts, Account_Row_Ui{name = "Offline fixture"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; forced_release = false; text_field_live = false}
+	settings_open(&ui, nil, .Chats, "SettingsFolderNew")
 
 	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
-		return build_layout(ui, 0)
+		commands := build_layout(ui, 0)
+		if settings_resolve_scroll(ui) {commands = build_layout(ui, 0)}
+		return commands
 	}
 	click :: proc(t: ^testing.T, ui: ^Ui_State, id: nendo.Id) -> bool {
 		for _ in 0 ..< 3 {frame(ui)}
@@ -82,7 +85,7 @@ folder_count_dispatch :: proc(t: ^testing.T) {
 	}
 	count_text :: proc(commands: []nendo.Render_Command) -> string {
 		box := nendo.element(nendo.id("FolderRuleBox0")).rect
-		for command in commands {
+		#reverse for command in commands {
 			if command.kind != .Text {continue}
 			b := command.rect
 			if b.x < box.x ||

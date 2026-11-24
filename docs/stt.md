@@ -8,7 +8,7 @@ Dictation and audio transcription run on your CPU with a model you pick. Only th
 
 ## Dictate into a draft
 
-Enable **Speech to text** in Settings > Speech, then:
+Enable **Speech to text** in **Settings > Language & speech**, then:
 
 1. Choose **Dictate** beside the composer's microphone button.
 2. Wait for **Listening**, then speak.
@@ -41,7 +41,7 @@ Audio messages have a **Transcribe** button that becomes **Transcribing...** whi
 
 ## Which transcription model to pick
 
-Choose **Transcription model** in Settings > Speech. The selected model is used for both dictation and audio messages.
+Choose **Transcription model** in **Settings > Language & speech**. The selected model is used for both dictation and audio messages.
 
 | Model | Family | Download | Languages |
 | --- | --- | ---: | --- |

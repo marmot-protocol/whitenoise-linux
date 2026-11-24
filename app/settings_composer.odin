@@ -3,9 +3,6 @@ package main
 import "nendo"
 import rl "sdlrl"
 
-@(private)
-COMPOSER_TAB :: 3
-
 @(private = "file")
 COMPOSER_PREVIEW_PAD :: 12
 
@@ -27,7 +24,6 @@ settings_composer :: proc(ui: ^Ui_State) {
 		{width = nendo.grow(), gap = 8, align = {y = .Center}},
 		) {
 			row_labels(tr("Composer preview"), "")
-			if ui.composer_settings_from_chat {settings_button("ComposerBack", tr("Back to chat"))}
 		}
 		composer_preview(ui)
 		id := nendo.id("ComposerLayoutOptions")
@@ -46,7 +42,7 @@ settings_composer :: proc(ui: ^Ui_State) {
 				config.layout == .Expanded,
 			)
 		}
-		scrollbar(id)
+		scrollbar(id, settings_float_z(ui))
 		if nendo.box(nendo.id_local("ComposerToolsHeading"))(
 		{width = nendo.grow(), gap = 8, align = {y = .Center}},
 		) {
@@ -87,11 +83,11 @@ composer_preview :: proc(ui: ^Ui_State) {
 		if nendo.box(nendo.id("ComposerPreviewRow"))(
 		{width = nendo.grow(), gap = plan.gap, align = {y = .Center}},
 		) {
-			composer_tools(ui, plan, .Left)
+			composer_tools(ui, plan, .Left, .Preview)
 			if inline {
 				composer_preview_text()
 			} else if nendo.box(nendo.id("ComposerPreviewGap"))({width = nendo.grow()}) {}
-			composer_tools(ui, plan, .Right)
+			composer_tools(ui, plan, .Right, .Preview)
 			composer_primary(ui, plan, .Preview)
 		}
 	}
@@ -244,7 +240,7 @@ composer_inspector :: proc(ui: ^Ui_State) {
 				)
 			}
 		}
-		scrollbar(id)
+		scrollbar(id, settings_float_z(ui))
 		before, after := composer_neighbors(config, action)
 		if before != .None || after != .None {
 			id := nendo.id("ComposerOrderOptions")
@@ -252,7 +248,7 @@ composer_inspector :: proc(ui: ^Ui_State) {
 				if before != .None {settings_button("ComposerEarlier", tr("Move earlier"))}
 				if after != .None {settings_button("ComposerLater", tr("Move later"))}
 			}
-			scrollbar(id)
+			scrollbar(id, settings_float_z(ui))
 		}
 	}
 }
@@ -289,7 +285,7 @@ composer_tile_id :: proc(action: Composer_Action) -> nendo.Id {
 composer_hit :: proc(ui: ^Ui_State) -> Composer_Action {
 	for action in composer_config(&ui.prefs).order[:COMPOSER_SHORTCUT_COUNT] {
 		if nendo.pointer_over(composer_tile_id(action)) ||
-		   nendo.pointer_over(nendo.id(COMPOSER_ACTIONS[action].id)) {
+		   nendo.pointer_over(composer_action_id(action, .Preview)) {
 			return action
 		}
 	}
@@ -320,7 +316,7 @@ composer_drop_at :: proc(ui: ^Ui_State, point: nendo.Vector2) -> Composer_Drop {
 	last := -1
 	for action, i in order {
 		if action == source || config.slots[action] != drop.slot {continue}
-		id := drop.preview ? nendo.id(COMPOSER_ACTIONS[action].id) : composer_tile_id(action)
+		id := drop.preview ? composer_action_id(action, .Preview) : composer_tile_id(action)
 		box := nendo.element(id)
 		if !box.found {continue}
 		r := box.rect
@@ -339,7 +335,7 @@ composer_drop_at :: proc(ui: ^Ui_State, point: nendo.Vector2) -> Composer_Drop {
 			if last < 0 {
 				slot := config.slots[action]
 				if slot != .Left && slot != .Right {continue}
-				if nendo.element(nendo.id(COMPOSER_ACTIONS[action].id)).found {continue}
+				if nendo.element(composer_action_id(action, .Preview)).found {continue}
 			}
 			drop.before = action
 			break
@@ -412,7 +408,6 @@ composer_save :: proc(ui: ^Ui_State, config: Composer_Config) {
 
 @(private)
 handle_settings_composer :: proc(ui: ^Ui_State) {
-	if clicked("ComposerBack") {settings_back(ui); return}
 	if clicked("ComposerReset") {
 		ui.composer_editor = {}
 		ui.prefs.composer = {}
@@ -452,9 +447,7 @@ handle_composer_drag :: proc(ui: ^Ui_State) -> bool {
 	drag := &editor.drag
 	shown :=
 		ui.page == .Settings &&
-		ui.settings_section == .General &&
-		ui.settings_tab == COMPOSER_TAB &&
-		!settings_on_menu(ui) &&
+		ui.settings_section == .Composer &&
 		!modal_open(ui) &&
 		!ui.add_account_open
 	if drag.source == .None {

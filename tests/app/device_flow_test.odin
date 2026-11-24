@@ -169,14 +169,15 @@ devices_visibility :: proc(t: ^testing.T) {
 		testing.expect(t, settings_handle_navigation(&ui, nil))
 		forced_release = false
 		testing.expect_value(t, ui.settings_section, Settings_Section.Devices)
-		testing.expect_value(t, ui.settings_level, Settings_Level.Sheet)
 		testing.expect_value(t, ui.settings_anchor, "DevicesRoster")
 		device_test_frame(&ui)
 		testing.expect(t, nendo.element(nendo.id("DevicesRoster")).found)
 	}
-	ui.prefs.page, ui.prefs.settings_section = .Settings, .Devices
+	ui.prefs.page, ui.prefs.settings_category = .Settings, .Account
 	restore_workspace(&ui, nil)
-	testing.expect_value(t, ui.settings_section, Settings_Section.Devices)
+	testing.expect_value(t, ui.settings_section, Settings_Section.Account)
+	device_test_frame(&ui)
+	testing.expect(t, nendo.element(nendo.id("RowLinkedDevices")).found)
 	if profile := device_current(&ui); profile != nil {
 		ui.page = .Chats
 		profile.first_import = true
@@ -206,7 +207,9 @@ devices_visibility :: proc(t: ^testing.T) {
 	ui.account_ref = ""
 	devices_select(&ui)
 	restore_workspace(&ui, nil)
-	testing.expect_value(t, ui.settings_section, Settings_Section.Home)
+	testing.expect_value(t, ui.settings_section, Settings_Section.Account)
+	device_test_frame(&ui)
+	testing.expect(t, !nendo.element(nendo.id("RowLinkedDevices")).found)
 }
 
 @(test)

@@ -469,7 +469,7 @@ login_pane :: proc(ui: ^Ui_State) {
 			}
 			if nendo.box(nendo.id("LoginGapC"))({height = nendo.fixed(6)}) {}
 			nendo.text(
-				tr("After signing in, open Devices in Settings to link another device."),
+				tr("After signing in, open Account & devices in Settings to link another device."),
 				{font = FONT_BODY, size = 12, color = TEXT_LO, align = .Center},
 			)
 		}

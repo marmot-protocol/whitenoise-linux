@@ -67,6 +67,13 @@ gutter :: proc(id_str: string) {
 // Run the two gutter drags. Called after layout, so nendo's boxes are
 // this frame's.
 handle_gutters :: proc(ui: ^Ui_State) {
+	if settings_workspace_visible(ui) {
+		if gutter_drag != "" {
+			gutter_drag = ""
+			save_settings(ui)
+		}
+		return
+	}
 	if rl.IsMouseButtonPressed(.LEFT) {
 		if nendo.pointer_over(nendo.id("RailGutter")) {
 			gutter_drag = "RailGutter"
@@ -105,7 +112,8 @@ rail_width :: proc(ui: ^Ui_State) -> f32 {
 	}
 	// Standalone pages leave the saved sidebar width and animation
 	// untouched so returning to another tab restores its layout.
-	if ui.page == .Archived || ui.page == .Settings {
+	page := shell_page(ui)
+	if page == .Archived || page == .Settings {
 		return RAIL_W_COLLAPSED
 	}
 	// Resize immediately; preserving the pref restores the list when it fits.
@@ -139,11 +147,11 @@ rail_full_w :: proc(ui: ^Ui_State) -> f32 {
 
 // The collapse button and palette command. A window too narrow for the
 // list beside the page collapses it on its own; expanding there opens
-// it anyway (rail_peek) until the user collapses it again. Pages that
-// pin the rail shut (one-card, Archived, Settings) render no button and
-// only flip the pref, since their rail width says nothing about it.
+// it anyway (rail_peek) until the user collapses it again. Views that
+// pin the rail shut only flip the preference; Settings has no rail.
 @(private)
 toggle_rail :: proc(ui: ^Ui_State) {
+	if settings_workspace_visible(ui) {return}
 	if single_pane() || ui.page == .Archived || ui.page == .Settings {
 		ui.rail_peek = false
 		ui.prefs.rail_collapsed = !ui.prefs.rail_collapsed
@@ -179,6 +187,7 @@ rail_narrow :: proc(ui: ^Ui_State) -> bool {
 @(private)
 shell_navigation :: proc(ui: ^Ui_State) {
 	if single_pane() {return}
+	active := shell_page(ui)
 	if nendo.box(nendo.id("RailTop"))(
 	{
 		width = nendo.fixed(RAIL_W_COLLAPSED),
@@ -203,9 +212,9 @@ shell_navigation :: proc(ui: ^Ui_State) {
 		{width = nendo.fixed(28), height = nendo.fixed(1), color = DIVIDER},
 		) {}
 		for page in ([3]Page{.Chats, .Contacts, .Archived}) {
-			nav_button(page, ui.page == page)
+			nav_button(page, active == page)
 		}
-		if !single_pane() && ui.page != .Archived && ui.page != .Settings {
+		if active != .Archived && active != .Settings {
 			if nendo.box(nendo.id("RailCollapse"))(
 			{
 				width = nendo.fixed(42),
@@ -229,9 +238,9 @@ shell_navigation :: proc(ui: ^Ui_State) {
 			}
 		}
 		if nendo.box(nendo.id("RailTopGap"))({height = nendo.grow()}) {}
-		nav_button(.Profile, ui.page == .Profile)
-		nav_button(.Settings, ui.page == .Settings)
-		nav_indicator(ui)
+		nav_button(.Profile, active == .Profile)
+		nav_button(.Settings, active == .Settings)
+		nav_indicator(active)
 	}
 	scrollbar(nendo.id("RailTop"))
 }
@@ -344,9 +353,34 @@ fit_w :: proc(w: f32, margin: f32 = 12) -> f32 {
 	return min(w, max(f32(rl.GetScreenWidth()) / UI_ZOOM - margin * 2, 120))
 }
 
+@(private)
+settings_workspace_visible :: proc(ui: ^Ui_State) -> bool {
+	return ui.page == .Settings && !ui.add_account_open && !ui.new_chat_open
+}
+
+@(private)
+SETTINGS_MODAL_W :: f32(820)
+@(private)
+SETTINGS_MODAL_Z :: i16(8)
+
+@(private)
+settings_modal :: proc(ui: ^Ui_State) -> bool {
+	return(
+		settings_workspace_visible(ui) &&
+		ui.account_ref != "" &&
+		f32(rl.GetScreenWidth()) / UI_ZOOM >= SETTINGS_MODAL_W + 80 &&
+		f32(rl.GetScreenHeight()) / UI_ZOOM >= 580 \
+	)
+}
+
+@(private)
+shell_page :: proc(ui: ^Ui_State) -> Page {
+	if settings_modal(ui) {return ui.settings_return_page.? or_else .Chats}
+	return ui.page
+}
+
 // Match the actual shell allocation, including the draggable separator.
 page_w :: proc(ui: ^Ui_State) -> f32 {
-	if ui.chat_preview_w > 0 {return ui.chat_preview_w}
 	width := f32(rl.GetScreenWidth()) / UI_ZOOM
 	if single_pane() {
 		return phone_detail(ui) ? width : 0
@@ -430,7 +464,11 @@ tab_scroll_restore :: proc(ui: ^Ui_State) {
 	for name in tab_scroll_ids(ui.page) {
 		if name == "" {continue}
 		id := nendo.id(name)
-		if data := nendo.scroll(id); data.found {
+		if ui.page == .Profile &&
+		   ui.settings_profile_return &&
+		   nendo.element(nendo.id("NameBox")).found {
+			scroll_into_view(id, nendo.id("NameBox"))
+		} else if data := nendo.scroll(id); data.found {
 			data.position^ = tab_scrolls[u64(ui.page) << 32 | u64(id.id)]
 		}
 	}
@@ -544,6 +582,10 @@ phone_back_action :: proc(ui: ^Ui_State) {
 	case .Settings:
 		settings_back(ui)
 	case .Archived, .Profile:
+		if ui.page == .Profile && ui.settings_profile_return {
+			profile_cancel(ui)
+			return
+		}
 		ui.page = .Chats // no list half of their own to fall back to
 	}
 }
@@ -839,16 +881,21 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 // here is the dim: a veil that pushes the page down a stop without
 // hiding it. The layer's own fade-in belongs to the renderer too, which
 // is why nothing below ramps with open_t.
-modal_backdrop :: proc() {
+modal_backdrop :: proc(
+	name: string = "ModalVeil",
+	z: i16 = 9,
+	pointer: nendo.Pointer_Capture = .Capture,
+) {
 	w := f32(rl.GetScreenWidth()) / UI_ZOOM
 	h := f32(rl.GetScreenHeight()) / UI_ZOOM
-	if nendo.box(nendo.id("ModalVeil"))(
+	if nendo.box(nendo.id(name))(
 	{
 		width = nendo.fixed(w),
 		height = nendo.fixed(h),
 		floating = {
 			attach_to = .Root,
-			z = 9,
+			z = z,
+			pointer = pointer,
 			attach = {element = .Center_Center, parent = .Center_Center},
 		},
 		color = OVERLAY,

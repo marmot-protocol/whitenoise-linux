@@ -8,7 +8,7 @@ Read aloud speaks messages with a local Supertonic 3 model. No message text is s
 
 ## Turn it on and pick a voice
 
-Enable **Read aloud** in Settings > Speech. Each voice has a row with its selection state, description, download status and **Preview** button.
+Enable **Read aloud** in **Settings > Language & speech**. Each voice has a row with its selection state, description, download status and **Preview** button.
 
 - **Preview does three things at once.** It selects that voice, downloads any missing files, and reads a sample in your app's language (English if unsupported).
 - **Stop reading cancels whatever is running.** That covers downloads, preparation or playback.

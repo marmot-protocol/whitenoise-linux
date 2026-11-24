@@ -1,4 +1,4 @@
-// Changing the vault password from Settings > Keys & identity.
+// Changing the vault password from Settings > Account & devices.
 //
 // vault_rekey re-seals vault.db under a new Argon2id key and keeps the
 // blob key already stored in the map. Sealed files stay where they are.

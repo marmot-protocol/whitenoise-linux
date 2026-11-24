@@ -50,18 +50,17 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 		nendo.set_dimensions(viewport)
 		for target in ([]struct {
 				section: Settings_Section,
-				tab:     int,
 				id:      string,
-			}{{.General, 0, "TgRestore"}, {.General, 1, "DateFmtCol"}, {.General, 2, "QuickReset"}, {.Folders, 0, "SettingsFolderNew"}, {.Speech, 0, "SttModel"}, {.Speech, 1, "TtsPreview0"}, {.Network, 0, "AddInboxBtn"}, {.Network, 1, "GitClientChoices"}, {.Keys, 0, "SettingsCopyNpub"}, {.Keys, 1, "KpRefresh"}, {.Keys, 2, "VaultPwBtn"}, {.Appearance, 0, "ThemeEditBtn"}, {.Notifications, 0, "NotifyTest"}, {.Storage, 0, "ImportBtn"}, {.Advanced, 0, "MapBrowserChoices"}, {.Advanced, 1, "AuditRefresh"}, {.Advanced, 2, "TgDevMode"}, {.About, 0, "AboutCredits"}, {.Agents, 0, "AgentDocs"}}) {
-			ui.settings_section, ui.settings_tab, ui.settings_level =
-				target.section, target.tab, .Sheet
+			}{{.Advanced, "TgRestore"}, {.Language, "DateFmtCol"}, {.Chats, "QuickReset"}, {.Chats, "SettingsFolderNew"}, {.Language, "SttModel"}, {.Language, "TtsPreview0"}, {.Connection, "AddInboxBtn"}, {.Connection, "GitClientChoices"}, {.Account, "SettingsCopyNpub"}, {.Account, "KpRefresh"}, {.Account, "VaultPwBtn"}, {.Appearance, "ThemeEditBtn"}, {.Notifications, "NotifyTest"}, {.Privacy, "ImportBtn"}, {.Connection, "MapBrowserChoices"}, {.Advanced, "AuditRefresh"}, {.Advanced, "TgDevMode"}, {.Help, "AboutCredits"}, {.Help, "SupportChat"}, {.Agents, "AgentDocs"}, {.Debug, "DebugSnapshotGroup"}, {.KP, "KpMineRefresh"}}) {
+			ui.prefs.dev_mode = target.section == .Debug || target.section == .KP
+			settings_open(&ui, nil, target.section)
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
 			mobile_settings_inside(t, nendo.id("SettingsRoot"), viewport)
 			mobile_settings_inside(t, nendo.id("SettingsSheet"), viewport, .Width)
 			id := target.id == "SttModel" ? nendo.id(target.id, 0) : nendo.id(target.id)
 			mobile_settings_inside(t, id, viewport, .Width)
 			if single_pane() &&
-			   target.section != .About &&
+			   target.id != "AboutCredits" &&
 			   target.id != "DateFmtCol" &&
 			   target.id != "GitClientChoices" &&
 			   target.id != "MapBrowserChoices" {
@@ -72,29 +71,30 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 					target.id,
 				)
 			}
-			panel :=
-				target.section == .Appearance && appearance_layout(&ui).columns > 1 ? "AppearanceControls" : "SettingsPage"
-			mobile_settings_reveal(t, &ui, panel, id)
+			mobile_settings_reveal(t, &ui, "SettingsPage", id)
 		}
 
-		ui.settings_section, ui.settings_level = .Agents, .Sheet
+		ui.prefs.dev_mode = false
+		settings_open(&ui, nil, .Agents)
 		ui.agent_connector = 1
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
 		mobile_settings_inside(t, nendo.id("AgentCopyPrompt"), viewport, .Width)
 		mobile_settings_inside(t, nendo.id("AgentCopyKey"), viewport, .Width)
 		ui.agent_connector = 0
 
-		ui.settings_section, ui.settings_level = .Storage, .Sheet
+		settings_open(&ui, nil, .Language)
 		ui.lang_open = true
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
 		mobile_settings_inside(t, nendo.id("LangModal"), viewport)
 		ui.lang_open = false
+		settings_open(&ui, nil, .Help)
 		ui.shortcuts_open = true
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
 		mobile_settings_inside(t, nendo.id("ShortModal"), viewport)
 		last_shortcut := len(SHORTCUTS) - (rl.HasTouch() ? 2 : 1)
 		mobile_settings_reveal(t, &ui, "ShortList", nendo.id("ShortRow", u32(last_shortcut)))
 		ui.shortcuts_open = false
+		settings_open(&ui, nil, .Privacy)
 		for creating in ([]bool{true, false}) {
 			ui.backup_mode = creating ? .Create : .Import
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
@@ -103,6 +103,7 @@ mobile_settings_viewport :: proc(t: ^testing.T) {
 			mobile_settings_reveal(t, &ui, "BackupModal", nendo.id("BackupGo"))
 		}
 		ui.backup_mode = .None
+		settings_open(&ui, nil, .Account)
 		ui.export_open = true
 		for sealed in ([]bool{false, true}) {
 			ui.export_result =

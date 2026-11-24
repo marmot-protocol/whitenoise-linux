@@ -614,9 +614,7 @@ pic_worker :: proc(_: ^thread.Thread) {
 			url = url,
 		}
 		data: []u8
-		if strings.has_prefix(url, "crop-circle:") {
-			pic.pixels, pic.side = crop_circle_pixels(url[len("crop-circle:"):])
-		} else if strings.has_prefix(url, "crop-square:") {
+		if strings.has_prefix(url, "crop-square:") {
 			pic.pixels, pic.side = crop_circle_pixels(url[len("crop-square:"):], .Square)
 		} else if strings.has_prefix(url, "crop-round:") {
 			pic.pixels, pic.side = crop_circle_pixels(url[len("crop-round:"):], .Circle)
@@ -787,31 +785,27 @@ drain_pics :: proc() {
 
 @(private)
 Crop_Shape :: enum {
-	Slanted,
-	Square,
-	Circle,
-	Rounded,
+	// Stored value 0 belonged to Slanted and is no longer used.
+	Square  = 1,
+	Circle  = 2,
+	Rounded = 3,
+}
+
+@(private)
+normalized_crop_shape :: proc(shape: Crop_Shape) -> Crop_Shape {
+	return shape >= .Square && shape <= .Rounded ? shape : .Circle
 }
 
 @(private)
 CROP_SHAPE_PREFIX := [Crop_Shape]string {
-	.Slanted = "crop-circle",
 	.Square  = "crop-square",
 	.Circle  = "crop-round",
 	.Rounded = "crop-rounded",
 }
 
-@(private)
-CROP_SHAPE_NAMES := [Crop_Shape]string {
-	.Slanted = N_("Slanted"),
-	.Square  = N_("Square"),
-	.Circle  = N_("Circle"),
-	.Rounded = N_("Rounded"),
-}
-
 // Public keys are already 32-byte digests. MLS's 16-byte IDs need SHA-256.
 @(private)
-crop_circle_pixels :: proc(key: string, shape := Crop_Shape.Slanted) -> ([]u8, i32) {
+crop_circle_pixels :: proc(key: string, shape := Crop_Shape.Circle) -> ([]u8, i32) {
 	if len(key) != 64 && len(key) != 32 {return nil, 0}
 	digest: [32]u8
 	bytes, valid := hex.decode_into_buffer(transmute([]u8)key, digest[:])
@@ -823,32 +817,11 @@ crop_circle_pixels :: proc(key: string, shape := Crop_Shape.Slanted) -> ([]u8, i
 	image := cc.make_from_digest(digest, .Detailed, module_size = 2, alpha = .Opaque)
 	if shape == .Square {return image.pixels, i32(image.width)}
 	defer cc.image_destroy(image)
-	if shape == .Circle || shape == .Rounded {
-		mask := shape == .Circle ? "circle" : "rounded"
-		return avatar_mask_pixels(
-			{data = raw_data(image.pixels), width = i32(image.width), height = i32(image.height)},
-			mask,
-		), i32(image.width)
-	}
-	pixels := make([]u8, len(image.pixels))
-	// Fit every row into a left-leaning trapezoid without cropping the fingerprint.
-	for y in 0 ..< image.height {
-		t := (f32(y) + 0.5) / f32(image.height)
-		left := f32(image.width) * 0.15 * t
-		right := f32(image.width) * (0.75 + 0.25 * t)
-		for x in 0 ..< image.width {
-			coverage := clamp(min(f32(x + 1) - left, right - f32(x)), 0, 1)
-			sx := clamp(
-				int((f32(x) + 0.5 - left) / (right - left) * f32(image.width)),
-				0,
-				image.width - 1,
-			)
-			dst, src := (y * image.width + x) * 4, (y * image.width + sx) * 4
-			copy(pixels[dst:dst + 3], image.pixels[src:src + 3])
-			pixels[dst + 3] = u8(coverage * 255)
-		}
-	}
-	return pixels, i32(image.width)
+	mask := shape == .Rounded ? "rounded" : "circle"
+	return avatar_mask_pixels(
+		{data = raw_data(image.pixels), width = i32(image.width), height = i32(image.height)},
+		mask,
+	), i32(image.width)
 }
 
 @(private)
@@ -860,8 +833,8 @@ crop_circle :: proc(
 	shape: Crop_Shape = Crop_Shape(-1),
 ) {
 	shape := shape
-	if shape == Crop_Shape(-1) {shape = g_ui != nil ? g_ui.prefs.crop_avatar_shape : .Slanted}
-	tex := url_pic(fmt.tprintf("%s:%s", CROP_SHAPE_PREFIX[shape], key))
+	if shape == Crop_Shape(-1) {shape = g_ui != nil ? g_ui.prefs.crop_avatar_shape : .Circle}
+	tex := url_pic(fmt.tprintf("%s:%s", CROP_SHAPE_PREFIX[normalized_crop_shape(shape)], key))
 	if nendo.box(nendo.id(id, index))(
 	{width = nendo.fixed(size), height = nendo.fixed(size), image = tex},
 	) {}

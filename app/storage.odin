@@ -1,5 +1,4 @@
-// The Storage settings section: the on-disk media cache (size readout
-// + clear), the data-dir readout, and the backup create/import flow.
+// Media cache and encrypted backups for Privacy & storage.
 //
 // Encryption at rest: cached attachment bytes are sealed with the
 // vault's blob key (vault.odin), so nothing decrypted touches the disk
@@ -225,12 +224,13 @@ backup_import :: proc(ui: ^Ui_State) {
 // ── Page ────────────────────────────────────────────────────────────
 
 settings_storage :: proc(ui: ^Ui_State) {
+	settings_usage(ui)
 	if !ui.cache_scanned {
 		cache_scan(ui)
 	}
 
+	settings_group(tr("Media cache"))
 	if nendo.box(nendo.id("StorageCacheGroup"))(settings_box()) {
-		settings_group(tr("Media cache"))
 		if nendo.box(nendo.id("RowCache"))(settings_row(true)) {
 			row_labels(
 				tr("Cached attachments"),
@@ -253,8 +253,8 @@ settings_storage :: proc(ui: ^Ui_State) {
 		}
 	}
 
-	if nendo.box(nendo.id("StorageBackupsGroup"))(settings_box()) {
-		settings_group(tr("Local data & backups"))
+	settings_group(tr("Data folder"))
+	if nendo.box(nendo.id("StorageLocationGroup"))(settings_box()) {
 		if nendo.box(nendo.id("RowLocation"))(settings_row(true)) {
 			row_labels(
 				tr("Location"),
@@ -270,7 +270,13 @@ settings_storage :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		if nendo.box(nendo.id("RowBackup"))(settings_row()) {
+	}
+
+	settings_group(tr("Encrypted backups"))
+	if nendo.box(nendo.id("StorageBackupsGroup"))(settings_box()) {
+		action_row := settings_line()
+		if single_pane() {action_row = settings_row(true)}
+		if nendo.box(nendo.id("RowBackup"))(action_row) {
 			row_labels(
 				tr("Back up local data"),
 				tr(
@@ -279,7 +285,8 @@ settings_storage :: proc(ui: ^Ui_State) {
 			)
 			settings_button("BackupBtn", tr("Create backup..."))
 		}
-		if nendo.box(nendo.id("RowImport"))(settings_row()) {
+		settings_divider()
+		if nendo.box(nendo.id("RowImport"))(action_row) {
 			row_labels(
 				tr("Import a backup"),
 				tr("Replaces the settings, drafts, custom emoji, and themes on this device."),
@@ -290,7 +297,8 @@ settings_storage :: proc(ui: ^Ui_State) {
 				DANGER,
 			)
 		}
-		if nendo.box(nendo.id("RowLastBackup"))(settings_row()) {
+		settings_divider()
+		if nendo.box(nendo.id("RowLastBackup"))(settings_line()) {
 			row_labels(tr("Last backup"), last_backup_line(ui))
 		}
 		nendo.text(
@@ -348,7 +356,6 @@ handle_storage :: proc(ui: ^Ui_State) {
 		}
 		return
 	}
-	keys_disarm(ui) // a click anywhere else disarms
 }
 
 // The modal owns input while open, on the settings page and on the

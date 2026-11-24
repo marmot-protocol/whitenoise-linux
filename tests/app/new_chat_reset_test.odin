@@ -123,7 +123,10 @@ new_chat_reset_dispatch :: proc(t: ^testing.T) {
 		testing.expect(t, !ui.new_chat_open)
 		if !cancel {
 			layout(&ui)
-			click(t, &ui, client, nendo.id("Nav", u32(Page.Chats)))
+			click(t, &ui, client, nendo.id("SettingsExit"))
+			testing.expect_value(t, ui.page, Page.Chats)
+			testing.expect_value(t, ui.focus, Focus.Compose)
+			testing.expect(t, !ui.new_chat_open)
 		}
 		layout(&ui)
 		click(t, &ui, client, nendo.id("NewChatBtn"))

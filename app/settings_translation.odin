@@ -46,10 +46,10 @@ translation_progress :: proc(ui: ^Ui_State, id: string) {
 
 @(private)
 settings_translation :: proc(ui: ^Ui_State) {
+	settings_group(tr("Message translation"))
 	when TRANSLATION_AVAILABLE {
 		if nendo.box(nendo.id("TranslationGroup"))(settings_box()) {
-			settings_group(tr("Message translation"))
-			if nendo.box(nendo.id("RowTranslation"))(settings_row()) {
+			if nendo.box(nendo.id("RowTranslation"))({width = nendo.grow()}) {
 				settings_check(
 					"TgTranslation",
 					ui.prefs.translation_enabled,
@@ -59,18 +59,21 @@ settings_translation :: proc(ui: ^Ui_State) {
 					),
 				)
 			}
-			if nendo.box(nendo.id("TranslationTermsRow"))(settings_row(true)) {
+			settings_divider()
+			if nendo.box(nendo.id("TranslationTermsRow"))(settings_line()) {
 				row_labels(tr("Gemma terms"), "")
 				settings_translation_register("TranslationTerms")
 				settings_button("TranslationTerms", external_link_action())
 			}
-			if nendo.box(nendo.id("TranslationPolicyRow"))(settings_row(true)) {
+			settings_divider()
+			if nendo.box(nendo.id("TranslationPolicyRow"))(settings_line()) {
 				row_labels(tr("Gemma prohibited use policy"), "")
 				settings_translation_register("TranslationPolicy")
 				settings_button("TranslationPolicy", external_link_action())
 			}
 			if !ui.prefs.translation_enabled {return}
-			if nendo.box(nendo.id("RowTranslationAuto"))(settings_row()) {
+			settings_divider()
+			if nendo.box(nendo.id("RowTranslationAuto"))({width = nendo.grow()}) {
 				settings_check(
 					"TgTranslationAuto",
 					ui.prefs.translation_auto,
@@ -80,6 +83,7 @@ settings_translation :: proc(ui: ^Ui_State) {
 					),
 				)
 			}
+			settings_divider()
 			settings_translation_language(
 				ui,
 				1,
@@ -88,6 +92,7 @@ settings_translation :: proc(ui: ^Ui_State) {
 				tr("Source language"),
 				ui.prefs.translation_source,
 			)
+			settings_divider()
 			settings_translation_language(
 				ui,
 				2,
@@ -100,6 +105,7 @@ settings_translation :: proc(ui: ^Ui_State) {
 				tr("Translations can be inaccurate. The original message is always available."),
 				{font = FONT_BODY, size = 11, color = TEXT_DIM},
 			)
+			settings_divider()
 			if nendo.box(nendo.id("TranslationModel"))(
 			{width = nendo.grow(), direction = .Column, gap = 6},
 			) {
@@ -149,7 +155,6 @@ settings_translation :: proc(ui: ^Ui_State) {
 		}
 	} else {
 		if nendo.box(nendo.id("TranslationGroup"))(settings_box()) {
-			settings_group(tr("Message translation"))
 			nendo.text(
 				tr("Message translation is available in native Linux builds."),
 				{font = FONT_BODY, size = 11, color = TEXT_DIM},
@@ -248,14 +253,14 @@ settings_translation_language :: proc(ui: ^Ui_State, menu: int, row, id, title, 
 				}
 			}
 		}
-		scrollbar(nendo.id("TranslationLanguageList"))
+		scrollbar(nendo.id("TranslationLanguageList"), settings_float_z(ui))
 	}
 }
 
 @(private)
 settings_translation_action :: proc(ui: ^Ui_State, id: string) -> bool {
 	when !TRANSLATION_AVAILABLE {return false}
-	if ui.settings_section != .General || ui.settings_tab != 1 {return false}
+	if ui.settings_section != .Language {return false}
 	switch id {
 	case "TgTranslation":
 		ui.prefs.translation_enabled = !ui.prefs.translation_enabled
@@ -338,8 +343,7 @@ settings_translation_close :: proc(ui: ^Ui_State, menu: int) {
 settings_translation_keys :: proc(ui: ^Ui_State) -> bool {
 	when !TRANSLATION_AVAILABLE {return false}
 	if !ui.prefs.translation_enabled ||
-	   ui.settings_section != .General ||
-	   ui.settings_tab != 1 ||
+	   ui.settings_section != .Language ||
 	   ui.translation.language_menu == 0 {return false}
 	index := ui.translation.language_choice
 	if rl.IsKeyPressed(.ENTER) ||
@@ -361,7 +365,7 @@ settings_translation_keys :: proc(ui: ^Ui_State) -> bool {
 @(private)
 handle_settings_translation :: proc(ui: ^Ui_State) -> bool {
 	when !TRANSLATION_AVAILABLE {return false}
-	if ui.settings_tab != 1 {return false}
+	if ui.settings_section != .Language {return false}
 	for id in ([]string{"TranslationSource", "TranslationTarget", "TranslationTerms", "TranslationPolicy", "TranslationDownload", "TranslationRemove", "TranslationRetryCheck"}) {
 		if clicked(id) {return settings_translation_action(ui, id)}
 	}

@@ -13,35 +13,35 @@ Settings_Avatar_Preview :: struct {
 }
 
 @(private)
+CROP_SHAPE_CHOICES := [Avatar_Shape]Crop_Shape {
+	.Circle  = .Circle,
+	.Rounded = .Rounded,
+	.Square  = .Square,
+}
+
+@(private)
 settings_avatar_choices :: proc(ui: ^Ui_State) {
 	key := ui.account_ref
 	name := len(ui.profile.name) > 0 ? ui.profile.name : profile_label(nil, key)
 	photo := url_pic(ui.my_pic_url)
-	generated: [Crop_Shape]^rl.Texture2D
+	generated: [Avatar_Shape]^rl.Texture2D
 	if len(key) == 64 || len(key) == 32 {
-		for prefix, shape in CROP_SHAPE_PREFIX {
-			generated[shape] = url_pic(fmt.tprintf("%s:%s", prefix, key))
+		for crop, shape in CROP_SHAPE_CHOICES {
+			generated[shape] = url_pic(fmt.tprintf("%s:%s", CROP_SHAPE_PREFIX[crop], key))
 		}
 	}
 
 	photos: [len(AVATAR_SHAPE_NAMES)]Settings_Avatar_Preview
+	crops: [len(AVATAR_SHAPE_NAMES)]Settings_Avatar_Preview
+	selected_crop := Avatar_Shape.Circle
 	for label, shape in AVATAR_SHAPE_NAMES {
 		mask := shape == .Square ? "square" : shape == .Rounded ? "rounded" : "circle"
-		fallback :=
-			shape == .Square ? Crop_Shape.Square : shape == .Rounded ? Crop_Shape.Rounded : Crop_Shape.Circle
-		photos[int(shape)] = {
-			label   = tr(label),
-			texture = photo != nil ? shaped_avatar(photo, mask) : generated[fallback],
-			radius  = shape == .Square ? 0 : shape == .Rounded ? 14.4 : 36,
-		}
-	}
-	crops: [len(CROP_SHAPE_NAMES)]Settings_Avatar_Preview
-	for label, shape in CROP_SHAPE_NAMES {
-		crops[int(shape)] = {
-			label   = tr(label),
-			texture = generated[shape],
-			radius  = shape == .Circle ? 36 : shape == .Rounded ? 14.4 : 0,
-		}
+		radius := shape == .Square ? f32(0) : shape == .Rounded ? 14.4 : 36
+		crop := CROP_SHAPE_CHOICES[shape]
+		crops[int(shape)] = {tr(label), generated[shape], radius}
+		photos[int(shape)] = crops[int(shape)]
+		if photo != nil {photos[int(shape)].texture = shaped_avatar(photo, mask)}
+		if ui.prefs.crop_avatar_shape == crop {selected_crop = shape}
 	}
 
 	width := settings_body_width(ui) - 24
@@ -70,7 +70,7 @@ settings_avatar_choices :: proc(ui: ^Ui_State) {
 			settings_avatar_preview_grid(
 				"CropShapeChip",
 				crops[:],
-				int(ui.prefs.crop_avatar_shape),
+				int(selected_crop),
 				key,
 				name,
 				width,

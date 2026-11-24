@@ -69,6 +69,9 @@ profile_edit_summary :: proc(t: ^testing.T) {
 	edit_profile_start(&ui)
 	ed_set(&ui, &ui.name_input, "Draft name")
 	ed_set(&ui, &ui.nip05_input, "draft@example.invalid")
+	edit_profile_start(&ui)
+	testing.expect_value(t, string(ui.name_input[:]), "Draft name")
+	testing.expect_value(t, string(ui.nip05_input[:]), "draft@example.invalid")
 	check(t, &ui, true)
 	// Cancel through the actual header action, preserving committed values.
 	box := nendo.element(nendo.id("EditProfileBtn")).rect

@@ -42,8 +42,7 @@ test_emoji_save_dispatch :: proc(t: ^testing.T) {
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; settings_stop(&ui); delete(ui.emoji_staged)
 		delete(ui.emoji_name)}
-	settings_open(&ui, nil, .General, 2, level = .Sheet)
-	ui.settings_anchor = "CustomEmojiGroup"
+	settings_open(&ui, nil, .Chats, "CustomEmojiGroup")
 	for keyboard in ([]bool{false, true}) {
 		for row in ([]struct {
 				path, name: string,

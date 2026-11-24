@@ -437,8 +437,8 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	case .Discard_Theme_Edit:
 		theme_edit_close(ui, .Discard)
 	case .Discard_Profile:
-		ui.profile.editing = false
 		ui.focus = .Compose
+		profile_edit_finish(ui)
 	case .Delete_Folder:
 		// Folder names are unique; resolve again instead of trusting a stale index.
 		for name, i in ui.prefs.folders {

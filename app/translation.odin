@@ -132,11 +132,9 @@ translation_model_dir :: proc() -> string {
 translation_settings_open :: proc(ui: ^Ui_State) -> bool {
 	return(
 		ui.page == .Settings &&
-		ui.settings_section == .General &&
-		ui.settings_tab == 1 &&
+		ui.settings_section == .Language &&
 		!ui.add_account_open &&
-		!ui.new_chat_open &&
-		!settings_on_menu(ui) \
+		!ui.new_chat_open \
 	)
 }
 

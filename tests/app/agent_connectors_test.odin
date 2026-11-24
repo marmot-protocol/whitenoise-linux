@@ -22,7 +22,7 @@ agent_connector_back :: proc(t: ^testing.T) {
 		testing.expect_value(t, kb_focus, "")
 		testing.expect(t, ui.settings_scroll_pending)
 		settings_back(&ui)
-		testing.expect_value(t, ui.settings_section, Settings_Section.Home)
+		testing.expect_value(t, ui.settings_section, Settings_Section.Advanced)
 	}
 }
 

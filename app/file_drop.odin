@@ -12,7 +12,6 @@ chat_drop_target :: proc(ui: ^Ui_State, position: rl.Vector2) -> bool {
 	   ui.selected < 0 ||
 	   ui.selected >= len(ui.chats) ||
 	   ui.chats[ui.selected].pending ||
-	   ui.chat_preview_w > 0 ||
 	   ui.lock_requested ||
 	   ui.add_account_open ||
 	   ui.new_chat_open ||

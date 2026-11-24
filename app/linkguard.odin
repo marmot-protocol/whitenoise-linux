@@ -3,7 +3,7 @@
 // A tapped http(s) link never goes straight to the browser: the guard
 // names the host it is about to hand the click to, because a link in a
 // chat came from someone else. "Always open links to this site" adds
-// the host to the trusted list Settings → Advanced manages, and later
+// the host to the trusted list in Settings > Connection, and later
 // links to that exact host open without the stop.
 // OpenBSD instead offers Copy link; it never hands links to another program.
 package main
@@ -218,7 +218,7 @@ link_modal :: proc(ui: ^Ui_State) {
 				radius = rr(6),
 			},
 			) {
-				toggle("LinkTrust", ui.link_trust)
+				toggle(nendo.id("LinkTrust"), ui.link_trust)
 				nendo.text(
 					tr("Always open links to this site"),
 					{font = FONT_BODY, size = 12, color = TEXT_DIM},

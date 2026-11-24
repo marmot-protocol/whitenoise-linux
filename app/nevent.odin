@@ -1,8 +1,8 @@
 // Nostr event references (nevent1 / note1, bare or "nostr:"-prefixed)
 // drawn as a card under the body instead of a bare token.
 //
-// The event is pulled by id from the user's fetch relays (Settings →
-// Network, ditto + primal by default) plus any relay hints the nevent
+// The event is pulled by id from the user's fetch relays (Settings >
+// Connection, ditto + primal by default) plus any relay hints the nevent
 // carries, on its own thread, and cached twice: in memory for the
 // session and as <home>/events/<id>.json across runs. Notes, replies,
 // articles, pull requests and issues render as author + text; patches
@@ -13,7 +13,7 @@
 // Note text goes through marmot's
 // markdown parser like a chat body; image links are fetched into memory
 // for this session and drawn inline. Every card offers one
-// "Open in client" button, the web client set in Settings → Network;
+// "Open in client" button, the web client set in Settings > Connection;
 // patches use the ngit client chosen there instead.
 //
 //   body token ──inline_segs──▶ Inline_Seg.evid ──render_segs──▶ nev_card

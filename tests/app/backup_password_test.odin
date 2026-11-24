@@ -41,11 +41,13 @@ backup_password_dispatch :: proc(t: ^testing.T) {
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; forced_release = false; backup_close(&ui)
 		delete(ui.backup_pw)}
-	settings_open(&ui, nil, .Storage, 0, level = .Sheet)
+	settings_open(&ui, nil, .Privacy, "BackupBtn")
 	frame :: proc(ui: ^Ui_State) -> []nendo.Render_Command {
 		nendo.set_pointer({-100, -100}, .Up)
 		anim_tick(1.0 / 60)
-		return build_layout(ui, 0)
+		commands := build_layout(ui, 0)
+		if settings_resolve_scroll(ui) {commands = build_layout(ui, 0)}
+		return commands
 	}
 	click :: proc(t: ^testing.T, id: nendo.Id) -> bool {
 		data := nendo.element(id)

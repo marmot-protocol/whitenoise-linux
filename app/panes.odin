@@ -193,7 +193,7 @@ chat_rail :: proc(ui: ^Ui_State, ordered: []Inbox_Row, total: int) {
 	top, view_height := inbox_view()
 	bottom := top + view_height
 	for section, i in sections {
-		// Empty folders stay out of the rail; Settings > Folders lists them.
+		// Empty folders stay out of the rail; Settings > Chats lists them.
 		if section.count == 0 {continue}
 		name := i < len(ui.prefs.folders) ? ui.prefs.folders[i] : ""
 		collapsed := ui.prefs.collapsed_folders[name]
@@ -876,8 +876,8 @@ nav_button :: proc(page: Page, active: bool) {
 
 // A vertical selection marker follows the active destination. Read last
 // frame's box so moving between top and bottom controls eases naturally.
-nav_indicator :: proc(ui: ^Ui_State) {
-	box := nendo.element(nendo.id("Nav", u32(ui.page)))
+nav_indicator :: proc(page: Page) {
+	box := nendo.element(nendo.id("Nav", u32(page)))
 	if !box.found {
 		return
 	}

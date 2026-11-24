@@ -68,7 +68,7 @@ GEO_DISK_KEEP :: GEO_DISK_CAP / 10 * 9 // a trim stops here, so it runs about on
 GEO_TILE_TTL :: 7 * 24 * time.Hour // older cached tiles are fetched again, and used if that fails
 
 // What maps send where. The first map shows it as a consent panel, and
-// Settings > Advanced shows it under the switch.
+// Settings > Connection shows it under the switch.
 @(private)
 GEO_DISCLOSURE := N_(
 	"Show a map for each shared location. Map images load from tile.openstreetmap.org, which sees your IP address and the area you view. Place names load from nominatim.openstreetmap.org, which receives the location rounded to about 100 m. Map images are cached on this device, encrypted, up to 1 GB.",
@@ -802,7 +802,7 @@ geo_consent :: proc(id: u32, w: f32) {
 		)
 		nendo.text(tr(GEO_DISCLOSURE), {font = FONT_BODY, size = 12, color = TEXT_DIM})
 		nendo.text(
-			tr("Nothing loads until you accept. You can change this in Settings > Advanced."),
+			tr("Nothing loads until you accept. You can change this in Settings > Connection."),
 			{font = FONT_BODY, size = 12, color = TEXT_DIM},
 		)
 		if nendo.box(nendo.id("GeoConsentRow", id))(

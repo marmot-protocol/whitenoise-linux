@@ -3,7 +3,11 @@ package main
 import "base:runtime"
 import "core:fmt"
 import "core:math"
+import "core:os"
+import "core:strings"
+import "core:sync"
 import "core:testing"
+import "core:text/edit"
 import "nendo"
 import rl "sdlrl"
 
@@ -12,6 +16,18 @@ import rl "sdlrl"
 settings_viewport :: proc(t: ^testing.T) {
 	if !test_isolated("settings_viewport") {return}
 	context.allocator = runtime.default_context().allocator
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	home, err := os.make_directory_temp("", "wn-settings-viewport", context.temp_allocator)
+	if !testing.expect(t, err == nil) {return}
+	defer os.remove_all(home)
+	previous_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
+	os.set_env("XDG_CONFIG_HOME", home)
+	defer {
+		if previous_config == "" {os.unset_env("XDG_CONFIG_HOME")} else {
+			os.set_env("XDG_CONFIG_HOME", previous_config)
+		}
+	}
 	rl.InitWindow(740, 500, "Settings viewport")
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
@@ -25,7 +41,9 @@ settings_viewport :: proc(t: ^testing.T) {
 	defer {nendo.set_context(previous); delete(memory)}
 	ui := Ui_State {
 		page          = .Settings,
+		selected      = -1,
 		audit_scanned = true,
+		cache_scanned = true,
 	}
 	append(
 		&ui.accounts,
@@ -36,11 +54,17 @@ settings_viewport :: proc(t: ^testing.T) {
 	defer delete(ui.accounts)
 	ui.prefs = default_prefs()
 	ui.prefs.reduce_motion = true
-	append(&ui.compose, "PRIVATE_DRAFT")
-	append(&ui.messages, Msg_Ui{body = "PRIVATE_MESSAGE"})
-	defer {delete(ui.compose); delete(ui.messages)}
+	append(&ui.client_input, ..transmute([]u8)ui.prefs.event_client)
+	defer {delete(ui.client_input); delete(ui.gm_input)}
+	edit.init(&ui.ed, context.allocator, context.allocator)
+	defer edit.destroy(&ui.ed)
 	g_ui, g_prefs = &ui, &ui.prefs
-	defer {g_ui, g_prefs = nil, nil}
+	defer {g_ui, g_prefs = nil, nil; kb_focus = ""}
+	settings_test_appearance_reflow(t, &ui)
+	settings_test_search_routes(t, &ui)
+	settings_test_notification_gate(t, &ui)
+	settings_test_emoji_previews(t, &ui)
+	settings_test_event_client_navigation(t, &ui)
 	for size in ([]struct {
 			w, h: i32,
 			zoom: f32,
@@ -52,8 +76,9 @@ settings_viewport :: proc(t: ^testing.T) {
 		for target in ([]struct {
 				section: Settings_Section,
 				anchor:  string,
-			}{{.Home, ""}, {.Keys, ""}, {.General, "RowLang"}, {.Network, "AddRelayRow"}, {.Network, "AddFetchRow"}, {.Network, "ClientBox"}, {.Keys, "NpubRow"}, {.Keys, "KpStatus"}, {.Keys, "RowRotate"}, {.Keys, "RowVaultPw"}, {.Keys, "RowReveal"}, {.Advanced, "RowTelemetry"}, {.Advanced, "RowAudit"}, {.Advanced, "RowDevMode"}, {.Appearance, ""}}) {
-			if target.section == .Appearance {ui.settings_tab = 2}
+				id:      string,
+			}{{.Home, "", "SettingsSearchBox"}, {.Appearance, "", "RowZoom"}, {.Notifications, "", "NotifyTest"}, {.Chats, "", "SettingsFolderNew"}, {.Language, "", "RowLang"}, {.Account, "", "RowEditProfile"}, {.Privacy, "", "RowTelemetry"}, {.Connection, "", "AddRelayRow"}, {.Advanced, "", "RowAudit"}, {.Help, "", "SupportChat"}, {.Language, "RowLang", "RowLang"}, {.Connection, "AddRelayRow", "AddRelayRow"}, {.Connection, "AddFetchRow", "AddFetchRow"}, {.Connection, "ClientBox", "ClientBox"}, {.Account, "NpubRow", "NpubRow"}, {.Account, "RowVaultPw", "RowVaultPw"}, {.Account, "RowReveal", "RowReveal"}, {.Account, "KpStatus", "KpStatus"}, {.Account, "RowRotate", "RowRotate"}, {.Privacy, "RowTelemetry", "RowTelemetry"}, {.Advanced, "RowAudit", "RowAudit"}, {.Advanced, "RowDevMode", "RowDevMode"}, {.Help, "SupportChat", "SupportChat"}, {.Help, "RowShortcuts", "RowShortcuts"}, {.Help, "AboutCredits", "AboutCredits"}}) {
+			if target.id == "RowShortcuts" && tap_size() {continue}
 			settings_open(&ui, nil, target.section, anchor = target.anchor)
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
 			root := nendo.element(nendo.id("SettingsRoot"))
@@ -63,45 +88,56 @@ settings_viewport :: proc(t: ^testing.T) {
 				root.found && box.width > 0 && box.x >= 0 && box.x + box.width <= viewport.width,
 				"Translated settings must not expand the page beyond the window",
 			)
-			if target.anchor != "" {
-				testing.expect(
+			testing.expectf(
+				t,
+				nendo.element(nendo.id(target.id)).found,
+				"%v with anchor %q must show %s without another navigation step",
+				target.section,
+				target.anchor,
+				target.id,
+			)
+			testing.expect(
+				t,
+				!nendo.element(nendo.id("SettingsPageIcon", 0)).found &&
+				!nendo.element(nendo.id("SettingsTabs")).found,
+				"Settings must not show an intermediate category menu or legacy tabs",
+			)
+			if target.section == .Help && target.anchor != "" {
+				page := nendo.element(nendo.id("SettingsPage")).rect
+				control := nendo.element(nendo.id(target.anchor)).rect
+				testing.expectf(
 					t,
-					nendo.element(nendo.id(target.anchor)).found,
-					"A settings deep link must render its destination control",
-				)
-			} else if target.section == .Appearance {
-				testing.expect_value(t, ui.settings_tab, 0)
-				testing.expect(
-					t,
-					nendo.element(nendo.id("SettingsSheet")).found &&
-					!nendo.element(nendo.id("SettingsPageIcon", 0)).found &&
-					!nendo.element(nendo.id("SettingsTabs")).found,
-					"Opening Appearance must show its workbench directly, without a category menu or tabs",
-				)
-			} else if target.section != .Home {
-				testing.expect(
-					t,
-					nendo.element(nendo.id("SettingsPageIcon", 0)).found &&
-					!nendo.element(nendo.id("SettingsSheet")).found,
-					"A category without a deep link must open on its menu, not its sheet",
+					control.y >= page.y - 0.1 && control.y < page.y + page.height,
+					"Help deep link must scroll %s into SettingsPage",
+					target.anchor,
 				)
 			}
-			if target.section == .General {
-				sheet := nendo.element(nendo.id("SettingsSheet")).rect
-				group := nendo.element(nendo.id("LanguageGroup")).rect
-				left := group.x - sheet.x
-				right := sheet.x + sheet.width - group.x - group.width
+			if target.section == .Account && target.anchor == "" {
+				for id in ([]string{"NpubRow", "RowReveal", "RowExport", "RowVaultPw", "RowLinkedDevices"}) {
+					testing.expectf(
+						t,
+						nendo.element(nendo.id(id)).found,
+						"Account must show %s",
+						id,
+					)
+				}
+			}
+			if target.section == .Language {
+				page := nendo.element(nendo.id("SettingsSheet")).rect
+				group := nendo.element(nendo.id("LanguageGroup"))
+				left := group.rect.x - page.x
+				right := page.x + page.width - group.rect.x - group.rect.width
 				testing.expect(
 					t,
-					left > right - 1 && left < right + 1,
-					"The Language fieldset must have equal side gutters inside its tab panel",
+					group.found && left > right - 1 && left < right + 1,
+					"Language must have equal side gutters inside its settings page",
 				)
 			}
 		}
+
 		for anchor in SETTINGS_TEST_APPEARANCE_ANCHORS {
 			settings_open(&ui, nil, .Appearance, anchor = anchor)
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
-			testing.expect_value(t, ui.settings_tab, 0)
 			if anchor == "RowScroll" && tap_size() {
 				testing.expect(
 					t,
@@ -110,18 +146,12 @@ settings_viewport :: proc(t: ^testing.T) {
 				)
 				continue
 			}
-			scroll_id := nendo.id("SettingsPage")
-			if settings_test_appearance_wide() {
-				scroll_id = nendo.id(
-					anchor == "RowTheme" ? "AppearanceThemes" : "AppearanceControls",
-				)
-			}
-			clip := nendo.element(scroll_id).rect
+			clip := nendo.element(nendo.id("SettingsPage")).rect
 			destination := nendo.element(nendo.id(anchor)).rect
 			testing.expectf(
 				t,
 				destination.y >= clip.y - 0.1 && destination.y < clip.y + clip.height,
-				"An Appearance deep link must reveal %s inside its own scroll viewport",
+				"An Appearance deep link must reveal %s inside SettingsPage",
 				anchor,
 			)
 			for other in SETTINGS_TEST_APPEARANCE_ANCHORS {
@@ -129,7 +159,7 @@ settings_viewport :: proc(t: ^testing.T) {
 				testing.expectf(
 					t,
 					nendo.element(nendo.id(other)).found,
-					"Opening %s must leave %s in the same Appearance workbench",
+					"Opening %s must leave %s on Appearance",
 					anchor,
 					other,
 				)
@@ -137,20 +167,8 @@ settings_viewport :: proc(t: ^testing.T) {
 		}
 		settings_open(&ui, nil, .Appearance)
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
-		settings_test_appearance_panels(t)
+		settings_test_appearance_rows(t)
 		commands := settings_test_frame(&ui)
-		for command in commands {
-			if command.kind != .Text {continue}
-			text := command.text.text
-			shown := text
-			testing.expect(
-				t,
-				shown != "PRIVATE_DRAFT" && shown != "PRIVATE_MESSAGE",
-				"Appearance must never render your live draft or message history",
-			)
-		}
-		testing.expect_value(t, string(ui.compose[:]), "PRIVATE_DRAFT")
-		testing.expect_value(t, ui.messages[0].body, "PRIVATE_MESSAGE")
 		rl.BeginDrawing()
 		rl.DrawRectangleRec(0, 0, f32(size.w), f32(size.h), nendo_color(BG))
 		rl.BeginMode2D({zoom = UI_ZOOM})
@@ -172,62 +190,15 @@ settings_viewport :: proc(t: ^testing.T) {
 			b.y >= 0 &&
 			b.x + b.width <= viewport.width + 0.1 &&
 			b.y + b.height <= viewport.height + 0.1,
-			"The Appearance workbench viewport %v must fit %v",
+			"The Appearance viewport %v must fit %v (root %v, main %v)",
 			b,
 			viewport,
+			nendo.element(nendo.id("SettingsRoot")).rect,
+			nendo.element(nendo.id("SettingsMain")).rect,
 		) {return}
-		// Wheel input must reach the clipped final row, not just a correctly sized box.
-		// The wheel arrives inside a frame, as in the app: a second scroll update
-		// without a layout between drops containers and their offsets.
-		b = nendo.element(settings_test_gallery_scroll_id()).rect
-		nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
-		last := -1
-		bottom: f32 = -1
-		for pack, i in theme_packs {
-			if pack.tone != ui.theme_tone || i == system_theme_index {continue}
-			tile := nendo.element(nendo.id("ThemeOpt", u32(i)))
-			if tile.found && tile.rect.y + tile.rect.height > bottom {
-				last, bottom = i, tile.rect.y + tile.rect.height
-			}
-		}
-		if !testing.expect(t, last >= 0) {return}
-		if settings_test_appearance_wide() {
-			// The sample conversation is inert: it never lights up or offers a composer.
-			head := nendo.element(nendo.id("ChatHeadInfo")).rect
-			nendo.set_pointer({head.x + head.width / 2, head.y + head.height / 2}, .Up)
-			testing.expect(
-				t,
-				nendo.pointer_over(nendo.id("AppearancePreview")) &&
-				!nendo.pointer_over(nendo.id("ChatHeadInfo")) &&
-				!nendo.element(nendo.id("Composer")).found,
-				"The Appearance conversation preview must not look interactive",
-			)
-			settings_test_scroll_panel(t, &ui, "AppearanceThemes", nendo.id("ThemeOpt", u32(last)))
-			settings_test_scroll_panel(t, &ui, "AppearanceControls", nendo.id("RowCropShape"))
-			settings_test_scroll_panel(t, &ui, "AppearancePreview", nendo.id("MsgRow", 4))
-			nendo.set_pointer({b.x + b.width / 2, b.y + b.height / 2}, .Up)
-		}
-		for _ in 0 ..< 128 {
-			row := nendo.element(nendo.id("ThemeOpt", u32(last))).rect
-			if row.y >= b.y && row.y + row.height <= b.y + b.height {break}
-			settings_test_frame(&ui, {0, -8})
-			for _ in 0 ..< 2 {settings_test_frame(&ui)}
-		}
-		target := nendo.element(nendo.id("ThemeOpt", u32(last)))
-		row := target.rect
-		testing.expect(
-			t,
-			target.found && row.y >= b.y && row.y + row.height <= b.y + b.height,
-			"Scrolling must reveal the complete final theme tile",
-		)
-		nendo.set_pointer({row.x + row.width / 2, row.y + row.height / 2}, .Up)
-		testing.expect(
-			t,
-			nendo.pointer_over(nendo.id("ThemeOpt", u32(last))),
-			"The final theme tile must remain clickable inside its scroll viewport",
-		)
+		mobile_settings_reveal(t, &ui, "SettingsPage", nendo.id("RowCropShape"))
 		ui.account_ref = "viewport-remote"
-		settings_open(&ui, nil, .Keys, anchor = "RowVaultPw")
+		settings_open(&ui, nil, .Account, anchor = "RowVaultPw")
 		for _ in 0 ..< 3 {settings_test_frame(&ui)}
 		testing.expect(
 			t,
@@ -239,7 +210,7 @@ settings_viewport :: proc(t: ^testing.T) {
 		ui.account_ref = "viewport-local"
 		when TRANSLATION_AVAILABLE {
 			ui.prefs.translation_enabled = true
-			settings_open(&ui, nil, .General, anchor = "RowTranslationTarget")
+			settings_open(&ui, nil, .Language, anchor = "RowTranslationTarget")
 			settings_translation_action(&ui, "TranslationTarget")
 			for _ in 0 ..< 3 {settings_test_frame(&ui)}
 			dropdown_page := nendo.element(nendo.id("SettingsPage")).rect
@@ -366,141 +337,467 @@ SETTINGS_TEST_APPEARANCE_ANCHORS := []string {
 }
 
 @(private)
-settings_test_appearance_panels :: proc(t: ^testing.T) {
-	page := nendo.element(nendo.id("SettingsPage")).rect
-	for id in ([]string{"AppearanceControls", "AppearanceThemes", "AppearancePreview"}) {
-		panel := nendo.element(nendo.id(id))
-		box := panel.rect
+settings_test_appearance_rows :: proc(t: ^testing.T) {
+	page := nendo.id("SettingsPage")
+	testing.expect(t, nendo.scroll(page).found)
+	clip := nendo.element(page).rect
+	previous := clip.y
+	for name in ([]string{"RowTheme", "RowBodyFont", "RowZoom"}) {
+		row := nendo.element(nendo.id(name))
 		testing.expectf(
 			t,
-			panel.found &&
-			box.width > 0 &&
-			box.height > 0 &&
-			box.x >= page.x - 0.1 &&
-			box.x + box.width <= page.x + page.width + 0.1,
-			"The %s panel must fit the Appearance viewport horizontally",
-			id,
+			row.found && row.rect.y >= previous - 0.1,
+			"%s must appear in reading order",
+			name,
 		)
-		if settings_test_appearance_wide() {
-			testing.expectf(
-				t,
-				box.y >= page.y - 0.1 &&
-				box.y + box.height <= page.y + page.height + 0.1 &&
-				nendo.scroll(nendo.id(id)).found,
-				"Wide %s %v must be a vertically bounded independent scroll viewport inside %v",
-				id,
-				box,
-				page,
-			)
-		}
+		previous = row.rect.y + row.rect.height
 	}
-	controls := nendo.element(nendo.id("AppearanceControls")).rect
-	themes := nendo.element(nendo.id("AppearanceThemes")).rect
-	preview := nendo.element(nendo.id("AppearancePreview")).rect
-	if themes.x + themes.width <= preview.x + 0.1 {
-		testing.expect(
+	for target in ([][2]string{{"RowZoom", "ZoomChoices"}, {"RowZoom", "ZoomReset"}, {"RowTheme", "BrowseThemes"}}) {
+		parent := nendo.element(nendo.id(target[0])).rect
+		child := nendo.element(nendo.id(target[1]))
+		testing.expectf(
 			t,
-			controls.x + controls.width <= themes.x + 0.1 &&
-			themes.x + themes.width <= preview.x + 0.1 &&
-			math.abs(controls.y - themes.y) <= 0.1 &&
-			math.abs(themes.y - preview.y) <= 0.1,
-			"Wide Appearance must place controls, themes and live preview side by side",
-		)
-	} else if settings_test_appearance_wide() {
-		testing.expect(
-			t,
-			controls.x + controls.width <= themes.x + 0.1 &&
-			themes.y + themes.height <= preview.y + 0.1 &&
-			math.abs(themes.x - preview.x) <= 0.1 &&
-			math.abs(controls.y - themes.y) <= 0.1,
-			"Intermediate Appearance must split controls from independently scrolling themes and preview",
-		)
-	} else {
-		testing.expect(
-			t,
-			controls.y + controls.height <= preview.y + 0.1 &&
-			preview.y + preview.height <= themes.y + 0.1 &&
-			math.abs(controls.x - preview.x) <= 0.1 &&
-			math.abs(preview.x - themes.x) <= 0.1,
-			"Narrow Appearance must stack controls, live preview and themes without overlap",
+			child.found &&
+			child.rect.y >= parent.y - 0.1 &&
+			child.rect.y + child.rect.height <= parent.y + parent.height + 0.1,
+			"%s must be inside %s",
+			target[1],
+			target[0],
 		)
 	}
-}
-
-@(private)
-settings_test_appearance_wide :: proc() -> bool {
-	return nendo.scroll(nendo.id("AppearanceControls")).found
-}
-
-@(private)
-settings_test_gallery_scroll_id :: proc() -> nendo.Id {
-	return nendo.id(settings_test_appearance_wide() ? "AppearanceThemes" : "SettingsPage")
-}
-
-@(private)
-settings_test_scroll_panel :: proc(
-	t: ^testing.T,
-	ui: ^Ui_State,
-	panel_id: string,
-	destination: nendo.Id,
-) {
-	ids := [4]string{"AppearanceControls", "AppearanceThemes", "AppearancePreview", "SettingsPage"}
-	offsets: [4]nendo.Vector2
-	boxes: [4]nendo.Rect
-	tracked: [4]bool
-	for id, i in ids {
-		data := nendo.scroll(nendo.id(id))
-		tracked[i] = data.found
-		if data.found {offsets[i] = data.position^}
-		boxes[i] = nendo.element(nendo.id(id)).rect
-	}
-	panel := nendo.element(nendo.id(panel_id)).rect
-	data := nendo.scroll(nendo.id(panel_id))
-	if !testing.expect(
+	testing.expect(
 		t,
-		data.found,
-		"Every wide Appearance panel must scroll independently",
-	) {return}
-	nendo.set_pointer({panel.x + panel.width / 2, panel.y + panel.height / 2}, .Up)
-	for _ in 0 ..< 128 {
-		box := nendo.element(destination).rect
-		if box.y >= panel.y && box.y + box.height <= panel.y + panel.height {break}
-		wanted := clamp(box.y, panel.y, panel.y + panel.height - box.height)
-		settings_test_frame(ui, {0, (wanted - box.y) / NENDO_SCROLL_PIXELS})
-		for _ in 0 ..< 2 {settings_test_frame(ui)}
-	}
-	target := nendo.element(destination)
-	box := target.rect
-	testing.expectf(
-		t,
-		target.found && box.y >= panel.y && box.y + box.height <= panel.y + panel.height,
-		"Scrolling %s must reveal final content %v within %v (window %dx%d)",
-		panel_id,
-		box,
-		panel,
-		rl.GetScreenWidth(),
-		rl.GetScreenHeight(),
+		!nendo.element(nendo.id("ThemeToneDark")).found &&
+		!nendo.element(nendo.id("SettingsConversationPreview")).found &&
+		nendo.element(nendo.id("SettingsAppearancePreview")).found,
+		"Appearance shows one compact sample; the full preview belongs in the gallery",
 	)
-	for id, i in ids {
-		if id == panel_id {continue}
-		if tracked[i] {
-			other := nendo.scroll(nendo.id(id))
+	for control in ([2]string{"Motion", "Contrast"}) {
+		for state in 0 ..< 3 {
+			testing.expect(t, nendo.element(nendo.id(control, u32(state))).found)
+		}
+	}
+}
+
+@(private)
+settings_test_appearance_reflow :: proc(t: ^testing.T, ui: ^Ui_State) {
+	resize :: proc(ui: ^Ui_State, w, h: i32) {
+		rl.SetWindowSize(w, h)
+		apply_zoom(ui)
+		nendo.set_dimensions({f32(w) / UI_ZOOM, f32(h) / UI_ZOOM})
+	}
+	ui.prefs.zoom_pct = 100
+	resize(ui, 1024, 700)
+	ui.page = .Chats
+	ui.prefs.settings_category = .Home
+	settings_enter(ui, nil)
+	for _ in 0 ..< 3 {settings_test_frame(ui)}
+	back_id := nendo.id("SettingsBack")
+	reset_id := nendo.id("ZoomReset")
+	page_id := nendo.id("SettingsPage")
+	testing.expect(
+		t,
+		ui.page == .Settings && ui.settings_section == .Appearance,
+		"First wide Settings entry must land on Appearance",
+	)
+	testing.expect(
+		t,
+		!nendo.element(back_id).found,
+		"Wide Appearance must not render compact Back",
+	)
+	search := nendo.element(nendo.id("SettingsSearchBox"))
+	categories := nendo.element(nendo.id("SettingsTaskPane"))
+	testing.expect(
+		t,
+		search.found &&
+		categories.found &&
+		search.rect.y + search.rect.height <= categories.rect.y,
+		"Sidebar search stays outside the scrolling category list",
+	)
+	for _ in 0 ..< 12 {
+		rl.PushKey(.TAB, true)
+		handle_settings(ui, nil)
+		rl.PushKey(.TAB, false)
+		if kb_focus == SETTINGS_SECTIONS[.Notifications] {break}
+	}
+	rl.PushKey(.ENTER, true)
+	handle_settings(ui, nil)
+	rl.PushKey(.ENTER, false)
+	testing.expect_value(t, ui.settings_section, Settings_Section.Notifications)
+	settings_open(ui, nil, .Appearance)
+	resize(ui, 390, 390)
+	for _ in 0 ..< 3 {settings_test_frame(ui)}
+	testing.expect(
+		t,
+		ui.settings_section == .Appearance && !ui.settings_gallery,
+		"Shrinking must keep the active page",
+	)
+	gallery_click(ui, nendo.id("BrowseThemes"))
+	testing.expect(t, ui.settings_gallery)
+	resize(ui, 1024, 700)
+	for _ in 0 ..< 3 {settings_test_frame(ui)}
+	testing.expect(
+		t,
+		ui.settings_section == .Appearance && ui.settings_gallery,
+		"Widening must keep the active gallery",
+	)
+	resize(ui, 390, 390)
+	for _ in 0 ..< 3 {settings_test_frame(ui)}
+	gallery_return_to_appearance(t, ui)
+	commands := settings_test_frame(ui)
+	back := nendo.element(back_id)
+	page := nendo.element(page_id).rect
+	label_found := false
+	for command in commands {
+		if command.kind == .Text && strings.contains(command.text.text, tr("All settings")) {
+			label_found = true
+		}
+	}
+	if testing.expect(
+		t,
+		back.found && back.rect.y + back.rect.height <= page.y + 0.1 && label_found,
+		"Compact Appearance must keep All settings above the scroll viewport",
+	) {
+		settings_test_point(back_id)
+		settings_test_release(ui)
+		testing.expect(
+			t,
+			ui.page == .Settings && ui.settings_section == .Home,
+			"Compact Back must open the categories",
+		)
+		for _ in 0 ..< 3 {settings_test_frame(ui)}
+		for category in ([]Settings_Section{.Appearance, .Notifications, .Chats, .Language, .Account, .Privacy, .Connection, .Advanced, .Help}) {
 			testing.expectf(
 				t,
-				other.found && other.position^ == offsets[i],
-				"Scrolling %s must preserve %s's scroll offset",
-				panel_id,
-				id,
+				nendo.element(nendo.id("SettingsNav", u32(category))).found,
+				"Compact index shows %v",
+				category,
 			)
 		}
-		testing.expectf(
+		testing.expect(
 			t,
-			nendo.element(nendo.id(id)).rect == boxes[i],
-			"Scrolling %s must not move %s",
-			panel_id,
-			id,
+			nendo.element(nendo.id("SettingsSearchBox")).found &&
+			!nendo.element(nendo.id("RowZoom")).found,
+		)
+		account := nendo.id("SettingsNav", u32(Settings_Section.Account))
+		mobile_settings_reveal(t, ui, "SettingsPage", account)
+		settings_test_point(account)
+		settings_test_release(ui)
+		for _ in 0 ..< 3 {settings_test_frame(ui)}
+		testing.expect_value(t, ui.settings_section, Settings_Section.Account)
+		testing.expect(
+			t,
+			nendo.element(nendo.id("RowEditProfile")).found,
+			"Opening Account from the compact index shows its controls",
 		)
 	}
+	ui.prefs.zoom_pct = 200
+	resize(ui, 1024, 700)
+	settings_open(ui, nil, .Appearance)
+	for _ in 0 ..< 3 {settings_test_frame(ui)}
+	page = nendo.element(page_id).rect
+	reset := nendo.element(reset_id)
+	testing.expect(t, nendo.element(back_id).found, "200% zoom must use the compact header")
+	if testing.expectf(
+		t,
+		reset.found &&
+		reset.rect.y >= page.y - 0.1 &&
+		reset.rect.y + reset.rect.height <= page.y + page.height + 0.1,
+		"Reset %v must be visible in %v on entry at 200%%",
+		reset.rect,
+		page,
+	) {
+		settings_test_point(reset_id)
+		settings_test_release(ui)
+		testing.expect_value(t, ui.prefs.zoom_pct, 100)
+		nendo.set_dimensions({1024 / UI_ZOOM, 700 / UI_ZOOM})
+		for _ in 0 ..< 3 {settings_test_frame(ui)}
+		testing.expect(
+			t,
+			ui.settings_section == .Appearance && !nendo.element(back_id).found,
+			"Resetting zoom must reflow in place to wide Appearance",
+		)
+	}
+	ui.prefs.zoom_pct = 100
+	resize(ui, 1024, 700)
+}
+@(private)
+settings_test_search_routes :: proc(t: ^testing.T, ui: ^Ui_State) {
+	set_locale("en")
+	defer set_locale("ja")
+	defer settings_open(ui, nil, .Home)
+	for target in ([]struct {
+			query:        string,
+			section:      Settings_Section,
+			anchor:       string,
+			control:      string,
+			editor_focus: Focus,
+		}{{"Mute a conversation", .Mute, "MuteHelp", "", .Compose}, {"Launch at login", .Advanced, "RowLaunch", "TgLaunch", .Compose}, {"developer mode", .Advanced, "RowDevMode", "TgDevMode", .Compose}, {"Center the conversation", .Appearance, "RowCentered", "TgCentered", .Compose}, {"Restore the last chat", .Advanced, "RowRestore", "TgRestore", .Compose}, {"Change your GM", .Chats, "RowGm", "GmBox", .Gm}, {"Choose where events open", .Connection, "ClientBox", "ClientBox", .Client}, {"vault password", .Account, "RowVaultPw", "VaultPwBtn", .Compose}}) {
+		when ODIN_OS == .OpenBSD || ODIN_PLATFORM_SUBTARGET == .Android {
+			if target.anchor == "RowLaunch" {continue}
+		}
+		settings_open(ui, nil, .Notifications)
+		settings_test_frame(ui)
+		ui.focus = .SettingsSearch
+		for ch in target.query {rl.PushChar(ch)}
+		settings_search_field(ui)
+		for _ in 0 ..< 3 {settings_test_frame(ui)}
+		testing.expect_value(t, ui.settings_section, Settings_Section.Notifications)
+		testing.expect(
+			t,
+			nendo.element(nendo.id("RowNotify")).found,
+			"Typing must not close the current desktop page",
+		)
+		matches: [len(SETTINGS_TASKS)]int
+		results := settings_results(ui, matches[:])
+		if !testing.expectf(t, len(results) > 0, "Search finds %q", target.query) {continue}
+		index := results[0]
+		result := nendo.id("SettingsTask", u32(index))
+		if !testing.expectf(
+			t,
+			nendo.element(result).found,
+			"Search renders %q",
+			target.query,
+		) {continue}
+		testing.expect(
+			t,
+			nendo.element(result).rect.x < nendo.element(nendo.id("SettingsPage")).rect.x,
+			"Desktop results must be in the sidebar",
+		)
+		rl.PushKey(.DOWN, true)
+		handle_settings(ui, nil)
+		rl.PushKey(.DOWN, false)
+		testing.expect_value(t, ui.settings_result, index + 1)
+		testing.expect_value(t, ui.settings_section, Settings_Section.Notifications)
+		rl.PushKey(.ENTER, true)
+		handle_settings(ui, nil)
+		rl.PushKey(.ENTER, false)
+		testing.expect_value(t, ui.settings_section, target.section)
+		testing.expect_value(t, ui.settings_anchor, target.anchor)
+		testing.expect_value(t, settings_flash_id, target.anchor)
+		for _ in 0 ..< 3 {settings_test_frame(ui)}
+		testing.expectf(
+			t,
+			nendo.element(nendo.id(target.anchor)).found,
+			"Search opens %s",
+			target.anchor,
+		)
+		testing.expect_value(t, kb_focus, target.control)
+		testing.expect_value(t, ui.focus, target.editor_focus)
+		if target.control != "" {
+			testing.expectf(
+				t,
+				nendo.element(nendo.id(target.control)).found,
+				"Search focus target %s is rendered",
+				target.control,
+			)
+			if target.editor_focus == .Compose {
+				order := settings_check_ids[:settings_check_count]
+				if target.section == .Appearance {order = theme_control_order[:]}
+				registered := false
+				for id in order {registered |= id == target.control}
+				testing.expectf(
+					t,
+					registered,
+					"%s is a registered keyboard control",
+					target.control,
+				)
+			}
+		}
+		if target.editor_focus == .Gm && testing.expect(t, active_buf(ui) == &ui.gm_input) {
+			rl.PushChar('!')
+			edit_text(ui, active_buf(ui))
+			testing.expect_value(t, string(ui.gm_input[:]), "!")
+			clear(&ui.gm_input)
+		}
+		if target.section == .Mute {
+			testing.expect_value(t, ui.selected, -1)
+		} else if target.anchor == "RowVaultPw" {
+			testing.expect(
+				t,
+				!ui.vault_pw_open && ui.keys_confirm == "" && len(ui.keys_nsec) == 0,
+				"Vault search must focus the control without opening it or exposing a secret",
+			)
+		}
+		settings_back(ui)
+		testing.expect_value(t, ui.settings_section, target.section)
+		testing.expect_value(t, string(ui.settings_search[:]), target.query)
+		testing.expect_value(t, ui.settings_result, index + 1)
+		testing.expect_value(t, ui.focus, Focus.SettingsSearch)
+	}
+	rl.SetWindowSize(390, 700)
+	apply_zoom(ui)
+	nendo.set_dimensions({390 / UI_ZOOM, 700 / UI_ZOOM})
+	for _ in 0 ..< 3 {settings_test_frame(ui)}
+	testing.expect(
+		t,
+		nendo.element(nendo.id("SettingsSearchBox")).found &&
+		!nendo.element(nendo.id("RowVaultPw")).found,
+		"A search in progress reflows to the compact results list",
+	)
+	rl.PushKey(.ENTER, true)
+	handle_settings(ui, nil)
+	rl.PushKey(.ENTER, false)
+	for _ in 0 ..< 3 {settings_test_frame(ui)}
+	testing.expect(t, nendo.element(nendo.id("RowVaultPw")).found && !ui.vault_pw_open)
+	settings_back(ui)
+	for _ in 0 ..< 3 {settings_test_frame(ui)}
+	testing.expect(
+		t,
+		nendo.element(nendo.id("SettingsSearchBox")).found &&
+		!nendo.element(nendo.id("RowVaultPw")).found,
+	)
+	rl.SetWindowSize(1024, 700)
+	apply_zoom(ui)
+	nendo.set_dimensions({1024 / UI_ZOOM, 700 / UI_ZOOM})
+	settings_open(ui, nil, .Mute)
+	settings_back(ui)
+	testing.expect_value(t, ui.settings_section, Settings_Section.Help)
+}
+
+@(private)
+settings_test_event_client_navigation :: proc(t: ^testing.T, ui: ^Ui_State) {
+	defer settings_open(ui, nil, .Home)
+	for exit in ([2]bool{false, true}) {
+		settings_open(ui, nil, .Connection, anchor = "ClientBox")
+		for _ in 0 ..< 3 {settings_test_frame(ui)}
+		ui.focus = .Client
+		ui.settings_dirty = false
+		handle_settings(ui, nil)
+		testing.expect(t, !ui.settings_dirty, "Unchanged event client does not queue a save")
+
+		value := exit ? "https://example.org/{id}" : "https://example.net/{id}"
+		ed_set(ui, &ui.client_input, "")
+		for ch in value {rl.PushChar(ch)}
+		edit_text(ui, active_buf(ui))
+		destination := nendo.id("SettingsNav", u32(Settings_Section.Appearance))
+		if exit {destination = nendo.id("SettingsExit")}
+		if !testing.expect(t, nendo.element(destination).found) {continue}
+		settings_test_point(destination)
+		if exit {
+			settings_test_release(ui)
+			testing.expect_value(t, ui.page, Page.Chats)
+		} else {
+			forced_release = true
+			testing.expect(t, settings_category_click(ui, nil))
+			forced_release = false
+			testing.expect_value(t, ui.settings_section, Settings_Section.Appearance)
+		}
+		testing.expect_value(t, ui.prefs.event_client, value)
+		testing.expect(t, ui.settings_dirty, "Leaving Connection with an edit queues a save")
+	}
+}
+
+@(private)
+settings_test_notification_gate :: proc(t: ^testing.T, ui: ^Ui_State) {
+	ui.prefs.notify_desktop, ui.prefs.notify_sound, ui.prefs.notify_preview = true, true, true
+	settings_open(ui, nil, .Notifications)
+	for _ in 0 ..< 3 {settings_test_frame(ui)}
+	testing.expect(
+		t,
+		notify_test_enabled(ui),
+		"The test action must be enabled while desktop alerts are on",
+	)
+	settings_test_point(nendo.id("TgNotify"))
+	settings_test_release(ui)
+	for _ in 0 ..< 3 {settings_test_frame(ui)}
+	testing.expect(
+		t,
+		!ui.prefs.notify_desktop && ui.prefs.notify_sound && ui.prefs.notify_preview,
+		"Turning off desktop alerts must preserve sound and preview choices",
+	)
+	testing.expect(
+		t,
+		!notify_test_enabled(ui) && nendo.element(nendo.id("NotifyTest")).found,
+		"The test action stays visible but disabled while desktop alerts are off",
+	)
+	in_app_enabled := false
+	for registered in settings_check_ids[:settings_check_count] {
+		if registered == "TgUiSounds" {in_app_enabled = true}
+	}
+	testing.expect(
+		t,
+		in_app_enabled,
+		"In-app sounds must stay enabled independently of desktop alerts",
+	)
+	for dependent in ([2]string{"TgSound", "TgPreview"}) {
+		id := nendo.id(dependent)
+		testing.expect(t, nendo.element(id).found)
+		for registered in settings_check_ids[:settings_check_count] {
+			testing.expect(
+				t,
+				registered != dependent,
+				"A disabled control must not enter the switch action order",
+			)
+		}
+		scroll_into_view(nendo.id("SettingsPage"), id)
+		for _ in 0 ..< 3 {settings_test_frame(ui)}
+		settings_test_point(id)
+		settings_test_release(ui)
+	}
+	testing.expect(
+		t,
+		ui.prefs.notify_sound && ui.prefs.notify_preview,
+		"Disabled controls must ignore clicks",
+	)
+	scroll_into_view(nendo.id("SettingsPage"), nendo.id("TgNotify"))
+	for _ in 0 ..< 3 {settings_test_frame(ui)}
+	settings_test_point(nendo.id("TgNotify"))
+	settings_test_release(ui)
+	testing.expect(
+		t,
+		notify_test_enabled(ui) && ui.prefs.notify_sound && ui.prefs.notify_preview,
+		"Re-enabling desktop alerts must restore their existing options",
+	)
+}
+
+@(private)
+settings_test_emoji_previews :: proc(t: ^testing.T, ui: ^Ui_State) {
+	defer emoji_preview_finish(.Discard)
+	defer session_textures_clear(&custom_emoji_textures)
+	directory := emoji_dir()
+	if !testing.expect_value(t, os.make_directory_all(directory), nil) {return}
+	defer {
+		os.remove_all(directory)
+		custom_emoji_scan()
+	}
+	for i in 0 ..< 40 {
+		path := fmt.tprintf("%s/item_%02d.png", directory, i)
+		if !testing.expect_value(t, os.write_entire_file(path, BUILTIN_EMOJI[0].png), nil) {return}
+	}
+	custom_emoji_scan()
+	settings_open(ui, nil, .Chats)
+	settings_test_frame(ui)
+	first, last := "item_00.png", "item_39.png"
+	first_chip := nendo.element(nendo.id("EmojiChip", 0))
+	last_chip := nendo.element(nendo.id("EmojiChip", 39))
+	page := nendo.element(nendo.id("SettingsPage")).rect
+	testing.expect(t, first_chip.found && first_chip.rect.y < page.y + page.height)
+	testing.expect(t, last_chip.found && last_chip.rect.y >= page.y + page.height)
+	_, decoded_in_layout := custom_emoji_textures[first]
+	testing.expect(t, !decoded_in_layout, "The first layout must not decode custom emoji")
+	settings_emoji_tick(ui)
+	emoji_preview_finish(.Publish)
+	testing.expect(
+		t,
+		custom_emoji_textures[first] != nil,
+		"A visible chip receives its decoded image",
+	)
+	_, decoded_offscreen := custom_emoji_textures[last]
+	testing.expect(t, !decoded_offscreen, "Thumbnails below the fold wait for scrolling")
+}
+
+@(private)
+settings_test_point :: proc(id: nendo.Id) {
+	box := nendo.element(id).rect
+	nendo.set_pointer({box.x + box.width / 2, box.y + box.height / 2}, .Up)
+}
+
+@(private)
+settings_test_release :: proc(ui: ^Ui_State) {
+	forced_release = true
+	handle_settings(ui, nil)
+	forced_release = false
 }
 
 @(private)
@@ -508,11 +805,13 @@ settings_test_frame :: proc(ui: ^Ui_State, wheel: nendo.Vector2 = {}) -> []nendo
 	anim_tick(1.0 / 60)
 	nendo.update_scroll(.Off, wheel, 1.0 / 60)
 	nendo.begin()
+	settings_check_count = 0
 	settings_pane(ui)
 	if open_now(nendo.id("ExportModal"), ui.export_open) {export_modal(ui)}
 	commands := nendo.end(0)
 	if settings_resolve_scroll(ui) {
 		nendo.begin()
+		settings_check_count = 0
 		settings_pane(ui)
 		if open_now(nendo.id("ExportModal"), ui.export_open) {export_modal(ui)}
 		commands = nendo.end(0)

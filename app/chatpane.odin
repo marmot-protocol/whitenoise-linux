@@ -61,15 +61,16 @@ chat_head_menu :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 }
 
 chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
-	preview := ui.chat_preview_w > 0
+	active := ui.page == .Chats
 	// A phone header is one row: Back, the title, Search and an overflow
 	// menu for the remaining chips.
 	phone := single_pane()
 
 	if nendo.box(nendo.id("ChatPane"))(
-	{width = nendo.grow(), height = preview ? nendo.fit() : nendo.grow(), direction = .Column},
+	{width = nendo.grow(), height = nendo.grow(), direction = .Column},
 	) {
-		if open_now(nendo.id("CtxMenu"), ui.ctx_open) &&
+		if active &&
+		   open_now(nendo.id("CtxMenu"), ui.ctx_open) &&
 		   ui.ctx_msg >= 0 &&
 		   ui.ctx_msg < len(ui.messages) {
 			context_menu(ui)
@@ -85,7 +86,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 		if open_now(nendo.id("EncModal"), ui.enc_open) {
 			encryption_modal(ui, chat)
 		}
-		if !preview && ui.fwd_kind != .Theme {
+		if ui.fwd_kind != .Theme {
 			if open_now(nendo.id("FwdModal"), ui.fwd_open) &&
 			   (ui.fwd_kind == .Add_Member || forward_source(ui) >= 0) {
 				forward_modal(ui)
@@ -112,7 +113,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 			color = RAIL_BG,
 		},
 		) {
-			if phone && !preview {header_icon("ChatBack", "\u2039", tr("Back"))}
+			if phone {header_icon("ChatBack", "\u2039", tr("Back"))}
 			// Avatar and title open conversation details.
 			if nendo.box(nendo.id("ChatHeadInfo"))(
 			{
@@ -140,13 +141,8 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 				if nendo.box(nendo.id("ChatHeadTitleClip"))(
 				{width = nendo.grow(), direction = .Column, gap = 2, clip = {x = true}},
 				) {
-					title := chat.title
-					if preview {
-						width := nendo.element(nendo.id("ChatHeadTitleClip")).rect.width
-						if width > 0 {title = text_ellipsis(title, width, FONT_TITLE, 16)}
-					}
 					nendo.text(
-						title,
+						chat.title,
 						{font = FONT_TITLE, size = 16, color = CARD_TEXT, wrap = .None},
 					)
 					if !chat_is_dm(chat) && len(ui.members) > 0 {
@@ -212,7 +208,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 			}
 			// The chrome floats over the timeline; only the bottom-most
 			// bar casts, so the shadows don't stack.
-			if len(ui.thread_stack) == 0 && !preview {
+			if len(ui.thread_stack) == 0 {
 				cast_shade(nendo.id("ChatHeader"), .Down, 14, 0.35)
 			}
 		}
@@ -258,7 +254,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 				}
 			}}
 		// Declared after the header so the bell it attaches to exists.
-		if open_now(nendo.id("MiModal"), ui.mi_open) {
+		if active && open_now(nendo.id("MiModal"), ui.mi_open) {
 			mention_inbox(ui)
 		}
 		// Thread route: breadcrumb bar under the header while open.
@@ -298,12 +294,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 		}
 
 		if nendo.box(nendo.id("ChatBody"))(
-		{
-			width = nendo.grow(),
-			height = preview ? nendo.fit() : nendo.grow(),
-			direction = .Row,
-			align = {x = .Center},
-		},
+		{width = nendo.grow(), height = nendo.grow(), direction = .Row, align = {x = .Center}},
 		) {
 			// Group info takes the whole conversation area, like the
 			// thread route; page_view_key plays the swap transition.
@@ -314,7 +305,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 			} else if nendo.box(nendo.id("ChatColumn"))(
 			{
 				width = ui.prefs.centered_chat ? nendo.grow(max = CHAT_WIDTH_MAX) : nendo.grow(),
-				height = preview ? nendo.fit() : nendo.grow(),
+				height = nendo.grow(),
 				direction = .Column,
 			},
 			) {
@@ -330,11 +321,11 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 				if nendo.box(nendo.id("Timeline"))(
 				{
 					width = nendo.grow(),
-					height = preview ? nendo.fit(min = 260) : nendo.grow(),
+					height = nendo.grow(),
 					direction = .Column,
 					padding = {left = u16(thread_slide()), top = 8, bottom = 8},
 					gap = 2,
-					clip = {y = !preview, scroll = true},
+					clip = {y = true, scroll = true},
 					// The theme's decor scene: nendo emits the Custom
 					// command before the children, so it paints behind
 					// the messages.
@@ -532,7 +523,7 @@ chat_pane :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, messages: []Msg_Ui) {
 				scrollbar(nendo.id("Timeline"))
 				jump_latest_button()
 
-				if !preview && (!chat.pending || !single_pane()) {chat_composer(ui)}
+				if !chat.pending || !single_pane() {chat_composer(ui)}
 			}
 		}
 		chat_drop_overlay(ui)
@@ -2283,7 +2274,7 @@ composer_edit :: proc(ui: ^Ui_State, width: f32, can_send: bool) {
 			wrap_break(text, 0, len(text), inline_width - CARET_W, BODY_FS, .Compose) ==
 				len(text) &&
 			strings.index_byte(text, '\n') < 0
-		if !ui.poll_open {
+		if ui.page == .Chats && !ui.poll_open {
 			if open_now(nendo.id("MentionPop"), ui.mention_active) {mention_popover(ui)}
 			if open_now(nendo.id("ShortcodePop"), ui.shortcode_active) {shortcode_popover(ui)}
 			if slash_open(ui) {slash_popover(ui)}
@@ -2331,7 +2322,7 @@ composer_edit :: proc(ui: ^Ui_State, width: f32, can_send: bool) {
 		}
 		if ui.poll_open {
 			poll_fields(ui, width)
-		} else if ui.compose_more && can_send {
+		} else if ui.page == .Chats && ui.compose_more && can_send {
 			composer_menu(ui, plan)
 		}
 	}

@@ -18,7 +18,7 @@ Debug > Timings shows where the app spends its time, for this process only. Noth
 The pinned MDK includes the timing work from marmot-protocol/mdk#1760.
 
 1. Enable Developer mode in Settings > Advanced.
-2. Open Debug > Timings and click Refresh.
+2. In **Advanced**, open **Debug > Timings** and click **Refresh**.
 3. Copy JSON exports all **78 distinct operation distributions**.
 
 The names are listed explicitly in `app/timings.odin`, matching the C snapshot in `marmot/marmot.odin`. Empty metrics stay visible with zero samples and null mean/p95, so you can tell unexercised paths from measured zeroes.
@@ -33,7 +33,7 @@ Each operation reports samples, successes, failures, total milliseconds, mean mi
 
 ## Uploads need your consent
 
-Settings > Advanced > Share usage and diagnostics explicitly grants MDK's combined consent. Existing relay-only consent requires a new decision. Turning sharing off revokes export. Audit logging has a separate switch.
+**Share usage and diagnostics** in **Settings > Privacy & storage** grants MDK's combined consent. Existing relay-only consent requires a new decision. Turning sharing off stops exports. Audit logging has a separate switch in **Advanced**.
 
 The app configures its route before starting MDK and builds marmot-c with `otlp-export`; cached bundles without that feature are rebuilt.
 
@@ -73,7 +73,7 @@ macOS and Windows use their native config directory, not `XDG_CONFIG_HOME`. The 
 The accepted keys are the six in the table above. Use one `key = "value"` assignment per line; lines beginning with `#` are comments. An empty value overrides the embedded value too.
 
 - **Protect credentials.** Use mode 0600 on Unix or an equivalent user-only ACL on Windows.
-- **Routes are not consent.** Routes and tokens never grant consent; uploads still require the corresponding setting in Settings > Advanced.
+- **Routes are not consent.** Uploads still require the matching setting in **Privacy & storage** or **Advanced**.
 
 <details>
 <summary><b>The thirteen histograms to chart first</b></summary>
