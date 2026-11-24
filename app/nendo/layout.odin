@@ -1247,6 +1247,7 @@ calculate_final_layout :: proc(pass: Layout_Pass) {
 
 			hash_map_item := get_hash_map_item(current_element.id)
 			hash_map_item.bounding_box = current_element_bounding_box
+			hash_map_item.declared_height = current_element.declared_height
 
 			if current_element.is_text_element {continue}
 			hash_map_item.laid_out_y = scroll_offset.y

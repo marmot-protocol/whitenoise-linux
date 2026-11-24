@@ -180,7 +180,7 @@ Use `nendo.percent(1, max = 480)` to fill the parent up to a cap. A row or colum
 
 Set `scroll = true` on a clip to retain a scroll position and accept wheel and drag input on its clipped axes. An ordinary clip still masks its children and applies a declared `offset`, but uses no scroll state.
 
-Use `nendo.virtual_rows` for a run of equal-height rows at the end of a top-aligned scrolling column. Nendo reserves the full scroll extent and returns the range to build, even if an outer column handles the scroll. A picker with a height cap that fits on the canvas keeps its own row window so keyboard navigation can reveal hidden rows. Give each row a stable ID and the declared row height. Put headers before the run and give them heights known before text wraps. Nendo uses the last layout for ancestor positions that depend on wrapping or alignment. The run closes at the end of its enclosing block.
+Use `nendo.virtual_rows` for a run at the end of a top-aligned column. Nendo reserves the full scroll extent and returns the range to build, even if an outer column handles the scroll. A picker with a height cap that fits on the canvas keeps its own row window so keyboard navigation can reveal hidden rows. Give each row a stable ID and the declared row height. Put headers before the run. Nendo starts with the current declared heights and uses the previous layout to estimate adjustments from wrapping or alignment. The run closes at the end of its enclosing block.
 
 ```odin
 if nendo.box(nendo.id("Results"))({
@@ -195,6 +195,8 @@ if nendo.box(nendo.id("Results"))({
     }
 }
 ```
+
+For unequal heights, pass cumulative heights instead of a count and a row height. For rows of height 32, 56, and 24, set `offsets := []f32{0, 32, 88, 112}` and call `nendo.virtual_rows(id, offsets, gap = 4)`. Build row `i` at height `offsets[i + 1] - offsets[i]`. Leave gaps out of `offsets`: nendo adds them between rows. Supply positive heights known before layout. Nendo searches the slice without copying it or measuring offscreen rows.
 
 | Path | What's there |
 | --- | --- |

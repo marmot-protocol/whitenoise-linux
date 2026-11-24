@@ -41,25 +41,74 @@ Virtual_Range :: struct {
 	remaining:  f32,
 }
 
-// Declare the final run of rows inside a top-aligned, vertically scrolling column.
-// Build one box of row_height per index in first..<end. The run owns the row gap.
-@(deferred_out = finish_virtual_rows)
-virtual_rows :: proc(id: Id, count: int, row_height: f32, gap: u16 = 0) -> Virtual_Range {
-	ctx := active_context
-	owner := get_open_layout_element()
+// Declare the final run in a top-aligned column. Build one row per index in first..<end.
+virtual_rows :: proc {
+	virtual_rows_fixed,
+	virtual_rows_offsets,
+}
+
+@(private, deferred_out = finish_virtual_rows)
+virtual_rows_fixed :: proc(id: Id, count: int, row_height: f32, gap: u16 = 0) -> Virtual_Range {
 	stride := row_height + f32(gap)
 	height := cmax(f32(0), f32(count) * stride - f32(gap))
+	top, window := virtual_window(height)
+	first := clamp(int(top / stride) - 1, 0, count)
+	end := clamp(int((top + window) / stride) + 2, first, count)
+	open_virtual_run(id, first, f32(first) * stride, gap)
+	return {first, end, cmax(f32(0), f32(count - end) * stride - f32(gap))}
+}
+
+// Offsets start at zero and end at the sum of row heights, without gaps.
+@(private, deferred_out = finish_virtual_rows)
+virtual_rows_offsets :: proc(id: Id, offsets: []f32, gap: u16 = 0) -> Virtual_Range {
+	count := max(0, len(offsets) - 1)
+	if count == 0 {
+		virtual_window(0)
+		open_virtual_run(id, 0, 0, gap)
+		return {}
+	}
+	space := f32(gap)
+	height := offsets[count] + f32(count - 1) * space
+	top, window := virtual_window(height)
+	// Shift the top by one gap to search row ends using the same edges.
+	first := clamp(virtual_lower_bound(offsets, space, top + space) - 2, 0, count)
+	end := clamp(virtual_lower_bound(offsets, space, top + window) + 1, first, count)
+	open_virtual_run(id, first, offsets[first] + f32(first) * space, gap)
+	tail := end < count ? offsets[count] - offsets[end] + f32(count - end - 1) * space : 0
+	return {first, end, tail}
+}
+
+@(private)
+virtual_lower_bound :: proc(offsets: []f32, gap, y: f32) -> int {
+	lo, hi := 0, len(offsets)
+	for lo < hi {
+		mid := lo + (hi - lo) / 2
+		if offsets[mid] + f32(mid) * gap < y {
+			lo = mid + 1
+		} else {
+			hi = mid
+		}
+	}
+	return lo
+}
+
+@(private)
+virtual_window :: proc(height: f32) -> (top, window: f32) {
+	ctx := active_context
+	owner := get_open_layout_element()
 	limit := ctx.layout_dimensions.height
 	if owner.config.height.max > 0 {
 		limit = cmin(limit, owner.config.height.max)
 	}
-	top, window := f32(0), limit
+	window = limit
+	clip := &owner.config.clip
 	inherited_clip := false
 	// A bounded picker keeps its own small window for keyboard reveal.
-	if owner.config.height.max <= 0 || owner.config.height.max > ctx.layout_dimensions.height {
+	if !scroll_enabled(clip) ||
+	   owner.config.height.max <= 0 ||
+	   owner.config.height.max > ctx.layout_dimensions.height {
 		top, window, inherited_clip = virtual_ancestor_window(owner, limit)
 	}
-	clip := &owner.config.clip
 	prefix := flow_prefix_y(owner, ctx.layout_element_children_buffer.length)
 	if view := scroll_enabled(clip) ? find_scroll_data(owner.id) : nil; view != nil {
 		viewport := view.bounding_box.height
@@ -77,16 +126,16 @@ virtual_rows :: proc(id: Id, count: int, row_height: f32, gap: u16 = 0) -> Virtu
 	}
 	top -= prefix
 	if clip.x || clip.y {top -= clip.offset.y}
-	first := clamp(int(top / stride) - 1, 0, count)
-	end := clamp(int((top + window) / stride) + 2, first, count)
+	return
+}
 
+@(private)
+open_virtual_run :: proc(id: Id, skipped: int, prefix: f32, gap: u16) {
 	open_element_with_id(id)
 	configure(Box{width = grow(), direction = .Column, gap = gap})
-	if first > 0 {
-		if box(id_local("VirtualBefore"))({height = fixed(f32(first) * stride - f32(gap))}) {}
+	if skipped > 0 {
+		if box(id_local("VirtualBefore"))({height = fixed(prefix - f32(gap))}) {}
 	}
-	remaining := end < count ? f32(count - end) * stride - f32(gap) : 0
-	return {first, end, remaining}
 }
 
 @(private)
@@ -101,7 +150,21 @@ flow_prefix_y :: proc(parent: ^Layout_Element, children_end: i32) -> (y: f32) {
 			&ctx.layout_elements,
 			array_get_value(&ctx.layout_element_children_buffer, i),
 		)
-		y += child.dimensions.height
+		height := child.dimensions.height
+		// Keep fixed children at their current heights. Only estimate the reflow.
+		if child.height_reflows {
+			prior := get_hash_map_item(child.id)
+			if prior.layout_element == child && !prior.appeared_this_frame {
+				height += prior.bounding_box.height - prior.declared_height
+				if child.is_text_element || child.config.aspect != 0 {
+					height = cmax(f32(0), height)
+				} else {
+					bounds := child.config.height
+					height = clamp(height, bounds.min, bounds.max)
+				}
+			}
+		}
+		y += height
 	}
 	return
 }

@@ -396,6 +396,9 @@ measure_text_cached :: proc(text: ^String, config: ^Text_Style) -> ^Measure_Text
 	measured_width = cmax(line_width, measured_width) - f32(config.spacing)
 
 	measured.measured_words_start_index = temp_word.next
+	if temp_word.next != -1 {
+		measured.multiple_words = array_get_value(&ctx.measured_words, temp_word.next).next != -1
+	}
 	measured.unwrapped_dimensions.width = measured_width
 	measured.unwrapped_dimensions.height = measured_height
 
@@ -678,9 +681,23 @@ close_element :: proc() {
 	}
 
 	update_aspect_ratio_box(open_layout_element)
+	open_layout_element.declared_height = open_layout_element.dimensions.height
 
 	element_is_floating := open_layout_element.config.floating.attach_to != .None
 	wrap_subtree := open_layout_element.wrap_subtree
+	width := layout_config.width
+	height := layout_config.height
+	aspect_reflows :=
+		layout_config.aspect != 0 &&
+		width.kind != .Fixed &&
+		(width.kind == .Percent || width.min != width.max)
+	content_reflows :=
+		height.kind != .Fixed &&
+		height.min != height.max &&
+		open_layout_element.children.length > 0 &&
+		(open_layout_element.height_reflows || wrap || layout_config.grid.min_cell_width > 0)
+	reflows := height.kind != .Percent && (aspect_reflows || content_reflows)
+	open_layout_element.height_reflows = reflows
 
 	// Close the currently open element
 	closing_element_index := array_remove_swapback(
@@ -697,6 +714,7 @@ close_element :: proc() {
 			return
 		}
 		open_layout_element.wrap_subtree ||= wrap_subtree
+		open_layout_element.height_reflows ||= reflows
 		open_layout_element.children.length += 1
 		array_add(&ctx.layout_element_children_buffer, closing_element_index)
 	}
@@ -796,6 +814,11 @@ open_text_element :: proc(text: String, text_config: Text_Style) {
 		height = text_config.line_height > 0 ? f32(text_config.line_height) : text_measured.unwrapped_dimensions.height,
 	}
 	text_element.dimensions = text_dimensions
+	text_element.declared_height = text_dimensions.height
+	text_element.height_reflows =
+		text_measured.contains_newlines ||
+		(text_config.wrap == .Words && text_measured.multiple_words)
+	parent_element.height_reflows ||= text_element.height_reflows
 	text_element.min_dimensions = Dimensions {
 		width  = text_measured.min_width,
 		height = text_dimensions.height,

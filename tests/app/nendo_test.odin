@@ -173,6 +173,8 @@ virtual_rows_layout :: proc(
 	count: int,
 	height: nendo.Size,
 	clip := nendo.Clip{y = true, scroll = true},
+	row_height: f32 = 20,
+	header_height: f32 = 19,
 ) -> []nendo.Render_Command {
 	nendo.begin()
 	if nendo.box(nendo.id("VirtualList"))(
@@ -185,11 +187,13 @@ virtual_rows_layout :: proc(
 		clip = clip,
 	},
 	) {
-		if nendo.box(nendo.id("VirtualHeader"))({height = nendo.fixed(19)}) {}
-		rows := nendo.virtual_rows(nendo.id("VirtualRun"), count, 20, gap = 4)
+		if nendo.box(nendo.id("VirtualHeader"))({direction = .Column}) {
+			if nendo.box()({height = nendo.fixed(header_height)}) {}
+		}
+		rows := nendo.virtual_rows(nendo.id("VirtualRun"), count, row_height, gap = 4)
 		for i in rows.first ..< rows.end {
 			if nendo.box(nendo.id("VirtualRow", u32(i)))(
-			{width = nendo.grow(), height = nendo.fixed(20), color = {1, 1, 1, 1}},
+			{width = nendo.grow(), height = nendo.fixed(row_height), color = {1, 1, 1, 1}},
 			) {}
 		}
 	}
@@ -263,11 +267,107 @@ layout_virtual_rows_preserves_geometry_when_scrolled_and_shrunk :: proc(t: ^test
 	testing.expect(t, last.found)
 	testing.expect_value(t, last.rect, nendo.Rect{11, 71, 182, 20})
 
+	virtual_rows_layout(100, nendo.fixed(40), row_height = 0)
+	nendo.scroll(list_id).position.y = -39
+	virtual_rows_layout(100, nendo.fixed(40), row_height = 0)
+	testing.expect_value(t, nendo.element(nendo.id("VirtualRow", 2)).rect.y, 0)
+	testing.expect_value(t, nendo.scroll(list_id).content.height, 436)
+
+	virtual_rows_layout(100, nendo.fixed(100))
+	nendo.scroll(list_id).position.y = -432
+	virtual_rows_layout(100, nendo.fixed(100), header_height = 300)
+	testing.expect_value(
+		t,
+		nendo.element(nendo.id("VirtualRow", 5)).rect,
+		nendo.Rect{11, 0, 182, 20},
+	)
+	nendo.scroll(list_id).position.y = -2817
+	virtual_rows_layout(100, nendo.fixed(100), header_height = 500)
+	testing.expect_value(t, nendo.scroll(list_id).position.y, -2817)
+	testing.expect_value(t, nendo.element(nendo.id("VirtualRow", 99)).rect.y, 71)
+
 	virtual_rows_layout(1000, nendo.fixed(100), {y = true, offset = {0, -200}})
 	testing.expect(t, !nendo.scroll(list_id).found)
 	row := nendo.element(nendo.id("VirtualRow", 8))
 	testing.expect(t, row.found)
 	testing.expect_value(t, row.rect, nendo.Rect{11, 23, 182, 20})
+	testing.expect_value(t, errors, 0)
+}
+
+@(test)
+layout_variable_virtual_rows :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	errors := 0
+	nendo.init(memory, {800, 600}, {handler = count_layout_error, user_data = &errors})
+
+	layout :: proc(offsets: []f32) {
+		nendo.begin()
+		if nendo.box(nendo.id("MixedView"))(
+		{
+			width = nendo.fixed(200),
+			height = nendo.fixed(60),
+			direction = .Column,
+			padding = nendo.pad(5),
+			gap = 3,
+			clip = {y = true, scroll = true},
+		},
+		) {
+			if nendo.box(nendo.id("MixedHeader"))({height = nendo.fixed(11)}) {}
+			rows := nendo.virtual_rows(nendo.id("MixedRun"), offsets, gap = 4)
+			for i in rows.first ..< rows.end {
+				if nendo.box(nendo.id("MixedRow", u32(i)))(
+				{width = nendo.grow(), height = nendo.fixed(offsets[i + 1] - offsets[i])},
+				) {}
+			}
+		}
+		nendo.end(0)
+	}
+	offsets: [1001]f32
+	heights := [3]f32{9, 100, 27}
+	for i in 0 ..< 1000 {offsets[i + 1] = offsets[i] + heights[i % len(heights)]}
+	list := nendo.id("MixedView")
+	layout(offsets[:])
+	view := nendo.scroll(list)
+	if !testing.expect(t, view.found) {return}
+	testing.expect_value(t, view.content.height, 49317)
+	testing.expect_value(t, nendo.element(nendo.id("MixedRow", 0)).rect, nendo.Rect{5, 19, 190, 9})
+	testing.expect(t, !nendo.element(nendo.id("MixedRow", 500)).found)
+	view.position.y = -100
+	layout(offsets[:])
+	testing.expect_value(
+		t,
+		nendo.element(nendo.id("MixedRow", 1)).rect,
+		nendo.Rect{5, -68, 190, 100},
+	)
+	testing.expect_value(
+		t,
+		nendo.element(nendo.id("MixedRow", 2)).rect,
+		nendo.Rect{5, 36, 190, 27},
+	)
+	view = nendo.scroll(list)
+	view.position.y = view.viewport.height - view.content.height
+	layout(offsets[:])
+	testing.expect_value(
+		t,
+		nendo.element(nendo.id("MixedRow", 999)).rect,
+		nendo.Rect{5, 46, 190, 9},
+	)
+	testing.expect(t, !nendo.element(nendo.id("MixedRow", 0)).found)
+	layout(offsets[:4])
+	testing.expect_value(
+		t,
+		nendo.element(nendo.id("MixedRow", 2)).rect,
+		nendo.Rect{5, 28, 190, 27},
+	)
+	testing.expect_value(t, nendo.scroll(list).content.height, 168)
+	layout(offsets[:1])
+	testing.expect_value(t, nendo.scroll(list).position.y, 0)
+	testing.expect(t, !nendo.element(nendo.id("MixedRow", 2)).found)
 	testing.expect_value(t, errors, 0)
 }
 
@@ -349,6 +449,88 @@ layout_virtual_rows_follow_ancestor_scroll :: proc(t: ^testing.T) {
 		testing.expect(t, !nendo.element(nendo.id("FloatingRow", 0)).found)
 	}
 	testing.expect_value(t, errors, 0)
+}
+
+@(test)
+layout_virtual_wrapped_header :: proc(t: ^testing.T) {
+	sync.lock(&nendo_test_mutex)
+	defer sync.unlock(&nendo_test_mutex)
+	previous := nendo.current_context()
+	nendo.set_context(nil)
+	memory := make([]u8, int(nendo.min_memory_size()))
+	defer {nendo.set_context(previous); delete(memory)}
+	nendo.init(memory, {800, 600})
+	nendo.set_measure_text(fixed_width_text, nil)
+	offsets: [101]f32
+	for i in 0 ..< 100 {offsets[i + 1] = offsets[i] + f32(20 + 8 * (i % 2))}
+
+	page := nendo.id("WrappedView")
+	header := nendo.id("WrappedHeading")
+	target := nendo.id("WrappedRow", 10)
+	HEADER_CAP :: f32(120)
+	Header :: enum {
+		Wrapped,
+		Fixed,
+		Single_Word,
+		At_Cap,
+		Grow_Aspect,
+		Fixed_Aspect,
+	}
+	for step in ([?]struct {
+			kind:          Header,
+			scroll_height: f32,
+		}{{.Wrapped, 0}, {.Wrapped, -1}, {.Single_Word, 16}, {.Wrapped, 0}, {.Fixed, 20}, {.Wrapped, 0}, {.At_Cap, HEADER_CAP}, {.Grow_Aspect, 0}, {.Fixed_Aspect, 100}}) {
+		if step.scroll_height != 0 {
+			h := step.scroll_height
+			if h < 0 {
+				h = nendo.element(header).rect.height
+				if !testing.expect(t, h >= 96, "heading wraps to at least six lines") {return}
+			}
+			nendo.scroll(page).position.y = -(h + offsets[10])
+		}
+		nendo.begin()
+		if nendo.box(page)(
+		{
+			width = nendo.fixed(100),
+			height = nendo.fixed(60),
+			direction = .Column,
+			clip = {y = true, scroll = true},
+		},
+		) {
+			if step.kind == .Grow_Aspect || step.kind == .Fixed_Aspect {
+				width := step.kind == .Grow_Aspect ? nendo.grow() : nendo.fixed(100)
+				if nendo.box(header)({width = width, aspect = 1}) {}
+			} else if nendo.box(header)(
+			{width = nendo.grow(), height = nendo.fit(max = HEADER_CAP), direction = .Column},
+			) {
+				if step.kind == .Fixed {
+					if nendo.box()({height = nendo.fixed(20)}) {}
+				} else {
+					LABEL :: "aa aa aa aa aa aa aa aa aa aa aa aa aa aa aa aa aa aa aa aa aa aa aa aa"
+					nendo.text(step.kind == .Single_Word ? "Loading" : LABEL, {wrap = .Words})
+					if step.kind == .At_Cap {
+						if nendo.box()({height = nendo.fixed(HEADER_CAP)}) {}
+					}
+				}
+			}
+			if nendo.box(nendo.id("NestedContent"))(
+			{width = nendo.grow(), height = nendo.fixed(offsets[100]), direction = .Column},
+			) {
+				rows := nendo.virtual_rows(nendo.id("WrappedRun"), offsets[:])
+				for i in rows.first ..< rows.end {
+					if nendo.box(nendo.id("WrappedRow", u32(i)))(
+					{width = nendo.grow(), height = nendo.fixed(offsets[i + 1] - offsets[i])},
+					) {}
+				}
+			}
+		}
+		nendo.end(0)
+		if step.scroll_height != 0 {
+			testing.expect_value(t, nendo.element(target).rect, nendo.Rect{0, 0, 100, 20})
+			nendo.set_pointer({50, 10}, .Up)
+			testing.expect(t, nendo.pointer_over(target))
+		}
+	}
 }
 
 // Three fixed rows keyed by identity, laid out in `order` inside a

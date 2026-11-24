@@ -109,9 +109,11 @@ Layout_Element :: struct {
 	animated_size:            Transition_Properties,
 	in_wrap_flow:             bool,
 	wrap_subtree:             bool,
+	height_reflows:           bool,
 	wrap_first:               i32,
 	wrap_intrinsic:           Dimensions,
 	wrap_exit_position:       Vector2,
+	declared_height:          f32,
 }
 
 @(private)
@@ -155,6 +157,7 @@ Layout_Element_Hash_Map_Item :: struct {
 	next_index:          i32,
 	generation:          u32,
 	laid_out_y:          f32,
+	declared_height:     f32,
 	appeared_this_frame: bool,
 }
 
@@ -172,6 +175,7 @@ Measure_Text_Cache_Item :: struct {
 	measured_words_start_index: i32,
 	min_width:                  f32,
 	contains_newlines:          bool,
+	multiple_words:             bool,
 	// Hash map data
 	id:                         u32,
 	next_index:                 i32,
