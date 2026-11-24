@@ -20,6 +20,9 @@ PREFIX="$1"
 ID="$2"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 
+# OpenBSD rejects a runtime directory writable by anyone but its owner.
+if [ "$(uname -s)" = OpenBSD ]; then umask 022; fi
+
 RES="$PREFIX/share/whitenoise-linux"
 LIB="$PREFIX/lib/whitenoise-linux"
 mkdir -p "$PREFIX/bin" "$LIB" "$RES/fonts" "$PREFIX/share/applications" \
@@ -77,6 +80,10 @@ elif [ -x "$HERE/build/wn-webview" ]; then
 fi
 # Every selectable set: emoji/<set>/ tiles plus the emoji/<set>.bin pack.
 cp -r "$HERE/vendor/emoji" "$RES/"
+if [ "$(uname -s)" = OpenBSD ]; then
+  # OpenBSD cp preserves directory modes even without -p.
+  find "$RES/emoji" -type d -exec chmod go-w {} +
+fi
 cp "$HERE/vendor/emoji-licenses/"*.txt "$RES/licenses/"
 cp "$HERE/vendor/emoji-catalog.tsv" "$RES/"
 # Fonts are staged and sha256-pinned by scripts/build.sh, so every package ships
