@@ -270,11 +270,21 @@ mobile_chat_layout_boundaries :: proc(t: ^testing.T) {
 		nendo.element(nendo.id("PollBusy")).found && ui.poll_ticket == 1,
 		"Back keeps an in-flight publish visible",
 	)
+	settings := nendo.element(nendo.id("Nav", u32(Page.Settings)))
+	testing.expect(t, settings.found && inside(settings.rect, {0, 0, 360, 300}))
+	nendo.set_pointer(
+		{settings.rect.x + settings.rect.width / 2, settings.rect.y + settings.rect.height / 2},
+		.Up,
+	)
+	forced_release = true
+	handle_pages(&ui, &client)
+	forced_release = false
 	testing.expect(
 		t,
-		nendo.element(nendo.id("PhoneNavigation")).found,
-		"you can switch pages while publishing",
+		ui.page == .Settings && ui.poll_ticket == 1,
+		"switch pages without stopping the publish",
 	)
+	ui.page = .Chats
 	ui.poll_ticket = 0
 	phone_back_action(&ui)
 	testing.expect(t, !ui.poll_open, "Back closes a poll that is not sending")
